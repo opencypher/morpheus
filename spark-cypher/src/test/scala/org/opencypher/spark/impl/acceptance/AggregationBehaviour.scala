@@ -28,8 +28,8 @@ package org.opencypher.spark.impl.acceptance
 
 import org.opencypher.okapi.api.graph.PropertyGraph
 import org.opencypher.okapi.api.value.CypherValue._
-
-import scala.collection.immutable.Bag
+import org.opencypher.okapi.ir.test.support.Bag
+import org.opencypher.okapi.ir.test.support.Bag._
 
 trait AggregationBehaviour {
   this: AcceptanceTest =>

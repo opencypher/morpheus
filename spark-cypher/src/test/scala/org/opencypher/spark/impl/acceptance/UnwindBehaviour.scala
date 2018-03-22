@@ -28,9 +28,8 @@ package org.opencypher.spark.impl.acceptance
 
 import org.opencypher.okapi.api.value.CAPSNode
 import org.opencypher.okapi.api.value.CypherValue._
+import org.opencypher.okapi.ir.test.support.Bag
 import org.opencypher.spark.impl.CAPSGraph
-
-import scala.collection.immutable.Bag
 
 trait UnwindBehaviour { self: AcceptanceTest =>
 
@@ -126,7 +125,7 @@ trait UnwindBehaviour { self: AcceptanceTest =>
         ))
     }
 
-    test("unwind in involved query") {
+    it("unwinds in an involved query") {
       val graph = initGraph("CREATE (:A)-[:T]->(:B {item: '1'})-[:T]->(:C)")
 
       val query =
@@ -138,13 +137,14 @@ trait UnwindBehaviour { self: AcceptanceTest =>
 
       val result = graph.cypher(query, Map("param" -> CypherList(1, 2, 3)))
 
-      result.getRecords.toMapsWithCollectedEntities.map(_.toString) should equal(
+      result.getRecords.toMapsWithCollectedEntities should equal(
         Bag(
           CypherMap("a" -> CAPSNode(0L, Set("A"), CypherMap.empty), "item" -> 3),
           CypherMap("a" -> CAPSNode(1L, Set("B"), CypherMap("item" -> "1")), "item" -> 3),
           CypherMap("a" -> CAPSNode(0L, Set("A"), CypherMap.empty), "item" -> 2),
           CypherMap("a" -> CAPSNode(1L, Set("B"), CypherMap("item" -> "1")), "item" -> 2)
-        ).map(_.toString))
+        )
+      )
     }
   }
 }

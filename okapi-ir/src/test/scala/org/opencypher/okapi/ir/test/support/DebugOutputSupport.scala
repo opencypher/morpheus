@@ -26,17 +26,24 @@
  */
 package org.opencypher.okapi.ir.test.support
 
-import scala.collection.Bag
+object Bag {
 
-trait DebugOutputSupport {
+  type Bag[T <: Any] = Map[T, Int]
 
-  implicit def bagConfig[T] = Bag.configuration.compact[T]
-
-  implicit class GenericIterableToBagConverter[T](val elements: TraversableOnce[T]) {
-    def toBag: Bag[T] = Bag(elements.toSeq: _*)
+  def apply[E](elements: E*): Bag[E] = {
+    elements.groupBy(identity).mapValues(_.size)
   }
 
-  implicit class ArrayToBagConverter[T](val elements: Array[T]) {
-    def toBag: Bag[T] = Bag(elements.toSeq: _*)
+  implicit class TraversableToBag[E](val t: Traversable[E]) {
+    def toBag: Bag[E] = Bag(t.toSeq: _*)
   }
+
+  implicit class IteratorToBag[E](val i: Iterator[E]) {
+    def toBag: Bag[E] = Bag(i.toSeq: _*)
+  }
+
+  implicit class ArrayToBag[E](val a: Array[E]) {
+    def toBag: Bag[E] = Bag(a: _*)
+  }
+
 }

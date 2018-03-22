@@ -32,8 +32,8 @@ import org.opencypher.spark.api.io.neo4j.Neo4jPropertyGraphDataSource._
 import org.opencypher.spark.impl.CAPSConverters._
 import org.opencypher.spark.test.CAPSTestSuite
 import org.opencypher.spark.test.fixture.{Neo4jServerFixture, TeamDataFixture}
-
-import scala.collection.Bag
+import org.opencypher.okapi.ir.test.support.Bag
+import org.opencypher.okapi.ir.test.support.Bag._
 
 class Neo4jPropertyGraphDataSourceTest
   extends CAPSTestSuite
