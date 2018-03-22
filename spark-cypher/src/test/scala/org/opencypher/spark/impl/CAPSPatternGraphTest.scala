@@ -585,6 +585,7 @@ class CAPSPatternGraphTest extends CAPSGraphTest {
     val when = given.cypher(
       """
         |MATCH (i:Interest)<-[h:HAS_INTEREST]-(a:Person)-[k:KNOWS]->(b:Person)
+        |WITH DISTINCT a, b
         |CONSTRUCT {
         |  MERGE (a)
         |  MERGE (b)
@@ -619,6 +620,30 @@ class CAPSPatternGraphTest extends CAPSGraphTest {
       """.stripMargin)
 
     when.getGraph.relationships("f", CTRelationship("FOO")).size should equal(3)
+  }
+
+  ignore("should merge and copy nodes") {
+    val given = initGraph(
+      """
+        |CREATE (a: Person)
+        |CREATE (b: Person)
+        |CREATE (a)-[:HAS_INTEREST]->(i1:Interest {val: 1})
+        |CREATE (a)-[:HAS_INTEREST]->(i2:Interest {val: 2})
+        |CREATE (a)-[:HAS_INTEREST]->(i3:Interest {val: 3})
+        |CREATE (a)-[:KNOWS]->(b)
+      """.stripMargin)
+
+    val when = given.cypher(
+      """
+        |MATCH (i:Interest)<-[h:HAS_INTEREST]-(a:Person)-[k:KNOWS]->(b:Person)
+        |CONSTRUCT {
+        |  MERGE (b)
+        |  CREATE (~a)
+        |}
+        |RETURN GRAPH
+      """.stripMargin)
+
+    when.getGraph.nodes("n", CTNode("Person")).size should equal(4)
   }
 
   private def initPersonReadsBookGraph: CAPSGraph = {

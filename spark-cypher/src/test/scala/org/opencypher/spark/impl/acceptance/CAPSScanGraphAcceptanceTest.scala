@@ -80,6 +80,7 @@ class CAPSScanGraphAcceptanceTest extends AcceptanceTest {
     val res = inputGraph.cypher(
       """
         |MATCH (n)-[:KNOWS]->(m)
+        |WITH DISTINCT n, m
         |CONSTRUCT {
         | MERGE (n)
         | MERGE (m)
