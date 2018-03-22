@@ -27,7 +27,6 @@
 package org.opencypher.spark.impl.physical
 
 import org.opencypher.okapi.relational.api.physical.PhysicalResult
-import org.opencypher.spark.api.CAPSSession
 import org.opencypher.spark.impl.{CAPSGraph, CAPSRecords}
 
 case class CAPSPhysicalResult(records: CAPSRecords, graph: CAPSGraph)

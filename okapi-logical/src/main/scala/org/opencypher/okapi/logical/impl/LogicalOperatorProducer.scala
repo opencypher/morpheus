@@ -26,7 +26,7 @@
  */
 package org.opencypher.okapi.logical.impl
 
-import org.opencypher.okapi.ir.api.{IRCatalogGraph, IRField, IRGraph, IRPatternGraph}
+import org.opencypher.okapi.ir.api.IRField
 import org.opencypher.okapi.ir.api.block.{Aggregations, SortItem}
 import org.opencypher.okapi.ir.api.expr._
 import org.opencypher.okapi.ir.impl.util.VarConverters._

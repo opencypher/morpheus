@@ -29,7 +29,6 @@ package org.opencypher.okapi.relational.api.physical
 import org.opencypher.okapi.api.graph.{CypherSession, PropertyGraph, QualifiedGraphName}
 import org.opencypher.okapi.api.table.CypherRecords
 import org.opencypher.okapi.api.value.CypherValue.CypherMap
-import org.opencypher.okapi.relational.impl.physical.PhysicalPlanner
 
 /**
   * Represents a back-end specific context which is used by the [[org.opencypher.okapi.relational.impl.physical.PhysicalPlanner]].

@@ -42,13 +42,16 @@ import org.opencypher.spark.schema.CAPSSchema._
 
 trait CAPSGraph extends PropertyGraph with GraphOperations with Serializable {
 
+  implicit def session: CAPSSession
+
   override def nodes(name: String, nodeCypherType: CTNode = CTNode): CAPSRecords
 
   override def relationships(name: String, relCypherType: CTRelationship = CTRelationship): CAPSRecords
 
-  override def session: CAPSSession
+  def union(other: PropertyGraph): CAPSGraph = CAPSUnionGraph(List(this, other.asCaps), doUpdateTags = false)
 
-  override def union(other: PropertyGraph): CAPSGraph
+  // TODO: Flatten UnionGraph trees that have tag updates enabled
+  override def unionAll(other: PropertyGraph): CAPSGraph = CAPSUnionGraph(this, other.asCaps)
 
   override def schema: CAPSSchema
 
@@ -123,7 +126,7 @@ object CAPSGraph {
   }
 
   def createLazy(theSchema: CAPSSchema, loadGraph: => CAPSGraph)(implicit caps: CAPSSession): CAPSGraph =
-    new LazyGraph(theSchema, loadGraph) {}
+    new LazyGraph(theSchema, loadGraph) { }
 
   sealed abstract class LazyGraph(override val schema: CAPSSchema, loadGraph: => CAPSGraph)(implicit caps: CAPSSession)
     extends CAPSGraph {
@@ -140,16 +143,13 @@ object CAPSGraph {
     override def relationships(name: String, relCypherType: CTRelationship): CAPSRecords =
       lazyGraph.relationships(name, relCypherType)
 
-    override def union(other: PropertyGraph): CAPSGraph =
-      lazyGraph.union(other)
-
     override def cache(): CAPSGraph = {
-      lazyGraph.cache();
+      lazyGraph.cache()
       this
     }
 
     override def persist(): CAPSGraph = {
-      lazyGraph.persist();
+      lazyGraph.persist()
       this
     }
 
@@ -159,12 +159,12 @@ object CAPSGraph {
     }
 
     override def unpersist(): CAPSGraph = {
-      lazyGraph.unpersist();
+      lazyGraph.unpersist()
       this
     }
 
     override def unpersist(blocking: Boolean): CAPSGraph = {
-      lazyGraph.unpersist(blocking);
+      lazyGraph.unpersist(blocking)
       this
     }
   }
@@ -178,8 +178,6 @@ object CAPSGraph {
 
     override def relationships(name: String, cypherType: CTRelationship): CAPSRecords =
       CAPSRecords.empty(RecordHeader.from(OpaqueField(Var(name)(cypherType))))
-
-    override def union(other: PropertyGraph): CAPSGraph = other.asCaps
   }
 
 }

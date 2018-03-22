@@ -31,8 +31,8 @@ import cats.data.State
 import cats.data.State._
 import cats.instances.list._
 import cats.syntax.flatMap._
-import org.neo4j.cypher.internal.v3_4.expressions.{Expression, LogicalVariable, RelTypeName, RelationshipChain}
 import org.neo4j.cypher.internal.v3_4.expressions.SemanticDirection.{BOTH, INCOMING, OUTGOING}
+import org.neo4j.cypher.internal.v3_4.expressions.{Expression, LogicalVariable, RelTypeName}
 import org.neo4j.cypher.internal.v3_4.{expressions => ast}
 import org.opencypher.okapi.api.types.{CTList, CTNode, CTRelationship, CypherType}
 import org.opencypher.okapi.impl.exception.NotImplementedException

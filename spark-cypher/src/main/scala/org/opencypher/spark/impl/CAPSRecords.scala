@@ -100,6 +100,19 @@ sealed abstract class CAPSRecords(val header: RecordHeader, val data: DataFrame)
     this
   }
 
+  def replaceTags(replacements: Map[Int, Int]): CAPSRecords = {
+    val idColumns = header.contents.collect {
+      case f: OpaqueField => ColumnName.of(f)
+      case p@ProjectedExpr(StartNode(_)) => ColumnName.of(p)
+      case p@ProjectedExpr(EndNode(_)) => ColumnName.of(p)
+    }
+    val dfWithReplacedTags = idColumns.foldLeft(data) {
+      case (df, column) => df.safeReplaceTags(column, replacements)
+    }
+
+    CAPSRecords.createInternal(header, dfWithReplacedTags)
+  }
+
   def select(fields: Set[Var]): CAPSRecords = {
     val selectedHeader = header.select(fields)
     val selectedColumnNames = selectedHeader.contents.map(ColumnName.of).toSeq
@@ -378,8 +391,8 @@ object CAPSRecords extends CypherRecordsCompanion[CAPSRecords, CAPSSession] {
   /**
     * Wraps a Spark SQL table (DataFrame) in a CAPSRecords, making it understandable by Cypher.
     *
-    * @param df the table to wrap.
-    * @param caps the session to which the resulting CAPSRecords is tied.
+    * @param df   table to wrap.
+    * @param caps session to which the resulting CAPSRecords is tied.
     * @return a Cypher table.
     */
   private[spark] def wrap(df: DataFrame)(implicit caps: CAPSSession): CAPSRecords =

@@ -27,16 +27,11 @@
 package org.opencypher.okapi.ir.impl
 
 import org.neo4j.cypher.internal.frontend.v3_4.parser.{Expressions, Patterns}
-import org.neo4j.cypher.internal.frontend.v3_4.semantics.SemanticState
 import org.neo4j.cypher.internal.util.v3_4.InputPosition.NONE
 import org.neo4j.cypher.internal.util.v3_4.{InputPosition, SyntaxException}
 import org.neo4j.cypher.internal.v3_4.{expressions => ast}
-import org.opencypher.okapi.api.graph.{GraphName, Namespace, QualifiedGraphName}
-import org.opencypher.okapi.api.io.PropertyGraphDataSource
-import org.opencypher.okapi.api.schema.Schema
 import org.opencypher.okapi.api.types.{CTNode, CTRelationship, CypherType}
-import org.opencypher.okapi.api.value.CypherValue.CypherMap
-import org.opencypher.okapi.ir.api.{IRCatalogGraph, IRField}
+import org.opencypher.okapi.ir.api.IRField
 import org.opencypher.okapi.ir.api.expr.{Expr, TildeModel, Var}
 import org.opencypher.okapi.ir.api.pattern._
 import org.opencypher.okapi.ir.test.toField

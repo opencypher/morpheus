@@ -48,6 +48,7 @@ import org.opencypher.spark.impl.physical.operators.CAPSPhysicalOperator._
 import org.opencypher.spark.impl.physical.{CAPSPhysicalResult, CAPSRuntimeContext}
 import org.opencypher.spark.impl.{CAPSGraph, CAPSRecords}
 import org.opencypher.spark.schema.CAPSSchema
+import org.opencypher.spark.schema.CAPSSchema._
 
 private[spark] abstract class UnaryPhysicalOperator extends CAPSPhysicalOperator {
 
@@ -199,7 +200,7 @@ final case class ConstructGraph(
   in: CAPSPhysicalOperator,
   constructItems: Set[ConstructedEntity],
   setItems: List[SetPropertyItem[Expr]],
-  schema: CAPSSchema)
+  initialSchema: CAPSSchema)
   extends UnaryPhysicalOperator {
 
   override def header: RecordHeader = RecordHeader.empty
@@ -208,7 +209,8 @@ final case class ConstructGraph(
     implicit val session = prev.records.caps
     val inputTable = prev.records
 
-    val entityTable = createEntities(constructItems, inputTable)
+    val newEntityTag = if (initialSchema.tags.isEmpty) 0 else initialSchema.tags.max + 1
+    val entityTable = createEntities(constructItems, inputTable, newEntityTag)
 
     val tableWithConstructedProperties = setProperties(setItems, entityTable)
 
@@ -217,7 +219,8 @@ final case class ConstructGraph(
       tableWithConstructedProperties.header -- inputTable.header,
       tableWithConstructedProperties.data.drop(inputTable.data.columns: _*))
 
-    val patternGraph = CAPSGraph.create(withInputsRemoved, schema)
+    val patternGraphSchema = initialSchema.withTags(initialSchema.tags + newEntityTag).asCaps
+    val patternGraph = CAPSGraph.create(withInputsRemoved, patternGraphSchema)
     CAPSPhysicalResult(CAPSRecords.unit(), patternGraph)
   }
 
@@ -239,7 +242,7 @@ final case class ConstructGraph(
     CAPSRecords.verifyAndCreate(newHeader, newData)(constructedTable.caps)
   }
 
-  private def createEntities(toCreate: Set[ConstructedEntity], constructedTable: CAPSRecords): CAPSRecords = {
+  private def createEntities(toCreate: Set[ConstructedEntity], constructedTable: CAPSRecords, newEntityTag: Int): CAPSRecords = {
     val numberOfColumnPartitions = toCreate.size
 
     // Construct nodes before relationships, as relationships might depend on nodes
@@ -248,14 +251,14 @@ final case class ConstructGraph(
 
     val (_, createdNodes) = nodes.foldLeft(0 -> Set.empty[(SlotContent, Column)]) {
       case ((nextColumnPartitionId, constructedNodes), nextNodeToConstruct) =>
-        (nextColumnPartitionId + 1) -> (constructedNodes ++ constructNode(nextColumnPartitionId, numberOfColumnPartitions, nextNodeToConstruct, constructedTable))
+        (nextColumnPartitionId + 1) -> (constructedNodes ++ constructNode(newEntityTag, nextColumnPartitionId, numberOfColumnPartitions, nextNodeToConstruct, constructedTable))
     }
 
     val recordsWithNodes = addEntitiesToRecords(createdNodes, constructedTable)
 
     val (_, createdRels) = rels.foldLeft(0 -> Set.empty[(SlotContent, Column)]) {
       case ((nextColumnPartitionId, constructedRels), nextRelToConstruct) =>
-        (nextColumnPartitionId + 1) -> (constructedRels ++ constructRel(nextColumnPartitionId, numberOfColumnPartitions, nextRelToConstruct, recordsWithNodes))
+        (nextColumnPartitionId + 1) -> (constructedRels ++ constructRel(newEntityTag, nextColumnPartitionId, numberOfColumnPartitions, nextRelToConstruct, recordsWithNodes))
     }
 
     addEntitiesToRecords(createdRels, recordsWithNodes)
@@ -277,7 +280,13 @@ final case class ConstructGraph(
     CAPSRecords.verifyAndCreate(newHeader, newData)(constructedTable.caps)
   }
 
-  private def constructNode(columnIdPartition: Int, numberOfColumnPartitions: Int, node: ConstructedNode, constructedTable: CAPSRecords): Set[(SlotContent, Column)] = {
+  private def constructNode(
+    newEntityTag: Int,
+    columnIdPartition: Int,
+    numberOfColumnPartitions: Int,
+    node: ConstructedNode,
+    constructedTable: CAPSRecords
+  ): Set[(SlotContent, Column)] = {
     val col = functions.lit(true)
     val labelTuples: Set[(SlotContent, Column)] = node.labels.map { label =>
       ProjectedExpr(HasLabel(node.v, label)(CTBoolean)) -> col
@@ -296,7 +305,7 @@ final case class ConstructGraph(
       case None => Set.empty[(SlotContent, Column)]
     }
 
-    labelTuples ++ propertyTuples + (OpaqueField(node.v) -> generateId(columnIdPartition, numberOfColumnPartitions))
+    labelTuples ++ propertyTuples + (OpaqueField(node.v) -> generateId(columnIdPartition, numberOfColumnPartitions).setTag(newEntityTag))
   }
 
   /**
@@ -316,7 +325,13 @@ final case class ConstructGraph(
     monotonically_increasing_id() + functions.lit(columnPartitionOffset)
   }
 
-  private def constructRel(columnIdPartition: Int, numberOfColumnPartitions: Int, toConstruct: ConstructedRelationship, constructedTable: CAPSRecords): Set[(SlotContent, Column)] = {
+  private def constructRel(
+    newEntityTag: Int,
+    columnIdPartition: Int,
+    numberOfColumnPartitions: Int,
+    toConstruct: ConstructedRelationship,
+    constructedTable: CAPSRecords
+  ): Set[(SlotContent, Column)] = {
     val ConstructedRelationship(rel, source, target, typOpt, equivalenceOpt) = toConstruct
     val header = constructedTable.header
     val inData = constructedTable.data
@@ -334,7 +349,7 @@ final case class ConstructGraph(
     }
 
     // id needs to be generated
-    val relTuple = OpaqueField(rel) -> generateId(columnIdPartition, numberOfColumnPartitions)
+    val relTuple = OpaqueField(rel) -> generateId(columnIdPartition, numberOfColumnPartitions).setTag(newEntityTag)
 
     val typeTuple = {
       typOpt match {

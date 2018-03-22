@@ -28,15 +28,12 @@ package org.opencypher.spark.impl
 
 import cats.data.NonEmptyVector
 import org.apache.spark.storage.StorageLevel
-import org.opencypher.okapi.api.graph.PropertyGraph
 import org.opencypher.okapi.api.schema._
 import org.opencypher.okapi.api.types.{CTNode, CTRelationship, CypherType, DefiniteCypherType}
-import org.opencypher.okapi.impl.exception.IllegalArgumentException
 import org.opencypher.okapi.ir.api.expr._
 import org.opencypher.okapi.relational.impl.table.RecordHeader
 import org.opencypher.spark.api.CAPSSession
 import org.opencypher.spark.api.io.{CAPSEntityTable, CAPSNodeTable, CAPSRelationshipTable}
-import org.opencypher.spark.impl.CAPSConverters._
 import org.opencypher.spark.schema.CAPSSchema
 
 class CAPSScanGraph(val scans: Seq[CAPSEntityTable], val schema: CAPSSchema)(implicit val session: CAPSSession)
@@ -86,16 +83,6 @@ class CAPSScanGraph(val scans: Seq[CAPSEntityTable], val schema: CAPSSchema)(imp
     alignedRecords.reduceOption(_ unionAll(targetRelHeader, _)).getOrElse(CAPSRecords.empty(targetRelHeader))
   }
 
-  override def union(other: PropertyGraph): CAPSGraph = other match {
-    case (otherScanGraph: CAPSScanGraph) =>
-      val allScans = scans ++ otherScanGraph.scans
-      val nodeTable = allScans
-        .collectFirst[CAPSNodeTable] { case table: CAPSNodeTable => table }
-        .getOrElse(throw IllegalArgumentException("at least one node scan"))
-      CAPSGraph.create(nodeTable, allScans.filterNot(_ == nodeTable): _*)
-    case _ => CAPSUnionGraph(this, other.asCaps)
-  }
-
   // TODO: add test case where there are multiple rel types in the underlying DF and see if it filters the right one
   case class EntityTables(entityTables: Vector[CAPSEntityTable]) {
     type EntityType = CypherType with DefiniteCypherType
@@ -120,4 +107,5 @@ class CAPSScanGraph(val scans: Seq[CAPSEntityTable], val schema: CAPSSchema)(imp
       selectedScans
     }
   }
+
 }

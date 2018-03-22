@@ -31,7 +31,7 @@ import org.opencypher.okapi.api.schema.Schema
 import org.opencypher.okapi.api.value.CypherValue._
 import org.opencypher.okapi.ir.api.block.SortItem
 import org.opencypher.okapi.ir.api.expr._
-import org.opencypher.okapi.ir.api.set.{SetItem, SetPropertyItem}
+import org.opencypher.okapi.ir.api.set.SetPropertyItem
 import org.opencypher.okapi.logical.impl._
 import org.opencypher.okapi.relational.api.physical.{PhysicalOperatorProducer, PhysicalPlannerContext}
 import org.opencypher.okapi.relational.impl.table.{ProjectedExpr, ProjectedField, RecordHeader}
@@ -136,8 +136,8 @@ final class CAPSPhysicalOperatorProducer(implicit caps: CAPSSession)
     removeSelfRelationships: Boolean): CAPSPhysicalOperator = operators.ExpandSource(
     first, second, third, source, rel, target, header, removeSelfRelationships)
 
-  override def planUnion(lhs: CAPSPhysicalOperator, rhs: CAPSPhysicalOperator): CAPSPhysicalOperator =
-    operators.Union(lhs, rhs)
+  override def planTabularUnionAll(lhs: CAPSPhysicalOperator, rhs: CAPSPhysicalOperator): CAPSPhysicalOperator =
+    operators.TabularUnionAll(lhs, rhs)
 
   override def planExpandInto(
     lhs: CAPSPhysicalOperator,

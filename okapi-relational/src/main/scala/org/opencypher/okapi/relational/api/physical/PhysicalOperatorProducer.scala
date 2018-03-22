@@ -276,7 +276,7 @@ trait PhysicalOperatorProducer[P <: PhysicalOperator[R, G, C], R <: CypherRecord
     * @param rhs second previous operator
     * @return union operator
     */
-  def planUnion(lhs: P, rhs: P): P
+  def planTabularUnionAll(lhs: P, rhs: P): P
 
   /**
     * Joins the two input records on two columns, where `source` is solved in the first operator and `target` is solved

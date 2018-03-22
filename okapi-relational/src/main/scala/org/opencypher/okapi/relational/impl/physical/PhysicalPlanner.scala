@@ -30,12 +30,12 @@ import org.opencypher.okapi.api.graph.{CypherSession, PropertyGraph}
 import org.opencypher.okapi.api.table.CypherRecords
 import org.opencypher.okapi.api.types.CTRelationship
 import org.opencypher.okapi.impl.exception.{IllegalArgumentException, NotImplementedException}
-import org.opencypher.okapi.relational.impl.flat
 import org.opencypher.okapi.ir.api.block.SortItem
 import org.opencypher.okapi.ir.api.expr.{Expr, TrueLit, Var}
 import org.opencypher.okapi.ir.api.util.DirectCompilationStage
 import org.opencypher.okapi.logical.impl._
 import org.opencypher.okapi.relational.api.physical.{PhysicalOperator, PhysicalOperatorProducer, PhysicalPlannerContext, RuntimeContext}
+import org.opencypher.okapi.relational.impl.flat
 import org.opencypher.okapi.relational.impl.flat.FlatOperator
 
 class PhysicalPlanner[P <: PhysicalOperator[R, G, C], R <: CypherRecords, G <: PropertyGraph, C <: RuntimeContext[R, G] ](producer: PhysicalOperatorProducer[P, R, G, C])
@@ -125,7 +125,7 @@ class PhysicalPlanner[P <: PhysicalOperator[R, G, C], R <: CypherRecords, G <: P
           case Undirected =>
             val outgoing = producer.planExpandSource(first, second, third, source, rel, target, header)
             val incoming = producer.planExpandSource(third, second, first, target, rel, source, header, removeSelfRelationships = true)
-            producer.planUnion(outgoing, incoming)
+            producer.planTabularUnionAll(outgoing, incoming)
         }
 
       case op@flat.ExpandInto(source, rel, target, direction, sourceOp, header, relHeader) =>
@@ -138,7 +138,7 @@ class PhysicalPlanner[P <: PhysicalOperator[R, G, C], R <: CypherRecords, G <: P
           case Undirected =>
             val outgoing = producer.planExpandInto(in, relationships, source, rel, target, header)
             val incoming = producer.planExpandInto(in, relationships, target, rel, source, header)
-            producer.planUnion(outgoing, incoming)
+            producer.planTabularUnionAll(outgoing, incoming)
         }
 
       case flat.InitVarExpand(source, edgeList, endNode, in, header) =>

@@ -30,12 +30,12 @@ import cats.Monoid
 import org.opencypher.okapi.api.schema.Schema
 import org.opencypher.okapi.api.types._
 import org.opencypher.okapi.impl.exception.IllegalStateException
-import org.opencypher.okapi.relational.impl.syntax.RecordHeaderSyntax._
 import org.opencypher.okapi.ir.api.block.SortItem
 import org.opencypher.okapi.ir.api.expr._
 import org.opencypher.okapi.ir.api.util.FreshVariableNamer
 import org.opencypher.okapi.logical.impl.{Direction, LogicalGraph}
 import org.opencypher.okapi.relational.impl.exception.RecordHeaderException
+import org.opencypher.okapi.relational.impl.syntax.RecordHeaderSyntax._
 import org.opencypher.okapi.relational.impl.table._
 
 import scala.annotation.tailrec

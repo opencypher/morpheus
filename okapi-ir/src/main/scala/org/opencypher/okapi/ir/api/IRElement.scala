@@ -31,7 +31,7 @@ import org.opencypher.okapi.api.schema.Schema
 import org.opencypher.okapi.api.types._
 import org.opencypher.okapi.impl.io.SessionPropertyGraphDataSource
 import org.opencypher.okapi.ir.api.pattern._
-import org.opencypher.okapi.ir.api.set.{SetItem, SetPropertyItem}
+import org.opencypher.okapi.ir.api.set.SetPropertyItem
 
 object IRField {
   def relTypes(field: IRField): Set[String] = field.cypherType match {
