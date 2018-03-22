@@ -337,32 +337,32 @@ class LogicalPlanner(producer: LogicalOperatorProducer)
 
     graph match {
       // TODO: IRGraph[Expr]
-      case p: IRPatternGraph[Expr @ unchecked] =>
-        val equivalences = p.creates.equivalences
+      case p: IRPatternGraph[Expr@unchecked] =>
 
-        val patternEntities = p.creates.fields
-        val entitiesInScope = fieldsInScope.map { (v: Var) =>
-          IRField(v.name)(v.cypherType)
-        }
-        val boundEntities = patternEntities intersect entitiesInScope
-        val entitiesToCreate = patternEntities -- boundEntities
+        val clonePatternEntities = p.clones.fields
+        val newPatternEntities = p.creates.fields
 
-        val entities: Set[ConstructedEntity] = entitiesToCreate.map { e =>
-          e.cypherType match {
-            case CTRelationship(relTypes) if relTypes.size <= 1 =>
-              val connection = p.creates.topology(e)
-              ConstructedRelationship(e, connection.source, connection.target, relTypes.headOption, equivalences.get(e))
-            case CTNode(labels) =>
-              ConstructedNode(e, labels.map(Label), equivalences.get(e))
-            case other =>
-              throw InvalidCypherTypeException(s"Expected an entity type (CTNode, CTRelationship), got $other")
-          }
-        }
-        LogicalPatternGraph(p.schema, entities, p.sets)
+        val entitiesToCreate = newPatternEntities -- clonePatternEntities
+
+        val cloneEntities: Set[ConstructedEntity] = clonePatternEntities.map(extractConstructedEntities(p.clones, _))
+        val newEntities: Set[ConstructedEntity] = entitiesToCreate.map(extractConstructedEntities(p.creates, _))
+
+        LogicalPatternGraph(p.schema, cloneEntities, newEntities, p.sets)
 
       case g: IRCatalogGraph => LogicalCatalogGraph(g.qualifiedName, g.schema)
     }
   }
+
+  private def extractConstructedEntities(pattern: Pattern[Expr], e: IRField) = e.cypherType match {
+    case CTRelationship(relTypes) if relTypes.size <= 1 =>
+      val connection = pattern.topology(e)
+      ConstructedRelationship(e, connection.source, connection.target, relTypes.headOption)
+    case CTNode(labels) =>
+      ConstructedNode(e, labels.map(Label))
+    case other =>
+      throw InvalidCypherTypeException(s"Expected an entity type (CTNode, CTRelationship), got $other")
+  }
+
 
   private def planStart(graph: IRGraph)(implicit context: LogicalPlannerContext): Start = {
     val logicalGraph: LogicalGraph = resolveGraph(graph, Set.empty)

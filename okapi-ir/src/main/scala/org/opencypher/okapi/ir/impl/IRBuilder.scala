@@ -164,15 +164,39 @@ object IRBuilder extends CompilationStage[ast.Statement, CypherQuery[Expr], IRBu
         } yield block
 
       // TODO: Support merges, removes
-      case ast.ConstructGraph(Nil, creates, Nil, sets) =>
+      case ast.ConstructGraph(clones, creates, Nil, sets) =>
         for {
-          patterns <- creates.map { case ast.Create(p: exp.Pattern) => p }.traverse(convertPattern[R])
-          setItems <- sets.flatMap { case ast.SetClause(s: Seq[ast.SetItem]) => s }.traverse(convertSetItem[R])
+          // TODO: Note: MERGE will be CLONE in the future
+          clonePatterns <- clones.map {
+            case ast.Merge(p: exp.Pattern, actions, None) if actions.isEmpty => p
+          }.traverse(convertPattern[R])
+
+          // TODO: Note: CREATE will be NEW in the future
+          newPatterns <- creates.map {
+            case ast.Create(p: exp.Pattern) => p
+          }.traverse(convertPattern[R])
+
+          setItems <- sets.flatMap {
+            case ast.SetClause(s: Seq[ast.SetItem]) => s
+          }.traverse(convertSetItem[R])
+
           context <- get[R, IRBuilderContext]
+
           refs <- {
-            val pattern = patterns.foldLeft(Pattern.empty[Expr])(_ ++ _)
-            val fieldNamesInPattern = pattern.fields.map(_.name)
-            val patternSchema = context.workingGraph.schema.forPattern(pattern)
+            // computing single nodes/rels constructed by CLONE (MERGE)
+            val clonePattern = clonePatterns.foldLeft(Pattern.empty[Expr])(_ ++ _)
+            val fieldNamesInClonePattern = clonePattern.fields.map(_.name)
+            val clonePatternSchema = context.workingGraph.schema.forPattern(clonePattern)
+
+            // computing single nodes/rels constructed by NEW (CREATE)
+            val newPattern = newPatterns.foldLeft(Pattern.empty[Expr])(_ ++ _)
+            val fieldNamesInNewPattern = newPattern.fields.map(_.name)
+            val newPatternSchema = context.workingGraph.schema.forPattern(newPattern)
+
+            // compute SET items for NEW (CREATE) patterns
+            val patternSchema = newPatternSchema ++ clonePatternSchema
+            val fieldNamesInPattern = fieldNamesInClonePattern ++ fieldNamesInNewPattern
+
             val (schema, _) = setItems.foldLeft(patternSchema -> Map.empty[Var, CypherType]) { case ((currentSchema, rewrittenVarTypes), setItem: SetItem[Expr]) =>
               if (!fieldNamesInPattern.contains(setItem.variable.name)) {
                 throw UnsupportedOperationException("SET on a variable that is not defined inside of the CONSTRUCT scope")
@@ -192,7 +216,7 @@ object IRBuilder extends CompilationStage[ast.Statement, CypherQuery[Expr], IRBu
                   updatedSchema -> rewrittenVarTypes
               }
             }
-            val patternGraph = IRPatternGraph[Expr](schema, pattern, setItems.collect { case p: SetPropertyItem[Expr] => p })
+            val patternGraph = IRPatternGraph[Expr](schema, clonePattern, newPattern, setItems.collect { case p: SetPropertyItem[Expr] => p })
             val updatedContext = context.withWorkingGraph(patternGraph)
             put[R, IRBuilderContext](updatedContext) >> pure[R, List[Block[Expr]]](List.empty)
           }

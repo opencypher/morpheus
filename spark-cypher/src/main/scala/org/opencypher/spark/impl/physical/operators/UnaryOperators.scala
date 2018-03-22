@@ -31,7 +31,7 @@ import org.apache.spark.sql.functions.{asc, desc, monotonically_increasing_id}
 import org.apache.spark.sql.types.{StructField, StructType}
 import org.opencypher.okapi.api.types._
 import org.opencypher.okapi.api.value.CypherValue._
-import org.opencypher.okapi.impl.exception.{IllegalArgumentException, IllegalStateException, NotImplementedException}
+import org.opencypher.okapi.impl.exception.{IllegalArgumentException, IllegalStateException, NotImplementedException, UnsupportedOperationException}
 import org.opencypher.okapi.ir.api.PropertyKey
 import org.opencypher.okapi.ir.api.block.{Asc, Desc, SortItem}
 import org.opencypher.okapi.ir.api.expr._
@@ -198,7 +198,8 @@ final case class Filter(in: CAPSPhysicalOperator, expr: Expr, header: RecordHead
 
 final case class ConstructGraph(
   in: CAPSPhysicalOperator,
-  constructItems: Set[ConstructedEntity],
+  clonedItems: Set[ConstructedEntity],
+  newItems: Set[ConstructedEntity],
   setItems: List[SetPropertyItem[Expr]],
   initialSchema: CAPSSchema)
   extends UnaryPhysicalOperator {
@@ -210,11 +211,13 @@ final case class ConstructGraph(
     val inputTable = prev.records
 
     val newEntityTag = if (initialSchema.tags.isEmpty) 0 else initialSchema.tags.max + 1
-    val entityTable = createEntities(constructItems, inputTable, newEntityTag)
+    val entityTable = createEntities(newItems, inputTable, newEntityTag)
 
     val tableWithConstructedProperties = setProperties(setItems, entityTable)
 
     // Remove input columns and header
+    //    val headerWithoutClones = inputTable.header.
+
     val withInputsRemoved = CAPSRecords.verifyAndCreate(
       tableWithConstructedProperties.header -- inputTable.header,
       tableWithConstructedProperties.data.drop(inputTable.data.columns: _*))
@@ -292,18 +295,21 @@ final case class ConstructGraph(
       ProjectedExpr(HasLabel(node.v, label)(CTBoolean)) -> col
     }
 
-    val propertyTuples = node.equivalence match {
-      case Some(TildeModel(origNode)) =>
-        val header = constructedTable.header
-        val origSlots = header.propertySlots(origNode).values
-        val copySlotContents = origSlots.map(_.withOwner(node.v)).map(_.content)
-        val columns = origSlots.map(ColumnName.of).map(constructedTable.data.col)
-        copySlotContents.zip(columns).toSet
+    // TODO: Use to implement COPY OF
+    //    val propertyTuples = node.equivalence match {
+    //      case Some(TildeModel(origNode)) =>
+    //        val header = constructedTable.header
+    //        val origSlots = header.propertySlots(origNode).values
+    //        val copySlotContents = origSlots.map(_.withOwner(node.v)).map(_.content)
+    //        val columns = origSlots.map(ColumnName.of).map(constructedTable.data.col)
+    //        copySlotContents.zip(columns).toSet
+    //
+    //      case Some(AtModel(_)) => throw NotImplementedException("AtModel copies")
+    //
+    //      case None => Set.empty[(SlotContent, Column)]
+    //    }
 
-      case Some(AtModel(_)) => throw NotImplementedException("AtModel copies")
-
-      case None => Set.empty[(SlotContent, Column)]
-    }
+    val propertyTuples = Set.empty[(SlotContent, Column)]
 
     labelTuples ++ propertyTuples + (OpaqueField(node.v) -> generateId(columnIdPartition, numberOfColumnPartitions).setTag(newEntityTag))
   }
@@ -332,7 +338,7 @@ final case class ConstructGraph(
     toConstruct: ConstructedRelationship,
     constructedTable: CAPSRecords
   ): Set[(SlotContent, Column)] = {
-    val ConstructedRelationship(rel, source, target, typOpt, equivalenceOpt) = toConstruct
+    val ConstructedRelationship(rel, source, target, typOpt) = toConstruct
     val header = constructedTable.header
     val inData = constructedTable.data
 
@@ -351,34 +357,43 @@ final case class ConstructGraph(
     // id needs to be generated
     val relTuple = OpaqueField(rel) -> generateId(columnIdPartition, numberOfColumnPartitions).setTag(newEntityTag)
 
-    val typeTuple = {
-      typOpt match {
-        // type is set
-        case Some(t) =>
-          val col = functions.lit(t)
-          ProjectedExpr(Type(rel)(CTString)) -> col
-        case None =>
-          // equivalence model is guaranteed to be present: get rel type from original
-          val origRel = equivalenceOpt.get.v
-          val header = constructedTable.header
-          val origTypeSlot = header.typeSlot(origRel)
-          val copyTypeSlotContents = origTypeSlot.withOwner(rel).content
-          val col = constructedTable.data.col(ColumnName.of(origTypeSlot))
-          (copyTypeSlotContents, col)
-      }
+    //    val typeTuple = {
+    //      typOpt match {
+    //        // type is set
+    //        case Some(t) =>
+    //          val col = functions.lit(t)
+    //          ProjectedExpr(Type(rel)(CTString)) -> col
+    //        case None =>
+    //          // equivalence model is guaranteed to be present: get rel type from original
+    //          val origRel = equivalenceOpt.get.v
+    //          val header = constructedTable.header
+    //          val origTypeSlot = header.typeSlot(origRel)
+    //          val copyTypeSlotContents = origTypeSlot.withOwner(rel).content
+    //          val col = constructedTable.data.col(ColumnName.of(origTypeSlot))
+    //          (copyTypeSlotContents, col)
+    //      }
+    //    }
+    val typeTuple = typOpt match {
+      case Some(t) =>
+        val col = functions.lit(t)
+        ProjectedExpr(Type(rel)(CTString)) -> col
+
+      case None => throw UnsupportedOperationException("Constructing a relationship without a type")
     }
 
-    val propertyTuples = equivalenceOpt match {
-      case Some(TildeModel(origRel)) =>
-        val header = constructedTable.header
-        val origSlots = header.propertySlots(origRel).values
-        val copySlotContents = origSlots.map(_.withOwner(rel)).map(_.content)
-        val columns = origSlots.map(ColumnName.of).map(constructedTable.data.col)
-        copySlotContents.zip(columns).toSet
-      case Some(AtModel(_)) => throw NotImplementedException("AtModel copies")
-
-      case None => Set.empty[(SlotContent, Column)]
-    }
+    // TODO: Use to implement COPY OF
+//    val propertyTuples = equivalenceOpt match {
+//      case Some(TildeModel(origRel)) =>
+//        val header = constructedTable.header
+//        val origSlots = header.propertySlots(origRel).values
+//        val copySlotContents = origSlots.map(_.withOwner(rel)).map(_.content)
+//        val columns = origSlots.map(ColumnName.of).map(constructedTable.data.col)
+//        copySlotContents.zip(columns).toSet
+//      case Some(AtModel(_)) => throw NotImplementedException("AtModel copies")
+//
+//      case None => Set.empty[(SlotContent, Column)]
+//    }
+    val propertyTuples = Set.empty[(SlotContent, Column)]
 
     Set(sourceTuple, targetTuple, relTuple, typeTuple) ++ propertyTuples
   }

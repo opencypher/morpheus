@@ -26,6 +26,8 @@
  */
 package org.opencypher.spark.impl.acceptance
 
+import org.opencypher.okapi.logical.api.configuration.LogicalConfiguration.PrintLogicalPlan
+import org.opencypher.okapi.relational.api.configuration.CoraConfiguration.{PrintFlatPlan, PrintPhysicalPlan}
 import org.opencypher.spark.test.support.creation.caps.{CAPSScanGraphFactory, CAPSTestGraphFactory}
 
 class CAPSScanGraphAcceptanceTest extends AcceptanceTest {
@@ -34,8 +36,30 @@ class CAPSScanGraphAcceptanceTest extends AcceptanceTest {
   def testGraph1 = initGraph("CREATE (:Person {name: 'Mats'})")
   def testGraph2 = initGraph("CREATE (:Person {name: 'Phil'})")
 
+
   it("supports UNION ALL") {
     testGraph1.unionAll(testGraph2).cypher("""MATCH (n) RETURN DISTINCT id(n)""").getRecords.size should equal(2)
+  }
+
+  it("supports MERGE in CONSTRUCT") {
+    PrintLogicalPlan.set()
+    PrintFlatPlan.set()
+    PrintPhysicalPlan.set()
+
+    val res = testGraph1.unionAll(testGraph2).cypher(
+      """
+        |MATCH (n),(m),(c)
+        |WHERE n.name = 'Mats' AND m.name = 'Phil'
+        |CONSTRUCT {
+        | MERGE (n)
+        | MERGE (m)
+        | CREATE (n)-[r:KNOWS]->(m)
+        |}
+        |RETURN GRAPH
+      """.stripMargin)
+
+    res.getGraph.nodes("n").collect.length shouldBe 2
+    res.getGraph.relationships("r").collect.length shouldBe 1
   }
 
 }

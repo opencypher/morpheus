@@ -60,18 +60,21 @@ final case class LogicalCatalogGraph(qualifiedGraphName: QualifiedGraphName, sch
   override protected def args: String = s"qualifiedGraphName = $qualifiedGraphName"
 }
 
-final case class LogicalPatternGraph(schema: Schema, entities: Set[ConstructedEntity], sets: List[SetPropertyItem[Expr]]) extends LogicalGraph {
-  override protected def args: String = entities.toString
+final case class LogicalPatternGraph(
+  schema: Schema,
+  clonedEntities: Set[ConstructedEntity],
+  newEntities: Set[ConstructedEntity],
+  sets: List[SetPropertyItem[Expr]]) extends LogicalGraph {
+
+  override protected def args: String = s"clonedEntities = $clonedEntities, newEntities = $newEntities"
 }
 
 sealed trait ConstructedEntity {
   def v: Var
 }
-case class ConstructedNode(v: Var, labels: Set[Label], equivalence: Option[EquivalenceModel]) extends ConstructedEntity
+case class ConstructedNode(v: Var, labels: Set[Label]) extends ConstructedEntity
 
-case class ConstructedRelationship(v: Var, source: Var, target: Var, typ: Option[String], equivalence: Option[EquivalenceModel]) extends ConstructedEntity {
-  require(typ.isDefined || equivalence.isDefined, s"$this: Need to define either the rel type or an equivalence model to construct a relationship")
-}
+case class ConstructedRelationship(v: Var, source: Var, target: Var, typ: Option[String]) extends ConstructedEntity
 
 sealed abstract class StackingLogicalOperator extends LogicalOperator {
   def in: LogicalOperator
