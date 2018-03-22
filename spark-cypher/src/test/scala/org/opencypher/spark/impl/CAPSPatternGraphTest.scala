@@ -42,7 +42,8 @@ import org.opencypher.spark.impl.table.CAPSRecordHeader
 import org.opencypher.spark.schema.CAPSSchema._
 import org.opencypher.spark.test.support.creation.caps.{CAPSPatternGraphFactory, CAPSTestGraphFactory}
 
-import scala.collection.Bag
+import org.opencypher.okapi.ir.test.support.Bag
+import org.opencypher.okapi.ir.test.support.Bag._
 import scala.collection.JavaConverters._
 
 class CAPSPatternGraphTest extends CAPSGraphTest {

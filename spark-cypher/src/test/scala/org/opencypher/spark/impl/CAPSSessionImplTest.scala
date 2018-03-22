@@ -30,7 +30,8 @@ import org.opencypher.okapi.api.value.CypherValue.CypherMap
 import org.opencypher.spark.test.CAPSTestSuite
 import org.opencypher.spark.test.fixture.TeamDataFixture
 
-import scala.collection.Bag
+import org.opencypher.okapi.ir.test.support.Bag
+import org.opencypher.okapi.ir.test.support.Bag._
 
 class CAPSSessionImplTest extends CAPSTestSuite with TeamDataFixture {
 

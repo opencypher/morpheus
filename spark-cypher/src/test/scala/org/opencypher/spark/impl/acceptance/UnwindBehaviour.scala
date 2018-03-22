@@ -28,9 +28,8 @@ package org.opencypher.spark.impl.acceptance
 
 import org.opencypher.okapi.api.value.CAPSNode
 import org.opencypher.okapi.api.value.CypherValue._
+import org.opencypher.okapi.ir.test.support.Bag
 import org.opencypher.spark.impl.CAPSGraph
-
-import scala.collection.immutable.Bag
 
 trait UnwindBehaviour { self: AcceptanceTest =>
 
