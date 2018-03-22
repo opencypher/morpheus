@@ -111,7 +111,7 @@ class CAPSScanGraphAcceptanceTest extends AcceptanceTest {
       """.stripMargin)
 
     res.getGraph.nodes("n").collect.length shouldBe 2
-    res.getGraph.relationships("r").collect.length shouldBe 2
+    res.getGraph.relationships("r").collect.length shouldBe 3
   }
 
 }

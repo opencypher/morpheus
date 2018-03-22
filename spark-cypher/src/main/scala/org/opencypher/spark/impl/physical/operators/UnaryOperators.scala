@@ -552,7 +552,7 @@ final case class Aggregate(
 
             case Collect(expr, distinct) => withInnerExpr(expr) { column =>
               val list = {
-                if (distinct) functions.collect_set(column)
+                if (distinct) functions.sort_array(functions.collect_set(column))
                 else functions.collect_list(column)
               }
 
