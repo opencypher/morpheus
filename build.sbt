@@ -31,37 +31,18 @@ libraryDependencies in Global ++= Seq(
   `org.neo4j_openCypher-frontend-1` % "test" classifier "tests",
   `org.neo4j_neo4j-cypher-util-3.4` % "test" classifier "tests",
   `org.mockito_mockito-all` % "test",
-  `org.junit.platform_junit-platform-runner` % "test",
-  `org.bouncycastle_bctls-jdk15on` % "test",
-  `org.apache.hadoop_hadoop-minicluster` % "test")
+  `org.junit.platform_junit-platform-runner` % "test")
 
-lazy val sparkCypherTck = project.in(file("spark-cypher-tck"))
-  .settings(
-    libraryDependencies ++= Seq(
-      `org.opencypher_tck` % "test"
-    ),
-    name := "spark-cypher-tck"
-  ).dependsOn(okapiApi, okapiIr, okapiTck, sparkCypher)
-
-lazy val sparkCypherExamples = project.in(file("spark-cypher-examples")).settings(
-  libraryDependencies ++= Seq(
-    `org.apache.spark_spark-graphx`)
-).dependsOn(sparkCypher)
-
+// Main project
 lazy val sparkCypher = project.in(file("spark-cypher")).settings(
   libraryDependencies ++= Seq(
     `org.apache.spark_spark-sql`,
     `org.apache.spark_spark-core`,
     `org.apache.spark_spark-catalyst`)
-).dependsOn(okapiApi, okapiIr, okapiLogical, okapiRelational, okapiTrees)
+    ++ miniclusterTestDependencies
+  ).dependsOn(okapiApi, okapiIr, okapiLogical, okapiRelational, okapiTrees)
 
-lazy val okapiTrees = project.in(file("okapi-trees"))
-
-lazy val okapiTck = project.in(file("okapi-tck")).settings(
-  libraryDependencies ++= Seq(
-    `org.opencypher_tck` % "test")
-).dependsOn(okapiApi, okapiIr, okapiIr)
-
+// Pipeline
 lazy val okapiRelational = project.in(file("okapi-relational")).settings(
   libraryDependencies ++= Seq(
     `org.neo4j.driver_neo4j-java-driver`,
@@ -84,13 +65,35 @@ lazy val okapiApi = project.in(file("okapi-api")).settings(
   libraryDependencies ++= Seq(`org.typelevel_cats-core`)
 ).dependsOn(okapiTrees, okapiTrees)
 
+// TCK
+lazy val sparkCypherTck = project.in(file("spark-cypher-tck"))
+  .settings(
+    libraryDependencies ++= Seq(
+      `org.opencypher_tck` % "test"
+    ),
+    name := "spark-cypher-tck"
+  ).dependsOn(okapiApi, okapiIr, okapiTck, sparkCypher)
+
+lazy val okapiTck = project.in(file("okapi-tck")).settings(
+  libraryDependencies ++= Seq(
+    `org.opencypher_tck` % "test")
+).dependsOn(okapiApi, okapiIr, okapiIr)
+
+// Examples
+lazy val sparkCypherExamples = project.in(file("spark-cypher-examples")).settings(
+  libraryDependencies ++= Seq(
+    `org.apache.spark_spark-graphx`)
+).dependsOn(sparkCypher)
+
+// Trees
+lazy val okapiTrees = project.in(file("okapi-trees"))
+
+// Dependencies
 lazy val `io.circe_circe-core` = "io.circe" %% "circe-core" % "0.9.1"
 
 lazy val `io.circe_circe-generic` = "io.circe" %% "circe-generic" % "0.9.1"
 
 lazy val `io.circe_circe-parser` = "io.circe" %% "circe-parser" % "0.9.1"
-
-lazy val `org.apache.hadoop_hadoop-minicluster` = "org.apache.hadoop" % "hadoop-minicluster" % "2.7.0"
 
 lazy val `org.apache.spark_spark-core` = "org.apache.spark" %% "spark-core" % "2.2.0"
 
@@ -101,8 +104,6 @@ lazy val `org.apache.spark_spark-graphx` = "org.apache.spark" %% "spark-graphx" 
 lazy val `org.apache.spark_spark-catalyst` = "org.apache.spark" %% "spark-catalyst" % "2.2.0"
 
 lazy val `org.atnos_eff` = "org.atnos" %% "eff" % "5.0.0"
-
-lazy val `org.bouncycastle_bctls-jdk15on` = "org.bouncycastle" % "bctls-jdk15on" % "1.57"
 
 lazy val `org.junit.platform_junit-platform-runner` = "org.junit.platform" % "junit-platform-runner" % "1.0.2"
 
@@ -127,3 +128,21 @@ lazy val `org.scalacheck_scalacheck` = "org.scalacheck" %% "scalacheck" % "1.13.
 lazy val `org.scalatest_scalatest` = "org.scalatest" %% "scalatest" % "3.0.5"
 
 lazy val `org.typelevel_cats-core` = "org.typelevel" %% "cats-core" % "1.0.1"
+
+// Workaround for Minicluster test dependency problem: https://github.com/sbt/sbt/issues/2964
+lazy val miniclusterTestDependencies = Seq(
+  "org.apache.hadoop" % "hadoop-minicluster" % "2.7.3" % "test",
+//  "org.apache.hadoop" % "hadoop-minicluster" % "2.7.3" % Test classifier "tests",
+  "org.apache.hbase" % "hbase-common" % "1.2.2" % Test classifier "tests",
+  "org.apache.hbase" % "hbase-common" % "1.2.2" % Test,
+  "org.apache.hbase" % "hbase-server" % "1.2.2" % Test classifier "tests",
+  "org.apache.hbase" % "hbase-server" % "1.2.2" % Test,
+  "org.apache.hbase" % "hbase-hadoop-compat" % "1.2.2" % Test classifier "tests",
+  "org.apache.hbase" % "hbase-hadoop-compat" % "1.2.2" % Test,
+  "org.apache.hbase" % "hbase-hadoop2-compat" % "1.2.2" % Test classifier "tests",
+  "org.apache.hbase" % "hbase-hadoop2-compat" % "1.2.2" % Test,
+  "org.apache.hadoop" % "hadoop-hdfs" % "2.7.3" % Test classifier "tests",
+  "org.apache.hadoop" % "hadoop-hdfs" % "2.7.3" % Test,
+  "org.apache.hadoop" % "hadoop-common" % "2.7.3" % Test,
+  "org.apache.hadoop" % "hadoop-common" % "2.7.3" % Test classifier "tests",
+  "org.apache.hadoop" % "hadoop-mapreduce-client-jobclient" % "2.7.3" % Test classifier "tests")
