@@ -79,7 +79,6 @@
     <dep.circe.version>0.9.1</dep.circe.version>
     <dep.eff.version>5.0.0</dep.eff.version>
     <dep.hadoop.version>2.7.0</dep.hadoop.version>
-    <dep.multiset.version>0.4</dep.multiset.version>
     <dep.neo4j.version>3.4.0-SNAPSHOT</dep.neo4j.version>
     <dep.netty.version>4.1.8.Final</dep.netty.version>
     <dep.neo4j.driver.version>1.4.2</dep.neo4j.driver.version>
@@ -542,13 +541,6 @@
       <groupId>org.mockito</groupId>
       <artifactId>mockito-all</artifactId>
       <version>${dep.mockito.version}</version>
-      <scope>test</scope>
-    </dependency>
-
-    <dependency>
-      <groupId>io.github.nicolasstucki</groupId>
-      <artifactId>multisets_${project.scala.binary.version}</artifactId>
-      <version>${dep.multiset.version}</version>
       <scope>test</scope>
     </dependency>
 

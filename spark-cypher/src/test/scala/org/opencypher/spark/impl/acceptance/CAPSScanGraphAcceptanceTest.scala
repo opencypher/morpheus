@@ -44,13 +44,9 @@ class CAPSScanGraphAcceptanceTest extends AcceptanceTest {
   }
 
   it("supports MERGE in CONSTRUCT") {
-    PrintLogicalPlan.set()
-    PrintFlatPlan.set()
-    PrintPhysicalPlan.set()
-
     val res = testGraph1.unionAll(testGraph2).cypher(
       """
-        |MATCH (n),(m),(c)
+        |MATCH (n),(m)
         |WHERE n.name = 'Mats' AND m.name = 'Phil'
         |CONSTRUCT {
         | MERGE (n)
@@ -117,7 +113,5 @@ class CAPSScanGraphAcceptanceTest extends AcceptanceTest {
     res.getGraph.nodes("n").collect.length shouldBe 2
     res.getGraph.relationships("r").collect.length shouldBe 2
   }
-
-
 
 }

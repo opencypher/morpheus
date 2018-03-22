@@ -652,7 +652,7 @@ trait AggregationBehaviour {
         ))
       }
 
-      test("multiple aggregates with grouping in RETURN clause") {
+      it("computes multiple aggregates with grouping in RETURN clause") {
         val graph = initGraph("CREATE ({key: 'a', val: 42}),({key: 'a',val: 23}),({key: 'b', val: 84})")
 
         val result = graph.cypher(
@@ -668,12 +668,12 @@ trait AggregationBehaviour {
 
         result.getRecords.toMaps should equal(Bag(
           CypherMap(
-            "key" -> "a", "avg" -> 32, "cnt" -> 2, "min" -> 23L, "max" -> 42L, "sum" -> 65, "col" -> Seq(23, 42)),
+            "key" -> "a", "avg" -> 32, "cnt" -> 2, "min" -> 23L, "max" -> 42L, "sum" -> 65, "col" -> Seq(42, 23)),
           CypherMap("key" -> "b", "avg" -> 84, "cnt" -> 1, "min" -> 84, "max" -> 84, "sum" -> 84, "col" -> Seq(84))
         ))
       }
 
-      test("multiple aggregates with grouping in WITH clause") {
+      it ("computes multiple aggregates with grouping in WITH clause") {
         val graph = initGraph("CREATE ({key: 'a', val: 42}),({key: 'a',val: 23}),({key: 'b', val: 84})")
 
         val result = graph.cypher(
@@ -690,7 +690,7 @@ trait AggregationBehaviour {
 
         result.getRecords.toMaps should equal(Bag(
           CypherMap(
-            "key" -> "a", "avg" -> 32, "cnt" -> 2, "min" -> 23L, "max" -> 42L, "sum" -> 65, "col" -> Seq(23, 42)),
+            "key" -> "a", "avg" -> 32, "cnt" -> 2, "min" -> 23L, "max" -> 42L, "sum" -> 65, "col" -> Seq(42, 23)),
           CypherMap("key" -> "b", "avg" -> 84, "cnt" -> 1, "min" -> 84, "max" -> 84, "sum" -> 84, "col" -> Seq(84))
         ))
       }

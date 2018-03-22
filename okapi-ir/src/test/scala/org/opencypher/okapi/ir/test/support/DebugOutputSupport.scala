@@ -26,12 +26,29 @@
  */
 package org.opencypher.okapi.ir.test.support
 
+import java.util.Objects
+
+import scala.collection.immutable.TreeMap
+
 object Bag {
 
-  type Bag[T <: Any] = Map[T, Int]
+  type Bag[T <: Any] = TreeMap[T, Int]
 
   def apply[E](elements: E*): Bag[E] = {
-    elements.groupBy(identity).mapValues(_.size)
+    implicit val ordering = new Ordering[E] {
+      override def compare(x: E, y: E): Int = {
+        if (Objects.equals(x, y)) {
+          0
+        } else if (x == null) {
+          -1
+        } else if (y == null) {
+          1
+        } else {
+          Ordering[String].compare(x.toString + x.hashCode, y.toString + y.hashCode)
+        }
+      }
+    }
+    TreeMap(elements.groupBy(identity).mapValues(_.size).toSeq: _*)
   }
 
   implicit class TraversableToBag[E](val t: Traversable[E]) {
