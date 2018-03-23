@@ -120,9 +120,6 @@ class CAPSPatternGraphTest extends CAPSGraphTest {
   test("projects a pattern graph with a created node") {
     val inputGraph = initGraph(`:Person` + `:KNOWS`)
 
-    PrintLogicalPlan.set()
-    PrintPhysicalPlan.set()
-
     val person = inputGraph.cypher(
       """MATCH (a:Person:Swedish)-[r]->(b)
         |CONSTRUCT {
@@ -614,7 +611,7 @@ class CAPSPatternGraphTest extends CAPSGraphTest {
     when.getGraph.relationships("f", CTRelationship("FOO")).size should equal(3)
   }
 
-  ignore("should merge and copy nodes") {
+  test("should merge and copy nodes") {
     val given = initGraph(
       """
         |CREATE (a: Person)

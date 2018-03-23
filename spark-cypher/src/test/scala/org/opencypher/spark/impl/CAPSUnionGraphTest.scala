@@ -38,6 +38,13 @@ class CAPSUnionGraphTest extends CAPSTestSuite with GraphCreationFixture with Te
 
   import CAPSGraphTestData._
 
+  def testGraph1 = initGraph("CREATE (:Person {name: 'Mats'})")
+  def testGraph2 = initGraph("CREATE (:Person {name: 'Phil'})")
+
+  it("supports UNION ALL") {
+    testGraph1.unionAll(testGraph2).cypher("""MATCH (n) RETURN DISTINCT id(n)""").getRecords.size should equal(2)
+  }
+
   test("Node scan from single node CAPSRecords") {
     val inputGraph = initGraph(`:Person`)
     val inputNodes = inputGraph.nodes("n")
