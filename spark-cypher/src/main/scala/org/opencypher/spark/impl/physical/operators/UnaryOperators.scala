@@ -207,7 +207,7 @@ final case class ConstructGraph(
   override def header: RecordHeader = RecordHeader.empty
 
   override def executeUnary(prev: CAPSPhysicalResult)(implicit context: CAPSRuntimeContext): CAPSPhysicalResult = {
-    implicit val session = prev.records.caps
+    implicit val session: CAPSSession = prev.records.caps
     val inputTable = prev.records
 
     // Construct NEW entities
@@ -315,6 +315,7 @@ final case class ConstructGraph(
     *
     * @param columnIdPartition column partition within DF partition
     */
+  // TODO: improve documentation and add specific tests
   private def generateId(columnIdPartition: Int, numberOfColumnPartitions: Int): Column = {
     val columnPartitionBits = math.log(numberOfColumnPartitions).floor.toInt + 1
     val totalIdSpaceBits = 33
