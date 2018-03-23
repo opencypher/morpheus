@@ -236,7 +236,8 @@ class IrBuilderTest extends IrTestSuite {
     }
   }
 
-  it("computes a pattern graph schema correctly - 1 create from equivalent") {
+  // TODO: SET is no longer supported
+  ignore("computes a pattern graph schema correctly - 1 create from equivalent") {
     val query =
       """
         |CONSTRUCT {
@@ -244,7 +245,7 @@ class IrBuilderTest extends IrTestSuite {
         |}
         |MATCH (b: A)
         |CONSTRUCT {
-        |  CREATE (c~b)
+        |  CLONE b as c
         |  SET c :B
         |}
         |RETURN GRAPH""".stripMargin

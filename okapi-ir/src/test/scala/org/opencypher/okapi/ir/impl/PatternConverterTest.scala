@@ -49,7 +49,8 @@ class PatternConverterTest extends IrTestSuite {
     )
   }
 
-  it("should convert a simple node with an equivalence pattern") {
+  // TODO: Replace with COPY OF
+  ignore("should convert a simple node with an equivalence pattern") {
     val pattern = parse("(b~a)")
     val entity = 'b -> CTNode
 
@@ -58,7 +59,8 @@ class PatternConverterTest extends IrTestSuite {
     )
   }
 
-  it("should convert equivalence with a simple node that has a label") {
+  // TODO: Replace with COPY OF
+  ignore("should convert equivalence with a simple node that has a label") {
     val pattern = parse("(a:Person),(b~a)")
     val a: IRField = 'a -> CTNode("Person")
     val b: IRField = 'b -> CTNode("Person")
