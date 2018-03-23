@@ -59,4 +59,8 @@ object IRCatalogGraph {
 
 final case class IRCatalogGraph(qualifiedName: QualifiedGraphName, schema: Schema) extends IRGraph
 
-final case class IRPatternGraph[E](schema: Schema, creates: Pattern[E], sets: List[SetPropertyItem[E]]) extends IRGraph
+final case class IRPatternGraph[E](
+  schema: Schema,
+  clones: Pattern[E],
+  creates: Pattern[E],
+  sets: List[SetPropertyItem[E]]) extends IRGraph

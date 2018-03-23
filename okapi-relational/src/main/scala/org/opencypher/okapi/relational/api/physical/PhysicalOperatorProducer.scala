@@ -134,15 +134,15 @@ trait PhysicalOperatorProducer[P <: PhysicalOperator[R, G, C], R <: CypherRecord
   /**
     * Returns the working graph
     *
-    * @param in     previous operator
+    * @param in previous operator
     */
   def planReturnGraph(in: P): P
 
   /**
     * Use the specified graph.
     *
-    * @param in     previous operator
-    * @param graph  graph to select from the catalog
+    * @param in    previous operator
+    * @param graph graph to select from the catalog
     * @return select graph operator
     */
   def planUseGraph(in: P, graph: LogicalCatalogGraph): P
@@ -160,14 +160,16 @@ trait PhysicalOperatorProducer[P <: PhysicalOperator[R, G, C], R <: CypherRecord
   /**
     * Creates a new record containing the specified entities (i.e. as defined in a construction pattern).
     *
-    * @param in       previous operator
-    * @param constructItems entities to create
-    * @param schema   schema of the resulting graph
+    * @param in             previous operator
+    * @param clonedEntities entities to clone
+    * @param newEntities    entities to create
+    * @param schema         schema of the resulting graph
     * @return project pattern graph operator
     */
   def planConstructGraph(
     in: P,
-    constructItems: Set[ConstructedEntity],
+    clonedEntities: Set[ConstructedEntity],
+    newEntities: Set[ConstructedEntity],
     setItems: List[SetPropertyItem[Expr]],
     schema: Schema): P
 

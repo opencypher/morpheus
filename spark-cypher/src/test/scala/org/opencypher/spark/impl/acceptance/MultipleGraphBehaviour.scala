@@ -31,11 +31,11 @@ import org.opencypher.okapi.api.schema.{PropertyKeys, Schema}
 import org.opencypher.okapi.api.types.{CTInteger, CTString}
 import org.opencypher.okapi.api.value.CypherValue.CypherMap
 import org.opencypher.okapi.impl.schema.TagSupport._
+import org.opencypher.okapi.ir.test.support.Bag
+import org.opencypher.okapi.ir.test.support.Bag._
 import org.opencypher.spark.impl.CAPSConverters._
 import org.opencypher.spark.impl.CAPSGraph
 import org.opencypher.spark.schema.CAPSSchema._
-
-import scala.collection.immutable.Bag
 
 trait MultipleGraphBehaviour {
   this: AcceptanceTest =>
@@ -303,14 +303,83 @@ trait MultipleGraphBehaviour {
       ))
     }
 
-    // TODO: Support MGC syntax
-    ignore("should allow simple MGC syntax") {
+    it("supports MERGE in CONSTRUCT") {
+      val res = testGraph1.unionAll(testGraph2).cypher(
+        """
+          |MATCH (n),(m)
+          |WHERE n.name = 'Mats' AND m.name = 'Phil'
+          |CONSTRUCT {
+          | MERGE (n)
+          | MERGE (m)
+          | CREATE (n)-[r:KNOWS]->(m)
+          |}
+          |RETURN GRAPH
+        """.stripMargin)
+
+      res.getGraph.nodes("n").collect.length shouldBe 2
+      res.getGraph.relationships("r").collect.length shouldBe 1
+    }
+
+    it("merges multiple relationships") {
+      val inputGraph = initGraph(
+        """
+          |CREATE (p0 {name: 'Mats'})
+          |CREATE (p1 {name: 'Phil'})
+          |CREATE (p0)-[:KNOWS]->(p1)
+          |CREATE (p0)-[:KNOWS]->(p1)
+          |CREATE (p1)-[:KNOWS]->(p0)
+        """.stripMargin)
+
+      val res = inputGraph.cypher(
+        """
+          |MATCH (n)-[:KNOWS]->(m)
+          |WITH DISTINCT n, m
+          |CONSTRUCT {
+          | MERGE (n)
+          | MERGE (m)
+          | CREATE (n)-[r:KNOWS]->(m)
+          |}
+          |RETURN GRAPH
+        """.stripMargin)
+
+      res.getGraph.nodes("n").collect.length shouldBe 2
+      res.getGraph.relationships("r").collect.length shouldBe 2
+    }
+
+    it("merges multiple relationships 2") {
+      val inputGraph = initGraph(
+        """
+          |CREATE (p0 {name: 'Mats'})
+          |CREATE (p1 {name: 'Phil'})
+          |CREATE (p0)-[:KNOWS]->(p1)
+          |CREATE (p0)-[:KNOWS]->(p1)
+          |CREATE (p1)-[:KNOWS]->(p0)
+        """.stripMargin)
+
+      val res = inputGraph.cypher(
+        """
+          |MATCH (n)-[:KNOWS]->(m)
+          |CONSTRUCT {
+          | MERGE (n)
+          | MERGE (m)
+          | CREATE (n)-[r:KNOWS]->(m)
+          |}
+          |RETURN GRAPH
+        """.stripMargin)
+
+      res.getGraph.nodes("n").collect.length shouldBe 2
+      res.getGraph.relationships("r").collect.length shouldBe 3
+    }
+
+    test("should allow simple MGC syntax") {
       val query =
         """|CONSTRUCT {
            |  CREATE (a:A)-[r:FOO]->(b:B)
            |}
            |MATCH (a)-->(b)
            |CONSTRUCT {
+           |  MERGE (a)
+           |  MERGE (b)
            |  CREATE (a)-[:KNOWS]->(b)
            |}
            |RETURN GRAPH""".stripMargin

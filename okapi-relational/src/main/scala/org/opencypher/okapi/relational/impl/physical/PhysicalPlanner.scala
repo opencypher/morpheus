@@ -63,15 +63,18 @@ class PhysicalPlanner[P <: PhysicalOperator[R, G, C], R <: CypherRecords, G <: P
         graph match {
           case g: LogicalCatalogGraph =>
             producer.planStart(Some(context.inputRecords), Some(g))
-          case LogicalPatternGraph(schema, entities, sets) =>
-            producer.planConstructGraph(producer.planStart(Some(context.inputRecords)), entities, sets, schema)
+          case LogicalPatternGraph(schema, clonedEntities, newEntities, sets) =>
+            producer.planConstructGraph(producer.planStart(Some(context.inputRecords)), clonedEntities, newEntities, sets, schema)
           case _ => throw IllegalArgumentException("a LogicalExternalGraph", graph)
         }
 
       case flat.UseGraph(graph, in) =>
         graph match {
-          case g: LogicalCatalogGraph => producer.planUseGraph(process(in), g)
-          case LogicalPatternGraph(schema, entities, sets) => producer.planConstructGraph(process(in), entities, sets, schema)
+          case g: LogicalCatalogGraph =>
+            producer.planUseGraph(process(in), g)
+
+          case LogicalPatternGraph(schema, clonedEntities, newEntities, sets) =>
+            producer.planConstructGraph(process(in), clonedEntities, newEntities, sets, schema)
         }
 
       case op@flat.NodeScan(v, in, header) =>
@@ -112,9 +115,11 @@ class PhysicalPlanner[P <: PhysicalOperator[R, G, C], R <: CypherRecords, G <: P
         val third = process(targetOp)
 
         val startFrom = sourceOp.sourceGraph match {
-          case e: LogicalCatalogGraph => producer.planStart(None, Some(e))
-          case LogicalPatternGraph(schema, entities, sets) =>
-            producer.planConstructGraph(producer.planStart(Some(context.inputRecords)), entities, sets, schema)
+          case e: LogicalCatalogGraph =>
+            producer.planStart(None, Some(e))
+
+          case LogicalPatternGraph(schema, clonedEntities, newEntities, sets) =>
+            producer.planConstructGraph(producer.planStart(Some(context.inputRecords)), clonedEntities, newEntities, sets, schema)
         }
 
         val second = producer.planRelationshipScan(startFrom, op.sourceGraph, rel, relHeader)

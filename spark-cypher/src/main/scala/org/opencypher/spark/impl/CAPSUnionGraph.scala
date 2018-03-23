@@ -92,8 +92,11 @@ final case class CAPSUnionGraph(graphs: List[CAPSGraph], doUpdateTags: Boolean =
       }
 
     val alignedScans = nodeScans.map(_.alignWith(node, targetHeader))
-    // TODO: Only distinct on id column
-    alignedScans.reduceOption(_ unionAll(targetHeader, _)).map(_.distinct).getOrElse(CAPSRecords.empty(targetHeader))
+
+    alignedScans
+      .reduceOption(_ unionAll(targetHeader, _))
+      .map(_.distinct(node))
+      .getOrElse(CAPSRecords.empty(targetHeader))
   }
 
   override def relationships(name: String, relCypherType: CTRelationship): CAPSRecords = {
@@ -107,7 +110,9 @@ final case class CAPSUnionGraph(graphs: List[CAPSGraph], doUpdateTags: Boolean =
       }
 
     val alignedScans = relScans.map(_.alignWith(rel, targetHeader))
-    // TODO: Only distinct on id column
-    alignedScans.reduceOption(_ unionAll(targetHeader, _)).map(_.distinct).getOrElse(CAPSRecords.empty(targetHeader))
+    alignedScans
+      .reduceOption(_ unionAll(targetHeader, _))
+      .map(_.distinct(rel))
+      .getOrElse(CAPSRecords.empty(targetHeader))
   }
 }

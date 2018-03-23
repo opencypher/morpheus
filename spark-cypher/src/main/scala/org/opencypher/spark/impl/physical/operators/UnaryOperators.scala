@@ -198,7 +198,8 @@ final case class Filter(in: CAPSPhysicalOperator, expr: Expr, header: RecordHead
 
 final case class ConstructGraph(
   in: CAPSPhysicalOperator,
-  constructItems: Set[ConstructedEntity],
+  clonedItems: Set[ConstructedEntity],
+  newItems: Set[ConstructedEntity],
   setItems: List[SetPropertyItem[Expr]],
   initialSchema: CAPSSchema)
   extends UnaryPhysicalOperator {
@@ -206,21 +207,24 @@ final case class ConstructGraph(
   override def header: RecordHeader = RecordHeader.empty
 
   override def executeUnary(prev: CAPSPhysicalResult)(implicit context: CAPSRuntimeContext): CAPSPhysicalResult = {
-    implicit val session = prev.records.caps
+    implicit val session: CAPSSession = prev.records.caps
     val inputTable = prev.records
 
+    // Construct NEW entities
     val newEntityTag = if (initialSchema.tags.isEmpty) 0 else initialSchema.tags.max + 1
-    val entityTable = createEntities(constructItems, inputTable, newEntityTag)
-
+    val entityTable = createEntities(newItems, inputTable, newEntityTag)
     val tableWithConstructedProperties = setProperties(setItems, entityTable)
 
-    // Remove input columns and header
-    val withInputsRemoved = CAPSRecords.verifyAndCreate(
-      tableWithConstructedProperties.header -- inputTable.header,
-      tableWithConstructedProperties.data.drop(inputTable.data.columns: _*))
+    // Remove all fields of the pattern graph DF that were not explicitly preserved with a CLONE
+    val allInputFields = inputTable.header.internalHeader.fields
+    val clonedEntities = clonedItems.map(_.v)
+    val fieldsToRemove = allInputFields -- clonedEntities
+    val patternGraphTable: CAPSRecords = tableWithConstructedProperties.removeFields(fieldsToRemove)
 
+    // Compute the schema by adding the new entity tag and construct the pattern graph
     val patternGraphSchema = initialSchema.withTags(initialSchema.tags + newEntityTag).asCaps
-    val patternGraph = CAPSGraph.create(withInputsRemoved, patternGraphSchema)
+    val patternGraph = CAPSGraph.create(patternGraphTable, patternGraphSchema)
+
     CAPSPhysicalResult(CAPSRecords.unit(), patternGraph)
   }
 
@@ -243,22 +247,20 @@ final case class ConstructGraph(
   }
 
   private def createEntities(toCreate: Set[ConstructedEntity], constructedTable: CAPSRecords, newEntityTag: Int): CAPSRecords = {
-    val numberOfColumnPartitions = toCreate.size
-
     // Construct nodes before relationships, as relationships might depend on nodes
     val nodes = toCreate.collect { case c: ConstructedNode => c }
     val rels = toCreate.collect { case r: ConstructedRelationship => r }
 
     val (_, createdNodes) = nodes.foldLeft(0 -> Set.empty[(SlotContent, Column)]) {
       case ((nextColumnPartitionId, constructedNodes), nextNodeToConstruct) =>
-        (nextColumnPartitionId + 1) -> (constructedNodes ++ constructNode(newEntityTag, nextColumnPartitionId, numberOfColumnPartitions, nextNodeToConstruct, constructedTable))
+        (nextColumnPartitionId + 1) -> (constructedNodes ++ constructNode(newEntityTag, nextColumnPartitionId, nodes.size, nextNodeToConstruct, constructedTable))
     }
 
     val recordsWithNodes = addEntitiesToRecords(createdNodes, constructedTable)
 
     val (_, createdRels) = rels.foldLeft(0 -> Set.empty[(SlotContent, Column)]) {
       case ((nextColumnPartitionId, constructedRels), nextRelToConstruct) =>
-        (nextColumnPartitionId + 1) -> (constructedRels ++ constructRel(newEntityTag, nextColumnPartitionId, numberOfColumnPartitions, nextRelToConstruct, recordsWithNodes))
+        (nextColumnPartitionId + 1) -> (constructedRels ++ constructRel(newEntityTag, nextColumnPartitionId, rels.size, nextRelToConstruct, recordsWithNodes))
     }
 
     addEntitiesToRecords(createdRels, recordsWithNodes)
@@ -313,6 +315,7 @@ final case class ConstructGraph(
     *
     * @param columnIdPartition column partition within DF partition
     */
+  // TODO: improve documentation and add specific tests
   private def generateId(columnIdPartition: Int, numberOfColumnPartitions: Int): Column = {
     val columnPartitionBits = math.log(numberOfColumnPartitions).floor.toInt + 1
     val totalIdSpaceBits = 33
@@ -321,7 +324,7 @@ final case class ConstructGraph(
     // id needs to be generated
     // Limits the system to 500 mn partitions
     // The first half of the id space is protected
-    val columnPartitionOffset = columnIdPartition << columnIdShift
+    val columnPartitionOffset = columnIdPartition.toLong << columnIdShift
     monotonically_increasing_id() + functions.lit(columnPartitionOffset)
   }
 
@@ -524,8 +527,9 @@ final case class Aggregate(
                 if (distinct) functions.collect_set(column)
                 else functions.collect_list(column)
               }
-
-              list.as(columnName)
+              // sort for deterministic aggregation results
+              val sorted = functions.sort_array(list)
+              sorted.as(columnName)
             }
 
             case x =>

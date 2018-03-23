@@ -40,8 +40,10 @@ object CypherParser extends CypherParser {
   implicit object defaultContext extends BlankBaseContext {
     override def errorHandler: (Seq[SemanticErrorDef]) => Unit =
       (errors) => {
-        if (errors.nonEmpty) {
-          throw ParsingException(s"Errors during semantic checking: ${errors.mkString(", ")}")
+        // TODO: Remove when frontend supports CLONE clause
+        val filteredErrors = errors.filterNot(_.msg.contains("already declared"))
+        if (filteredErrors.nonEmpty) {
+          throw ParsingException(s"Errors during semantic checking: ${filteredErrors.mkString(", ")}")
         }
       }
   }

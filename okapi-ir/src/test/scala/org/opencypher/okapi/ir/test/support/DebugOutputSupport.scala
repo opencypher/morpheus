@@ -26,17 +26,41 @@
  */
 package org.opencypher.okapi.ir.test.support
 
-import scala.collection.Bag
+import java.util.Objects
 
-trait DebugOutputSupport {
+import scala.collection.immutable.TreeMap
 
-  implicit def bagConfig[T] = Bag.configuration.compact[T]
+object Bag {
 
-  implicit class GenericIterableToBagConverter[T](val elements: TraversableOnce[T]) {
-    def toBag: Bag[T] = Bag(elements.toSeq: _*)
+  type Bag[T <: Any] = TreeMap[T, Int]
+
+  def apply[E](elements: E*): Bag[E] = {
+    implicit val ordering = new Ordering[E] {
+      override def compare(x: E, y: E): Int = {
+        if (Objects.equals(x, y)) {
+          0
+        } else if (x == null) {
+          -1
+        } else if (y == null) {
+          1
+        } else {
+          Ordering[String].compare(x.toString + x.hashCode, y.toString + y.hashCode)
+        }
+      }
+    }
+    TreeMap(elements.groupBy(identity).mapValues(_.size).toSeq: _*)
   }
 
-  implicit class ArrayToBagConverter[T](val elements: Array[T]) {
-    def toBag: Bag[T] = Bag(elements.toSeq: _*)
+  implicit class TraversableToBag[E](val t: Traversable[E]) {
+    def toBag: Bag[E] = Bag(t.toSeq: _*)
   }
+
+  implicit class IteratorToBag[E](val i: Iterator[E]) {
+    def toBag: Bag[E] = Bag(i.toSeq: _*)
+  }
+
+  implicit class ArrayToBag[E](val a: Array[E]) {
+    def toBag: Bag[E] = Bag(a: _*)
+  }
+
 }

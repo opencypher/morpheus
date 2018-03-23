@@ -134,6 +134,16 @@ sealed abstract class CAPSRecords(val header: RecordHeader, val data: DataFrame)
     }
   }
 
+  def removeFields(fields: Set[Var]): CAPSRecords = {
+    val (updatedHeader, updatedData) = fields.foldLeft((header, data)) {
+        case ((tempHeader, tempDf), nextFieldToRemove) =>
+          val slotsToRemove = tempHeader.selfWithChildren(nextFieldToRemove)
+          val updatedHeader = tempHeader -- RecordHeader.from(slotsToRemove.toList)
+          updatedHeader -> tempDf.drop(slotsToRemove.map(ColumnName.of): _*)
+      }
+    CAPSRecords.createInternal(updatedHeader, updatedData)
+  }
+
   def unionAll(header: RecordHeader, other: CAPSRecords): CAPSRecords = {
     val unionData = data.union(other.data)
     CAPSRecords.verifyAndCreate(header, unionData)
@@ -142,6 +152,9 @@ sealed abstract class CAPSRecords(val header: RecordHeader, val data: DataFrame)
   def distinct: CAPSRecords = {
     CAPSRecords.verifyAndCreate(header, data.distinct())
   }
+
+  def distinct(fields: Var*): CAPSRecords =
+    CAPSRecords.verifyAndCreate(header, data.dropDuplicates(fields.map(OpaqueField).map(ColumnName.of)))
 
   /**
     * Converts all values stored in this table to instances of the corresponding CypherValue class.

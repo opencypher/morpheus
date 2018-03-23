@@ -30,6 +30,8 @@ import org.opencypher.okapi.api.graph.{GraphName, Namespace, QualifiedGraphName}
 import org.opencypher.spark.api.CAPSSession
 import org.opencypher.spark.api.io.file.FileCsvPropertyGraphDataSource
 
+import org.opencypher.spark.impl.CAPSConverters._
+
 /**
   * Demonstrates multiple graph capabilities by loading a social network from case class objects and a purchase network
   * from CSV data and schema files. The example connects both networks via matching user and customer names. A Cypher
@@ -57,6 +59,8 @@ object MultipleGraphExample extends App {
     """|MATCH (p:Person),(c:Customer)
        |WHERE p.name = c.name
        |CONSTRUCT {
+       |  MERGE (p)
+       |  MERGE (c)
        |  CREATE (p)-[x:IS]->(c)
        |}
        |RETURN GRAPH
@@ -64,7 +68,7 @@ object MultipleGraphExample extends App {
   ).getGraph
 
   // 6) Build recommendation graph from disconnected and integration graphs
-  val recommendationGraph = disconnectedGraph unionAll integrationGraph
+  val recommendationGraph = disconnectedGraph.asCaps union integrationGraph
 
   // 7) Query for product recommendations
   val recommendations = recommendationGraph.cypher(

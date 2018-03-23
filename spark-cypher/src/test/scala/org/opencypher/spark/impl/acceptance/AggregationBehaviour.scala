@@ -28,8 +28,8 @@ package org.opencypher.spark.impl.acceptance
 
 import org.opencypher.okapi.api.graph.PropertyGraph
 import org.opencypher.okapi.api.value.CypherValue._
-
-import scala.collection.immutable.Bag
+import org.opencypher.okapi.ir.test.support.Bag
+import org.opencypher.okapi.ir.test.support.Bag._
 
 trait AggregationBehaviour {
   this: AcceptanceTest =>
@@ -519,7 +519,7 @@ trait AggregationBehaviour {
         val result = graph.cypher("MATCH (n) WITH COLLECT(n.val) AS res RETURN res")
 
         result.getRecords.toMaps should equal(Bag(
-          CypherMap("res" -> Seq(6, 4, 2))
+          CypherMap("res" -> Seq(2, 4, 6))
         ))
       }
 
@@ -529,7 +529,7 @@ trait AggregationBehaviour {
         val result = graph.cypher("MATCH (n) RETURN COLLECT(n.val) AS res")
 
         result.getRecords.toMaps should equal(Bag(
-          CypherMap("res" -> Seq(6, 4, 2))
+          CypherMap("res" -> Seq(2, 4, 6))
         ))
       }
 
@@ -630,7 +630,7 @@ trait AggregationBehaviour {
             |RETURN avg, cnt, min, max, sum, col""".stripMargin)
 
         result.getRecords.toMaps should equal(Bag(
-          CypherMap("avg" -> 49, "cnt" -> 3, "min" -> 23L, "max" -> 84L, "sum" -> 149, "col" -> Seq(84, 23, 42))
+          CypherMap("avg" -> 49, "cnt" -> 3, "min" -> 23L, "max" -> 84L, "sum" -> 149, "col" -> Seq(23, 42, 84))
         ))
       }
 
@@ -648,11 +648,11 @@ trait AggregationBehaviour {
             | COLLECT(n.val) AS col""".stripMargin)
 
         result.getRecords.toMaps should equal(Bag(
-          CypherMap("avg" -> 49, "cnt" -> 3, "min" -> 23L, "max" -> 84L, "sum" -> 149, "col" -> Seq(84, 23, 42))
+          CypherMap("avg" -> 49, "cnt" -> 3, "min" -> 23L, "max" -> 84L, "sum" -> 149, "col" -> Seq(23, 42, 84))
         ))
       }
 
-      test("multiple aggregates with grouping in RETURN clause") {
+      it("computes multiple aggregates with grouping in RETURN clause") {
         val graph = initGraph("CREATE ({key: 'a', val: 42}),({key: 'a',val: 23}),({key: 'b', val: 84})")
 
         val result = graph.cypher(
@@ -673,7 +673,7 @@ trait AggregationBehaviour {
         ))
       }
 
-      test("multiple aggregates with grouping in WITH clause") {
+      it ("computes multiple aggregates with grouping in WITH clause") {
         val graph = initGraph("CREATE ({key: 'a', val: 42}),({key: 'a',val: 23}),({key: 'b', val: 84})")
 
         val result = graph.cypher(
