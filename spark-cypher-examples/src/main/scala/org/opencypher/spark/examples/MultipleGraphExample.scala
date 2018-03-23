@@ -27,9 +27,9 @@
 package org.opencypher.spark.examples
 
 import org.opencypher.okapi.api.graph.{GraphName, Namespace, QualifiedGraphName}
+import org.opencypher.okapi.relational.api.configuration.CoraConfiguration.PrintPhysicalPlan
 import org.opencypher.spark.api.CAPSSession
 import org.opencypher.spark.api.io.file.FileCsvPropertyGraphDataSource
-
 import org.opencypher.spark.impl.CAPSConverters._
 
 /**
@@ -53,18 +53,22 @@ object MultipleGraphExample extends App {
   val purchaseNetwork = session.graph(QualifiedGraphName(Namespace("csv"), GraphName("prod")))
 
   // 5) Create new edges between users and customers with the same name
-  val recommendationGraph = socialNetwork.cypher(
-    """|MATCH (p:Person)
+  val recommendationGraph = session.cypher(
+    """|USE GRAPH socialNetwork
+       |MATCH (p:Person)
        |USE GRAPH csv.prod
        |MATCH (c:Customer)
        |WHERE p.name = c.name
-       |CONSTRUCT ON socialNetwork, myDataSource.products {
-       |  CLONE c, p
+       |CONSTRUCT ON socialNetwork, csv.prod {
+       |  CLONE p, c
        |  CREATE (p)-[x:IS]->(c)
        |}
        |RETURN GRAPH
     """.stripMargin
   ).getGraph
+
+  recommendationGraph.nodes("n").asCaps.data.show()
+  recommendationGraph.relationships("r").asCaps.data.show()
 
   // 6) Query for product recommendations
   val recommendations = recommendationGraph.cypher(

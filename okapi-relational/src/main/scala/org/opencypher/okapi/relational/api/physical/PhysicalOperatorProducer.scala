@@ -172,6 +172,7 @@ trait PhysicalOperatorProducer[P <: PhysicalOperator[R, G, C], R <: CypherRecord
     newEntities: Set[ConstructedEntity],
     setItems: List[SetPropertyItem[Expr]],
     schema: Schema,
+    catalog: QualifiedGraphName => PropertyGraph,
     onGraphs: List[QualifiedGraphName]): P
 
   /**

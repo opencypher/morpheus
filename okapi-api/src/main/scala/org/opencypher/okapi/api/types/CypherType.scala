@@ -158,17 +158,22 @@ case object CTMap extends MaterialDefiniteCypherType with MaterialDefiniteCypher
   }
 }
 
-object CTNode extends CTNode(Set.empty, None) with Serializable {
-  def apply(labels: String*): CTNode =
-    if (labels.isEmpty) this else CTNode(labels.toSet)
+object CTNode extends CTNode(Set.empty[String], None) with Serializable {
+  def apply(labels: String*)(implicit graph: Option[QualifiedGraphName] = None): CTNode =
+    if (labels.isEmpty && graph.isEmpty) this else CTNode(labels.toSet, graph)
+
+  def apply(labels: Set[String]): CTNode =
+    if (labels.isEmpty) this else CTNode(labels, None)
 }
 
-sealed case class CTNode(labels: Set[String], graph: Option[QualifiedGraphName] = None) extends MaterialDefiniteCypherType {
+sealed case class CTNode(labels: Set[String], override val graph: Option[QualifiedGraphName]) extends MaterialDefiniteCypherType {
 
   self =>
 
+  private def graphToString = graph.map(_.graphName).map(n => s" @ $n").getOrElse("")
+
   final override def name: String =
-    if (labels.isEmpty) "NODE" else s"${labels.mkString(":", ":", "")} NODE"
+    if (labels.isEmpty) s"NODE$graphToString" else s"${labels.mkString(":", ":", "")} NODE$graphToString"
 
   final override def nullable: CTNodeOrNull =
     if (labels.isEmpty) CTNodeOrNull else CTNodeOrNull(labels)
@@ -208,16 +213,21 @@ sealed case class CTNodeOrNull(labels: Set[String]) extends NullableDefiniteCyph
 }
 
 object CTRelationship extends CTRelationship(Set.empty, None) with Serializable {
-  def apply(types: String*): CTRelationship =
-    if (types.isEmpty) this else CTRelationship(types.toSet)
+  def apply(types: String*)(implicit graph: Option[QualifiedGraphName] = None): CTRelationship =
+    if (types.isEmpty && graph.isEmpty) this else CTRelationship(types.toSet, graph)
+
+  def apply(types: Set[String]): CTRelationship =
+    if (types.isEmpty) this else CTRelationship(types, None)
 }
 
-sealed case class CTRelationship(types: Set[String], graph: Option[QualifiedGraphName] = None) extends MaterialDefiniteCypherType {
+sealed case class CTRelationship(types: Set[String], override val graph: Option[QualifiedGraphName]) extends MaterialDefiniteCypherType {
 
   self =>
 
+  private def graphToString = graph.map(_.graphName).map(n => s" @ $n").getOrElse("")
+
   final override def name: String =
-    if (types.isEmpty) "RELATIONSHIP" else s"${types.map(t => s"$t").mkString(":", "|", "")} RELATIONSHIP"
+    if (types.isEmpty) s"RELATIONSHIP$graphToString" else s"${types.map(t => s"$t").mkString(":", "|", "")} RELATIONSHIP$graphToString"
 
   final override def nullable: CTRelationshipOrNull =
     if (types.isEmpty) CTRelationshipOrNull else CTRelationshipOrNull(types)
@@ -418,6 +428,8 @@ sealed trait CypherType extends Serializable {
 
   // true, if null is a value of this type
   def isNullable: Boolean
+
+  def graph: Option[QualifiedGraphName] = None
 
   // true, if this type only (i.e. excluding type parameters) is a wildcard (= standing for an arbitrary unknown type)
   def isWildcard: Boolean

@@ -114,10 +114,10 @@ object SchemaTyper {
       for {
         nodeType <- process[R](node)
         result <- nodeType.material match {
-          case CTNode(nodeLabels, _) =>
+          case CTNode(nodeLabels, qgn) =>
             val detailed = nodeLabels ++ labels.map(_.name).toSet
             recordType[R](node -> nodeType) >>
-              updateTyping[R](node -> CTNode(detailed)) >>
+              updateTyping[R](node -> CTNode(detailed, qgn)) >>
               recordAndUpdate[R](expr -> CTBoolean)
 
           case x =>

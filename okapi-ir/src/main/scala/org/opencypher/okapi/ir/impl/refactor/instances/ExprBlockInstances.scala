@@ -41,7 +41,7 @@ trait ExprBlockInstances {
     def representsRel(v: Var): Boolean =
       f.name == v.name && f.cypherType.subTypeOf(CTRelationship).isTrue
     def withLabel(l: Label): IRField = {
-      f.copy()(cypherType = f.cypherType.meet(CTNode(l.name)))
+      f.copy()(cypherType = f.cypherType.meet(CTNode(Set(l.name), f.cypherType.graph)))
     }
   }
 

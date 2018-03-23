@@ -62,24 +62,28 @@ final case class CAPSUnionGraph(graphs: List[CAPSGraph], doUpdateTags: Boolean =
 
   private def map(f: CAPSGraph => CAPSGraph): CAPSUnionGraph = CAPSUnionGraph(graphs.map(f), doUpdateTags)
 
-  def performedReplacements: Map[CAPSGraph, Map[Int, Int]] = replacementMap
+  def performedRetaggings: Map[CAPSGraph, Map[Int, Int]] = replacementMap
 
   private val replacementMap: Map[CAPSGraph, Map[Int, Int]] = {
-    val (result, _) = graphs.foldLeft((Map.empty[CAPSGraph, Map[Int, Int]], Set.empty[Int])) {
+    if (doUpdateTags) {
+      val (result, _) = graphs.foldLeft((Map.empty[CAPSGraph, Map[Int, Int]], Set.empty[Int])) {
 
-      case ((graphReplacements, previousTags), currentGraph ) =>
+        case ((graphReplacements, previousTags), currentGraph) =>
 
-        val rightTags = currentGraph.schema.tags
+          val rightTags = currentGraph.schema.tags
 
-        val replacements = previousTags.replacementsFor(rightTags)
-        val updatedRightTags = rightTags.replaceWith(replacements)
+          val replacements = previousTags.replacementsFor(rightTags)
+          val updatedRightTags = rightTags.replaceWith(replacements)
 
-        val updatedPreviousTags = previousTags ++ updatedRightTags
-        val updatedGraphReplacements = graphReplacements.updated(currentGraph, replacements)
+          val updatedPreviousTags = previousTags ++ updatedRightTags
+          val updatedGraphReplacements = graphReplacements.updated(currentGraph, replacements)
 
-        updatedGraphReplacements -> updatedPreviousTags
+          updatedGraphReplacements -> updatedPreviousTags
+      }
+      result
+    } else {
+      Map.empty.withDefaultValue(Map.empty)
     }
-    result
   }
 
   override def nodes(name: String, nodeCypherType: CTNode): CAPSRecords = {

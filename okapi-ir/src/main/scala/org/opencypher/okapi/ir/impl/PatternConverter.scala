@@ -88,7 +88,7 @@ final class PatternConverter {
 
         val nodeVar = vOpt match {
           case Some(v) => Var(v.name)(CTNode(allLabels, qgnOption))
-          case None => FreshVariableNamer(np.position.offset, CTNode(allLabels, Some(qualifiedGraphName)))
+          case None => FreshVariableNamer(np.position.offset, CTNode(allLabels, qgnOption))
         }
         for {
           entity <- pure(IRField(nodeVar.name)(nodeVar.cypherType))
@@ -196,8 +196,8 @@ final class PatternConverter {
     val relTypes = patternTypes ++ knownRelTypes
 
     val rel = eOpt match {
-      case Some(v) => Var(v.name)(CTRelationship(relTypes))
-      case None => FreshVariableNamer(offset, CTRelationship(relTypes))
+      case Some(v) => Var(v.name)(CTRelationship(relTypes, qgnOption))
+      case None => FreshVariableNamer(offset, CTRelationship(relTypes, qgnOption))
     }
     rel
   }

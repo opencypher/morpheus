@@ -64,7 +64,7 @@ class PhysicalPlanner[P <: PhysicalOperator[R, G, C], R <: CypherRecords, G <: P
           case g: LogicalCatalogGraph =>
             producer.planStart(Some(context.inputRecords), Some(g))
           case LogicalPatternGraph(schema, clonedVarsToInputVars, newEntities, sets, onGraphs) =>
-            producer.planConstructGraph(producer.planStart(Some(context.inputRecords)), clonedVarsToInputVars, newEntities, sets, schema, onGraphs)
+            producer.planConstructGraph(producer.planStart(Some(context.inputRecords)), clonedVarsToInputVars, newEntities, sets, schema, context.resolver, onGraphs)
           case _ => throw IllegalArgumentException("a LogicalExternalGraph", graph)
         }
 
@@ -74,7 +74,7 @@ class PhysicalPlanner[P <: PhysicalOperator[R, G, C], R <: CypherRecords, G <: P
             producer.planUseGraph(process(in), g)
 
           case LogicalPatternGraph(schema, clonedVarsToInputVars, newEntities, sets, onGraphs) =>
-            producer.planConstructGraph(process(in), clonedVarsToInputVars, newEntities, sets, schema, onGraphs)
+            producer.planConstructGraph(process(in), clonedVarsToInputVars, newEntities, sets, schema, context.resolver, onGraphs)
         }
 
       case op@flat.NodeScan(v, in, header) =>
@@ -119,7 +119,7 @@ class PhysicalPlanner[P <: PhysicalOperator[R, G, C], R <: CypherRecords, G <: P
             producer.planStart(None, Some(e))
 
           case LogicalPatternGraph(schema, clonedVarsToInputVars, newEntities, sets, onGraphs) =>
-            producer.planConstructGraph(producer.planStart(Some(context.inputRecords)), clonedVarsToInputVars, newEntities, sets, schema, onGraphs)
+            producer.planConstructGraph(producer.planStart(Some(context.inputRecords)), clonedVarsToInputVars, newEntities, sets, schema, context.resolver, onGraphs)
         }
 
         val second = producer.planRelationshipScan(startFrom, op.sourceGraph, rel, relHeader)

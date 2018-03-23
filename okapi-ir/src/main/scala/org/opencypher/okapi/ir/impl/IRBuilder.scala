@@ -201,13 +201,13 @@ object IRBuilder extends CompilationStage[ast.Statement, CypherQuery[Expr], IRBu
               }
               setItem match {
                 case SetLabelItem(variable, labels) =>
-                  val existingLabels = rewrittenVarTypes.getOrElse(variable, variable.cypherType) match {
-                    case CTNode(existing, _) => existing
+                  val (existingLabels, existingQgn) = rewrittenVarTypes.getOrElse(variable, variable.cypherType) match {
+                    case CTNode(ls, qgn) => ls -> qgn
                     case other => throw UnsupportedOperationException(s"SET label on something that is not a node: $other")
                   }
                   val labelsAfterSet = existingLabels ++ labels
                   val updatedSchema = currentSchema.addLabelsToCombo(labels, existingLabels)
-                  updatedSchema -> rewrittenVarTypes.updated(variable, CTNode(labelsAfterSet))
+                  updatedSchema -> rewrittenVarTypes.updated(variable, CTNode(labelsAfterSet, existingQgn))
                 case SetPropertyItem(propertyKey, variable, setValue) =>
                   val propertyType = setValue.cypherType
                   val updatedSchema = currentSchema.addPropertyToEntity(propertyKey, propertyType, variable.cypherType)
