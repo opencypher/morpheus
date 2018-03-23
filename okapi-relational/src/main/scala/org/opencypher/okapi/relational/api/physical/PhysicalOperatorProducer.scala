@@ -26,7 +26,7 @@
  */
 package org.opencypher.okapi.relational.api.physical
 
-import org.opencypher.okapi.api.graph.PropertyGraph
+import org.opencypher.okapi.api.graph.{PropertyGraph, QualifiedGraphName}
 import org.opencypher.okapi.api.schema.Schema
 import org.opencypher.okapi.api.table.CypherRecords
 import org.opencypher.okapi.ir.api.block.SortItem
@@ -171,7 +171,8 @@ trait PhysicalOperatorProducer[P <: PhysicalOperator[R, G, C], R <: CypherRecord
     clonedVarsToInputVars: Map[Var, Var],
     newEntities: Set[ConstructedEntity],
     setItems: List[SetPropertyItem[Expr]],
-    schema: Schema): P
+    schema: Schema,
+    onGraphs: List[QualifiedGraphName]): P
 
   /**
     * Groups the underlying records by the specified expressions and evaluates the given aggregate functions.

@@ -43,34 +43,30 @@ object MultipleGraphExample extends App {
 
   // 2) Load social network data via case class instances
   val socialNetwork = session.readFrom(SocialNetworkData.persons, SocialNetworkData.friendships)
+  session.store(GraphName("socialNetwork"), socialNetwork)
 
   // 3) Register a File-based data source in the Cypher session
   val csvFolder = getClass.getResource("/csv").getFile
   // Note: if files were stored in HDFS, change the data source to HdfsCsvPropertyGraphDataSource
-  session.registerSource(Namespace("myDataSource"), new FileCsvPropertyGraphDataSource(graphFolder = csvFolder))
+  session.registerSource(Namespace("csv"), new FileCsvPropertyGraphDataSource(graphFolder = csvFolder))
   // access the graph via its qualified graph name
-  val purchaseNetwork = session.graph(QualifiedGraphName(Namespace("myDataSource"), GraphName("prod")))
-
-  // 4) Build union of social and purchase network (note, that there are no relationships connecting nodes from both graphs)
-  val disconnectedGraph = socialNetwork unionAll purchaseNetwork
+  val purchaseNetwork = session.graph(QualifiedGraphName(Namespace("csv"), GraphName("prod")))
 
   // 5) Create new edges between users and customers with the same name
-  val integrationGraph = disconnectedGraph.cypher(
-    """|MATCH (p:Person),(c:Customer)
+  val recommendationGraph = socialNetwork.cypher(
+    """|MATCH (p:Person)
+       |USE GRAPH csv.prod
+       |MATCH (c:Customer)
        |WHERE p.name = c.name
-       |CONSTRUCT {
-       |  MERGE (p)
-       |  MERGE (c)
+       |CONSTRUCT ON socialNetwork, myDataSource.products {
+       |  CLONE c, p
        |  CREATE (p)-[x:IS]->(c)
        |}
        |RETURN GRAPH
     """.stripMargin
   ).getGraph
 
-  // 6) Build recommendation graph from disconnected and integration graphs
-  val recommendationGraph = disconnectedGraph.asCaps union integrationGraph
-
-  // 7) Query for product recommendations
+  // 6) Query for product recommendations
   val recommendations = recommendationGraph.cypher(
     """|MATCH (person:Person)-[:FRIEND_OF]-(friend:Person),
        |(friend)-[:IS]->(customer:Customer),

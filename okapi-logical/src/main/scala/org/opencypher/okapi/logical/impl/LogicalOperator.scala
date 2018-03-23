@@ -64,7 +64,9 @@ final case class LogicalPatternGraph(
   schema: Schema,
   clones: Map[Var, Var],
   newEntities: Set[ConstructedEntity],
-  sets: List[SetPropertyItem[Expr]]) extends LogicalGraph {
+  sets: List[SetPropertyItem[Expr]],
+  onGraphs: List[QualifiedGraphName]
+) extends LogicalGraph {
 
   override protected def args: String = s"clonedVars = $clones, newEntities = $newEntities"
 }

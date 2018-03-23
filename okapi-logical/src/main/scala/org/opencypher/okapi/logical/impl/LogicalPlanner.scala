@@ -356,7 +356,7 @@ class LogicalPlanner(producer: LogicalOperatorProducer)
         }
         val newEntities: Set[ConstructedEntity] = entitiesToCreate.map(e => extractConstructedEntities(p.creates, e, equivalences.get(e)))
 
-        LogicalPatternGraph(p.schema, clonedVarToInputVar, newEntities, p.sets)
+        LogicalPatternGraph(p.schema, clonedVarToInputVar, newEntities, p.sets, p.onGraphs)
 
       case g: IRCatalogGraph => LogicalCatalogGraph(g.qualifiedName, g.schema)
     }

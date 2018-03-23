@@ -29,6 +29,7 @@ package org.opencypher.spark.impl.physical.operators
 import org.apache.spark.sql._
 import org.apache.spark.sql.functions.{asc, desc, monotonically_increasing_id}
 import org.apache.spark.sql.types.{StructField, StructType}
+import org.opencypher.okapi.api.graph.QualifiedGraphName
 import org.opencypher.okapi.api.types._
 import org.opencypher.okapi.api.value.CypherValue._
 import org.opencypher.okapi.impl.exception.{IllegalArgumentException, IllegalStateException, NotImplementedException}
@@ -201,7 +202,8 @@ final case class ConstructGraph(
   clonedVarsToInputVars: Map[Var, Var],
   newItems: Set[ConstructedEntity],
   setItems: List[SetPropertyItem[Expr]],
-  initialSchema: CAPSSchema)
+  initialSchema: CAPSSchema,
+  onGraphs: List[QualifiedGraphName])
   extends UnaryPhysicalOperator {
 
   override def header: RecordHeader = RecordHeader.empty
