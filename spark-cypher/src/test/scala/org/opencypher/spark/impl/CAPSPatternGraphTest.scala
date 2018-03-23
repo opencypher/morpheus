@@ -117,8 +117,7 @@ class CAPSPatternGraphTest extends CAPSGraphTest {
       ))
   }
 
-  // Fix ID generation: The generated IDs for the blank nodes collide with other generated IDs.
-  ignore("projects a pattern graph with a created node") {
+  test("projects a pattern graph with a created node") {
     val inputGraph = initGraph(`:Person` + `:KNOWS`)
 
     PrintLogicalPlan.set()
@@ -131,14 +130,6 @@ class CAPSPatternGraphTest extends CAPSGraphTest {
         |}
         |RETURN GRAPH
       """.stripMargin)
-
-    person.getGraph.asInstanceOf[CAPSPatternGraph].baseTable.data.show()
-
-    person.getGraph.nodes("n").show
-
-    person.getGraph.relationships("r", CTRelationship("KNOWS_A")).show
-
-    person.getGraph.cypher("MATCH (b)-[:KNOWS_A]->(n) RETURN n").getRecords.show
 
     person
       .getGraph

@@ -38,7 +38,6 @@ class CAPSScanGraphAcceptanceTest extends AcceptanceTest {
   def testGraph1 = initGraph("CREATE (:Person {name: 'Mats'})")
   def testGraph2 = initGraph("CREATE (:Person {name: 'Phil'})")
 
-
   it("supports UNION ALL") {
     testGraph1.unionAll(testGraph2).cypher("""MATCH (n) RETURN DISTINCT id(n)""").getRecords.size should equal(2)
   }
@@ -55,9 +54,6 @@ class CAPSScanGraphAcceptanceTest extends AcceptanceTest {
         |}
         |RETURN GRAPH
       """.stripMargin)
-
-
-    res.getGraph.relationships("r").asCaps.data.show()
 
     res.getGraph.nodes("n").collect.length shouldBe 2
     res.getGraph.relationships("r").collect.length shouldBe 1

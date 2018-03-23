@@ -210,50 +210,21 @@ final case class ConstructGraph(
     implicit val session = prev.records.caps
     val inputTable = prev.records
 
-    // Remove input columns and header
-    val inputColumns = inputTable.data.columns.toSet
-
-    // filter according to equivalence model
-    val copyVars = newItems.flatMap(_.equivalence).map(_.v)
-
-    val keepInBaseTable = copyVars ++ clonedItems.map(_.v)
-
-    val (removeHeader, removeColumns) = keepInBaseTable.foldLeft((inputTable.header, inputColumns)) {
-      case ((header, columns), nextVar) =>
-
-        val keepSlot = header.selfWithChildren(nextVar)
-        val nextHeader = header -- RecordHeader.from(keepSlot.toList)
-
-        val nextColumns = keepSlot.map(ColumnName.of).toSet
-        nextHeader -> (columns -- nextColumns)
-    }
-
-    val baseHeader = inputTable.header -- removeHeader
-    val baseDf = inputTable.data.drop(removeColumns.toSeq: _*)
-    val baseTable = CAPSRecords.verifyAndCreate(baseHeader, baseDf)
-
+    // Construct NEW entities
     val newEntityTag = if (initialSchema.tags.isEmpty) 0 else initialSchema.tags.max + 1
-    val entityTable = createEntities(newItems, baseTable, newEntityTag)
-
+    val entityTable = createEntities(newItems, inputTable, newEntityTag)
     val tableWithConstructedProperties = setProperties(setItems, entityTable)
 
-    val (removeCopyHeader, removeCopyColumns) = copyVars.foldLeft(RecordHeader.empty, Set.empty[String]) {
-      case ((header, columns), nextVar) =>
+    // Remove all fields of the pattern graph DF that were not explicitly preserved with a CLONE
+    val allInputFields = inputTable.header.internalHeader.fields
+    val clonedEntities = clonedItems.map(_.v)
+    val fieldsToRemove = allInputFields -- clonedEntities
+    val patternGraphTable: CAPSRecords = tableWithConstructedProperties.removeFields(fieldsToRemove)
 
-        val keepSlot = tableWithConstructedProperties.header.selfWithChildren(nextVar)
-        val nextHeader = header ++ RecordHeader.from(keepSlot.toList)
-
-        val nextColumns = keepSlot.map(ColumnName.of).toSet
-        nextHeader -> (columns ++ nextColumns)
-    }
-
+    // Compute the schema by adding the new entity tag and construct the pattern graph
     val patternGraphSchema = initialSchema.withTags(initialSchema.tags + newEntityTag).asCaps
-
-    val patternGraphHeader = tableWithConstructedProperties.header -- removeCopyHeader
-    val patternGraphDf = tableWithConstructedProperties.data.drop(removeCopyColumns.toSeq: _*)
-    val patternGraphTable = CAPSRecords.verifyAndCreate(patternGraphHeader, patternGraphDf)
-
     val patternGraph = CAPSGraph.create(patternGraphTable, patternGraphSchema)
+
     CAPSPhysicalResult(CAPSRecords.unit(), patternGraph)
   }
 
@@ -552,11 +523,12 @@ final case class Aggregate(
 
             case Collect(expr, distinct) => withInnerExpr(expr) { column =>
               val list = {
-                if (distinct) functions.sort_array(functions.collect_set(column))
+                if (distinct) functions.collect_set(column)
                 else functions.collect_list(column)
               }
-
-              list.as(columnName)
+              // sort for deterministic aggregation results
+              val sorted = functions.sort_array(list)
+              sorted.as(columnName)
             }
 
             case x =>

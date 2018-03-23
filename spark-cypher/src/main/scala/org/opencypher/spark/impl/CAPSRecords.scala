@@ -134,6 +134,16 @@ sealed abstract class CAPSRecords(val header: RecordHeader, val data: DataFrame)
     }
   }
 
+  def removeFields(fields: Set[Var]) = {
+    val (updatedHeader, updatedData) = fields.foldLeft((header, data)) {
+        case ((header, df), nextFieldToRemove) =>
+          val slotsToRemove = header.selfWithChildren(nextFieldToRemove)
+          val updatedHeader = header -- RecordHeader.from(slotsToRemove.toList)
+          updatedHeader -> df.drop(slotsToRemove.map(ColumnName.of): _*)
+      }
+    CAPSRecords.createInternal(updatedHeader, updatedData)
+  }
+
   def unionAll(header: RecordHeader, other: CAPSRecords): CAPSRecords = {
     val unionData = data.union(other.data)
     CAPSRecords.verifyAndCreate(header, unionData)
