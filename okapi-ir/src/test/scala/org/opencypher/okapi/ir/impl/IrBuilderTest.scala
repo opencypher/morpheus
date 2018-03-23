@@ -51,7 +51,7 @@ class IrBuilderTest extends IrTestSuite {
         |RETURN GRAPH""".stripMargin
 
     query.model.result match {
-      case GraphResultBlock(_, IRPatternGraph(schema,_, _, _)) =>
+      case GraphResultBlock(_, IRPatternGraph(schema,_, _, _, _)) =>
         schema should equal(Schema.empty.withNodePropertyKeys("A")())
       case _ => fail("no matching graph result found")
     }
@@ -95,7 +95,7 @@ class IrBuilderTest extends IrTestSuite {
         |RETURN GRAPH""".stripMargin
 
     query.model.result match {
-      case GraphResultBlock(_, IRPatternGraph(schema,_, _, _)) =>
+      case GraphResultBlock(_, IRPatternGraph(schema,_, _, _, _)) =>
         schema should equal(Schema.empty.withNodePropertyKeys("A")().withNodePropertyKeys("B", "C")())
       case _ => fail("no matching graph result found")
     }
@@ -112,7 +112,7 @@ class IrBuilderTest extends IrTestSuite {
         |RETURN GRAPH""".stripMargin
 
     query.model.result match {
-      case GraphResultBlock(_, IRPatternGraph(schema,_, _, _)) =>
+      case GraphResultBlock(_, IRPatternGraph(schema,_, _, _, _)) =>
         schema should equal(Schema.empty.withNodePropertyKeys("A", "D")().withNodePropertyKeys("B", "C")())
       case _ => fail("no matching graph result found")
     }
@@ -129,7 +129,7 @@ class IrBuilderTest extends IrTestSuite {
         |RETURN GRAPH""".stripMargin
 
     query.model.result match {
-      case GraphResultBlock(_, IRPatternGraph(schema,_, _, _)) =>
+      case GraphResultBlock(_, IRPatternGraph(schema,_, _, _, _)) =>
         schema should equal(Schema.empty.withNodePropertyKeys("A", "B", "C")())
       case _ => fail("no matching graph result found")
     }
@@ -147,7 +147,7 @@ class IrBuilderTest extends IrTestSuite {
         |RETURN GRAPH""".stripMargin
 
     query.model.result match {
-      case GraphResultBlock(_, IRPatternGraph(schema,_, _, _)) =>
+      case GraphResultBlock(_, IRPatternGraph(schema,_, _, _, _)) =>
         schema should equal(Schema.empty.withNodePropertyKeys("A", "B")().withNodePropertyKeys("A", "C")())
       case _ => fail("no matching graph result found")
     }
@@ -165,7 +165,7 @@ class IrBuilderTest extends IrTestSuite {
         |RETURN GRAPH""".stripMargin
 
     query.model.result match {
-      case GraphResultBlock(_, IRPatternGraph(schema,_, _, _)) =>
+      case GraphResultBlock(_, IRPatternGraph(schema,_, _, _, _)) =>
         schema should equal(Schema.empty.withNodePropertyKeys("A", "B")())
       case _ => fail("no matching graph result found")
     }
@@ -181,7 +181,7 @@ class IrBuilderTest extends IrTestSuite {
         |RETURN GRAPH""".stripMargin
 
     query.model.result match {
-      case GraphResultBlock(_, IRPatternGraph(schema,_, _, _)) =>
+      case GraphResultBlock(_, IRPatternGraph(schema,_, _, _, _)) =>
         schema should equal(Schema.empty.withNodePropertyKeys("A")("name" -> CTString))
       case _ => fail("no matching graph result found")
     }
@@ -197,7 +197,7 @@ class IrBuilderTest extends IrTestSuite {
         |RETURN GRAPH""".stripMargin
 
     query.model.result match {
-      case GraphResultBlock(_, IRPatternGraph(schema,_, _, _)) =>
+      case GraphResultBlock(_, IRPatternGraph(schema,_, _, _, _)) =>
         schema should equal(Schema.empty.withNodePropertyKeys("A", "B")("name" -> CTString))
       case _ => fail("no matching graph result found")
     }
@@ -213,7 +213,7 @@ class IrBuilderTest extends IrTestSuite {
         |RETURN GRAPH""".stripMargin
 
     query.model.result match {
-      case GraphResultBlock(_, IRPatternGraph(schema,_, _, _)) =>
+      case GraphResultBlock(_, IRPatternGraph(schema,_, _, _, _)) =>
         schema should equal(Schema.empty.withNodePropertyKeys(Set.empty[String]).withRelationshipPropertyKeys("R")("level" -> CTString))
       case _ => fail("no matching graph result found")
     }
@@ -230,13 +230,14 @@ class IrBuilderTest extends IrTestSuite {
         |RETURN GRAPH""".stripMargin
 
     query.model.result match {
-      case GraphResultBlock(_, IRPatternGraph(schema,_, _, _)) =>
+      case GraphResultBlock(_, IRPatternGraph(schema,_, _, _, _)) =>
         schema should equal(Schema.empty.withNodePropertyKeys(Set("A"), PropertyKeys("category" -> CTString, "ports" -> CTInteger)))
       case _ => fail("no matching graph result found")
     }
   }
 
-  it("computes a pattern graph schema correctly - 1 create from equivalent") {
+  // TODO: SET is no longer supported
+  ignore("computes a pattern graph schema correctly - 1 create from equivalent") {
     val query =
       """
         |CONSTRUCT {
@@ -244,13 +245,13 @@ class IrBuilderTest extends IrTestSuite {
         |}
         |MATCH (b: A)
         |CONSTRUCT {
-        |  CREATE (c~b)
+        |  CLONE b as c
         |  SET c :B
         |}
         |RETURN GRAPH""".stripMargin
 
     query.model.result match {
-      case GraphResultBlock(_, IRPatternGraph(schema,_, _, _)) =>
+      case GraphResultBlock(_, IRPatternGraph(schema,_, _, _, _)) =>
         schema should equal(Schema.empty.withNodePropertyKeys("A", "B")())
       case _ => fail("no matching graph result found")
     }

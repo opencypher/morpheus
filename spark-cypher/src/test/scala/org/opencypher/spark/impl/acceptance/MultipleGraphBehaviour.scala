@@ -211,12 +211,15 @@ trait MultipleGraphBehaviour {
       ))
     }
 
-    it("should construct multiple properties") {
+    // TODO: Requires COPY OF to be able to express original intent
+    ignore("should construct multiple properties") {
       val query =
-        """|CONSTRUCT {
-           |  CREATE (a :A:B)
-           |  SET a.name = 'Donald'
-           |  SET a.age = 100
+        """|MATCH (a)
+           |CONSTRUCT {
+           |  CLONE a as newA
+           |  CREATE (newA :A:B)
+           |  SET newA.name = 'Donald'
+           |  SET newA.age = 100
            |}
            |RETURN GRAPH""".stripMargin
 
@@ -229,7 +232,7 @@ trait MultipleGraphBehaviour {
           .withNodePropertyKeys(Set("A", "B"), PropertyKeys("name" -> CTString, "age" -> CTInteger))
             .withTags(0, 1)
           .asCaps)
-      result.getGraph.cypher("MATCH (a:A) RETURN a.name").getRecords.iterator.toBag should equal(Bag(
+      result.getGraph.cypher("MATCH (a:A:B) RETURN a.name").getRecords.iterator.toBag should equal(Bag(
         CypherMap("a.name" -> "Donald")
       ))
     }
@@ -238,7 +241,7 @@ trait MultipleGraphBehaviour {
       val query =
         """|MATCH (m:Person)
            |CONSTRUCT {
-           |  CREATE (a~m)
+           |  CLONE m
            |}
            |RETURN GRAPH""".stripMargin
 
@@ -276,7 +279,8 @@ trait MultipleGraphBehaviour {
       ))
     }
 
-    it("should tilde copy a relationship") {
+    // TODO: Requires COPY OF
+    ignore("should tilde copy a relationship") {
       val query =
         """|CONSTRUCT {
            |  CREATE ()-[r:FOO]->()
@@ -303,14 +307,13 @@ trait MultipleGraphBehaviour {
       ))
     }
 
-    it("supports MERGE in CONSTRUCT") {
+    it("supports CLONE in CONSTRUCT") {
       val res = testGraph1.unionAll(testGraph2).cypher(
         """
           |MATCH (n),(m)
           |WHERE n.name = 'Mats' AND m.name = 'Phil'
           |CONSTRUCT {
-          | MERGE (n)
-          | MERGE (m)
+          | CLONE n, m
           | CREATE (n)-[r:KNOWS]->(m)
           |}
           |RETURN GRAPH
@@ -320,7 +323,7 @@ trait MultipleGraphBehaviour {
       res.getGraph.relationships("r").collect.length shouldBe 1
     }
 
-    it("merges multiple relationships") {
+    it("constructs multiple relationships") {
       val inputGraph = initGraph(
         """
           |CREATE (p0 {name: 'Mats'})
@@ -335,8 +338,7 @@ trait MultipleGraphBehaviour {
           |MATCH (n)-[:KNOWS]->(m)
           |WITH DISTINCT n, m
           |CONSTRUCT {
-          | MERGE (n)
-          | MERGE (m)
+          | CLONE n, m
           | CREATE (n)-[r:KNOWS]->(m)
           |}
           |RETURN GRAPH
@@ -346,7 +348,7 @@ trait MultipleGraphBehaviour {
       res.getGraph.relationships("r").collect.length shouldBe 2
     }
 
-    it("merges multiple relationships 2") {
+    it("constructs multiple relationships 2") {
       val inputGraph = initGraph(
         """
           |CREATE (p0 {name: 'Mats'})
@@ -360,8 +362,7 @@ trait MultipleGraphBehaviour {
         """
           |MATCH (n)-[:KNOWS]->(m)
           |CONSTRUCT {
-          | MERGE (n)
-          | MERGE (m)
+          | CLONE n, m
           | CREATE (n)-[r:KNOWS]->(m)
           |}
           |RETURN GRAPH
@@ -378,8 +379,7 @@ trait MultipleGraphBehaviour {
            |}
            |MATCH (a)-->(b)
            |CONSTRUCT {
-           |  MERGE (a)
-           |  MERGE (b)
+           |  CLONE a, b
            |  CREATE (a)-[:KNOWS]->(b)
            |}
            |RETURN GRAPH""".stripMargin

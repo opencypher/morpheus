@@ -32,9 +32,11 @@ import scala.collection.immutable.TreeMap
 
 object Bag {
 
-  type Bag[T <: Any] = TreeMap[T, Int]
+  // Name for the ordered list representation that we use to check equality of results where the order does not matter
+  type Bag[T <: Any] = List[T]
 
   def apply[E](elements: E*): Bag[E] = {
+    // Canonical ordered representation to determine the equality of bags (and have nice diffs when they're not equal)
     implicit val ordering = new Ordering[E] {
       override def compare(x: E, y: E): Int = {
         if (Objects.equals(x, y)) {
@@ -48,7 +50,7 @@ object Bag {
         }
       }
     }
-    TreeMap(elements.groupBy(identity).mapValues(_.size).toSeq: _*)
+    List(elements: _*).sorted
   }
 
   implicit class TraversableToBag[E](val t: Traversable[E]) {

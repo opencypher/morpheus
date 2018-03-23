@@ -134,8 +134,40 @@ sealed abstract class CAPSRecords(val header: RecordHeader, val data: DataFrame)
     }
   }
 
-  def removeFields(fields: Set[Var]): CAPSRecords = {
-    val (updatedHeader, updatedData) = fields.foldLeft((header, data)) {
+  def addAliases(aliasToOriginal: Map[Var, Var]): CAPSRecords = {
+    val (updatedHeader, updatedData) = aliasToOriginal.foldLeft((header, data)) {
+      case ((tempHeader, tempDf), (nextAlias, nextOriginal)) =>
+        val originalSlots = tempHeader.selfWithChildren(nextOriginal).toList
+        val slotsToAdd = originalSlots.map(_.withOwner(nextAlias))
+        val updatedHeader = tempHeader ++ RecordHeader.from(slotsToAdd)
+        val originalColumns = originalSlots.map(ColumnName.of).map(tempDf.col)
+        val aliasColumns = slotsToAdd.map(ColumnName.of)
+        val additions = aliasColumns.zip(originalColumns)
+        val updatedDf = tempDf.safeAddColumns(additions: _*)
+        updatedHeader -> updatedDf
+    }
+    CAPSRecords.createInternal(updatedHeader, updatedData)
+  }
+
+  def renameVars(aliasToOriginal: Map[Var, Var]): CAPSRecords = {
+    val (updatedHeader, updatedData) = aliasToOriginal.foldLeft((header, data)) {
+      case ((tempHeader, tempDf), (nextAlias, nextOriginal)) =>
+        val slotsToReassign = tempHeader.selfWithChildren(nextOriginal).toList
+        val reassignedSlots = slotsToReassign.map(_.withOwner(nextAlias))
+        val updatedHeader = tempHeader --
+          RecordHeader.from(slotsToReassign) ++
+          RecordHeader.from(reassignedSlots)
+        val originalColumns = slotsToReassign.map(ColumnName.of)
+        val aliasColumns = reassignedSlots.map(ColumnName.of)
+        val renamings = originalColumns.zip(aliasColumns)
+        val updatedDf = tempDf.safeRenameColumns(renamings: _*)
+        updatedHeader -> updatedDf
+    }
+    CAPSRecords.createInternal(updatedHeader, updatedData)
+  }
+
+  def removeVars(vars: Set[Var]): CAPSRecords = {
+    val (updatedHeader, updatedData) = vars.foldLeft((header, data)) {
         case ((tempHeader, tempDf), nextFieldToRemove) =>
           val slotsToRemove = tempHeader.selfWithChildren(nextFieldToRemove)
           val updatedHeader = tempHeader -- RecordHeader.from(slotsToRemove.toList)

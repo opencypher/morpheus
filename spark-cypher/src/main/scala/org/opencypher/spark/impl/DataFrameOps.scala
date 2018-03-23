@@ -155,6 +155,12 @@ object DataFrameOps {
       df.withColumn(name, col)
     }
 
+    def safeAddColumns(columns: (String, Column)*): DataFrame = {
+      columns.foldLeft(df) { case (tempDf, (colName, col)) =>
+        tempDf.safeAddColumn(colName, col)
+      }
+    }
+
     def safeReplaceColumn(name: String, newColumn: Column): DataFrame = {
       require(df.columns.contains(name), s"Cannot replace column `$name`. No column with that name exists. " +
         s"Use `safeAddColumn` if you intend to add that column.")
@@ -165,6 +171,12 @@ object DataFrameOps {
       require(!df.columns.contains(newName),
         s"Cannot rename column `$oldName` to `$newName`. A column with name `$newName` exists already.")
       df.withColumnRenamed(oldName, newName)
+    }
+
+    def safeRenameColumns(renamings: (String, String)*): DataFrame = {
+      renamings.foldLeft(df) { case (tempDf, (oldName, newName)) =>
+          tempDf.safeRenameColumn(oldName, newName)
+      }
     }
 
     def safeDropColumn(name: String): DataFrame = {

@@ -198,7 +198,7 @@ final case class Filter(in: CAPSPhysicalOperator, expr: Expr, header: RecordHead
 
 final case class ConstructGraph(
   in: CAPSPhysicalOperator,
-  clonedItems: Set[ConstructedEntity],
+  clonedVarsToInputVars: Map[Var, Var],
   newItems: Set[ConstructedEntity],
   setItems: List[SetPropertyItem[Expr]],
   initialSchema: CAPSSchema)
@@ -208,18 +208,21 @@ final case class ConstructGraph(
 
   override def executeUnary(prev: CAPSPhysicalResult)(implicit context: CAPSRuntimeContext): CAPSPhysicalResult = {
     implicit val session: CAPSSession = prev.records.caps
-    val inputTable = prev.records
+
+    // Apply aliases in CLONE to input table in order to create the base table, on which CONSTRUCT happens
+    val aliasClones = clonedVarsToInputVars.filter { case (alias, original) => alias != original }
+    val baseTable = prev.records.addAliases(aliasClones)
 
     // Construct NEW entities
     val newEntityTag = if (initialSchema.tags.isEmpty) 0 else initialSchema.tags.max + 1
-    val entityTable = createEntities(newItems, inputTable, newEntityTag)
+    val entityTable = createEntities(newItems, baseTable, newEntityTag)
     val tableWithConstructedProperties = setProperties(setItems, entityTable)
 
-    // Remove all fields of the pattern graph DF that were not explicitly preserved with a CLONE
-    val allInputFields = inputTable.header.internalHeader.fields
-    val clonedEntities = clonedItems.map(_.v)
-    val fieldsToRemove = allInputFields -- clonedEntities
-    val patternGraphTable: CAPSRecords = tableWithConstructedProperties.removeFields(fieldsToRemove)
+    // Remove all vars that were part the original pattern graph DF, except variables that were CLONEd without an alias
+    val allInputVars = baseTable.header.internalHeader.fields
+    val originalVarsToKeep = clonedVarsToInputVars.keySet -- aliasClones.keySet
+    val varsToRemoveFromTable = allInputVars -- originalVarsToKeep
+    val patternGraphTable = tableWithConstructedProperties.removeVars(varsToRemoveFromTable)
 
     // Compute the schema by adding the new entity tag and construct the pattern graph
     val patternGraphSchema = initialSchema.withTags(initialSchema.tags + newEntityTag).asCaps

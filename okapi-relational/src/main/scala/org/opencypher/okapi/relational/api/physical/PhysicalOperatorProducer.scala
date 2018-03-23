@@ -160,15 +160,15 @@ trait PhysicalOperatorProducer[P <: PhysicalOperator[R, G, C], R <: CypherRecord
   /**
     * Creates a new record containing the specified entities (i.e. as defined in a construction pattern).
     *
-    * @param in             previous operator
-    * @param clonedEntities entities to clone
-    * @param newEntities    entities to create
-    * @param schema         schema of the resulting graph
+    * @param in                    previous operator
+    * @param clonedVarsToInputVars map from cloned variable name within CONSTRUCT to outer scope
+    * @param newEntities           entities to create
+    * @param schema                schema of the resulting graph
     * @return project pattern graph operator
     */
   def planConstructGraph(
     in: P,
-    clonedEntities: Set[ConstructedEntity],
+    clonedVarsToInputVars: Map[Var, Var],
     newEntities: Set[ConstructedEntity],
     setItems: List[SetPropertyItem[Expr]],
     schema: Schema): P

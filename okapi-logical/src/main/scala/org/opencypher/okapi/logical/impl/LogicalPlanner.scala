@@ -341,15 +341,22 @@ class LogicalPlanner(producer: LogicalOperatorProducer)
 
         val equivalences = p.creates.equivalences
 
-        val clonePatternEntities = p.clones.fields
+        val clonePatternEntities = p.clones.keys
         val newPatternEntities = p.creates.fields
 
         val entitiesToCreate = newPatternEntities -- clonePatternEntities
 
-        val cloneEntities: Set[ConstructedEntity] = clonePatternEntities.map(extractConstructedEntities(p.clones, _, None))
+        val clonedVarToInputVar: Map[Var, Var] = p.clones.map { case (clonedField, inputExpression) =>
+            val clonedVar = Var(clonedField.name)(clonedField.cypherType)
+            val inputVar = inputExpression match {
+              case v: Var => v
+              case other => throw IllegalArgumentException("CLONED expression to be a variable", other)
+            }
+          clonedVar -> inputVar
+        }
         val newEntities: Set[ConstructedEntity] = entitiesToCreate.map(e => extractConstructedEntities(p.creates, e, equivalences.get(e)))
 
-        LogicalPatternGraph(p.schema, cloneEntities, newEntities, p.sets)
+        LogicalPatternGraph(p.schema, clonedVarToInputVar, newEntities, p.sets)
 
       case g: IRCatalogGraph => LogicalCatalogGraph(g.qualifiedName, g.schema)
     }

@@ -30,4 +30,38 @@ import org.opencypher.spark.test.support.creation.caps.{CAPSScanGraphFactory, CA
 
 class CAPSScanGraphAcceptanceTest extends AcceptanceTest {
   override def capsGraphFactory: CAPSTestGraphFactory = CAPSScanGraphFactory
+
+
+  def testGraph1 = initGraph("CREATE (:Person {name: 'Mats'})")
+
+  def testGraph2 = initGraph("CREATE (:Person {name: 'Phil'})")
+
+  def testGraph3 = initGraph("CREATE (:Car {type: 'Toyota'})")
+
+  it("it should create without an alias") {
+    val query =
+      """
+        |MATCH (n)
+        |CONSTRUCT {
+        |  CLONE n
+        |}
+        |RETURN GRAPH""".stripMargin
+
+    val result = testGraph1.cypher(query)
+    result.getRecords.toMaps shouldBe empty
+  }
+
+  it("it should create with an alias") {
+    val query =
+      """
+        |MATCH (n)
+        |CONSTRUCT {
+        |  CLONE n as m
+        |}
+        |RETURN GRAPH""".stripMargin
+
+    val result = testGraph1.cypher(query)
+    result.getRecords.toMaps shouldBe empty
+  }
+
 }

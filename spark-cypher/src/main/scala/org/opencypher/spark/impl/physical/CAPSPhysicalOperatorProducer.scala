@@ -107,10 +107,10 @@ final class CAPSPhysicalOperatorProducer(implicit caps: CAPSSession)
 
   override def planConstructGraph(
     in: CAPSPhysicalOperator,
-    clonedItems: Set[ConstructedEntity],
+    clonedVarsToInputVars: Map[Var, Var],
     newItems: Set[ConstructedEntity],
     setItems: List[SetPropertyItem[Expr]],
-    schema: Schema): CAPSPhysicalOperator = operators.ConstructGraph(in, clonedItems, newItems, setItems, schema.asCaps)
+    schema: Schema): CAPSPhysicalOperator = operators.ConstructGraph(in, clonedVarsToInputVars, newItems, setItems, schema.asCaps)
 
   override def planAggregate(in: CAPSPhysicalOperator, group: Set[Var], aggregations: Set[(Var, Aggregator)], header: RecordHeader): CAPSPhysicalOperator = operators.Aggregate(in, aggregations, group, header)
 
