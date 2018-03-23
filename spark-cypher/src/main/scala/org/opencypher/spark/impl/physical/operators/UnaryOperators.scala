@@ -198,7 +198,7 @@ final case class Filter(in: CAPSPhysicalOperator, expr: Expr, header: RecordHead
 
 final case class ConstructGraph(
   in: CAPSPhysicalOperator,
-  clonedItems: Set[ConstructedEntity],
+  clonedVarsToInputVars: Map[Var, Var],
   newItems: Set[ConstructedEntity],
   setItems: List[SetPropertyItem[Expr]],
   initialSchema: CAPSSchema)
@@ -208,7 +208,9 @@ final case class ConstructGraph(
 
   override def executeUnary(prev: CAPSPhysicalResult)(implicit context: CAPSRuntimeContext): CAPSPhysicalResult = {
     implicit val session: CAPSSession = prev.records.caps
-    val inputTable = prev.records
+
+    // Apply renames in CLONE to inputs
+    val inputTable = prev.records.addAliases(clonedVarsToInputVars)
 
     // Construct NEW entities
     val newEntityTag = if (initialSchema.tags.isEmpty) 0 else initialSchema.tags.max + 1
@@ -217,9 +219,9 @@ final case class ConstructGraph(
 
     // Remove all fields of the pattern graph DF that were not explicitly preserved with a CLONE
     val allInputFields = inputTable.header.internalHeader.fields
-    val clonedEntities = clonedItems.map(_.v)
-    val fieldsToRemove = allInputFields -- clonedEntities
-    val patternGraphTable: CAPSRecords = tableWithConstructedProperties.removeFields(fieldsToRemove)
+    val originalEntitiesThatHaveNotBeenAliased = clonedVarsToInputVars.filter { case (alias, original) => alias == original }.values.toSet
+    val fieldsToRemove = allInputFields -- originalEntitiesThatHaveNotBeenAliased
+    val patternGraphTable: CAPSRecords = tableWithConstructedProperties.removeVars(fieldsToRemove)
 
     // Compute the schema by adding the new entity tag and construct the pattern graph
     val patternGraphSchema = initialSchema.withTags(initialSchema.tags + newEntityTag).asCaps

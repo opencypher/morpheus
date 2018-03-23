@@ -68,23 +68,12 @@ final class PatternConverter {
     case ast.NamedPatternPart(_, part) => convertPart(knownTypes)(part)
   }
 
-  private def convertEquivalenceModel(m: ast.EquivalenceModel, knownTypes: Map[ast.Expression, CypherType], fallbackType: CypherType): EquivalenceModel = {
-    m match {
-      case ast.TildeModel(v) => TildeModel(Var(v.name)(knownTypes.get(v).getOrElse(fallbackType)))
-      case ast.AtModel(v) => AtModel(Var(v.name)(knownTypes(v)))
-    }
-  }
-
   private def convertElement(p: ast.PatternElement, knownTypes: Map[ast.Expression, CypherType]): Result[IRField] =
     p match {
 
-      case np @ ast.NodePattern(vOpt, labels: Seq[ast.LabelName], None, equivalenceModelOpt) =>
+      case np @ ast.NodePattern(vOpt, labels: Seq[ast.LabelName], None) =>
         // labels within CREATE patterns, e.g. CREATE (a:Foo), labels for MATCH clauses are rewritten to WHERE
         val patternLabels = labels.map(_.name).toSet
-
-        // labels for ~ / @ are extracted from the referred variable
-        val equivalence = equivalenceModelOpt.map(convertEquivalenceModel(_, knownTypes, CTNode(patternLabels)))
-        val equivalenceLabels = equivalence.map(_.v.cypherType.asInstanceOf[CTNode].labels).getOrElse(Set.empty)
 
         // labels defined in outside scope, passed in by IRBuilder
         val knownLabels = vOpt.map(expr => knownTypes.get(expr) match {
@@ -92,7 +81,7 @@ final class PatternConverter {
           case _ => Set.empty
         }).getOrElse(Set.empty)
 
-        val allLabels = patternLabels ++ equivalenceLabels ++ knownLabels
+        val allLabels = patternLabels ++ knownLabels
 
         val nodeVar = vOpt match {
           case Some(v) => Var(v.name)(CTNode(allLabels))
@@ -100,20 +89,19 @@ final class PatternConverter {
         }
         for {
           entity <- pure(IRField(nodeVar.name)(nodeVar.cypherType))
-          _ <- modify[Pattern[Expr]](_.withEntity(entity, equivalence))
+          _ <- modify[Pattern[Expr]](_.withEntity(entity))
         } yield entity
 
-      case rc @ ast.RelationshipChain(left, ast.RelationshipPattern(eOpt, types, None, None, dir, equivalenceModelOpt, _), right) =>
+      case rc @ ast.RelationshipChain(left, ast.RelationshipPattern(eOpt, types, None, None, dir, _), right) =>
 
-        val rel = createRelationshipVar(knownTypes, rc.position.offset, eOpt, types, equivalenceModelOpt)
+        val rel = createRelationshipVar(knownTypes, rc.position.offset, eOpt, types)
 
         for {
           source <- convertElement(left, knownTypes)
           target <- convertElement(right, knownTypes)
           rel <- pure(IRField(rel.name)(rel.cypherType))
-          equivalence = equivalenceModelOpt.map(convertEquivalenceModel(_, knownTypes, rel.cypherType))
           _ <- modify[Pattern[Expr]] { given =>
-            val registered = given.withEntity(rel, equivalence)
+            val registered = given.withEntity(rel)
 
             Endpoints.apply(source, target) match {
               case ends: IdenticalEndpoints =>
@@ -136,18 +124,17 @@ final class PatternConverter {
 
       case rc @ ast.RelationshipChain(
             left,
-            ast.RelationshipPattern(eOpt, types, Some(Some(range)), None, dir, equivalenceModelOpt, _),
+            ast.RelationshipPattern(eOpt, types, Some(Some(range)), None, dir, _),
             right) =>
 
-        val rel = createRelationshipVar(knownTypes, rc.position.offset, eOpt, types, equivalenceModelOpt)
+        val rel = createRelationshipVar(knownTypes, rc.position.offset, eOpt, types)
 
         for {
           source <- convertElement(left, knownTypes)
           target <- convertElement(right, knownTypes)
           rel <- pure(IRField(rel.name)(CTList(rel.cypherType)))
-          equivalence = equivalenceModelOpt.map(convertEquivalenceModel(_, knownTypes, rel.cypherType))
           _ <- modify[Pattern[Expr]] { given =>
-            val registered = given.withEntity(rel, equivalence)
+            val registered = given.withEntity(rel)
 
             // TODO: replace with match on range parameter and remove upper case
             val lower = range.lower.map(_.value.intValue()).getOrElse(1)
@@ -183,14 +170,14 @@ final class PatternConverter {
     knownTypes: Map[Expression, CypherType],
     offset: Int,
     eOpt: Option[LogicalVariable],
-    types: Seq[RelTypeName],
-    equivalenceModelOpt: Option[ast.EquivalenceModel]): Var = {
+    types: Seq[RelTypeName]): Var = {
 
     val patternTypes = types.map(_.name).toSet
 
+    // TODO: Reuse for COPY OF
     // types for ~ / @ are extracted from the referred variable
-    val equivalence = equivalenceModelOpt.map(convertEquivalenceModel(_, knownTypes, CTRelationship(patternTypes)))
-    val equivalenceTypes = equivalence.map(_.v.cypherType.asInstanceOf[CTRelationship].types).getOrElse(Set.empty)
+//    val equivalence = equivalenceModelOpt.map(convertEquivalenceModel(_, knownTypes, CTRelationship(patternTypes)))
+//    val equivalenceTypes = equivalence.map(_.v.cypherType.asInstanceOf[CTRelationship].types).getOrElse(Set.empty)
 
     // types defined in outside scope, passed in by IRBuilder
     val knownRelTypes = eOpt.map(expr => knownTypes.get(expr) match {
@@ -198,7 +185,7 @@ final class PatternConverter {
       case _ => Set.empty
     }).getOrElse(Set.empty)
 
-    val relTypes = patternTypes ++ equivalenceTypes ++ knownRelTypes
+    val relTypes = patternTypes ++ knownRelTypes
 
     val rel = eOpt match {
       case Some(v) => Var(v.name)(CTRelationship(relTypes))

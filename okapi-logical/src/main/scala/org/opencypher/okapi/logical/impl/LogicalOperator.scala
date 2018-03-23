@@ -62,11 +62,11 @@ final case class LogicalCatalogGraph(qualifiedGraphName: QualifiedGraphName, sch
 
 final case class LogicalPatternGraph(
   schema: Schema,
-  clonedEntities: Set[ConstructedEntity],
+  clones: Map[Var, Var],
   newEntities: Set[ConstructedEntity],
   sets: List[SetPropertyItem[Expr]]) extends LogicalGraph {
 
-  override protected def args: String = s"clonedEntities = $clonedEntities, newEntities = $newEntities"
+  override protected def args: String = s"clonedVars = $clones, newEntities = $newEntities"
 }
 
 sealed trait ConstructedEntity {

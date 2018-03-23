@@ -56,12 +56,18 @@ package object impl {
     }
   }
 
-  def error[R: _mayFail: _hasContext, A](err: IRBuilderError)(v: A): Eff[R, A] =
+  def error[R: _mayFail : _hasContext, A](err: IRBuilderError)(v: A): Eff[R, A] =
     left[R, IRBuilderError, BlockRegistry[Expr]](err) >> pure(v)
 
   implicit final class RichSchema(schema: Schema) {
     def forPattern(pattern: Pattern[Expr]): Schema = {
       pattern.fields
+        .map(fromField)
+        .foldLeft(Schema.empty)(_ ++ _)
+    }
+
+    def forFields(fs: Set[IRField]): Schema = {
+      fs
         .map(fromField)
         .foldLeft(Schema.empty)(_ ++ _)
     }

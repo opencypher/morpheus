@@ -164,29 +164,27 @@ object IRBuilder extends CompilationStage[ast.Statement, CypherQuery[Expr], IRBu
         } yield block
 
       // TODO: Support merges, removes
-      case ast.ConstructGraph(clones, creates, Nil, sets) =>
+      case ast.ConstructGraph(clones, creates, sets, on) =>
         for {
-          // TODO: Note: MERGE will be CLONE in the future
-          clonePatterns <- clones.map {
-            case ast.Merge(p: exp.Pattern, actions, None) if actions.isEmpty => p
-          }.traverse(convertPattern[R])
-
+          cloneItems <- clones.flatMap(_.items).traverse(convertReturnItem[R])
           // TODO: Note: CREATE will be NEW in the future
           newPatterns <- creates.map {
             case ast.Create(p: exp.Pattern) => p
           }.traverse(convertPattern[R])
 
           setItems <- sets.flatMap {
-            case ast.SetClause(s: Seq[ast.SetItem]) => s
+            case ast.SetClause(s) => s
           }.traverse(convertSetItem[R])
 
           context <- get[R, IRBuilderContext]
 
           refs <- {
             // computing single nodes/rels constructed by CLONE (MERGE)
-            val clonePattern = clonePatterns.foldLeft(Pattern.empty[Expr])(_ ++ _)
-            val fieldNamesInClonePattern = clonePattern.fields.map(_.name)
-            val clonePatternSchema = context.workingGraph.schema.forPattern(clonePattern)
+            //val clonePattern = clonePatterns.foldLeft(Pattern.empty[Expr])(_ ++ _)
+            val cloneItemMap: Map[IRField, Expr] = cloneItems.toMap
+            val fieldsInCloneItems = cloneItemMap.keys.toSet
+            val fieldNamesInCloneItems = fieldsInCloneItems.map(_.name)
+            val clonePatternSchema = context.workingGraph.schema.forFields(fieldsInCloneItems)
 
             // computing single nodes/rels constructed by NEW (CREATE)
             val newPattern = newPatterns.foldLeft(Pattern.empty[Expr])(_ ++ _)
@@ -195,7 +193,7 @@ object IRBuilder extends CompilationStage[ast.Statement, CypherQuery[Expr], IRBu
 
             // compute SET items for NEW (CREATE) patterns
             val patternSchema = newPatternSchema ++ clonePatternSchema
-            val fieldNamesInPattern = fieldNamesInClonePattern ++ fieldNamesInNewPattern
+            val fieldNamesInPattern = fieldNamesInCloneItems ++ fieldNamesInNewPattern
 
             val (schema, _) = setItems.foldLeft(patternSchema -> Map.empty[Var, CypherType]) { case ((currentSchema, rewrittenVarTypes), setItem: SetItem[Expr]) =>
               if (!fieldNamesInPattern.contains(setItem.variable.name)) {
@@ -216,7 +214,14 @@ object IRBuilder extends CompilationStage[ast.Statement, CypherQuery[Expr], IRBu
                   updatedSchema -> rewrittenVarTypes
               }
             }
-            val patternGraph = IRPatternGraph[Expr](schema, clonePattern, newPattern, setItems.collect { case p: SetPropertyItem[Expr] => p })
+            val onGraphs = on.map(graph => QualifiedGraphName(graph.parts))
+
+            val patternGraph = IRPatternGraph[Expr](
+              schema,
+              cloneItemMap,
+              newPattern,
+              setItems.collect { case p: SetPropertyItem[Expr] => p },
+              onGraphs)
             val updatedContext = context.withWorkingGraph(patternGraph)
             put[R, IRBuilderContext](updatedContext) >> pure[R, List[Block[Expr]]](List.empty)
           }
