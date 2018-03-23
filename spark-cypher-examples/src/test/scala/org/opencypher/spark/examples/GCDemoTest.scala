@@ -64,12 +64,13 @@ class GCDemoTest extends CAPSTestSuite with SparkSessionFixture with Neo4jServer
     // query 1, find friends in the US social network
     caps.cypher(
       """CREATE GRAPH usFriends {
-        |  USE GRAPH neo4j.US
+        |  FROM GRAPH neo4j.US
         |  MATCH (a:Person)-[:LIVES_IN]->(city:City)<-[:LIVES_IN]-(b:Person), (a)-[:KNOWS*1..2]->(b)
         |  WHERE city.name = 'New York City' OR city.name = 'San Francisco'
-        |  CONSTRUCT {
-        |    CREATE (~a)-[:CLOSE_TO]->(~b)
-        |  }
+        |  CONSTRUCT
+        |    ON neo4j.US
+        |    CLONE a, b
+        |    NEW (a)-[:CLOSE_TO]->(b)
         |  RETURN GRAPH
         |}
       """.stripMargin)
@@ -77,12 +78,13 @@ class GCDemoTest extends CAPSTestSuite with SparkSessionFixture with Neo4jServer
     // query 2, find friends in the EU social network
     caps.cypher(
       """CREATE GRAPH euFriends {
-        |  USE GRAPH neo4j.EU
+        |  FROM GRAPH neo4j.EU
         |  MATCH (a:Person)-[:LIVES_IN]->(city:City)<-[:LIVES_IN]-(b:Person), (a)-[:KNOWS*1..2]->(b)
         |  WHERE city.name = 'Malmö' OR city.name = 'Berlin'
-        |  CONSTRUCT {
-        |    CREATE (~a)-[:CLOSE_TO]->(~b)
-        |  }
+        |  CONSTRUCT
+        |    ON neo4j.EU
+        |    CLONE a, b
+        |    NEW (a)-[:CLOSE_TO]->(b)
         |  RETURN GRAPH
         |}
       """.stripMargin)
@@ -90,59 +92,36 @@ class GCDemoTest extends CAPSTestSuite with SparkSessionFixture with Neo4jServer
     // query 3, put these graphs together
     caps.cypher(
       """CREATE GRAPH allFriends {
-        |  USE GRAPH euFriends
+        |  FROM GRAPH euFriends
         |  RETURN GRAPH
         |  UNION ALL
-        |  USE GRAPH usFriends
+        |  FROM GRAPH usFriends
         |  RETURN GRAPH
         |}
       """.stripMargin
     )
 
-    // query 4, find which customers are which persons
+    // query 4, connect the friends together with their purchases as customers
     caps.cypher(
-      s"""CREATE GRAPH customerPersonLinks {
-         |  USE GRAPH allFriends
+      s"""CREATE GRAPH connectedCustomers {
+         |  FROM GRAPH allFriends
          |  MATCH (p:Person)
-         |  WITH p.name AS personName, p
-         |  USE GRAPH hdfs.prod
+         |  WITH p.name AS personName, p  // this is a workaround
+         |  FROM GRAPH hdfs.prod
          |  MATCH (c:Customer)
-         |  WITH c.name as customerName, personName, c, p
+         |  WITH c.name as customerName, personName, c, p // also a workaround
          |  WHERE customerName = personName
-         |  CONSTRUCT {
-         |    CREATE (~c)-[:IS]->(~p)
-         |  }
+         |  CONSTRUCT
+         |    ON hdfs.prod, allFriends
+         |    CLONE c, p
+         |    NEW (c)-[:IS]->(p)
          |  RETURN GRAPH
          |}
       """.stripMargin)
 
-    /*
-     * Query 5
-     * This step is where it all comes together.
-     *
-     * An equivalence UNION collapses the CREATEd persons and customers above
-     * into the same nodes, which connects the CLOSE_TO and IS relationships
-     * as well as the KNOWS, LIVES_IN and HAS_INTEREST from the source social networks
-     * and the BOUGHT from the product graph
-     */
-    caps.cypher(
-      """CREATE GRAPH connectedCustomers {
-        |  USE GRAPH hdfs.prod RETURN GRAPH
-        |  UNION
-        |  USE GRAPH neo4j.US RETURN GRAPH
-        |  UNION
-        |  USE GRAPH neo4j.EU RETURN GRAPH
-        |  UNION
-        |  USE GRAPH customerPersonLinks RETURN GRAPH
-        |  UNION
-        |  USE GRAPH allFriends RETURN GRAPH
-        |}
-      """.stripMargin
-    )
-
-    // query 6, find people who are close to one another and compute recommendations for them
+    // query 5, find people who are close to one another and compute recommendations for them
     val result = caps.cypher(
-      """USE GRAPH connectedCustomers
+      """FROM GRAPH connectedCustomers
         |MATCH (a:Person)-[:CLOSE_TO]-(b:Person)-[:HAS_INTEREST]->(i:Interest),
         |      (a)<-[:IS]-(x:Customer)-[r:BOUGHT]->(p:Product {category: i.name})
         |WHERE r.rating >= 4 AND (r.helpful * 1.0) / r.votes > 0.6
