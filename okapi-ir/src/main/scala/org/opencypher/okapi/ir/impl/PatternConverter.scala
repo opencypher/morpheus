@@ -34,6 +34,7 @@ import cats.syntax.flatMap._
 import org.neo4j.cypher.internal.v3_4.expressions.SemanticDirection.{BOTH, INCOMING, OUTGOING}
 import org.neo4j.cypher.internal.v3_4.expressions.{Expression, LogicalVariable, RelTypeName}
 import org.neo4j.cypher.internal.v3_4.{expressions => ast}
+import org.opencypher.okapi.api.graph.QualifiedGraphName
 import org.opencypher.okapi.api.types.{CTList, CTNode, CTRelationship, CypherType}
 import org.opencypher.okapi.impl.exception.NotImplementedException
 import org.opencypher.okapi.ir.api._
@@ -48,57 +49,61 @@ final class PatternConverter {
   type Result[A] = State[Pattern[Expr], A]
 
   def convert(
-      p: ast.Pattern,
-      knownTypes: Map[ast.Expression, CypherType],
-      pattern: Pattern[Expr] = Pattern.empty): Pattern[Expr] =
-    convertPattern(p, knownTypes).runS(pattern).value
+    p: ast.Pattern,
+    knownTypes: Map[ast.Expression, CypherType],
+    qualifiedGraphName: QualifiedGraphName,
+    pattern: Pattern[Expr] = Pattern.empty): Pattern[Expr] =
+    convertPattern(p, knownTypes, qualifiedGraphName).runS(pattern).value
 
   def convertRelsPattern(
-      p: ast.RelationshipsPattern,
-      knownTypes: Map[ast.Expression, CypherType],
-      pattern: Pattern[Expr] = Pattern.empty): Pattern[Expr] =
-    convertElement(p.element, knownTypes).runS(pattern).value
+    p: ast.RelationshipsPattern,
+    knownTypes: Map[ast.Expression, CypherType],
+    qualifiedGraphName: QualifiedGraphName,
+    pattern: Pattern[Expr] = Pattern.empty): Pattern[Expr] =
+    convertElement(p.element, knownTypes, qualifiedGraphName).runS(pattern).value
 
-  private def convertPattern(p: ast.Pattern, knownTypes: Map[ast.Expression, CypherType]): Result[Unit] =
-    Foldable[List].sequence_[Result, Unit](p.patternParts.toList.map(convertPart(knownTypes)))
+  private def convertPattern(p: ast.Pattern, knownTypes: Map[ast.Expression, CypherType], qualifiedGraphName: QualifiedGraphName): Result[Unit] =
+    Foldable[List].sequence_[Result, Unit](p.patternParts.toList.map(convertPart(knownTypes, qualifiedGraphName)))
 
   @tailrec
-  private def convertPart(knownTypes: Map[ast.Expression, CypherType])(p: ast.PatternPart): Result[Unit] = p match {
-    case _: ast.AnonymousPatternPart   => stomp(convertElement(p.element, knownTypes))
-    case ast.NamedPatternPart(_, part) => convertPart(knownTypes)(part)
+  private def convertPart(knownTypes: Map[ast.Expression, CypherType], qualifiedGraphName: QualifiedGraphName)(p: ast.PatternPart): Result[Unit] = p match {
+    case _: ast.AnonymousPatternPart => stomp(convertElement(p.element, knownTypes, qualifiedGraphName))
+    case ast.NamedPatternPart(_, part) => convertPart(knownTypes, qualifiedGraphName)(part)
   }
 
-  private def convertElement(p: ast.PatternElement, knownTypes: Map[ast.Expression, CypherType]): Result[IRField] =
+  private def convertElement(p: ast.PatternElement, knownTypes: Map[ast.Expression, CypherType], qualifiedGraphName: QualifiedGraphName): Result[IRField] =
     p match {
 
-      case np @ ast.NodePattern(vOpt, labels: Seq[ast.LabelName], None) =>
+      case np@ast.NodePattern(vOpt, labels: Seq[ast.LabelName], None) =>
         // labels within CREATE patterns, e.g. CREATE (a:Foo), labels for MATCH clauses are rewritten to WHERE
         val patternLabels = labels.map(_.name).toSet
 
         // labels defined in outside scope, passed in by IRBuilder
-        val knownLabels = vOpt.map(expr => knownTypes.get(expr) match {
-          case Some(CTNode(l)) => l
-          case _ => Set.empty
-        }).getOrElse(Set.empty)
+        val (knownLabels, qgnOption) = vOpt.flatMap(expr => knownTypes.get(expr)).flatMap {
+          case n: CTNode => Some(n.labels -> n.graph)
+          case _ => None
+        }.getOrElse(Set.empty[String] -> Some(qualifiedGraphName))
 
         val allLabels = patternLabels ++ knownLabels
 
         val nodeVar = vOpt match {
-          case Some(v) => Var(v.name)(CTNode(allLabels))
-          case None    => FreshVariableNamer(np.position.offset, CTNode(allLabels))
+          case Some(v) => Var(v.name)(CTNode(allLabels, qgnOption))
+          case None => FreshVariableNamer(np.position.offset, CTNode(allLabels, Some(qualifiedGraphName)))
         }
         for {
           entity <- pure(IRField(nodeVar.name)(nodeVar.cypherType))
           _ <- modify[Pattern[Expr]](_.withEntity(entity))
         } yield entity
 
-      case rc @ ast.RelationshipChain(left, ast.RelationshipPattern(eOpt, types, None, None, dir, _), right) =>
+      case rc
+        @ast.RelationshipChain(left, ast.RelationshipPattern(eOpt, types, None, None, dir, _), right)
+      =>
 
-        val rel = createRelationshipVar(knownTypes, rc.position.offset, eOpt, types)
+        val rel = createRelationshipVar(knownTypes, rc.position.offset, eOpt, types, qualifiedGraphName)
 
         for {
-          source <- convertElement(left, knownTypes)
-          target <- convertElement(right, knownTypes)
+          source <- convertElement(left, knownTypes, qualifiedGraphName)
+          target <- convertElement(right, knownTypes, qualifiedGraphName)
           rel <- pure(IRField(rel.name)(rel.cypherType))
           _ <- modify[Pattern[Expr]] { given =>
             val registered = given.withEntity(rel)
@@ -122,16 +127,18 @@ final class PatternConverter {
           }
         } yield target
 
-      case rc @ ast.RelationshipChain(
-            left,
-            ast.RelationshipPattern(eOpt, types, Some(Some(range)), None, dir, _),
-            right) =>
+      case rc
+        @ast.RelationshipChain(
+      left,
+      ast.RelationshipPattern(eOpt, types, Some(Some(range)), None, dir, _),
+      right)
+      =>
 
-        val rel = createRelationshipVar(knownTypes, rc.position.offset, eOpt, types)
+        val rel = createRelationshipVar(knownTypes, rc.position.offset, eOpt, types, qualifiedGraphName)
 
         for {
-          source <- convertElement(left, knownTypes)
-          target <- convertElement(right, knownTypes)
+          source <- convertElement(left, knownTypes, qualifiedGraphName)
+          target <- convertElement(right, knownTypes, qualifiedGraphName)
           rel <- pure(IRField(rel.name)(CTList(rel.cypherType)))
           _ <- modify[Pattern[Expr]] { given =>
             val registered = given.withEntity(rel)
@@ -170,20 +177,21 @@ final class PatternConverter {
     knownTypes: Map[Expression, CypherType],
     offset: Int,
     eOpt: Option[LogicalVariable],
-    types: Seq[RelTypeName]): Var = {
+    types: Seq[RelTypeName],
+    qualifiedGraphName: QualifiedGraphName): Var = {
 
     val patternTypes = types.map(_.name).toSet
 
     // TODO: Reuse for COPY OF
     // types for ~ / @ are extracted from the referred variable
-//    val equivalence = equivalenceModelOpt.map(convertEquivalenceModel(_, knownTypes, CTRelationship(patternTypes)))
-//    val equivalenceTypes = equivalence.map(_.v.cypherType.asInstanceOf[CTRelationship].types).getOrElse(Set.empty)
+    //    val equivalence = equivalenceModelOpt.map(convertEquivalenceModel(_, knownTypes, CTRelationship(patternTypes)))
+    //    val equivalenceTypes = equivalence.map(_.v.cypherType.asInstanceOf[CTRelationship].types).getOrElse(Set.empty)
 
     // types defined in outside scope, passed in by IRBuilder
-    val knownRelTypes = eOpt.map(expr => knownTypes.get(expr) match {
-      case Some(CTRelationship(t)) => t
-      case _ => Set.empty
-    }).getOrElse(Set.empty)
+    val (knownRelTypes, qgnOption) = eOpt.flatMap(expr => knownTypes.get(expr)).flatMap {
+      case CTRelationship(t, qgn) => Some(t -> qgn)
+      case _ => None
+    }.getOrElse(Set.empty -> Some(qualifiedGraphName))
 
     val relTypes = patternTypes ++ knownRelTypes
 

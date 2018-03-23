@@ -27,6 +27,7 @@
 package org.opencypher.spark.impl
 
 import java.util.UUID
+import java.util.concurrent.atomic.AtomicLong
 
 import org.apache.spark.sql.SparkSession
 import org.opencypher.okapi.api.graph._
@@ -67,6 +68,8 @@ sealed class CAPSSessionImpl(val sparkSession: SparkSession, val sessionNamespac
   private val physicalOptimizer = new PhysicalOptimizer()
   private val parser = CypherParser
 
+  private val maxSessionGraphId: AtomicLong = new AtomicLong(0)
+
   def catalog(qualifiedGraphName: QualifiedGraphName): PropertyGraphDataSource = {
     dataSourceMapping(qualifiedGraphName.namespace)
   }
@@ -86,7 +89,7 @@ sealed class CAPSSessionImpl(val sparkSession: SparkSession, val sessionNamespac
     val allParameters = queryParameters ++ extractedParameters
 
     logStageProgress("IR translation ...", newLine = false)
-    val irBuilderContext = IRBuilderContext.initial(query, allParameters, semState, ambientGraphNew, dataSource, inputFields)
+    val irBuilderContext = IRBuilderContext.initial(query, allParameters, semState, ambientGraphNew, generateGraphName _, dataSource, inputFields)
     val ir = time("IR translation")(IRBuilder(stmt)(irBuilderContext))
     logStageProgress("Done!")
 
@@ -220,16 +223,19 @@ sealed class CAPSSessionImpl(val sparkSession: SparkSession, val sessionNamespac
       CAPSRuntimeContext(physicalPlannerContext.parameters, graphAt, collection.mutable.Map.empty))
   }
 
+  private[opencypher] def generateGraphName: QualifiedGraphName = {
+    QualifiedGraphName(SessionPropertyGraphDataSource.Namespace, GraphName(s"tmp#${maxSessionGraphId.incrementAndGet}"))
+  }
+
   private def mountAmbientGraph(ambient: PropertyGraph): IRCatalogGraph = {
-    val graphName = GraphName(UUID.randomUUID().toString)
-    val qualifiedGraphName = store(graphName, ambient)
+    val qualifiedGraphName = store(generateGraphName.graphName, ambient)
     IRCatalogGraph(qualifiedGraphName, ambient.schema)
   }
 
   private def planStart(graph: PropertyGraph, fields: Set[Var]): LogicalOperator = {
     val ambientGraph = mountAmbientGraph(graph)
 
-    producer.planStart(LogicalCatalogGraph(ambientGraph.qualifiedName, graph.schema), fields)
+    producer.planStart(LogicalCatalogGraph(ambientGraph.qualifiedGraphName, graph.schema), fields)
   }
 
   override def toString: String = s"${this.getClass.getSimpleName}"

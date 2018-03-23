@@ -43,6 +43,7 @@ import org.opencypher.okapi.ir.impl.typer.exception.TypingException
 import org.opencypher.okapi.ir.impl.typer.{SchemaTyper, TypeTracker}
 
 final case class IRBuilderContext(
+  uniqueSessionGraphNameGenerator: () => QualifiedGraphName,
   queryString: String,
   parameters: CypherMap,
   workingGraph: IRGraph, // initially the ambient graph, but gets changed by `USE GRAPH`/`CONSTRUCT`
@@ -55,8 +56,9 @@ final case class IRBuilderContext(
   private lazy val exprConverter = new ExpressionConverter()(self)
   private lazy val patternConverter = new PatternConverter
 
-  def convertPattern(p: ast.Pattern): Pattern[Expr] =
-    patternConverter.convert(p, knownTypes)
+  def convertPattern(p: ast.Pattern): Pattern[Expr] = {
+    patternConverter.convert(p, knownTypes, workingGraph.qualifiedGraphName)
+  }
 
   def convertExpression(e: ast.Expression): Expr = {
     val inferred = infer(e)
@@ -110,6 +112,7 @@ object IRBuilderContext {
     parameters: CypherMap,
     semState: SemanticState,
     workingGraph: IRCatalogGraph,
+    uniqueSessionGraphNameGenerator: () => QualifiedGraphName,
     resolver: Namespace => PropertyGraphDataSource,
     fieldsFromDrivingTable: Set[Var] = Set.empty
   ): IRBuilderContext = {
@@ -118,6 +121,7 @@ object IRBuilderContext {
     val updatedRegistry = registry.register(block)
 
     val context = IRBuilderContext(
+      uniqueSessionGraphNameGenerator,
       query,
       parameters,
       workingGraph,

@@ -100,11 +100,14 @@ abstract class IrTestSuite extends BaseTestSuite with MockitoSugar {
       val stmt = CypherParser(queryText)(CypherParser.defaultContext)
       val parameters = Map.empty[String, CypherValue]
       IRBuilder(stmt)(
-        IRBuilderContext.initial(queryText,
+        IRBuilderContext.initial(
+          queryText,
           parameters,
           SemanticState.clean,
           testGraph()(schema),
-          _ => testGraphSource(graphsWithSchema :+ (testGraphName -> schema): _*)))
+          () => testQualifiedGraphName,
+          _ => testGraphSource(graphsWithSchema :+ (testGraphName -> schema): _*)
+        ))
     }
 
     def irWithParams(params: (String, CypherValue)*)(implicit schema: Schema = Schema.empty): CypherQuery[Expr] = {
@@ -114,6 +117,7 @@ abstract class IrTestSuite extends BaseTestSuite with MockitoSugar {
           params.toMap,
           SemanticState.clean,
           testGraph()(schema),
+          () => testQualifiedGraphName,
           _ => testGraphSource(testGraphName -> schema)))
     }
   }

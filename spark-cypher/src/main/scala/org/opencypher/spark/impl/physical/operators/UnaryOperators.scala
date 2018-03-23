@@ -230,6 +230,8 @@ final case class ConstructGraph(
     val patternGraphSchema = initialSchema.withTags(initialSchema.tags + newEntityTag).asCaps
     val patternGraph = CAPSGraph.create(patternGraphTable, patternGraphSchema)
 
+    // Create UNION graph for `onGraphs`
+
     CAPSPhysicalResult(CAPSRecords.unit(), patternGraph)
   }
 

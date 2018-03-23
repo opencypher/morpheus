@@ -32,6 +32,6 @@ import org.opencypher.okapi.logical.impl.{LogicalCatalogGraph, SolvedQueryModel,
 abstract class LogicalTestSuite extends IrTestSuite {
 
   def leafPlan: Start =
-    Start(LogicalCatalogGraph(testGraph.qualifiedName, testGraph.schema), Set.empty, SolvedQueryModel.empty)
+    Start(LogicalCatalogGraph(testGraph.qualifiedGraphName, testGraph.schema), Set.empty, SolvedQueryModel.empty)
 
 }

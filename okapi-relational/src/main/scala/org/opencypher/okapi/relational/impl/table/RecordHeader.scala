@@ -152,7 +152,7 @@ final case class RecordHeader(internalHeader: InternalHeader) {
       case RecordSlot(_, OpaqueField(v)) => v
     }.filter { v =>
       v.cypherType match {
-        case CTNode(labels) =>
+        case CTNode(labels, _) =>
           val allPossibleLabels = this.labels(v).map(_.label.name).toSet ++ labels
           nodeType.labels.subsetOf(allPossibleLabels)
         case _ => false
@@ -168,7 +168,7 @@ final case class RecordHeader(internalHeader: InternalHeader) {
     }.filter { v =>
       v.cypherType match {
         case t: CTRelationship if targetTypes.isEmpty || t.types.isEmpty => true
-        case CTRelationship(types) =>
+        case CTRelationship(types, _) =>
           types.exists(targetTypes.contains)
         case _ => false
       }
@@ -194,7 +194,7 @@ object RecordHeader {
   // TODO: Probably move this to an implicit class RichSchema?
   def nodeFromSchema(node: Var, schema: Schema): RecordHeader = {
     val labels: Set[String] = node.cypherType match {
-      case CTNode(l) => l
+      case CTNode(l, _) => l
       case other     => throw IllegalArgumentException("CTNode", other)
     }
     nodeFromSchema(node, schema, labels)
@@ -231,9 +231,9 @@ object RecordHeader {
 
   def relationshipFromSchema(rel: Var, schema: Schema): RecordHeader = {
     val types: Set[String] = rel.cypherType match {
-      case CTRelationship(_types) if _types.isEmpty =>
+      case CTRelationship(_types, _) if _types.isEmpty =>
         schema.relationshipTypes
-      case CTRelationship(_types) =>
+      case CTRelationship(_types, _) =>
         _types
       case other =>
         throw IllegalArgumentException("CTRelationship", other)

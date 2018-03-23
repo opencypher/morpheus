@@ -202,7 +202,7 @@ object IRBuilder extends CompilationStage[ast.Statement, CypherQuery[Expr], IRBu
               setItem match {
                 case SetLabelItem(variable, labels) =>
                   val existingLabels = rewrittenVarTypes.getOrElse(variable, variable.cypherType) match {
-                    case CTNode(existing) => existing
+                    case CTNode(existing, _) => existing
                     case other => throw UnsupportedOperationException(s"SET label on something that is not a node: $other")
                   }
                   val labelsAfterSet = existingLabels ++ labels
@@ -215,8 +215,10 @@ object IRBuilder extends CompilationStage[ast.Statement, CypherQuery[Expr], IRBu
               }
             }
             val onGraphs = on.map(graph => QualifiedGraphName(graph.parts))
+            val qgn = context.uniqueSessionGraphNameGenerator()
 
             val patternGraph = IRPatternGraph[Expr](
+              qgn,
               schema,
               cloneItemMap,
               newPattern,

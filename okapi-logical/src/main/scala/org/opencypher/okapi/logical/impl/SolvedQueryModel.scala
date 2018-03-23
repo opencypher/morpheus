@@ -53,7 +53,7 @@ case class SolvedQueryModel(
   def contains(blocks: Set[Block[Expr]]): Boolean = blocks.forall(contains)
   def contains(block: Block[Expr]): Boolean = {
     val bindsFields = block.binds.fields subsetOf fields
-    val preds = block.where.toSet subsetOf predicates
+    val preds = block.where subsetOf predicates
 
     bindsFields && preds
   }
@@ -63,9 +63,9 @@ case class SolvedQueryModel(
 
   def solveRelationship(r: IRField): SolvedQueryModel = {
     r.cypherType match {
-      case CTRelationship(types) if types.isEmpty =>
+      case CTRelationship(types, _) if types.isEmpty =>
         withField(r)
-      case CTRelationship(types) =>
+      case CTRelationship(types, _) =>
         val predicate =
           if (types.size == 1)
             HasType(r, RelType(types.head))(CTBoolean)

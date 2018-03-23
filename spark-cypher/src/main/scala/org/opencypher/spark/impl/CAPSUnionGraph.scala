@@ -62,6 +62,8 @@ final case class CAPSUnionGraph(graphs: List[CAPSGraph], doUpdateTags: Boolean =
 
   private def map(f: CAPSGraph => CAPSGraph): CAPSUnionGraph = CAPSUnionGraph(graphs.map(f), doUpdateTags)
 
+  def performedReplacements: Map[CAPSGraph, Map[Int, Int]] = replacementMap
+
   private val replacementMap: Map[CAPSGraph, Map[Int, Int]] = {
     val (result, _) = graphs.foldLeft((Map.empty[CAPSGraph, Map[Int, Int]], Set.empty[Int])) {
 

@@ -231,6 +231,7 @@ class ExpressionConverterTest extends BaseTestSuite with Neo4jAstTestSupport wit
     CypherMap.empty,
     SemanticState.clean,
     IRCatalogGraph(QualifiedGraphName(Namespace(""), GraphName("")), Schema.empty),
+    () => QualifiedGraphName("hello.world"),
     _ => mock[PropertyGraphDataSource]
   )
   private def convert(e: ast.Expression): Expr =
