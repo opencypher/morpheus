@@ -33,15 +33,15 @@ import org.opencypher.okapi.ir.api.pattern.{DirectedRelationship, Pattern}
 import org.opencypher.okapi.test.BaseTestSuite
 
 class RichSchemaTest extends BaseTestSuite {
-    describe("fromPattern") {
-      it("can convert a pattern with all known fields") {
+    describe("fromFields") {
+      it("can convert fields in a pattern") {
         val schema = Schema.empty
           .withNodePropertyKeys("Person")("name" -> CTString)
           .withNodePropertyKeys("City")("name" -> CTString, "region" -> CTBoolean)
           .withRelationshipPropertyKeys("KNOWS")("since" -> CTFloat.nullable)
           .withRelationshipPropertyKeys("BAR")("foo" -> CTInteger)
 
-        val actual = schema.forPattern(Pattern(
+        val actual = Pattern(
           Set(
             IRField("n")(CTNode("Person")),
             IRField("r")(CTRelationship("BAR")),
@@ -50,7 +50,7 @@ class RichSchemaTest extends BaseTestSuite {
           Map(
             IRField("r")(CTRelationship("BAR")) -> DirectedRelationship(IRField("n")(CTNode("Person")), IRField("m")(CTNode("Person")))
           )
-        ))
+        ).fields.map(schema.forField).reduce(_ ++ _)
 
         val expected = Schema.empty
           .withNodePropertyKeys("Person")("name" -> CTString)
@@ -59,14 +59,14 @@ class RichSchemaTest extends BaseTestSuite {
         actual should be(expected)
       }
 
-      it("can convert a pattern with unknown field") {
+      it("can compute a schema when a field is unknown") {
         val schema = Schema.empty
           .withNodePropertyKeys("Person")("name" -> CTString)
           .withNodePropertyKeys("City")("name" -> CTString, "region" -> CTBoolean)
           .withRelationshipPropertyKeys("KNOWS")("since" -> CTFloat.nullable)
           .withRelationshipPropertyKeys("BAR")("foo" -> CTInteger)
 
-        val actual = schema.forPattern(Pattern(
+        val actual = Pattern(
           Set(
             IRField("n")(CTNode("Person")),
             IRField("r")(CTRelationship("BAR")),
@@ -75,7 +75,7 @@ class RichSchemaTest extends BaseTestSuite {
           Map(
             IRField("r")(CTRelationship("BAR")) -> DirectedRelationship(IRField("n")(CTNode("Person")), IRField("m")(CTNode("Person")))
           )
-        ))
+        ).fields.map(schema.forField).reduce(_ ++ _)
 
         val expected = Schema.empty
           .withNodePropertyKeys("Person")("name" -> CTString)
@@ -85,7 +85,7 @@ class RichSchemaTest extends BaseTestSuite {
         actual should be(expected)
       }
 
-      it("can convert a pattern with empty labeled field") {
+      it("can convert fields when one of them is unlabeled") {
         val schema = Schema.empty
           .withNodePropertyKeys("Person")("name" -> CTString)
           .withNodePropertyKeys("City")("name" -> CTString, "region" -> CTBoolean)
@@ -93,7 +93,7 @@ class RichSchemaTest extends BaseTestSuite {
           .withRelationshipPropertyKeys("KNOWS")("since" -> CTFloat.nullable)
           .withRelationshipPropertyKeys("BAR")("foo" -> CTInteger)
 
-        val actual = schema.forPattern(Pattern(
+        val actual = Pattern(
           Set(
             IRField("n")(CTNode("Person")),
             IRField("r")(CTRelationship("BAR")),
@@ -102,7 +102,7 @@ class RichSchemaTest extends BaseTestSuite {
           Map(
             IRField("r")(CTRelationship("BAR")) -> DirectedRelationship(IRField("n")(CTNode("Person")), IRField("m")(CTNode("Person")))
           )
-        ))
+        ).fields.map(schema.forField).reduce(_ ++ _)
 
         val expected = Schema.empty
           .withNodePropertyKeys("Person")("name" -> CTString)

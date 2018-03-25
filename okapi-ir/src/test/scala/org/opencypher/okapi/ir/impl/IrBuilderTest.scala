@@ -45,7 +45,7 @@ class IrBuilderTest extends IrTestSuite {
   it("computes a pattern graph schema correctly - 1 create") {
     val query =
       """
-        |CONSTRUCT  {
+        |CONSTRUCT {
         |  CREATE (a :A)
         |}
         |RETURN GRAPH""".stripMargin

@@ -29,6 +29,7 @@ package org.opencypher.spark.impl.acceptance
 import org.opencypher.okapi.api.graph.GraphName
 import org.opencypher.okapi.api.schema.{PropertyKeys, Schema}
 import org.opencypher.okapi.api.types.{CTInteger, CTString}
+import org.opencypher.okapi.api.value.{CAPSRelationship, CypherValue}
 import org.opencypher.okapi.api.value.CypherValue.CypherMap
 import org.opencypher.okapi.impl.schema.TagSupport._
 import org.opencypher.okapi.ir.test.support.Bag
@@ -278,7 +279,7 @@ trait MultipleGraphBehaviour {
       result.getGraph.schema should equal(
         Schema.empty
           .withNodePropertyKeys(Set("Person"), PropertyKeys("name" -> CTString))
-          .withTags(0, 1)
+          .withTags(0)
           .asCaps)
       result.getGraph.cypher("MATCH (a:Person) RETURN a.name").getRecords.iterator.toBag should equal(Bag(
         CypherMap("a.name" -> "Mats")
@@ -398,7 +399,8 @@ trait MultipleGraphBehaviour {
       res.getGraph.relationships("r").collect.length shouldBe 3
     }
 
-    test("should allow simple MGC syntax") {
+    // TODO: Allow schema lookup for constructed graph that is not in the catalog
+    ignore("should allow simple MGC syntax") {
       val query =
         """|CONSTRUCT {
            |  CREATE (a:A)-[r:FOO]->(b:B)
@@ -425,6 +427,64 @@ trait MultipleGraphBehaviour {
         CypherMap("type(r)" -> "KNOWS")
       ))
     }
+
+    it("CONSTRUCTS ON a single graph") {
+      caps.store(GraphName("one"), testGraph1)
+      val query =
+        """
+          |CONSTRUCT ON one {
+          |}
+          |RETURN GRAPH""".stripMargin
+
+      val result = testGraph2.cypher(query).getGraph
+
+      result.schema should equal(testGraph1.schema)
+      result.nodes("n").toMaps should equal(testGraph1.nodes("n").toMaps)
+      result.relationships("r").toMaps should equal(testGraph1.relationships("r").toMaps)
+      result.schema.toTagged.tags should equal(testGraph1.schema.tags)
+    }
+
+    it("CONSTRUCTS ON two graphs") {
+      caps.store(GraphName("one"), testGraph1)
+      caps.store(GraphName("two"), testGraph2)
+      val query =
+        """
+          |CONSTRUCT ON one, two {
+          |}
+          |RETURN GRAPH""".stripMargin
+
+      val result = testGraph2.cypher(query).getGraph
+
+      result.schema should equal(testGraph1.schema.union(testGraph2.schema))
+      result.nodes("n").toMaps should equal(testGraph1.unionAll(testGraph2).nodes("n").toMaps)
+      result.relationships("r").toMaps should equal(testGraph1.unionAll(testGraph2).relationships("r").toMaps)
+      result.schema.toTagged.tags should equal(Set(0, 1))
+    }
+
+    it("CONSTRUCTS ON two graphs and adds a relationship") {
+      caps.store(GraphName("one"), testGraph1)
+      caps.store(GraphName("two"), testGraph2)
+      val query =
+        """|USE GRAPH one
+           |MATCH (m: Person)
+           |USE GRAPH two
+           |MATCH (p: Person)
+           |CONSTRUCT ON one, two {
+           |  CLONE m, p
+           |  CREATE (m)-[:KNOWS]->(p)
+           |}
+           |RETURN GRAPH""".stripMargin
+
+      val result = caps.cypher(query).getGraph
+
+      result.schema should equal(testGraph1.schema.union(testGraph2.schema).withRelationshipPropertyKeys("KNOWS")().withTags(0, 1, 2).asCaps)
+      result.nodes("n").toMaps should equal(testGraph1.unionAll(testGraph2).nodes("n").toMaps)
+      result.relationships("r").toMapsWithCollectedEntities should equal(Bag(
+        CypherMap("r" -> CAPSRelationship(2251799813685248L, 0L, 1125899906842624L, "KNOWS")))
+      )
+      result.schema.toTagged.tags should equal(Set(0, 1, 2))
+    }
+
 
   }
 

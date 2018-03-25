@@ -60,19 +60,8 @@ package object impl {
     left[R, IRBuilderError, BlockRegistry[Expr]](err) >> pure(v)
 
   implicit final class RichSchema(schema: Schema) {
-    def forPattern(pattern: Pattern[Expr]): Schema = {
-      pattern.fields
-        .map(fromField)
-        .foldLeft(Schema.empty)(_ ++ _)
-    }
 
-    def forFields(fs: Set[IRField]): Schema = {
-      fs
-        .map(fromField)
-        .foldLeft(Schema.empty)(_ ++ _)
-    }
-
-    private def fromField(entity: IRField): Schema = entity.cypherType match {
+    def forField(entity: IRField): Schema = entity.cypherType match {
       case CTNode(labels, _) =>
         schema.fromNodeEntity(labels)
       case r: CTRelationship =>

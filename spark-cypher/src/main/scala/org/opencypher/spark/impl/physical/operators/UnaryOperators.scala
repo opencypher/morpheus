@@ -215,15 +215,9 @@ final case class ConstructGraph(
   override def executeUnary(prev: CAPSPhysicalResult)(implicit context: CAPSRuntimeContext): CAPSPhysicalResult = {
     implicit val session: CAPSSession = prev.records.caps
 
-    println("input to pattern graph")
-    prev.records.asCaps.data.show()
-
     // Apply aliases in CLONE to input table in order to create the base table, on which CONSTRUCT happens
     val aliasClones = clonedVarsToInputVars.filter { case (alias, original) => alias != original }
     val baseTable = prev.records.addAliases(aliasClones)
-
-    println("base table")
-    baseTable.asCaps.data.show()
 
     // TODO: Plan unions in PhysicalPlanner instead
     // Create UNION graph for `onGraphs` and retag the base table
@@ -235,10 +229,6 @@ final case class ConstructGraph(
       case severalGraphs =>
         val graphToQgnMap = severalGraphs.map(qgnToGraph).zip(severalGraphs).toMap
         val onGraphUnion = CAPSUnionGraph(graphToQgnMap.keys.toList)
-        println("persons in retagged graph union")
-        onGraphUnion.asCaps.nodes("p", CTNode("Person")).data.show(100)
-        println("customers in retagged graph union")
-        onGraphUnion.asCaps.nodes("c", CTNode("Customer")).data.show(100)
         val qgnToRetaggingsMap = onGraphUnion.performedRetaggings.map {
           case (graph, retaggings) => graphToQgnMap(graph) -> retaggings
         }
@@ -253,9 +243,6 @@ final case class ConstructGraph(
         Some(onGraphUnion) -> CAPSRecords.verifyAndCreate(baseTable.header, retaggedBaseTableData)
     }
 
-    println("retagged base table")
-    retaggedBaseTable.asCaps.data.show()
-
     // Construct NEW entities
     val (newEntityTags, tableWithConstructedEntities) = {
       if (newItems.isEmpty) {
@@ -267,9 +254,6 @@ final case class ConstructGraph(
         Set(newEntityTag) -> entityTableWithProperties
       }
     }
-
-    println(s"retagged base table after construction, new entity tags = $newEntityTags")
-    tableWithConstructedEntities.asCaps.data.show()
 
     // Remove all vars that were part the original pattern graph DF, except variables that were CLONEd without an alias
     val allInputVars = retaggedBaseTable.header.internalHeader.fields

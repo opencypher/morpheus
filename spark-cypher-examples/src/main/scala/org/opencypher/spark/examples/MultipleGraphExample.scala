@@ -67,9 +67,6 @@ object MultipleGraphExample extends App {
     """.stripMargin
   ).getGraph
 
-  recommendationGraph.nodes("n").asCaps.data.show()
-  recommendationGraph.relationships("r").asCaps.data.show()
-
   // 6) Query for product recommendations
   val recommendations = recommendationGraph.cypher(
     """|MATCH (person:Person)-[:FRIEND_OF]-(friend:Person),
