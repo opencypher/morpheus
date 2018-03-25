@@ -208,7 +208,7 @@ final case class ConstructGraph(
 
   override def toString = {
     val entities = construct.clones.keySet ++ construct.newEntities.map(_.v)
-    s"ConstructGraph(on=[${construct.onGraphs.mkString(", ")}], entities=${entities.mkString(", ")})"
+    s"ConstructGraph(on=[${construct.onGraphs.mkString(", ")}], entities=[${entities.mkString(", ")}])"
   }
 
   override def header: RecordHeader = RecordHeader.empty

@@ -57,7 +57,7 @@ trait LogicalGraph {
 }
 
 final case class LogicalCatalogGraph(qualifiedGraphName: QualifiedGraphName, schema: Schema) extends LogicalGraph {
-  override protected def args: String = s"qualifiedGraphName = $qualifiedGraphName"
+  override protected def args: String = qualifiedGraphName.toString
 }
 
 final case class LogicalPatternGraph(
