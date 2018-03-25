@@ -62,7 +62,7 @@ class PhysicalPlanner[P <: PhysicalOperator[R, G, C], R <: CypherRecords, G <: P
       case flat.Start(graph, _) =>
         graph match {
           case g: LogicalCatalogGraph =>
-            producer.planStart(None, Some(g.qualifiedGraphName))
+            producer.planStart(Some(context.inputRecords), Some(g.qualifiedGraphName))
           case _ => throw IllegalArgumentException("Start needs a catalog graph", graph)
         }
 
