@@ -45,10 +45,17 @@ object CAPSUnionGraph {
 
 // TODO: flatten union trees
 final case class CAPSUnionGraph(graphs: List[CAPSGraph], doUpdateTags: Boolean = true)(implicit val session: CAPSSession) extends CAPSGraph {
+  require(graphs.size > 0, "Union requires at least one graph")
 
-  private lazy val individualSchemas = graphs.map(_.schema)
+  private lazy val individualSchemas: Seq[CAPSSchema] = graphs.map(_.schema.asCaps)
 
-  override lazy val schema: CAPSSchema = individualSchemas.foldLeft(Schema.empty)(_ ++ _).asCaps
+  override lazy val schema: CAPSSchema = {
+    if (doUpdateTags) {
+      individualSchemas.reduce(_ union _)
+    } else {
+      individualSchemas.foldLeft(Schema.empty)(_ ++ _).asCaps
+    }
+  }
 
   override def cache(): CAPSUnionGraph = map(_.cache())
 

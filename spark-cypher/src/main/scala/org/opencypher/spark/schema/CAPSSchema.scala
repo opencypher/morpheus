@@ -33,6 +33,7 @@ import org.opencypher.okapi.impl.exception.{SchemaException, UnsupportedOperatio
 import org.opencypher.okapi.impl.schema.SchemaUtils._
 import org.opencypher.okapi.impl.schema.{ImpliedLabels, LabelCombinations, TagSupport}
 import org.opencypher.spark.impl.convert.CAPSCypherType._
+import org.opencypher.spark.schema.CAPSSchema._
 
 object CAPSSchema {
   val empty: CAPSSchema = Schema.empty.asCaps
@@ -144,5 +145,5 @@ case class CAPSSchema private[schema](schema: Schema with TagSupport) extends Sc
 
   override def replaceTags(replacements: Map[Int, Int]): Schema with TagSupport = schema.replaceTags(replacements)
 
-  override def union(other: Schema with TagSupport): Schema with TagSupport = schema.union(other)
+  override def union(other: Schema with TagSupport): CAPSSchema = schema.union(other).asCaps
 }

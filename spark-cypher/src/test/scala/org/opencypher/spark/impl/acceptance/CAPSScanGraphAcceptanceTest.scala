@@ -26,7 +26,10 @@
  */
 package org.opencypher.spark.impl.acceptance
 
+import org.opencypher.okapi.api.graph.GraphName
 import org.opencypher.spark.test.support.creation.caps.{CAPSScanGraphFactory, CAPSTestGraphFactory}
+
+import org.opencypher.okapi.impl.schema.TagSupport._
 
 class CAPSScanGraphAcceptanceTest extends AcceptanceTest {
   override def capsGraphFactory: CAPSTestGraphFactory = CAPSScanGraphFactory
@@ -38,30 +41,37 @@ class CAPSScanGraphAcceptanceTest extends AcceptanceTest {
 
   def testGraph3 = initGraph("CREATE (:Car {type: 'Toyota'})")
 
-  it("it should create without an alias") {
+  it("CONSTRUCTS ON a single graph") {
+    caps.store(GraphName("one"), testGraph1)
     val query =
       """
-        |MATCH (n)
-        |CONSTRUCT {
-        |  CLONE n
+        |CONSTRUCT ON one {
         |}
         |RETURN GRAPH""".stripMargin
 
-    val result = testGraph1.cypher(query)
-    result.getRecords.toMaps shouldBe empty
+    val result = testGraph2.cypher(query).getGraph
+
+    result.schema should equal(testGraph1.schema)
+    result.nodes("n").toMaps should equal(testGraph1.nodes("n").toMaps)
+    result.relationships("r").toMaps should equal(testGraph1.relationships("r").toMaps)
+    result.schema.toTagged.tags should equal(testGraph1.schema.tags)
   }
 
-  it("it should create with an alias") {
+  it("CONSTRUCTS ON two graphs") {
+    caps.store(GraphName("one"), testGraph1)
+    caps.store(GraphName("two"), testGraph2)
     val query =
       """
-        |MATCH (n)
-        |CONSTRUCT {
-        |  CLONE n as m
+        |CONSTRUCT ON one, two {
         |}
         |RETURN GRAPH""".stripMargin
 
-    val result = testGraph1.cypher(query)
-    result.getRecords.toMaps shouldBe empty
+    val result = testGraph2.cypher(query).getGraph
+
+    result.schema should equal(testGraph1.schema.union(testGraph2.schema))
+    result.nodes("n").toMaps should equal(testGraph1.unionAll(testGraph2).nodes("n").toMaps)
+    result.relationships("r").toMaps should equal(testGraph1.unionAll(testGraph2).relationships("r").toMaps)
+    result.schema.toTagged.tags should equal(Set(0, 1))
   }
 
 }

@@ -257,21 +257,28 @@ final case class ConstructGraph(
     retaggedBaseTable.asCaps.data.show()
 
     // Construct NEW entities
-    val newEntityTag = if (initialSchema.tags.isEmpty) 0 else initialSchema.tags.max + 1
-    val entityTable = createEntities(newItems, retaggedBaseTable, newEntityTag)
-    val tableWithConstructedProperties = setProperties(setItems, entityTable)
+    val (newEntityTags, tableWithConstructedEntities) = {
+      if (newItems.isEmpty) {
+        Set.empty[Int] -> retaggedBaseTable
+      } else {
+        val newEntityTag = if (initialSchema.tags.isEmpty) 0 else initialSchema.tags.max + 1
+        val entityTable = createEntities(newItems, retaggedBaseTable, newEntityTag)
+        val entityTableWithProperties = setProperties(setItems, entityTable)
+        Set(newEntityTag) -> entityTableWithProperties
+      }
+    }
 
-    println("retagged base table after construction")
-    tableWithConstructedProperties.asCaps.data.show()
+    println(s"retagged base table after construction, new entity tags = $newEntityTags")
+    tableWithConstructedEntities.asCaps.data.show()
 
     // Remove all vars that were part the original pattern graph DF, except variables that were CLONEd without an alias
     val allInputVars = retaggedBaseTable.header.internalHeader.fields
     val originalVarsToKeep = clonedVarsToInputVars.keySet -- aliasClones.keySet
     val varsToRemoveFromTable = allInputVars -- originalVarsToKeep
-    val patternGraphTable = tableWithConstructedProperties.removeVars(varsToRemoveFromTable)
+    val patternGraphTable = tableWithConstructedEntities.removeVars(varsToRemoveFromTable)
 
     // Compute the schema by adding the new entity tag and construct the pattern graph
-    val patternGraphSchema = initialSchema.withTags(initialSchema.tags + newEntityTag).asCaps
+    val patternGraphSchema = initialSchema.withTags(initialSchema.tags ++ newEntityTags).asCaps
 
     // If necessary plan a union if there are graphs we were CONSTRUCTED ON.
     val resultGraph = lhsGraph match {

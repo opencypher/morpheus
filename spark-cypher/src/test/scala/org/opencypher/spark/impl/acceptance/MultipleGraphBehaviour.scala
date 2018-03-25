@@ -47,6 +47,32 @@ trait MultipleGraphBehaviour {
 
     def testGraph3 = initGraph("CREATE (:Car {type: 'Toyota'})")
 
+    it("CLONEs without an alias") {
+      val query =
+        """
+          |MATCH (n)
+          |CONSTRUCT {
+          |  CLONE n
+          |}
+          |RETURN GRAPH""".stripMargin
+
+      val result = testGraph1.cypher(query)
+      result.getRecords.toMaps shouldBe empty
+    }
+
+    it("CLONEs with an alias") {
+      val query =
+        """
+          |MATCH (n)
+          |CONSTRUCT {
+          |  CLONE n as m
+          |}
+          |RETURN GRAPH""".stripMargin
+
+      val result = testGraph1.cypher(query)
+      result.getRecords.toMaps shouldBe empty
+    }
+
     it("should return a graph") {
       val query =
         """RETURN GRAPH""".stripMargin
