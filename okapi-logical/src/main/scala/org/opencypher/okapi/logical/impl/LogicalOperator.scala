@@ -68,7 +68,10 @@ final case class LogicalPatternGraph(
   onGraphs: List[QualifiedGraphName]
 ) extends LogicalGraph {
 
-  override protected def args: String = s"clonedVars = $clones, newEntities = $newEntities"
+  override protected def args: String = {
+    val variables = clones.keySet ++ newEntities.map(_.v)
+    variables.mkString(", ")
+  }
 }
 
 sealed trait ConstructedEntity {
@@ -213,7 +216,6 @@ final case class Aggregate(
 
 final case class Select(
     orderedFields: List[Var],
-    graphs: Set[String],
     in: LogicalOperator,
     solved: SolvedQueryModel)
     extends StackingLogicalOperator {

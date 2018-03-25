@@ -43,6 +43,8 @@ class CAPSScanGraph(val scans: Seq[CAPSEntityTable], val schema: CAPSSchema)(imp
 
   self: CAPSGraph =>
 
+  override def toString = s"CAPSScanGraph(${scans.map(_.entityType).mkString(", ")})"
+
   private val nodeEntityTables = EntityTables(scans.collect { case it: CAPSNodeTable => it }.toVector)
   private val relEntityTables = EntityTables(scans.collect { case it: CAPSRelationshipTable => it }.toVector)
 

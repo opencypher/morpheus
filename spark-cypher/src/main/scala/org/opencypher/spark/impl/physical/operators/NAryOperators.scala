@@ -24,43 +24,20 @@
  * described as "implementation extensions to Cypher" or as "proposed changes to
  * Cypher that are not yet approved by the openCypher community".
  */
-package org.opencypher.okapi.relational.api.physical
+package org.opencypher.spark.impl.physical.operators
 
-import org.opencypher.okapi.api.graph.{CypherSession, PropertyGraph, QualifiedGraphName}
-import org.opencypher.okapi.api.table.CypherRecords
-import org.opencypher.okapi.api.value.CypherValue.CypherMap
+import org.opencypher.spark.impl.physical.{CAPSPhysicalResult, CAPSRuntimeContext}
+import org.opencypher.spark.impl.{CAPSRecords, CAPSUnionGraph}
 
-/**
-  * Represents a back-end specific context which is used by the [[org.opencypher.okapi.relational.impl.physical.PhysicalPlanner]].
-  *
-  * @tparam R backend-specific cypher records
-  */
-trait PhysicalPlannerContext[R <: CypherRecords] {
-  /**
-    * Refers to the session in which that query is executed.
-    *
-    * @return back-end specific cypher session
-    */
-  def session: CypherSession
+final case class GraphUnionAll(inputs: List[CAPSPhysicalOperator], preventIdCollisions: Boolean = true)
+  extends CAPSPhysicalOperator with InheritedHeader {
+  require(inputs.nonEmpty, "GraphUnionAll requires at least one input")
 
-  /**
-    * Lookup function that resolves QGNs to property graphs.
-    *
-    * @return lookup function
-    */
-  def catalog: QualifiedGraphName => PropertyGraph
-
-  /**
-    * Initial records for physical planning.
-    *
-    * @return
-    */
-  def inputRecords: R
-
-  /**
-    * Query parameters
-    *
-    * @return query parameters
-    */
-  def parameters: CypherMap
+  override def execute(implicit context: CAPSRuntimeContext): CAPSPhysicalResult = {
+    val inputResults = inputs.map(_.execute)
+    implicit val caps = inputResults.head.records.caps
+    val inputGraphs = inputResults.map(_.graph)
+    val unionGraph = CAPSUnionGraph(inputGraphs, preventIdCollisions)
+    CAPSPhysicalResult(CAPSRecords.unit(), unionGraph)
+  }
 }

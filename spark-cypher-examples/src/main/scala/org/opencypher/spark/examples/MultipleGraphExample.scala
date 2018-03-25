@@ -61,7 +61,7 @@ object MultipleGraphExample extends App {
        |WHERE p.name = c.name
        |CONSTRUCT ON socialNetwork, csv.prod {
        |  CLONE p, c
-       |  CREATE (p)-[x:IS]->(c)
+       |  CREATE (p)-[:IS]->(c)
        |}
        |RETURN GRAPH
     """.stripMargin

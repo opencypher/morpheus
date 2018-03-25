@@ -51,6 +51,7 @@ import org.opencypher.spark.impl.{CAPSGraph, CAPSRecords, CAPSUnionGraph}
 import org.opencypher.spark.schema.CAPSSchema
 import org.opencypher.spark.schema.CAPSSchema._
 import org.opencypher.spark.impl.CAPSConverters._
+import org.opencypher.spark.impl.CAPSUnionGraph.{apply => _, unapply => _, _}
 
 private[spark] abstract class UnaryPhysicalOperator extends CAPSPhysicalOperator {
 
@@ -200,57 +201,49 @@ final case class Filter(in: CAPSPhysicalOperator, expr: Expr, header: RecordHead
 
 final case class ConstructGraph(
   in: CAPSPhysicalOperator,
-  clonedVarsToInputVars: Map[Var, Var],
-  newItems: Set[ConstructedEntity],
-  setItems: List[SetPropertyItem[Expr]],
-  initialSchema: CAPSSchema,
-  catalog: QualifiedGraphName => PropertyGraph,
-  onGraphs: List[QualifiedGraphName])
+  construct: LogicalPatternGraph,
+  catalog: QualifiedGraphName => PropertyGraph
+)
   extends UnaryPhysicalOperator {
+
+  override def toString = {
+    val entities = construct.clones.keySet ++ construct.newEntities.map(_.v)
+    s"ConstructGraph(on=[${construct.onGraphs.mkString(", ")}], entities=${entities.mkString(", ")})"
+  }
 
   override def header: RecordHeader = RecordHeader.empty
 
-  private def qgnToGraph(qgn: QualifiedGraphName): CAPSGraph = catalog(qgn).asCaps
-
   override def executeUnary(prev: CAPSPhysicalResult)(implicit context: CAPSRuntimeContext): CAPSPhysicalResult = {
     implicit val session: CAPSSession = prev.records.caps
+
+    val LogicalPatternGraph(schema, clonedVarsToInputVars, newEntities, sets, onGraphs) = construct
+    val initialSchema = schema.asCaps
 
     // Apply aliases in CLONE to input table in order to create the base table, on which CONSTRUCT happens
     val aliasClones = clonedVarsToInputVars.filter { case (alias, original) => alias != original }
     val baseTable = prev.records.addAliases(aliasClones)
 
-    // TODO: Plan unions in PhysicalPlanner instead
-    // Create UNION graph for `onGraphs` and retag the base table
-    val (lhsGraph, retaggedBaseTable): (Option[CAPSGraph], CAPSRecords) = onGraphs match {
-      case Nil =>
-        None -> baseTable
-      case h :: Nil =>
-        Some(qgnToGraph(h)) -> baseTable
-      case severalGraphs =>
-        val graphToQgnMap = severalGraphs.map(qgnToGraph).zip(severalGraphs).toMap
-        val onGraphUnion = CAPSUnionGraph(graphToQgnMap.keys.toList)
-        val qgnToRetaggingsMap = onGraphUnion.performedRetaggings.map {
-          case (graph, retaggings) => graphToQgnMap(graph) -> retaggings
-        }
-        val slotsToRetag: Map[RecordSlot, QualifiedGraphName] = clonedVarsToInputVars.values.map { v =>
-          val qgn = v.cypherType.graph.getOrElse(throw IllegalStateException(s"Variable $v does not have its working graph recorded in its type"))
-          // TODO: Also remap start/end for relationships.
-          baseTable.header.slotFor(v) -> qgn
-        }.toMap
-        val retaggedBaseTableData = slotsToRetag.foldLeft(baseTable.data) { case (updatedTable, (slot, qgn)) =>
-          updatedTable.safeReplaceTags(ColumnName.of(slot), qgnToRetaggingsMap(qgn))
-        }
-        Some(onGraphUnion) -> CAPSRecords.verifyAndCreate(baseTable.header, retaggedBaseTableData)
+    // Compute retaggings so the IDs in the base table match the IDs in the UnionGraph of the constructed on graphs
+    val retaggings = computeRetaggings(onGraphs.map(qgn => qgn -> catalog(qgn).schema.asCaps)).withDefaultValue(Map.empty)
+    // TODO: Move to CAPSRecords, `retagVariable(v: Var, retaggings: Map[Int, Int])`
+    val slotsToRetag: Map[RecordSlot, QualifiedGraphName] = clonedVarsToInputVars.values.map { v =>
+      val qgn = v.cypherType.graph.getOrElse(throw IllegalStateException(s"Variable $v does not have its working graph recorded in its type"))
+      // TODO: Also remap start/end for relationships.
+      baseTable.header.slotFor(v) -> qgn
+    }.toMap
+    val retaggedBaseTableData = slotsToRetag.foldLeft(baseTable.data) { case (updatedTable, (slot, qgn)) =>
+      updatedTable.safeReplaceTags(ColumnName.of(slot), retaggings(qgn))
     }
+    val retaggedBaseTable = CAPSRecords.verifyAndCreate(baseTable.header, retaggedBaseTableData)
 
     // Construct NEW entities
     val (newEntityTags, tableWithConstructedEntities) = {
-      if (newItems.isEmpty) {
+      if (newEntities.isEmpty) {
         Set.empty[Int] -> retaggedBaseTable
       } else {
         val newEntityTag = if (initialSchema.tags.isEmpty) 0 else initialSchema.tags.max + 1
-        val entityTable = createEntities(newItems, retaggedBaseTable, newEntityTag)
-        val entityTableWithProperties = setProperties(setItems, entityTable)
+        val entityTable = createEntities(newEntities, retaggedBaseTable, newEntityTag)
+        val entityTableWithProperties = setProperties(sets, entityTable)
         Set(newEntityTag) -> entityTableWithProperties
       }
     }
@@ -261,17 +254,10 @@ final case class ConstructGraph(
     val varsToRemoveFromTable = allInputVars -- originalVarsToKeep
     val patternGraphTable = tableWithConstructedEntities.removeVars(varsToRemoveFromTable)
 
-    // Compute the schema by adding the new entity tag and construct the pattern graph
+    // Compute the schema by adding the new entity tags and construct the pattern graph
     val patternGraphSchema = initialSchema.withTags(initialSchema.tags ++ newEntityTags).asCaps
 
-    // If necessary plan a union if there are graphs we were CONSTRUCTED ON.
-    val resultGraph = lhsGraph match {
-      case None => CAPSGraph.create(patternGraphTable, patternGraphSchema)
-      // Do not update the tags in the pattern graph in order to preserve the constructed relationships and avoid duplicted entities.
-      case Some(graph) => CAPSUnionGraph(graph :: CAPSGraph.create(patternGraphTable, patternGraphSchema) :: Nil, doUpdateTags = false)
-    }
-
-    CAPSPhysicalResult(CAPSRecords.unit(), resultGraph)
+    CAPSPhysicalResult(CAPSRecords.unit(), CAPSGraph.create(patternGraphTable, patternGraphSchema))
   }
 
   private def setProperties(setItems: List[SetPropertyItem[Expr]], constructedTable: CAPSRecords)(implicit context: CAPSRuntimeContext): CAPSRecords = {
