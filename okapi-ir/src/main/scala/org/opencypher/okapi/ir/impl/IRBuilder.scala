@@ -76,7 +76,19 @@ object IRBuilder extends CompilationStage[ast.Statement, CypherStatement[Expr], 
               case _ => throw IllegalArgumentException("The query in CREATE GRAPH must return a graph")
             }
             val irQgn = QualifiedGraphName(qgn.parts)
-            pure[R, Option[CypherStatement[Expr]]](Some(CreateGraphStatement[Expr](QueryInfo(context.queryString), IRCatalogGraph(irQgn, schema), innerQuery.get)))
+            val statement = Some(CreateGraphStatement[Expr](QueryInfo(context.queryString), IRCatalogGraph(irQgn, schema), innerQuery.get))
+            pure[R, Option[CypherStatement[Expr]]](statement)
+          }
+        } yield result
+
+      case ast.DeleteGraph(qgn) =>
+        for {
+          context <- get[R, IRBuilderContext]
+          result <- {
+            val irQgn = QualifiedGraphName(qgn.parts)
+            val schema = context.schemaFor(irQgn)
+            val statement = Some(DeleteGraphStatement[Expr](QueryInfo(context.queryString), IRCatalogGraph(irQgn, schema)))
+            pure[R, Option[CypherStatement[Expr]]](statement)
           }
         } yield result
 

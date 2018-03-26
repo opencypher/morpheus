@@ -41,6 +41,7 @@ import org.opencypher.okapi.test.BaseTestSuite
 import org.scalatest.mockito.MockitoSugar
 
 import scala.language.implicitConversions
+import scala.reflect.ClassTag
 
 abstract class IrTestSuite extends BaseTestSuite with MockitoSugar {
 
@@ -94,17 +95,15 @@ abstract class IrTestSuite extends BaseTestSuite with MockitoSugar {
   case class DummyBinds[E](fields: Set[IRField] = Set.empty) extends Binds[E]
 
   implicit class RichString(queryText: String) {
+    def parseIR[T <: CypherStatement[Expr] : ClassTag]: T = ir() match {
+        case cq : T => cq
+        case other => throw new IllegalArgumentException(s"Cannot convert $other")
+    }
+
     def asCypherQuery: CypherQuery[Expr] = {
       ir() match {
         case cq : CypherQuery[Expr] => cq
         case other => throw new IllegalArgumentException(s"Cannot convert $other into CypherQuery")
-      }
-    }
-
-    def asCreateGraphStatement: CreateGraphStatement[Expr] = {
-      ir() match {
-        case s : CreateGraphStatement[Expr] => s
-        case other => throw new IllegalArgumentException(s"Cannot convert $other into CreateGraphStatement")
       }
     }
 

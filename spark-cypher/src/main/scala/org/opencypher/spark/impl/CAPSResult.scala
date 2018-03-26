@@ -69,7 +69,7 @@ trait CAPSResult extends CypherResult {
 }
 
 object CAPSResult {
-  def empty(queryPlans: CAPSQueryPlans): CAPSResult = new CAPSResult {
+  def empty(queryPlans: CAPSQueryPlans = CAPSQueryPlans.empty): CAPSResult = new CAPSResult {
     override def records: Option[CAPSRecords] = None
 
     override def graph = None

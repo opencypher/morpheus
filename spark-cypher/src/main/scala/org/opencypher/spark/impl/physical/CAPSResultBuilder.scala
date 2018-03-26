@@ -45,19 +45,22 @@ object CAPSResultBuilder {
 
       override def graph: Option[CAPSGraph] = Some(result.graph)
 
-      override def plans = CAPSQueryPlans(logical, flat, physical)
+      override def plans = CAPSQueryPlans(Some(logical), Some(flat), Some(physical))
 
     }
   }
 }
 
 case class CAPSQueryPlans(
-  logicalPlan: TreeNode[LogicalOperator],
-  flatPlan: TreeNode[FlatOperator],
-  physicalPlan: TreeNode[CAPSPhysicalOperator]) extends CypherQueryPlans {
+  logicalPlan: Option[TreeNode[LogicalOperator]],
+  flatPlan: Option[TreeNode[FlatOperator]],
+  physicalPlan: Option[TreeNode[CAPSPhysicalOperator]]) extends CypherQueryPlans {
 
-  override def logical: String = logicalPlan.pretty
+  override def logical: String = logicalPlan.map(_.pretty).getOrElse("")
 
-  override def physical: String = physicalPlan.pretty
+  override def physical: String = physicalPlan.map(_.pretty).getOrElse("")
+}
 
+object CAPSQueryPlans {
+  def empty: CAPSQueryPlans = CAPSQueryPlans(None, None, None)
 }

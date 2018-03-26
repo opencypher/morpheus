@@ -196,7 +196,7 @@ trait MatchBehaviour {
           ))
 
         // TODO: Move to plan based testing
-        result.plans.asCaps.logicalPlan.pretty should include("ValueJoin")
+        result.plans.asCaps.logical should include("ValueJoin")
       }
 
       it("can evaluate cross Product between multiple match clauses") {

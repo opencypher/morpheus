@@ -57,3 +57,15 @@ final case class CreateGraphStatement[E](
 
   override def where: Set[E] = Set.empty
 }
+
+final case class DeleteGraphStatement[E](
+  info: QueryInfo,
+  graph: IRGraph
+) extends CypherStatement[E] {
+
+  override val after: List[Block[E]] = List.empty
+
+  override def binds: Binds[E] = Binds.empty
+
+  override def where: Set[E] = Set.empty
+}

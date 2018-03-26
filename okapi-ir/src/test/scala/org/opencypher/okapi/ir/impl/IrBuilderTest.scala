@@ -441,10 +441,21 @@ class IrBuilderTest extends IrTestSuite {
           |}
         """.stripMargin
 
-      val result = query.asCreateGraphStatement
+      val result = query.parseIR[CreateGraphStatement[Expr]]
 
       result.innerQuery.model should equalWithTracing( innerQuery.asCypherQuery.model)
       result.graph.qualifiedGraphName should equal(QualifiedGraphName(Namespace("session"),GraphName("bar")))
+      result.graph.schema should equal(testGraphSchema)
+    }
+  }
+
+  describe("DeleteGraphStatement") {
+    it("can parse a DELETE GRAPH statement") {
+      val query = s"DELETE GRAPH $testQualifiedGraphName"
+
+      val result = query.parseIR[DeleteGraphStatement[Expr]]
+
+      result.graph.qualifiedGraphName should equal(testQualifiedGraphName)
       result.graph.schema should equal(testGraphSchema)
     }
   }

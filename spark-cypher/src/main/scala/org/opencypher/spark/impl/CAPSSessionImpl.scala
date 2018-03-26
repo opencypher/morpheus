@@ -36,9 +36,9 @@ import org.opencypher.okapi.api.value.CypherValue._
 import org.opencypher.okapi.api.value._
 import org.opencypher.okapi.impl.io.SessionPropertyGraphDataSource
 import org.opencypher.okapi.impl.util.Measurement.time
+import org.opencypher.okapi.ir.api._
 import org.opencypher.okapi.ir.api.configuration.IrConfiguration.PrintIr
 import org.opencypher.okapi.ir.api.expr.{Expr, Var}
-import org.opencypher.okapi.ir.api.{CreateGraphStatement, CypherQuery, IRCatalogGraph, IRField}
 import org.opencypher.okapi.ir.impl.parse.CypherParser
 import org.opencypher.okapi.ir.impl.{IRBuilder, IRBuilderContext}
 import org.opencypher.okapi.logical.api.configuration.LogicalConfiguration.PrintLogicalPlan
@@ -108,6 +108,10 @@ sealed class CAPSSessionImpl(val sparkSession: SparkSession, val sessionNamespac
         store(targetGraph.qualifiedGraphName, resultGraph)
 
         CAPSResult.empty(innerResult.plans)
+
+      case DeleteGraphStatement(_, targetGraph) =>
+        delete(targetGraph.qualifiedGraphName)
+        CAPSResult.empty()
     }
   }
 

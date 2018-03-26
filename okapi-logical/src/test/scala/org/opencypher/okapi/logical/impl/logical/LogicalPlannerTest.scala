@@ -325,12 +325,19 @@ class LogicalPlannerTest extends LogicalTestSuite {
 
   private val planner = new LogicalPlanner(new LogicalOperatorProducer)
 
-  private def plan(ir: CypherQuery[Expr], schema: Schema = Schema.empty): LogicalOperator =
+  private def plan(ir: CypherStatement[Expr], schema: Schema = Schema.empty): LogicalOperator =
     plan(ir, schema, testGraphName -> schema)
 
-  private def plan(ir: CypherQuery[Expr], ambientSchema: Schema, graphWithSchema: (GraphName, Schema)*): LogicalOperator = {
+  private def plan(ir: CypherStatement[Expr], ambientSchema: Schema, graphWithSchema: (GraphName, Schema)*): LogicalOperator = {
     val withAmbientGraph = graphWithSchema :+ (testGraphName -> ambientSchema)
-    planner.process(ir)(LogicalPlannerContext(ambientSchema, Set.empty, Map(testQualifiedGraphName -> graphSource(withAmbientGraph: _*))))
+
+    ir match {
+      case cq: CypherQuery[Expr] =>
+        planner.process(cq)(LogicalPlannerContext(ambientSchema, Set.empty, Map(testQualifiedGraphName -> graphSource(withAmbientGraph: _*))))
+      case _ => throw new IllegalArgumentException("Query is not a CypherQuery")
+    }
+
+
   }
 
   case class equalWithoutResult(plan: LogicalOperator) extends Matcher[LogicalOperator] {
