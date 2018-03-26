@@ -91,11 +91,11 @@ object SchemaTyper {
             recordType(v -> varTyp) >> recordAndUpdate(expr -> propType)
 
           // User specified label constraints - we can use those for type inference
-          case CTNode(labels) =>
+          case CTNode(labels, _) =>
             val propType = schema.nodeKeyType(labels, name).getOrElse(CTNull)
             recordType(v -> varTyp) >> recordAndUpdate(expr -> propType)
 
-          case CTRelationship(types) =>
+          case CTRelationship(types, _) =>
             val propType = schema.relationshipKeyType(types, name).getOrElse(CTNull)
             recordType(v -> varTyp) >> recordAndUpdate(expr -> propType)
 
@@ -114,10 +114,10 @@ object SchemaTyper {
       for {
         nodeType <- process[R](node)
         result <- nodeType.material match {
-          case CTNode(nodeLabels) =>
+          case CTNode(nodeLabels, qgn) =>
             val detailed = nodeLabels ++ labels.map(_.name).toSet
             recordType[R](node -> nodeType) >>
-              updateTyping[R](node -> CTNode(detailed)) >>
+              updateTyping[R](node -> CTNode(detailed, qgn)) >>
               recordAndUpdate[R](expr -> CTBoolean)
 
           case x =>

@@ -238,14 +238,6 @@ final case class ExpandInto(
 
 }
 
-final case class GraphUnionAll(lhs: CAPSPhysicalOperator, rhs: CAPSPhysicalOperator)
-  extends BinaryPhysicalOperator with InheritedHeader {
-
-  override def executeBinary(left: CAPSPhysicalResult, right: CAPSPhysicalResult)(implicit context: CAPSRuntimeContext) = {
-    CAPSPhysicalResult(CAPSRecords.unit()(left.records.caps), left.graph.unionAll(right.graph))
-  }
-}
-
 /**
   * Computes the union of the two input operators. The two inputs must have identical headers.
   * This operation does not remove duplicates.

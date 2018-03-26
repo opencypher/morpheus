@@ -41,22 +41,30 @@ private[spark] abstract class LeafPhysicalOperator extends CAPSPhysicalOperator 
 
 object Start {
 
-  def apply(records: CAPSRecords, graph: LogicalCatalogGraph)(implicit caps: CAPSSession): Start = Start(Some(records), Some(graph))
+  def apply(records: CAPSRecords, graph: CAPSGraph)(implicit caps: CAPSSession): Start = Start(Some(records), Some(graph))
 
   def apply(records: CAPSRecords)(implicit caps: CAPSSession): Start = Start(Some(records))
 
-  def apply(graph: LogicalCatalogGraph)(implicit caps: CAPSSession): Start = Start(None, Some(graph))
+  def apply(graph: CAPSGraph)(implicit caps: CAPSSession): Start = Start(None, Some(graph))
 
 }
 
-final case class Start(recordsOpt: Option[CAPSRecords] = None, graphOpt: Option[LogicalCatalogGraph] = None)(implicit caps: CAPSSession) extends LeafPhysicalOperator {
+final case class Start(recordsOpt: Option[CAPSRecords] = None, graphOpt: Option[CAPSGraph] = None)
+  (implicit caps: CAPSSession) extends LeafPhysicalOperator {
 
   override val header = recordsOpt.map(_.header).getOrElse(RecordHeader.empty)
 
   override def executeLeaf()(implicit context: CAPSRuntimeContext): CAPSPhysicalResult = {
     val records = recordsOpt.getOrElse(CAPSRecords.unit())
-    val graph = graphOpt.map(g => resolve(g.qualifiedGraphName)).getOrElse(CAPSGraph.empty)
+    val graph = graphOpt.getOrElse(CAPSGraph.empty)
     CAPSPhysicalResult(records, graph)
+  }
+
+  override def toString = {
+    val graphArg = graphOpt.map(_.toString)
+    val recordsArg = recordsOpt.map(_.toString)
+    val allArgs = List(recordsArg, graphArg).flatten.mkString(", ")
+    s"Start($allArgs)"
   }
 
 }

@@ -70,7 +70,7 @@ class LogicalPlannerTest extends LogicalTestSuite {
 
   test("convert load graph block") {
     val result = plan(irFor(leafBlock))
-    val expected = Select(List.empty, Set.empty, leafPlan, emptySqm)
+    val expected = Select(List.empty, leafPlan, emptySqm)
     result should equalWithTracing(expected)
   }
 
@@ -336,7 +336,7 @@ class LogicalPlannerTest extends LogicalTestSuite {
   case class equalWithoutResult(plan: LogicalOperator) extends Matcher[LogicalOperator] {
     override def apply(left: LogicalOperator): MatchResult = {
       left match {
-        case Select(_, _, in, _) =>
+        case Select(_, in, _) =>
           val planMatch = equalWithTracing(in)(plan)
           val solvedMatch = equalWithTracing(in.solved)(plan.solved)
           MatchHelper.combine(planMatch, solvedMatch)

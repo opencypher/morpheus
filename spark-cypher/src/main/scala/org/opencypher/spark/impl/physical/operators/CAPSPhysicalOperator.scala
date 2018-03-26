@@ -92,7 +92,7 @@ object CAPSPhysicalOperator {
 
   def assertIsNode(slot: RecordSlot): Unit = {
     slot.content.cypherType match {
-      case CTNode(_) =>
+      case CTNode(_, _) =>
       case x =>
         throw IllegalArgumentException(s"Expected $slot to contain a node, but was $x")
     }

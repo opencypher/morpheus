@@ -69,8 +69,7 @@ final case class Filter(expr: Expr, in: FlatOperator, header: RecordHeader) exte
 
 final case class Distinct(fields: Set[Var], in: FlatOperator, header: RecordHeader) extends StackingFlatOperator
 
-final case class Select(fields: List[Var], graphs: Set[String], in: FlatOperator, header: RecordHeader)
-    extends StackingFlatOperator
+final case class Select(fields: List[Var], in: FlatOperator, header: RecordHeader) extends StackingFlatOperator
 
 final case class ReturnGraph(in: FlatOperator) extends StackingFlatOperator {
   override def header: RecordHeader = RecordHeader.empty

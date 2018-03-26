@@ -42,7 +42,7 @@ case class RowExpansion(
 ) extends (Row => Seq[Row]) {
 
   private lazy val targetLabels = targetVar.cypherType match {
-    case CTNode(labels) => labels
+    case CTNode(labels, _) => labels
     case _              => Set.empty[String]
   }
 
@@ -76,9 +76,9 @@ case class RowExpansion(
             val hasAllRequiredLabels = indices.forall(adaptedRow.getBoolean)
             if (hasAllRequiredLabels) Some(adaptedRow)
             else None
-          case CTRelationship(types) if types.isEmpty =>
+          case CTRelationship(types, _) if types.isEmpty =>
             Some(adaptedRow)
-          case CTRelationship(types) =>
+          case CTRelationship(types, _) =>
             val index = typeIndexLookupTable(entity)
             val relType = adaptedRow.getString(index)
             val hasMatchingType = types.contains(relType)

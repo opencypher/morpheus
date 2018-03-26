@@ -310,7 +310,6 @@ class FlatPlannerTest extends BaseTestSuite {
     result should equalWithTracing(
       mkFlat.select(
         List(Var("foo")(CTString)),
-        Set.empty,
         mkFlat.project(
           ProjectedField(Var("foo")(CTString), Property(Var("n")(CTNode), PropertyKey("name"))(CTString)),
           flatNodeScan("n", "Person")
@@ -339,7 +338,6 @@ class FlatPlannerTest extends BaseTestSuite {
     result should equalWithTracing(
       mkFlat.select(
         List(n),
-        Set.empty,
         mkFlat.removeAliases(
           List(n),
           mkFlat.project(
@@ -377,7 +375,6 @@ class FlatPlannerTest extends BaseTestSuite {
     result should equal(
       mkFlat.select(
         List(Var("foo")(CTString), Var("n")(CTNode), Var("baz")(CTInteger.nullable)),
-        Set.empty,
         mkFlat.project(
           ProjectedField(
             Var("baz")(CTInteger.nullable),

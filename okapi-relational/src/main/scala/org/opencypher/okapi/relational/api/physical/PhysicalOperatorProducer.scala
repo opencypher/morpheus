@@ -26,13 +26,13 @@
  */
 package org.opencypher.okapi.relational.api.physical
 
-import org.opencypher.okapi.api.graph.PropertyGraph
+import org.opencypher.okapi.api.graph.{PropertyGraph, QualifiedGraphName}
 import org.opencypher.okapi.api.schema.Schema
 import org.opencypher.okapi.api.table.CypherRecords
 import org.opencypher.okapi.ir.api.block.SortItem
 import org.opencypher.okapi.ir.api.expr.{Aggregator, Expr, Var}
 import org.opencypher.okapi.ir.api.set.SetPropertyItem
-import org.opencypher.okapi.logical.impl.{ConstructedEntity, Direction, LogicalCatalogGraph, LogicalGraph}
+import org.opencypher.okapi.logical.impl._
 import org.opencypher.okapi.relational.impl.table.{ProjectedExpr, ProjectedField, RecordHeader}
 
 /**
@@ -55,7 +55,7 @@ trait PhysicalOperatorProducer[P <: PhysicalOperator[R, G, C], R <: CypherRecord
     * @param g  external (URI) reference to the input graph (e.g. the session graph)
     * @return start operator
     */
-  def planStart(in: Option[R] = None, g: Option[LogicalCatalogGraph] = None): P
+  def planStart(in: Option[R] = None, g: Option[QualifiedGraphName] = None): P
 
   /**
     * Scans the node set of the input graph and returns all nodes that match the given CTNode type.
@@ -160,18 +160,15 @@ trait PhysicalOperatorProducer[P <: PhysicalOperator[R, G, C], R <: CypherRecord
   /**
     * Creates a new record containing the specified entities (i.e. as defined in a construction pattern).
     *
-    * @param in                    previous operator
-    * @param clonedVarsToInputVars map from cloned variable name within CONSTRUCT to outer scope
-    * @param newEntities           entities to create
-    * @param schema                schema of the resulting graph
+    * @param in        previous operator
+    * @param construct graph to construct
+    * @param catalog   resolver for catalog graphs
     * @return project pattern graph operator
     */
   def planConstructGraph(
     in: P,
-    clonedVarsToInputVars: Map[Var, Var],
-    newEntities: Set[ConstructedEntity],
-    setItems: List[SetPropertyItem[Expr]],
-    schema: Schema): P
+    construct: LogicalPatternGraph,
+    catalog: QualifiedGraphName => PropertyGraph): P
 
   /**
     * Groups the underlying records by the specified expressions and evaluates the given aggregate functions.
@@ -372,5 +369,15 @@ trait PhysicalOperatorProducer[P <: PhysicalOperator[R, G, C], R <: CypherRecord
     direction: Direction,
     header: RecordHeader,
     isExpandInto: Boolean): P
+
+  // N-ary operators
+  /**
+    * Performs a UNION ALL over graphs.
+    *
+    * @param graphs graph to perform UNION ALL over
+    * @param preventIdCollisions flag that indicates if ID collisions between entities should be prevented
+    * @return union all operator
+    */
+  def planGraphUnionAll(graphs: List[P], preventIdCollisions: Boolean = true): P
 
 }

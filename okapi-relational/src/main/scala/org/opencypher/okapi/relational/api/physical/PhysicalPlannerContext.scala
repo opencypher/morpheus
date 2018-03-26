@@ -44,11 +44,11 @@ trait PhysicalPlannerContext[R <: CypherRecords] {
   def session: CypherSession
 
   /**
-    * Lookup function that resolves URIs to property graphs.
+    * Lookup function that resolves QGNs to property graphs.
     *
     * @return lookup function
     */
-  def resolver: QualifiedGraphName => PropertyGraph
+  def catalog: QualifiedGraphName => PropertyGraph
 
   /**
     * Initial records for physical planning.

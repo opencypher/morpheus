@@ -56,7 +56,7 @@ class FlatOperatorProducer(implicit context: FlatPlannerContext) {
     CartesianProduct(lhs, rhs, header)
   }
 
-  def select(fields: List[Var], graphs: Set[String], in: FlatOperator): Select = {
+  def select(fields: List[Var], in: FlatOperator): Select = {
     val fieldContents = fields.map { field =>
       in.header.slotFor(field).content
     }
@@ -65,7 +65,7 @@ class FlatOperatorProducer(implicit context: FlatPlannerContext) {
 
     val (nextHeader, _) = RecordHeader.empty.update(addContents(finalContents))
 
-    Select(fields, graphs, in, nextHeader)
+    Select(fields, in, nextHeader)
   }
 
   def returnGraph(in: FlatOperator): ReturnGraph = {

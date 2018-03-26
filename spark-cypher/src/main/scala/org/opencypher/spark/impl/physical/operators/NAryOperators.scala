@@ -24,10 +24,20 @@
  * described as "implementation extensions to Cypher" or as "proposed changes to
  * Cypher that are not yet approved by the openCypher community".
  */
-package org.opencypher.spark.impl.acceptance
+package org.opencypher.spark.impl.physical.operators
 
-import org.opencypher.spark.test.support.creation.caps.{CAPSScanGraphFactory, CAPSTestGraphFactory}
+import org.opencypher.spark.impl.physical.{CAPSPhysicalResult, CAPSRuntimeContext}
+import org.opencypher.spark.impl.{CAPSRecords, CAPSUnionGraph}
 
-class CAPSScanGraphAcceptanceTest extends AcceptanceTest {
-  override def capsGraphFactory: CAPSTestGraphFactory = CAPSScanGraphFactory
+final case class GraphUnionAll(inputs: List[CAPSPhysicalOperator], preventIdCollisions: Boolean = true)
+  extends CAPSPhysicalOperator with InheritedHeader {
+  require(inputs.nonEmpty, "GraphUnionAll requires at least one input")
+
+  override def execute(implicit context: CAPSRuntimeContext): CAPSPhysicalResult = {
+    val inputResults = inputs.map(_.execute)
+    implicit val caps = inputResults.head.records.caps
+    val inputGraphs = inputResults.map(_.graph)
+    val unionGraph = CAPSUnionGraph(inputGraphs, preventIdCollisions)
+    CAPSPhysicalResult(CAPSRecords.unit(), unionGraph)
+  }
 }

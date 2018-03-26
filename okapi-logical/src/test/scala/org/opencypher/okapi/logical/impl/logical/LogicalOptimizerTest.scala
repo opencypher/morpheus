@@ -66,7 +66,6 @@ class LogicalOptimizerTest extends IrTestSuite {
 
     val expected = Select(
       List(Var("a")(CTNode(Set("Animal")))),
-      Set(),
       NodeScan(
         Var("a")(CTNode(Set("Animal"))),
         Start(
@@ -91,7 +90,6 @@ class LogicalOptimizerTest extends IrTestSuite {
 
     val expected = Select(
       List(Var("a")(CTNode(Set("Animal")))),
-      Set(),
       EmptyRecords(
         Set(Var("a")(CTNode(Set("Animal")))),
         Start(logicalGraph, Set(), emptySqm),
@@ -115,7 +113,6 @@ class LogicalOptimizerTest extends IrTestSuite {
 
     val expected = Select(
       List(Var("a")(CTNode(Set("Animal", "Astronaut")))),
-      Set(),
       EmptyRecords(
         Set(Var("a")(CTNode(Set("Astronaut", "Animal")))),
         Start(logicalGraph, Set(), emptySqm),

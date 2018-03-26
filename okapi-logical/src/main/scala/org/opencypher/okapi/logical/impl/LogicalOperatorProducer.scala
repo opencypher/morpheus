@@ -121,7 +121,7 @@ class LogicalOperatorProducer {
   }
 
   def planSelect(fields: List[Var], prev: LogicalOperator): Select = {
-    Select(fields, Set.empty, prev, prev.solved)
+    Select(fields, prev, prev.solved)
   }
 
   def planReturnGraph(prev: LogicalOperator): ReturnGraph = {

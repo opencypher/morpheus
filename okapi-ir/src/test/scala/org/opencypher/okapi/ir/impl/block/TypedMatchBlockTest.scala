@@ -35,7 +35,9 @@ import org.opencypher.okapi.ir.impl.refactor.instances._
 
 class TypedMatchBlockTest extends IrTestSuite {
 
-  test("computes detailed type of pattern variables") {
+  implicit val graph = Some(testQualifiedGraphName)
+
+  it("computes detailed types of pattern variables") {
     implicit val (block, globals) = matchBlock("MATCH (n:Person:Foo)-[r:TYPE]->(m) RETURN n")
 
     typedMatchBlock.outputs(block).map(_.toTypedTuple) should equal(

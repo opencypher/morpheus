@@ -94,8 +94,8 @@ class LogicalPlanner(producer: LogicalOperatorProducer)
   def planLeaf(block: Block[Expr], model: QueryModel[Expr])(implicit context: LogicalPlannerContext): LogicalOperator = {
     block match {
       case SourceBlock(irGraph: IRCatalogGraph) =>
-        val qualifiedGraphName = irGraph.qualifiedName
-        val graphSource = context.catalog(irGraph.qualifiedName)
+        val qualifiedGraphName = irGraph.qualifiedGraphName
+        val graphSource = context.catalog(irGraph.qualifiedGraphName)
         producer.planStart(
           LogicalCatalogGraph(qualifiedGraphName, graphSource.schema(qualifiedGraphName.graphName).get),
           context.inputRecordFields)
@@ -356,22 +356,21 @@ class LogicalPlanner(producer: LogicalOperatorProducer)
         }
         val newEntities: Set[ConstructedEntity] = entitiesToCreate.map(e => extractConstructedEntities(p.creates, e, equivalences.get(e)))
 
-        LogicalPatternGraph(p.schema, clonedVarToInputVar, newEntities, p.sets)
+        LogicalPatternGraph(p.schema, clonedVarToInputVar, newEntities, p.sets, p.onGraphs)
 
-      case g: IRCatalogGraph => LogicalCatalogGraph(g.qualifiedName, g.schema)
+      case g: IRCatalogGraph => LogicalCatalogGraph(g.qualifiedGraphName, g.schema)
     }
   }
 
   private def extractConstructedEntities(pattern: Pattern[Expr], e: IRField, equivalenceModel: Option[EquivalenceModel]) = e.cypherType match {
-    case CTRelationship(relTypes) if relTypes.size <= 1 =>
+    case CTRelationship(relTypes, _) if relTypes.size <= 1 =>
       val connection = pattern.topology(e)
       ConstructedRelationship(e, connection.source, connection.target, relTypes.headOption, equivalenceModel)
-    case CTNode(labels) =>
+    case CTNode(labels, _) =>
       ConstructedNode(e, labels.map(Label), equivalenceModel)
     case other =>
       throw InvalidCypherTypeException(s"Expected an entity type (CTNode, CTRelationship), got $other")
   }
-
 
   private def planStart(graph: IRGraph)(implicit context: LogicalPlannerContext): Start = {
     val logicalGraph: LogicalGraph = resolveGraph(graph, Set.empty)

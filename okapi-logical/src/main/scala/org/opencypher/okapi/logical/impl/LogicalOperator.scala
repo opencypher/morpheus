@@ -57,16 +57,21 @@ trait LogicalGraph {
 }
 
 final case class LogicalCatalogGraph(qualifiedGraphName: QualifiedGraphName, schema: Schema) extends LogicalGraph {
-  override protected def args: String = s"qualifiedGraphName = $qualifiedGraphName"
+  override protected def args: String = qualifiedGraphName.toString
 }
 
 final case class LogicalPatternGraph(
   schema: Schema,
   clones: Map[Var, Var],
   newEntities: Set[ConstructedEntity],
-  sets: List[SetPropertyItem[Expr]]) extends LogicalGraph {
+  sets: List[SetPropertyItem[Expr]],
+  onGraphs: List[QualifiedGraphName]
+) extends LogicalGraph {
 
-  override protected def args: String = s"clonedVars = $clones, newEntities = $newEntities"
+  override protected def args: String = {
+    val variables = clones.keySet ++ newEntities.map(_.v)
+    variables.mkString(", ")
+  }
 }
 
 sealed trait ConstructedEntity {
@@ -211,7 +216,6 @@ final case class Aggregate(
 
 final case class Select(
     orderedFields: List[Var],
-    graphs: Set[String],
     in: LogicalOperator,
     solved: SolvedQueryModel)
     extends StackingLogicalOperator {

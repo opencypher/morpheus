@@ -29,6 +29,7 @@ package org.opencypher.spark.impl.physical.operators
 import org.apache.spark.sql._
 import org.apache.spark.sql.functions.{asc, desc, monotonically_increasing_id}
 import org.apache.spark.sql.types.{StructField, StructType}
+import org.opencypher.okapi.api.graph.{PropertyGraph, QualifiedGraphName}
 import org.opencypher.okapi.api.types._
 import org.opencypher.okapi.api.value.CypherValue._
 import org.opencypher.okapi.impl.exception.{IllegalArgumentException, IllegalStateException, NotImplementedException}
@@ -46,9 +47,11 @@ import org.opencypher.spark.impl.SparkSQLExprMapper._
 import org.opencypher.spark.impl.convert.CAPSCypherType._
 import org.opencypher.spark.impl.physical.operators.CAPSPhysicalOperator._
 import org.opencypher.spark.impl.physical.{CAPSPhysicalResult, CAPSRuntimeContext}
-import org.opencypher.spark.impl.{CAPSGraph, CAPSRecords}
+import org.opencypher.spark.impl.{CAPSGraph, CAPSRecords, CAPSUnionGraph}
 import org.opencypher.spark.schema.CAPSSchema
 import org.opencypher.spark.schema.CAPSSchema._
+import org.opencypher.spark.impl.CAPSConverters._
+import org.opencypher.spark.impl.CAPSUnionGraph.{apply => _, unapply => _, _}
 
 private[spark] abstract class UnaryPhysicalOperator extends CAPSPhysicalOperator {
 
@@ -198,37 +201,63 @@ final case class Filter(in: CAPSPhysicalOperator, expr: Expr, header: RecordHead
 
 final case class ConstructGraph(
   in: CAPSPhysicalOperator,
-  clonedVarsToInputVars: Map[Var, Var],
-  newItems: Set[ConstructedEntity],
-  setItems: List[SetPropertyItem[Expr]],
-  initialSchema: CAPSSchema)
+  construct: LogicalPatternGraph,
+  catalog: QualifiedGraphName => PropertyGraph
+)
   extends UnaryPhysicalOperator {
+
+  override def toString = {
+    val entities = construct.clones.keySet ++ construct.newEntities.map(_.v)
+    s"ConstructGraph(on=[${construct.onGraphs.mkString(", ")}], entities=[${entities.mkString(", ")}])"
+  }
 
   override def header: RecordHeader = RecordHeader.empty
 
   override def executeUnary(prev: CAPSPhysicalResult)(implicit context: CAPSRuntimeContext): CAPSPhysicalResult = {
     implicit val session: CAPSSession = prev.records.caps
 
+    val LogicalPatternGraph(schema, clonedVarsToInputVars, newEntities, sets, onGraphs) = construct
+    val initialSchema = schema.asCaps
+
     // Apply aliases in CLONE to input table in order to create the base table, on which CONSTRUCT happens
     val aliasClones = clonedVarsToInputVars.filter { case (alias, original) => alias != original }
     val baseTable = prev.records.addAliases(aliasClones)
 
+    // Compute retaggings so the IDs in the base table match the IDs in the UnionGraph of the constructed on graphs
+    val retaggings = computeRetaggings(onGraphs.map(qgn => qgn -> catalog(qgn).schema.asCaps)).withDefaultValue(Map.empty)
+    // TODO: Move to CAPSRecords, `retagVariable(v: Var, retaggings: Map[Int, Int])`
+    val slotsToRetag: Map[RecordSlot, QualifiedGraphName] = clonedVarsToInputVars.values.map { v =>
+      val qgn = v.cypherType.graph.getOrElse(throw IllegalStateException(s"Variable $v does not have its working graph recorded in its type"))
+      // TODO: Also remap start/end for relationships.
+      baseTable.header.slotFor(v) -> qgn
+    }.toMap
+    val retaggedBaseTableData = slotsToRetag.foldLeft(baseTable.data) { case (updatedTable, (slot, qgn)) =>
+      updatedTable.safeReplaceTags(ColumnName.of(slot), retaggings(qgn))
+    }
+    val retaggedBaseTable = CAPSRecords.verifyAndCreate(baseTable.header, retaggedBaseTableData)
+
     // Construct NEW entities
-    val newEntityTag = if (initialSchema.tags.isEmpty) 0 else initialSchema.tags.max + 1
-    val entityTable = createEntities(newItems, baseTable, newEntityTag)
-    val tableWithConstructedProperties = setProperties(setItems, entityTable)
+    val (newEntityTags, tableWithConstructedEntities) = {
+      if (newEntities.isEmpty) {
+        Set.empty[Int] -> retaggedBaseTable
+      } else {
+        val newEntityTag = if (initialSchema.tags.isEmpty) 0 else initialSchema.tags.max + 1
+        val entityTable = createEntities(newEntities, retaggedBaseTable, newEntityTag)
+        val entityTableWithProperties = setProperties(sets, entityTable)
+        Set(newEntityTag) -> entityTableWithProperties
+      }
+    }
 
     // Remove all vars that were part the original pattern graph DF, except variables that were CLONEd without an alias
-    val allInputVars = baseTable.header.internalHeader.fields
+    val allInputVars = retaggedBaseTable.header.internalHeader.fields
     val originalVarsToKeep = clonedVarsToInputVars.keySet -- aliasClones.keySet
     val varsToRemoveFromTable = allInputVars -- originalVarsToKeep
-    val patternGraphTable = tableWithConstructedProperties.removeVars(varsToRemoveFromTable)
+    val patternGraphTable = tableWithConstructedEntities.removeVars(varsToRemoveFromTable)
 
-    // Compute the schema by adding the new entity tag and construct the pattern graph
-    val patternGraphSchema = initialSchema.withTags(initialSchema.tags + newEntityTag).asCaps
-    val patternGraph = CAPSGraph.create(patternGraphTable, patternGraphSchema)
+    // Compute the schema by adding the new entity tags and construct the pattern graph
+    val patternGraphSchema = initialSchema.withTags(initialSchema.tags ++ newEntityTags).asCaps
 
-    CAPSPhysicalResult(CAPSRecords.unit(), patternGraph)
+    CAPSPhysicalResult(CAPSRecords.unit(), CAPSGraph.create(patternGraphTable, patternGraphSchema))
   }
 
   private def setProperties(setItems: List[SetPropertyItem[Expr]], constructedTable: CAPSRecords)(implicit context: CAPSRuntimeContext): CAPSRecords = {
@@ -251,8 +280,12 @@ final case class ConstructGraph(
 
   private def createEntities(toCreate: Set[ConstructedEntity], constructedTable: CAPSRecords, newEntityTag: Int): CAPSRecords = {
     // Construct nodes before relationships, as relationships might depend on nodes
-    val nodes = toCreate.collect { case c: ConstructedNode => c }
-    val rels = toCreate.collect { case r: ConstructedRelationship => r }
+    val nodes = toCreate.collect {
+      case c@ConstructedNode(Var(name), _, _) if !constructedTable.header.fields.contains(name) => c
+    }
+    val rels = toCreate.collect {
+      case r@ConstructedRelationship(Var(name), _, _, _, _) if !constructedTable.header.fields.contains(name) => r
+    }
 
     val (_, createdNodes) = nodes.foldLeft(0 -> Set.empty[(SlotContent, Column)]) {
       case ((nextColumnPartitionId, constructedNodes), nextNodeToConstruct) =>

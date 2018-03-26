@@ -60,20 +60,9 @@ package object impl {
     left[R, IRBuilderError, BlockRegistry[Expr]](err) >> pure(v)
 
   implicit final class RichSchema(schema: Schema) {
-    def forPattern(pattern: Pattern[Expr]): Schema = {
-      pattern.fields
-        .map(fromField)
-        .foldLeft(Schema.empty)(_ ++ _)
-    }
 
-    def forFields(fs: Set[IRField]): Schema = {
-      fs
-        .map(fromField)
-        .foldLeft(Schema.empty)(_ ++ _)
-    }
-
-    private def fromField(entity: IRField): Schema = entity.cypherType match {
-      case CTNode(labels) =>
+    def forField(entity: IRField): Schema = entity.cypherType match {
+      case CTNode(labels, _) =>
         schema.fromNodeEntity(labels)
       case r: CTRelationship =>
         schema.forRelationship(r)
@@ -89,14 +78,14 @@ package object impl {
 
     def addPropertyToEntity(propertyKey: String, propertyType: CypherType, entityType: CypherType): Schema = {
       entityType match {
-        case CTNode(labels) =>
+        case CTNode(labels, _) =>
           val allRelevantLabelCombinations = schema.combinationsFor(labels)
           val property = if (allRelevantLabelCombinations.size == 1) propertyType else propertyType.nullable
           allRelevantLabelCombinations.foldLeft(schema) { case (innerCurrentSchema, combo) =>
             val updatedPropertyKeys = innerCurrentSchema.keysFor(Set(combo)).updated(propertyKey, property)
             innerCurrentSchema.withOverwrittenNodePropertyKeys(combo, updatedPropertyKeys)
           }
-        case CTRelationship(types) =>
+        case CTRelationship(types, _) =>
           val typesToUpdate = if (types.isEmpty) schema.relationshipTypes else types
           typesToUpdate.foldLeft(schema) { case (innerCurrentSchema, relType) =>
             val updatedPropertyKeys = innerCurrentSchema.relationshipKeys(relType).updated(propertyKey, propertyType)

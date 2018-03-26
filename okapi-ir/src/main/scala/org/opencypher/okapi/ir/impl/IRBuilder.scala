@@ -33,6 +33,7 @@ import org.neo4j.cypher.internal.frontend.v3_4.ast
 import org.neo4j.cypher.internal.util.v3_4.InputPosition
 import org.neo4j.cypher.internal.v3_4.{expressions => exp}
 import org.opencypher.okapi.api.graph.QualifiedGraphName
+import org.opencypher.okapi.api.schema.Schema
 import org.opencypher.okapi.api.types._
 import org.opencypher.okapi.impl.exception.{IllegalArgumentException, IllegalStateException, UnsupportedOperationException}
 import org.opencypher.okapi.ir.api._
@@ -42,6 +43,7 @@ import org.opencypher.okapi.ir.api.pattern.Pattern
 import org.opencypher.okapi.ir.api.set.{SetItem, SetLabelItem, SetPropertyItem}
 import org.opencypher.okapi.ir.api.util.CompilationStage
 import org.opencypher.okapi.ir.impl.refactor.instances._
+import org.opencypher.okapi.impl.schema.TagSupport._
 
 object IRBuilder extends CompilationStage[ast.Statement, CypherQuery[Expr], IRBuilderContext] {
 
@@ -184,40 +186,55 @@ object IRBuilder extends CompilationStage[ast.Statement, CypherQuery[Expr], IRBu
             val cloneItemMap: Map[IRField, Expr] = cloneItems.toMap
             val fieldsInCloneItems = cloneItemMap.keys.toSet
             val fieldNamesInCloneItems = fieldsInCloneItems.map(_.name)
-            val clonePatternSchema = context.workingGraph.schema.forFields(fieldsInCloneItems)
 
             // computing single nodes/rels constructed by NEW (CREATE)
             val newPattern = newPatterns.foldLeft(Pattern.empty[Expr])(_ ++ _)
             val fieldNamesInNewPattern = newPattern.fields.map(_.name)
-            val newPatternSchema = context.workingGraph.schema.forPattern(newPattern)
+
+            // Fields inside of CONSTRUCT could have been matched on other graphs than just the workingGraph
+            val cloneSchema = schemaForFields(context, cloneItemMap.keys.toSet)
+            val newPatternSchema = schemaForPattern(context, newPattern)
 
             // compute SET items for NEW (CREATE) patterns
-            val patternSchema = newPatternSchema ++ clonePatternSchema
+            val patternSchema = newPatternSchema ++ cloneSchema
             val fieldNamesInPattern = fieldNamesInCloneItems ++ fieldNamesInNewPattern
 
-            val (schema, _) = setItems.foldLeft(patternSchema -> Map.empty[Var, CypherType]) { case ((currentSchema, rewrittenVarTypes), setItem: SetItem[Expr]) =>
+            val (constructedSchema, _) = setItems.foldLeft(patternSchema -> Map.empty[Var, CypherType]) { case ((currentSchema, rewrittenVarTypes), setItem: SetItem[Expr]) =>
               if (!fieldNamesInPattern.contains(setItem.variable.name)) {
                 throw UnsupportedOperationException("SET on a variable that is not defined inside of the CONSTRUCT scope")
               }
               setItem match {
                 case SetLabelItem(variable, labels) =>
-                  val existingLabels = rewrittenVarTypes.getOrElse(variable, variable.cypherType) match {
-                    case CTNode(existing) => existing
+                  val (existingLabels, existingQgn) = rewrittenVarTypes.getOrElse(variable, variable.cypherType) match {
+                    case CTNode(ls, qgn) => ls -> qgn
                     case other => throw UnsupportedOperationException(s"SET label on something that is not a node: $other")
                   }
                   val labelsAfterSet = existingLabels ++ labels
                   val updatedSchema = currentSchema.addLabelsToCombo(labels, existingLabels)
-                  updatedSchema -> rewrittenVarTypes.updated(variable, CTNode(labelsAfterSet))
+                  updatedSchema -> rewrittenVarTypes.updated(variable, CTNode(labelsAfterSet, existingQgn))
                 case SetPropertyItem(propertyKey, variable, setValue) =>
                   val propertyType = setValue.cypherType
                   val updatedSchema = currentSchema.addPropertyToEntity(propertyKey, propertyType, variable.cypherType)
                   updatedSchema -> rewrittenVarTypes
               }
             }
+
             val onGraphs = on.map(graph => QualifiedGraphName(graph.parts))
+            val patternGraphSchema = {
+              if (onGraphs.size > 0) {
+                val onGraphsSchema = onGraphs.map(context.schemaFor).map(_.toTagged)
+                val schemaForUnionOfOnGraphs = onGraphsSchema.reduce(_ union _)
+                schemaForUnionOfOnGraphs ++ constructedSchema // No UNION to avoid retagging
+              } else {
+                constructedSchema
+              }
+            }
+
+            val qgn = context.uniqueSessionGraphNameGenerator()
 
             val patternGraph = IRPatternGraph[Expr](
-              schema,
+              qgn,
+              patternGraphSchema,
               cloneItemMap,
               newPattern,
               setItems.collect { case p: SetPropertyItem[Expr] => p },
@@ -269,6 +286,19 @@ object IRBuilder extends CompilationStage[ast.Statement, CypherQuery[Expr], IRBu
       case x =>
         error(IRBuilderError(s"Clause not yet supported: $x"))(List.empty[Block[Expr]])
     }
+  }
+
+  def schemaForPattern(context: IRBuilderContext, pattern: Pattern[Expr]): Schema = schemaForFields(context, pattern.fields)
+
+  def schemaForFields(
+    context: IRBuilderContext,
+    fields: Set[IRField]
+  ): Schema = {
+    fields.map { field =>
+      val graphSchema = field.cypherType.graph.map(context.schemaFor).getOrElse(context.workingGraph.schema)
+      val fieldSchema = graphSchema.forField(field)
+      fieldSchema
+    }.foldLeft(Schema.empty)(_ ++ _)
   }
 
   private def registerProjectBlock(
