@@ -83,7 +83,7 @@ object IRBuilder extends CompilationStage[ast.Statement, CypherQuery[Expr], IRBu
 
     c match {
 
-      case ast.UseGraph(qgn: ast.QualifiedGraphName) =>
+      case ast.FromGraph(qgn: ast.QualifiedGraphName) =>
         for {
           context <- get[R, IRBuilderContext]
           blocks <- {
@@ -166,17 +166,18 @@ object IRBuilder extends CompilationStage[ast.Statement, CypherQuery[Expr], IRBu
         } yield block
 
       // TODO: Support merges, removes
-      case ast.ConstructGraph(clones, creates, sets, on) =>
+      case ast.ConstructGraph(clones, news, on) =>
         for {
           cloneItems <- clones.flatMap(_.items).traverse(convertReturnItem[R])
           // TODO: Note: CREATE will be NEW in the future
-          newPatterns <- creates.map {
-            case ast.Create(p: exp.Pattern) => p
+          newPatterns <- news.map {
+            case ast.New(p: exp.Pattern) => p
           }.traverse(convertPattern[R])
 
-          setItems <- sets.flatMap {
-            case ast.SetClause(s) => s
-          }.traverse(convertSetItem[R])
+          // TODO: requires NEW (a { foo : 42 }) to be parsed to SET items
+//          setItems <- sets.flatMap {
+//            case ast.SetClause(s) => s
+//          }.traverse(convertSetItem[R])
 
           context <- get[R, IRBuilderContext]
 
@@ -198,6 +199,9 @@ object IRBuilder extends CompilationStage[ast.Statement, CypherQuery[Expr], IRBu
             // compute SET items for NEW (CREATE) patterns
             val patternSchema = newPatternSchema ++ cloneSchema
             val fieldNamesInPattern = fieldNamesInCloneItems ++ fieldNamesInNewPattern
+
+            // TODO: remove when map-expressions in NEW patterns are supported
+            val setItems = List.empty[SetItem[Expr]]
 
             val (constructedSchema, _) = setItems.foldLeft(patternSchema -> Map.empty[Var, CypherType]) { case ((currentSchema, rewrittenVarTypes), setItem: SetItem[Expr]) =>
               if (!fieldNamesInPattern.contains(setItem.variable.name)) {

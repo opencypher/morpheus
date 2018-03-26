@@ -52,9 +52,8 @@ trait MultipleGraphBehaviour {
       val query =
         """
           |MATCH (n)
-          |CONSTRUCT {
+          |CONSTRUCT
           |  CLONE n
-          |}
           |RETURN GRAPH""".stripMargin
 
       val result = testGraph1.cypher(query)
@@ -65,9 +64,8 @@ trait MultipleGraphBehaviour {
       val query =
         """
           |MATCH (n)
-          |CONSTRUCT {
+          |CONSTRUCT
           |  CLONE n as m
-          |}
           |RETURN GRAPH""".stripMargin
 
       val result = testGraph1.cypher(query)
@@ -87,7 +85,7 @@ trait MultipleGraphBehaviour {
     it("should switch to another graph and then return it") {
       caps.store(GraphName("graph2"), testGraph2)
       val query =
-        """USE GRAPH graph2
+        """FROM GRAPH graph2
           |RETURN GRAPH""".stripMargin
 
       val result = testGraph1.cypher(query)
@@ -100,7 +98,7 @@ trait MultipleGraphBehaviour {
       caps.store(GraphName("graph2"), testGraph2)
 
       val query =
-        """USE GRAPH graph2
+        """FROM GRAPH graph2
           |MATCH (n:Person)
           |RETURN n.name AS name""".stripMargin
 
@@ -118,10 +116,10 @@ trait MultipleGraphBehaviour {
       caps.store(GraphName("graph3"), testGraph3)
 
       val query =
-        """USE GRAPH graph2
+        """FROM GRAPH graph2
           |MATCH (n:Person)
           |WITH n.name AS name
-          |USE GRAPH graph3
+          |FROM GRAPH graph3
           |MATCH (c:Car)
           |RETURN name, c.type AS car""".stripMargin
 
@@ -135,9 +133,8 @@ trait MultipleGraphBehaviour {
 
     it("should construct a graph") {
       val query =
-        """|CONSTRUCT {
-           |  CREATE (:A)-[:KNOWS]->(:B)
-           |}
+        """|CONSTRUCT
+           |  NEW (:A)-[:KNOWS]->(:B)
            |RETURN GRAPH""".stripMargin
 
       val result = testGraph1.cypher(query)
@@ -149,12 +146,11 @@ trait MultipleGraphBehaviour {
       result.getGraph.relationships("r").size should equal(1)
     }
 
-    it("should CONSTRUCT a graph with multiple connected CREATE clauses") {
+    it("should CONSTRUCT a graph with multiple connected NEW clauses") {
       val query =
-        """|CONSTRUCT {
-           |  CREATE (a:A)-[:KNOWS]->(b:B)
-           |  CREATE (b)-[:KNOWS]->(c:C)
-           |}
+        """|CONSTRUCT
+           |  NEW (a:A)-[:KNOWS]->(b:B)
+           |  NEW (b)-[:KNOWS]->(c:C)
            |RETURN GRAPH""".stripMargin
 
       val result = testGraph1.cypher(query)
@@ -166,12 +162,11 @@ trait MultipleGraphBehaviour {
       result.getGraph.relationships("r").size should equal(2)
     }
 
-    it("should CONSTRUCT a graph with multiple unconnected CREATE clauses") {
+    it("should CONSTRUCT a graph with multiple unconnected NEW clauses") {
       val query =
-        """|CONSTRUCT {
-           |  CREATE (a:A)-[:KNOWS]->(b:B)
-           |  CREATE (c:C)-[:KNOWS]->(d:D)
-           |}
+        """|CONSTRUCT
+           |  NEW (a:A)-[:KNOWS]->(b:B)
+           |  NEW (c:C)-[:KNOWS]->(d:D)
            |RETURN GRAPH""".stripMargin
 
       val result = testGraph1.cypher(query)
@@ -183,12 +178,11 @@ trait MultipleGraphBehaviour {
       result.getGraph.relationships("r").size should equal(2)
     }
 
-    it("should CONSTRUCT a graph with multiple unconnected anonymous CREATE clauses") {
+    it("should CONSTRUCT a graph with multiple unconnected anonymous NEW clauses") {
       val query =
-        """|CONSTRUCT {
-           |  CREATE (:A)
-           |  CREATE (:B)
-           |}
+        """|CONSTRUCT
+           |  NEW (:A)
+           |  NEW (:B)
            |RETURN GRAPH""".stripMargin
 
       val result = testGraph1.cypher(query)
@@ -201,13 +195,12 @@ trait MultipleGraphBehaviour {
       result.getGraph.relationships("r").size should equal(0)
     }
 
-    it("should construct a node property from a matched node") {
+    // TODO: reactive after map expressions in NEW are supported
+    ignore("should construct a node property from a matched node") {
       val query =
         """|MATCH (m)
-           |CONSTRUCT {
-           |  CREATE (a :A)
-           |  SET a.name = m.name
-           |}
+           |CONSTRUCT
+           |  NEW (a :A { name: m.name})
            |RETURN GRAPH""".stripMargin
 
       val result = testGraph1.cypher(query)
@@ -220,12 +213,11 @@ trait MultipleGraphBehaviour {
       ))
     }
 
-    it("should construct a node property from a literal") {
+    // TODO: reactive after map expressions in NEW are supported
+    ignore("should construct a node property from a literal") {
       val query =
-        """|CONSTRUCT {
-           |  CREATE (a :A)
-           |  SET a.name = 'Donald'
-           |}
+        """|CONSTRUCT
+           |  NEW (a :A {a.name : 'Donald'})
            |RETURN GRAPH""".stripMargin
 
       val result = testGraph1.cypher(query)
@@ -239,15 +231,13 @@ trait MultipleGraphBehaviour {
     }
 
     // TODO: Requires COPY OF to be able to express original intent
+    // TODO: reactive after map expressions in NEW are supported
     ignore("should construct multiple properties") {
       val query =
         """|MATCH (a)
-           |CONSTRUCT {
+           |CONSTRUCT
            |  CLONE a as newA
-           |  CREATE (newA :A:B)
-           |  SET newA.name = 'Donald'
-           |  SET newA.age = 100
-           |}
+           |  NEW (newA :A:B {newA.name : 'Donald', newA.age : 100})
            |RETURN GRAPH""".stripMargin
 
       val result = testGraph1.cypher(query)
@@ -267,9 +257,8 @@ trait MultipleGraphBehaviour {
     it("should pick up labels of the outer match") {
       val query =
         """|MATCH (m:Person)
-           |CONSTRUCT {
+           |CONSTRUCT
            |  CLONE m
-           |}
            |RETURN GRAPH""".stripMargin
 
       val result = testGraph1.cypher(query)
@@ -286,12 +275,11 @@ trait MultipleGraphBehaviour {
       ))
     }
 
-    it("should construct a relationship") {
+    // TODO: reactive after map expressions in NEW are supported
+    ignore("should construct a relationship") {
       val query =
-        """|CONSTRUCT {
-           |  CREATE ()-[r:FOO]->()
-           |  SET r.val = 42
-           |}
+        """|CONSTRUCT
+           |  NEW ()-[r:FOO {r.val : 42}]->()
            |RETURN GRAPH""".stripMargin
 
       val result = testGraph1.cypher(query)
@@ -307,17 +295,14 @@ trait MultipleGraphBehaviour {
     }
 
     // TODO: Requires COPY OF
+    // TODO: reactive after map expressions in NEW are supported
     ignore("should tilde copy a relationship") {
       val query =
-        """|CONSTRUCT {
-           |  CREATE ()-[r:FOO]->()
-           |  SET r.val = 42
-           |}
+        """|CONSTRUCT
+           |  NEW ()-[r:FOO {r.val : 42}]->()
            |MATCH ()-[s]->()
-           |CONSTRUCT {
-           |  CREATE ()-[t~s]->()
-           |  SET t.name = 'Donald'
-           |}
+           |CONSTRUCT
+           |  NEW ()-[t COPY OF s {t.name : 'Donald'}]->()
            |RETURN GRAPH""".stripMargin
 
       val result = testGraph1.cypher(query)
@@ -339,10 +324,9 @@ trait MultipleGraphBehaviour {
         """
           |MATCH (n),(m)
           |WHERE n.name = 'Mats' AND m.name = 'Phil'
-          |CONSTRUCT {
+          |CONSTRUCT
           | CLONE n, m
-          | CREATE (n)-[r:KNOWS]->(m)
-          |}
+          | NEW (n)-[r:KNOWS]->(m)
           |RETURN GRAPH
         """.stripMargin)
 
@@ -364,10 +348,9 @@ trait MultipleGraphBehaviour {
         """
           |MATCH (n)-[:KNOWS]->(m)
           |WITH DISTINCT n, m
-          |CONSTRUCT {
+          |CONSTRUCT
           | CLONE n, m
-          | CREATE (n)-[r:KNOWS]->(m)
-          |}
+          | NEW (n)-[r:KNOWS]->(m)
           |RETURN GRAPH
         """.stripMargin)
 
@@ -388,10 +371,9 @@ trait MultipleGraphBehaviour {
       val res = inputGraph.cypher(
         """
           |MATCH (n)-[:KNOWS]->(m)
-          |CONSTRUCT {
+          |CONSTRUCT
           | CLONE n, m
-          | CREATE (n)-[r:KNOWS]->(m)
-          |}
+          | NEW (n)-[r:KNOWS]->(m)
           |RETURN GRAPH
         """.stripMargin)
 
@@ -402,14 +384,12 @@ trait MultipleGraphBehaviour {
     // TODO: Allow schema lookup for constructed graph that is not in the catalog
     ignore("should allow simple MGC syntax") {
       val query =
-        """|CONSTRUCT {
-           |  CREATE (a:A)-[r:FOO]->(b:B)
-           |}
+        """|CONSTRUCT
+           |  NEW (a:A)-[r:FOO]->(b:B)
            |MATCH (a)-->(b)
-           |CONSTRUCT {
+           |CONSTRUCT
            |  CLONE a, b
-           |  CREATE (a)-[:KNOWS]->(b)
-           |}
+           |  NEW (a)-[:KNOWS]->(b)
            |RETURN GRAPH""".stripMargin
 
       val result = testGraph1.cypher(query)
@@ -432,8 +412,7 @@ trait MultipleGraphBehaviour {
       caps.store(GraphName("one"), testGraph1)
       val query =
         """
-          |CONSTRUCT ON one {
-          |}
+          |CONSTRUCT ON one
           |RETURN GRAPH""".stripMargin
 
       val result = testGraph2.cypher(query).getGraph
@@ -449,8 +428,7 @@ trait MultipleGraphBehaviour {
       caps.store(GraphName("two"), testGraph2)
       val query =
         """
-          |CONSTRUCT ON one, two {
-          |}
+          |CONSTRUCT ON one, two
           |RETURN GRAPH""".stripMargin
 
       val result = testGraph2.cypher(query).getGraph
@@ -465,14 +443,13 @@ trait MultipleGraphBehaviour {
       caps.store(GraphName("one"), testGraph1)
       caps.store(GraphName("two"), testGraph2)
       val query =
-        """|USE GRAPH one
+        """|FROM GRAPH one
            |MATCH (m: Person)
-           |USE GRAPH two
+           |FROM GRAPH two
            |MATCH (p: Person)
-           |CONSTRUCT ON one, two {
+           |CONSTRUCT ON one, two
            |  CLONE m, p
-           |  CREATE (m)-[:KNOWS]->(p)
-           |}
+           |  NEW (m)-[:KNOWS]->(p)
            |RETURN GRAPH""".stripMargin
 
       val result = caps.cypher(query).getGraph
@@ -484,8 +461,6 @@ trait MultipleGraphBehaviour {
       )
       result.schema.toTagged.tags should equal(Set(0, 1, 2))
     }
-
-
   }
 
 }
