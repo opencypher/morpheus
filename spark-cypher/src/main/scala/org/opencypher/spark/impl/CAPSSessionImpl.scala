@@ -26,7 +26,6 @@
  */
 package org.opencypher.spark.impl
 
-import java.util.UUID
 import java.util.concurrent.atomic.AtomicLong
 
 import org.apache.spark.sql.SparkSession
@@ -37,8 +36,9 @@ import org.opencypher.okapi.api.value.CypherValue._
 import org.opencypher.okapi.api.value._
 import org.opencypher.okapi.impl.io.SessionPropertyGraphDataSource
 import org.opencypher.okapi.impl.util.Measurement.time
+import org.opencypher.okapi.ir.api.configuration.IrConfiguration.PrintIr
 import org.opencypher.okapi.ir.api.expr.{Expr, Var}
-import org.opencypher.okapi.ir.api.{IRCatalogGraph, IRField}
+import org.opencypher.okapi.ir.api.{CreateGraphStatement, CypherQuery, IRCatalogGraph, IRField}
 import org.opencypher.okapi.ir.impl.parse.CypherParser
 import org.opencypher.okapi.ir.impl.{IRBuilder, IRBuilderContext}
 import org.opencypher.okapi.logical.api.configuration.LogicalConfiguration.PrintLogicalPlan
@@ -49,7 +49,6 @@ import org.opencypher.okapi.relational.impl.physical.PhysicalPlanner
 import org.opencypher.spark.api.CAPSSession
 import org.opencypher.spark.impl.CAPSConverters._
 import org.opencypher.spark.impl.physical._
-import org.opencypher.okapi.ir.api.configuration.IrConfiguration._
 
 sealed class CAPSSessionImpl(val sparkSession: SparkSession, val sessionNamespace: Namespace)
   extends CAPSSession
@@ -95,32 +94,25 @@ sealed class CAPSSessionImpl(val sparkSession: SparkSession, val sessionNamespac
 
     if (PrintIr.isSet) {
       println("IR:")
-      println(ir.model.result.pretty)
+      println(ir.pretty)
     }
 
-    logStageProgress("Logical planning ...", newLine = false)
-    val logicalPlannerContext = LogicalPlannerContext(graph.schema, inputFields, catalog)
-    val logicalPlan = time("Logical planning")(logicalPlanner(ir)(logicalPlannerContext))
-    logStageProgress("Done!")
-    if (PrintLogicalPlan.isSet) {
-      println("Logical plan:")
-      println(logicalPlan.pretty)
-    }
+    ir match {
+      case cq: CypherQuery[Expr] =>
+        planCypherQuery(graph, cq, allParameters, inputFields, drivingTable)
 
-    logStageProgress("Logical optimization ...", newLine = false)
-    val optimizedLogicalPlan = time("Logical optimization")(logicalOptimizer(logicalPlan)(logicalPlannerContext))
-    logStageProgress("Done!")
-    if (PrintLogicalPlan.isSet) {
-      println("Optimized logical plan:")
-      println(optimizedLogicalPlan.pretty())
+      case CreateGraphStatement(_, irGraph, innerQueryIr) =>
+        val innerResult = planCypherQuery(graph, innerQueryIr, allParameters, inputFields, drivingTable)
+        val resultGraph = innerResult.getGraph
+        val namespace = irGraph.qualifiedGraphName.namespace
+        val graphName = irGraph.qualifiedGraphName.graphName
+        dataSource(namespace).store(graphName, resultGraph)
+        CAPSResult.empty(innerResult.plans)
     }
-
-    plan(drivingTable, allParameters, optimizedLogicalPlan)
   }
 
   override def sql(query: String): CAPSRecords =
     CAPSRecords.wrap(sparkSession.sql(query))
-
 
   /**
     * Unmounts the property graph associated with the given name from the session-local storage.
@@ -154,7 +146,7 @@ sealed class CAPSSessionImpl(val sparkSession: SparkSession, val sessionNamespac
     queryParameters: CypherMap): CAPSRecords = {
     val scan = planStart(graph, in.asCaps.header.internalHeader.fields)
     val filter = producer.planFilter(expr, scan)
-    plan(in, queryParameters, filter).getRecords
+    planPhysical(in, queryParameters, filter).getRecords
   }
 
   override def select(
@@ -164,7 +156,7 @@ sealed class CAPSSessionImpl(val sparkSession: SparkSession, val sessionNamespac
     queryParameters: CypherMap): CAPSRecords = {
     val scan = planStart(graph, in.asCaps.header.internalHeader.fields)
     val select = producer.planSelect(fields, scan)
-    plan(in, queryParameters, select).getRecords
+    planPhysical(in, queryParameters, select).getRecords
   }
 
   override def project(
@@ -174,7 +166,7 @@ sealed class CAPSSessionImpl(val sparkSession: SparkSession, val sessionNamespac
     queryParameters: CypherMap): CAPSRecords = {
     val scan = planStart(graph, in.asCaps.header.internalHeader.fields)
     val project = producer.projectExpr(expr, scan)
-    plan(in, queryParameters, project).getRecords
+    planPhysical(in, queryParameters, project).getRecords
   }
 
   override def alias(
@@ -185,10 +177,35 @@ sealed class CAPSSessionImpl(val sparkSession: SparkSession, val sessionNamespac
     val (expr, v) = alias
     val scan = planStart(graph, in.asCaps.header.internalHeader.fields)
     val select = producer.projectField(IRField(v.name)(v.cypherType), expr, scan)
-    plan(in, queryParameters, select).getRecords
+    planPhysical(in, queryParameters, select).getRecords
   }
 
-  private def plan(
+  private def planCypherQuery(graph: PropertyGraph, cypherQuery: CypherQuery[Expr], allParameters: CypherMap, inputFields: Set[Var], drivingTable: CypherRecords) = {
+    val LogicalPlan = planLogical(cypherQuery, graph, inputFields)
+    planPhysical(drivingTable, allParameters, LogicalPlan)
+  }
+
+  private def planLogical(ir: CypherQuery[Expr], graph: PropertyGraph, inputFields: Set[Var]) = {
+    logStageProgress("Logical planning ...", newLine = false)
+    val logicalPlannerContext = LogicalPlannerContext(graph.schema, inputFields, catalog)
+    val logicalPlan = time("Logical planning")(logicalPlanner(ir)(logicalPlannerContext))
+    logStageProgress("Done!")
+    if (PrintLogicalPlan.isSet) {
+      println("Logical plan:")
+      println(logicalPlan.pretty)
+    }
+
+    logStageProgress("Logical optimization ...", newLine = false)
+    val optimizedLogicalPlan = time("Logical optimization")(logicalOptimizer(logicalPlan)(logicalPlannerContext))
+    logStageProgress("Done!")
+    if (PrintLogicalPlan.isSet) {
+      println("Optimized logical plan:")
+      println(optimizedLogicalPlan.pretty())
+    }
+    optimizedLogicalPlan
+  }
+
+  private def planPhysical(
     records: CypherRecords,
     parameters: CypherMap,
     logicalPlan: LogicalOperator): CAPSResult = {

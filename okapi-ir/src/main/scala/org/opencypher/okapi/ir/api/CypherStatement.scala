@@ -28,10 +28,14 @@ package org.opencypher.okapi.ir.api
 
 import org.opencypher.okapi.ir.api.block.{Binds, Block}
 
+sealed trait CypherStatement[E] extends Block[E] {
+  def info: QueryInfo
+}
+
 final case class CypherQuery[E](
     info: QueryInfo,
     model: QueryModel[E]
-) extends Block[E] {
+) extends CypherStatement[E] {
   override def after: List[Block[E]] = model.after
 
   override def binds: Binds[E] = model.binds
@@ -39,4 +43,17 @@ final case class CypherQuery[E](
   override def where(): Set[E] = model.where
 
   override def graph: IRGraph = model.graph
+}
+
+final case class CreateGraphStatement[E](
+    info: QueryInfo,
+    graph: IRGraph,
+    innerQuery: CypherQuery[E]
+) extends CypherStatement[E] {
+
+  override val after: List[Block[E]] = List(innerQuery)
+
+  override def binds: Binds[E] = Binds.empty
+
+  override def where: Set[E] = Set.empty
 }

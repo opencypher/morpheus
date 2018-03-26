@@ -67,3 +67,13 @@ trait CAPSResult extends CypherResult {
 
   override def toString = this.getClass.getSimpleName
 }
+
+object CAPSResult {
+  def empty(queryPlans: CAPSQueryPlans): CAPSResult = new CAPSResult {
+    override def records: Option[CAPSRecords] = None
+
+    override def graph = None
+
+    override def plans: CAPSQueryPlans = queryPlans
+  }
+}

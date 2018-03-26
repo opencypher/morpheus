@@ -107,7 +107,7 @@ abstract class IrTestSuite extends BaseTestSuite with MockitoSugar {
           testGraph()(schema),
           () => testQualifiedGraphName,
           _ => testGraphSource(graphsWithSchema :+ (testGraphName -> schema): _*)
-        ))
+        )).asInstanceOf[CypherQuery[Expr]]
     }
 
     def irWithParams(params: (String, CypherValue)*)(implicit schema: Schema = Schema.empty): CypherQuery[Expr] = {
@@ -118,7 +118,7 @@ abstract class IrTestSuite extends BaseTestSuite with MockitoSugar {
           SemanticState.clean,
           testGraph()(schema),
           () => testQualifiedGraphName,
-          _ => testGraphSource(testGraphName -> schema)))
+          _ => testGraphSource(testGraphName -> schema))).asInstanceOf[CypherQuery[Expr]]
     }
   }
 
