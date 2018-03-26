@@ -94,9 +94,21 @@ abstract class IrTestSuite extends BaseTestSuite with MockitoSugar {
   case class DummyBinds[E](fields: Set[IRField] = Set.empty) extends Binds[E]
 
   implicit class RichString(queryText: String) {
-    def model: QueryModel[Expr] = ir().model
+    def asCypherQuery: CypherQuery[Expr] = {
+      ir() match {
+        case cq : CypherQuery[Expr] => cq
+        case other => throw new IllegalArgumentException(s"Cannot convert $other into CypherQuery")
+      }
+    }
 
-    def ir(graphsWithSchema: (GraphName, Schema)*)(implicit schema: Schema = Schema.empty): CypherQuery[Expr] = {
+    def asCreateGraphStatement: CreateGraphStatement[Expr] = {
+      ir() match {
+        case s : CreateGraphStatement[Expr] => s
+        case other => throw new IllegalArgumentException(s"Cannot convert $other into CreateGraphStatement")
+      }
+    }
+
+    def ir(graphsWithSchema: (GraphName, Schema)*)(implicit schema: Schema = Schema.empty): CypherStatement[Expr] = {
       val stmt = CypherParser(queryText)(CypherParser.defaultContext)
       val parameters = Map.empty[String, CypherValue]
       IRBuilder(stmt)(
@@ -107,10 +119,10 @@ abstract class IrTestSuite extends BaseTestSuite with MockitoSugar {
           testGraph()(schema),
           () => testQualifiedGraphName,
           _ => testGraphSource(graphsWithSchema :+ (testGraphName -> schema): _*)
-        )).asInstanceOf[CypherQuery[Expr]]
+        ))
     }
 
-    def irWithParams(params: (String, CypherValue)*)(implicit schema: Schema = Schema.empty): CypherQuery[Expr] = {
+    def irWithParams(params: (String, CypherValue)*)(implicit schema: Schema = Schema.empty): CypherStatement[Expr] = {
       val stmt = CypherParser(queryText)(CypherParser.defaultContext)
       IRBuilder(stmt)(
         IRBuilderContext.initial(queryText,
@@ -118,7 +130,7 @@ abstract class IrTestSuite extends BaseTestSuite with MockitoSugar {
           SemanticState.clean,
           testGraph()(schema),
           () => testQualifiedGraphName,
-          _ => testGraphSource(testGraphName -> schema))).asInstanceOf[CypherQuery[Expr]]
+          _ => testGraphSource(testGraphName -> schema)))
     }
   }
 

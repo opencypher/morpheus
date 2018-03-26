@@ -101,12 +101,12 @@ sealed class CAPSSessionImpl(val sparkSession: SparkSession, val sessionNamespac
       case cq: CypherQuery[Expr] =>
         planCypherQuery(graph, cq, allParameters, inputFields, drivingTable)
 
-      case CreateGraphStatement(_, irGraph, innerQueryIr) =>
+      case CreateGraphStatement(_, targetGraph, innerQueryIr) =>
         val innerResult = planCypherQuery(graph, innerQueryIr, allParameters, inputFields, drivingTable)
         val resultGraph = innerResult.getGraph
-        val namespace = irGraph.qualifiedGraphName.namespace
-        val graphName = irGraph.qualifiedGraphName.graphName
-        dataSource(namespace).store(graphName, resultGraph)
+
+        store(targetGraph.qualifiedGraphName, resultGraph)
+
         CAPSResult.empty(innerResult.plans)
     }
   }

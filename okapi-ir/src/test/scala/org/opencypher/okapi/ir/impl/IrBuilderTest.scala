@@ -26,6 +26,7 @@
  */
 package org.opencypher.okapi.ir.impl
 
+import org.opencypher.okapi.api.graph.{GraphName, Namespace, QualifiedGraphName}
 import org.opencypher.okapi.api.schema.{PropertyKeys, Schema}
 import org.opencypher.okapi.api.types._
 import org.opencypher.okapi.api.value.CypherValue._
@@ -42,41 +43,44 @@ import scala.collection.immutable.Set
 
 class IrBuilderTest extends IrTestSuite {
 
-  it("computes a pattern graph schema correctly - 1 create") {
+  describe("parsing CypherQuery") {it("computes a pattern graph schema correctly - 1 create") {
     val query =
       """
         |CONSTRUCT
         |  NEW (a :A)
+
         |RETURN GRAPH""".stripMargin
 
-    query.model.result match {
-      case GraphResultBlock(_, IRPatternGraph(_, schema, _, _, _, _)) =>
-        schema should equal(Schema.empty.withNodePropertyKeys("A")())
-      case _ => fail("no matching graph result found")
+      query.asCypherQuery.model.result match {
+        case GraphResultBlock(_, IRPatternGraph(_, schema, _, _, _, _)) =>
+          schema should equal(Schema.empty.withNodePropertyKeys("A")())
+        case _ => fail("no matching graph result found")
+      }
     }
-  }
 
   // TODO: Enable again once setting in NEW is supported
-  ignore("construct can set a label") {
+  ignore("construct can seta label ") {
     val query =
       """
         |CONSTRUCT
-        |  NEW (a: Label)
+        |  NEW ( a :Label
+        )
         |RETURN GRAPH""".stripMargin
 
-    intercept[UnsupportedOperationException](query.model)
-  }
+      intercept[UnsupportedOperationException](query.asCypherQuery.model)
+    }
 
   // TODO: Enable again once setting in NEW is supported
-  ignore("construct can set a new relationship type") {
+  ignore("construct can set a newrelationshiptype") {
     val query =
       """
         |CONSTRUCT
-        |  NEW ()-[r:Label]->()
+        |  NEW ()-[ r :Label
+        ]->()
         |RETURN GRAPH""".stripMargin
 
-    intercept[ParsingException](query.model)
-  }
+      intercept[ParsingException](query.asCypherQuery.model)
+    }
 
   it("computes a pattern graph schema correctly - 2 creates") {
     val query =
@@ -84,224 +88,168 @@ class IrBuilderTest extends IrTestSuite {
         |CONSTRUCT
         |  NEW (a :A)
         |  NEW (b :B:C)
+
         |RETURN GRAPH""".stripMargin
 
-    query.model.result match {
-      case GraphResultBlock(_, IRPatternGraph(_, schema, _, _, _, _)) =>
-        schema should equal(Schema.empty.withNodePropertyKeys("A")().withNodePropertyKeys("B", "C")())
-      case _ => fail("no matching graph result found")
+      query.asCypherQuery.model.result match {
+        case GraphResultBlock(_, IRPatternGraph(_, schema, _, _, _, _)) =>
+          schema should equal(Schema.empty.withNodePropertyKeys("A")().withNodePropertyKeys("B", "C")())
+        case _ => fail("no matching graph result found")
+      }
     }
-  }
 
-  it("computes a pattern graph schema correctly - setting 2 labels") {
+  it("computes a pattern graph schema correctly - setting2 labels") {
     val query =
       """
         |CONSTRUCT
         |  NEW (a :A:D)
         |  NEW (b :B:C)
+
         |RETURN GRAPH""".stripMargin
 
-    query.model.result match {
-      case GraphResultBlock(_, IRPatternGraph(_, schema, _, _, _, _)) =>
-        schema should equal(Schema.empty.withNodePropertyKeys("A", "D")().withNodePropertyKeys("B", "C")())
-      case _ => fail("no matching graph result found")
+      query.asCypherQuery.model.result match {
+        case GraphResultBlock(_, IRPatternGraph(_, schema, _, _, _, _)) =>
+          schema should equal(Schema.empty.withNodePropertyKeys("A", "D")().withNodePropertyKeys("B", "C")())
+        case _ => fail("no matching graph result found")
+      }
     }
-  }
 
   it("computes a pattern graph schema correctly - setting 3 labels") {
     val query =
       """
         |CONSTRUCT
-        |  NEW (a :A:B:C)
+        |  NEW (a :A :B
+         :C
+        )
         |RETURN GRAPH""".stripMargin
 
-    query.model.result match {
-      case GraphResultBlock(_, IRPatternGraph(_, schema, _, _, _, _)) =>
-        schema should equal(Schema.empty.withNodePropertyKeys("A", "B", "C")())
-      case _ => fail("no matching graph result found")
+      query.asCypherQuery.model.result match {
+        case GraphResultBlock(_, IRPatternGraph(_, schema, _, _, _, _)) =>
+          schema should equal(Schema.empty.withNodePropertyKeys("A", "B", "C")())
+        case _ => fail("no matching graph result found")
+      }
     }
-  }
 
-  it("computes a pattern graph schema correctly - setting 2 different label combinations with overlap") {
+  it("computes a pattern graph schema correctly - setting 2 different labelcombinations with overlap") {
     val query =
       """
         |CONSTRUCT
-        |  NEW (a :A:B)
-        |  NEW (b :A:C)
+        |  NEW (a :A :B)
+        |  NEW ( b :A:C
+        )
         |RETURN GRAPH""".stripMargin
 
-    query.model.result match {
-      case GraphResultBlock(_, IRPatternGraph(_, schema, _, _, _, _)) =>
-        schema should equal(Schema.empty.withNodePropertyKeys("A", "B")().withNodePropertyKeys("A", "C")())
-      case _ => fail("no matching graph result found")
+      query.asCypherQuery.model.result match {
+        case GraphResultBlock(_, IRPatternGraph(_, schema, _, _, _, _)) =>
+          schema should equal(Schema.empty.withNodePropertyKeys("A", "B")().withNodePropertyKeys("A", "C")())
+        case _ => fail("no matching graph result found")
+      }
     }
-  }
 
   it("computes a pattern graph schema correctly - setting 2 equal label combinations") {
     val query =
       """
         |CONSTRUCT
-        |  NEW (a :A:B)
-        |  NEW (b :B:A)
+        |  NEW (a :A :B)
+        |  NEW ( b :B:A
+        )
         |RETURN GRAPH""".stripMargin
 
-    query.model.result match {
-      case GraphResultBlock(_, IRPatternGraph(_, schema, _, _, _, _)) =>
-        schema should equal(Schema.empty.withNodePropertyKeys("A", "B")())
-      case _ => fail("no matching graph result found")
+      query.asCypherQuery.model.result match {
+        case GraphResultBlock(_, IRPatternGraph(_, schema, _, _, _, _)) =>
+          schema should equal(Schema.empty.withNodePropertyKeys("A", "B")())
+        case _ => fail("no matching graph result found")
+      }
     }
-  }
 
   // TODO: Enable again once setting in NEW is supported
   ignore("computes a pattern graph schema correctly - setting a property") {
     val query =
       """
         |CONSTRUCT
-        |  NEW (a :A {name : 'Mats'})
+        |  NEW (a :A{name : 'Mats'
+        })
         |RETURN GRAPH""".stripMargin
 
-    query.model.result match {
-      case GraphResultBlock(_, IRPatternGraph(_, schema, _, _, _, _)) =>
-        schema should equal(Schema.empty.withNodePropertyKeys("A")("name" -> CTString))
-      case _ => fail("no matching graph result found")
+      query.asCypherQuery.model.result match {
+        case GraphResultBlock(_, IRPatternGraph(_, schema, _, _, _, _)) =>
+          schema should equal(Schema.empty.withNodePropertyKeys("A")("name" -> CTString))
+        case _ => fail("no matching graph result found")
+      }
     }
-  }
 
   // TODO: Enable again once setting in NEW is supported
   ignore("computes a pattern graph schema correctly - setting a node property and a label combination") {
     val query =
       """
         |CONSTRUCT
-        |  NEW (a :A:B {name : 'Mats'})
+        |  NEW (a :A:B{name : 'Mats'
+        })
         |RETURN GRAPH""".stripMargin
 
-    query.model.result match {
-      case GraphResultBlock(_, IRPatternGraph(_, schema, _, _, _, _)) =>
-        schema should equal(Schema.empty.withNodePropertyKeys("A", "B")("name" -> CTString))
-      case _ => fail("no matching graph result found")
+      query.asCypherQuery.model.result match {
+        case GraphResultBlock(_, IRPatternGraph(_, schema, _, _, _, _)) =>
+          schema should equal(Schema.empty.withNodePropertyKeys("A", "B")("name" -> CTString))
+        case _ => fail("no matching graph result found")
+      }
     }
-  }
 
   // TODO: Enable again once setting in NEW is supported
-  ignore("computes a pattern graph schema correctly - 1 rel property set") {
+  ignore("computes a pattern graph schema correctly - 1  rel propertyset") {
     val query =
       """
         |CONSTRUCT
-        |  NEW ()-[r :R {level : 'high'}]->()
+        |  NEW ()-[r :R{level : 'high'
+        }]->()
         |RETURN GRAPH""".stripMargin
 
-    query.model.result match {
-      case GraphResultBlock(_, IRPatternGraph(_, schema, _, _, _, _)) =>
-        schema should equal(Schema.empty.withNodePropertyKeys(Set.empty[String]).withRelationshipPropertyKeys("R")("level" -> CTString))
-      case _ => fail("no matching graph result found")
+      query.asCypherQuery.model.result match {
+        case GraphResultBlock(_, IRPatternGraph(_, schema, _, _, _, _)) =>
+          schema should equal(Schema.empty.withNodePropertyKeys(Set.empty[String]).withRelationshipPropertyKeys("R")("level" -> CTString))
+        case _ => fail("no matching graph result found")
+      }
     }
-  }
 
   // TODO: Enable again once setting in NEW is supported
-  ignore("computes a pattern graph schema correctly - 2 properties set") {
+  ignore("computes a pattern graph schema correctly -  2  propertiesset") {
     val query =
       """
         |CONSTRUCT
-        |  CREATE (a :A {category : 'computer', ports : 4})
+        |  CREATE (a :A{category : 'computer'
+        ,ports : 4
+        })
         |RETURN GRAPH""".stripMargin
 
-    query.model.result match {
-      case GraphResultBlock(_, IRPatternGraph(_, schema, _, _, _, _)) =>
-        schema should equal(Schema.empty.withNodePropertyKeys(Set("A"), PropertyKeys("category" -> CTString, "ports" -> CTInteger)))
-      case _ => fail("no matching graph result found")
+      query.asCypherQuery.model.result match {
+        case GraphResultBlock(_, IRPatternGraph(_, schema, _, _, _, _)) =>
+          schema should equal(Schema.empty.withNodePropertyKeys(Set("A"), PropertyKeys("category" -> CTString, "ports" -> CTInteger)))
+        case _ => fail("no matching graph result found")
+      }
     }
-  }
 
-  // TODO: Enable again once setting in NEW is supported
+  // TODO: Enable again once setting in NEW is  supported
   ignore("computes a pattern graph schema correctly - clone then add label") {
     val query =
       """
         |CONSTRUCT
         |  NEW (a :A)
+
         |MATCH (b: A)
         |CONSTRUCT
         |  CLONE b as c
-        |  NEW (c: B)
+        |  NEW ( c :B
+        )
         |RETURN GRAPH""".stripMargin
 
-    query.model.result match {
-      case GraphResultBlock(_, IRPatternGraph(_, schema, _, _, _, _)) =>
-        schema should equal(Schema.empty.withNodePropertyKeys("A", "B")())
-      case _ => fail("no matching graph result found")
+      query.asCypherQuery.model.result match {
+        case GraphResultBlock(_, IRPatternGraph(_, schema, _, _, _, _)) =>
+          schema should equal(Schema.empty.withNodePropertyKeys("A", "B")())
+        case _ => fail("no matching graph result found")
+      }
     }
-  }
 
-  test("match node and return it") {
-    "MATCH (a:Person) RETURN a".model.ensureThat { (model, globals) =>
-      val loadBlock = model.findExactlyOne {
-        case NoWhereBlock(s@SourceBlock(_)) =>
-          s.binds.fields shouldBe empty
-      }
-
-      val matchBlock = model.findExactlyOne {
-        case MatchBlock(deps, Pattern(fields, topo, equivalences), exprs, _, _) =>
-          deps should equalWithTracing(List(loadBlock))
-          fields should equal(Set(toField('a -> CTNode)))
-          topo shouldBe empty
-          exprs should equalWithTracing(Set(HasLabel(toVar('a), Label("Person"))()))
-      }
-
-      val projectBlock = model.findExactlyOne {
-        case NoWhereBlock(ProjectBlock(deps, Fields(map), _, _, _)) =>
-          deps should equalWithTracing(List(matchBlock))
-          map should equal(Map(toField('a) -> toVar('a)))
-      }
-
-      model.result match {
-        case NoWhereBlock(TableResultBlock(deps, OrderedFields(List(IRField("a"))), _)) =>
-          deps should equal(List(projectBlock))
-      }
-
-      model.dependencies should equalWithTracing(
-        Set(matchBlock, loadBlock, projectBlock, model.result)
-      )
-    }
-  }
-
-  it("matches a simple relationship pattern and returns some fields") {
-    "MATCH (a)-[r]->(b) RETURN b AS otherB, a, r".model.ensureThat { (model, globals) =>
-      val loadBlock = model.findExactlyOne {
-        case NoWhereBlock(s@SourceBlock(_)) =>
-          s.binds.fields shouldBe empty
-      }
-
-      val matchBlock = model.findExactlyOne {
-        case NoWhereBlock(MatchBlock(deps, Pattern(fields, topo, equivalences), _, _, _)) =>
-          deps should equalWithTracing(List(loadBlock))
-          fields should equal(Set[IRField]('a -> CTNode, 'b -> CTNode, 'r -> CTRelationship))
-          val map = Map(toField('r) -> DirectedRelationship('a, 'b))
-          topo should equal(map)
-      }
-
-      val projectBlock = model.findExactlyOne {
-        case NoWhereBlock(ProjectBlock(deps, Fields(map), _, _, _)) =>
-          deps should equalWithTracing(List(matchBlock))
-          map should equal(
-            Map(
-              toField('a) -> toVar('a),
-              toField('otherB) -> toVar('b),
-              toField('r) -> toVar('r)
-            ))
-      }
-
-      val resultBlock = model.result.findExactlyOne {
-        case TableResultBlock(_, OrderedFields(List(IRField("otherB"), IRField("a"), IRField("r"))), _) =>
-      }
-
-      model.dependencies should equalWithTracing(
-        Set(matchBlock, loadBlock, projectBlock, resultBlock)
-      )
-    }
-  }
-
-  it("matches node order by name and returns it") {
-    "MATCH (a:Person) WITH a.name AS name, a.age AS age ORDER BY age RETURN age, name".model.ensureThat {
-      (model, _) =>
+    test("match node and return it") {
+      "MATCH (a:Person) RETURN a".asCypherQuery.model.ensureThat { (model, globals) =>
         val loadBlock = model.findExactlyOne {
           case NoWhereBlock(s@SourceBlock(_)) =>
             s.binds.fields shouldBe empty
@@ -315,102 +263,191 @@ class IrBuilderTest extends IrTestSuite {
             exprs should equalWithTracing(Set(HasLabel(toVar('a), Label("Person"))()))
         }
 
-        val projectBlock1 = model.findExactlyOne {
-          case NoWhereBlock(ProjectBlock(deps, Fields(map), _, _, _)) if deps.head == matchBlock =>
+        val projectBlock = model.findExactlyOne {
+          case NoWhereBlock(ProjectBlock(deps, Fields(map), _, _, _)) =>
             deps should equalWithTracing(List(matchBlock))
-            map should equal(
-              Map(
-                toField('name) -> Property(Var("a")(CTNode), PropertyKey("name"))(CTNull),
-                toField('age) -> Property(Var("a")(CTNode), PropertyKey("age"))(CTNull)
-              ))
+            map should equal(Map(toField('a) -> toVar('a)))
         }
 
-        val projectBlock2 = model.findExactlyOne {
-          case NoWhereBlock(ProjectBlock(deps, Fields(map), _, _, _)) if deps.head == projectBlock1 =>
-            deps should equalWithTracing(List(projectBlock1))
-            map should equal(
-              Map(
-                toField('age) -> toVar('age),
-                toField('name) -> toVar('name)
-              ))
-        }
-
-        val orderByBlock = model.findExactlyOne {
-          case NoWhereBlock(OrderAndSliceBlock(deps, orderBy, None, None, _)) =>
-            val ordered = List(Asc(toVar('age)))
-            orderBy should equal(ordered)
-            deps should equalWithTracing(List(projectBlock2))
-        }
-
-        val projectBlock3 = model.findExactlyOne {
-          case NoWhereBlock(ProjectBlock(deps, Fields(map), _, _, _)) if deps.head == orderByBlock =>
-            deps should equalWithTracing(List(orderByBlock))
-            map should equal(
-              Map(
-                toField('age) -> toVar('age),
-                toField('name) -> toVar('name)
-              ))
-        }
-
-        val resultBlock = model.findExactlyOne {
-          case TableResultBlock(deps, OrderedFields(List(IRField("age"), IRField("name"))), _) =>
-            deps should equalWithTracing(List(projectBlock3))
+        model.result match {
+          case NoWhereBlock(TableResultBlock(deps, OrderedFields(List(IRField("a"))), _)) =>
+            deps should equal(List(projectBlock))
         }
 
         model.dependencies should equalWithTracing(
-          Set(orderByBlock, projectBlock3, projectBlock2, projectBlock1, matchBlock, loadBlock, resultBlock)
+          Set(matchBlock, loadBlock, projectBlock, model.result)
         )
+      }
     }
+
+    it("matches a simple relationship pattern and returns some fields") {
+      "MATCH (a)-[r]->(b) RETURN b AS otherB, a, r".asCypherQuery.model.ensureThat { (model, globals) =>
+        val loadBlock = model.findExactlyOne {
+          case NoWhereBlock(s@SourceBlock(_)) =>
+            s.binds.fields shouldBe empty
+        }
+
+        val matchBlock = model.findExactlyOne {
+          case NoWhereBlock(MatchBlock(deps, Pattern(fields, topo, equivalences), _, _, _)) =>
+            deps should equalWithTracing(List(loadBlock))
+            fields should equal(Set[IRField]('a -> CTNode, 'b -> CTNode, 'r -> CTRelationship))
+            val map = Map(toField('r) -> DirectedRelationship('a, 'b))
+            topo should equal(map)
+        }
+
+        val projectBlock = model.findExactlyOne {
+          case NoWhereBlock(ProjectBlock(deps, Fields(map), _, _, _)) =>
+            deps should equalWithTracing(List(matchBlock))
+            map should equal(
+              Map(
+                toField('a) -> toVar('a),
+                toField('otherB) -> toVar('b),
+                toField('r) -> toVar('r)
+              ))
+        }
+
+        val resultBlock = model.result.findExactlyOne {
+          case TableResultBlock(_, OrderedFields(List(IRField("otherB"), IRField("a"), IRField("r"))), _) =>
+        }
+
+        model.dependencies should equalWithTracing(
+          Set(matchBlock, loadBlock, projectBlock, resultBlock)
+        )
+      }
+    }
+
+    it("matches node order by name and returns it") {
+      "MATCH (a:Person) WITH a.name AS name, a.age AS age ORDER BY age RETURN age, name".asCypherQuery.model.ensureThat {
+        (model, _) =>
+          val loadBlock = model.findExactlyOne {
+            case NoWhereBlock(s@SourceBlock(_)) =>
+              s.binds.fields shouldBe empty
+          }
+
+          val matchBlock = model.findExactlyOne {
+            case MatchBlock(deps, Pattern(fields, topo, equivalences), exprs, _, _) =>
+              deps should equalWithTracing(List(loadBlock))
+              fields should equal(Set(toField('a -> CTNode)))
+              topo shouldBe empty
+              exprs should equalWithTracing(Set(HasLabel(toVar('a), Label("Person"))()))
+          }
+
+          val projectBlock1 = model.findExactlyOne {
+            case NoWhereBlock(ProjectBlock(deps, Fields(map), _, _, _)) if deps.head == matchBlock =>
+              deps should equalWithTracing(List(matchBlock))
+              map should equal(
+                Map(
+                  toField('name) -> Property(Var("a")(CTNode), PropertyKey("name"))(CTNull),
+                  toField('age) -> Property(Var("a")(CTNode), PropertyKey("age"))(CTNull)
+                ))
+          }
+
+          val projectBlock2 = model.findExactlyOne {
+            case NoWhereBlock(ProjectBlock(deps, Fields(map), _, _, _)) if deps.head == projectBlock1 =>
+              deps should equalWithTracing(List(projectBlock1))
+              map should equal(
+                Map(
+                  toField('age) -> toVar('age),
+                  toField('name) -> toVar('name)
+                ))
+          }
+
+          val orderByBlock = model.findExactlyOne {
+            case NoWhereBlock(OrderAndSliceBlock(deps, orderBy, None, None, _)) =>
+              val ordered = List(Asc(toVar('age)))
+              orderBy should equal(ordered)
+              deps should equalWithTracing(List(projectBlock2))
+          }
+
+          val projectBlock3 = model.findExactlyOne {
+            case NoWhereBlock(ProjectBlock(deps, Fields(map), _, _, _)) if deps.head == orderByBlock =>
+              deps should equalWithTracing(List(orderByBlock))
+              map should equal(
+                Map(
+                  toField('age) -> toVar('age),
+                  toField('name) -> toVar('name)
+                ))
+          }
+
+          val resultBlock = model.findExactlyOne {
+            case TableResultBlock(deps, OrderedFields(List(IRField("age"), IRField("name"))), _) =>
+              deps should equalWithTracing(List(projectBlock3))
+          }
+
+          model.dependencies should equalWithTracing(
+            Set(orderByBlock, projectBlock3, projectBlock2, projectBlock1, matchBlock, loadBlock, resultBlock)
+          )
+      }
+    }
+
+    //  ignore("can handle return graph of") {
+    //    "MATCH (a), (b) RETURN GRAPH moo OF (a)-[r:TEST]->(b)".asCypherQuery.model.ensureThat { (model, globals) =>
+    //      val expectedSchema = Schema.empty
+    //        .withNodePropertyKeys(Set.empty[String], PropertyKeys.empty)
+    //        .withRelationshipPropertyKeys("TEST")()
+    //
+    //      val loadRef = model.findExactlyOne {
+    //        case NoWhereBlock(s @ SourceBlock(_)) =>
+    //          s.binds.fields shouldBe empty
+    //      }
+    //
+    //      val nodeA = toField('a -> CTNode)
+    //      val nodeB = toField('b -> CTNode)
+    //      val rel = toField('r -> CTRelationship("TEST"))
+    //
+    //      val matchRef = model.findExactlyOne {
+    //        case MatchBlock(deps, Pattern(fields, topo), exprs, _, _) =>
+    //          fields should equal(Set(nodeA, nodeB))
+    //          topo should equal(Map())
+    //          exprs shouldBe empty
+    //      }
+    //
+    //      val projectRef = model.findExactlyOne {
+    //        case NoWhereBlock(ProjectBlock(deps, Fields(map, graphs), _, _, _)) =>
+    //          map shouldBe empty
+    //
+    //          graphs shouldBe Set(
+    //            IRPatternGraph(
+    //              "moo",
+    //              expectedSchema,
+    //              Pattern(Set(nodeA, nodeB, rel), Map(rel -> DirectedRelationship(nodeA, nodeB)))))
+    //      }
+    //
+    //      model.result match {
+    //        case NoWhereBlock(ResultBlock(deps, items, _, _, _, _)) =>
+    //          deps should equal(Set(projectRef))
+    //          items.fields shouldBe empty
+    //          items.graphs should equal(Set(IRCatalogGraph("moo", expectedSchema, QualifiedGraphName(SessionPropertyGraphDataSource.Namespace, GraphName("moo")))))
+    //      }
+    //
+    //      model.requirements should equal(
+    //        Map(
+    //          projectRef -> Set(matchRef),
+    //          matchRef -> Set(loadRef),
+    //          loadRef -> Set()
+    //        ))
+    //    }
+    //  }
   }
 
-  //  ignore("can handle return graph of") {
-  //    "MATCH (a), (b) RETURN GRAPH moo OF (a)-[r:TEST]->(b)".model.ensureThat { (model, globals) =>
-  //      val expectedSchema = Schema.empty
-  //        .withNodePropertyKeys(Set.empty[String], PropertyKeys.empty)
-  //        .withRelationshipPropertyKeys("TEST")()
-  //
-  //      val loadRef = model.findExactlyOne {
-  //        case NoWhereBlock(s @ SourceBlock(_)) =>
-  //          s.binds.fields shouldBe empty
-  //      }
-  //
-  //      val nodeA = toField('a -> CTNode)
-  //      val nodeB = toField('b -> CTNode)
-  //      val rel = toField('r -> CTRelationship("TEST"))
-  //
-  //      val matchRef = model.findExactlyOne {
-  //        case MatchBlock(deps, Pattern(fields, topo), exprs, _, _) =>
-  //          fields should equal(Set(nodeA, nodeB))
-  //          topo should equal(Map())
-  //          exprs shouldBe empty
-  //      }
-  //
-  //      val projectRef = model.findExactlyOne {
-  //        case NoWhereBlock(ProjectBlock(deps, Fields(map, graphs), _, _, _)) =>
-  //          map shouldBe empty
-  //
-  //          graphs shouldBe Set(
-  //            IRPatternGraph(
-  //              "moo",
-  //              expectedSchema,
-  //              Pattern(Set(nodeA, nodeB, rel), Map(rel -> DirectedRelationship(nodeA, nodeB)))))
-  //      }
-  //
-  //      model.result match {
-  //        case NoWhereBlock(ResultBlock(deps, items, _, _, _, _)) =>
-  //          deps should equal(Set(projectRef))
-  //          items.fields shouldBe empty
-  //          items.graphs should equal(Set(IRCatalogGraph("moo", expectedSchema, QualifiedGraphName(SessionPropertyGraphDataSource.Namespace, GraphName("moo")))))
-  //      }
-  //
-  //      model.requirements should equal(
-  //        Map(
-  //          projectRef -> Set(matchRef),
-  //          matchRef -> Set(loadRef),
-  //          loadRef -> Set()
-  //        ))
-  //    }
-  //  }
+  describe("CreateGraphStatement") {
+    it("can parse a CREATE GRAPH statement") {
+      val innerQuery = s"FROM GRAPH ${testQualifiedGraphName.toString} RETURN GRAPH"
+
+      val query =
+        s"""
+          |CREATE GRAPH session.bar {
+          | $innerQuery
+          |}
+        """.stripMargin
+
+      val result = query.asCreateGraphStatement
+
+      result.innerQuery.model should equalWithTracing( innerQuery.asCypherQuery.model)
+      result.graph.qualifiedGraphName should equal(QualifiedGraphName(Namespace("session"),GraphName("bar")))
+      result.graph.schema should equal(testGraphSchema)
+    }
+  }
 
   implicit class RichBlock(b: Block[Expr]) {
 
