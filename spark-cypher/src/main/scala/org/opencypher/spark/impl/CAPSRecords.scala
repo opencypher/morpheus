@@ -110,7 +110,7 @@ sealed abstract class CAPSRecords(val header: RecordHeader, val data: DataFrame)
       case (df, column) => df.safeReplaceTags(column, replacements)
     }
 
-    CAPSRecords.createInternal(header, dfWithReplacedTags)
+    CAPSRecords.verifyAndCreate(header, dfWithReplacedTags)
   }
 
   def select(fields: Set[Var]): CAPSRecords = {
@@ -146,7 +146,7 @@ sealed abstract class CAPSRecords(val header: RecordHeader, val data: DataFrame)
         val updatedDf = tempDf.safeAddColumns(additions: _*)
         updatedHeader -> updatedDf
     }
-    CAPSRecords.createInternal(updatedHeader, updatedData)
+    CAPSRecords.verifyAndCreate(updatedHeader, updatedData)
   }
 
   def renameVars(aliasToOriginal: Map[Var, Var]): CAPSRecords = {
@@ -163,7 +163,7 @@ sealed abstract class CAPSRecords(val header: RecordHeader, val data: DataFrame)
         val updatedDf = tempDf.safeRenameColumns(renamings: _*)
         updatedHeader -> updatedDf
     }
-    CAPSRecords.createInternal(updatedHeader, updatedData)
+    CAPSRecords.verifyAndCreate(updatedHeader, updatedData)
   }
 
   def removeVars(vars: Set[Var]): CAPSRecords = {
@@ -173,7 +173,7 @@ sealed abstract class CAPSRecords(val header: RecordHeader, val data: DataFrame)
           val updatedHeader = tempHeader -- RecordHeader.from(slotsToRemove.toList)
           updatedHeader -> tempDf.drop(slotsToRemove.map(ColumnName.of): _*)
       }
-    CAPSRecords.createInternal(updatedHeader, updatedData)
+    CAPSRecords.verifyAndCreate(updatedHeader, updatedData)
   }
 
   def unionAll(header: RecordHeader, other: CAPSRecords): CAPSRecords = {
@@ -532,7 +532,7 @@ object CAPSRecords extends CypherRecordsCompanion[CAPSRecords, CAPSSession] {
       val cypherType = field.dataType.toCypherType(field.nullable)
         .getOrElse(throw IllegalArgumentException("a supported Spark type", field.dataType))
       val headerType = slot.content.cypherType
-
+      
       // if the type in the data doesn't correspond to the type in the header we fail
       // except: we encode nodes, rels and integers with the same data type, so we can't fail
       // on conflicts when we expect entities (alternative: change reverse-mapping function somehow)
