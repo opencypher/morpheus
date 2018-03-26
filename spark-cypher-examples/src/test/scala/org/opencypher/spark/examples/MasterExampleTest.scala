@@ -44,103 +44,105 @@ import org.opencypher.spark.test.CAPSTestSuite
 import org.opencypher.spark.test.fixture.{MiniDFSClusterFixture, Neo4jServerFixture, SparkSessionFixture}
 import org.scalatest.Assertion
 
-class GCDemoTest extends CAPSTestSuite with SparkSessionFixture with Neo4jServerFixture with MiniDFSClusterFixture {
+class MasterExampleTest extends CAPSTestSuite with SparkSessionFixture with Neo4jServerFixture with MiniDFSClusterFixture {
 
   val isChecking = false
 
-  test("the demo") {
+  test("CAPS Multiple Graphs Demo") {
     val t0 = System.currentTimeMillis()
 
-    // register pgds
+    // Register Property Graph Data Sources (PGDS)
+
+    // Neo4j PGDS
     def nodeQuery(region: String) = s"MATCH (n {region: '$region'}) RETURN n"
     def relQuery(region: String) = s"MATCH ()-[r {region: '$region'}]->() RETURN r"
-
     caps.registerSource(Namespace("neo4j"), new Neo4jPropertyGraphDataSource(neo4jConfig, Map(
       GraphName("US") -> (nodeQuery("US") -> relQuery("US")),
       GraphName("EU") -> (nodeQuery("EU") -> relQuery("EU")))
     ))
+    // HDFS CSV PDGS
     caps.registerSource(Namespace("hdfs"), HdfsCsvPropertyGraphDataSource(clusterConfig, rootPath = "/csv"))
 
-    // query 1, find friends in the US social network
-    caps.cypher(
-      """CREATE GRAPH usFriends {
+    /**
+      * Returns a query that creates a graph containing persons that live in the same city and
+      * know each other via 1 to 2 hops. The created graph contains a CLOSE_TO relationship between
+      * each such pair of persons and is stored in the session catalog using the given graph name.
+      */
+    def cityFriendsQuery(graphName: String, cities: List[String]): String =
+      s"""CREATE GRAPH $graphName {
         |  FROM GRAPH neo4j.US
         |  MATCH (a:Person)-[:LIVES_IN]->(city:City)<-[:LIVES_IN]-(b:Person), (a)-[:KNOWS*1..2]->(b)
-        |  WHERE city.name = 'New York City' OR city.name = 'San Francisco'
+        |  WHERE ${cities.map(c => s"city.name = '$c'").mkString(" OR ")}
         |  CONSTRUCT
         |    ON neo4j.US
         |    CLONE a, b
         |    NEW (a)-[:CLOSE_TO]->(b)
         |  RETURN GRAPH
         |}
-      """.stripMargin)
+      """.stripMargin
 
-    // query 2, find friends in the EU social network
-    caps.cypher(
-      """CREATE GRAPH euFriends {
-        |  FROM GRAPH neo4j.EU
-        |  MATCH (a:Person)-[:LIVES_IN]->(city:City)<-[:LIVES_IN]-(b:Person), (a)-[:KNOWS*1..2]->(b)
-        |  WHERE city.name = 'Malmö' OR city.name = 'Berlin'
-        |  CONSTRUCT
-        |    ON neo4j.EU
-        |    CLONE a, b
-        |    NEW (a)-[:CLOSE_TO]->(b)
-        |  RETURN GRAPH
-        |}
-      """.stripMargin)
+    // Find persons that are close to each other in the US social network
+    val usFriends = "usFriends"
+    caps.cypher(cityFriendsQuery(usFriends, List("New York City", "San Francisco")))
+    // Find persons that are close to each other in the EU social network
+    val euFriends = "euFriends"
+    caps.cypher(cityFriendsQuery(euFriends, List("Malmö", "Berlin")))
 
-    // query 3, put these graphs together
+    // Union the US and EU graphs into a single graph 'allFriends'
+    val allFriends = "allFriends"
     caps.cypher(
-      """CREATE GRAPH allFriends {
-        |  FROM GRAPH euFriends
+      s"""CREATE GRAPH $allFriends {
+        |  FROM GRAPH $usFriends
         |  RETURN GRAPH
         |  UNION ALL
-        |  FROM GRAPH usFriends
+        |  FROM GRAPH $euFriends
         |  RETURN GRAPH
         |}
       """.stripMargin
     )
 
-    // query 4, connect the friends together with their purchases as customers
+    // Connect the social network with the products network using equal person and customer emails.
+    val connectedCustomers = "connectedCustomers"
     caps.cypher(
-      s"""CREATE GRAPH connectedCustomers {
-         |  FROM GRAPH allFriends
+      s"""CREATE GRAPH $connectedCustomers {
+         |  FROM GRAPH $allFriends
          |  MATCH (p:Person)
          |  WITH p.name AS personName, p  // this is a workaround
          |  FROM GRAPH hdfs.prod
          |  MATCH (c:Customer)
          |  WITH c.name as customerName, personName, c, p // also a workaround
          |  WHERE customerName = personName
-         |  CONSTRUCT
-         |    ON hdfs.prod, allFriends
+         |  CONSTRUCT ON hdfs.prod, $allFriends
          |    CLONE c, p
          |    NEW (c)-[:IS]->(p)
          |  RETURN GRAPH
          |}
       """.stripMargin)
 
-    // query 5, find people who are close to one another and compute recommendations for them
+    // Compute recommendations for 'target' based on their interests and what persons close to the
+    // 'target' have already bought and given a helpful and positive rating.
     val result = caps.cypher(
-      """FROM GRAPH connectedCustomers
-        |MATCH (a:Person)-[:CLOSE_TO]-(b:Person)-[:HAS_INTEREST]->(i:Interest),
-        |      (a)<-[:IS]-(x:Customer)-[r:BOUGHT]->(p:Product {category: i.name})
-        |WHERE r.rating >= 4 AND (r.helpful * 1.0) / r.votes > 0.6
-        |WITH * ORDER BY p.rank
-        |RETURN DISTINCT p.title AS product, b.name AS name
+      s"""FROM GRAPH $connectedCustomers
+        |MATCH (target:Person)<-[:CLOSE_TO]-(person:Person),
+        |      (target)-[:HAS_INTEREST]->(i:Interest),
+        |      (person)<-[:IS]-(x:Customer)-[b:BOUGHT]->(product:Product {category: i.name})
+        |WHERE b.rating >= 4 AND (b.helpful * 1.0) / b.votes > 0.6
+        |WITH * ORDER BY product.rank
+        |RETURN DISTINCT product.title AS product, target.name AS name
         |LIMIT 100
       """.stripMargin)
 
-    // print the results
+    // Print the results
     result.show
 
-    //Write back to Neo
-    withBoltSession { session =>
-      // maybe iterate over rows instead of CypherMaps is faster
-      result.getRecords.collect.foreach { cypherMap =>
-        session.run(
-          s"MATCH (p:Person {name: ${cypherMap.get("name").get}}) SET p.should_buy = ${cypherMap.get("product").get}")
-      }
-    }
+    // Write back to Neo4j
+//    withBoltSession { session =>
+//      // maybe iterate over rows instead of CypherMaps is faster
+//      result.getRecords.collect.foreach { cypherMap =>
+//        session.run(
+//          s"MATCH (p:Person {name: ${cypherMap.get("name").get}}) SET p.should_buy = ${cypherMap.get("product").get}")
+//      }
+//    }
 
     val tx = System.currentTimeMillis()
     System.out.println(s"${tx - t0} ms")
