@@ -65,7 +65,7 @@ object Neo4jWorkflow extends App {
   // 3) Register a File-based data source in the Cypher session
   val csvFolder = getClass.getResource("/csv").getFile
   val csvNamespace = Namespace("csv")
-  session.registerSource(csvNamespace, new FileCsvPropertyGraphDataSource(graphFolder = csvFolder))
+  session.registerSource(csvNamespace, FileCsvPropertyGraphDataSource(graphFolder = csvFolder))
   // Access the graph via its qualified graph name
   val purchaseNetwork = session.graph(QualifiedGraphName(csvNamespace, GraphName("prod")))
 
@@ -78,9 +78,8 @@ object Neo4jWorkflow extends App {
        |FROM GRAPH csv.prod
        |MATCH (c:Customer)
        |WHERE pName = c.name
-       |CONSTRUCT {
-       |  CREATE (p)-[x:IS]->(c)
-       |}
+       |CONSTRUCT
+       |  NEW (p)-[:IS]->(c)
        |RETURN GRAPH
     """.stripMargin
   ).graph.get
