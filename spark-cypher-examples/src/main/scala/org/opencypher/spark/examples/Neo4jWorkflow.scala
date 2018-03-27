@@ -72,10 +72,10 @@ object Neo4jWorkflow extends App {
   // 4) Create new edges between users and customers with the same name
   // TODO: Fix bug that requires "WITH p.name as pName, p"
   val integrationGraph = session.cypher(
-    """|USE GRAPH neo4j.graph
+    """|FROM GRAPH neo4j.graph
        |MATCH (p:Person)
        |WITH p.name as pName, p
-       |USE GRAPH csv.prod
+       |FROM GRAPH csv.prod
        |MATCH (c:Customer)
        |WHERE pName = c.name
        |CONSTRUCT {

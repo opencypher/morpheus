@@ -59,13 +59,10 @@ class CAPSPatternGraphTest extends CAPSGraphTest {
 
     val person = inputGraph.cypher(
       """MATCH (a :Swedish)
-        |CONSTRUCT {
+        |CONSTRUCT
         |  CLONE a
-        |}
         |RETURN GRAPH
       """.stripMargin)
-
-    person.getRecords.asCaps.data.show
 
     person.getGraph.cypher("MATCH (n) RETURN n.name").getRecords.collect.toSet should equal(
       Set(
@@ -78,9 +75,8 @@ class CAPSPatternGraphTest extends CAPSGraphTest {
 
     val person = inputGraph.cypher(
       """MATCH (a:Person:Swedish)-[r]->(b)
-        |CONSTRUCT {
+        |CONSTRUCT
         |  CLONE a, b, r
-        |}
         |RETURN GRAPH
       """.stripMargin)
 
@@ -99,9 +95,8 @@ class CAPSPatternGraphTest extends CAPSGraphTest {
 
     val person = inputGraph.cypher(
       """MATCH (a:Person:Swedish)-[r]->(b)
-        |CONSTRUCT {
+        |CONSTRUCT
         |  CLONE r
-        |}
         |RETURN GRAPH
       """.stripMargin)
 
@@ -120,10 +115,9 @@ class CAPSPatternGraphTest extends CAPSGraphTest {
 
     val person = inputGraph.cypher(
       """MATCH (a:Person:Swedish)-[r]->(b)
-        |CONSTRUCT {
+        |CONSTRUCT
         |  CLONE a, b
-        |  CREATE (a)-[foo:SWEDISH_KNOWS]->(b)
-        |}
+        |  NEW (a)-[foo:SWEDISH_KNOWS]->(b)
         |RETURN GRAPH
       """.stripMargin)
 
@@ -145,10 +139,9 @@ class CAPSPatternGraphTest extends CAPSGraphTest {
 
     val person = inputGraph.cypher(
       """MATCH (a:Person:Swedish)-[r]->(b)
-        |CONSTRUCT {
+        |CONSTRUCT
         |  CLONE a, r, b
-        |  CREATE (a)-[r]->(b)-[:KNOWS_A]->()
-        |}
+        |  NEW (a)-[r]->(b)-[:KNOWS_A]->()
         |RETURN GRAPH
       """.stripMargin)
 
@@ -198,10 +191,9 @@ class CAPSPatternGraphTest extends CAPSGraphTest {
 
     val person = inputGraph.cypher(
       """MATCH (a:Person:Swedish)-[r]->(b)
-        |CONSTRUCT {
+        |CONSTRUCT
         |  CLONE a, r, b
-        |  CREATE (a)-[r]->(b)-[bar:KNOWS_A]->(baz:Swede)
-        |}
+        |  NEW (a)-[r]->(b)-[bar:KNOWS_A]->(baz:Swede)
         |RETURN GRAPH
       """.stripMargin)
 
@@ -576,10 +568,9 @@ class CAPSPatternGraphTest extends CAPSGraphTest {
     val when = given.cypher(
       """
         |MATCH (i:Interest)<-[h:HAS_INTEREST]-(a:Person)-[k:KNOWS]->(b:Person)
-        |CONSTRUCT {
+        |CONSTRUCT
         |  CLONE a, k, b
-        |  CREATE (a)-[k]->(b)
-        |}
+        |  NEW (a)-[k]->(b)
         |RETURN GRAPH
       """.stripMargin)
 
@@ -601,10 +592,9 @@ class CAPSPatternGraphTest extends CAPSGraphTest {
       """
         |MATCH (i:Interest)<-[h:HAS_INTEREST]-(a:Person)-[k:KNOWS]->(b:Person)
         |WITH DISTINCT a, b
-        |CONSTRUCT {
+        |CONSTRUCT
         |  CLONE a, b
-        |  CREATE (a)-[f:FOO]->(b)
-        |}
+        |  NEW (a)-[f:FOO]->(b)
         |RETURN GRAPH
       """.stripMargin)
 
@@ -625,10 +615,9 @@ class CAPSPatternGraphTest extends CAPSGraphTest {
     val when = given.cypher(
       """
         |MATCH (i:Interest)<-[h:HAS_INTEREST]-(a:Person)-[k:KNOWS]->(b:Person)
-        |CONSTRUCT {
+        |CONSTRUCT
         |  CLONE a, b
-        |  CREATE (a)-[f:FOO]->(b)
-        |}
+        |  NEW (a)-[:FOO]->(b)
         |RETURN GRAPH
       """.stripMargin)
 
@@ -650,10 +639,9 @@ class CAPSPatternGraphTest extends CAPSGraphTest {
     val when = given.cypher(
       """
         |MATCH (i:Interest)<-[h:HAS_INTEREST]-(a:Person)-[k:KNOWS]->(b:Person)
-        |CONSTRUCT {
+        |CONSTRUCT
         |  CLONE a
-        |  CREATE (a)
-        |}
+        |  NEW (a)
         |RETURN GRAPH
       """.stripMargin)
 

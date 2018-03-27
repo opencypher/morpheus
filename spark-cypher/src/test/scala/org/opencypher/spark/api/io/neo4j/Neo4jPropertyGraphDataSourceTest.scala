@@ -105,10 +105,10 @@ class Neo4jPropertyGraphDataSourceTest
 
     caps.registerSource(testNamespace, dataSource)
 
-    val nodes: CypherResult = caps.cypher(s"USE GRAPH $testNamespace.$testGraphName MATCH (n) RETURN n")
+    val nodes: CypherResult = caps.cypher(s"FROM GRAPH $testNamespace.$testGraphName MATCH (n) RETURN n")
     nodes.getRecords.collect.toBag should equal(teamDataGraphNodes)
 
-    val edges = caps.cypher(s"USE GRAPH $testNamespace.$testGraphName MATCH ()-[r]->() RETURN r")
+    val edges = caps.cypher(s"FROM GRAPH $testNamespace.$testGraphName MATCH ()-[r]->() RETURN r")
     edges.getRecords.collect.toBag should equal(teamDataGraphRels)
   }
 }

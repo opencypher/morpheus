@@ -85,10 +85,10 @@ object GraphXPageRankExample extends App {
 
   // 9) Query across both graphs to print names with corresponding ranks, sorted by rank
   val result = session.cypher(
-    """|USE GRAPH ranks
+    """|FROM GRAPH ranks
        |MATCH (r)
        |WITH id(r) as id, r.rank as rank
-       |USE GRAPH sn
+       |FROM GRAPH sn
        |MATCH (p:Person)
        |WHERE id(p) = id
        |RETURN p.name as name, rank

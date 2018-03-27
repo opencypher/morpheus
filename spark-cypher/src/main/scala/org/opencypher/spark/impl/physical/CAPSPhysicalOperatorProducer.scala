@@ -79,7 +79,7 @@ final class CAPSPhysicalOperatorProducer(implicit caps: CAPSSession)
   override def planStart(in: Option[CAPSRecords], g: Option[QualifiedGraphName]): CAPSPhysicalOperator =
     operators.Start(in, g.map(caps.graph(_).asCaps))
 
-  // TODO: Make catalog usage consistent between Start/Use Graph
+  // TODO: Make catalog usage consistent between Start/FROM GRAPH
   override def planUseGraph(in: CAPSPhysicalOperator, g: LogicalCatalogGraph): CAPSPhysicalOperator =
     operators.UseGraph(in, g)
 

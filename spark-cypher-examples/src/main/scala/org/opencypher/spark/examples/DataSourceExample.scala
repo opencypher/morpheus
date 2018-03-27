@@ -38,7 +38,7 @@ object DataSourceExample extends App {
 
   session.store(GraphName("sn"), socialNetwork)
 
-  val result = session.cypher("USE GRAPH session.sn MATCH (n) RETURN n")
+  val result = session.cypher("FROM GRAPH session.sn MATCH (n) RETURN n")
 
   result.show
 }

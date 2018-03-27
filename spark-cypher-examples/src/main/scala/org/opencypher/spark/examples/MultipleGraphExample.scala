@@ -54,9 +54,9 @@ object MultipleGraphExample extends App {
 
   // 5) Create new edges between users and customers with the same name
   val recommendationGraph = session.cypher(
-    """|USE GRAPH socialNetwork
+    """|FROM GRAPH socialNetwork
        |MATCH (p:Person)
-       |USE GRAPH csv.prod
+       |FROM GRAPH csv.prod
        |MATCH (c:Customer)
        |WHERE p.name = c.name
        |CONSTRUCT ON socialNetwork, csv.prod {
