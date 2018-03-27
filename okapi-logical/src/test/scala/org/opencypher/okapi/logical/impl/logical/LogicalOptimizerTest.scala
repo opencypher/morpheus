@@ -55,7 +55,7 @@ class LogicalOptimizerTest extends IrTestSuite {
   def plannerContext(schema: Schema) =
     LogicalPlannerContext(schema, Set.empty, Map(testQualifiedGraphName -> testGraphSource(testGraphName -> schema)))
 
-  it("push label filter into scan") {
+  it("pushes label filter into scan") {
     val animalSchema = schema.withNodePropertyKeys("Animal")()
     val animalGraph = LogicalCatalogGraph(testQualifiedGraphName, animalSchema)
     val query =
@@ -81,7 +81,7 @@ class LogicalOptimizerTest extends IrTestSuite {
     optimizedLogicalPlan should equalWithTracing(expected)
   }
 
-  it("rewrite missing label scan to empty records") {
+  it("rewrites missing label scan to empty records") {
     val query =
       """|MATCH (a:Animal)
          |RETURN a""".stripMargin
@@ -101,7 +101,7 @@ class LogicalOptimizerTest extends IrTestSuite {
     optimizedLogicalPlan should equalWithTracing(expected)
   }
 
-  it("rewrite missing label combination") {
+  it("rewrites missing label combination") {
     val query =
       """|MATCH (a:Animal:Astronaut)
          |RETURN a""".stripMargin

@@ -36,11 +36,12 @@ import org.opencypher.okapi.api.value.CypherValue._
 import org.opencypher.okapi.api.value._
 import org.opencypher.okapi.impl.io.SessionPropertyGraphDataSource
 import org.opencypher.okapi.impl.util.Measurement.time
+import org.opencypher.okapi.ir.api.configuration.IrConfiguration._
 import org.opencypher.okapi.ir.api._
 import org.opencypher.okapi.ir.api.configuration.IrConfiguration.PrintIr
 import org.opencypher.okapi.ir.api.expr.{Expr, Var}
 import org.opencypher.okapi.ir.impl.parse.CypherParser
-import org.opencypher.okapi.ir.impl.{IRBuilder, IRBuilderContext}
+import org.opencypher.okapi.ir.impl.{IRBuilder, IRBuilderContext, QGNGenerator}
 import org.opencypher.okapi.logical.api.configuration.LogicalConfiguration.PrintLogicalPlan
 import org.opencypher.okapi.logical.impl._
 import org.opencypher.okapi.relational.api.configuration.CoraConfiguration.{PrintFlatPlan, PrintOptimizedPhysicalPlan, PrintPhysicalPlan, PrintQueryExecutionStages}
@@ -88,7 +89,7 @@ sealed class CAPSSessionImpl(val sparkSession: SparkSession, val sessionNamespac
     val allParameters = queryParameters ++ extractedParameters
 
     logStageProgress("IR translation ...", newLine = false)
-    val irBuilderContext = IRBuilderContext.initial(query, allParameters, semState, ambientGraphNew, generateGraphName _, dataSource, inputFields)
+    val irBuilderContext = IRBuilderContext.initial(query, allParameters, semState, ambientGraphNew, qgnGenerator, dataSource, inputFields)
     val ir = time("IR translation")(IRBuilder(stmt)(irBuilderContext))
     logStageProgress("Done!")
 
@@ -244,12 +245,14 @@ sealed class CAPSSessionImpl(val sparkSession: SparkSession, val sessionNamespac
       CAPSRuntimeContext(physicalPlannerContext.parameters, graphAt, collection.mutable.Map.empty))
   }
 
-  private[opencypher] def generateGraphName: QualifiedGraphName = {
-    QualifiedGraphName(SessionPropertyGraphDataSource.Namespace, GraphName(s"tmp#${maxSessionGraphId.incrementAndGet}"))
+  private[opencypher] val qgnGenerator = new QGNGenerator {
+    override def generate: QualifiedGraphName = {
+      QualifiedGraphName(SessionPropertyGraphDataSource.Namespace, GraphName(s"tmp#${maxSessionGraphId.incrementAndGet}"))
+    }
   }
 
   private def mountAmbientGraph(ambient: PropertyGraph): IRCatalogGraph = {
-    val qualifiedGraphName = store(generateGraphName.graphName, ambient)
+    val qualifiedGraphName = store(qgnGenerator.generate.graphName, ambient)
     IRCatalogGraph(qualifiedGraphName, ambient.schema)
   }
 

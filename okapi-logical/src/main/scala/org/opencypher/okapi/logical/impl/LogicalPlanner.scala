@@ -339,10 +339,10 @@ class LogicalPlanner(producer: LogicalOperatorProducer)
       // TODO: IRGraph[Expr]
       case p: IRPatternGraph[Expr@unchecked] =>
 
-        val equivalences = p.creates.equivalences
+        val equivalences = p.news.equivalences
 
         val clonePatternEntities = p.clones.keys
-        val newPatternEntities = p.creates.fields
+        val newPatternEntities = p.news.fields
 
         val entitiesToCreate = newPatternEntities -- clonePatternEntities
 
@@ -354,7 +354,7 @@ class LogicalPlanner(producer: LogicalOperatorProducer)
             }
           clonedVar -> inputVar
         }
-        val newEntities: Set[ConstructedEntity] = entitiesToCreate.map(e => extractConstructedEntities(p.creates, e, equivalences.get(e)))
+        val newEntities: Set[ConstructedEntity] = entitiesToCreate.map(e => extractConstructedEntities(p.news, e, equivalences.get(e)))
 
         LogicalPatternGraph(p.schema, clonedVarToInputVar, newEntities, p.sets, p.onGraphs)
 

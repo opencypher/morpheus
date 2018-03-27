@@ -61,7 +61,7 @@ package object impl {
 
   implicit final class RichSchema(schema: Schema) {
 
-    def forField(entity: IRField): Schema = entity.cypherType match {
+    def forEntityType(cypherType: CypherType): Schema = cypherType match {
       case CTNode(labels, _) =>
         schema.fromNodeEntity(labels)
       case r: CTRelationship =>

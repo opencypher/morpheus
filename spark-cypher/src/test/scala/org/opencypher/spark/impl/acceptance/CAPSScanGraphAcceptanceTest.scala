@@ -26,8 +26,53 @@
  */
 package org.opencypher.spark.impl.acceptance
 
+import org.opencypher.okapi.api.graph.GraphName
+import org.opencypher.okapi.api.value.{CAPSRelationship, CypherValue}
+import org.opencypher.okapi.ir.test.support.Bag
 import org.opencypher.spark.test.support.creation.caps.{CAPSScanGraphFactory, CAPSTestGraphFactory}
+import org.opencypher.okapi.api.graph.GraphName
+import org.opencypher.okapi.api.schema.{PropertyKeys, Schema}
+import org.opencypher.okapi.api.types.{CTInteger, CTString}
+import org.opencypher.okapi.api.value.{CAPSRelationship, CypherValue}
+import org.opencypher.okapi.api.value.CypherValue.CypherMap
+import org.opencypher.okapi.impl.schema.TagSupport._
+import org.opencypher.okapi.ir.test.support.Bag
+import org.opencypher.okapi.ir.test.support.Bag._
+import org.opencypher.spark.impl.CAPSConverters._
+import org.opencypher.spark.impl.CAPSGraph
+import org.opencypher.spark.schema.CAPSSchema._
 
 class CAPSScanGraphAcceptanceTest extends AcceptanceTest {
   override def capsGraphFactory: CAPSTestGraphFactory = CAPSScanGraphFactory
+
+  def testGraph1 = initGraph("CREATE (:Person {name: 'Mats'})")
+
+  def testGraph2 = initGraph("CREATE (:Person {name: 'Phil'})")
+
+  def testGraph3 = initGraph("CREATE (:Car {type: 'Toyota'})")
+
+  it("CONSTRUCTS ON two graphs and adds a relationship") {
+    caps.store(GraphName("one"), testGraph1)
+    caps.store(GraphName("two"), testGraph2)
+    val query =
+      """|FROM GRAPH one
+         |MATCH (m: Person)
+         |FROM GRAPH two
+         |MATCH (p: Person)
+         |CONSTRUCT ON one, two
+         |  CLONE m, p
+         |  NEW (m)-[:KNOWS]->(p)
+         |RETURN GRAPH""".stripMargin
+
+    val result = caps.cypher(query).getGraph
+
+    result.schema should equal(testGraph1.schema.union(testGraph2.schema).withRelationshipPropertyKeys("KNOWS")().withTags(0, 1, 2).asCaps)
+    result.nodes("n").toMaps should equal(testGraph1.unionAll(testGraph2).nodes("n").toMaps)
+    result.relationships("r").toMapsWithCollectedEntities should equal(Bag(
+      CypherMap("r" -> CAPSRelationship(2251799813685248L, 0L, 1125899906842624L, "KNOWS")))
+    )
+    result.schema.toTagged.tags should equal(Set(0, 1, 2))
+  }
+
+
 }

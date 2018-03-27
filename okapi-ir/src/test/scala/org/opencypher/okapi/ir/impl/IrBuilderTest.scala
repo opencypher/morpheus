@@ -42,7 +42,37 @@ import org.opencypher.okapi.ir.test.support.MatchHelper.equalWithTracing
 import scala.collection.immutable.Set
 
 class IrBuilderTest extends IrTestSuite {
+  describe("negative tests") {
 
+    it("sets the correct type for new entities") {
+      val query =
+        """
+          |CONSTRUCT
+          |  NEW (a)
+          |RETURN GRAPH""".stripMargin
+
+      query.asCypherQuery().model.result match {
+        case GraphResultBlock(_, IRPatternGraph(qgn, _, _, news, _, _)) =>
+          news.fields.size should equal(1)
+          val a = news.fields.head
+          a.cypherType.graph should equal(Some(qgn))
+        case _ => fail("no matching graph result found")
+      }
+    }
+
+    // TODO: Ensure this fails
+    ignore("fails when using a uncloned bound variables in a pattern") {
+      val query =
+        """
+          |MATCH (a)
+          |CONSTRUCT
+          |  NEW (a)
+          |RETURN GRAPH""".stripMargin
+
+      intercept[UnsupportedOperationException](query.asCypherQuery().model)
+    }
+
+  }
   describe("parsing CypherQuery") {
     it("computes a pattern graph schema correctly - 1 create") {
       val query =
@@ -78,6 +108,20 @@ class IrBuilderTest extends IrTestSuite {
         |RETURN GRAPH""".stripMargin
 
       intercept[ParsingException](query.asCypherQuery().model)
+    }
+
+    it("computes a pattern graph schema correctly - 1 create") {
+      val query =
+        """
+          |CONSTRUCT
+          |  NEW (a :A)
+          |RETURN GRAPH""".stripMargin
+
+      query.asCypherQuery().model.result match {
+        case GraphResultBlock(_, IRPatternGraph(_, schema, _, _, _, _)) =>
+          schema should equal(Schema.empty.withNodePropertyKeys("A")())
+        case _ => fail("no matching graph result found")
+      }
     }
 
     it("computes a pattern graph schema correctly - 2 creates") {
