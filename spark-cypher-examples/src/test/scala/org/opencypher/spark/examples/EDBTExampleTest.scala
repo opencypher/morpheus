@@ -35,7 +35,10 @@ import org.opencypher.spark.api.io.neo4j.Neo4jPropertyGraphDataSource
 import org.opencypher.spark.test.CAPSTestSuite
 import org.opencypher.spark.test.fixture.{MiniDFSClusterFixture, Neo4jServerFixture, SparkSessionFixture}
 
-class EDBTExampleTest extends CAPSTestSuite with SparkSessionFixture with Neo4jServerFixture with MiniDFSClusterFixture {
+class EDBTExampleTest extends CAPSTestSuite
+  with SparkSessionFixture
+  with Neo4jServerFixture
+  with MiniDFSClusterFixture {
 
   test("CAPS Multiple Graphs EDBT Demo") {
     // Register Property Graph Data Sources (PGDS)
@@ -57,7 +60,8 @@ class EDBTExampleTest extends CAPSTestSuite with SparkSessionFixture with Neo4jS
       */
     def cityFriendsQuery(fromGraph: String, cities: List[String]): String =
       s"""FROM GRAPH $fromGraph
-        |MATCH (a:Person)-[:LIVES_IN]->(city:City)<-[:LIVES_IN]-(b:Person), (a)-[:KNOWS*1..2]->(b)
+        |MATCH (a:Person)-[:LIVES_IN]->(city:City)<-[:LIVES_IN]-(b:Person),
+        |      (a)-[:KNOWS*1..2]->(b)
         |WHERE ${cities.map(c => s"city.name = '$c'").mkString(" OR ")}
         |CONSTRUCT
         |  ON $fromGraph
@@ -96,7 +100,7 @@ class EDBTExampleTest extends CAPSTestSuite with SparkSessionFixture with Neo4jS
         |WHERE b.rating >= 4 AND (b.helpful * 1.0) / b.votes > 0.6
         |WITH * ORDER BY product.rank
         |RETURN DISTINCT product.title AS product, target.name AS name
-        |LIMIT 100
+        |LIMIT 3
       """.stripMargin).getRecords
 
     // Print the results
