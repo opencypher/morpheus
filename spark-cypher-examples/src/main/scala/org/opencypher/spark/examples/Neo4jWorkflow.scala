@@ -65,22 +65,21 @@ object Neo4jWorkflow extends App {
   // 3) Register a File-based data source in the Cypher session
   val csvFolder = getClass.getResource("/csv").getFile
   val csvNamespace = Namespace("csv")
-  session.registerSource(csvNamespace, new FileCsvPropertyGraphDataSource(graphFolder = csvFolder))
+  session.registerSource(csvNamespace, FileCsvPropertyGraphDataSource(graphFolder = csvFolder))
   // Access the graph via its qualified graph name
   val purchaseNetwork = session.graph(QualifiedGraphName(csvNamespace, GraphName("prod")))
 
   // 4) Create new edges between users and customers with the same name
   // TODO: Fix bug that requires "WITH p.name as pName, p"
   val integrationGraph = session.cypher(
-    """|USE GRAPH neo4j.graph
+    """|FROM GRAPH neo4j.graph
        |MATCH (p:Person)
        |WITH p.name as pName, p
-       |USE GRAPH csv.prod
+       |FROM GRAPH csv.prod
        |MATCH (c:Customer)
        |WHERE pName = c.name
-       |CONSTRUCT {
-       |  CREATE (p)-[x:IS]->(c)
-       |}
+       |CONSTRUCT
+       |  NEW (p)-[:IS]->(c)
        |RETURN GRAPH
     """.stripMargin
   ).graph.get

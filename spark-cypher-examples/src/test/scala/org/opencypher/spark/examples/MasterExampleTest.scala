@@ -24,14 +24,14 @@
  * described as "implementation extensions to Cypher" or as "proposed changes to
  * Cypher that are not yet approved by the openCypher community".
  */
-package org.opencypher.spark.demo
+package org.opencypher.spark.examples
 
 import java.net.{URI, URLEncoder}
 
 import org.apache.http.client.utils.URIBuilder
 import org.apache.spark.sql.Row
 import org.neo4j.driver.v1.{AuthTokens, Session}
-import org.opencypher.okapi.api.graph.{CypherResult, GraphName, PropertyGraph}
+import org.opencypher.okapi.api.graph.{CypherResult, GraphName, Namespace, PropertyGraph}
 import org.opencypher.okapi.api.schema.Schema
 import org.opencypher.okapi.api.types.{CTInteger, CTString}
 import org.opencypher.okapi.api.value.CypherValue.CypherMap
@@ -39,86 +39,110 @@ import org.opencypher.okapi.ir.test.support.Bag
 import org.opencypher.okapi.ir.test.support.Bag._
 import org.opencypher.spark.api.io.hdfs.HdfsCsvPropertyGraphDataSource
 import org.opencypher.spark.api.io.neo4j.Neo4jPropertyGraphDataSource
-import org.opencypher.spark.impl.CAPSRecords
+import org.opencypher.spark.impl.{CAPSPatternGraph, CAPSRecords}
 import org.opencypher.spark.test.CAPSTestSuite
 import org.opencypher.spark.test.fixture.{MiniDFSClusterFixture, Neo4jServerFixture, SparkSessionFixture}
 import org.scalatest.Assertion
 
-class GCDemoTest extends CAPSTestSuite with SparkSessionFixture with Neo4jServerFixture with MiniDFSClusterFixture {
+class MasterExampleTest extends CAPSTestSuite with SparkSessionFixture with Neo4jServerFixture with MiniDFSClusterFixture {
 
-  protected override def hdfsURI: URI = new URIBuilder(super.hdfsURI).build()
+  val isChecking = false
 
-  protected override def dfsTestGraphPath = Some("/csv/prod")
-
-  ignore("the demo") {
+  ignore("Master example") {
     val t0 = System.currentTimeMillis()
-    lazy val SN_US = neoRegionGraph("US")
-    lazy val SN_EU = neoRegionGraph("EU")
-    lazy val PRODUCTS = hdfsProductGraph
 
-    val CITYFRIENDS_US =
-      SN_US.cypher(
-        """MATCH (a:Person)-[:LIVES_IN]->(city:City)<-[:LIVES_IN]-(b:Person), (a)-[:KNOWS*1..2]->(b)
-          |WHERE city.name = "New York City" OR city.name = "San Francisco"
-          |RETURN GRAPH result OF (a)-[r:ACQUAINTED]->(b)
-        """.stripMargin)
+    // Register Property Graph Data Sources (PGDS)
 
-    check(verifyCityFriendsUS(CITYFRIENDS_US.getGraph))
+    // Neo4j PGDS
+    def nodeQuery(region: String) = s"MATCH (n {region: '$region'}) RETURN n"
+    def relQuery(region: String) = s"MATCH ()-[r {region: '$region'}]->() RETURN r"
+    caps.registerSource(Namespace("neo4j"), new Neo4jPropertyGraphDataSource(neo4jConfig, Map(
+      GraphName("US") -> (nodeQuery("US") -> relQuery("US")),
+      GraphName("EU") -> (nodeQuery("EU") -> relQuery("EU")))
+    ))
+    // HDFS CSV PDGS
+    caps.registerSource(Namespace("hdfs"), HdfsCsvPropertyGraphDataSource(clusterConfig, rootPath = "/csv"))
 
-    val CITYFRIENDS_EU =
-      SN_EU.cypher(
-        """MATCH (a:Person)-[:LIVES_IN]->(city:City)<-[:LIVES_IN]-(b:Person), (a)-[:KNOWS*1..2]->(b)
-          |WHERE city.name = "Malmö" OR city.name = "Berlin"
-          |RETURN GRAPH result OF (a)-[r:ACQUAINTED]->(b)
-        """.stripMargin)
+    /**
+      * Returns a query that creates a graph containing persons that live in the same city and
+      * know each other via 1 to 2 hops. The created graph contains a CLOSE_TO relationship between
+      * each such pair of persons and is stored in the session catalog using the given graph name.
+      */
+    def cityFriendsQuery(graphName: String, cities: List[String]): String =
+      s"""CREATE GRAPH $graphName {
+        |  FROM GRAPH neo4j.US
+        |  MATCH (a:Person)-[:LIVES_IN]->(city:City)<-[:LIVES_IN]-(b:Person), (a)-[:KNOWS*1..2]->(b)
+        |  WHERE ${cities.map(c => s"city.name = '$c'").mkString(" OR ")}
+        |  CONSTRUCT
+        |    ON neo4j.US
+        |    CLONE a, b
+        |    NEW (a)-[:CLOSE_TO]->(b)
+        |  RETURN GRAPH
+        |}
+      """.stripMargin
 
-    check(verifyCityFriendsEU(CITYFRIENDS_EU.getGraph))
+    // Find persons that are close to each other in the US social network
+    val usFriends = "usFriends"
+    caps.cypher(cityFriendsQuery(usFriends, List("New York City", "San Francisco")))
+    // Find persons that are close to each other in the EU social network
+    val euFriends = "euFriends"
+    caps.cypher(cityFriendsQuery(euFriends, List("Malmö", "Berlin")))
 
-    val ALL_CITYFRIENDS = CITYFRIENDS_EU.getGraph unionAll CITYFRIENDS_US.getGraph
+    // Union the US and EU graphs into a single graph 'allFriends'
+    val allFriends = "allFriends"
+    caps.cypher(
+      s"""CREATE GRAPH $allFriends {
+        |  FROM GRAPH $usFriends
+        |  RETURN GRAPH
+        |  UNION ALL
+        |  FROM GRAPH $euFriends
+        |  RETURN GRAPH
+        |}
+      """.stripMargin
+    )
 
-    check(verifyAllCityFriends(ALL_CITYFRIENDS))
+    // Connect the social network with the products network using equal person and customer emails.
+    val connectedCustomers = "connectedCustomers"
+    caps.cypher(
+      s"""CREATE GRAPH $connectedCustomers {
+         |  FROM GRAPH $allFriends
+         |  MATCH (p:Person)
+         |  WITH p.name AS personName, p  // this is a workaround
+         |  FROM GRAPH hdfs.prod
+         |  MATCH (c:Customer)
+         |  WITH c.name as customerName, personName, c, p // also a workaround
+         |  WHERE customerName = personName
+         |  CONSTRUCT ON hdfs.prod, $allFriends
+         |    CLONE c, p
+         |    NEW (c)-[:IS]->(p)
+         |  RETURN GRAPH
+         |}
+      """.stripMargin)
 
-    caps.store(GraphName("friends"), ALL_CITYFRIENDS)
-    caps.store(GraphName("products"), PRODUCTS)
-
-    val LINKS = caps.cypher(
-      s"""USE GRAPH friends
-         |MATCH (p:Person)
-         |WITH p.name AS personName, p
-         |USE GRAPH products
-         |MATCH (c:Customer)
-         |WITH c.name as customerName, personName, c, p
-         |WHERE customerName = personName
-         |RETURN GRAPH result OF (c)-[x:IS]->(p)
-      """.stripMargin).getGraph
-
-    check(verifyLinks(LINKS))
-
-    val RECO = ALL_CITYFRIENDS unionAll PRODUCTS unionAll LINKS unionAll SN_EU unionAll SN_US
-
-    check(verifyReco(RECO))
-
-    val result = RECO.cypher(
-      """MATCH (a:Person)-[:ACQUAINTED]-(b:Person)-[:HAS_INTEREST]->(i:Interest),
-        |      (a)<-[:IS]-(x:Customer)-[r:BOUGHT]->(p:Product {category: i.name})
-        |WHERE r.rating >= 4 AND (r.helpful * 1.0) / r.votes > 0.6
-        |WITH * ORDER BY p.rank
-        |RETURN DISTINCT p.title AS product, b.name AS name
+    // Compute recommendations for 'target' based on their interests and what persons close to the
+    // 'target' have already bought and given a helpful and positive rating.
+    val result = caps.cypher(
+      s"""FROM GRAPH $connectedCustomers
+        |MATCH (target:Person)<-[:CLOSE_TO]-(person:Person),
+        |      (target)-[:HAS_INTEREST]->(i:Interest),
+        |      (person)<-[:IS]-(x:Customer)-[b:BOUGHT]->(product:Product {category: i.name})
+        |WHERE b.rating >= 4 AND (b.helpful * 1.0) / b.votes > 0.6
+        |WITH * ORDER BY product.rank
+        |RETURN DISTINCT product.title AS product, target.name AS name
         |LIMIT 100
       """.stripMargin)
 
-    check(verifyRecoResult(result))
-
+    // Print the results
     result.show
 
-    //Write back to Neo
-    withBoltSession { session =>
-      // maybe iterate over rows instead of CypherMaps is faster
-      result.getRecords.collect.foreach { cypherMap =>
-        session.run(
-          s"MATCH (p:Person {name: ${cypherMap.get("name").get}}) SET p.should_buy = ${cypherMap.get("product").get}")
-      }
-    }
+    // Write back to Neo4j
+//    withBoltSession { session =>
+//      // maybe iterate over rows instead of CypherMaps is faster
+//      result.getRecords.collect.foreach { cypherMap =>
+//        session.run(
+//          s"MATCH (p:Person {name: ${cypherMap.get("name").get}}) SET p.should_buy = ${cypherMap.get("product").get}")
+//      }
+//    }
 
     val tx = System.currentTimeMillis()
     System.out.println(s"${tx - t0} ms")
@@ -142,12 +166,12 @@ class GCDemoTest extends CAPSTestSuite with SparkSessionFixture with Neo4jServer
       ))
   }
 
-  private def check(f: => Unit): Unit = {
-    f
-  }
+  protected override def hdfsURI: URI = new URIBuilder(super.hdfsURI).build()
 
-  private def waitHere(): Unit = {
-    while (true) Thread.sleep(100L)
+  protected override def dfsTestGraphPath = Some("/csv/prod")
+
+  private def check(f: => Unit): Unit = {
+    if (isChecking) f
   }
 
   private def withBoltSession[T](f: Session => T): T = {
@@ -169,9 +193,6 @@ class GCDemoTest extends CAPSTestSuite with SparkSessionFixture with Neo4jServer
     new Neo4jPropertyGraphDataSource(neo4jConfig, Map(regionGraphName -> (nodeQuery -> relQuery)))
       .graph(regionGraphName)
   }
-
-  private def hdfsProductGraph: PropertyGraph =
-    new HdfsCsvPropertyGraphDataSource(clusterConfig, rootPath = "/csv").graph(GraphName("prod"))
 
   def verifyRecoResult(r: CypherResult) = {
     println("===>>> verifying RECO result")
@@ -200,7 +221,7 @@ class GCDemoTest extends CAPSTestSuite with SparkSessionFixture with Neo4jServer
           "rank" -> CTInteger.nullable,
           "category" -> CTString.nullable)
         .withRelationshipType("IS")
-        .withRelationshipType("ACQUAINTED")
+        .withRelationshipType("CLOSE_TO")
         .withRelationshipPropertyKeys("LIVES_IN")("region" -> CTString)
         .withRelationshipPropertyKeys("BOUGHT")(
           "rating" -> CTInteger.nullable,
@@ -271,8 +292,8 @@ class GCDemoTest extends CAPSTestSuite with SparkSessionFixture with Neo4jServer
     graph.relationships("r").asInstanceOf[CAPSRecords].toDF().drop("r").collect().toBag should equal(
       Bag(
         Row(18L, "KNOWS", 16L, "EU", null, null, null),
-        Row(18L, "ACQUAINTED", 16L, null, null, null, null),
-        Row(13L, "ACQUAINTED", 15L, null, null, null, null),
+        Row(18L, "CLOSE_TO", 16L, null, null, null, null),
+        Row(13L, "CLOSE_TO", 15L, null, null, null, null),
         Row(2002L, "IS", 8L, null, null, null, null),
         Row(17L, "HAS_INTEREST", 26L, "EU", null, null, null),
         Row(9L, "HAS_INTEREST", 21L, "US", null, null, null),
@@ -282,32 +303,32 @@ class GCDemoTest extends CAPSTestSuite with SparkSessionFixture with Neo4jServer
         Row(17L, "LIVES_IN", 4L, "EU", null, null, null),
         Row(2010L, "IS", 16L, null, null, null, null),
         Row(2004L, "BOUGHT", 1013L, null, 5L, 8L, 10L),
-        Row(7L, "ACQUAINTED", 9L, null, null, null, null),
+        Row(7L, "CLOSE_TO", 9L, null, null, null, null),
         Row(2011L, "IS", 17L, null, null, null, null),
         Row(18L, "HAS_INTEREST", 27L, "EU", null, null, null),
         Row(2004L, "IS", 10L, null, null, null, null),
-        Row(8L, "ACQUAINTED", 9L, null, null, null, null),
-        Row(16L, "ACQUAINTED", 17L, null, null, null, null),
+        Row(8L, "CLOSE_TO", 9L, null, null, null, null),
+        Row(16L, "CLOSE_TO", 17L, null, null, null, null),
         Row(14L, "LIVES_IN", 3L, "EU", null, null, null),
         Row(2007L, "IS", 13L, null, null, null, null),
-        Row(7L, "ACQUAINTED", 8L, null, null, null, null),
+        Row(7L, "CLOSE_TO", 8L, null, null, null, null),
         Row(12L, "HAS_INTEREST", 23L, "US", null, null, null),
         Row(2001L, "BOUGHT", 1001L, null, 4L, 7L, 10L),
         Row(2001L, "BOUGHT", 1005L, null, 5L, 8L, 10L),
         Row(11L, "LIVES_IN", 1L, "US", null, null, null),
         Row(11L, "KNOWS", 12L, "US", null, null, null),
-        Row(18L, "ACQUAINTED", 17L, null, null, null, null),
+        Row(18L, "CLOSE_TO", 17L, null, null, null, null),
         Row(2001L, "IS", 7L, null, null, null, null),
         Row(7L, "KNOWS", 9L, "US", null, null, null),
         Row(14L, "KNOWS", 15L, "EU", null, null, null),
         Row(12L, "LIVES_IN", 1L, "US", null, null, null),
-        Row(10L, "ACQUAINTED", 11L, null, null, null, null),
+        Row(10L, "CLOSE_TO", 11L, null, null, null, null),
         Row(19L, "LIVES_IN", 2L, "EU", null, null, null),
-        Row(11L, "ACQUAINTED", 12L, null, null, null, null),
+        Row(11L, "CLOSE_TO", 12L, null, null, null, null),
         Row(5L, "LIVES_IN", 6L, "US", null, null, null),
-        Row(10L, "ACQUAINTED", 12L, null, null, null, null),
+        Row(10L, "CLOSE_TO", 12L, null, null, null, null),
         Row(7L, "KNOWS", 8L, "US", null, null, null),
-        Row(13L, "ACQUAINTED", 14L, null, null, null, null),
+        Row(13L, "CLOSE_TO", 14L, null, null, null, null),
         Row(9L, "HAS_INTEREST", 25L, "EU", null, null, null),
         Row(16L, "KNOWS", 17L, "EU", null, null, null),
         Row(2007L, "BOUGHT", 1002L, null, 4L, 7L, 10L),
@@ -332,7 +353,7 @@ class GCDemoTest extends CAPSTestSuite with SparkSessionFixture with Neo4jServer
         Row(2003L, "IS", 9L, null, null, null, null),
         Row(18L, "LIVES_IN", 4L, "EU", null, null, null),
         Row(13L, "KNOWS", 14L, "EU", null, null, null),
-        Row(14L, "ACQUAINTED", 15L, null, null, null, null)
+        Row(14L, "CLOSE_TO", 15L, null, null, null, null)
       ))
   }
 
@@ -397,7 +418,7 @@ class GCDemoTest extends CAPSTestSuite with SparkSessionFixture with Neo4jServer
     g.schema should equal(
       Schema.empty
         .withNodePropertyKeys("Person")("name" -> CTString, "region" -> CTString)
-        .withRelationshipType("ACQUAINTED"))
+        .withRelationshipType("CLOSE_TO"))
 
     g.nodes("n").collect.toBag should equal(
       Bag(
@@ -412,12 +433,12 @@ class GCDemoTest extends CAPSTestSuite with SparkSessionFixture with Neo4jServer
     val relsWithoutRelId = g.relationships("r").asInstanceOf[CAPSRecords].toDF().drop("r")
     relsWithoutRelId.collect().toBag should equal(
       Bag(
-        Row(7L, "ACQUAINTED", 8L),
-        Row(7L, "ACQUAINTED", 9L),
-        Row(8L, "ACQUAINTED", 9L),
-        Row(10L, "ACQUAINTED", 11L),
-        Row(10L, "ACQUAINTED", 12L),
-        Row(11L, "ACQUAINTED", 12L)
+        Row(7L, "CLOSE_TO", 8L),
+        Row(7L, "CLOSE_TO", 9L),
+        Row(8L, "CLOSE_TO", 9L),
+        Row(10L, "CLOSE_TO", 11L),
+        Row(10L, "CLOSE_TO", 12L),
+        Row(11L, "CLOSE_TO", 12L)
       ))
   }
 
@@ -427,7 +448,7 @@ class GCDemoTest extends CAPSTestSuite with SparkSessionFixture with Neo4jServer
     g.schema should equal(
       Schema.empty
         .withNodePropertyKeys("Person")("name" -> CTString, "region" -> CTString)
-        .withRelationshipType("ACQUAINTED"))
+        .withRelationshipType("CLOSE_TO"))
 
     g.nodes("n").collect.toBag should equal(
       Bag(
@@ -442,12 +463,12 @@ class GCDemoTest extends CAPSTestSuite with SparkSessionFixture with Neo4jServer
     val relsWithoutRelId = g.relationships("r").asInstanceOf[CAPSRecords].toDF().drop("r")
     relsWithoutRelId.collect().toBag should equal(
       Bag(
-        Row(13L, "ACQUAINTED", 14L),
-        Row(13L, "ACQUAINTED", 15L),
-        Row(14L, "ACQUAINTED", 15L),
-        Row(18L, "ACQUAINTED", 16L),
-        Row(18L, "ACQUAINTED", 17L),
-        Row(16L, "ACQUAINTED", 17L)
+        Row(13L, "CLOSE_TO", 14L),
+        Row(13L, "CLOSE_TO", 15L),
+        Row(14L, "CLOSE_TO", 15L),
+        Row(18L, "CLOSE_TO", 16L),
+        Row(18L, "CLOSE_TO", 17L),
+        Row(16L, "CLOSE_TO", 17L)
       ))
   }
 
@@ -457,7 +478,7 @@ class GCDemoTest extends CAPSTestSuite with SparkSessionFixture with Neo4jServer
     g.schema should equal(
       Schema.empty
         .withNodePropertyKeys("Person")("name" -> CTString, "region" -> CTString)
-        .withRelationshipType("ACQUAINTED"))
+        .withRelationshipType("CLOSE_TO"))
 
     g.nodes("n").collect.toBag should equal(
       Bag(
@@ -478,18 +499,18 @@ class GCDemoTest extends CAPSTestSuite with SparkSessionFixture with Neo4jServer
     val relsWithoutRelId = g.relationships("r").asInstanceOf[CAPSRecords].toDF().drop("r")
     Bag(relsWithoutRelId.collect(): _*) should equal(
       Bag(
-        Row(7L, "ACQUAINTED", 8L),
-        Row(7L, "ACQUAINTED", 9L),
-        Row(8L, "ACQUAINTED", 9L),
-        Row(10L, "ACQUAINTED", 11L),
-        Row(10L, "ACQUAINTED", 12L),
-        Row(11L, "ACQUAINTED", 12L),
-        Row(13L, "ACQUAINTED", 14L),
-        Row(13L, "ACQUAINTED", 15L),
-        Row(14L, "ACQUAINTED", 15L),
-        Row(18L, "ACQUAINTED", 16L),
-        Row(18L, "ACQUAINTED", 17L),
-        Row(16L, "ACQUAINTED", 17L)
+        Row(7L, "CLOSE_TO", 8L),
+        Row(7L, "CLOSE_TO", 9L),
+        Row(8L, "CLOSE_TO", 9L),
+        Row(10L, "CLOSE_TO", 11L),
+        Row(10L, "CLOSE_TO", 12L),
+        Row(11L, "CLOSE_TO", 12L),
+        Row(13L, "CLOSE_TO", 14L),
+        Row(13L, "CLOSE_TO", 15L),
+        Row(14L, "CLOSE_TO", 15L),
+        Row(18L, "CLOSE_TO", 16L),
+        Row(18L, "CLOSE_TO", 17L),
+        Row(16L, "CLOSE_TO", 17L)
       ))
   }
 

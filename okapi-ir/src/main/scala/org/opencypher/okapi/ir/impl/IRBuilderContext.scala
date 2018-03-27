@@ -46,7 +46,7 @@ final case class IRBuilderContext(
   uniqueSessionGraphNameGenerator: () => QualifiedGraphName,
   queryString: String,
   parameters: CypherMap,
-  workingGraph: IRGraph, // initially the ambient graph, but gets changed by `USE GRAPH`/`CONSTRUCT`
+  workingGraph: IRGraph, // initially the ambient graph, but gets changed by `FROM GRAPH`/`CONSTRUCT`
   blockRegistry: BlockRegistry[Expr] = BlockRegistry.empty[Expr],
   semanticState: SemanticState,
   resolver: Namespace => PropertyGraphDataSource,

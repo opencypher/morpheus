@@ -91,10 +91,10 @@ class HdfsCsvPropertyGraphDataSourceTest
 
     caps.registerSource(testNamespace, dataSource)
 
-    val nodes = caps.cypher(s"USE GRAPH $testNamespace.$testGraphName MATCH (n) RETURN n")
+    val nodes = caps.cypher(s"FROM GRAPH $testNamespace.$testGraphName MATCH (n) RETURN n")
     nodes.getRecords.asCaps.toDF().collect().toBag should equal(csvTestGraphNodes)
 
-    val edges = caps.cypher(s"USE GRAPH $testNamespace.$testGraphName MATCH ()-[r]->() RETURN r")
+    val edges = caps.cypher(s"FROM GRAPH $testNamespace.$testGraphName MATCH ()-[r]->() RETURN r")
     edges.getRecords.asCaps.toDF().collect().toBag should equal(csvTestGraphRelsFromRecords)
   }
 
