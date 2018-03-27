@@ -461,6 +461,31 @@ trait MultipleGraphBehaviour {
       )
       result.schema.toTagged.tags should equal(Set(0, 1, 2))
     }
+
+    //TODO: Copy all properties
+    ignore("CONSTRUCT: cloning from different graphs") {
+      def testGraphRels = initGraph(
+        """|CREATE (mats:Person {name: 'Mats'})
+           |CREATE (max:Person {name: 'Max'})
+           |CREATE (max)-[:HAS_SIMILAR_NAME]->(mats)
+        """.stripMargin)
+      caps.store(GraphName("testGraphRels1"), testGraphRels)
+      caps.store(GraphName("testGraphRels2"), testGraphRels)
+      val query =
+        """|FROM GRAPH testGraphRels1
+           |MATCH (p1)-[r1]->(p2)
+           |FROM GRAPH testGraphRels2
+           |MATCH (p3)-[r2]->(p4)
+           |CONSTRUCT
+           |  CLONE p1, p2, p3, p4, r1, r2
+           |RETURN GRAPH""".stripMargin
+
+      val result = caps.cypher(query).getGraph
+
+      result.nodes("n").asCaps.data.show
+      result.relationships("r").asCaps.data.show
+    }
+
   }
 
 }

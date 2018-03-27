@@ -211,7 +211,7 @@ object IRBuilder extends CompilationStage[ast.Statement, CypherStatement[Expr], 
           }.traverse(convertPattern[R](_, Some(qgn)))
 
           refs <- {
-            val onGraphs = on.map(graph => QualifiedGraphName(graph.parts))
+            val onGraphs: List[QualifiedGraphName] = on.map(graph => QualifiedGraphName(graph.parts))
             val schemaForOnGraphUnion = onGraphs.foldLeft(Schema.empty.withTags()) { case (agg, next) =>
               agg union context.schemaFor(next).toTagged
             }
@@ -225,7 +225,9 @@ object IRBuilder extends CompilationStage[ast.Statement, CypherStatement[Expr], 
             val newPattern = newPatterns.foldLeft(Pattern.empty[Expr])(_ ++ _)
             val cypherTypesInNewPattern = newPattern.fields.map(_.cypherType)
 
-            val schemaWithNewLabels = cypherTypesInNewPattern.foldLeft(cloneSchema) { case (agg, next) =>
+
+            val newEntityTag = if(news.isEmpty) None else Some()
+            val constructOperatorSchema = cypherTypesInNewPattern.foldLeft(cloneSchema) { case (agg, next) =>
               next match {
                 case n: CTNode =>
                   agg.withNodePropertyKeys(n.labels)
@@ -236,7 +238,9 @@ object IRBuilder extends CompilationStage[ast.Statement, CypherStatement[Expr], 
               }
             }
 
-            val patternGraphSchema = schemaForOnGraphUnion ++ schemaWithNewLabels // No UNION to avoid retagging
+
+
+            val patternGraphSchema = schemaForOnGraphUnion ++ constructOperatorSchema // No UNION to avoid retagging
 
             val patternGraph = IRPatternGraph[Expr](
               qgn,

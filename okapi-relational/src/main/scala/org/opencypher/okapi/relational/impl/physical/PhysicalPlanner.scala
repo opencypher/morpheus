@@ -27,9 +27,12 @@
 package org.opencypher.okapi.relational.impl.physical
 
 import org.opencypher.okapi.api.graph.{CypherSession, PropertyGraph, QualifiedGraphName}
+import org.opencypher.okapi.api.schema.Schema
 import org.opencypher.okapi.api.table.CypherRecords
 import org.opencypher.okapi.api.types.{CTBoolean, CTNode, CTRelationship}
 import org.opencypher.okapi.impl.exception.{IllegalArgumentException, NotImplementedException}
+import org.opencypher.okapi.impl.schema.TagSupport
+import org.opencypher.okapi.impl.schema.TagSupport._
 import org.opencypher.okapi.ir.api.block.SortItem
 import org.opencypher.okapi.ir.api.expr._
 import org.opencypher.okapi.ir.api.util.DirectCompilationStage
@@ -74,46 +77,84 @@ class PhysicalPlanner[P <: PhysicalOperator[R, G, C], R <: CypherRecords, G <: P
           case construct: LogicalPatternGraph =>
             def catalogGraph(qgn: QualifiedGraphName) = producer.planStart(None, Some(qgn))
 
-            val constructGraphOperator = producer.planConstructGraph(process(in), construct, context.catalog)
+            def computeRetaggings(graphs: Map[QualifiedGraphName, Schema with TagSupport]): Map[QualifiedGraphName, Map[Int, Int]] = {
+              val (result, _) = graphs.foldLeft((Map.empty[QualifiedGraphName, Map[Int, Int]], Set.empty[Int])) {
+                case ((graphReplacements, previousTags), (graphId, schema)) =>
+                  val rightTags = schema.tags
 
-            // Create UNION graph for `onGraphs`
-            val constructOnGraph: Option[P] = construct.onGraphs match {
-              case Nil =>
-                None
-              case h :: Nil =>
-                Some(catalogGraph(h))
-              case severalGraphs =>
-                val onGraphUnion = producer.planGraphUnionAll(severalGraphs.map(catalogGraph))
-                Some(onGraphUnion)
+                  val replacements = previousTags.replacementsFor(rightTags)
+                  val updatedRightTags = rightTags.replaceWith(replacements)
+
+                  val updatedPreviousTags = previousTags ++ updatedRightTags
+                  val updatedGraphReplacements = graphReplacements.updated(graphId, replacements)
+
+                  updatedGraphReplacements -> updatedPreviousTags
+              }
+              result
             }
 
-            // If necessary plan a union if there are graphs that the new graph is CONSTRUCTED ON.
-            constructOnGraph match {
-              case None => constructGraphOperator
-              // Do not prevent collisions with the constructed graph in order to preserve the constructed relationships
-              case Some(constructedOn) => producer.planGraphUnionAll(constructedOn :: constructGraphOperator :: Nil, preventIdCollisions = false)
+            val varGraphs: Map[Var, QualifiedGraphName] = construct.clones.mapValues(_.cypherType.graph.get)
+            val onGraph: Set[QualifiedGraphName] = construct.onGraphs.toSet
+
+            val sourceGraphs = onGraph ++ varGraphs.values.toSet
+
+            if (sourceGraphs.isEmpty) {
+              producer.planConstructGraph(process(in), construct, Map.empty.withDefaultValue(Map.empty))
+            } else if (sourceGraphs.size == 1) {
+              val constructGraphOperator = producer.planConstructGraph(process(in), construct, Map.empty.withDefaultValue(Map.empty))
+              if (construct.onGraphs.isEmpty) {
+                constructGraphOperator
+              } else { // Can be at most one
+                val constructOnGraph = catalogGraph(construct.onGraphs.head)
+                producer.planGraphUnionAll(List(constructOnGraph, constructGraphOperator))
+              }
+            } else {
+              val schemasForGraphs: Map[QualifiedGraphName, Schema with TagSupport] = sourceGraphs.map(g => g -> context.schemaCatalog(g)).toMap
+              val retaggings: Map[QualifiedGraphName, Map[Int, Int]] = computeRetaggings(schemasForGraphs)
+              val constructGraphOperator = producer.planConstructGraph(process(in), construct, retaggings)
+              if (onGraph.isEmpty) { // No on-graphs, the retagged constructed graph is enough
+                constructGraphOperator
+              } else { // Multiple graphs, might need to do retagging
+                val constructOnGraph: P = {
+                  val retaggingsForGraphs = construct.onGraphs.map(qgn => catalogGraph(qgn) -> retaggings(qgn)).toMap
+                  // Create UNION graph for `onGraphs`
+                  val onGraphUnion = producer.planGraphUnionAll(retaggingsForGraphs.keys.toList, retaggingsForGraphs)
+                  onGraphUnion
+                }
+                // Another union between the on-graphs with the constructed pattern graph, no retaggings
+                producer.planGraphUnionAll(List(constructOnGraph, constructGraphOperator))
+              }
             }
         }
 
-      case op@flat.NodeScan(v, in, header) =>
+      case op
+        @flat.NodeScan(v, in, header)
+      =>
         producer.planNodeScan(process(in), op.sourceGraph, v, header)
 
-      case op@flat.EdgeScan(e, in, header) =>
+      case op
+        @flat.EdgeScan(e, in, header)
+      =>
         producer.planRelationshipScan(process(in), op.sourceGraph, e, header)
 
-      case flat.Alias(expr, alias, in, header) =>
+      case flat.Alias(expr, alias, in, header)
+      =>
         producer.planAlias(process(in), expr, alias, header)
 
-      case flat.Unwind(list, item, in, header) =>
+      case flat.Unwind(list, item, in, header)
+      =>
         producer.planUnwind(process(in), list, item, header)
 
-      case flat.Project(expr, in, header) =>
+      case flat.Project(expr, in, header)
+      =>
         producer.planProject(process(in), expr, header)
 
-      case flat.Aggregate(aggregations, group, in, header) =>
+      case flat.Aggregate(aggregations, group, in, header)
+      =>
         producer.planAggregate(process(in), group, aggregations, header)
 
-      case flat.Filter(expr, in, header) =>
+      case flat.Filter(expr, in, header)
+      =>
         expr match {
           case TrueLit() =>
             process(in) // optimise away filter
@@ -138,7 +179,7 @@ class PhysicalPlanner[P <: PhysicalOperator[R, G, C], R <: CypherRecords, G <: P
             producer.planStart(None, Some(e.qualifiedGraphName))
 
           case c: LogicalPatternGraph =>
-            producer.planConstructGraph(producer.planStart(Some(context.inputRecords)), c, context.catalog)
+            producer.planConstructGraph(producer.planStart(Some(context.inputRecords)), c, Map.empty)
         }
 
         val second = producer.planRelationshipScan(startFrom, op.sourceGraph, rel, relHeader)
@@ -163,7 +204,9 @@ class PhysicalPlanner[P <: PhysicalOperator[R, G, C], R <: CypherRecords, G <: P
             producer.planTabularUnionAll(outgoing, incoming)
         }
 
-      case op@flat.ExpandInto(source, rel, target, direction, sourceOp, header, relHeader) =>
+      case op
+        @flat.ExpandInto(source, rel, target, direction, sourceOp, header, relHeader)
+      =>
         val in = process(sourceOp)
         val relationships = producer.planRelationshipScan(in, op.sourceGraph, rel, relHeader)
 
@@ -180,14 +223,16 @@ class PhysicalPlanner[P <: PhysicalOperator[R, G, C], R <: CypherRecords, G <: P
             producer.planTabularUnionAll(outgoing, incoming)
         }
 
-      case flat.InitVarExpand(source, edgeList, endNode, in, header) =>
+      case flat.InitVarExpand(source, edgeList, endNode, in, header)
+      =>
         producer.planInitVarExpand(process(in), source, edgeList, endNode, header)
 
       case flat.BoundedVarExpand(
       rel, edgeList, target, direction,
       lower, upper,
       sourceOp, relOp, targetOp,
-      header, isExpandInto) =>
+      header, isExpandInto)
+      =>
         val first = process(sourceOp)
         val second = process(relOp)
         val third = process(targetOp)
@@ -206,22 +251,28 @@ class PhysicalPlanner[P <: PhysicalOperator[R, G, C], R <: CypherRecords, G <: P
           header,
           isExpandInto)
 
-      case flat.Optional(lhs, rhs, header) =>
+      case flat.Optional(lhs, rhs, header)
+      =>
         producer.planOptional(process(lhs), process(rhs), header)
 
-      case flat.ExistsSubQuery(predicateField, lhs, rhs, header) =>
+      case flat.ExistsSubQuery(predicateField, lhs, rhs, header)
+      =>
         producer.planExistsSubQuery(process(lhs), process(rhs), predicateField, header)
 
-      case flat.OrderBy(sortItems: Seq[SortItem[Expr]], in, header) =>
+      case flat.OrderBy(sortItems: Seq[SortItem[Expr]], in, header)
+      =>
         producer.planOrderBy(process(in), sortItems, header)
 
-      case flat.Skip(expr, in, header) =>
+      case flat.Skip(expr, in, header)
+      =>
         producer.planSkip(process(in), expr, header)
 
-      case flat.Limit(expr, in, header) =>
+      case flat.Limit(expr, in, header)
+      =>
         producer.planLimit(process(in), expr, header)
 
-      case flat.ReturnGraph(in) =>
+      case flat.ReturnGraph(in)
+      =>
         producer.planReturnGraph(process(in))
 
       case x =>
@@ -229,7 +280,9 @@ class PhysicalPlanner[P <: PhysicalOperator[R, G, C], R <: CypherRecords, G <: P
     }
   }
 
-  private def relTypes(r: Var): Set[String] = r.cypherType match {
+  private def relTypes(r: Var): Set[String]
+
+  = r.cypherType match {
     case t: CTRelationship => t.types
     case _ => Set.empty
   }

@@ -158,15 +158,15 @@ trait PhysicalOperatorProducer[P <: PhysicalOperator[R, G, C], R <: CypherRecord
   /**
     * Creates a new record containing the specified entities (i.e. as defined in a construction pattern).
     *
-    * @param in        previous operator
-    * @param construct graph to construct
-    * @param catalog   resolver for catalog graphs
+    * @param in         previous operator
+    * @param construct  graph to construct
+    * @param retaggings retaggings to apply to entities in the input table
     * @return project pattern graph operator
     */
   def planConstructGraph(
     in: P,
     construct: LogicalPatternGraph,
-    catalog: QualifiedGraphName => PropertyGraph): P
+    retaggings: Map[QualifiedGraphName, Map[Int, Int]]): P
 
   /**
     * Groups the underlying records by the specified expressions and evaluates the given aggregate functions.
@@ -334,10 +334,9 @@ trait PhysicalOperatorProducer[P <: PhysicalOperator[R, G, C], R <: CypherRecord
   /**
     * Performs a UNION ALL over graphs.
     *
-    * @param graphs              graph to perform UNION ALL over
-    * @param preventIdCollisions flag that indicates if ID collisions between entities should be prevented
+    * @param graphs     graphs to perform UNION ALL over together
+    * @param retaggings for each graphs the retaggings that need to be applied to its scans
     * @return union all operator
     */
-  def planGraphUnionAll(graphs: List[P], preventIdCollisions: Boolean = true): P
-
+  def planGraphUnionAll(graphs: List[P], retaggings: Map[P, Map[Int, Int]] = Map.empty.withDefaultValue(Map.empty)): P
 }

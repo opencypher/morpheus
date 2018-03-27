@@ -49,7 +49,7 @@ final case class IRBuilderContext(
   workingGraph: IRGraph, // initially the ambient graph, but gets changed by `FROM GRAPH`/`CONSTRUCT`
   blockRegistry: BlockRegistry[Expr] = BlockRegistry.empty[Expr],
   semanticState: SemanticState,
-  resolver: Namespace => PropertyGraphDataSource,
+  queryCatalog: QueryCatalog, // copy of Session catalog plus constructed graph schemas
   knownTypes: Map[ast.Expression, CypherType] = Map.empty) {
   self =>
 
@@ -79,17 +79,7 @@ final case class IRBuilderContext(
 
   private def typer = SchemaTyper(workingGraph.schema)
 
-  def schemaFor(qualifiedGraphName: QualifiedGraphName): Schema = {
-    val dataSource = resolver(qualifiedGraphName.namespace)
-
-    dataSource.schema(qualifiedGraphName.graphName) match {
-      case None =>
-        // This initialises the graph eagerly!!
-        // TODO: We probably want to save the graph reference somewhere
-        dataSource.graph(qualifiedGraphName.graphName).schema
-      case Some(s) => s
-    }
-  }
+  def schemaFor(qgn: QualifiedGraphName): Schema = queryCatalog.schema(qgn)
 
   def withBlocks(reg: BlockRegistry[Expr]): IRBuilderContext = copy(blockRegistry = reg)
 
@@ -113,12 +103,13 @@ object IRBuilderContext {
     semState: SemanticState,
     workingGraph: IRCatalogGraph,
     qgnGenerator: QGNGenerator,
-    resolver: Namespace => PropertyGraphDataSource,
+    sessionCatalog: Map[Namespace, PropertyGraphDataSource],
     fieldsFromDrivingTable: Set[Var] = Set.empty
   ): IRBuilderContext = {
     val registry = BlockRegistry.empty[Expr]
     val block = SourceBlock[Expr](workingGraph)
     val updatedRegistry = registry.register(block)
+    val queryCatalog = QueryCatalog(sessionCatalog)
 
     val context = IRBuilderContext(
       qgnGenerator,
@@ -127,7 +118,7 @@ object IRBuilderContext {
       workingGraph,
       updatedRegistry,
       semState,
-      resolver)
+      queryCatalog)
 
     context.withFields(fieldsFromDrivingTable.map(v => IRField(v.name)(v.cypherType)))
   }

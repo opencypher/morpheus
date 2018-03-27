@@ -24,52 +24,40 @@
  * described as "implementation extensions to Cypher" or as "proposed changes to
  * Cypher that are not yet approved by the openCypher community".
  */
-package org.opencypher.okapi.relational.api.physical
+package org.opencypher.okapi.ir.impl
 
-import org.opencypher.okapi.api.graph.{CypherSession, PropertyGraph, QualifiedGraphName}
+import org.opencypher.okapi.api.graph.{Namespace, PropertyGraph, QualifiedGraphName}
+import org.opencypher.okapi.api.io.PropertyGraphDataSource
 import org.opencypher.okapi.api.schema.Schema
-import org.opencypher.okapi.api.table.CypherRecords
-import org.opencypher.okapi.api.value.CypherValue.CypherMap
 import org.opencypher.okapi.impl.schema.TagSupport
+import org.opencypher.okapi.impl.schema.TagSupport._
 
-/**
-  * Represents a back-end specific context which is used by the [[org.opencypher.okapi.relational.impl.physical.PhysicalPlanner]].
-  *
-  * @tparam R backend-specific cypher records
-  */
-trait PhysicalPlannerContext[R <: CypherRecords] {
-  /**
-    * Refers to the session in which that query is executed.
-    *
-    * @return back-end specific cypher session
-    */
-  def session: CypherSession
+case class QueryCatalog(dataSourceMapping: Map[Namespace, PropertyGraphDataSource], registeredSchemas: Map[QualifiedGraphName, Schema with TagSupport]) {
+  def schema(qgn: QualifiedGraphName): Schema with TagSupport = {
+    registeredSchemas.getOrElse(
+      qgn,
+      schemaFromDataSource(qgn)
+    )
+  }
 
-  /**
-    * Lookup function that resolves QGNs to property graphs.
-    *
-    * @return lookup function
-    */
-  def catalog: QualifiedGraphName => PropertyGraph
+  def graph(qgn: QualifiedGraphName): PropertyGraph = dataSourceMapping(qgn.namespace).graph(qgn.graphName)
 
-  /**
-    * Lookup function that resolves QGNs to schemas.
-    *
-    * @return lookup function
-    */
-  def schemaCatalog: QualifiedGraphName => Schema with TagSupport
+  private def schemaFromDataSource(qgn: QualifiedGraphName): Schema with TagSupport = {
+    val dataSource = dataSourceMapping(qgn.namespace)
+    val graphName = qgn.graphName
+    val schema: Schema = dataSource.schema(graphName) match {
+      case Some(s) => s
+      case None => dataSource.graph(graphName).schema
+    }
+    schema.toTagged
+  }
 
-  /**
-    * Initial records for physical planning.
-    *
-    * @return
-    */
-  def inputRecords: R
+  def withSchema(qgn: QualifiedGraphName, schema: Schema with TagSupport): QueryCatalog = {
+    copy(registeredSchemas = registeredSchemas.updated(qgn, schema))
+  }
+}
 
-  /**
-    * Query parameters
-    *
-    * @return query parameters
-    */
-  def parameters: CypherMap
+object QueryCatalog {
+  def apply(dataSourceMapping:  Map[Namespace, PropertyGraphDataSource]): QueryCatalog =
+    QueryCatalog(dataSourceMapping, Map.empty)
 }

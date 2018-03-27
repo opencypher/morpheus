@@ -49,29 +49,58 @@ class CAPSScanGraphAcceptanceTest extends AcceptanceTest {
 
   def testGraph2 = initGraph("CREATE (:Person {name: 'Phil'})")
 
-  def testGraph3 = initGraph("CREATE (:Car {type: 'Toyota'})")
+  def uselessGraph = initGraph("CREATE ()")
 
-  it("CONSTRUCTS ON two graphs and adds a relationship") {
-    caps.store(GraphName("one"), testGraph1)
-    caps.store(GraphName("two"), testGraph2)
+  def testGraphRels = initGraph(
+    """|CREATE (mats:Person {name: 'Mats'})
+       |CREATE (max:Person {name: 'Max'})
+       |CREATE (max)-[:HAS_SIMILAR_NAME]->(mats)
+    """.stripMargin)
+
+  it("CONSTRUCTS ON a relationship") {
+    caps.store(GraphName("testGraphRels1"), testGraphRels)
+    caps.store(GraphName("testGraphRels2"), testGraphRels)
     val query =
-      """|FROM GRAPH one
-         |MATCH (m: Person)
-         |FROM GRAPH two
-         |MATCH (p: Person)
-         |CONSTRUCT ON one, two
-         |  CLONE m, p
-         |  NEW (m)-[:KNOWS]->(p)
+      """|FROM GRAPH testGraphRels1
+         |MATCH (p1 :Person)-[r1]->(p2 :Person)
+         |CONSTRUCT ON testGraphRels2
+         |  CLONE p1, r1, p2
          |RETURN GRAPH""".stripMargin
 
     val result = caps.cypher(query).getGraph
 
-    result.schema should equal(testGraph1.schema.union(testGraph2.schema).withRelationshipPropertyKeys("KNOWS")().withTags(0, 1, 2).asCaps)
-    result.nodes("n").toMaps should equal(testGraph1.unionAll(testGraph2).nodes("n").toMaps)
-    result.relationships("r").toMapsWithCollectedEntities should equal(Bag(
-      CypherMap("r" -> CAPSRelationship(2251799813685248L, 0L, 1125899906842624L, "KNOWS")))
-    )
-    result.schema.toTagged.tags should equal(Set(0, 1, 2))
+    result.nodes("n").asCaps.data.show
+    result.relationships("r").asCaps.data.show
+
+//    result.schema should equal(testGraph1.schema.union(testGraph2.schema).withRelationshipPropertyKeys("KNOWS")().withTags(0, 1, 2).asCaps)
+//    result.nodes("n").toMaps should equal(testGraph1.unionAll(testGraph2).nodes("n").toMaps)
+//    result.relationships("r").toMapsWithCollectedEntities should equal(Bag(
+//      CypherMap("r" -> CAPSRelationship(2251799813685248L, 0L, 1125899906842624L, "KNOWS")))
+//    )
+//    result.schema.toTagged.tags should equal(Set(0, 1, 2))
+  }
+
+  ignore("CONSTRUCT: cloning from different graphs") {
+    def testGraphRels = initGraph(
+      """|CREATE (mats:Person {name: 'Mats'})
+         |CREATE (max:Person {name: 'Max'})
+         |CREATE (max)-[:HAS_SIMILAR_NAME]->(mats)
+      """.stripMargin)
+    caps.store(GraphName("testGraphRels1"), testGraphRels)
+    caps.store(GraphName("testGraphRels2"), testGraphRels)
+    val query =
+      """|FROM GRAPH testGraphRels1
+         |MATCH (p1 :Person)-[r1]->(p2 :Person)
+         |FROM GRAPH testGraphRels2
+         |MATCH (p3 :Person)-[r2]->(p4 :Person)
+         |CONSTRUCT
+         |  CLONE p1, p2, p3, p4, r1, r2
+         |RETURN GRAPH""".stripMargin
+
+    val result = caps.cypher(query).getGraph
+
+    result.nodes("n").asCaps.data.show
+    result.relationships("r").asCaps.data.show
   }
 
 

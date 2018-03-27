@@ -27,15 +27,11 @@
 package org.opencypher.spark.impl
 
 import org.apache.spark.storage.StorageLevel
-import org.opencypher.okapi.api.graph.QualifiedGraphName
 import org.opencypher.okapi.api.schema.Schema
 import org.opencypher.okapi.api.types.{CTNode, CTRelationship}
-import org.opencypher.okapi.impl.schema.TagSupport
-import org.opencypher.okapi.impl.schema.TagSupport._
 import org.opencypher.okapi.ir.api.expr.Var
 import org.opencypher.okapi.relational.impl.table.RecordHeader
 import org.opencypher.spark.api.CAPSSession
-import org.opencypher.spark.impl.CAPSUnionGraph.computeRetaggings
 import org.opencypher.spark.schema.CAPSSchema
 import org.opencypher.spark.schema.CAPSSchema._
 
@@ -43,39 +39,19 @@ object CAPSUnionGraph {
   def apply(graphs: CAPSGraph*)(implicit session: CAPSSession): CAPSUnionGraph = {
     CAPSUnionGraph(graphs.toList)
   }
-
-  def computeRetaggings[GraphId](graphs: List[(GraphId, CAPSSchema)]): Map[GraphId, Map[Int, Int]] = {
-    val (result, _) = graphs.foldLeft((Map.empty[GraphId, Map[Int, Int]], Set.empty[Int])) {
-      case ((graphReplacements, previousTags), (graphId, schema)) =>
-        val rightTags = schema.tags
-
-        val replacements = previousTags.replacementsFor(rightTags)
-        val updatedRightTags = rightTags.replaceWith(replacements)
-
-        val updatedPreviousTags = previousTags ++ updatedRightTags
-        val updatedGraphReplacements = graphReplacements.updated(graphId, replacements)
-
-        updatedGraphReplacements -> updatedPreviousTags
-    }
-    result
-  }
-
 }
 
-final case class CAPSUnionGraph(graphs: List[CAPSGraph], preventIdCollisions: Boolean = true)
+final case class CAPSUnionGraph(
+  graphs: List[CAPSGraph],
+  retaggingsForGraphs: Map[CAPSGraph, Map[Int, Int]] = Map.empty.withDefaultValue(Map.empty)
+)
   (implicit val session: CAPSSession) extends CAPSGraph {
   require(graphs.size > 0, "Union requires at least one graph")
 
-  override def toString = s"CAPSUnionGraph(graphs=[${graphs.mkString(",")}], preventIdCollisions=$preventIdCollisions)"
-
-  private lazy val individualSchemas: Seq[CAPSSchema] = graphs.map(_.schema.asCaps)
+  override def toString = s"CAPSUnionGraph(graphs=[${graphs.mkString(",")}])"
 
   override lazy val schema: CAPSSchema = {
-    if (preventIdCollisions) {
-      individualSchemas.reduce(_ union _)
-    } else {
-      individualSchemas.foldLeft(Schema.empty)(_ ++ _).asCaps
-    }
+    graphs.map(g => g.schema.replaceTags(retaggingsForGraphs(g))).foldLeft(Schema.empty)(_ ++ _).asCaps
   }
 
   override def cache(): CAPSUnionGraph = map(_.cache())
@@ -88,15 +64,7 @@ final case class CAPSUnionGraph(graphs: List[CAPSGraph], preventIdCollisions: Bo
 
   override def unpersist(blocking: Boolean): CAPSUnionGraph = map(_.unpersist(blocking))
 
-  private def map(f: CAPSGraph => CAPSGraph): CAPSUnionGraph = CAPSUnionGraph(graphs.map(f), preventIdCollisions)
-
-  private val retaggingsForGraph: Map[CAPSGraph, Map[Int, Int]] = {
-    if (preventIdCollisions) {
-      computeRetaggings(graphs.map(g => (g, g.schema)))
-    } else {
-      Map.empty.withDefaultValue(Map.empty)
-    }
-  }
+  private def map(f: CAPSGraph => CAPSGraph): CAPSUnionGraph = CAPSUnionGraph(graphs.map(f), retaggingsForGraphs)
 
   override def nodes(name: String, nodeCypherType: CTNode): CAPSRecords = {
     val node = Var(name)(nodeCypherType)
@@ -106,7 +74,7 @@ final case class CAPSUnionGraph(graphs: List[CAPSGraph], preventIdCollisions: Bo
       .map {
         graph =>
           val nodeScan = graph.nodes(name, nodeCypherType)
-          nodeScan.retag(retaggingsForGraph(graph))
+          nodeScan.retag(retaggingsForGraphs(graph))
       }
 
     val alignedScans = nodeScans.map(_.alignWith(node, targetHeader))
@@ -124,7 +92,7 @@ final case class CAPSUnionGraph(graphs: List[CAPSGraph], preventIdCollisions: Bo
       .filter(relCypherType.types.isEmpty || _.schema.relationshipTypes.intersect(relCypherType.types).nonEmpty)
       .map { graph =>
         val relScan = graph.relationships(name, relCypherType)
-        relScan.retag(retaggingsForGraph(graph))
+        relScan.retag(retaggingsForGraphs(graph))
       }
 
     val alignedScans = relScans.map(_.alignWith(rel, targetHeader))

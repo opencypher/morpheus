@@ -34,9 +34,9 @@ import org.opencypher.okapi.logical.impl._
 import org.opencypher.okapi.relational.api.physical.{PhysicalOperatorProducer, PhysicalPlannerContext}
 import org.opencypher.okapi.relational.impl.table._
 import org.opencypher.spark.api.CAPSSession
+import org.opencypher.spark.impl.CAPSConverters._
 import org.opencypher.spark.impl.physical.operators.CAPSPhysicalOperator
 import org.opencypher.spark.impl.{CAPSGraph, CAPSRecords}
-import org.opencypher.spark.impl.CAPSConverters._
 
 case class CAPSPhysicalPlannerContext(
   session: CAPSSession,
@@ -107,8 +107,8 @@ final class CAPSPhysicalOperatorProducer(implicit caps: CAPSSession)
   override def planConstructGraph(
     in: CAPSPhysicalOperator,
     construct: LogicalPatternGraph,
-    catalog: QualifiedGraphName => PropertyGraph): CAPSPhysicalOperator = {
-    operators.ConstructGraph(in, construct, catalog)
+    retaggings: Map[QualifiedGraphName, Map[Int, Int]]): CAPSPhysicalOperator = {
+    operators.ConstructGraph(in, construct, retaggings)
   }
 
   override def planAggregate(in: CAPSPhysicalOperator, group: Set[Var], aggregations: Set[(Var, Aggregator)], header: RecordHeader): CAPSPhysicalOperator = operators.Aggregate(in, aggregations, group, header)
@@ -170,7 +170,11 @@ final class CAPSPhysicalOperatorProducer(implicit caps: CAPSSession)
   override def planLimit(in: CAPSPhysicalOperator, expr: Expr, header: RecordHeader): CAPSPhysicalOperator =
     operators.Limit(in, expr, header)
 
-  override def planGraphUnionAll(graphs: List[CAPSPhysicalOperator], preventIdCollisions: Boolean): CAPSPhysicalOperator = {
-    operators.GraphUnionAll(graphs, preventIdCollisions)
+  override def planGraphUnionAll(
+    graphs: List[CAPSPhysicalOperator],
+    retaggings: Map[CAPSPhysicalOperator, Map[Int, Int]] = Map.empty.withDefaultValue(Map.empty)):
+    CAPSPhysicalOperator = {
+
+    operators.GraphUnionAll(graphs, retaggings)
   }
 }

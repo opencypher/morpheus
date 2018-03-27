@@ -48,7 +48,7 @@ trait CAPSGraph extends PropertyGraph with GraphOperations with Serializable {
 
   override def relationships(name: String, relCypherType: CTRelationship = CTRelationship): CAPSRecords
 
-  def union(other: PropertyGraph): CAPSGraph = CAPSUnionGraph(List(this, other.asCaps), preventIdCollisions = false)
+  def union(other: PropertyGraph): CAPSGraph = CAPSUnionGraph(List(this, other.asCaps))
 
   // TODO: Flatten UnionGraph trees that have tag updates enabled
   override def unionAll(other: PropertyGraph): CAPSGraph = CAPSUnionGraph(this, other.asCaps)

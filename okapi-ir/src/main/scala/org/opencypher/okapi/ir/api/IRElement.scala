@@ -50,6 +50,7 @@ final case class IRField(name: String)(val cypherType: CypherType = CTWildcard) 
 
 sealed trait IRGraph {
   def schema: Schema
+
   def qualifiedGraphName: QualifiedGraphName
 }
 
@@ -66,4 +67,6 @@ final case class IRPatternGraph[E](
   clones: Map[IRField, E],
   news: Pattern[E],
   sets: List[SetPropertyItem[E]],
-  onGraphs: List[QualifiedGraphName]) extends IRGraph
+  onGraphs: List[QualifiedGraphName],
+  newEntityTag: Option[Int]
+) extends IRGraph

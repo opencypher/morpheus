@@ -89,7 +89,8 @@ sealed class CAPSSessionImpl(val sparkSession: SparkSession, val sessionNamespac
     val allParameters = queryParameters ++ extractedParameters
 
     logStageProgress("IR translation ...", newLine = false)
-    val irBuilderContext = IRBuilderContext.initial(query, allParameters, semState, ambientGraphNew, qgnGenerator, dataSource, inputFields)
+
+    val irBuilderContext = IRBuilderContext.initial(query, allParameters, semState, ambientGraphNew, qgnGenerator, dataSourceMapping, inputFields)
     val ir = time("IR translation")(IRBuilder(stmt)(irBuilderContext))
     logStageProgress("Done!")
 

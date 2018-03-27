@@ -27,9 +27,16 @@
 package org.opencypher.spark.impl.physical.operators
 
 import org.opencypher.spark.impl.physical.{CAPSPhysicalResult, CAPSRuntimeContext}
-import org.opencypher.spark.impl.{CAPSRecords, CAPSUnionGraph}
+import org.opencypher.spark.impl.{CAPSGraph, CAPSRecords, CAPSUnionGraph}
 
-final case class GraphUnionAll(inputs: List[CAPSPhysicalOperator], preventIdCollisions: Boolean = true)
+/**
+  *
+  * @param inputs
+  * @param retaggings
+  */
+final case class GraphUnionAll(
+  inputs: List[CAPSPhysicalOperator],
+  retaggings: Map[CAPSPhysicalOperator, Map[Int, Int]] = Map.empty.withDefaultValue(Map.empty))
   extends CAPSPhysicalOperator with InheritedHeader {
   require(inputs.nonEmpty, "GraphUnionAll requires at least one input")
 
@@ -37,7 +44,8 @@ final case class GraphUnionAll(inputs: List[CAPSPhysicalOperator], preventIdColl
     val inputResults = inputs.map(_.execute)
     implicit val caps = inputResults.head.records.caps
     val inputGraphs = inputResults.map(_.graph)
-    val unionGraph = CAPSUnionGraph(inputGraphs, preventIdCollisions)
+    val retaggingsForGraphs = inputGraphs.zip(inputs.map(retaggings)).toMap
+    val unionGraph = CAPSUnionGraph(inputGraphs, retaggingsForGraphs)
     CAPSPhysicalResult(CAPSRecords.unit(), unionGraph)
   }
 }
