@@ -60,7 +60,7 @@ class EDBTExampleTest extends CAPSTestSuite with SparkSessionFixture with Neo4jS
         |MATCH (a:Person)-[:LIVES_IN]->(city:City)<-[:LIVES_IN]-(b:Person), (a)-[:KNOWS*1..2]->(b)
         |WHERE ${cities.map(c => s"city.name = '$c'").mkString(" OR ")}
         |CONSTRUCT
-        |  ON neo4j.US
+        |  ON $fromGraph
         |  CLONE a, b
         |  NEW (a)-[:CLOSE_TO]->(b)
         |RETURN GRAPH
