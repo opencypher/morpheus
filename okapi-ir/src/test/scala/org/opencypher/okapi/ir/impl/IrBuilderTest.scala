@@ -45,9 +45,8 @@ class IrBuilderTest extends IrTestSuite {
   it("computes a pattern graph schema correctly - 1 create") {
     val query =
       """
-        |CONSTRUCT {
-        |  CREATE (a :A)
-        |}
+        |CONSTRUCT
+        |  NEW (a :A)
         |RETURN GRAPH""".stripMargin
 
     query.model.result match {
@@ -57,29 +56,23 @@ class IrBuilderTest extends IrTestSuite {
     }
   }
 
-  it("fails when setting a label on an entity that is not in scope") {
+  // TODO: Enable again once setting in NEW is supported
+  ignore("construct can set a label") {
     val query =
       """
-        |CONSTRUCT {
-        |  CREATE (a)
-        |}
-        |CONSTRUCT  {
-        |  SET a :Label
-        |}
+        |CONSTRUCT
+        |  NEW (a: Label)
         |RETURN GRAPH""".stripMargin
 
     intercept[UnsupportedOperationException](query.model)
   }
 
-  it("fails when setting a label on a relationship") {
+  // TODO: Enable again once setting in NEW is supported
+  ignore("construct can set a new relationship type") {
     val query =
       """
-        |CONSTRUCT {
-        |  CREATE ()-[r:KNOWS]->()
-        |}
-        |CONSTRUCT  {
-        |  SET r :Label
-        |}
+        |CONSTRUCT
+        |  NEW ()-[r:Label]->()
         |RETURN GRAPH""".stripMargin
 
     intercept[ParsingException](query.model)
@@ -88,10 +81,9 @@ class IrBuilderTest extends IrTestSuite {
   it("computes a pattern graph schema correctly - 2 creates") {
     val query =
       """
-        |CONSTRUCT  {
-        |  CREATE (a :A)
-        |  CREATE (b :B:C)
-        |}
+        |CONSTRUCT
+        |  NEW (a :A)
+        |  NEW (b :B:C)
         |RETURN GRAPH""".stripMargin
 
     query.model.result match {
@@ -101,14 +93,12 @@ class IrBuilderTest extends IrTestSuite {
     }
   }
 
-  it("computes a pattern graph schema correctly - 2 creates and a set") {
+  it("computes a pattern graph schema correctly - setting 2 labels") {
     val query =
       """
-        |CONSTRUCT  {
-        |  CREATE (a :A)
-        |  CREATE (b :B:C)
-        |  SET a :D
-        |}
+        |CONSTRUCT
+        |  NEW (a :A:D)
+        |  NEW (b :B:C)
         |RETURN GRAPH""".stripMargin
 
     query.model.result match {
@@ -118,14 +108,11 @@ class IrBuilderTest extends IrTestSuite {
     }
   }
 
-  it("computes a pattern graph schema correctly - 1 create and 2 sets") {
+  it("computes a pattern graph schema correctly - setting 3 labels") {
     val query =
       """
-        |CONSTRUCT  {
-        |  CREATE (a :A)
-        |  SET a :B
-        |  SET a :C
-        |}
+        |CONSTRUCT
+        |  NEW (a :A:B:C)
         |RETURN GRAPH""".stripMargin
 
     query.model.result match {
@@ -135,15 +122,12 @@ class IrBuilderTest extends IrTestSuite {
     }
   }
 
-  it("computes a pattern graph schema correctly - 2 creates and 2 sets on same label") {
+  it("computes a pattern graph schema correctly - setting 2 different label combinations with overlap") {
     val query =
       """
-        |CONSTRUCT  {
-        |  CREATE (a :A)
-        |  CREATE (b :A)
-        |  SET a :B
-        |  SET b :C
-        |}
+        |CONSTRUCT
+        |  NEW (a :A:B)
+        |  NEW (b :A:C)
         |RETURN GRAPH""".stripMargin
 
     query.model.result match {
@@ -153,15 +137,12 @@ class IrBuilderTest extends IrTestSuite {
     }
   }
 
-  it("computes a pattern graph schema correctly - 2 creates and 2 sets on different labels") {
+  it("computes a pattern graph schema correctly - setting 2 equal label combinations") {
     val query =
       """
-        |CONSTRUCT  {
-        |  CREATE (a :A)
-        |  CREATE (b :B)
-        |  SET a :B
-        |  SET b :A
-        |}
+        |CONSTRUCT
+        |  NEW (a :A:B)
+        |  NEW (b :B:A)
         |RETURN GRAPH""".stripMargin
 
     query.model.result match {
@@ -171,13 +152,12 @@ class IrBuilderTest extends IrTestSuite {
     }
   }
 
-  it("computes a pattern graph schema correctly - 1 create and 1 set property") {
+  // TODO: Enable again once setting in NEW is supported
+  ignore("computes a pattern graph schema correctly - setting a property") {
     val query =
       """
-        |CONSTRUCT  {
-        |  CREATE (a :A)
-        |  SET a.name = 'Mats'
-        |}
+        |CONSTRUCT
+        |  NEW (a :A {name : 'Mats'})
         |RETURN GRAPH""".stripMargin
 
     query.model.result match {
@@ -187,13 +167,12 @@ class IrBuilderTest extends IrTestSuite {
     }
   }
 
-  it("computes a pattern graph schema correctly - 1 create and 1 set property with two labels") {
+  // TODO: Enable again once setting in NEW is supported
+  ignore("computes a pattern graph schema correctly - setting a node property and a label combination") {
     val query =
       """
-        |CONSTRUCT  {
-        |  CREATE (a :A:B)
-        |  SET a.name = 'Mats'
-        |}
+        |CONSTRUCT
+        |  NEW (a :A:B {name : 'Mats'})
         |RETURN GRAPH""".stripMargin
 
     query.model.result match {
@@ -203,13 +182,12 @@ class IrBuilderTest extends IrTestSuite {
     }
   }
 
-  it("computes a pattern graph schema correctly - 1 create and 1 set rel property") {
+  // TODO: Enable again once setting in NEW is supported
+  ignore("computes a pattern graph schema correctly - 1 rel property set") {
     val query =
       """
-        |CONSTRUCT  {
-        |  CREATE ()-[r :R]->()
-        |  SET r.level = 'high'
-        |}
+        |CONSTRUCT
+        |  NEW ()-[r :R {level : 'high'}]->()
         |RETURN GRAPH""".stripMargin
 
     query.model.result match {
@@ -219,14 +197,12 @@ class IrBuilderTest extends IrTestSuite {
     }
   }
 
-  it("computes a pattern graph schema correctly - 1 create and 2 set properties") {
+  // TODO: Enable again once setting in NEW is supported
+  ignore("computes a pattern graph schema correctly - 2 properties set") {
     val query =
       """
-        |CONSTRUCT  {
-        |  CREATE (a :A)
-        |  SET a.category = 'computer'
-        |  SET a.ports = 4
-        |}
+        |CONSTRUCT
+        |  CREATE (a :A {category : 'computer', ports : 4})
         |RETURN GRAPH""".stripMargin
 
     query.model.result match {
@@ -236,18 +212,16 @@ class IrBuilderTest extends IrTestSuite {
     }
   }
 
-  // TODO: SET is no longer supported
-  ignore("computes a pattern graph schema correctly - 1 create from equivalent") {
+  // TODO: Enable again once setting in NEW is supported
+  ignore("computes a pattern graph schema correctly - clone then add label") {
     val query =
       """
-        |CONSTRUCT {
-        |  CREATE (a :A)
-        |}
+        |CONSTRUCT
+        |  NEW (a :A)
         |MATCH (b: A)
-        |CONSTRUCT {
+        |CONSTRUCT
         |  CLONE b as c
-        |  SET c :B
-        |}
+        |  NEW (c: B)
         |RETURN GRAPH""".stripMargin
 
     query.model.result match {
