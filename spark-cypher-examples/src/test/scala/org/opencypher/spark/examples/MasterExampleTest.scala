@@ -48,7 +48,7 @@ class MasterExampleTest extends CAPSTestSuite with SparkSessionFixture with Neo4
 
   val isChecking = false
 
-  test("CAPS Multiple Graphs Demo") {
+  ignore("Master example") {
     val t0 = System.currentTimeMillis()
 
     // Register Property Graph Data Sources (PGDS)
