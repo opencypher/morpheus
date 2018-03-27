@@ -60,6 +60,25 @@ class IrBuilderTest extends IrTestSuite {
       }
     }
 
+    it("sets the correct type for clone aliases") {
+      val query =
+        """
+          |MATCH (a)
+          |CONSTRUCT
+          |  CLONE a as b
+          |RETURN GRAPH""".stripMargin
+
+      query.model.result match {
+        case GraphResultBlock(_, IRPatternGraph(qgn, _, clones, _, _, _)) =>
+          clones.keys.size should equal(1)
+          val (b, a) = clones.head
+          a should equal(Var("a")())
+          a.asInstanceOf[Var].cypherType.graph should equal(Some(testGraph.qualifiedGraphName))
+          b.cypherType.graph should equal(Some(qgn))
+        case _ => fail("no matching graph result found")
+      }
+    }
+
     // TODO: Ensure this fails
     ignore("fails when using a uncloned bound variables in a pattern") {
       val query =

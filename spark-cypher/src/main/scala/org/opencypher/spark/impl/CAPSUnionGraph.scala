@@ -106,7 +106,7 @@ final case class CAPSUnionGraph(graphs: List[CAPSGraph], preventIdCollisions: Bo
       .map {
         graph =>
           val nodeScan = graph.nodes(name, nodeCypherType)
-          nodeScan.replaceTags(retaggingsForGraph(graph))
+          nodeScan.retag(retaggingsForGraph(graph))
       }
 
     val alignedScans = nodeScans.map(_.alignWith(node, targetHeader))
@@ -124,7 +124,7 @@ final case class CAPSUnionGraph(graphs: List[CAPSGraph], preventIdCollisions: Bo
       .filter(relCypherType.types.isEmpty || _.schema.relationshipTypes.intersect(relCypherType.types).nonEmpty)
       .map { graph =>
         val relScan = graph.relationships(name, relCypherType)
-        relScan.replaceTags(retaggingsForGraph(graph))
+        relScan.retag(retaggingsForGraph(graph))
       }
 
     val alignedScans = relScans.map(_.alignWith(rel, targetHeader))
