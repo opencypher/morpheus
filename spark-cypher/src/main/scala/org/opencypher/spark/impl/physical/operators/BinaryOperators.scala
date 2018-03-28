@@ -239,35 +239,6 @@ final case class ExistsSubQuery(
   }
 }
 
-// This maps a Cypher pattern such as (s)-[r]->(t), where s and t are both solved by lhs, and r is solved by rhs
-final case class ExpandInto(
-  lhs: CAPSPhysicalOperator,
-  rhs: CAPSPhysicalOperator,
-  source: Var,
-  rel: Var,
-  target: Var,
-  header: RecordHeader)
-  extends BinaryPhysicalOperator {
-
-  override def executeBinary(left: CAPSPhysicalResult, right: CAPSPhysicalResult)(
-    implicit context: CAPSRuntimeContext): CAPSPhysicalResult = {
-    val sourceSlot = left.records.header.slotFor(source)
-    val targetSlot = left.records.header.slotFor(target)
-    val relSourceSlot = right.records.header.sourceNodeSlot(rel)
-    val relTargetSlot = right.records.header.targetNodeSlot(rel)
-
-    assertIsNode(sourceSlot)
-    assertIsNode(targetSlot)
-    assertIsNode(relSourceSlot)
-    assertIsNode(relTargetSlot)
-
-    val joinedRecords =
-      joinRecords(header, Seq(sourceSlot -> relSourceSlot, targetSlot -> relTargetSlot))(left.records, right.records)
-    CAPSPhysicalResult(joinedRecords, left.graph)
-  }
-
-}
-
 /**
   * Computes the union of the two input operators. The two inputs must have identical headers.
   * This operation does not remove duplicates.

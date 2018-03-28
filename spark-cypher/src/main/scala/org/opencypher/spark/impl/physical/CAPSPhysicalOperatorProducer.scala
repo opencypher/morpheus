@@ -134,14 +134,6 @@ final class CAPSPhysicalOperatorProducer(implicit caps: CAPSSession)
   override def planTabularUnionAll(lhs: CAPSPhysicalOperator, rhs: CAPSPhysicalOperator): CAPSPhysicalOperator =
     operators.TabularUnionAll(lhs, rhs)
 
-  override def planExpandInto(
-    lhs: CAPSPhysicalOperator,
-    rhs: CAPSPhysicalOperator,
-    source: Var,
-    rel: Var,
-    target: Var,
-    header: RecordHeader): CAPSPhysicalOperator = operators.ExpandInto(lhs, rhs, source, rel, target, header)
-
   override def planInitVarExpand(
     in: CAPSPhysicalOperator,
     source: Var,

@@ -287,20 +287,6 @@ trait PhysicalOperatorProducer[P <: PhysicalOperator[R, G, C], R <: CypherRecord
   def planTabularUnionAll(lhs: P, rhs: P): P
 
   /**
-    * Joins the two input records on two columns, where `source` is solved in the first operator and `target` is solved
-    * in the second operator.
-    *
-    * @param lhs    first previous operator
-    * @param rhs    second previous operator
-    * @param source variable solved by the first operator
-    * @param rel    relationship variable
-    * @param target variable solved by the second operator
-    * @param header resulting record header
-    * @return expand into operator
-    */
-  def planExpandInto(lhs: P, rhs: P, source: Var, rel: Var, target: Var, header: RecordHeader): P
-
-  /**
     * Computes the result of an OPTIONAL MATCH where the first input is the non-optional part and the second input the
     * optional one.
     *

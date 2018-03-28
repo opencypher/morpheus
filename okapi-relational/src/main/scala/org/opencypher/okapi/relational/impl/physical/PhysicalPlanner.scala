@@ -166,12 +166,16 @@ class PhysicalPlanner[P <: PhysicalOperator[R, G, C], R <: CypherRecords, G <: P
         val in = process(sourceOp)
         val relationships = producer.planRelationshipScan(in, op.sourceGraph, rel, relHeader)
 
+        val startNode = StartNode(rel)(CTNode)
+        val endNode = EndNode(rel)(CTNode)
+
         direction match {
           case Directed =>
-            producer.planExpandInto(in, relationships, source, rel, target, header)
+            producer.planJoin(in, relationships, Seq(source -> startNode, target -> endNode), header)
+
           case Undirected =>
-            val outgoing = producer.planExpandInto(in, relationships, source, rel, target, header)
-            val incoming = producer.planExpandInto(in, relationships, target, rel, source, header)
+            val outgoing = producer.planJoin(in, relationships, Seq(source -> startNode, target -> endNode), header)
+            val incoming = producer.planJoin(in, relationships, Seq(target -> startNode, source -> endNode), header)
             producer.planTabularUnionAll(outgoing, incoming)
         }
 
