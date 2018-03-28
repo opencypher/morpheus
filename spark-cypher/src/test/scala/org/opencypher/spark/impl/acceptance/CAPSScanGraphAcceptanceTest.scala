@@ -26,36 +26,8 @@
  */
 package org.opencypher.spark.impl.acceptance
 
-import org.opencypher.okapi.api.value.CypherValue.CypherMap
-import org.opencypher.okapi.ir.test.support.Bag
-import org.opencypher.okapi.ir.test.support.Bag._
-import org.opencypher.okapi.relational.api.configuration.CoraConfiguration.PrintPhysicalPlan
 import org.opencypher.spark.test.support.creation.caps.{CAPSScanGraphFactory, CAPSTestGraphFactory}
 
 class CAPSScanGraphAcceptanceTest extends AcceptanceTest {
   override def capsGraphFactory: CAPSTestGraphFactory = CAPSScanGraphFactory
-
-  it("matches an undirected relationship") {
-
-    PrintPhysicalPlan.set
-
-    val given = initGraph(
-      """
-        |CREATE (a:A {prop: 'isA'})
-        |CREATE (b:B {prop: 'fromA'})
-        |CREATE (c:C {prop: 'toA'})
-        |CREATE (d:D)
-        |CREATE (a)-[:T]->(b)
-        |CREATE (b)-[:T]->(c)
-        |CREATE (c)-[:T]->(a)
-      """.stripMargin
-    )
-
-    val result = given.cypher("MATCH (a:A)--(other) RETURN a.prop, other.prop")
-
-    result.getRecords.collect.toBag should equal(Bag(
-      CypherMap("a.prop" -> "isA", "other.prop" -> "fromA"),
-      CypherMap("a.prop" -> "isA", "other.prop" -> "toA")
-    ))
-  }
 }
