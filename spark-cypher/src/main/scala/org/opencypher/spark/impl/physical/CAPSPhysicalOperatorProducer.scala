@@ -116,6 +116,12 @@ final class CAPSPhysicalOperatorProducer(implicit caps: CAPSSession)
   override def planFilter(in: CAPSPhysicalOperator, expr: Expr, header: RecordHeader): CAPSPhysicalOperator =
     operators.Filter(in, expr, header)
 
+  override def planJoin(
+    lhs: CAPSPhysicalOperator,
+    rhs: CAPSPhysicalOperator,
+    joinColumns: Seq[(Expr, Expr)],
+    header: RecordHeader): CAPSPhysicalOperator = operators.Join(lhs, rhs, joinColumns, header)
+
   override def planValueJoin(
     lhs: CAPSPhysicalOperator,
     rhs: CAPSPhysicalOperator,

@@ -258,6 +258,17 @@ trait PhysicalOperatorProducer[P <: PhysicalOperator[R, G, C], R <: CypherRecord
   def planCartesianProduct(lhs: P, rhs: P, header: RecordHeader): P
 
   /**
+    * Joins the two input records on given variables.
+    *
+    * @param lhs         first previous operator
+    * @param rhs         second previous operator
+    * @param joinColumns sequence of left and right join columns
+    * @param header      resulting record header
+    * @return join operator
+    */
+  def planJoin(lhs: P, rhs: P, joinColumns: Seq[(Expr, Expr)], header: RecordHeader): P
+
+  /**
     * Joins the two input records on node attribute values.
     *
     * @param lhs        first previous operator
@@ -374,7 +385,7 @@ trait PhysicalOperatorProducer[P <: PhysicalOperator[R, G, C], R <: CypherRecord
   /**
     * Performs a UNION ALL over graphs.
     *
-    * @param graphs graph to perform UNION ALL over
+    * @param graphs              graph to perform UNION ALL over
     * @param preventIdCollisions flag that indicates if ID collisions between entities should be prevented
     * @return union all operator
     */

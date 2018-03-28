@@ -28,10 +28,10 @@ package org.opencypher.okapi.relational.impl.physical
 
 import org.opencypher.okapi.api.graph.{CypherSession, PropertyGraph, QualifiedGraphName}
 import org.opencypher.okapi.api.table.CypherRecords
-import org.opencypher.okapi.api.types.CTRelationship
+import org.opencypher.okapi.api.types.{CTNode, CTRelationship}
 import org.opencypher.okapi.impl.exception.{IllegalArgumentException, NotImplementedException}
 import org.opencypher.okapi.ir.api.block.SortItem
-import org.opencypher.okapi.ir.api.expr.{Expr, TrueLit, Var}
+import org.opencypher.okapi.ir.api.expr._
 import org.opencypher.okapi.ir.api.util.DirectCompilationStage
 import org.opencypher.okapi.logical.impl._
 import org.opencypher.okapi.relational.api.physical.{PhysicalOperator, PhysicalOperatorProducer, PhysicalPlannerContext, RuntimeContext}
@@ -144,7 +144,9 @@ class PhysicalPlanner[P <: PhysicalOperator[R, G, C], R <: CypherRecords, G <: P
 
         direction match {
           case Directed =>
-            producer.planExpandSource(first, second, third, source, rel, target, header)
+            val tempResult = producer.planJoin(first, second, Seq(source -> StartNode(rel)(CTNode)), first.header ++ second.header)
+            producer.planJoin(tempResult, third, Seq(EndNode(rel)(CTNode) -> target), header)
+
           case Undirected =>
             val outgoing = producer.planExpandSource(first, second, third, source, rel, target, header)
             val incoming = producer.planExpandSource(third, second, first, target, rel, source, header, removeSelfRelationships = true)

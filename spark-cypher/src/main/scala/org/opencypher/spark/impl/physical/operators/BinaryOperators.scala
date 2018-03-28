@@ -27,7 +27,8 @@
 package org.opencypher.spark.impl.physical.operators
 
 import org.apache.spark.sql.functions
-import org.opencypher.okapi.ir.api.expr.Var
+import org.opencypher.okapi.impl.exception.IllegalArgumentException
+import org.opencypher.okapi.ir.api.expr.{Expr, Var}
 import org.opencypher.okapi.relational.impl.table.{ColumnName, OpaqueField, RecordHeader, RecordSlot}
 import org.opencypher.spark.impl.DataFrameOps._
 import org.opencypher.spark.impl.physical.operators.CAPSPhysicalOperator._
@@ -45,15 +46,45 @@ private[spark] abstract class BinaryPhysicalOperator extends CAPSPhysicalOperato
   def executeBinary(left: CAPSPhysicalResult, right: CAPSPhysicalResult)(implicit context: CAPSRuntimeContext): CAPSPhysicalResult
 }
 
-final case class ValueJoin(
-    lhs: CAPSPhysicalOperator,
-    rhs: CAPSPhysicalOperator,
-    predicates: Set[org.opencypher.okapi.ir.api.expr.Equals],
-    header: RecordHeader)
-    extends BinaryPhysicalOperator {
+final case class Join(
+  lhs: CAPSPhysicalOperator,
+  rhs: CAPSPhysicalOperator,
+  joinColumns: Seq[(Expr, Expr)],
+  header: RecordHeader) extends BinaryPhysicalOperator {
 
   override def executeBinary(left: CAPSPhysicalResult, right: CAPSPhysicalResult)(
-      implicit context: CAPSRuntimeContext): CAPSPhysicalResult = {
+    implicit context: CAPSRuntimeContext): CAPSPhysicalResult = {
+
+    val leftHeader = lhs.header
+    val rightHeader = rhs.header
+
+    val joinSlots = joinColumns.map {
+      case (leftExpr, rightExpr) =>
+        val leftRecordSlot = leftHeader.slotsFor(leftExpr)
+          .headOption
+          .getOrElse(throw IllegalArgumentException("Expression mapping to a single column", leftExpr))
+        val rightRecordSlot = rightHeader.slotsFor(rightExpr)
+          .headOption
+          .getOrElse(throw IllegalArgumentException("Expression mapping to a single column", rightExpr))
+
+        leftRecordSlot -> rightRecordSlot
+    }
+
+    val joinedRecords = joinRecords(leftHeader ++ rightHeader, joinSlots)(left.records, right.records)
+
+    CAPSPhysicalResult(joinedRecords, left.graph)
+  }
+}
+
+final case class ValueJoin(
+  lhs: CAPSPhysicalOperator,
+  rhs: CAPSPhysicalOperator,
+  predicates: Set[org.opencypher.okapi.ir.api.expr.Equals],
+  header: RecordHeader)
+  extends BinaryPhysicalOperator {
+
+  override def executeBinary(left: CAPSPhysicalResult, right: CAPSPhysicalResult)(
+    implicit context: CAPSRuntimeContext): CAPSPhysicalResult = {
     val leftHeader = left.records.header
     val rightHeader = right.records.header
     val slots = predicates.map { p =>
@@ -62,22 +93,21 @@ final case class ValueJoin(
 
     CAPSPhysicalResult(joinRecords(header, slots)(left.records, right.records), left.graph)
   }
-
 }
 
 /**
   * This operator performs a left outer join between the already matched path and the optional matched pattern and
   * updates the resulting columns.
   *
-  * @param lhs previous match data
-  * @param rhs optional match data
+  * @param lhs    previous match data
+  * @param rhs    optional match data
   * @param header result header (lhs header + rhs header)
   */
 final case class Optional(lhs: CAPSPhysicalOperator, rhs: CAPSPhysicalOperator, header: RecordHeader)
-    extends BinaryPhysicalOperator {
+  extends BinaryPhysicalOperator {
 
   override def executeBinary(left: CAPSPhysicalResult, right: CAPSPhysicalResult)(
-      implicit context: CAPSRuntimeContext): CAPSPhysicalResult = {
+    implicit context: CAPSRuntimeContext): CAPSPhysicalResult = {
     val leftData = left.records.toDF()
     val rightData = right.records.toDF()
     val leftHeader = left.records.header
@@ -87,7 +117,7 @@ final case class Optional(lhs: CAPSPhysicalOperator, rhs: CAPSPhysicalOperator, 
 
     val (joinSlots, otherCommonSlots) = commonFields.partition {
       case RecordSlot(_, _: OpaqueField) => true
-      case RecordSlot(_, _)              => false
+      case RecordSlot(_, _) => false
     }
 
     val joinFields = joinSlots
@@ -137,20 +167,20 @@ final case class Optional(lhs: CAPSPhysicalOperator, rhs: CAPSPhysicalOperator, 
   * already bound match, there is a non-null partner, we set a target column to true, otherwise false.
   * Only the mandatory match data and the target column are kept in the result.
   *
-  * @param lhs mandatory match data
-  * @param rhs expanded pattern predicate data
+  * @param lhs         mandatory match data
+  * @param rhs         expanded pattern predicate data
   * @param targetField field that will store the subquery value (exists true/false)
-  * @param header result header (lhs header + predicateField)
+  * @param header      result header (lhs header + predicateField)
   */
 final case class ExistsSubQuery(
-    lhs: CAPSPhysicalOperator,
-    rhs: CAPSPhysicalOperator,
-    targetField: Var,
-    header: RecordHeader)
-    extends BinaryPhysicalOperator {
+  lhs: CAPSPhysicalOperator,
+  rhs: CAPSPhysicalOperator,
+  targetField: Var,
+  header: RecordHeader)
+  extends BinaryPhysicalOperator {
 
   override def executeBinary(left: CAPSPhysicalResult, right: CAPSPhysicalResult)(
-      implicit context: CAPSRuntimeContext): CAPSPhysicalResult = {
+    implicit context: CAPSRuntimeContext): CAPSPhysicalResult = {
     val leftData = left.records.toDF()
     val rightData = right.records.toDF()
     val leftHeader = left.records.header
@@ -211,16 +241,16 @@ final case class ExistsSubQuery(
 
 // This maps a Cypher pattern such as (s)-[r]->(t), where s and t are both solved by lhs, and r is solved by rhs
 final case class ExpandInto(
-    lhs: CAPSPhysicalOperator,
-    rhs: CAPSPhysicalOperator,
-    source: Var,
-    rel: Var,
-    target: Var,
-    header: RecordHeader)
-    extends BinaryPhysicalOperator {
+  lhs: CAPSPhysicalOperator,
+  rhs: CAPSPhysicalOperator,
+  source: Var,
+  rel: Var,
+  target: Var,
+  header: RecordHeader)
+  extends BinaryPhysicalOperator {
 
   override def executeBinary(left: CAPSPhysicalResult, right: CAPSPhysicalResult)(
-      implicit context: CAPSRuntimeContext): CAPSPhysicalResult = {
+    implicit context: CAPSRuntimeContext): CAPSPhysicalResult = {
     val sourceSlot = left.records.header.slotFor(source)
     val targetSlot = left.records.header.slotFor(target)
     val relSourceSlot = right.records.header.sourceNodeSlot(rel)
@@ -263,10 +293,10 @@ final case class TabularUnionAll(lhs: CAPSPhysicalOperator, rhs: CAPSPhysicalOpe
 }
 
 final case class CartesianProduct(lhs: CAPSPhysicalOperator, rhs: CAPSPhysicalOperator, header: RecordHeader)
-    extends BinaryPhysicalOperator {
+  extends BinaryPhysicalOperator {
 
   override def executeBinary(left: CAPSPhysicalResult, right: CAPSPhysicalResult)(
-      implicit context: CAPSRuntimeContext): CAPSPhysicalResult = {
+    implicit context: CAPSRuntimeContext): CAPSPhysicalResult = {
     val data = left.records.data
     val otherData = right.records.data
     val newData = data.crossJoin(otherData)
