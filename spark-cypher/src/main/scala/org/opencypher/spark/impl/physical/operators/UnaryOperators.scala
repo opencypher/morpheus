@@ -189,16 +189,7 @@ final case class Filter(in: CAPSPhysicalOperator, expr: Expr, header: RecordHead
   override def executeUnary(prev: CAPSPhysicalResult)(implicit context: CAPSRuntimeContext): CAPSPhysicalResult = {
     prev.mapRecordsWithDetails { records =>
       val filteredRows = records.data.where(expr.asSparkSQLExpr(header, records.data, context))
-
-      // TODO: is this necessary? Filter should just remove rows
-      val selectedColumns = header.slots.map { c =>
-        val name = ColumnName.of(c)
-        filteredRows.col(name)
-      }
-
-      val newData = filteredRows.select(selectedColumns: _*)
-
-      CAPSRecords.verifyAndCreate(header, newData)(records.caps)
+      CAPSRecords.verifyAndCreate(header, filteredRows)(records.caps)
     }
   }
 }
