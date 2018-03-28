@@ -42,16 +42,14 @@ import org.opencypher.okapi.logical.impl.{ConstructedEntity, _}
 import org.opencypher.okapi.relational.impl.syntax.RecordHeaderSyntax._
 import org.opencypher.okapi.relational.impl.table.{ColumnName, _}
 import org.opencypher.spark.api.CAPSSession
+import org.opencypher.spark.impl.CAPSUnionGraph.{apply => _, unapply => _, _}
 import org.opencypher.spark.impl.DataFrameOps._
 import org.opencypher.spark.impl.SparkSQLExprMapper._
 import org.opencypher.spark.impl.convert.CAPSCypherType._
 import org.opencypher.spark.impl.physical.operators.CAPSPhysicalOperator._
 import org.opencypher.spark.impl.physical.{CAPSPhysicalResult, CAPSRuntimeContext}
-import org.opencypher.spark.impl.{CAPSGraph, CAPSRecords, CAPSUnionGraph}
-import org.opencypher.spark.schema.CAPSSchema
+import org.opencypher.spark.impl.{CAPSGraph, CAPSRecords}
 import org.opencypher.spark.schema.CAPSSchema._
-import org.opencypher.spark.impl.CAPSConverters._
-import org.opencypher.spark.impl.CAPSUnionGraph.{apply => _, unapply => _, _}
 
 private[spark] abstract class UnaryPhysicalOperator extends CAPSPhysicalOperator {
 
@@ -71,22 +69,28 @@ final case class Cache(in: CAPSPhysicalOperator) extends UnaryPhysicalOperator w
       prev
     })
   }
-
 }
 
-final case class Scan(in: CAPSPhysicalOperator, v: Var, header: RecordHeader)
-  extends UnaryPhysicalOperator {
+final case class NodeScan(in: CAPSPhysicalOperator, v: Var, header: RecordHeader) extends UnaryPhysicalOperator {
 
-  // TODO: Move to Graph interface?
   override def executeUnary(prev: CAPSPhysicalResult)(implicit context: CAPSRuntimeContext): CAPSPhysicalResult = {
     val graph = prev.graph
     val records = v.cypherType match {
-      case r: CTRelationship =>
-        graph.relationships(v.name, r)
-      case n: CTNode =>
-        graph.nodes(v.name, n)
-      case x =>
-        throw IllegalArgumentException("an entity type", x)
+      case n: CTNode => graph.nodes(v.name, n)
+      case other => throw IllegalArgumentException("Node variable", other)
+    }
+    assert(header == records.header)
+    CAPSPhysicalResult(records, graph)
+  }
+}
+
+final case class RelationshipScan(in: CAPSPhysicalOperator, v: Var, header: RecordHeader) extends UnaryPhysicalOperator {
+
+  override def executeUnary(prev: CAPSPhysicalResult)(implicit context: CAPSRuntimeContext): CAPSPhysicalResult = {
+    val graph = prev.graph
+    val records = v.cypherType match {
+      case r: CTRelationship => graph.relationships(v.name, r)
+      case other => throw IllegalArgumentException("Relationship variable", other)
     }
     assert(header == records.header)
     CAPSPhysicalResult(records, graph)

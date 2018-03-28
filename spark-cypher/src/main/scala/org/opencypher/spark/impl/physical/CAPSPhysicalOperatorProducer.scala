@@ -87,13 +87,13 @@ final class CAPSPhysicalOperatorProducer(implicit caps: CAPSSession)
     in: CAPSPhysicalOperator,
     inGraph: LogicalGraph,
     v: Var,
-    header: RecordHeader): CAPSPhysicalOperator = operators.Scan(in, v, header)
+    header: RecordHeader): CAPSPhysicalOperator = operators.NodeScan(in, v, header)
 
   override def planRelationshipScan(
     in: CAPSPhysicalOperator,
     inGraph: LogicalGraph,
     v: Var,
-    header: RecordHeader): CAPSPhysicalOperator = operators.Scan(in, v, header)
+    header: RecordHeader): CAPSPhysicalOperator = operators.RelationshipScan(in, v, header)
 
   override def planAlias(in: CAPSPhysicalOperator, expr: Expr, alias: Var, header: RecordHeader): CAPSPhysicalOperator =
     operators.Alias(in, expr, alias, header)
