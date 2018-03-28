@@ -27,11 +27,9 @@
 package org.opencypher.okapi.relational.api.physical
 
 import org.opencypher.okapi.api.graph.{PropertyGraph, QualifiedGraphName}
-import org.opencypher.okapi.api.schema.Schema
 import org.opencypher.okapi.api.table.CypherRecords
 import org.opencypher.okapi.ir.api.block.SortItem
 import org.opencypher.okapi.ir.api.expr.{Aggregator, Expr, Var}
-import org.opencypher.okapi.ir.api.set.SetPropertyItem
 import org.opencypher.okapi.logical.impl._
 import org.opencypher.okapi.relational.impl.table.{ProjectedExpr, ProjectedField, RecordHeader}
 
@@ -258,7 +256,7 @@ trait PhysicalOperatorProducer[P <: PhysicalOperator[R, G, C], R <: CypherRecord
   def planCartesianProduct(lhs: P, rhs: P, header: RecordHeader): P
 
   /**
-    * Joins the two input records on given variables.
+    * Joins the two input records using the given expressions.
     *
     * @param lhs         first previous operator
     * @param rhs         second previous operator
@@ -325,30 +323,6 @@ trait PhysicalOperatorProducer[P <: PhysicalOperator[R, G, C], R <: CypherRecord
   def planExistsSubQuery(lhs: P, rhs: P, targetField: Var, header: RecordHeader): P
 
   // Ternary operators
-
-  /**
-    * Expands the records in the first input (nodes) via the records in the second input (relationships) into the
-    * records in the third input (nodes).
-    *
-    * @param first                   first previous operator
-    * @param second                  second previous operator
-    * @param third                   third previous operator
-    * @param source                  node variable in the first input
-    * @param rel                     relationship variable in the second input
-    * @param target                  node variable in the third input
-    * @param header                  resulting record header
-    * @param removeSelfRelationships set true, iff loops shall be removed from the output
-    * @return expand source operator
-    */
-  def planExpandSource(
-    first: P,
-    second: P,
-    third: P,
-    source: Var,
-    rel: Var,
-    target: Var,
-    header: RecordHeader,
-    removeSelfRelationships: Boolean = false): P
 
   /**
     * Performs a bounded variable length path expression.

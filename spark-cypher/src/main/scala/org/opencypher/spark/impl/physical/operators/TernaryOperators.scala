@@ -52,49 +52,6 @@ private[spark] abstract class TernaryPhysicalOperator extends CAPSPhysicalOperat
       implicit context: CAPSRuntimeContext): CAPSPhysicalResult
 }
 
-// This maps a Cypher pattern such as (s)-[r]->(t), where s is solved by first, r is solved by second and t is solved by third
-final case class ExpandSource(
-    first: CAPSPhysicalOperator,
-    second: CAPSPhysicalOperator,
-    third: CAPSPhysicalOperator,
-    source: Var,
-    rel: Var,
-    target: Var,
-    header: RecordHeader,
-    removeSelfRelationships: Boolean = false)
-    extends TernaryPhysicalOperator {
-
-  override def executeTernary(first: CAPSPhysicalResult, second: CAPSPhysicalResult, third: CAPSPhysicalResult)(implicit context: CAPSRuntimeContext): CAPSPhysicalResult = {
-    val relationships = getRelationshipData(second.records)
-
-    val sourceSlot = first.records.header.slotFor(source)
-    val sourceSlotInRel = second.records.header.sourceNodeSlot(rel)
-    assertIsNode(sourceSlot)
-    assertIsNode(sourceSlotInRel)
-
-    val sourceToRelHeader = first.records.header ++ second.records.header
-    val sourceAndRel = joinRecords(sourceToRelHeader, Seq(sourceSlot -> sourceSlotInRel))(first.records, relationships)
-
-    val targetSlot = third.records.header.slotFor(target)
-    val targetSlotInRel = sourceAndRel.header.targetNodeSlot(rel)
-    assertIsNode(targetSlot)
-    assertIsNode(targetSlotInRel)
-
-    val joinedRecords = joinRecords(header, Seq(targetSlotInRel -> targetSlot))(sourceAndRel, third.records)
-    CAPSPhysicalResult(joinedRecords, first.graph)
-  }
-
-  private def getRelationshipData(rels: CAPSRecords)(implicit context: CAPSRuntimeContext): CAPSRecords = {
-    if(removeSelfRelationships) {
-      val data = rels.data
-      val startNodeColumn = data.col(columnName(rels.header.sourceNodeSlot(rel)))
-      val endNodeColumn = data.col(columnName(rels.header.targetNodeSlot(rel)))
-
-      CAPSRecords.verifyAndCreate(rels.header, data.where(endNodeColumn =!= startNodeColumn))(rels.caps)
-    } else rels
-  }
-}
-
 // Expands a pattern like (s)-[r*n..m]->(t) where s is solved by first, r is solved by second and t is solved by third
 // this performs m joins with second to step all steps, then drops n of these steps
 // edgeList is what is bound to r; a list of relationships (currently just the ids)

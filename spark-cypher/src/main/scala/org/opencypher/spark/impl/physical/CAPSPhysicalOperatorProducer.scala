@@ -131,17 +131,6 @@ final class CAPSPhysicalOperatorProducer(implicit caps: CAPSSession)
   override def planDistinct(in: CAPSPhysicalOperator, fields: Set[Var]): CAPSPhysicalOperator =
     operators.Distinct(in, fields)
 
-  override def planExpandSource(
-    first: CAPSPhysicalOperator,
-    second: CAPSPhysicalOperator,
-    third: CAPSPhysicalOperator,
-    source: Var,
-    rel: Var,
-    target: Var,
-    header: RecordHeader,
-    removeSelfRelationships: Boolean): CAPSPhysicalOperator = operators.ExpandSource(
-    first, second, third, source, rel, target, header, removeSelfRelationships)
-
   override def planTabularUnionAll(lhs: CAPSPhysicalOperator, rhs: CAPSPhysicalOperator): CAPSPhysicalOperator =
     operators.TabularUnionAll(lhs, rhs)
 

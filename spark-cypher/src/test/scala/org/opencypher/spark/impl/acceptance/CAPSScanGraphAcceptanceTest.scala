@@ -26,45 +26,36 @@
  */
 package org.opencypher.spark.impl.acceptance
 
-import org.opencypher.okapi.api.value.CypherValue
 import org.opencypher.okapi.api.value.CypherValue.CypherMap
 import org.opencypher.okapi.ir.test.support.Bag
-import org.opencypher.okapi.relational.api.configuration.CoraConfiguration.{PrintFlatPlan, PrintPhysicalPlan}
+import org.opencypher.okapi.ir.test.support.Bag._
+import org.opencypher.okapi.relational.api.configuration.CoraConfiguration.PrintPhysicalPlan
 import org.opencypher.spark.test.support.creation.caps.{CAPSScanGraphFactory, CAPSTestGraphFactory}
 
 class CAPSScanGraphAcceptanceTest extends AcceptanceTest {
   override def capsGraphFactory: CAPSTestGraphFactory = CAPSScanGraphFactory
 
-  it("can handle multiple match clauses") {
+  it("matches an undirected relationship") {
 
     PrintPhysicalPlan.set
 
-    // Given
     val given = initGraph(
-      """CREATE (p1:Person {name: "Alice"})
-        |CREATE (p2:Person {name: "Bob"})
-        |CREATE (p3:Person {name: "Eve"})
-        |CREATE (p1)-[:KNOWS]->(p2)
-        |CREATE (p2)-[:KNOWS]->(p3)
-      """.stripMargin)
+      """
+        |CREATE (a:A {prop: 'isA'})
+        |CREATE (b:B {prop: 'fromA'})
+        |CREATE (c:C {prop: 'toA'})
+        |CREATE (d:D)
+        |CREATE (a)-[:T]->(b)
+        |CREATE (b)-[:T]->(c)
+        |CREATE (c)-[:T]->(a)
+      """.stripMargin
+    )
 
-    // When
-    val result = given.cypher(
-      """MATCH (p1:Person)
-        |MATCH (p1:Person)-[e1]->(p2:Person)
-        |MATCH (p2)-[e2]->(p3:Person)
-        |RETURN p1.name, p2.name, p3.name
-      """.stripMargin)
+    val result = given.cypher("MATCH (a:A)--(other) RETURN a.prop, other.prop")
 
-    // Then
-    result.getRecords.toMaps should equal(
-      Bag(
-        CypherMap(
-          "p1.name" -> "Alice",
-          "p2.name" -> "Bob",
-          "p3.name" ->
-            "Eve"
-        )
-      ))
+    result.getRecords.collect.toBag should equal(Bag(
+      CypherMap("a.prop" -> "isA", "other.prop" -> "fromA"),
+      CypherMap("a.prop" -> "isA", "other.prop" -> "toA")
+    ))
   }
 }

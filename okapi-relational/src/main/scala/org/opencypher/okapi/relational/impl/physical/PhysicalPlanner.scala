@@ -28,7 +28,7 @@ package org.opencypher.okapi.relational.impl.physical
 
 import org.opencypher.okapi.api.graph.{CypherSession, PropertyGraph, QualifiedGraphName}
 import org.opencypher.okapi.api.table.CypherRecords
-import org.opencypher.okapi.api.types.{CTNode, CTRelationship}
+import org.opencypher.okapi.api.types.{CTBoolean, CTNode, CTRelationship}
 import org.opencypher.okapi.impl.exception.{IllegalArgumentException, NotImplementedException}
 import org.opencypher.okapi.ir.api.block.SortItem
 import org.opencypher.okapi.ir.api.expr._
@@ -141,15 +141,24 @@ class PhysicalPlanner[P <: PhysicalOperator[R, G, C], R <: CypherRecords, G <: P
         }
 
         val second = producer.planRelationshipScan(startFrom, op.sourceGraph, rel, relHeader)
+        val startNode = StartNode(rel)(CTNode)
+        val endNode = EndNode(rel)(CTNode)
 
         direction match {
           case Directed =>
-            val tempResult = producer.planJoin(first, second, Seq(source -> StartNode(rel)(CTNode)), first.header ++ second.header)
-            producer.planJoin(tempResult, third, Seq(EndNode(rel)(CTNode) -> target), header)
+            val tempResult = producer.planJoin(first, second, Seq(source -> startNode), first.header ++ second.header)
+            producer.planJoin(tempResult, third, Seq(endNode -> target), header)
 
           case Undirected =>
-            val outgoing = producer.planExpandSource(first, second, third, source, rel, target, header)
-            val incoming = producer.planExpandSource(third, second, first, target, rel, source, header, removeSelfRelationships = true)
+            val tempOutgoing = producer.planJoin(first, second, Seq(source -> startNode), first.header ++ second.header)
+            val outgoing = producer.planJoin(tempOutgoing, third, Seq(endNode -> target), header)
+
+            val filterExpression = Not(Equals(startNode, endNode)(CTBoolean))(CTBoolean)
+            val relsWithoutLoops = producer.planFilter(second, filterExpression, second.header)
+
+            val tempIncoming = producer.planJoin(third, relsWithoutLoops, Seq(target -> startNode), third.header ++ second.header)
+            val incoming = producer.planJoin(tempIncoming, first, Seq(endNode -> source), header)
+
             producer.planTabularUnionAll(outgoing, incoming)
         }
 
