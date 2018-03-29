@@ -122,12 +122,6 @@ final class CAPSPhysicalOperatorProducer(implicit caps: CAPSSession)
     joinColumns: Seq[(Expr, Expr)],
     header: RecordHeader): CAPSPhysicalOperator = operators.Join(lhs, rhs, joinColumns, header)
 
-  override def planValueJoin(
-    lhs: CAPSPhysicalOperator,
-    rhs: CAPSPhysicalOperator,
-    predicates: Set[Equals],
-    header: RecordHeader): CAPSPhysicalOperator = operators.ValueJoin(lhs, rhs, predicates, header)
-
   override def planDistinct(in: CAPSPhysicalOperator, fields: Set[Var]): CAPSPhysicalOperator =
     operators.Distinct(in, fields)
 
