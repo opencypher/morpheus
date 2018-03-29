@@ -95,17 +95,14 @@ abstract class IrTestSuite extends BaseTestSuite with MockitoSugar {
   case class DummyBinds[E](fields: Set[IRField] = Set.empty) extends Binds[E]
 
   implicit class RichString(queryText: String) {
-    def parseIR[T <: CypherStatement[Expr] : ClassTag]: T = ir() match {
+    def parseIR[T <: CypherStatement[Expr] : ClassTag](graphsWithSchema: (GraphName, Schema)*)(implicit schema: Schema = Schema.empty): T =
+      ir(graphsWithSchema:_ *) match {
         case cq : T => cq
         case other => throw new IllegalArgumentException(s"Cannot convert $other")
     }
 
-    def asCypherQuery: CypherQuery[Expr] = {
-      ir() match {
-        case cq : CypherQuery[Expr] => cq
-        case other => throw new IllegalArgumentException(s"Cannot convert $other into CypherQuery")
-      }
-    }
+    def asCypherQuery(graphsWithSchema: (GraphName, Schema)*)(implicit schema: Schema = Schema.empty): CypherQuery[Expr] =
+      parseIR[CypherQuery[Expr]](graphsWithSchema: _*)
 
     def ir(graphsWithSchema: (GraphName, Schema)*)(implicit schema: Schema = Schema.empty): CypherStatement[Expr] = {
       val stmt = CypherParser(queryText)(CypherParser.defaultContext)

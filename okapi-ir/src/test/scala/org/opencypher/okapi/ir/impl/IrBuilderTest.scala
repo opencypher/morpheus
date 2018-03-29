@@ -51,7 +51,7 @@ class IrBuilderTest extends IrTestSuite {
 
         |RETURN GRAPH""".stripMargin
 
-      query.asCypherQuery.model.result match {
+      query.asCypherQuery()().model.result match {
         case GraphResultBlock(_, IRPatternGraph(_, schema, _, _, _, _)) =>
           schema should equal(Schema.empty.withNodePropertyKeys("A")())
         case _ => fail("no matching graph result found")
@@ -67,7 +67,7 @@ class IrBuilderTest extends IrTestSuite {
         )
         |RETURN GRAPH""".stripMargin
 
-      intercept[UnsupportedOperationException](query.asCypherQuery.model)
+      intercept[UnsupportedOperationException](query.asCypherQuery().model)
     }
 
   // TODO: Enable again once setting in NEW is supported
@@ -79,7 +79,7 @@ class IrBuilderTest extends IrTestSuite {
         ]->()
         |RETURN GRAPH""".stripMargin
 
-      intercept[ParsingException](query.asCypherQuery.model)
+      intercept[ParsingException](query.asCypherQuery().model)
     }
 
   it("computes a pattern graph schema correctly - 2 creates") {
@@ -91,7 +91,7 @@ class IrBuilderTest extends IrTestSuite {
 
         |RETURN GRAPH""".stripMargin
 
-      query.asCypherQuery.model.result match {
+      query.asCypherQuery().model.result match {
         case GraphResultBlock(_, IRPatternGraph(_, schema, _, _, _, _)) =>
           schema should equal(Schema.empty.withNodePropertyKeys("A")().withNodePropertyKeys("B", "C")())
         case _ => fail("no matching graph result found")
@@ -107,7 +107,7 @@ class IrBuilderTest extends IrTestSuite {
 
         |RETURN GRAPH""".stripMargin
 
-      query.asCypherQuery.model.result match {
+      query.asCypherQuery().model.result match {
         case GraphResultBlock(_, IRPatternGraph(_, schema, _, _, _, _)) =>
           schema should equal(Schema.empty.withNodePropertyKeys("A", "D")().withNodePropertyKeys("B", "C")())
         case _ => fail("no matching graph result found")
@@ -123,7 +123,7 @@ class IrBuilderTest extends IrTestSuite {
         )
         |RETURN GRAPH""".stripMargin
 
-      query.asCypherQuery.model.result match {
+      query.asCypherQuery().model.result match {
         case GraphResultBlock(_, IRPatternGraph(_, schema, _, _, _, _)) =>
           schema should equal(Schema.empty.withNodePropertyKeys("A", "B", "C")())
         case _ => fail("no matching graph result found")
@@ -139,7 +139,7 @@ class IrBuilderTest extends IrTestSuite {
         )
         |RETURN GRAPH""".stripMargin
 
-      query.asCypherQuery.model.result match {
+      query.asCypherQuery().model.result match {
         case GraphResultBlock(_, IRPatternGraph(_, schema, _, _, _, _)) =>
           schema should equal(Schema.empty.withNodePropertyKeys("A", "B")().withNodePropertyKeys("A", "C")())
         case _ => fail("no matching graph result found")
@@ -155,7 +155,7 @@ class IrBuilderTest extends IrTestSuite {
         )
         |RETURN GRAPH""".stripMargin
 
-      query.asCypherQuery.model.result match {
+      query.asCypherQuery().model.result match {
         case GraphResultBlock(_, IRPatternGraph(_, schema, _, _, _, _)) =>
           schema should equal(Schema.empty.withNodePropertyKeys("A", "B")())
         case _ => fail("no matching graph result found")
@@ -171,7 +171,7 @@ class IrBuilderTest extends IrTestSuite {
         })
         |RETURN GRAPH""".stripMargin
 
-      query.asCypherQuery.model.result match {
+      query.asCypherQuery().model.result match {
         case GraphResultBlock(_, IRPatternGraph(_, schema, _, _, _, _)) =>
           schema should equal(Schema.empty.withNodePropertyKeys("A")("name" -> CTString))
         case _ => fail("no matching graph result found")
@@ -187,7 +187,7 @@ class IrBuilderTest extends IrTestSuite {
         })
         |RETURN GRAPH""".stripMargin
 
-      query.asCypherQuery.model.result match {
+      query.asCypherQuery().model.result match {
         case GraphResultBlock(_, IRPatternGraph(_, schema, _, _, _, _)) =>
           schema should equal(Schema.empty.withNodePropertyKeys("A", "B")("name" -> CTString))
         case _ => fail("no matching graph result found")
@@ -203,7 +203,7 @@ class IrBuilderTest extends IrTestSuite {
         }]->()
         |RETURN GRAPH""".stripMargin
 
-      query.asCypherQuery.model.result match {
+      query.asCypherQuery().model.result match {
         case GraphResultBlock(_, IRPatternGraph(_, schema, _, _, _, _)) =>
           schema should equal(Schema.empty.withNodePropertyKeys(Set.empty[String]).withRelationshipPropertyKeys("R")("level" -> CTString))
         case _ => fail("no matching graph result found")
@@ -220,7 +220,7 @@ class IrBuilderTest extends IrTestSuite {
         })
         |RETURN GRAPH""".stripMargin
 
-      query.asCypherQuery.model.result match {
+      query.asCypherQuery().model.result match {
         case GraphResultBlock(_, IRPatternGraph(_, schema, _, _, _, _)) =>
           schema should equal(Schema.empty.withNodePropertyKeys(Set("A"), PropertyKeys("category" -> CTString, "ports" -> CTInteger)))
         case _ => fail("no matching graph result found")
@@ -241,7 +241,7 @@ class IrBuilderTest extends IrTestSuite {
         )
         |RETURN GRAPH""".stripMargin
 
-      query.asCypherQuery.model.result match {
+      query.asCypherQuery().model.result match {
         case GraphResultBlock(_, IRPatternGraph(_, schema, _, _, _, _)) =>
           schema should equal(Schema.empty.withNodePropertyKeys("A", "B")())
         case _ => fail("no matching graph result found")
@@ -249,7 +249,7 @@ class IrBuilderTest extends IrTestSuite {
     }
 
     test("match node and return it") {
-      "MATCH (a:Person) RETURN a".asCypherQuery.model.ensureThat { (model, globals) =>
+      "MATCH (a:Person) RETURN a".asCypherQuery().model.ensureThat { (model, globals) =>
         val loadBlock = model.findExactlyOne {
           case NoWhereBlock(s@SourceBlock(_)) =>
             s.binds.fields shouldBe empty
@@ -281,7 +281,7 @@ class IrBuilderTest extends IrTestSuite {
     }
 
     it("matches a simple relationship pattern and returns some fields") {
-      "MATCH (a)-[r]->(b) RETURN b AS otherB, a, r".asCypherQuery.model.ensureThat { (model, globals) =>
+      "MATCH (a)-[r]->(b) RETURN b AS otherB, a, r".asCypherQuery().model.ensureThat { (model, globals) =>
         val loadBlock = model.findExactlyOne {
           case NoWhereBlock(s@SourceBlock(_)) =>
             s.binds.fields shouldBe empty
@@ -317,7 +317,7 @@ class IrBuilderTest extends IrTestSuite {
     }
 
     it("matches node order by name and returns it") {
-      "MATCH (a:Person) WITH a.name AS name, a.age AS age ORDER BY age RETURN age, name".asCypherQuery.model.ensureThat {
+      "MATCH (a:Person) WITH a.name AS name, a.age AS age ORDER BY age RETURN age, name".asCypherQuery().model.ensureThat {
         (model, _) =>
           val loadBlock = model.findExactlyOne {
             case NoWhereBlock(s@SourceBlock(_)) =>
@@ -381,7 +381,7 @@ class IrBuilderTest extends IrTestSuite {
     }
 
     //  ignore("can handle return graph of") {
-    //    "MATCH (a), (b) RETURN GRAPH moo OF (a)-[r:TEST]->(b)".asCypherQuery.model.ensureThat { (model, globals) =>
+    //    "MATCH (a), (b) RETURN GRAPH moo OF (a)-[r:TEST]->(b)".asCypherQuery().model.ensureThat { (model, globals) =>
     //      val expectedSchema = Schema.empty
     //        .withNodePropertyKeys(Set.empty[String], PropertyKeys.empty)
     //        .withRelationshipPropertyKeys("TEST")()
@@ -441,9 +441,9 @@ class IrBuilderTest extends IrTestSuite {
           |}
         """.stripMargin
 
-      val result = query.parseIR[CreateGraphStatement[Expr]]
+      val result = query.parseIR[CreateGraphStatement[Expr]]()
 
-      result.innerQuery.model should equalWithTracing( innerQuery.asCypherQuery.model)
+      result.innerQuery.model should equalWithTracing( innerQuery.asCypherQuery().model)
       result.graph.qualifiedGraphName should equal(QualifiedGraphName(Namespace("session"),GraphName("bar")))
       result.graph.schema should equal(testGraphSchema)
     }
@@ -453,7 +453,7 @@ class IrBuilderTest extends IrTestSuite {
     it("can parse a DELETE GRAPH statement") {
       val query = s"DELETE GRAPH $testQualifiedGraphName"
 
-      val result = query.parseIR[DeleteGraphStatement[Expr]]
+      val result = query.parseIR[DeleteGraphStatement[Expr]]()
 
       result.graph.qualifiedGraphName should equal(testQualifiedGraphName)
       result.graph.schema should equal(testGraphSchema)
