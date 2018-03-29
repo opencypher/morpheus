@@ -267,17 +267,6 @@ trait PhysicalOperatorProducer[P <: PhysicalOperator[R, G, C], R <: CypherRecord
   def planJoin(lhs: P, rhs: P, joinColumns: Seq[(Expr, Expr)], header: RecordHeader): P
 
   /**
-    * Joins the two input records on node attribute values.
-    *
-    * @param lhs        first previous operator
-    * @param rhs        second previous operator
-    * @param predicates join predicates
-    * @param header     resulting record header
-    * @return value join operator
-    */
-  def planValueJoin(lhs: P, rhs: P, predicates: Set[org.opencypher.okapi.ir.api.expr.Equals], header: RecordHeader): P
-
-  /**
     * Unions the input records.
     *
     * @param lhs first previous operator

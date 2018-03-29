@@ -414,7 +414,7 @@ class LogicalPlanner(producer: LogicalOperatorProducer)
           val (leftIn, rightIn) = joinPredicates.foldLeft((lhs, rhs)) {
             case ((l, r), predicate) => producer.projectExpr(predicate.lhs, l) -> producer.projectExpr(predicate.rhs, r)
           }
-          producer.planValueJoin(leftIn, rightIn, joinPredicates.toSet)
+          producer.planValueJoin(leftIn, rightIn, joinPredicates)
         }
       }
       // TODO: use type system to avoid empty pattern

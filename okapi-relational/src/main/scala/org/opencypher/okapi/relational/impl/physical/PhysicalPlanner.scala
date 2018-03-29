@@ -122,7 +122,8 @@ class PhysicalPlanner[P <: PhysicalOperator[R, G, C], R <: CypherRecords, G <: P
         }
 
       case flat.ValueJoin(lhs, rhs, predicates, header) =>
-        producer.planValueJoin(process(lhs), process(rhs), predicates, header)
+        val joinExpressions = predicates.map(p => p.lhs -> p.rhs).toSeq
+        producer.planJoin(process(lhs), process(rhs), joinExpressions, header)
 
       case flat.Distinct(fields, in, _) =>
         producer.planDistinct(process(in), fields)

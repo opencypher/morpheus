@@ -73,25 +73,6 @@ final case class Join(
   }
 }
 
-final case class ValueJoin(
-  lhs: CAPSPhysicalOperator,
-  rhs: CAPSPhysicalOperator,
-  predicates: Set[org.opencypher.okapi.ir.api.expr.Equals],
-  header: RecordHeader)
-  extends BinaryPhysicalOperator {
-
-  override def executeBinary(left: CAPSPhysicalResult, right: CAPSPhysicalResult)(
-    implicit context: CAPSRuntimeContext): CAPSPhysicalResult = {
-    val leftHeader = left.records.header
-    val rightHeader = right.records.header
-    val slots = predicates.map { p =>
-      leftHeader.slotsFor(p.lhs).head -> rightHeader.slotsFor(p.rhs).head
-    }.toSeq
-
-    CAPSPhysicalResult(joinRecords(header, slots)(left.records, right.records), left.graph)
-  }
-}
-
 /**
   * This operator performs a left outer join between the already matched path and the optional matched pattern and
   * updates the resulting columns.
@@ -265,30 +246,30 @@ final case class CartesianProduct(lhs: CAPSPhysicalOperator, rhs: CAPSPhysicalOp
 
   override def executeBinary(left: CAPSPhysicalResult, right: CAPSPhysicalResult)(
     implicit context: CAPSRuntimeContext): CAPSPhysicalResult = {
-    println("cross")
-    println("header")
-    println(header.pretty)
+//    println("cross")
+//    println("header")
+//    println(header.pretty)
 
     val data = left.records.data
-    println("left struct type")
-    println(left.records.data.schema)
-    println()
-    println("left data")
-    left.records.data.show()
-    println()
-    println("right struct type")
-    println(right.records.data.schema)
-    println()
-    println("right data")
-    right.records.data.show()
-    println()
+//    println("left struct type")
+//    println(left.records.data.schema)
+//    println()
+//    println("left data")
+//    left.records.data.show()
+//    println()
+//    println("right struct type")
+//    println(right.records.data.schema)
+//    println()
+//    println("right data")
+//    right.records.data.show()
+//    println()
 
     val otherData = right.records.data
     val newData = data.crossJoin(otherData)
-    println("cross struct type")
-    println(newData.schema)
-    println("cross data")
-    newData.show()
+//    println("cross struct type")
+//    println(newData.schema)
+//    println("cross data")
+//    newData.show()
 
     val records = CAPSRecords.verifyAndCreate(header, newData)(left.records.caps)
     CAPSPhysicalResult(records, left.graph)
