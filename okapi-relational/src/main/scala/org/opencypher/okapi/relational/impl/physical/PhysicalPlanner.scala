@@ -166,8 +166,8 @@ class PhysicalPlanner[P <: PhysicalOperator[R, G, C], R <: CypherRecords, G <: P
         val in = process(sourceOp)
         val relationships = producer.planRelationshipScan(in, op.sourceGraph, rel, relHeader)
 
-        val startNode = StartNode(rel)(CTNode)
-        val endNode = EndNode(rel)(CTNode)
+        val startNode = StartNode(rel)()
+        val endNode = EndNode(rel)()
 
         direction match {
           case Directed =>

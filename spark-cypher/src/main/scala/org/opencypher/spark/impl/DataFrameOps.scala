@@ -198,7 +198,7 @@ object DataFrameOps {
 
       val joinExpr = joinCols.map {
         case (l, r) => df.col(l) === other.col(r)
-      }.foldLeft(lit(true))((acc, expr) => acc && expr)
+      }.reduce((acc, expr) => acc && expr)
 
       df.join(other, joinExpr, joinType)
     }

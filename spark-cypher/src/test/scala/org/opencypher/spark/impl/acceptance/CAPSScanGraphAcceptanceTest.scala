@@ -26,7 +26,6 @@
  */
 package org.opencypher.spark.impl.acceptance
 
-import org.opencypher.okapi.relational.api.configuration.CoraConfiguration.{PrintFlatPlan, PrintOptimizedPhysicalPlan, PrintPhysicalPlan}
 import org.opencypher.spark.test.support.creation.caps.{CAPSScanGraphFactory, CAPSTestGraphFactory}
 
 class CAPSScanGraphAcceptanceTest extends AcceptanceTest {
@@ -54,5 +53,21 @@ class CAPSScanGraphAcceptanceTest extends AcceptanceTest {
       """.stripMargin)
 
     results.show
+  }
+
+
+  it("should correctly perform a join after a cross") {
+    val df1 = sparkSession.createDataFrame(Seq((0L, "A")))
+      .toDF("a", "____a_dot_nameSTRING")
+    val df2 = sparkSession.createDataFrame(Seq((1L, "B")))
+      .toDF("b", "____b_dot_nameSTRING")
+    val df3 = sparkSession.createDataFrame(Seq((1L, 4L, "KNOWS", 2L)))
+      .toDF("____source(e)", "e", "____type(e)", "____target(e)")
+
+    val cross = df1.crossJoin(df2)
+    cross.show()
+    val join = cross.join(df3, cross.col("b") === df3.col("____source(e)"))
+
+    join.show()
   }
 }

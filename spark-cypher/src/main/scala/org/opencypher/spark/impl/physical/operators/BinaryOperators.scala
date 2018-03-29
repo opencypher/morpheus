@@ -55,22 +55,19 @@ final case class Join(
   override def executeBinary(left: CAPSPhysicalResult, right: CAPSPhysicalResult)(
     implicit context: CAPSRuntimeContext): CAPSPhysicalResult = {
 
-    val leftHeader = lhs.header
-    val rightHeader = rhs.header
-
     val joinSlots = joinColumns.map {
       case (leftExpr, rightExpr) =>
-        val leftRecordSlot = leftHeader.slotsFor(leftExpr)
+        val leftRecordSlot = header.slotsFor(leftExpr)
           .headOption
           .getOrElse(throw IllegalArgumentException("Expression mapping to a single column", leftExpr))
-        val rightRecordSlot = rightHeader.slotsFor(rightExpr)
+        val rightRecordSlot = header.slotsFor(rightExpr)
           .headOption
           .getOrElse(throw IllegalArgumentException("Expression mapping to a single column", rightExpr))
 
         leftRecordSlot -> rightRecordSlot
     }
 
-    val joinedRecords = joinRecords(leftHeader ++ rightHeader, joinSlots)(left.records, right.records)
+    val joinedRecords = joinRecords(header, joinSlots)(left.records, right.records)
 
     CAPSPhysicalResult(joinedRecords, left.graph)
   }
@@ -268,11 +265,32 @@ final case class CartesianProduct(lhs: CAPSPhysicalOperator, rhs: CAPSPhysicalOp
 
   override def executeBinary(left: CAPSPhysicalResult, right: CAPSPhysicalResult)(
     implicit context: CAPSRuntimeContext): CAPSPhysicalResult = {
+    println("cross")
+    println("header")
+    println(header.pretty)
+
     val data = left.records.data
+    println("left struct type")
+    println(left.records.data.schema)
+    println()
+    println("left data")
+    left.records.data.show()
+    println()
+    println("right struct type")
+    println(right.records.data.schema)
+    println()
+    println("right data")
+    right.records.data.show()
+    println()
+
     val otherData = right.records.data
     val newData = data.crossJoin(otherData)
+    println("cross struct type")
+    println(newData.schema)
+    println("cross data")
+    newData.show()
+
     val records = CAPSRecords.verifyAndCreate(header, newData)(left.records.caps)
     CAPSPhysicalResult(records, left.graph)
   }
-
 }

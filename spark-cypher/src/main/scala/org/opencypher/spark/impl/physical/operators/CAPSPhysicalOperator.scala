@@ -73,7 +73,50 @@ object CAPSPhysicalOperator {
 
     val joinCols = joinSlots.map(pair => columnName(pair._1) -> columnName(pair._2))
 
-    joinDFs(lhsData, rhsData, header, joinCols)(joinType, deduplicate)(lhs.caps)
+//    println("join")
+//    println("record header")
+//    println(header.pretty)
+//
+//
+//    println("join columns")
+//    println(joinCols)
+//    println()
+//    println("left struct type")
+//    println(lhsData.schema)
+//    println()
+//    println("left data")
+//    lhsData.show
+//    println()
+//    println("right struct type")
+//    println(rhsData.schema)
+//    println()
+//    println("right data")
+//    rhsData.show
+
+    val weirdResult = joinDFs(lhsData, rhsData, header, joinCols)(joinType, deduplicate)(lhs.caps)
+//
+//    println()
+//    println("weirdResult struct type")
+//    println(weirdResult.data.schema)
+//    println("weirdResult data")
+//    weirdResult.data.show
+
+    val selectColumns = header.slots
+      .map(ColumnName.of)
+      .map(weirdResult.data.col)
+
+//    println("select columns")
+//    println(selectColumns)
+//    println("existing columns")
+//    println(weirdResult.data.columns.toList)
+
+    val select = weirdResult.data.select(selectColumns: _*)
+    val result = CAPSRecords.verifyAndCreate(header, select)(lhs.caps)
+
+//    println(weirdResult.data.schema)
+//    println(result.data.schema)
+
+    result
   }
 
   def joinDFs(lhsData: DataFrame, rhsData: DataFrame, header: RecordHeader, joinCols: Seq[(String, String)])(
