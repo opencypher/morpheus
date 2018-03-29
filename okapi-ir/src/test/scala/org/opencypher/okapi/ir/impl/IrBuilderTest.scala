@@ -43,12 +43,12 @@ import scala.collection.immutable.Set
 
 class IrBuilderTest extends IrTestSuite {
 
-  describe("parsing CypherQuery") {it("computes a pattern graph schema correctly - 1 create") {
-    val query =
-      """
+  describe("parsing CypherQuery") {
+    it("computes a pattern graph schema correctly - 1 create") {
+      val query =
+        """
         |CONSTRUCT
         |  NEW (a :A)
-
         |RETURN GRAPH""".stripMargin
 
       query.asCypherQuery()().model.result match {
@@ -58,37 +58,34 @@ class IrBuilderTest extends IrTestSuite {
       }
     }
 
-  // TODO: Enable again once setting in NEW is supported
-  ignore("construct can seta label ") {
-    val query =
-      """
+    // TODO: Enable again once setting in NEW is supported
+    ignore("construct can set a label") {
+      val query =
+        """
         |CONSTRUCT
-        |  NEW ( a :Label
-        )
+        |  NEW (a :Label)
         |RETURN GRAPH""".stripMargin
 
       intercept[UnsupportedOperationException](query.asCypherQuery().model)
     }
 
-  // TODO: Enable again once setting in NEW is supported
-  ignore("construct can set a newrelationshiptype") {
-    val query =
-      """
+    // TODO: Enable again once setting in NEW is supported
+    ignore("construct can set a new relationship type") {
+      val query =
+        """
         |CONSTRUCT
-        |  NEW ()-[ r :Label
-        ]->()
+        |  NEW ()-[r:Label]->()
         |RETURN GRAPH""".stripMargin
 
       intercept[ParsingException](query.asCypherQuery().model)
     }
 
-  it("computes a pattern graph schema correctly - 2 creates") {
-    val query =
-      """
+    it("computes a pattern graph schema correctly - 2 creates") {
+      val query =
+        """
         |CONSTRUCT
-        |  NEW (a :A)
-        |  NEW (b :B:C)
-
+        |  NEW (a:A)
+        |  NEW (b:B:C)
         |RETURN GRAPH""".stripMargin
 
       query.asCypherQuery().model.result match {
@@ -98,13 +95,12 @@ class IrBuilderTest extends IrTestSuite {
       }
     }
 
-  it("computes a pattern graph schema correctly - setting2 labels") {
-    val query =
-      """
+    it("computes a pattern graph schema correctly - setting2 labels") {
+      val query =
+        """
         |CONSTRUCT
-        |  NEW (a :A:D)
-        |  NEW (b :B:C)
-
+        |  NEW (a:A:D)
+        |  NEW (b:B:C)
         |RETURN GRAPH""".stripMargin
 
       query.asCypherQuery().model.result match {
@@ -114,13 +110,11 @@ class IrBuilderTest extends IrTestSuite {
       }
     }
 
-  it("computes a pattern graph schema correctly - setting 3 labels") {
-    val query =
-      """
+    it("computes a pattern graph schema correctly - setting 3 labels") {
+      val query =
+        """
         |CONSTRUCT
-        |  NEW (a :A :B
-         :C
-        )
+        |  NEW (a:A:B:C)
         |RETURN GRAPH""".stripMargin
 
       query.asCypherQuery().model.result match {
@@ -130,13 +124,12 @@ class IrBuilderTest extends IrTestSuite {
       }
     }
 
-  it("computes a pattern graph schema correctly - setting 2 different labelcombinations with overlap") {
-    val query =
-      """
+    it("computes a pattern graph schema correctly - setting 2 different label combinations with overlap") {
+      val query =
+        """
         |CONSTRUCT
-        |  NEW (a :A :B)
-        |  NEW ( b :A:C
-        )
+        |  NEW (a:A:B)
+        |  NEW (b:A:C)
         |RETURN GRAPH""".stripMargin
 
       query.asCypherQuery().model.result match {
@@ -146,13 +139,12 @@ class IrBuilderTest extends IrTestSuite {
       }
     }
 
-  it("computes a pattern graph schema correctly - setting 2 equal label combinations") {
-    val query =
-      """
+    it("computes a pattern graph schema correctly - setting 2 equal label combinations") {
+      val query =
+        """
         |CONSTRUCT
-        |  NEW (a :A :B)
-        |  NEW ( b :B:A
-        )
+        |  NEW (a:A:B)
+        |  NEW (b:B:A)
         |RETURN GRAPH""".stripMargin
 
       query.asCypherQuery().model.result match {
@@ -162,13 +154,12 @@ class IrBuilderTest extends IrTestSuite {
       }
     }
 
-  // TODO: Enable again once setting in NEW is supported
-  ignore("computes a pattern graph schema correctly - setting a property") {
-    val query =
-      """
+    // TODO: Enable again once setting in NEW is supported
+    ignore("computes a pattern graph schema correctly - setting a property") {
+      val query =
+        """
         |CONSTRUCT
-        |  NEW (a :A{name : 'Mats'
-        })
+        |  NEW (a:A{name : 'Mats'})
         |RETURN GRAPH""".stripMargin
 
       query.asCypherQuery().model.result match {
@@ -178,13 +169,12 @@ class IrBuilderTest extends IrTestSuite {
       }
     }
 
-  // TODO: Enable again once setting in NEW is supported
-  ignore("computes a pattern graph schema correctly - setting a node property and a label combination") {
-    val query =
-      """
+    // TODO: Enable again once setting in NEW is supported
+    ignore("computes a pattern graph schema correctly - setting a node property and a label combination") {
+      val query =
+        """
         |CONSTRUCT
-        |  NEW (a :A:B{name : 'Mats'
-        })
+        |  NEW (a:A:B{name : 'Mats'})
         |RETURN GRAPH""".stripMargin
 
       query.asCypherQuery().model.result match {
@@ -194,13 +184,12 @@ class IrBuilderTest extends IrTestSuite {
       }
     }
 
-  // TODO: Enable again once setting in NEW is supported
-  ignore("computes a pattern graph schema correctly - 1  rel propertyset") {
-    val query =
-      """
+    // TODO: Enable again once setting in NEW is supported
+    ignore("computes a pattern graph schema correctly - 1  rel property set") {
+      val query =
+        """
         |CONSTRUCT
-        |  NEW ()-[r :R{level : 'high'
-        }]->()
+        |  NEW ()-[r:R{level : 'high'}]->()
         |RETURN GRAPH""".stripMargin
 
       query.asCypherQuery().model.result match {
@@ -210,14 +199,12 @@ class IrBuilderTest extends IrTestSuite {
       }
     }
 
-  // TODO: Enable again once setting in NEW is supported
-  ignore("computes a pattern graph schema correctly -  2  propertiesset") {
-    val query =
-      """
+    // TODO: Enable again once setting in NEW is supported
+    ignore("computes a pattern graph schema correctly -  2  properties set") {
+      val query =
+        """
         |CONSTRUCT
-        |  CREATE (a :A{category : 'computer'
-        ,ports : 4
-        })
+        |  CREATE (a:A{category : 'computer',ports : 4})
         |RETURN GRAPH""".stripMargin
 
       query.asCypherQuery().model.result match {
@@ -227,18 +214,16 @@ class IrBuilderTest extends IrTestSuite {
       }
     }
 
-  // TODO: Enable again once setting in NEW is  supported
-  ignore("computes a pattern graph schema correctly - clone then add label") {
-    val query =
-      """
+    // TODO: Enable again once setting in NEW is  supported
+    ignore("computes a pattern graph schema correctly - clone then add label") {
+      val query =
+        """
         |CONSTRUCT
-        |  NEW (a :A)
-
-        |MATCH (b: A)
+        |  NEW (a:A)
+        |MATCH (b:A)
         |CONSTRUCT
         |  CLONE b as c
-        |  NEW ( c :B
-        )
+        |  NEW (c:B)
         |RETURN GRAPH""".stripMargin
 
       query.asCypherQuery().model.result match {
@@ -436,15 +421,15 @@ class IrBuilderTest extends IrTestSuite {
 
       val query =
         s"""
-          |CREATE GRAPH session.bar {
-          | $innerQuery
-          |}
+           |CREATE GRAPH session.bar {
+           | $innerQuery
+           |}
         """.stripMargin
 
       val result = query.parseIR[CreateGraphStatement[Expr]]()
 
-      result.innerQuery.model should equalWithTracing( innerQuery.asCypherQuery().model)
-      result.graph.qualifiedGraphName should equal(QualifiedGraphName(Namespace("session"),GraphName("bar")))
+      result.innerQuery.model should equalWithTracing(innerQuery.asCypherQuery().model)
+      result.graph.qualifiedGraphName should equal(QualifiedGraphName(Namespace("session"), GraphName("bar")))
       result.graph.schema should equal(testGraphSchema)
     }
   }
