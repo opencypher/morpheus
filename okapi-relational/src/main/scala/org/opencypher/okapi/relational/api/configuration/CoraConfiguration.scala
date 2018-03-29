@@ -34,6 +34,8 @@ object CoraConfiguration {
 
   object PrintPhysicalPlan extends ConfigFlag("cora.explainPhysical", false)
 
+  object PrintOptimizedPhysicalPlan extends ConfigFlag("cora.explainOptimizedPhysical", false)
+
   object DebugPhysicalResult extends ConfigFlag("cora.debugPhysical", false)
 
   object PrintQueryExecutionStages extends ConfigFlag("cora.stages", false)

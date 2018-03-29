@@ -26,8 +26,33 @@
  */
 package org.opencypher.spark.impl.acceptance
 
+import org.opencypher.okapi.relational.api.configuration.CoraConfiguration.{PrintFlatPlan, PrintOptimizedPhysicalPlan, PrintPhysicalPlan}
 import org.opencypher.spark.test.support.creation.caps.{CAPSScanGraphFactory, CAPSTestGraphFactory}
 
 class CAPSScanGraphAcceptanceTest extends AcceptanceTest {
   override def capsGraphFactory: CAPSTestGraphFactory = CAPSScanGraphFactory
+
+  it("foo") {
+
+//    PrintFlatPlan.set
+//    PrintPhysicalPlan.set
+//    PrintOptimizedPhysicalPlan.set
+
+    val graph = initGraph(
+      """
+        |CREATE (a {name: 'A'}), (b {name: 'B'}),
+        |       (x1 {name: 'x1'})
+        |CREATE (a)-[:KNOWS]->(x1),
+        |       (b)-[:KNOWS]->(x1)
+      """.stripMargin)
+
+    val results = graph.cypher(
+      """
+        |MATCH (a {name: 'A'}), (b {name: 'B'})
+        |MATCH (a)-[e]->(x)<-[f]->(b)
+        |RETURN x
+      """.stripMargin)
+
+    results.show
+  }
 }
