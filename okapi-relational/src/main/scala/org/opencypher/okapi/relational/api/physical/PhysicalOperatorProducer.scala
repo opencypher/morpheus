@@ -49,7 +49,7 @@ trait PhysicalOperatorProducer[P <: PhysicalOperator[R, G, C], R <: CypherRecord
   /**
     * Starts the query execution based on optional given records and an optional graph.
     *
-    * @param in backend-specific records
+    * @param in  backend-specific records
     * @param qgn qualified graph name of the input graph
     * @return start operator
     */
@@ -158,12 +158,12 @@ trait PhysicalOperatorProducer[P <: PhysicalOperator[R, G, C], R <: CypherRecord
   /**
     * Creates a new record containing the specified entities (i.e. as defined in a construction pattern).
     *
-    * @param in         previous operator
-    * @param construct  graph to construct
-    * @param retaggings retaggings to apply to entities in the input table
+    * @param table     table that contains cloned aliases and data for constructing new entities
+    * @param onGraph   graph that we construct on
+    * @param construct graph to construct
     * @return project pattern graph operator
     */
-  def planConstructGraph(in: P, construct: LogicalPatternGraph): P
+  def planConstructGraph(table: P, onGraph: P, construct: LogicalPatternGraph): P
 
   /**
     * Groups the underlying records by the specified expressions and evaluates the given aggregate functions.
@@ -331,8 +331,8 @@ trait PhysicalOperatorProducer[P <: PhysicalOperator[R, G, C], R <: CypherRecord
   /**
     * Performs a UNION ALL over graphs.
     *
-    * @param graphs     graphs to perform UNION ALL over together
-    * @param qgn name for the union graph
+    * @param graphs graphs to perform UNION ALL over together
+    * @param qgn    name for the union graph
     * @return union all operator
     */
   def planGraphUnionAll(graphs: List[P], qgn: QualifiedGraphName): P

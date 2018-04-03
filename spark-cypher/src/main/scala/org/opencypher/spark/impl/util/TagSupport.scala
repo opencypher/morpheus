@@ -50,8 +50,13 @@ import org.opencypher.okapi.api.graph.QualifiedGraphName
 //
 object TagSupport {
 
-  def computeRetaggings(graphs: Map[QualifiedGraphName, Set[Int]]): Map[QualifiedGraphName, Map[Int, Int]] = {
-    val (result, _) = graphs.foldLeft((Map.empty[QualifiedGraphName, Map[Int, Int]], Set.empty[Int])) {
+  def computeRetaggings(
+    graphs: Map[QualifiedGraphName, Set[Int]],
+    fixedRetaggings: Map[QualifiedGraphName, Map[Int, Int]] = Map.empty[QualifiedGraphName, Map[Int, Int]]
+  ): Map[QualifiedGraphName, Map[Int, Int]] = {
+    val graphsToRetag = graphs.filterNot { case (qgn, _) => fixedRetaggings.contains(qgn) }
+    val usedTags = fixedRetaggings.values.flatMap(_.values).toSet
+    val (result, _) = graphsToRetag.foldLeft((fixedRetaggings, usedTags)) {
       case ((graphReplacements, previousTags), (graphId, rightTags)) =>
 
         val replacements = previousTags.replacementsFor(rightTags)
@@ -81,6 +86,15 @@ object TagSupport {
 //
 //    def withTags(tags: Set[Int]): Schema with TagSupport = s.toTagged.withTags(tags)
 //
+//  }
+
+//  implicit class RemappingOps(val remapping: Map[Int, Int]) extends AnyVal {
+//    def chain(other: Map[Int, Int]): Map[Int, Int] = {
+//      remapping.map { case (from, to) =>
+//        val updatedTo = other.getOrElse(from, to)
+//        from -> updatedTo
+//      }
+//    }
 //  }
 
   implicit class TagSet(val lhsTags: Set[Int]) extends AnyVal {

@@ -47,6 +47,6 @@ final case class GraphUnionAll(inputs: List[CAPSPhysicalOperator], qgn: Qualifie
       .map(r => r.workingGraph -> tagStrategy(r.workingGraphName)).toMap
     val unionGraph = CAPSUnionGraph(graphWithTagStrategy)
 
-    CAPSPhysicalResult(CAPSRecords.unit(), unionGraph, qgn, Map.empty)
+    CAPSPhysicalResult(CAPSRecords.unit(), unionGraph, qgn, tagStrategy)
   }
 }

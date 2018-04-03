@@ -135,11 +135,11 @@ class CAPSScanGraphAcceptanceTest extends AcceptanceTest {
 
     val graph = caps.cypher(query).getGraph
 
-    graph.schema should equal(testGraph1.schema)
+    graph.schema should equal(testGraph1.schema.asCaps)
     graph.asCaps.tags should equal(Set(0, 1))
     graph.nodes("n").collect.toBag should equal(Bag(
-      CypherMap("n" -> CAPSNode(0, Set("Person"), CypherMap("name" -> "Mats"))),
-      CypherMap("n" -> CAPSNode(0L.setTag(1), Set("Person"), CypherMap("name" -> "Phil")))
+      CypherMap("n" -> CAPSNode(0L.setTag(1), Set("Person"), CypherMap("name" -> "Mats"))),
+      CypherMap("n" -> CAPSNode(0L, Set("Person"), CypherMap("name" -> "Phil")))
     ))
   }
 

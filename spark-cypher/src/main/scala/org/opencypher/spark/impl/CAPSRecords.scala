@@ -101,14 +101,16 @@ sealed abstract class CAPSRecords(val header: RecordHeader, val data: DataFrame)
     this
   }
 
+  // TODO: Forther optimize identity retaggings
   def retag(replacements: Map[Int, Int]): CAPSRecords = {
+    val actualRetaggings = replacements.filterNot { case (from, to) => from == to }
     val idColumns = header.contents.collect {
       case f: OpaqueField => ColumnName.of(f)
       case p@ProjectedExpr(StartNode(_)) => ColumnName.of(p)
       case p@ProjectedExpr(EndNode(_)) => ColumnName.of(p)
     }
     val dfWithReplacedTags = idColumns.foldLeft(data) {
-      case (df, column) => df.safeReplaceTags(column, replacements)
+      case (df, column) => df.safeReplaceTags(column, actualRetaggings)
     }
 
     CAPSRecords.verifyAndCreate(header, dfWithReplacedTags)

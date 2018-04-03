@@ -107,8 +107,9 @@ final class CAPSPhysicalOperatorProducer(implicit caps: CAPSSession)
 
   override def planConstructGraph(
     in: CAPSPhysicalOperator,
+    onGraph: CAPSPhysicalOperator,
     construct: LogicalPatternGraph): CAPSPhysicalOperator = {
-    operators.ConstructGraph(in, construct)
+    operators.ConstructGraph(in, onGraph, construct)
   }
 
   override def planAggregate(in: CAPSPhysicalOperator, group: Set[Var], aggregations: Set[(Var, Aggregator)], header: RecordHeader): CAPSPhysicalOperator = operators.Aggregate(in, aggregations, group, header)

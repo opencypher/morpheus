@@ -27,22 +27,20 @@
 package org.opencypher.spark.impl.physical.operators
 
 import org.apache.spark.sql._
-import org.apache.spark.sql.functions.{asc, desc, monotonically_increasing_id}
+import org.apache.spark.sql.functions.{asc, desc}
 import org.apache.spark.sql.types.{StructField, StructType}
-import org.opencypher.okapi.api.graph.{PropertyGraph, QualifiedGraphName}
 import org.opencypher.okapi.api.types._
 import org.opencypher.okapi.api.value.CypherValue._
 import org.opencypher.okapi.impl.exception.{IllegalArgumentException, IllegalStateException, NotImplementedException}
-import org.opencypher.okapi.ir.api.PropertyKey
 import org.opencypher.okapi.ir.api.block.{Asc, Desc, SortItem}
 import org.opencypher.okapi.ir.api.expr._
-import org.opencypher.okapi.ir.api.set.SetPropertyItem
 import org.opencypher.okapi.ir.impl.syntax.ExprSyntax._
-import org.opencypher.okapi.logical.impl.{ConstructedEntity, _}
-import org.opencypher.okapi.relational.impl.syntax.RecordHeaderSyntax._
+import org.opencypher.okapi.logical.impl._
 import org.opencypher.okapi.relational.impl.table.{ColumnName, _}
 import org.opencypher.spark.api.CAPSSession
 import org.opencypher.spark.impl.CAPSUnionGraph.{apply => _, unapply => _, _}
+import org.opencypher.spark.impl.CAPSRecords
+import org.opencypher.spark.impl.CAPSUnionGraph.{apply => _, unapply => _}
 import org.opencypher.spark.impl.DataFrameOps._
 import org.opencypher.spark.impl.SparkSQLExprMapper._
 import org.opencypher.spark.impl.convert.CAPSCypherType._
@@ -191,235 +189,6 @@ final case class Filter(in: CAPSPhysicalOperator, expr: Expr, header: RecordHead
       val filteredRows = records.data.where(expr.asSparkSQLExpr(header, records.data, context))
       CAPSRecords.verifyAndCreate(header, filteredRows)(records.caps)
     }
-  }
-}
-
-import org.opencypher.spark.impl.util.TagSupport._
-
-final case class ConstructGraph(
-  in: CAPSPhysicalOperator,
-  construct: LogicalPatternGraph
-)
-  extends UnaryPhysicalOperator {
-
-  override def toString = {
-    val entities = construct.clones.keySet ++ construct.newEntities.map(_.v)
-    s"ConstructGraph(on=[${construct.onGraphs.mkString(", ")}], entities=[${entities.mkString(", ")}])"
-  }
-
-  override def header: RecordHeader = RecordHeader.empty
-
-  private def pickFreeTag(tagStrategy: Map[QualifiedGraphName, Map[Int, Int]]): Int = {
-    val usedTags = tagStrategy.values.flatMap(_.values).toSet
-    if (usedTags.isEmpty) 0
-    else usedTags.max + 1
-  }
-
-  override def executeUnary(prev: CAPSPhysicalResult)(implicit context: CAPSRuntimeContext): CAPSPhysicalResult = {
-    implicit val session: CAPSSession = prev.records.caps
-
-    val LogicalPatternGraph(schema, clonedVarsToInputVars, newEntities, _, onGraphs, name) = construct
-
-    val uniqueGraphNamesClonedFrom: Set[QualifiedGraphName] = clonedVarsToInputVars.values.map(_.cypherType.graph.get).toSet
-    val tagsForGraph: Map[QualifiedGraphName, Set[Int]] = uniqueGraphNamesClonedFrom.map(qgn => qgn -> context.resolve(qgn).get.tags).toMap
-    val tagStrategy = computeRetaggings(tagsForGraph)
-
-    // Apply aliases in CLONE to input table in order to create the base table, on which CONSTRUCT happens
-    val aliasClones = clonedVarsToInputVars.filter { case (alias, original) => alias != original }
-    val baseTable = prev.records.addAliases(aliasClones)
-
-    val retaggedBaseTable = aliasClones.foldLeft(baseTable) { case (df, clone) =>
-      // TODO: Unsafe get
-      df.retagVariable(clone._1, tagStrategy(clone._2.cypherType.graph.get))
-    }
-
-    // Construct NEW entities
-    val (newEntityTags, tableWithConstructedEntities) = {
-      if (newEntities.isEmpty) {
-        Set.empty[Int] -> retaggedBaseTable
-      } else {
-        val newEntityTag = pickFreeTag(tagStrategy)
-        val entityTable = createEntities(newEntities, retaggedBaseTable, newEntityTag)
-//        val entityTableWithProperties = setProperties(sets, entityTable)
-        Set(newEntityTag) -> entityTable
-      }
-    }
-
-    // Remove all vars that were part the original pattern graph DF, except variables that were CLONEd without an alias
-    val allInputVars = baseTable.header.internalHeader.fields
-    val originalVarsToKeep = clonedVarsToInputVars.keySet -- aliasClones.keySet
-    val varsToRemoveFromTable = allInputVars -- originalVarsToKeep
-    val patternGraphTable = tableWithConstructedEntities.removeVars(varsToRemoveFromTable)
-
-    val tagsUsed = tagStrategy.foldLeft(newEntityTags) {
-      case (tags, (qgn, remapping)) =>
-        val remappedTags = tagsForGraph(qgn).map(remapping)
-        tags ++ remappedTags
-    }
-
-    CAPSPhysicalResult(CAPSRecords.unit(), CAPSGraph.create(patternGraphTable, schema.asCaps, tagsUsed), name, tagStrategy)
-  }
-
-  private def setProperties(setItems: List[SetPropertyItem[Expr]], constructedTable: CAPSRecords)(implicit context: CAPSRuntimeContext): CAPSRecords = {
-    setItems.foldLeft(constructedTable) { case (table, nextSetItem) =>
-      constructProperty(nextSetItem.variable, nextSetItem.propertyKey, nextSetItem.setValue, table)
-    }
-  }
-
-  def constructProperty(variable: Var, propertyKey: String, propertyValue: Expr, constructedTable: CAPSRecords)(implicit context: CAPSRuntimeContext): CAPSRecords = {
-    val propertyValueColumn: Column = propertyValue.asSparkSQLExpr(constructedTable.header, constructedTable.data, context)
-
-    val propertyExpression = Property(variable, PropertyKey(propertyKey))(propertyValue.cypherType)
-    val propertySlotContent = ProjectedExpr(propertyExpression)
-    val newData = constructedTable.data.safeAddColumn(ColumnName.of(propertySlotContent), propertyValueColumn)
-
-    val newHeader = constructedTable.header.update(addContent(propertySlotContent))._1
-
-    CAPSRecords.verifyAndCreate(newHeader, newData)(constructedTable.caps)
-  }
-
-  private def createEntities(toCreate: Set[ConstructedEntity], constructedTable: CAPSRecords, newEntityTag: Int): CAPSRecords = {
-    // Construct nodes before relationships, as relationships might depend on nodes
-    val nodes = toCreate.collect {
-      case c@ConstructedNode(Var(name), _, _) if !constructedTable.header.fields.contains(name) => c
-    }
-    val rels = toCreate.collect {
-      case r@ConstructedRelationship(Var(name), _, _, _, _) if !constructedTable.header.fields.contains(name) => r
-    }
-
-    val (_, createdNodes) = nodes.foldLeft(0 -> Set.empty[(SlotContent, Column)]) {
-      case ((nextColumnPartitionId, constructedNodes), nextNodeToConstruct) =>
-        (nextColumnPartitionId + 1) -> (constructedNodes ++ constructNode(newEntityTag, nextColumnPartitionId, nodes.size, nextNodeToConstruct, constructedTable))
-    }
-
-    val recordsWithNodes = addEntitiesToRecords(createdNodes, constructedTable)
-
-    val (_, createdRels) = rels.foldLeft(0 -> Set.empty[(SlotContent, Column)]) {
-      case ((nextColumnPartitionId, constructedRels), nextRelToConstruct) =>
-        (nextColumnPartitionId + 1) -> (constructedRels ++ constructRel(newEntityTag, nextColumnPartitionId, rels.size, nextRelToConstruct, recordsWithNodes))
-    }
-
-    addEntitiesToRecords(createdRels, recordsWithNodes)
-  }
-
-  private def addEntitiesToRecords(columnsToAdd: Set[(SlotContent, Column)], constructedTable: CAPSRecords): CAPSRecords = {
-    val newData = columnsToAdd.foldLeft(constructedTable.data) {
-      case (acc, (expr, col)) =>
-        acc.safeAddColumn(ColumnName.of(expr), col)
-    }
-
-    // TODO: Move header construction to FlatPlanner
-    val newHeader = constructedTable.header
-      .update(
-        addContents(columnsToAdd.map(_._1).toSeq)
-      )
-      ._1
-
-    CAPSRecords.verifyAndCreate(newHeader, newData)(constructedTable.caps)
-  }
-
-  private def constructNode(
-    newEntityTag: Int,
-    columnIdPartition: Int,
-    numberOfColumnPartitions: Int,
-    node: ConstructedNode,
-    constructedTable: CAPSRecords
-  ): Set[(SlotContent, Column)] = {
-    val col = functions.lit(true)
-    val labelTuples: Set[(SlotContent, Column)] = node.labels.map { label =>
-      ProjectedExpr(HasLabel(node.v, label)(CTBoolean)) -> col
-    }
-
-    val propertyTuples = node.equivalence match {
-      case Some(TildeModel(origNode)) =>
-        val header = constructedTable.header
-        val origSlots = header.propertySlots(origNode).values
-        val copySlotContents = origSlots.map(_.withOwner(node.v)).map(_.content)
-        val columns = origSlots.map(ColumnName.of).map(constructedTable.data.col)
-        copySlotContents.zip(columns).toSet
-
-      case Some(AtModel(_)) => throw NotImplementedException("AtModel copies")
-
-      case None => Set.empty[(SlotContent, Column)]
-    }
-
-    labelTuples ++ propertyTuples + (OpaqueField(node.v) -> generateId(columnIdPartition, numberOfColumnPartitions).setTag(newEntityTag))
-  }
-
-  /**
-    *org.apache.spark.sql.functions$#monotonically_increasing_id()
-    *
-    * @param columnIdPartition column partition within DF partition
-    */
-  // TODO: improve documentation and add specific tests
-  private def generateId(columnIdPartition: Int, numberOfColumnPartitions: Int): Column = {
-    val columnPartitionBits = math.log(numberOfColumnPartitions).floor.toInt + 1
-    val totalIdSpaceBits = 33
-    val columnIdShift = totalIdSpaceBits - columnPartitionBits
-
-    // id needs to be generated
-    // Limits the system to 500 mn partitions
-    // The first half of the id space is protected
-    val columnPartitionOffset = columnIdPartition.toLong << columnIdShift
-    monotonically_increasing_id() + functions.lit(columnPartitionOffset)
-  }
-
-  private def constructRel(
-    newEntityTag: Int,
-    columnIdPartition: Int,
-    numberOfColumnPartitions: Int,
-    toConstruct: ConstructedRelationship,
-    constructedTable: CAPSRecords
-  ): Set[(SlotContent, Column)] = {
-    val ConstructedRelationship(rel, source, target, typOpt, equivalenceOpt) = toConstruct
-    val header = constructedTable.header
-    val inData = constructedTable.data
-
-    // source and target are present: just copy
-    val sourceTuple = {
-      val slot = header.slotFor(source)
-      val col = inData.col(ColumnName.of(slot))
-      ProjectedExpr(StartNode(rel)(CTInteger)) -> col
-    }
-    val targetTuple = {
-      val slot = header.slotFor(target)
-      val col = inData.col(ColumnName.of(slot))
-      ProjectedExpr(EndNode(rel)(CTInteger)) -> col
-    }
-
-    // id needs to be generated
-    val relTuple = OpaqueField(rel) -> generateId(columnIdPartition, numberOfColumnPartitions).setTag(newEntityTag)
-
-    val typeTuple = {
-      typOpt match {
-        // type is set
-        case Some(t) =>
-          val col = functions.lit(t)
-          ProjectedExpr(Type(rel)(CTString)) -> col
-        case None =>
-          // equivalence model is guaranteed to be present: get rel type from original
-          val origRel = equivalenceOpt.get.v
-          val header = constructedTable.header
-          val origTypeSlot = header.typeSlot(origRel)
-          val copyTypeSlotContents = origTypeSlot.withOwner(rel).content
-          val col = constructedTable.data.col(ColumnName.of(origTypeSlot))
-          (copyTypeSlotContents, col)
-      }
-    }
-
-    val propertyTuples = equivalenceOpt match {
-      case Some(TildeModel(origRel)) =>
-        val header = constructedTable.header
-        val origSlots = header.propertySlots(origRel).values
-        val copySlotContents = origSlots.map(_.withOwner(rel)).map(_.content)
-        val columns = origSlots.map(ColumnName.of).map(constructedTable.data.col)
-        copySlotContents.zip(columns).toSet
-      case Some(AtModel(_)) => throw NotImplementedException("AtModel copies")
-
-      case None => Set.empty[(SlotContent, Column)]
-    }
-
-    Set(sourceTuple, targetTuple, relTuple, typeTuple) ++ propertyTuples
   }
 }
 

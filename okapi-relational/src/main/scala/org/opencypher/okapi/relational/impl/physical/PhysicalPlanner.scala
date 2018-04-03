@@ -73,15 +73,10 @@ class PhysicalPlanner[P <: PhysicalOperator[R, G, C], R <: CypherRecords, G <: P
             producer.planUseGraph(process(in), g)
 
           case construct: LogicalPatternGraph =>
-            val constructGraphOperator = producer.planConstructGraph(process(in), construct)
-            if (construct.onGraphs.isEmpty) {
-              constructGraphOperator
-            } else {
-              // Create UNION graph for `onGraphs` and the constructed graph
-              val onGraphPlans = construct.onGraphs.map(qgn => producer.planStart(None, qgn))
-              val onGraphUnion = producer.planGraphUnionAll(onGraphPlans :+ constructGraphOperator, construct.name)
-              onGraphUnion
-            }
+            // TODO: More efficient plans for simple special cases (i.e. no ON)
+            val onGraphPlans = construct.onGraphs.map(qgn => producer.planStart(None, qgn))
+            val onGraphUnion = producer.planGraphUnionAll(onGraphPlans, construct.name)
+            producer.planConstructGraph(process(in), onGraphUnion, construct)
         }
 
       case op
