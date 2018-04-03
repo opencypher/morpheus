@@ -427,7 +427,7 @@ trait MultipleGraphBehaviour {
 
       val result = testGraph2.cypher(query).getGraph
 
-      result.schema should equal(testGraph1.schema ++ testGraph2.schema)
+      result.schema should equal((testGraph1.schema ++ testGraph2.schema).asCaps)
       result.nodes("n").toMaps should equal(testGraph1.unionAll(testGraph2).nodes("n").toMaps)
       result.relationships("r").toMaps should equal(testGraph1.unionAll(testGraph2).relationships("r").toMaps)
     }
@@ -447,7 +447,7 @@ trait MultipleGraphBehaviour {
 
       val result = caps.cypher(query).getGraph
 
-      result.schema should equal((testGraph1.schema ++ testGraph2.schema).withRelationshipPropertyKeys("KNOWS")())
+      result.schema should equal((testGraph1.schema ++ testGraph2.schema).withRelationshipPropertyKeys("KNOWS")().asCaps)
       result.nodes("n").toMaps should equal(testGraph1.unionAll(testGraph2).nodes("n").toMaps)
       result.relationships("r").toMapsWithCollectedEntities should equal(Bag(
         CypherMap("r" -> CAPSRelationship(2251799813685248L, 0L, 1125899906842624L, "KNOWS")))

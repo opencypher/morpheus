@@ -26,7 +26,7 @@
  */
 package org.opencypher.okapi.relational.api.physical
 
-import org.opencypher.okapi.api.graph.CypherSession
+import org.opencypher.okapi.api.graph.{CypherSession, PropertyGraph, QualifiedGraphName}
 import org.opencypher.okapi.api.table.CypherRecords
 import org.opencypher.okapi.api.value.CypherValue.CypherMap
 import org.opencypher.okapi.ir.impl.QueryCatalog
@@ -36,7 +36,7 @@ import org.opencypher.okapi.ir.impl.QueryCatalog
   *
   * @tparam R backend-specific cypher records
   */
-trait PhysicalPlannerContext[R <: CypherRecords] {
+trait PhysicalPlannerContext[P <: PhysicalOperator[R, _, _], R <: CypherRecords] {
   /**
     * Refers to the session in which that query is executed.
     *
@@ -50,6 +50,9 @@ trait PhysicalPlannerContext[R <: CypherRecords] {
     * @return lookup function
     */
   def catalog: QueryCatalog
+
+  // TODO: Improve design
+  def constructedGraphPlans: collection.mutable.Map[QualifiedGraphName, P]
 
   /**
     * Initial records for physical planning.

@@ -49,11 +49,11 @@ trait PhysicalOperatorProducer[P <: PhysicalOperator[R, G, C], R <: CypherRecord
   /**
     * Starts the query execution based on optional given records and an optional graph.
     *
-    * @param in  backend-specific records
-    * @param qgn qualified graph name of the input graph
+    * @param qgnOpt qualified graph name of the input graph
+    * @param in     backend-specific records
     * @return start operator
     */
-  def planStart(in: Option[R] = None, qgn: QualifiedGraphName): P
+  def planStart(qgnOpt: Option[QualifiedGraphName] = None, in: Option[R] = None): P
 
   /**
     * Scans the node set of the input graph and returns all nodes that match the given CTNode type.

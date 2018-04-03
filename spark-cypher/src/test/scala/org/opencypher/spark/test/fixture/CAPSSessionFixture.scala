@@ -29,6 +29,7 @@ package org.opencypher.spark.test.fixture
 import org.opencypher.okapi.test.BaseTestSuite
 import org.opencypher.okapi.test.fixture.BaseTestFixture
 import org.opencypher.spark.api.CAPSSession
+import org.opencypher.spark.impl.CAPSGraph
 
 trait CAPSSessionFixture extends BaseTestFixture {
   self: SparkSessionFixture with BaseTestSuite =>
@@ -38,6 +39,7 @@ trait CAPSSessionFixture extends BaseTestFixture {
   abstract override protected def afterEach(): Unit = {
     // delete all session graphs via their qualified graph name
     caps.dataSource(caps.sessionNamespace).graphNames.foreach(caps.delete)
+    caps.store(caps.emptyGraphQgn, CAPSGraph.empty)
     super.afterEach()
   }
 }

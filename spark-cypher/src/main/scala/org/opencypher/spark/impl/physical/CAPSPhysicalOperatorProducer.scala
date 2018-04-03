@@ -43,14 +43,15 @@ case class CAPSPhysicalPlannerContext(
   session: CAPSSession,
   catalog: QueryCatalog,
   inputRecords: CAPSRecords,
-  parameters: CypherMap) extends PhysicalPlannerContext[CAPSRecords]
+  parameters: CypherMap,
+  constructedGraphPlans: collection.mutable.Map[QualifiedGraphName, CAPSPhysicalOperator]) extends PhysicalPlannerContext[CAPSPhysicalOperator, CAPSRecords]
 
 object CAPSPhysicalPlannerContext {
   def from(
     catalog: QueryCatalog,
     inputRecords: CAPSRecords,
-    parameters: CypherMap)(implicit session: CAPSSession): PhysicalPlannerContext[CAPSRecords] = {
-    CAPSPhysicalPlannerContext(session, catalog, inputRecords, parameters)
+    parameters: CypherMap)(implicit session: CAPSSession): PhysicalPlannerContext[CAPSPhysicalOperator, CAPSRecords] = {
+    CAPSPhysicalPlannerContext(session, catalog, inputRecords, parameters, collection.mutable.Map.empty)
   }
 }
 
@@ -77,8 +78,8 @@ final class CAPSPhysicalOperatorProducer(implicit caps: CAPSSession)
   override def planEmptyRecords(in: CAPSPhysicalOperator, header: RecordHeader): CAPSPhysicalOperator =
     operators.EmptyRecords(in, header)
 
-  override def planStart(in: Option[CAPSRecords], qgn: QualifiedGraphName): CAPSPhysicalOperator =
-    operators.Start(in, qgn)
+  override def planStart(qgnOpt: Option[QualifiedGraphName] = None, in: Option[CAPSRecords] = None): CAPSPhysicalOperator =
+    operators.Start(qgnOpt.getOrElse(caps.emptyGraphQgn), in)
 
   // TODO: Make catalog usage consistent between Start/FROM GRAPH
   override def planUseGraph(in: CAPSPhysicalOperator, g: LogicalCatalogGraph): CAPSPhysicalOperator =

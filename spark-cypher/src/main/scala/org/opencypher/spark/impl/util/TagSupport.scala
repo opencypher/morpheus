@@ -50,10 +50,10 @@ import org.opencypher.okapi.api.graph.QualifiedGraphName
 //
 object TagSupport {
 
-  def computeRetaggings(
-    graphs: Map[QualifiedGraphName, Set[Int]],
-    fixedRetaggings: Map[QualifiedGraphName, Map[Int, Int]] = Map.empty[QualifiedGraphName, Map[Int, Int]]
-  ): Map[QualifiedGraphName, Map[Int, Int]] = {
+  def computeRetaggings[GraphKey](
+    graphs: Map[GraphKey, Set[Int]],
+    fixedRetaggings: Map[GraphKey, Map[Int, Int]] = Map.empty[GraphKey, Map[Int, Int]]
+  ): Map[GraphKey, Map[Int, Int]] = {
     val graphsToRetag = graphs.filterNot { case (qgn, _) => fixedRetaggings.contains(qgn) }
     val usedTags = fixedRetaggings.values.flatMap(_.values).toSet
     val (result, _) = graphsToRetag.foldLeft((fixedRetaggings, usedTags)) {

@@ -46,12 +46,12 @@ class PhysicalOptimizerTest extends CAPSTestSuite with GraphCreationFixture {
     val plan = CartesianProduct(
       CartesianProduct(
         NodeScan(
-          Start(emptyRecords, testQualifiedGraphName),
+          Start(testQualifiedGraphName, emptyRecords),
           Var("C")(CTNode),
           RecordHeader.empty
         ),
         NodeScan(
-          Start(emptyRecords, testQualifiedGraphName),
+          Start(testQualifiedGraphName, emptyRecords),
           Var("B")(CTNode),
           RecordHeader.empty
         ),
@@ -59,12 +59,12 @@ class PhysicalOptimizerTest extends CAPSTestSuite with GraphCreationFixture {
       ),
       CartesianProduct(
         NodeScan(
-          Start(emptyRecords, testQualifiedGraphName),
+          Start(testQualifiedGraphName, emptyRecords),
           Var("C")(CTNode),
           RecordHeader.empty
         ),
         NodeScan(
-          Start(emptyRecords, testQualifiedGraphName),
+          Start(testQualifiedGraphName, emptyRecords),
           Var("B")(CTNode),
           RecordHeader.empty
         ),
@@ -81,12 +81,12 @@ class PhysicalOptimizerTest extends CAPSTestSuite with GraphCreationFixture {
         Cache(
           CartesianProduct(
             NodeScan(
-              Start(emptyRecords, testQualifiedGraphName),
+              Start(testQualifiedGraphName, emptyRecords),
               Var("C")(CTNode),
               RecordHeader.empty
             ),
             NodeScan(
-              Start(emptyRecords, testQualifiedGraphName),
+              Start(testQualifiedGraphName, emptyRecords),
               Var("B")(CTNode),
               RecordHeader.empty
             ),
@@ -96,12 +96,12 @@ class PhysicalOptimizerTest extends CAPSTestSuite with GraphCreationFixture {
         Cache(
           CartesianProduct(
             NodeScan(
-              Start(emptyRecords, testQualifiedGraphName),
+              Start(testQualifiedGraphName, emptyRecords),
               Var("C")(CTNode),
               RecordHeader.empty
             ),
             NodeScan(
-              Start(emptyRecords, testQualifiedGraphName),
+              Start(testQualifiedGraphName, emptyRecords),
               Var("B")(CTNode),
               RecordHeader.empty
             ),
