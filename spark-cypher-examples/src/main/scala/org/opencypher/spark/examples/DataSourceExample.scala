@@ -26,7 +26,6 @@
  */
 package org.opencypher.spark.examples
 
-import org.opencypher.okapi.api.graph.GraphName
 import org.opencypher.spark.api.CAPSSession
 
 object DataSourceExample extends App {
@@ -36,7 +35,7 @@ object DataSourceExample extends App {
   // 2) Load social network data via case class instances
   val socialNetwork = session.readFrom(SocialNetworkData.persons, SocialNetworkData.friendships)
 
-  session.store(GraphName("sn"), socialNetwork)
+  session.store("sn", socialNetwork)
 
   val result = session.cypher("FROM GRAPH session.sn MATCH (n) RETURN n")
 

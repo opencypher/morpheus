@@ -29,6 +29,7 @@ package org.opencypher.spark.examples
 import org.opencypher.okapi.api.graph.{Namespace, QualifiedGraphName}
 import org.opencypher.spark.api.CAPSSession
 import org.opencypher.spark.api.io.file.FileCsvGraphDataSource
+import org.opencypher.spark.impl.CAPSConverters._
 
 /**
   * Demonstrates usage patterns where Cypher and SQL can be interleaved in the
@@ -56,7 +57,7 @@ object CypherSQLRoundtripExample extends App {
   )
 
   // 5) Register the result as a table called people
-  result.getRecords.register("people")
+  result.getRecords.asCaps.toDF().createOrReplaceTempView("people")
 
   // 6) Query the registered table using SQL
   val sqlResults = session.sql("SELECT age, name FROM people")
