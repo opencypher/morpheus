@@ -36,6 +36,7 @@ import org.opencypher.okapi.api.graph.QualifiedGraphName
 import org.opencypher.okapi.api.schema.Schema
 import org.opencypher.okapi.api.types._
 import org.opencypher.okapi.impl.exception.{IllegalArgumentException, IllegalStateException, UnsupportedOperationException}
+import org.opencypher.okapi.impl.schema.TagSupport._
 import org.opencypher.okapi.ir.api._
 import org.opencypher.okapi.ir.api.block.{SortItem, _}
 import org.opencypher.okapi.ir.api.expr._
@@ -43,41 +44,68 @@ import org.opencypher.okapi.ir.api.pattern.Pattern
 import org.opencypher.okapi.ir.api.set.{SetItem, SetLabelItem, SetPropertyItem}
 import org.opencypher.okapi.ir.api.util.CompilationStage
 import org.opencypher.okapi.ir.impl.refactor.instances._
-import org.opencypher.okapi.impl.schema.TagSupport._
 
-object IRBuilder extends CompilationStage[ast.Statement, CypherQuery[Expr], IRBuilderContext] {
+object IRBuilder extends CompilationStage[ast.Statement, CypherStatement[Expr], IRBuilderContext] {
 
-  override type Out = Either[IRBuilderError, (Option[CypherQuery[Expr]], IRBuilderContext)]
+  override type Out = Either[IRBuilderError, (Option[CypherStatement[Expr]], IRBuilderContext)]
 
   override def process(input: ast.Statement)(implicit context: IRBuilderContext): Out =
     buildIR[IRBuilderStack[Option[CypherQuery[Expr]]]](input).run(context)
 
-  override def extract(output: Out): CypherQuery[Expr] =
+  override def extract(output: Out): CypherStatement[Expr] =
     output match {
       case Left(error) => throw IllegalStateException(s"Error during IR construction: $error")
       case Right((Some(q), _)) => q
       case Right((None, _)) => throw IllegalStateException(s"Failed to construct IR")
     }
 
-  private def buildIR[R: _mayFail : _hasContext](s: ast.Statement): Eff[R, Option[CypherQuery[Expr]]] =
+  private def buildIR[R: _mayFail : _hasContext](s: ast.Statement): Eff[R, Option[CypherStatement[Expr]]] =
     s match {
       case ast.Query(_, part) =>
         for {
-          query <- {
-            part match {
-              case ast.SingleQuery(clauses) =>
-                val blocks = clauses.toList.traverse(convertClause[R])
-                blocks >> convertRegistry
+          res <- convertQueryPart(part)
+        } yield res
 
-              case x =>
-                error(IRBuilderError(s"Query not supported: $x"))(None)
+      case ast.CreateGraph(qgn, query) =>
+        for {
+          innerQuery <- convertQueryPart(query)
+          context <- get[R, IRBuilderContext]
+          result <- {
+            val schema = innerQuery.get.model.result match {
+              case GraphResultBlock(_, irGraph) => context.schemaFor(irGraph.qualifiedGraphName)
+              case _ => throw IllegalArgumentException("The query in CREATE GRAPH must return a graph")
             }
+            val irQgn = QualifiedGraphName(qgn.parts)
+            val statement = Some(CreateGraphStatement[Expr](QueryInfo(context.queryString), IRCatalogGraph(irQgn, schema), innerQuery.get))
+            pure[R, Option[CypherStatement[Expr]]](statement)
           }
-        } yield query
+        } yield result
+
+      case ast.DeleteGraph(qgn) =>
+        for {
+          context <- get[R, IRBuilderContext]
+          result <- {
+            val irQgn = QualifiedGraphName(qgn.parts)
+            val schema = context.schemaFor(irQgn)
+            val statement = Some(DeleteGraphStatement[Expr](QueryInfo(context.queryString), IRCatalogGraph(irQgn, schema)))
+            pure[R, Option[CypherStatement[Expr]]](statement)
+          }
+        } yield result
 
       case x =>
         error(IRBuilderError(s"Statement not yet supported: $x"))(None)
     }
+
+  private def convertQueryPart[R: _mayFail : _hasContext](part: ast.QueryPart): Eff[R, Option[CypherQuery[Expr]]] = {
+    part match {
+      case ast.SingleQuery(clauses) =>
+        val blocks = clauses.toList.traverse(convertClause[R])
+        blocks >> convertRegistry
+
+      case x =>
+        error(IRBuilderError(s"Query not supported: $x"))(None)
+    }
+  }
 
   private def convertClause[R: _mayFail : _hasContext](c: ast.Clause): Eff[R, List[Block[Expr]]] = {
 

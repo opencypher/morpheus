@@ -41,6 +41,7 @@ import org.opencypher.okapi.test.BaseTestSuite
 import org.scalatest.mockito.MockitoSugar
 
 import scala.language.implicitConversions
+import scala.reflect.ClassTag
 
 abstract class IrTestSuite extends BaseTestSuite with MockitoSugar {
 
@@ -94,9 +95,16 @@ abstract class IrTestSuite extends BaseTestSuite with MockitoSugar {
   case class DummyBinds[E](fields: Set[IRField] = Set.empty) extends Binds[E]
 
   implicit class RichString(queryText: String) {
-    def model: QueryModel[Expr] = ir().model
+    def parseIR[T <: CypherStatement[Expr] : ClassTag](graphsWithSchema: (GraphName, Schema)*)(implicit schema: Schema = Schema.empty): T =
+      ir(graphsWithSchema:_ *) match {
+        case cq : T => cq
+        case other => throw new IllegalArgumentException(s"Cannot convert $other")
+    }
 
-    def ir(graphsWithSchema: (GraphName, Schema)*)(implicit schema: Schema = Schema.empty): CypherQuery[Expr] = {
+    def asCypherQuery(graphsWithSchema: (GraphName, Schema)*)(implicit schema: Schema = Schema.empty): CypherQuery[Expr] =
+      parseIR[CypherQuery[Expr]](graphsWithSchema: _*)
+
+    def ir(graphsWithSchema: (GraphName, Schema)*)(implicit schema: Schema = Schema.empty): CypherStatement[Expr] = {
       val stmt = CypherParser(queryText)(CypherParser.defaultContext)
       val parameters = Map.empty[String, CypherValue]
       IRBuilder(stmt)(
@@ -110,7 +118,7 @@ abstract class IrTestSuite extends BaseTestSuite with MockitoSugar {
         ))
     }
 
-    def irWithParams(params: (String, CypherValue)*)(implicit schema: Schema = Schema.empty): CypherQuery[Expr] = {
+    def irWithParams(params: (String, CypherValue)*)(implicit schema: Schema = Schema.empty): CypherStatement[Expr] = {
       val stmt = CypherParser(queryText)(CypherParser.defaultContext)
       IRBuilder(stmt)(
         IRBuilderContext.initial(queryText,

@@ -45,7 +45,8 @@ abstract class AcceptanceTest
     with PredicateBehaviour
     with ReturnBehaviour
     with WithBehaviour
-    with UnwindBehaviour {
+    with UnwindBehaviour
+    with CatalogDDLBehaviour {
 
   def capsGraphFactory: CAPSTestGraphFactory
 
@@ -59,6 +60,10 @@ abstract class AcceptanceTest
 
     describe("BoundedVarExpandBehaviour") {
       it should behave like boundedVarExpandBehaviour(initGraph)
+    }
+
+    describe("CatalogDDLBehaviour") {
+      it should behave like catalogDDLBehaviour(initGraph)
     }
 
     describe("ExpandIntoBehaviour") {

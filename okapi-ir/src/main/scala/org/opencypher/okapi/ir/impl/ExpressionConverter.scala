@@ -31,7 +31,7 @@ import org.neo4j.cypher.internal.v3_4.{functions, expressions => ast}
 import org.opencypher.okapi.api.types._
 import org.opencypher.okapi.impl.exception.NotImplementedException
 import org.opencypher.okapi.ir.api.expr._
-import org.opencypher.okapi.ir.api.{Label, PropertyKey, RelType}
+import org.opencypher.okapi.ir.api.{CypherQuery, Label, PropertyKey, RelType}
 import org.opencypher.okapi.ir.impl.FunctionUtils._
 
 import scala.language.implicitConversions
@@ -113,7 +113,10 @@ final class ExpressionConverter(implicit context: IRBuilderContext) {
 
     // Exists (rewritten Pattern Expressions)
     case org.opencypher.okapi.ir.impl.parse.rewriter.ExistsPattern(subquery, trueVar) =>
-      val innerModel = IRBuilder(subquery)(context)
+      val innerModel = IRBuilder(subquery)(context) match {
+        case cq: CypherQuery[Expr] => cq
+        case _ => throw new IllegalArgumentException("ExistsPattern only accepts SingleQuery")
+      }
       ExistsPatternExpr(
         Var(trueVar.name)(CTBoolean),
         innerModel
