@@ -35,7 +35,7 @@ import org.opencypher.spark.test.CAPSTestSuite
 import org.opencypher.spark.test.fixture.{MiniDFSClusterFixture, TeamDataFixture}
 import org.opencypher.spark.test.support.RecordMatchingTestSupport
 
-class HdfsCsvPropertyGraphDataSourceTest
+class HdfsCsvGraphDataSourceTest
   extends CAPSTestSuite with MiniDFSClusterFixture with RecordMatchingTestSupport with TeamDataFixture {
 
   protected override def dfsTestGraphPath = Some("/csv/sn")
@@ -43,7 +43,7 @@ class HdfsCsvPropertyGraphDataSourceTest
   test("hasGraph should return true for existing graph") {
     val testGraphName = GraphName("sn")
 
-    val dataSource = HdfsCsvPropertyGraphDataSource(
+    val dataSource = HdfsCsvGraphDataSource(
       hadoopConfig = clusterConfig,
       rootPath = "/csv")
 
@@ -53,7 +53,7 @@ class HdfsCsvPropertyGraphDataSourceTest
   test("hasGraph should return false for non-existing graph") {
     val testGraphName = GraphName("sn2")
 
-    val dataSource = HdfsCsvPropertyGraphDataSource(
+    val dataSource = HdfsCsvGraphDataSource(
       hadoopConfig = clusterConfig,
       rootPath = "/csv")
 
@@ -62,7 +62,7 @@ class HdfsCsvPropertyGraphDataSourceTest
 
   test("graphNames should return all names of stored graphs") {
     val testGraphName = GraphName("sn")
-    val source = HdfsCsvPropertyGraphDataSource(
+    val source = HdfsCsvGraphDataSource(
       hadoopConfig = clusterConfig,
       rootPath = "/csv")
 
@@ -72,7 +72,7 @@ class HdfsCsvPropertyGraphDataSourceTest
   test("Load graph from HDFS via DataSource") {
     val testGraphName = GraphName("sn")
 
-    val dataSource = HdfsCsvPropertyGraphDataSource(
+    val dataSource = HdfsCsvGraphDataSource(
       hadoopConfig = clusterConfig,
       rootPath = "/csv")
 
@@ -85,7 +85,7 @@ class HdfsCsvPropertyGraphDataSourceTest
     val testNamespace = Namespace("myHDFS")
     val testGraphName = GraphName("sn")
 
-    val dataSource = HdfsCsvPropertyGraphDataSource(
+    val dataSource = HdfsCsvGraphDataSource(
       hadoopConfig = sparkSession.sparkContext.hadoopConfiguration,
       rootPath = "/csv")
 
@@ -102,7 +102,7 @@ class HdfsCsvPropertyGraphDataSourceTest
     val paths = Set("hdfs:///foo/bar", "/foo/bar", "hdfs://hostname/foo/bar", "hdfs://hostname:123/foo/bar")
 
     paths.foreach { path =>
-      val uri = HdfsCsvPropertyGraphDataSource(sparkSession.sparkContext.hadoopConfiguration, path).graphPath(GraphName("myGraph"))
+      val uri = HdfsCsvGraphDataSource(sparkSession.sparkContext.hadoopConfiguration, path).graphPath(GraphName("myGraph"))
 
       uri should equal(URI.create("hdfs:///foo/bar/myGraph"))
     }

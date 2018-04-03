@@ -33,7 +33,7 @@ import org.apache.spark.sql.SparkSession
 import org.opencypher.okapi.api.graph.{CypherResult, GraphName}
 import org.opencypher.spark.api.CAPSSession
 import org.opencypher.spark.api.SparkConfiguration.MasterAddress
-import org.opencypher.spark.api.io.file.FileCsvPropertyGraphDataSource
+import org.opencypher.spark.api.io.file.FileCsvGraphDataSource
 
 // TODO: check if it still runs and move to caps-examples
 object CSVDemo {
@@ -49,7 +49,7 @@ object CSVDemo {
     println(s"Now executing query: $query")
 
     implicit val caps = CAPSSession.create()
-    val dataSource = new FileCsvPropertyGraphDataSource(rootPath = "/demo")
+    val dataSource = new FileCsvGraphDataSource(rootPath = "/demo")
     val graph = dataSource.graph(GraphName("ldbc_1"))
     val result = graph.cypher(query)
 
