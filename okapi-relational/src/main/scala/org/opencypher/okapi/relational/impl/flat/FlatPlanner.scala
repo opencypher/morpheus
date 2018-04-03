@@ -87,7 +87,7 @@ class FlatPlanner extends DirectCompilationStage[LogicalOperator, FlatOperator, 
       case logical.Start(graph, fields, _) =>
         producer.planStart(graph, fields)
 
-      case logical.UseGraph(graph, in, _) =>
+      case logical.FromGraph(graph, in, _) =>
         producer.planUseGraph(graph, process(in))
 
       case logical.BoundedVarLengthExpand(source, edgeList, target, direction, lower, upper, sourceOp, targetOp, _) =>

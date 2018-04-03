@@ -27,6 +27,7 @@
 package org.opencypher.spark.impl
 
 import org.apache.spark.storage.StorageLevel
+import org.opencypher.okapi.api.graph.QualifiedGraphName
 import org.opencypher.okapi.api.schema.Schema
 import org.opencypher.okapi.api.types.{CTNode, CTRelationship}
 import org.opencypher.okapi.ir.api.expr.Var
@@ -37,21 +38,21 @@ import org.opencypher.spark.schema.CAPSSchema._
 
 object CAPSUnionGraph {
   def apply(graphs: CAPSGraph*)(implicit session: CAPSSession): CAPSUnionGraph = {
-    CAPSUnionGraph(graphs.toList)
+    CAPSUnionGraph(graphs.map(g => g -> Map.empty[Int, Int]).toMap)
   }
 }
 
-final case class CAPSUnionGraph(
-  graphs: List[CAPSGraph],
-  retaggingsForGraphs: Map[CAPSGraph, Map[Int, Int]] = Map.empty.withDefaultValue(Map.empty)
-)
+final case class CAPSUnionGraph(graphs: Map[CAPSGraph, Map[Int, Int]])
   (implicit val session: CAPSSession) extends CAPSGraph {
-  require(graphs.size > 0, "Union requires at least one graph")
+
+  require(graphs.nonEmpty, "Union requires at least one graph")
+
+  override lazy val tags: Set[Int] = graphs.values.flatMap(_.values).toSet
 
   override def toString = s"CAPSUnionGraph(graphs=[${graphs.mkString(",")}])"
 
   override lazy val schema: CAPSSchema = {
-    graphs.map(g => g.schema.replaceTags(retaggingsForGraphs(g))).foldLeft(Schema.empty)(_ ++ _).asCaps
+    graphs.keys.map(g => g.schema).foldLeft(Schema.empty)(_ ++ _).asCaps
   }
 
   override def cache(): CAPSUnionGraph = map(_.cache())
@@ -64,17 +65,18 @@ final case class CAPSUnionGraph(
 
   override def unpersist(blocking: Boolean): CAPSUnionGraph = map(_.unpersist(blocking))
 
-  private def map(f: CAPSGraph => CAPSGraph): CAPSUnionGraph = CAPSUnionGraph(graphs.map(f), retaggingsForGraphs)
+  private def map(f: CAPSGraph => CAPSGraph): CAPSUnionGraph =
+    CAPSUnionGraph(graphs.keys.map(f).zip(graphs.keys).toMap.mapValues(graphs))
 
   override def nodes(name: String, nodeCypherType: CTNode): CAPSRecords = {
     val node = Var(name)(nodeCypherType)
     val targetHeader = RecordHeader.nodeFromSchema(node, schema)
-    val nodeScans: Seq[CAPSRecords] = graphs
+    val nodeScans = graphs.keys
       .filter(nodeCypherType.labels.isEmpty || _.schema.labels.intersect(nodeCypherType.labels).nonEmpty)
       .map {
         graph =>
           val nodeScan = graph.nodes(name, nodeCypherType)
-          nodeScan.retag(retaggingsForGraphs(graph))
+          nodeScan.retag(graphs(graph))
       }
 
     val alignedScans = nodeScans.map(_.alignWith(node, targetHeader))
@@ -88,11 +90,11 @@ final case class CAPSUnionGraph(
   override def relationships(name: String, relCypherType: CTRelationship): CAPSRecords = {
     val rel = Var(name)(relCypherType)
     val targetHeader = RecordHeader.relationshipFromSchema(rel, schema)
-    val relScans: Seq[CAPSRecords] = graphs
+    val relScans = graphs.keys
       .filter(relCypherType.types.isEmpty || _.schema.relationshipTypes.intersect(relCypherType.types).nonEmpty)
       .map { graph =>
         val relScan = graph.relationships(name, relCypherType)
-        relScan.retag(retaggingsForGraphs(graph))
+        relScan.retag(graphs(graph))
       }
 
     val alignedScans = relScans.map(_.alignWith(rel, targetHeader))

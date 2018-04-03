@@ -30,6 +30,7 @@ import org.opencypher.okapi.api.graph.{PropertyGraph, QualifiedGraphName}
 import org.opencypher.okapi.api.value.CypherValue._
 import org.opencypher.okapi.ir.api.block.SortItem
 import org.opencypher.okapi.ir.api.expr._
+import org.opencypher.okapi.ir.impl.QueryCatalog
 import org.opencypher.okapi.logical.impl._
 import org.opencypher.okapi.relational.api.physical.{PhysicalOperatorProducer, PhysicalPlannerContext}
 import org.opencypher.okapi.relational.impl.table._
@@ -40,16 +41,16 @@ import org.opencypher.spark.impl.{CAPSGraph, CAPSRecords}
 
 case class CAPSPhysicalPlannerContext(
   session: CAPSSession,
-  catalog: QualifiedGraphName => PropertyGraph,
+  catalog: QueryCatalog,
   inputRecords: CAPSRecords,
   parameters: CypherMap) extends PhysicalPlannerContext[CAPSRecords]
 
 object CAPSPhysicalPlannerContext {
   def from(
-    resolver: QualifiedGraphName => PropertyGraph,
+    catalog: QueryCatalog,
     inputRecords: CAPSRecords,
     parameters: CypherMap)(implicit session: CAPSSession): PhysicalPlannerContext[CAPSRecords] = {
-    CAPSPhysicalPlannerContext(session, resolver, inputRecords, parameters)
+    CAPSPhysicalPlannerContext(session, catalog, inputRecords, parameters)
   }
 }
 
@@ -76,8 +77,8 @@ final class CAPSPhysicalOperatorProducer(implicit caps: CAPSSession)
   override def planEmptyRecords(in: CAPSPhysicalOperator, header: RecordHeader): CAPSPhysicalOperator =
     operators.EmptyRecords(in, header)
 
-  override def planStart(in: Option[CAPSRecords], g: Option[QualifiedGraphName]): CAPSPhysicalOperator =
-    operators.Start(in, g.map(caps.graph(_).asCaps))
+  override def planStart(in: Option[CAPSRecords], qgn: QualifiedGraphName): CAPSPhysicalOperator =
+    operators.Start(in, qgn)
 
   // TODO: Make catalog usage consistent between Start/FROM GRAPH
   override def planUseGraph(in: CAPSPhysicalOperator, g: LogicalCatalogGraph): CAPSPhysicalOperator =
@@ -106,9 +107,8 @@ final class CAPSPhysicalOperatorProducer(implicit caps: CAPSSession)
 
   override def planConstructGraph(
     in: CAPSPhysicalOperator,
-    construct: LogicalPatternGraph,
-    retaggings: Map[QualifiedGraphName, Map[Int, Int]]): CAPSPhysicalOperator = {
-    operators.ConstructGraph(in, construct, retaggings)
+    construct: LogicalPatternGraph): CAPSPhysicalOperator = {
+    operators.ConstructGraph(in, construct)
   }
 
   override def planAggregate(in: CAPSPhysicalOperator, group: Set[Var], aggregations: Set[(Var, Aggregator)], header: RecordHeader): CAPSPhysicalOperator = operators.Aggregate(in, aggregations, group, header)
@@ -170,11 +170,8 @@ final class CAPSPhysicalOperatorProducer(implicit caps: CAPSSession)
   override def planLimit(in: CAPSPhysicalOperator, expr: Expr, header: RecordHeader): CAPSPhysicalOperator =
     operators.Limit(in, expr, header)
 
-  override def planGraphUnionAll(
-    graphs: List[CAPSPhysicalOperator],
-    retaggings: Map[CAPSPhysicalOperator, Map[Int, Int]] = Map.empty.withDefaultValue(Map.empty)):
+  override def planGraphUnionAll(graphs: List[CAPSPhysicalOperator], qgn: QualifiedGraphName):
     CAPSPhysicalOperator = {
-
-    operators.GraphUnionAll(graphs, retaggings)
+    operators.GraphUnionAll(graphs, qgn)
   }
 }

@@ -50,10 +50,10 @@ trait PhysicalOperatorProducer[P <: PhysicalOperator[R, G, C], R <: CypherRecord
     * Starts the query execution based on optional given records and an optional graph.
     *
     * @param in backend-specific records
-    * @param g  external (URI) reference to the input graph (e.g. the session graph)
+    * @param qgn qualified graph name of the input graph
     * @return start operator
     */
-  def planStart(in: Option[R] = None, g: Option[QualifiedGraphName] = None): P
+  def planStart(in: Option[R] = None, qgn: QualifiedGraphName): P
 
   /**
     * Scans the node set of the input graph and returns all nodes that match the given CTNode type.
@@ -163,10 +163,7 @@ trait PhysicalOperatorProducer[P <: PhysicalOperator[R, G, C], R <: CypherRecord
     * @param retaggings retaggings to apply to entities in the input table
     * @return project pattern graph operator
     */
-  def planConstructGraph(
-    in: P,
-    construct: LogicalPatternGraph,
-    retaggings: Map[QualifiedGraphName, Map[Int, Int]]): P
+  def planConstructGraph(in: P, construct: LogicalPatternGraph): P
 
   /**
     * Groups the underlying records by the specified expressions and evaluates the given aggregate functions.
@@ -335,8 +332,8 @@ trait PhysicalOperatorProducer[P <: PhysicalOperator[R, G, C], R <: CypherRecord
     * Performs a UNION ALL over graphs.
     *
     * @param graphs     graphs to perform UNION ALL over together
-    * @param retaggings for each graphs the retaggings that need to be applied to its scans
+    * @param qgn name for the union graph
     * @return union all operator
     */
-  def planGraphUnionAll(graphs: List[P], retaggings: Map[P, Map[Int, Int]] = Map.empty.withDefaultValue(Map.empty)): P
+  def planGraphUnionAll(graphs: List[P], qgn: QualifiedGraphName): P
 }

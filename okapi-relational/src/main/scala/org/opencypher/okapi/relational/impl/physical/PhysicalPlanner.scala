@@ -31,8 +31,6 @@ import org.opencypher.okapi.api.schema.Schema
 import org.opencypher.okapi.api.table.CypherRecords
 import org.opencypher.okapi.api.types.{CTBoolean, CTNode, CTRelationship}
 import org.opencypher.okapi.impl.exception.{IllegalArgumentException, NotImplementedException}
-import org.opencypher.okapi.impl.schema.TagSupport
-import org.opencypher.okapi.impl.schema.TagSupport._
 import org.opencypher.okapi.ir.api.block.SortItem
 import org.opencypher.okapi.ir.api.expr._
 import org.opencypher.okapi.ir.api.util.DirectCompilationStage
@@ -65,7 +63,7 @@ class PhysicalPlanner[P <: PhysicalOperator[R, G, C], R <: CypherRecords, G <: P
       case flat.Start(graph, _) =>
         graph match {
           case g: LogicalCatalogGraph =>
-            producer.planStart(Some(context.inputRecords), Some(g.qualifiedGraphName))
+            producer.planStart(Some(context.inputRecords), g.qualifiedGraphName)
           case _ => throw IllegalArgumentException("Start needs a catalog graph", graph)
         }
 
@@ -75,55 +73,14 @@ class PhysicalPlanner[P <: PhysicalOperator[R, G, C], R <: CypherRecords, G <: P
             producer.planUseGraph(process(in), g)
 
           case construct: LogicalPatternGraph =>
-            def catalogGraph(qgn: QualifiedGraphName) = producer.planStart(None, Some(qgn))
-
-            def computeRetaggings(graphs: Map[QualifiedGraphName, Schema with TagSupport]): Map[QualifiedGraphName, Map[Int, Int]] = {
-              val (result, _) = graphs.foldLeft((Map.empty[QualifiedGraphName, Map[Int, Int]], Set.empty[Int])) {
-                case ((graphReplacements, previousTags), (graphId, schema)) =>
-                  val rightTags = schema.tags
-
-                  val replacements = previousTags.replacementsFor(rightTags)
-                  val updatedRightTags = rightTags.replaceWith(replacements)
-
-                  val updatedPreviousTags = previousTags ++ updatedRightTags
-                  val updatedGraphReplacements = graphReplacements.updated(graphId, replacements)
-
-                  updatedGraphReplacements -> updatedPreviousTags
-              }
-              result
-            }
-
-            val varGraphs: Map[Var, QualifiedGraphName] = construct.clones.mapValues(_.cypherType.graph.get)
-            val onGraph: Set[QualifiedGraphName] = construct.onGraphs.toSet
-
-            val sourceGraphs = onGraph ++ varGraphs.values.toSet
-
-            if (sourceGraphs.isEmpty) {
-              producer.planConstructGraph(process(in), construct, Map.empty.withDefaultValue(Map.empty))
-            } else if (sourceGraphs.size == 1) {
-              val constructGraphOperator = producer.planConstructGraph(process(in), construct, Map.empty.withDefaultValue(Map.empty))
-              if (construct.onGraphs.isEmpty) {
-                constructGraphOperator
-              } else { // Can be at most one
-                val constructOnGraph = catalogGraph(construct.onGraphs.head)
-                producer.planGraphUnionAll(List(constructOnGraph, constructGraphOperator))
-              }
+            val constructGraphOperator = producer.planConstructGraph(process(in), construct)
+            if (construct.onGraphs.isEmpty) {
+              constructGraphOperator
             } else {
-              val schemasForGraphs: Map[QualifiedGraphName, Schema with TagSupport] = sourceGraphs.map(g => g -> context.schemaCatalog(g)).toMap
-              val retaggings: Map[QualifiedGraphName, Map[Int, Int]] = computeRetaggings(schemasForGraphs)
-              val constructGraphOperator = producer.planConstructGraph(process(in), construct, retaggings)
-              if (onGraph.isEmpty) { // No on-graphs, the retagged constructed graph is enough
-                constructGraphOperator
-              } else { // Multiple graphs, might need to do retagging
-                val constructOnGraph: P = {
-                  val retaggingsForGraphs = construct.onGraphs.map(qgn => catalogGraph(qgn) -> retaggings(qgn)).toMap
-                  // Create UNION graph for `onGraphs`
-                  val onGraphUnion = producer.planGraphUnionAll(retaggingsForGraphs.keys.toList, retaggingsForGraphs)
-                  onGraphUnion
-                }
-                // Another union between the on-graphs with the constructed pattern graph, no retaggings
-                producer.planGraphUnionAll(List(constructOnGraph, constructGraphOperator))
-              }
+              // Create UNION graph for `onGraphs` and the constructed graph
+              val onGraphPlans = construct.onGraphs.map(qgn => producer.planStart(None, qgn))
+              val onGraphUnion = producer.planGraphUnionAll(onGraphPlans :+ constructGraphOperator, construct.name)
+              onGraphUnion
             }
         }
 
@@ -176,10 +133,13 @@ class PhysicalPlanner[P <: PhysicalOperator[R, G, C], R <: CypherRecords, G <: P
 
         val startFrom = sourceOp.sourceGraph match {
           case e: LogicalCatalogGraph =>
-            producer.planStart(None, Some(e.qualifiedGraphName))
+            producer.planStart(None, e.qualifiedGraphName)
 
           case c: LogicalPatternGraph =>
-            producer.planConstructGraph(producer.planStart(Some(context.inputRecords)), c, Map.empty)
+            // TODO: Investigate a query such as
+            // CONSTRUCT ON foo, bar
+            // MATCH ()-[]->()
+            ???
         }
 
         val second = producer.planRelationshipScan(startFrom, op.sourceGraph, rel, relHeader)

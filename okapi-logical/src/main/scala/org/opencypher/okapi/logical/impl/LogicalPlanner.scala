@@ -60,7 +60,7 @@ class LogicalPlanner(producer: LogicalOperatorProducer)
         val fields = t.binds.orderedFields.map(f => Var(f.name)(f.cypherType))
         producer.planSelect(fields, plan)
       case g: GraphResultBlock[_] =>
-        producer.planReturnGraph(producer.planUseGraph(resolveGraph(g.graph, plan.fields), plan))
+        producer.planReturnGraph(producer.planFromGraph(resolveGraph(g.graph, plan.fields), plan))
     }
   }
 
@@ -115,7 +115,7 @@ class LogicalPlanner(producer: LogicalOperatorProducer)
           plan match {
             // If the inner plan is a start, simply rewrite it to start with the required graph
             case Start(_, fields, solved) => Start(lg, fields, solved)
-            case _ => planUseGraph(lg, plan)
+            case _ => planFromGraph(lg, plan)
           }
         }
         // this plans both pattern and filter for convenience -- TODO: split up
@@ -356,7 +356,7 @@ class LogicalPlanner(producer: LogicalOperatorProducer)
         }
         val newEntities: Set[ConstructedEntity] = entitiesToCreate.map(e => extractConstructedEntities(p.news, e, equivalences.get(e)))
 
-        LogicalPatternGraph(p.schema, clonedVarToInputVar, newEntities, p.sets, p.onGraphs)
+        LogicalPatternGraph(p.schema, clonedVarToInputVar, newEntities, p.sets, p.onGraphs, p.qualifiedGraphName)
 
       case g: IRCatalogGraph => LogicalCatalogGraph(g.qualifiedGraphName, g.schema)
     }
@@ -378,10 +378,10 @@ class LogicalPlanner(producer: LogicalOperatorProducer)
     producer.planStart(logicalGraph, context.inputRecordFields)
   }
 
-  private def planUseGraph(graph: LogicalGraph, prev: LogicalOperator)(
-    implicit context: LogicalPlannerContext): UseGraph = {
+  private def planFromGraph(graph: LogicalGraph, prev: LogicalOperator)(
+    implicit context: LogicalPlannerContext): FromGraph = {
 
-    producer.planUseGraph(graph, prev)
+    producer.planFromGraph(graph, prev)
   }
 
   private def planMatchPattern(plan: LogicalOperator, pattern: Pattern[Expr], where: Set[Expr], graph: IRGraph)(

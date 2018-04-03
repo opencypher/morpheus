@@ -36,7 +36,6 @@ import org.opencypher.okapi.api.graph.QualifiedGraphName
 import org.opencypher.okapi.api.schema.Schema
 import org.opencypher.okapi.api.types._
 import org.opencypher.okapi.impl.exception.{IllegalArgumentException, IllegalStateException, UnsupportedOperationException}
-import org.opencypher.okapi.impl.schema.TagSupport._
 import org.opencypher.okapi.ir.api._
 import org.opencypher.okapi.ir.api.block.{SortItem, _}
 import org.opencypher.okapi.ir.api.expr._
@@ -52,12 +51,16 @@ object IRBuilder extends CompilationStage[ast.Statement, CypherStatement[Expr], 
   override def process(input: ast.Statement)(implicit context: IRBuilderContext): Out =
     buildIR[IRBuilderStack[Option[CypherQuery[Expr]]]](input).run(context)
 
-  override def extract(output: Out): CypherStatement[Expr] =
+  def getContext(output: Out): IRBuilderContext = getTuple(output)._2
+
+  private def getTuple(output: Out) =
     output match {
       case Left(error) => throw IllegalStateException(s"Error during IR construction: $error")
-      case Right((Some(q), _)) => q
       case Right((None, _)) => throw IllegalStateException(s"Failed to construct IR")
+      case Right(t@(Some(q), ctx)) => q -> ctx
     }
+
+  override def extract(output: Out): CypherStatement[Expr] = getTuple(output)._1
 
   private def buildIR[R: _mayFail : _hasContext](s: ast.Statement): Eff[R, Option[CypherStatement[Expr]]] =
     s match {
@@ -116,11 +119,7 @@ object IRBuilder extends CompilationStage[ast.Statement, CypherStatement[Expr], 
           context <- get[R, IRBuilderContext]
           blocks <- {
             val irQgn = QualifiedGraphName(qgn.parts)
-            val ds = context.resolver(irQgn.namespace)
-            val schema = ds.schema(irQgn.graphName) match {
-              case Some(s) => s
-              case None => ds.graph(irQgn.graphName).schema
-            }
+            val schema = context.schemaFor(irQgn)
             val irGraph = IRCatalogGraph(irQgn, schema)
             val updatedContext = context.withWorkingGraph(irGraph)
             put[R, IRBuilderContext](updatedContext) >> pure[R, List[Block[Expr]]](List.empty)
@@ -193,7 +192,6 @@ object IRBuilder extends CompilationStage[ast.Statement, CypherStatement[Expr], 
           }
         } yield block
 
-      // TODO: Support merges, removes
       case ast.ConstructGraph(clones, news, on) =>
         for {
           context <- get[R, IRBuilderContext]
@@ -212,8 +210,8 @@ object IRBuilder extends CompilationStage[ast.Statement, CypherStatement[Expr], 
 
           refs <- {
             val onGraphs: List[QualifiedGraphName] = on.map(graph => QualifiedGraphName(graph.parts))
-            val schemaForOnGraphUnion = onGraphs.foldLeft(Schema.empty.withTags()) { case (agg, next) =>
-              agg union context.schemaFor(next).toTagged
+            val schemaForOnGraphUnion = onGraphs.foldLeft(Schema.empty) { case (agg, next) =>
+              agg ++ context.schemaFor(next)
             }
 
             // Computing single nodes/rels constructed by CLONE (MERGE)
@@ -225,8 +223,6 @@ object IRBuilder extends CompilationStage[ast.Statement, CypherStatement[Expr], 
             val newPattern = newPatterns.foldLeft(Pattern.empty[Expr])(_ ++ _)
             val cypherTypesInNewPattern = newPattern.fields.map(_.cypherType)
 
-
-            val newEntityTag = if(news.isEmpty) None else Some()
             val constructOperatorSchema = cypherTypesInNewPattern.foldLeft(cloneSchema) { case (agg, next) =>
               next match {
                 case n: CTNode =>
@@ -238,9 +234,7 @@ object IRBuilder extends CompilationStage[ast.Statement, CypherStatement[Expr], 
               }
             }
 
-
-
-            val patternGraphSchema = schemaForOnGraphUnion ++ constructOperatorSchema // No UNION to avoid retagging
+            val patternGraphSchema = schemaForOnGraphUnion ++ constructOperatorSchema
 
             val patternGraph = IRPatternGraph[Expr](
               qgn,
@@ -249,24 +243,17 @@ object IRBuilder extends CompilationStage[ast.Statement, CypherStatement[Expr], 
               newPattern,
               List.empty,
               onGraphs)
-            val updatedContext = context.withWorkingGraph(patternGraph)
+            val updatedContext = context.withWorkingGraph(patternGraph).registerSchema(qgn, patternGraphSchema)
             put[R, IRBuilderContext](updatedContext) >> pure[R, List[Block[Expr]]](List.empty)
           }
         } yield refs
 
-      case ast.ReturnGraph(qgnOpt) =>
+      case ast.ReturnGraph(None) =>
         for {
           context <- get[R, IRBuilderContext]
           refs <- {
             val after = context.blockRegistry.lastAdded.toList
-            val irGraph = qgnOpt match {
-              case None => context.workingGraph
-              case Some(astQgn) =>
-                val irQgn = QualifiedGraphName(astQgn.parts)
-                val pgds = context.resolver(irQgn.namespace)
-                IRCatalogGraph(irQgn, pgds.schema(irQgn.graphName).getOrElse(pgds.graph(irQgn.graphName).schema))
-            }
-            val returns = GraphResultBlock[Expr](after, irGraph)
+            val returns = GraphResultBlock[Expr](after, context.workingGraph)
             val updatedRegistry = context.blockRegistry.register(returns)
             put[R, IRBuilderContext](context.copy(blockRegistry = updatedRegistry)) >> pure[R, List[Block[Expr]]](List(returns))
           }

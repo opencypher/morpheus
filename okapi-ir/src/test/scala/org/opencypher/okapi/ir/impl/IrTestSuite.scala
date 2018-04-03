@@ -115,7 +115,7 @@ abstract class IrTestSuite extends BaseTestSuite with MockitoSugar {
           SemanticState.clean,
           testGraph()(schema),
           qgnGenerator,
-          _ => testGraphSource(graphsWithSchema :+ (testGraphName -> schema): _*)
+          Map.empty.withDefaultValue(testGraphSource(graphsWithSchema :+ (testGraphName -> schema): _*))
         ))
     }
 
@@ -131,7 +131,7 @@ abstract class IrTestSuite extends BaseTestSuite with MockitoSugar {
           SemanticState.clean,
           testGraph()(schema),
           qgnGenerator,
-          _ => testGraphSource(testGraphName -> schema)))
+          Map.empty.withDefaultValue(testGraphSource(testGraphName -> schema))))
     }
   }
 

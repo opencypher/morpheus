@@ -69,7 +69,7 @@ final case class Join(
 
     val joinedRecords = joinRecords(header, joinSlots)(left.records, right.records)
 
-    CAPSPhysicalResult(joinedRecords, left.graph)
+    CAPSPhysicalResult(joinedRecords, left.workingGraph, left.workingGraphName)
   }
 }
 
@@ -136,7 +136,7 @@ final case class Optional(lhs: CAPSPhysicalOperator, rhs: CAPSPhysicalOperator, 
     val joinedRecords =
       joinDFs(left.records.data, reducedRhsData, header, joinCols)("leftouter", deduplicate = true)(left.records.caps)
 
-    CAPSPhysicalResult(joinedRecords, left.graph)
+    CAPSPhysicalResult(joinedRecords, left.workingGraph, left.workingGraphName)
   }
 }
 
@@ -213,7 +213,7 @@ final case class ExistsSubQuery(
         targetFieldColumnName,
         functions.when(functions.isnull(targetFieldColumn), false).otherwise(true))
 
-    CAPSPhysicalResult(CAPSRecords.verifyAndCreate(header, updatedJoinedRecords)(left.records.caps), left.graph)
+    CAPSPhysicalResult(CAPSRecords.verifyAndCreate(header, updatedJoinedRecords)(left.records.caps), left.workingGraph, left.workingGraphName)
   }
 }
 
@@ -237,7 +237,7 @@ final case class TabularUnionAll(lhs: CAPSPhysicalOperator, rhs: CAPSPhysicalOpe
     val unionedData = leftData.union(rightData)
     val records = CAPSRecords.verifyAndCreate(header, unionedData)(left.records.caps)
 
-    CAPSPhysicalResult(records, left.graph)
+    CAPSPhysicalResult(records, left.workingGraph, left.workingGraphName)
   }
 }
 
@@ -252,6 +252,6 @@ final case class CartesianProduct(lhs: CAPSPhysicalOperator, rhs: CAPSPhysicalOp
     val newData = data.crossJoin(otherData)
 
     val records = CAPSRecords.verifyAndCreate(header, newData)(left.records.caps)
-    CAPSPhysicalResult(records, left.graph)
+    CAPSPhysicalResult(records, left.workingGraph, left.workingGraphName)
   }
 }

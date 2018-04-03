@@ -87,13 +87,13 @@ final case class NodeScan(in: CAPSPhysicalOperator, v: Var, header: RecordHeader
 final case class RelationshipScan(in: CAPSPhysicalOperator, v: Var, header: RecordHeader) extends UnaryPhysicalOperator {
 
   override def executeUnary(prev: CAPSPhysicalResult)(implicit context: CAPSRuntimeContext): CAPSPhysicalResult = {
-    val graph = prev.graph
+    val graph = prev.workingGraph
     val records = v.cypherType match {
       case r: CTRelationship => graph.relationships(v.name, r)
       case other => throw IllegalArgumentException("Relationship variable", other)
     }
     assert(header == records.header)
-    CAPSPhysicalResult(records, graph)
+    CAPSPhysicalResult(records, graph, v.cypherType.graph.get)
   }
 }
 
@@ -194,10 +194,11 @@ final case class Filter(in: CAPSPhysicalOperator, expr: Expr, header: RecordHead
   }
 }
 
+import org.opencypher.spark.impl.util.TagSupport._
+
 final case class ConstructGraph(
   in: CAPSPhysicalOperator,
-  construct: LogicalPatternGraph,
-  retaggings: Map[QualifiedGraphName, Map[Int, Int]]
+  construct: LogicalPatternGraph
 )
   extends UnaryPhysicalOperator {
 
@@ -208,42 +209,54 @@ final case class ConstructGraph(
 
   override def header: RecordHeader = RecordHeader.empty
 
+  private def computeRetaggings(graphs: Map[QualifiedGraphName, Set[Int]]): Map[QualifiedGraphName, Map[Int, Int]] = {
+    val (result, _) = graphs.foldLeft((Map.empty[QualifiedGraphName, Map[Int, Int]], Set.empty[Int])) {
+      case ((graphReplacements, previousTags), (graphId, rightTags)) =>
+
+        val replacements = previousTags.replacementsFor(rightTags)
+        val updatedRightTags = rightTags.replaceWith(replacements)
+
+        val updatedPreviousTags = previousTags ++ updatedRightTags
+        val updatedGraphReplacements = graphReplacements.updated(graphId, replacements)
+
+        updatedGraphReplacements -> updatedPreviousTags
+    }
+    result
+  }
+
+  private def pickFreeTag(tagStrategy: Map[QualifiedGraphName, Map[Int, Int]]): Int = {
+    val usedTags = tagStrategy.values.flatMap(_.values).toSet
+    if (usedTags.isEmpty) 0
+    else usedTags.max + 1
+  }
+
   override def executeUnary(prev: CAPSPhysicalResult)(implicit context: CAPSRuntimeContext): CAPSPhysicalResult = {
     implicit val session: CAPSSession = prev.records.caps
 
-    val LogicalPatternGraph(schema, clonedVarsToInputVars, newEntities, sets, onGraphs) = construct
-    val initialSchema = schema.asCaps
+    val LogicalPatternGraph(schema, clonedVarsToInputVars, newEntities, _, onGraphs, name) = construct
+
+    val uniqueGraphNamesClonedFrom: Set[QualifiedGraphName] = clonedVarsToInputVars.values.map(_.cypherType.graph.get).toSet
+    val tagsForGraph: Map[QualifiedGraphName, Set[Int]] = uniqueGraphNamesClonedFrom.map(qgn => qgn -> context.resolve(qgn).get.tags).toMap
+    val tagStrategy = computeRetaggings(tagsForGraph)
 
     // Apply aliases in CLONE to input table in order to create the base table, on which CONSTRUCT happens
     val aliasClones = clonedVarsToInputVars.filter { case (alias, original) => alias != original }
     val baseTable = prev.records.addAliases(aliasClones)
 
-
     val retaggedBaseTable = aliasClones.foldLeft(baseTable) { case (df, clone) =>
       // TODO: Unsafe get
-      df.retagVariable(clone._1, retaggings(clone._2.cypherType.graph.get))
+      df.retagVariable(clone._1, tagStrategy(clone._2.cypherType.graph.get))
     }
-
-//    // TODO: Move to CAPSRecords, `retagVariable(v: Var, retaggings: Map[Int, Int])`
-//    val slotsToRetag: Map[RecordSlot, QualifiedGraphName] = clonedVarsToInputVars.values.map { v =>
-//      val qgn = v.cypherType.graph.getOrElse(throw IllegalStateException(s"Variable $v does not have its working graph recorded in its type"))
-//      // TODO: Also remap start/end for relationships.
-//      baseTable.header.slotFor(v) -> qgn
-//    }.toMap
-//    val retaggedBaseTableData = slotsToRetag.foldLeft(baseTable.data) { case (updatedTable, (slot, qgn)) =>
-//      updatedTable.safeReplaceTags(ColumnName.of(slot), retaggings(qgn))
-//    }
-//    val retaggedBaseTable = CAPSRecords.verifyAndCreate(baseTable.header, retaggedBaseTableData)
 
     // Construct NEW entities
     val (newEntityTags, tableWithConstructedEntities) = {
       if (newEntities.isEmpty) {
         Set.empty[Int] -> retaggedBaseTable
       } else {
-        val newEntityTag = if (initialSchema.tags.isEmpty) 0 else initialSchema.tags.max + 1
+        val newEntityTag = pickFreeTag(tagStrategy)
         val entityTable = createEntities(newEntities, retaggedBaseTable, newEntityTag)
-        val entityTableWithProperties = setProperties(sets, entityTable)
-        Set(newEntityTag) -> entityTableWithProperties
+//        val entityTableWithProperties = setProperties(sets, entityTable)
+        Set(newEntityTag) -> entityTable
       }
     }
 
@@ -253,10 +266,13 @@ final case class ConstructGraph(
     val varsToRemoveFromTable = allInputVars -- originalVarsToKeep
     val patternGraphTable = tableWithConstructedEntities.removeVars(varsToRemoveFromTable)
 
-    // Compute the schema by adding the new entity tags and construct the pattern graph
-    val patternGraphSchema = initialSchema.withTags(initialSchema.tags ++ newEntityTags).asCaps
+    val tagsUsed = tagStrategy.foldLeft(newEntityTags) {
+      case (tags, (qgn, remapping)) =>
+        val remappedTags = tagsForGraph(qgn).map(remapping)
+        tags ++ remappedTags
+    }
 
-    CAPSPhysicalResult(CAPSRecords.unit(), CAPSGraph.create(patternGraphTable, patternGraphSchema))
+    CAPSPhysicalResult(CAPSRecords.unit(), CAPSGraph.create(patternGraphTable, schema.asCaps, tagsUsed), name, tagStrategy)
   }
 
   private def setProperties(setItems: List[SetPropertyItem[Expr]], constructedTable: CAPSRecords)(implicit context: CAPSRuntimeContext): CAPSRecords = {
@@ -441,7 +457,7 @@ final case class RemoveAliases(
 
 final case class ReturnGraph(in: CAPSPhysicalOperator) extends UnaryPhysicalOperator {
   override def executeUnary(prev: CAPSPhysicalResult)(implicit context: CAPSRuntimeContext): CAPSPhysicalResult = {
-    CAPSPhysicalResult(CAPSRecords.empty(header)(prev.records.caps), prev.graph)
+    CAPSPhysicalResult(CAPSRecords.empty(header)(prev.records.caps), prev.workingGraph, prev.workingGraphName)
   }
 
   override def header: RecordHeader = RecordHeader.empty
@@ -690,7 +706,7 @@ final case class EmptyRecords(in: CAPSPhysicalOperator, header: RecordHeader)(im
 final case class UseGraph(in: CAPSPhysicalOperator, graph: LogicalCatalogGraph) extends UnaryPhysicalOperator with InheritedHeader {
 
   override def executeUnary(prev: CAPSPhysicalResult)(implicit context: CAPSRuntimeContext): CAPSPhysicalResult = {
-    CAPSPhysicalResult(prev.records, resolve(graph.qualifiedGraphName))
+    CAPSPhysicalResult(prev.records, resolve(graph.qualifiedGraphName), graph.qualifiedGraphName)
   }
 
 }

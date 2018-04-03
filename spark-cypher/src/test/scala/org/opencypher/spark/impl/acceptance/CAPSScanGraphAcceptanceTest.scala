@@ -27,20 +27,16 @@
 package org.opencypher.spark.impl.acceptance
 
 import org.opencypher.okapi.api.graph.GraphName
-import org.opencypher.okapi.api.value.{CAPSRelationship, CypherValue}
-import org.opencypher.okapi.ir.test.support.Bag
-import org.opencypher.spark.test.support.creation.caps.{CAPSScanGraphFactory, CAPSTestGraphFactory}
-import org.opencypher.okapi.api.graph.GraphName
-import org.opencypher.okapi.api.schema.{PropertyKeys, Schema}
-import org.opencypher.okapi.api.types.{CTInteger, CTString}
-import org.opencypher.okapi.api.value.{CAPSRelationship, CypherValue}
+import org.opencypher.okapi.api.schema.Schema
+import org.opencypher.okapi.api.value.{CAPSNode, CypherValue}
 import org.opencypher.okapi.api.value.CypherValue.CypherMap
-import org.opencypher.okapi.impl.schema.TagSupport._
 import org.opencypher.okapi.ir.test.support.Bag
 import org.opencypher.okapi.ir.test.support.Bag._
+import org.opencypher.okapi.logical.api.configuration.LogicalConfiguration.PrintLogicalPlan
 import org.opencypher.spark.impl.CAPSConverters._
-import org.opencypher.spark.impl.CAPSGraph
 import org.opencypher.spark.schema.CAPSSchema._
+import org.opencypher.spark.test.support.creation.caps.{CAPSScanGraphFactory, CAPSTestGraphFactory}
+import org.opencypher.spark.impl.DataFrameOps._
 
 class CAPSScanGraphAcceptanceTest extends AcceptanceTest {
   override def capsGraphFactory: CAPSTestGraphFactory = CAPSScanGraphFactory
@@ -56,6 +52,96 @@ class CAPSScanGraphAcceptanceTest extends AcceptanceTest {
        |CREATE (max:Person {name: 'Max'})
        |CREATE (max)-[:HAS_SIMILAR_NAME]->(mats)
     """.stripMargin)
+
+  it("very simple") {
+    val query =
+      """
+        |CONSTRUCT
+        |  NEW (a)
+        |RETURN GRAPH
+      """.stripMargin
+
+    val graph = caps.cypher(query).getGraph
+
+    graph.schema should equal(Schema.empty.withNodePropertyKeys(Set.empty[String]).asCaps)
+    graph.asCaps.tags should equal(Set(0))
+    graph.nodes("n").collect.toBag should equal(Bag(
+      CypherMap("n" -> CAPSNode(0))
+    ))
+  }
+
+  it("construct match construct") {
+    caps.store(GraphName("g1"), testGraphRels)
+    val query =
+      """
+        |FROM GRAPH g1
+        |MATCH (a)
+        |CONSTRUCT // generated qgn
+        |  CLONE a
+        |MATCH (b)
+        |CONSTRUCT
+        |  ON g1
+        |  CLONE b
+        |RETURN GRAPH
+      """.stripMargin
+
+    PrintLogicalPlan.set
+
+    val graph = caps.cypher(query).getGraph
+
+    graph.schema should equal(testGraphRels.schema)
+    graph.asCaps.tags should equal(Set(0, 1))
+    graph.nodes("n").collect.toBag should equal(Bag(
+      CypherMap("n" -> CAPSNode(0, Set("Person"), CypherMap("name" -> "Mats"))),
+      CypherMap("n" -> CAPSNode(1, Set("Person"), CypherMap("name" -> "Max"))),
+      CypherMap("n" -> CAPSNode(0L.setTag(1), Set("Person"), CypherMap("name" -> "Mats"))),
+      CypherMap("n" -> CAPSNode(1L.setTag(1), Set("Person"), CypherMap("name" -> "Max")))
+    ))
+  }
+
+  it("very simple 2") {
+    caps.store(GraphName("g1"), testGraph1)
+    caps.store(GraphName("g2"), testGraph2)
+    val query =
+      """
+        |CONSTRUCT ON g1, g2
+        |RETURN GRAPH
+      """.stripMargin
+
+    val graph = caps.cypher(query).getGraph
+
+    graph.schema should equal((testGraph1.schema ++ testGraph2.schema).asCaps)
+    graph.asCaps.tags should equal(Set(0, 1))
+    graph.nodes("n").collect.toBag should equal(Bag(
+      CypherMap("n" -> CAPSNode(0, Set("Person"), CypherMap("name" -> "Mats"))),
+      CypherMap("n" -> CAPSNode(0L.setTag(1), Set("Person"), CypherMap("name" -> "Phil")))
+    ))
+  }
+
+  it("somewhat complex") {
+    caps.store(GraphName("g1"), testGraph1)
+    caps.store(GraphName("g2"), testGraph2)
+    val query =
+      """
+        |FROM GRAPH g1
+        |MATCH (a:Person)
+        |FROM GRAPH g2
+        |MATCH (b:Person)
+        |CONSTRUCT
+        |  ON g2
+        |  CLONE a, b
+        |RETURN GRAPH
+      """.stripMargin
+
+    val graph = caps.cypher(query).getGraph
+
+    graph.schema should equal(testGraph1.schema)
+    graph.asCaps.tags should equal(Set(0, 1))
+    graph.nodes("n").collect.toBag should equal(Bag(
+      CypherMap("n" -> CAPSNode(0, Set("Person"), CypherMap("name" -> "Mats"))),
+      CypherMap("n" -> CAPSNode(0L.setTag(1), Set("Person"), CypherMap("name" -> "Phil")))
+    ))
+  }
 
   it("CONSTRUCTS ON a relationship") {
     caps.store(GraphName("testGraphRels1"), testGraphRels)

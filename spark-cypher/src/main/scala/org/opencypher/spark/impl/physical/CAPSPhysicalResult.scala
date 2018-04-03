@@ -26,10 +26,16 @@
  */
 package org.opencypher.spark.impl.physical
 
+import org.opencypher.okapi.api.graph.QualifiedGraphName
 import org.opencypher.okapi.relational.api.physical.PhysicalResult
 import org.opencypher.spark.impl.{CAPSGraph, CAPSRecords}
 
-case class CAPSPhysicalResult(records: CAPSRecords, graph: CAPSGraph)
+case class CAPSPhysicalResult(
+  records: CAPSRecords,
+  workingGraph: CAPSGraph,
+  workingGraphName: QualifiedGraphName,
+  tagStrategy: Map[QualifiedGraphName, Map[Int, Int]] = Map.empty
+)
   extends PhysicalResult[CAPSRecords, CAPSGraph] {
 
   override def mapRecordsWithDetails(f: CAPSRecords => CAPSRecords): CAPSPhysicalResult =

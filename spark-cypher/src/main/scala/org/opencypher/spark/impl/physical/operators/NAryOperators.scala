@@ -26,26 +26,42 @@
  */
 package org.opencypher.spark.impl.physical.operators
 
+import org.opencypher.okapi.api.graph.QualifiedGraphName
 import org.opencypher.spark.impl.physical.{CAPSPhysicalResult, CAPSRuntimeContext}
 import org.opencypher.spark.impl.{CAPSGraph, CAPSRecords, CAPSUnionGraph}
+import org.opencypher.spark.impl.util.TagSupport._
 
-/**
-  *
-  * @param inputs
-  * @param retaggings
-  */
-final case class GraphUnionAll(
-  inputs: List[CAPSPhysicalOperator],
-  retaggings: Map[CAPSPhysicalOperator, Map[Int, Int]] = Map.empty.withDefaultValue(Map.empty))
+final case class GraphUnionAll(inputs: List[CAPSPhysicalOperator], qgn: QualifiedGraphName)
   extends CAPSPhysicalOperator with InheritedHeader {
   require(inputs.nonEmpty, "GraphUnionAll requires at least one input")
+
+  private def computeRetaggings(graphs: Map[QualifiedGraphName, Set[Int]]): Map[QualifiedGraphName, Map[Int, Int]] = {
+    val (result, _) = graphs.foldLeft((Map.empty[QualifiedGraphName, Map[Int, Int]], Set.empty[Int])) {
+      case ((graphReplacements, previousTags), (graphId, rightTags)) =>
+
+        val replacements = previousTags.replacementsFor(rightTags)
+        val updatedRightTags = rightTags.replaceWith(replacements)
+
+        val updatedPreviousTags = previousTags ++ updatedRightTags
+        val updatedGraphReplacements = graphReplacements.updated(graphId, replacements)
+
+        updatedGraphReplacements -> updatedPreviousTags
+    }
+    result
+  }
 
   override def execute(implicit context: CAPSRuntimeContext): CAPSPhysicalResult = {
     val inputResults = inputs.map(_.execute)
     implicit val caps = inputResults.head.records.caps
-    val inputGraphs = inputResults.map(_.graph)
-    val retaggingsForGraphs = inputGraphs.zip(inputs.map(retaggings)).toMap
-    val unionGraph = CAPSUnionGraph(inputGraphs, retaggingsForGraphs)
-    CAPSPhysicalResult(CAPSRecords.unit(), unionGraph)
+
+    val inputGraphs: Map[QualifiedGraphName, CAPSGraph] = inputResults.map(r => r.workingGraphName -> r.workingGraph).toMap
+    val graphTags: Map[QualifiedGraphName, Set[Int]] = inputGraphs.mapValues(_.tags)
+    val tagStrategy: Map[QualifiedGraphName, Map[Int, Int]] = computeRetaggings(graphTags)
+
+    val graphWithTagStrategy: Map[CAPSGraph, Map[Int, Int]] = inputResults
+      .map(r => r.workingGraph -> tagStrategy(r.workingGraphName)).toMap
+    val unionGraph = CAPSUnionGraph(graphWithTagStrategy)
+
+    CAPSPhysicalResult(CAPSRecords.unit(), unionGraph, qgn, Map.empty)
   }
 }

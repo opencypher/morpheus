@@ -36,7 +36,8 @@ import org.opencypher.spark.api.CAPSSession
 import org.opencypher.spark.api.io.{CAPSEntityTable, CAPSNodeTable, CAPSRelationshipTable}
 import org.opencypher.spark.schema.CAPSSchema
 
-class CAPSScanGraph(val scans: Seq[CAPSEntityTable], val schema: CAPSSchema)(implicit val session: CAPSSession)
+class CAPSScanGraph(val scans: Seq[CAPSEntityTable], val schema: CAPSSchema, val tags: Set[Int])
+  (implicit val session: CAPSSession)
   extends CAPSGraph {
 
   // TODO: Normalize (remove redundant columns for implied Schema information, clear aliases?)

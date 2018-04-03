@@ -128,8 +128,8 @@ class LogicalOperatorProducer {
     ReturnGraph(prev, prev.solved)
   }
 
-  def planUseGraph(graph: LogicalGraph, prev: LogicalOperator): UseGraph = {
-    UseGraph(graph, prev, prev.solved)
+  def planFromGraph(graph: LogicalGraph, prev: LogicalOperator): FromGraph = {
+    FromGraph(graph, prev, prev.solved)
   }
 
   def planStart(graph: LogicalGraph, fields: Set[Var]): Start = {

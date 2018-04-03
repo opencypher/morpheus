@@ -47,7 +47,7 @@ object CAPSPatternGraphFactory extends CAPSTestGraphFactory {
 
     val baseTable = CAPSRecords.verifyAndCreate(nodes.header ++ rels.header, baseTableData)
 
-    new CAPSPatternGraph(baseTable, scanGraph.schema)
+    new CAPSPatternGraph(baseTable, scanGraph.schema, Set(0))
   }
 
   override def name: String = "CAPSPatternGraphFactory"

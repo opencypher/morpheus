@@ -65,7 +65,8 @@ final case class LogicalPatternGraph(
   clones: Map[Var, Var],
   newEntities: Set[ConstructedEntity],
   sets: List[SetPropertyItem[Expr]],
-  onGraphs: List[QualifiedGraphName]
+  onGraphs: List[QualifiedGraphName],
+  name: QualifiedGraphName
 ) extends LogicalGraph {
 
   override protected def args: String = {
@@ -266,7 +267,7 @@ final case class ExistsSubQuery(
   override val fields: Set[Var] = lhs.fields + expr.targetField
 }
 
-final case class UseGraph(
+final case class FromGraph(
     override val graph: LogicalGraph,
     in: LogicalOperator,
     solved: SolvedQueryModel)

@@ -42,7 +42,9 @@ import org.opencypher.spark.schema.CAPSSchema
   */
 class CAPSPatternGraph(
   private[spark] val baseTable: CAPSRecords,
-  val schema: CAPSSchema)(implicit val session: CAPSSession)
+  override val schema: CAPSSchema,
+  override val tags: Set[Int]
+)(implicit val session: CAPSSession)
     extends CAPSGraph {
 
   private val header = baseTable.header
@@ -60,7 +62,7 @@ class CAPSPatternGraph(
   override def unpersist(blocking: Boolean): CAPSPatternGraph = map(_.unpersist(blocking))
 
   private def map(f: CAPSRecords => CAPSRecords) =
-    new CAPSPatternGraph(f(baseTable), schema)
+    new CAPSPatternGraph(f(baseTable), schema, tags)
 
   override def nodes(name: String, nodeCypherType: CTNode): CAPSRecords = {
     val targetNode = Var(name)(nodeCypherType)

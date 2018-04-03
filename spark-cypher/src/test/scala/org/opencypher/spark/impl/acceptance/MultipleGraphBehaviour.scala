@@ -31,7 +31,6 @@ import org.opencypher.okapi.api.schema.{PropertyKeys, Schema}
 import org.opencypher.okapi.api.types.{CTInteger, CTString}
 import org.opencypher.okapi.api.value.{CAPSRelationship, CypherValue}
 import org.opencypher.okapi.api.value.CypherValue.CypherMap
-import org.opencypher.okapi.impl.schema.TagSupport._
 import org.opencypher.okapi.ir.test.support.Bag
 import org.opencypher.okapi.ir.test.support.Bag._
 import org.opencypher.spark.impl.CAPSConverters._
@@ -207,7 +206,7 @@ trait MultipleGraphBehaviour {
 
       result.getRecords.toMaps shouldBe empty
       result.getGraph.schema.labels should equal(Set("A"))
-      result.getGraph.schema should equal(Schema.empty.withNodePropertyKeys("A")("name" -> CTString).withTags(0, 1).asCaps)
+      result.getGraph.schema should equal(Schema.empty.withNodePropertyKeys("A")("name" -> CTString).asCaps)
       result.getGraph.cypher("MATCH (a:A) RETURN a.name").getRecords.iterator.toBag should equal(Bag(
         CypherMap("a.name" -> "Mats")
       ))
@@ -224,7 +223,7 @@ trait MultipleGraphBehaviour {
 
       result.getRecords.toMaps shouldBe empty
       result.getGraph.schema.labels should equal(Set("A"))
-      result.getGraph.schema should equal(Schema.empty.withNodePropertyKeys("A")("name" -> CTString).withTags(0, 1).asCaps)
+      result.getGraph.schema should equal(Schema.empty.withNodePropertyKeys("A")("name" -> CTString).asCaps)
       result.getGraph.cypher("MATCH (a:A) RETURN a.name").getRecords.iterator.toBag should equal(Bag(
         CypherMap("a.name" -> "Donald")
       ))
@@ -247,7 +246,6 @@ trait MultipleGraphBehaviour {
       result.getGraph.schema should equal(
         Schema.empty
           .withNodePropertyKeys(Set("A", "B"), PropertyKeys("name" -> CTString, "age" -> CTInteger))
-            .withTags(0, 1)
           .asCaps)
       result.getGraph.cypher("MATCH (a:A:B) RETURN a.name").getRecords.iterator.toBag should equal(Bag(
         CypherMap("a.name" -> "Donald")
@@ -268,7 +266,6 @@ trait MultipleGraphBehaviour {
       result.getGraph.schema should equal(
         Schema.empty
           .withNodePropertyKeys(Set("Person"), PropertyKeys("name" -> CTString))
-          .withTags(0)
           .asCaps)
       result.getGraph.cypher("MATCH (a:Person) RETURN a.name").getRecords.iterator.toBag should equal(Bag(
         CypherMap("a.name" -> "Mats")
@@ -288,7 +285,7 @@ trait MultipleGraphBehaviour {
       result.getGraph.schema.relationshipTypes should equal(Set("FOO"))
       result.getGraph.schema should equal(Schema.empty
         .withNodePropertyKeys()()
-        .withRelationshipPropertyKeys("FOO", PropertyKeys("val" -> CTInteger)).withTags(0, 1).asCaps)
+        .withRelationshipPropertyKeys("FOO", PropertyKeys("val" -> CTInteger)).asCaps)
       result.getGraph.cypher("MATCH ()-[r]->() RETURN r.val").getRecords.iterator.toBag should equal(Bag(
         CypherMap("r.val" -> 42)
       ))
@@ -312,7 +309,6 @@ trait MultipleGraphBehaviour {
       result.getGraph.schema should equal(Schema.empty
         .withNodePropertyKeys()()
         .withRelationshipPropertyKeys("FOO", PropertyKeys("val" -> CTInteger, "name" -> CTString))
-        .withTags(0, 1)
         .asCaps)
       result.getGraph.cypher("MATCH ()-[r]->() RETURN r.val, r.name").getRecords.iterator.toBag should equal(Bag(
         CypherMap("r.val" -> 42, "r.name" -> "Donald")
@@ -401,7 +397,6 @@ trait MultipleGraphBehaviour {
         .withNodePropertyKeys("A")()
         .withNodePropertyKeys("B")()
         .withRelationshipPropertyKeys("KNOWS")()
-          .withTags(0, 1)
         .asCaps)
       result.getGraph.cypher("MATCH ()-[r]->() RETURN type(r)").getRecords.iterator.toBag should equal(Bag(
         CypherMap("type(r)" -> "KNOWS")
@@ -420,7 +415,6 @@ trait MultipleGraphBehaviour {
       result.schema should equal(testGraph1.schema)
       result.nodes("n").toMaps should equal(testGraph1.nodes("n").toMaps)
       result.relationships("r").toMaps should equal(testGraph1.relationships("r").toMaps)
-      result.schema.toTagged.tags should equal(testGraph1.schema.tags)
     }
 
     it("CONSTRUCTS ON two graphs") {
@@ -433,10 +427,9 @@ trait MultipleGraphBehaviour {
 
       val result = testGraph2.cypher(query).getGraph
 
-      result.schema should equal(testGraph1.schema.union(testGraph2.schema))
+      result.schema should equal(testGraph1.schema ++ testGraph2.schema)
       result.nodes("n").toMaps should equal(testGraph1.unionAll(testGraph2).nodes("n").toMaps)
       result.relationships("r").toMaps should equal(testGraph1.unionAll(testGraph2).relationships("r").toMaps)
-      result.schema.toTagged.tags should equal(Set(0, 1))
     }
 
     it("CONSTRUCTS ON two graphs and adds a relationship") {
@@ -454,12 +447,11 @@ trait MultipleGraphBehaviour {
 
       val result = caps.cypher(query).getGraph
 
-      result.schema should equal(testGraph1.schema.union(testGraph2.schema).withRelationshipPropertyKeys("KNOWS")().withTags(0, 1, 2).asCaps)
+      result.schema should equal((testGraph1.schema ++ testGraph2.schema).withRelationshipPropertyKeys("KNOWS")())
       result.nodes("n").toMaps should equal(testGraph1.unionAll(testGraph2).nodes("n").toMaps)
       result.relationships("r").toMapsWithCollectedEntities should equal(Bag(
         CypherMap("r" -> CAPSRelationship(2251799813685248L, 0L, 1125899906842624L, "KNOWS")))
       )
-      result.schema.toTagged.tags should equal(Set(0, 1, 2))
     }
 
     //TODO: Copy all properties

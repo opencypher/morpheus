@@ -93,6 +93,9 @@ final case class IRBuilderContext(
 
   def withWorkingGraph(graph: IRGraph): IRBuilderContext =
     copy(workingGraph = graph)
+
+  def registerSchema(qgn: QualifiedGraphName, schema: Schema): IRBuilderContext =
+    copy(queryCatalog = queryCatalog.withSchema(qgn, schema))
 }
 
 object IRBuilderContext {

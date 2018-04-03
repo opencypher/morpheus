@@ -95,7 +95,7 @@ object CAPSScanGraphFactory extends CAPSTestGraphFactory {
         .withPropertyKeys(propKeys.keys.toSeq: _*), records)
     }
 
-    new CAPSScanGraph(nodeScans.toSeq ++ relScans, schema)
+    new CAPSScanGraph(nodeScans.toSeq ++ relScans, schema, Set(0))
   }
 
   override def name: String = "CAPSScanGraphFactory"

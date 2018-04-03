@@ -42,16 +42,20 @@ import org.opencypher.spark.schema.CAPSSchema._
 
 trait CAPSGraph extends PropertyGraph with GraphOperations with Serializable {
 
+  def tags: Set[Int]
+
   implicit def session: CAPSSession
 
   override def nodes(name: String, nodeCypherType: CTNode = CTNode): CAPSRecords
 
   override def relationships(name: String, relCypherType: CTRelationship = CTRelationship): CAPSRecords
 
-  def union(other: PropertyGraph): CAPSGraph = CAPSUnionGraph(List(this, other.asCaps))
-
   // TODO: Flatten UnionGraph trees that have tag updates enabled
-  override def unionAll(other: PropertyGraph): CAPSGraph = CAPSUnionGraph(this, other.asCaps)
+  override def unionAll(other: PropertyGraph): CAPSGraph = {
+    // TODO: Compute retagging here
+
+    CAPSUnionGraph(this, other.asCaps)
+  }
 
   override def schema: CAPSSchema
 
@@ -110,17 +114,19 @@ object CAPSGraph {
       override def unpersist(): CAPSGraph = this
 
       override def unpersist(blocking: Boolean): CAPSGraph = this
+
+      override def tags: Set[Int] = Set.empty
     }
 
   def create(nodeTable: CAPSNodeTable, entityTables: CAPSEntityTable*)(implicit caps: CAPSSession): CAPSGraph = {
     val allTables = nodeTable +: entityTables
     val schema = allTables.map(_.schema).reduce[Schema](_ ++ _).asCaps
-    new CAPSScanGraph(allTables, schema)
+    new CAPSScanGraph(allTables, schema, Set(0))
   }
 
-  def create(records: CypherRecords, schema: CAPSSchema)(implicit caps: CAPSSession): CAPSGraph = {
+  def create(records: CypherRecords, schema: CAPSSchema, tags: Set[Int] = Set(0))(implicit caps: CAPSSession): CAPSGraph = {
     val capsRecords = records.asCaps
-    new CAPSPatternGraph(capsRecords, schema)
+    new CAPSPatternGraph(capsRecords, schema, tags)
   }
 
   def createLazy(theSchema: CAPSSchema, loadGraph: => CAPSGraph)(implicit caps: CAPSSession): CAPSGraph =
@@ -132,6 +138,8 @@ object CAPSGraph {
       val g = loadGraph
       if (g.schema == schema) g else throw IllegalArgumentException(s"a graph with schema $schema", g.schema)
     }
+
+    override def tags: Set[Int] = lazyGraph.tags
 
     override def session: CAPSSession = caps
 

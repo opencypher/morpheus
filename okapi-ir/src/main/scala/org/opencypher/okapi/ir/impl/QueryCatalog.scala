@@ -29,11 +29,9 @@ package org.opencypher.okapi.ir.impl
 import org.opencypher.okapi.api.graph.{Namespace, PropertyGraph, QualifiedGraphName}
 import org.opencypher.okapi.api.io.PropertyGraphDataSource
 import org.opencypher.okapi.api.schema.Schema
-import org.opencypher.okapi.impl.schema.TagSupport
-import org.opencypher.okapi.impl.schema.TagSupport._
 
-case class QueryCatalog(dataSourceMapping: Map[Namespace, PropertyGraphDataSource], registeredSchemas: Map[QualifiedGraphName, Schema with TagSupport]) {
-  def schema(qgn: QualifiedGraphName): Schema with TagSupport = {
+case class QueryCatalog(dataSourceMapping: Map[Namespace, PropertyGraphDataSource], registeredSchemas: Map[QualifiedGraphName, Schema]) {
+  def schema(qgn: QualifiedGraphName): Schema = {
     registeredSchemas.getOrElse(
       qgn,
       schemaFromDataSource(qgn)
@@ -42,17 +40,17 @@ case class QueryCatalog(dataSourceMapping: Map[Namespace, PropertyGraphDataSourc
 
   def graph(qgn: QualifiedGraphName): PropertyGraph = dataSourceMapping(qgn.namespace).graph(qgn.graphName)
 
-  private def schemaFromDataSource(qgn: QualifiedGraphName): Schema with TagSupport = {
+  private def schemaFromDataSource(qgn: QualifiedGraphName): Schema = {
     val dataSource = dataSourceMapping(qgn.namespace)
     val graphName = qgn.graphName
     val schema: Schema = dataSource.schema(graphName) match {
       case Some(s) => s
       case None => dataSource.graph(graphName).schema
     }
-    schema.toTagged
+    schema
   }
 
-  def withSchema(qgn: QualifiedGraphName, schema: Schema with TagSupport): QueryCatalog = {
+  def withSchema(qgn: QualifiedGraphName, schema: Schema): QueryCatalog = {
     copy(registeredSchemas = registeredSchemas.updated(qgn, schema))
   }
 }
