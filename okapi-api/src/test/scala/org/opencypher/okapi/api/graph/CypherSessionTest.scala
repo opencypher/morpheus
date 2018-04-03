@@ -50,7 +50,7 @@ class CypherSessionTest extends FunSuite with MockitoSugar with Matchers {
   }
 
   test("avoid retrieving a graph not stored in the session") {
-    an[NoSuchElementException] should be thrownBy createSession.graph(GraphName("foo"))
+    an[NoSuchElementException] should be thrownBy createSession.graph("foo")
   }
 
   test("avoid retrieving a graph from a non-registered data source") {

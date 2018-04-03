@@ -40,7 +40,7 @@ trait CatalogDDLBehaviour {
             |CREATE (:A)
           """.stripMargin)
 
-        caps.store(GraphName("foo"), inputGraph)
+        caps.store("foo", inputGraph)
 
         val result = caps.cypher(
           """
@@ -60,8 +60,7 @@ trait CatalogDDLBehaviour {
 
     describe("DELETE GRAPH") {
       it("can delete a session graph") {
-        val graphName = GraphName("foo")
-        caps.store(graphName, initGraph("CREATE (:A)"))
+        caps.store("foo", initGraph("CREATE (:A)"))
 
         val result = caps.cypher(
           """
@@ -69,7 +68,7 @@ trait CatalogDDLBehaviour {
           """.stripMargin
         )
 
-        caps.dataSource(caps.sessionNamespace).hasGraph(graphName) shouldBe false
+        caps.dataSource(caps.sessionNamespace).hasGraph(GraphName("foo")) shouldBe false
         result.graph shouldBe None
         result.records shouldBe None
       }

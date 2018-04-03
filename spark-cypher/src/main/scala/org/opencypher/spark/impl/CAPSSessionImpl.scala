@@ -123,15 +123,12 @@ sealed class CAPSSessionImpl(val sparkSession: SparkSession, val sessionNamespac
   override def sql(query: String): CAPSRecords =
     CAPSRecords.wrap(sparkSession.sql(query))
 
-  /**
-    * Unmounts the property graph associated with the given name from the session-local storage.
-    *
-    * @param graphName name of the graph within the session {{{session.graphName}}}
-    */
-  override def delete(graphName: GraphName): Unit = {
-    val sessionDataSource = dataSourceMapping(SessionGraphDataSource.Namespace)
-    sessionDataSource.graph(graphName).asCaps.unpersist()
-    sessionDataSource.delete(graphName)
+  override def delete(qgn: QualifiedGraphName): Unit = {
+    if (qgn.namespace == SessionGraphDataSource.Namespace) {
+      val g = dataSourceMapping(SessionGraphDataSource.Namespace).graph(qgn.graphName)
+      g.asCaps.unpersist()
+    }
+    super.delete(qgn)
   }
 
   private def graphAt(qualifiedGraphName: QualifiedGraphName): Option[CAPSGraph] =
@@ -258,8 +255,9 @@ sealed class CAPSSessionImpl(val sparkSession: SparkSession, val sessionNamespac
   }
 
   private def mountAmbientGraph(ambient: PropertyGraph): IRCatalogGraph = {
-    val qualifiedGraphName = store(qgnGenerator.generate.graphName, ambient)
-    IRCatalogGraph(qualifiedGraphName, ambient.schema)
+    val qgn = qgnGenerator.generate
+    store(qgn, ambient)
+    IRCatalogGraph(qgn, ambient.schema)
   }
 
   private def planStart(graph: PropertyGraph, fields: Set[Var]): LogicalOperator = {

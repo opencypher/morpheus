@@ -45,7 +45,6 @@ class SessionGraphDataSource() extends PropertyGraphDataSource {
 
   override def store(name: GraphName, graph: PropertyGraph): Unit = graphMap = graphMap.updated(name, graph)
 
-  // TODO: uncache graph
   override def delete(name: GraphName): Unit = graphMap = graphMap.filterKeys(_ != name)
 
   override def graphNames: Set[GraphName] = graphMap.keySet
