@@ -221,7 +221,10 @@ object IRBuilder extends CompilationStage[ast.Statement, CypherStatement[Expr], 
 
             // computing single nodes/rels constructed by NEW (CREATE)
             val newPattern = newPatterns.foldLeft(Pattern.empty[Expr])(_ ++ _)
-            val cypherTypesInNewPattern = newPattern.fields.map(_.cypherType)
+            val cypherTypesInNewPattern = newPattern
+              .fields
+              .filterNot(cloneItemMap.contains)
+              .map(_.cypherType)
 
             val constructOperatorSchema = cypherTypesInNewPattern.foldLeft(cloneSchema) { case (agg, next) =>
               next match {
