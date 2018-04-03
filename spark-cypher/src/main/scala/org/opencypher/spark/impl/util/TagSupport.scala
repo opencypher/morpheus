@@ -25,6 +25,9 @@
  * Cypher that are not yet approved by the openCypher community".
  */
 package org.opencypher.spark.impl.util
+
+import org.opencypher.okapi.api.graph.QualifiedGraphName
+
 //
 //import org.opencypher.okapi.api.schema.{RelTypePropertyMap, Schema}
 //
@@ -46,6 +49,22 @@ package org.opencypher.spark.impl.util
 //}
 //
 object TagSupport {
+
+  def computeRetaggings(graphs: Map[QualifiedGraphName, Set[Int]]): Map[QualifiedGraphName, Map[Int, Int]] = {
+    val (result, _) = graphs.foldLeft((Map.empty[QualifiedGraphName, Map[Int, Int]], Set.empty[Int])) {
+      case ((graphReplacements, previousTags), (graphId, rightTags)) =>
+
+        val replacements = previousTags.replacementsFor(rightTags)
+        val updatedRightTags = rightTags.replaceWith(replacements)
+
+        val updatedPreviousTags = previousTags ++ updatedRightTags
+        val updatedGraphReplacements = graphReplacements.updated(graphId, replacements)
+
+        updatedGraphReplacements -> updatedPreviousTags
+    }
+    result
+  }
+
 
 //  implicit class TaggedSchema(s: Schema) {
 //

@@ -209,21 +209,6 @@ final case class ConstructGraph(
 
   override def header: RecordHeader = RecordHeader.empty
 
-  private def computeRetaggings(graphs: Map[QualifiedGraphName, Set[Int]]): Map[QualifiedGraphName, Map[Int, Int]] = {
-    val (result, _) = graphs.foldLeft((Map.empty[QualifiedGraphName, Map[Int, Int]], Set.empty[Int])) {
-      case ((graphReplacements, previousTags), (graphId, rightTags)) =>
-
-        val replacements = previousTags.replacementsFor(rightTags)
-        val updatedRightTags = rightTags.replaceWith(replacements)
-
-        val updatedPreviousTags = previousTags ++ updatedRightTags
-        val updatedGraphReplacements = graphReplacements.updated(graphId, replacements)
-
-        updatedGraphReplacements -> updatedPreviousTags
-    }
-    result
-  }
-
   private def pickFreeTag(tagStrategy: Map[QualifiedGraphName, Map[Int, Int]]): Int = {
     val usedTags = tagStrategy.values.flatMap(_.values).toSet
     if (usedTags.isEmpty) 0

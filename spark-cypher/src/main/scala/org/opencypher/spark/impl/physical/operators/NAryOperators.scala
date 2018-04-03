@@ -35,21 +35,6 @@ final case class GraphUnionAll(inputs: List[CAPSPhysicalOperator], qgn: Qualifie
   extends CAPSPhysicalOperator with InheritedHeader {
   require(inputs.nonEmpty, "GraphUnionAll requires at least one input")
 
-  private def computeRetaggings(graphs: Map[QualifiedGraphName, Set[Int]]): Map[QualifiedGraphName, Map[Int, Int]] = {
-    val (result, _) = graphs.foldLeft((Map.empty[QualifiedGraphName, Map[Int, Int]], Set.empty[Int])) {
-      case ((graphReplacements, previousTags), (graphId, rightTags)) =>
-
-        val replacements = previousTags.replacementsFor(rightTags)
-        val updatedRightTags = rightTags.replaceWith(replacements)
-
-        val updatedPreviousTags = previousTags ++ updatedRightTags
-        val updatedGraphReplacements = graphReplacements.updated(graphId, replacements)
-
-        updatedGraphReplacements -> updatedPreviousTags
-    }
-    result
-  }
-
   override def execute(implicit context: CAPSRuntimeContext): CAPSPhysicalResult = {
     val inputResults = inputs.map(_.execute)
     implicit val caps = inputResults.head.records.caps
