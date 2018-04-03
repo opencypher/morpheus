@@ -55,7 +55,7 @@ object LogicalOptimizer extends DirectCompilationStage[LogicalOperator, LogicalO
   def pushLabelsIntoScans(labelMap: Map[Var, Set[String]]): PartialFunction[LogicalOperator, LogicalOperator] = {
     case ns@NodeScan(v@Var(name), in, solved) =>
       val updatedLabels = labelMap(v)
-      val updatedVar = Var(name)(CTNode(ns.labels ++ updatedLabels))
+      val updatedVar = Var(name)(CTNode(ns.labels ++ updatedLabels, v.cypherType.graph))
       val updatedSolved = in.solved.withPredicates(updatedLabels.map(l => HasLabel(v, Label(l))(CTBoolean)).toSeq: _*)
       NodeScan(updatedVar, in, updatedSolved)
     case Filter(_: HasLabel, in, _) => in
