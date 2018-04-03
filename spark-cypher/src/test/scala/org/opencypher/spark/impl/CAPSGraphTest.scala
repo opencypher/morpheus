@@ -33,9 +33,9 @@ import org.opencypher.okapi.ir.test.support.Bag
 import org.opencypher.spark.api.io.{CAPSNodeTable, CAPSRelationshipTable}
 import org.opencypher.spark.impl.DataFrameOps._
 import org.opencypher.spark.test.CAPSTestSuite
-import org.opencypher.spark.test.fixture.{GraphCreationFixture, TeamDataFixture}
+import org.opencypher.spark.test.fixture.{GraphConstructionFixture, TeamDataFixture}
 
-class CAPSGraphTest extends CAPSTestSuite with GraphCreationFixture with TeamDataFixture {
+abstract class CAPSGraphTest extends CAPSTestSuite with GraphConstructionFixture with TeamDataFixture {
 
   it("should return only nodes with that exact label (single label)") {
     val graph = initGraph(dataFixtureWithoutArrays)

@@ -32,9 +32,9 @@ import org.opencypher.okapi.ir.test.support.Bag._
 import org.opencypher.spark.impl
 import org.opencypher.spark.impl.DataFrameOps._
 import org.opencypher.spark.test.CAPSTestSuite
-import org.opencypher.spark.test.fixture.{GraphCreationFixture, TeamDataFixture}
+import org.opencypher.spark.test.fixture.{GraphConstructionFixture, TeamDataFixture}
 
-class CAPSUnionGraphTest extends CAPSTestSuite with GraphCreationFixture with TeamDataFixture {
+class CAPSUnionGraphTest extends CAPSTestSuite with GraphConstructionFixture with TeamDataFixture {
 
   import CAPSGraphTestData._
 

@@ -34,9 +34,9 @@ import org.opencypher.spark.impl.CAPSConverters._
 import org.opencypher.spark.impl.physical.operators.{Cache, CartesianProduct, NodeScan, Start}
 import org.opencypher.spark.impl.{CAPSGraph, CAPSRecords}
 import org.opencypher.spark.test.CAPSTestSuite
-import org.opencypher.spark.test.fixture.GraphCreationFixture
+import org.opencypher.spark.test.fixture.GraphConstructionFixture
 
-class PhysicalOptimizerTest extends CAPSTestSuite with GraphCreationFixture {
+class PhysicalOptimizerTest extends CAPSTestSuite with GraphConstructionFixture {
   val emptyRecords = CAPSRecords.empty(RecordHeader.empty)
   val testNamespace = Namespace("testNamespace")
   val testGraphName = GraphName("test")

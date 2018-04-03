@@ -34,15 +34,15 @@ import org.opencypher.okapi.api.value.CypherValue._
 import org.opencypher.okapi.impl.exception.InternalException
 import org.opencypher.okapi.ir.api.expr._
 import org.opencypher.okapi.ir.api.{Label, PropertyKey}
+import org.opencypher.okapi.ir.test.support.Bag
+import org.opencypher.okapi.ir.test.support.Bag._
 import org.opencypher.okapi.relational.impl.table.{ColumnName, OpaqueField, ProjectedExpr, RecordHeader}
 import org.opencypher.spark.api.io.{CAPSNodeTable, CAPSRelationshipTable}
 import org.opencypher.spark.impl.DataFrameOps._
 import org.opencypher.spark.test.CAPSTestSuite
-import org.opencypher.spark.test.fixture.{GraphCreationFixture, TeamDataFixture}
-import org.opencypher.okapi.ir.test.support.Bag
-import org.opencypher.okapi.ir.test.support.Bag._
+import org.opencypher.spark.test.fixture.{GraphConstructionFixture, TeamDataFixture}
 
-class CAPSRecordsTest extends CAPSTestSuite with GraphCreationFixture with TeamDataFixture {
+class CAPSRecordsTest extends CAPSTestSuite with GraphConstructionFixture with TeamDataFixture {
 
   test("retags a node variable") {
     val givenDF = session.createDataFrame(

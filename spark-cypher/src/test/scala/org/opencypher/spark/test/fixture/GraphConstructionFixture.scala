@@ -32,7 +32,7 @@ import org.opencypher.spark.impl.CAPSConverters._
 import org.opencypher.spark.impl.CAPSGraph
 import org.opencypher.spark.test.support.creation.caps.{CAPSScanGraphFactory, CAPSTestGraphFactory}
 
-trait GraphCreationFixture {
+trait GraphConstructionFixture {
   self: CAPSSessionFixture with BaseTestSuite =>
 
   def capsGraphFactory: CAPSTestGraphFactory = CAPSScanGraphFactory
