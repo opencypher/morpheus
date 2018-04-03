@@ -169,22 +169,7 @@ final case class SchemaImpl(
     copy(labelPropertyMap = newNodeKeyMap, relTypePropertyMap = newRelTypePropertyMap)
   }
 
-
-
-  override def fromNodeEntity(labels: Set[String]): Schema = {
-    if (labels.nonEmpty) {
-      forNodeScan(labels)
-    } else {
-      val propertyKeys = if (graphContainsNodeWithoutLabel) {
-        labelPropertyMap.properties(Set.empty[String])
-      } else {
-        PropertyKeys.empty
-      }
-      Schema.empty.withNodePropertyKeys(Set.empty[String], propertyKeys)
-    }
-  }
-
-  def forNodeScan(labelConstraints: Set[String]): Schema = {
+  def forNode(labelConstraints: Set[String]): Schema = {
     val requiredLabels = {
       val explicitLabels = labelConstraints
       val impliedLabels = this.impliedLabels.transitiveImplicationsFor(explicitLabels)

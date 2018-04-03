@@ -33,7 +33,6 @@ import org.opencypher.okapi.impl.exception.{SchemaException, UnsupportedOperatio
 import org.opencypher.okapi.impl.schema.SchemaUtils._
 import org.opencypher.okapi.impl.schema.{ImpliedLabels, LabelCombinations}
 import org.opencypher.spark.impl.convert.CAPSCypherType._
-import org.opencypher.spark.schema.CAPSSchema._
 
 object CAPSSchema {
   val empty: CAPSSchema = Schema.empty.asCaps
@@ -123,13 +122,11 @@ case class CAPSSchema private[schema](schema: Schema) extends Schema {
 
   override def ++(other: Schema): Schema = schema ++ other
 
-  override def fromNodeEntity(labels: Set[String]): Schema = schema.fromNodeEntity(labels)
-
   override def pretty: String = schema.pretty
 
   override def isEmpty: Boolean = schema.isEmpty
 
-  override def forNodeScan(labelConstraints: Set[String]): Schema = schema.forNodeScan(labelConstraints)
+  override def forNode(labelConstraints: Set[String]): Schema = schema.forNode(labelConstraints)
 
   override def forRelationship(relType: CTRelationship): Schema = schema.forRelationship(relType)
 

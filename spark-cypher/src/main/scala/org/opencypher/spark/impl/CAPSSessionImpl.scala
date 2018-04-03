@@ -248,7 +248,7 @@ sealed class CAPSSessionImpl(val sparkSession: SparkSession, val sessionNamespac
     }
 
     CAPSResultBuilder.from(logicalPlan, flatPlan, optimizedPhysicalPlan)(
-      CAPSRuntimeContext(physicalPlannerContext.parameters, graphAt, collection.mutable.Map.empty))
+      CAPSRuntimeContext(physicalPlannerContext.parameters, graphAt, collection.mutable.Map.empty, collection.mutable.Map.empty))
   }
 
   private[opencypher] val qgnGenerator = new QGNGenerator {

@@ -26,11 +26,12 @@
  */
 package org.opencypher.okapi.relational.impl.physical
 
-import org.opencypher.okapi.api.graph.{CypherSession, PropertyGraph, QualifiedGraphName}
-import org.opencypher.okapi.api.schema.Schema
+import org.opencypher.okapi.api.graph.{CypherSession, PropertyGraph}
 import org.opencypher.okapi.api.table.CypherRecords
 import org.opencypher.okapi.api.types.{CTBoolean, CTNode, CTRelationship}
 import org.opencypher.okapi.impl.exception.{IllegalArgumentException, NotImplementedException}
+import org.opencypher.okapi.api.types.CTRelationship
+import org.opencypher.okapi.impl.exception.NotImplementedException
 import org.opencypher.okapi.ir.api.block.SortItem
 import org.opencypher.okapi.ir.api.expr._
 import org.opencypher.okapi.ir.api.util.DirectCompilationStage
@@ -65,7 +66,10 @@ class PhysicalPlanner[P <: PhysicalOperator[R, G, C], R <: CypherRecords, G <: P
           case g: LogicalCatalogGraph =>
             producer.planStart(Some(g.qualifiedGraphName), Some(context.inputRecords))
           case p: LogicalPatternGraph =>
-            context.constructedGraphPlans(p.name)
+            context.constructedGraphPlans.get(p.name) match {
+              case Some(plan) => plan // the graph was already constructed
+              case None => planConstructGraph(None, p) // plan starts with a construct graph, thus we have to plan it
+            }
         }
 
       case flat.UseGraph(graph, in) =>
@@ -74,19 +78,7 @@ class PhysicalPlanner[P <: PhysicalOperator[R, G, C], R <: CypherRecords, G <: P
             producer.planUseGraph(process(in), g)
 
           case construct: LogicalPatternGraph =>
-            val onGraphPlan = {
-              construct.onGraphs match {
-                case Nil => producer.planStart() // Empty start
-                //TODO: Optimize case where no union is necessary
-                //case h :: Nil => producer.planStart(Some(h)) // Just one graph, no union required
-                case several =>
-                  val onGraphPlans = several.map(qgn => producer.planStart(Some(qgn)))
-                  producer.planGraphUnionAll(onGraphPlans, construct.name)
-              }
-            }
-            val constructGraphPlan = producer.planConstructGraph(process(in), onGraphPlan, construct)
-            context.constructedGraphPlans.update(construct.name, constructGraphPlan)
-            constructGraphPlan
+            planConstructGraph(Some(in), construct)
         }
 
       case op
@@ -240,6 +232,24 @@ class PhysicalPlanner[P <: PhysicalOperator[R, G, C], R <: CypherRecords, G <: P
       case x =>
         throw NotImplementedException(s"Physical planning of operator $x")
     }
+  }
+
+  private def planConstructGraph(in: Option[FlatOperator], construct: LogicalPatternGraph)(implicit context: PhysicalPlannerContext[P, R]) = {
+    val onGraphPlan = {
+      construct.onGraphs match {
+        case Nil => producer.planStart() // Empty start
+        //TODO: Optimize case where no union is necessary
+        //case h :: Nil => producer.planStart(Some(h)) // Just one graph, no union required
+        case several =>
+          val onGraphPlans = several.map(qgn => producer.planStart(Some(qgn)))
+          producer.planGraphUnionAll(onGraphPlans, construct.name)
+      }
+    }
+    val inputTablePlan = in.map(process).getOrElse(producer.planStart())
+
+    val constructGraphPlan = producer.planConstructGraph(inputTablePlan, onGraphPlan, construct)
+    context.constructedGraphPlans.update(construct.name, constructGraphPlan)
+    constructGraphPlan
   }
 
   private def relTypes(r: Var): Set[String]

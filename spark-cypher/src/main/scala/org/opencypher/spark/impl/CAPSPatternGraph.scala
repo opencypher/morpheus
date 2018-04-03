@@ -66,7 +66,7 @@ class CAPSPatternGraph(
 
   override def nodes(name: String, nodeCypherType: CTNode): CAPSRecords = {
     val targetNode = Var(name)(nodeCypherType)
-    val nodeSchema = schema.forNodeScan(nodeCypherType.labels)
+    val nodeSchema = schema.forNode(nodeCypherType.labels)
     val targetNodeHeader = RecordHeader.nodeFromSchema(targetNode, nodeSchema)
     val extractionNodes: Seq[Var] = header.nodesForType(nodeCypherType)
 

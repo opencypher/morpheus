@@ -240,13 +240,6 @@ trait Schema {
   private[opencypher] def dropPropertiesFor(combo: Set[String]): Schema
 
   /**
-    * Given the current schema, construct a new Schema for an entity with a given set of labels.
-    * If the set of labels is empty, this means that the resulting schema will only have properties present on nodes
-    * that have no labels.
-    */
-  private[opencypher] def fromNodeEntity(labels: Set[String]): Schema
-
-  /**
     * Returns the sub-schema for a node scan under the given constraints.
     * Labels are interpreted as constraints on the resulting Schema.
     * If no labels are specified, this means the resulting node can have any valid label combination.
@@ -254,7 +247,7 @@ trait Schema {
     * @param labelConstraints Specifies the labels that the node is guaranteed to have
     * @return sub-schema for `labelConstraints`
     */
-  private[opencypher] def forNodeScan(labelConstraints: Set[String]): Schema
+  private[opencypher] def forNode(labelConstraints: Set[String]): Schema
 
   /**
     * Returns the sub-schema for `relType`

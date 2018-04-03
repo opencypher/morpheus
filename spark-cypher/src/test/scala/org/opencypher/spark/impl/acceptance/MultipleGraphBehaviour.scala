@@ -29,7 +29,7 @@ package org.opencypher.spark.impl.acceptance
 import org.opencypher.okapi.api.graph.GraphName
 import org.opencypher.okapi.api.schema.{PropertyKeys, Schema}
 import org.opencypher.okapi.api.types.{CTInteger, CTString}
-import org.opencypher.okapi.api.value.{CAPSRelationship, CypherValue}
+import org.opencypher.okapi.api.value.CAPSRelationship
 import org.opencypher.okapi.api.value.CypherValue.CypherMap
 import org.opencypher.okapi.ir.test.support.Bag
 import org.opencypher.okapi.ir.test.support.Bag._
@@ -377,32 +377,6 @@ trait MultipleGraphBehaviour {
       res.getGraph.relationships("r").collect.length shouldBe 3
     }
 
-    // TODO: Allow schema lookup for constructed graph that is not in the catalog
-    ignore("should allow simple MGC syntax") {
-      val query =
-        """|CONSTRUCT
-           |  NEW (a:A)-[r:FOO]->(b:B)
-           |MATCH (a)-->(b)
-           |CONSTRUCT
-           |  CLONE a, b
-           |  NEW (a)-[:KNOWS]->(b)
-           |RETURN GRAPH""".stripMargin
-
-      val result = testGraph1.cypher(query)
-
-      result.getRecords.toMaps shouldBe empty
-      result.getGraph.schema.relationshipTypes should equal(Set("KNOWS"))
-      result.getGraph.schema.labels should equal(Set("A", "B"))
-      result.getGraph.schema should equal(Schema.empty
-        .withNodePropertyKeys("A")()
-        .withNodePropertyKeys("B")()
-        .withRelationshipPropertyKeys("KNOWS")()
-        .asCaps)
-      result.getGraph.cypher("MATCH ()-[r]->() RETURN type(r)").getRecords.iterator.toBag should equal(Bag(
-        CypherMap("type(r)" -> "KNOWS")
-      ))
-    }
-
     it("CONSTRUCTS ON a single graph") {
       caps.store(GraphName("one"), testGraph1)
       val query =
@@ -453,31 +427,6 @@ trait MultipleGraphBehaviour {
         CypherMap("r" -> CAPSRelationship(2251799813685248L, 0L, 1125899906842624L, "KNOWS")))
       )
     }
-
-    //TODO: Copy all properties
-    ignore("CONSTRUCT: cloning from different graphs") {
-      def testGraphRels = initGraph(
-        """|CREATE (mats:Person {name: 'Mats'})
-           |CREATE (max:Person {name: 'Max'})
-           |CREATE (max)-[:HAS_SIMILAR_NAME]->(mats)
-        """.stripMargin)
-      caps.store(GraphName("testGraphRels1"), testGraphRels)
-      caps.store(GraphName("testGraphRels2"), testGraphRels)
-      val query =
-        """|FROM GRAPH testGraphRels1
-           |MATCH (p1)-[r1]->(p2)
-           |FROM GRAPH testGraphRels2
-           |MATCH (p3)-[r2]->(p4)
-           |CONSTRUCT
-           |  CLONE p1, p2, p3, p4, r1, r2
-           |RETURN GRAPH""".stripMargin
-
-      val result = caps.cypher(query).getGraph
-
-      result.nodes("n").asCaps.data.show
-      result.relationships("r").asCaps.data.show
-    }
-
   }
 
 }

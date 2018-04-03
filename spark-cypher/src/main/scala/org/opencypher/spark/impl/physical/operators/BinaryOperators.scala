@@ -46,9 +46,9 @@ import org.opencypher.spark.impl.DataFrameOps._
 import org.opencypher.spark.impl.SparkSQLExprMapper._
 import org.opencypher.spark.impl.physical.operators.CAPSPhysicalOperator._
 import org.opencypher.spark.impl.physical.{CAPSPhysicalResult, CAPSRuntimeContext}
+import org.opencypher.spark.impl.util.TagSupport._
 import org.opencypher.spark.impl.{CAPSGraph, CAPSRecords, CAPSUnionGraph, ColumnNameGenerator}
 import org.opencypher.spark.schema.CAPSSchema._
-import org.opencypher.spark.impl.util.TagSupport._
 
 private[spark] abstract class BinaryPhysicalOperator extends CAPSPhysicalOperator {
 
@@ -310,7 +310,7 @@ final case class ConstructGraph(
 
     val matchGraphs: Set[QualifiedGraphName] = clonedVarsToInputVars.values.map(_.cypherType.graph.get).toSet
     val allGraphs = unionTagStrategy.keySet ++ matchGraphs
-    val tagsForGraph: Map[QualifiedGraphName, Set[Int]] = allGraphs.map(qgn => qgn -> context.resolve(qgn).get.tags).toMap
+    val tagsForGraph: Map[QualifiedGraphName, Set[Int]] = allGraphs.map(qgn => qgn -> resolveTags(qgn)).toMap
 
     val constructTagStrategy = computeRetaggings(tagsForGraph, unionTagStrategy)
 
@@ -348,6 +348,8 @@ final case class ConstructGraph(
 
     val patternGraph = CAPSGraph.create(patternGraphTable, schema.asCaps, tagsUsed)
     val constructedCombinedWithOn = CAPSUnionGraph(Map(identityRetaggings(onGraph), identityRetaggings(patternGraph)))
+
+    context.patternGraphTags.update(construct.name, constructedCombinedWithOn.tags)
 
     CAPSPhysicalResult(CAPSRecords.unit(),constructedCombinedWithOn , name, constructTagStrategy)
   }
