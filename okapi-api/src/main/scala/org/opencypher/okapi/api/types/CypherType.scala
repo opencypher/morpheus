@@ -288,6 +288,8 @@ final case class CTList(elementType: CypherType) extends MaterialDefiniteCypherT
 
   self =>
 
+  override def graph: Option[QualifiedGraphName] = elementType.graph
+
   override def name = s"LIST OF $elementType"
 
   override def nullable =

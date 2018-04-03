@@ -141,10 +141,7 @@ class PhysicalPlanner[P <: PhysicalOperator[R, G, C], R <: CypherRecords, G <: P
             producer.planStart(Some(e.qualifiedGraphName))
 
           case c: LogicalPatternGraph =>
-            // TODO: Investigate a query such as
-            // CONSTRUCT ON foo, bar
-            // MATCH ()-[]->()
-            ???
+            context.constructedGraphPlans(c.name)
         }
 
         val second = producer.planRelationshipScan(startFrom, op.sourceGraph, rel, relHeader)
