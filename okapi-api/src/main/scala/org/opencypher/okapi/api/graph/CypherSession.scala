@@ -30,8 +30,8 @@ import org.opencypher.okapi.api.io._
 import org.opencypher.okapi.api.table.CypherRecords
 import org.opencypher.okapi.api.value.CypherValue._
 import org.opencypher.okapi.impl.exception.{IllegalArgumentException, UnsupportedOperationException}
-import org.opencypher.okapi.impl.io.SessionPropertyGraphDataSource
-import org.opencypher.okapi.impl.io.SessionPropertyGraphDataSource.{Namespace => SessionNamespace}
+import org.opencypher.okapi.impl.io.SessionGraphDataSource
+import org.opencypher.okapi.impl.io.SessionGraphDataSource.{Namespace => SessionNamespace}
 
 /**
   * The Cypher Session is the main API for a Cypher-based application. It manages graphs which can be queried using
@@ -50,10 +50,10 @@ trait CypherSession {
   /**
     * Stores a mutable mapping between a data source [[org.opencypher.okapi.api.graph.Namespace]] and the specific [[org.opencypher.okapi.api.io.PropertyGraphDataSource]].
     *
-    * This mapping also holds the [[org.opencypher.okapi.impl.io.SessionPropertyGraphDataSource]] by default.
+    * This mapping also holds the [[org.opencypher.okapi.impl.io.SessionGraphDataSource]] by default.
     */
   protected var dataSourceMapping: Map[Namespace, PropertyGraphDataSource] =
-    Map(sessionNamespace -> new SessionPropertyGraphDataSource)
+    Map(sessionNamespace -> new SessionGraphDataSource)
 
   /**
     * Register the given [[org.opencypher.okapi.api.io.PropertyGraphDataSource]] under the specific [[org.opencypher.okapi.api.graph.Namespace]] within this session.

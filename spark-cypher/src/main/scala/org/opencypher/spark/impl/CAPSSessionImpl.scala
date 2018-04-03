@@ -34,7 +34,7 @@ import org.opencypher.okapi.api.io.PropertyGraphDataSource
 import org.opencypher.okapi.api.table.CypherRecords
 import org.opencypher.okapi.api.value.CypherValue._
 import org.opencypher.okapi.api.value._
-import org.opencypher.okapi.impl.io.SessionPropertyGraphDataSource
+import org.opencypher.okapi.impl.io.SessionGraphDataSource
 import org.opencypher.okapi.impl.util.Measurement.time
 import org.opencypher.okapi.ir.api.configuration.IrConfiguration._
 import org.opencypher.okapi.ir.api._
@@ -129,7 +129,7 @@ sealed class CAPSSessionImpl(val sparkSession: SparkSession, val sessionNamespac
     * @param graphName name of the graph within the session {{{session.graphName}}}
     */
   override def delete(graphName: GraphName): Unit = {
-    val sessionDataSource = dataSourceMapping(SessionPropertyGraphDataSource.Namespace)
+    val sessionDataSource = dataSourceMapping(SessionGraphDataSource.Namespace)
     sessionDataSource.graph(graphName).asCaps.unpersist()
     sessionDataSource.delete(graphName)
   }
@@ -253,7 +253,7 @@ sealed class CAPSSessionImpl(val sparkSession: SparkSession, val sessionNamespac
 
   private[opencypher] val qgnGenerator = new QGNGenerator {
     override def generate: QualifiedGraphName = {
-      QualifiedGraphName(SessionPropertyGraphDataSource.Namespace, GraphName(s"tmp#${maxSessionGraphId.incrementAndGet}"))
+      QualifiedGraphName(SessionGraphDataSource.Namespace, GraphName(s"tmp#${maxSessionGraphId.incrementAndGet}"))
     }
   }
 

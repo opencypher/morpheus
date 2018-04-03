@@ -27,7 +27,7 @@
 package org.opencypher.okapi.api.graph
 
 import org.opencypher.okapi.impl.exception.IllegalArgumentException
-import org.opencypher.okapi.impl.io.SessionPropertyGraphDataSource
+import org.opencypher.okapi.impl.io.SessionGraphDataSource
 
 /**
   * A graph name is used to address a specific graph within a [[Namespace]] and is used for lookups in the
@@ -62,7 +62,7 @@ object QualifiedGraphName {
     *
     * are valid qualified graph names. The separation between namespace and graph name is expected to be at the first
     * occurring '.'. A graph name may contain an arbitrary number of additional '.' characters. Note that a string
-    * without any '.' characters is considered to be associated with the [[org.opencypher.okapi.impl.io.SessionPropertyGraphDataSource]].
+    * without any '.' characters is considered to be associated with the [[org.opencypher.okapi.impl.io.SessionGraphDataSource]].
     *
     * @param qualifiedGraphName string representation of a qualified graph name
     * @return qualified graph name
@@ -71,7 +71,7 @@ object QualifiedGraphName {
 
   private[okapi] def apply(parts: List[String]): QualifiedGraphName = parts match {
     case Nil => throw IllegalArgumentException("qualified graph name or single graph name")
-    case head :: Nil => QualifiedGraphName(SessionPropertyGraphDataSource.Namespace, GraphName(head))
+    case head :: Nil => QualifiedGraphName(SessionGraphDataSource.Namespace, GraphName(head))
     case head :: tail => QualifiedGraphName(Namespace(head), GraphName(tail.mkString(".")))
   }
 

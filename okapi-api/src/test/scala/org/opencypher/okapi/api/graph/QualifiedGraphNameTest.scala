@@ -26,7 +26,7 @@
  */
 package org.opencypher.okapi.api.graph
 
-import org.opencypher.okapi.impl.io.SessionPropertyGraphDataSource.{Namespace => SessionNamespace}
+import org.opencypher.okapi.impl.io.SessionGraphDataSource.{Namespace => SessionNamespace}
 import org.scalatest.{FunSuite, Matchers}
 
 class QualifiedGraphNameTest extends FunSuite with Matchers {

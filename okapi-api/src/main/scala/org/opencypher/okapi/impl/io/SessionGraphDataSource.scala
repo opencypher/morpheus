@@ -30,12 +30,12 @@ import org.opencypher.okapi.api.graph.{GraphName, PropertyGraph}
 import org.opencypher.okapi.api.io.PropertyGraphDataSource
 import org.opencypher.okapi.api.schema.Schema
 
-object SessionPropertyGraphDataSource {
+object SessionGraphDataSource {
 
   val Namespace = org.opencypher.okapi.api.graph.Namespace("session")
 }
 
-class SessionPropertyGraphDataSource() extends PropertyGraphDataSource {
+class SessionGraphDataSource() extends PropertyGraphDataSource {
 
   private var graphMap: Map[GraphName, PropertyGraph] = Map.empty
 
