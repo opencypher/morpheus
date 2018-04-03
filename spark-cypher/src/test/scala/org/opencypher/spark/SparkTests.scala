@@ -24,10 +24,32 @@
  * described as "implementation extensions to Cypher" or as "proposed changes to
  * Cypher that are not yet approved by the openCypher community".
  */
-package org.opencypher.spark.impl.acceptance
+package org.opencypher.spark
 
-import org.opencypher.spark.test.support.creation.caps.{CAPSScanGraphFactory, CAPSTestGraphFactory}
+import org.opencypher.spark.test.CAPSTestSuite
 
-class CAPSScanGraphAcceptanceTest extends AcceptanceTest {
-  override def capsGraphFactory: CAPSTestGraphFactory = CAPSScanGraphFactory
+class SparkTests extends CAPSTestSuite {
+
+  // Example for: https://issues.apache.org/jira/browse/SPARK-23855
+  ignore("should correctly perform a join after a cross") {
+    val df1 = sparkSession.createDataFrame(Seq(Tuple1(0L)))
+      .toDF("a")
+
+    val df2 = sparkSession.createDataFrame(Seq(Tuple1(1L)))
+      .toDF("b")
+
+    val df3 = sparkSession.createDataFrame(Seq(Tuple1(0L)))
+      .toDF("c")
+
+    val cross = df1.crossJoin(df2)
+    cross.show()
+
+    val joined = cross
+      .join(df3, cross.col("a") === df3.col("c"))
+
+    joined.show()
+
+    val selected = joined.select("*")
+    selected.show
+  }
 }

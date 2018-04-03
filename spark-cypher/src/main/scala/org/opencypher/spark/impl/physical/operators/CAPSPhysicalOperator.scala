@@ -71,52 +71,14 @@ object CAPSPhysicalOperator {
     val lhsData = lhs.toDF()
     val rhsData = rhs.toDF()
 
-    val joinCols = joinSlots.map(pair => columnName(pair._1) -> columnName(pair._2))
+    val joinCols = joinSlots.map { case (left, right) => columnName(left) -> columnName(right) }
 
-//    println("join")
-//    println("record header")
-//    println(header.pretty)
-//
-//
-//    println("join columns")
-//    println(joinCols)
-//    println()
-//    println("left struct type")
-//    println(lhsData.schema)
-//    println()
-//    println("left data")
-//    lhsData.show
-//    println()
-//    println("right struct type")
-//    println(rhsData.schema)
-//    println()
-//    println("right data")
-//    rhsData.show
-
+    // TODO: the join produced corrupt data when the previous operator was a cross. We work around that by using a
+    // subsequent select. This can be removed, once https://issues.apache.org/jira/browse/SPARK-23855 is solved or we
+    // upgrade to Spark 2.3.0
     val weirdResult = joinDFs(lhsData, rhsData, header, joinCols)(joinType, deduplicate)(lhs.caps)
-//
-//    println()
-//    println("weirdResult struct type")
-//    println(weirdResult.data.schema)
-//    println("weirdResult data")
-//    weirdResult.data.show
-
-    val selectColumns = header.slots
-      .map(ColumnName.of)
-      .map(weirdResult.data.col)
-
-//    println("select columns")
-//    println(selectColumns)
-//    println("existing columns")
-//    println(weirdResult.data.columns.toList)
-
-    val select = weirdResult.data.select(selectColumns: _*)
-    val result = CAPSRecords.verifyAndCreate(header, select)(lhs.caps)
-
-//    println(weirdResult.data.schema)
-//    println(result.data.schema)
-
-    result
+    val select = weirdResult.data.select("*")
+    CAPSRecords.verifyAndCreate(header, select)(lhs.caps)
   }
 
   def joinDFs(lhsData: DataFrame, rhsData: DataFrame, header: RecordHeader, joinCols: Seq[(String, String)])(

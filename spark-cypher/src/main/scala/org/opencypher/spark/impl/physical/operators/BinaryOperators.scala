@@ -246,30 +246,10 @@ final case class CartesianProduct(lhs: CAPSPhysicalOperator, rhs: CAPSPhysicalOp
 
   override def executeBinary(left: CAPSPhysicalResult, right: CAPSPhysicalResult)(
     implicit context: CAPSRuntimeContext): CAPSPhysicalResult = {
-//    println("cross")
-//    println("header")
-//    println(header.pretty)
 
     val data = left.records.data
-//    println("left struct type")
-//    println(left.records.data.schema)
-//    println()
-//    println("left data")
-//    left.records.data.show()
-//    println()
-//    println("right struct type")
-//    println(right.records.data.schema)
-//    println()
-//    println("right data")
-//    right.records.data.show()
-//    println()
-
     val otherData = right.records.data
     val newData = data.crossJoin(otherData)
-//    println("cross struct type")
-//    println(newData.schema)
-//    println("cross data")
-//    newData.show()
 
     val records = CAPSRecords.verifyAndCreate(header, newData)(left.records.caps)
     CAPSPhysicalResult(records, left.graph)
