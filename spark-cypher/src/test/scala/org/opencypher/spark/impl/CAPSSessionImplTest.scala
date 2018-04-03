@@ -36,8 +36,8 @@ import org.opencypher.okapi.ir.test.support.Bag._
 class CAPSSessionImplTest extends CAPSTestSuite with TeamDataFixture {
 
   it("can execute sql on registered tables") {
-    CAPSRecords.wrap(personDF).register("people")
-    CAPSRecords.wrap(knowsDF).register("knows")
+    CAPSRecords.wrap(personDF).toDF().createOrReplaceTempView("people")
+    CAPSRecords.wrap(knowsDF).toDF().createOrReplaceTempView("knows")
 
     val sqlResult = caps.sql(
       """

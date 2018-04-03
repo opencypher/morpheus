@@ -132,7 +132,7 @@ class CAPSRecordsTest extends CAPSTestSuite with GraphCreationFixture with TeamD
 
   it("can be registered and queried from SQL") {
     // Given
-    CAPSRecords.create(personTable).register("people")
+    CAPSRecords.create(personTable).toDF().createOrReplaceTempView("people")
 
     // When
     val df = session.sql("SELECT * FROM people")
