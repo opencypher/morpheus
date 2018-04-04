@@ -334,7 +334,7 @@ final case class ConstructGraph(
           case (df, SetPropertyItem(key, v, expr)) =>
             constructProperty(v, key, expr, df)
         }
-        Set(newEntityTag) -> entityTable
+        Set(newEntityTag) -> entityTableWithProperties
       }
     }
 

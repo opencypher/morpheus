@@ -241,6 +241,21 @@ trait MultipleGraphBehaviour extends CAPSTestSuite with ScanGraphFactory {
     it("should construct a node property from a literal") {
       val query =
         """|CONSTRUCT
+           |  NEW ({name: 'Donald'})
+           |RETURN GRAPH""".stripMargin
+
+      val result = caps.cypher(query)
+
+      result.getRecords.toMaps shouldBe empty
+      result.getGraph.schema should equal(Schema.empty.withNodePropertyKeys()("name" -> CTString).asCaps)
+      result.getGraph.cypher("MATCH (a) RETURN a.name").getRecords.iterator.toBag should equal(Bag(
+        CypherMap("a.name" -> "Donald")
+      ))
+    }
+
+    it("should construct a node label and a node property from a literal") {
+      val query =
+        """|CONSTRUCT
            |  NEW (a :A {name: 'Donald'})
            |RETURN GRAPH""".stripMargin
 
