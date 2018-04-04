@@ -29,7 +29,7 @@ package org.opencypher.spark.impl
 import org.apache.spark.sql.Row
 import org.opencypher.okapi.api.types.{CTNode, CTRelationship}
 import org.opencypher.okapi.ir.test.support.Bag
-import org.opencypher.spark.api.io.CAPSRelationshipTable
+import org.opencypher.spark.api.io.{CAPSNodeTable, CAPSRelationshipTable}
 import org.opencypher.spark.test.CAPSTestSuite
 import org.opencypher.spark.test.fixture.{GraphCreationFixture, TeamDataFixture}
 
@@ -74,6 +74,20 @@ class CAPSGraphTest extends CAPSTestSuite with GraphCreationFixture with TeamDat
         Row(3L, true, true, 8L, "Max"),
         Row(0L, true, true, 42L, "Stefan")
       ))
+  }
+
+  it("should support the same node label from multiple node tables") {
+    // this creates additional :Person nodes
+    val personsPart2 = caps.sparkSession.createDataFrame(
+      Seq(
+        (5L, false, "Soeren", 23L),
+        (6L, false, "Hannes", 42L))
+    ).toDF("ID", "IS_SWEDE", "NAME", "NUM")
+
+    val personTable2 = CAPSNodeTable(personTable.mapping, personsPart2)
+
+    val graph = CAPSGraph.create(personTable, personTable2)
+    graph.nodes("n").size shouldBe 6
   }
 
   it("should support the same relationship type from multiple relationship tables") {
