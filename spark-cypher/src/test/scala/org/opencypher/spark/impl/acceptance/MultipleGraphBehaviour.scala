@@ -33,13 +33,32 @@ import org.opencypher.okapi.api.value.CypherValue.CypherMap
 import org.opencypher.okapi.api.value.{CAPSNode, CAPSRelationship}
 import org.opencypher.okapi.ir.test.support.Bag
 import org.opencypher.okapi.ir.test.support.Bag._
+import org.opencypher.okapi.ir.test.support.creation.propertygraph.TestPropertyGraphFactory
 import org.opencypher.spark.impl.CAPSConverters._
 import org.opencypher.spark.impl.CAPSGraph
 import org.opencypher.spark.impl.DataFrameOps._
 import org.opencypher.spark.schema.CAPSSchema._
+import org.opencypher.spark.test.CAPSTestSuite
+import org.opencypher.spark.test.support.creation.caps.{CAPSScanGraphFactory, CAPSTestGraphFactory}
 
-trait MultipleGraphBehaviour {
-  this: AcceptanceTest =>
+class SingleBehaviourRunner extends CAPSTestSuite with MultipleGraphBehaviour with ScanGraphFactory {
+
+  val initGraph: String => CAPSGraph = (createQuery) =>
+    capsGraphFactory(TestPropertyGraphFactory(createQuery)).asCaps
+
+  describe("using " + capsGraphFactory.name) {
+    describe("MultipleGraphBehaviour") {
+      it should behave like multipleGraphBehaviour(initGraph)
+    }
+  }
+
+}
+
+trait ScanGraphFactory {
+  def capsGraphFactory: CAPSTestGraphFactory = CAPSScanGraphFactory
+}
+
+trait MultipleGraphBehaviour extends CAPSTestSuite with ScanGraphFactory {
 
   def multipleGraphBehaviour(initGraph: String => CAPSGraph): Unit = {
     def testGraph1 = initGraph("CREATE (:Person {name: 'Mats'})")
@@ -219,11 +238,10 @@ trait MultipleGraphBehaviour {
       ))
     }
 
-    // TODO: reactive after map expressions in NEW are supported
-    ignore("should construct a node property from a literal") {
+    it("should construct a node property from a literal") {
       val query =
         """|CONSTRUCT
-           |  NEW (a :A {a.name : 'Donald'})
+           |  NEW (a :A {name: 'Donald'})
            |RETURN GRAPH""".stripMargin
 
       val result = testGraph1.cypher(query)
@@ -236,14 +254,10 @@ trait MultipleGraphBehaviour {
       ))
     }
 
-    // TODO: Requires COPY OF to be able to express original intent
-    // TODO: reactive after map expressions in NEW are supported
-    ignore("should construct multiple properties") {
+    it("should construct multiple properties") {
       val query =
-        """|MATCH (a)
-           |CONSTRUCT
-           |  CLONE a as newA
-           |  NEW (newA :A:B {newA.name : 'Donald', newA.age : 100})
+        """|CONSTRUCT
+           |  NEW (a:A:B {name:'Donald', age:100})
            |RETURN GRAPH""".stripMargin
 
       val result = testGraph1.cypher(query)
@@ -279,11 +293,10 @@ trait MultipleGraphBehaviour {
       ))
     }
 
-    // TODO: reactive after map expressions in NEW are supported
-    ignore("should construct a relationship") {
+    it("should construct a relationship") {
       val query =
         """|CONSTRUCT
-           |  NEW ()-[r:FOO {r.val : 42}]->()
+           |  NEW ()-[r:FOO {val : 42}]->()
            |RETURN GRAPH""".stripMargin
 
       val result = testGraph1.cypher(query)
@@ -303,10 +316,10 @@ trait MultipleGraphBehaviour {
     ignore("should tilde copy a relationship") {
       val query =
         """|CONSTRUCT
-           |  NEW ()-[r:FOO {r.val : 42}]->()
+           |  NEW ()-[r:FOO {val : 42}]->()
            |MATCH ()-[s]->()
            |CONSTRUCT
-           |  NEW ()-[t COPY OF s {t.name : 'Donald'}]->()
+           |  NEW ()-[t COPY OF s {name : 'Donald'}]->()
            |RETURN GRAPH""".stripMargin
 
       val result = testGraph1.cypher(query)
@@ -443,8 +456,6 @@ trait MultipleGraphBehaviour {
           |RETURN GRAPH
         """.stripMargin
 
-      println(caps.toString)
-
       val graph = caps.cypher(query).getGraph
 
       graph.schema should equal(Schema.empty.withNodePropertyKeys(Set.empty[String]).asCaps)
@@ -541,6 +552,7 @@ trait MultipleGraphBehaviour {
            |CREATE (max:Person {name: 'Max'})
            |CREATE (max)-[:HAS_SIMILAR_NAME]->(mats)
         """.stripMargin)
+
       caps.store(GraphName("testGraphRels1"), testGraphRels)
       caps.store(GraphName("testGraphRels2"), testGraphRels)
 

@@ -32,7 +32,12 @@ import org.opencypher.okapi.ir.api.expr.Var
 import scala.language.implicitConversions
 
 object VarConverters {
-  implicit def toVar(f: IRField): Var = Var(f.name)(f.cypherType)
+
+  implicit class RichIrField(val f: IRField) extends AnyVal {
+    def toVar: Var = Var(f.name)(f.cypherType)
+  }
+
+  implicit def toVar(f: IRField): Var = f.toVar
 
   implicit def toVars(fields: Set[IRField]): Set[Var] = fields.map(toVar)
 }

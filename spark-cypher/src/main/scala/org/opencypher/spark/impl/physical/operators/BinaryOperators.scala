@@ -41,6 +41,7 @@ import org.opencypher.spark.impl.CAPSUnionGraph.{apply => _, unapply => _}
 import org.apache.spark.sql.functions
 import org.opencypher.okapi.impl.exception.IllegalArgumentException
 import org.opencypher.okapi.ir.api.expr.{Expr, Var}
+import org.opencypher.okapi.ir.api.set.SetPropertyItem
 import org.opencypher.okapi.relational.impl.table.{ColumnName, OpaqueField, RecordHeader, RecordSlot}
 import org.opencypher.spark.impl.DataFrameOps._
 import org.opencypher.spark.impl.SparkSQLExprMapper._
@@ -306,7 +307,7 @@ final case class ConstructGraph(
     val onGraph = right.workingGraph
     val unionTagStrategy: Map[QualifiedGraphName, Map[Int, Int]] = right.tagStrategy
 
-    val LogicalPatternGraph(schema, clonedVarsToInputVars, newEntities, _, onGraphs, name) = construct
+    val LogicalPatternGraph(schema, clonedVarsToInputVars, newEntities, sets, onGraphs, name) = construct
 
     val matchGraphs: Set[QualifiedGraphName] = clonedVarsToInputVars.values.map(_.cypherType.graph.get).toSet
     val allGraphs = unionTagStrategy.keySet ++ matchGraphs
@@ -329,7 +330,10 @@ final case class ConstructGraph(
       } else {
         val newEntityTag = pickFreeTag(constructTagStrategy)
         val entityTable = createEntities(newEntities, retaggedBaseTable, newEntityTag)
-        //        val entityTableWithProperties = setProperties(sets, entityTable)
+        val entityTableWithProperties = sets.foldLeft(entityTable) {
+          case (df, SetPropertyItem(key, v, expr)) =>
+            constructProperty(v, key, expr, df)
+        }
         Set(newEntityTag) -> entityTable
       }
     }
@@ -351,8 +355,9 @@ final case class ConstructGraph(
 
     context.patternGraphTags.update(construct.name, constructedCombinedWithOn.tags)
 
-    CAPSPhysicalResult(CAPSRecords.unit(),constructedCombinedWithOn , name, constructTagStrategy)
+    CAPSPhysicalResult(CAPSRecords.unit(), constructedCombinedWithOn, name, constructTagStrategy)
   }
+
 
   def constructProperty(variable: Var, propertyKey: String, propertyValue: Expr, constructedTable: CAPSRecords)(implicit context: CAPSRuntimeContext): CAPSRecords = {
     val propertyValueColumn: Column = propertyValue.asSparkSQLExpr(constructedTable.header, constructedTable.data, context)
