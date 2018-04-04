@@ -432,7 +432,7 @@ class LogicalPlanner(producer: LogicalOperatorProducer)
       val field = nodes.head
 
       // if we have already have a previous result we need to plan a cartesian product
-      if (plan.solved.fields.nonEmpty) {
+      if (plan.fields.nonEmpty) {
         producer.planCartesianProduct(plan, nodePlan(planStart(graph), field))
       } else { // first node scan
         nodePlan(plan, field)

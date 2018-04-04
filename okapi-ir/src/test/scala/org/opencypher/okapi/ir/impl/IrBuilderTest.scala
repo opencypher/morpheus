@@ -68,7 +68,7 @@ class IrBuilderTest extends IrTestSuite {
           |  CLONE a as b
           |RETURN GRAPH""".stripMargin
 
-      query.model.result match {
+      query.asCypherQuery().model.result match {
         case GraphResultBlock(_, IRPatternGraph(qgn, _, clones, _, _, _)) =>
           clones.keys.size should equal(1)
           val (b, a) = clones.head
@@ -93,20 +93,6 @@ class IrBuilderTest extends IrTestSuite {
 
   }
   describe("parsing CypherQuery") {
-    it("computes a pattern graph schema correctly - 1 create") {
-      val query =
-        """
-        |CONSTRUCT
-        |  NEW (a :A)
-        |RETURN GRAPH""".stripMargin
-
-      query.asCypherQuery()().model.result match {
-        case GraphResultBlock(_, IRPatternGraph(_, schema, _, _, _, _)) =>
-          schema should equal(Schema.empty.withNodePropertyKeys("A")())
-        case _ => fail("no matching graph result found")
-      }
-    }
-
     // TODO: Enable again once setting in NEW is supported
     ignore("construct can set a label") {
       val query =

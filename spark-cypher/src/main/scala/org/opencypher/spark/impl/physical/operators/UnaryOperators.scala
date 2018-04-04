@@ -38,7 +38,6 @@ import org.opencypher.okapi.ir.impl.syntax.ExprSyntax._
 import org.opencypher.okapi.logical.impl._
 import org.opencypher.okapi.relational.impl.table.{ColumnName, _}
 import org.opencypher.spark.api.CAPSSession
-import org.opencypher.spark.impl.CAPSUnionGraph.{apply => _, unapply => _, _}
 import org.opencypher.spark.impl.CAPSRecords
 import org.opencypher.spark.impl.CAPSUnionGraph.{apply => _, unapply => _}
 import org.opencypher.spark.impl.DataFrameOps._
@@ -46,8 +45,6 @@ import org.opencypher.spark.impl.SparkSQLExprMapper._
 import org.opencypher.spark.impl.convert.CAPSCypherType._
 import org.opencypher.spark.impl.physical.operators.CAPSPhysicalOperator._
 import org.opencypher.spark.impl.physical.{CAPSPhysicalResult, CAPSRuntimeContext}
-import org.opencypher.spark.impl.{CAPSGraph, CAPSRecords}
-import org.opencypher.spark.schema.CAPSSchema._
 
 private[spark] abstract class UnaryPhysicalOperator extends CAPSPhysicalOperator {
 
@@ -72,13 +69,13 @@ final case class Cache(in: CAPSPhysicalOperator) extends UnaryPhysicalOperator w
 final case class NodeScan(in: CAPSPhysicalOperator, v: Var, header: RecordHeader) extends UnaryPhysicalOperator {
 
   override def executeUnary(prev: CAPSPhysicalResult)(implicit context: CAPSRuntimeContext): CAPSPhysicalResult = {
-    val graph = prev.graph
+    val graph = prev.workingGraph
     val records = v.cypherType match {
       case n: CTNode => graph.nodes(v.name, n)
       case other => throw IllegalArgumentException("Node variable", other)
     }
     assert(header == records.header)
-    CAPSPhysicalResult(records, graph)
+    CAPSPhysicalResult(records, graph, prev.workingGraphName)
   }
 }
 
