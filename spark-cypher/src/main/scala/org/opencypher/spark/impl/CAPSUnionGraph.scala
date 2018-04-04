@@ -27,13 +27,11 @@
 package org.opencypher.spark.impl
 
 import org.apache.spark.storage.StorageLevel
-import org.opencypher.okapi.api.graph.QualifiedGraphName
 import org.opencypher.okapi.api.schema.Schema
 import org.opencypher.okapi.api.types.{CTNode, CTRelationship}
 import org.opencypher.okapi.ir.api.expr.Var
 import org.opencypher.okapi.relational.impl.table.RecordHeader
 import org.opencypher.spark.api.CAPSSession
-import org.opencypher.spark.impl.util.TagSupport
 import org.opencypher.spark.impl.util.TagSupport.computeRetaggings
 import org.opencypher.spark.schema.CAPSSchema
 import org.opencypher.spark.schema.CAPSSchema._

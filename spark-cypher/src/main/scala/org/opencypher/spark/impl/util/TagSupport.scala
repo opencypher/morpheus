@@ -26,30 +26,20 @@
  */
 package org.opencypher.spark.impl.util
 
-import org.opencypher.okapi.api.graph.QualifiedGraphName
-
-//
-//import org.opencypher.okapi.api.schema.{RelTypePropertyMap, Schema}
-//
-//trait TagSupport {
-//
-//  self: Schema with TagSupport =>
-//
-//  def tags: Set[Int] = Set(0)
-//
-//  def withTag(tag: Int): Schema with TagSupport = withTags(tag)
-//
-//  def withTags(tags: Int*): Schema with TagSupport = withTags(tags.toSet)
-//
-//  def withTags(tags: Set[Int]): Schema with TagSupport
-//
-//  def replaceTags(replacements: Map[Int, Int]): Schema with TagSupport
-//
-//  def union(other: Schema with TagSupport): Schema with TagSupport
-//}
-//
 object TagSupport {
 
+  /**
+    * Returns tag remappings that, when applied, guarantee that there are no ID collisions between the
+    * given graphs.
+    *
+    * Optionally fixed retaggings can be supplied. In this case these retaggings are applied and for the remaining
+    * graphs the required retaggings are computed on top of the fixed retaggings.
+    *
+    * @param graphs
+    * @param fixedRetaggings
+    * @tparam GraphKey
+    * @return
+    */
   def computeRetaggings[GraphKey](
     graphs: Map[GraphKey, Set[Int]],
     fixedRetaggings: Map[GraphKey, Map[Int, Int]] = Map.empty[GraphKey, Map[Int, Int]]
@@ -69,33 +59,6 @@ object TagSupport {
     }
     result
   }
-
-
-//  implicit class TaggedSchema(s: Schema) {
-//
-//    def toTagged: Schema with TagSupport = {
-//      s match {
-//        case swt: Schema with TagSupport => swt
-//        case other => SchemaImpl(other.labelPropertyMap, other.relTypePropertyMap: RelTypePropertyMap, Set(0))
-//      }
-//    }
-//
-//    def withTag(tag: Int): Schema with TagSupport = withTags(tag)
-//
-//    def withTags(tags: Int*): Schema with TagSupport = withTags(tags.toSet)
-//
-//    def withTags(tags: Set[Int]): Schema with TagSupport = s.toTagged.withTags(tags)
-//
-//  }
-
-//  implicit class RemappingOps(val remapping: Map[Int, Int]) extends AnyVal {
-//    def chain(other: Map[Int, Int]): Map[Int, Int] = {
-//      remapping.map { case (from, to) =>
-//        val updatedTo = other.getOrElse(from, to)
-//        from -> updatedTo
-//      }
-//    }
-//  }
 
   implicit class TagSet(val lhsTags: Set[Int]) extends AnyVal {
 

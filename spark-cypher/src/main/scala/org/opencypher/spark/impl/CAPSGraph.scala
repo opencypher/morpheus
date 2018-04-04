@@ -27,7 +27,7 @@
 package org.opencypher.spark.impl
 
 import org.apache.spark.storage.StorageLevel
-import org.opencypher.okapi.api.graph.{GraphOperations, PropertyGraph}
+import org.opencypher.okapi.api.graph.{GraphOperations, PropertyGraph, QualifiedGraphName}
 import org.opencypher.okapi.api.schema._
 import org.opencypher.okapi.api.table.CypherRecords
 import org.opencypher.okapi.api.types.{CTNode, CTRelationship}
@@ -37,6 +37,7 @@ import org.opencypher.okapi.relational.impl.table.{ColumnName, OpaqueField, Reco
 import org.opencypher.spark.api.CAPSSession
 import org.opencypher.spark.api.io.{CAPSEntityTable, CAPSNodeTable}
 import org.opencypher.spark.impl.CAPSConverters._
+import org.opencypher.spark.impl.util.TagSupport.computeRetaggings
 import org.opencypher.spark.schema.CAPSSchema
 import org.opencypher.spark.schema.CAPSSchema._
 
@@ -50,11 +51,8 @@ trait CAPSGraph extends PropertyGraph with GraphOperations with Serializable {
 
   override def relationships(name: String, relCypherType: CTRelationship = CTRelationship): CAPSRecords
 
-  // TODO: Flatten UnionGraph trees that have tag updates enabled
-  override def unionAll(other: PropertyGraph): CAPSGraph = {
-    // TODO: Compute retagging here
-
-    CAPSUnionGraph(this, other.asCaps)
+  override def unionAll(others: PropertyGraph*): CAPSGraph = {
+    CAPSUnionGraph(this :: others.map(_.asCaps).toList: _*)
   }
 
   override def schema: CAPSSchema

@@ -39,12 +39,10 @@ final case class GraphUnionAll(inputs: List[CAPSPhysicalOperator], qgn: Qualifie
     val inputResults = inputs.map(_.execute)
     implicit val caps = inputResults.head.records.caps
 
-    val inputGraphs: Map[QualifiedGraphName, CAPSGraph] = inputResults.map(r => r.workingGraphName -> r.workingGraph).toMap
-    val graphTags: Map[QualifiedGraphName, Set[Int]] = inputGraphs.mapValues(_.tags)
-    val tagStrategy: Map[QualifiedGraphName, Map[Int, Int]] = computeRetaggings(graphTags)
+    val graphTags = inputResults.map(r => r.workingGraphName -> r.workingGraph.tags).toMap
+    val tagStrategy = computeRetaggings(graphTags)
+    val graphWithTagStrategy = inputResults.map(r => r.workingGraph -> tagStrategy(r.workingGraphName)).toMap
 
-    val graphWithTagStrategy: Map[CAPSGraph, Map[Int, Int]] = inputResults
-      .map(r => r.workingGraph -> tagStrategy(r.workingGraphName)).toMap
     val unionGraph = CAPSUnionGraph(graphWithTagStrategy)
 
     CAPSPhysicalResult(CAPSRecords.unit(), unionGraph, qgn, tagStrategy)
