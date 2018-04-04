@@ -80,39 +80,25 @@ class PhysicalPlanner[P <: PhysicalOperator[R, G, C], R <: CypherRecords, G <: P
         }
 
       case op
-        @flat.NodeScan(v, in, header)
-      =>
-        producer.planNodeScan(process(in), op.sourceGraph, v, header)
+        @flat.NodeScan(v, in, header) => producer.planNodeScan(process(in), op.sourceGraph, v, header)
 
       case op
-        @flat.EdgeScan(e, in, header)
-      =>
-        producer.planRelationshipScan(process(in), op.sourceGraph, e, header)
+        @flat.EdgeScan(e, in, header) => producer.planRelationshipScan(process(in), op.sourceGraph, e, header)
 
-      case flat.Alias(expr, alias, in, header)
-      =>
-        producer.planAlias(process(in), expr, alias, header)
+      case flat.Alias(expr, alias, in, header) => producer.planAlias(process(in), expr, alias, header)
 
-      case flat.Unwind(list, item, in, header)
-      =>
-        producer.planUnwind(process(in), list, item, header)
+      case flat.Unwind(list, item, in, header) => producer.planUnwind(process(in), list, item, header)
 
-      case flat.Project(expr, in, header)
-      =>
-        producer.planProject(process(in), expr, header)
+      case flat.Project(expr, in, header) => producer.planProject(process(in), expr, header)
 
-      case flat.Aggregate(aggregations, group, in, header)
-      =>
-        producer.planAggregate(process(in), group, aggregations, header)
+      case flat.Aggregate(aggregations, group, in, header) => producer.planAggregate(process(in), group, aggregations, header)
 
-      case flat.Filter(expr, in, header)
-      =>
-        expr match {
-          case TrueLit() =>
-            process(in) // optimise away filter
-          case _ =>
-            producer.planFilter(process(in), expr, header)
-        }
+      case flat.Filter(expr, in, header) => expr match {
+        case TrueLit() =>
+          process(in) // optimise away filter
+        case _ =>
+          producer.planFilter(process(in), expr, header)
+      }
 
       case flat.ValueJoin(lhs, rhs, predicates, header) =>
         val joinExpressions = predicates.map(p => p.lhs -> p.rhs).toSeq
@@ -156,9 +142,7 @@ class PhysicalPlanner[P <: PhysicalOperator[R, G, C], R <: CypherRecords, G <: P
             producer.planTabularUnionAll(outgoing, incoming)
         }
 
-      case op
-        @flat.ExpandInto(source, rel, target, direction, sourceOp, header, relHeader)
-      =>
+      case op@flat.ExpandInto(source, rel, target, direction, sourceOp, header, relHeader) =>
         val in = process(sourceOp)
         val relationships = producer.planRelationshipScan(in, op.sourceGraph, rel, relHeader)
 
@@ -175,16 +159,10 @@ class PhysicalPlanner[P <: PhysicalOperator[R, G, C], R <: CypherRecords, G <: P
             producer.planTabularUnionAll(outgoing, incoming)
         }
 
-      case flat.InitVarExpand(source, edgeList, endNode, in, header)
-      =>
+      case flat.InitVarExpand(source, edgeList, endNode, in, header) =>
         producer.planInitVarExpand(process(in), source, edgeList, endNode, header)
 
-      case flat.BoundedVarExpand(
-      rel, edgeList, target, direction,
-      lower, upper,
-      sourceOp, relOp, targetOp,
-      header, isExpandInto)
-      =>
+      case flat.BoundedVarExpand(rel, edgeList, target, direction, lower, upper, sourceOp, relOp, targetOp, header, isExpandInto) =>
         val first = process(sourceOp)
         val second = process(relOp)
         val third = process(targetOp)
@@ -203,32 +181,21 @@ class PhysicalPlanner[P <: PhysicalOperator[R, G, C], R <: CypherRecords, G <: P
           header,
           isExpandInto)
 
-      case flat.Optional(lhs, rhs, header)
-      =>
-        producer.planOptional(process(lhs), process(rhs), header)
+      case flat.Optional(lhs, rhs, header) => producer.planOptional(process(lhs), process(rhs), header)
 
-      case flat.ExistsSubQuery(predicateField, lhs, rhs, header)
-      =>
+      case flat.ExistsSubQuery(predicateField, lhs, rhs, header) =>
         producer.planExistsSubQuery(process(lhs), process(rhs), predicateField, header)
 
-      case flat.OrderBy(sortItems: Seq[SortItem[Expr]], in, header)
-      =>
+      case flat.OrderBy(sortItems: Seq[SortItem[Expr]], in, header) =>
         producer.planOrderBy(process(in), sortItems, header)
 
-      case flat.Skip(expr, in, header)
-      =>
-        producer.planSkip(process(in), expr, header)
+      case flat.Skip(expr, in, header) => producer.planSkip(process(in), expr, header)
 
-      case flat.Limit(expr, in, header)
-      =>
-        producer.planLimit(process(in), expr, header)
+      case flat.Limit(expr, in, header) => producer.planLimit(process(in), expr, header)
 
-      case flat.ReturnGraph(in)
-      =>
-        producer.planReturnGraph(process(in))
+      case flat.ReturnGraph(in) => producer.planReturnGraph(process(in))
 
-      case x =>
-        throw NotImplementedException(s"Physical planning of operator $x")
+      case other => throw NotImplementedException(s"Physical planning of operator $other")
     }
   }
 
@@ -250,9 +217,7 @@ class PhysicalPlanner[P <: PhysicalOperator[R, G, C], R <: CypherRecords, G <: P
     constructGraphPlan
   }
 
-  private def relTypes(r: Var): Set[String]
-
-  = r.cypherType match {
+  private def relTypes(r: Var): Set[String] = r.cypherType match {
     case t: CTRelationship => t.types
     case _ => Set.empty
   }

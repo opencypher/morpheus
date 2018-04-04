@@ -39,8 +39,8 @@ trait GraphOperations {
     * Constructs the union of this graph and the argument graphs. Note that the argument graphs have to
     * be managed by the same session as this graph.
     *
-    * Union does not merge any nodes or relationships, it only moves all the nodes and relationships
-    * in the union.
+    * This operation does not merge any nodes or relationships, but simply creates a new graph consisting
+    * of all nodes and relationships of the argument graphs.
     *
     * @param others argument graphs with which to union
     * @return union of this and the argument graph
