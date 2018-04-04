@@ -454,8 +454,7 @@ trait MultipleGraphBehaviour {
       ))
     }
 
-    // TODO: Fix planner, no cartesian product needed
-    ignore("construct match construct") {
+    it("construct match construct") {
       caps.store(GraphName("g1"), testGraphRels)
       val query =
         """

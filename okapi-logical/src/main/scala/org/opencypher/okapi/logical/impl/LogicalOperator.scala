@@ -273,7 +273,12 @@ final case class FromGraph(
     solved: SolvedQueryModel)
     extends StackingLogicalOperator {
 
-  override val fields: Set[Var] = in.fields
+  // Pattern graph consumes input table, so no fields are bound afterwards
+  // TODO: adopt yield for construct
+  override val fields: Set[Var] = graph match {
+    case _: LogicalPatternGraph => Set.empty
+    case _: LogicalCatalogGraph => in.fields
+  }
 }
 
 final case class EmptyRecords(fields: Set[Var], in: LogicalOperator, solved: SolvedQueryModel)
