@@ -95,44 +95,7 @@ final class PatternConverter {
           _ <- modify[Pattern[Expr]](_.withEntity(entity))
         } yield entity
 
-      case rc
-        @ast.RelationshipChain(left, ast.RelationshipPattern(eOpt, types, None, None, dir, _), right)
-      =>
-
-        val rel = createRelationshipVar(knownTypes, rc.position.offset, eOpt, types, qualifiedGraphName)
-
-        for {
-          source <- convertElement(left, knownTypes, qualifiedGraphName)
-          target <- convertElement(right, knownTypes, qualifiedGraphName)
-          rel <- pure(IRField(rel.name)(rel.cypherType))
-          _ <- modify[Pattern[Expr]] { given =>
-            val registered = given.withEntity(rel)
-
-            Endpoints.apply(source, target) match {
-              case ends: IdenticalEndpoints =>
-                registered.withConnection(rel, CyclicRelationship(ends))
-
-              case ends: DifferentEndpoints =>
-                dir match {
-                  case OUTGOING =>
-                    registered.withConnection(rel, DirectedRelationship(ends))
-
-                  case INCOMING =>
-                    registered.withConnection(rel, DirectedRelationship(ends.flip))
-
-                  case BOTH =>
-                    registered.withConnection(rel, UndirectedRelationship(ends))
-                }
-            }
-          }
-        } yield target
-
-      case rc
-        @ast.RelationshipChain(
-      left,
-      ast.RelationshipPattern(eOpt, types, Some(Some(range)), None, dir, _),
-      right)
-      =>
+      case rc @ast.RelationshipChain(left, ast.RelationshipPattern(eOpt, types, rangeOpt, None, dir, _), right) =>
 
         val rel = createRelationshipVar(knownTypes, rc.position.offset, eOpt, types, qualifiedGraphName)
 
@@ -143,28 +106,49 @@ final class PatternConverter {
           _ <- modify[Pattern[Expr]] { given =>
             val registered = given.withEntity(rel)
 
-            // TODO: replace with match on range parameter and remove upper case
-            val lower = range.lower.map(_.value.intValue()).getOrElse(1)
-            val upper =
-              range.upper
-                .map(_.value.intValue())
-                .getOrElse(throw NotImplementedException("Support for unbounded var-length not yet implemented"))
+            rangeOpt match {
+              case Some(Some(range)) =>
+                val lower = range.lower.map(_.value.intValue()).getOrElse(1)
+                val upper = range.upper
+                    .map(_.value.intValue())
+                    .getOrElse(throw NotImplementedException("Support for unbounded var-length not yet implemented"))
 
-            Endpoints.apply(source, target) match {
-              case _: IdenticalEndpoints =>
-                throw NotImplementedException("Support for cyclic var-length not yet implemented")
+                Endpoints.apply(source, target) match {
+                  case _: IdenticalEndpoints =>
+                    throw NotImplementedException("Support for cyclic var-length not yet implemented")
 
-              case ends: DifferentEndpoints =>
-                dir match {
-                  case OUTGOING =>
-                    registered.withConnection(rel, DirectedVarLengthRelationship(ends, lower, Some(upper)))
+                  case ends: DifferentEndpoints =>
+                    dir match {
+                      case OUTGOING =>
+                        registered.withConnection(rel, DirectedVarLengthRelationship(ends, lower, Some(upper)))
 
-                  case INCOMING =>
-                    registered.withConnection(rel, DirectedVarLengthRelationship(ends.flip, lower, Some(upper)))
+                      case INCOMING =>
+                        registered.withConnection(rel, DirectedVarLengthRelationship(ends.flip, lower, Some(upper)))
 
-                  case BOTH =>
-                    registered.withConnection(rel, UndirectedVarLengthRelationship(ends.flip, lower, Some(upper)))
+                      case BOTH =>
+                        registered.withConnection(rel, UndirectedVarLengthRelationship(ends.flip, lower, Some(upper)))
+                    }
                 }
+
+              case None =>
+                Endpoints.apply(source, target) match {
+                  case ends: IdenticalEndpoints =>
+                    registered.withConnection(rel, CyclicRelationship(ends))
+
+                  case ends: DifferentEndpoints =>
+                    dir match {
+                      case OUTGOING =>
+                        registered.withConnection(rel, DirectedRelationship(ends))
+
+                      case INCOMING =>
+                        registered.withConnection(rel, DirectedRelationship(ends.flip))
+
+                      case BOTH =>
+                        registered.withConnection(rel, UndirectedRelationship(ends))
+                    }
+                }
+
+              case _ =>  throw NotImplementedException(s"Support for pattern conversion of $rc not yet implemented")
             }
           }
         } yield target
