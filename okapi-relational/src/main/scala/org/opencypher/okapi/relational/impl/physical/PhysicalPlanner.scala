@@ -29,8 +29,6 @@ package org.opencypher.okapi.relational.impl.physical
 import org.opencypher.okapi.api.graph.{CypherSession, PropertyGraph}
 import org.opencypher.okapi.api.table.CypherRecords
 import org.opencypher.okapi.api.types.{CTBoolean, CTNode, CTRelationship}
-import org.opencypher.okapi.impl.exception.{IllegalArgumentException, NotImplementedException}
-import org.opencypher.okapi.api.types.CTRelationship
 import org.opencypher.okapi.impl.exception.NotImplementedException
 import org.opencypher.okapi.ir.api.block.SortItem
 import org.opencypher.okapi.ir.api.expr._
@@ -72,10 +70,10 @@ class PhysicalPlanner[P <: PhysicalOperator[R, G, C], R <: CypherRecords, G <: P
             }
         }
 
-      case flat.UseGraph(graph, in) =>
+      case flat.FromGraph(graph, in) =>
         graph match {
           case g: LogicalCatalogGraph =>
-            producer.planUseGraph(process(in), g)
+            producer.planFromGraph(process(in), g)
 
           case construct: LogicalPatternGraph =>
             planConstructGraph(Some(in), construct)

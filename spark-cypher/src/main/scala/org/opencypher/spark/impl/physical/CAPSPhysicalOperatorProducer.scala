@@ -26,7 +26,7 @@
  */
 package org.opencypher.spark.impl.physical
 
-import org.opencypher.okapi.api.graph.{PropertyGraph, QualifiedGraphName}
+import org.opencypher.okapi.api.graph.QualifiedGraphName
 import org.opencypher.okapi.api.value.CypherValue._
 import org.opencypher.okapi.ir.api.block.SortItem
 import org.opencypher.okapi.ir.api.expr._
@@ -35,7 +35,6 @@ import org.opencypher.okapi.logical.impl._
 import org.opencypher.okapi.relational.api.physical.{PhysicalOperatorProducer, PhysicalPlannerContext}
 import org.opencypher.okapi.relational.impl.table._
 import org.opencypher.spark.api.CAPSSession
-import org.opencypher.spark.impl.CAPSConverters._
 import org.opencypher.spark.impl.physical.operators.CAPSPhysicalOperator
 import org.opencypher.spark.impl.{CAPSGraph, CAPSRecords}
 
@@ -82,8 +81,8 @@ final class CAPSPhysicalOperatorProducer(implicit caps: CAPSSession)
     operators.Start(qgnOpt.getOrElse(caps.emptyGraphQgn), in)
 
   // TODO: Make catalog usage consistent between Start/FROM GRAPH
-  override def planUseGraph(in: CAPSPhysicalOperator, g: LogicalCatalogGraph): CAPSPhysicalOperator =
-    operators.UseGraph(in, g)
+  override def planFromGraph(in: CAPSPhysicalOperator, g: LogicalCatalogGraph): CAPSPhysicalOperator =
+    operators.FromGraph(in, g)
 
   override def planNodeScan(
     in: CAPSPhysicalOperator,

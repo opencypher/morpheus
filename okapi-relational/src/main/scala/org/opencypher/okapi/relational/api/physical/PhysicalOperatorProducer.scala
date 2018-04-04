@@ -143,7 +143,7 @@ trait PhysicalOperatorProducer[P <: PhysicalOperator[R, G, C], R <: CypherRecord
     * @param graph graph to select from the catalog
     * @return select graph operator
     */
-  def planUseGraph(in: P, graph: LogicalCatalogGraph): P
+  def planFromGraph(in: P, graph: LogicalCatalogGraph): P
 
   /**
     * Evaluates the given expression and projects it to a new column in the input records.
