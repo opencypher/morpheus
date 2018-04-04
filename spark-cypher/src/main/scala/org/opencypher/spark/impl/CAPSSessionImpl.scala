@@ -36,11 +36,12 @@ import org.opencypher.okapi.api.value.CypherValue._
 import org.opencypher.okapi.api.value._
 import org.opencypher.okapi.impl.io.SessionPropertyGraphDataSource
 import org.opencypher.okapi.impl.util.Measurement.time
+import org.opencypher.okapi.ir.api.configuration.IrConfiguration._
 import org.opencypher.okapi.ir.api._
 import org.opencypher.okapi.ir.api.configuration.IrConfiguration.PrintIr
 import org.opencypher.okapi.ir.api.expr.{Expr, Var}
 import org.opencypher.okapi.ir.impl.parse.CypherParser
-import org.opencypher.okapi.ir.impl.{IRBuilder, IRBuilderContext}
+import org.opencypher.okapi.ir.impl.{IRBuilder, IRBuilderContext, QGNGenerator, QueryCatalog}
 import org.opencypher.okapi.logical.api.configuration.LogicalConfiguration.PrintLogicalPlan
 import org.opencypher.okapi.logical.impl._
 import org.opencypher.okapi.relational.api.configuration.CoraConfiguration.{PrintFlatPlan, PrintOptimizedPhysicalPlan, PrintPhysicalPlan, PrintQueryExecutionStages}
@@ -88,8 +89,12 @@ sealed class CAPSSessionImpl(val sparkSession: SparkSession, val sessionNamespac
     val allParameters = queryParameters ++ extractedParameters
 
     logStageProgress("IR translation ...", newLine = false)
-    val irBuilderContext = IRBuilderContext.initial(query, allParameters, semState, ambientGraphNew, generateGraphName _, dataSource, inputFields)
-    val ir = time("IR translation")(IRBuilder(stmt)(irBuilderContext))
+
+    val irBuilderContext = IRBuilderContext.initial(query, allParameters, semState, ambientGraphNew, qgnGenerator, dataSourceMapping, inputFields)
+    val irOut = time("IR translation")(IRBuilder.process(stmt)(irBuilderContext))
+
+    val ir = IRBuilder.extract(irOut)
+
     logStageProgress("Done!")
 
     if (PrintIr.isSet) {
@@ -212,7 +217,9 @@ sealed class CAPSSessionImpl(val sparkSession: SparkSession, val sessionNamespac
   private def planPhysical(
     records: CypherRecords,
     parameters: CypherMap,
-    logicalPlan: LogicalOperator): CAPSResult = {
+    logicalPlan: LogicalOperator,
+    queryCatalog: QueryCatalog = QueryCatalog(dataSourceMapping)
+  ): CAPSResult = {
     logStageProgress("Flat planning ... ", newLine = false)
     val flatPlannerContext = FlatPlannerContext(parameters)
     val flatPlan = time("Flat planning")(flatPlanner(logicalPlan)(flatPlannerContext))
@@ -223,7 +230,7 @@ sealed class CAPSSessionImpl(val sparkSession: SparkSession, val sessionNamespac
     }
 
     logStageProgress("Physical planning ... ", newLine = false)
-    val physicalPlannerContext = CAPSPhysicalPlannerContext.from(this.graph, records.asCaps, parameters)(self)
+    val physicalPlannerContext = CAPSPhysicalPlannerContext.from(queryCatalog, records.asCaps, parameters)(self)
     val physicalPlan = time("Physical planning")(physicalPlanner(flatPlan)(physicalPlannerContext))
     logStageProgress("Done!")
     if (PrintPhysicalPlan.isSet) {
@@ -241,15 +248,17 @@ sealed class CAPSSessionImpl(val sparkSession: SparkSession, val sessionNamespac
     }
 
     CAPSResultBuilder.from(logicalPlan, flatPlan, optimizedPhysicalPlan)(
-      CAPSRuntimeContext(physicalPlannerContext.parameters, graphAt, collection.mutable.Map.empty))
+      CAPSRuntimeContext(physicalPlannerContext.parameters, graphAt, collection.mutable.Map.empty, collection.mutable.Map.empty))
   }
 
-  private[opencypher] def generateGraphName: QualifiedGraphName = {
-    QualifiedGraphName(SessionPropertyGraphDataSource.Namespace, GraphName(s"tmp#${maxSessionGraphId.incrementAndGet}"))
+  private[opencypher] val qgnGenerator = new QGNGenerator {
+    override def generate: QualifiedGraphName = {
+      QualifiedGraphName(SessionPropertyGraphDataSource.Namespace, GraphName(s"tmp#${maxSessionGraphId.incrementAndGet}"))
+    }
   }
 
   private def mountAmbientGraph(ambient: PropertyGraph): IRCatalogGraph = {
-    val qualifiedGraphName = store(generateGraphName.graphName, ambient)
+    val qualifiedGraphName = store(qgnGenerator.generate.graphName, ambient)
     IRCatalogGraph(qualifiedGraphName, ambient.schema)
   }
 

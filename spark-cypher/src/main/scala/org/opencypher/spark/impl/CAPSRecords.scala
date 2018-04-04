@@ -33,6 +33,7 @@ import org.apache.spark.rdd.RDD
 import org.apache.spark.sql._
 import org.apache.spark.sql.types._
 import org.apache.spark.storage.StorageLevel
+import org.opencypher.okapi.api.graph.QualifiedGraphName
 import org.opencypher.okapi.api.io.conversion.{NodeMapping, RelationshipMapping}
 import org.opencypher.okapi.api.table.{CypherRecords, CypherRecordsCompanion}
 import org.opencypher.okapi.api.types._
@@ -100,14 +101,16 @@ sealed abstract class CAPSRecords(val header: RecordHeader, val data: DataFrame)
     this
   }
 
-  def replaceTags(replacements: Map[Int, Int]): CAPSRecords = {
+  // TODO: Forther optimize identity retaggings
+  def retag(replacements: Map[Int, Int]): CAPSRecords = {
+    val actualRetaggings = replacements.filterNot { case (from, to) => from == to }
     val idColumns = header.contents.collect {
       case f: OpaqueField => ColumnName.of(f)
       case p@ProjectedExpr(StartNode(_)) => ColumnName.of(p)
       case p@ProjectedExpr(EndNode(_)) => ColumnName.of(p)
     }
     val dfWithReplacedTags = idColumns.foldLeft(data) {
-      case (df, column) => df.safeReplaceTags(column, replacements)
+      case (df, column) => df.safeReplaceTags(column, actualRetaggings)
     }
 
     CAPSRecords.verifyAndCreate(header, dfWithReplacedTags)
@@ -149,6 +152,23 @@ sealed abstract class CAPSRecords(val header: RecordHeader, val data: DataFrame)
     CAPSRecords.verifyAndCreate(updatedHeader, updatedData)
   }
 
+  def retagVariable(v: Var, replacements: Map[Int, Int]): CAPSRecords = {
+    val slotsToRetag = v.cypherType match {
+      case _: CTNode => Set(header.slotFor(v))
+      case _: CTRelationship =>
+        val idSlot = header.slotFor(v)
+        val sourceSlot = header.sourceNodeSlot(v)
+        val targetSlot = header.targetNodeSlot(v)
+        Set(idSlot, sourceSlot, targetSlot)
+      case _ => Set.empty
+    }
+    val columnsToRetag = slotsToRetag.map(ColumnName.of)
+    val retaggedData = columnsToRetag.foldLeft(data) { case (df, columnName) =>
+      df.safeReplaceTags(columnName, replacements)
+    }
+    CAPSRecords.verifyAndCreate(header, retaggedData)
+  }
+
   def renameVars(aliasToOriginal: Map[Var, Var]): CAPSRecords = {
     val (updatedHeader, updatedData) = aliasToOriginal.foldLeft((header, data)) {
       case ((tempHeader, tempDf), (nextAlias, nextOriginal)) =>
@@ -168,11 +188,11 @@ sealed abstract class CAPSRecords(val header: RecordHeader, val data: DataFrame)
 
   def removeVars(vars: Set[Var]): CAPSRecords = {
     val (updatedHeader, updatedData) = vars.foldLeft((header, data)) {
-        case ((tempHeader, tempDf), nextFieldToRemove) =>
-          val slotsToRemove = tempHeader.selfWithChildren(nextFieldToRemove)
-          val updatedHeader = tempHeader -- RecordHeader.from(slotsToRemove.toList)
-          updatedHeader -> tempDf.drop(slotsToRemove.map(ColumnName.of): _*)
-      }
+      case ((tempHeader, tempDf), nextFieldToRemove) =>
+        val slotsToRemove = tempHeader.selfWithChildren(nextFieldToRemove)
+        val updatedHeader = tempHeader -- RecordHeader.from(slotsToRemove.toList)
+        updatedHeader -> tempDf.drop(slotsToRemove.map(ColumnName.of): _*)
+    }
     CAPSRecords.verifyAndCreate(updatedHeader, updatedData)
   }
 

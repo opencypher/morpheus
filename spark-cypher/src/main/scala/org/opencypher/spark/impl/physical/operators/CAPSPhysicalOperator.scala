@@ -51,6 +51,8 @@ private[spark] abstract class CAPSPhysicalOperator
     context.resolve(qualifiedGraphName).map(_.asCaps).getOrElse(throw IllegalArgumentException(s"a graph at $qualifiedGraphName"))
   }
 
+  protected def resolveTags(qgn: QualifiedGraphName)(implicit context: CAPSRuntimeContext): Set[Int] = context.patternGraphTags.getOrElse(qgn, resolve(qgn).tags)
+
   override def args: Iterator[Any] = super.args.flatMap {
     case RecordHeader(_) | Some(RecordHeader(_)) => None
     case other                                   => Some(other)

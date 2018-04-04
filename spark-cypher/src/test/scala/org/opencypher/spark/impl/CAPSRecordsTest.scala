@@ -26,7 +26,7 @@
  */
 package org.opencypher.spark.impl
 
-import org.apache.spark.sql.Row
+import org.apache.spark.sql.{DataFrame, Row}
 import org.opencypher.okapi.api.io.conversion.{NodeMapping, RelationshipMapping}
 import org.opencypher.okapi.api.types._
 import org.opencypher.okapi.api.value.CAPSNode
@@ -34,16 +34,89 @@ import org.opencypher.okapi.api.value.CypherValue._
 import org.opencypher.okapi.impl.exception.InternalException
 import org.opencypher.okapi.ir.api.expr._
 import org.opencypher.okapi.ir.api.{Label, PropertyKey}
-import org.opencypher.okapi.relational.impl.table.{OpaqueField, ProjectedExpr, RecordHeader}
+import org.opencypher.okapi.relational.impl.table.{ColumnName, OpaqueField, ProjectedExpr, RecordHeader}
 import org.opencypher.spark.api.io.{CAPSNodeTable, CAPSRelationshipTable}
 import org.opencypher.spark.impl.DataFrameOps._
 import org.opencypher.spark.test.CAPSTestSuite
 import org.opencypher.spark.test.fixture.{GraphCreationFixture, TeamDataFixture}
-
 import org.opencypher.okapi.ir.test.support.Bag
 import org.opencypher.okapi.ir.test.support.Bag._
 
 class CAPSRecordsTest extends CAPSTestSuite with GraphCreationFixture with TeamDataFixture {
+
+  test("retags a node variable") {
+    val givenDF = session.createDataFrame(
+      Seq(
+        (1L, true, "Mats"),
+        (2L, false, "Martin"),
+        (3L, false, "Max"),
+        (4L, false, "Stefan")
+      )).toDF("ID", "IS_SWEDE", "NAME")
+
+    val givenMapping = NodeMapping.on("ID")
+      .withImpliedLabel("Person")
+      .withOptionalLabel("Swedish" -> "IS_SWEDE")
+      .withPropertyKey("name" -> "NAME")
+
+    val nodeTable = CAPSNodeTable(givenMapping, givenDF)
+
+    val records = CAPSRecords.create(nodeTable)
+
+    val entityVar = Var(CAPSRecords.placeHolderVarName)(CTNode("Person"))
+
+    val fromTag = 0
+    val toTag = 1
+
+    val retagged = records.retagVariable(entityVar, Map(fromTag -> toTag))
+
+    val nodeIdCol = ColumnName.of(records.header.slotFor(entityVar))
+
+    validateTag(records.data, nodeIdCol, fromTag)
+    validateTag(retagged.data, nodeIdCol, toTag)
+  }
+
+  it("retags a relationship variable") {
+    val givenDF = session.createDataFrame(
+      Seq(
+        (10L, 1L, 2L, "RED"),
+        (11L, 2L, 3L, "BLUE"),
+        (12L, 3L, 4L, "GREEN"),
+        (13L, 4L, 1L, "YELLOW")
+      )).toDF("ID", "FROM", "TO", "COLOR").setNonNullable("COLOR")
+
+    val givenMapping = RelationshipMapping.on("ID")
+      .from("FROM")
+      .to("TO")
+      .withSourceRelTypeKey("COLOR", Set("RED", "BLUE", "GREEN", "YELLOW"))
+
+    val relTable = CAPSRelationshipTable(givenMapping, givenDF)
+
+    val records = CAPSRecords.create(relTable)
+
+    val entityVar = Var(CAPSRecords.placeHolderVarName)(CTRelationship("RED", "BLUE", "GREEN", "YELLOW"))
+
+    val fromTag = 0
+    val toTag = 1
+
+    val retagged = records.retagVariable(entityVar, Map(fromTag -> toTag))
+
+    val relIdCol = ColumnName.of(records.header.slotFor(entityVar))
+    val sourceIdCol = ColumnName.of(records.header.sourceNodeSlot(entityVar))
+    val targetIdCol = ColumnName.of(records.header.targetNodeSlot(entityVar))
+
+    validateTag(records.data, relIdCol, fromTag)
+    validateTag(retagged.data, relIdCol, toTag)
+
+    validateTag(records.data, sourceIdCol, fromTag)
+    validateTag(retagged.data, sourceIdCol, toTag)
+
+    validateTag(records.data, targetIdCol, fromTag)
+    validateTag(retagged.data, targetIdCol, toTag)
+  }
+
+  private def validateTag(df: DataFrame, col: String, tag: Int): Unit = {
+    df.select(col).collect().forall(_.getLong(0).getTag == tag) shouldBe true
+  }
 
   it("can wrap a dataframe") {
     // Given (generally produced by a SQL query)

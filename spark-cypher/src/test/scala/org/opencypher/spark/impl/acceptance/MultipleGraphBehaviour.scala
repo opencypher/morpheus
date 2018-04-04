@@ -29,13 +29,13 @@ package org.opencypher.spark.impl.acceptance
 import org.opencypher.okapi.api.graph.GraphName
 import org.opencypher.okapi.api.schema.{PropertyKeys, Schema}
 import org.opencypher.okapi.api.types.{CTInteger, CTString}
-import org.opencypher.okapi.api.value.{CAPSRelationship, CypherValue}
 import org.opencypher.okapi.api.value.CypherValue.CypherMap
-import org.opencypher.okapi.impl.schema.TagSupport._
+import org.opencypher.okapi.api.value.{CAPSNode, CAPSRelationship}
 import org.opencypher.okapi.ir.test.support.Bag
 import org.opencypher.okapi.ir.test.support.Bag._
 import org.opencypher.spark.impl.CAPSConverters._
 import org.opencypher.spark.impl.CAPSGraph
+import org.opencypher.spark.impl.DataFrameOps._
 import org.opencypher.spark.schema.CAPSSchema._
 
 trait MultipleGraphBehaviour {
@@ -47,6 +47,12 @@ trait MultipleGraphBehaviour {
     def testGraph2 = initGraph("CREATE (:Person {name: 'Phil'})")
 
     def testGraph3 = initGraph("CREATE (:Car {type: 'Toyota'})")
+
+    def testGraphRels = initGraph(
+      """|CREATE (mats:Person {name: 'Mats'})
+         |CREATE (max:Person {name: 'Max'})
+         |CREATE (max)-[:HAS_SIMILAR_NAME]->(mats)
+      """.stripMargin)
 
     it("CLONEs without an alias") {
       val query =
@@ -207,7 +213,7 @@ trait MultipleGraphBehaviour {
 
       result.getRecords.toMaps shouldBe empty
       result.getGraph.schema.labels should equal(Set("A"))
-      result.getGraph.schema should equal(Schema.empty.withNodePropertyKeys("A")("name" -> CTString).withTags(0, 1).asCaps)
+      result.getGraph.schema should equal(Schema.empty.withNodePropertyKeys("A")("name" -> CTString).asCaps)
       result.getGraph.cypher("MATCH (a:A) RETURN a.name").getRecords.iterator.toBag should equal(Bag(
         CypherMap("a.name" -> "Mats")
       ))
@@ -224,7 +230,7 @@ trait MultipleGraphBehaviour {
 
       result.getRecords.toMaps shouldBe empty
       result.getGraph.schema.labels should equal(Set("A"))
-      result.getGraph.schema should equal(Schema.empty.withNodePropertyKeys("A")("name" -> CTString).withTags(0, 1).asCaps)
+      result.getGraph.schema should equal(Schema.empty.withNodePropertyKeys("A")("name" -> CTString).asCaps)
       result.getGraph.cypher("MATCH (a:A) RETURN a.name").getRecords.iterator.toBag should equal(Bag(
         CypherMap("a.name" -> "Donald")
       ))
@@ -247,7 +253,6 @@ trait MultipleGraphBehaviour {
       result.getGraph.schema should equal(
         Schema.empty
           .withNodePropertyKeys(Set("A", "B"), PropertyKeys("name" -> CTString, "age" -> CTInteger))
-            .withTags(0, 1)
           .asCaps)
       result.getGraph.cypher("MATCH (a:A:B) RETURN a.name").getRecords.iterator.toBag should equal(Bag(
         CypherMap("a.name" -> "Donald")
@@ -268,7 +273,6 @@ trait MultipleGraphBehaviour {
       result.getGraph.schema should equal(
         Schema.empty
           .withNodePropertyKeys(Set("Person"), PropertyKeys("name" -> CTString))
-          .withTags(0)
           .asCaps)
       result.getGraph.cypher("MATCH (a:Person) RETURN a.name").getRecords.iterator.toBag should equal(Bag(
         CypherMap("a.name" -> "Mats")
@@ -288,7 +292,7 @@ trait MultipleGraphBehaviour {
       result.getGraph.schema.relationshipTypes should equal(Set("FOO"))
       result.getGraph.schema should equal(Schema.empty
         .withNodePropertyKeys()()
-        .withRelationshipPropertyKeys("FOO", PropertyKeys("val" -> CTInteger)).withTags(0, 1).asCaps)
+        .withRelationshipPropertyKeys("FOO", PropertyKeys("val" -> CTInteger)).asCaps)
       result.getGraph.cypher("MATCH ()-[r]->() RETURN r.val").getRecords.iterator.toBag should equal(Bag(
         CypherMap("r.val" -> 42)
       ))
@@ -312,7 +316,6 @@ trait MultipleGraphBehaviour {
       result.getGraph.schema should equal(Schema.empty
         .withNodePropertyKeys()()
         .withRelationshipPropertyKeys("FOO", PropertyKeys("val" -> CTInteger, "name" -> CTString))
-        .withTags(0, 1)
         .asCaps)
       result.getGraph.cypher("MATCH ()-[r]->() RETURN r.val, r.name").getRecords.iterator.toBag should equal(Bag(
         CypherMap("r.val" -> 42, "r.name" -> "Donald")
@@ -381,8 +384,192 @@ trait MultipleGraphBehaviour {
       res.getGraph.relationships("r").collect.length shouldBe 3
     }
 
-    // TODO: Allow schema lookup for constructed graph that is not in the catalog
-    ignore("should allow simple MGC syntax") {
+    it("CONSTRUCTS ON a single graph") {
+      caps.store(GraphName("one"), testGraph1)
+      val query =
+        """
+          |CONSTRUCT ON one
+          |RETURN GRAPH""".stripMargin
+
+      val result = testGraph2.cypher(query).getGraph
+
+      result.schema should equal(testGraph1.schema)
+      result.nodes("n").toMaps should equal(testGraph1.nodes("n").toMaps)
+      result.relationships("r").toMaps should equal(testGraph1.relationships("r").toMaps)
+    }
+
+    it("CONSTRUCTS ON two graphs") {
+      caps.store(GraphName("one"), testGraph1)
+      caps.store(GraphName("two"), testGraph2)
+      val query =
+        """
+          |CONSTRUCT ON one, two
+          |RETURN GRAPH""".stripMargin
+
+      val result = testGraph2.cypher(query).getGraph
+
+      result.schema should equal((testGraph1.schema ++ testGraph2.schema).asCaps)
+      result.nodes("n").toMaps should equal(testGraph1.unionAll(testGraph2).nodes("n").toMaps)
+      result.relationships("r").toMaps should equal(testGraph1.unionAll(testGraph2).relationships("r").toMaps)
+    }
+
+    it("CONSTRUCTS ON two graphs and adds a relationship") {
+      caps.store(GraphName("one"), testGraph1)
+      caps.store(GraphName("two"), testGraph2)
+      val query =
+        """|FROM GRAPH one
+           |MATCH (m: Person)
+           |FROM GRAPH two
+           |MATCH (p: Person)
+           |CONSTRUCT ON one, two
+           |  CLONE m, p
+           |  NEW (m)-[:KNOWS]->(p)
+           |RETURN GRAPH""".stripMargin
+
+      val result = caps.cypher(query).getGraph
+
+      result.schema should equal((testGraph1.schema ++ testGraph2.schema).withRelationshipPropertyKeys("KNOWS")().asCaps)
+      result.nodes("n").toMaps should equal(testGraph1.unionAll(testGraph2).nodes("n").toMaps)
+      result.relationships("r").toMapsWithCollectedEntities should equal(Bag(
+        CypherMap("r" -> CAPSRelationship(2251799813685248L, 0L, 1125899906842624L, "KNOWS")))
+      )
+    }
+
+    it("constructs a new node") {
+      val query =
+        """
+          |CONSTRUCT
+          |  NEW (a)
+          |RETURN GRAPH
+        """.stripMargin
+
+      println(caps.toString)
+
+      val graph = caps.cypher(query).getGraph
+
+      graph.schema should equal(Schema.empty.withNodePropertyKeys(Set.empty[String]).asCaps)
+      graph.asCaps.tags should equal(Set(0))
+      graph.nodes("n").collect.toBag should equal(Bag(
+        CypherMap("n" -> CAPSNode(0))
+      ))
+    }
+
+    it("construct match construct") {
+      caps.store(GraphName("g1"), testGraphRels)
+      val query =
+        """
+          |FROM GRAPH g1
+          |MATCH (a)
+          |CONSTRUCT // generated qgn
+          |  CLONE a
+          |MATCH (b)
+          |CONSTRUCT
+          |  ON g1
+          |  CLONE b
+          |RETURN GRAPH
+        """.stripMargin
+
+      val graph = caps.cypher(query).getGraph
+
+      graph.schema should equal(testGraphRels.schema)
+      graph.asCaps.tags should equal(Set(0, 1))
+      graph.nodes("n").collect.toBag should equal(Bag(
+        CypherMap("n" -> CAPSNode(0, Set("Person"), CypherMap("name" -> "Mats"))),
+        CypherMap("n" -> CAPSNode(1, Set("Person"), CypherMap("name" -> "Max"))),
+        CypherMap("n" -> CAPSNode(0L.setTag(1), Set("Person"), CypherMap("name" -> "Mats"))),
+        CypherMap("n" -> CAPSNode(1L.setTag(1), Set("Person"), CypherMap("name" -> "Max")))
+      ))
+    }
+
+    it("does not clone twice when a variable is both constructed on and matched") {
+      caps.store(GraphName("g1"), testGraph1)
+      caps.store(GraphName("g2"), testGraph2)
+      val query =
+        """
+          |FROM GRAPH g1
+          |MATCH (a:Person)
+          |FROM GRAPH g2
+          |MATCH (b:Person)
+          |CONSTRUCT
+          |  ON g2
+          |  CLONE a, b
+          |RETURN GRAPH
+        """.stripMargin
+
+      val graph = caps.cypher(query).getGraph
+
+      graph.schema should equal(testGraph1.schema.asCaps)
+      graph.asCaps.tags should equal(Set(0, 1))
+      graph.nodes("n").collect.toBag should equal(Bag(
+        CypherMap("n" -> CAPSNode(0L.setTag(1), Set("Person"), CypherMap("name" -> "Mats"))),
+        CypherMap("n" -> CAPSNode(0L, Set("Person"), CypherMap("name" -> "Phil")))
+      ))
+    }
+
+    it("allows CONSTRUCT ON with relationships") {
+      caps.store(GraphName("testGraphRels1"), testGraphRels)
+      caps.store(GraphName("testGraphRels2"), testGraphRels)
+      val query =
+        """|FROM GRAPH testGraphRels1
+           |MATCH (p1 :Person)-[r1]->(p2 :Person)
+           |CONSTRUCT ON testGraphRels2
+           |  CLONE p1, r1, p2
+           |RETURN GRAPH""".stripMargin
+
+      val result = caps.cypher(query).getGraph
+
+      result.schema should equal((testGraph1.schema ++ testGraph2.schema).withRelationshipPropertyKeys("HAS_SIMILAR_NAME")().asCaps)
+
+      result.nodes("n").toMapsWithCollectedEntities should equal(Bag(
+        CypherMap("n" -> CAPSNode(0L, Set("Person"), CypherMap("name" -> "Mats"))),
+        CypherMap("n" -> CAPSNode(1L, Set("Person"), CypherMap("name" -> "Max"))),
+        CypherMap("n" -> CAPSNode(0L.setTag(1), Set("Person"), CypherMap("name" -> "Mats"))),
+        CypherMap("n" -> CAPSNode(1L.setTag(1), Set("Person"), CypherMap("name" -> "Max")))
+      ))
+
+      result.relationships("r").toMapsWithCollectedEntities should equal(Bag(
+        CypherMap("r" -> CAPSRelationship(2, 1, 0, "HAS_SIMILAR_NAME")),
+        CypherMap("r" -> CAPSRelationship(2.setTag(1), 1.setTag(1), 0.setTag(1), "HAS_SIMILAR_NAME"))
+      ))
+
+      result.asCaps.tags should equal(Set(0, 1))
+    }
+
+    it("allows cloning from different graphs with nodes and relationships") {
+      def testGraphRels = initGraph(
+        """|CREATE (mats:Person {name: 'Mats'})
+           |CREATE (max:Person {name: 'Max'})
+           |CREATE (max)-[:HAS_SIMILAR_NAME]->(mats)
+        """.stripMargin)
+      caps.store(GraphName("testGraphRels1"), testGraphRels)
+      caps.store(GraphName("testGraphRels2"), testGraphRels)
+
+      val query =
+        """|FROM GRAPH testGraphRels1
+           |MATCH (p1 :Person)-[r1]->(p2 :Person)
+           |FROM GRAPH testGraphRels2
+           |MATCH (p3 :Person)-[r2]->(p4 :Person)
+           |CONSTRUCT
+           |  CLONE p1, p2, p3, p4, r1, r2
+           |RETURN GRAPH""".stripMargin
+
+      val result = caps.cypher(query).getGraph
+      result.schema.asCaps shouldEqual testGraphRels.schema
+
+      result.nodes("n").toMapsWithCollectedEntities should equal(Bag(
+        CypherMap("n" -> CAPSNode(0L, Set("Person"), CypherMap("name" -> "Mats"))),
+        CypherMap("n" -> CAPSNode(1L, Set("Person"), CypherMap("name" -> "Max"))),
+        CypherMap("n" -> CAPSNode(0L.setTag(1), Set("Person"), CypherMap("name" -> "Mats"))),
+        CypherMap("n" -> CAPSNode(1L.setTag(1), Set("Person"), CypherMap("name" -> "Max")))
+      ))
+
+      result.relationships("r").toMapsWithCollectedEntities should equal(Bag(
+        CypherMap("r" -> CAPSRelationship(2, 1, 0, "HAS_SIMILAR_NAME")),
+        CypherMap("r" -> CAPSRelationship(2.setTag(1), 1.setTag(1), 0.setTag(1), "HAS_SIMILAR_NAME"))
+      ))
+    }
+
+    it("allows consecutive construction") {
       val query =
         """|CONSTRUCT
            |  NEW (a:A)-[r:FOO]->(b:B)
@@ -401,66 +588,10 @@ trait MultipleGraphBehaviour {
         .withNodePropertyKeys("A")()
         .withNodePropertyKeys("B")()
         .withRelationshipPropertyKeys("KNOWS")()
-          .withTags(0, 1)
         .asCaps)
       result.getGraph.cypher("MATCH ()-[r]->() RETURN type(r)").getRecords.iterator.toBag should equal(Bag(
         CypherMap("type(r)" -> "KNOWS")
       ))
     }
-
-    it("CONSTRUCTS ON a single graph") {
-      caps.store(GraphName("one"), testGraph1)
-      val query =
-        """
-          |CONSTRUCT ON one
-          |RETURN GRAPH""".stripMargin
-
-      val result = testGraph2.cypher(query).getGraph
-
-      result.schema should equal(testGraph1.schema)
-      result.nodes("n").toMaps should equal(testGraph1.nodes("n").toMaps)
-      result.relationships("r").toMaps should equal(testGraph1.relationships("r").toMaps)
-      result.schema.toTagged.tags should equal(testGraph1.schema.tags)
-    }
-
-    it("CONSTRUCTS ON two graphs") {
-      caps.store(GraphName("one"), testGraph1)
-      caps.store(GraphName("two"), testGraph2)
-      val query =
-        """
-          |CONSTRUCT ON one, two
-          |RETURN GRAPH""".stripMargin
-
-      val result = testGraph2.cypher(query).getGraph
-
-      result.schema should equal(testGraph1.schema.union(testGraph2.schema))
-      result.nodes("n").toMaps should equal(testGraph1.unionAll(testGraph2).nodes("n").toMaps)
-      result.relationships("r").toMaps should equal(testGraph1.unionAll(testGraph2).relationships("r").toMaps)
-      result.schema.toTagged.tags should equal(Set(0, 1))
-    }
-
-    it("CONSTRUCTS ON two graphs and adds a relationship") {
-      caps.store(GraphName("one"), testGraph1)
-      caps.store(GraphName("two"), testGraph2)
-      val query =
-        """|FROM GRAPH one
-           |MATCH (m: Person)
-           |FROM GRAPH two
-           |MATCH (p: Person)
-           |CONSTRUCT ON one, two
-           |  CLONE m, p
-           |  NEW (m)-[:KNOWS]->(p)
-           |RETURN GRAPH""".stripMargin
-
-      val result = caps.cypher(query).getGraph
-
-      result.schema should equal(testGraph1.schema.union(testGraph2.schema).withRelationshipPropertyKeys("KNOWS")().withTags(0, 1, 2).asCaps)
-      result.nodes("n").toMaps should equal(testGraph1.unionAll(testGraph2).nodes("n").toMaps)
-      result.relationships("r").toMapsWithCollectedEntities should equal(Bag(
-        CypherMap("r" -> CAPSRelationship(2251799813685248L, 0L, 1125899906842624L, "KNOWS")))
-      )
-      result.schema.toTagged.tags should equal(Set(0, 1, 2))
-    }
   }
-
 }

@@ -51,6 +51,8 @@ class Neo4jGraph(val schema: CAPSSchema, val session: CAPSSession)(
   targetNode: String = "target")
   extends CAPSGraph {
 
+  override val tags = Set(0)
+
   protected implicit val caps = session
 
   override def cache(): CAPSGraph = map(_.cache(), _.cache())

@@ -26,30 +26,31 @@
  */
 package org.opencypher.spark.impl.physical
 
-import org.opencypher.okapi.api.graph.{PropertyGraph, QualifiedGraphName}
+import org.opencypher.okapi.api.graph.QualifiedGraphName
 import org.opencypher.okapi.api.value.CypherValue._
 import org.opencypher.okapi.ir.api.block.SortItem
 import org.opencypher.okapi.ir.api.expr._
+import org.opencypher.okapi.ir.impl.QueryCatalog
 import org.opencypher.okapi.logical.impl._
 import org.opencypher.okapi.relational.api.physical.{PhysicalOperatorProducer, PhysicalPlannerContext}
 import org.opencypher.okapi.relational.impl.table._
 import org.opencypher.spark.api.CAPSSession
 import org.opencypher.spark.impl.physical.operators.CAPSPhysicalOperator
 import org.opencypher.spark.impl.{CAPSGraph, CAPSRecords}
-import org.opencypher.spark.impl.CAPSConverters._
 
 case class CAPSPhysicalPlannerContext(
   session: CAPSSession,
-  catalog: QualifiedGraphName => PropertyGraph,
+  catalog: QueryCatalog,
   inputRecords: CAPSRecords,
-  parameters: CypherMap) extends PhysicalPlannerContext[CAPSRecords]
+  parameters: CypherMap,
+  constructedGraphPlans: collection.mutable.Map[QualifiedGraphName, CAPSPhysicalOperator]) extends PhysicalPlannerContext[CAPSPhysicalOperator, CAPSRecords]
 
 object CAPSPhysicalPlannerContext {
   def from(
-    resolver: QualifiedGraphName => PropertyGraph,
+    catalog: QueryCatalog,
     inputRecords: CAPSRecords,
-    parameters: CypherMap)(implicit session: CAPSSession): PhysicalPlannerContext[CAPSRecords] = {
-    CAPSPhysicalPlannerContext(session, resolver, inputRecords, parameters)
+    parameters: CypherMap)(implicit session: CAPSSession): PhysicalPlannerContext[CAPSPhysicalOperator, CAPSRecords] = {
+    CAPSPhysicalPlannerContext(session, catalog, inputRecords, parameters, collection.mutable.Map.empty)
   }
 }
 
@@ -76,12 +77,12 @@ final class CAPSPhysicalOperatorProducer(implicit caps: CAPSSession)
   override def planEmptyRecords(in: CAPSPhysicalOperator, header: RecordHeader): CAPSPhysicalOperator =
     operators.EmptyRecords(in, header)
 
-  override def planStart(in: Option[CAPSRecords], g: Option[QualifiedGraphName]): CAPSPhysicalOperator =
-    operators.Start(in, g.map(caps.graph(_).asCaps))
+  override def planStart(qgnOpt: Option[QualifiedGraphName] = None, in: Option[CAPSRecords] = None): CAPSPhysicalOperator =
+    operators.Start(qgnOpt.getOrElse(caps.emptyGraphQgn), in)
 
   // TODO: Make catalog usage consistent between Start/FROM GRAPH
-  override def planUseGraph(in: CAPSPhysicalOperator, g: LogicalCatalogGraph): CAPSPhysicalOperator =
-    operators.UseGraph(in, g)
+  override def planFromGraph(in: CAPSPhysicalOperator, g: LogicalCatalogGraph): CAPSPhysicalOperator =
+    operators.FromGraph(in, g)
 
   override def planNodeScan(
     in: CAPSPhysicalOperator,
@@ -106,9 +107,9 @@ final class CAPSPhysicalOperatorProducer(implicit caps: CAPSSession)
 
   override def planConstructGraph(
     in: CAPSPhysicalOperator,
-    construct: LogicalPatternGraph,
-    catalog: QualifiedGraphName => PropertyGraph): CAPSPhysicalOperator = {
-    operators.ConstructGraph(in, construct, catalog)
+    onGraph: CAPSPhysicalOperator,
+    construct: LogicalPatternGraph): CAPSPhysicalOperator = {
+    operators.ConstructGraph(in, onGraph, construct)
   }
 
   override def planAggregate(in: CAPSPhysicalOperator, group: Set[Var], aggregations: Set[(Var, Aggregator)], header: RecordHeader): CAPSPhysicalOperator = operators.Aggregate(in, aggregations, group, header)
@@ -170,7 +171,8 @@ final class CAPSPhysicalOperatorProducer(implicit caps: CAPSSession)
   override def planLimit(in: CAPSPhysicalOperator, expr: Expr, header: RecordHeader): CAPSPhysicalOperator =
     operators.Limit(in, expr, header)
 
-  override def planGraphUnionAll(graphs: List[CAPSPhysicalOperator], preventIdCollisions: Boolean): CAPSPhysicalOperator = {
-    operators.GraphUnionAll(graphs, preventIdCollisions)
+  override def planGraphUnionAll(graphs: List[CAPSPhysicalOperator], qgn: QualifiedGraphName):
+    CAPSPhysicalOperator = {
+    operators.GraphUnionAll(graphs, qgn)
   }
 }

@@ -24,22 +24,12 @@
  * described as "implementation extensions to Cypher" or as "proposed changes to
  * Cypher that are not yet approved by the openCypher community".
  */
-package org.opencypher.spark.test.fixture
+package org.opencypher.okapi.ir.impl
 
-import org.opencypher.okapi.test.BaseTestSuite
-import org.opencypher.okapi.test.fixture.BaseTestFixture
-import org.opencypher.spark.api.CAPSSession
-import org.opencypher.spark.impl.CAPSGraph
+import org.opencypher.okapi.api.graph.QualifiedGraphName
 
-trait CAPSSessionFixture extends BaseTestFixture {
-  self: SparkSessionFixture with BaseTestSuite =>
+trait QGNGenerator {
 
-  implicit lazy val caps: CAPSSession = CAPSSession.create()
+  def generate: QualifiedGraphName
 
-  abstract override protected def afterEach(): Unit = {
-    // delete all session graphs via their qualified graph name
-    caps.dataSource(caps.sessionNamespace).graphNames.foreach(caps.delete)
-    caps.store(caps.emptyGraphQgn, CAPSGraph.empty)
-    super.afterEach()
-  }
 }

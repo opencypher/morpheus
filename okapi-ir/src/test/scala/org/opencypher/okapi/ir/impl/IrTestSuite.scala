@@ -41,6 +41,7 @@ import org.opencypher.okapi.test.BaseTestSuite
 import org.scalatest.mockito.MockitoSugar
 
 import scala.language.implicitConversions
+import scala.util.Random
 import scala.reflect.ClassTag
 
 abstract class IrTestSuite extends BaseTestSuite with MockitoSugar {
@@ -113,9 +114,13 @@ abstract class IrTestSuite extends BaseTestSuite with MockitoSugar {
           parameters,
           SemanticState.clean,
           testGraph()(schema),
-          () => testQualifiedGraphName,
-          _ => testGraphSource(graphsWithSchema :+ (testGraphName -> schema): _*)
+          qgnGenerator,
+          Map.empty.withDefaultValue(testGraphSource(graphsWithSchema :+ (testGraphName -> schema): _*))
         ))
+    }
+
+    val qgnGenerator = new QGNGenerator {
+      override def generate: QualifiedGraphName = QualifiedGraphName(s"session.#${(Random.nextInt & Int.MaxValue) % 100}")
     }
 
     def irWithParams(params: (String, CypherValue)*)(implicit schema: Schema = Schema.empty): CypherStatement[Expr] = {
@@ -125,8 +130,8 @@ abstract class IrTestSuite extends BaseTestSuite with MockitoSugar {
           params.toMap,
           SemanticState.clean,
           testGraph()(schema),
-          () => testQualifiedGraphName,
-          _ => testGraphSource(testGraphName -> schema)))
+          qgnGenerator,
+          Map.empty.withDefaultValue(testGraphSource(testGraphName -> schema))))
     }
   }
 

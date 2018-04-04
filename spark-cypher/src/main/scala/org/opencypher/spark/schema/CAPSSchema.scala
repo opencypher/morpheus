@@ -31,9 +31,8 @@ import org.opencypher.okapi.api.schema.{LabelPropertyMap, RelTypePropertyMap, Sc
 import org.opencypher.okapi.api.types.{CTRelationship, CypherType}
 import org.opencypher.okapi.impl.exception.{SchemaException, UnsupportedOperationException}
 import org.opencypher.okapi.impl.schema.SchemaUtils._
-import org.opencypher.okapi.impl.schema.{ImpliedLabels, LabelCombinations, TagSupport}
+import org.opencypher.okapi.impl.schema.{ImpliedLabels, LabelCombinations}
 import org.opencypher.spark.impl.convert.CAPSCypherType._
-import org.opencypher.spark.schema.CAPSSchema._
 
 object CAPSSchema {
   val empty: CAPSSchema = Schema.empty.asCaps
@@ -47,7 +46,7 @@ object CAPSSchema {
     def asCaps: CAPSSchema = {
       schema match {
         case s: CAPSSchema => s
-        case s: Schema with TagSupport =>
+        case s: Schema =>
           val combosByLabel = s.foldAndProduce(Map.empty[String, Set[Set[String]]])(
             (set, combos, _) => set + combos,
             (combos, _) => Set(combos))
@@ -85,7 +84,7 @@ object CAPSSchema {
 
 }
 
-case class CAPSSchema private[schema](schema: Schema with TagSupport) extends Schema with TagSupport {
+case class CAPSSchema private[schema](schema: Schema) extends Schema {
 
   override def labels: Set[String] = schema.labels
 
@@ -123,13 +122,11 @@ case class CAPSSchema private[schema](schema: Schema with TagSupport) extends Sc
 
   override def ++(other: Schema): Schema = schema ++ other
 
-  override def fromNodeEntity(labels: Set[String]): Schema = schema.fromNodeEntity(labels)
-
   override def pretty: String = schema.pretty
 
   override def isEmpty: Boolean = schema.isEmpty
 
-  override def forNodeScan(labelConstraints: Set[String]): Schema = schema.forNodeScan(labelConstraints)
+  override def forNode(labelConstraints: Set[String]): Schema = schema.forNode(labelConstraints)
 
   override def forRelationship(relType: CTRelationship): Schema = schema.forRelationship(relType)
 
@@ -138,12 +135,4 @@ case class CAPSSchema private[schema](schema: Schema with TagSupport) extends Sc
   override def withOverwrittenNodePropertyKeys(nodeLabels: Set[String], propertyKeys: PropertyKeys): Schema = schema.withOverwrittenNodePropertyKeys(nodeLabels, propertyKeys)
 
   override def withOverwrittenRelationshipPropertyKeys(relType: String, propertyKeys: PropertyKeys): Schema = schema.withOverwrittenRelationshipPropertyKeys(relType, propertyKeys)
-
-  override def tags: Set[Int] = schema.tags
-
-  override def withTags(tags: Set[Int]): Schema with TagSupport = schema.withTags(tags)
-
-  override def replaceTags(replacements: Map[Int, Int]): Schema with TagSupport = schema.replaceTags(replacements)
-
-  override def union(other: Schema with TagSupport): CAPSSchema = schema.union(other).asCaps
 }

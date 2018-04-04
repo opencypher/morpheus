@@ -26,11 +26,11 @@
  */
 package org.opencypher.spark.impl.physical.operators
 
-import org.opencypher.okapi.logical.impl.LogicalCatalogGraph
+import org.opencypher.okapi.api.graph.QualifiedGraphName
 import org.opencypher.okapi.relational.impl.table.RecordHeader
 import org.opencypher.spark.api.CAPSSession
+import org.opencypher.spark.impl.CAPSRecords
 import org.opencypher.spark.impl.physical.{CAPSPhysicalResult, CAPSRuntimeContext}
-import org.opencypher.spark.impl.{CAPSGraph, CAPSRecords}
 
 private[spark] abstract class LeafPhysicalOperator extends CAPSPhysicalOperator {
 
@@ -41,29 +41,26 @@ private[spark] abstract class LeafPhysicalOperator extends CAPSPhysicalOperator 
 
 object Start {
 
-  def apply(records: CAPSRecords, graph: CAPSGraph)(implicit caps: CAPSSession): Start = Start(Some(records), Some(graph))
-
-  def apply(records: CAPSRecords)(implicit caps: CAPSSession): Start = Start(Some(records))
-
-  def apply(graph: CAPSGraph)(implicit caps: CAPSSession): Start = Start(None, Some(graph))
+  def apply(qgn: QualifiedGraphName, records: CAPSRecords)(implicit caps: CAPSSession): Start = {
+    Start(qgn, Some(records))
+  }
 
 }
 
-final case class Start(recordsOpt: Option[CAPSRecords] = None, graphOpt: Option[CAPSGraph] = None)
+final case class Start(qgn: QualifiedGraphName, recordsOpt: Option[CAPSRecords])
   (implicit caps: CAPSSession) extends LeafPhysicalOperator {
 
   override val header = recordsOpt.map(_.header).getOrElse(RecordHeader.empty)
 
   override def executeLeaf()(implicit context: CAPSRuntimeContext): CAPSPhysicalResult = {
     val records = recordsOpt.getOrElse(CAPSRecords.unit())
-    val graph = graphOpt.getOrElse(CAPSGraph.empty)
-    CAPSPhysicalResult(records, graph)
+    CAPSPhysicalResult(records, resolve(qgn), qgn)
   }
 
   override def toString = {
-    val graphArg = graphOpt.map(_.toString)
+    val graphArg = qgn.toString
     val recordsArg = recordsOpt.map(_.toString)
-    val allArgs = List(recordsArg, graphArg).flatten.mkString(", ")
+    val allArgs = List(recordsArg, graphArg).mkString(", ")
     s"Start($allArgs)"
   }
 

@@ -74,7 +74,7 @@ final case class BoundedVarExpand(
     (implicit context: CAPSRuntimeContext): CAPSPhysicalResult = {
     val expanded = expand(first.records, second.records)
 
-    CAPSPhysicalResult(finalize(expanded, third.records), first.graph)
+    CAPSPhysicalResult(finalize(expanded, third.records), first.workingGraph, first.workingGraphName)
   }
 
   private def iterate(lhs: DataFrame, rels: DataFrame)(

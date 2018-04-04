@@ -35,11 +35,12 @@ import org.opencypher.spark.impl.{CAPSGraph, CAPSRecords}
 import scala.collection.mutable
 
 object CAPSRuntimeContext {
-  val empty = CAPSRuntimeContext(CypherMap.empty, _ => None, mutable.Map.empty)
+  val empty = CAPSRuntimeContext(CypherMap.empty, _ => None, mutable.Map.empty, mutable.Map.empty)
 }
 
 case class CAPSRuntimeContext(
   parameters: CypherMap,
   resolve: QualifiedGraphName => Option[CAPSGraph],
-  cache: mutable.Map[CAPSPhysicalOperator, CAPSPhysicalResult])
+  cache: mutable.Map[CAPSPhysicalOperator, CAPSPhysicalResult],
+  patternGraphTags: mutable.Map[QualifiedGraphName, Set[Int]])
   extends RuntimeContext[CAPSRecords, CAPSGraph]

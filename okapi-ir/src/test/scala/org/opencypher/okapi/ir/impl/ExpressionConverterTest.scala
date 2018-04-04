@@ -42,6 +42,8 @@ import org.opencypher.okapi.ir.test.toVar
 import org.opencypher.okapi.test.BaseTestSuite
 import org.scalatest.mockito.MockitoSugar
 
+import scala.util.Random
+
 class ExpressionConverterTest extends BaseTestSuite with Neo4jAstTestSupport with MockitoSugar {
 
   private def testTypes(ref: Ref[ast.Expression]): CypherType = ref.value match {
@@ -226,13 +228,17 @@ class ExpressionConverterTest extends BaseTestSuite with Neo4jAstTestSupport wit
     )
   }
 
+  val qgnGenerator = new QGNGenerator {
+    override def generate: QualifiedGraphName = QualifiedGraphName(s"session.#${(Random.nextInt & Int.MaxValue) % 100}")
+  }
+
   lazy val testContext = IRBuilderContext.initial(
     "",
     CypherMap.empty,
     SemanticState.clean,
     IRCatalogGraph(QualifiedGraphName(Namespace(""), GraphName("")), Schema.empty),
-    () => QualifiedGraphName("hello.world"),
-    _ => mock[PropertyGraphDataSource]
+    qgnGenerator,
+    Map.empty
   )
   private def convert(e: ast.Expression): Expr =
     new ExpressionConverter()(testContext).convert(e)(testTypes)

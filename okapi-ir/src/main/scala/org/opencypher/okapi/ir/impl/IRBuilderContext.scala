@@ -43,21 +43,21 @@ import org.opencypher.okapi.ir.impl.typer.exception.TypingException
 import org.opencypher.okapi.ir.impl.typer.{SchemaTyper, TypeTracker}
 
 final case class IRBuilderContext(
-  uniqueSessionGraphNameGenerator: () => QualifiedGraphName,
+  qgnGenerator: QGNGenerator,
   queryString: String,
   parameters: CypherMap,
   workingGraph: IRGraph, // initially the ambient graph, but gets changed by `FROM GRAPH`/`CONSTRUCT`
   blockRegistry: BlockRegistry[Expr] = BlockRegistry.empty[Expr],
   semanticState: SemanticState,
-  resolver: Namespace => PropertyGraphDataSource,
+  queryCatalog: QueryCatalog, // copy of Session catalog plus constructed graph schemas
   knownTypes: Map[ast.Expression, CypherType] = Map.empty) {
   self =>
 
   private lazy val exprConverter = new ExpressionConverter()(self)
   private lazy val patternConverter = new PatternConverter
 
-  def convertPattern(p: ast.Pattern): Pattern[Expr] = {
-    patternConverter.convert(p, knownTypes, workingGraph.qualifiedGraphName)
+  def convertPattern(p: ast.Pattern, qgn: Option[QualifiedGraphName] = None): Pattern[Expr] = {
+    patternConverter.convert(p, knownTypes, qgn.getOrElse(workingGraph.qualifiedGraphName))
   }
 
   def convertExpression(e: ast.Expression): Expr = {
@@ -79,17 +79,7 @@ final case class IRBuilderContext(
 
   private def typer = SchemaTyper(workingGraph.schema)
 
-  def schemaFor(qualifiedGraphName: QualifiedGraphName): Schema = {
-    val dataSource = resolver(qualifiedGraphName.namespace)
-
-    dataSource.schema(qualifiedGraphName.graphName) match {
-      case None =>
-        // This initialises the graph eagerly!!
-        // TODO: We probably want to save the graph reference somewhere
-        dataSource.graph(qualifiedGraphName.graphName).schema
-      case Some(s) => s
-    }
-  }
+  def schemaFor(qgn: QualifiedGraphName): Schema = queryCatalog.schema(qgn)
 
   def withBlocks(reg: BlockRegistry[Expr]): IRBuilderContext = copy(blockRegistry = reg)
 
@@ -103,6 +93,9 @@ final case class IRBuilderContext(
 
   def withWorkingGraph(graph: IRGraph): IRBuilderContext =
     copy(workingGraph = graph)
+
+  def registerSchema(qgn: QualifiedGraphName, schema: Schema): IRBuilderContext =
+    copy(queryCatalog = queryCatalog.withSchema(qgn, schema))
 }
 
 object IRBuilderContext {
@@ -112,22 +105,23 @@ object IRBuilderContext {
     parameters: CypherMap,
     semState: SemanticState,
     workingGraph: IRCatalogGraph,
-    uniqueSessionGraphNameGenerator: () => QualifiedGraphName,
-    resolver: Namespace => PropertyGraphDataSource,
+    qgnGenerator: QGNGenerator,
+    sessionCatalog: Map[Namespace, PropertyGraphDataSource],
     fieldsFromDrivingTable: Set[Var] = Set.empty
   ): IRBuilderContext = {
     val registry = BlockRegistry.empty[Expr]
     val block = SourceBlock[Expr](workingGraph)
     val updatedRegistry = registry.register(block)
+    val queryCatalog = QueryCatalog(sessionCatalog)
 
     val context = IRBuilderContext(
-      uniqueSessionGraphNameGenerator,
+      qgnGenerator,
       query,
       parameters,
       workingGraph,
       updatedRegistry,
       semState,
-      resolver)
+      queryCatalog)
 
     context.withFields(fieldsFromDrivingTable.map(v => IRField(v.name)(v.cypherType)))
   }

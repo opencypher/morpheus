@@ -24,43 +24,21 @@
  * described as "implementation extensions to Cypher" or as "proposed changes to
  * Cypher that are not yet approved by the openCypher community".
  */
-package org.opencypher.okapi.impl.schema
+package org.opencypher.spark.impl.util
 
-import org.opencypher.okapi.api.schema.Schema
-import org.opencypher.okapi.impl.schema.TagSupport._
 import org.opencypher.okapi.test.BaseTestSuite
+import org.opencypher.spark.impl.util.TagSupport._
 
 class TagSupportTest extends BaseTestSuite {
 
-  it("allows adding tags to a schema") {
-    val taggedSchema = Schema.empty.withTags(1, 2, 3)
-    taggedSchema.tags should equal(Set(1, 2, 3))
-  }
-
-  it("preserves other schema entries when adding tags") {
-    val taggedSchema = Schema.empty.withNodePropertyKeys(Set("a")).withTags(1, 2, 3)
-    taggedSchema.tags should equal(Set(1, 2, 3))
-    taggedSchema.labels should equal(Set("a"))
-  }
-
-  it("merges tags when concatenating schemas") {
-    val s1: Schema with TagSupport = Schema.empty.withTags(1, 2, 3)
-    val s2: Schema with TagSupport = Schema.empty.withTags(1, 2, 4)
-    val concatenatedSchema = s1 ++ s2
-    concatenatedSchema should equal(Schema.empty.withTags(1, 2, 3, 4))
-  }
-
-  it("replaces tags") {
-    val taggedSchema = Schema.empty.withTags(1, 2, 3).replaceTags(Map(2 -> 5))
-    taggedSchema should equal(Schema.empty.withTags(1, 5, 3))
-  }
-
-  it("replaces tags on the rhs schema when resolving tag conflicts in a schema union") {
-    val s1: Schema with TagSupport = Schema.empty.withTags(1, 2, 3)
-    val s2: Schema with TagSupport = Schema.empty.withTags(1, 2, 4)
-    val schemaUnion = s1 union s2
-    schemaUnion.tags.size should equal(6)
-    Set(1, 2, 3).subsetOf(schemaUnion.tags) should equal(true)
+  it("computes replacement tags") {
+    Set(0).replacementsFor(Set(0)) should equal(Map(0 -> 1))
+    Set(0).replacementsFor(Set(1)) should equal(Map(1 -> 1))
+    Set(0, 1, 2).replacementsFor(Set(1)) should equal(Map(1 -> 3))
+    Set.empty[Int].replacementsFor(Set.empty) should equal(Map.empty)
+    Set.empty[Int].replacementsFor(Set(1, 2, 3)) should equal(Map(1 -> 1, 2 -> 2, 3 -> 3))
+    Set(1, 2, 3).replacementsFor(Set(1, 2, 3)) should equal(Map(1 -> 4, 2 -> 5, 3 -> 6))
+    Set(1, 2, 3).replacementsFor(Set(0, 1)) should equal(Map(0 -> 0, 1 -> 4))
   }
 
 }

@@ -33,9 +33,7 @@ import org.atnos.eff.syntax.all._
 import org.opencypher.okapi.api.schema.Schema
 import org.opencypher.okapi.api.types.{CTNode, CTRelationship, CypherType}
 import org.opencypher.okapi.impl.exception.IllegalArgumentException
-import org.opencypher.okapi.ir.api.IRField
 import org.opencypher.okapi.ir.api.expr.Expr
-import org.opencypher.okapi.ir.api.pattern.Pattern
 
 package object impl {
 
@@ -61,9 +59,9 @@ package object impl {
 
   implicit final class RichSchema(schema: Schema) {
 
-    def forField(entity: IRField): Schema = entity.cypherType match {
+    def forEntityType(cypherType: CypherType): Schema = cypherType match {
       case CTNode(labels, _) =>
-        schema.fromNodeEntity(labels)
+        schema.forNode(labels)
       case r: CTRelationship =>
         schema.forRelationship(r)
       case x => throw IllegalArgumentException("entity type", x)

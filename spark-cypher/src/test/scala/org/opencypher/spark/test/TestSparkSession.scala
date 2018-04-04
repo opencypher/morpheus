@@ -66,7 +66,7 @@ object TestSparkSession {
       .appName(s"cypher-for-apache-spark-tests-${UUID.randomUUID()}")
       .getOrCreate()
 
-    session.sparkContext.setLogLevel("ERROR")
+    session.sparkContext.setLogLevel("WARN")
     session
   }
 }

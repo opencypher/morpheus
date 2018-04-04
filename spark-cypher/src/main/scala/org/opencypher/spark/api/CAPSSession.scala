@@ -30,7 +30,7 @@ import java.util.UUID
 
 import org.apache.spark.SparkConf
 import org.apache.spark.sql.{DataFrame, Dataset, SparkSession}
-import org.opencypher.okapi.api.graph.{CypherSession, Namespace, PropertyGraph}
+import org.opencypher.okapi.api.graph._
 import org.opencypher.okapi.api.table.CypherRecords
 import org.opencypher.okapi.api.value.CypherValue.CypherMap
 import org.opencypher.okapi.impl.exception.{IllegalArgumentException, UnsupportedOperationException}
@@ -84,6 +84,11 @@ trait CAPSSession extends CypherSession {
   def readFrom(nodeTable: CAPSNodeTable, entityTables: CAPSEntityTable*): PropertyGraph = {
     CAPSGraph.create(nodeTable, entityTables: _*)(this)
   }
+
+  private[opencypher] val emptyGraphQgn = QualifiedGraphName(sessionNamespace, GraphName("emptyGraph"))
+
+  // Store empty graph in catalog, so operators that start with an empty graph can refer to its QGN
+  store(emptyGraphQgn, CAPSGraph.empty(this))
 }
 
 object CAPSSession extends Serializable {

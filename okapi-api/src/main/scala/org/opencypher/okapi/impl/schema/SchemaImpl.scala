@@ -31,12 +31,10 @@ import org.opencypher.okapi.api.schema.{LabelPropertyMap, PropertyKeys, RelTypeP
 import org.opencypher.okapi.api.types._
 import org.opencypher.okapi.impl.exception.SchemaException
 import org.opencypher.okapi.impl.schema.SchemaUtils._
-import org.opencypher.okapi.impl.schema.TagSupport._
 
 final case class SchemaImpl(
   labelPropertyMap: LabelPropertyMap,
-  relTypePropertyMap: RelTypePropertyMap,
-  override val tags: Set[Int] = Set(0)) extends Schema with TagSupport {
+  relTypePropertyMap: RelTypePropertyMap) extends Schema {
 
   self: Schema =>
 
@@ -168,30 +166,10 @@ final case class SchemaImpl(
     }
     val newNodeKeyMap = labelPropertyMap ++ other.labelPropertyMap ++ LabelPropertyMap(nulledOut)
 
-    val otherTags = other match {
-      case s: TagSupport => s.tags
-      case _ => Set.empty[Int]
-    }
-
-    copy(labelPropertyMap = newNodeKeyMap, relTypePropertyMap = newRelTypePropertyMap, tags = tags ++ otherTags)
+    copy(labelPropertyMap = newNodeKeyMap, relTypePropertyMap = newRelTypePropertyMap)
   }
 
-
-
-  override def fromNodeEntity(labels: Set[String]): Schema = {
-    if (labels.nonEmpty) {
-      forNodeScan(labels)
-    } else {
-      val propertyKeys = if (graphContainsNodeWithoutLabel) {
-        labelPropertyMap.properties(Set.empty[String])
-      } else {
-        PropertyKeys.empty
-      }
-      Schema.empty.withNodePropertyKeys(Set.empty[String], propertyKeys)
-    }
-  }
-
-  def forNodeScan(labelConstraints: Set[String]): Schema = {
+  def forNode(labelConstraints: Set[String]): Schema = {
     val requiredLabels = {
       val explicitLabels = labelConstraints
       val impliedLabels = this.impliedLabels.transitiveImplicationsFor(explicitLabels)
@@ -287,14 +265,6 @@ final case class SchemaImpl(
     }
 
   override def isEmpty: Boolean = this == Schema.empty
-
-  override def withTags(tags: Set[Int]): Schema with TagSupport = copy(tags = tags)
-
-  override def replaceTags(replacements: Map[Int, Int]): Schema with TagSupport =
-    copy(tags = this.tags.replaceWith(replacements))
-
-  override def union(other: Schema with TagSupport): Schema with TagSupport =
-    ++(other.replaceTags(this.tags.replacementsFor(other.tags)))
 
   override private[opencypher] def dropPropertiesFor(combo: Set[String]) =
     copy(labelPropertyMap - combo)

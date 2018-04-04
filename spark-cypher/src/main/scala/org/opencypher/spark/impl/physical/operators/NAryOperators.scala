@@ -26,18 +26,25 @@
  */
 package org.opencypher.spark.impl.physical.operators
 
+import org.opencypher.okapi.api.graph.QualifiedGraphName
 import org.opencypher.spark.impl.physical.{CAPSPhysicalResult, CAPSRuntimeContext}
-import org.opencypher.spark.impl.{CAPSRecords, CAPSUnionGraph}
+import org.opencypher.spark.impl.{CAPSGraph, CAPSRecords, CAPSUnionGraph}
+import org.opencypher.spark.impl.util.TagSupport._
 
-final case class GraphUnionAll(inputs: List[CAPSPhysicalOperator], preventIdCollisions: Boolean = true)
+final case class GraphUnionAll(inputs: List[CAPSPhysicalOperator], qgn: QualifiedGraphName)
   extends CAPSPhysicalOperator with InheritedHeader {
   require(inputs.nonEmpty, "GraphUnionAll requires at least one input")
 
   override def execute(implicit context: CAPSRuntimeContext): CAPSPhysicalResult = {
     val inputResults = inputs.map(_.execute)
     implicit val caps = inputResults.head.records.caps
-    val inputGraphs = inputResults.map(_.graph)
-    val unionGraph = CAPSUnionGraph(inputGraphs, preventIdCollisions)
-    CAPSPhysicalResult(CAPSRecords.unit(), unionGraph)
+
+    val graphTags = inputResults.map(r => r.workingGraphName -> r.workingGraph.tags).toMap
+    val tagStrategy = computeRetaggings(graphTags)
+    val graphWithTagStrategy = inputResults.map(r => r.workingGraph -> tagStrategy(r.workingGraphName)).toMap
+
+    val unionGraph = CAPSUnionGraph(graphWithTagStrategy)
+
+    CAPSPhysicalResult(CAPSRecords.unit(), unionGraph, qgn, tagStrategy)
   }
 }

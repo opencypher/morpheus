@@ -36,12 +36,14 @@ trait GraphOperations {
   self: PropertyGraph =>
 
   /**
-    * Constructs the union of this graph and the argument graph. Note that the argument graph has to be managed by the
-    * same session as this graph.
+    * Constructs the union of this graph and the argument graphs. Note that the argument graphs have to
+    * be managed by the same session as this graph.
     *
-    * @param other argument graph with which to union
+    * This operation does not merge any nodes or relationships, but simply creates a new graph consisting
+    * of all nodes and relationships of the argument graphs.
+    *
+    * @param others argument graphs with which to union
     * @return union of this and the argument graph
     */
-  // TODO: Explain semantics of the union (equality vs equivalence)
-  def unionAll(other: PropertyGraph): PropertyGraph
+  def unionAll(others: PropertyGraph*): PropertyGraph
 }

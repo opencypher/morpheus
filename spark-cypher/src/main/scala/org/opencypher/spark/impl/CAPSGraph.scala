@@ -27,7 +27,7 @@
 package org.opencypher.spark.impl
 
 import org.apache.spark.storage.StorageLevel
-import org.opencypher.okapi.api.graph.{GraphOperations, PropertyGraph}
+import org.opencypher.okapi.api.graph.{GraphOperations, PropertyGraph, QualifiedGraphName}
 import org.opencypher.okapi.api.schema._
 import org.opencypher.okapi.api.table.CypherRecords
 import org.opencypher.okapi.api.types.{CTNode, CTRelationship}
@@ -37,10 +37,13 @@ import org.opencypher.okapi.relational.impl.table.{ColumnName, OpaqueField, Reco
 import org.opencypher.spark.api.CAPSSession
 import org.opencypher.spark.api.io.{CAPSEntityTable, CAPSNodeTable}
 import org.opencypher.spark.impl.CAPSConverters._
+import org.opencypher.spark.impl.util.TagSupport.computeRetaggings
 import org.opencypher.spark.schema.CAPSSchema
 import org.opencypher.spark.schema.CAPSSchema._
 
 trait CAPSGraph extends PropertyGraph with GraphOperations with Serializable {
+
+  def tags: Set[Int]
 
   implicit def session: CAPSSession
 
@@ -48,10 +51,9 @@ trait CAPSGraph extends PropertyGraph with GraphOperations with Serializable {
 
   override def relationships(name: String, relCypherType: CTRelationship = CTRelationship): CAPSRecords
 
-  def union(other: PropertyGraph): CAPSGraph = CAPSUnionGraph(List(this, other.asCaps), preventIdCollisions = false)
-
-  // TODO: Flatten UnionGraph trees that have tag updates enabled
-  override def unionAll(other: PropertyGraph): CAPSGraph = CAPSUnionGraph(this, other.asCaps)
+  override def unionAll(others: PropertyGraph*): CAPSGraph = {
+    CAPSUnionGraph(this :: others.map(_.asCaps).toList: _*)
+  }
 
   override def schema: CAPSSchema
 
@@ -110,17 +112,19 @@ object CAPSGraph {
       override def unpersist(): CAPSGraph = this
 
       override def unpersist(blocking: Boolean): CAPSGraph = this
+
+      override def tags: Set[Int] = Set.empty
     }
 
   def create(nodeTable: CAPSNodeTable, entityTables: CAPSEntityTable*)(implicit caps: CAPSSession): CAPSGraph = {
     val allTables = nodeTable +: entityTables
     val schema = allTables.map(_.schema).reduce[Schema](_ ++ _).asCaps
-    new CAPSScanGraph(allTables, schema)
+    new CAPSScanGraph(allTables, schema, Set(0))
   }
 
-  def create(records: CypherRecords, schema: CAPSSchema)(implicit caps: CAPSSession): CAPSGraph = {
+  def create(records: CypherRecords, schema: CAPSSchema, tags: Set[Int] = Set(0))(implicit caps: CAPSSession): CAPSGraph = {
     val capsRecords = records.asCaps
-    new CAPSPatternGraph(capsRecords, schema)
+    new CAPSPatternGraph(capsRecords, schema, tags)
   }
 
   def createLazy(theSchema: CAPSSchema, loadGraph: => CAPSGraph)(implicit caps: CAPSSession): CAPSGraph =
@@ -132,6 +136,8 @@ object CAPSGraph {
       val g = loadGraph
       if (g.schema == schema) g else throw IllegalArgumentException(s"a graph with schema $schema", g.schema)
     }
+
+    override def tags: Set[Int] = lazyGraph.tags
 
     override def session: CAPSSession = caps
 

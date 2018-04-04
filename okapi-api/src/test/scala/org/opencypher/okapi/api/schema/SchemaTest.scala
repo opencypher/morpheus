@@ -217,18 +217,18 @@ class SchemaTest extends FunSuite with Matchers {
       .withNodePropertyKeys("Pet")("notName" -> CTBoolean)
       .withRelationshipPropertyKeys("OWNER")("since" -> CTInteger)
 
-    schema.forNodeScan(Set("Person")) should equal(
+    schema.forNode(Set("Person")) should equal(
       Schema.empty
         .withNodePropertyKeys("Person")("name" -> CTString)
         .withNodePropertyKeys("Employee", "Person")("name" -> CTString, "salary" -> CTInteger)
     )
 
-    schema.forNodeScan(Set("Dog")) should equal(
+    schema.forNode(Set("Dog")) should equal(
       Schema.empty
         .withNodePropertyKeys("Dog", "Pet")("name" -> CTFloat)
     )
 
-    schema.forNodeScan(Set("Dog", "Pet")) should equal(
+    schema.forNode(Set("Dog", "Pet")) should equal(
       Schema.empty
         .withNodePropertyKeys("Dog", "Pet")("name" -> CTFloat)
     )

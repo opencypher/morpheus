@@ -42,22 +42,57 @@ import org.opencypher.okapi.ir.test.support.MatchHelper.equalWithTracing
 import scala.collection.immutable.Set
 
 class IrBuilderTest extends IrTestSuite {
+  describe("negative tests") {
 
-  describe("parsing CypherQuery") {
-    it("computes a pattern graph schema correctly - 1 create") {
+    it("sets the correct type for new entities") {
       val query =
         """
-        |CONSTRUCT
-        |  NEW (a :A)
-        |RETURN GRAPH""".stripMargin
+          |CONSTRUCT
+          |  NEW (a)
+          |RETURN GRAPH""".stripMargin
 
-      query.asCypherQuery()().model.result match {
-        case GraphResultBlock(_, IRPatternGraph(_, schema, _, _, _, _)) =>
-          schema should equal(Schema.empty.withNodePropertyKeys("A")())
+      query.asCypherQuery().model.result match {
+        case GraphResultBlock(_, IRPatternGraph(qgn, _, _, news, _, _)) =>
+          news.fields.size should equal(1)
+          val a = news.fields.head
+          a.cypherType.graph should equal(Some(qgn))
         case _ => fail("no matching graph result found")
       }
     }
 
+    it("sets the correct type for clone aliases") {
+      val query =
+        """
+          |MATCH (a)
+          |CONSTRUCT
+          |  CLONE a as b
+          |RETURN GRAPH""".stripMargin
+
+      query.asCypherQuery().model.result match {
+        case GraphResultBlock(_, IRPatternGraph(qgn, _, clones, _, _, _)) =>
+          clones.keys.size should equal(1)
+          val (b, a) = clones.head
+          a should equal(Var("a")())
+          a.asInstanceOf[Var].cypherType.graph should equal(Some(testGraph.qualifiedGraphName))
+          b.cypherType.graph should equal(Some(qgn))
+        case _ => fail("no matching graph result found")
+      }
+    }
+
+    // TODO: Ensure this fails
+    ignore("fails when using a uncloned bound variables in a pattern") {
+      val query =
+        """
+          |MATCH (a)
+          |CONSTRUCT
+          |  NEW (a)
+          |RETURN GRAPH""".stripMargin
+
+      intercept[UnsupportedOperationException](query.asCypherQuery().model)
+    }
+
+  }
+  describe("parsing CypherQuery") {
     // TODO: Enable again once setting in NEW is supported
     ignore("construct can set a label") {
       val query =
@@ -78,6 +113,20 @@ class IrBuilderTest extends IrTestSuite {
         |RETURN GRAPH""".stripMargin
 
       intercept[ParsingException](query.asCypherQuery().model)
+    }
+
+    it("computes a pattern graph schema correctly - 1 create") {
+      val query =
+        """
+          |CONSTRUCT
+          |  NEW (a :A)
+          |RETURN GRAPH""".stripMargin
+
+      query.asCypherQuery().model.result match {
+        case GraphResultBlock(_, IRPatternGraph(_, schema, _, _, _, _)) =>
+          schema should equal(Schema.empty.withNodePropertyKeys("A")())
+        case _ => fail("no matching graph result found")
+      }
     }
 
     it("computes a pattern graph schema correctly - 2 creates") {

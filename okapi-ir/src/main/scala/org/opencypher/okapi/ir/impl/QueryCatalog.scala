@@ -24,22 +24,38 @@
  * described as "implementation extensions to Cypher" or as "proposed changes to
  * Cypher that are not yet approved by the openCypher community".
  */
-package org.opencypher.spark.test.fixture
+package org.opencypher.okapi.ir.impl
 
-import org.opencypher.okapi.test.BaseTestSuite
-import org.opencypher.okapi.test.fixture.BaseTestFixture
-import org.opencypher.spark.api.CAPSSession
-import org.opencypher.spark.impl.CAPSGraph
+import org.opencypher.okapi.api.graph.{Namespace, PropertyGraph, QualifiedGraphName}
+import org.opencypher.okapi.api.io.PropertyGraphDataSource
+import org.opencypher.okapi.api.schema.Schema
 
-trait CAPSSessionFixture extends BaseTestFixture {
-  self: SparkSessionFixture with BaseTestSuite =>
-
-  implicit lazy val caps: CAPSSession = CAPSSession.create()
-
-  abstract override protected def afterEach(): Unit = {
-    // delete all session graphs via their qualified graph name
-    caps.dataSource(caps.sessionNamespace).graphNames.foreach(caps.delete)
-    caps.store(caps.emptyGraphQgn, CAPSGraph.empty)
-    super.afterEach()
+case class QueryCatalog(dataSourceMapping: Map[Namespace, PropertyGraphDataSource], registeredSchemas: Map[QualifiedGraphName, Schema]) {
+  def schema(qgn: QualifiedGraphName): Schema = {
+    registeredSchemas.getOrElse(
+      qgn,
+      schemaFromDataSource(qgn)
+    )
   }
+
+  def graph(qgn: QualifiedGraphName): PropertyGraph = dataSourceMapping(qgn.namespace).graph(qgn.graphName)
+
+  private def schemaFromDataSource(qgn: QualifiedGraphName): Schema = {
+    val dataSource = dataSourceMapping(qgn.namespace)
+    val graphName = qgn.graphName
+    val schema: Schema = dataSource.schema(graphName) match {
+      case Some(s) => s
+      case None => dataSource.graph(graphName).schema
+    }
+    schema
+  }
+
+  def withSchema(qgn: QualifiedGraphName, schema: Schema): QueryCatalog = {
+    copy(registeredSchemas = registeredSchemas.updated(qgn, schema))
+  }
+}
+
+object QueryCatalog {
+  def apply(dataSourceMapping:  Map[Namespace, PropertyGraphDataSource]): QueryCatalog =
+    QueryCatalog(dataSourceMapping, Map.empty)
 }

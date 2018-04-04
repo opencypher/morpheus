@@ -142,7 +142,7 @@ class FlatOperatorProducer(implicit context: FlatPlannerContext) {
 
   def varLengthEdgeScan(edgeList: Var, prev: FlatOperator): EdgeScan = {
     val types = relTypeFromList(edgeList.cypherType)
-    val edge = FreshVariableNamer(edgeList.name + "extended", CTRelationship(types))
+    val edge = FreshVariableNamer(edgeList.name + "extended", CTRelationship(types, edgeList.cypherType.graph))
     edgeScan(edge, prev)
   }
 
@@ -202,8 +202,8 @@ class FlatOperatorProducer(implicit context: FlatPlannerContext) {
     ValueJoin(lhs, rhs, predicates, lhs.header ++ rhs.header)
   }
 
-  def planUseGraph(graph: LogicalGraph, prev: FlatOperator) = {
-    UseGraph(graph, prev)
+  def planFromGraph(graph: LogicalGraph, prev: FlatOperator) = {
+    FromGraph(graph, prev)
   }
 
   def planEmptyRecords(fields: Set[Var], prev: FlatOperator): EmptyRecords = {

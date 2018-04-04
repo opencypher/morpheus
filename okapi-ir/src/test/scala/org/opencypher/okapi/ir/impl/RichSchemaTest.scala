@@ -26,7 +26,7 @@
  */
 package org.opencypher.okapi.ir.impl
 
-import org.opencypher.okapi.api.schema.{PropertyKeys, Schema}
+import org.opencypher.okapi.api.schema.Schema
 import org.opencypher.okapi.api.types._
 import org.opencypher.okapi.ir.api.IRField
 import org.opencypher.okapi.ir.api.pattern.{DirectedRelationship, Pattern}
@@ -50,7 +50,7 @@ class RichSchemaTest extends BaseTestSuite {
           Map(
             IRField("r")(CTRelationship("BAR")) -> DirectedRelationship(IRField("n")(CTNode("Person")), IRField("m")(CTNode("Person")))
           )
-        ).fields.map(schema.forField).reduce(_ ++ _)
+        ).fields.map(f => schema.forEntityType(f.cypherType)).reduce(_ ++ _)
 
         val expected = Schema.empty
           .withNodePropertyKeys("Person")("name" -> CTString)
@@ -73,44 +73,16 @@ class RichSchemaTest extends BaseTestSuite {
             IRField("m")(CTNode())
           ),
           Map(
-            IRField("r")(CTRelationship("BAR")) -> DirectedRelationship(IRField("n")(CTNode("Person")), IRField("m")(CTNode("Person")))
+            IRField("r")(CTRelationship("BAR")) -> DirectedRelationship(IRField("n")(CTNode("Person")), IRField("m")(CTNode()))
           )
-        ).fields.map(schema.forField).reduce(_ ++ _)
+        ).fields.map(f => schema.forEntityType(f.cypherType)).reduce(_ ++ _)
 
         val expected = Schema.empty
-          .withNodePropertyKeys("Person")("name" -> CTString)
-          .withNodePropertyKeys(Set.empty[String], PropertyKeys.empty)
-          .withRelationshipPropertyKeys("BAR")("foo" -> CTInteger)
-
-        actual should be(expected)
-      }
-
-      it("can convert fields when one of them is unlabeled") {
-        val schema = Schema.empty
           .withNodePropertyKeys("Person")("name" -> CTString)
           .withNodePropertyKeys("City")("name" -> CTString, "region" -> CTBoolean)
-          .withNodePropertyKeys()("name" -> CTString)
-          .withRelationshipPropertyKeys("KNOWS")("since" -> CTFloat.nullable)
-          .withRelationshipPropertyKeys("BAR")("foo" -> CTInteger)
-
-        val actual = Pattern(
-          Set(
-            IRField("n")(CTNode("Person")),
-            IRField("r")(CTRelationship("BAR")),
-            IRField("m")(CTNode())
-          ),
-          Map(
-            IRField("r")(CTRelationship("BAR")) -> DirectedRelationship(IRField("n")(CTNode("Person")), IRField("m")(CTNode("Person")))
-          )
-        ).fields.map(schema.forField).reduce(_ ++ _)
-
-        val expected = Schema.empty
-          .withNodePropertyKeys("Person")("name" -> CTString)
-          .withNodePropertyKeys()("name" -> CTString)
           .withRelationshipPropertyKeys("BAR")("foo" -> CTInteger)
 
         actual should be(expected)
       }
     }
-
 }
