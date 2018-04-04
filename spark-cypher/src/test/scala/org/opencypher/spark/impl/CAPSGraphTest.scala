@@ -27,11 +27,13 @@
 package org.opencypher.spark.impl
 
 import org.apache.spark.sql.Row
+import org.opencypher.okapi.api.types.{CTNode, CTRelationship}
 import org.opencypher.okapi.ir.test.support.Bag
+import org.opencypher.spark.api.io.CAPSRelationshipTable
 import org.opencypher.spark.test.CAPSTestSuite
 import org.opencypher.spark.test.fixture.{GraphCreationFixture, TeamDataFixture}
 
-abstract class CAPSGraphTest extends CAPSTestSuite with GraphCreationFixture with TeamDataFixture {
+class CAPSGraphTest extends CAPSTestSuite with GraphCreationFixture with TeamDataFixture {
 
   it("should return only nodes with that exact label (single label)") {
     val graph = initGraph(dataFixtureWithoutArrays)
@@ -72,5 +74,25 @@ abstract class CAPSGraphTest extends CAPSTestSuite with GraphCreationFixture wit
         Row(3L, true, true, 8L, "Max"),
         Row(0L, true, true, 42L, "Stefan")
       ))
+  }
+
+  it("should support the same relationship type from multiple relationship tables") {
+    // this creates additional :KNOWS relationships
+    val knowsParts2 = caps.sparkSession.createDataFrame(
+      Seq(
+        (1L, 7L, 2L, 2017L),
+        (1L, 8L, 3L, 2016L))
+    ).toDF("SRC", "ID", "DST", "SINCE")
+
+    val knowsTable2 = CAPSRelationshipTable(knowsTable.mapping, knowsParts2)
+
+    val graph = CAPSGraph.create(personTable, knowsTable, knowsTable2)
+    graph.relationships("r").size shouldBe 8
+  }
+
+  it("should return an empty result for non-present types") {
+    val graph = CAPSGraph.create(personTable, knowsTable)
+    graph.nodes("n", CTNode("BAR")).size shouldBe 0
+    graph.relationships("r", CTRelationship("FOO")).size shouldBe 0
   }
 }
