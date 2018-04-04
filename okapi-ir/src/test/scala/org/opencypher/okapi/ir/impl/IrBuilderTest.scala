@@ -26,7 +26,6 @@
  */
 package org.opencypher.okapi.ir.impl
 
-import org.opencypher.okapi.api
 import org.opencypher.okapi.api.graph.{GraphName, Namespace, QualifiedGraphName}
 import org.opencypher.okapi.api.schema.{PropertyKeys, Schema}
 import org.opencypher.okapi.api.types._
@@ -297,6 +296,39 @@ class IrBuilderTest extends IrTestSuite {
       }
     }
 
+    it("throws an error when a relationships is cloned that is not part of a new pattern") {
+      val query =
+        """
+          |MATCH ()-[r]->()
+          |CONSTRUCT
+          | CLONE r
+          |RETURN GRAPH
+        """.stripMargin
+
+      intercept[UnsupportedOperationException](query.asCypherQuery().model)
+    }
+
+    // TODO: allow specifying cloned rels in new without relationship type
+    it("allows cloning relationships with newly constructed start and end nodes") {
+      val query =
+        """
+          |MATCH (:FOO)-[r:REL]->()
+          |CONSTRUCT
+          | CLONE r as newR
+          | NEW (:A)-[newR:REL]->()
+          |RETURN GRAPH
+        """.stripMargin
+
+      query.asCypherQuery().model.result match {
+        case GraphResultBlock(_, IRPatternGraph(_, schema, _, _, _)) =>
+          schema should equal(Schema.empty
+            .withNodePropertyKeys("A")()
+            .withNodePropertyKeys()()
+            .withRelationshipPropertyKeys("REL")())
+        case _ => fail("no matching graph result found")
+      }
+    }
+
     test("match node and return it") {
       "MATCH (a:Person) RETURN a".asCypherQuery().model.ensureThat {
         (model, globals) =>
@@ -329,6 +361,7 @@ class IrBuilderTest extends IrTestSuite {
           )
       }
     }
+
 
     it("matches a simple relationship pattern and returns some fields") {
       "MATCH (a)-[r]->(b) RETURN b AS otherB, a, r".asCypherQuery().model.ensureThat {

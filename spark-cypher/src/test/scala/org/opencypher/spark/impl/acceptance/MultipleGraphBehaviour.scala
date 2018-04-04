@@ -512,7 +512,8 @@ class MultipleGraphBehaviour extends CAPSTestSuite with ScanGraphInit {
     ))
   }
 
-  it("allows CONSTRUCT ON with relationships") {
+  // TODO: enable when frontend bug is fixed
+  ignore("allows CONSTRUCT ON with relationships") {
     caps.store("testGraphRels1", testGraphRels)
     caps.store("testGraphRels2", testGraphRels)
     val query =
@@ -520,6 +521,7 @@ class MultipleGraphBehaviour extends CAPSTestSuite with ScanGraphInit {
          |MATCH (p1 :Person)-[r1]->(p2 :Person)
          |CONSTRUCT ON testGraphRels2
          |  CLONE p1, r1, p2
+         |  NEW (p1)-[ r1]->( p2)
          |RETURN GRAPH""".stripMargin
 
     val result = caps.cypher(query).getGraph
@@ -541,7 +543,8 @@ class MultipleGraphBehaviour extends CAPSTestSuite with ScanGraphInit {
     result.asCaps.tags should equal(Set(0, 1))
   }
 
-  it("allows cloning from different graphs with nodes and relationships") {
+  // TODO: enable when frontend is fixed
+  ignore("allows cloning from different graphs with nodes and relationships") {
     def testGraphRels = initGraph(
       """|CREATE (mats:Person {name: 'Mats'})
          |CREATE (max:Person {name: 'Max'})
@@ -558,6 +561,8 @@ class MultipleGraphBehaviour extends CAPSTestSuite with ScanGraphInit {
          |MATCH (p3 :Person)-[r2]->(p4 :Person)
          |CONSTRUCT
          |  CLONE p1, p2, p3, p4, r1, r2
+         |  NEW (p1)-[r1]->(p2)
+         |  NEW (p3)-[r2]->(p4)
          |RETURN GRAPH""".stripMargin
 
     val result = caps.cypher(query).getGraph

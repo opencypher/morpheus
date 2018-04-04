@@ -343,6 +343,7 @@ class LogicalPlanner(producer: LogicalOperatorProducer)
         val equivalences = p.news.equivalences
 
         val clonePatternEntities = p.clones.keys
+
         val newPatternEntities = p.news.fields
 
         val entitiesToCreate = newPatternEntities -- clonePatternEntities

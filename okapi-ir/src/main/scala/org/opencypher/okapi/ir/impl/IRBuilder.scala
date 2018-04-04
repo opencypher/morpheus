@@ -36,7 +36,7 @@ import org.opencypher.okapi.api.graph.QualifiedGraphName
 import org.opencypher.okapi.api.schema.PropertyKeys.PropertyKeys
 import org.opencypher.okapi.api.schema.{PropertyKeys, Schema}
 import org.opencypher.okapi.api.types._
-import org.opencypher.okapi.impl.exception.{IllegalArgumentException, IllegalStateException}
+import org.opencypher.okapi.impl.exception.{IllegalArgumentException, IllegalStateException, UnsupportedOperationException}
 import org.opencypher.okapi.ir.api._
 import org.opencypher.okapi.ir.api.block.{SortItem, _}
 import org.opencypher.okapi.ir.api.expr._
@@ -219,6 +219,16 @@ object IRBuilder extends CompilationStage[ast.Statement, CypherStatement[Expr], 
             // Computing single nodes/rels constructed by NEW (CREATE)
             val newPattern = newPatterns.foldLeft(Pattern.empty[Expr])(_ ++ _)
             val newPatternProperties = newPattern.properties
+
+            // Make sure that there are no dangling relationships
+            // we can currently only clone relationships that are also part of a new pattern
+            cloneItems.map(_._1).foreach { cloneFieldAlias =>
+              cloneFieldAlias.cypherType match {
+                case _ : CTRelationship if !newPattern.fields.contains(cloneFieldAlias) =>
+                  throw UnsupportedOperationException(s"Can only clone relationship ${cloneFieldAlias.name} if it is also part of a NEW pattern")
+                case _ => ()
+              }
+            }
 
             val fieldsInNewPattern = newPattern
               .fields
