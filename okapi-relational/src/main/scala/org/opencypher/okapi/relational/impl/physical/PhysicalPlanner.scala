@@ -28,10 +28,10 @@ package org.opencypher.okapi.relational.impl.physical
 
 import org.opencypher.okapi.api.graph.{CypherSession, PropertyGraph, QualifiedGraphName}
 import org.opencypher.okapi.api.table.CypherRecords
-import org.opencypher.okapi.api.types.CTRelationship
+import org.opencypher.okapi.api.types.{CTBoolean, CTNode, CTRelationship}
 import org.opencypher.okapi.impl.exception.{IllegalArgumentException, NotImplementedException}
 import org.opencypher.okapi.ir.api.block.SortItem
-import org.opencypher.okapi.ir.api.expr.{Expr, TrueLit, Var}
+import org.opencypher.okapi.ir.api.expr._
 import org.opencypher.okapi.ir.api.util.DirectCompilationStage
 import org.opencypher.okapi.logical.impl._
 import org.opencypher.okapi.relational.api.physical.{PhysicalOperator, PhysicalOperatorProducer, PhysicalPlannerContext, RuntimeContext}
@@ -122,7 +122,8 @@ class PhysicalPlanner[P <: PhysicalOperator[R, G, C], R <: CypherRecords, G <: P
         }
 
       case flat.ValueJoin(lhs, rhs, predicates, header) =>
-        producer.planValueJoin(process(lhs), process(rhs), predicates, header)
+        val joinExpressions = predicates.map(p => p.lhs -> p.rhs).toSeq
+        producer.planJoin(process(lhs), process(rhs), joinExpressions, header)
 
       case flat.Distinct(fields, in, _) =>
         producer.planDistinct(process(in), fields)
@@ -141,13 +142,24 @@ class PhysicalPlanner[P <: PhysicalOperator[R, G, C], R <: CypherRecords, G <: P
         }
 
         val second = producer.planRelationshipScan(startFrom, op.sourceGraph, rel, relHeader)
+        val startNode = StartNode(rel)(CTNode)
+        val endNode = EndNode(rel)(CTNode)
 
         direction match {
           case Directed =>
-            producer.planExpandSource(first, second, third, source, rel, target, header)
+            val tempResult = producer.planJoin(first, second, Seq(source -> startNode), first.header ++ second.header)
+            producer.planJoin(tempResult, third, Seq(endNode -> target), header)
+
           case Undirected =>
-            val outgoing = producer.planExpandSource(first, second, third, source, rel, target, header)
-            val incoming = producer.planExpandSource(third, second, first, target, rel, source, header, removeSelfRelationships = true)
+            val tempOutgoing = producer.planJoin(first, second, Seq(source -> startNode), first.header ++ second.header)
+            val outgoing = producer.planJoin(tempOutgoing, third, Seq(endNode -> target), header)
+
+            val filterExpression = Not(Equals(startNode, endNode)(CTBoolean))(CTBoolean)
+            val relsWithoutLoops = producer.planFilter(second, filterExpression, second.header)
+
+            val tempIncoming = producer.planJoin(third, relsWithoutLoops, Seq(target -> startNode), third.header ++ second.header)
+            val incoming = producer.planJoin(tempIncoming, first, Seq(endNode -> source), header)
+
             producer.planTabularUnionAll(outgoing, incoming)
         }
 
@@ -155,12 +167,16 @@ class PhysicalPlanner[P <: PhysicalOperator[R, G, C], R <: CypherRecords, G <: P
         val in = process(sourceOp)
         val relationships = producer.planRelationshipScan(in, op.sourceGraph, rel, relHeader)
 
+        val startNode = StartNode(rel)()
+        val endNode = EndNode(rel)()
+
         direction match {
           case Directed =>
-            producer.planExpandInto(in, relationships, source, rel, target, header)
+            producer.planJoin(in, relationships, Seq(source -> startNode, target -> endNode), header)
+
           case Undirected =>
-            val outgoing = producer.planExpandInto(in, relationships, source, rel, target, header)
-            val incoming = producer.planExpandInto(in, relationships, target, rel, source, header)
+            val outgoing = producer.planJoin(in, relationships, Seq(source -> startNode, target -> endNode), header)
+            val incoming = producer.planJoin(in, relationships, Seq(target -> startNode, source -> endNode), header)
             producer.planTabularUnionAll(outgoing, incoming)
         }
 

@@ -71,9 +71,14 @@ object CAPSPhysicalOperator {
     val lhsData = lhs.toDF()
     val rhsData = rhs.toDF()
 
-    val joinCols = joinSlots.map(pair => columnName(pair._1) -> columnName(pair._2))
+    val joinCols = joinSlots.map { case (left, right) => columnName(left) -> columnName(right) }
 
-    joinDFs(lhsData, rhsData, header, joinCols)(joinType, deduplicate)(lhs.caps)
+    // TODO: the join produced corrupt data when the previous operator was a cross. We work around that by using a
+    // subsequent select. This can be removed, once https://issues.apache.org/jira/browse/SPARK-23855 is solved or we
+    // upgrade to Spark 2.3.0
+    val potentiallyCorruptedResult = joinDFs(lhsData, rhsData, header, joinCols)(joinType, deduplicate)(lhs.caps)
+    val select = potentiallyCorruptedResult.data.select("*")
+    CAPSRecords.verifyAndCreate(header, select)(lhs.caps)
   }
 
   def joinDFs(lhsData: DataFrame, rhsData: DataFrame, header: RecordHeader, joinCols: Seq[(String, String)])(

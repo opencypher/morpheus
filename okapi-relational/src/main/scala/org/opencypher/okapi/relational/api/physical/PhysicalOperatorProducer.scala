@@ -27,11 +27,9 @@
 package org.opencypher.okapi.relational.api.physical
 
 import org.opencypher.okapi.api.graph.{PropertyGraph, QualifiedGraphName}
-import org.opencypher.okapi.api.schema.Schema
 import org.opencypher.okapi.api.table.CypherRecords
 import org.opencypher.okapi.ir.api.block.SortItem
 import org.opencypher.okapi.ir.api.expr.{Aggregator, Expr, Var}
-import org.opencypher.okapi.ir.api.set.SetPropertyItem
 import org.opencypher.okapi.logical.impl._
 import org.opencypher.okapi.relational.impl.table.{ProjectedExpr, ProjectedField, RecordHeader}
 
@@ -258,15 +256,15 @@ trait PhysicalOperatorProducer[P <: PhysicalOperator[R, G, C], R <: CypherRecord
   def planCartesianProduct(lhs: P, rhs: P, header: RecordHeader): P
 
   /**
-    * Joins the two input records on node attribute values.
+    * Joins the two input records using the given expressions.
     *
-    * @param lhs        first previous operator
-    * @param rhs        second previous operator
-    * @param predicates join predicates
-    * @param header     resulting record header
-    * @return value join operator
+    * @param lhs         first previous operator
+    * @param rhs         second previous operator
+    * @param joinColumns sequence of left and right join columns
+    * @param header      resulting record header
+    * @return join operator
     */
-  def planValueJoin(lhs: P, rhs: P, predicates: Set[org.opencypher.okapi.ir.api.expr.Equals], header: RecordHeader): P
+  def planJoin(lhs: P, rhs: P, joinColumns: Seq[(Expr, Expr)], header: RecordHeader): P
 
   /**
     * Unions the input records.
@@ -276,20 +274,6 @@ trait PhysicalOperatorProducer[P <: PhysicalOperator[R, G, C], R <: CypherRecord
     * @return union operator
     */
   def planTabularUnionAll(lhs: P, rhs: P): P
-
-  /**
-    * Joins the two input records on two columns, where `source` is solved in the first operator and `target` is solved
-    * in the second operator.
-    *
-    * @param lhs    first previous operator
-    * @param rhs    second previous operator
-    * @param source variable solved by the first operator
-    * @param rel    relationship variable
-    * @param target variable solved by the second operator
-    * @param header resulting record header
-    * @return expand into operator
-    */
-  def planExpandInto(lhs: P, rhs: P, source: Var, rel: Var, target: Var, header: RecordHeader): P
 
   /**
     * Computes the result of an OPTIONAL MATCH where the first input is the non-optional part and the second input the
@@ -314,30 +298,6 @@ trait PhysicalOperatorProducer[P <: PhysicalOperator[R, G, C], R <: CypherRecord
   def planExistsSubQuery(lhs: P, rhs: P, targetField: Var, header: RecordHeader): P
 
   // Ternary operators
-
-  /**
-    * Expands the records in the first input (nodes) via the records in the second input (relationships) into the
-    * records in the third input (nodes).
-    *
-    * @param first                   first previous operator
-    * @param second                  second previous operator
-    * @param third                   third previous operator
-    * @param source                  node variable in the first input
-    * @param rel                     relationship variable in the second input
-    * @param target                  node variable in the third input
-    * @param header                  resulting record header
-    * @param removeSelfRelationships set true, iff loops shall be removed from the output
-    * @return expand source operator
-    */
-  def planExpandSource(
-    first: P,
-    second: P,
-    third: P,
-    source: Var,
-    rel: Var,
-    target: Var,
-    header: RecordHeader,
-    removeSelfRelationships: Boolean = false): P
 
   /**
     * Performs a bounded variable length path expression.
@@ -374,7 +334,7 @@ trait PhysicalOperatorProducer[P <: PhysicalOperator[R, G, C], R <: CypherRecord
   /**
     * Performs a UNION ALL over graphs.
     *
-    * @param graphs graph to perform UNION ALL over
+    * @param graphs              graph to perform UNION ALL over
     * @param preventIdCollisions flag that indicates if ID collisions between entities should be prevented
     * @return union all operator
     */

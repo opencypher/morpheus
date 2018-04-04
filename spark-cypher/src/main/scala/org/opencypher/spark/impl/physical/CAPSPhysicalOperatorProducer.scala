@@ -87,13 +87,13 @@ final class CAPSPhysicalOperatorProducer(implicit caps: CAPSSession)
     in: CAPSPhysicalOperator,
     inGraph: LogicalGraph,
     v: Var,
-    header: RecordHeader): CAPSPhysicalOperator = operators.Scan(in, v, header)
+    header: RecordHeader): CAPSPhysicalOperator = operators.NodeScan(in, v, header)
 
   override def planRelationshipScan(
     in: CAPSPhysicalOperator,
     inGraph: LogicalGraph,
     v: Var,
-    header: RecordHeader): CAPSPhysicalOperator = operators.Scan(in, v, header)
+    header: RecordHeader): CAPSPhysicalOperator = operators.RelationshipScan(in, v, header)
 
   override def planAlias(in: CAPSPhysicalOperator, expr: Expr, alias: Var, header: RecordHeader): CAPSPhysicalOperator =
     operators.Alias(in, expr, alias, header)
@@ -116,36 +116,17 @@ final class CAPSPhysicalOperatorProducer(implicit caps: CAPSSession)
   override def planFilter(in: CAPSPhysicalOperator, expr: Expr, header: RecordHeader): CAPSPhysicalOperator =
     operators.Filter(in, expr, header)
 
-  override def planValueJoin(
+  override def planJoin(
     lhs: CAPSPhysicalOperator,
     rhs: CAPSPhysicalOperator,
-    predicates: Set[Equals],
-    header: RecordHeader): CAPSPhysicalOperator = operators.ValueJoin(lhs, rhs, predicates, header)
+    joinColumns: Seq[(Expr, Expr)],
+    header: RecordHeader): CAPSPhysicalOperator = operators.Join(lhs, rhs, joinColumns, header)
 
   override def planDistinct(in: CAPSPhysicalOperator, fields: Set[Var]): CAPSPhysicalOperator =
     operators.Distinct(in, fields)
 
-  override def planExpandSource(
-    first: CAPSPhysicalOperator,
-    second: CAPSPhysicalOperator,
-    third: CAPSPhysicalOperator,
-    source: Var,
-    rel: Var,
-    target: Var,
-    header: RecordHeader,
-    removeSelfRelationships: Boolean): CAPSPhysicalOperator = operators.ExpandSource(
-    first, second, third, source, rel, target, header, removeSelfRelationships)
-
   override def planTabularUnionAll(lhs: CAPSPhysicalOperator, rhs: CAPSPhysicalOperator): CAPSPhysicalOperator =
     operators.TabularUnionAll(lhs, rhs)
-
-  override def planExpandInto(
-    lhs: CAPSPhysicalOperator,
-    rhs: CAPSPhysicalOperator,
-    source: Var,
-    rel: Var,
-    target: Var,
-    header: RecordHeader): CAPSPhysicalOperator = operators.ExpandInto(lhs, rhs, source, rel, target, header)
 
   override def planInitVarExpand(
     in: CAPSPhysicalOperator,

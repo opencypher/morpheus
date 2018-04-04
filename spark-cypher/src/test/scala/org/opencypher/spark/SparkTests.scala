@@ -24,20 +24,32 @@
  * described as "implementation extensions to Cypher" or as "proposed changes to
  * Cypher that are not yet approved by the openCypher community".
  */
-package org.opencypher.okapi.relational.api.configuration
+package org.opencypher.spark
 
-import org.opencypher.okapi.impl.configuration.ConfigFlag
+import org.opencypher.spark.test.CAPSTestSuite
 
-object CoraConfiguration {
+class SparkTests extends CAPSTestSuite {
 
-  object PrintFlatPlan extends ConfigFlag("cora.explainFlat")
+  // Example for: https://issues.apache.org/jira/browse/SPARK-23855
+  ignore("should correctly perform a join after a cross") {
+    val df1 = sparkSession.createDataFrame(Seq(Tuple1(0L)))
+      .toDF("a")
 
-  object PrintPhysicalPlan extends ConfigFlag("cora.explainPhysical", false)
+    val df2 = sparkSession.createDataFrame(Seq(Tuple1(1L)))
+      .toDF("b")
 
-  object PrintOptimizedPhysicalPlan extends ConfigFlag("cora.explainOptimizedPhysical", false)
+    val df3 = sparkSession.createDataFrame(Seq(Tuple1(0L)))
+      .toDF("c")
 
-  object DebugPhysicalResult extends ConfigFlag("cora.debugPhysical", false)
+    val cross = df1.crossJoin(df2)
+    cross.show()
 
-  object PrintQueryExecutionStages extends ConfigFlag("cora.stages", false)
+    val joined = cross
+      .join(df3, cross.col("a") === df3.col("c"))
 
+    joined.show()
+
+    val selected = joined.select("*")
+    selected.show
+  }
 }

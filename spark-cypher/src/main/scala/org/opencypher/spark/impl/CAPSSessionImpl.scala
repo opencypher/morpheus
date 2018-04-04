@@ -43,7 +43,7 @@ import org.opencypher.okapi.ir.impl.parse.CypherParser
 import org.opencypher.okapi.ir.impl.{IRBuilder, IRBuilderContext}
 import org.opencypher.okapi.logical.api.configuration.LogicalConfiguration.PrintLogicalPlan
 import org.opencypher.okapi.logical.impl._
-import org.opencypher.okapi.relational.api.configuration.CoraConfiguration.{PrintFlatPlan, PrintPhysicalPlan, PrintQueryExecutionStages}
+import org.opencypher.okapi.relational.api.configuration.CoraConfiguration.{PrintFlatPlan, PrintOptimizedPhysicalPlan, PrintPhysicalPlan, PrintQueryExecutionStages}
 import org.opencypher.okapi.relational.impl.flat.{FlatPlanner, FlatPlannerContext}
 import org.opencypher.okapi.relational.impl.physical.PhysicalPlanner
 import org.opencypher.spark.api.CAPSSession
@@ -235,7 +235,7 @@ sealed class CAPSSessionImpl(val sparkSession: SparkSession, val sessionNamespac
     logStageProgress("Physical optimization ... ", newLine = false)
     val optimizedPhysicalPlan = time("Physical optimization")(physicalOptimizer(physicalPlan)(PhysicalOptimizerContext()))
     logStageProgress("Done!")
-    if (PrintPhysicalPlan.isSet) {
+    if (PrintOptimizedPhysicalPlan.isSet) {
       println("Optimized physical plan:")
       println(optimizedPhysicalPlan.pretty())
     }
