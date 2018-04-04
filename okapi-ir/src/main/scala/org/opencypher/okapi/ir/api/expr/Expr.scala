@@ -211,6 +211,10 @@ final case class Property(m: Expr, key: PropertyKey)(val cypherType: CypherType 
   override def withoutType: String = s"${m.withoutType}.${key.name}"
 }
 
+final case class MapExpression(items: Map[String, Expr])(val cypherType: CypherType = CTWildcard) extends Expr {
+  override def withoutType: String = s"{${items.mapValues(_.withoutType)}}"
+}
+
 // Arithmetic expressions
 
 sealed trait ArithmeticExpr extends BinaryExpr {

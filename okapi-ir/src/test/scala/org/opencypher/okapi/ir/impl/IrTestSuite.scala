@@ -41,8 +41,8 @@ import org.opencypher.okapi.test.BaseTestSuite
 import org.scalatest.mockito.MockitoSugar
 
 import scala.language.implicitConversions
-import scala.util.Random
 import scala.reflect.ClassTag
+import scala.util.Random
 
 abstract class IrTestSuite extends BaseTestSuite with MockitoSugar {
 
@@ -50,6 +50,10 @@ abstract class IrTestSuite extends BaseTestSuite with MockitoSugar {
   val testGraphName = GraphName("test")
   val testGraphSchema = Schema.empty
   val testQualifiedGraphName = QualifiedGraphName(testNamespace, testGraphName)
+
+  val qgnGenerator = new QGNGenerator {
+    override def generate: QualifiedGraphName = QualifiedGraphName(s"session.#${(Random.nextInt & Int.MaxValue) % 100}")
+  }
 
   def testGraph()(implicit schema: Schema = testGraphSchema) =
     IRCatalogGraph(testQualifiedGraphName, schema)
@@ -119,9 +123,7 @@ abstract class IrTestSuite extends BaseTestSuite with MockitoSugar {
         ))
     }
 
-    val qgnGenerator = new QGNGenerator {
-      override def generate: QualifiedGraphName = QualifiedGraphName(s"session.#${(Random.nextInt & Int.MaxValue) % 100}")
-    }
+
 
     def irWithParams(params: (String, CypherValue)*)(implicit schema: Schema = Schema.empty): CypherStatement[Expr] = {
       val stmt = CypherParser(queryText)(CypherParser.defaultContext)
@@ -135,4 +137,15 @@ abstract class IrTestSuite extends BaseTestSuite with MockitoSugar {
     }
   }
 
+  object IRBuilderHelper {
+    val emptyIRBuilderContext: IRBuilderContext =
+      IRBuilderContext.initial(
+        "",
+        Map.empty[String, CypherValue],
+        SemanticState.clean,
+        testGraph()(Schema.empty),
+        qgnGenerator,
+        Map.empty
+      )
+  }
 }

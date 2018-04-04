@@ -29,7 +29,7 @@ package org.opencypher.okapi.ir.api.pattern
 import org.opencypher.okapi.api.types.{CTNode, CTRelationship, CypherType}
 import org.opencypher.okapi.ir.api._
 import org.opencypher.okapi.ir.api.block.Binds
-import org.opencypher.okapi.ir.api.expr.EquivalenceModel
+import org.opencypher.okapi.ir.api.expr.{EquivalenceModel, MapExpression}
 import org.opencypher.okapi.ir.impl.exception.PatternConversionException
 
 import scala.annotation.tailrec
@@ -43,7 +43,8 @@ case object Pattern {
 final case class Pattern[E](
   fields: Set[IRField],
   topology: Map[IRField, Connection],
-  equivalences: Map[IRField, EquivalenceModel] = Map.empty
+  equivalences: Map[IRField, EquivalenceModel] = Map.empty,
+  properties: Map[IRField, MapExpression] = Map.empty
 ) extends Binds[E] {
 
   lazy val nodes: Set[IRField] = getEntity(CTNode)
@@ -90,15 +91,26 @@ final case class Pattern[E](
 
   def isEmpty: Boolean = this == Pattern.empty
 
-  def withConnection(key: IRField, connection: Connection): Pattern[E] =
-    if (topology.get(key).contains(connection)) this else copy(topology = topology.updated(key, connection))
+  def withConnection(key: IRField, connection: Connection, propertiesOpt: Option[MapExpression] = None): Pattern[E] = {
+    val withProperties: Pattern[E] = propertiesOpt match {
+      case Some(props) => copy(properties = properties.updated(key, props))
+      case None => this
+    }
 
-  def withEntity(field: IRField, equivalence: Option[EquivalenceModel] = None): Pattern[E] = {
+    if (topology.get(key).contains(connection)) withProperties else withProperties.copy(topology = topology.updated(key, connection))
+  }
+
+  def withEntity(field: IRField, propertiesOpt: Option[MapExpression] = None, equivalence: Option[EquivalenceModel] = None): Pattern[E] = {
+    val withProperties: Pattern[E] = propertiesOpt match {
+      case Some(props) => copy(properties = properties.updated(field, props))
+      case None => this
+    }
+
     equivalence match {
-      case None => if (fields(field)) this else copy(fields = fields + field)
+      case None => if (fields(field)) withProperties else withProperties.copy(fields = fields + field)
       case Some(e) =>
-        if (fields(field)) copy(equivalences = equivalences + (field -> e))
-        else copy(fields = fields + field, equivalences = equivalences + (field -> e))
+        if (fields(field)) withProperties.copy(equivalences = equivalences + (field -> e))
+        else withProperties.copy(fields = fields + field, equivalences = equivalences + (field -> e))
     }
   }
 

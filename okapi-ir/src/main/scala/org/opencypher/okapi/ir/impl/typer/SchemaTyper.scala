@@ -107,6 +107,13 @@ object SchemaTyper {
         }
       } yield result
 
+    case MapExpression(items) =>
+      val values = items.map(_._2)
+      for {
+        _ <- values.toList.traverse(process[R])
+        mapType <- recordAndUpdate(expr -> CTMap)
+      } yield mapType
+
     case _: ExistsPattern =>
       recordAndUpdate[R](expr -> CTBoolean)
 

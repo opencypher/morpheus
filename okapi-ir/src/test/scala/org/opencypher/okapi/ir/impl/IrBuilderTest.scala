@@ -290,7 +290,7 @@ class IrBuilderTest extends IrTestSuite {
         }
 
         val matchBlock = model.findExactlyOne {
-          case MatchBlock(deps, Pattern(fields, topo, equivalences), exprs, _, _) =>
+          case MatchBlock(deps, Pattern(fields, topo, equivalences, _), exprs, _, _) =>
             deps should equalWithTracing(List(loadBlock))
             fields should equal(Set(toField('a -> CTNode)))
             topo shouldBe empty
@@ -322,7 +322,7 @@ class IrBuilderTest extends IrTestSuite {
         }
 
         val matchBlock = model.findExactlyOne {
-          case NoWhereBlock(MatchBlock(deps, Pattern(fields, topo, equivalences), _, _, _)) =>
+          case NoWhereBlock(MatchBlock(deps, Pattern(fields, topo, equivalences, _), _, _, _)) =>
             deps should equalWithTracing(List(loadBlock))
             fields should equal(Set[IRField]('a -> CTNode, 'b -> CTNode, 'r -> CTRelationship))
             val map = Map(toField('r) -> DirectedRelationship('a, 'b))
@@ -359,7 +359,7 @@ class IrBuilderTest extends IrTestSuite {
           }
 
           val matchBlock = model.findExactlyOne {
-            case MatchBlock(deps, Pattern(fields, topo, equivalences), exprs, _, _) =>
+            case MatchBlock(deps, Pattern(fields, topo, equivalences, _), exprs, _, _) =>
               deps should equalWithTracing(List(loadBlock))
               fields should equal(Set(toField('a -> CTNode)))
               topo shouldBe empty

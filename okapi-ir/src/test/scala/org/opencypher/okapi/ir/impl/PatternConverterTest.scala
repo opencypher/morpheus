@@ -55,7 +55,7 @@ class PatternConverterTest extends IrTestSuite {
     val entity = 'b -> CTNode
 
     convert(pattern) should equal(
-      Pattern.empty.withEntity(entity, Some(TildeModel(Var("a")(CTNode()))))
+      Pattern.empty.withEntity(entity, None, Some(TildeModel(Var("a")(CTNode()))))
     )
   }
 
@@ -68,7 +68,7 @@ class PatternConverterTest extends IrTestSuite {
     convert(pattern) should equal(
       Pattern.empty
         .withEntity(a)
-        .withEntity(b, Some(TildeModel(Var("a")(CTNode("Person")))))
+        .withEntity(b, None, Some(TildeModel(Var("a")(CTNode("Person")))))
     )
   }
 
@@ -174,7 +174,7 @@ class PatternConverterTest extends IrTestSuite {
     )
   }
 
-  val converter = new PatternConverter
+  val converter = new PatternConverter()(IRBuilderHelper.emptyIRBuilderContext)
 
   def convert(p: ast.Pattern, knownTypes: Map[ast.Expression, CypherType] = Map.empty): Pattern[Expr] =
     converter.convert(p, knownTypes, testQualifiedGraphName)

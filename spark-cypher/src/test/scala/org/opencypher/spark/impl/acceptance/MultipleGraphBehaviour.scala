@@ -202,7 +202,7 @@ trait MultipleGraphBehaviour {
     }
 
     // TODO: reactive after map expressions in NEW are supported
-    ignore("should construct a node property from a matched node") {
+    it("should construct a node property from a matched node") {
       val query =
         """|MATCH (m)
            |CONSTRUCT

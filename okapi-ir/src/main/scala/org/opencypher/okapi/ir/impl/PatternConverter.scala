@@ -36,7 +36,7 @@ import org.neo4j.cypher.internal.v3_4.expressions.{Expression, LogicalVariable, 
 import org.neo4j.cypher.internal.v3_4.{expressions => ast}
 import org.opencypher.okapi.api.graph.QualifiedGraphName
 import org.opencypher.okapi.api.types.{CTList, CTNode, CTRelationship, CypherType}
-import org.opencypher.okapi.impl.exception.NotImplementedException
+import org.opencypher.okapi.impl.exception.{IllegalArgumentException, NotImplementedException}
 import org.opencypher.okapi.ir.api._
 import org.opencypher.okapi.ir.api.expr._
 import org.opencypher.okapi.ir.api.pattern._
@@ -44,7 +44,7 @@ import org.opencypher.okapi.ir.api.util.FreshVariableNamer
 
 import scala.annotation.tailrec
 
-final class PatternConverter {
+final class PatternConverter()(implicit val irBuilderContext: IRBuilderContext) {
 
   type Result[A] = State[Pattern[Expr], A]
 
@@ -74,7 +74,7 @@ final class PatternConverter {
   private def convertElement(p: ast.PatternElement, knownTypes: Map[ast.Expression, CypherType], qualifiedGraphName: QualifiedGraphName): Result[IRField] =
     p match {
 
-      case np@ast.NodePattern(vOpt, labels: Seq[ast.LabelName], None) =>
+      case np@ast.NodePattern(vOpt, labels: Seq[ast.LabelName], propertiesOpt) =>
         // labels within CREATE patterns, e.g. CREATE (a:Foo), labels for MATCH clauses are rewritten to WHERE
         val patternLabels = labels.map(_.name).toSet
 
@@ -90,14 +90,16 @@ final class PatternConverter {
           case Some(v) => Var(v.name)(CTNode(allLabels, qgnOption))
           case None => FreshVariableNamer(np.position.offset, CTNode(allLabels, qgnOption))
         }
+
         for {
           entity <- pure(IRField(nodeVar.name)(nodeVar.cypherType))
-          _ <- modify[Pattern[Expr]](_.withEntity(entity))
+          _ <- modify[Pattern[Expr]](_.withEntity(entity, extractProperties(propertiesOpt)))
         } yield entity
 
-      case rc @ast.RelationshipChain(left, ast.RelationshipPattern(eOpt, types, rangeOpt, None, dir, _), right) =>
+      case rc @ast.RelationshipChain(left, ast.RelationshipPattern(eOpt, types, rangeOpt, propertiesOpt, dir, _), right) =>
 
         val rel = createRelationshipVar(knownTypes, rc.position.offset, eOpt, types, qualifiedGraphName)
+        val convertedProperties = extractProperties(propertiesOpt)
 
         for {
           source <- convertElement(left, knownTypes, qualifiedGraphName)
@@ -120,31 +122,31 @@ final class PatternConverter {
                   case ends: DifferentEndpoints =>
                     dir match {
                       case OUTGOING =>
-                        registered.withConnection(rel, DirectedVarLengthRelationship(ends, lower, Some(upper)))
+                        registered.withConnection(rel, DirectedVarLengthRelationship(ends, lower, Some(upper)), convertedProperties)
 
                       case INCOMING =>
-                        registered.withConnection(rel, DirectedVarLengthRelationship(ends.flip, lower, Some(upper)))
+                        registered.withConnection(rel, DirectedVarLengthRelationship(ends.flip, lower, Some(upper)), convertedProperties)
 
                       case BOTH =>
-                        registered.withConnection(rel, UndirectedVarLengthRelationship(ends.flip, lower, Some(upper)))
+                        registered.withConnection(rel, UndirectedVarLengthRelationship(ends.flip, lower, Some(upper)), convertedProperties)
                     }
                 }
 
               case None =>
                 Endpoints.apply(source, target) match {
                   case ends: IdenticalEndpoints =>
-                    registered.withConnection(rel, CyclicRelationship(ends))
+                    registered.withConnection(rel, CyclicRelationship(ends), convertedProperties)
 
                   case ends: DifferentEndpoints =>
                     dir match {
                       case OUTGOING =>
-                        registered.withConnection(rel, DirectedRelationship(ends))
+                        registered.withConnection(rel, DirectedRelationship(ends), convertedProperties)
 
                       case INCOMING =>
-                        registered.withConnection(rel, DirectedRelationship(ends.flip))
+                        registered.withConnection(rel, DirectedRelationship(ends.flip), convertedProperties)
 
                       case BOTH =>
-                        registered.withConnection(rel, UndirectedRelationship(ends))
+                        registered.withConnection(rel, UndirectedRelationship(ends), convertedProperties)
                     }
                 }
 
@@ -156,6 +158,14 @@ final class PatternConverter {
       case x =>
         throw NotImplementedException(s"Support for pattern conversion of $x not yet implemented")
     }
+
+  private def extractProperties(propertiesOpt: Option[Expression]) = {
+    propertiesOpt.map(irBuilderContext.convertExpression) match {
+      case Some(e: MapExpression) => Some(e)
+      case Some(other) => throw IllegalArgumentException("MapExpression", other)
+      case _ => None
+    }
+  }
 
   private def createRelationshipVar(
     knownTypes: Map[Expression, CypherType],
