@@ -461,7 +461,7 @@ trait MultipleGraphBehaviour {
     }
 
     it("construct match construct") {
-      caps.store(GraphName("g1"), testGraphRels)
+      caps.store("g1", testGraphRels)
       val query =
         """
           |FROM GRAPH g1
@@ -488,8 +488,8 @@ trait MultipleGraphBehaviour {
     }
 
     it("does not clone twice when a variable is both constructed on and matched") {
-      caps.store(GraphName("g1"), testGraph1)
-      caps.store(GraphName("g2"), testGraph2)
+      caps.store("g1", testGraph1)
+      caps.store("g2", testGraph2)
       val query =
         """
           |FROM GRAPH g1
@@ -513,8 +513,8 @@ trait MultipleGraphBehaviour {
     }
 
     it("allows CONSTRUCT ON with relationships") {
-      caps.store(GraphName("testGraphRels1"), testGraphRels)
-      caps.store(GraphName("testGraphRels2"), testGraphRels)
+      caps.store("testGraphRels1", testGraphRels)
+      caps.store("testGraphRels2", testGraphRels)
       val query =
         """|FROM GRAPH testGraphRels1
            |MATCH (p1 :Person)-[r1]->(p2 :Person)
@@ -548,8 +548,8 @@ trait MultipleGraphBehaviour {
            |CREATE (max)-[:HAS_SIMILAR_NAME]->(mats)
         """.stripMargin)
 
-      caps.store(GraphName("testGraphRels1"), testGraphRels)
-      caps.store(GraphName("testGraphRels2"), testGraphRels)
+      caps.store("testGraphRels1", testGraphRels)
+      caps.store("testGraphRels2", testGraphRels)
 
       val query =
         """|FROM GRAPH testGraphRels1
