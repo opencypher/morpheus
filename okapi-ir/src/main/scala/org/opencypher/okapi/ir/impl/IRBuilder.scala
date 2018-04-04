@@ -33,7 +33,8 @@ import org.neo4j.cypher.internal.frontend.v3_4.ast
 import org.neo4j.cypher.internal.util.v3_4.InputPosition
 import org.neo4j.cypher.internal.v3_4.{expressions => exp}
 import org.opencypher.okapi.api.graph.QualifiedGraphName
-import org.opencypher.okapi.api.schema.Schema
+import org.opencypher.okapi.api.schema.PropertyKeys.PropertyKeys
+import org.opencypher.okapi.api.schema.{PropertyKeys, Schema}
 import org.opencypher.okapi.api.types._
 import org.opencypher.okapi.impl.exception.{IllegalArgumentException, IllegalStateException, UnsupportedOperationException}
 import org.opencypher.okapi.ir.api._
@@ -195,14 +196,10 @@ object IRBuilder extends CompilationStage[ast.Statement, CypherStatement[Expr], 
       case ast.ConstructGraph(clones, news, on) =>
         for {
           context <- get[R, IRBuilderContext]
+
           qgn = context.qgnGenerator.generate
 
           cloneItems <- clones.flatMap(_.items).traverse(convertClone[R](_, qgn))
-
-          // TODO: requires NEW (a { foo : 42 }) to be parsed to SET items
-          //          setItems <- sets.flatMap {
-          //            case ast.SetClause(s) => s
-          //          }.traverse(convertSetItem[R])
 
           newPatterns <- news.map {
             case ast.New(p: exp.Pattern) => p
@@ -219,21 +216,32 @@ object IRBuilder extends CompilationStage[ast.Statement, CypherStatement[Expr], 
             // Fields inside of CONSTRUCT could have been matched on other graphs than just the workingGraph
             val cloneSchema = schemaForEntityTypes(context, cloneItemMap.values.map(_.cypherType).toSet)
 
-            // computing single nodes/rels constructed by NEW (CREATE)
+            // Computing single nodes/rels constructed by NEW (CREATE)
             val newPattern = newPatterns.foldLeft(Pattern.empty[Expr])(_ ++ _)
-            val cypherTypesInNewPattern = newPattern
+            val newPatternProperties = newPattern.properties
+
+            val fieldsInNewPattern = newPattern
               .fields
               .filterNot(cloneItemMap.contains)
-              .map(_.cypherType)
 
-            val constructOperatorSchema = cypherTypesInNewPattern.foldLeft(cloneSchema) { case (agg, next) =>
-              next match {
+              def propertyKeys(f: IRField): PropertyKeys = {
+                newPatternProperties.get(f) match {
+                  case None => PropertyKeys.empty
+                  case Some(MapExpression(items)) =>
+                    items.map { case (key, expr) =>
+                      key -> expr.cypherType
+                    }
+                }
+            }
+
+            val constructOperatorSchema = fieldsInNewPattern.foldLeft(cloneSchema) { case (agg, next) =>
+              next.cypherType match {
                 case n: CTNode =>
-                  agg.withNodePropertyKeys(n.labels)
+                  agg.withNodePropertyKeys(n.labels, propertyKeys(next))
                 case r: CTRelationship =>
                   // TODO: Unsafe head
-                  agg.withRelationshipType(r.types.head)
-                case _ => agg
+                  agg.withRelationshipPropertyKeys(r.types.head, propertyKeys(next))
+                case other => throw IllegalArgumentException("A node or a relationship", other)
               }
             }
 
@@ -244,7 +252,6 @@ object IRBuilder extends CompilationStage[ast.Statement, CypherStatement[Expr], 
               patternGraphSchema,
               cloneItemMap,
               newPattern,
-              List.empty,
               onGraphs)
             val updatedContext = context.withWorkingGraph(patternGraph).registerSchema(qgn, patternGraphSchema)
             put[R, IRBuilderContext](updatedContext) >> pure[R, List[Block[Expr]]](List.empty)

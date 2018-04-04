@@ -69,7 +69,7 @@ final case class Pattern[E](
       s"Expected disjoint patterns but found conflicting connection for ${conflicts.head}:\n" +
         s"${topology(conflicts.head)} and ${other.topology(conflicts.head)}")
     val newTopology = topology ++ other.topology
-    Pattern(fields ++ other.fields, newTopology, equivalences ++ other.equivalences)
+    Pattern(fields ++ other.fields, newTopology, equivalences ++ other.equivalences, properties ++ other.properties)
   }
 
   private def verifyFieldTypes(map1: Map[String, CypherType], map2: Map[String, CypherType]): Unit = {

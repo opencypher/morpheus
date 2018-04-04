@@ -32,7 +32,7 @@ import org.neo4j.cypher.internal.util.v3_4.{InputPosition, SyntaxException}
 import org.neo4j.cypher.internal.v3_4.{expressions => ast}
 import org.opencypher.okapi.api.types.{CTNode, CTRelationship, CypherType}
 import org.opencypher.okapi.ir.api.IRField
-import org.opencypher.okapi.ir.api.expr.{Expr, TildeModel, Var}
+import org.opencypher.okapi.ir.api.expr._
 import org.opencypher.okapi.ir.api.pattern._
 import org.opencypher.okapi.ir.test.toField
 import org.parboiled.scala.{EOI, Parser, Rule1}
@@ -46,6 +46,19 @@ class PatternConverterTest extends IrTestSuite {
 
     convert(pattern) should equal(
       Pattern.empty.withEntity('x -> CTNode)
+    )
+  }
+
+  it("converts entity properties") {
+    val pattern = parse("(a:A {name:'Hans'})-[rel:KNOWS {since:2007}]->(a)")
+    val a: IRField = 'a -> CTNode("A")
+    val rel: IRField = 'rel -> CTRelationship("KNOWS")
+
+    convert(pattern).properties should equal(
+      Map(
+        a -> MapExpression(Map("name" -> StringLit("Hans")()))(),
+        rel -> MapExpression(Map("since" -> IntegerLit(2007)()))()
+      )
     )
   }
 
@@ -191,4 +204,5 @@ class PatternConverterTest extends IrTestSuite {
     def parse(exprText: String, offset: Option[InputPosition]): ast.Pattern =
       parseOrThrow(exprText, offset, SinglePattern)
   }
+
 }
