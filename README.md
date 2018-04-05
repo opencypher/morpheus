@@ -107,7 +107,7 @@ import org.opencypher.spark.api.io.{Node, Relationship, RelationshipType}
 object CaseClassExample extends App {
 
   // 1) Create CAPS session
-  implicit val session = CAPSSession.local()
+  implicit val session: CAPSSession = CAPSSession.local()
 
   // 2) Load social network data via case class instances
   val socialNetwork = session.readFrom(SocialNetworkData.persons, SocialNetworkData.friendships)
