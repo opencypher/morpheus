@@ -27,10 +27,10 @@
 package org.opencypher.spark.examples
 
 import org.neo4j.harness.ServerControls
-import org.opencypher.okapi.api.graph.{GraphName, Namespace}
+import org.opencypher.okapi.api.graph.Namespace
 import org.opencypher.spark.api.CAPSSession
-import org.opencypher.spark.api.io.file.FileCsvPropertyGraphDataSource
-import org.opencypher.spark.api.io.neo4j.Neo4jPropertyGraphDataSource
+import org.opencypher.spark.api.io.file.FileCsvGraphDataSource
+import org.opencypher.spark.api.io.neo4j.CommunityNeo4jGraphDataSource
 import org.opencypher.spark.examples.Neo4jHelpers._
 
 /**
@@ -51,11 +51,11 @@ object RecommendationExample extends App {
 
   // The graph within Neo4j is partitioned into regions using a property key. Within the data source, we map each
   // partition to a separate graph name (i.e. US and EU)
-  caps.registerSource(Namespace("usSocialNetwork"), new Neo4jPropertyGraphDataSource(neo4jServerUS.dataSourceConfig))
-  caps.registerSource(Namespace("euSocialNetwork"), new Neo4jPropertyGraphDataSource(neo4jServerEU.dataSourceConfig))
+  caps.registerSource(Namespace("usSocialNetwork"), CommunityNeo4jGraphDataSource(neo4jServerUS.dataSourceConfig))
+  caps.registerSource(Namespace("euSocialNetwork"), CommunityNeo4jGraphDataSource(neo4jServerEU.dataSourceConfig))
 
   // File-based CSV GDS
-  caps.registerSource(Namespace("purchases"), FileCsvPropertyGraphDataSource(rootPath = s"${getClass.getResource("/csv").getFile}"))
+  caps.registerSource(Namespace("purchases"), FileCsvGraphDataSource(rootPath = s"${getClass.getResource("/csv").getFile}"))
 
   // Start analytical workload
 
@@ -81,7 +81,7 @@ object RecommendationExample extends App {
   val euFriends = caps.cypher(cityFriendsQuery("euSocialNetwork.graph")).getGraph
 
   // Union the US and EU graphs into a single graph 'allFriends' and store it in the session
-  val allFriendsName = caps.store(GraphName("allFriends"), usFriends.unionAll(euFriends))
+  val allFriendsName = caps.store("allFriends", usFriends.unionAll(euFriends))
 
   // Connect the social network with the products network using equal person and customer emails
   val connectedCustomers = caps.cypher(
