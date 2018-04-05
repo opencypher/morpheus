@@ -386,9 +386,9 @@ class CAPSPatternGraphTest extends CAPSGraphTest {
 
     patternGraph.nodes("n", CTNode("Person")).collect.toBag should equal(
       Bag(
-        CypherMap("n" -> CAPSNode(0L, Set())),
+        CypherMap("n" -> CAPSNode(0L)),
         CypherMap("n" -> CAPSNode(1L, Set("Person"))),
-        CypherMap("n" -> CAPSNode(10L, Set()))
+        CypherMap("n" -> CAPSNode(10L))
       ))
   }
 

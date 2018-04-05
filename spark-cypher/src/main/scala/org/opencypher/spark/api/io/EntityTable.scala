@@ -59,7 +59,7 @@ sealed trait EntityTable[T <: CypherTable[String]] {
   def table: T
 
   protected def verify(): Unit = {
-    table.verifyColumnType(mapping.sourceIdKey, CTInteger, "id key")
+    table.verifyColumnType(mapping.sourceIdKey, CTString, "id key")
   }
 
 }
@@ -192,8 +192,8 @@ abstract class RelationshipTable[T <: CypherTable[String]](mapping: Relationship
 
   override protected def verify(): Unit = {
     super.verify()
-    table.verifyColumnType(mapping.sourceStartNodeKey, CTInteger, "start node")
-    table.verifyColumnType(mapping.sourceEndNodeKey, CTInteger, "end node")
+    table.verifyColumnType(mapping.sourceStartNodeKey, CTString, "start node")
+    table.verifyColumnType(mapping.sourceEndNodeKey, CTString, "end node")
     mapping.relTypeOrSourceRelTypeKey.right.foreach { key =>
       table.verifyColumnType(key._1, CTString, "relationship type")
     }

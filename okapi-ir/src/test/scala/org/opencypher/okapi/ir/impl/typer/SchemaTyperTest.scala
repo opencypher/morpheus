@@ -344,10 +344,31 @@ class SchemaTyperTest extends BaseTestSuite with Neo4jAstTestSupport with Mockit
     assertExpr.from("r.relative") shouldHaveInferredType CTBoolean
   }
 
-  test("typing of id function") {
-    implicit val context = typeTracker("n" -> CTNode("Person"))
+  describe("ID") {
+    it("can type id function of nodes") {
+      implicit val context = typeTracker("n" -> CTNode("Person"))
 
-    assertExpr.from("id(n)") shouldHaveInferredType CTInteger
+      assertExpr.from("id(n)") shouldHaveInferredType CTString
+    }
+
+    it("can type id function of rels") {
+      implicit val context = typeTracker("r" -> CTRelationship("KNOWS"))
+
+      assertExpr.from("id(r)") shouldHaveInferredType CTString
+    }
+
+    it("can type id function of nullable rels") {
+      implicit val context = typeTracker("r" -> CTRelationship("KNOWS").nullable)
+
+      assertExpr.from("id(r)") shouldHaveInferredType CTString.nullable
+    }
+
+    it("fails typing id function of non nodes/rels") {
+      implicit val context = typeTracker("val" -> CTString)
+
+      val expr = parseExpr("id(val)")
+      assertExpr(expr) shouldFailToInferTypeWithErrors NoSuitableSignatureForExpr(expr, Seq(CTString))
+    }
   }
 
   test("typing of functions") {

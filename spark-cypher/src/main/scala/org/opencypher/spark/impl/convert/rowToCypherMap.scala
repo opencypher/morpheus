@@ -62,7 +62,7 @@ final case class rowToCypherMap(header: RecordHeader) extends (Row => CypherMap)
     val idValue = row.getAs[Any](ColumnName.of(header.slotFor(field)))
     idValue match {
       case null       => CypherNull
-      case id: Long   =>
+      case id: String   =>
         val labels = header
         .labelSlots(field)
         .mapValues { s =>
@@ -93,9 +93,9 @@ final case class rowToCypherMap(header: RecordHeader) extends (Row => CypherMap)
     val idValue = row.getAs[Any](ColumnName.of(header.slotFor(field)))
     idValue match {
       case null       => CypherNull
-      case id: Long   =>
-        val source = row.getAs[Long](ColumnName.of(header.sourceNodeSlot(field)))
-        val target = row.getAs[Long](ColumnName.of(header.targetNodeSlot(field)))
+      case id: String   =>
+        val source = row.getAs[String](ColumnName.of(header.sourceNodeSlot(field)))
+        val target = row.getAs[String](ColumnName.of(header.targetNodeSlot(field)))
         val typ = row.getAs[String](ColumnName.of(header.typeSlot(field)))
         val properties = header
           .propertySlots(field)
