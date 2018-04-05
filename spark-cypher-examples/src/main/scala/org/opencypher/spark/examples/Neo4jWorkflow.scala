@@ -28,9 +28,9 @@ package org.opencypher.spark.examples
 
 import org.opencypher.okapi.api.graph.{GraphName, Namespace, QualifiedGraphName}
 import org.opencypher.spark.api.CAPSSession
-import org.opencypher.spark.api.io.file.FileCsvPropertyGraphDataSource
-import org.opencypher.spark.api.io.neo4j.Neo4jPropertyGraphDataSource
-import org.opencypher.spark.api.io.neo4j.Neo4jPropertyGraphDataSource._
+import org.opencypher.spark.api.io.file.FileCsvGraphDataSource
+import org.opencypher.spark.api.io.neo4j.CommunityNeo4jGraphDataSource._
+import org.opencypher.spark.api.io.neo4j.{Neo4jConfig, CommunityNeo4jGraphDataSource}
 import org.opencypher.spark.examples.Neo4jHelpers._
 
 /**
@@ -46,17 +46,17 @@ object Neo4jWorkflow extends App {
   val neo4j = Neo4jHelpers.startNeo4j(personNetwork)
 
   // Register Graph Data Sources (GDS)
-  session.registerSource(Namespace("socialNetwork"), new Neo4jPropertyGraphDataSource(neo4j.dataSourceConfig))
+  session.registerSource(Namespace("socialNetwork"), CommunityNeo4jGraphDataSource(neo4j.dataSourceConfig))
 
   // Access the graph via its qualified graph name
-  val socialNetwork = session.graph(QualifiedGraphName("socialNetwork.graph"))
+  val socialNetwork = session.graph("socialNetwork.graph")
 
   // Register a File-based data source in the Cypher session
-  session.registerSource(Namespace("csv"), FileCsvPropertyGraphDataSource(rootPath = getClass.getResource("/csv").getFile))
+  session.registerSource(Namespace("csv"), FileCsvGraphDataSource(rootPath = getClass.getResource("/csv").getFile))
 
 
   // Access the graph via its qualified graph name
-  val purchaseNetwork = session.graph(QualifiedGraphName(Namespace("csv"), GraphName("products")))
+  val purchaseNetwork = session.graph("csv.products")
 
   // Build new recommendation graph that connects the social and product graphs and
   // create new edges between users and customers with the same name
@@ -89,7 +89,7 @@ object Neo4jWorkflow extends App {
   }
 
   // Proof that the write-back to Neo4j worked, retrieve and print updated Neo4j results
-  val updatedNeo4jSource = new Neo4jPropertyGraphDataSource(neo4j.dataSourceConfig)
+  val updatedNeo4jSource = CommunityNeo4jGraphDataSource(neo4j.dataSourceConfig)
   session.registerSource(Namespace("updated-neo4j"), updatedNeo4jSource)
   val socialNetworkWithRanks = session.graph(QualifiedGraphName(Namespace("updated-neo4j"), neo4jDefaultGraphName))
   socialNetworkWithRanks.cypher("MATCH (p) WHERE p.should_buy IS NOT NULL RETURN p.name, p.should_buy").show

@@ -37,9 +37,9 @@ import org.opencypher.okapi.ir.api.expr.Var
 import org.opencypher.okapi.relational.impl.syntax.RecordHeaderSyntax._
 import org.opencypher.okapi.relational.impl.table.{OpaqueField, RecordHeader}
 import org.opencypher.spark.test.CAPSTestSuite
-import org.opencypher.spark.test.fixture.GraphCreationFixture
+import org.opencypher.spark.test.fixture.GraphConstructionFixture
 
-class CAPSRecordsPrinterTest extends CAPSTestSuite with GraphCreationFixture {
+class CAPSRecordsPrinterTest extends CAPSTestSuite with GraphConstructionFixture {
 
   implicit val options: PrintOptions = PrintOptions.out
 

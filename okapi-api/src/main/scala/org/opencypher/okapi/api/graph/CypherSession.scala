@@ -30,8 +30,8 @@ import org.opencypher.okapi.api.io._
 import org.opencypher.okapi.api.table.CypherRecords
 import org.opencypher.okapi.api.value.CypherValue._
 import org.opencypher.okapi.impl.exception.{IllegalArgumentException, UnsupportedOperationException}
-import org.opencypher.okapi.impl.io.SessionPropertyGraphDataSource
-import org.opencypher.okapi.impl.io.SessionPropertyGraphDataSource.{Namespace => SessionNamespace}
+import org.opencypher.okapi.impl.io.SessionGraphDataSource
+import org.opencypher.okapi.impl.io.SessionGraphDataSource.{Namespace => SessionNamespace}
 
 /**
   * The Cypher Session is the main API for a Cypher-based application. It manages graphs which can be queried using
@@ -50,10 +50,10 @@ trait CypherSession {
   /**
     * Stores a mutable mapping between a data source [[org.opencypher.okapi.api.graph.Namespace]] and the specific [[org.opencypher.okapi.api.io.PropertyGraphDataSource]].
     *
-    * This mapping also holds the [[org.opencypher.okapi.impl.io.SessionPropertyGraphDataSource]] by default.
+    * This mapping also holds the [[org.opencypher.okapi.impl.io.SessionGraphDataSource]] by default.
     */
   protected var dataSourceMapping: Map[Namespace, PropertyGraphDataSource] =
-    Map(sessionNamespace -> new SessionPropertyGraphDataSource)
+    Map(sessionNamespace -> new SessionGraphDataSource)
 
   /**
     * Register the given [[org.opencypher.okapi.api.io.PropertyGraphDataSource]] under the specific [[org.opencypher.okapi.api.graph.Namespace]] within this session.
@@ -110,15 +110,16 @@ trait CypherSession {
   def cypher(query: String, parameters: CypherMap = CypherMap.empty, drivingTable: Option[CypherRecords] = None): CypherResult
 
   /**
-    * Stores the given [[org.opencypher.okapi.api.graph.PropertyGraph]] to session-local storage under the given [[org.opencypher.okapi.api.graph.GraphName]]. The specified graph
-    * will be accessible under the session-local naming scheme, e.g. `session.graphName`.
+    * Stores the given [[org.opencypher.okapi.api.graph.PropertyGraph]] using the [[org.opencypher.okapi.api.io.PropertyGraphDataSource]] registered under the [[org.opencypher.okapi.api.graph.Namespace]] of the specified string representation of a [[org.opencypher.okapi.api.graph.QualifiedGraphName]].
     *
-    * @param graphName graph name
-    * @param graph     property graph to store
+    * If the given qualified graph name does not contain any period character (`.`),
+    * the default [[org.opencypher.okapi.impl.io.SessionGraphDataSource]] will be used.
+    *
+    * @param qualifiedGraphName qualified graph name
+    * @param graph              property graph to store
     */
-  def store(graphName: GraphName, graph: PropertyGraph): QualifiedGraphName = {
-    dataSourceMapping(SessionNamespace).store(graphName, graph)
-    QualifiedGraphName(SessionNamespace, graphName)
+  def store(qualifiedGraphName: String, graph: PropertyGraph): Unit = {
+    store(QualifiedGraphName(qualifiedGraphName), graph)
   }
 
   /**
@@ -132,12 +133,15 @@ trait CypherSession {
     dataSource(qualifiedGraphName.namespace).store(qualifiedGraphName.graphName, graph)
 
   /**
-    * Removes the [[org.opencypher.okapi.api.graph.PropertyGraph]] associated with the given name from the session-local storage.
+    * Removes the [[org.opencypher.okapi.api.graph.PropertyGraph]] associated with the given qualified graph name.
     *
-    * @param graphName name of the graph within the session.
+    * If the given qualified graph name does not contain any period character (`.`),
+    * the default [[org.opencypher.okapi.impl.io.SessionGraphDataSource]] will be used.
+    *
+    * @param qualifiedGraphName name of the graph within the session.
     */
-  def delete(graphName: GraphName): Unit =
-    dataSourceMapping(SessionNamespace).delete(graphName)
+  def delete(qualifiedGraphName: String): Unit =
+    delete(QualifiedGraphName(qualifiedGraphName))
 
   /**
     * Removes the [[org.opencypher.okapi.api.graph.PropertyGraph]] with the given qualified name from the data source associated with the specified
@@ -149,13 +153,16 @@ trait CypherSession {
     dataSource(qualifiedGraphName.namespace).delete(qualifiedGraphName.graphName)
 
   /**
-    * Returns the [[org.opencypher.okapi.api.graph.PropertyGraph]] that is stored in session-local storage under the given [[org.opencypher.okapi.api.graph.GraphName]].
+    * Returns the [[org.opencypher.okapi.api.graph.PropertyGraph]] that is stored under the given string representation of a [[org.opencypher.okapi.api.graph.QualifiedGraphName]].
     *
-    * @param graphName qualified graph name
+    * If the given qualified graph name does not contain any period character (`.`),
+    * the default [[org.opencypher.okapi.impl.io.SessionGraphDataSource]] will be used.
+    *
+    * @param qualifiedGraphName qualified graph name
     * @return property graph
     */
-  def graph(graphName: GraphName): PropertyGraph =
-    dataSource(sessionNamespace).graph(graphName)
+  def graph(qualifiedGraphName: String): PropertyGraph =
+    graph(QualifiedGraphName(qualifiedGraphName))
 
   /**
     * Returns the [[org.opencypher.okapi.api.graph.PropertyGraph]] that is stored under the given [[org.opencypher.okapi.api.graph.QualifiedGraphName]].

@@ -29,9 +29,9 @@ package org.opencypher.okapi.api.schema
 import org.opencypher.okapi.api.types.{CTInteger, CTString}
 import org.opencypher.spark.schema.CAPSSchema._
 import org.opencypher.spark.test.CAPSTestSuite
-import org.opencypher.spark.test.fixture.GraphCreationFixture
+import org.opencypher.spark.test.fixture.GraphConstructionFixture
 
-class TestGraphSchemaTest extends CAPSTestSuite with GraphCreationFixture {
+class TestGraphSchemaTest extends CAPSTestSuite with GraphConstructionFixture {
 
   test("constructs schema correctly for unlabeled nodes") {
     val graph = initGraph("CREATE ({id: 1}), ({id: 2}), ({other: 'foo'}), ()")

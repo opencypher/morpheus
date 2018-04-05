@@ -46,7 +46,7 @@ import scala.language.implicitConversions
   * @param hadoopConfig Hadoop configuration
   * @param rootPath     root path containing one ore more graphs
   */
-case class HdfsCsvPropertyGraphDataSource(
+case class HdfsCsvGraphDataSource(
   hadoopConfig: Configuration,
   rootPath: String)(implicit val session: CAPSSession) extends CAPSPropertyGraphDataSource {
 

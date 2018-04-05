@@ -52,12 +52,6 @@ trait CypherRecords extends CypherTable[String] with CypherPrintable {
     */
   def collect: Array[CypherMap]
 
-  /**
-    * Registers these records as a table under the given name.
-    *
-    * @param name the name under which this table may be referenced.
-    */
-  def register(name: String): Unit
 }
 
 trait CypherRecordsCompanion[R <: CypherRecords, S <: CypherSession] {

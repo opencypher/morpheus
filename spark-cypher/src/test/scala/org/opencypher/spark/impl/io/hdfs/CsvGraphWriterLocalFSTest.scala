@@ -33,10 +33,10 @@ import org.opencypher.okapi.ir.test.support.Bag._
 import org.opencypher.spark.impl.CAPSConverters._
 import org.opencypher.spark.impl.CAPSGraph
 import org.opencypher.spark.test.CAPSTestSuite
-import org.opencypher.spark.test.fixture.{GraphCreationFixture, MiniDFSClusterFixture, TeamDataFixture}
+import org.opencypher.spark.test.fixture.{GraphConstructionFixture, MiniDFSClusterFixture, TeamDataFixture}
 
 // This tests depends on the id generation in Neo4j (harness)
-class CsvGraphWriterLocalFSTest extends CAPSTestSuite with MiniDFSClusterFixture with TeamDataFixture with GraphCreationFixture {
+class CsvGraphWriterLocalFSTest extends CAPSTestSuite with MiniDFSClusterFixture with TeamDataFixture with GraphConstructionFixture {
 
   it("can store a graph to local file system") {
     val tmpPath = Files.createTempDirectory("caps_graph")

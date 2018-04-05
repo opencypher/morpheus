@@ -26,7 +26,6 @@
  */
 package org.opencypher.spark.impl.acceptance
 
-import org.opencypher.okapi.api.graph.GraphName
 import org.opencypher.okapi.api.schema.{PropertyKeys, Schema}
 import org.opencypher.okapi.api.types.{CTInteger, CTString}
 import org.opencypher.okapi.api.value.CypherValue.CypherMap
@@ -89,7 +88,7 @@ trait MultipleGraphBehaviour {
     }
 
     it("should switch to another graph and then return it") {
-      caps.store(GraphName("graph2"), testGraph2)
+      caps.store("graph2", testGraph2)
       val query =
         """FROM GRAPH graph2
           |RETURN GRAPH""".stripMargin
@@ -100,8 +99,8 @@ trait MultipleGraphBehaviour {
     }
 
     it("can select a source graph to match data from") {
-      caps.store(GraphName("graph1"), testGraph1)
-      caps.store(GraphName("graph2"), testGraph2)
+      caps.store("graph1", testGraph1)
+      caps.store("graph2", testGraph2)
 
       val query =
         """FROM GRAPH graph2
@@ -117,9 +116,9 @@ trait MultipleGraphBehaviour {
     }
 
     it("matches from different graphs") {
-      caps.store(GraphName("graph1"), testGraph1)
-      caps.store(GraphName("graph2"), testGraph2)
-      caps.store(GraphName("graph3"), testGraph3)
+      caps.store("graph1", testGraph1)
+      caps.store("graph2", testGraph2)
+      caps.store("graph3", testGraph3)
 
       val query =
         """FROM GRAPH graph2
@@ -394,7 +393,7 @@ trait MultipleGraphBehaviour {
     }
 
     it("CONSTRUCTS ON a single graph") {
-      caps.store(GraphName("one"), testGraph1)
+      caps.store("one", testGraph1)
       val query =
         """
           |CONSTRUCT ON one
@@ -408,8 +407,8 @@ trait MultipleGraphBehaviour {
     }
 
     it("CONSTRUCTS ON two graphs") {
-      caps.store(GraphName("one"), testGraph1)
-      caps.store(GraphName("two"), testGraph2)
+      caps.store("one", testGraph1)
+      caps.store("two", testGraph2)
       val query =
         """
           |CONSTRUCT ON one, two
@@ -423,8 +422,8 @@ trait MultipleGraphBehaviour {
     }
 
     it("CONSTRUCTS ON two graphs and adds a relationship") {
-      caps.store(GraphName("one"), testGraph1)
-      caps.store(GraphName("two"), testGraph2)
+      caps.store("one", testGraph1)
+      caps.store("two", testGraph2)
       val query =
         """|FROM GRAPH one
            |MATCH (m: Person)
@@ -462,7 +461,7 @@ trait MultipleGraphBehaviour {
     }
 
     it("construct match construct") {
-      caps.store(GraphName("g1"), testGraphRels)
+      caps.store("g1", testGraphRels)
       val query =
         """
           |FROM GRAPH g1
@@ -489,8 +488,8 @@ trait MultipleGraphBehaviour {
     }
 
     it("does not clone twice when a variable is both constructed on and matched") {
-      caps.store(GraphName("g1"), testGraph1)
-      caps.store(GraphName("g2"), testGraph2)
+      caps.store("g1", testGraph1)
+      caps.store("g2", testGraph2)
       val query =
         """
           |FROM GRAPH g1
@@ -514,8 +513,8 @@ trait MultipleGraphBehaviour {
     }
 
     it("allows CONSTRUCT ON with relationships") {
-      caps.store(GraphName("testGraphRels1"), testGraphRels)
-      caps.store(GraphName("testGraphRels2"), testGraphRels)
+      caps.store("testGraphRels1", testGraphRels)
+      caps.store("testGraphRels2", testGraphRels)
       val query =
         """|FROM GRAPH testGraphRels1
            |MATCH (p1 :Person)-[r1]->(p2 :Person)
@@ -549,8 +548,8 @@ trait MultipleGraphBehaviour {
            |CREATE (max)-[:HAS_SIMILAR_NAME]->(mats)
         """.stripMargin)
 
-      caps.store(GraphName("testGraphRels1"), testGraphRels)
-      caps.store(GraphName("testGraphRels2"), testGraphRels)
+      caps.store("testGraphRels1", testGraphRels)
+      caps.store("testGraphRels2", testGraphRels)
 
       val query =
         """|FROM GRAPH testGraphRels1

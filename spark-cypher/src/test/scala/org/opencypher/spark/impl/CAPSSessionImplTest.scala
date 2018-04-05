@@ -26,18 +26,52 @@
  */
 package org.opencypher.spark.impl
 
+import org.opencypher.okapi.api.graph.{Namespace, QualifiedGraphName}
+import org.opencypher.okapi.api.value.CAPSNode
 import org.opencypher.okapi.api.value.CypherValue.CypherMap
+import org.opencypher.okapi.impl.io.SessionGraphDataSource
 import org.opencypher.spark.test.CAPSTestSuite
-import org.opencypher.spark.test.fixture.TeamDataFixture
-
+import org.opencypher.spark.test.fixture.{GraphConstructionFixture, TeamDataFixture}
 import org.opencypher.okapi.ir.test.support.Bag
 import org.opencypher.okapi.ir.test.support.Bag._
 
-class CAPSSessionImplTest extends CAPSTestSuite with TeamDataFixture {
+class CAPSSessionImplTest extends CAPSTestSuite with TeamDataFixture with GraphConstructionFixture {
+
+  it("can use multiple session graph data sources") {
+    caps.registerSource(Namespace("working"), new SessionGraphDataSource())
+    caps.registerSource(Namespace("foo"), new SessionGraphDataSource())
+
+    val g1 = initGraph("CREATE (:A)")
+    val g2 = initGraph("CREATE (:B)")
+    val g3 = initGraph("CREATE (:C)")
+
+    caps.store(QualifiedGraphName("session.a"), g1)
+    caps.store(QualifiedGraphName("working.a"), g2)
+    caps.cypher("CREATE GRAPH working.b { FROM GRAPH working.a RETURN GRAPH }")
+    caps.store(QualifiedGraphName("foo.bar.baz.a"), g3)
+
+    val r1 = caps.cypher("FROM GRAPH a MATCH (n) RETURN n")
+    val r2 = caps.cypher("FROM GRAPH working.a MATCH (n) RETURN n")
+    val r3 = caps.cypher("FROM GRAPH working.b MATCH (n) RETURN n")
+    val r4 = caps.cypher("FROM GRAPH foo.bar.baz.a MATCH (n) RETURN n")
+
+    r1.getRecords.collect.toBag should equal(Bag(
+      CypherMap("n" -> CAPSNode(0L, Set("A")))
+    ))
+    r2.getRecords.collect.toBag should equal(Bag(
+      CypherMap("n" -> CAPSNode(0L, Set("B")))
+    ))
+    r3.getRecords.collect.toBag should equal(Bag(
+      CypherMap("n" -> CAPSNode(0L, Set("B")))
+    ))
+    r4.getRecords.collect.toBag should equal(Bag(
+      CypherMap("n" -> CAPSNode(0L, Set("C")))
+    ))
+  }
 
   it("can execute sql on registered tables") {
-    CAPSRecords.wrap(personDF).register("people")
-    CAPSRecords.wrap(knowsDF).register("knows")
+    CAPSRecords.wrap(personDF).toDF().createOrReplaceTempView("people")
+    CAPSRecords.wrap(knowsDF).toDF().createOrReplaceTempView("knows")
 
     val sqlResult = caps.sql(
       """

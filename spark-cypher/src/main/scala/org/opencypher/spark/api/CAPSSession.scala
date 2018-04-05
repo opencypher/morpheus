@@ -34,7 +34,7 @@ import org.opencypher.okapi.api.graph._
 import org.opencypher.okapi.api.table.CypherRecords
 import org.opencypher.okapi.api.value.CypherValue.CypherMap
 import org.opencypher.okapi.impl.exception.{IllegalArgumentException, UnsupportedOperationException}
-import org.opencypher.okapi.impl.io.SessionPropertyGraphDataSource
+import org.opencypher.okapi.impl.io.SessionGraphDataSource
 import org.opencypher.okapi.relational.impl.table.ColumnName
 import org.opencypher.spark.api.io._
 import org.opencypher.spark.impl.{CAPSGraph, CAPSRecords, CAPSSessionImpl}
@@ -99,7 +99,7 @@ object CAPSSession extends Serializable {
     * @param sparkSession Spark session
     * @return CAPS session
     */
-  def create(sessionNamespace: Namespace = SessionPropertyGraphDataSource.Namespace)
+  def create(sessionNamespace: Namespace = SessionGraphDataSource.Namespace)
     (implicit sparkSession: SparkSession): CAPSSession = new CAPSSessionImpl(sparkSession, sessionNamespace)
 
   /**

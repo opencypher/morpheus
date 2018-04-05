@@ -27,7 +27,6 @@
 package org.opencypher.spark.examples
 
 import org.apache.spark.graphx._
-import org.opencypher.okapi.api.graph.GraphName
 import org.opencypher.okapi.api.io.conversion.NodeMapping
 import org.opencypher.spark.api.CAPSSession
 import org.opencypher.spark.api.CAPSSession._
@@ -77,8 +76,8 @@ object GraphXPageRankExample extends App {
   val rankNodes = session.readFrom(CAPSNodeTable(ranksNodeMapping, rankTable))
 
   // 8) Mount both graphs in the session
-  session.store(GraphName("ranks"), rankNodes)
-  session.store(GraphName("sn"), socialNetwork)
+  session.store("ranks", rankNodes)
+  session.store("sn", socialNetwork)
 
   rankNodes.nodes("r").show
   socialNetwork.nodes("s").show

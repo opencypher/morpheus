@@ -33,7 +33,7 @@ import org.opencypher.spark.api.CAPSSession
 import org.opencypher.spark.impl.io.CAPSPropertyGraphDataSource
 import org.opencypher.spark.impl.io.neo4j.Neo4jGraphLoader
 
-object Neo4jPropertyGraphDataSource {
+object CommunityNeo4jGraphDataSource {
 
   val neo4jDefaultGraphName = GraphName("graph")
 
@@ -56,9 +56,9 @@ object Neo4jPropertyGraphDataSource {
   * @param schemata an optional schema of the loaded graph
   * @param session CAPS session
   */
-case class Neo4jPropertyGraphDataSource(
+case class CommunityNeo4jGraphDataSource(
   config: Neo4jConfig,
-  queries: Map[GraphName, (String, String)] = Neo4jPropertyGraphDataSource.defaultQueries,
+  queries: Map[GraphName, (String, String)] = CommunityNeo4jGraphDataSource.defaultQueries,
   schemata: Map[GraphName, Schema] = Map.empty)
   (implicit val session: CAPSSession)
   extends CAPSPropertyGraphDataSource {

@@ -24,19 +24,30 @@
  * described as "implementation extensions to Cypher" or as "proposed changes to
  * Cypher that are not yet approved by the openCypher community".
  */
-package org.opencypher.spark.test.fixture
+package org.opencypher.okapi.impl.io
 
-import org.opencypher.okapi.ir.test.support.creation.propertygraph.TestPropertyGraphFactory
-import org.opencypher.okapi.test.BaseTestSuite
-import org.opencypher.spark.impl.CAPSConverters._
-import org.opencypher.spark.impl.CAPSGraph
-import org.opencypher.spark.test.support.creation.caps.{CAPSScanGraphFactory, CAPSTestGraphFactory}
+import org.opencypher.okapi.api.graph.{GraphName, PropertyGraph}
+import org.opencypher.okapi.api.io.PropertyGraphDataSource
+import org.opencypher.okapi.api.schema.Schema
 
-trait GraphCreationFixture {
-  self: CAPSSessionFixture with BaseTestSuite =>
+object SessionGraphDataSource {
 
-  def capsGraphFactory: CAPSTestGraphFactory = CAPSScanGraphFactory
+  val Namespace = org.opencypher.okapi.api.graph.Namespace("session")
+}
 
-  val initGraph: String => CAPSGraph =
-    (createQuery) => CAPSScanGraphFactory(TestPropertyGraphFactory(createQuery)).asCaps
+class SessionGraphDataSource() extends PropertyGraphDataSource {
+
+  private var graphMap: Map[GraphName, PropertyGraph] = Map.empty
+
+  override def graph(name: GraphName): PropertyGraph = graphMap(name)
+
+  override def schema(name: GraphName): Option[Schema] = Some(graph(name).schema)
+
+  override def store(name: GraphName, graph: PropertyGraph): Unit = graphMap = graphMap.updated(name, graph)
+
+  override def delete(name: GraphName): Unit = graphMap = graphMap.filterKeys(_ != name)
+
+  override def graphNames: Set[GraphName] = graphMap.keySet
+
+  override def hasGraph(name: GraphName): Boolean = graphMap.contains(name)
 }

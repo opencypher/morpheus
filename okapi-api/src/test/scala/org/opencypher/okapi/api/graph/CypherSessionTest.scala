@@ -30,7 +30,7 @@ import org.opencypher.okapi.api.io.PropertyGraphDataSource
 import org.opencypher.okapi.api.table.CypherRecords
 import org.opencypher.okapi.api.value.CypherValue.CypherMap
 import org.opencypher.okapi.impl.exception.IllegalArgumentException
-import org.opencypher.okapi.impl.io.SessionPropertyGraphDataSource
+import org.opencypher.okapi.impl.io.SessionGraphDataSource
 import org.scalatest.mockito.MockitoSugar
 import org.scalatest.{FunSuite, Matchers}
 
@@ -38,7 +38,7 @@ class CypherSessionTest extends FunSuite with MockitoSugar with Matchers {
 
   test("avoid de-registering the session data source") {
     an[org.opencypher.okapi.impl.exception.UnsupportedOperationException] should be thrownBy
-      createSession.deregisterSource(SessionPropertyGraphDataSource.Namespace)
+      createSession.deregisterSource(SessionGraphDataSource.Namespace)
   }
 
   test("avoid de-registering a non-registered data source") {
@@ -50,7 +50,7 @@ class CypherSessionTest extends FunSuite with MockitoSugar with Matchers {
   }
 
   test("avoid retrieving a graph not stored in the session") {
-    an[NoSuchElementException] should be thrownBy createSession.graph(GraphName("foo"))
+    an[NoSuchElementException] should be thrownBy createSession.graph("foo")
   }
 
   test("avoid retrieving a graph from a non-registered data source") {
@@ -84,17 +84,17 @@ class CypherSessionTest extends FunSuite with MockitoSugar with Matchers {
 
   test("namespaces") {
     val session = createSession
-    session.namespaces should equal(Set(SessionPropertyGraphDataSource.Namespace))
+    session.namespaces should equal(Set(SessionGraphDataSource.Namespace))
     val namespace = Namespace("foo")
     val dataSource = mock[PropertyGraphDataSource]
     session.registerSource(namespace, dataSource)
-    session.namespaces should equal(Set(SessionPropertyGraphDataSource.Namespace, namespace))
+    session.namespaces should equal(Set(SessionGraphDataSource.Namespace, namespace))
   }
 
   private def createSession: CypherSession = new CypherSession {
     override def cypher(query: String, parameters: CypherMap, drivingTable: Option[CypherRecords]): CypherResult = ???
 
-    override def sessionNamespace: Namespace = SessionPropertyGraphDataSource.Namespace
+    override def sessionNamespace: Namespace = SessionGraphDataSource.Namespace
 
     override private[graph] def cypherOnGraph(graph: PropertyGraph, query: String, parameters: CypherMap, drivingTable: Option[CypherRecords]) = ???
   }

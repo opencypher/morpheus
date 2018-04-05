@@ -60,7 +60,7 @@ import scala.collection.JavaConverters._
   * @param rootPath path to the folder containing the nodes/relationships folders
   * @param session  CAPS Session
   */
-case class FileCsvPropertyGraphDataSource(rootPath: String)(implicit val session: CAPSSession)
+case class FileCsvGraphDataSource(rootPath: String)(implicit val session: CAPSSession)
   extends CAPSPropertyGraphDataSource {
 
   override def graph(name: GraphName): PropertyGraph = CsvGraphLoader(graphPath(name)).load
