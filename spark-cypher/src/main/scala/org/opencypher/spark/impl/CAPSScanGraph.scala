@@ -27,7 +27,9 @@
 package org.opencypher.spark.impl
 
 import cats.data.NonEmptyVector
+import org.apache.spark.sql.functions
 import org.apache.spark.storage.StorageLevel
+import org.opencypher.okapi.api.io.conversion.RelationshipMapping
 import org.opencypher.okapi.api.schema._
 import org.opencypher.okapi.api.types.{CTNode, CTRelationship, CypherType, DefiniteCypherType}
 import org.opencypher.okapi.ir.api.expr._
@@ -46,8 +48,9 @@ class CAPSScanGraph(val scans: Seq[CAPSEntityTable], val schema: CAPSSchema, val
 
   override def toString = s"CAPSScanGraph(${scans.map(_.entityType).mkString(", ")})"
 
-  private val nodeEntityTables = EntityTables(scans.collect { case it: CAPSNodeTable => it }.toVector)
-  private val relEntityTables = EntityTables(scans.collect { case it: CAPSRelationshipTable => it }.toVector)
+  private val nodeEntityTables = EntityTables(scans.collect { case it: CAPSNodeTable => it })
+
+  private val relEntityTables = EntityTables(scans.collect { case it: CAPSRelationshipTable => it })
 
   override def cache(): CAPSScanGraph = forEach(_.table.cache())
 
@@ -86,11 +89,11 @@ class CAPSScanGraph(val scans: Seq[CAPSEntityTable], val schema: CAPSSchema, val
     alignedRecords.reduceOption(_ unionAll(targetRelHeader, _)).getOrElse(CAPSRecords.empty(targetRelHeader))
   }
 
-  // TODO: add test case where there are multiple rel types in the underlying DF and see if it filters the right one
-  case class EntityTables(entityTables: Vector[CAPSEntityTable]) {
+  private class EntityTables(entityTables: Vector[CAPSEntityTable]) {
+
     type EntityType = CypherType with DefiniteCypherType
 
-    lazy val entityTableTypes: Vector[EntityType] = entityTables.map(_.entityType)
+    lazy val entityTableTypes: Set[EntityType] = entityTables.map(_.entityType).toSet
 
     lazy val entityTablesByType: Map[EntityType, NonEmptyVector[CAPSEntityTable]] =
       entityTables
@@ -103,12 +106,29 @@ class CAPSScanGraph(val scans: Seq[CAPSEntityTable], val schema: CAPSSchema, val
 
       def isSubType(tableType: EntityType) = tableType.subTypeOf(entityType).isTrue
 
-      val candidateTypes = entityTableTypes.filter(isSubType)
-      // TODO: we always select the head of the NonEmptyVector, why not changing to Map[EntityType, EntityScan]?
-      // TODO: does this work for relationships?
-      val selectedScans = candidateTypes.flatMap(typ => entityTablesByType.get(typ).map(_.head))
-      selectedScans
+      entityTableTypes
+        .filter(isSubType)
+        .flatMap(typ => entityTablesByType(typ).toVector).toSeq
     }
+  }
+
+  private object EntityTables {
+
+    /**
+      * Splits up relation tables containing multiple relationship types into single relationship tables
+      */
+    def apply(entityTables: Seq[CAPSEntityTable]): EntityTables = new EntityTables(entityTables.flatMap {
+      case CAPSRelationshipTable(relMapping@RelationshipMapping(_, _, _, Right((typeColumnName, relTypes)), _), sparkTable) =>
+        val typeColumn = sparkTable.df.col(typeColumnName)
+        relTypes.map {
+          relType =>
+            val filteredDf = sparkTable.df
+              .filter(typeColumn === functions.lit(relType))
+              .drop(typeColumnName)
+            CAPSRelationshipTable(relMapping.copy(relTypeOrSourceRelTypeKey = Left(relType)), filteredDf)
+        }
+      case other => Seq(other)
+    }.toVector)
   }
 
 }
