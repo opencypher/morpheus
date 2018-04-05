@@ -46,17 +46,17 @@ object Neo4jWorkflow extends App {
   val neo4j = Neo4jHelpers.startNeo4j(personNetwork)
 
   // Register Graph Data Sources (GDS)
-  session.registerSource(Namespace("socialNetwork"), new CommunityNeo4jGraphDataSource(neo4j.dataSourceConfig))
+  session.registerSource(Namespace("socialNetwork"), CommunityNeo4jGraphDataSource(neo4j.dataSourceConfig))
 
   // Access the graph via its qualified graph name
-  val socialNetwork = session.graph(QualifiedGraphName("socialNetwork.graph"))
+  val socialNetwork = session.graph("socialNetwork.graph")
 
   // Register a File-based data source in the Cypher session
   session.registerSource(Namespace("csv"), FileCsvGraphDataSource(rootPath = getClass.getResource("/csv").getFile))
 
 
   // Access the graph via its qualified graph name
-  val purchaseNetwork = session.graph(QualifiedGraphName(Namespace("csv"), GraphName("products")))
+  val purchaseNetwork = session.graph("csv.products")
 
   // Build new recommendation graph that connects the social and product graphs and
   // create new edges between users and customers with the same name
@@ -89,7 +89,7 @@ object Neo4jWorkflow extends App {
   }
 
   // Proof that the write-back to Neo4j worked, retrieve and print updated Neo4j results
-  val updatedNeo4jSource = new CommunityNeo4jGraphDataSource(neo4j.dataSourceConfig)
+  val updatedNeo4jSource = CommunityNeo4jGraphDataSource(neo4j.dataSourceConfig)
   session.registerSource(Namespace("updated-neo4j"), updatedNeo4jSource)
   val socialNetworkWithRanks = session.graph(QualifiedGraphName(Namespace("updated-neo4j"), neo4jDefaultGraphName))
   socialNetworkWithRanks.cypher("MATCH (p) WHERE p.should_buy IS NOT NULL RETURN p.name, p.should_buy").show
