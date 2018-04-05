@@ -48,9 +48,9 @@ object MultipleGraphExample extends App {
   // 3) Register a File-based data source in the Cypher session
   val csvFolder = getClass.getResource("/csv").getFile
   // Note: if files were stored in HDFS, change the data source to HdfsCsvPropertyGraphDataSource
-  session.registerSource(Namespace("csv"), new FileCsvPropertyGraphDataSource(rootPath = csvFolder))
+  session.registerSource(Namespace("csv"), FileCsvPropertyGraphDataSource(rootPath = csvFolder))
   // access the graph via its qualified graph name
-  val purchaseNetwork = session.graph(QualifiedGraphName(Namespace("csv"), GraphName("prod")))
+  val purchaseNetwork = session.graph(QualifiedGraphName(Namespace("csv"), GraphName("products")))
 
   // 5) Create new edges between users and customers with the same name
   val recommendationGraph = session.cypher(
