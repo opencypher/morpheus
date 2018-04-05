@@ -41,9 +41,9 @@ object CypherSQLRoundtripExample extends App {
   implicit val session: CAPSSession = CAPSSession.local()
 
   // 2) Register a file based data source at the session
-  //    It contains a purchase network graph called 'prod'
+  //    It contains a purchase network graph called 'products'
   val graphDir = getClass.getResource("/csv").getFile
-  session.registerSource(Namespace("myDataSource"), FileCsvPropertyGraphDataSource(graphFolder = graphDir))
+  session.registerSource(Namespace("myDataSource"), FileCsvPropertyGraphDataSource(rootPath = graphDir))
 
   // 3) Load social network data via case class instances
   val socialNetwork = session.readFrom(SocialNetworkData.persons, SocialNetworkData.friendships)
@@ -62,7 +62,7 @@ object CypherSQLRoundtripExample extends App {
   val sqlResults = session.sql("SELECT age, name FROM people")
 
   // 7) Use the results from the SQL query as driving table for a Cypher query on a graph contained in the data source
-  val result2 = session.graph(QualifiedGraphName("myDataSource.prod")).cypher(
+  val result2 = session.graph(QualifiedGraphName("myDataSource.products")).cypher(
     s"""
        |MATCH (c:Customer {name: name})-->(p:Product)
        |RETURN c.name, age, p.title

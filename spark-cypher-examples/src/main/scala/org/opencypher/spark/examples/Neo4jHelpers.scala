@@ -24,38 +24,40 @@
  * described as "implementation extensions to Cypher" or as "proposed changes to
  * Cypher that are not yet approved by the openCypher community".
  */
-package org.opencypher.spark.demo
+package org.opencypher.spark.examples
 
-import java.util.Calendar
+import org.neo4j.graphdb.Result
+import org.neo4j.harness.{ServerControls, TestServerBuilders}
+import org.opencypher.spark.api.io.neo4j.Neo4jConfig
 
-import org.apache.spark.SparkConf
-import org.apache.spark.sql.SparkSession
-import org.opencypher.okapi.api.graph.{CypherResult, GraphName}
-import org.opencypher.spark.api.CAPSSession
-import org.opencypher.spark.api.SparkConfiguration.MasterAddress
-import org.opencypher.spark.api.io.file.FileCsvPropertyGraphDataSource
+object Neo4jHelpers {
 
-// TODO: check if it still runs and move to caps-examples
-object CSVDemo {
+  implicit class RichServerControls(val server: ServerControls) extends AnyVal {
 
-  implicit lazy val sparkSession = SparkSession
-    .builder()
-    .config(new SparkConf(true))
-    .master(MasterAddress.get)
-    .appName(s"cypher-for-apache-spark-benchmark-${Calendar.getInstance().getTime}")
-    .getOrCreate()
+    def dataSourceConfig =
+      Neo4jConfig(server.boltURI(), user = "anonymous", password = Some("password"), encrypted = false)
 
-  def cypher(query: String): CypherResult = {
-    println(s"Now executing query: $query")
+    def uri: String = {
+      val scheme = server.boltURI().getScheme
+      val userInfo = s"anonymous:password@"
+      val host = server.boltURI().getAuthority
+      s"$scheme://$userInfo$host"
+    }
 
-    implicit val caps = CAPSSession.create()
-    val dataSource = new FileCsvPropertyGraphDataSource(rootPath = "/demo")
-    val graph = dataSource.graph(GraphName("ldbc_1"))
-    val result = graph.cypher(query)
+    def stop(): Unit = {
+      server.close()
+    }
 
-    val start = System.currentTimeMillis()
-    println(s"Returned ${result.records.size} row(s) in ${System.currentTimeMillis() - start} ms")
+    def execute(cypher: String): Result =
+      server.graph().execute(cypher)
+  }
 
-    result
+  def startNeo4j(dataFixture: String): ServerControls = {
+    TestServerBuilders
+      .newInProcessBuilder()
+      .withConfig("dbms.security.auth_enabled", "true")
+      .withFixture("CALL dbms.security.createUser('anonymous', 'password', false)")
+      .withFixture(dataFixture)
+      .newServer()
   }
 }

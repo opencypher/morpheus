@@ -108,11 +108,11 @@ class MasterExampleTest extends CAPSTestSuite with SparkSessionFixture with Neo4
          |  FROM GRAPH $allFriends
          |  MATCH (p:Person)
          |  WITH p.name AS personName, p  // this is a workaround
-         |  FROM GRAPH hdfs.prod
+         |  FROM GRAPH hdfs.products
          |  MATCH (c:Customer)
          |  WITH c.name as customerName, personName, c, p // also a workaround
          |  WHERE customerName = personName
-         |  CONSTRUCT ON hdfs.prod, $allFriends
+         |  CONSTRUCT ON hdfs.products, $allFriends
          |    CLONE c, p
          |    NEW (c)-[:IS]->(p)
          |  RETURN GRAPH

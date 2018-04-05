@@ -39,7 +39,7 @@ class FileCsvPropertyGraphDataSourceTest extends CAPSTestSuite with TeamDataFixt
   test("hasGraph should return true for existing graph") {
     val testGraphName = GraphName("sn")
 
-    val dataSource = new FileCsvPropertyGraphDataSource(graphFolder = testRootPath)
+    val dataSource = new FileCsvPropertyGraphDataSource(rootPath = testRootPath)
 
     dataSource.hasGraph(testGraphName) should be(true)
   }
@@ -47,7 +47,7 @@ class FileCsvPropertyGraphDataSourceTest extends CAPSTestSuite with TeamDataFixt
   test("hasGraph should return false for non-existing graph") {
     val testGraphName = GraphName("sn2")
 
-    val dataSource = new FileCsvPropertyGraphDataSource(graphFolder = testRootPath)
+    val dataSource = new FileCsvPropertyGraphDataSource(rootPath = testRootPath)
 
     dataSource.hasGraph(testGraphName) should be(false)
   }
@@ -55,7 +55,7 @@ class FileCsvPropertyGraphDataSourceTest extends CAPSTestSuite with TeamDataFixt
   test("graphNames should return all names of stored graphs") {
     val testGraphName1 = GraphName("sn")
     val testGraphName2 = GraphName("prod")
-    val source = new FileCsvPropertyGraphDataSource(graphFolder = testRootPath)
+    val source = new FileCsvPropertyGraphDataSource(rootPath = testRootPath)
 
     source.graphNames should equal(Set(testGraphName1, testGraphName2))
   }
@@ -63,7 +63,7 @@ class FileCsvPropertyGraphDataSourceTest extends CAPSTestSuite with TeamDataFixt
   test("Load graph from file via DataSource") {
     val testGraphName = GraphName("sn")
 
-    val dataSource = new FileCsvPropertyGraphDataSource(graphFolder = testRootPath)
+    val dataSource = new FileCsvPropertyGraphDataSource(rootPath = testRootPath)
 
     val graph = dataSource.graph(testGraphName)
     graph.nodes("n").asCaps.toDF().collect().toBag should equal(csvTestGraphNodes)
@@ -74,7 +74,7 @@ class FileCsvPropertyGraphDataSourceTest extends CAPSTestSuite with TeamDataFixt
     val testNamespace = Namespace("myFS")
     val testGraphName = GraphName("sn")
 
-    val dataSource = new FileCsvPropertyGraphDataSource(graphFolder = testRootPath)
+    val dataSource = new FileCsvPropertyGraphDataSource(rootPath = testRootPath)
     caps.registerSource(testNamespace, dataSource)
 
     val nodes = caps.cypher(s"FROM GRAPH $testNamespace.$testGraphName MATCH (n) RETURN n")
