@@ -66,6 +66,5 @@ final case class IRPatternGraph[E](
   schema: Schema,
   clones: Map[IRField, E],
   news: Pattern[E],
-  sets: List[SetPropertyItem[E]],
   onGraphs: List[QualifiedGraphName]
 ) extends IRGraph

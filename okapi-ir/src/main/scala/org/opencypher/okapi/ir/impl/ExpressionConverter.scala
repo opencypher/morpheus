@@ -128,6 +128,12 @@ final class ExpressionConverter(implicit context: IRBuilderContext) {
       val defaultExpr = default.flatMap(expr => Some(convert(expr)))
       CaseExpr(alternativeExprs, defaultExpr)(typings(e))
 
+    case ast.MapExpression(items) =>
+      val convertedItems: Map[String, Expr] = items.map {
+        case (key, value) => key.name -> convert(value)
+      }.toMap
+      MapExpression(convertedItems)(typings(e))
+
     case _ =>
       throw NotImplementedException(s"Not yet able to convert expression: $e")
   }

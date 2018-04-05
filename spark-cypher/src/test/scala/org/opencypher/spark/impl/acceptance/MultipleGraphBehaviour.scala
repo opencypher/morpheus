@@ -202,7 +202,7 @@ trait MultipleGraphBehaviour {
     }
 
     // TODO: reactive after map expressions in NEW are supported
-    ignore("should construct a node property from a matched node") {
+    it("should construct a node property from a matched node") {
       val query =
         """|MATCH (m)
            |CONSTRUCT
@@ -219,11 +219,25 @@ trait MultipleGraphBehaviour {
       ))
     }
 
-    // TODO: reactive after map expressions in NEW are supported
-    ignore("should construct a node property from a literal") {
+    it("should construct a node property from a literal") {
       val query =
         """|CONSTRUCT
-           |  NEW (a :A {a.name : 'Donald'})
+           |  NEW ({name: 'Donald'})
+           |RETURN GRAPH""".stripMargin
+
+      val result = caps.cypher(query)
+
+      result.getRecords.toMaps shouldBe empty
+      result.getGraph.schema should equal(Schema.empty.withNodePropertyKeys()("name" -> CTString).asCaps)
+      result.getGraph.cypher("MATCH (a) RETURN a.name").getRecords.iterator.toBag should equal(Bag(
+        CypherMap("a.name" -> "Donald")
+      ))
+    }
+
+    it("should construct a node label and a node property from a literal") {
+      val query =
+        """|CONSTRUCT
+           |  NEW (a :A {name: 'Donald'})
            |RETURN GRAPH""".stripMargin
 
       val result = testGraph1.cypher(query)
@@ -236,14 +250,10 @@ trait MultipleGraphBehaviour {
       ))
     }
 
-    // TODO: Requires COPY OF to be able to express original intent
-    // TODO: reactive after map expressions in NEW are supported
-    ignore("should construct multiple properties") {
+    it("should construct multiple properties") {
       val query =
-        """|MATCH (a)
-           |CONSTRUCT
-           |  CLONE a as newA
-           |  NEW (newA :A:B {newA.name : 'Donald', newA.age : 100})
+        """|CONSTRUCT
+           |  NEW (a:A:B {name:'Donald', age:100})
            |RETURN GRAPH""".stripMargin
 
       val result = testGraph1.cypher(query)
@@ -279,11 +289,10 @@ trait MultipleGraphBehaviour {
       ))
     }
 
-    // TODO: reactive after map expressions in NEW are supported
-    ignore("should construct a relationship") {
+    it("should construct a relationship") {
       val query =
         """|CONSTRUCT
-           |  NEW ()-[r:FOO {r.val : 42}]->()
+           |  NEW ()-[r:FOO {val : 42}]->()
            |RETURN GRAPH""".stripMargin
 
       val result = testGraph1.cypher(query)
@@ -303,10 +312,10 @@ trait MultipleGraphBehaviour {
     ignore("should tilde copy a relationship") {
       val query =
         """|CONSTRUCT
-           |  NEW ()-[r:FOO {r.val : 42}]->()
+           |  NEW ()-[r:FOO {val : 42}]->()
            |MATCH ()-[s]->()
            |CONSTRUCT
-           |  NEW ()-[t COPY OF s {t.name : 'Donald'}]->()
+           |  NEW ()-[t COPY OF s {name : 'Donald'}]->()
            |RETURN GRAPH""".stripMargin
 
       val result = testGraph1.cypher(query)
@@ -443,8 +452,6 @@ trait MultipleGraphBehaviour {
           |RETURN GRAPH
         """.stripMargin
 
-      println(caps.toString)
-
       val graph = caps.cypher(query).getGraph
 
       graph.schema should equal(Schema.empty.withNodePropertyKeys(Set.empty[String]).asCaps)
@@ -541,6 +548,7 @@ trait MultipleGraphBehaviour {
            |CREATE (max:Person {name: 'Max'})
            |CREATE (max)-[:HAS_SIMILAR_NAME]->(mats)
         """.stripMargin)
+
       caps.store(GraphName("testGraphRels1"), testGraphRels)
       caps.store(GraphName("testGraphRels2"), testGraphRels)
 

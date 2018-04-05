@@ -31,6 +31,7 @@ import org.opencypher.okapi.impl.exception.{IllegalArgumentException, IllegalSta
 import org.opencypher.okapi.ir.api.block._
 import org.opencypher.okapi.ir.api.expr._
 import org.opencypher.okapi.ir.api.pattern._
+import org.opencypher.okapi.ir.api.set.SetPropertyItem
 import org.opencypher.okapi.ir.api.util.DirectCompilationStage
 import org.opencypher.okapi.ir.api.{Label, _}
 import org.opencypher.okapi.ir.impl.syntax.ExprSyntax._
@@ -338,7 +339,7 @@ class LogicalPlanner(producer: LogicalOperatorProducer)
     graph match {
       // TODO: IRGraph[Expr]
       case p: IRPatternGraph[Expr@unchecked] =>
-
+        import org.opencypher.okapi.ir.impl.util.VarConverters.RichIrField
         val equivalences = p.news.equivalences
 
         val clonePatternEntities = p.clones.keys
@@ -347,16 +348,24 @@ class LogicalPlanner(producer: LogicalOperatorProducer)
         val entitiesToCreate = newPatternEntities -- clonePatternEntities
 
         val clonedVarToInputVar: Map[Var, Var] = p.clones.map { case (clonedField, inputExpression) =>
-            val clonedVar = Var(clonedField.name)(clonedField.cypherType)
             val inputVar = inputExpression match {
               case v: Var => v
               case other => throw IllegalArgumentException("CLONED expression to be a variable", other)
             }
-          clonedVar -> inputVar
+          clonedField.toVar -> inputVar
         }
         val newEntities: Set[ConstructedEntity] = entitiesToCreate.map(e => extractConstructedEntities(p.news, e, equivalences.get(e)))
 
-        LogicalPatternGraph(p.schema, clonedVarToInputVar, newEntities, p.sets, p.onGraphs, p.qualifiedGraphName)
+        val setItems = {
+          p.news.properties.flatMap { case (irField, mapExpr) =>
+            val v = irField.toVar
+            mapExpr.items.map { case (propertyKey, expr) =>
+              SetPropertyItem(propertyKey, v, expr)
+            }
+          }
+        }.toList
+
+        LogicalPatternGraph(p.schema, clonedVarToInputVar, newEntities, setItems, p.onGraphs, p.qualifiedGraphName)
 
       case g: IRCatalogGraph => LogicalCatalogGraph(g.qualifiedGraphName, g.schema)
     }
