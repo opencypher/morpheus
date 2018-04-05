@@ -9,24 +9,24 @@ import org.opencypher.spark.examples.Neo4jHelpers._
 
 object RecommendationExample extends App {
 
-  // 1) Create CAPS session.
+  // Create CAPS session
   implicit val caps: CAPSSession = CAPSSession.local()
 
-  // 2) Start two Neo4j instances and populate them with social network data.
+  // Start two Neo4j instances and populate them with social network data
   implicit val neo4jServerUS: ServerControls = startNeo4j(dataFixtureUS)
   implicit val neo4jServerEU: ServerControls = startNeo4j(dataFixtureEU)
 
-  // 3) Register Property Graph Data Sources (PGDS)
+  // Register Graph Data Sources (GDS)
 
   // The graph within Neo4j is partitioned into regions using a property key. Within the data source, we map each
-  // partition to a separate graph name (i.e. US and EU).
+  // partition to a separate graph name (i.e. US and EU)
   caps.registerSource(Namespace("usSocialNetwork"), new Neo4jPropertyGraphDataSource(neo4jServerUS.dataSourceConfig))
   caps.registerSource(Namespace("euSocialNetwork"), new Neo4jPropertyGraphDataSource(neo4jServerEU.dataSourceConfig))
 
-  // File-based CSV PGDS
+  // File-based CSV GDS
   caps.registerSource(Namespace("purchases"), FileCsvPropertyGraphDataSource(rootPath = s"${getClass.getResource("/csv").getFile}"))
 
-  // 4) Start analytical workload
+  // Start analytical workload
 
   /**
     * Returns a query that creates a graph containing persons that live in the same city and
@@ -49,10 +49,10 @@ object RecommendationExample extends App {
   // Find persons that are close to each other in the EU social network
   val euFriends = caps.cypher(cityFriendsQuery("euSocialNetwork.graph")).getGraph
 
-  // Union the US and EU graphs into a single graph 'allFriends' and store it in the session.
+  // Union the US and EU graphs into a single graph 'allFriends' and store it in the session
   val allFriendsName = caps.store(GraphName("allFriends"), usFriends.unionAll(euFriends))
 
-  // Connect the social network with the products network using equal person and customer emails.
+  // Connect the social network with the products network using equal person and customer emails
   val connectedCustomers = caps.cypher(
     s"""FROM GRAPH $allFriendsName
        |MATCH (p:Person)
@@ -66,7 +66,7 @@ object RecommendationExample extends App {
       """.stripMargin).getGraph
 
   // Compute recommendations for 'target' based on their interests and what persons close to the
-  // 'target' have already bought and given a helpful and positive rating.
+  // 'target' have already bought and given a helpful and positive rating
   val recommendationTable = connectedCustomers.cypher(
     s"""MATCH (target:Person)<-[:CLOSE_TO]-(person:Person),
        |       (target)-[:HAS_INTEREST]->(i:Interest),
@@ -80,6 +80,7 @@ object RecommendationExample extends App {
   // Print the results
   recommendationTable.show
 
+  // Shutdown Neo4j test instance
   neo4jServerUS.stop()
   neo4jServerEU.stop()
 

@@ -1,6 +1,6 @@
 package org.opencypher.spark.examples
 
-import org.neo4j.driver.v1.{AuthTokens, Session}
+import org.neo4j.graphdb.Result
 import org.neo4j.harness.{ServerControls, TestServerBuilders}
 import org.opencypher.spark.api.io.neo4j.Neo4jConfig
 
@@ -19,9 +19,11 @@ object Neo4jHelpers {
     }
 
     def stop(): Unit = {
-      server.
       server.close()
     }
+
+    def execute(cypher: String): Result =
+      server.graph().execute(cypher)
   }
 
   def startNeo4j(dataFixture: String): ServerControls = {
@@ -31,16 +33,5 @@ object Neo4jHelpers {
       .withFixture("CALL dbms.security.createUser('anonymous', 'password', false)")
       .withFixture(dataFixture)
       .newServer()
-  }
-
-  def withBoltSession[T](f: Session => T)(implicit neo4jConfig: Neo4jConfig): T = {
-    val driver = org.neo4j.driver.v1.GraphDatabase.driver(
-      neo4jConfig.uri, AuthTokens.basic(neo4jConfig.user, neo4jConfig.password.get), neo4jConfig.boltConfig())
-    val session = driver.session()
-    try {
-      f(session)
-    } finally {
-      session.close()
-    }
   }
 }
