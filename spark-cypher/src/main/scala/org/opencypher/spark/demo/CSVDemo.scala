@@ -49,7 +49,7 @@ object CSVDemo {
     println(s"Now executing query: $query")
 
     implicit val caps = CAPSSession.create()
-    val dataSource = new FileCsvPropertyGraphDataSource(graphFolder = "/demo")
+    val dataSource = new FileCsvPropertyGraphDataSource(rootPath = "/demo")
     val graph = dataSource.graph(GraphName("ldbc_1"))
     val result = graph.cypher(query)
 

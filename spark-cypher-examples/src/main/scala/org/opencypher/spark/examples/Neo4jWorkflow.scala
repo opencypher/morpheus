@@ -28,7 +28,7 @@ package org.opencypher.spark.examples
 
 import java.net.URI
 
-import org.neo4j.driver.v1.{AuthTokens, Session, StatementResult}
+import org.neo4j.driver.v1.{Session, StatementResult}
 import org.opencypher.okapi.api.graph.{GraphName, Namespace, QualifiedGraphName}
 import org.opencypher.spark.api.CAPSSession
 import org.opencypher.spark.api.io.file.FileCsvPropertyGraphDataSource
@@ -65,17 +65,15 @@ object Neo4jWorkflow extends App {
   // 3) Register a File-based data source in the Cypher session
   val csvFolder = getClass.getResource("/csv").getFile
   val csvNamespace = Namespace("csv")
-  session.registerSource(csvNamespace, FileCsvPropertyGraphDataSource(graphFolder = csvFolder))
+  session.registerSource(csvNamespace, FileCsvPropertyGraphDataSource(rootPath = csvFolder))
   // Access the graph via its qualified graph name
   val purchaseNetwork = session.graph(QualifiedGraphName(csvNamespace, GraphName("prod")))
 
   // 4) Create new edges between users and customers with the same name
-  // TODO: Fix bug that requires "WITH p.name as pName, p"
   val integrationGraph = session.cypher(
     """|FROM GRAPH neo4j.graph
        |MATCH (p:Person)
-       |WITH p.name as pName, p
-       |FROM GRAPH csv.prod
+       |FROM GRAPH csv.products
        |MATCH (c:Customer)
        |WHERE pName = c.name
        |CONSTRUCT
@@ -110,10 +108,8 @@ object Neo4jWorkflow extends App {
   val socialNetworkWithRanks = session.graph(QualifiedGraphName(updatedNeo4jNamespace, neo4jDefaultGraphName))
   socialNetworkWithRanks.cypher("MATCH (p) RETURN p.name, p.should_buy").show
 
-}
 
-object Neo4jHelpers {
-
+  // TODO: use Neo4jHelper with data fixture
   def loadPersonNetwork(session: Session)(implicit neo4jConfig: Neo4jConfig): Unit = {
     val isEmpty: Boolean = {
       val countResult: StatementResult = session.run("MATCH (n) RETURN COUNT(n) as count")
@@ -131,16 +127,4 @@ object Neo4jHelpers {
             |CREATE (b)-[:FRIEND_OF { since: '12/12/2009' }]->(c)""".stripMargin)
     }
   }
-
-  def withBoltSession[T](f: Session => T)(implicit neo4jConfig: Neo4jConfig): T = {
-    val driver = org.neo4j.driver.v1.GraphDatabase.driver(
-      neo4jConfig.uri, AuthTokens.basic(neo4jConfig.user, neo4jConfig.password.get), neo4jConfig.boltConfig())
-    val session = driver.session()
-    try {
-      f(session)
-    } finally {
-      session.close()
-    }
-  }
-
 }

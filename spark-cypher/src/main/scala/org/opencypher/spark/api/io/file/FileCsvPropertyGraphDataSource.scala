@@ -57,10 +57,10 @@ import scala.collection.JavaConverters._
   *   - for every relationship csv file create a schema file called FILE_NAME.csv.SCHEMA
   *   - for information about the structure of the relationship schema file see [[org.opencypher.spark.impl.io.hdfs.CsvRelSchema]]
   *
-  * @param graphFolder path to the folder containing the nodes/relationships folders
-  * @param session     CAPS Session
+  * @param rootPath path to the folder containing the nodes/relationships folders
+  * @param session  CAPS Session
   */
-case class FileCsvPropertyGraphDataSource(graphFolder: String)(implicit val session: CAPSSession)
+case class FileCsvPropertyGraphDataSource(rootPath: String)(implicit val session: CAPSSession)
   extends CAPSPropertyGraphDataSource {
 
   override def graph(name: GraphName): PropertyGraph = CsvGraphLoader(graphPath(name)).load
@@ -73,7 +73,7 @@ case class FileCsvPropertyGraphDataSource(graphFolder: String)(implicit val sess
   override def delete(name: GraphName): Unit =
     if (hasGraph(name)) Files.delete(Paths.get(graphPath(name)))
 
-  override def graphNames: Set[GraphName] = Files.list(Paths.get(graphFolder)).iterator().asScala
+  override def graphNames: Set[GraphName] = Files.list(Paths.get(rootPath)).iterator().asScala
     .filter(p => Files.isDirectory(p))
     .map(p => p.getFileName.toString)
     .map(GraphName)
@@ -82,7 +82,7 @@ case class FileCsvPropertyGraphDataSource(graphFolder: String)(implicit val sess
   override def hasGraph(name: GraphName): Boolean = Files.exists(Paths.get(graphPath(name)))
 
   private def graphPath(name: GraphName): URI =
-    new URIBuilder(graphFolder)
+    new URIBuilder(rootPath)
       .setScheme("file")
-      .setPath(Paths.get(graphFolder, name.value).toString).build()
+      .setPath(Paths.get(rootPath, name.value).toString).build()
 }

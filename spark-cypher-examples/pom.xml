@@ -31,6 +31,12 @@
       <version>${dep.spark.version}</version>
     </dependency>
 
+    <dependency>
+      <groupId>org.neo4j.test</groupId>
+      <artifactId>neo4j-harness</artifactId>
+      <version>${dep.neo4j.harness.version}</version>
+    </dependency>
+
     <!-- Test deps -->
     <dependency>
       <groupId>org.opencypher</groupId>
