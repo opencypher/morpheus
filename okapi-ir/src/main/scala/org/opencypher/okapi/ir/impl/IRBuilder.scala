@@ -36,7 +36,7 @@ import org.opencypher.okapi.api.graph.QualifiedGraphName
 import org.opencypher.okapi.api.schema.PropertyKeys.PropertyKeys
 import org.opencypher.okapi.api.schema.{PropertyKeys, Schema}
 import org.opencypher.okapi.api.types._
-import org.opencypher.okapi.impl.exception.{IllegalArgumentException, IllegalStateException, UnsupportedOperationException}
+import org.opencypher.okapi.impl.exception.{IllegalArgumentException, IllegalStateException}
 import org.opencypher.okapi.ir.api._
 import org.opencypher.okapi.ir.api.block.{SortItem, _}
 import org.opencypher.okapi.ir.api.expr._
@@ -224,23 +224,13 @@ object IRBuilder extends CompilationStage[ast.Statement, CypherStatement[Expr], 
               .fields
               .filterNot(cloneItemMap.contains)
 
-              def propertyKeys(f: IRField): PropertyKeys = {
-                newPatternProperties.get(f) match {
-                  case None => PropertyKeys.empty
-                  case Some(MapExpression(items)) =>
-                    items.map { case (key, expr) =>
-                      key -> expr.cypherType
-                    }
-                }
-            }
-
             val constructOperatorSchema = fieldsInNewPattern.foldLeft(cloneSchema) { case (agg, next) =>
               next.cypherType match {
                 case n: CTNode =>
-                  agg.withNodePropertyKeys(n.labels, propertyKeys(next))
+                  agg.withNodePropertyKeys(n.labels, extractPropertyKeysFromIRField(next, newPatternProperties))
                 case r: CTRelationship =>
                   // TODO: Unsafe head
-                  agg.withRelationshipPropertyKeys(r.types.head, propertyKeys(next))
+                  agg.withRelationshipPropertyKeys(r.types.head, extractPropertyKeysFromIRField(next, newPatternProperties))
                 case other => throw IllegalArgumentException("A node or a relationship", other)
               }
             }
@@ -310,7 +300,8 @@ object IRBuilder extends CompilationStage[ast.Statement, CypherStatement[Expr], 
     fieldExprs: List[(IRField, Expr)],
     given: Set[Expr] = Set.empty[Expr],
     source: IRGraph,
-    distinct: Boolean): (Block[Expr], BlockRegistry[Expr]) = {
+    distinct: Boolean
+  ): (Block[Expr], BlockRegistry[Expr]) = {
     val blockRegistry = context.blockRegistry
     val binds = Fields(fieldExprs.toMap)
 
@@ -323,7 +314,8 @@ object IRBuilder extends CompilationStage[ast.Statement, CypherStatement[Expr], 
   private def registerOrderAndSliceBlock[R: _mayFail : _hasContext](
     orderBy: Option[ast.OrderBy],
     skip: Option[ast.Skip],
-    limit: Option[ast.Limit]) = {
+    limit: Option[ast.Limit]
+  ) = {
     for {
       context <- get[R, IRBuilderContext]
       sortItems <- orderBy match {
@@ -348,7 +340,10 @@ object IRBuilder extends CompilationStage[ast.Statement, CypherStatement[Expr], 
     } yield blocks
   }
 
-  private def convertClone[R: _mayFail : _hasContext](item: ast.ReturnItem, qgn: QualifiedGraphName): Eff[R, (IRField, Expr)] = {
+  private def convertClone[R: _mayFail : _hasContext](
+    item: ast.ReturnItem,
+    qgn: QualifiedGraphName
+  ): Eff[R, (IRField, Expr)] = {
 
     def convert(cypherType: CypherType, name: String): IRField = {
       val aliasType = cypherType match {
@@ -414,7 +409,8 @@ object IRBuilder extends CompilationStage[ast.Statement, CypherStatement[Expr], 
 
   private def convertUnwindItem[R: _mayFail : _hasContext](
     list: exp.Expression,
-    variable: exp.Variable): Eff[R, (Expr, IRField)] = {
+    variable: exp.Variable
+  ): Eff[R, (Expr, IRField)] = {
     for {
       expr <- convertExpr(list)
       context <- get[R, IRBuilderContext]
@@ -433,7 +429,10 @@ object IRBuilder extends CompilationStage[ast.Statement, CypherStatement[Expr], 
     } yield field
   }
 
-  private def convertPattern[R: _hasContext](p: exp.Pattern, qgn: Option[QualifiedGraphName] = None): Eff[R, Pattern[Expr]] = {
+  private def convertPattern[R: _hasContext](
+    p: exp.Pattern,
+    qgn: Option[QualifiedGraphName] = None
+  ): Eff[R, Pattern[Expr]] = {
     for {
       context <- get[R, IRBuilderContext]
       result <- {
@@ -518,6 +517,19 @@ object IRBuilder extends CompilationStage[ast.Statement, CypherStatement[Expr], 
         for {
           expr <- convertExpr(astExpr)
         } yield Desc(expr)
+    }
+  }
+
+  private def extractPropertyKeysFromIRField(
+    f: IRField,
+    irFieldProperties: Map[IRField, MapExpression]
+  ): PropertyKeys = {
+    irFieldProperties.get(f) match {
+      case None => PropertyKeys.empty
+      case Some(MapExpression(items)) =>
+        items.map { case (key, expr) =>
+          key -> expr.cypherType
+        }
     }
   }
 }

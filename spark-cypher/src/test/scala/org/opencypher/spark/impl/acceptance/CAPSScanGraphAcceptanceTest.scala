@@ -26,43 +26,8 @@
  */
 package org.opencypher.spark.impl.acceptance
 
-import org.opencypher.okapi.api.schema.Schema
-import org.opencypher.okapi.api.types.CTString
-import org.opencypher.okapi.api.value.CypherValue.CypherMap
-import org.opencypher.okapi.ir.test.support.Bag
-import org.opencypher.okapi.ir.test.support.Bag._
-import org.opencypher.spark.schema.CAPSSchema._
 import org.opencypher.spark.test.support.creation.caps.{CAPSScanGraphFactory, CAPSTestGraphFactory}
 
 class CAPSScanGraphAcceptanceTest extends AcceptanceTest {
   override def capsGraphFactory: CAPSTestGraphFactory = CAPSScanGraphFactory
-
-  def testGraph1 = initGraph("CREATE (:Person {name: 'Mats'})")
-
-  def testGraph2 = initGraph("CREATE (:Person {name: 'Phil'})")
-
-  def testGraph3 = initGraph("CREATE (:Car {type: 'Toyota'})")
-
-  def testGraphRels = initGraph(
-    """|CREATE (mats:Person {name: 'Mats'})
-       |CREATE (max:Person {name: 'Max'})
-       |CREATE (max)-[:HAS_SIMILAR_NAME]->(mats)
-    """.stripMargin)
-
-  it("should construct a node property from a matched node") {
-    val query =
-      """|MATCH (m)
-         |CONSTRUCT
-         |  NEW (a :A { name: m.name})
-         |RETURN GRAPH""".stripMargin
-
-    val result = testGraph1.cypher(query)
-
-    result.getRecords.toMaps shouldBe empty
-    result.getGraph.schema.labels should equal(Set("A"))
-    result.getGraph.schema should equal(Schema.empty.withNodePropertyKeys("A")("name" -> CTString).asCaps)
-    result.getGraph.cypher("MATCH (a:A) RETURN a.name").getRecords.iterator.toBag should equal(Bag(
-      CypherMap("a.name" -> "Mats")
-    ))
-  }
 }

@@ -33,32 +33,13 @@ import org.opencypher.okapi.api.value.CypherValue.CypherMap
 import org.opencypher.okapi.api.value.{CAPSNode, CAPSRelationship}
 import org.opencypher.okapi.ir.test.support.Bag
 import org.opencypher.okapi.ir.test.support.Bag._
-import org.opencypher.okapi.ir.test.support.creation.propertygraph.TestPropertyGraphFactory
 import org.opencypher.spark.impl.CAPSConverters._
 import org.opencypher.spark.impl.CAPSGraph
 import org.opencypher.spark.impl.DataFrameOps._
 import org.opencypher.spark.schema.CAPSSchema._
-import org.opencypher.spark.test.CAPSTestSuite
-import org.opencypher.spark.test.support.creation.caps.{CAPSScanGraphFactory, CAPSTestGraphFactory}
 
-class SingleBehaviourRunner extends CAPSTestSuite with MultipleGraphBehaviour with ScanGraphFactory {
-
-  val initGraph: String => CAPSGraph = (createQuery) =>
-    capsGraphFactory(TestPropertyGraphFactory(createQuery)).asCaps
-
-  describe("using " + capsGraphFactory.name) {
-    describe("MultipleGraphBehaviour") {
-      it should behave like multipleGraphBehaviour(initGraph)
-    }
-  }
-
-}
-
-trait ScanGraphFactory {
-  def capsGraphFactory: CAPSTestGraphFactory = CAPSScanGraphFactory
-}
-
-trait MultipleGraphBehaviour extends CAPSTestSuite with ScanGraphFactory {
+trait MultipleGraphBehaviour {
+  this: AcceptanceTest =>
 
   def multipleGraphBehaviour(initGraph: String => CAPSGraph): Unit = {
     def testGraph1 = initGraph("CREATE (:Person {name: 'Mats'})")
