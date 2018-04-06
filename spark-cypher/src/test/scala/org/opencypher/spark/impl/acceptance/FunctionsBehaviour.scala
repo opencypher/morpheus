@@ -27,304 +27,307 @@
 package org.opencypher.spark.impl.acceptance
 
 import org.opencypher.okapi.api.value.CypherValue._
+import org.opencypher.spark.impl.CAPSGraph
+
 import org.opencypher.okapi.ir.test.support.Bag
 import org.opencypher.okapi.ir.test.support.Bag._
-import org.opencypher.spark.test.CAPSTestSuite
-import org.scalatest.DoNotDiscover
 
-@DoNotDiscover
-class FunctionsBehaviour extends CAPSTestSuite with DefaultGraphInit {
+trait FunctionsBehaviour {
+  self: AcceptanceTest =>
 
-  describe("exists") {
+  def functionsBehaviour(initGraph: String => CAPSGraph): Unit = {
 
-    test("exists()") {
-      val given = initGraph("CREATE ({id: 1}), ({id: 2}), ({other: 'foo'}), ()")
+    describe("exists") {
 
-      val result = given.cypher("MATCH (n) RETURN exists(n.id) AS exists")
+      test("exists()") {
+        val given = initGraph("CREATE ({id: 1}), ({id: 2}), ({other: 'foo'}), ()")
 
-      result.getRecords.toMaps should equal(
-        Bag(
-          CypherMap("exists" -> true),
-          CypherMap("exists" -> true),
-          CypherMap("exists" -> false),
-          CypherMap("exists" -> false)
-        ))
-    }
-  }
+        val result = given.cypher("MATCH (n) RETURN exists(n.id) AS exists")
 
-  describe("type") {
-
-    test("type()") {
-      val given = initGraph("CREATE ()-[:KNOWS]->()-[:HATES]->()-[:REL]->()")
-
-      val result = given.cypher("MATCH ()-[r]->() RETURN type(r)")
-
-      result.getRecords.toMaps should equal(
-        Bag(
-          CypherMap("type(r)" -> "KNOWS"),
-          CypherMap("type(r)" -> "HATES"),
-          CypherMap("type(r)" -> "REL")
-        ))
-    }
-  }
-
-  describe("id") {
-
-    test("id for node") {
-      val given = initGraph("CREATE (),()")
-
-      val result = given.cypher("MATCH (n) RETURN id(n)")
-
-      result.getRecords.toMaps should equal(Bag(CypherMap("id(n)" -> 0), CypherMap("id(n)" -> 1)))
+        result.getRecords.toMaps should equal(
+          Bag(
+            CypherMap("exists" -> true),
+            CypherMap("exists" -> true),
+            CypherMap("exists" -> false),
+            CypherMap("exists" -> false)
+          ))
+      }
     }
 
-    test("id for rel") {
-      val given = initGraph("CREATE ()-[:REL]->()-[:REL]->()")
+    describe("type") {
 
-      val result = given.cypher("MATCH ()-[e]->() RETURN id(e)")
+      test("type()") {
+        val given = initGraph("CREATE ()-[:KNOWS]->()-[:HATES]->()-[:REL]->()")
 
-      result.getRecords.toMaps should equal(Bag(CypherMap("id(e)" -> 2), CypherMap("id(e)" -> 4)))
+        val result = given.cypher("MATCH ()-[r]->() RETURN type(r)")
+
+        result.getRecords.toMaps should equal(
+          Bag(
+            CypherMap("type(r)" -> "KNOWS"),
+            CypherMap("type(r)" -> "HATES"),
+            CypherMap("type(r)" -> "REL")
+          ))
+      }
     }
 
-  }
+    describe("id") {
 
-  describe("labels") {
+      test("id for node") {
+        val given = initGraph("CREATE (),()")
 
-    test("get single label") {
-      val given = initGraph("CREATE (:A), (:B)")
+        val result = given.cypher("MATCH (n) RETURN id(n)")
 
-      val result = given.cypher("MATCH (a) RETURN labels(a)")
+        result.getRecords.toMaps should equal(Bag(CypherMap("id(n)" -> 0), CypherMap("id(n)" -> 1)))
+      }
 
-      result.getRecords.toMaps should equal(
-        Bag(
-          CypherMap("labels(a)" -> List("A")),
-          CypherMap("labels(a)" -> List("B"))
-        ))
+      test("id for rel") {
+        val given = initGraph("CREATE ()-[:REL]->()-[:REL]->()")
+
+        val result = given.cypher("MATCH ()-[e]->() RETURN id(e)")
+
+        result.getRecords.toMaps should equal(Bag(CypherMap("id(e)" -> 2), CypherMap("id(e)" -> 4)))
+      }
+
     }
 
-    test("get multiple labels") {
-      val given = initGraph("CREATE (:A:B), (:C:D)")
+    describe("labels") {
 
-      val result = given.cypher("MATCH (a) RETURN labels(a)")
+      test("get single label") {
+        val given = initGraph("CREATE (:A), (:B)")
 
-      result.getRecords.toMaps should equal(
-        Bag(
-          CypherMap("labels(a)" -> List("A", "B")),
-          CypherMap("labels(a)" -> List("C", "D"))
-        ))
+        val result = given.cypher("MATCH (a) RETURN labels(a)")
+
+        result.getRecords.toMaps should equal(
+          Bag(
+            CypherMap("labels(a)" -> List("A")),
+            CypherMap("labels(a)" -> List("B"))
+          ))
+      }
+
+      test("get multiple labels") {
+        val given = initGraph("CREATE (:A:B), (:C:D)")
+
+        val result = given.cypher("MATCH (a) RETURN labels(a)")
+
+        result.getRecords.toMaps should equal(
+          Bag(
+            CypherMap("labels(a)" -> List("A", "B")),
+            CypherMap("labels(a)" -> List("C", "D"))
+          ))
+      }
+
+      test("unlabeled nodes") {
+        val given = initGraph("CREATE (:A), (:C:D), ()")
+
+        val result = given.cypher("MATCH (a) RETURN labels(a)")
+
+        result.getRecords.toMaps should equal(
+          Bag(
+            CypherMap("labels(a)" -> List("A")),
+            CypherMap("labels(a)" -> List("C", "D")),
+            CypherMap("labels(a)" -> List.empty)
+          ))
+      }
+
     }
 
-    test("unlabeled nodes") {
-      val given = initGraph("CREATE (:A), (:C:D), ()")
+    describe("size") {
 
-      val result = given.cypher("MATCH (a) RETURN labels(a)")
+      test("size() on literal list") {
+        val given = initGraph("CREATE ()")
 
-      result.getRecords.toMaps should equal(
-        Bag(
-          CypherMap("labels(a)" -> List("A")),
-          CypherMap("labels(a)" -> List("C", "D")),
-          CypherMap("labels(a)" -> List.empty)
-        ))
+        val result = given.cypher("MATCH () RETURN size(['Alice', 'Bob']) as s")
+
+        result.getRecords.toMaps should equal(
+          Bag(
+            CypherMap("s" -> 2)
+          ))
+      }
+
+      test("size() on literal string") {
+        val given = initGraph("CREATE ()")
+
+        val result = given.cypher("MATCH () RETURN size('Alice') as s")
+
+        result.getRecords.toMaps should equal(
+          Bag(
+            CypherMap("s" -> 5)
+          ))
+      }
+
+      test("size() on retrieved string") {
+        val given = initGraph("CREATE ({name: 'Alice'})")
+
+        val result = given.cypher("MATCH (a) RETURN size(a.name) as s")
+
+        result.getRecords.toMaps should equal(
+          Bag(
+            CypherMap("s" -> 5)
+          ))
+      }
+
+      test("size() on constructed list") {
+        val given = initGraph("CREATE (:A:B), (:C:D), (:A), ()")
+
+        val result = given.cypher("MATCH (a) RETURN size(labels(a)) as s")
+
+        result.getRecords.toMaps should equal(
+          Bag(
+            CypherMap("s" -> 2),
+            CypherMap("s" -> 2),
+            CypherMap("s" -> 1),
+            CypherMap("s" -> 0)
+          ))
+      }
+
+      ignore("size() on null") {
+        val given = initGraph("CREATE ()")
+
+        val result = given.cypher("MATCH (a) RETURN size(a.prop) as s")
+
+        result.getRecords.toMaps should equal(Bag(CypherMap("s" -> null)))
+      }
+
     }
 
-  }
+    describe("keys") {
 
-  describe("size") {
+      test("keys()") {
+        val given = initGraph("CREATE ({name:'Alice', age: 64, eyes:'brown'})")
 
-    test("size() on literal list") {
-      val given = initGraph("CREATE ()")
+        val result = given.cypher("MATCH (a) WHERE a.name = 'Alice' RETURN keys(a) as k")
 
-      val result = given.cypher("MATCH () RETURN size(['Alice', 'Bob']) as s")
+        val keysAsMap = result.getRecords.toMaps
 
-      result.getRecords.toMaps should equal(
-        Bag(
-          CypherMap("s" -> 2)
-        ))
+        keysAsMap should equal(
+          Bag(
+            CypherMap("k" -> List("age", "eyes", "name"))
+          ))
+      }
+
+      test("keys() does not return keys of unset properties") {
+        val given = initGraph(
+          """
+            |CREATE (:Person {name:'Alice', age: 64, eyes:'brown'})
+            |CREATE (:Person {name:'Bob', eyes:'blue'})
+          """.stripMargin)
+
+        val result = given.cypher("MATCH (a: Person) WHERE a.name = 'Bob' RETURN keys(a) as k")
+
+        result.getRecords.toMaps should equal(
+          Bag(
+            CypherMap("k" -> List("eyes", "name"))
+          ))
+      }
+
+      // TODO: Enable when "Some error in type inference: Don't know how to type MapExpression" is fixed
+      ignore("keys() works with literal maps") {
+        val given = initGraph("CREATE ()")
+
+        val result = given.cypher("MATCH () WITH {person: {name: 'Anne', age: 25}} AS p RETURN keys(p) as k")
+
+        result.getRecords.toMaps should equal(
+          Bag(
+            CypherMap("k" -> List("age", "name"))
+          ))
+      }
+
     }
 
-    test("size() on literal string") {
-      val given = initGraph("CREATE ()")
+    describe("startNode") {
 
-      val result = given.cypher("MATCH () RETURN size('Alice') as s")
+      test("startNode()") {
+        val given = initGraph("CREATE ()-[:FOO {val: 'a'}]->(),()-[:FOO {val: 'b'}]->()")
 
-      result.getRecords.toMaps should equal(
-        Bag(
-          CypherMap("s" -> 5)
-        ))
+        val result = given.cypher("MATCH ()-[r:FOO]->() RETURN r.val, startNode(r)")
+
+        result.getRecords.toMaps should equal(
+          Bag(
+            CypherMap("r.val" -> "a", "startNode(r)" -> 0),
+            CypherMap("r.val" -> "b", "startNode(r)" -> 3)
+          ))
+      }
     }
 
-    test("size() on retrieved string") {
-      val given = initGraph("CREATE ({name: 'Alice'})")
+    describe("endNode") {
 
-      val result = given.cypher("MATCH (a) RETURN size(a.name) as s")
+      test("endNode()") {
+        val given = initGraph("CREATE ()-[:FOO {val: 'a'}]->(),()-[:FOO {val: 'b'}]->()")
 
-      result.getRecords.toMaps should equal(
-        Bag(
-          CypherMap("s" -> 5)
-        ))
+        val result = given.cypher("MATCH (a)-[r]->() RETURN r.val, endNode(r)")
+
+        result.getRecords.toMaps should equal(
+          Bag(
+            CypherMap("r.val" -> "a", "endNode(r)" -> 1),
+            CypherMap("r.val" -> "b", "endNode(r)" -> 4)
+          ))
+      }
     }
 
-    test("size() on constructed list") {
-      val given = initGraph("CREATE (:A:B), (:C:D), (:A), ()")
+    describe("toFloat") {
 
-      val result = given.cypher("MATCH (a) RETURN size(labels(a)) as s")
+      test("toFloat from integers") {
+        val given = initGraph("CREATE (a {val: 1})")
 
-      result.getRecords.toMaps should equal(
-        Bag(
-          CypherMap("s" -> 2),
-          CypherMap("s" -> 2),
-          CypherMap("s" -> 1),
-          CypherMap("s" -> 0)
-        ))
+        val result = given.cypher("MATCH (a) RETURN toFloat(a.val) as myFloat")
+
+        result.getRecords.toMaps should equal(
+          Bag(
+            CypherMap("myFloat" -> 1.0)
+          ))
+      }
+
+      test("toFloat from float") {
+        val given = initGraph("CREATE (a {val: 1.0d})")
+
+        val result = given.cypher("MATCH (a) RETURN toFloat(a.val) as myFloat")
+
+        result.getRecords.toMaps should equal(
+          Bag(
+            CypherMap("myFloat" -> 1.0)
+          ))
+      }
+
+      test("toFloat from string") {
+        val given = initGraph("CREATE (a {val: '42'})")
+
+        val result = given.cypher("MATCH (a) RETURN toFloat(a.val) as myFloat")
+
+        result.getRecords.toMaps should equal(
+          Bag(
+            CypherMap("myFloat" -> 42.0)
+          ))
+      }
     }
 
-    ignore("size() on null") {
-      val given = initGraph("CREATE ()")
+    describe("coalesce") {
+      it("can evaluate coalesce") {
+        val given = initGraph("CREATE ({valA: 1}), ({valB: 2}), ({valC: 3}), ()")
 
-      val result = given.cypher("MATCH (a) RETURN size(a.prop) as s")
+        val result = given.cypher("MATCH (n) RETURN coalesce(n.valA, n.valB, n.valC) as value")
 
-      result.getRecords.toMaps should equal(Bag(CypherMap("s" -> null)))
+        result.getRecords.collect.toBag should equal(
+          Bag(
+            CypherMap("value" -> 1),
+            CypherMap("value" -> 2),
+            CypherMap("value" -> 3),
+            CypherMap("value" -> null)
+          ))
+      }
+
+      it("can evaluate coalesce on non-existing expressions") {
+        val given = initGraph("CREATE ({valA: 1}), ({valB: 2}), ()")
+
+        val result = given.cypher("MATCH (n) RETURN coalesce(n.valD, n.valE) as value")
+
+        result.getRecords.collect.toBag should equal(
+          Bag(
+            CypherMap("value" -> null),
+            CypherMap("value" -> null),
+            CypherMap("value" -> null)
+          ))
+      }
+
     }
-
-  }
-
-  describe("keys") {
-
-    test("keys()") {
-      val given = initGraph("CREATE ({name:'Alice', age: 64, eyes:'brown'})")
-
-      val result = given.cypher("MATCH (a) WHERE a.name = 'Alice' RETURN keys(a) as k")
-
-      val keysAsMap = result.getRecords.toMaps
-
-      keysAsMap should equal(
-        Bag(
-          CypherMap("k" -> List("age", "eyes", "name"))
-        ))
-    }
-
-    test("keys() does not return keys of unset properties") {
-      val given = initGraph(
-        """
-          |CREATE (:Person {name:'Alice', age: 64, eyes:'brown'})
-          |CREATE (:Person {name:'Bob', eyes:'blue'})
-        """.stripMargin)
-
-      val result = given.cypher("MATCH (a: Person) WHERE a.name = 'Bob' RETURN keys(a) as k")
-
-      result.getRecords.toMaps should equal(
-        Bag(
-          CypherMap("k" -> List("eyes", "name"))
-        ))
-    }
-
-    // TODO: Enable when "Some error in type inference: Don't know how to type MapExpression" is fixed
-    ignore("keys() works with literal maps") {
-      val given = initGraph("CREATE ()")
-
-      val result = given.cypher("MATCH () WITH {person: {name: 'Anne', age: 25}} AS p RETURN keys(p) as k")
-
-      result.getRecords.toMaps should equal(
-        Bag(
-          CypherMap("k" -> List("age", "name"))
-        ))
-    }
-
-  }
-
-  describe("startNode") {
-
-    test("startNode()") {
-      val given = initGraph("CREATE ()-[:FOO {val: 'a'}]->(),()-[:FOO {val: 'b'}]->()")
-
-      val result = given.cypher("MATCH ()-[r:FOO]->() RETURN r.val, startNode(r)")
-
-      result.getRecords.toMaps should equal(
-        Bag(
-          CypherMap("r.val" -> "a", "startNode(r)" -> 0),
-          CypherMap("r.val" -> "b", "startNode(r)" -> 3)
-        ))
-    }
-  }
-
-  describe("endNode") {
-
-    test("endNode()") {
-      val given = initGraph("CREATE ()-[:FOO {val: 'a'}]->(),()-[:FOO {val: 'b'}]->()")
-
-      val result = given.cypher("MATCH (a)-[r]->() RETURN r.val, endNode(r)")
-
-      result.getRecords.toMaps should equal(
-        Bag(
-          CypherMap("r.val" -> "a", "endNode(r)" -> 1),
-          CypherMap("r.val" -> "b", "endNode(r)" -> 4)
-        ))
-    }
-  }
-
-  describe("toFloat") {
-
-    test("toFloat from integers") {
-      val given = initGraph("CREATE (a {val: 1})")
-
-      val result = given.cypher("MATCH (a) RETURN toFloat(a.val) as myFloat")
-
-      result.getRecords.toMaps should equal(
-        Bag(
-          CypherMap("myFloat" -> 1.0)
-        ))
-    }
-
-    test("toFloat from float") {
-      val given = initGraph("CREATE (a {val: 1.0d})")
-
-      val result = given.cypher("MATCH (a) RETURN toFloat(a.val) as myFloat")
-
-      result.getRecords.toMaps should equal(
-        Bag(
-          CypherMap("myFloat" -> 1.0)
-        ))
-    }
-
-    test("toFloat from string") {
-      val given = initGraph("CREATE (a {val: '42'})")
-
-      val result = given.cypher("MATCH (a) RETURN toFloat(a.val) as myFloat")
-
-      result.getRecords.toMaps should equal(
-        Bag(
-          CypherMap("myFloat" -> 42.0)
-        ))
-    }
-  }
-
-  describe("coalesce") {
-    it("can evaluate coalesce") {
-      val given = initGraph("CREATE ({valA: 1}), ({valB: 2}), ({valC: 3}), ()")
-
-      val result = given.cypher("MATCH (n) RETURN coalesce(n.valA, n.valB, n.valC) as value")
-
-      result.getRecords.collect.toBag should equal(
-        Bag(
-          CypherMap("value" -> 1),
-          CypherMap("value" -> 2),
-          CypherMap("value" -> 3),
-          CypherMap("value" -> null)
-        ))
-    }
-
-    it("can evaluate coalesce on non-existing expressions") {
-      val given = initGraph("CREATE ({valA: 1}), ({valB: 2}), ()")
-
-      val result = given.cypher("MATCH (n) RETURN coalesce(n.valD, n.valE) as value")
-
-      result.getRecords.collect.toBag should equal(
-        Bag(
-          CypherMap("value" -> null),
-          CypherMap("value" -> null),
-          CypherMap("value" -> null)
-        ))
-    }
-
   }
 }

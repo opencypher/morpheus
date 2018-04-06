@@ -26,52 +26,8 @@
  */
 package org.opencypher.spark.impl.acceptance
 
-import org.scalatest.Suites
+import org.opencypher.spark.test.support.creation.caps.{CAPSPatternGraphFactory, CAPSTestGraphFactory}
 
-class CAPSPatternGraphAcceptanceTest extends Suites(
-  Aggregation_PatternGraph,
-  BoundedVarExpand_PatternGraph,
-  ExpandInto_PatternGraph,
-  Expression_PatternGraph,
-  Functions_PatternGraph,
-  Match_PatternGraph,
-  MultipleGraph_PatternGraph,
-  OptionalMatch_PatternGraph,
-  Predicate_PatternGraph,
-  Return_PatternGraph,
-  With_PatternGraph,
-  Unwind_PatternGraph,
-  CatalogDDL_PatternGraph
-)
-
-/**
-  * Objects that allow ScalaTest to extract decent names for the behaviours.
-  *
-  * This is verbose, but I found no way to instantiate dynamic traits at compile time without resorting to macros.
-  */
-object Aggregation_PatternGraph extends AggregationBehaviour with PatternGraphInit
-
-object BoundedVarExpand_PatternGraph extends BoundedVarExpandBehaviour with PatternGraphInit
-
-object ExpandInto_PatternGraph extends ExpandIntoBehaviour with PatternGraphInit
-
-object Expression_PatternGraph extends ExpressionBehaviour with PatternGraphInit
-
-object Functions_PatternGraph extends FunctionsBehaviour with PatternGraphInit
-
-object Match_PatternGraph extends MatchBehaviour with PatternGraphInit
-
-object MultipleGraph_PatternGraph extends MultipleGraphBehaviour with PatternGraphInit
-
-object OptionalMatch_PatternGraph extends OptionalMatchBehaviour with PatternGraphInit
-
-object Predicate_PatternGraph extends PredicateBehaviour with PatternGraphInit
-
-object Return_PatternGraph extends ReturnBehaviour with PatternGraphInit
-
-object With_PatternGraph extends WithBehaviour with PatternGraphInit
-
-object Unwind_PatternGraph extends UnwindBehaviour with PatternGraphInit
-
-object CatalogDDL_PatternGraph extends CatalogDDLBehaviour with PatternGraphInit
-
+class CAPSPatternGraphAcceptanceTest extends AcceptanceTest {
+  override def capsGraphFactory: CAPSTestGraphFactory = CAPSPatternGraphFactory
+}

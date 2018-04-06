@@ -29,121 +29,122 @@ package org.opencypher.spark.impl.acceptance
 import org.opencypher.okapi.api.value.CAPSNode
 import org.opencypher.okapi.api.value.CypherValue._
 import org.opencypher.okapi.ir.test.support.Bag
-import org.opencypher.spark.test.CAPSTestSuite
-import org.scalatest.DoNotDiscover
+import org.opencypher.spark.impl.CAPSGraph
 
-@DoNotDiscover
-class UnwindBehaviour extends CAPSTestSuite with DefaultGraphInit {
+trait UnwindBehaviour { self: AcceptanceTest =>
 
-  test("standalone unwind from parameter") {
-    val query = "UNWIND $param AS item RETURN item"
+  def unwindBehaviour(initGraph: String => CAPSGraph): Unit = {
 
-    val result = caps.cypher(query, Map("param" -> CypherList(1, 2, 3)))
+    test("standalone unwind from parameter") {
+      val query = "UNWIND $param AS item RETURN item"
 
-    result.getRecords.toMapsWithCollectedEntities should equal(
-      Bag(
-        CypherMap("item" -> 1),
-        CypherMap("item" -> 2),
-        CypherMap("item" -> 3)
-      ))
-  }
+      val result = caps.cypher(query, Map("param" -> CypherList(1, 2, 3)))
 
-  test("standalone unwind from literal") {
-    val query = "UNWIND [1, 2, 3] AS item RETURN item"
+      result.getRecords.toMapsWithCollectedEntities should equal(
+        Bag(
+          CypherMap("item" -> 1),
+          CypherMap("item" -> 2),
+          CypherMap("item" -> 3)
+        ))
+    }
 
-    val result = caps.cypher(query)
+    test("standalone unwind from literal") {
+      val query = "UNWIND [1, 2, 3] AS item RETURN item"
 
-    result.getRecords.toMapsWithCollectedEntities should be(
-      Bag(
-        CypherMap("item" -> 1),
-        CypherMap("item" -> 2),
-        CypherMap("item" -> 3)
-      ))
-  }
+      val result = caps.cypher(query)
 
-  test("unwind after match") {
-    val graph = initGraph("CREATE (:A)-[:T]->(:B {item: '1'})-[:T]->(:C)")
+      result.getRecords.toMapsWithCollectedEntities should be(
+        Bag(
+          CypherMap("item" -> 1),
+          CypherMap("item" -> 2),
+          CypherMap("item" -> 3)
+        ))
+    }
 
-    val query = "MATCH (a)-[r]->(b) UNWIND $param AS item RETURN a, item"
+    test("unwind after match") {
+      val graph = initGraph("CREATE (:A)-[:T]->(:B {item: '1'})-[:T]->(:C)")
 
-    val result = graph.cypher(query, Map("param" -> CypherList(1, 2, 3)))
+      val query = "MATCH (a)-[r]->(b) UNWIND $param AS item RETURN a, item"
 
-    result.getRecords.toMapsWithCollectedEntities.map(_.toString) should equal(
-      Bag(
-        CypherMap("a" -> CAPSNode(0L, Set("A"), CypherMap.empty), "item" -> 1),
-        CypherMap("a" -> CAPSNode(0L, Set("A"), CypherMap.empty), "item" -> 2),
-        CypherMap("a" -> CAPSNode(0L, Set("A"), CypherMap.empty), "item" -> 3),
-        CypherMap("a" -> CAPSNode(1L, Set("B"), CypherMap("item" -> "1")), "item" -> 1),
-        CypherMap("a" -> CAPSNode(1L, Set("B"), CypherMap("item" -> "1")), "item" -> 2),
-        CypherMap("a" -> CAPSNode(1L, Set("B"), CypherMap("item" -> "1")), "item" -> 3)
-      ).map(_.toString))
-  }
+      val result = graph.cypher(query, Map("param" -> CypherList(1, 2, 3)))
 
-  test("unwind from expression, aggregation") {
-    val graph = initGraph("CREATE (:A {v: 1}), (:A:B {v: 15}), (:A:C {v: -32}), (:A)")
+      result.getRecords.toMapsWithCollectedEntities.map(_.toString) should equal(
+        Bag(
+          CypherMap("a" -> CAPSNode(0L, Set("A"), CypherMap.empty), "item" -> 1),
+          CypherMap("a" -> CAPSNode(0L, Set("A"), CypherMap.empty), "item" -> 2),
+          CypherMap("a" -> CAPSNode(0L, Set("A"), CypherMap.empty), "item" -> 3),
+          CypherMap("a" -> CAPSNode(1L, Set("B"), CypherMap("item" -> "1")), "item" -> 1),
+          CypherMap("a" -> CAPSNode(1L, Set("B"), CypherMap("item" -> "1")), "item" -> 2),
+          CypherMap("a" -> CAPSNode(1L, Set("B"), CypherMap("item" -> "1")), "item" -> 3)
+        ).map(_.toString))
+    }
 
-    val query = "MATCH (a:A) WITH collect(a.v) AS list UNWIND list AS item RETURN item"
+    test("unwind from expression, aggregation") {
+      val graph = initGraph("CREATE (:A {v: 1}), (:A:B {v: 15}), (:A:C {v: -32}), (:A)")
 
-    val result = graph.cypher(query, Map("param" -> CypherList(1, 2, 3)))
+      val query = "MATCH (a:A) WITH collect(a.v) AS list UNWIND list AS item RETURN item"
 
-    result.getRecords.toMapsWithCollectedEntities should equal(
-      Bag(
-        CypherMap("item" -> 1),
-        CypherMap("item" -> 15),
-        CypherMap("item" -> -32)
-      ))
-  }
+      val result = graph.cypher(query, Map("param" -> CypherList(1, 2, 3)))
 
-  test("unwind from expression") {
-    val graph = initGraph("CREATE (:A {v: [1, 2]}), (:A:B {v: [-4]})")
+      result.getRecords.toMapsWithCollectedEntities should equal(
+        Bag(
+          CypherMap("item" -> 1),
+          CypherMap("item" -> 15),
+          CypherMap("item" -> -32)
+        ))
+    }
 
-    val query = "MATCH (a:A) WITH a.v AS list UNWIND list AS item RETURN item"
+    test("unwind from expression") {
+      val graph = initGraph("CREATE (:A {v: [1, 2]}), (:A:B {v: [-4]})")
 
-    val result = graph.cypher(query, Map("param" -> CypherList(1, 2, 3)))
+      val query = "MATCH (a:A) WITH a.v AS list UNWIND list AS item RETURN item"
 
-    result.getRecords.toMapsWithCollectedEntities should equal(
-      Bag(
-        CypherMap("item" -> 1),
-        CypherMap("item" -> 2),
-        CypherMap("item" -> -4)
-      ))
-  }
+      val result = graph.cypher(query, Map("param" -> CypherList(1, 2, 3)))
 
-  // TODO: activate once https://issues.apache.org/jira/browse/SPARK-23610 is resolved
-  ignore("unwind from expression with empty and null lists") {
-    val graph = initGraph("CREATE (:A {v: [1, 2]}), (:A:B {v: [-4]}), (:A:C {v: []}), (:A)")
+      result.getRecords.toMapsWithCollectedEntities should equal(
+        Bag(
+          CypherMap("item" -> 1),
+          CypherMap("item" -> 2),
+          CypherMap("item" -> -4)
+        ))
+    }
 
-    val query = "MATCH (a:A) WITH a.v AS list UNWIND list AS item RETURN item"
+    // TODO: activate once https://issues.apache.org/jira/browse/SPARK-23610 is resolved
+    ignore("unwind from expression with empty and null lists") {
+      val graph = initGraph("CREATE (:A {v: [1, 2]}), (:A:B {v: [-4]}), (:A:C {v: []}), (:A)")
 
-    val result = graph.cypher(query, Map("param" -> CypherList(1, 2, 3)))
+      val query = "MATCH (a:A) WITH a.v AS list UNWIND list AS item RETURN item"
 
-    result.getRecords.toMapsWithCollectedEntities should equal(
-      Bag(
-        CypherMap("item" -> 1),
-        CypherMap("item" -> 2),
-        CypherMap("item" -> -4)
-      ))
-  }
+      val result = graph.cypher(query, Map("param" -> CypherList(1, 2, 3)))
 
-  it("unwinds in an involved query") {
-    val graph = initGraph("CREATE (:A)-[:T]->(:B {item: '1'})-[:T]->(:C)")
+      result.getRecords.toMapsWithCollectedEntities should equal(
+        Bag(
+          CypherMap("item" -> 1),
+          CypherMap("item" -> 2),
+          CypherMap("item" -> -4)
+        ))
+    }
 
-    val query =
-      """MATCH (a)-[r]->(b)
+    it("unwinds in an involved query") {
+      val graph = initGraph("CREATE (:A)-[:T]->(:B {item: '1'})-[:T]->(:C)")
+
+      val query =
+        """MATCH (a)-[r]->(b)
         |UNWIND $param AS item
         |WITH a, r, item
         |  WHERE item > 1
         |RETURN a, item""".stripMargin
 
-    val result = graph.cypher(query, Map("param" -> CypherList(1, 2, 3)))
+      val result = graph.cypher(query, Map("param" -> CypherList(1, 2, 3)))
 
-    result.getRecords.toMapsWithCollectedEntities should equal(
-      Bag(
-        CypherMap("a" -> CAPSNode(0L, Set("A"), CypherMap.empty), "item" -> 3),
-        CypherMap("a" -> CAPSNode(1L, Set("B"), CypherMap("item" -> "1")), "item" -> 3),
-        CypherMap("a" -> CAPSNode(0L, Set("A"), CypherMap.empty), "item" -> 2),
-        CypherMap("a" -> CAPSNode(1L, Set("B"), CypherMap("item" -> "1")), "item" -> 2)
+      result.getRecords.toMapsWithCollectedEntities should equal(
+        Bag(
+          CypherMap("a" -> CAPSNode(0L, Set("A"), CypherMap.empty), "item" -> 3),
+          CypherMap("a" -> CAPSNode(1L, Set("B"), CypherMap("item" -> "1")), "item" -> 3),
+          CypherMap("a" -> CAPSNode(0L, Set("A"), CypherMap.empty), "item" -> 2),
+          CypherMap("a" -> CAPSNode(1L, Set("B"), CypherMap("item" -> "1")), "item" -> 2)
+        )
       )
-    )
+    }
   }
 }

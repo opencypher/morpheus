@@ -27,51 +27,51 @@
 package org.opencypher.spark.impl.acceptance
 
 import org.opencypher.okapi.api.graph.GraphName
-import org.opencypher.spark.test.CAPSTestSuite
-import org.scalatest.DoNotDiscover
+import org.opencypher.spark.impl.CAPSGraph
 
-@DoNotDiscover
-class CatalogDDLBehaviour extends CAPSTestSuite with DefaultGraphInit {
+trait CatalogDDLBehaviour {
+  self: AcceptanceTest =>
 
-  describe("CREATE GRAPH") {
-    it("supports CREATE GRAPH on the session") {
-      val inputGraph = initGraph(
-        """
-          |CREATE (:A)
-        """.stripMargin)
+  def catalogDDLBehaviour(initGraph: String => CAPSGraph): Unit = {
+    describe("CREATE GRAPH") {
+      it("supports CREATE GRAPH on the session") {
+        val inputGraph = initGraph(
+          """
+            |CREATE (:A)
+          """.stripMargin)
 
-      caps.store("foo", inputGraph)
+        caps.store("foo", inputGraph)
 
-      val result = caps.cypher(
-        """
-          |CREATE GRAPH bar {
-          | From GRAPH foo
-          | RETURN GRAPH
-          |}
-        """.stripMargin)
+        val result = caps.cypher(
+          """
+            |CREATE GRAPH bar {
+            | From GRAPH foo
+            | RETURN GRAPH
+            |}
+          """.stripMargin)
 
-      val sessionSource = caps.dataSource(caps.sessionNamespace)
-      sessionSource.hasGraph(GraphName("bar")) shouldBe true
-      sessionSource.graph(GraphName("bar")) shouldEqual inputGraph
-      result.graph shouldBe None
-      result.records shouldBe None
+        val sessionSource = caps.dataSource(caps.sessionNamespace)
+        sessionSource.hasGraph(GraphName("bar")) shouldBe true
+        sessionSource.graph(GraphName("bar")) shouldEqual inputGraph
+        result.graph shouldBe None
+        result.records shouldBe None
+      }
     }
-  }
 
     describe("DELETE GRAPH") {
       it("can delete a session graph") {
-
         caps.store("foo", initGraph("CREATE (:A)"))
 
-      val result = caps.cypher(
-        """
-          |DELETE GRAPH session.foo
-        """.stripMargin
-      )
+        val result = caps.cypher(
+          """
+            |DELETE GRAPH session.foo
+          """.stripMargin
+        )
 
         caps.dataSource(caps.sessionNamespace).hasGraph(GraphName("foo")) shouldBe false
         result.graph shouldBe None
         result.records shouldBe None
+      }
     }
   }
 }
