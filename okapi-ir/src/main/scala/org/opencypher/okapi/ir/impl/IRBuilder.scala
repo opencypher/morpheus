@@ -44,6 +44,8 @@ import org.opencypher.okapi.ir.api.pattern.Pattern
 import org.opencypher.okapi.ir.api.set.{SetItem, SetLabelItem, SetPropertyItem}
 import org.opencypher.okapi.ir.api.util.CompilationStage
 import org.opencypher.okapi.ir.impl.refactor.instances._
+import org.opencypher.okapi.ir.impl.util.VarConverters.RichIrField
+
 
 object IRBuilder extends CompilationStage[ast.Statement, CypherStatement[Expr], IRBuilderContext] {
 
@@ -220,21 +222,14 @@ object IRBuilder extends CompilationStage[ast.Statement, CypherStatement[Expr], 
             val explicitCloneItemMap = explicitCloneItems.toMap
 
             // Items from other graphs that are cloned by default
-            val cloneByDefault = newPattern.fields.filter(f =>
-              f.cypherType.graph.get != qgn && !explicitCloneItemMap.keys.exists(_.name == f.name))
-            val cloneByDefaultItemMap = cloneByDefault.map { f =>
-              val aliasType = f.cypherType match {
-                case n: CTNode => n.copy(graph = Some(qgn))
-                case r: CTRelationship => r.copy(graph = Some(qgn))
-                case other => throw IllegalArgumentException("a node or relationship to clone", other)
-              }
-              val alias = IRField(f.name)(aliasType)
-              import org.opencypher.okapi.ir.impl.util.VarConverters.RichIrField
-              val expr = f.toVar
-              alias -> expr
+            val implicitCloneItems = newPattern.fields.filterNot { f =>
+              f.cypherType.graph.get == qgn || explicitCloneItemMap.keys.exists(_.name == f.name)
+            }
+            val implicitCloneItemMap = implicitCloneItems.map { f =>
+              // Convert field to clone item
+              IRField(f.name)(f.cypherType.withGraph(qgn)) -> f.toVar
             }.toMap
-            
-            val cloneItemMap = cloneByDefaultItemMap ++ explicitCloneItemMap
+            val cloneItemMap = implicitCloneItemMap ++ explicitCloneItemMap
 
             // Fields inside of CONSTRUCT could have been matched on other graphs than just the workingGraph
             val cloneSchema = schemaForEntityTypes(context, cloneItemMap.values.map(_.cypherType).toSet)
@@ -243,7 +238,7 @@ object IRBuilder extends CompilationStage[ast.Statement, CypherStatement[Expr], 
             // we can currently only clone relationships that are also part of a new pattern
             cloneItemMap.keys.foreach { cloneFieldAlias =>
               cloneFieldAlias.cypherType match {
-                case _ : CTRelationship if !newPattern.fields.contains(cloneFieldAlias) =>
+                case _: CTRelationship if !newPattern.fields.contains(cloneFieldAlias) =>
                   throw UnsupportedOperationException(s"Can only clone relationship ${cloneFieldAlias.name} if it is also part of a NEW pattern")
                 case _ => ()
               }
@@ -374,14 +369,7 @@ object IRBuilder extends CompilationStage[ast.Statement, CypherStatement[Expr], 
     qgn: QualifiedGraphName
   ): Eff[R, (IRField, Expr)] = {
 
-    def convert(cypherType: CypherType, name: String): IRField = {
-      val aliasType = cypherType match {
-        case n: CTNode => n.copy(graph = Some(qgn))
-        case r: CTRelationship => r.copy(graph = Some(qgn))
-        case other => throw IllegalArgumentException("a node or relationship to clone", other)
-      }
-      IRField(name)(aliasType)
-    }
+    def convert(cypherType: CypherType, name: String): IRField = IRField(name)(cypherType.withGraph(qgn))
 
     item match {
 
