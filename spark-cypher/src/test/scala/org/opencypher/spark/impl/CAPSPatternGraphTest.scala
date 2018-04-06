@@ -111,6 +111,29 @@ class CAPSPatternGraphTest extends CAPSGraphTest {
       ))
   }
 
+  it("implictly clones when projecting a pattern graph with a created relationship") {
+    val inputGraph = initGraph(`:Person` + `:KNOWS`)
+
+    val person = inputGraph.cypher(
+      """MATCH (a:Person:Swedish)-[r]->(b)
+        |CONSTRUCT
+        |  NEW (a)-[foo:SWEDISH_KNOWS]->(b)
+        |RETURN GRAPH
+      """.stripMargin)
+
+    person
+      .getGraph
+      .cypher("MATCH ()-[:SWEDISH_KNOWS]->(n) RETURN n.name")
+      .getRecords
+      .collect
+      .toSet should equal(
+      Set(
+        CypherMap("n.name" -> "Stefan"),
+        CypherMap("n.name" -> "Martin"),
+        CypherMap("n.name" -> "Max")
+      ))
+  }
+
   test("projects a pattern graph with a created node") {
     val inputGraph = initGraph(`:Person` + `:KNOWS`)
 
@@ -118,6 +141,27 @@ class CAPSPatternGraphTest extends CAPSGraphTest {
       """MATCH (a:Person:Swedish)-[r]->(b)
         |CONSTRUCT
         |  CLONE a, r, b
+        |  NEW (a)-[r]->(b)-[:KNOWS_A]->()
+        |RETURN GRAPH
+      """.stripMargin)
+
+    person
+      .getGraph
+      .cypher("MATCH (b)-[:KNOWS_A]->(n) WITH COUNT(n) as cnt RETURN cnt")
+      .getRecords
+      .collect
+      .toSet should equal(
+      Set(
+        CypherMap("cnt" -> 3)
+      ))
+  }
+
+  test("implictly clones when projecting a pattern graph with a created node") {
+    val inputGraph = initGraph(`:Person` + `:KNOWS`)
+
+    val person = inputGraph.cypher(
+      """MATCH (a:Person:Swedish)-[r]->(b)
+        |CONSTRUCT
         |  NEW (a)-[r]->(b)-[:KNOWS_A]->()
         |RETURN GRAPH
       """.stripMargin)
@@ -170,6 +214,26 @@ class CAPSPatternGraphTest extends CAPSGraphTest {
       """MATCH (a:Person:Swedish)-[r]->(b)
         |CONSTRUCT
         |  CLONE a, r, b
+        |  NEW (a)-[r]->(b)-[bar:KNOWS_A]->(baz:Swede)
+        |RETURN GRAPH
+      """.stripMargin)
+
+    val graph = person.getGraph
+
+    graph.cypher("MATCH (n:Swede) RETURN labels(n)").getRecords.collect.toSet should equal(
+      Set(
+        CypherMap("labels(n)" -> List("Swede")),
+        CypherMap("labels(n)" -> List("Swede")),
+        CypherMap("labels(n)" -> List("Swede"))
+      ))
+  }
+
+  it("implicitly clones when projecting a pattern graph with a created node that has labels") {
+    val inputGraph = initGraph(`:Person` + `:KNOWS`)
+
+    val person = inputGraph.cypher(
+      """MATCH (a:Person:Swedish)-[r]->(b)
+        |CONSTRUCT
         |  NEW (a)-[r]->(b)-[bar:KNOWS_A]->(baz:Swede)
         |RETURN GRAPH
       """.stripMargin)
@@ -571,6 +635,29 @@ class CAPSPatternGraphTest extends CAPSGraphTest {
         |WITH DISTINCT a, b
         |CONSTRUCT
         |  CLONE a, b
+        |  NEW (a)-[f:FOO]->(b)
+        |RETURN GRAPH
+      """.stripMargin)
+
+    when.getGraph.relationships("f", CTRelationship("FOO")).size should equal(1)
+  }
+
+  it("implictly clones when creating a single relationship between unique merged node pair") {
+    val given = initGraph(
+      """
+        |CREATE (a: Person)
+        |CREATE (b: Person)
+        |CREATE (a)-[:HAS_INTEREST]->(i1:Interest {val: 1})
+        |CREATE (a)-[:HAS_INTEREST]->(i2:Interest {val: 2})
+        |CREATE (a)-[:HAS_INTEREST]->(i3:Interest {val: 3})
+        |CREATE (a)-[:KNOWS]->(b)
+      """.stripMargin)
+
+    val when = given.cypher(
+      """
+        |MATCH (i:Interest)<-[h:HAS_INTEREST]-(a:Person)-[k:KNOWS]->(b:Person)
+        |WITH DISTINCT a, b
+        |CONSTRUCT
         |  NEW (a)-[f:FOO]->(b)
         |RETURN GRAPH
       """.stripMargin)

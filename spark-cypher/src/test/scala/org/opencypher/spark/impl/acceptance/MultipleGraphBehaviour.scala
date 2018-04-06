@@ -345,6 +345,20 @@ class MultipleGraphBehaviour extends CAPSTestSuite with ScanGraphInit {
     res.getGraph.relationships("r").collect.length shouldBe 1
   }
 
+  it("implicitly CLONEs in CONSTRUCT") {
+    val res = testGraph1.unionAll(testGraph2).cypher(
+      """
+        |MATCH (n),(m)
+        |WHERE n.name = 'Mats' AND m.name = 'Phil'
+        |CONSTRUCT
+        | NEW (n)-[r:KNOWS]->(m)
+        |RETURN GRAPH
+      """.stripMargin)
+
+    res.getGraph.nodes("n").collect.length shouldBe 2
+    res.getGraph.relationships("r").collect.length shouldBe 1
+  }
+
   it("constructs multiple relationships") {
     val inputGraph = initGraph(
       """
@@ -369,6 +383,29 @@ class MultipleGraphBehaviour extends CAPSTestSuite with ScanGraphInit {
     res.getGraph.relationships("r").collect.length shouldBe 2
   }
 
+  it("implicitly clones when constructing multiple relationships") {
+    val inputGraph = initGraph(
+      """
+        |CREATE (p0 {name: 'Mats'})
+        |CREATE (p1 {name: 'Phil'})
+        |CREATE (p0)-[:KNOWS]->(p1)
+        |CREATE (p0)-[:KNOWS]->(p1)
+        |CREATE (p1)-[:KNOWS]->(p0)
+      """.stripMargin)
+
+    val res = inputGraph.cypher(
+      """
+        |MATCH (n)-[:KNOWS]->(m)
+        |WITH DISTINCT n, m
+        |CONSTRUCT
+        | NEW (n)-[r:KNOWS]->(m)
+        |RETURN GRAPH
+      """.stripMargin)
+
+    res.getGraph.nodes("n").collect.length shouldBe 2
+    res.getGraph.relationships("r").collect.length shouldBe 2
+  }
+
   it("constructs multiple relationships 2") {
     val inputGraph = initGraph(
       """
@@ -384,6 +421,28 @@ class MultipleGraphBehaviour extends CAPSTestSuite with ScanGraphInit {
         |MATCH (n)-[:KNOWS]->(m)
         |CONSTRUCT
         | CLONE n, m
+        | NEW (n)-[r:KNOWS]->(m)
+        |RETURN GRAPH
+      """.stripMargin)
+
+    res.getGraph.nodes("n").collect.length shouldBe 2
+    res.getGraph.relationships("r").collect.length shouldBe 3
+  }
+
+  it("implicitly clones when constructing multiple relationships 2") {
+    val inputGraph = initGraph(
+      """
+        |CREATE (p0 {name: 'Mats'})
+        |CREATE (p1 {name: 'Phil'})
+        |CREATE (p0)-[:KNOWS]->(p1)
+        |CREATE (p0)-[:KNOWS]->(p1)
+        |CREATE (p1)-[:KNOWS]->(p0)
+      """.stripMargin)
+
+    val res = inputGraph.cypher(
+      """
+        |MATCH (n)-[:KNOWS]->(m)
+        |CONSTRUCT
         | NEW (n)-[r:KNOWS]->(m)
         |RETURN GRAPH
       """.stripMargin)
@@ -431,6 +490,27 @@ class MultipleGraphBehaviour extends CAPSTestSuite with ScanGraphInit {
          |MATCH (p: Person)
          |CONSTRUCT ON one, two
          |  CLONE m, p
+         |  NEW (m)-[:KNOWS]->(p)
+         |RETURN GRAPH""".stripMargin
+
+    val result = caps.cypher(query).getGraph
+
+    result.schema should equal((testGraph1.schema ++ testGraph2.schema).withRelationshipPropertyKeys("KNOWS")().asCaps)
+    result.nodes("n").toMaps should equal(testGraph1.unionAll(testGraph2).nodes("n").toMaps)
+    result.relationships("r").toMapsWithCollectedEntities should equal(Bag(
+      CypherMap("r" -> CAPSRelationship(2251799813685248L, 0L, 1125899906842624L, "KNOWS")))
+    )
+  }
+
+  it("implictly clones when CONSTRUCTing ON two graphs and adding a relationship") {
+    caps.store("one", testGraph1)
+    caps.store("two", testGraph2)
+    val query =
+      """|FROM GRAPH one
+         |MATCH (m: Person)
+         |FROM GRAPH two
+         |MATCH (p: Person)
+         |CONSTRUCT ON one, two
          |  NEW (m)-[:KNOWS]->(p)
          |RETURN GRAPH""".stripMargin
 
@@ -588,6 +668,30 @@ class MultipleGraphBehaviour extends CAPSTestSuite with ScanGraphInit {
          |MATCH (a)-->(b)
          |CONSTRUCT
          |  CLONE a, b
+         |  NEW (a)-[:KNOWS]->(b)
+         |RETURN GRAPH""".stripMargin
+
+    val result = testGraph1.cypher(query)
+
+    result.getRecords.toMaps shouldBe empty
+    result.getGraph.schema.relationshipTypes should equal(Set("KNOWS"))
+    result.getGraph.schema.labels should equal(Set("A", "B"))
+    result.getGraph.schema should equal(Schema.empty
+      .withNodePropertyKeys("A")()
+      .withNodePropertyKeys("B")()
+      .withRelationshipPropertyKeys("KNOWS")()
+      .asCaps)
+    result.getGraph.cypher("MATCH ()-[r]->() RETURN type(r)").getRecords.iterator.toBag should equal(Bag(
+      CypherMap("type(r)" -> "KNOWS")
+    ))
+  }
+
+  it("implictly clones when doing consecutive construction") {
+    val query =
+      """|CONSTRUCT
+         |  NEW (a:A)-[r:FOO]->(b:B)
+         |MATCH (a)-->(b)
+         |CONSTRUCT
          |  NEW (a)-[:KNOWS]->(b)
          |RETURN GRAPH""".stripMargin
 

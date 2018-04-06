@@ -199,7 +199,7 @@ object IRBuilder extends CompilationStage[ast.Statement, CypherStatement[Expr], 
 
           qgn = context.qgnGenerator.generate
 
-          cloneItems <- clones.flatMap(_.items).traverse(convertClone[R](_, qgn))
+          explicitCloneItems <- clones.flatMap(_.items).traverse(convertClone[R](_, qgn))
 
           newPatterns <- news.map {
             case ast.New(p: exp.Pattern) => p
@@ -211,18 +211,37 @@ object IRBuilder extends CompilationStage[ast.Statement, CypherStatement[Expr], 
               agg ++ context.schemaFor(next)
             }
 
-            // Computing single nodes/rels constructed by CLONE (MERGE)
-            val cloneItemMap: Map[IRField, Expr] = cloneItems.toMap
-            // Fields inside of CONSTRUCT could have been matched on other graphs than just the workingGraph
-            val cloneSchema = schemaForEntityTypes(context, cloneItemMap.values.map(_.cypherType).toSet)
-
             // Computing single nodes/rels constructed by NEW (CREATE)
+            // TODO: Throw exception if both clone alias and original field name are used in NEW
             val newPattern = newPatterns.foldLeft(Pattern.empty[Expr])(_ ++ _)
             val newPatternProperties = newPattern.properties
 
+            // Single nodes/rels constructed by CLONE (MERGE)
+            val explicitCloneItemMap = explicitCloneItems.toMap
+
+            // Items from other graphs that are cloned by default
+            val cloneByDefault = newPattern.fields.filter(f =>
+              f.cypherType.graph.get != qgn && !explicitCloneItemMap.keys.exists(_.name == f.name))
+            val cloneByDefaultItemMap = cloneByDefault.map { f =>
+              val aliasType = f.cypherType match {
+                case n: CTNode => n.copy(graph = Some(qgn))
+                case r: CTRelationship => r.copy(graph = Some(qgn))
+                case other => throw IllegalArgumentException("a node or relationship to clone", other)
+              }
+              val alias = IRField(f.name)(aliasType)
+              import org.opencypher.okapi.ir.impl.util.VarConverters.RichIrField
+              val expr = f.toVar
+              alias -> expr
+            }.toMap
+            
+            val cloneItemMap = cloneByDefaultItemMap ++ explicitCloneItemMap
+
+            // Fields inside of CONSTRUCT could have been matched on other graphs than just the workingGraph
+            val cloneSchema = schemaForEntityTypes(context, cloneItemMap.values.map(_.cypherType).toSet)
+
             // Make sure that there are no dangling relationships
             // we can currently only clone relationships that are also part of a new pattern
-            cloneItems.map(_._1).foreach { cloneFieldAlias =>
+            cloneItemMap.keys.foreach { cloneFieldAlias =>
               cloneFieldAlias.cypherType match {
                 case _ : CTRelationship if !newPattern.fields.contains(cloneFieldAlias) =>
                   throw UnsupportedOperationException(s"Can only clone relationship ${cloneFieldAlias.name} if it is also part of a NEW pattern")
