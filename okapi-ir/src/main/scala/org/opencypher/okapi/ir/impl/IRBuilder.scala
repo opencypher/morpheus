@@ -36,7 +36,7 @@ import org.opencypher.okapi.api.graph.QualifiedGraphName
 import org.opencypher.okapi.api.schema.PropertyKeys.PropertyKeys
 import org.opencypher.okapi.api.schema.{PropertyKeys, Schema}
 import org.opencypher.okapi.api.types._
-import org.opencypher.okapi.impl.exception.{IllegalArgumentException, IllegalStateException}
+import org.opencypher.okapi.impl.exception.{IllegalArgumentException, IllegalStateException, UnsupportedOperationException}
 import org.opencypher.okapi.ir.api._
 import org.opencypher.okapi.ir.api.block.{SortItem, _}
 import org.opencypher.okapi.ir.api.expr._
@@ -44,6 +44,8 @@ import org.opencypher.okapi.ir.api.pattern.Pattern
 import org.opencypher.okapi.ir.api.set.{SetItem, SetLabelItem, SetPropertyItem}
 import org.opencypher.okapi.ir.api.util.CompilationStage
 import org.opencypher.okapi.ir.impl.refactor.instances._
+import org.opencypher.okapi.ir.impl.util.VarConverters.RichIrField
+
 
 object IRBuilder extends CompilationStage[ast.Statement, CypherStatement[Expr], IRBuilderContext] {
 
@@ -199,7 +201,7 @@ object IRBuilder extends CompilationStage[ast.Statement, CypherStatement[Expr], 
 
           qgn = context.qgnGenerator.generate
 
-          cloneItems <- clones.flatMap(_.items).traverse(convertClone[R](_, qgn))
+          explicitCloneItems <- clones.flatMap(_.items).traverse(convertClone[R](_, qgn))
 
           newPatterns <- news.map {
             case ast.New(p: exp.Pattern) => p
@@ -211,14 +213,36 @@ object IRBuilder extends CompilationStage[ast.Statement, CypherStatement[Expr], 
               agg ++ context.schemaFor(next)
             }
 
-            // Computing single nodes/rels constructed by CLONE (MERGE)
-            val cloneItemMap: Map[IRField, Expr] = cloneItems.toMap
+            // Computing single nodes/rels constructed by NEW (CREATE)
+            // TODO: Throw exception if both clone alias and original field name are used in NEW
+            val newPattern = newPatterns.foldLeft(Pattern.empty[Expr])(_ ++ _)
+            val newPatternProperties = newPattern.properties
+
+            // Single nodes/rels constructed by CLONE (MERGE)
+            val explicitCloneItemMap = explicitCloneItems.toMap
+
+            // Items from other graphs that are cloned by default
+            val implicitCloneItems = newPattern.fields.filterNot { f =>
+              f.cypherType.graph.get == qgn || explicitCloneItemMap.keys.exists(_.name == f.name)
+            }
+            val implicitCloneItemMap = implicitCloneItems.map { f =>
+              // Convert field to clone item
+              IRField(f.name)(f.cypherType.withGraph(qgn)) -> f.toVar
+            }.toMap
+            val cloneItemMap = implicitCloneItemMap ++ explicitCloneItemMap
+
             // Fields inside of CONSTRUCT could have been matched on other graphs than just the workingGraph
             val cloneSchema = schemaForEntityTypes(context, cloneItemMap.values.map(_.cypherType).toSet)
 
-            // Computing single nodes/rels constructed by NEW (CREATE)
-            val newPattern = newPatterns.foldLeft(Pattern.empty[Expr])(_ ++ _)
-            val newPatternProperties = newPattern.properties
+            // Make sure that there are no dangling relationships
+            // we can currently only clone relationships that are also part of a new pattern
+            cloneItemMap.keys.foreach { cloneFieldAlias =>
+              cloneFieldAlias.cypherType match {
+                case _: CTRelationship if !newPattern.fields.contains(cloneFieldAlias) =>
+                  throw UnsupportedOperationException(s"Can only clone relationship ${cloneFieldAlias.name} if it is also part of a NEW pattern")
+                case _ => ()
+              }
+            }
 
             val fieldsInNewPattern = newPattern
               .fields
@@ -345,14 +369,7 @@ object IRBuilder extends CompilationStage[ast.Statement, CypherStatement[Expr], 
     qgn: QualifiedGraphName
   ): Eff[R, (IRField, Expr)] = {
 
-    def convert(cypherType: CypherType, name: String): IRField = {
-      val aliasType = cypherType match {
-        case n: CTNode => n.copy(graph = Some(qgn))
-        case r: CTRelationship => r.copy(graph = Some(qgn))
-        case other => throw IllegalArgumentException("a node or relationship to clone", other)
-      }
-      IRField(name)(aliasType)
-    }
+    def convert(cypherType: CypherType, name: String): IRField = IRField(name)(cypherType.withGraph(qgn))
 
     item match {
 

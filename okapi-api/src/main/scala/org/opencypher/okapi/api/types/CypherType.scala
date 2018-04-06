@@ -166,7 +166,10 @@ object CTNode extends CTNode(Set.empty[String], None) with Serializable {
     if (labels.isEmpty) this else CTNode(labels, None)
 }
 
-sealed case class CTNode(labels: Set[String], override val graph: Option[QualifiedGraphName]) extends MaterialDefiniteCypherType {
+sealed case class CTNode(
+  labels: Set[String],
+  override val graph: Option[QualifiedGraphName]
+) extends MaterialDefiniteCypherType {
 
   self =>
 
@@ -198,6 +201,8 @@ sealed case class CTNode(labels: Set[String], override val graph: Option[Qualifi
     case CTNode(otherLabels, qgnOpt) => CTNode(labels union otherLabels, if (graph == qgnOpt) graph else None)
     case _ => super.meetMaterially(other)
   }
+
+  override def withGraph(qgn: QualifiedGraphName): CypherType = copy(graph = Some(qgn))
 }
 
 object CTNodeOrNull extends CTNodeOrNull(Set.empty) with Serializable {
@@ -220,7 +225,10 @@ object CTRelationship extends CTRelationship(Set.empty, None) with Serializable 
     if (types.isEmpty) this else CTRelationship(types, None)
 }
 
-sealed case class CTRelationship(types: Set[String], override val graph: Option[QualifiedGraphName]) extends MaterialDefiniteCypherType {
+sealed case class CTRelationship(
+  types: Set[String],
+  override val graph: Option[QualifiedGraphName]
+) extends MaterialDefiniteCypherType {
 
   self =>
 
@@ -266,6 +274,8 @@ sealed case class CTRelationship(types: Set[String], override val graph: Option[
     case _ =>
       super.meetMaterially(other)
   }
+
+  override def withGraph(qgn: QualifiedGraphName): CypherType = copy(graph = Some(qgn))
 }
 
 object CTRelationshipOrNull extends CTRelationshipOrNull(Set.empty) with Serializable {
@@ -289,6 +299,8 @@ final case class CTList(elementType: CypherType) extends MaterialDefiniteCypherT
   self =>
 
   override def graph: Option[QualifiedGraphName] = elementType.graph
+
+  override def withGraph(qgn: QualifiedGraphName): CypherType = copy(elementType = elementType.withGraph(qgn))
 
   override def name = s"LIST OF $elementType"
 
@@ -432,6 +444,8 @@ sealed trait CypherType extends Serializable {
   def isNullable: Boolean
 
   def graph: Option[QualifiedGraphName] = None
+
+  def withGraph(qgn: QualifiedGraphName): CypherType = this
 
   // true, if this type only (i.e. excluding type parameters) is a wildcard (= standing for an arbitrary unknown type)
   def isWildcard: Boolean
