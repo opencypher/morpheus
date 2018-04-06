@@ -24,16 +24,29 @@
  * described as "implementation extensions to Cypher" or as "proposed changes to
  * Cypher that are not yet approved by the openCypher community".
  */
-package org.opencypher.spark.test.support.creation.caps
+package org.opencypher.spark.impl.acceptance
 
-import org.opencypher.okapi.ir.test.support.creation.TestGraphFactory
-import org.opencypher.okapi.ir.test.support.creation.propertygraph.TestPropertyGraphFactory
 import org.opencypher.spark.api.CAPSSession
 import org.opencypher.spark.impl.CAPSGraph
-import org.opencypher.spark.impl.CAPSConverters._
+import org.opencypher.spark.test.support.creation.caps.{CAPSPatternGraphFactory, CAPSScanGraphFactory}
 
-trait CAPSTestGraphFactory extends TestGraphFactory[CAPSSession] {
-  def initGraph(createQuery: String)(implicit caps: CAPSSession): CAPSGraph = {
-    apply(TestPropertyGraphFactory(createQuery)).asCaps
+trait GraphInit {
+  def initGraph(createQuery: String)(implicit caps: CAPSSession): CAPSGraph
+}
+
+trait DefaultGraphInit extends ScanGraphInit
+
+trait ScanGraphInit extends GraphInit {
+  def initGraph(createQuery: String)(implicit caps: CAPSSession) = {
+    CAPSScanGraphFactory.initGraph(createQuery)
+  }
+}
+
+/**
+  * Extend & override to ensure Scala knows this implements the same method as `DefaultGraphInit.initGraph`
+  */
+trait PatternGraphInit extends DefaultGraphInit {
+  override def initGraph(createQuery: String)(implicit caps: CAPSSession) = {
+    CAPSPatternGraphFactory.initGraph(createQuery)
   }
 }
