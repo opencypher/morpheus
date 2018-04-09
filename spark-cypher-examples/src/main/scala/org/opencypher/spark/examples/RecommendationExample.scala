@@ -81,16 +81,16 @@ object RecommendationExample extends App {
   val euFriends = caps.cypher(cityFriendsQuery("euSocialNetwork.graph")).getGraph
 
   // Union the US and EU graphs into a single graph 'allFriends' and store it in the session
-  val allFriendsName = caps.store("allFriends", usFriends.unionAll(euFriends))
+  caps.store("allFriends", usFriends.unionAll(euFriends))
 
   // Connect the social network with the products network using equal person and customer emails
   val connectedCustomers = caps.cypher(
-    s"""FROM GRAPH $allFriendsName
+    s"""FROM GRAPH allFriends
        |MATCH (p:Person)
        |FROM GRAPH purchases.products
        |MATCH (c:Customer)
        |WHERE c.name = p.name
-       |CONSTRUCT ON purchases.products, $allFriendsName
+       |CONSTRUCT ON purchases.products, allFriends
        |  CLONE c, p
        |  NEW (c)-[:IS]->(p)
        |RETURN GRAPH
