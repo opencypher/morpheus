@@ -58,7 +58,6 @@ object MultipleGraphExample extends App {
        |MATCH (c:Customer)
        |WHERE p.name = c.name
        |CONSTRUCT ON socialNetwork, csv.products
-       |  CLONE p, c
        |  NEW (p)-[:IS]->(c)
        |RETURN GRAPH
     """.stripMargin
