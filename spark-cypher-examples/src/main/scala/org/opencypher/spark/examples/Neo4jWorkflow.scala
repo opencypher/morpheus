@@ -68,7 +68,6 @@ object Neo4jWorkflow extends App {
        |WHERE p.name = c.name
        |CONSTRUCT
        |  ON socialNetwork.graph, csv.products
-       |  CLONE p, c
        |  NEW (p)-[:IS]->(c)
        |RETURN GRAPH
     """.stripMargin
