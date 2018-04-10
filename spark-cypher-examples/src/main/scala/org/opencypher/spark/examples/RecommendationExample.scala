@@ -70,7 +70,6 @@ object RecommendationExample extends App {
        |      (a)-[:KNOWS*1..2]->(b)
        |CONSTRUCT
        |  ON $fromGraph
-       |  CLONE a, b
        |  NEW (a)-[:CLOSE_TO]->(b)
        |RETURN GRAPH
       """.stripMargin
@@ -99,13 +98,13 @@ object RecommendationExample extends App {
   // Compute recommendations for 'target' based on their interests and what persons close to the
   // 'target' have already bought and given a helpful and positive rating
   val recommendationTable = connectedCustomers.cypher(
-    s"""MATCH (target:Person)<-[:CLOSE_TO]-(person:Person),
-       |       (target)-[:HAS_INTEREST]->(i:Interest),
-       |       (person)<-[:IS]-(x:Customer)-[b:BOUGHT]->(product:Product {category: i.name})
-       |WHERE b.rating >= 4 AND (b.helpful * 1.0) / b.votes > 0.6
-       |WITH * ORDER BY product.rank
-       |RETURN DISTINCT product.title AS product, target.name AS name
-       |LIMIT 3
+    s"""|MATCH (target:Person)<-[:CLOSE_TO]-(person:Person),
+        |      (target)-[:HAS_INTEREST]->(i:Interest),
+        |      (person)<-[:IS]-(x:Customer)-[b:BOUGHT]->(product:Product {category: i.name})
+        |WHERE b.rating >= 4 AND (b.helpful * 1.0) / b.votes > 0.6
+        |WITH * ORDER BY product.rank
+        |RETURN DISTINCT product.title AS product, target.name AS name
+        |LIMIT 3
       """.stripMargin).getRecords
 
   // Print the results

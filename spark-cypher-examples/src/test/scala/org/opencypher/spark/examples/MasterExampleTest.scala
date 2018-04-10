@@ -75,7 +75,6 @@ class MasterExampleTest extends CAPSTestSuite with SparkSessionFixture with Neo4
         |  WHERE ${cities.map(c => s"city.name = '$c'").mkString(" OR ")}
         |  CONSTRUCT
         |    ON neo4j.US
-        |    CLONE a, b
         |    NEW (a)-[:CLOSE_TO]->(b)
         |  RETURN GRAPH
         |}
@@ -113,7 +112,6 @@ class MasterExampleTest extends CAPSTestSuite with SparkSessionFixture with Neo4
          |  WITH c.name as customerName, personName, c, p // also a workaround
          |  WHERE customerName = personName
          |  CONSTRUCT ON hdfs.products, $allFriends
-         |    CLONE c, p
          |    NEW (c)-[:IS]->(p)
          |  RETURN GRAPH
          |}
