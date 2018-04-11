@@ -43,90 +43,56 @@ import scala.collection.immutable.Set
 
 class IrBuilderTest extends IrTestSuite {
 
-  it("sets the correct type for new entities") {
-    val query =
-      """
-        |CONSTRUCT
-        |  NEW (a)
-        |RETURN GRAPH""".stripMargin
-
-    query.asCypherQuery().model.result match {
-      case GraphResultBlock(_, IRPatternGraph(qgn, _, _, news, _)) =>
-        news.fields.size should equal(1)
-        val a = news.fields.head
-        a.cypherType.graph should equal(Some(qgn))
-      case _ => fail("no matching graph result found")
-    }
-  }
-
-  it("computes the correct schema for new entities") {
-    val query =
-      """
-        |CONSTRUCT
-        |  NEW (a:A {name:'Hans'})-[rel:KNOWS {since:2007}]->(a)
-        |RETURN GRAPH""".stripMargin
-
-    query.asCypherQuery().model.result match {
-      case GraphResultBlock(_, IRPatternGraph(_, schema, _, _, _)) =>
-        schema shouldEqual Schema.empty
-          .withNodePropertyKeys("A")("name" -> CTString)
-          .withRelationshipPropertyKeys("KNOWS")("since" -> CTInteger)
-      case _ => fail("no matching graph result found")
-    }
-  }
-
-  it("sets the correct type for clone aliases") {
-    val query =
-      """
-        |MATCH (a)
-        |CONSTRUCT
-        |  CLONE a as b
-        |RETURN GRAPH""".stripMargin
-
-    query.asCypherQuery().model.result match {
-      case GraphResultBlock(_, IRPatternGraph(qgn, _, clones, _, _)) =>
-        clones.keys.size should equal(1)
-        val (b, a) = clones.head
-        a should equal(Var("a")())
-        a.asInstanceOf[Var].cypherType.graph should equal(Some(testGraph.qualifiedGraphName))
-        b.cypherType.graph should equal(Some(qgn))
-      case _ => fail("no matching graph result found")
-    }
-  }
-
-  // TODO: Ensure this fails
-  ignore("fails when using a uncloned bound variables in a pattern") {
-    val query =
-      """
-        |MATCH (a)
-        |CONSTRUCT
-        |  NEW (a)
-        |RETURN GRAPH""".stripMargin
-
-    intercept[UnsupportedOperationException](query.asCypherQuery().model)
-  }
-
-  describe("parsing CypherQuery") {
-    // TODO: Enable again once setting in NEW is supported
-    ignore("construct can set a label") {
+  describe("CONSTRUCT") {
+    it("sets the correct type for new entities") {
       val query =
         """
           |CONSTRUCT
-          |  NEW (a :Label)
+          |  NEW (a)
           |RETURN GRAPH""".stripMargin
 
-      intercept[UnsupportedOperationException](query.asCypherQuery().model)
+      query.asCypherQuery().model.result match {
+        case GraphResultBlock(_, IRPatternGraph(qgn, _, _, news, _)) =>
+          news.fields.size should equal(1)
+          val a = news.fields.head
+          a.cypherType.graph should equal(Some(qgn))
+        case _ => fail("no matching graph result found")
+      }
     }
 
-    // TODO: Enable again once setting in NEW is supported
-    ignore("construct can set a new relationship type") {
+    it("computes the correct schema for new entities") {
       val query =
         """
           |CONSTRUCT
-          |  NEW ()-[r:Label]->()
+          |  NEW (a:A {name:'Hans'})-[rel:KNOWS {since:2007}]->(a)
           |RETURN GRAPH""".stripMargin
 
-      intercept[ParsingException](query.asCypherQuery().model)
+      query.asCypherQuery().model.result match {
+        case GraphResultBlock(_, IRPatternGraph(_, schema, _, _, _)) =>
+          schema shouldEqual Schema.empty
+            .withNodePropertyKeys("A")("name" -> CTString)
+            .withRelationshipPropertyKeys("KNOWS")("since" -> CTInteger)
+        case _ => fail("no matching graph result found")
+      }
+    }
+
+    it("sets the correct type for clone aliases") {
+      val query =
+        """
+          |MATCH (a)
+          |CONSTRUCT
+          |  CLONE a as b
+          |RETURN GRAPH""".stripMargin
+
+      query.asCypherQuery().model.result match {
+        case GraphResultBlock(_, IRPatternGraph(qgn, _, clones, _, _)) =>
+          clones.keys.size should equal(1)
+          val (b, a) = clones.head
+          a should equal(Var("a")())
+          a.asInstanceOf[Var].cypherType.graph should equal(Some(testGraph.qualifiedGraphName))
+          b.cypherType.graph should equal(Some(qgn))
+        case _ => fail("no matching graph result found")
+      }
     }
 
     it("computes a pattern graph schema correctly - 1 create") {
@@ -217,12 +183,11 @@ class IrBuilderTest extends IrTestSuite {
       }
     }
 
-    // TODO: Enable again once setting in NEW is supported
-    ignore("computes a pattern graph schema correctly - setting a property") {
+    it("computes a pattern graph schema correctly - setting a property") {
       val query =
         """
           |CONSTRUCT
-          |  NEW (a:A{name : 'Mats'})
+          |  NEW (a:A {name : 'Mats'})
           |RETURN GRAPH""".stripMargin
 
       query.asCypherQuery().model.result match {
@@ -232,12 +197,11 @@ class IrBuilderTest extends IrTestSuite {
       }
     }
 
-    // TODO: Enable again once setting in NEW is supported
-    ignore("computes a pattern graph schema correctly - setting a node property and a label combination") {
+    it("computes a pattern graph schema correctly - setting a node property and a label combination") {
       val query =
         """
           |CONSTRUCT
-          |  NEW (a:A:B{name : 'Mats'})
+          |  NEW (a:A:B {name : 'Mats'})
           |RETURN GRAPH""".stripMargin
 
       query.asCypherQuery().model.result match {
@@ -251,7 +215,7 @@ class IrBuilderTest extends IrTestSuite {
       val query =
         """
           |CONSTRUCT
-          |  NEW ()-[r:R{level : 'high'}]->()
+          |  NEW ()-[r:R {level : 'high'}]->()
           |RETURN GRAPH""".stripMargin
 
       query.asCypherQuery().model.result match {
@@ -271,6 +235,142 @@ class IrBuilderTest extends IrTestSuite {
       query.asCypherQuery().model.result match {
         case GraphResultBlock(_, IRPatternGraph(_, schema, _, _, _)) =>
           schema should equal(Schema.empty.withNodePropertyKeys(Set("A"), PropertyKeys("category" -> CTString, "ports" -> CTInteger)))
+        case _ => fail("no matching graph result found")
+      }
+    }
+
+    it("computes a pattern graph schema correctly -  for cloned nodes") {
+
+      val graphName = GraphName("input")
+      val inputSchema = Schema.empty
+        .withNodePropertyKeys("A")("category" -> CTString, "ports" -> CTInteger)
+
+      val query =
+        """
+          |FROM GRAPH testNamespace.input
+          |MATCH (a: A)
+          |CONSTRUCT
+          |  NEW (COPY OF a)
+          |RETURN GRAPH""".stripMargin
+
+      query.asCypherQuery(graphName -> inputSchema).model.result match {
+        case GraphResultBlock(_, IRPatternGraph(_, schema, _, _, _)) =>
+          schema should equal(inputSchema)
+        case _ => fail("no matching graph result found")
+      }
+    }
+
+    it("computes a pattern graph schema correctly -  for cloned nodes with additional Label") {
+
+      val graphName = GraphName("input")
+      val inputSchema = Schema.empty
+        .withNodePropertyKeys("A")("category" -> CTString, "ports" -> CTInteger)
+
+      val query =
+        """
+          |FROM GRAPH testNamespace.input
+          |MATCH (a: A)
+          |CONSTRUCT
+          |  NEW (b COPY OF a:B)
+          |RETURN GRAPH""".stripMargin
+
+      query.asCypherQuery(graphName -> inputSchema).model.result match {
+        case GraphResultBlock(_, IRPatternGraph(_, schema, _, _, _)) =>
+          schema should equal(Schema.empty
+            .withNodePropertyKeys("A", "B")("category" -> CTString, "ports" -> CTInteger))
+        case _ => fail("no matching graph result found")
+      }
+    }
+
+    it("computes a pattern graph schema correctly -  for cloned nodes with additional properties") {
+
+      val graphName = GraphName("input")
+      val inputSchema = Schema.empty
+        .withNodePropertyKeys("A")("category" -> CTString, "ports" -> CTInteger)
+
+      val query =
+        """
+          |FROM GRAPH testNamespace.input
+          |MATCH (a: A)
+          |CONSTRUCT
+          |  NEW (b COPY OF a {memory: "1TB"})
+          |RETURN GRAPH""".stripMargin
+
+      query.asCypherQuery(graphName -> inputSchema).model.result match {
+        case GraphResultBlock(_, IRPatternGraph(_, schema, _, _, _)) =>
+          schema should equal(Schema.empty
+            .withNodePropertyKeys("A")("category" -> CTString, "ports" -> CTInteger, "memory" -> CTString))
+        case _ => fail("no matching graph result found")
+      }
+    }
+
+    it("computes a pattern graph schema correctly -  for cloned relationships") {
+
+      val graphName = GraphName("input")
+      val inputSchema = Schema.empty
+        .withNodePropertyKeys()()
+        .withRelationshipPropertyKeys("A")("category" -> CTString, "ports" -> CTInteger)
+
+      val query =
+        """
+          |FROM GRAPH testNamespace.input
+          |MATCH ()-[a:A]->()
+          |CONSTRUCT
+          |  NEW ()-[COPY OF a]->()
+          |RETURN GRAPH""".stripMargin
+
+      query.asCypherQuery(graphName -> inputSchema).model.result match {
+        case GraphResultBlock(_, IRPatternGraph(_, schema, _, _, _)) =>
+          schema should equal(inputSchema)
+        case _ => fail("no matching graph result found")
+      }
+    }
+
+    it("computes a pattern graph schema correctly -  for cloned relationships with different type") {
+
+      val graphName = GraphName("input")
+      val inputSchema = Schema.empty
+        .withNodePropertyKeys()()
+        .withRelationshipPropertyKeys("A")("category" -> CTString, "ports" -> CTInteger)
+
+      val query =
+        """
+          |FROM GRAPH testNamespace.input
+          |MATCH ()-[a:A]->()
+          |CONSTRUCT
+          |  NEW ()-[b COPY OF a:B]->()
+          |RETURN GRAPH""".stripMargin
+
+      query.asCypherQuery(graphName -> inputSchema).model.result match {
+        case GraphResultBlock(_, IRPatternGraph(_, schema, _, _, _)) =>
+          schema should equal(Schema.empty
+            .withNodePropertyKeys()()
+            .withRelationshipPropertyKeys("B")("category" -> CTString, "ports" -> CTInteger)
+          )
+        case _ => fail("no matching graph result found")
+      }
+    }
+
+    it("computes a pattern graph schema correctly -  for cloned relationships with additional properties") {
+
+      val graphName = GraphName("input")
+      val inputSchema = Schema.empty
+        .withNodePropertyKeys()()
+        .withRelationshipPropertyKeys("A")("category" -> CTString, "ports" -> CTInteger)
+
+      val query =
+        """
+          |FROM GRAPH testNamespace.input
+          |MATCH ()-[a:A]->()
+          |CONSTRUCT
+          |  NEW ()-[b COPY OF a {memory: "1TB"}]->()
+          |RETURN GRAPH""".stripMargin
+
+      query.asCypherQuery(graphName -> inputSchema).model.result match {
+        case GraphResultBlock(_, IRPatternGraph(_, schema, _, _, _)) =>
+          schema should equal(Schema.empty
+            .withNodePropertyKeys()()
+            .withRelationshipPropertyKeys("A")("category" -> CTString, "ports" -> CTInteger, "memory" -> CTString))
         case _ => fail("no matching graph result found")
       }
     }
@@ -345,7 +445,9 @@ class IrBuilderTest extends IrTestSuite {
         case _ => fail("no matching graph result found")
       }
     }
+  }
 
+  describe("parsing CypherQuery") {
     test("match node and return it") {
       "MATCH (a:Person) RETURN a".asCypherQuery().model.ensureThat {
         (model, globals) =>

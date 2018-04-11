@@ -216,7 +216,6 @@ object IRBuilder extends CompilationStage[ast.Statement, CypherStatement[Expr], 
             // Computing single nodes/rels constructed by NEW (CREATE)
             // TODO: Throw exception if both clone alias and original field name are used in NEW
             val newPattern = newPatterns.foldLeft(Pattern.empty[Expr])(_ ++ _)
-            val newPatternProperties = newPattern.properties
 
             // Single nodes/rels constructed by CLONE (MERGE)
             val explicitCloneItemMap = explicitCloneItems.toMap
@@ -249,27 +248,16 @@ object IRBuilder extends CompilationStage[ast.Statement, CypherStatement[Expr], 
               .filterNot(cloneItemMap.contains)
 
             val constructOperatorSchema = fieldsInNewPattern.foldLeft(cloneSchema) { case (agg, next) =>
+              val actualLabelsOrTypes = labelsOrTypesFromNewPattern(next, newPattern, context)
+              val actualProperties = propertyKeysFromNewPattern(next, newPattern, context)
+
               next.cypherType match {
                 case n: CTNode =>
-                  val baseFieldLabels: Set[String] = newPattern.baseFields.get(next) match {
-                    case Some(baseNode) => baseNode.cypherType.asInstanceOf[CTNode].labels // casting is safe because frontend catches the other cases
-                    case _ => Set.empty
-                  }
-
-                  val actualLabels = n.labels ++ baseFieldLabels
-
-                  agg.withNodePropertyKeys(actualLabels, extractPropertyKeysFromIRField(next, newPatternProperties))
+                  agg.withNodePropertyKeys(actualLabelsOrTypes, actualProperties)
 
                 case r: CTRelationship =>
-                  val baseFieldTypes: Set[String] = newPattern.baseFields.get(next) match {
-                    case Some(baseRel) => baseRel.cypherType.asInstanceOf[CTRelationship].types // casting is safe because frontend catches the other cases
-                    case _ => Set.empty
-                  }
-
-                  val actualTypes = if (r.types.nonEmpty) r.types else baseFieldTypes
-
-                  actualTypes.foldLeft(agg) {
-                    case (agg2, typ) => agg2.withRelationshipPropertyKeys(typ, extractPropertyKeysFromIRField(next, newPatternProperties))
+                  actualLabelsOrTypes.foldLeft(agg) {
+                    case (agg2, typ) => agg2.withRelationshipPropertyKeys(typ, actualProperties)
                   }
 
                 case other => throw IllegalArgumentException("A node or a relationship", other)
@@ -326,14 +314,14 @@ object IRBuilder extends CompilationStage[ast.Statement, CypherStatement[Expr], 
     }
   }
 
-  def schemaForEntityTypes(
-    context: IRBuilderContext,
-    cypherTypes: Set[CypherType]
-  ): Schema = {
-    cypherTypes.map { cypherType =>
-      val graphSchema = cypherType.graph.map(context.schemaFor).getOrElse(context.workingGraph.schema)
-      graphSchema.forEntityType(cypherType)
-    }.foldLeft(Schema.empty)(_ ++ _)
+  def schemaForEntityTypes( context: IRBuilderContext, cypherTypes: Set[CypherType]): Schema =
+    cypherTypes
+      .map( schemaForEntityType(context, _) )
+      .foldLeft(Schema.empty)(_ ++ _)
+
+  def schemaForEntityType(context: IRBuilderContext, cypherType: CypherType): Schema = {
+    val graphSchema = cypherType.graph.map(context.schemaFor).getOrElse(context.workingGraph.schema)
+    graphSchema.forEntityType(cypherType)
   }
 
   private def registerProjectBlock(
@@ -552,6 +540,42 @@ object IRBuilder extends CompilationStage[ast.Statement, CypherStatement[Expr], 
           expr <- convertExpr(astExpr)
         } yield Desc(expr)
     }
+  }
+
+  private def labelsOrTypesFromNewPattern(field: IRField, pattern: Pattern[Expr], context: IRBuilderContext): Set[String] = {
+    val baseFieldLabelsOrTypes: Set[String] = pattern.baseFields.get(field) match {
+      case Some(baseEntity) => baseEntity.cypherType match {
+        case CTNode(labels, _) => labels
+        case CTRelationship(types, _) => types
+        case _ => ???
+      }
+      case None => Set.empty
+    }
+
+    field.cypherType match {
+      case n: CTNode => n.labels ++ baseFieldLabelsOrTypes
+      case r: CTRelationship => if (r.types.nonEmpty) r.types else baseFieldLabelsOrTypes
+      case other => throw IllegalArgumentException("A node or a relationship", other)
+    }
+  }
+
+  private def propertyKeysFromNewPattern(field: IRField, pattern: Pattern[Expr], context: IRBuilderContext ) = {
+    val baseFieldProperties = pattern.baseFields.get(field) match {
+      case Some(baseNode) =>
+        val baseEntitySchema = schemaForEntityType(context, baseNode.cypherType)
+
+        baseNode.cypherType match {
+          case ct: CTNode => baseEntitySchema.nodeKeys(ct.labels.toSeq: _*)
+          case ct: CTRelationship => ct.types.map(baseEntitySchema.relationshipKeys).reduce(_ ++ _)
+          case other => throw IllegalArgumentException(s"Base Entity type cannot be of type $other")
+        }
+
+      case _ =>
+        PropertyKeys.empty
+    }
+
+    val newProperties = extractPropertyKeysFromIRField(field, pattern.properties)
+    baseFieldProperties ++ newProperties
   }
 
   private def extractPropertyKeysFromIRField(

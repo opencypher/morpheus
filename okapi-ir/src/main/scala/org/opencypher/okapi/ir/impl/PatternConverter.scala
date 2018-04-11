@@ -205,9 +205,13 @@ final class PatternConverter()(implicit val irBuilderContext: IRBuilderContext) 
     val (knownRelTypes, qgnOption) = eOpt.flatMap(expr => knownTypes.get(expr)).flatMap {
       case CTRelationship(t, qgn) => Some(t -> qgn)
       case _ => None
-    }.getOrElse(Set.empty -> Some(qualifiedGraphName))
+    }.getOrElse(Set.empty[String] -> Some(qualifiedGraphName))
 
-    val relTypes = patternTypes ++ knownRelTypes ++ baseRelTypes
+    val relTypes = {
+      if (patternTypes.nonEmpty) patternTypes
+      else if (baseRelTypes.nonEmpty) baseRelTypes
+      else knownRelTypes
+    }
 
     val rel = eOpt match {
       case Some(v) => Var(v.name)(CTRelationship(relTypes, qgnOption))
