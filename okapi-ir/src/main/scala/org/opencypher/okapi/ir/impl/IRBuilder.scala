@@ -251,10 +251,27 @@ object IRBuilder extends CompilationStage[ast.Statement, CypherStatement[Expr], 
             val constructOperatorSchema = fieldsInNewPattern.foldLeft(cloneSchema) { case (agg, next) =>
               next.cypherType match {
                 case n: CTNode =>
-                  agg.withNodePropertyKeys(n.labels, extractPropertyKeysFromIRField(next, newPatternProperties))
+                  val baseFieldLabels: Set[String] = newPattern.baseFields.get(next) match {
+                    case Some(baseNode) => baseNode.cypherType.asInstanceOf[CTNode].labels // casting is safe because frontend catches the other cases
+                    case _ => Set.empty
+                  }
+
+                  val actualLabels = n.labels ++ baseFieldLabels
+
+                  agg.withNodePropertyKeys(actualLabels, extractPropertyKeysFromIRField(next, newPatternProperties))
+
                 case r: CTRelationship =>
-                  // TODO: Unsafe head
-                  agg.withRelationshipPropertyKeys(r.types.head, extractPropertyKeysFromIRField(next, newPatternProperties))
+                  val baseFieldTypes: Set[String] = newPattern.baseFields.get(next) match {
+                    case Some(baseRel) => baseRel.cypherType.asInstanceOf[CTRelationship].types // casting is safe because frontend catches the other cases
+                    case _ => Set.empty
+                  }
+
+                  val actualTypes = if (r.types.nonEmpty) r.types else baseFieldTypes
+
+                  actualTypes.foldLeft(agg) {
+                    case (agg2, typ) => agg2.withRelationshipPropertyKeys(typ, extractPropertyKeysFromIRField(next, newPatternProperties))
+                  }
+
                 case other => throw IllegalArgumentException("A node or a relationship", other)
               }
             }

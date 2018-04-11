@@ -62,29 +62,6 @@ class PatternConverterTest extends IrTestSuite {
     )
   }
 
-  // TODO: Replace with COPY OF
-  ignore("should convert a simple node with an equivalence pattern") {
-    val pattern = parse("(b~a)")
-    val entity = 'b -> CTNode
-
-    convert(pattern) should equal(
-      Pattern.empty.withEntity(entity, None, Some(TildeModel(Var("a")(CTNode()))))
-    )
-  }
-
-  // TODO: Replace with COPY OF
-  ignore("should convert equivalence with a simple node that has a label") {
-    val pattern = parse("(a:Person),(b~a)")
-    val a: IRField = 'a -> CTNode("Person")
-    val b: IRField = 'b -> CTNode("Person")
-
-    convert(pattern) should equal(
-      Pattern.empty
-        .withEntity(a)
-        .withEntity(b, None, Some(TildeModel(Var("a")(CTNode("Person")))))
-    )
-  }
-
   test("simple rel pattern") {
     val pattern = parse("(x)-[r]->(b)")
 
@@ -184,6 +161,50 @@ class PatternConverterTest extends IrTestSuite {
         .withEntity(newR)
         .withConnection(r, DirectedRelationship(x, y))
         .withConnection(newR, DirectedRelationship(y, z))
+    )
+  }
+
+  it("can convert base nodes") {
+    val pattern = parse("(y), (x COPY OF y)")
+
+    val knownTypes: Map[ast.Expression, CypherType] = Map(
+      ast.Variable("y")(NONE) -> CTNode("Person")
+    )
+
+    val x: IRField = 'x -> CTNode("Person")
+    val y: IRField = 'y -> CTNode("Person")
+
+    convert(pattern, knownTypes) should equal(
+      Pattern.empty
+        .withEntity(x)
+        .withEntity(y)
+        .withBaseField(x, Some(y))
+    )
+  }
+
+  it("can convert base relationships") {
+    val pattern = parse("(x)-[r]->(y), (x)-[r2 COPY OF r]->(y)")
+
+    val knownTypes: Map[ast.Expression, CypherType] = Map(
+      ast.Variable("x")(NONE) -> CTNode("Person"),
+      ast.Variable("y")(NONE) -> CTNode("Customer"),
+      ast.Variable("r")(NONE) -> CTRelationship("FOO")
+    )
+
+    val x: IRField = 'x -> CTNode("Person")
+    val y: IRField = 'y -> CTNode("Person")
+    val r: IRField = 'r -> CTRelationship("FOO")
+    val r2: IRField = 'r2 -> CTRelationship("FOO")
+
+    convert(pattern, knownTypes) should equal(
+      Pattern.empty
+        .withEntity(x)
+        .withEntity(y)
+        .withEntity(r)
+        .withEntity(r2)
+        .withConnection(r, DirectedRelationship(x, y))
+        .withConnection(r2, DirectedRelationship(x, y))
+        .withBaseField(r2, Some(r))
     )
   }
 

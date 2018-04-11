@@ -52,31 +52,45 @@ final class PatternConverter()(implicit val irBuilderContext: IRBuilderContext) 
     p: ast.Pattern,
     knownTypes: Map[ast.Expression, CypherType],
     qualifiedGraphName: QualifiedGraphName,
-    pattern: Pattern[Expr] = Pattern.empty): Pattern[Expr] =
+    pattern: Pattern[Expr] = Pattern.empty
+  ): Pattern[Expr] =
     convertPattern(p, knownTypes, qualifiedGraphName).runS(pattern).value
 
   def convertRelsPattern(
     p: ast.RelationshipsPattern,
     knownTypes: Map[ast.Expression, CypherType],
     qualifiedGraphName: QualifiedGraphName,
-    pattern: Pattern[Expr] = Pattern.empty): Pattern[Expr] =
+    pattern: Pattern[Expr] = Pattern.empty
+  ): Pattern[Expr] =
     convertElement(p.element, knownTypes, qualifiedGraphName).runS(pattern).value
 
-  private def convertPattern(p: ast.Pattern, knownTypes: Map[ast.Expression, CypherType], qualifiedGraphName: QualifiedGraphName): Result[Unit] =
+  private def convertPattern(
+    p: ast.Pattern,
+    knownTypes: Map[ast.Expression, CypherType],
+    qualifiedGraphName: QualifiedGraphName
+  ): Result[Unit] =
     Foldable[List].sequence_[Result, Unit](p.patternParts.toList.map(convertPart(knownTypes, qualifiedGraphName)))
 
   @tailrec
-  private def convertPart(knownTypes: Map[ast.Expression, CypherType], qualifiedGraphName: QualifiedGraphName)(p: ast.PatternPart): Result[Unit] = p match {
+  private def convertPart(knownTypes: Map[ast.Expression, CypherType], qualifiedGraphName: QualifiedGraphName)
+    (p: ast.PatternPart): Result[Unit] = p match {
     case _: ast.AnonymousPatternPart => stomp(convertElement(p.element, knownTypes, qualifiedGraphName))
     case ast.NamedPatternPart(_, part) => convertPart(knownTypes, qualifiedGraphName)(part)
   }
 
-  private def convertElement(p: ast.PatternElement, knownTypes: Map[ast.Expression, CypherType], qualifiedGraphName: QualifiedGraphName): Result[IRField] =
+  private def convertElement(
+    p: ast.PatternElement,
+    knownTypes: Map[ast.Expression, CypherType],
+    qualifiedGraphName: QualifiedGraphName
+  ): Result[IRField] =
     p match {
 
-      case np@ast.NodePattern(vOpt, labels: Seq[ast.LabelName], propertiesOpt) =>
+      case np@ast.NodePattern(vOpt, labels: Seq[ast.LabelName], propertiesOpt, baseNodeVar) =>
         // labels within CREATE patterns, e.g. CREATE (a:Foo), labels for MATCH clauses are rewritten to WHERE
         val patternLabels = labels.map(_.name).toSet
+
+        val baseNodeCypherTypeOpt = baseNodeVar.map(knownTypes)
+        val baseNodeLabels = baseNodeCypherTypeOpt.map(_.asInstanceOf[CTNode].labels).getOrElse(Set.empty)
 
         // labels defined in outside scope, passed in by IRBuilder
         val (knownLabels, qgnOption) = vOpt.flatMap(expr => knownTypes.get(expr)).flatMap {
@@ -84,36 +98,42 @@ final class PatternConverter()(implicit val irBuilderContext: IRBuilderContext) 
           case _ => None
         }.getOrElse(Set.empty[String] -> Some(qualifiedGraphName))
 
-        val allLabels = patternLabels ++ knownLabels
+        val allLabels = patternLabels ++ knownLabels ++ baseNodeLabels
 
         val nodeVar = vOpt match {
           case Some(v) => Var(v.name)(CTNode(allLabels, qgnOption))
           case None => FreshVariableNamer(np.position.offset, CTNode(allLabels, qgnOption))
         }
 
+        val baseNodeField = baseNodeVar.map(x => IRField(x.name)(knownTypes(x)))
+
         for {
           entity <- pure(IRField(nodeVar.name)(nodeVar.cypherType))
-          _ <- modify[Pattern[Expr]](_.withEntity(entity, extractProperties(propertiesOpt)))
+          _ <- modify[Pattern[Expr]](_.withEntity(entity, extractProperties(propertiesOpt)).withBaseField(entity, baseNodeField))
         } yield entity
 
-      case rc @ast.RelationshipChain(left, ast.RelationshipPattern(eOpt, types, rangeOpt, propertiesOpt, dir, _), right) =>
+      case rc@ast.RelationshipChain(left, ast.RelationshipPattern(eOpt, types, rangeOpt, propertiesOpt, dir, _, baseRelVar), right) =>
 
-        val rel = createRelationshipVar(knownTypes, rc.position.offset, eOpt, types, qualifiedGraphName)
+        val rel = createRelationshipVar(knownTypes, rc.position.offset, eOpt, types, baseRelVar, qualifiedGraphName)
         val convertedProperties = extractProperties(propertiesOpt)
+
+        val baseRelField = baseRelVar.map(x => IRField(x.name)(knownTypes(x)))
 
         for {
           source <- convertElement(left, knownTypes, qualifiedGraphName)
           target <- convertElement(right, knownTypes, qualifiedGraphName)
           rel <- pure(IRField(rel.name)(if (rangeOpt.isDefined) CTList(rel.cypherType) else rel.cypherType))
           _ <- modify[Pattern[Expr]] { given =>
-            val registered = given.withEntity(rel)
+            val registered = given
+              .withEntity(rel)
+              .withBaseField(rel, baseRelField)
 
             rangeOpt match {
               case Some(Some(range)) =>
                 val lower = range.lower.map(_.value.intValue()).getOrElse(1)
                 val upper = range.upper
-                    .map(_.value.intValue())
-                    .getOrElse(throw NotImplementedException("Support for unbounded var-length not yet implemented"))
+                  .map(_.value.intValue())
+                  .getOrElse(throw NotImplementedException("Support for unbounded var-length not yet implemented"))
 
                 Endpoints.apply(source, target) match {
                   case _: IdenticalEndpoints =>
@@ -150,7 +170,7 @@ final class PatternConverter()(implicit val irBuilderContext: IRBuilderContext) 
                     }
                 }
 
-              case _ =>  throw NotImplementedException(s"Support for pattern conversion of $rc not yet implemented")
+              case _ => throw NotImplementedException(s"Support for pattern conversion of $rc not yet implemented")
             }
           }
         } yield target
@@ -172,14 +192,14 @@ final class PatternConverter()(implicit val irBuilderContext: IRBuilderContext) 
     offset: Int,
     eOpt: Option[LogicalVariable],
     types: Seq[RelTypeName],
-    qualifiedGraphName: QualifiedGraphName): Var = {
+    baseRelOpt: Option[LogicalVariable],
+    qualifiedGraphName: QualifiedGraphName
+  ): Var = {
 
     val patternTypes = types.map(_.name).toSet
 
-    // TODO: Reuse for COPY OF
-    // types for ~ / @ are extracted from the referred variable
-    //    val equivalence = equivalenceModelOpt.map(convertEquivalenceModel(_, knownTypes, CTRelationship(patternTypes)))
-    //    val equivalenceTypes = equivalence.map(_.v.cypherType.asInstanceOf[CTRelationship].types).getOrElse(Set.empty)
+    val baseRelCypherTypeOpt = baseRelOpt.map(knownTypes)
+    val baseRelTypes = baseRelCypherTypeOpt.map(_.asInstanceOf[CTRelationship].types).getOrElse(Set.empty)
 
     // types defined in outside scope, passed in by IRBuilder
     val (knownRelTypes, qgnOption) = eOpt.flatMap(expr => knownTypes.get(expr)).flatMap {
@@ -187,7 +207,7 @@ final class PatternConverter()(implicit val irBuilderContext: IRBuilderContext) 
       case _ => None
     }.getOrElse(Set.empty -> Some(qualifiedGraphName))
 
-    val relTypes = patternTypes ++ knownRelTypes
+    val relTypes = patternTypes ++ knownRelTypes ++ baseRelTypes
 
     val rel = eOpt match {
       case Some(v) => Var(v.name)(CTRelationship(relTypes, qgnOption))
