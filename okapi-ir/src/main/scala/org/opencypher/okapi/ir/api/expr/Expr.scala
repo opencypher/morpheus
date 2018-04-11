@@ -49,14 +49,6 @@ sealed abstract class Expr extends AbstractTreeNode[Expr] {
   override def toString = s"$withoutType :: $cypherType"
 }
 
-sealed trait EquivalenceModel {
-  def v: Var
-}
-
-final case class TildeModel(v: Var) extends EquivalenceModel
-
-final case class AtModel(v: Var) extends EquivalenceModel
-
 final case class Param(name: String)(val cypherType: CypherType = CTWildcard) extends Expr {
   override def withoutType: String = s"$$$name"
 }

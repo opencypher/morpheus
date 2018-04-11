@@ -77,20 +77,20 @@ final case class LogicalPatternGraph(
 
 sealed trait ConstructedEntity {
   def v: Var
-  def equivalence: Option[EquivalenceModel]
+  def baseEntity: Option[Var]
 }
 case class ConstructedNode(
   v: Var,
   labels: Set[Label],
-  equivalence: Option[EquivalenceModel]) extends ConstructedEntity
+  baseEntity: Option[Var]) extends ConstructedEntity
 
 case class ConstructedRelationship(
   v: Var,
   source: Var,
   target: Var,
   typ: Option[String],
-  equivalence: Option[EquivalenceModel]) extends ConstructedEntity {
-  require(typ.isDefined || equivalence.isDefined, s"$this: Need to define either the rel type or an equivalence model to construct a relationship")
+  baseEntity: Option[Var]) extends ConstructedEntity {
+  require(typ.isDefined || baseEntity.isDefined, s"$this: Need to define either the rel type or an equivalence model to construct a relationship")
 }
 
 sealed abstract class StackingLogicalOperator extends LogicalOperator {
