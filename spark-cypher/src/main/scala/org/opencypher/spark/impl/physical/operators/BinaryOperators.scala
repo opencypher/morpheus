@@ -423,15 +423,13 @@ final case class ConstructGraph(
       ProjectedExpr(HasLabel(node.v, label)(CTBoolean)) -> col
     }
 
-    val propertyTuples = node.equivalence match {
-      case Some(TildeModel(origNode)) =>
+    val propertyTuples = node.baseEntity match {
+      case Some(origNode) =>
         val header = constructedTable.header
         val origSlots = header.propertySlots(origNode).values
         val copySlotContents = origSlots.map(_.withOwner(node.v)).map(_.content)
         val columns = origSlots.map(ColumnName.of).map(constructedTable.data.col)
         copySlotContents.zip(columns).toSet
-
-      case Some(AtModel(_)) => throw NotImplementedException("AtModel copies")
 
       case None => Set.empty[(SlotContent, Column)]
     }
@@ -464,7 +462,7 @@ final case class ConstructGraph(
     toConstruct: ConstructedRelationship,
     constructedTable: CAPSRecords
   ): Set[(SlotContent, Column)] = {
-    val ConstructedRelationship(rel, source, target, typOpt, equivalenceOpt) = toConstruct
+    val ConstructedRelationship(rel, source, target, typOpt, baseRelOpt) = toConstruct
     val header = constructedTable.header
     val inData = constructedTable.data
 
@@ -490,8 +488,8 @@ final case class ConstructGraph(
           val col = functions.lit(t)
           ProjectedExpr(Type(rel)(CTString)) -> col
         case None =>
-          // equivalence model is guaranteed to be present: get rel type from original
-          val origRel = equivalenceOpt.get.v
+          // When no type is present, it needs to be a copy of a base relationship
+          val origRel = baseRelOpt.get
           val header = constructedTable.header
           val origTypeSlot = header.typeSlot(origRel)
           val copyTypeSlotContents = origTypeSlot.withOwner(rel).content
@@ -500,15 +498,13 @@ final case class ConstructGraph(
       }
     }
 
-    val propertyTuples = equivalenceOpt match {
-      case Some(TildeModel(origRel)) =>
+    val propertyTuples = baseRelOpt match {
+      case Some(baseRel) =>
         val header = constructedTable.header
-        val origSlots = header.propertySlots(origRel).values
+        val origSlots = header.propertySlots(baseRel).values
         val copySlotContents = origSlots.map(_.withOwner(rel)).map(_.content)
         val columns = origSlots.map(ColumnName.of).map(constructedTable.data.col)
         copySlotContents.zip(columns).toSet
-      case Some(AtModel(_)) => throw NotImplementedException("AtModel copies")
-
       case None => Set.empty[(SlotContent, Column)]
     }
 

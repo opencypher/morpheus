@@ -33,6 +33,7 @@ import org.opencypher.okapi.api.value.{CAPSNode, CAPSRelationship}
 import org.opencypher.okapi.ir.test.support.Bag
 import org.opencypher.okapi.ir.test.support.Bag._
 import org.opencypher.spark.impl.CAPSConverters._
+import org.opencypher.spark.impl.{CAPSPatternGraph, CAPSUnionGraph}
 import org.opencypher.spark.impl.DataFrameOps._
 import org.opencypher.spark.schema.CAPSSchema._
 import org.opencypher.spark.test.CAPSTestSuite
@@ -200,7 +201,6 @@ class MultipleGraphBehaviour extends CAPSTestSuite with ScanGraphInit {
     result.getGraph.relationships("r").size should equal(0)
   }
 
-  // TODO: reactive after map expressions in NEW are supported
   it("should construct a node property from a matched node") {
     val query =
       """|MATCH (m)
@@ -306,9 +306,7 @@ class MultipleGraphBehaviour extends CAPSTestSuite with ScanGraphInit {
     ))
   }
 
-  // TODO: Requires COPY OF
-  // TODO: reactive after map expressions in NEW are supported
-  ignore("should tilde copy a relationship") {
+  it("should copy a relationship") {
     val query =
       """|CONSTRUCT
          |  NEW ()-[r:FOO {val : 42}]->()
@@ -327,6 +325,28 @@ class MultipleGraphBehaviour extends CAPSTestSuite with ScanGraphInit {
       .asCaps)
     result.getGraph.cypher("MATCH ()-[r]->() RETURN r.val, r.name").getRecords.iterator.toBag should equal(Bag(
       CypherMap("r.val" -> 42, "r.name" -> "Donald")
+    ))
+  }
+
+  it("should copy a node") {
+    val query =
+      """|CONSTRUCT
+         |  NEW (:Foo {foo: 'bar'})
+         |MATCH (a)
+         |CONSTRUCT
+         |  NEW (COPY OF a)
+         |RETURN GRAPH""".stripMargin
+
+    val result = testGraph1.cypher(query)
+
+    result.getRecords.toMaps shouldBe empty
+    result.getGraph.schema.labels should equal(Set("Foo"))
+    result.getGraph.schema should equal(Schema.empty
+      .withNodePropertyKeys("Foo")("foo" -> CTString)
+      .asCaps)
+
+    result.getGraph.cypher("MATCH (a) RETURN a.foo, labels(a) as labels").getRecords.iterator.toBag should equal(Bag(
+      CypherMap("a.foo" -> "bar", "labels" -> Seq("Foo"))
     ))
   }
 
