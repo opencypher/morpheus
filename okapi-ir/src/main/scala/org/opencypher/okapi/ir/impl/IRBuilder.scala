@@ -527,7 +527,7 @@ object IRBuilder extends CompilationStage[ast.Statement, CypherStatement[Expr], 
           Set(Set.empty[String] -> newLabels)
 
         val updatedPropertyKeys = updatedLabels.map {
-          case (oldLabelCombo, newLabelComboo) => newLabelComboo -> (baseFieldSchema.nodeKeys(oldLabelCombo) ++ newPropertyKeys)
+          case (oldLabelCombo, newLabelCombo) => newLabelCombo -> (baseFieldSchema.nodeKeys(oldLabelCombo) ++ newPropertyKeys)
         }
 
         updatedPropertyKeys.foldLeft(Schema.empty) {

@@ -350,6 +350,30 @@ class MultipleGraphBehaviour extends CAPSTestSuite with ScanGraphInit {
     ))
   }
 
+  it("should copy a node with labels") {
+    val graph = initGraph(
+      """
+        |CREATE (:A {val: 1})
+        |CREATE (:B {val: 1})
+        |CREATE (:A:C {val: 1})
+      """.stripMargin)
+
+    val query =
+      """|MATCH (a)
+         |CONSTRUCT
+         |  NEW (COPY OF a)
+         |RETURN GRAPH""".stripMargin
+
+    val result = graph.cypher(query)
+
+    result.getRecords.toMaps shouldBe empty
+    result.getGraph.cypher("MATCH (a) RETURN a.val, labels(a) as labels").getRecords.iterator.toBag should equal(Bag(
+      CypherMap("a.val" -> 1, "labels" -> Seq("A")),
+      CypherMap("a.val" -> 1, "labels" -> Seq("B")),
+      CypherMap("a.val" -> 1, "labels" -> Seq("A", "C"))
+    ))
+  }
+
   it("supports CLONE in CONSTRUCT") {
     val res = testGraph1.unionAll(testGraph2).cypher(
       """

@@ -307,7 +307,7 @@ final case class ConstructGraph(
     val onGraph = right.workingGraph
     val unionTagStrategy: Map[QualifiedGraphName, Map[Int, Int]] = right.tagStrategy
 
-    val LogicalPatternGraph(schema, clonedVarsToInputVars, newEntities, sets, onGraphs, name) = construct
+    val LogicalPatternGraph(schema, clonedVarsToInputVars, newEntities, sets, _, name) = construct
 
     val matchGraphs: Set[QualifiedGraphName] = clonedVarsToInputVars.values.map(_.cypherType.graph.get).toSet
     val allGraphs = unionTagStrategy.keySet ++ matchGraphs
@@ -419,19 +419,27 @@ final case class ConstructGraph(
     constructedTable: CAPSRecords
   ): Set[(SlotContent, Column)] = {
     val col = functions.lit(true)
-    val labelTuples: Set[(SlotContent, Column)] = node.labels.map { label =>
-      ProjectedExpr(HasLabel(node.v, label)(CTBoolean)) -> col
+
+    def copySlotsContents(targetVar: Var)(extractor: RecordHeader => Set[RecordSlot]): Set[(SlotContent, Column)] = {
+      val header = constructedTable.header
+        val origSlots = extractor(header)
+        val copySlotContents = origSlots.map(_.withOwner(targetVar)).map(_.content)
+        val columns = origSlots.map(ColumnName.of).map(constructedTable.data.col)
+        copySlotContents.zip(columns)
     }
 
-    val propertyTuples = node.baseEntity match {
-      case Some(origNode) =>
-        val header = constructedTable.header
-        val origSlots = header.propertySlots(origNode).values
-        val copySlotContents = origSlots.map(_.withOwner(node.v)).map(_.content)
-        val columns = origSlots.map(ColumnName.of).map(constructedTable.data.col)
-        copySlotContents.zip(columns).toSet
+    val copiedLabelTuples: Set[(SlotContent, Column)] = node.baseEntity match {
+      case Some(origNode) => copySlotsContents(node.v)(_.labelSlots(origNode).values.toSet)
+      case None => Set.empty
+    }
 
-      case None => Set.empty[(SlotContent, Column)]
+    val labelTuples: Set[(SlotContent, Column)] = node.labels.map { label =>
+      ProjectedExpr(HasLabel(node.v, label)(CTBoolean)) -> col
+    } ++ copiedLabelTuples
+
+    val propertyTuples: Set[(SlotContent, Column)] = node.baseEntity match {
+      case Some(origNode) => copySlotsContents(node.v)(_.propertySlots(origNode).values.toSet)
+      case None => Set.empty
     }
 
     labelTuples ++ propertyTuples + (OpaqueField(node.v) -> generateId(columnIdPartition, numberOfColumnPartitions).setTag(newEntityTag))
