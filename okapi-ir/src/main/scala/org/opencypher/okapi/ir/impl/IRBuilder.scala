@@ -33,14 +33,13 @@ import org.neo4j.cypher.internal.frontend.v3_4.ast
 import org.neo4j.cypher.internal.util.v3_4.InputPosition
 import org.neo4j.cypher.internal.v3_4.{expressions => exp}
 import org.opencypher.okapi.api.graph.QualifiedGraphName
-import org.opencypher.okapi.api.schema.{PropertyKeys, Schema}
+import org.opencypher.okapi.api.schema.Schema
 import org.opencypher.okapi.api.types._
 import org.opencypher.okapi.impl.exception.{IllegalArgumentException, IllegalStateException, UnsupportedOperationException}
 import org.opencypher.okapi.ir.api._
 import org.opencypher.okapi.ir.api.block.{SortItem, _}
 import org.opencypher.okapi.ir.api.expr._
 import org.opencypher.okapi.ir.api.pattern.Pattern
-import org.opencypher.okapi.ir.api.set.{SetItem, SetLabelItem, SetPropertyItem}
 import org.opencypher.okapi.ir.api.util.CompilationStage
 import org.opencypher.okapi.ir.impl.refactor.instances._
 import org.opencypher.okapi.ir.impl.util.VarConverters.RichIrField
@@ -508,12 +507,9 @@ object IRBuilder extends CompilationStage[ast.Statement, CypherStatement[Expr], 
   }
 
   private def schemaForNewField(field: IRField, pattern: Pattern[Expr], context: IRBuilderContext ): Schema = {
-    val baseFieldSchema = pattern.baseFields.get(field) match {
-      case Some(baseNode) =>
-        schemaForEntityType(context, baseNode.cypherType)
-      case _ =>
-        Schema.empty
-    }
+    val baseFieldSchema = pattern.baseFields.get(field).map { baseNode =>
+      schemaForEntityType(context, baseNode.cypherType)
+    }.getOrElse(Schema.empty)
 
     val newPropertyKeys: Map[String, CypherType] = pattern.properties.get(field)
       .map(_.items.map(p => p._1 -> p._2.cypherType))
@@ -521,12 +517,12 @@ object IRBuilder extends CompilationStage[ast.Statement, CypherStatement[Expr], 
 
     field.cypherType match {
       case CTNode(newLabels, _) =>
-        val updatedLabels = if (baseFieldSchema.labels.nonEmpty)
+        val oldLabelCombosToNewLabelCombos = if (baseFieldSchema.labels.nonEmpty)
           baseFieldSchema.allLabelCombinations.map(oldLabels => oldLabels -> (oldLabels ++ newLabels))
         else
           Set(Set.empty[String] -> newLabels)
 
-        val updatedPropertyKeys = updatedLabels.map {
+        val updatedPropertyKeys = oldLabelCombosToNewLabelCombos.map {
           case (oldLabelCombo, newLabelCombo) => newLabelCombo -> (baseFieldSchema.nodeKeys(oldLabelCombo) ++ newPropertyKeys)
         }
 
@@ -536,23 +532,24 @@ object IRBuilder extends CompilationStage[ast.Statement, CypherStatement[Expr], 
 
       // if there is only one relationship type we need to merge all existing types and update them
       case CTRelationship(newTypes, _) if newTypes.size == 1 =>
-        val mergedPropertyKeys = baseFieldSchema.relTypePropertyMap.map.values.foldLeft(Map.empty[String, CypherType])(_ ++ _)
+        val possiblePropertyKeys = baseFieldSchema.relTypePropertyMap.map.values.foldLeft(Map.empty[String, CypherType])(_ ++ _).keySet
 
-        val joinedPropertyKeys = mergedPropertyKeys.map {
-          case (key, _) => key -> baseFieldSchema.relationshipKeyType(Set.empty, key).get
-        }
+        val joinedPropertyKeys = possiblePropertyKeys.map { key =>
+          key -> baseFieldSchema.relationshipKeyType(Set.empty, key).get
+        }.toMap
+
         val updatedPropertyKeys = joinedPropertyKeys ++ newPropertyKeys
 
         Schema.empty.withRelationshipPropertyKeys(newTypes.head, updatedPropertyKeys)
 
       case CTRelationship(newTypes, _) =>
-        val actuallTypes = if (newTypes.nonEmpty) newTypes else baseFieldSchema.relationshipTypes
+        val actualTypes = if (newTypes.nonEmpty) newTypes else baseFieldSchema.relationshipTypes
 
-        actuallTypes.foldLeft(Schema.empty){
+        actualTypes.foldLeft(Schema.empty){
           case (acc, relType) => acc.withRelationshipPropertyKeys(relType, baseFieldSchema.relationshipKeys(relType) ++ newPropertyKeys)
         }
 
-      case other => throw new IllegalArgumentException("CTNode or CTString", other)
+      case other => throw IllegalArgumentException("CTNode or CTRelationship", other)
     }
   }
 }
