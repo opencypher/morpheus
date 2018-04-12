@@ -696,8 +696,7 @@ class MultipleGraphBehaviour extends CAPSTestSuite with ScanGraphInit {
     ))
   }
 
-  // TODO: enable when frontend bug is fixed
-  ignore("allows CONSTRUCT ON with relationships") {
+  it("allows CONSTRUCT ON with relationships") {
     caps.store("testGraphRels1", testGraphRels)
     caps.store("testGraphRels2", testGraphRels)
     val query =
@@ -727,8 +726,7 @@ class MultipleGraphBehaviour extends CAPSTestSuite with ScanGraphInit {
     result.asCaps.tags should equal(Set(0, 1))
   }
 
-  // TODO: enable when frontend is fixed
-  ignore("allows cloning from different graphs with nodes and relationships") {
+  it("allows cloning from different graphs with nodes and relationships") {
     def testGraphRels = initGraph(
       """|CREATE (mats:Person {name: 'Mats'})
          |CREATE (max:Person {name: 'Max'})
