@@ -1,0 +1,241 @@
+Copyright (c) 2016-2018 "Neo4j, Inc." [https://neo4j.com]
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+
+Attribution Notice under the terms of the Apache License 2.0
+
+This work was created by the collective efforts of the openCypher community.
+Without limiting the terms of Section 6, any Derivative Work that is not
+approved by the public consensus process of the openCypher Implementers Group
+should not be described as “Cypher” (and Cypher® is a registered trademark of
+Neo4j Inc.) or as "openCypher". Extensions by implementers or prototypes or
+proposals for change that have been documented or implemented should only be
+described as "implementation extensions to Cypher" or as "proposed changes to
+Cypher that are not yet approved by the openCypher community".
+
+
+Third-party licenses
+--------------------
+
+Apache Software License, Version 2.0
+  aopalliance version 1.0 repackaged as a module
+  Apache Avro
+  Apache Avro IPC
+  Apache Avro Mapred API
+  Apache Commons Codec
+  Apache Commons Configuration
+  Apache Commons Crypto
+  Apache Commons Lang
+  Apache Commons Logging
+  Apache Commons Math
+  Apache Directory API ASN.1 API
+  Apache Directory LDAP API Utilities
+  Apache Hadoop Annotations
+  Apache Hadoop Auth
+  Apache Hadoop Client
+  Apache Hadoop Common
+  Apache Hadoop HDFS
+  Apache HttpClient
+  Apache HttpCore
+  Apache Ivy
+  Apache Log4j
+  Apache Parquet Column
+  Apache Parquet Common
+  Apache Parquet Encodings
+  Apache Parquet Format
+  Apache Parquet Hadoop
+  Apache Parquet Jackson
+  ApacheDS I18n
+  ApacheDS Protocol Kerberos Codec
+  Bean Validation API
+  chill
+  chill-java
+  Circe core
+  Circe generic
+  Circe jawn
+  Circe numbers
+  Circe parser
+  Commons CLI
+  Commons Collections
+  Commons Compress
+  Commons Daemon
+  Commons IO
+  Commons Lang
+  Commons Net
+  Compress-LZF
+  core
+  coreJVM
+  coursier
+  coursier-cache
+  Curator Client
+  Curator Framework
+  Curator Recipes
+  Data Mapper for Jackson
+  empty
+  FindBugs-jsr305
+  Google Guice - Core Library
+  Google Guice - Extensions - Servlet
+  Graphite Integration for Metrics
+  Gson
+  Guava: Google Core Libraries for Java
+  hadoop-mapreduce-client-app
+  hadoop-mapreduce-client-common
+  hadoop-mapreduce-client-core
+  hadoop-mapreduce-client-jobclient
+  hadoop-mapreduce-client-shuffle
+  hadoop-yarn-api
+  hadoop-yarn-client
+  hadoop-yarn-common
+  hadoop-yarn-server-common
+  hadoop-yarn-server-nodemanager
+  hadoop-yarn-server-web-proxy
+  HK2 API module
+  HK2 Implementation Utilities
+  htrace-core
+  HttpClient
+  Jackson
+  Jackson Integration for Metrics
+  Jackson-annotations
+  Jackson-core
+  jackson-databind
+  Jackson-module-paranamer
+  jackson-module-scala
+  Java Servlet API
+  java-xmlbuilder
+  JavaBeans(TM) Activation Framework
+  JavaMail API (compat)
+  javaparser-core
+  Javassist
+  javax.annotation API
+  javax.inject
+  javax.inject:1 as OSGi bundle
+  javax.ws.rs-api
+  JAX-RS provider for JSON content type
+  jersey-container-servlet
+  jersey-container-servlet-core
+  jersey-core-client
+  jersey-core-common
+  jersey-core-server
+  jersey-media-jaxb
+  jersey-repackaged-guava
+  JetS3t
+  Jettison
+  Jetty Server
+  Jetty Utilities
+  json4s-ast
+  json4s-core
+  json4s-jackson
+  JVM Integration for Metrics
+  LZ4 and xxHash
+  Metrics Core
+  MX4J
+  Neo4j - Cypher Expressions 3.4
+  Neo4j - Cypher Util 3.4
+  Neo4j Java Driver
+  Netty
+  Netty/All-in-One
+  Objenesis
+  Okapi - openCypher API
+  Okapi IR - Declarative representation of Cypher queries
+  Okapi Logical - Logical representation of Cypher queries
+  Okapi Relational - Relational Algebra for Cypher
+  Okapi Trees - Tree rewriting framework for Okapi
+  openCypher Frontend
+  oro
+  OSGi resource locator bundle - used by various API providers that rely on META-INF/services mechanism to locate providers.
+  parboiled-core
+  parboiled-scala
+  RoaringBitmap
+  scalaj-http
+  ServiceLocator Default Implementation
+  servlet-api
+  snappy-java
+  Spark Project Catalyst
+  Spark Project Core
+  Spark Project Launcher
+  Spark Project Networking
+  Spark Project Shuffle Streaming Service
+  Spark Project Sketch
+  Spark Project SQL
+  Spark Project Tags
+  Spark Project Unsafe
+  stream-lib
+  univocity-parsers
+  Xerces2 Java Parser
+  XML Commons External Components XML APIs
+  Xml Compatibility extensions for Jackson
+  zookeeper
+
+BSD License
+  ANTLR 4 Runtime
+  Commons Compiler
+  Janino
+  JLine
+  JSch
+  Kryo Shaded
+  leveldbjni-all
+  MinLog
+  ParaNamer Core
+  Protocol Buffer Java API
+  Py4J
+  Scala Compiler
+  Scala Library
+  scala-parser-combinators
+  scala-xml
+  Scalap
+  scalaz-concurrent
+  scalaz-core
+  scalaz-effect
+  xmlenc Library
+
+Bouncy Castle License
+  Bouncy Castle Provider
+
+MIT License
+  JCL 1.1.1 implemented over SLF4J
+  JUL to SLF4J bridge
+  pyrolite
+  scopt
+  SLF4J API Module
+  SLF4J LOG4J-12 Binding
+
+MIT license
+  ammonite
+  ammonite-compiler
+  ammonite-ops
+  ammonite-repl
+  ammonite-runtime
+  ammonite-terminal
+  ammonite-util
+  Cats core
+  Cats kernel
+  Cats macros
+  core
+  fansi
+  fastparse
+  fastparse-utils
+  geny
+  machinist
+  parser
+  pprint
+  scalaparse
+  sourcecode
+  upickle
+
+Public Domain
+  AOP alliance
+  XZ for Java
+
+Public domain
+  base64
+
