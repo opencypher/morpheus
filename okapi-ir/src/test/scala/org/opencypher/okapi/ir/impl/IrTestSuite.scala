@@ -123,8 +123,6 @@ abstract class IrTestSuite extends BaseTestSuite with MockitoSugar {
         ))
     }
 
-
-
     def irWithParams(params: (String, CypherValue)*)(implicit schema: Schema = Schema.empty): CypherStatement[Expr] = {
       val stmt = CypherParser(queryText)(CypherParser.defaultContext)
       IRBuilder(stmt)(

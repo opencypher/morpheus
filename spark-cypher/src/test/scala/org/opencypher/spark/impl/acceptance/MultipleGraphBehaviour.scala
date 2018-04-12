@@ -33,6 +33,7 @@ import org.opencypher.okapi.api.value.{CAPSNode, CAPSRelationship}
 import org.opencypher.okapi.ir.test.support.Bag
 import org.opencypher.okapi.ir.test.support.Bag._
 import org.opencypher.spark.impl.CAPSConverters._
+import org.opencypher.spark.impl.{CAPSPatternGraph, CAPSUnionGraph}
 import org.opencypher.spark.impl.DataFrameOps._
 import org.opencypher.spark.schema.CAPSSchema._
 import org.opencypher.spark.test.CAPSTestSuite
@@ -200,7 +201,6 @@ class MultipleGraphBehaviour extends CAPSTestSuite with ScanGraphInit {
     result.getGraph.relationships("r").size should equal(0)
   }
 
-  // TODO: reactive after map expressions in NEW are supported
   it("should construct a node property from a matched node") {
     val query =
       """|MATCH (m)
@@ -306,9 +306,7 @@ class MultipleGraphBehaviour extends CAPSTestSuite with ScanGraphInit {
     ))
   }
 
-  // TODO: Requires COPY OF
-  // TODO: reactive after map expressions in NEW are supported
-  ignore("should tilde copy a relationship") {
+  it("should copy a relationship") {
     val query =
       """|CONSTRUCT
          |  NEW ()-[r:FOO {val : 42}]->()
@@ -320,13 +318,119 @@ class MultipleGraphBehaviour extends CAPSTestSuite with ScanGraphInit {
     val result = testGraph1.cypher(query)
 
     result.getRecords.toMaps shouldBe empty
-    result.getGraph.schema.relationshipTypes should equal(Set("FOO"))
+    result.getGraph.cypher("MATCH ()-[r]->() RETURN r.val, r.name, type(r) as type").getRecords.iterator.toBag should equal(Bag(
+      CypherMap("r.val" -> 42, "r.name" -> "Donald", "type" -> "FOO")
+    ))
+  }
+
+  it("should copy a mean relationship") {
+    val graph = initGraph(
+      """
+        |CREATE ()-[:FOO {val: 1, val2: 2}]->()
+        |CREATE ()-[:BAR {val: 1, val2: 3}]->()
+      """.stripMargin)
+
+    val query =
+      """MATCH ()-[s]->()
+         |CONSTRUCT
+         |  NEW ()-[t COPY OF s :BAZ {val2 : 'Donald'}]->()
+         |RETURN GRAPH""".stripMargin
+
+    val result = graph.cypher(query)
+
+    result.getRecords.toMaps shouldBe empty
+
+    result.getGraph.asInstanceOf[CAPSUnionGraph].graphs.keys.tail.head.asInstanceOf[CAPSPatternGraph].baseTable.data.show()
+
+    result.getGraph.cypher("MATCH ()-[r]->() RETURN r.val, r.val2, type(r) as type").getRecords.iterator.toBag should equal(Bag(
+      CypherMap("r.val" -> 1, "r.val2" -> "Donald", "type" -> "BAZ"),
+      CypherMap("r.val" -> 1, "r.val2" -> "Donald", "type" -> "BAZ")
+    ))
+  }
+
+  it("should copy a node") {
+    val query =
+      """|CONSTRUCT
+         |  NEW (:Foo {foo: 'bar'})
+         |MATCH (a)
+         |CONSTRUCT
+         |  NEW (COPY OF a)
+         |RETURN GRAPH""".stripMargin
+
+    val result = testGraph1.cypher(query)
+
+    result.getRecords.toMaps shouldBe empty
+    result.getGraph.schema.labels should equal(Set("Foo"))
     result.getGraph.schema should equal(Schema.empty
-      .withNodePropertyKeys()()
-      .withRelationshipPropertyKeys("FOO", PropertyKeys("val" -> CTInteger, "name" -> CTString))
+      .withNodePropertyKeys("Foo")("foo" -> CTString)
       .asCaps)
-    result.getGraph.cypher("MATCH ()-[r]->() RETURN r.val, r.name").getRecords.iterator.toBag should equal(Bag(
-      CypherMap("r.val" -> 42, "r.name" -> "Donald")
+
+    result.getGraph.cypher("MATCH (a) RETURN a.foo, labels(a) as labels").getRecords.iterator.toBag should equal(Bag(
+      CypherMap("a.foo" -> "bar", "labels" -> Seq("Foo"))
+    ))
+  }
+
+  it("should copy a node with labels") {
+    val graph = initGraph(
+      """
+        |CREATE (:A {val: 1})
+        |CREATE (:B {val: 1})
+        |CREATE (:A:C {val: 1})
+      """.stripMargin)
+
+    val query =
+      """|MATCH (a)
+         |CONSTRUCT
+         |  NEW (COPY OF a)
+         |RETURN GRAPH""".stripMargin
+
+    val result = graph.cypher(query)
+
+    result.getRecords.toMaps shouldBe empty
+    result.getGraph.cypher("MATCH (a) RETURN a.val, labels(a) as labels").getRecords.iterator.toBag should equal(Bag(
+      CypherMap("a.val" -> 1, "labels" -> Seq("A")),
+      CypherMap("a.val" -> 1, "labels" -> Seq("B")),
+      CypherMap("a.val" -> 1, "labels" -> Seq("A", "C"))
+    ))
+  }
+
+  it("can override in SET") {
+    val graph = initGraph(
+      """
+        |CREATE ({val: 1})
+      """.stripMargin)
+
+    val query =
+      """|MATCH (a)
+         |CONSTRUCT
+         |  NEW (COPY OF a {val: 2})
+         |RETURN GRAPH""".stripMargin
+
+    val result = graph.cypher(query)
+
+    result.getRecords.toMaps shouldBe empty
+    result.getGraph.cypher("MATCH (a) RETURN a.val").getRecords.iterator.toBag should equal(Bag(
+      CypherMap("a.val" -> 2)
+    ))
+  }
+
+  it("can override heterogeneous types in SET") {
+    val graph = initGraph(
+      """
+        |CREATE ({val: 1})
+      """.stripMargin)
+
+    val query =
+      """|MATCH (a)
+         |CONSTRUCT
+         |  NEW (COPY OF a {val: 'foo'})
+         |RETURN GRAPH""".stripMargin
+
+    val result = graph.cypher(query)
+
+    result.getRecords.toMaps shouldBe empty
+    result.getGraph.cypher("MATCH (a) RETURN a.val").getRecords.iterator.toBag should equal(Bag(
+      CypherMap("a.val" -> "foo")
     ))
   }
 
@@ -592,8 +696,7 @@ class MultipleGraphBehaviour extends CAPSTestSuite with ScanGraphInit {
     ))
   }
 
-  // TODO: enable when frontend bug is fixed
-  ignore("allows CONSTRUCT ON with relationships") {
+  it("allows CONSTRUCT ON with relationships") {
     caps.store("testGraphRels1", testGraphRels)
     caps.store("testGraphRels2", testGraphRels)
     val query =
@@ -623,8 +726,7 @@ class MultipleGraphBehaviour extends CAPSTestSuite with ScanGraphInit {
     result.asCaps.tags should equal(Set(0, 1))
   }
 
-  // TODO: enable when frontend is fixed
-  ignore("allows cloning from different graphs with nodes and relationships") {
+  it("allows cloning from different graphs with nodes and relationships") {
     def testGraphRels = initGraph(
       """|CREATE (mats:Person {name: 'Mats'})
          |CREATE (max:Person {name: 'Max'})

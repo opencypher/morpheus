@@ -57,6 +57,13 @@ final case class InternalHeader protected[okapi](
       case (acc, content) => acc + content
     }
 
+  def -(toRemove: RecordSlot): InternalHeader = {
+    val toRetain = slots.filterNot(_ == toRemove).map(_.content)
+    toRetain.foldLeft(InternalHeader.empty) {
+      case (acc, content) => acc + content
+    }
+  }
+
   def --(other: InternalHeader): InternalHeader =
     slots.foldLeft(InternalHeader.empty) {
       case (acc, slot) =>

@@ -33,15 +33,13 @@ import org.neo4j.cypher.internal.frontend.v3_4.ast
 import org.neo4j.cypher.internal.util.v3_4.InputPosition
 import org.neo4j.cypher.internal.v3_4.{expressions => exp}
 import org.opencypher.okapi.api.graph.QualifiedGraphName
-import org.opencypher.okapi.api.schema.PropertyKeys.PropertyKeys
-import org.opencypher.okapi.api.schema.{PropertyKeys, Schema}
+import org.opencypher.okapi.api.schema.Schema
 import org.opencypher.okapi.api.types._
 import org.opencypher.okapi.impl.exception.{IllegalArgumentException, IllegalStateException, UnsupportedOperationException}
 import org.opencypher.okapi.ir.api._
 import org.opencypher.okapi.ir.api.block.{SortItem, _}
 import org.opencypher.okapi.ir.api.expr._
 import org.opencypher.okapi.ir.api.pattern.Pattern
-import org.opencypher.okapi.ir.api.set.{SetItem, SetLabelItem, SetPropertyItem}
 import org.opencypher.okapi.ir.api.util.CompilationStage
 import org.opencypher.okapi.ir.impl.refactor.instances._
 import org.opencypher.okapi.ir.impl.util.VarConverters.RichIrField
@@ -216,7 +214,6 @@ object IRBuilder extends CompilationStage[ast.Statement, CypherStatement[Expr], 
             // Computing single nodes/rels constructed by NEW (CREATE)
             // TODO: Throw exception if both clone alias and original field name are used in NEW
             val newPattern = newPatterns.foldLeft(Pattern.empty[Expr])(_ ++ _)
-            val newPatternProperties = newPattern.properties
 
             // Single nodes/rels constructed by CLONE (MERGE)
             val explicitCloneItemMap = explicitCloneItems.toMap
@@ -248,15 +245,9 @@ object IRBuilder extends CompilationStage[ast.Statement, CypherStatement[Expr], 
               .fields
               .filterNot(cloneItemMap.contains)
 
-            val constructOperatorSchema = fieldsInNewPattern.foldLeft(cloneSchema) { case (agg, next) =>
-              next.cypherType match {
-                case n: CTNode =>
-                  agg.withNodePropertyKeys(n.labels, extractPropertyKeysFromIRField(next, newPatternProperties))
-                case r: CTRelationship =>
-                  // TODO: Unsafe head
-                  agg.withRelationshipPropertyKeys(r.types.head, extractPropertyKeysFromIRField(next, newPatternProperties))
-                case other => throw IllegalArgumentException("A node or a relationship", other)
-              }
+            val constructOperatorSchema = fieldsInNewPattern.foldLeft(cloneSchema) { case (acc, next) =>
+              val newFieldSchema = schemaForNewField(next, newPattern, context)
+              acc ++ newFieldSchema
             }
 
             val patternGraphSchema = schemaForOnGraphUnion ++ constructOperatorSchema
@@ -309,14 +300,14 @@ object IRBuilder extends CompilationStage[ast.Statement, CypherStatement[Expr], 
     }
   }
 
-  def schemaForEntityTypes(
-    context: IRBuilderContext,
-    cypherTypes: Set[CypherType]
-  ): Schema = {
-    cypherTypes.map { cypherType =>
-      val graphSchema = cypherType.graph.map(context.schemaFor).getOrElse(context.workingGraph.schema)
-      graphSchema.forEntityType(cypherType)
-    }.foldLeft(Schema.empty)(_ ++ _)
+  def schemaForEntityTypes(context: IRBuilderContext, cypherTypes: Set[CypherType]): Schema =
+    cypherTypes
+      .map(schemaForEntityType(context, _))
+      .foldLeft(Schema.empty)(_ ++ _)
+
+  def schemaForEntityType(context: IRBuilderContext, cypherType: CypherType): Schema = {
+    val graphSchema = cypherType.graph.map(context.schemaFor).getOrElse(context.workingGraph.schema)
+    graphSchema.forEntityType(cypherType)
   }
 
   private def registerProjectBlock(
@@ -462,28 +453,6 @@ object IRBuilder extends CompilationStage[ast.Statement, CypherStatement[Expr], 
     } yield result
   }
 
-  private def convertSetItem[R: _hasContext](p: ast.SetItem): Eff[R, SetItem[Expr]] = {
-    p match {
-      case ast.SetPropertyItem(exp.LogicalProperty(map: exp.Variable, exp.PropertyKeyName(propertyName)), setValue: exp.Expression) =>
-        for {
-          variable <- convertExpr[R](map)
-          convertedSetExpr <- convertExpr[R](setValue)
-          result <- {
-            val setItem = SetPropertyItem(propertyName, variable.asInstanceOf[Var], convertedSetExpr)
-            pure[R, SetItem[Expr]](setItem)
-          }
-        } yield result
-      case ast.SetLabelItem(expr, labels) =>
-        for {
-          variable <- convertExpr[R](expr)
-          result <- {
-            val setLabel: SetItem[Expr] = SetLabelItem(variable.asInstanceOf[Var], labels.map(_.name).toSet)
-            pure[R, SetItem[Expr]](setLabel)
-          }
-        } yield result
-    }
-  }
-
   private def convertExpr[R: _mayFail : _hasContext](e: Option[exp.Expression]): Eff[R, Option[Expr]] =
     for {
       context <- get[R, IRBuilderContext]
@@ -537,16 +506,53 @@ object IRBuilder extends CompilationStage[ast.Statement, CypherStatement[Expr], 
     }
   }
 
-  private def extractPropertyKeysFromIRField(
-    f: IRField,
-    irFieldProperties: Map[IRField, MapExpression]
-  ): PropertyKeys = {
-    irFieldProperties.get(f) match {
-      case None => PropertyKeys.empty
-      case Some(MapExpression(items)) =>
-        items.map { case (key, expr) =>
-          key -> expr.cypherType
+  private def schemaForNewField(field: IRField, pattern: Pattern[Expr], context: IRBuilderContext): Schema = {
+    val baseFieldSchema = pattern.baseFields.get(field).map { baseNode =>
+      schemaForEntityType(context, baseNode.cypherType)
+    }.getOrElse(Schema.empty)
+
+    val newPropertyKeys: Map[String, CypherType] = pattern.properties.get(field)
+      .map(_.items.map(p => p._1 -> p._2.cypherType))
+      .getOrElse(Map.empty)
+
+    field.cypherType match {
+      case CTNode(newLabels, _) =>
+        val oldLabelCombosToNewLabelCombos = if (baseFieldSchema.labels.nonEmpty)
+          baseFieldSchema.allLabelCombinations.map(oldLabels => oldLabels -> (oldLabels ++ newLabels))
+        else
+          Set(Set.empty[String] -> newLabels)
+
+        val updatedPropertyKeys = oldLabelCombosToNewLabelCombos.map {
+          case (oldLabelCombo, newLabelCombo) => newLabelCombo -> (baseFieldSchema.nodeKeys(oldLabelCombo) ++ newPropertyKeys)
         }
+
+        updatedPropertyKeys.foldLeft(Schema.empty) {
+          case (acc, (labelCombo, propertyKeys)) => acc.withNodePropertyKeys(labelCombo, propertyKeys)
+        }
+
+      // if there is only one relationship type we need to merge all existing types and update them
+      case CTRelationship(newTypes, _) if newTypes.size == 1 =>
+        val possiblePropertyKeys = baseFieldSchema.relTypePropertyMap.map
+          .values
+          .map(_.keySet)
+          .foldLeft(Set.empty[String])(_ ++ _)
+
+        val joinedPropertyKeys = possiblePropertyKeys.map { key =>
+          key -> baseFieldSchema.relationshipKeyType(Set.empty, key).get
+        }.toMap
+
+        val updatedPropertyKeys = joinedPropertyKeys ++ newPropertyKeys
+
+        Schema.empty.withRelationshipPropertyKeys(newTypes.head, updatedPropertyKeys)
+
+      case CTRelationship(newTypes, _) =>
+        val actualTypes = if (newTypes.nonEmpty) newTypes else baseFieldSchema.relationshipTypes
+
+        actualTypes.foldLeft(Schema.empty) {
+          case (acc, relType) => acc.withRelationshipPropertyKeys(relType, baseFieldSchema.relationshipKeys(relType) ++ newPropertyKeys)
+        }
+
+      case other => throw IllegalArgumentException("CTNode or CTRelationship", other)
     }
   }
 }

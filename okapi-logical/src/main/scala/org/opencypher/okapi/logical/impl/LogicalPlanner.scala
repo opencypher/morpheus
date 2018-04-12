@@ -340,7 +340,7 @@ class LogicalPlanner(producer: LogicalOperatorProducer)
       // TODO: IRGraph[Expr]
       case p: IRPatternGraph[Expr@unchecked] =>
         import org.opencypher.okapi.ir.impl.util.VarConverters.RichIrField
-        val equivalences = p.news.equivalences
+        val baseEntities = p.news.baseFields.mapValues(_.toVar)
 
         val clonePatternEntities = p.clones.keys
 
@@ -355,7 +355,8 @@ class LogicalPlanner(producer: LogicalOperatorProducer)
             }
           clonedField.toVar -> inputVar
         }
-        val newEntities: Set[ConstructedEntity] = entitiesToCreate.map(e => extractConstructedEntities(p.news, e, equivalences.get(e)))
+
+        val newEntities: Set[ConstructedEntity] = entitiesToCreate.map(e => extractConstructedEntities(p.news, e, baseEntities.get(e)))
 
         val setItems = {
           p.news.properties.flatMap { case (irField, mapExpr) =>
@@ -372,12 +373,12 @@ class LogicalPlanner(producer: LogicalOperatorProducer)
     }
   }
 
-  private def extractConstructedEntities(pattern: Pattern[Expr], e: IRField, equivalenceModel: Option[EquivalenceModel]) = e.cypherType match {
+  private def extractConstructedEntities(pattern: Pattern[Expr], e: IRField, baseField: Option[Var]) = e.cypherType match {
     case CTRelationship(relTypes, _) if relTypes.size <= 1 =>
       val connection = pattern.topology(e)
-      ConstructedRelationship(e, connection.source, connection.target, relTypes.headOption, equivalenceModel)
+      ConstructedRelationship(e, connection.source, connection.target, relTypes.headOption, baseField)
     case CTNode(labels, _) =>
-      ConstructedNode(e, labels.map(Label), equivalenceModel)
+      ConstructedNode(e, labels.map(Label), baseField)
     case other =>
       throw InvalidCypherTypeException(s"Expected an entity type (CTNode, CTRelationship), got $other")
   }

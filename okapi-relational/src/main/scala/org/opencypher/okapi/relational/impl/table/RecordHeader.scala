@@ -51,6 +51,14 @@ final case class RecordHeader(internalHeader: InternalHeader) {
     copy(internalHeader ++ other.internalHeader)
 
   /**
+    * Removes the specified RecordSlot from the header
+    * @param toRemove record slot to remove
+    * @return new RecordHeader with removed slot
+    */
+  def -(toRemove: RecordSlot): RecordHeader =
+    copy(internalHeader - toRemove)
+
+  /**
     * Returns this record header with all fields of the other record header removed.
     *
     * @param other the header to remove

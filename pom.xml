@@ -80,7 +80,7 @@
     <dep.eff.version>5.0.0</dep.eff.version>
     <dep.hadoop.version>2.7.0</dep.hadoop.version>
     <dep.neo4j.version>3.4.0-SNAPSHOT</dep.neo4j.version>
-    <dep.neo4j.frontend.version>3.4.0-0323</dep.neo4j.frontend.version>
+    <dep.neo4j.frontend.version>3.4.0-0412</dep.neo4j.frontend.version>
     <dep.netty.version>4.1.8.Final</dep.netty.version>
     <dep.neo4j.driver.version>1.4.2</dep.neo4j.driver.version>
     <dep.spark.version>2.2.0</dep.spark.version>
