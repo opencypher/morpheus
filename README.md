@@ -18,9 +18,9 @@ integration with GraphX. To learn more about this, please see our [examples](htt
 <!--- **Data Analysts**: -->
 <!--  This example shows how to aggregate detailed sales data within a graph — in effect, performing a ‘roll-up’ — in order to obtain a high-level summarized view of the data, stored and returned in another graph, as well as returning an even higher-level view as an executive report. The summarized graph may be used to draw further high-level reports, but may also be used to undertake ‘drill-down’ actions by probing into the graph to extract more detailed information.-->
 
-## Current status: Alpha
+## Current status: Beta
 
-The project is currently in an alpha stage, which means that the code and the functionality are still changing. 
+The project is currently in a beta stage, which means that the code and the functionality is changing, but the APIs are stabilising.
 We invite you to try it and welcome any feedback.
 
 The first release for the project is targeted for May 2018. 
@@ -64,13 +64,13 @@ Maven:
 <dependency>
   <groupId>org.opencypher</groupId>
   <artifactId>spark-cypher</artifactId>
-  <version>1.0.0-alpha02</version>
+  <version>1.0.0-beta.1</version>
 </dependency>
 ```
 
 sbt:
 ```
-libraryDependencies += "org.opencypher" % "spark-cypher" % "1.0.0-alpha02"
+libraryDependencies += "org.opencypher" % "spark-cypher" % "1.0.0-beta.1"
 ```
 
 Remember to add `fork in run := true` in your `build.sbt` for scala projects; this is not CAPS
@@ -87,7 +87,7 @@ Documentation will be generated and placed under `[MODULE_DIRECTORY]/target/site
 
 ### Hello CAPS
 
-Cypher is based on the [property graph](https://github.com/opencypher/openCypher/blob/master/docs/property-graph-model.adoc) model, comprising labelled nodes and typed relationships, with a relationship either connecting two nodes, or forming a self-loop on a single node. 
+Cypher is based on the [property graph](https://github.com/opencypher/openCypher/blob/master/docs/property-graph-model.adoc) data model, comprising labelled nodes and typed relationships, with a relationship either connecting two nodes, or forming a self-loop on a single node. 
 Both nodes and relationships are uniquely identified by an ID (in CAPS this is of type `Long`), and contain a set of properties. 
 
 The following example shows how to convert a social network represented as Scala case classes to a `PropertyGraph` representation. 
