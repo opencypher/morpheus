@@ -101,6 +101,22 @@ trait CypherSession {
     throw IllegalArgumentException(s"a data source registered with namespace '$namespace'"))
 
   /**
+    * Returns the full catalog known to the session, including all graphs hosted by registered
+    * [[org.opencypher.okapi.api.io.PropertyGraphDataSource]]s.
+    *
+    * @note This operation may not be lazy, since it looks up all graphs available in each graph data source and is thus subjected to the behaviour of those implementations.
+    * @return a map of all graphs known to this session, keyed by their [[org.opencypher.okapi.api.graph.QualifiedGraphName]]s.
+    */
+  def catalog: Map[QualifiedGraphName, PropertyGraph] =
+    dataSourceMapping.flatMap {
+      case (namespace, pgds) =>
+        pgds.graphNames.map(n => n -> pgds.graph(n)).map {
+          case (name, graph) =>
+            QualifiedGraphName(namespace, name) -> graph
+        }
+    }
+
+  /**
     * Executes a Cypher query in this session on the current ambient graph.
     *
     * @param query      Cypher query to execute
