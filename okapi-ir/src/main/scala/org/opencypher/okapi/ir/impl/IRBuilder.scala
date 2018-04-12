@@ -246,7 +246,7 @@ object IRBuilder extends CompilationStage[ast.Statement, CypherStatement[Expr], 
               .filterNot(cloneItemMap.contains)
 
             val constructOperatorSchema = fieldsInNewPattern.foldLeft(cloneSchema) { case (acc, next) =>
-              val newFieldSchema = schemaForNewField(next,newPattern, context)
+              val newFieldSchema = schemaForNewField(next, newPattern, context)
               acc ++ newFieldSchema
             }
 
@@ -300,9 +300,9 @@ object IRBuilder extends CompilationStage[ast.Statement, CypherStatement[Expr], 
     }
   }
 
-  def schemaForEntityTypes( context: IRBuilderContext, cypherTypes: Set[CypherType]): Schema =
+  def schemaForEntityTypes(context: IRBuilderContext, cypherTypes: Set[CypherType]): Schema =
     cypherTypes
-      .map( schemaForEntityType(context, _) )
+      .map(schemaForEntityType(context, _))
       .foldLeft(Schema.empty)(_ ++ _)
 
   def schemaForEntityType(context: IRBuilderContext, cypherType: CypherType): Schema = {
@@ -506,7 +506,7 @@ object IRBuilder extends CompilationStage[ast.Statement, CypherStatement[Expr], 
     }
   }
 
-  private def schemaForNewField(field: IRField, pattern: Pattern[Expr], context: IRBuilderContext ): Schema = {
+  private def schemaForNewField(field: IRField, pattern: Pattern[Expr], context: IRBuilderContext): Schema = {
     val baseFieldSchema = pattern.baseFields.get(field).map { baseNode =>
       schemaForEntityType(context, baseNode.cypherType)
     }.getOrElse(Schema.empty)
@@ -532,7 +532,10 @@ object IRBuilder extends CompilationStage[ast.Statement, CypherStatement[Expr], 
 
       // if there is only one relationship type we need to merge all existing types and update them
       case CTRelationship(newTypes, _) if newTypes.size == 1 =>
-        val possiblePropertyKeys = baseFieldSchema.relTypePropertyMap.map.values.foldLeft(Map.empty[String, CypherType])(_ ++ _).keySet
+        val possiblePropertyKeys = baseFieldSchema.relTypePropertyMap.map
+          .values
+          .map(_.keySet)
+          .foldLeft(Set.empty[String])(_ ++ _)
 
         val joinedPropertyKeys = possiblePropertyKeys.map { key =>
           key -> baseFieldSchema.relationshipKeyType(Set.empty, key).get
@@ -545,7 +548,7 @@ object IRBuilder extends CompilationStage[ast.Statement, CypherStatement[Expr], 
       case CTRelationship(newTypes, _) =>
         val actualTypes = if (newTypes.nonEmpty) newTypes else baseFieldSchema.relationshipTypes
 
-        actualTypes.foldLeft(Schema.empty){
+        actualTypes.foldLeft(Schema.empty) {
           case (acc, relType) => acc.withRelationshipPropertyKeys(relType, baseFieldSchema.relationshipKeys(relType) ++ newPropertyKeys)
         }
 
