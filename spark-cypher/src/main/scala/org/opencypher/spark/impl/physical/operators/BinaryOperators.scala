@@ -26,23 +26,19 @@
  */
 package org.opencypher.spark.impl.physical.operators
 
-import org.apache.spark.sql.functions.monotonically_increasing_id
 import org.apache.spark.sql.{Column, functions}
+import org.apache.spark.sql.functions.monotonically_increasing_id
 import org.opencypher.okapi.api.graph.QualifiedGraphName
 import org.opencypher.okapi.api.types.{CTBoolean, CTInteger, CTString}
-import org.opencypher.okapi.impl.exception.NotImplementedException
+import org.opencypher.okapi.impl.exception.IllegalArgumentException
 import org.opencypher.okapi.ir.api.PropertyKey
-import org.opencypher.okapi.ir.api.expr._
+import org.opencypher.okapi.ir.api.expr.{Expr, Var, _}
+import org.opencypher.okapi.ir.api.set.SetPropertyItem
 import org.opencypher.okapi.logical.impl.{ConstructedEntity, ConstructedNode, ConstructedRelationship, LogicalPatternGraph}
 import org.opencypher.okapi.relational.impl.syntax.RecordHeaderSyntax.{addContent, addContents, _}
-import org.opencypher.okapi.relational.impl.table.{ColumnName, _}
+import org.opencypher.okapi.relational.impl.table.{ColumnName, OpaqueField, RecordHeader, RecordSlot, _}
 import org.opencypher.spark.api.CAPSSession
 import org.opencypher.spark.impl.CAPSUnionGraph.{apply => _, unapply => _}
-import org.apache.spark.sql.functions
-import org.opencypher.okapi.impl.exception.IllegalArgumentException
-import org.opencypher.okapi.ir.api.expr.{Expr, Var}
-import org.opencypher.okapi.ir.api.set.SetPropertyItem
-import org.opencypher.okapi.relational.impl.table.{ColumnName, OpaqueField, RecordHeader, RecordSlot}
 import org.opencypher.spark.impl.DataFrameOps._
 import org.opencypher.spark.impl.SparkSQLExprMapper._
 import org.opencypher.spark.impl.physical.operators.CAPSPhysicalOperator._
@@ -59,17 +55,20 @@ private[spark] abstract class BinaryPhysicalOperator extends CAPSPhysicalOperato
 
   override def execute(implicit context: CAPSRuntimeContext): CAPSPhysicalResult = executeBinary(lhs.execute, rhs.execute)
 
-  def executeBinary(left: CAPSPhysicalResult, right: CAPSPhysicalResult)(implicit context: CAPSRuntimeContext): CAPSPhysicalResult
+  def executeBinary(left: CAPSPhysicalResult, right: CAPSPhysicalResult)
+    (implicit context: CAPSRuntimeContext): CAPSPhysicalResult
 }
 
 final case class Join(
   lhs: CAPSPhysicalOperator,
   rhs: CAPSPhysicalOperator,
   joinColumns: Seq[(Expr, Expr)],
-  header: RecordHeader) extends BinaryPhysicalOperator {
+  header: RecordHeader
+) extends BinaryPhysicalOperator {
 
   override def executeBinary(left: CAPSPhysicalResult, right: CAPSPhysicalResult)(
-    implicit context: CAPSRuntimeContext): CAPSPhysicalResult = {
+    implicit context: CAPSRuntimeContext
+  ): CAPSPhysicalResult = {
 
     val joinSlots = joinColumns.map {
       case (leftExpr, rightExpr) =>
@@ -101,7 +100,8 @@ final case class Optional(lhs: CAPSPhysicalOperator, rhs: CAPSPhysicalOperator, 
   extends BinaryPhysicalOperator {
 
   override def executeBinary(left: CAPSPhysicalResult, right: CAPSPhysicalResult)(
-    implicit context: CAPSRuntimeContext): CAPSPhysicalResult = {
+    implicit context: CAPSRuntimeContext
+  ): CAPSPhysicalResult = {
     val leftData = left.records.toDF()
     val rightData = right.records.toDF()
     val leftHeader = left.records.header
@@ -170,11 +170,13 @@ final case class ExistsSubQuery(
   lhs: CAPSPhysicalOperator,
   rhs: CAPSPhysicalOperator,
   targetField: Var,
-  header: RecordHeader)
+  header: RecordHeader
+)
   extends BinaryPhysicalOperator {
 
   override def executeBinary(left: CAPSPhysicalResult, right: CAPSPhysicalResult)(
-    implicit context: CAPSRuntimeContext): CAPSPhysicalResult = {
+    implicit context: CAPSRuntimeContext
+  ): CAPSPhysicalResult = {
     val leftData = left.records.toDF()
     val rightData = right.records.toDF()
     val leftHeader = left.records.header
@@ -245,7 +247,8 @@ final case class ExistsSubQuery(
 final case class TabularUnionAll(lhs: CAPSPhysicalOperator, rhs: CAPSPhysicalOperator)
   extends BinaryPhysicalOperator with InheritedHeader {
 
-  override def executeBinary(left: CAPSPhysicalResult, right: CAPSPhysicalResult)(implicit context: CAPSRuntimeContext): CAPSPhysicalResult = {
+  override def executeBinary(left: CAPSPhysicalResult, right: CAPSPhysicalResult)
+    (implicit context: CAPSRuntimeContext): CAPSPhysicalResult = {
     val leftData = left.records.data
     // left and right have the same set of columns, but the order must also match
     val rightData = right.records.data.select(leftData.columns.head, leftData.columns.tail: _*)
@@ -261,7 +264,8 @@ final case class CartesianProduct(lhs: CAPSPhysicalOperator, rhs: CAPSPhysicalOp
   extends BinaryPhysicalOperator {
 
   override def executeBinary(left: CAPSPhysicalResult, right: CAPSPhysicalResult)(
-    implicit context: CAPSRuntimeContext): CAPSPhysicalResult = {
+    implicit context: CAPSRuntimeContext
+  ): CAPSPhysicalResult = {
 
     val data = left.records.data
     val otherData = right.records.data
@@ -359,19 +363,32 @@ final case class ConstructGraph(
   }
 
 
-  def constructProperty(variable: Var, propertyKey: String, propertyValue: Expr, constructedTable: CAPSRecords)(implicit context: CAPSRuntimeContext): CAPSRecords = {
+  def constructProperty(variable: Var, propertyKey: String, propertyValue: Expr, constructedTable: CAPSRecords)
+    (implicit context: CAPSRuntimeContext): CAPSRecords = {
     val propertyValueColumn: Column = propertyValue.asSparkSQLExpr(constructedTable.header, constructedTable.data, context)
 
     val propertyExpression = Property(variable, PropertyKey(propertyKey))(propertyValue.cypherType)
     val propertySlotContent = ProjectedExpr(propertyExpression)
-    val newData = constructedTable.data.safeAddColumn(ColumnName.of(propertySlotContent), propertyValueColumn)
 
-    val newHeader = constructedTable.header.update(addContent(propertySlotContent))._1
+    val existingSlotsForProperty = constructedTable.header.propertySlots(variable).collect({
+      case (Property(_, PropertyKey(name)), recordSlot) if  name == propertyKey => recordSlot
+    })
 
+    val headerWithExistingRemoved = existingSlotsForProperty.foldLeft(constructedTable.header)(_ - _)
+    val dataWithExistingRemoved = existingSlotsForProperty.foldLeft(constructedTable.data){
+      case (acc, toRemove) => acc.safeDropColumn(ColumnName.of(toRemove))
+    }
+
+    val newData = dataWithExistingRemoved.safeAddColumn(ColumnName.of(propertySlotContent), propertyValueColumn)
+    val newHeader = headerWithExistingRemoved.update(addContent(propertySlotContent))._1
     CAPSRecords.verifyAndCreate(newHeader, newData)(constructedTable.caps)
   }
 
-  private def createEntities(toCreate: Set[ConstructedEntity], constructedTable: CAPSRecords, newEntityTag: Int): CAPSRecords = {
+  private def createEntities(
+    toCreate: Set[ConstructedEntity],
+    constructedTable: CAPSRecords,
+    newEntityTag: Int
+  ): CAPSRecords = {
     // Construct nodes before relationships, as relationships might depend on nodes
     val nodes = toCreate.collect {
       case c@ConstructedNode(Var(name), _, _) if !constructedTable.header.fields.contains(name) => c
@@ -395,7 +412,10 @@ final case class ConstructGraph(
     addEntitiesToRecords(createdRels, recordsWithNodes)
   }
 
-  private def addEntitiesToRecords(columnsToAdd: Set[(SlotContent, Column)], constructedTable: CAPSRecords): CAPSRecords = {
+  private def addEntitiesToRecords(
+    columnsToAdd: Set[(SlotContent, Column)],
+    constructedTable: CAPSRecords
+  ): CAPSRecords = {
     val newData = columnsToAdd.foldLeft(constructedTable.data) {
       case (acc, (expr, col)) =>
         acc.safeAddColumn(ColumnName.of(expr), col)
@@ -420,16 +440,8 @@ final case class ConstructGraph(
   ): Set[(SlotContent, Column)] = {
     val col = functions.lit(true)
 
-    def copySlotsContents(targetVar: Var)(extractor: RecordHeader => Set[RecordSlot]): Set[(SlotContent, Column)] = {
-      val header = constructedTable.header
-        val origSlots = extractor(header)
-        val copySlotContents = origSlots.map(_.withOwner(targetVar)).map(_.content)
-        val columns = origSlots.map(ColumnName.of).map(constructedTable.data.col)
-        copySlotContents.zip(columns)
-    }
-
     val copiedLabelTuples: Set[(SlotContent, Column)] = node.baseEntity match {
-      case Some(origNode) => copySlotsContents(node.v)(_.labelSlots(origNode).values.toSet)
+      case Some(origNode) => copySlotsContents(node.v, constructedTable)(_.labelSlots(origNode).values.toSet)
       case None => Set.empty
     }
 
@@ -438,7 +450,7 @@ final case class ConstructGraph(
     } ++ copiedLabelTuples
 
     val propertyTuples: Set[(SlotContent, Column)] = node.baseEntity match {
-      case Some(origNode) => copySlotsContents(node.v)(_.propertySlots(origNode).values.toSet)
+      case Some(origNode) => copySlotsContents(node.v, constructedTable)(_.propertySlots(origNode).values.toSet)
       case None => Set.empty
     }
 
@@ -497,25 +509,25 @@ final case class ConstructGraph(
           ProjectedExpr(Type(rel)(CTString)) -> col
         case None =>
           // When no type is present, it needs to be a copy of a base relationship
-          val origRel = baseRelOpt.get
-          val header = constructedTable.header
-          val origTypeSlot = header.typeSlot(origRel)
-          val copyTypeSlotContents = origTypeSlot.withOwner(rel).content
-          val col = constructedTable.data.col(ColumnName.of(origTypeSlot))
-          (copyTypeSlotContents, col)
+          copySlotsContents(rel, constructedTable)(header => Set(header.typeSlot(baseRelOpt.get))).head
       }
     }
 
-    val propertyTuples = baseRelOpt match {
+    val propertyTuples: Set[(SlotContent, Column)] = baseRelOpt match {
       case Some(baseRel) =>
-        val header = constructedTable.header
-        val origSlots = header.propertySlots(baseRel).values
-        val copySlotContents = origSlots.map(_.withOwner(rel)).map(_.content)
-        val columns = origSlots.map(ColumnName.of).map(constructedTable.data.col)
-        copySlotContents.zip(columns).toSet
-      case None => Set.empty[(SlotContent, Column)]
+        copySlotsContents(rel, constructedTable)(_.propertySlots(baseRel).values.toSet)
+      case None => Set.empty
     }
 
     Set(sourceTuple, targetTuple, relTuple, typeTuple) ++ propertyTuples
+  }
+
+  private def copySlotsContents(targetVar: Var, records: CAPSRecords)
+    (extractor: RecordHeader => Set[RecordSlot]): Set[(SlotContent, Column)] = {
+    val header = records.header
+    val origSlots = extractor(header)
+    val copySlotContents = origSlots.map(_.withOwner(targetVar)).map(_.content)
+    val columns = origSlots.map(ColumnName.of).map(records.data.col)
+    copySlotContents.zip(columns)
   }
 }

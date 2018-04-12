@@ -318,13 +318,33 @@ class MultipleGraphBehaviour extends CAPSTestSuite with ScanGraphInit {
     val result = testGraph1.cypher(query)
 
     result.getRecords.toMaps shouldBe empty
-    result.getGraph.schema.relationshipTypes should equal(Set("FOO"))
-    result.getGraph.schema should equal(Schema.empty
-      .withNodePropertyKeys()()
-      .withRelationshipPropertyKeys("FOO", PropertyKeys("val" -> CTInteger, "name" -> CTString))
-      .asCaps)
-    result.getGraph.cypher("MATCH ()-[r]->() RETURN r.val, r.name").getRecords.iterator.toBag should equal(Bag(
-      CypherMap("r.val" -> 42, "r.name" -> "Donald")
+    result.getGraph.cypher("MATCH ()-[r]->() RETURN r.val, r.name, type(r) as type").getRecords.iterator.toBag should equal(Bag(
+      CypherMap("r.val" -> 42, "r.name" -> "Donald", "type" -> "FOO")
+    ))
+  }
+
+  it("should copy a mean relationship") {
+    val graph = initGraph(
+      """
+        |CREATE ()-[:FOO {val: 1, val2: 2}]->()
+        |CREATE ()-[:BAR {val: 1, val2: 3}]->()
+      """.stripMargin)
+
+    val query =
+      """MATCH ()-[s]->()
+         |CONSTRUCT
+         |  NEW ()-[t COPY OF s :BAZ {val2 : 'Donald'}]->()
+         |RETURN GRAPH""".stripMargin
+
+    val result = graph.cypher(query)
+
+    result.getRecords.toMaps shouldBe empty
+
+    result.getGraph.asInstanceOf[CAPSUnionGraph].graphs.keys.tail.head.asInstanceOf[CAPSPatternGraph].baseTable.data.show()
+
+    result.getGraph.cypher("MATCH ()-[r]->() RETURN r.val, r.val2, type(r) as type").getRecords.iterator.toBag should equal(Bag(
+      CypherMap("r.val" -> 1, "r.val2" -> "Donald", "type" -> "BAZ"),
+      CypherMap("r.val" -> 1, "r.val2" -> "Donald", "type" -> "BAZ")
     ))
   }
 
@@ -371,6 +391,46 @@ class MultipleGraphBehaviour extends CAPSTestSuite with ScanGraphInit {
       CypherMap("a.val" -> 1, "labels" -> Seq("A")),
       CypherMap("a.val" -> 1, "labels" -> Seq("B")),
       CypherMap("a.val" -> 1, "labels" -> Seq("A", "C"))
+    ))
+  }
+
+  it("can override in SET") {
+    val graph = initGraph(
+      """
+        |CREATE ({val: 1})
+      """.stripMargin)
+
+    val query =
+      """|MATCH (a)
+         |CONSTRUCT
+         |  NEW (COPY OF a {val: 2})
+         |RETURN GRAPH""".stripMargin
+
+    val result = graph.cypher(query)
+
+    result.getRecords.toMaps shouldBe empty
+    result.getGraph.cypher("MATCH (a) RETURN a.val").getRecords.iterator.toBag should equal(Bag(
+      CypherMap("a.val" -> 2)
+    ))
+  }
+
+  it("can override heterogeneous types in SET") {
+    val graph = initGraph(
+      """
+        |CREATE ({val: 1})
+      """.stripMargin)
+
+    val query =
+      """|MATCH (a)
+         |CONSTRUCT
+         |  NEW (COPY OF a {val: 'foo'})
+         |RETURN GRAPH""".stripMargin
+
+    val result = graph.cypher(query)
+
+    result.getRecords.toMaps shouldBe empty
+    result.getGraph.cypher("MATCH (a) RETURN a.val").getRecords.iterator.toBag should equal(Bag(
+      CypherMap("a.val" -> "foo")
     ))
   }
 
