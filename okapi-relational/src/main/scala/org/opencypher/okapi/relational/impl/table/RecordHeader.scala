@@ -85,13 +85,6 @@ final case class RecordHeader(internalHeader: InternalHeader) {
     */
   def fields: Set[String] = internalHeader.fields.map(_.name)
 
-  /**
-    * The fields contained in this header, in the order they were defined.
-    *
-    * @return the ordered fields in this header.
-    */
-  def fieldsInOrder: Seq[String] = slots.flatMap(_.content.alias.map(_.name))
-
   def slotsFor(expr: Expr): Seq[RecordSlot] =
     internalHeader.slotsFor(expr)
 

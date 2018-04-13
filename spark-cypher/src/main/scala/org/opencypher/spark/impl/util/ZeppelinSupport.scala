@@ -70,7 +70,7 @@ object ZeppelinSupport {
       * }}}
       */
     def asZeppelingTable(): Unit = {
-      val fields = records.header.fieldsInOrder
+      val fields = records.columns
       val header = fields.mkString("\t")
       val rows = records.collect.map { data =>
         fields.map(field => data.get(field).get).mkString("\t")

@@ -219,7 +219,13 @@ sealed abstract class CAPSRecords(val header: RecordHeader, val data: DataFrame)
     data.map(rowToCypherMap(header))
   }
 
-  override def columns: Seq[String] = header.fieldsInOrder
+  /**
+    * Returns the header fields in the order specified by the DataFrame
+    * @return columns in header ordered as in the DF
+    */
+  override def columns: Seq[String] = {
+    data.columns.filter(header.fields.contains)
+  }
 
   override def rows: Iterator[String => CypherValue] = {
     toLocalIterator.asScala.map(_.value)
