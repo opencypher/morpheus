@@ -38,7 +38,7 @@ import org.opencypher.okapi.api.io.conversion.{NodeMapping, RelationshipMapping}
 import org.opencypher.okapi.api.table.{CypherRecords, CypherRecordsCompanion}
 import org.opencypher.okapi.api.types._
 import org.opencypher.okapi.api.value.CypherValue.{CypherMap, CypherValue}
-import org.opencypher.okapi.impl.exception.{IllegalArgumentException, IllegalStateException}
+import org.opencypher.okapi.impl.exception.{IllegalArgumentException, IllegalStateException, UnsupportedOperationException}
 import org.opencypher.okapi.impl.table._
 import org.opencypher.okapi.impl.util.PrintOptions
 import org.opencypher.okapi.ir.api.expr._
@@ -271,6 +271,15 @@ sealed abstract class CAPSRecords(val header: RecordHeader, val data: DataFrame)
 
     val renamedSlots = renamedSlotMapping.map(_._2)
 
+    def typeAlignmentError(alignWithSlot: RecordSlot, varToAlign: Var, typeToAlign: CypherType) = {
+      val varToAlignName = varToAlign.name
+      val varToAlignString = if (varToAlignName.isEmpty) "table" else s"variable '$varToAlignName'"
+
+      throw UnsupportedOperationException(
+        s"""|Cannot align $varToAlignString with '${v.name}' due the alignment target type for ${alignWithSlot.content.key.withoutType}:
+            |  The target type on '${v.name}' is ${alignWithSlot.content.cypherType}, whilst the $varToAlignString type is $typeToAlign""".stripMargin)
+    }
+
     val relevantColumns = targetHeader.slots.map { targetSlot =>
       val targetColName = ColumnName.of(targetSlot)
 
@@ -279,23 +288,34 @@ sealed abstract class CAPSRecords(val header: RecordHeader, val data: DataFrame)
           val sourceColName = ColumnName.of(sourceSlot)
 
           // the column exists in the source data
-          if (sourceColName == targetColName)
+          if (sourceColName == targetColName) {
             withRenamedColumns.col(targetColName)
-          // the column exists in the source data but has a different data type (and thus different column name)
-          else
-            withRenamedColumns.col(sourceColName)
-              .cast(targetSlot.content.cypherType.getSparkType)
-              .as(targetColName)
+            // the column exists in the source data but has a different data type (and thus different column name)
+          } else {
+            val slotType = targetSlot.content.cypherType
+            val sparkTypeOpt = slotType.toSparkType
+            sparkTypeOpt match {
+              case Some(sparkType) =>
+                withRenamedColumns.col(sourceColName)
+                  .cast(sparkType)
+                  .as(targetColName)
+              case None => typeAlignmentError(targetSlot, oldEntity, sourceSlot.content.cypherType)
+
+            }
+          }
 
         case None =>
           val content = targetSlot.content.key match {
             case HasLabel(_, label) if entityLabels.contains(label.name) => functions.lit(true)
             case _: HasLabel => functions.lit(false)
             case _: Type if entityLabels.size == 1 => functions.lit(entityLabels.head)
-            case _ => functions.lit(null).cast(targetSlot.content.cypherType.getSparkType)
+            case _ =>
+              require(targetSlot.content.cypherType.isNullable, s"Cannot align by adding a NULL column, because the type for '${targetSlot.content.key}' is non-nullable")
+              functions.lit(null).cast(targetSlot.content.cypherType.getSparkType)
           }
           content.as(targetColName)
       }
+
     }
 
     val withRelevantColumns = withRenamedColumns.select(relevantColumns: _*)
