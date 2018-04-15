@@ -29,6 +29,7 @@ package org.opencypher.spark.impl
 import org.apache.spark.storage.StorageLevel
 import org.opencypher.okapi.api.types.{CTNode, CTRelationship}
 import org.opencypher.okapi.ir.api.expr._
+import org.opencypher.okapi.relational.impl.table.RecordHeader._
 import org.opencypher.okapi.relational.impl.table.{ColumnName, OpaqueField, RecordHeader, SlotContent}
 import org.opencypher.spark.api.CAPSSession
 import org.opencypher.spark.impl.table.CAPSRecordHeader._
@@ -45,7 +46,7 @@ class CAPSPatternGraph(
   override val schema: CAPSSchema,
   override val tags: Set[Int]
 )(implicit val session: CAPSSession)
-    extends CAPSGraph {
+  extends CAPSGraph {
 
   private val header = baseTable.header
 
@@ -67,33 +68,34 @@ class CAPSPatternGraph(
   override def nodes(name: String, nodeCypherType: CTNode): CAPSRecords = {
     val targetNode = Var(name)(nodeCypherType)
     val nodeSchema = schema.forNode(nodeCypherType.labels)
-    val targetNodeHeader = RecordHeader.nodeFromSchema(targetNode, nodeSchema)
-    val extractionNodes: Seq[Var] = header.nodesForType(nodeCypherType)
+    val targetNodeHeader = RecordHeader.forNode(targetNode, nodeSchema)
+    val extractionNodes = header.nodesForType(nodeCypherType)
 
     extractRecordsFor(targetNode, targetNodeHeader, extractionNodes)
   }
 
   override def relationships(name: String, relCypherType: CTRelationship): CAPSRecords = {
     val targetRel = Var(name)(relCypherType)
-    val targetRelHeader = RecordHeader.relationshipFromSchema(targetRel, schema.forRelationship(relCypherType))
+    val targetRelHeader = RecordHeader.forRelationship(targetRel, schema.forRelationship(relCypherType))
     val extractionRels = header.relationshipsForType(relCypherType)
 
     extractRecordsFor(targetRel, targetRelHeader, extractionRels)
   }
 
-  private def extractRecordsFor(targetVar: Var, targetHeader: RecordHeader, extractionVars: Seq[Var]): CAPSRecords = {
+  private def extractRecordsFor(targetVar: Var, targetHeader: RecordHeader, extractionVars: Set[Var]): CAPSRecords = {
     val extractionSlots = extractionVars.map { candidate =>
-      candidate -> (header.childSlots(candidate) :+ header.slotFor(candidate))
+      candidate -> header.select(candidate)
     }.toMap
 
     val relColumnsLookupTables = extractionSlots.map {
       case (relVar, slotsForRel) =>
-        relVar -> createScanToBaseTableLookup(targetVar, slotsForRel.map(_.content))
+        relVar -> createScanToBaseTableLookup(targetVar, slotsForRel.map(_.content).toSeq)
     }
 
-    val extractedDf = baseTable
-      .toDF()
-      .flatMap(RowExpansion(targetHeader, targetVar, extractionSlots, relColumnsLookupTables))(targetHeader.rowEncoder)
+    val extractedDf = {
+      implicit val baseTableDf = baseTable.toDF()
+      baseTableDf.flatMap(RowExpansion(targetHeader, targetVar, extractionSlots, relColumnsLookupTables))(targetHeader.rowEncoder)
+    }
 
     val distinctData = extractedDf.dropDuplicates(ColumnName.of(OpaqueField(targetVar)))
 

@@ -29,6 +29,7 @@ package org.opencypher.okapi.relational.impl.flat
 import org.opencypher.okapi.ir.api.block.SortItem
 import org.opencypher.okapi.ir.api.expr.{Aggregator, Expr, Var}
 import org.opencypher.okapi.logical.impl.{Direction, LogicalGraph}
+import org.opencypher.okapi.relational.impl.table.RecordHeader._
 import org.opencypher.okapi.relational.impl.table.{OpaqueField, ProjectedExpr, ProjectedField, RecordHeader}
 import org.opencypher.okapi.trees.AbstractTreeNode
 
@@ -168,7 +169,7 @@ final case class Limit(expr: Expr, in: FlatOperator, header: RecordHeader) exten
 final case class EmptyRecords(in: FlatOperator, header: RecordHeader) extends StackingFlatOperator
 
 final case class Start(sourceGraph: LogicalGraph, fields: Set[Var]) extends FlatLeafOperator {
-  override val header: RecordHeader = RecordHeader.from(fields.map(OpaqueField).toSeq: _*)
+  override val header: RecordHeader = RecordHeader.apply(fields.map(OpaqueField).toSeq: _*)
 }
 
 final case class FromGraph(override val sourceGraph: LogicalGraph, in: FlatOperator)

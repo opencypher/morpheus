@@ -29,16 +29,11 @@ package org.opencypher.okapi.relational.impl.table
 import org.opencypher.okapi.api.types._
 import org.opencypher.okapi.impl.exception.IllegalArgumentException
 import org.opencypher.okapi.ir.api.expr._
-
-final case class RecordSlot(index: Int, content: SlotContent) {
-  def withOwner(v: Var): RecordSlot = copy(content = content.withOwner(v))
-}
-
-object RecordSlot {
-  def from(pair: (Int, SlotContent)) = RecordSlot(pair._1, pair._2)
-}
+import RecordHeader._
 
 sealed trait SlotContent {
+
+  def toRecordSlot: RecordSlot = key -> this
 
   def key: Expr
 
@@ -46,7 +41,6 @@ sealed trait SlotContent {
   def owner: Option[Var]
 
   final def cypherType: CypherType = key.cypherType
-  def support: Traversable[Expr]
 
   def withOwner(newOwner: Var): SlotContent
 }
@@ -76,8 +70,6 @@ final case class ProjectedExpr(expr: Expr) extends ProjectedSlotContent {
   override def key = expr
   override def alias = None
 
-  override def support = Seq(expr)
-
   override def withOwner(newOwner: Var): ProjectedExpr = key match {
     case h: HasLabel  => ProjectedExpr(HasLabel(newOwner, h.label)(h.cypherType))
     case t: Type      => ProjectedExpr(Type(newOwner)(t.cypherType))
@@ -91,14 +83,10 @@ final case class ProjectedExpr(expr: Expr) extends ProjectedSlotContent {
 final case class OpaqueField(field: Var) extends FieldSlotContent {
   override def owner = Some(field)
 
-  override def support = Seq(field)
-
   override def withOwner(newOwner: Var): SlotContent = copy(Var(newOwner.name)(cypherType))
 }
 
 final case class ProjectedField(field: Var, expr: Expr) extends ProjectedSlotContent with FieldSlotContent {
-
-  override def support = Seq(field, expr)
 
   // TODO: Consider whether withOwner on ProjectedField should return ProjectedExpr
   override def withOwner(newOwner: Var): ProjectedExpr = expr match {

@@ -27,17 +27,17 @@
 package org.opencypher.spark.impl
 
 import org.apache.spark.storage.StorageLevel
-import org.opencypher.okapi.api.graph.{GraphOperations, PropertyGraph, QualifiedGraphName}
+import org.opencypher.okapi.api.graph.{GraphOperations, PropertyGraph}
 import org.opencypher.okapi.api.schema._
 import org.opencypher.okapi.api.table.CypherRecords
 import org.opencypher.okapi.api.types.{CTNode, CTRelationship}
 import org.opencypher.okapi.impl.exception.IllegalArgumentException
 import org.opencypher.okapi.ir.api.expr._
+import org.opencypher.okapi.relational.impl.table.RecordHeader._
 import org.opencypher.okapi.relational.impl.table.{ColumnName, OpaqueField, RecordHeader}
 import org.opencypher.spark.api.CAPSSession
 import org.opencypher.spark.api.io.{CAPSEntityTable, CAPSNodeTable}
 import org.opencypher.spark.impl.CAPSConverters._
-import org.opencypher.spark.impl.util.TagSupport.computeRetaggings
 import org.opencypher.spark.schema.CAPSSchema
 import org.opencypher.spark.schema.CAPSSchema._
 
@@ -89,7 +89,7 @@ trait CAPSGraph extends PropertyGraph with GraphOperations with Serializable {
       case None => records.data
     }
 
-    val updatedHeader = RecordHeader.from(keepSlots.toSeq: _*)
+    val updatedHeader = RecordHeader.apply(keepSlots.toSeq: _*)
 
     CAPSRecords.verifyAndCreate(updatedHeader, updatedData)(session)
   }
@@ -178,10 +178,10 @@ object CAPSGraph {
     override val schema: CAPSSchema = CAPSSchema.empty
 
     override def nodes(name: String, cypherType: CTNode): CAPSRecords =
-      CAPSRecords.empty(RecordHeader.from(OpaqueField(Var(name)(cypherType))))
+      CAPSRecords.empty(RecordHeader.apply(OpaqueField(Var(name)(cypherType))))
 
     override def relationships(name: String, cypherType: CTRelationship): CAPSRecords =
-      CAPSRecords.empty(RecordHeader.from(OpaqueField(Var(name)(cypherType))))
+      CAPSRecords.empty(RecordHeader.apply(OpaqueField(Var(name)(cypherType))))
   }
 
 }

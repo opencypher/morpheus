@@ -31,17 +31,19 @@ import org.opencypher.okapi.api.graph.QualifiedGraphName
 import org.opencypher.okapi.api.types._
 import org.opencypher.okapi.impl.exception.IllegalArgumentException
 import org.opencypher.okapi.relational.api.physical.PhysicalOperator
-import org.opencypher.okapi.relational.impl.table.{ColumnName, RecordHeader, RecordSlot, SlotContent}
+import org.opencypher.okapi.relational.impl.table.RecordHeader._
+import org.opencypher.okapi.relational.impl.table.{ColumnName, SlotContent}
 import org.opencypher.okapi.trees.AbstractTreeNode
 import org.opencypher.spark.api.CAPSSession
 import org.opencypher.spark.impl.CAPSConverters._
 import org.opencypher.spark.impl.DataFrameOps._
 import org.opencypher.spark.impl.physical.{CAPSPhysicalResult, CAPSRuntimeContext}
 import org.opencypher.spark.impl.{CAPSGraph, CAPSRecords}
+import org.opencypher.spark.impl.table.CAPSRecordHeader._
 
 private[spark] abstract class CAPSPhysicalOperator
   extends AbstractTreeNode[CAPSPhysicalOperator]
-  with PhysicalOperator[CAPSRecords, CAPSGraph, CAPSRuntimeContext] {
+    with PhysicalOperator[CAPSRecords, CAPSGraph, CAPSRuntimeContext] {
 
   override def header: RecordHeader
 
@@ -54,26 +56,24 @@ private[spark] abstract class CAPSPhysicalOperator
   protected def resolveTags(qgn: QualifiedGraphName)(implicit context: CAPSRuntimeContext): Set[Int] = context.patternGraphTags.getOrElse(qgn, resolve(qgn).tags)
 
   override def args: Iterator[Any] = super.args.flatMap {
-    case RecordHeader(_) | Some(RecordHeader(_)) => None
-    case other                                   => Some(other)
+    // Filter maps that are most likely record headers
+    case _: Map[_, _] | Some(_: Map[_, _]) => None
+    case other => Some(other)
   }
 }
 
 object CAPSPhysicalOperator {
-  def columnName(slot: RecordSlot): String = ColumnName.of(slot)
-
-  def columnName(content: SlotContent): String = ColumnName.of(content)
 
   def joinRecords(
-      header: RecordHeader,
-      joinSlots: Seq[(RecordSlot, RecordSlot)],
-      joinType: String = "inner",
-      deduplicate: Boolean = false)(lhs: CAPSRecords, rhs: CAPSRecords): CAPSRecords = {
+    header: RecordHeader,
+    joinSlots: Seq[(RecordSlot, RecordSlot)],
+    joinType: String = "inner",
+    deduplicate: Boolean = false)(lhs: CAPSRecords, rhs: CAPSRecords): CAPSRecords = {
 
     val lhsData = lhs.toDF()
     val rhsData = rhs.toDF()
 
-    val joinCols = joinSlots.map { case (left, right) => columnName(left) -> columnName(right) }
+    val joinCols = joinSlots.map { case (left, right) => left.columnName -> right.columnName }
 
     // TODO: the join produced corrupt data when the previous operator was a cross. We work around that by using a
     // subsequent select. This can be removed, once https://issues.apache.org/jira/browse/SPARK-23855 is solved or we
@@ -84,8 +84,8 @@ object CAPSPhysicalOperator {
   }
 
   def joinDFs(lhsData: DataFrame, rhsData: DataFrame, header: RecordHeader, joinCols: Seq[(String, String)])(
-      joinType: String,
-      deduplicate: Boolean)(implicit caps: CAPSSession): CAPSRecords = {
+    joinType: String,
+    deduplicate: Boolean)(implicit caps: CAPSSession): CAPSRecords = {
 
     val joinedData = lhsData.safeJoin(rhsData, joinCols, joinType)
 

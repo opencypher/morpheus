@@ -26,32 +26,36 @@
  */
 package org.opencypher.spark.impl
 
-import org.apache.spark.sql.Row
+import org.apache.spark.sql.{DataFrame, Row}
 import org.apache.spark.sql.types.StructType
 import org.opencypher.okapi.api.types.{CTNode, CTRelationship}
 import org.opencypher.okapi.impl.exception.IllegalArgumentException
 import org.opencypher.okapi.ir.api.expr._
+import org.opencypher.okapi.relational.impl.table.RecordHeader._
 import org.opencypher.okapi.relational.impl.table._
 import org.opencypher.spark.impl.table.CAPSRecordHeader._
 
 case class RowExpansion(
     targetHeader: RecordHeader,
     targetVar: Var,
-    entitiesWithChildren: Map[Var, Seq[RecordSlot]],
+    entitiesWithChildren: Map[Var, RecordHeader],
     propertyColumnLookupTables: Map[Var, Map[String, String]]
-) extends (Row => Seq[Row]) {
+)(implicit baseDf: DataFrame) extends (Row => Seq[Row]) {
 
   private lazy val targetLabels = targetVar.cypherType match {
     case CTNode(labels, _) => labels
     case _              => Set.empty[String]
   }
 
-  private val rowSchema = StructType(targetHeader.slots.map(_.asStructField))
+  private val rowSchema: StructType = {
+    val columnMappings = targetHeader.columnMappings
+    StructType(baseDf.columns.flatMap(columnMappings.get))
+  }
 
   private lazy val labelIndexLookupTable = entitiesWithChildren.map {
     case (node, slots) =>
       val labelIndicesForNode = slots.collect {
-        case RecordSlot(_, p @ ProjectedExpr(HasLabel(_, l))) if targetLabels.contains(l.name) =>
+        case (_, p @ ProjectedExpr(HasLabel(_, l))) if targetLabels.contains(l.name) =>
           rowSchema.fieldIndex(ColumnName.of(p.withOwner(targetVar)))
       }
       node -> labelIndicesForNode
@@ -60,7 +64,7 @@ case class RowExpansion(
   private lazy val typeIndexLookupTable = entitiesWithChildren.map {
     case (rel, slots) =>
       val typeIndexForRel = slots.collectFirst {
-        case RecordSlot(_, p @ ProjectedExpr(Type(r))) if r == rel =>
+        case (_, p @ ProjectedExpr(Type(r))) if r == rel =>
           rowSchema.fieldIndex(ColumnName.of(p.withOwner(targetVar)))
       }.getOrElse(throw IllegalArgumentException(s"a type column for relationship $rel"))
       rel -> typeIndexForRel

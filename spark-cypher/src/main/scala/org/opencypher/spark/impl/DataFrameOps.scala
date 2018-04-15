@@ -34,24 +34,22 @@ import org.opencypher.okapi.api.value.CypherValue
 import org.opencypher.okapi.api.value.CypherValue.CypherValue
 import org.opencypher.okapi.impl.exception.IllegalArgumentException
 import org.opencypher.okapi.ir.api.expr.{Expr, Param}
-import org.opencypher.okapi.relational.impl.table.RecordHeader
+import org.opencypher.okapi.relational.impl.table.RecordHeader._
 import org.opencypher.spark.api.SparkConfiguration._
 import org.opencypher.spark.impl.convert.CAPSCypherType._
 import org.opencypher.spark.impl.physical.CAPSRuntimeContext
+import org.opencypher.spark.impl.table.CAPSRecordHeader._
 
 object DataFrameOps {
 
   implicit class CypherRow(r: Row) {
-    def getCypherValue(expr: Expr, header: RecordHeader)(implicit context: CAPSRuntimeContext): CypherValue = {
+    def getCypherValue(expr: Expr, header: RecordHeader, df: DataFrame)(implicit context: CAPSRuntimeContext): CypherValue = {
       expr match {
         case Param(name) => context.parameters(name)
         case _ =>
-          header.slotsFor(expr).headOption match {
-            case None => throw IllegalArgumentException(s"slot for $expr")
-            case Some(slot) =>
-              val index = slot.index
-              CypherValue(r.get(index))
-          }
+          val slot = header.slotFor(expr)
+          val index = df.schema.fieldIndex(slot.columnName)
+          CypherValue(r.get(index))
       }
     }
   }
@@ -92,7 +90,6 @@ object DataFrameOps {
 
 
   implicit class RichDataFrame(val df: DataFrame) extends AnyVal {
-
 
     /**
       * Returns the corresponding Cypher type for the given column name in the data frame.
@@ -175,7 +172,7 @@ object DataFrameOps {
 
     def safeRenameColumns(renamings: (String, String)*): DataFrame = {
       renamings.foldLeft(df) { case (tempDf, (oldName, newName)) =>
-          tempDf.safeRenameColumn(oldName, newName)
+        tempDf.safeRenameColumn(oldName, newName)
       }
     }
 

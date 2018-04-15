@@ -37,7 +37,7 @@ class FunctionsBehaviour extends CAPSTestSuite with DefaultGraphInit {
 
   describe("exists") {
 
-    test("exists()") {
+    it("exists()") {
       val given = initGraph("CREATE ({id: 1}), ({id: 2}), ({other: 'foo'}), ()")
 
       val result = given.cypher("MATCH (n) RETURN exists(n.id) AS exists")

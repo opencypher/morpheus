@@ -31,178 +31,44 @@ import org.opencypher.okapi.api.types.{CTBoolean, CTNode, CTString, _}
 import org.opencypher.okapi.impl.exception.IllegalArgumentException
 import org.opencypher.okapi.ir.api.expr._
 import org.opencypher.okapi.ir.api.{Label, PropertyKey}
-import org.opencypher.okapi.relational.impl.syntax.RecordHeaderSyntax._
-
-/**
-  * A header for a CypherRecords.
-  *
-  * The header consists of a number of slots, each of which represents a Cypher expression.
-  * The slots that represent variables (which is a kind of expression) are called <i>fields</i>.
-  */
-final case class RecordHeader(internalHeader: InternalHeader) {
-
-  /**
-    * Computes the concatenation of this header and another header.
-    *
-    * @param other the header with which to concatenate.
-    * @return the concatenation of this and the argument header.
-    */
-  def ++(other: RecordHeader): RecordHeader =
-    copy(internalHeader ++ other.internalHeader)
-
-  /**
-    * Removes the specified RecordSlot from the header
-    * @param toRemove record slot to remove
-    * @return new RecordHeader with removed slot
-    */
-  def -(toRemove: RecordSlot): RecordHeader =
-    copy(internalHeader - toRemove)
-
-  /**
-    * Returns this record header with all fields of the other record header removed.
-    *
-    * @param other the header to remove
-    * @return updated header
-    */
-  def --(other: RecordHeader): RecordHeader =
-    copy(internalHeader -- other.internalHeader)
-
-
-  def indexOf(content: SlotContent): Option[Int] = slots.find(_.content == content).map(_.index)
-
-  /**
-    * The ordered sequence of slots stored in this header.
-    *
-    * @return the slots in this header.
-    */
-  def slots: IndexedSeq[RecordSlot] = internalHeader.slots
-  def contents: Set[SlotContent] = slots.map(_.content).toSet
-
-  /**
-    * The set of fields contained in this header.
-    *
-    * @return the fields in this header.
-    */
-  def fields: Set[String] = internalHeader.fields.map(_.name)
-
-  def slotsFor(expr: Expr): Seq[RecordSlot] =
-    internalHeader.slotsFor(expr)
-
-  // TODO: Push error handling to API consumers
-
-  def slotFor(variable: Var): RecordSlot = slotsFor(variable).headOption.getOrElse(
-    throw IllegalArgumentException(s"One of $fields", variable)
-  )
-
-  def mandatory(slot: RecordSlot): Boolean =
-    internalHeader.mandatory(slot)
-
-  def sourceNodeSlot(rel: Var): RecordSlot = slotsFor(StartNode(rel)()).headOption.getOrElse(
-    throw IllegalArgumentException(s"One of $fields", rel)
-  )
-  def targetNodeSlot(rel: Var): RecordSlot = slotsFor(EndNode(rel)()).headOption.getOrElse(
-    throw IllegalArgumentException(s"One of $fields", rel)
-  )
-  def typeSlot(rel: Expr): RecordSlot = slotsFor(Type(rel)()).headOption.getOrElse(
-    throw IllegalArgumentException(s"One of $fields", rel)
-  )
-
-  def labels(node: Var): Seq[HasLabel] = labelSlots(node).keys.toSeq
-
-  def properties(node: Var): Seq[Property] = propertySlots(node).keys.toSeq
-
-  def select(fields: Set[Var]): RecordHeader = {
-    fields.foldLeft(RecordHeader.empty) {
-      case (acc, next) =>
-        val contents = childSlots(next).map(_.content)
-        if (contents.nonEmpty) {
-          acc.update(addContents(OpaqueField(next) +: contents))._1
-        } else {
-          acc
-        }
-    }
-  }
-
-  def selfWithChildren(field: Var): Seq[RecordSlot] =
-    slotFor(field) +: childSlots(field)
-
-  def childSlots(entity: Var): Seq[RecordSlot] = {
-    slots.filter {
-      case RecordSlot(_, OpaqueField(_))               => false
-      case slot if slot.content.owner.contains(entity) => true
-      case _                                           => false
-    }
-  }
-
-  def labelSlots(node: Var): Map[HasLabel, RecordSlot] = {
-    slots.collect {
-      case s @ RecordSlot(_, ProjectedExpr(h: HasLabel)) if h.node == node     => h -> s
-      case s @ RecordSlot(_, ProjectedField(_, h: HasLabel)) if h.node == node => h -> s
-    }.toMap
-  }
-
-  def propertySlots(entity: Var): Map[Property, RecordSlot] = {
-    slots.collect {
-      case s @ RecordSlot(_, ProjectedExpr(p: Property)) if p.m == entity     => p -> s
-      case s @ RecordSlot(_, ProjectedField(_, p: Property)) if p.m == entity => p -> s
-    }.toMap
-  }
-
-  def nodesForType(nodeType: CTNode): Seq[Var] = {
-    slots.collect {
-      case RecordSlot(_, OpaqueField(v)) => v
-    }.filter { v =>
-      v.cypherType match {
-        case CTNode(labels, _) =>
-          val allPossibleLabels = this.labels(v).map(_.label.name).toSet ++ labels
-          nodeType.labels.subsetOf(allPossibleLabels)
-        case _ => false
-      }
-    }
-  }
-
-  def relationshipsForType(relType: CTRelationship): Seq[Var] = {
-    val targetTypes = relType.types
-
-    slots.collect {
-      case RecordSlot(_, OpaqueField(v)) => v
-    }.filter { v =>
-      v.cypherType match {
-        case t: CTRelationship if targetTypes.isEmpty || t.types.isEmpty => true
-        case CTRelationship(types, _) =>
-          types.exists(targetTypes.contains)
-        case _ => false
-      }
-    }
-  }
-
-  override def toString: String = s"RecordHeader with ${slots.size} slots"
-
-  def pretty: String = s"RecordHeader with ${slots.size} slots: \n\t ${slots.mkString("\n\t")}"
-}
 
 object RecordHeader {
 
-  def empty: RecordHeader =
-    RecordHeader(InternalHeader.empty)
+  type RecordSlot = (Expr, SlotContent)
 
-  def from(slots: List[RecordSlot]): RecordHeader =
-    from(slots.map(_.content): _*)
+  implicit class RichRecordSlot(val slot: RecordSlot) extends AnyVal {
+    def key: Expr = slot._1
 
-  def from(contents: SlotContent*): RecordHeader =
-    RecordHeader(contents.foldLeft(InternalHeader.empty) { case (header, slot) => header + slot })
+    def value: SlotContent = slot._2
 
-  // TODO: Probably move this to an implicit class RichSchema?
-  def nodeFromSchema(node: Var, schema: Schema): RecordHeader = {
-    val labels: Set[String] = node.cypherType match {
-      case CTNode(l, _) => l
-      case other     => throw IllegalArgumentException("CTNode", other)
-    }
-    nodeFromSchema(node, schema, labels)
+    def content: SlotContent = value
+
+    def withOwner(v: Var): RecordSlot = value.withOwner(v).toRecordSlot
   }
 
-  def nodeFromSchema(node: Var, schema: Schema, labels: Set[String]): RecordHeader = {
+  type RecordHeader = Map[Expr, SlotContent]
 
+  val empty: RecordHeader = Map.empty[Expr, SlotContent]
+
+  def apply(contents: SlotContent*): RecordHeader = fromSlotContents(contents)
+
+  def fromSlots(slots: Seq[RecordSlot]): RecordHeader = apply(slots.map(_.content): _*)
+
+  def fromSlots(slots: Set[RecordSlot]): RecordHeader = fromSlots(slots.toSeq)
+
+  def fromSlotContents(contents: Set[SlotContent]): RecordHeader = fromSlotContents(contents.toSeq)
+
+  def fromSlotContents(contents: Seq[SlotContent]): RecordHeader = contents.map(_.toRecordSlot).toMap
+
+  def forNode(node: Var, schema: Schema): RecordHeader = {
+    val labels: Set[String] = node.cypherType match {
+      case CTNode(l, _) => l
+      case other => throw IllegalArgumentException("CTNode", other)
+    }
+    forNodeWithExplicitLabels(node, schema, labels)
+  }
+
+  protected def forNodeWithExplicitLabels(node: Var, schema: Schema, labels: Set[String]): RecordHeader = {
     val labelCombos = if (labels.isEmpty) {
       // all nodes scan
       schema.allLabelCombinations
@@ -224,13 +90,11 @@ object RecordHeader {
     }
 
     val projectedExprs = labelExprs ++ propertyExprs
-    val (header, _) = RecordHeader.empty
-      .update(addContents(OpaqueField(node) +: projectedExprs))
 
-    header
+    RecordHeader.fromSlotContents(OpaqueField(node) +: projectedExprs)
   }
 
-  def relationshipFromSchema(rel: Var, schema: Schema): RecordHeader = {
+  def forRelationship(rel: Var, schema: Schema): RecordHeader = {
     val types: Set[String] = rel.cypherType match {
       case CTRelationship(_types, _) if _types.isEmpty =>
         schema.relationshipTypes
@@ -240,10 +104,10 @@ object RecordHeader {
         throw IllegalArgumentException("CTRelationship", other)
     }
 
-    relationshipFromSchema(rel, schema, types)
+    forRelationshipWithExplicitType(rel, schema, types)
   }
 
-  def relationshipFromSchema(rel: Var, schema: Schema, relTypes: Set[String]): RecordHeader = {
+  protected def forRelationshipWithExplicitType(rel: Var, schema: Schema, relTypes: Set[String]): RecordHeader = {
     val relKeyHeaderProperties = relTypes.toSeq
       .flatMap(t => schema.relationshipKeys(t).toSeq)
       .groupBy(_._1)
@@ -264,8 +128,121 @@ object RecordHeader {
     val endNode = ProjectedExpr(EndNode(rel)(CTNode))
 
     val relHeaderContents = Seq(startNode, OpaqueField(rel), typeString, endNode) ++ relKeyHeaderContents
-    val (relHeader, _) = RecordHeader.empty.update(addContents(relHeaderContents))
-
-    relHeader
+    RecordHeader.fromSlotContents(relHeaderContents)
   }
+
+  /**
+    * A header for a CypherRecords.
+    *
+    * The header consists of a number of slots, each of which represents a Cypher expression.
+    * The slots that represent variables (which is a kind of expression) are called <i>fields</i>.
+    */
+  implicit class RichRecordHeader(val header: RecordHeader) extends AnyVal {
+    /**
+      * The set of record slots stored in this header.
+      *
+      * @return slots in this header
+      */
+    def slots: Set[RecordSlot] = header.toSet
+
+    def contents: Set[SlotContent] = header.values.toSet
+
+    def withSlot(slotContent: SlotContent): RecordHeader = header.updated(slotContent.key, slotContent)
+
+    def withSlot(slot: RecordSlot): RecordHeader = withSlot(slot.content)
+
+    def withSlots(slots: RecordSlot*): RecordHeader = header ++ slots
+
+    def withSlotContent(slotContent: SlotContent): RecordHeader = header + slotContent.toRecordSlot
+
+    def withSlotContents(slotContents: SlotContent*): RecordHeader = header ++ slotContents.map(_.toRecordSlot)
+
+    /**
+      * The set of fields contained in this header.
+      *
+      * @return the fields in this header.
+      */
+    def fields: Set[Var] = header.keySet.collect { case v: Var => v }
+
+    def fieldNames: Set[String] = fields.map(_.name)
+
+    def slotFor(expr: Expr): RecordSlot = expr -> header(expr)
+
+    def slotFor(varName: String): Option[RecordSlot] = {
+      fields.collectFirst { case v@Var(name) if name == varName => v }.map(slotFor)
+    }
+
+    def sourceNodeSlot(rel: Var): RecordSlot = slotFor(StartNode(rel)())
+
+    def targetNodeSlot(rel: Var): RecordSlot = slotFor(EndNode(rel)())
+
+    def typeSlot(rel: Expr): RecordSlot = slotFor(Type(rel)())
+
+    def labels(node: Var): Seq[HasLabel] = labelSlots(node).keys.toSeq
+
+    def properties(node: Var): Seq[Property] = propertySlots(node).keys.toSeq
+
+    def select(field: Var): RecordHeader = selfWithChildren(field)
+
+    def select(fields: Set[Var]): RecordHeader = fields.flatMap(selfWithChildren).toMap
+
+    protected def selfWithChildren(field: Var): RecordHeader = {
+      if (header.contains(field)) {
+        childSlots(field) + slotFor(field)
+      } else {
+        RecordHeader.empty
+      }
+    }
+
+    def childSlots(entity: Var): RecordHeader = {
+      slots.filter {
+        case (_, OpaqueField(_)) => false
+        case slot if slot.content.owner.contains(entity) => true
+        case _ => false
+      }.toMap
+    }
+
+    def labelSlots(node: Var): Map[HasLabel, RecordSlot] = {
+      slots.collect {
+        case s@(_, ProjectedExpr(h: HasLabel)) if h.node == node => h -> s
+        case s@(_, ProjectedField(_, h: HasLabel)) if h.node == node => h -> s
+      }.toMap
+    }
+
+    def propertySlots(entity: Var): Map[Property, RecordSlot] = {
+      slots.collect {
+        case s@(_, ProjectedExpr(p: Property)) if p.m == entity => p -> s
+        case s@(_, ProjectedField(_, p: Property)) if p.m == entity => p -> s
+      }.toMap
+    }
+
+    def nodesForType(nodeType: CTNode): Set[Var] = {
+      slots.collect {
+        case (_, OpaqueField(v)) => v
+      }.filter { v =>
+        v.cypherType match {
+          case CTNode(labels, _) =>
+            val allPossibleLabels = this.labels(v).map(_.label.name).toSet ++ labels
+            nodeType.labels.subsetOf(allPossibleLabels)
+          case _ => false
+        }
+      }
+    }
+
+    def relationshipsForType(relType: CTRelationship): Set[Var] = {
+      val targetTypes = relType.types
+
+      slots.collect {
+        case (_, OpaqueField(v)) => v
+      }.filter { v =>
+        v.cypherType match {
+          case t: CTRelationship if targetTypes.isEmpty || t.types.isEmpty => true
+          case CTRelationship(types, _) =>
+            types.exists(targetTypes.contains)
+          case _ => false
+        }
+      }
+    }
+  }
+
 }

@@ -32,11 +32,13 @@ import org.opencypher.okapi.api.value.CypherValue._
 import org.opencypher.okapi.api.value._
 import org.opencypher.okapi.impl.exception.UnsupportedOperationException
 import org.opencypher.okapi.ir.api.expr.Var
+import org.opencypher.okapi.relational.impl.table.RecordHeader._
 import org.opencypher.okapi.relational.impl.table.{ColumnName, RecordHeader}
+import org.opencypher.spark.impl.table.CAPSRecordHeader._
 
 final case class rowToCypherMap(header: RecordHeader) extends (Row => CypherMap) {
   override def apply(row: Row): CypherMap = {
-    val values = header.internalHeader.fields.map { field =>
+    val values = header.fields.map { field =>
       field.name -> constructValue(row, field)
     }.toSeq
 
@@ -53,20 +55,20 @@ final case class rowToCypherMap(header: RecordHeader) extends (Row => CypherMap)
         collectRel(row, field)
 
       case _ =>
-        val raw = row.getAs[Any](ColumnName.of(header.slotFor(field)))
+        val raw = row.getAs[Any](header.slotFor(field).columnName)
         CypherValue(raw)
     }
   }
 
   private def collectNode(row: Row, field: Var): CypherValue = {
-    val idValue = row.getAs[Any](ColumnName.of(header.slotFor(field)))
+    val idValue = row.getAs[Any](header.slotFor(field).columnName)
     idValue match {
       case null       => CypherNull
       case id: Long   =>
         val labels = header
         .labelSlots(field)
         .mapValues { s =>
-          row.getAs[Boolean](ColumnName.of(s))
+          row.getAs[Boolean](s.columnName)
         }
         .collect {
           case (h, b) if b =>
@@ -77,7 +79,7 @@ final case class rowToCypherMap(header: RecordHeader) extends (Row => CypherMap)
         val properties = header
           .propertySlots(field)
           .mapValues { s =>
-            CypherValue(row.getAs[Any](ColumnName.of(s)))
+            CypherValue(row.getAs[Any](s.columnName))
           }
           .collect {
             case (p, v) if !v.isNull =>
@@ -90,7 +92,7 @@ final case class rowToCypherMap(header: RecordHeader) extends (Row => CypherMap)
   }
 
   private def collectRel(row: Row, field: Var): CypherValue = {
-    val idValue = row.getAs[Any](ColumnName.of(header.slotFor(field)))
+    val idValue = row.getAs[Any](header.slotFor(field).columnName)
     idValue match {
       case null       => CypherNull
       case id: Long   =>

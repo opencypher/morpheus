@@ -36,6 +36,8 @@ import org.opencypher.okapi.ir.api.block.{Asc, Desc, SortItem}
 import org.opencypher.okapi.ir.api.expr._
 import org.opencypher.okapi.ir.impl.syntax.ExprSyntax._
 import org.opencypher.okapi.logical.impl._
+import org.opencypher.okapi.relational.impl.table.RecordHeader._
+import org.opencypher.spark.impl.table.CAPSRecordHeader._
 import org.opencypher.okapi.relational.impl.table.{ColumnName, _}
 import org.opencypher.spark.api.CAPSSession
 import org.opencypher.spark.impl.CAPSRecords
@@ -99,7 +101,7 @@ final case class Unwind(in: CAPSPhysicalOperator, list: Expr, item: Var, header:
 
   override def executeUnary(prev: CAPSPhysicalResult)(implicit context: CAPSRuntimeContext): CAPSPhysicalResult = {
     prev.mapRecordsWithDetails { records =>
-      val itemColumn = ColumnName.of(header.slotFor(item))
+      val itemColumn = header.slotFor(item).columnName
       val newData = list match {
         // the list is external: we create a dataframe and crossjoin with it
         case Param(name) =>
@@ -136,12 +138,12 @@ final case class Alias(in: CAPSPhysicalOperator, expr: Expr, alias: Var, header:
 
   override def executeUnary(prev: CAPSPhysicalResult)(implicit context: CAPSRuntimeContext): CAPSPhysicalResult = {
     prev.mapRecordsWithDetails { records =>
-      val oldSlot = records.header.slotsFor(expr).head
+      val oldSlot = records.header.slotFor(expr)
 
-      val newSlot = header.slotsFor(alias).head
+      val newSlot = header.slotFor(alias)
 
-      val oldColumnName = ColumnName.of(oldSlot)
-      val newColumnName = ColumnName.of(newSlot)
+      val oldColumnName = oldSlot.columnName
+      val newColumnName = newSlot.columnName
 
       val newData = if (records.data.columns.contains(oldColumnName)) {
         records.data.safeRenameColumn(oldColumnName, newColumnName)
@@ -158,23 +160,19 @@ final case class Project(in: CAPSPhysicalOperator, expr: Expr, header: RecordHea
 
   override def executeUnary(prev: CAPSPhysicalResult)(implicit context: CAPSRuntimeContext): CAPSPhysicalResult = {
     prev.mapRecordsWithDetails { records =>
-      val headerNames = header.slotsFor(expr).map(ColumnName.of)
-      val dataNames = records.data.columns.toSeq
+      val sparkColumnNameForExpr = header.slotFor(expr).columnName
+      val sparkColumnNames = records.data.columns
 
-      // TODO: Can optimise for var AS var2 case -- avoid duplicating data
-      val newData = headerNames.diff(dataNames) match {
-        case Seq(one) =>
-          // align the name of the column to what the header expects
-          val newCol = expr.asSparkSQLExpr(header, records.data, context).as(one)
-          val columnsToSelect = records.data.columns
-            .map(records.data.col) :+ newCol
-
-          records.data.select(columnsToSelect: _*)
-        case seq if seq.isEmpty => throw IllegalStateException(s"Did not find a slot for expression $expr in $headerNames")
-        case seq => throw IllegalStateException(s"Got multiple slots for expression $expr: $seq")
+      if (sparkColumnNames.contains(sparkColumnNameForExpr)) {
+        // Already projected, do nothing
+        records
+      } else {
+        val newCol = expr.asSparkSQLExpr(header, records.data, context).as(sparkColumnNameForExpr)
+        val columnsToSelect = records.data.columns.map(records.data.col) :+ newCol
+        val newData = records.data.select(columnsToSelect: _*)
+        CAPSRecords.verifyAndCreate(header, newData)(records.caps)
       }
 
-      CAPSRecords.verifyAndCreate(header, newData)(records.caps)
     }
   }
 }
@@ -221,23 +219,19 @@ final case class SelectFields(in: CAPSPhysicalOperator, fields: List[Var], heade
     prev.mapRecordsWithDetails { records =>
       val fieldIndices = fields.zipWithIndex.toMap
 
-      val groupedSlots = header.slots.sortBy {
-        _.content match {
-          case content: FieldSlotContent =>
-            fieldIndices.getOrElse(content.field, Int.MaxValue)
-          case content@ProjectedExpr(expr) =>
-            val deps = expr.dependencies
-            deps.headOption
-              .filter(_ => deps.size == 1)
-              .flatMap(fieldIndices.get)
-              .getOrElse(Int.MaxValue)
-        }
+      val groupedSlots = header.contents.toSeq.sortBy {
+        case content: FieldSlotContent =>
+          fieldIndices.getOrElse(content.field, Int.MaxValue)
+        case content@ProjectedExpr(expr) =>
+          val deps = expr.dependencies
+          deps.headOption
+            .filter(_ => deps.size == 1)
+            .flatMap(fieldIndices.get)
+            .getOrElse(Int.MaxValue)
       }
 
       val data = records.data
-      val columns = groupedSlots.map { s =>
-        data.col(ColumnName.of(s))
-      }
+      val columns = groupedSlots.map(s => data.col(s.columnName))
       val newData = records.data.select(columns: _*)
 
       CAPSRecords.verifyAndCreate(header, newData)(records.caps)
@@ -285,7 +279,7 @@ final case class Aggregate(
       val data: Either[RelationalGroupedDataset, DataFrame] =
         if (group.nonEmpty) {
           val columns = group.flatMap { expr =>
-            val withChildren = records.header.selfWithChildren(expr).map(_.content.key)
+            val withChildren = records.header.select(expr).map(_.content.key)
             withChildren.map(e => withInnerExpr(e)(identity))
           }
           Left(inData.groupBy(columns.toSeq: _*))
@@ -431,13 +425,13 @@ final case class InitVarExpand(in: CAPSPhysicalOperator, source: Var, edgeList: 
       val inputData = records.data
       val keep = inputData.columns.map(inputData.col)
 
-      val edgeListColName = columnName(edgeListSlot)
+      val edgeListColName = edgeListSlot.columnName
       val edgeListColumn = functions.typedLit(Array[Long]())
       val withEmptyList = inputData.safeAddColumn(edgeListColName, edgeListColumn)
 
       val cols = keep ++ Seq(
         withEmptyList.col(edgeListColName),
-        inputData.col(columnName(sourceSlot)).as(columnName(targetSlot)))
+        inputData.col(sourceSlot.columnName).as(targetSlot.columnName))
 
       val initializedData = withEmptyList.select(cols: _*)
 

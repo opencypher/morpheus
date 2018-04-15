@@ -34,6 +34,7 @@ import org.opencypher.okapi.ir.api.{IRField, Label, PropertyKey}
 import org.opencypher.okapi.ir.test._
 import org.opencypher.okapi.ir.test.support.MatchHelper._
 import org.opencypher.okapi.logical.impl.{Directed, LogicalGraph, LogicalOperatorProducer, Undirected}
+import org.opencypher.okapi.relational.impl.table.RecordHeader._
 import org.opencypher.okapi.relational.impl.table.{FieldSlotContent, OpaqueField, ProjectedExpr, ProjectedField}
 import org.opencypher.okapi.test.BaseTestSuite
 
@@ -370,7 +371,7 @@ class FlatPlannerTest extends BaseTestSuite {
         )
       )
     )
-    val orderedContents = result.header.slots.map(_.content).collect { case content: FieldSlotContent => content.key }
+    val unorderedContents = result.header.slots.map(_.content).collect { case content: FieldSlotContent => content.key }
 
     result should equal(
       mkFlat.select(
@@ -385,7 +386,7 @@ class FlatPlannerTest extends BaseTestSuite {
         )
       )
     )
-    orderedContents should equal(List(Var("foo")(CTString), Var("n")(CTNode), Var("baz")(CTInteger)))
+    unorderedContents should equal(Set(Var("foo")(CTString), Var("n")(CTNode), Var("baz")(CTInteger)))
   }
 
   private def logicalNodeScan(nodeField: String, labelNames: String*) =

@@ -37,9 +37,10 @@ import org.opencypher.okapi.impl.exception.IllegalArgumentException
 import org.opencypher.okapi.ir.api.PropertyKey
 import org.opencypher.okapi.ir.api.expr._
 import org.opencypher.okapi.relational.impl.table.RecordHeader
+import org.opencypher.okapi.relational.impl.table.RecordHeader._
 import org.opencypher.spark.api.CAPSSession
 import org.opencypher.spark.impl.io.neo4j.Neo4jGraph.{filterNode, filterRel, nodeToRow, relToRow}
-import org.opencypher.spark.impl.table.CAPSRecordHeader
+import org.opencypher.spark.impl.table.CAPSRecordHeader._
 import org.opencypher.spark.impl.{CAPSGraph, CAPSRecords}
 import org.opencypher.spark.schema.CAPSSchema
 
@@ -77,7 +78,7 @@ class Neo4jGraph(val schema: CAPSSchema, val session: CAPSSession)(
       targetNode)
 
   override def nodes(name: String, cypherType: CTNode): CAPSRecords = {
-    val header = RecordHeader.nodeFromSchema(Var(name)(cypherType), schema)
+    val header = RecordHeader.forNode(Var(name)(cypherType), schema)
 
     computeRecords(name, cypherType, header) { (header, struct) =>
       inputNodes.filter(filterNode(cypherType)).map(nodeToRow(header, struct))
@@ -85,7 +86,7 @@ class Neo4jGraph(val schema: CAPSSchema, val session: CAPSSession)(
   }
 
   override def relationships(name: String, cypherType: CTRelationship): CAPSRecords = {
-    val header = RecordHeader.relationshipFromSchema(Var(name)(cypherType), schema)
+    val header = RecordHeader.forRelationship(Var(name)(cypherType), schema)
 
     computeRecords(name, cypherType, header) { (header, struct) =>
       inputRels.filter(filterRel(cypherType)).map(relToRow(header, struct))
@@ -94,11 +95,12 @@ class Neo4jGraph(val schema: CAPSSchema, val session: CAPSSession)(
 
   private def computeRecords(name: String, cypherType: CypherType, header: RecordHeader)(
     computeRdd: (RecordHeader, StructType) => RDD[Row]): CAPSRecords = {
-    val struct = CAPSRecordHeader.asSparkStructType(header)
+    // Order is arbitrary, as it is not defined by the header
+    val struct = StructType(header.columnMappings.values.toSeq)
     val rdd = computeRdd(header, struct)
     val slot = header.slotFor(Var(name)(cypherType))
     val rawData = session.sparkSession.createDataFrame(rdd, struct)
-    val col = rawData.col(rawData.columns(slot.index))
+    val col = rawData.col(rawData.columns(slot.indexIn(rawData)))
     val recordData = rawData.repartition(col).sortWithinPartitions(col)
     CAPSRecords.verifyAndCreate(header, recordData)(session)
   }
@@ -140,7 +142,7 @@ object Neo4jGraph {
             throw IllegalArgumentException("a node member expression (property, label, node variable)", x)
 
         }
-      }
+      }.toSeq
 
       Row(values: _*)
     }
@@ -182,7 +184,7 @@ object Neo4jGraph {
               "a relationship member expression (property, start node, end node, type, relationship variable)",
               x)
         }
-      }
+      }.toSeq
 
       Row(values: _*)
     }

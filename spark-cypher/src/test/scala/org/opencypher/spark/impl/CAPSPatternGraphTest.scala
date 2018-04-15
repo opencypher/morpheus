@@ -36,9 +36,10 @@ import org.opencypher.okapi.ir.api.{Label, PropertyKey}
 import org.opencypher.okapi.ir.test._
 import org.opencypher.okapi.ir.test.support.Bag
 import org.opencypher.okapi.ir.test.support.Bag._
-import org.opencypher.okapi.relational.impl.syntax.RecordHeaderSyntax._
-import org.opencypher.okapi.relational.impl.table.{OpaqueField, ProjectedExpr, ProjectedField, RecordHeader}
+import org.opencypher.okapi.relational.impl.table.RecordHeader._
+import org.opencypher.okapi.relational.impl.table._
 import org.opencypher.spark.impl.table.CAPSRecordHeader
+import org.opencypher.spark.impl.table.CAPSRecordHeader._
 import org.opencypher.spark.schema.CAPSSchema._
 import org.opencypher.spark.test.support.creation.caps.{CAPSPatternGraphFactory, CAPSTestGraphFactory}
 
@@ -403,20 +404,19 @@ class CAPSPatternGraphTest extends CAPSGraphTest {
 
   test("Supports node scans from ad-hoc table") {
     val n: Var = 'n -> CTNode
-    val fields = Seq(
+    val fields: Seq[SlotContent] = Seq(
       OpaqueField('p -> CTNode("Person")),
       OpaqueField(n),
       ProjectedExpr(HasLabel(n, Label("Person"))(CTBoolean)),
       OpaqueField('q -> CTNode("Foo"))
     )
-    val (header, _) = RecordHeader.empty.update(addContents(fields))
+    val header = RecordHeader(fields: _*)
 
     val df = session.createDataFrame(
       List(
         Row(0L, 1L, true, 2L),
         Row(10L, 11L, false, 12L)
-      ).asJava,
-      CAPSRecordHeader.asSparkStructType(header))
+      ).asJava, fields.asSparkSchema)
 
     val schema = Schema.empty
       .withNodePropertyKeys("Person")()
@@ -450,7 +450,7 @@ class CAPSPatternGraphTest extends CAPSGraphTest {
       OpaqueField(x),
       ProjectedExpr(Type(x)(CTString))
     )
-    val (header, _) = RecordHeader.empty.update(addContents(fields))
+    val header = RecordHeader(fields: _*)
 
     val df = session.createDataFrame(
       List(
@@ -466,8 +466,7 @@ class CAPSPatternGraphTest extends CAPSGraphTest {
         Row(2007L, true, "Mallory", 10L, true, "Mallory", "EU", 2007L, 10L, 5849745457152L, "IS"),
         Row(2003L, true, "Eve", 6L, true, "Eve", "US", 2003L, 6L, 5480378269696L, "IS"),
         Row(2004L, true, "Carol", 7L, true, "Carol", "US", 2004L, 7L, 5626407157760L, "IS")
-      ).asJava,
-      CAPSRecordHeader.asSparkStructType(header)
+      ).asJava, fields.asSparkSchema
     )
 
     val schema = Schema.empty
@@ -492,15 +491,13 @@ class CAPSPatternGraphTest extends CAPSGraphTest {
       ProjectedExpr(HasLabel(p, Label("Person"))(CTBoolean)),
       ProjectedExpr(Property(p, PropertyKey("name"))(CTString))
     )
-    val (header, _) = RecordHeader.empty.update(addContents(fields))
+    val header = RecordHeader(fields: _*)
 
-    val sparkHeader = CAPSRecordHeader.asSparkStructType(header)
     val df = session.createDataFrame(
       List(
         Row(0L, true, "PersonPeter"),
         Row(0L, true, "PersonPeter")
-      ).asJava,
-      sparkHeader)
+      ).asJava, fields.asSparkSchema)
 
     val schema = Schema.empty
       .withNodePropertyKeys("Person")("name" -> CTString)
@@ -525,15 +522,13 @@ class CAPSPatternGraphTest extends CAPSGraphTest {
       ProjectedExpr(Property(p, PropertyKey("name"))(CTString)),
       ProjectedField('foo -> CTString, Property(e, PropertyKey("name"))(CTString))
     )
-    val (header, _) = RecordHeader.empty.update(addContents(fields))
+    val header = RecordHeader(fields: _*)
 
-    val sparkHeader = CAPSRecordHeader.asSparkStructType(header)
     val df = session.createDataFrame(
       List(
         Row(0L, true, 1L, true, "PersonPeter", "EmployeePeter"),
         Row(10L, true, 11L, true, "PersonSusanna", "EmployeeSusanna")
-      ).asJava,
-      sparkHeader)
+      ).asJava, fields.asSparkSchema)
 
     val schema = Schema.empty
       .withNodePropertyKeys("Person")("name" -> CTString)
@@ -565,15 +560,13 @@ class CAPSPatternGraphTest extends CAPSGraphTest {
       ProjectedExpr(Property(e, PropertyKey("name"))(CTString.nullable)),
       ProjectedExpr(Property(pe, PropertyKey("name"))(CTString))
     )
-    val (header, _) = RecordHeader.empty.update(addContents(fields))
+    val header = RecordHeader(fields: _*)
 
-    val sparkHeader = CAPSRecordHeader.asSparkStructType(header)
     val df = session.createDataFrame(
       List(
         Row(0L, 1L, 2L, "PersonPeter", "EmployeePeter", "HybridPeter"),
         Row(10L, 11L, 12L, "person.graphsusanna", null, "HybridSusanna")
-      ).asJava,
-      sparkHeader)
+      ).asJava, fields.asSparkSchema)
 
     val schema = Schema.empty
       .withNodePropertyKeys("Person")("name" -> CTString)
@@ -727,7 +720,7 @@ class CAPSPatternGraphTest extends CAPSGraphTest {
       .join(booksDf, readsDf.col("____target(r)") === booksDf.col("b"))
 
     val slots = persons.header.slots ++ reads.header.slots ++ books.header.slots
-    val joinHeader = RecordHeader.from(slots.map(_.content): _*)
+    val joinHeader = RecordHeader.fromSlots(slots)
 
     CAPSGraph.create(CAPSRecords.verifyAndCreate(joinHeader, joinedDf), inputGraph.schema)
   }

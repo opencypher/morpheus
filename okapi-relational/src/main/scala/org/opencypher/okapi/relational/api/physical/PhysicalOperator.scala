@@ -28,7 +28,7 @@ package org.opencypher.okapi.relational.api.physical
 
 import org.opencypher.okapi.api.graph.PropertyGraph
 import org.opencypher.okapi.api.table.CypherRecords
-import org.opencypher.okapi.relational.impl.table.RecordHeader
+import org.opencypher.okapi.relational.impl.table.RecordHeader._
 
 /**
   * Represents a backend-specific implementation of a physical query operation on the underlying data.

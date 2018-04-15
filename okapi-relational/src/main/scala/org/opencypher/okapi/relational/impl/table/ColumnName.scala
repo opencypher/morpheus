@@ -29,6 +29,7 @@ package org.opencypher.okapi.relational.impl.table
 import java.util.UUID
 
 import org.opencypher.okapi.ir.api.expr.{Expr, Property, Var}
+import org.opencypher.okapi.relational.impl.table.RecordHeader._
 
 import scala.collection.mutable
 

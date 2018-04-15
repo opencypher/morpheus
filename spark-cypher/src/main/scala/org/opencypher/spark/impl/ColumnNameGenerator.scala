@@ -26,7 +26,8 @@
  */
 package org.opencypher.spark.impl
 
-import org.opencypher.okapi.relational.impl.table.{ColumnName, RecordHeader}
+import org.opencypher.okapi.relational.impl.table.ColumnName
+import org.opencypher.okapi.relational.impl.table.RecordHeader._
 
 import scala.annotation.tailrec
 import scala.util.Random
