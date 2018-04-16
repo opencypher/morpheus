@@ -63,12 +63,12 @@ class RecordHeaderTest extends BaseTestSuite {
       Property(p, PropertyKey("prop"))()
     )
 
-    val h1 = RecordHeader.empty.withExpressions((nExprs ++ pExprs).toSeq: _*)
+    val header = RecordHeader.empty.withExpressions((nExprs ++ pExprs).toSeq: _*)
 
-    h1.selectField(n).expressions should equal(nExprs)
-    h1.selectField(p).expressions should equal(pExprs)
-    h1.selectField(r).expressions should equal(Set.empty)
-    h1.selectFields(Set[Var]('n, 'p, 'r)).expressions should equal(nExprs ++ pExprs)
+    header.selectField(n).expressions should equal(nExprs)
+    header.selectField(p).expressions should equal(pExprs)
+    header.selectField(r).expressions should equal(Set.empty)
+    header.selectFields(Set[Var]('n, 'p, 'r)).expressions should equal(nExprs ++ pExprs)
   }
 
   test("Can add projected expressions") {
@@ -91,7 +91,7 @@ class RecordHeaderTest extends BaseTestSuite {
     val expr = n
     val result = RecordHeader(expr, expr)
 
-    result.mappings should equal(Set(expr))
+    result.expressions should equal(Set(expr))
     result.fields should equal(Set(n))
   }
 
@@ -137,7 +137,7 @@ class RecordHeaderTest extends BaseTestSuite {
     val newHeader = oldHeader.withMapping(newMapping)
 
     oldHeader.mappings should equal(Set(oldExpr -> Set.empty))
-    newHeader.mappings should equal(Set(oldExpr) -> Set(Var("n.text")(CTString)))
+    newHeader.mappings should equal(Set(oldExpr -> Set(Var("n.text")(CTString))))
     oldHeader.expressions should be(newHeader.expressions)
     newHeader.fields should equal(Set(Var("n.text")(CTString)))
   }
@@ -147,7 +147,7 @@ class RecordHeaderTest extends BaseTestSuite {
     val newField = Var("n")(CTNode("User"))
     val newHeader = oldHeader.withField(newField)
 
-    newHeader.mappings should equal(Set(newField))
+    newHeader.expressions should equal(Set(newField))
     newHeader.fields.head.cypherType should equal(CTNode("User"))
   }
 
