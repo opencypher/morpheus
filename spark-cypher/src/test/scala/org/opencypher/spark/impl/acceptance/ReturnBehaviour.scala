@@ -308,7 +308,7 @@ class ReturnBehaviour extends CAPSTestSuite with DefaultGraphInit {
           |LIMIT $limit
           |RETURN a""".stripMargin, Map("limit" -> CypherValue(1)))
 
-      res.getRecords.size
+      res.getRecords.size should be(1)
     }
 
 
