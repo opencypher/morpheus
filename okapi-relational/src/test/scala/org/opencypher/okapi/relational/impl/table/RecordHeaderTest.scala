@@ -31,6 +31,7 @@ import org.opencypher.okapi.api.types._
 import org.opencypher.okapi.ir.api.expr._
 import org.opencypher.okapi.ir.api.{Label, PropertyKey, RelType}
 import org.opencypher.okapi.ir.test._
+import org.opencypher.okapi.ir.test.support.MatchHelper.equalWithTracing
 import org.opencypher.okapi.relational.impl.table.RecordHeader._
 import org.opencypher.okapi.test.BaseTestSuite
 
@@ -184,8 +185,11 @@ class RecordHeaderTest extends BaseTestSuite {
 
     val header = RecordHeader(n).withExpression(label1).withExpression(label2).withExpression(prop)
 
+    println(header)
+    println(header.labels(n))
+
     header.labels(n) should equal(
-      Seq(
+      Set(
         HasLabel(n, Label("A"))(CTBoolean),
         HasLabel(n, Label("B"))(CTBoolean)
       )
@@ -238,17 +242,17 @@ class RecordHeaderTest extends BaseTestSuite {
     )
   }
 
-  test("labelSlots") {
+  it("labelSlots") {
     val label1 = HasLabel(n, Label("A"))(CTBoolean) -> Set.empty[Var]
     val label2 = HasLabel(n, Label("B"))(CTBoolean) -> Set(foo)
     val label3 = HasLabel(m, Label("B"))(CTBoolean) -> Set.empty[Var]
     val prop = Property(n, PropertyKey("foo"))(CTString) -> Set.empty[Var]
 
     val header = RecordHeader.empty.withMappings(n -> Set(n), label1, label2, prop, m -> Set(m), label3)
-
-    header.labelExprs(n).keySet should equal(Set(label1, label2))
-    header.labelExprs(m).keySet should equal(Set(label3))
-    header.labelExprs(q).keySet should equal(Set.empty)
+    
+    header.labelExprs(n) should equalWithTracing(Map(label1, label2))
+    header.labelExprs(m) should equalWithTracing(Map(label3))
+    header.labelExprs(q) should equalWithTracing(Map.empty)
   }
 
   test("propertySlots") {

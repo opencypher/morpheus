@@ -145,7 +145,27 @@ object RecordHeader {
 
     def withMapping(m: ExpressionMapping): RecordHeader = header |+| Map(m)
 
-    def withField(v: Var): RecordHeader = header |+| Map(v -> Set(v))
+    def withField(v: Var): RecordHeader = {
+      // Ensure a field with the same name and a different type is replaced
+      val maybeExistingFieldWithSameName = field(v.name)
+      maybeExistingFieldWithSameName match {
+        case None =>
+          // Add new field
+          header |+| Map(v -> Set(v))
+        case Some(existing) =>
+          if (existing.cypherType == v.cypherType) {
+            // Nothing to do, field exists already
+            header
+          } else {
+            // Replace existing field (which could be an alias)
+            val (existingKey, oldFields) = header.exprFor(existing)
+            val updatedFields = oldFields - existing + v
+            header.updated(existingKey, updatedFields)
+          }
+      }
+    }
+
+    def field(name: String): Option[Var] = fields.find(_.name == name)
 
     def withFields(vs: Var*): RecordHeader = vs.foldLeft(header)(_.withField(_))
 
