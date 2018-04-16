@@ -98,7 +98,7 @@ class Neo4jGraph(val schema: CAPSSchema, val session: CAPSSession)(
     // Order is arbitrary, as it is not defined by the header
     val struct = StructType(header.columnMappings.values.toSeq)
     val rdd = computeRdd(header, struct)
-    val slot = header.slotFor(Var(name)(cypherType))
+    val slot = header.exprFor(Var(name)(cypherType))
     val rawData = session.sparkSession.createDataFrame(rdd, struct)
     val col = rawData.col(rawData.columns(slot.indexIn(rawData)))
     val recordData = rawData.repartition(col).sortWithinPartitions(col)
@@ -126,22 +126,19 @@ object Neo4jGraph {
       val props = importedNode.asMap().asScala
       val labels = importedNode.labels().asScala.toSet
 
-      val values = header.slots.map { slot =>
-        slot.content.key match {
-          case Property(_, PropertyKey(keyName)) =>
-            val propValue = props.get(keyName).orNull
-            CypherValue(propValue).unwrap
+      val values = header.expressions.map {
+        case Property(_, PropertyKey(keyName)) =>
+          val propValue = props.get(keyName).orNull
+          CypherValue(propValue).unwrap
 
-          case HasLabel(_, label) =>
-            labels(label.name)
+        case HasLabel(_, label) =>
+          labels(label.name)
 
-          case _: Var =>
-            importedNode.id()
+        case _: Var =>
+          importedNode.id()
 
-          case x =>
-            throw IllegalArgumentException("a node member expression (property, label, node variable)", x)
-
-        }
+        case x =>
+          throw IllegalArgumentException("a node member expression (property, label, node variable)", x)
       }.toSeq
 
       Row(values: _*)
@@ -161,29 +158,27 @@ object Neo4jGraph {
       val relType = importedRel.`type`()
       val props = importedRel.asMap().asScala
 
-      val values = header.slots.map { slot =>
-        slot.content.key match {
-          case Property(_, PropertyKey(keyName)) =>
-            val propValue = props.get(keyName).orNull
-            CypherValue(propValue).unwrap
+      val values = header.expressions.map {
+        case Property(_, PropertyKey(keyName)) =>
+          val propValue = props.get(keyName).orNull
+          CypherValue(propValue).unwrap
 
-          case _: StartNode =>
-            importedRel.startNodeId()
+        case _: StartNode =>
+          importedRel.startNodeId()
 
-          case _: EndNode =>
-            importedRel.endNodeId()
+        case _: EndNode =>
+          importedRel.endNodeId()
 
-          case _: Type =>
-            relType
+        case _: Type =>
+          relType
 
-          case _: Var =>
-            importedRel.id()
+        case _: Var =>
+          importedRel.id()
 
-          case x =>
-            throw IllegalArgumentException(
-              "a relationship member expression (property, start node, end node, type, relationship variable)",
-              x)
-        }
+        case x =>
+          throw IllegalArgumentException(
+            "a relationship member expression (property, start node, end node, type, relationship variable)",
+            x)
       }.toSeq
 
       Row(values: _*)

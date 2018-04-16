@@ -61,7 +61,7 @@ class ExpandIntoBehaviour extends CAPSTestSuite with DefaultGraphInit {
       """.stripMargin)
 
     // Then
-    result.getRecords.toMaps should equal(Bag(
+    result.getRecords.toMapsWithCollectedEntities should equal(Bag(
       CypherMap(
         "p1.name" -> "Alice",
         "p2.name" -> "Bob",
@@ -99,7 +99,7 @@ class ExpandIntoBehaviour extends CAPSTestSuite with DefaultGraphInit {
       """.stripMargin)
 
     // Then
-    result.getRecords.toMaps should equal(Bag(
+    result.getRecords.toMapsWithCollectedEntities should equal(Bag(
       CypherMap(
         "p1.name" -> "Alice",
         "p2.name" -> "Bob",
@@ -136,7 +136,7 @@ class ExpandIntoBehaviour extends CAPSTestSuite with DefaultGraphInit {
     )
 
     // Then
-    result.getRecords.toMaps should equal(Bag(
+    result.getRecords.toMapsWithCollectedEntities should equal(Bag(
       CypherMap(
         "p1.name" -> "Alice",
         "p2.name" -> "Bob",

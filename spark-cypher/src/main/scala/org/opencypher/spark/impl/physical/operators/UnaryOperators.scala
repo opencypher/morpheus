@@ -101,7 +101,7 @@ final case class Unwind(in: CAPSPhysicalOperator, list: Expr, item: Var, header:
 
   override def executeUnary(prev: CAPSPhysicalResult)(implicit context: CAPSRuntimeContext): CAPSPhysicalResult = {
     prev.mapRecordsWithDetails { records =>
-      val itemColumn = header.slotFor(item).columnName
+      val itemColumn = header.exprFor(item).columnName
       val newData = list match {
         // the list is external: we create a dataframe and crossjoin with it
         case Param(name) =>
@@ -138,9 +138,9 @@ final case class Alias(in: CAPSPhysicalOperator, expr: Expr, alias: Var, header:
 
   override def executeUnary(prev: CAPSPhysicalResult)(implicit context: CAPSRuntimeContext): CAPSPhysicalResult = {
     prev.mapRecordsWithDetails { records =>
-      val oldSlot = records.header.slotFor(expr)
+      val oldSlot = records.header.exprFor(expr)
 
-      val newSlot = header.slotFor(alias)
+      val newSlot = header.exprFor(alias)
 
       val oldColumnName = oldSlot.columnName
       val newColumnName = newSlot.columnName
@@ -160,7 +160,7 @@ final case class Project(in: CAPSPhysicalOperator, expr: Expr, header: RecordHea
 
   override def executeUnary(prev: CAPSPhysicalResult)(implicit context: CAPSRuntimeContext): CAPSPhysicalResult = {
     prev.mapRecordsWithDetails { records =>
-      val sparkColumnNameForExpr = header.slotFor(expr).columnName
+      val sparkColumnNameForExpr = header.exprFor(expr).columnName
       val sparkColumnNames = records.data.columns
 
       if (sparkColumnNames.contains(sparkColumnNameForExpr)) {
@@ -189,14 +189,14 @@ final case class Filter(in: CAPSPhysicalOperator, expr: Expr, header: RecordHead
 
 final case class RemoveAliases(
   in: CAPSPhysicalOperator,
-  dependentFields: Set[(ProjectedField, ProjectedExpr)],
+  dependentFields: Set[(Expr, Expr)],
   header: RecordHeader) extends UnaryPhysicalOperator {
 
   override def executeUnary(prev: CAPSPhysicalResult)(implicit context: CAPSRuntimeContext): CAPSPhysicalResult = {
     prev.mapRecordsWithDetails { records =>
       val renamed = dependentFields.foldLeft(records.data) {
         case (df, (v, expr)) =>
-          df.safeRenameColumn(ColumnName.of(v), ColumnName.of(expr))
+          df.safeRenameColumn(v.columnName, expr.columnName)
       }
 
       CAPSRecords.verifyAndCreate(header, renamed)(records.caps)
@@ -219,10 +219,12 @@ final case class SelectFields(in: CAPSPhysicalOperator, fields: List[Var], heade
     prev.mapRecordsWithDetails { records =>
       val fieldIndices = fields.zipWithIndex.toMap
 
-      val groupedSlots = header.contents.toSeq.sortBy {
-        case content: FieldSlotContent =>
-          fieldIndices.getOrElse(content.field, Int.MaxValue)
-        case content@ProjectedExpr(expr) =>
+      val groupedSlots = header.toSeq.sortBy {
+        case (_, aliases) if fields.nonEmpty =>
+          aliases.collectFirst {
+            case f if fieldIndices.contains(f) => fieldIndices(f)
+          }.getOrElse(Int.MaxValue)
+        case (expr, _) =>
           val deps = expr.dependencies
           deps.headOption
             .filter(_ => deps.size == 1)
@@ -245,7 +247,7 @@ final case class Distinct(in: CAPSPhysicalOperator, fields: Set[Var])
   override def executeUnary(prev: CAPSPhysicalResult)(implicit context: CAPSRuntimeContext): CAPSPhysicalResult = {
     prev.mapRecordsWithDetails { records =>
       val data = records.data
-      val relevantColumns = fields.map(header.slotFor).map(ColumnName.of)
+      val relevantColumns = fields.map(header.exprFor).map(ColumnName.of)
       val distinctRows = data.dropDuplicates(relevantColumns.toSeq)
       CAPSRecords.verifyAndCreate(header, distinctRows)(records.caps)
     }
@@ -279,7 +281,7 @@ final case class Aggregate(
       val data: Either[RelationalGroupedDataset, DataFrame] =
         if (group.nonEmpty) {
           val columns = group.flatMap { expr =>
-            val withChildren = records.header.select(expr).map(_.content.key)
+            val withChildren = records.header.selectField(expr).map(_.expr)
             withChildren.map(e => withInnerExpr(e)(identity))
           }
           Left(inData.groupBy(columns.toSeq: _*))
@@ -347,7 +349,7 @@ final case class OrderBy(in: CAPSPhysicalOperator, sortItems: Seq[SortItem[Expr]
   extends UnaryPhysicalOperator with InheritedHeader {
 
   override def executeUnary(prev: CAPSPhysicalResult)(implicit context: CAPSRuntimeContext): CAPSPhysicalResult = {
-    val getColumnName = (expr: Var) => ColumnName.of(prev.records.header.slotFor(expr))
+    val getColumnName = (expr: Var) => ColumnName.of(prev.records.header.exprFor(expr))
 
     val sortExpression = sortItems.map {
       case Asc(expr: Var) => asc(getColumnName(expr))
@@ -415,9 +417,9 @@ final case class InitVarExpand(in: CAPSPhysicalOperator, source: Var, edgeList: 
   extends UnaryPhysicalOperator {
 
   override def executeUnary(prev: CAPSPhysicalResult)(implicit context: CAPSRuntimeContext): CAPSPhysicalResult = {
-    val sourceSlot = header.slotFor(source)
-    val edgeListSlot = header.slotFor(edgeList)
-    val targetSlot = header.slotFor(target)
+    val sourceSlot = header.exprFor(source)
+    val edgeListSlot = header.exprFor(edgeList)
+    val targetSlot = header.exprFor(target).expr
 
     assertIsNode(targetSlot)
 

@@ -43,7 +43,7 @@ class BoundedVarExpandBehaviour extends CAPSTestSuite with DefaultGraphInit {
     val result = given.cypher("MATCH (n:Node)-[r*0..1]->(m:Node) RETURN m.val")
 
     // Then
-    result.getRecords.toMaps should equal(Bag(
+    result.getRecords.toMapsWithCollectedEntities should equal(Bag(
       CypherMap("m.val" -> "source"),
       CypherMap("m.val" -> "mid1"),
       CypherMap("m.val" -> "mid1"),
@@ -61,7 +61,7 @@ class BoundedVarExpandBehaviour extends CAPSTestSuite with DefaultGraphInit {
     val result = given.cypher("MATCH (t:Node)-[r*2..3]->(y:Node) RETURN y.val")
 
     // Then
-    result.getRecords.toMaps should equal(Bag(
+    result.getRecords.toMapsWithCollectedEntities should equal(Bag(
       CypherMap("y.val" -> "end")
     ))
   }
@@ -74,7 +74,7 @@ class BoundedVarExpandBehaviour extends CAPSTestSuite with DefaultGraphInit {
     val result = given.cypher("MATCH (a:Node)-[r*..6]->(b:Node) RETURN b.v")
 
     // Then
-    result.getRecords.toMaps should equal(Bag(
+    result.getRecords.toMapsWithCollectedEntities should equal(Bag(
       CypherMap("b.v" -> "a"),
       CypherMap("b.v" -> "a"),
       CypherMap("b.v" -> "a"),
@@ -95,7 +95,7 @@ class BoundedVarExpandBehaviour extends CAPSTestSuite with DefaultGraphInit {
     val result = given.cypher("MATCH (a:Node)-[r*..6]->(b:Node) RETURN r")
 
     // Then
-    result.getRecords.toMaps should equal(Bag(
+    result.getRecords.toMapsWithCollectedEntities should equal(Bag(
       CypherMap("r" -> List(2)),
       CypherMap("r" -> List(2, 4)),
       CypherMap("r" -> List(2, 4, 5)),
@@ -116,7 +116,7 @@ class BoundedVarExpandBehaviour extends CAPSTestSuite with DefaultGraphInit {
     val result = given.cypher("MATCH (a:Node)-[r:LOVES|KNOWS*..6]->(b:Node) RETURN b.v")
 
     // Then
-    result.getRecords.toMaps should equal(Bag(
+    result.getRecords.toMapsWithCollectedEntities should equal(Bag(
       CypherMap("b.v" -> "b"),
       CypherMap("b.v" -> "c"),
       CypherMap("b.v" -> "c")
@@ -133,7 +133,7 @@ class BoundedVarExpandBehaviour extends CAPSTestSuite with DefaultGraphInit {
     val result = given.cypher("MATCH (a:Node)-[r*..6 {v: 2}]->(b:Node) RETURN b.v")
 
     // Then
-    result.getRecords.toMaps should equal(Bag(
+    result.getRecords.toMapsWithCollectedEntities should equal(Bag(
       CypherMap("b.v" -> "c"),
       CypherMap("b.v" -> "a"),
       CypherMap("b.v" -> "a")
@@ -148,7 +148,7 @@ class BoundedVarExpandBehaviour extends CAPSTestSuite with DefaultGraphInit {
     val result = given.cypher("MATCH (a:Node)-[r:KNOWS*..6]->(b:Node)-[:HATES]->(c:Node) RETURN c.v")
 
     // Then
-    result.getRecords.toMaps should equal(Bag(
+    result.getRecords.toMapsWithCollectedEntities should equal(Bag(
       CypherMap("c.v" -> "d"),
       CypherMap("c.v" -> "d")
     ))
@@ -174,7 +174,7 @@ class BoundedVarExpandBehaviour extends CAPSTestSuite with DefaultGraphInit {
     )
 
     // Then
-    result.getRecords.toMaps should equal(Bag(
+    result.getRecords.toMapsWithCollectedEntities should equal(Bag(
       CypherMap("a.name" -> "Philip", "b.name" -> "Stefan", "c.name" -> "Berlondon")
     ))
   }

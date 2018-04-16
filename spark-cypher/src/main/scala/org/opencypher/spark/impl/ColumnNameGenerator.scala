@@ -40,7 +40,7 @@ object ColumnNameGenerator {
     val chars = (1 to NAME_SIZE).map(_ => Random.nextPrintableChar())
     val name = ColumnName.from(String.valueOf(chars.toArray))
 
-    if (header.slots.map(ColumnName.of).contains(name)) generateUniqueName(header)
+    if (header.mappings.map(ColumnName.of).contains(name)) generateUniqueName(header)
     else name
   }
 }

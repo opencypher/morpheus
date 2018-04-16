@@ -55,7 +55,7 @@ case class RowExpansion(
   private lazy val labelIndexLookupTable = entitiesWithChildren.map {
     case (node, slots) =>
       val labelIndicesForNode = slots.collect {
-        case (_, p @ ProjectedExpr(HasLabel(_, l))) if targetLabels.contains(l.name) =>
+        case (p @ HasLabel(_, l), _) if targetLabels.contains(l.name) =>
           rowSchema.fieldIndex(ColumnName.of(p.withOwner(targetVar)))
       }
       node -> labelIndicesForNode
@@ -64,7 +64,7 @@ case class RowExpansion(
   private lazy val typeIndexLookupTable = entitiesWithChildren.map {
     case (rel, slots) =>
       val typeIndexForRel = slots.collectFirst {
-        case (_, p @ ProjectedExpr(Type(r))) if r == rel =>
+        case (p @ Type(r), _) if r == rel =>
           rowSchema.fieldIndex(ColumnName.of(p.withOwner(targetVar)))
       }.getOrElse(throw IllegalArgumentException(s"a type column for relationship $rel"))
       rel -> typeIndexForRel
@@ -97,16 +97,16 @@ case class RowExpansion(
   }
 
   def adaptRowToNewHeader(row: Row, lookupTable: Map[String, String]): Row = {
-    val orderedRowContent = targetHeader.slots.foldLeft(Seq.empty[Any]) { (newRowAcc, targetSlot) =>
+    val orderedRowContent = targetHeader.mappings.foldLeft(Seq.empty[Any]) { (newRowAcc, targetSlot) =>
       val maybeColumnName = lookupTable.get(ColumnName.of(targetSlot))
       maybeColumnName match {
         case Some(columnName) =>
           val index = row.fieldIndex(columnName)
           newRowAcc :+ row.get(index)
         case None =>
-          val value = targetSlot.content match {
-            case ProjectedExpr(HasLabel(_, _)) => false
-            case ProjectedExpr(Property(_, _)) => null
+          val value = targetSlot.expr match {
+            case HasLabel(_, _) => false
+            case Property(_, _) => null
             case other                         => throw IllegalArgumentException("a projected expression of label or property", other)
           }
           newRowAcc :+ value
@@ -116,12 +116,12 @@ case class RowExpansion(
   }
 
   def filterNullRows(rows: Seq[Row]): Seq[Row] = {
-    val slot = targetHeader.contents.find {
-      case _: OpaqueField => true
+    val expr = targetHeader.expressions.find {
+      case _: Var => true
       case _ => false
     }.get
 
-    val index = rowSchema.fieldIndex(ColumnName.of(slot))
+    val index = rowSchema.fieldIndex(expr.columnName)
 
     rows.filterNot(_.isNullAt(index))
   }

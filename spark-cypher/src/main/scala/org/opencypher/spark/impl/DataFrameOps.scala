@@ -47,7 +47,7 @@ object DataFrameOps {
       expr match {
         case Param(name) => context.parameters(name)
         case _ =>
-          val slot = header.slotFor(expr)
+          val slot = header.exprFor(expr)
           val index = df.schema.fieldIndex(slot.columnName)
           CypherValue(r.get(index))
       }

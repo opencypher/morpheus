@@ -43,7 +43,7 @@ object CAPSPatternGraphFactory extends CAPSTestGraphFactory {
     val rels = scanGraph.relationships("r")
 
     val lhs = nodes.data.col(ColumnName.of(Var("n")(CTNode)))
-    val rhs = rels.data.col(rels.header.sourceNodeSlot(Var("r")(CTRelationship)).columnName)
+    val rhs = rels.data.col(rels.header.sourceNodeMapping(Var("r")(CTRelationship)).columnName)
 
     val baseTableData = nodes.data.join(rels.data, lhs === rhs, "left_outer")
 

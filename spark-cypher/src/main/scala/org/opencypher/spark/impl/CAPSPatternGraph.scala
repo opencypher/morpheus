@@ -30,7 +30,7 @@ import org.apache.spark.storage.StorageLevel
 import org.opencypher.okapi.api.types.{CTNode, CTRelationship}
 import org.opencypher.okapi.ir.api.expr._
 import org.opencypher.okapi.relational.impl.table.RecordHeader._
-import org.opencypher.okapi.relational.impl.table.{ColumnName, OpaqueField, RecordHeader, SlotContent}
+import org.opencypher.okapi.relational.impl.table.{ColumnName, RecordHeader}
 import org.opencypher.spark.api.CAPSSession
 import org.opencypher.spark.impl.table.CAPSRecordHeader._
 import org.opencypher.spark.schema.CAPSSchema
@@ -84,12 +84,12 @@ class CAPSPatternGraph(
 
   private def extractRecordsFor(targetVar: Var, targetHeader: RecordHeader, extractionVars: Set[Var]): CAPSRecords = {
     val extractionSlots = extractionVars.map { candidate =>
-      candidate -> header.select(candidate)
+      candidate -> header.selectField(candidate)
     }.toMap
 
     val relColumnsLookupTables = extractionSlots.map {
-      case (relVar, slotsForRel) =>
-        relVar -> createScanToBaseTableLookup(targetVar, slotsForRel.map(_.content).toSeq)
+      case (relVar, exprsForRel) =>
+        relVar -> createScanToBaseTableLookup(targetVar, exprsForRel.map(_.expr).toSeq)
     }
 
     val extractedDf = {
@@ -97,14 +97,14 @@ class CAPSPatternGraph(
       baseTableDf.flatMap(RowExpansion(targetHeader, targetVar, extractionSlots, relColumnsLookupTables))(targetHeader.rowEncoder)
     }
 
-    val distinctData = extractedDf.dropDuplicates(ColumnName.of(OpaqueField(targetVar)))
+    val distinctData = extractedDf.dropDuplicates(targetVar.columnName)
 
     CAPSRecords.verifyAndCreate(targetHeader, distinctData)
   }
 
-  private def createScanToBaseTableLookup(scanTableVar: Var, slotContents: Seq[SlotContent]): Map[String, String] = {
-    slotContents.map { baseTableSlotContent =>
-      ColumnName.of(baseTableSlotContent.withOwner(scanTableVar)) -> ColumnName.of(baseTableSlotContent)
+  private def createScanToBaseTableLookup(scanTableVar: Var, baseTableExpressions: Seq[Expr]): Map[String, String] = {
+    baseTableExpressions.map { baseTableExpression =>
+      baseTableExpression.withOwner(scanTableVar).columnName -> baseTableExpression.columnName
     }.toMap
   }
 }

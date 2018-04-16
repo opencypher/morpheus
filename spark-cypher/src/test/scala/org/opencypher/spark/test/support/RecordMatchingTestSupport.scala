@@ -28,7 +28,7 @@ package org.opencypher.spark.test.support
 
 import org.opencypher.okapi.api.table.CypherRecords
 import org.opencypher.okapi.api.value.CypherValue._
-import org.opencypher.okapi.ir.api.expr.Var
+import org.opencypher.okapi.ir.api.expr.{Expr, Var}
 import org.opencypher.okapi.ir.test.support.Bag
 import org.opencypher.okapi.ir.test.support.Bag._
 import org.opencypher.okapi.relational.impl.table.RecordHeader._
@@ -64,11 +64,11 @@ trait RecordMatchingTestSupport {
     }
 
     private def projected(records: CAPSRecords): CAPSRecords = {
-      val newSlots: Set[SlotContent] = records.header.slots.map(_.content).map {
-        case slot: FieldSlotContent => OpaqueField(slot.field)
-        case slot: ProjectedExpr => OpaqueField(Var(slot.expr.withoutType)(slot.cypherType))
+      val newExprs = records.header.flatMap {
+        case (_, fields) if fields.nonEmpty => fields
+        case (expr, _) => Var(expr.withoutType)(expr.cypherType)
       }
-      val newHeader = RecordHeader.fromSlotContents(newSlots)
+      val newHeader = RecordHeader.empty.withExpressions(newExprs.toSeq: _*)
       val alphabeticallyOrderedColumnNames = newHeader.fieldNames.toSeq.sorted
       val newData = records.data.toDF(alphabeticallyOrderedColumnNames: _*)
       CAPSRecords.verifyAndCreate(newHeader, newData)(records.caps)
@@ -78,24 +78,8 @@ trait RecordMatchingTestSupport {
   implicit class RichRecords(records: CypherRecords) {
     val capsRecords = records.asCaps
 
-    // TODO: Remove this and replace usages with toMapsWithCollectedEntities below
-    // probably use this name though, and have not collecting be the special case
-    def toMaps: Bag[CypherMap] = {
-      val df = capsRecords.toDF()
-      val rows = df.collect().map { r =>
-        val properties = capsRecords.header.slots.map { s =>
-          s.content match {
-            case f: FieldSlotContent => f.field.name -> r.getCypherValue(f.key, capsRecords.header, df)
-            case x => x.key.withoutType -> r.getCypherValue(x.key, capsRecords.header, df)
-          }
-        }.toMap
-        CypherMap(properties)
-      }
-      Bag(rows: _*)
-    }
+    def toMapsWithCollectedEntities: Bag[CypherMap] = Bag(capsRecords.toCypherMaps.collect(): _*)
 
-    def toMapsWithCollectedEntities: Bag[CypherMap] =
-      Bag(capsRecords.toCypherMaps.collect(): _*)
   }
 
 }

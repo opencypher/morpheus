@@ -30,16 +30,15 @@ import org.apache.spark.sql.DataFrame
 import org.opencypher.okapi.api.graph.QualifiedGraphName
 import org.opencypher.okapi.api.types._
 import org.opencypher.okapi.impl.exception.IllegalArgumentException
+import org.opencypher.okapi.ir.api.expr.Expr
 import org.opencypher.okapi.relational.api.physical.PhysicalOperator
 import org.opencypher.okapi.relational.impl.table.RecordHeader._
-import org.opencypher.okapi.relational.impl.table.{ColumnName, SlotContent}
 import org.opencypher.okapi.trees.AbstractTreeNode
 import org.opencypher.spark.api.CAPSSession
 import org.opencypher.spark.impl.CAPSConverters._
 import org.opencypher.spark.impl.DataFrameOps._
 import org.opencypher.spark.impl.physical.{CAPSPhysicalResult, CAPSRuntimeContext}
 import org.opencypher.spark.impl.{CAPSGraph, CAPSRecords}
-import org.opencypher.spark.impl.table.CAPSRecordHeader._
 
 private[spark] abstract class CAPSPhysicalOperator
   extends AbstractTreeNode[CAPSPhysicalOperator]
@@ -66,14 +65,12 @@ object CAPSPhysicalOperator {
 
   def joinRecords(
     header: RecordHeader,
-    joinSlots: Seq[(RecordSlot, RecordSlot)],
+    joinCols: Seq[(String, String)],
     joinType: String = "inner",
     deduplicate: Boolean = false)(lhs: CAPSRecords, rhs: CAPSRecords): CAPSRecords = {
 
     val lhsData = lhs.toDF()
     val rhsData = rhs.toDF()
-
-    val joinCols = joinSlots.map { case (left, right) => left.columnName -> right.columnName }
 
     // TODO: the join produced corrupt data when the previous operator was a cross. We work around that by using a
     // subsequent select. This can be removed, once https://issues.apache.org/jira/browse/SPARK-23855 is solved or we
@@ -97,11 +94,11 @@ object CAPSPhysicalOperator {
     CAPSRecords.verifyAndCreate(header, returnData)
   }
 
-  def assertIsNode(slot: RecordSlot): Unit = {
-    slot.content.cypherType match {
+  def assertIsNode(expr: Expr): Unit = {
+    expr.cypherType match {
       case CTNode(_, _) =>
       case x =>
-        throw IllegalArgumentException(s"Expected $slot to contain a node, but was $x")
+        throw IllegalArgumentException(s"Expected $expr to contain a node, but was $x")
     }
   }
 

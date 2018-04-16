@@ -89,7 +89,7 @@ object SparkSQLExprMapper {
         case _: Var | _: Param | _: Property | _: HasLabel | _: StartNode | _: EndNode =>
           verify
 
-          val slot = header.slotFor(expr)
+          val slot = header.exprFor(expr)
 
           val columns = df.columns.toSet
           val colName = slot.columnName
@@ -152,15 +152,15 @@ object SparkSQLExprMapper {
         case Exists(e) => e.asSparkSQLExpr.isNotNull
         case Id(e) => e.asSparkSQLExpr
         case Labels(e) =>
-          val node = Var(header.slotFor(e).columnName)(CTNode)
+          val node = Var(header.exprFor(e).columnName)(CTNode)
           val labelExprs = header.labels(node)
           val labelColumns = labelExprs.map(_.asSparkSQLExpr)
-          val labelNames = labelExprs.map(_.label.name)
-          val booleanLabelFlagColumn = functions.array(labelColumns: _*)
+          val labelNames = labelExprs.map(_.label.name).toSeq
+          val booleanLabelFlagColumn = functions.array(labelColumns.toSeq: _*)
           get_node_labels(labelNames)(booleanLabelFlagColumn)
 
         case Keys(e) =>
-          val node = Var(header.slotFor(e).columnName)(CTNode)
+          val node = Var(header.exprFor(e).columnName)(CTNode)
           val propertyExprs = header.properties(node)
           val propertyColumns = propertyExprs.map(_.asSparkSQLExpr)
           val keyNames = propertyExprs.map(_.key.name)
@@ -170,7 +170,7 @@ object SparkSQLExprMapper {
         case Type(inner) =>
           inner match {
             case v: Var =>
-              val typeSlot = header.typeSlot(v)
+              val typeSlot = header.typeMapping(v)
               val typeCol = df.col(typeSlot.columnName)
               typeCol
             case _ =>
@@ -178,12 +178,12 @@ object SparkSQLExprMapper {
           }
 
         case StartNodeFunction(e) =>
-          val rel = Var(header.slotFor(e).columnName)(CTNode)
-          header.sourceNodeSlot(rel).content.key.asSparkSQLExpr
+          val rel = Var(header.exprFor(e).columnName)(CTNode)
+          header.sourceNodeMapping(rel).expr.asSparkSQLExpr
 
         case EndNodeFunction(e) =>
-          val rel = Var(header.slotFor(e).columnName)(CTNode)
-          header.targetNodeSlot(rel).content.key.asSparkSQLExpr
+          val rel = Var(header.exprFor(e).columnName)(CTNode)
+          header.targetNodeMapping(rel).expr.asSparkSQLExpr
 
         case ToFloat(e) => e.asSparkSQLExpr.cast(DoubleType)
 

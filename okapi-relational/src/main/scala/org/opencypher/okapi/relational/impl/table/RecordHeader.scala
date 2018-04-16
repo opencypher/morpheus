@@ -26,6 +26,8 @@
  */
 package org.opencypher.okapi.relational.impl.table
 
+import cats.instances.all._
+import cats.syntax.semigroup._
 import org.opencypher.okapi.api.schema.Schema
 import org.opencypher.okapi.api.types.{CTBoolean, CTNode, CTString, _}
 import org.opencypher.okapi.impl.exception.IllegalArgumentException
@@ -34,31 +36,26 @@ import org.opencypher.okapi.ir.api.{Label, PropertyKey}
 
 object RecordHeader {
 
-  type RecordSlot = (Expr, SlotContent)
+  type ExpressionMapping = (Expr, Set[Var])
 
-  implicit class RichRecordSlot(val slot: RecordSlot) extends AnyVal {
-    def key: Expr = slot._1
+  implicit class RichExpressionMapping(val mapping: ExpressionMapping) extends AnyVal {
 
-    def value: SlotContent = slot._2
+    def expr: Expr = mapping._1
 
-    def content: SlotContent = value
+    def key: Expr = expr
 
-    def withOwner(v: Var): RecordSlot = value.withOwner(v).toRecordSlot
+    def fields: Set[Var] = mapping._2
+
+    def value: Set[Var] = fields
   }
 
-  type RecordHeader = Map[Expr, SlotContent]
+  type RecordHeader = Map[Expr, Set[Var]]
 
-  val empty: RecordHeader = Map.empty[Expr, SlotContent]
+  val empty: RecordHeader = Map.empty[Expr, Set[Var]]
 
-  def apply(contents: SlotContent*): RecordHeader = fromSlotContents(contents)
-
-  def fromSlots(slots: Seq[RecordSlot]): RecordHeader = apply(slots.map(_.content): _*)
-
-  def fromSlots(slots: Set[RecordSlot]): RecordHeader = fromSlots(slots.toSeq)
-
-  def fromSlotContents(contents: Set[SlotContent]): RecordHeader = fromSlotContents(contents.toSeq)
-
-  def fromSlotContents(contents: Seq[SlotContent]): RecordHeader = contents.map(_.toRecordSlot).toMap
+  def apply(expressions: Expr*): RecordHeader = {
+    expressions.foldLeft(RecordHeader.empty)(_.withExpression(_))
+  }
 
   def forNode(node: Var, schema: Schema): RecordHeader = {
     val labels: Set[String] = node.cypherType match {
@@ -80,18 +77,16 @@ object RecordHeader {
 
     // create a label column for each possible label
     // optimisation enabled: will not add columns for implied or impossible labels
-    val labelExprs = labelCombos.flatten.toSeq.sorted.map { label =>
-      ProjectedExpr(HasLabel(node, Label(label))(CTBoolean))
+    val labelExprs = labelCombos.flatten.toList.sorted.map { label =>
+      HasLabel(node, Label(label))(CTBoolean)
     }
 
-    val propertyKeys = schema.keysFor(labelCombos)
-    val propertyExprs = propertyKeys.toSeq.sortBy(_._1).map {
-      case (k, t) => ProjectedExpr(Property(node, PropertyKey(k))(t))
+    val properties = schema.keysFor(labelCombos)
+    val propertyExprs = properties.toList.sortBy(_._1).map {
+      case (k, t) => Property(node, PropertyKey(k))(t)
     }
 
-    val projectedExprs = labelExprs ++ propertyExprs
-
-    RecordHeader.fromSlotContents(OpaqueField(node) +: projectedExprs)
+    RecordHeader(node :: (labelExprs ++ propertyExprs): _*)
   }
 
   def forRelationship(rel: Var, schema: Schema): RecordHeader = {
@@ -119,16 +114,15 @@ object RecordHeader {
         }
       }
 
-    val relKeyHeaderContents = relKeyHeaderProperties.toSeq.sortBy(_._1).map {
-      case ((k, t)) => ProjectedExpr(Property(rel, PropertyKey(k))(t))
+    val propertyExprs = relKeyHeaderProperties.toList.sortBy(_._1).map {
+      case ((k, t)) => Property(rel, PropertyKey(k))(t)
     }
 
-    val startNode = ProjectedExpr(StartNode(rel)(CTNode))
-    val typeString = ProjectedExpr(Type(rel)(CTString))
-    val endNode = ProjectedExpr(EndNode(rel)(CTNode))
+    val startNode = StartNode(rel)(CTNode)
+    val typeString = Type(rel)(CTString)
+    val endNode = EndNode(rel)(CTNode)
 
-    val relHeaderContents = Seq(startNode, OpaqueField(rel), typeString, endNode) ++ relKeyHeaderContents
-    RecordHeader.fromSlotContents(relHeaderContents)
+    RecordHeader(startNode :: rel :: typeString :: endNode :: propertyExprs: _*)
   }
 
   /**
@@ -143,86 +137,108 @@ object RecordHeader {
       *
       * @return slots in this header
       */
-    def slots: Set[RecordSlot] = header.toSet
+    def mappings: Set[ExpressionMapping] = header.toSet
 
-    def contents: Set[SlotContent] = header.values.toSet
+    def mappingFor(expr: Expr): ExpressionMapping = expr -> header(expr)
 
-    def withSlot(slotContent: SlotContent): RecordHeader = header.updated(slotContent.key, slotContent)
+    def expressions: Set[Expr] = header.keySet
 
-    def withSlot(slot: RecordSlot): RecordHeader = withSlot(slot.content)
+    def withMapping(m: ExpressionMapping): RecordHeader = header |+| Map(m)
 
-    def withSlots(slots: RecordSlot*): RecordHeader = header ++ slots
+    def withField(v: Var): RecordHeader = header |+| Map(v -> Set(v))
 
-    def withSlotContent(slotContent: SlotContent): RecordHeader = header + slotContent.toRecordSlot
+    def withFields(vs: Var*): RecordHeader = vs.foldLeft(header)(_.withField(_))
 
-    def withSlotContents(slotContents: SlotContent*): RecordHeader = header ++ slotContents.map(_.toRecordSlot)
+    def withMappings(m: ExpressionMapping*): RecordHeader = header |+| m.toMap
+
+    def withExpression(expression: Expr): RecordHeader = {
+      expression match {
+        case v: Var => withField(v)
+        case _ => header |+| Map(expression -> Set.empty)
+      }
+    }
+
+    def withExpressions(expressions: Expr*): RecordHeader = {
+      expressions.foldLeft(header)(_.withExpression(_))
+    }
+
+    def selectField(field: Var): RecordHeader = selectFields(Set(field))
+
+    /**
+      * Returns the header only for the selected fields.
+      */
+    def selectFields(fields: Set[Var]): RecordHeader = {
+      header.flatMap {
+        case (expr, fs) if fs.exists(fields.contains) || expr.owner.map(fields.contains).isDefined =>
+          Some(expr -> fs.intersect(fields))
+        case _ => None
+      }
+    }
 
     /**
       * The set of fields contained in this header.
       *
       * @return the fields in this header.
       */
-    def fields: Set[Var] = header.keySet.collect { case v: Var => v }
+    def fields: Set[Var] = header.values.flatten.toSet
 
     def fieldNames: Set[String] = fields.map(_.name)
 
-    def slotFor(expr: Expr): RecordSlot = expr -> header(expr)
-
-    def slotFor(varName: String): Option[RecordSlot] = {
-      fields.collectFirst { case v@Var(name) if name == varName => v }.map(slotFor)
-    }
-
-    def sourceNodeSlot(rel: Var): RecordSlot = slotFor(StartNode(rel)())
-
-    def targetNodeSlot(rel: Var): RecordSlot = slotFor(EndNode(rel)())
-
-    def typeSlot(rel: Expr): RecordSlot = slotFor(Type(rel)())
-
-    def labels(node: Var): Seq[HasLabel] = labelSlots(node).keys.toSeq
-
-    def properties(node: Var): Seq[Property] = propertySlots(node).keys.toSeq
-
-    def select(field: Var): RecordHeader = selfWithChildren(field)
-
-    def select(fields: Set[Var]): RecordHeader = fields.flatMap(selfWithChildren).toMap
-
-    protected def selfWithChildren(field: Var): RecordHeader = {
-      if (header.contains(field)) {
-        childSlots(field) + slotFor(field)
+    def exprFor(expr: Expr): ExpressionMapping = {
+      if (header.contains(expr)) {
+        expr -> header(expr)
       } else {
-        RecordHeader.empty
+        expr match {
+          case v: Var =>
+            // Could be an alias
+            header.collectFirst {
+              case (maybeAliasedExpr, fields) if fields.contains(v) => maybeAliasedExpr -> fields
+            }.getOrElse(throw IllegalArgumentException(s"""Variable $expr has no associated expression or alias in header ${header}"""))
+          case _ => throw IllegalArgumentException(s"""Expression $expr is not present in header ${header}""")
+        }
       }
     }
 
-    def childSlots(entity: Var): RecordHeader = {
-      slots.filter {
-        case (_, OpaqueField(_)) => false
-        case slot if slot.content.owner.contains(entity) => true
+    def exprFor(fieldName: String): Option[ExpressionMapping] = {
+      fields.collectFirst { case v@Var(name) if name == fieldName => v }.map(exprFor)
+    }
+
+    def sourceNodeMapping(rel: Var): ExpressionMapping = exprFor(StartNode(rel)())
+
+    def targetNodeMapping(rel: Var): ExpressionMapping = exprFor(EndNode(rel)())
+
+    def typeMapping(rel: Expr): ExpressionMapping = exprFor(Type(rel)())
+
+    def labels(node: Var): Set[HasLabel] = labelExprs(node).keySet
+
+    def properties(node: Var): Seq[Property] = propertyExprs(node).keys.toSeq
+
+    def ownedExprs(entity: Expr): RecordHeader = {
+      val exprMapping = exprFor(entity)
+      val entityAliases = exprMapping._2
+      header.filter {
+        case mapping if mapping.expr.owner.exists(entityAliases.contains) => true
         case _ => false
+      }
+    }
+
+    def labelExprs(node: Var): Map[HasLabel, Set[Var]] = {
+      mappings.collect {
+        case (label@HasLabel(n, _), fields) if node == n => label -> fields
       }.toMap
     }
 
-    def labelSlots(node: Var): Map[HasLabel, RecordSlot] = {
-      slots.collect {
-        case s@(_, ProjectedExpr(h: HasLabel)) if h.node == node => h -> s
-        case s@(_, ProjectedField(_, h: HasLabel)) if h.node == node => h -> s
-      }.toMap
-    }
-
-    def propertySlots(entity: Var): Map[Property, RecordSlot] = {
-      slots.collect {
-        case s@(_, ProjectedExpr(p: Property)) if p.m == entity => p -> s
-        case s@(_, ProjectedField(_, p: Property)) if p.m == entity => p -> s
+    def propertyExprs(entity: Var): Map[Property, Set[Var]] = {
+      mappings.collect {
+        case (property@Property(e, _), fields) if entity == e => property -> fields
       }.toMap
     }
 
     def nodesForType(nodeType: CTNode): Set[Var] = {
-      slots.collect {
-        case (_, OpaqueField(v)) => v
-      }.filter { v =>
-        v.cypherType match {
+      fields.filter { field =>
+        field.cypherType match {
           case CTNode(labels, _) =>
-            val allPossibleLabels = this.labels(v).map(_.label.name).toSet ++ labels
+            val allPossibleLabels = this.labels(field).map(_.label.name).toSet ++ labels
             nodeType.labels.subsetOf(allPossibleLabels)
           case _ => false
         }
@@ -232,13 +248,10 @@ object RecordHeader {
     def relationshipsForType(relType: CTRelationship): Set[Var] = {
       val targetTypes = relType.types
 
-      slots.collect {
-        case (_, OpaqueField(v)) => v
-      }.filter { v =>
-        v.cypherType match {
+      fields.filter { field =>
+        field.cypherType match {
           case t: CTRelationship if targetTypes.isEmpty || t.types.isEmpty => true
-          case CTRelationship(types, _) =>
-            types.exists(targetTypes.contains)
+          case CTRelationship(types, _) => types.exists(targetTypes.contains)
           case _ => false
         }
       }

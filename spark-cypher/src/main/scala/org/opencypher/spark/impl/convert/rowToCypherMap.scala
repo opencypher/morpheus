@@ -55,36 +55,35 @@ final case class rowToCypherMap(header: RecordHeader) extends (Row => CypherMap)
         collectRel(row, field)
 
       case _ =>
-        val raw = row.getAs[Any](header.slotFor(field).columnName)
+        val raw = row.getAs[Any](header.exprFor(field).columnName)
         CypherValue(raw)
     }
   }
 
   private def collectNode(row: Row, field: Var): CypherValue = {
-    val idValue = row.getAs[Any](header.slotFor(field).columnName)
+    val idValue = row.getAs[Any](header.exprFor(field).columnName)
     idValue match {
       case null       => CypherNull
       case id: Long   =>
         val labels = header
-        .labelSlots(field)
-        .mapValues { s =>
-          row.getAs[Boolean](s.columnName)
+        .labels(field)
+        .map { label =>
+          label -> row.getAs[Boolean](label.columnName)
         }
         .collect {
           case (h, b) if b =>
             h.label.name
         }
-        .toSet
 
         val properties = header
-          .propertySlots(field)
-          .mapValues { s =>
-            CypherValue(row.getAs[Any](s.columnName))
+          .properties(field)
+          .map { property =>
+            property -> CypherValue(row.getAs[Any](property.columnName))
           }
           .collect {
             case (p, v) if !v.isNull =>
               p.key.name -> v
-          }
+          }.toMap
 
         CAPSNode(id, labels, properties)
       case invalidID => throw UnsupportedOperationException(s"CAPSNode ID has to be a Long instead of ${invalidID.getClass}")
@@ -92,22 +91,22 @@ final case class rowToCypherMap(header: RecordHeader) extends (Row => CypherMap)
   }
 
   private def collectRel(row: Row, field: Var): CypherValue = {
-    val idValue = row.getAs[Any](header.slotFor(field).columnName)
+    val idValue = row.getAs[Any](header.exprFor(field).columnName)
     idValue match {
       case null       => CypherNull
       case id: Long   =>
-        val source = row.getAs[Long](ColumnName.of(header.sourceNodeSlot(field)))
-        val target = row.getAs[Long](ColumnName.of(header.targetNodeSlot(field)))
-        val typ = row.getAs[String](ColumnName.of(header.typeSlot(field)))
+        val source = row.getAs[Long](header.sourceNodeMapping(field).columnName)
+        val target = row.getAs[Long](header.targetNodeMapping(field).columnName)
+        val typ = row.getAs[String](header.typeMapping(field).columnName)
         val properties = header
-          .propertySlots(field)
-          .mapValues { s =>
-            CypherValue.apply(row.getAs[Any](ColumnName.of(s)))
+          .properties(field)
+          .map { property =>
+            property -> CypherValue(row.getAs[Any](property.columnName))
           }
           .collect {
             case (p, v) if !v.isNull =>
               p.key.name -> v
-          }
+          }.toMap
 
         CAPSRelationship(id, source, target, typ, properties)
       case invalidID => throw UnsupportedOperationException(s"CAPSRelationship ID has to be a Long instead of ${invalidID.getClass}")

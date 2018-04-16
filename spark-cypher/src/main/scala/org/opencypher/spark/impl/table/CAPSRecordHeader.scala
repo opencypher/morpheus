@@ -30,7 +30,7 @@ import org.apache.spark.sql.{Column, DataFrame, Row}
 import org.apache.spark.sql.catalyst.encoders.{ExpressionEncoder, RowEncoder}
 import org.apache.spark.sql.types.{StructField, StructType}
 import org.opencypher.okapi.impl.exception.IllegalArgumentException
-import org.opencypher.okapi.ir.api.expr.Var
+import org.opencypher.okapi.ir.api.expr.{Expr, Var}
 import org.opencypher.okapi.relational.impl.table.RecordHeader._
 import org.opencypher.okapi.relational.impl.table._
 import org.opencypher.spark.impl.convert.CAPSCypherType._
@@ -39,15 +39,14 @@ object CAPSRecordHeader {
 
   def fromSparkStructType(structType: StructType): RecordHeader =
     RecordHeader.apply(structType.fields.map { field =>
-      OpaqueField(
         Var(field.name)(field.dataType.toCypherType(field.nullable)
-          .getOrElse(throw IllegalArgumentException("a supported Spark type", field.dataType))))
+          .getOrElse(throw IllegalArgumentException("a supported Spark type", field.dataType)))
     }: _*)
 
   implicit class CAPSRecordHeader(header: RecordHeader) extends Serializable {
 
     def columnMappings: Map[String, StructField] = {
-      header.slots.map { slot =>
+      header.mappings.map { slot =>
         slot.columnName -> slot.asStructField
       }.toMap
     }
@@ -59,31 +58,31 @@ object CAPSRecordHeader {
 
     def rowEncoder(implicit df: DataFrame): ExpressionEncoder[Row] = RowEncoder(sparkSchemaForDf(df))
 
-    def columns: Set[String] = header.slots.map(_.columnName)
+    def columns: Set[String] = header.mappings.map(_.columnName)
 
-    def dfColumnNameToSlotContent: Map[String, RecordSlot] = {
+    def dfColumnNameToSlotContent: Map[String, ExpressionMapping] = {
       for {
-        slot <- header.slots
+        slot <- header.mappings
       } yield slot.columnName -> slot
     }.toMap
 
     def dfColumnNameToFieldName: Map[String, String] = {
       for {
         field <- header.fields
-        slot = header.slotFor(field)
+        slot = header.exprFor(field)
       } yield slot.columnName -> field.name
     }.toMap
   }
 
-  implicit class CAPSOrderedSlots(slotContents: Seq[SlotContent]) {
+  implicit class CAPSOrderedSlots(slotContents: Seq[Expr]) {
 
     def asSparkSchema: StructType = StructType(slotContents.map(_.asStructField))
 
   }
 
-  implicit class CAPSRecordSlot(slot: RecordSlot) {
+  implicit class CAPSRecordSlot(slot: ExpressionMapping) {
 
-    def asStructField: StructField = slot.content.asStructField
+    def asStructField: StructField = slot.expr.asStructField
 
     def columnName: String = ColumnName.of(slot)
 
@@ -97,7 +96,7 @@ object CAPSRecordHeader {
 
   }
 
-  implicit class CAPSSlotContent(slotContent: SlotContent) {
+  implicit class CAPSSlotContent(slotContent: Expr) {
 
     def asStructField: StructField = {
       val name = slotContent.columnName
