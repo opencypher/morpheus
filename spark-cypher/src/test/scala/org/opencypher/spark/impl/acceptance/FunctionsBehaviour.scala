@@ -29,6 +29,8 @@ package org.opencypher.spark.impl.acceptance
 import org.opencypher.okapi.api.value.CypherValue._
 import org.opencypher.okapi.ir.test.support.Bag
 import org.opencypher.okapi.ir.test.support.Bag._
+import org.opencypher.okapi.logical.api.configuration.LogicalConfiguration.PrintLogicalPlan
+import org.opencypher.okapi.relational.api.configuration.CoraConfiguration.{PrintFlatPlan, PrintOptimizedPhysicalPlan}
 import org.opencypher.spark.test.CAPSTestSuite
 import org.scalatest.DoNotDiscover
 
@@ -38,6 +40,11 @@ class FunctionsBehaviour extends CAPSTestSuite with DefaultGraphInit {
   describe("exists") {
 
     it("exists()") {
+
+      PrintLogicalPlan.set()
+      PrintFlatPlan.set()
+      PrintOptimizedPhysicalPlan.set()
+
       val given = initGraph("CREATE ({id: 1}), ({id: 2}), ({other: 'foo'}), ()")
 
       val result = given.cypher("MATCH (n) RETURN exists(n.id) AS exists")

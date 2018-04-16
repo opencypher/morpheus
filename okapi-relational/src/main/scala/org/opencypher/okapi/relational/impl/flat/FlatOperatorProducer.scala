@@ -58,8 +58,9 @@ class FlatOperatorProducer(implicit context: FlatPlannerContext) {
   }
 
   def select(orderedFields: List[Var], in: FlatOperator): Select = {
-    // TODO: Error handling when slot not present
-    Select(orderedFields, in, in.header.selectFields(orderedFields.toSet))
+    require(orderedFields.toSet.subsetOf(in.header.fields))
+    val updatedHeader = in.header.selectFields(orderedFields.toSet)
+    Select(orderedFields, in, updatedHeader)
   }
 
   def returnGraph(in: FlatOperator): ReturnGraph = {
@@ -118,20 +119,10 @@ class FlatOperatorProducer(implicit context: FlatPlannerContext) {
   }
 
   def project(expr: Expr, maybeField: Option[Var], in: FlatOperator): FlatOperator = {
-    maybeField match {
-      case None =>
-        if (in.header.contains(expr)) {
-          in
-        } else {
-          Project(expr, in, in.header.withExpression(expr))
-        }
-      case Some(field) =>
-        val updatedHeader = in.header.withMapping(expr -> Set(field))
-        if (in.header.contains(expr)) {
-          Alias(expr, field, in, updatedHeader)
-        } else {
-          Project(expr, in, updatedHeader)
-        }
+    def header = in.header
+    header.getExprFor(expr) match {
+      case Some((existingExpr, fields)) => Project(existingExpr, in, maybeField.map(header.withField(_)).getOrElse(header))
+      case None => Project(expr, in, header.withMapping(expr -> maybeField.toSet))
     }
   }
 

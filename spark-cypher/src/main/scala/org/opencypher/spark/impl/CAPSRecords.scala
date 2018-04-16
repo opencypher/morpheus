@@ -512,12 +512,12 @@ object CAPSRecords extends CypherRecordsCompanion[CAPSRecords, CAPSSession] {
     }
 
     // Verify column types
-    initialHeader.mappings.foreach { slot =>
+    initialHeader.mappings.foreach { exprMapping =>
       val dfSchema = initialData.schema
-      val field = dfSchema(ColumnName.of(slot))
+      val field = dfSchema(exprMapping.columnName)
       val cypherType = field.dataType.toCypherType(field.nullable)
         .getOrElse(throw IllegalArgumentException("a supported Spark type", field.dataType))
-      val headerType = slot.expr.cypherType
+      val headerType = exprMapping.expr.cypherType
       // if the type in the data doesn't correspond to the type in the header we fail
       // except: we encode nodes, rels and integers with the same data type, so we can't fail
       // on conflicts when we expect entities (alternative: change reverse-mapping function somehow)

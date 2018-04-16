@@ -249,7 +249,7 @@ class RecordHeaderTest extends BaseTestSuite {
     val prop = Property(n, PropertyKey("foo"))(CTString) -> Set.empty[Var]
 
     val header = RecordHeader.empty.withMappings(n -> Set(n), label1, label2, prop, m -> Set(m), label3)
-    
+
     header.labelExprs(n) should equalWithTracing(Map(label1, label2))
     header.labelExprs(m) should equalWithTracing(Map(label3))
     header.labelExprs(q) should equalWithTracing(Map.empty)

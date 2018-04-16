@@ -204,19 +204,24 @@ object RecordHeader {
 
     def fieldNames: Set[String] = fields.map(_.name)
 
-    def exprFor(expr: Expr): ExpressionMapping = {
+    def getExprFor(expr: Expr): Option[ExpressionMapping] = {
       if (header.contains(expr)) {
-        expr -> header(expr)
+        Some(expr -> header(expr))
       } else {
         expr match {
           case v: Var =>
             // Could be an alias
             header.collectFirst {
               case (maybeAliasedExpr, fields) if fields.contains(v) => maybeAliasedExpr -> fields
-            }.getOrElse(throw IllegalArgumentException(s"""Variable $expr has no associated expression or alias in header ${header}"""))
-          case _ => throw IllegalArgumentException(s"""Expression $expr is not present in header ${header}""")
+            }
+          case _ => None
         }
       }
+    }
+
+    def exprFor(expr: Expr): ExpressionMapping = {
+      getExprFor(expr).getOrElse(
+        throw IllegalArgumentException(s"""Expr $expr has no associated expression or alias in header ${header}"""))
     }
 
     def exprFor(fieldName: String): Option[ExpressionMapping] = {

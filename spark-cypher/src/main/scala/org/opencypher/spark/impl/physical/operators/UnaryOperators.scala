@@ -48,6 +48,8 @@ import org.opencypher.spark.impl.convert.CAPSCypherType._
 import org.opencypher.spark.impl.physical.operators.CAPSPhysicalOperator._
 import org.opencypher.spark.impl.physical.{CAPSPhysicalResult, CAPSRuntimeContext}
 
+import scala.collection.immutable
+
 private[spark] abstract class UnaryPhysicalOperator extends CAPSPhysicalOperator {
 
   def in: CAPSPhysicalOperator
@@ -164,16 +166,16 @@ final case class Project(in: CAPSPhysicalOperator, expr: Expr, header: RecordHea
       val sparkColumnNames = records.data.columns
 
       if (sparkColumnNames.contains(sparkColumnNameForExpr)) {
-        // Already projected, do nothing
+        // Already projected, was aliased in header. Do nothing.
         records
       } else {
-        val newCol = expr.asSparkSQLExpr(header, records.data, context).as(sparkColumnNameForExpr)
-        val columnsToSelect = records.data.columns.map(records.data.col) :+ newCol
-        val newData = records.data.select(columnsToSelect: _*)
+        val newData = records.data.safeAddColumn(
+          sparkColumnNameForExpr, expr.asSparkSQLExpr(header, records.data, context)
+        )
         CAPSRecords.verifyAndCreate(header, newData)(records.caps)
       }
-
     }
+
   }
 }
 
@@ -217,24 +219,8 @@ final case class SelectFields(in: CAPSPhysicalOperator, fields: List[Var], heade
 
   override def executeUnary(prev: CAPSPhysicalResult)(implicit context: CAPSRuntimeContext): CAPSPhysicalResult = {
     prev.mapRecordsWithDetails { records =>
-      val fieldIndices = fields.zipWithIndex.toMap
-
-      val groupedSlots = header.toSeq.sortBy {
-        case (_, aliases) if fields.nonEmpty =>
-          aliases.collectFirst {
-            case f if fieldIndices.contains(f) => fieldIndices(f)
-          }.getOrElse(Int.MaxValue)
-        case (expr, _) =>
-          val deps = expr.dependencies
-          deps.headOption
-            .filter(_ => deps.size == 1)
-            .flatMap(fieldIndices.get)
-            .getOrElse(Int.MaxValue)
-      }
-
-      val data = records.data
-      val columns = groupedSlots.map(s => data.col(s.columnName))
-      val newData = records.data.select(columns: _*)
+      val columnNamesToSelect = fields.flatMap(header.exprFor(_).expr).map(_.columnName).distinct
+      val newData = records.data.select(columnNamesToSelect.map(records.data.col): _*)
 
       CAPSRecords.verifyAndCreate(header, newData)(records.caps)
     }
