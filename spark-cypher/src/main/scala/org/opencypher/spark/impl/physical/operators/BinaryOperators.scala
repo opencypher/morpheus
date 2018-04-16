@@ -35,6 +35,7 @@ import org.opencypher.okapi.ir.api.PropertyKey
 import org.opencypher.okapi.ir.api.expr.{Expr, Var, _}
 import org.opencypher.okapi.ir.api.set.SetPropertyItem
 import org.opencypher.okapi.logical.impl.{ConstructedEntity, ConstructedNode, ConstructedRelationship, LogicalPatternGraph}
+import org.opencypher.okapi.relational.impl.ColumnNameGenerator
 import org.opencypher.okapi.relational.impl.syntax.RecordHeaderSyntax.{addContent, addContents, _}
 import org.opencypher.okapi.relational.impl.table.{ColumnName, OpaqueField, RecordHeader, RecordSlot, _}
 import org.opencypher.spark.api.CAPSSession
@@ -44,7 +45,7 @@ import org.opencypher.spark.impl.SparkSQLExprMapper._
 import org.opencypher.spark.impl.physical.operators.CAPSPhysicalOperator._
 import org.opencypher.spark.impl.physical.{CAPSPhysicalResult, CAPSRuntimeContext}
 import org.opencypher.spark.impl.util.TagSupport._
-import org.opencypher.spark.impl.{CAPSGraph, CAPSRecords, CAPSUnionGraph, ColumnNameGenerator}
+import org.opencypher.spark.impl.{CAPSGraph, CAPSRecords, CAPSUnionGraph}
 import org.opencypher.spark.schema.CAPSSchema._
 
 private[spark] abstract class BinaryPhysicalOperator extends CAPSPhysicalOperator {
@@ -63,7 +64,8 @@ final case class Join(
   lhs: CAPSPhysicalOperator,
   rhs: CAPSPhysicalOperator,
   joinColumns: Seq[(Expr, Expr)],
-  header: RecordHeader
+  header: RecordHeader,
+  joinType: String
 ) extends BinaryPhysicalOperator {
 
   override def executeBinary(left: CAPSPhysicalResult, right: CAPSPhysicalResult)(
@@ -82,7 +84,7 @@ final case class Join(
         leftRecordSlot -> rightRecordSlot
     }
 
-    val joinedRecords = joinRecords(header, joinSlots)(left.records, right.records)
+    val joinedRecords = joinRecords(header, joinSlots, joinType)(left.records, right.records)
 
     CAPSPhysicalResult(joinedRecords, left.workingGraph, left.workingGraphName)
   }

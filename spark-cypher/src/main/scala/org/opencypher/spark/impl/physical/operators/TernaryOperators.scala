@@ -30,12 +30,13 @@ import org.apache.spark.sql.DataFrame
 import org.opencypher.okapi.api.types.CTNode
 import org.opencypher.okapi.ir.api.expr.{EndNode, Var}
 import org.opencypher.okapi.logical.impl.{Directed, Direction, Undirected}
+import org.opencypher.okapi.relational.impl.ColumnNameGenerator
 import org.opencypher.okapi.relational.impl.table.{OpaqueField, ProjectedExpr, RecordHeader, RecordSlot}
 import org.opencypher.spark.impl.CAPSFunctions._
 import org.opencypher.spark.impl.DataFrameOps._
 import org.opencypher.spark.impl.physical.operators.CAPSPhysicalOperator._
 import org.opencypher.spark.impl.physical.{CAPSPhysicalResult, CAPSRuntimeContext}
-import org.opencypher.spark.impl.{CAPSRecords, ColumnNameGenerator}
+import org.opencypher.spark.impl.CAPSRecords
 
 private[spark] abstract class TernaryPhysicalOperator extends CAPSPhysicalOperator {
 

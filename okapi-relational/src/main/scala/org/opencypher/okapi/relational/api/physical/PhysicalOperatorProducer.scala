@@ -31,6 +31,7 @@ import org.opencypher.okapi.api.table.CypherRecords
 import org.opencypher.okapi.ir.api.block.SortItem
 import org.opencypher.okapi.ir.api.expr.{Aggregator, Expr, Var}
 import org.opencypher.okapi.logical.impl._
+import org.opencypher.okapi.relational.impl.physical.{InnerJoin, JoinType}
 import org.opencypher.okapi.relational.impl.table.{ProjectedExpr, ProjectedField, RecordHeader}
 
 /**
@@ -94,9 +95,20 @@ trait PhysicalOperatorProducer[P <: PhysicalOperator[R, G, C], R <: CypherRecord
     * @param expr   expression to be aliased
     * @param alias  alias
     * @param header resulting record header
-    * @return empty records operator
+    * @return Alias operator
     */
   def planAlias(in: P, expr: Expr, alias: Var, header: RecordHeader): P
+
+  /**
+    * Drops the columns identified by the given expressions from the input records.
+    * Expressions not present are ignored.
+    *
+    * @param in         previous operator
+    * @param dropFields expressions to be dropped
+    * @param header     resulting record header
+    * @return Drop operator
+    */
+  def planDrop(in: P, dropFields: Seq[Expr], header: RecordHeader): P
 
   /**
     * The operator takes a set of (field, expression) aliases and renames the columns identified by a field to the
@@ -259,9 +271,10 @@ trait PhysicalOperatorProducer[P <: PhysicalOperator[R, G, C], R <: CypherRecord
     * @param rhs         second previous operator
     * @param joinColumns sequence of left and right join columns
     * @param header      resulting record header
+    * @param joinType    type of the join
     * @return join operator
     */
-  def planJoin(lhs: P, rhs: P, joinColumns: Seq[(Expr, Expr)], header: RecordHeader): P
+  def planJoin(lhs: P, rhs: P, joinColumns: Seq[(Expr, Expr)], header: RecordHeader, joinType: JoinType = InnerJoin): P
 
   /**
     * Unions the input records.
