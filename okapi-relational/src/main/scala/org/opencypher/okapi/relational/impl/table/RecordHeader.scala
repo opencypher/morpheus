@@ -169,7 +169,7 @@ object RecordHeader {
       */
     def selectFields(fields: Set[Var]): RecordHeader = {
       header.flatMap {
-        case (expr, fs) if fs.exists(fields.contains) || expr.owner.map(fields.contains).isDefined =>
+        case (expr, fs) if fs.exists(fields.contains) || expr.owner.exists(fields.contains) =>
           Some(expr -> fs.intersect(fields))
         case _ => None
       }
