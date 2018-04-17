@@ -24,12 +24,13 @@
  * described as "implementation extensions to Cypher" or as "proposed changes to
  * Cypher that are not yet approved by the openCypher community".
  */
-package org.opencypher.okapi.api.value
+package org.opencypher.spark.api.value
 
 import org.opencypher.okapi.api.value.CypherValue._
-import org.opencypher.spark.test.CAPSTestSuite
+import org.opencypher.okapi.api.value.{CAPSNode, CAPSRelationship}
+import org.opencypher.okapi.test.BaseTestSuite
 
-class CAPSValueToStringTest extends CAPSTestSuite {
+class CAPSValueToStringTest extends BaseTestSuite {
 
   test("node") {
     CAPSNode(1L, Set.empty, CypherMap.empty).toCypherString should equal("()")
@@ -63,5 +64,12 @@ class CAPSValueToStringTest extends CAPSTestSuite {
     CypherMap().toCypherString should equal("{}")
     CypherMap("a" -> 1).toCypherString should equal("{a: 1}")
     CypherMap("a" -> 1, "b" -> true).toCypherString should equal("{a: 1, b: true}")
+  }
+
+  test("should escape apostrophes in strings") {
+    CypherMap("street" -> "59 rue de l'Abbaye").toCypherString should equal("{street: '59 rue de l\\'Abbaye'}")
+    CypherMap("street" -> "59 rue de l\"Abbaye'").toCypherString should equal("{street: '59 rue de l\\\"Abbaye\\''}")
+    CAPSNode(1, Set.empty, CypherMap("street" -> "59 rue de l\"Abbaye'")).toCypherString should equal("({street: '59 rue de l\\\"Abbaye\\''})")
+    CAPSRelationship(1, 2, 3, "FOO", CypherMap("street" -> "59 rue de l\"Abbaye'")).toCypherString should equal("[:FOO {street: '59 rue de l\\\"Abbaye\\''}]")
   }
 }
