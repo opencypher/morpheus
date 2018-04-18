@@ -182,7 +182,7 @@ class PhysicalPlanner[P <: PhysicalOperator[R, G, C], R <: CypherRecords, G <: P
           header,
           isExpandInto)
 
-      case flat.Optional(lhs, rhs, header) => producer.planOptional(process(lhs), process(rhs), header)
+      case flat.Optional(lhs, rhs, header) => planOptional(lhs, rhs, header)
 
       case flat.ExistsSubQuery(predicateField, lhs, rhs, header) =>
         producer.planExistsSubQuery(process(lhs), process(rhs), predicateField, header)
@@ -245,7 +245,7 @@ class PhysicalPlanner[P <: PhysicalOperator[R, G, C], R <: CypherRecords, G <: P
       .flatMap(rhsHeader.childSlots)
       .map(_.content.key)
       .union(otherCommonFields)
-      .toList
+      .distinct
 
     val rhsHeaderWithDropped = fieldsToRemove.flatMap(rhsHeader.slotsFor).foldLeft(rhsHeader)(_ - _)
     val rhsWithDropped = producer.planDrop(rhsData, fieldsToRemove, rhsHeaderWithDropped)

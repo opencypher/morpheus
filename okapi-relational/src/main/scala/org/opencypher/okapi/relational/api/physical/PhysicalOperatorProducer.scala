@@ -286,17 +286,6 @@ trait PhysicalOperatorProducer[P <: PhysicalOperator[R, G, C], R <: CypherRecord
   def planTabularUnionAll(lhs: P, rhs: P): P
 
   /**
-    * Computes the result of an OPTIONAL MATCH where the first input is the non-optional part and the second input the
-    * optional one.
-    *
-    * @param lhs    first previous operator
-    * @param rhs    second previous operator
-    * @param header resulting record header
-    * @return optional operator
-    */
-  def planOptional(lhs: P, rhs: P, header: RecordHeader): P
-
-  /**
     * Filters the rows of the first input by checking if there exists a corresponding row in the second input.
     *
     * @param lhs         first previous operator

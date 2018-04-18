@@ -182,7 +182,11 @@ final case class Project(in: CAPSPhysicalOperator, expr: Expr, header: RecordHea
 final case class Drop(in: CAPSPhysicalOperator, dropFields: Seq[Expr], header: RecordHeader) extends UnaryPhysicalOperator {
   override def executeUnary(prev: CAPSPhysicalResult)(implicit context: CAPSRuntimeContext): CAPSPhysicalResult = {
     prev.mapRecordsWithDetails { records =>
-      val withDropped = records.data.safeDropColumns(dropFields.map(ColumnName.of): _*)
+      val columnToDrop = dropFields
+        .map(ColumnName.of)
+        .filter(records.data.columns.contains)
+
+      val withDropped = records.data.safeDropColumns(columnToDrop: _*)
       CAPSRecords.verifyAndCreate(header, withDropped)(records.caps)
     }
   }

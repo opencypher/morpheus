@@ -168,9 +168,6 @@ final class CAPSPhysicalOperatorProducer(implicit caps: CAPSSession)
     isExpandInto: Boolean): CAPSPhysicalOperator = operators.BoundedVarExpand(
     first, second, third, rel, edgeList, target, initialEndNode, lower, upper, direction, header, isExpandInto)
 
-  override def planOptional(lhs: CAPSPhysicalOperator, rhs: CAPSPhysicalOperator, header: RecordHeader): CAPSPhysicalOperator =
-    operators.Optional(lhs, rhs, header)
-
   override def planExistsSubQuery(
     lhs: CAPSPhysicalOperator,
     rhs: CAPSPhysicalOperator,

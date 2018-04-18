@@ -52,6 +52,9 @@ object ColumnName {
   def of(expr: Expr): String = {
     expr match {
       case Var(name) => name
+      case _: Property =>
+        val columnNameBuilder = new NameBuilder() += None += expr.withoutType + expr.cypherType.material.name
+        columnNameBuilder.result()
       case _ =>
         val columnNameBuilder = new NameBuilder() += None += expr.withoutType
         columnNameBuilder.result()
