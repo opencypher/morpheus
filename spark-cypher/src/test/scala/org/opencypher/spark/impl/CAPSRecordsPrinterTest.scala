@@ -43,7 +43,7 @@ class CAPSRecordsPrinterTest extends CAPSTestSuite with GraphConstructionFixture
 
   implicit val options: PrintOptions = PrintOptions.out
 
-  test("unit table") {
+  it("prints the unit table") {
     // Given
     val records = CAPSRecords.unit()
 
@@ -51,19 +51,18 @@ class CAPSRecordsPrinterTest extends CAPSTestSuite with GraphConstructionFixture
     print(records)
 
     // Then
-    val result = getString
-    result should equal(
-      """+----------------------+
-        !| (no columns)         |
-        !+----------------------+
-        !| (empty row)          |
-        !+----------------------+
-        !(1 rows)
-        !""".stripMargin('!')
+    getString should equal(
+      """!+--------------+
+         !| (no columns) |
+         !+--------------+
+         !| (empty row)  |
+         !+--------------+
+         !(1 rows)
+         !""".stripMargin('!')
     )
   }
 
-  test("single column, no rows") {
+  it("prints a single column with no rows") {
     // Given
     val records = CAPSRecords.empty(headerOf('foo))
 
@@ -72,15 +71,15 @@ class CAPSRecordsPrinterTest extends CAPSTestSuite with GraphConstructionFixture
 
     // Then
     getString should equal(
-      """+----------------------+
-        !| foo                  |
-        !+----------------------+
-        !(no rows)
-        !""".stripMargin('!')
+      """!+-----+
+         !| foo |
+         !+-----+
+         !(no rows)
+         !""".stripMargin('!')
     )
   }
 
-  test("single column, three rows") {
+  it("prints a single column with three rows") {
     // Given
     val records = CAPSRecords.create(Seq(Row1("myString"), Row1("foo"), Row1(null)))
 
@@ -90,19 +89,19 @@ class CAPSRecordsPrinterTest extends CAPSTestSuite with GraphConstructionFixture
     // Then
     val result = getString
     result should equal(
-      """+----------------------+
-        !| foo                  |
-        !+----------------------+
-        !| 'myString'           |
-        !| 'foo'                |
-        !| null                 |
-        !+----------------------+
-        !(3 rows)
-        !""".stripMargin('!')
+      """!+------------+
+         !| foo        |
+         !+------------+
+         !| 'myString' |
+         !| 'foo'      |
+         !| null       |
+         !+------------+
+         !(3 rows)
+         !""".stripMargin('!')
     )
   }
 
-  test("three columns, three rows") {
+  it("prints three columns with three rows") {
     // Given
     val records = CAPSRecords.create(
       Seq(
@@ -116,39 +115,42 @@ class CAPSRecordsPrinterTest extends CAPSTestSuite with GraphConstructionFixture
 
     // Then
     getString should equal(
-      """+--------------------------------------------------------------------+
-        !| foo                  | v                    | veryLongColumnNameWi |
-        !+--------------------------------------------------------------------+
-        !| 'myString'           | 4                    | false                |
-        !| 'foo'                | 99999999             | true                 |
-        !| null                 | -1                   | true                 |
-        !+--------------------------------------------------------------------+
-        !(3 rows)
-        !""".stripMargin('!')
+      """!+-------------------------------------------------------+
+         !| foo        | v        | veryLongColumnNameWithBoolean |
+         !+-------------------------------------------------------+
+         !| 'myString' | 4        | false                         |
+         !| 'foo'      | 99999999 | true                          |
+         !| null       | -1       | true                          |
+         !+-------------------------------------------------------+
+         !(3 rows)
+         !""".stripMargin('!')
     )
   }
 
-  test("return property values without alias") {
+  it("prints return property values without alias") {
     val given =
-      initGraph("""
-        |CREATE (a:Person {name: "Alice"})-[:LIVES_IN]->(city:City)<-[:LIVES_IN]-(b:Person {name: "Bob"})
-      """.stripMargin)
+      initGraph(
+        """
+          |CREATE (a:Person {name: "Alice"})-[:LIVES_IN]->(city:City)<-[:LIVES_IN]-(b:Person {name: "Bob"})
+        """.stripMargin)
 
-    val when = given.cypher("""MATCH (a:Person)-[:LIVES_IN]->(city:City)<-[:LIVES_IN]-(b:Person)
+    val when = given.cypher(
+      """MATCH (a:Person)-[:LIVES_IN]->(city:City)<-[:LIVES_IN]-(b:Person)
         |RETURN a.name, b.name
         |ORDER BY a.name
       """.stripMargin)
 
     print(when.getRecords)
 
-    getString should equal("""+---------------------------------------------+
-        !| a.name               | b.name               |
-        !+---------------------------------------------+
-        !| 'Alice'              | 'Bob'                |
-        !| 'Bob'                | 'Alice'              |
-        !+---------------------------------------------+
-        !(2 rows)
-        !""".stripMargin('!'))
+    getString should equal(
+      """!+-------------------+
+         !| a.name  | b.name  |
+         !+-------------------+
+         !| 'Alice' | 'Bob'   |
+         !| 'Bob'   | 'Alice' |
+         !+-------------------+
+         !(2 rows)
+         !""".stripMargin('!'))
   }
 
   var baos: ByteArrayOutputStream = _
@@ -158,6 +160,7 @@ class CAPSRecordsPrinterTest extends CAPSTestSuite with GraphConstructionFixture
   }
 
   private case class Row1(foo: String)
+
   private case class Row3(foo: String, v: Long, veryLongColumnNameWithBoolean: Boolean)
 
   private def headerOf(fields: Symbol*): RecordHeader = {

@@ -216,6 +216,8 @@ object CypherValue {
 
     def get(k: String): Option[CypherValue] = value.get(k)
 
+    def getOrElse(k: String, default: CypherValue = CypherNull): CypherValue = value.getOrElse(k, default)
+
     def apply(k: String): CypherValue = value.getOrElse(k, CypherNull)
 
     def ++(other: CypherMap): CypherMap = value ++ other.value
