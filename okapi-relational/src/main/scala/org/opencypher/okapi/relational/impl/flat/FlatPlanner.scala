@@ -31,7 +31,6 @@ import org.opencypher.okapi.impl.exception.NotImplementedException
 import org.opencypher.okapi.ir.api.util.DirectCompilationStage
 import org.opencypher.okapi.logical.impl.LogicalOperator
 import org.opencypher.okapi.logical.{impl => logical}
-import org.opencypher.okapi.relational.impl.table.{ProjectedExpr, ProjectedField}
 
 final case class FlatPlannerContext(parameters: CypherMap)
 
@@ -46,10 +45,7 @@ class FlatPlanner extends DirectCompilationStage[LogicalOperator, FlatOperator, 
         producer.cartesianProduct(process(lhs), process(rhs))
 
       case logical.Select(fields, in, _) =>
-        val withAliasesRemoved = if (fields.nonEmpty) {
-          producer.removeAliases(fields, process(in))
-        } else process(in)
-        producer.select(fields, withAliasesRemoved)
+        producer.select(fields, process(in))
 
       case logical.Filter(expr, in, _) =>
         producer.filter(expr, process(in))
@@ -63,11 +59,8 @@ class FlatPlanner extends DirectCompilationStage[LogicalOperator, FlatOperator, 
       case logical.Unwind(list, item, in, _) =>
         producer.unwind(list, item, process(in))
 
-      case logical.Project(expr, None, in, _) =>
-        producer.project(ProjectedExpr(expr), process(in))
-
-      case logical.Project(expr, Some(field), in, _) =>
-        producer.project(ProjectedField(field, expr), process(in))
+      case logical.Project(expr, maybeField, in, _) =>
+        producer.project(expr, maybeField, process(in))
 
       case logical.Aggregate(aggregations, group, in, _) =>
         producer.aggregate(aggregations, group, process(in))

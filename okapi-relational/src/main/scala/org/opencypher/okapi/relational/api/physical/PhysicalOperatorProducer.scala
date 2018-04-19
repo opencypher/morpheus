@@ -31,7 +31,7 @@ import org.opencypher.okapi.api.table.CypherRecords
 import org.opencypher.okapi.ir.api.block.SortItem
 import org.opencypher.okapi.ir.api.expr.{Aggregator, Expr, Var}
 import org.opencypher.okapi.logical.impl._
-import org.opencypher.okapi.relational.impl.table.{ProjectedExpr, ProjectedField, RecordHeader}
+import org.opencypher.okapi.relational.impl.table.RecordHeader._
 
 /**
   * Main interface to be implemented by custom (relational) back-ends to execute a Cypher query. Methods are being
@@ -86,28 +86,6 @@ trait PhysicalOperatorProducer[P <: PhysicalOperator[R, G, C], R <: CypherRecord
     * @return empty records operator
     */
   def planEmptyRecords(in: P, header: RecordHeader): P
-
-  /**
-    * Renames the column identified by the given expression to the specified alias.
-    *
-    * @param in     previous operator
-    * @param expr   expression to be aliased
-    * @param alias  alias
-    * @param header resulting record header
-    * @return empty records operator
-    */
-  def planAlias(in: P, expr: Expr, alias: Var, header: RecordHeader): P
-
-  /**
-    * The operator takes a set of (field, expression) aliases and renames the columns identified by a field to the
-    * corresponding expression.
-    *
-    * @param in      previous operator
-    * @param aliases set of aliases
-    * @param header  resulting record header
-    * @return remove aliases operator
-    */
-  def planRemoveAliases(in: P, aliases: Set[(ProjectedField, ProjectedExpr)], header: RecordHeader): P
 
   /**
     * Filters the incoming rows according to the specified expression.

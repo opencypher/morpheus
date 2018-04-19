@@ -33,6 +33,7 @@ import org.opencypher.okapi.ir.api.expr._
 import org.opencypher.okapi.ir.impl.QueryCatalog
 import org.opencypher.okapi.logical.impl._
 import org.opencypher.okapi.relational.api.physical.{PhysicalOperatorProducer, PhysicalPlannerContext}
+import org.opencypher.okapi.relational.impl.table.RecordHeader._
 import org.opencypher.okapi.relational.impl.table._
 import org.opencypher.spark.api.CAPSSession
 import org.opencypher.spark.impl.physical.operators.CAPSPhysicalOperator
@@ -62,11 +63,6 @@ final class CAPSPhysicalOperatorProducer(implicit caps: CAPSSession)
     rhs: CAPSPhysicalOperator,
     header: RecordHeader): CAPSPhysicalOperator = operators.CartesianProduct(lhs, rhs, header)
 
-  override def planRemoveAliases(
-    in: CAPSPhysicalOperator,
-    dependent: Set[(ProjectedField, ProjectedExpr)],
-    header: RecordHeader): CAPSPhysicalOperator = operators.RemoveAliases(in, dependent, header)
-
   override def planSelectFields(in: CAPSPhysicalOperator, fields: List[Var], header: RecordHeader): CAPSPhysicalOperator =
     operators.SelectFields(in, fields, header)
 
@@ -95,9 +91,6 @@ final class CAPSPhysicalOperatorProducer(implicit caps: CAPSSession)
     inGraph: LogicalGraph,
     v: Var,
     header: RecordHeader): CAPSPhysicalOperator = operators.RelationshipScan(in, v, header)
-
-  override def planAlias(in: CAPSPhysicalOperator, expr: Expr, alias: Var, header: RecordHeader): CAPSPhysicalOperator =
-    operators.Alias(in, expr, alias, header)
 
   override def planUnwind(in: CAPSPhysicalOperator, list: Expr, item: Var, header: RecordHeader): CAPSPhysicalOperator =
     operators.Unwind(in, list, item, header)

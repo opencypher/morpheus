@@ -26,55 +26,86 @@
  */
 package org.opencypher.spark.impl.table
 
-import org.apache.spark.sql.Row
+import org.apache.spark.sql.{Column, DataFrame, Row}
 import org.apache.spark.sql.catalyst.encoders.{ExpressionEncoder, RowEncoder}
 import org.apache.spark.sql.types.{StructField, StructType}
 import org.opencypher.okapi.impl.exception.IllegalArgumentException
-import org.opencypher.okapi.ir.api.expr.Var
+import org.opencypher.okapi.ir.api.expr.{Expr, Var}
+import org.opencypher.okapi.relational.impl.table.RecordHeader._
 import org.opencypher.okapi.relational.impl.table._
 import org.opencypher.spark.impl.convert.CAPSCypherType._
 
 object CAPSRecordHeader {
 
   def fromSparkStructType(structType: StructType): RecordHeader =
-    RecordHeader.from(structType.fields.map { field =>
-      OpaqueField(
+    RecordHeader.apply(structType.fields.map { field =>
         Var(field.name)(field.dataType.toCypherType(field.nullable)
-          .getOrElse(throw IllegalArgumentException("a supported Spark type", field.dataType))))
+          .getOrElse(throw IllegalArgumentException("a supported Spark type", field.dataType)))
     }: _*)
 
-  def asSparkStructType(header: RecordHeader): StructType = {
-    val fields = header.slots.map(slot => structField(slot, !header.mandatory(slot)))
-    StructType(fields)
-  }
-
-  private def structField(slot: RecordSlot, nullable: Boolean): StructField = {
-    val name = ColumnName.of(slot.content)
-    val dataType = slot.content.cypherType.getSparkType
-    StructField(name, dataType, nullable)
-  }
-
   implicit class CAPSRecordHeader(header: RecordHeader) extends Serializable {
-    def asSparkSchema: StructType =
-      StructType(header.internalHeader.slots.map(_.asStructField))
 
-    def rowEncoder: ExpressionEncoder[Row] =
-      RowEncoder(asSparkSchema)
-  }
-
-  implicit class CAPSInternalHeader(internalHeader: InternalHeader) {
-    def columns = internalHeader.slots.map(computeColumnName).toVector
-
-    def column(slot: RecordSlot) = columns(slot.index)
-
-    private def computeColumnName(slot: RecordSlot): String = ColumnName.of(slot)
-  }
-
-  implicit class CAPSRecordSlot(slot: RecordSlot) {
-    def asStructField: StructField = {
-      val name = ColumnName.of(slot)
-      val sparkType = slot.content.cypherType.getSparkType
-      StructField(name, sparkType, slot.content.cypherType.isNullable)
+    def columnMappings: Map[String, StructField] = {
+      header.mappings.map { slot =>
+        slot.columnName -> slot.asStructField
+      }.toMap
     }
+
+    def sparkSchemaForDf(df: DataFrame): StructType = {
+      val schemaForColumn = columnMappings
+      StructType(df.columns.map(schemaForColumn))
+    }
+
+    def rowEncoder(implicit df: DataFrame): ExpressionEncoder[Row] = RowEncoder(sparkSchemaForDf(df))
+
+    def columns: Set[String] = header.mappings.map(_.columnName)
+
+    def dfColumnNameToSlotContent: Map[String, ExpressionMapping] = {
+      for {
+        slot <- header.mappings
+      } yield slot.columnName -> slot
+    }.toMap
+
+    def dfColumnNameToFieldName: Map[String, String] = {
+      for {
+        field <- header.fields
+        slot = header.exprFor(field)
+      } yield slot.columnName -> field.name
+    }.toMap
   }
+
+  implicit class CAPSOrderedSlots(slotContents: Seq[Expr]) {
+
+    def asSparkSchema: StructType = StructType(slotContents.map(_.asStructField))
+
+  }
+
+  implicit class CAPSRecordSlot(slot: ExpressionMapping) {
+
+    def asStructField: StructField = slot.expr.asStructField
+
+    def columnName: String = ColumnName.of(slot)
+
+    def indexIn(df: DataFrame): Int = {
+      df.schema.fieldIndex(slot.columnName)
+    }
+
+    def columnIn(df: DataFrame): Column = {
+      df.col(columnName)
+    }
+
+  }
+
+  implicit class CAPSSlotContent(slotContent: Expr) {
+
+    def asStructField: StructField = {
+      val name = slotContent.columnName
+      val sparkType = slotContent.cypherType.getSparkType
+      StructField(name, sparkType, slotContent.cypherType.isNullable)
+    }
+
+    def columnName: String = ColumnName.of(slotContent)
+
+  }
+
 }

@@ -63,7 +63,7 @@ class MultipleGraphBehaviour extends CAPSTestSuite with ScanGraphInit {
         |RETURN GRAPH""".stripMargin
 
     val result = testGraph1.cypher(query)
-    result.getRecords.toMaps shouldBe empty
+    result.getRecords.toMapsWithCollectedEntities shouldBe empty
   }
 
   it("CLONEs with an alias") {
@@ -75,7 +75,7 @@ class MultipleGraphBehaviour extends CAPSTestSuite with ScanGraphInit {
         |RETURN GRAPH""".stripMargin
 
     val result = testGraph1.cypher(query)
-    result.getRecords.toMaps shouldBe empty
+    result.getRecords.toMapsWithCollectedEntities shouldBe empty
   }
 
   it("should return a graph") {
@@ -83,7 +83,7 @@ class MultipleGraphBehaviour extends CAPSTestSuite with ScanGraphInit {
       """RETURN GRAPH""".stripMargin
 
     val result = testGraph1.cypher(query)
-    result.getRecords.toMaps shouldBe empty
+    result.getRecords.toMapsWithCollectedEntities shouldBe empty
 
     result.asCaps.getGraph shouldMatch testGraph1
   }
@@ -95,7 +95,7 @@ class MultipleGraphBehaviour extends CAPSTestSuite with ScanGraphInit {
         |RETURN GRAPH""".stripMargin
 
     val result = testGraph1.cypher(query)
-    result.getRecords.toMaps shouldBe empty
+    result.getRecords.toMapsWithCollectedEntities shouldBe empty
     result.asCaps.getGraph shouldMatch testGraph2
   }
 
@@ -110,7 +110,7 @@ class MultipleGraphBehaviour extends CAPSTestSuite with ScanGraphInit {
 
     val result = testGraph1.cypher(query)
 
-    result.getRecords.toMaps should equal(
+    result.getRecords.toMapsWithCollectedEntities should equal(
       Bag(
         CypherMap("name" -> "Phil")
       ))
@@ -131,7 +131,7 @@ class MultipleGraphBehaviour extends CAPSTestSuite with ScanGraphInit {
 
     val result = testGraph1.cypher(query)
 
-    result.getRecords.toMaps should equal(
+    result.getRecords.toMapsWithCollectedEntities should equal(
       Bag(
         CypherMap("name" -> "Phil", "car" -> "Toyota")
       ))
@@ -145,7 +145,7 @@ class MultipleGraphBehaviour extends CAPSTestSuite with ScanGraphInit {
 
     val result = testGraph1.cypher(query)
 
-    result.getRecords.toMaps shouldBe empty
+    result.getRecords.toMapsWithCollectedEntities shouldBe empty
     result.getGraph.schema.labels should equal(Set("A", "B"))
     result.getGraph.schema.relationshipTypes should equal(Set("KNOWS"))
     result.getGraph.nodes("n").size should equal(2)
@@ -161,7 +161,7 @@ class MultipleGraphBehaviour extends CAPSTestSuite with ScanGraphInit {
 
     val result = testGraph1.cypher(query)
 
-    result.getRecords.toMaps shouldBe empty
+    result.getRecords.toMapsWithCollectedEntities shouldBe empty
     result.getGraph.schema.labels should equal(Set("A", "B", "C"))
     result.getGraph.schema.relationshipTypes should equal(Set("KNOWS"))
     result.getGraph.nodes("n").size should equal(3)
@@ -177,7 +177,7 @@ class MultipleGraphBehaviour extends CAPSTestSuite with ScanGraphInit {
 
     val result = testGraph1.cypher(query)
 
-    result.getRecords.toMaps shouldBe empty
+    result.getRecords.toMapsWithCollectedEntities shouldBe empty
     result.getGraph.schema.labels should equal(Set("A", "B", "C", "D"))
     result.getGraph.schema.relationshipTypes should equal(Set("KNOWS"))
     result.getGraph.nodes("n").size should equal(4)
@@ -193,7 +193,7 @@ class MultipleGraphBehaviour extends CAPSTestSuite with ScanGraphInit {
 
     val result = testGraph1.cypher(query)
 
-    result.getRecords.toMaps shouldBe empty
+    result.getRecords.toMapsWithCollectedEntities shouldBe empty
 
     result.getGraph.schema.labels should equal(Set("A", "B"))
     result.getGraph.schema.relationshipTypes should equal(Set.empty)
@@ -210,7 +210,7 @@ class MultipleGraphBehaviour extends CAPSTestSuite with ScanGraphInit {
 
     val result = testGraph1.cypher(query)
 
-    result.getRecords.toMaps shouldBe empty
+    result.getRecords.toMapsWithCollectedEntities shouldBe empty
     result.getGraph.schema.labels should equal(Set("A"))
     result.getGraph.schema should equal(Schema.empty.withNodePropertyKeys("A")("name" -> CTString).asCaps)
     result.getGraph.cypher("MATCH (a:A) RETURN a.name").getRecords.iterator.toBag should equal(Bag(
@@ -226,7 +226,7 @@ class MultipleGraphBehaviour extends CAPSTestSuite with ScanGraphInit {
 
     val result = caps.cypher(query)
 
-    result.getRecords.toMaps shouldBe empty
+    result.getRecords.toMapsWithCollectedEntities shouldBe empty
     result.getGraph.schema should equal(Schema.empty.withNodePropertyKeys()("name" -> CTString).asCaps)
     result.getGraph.cypher("MATCH (a) RETURN a.name").getRecords.iterator.toBag should equal(Bag(
       CypherMap("a.name" -> "Donald")
@@ -241,7 +241,7 @@ class MultipleGraphBehaviour extends CAPSTestSuite with ScanGraphInit {
 
     val result = testGraph1.cypher(query)
 
-    result.getRecords.toMaps shouldBe empty
+    result.getRecords.toMapsWithCollectedEntities shouldBe empty
     result.getGraph.schema.labels should equal(Set("A"))
     result.getGraph.schema should equal(Schema.empty.withNodePropertyKeys("A")("name" -> CTString).asCaps)
     result.getGraph.cypher("MATCH (a:A) RETURN a.name").getRecords.iterator.toBag should equal(Bag(
@@ -257,7 +257,7 @@ class MultipleGraphBehaviour extends CAPSTestSuite with ScanGraphInit {
 
     val result = testGraph1.cypher(query)
 
-    result.getRecords.toMaps shouldBe empty
+    result.getRecords.toMapsWithCollectedEntities shouldBe empty
     result.getGraph.schema.labels should equal(Set("A", "B"))
     result.getGraph.schema should equal(
       Schema.empty
@@ -277,7 +277,7 @@ class MultipleGraphBehaviour extends CAPSTestSuite with ScanGraphInit {
 
     val result = testGraph1.cypher(query)
 
-    result.getRecords.toMaps shouldBe empty
+    result.getRecords.toMapsWithCollectedEntities shouldBe empty
     result.getGraph.schema.labels should equal(Set("Person"))
     result.getGraph.schema should equal(
       Schema.empty
@@ -296,7 +296,7 @@ class MultipleGraphBehaviour extends CAPSTestSuite with ScanGraphInit {
 
     val result = testGraph1.cypher(query)
 
-    result.getRecords.toMaps shouldBe empty
+    result.getRecords.toMapsWithCollectedEntities shouldBe empty
     result.getGraph.schema.relationshipTypes should equal(Set("FOO"))
     result.getGraph.schema should equal(Schema.empty
       .withNodePropertyKeys()()
@@ -317,7 +317,7 @@ class MultipleGraphBehaviour extends CAPSTestSuite with ScanGraphInit {
 
     val result = testGraph1.cypher(query)
 
-    result.getRecords.toMaps shouldBe empty
+    result.getRecords.toMapsWithCollectedEntities shouldBe empty
     result.getGraph.cypher("MATCH ()-[r]->() RETURN r.val, r.name, type(r) as type").getRecords.iterator.toBag should equal(Bag(
       CypherMap("r.val" -> 42, "r.name" -> "Donald", "type" -> "FOO")
     ))
@@ -338,7 +338,7 @@ class MultipleGraphBehaviour extends CAPSTestSuite with ScanGraphInit {
 
     val result = graph.cypher(query)
 
-    result.getRecords.toMaps shouldBe empty
+    result.getRecords.toMapsWithCollectedEntities shouldBe empty
 
     result.getGraph.asInstanceOf[CAPSUnionGraph].graphs.keys.tail.head.asInstanceOf[CAPSPatternGraph].baseTable.data.show()
 
@@ -359,7 +359,7 @@ class MultipleGraphBehaviour extends CAPSTestSuite with ScanGraphInit {
 
     val result = testGraph1.cypher(query)
 
-    result.getRecords.toMaps shouldBe empty
+    result.getRecords.toMapsWithCollectedEntities shouldBe empty
     result.getGraph.schema.labels should equal(Set("Foo"))
     result.getGraph.schema should equal(Schema.empty
       .withNodePropertyKeys("Foo")("foo" -> CTString)
@@ -386,7 +386,7 @@ class MultipleGraphBehaviour extends CAPSTestSuite with ScanGraphInit {
 
     val result = graph.cypher(query)
 
-    result.getRecords.toMaps shouldBe empty
+    result.getRecords.toMapsWithCollectedEntities shouldBe empty
     result.getGraph.cypher("MATCH (a) RETURN a.val, labels(a) as labels").getRecords.iterator.toBag should equal(Bag(
       CypherMap("a.val" -> 1, "labels" -> Seq("A")),
       CypherMap("a.val" -> 1, "labels" -> Seq("B")),
@@ -408,7 +408,7 @@ class MultipleGraphBehaviour extends CAPSTestSuite with ScanGraphInit {
 
     val result = graph.cypher(query)
 
-    result.getRecords.toMaps shouldBe empty
+    result.getRecords.toMapsWithCollectedEntities shouldBe empty
     result.getGraph.cypher("MATCH (a) RETURN a.val").getRecords.iterator.toBag should equal(Bag(
       CypherMap("a.val" -> 2)
     ))
@@ -428,7 +428,7 @@ class MultipleGraphBehaviour extends CAPSTestSuite with ScanGraphInit {
 
     val result = graph.cypher(query)
 
-    result.getRecords.toMaps shouldBe empty
+    result.getRecords.toMapsWithCollectedEntities shouldBe empty
     result.getGraph.cypher("MATCH (a) RETURN a.val").getRecords.iterator.toBag should equal(Bag(
       CypherMap("a.val" -> "foo")
     ))
@@ -565,8 +565,8 @@ class MultipleGraphBehaviour extends CAPSTestSuite with ScanGraphInit {
     val result = testGraph2.cypher(query).getGraph
 
     result.schema should equal(testGraph1.schema)
-    result.nodes("n").toMaps should equal(testGraph1.nodes("n").toMaps)
-    result.relationships("r").toMaps should equal(testGraph1.relationships("r").toMaps)
+    result.nodes("n").toMapsWithCollectedEntities should equal(testGraph1.nodes("n").toMapsWithCollectedEntities)
+    result.relationships("r").toMapsWithCollectedEntities should equal(testGraph1.relationships("r").toMapsWithCollectedEntities)
   }
 
   it("CONSTRUCTS ON two graphs") {
@@ -580,8 +580,8 @@ class MultipleGraphBehaviour extends CAPSTestSuite with ScanGraphInit {
     val result = testGraph2.cypher(query).getGraph
 
     result.schema should equal((testGraph1.schema ++ testGraph2.schema).asCaps)
-    result.nodes("n").toMaps should equal(testGraph1.unionAll(testGraph2).nodes("n").toMaps)
-    result.relationships("r").toMaps should equal(testGraph1.unionAll(testGraph2).relationships("r").toMaps)
+    result.nodes("n").toMapsWithCollectedEntities should equal(testGraph1.unionAll(testGraph2).nodes("n").toMapsWithCollectedEntities)
+    result.relationships("r").toMapsWithCollectedEntities should equal(testGraph1.unionAll(testGraph2).relationships("r").toMapsWithCollectedEntities)
   }
 
   it("CONSTRUCTS ON two graphs and adds a relationship") {
@@ -600,7 +600,7 @@ class MultipleGraphBehaviour extends CAPSTestSuite with ScanGraphInit {
     val result = caps.cypher(query).getGraph
 
     result.schema should equal((testGraph1.schema ++ testGraph2.schema).withRelationshipPropertyKeys("KNOWS")().asCaps)
-    result.nodes("n").toMaps should equal(testGraph1.unionAll(testGraph2).nodes("n").toMaps)
+    result.nodes("n").toMapsWithCollectedEntities should equal(testGraph1.unionAll(testGraph2).nodes("n").toMapsWithCollectedEntities)
     result.relationships("r").toMapsWithCollectedEntities should equal(Bag(
       CypherMap("r" -> CAPSRelationship(2251799813685248L, 0L, 1125899906842624L, "KNOWS")))
     )
@@ -621,7 +621,7 @@ class MultipleGraphBehaviour extends CAPSTestSuite with ScanGraphInit {
     val result = caps.cypher(query).getGraph
 
     result.schema should equal((testGraph1.schema ++ testGraph2.schema).withRelationshipPropertyKeys("KNOWS")().asCaps)
-    result.nodes("n").toMaps should equal(testGraph1.unionAll(testGraph2).nodes("n").toMaps)
+    result.nodes("n").toMapsWithCollectedEntities should equal(testGraph1.unionAll(testGraph2).nodes("n").toMapsWithCollectedEntities)
     result.relationships("r").toMapsWithCollectedEntities should equal(Bag(
       CypherMap("r" -> CAPSRelationship(2251799813685248L, 0L, 1125899906842624L, "KNOWS")))
     )
@@ -775,7 +775,7 @@ class MultipleGraphBehaviour extends CAPSTestSuite with ScanGraphInit {
 
     val result = testGraph1.cypher(query)
 
-    result.getRecords.toMaps shouldBe empty
+    result.getRecords.toMapsWithCollectedEntities shouldBe empty
     result.getGraph.schema.relationshipTypes should equal(Set("KNOWS"))
     result.getGraph.schema.labels should equal(Set("A", "B"))
     result.getGraph.schema should equal(Schema.empty
@@ -799,7 +799,7 @@ class MultipleGraphBehaviour extends CAPSTestSuite with ScanGraphInit {
 
     val result = testGraph1.cypher(query)
 
-    result.getRecords.toMaps shouldBe empty
+    result.getRecords.toMapsWithCollectedEntities shouldBe empty
     result.getGraph.schema.relationshipTypes should equal(Set("KNOWS"))
     result.getGraph.schema.labels should equal(Set("A", "B"))
     result.getGraph.schema should equal(Schema.empty

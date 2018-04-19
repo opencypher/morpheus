@@ -36,10 +36,12 @@ import org.opencypher.okapi.api.graph.PropertyGraph
 import org.opencypher.okapi.api.schema.Schema
 import org.opencypher.okapi.api.types.CTRelationship
 import org.opencypher.okapi.ir.api.expr._
+import org.opencypher.okapi.relational.impl.table.RecordHeader._
 import org.opencypher.okapi.relational.impl.table._
 import org.opencypher.spark.api.CAPSSession
 import org.opencypher.spark.impl.CAPSConverters._
 import org.opencypher.spark.impl.io.hdfs.CsvGraphLoader._
+import org.opencypher.spark.impl.table.CAPSRecordHeader._
 
 class CsvGraphWriter(graph: PropertyGraph, fileHandler: CsvFileHandler)(implicit capsSession: CAPSSession) {
 
@@ -63,13 +65,16 @@ class CsvGraphWriter(graph: PropertyGraph, fileHandler: CsvFileHandler)(implicit
     }
   }
 
+  // TODO: Too many assumptions, name draws attention to that intentionally
+  private def columnNameOfEntityIdFieldAssumingThereIsOnlyOneEnitityInHeader(header: RecordHeader): String = {
+    header.exprFor(header.fields.head).expr.columnName
+  }
+
   private def writeNodeSchema(labels: Set[String], header: RecordHeader, dfSchema: StructType): Unit = {
-    val idFieldName = header.contents.collectFirst {
-      case a: OpaqueField => ColumnName.of(a)
-    }.get
+    val idFieldName = columnNameOfEntityIdFieldAssumingThereIsOnlyOneEnitityInHeader(header)
     val idField = CsvField("id", dfSchema.fieldIndex(idFieldName), "LONG")
 
-    val csvSchema = CsvNodeSchema(idField, labels.toList, List.empty, getPropertySchema(header, dfSchema).toList)
+    val csvSchema = CsvNodeSchema(idField, labels.toList, List.empty, getPropertySchema(header, dfSchema))
 
     fileHandler.writeSchemaFile(NODES_DIRECTORY, s"${fileNameFor(labels)}$SCHEMA_SUFFIX", csvSchema.toJson)
   }
@@ -88,19 +93,13 @@ class CsvGraphWriter(graph: PropertyGraph, fileHandler: CsvFileHandler)(implicit
   }
 
   private def writeRelationshipSchema(relType: String, header: RecordHeader, dfSchema: StructType): Unit = {
-    val idFieldName = header.contents.collectFirst {
-      case a: OpaqueField => ColumnName.of(a)
-    }.get
+    val idFieldName = columnNameOfEntityIdFieldAssumingThereIsOnlyOneEnitityInHeader(header)
     val idField = CsvField("id", dfSchema.fieldIndex(idFieldName), "LONG")
 
-    val startIdFieldName = header.contents.collectFirst {
-      case a@ProjectedExpr(StartNode(_)) => ColumnName.of(a)
-    }.get
+    val startIdFieldName = header.expressions.collectFirst { case s: StartNode => s.columnName }.get
     val startIdField = CsvField("startId", dfSchema.fieldIndex(startIdFieldName), "LONG")
 
-    val endIdFieldName = header.contents.collectFirst {
-      case a@ProjectedExpr(EndNode(_)) => ColumnName.of(a)
-    }.get
+    val endIdFieldName = header.expressions.collectFirst { case e: EndNode => e.columnName }.get
     val endIdField = CsvField("endId", dfSchema.fieldIndex(endIdFieldName), "LONG")
 
     val csvSchema = CsvRelSchema(idField, startIdField, endIdField, relType, getPropertySchema(header, dfSchema).toList)
@@ -108,13 +107,12 @@ class CsvGraphWriter(graph: PropertyGraph, fileHandler: CsvFileHandler)(implicit
     fileHandler.writeSchemaFile(RELS_DIRECTORY, s"${fileNameFor(relType)}$SCHEMA_SUFFIX", csvSchema.toJson)
   }
 
-  private def getPropertySchema(header: RecordHeader, dfSchema: StructType) = {
-    val propertyFields = header.contents.collect {
-      case propertySlot@ProjectedExpr(pr: Property) =>
-        val index = dfSchema.fieldIndex(ColumnName.of(propertySlot))
-        CsvField(pr.key.name, index, pr.cypherType)
-    }
-    propertyFields
+  private def getPropertySchema(header: RecordHeader, dfSchema: StructType): List[CsvField] = {
+    header.expressions.collect {
+      case p: Property =>
+        val index = dfSchema.fieldIndex(p.columnName)
+        CsvField(p.key.name, index, p.cypherType)
+    }.toList
   }
 
   /**
@@ -127,9 +125,9 @@ class CsvGraphWriter(graph: PropertyGraph, fileHandler: CsvFileHandler)(implicit
     * @return df without label or type column
     */
   private def prepareDataFrame(df: DataFrame, header: RecordHeader): DataFrame = {
-    val relevantColumnNames = header.contents.filter {
-      case ProjectedExpr(HasLabel(_, _)) => false
-      case ProjectedExpr(Type(_)) => false
+    val relevantColumnNames = header.expressions.filter {
+      case HasLabel(_, _) => false
+      case Type(_) => false
       case _ => true
     }.map(ColumnName.of)
     val trimmedDF = df.select(relevantColumnNames.head, relevantColumnNames.tail.toSeq: _*)

@@ -53,7 +53,7 @@ class MatchBehaviour extends CAPSTestSuite with DefaultGraphInit {
         """.stripMargin)
 
       // Then
-      result.getRecords.toMaps should equal(Bag(CypherMap("a.firstName" -> "Alice")
+      result.getRecords.toMapsWithCollectedEntities should equal(Bag(CypherMap("a.firstName" -> "Alice")
       ))
     }
 
@@ -69,7 +69,7 @@ class MatchBehaviour extends CAPSTestSuite with DefaultGraphInit {
         """.stripMargin)
 
       // Then
-      result.getRecords.toMaps shouldBe empty
+      result.getRecords.toMapsWithCollectedEntities shouldBe empty
     }
   }
 
@@ -93,7 +93,7 @@ class MatchBehaviour extends CAPSTestSuite with DefaultGraphInit {
         """.stripMargin)
 
       // Then
-      result.getRecords.toMaps should equal(
+      result.getRecords.toMapsWithCollectedEntities should equal(
         Bag(
           CypherMap(
             "p1.name" -> "Alice",
@@ -123,7 +123,7 @@ class MatchBehaviour extends CAPSTestSuite with DefaultGraphInit {
         """.stripMargin)
 
       // Then
-      result.getRecords.toMaps should equal(
+      result.getRecords.toMapsWithCollectedEntities should equal(
         Bag(
           CypherMap(
             "p1.name" -> "Bob",
@@ -161,7 +161,7 @@ class MatchBehaviour extends CAPSTestSuite with DefaultGraphInit {
         """.stripMargin)
 
       // Then
-      result.getRecords.toMaps should equal(
+      result.getRecords.toMapsWithCollectedEntities should equal(
         Bag(
           CypherMap("one" -> "Alice", "two" -> "Alice"),
           CypherMap("one" -> "Alice", "two" -> "Bob"),
@@ -188,7 +188,7 @@ class MatchBehaviour extends CAPSTestSuite with DefaultGraphInit {
         """.stripMargin)
 
       // Then
-      result.getRecords.toMaps should equal(
+      result.getRecords.toMapsWithCollectedEntities should equal(
         Bag(
           CypherMap("one" -> "Alice", "two" -> "Alice"),
           CypherMap("one" -> "Bob", "two" -> "Bob")

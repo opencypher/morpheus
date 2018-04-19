@@ -34,7 +34,7 @@ import org.opencypher.okapi.ir.api.{IRField, Label, PropertyKey}
 import org.opencypher.okapi.ir.test._
 import org.opencypher.okapi.ir.test.support.MatchHelper._
 import org.opencypher.okapi.logical.impl.{Directed, LogicalGraph, LogicalOperatorProducer, Undirected}
-import org.opencypher.okapi.relational.impl.table.{FieldSlotContent, OpaqueField, ProjectedExpr, ProjectedField}
+import org.opencypher.okapi.relational.impl.table.RecordHeader._
 import org.opencypher.okapi.test.BaseTestSuite
 
 import scala.language.implicitConversions
@@ -63,13 +63,9 @@ class FlatPlannerTest extends BaseTestSuite {
   test("projecting a new expression") {
     val expr = Subtract('a, 'b)()
     val result = flatPlanner.process(mkLogical.projectField('c, expr, logicalStartOperator))
-    val headerContents = result.header.contents
 
-    result should equal(mkFlat.project(ProjectedField('c, expr), flatStartOperator))
-    headerContents should equal(
-      Set(
-        ProjectedField('c, expr)
-      ))
+    result should equal(mkFlat.project(expr, Some('c), flatStartOperator))
+    result.header should equal(Map(expr -> 'c))
   }
 
   test("construct load graph") {
@@ -78,44 +74,38 @@ class FlatPlannerTest extends BaseTestSuite {
 
   test("Construct node scan") {
     val result = flatPlanner.process(logicalNodeScan("n", "Person"))
-    val headerContents = result.header.contents
 
     val nodeVar = Var("n")(CTNode("Person"))
 
     result should equal(flatNodeScan(nodeVar))
-    headerContents should equal(
-      Set(
-        OpaqueField(nodeVar),
-        ProjectedExpr(HasLabel(nodeVar, Label("Person"))(CTBoolean)),
-        ProjectedExpr(Property(nodeVar, PropertyKey("name"))(CTString)),
-        ProjectedExpr(Property(nodeVar, PropertyKey("age"))(CTInteger.nullable))
-      ))
+    result.header should equal(Map(
+      nodeVar -> Set(nodeVar),
+      HasLabel(nodeVar, Label("Person"))(CTBoolean) -> Set.empty,
+      Property(nodeVar, PropertyKey("name"))(CTString) -> Set.empty,
+      Property(nodeVar, PropertyKey("age"))(CTInteger.nullable) -> Set.empty
+    ))
   }
 
   test("Construct unlabeled node scan") {
     val result = flatPlanner.process(logicalNodeScan("n"))
-    val headerContents = result.header.contents
 
     val nodeVar = Var("n")(CTNode)
 
     result should equal(flatNodeScan(nodeVar))
-    headerContents should equal(
-      Set(
-        OpaqueField(nodeVar),
-        ProjectedExpr(HasLabel(nodeVar, Label("Person"))(CTBoolean)),
-        ProjectedExpr(HasLabel(nodeVar, Label("Employee"))(CTBoolean)),
-        ProjectedExpr(Property(nodeVar, PropertyKey("name"))(CTString)),
-        ProjectedExpr(Property(nodeVar, PropertyKey("age"))(CTInteger.nullable)),
-        ProjectedExpr(Property(nodeVar, PropertyKey("salary"))(CTFloat.nullable))
-      ))
+    result.header should equal(Map(
+      nodeVar -> Set(nodeVar),
+      HasLabel(nodeVar, Label("Person"))(CTBoolean) -> Set.empty,
+      HasLabel(nodeVar, Label("Employee"))(CTBoolean) -> Set.empty,
+      Property(nodeVar, PropertyKey("name"))(CTString) -> Set.empty,
+      Property(nodeVar, PropertyKey("age"))(CTInteger.nullable) -> Set.empty,
+      Property(nodeVar, PropertyKey("salary"))(CTFloat.nullable) -> Set.empty
+    ))
   }
 
   test("Construct simple filtered node scan") {
     val result = flatPlanner.process(
       mkLogical.planFilter(TrueLit(), logicalNodeScan("n"))
     )
-    val headerContents = result.header.contents
-
     val nodeVar = Var("n")(CTNode)
 
     result should equal(
@@ -124,15 +114,14 @@ class FlatPlannerTest extends BaseTestSuite {
         flatNodeScan(nodeVar)
       )
     )
-    headerContents should equal(
-      Set(
-        OpaqueField(nodeVar),
-        ProjectedExpr(HasLabel(nodeVar, Label("Person"))(CTBoolean)),
-        ProjectedExpr(HasLabel(nodeVar, Label("Employee"))(CTBoolean)),
-        ProjectedExpr(Property(nodeVar, PropertyKey("name"))(CTString)),
-        ProjectedExpr(Property(nodeVar, PropertyKey("age"))(CTInteger.nullable)),
-        ProjectedExpr(Property(nodeVar, PropertyKey("salary"))(CTFloat.nullable))
-      ))
+    result.header should equal(Map(
+      nodeVar -> Set(nodeVar),
+      HasLabel(nodeVar, Label("Person"))(CTBoolean) -> Set.empty,
+      HasLabel(nodeVar, Label("Employee"))(CTBoolean) -> Set.empty,
+      Property(nodeVar, PropertyKey("name"))(CTString) -> Set.empty,
+      Property(nodeVar, PropertyKey("age"))(CTInteger.nullable) -> Set.empty,
+      Property(nodeVar, PropertyKey("salary"))(CTFloat.nullable) -> Set.empty
+    ))
   }
 
   test("flat plan for expand") {
@@ -145,8 +134,6 @@ class FlatPlannerTest extends BaseTestSuite {
         logicalNodeScan("n"),
         logicalNodeScan("m"))
     )
-    val headerContents = result.header.contents
-
     val source = Var("n")(CTNode)
     val rel = Var("r")(CTRelationship)
     val target = Var("m")(CTNode)
@@ -154,27 +141,26 @@ class FlatPlannerTest extends BaseTestSuite {
     result should equal(
       mkFlat.expand(source, rel, Undirected, target, schema, flatNodeScan(source), flatNodeScan(target))
     )
-    headerContents should equal(
-      Set(
-        OpaqueField(source),
-        ProjectedExpr(HasLabel(source, Label("Person"))(CTBoolean)),
-        ProjectedExpr(HasLabel(source, Label("Employee"))(CTBoolean)),
-        ProjectedExpr(Property(source, PropertyKey("name"))(CTString)),
-        ProjectedExpr(Property(source, PropertyKey("age"))(CTInteger.nullable)),
-        ProjectedExpr(Property(source, PropertyKey("salary"))(CTFloat.nullable)),
-        ProjectedExpr(StartNode(rel)(CTInteger)),
-        OpaqueField(rel),
-        ProjectedExpr(Type(rel)(CTString)),
-        ProjectedExpr(EndNode(rel)(CTInteger)),
-        ProjectedExpr(Property(rel, PropertyKey("since"))(CTString.nullable)),
-        ProjectedExpr(Property(rel, PropertyKey("bar"))(CTBoolean.nullable)),
-        OpaqueField(target),
-        ProjectedExpr(HasLabel(target, Label("Person"))(CTBoolean)),
-        ProjectedExpr(HasLabel(target, Label("Employee"))(CTBoolean)),
-        ProjectedExpr(Property(target, PropertyKey("name"))(CTString)),
-        ProjectedExpr(Property(target, PropertyKey("age"))(CTInteger.nullable)),
-        ProjectedExpr(Property(target, PropertyKey("salary"))(CTFloat.nullable))
-      ))
+    result.header should equal(Map(
+      source -> Set(source),
+      HasLabel(source, Label("Person"))(CTBoolean) -> Set.empty,
+      HasLabel(source, Label("Employee"))(CTBoolean) -> Set.empty,
+      Property(source, PropertyKey("name"))(CTString) -> Set.empty,
+      Property(source, PropertyKey("age"))(CTInteger.nullable) -> Set.empty,
+      Property(source, PropertyKey("salary"))(CTFloat.nullable) -> Set.empty,
+      StartNode(rel)(CTInteger) -> Set.empty,
+      rel -> Set(rel),
+      Type(rel)(CTString) -> Set.empty,
+      EndNode(rel)(CTInteger) -> Set.empty,
+      Property(rel, PropertyKey("since"))(CTString.nullable) -> Set.empty,
+      Property(rel, PropertyKey("bar"))(CTBoolean.nullable) -> Set.empty,
+      target -> Set(target),
+      HasLabel(target, Label("Person"))(CTBoolean) -> Set.empty,
+      HasLabel(target, Label("Employee"))(CTBoolean) -> Set.empty,
+      Property(target, PropertyKey("name"))(CTString) -> Set.empty,
+      Property(target, PropertyKey("age"))(CTInteger.nullable) -> Set.empty,
+      Property(target, PropertyKey("salary"))(CTFloat.nullable) -> Set.empty
+    ))
   }
 
   test("flat plan for expand with rel type info") {
@@ -188,8 +174,6 @@ class FlatPlannerTest extends BaseTestSuite {
         logicalNodeScan("m")
       )
     )
-    val headerContents = result.header.contents
-
     val source = Var("n")(CTNode)
     val rel = Var("r")(CTRelationship("KNOWS"))
     val target = Var("m")(CTNode)
@@ -197,26 +181,25 @@ class FlatPlannerTest extends BaseTestSuite {
     result should equal(
       mkFlat.expand(source, rel, Directed, target, schema, flatNodeScan(source), flatNodeScan(target))
     )
-    headerContents should equal(
-      Set(
-        OpaqueField(source),
-        ProjectedExpr(HasLabel(source, Label("Person"))(CTBoolean)),
-        ProjectedExpr(HasLabel(source, Label("Employee"))(CTBoolean)),
-        ProjectedExpr(Property(source, PropertyKey("name"))(CTString)),
-        ProjectedExpr(Property(source, PropertyKey("age"))(CTInteger.nullable)),
-        ProjectedExpr(Property(source, PropertyKey("salary"))(CTFloat.nullable)),
-        ProjectedExpr(StartNode(rel)(CTInteger)),
-        OpaqueField(rel),
-        ProjectedExpr(Type(rel)(CTString)),
-        ProjectedExpr(EndNode(rel)(CTInteger)),
-        ProjectedExpr(Property(rel, PropertyKey("since"))(CTString)),
-        OpaqueField(target),
-        ProjectedExpr(HasLabel(target, Label("Person"))(CTBoolean)),
-        ProjectedExpr(HasLabel(target, Label("Employee"))(CTBoolean)),
-        ProjectedExpr(Property(target, PropertyKey("name"))(CTString)),
-        ProjectedExpr(Property(target, PropertyKey("age"))(CTInteger.nullable)),
-        ProjectedExpr(Property(target, PropertyKey("salary"))(CTFloat.nullable))
-      ))
+    result.header should equal(Map(
+      source -> Set(source),
+      HasLabel(source, Label("Person"))(CTBoolean) -> Set.empty,
+      HasLabel(source, Label("Employee"))(CTBoolean) -> Set.empty,
+      Property(source, PropertyKey("name"))(CTString) -> Set.empty,
+      Property(source, PropertyKey("age"))(CTInteger.nullable) -> Set.empty,
+      Property(source, PropertyKey("salary"))(CTFloat.nullable) -> Set.empty,
+      StartNode(rel)(CTInteger) -> Set.empty,
+      rel -> Set(rel),
+      Type(rel)(CTString) -> Set.empty,
+      EndNode(rel)(CTInteger) -> Set.empty,
+      Property(rel, PropertyKey("since"))(CTString) -> Set.empty,
+      target -> Set(target),
+      HasLabel(target, Label("Person"))(CTBoolean) -> Set.empty,
+      HasLabel(target, Label("Employee"))(CTBoolean) -> Set.empty,
+      Property(target, PropertyKey("name"))(CTString) -> Set.empty,
+      Property(target, PropertyKey("age"))(CTInteger.nullable) -> Set.empty,
+      Property(target, PropertyKey("salary"))(CTFloat.nullable) -> Set.empty
+    ))
   }
 
   test("flat plan for init var expand") {
@@ -254,22 +237,21 @@ class FlatPlannerTest extends BaseTestSuite {
 
     result should equal(flatOp)
 
-    result.header.contents should equal(
-      Set(
-        OpaqueField(source),
-        ProjectedExpr(HasLabel(source, Label("Person"))(CTBoolean)),
-        ProjectedExpr(HasLabel(source, Label("Employee"))(CTBoolean)),
-        ProjectedExpr(Property(source, PropertyKey("name"))(CTString)),
-        ProjectedExpr(Property(source, PropertyKey("age"))(CTInteger.nullable)),
-        ProjectedExpr(Property(source, PropertyKey("salary"))(CTFloat.nullable)),
-        OpaqueField(edgeList),
-        OpaqueField(target),
-        ProjectedExpr(HasLabel(target, Label("Person"))(CTBoolean)),
-        ProjectedExpr(HasLabel(target, Label("Employee"))(CTBoolean)),
-        ProjectedExpr(Property(target, PropertyKey("name"))(CTString)),
-        ProjectedExpr(Property(target, PropertyKey("age"))(CTInteger.nullable)),
-        ProjectedExpr(Property(target, PropertyKey("salary"))(CTFloat.nullable))
-      ))
+    result.header should equal(Map(
+      source -> Set(source),
+      HasLabel(source, Label("Person"))(CTBoolean) -> Set.empty,
+      HasLabel(source, Label("Employee"))(CTBoolean) -> Set.empty,
+      Property(source, PropertyKey("name"))(CTString) -> Set.empty,
+      Property(source, PropertyKey("age"))(CTInteger.nullable) -> Set.empty,
+      Property(source, PropertyKey("salary"))(CTFloat.nullable) -> Set.empty,
+      edgeList -> Set(edgeList),
+      target -> Set(target),
+      HasLabel(target, Label("Person"))(CTBoolean) -> Set.empty,
+      HasLabel(target, Label("Employee"))(CTBoolean) -> Set.empty,
+      Property(target, PropertyKey("name"))(CTString) -> Set.empty,
+      Property(target, PropertyKey("age"))(CTInteger.nullable) -> Set.empty,
+      Property(target, PropertyKey("salary"))(CTFloat.nullable) -> Set.empty
+    ))
   }
 
   ignore("Construct label-filtered node scan") {
@@ -278,21 +260,18 @@ class FlatPlannerTest extends BaseTestSuite {
     val result = flatPlanner.process(
       mkLogical.planFilter(HasLabel(nodeVar, Label("Person"))(CTBoolean), logicalNodeScan("n"))
     )
-    val headerContents = result.header.contents
-
     result should equal(
       mkFlat.filter(
         HasLabel(nodeVar, Label("Person"))(CTBoolean),
         flatNodeScan(nodeVar.name)
       )
     )
-    headerContents should equal(
-      Set(
-        OpaqueField(nodeVar),
-        ProjectedExpr(HasLabel(nodeVar, Label("Person"))(CTBoolean)),
-        ProjectedExpr(Property(nodeVar, PropertyKey("name"))(CTString)),
-        ProjectedExpr(Property(nodeVar, PropertyKey("age"))(CTInteger.nullable))
-      ))
+    result.header should equal(Map(
+      nodeVar -> Set(nodeVar),
+      HasLabel(nodeVar, Label("Person"))(CTBoolean) -> Set.empty,
+      Property(nodeVar, PropertyKey("name"))(CTString) -> Set.empty,
+      Property(nodeVar, PropertyKey("age"))(CTInteger.nullable) -> Set.empty
+    ))
   }
 
   test("Construct selection") {
@@ -305,55 +284,57 @@ class FlatPlannerTest extends BaseTestSuite {
           logicalNodeScan("n", "Person"))
       )
     )
-    val headerContents = result.header.contents
-
     result should equalWithTracing(
       mkFlat.select(
         List(Var("foo")(CTString)),
         mkFlat.project(
-          ProjectedField(Var("foo")(CTString), Property(Var("n")(CTNode), PropertyKey("name"))(CTString)),
-          flatNodeScan("n", "Person")
-        )
+          Property(Var("n")(CTNode), PropertyKey("name"))(CTString),
+          Some(Var("foo")(CTString)),
+          flatNodeScan("n", "Person"))
       )
     )
-    headerContents should equalWithTracing(
-      Set(
-        ProjectedField(Var("foo")(CTString), Property(Var("n")(CTNode), PropertyKey("name"))(CTString))
-      ))
+    result.header should equalWithTracing(Map(
+      Property(Var("n")(CTNode), PropertyKey("name"))(CTString) -> Set(Var("foo")(CTString))
+    ))
   }
 
   test("Construct selection with renamed alias") {
     val n = Var("n")(CTNode("Person"))
 
-    val result = flatPlanner.process(
+    val header = flatPlanner.process(
       mkLogical.planSelect(
         List(n),
         prev = mkLogical.projectField(
           IRField("foo")(CTString),
           Property(n, PropertyKey("name"))(CTString),
           logicalNodeScan("n", "Person")))
-    )
-    val headerContents = result.header.contents
+    ).header
 
-    result should equalWithTracing(
+    flatPlanner.process(
+      mkLogical.planSelect(
+        List(n),
+        prev = mkLogical.projectField(
+          IRField("foo")(CTString),
+          Property(n, PropertyKey("name"))(CTString),
+          logicalNodeScan("n", "Person")))
+    ) should equalWithTracing(
       mkFlat.select(
         List(n),
-        mkFlat.removeAliases(
+        mkFlat.select(
           List(n),
           mkFlat.project(
-            ProjectedField(Var("foo")(CTString), Property(n, PropertyKey("name"))(CTString)),
+            Property(n, PropertyKey("name"))(CTString),
+            Some(Var("foo")(CTString)),
             flatNodeScan("n", "Person")
           ))
       )
     )
-    headerContents should equalWithTracing(
-      Set(
-        OpaqueField(n),
-        ProjectedExpr(HasLabel(n, Label("Person"))(CTBoolean)),
-        ProjectedExpr(Property(n, PropertyKey("name"))(CTString)),
-        ProjectedExpr(Property(n, PropertyKey("age"))(CTInteger.nullable))
-      ))
-
+    header should equalWithTracing(Map(
+      n -> Set(n),
+      HasLabel(n, Label("Person"))(CTBoolean) -> Set.empty,
+      Property(n, PropertyKey("name"))(CTString) -> Set.empty,
+      Property(n, PropertyKey("age"))(CTInteger.nullable) -> Set.empty
+    ))
   }
 
   test("Construct selection with several fields") {
@@ -370,22 +351,25 @@ class FlatPlannerTest extends BaseTestSuite {
         )
       )
     )
-    val orderedContents = result.header.slots.map(_.content).collect { case content: FieldSlotContent => content.key }
 
     result should equal(
       mkFlat.select(
         List(Var("foo")(CTString), Var("n")(CTNode), Var("baz")(CTInteger.nullable)),
         mkFlat.project(
-          ProjectedField(
-            Var("baz")(CTInteger.nullable),
-            Property(Var("n")(CTNode), PropertyKey("age"))(CTInteger.nullable)),
+          Property(Var("n")(CTNode), PropertyKey("age"))(CTInteger.nullable),
+          Some(Var("baz")(CTInteger.nullable)),
           mkFlat.project(
-            ProjectedField(Var("foo")(CTString), Property(Var("n")(CTNode), PropertyKey("name"))(CTString)),
+            Property(Var("n")(CTNode), PropertyKey("name"))(CTString),
+            Some(Var("foo")(CTString)),
             flatNodeScan("n", "Person"))
         )
       )
     )
-    orderedContents should equal(List(Var("foo")(CTString), Var("n")(CTNode), Var("baz")(CTInteger)))
+    result.header should equal(Map(
+      Var("baz")(CTInteger) -> Set(Var("baz")(CTInteger)),
+      Var("foo")(CTString) -> Set(Var("foo")(CTString)),
+      Var("n")(CTNode) -> Set(Var("n")(CTNode))
+    ))
   }
 
   private def logicalNodeScan(nodeField: String, labelNames: String*) =

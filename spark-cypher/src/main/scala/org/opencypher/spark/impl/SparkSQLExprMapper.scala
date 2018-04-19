@@ -32,17 +32,18 @@ import org.opencypher.okapi.api.types.{CTList, CTNode, CTNull, CTString}
 import org.opencypher.okapi.api.value.CypherValue.CypherList
 import org.opencypher.okapi.impl.exception.{IllegalArgumentException, IllegalStateException, NotImplementedException}
 import org.opencypher.okapi.ir.api.expr._
-import org.opencypher.okapi.relational.impl.table.{ColumnName, RecordHeader}
+import org.opencypher.okapi.relational.impl.table.RecordHeader._
 import org.opencypher.spark.impl.CAPSFunctions.{array_contains, get_node_labels, get_property_keys}
 import org.opencypher.spark.impl.convert.CAPSCypherType._
 import org.opencypher.spark.impl.physical.CAPSRuntimeContext
+import org.opencypher.spark.impl.table.CAPSRecordHeader._
 
 object SparkSQLExprMapper {
 
   implicit class RichExpression(expr: Expr) {
 
     def verify(implicit header: RecordHeader): Unit = {
-      if (header.slotsFor(expr).isEmpty) throw IllegalStateException(s"No slot for expression $expr")
+      if (header.get(expr).isEmpty) throw IllegalStateException(s"No slot for expression $expr")
     }
 
     /**
@@ -88,10 +89,10 @@ object SparkSQLExprMapper {
         case _: Var | _: Param | _: Property | _: HasLabel | _: StartNode | _: EndNode =>
           verify
 
-          val slot = header.slotsFor(expr).head
+          val slot = header.exprFor(expr)
 
           val columns = df.columns.toSet
-          val colName = ColumnName.of(slot)
+          val colName = slot.columnName
 
           if (columns.contains(colName)) {
             df.col(colName)
@@ -151,15 +152,15 @@ object SparkSQLExprMapper {
         case Exists(e) => e.asSparkSQLExpr.isNotNull
         case Id(e) => e.asSparkSQLExpr
         case Labels(e) =>
-          val node = Var(ColumnName.of(header.slotsFor(e).head))(CTNode)
+          val node = Var(header.exprFor(e).columnName)(CTNode)
           val labelExprs = header.labels(node)
           val labelColumns = labelExprs.map(_.asSparkSQLExpr)
-          val labelNames = labelExprs.map(_.label.name)
-          val booleanLabelFlagColumn = functions.array(labelColumns: _*)
+          val labelNames = labelExprs.map(_.label.name).toSeq
+          val booleanLabelFlagColumn = functions.array(labelColumns.toSeq: _*)
           get_node_labels(labelNames)(booleanLabelFlagColumn)
 
         case Keys(e) =>
-          val node = Var(ColumnName.of(header.slotsFor(e).head))(CTNode)
+          val node = Var(header.exprFor(e).columnName)(CTNode)
           val propertyExprs = header.properties(node)
           val propertyColumns = propertyExprs.map(_.asSparkSQLExpr)
           val keyNames = propertyExprs.map(_.key.name)
@@ -169,20 +170,20 @@ object SparkSQLExprMapper {
         case Type(inner) =>
           inner match {
             case v: Var =>
-              val typeSlot = header.typeSlot(v)
-              val typeCol = df.col(ColumnName.of(typeSlot))
+              val typeSlot = header.typeMapping(v)
+              val typeCol = df.col(typeSlot.columnName)
               typeCol
             case _ =>
               throw NotImplementedException(s"Inner expression $inner of $expr is not yet supported (only variables)")
           }
 
         case StartNodeFunction(e) =>
-          val rel = Var(ColumnName.of(header.slotsFor(e).head))(CTNode)
-          header.sourceNodeSlot(rel).content.key.asSparkSQLExpr
+          val rel = Var(header.exprFor(e).columnName)(CTNode)
+          header.sourceNodeMapping(rel).expr.asSparkSQLExpr
 
         case EndNodeFunction(e) =>
-          val rel = Var(ColumnName.of(header.slotsFor(e).head))(CTNode)
-          header.targetNodeSlot(rel).content.key.asSparkSQLExpr
+          val rel = Var(header.exprFor(e).columnName)(CTNode)
+          header.targetNodeMapping(rel).expr.asSparkSQLExpr
 
         case ToFloat(e) => e.asSparkSQLExpr.cast(DoubleType)
 

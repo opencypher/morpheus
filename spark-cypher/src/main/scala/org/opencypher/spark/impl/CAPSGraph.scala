@@ -27,17 +27,17 @@
 package org.opencypher.spark.impl
 
 import org.apache.spark.storage.StorageLevel
-import org.opencypher.okapi.api.graph.{GraphOperations, PropertyGraph, QualifiedGraphName}
+import org.opencypher.okapi.api.graph.{GraphOperations, PropertyGraph}
 import org.opencypher.okapi.api.schema._
 import org.opencypher.okapi.api.table.CypherRecords
 import org.opencypher.okapi.api.types.{CTNode, CTRelationship}
 import org.opencypher.okapi.impl.exception.IllegalArgumentException
 import org.opencypher.okapi.ir.api.expr._
-import org.opencypher.okapi.relational.impl.table.{ColumnName, OpaqueField, RecordHeader}
+import org.opencypher.okapi.relational.impl.table.RecordHeader._
+import org.opencypher.okapi.relational.impl.table.{ColumnName, RecordHeader}
 import org.opencypher.spark.api.CAPSSession
 import org.opencypher.spark.api.io.{CAPSEntityTable, CAPSNodeTable}
 import org.opencypher.spark.impl.CAPSConverters._
-import org.opencypher.spark.impl.util.TagSupport.computeRetaggings
 import org.opencypher.spark.schema.CAPSSchema
 import org.opencypher.spark.schema.CAPSSchema._
 
@@ -72,24 +72,23 @@ trait CAPSGraph extends PropertyGraph with GraphOperations with Serializable {
     val nodeVar = Var(name)(nodeType)
     val records = nodes(name, nodeType)
 
-    // compute slot contents to remove and to keep
-    val removeSlots = records.header.labelSlots(nodeVar)
-      .filterNot(slot => labels.contains(slot._1.label.name))
-      .values
-    val keepSlots = records.header.contents.diff(removeSlots.map(_.content).toSet)
+    // compute expressions to remove and to keep
+    val labelsToRemove: Set[HasLabel] = records.header
+      .labels(nodeVar)
+      .filterNot(hasLabel => labels.contains(hasLabel.label.name))
+
+    val updatedHeader = records.header -- labelsToRemove
 
     // we only keep rows where all "other" labels are false
-    val predicate = removeSlots.map(ColumnName.of)
+    val predicate = labelsToRemove.map(ColumnName.of)
       .map(records.data.col(_) === false)
       .reduceOption(_ && _)
 
     // filter rows and drop unnecessary columns
     val updatedData = predicate match {
-      case Some(filter) => records.data.filter(filter).drop(removeSlots.map(ColumnName.of).toSeq :_*)
+      case Some(filter) => records.data.filter(filter).drop(labelsToRemove.map(ColumnName.of).toSeq :_*)
       case None => records.data
     }
-
-    val updatedHeader = RecordHeader.from(keepSlots.toSeq: _*)
 
     CAPSRecords.verifyAndCreate(updatedHeader, updatedData)(session)
   }
@@ -178,10 +177,10 @@ object CAPSGraph {
     override val schema: CAPSSchema = CAPSSchema.empty
 
     override def nodes(name: String, cypherType: CTNode): CAPSRecords =
-      CAPSRecords.empty(RecordHeader.from(OpaqueField(Var(name)(cypherType))))
+      CAPSRecords.empty(RecordHeader(Var(name)(cypherType)))
 
     override def relationships(name: String, cypherType: CTRelationship): CAPSRecords =
-      CAPSRecords.empty(RecordHeader.from(OpaqueField(Var(name)(cypherType))))
+      CAPSRecords.empty(RecordHeader(Var(name)(cypherType)))
   }
 
 }

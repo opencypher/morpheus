@@ -32,11 +32,13 @@ import org.opencypher.okapi.api.value.CypherValue._
 import org.opencypher.okapi.api.value._
 import org.opencypher.okapi.impl.exception.UnsupportedOperationException
 import org.opencypher.okapi.ir.api.expr.Var
+import org.opencypher.okapi.relational.impl.table.RecordHeader._
 import org.opencypher.okapi.relational.impl.table.{ColumnName, RecordHeader}
+import org.opencypher.spark.impl.table.CAPSRecordHeader._
 
 final case class rowToCypherMap(header: RecordHeader) extends (Row => CypherMap) {
   override def apply(row: Row): CypherMap = {
-    val values = header.internalHeader.fields.map { field =>
+    val values = header.fields.map { field =>
       field.name -> constructValue(row, field)
     }.toSeq
 
@@ -53,36 +55,35 @@ final case class rowToCypherMap(header: RecordHeader) extends (Row => CypherMap)
         collectRel(row, field)
 
       case _ =>
-        val raw = row.getAs[Any](ColumnName.of(header.slotFor(field)))
+        val raw = row.getAs[Any](header.exprFor(field).columnName)
         CypherValue(raw)
     }
   }
 
   private def collectNode(row: Row, field: Var): CypherValue = {
-    val idValue = row.getAs[Any](ColumnName.of(header.slotFor(field)))
+    val idValue = row.getAs[Any](header.exprFor(field).columnName)
     idValue match {
       case null       => CypherNull
       case id: Long   =>
         val labels = header
-        .labelSlots(field)
-        .mapValues { s =>
-          row.getAs[Boolean](ColumnName.of(s))
+        .labels(field)
+        .map { label =>
+          label -> row.getAs[Boolean](label.columnName)
         }
         .collect {
           case (h, b) if b =>
             h.label.name
         }
-        .toSet
 
         val properties = header
-          .propertySlots(field)
-          .mapValues { s =>
-            CypherValue(row.getAs[Any](ColumnName.of(s)))
+          .properties(field)
+          .map { property =>
+            property -> CypherValue(row.getAs[Any](property.columnName))
           }
           .collect {
             case (p, v) if !v.isNull =>
               p.key.name -> v
-          }
+          }.toMap
 
         CAPSNode(id, labels, properties)
       case invalidID => throw UnsupportedOperationException(s"CAPSNode ID has to be a Long instead of ${invalidID.getClass}")
@@ -90,22 +91,22 @@ final case class rowToCypherMap(header: RecordHeader) extends (Row => CypherMap)
   }
 
   private def collectRel(row: Row, field: Var): CypherValue = {
-    val idValue = row.getAs[Any](ColumnName.of(header.slotFor(field)))
+    val idValue = row.getAs[Any](header.exprFor(field).columnName)
     idValue match {
       case null       => CypherNull
       case id: Long   =>
-        val source = row.getAs[Long](ColumnName.of(header.sourceNodeSlot(field)))
-        val target = row.getAs[Long](ColumnName.of(header.targetNodeSlot(field)))
-        val typ = row.getAs[String](ColumnName.of(header.typeSlot(field)))
+        val source = row.getAs[Long](header.sourceNodeMapping(field).columnName)
+        val target = row.getAs[Long](header.targetNodeMapping(field).columnName)
+        val typ = row.getAs[String](header.typeMapping(field).columnName)
         val properties = header
-          .propertySlots(field)
-          .mapValues { s =>
-            CypherValue.apply(row.getAs[Any](ColumnName.of(s)))
+          .properties(field)
+          .map { property =>
+            property -> CypherValue(row.getAs[Any](property.columnName))
           }
           .collect {
             case (p, v) if !v.isNull =>
               p.key.name -> v
-          }
+          }.toMap
 
         CAPSRelationship(id, source, target, typ, properties)
       case invalidID => throw UnsupportedOperationException(s"CAPSRelationship ID has to be a Long instead of ${invalidID.getClass}")

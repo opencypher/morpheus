@@ -70,7 +70,7 @@ final case class CAPSUnionGraph(graphs: Map[CAPSGraph, Map[Int, Int]])
 
   override def nodes(name: String, nodeCypherType: CTNode): CAPSRecords = {
     val node = Var(name)(nodeCypherType)
-    val targetHeader = RecordHeader.nodeFromSchema(node, schema)
+    val targetHeader = RecordHeader.forNode(node, schema)
     val nodeScans = graphs.keys
       .filter(nodeCypherType.labels.isEmpty || _.schema.labels.intersect(nodeCypherType.labels).nonEmpty)
       .map {
@@ -89,7 +89,7 @@ final case class CAPSUnionGraph(graphs: Map[CAPSGraph, Map[Int, Int]])
 
   override def relationships(name: String, relCypherType: CTRelationship): CAPSRecords = {
     val rel = Var(name)(relCypherType)
-    val targetHeader = RecordHeader.relationshipFromSchema(rel, schema)
+    val targetHeader = RecordHeader.forRelationship(rel, schema)
     val relScans = graphs.keys
       .filter(relCypherType.types.isEmpty || _.schema.relationshipTypes.intersect(relCypherType.types).nonEmpty)
       .map { graph =>

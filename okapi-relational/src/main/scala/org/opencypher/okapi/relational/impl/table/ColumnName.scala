@@ -29,6 +29,7 @@ package org.opencypher.okapi.relational.impl.table
 import java.util.UUID
 
 import org.opencypher.okapi.ir.api.expr.{Expr, Property, Var}
+import org.opencypher.okapi.relational.impl.table.RecordHeader._
 
 import scala.collection.mutable
 
@@ -37,17 +38,7 @@ object ColumnName {
   def tempColName: String =
     UUID.randomUUID().toString
 
-  def of(slot: RecordSlot): String = of(slot.content)
-
-  def of(slot: SlotContent): String = {
-    val builder = slot match {
-      case fieldContent: FieldSlotContent => new NameBuilder() += fieldContent.field.name
-      case ProjectedExpr(p: Property) => new NameBuilder() += None += p.withoutType + p.cypherType.material.name
-      case ProjectedExpr(expr) => new NameBuilder() += None += expr.withoutType
-    }
-
-    builder.result()
-  }
+  def of(mapping: ExpressionMapping): String = of(mapping.expr)
 
   def of(expr: Expr): String = {
     expr match {

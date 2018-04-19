@@ -67,14 +67,14 @@ final class ExpressionConverter(implicit context: IRBuilderContext) {
       Ors(exprs.map(convert))
     case ast.HasLabels(node, labels) =>
       val exprs = labels.map { (l: ast.LabelName) =>
-        HasLabel(convert(node), Label(l.name))(typings(e))
+        HasLabel(convert(node).asInstanceOf[Var], Label(l.name))(typings(e))
       }
       if (exprs.size == 1) exprs.head else Ands(exprs.toSet)
     case ast.Not(expr) =>
       Not(convert(expr))(typings(e))
     // TODO: Does this belong here still?
     case ast.Equals(f: ast.FunctionInvocation, s: ast.StringLiteral) if f.function == functions.Type =>
-      HasType(convert(f.args.head), RelType(s.value))(CTBoolean)
+      HasType(convert(f.args.head).asInstanceOf[Var], RelType(s.value))(CTBoolean)
     case ast.Equals(lhs, rhs) =>
       Equals(convert(lhs), convert(rhs))(typings(e))
     case ast.LessThan(lhs, rhs) =>

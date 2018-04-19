@@ -29,6 +29,8 @@ package org.opencypher.spark.impl.acceptance
 import org.opencypher.okapi.api.value.CypherValue._
 import org.opencypher.okapi.ir.test.support.Bag
 import org.opencypher.okapi.ir.test.support.Bag._
+import org.opencypher.okapi.logical.api.configuration.LogicalConfiguration.PrintLogicalPlan
+import org.opencypher.okapi.relational.api.configuration.CoraConfiguration.{PrintFlatPlan, PrintOptimizedPhysicalPlan}
 import org.opencypher.spark.test.CAPSTestSuite
 import org.scalatest.DoNotDiscover
 
@@ -37,12 +39,17 @@ class FunctionsBehaviour extends CAPSTestSuite with DefaultGraphInit {
 
   describe("exists") {
 
-    test("exists()") {
+    it("exists()") {
+
+      PrintLogicalPlan.set()
+      PrintFlatPlan.set()
+      PrintOptimizedPhysicalPlan.set()
+
       val given = initGraph("CREATE ({id: 1}), ({id: 2}), ({other: 'foo'}), ()")
 
       val result = given.cypher("MATCH (n) RETURN exists(n.id) AS exists")
 
-      result.getRecords.toMaps should equal(
+      result.getRecords.toMapsWithCollectedEntities should equal(
         Bag(
           CypherMap("exists" -> true),
           CypherMap("exists" -> true),
@@ -59,7 +66,7 @@ class FunctionsBehaviour extends CAPSTestSuite with DefaultGraphInit {
 
       val result = given.cypher("MATCH ()-[r]->() RETURN type(r)")
 
-      result.getRecords.toMaps should equal(
+      result.getRecords.toMapsWithCollectedEntities should equal(
         Bag(
           CypherMap("type(r)" -> "KNOWS"),
           CypherMap("type(r)" -> "HATES"),
@@ -75,7 +82,7 @@ class FunctionsBehaviour extends CAPSTestSuite with DefaultGraphInit {
 
       val result = given.cypher("MATCH (n) RETURN id(n)")
 
-      result.getRecords.toMaps should equal(Bag(CypherMap("id(n)" -> 0), CypherMap("id(n)" -> 1)))
+      result.getRecords.toMapsWithCollectedEntities should equal(Bag(CypherMap("id(n)" -> 0), CypherMap("id(n)" -> 1)))
     }
 
     test("id for rel") {
@@ -83,7 +90,7 @@ class FunctionsBehaviour extends CAPSTestSuite with DefaultGraphInit {
 
       val result = given.cypher("MATCH ()-[e]->() RETURN id(e)")
 
-      result.getRecords.toMaps should equal(Bag(CypherMap("id(e)" -> 2), CypherMap("id(e)" -> 4)))
+      result.getRecords.toMapsWithCollectedEntities should equal(Bag(CypherMap("id(e)" -> 2), CypherMap("id(e)" -> 4)))
     }
 
   }
@@ -95,7 +102,7 @@ class FunctionsBehaviour extends CAPSTestSuite with DefaultGraphInit {
 
       val result = given.cypher("MATCH (a) RETURN labels(a)")
 
-      result.getRecords.toMaps should equal(
+      result.getRecords.toMapsWithCollectedEntities should equal(
         Bag(
           CypherMap("labels(a)" -> List("A")),
           CypherMap("labels(a)" -> List("B"))
@@ -107,7 +114,7 @@ class FunctionsBehaviour extends CAPSTestSuite with DefaultGraphInit {
 
       val result = given.cypher("MATCH (a) RETURN labels(a)")
 
-      result.getRecords.toMaps should equal(
+      result.getRecords.toMapsWithCollectedEntities should equal(
         Bag(
           CypherMap("labels(a)" -> List("A", "B")),
           CypherMap("labels(a)" -> List("C", "D"))
@@ -119,7 +126,7 @@ class FunctionsBehaviour extends CAPSTestSuite with DefaultGraphInit {
 
       val result = given.cypher("MATCH (a) RETURN labels(a)")
 
-      result.getRecords.toMaps should equal(
+      result.getRecords.toMapsWithCollectedEntities should equal(
         Bag(
           CypherMap("labels(a)" -> List("A")),
           CypherMap("labels(a)" -> List("C", "D")),
@@ -136,7 +143,7 @@ class FunctionsBehaviour extends CAPSTestSuite with DefaultGraphInit {
 
       val result = given.cypher("MATCH () RETURN size(['Alice', 'Bob']) as s")
 
-      result.getRecords.toMaps should equal(
+      result.getRecords.toMapsWithCollectedEntities should equal(
         Bag(
           CypherMap("s" -> 2)
         ))
@@ -147,7 +154,7 @@ class FunctionsBehaviour extends CAPSTestSuite with DefaultGraphInit {
 
       val result = given.cypher("MATCH () RETURN size('Alice') as s")
 
-      result.getRecords.toMaps should equal(
+      result.getRecords.toMapsWithCollectedEntities should equal(
         Bag(
           CypherMap("s" -> 5)
         ))
@@ -158,7 +165,7 @@ class FunctionsBehaviour extends CAPSTestSuite with DefaultGraphInit {
 
       val result = given.cypher("MATCH (a) RETURN size(a.name) as s")
 
-      result.getRecords.toMaps should equal(
+      result.getRecords.toMapsWithCollectedEntities should equal(
         Bag(
           CypherMap("s" -> 5)
         ))
@@ -169,7 +176,7 @@ class FunctionsBehaviour extends CAPSTestSuite with DefaultGraphInit {
 
       val result = given.cypher("MATCH (a) RETURN size(labels(a)) as s")
 
-      result.getRecords.toMaps should equal(
+      result.getRecords.toMapsWithCollectedEntities should equal(
         Bag(
           CypherMap("s" -> 2),
           CypherMap("s" -> 2),
@@ -183,7 +190,7 @@ class FunctionsBehaviour extends CAPSTestSuite with DefaultGraphInit {
 
       val result = given.cypher("MATCH (a) RETURN size(a.prop) as s")
 
-      result.getRecords.toMaps should equal(Bag(CypherMap("s" -> null)))
+      result.getRecords.toMapsWithCollectedEntities should equal(Bag(CypherMap("s" -> null)))
     }
 
   }
@@ -195,7 +202,7 @@ class FunctionsBehaviour extends CAPSTestSuite with DefaultGraphInit {
 
       val result = given.cypher("MATCH (a) WHERE a.name = 'Alice' RETURN keys(a) as k")
 
-      val keysAsMap = result.getRecords.toMaps
+      val keysAsMap = result.getRecords.toMapsWithCollectedEntities
 
       keysAsMap should equal(
         Bag(
@@ -212,7 +219,7 @@ class FunctionsBehaviour extends CAPSTestSuite with DefaultGraphInit {
 
       val result = given.cypher("MATCH (a: Person) WHERE a.name = 'Bob' RETURN keys(a) as k")
 
-      result.getRecords.toMaps should equal(
+      result.getRecords.toMapsWithCollectedEntities should equal(
         Bag(
           CypherMap("k" -> List("eyes", "name"))
         ))
@@ -224,7 +231,7 @@ class FunctionsBehaviour extends CAPSTestSuite with DefaultGraphInit {
 
       val result = given.cypher("MATCH () WITH {person: {name: 'Anne', age: 25}} AS p RETURN keys(p) as k")
 
-      result.getRecords.toMaps should equal(
+      result.getRecords.toMapsWithCollectedEntities should equal(
         Bag(
           CypherMap("k" -> List("age", "name"))
         ))
@@ -239,7 +246,7 @@ class FunctionsBehaviour extends CAPSTestSuite with DefaultGraphInit {
 
       val result = given.cypher("MATCH ()-[r:FOO]->() RETURN r.val, startNode(r)")
 
-      result.getRecords.toMaps should equal(
+      result.getRecords.toMapsWithCollectedEntities should equal(
         Bag(
           CypherMap("r.val" -> "a", "startNode(r)" -> 0),
           CypherMap("r.val" -> "b", "startNode(r)" -> 3)
@@ -254,7 +261,7 @@ class FunctionsBehaviour extends CAPSTestSuite with DefaultGraphInit {
 
       val result = given.cypher("MATCH (a)-[r]->() RETURN r.val, endNode(r)")
 
-      result.getRecords.toMaps should equal(
+      result.getRecords.toMapsWithCollectedEntities should equal(
         Bag(
           CypherMap("r.val" -> "a", "endNode(r)" -> 1),
           CypherMap("r.val" -> "b", "endNode(r)" -> 4)
@@ -269,7 +276,7 @@ class FunctionsBehaviour extends CAPSTestSuite with DefaultGraphInit {
 
       val result = given.cypher("MATCH (a) RETURN toFloat(a.val) as myFloat")
 
-      result.getRecords.toMaps should equal(
+      result.getRecords.toMapsWithCollectedEntities should equal(
         Bag(
           CypherMap("myFloat" -> 1.0)
         ))
@@ -280,7 +287,7 @@ class FunctionsBehaviour extends CAPSTestSuite with DefaultGraphInit {
 
       val result = given.cypher("MATCH (a) RETURN toFloat(a.val) as myFloat")
 
-      result.getRecords.toMaps should equal(
+      result.getRecords.toMapsWithCollectedEntities should equal(
         Bag(
           CypherMap("myFloat" -> 1.0)
         ))
@@ -291,7 +298,7 @@ class FunctionsBehaviour extends CAPSTestSuite with DefaultGraphInit {
 
       val result = given.cypher("MATCH (a) RETURN toFloat(a.val) as myFloat")
 
-      result.getRecords.toMaps should equal(
+      result.getRecords.toMapsWithCollectedEntities should equal(
         Bag(
           CypherMap("myFloat" -> 42.0)
         ))

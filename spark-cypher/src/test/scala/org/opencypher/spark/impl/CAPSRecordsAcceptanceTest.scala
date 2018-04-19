@@ -31,10 +31,12 @@ import org.opencypher.okapi.api.table.CypherRecords
 import org.opencypher.okapi.impl.exception.IllegalArgumentException
 import org.opencypher.okapi.ir.test.support.Bag
 import org.opencypher.okapi.ir.test.support.Bag._
+import org.opencypher.okapi.relational.impl.table.RecordHeader._
 import org.opencypher.spark.impl.CAPSConverters._
 import org.opencypher.spark.impl.io.neo4j.Neo4jGraphLoader
 import org.opencypher.spark.test.CAPSTestSuite
 import org.opencypher.spark.test.fixture.{Neo4jServerFixture, OpenCypherDataFixture}
+import org.opencypher.spark.impl.table.CAPSRecordHeader._
 
 import scala.language.reflectiveCalls
 
@@ -167,8 +169,8 @@ class CAPSRecordsAcceptanceTest extends CAPSTestSuite with Neo4jServerFixture wi
 
     def shouldHaveSize(size: Int) = {
       val tuples = capsRecords.data.collect().toSeq.map { r =>
-        val cells = capsRecords.header.slots.map { s =>
-          r.get(s.index)
+        val cells = capsRecords.columns.toIndexedSeq.map { c =>
+          r.getAs[Any](c)
         }
 
         asProduct(cells)

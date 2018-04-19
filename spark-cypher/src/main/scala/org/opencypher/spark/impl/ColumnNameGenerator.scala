@@ -26,7 +26,8 @@
  */
 package org.opencypher.spark.impl
 
-import org.opencypher.okapi.relational.impl.table.{ColumnName, RecordHeader}
+import org.opencypher.okapi.relational.impl.table.ColumnName
+import org.opencypher.okapi.relational.impl.table.RecordHeader._
 
 import scala.annotation.tailrec
 import scala.util.Random
@@ -39,7 +40,7 @@ object ColumnNameGenerator {
     val chars = (1 to NAME_SIZE).map(_ => Random.nextPrintableChar())
     val name = ColumnName.from(String.valueOf(chars.toArray))
 
-    if (header.slots.map(ColumnName.of).contains(name)) generateUniqueName(header)
+    if (header.mappings.map(ColumnName.of).contains(name)) generateUniqueName(header)
     else name
   }
 }
