@@ -268,6 +268,8 @@ final case class ToFloat(expr: Expr)(val cypherType: CypherType = CTWildcard) ex
 
 final case class Coalesce(exprs: IndexedSeq[Expr])(val cypherType: CypherType = CTWildcard) extends FunctionExpr
 
+final case class Explode(expr: Expr)(val cypherType: CypherType = CTWildcard) extends UnaryFunctionExpr
+
 // Aggregators
 sealed trait Aggregator extends Expr {
   def inner: Option[Expr]

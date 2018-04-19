@@ -24,7 +24,7 @@
  * described as "implementation extensions to Cypher" or as "proposed changes to
  * Cypher that are not yet approved by the openCypher community".
  */
-package org.opencypher.spark.impl
+package org.opencypher.okapi.relational.impl
 
 import org.opencypher.okapi.relational.impl.table.{ColumnName, RecordHeader}
 

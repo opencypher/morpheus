@@ -35,8 +35,10 @@ import org.opencypher.okapi.ir.api.expr._
 import org.opencypher.okapi.ir.api.util.DirectCompilationStage
 import org.opencypher.okapi.logical.impl._
 import org.opencypher.okapi.relational.api.physical.{PhysicalOperator, PhysicalOperatorProducer, PhysicalPlannerContext, RuntimeContext}
-import org.opencypher.okapi.relational.impl.flat
 import org.opencypher.okapi.relational.impl.flat.FlatOperator
+import org.opencypher.okapi.relational.impl.table.{OpaqueField, ProjectedExpr, RecordHeader, RecordSlot}
+import org.opencypher.okapi.relational.impl.{ColumnNameGenerator, flat}
+import org.opencypher.okapi.relational.impl.syntax.RecordHeaderSyntax._
 
 class PhysicalPlanner[P <: PhysicalOperator[R, G, C], R <: CypherRecords, G <: PropertyGraph, C <: RuntimeContext[R, G]](producer: PhysicalOperatorProducer[P, R, G, C])
 
@@ -87,7 +89,11 @@ class PhysicalPlanner[P <: PhysicalOperator[R, G, C], R <: CypherRecords, G <: P
 
       case flat.Alias(expr, alias, in, header) => producer.planAlias(process(in), expr, alias, header)
 
-      case flat.Unwind(list, item, in, header) => producer.planUnwind(process(in), list, item, header)
+      case flat.Unwind(list, item, in, header) =>
+        val explodeExpr = Explode(list)(item.cypherType)
+        val withExplodedHeader = in.header.update(addContent(ProjectedExpr(explodeExpr)))._1
+        val withExploded = producer.planProject(process(in), explodeExpr, withExplodedHeader)
+        producer.planAlias(withExploded, explodeExpr, item, header)
 
       case flat.Project(expr, in, header) => producer.planProject(process(in), expr, header)
 
@@ -181,7 +187,7 @@ class PhysicalPlanner[P <: PhysicalOperator[R, G, C], R <: CypherRecords, G <: P
           header,
           isExpandInto)
 
-      case flat.Optional(lhs, rhs, header) => producer.planOptional(process(lhs), process(rhs), header)
+      case flat.Optional(lhs, rhs, header) => planOptional(lhs, rhs, header)
 
       case flat.ExistsSubQuery(predicateField, lhs, rhs, header) =>
         producer.planExistsSubQuery(process(lhs), process(rhs), predicateField, header)
@@ -215,6 +221,56 @@ class PhysicalPlanner[P <: PhysicalOperator[R, G, C], R <: CypherRecords, G <: P
     val constructGraphPlan = producer.planConstructGraph(inputTablePlan, onGraphPlan, construct)
     context.constructedGraphPlans.update(construct.name, constructGraphPlan)
     constructGraphPlan
+  }
+
+  private def planOptional(lhs: FlatOperator, rhs: FlatOperator, header: RecordHeader)(implicit context: PhysicalPlannerContext[P, R]) = {
+    val lhsData = process(lhs)
+    val rhsData = process(rhs)
+    val lhsHeader = lhs.header
+    val rhsHeader = rhs.header
+
+
+    // 1. Compute fields between left and right side
+    val commonFields = lhsHeader.slots.intersect(rhsHeader.slots)
+
+    val (joinSlots, otherCommonSlots) = commonFields.partition {
+      case RecordSlot(_, _: OpaqueField) => true
+      case RecordSlot(_, _) => false
+    }
+
+    val joinFields = joinSlots
+      .map(_.content)
+      .collect { case OpaqueField(v) => v }
+      .distinct
+
+    val otherCommonFields = otherCommonSlots
+      .map(_.content.key)
+
+    // 2. Remove siblings of the join fields and other common fields
+    val fieldsToRemove = joinFields
+      .flatMap(rhsHeader.childSlots)
+      .map(_.content.key)
+      .union(otherCommonFields)
+      .distinct
+
+    val rhsHeaderWithDropped = fieldsToRemove.flatMap(rhsHeader.slotsFor).foldLeft(rhsHeader)(_ - _)
+    val rhsWithDropped = producer.planDrop(rhsData, fieldsToRemove, rhsHeaderWithDropped)
+
+    // 3. Rename the join fields on the right hand side, in order to make them distinguishable after the join
+    val joinFieldRenames = joinFields.map(f => f -> Var(ColumnNameGenerator.generateUniqueName(rhsHeader))(f.cypherType)).toMap
+
+    val rhsWithRenamedSlots = rhsHeaderWithDropped.slots.collect {
+      case RecordSlot(i, OpaqueField(v)) if joinFieldRenames.contains(v) => RecordSlot(i, OpaqueField(joinFieldRenames(v)))
+      case other => other
+    }
+    val rhsHeaderWithRenamed = RecordHeader.from(rhsWithRenamedSlots.toList)
+    val rhsWithRenamed = producer.planAlias(rhsWithDropped, joinFieldRenames.toSeq, rhsHeaderWithRenamed)
+
+    // 4. Left outer join the left side and the processed right side
+    val joined = producer.planJoin(lhsData, rhsWithRenamed, joinFieldRenames.toSeq, lhsHeader ++ rhsHeaderWithRenamed, LeftOuterJoin)
+
+    // 5. Drop the duplicate join fields
+    producer.planDrop(joined, joinFieldRenames.values.toSeq, header)
   }
 
   private def relTypes(r: Var): Set[String] = r.cypherType match {

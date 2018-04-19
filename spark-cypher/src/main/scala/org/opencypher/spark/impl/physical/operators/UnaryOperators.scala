@@ -92,61 +92,26 @@ final case class RelationshipScan(in: CAPSPhysicalOperator, v: Var, header: Reco
   }
 }
 
-final case class Unwind(in: CAPSPhysicalOperator, list: Expr, item: Var, header: RecordHeader)
+final case class Alias(in: CAPSPhysicalOperator, aliases: Seq[(Expr, Var)], header: RecordHeader)
   extends UnaryPhysicalOperator {
-
-  import scala.collection.JavaConverters._
 
   override def executeUnary(prev: CAPSPhysicalResult)(implicit context: CAPSRuntimeContext): CAPSPhysicalResult = {
     prev.mapRecordsWithDetails { records =>
-      val itemColumn = ColumnName.of(header.slotFor(item))
-      val newData = list match {
-        // the list is external: we create a dataframe and crossjoin with it
-        case Param(name) =>
-          // we need a Java list of rows to construct a DataFrame
-          context.parameters(name).as[CypherList] match {
-            case Some(l) =>
-              val sparkType = item.cypherType.getSparkType
-              val nullable = item.cypherType.isNullable
-              val schema = StructType(Seq(StructField(itemColumn, sparkType, nullable)))
+      val inHeader = records.header
 
-              val javaRowList = l.unwrap.map(Row(_)).asJava
-              val df = records.caps.sparkSession.createDataFrame(javaRowList, schema)
+      val newData = aliases.foldLeft(records.data) {
+        case (acc, (expr, alias)) =>
+          val oldSlot = inHeader.slotsFor(expr).head
+          val newSlot = header.slotsFor(alias).head
 
-              records.data.crossJoin(df)
+          val oldColumnName = ColumnName.of(oldSlot)
+          val newColumnName = ColumnName.of(newSlot)
 
-            case None =>
-              throw IllegalArgumentException("a list", list)
+          if (records.data.columns.contains(oldColumnName)) {
+            acc.safeRenameColumn(oldColumnName, newColumnName)
+          } else {
+            throw IllegalArgumentException(s"a column with name $oldColumnName")
           }
-
-        // the list lives in a column: we explode it
-        case expr =>
-          val listColumn = expr.asSparkSQLExpr(records.header, records.data, context)
-
-          records.data.safeAddColumn(itemColumn, functions.explode(listColumn))
-      }
-
-      CAPSRecords.verifyAndCreate(header, newData)(records.caps)
-    }
-  }
-}
-
-final case class Alias(in: CAPSPhysicalOperator, expr: Expr, alias: Var, header: RecordHeader)
-  extends UnaryPhysicalOperator {
-
-  override def executeUnary(prev: CAPSPhysicalResult)(implicit context: CAPSRuntimeContext): CAPSPhysicalResult = {
-    prev.mapRecordsWithDetails { records =>
-      val oldSlot = records.header.slotsFor(expr).head
-
-      val newSlot = header.slotsFor(alias).head
-
-      val oldColumnName = ColumnName.of(oldSlot)
-      val newColumnName = ColumnName.of(newSlot)
-
-      val newData = if (records.data.columns.contains(oldColumnName)) {
-        records.data.safeRenameColumn(oldColumnName, newColumnName)
-      } else {
-        throw IllegalArgumentException(s"a column with name $oldColumnName")
       }
 
       CAPSRecords.verifyAndCreate(header, newData)(records.caps)
@@ -175,6 +140,19 @@ final case class Project(in: CAPSPhysicalOperator, expr: Expr, header: RecordHea
       }
 
       CAPSRecords.verifyAndCreate(header, newData)(records.caps)
+    }
+  }
+}
+
+final case class Drop(in: CAPSPhysicalOperator, dropFields: Seq[Expr], header: RecordHeader) extends UnaryPhysicalOperator {
+  override def executeUnary(prev: CAPSPhysicalResult)(implicit context: CAPSRuntimeContext): CAPSPhysicalResult = {
+    prev.mapRecordsWithDetails { records =>
+      val columnToDrop = dropFields
+        .map(ColumnName.of)
+        .filter(records.data.columns.contains)
+
+      val withDropped = records.data.safeDropColumns(columnToDrop: _*)
+      CAPSRecords.verifyAndCreate(header, withDropped)(records.caps)
     }
   }
 }

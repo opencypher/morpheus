@@ -31,6 +31,7 @@ import org.opencypher.okapi.api.table.CypherRecords
 import org.opencypher.okapi.ir.api.block.SortItem
 import org.opencypher.okapi.ir.api.expr.{Aggregator, Expr, Var}
 import org.opencypher.okapi.logical.impl._
+import org.opencypher.okapi.relational.impl.physical.{InnerJoin, JoinType}
 import org.opencypher.okapi.relational.impl.table.{ProjectedExpr, ProjectedField, RecordHeader}
 
 /**
@@ -88,15 +89,36 @@ trait PhysicalOperatorProducer[P <: PhysicalOperator[R, G, C], R <: CypherRecord
   def planEmptyRecords(in: P, header: RecordHeader): P
 
   /**
+    * Renames the columns identified by the given expressions to the specified aliases.
+    *
+    * @param in     previous operator
+    * @param tuples pairs of source expressions to target aliases
+    * @param header resulting record header
+    * @return Alias operator
+    */
+  def planAlias(in: P, tuples: Seq[(Expr, Var)], header: RecordHeader): P
+
+  /**
     * Renames the column identified by the given expression to the specified alias.
     *
     * @param in     previous operator
     * @param expr   expression to be aliased
     * @param alias  alias
     * @param header resulting record header
-    * @return empty records operator
+    * @return Alias operator
     */
-  def planAlias(in: P, expr: Expr, alias: Var, header: RecordHeader): P
+  def planAlias(in: P, expr: Expr, alias: Var, header: RecordHeader): P = planAlias(in, Seq(expr -> alias), header)
+
+  /**
+    * Drops the columns identified by the given expressions from the input records.
+    * Expressions not present are ignored.
+    *
+    * @param in         previous operator
+    * @param dropFields expressions to be dropped
+    * @param header     resulting record header
+    * @return Drop operator
+    */
+  def planDrop(in: P, dropFields: Seq[Expr], header: RecordHeader): P
 
   /**
     * The operator takes a set of (field, expression) aliases and renames the columns identified by a field to the
@@ -196,17 +218,6 @@ trait PhysicalOperatorProducer[P <: PhysicalOperator[R, G, C], R <: CypherRecord
   def planOrderBy(in: P, sortItems: Seq[SortItem[Expr]], header: RecordHeader): P
 
   /**
-    * Unwinds the given list of items into the specified var for each row in the input records.
-    *
-    * @param in     previous operator
-    * @param list   list of items to unwind
-    * @param item   var to project item to
-    * @param header resulting record header
-    * @return unwind operator
-    */
-  def planUnwind(in: P, list: Expr, item: Var, header: RecordHeader): P
-
-  /**
     * Initializes the underlying records for a variable expand computation (e.g., (a)-[:A*1..3]->(b)).
     *
     * @param in       previous operator
@@ -259,9 +270,10 @@ trait PhysicalOperatorProducer[P <: PhysicalOperator[R, G, C], R <: CypherRecord
     * @param rhs         second previous operator
     * @param joinColumns sequence of left and right join columns
     * @param header      resulting record header
+    * @param joinType    type of the join
     * @return join operator
     */
-  def planJoin(lhs: P, rhs: P, joinColumns: Seq[(Expr, Expr)], header: RecordHeader): P
+  def planJoin(lhs: P, rhs: P, joinColumns: Seq[(Expr, Expr)], header: RecordHeader, joinType: JoinType = InnerJoin): P
 
   /**
     * Unions the input records.
@@ -271,17 +283,6 @@ trait PhysicalOperatorProducer[P <: PhysicalOperator[R, G, C], R <: CypherRecord
     * @return union operator
     */
   def planTabularUnionAll(lhs: P, rhs: P): P
-
-  /**
-    * Computes the result of an OPTIONAL MATCH where the first input is the non-optional part and the second input the
-    * optional one.
-    *
-    * @param lhs    first previous operator
-    * @param rhs    second previous operator
-    * @param header resulting record header
-    * @return optional operator
-    */
-  def planOptional(lhs: P, rhs: P, header: RecordHeader): P
 
   /**
     * Filters the rows of the first input by checking if there exists a corresponding row in the second input.

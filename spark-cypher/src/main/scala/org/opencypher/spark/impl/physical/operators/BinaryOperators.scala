@@ -35,6 +35,7 @@ import org.opencypher.okapi.ir.api.PropertyKey
 import org.opencypher.okapi.ir.api.expr.{Expr, Var, _}
 import org.opencypher.okapi.ir.api.set.SetPropertyItem
 import org.opencypher.okapi.logical.impl.{ConstructedEntity, ConstructedNode, ConstructedRelationship, LogicalPatternGraph}
+import org.opencypher.okapi.relational.impl.ColumnNameGenerator
 import org.opencypher.okapi.relational.impl.syntax.RecordHeaderSyntax.{addContent, addContents, _}
 import org.opencypher.okapi.relational.impl.table.{ColumnName, OpaqueField, RecordHeader, RecordSlot, _}
 import org.opencypher.spark.api.CAPSSession
@@ -44,7 +45,7 @@ import org.opencypher.spark.impl.SparkSQLExprMapper._
 import org.opencypher.spark.impl.physical.operators.CAPSPhysicalOperator._
 import org.opencypher.spark.impl.physical.{CAPSPhysicalResult, CAPSRuntimeContext}
 import org.opencypher.spark.impl.util.TagSupport._
-import org.opencypher.spark.impl.{CAPSGraph, CAPSRecords, CAPSUnionGraph, ColumnNameGenerator}
+import org.opencypher.spark.impl.{CAPSGraph, CAPSRecords, CAPSUnionGraph}
 import org.opencypher.spark.schema.CAPSSchema._
 
 private[spark] abstract class BinaryPhysicalOperator extends CAPSPhysicalOperator {
@@ -63,7 +64,8 @@ final case class Join(
   lhs: CAPSPhysicalOperator,
   rhs: CAPSPhysicalOperator,
   joinColumns: Seq[(Expr, Expr)],
-  header: RecordHeader
+  header: RecordHeader,
+  joinType: String
 ) extends BinaryPhysicalOperator {
 
   override def executeBinary(left: CAPSPhysicalResult, right: CAPSPhysicalResult)(
@@ -82,75 +84,7 @@ final case class Join(
         leftRecordSlot -> rightRecordSlot
     }
 
-    val joinedRecords = joinRecords(header, joinSlots)(left.records, right.records)
-
-    CAPSPhysicalResult(joinedRecords, left.workingGraph, left.workingGraphName)
-  }
-}
-
-/**
-  * This operator performs a left outer join between the already matched path and the optional matched pattern and
-  * updates the resulting columns.
-  *
-  * @param lhs    previous match data
-  * @param rhs    optional match data
-  * @param header result header (lhs header + rhs header)
-  */
-final case class Optional(lhs: CAPSPhysicalOperator, rhs: CAPSPhysicalOperator, header: RecordHeader)
-  extends BinaryPhysicalOperator {
-
-  override def executeBinary(left: CAPSPhysicalResult, right: CAPSPhysicalResult)(
-    implicit context: CAPSRuntimeContext
-  ): CAPSPhysicalResult = {
-    val leftData = left.records.toDF()
-    val rightData = right.records.toDF()
-    val leftHeader = left.records.header
-    val rightHeader = right.records.header
-
-    val commonFields = leftHeader.slots.intersect(rightHeader.slots)
-
-    val (joinSlots, otherCommonSlots) = commonFields.partition {
-      case RecordSlot(_, _: OpaqueField) => true
-      case RecordSlot(_, _) => false
-    }
-
-    val joinFields = joinSlots
-      .map(_.content)
-      .collect { case OpaqueField(v) => v }
-
-    val otherCommonFields = otherCommonSlots
-      .map(_.content)
-
-    val columnsToRemove = joinFields
-      .flatMap(rightHeader.childSlots)
-      .map(_.content)
-      .union(otherCommonFields)
-      .map(ColumnName.of)
-
-    val lhsJoinSlots = joinFields.map(leftHeader.slotFor)
-    val rhsJoinSlots = joinFields.map(rightHeader.slotFor)
-
-    // Find the join pairs and introduce an alias for the right hand side
-    // This is necessary to be able to deduplicate the join columns later
-    val joinColumnMapping = lhsJoinSlots
-      .map(lhsSlot => {
-        lhsSlot -> rhsJoinSlots.find(_.content == lhsSlot.content).get
-      })
-      .map(pair => {
-        val lhsColName = ColumnName.of(pair._1)
-        val rhsColName = ColumnName.of(pair._2)
-
-        (lhsColName, rhsColName, ColumnNameGenerator.generateUniqueName(rightHeader))
-      })
-
-    // Rename join columns on the right hand side and drop common non-join columns
-    val reducedRhsData = joinColumnMapping
-      .foldLeft(rightData)((acc, col) => acc.safeRenameColumn(col._2, col._3))
-      .safeDropColumns(columnsToRemove: _*)
-
-    val joinCols = joinColumnMapping.map(t => t._1 -> t._3)
-    val joinedRecords =
-      joinDFs(left.records.data, reducedRhsData, header, joinCols)("leftouter", deduplicate = true)(left.records.caps)
+    val joinedRecords = joinRecords(header, joinSlots, joinType)(left.records, right.records)
 
     CAPSPhysicalResult(joinedRecords, left.workingGraph, left.workingGraphName)
   }
