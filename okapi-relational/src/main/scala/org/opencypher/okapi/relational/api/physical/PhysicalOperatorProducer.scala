@@ -218,17 +218,6 @@ trait PhysicalOperatorProducer[P <: PhysicalOperator[R, G, C], R <: CypherRecord
   def planOrderBy(in: P, sortItems: Seq[SortItem[Expr]], header: RecordHeader): P
 
   /**
-    * Unwinds the given list of items into the specified var for each row in the input records.
-    *
-    * @param in     previous operator
-    * @param list   list of items to unwind
-    * @param item   var to project item to
-    * @param header resulting record header
-    * @return unwind operator
-    */
-  def planUnwind(in: P, list: Expr, item: Var, header: RecordHeader): P
-
-  /**
     * Initializes the underlying records for a variable expand computation (e.g., (a)-[:A*1..3]->(b)).
     *
     * @param in       previous operator

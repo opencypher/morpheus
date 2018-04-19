@@ -28,7 +28,7 @@ package org.opencypher.spark.impl
 
 import org.apache.spark.sql.types.{BooleanType, DoubleType, LongType}
 import org.apache.spark.sql.{Column, DataFrame, functions}
-import org.opencypher.okapi.api.types.{CTList, CTNode, CTNull, CTString}
+import org.opencypher.okapi.api.types._
 import org.opencypher.okapi.api.value.CypherValue.CypherList
 import org.opencypher.okapi.impl.exception.{IllegalArgumentException, IllegalStateException, NotImplementedException}
 import org.opencypher.okapi.ir.api.expr._
@@ -185,6 +185,11 @@ object SparkSQLExprMapper {
           header.targetNodeSlot(rel).content.key.asSparkSQLExpr
 
         case ToFloat(e) => e.asSparkSQLExpr.cast(DoubleType)
+
+        case Explode(list) => list.cypherType match {
+          case CTList(_) | CTListOrNull(_) => functions.explode(list.asSparkSQLExpr)
+          case other => throw IllegalArgumentException("CTList", other)
+        }
 
         // Pattern Predicate
         case ep: ExistsPatternExpr => ep.targetField.asSparkSQLExpr

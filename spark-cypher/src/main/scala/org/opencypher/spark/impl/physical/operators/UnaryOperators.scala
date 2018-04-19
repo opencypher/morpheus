@@ -92,45 +92,6 @@ final case class RelationshipScan(in: CAPSPhysicalOperator, v: Var, header: Reco
   }
 }
 
-final case class Unwind(in: CAPSPhysicalOperator, list: Expr, item: Var, header: RecordHeader)
-  extends UnaryPhysicalOperator {
-
-  import scala.collection.JavaConverters._
-
-  override def executeUnary(prev: CAPSPhysicalResult)(implicit context: CAPSRuntimeContext): CAPSPhysicalResult = {
-    prev.mapRecordsWithDetails { records =>
-      val itemColumn = ColumnName.of(header.slotFor(item))
-      val newData = list match {
-        // the list is external: we create a dataframe and crossjoin with it
-        case Param(name) =>
-          // we need a Java list of rows to construct a DataFrame
-          context.parameters(name).as[CypherList] match {
-            case Some(l) =>
-              val sparkType = item.cypherType.getSparkType
-              val nullable = item.cypherType.isNullable
-              val schema = StructType(Seq(StructField(itemColumn, sparkType, nullable)))
-
-              val javaRowList = l.unwrap.map(Row(_)).asJava
-              val df = records.caps.sparkSession.createDataFrame(javaRowList, schema)
-
-              records.data.crossJoin(df)
-
-            case None =>
-              throw IllegalArgumentException("a list", list)
-          }
-
-        // the list lives in a column: we explode it
-        case expr =>
-          val listColumn = expr.asSparkSQLExpr(records.header, records.data, context)
-
-          records.data.safeAddColumn(itemColumn, functions.explode(listColumn))
-      }
-
-      CAPSRecords.verifyAndCreate(header, newData)(records.caps)
-    }
-  }
-}
-
 final case class Alias(in: CAPSPhysicalOperator, aliases: Seq[(Expr, Var)], header: RecordHeader)
   extends UnaryPhysicalOperator {
 

@@ -35,9 +35,10 @@ import org.opencypher.okapi.ir.api.expr._
 import org.opencypher.okapi.ir.api.util.DirectCompilationStage
 import org.opencypher.okapi.logical.impl._
 import org.opencypher.okapi.relational.api.physical.{PhysicalOperator, PhysicalOperatorProducer, PhysicalPlannerContext, RuntimeContext}
-import org.opencypher.okapi.relational.impl.{ColumnNameGenerator, flat}
 import org.opencypher.okapi.relational.impl.flat.FlatOperator
-import org.opencypher.okapi.relational.impl.table.{OpaqueField, RecordHeader, RecordSlot}
+import org.opencypher.okapi.relational.impl.table.{OpaqueField, ProjectedExpr, RecordHeader, RecordSlot}
+import org.opencypher.okapi.relational.impl.{ColumnNameGenerator, flat}
+import org.opencypher.okapi.relational.impl.syntax.RecordHeaderSyntax._
 
 class PhysicalPlanner[P <: PhysicalOperator[R, G, C], R <: CypherRecords, G <: PropertyGraph, C <: RuntimeContext[R, G]](producer: PhysicalOperatorProducer[P, R, G, C])
 
@@ -88,7 +89,11 @@ class PhysicalPlanner[P <: PhysicalOperator[R, G, C], R <: CypherRecords, G <: P
 
       case flat.Alias(expr, alias, in, header) => producer.planAlias(process(in), expr, alias, header)
 
-      case flat.Unwind(list, item, in, header) => producer.planUnwind(process(in), list, item, header)
+      case flat.Unwind(list, item, in, header) =>
+        val explodeExpr = Explode(list)(item.cypherType)
+        val withExplodedHeader = in.header.update(addContent(ProjectedExpr(explodeExpr)))._1
+        val withExploded = producer.planProject(process(in), explodeExpr, withExplodedHeader)
+        producer.planAlias(withExploded, explodeExpr, item, header)
 
       case flat.Project(expr, in, header) => producer.planProject(process(in), expr, header)
 
