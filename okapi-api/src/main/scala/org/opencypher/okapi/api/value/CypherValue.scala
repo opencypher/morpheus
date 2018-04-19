@@ -156,29 +156,33 @@ object CypherValue {
       */
     def toCypherString: String = {
       this match {
-        case CypherString(s) => s"'$s'"
+        case CypherString(s) => s"'${escape(s)}'"
         case CypherList(l) => l.map(_.toCypherString).mkString("[", ", ", "]")
         case CypherMap(m) =>
           m.toSeq
             .sortBy(_._1)
             .map { case (k, v) => s"$k: ${v.toCypherString}" }
             .mkString("{", ", ", "}")
-        case CypherRelationship(_, _, _, relType, CypherMap(properties)) =>
+        case CypherRelationship(_, _, _, relType, props) =>
           s"[:$relType${
-            if (properties.isEmpty) ""
-            else s" ${properties.toCypherString}"
+            if (props.isEmpty) ""
+            else s" ${props.toCypherString}"
           }]"
-        case CypherNode(_, labels, CypherMap(properties)) =>
+        case CypherNode(_, labels, props) =>
           val labelString =
             if (labels.isEmpty) ""
             else labels.toSeq.sorted.mkString(":", ":", "")
-          val propertyString = if (properties.isEmpty) ""
-          else s"${properties.toCypherString}"
+          val propertyString = if (props.isEmpty) ""
+          else s"${props.toCypherString}"
           Seq(labelString, propertyString)
             .filter(_.nonEmpty)
             .mkString("(", " ", ")")
         case _ => Objects.toString(value)
       }
+    }
+
+    private def escape(str: String): String = {
+      str.replaceAllLiterally("'", "\\'").replaceAllLiterally("\"", "\\\"")
     }
 
     private[okapi] def isOrContainsNull: Boolean = isNull || {
@@ -211,6 +215,8 @@ object CypherValue {
 
   implicit class CypherMap(val value: Map[String, CypherValue]) extends AnyVal with MaterialCypherValue[Map[String, CypherValue]] {
     override def unwrap: Map[String, Any] = value.map { case (k, v) => k -> v.unwrap }
+
+    def isEmpty: Boolean = value.isEmpty
 
     def keys: Set[String] = value.keySet
 
