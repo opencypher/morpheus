@@ -35,7 +35,7 @@ import org.scalatest.DoNotDiscover
 @DoNotDiscover
 class OptionalMatchBehaviour extends CAPSTestSuite with DefaultGraphInit {
 
-  test("optional match") {
+  it("optionally match") {
     // Given
     val given = initGraph(
       """
@@ -74,7 +74,7 @@ class OptionalMatchBehaviour extends CAPSTestSuite with DefaultGraphInit {
     ))
   }
 
-  test("optional match with predicates") {
+  it("can optionally match with predicates") {
     // Given
     val given = initGraph(
       """
@@ -104,7 +104,7 @@ class OptionalMatchBehaviour extends CAPSTestSuite with DefaultGraphInit {
     ))
   }
 
-  test("optional match with partial matches") {
+  it("can optionally match with partial matches") {
     // Given
     val given = initGraph(
       """
@@ -143,7 +143,7 @@ class OptionalMatchBehaviour extends CAPSTestSuite with DefaultGraphInit {
     ))
   }
 
-  test("optional match with duplicates") {
+  it("can optionally match with duplicates") {
     // Given
     val given = initGraph(
       """
@@ -181,7 +181,7 @@ class OptionalMatchBehaviour extends CAPSTestSuite with DefaultGraphInit {
     ))
   }
 
-  test("optional match with duplicates and cycle") {
+  it("can optionally match with duplicates and cycle") {
     // Given
     val given = initGraph(
       """

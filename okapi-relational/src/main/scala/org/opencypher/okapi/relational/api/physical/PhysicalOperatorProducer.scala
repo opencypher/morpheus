@@ -89,6 +89,16 @@ trait PhysicalOperatorProducer[P <: PhysicalOperator[R, G, C], R <: CypherRecord
   def planEmptyRecords(in: P, header: RecordHeader): P
 
   /**
+    * Renames the columns identified by the given expressions to the specified aliases.
+    *
+    * @param in     previous operator
+    * @param tuples pairs of source expressions to target aliases
+    * @param header resulting record header
+    * @return Alias operator
+    */
+  def planAlias(in: P, tuples: Seq[(Expr, Var)], header: RecordHeader): P
+
+  /**
     * Renames the column identified by the given expression to the specified alias.
     *
     * @param in     previous operator
@@ -97,7 +107,7 @@ trait PhysicalOperatorProducer[P <: PhysicalOperator[R, G, C], R <: CypherRecord
     * @param header resulting record header
     * @return Alias operator
     */
-  def planAlias(in: P, expr: Expr, alias: Var, header: RecordHeader): P
+  def planAlias(in: P, expr: Expr, alias: Var, header: RecordHeader): P = planAlias(in, Seq(expr -> alias), header)
 
   /**
     * Drops the columns identified by the given expressions from the input records.

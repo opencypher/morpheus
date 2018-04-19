@@ -131,22 +131,26 @@ final case class Unwind(in: CAPSPhysicalOperator, list: Expr, item: Var, header:
   }
 }
 
-final case class Alias(in: CAPSPhysicalOperator, expr: Expr, alias: Var, header: RecordHeader)
+final case class Alias(in: CAPSPhysicalOperator, aliases: Seq[(Expr, Var)], header: RecordHeader)
   extends UnaryPhysicalOperator {
 
   override def executeUnary(prev: CAPSPhysicalResult)(implicit context: CAPSRuntimeContext): CAPSPhysicalResult = {
     prev.mapRecordsWithDetails { records =>
-      val oldSlot = records.header.slotsFor(expr).head
+      val inHeader = records.header
 
-      val newSlot = header.slotsFor(alias).head
+      val newData = aliases.foldLeft(records.data) {
+        case (acc, (expr, alias)) =>
+          val oldSlot = inHeader.slotsFor(expr).head
+          val newSlot = header.slotsFor(alias).head
 
-      val oldColumnName = ColumnName.of(oldSlot)
-      val newColumnName = ColumnName.of(newSlot)
+          val oldColumnName = ColumnName.of(oldSlot)
+          val newColumnName = ColumnName.of(newSlot)
 
-      val newData = if (records.data.columns.contains(oldColumnName)) {
-        records.data.safeRenameColumn(oldColumnName, newColumnName)
-      } else {
-        throw IllegalArgumentException(s"a column with name $oldColumnName")
+          if (records.data.columns.contains(oldColumnName)) {
+            acc.safeRenameColumn(oldColumnName, newColumnName)
+          } else {
+            throw IllegalArgumentException(s"a column with name $oldColumnName")
+          }
       }
 
       CAPSRecords.verifyAndCreate(header, newData)(records.caps)

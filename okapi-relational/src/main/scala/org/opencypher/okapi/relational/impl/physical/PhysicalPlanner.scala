@@ -236,6 +236,7 @@ class PhysicalPlanner[P <: PhysicalOperator[R, G, C], R <: CypherRecords, G <: P
     val joinFields = joinSlots
       .map(_.content)
       .collect { case OpaqueField(v) => v }
+      .distinct
 
     val otherCommonFields = otherCommonSlots
       .map(_.content.key)
@@ -258,9 +259,7 @@ class PhysicalPlanner[P <: PhysicalOperator[R, G, C], R <: CypherRecords, G <: P
       case other => other
     }
     val rhsHeaderWithRenamed = RecordHeader.from(rhsWithRenamedSlots.toList)
-    val rhsWithRenamed = joinFieldRenames.foldLeft(rhsWithDropped) {
-      case (acc, (expr, alias)) => producer.planAlias(acc, expr, alias, rhsHeaderWithRenamed)
-    }
+    val rhsWithRenamed = producer.planAlias(rhsWithDropped, joinFieldRenames.toSeq, rhsHeaderWithRenamed)
 
     // 4. Left outer join the left side and the processed right side
     val joined = producer.planJoin(lhsData, rhsWithRenamed, joinFieldRenames.toSeq, lhsHeader ++ rhsHeaderWithRenamed, LeftOuterJoin)
