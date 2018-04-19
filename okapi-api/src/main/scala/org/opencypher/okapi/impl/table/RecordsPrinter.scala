@@ -48,8 +48,8 @@ object RecordsPrinter {
         columnName <- columnNames
         headerWidth = columnName.length
         columnRowValueLengths = rows.map(row => row.getOrElse(columnName).toCypherString.length)
-        maxColumnRowValueWidth = columnRowValueLengths.foldLeft(0)(math.max)
-        columnWidth = math.min(options.maxColumnWidth, math.max(headerWidth, maxColumnRowValueWidth))
+        maxColumnRowValueWidth = columnRowValueLengths.foldLeft(headerWidth)(math.max)
+        columnWidth = math.min(options.maxColumnWidth, maxColumnRowValueWidth)
       } yield columnName -> columnWidth
     }.toMap
 
