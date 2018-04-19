@@ -29,21 +29,19 @@ package org.opencypher.okapi.impl.util
 import java.io.PrintStream
 
 object PrintOptions {
-  private val DEFAULT_COLUMN_WIDTH = 20
-  private val DEFAULT_MARGIN = 2
+  private val DEFAULT_MAX_COLUMN_WIDTH: Int = Int.MaxValue
 
   implicit lazy val out: PrintOptions =
-    PrintOptions(stream = Console.out, columnWidth = DEFAULT_COLUMN_WIDTH, margin = DEFAULT_MARGIN)
+    PrintOptions(stream = Console.out, maxColumnWidth = DEFAULT_MAX_COLUMN_WIDTH)
 
   lazy val err: PrintOptions =
-    PrintOptions(stream = Console.err, columnWidth = DEFAULT_COLUMN_WIDTH, margin =  DEFAULT_MARGIN)
+    PrintOptions(stream = Console.err, maxColumnWidth = DEFAULT_MAX_COLUMN_WIDTH)
 
   def current(implicit options: PrintOptions): PrintOptions =
     options
 }
 
-final case class PrintOptions(stream: PrintStream, columnWidth: Int, margin: Int) {
+final case class PrintOptions(stream: PrintStream, maxColumnWidth: Int) {
   def stream(newStream: PrintStream): PrintOptions = copy(stream = newStream)
-  def columnWidth(newColumnWidth: Int): PrintOptions = copy(columnWidth = newColumnWidth)
-  def margin(newMargin: Int): PrintOptions = copy(margin = newMargin)
+  def maxColumnWidth(maxColumnWidth: Int): PrintOptions = copy(maxColumnWidth = maxColumnWidth)
 }
