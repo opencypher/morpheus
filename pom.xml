@@ -181,7 +181,7 @@
           <artifactId>license-maven-plugin</artifactId>
           <version>${plugin.license-maven.version}</version>
           <configuration>
-            <header>${project.rootdir}/license-header.txt</header>
+            <header>${project.rootdir}/licensecheck-config/src/main/resources/NOTICE-header.txt</header>
             <basedir>${basedir}/src</basedir>
             <mapping>
               <scala>SLASHSTAR_STYLE</scala>
