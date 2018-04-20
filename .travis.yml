@@ -8,8 +8,6 @@ scala:
 
 env:
   matrix:
-    - PROFILE=databricks
+    - PROFILE=standalone
 
 script: "mvn clean install -P ${PROFILE}"
-
-

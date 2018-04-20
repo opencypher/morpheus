@@ -51,8 +51,6 @@ Apache Software License, Version 2.0
   Compress-LZF
   core
   coreJVM
-  coursier
-  coursier-cache
   Curator Client
   Curator Framework
   Curator Recipes
@@ -90,7 +88,6 @@ Apache Software License, Version 2.0
   java-xmlbuilder
   JavaBeans(TM) Activation Framework
   JavaMail API (compat)
-  javaparser-core
   Javassist
   javax.annotation API
   javax.inject
@@ -132,7 +129,6 @@ Apache Software License, Version 2.0
   parboiled-core
   parboiled-scala
   RoaringBitmap
-  scalaj-http
   ServiceLocator Default Implementation
   servlet-api
   snappy-java
@@ -362,7 +358,6 @@ BSD License
   ANTLR 4 Runtime
   Commons Compiler
   Janino
-  JLine
   JSch
   Kryo Shaded
   leveldbjni-all
@@ -375,9 +370,6 @@ BSD License
   scala-parser-combinators
   scala-xml
   Scalap
-  scalaz-concurrent
-  scalaz-core
-  scalaz-effect
   xmlenc Library
 ------------------------------------------------------------------------------
 
@@ -442,33 +434,17 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 ------------------------------------------------------------------------------
 MIT-license
-  ammonite
-  ammonite-compiler
-  ammonite-ops
-  ammonite-repl
-  ammonite-runtime
-  ammonite-terminal
-  ammonite-util
   Cats core
   Cats kernel
   Cats macros
   core
-  fansi
-  fastparse
-  fastparse-utils
-  geny
   JCL 1.1.1 implemented over SLF4J
   JUL to SLF4J bridge
   machinist
   parser
-  pprint
   pyrolite
-  scalaparse
-  scopt
   SLF4J API Module
   SLF4J LOG4J-12 Binding
-  sourcecode
-  upickle
 ------------------------------------------------------------------------------
 
 The MIT License

@@ -62,6 +62,7 @@
     <project.scala.binary.version>2.11</project.scala.binary.version>
     <project.scala.version>${project.scala.binary.version}.12</project.scala.version>
     <project.rootdir>${project.basedir}</project.rootdir>
+    <project.artifact.classifier>standalone</project.artifact.classifier>
 
     <!-- Used plugins -->
     <plugin.exec-maven.version>1.4.0</plugin.exec-maven.version>
@@ -76,7 +77,6 @@
     <plugin.maven-surefire.version>2.20.1</plugin.maven-surefire.version>
 
     <!-- Used dependencies -->
-    <dep.ammonite.version>1.0.3-33-2d70b25</dep.ammonite.version>
     <dep.cats.version>1.0.1</dep.cats.version>
     <dep.circe.version>0.9.1</dep.circe.version>
     <dep.eff.version>5.0.0</dep.eff.version>
@@ -86,6 +86,7 @@
     <dep.netty.version>4.1.8.Final</dep.netty.version>
     <dep.neo4j.driver.version>1.4.2</dep.neo4j.driver.version>
     <dep.spark.version>2.2.0</dep.spark.version>
+    <dep.spark.scope>compile</dep.spark.scope>
 
     <!-- Test scope dependencies -->
     <dep.bouncycastle.version>1.57</dep.bouncycastle.version>
@@ -364,17 +365,8 @@
         </executions>
       </plugin>
 
-      <!-- setup ammonite repl runner -->
-      <plugin>
-        <groupId>org.codehaus.mojo</groupId>
-        <artifactId>exec-maven-plugin</artifactId>
-        <version>${plugin.exec-maven.version}</version>
-        <configuration>
-          <mainClass>org.opencypher.okapi.demo.Shell</mainClass>
-          <classpathScope>test</classpathScope>
-        </configuration>
-      </plugin>
     </plugins>
+
   </build>
 
   <profiles>
@@ -399,34 +391,23 @@
     </profile>
 
     <profile>
-      <id>databricks</id>
-      <properties>
-        <dep.spark.version>2.2.0</dep.spark.version>
-      </properties>
-    </profile>
-
-    <profile>
-      <id>cloudera</id>
-      <repositories>
-        <repository>
-          <id>cloudera</id>
-          <url>https://repository.cloudera.com/artifactory/cloudera-repos/</url>
-        </repository>
-      </repositories>
-
-      <properties>
-        <dep.spark.version>2.2.0.cloudera1</dep.spark.version>
-      </properties>
-    </profile>
-
-    <profile>
-      <id>buildShade</id>
       <activation>
-        <property>
-          <name>buildShade</name>
-          <value>true</value>
-        </property>
+        <activeByDefault>true</activeByDefault>
       </activation>
+      <id>standalone</id>
+      <properties>
+        <project.artifact.classifier>standalone</project.artifact.classifier>
+        <dep.spark.scope>compile</dep.spark.scope>
+        <buildShade>true</buildShade>
+      </properties>
+    </profile>
+
+    <profile>
+      <id>cluster</id>
+      <properties>
+        <project.artifact.classifier>cluster</project.artifact.classifier>
+        <dep.spark.scope>provided</dep.spark.scope>
+      </properties>
       <build>
         <plugins>
           <!-- shade plugin -->
@@ -443,7 +424,7 @@
                 </goals>
                 <configuration>
                   <shadedArtifactAttached>true</shadedArtifactAttached>
-                  <shadedClassifierName>standalone-shell</shadedClassifierName>
+                  <shadedClassifierName>${project.artifact.classifier}</shadedClassifierName>
                   <createDependencyReducedPom>true</createDependencyReducedPom>
                   <artifactSet>
                     <excludes>
@@ -483,24 +464,6 @@
                     </filter>
 
                     <filter>
-                      <artifact>com.lihaoyi:ammonite-ops_${project.scala.binary.version}
-                      </artifact>
-                      <excludes>
-                        <exclude>ammonite/Constants.class</exclude>
-                        <exclude>ammonite/Constants$.class</exclude>
-                      </excludes>
-                    </filter>
-
-                    <filter>
-                      <artifact>com.lihaoyi:ammonite-terminal_${project.scala.binary.version}
-                      </artifact>
-                      <excludes>
-                        <exclude>ammonite/Constants.class</exclude>
-                        <exclude>ammonite/Constants$.class</exclude>
-                      </excludes>
-                    </filter>
-
-                    <filter>
                       <artifact>org.apache.hadoop:hadoop-yarn-api</artifact>
                       <excludes>
                         <exclude>org/apache/hadoop/yarn/util/package-info.class</exclude>
@@ -527,6 +490,7 @@
         </plugins>
       </build>
     </profile>
+
   </profiles>
 
   <dependencies>

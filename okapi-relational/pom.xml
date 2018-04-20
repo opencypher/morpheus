@@ -35,18 +35,6 @@
 
     <!-- Utils -->
     <dependency>
-      <groupId>com.lihaoyi</groupId>
-      <artifactId>ammonite_${project.scala.version}</artifactId>
-      <version>${dep.ammonite.version}</version>
-    </dependency>
-
-    <dependency>
-      <groupId>com.lihaoyi</groupId>
-      <artifactId>ammonite-ops_${project.scala.binary.version}</artifactId>
-      <version>${dep.ammonite.version}</version>
-    </dependency>
-
-    <dependency>
       <groupId>io.circe</groupId>
       <artifactId>circe-core_${project.scala.binary.version}</artifactId>
       <version>${dep.circe.version}</version>

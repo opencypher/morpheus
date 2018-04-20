@@ -12,10 +12,6 @@ Apache Software License, Version 2.0
   Circe parser
   core
   coreJVM
-  coursier
-  coursier-cache
-  javaparser-core
-  Javassist
   Neo4j - Cypher Expressions 3.4
   Neo4j - Cypher Util 3.4
   Neo4j Java Driver
@@ -26,7 +22,6 @@ Apache Software License, Version 2.0
   openCypher Frontend
   parboiled-core
   parboiled-scala
-  scalaj-http
 ------------------------------------------------------------------------------
 
                                  Apache License
@@ -235,14 +230,10 @@ Apache Software License, Version 2.0
 
 ------------------------------------------------------------------------------
 BSD License
-  JLine
   Scala Compiler
   Scala Library
   scala-parser-combinators
   scala-xml
-  scalaz-concurrent
-  scalaz-core
-  scalaz-effect
 ------------------------------------------------------------------------------
 
 Copyright (c) <year>, <copyright holder>
@@ -274,28 +265,12 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 ------------------------------------------------------------------------------
 MIT-license
-  ammonite
-  ammonite-compiler
-  ammonite-ops
-  ammonite-repl
-  ammonite-runtime
-  ammonite-terminal
-  ammonite-util
   Cats core
   Cats kernel
   Cats macros
   core
-  fansi
-  fastparse
-  fastparse-utils
-  geny
   machinist
   parser
-  pprint
-  scalaparse
-  scopt
-  sourcecode
-  upickle
 ------------------------------------------------------------------------------
 
 The MIT License
