@@ -104,6 +104,91 @@ class OptionalMatchBehaviour extends CAPSTestSuite with DefaultGraphInit {
     ))
   }
 
+  it("can optionally match already matched relationships") {
+    // Given
+    val given = initGraph(
+      """
+        |CREATE (p1:Person {name: "Alice"})
+        |CREATE (p2:Person {name: "Bob"})
+        |CREATE (p3:Person {name: "Eve"})
+        |CREATE (p1)-[:KNOWS]->(p2)
+        |CREATE (p2)-[:KNOWS]->(p3)
+        |CREATE (p1)-[:KNOWS]->(p3)
+      """.stripMargin)
+
+    // When
+    val result = given.cypher(
+      """
+        |MATCH (p1:Person)-[e1:KNOWS]->(p2:Person)
+        |OPTIONAL MATCH (p1)-[e2:KNOWS]->(p3:Person)
+        |RETURN p1.name, p2.name, p3.name
+      """.stripMargin)
+
+    // Then
+    result.getRecords.toMaps should equal(Bag(
+      CypherMap(
+        "p1.name" -> "Alice",
+        "p2.name" -> "Bob",
+        "p3.name" -> "Eve"
+      ),
+      CypherMap(
+        "p1.name" -> "Alice",
+        "p2.name" -> "Eve",
+        "p3.name" -> "Bob"
+      ),
+      CypherMap(
+        "p1.name" -> "Alice",
+        "p2.name" -> "Bob",
+        "p3.name" -> "Bob"
+      ),
+      CypherMap(
+        "p1.name" -> "Alice",
+        "p2.name" -> "Eve",
+        "p3.name" -> "Eve"
+      ),
+      CypherMap(
+        "p1.name" -> "Bob",
+        "p2.name" -> "Eve",
+        "p3.name" -> "Eve"
+      )
+    ))
+  }
+
+  it("can optionally match incoming relationships") {
+    // Given
+    val given = initGraph(
+      """
+        |CREATE (p1:Person {name: "Alice"})
+        |CREATE (p2:Person {name: "Bob"})
+        |CREATE (p3:Person {name: "Frank"})
+        |CREATE (p1)-[:KNOWS]->(p2)
+        |CREATE (p2)-[:KNOWS]->(p3)
+        |CREATE (p1)<-[:LOVES]-(p3)
+      """.stripMargin)
+
+    // When
+    val result = given.cypher(
+      """
+        |MATCH (p1:Person)-[e1:KNOWS]->(p2:Person)
+        |OPTIONAL MATCH (p1)<-[e2:LOVES]-(p3:Person)
+        |RETURN p1.name, p2.name, p3.name
+      """.stripMargin)
+
+    // Then
+    result.getRecords.toMaps should equal(Bag(
+      CypherMap(
+        "p1.name" -> "Alice",
+        "p2.name" -> "Bob",
+        "p3.name" -> "Frank"
+      ),
+      CypherMap(
+        "p1.name" -> "Bob",
+        "p2.name" -> "Frank",
+        "p3.name" -> null
+      )
+    ))
+  }
+
   it("can optionally match with partial matches") {
     // Given
     val given = initGraph(
