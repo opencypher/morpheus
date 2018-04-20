@@ -77,7 +77,6 @@
     <plugin.maven-surefire.version>2.20.1</plugin.maven-surefire.version>
 
     <!-- Used dependencies -->
-    <dep.ammonite.version>1.0.3-33-2d70b25</dep.ammonite.version>
     <dep.cats.version>1.0.1</dep.cats.version>
     <dep.circe.version>0.9.1</dep.circe.version>
     <dep.eff.version>5.0.0</dep.eff.version>
@@ -120,264 +119,251 @@
   </repositories>
 
   <build>
-    <resources>
-      <resource>
-        <directory>${basedir}/src/main/resources</directory>
-        <filtering>true</filtering>
-      </resource>
-    </resources>
-    <testResources>
-      <testResource>
-        <directory>${basedir}/src/test/resources</directory>
-        <filtering>true</filtering>
-      </testResource>
-    </testResources>
+  <resources>
+    <resource>
+      <directory>${basedir}/src/main/resources</directory>
+      <filtering>true</filtering>
+    </resource>
+  </resources>
+  <testResources>
+    <testResource>
+      <directory>${basedir}/src/test/resources</directory>
+      <filtering>true</filtering>
+    </testResource>
+  </testResources>
 
-    <pluginManagement>
-      <plugins>
-        <plugin>
-          <groupId>org.neo4j.build.plugins</groupId>
-          <artifactId>licensing-maven-plugin</artifactId>
-          <version>1.7.6</version>
-          <configuration>
-            <failIfDisliked>true</failIfDisliked>
-            <failIfMissing>true</failIfMissing>
-            <plainTextReport>true</plainTextReport>
-            <prependText>NOTICE-header.txt</prependText>
-            <includedScopes>compile</includedScopes>
-            <excludedScopes>test provided</excludedScopes>
-            <!-- A bunch of dependencies that come from neo4j-harness -->
-            <excludedGroups>^((com.sun.jersey){1}|(org.apache.xbean){1})$</excludedGroups>
-            <excludedArtifacts>
-              <!-- Dependencies that come from test scope -->
-              ^((jersey-guice)|(jaxb-impl)|(jaxb-api)|(stax-api))$
-            </excludedArtifacts>
-          </configuration>
-          <executions>
-            <execution>
-              <id>list-all-licenses</id>
-              <phase>compile</phase>
-              <goals>
-                <goal>check</goal>
-              </goals>
-              <configuration>
-                <licensingRequirementFiles>
-                  <licensingRequirementFile>
-                    licensing-config.xml
-                  </licensingRequirementFile>
-                </licensingRequirementFiles>
-                <thirdPartyLicensingFilename>
-                  ${project.artifactId}-${project.version}-NOTICE.txt
-                </thirdPartyLicensingFilename>
-                <checkExistingNoticeFile>
-                  ${project.build.directory}/../NOTICE.txt
-                </checkExistingNoticeFile>
-                <listPrependText>LICENSES-header.txt</listPrependText>
-                <listReport>${project.artifactId}-${project.version}-LICENSES.txt</listReport>
-                <checkExistingLicensesFile>
-                  ${project.build.directory}/../LICENSES.txt
-                </checkExistingLicensesFile>
-              </configuration>
-            </execution>
-          </executions>
-          <dependencies>
-            <dependency>
-              <groupId>org.opencypher</groupId>
-              <artifactId>okapi-licensecheck-config</artifactId>
-              <version>${project.version}</version>
-            </dependency>
-          </dependencies>
-        </plugin>
-
-        <!-- License header checking -->
-        <plugin>
-          <groupId>com.mycila</groupId>
-          <artifactId>license-maven-plugin</artifactId>
-          <version>${plugin.license-maven.version}</version>
-          <configuration>
-            <header>${project.rootdir}/license-header.txt</header>
-            <basedir>${basedir}/src</basedir>
-            <mapping>
-              <scala>SLASHSTAR_STYLE</scala>
-            </mapping>
-            <excludes>
-              <exclude>test/resources/**</exclude>
-              <exclude>main/resources/**</exclude>
-            </excludes>
-          </configuration>
-          <executions>
-            <execution>
-              <id>check-license-headers</id>
-              <phase>validate</phase>
-              <goals>
-                <goal>check</goal>
-              </goals>
-            </execution>
-          </executions>
-        </plugin>
-      </plugins>
-    </pluginManagement>
-
+  <pluginManagement>
     <plugins>
-      <!-- javac -->
       <plugin>
-        <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-compiler-plugin</artifactId>
-        <version>${plugin.maven-compiler.version}</version>
+        <groupId>org.neo4j.build.plugins</groupId>
+        <artifactId>licensing-maven-plugin</artifactId>
+        <version>1.7.6</version>
         <configuration>
-          <source>${project.java.version}</source>
-          <target>${project.java.version}</target>
+          <failIfDisliked>true</failIfDisliked>
+          <failIfMissing>true</failIfMissing>
+          <plainTextReport>true</plainTextReport>
+          <prependText>NOTICE-header.txt</prependText>
+          <includedScopes>compile</includedScopes>
+          <excludedScopes>test provided</excludedScopes>
+          <!-- A bunch of dependencies that come from neo4j-harness -->
+          <excludedGroups>^((com.sun.jersey){1}|(org.apache.xbean){1})$</excludedGroups>
+          <excludedArtifacts>
+            <!-- Dependencies that come from test scope -->
+            ^((jersey-guice)|(jaxb-impl)|(jaxb-api)|(stax-api))$
+          </excludedArtifacts>
         </configuration>
-      </plugin>
-
-      <!-- Builds a source JAR -->
-      <plugin>
-        <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-source-plugin</artifactId>
-        <version>3.0.0</version>
         <executions>
           <execution>
-            <id>attach-sources</id>
+            <id>list-all-licenses</id>
+            <phase>compile</phase>
             <goals>
-              <goal>jar</goal>
+              <goal>check</goal>
             </goals>
+            <configuration>
+              <licensingRequirementFiles>
+                <licensingRequirementFile>
+                  licensing-config.xml
+                </licensingRequirementFile>
+              </licensingRequirementFiles>
+              <thirdPartyLicensingFilename>
+                ${project.artifactId}-${project.version}-NOTICE.txt
+              </thirdPartyLicensingFilename>
+              <checkExistingNoticeFile>
+                ${project.build.directory}/../NOTICE.txt
+              </checkExistingNoticeFile>
+              <listPrependText>LICENSES-header.txt</listPrependText>
+              <listReport>${project.artifactId}-${project.version}-LICENSES.txt</listReport>
+              <checkExistingLicensesFile>
+                ${project.build.directory}/../LICENSES.txt
+              </checkExistingLicensesFile>
+            </configuration>
           </execution>
         </executions>
+        <dependencies>
+          <dependency>
+            <groupId>org.opencypher</groupId>
+            <artifactId>okapi-licensecheck-config</artifactId>
+            <version>${project.version}</version>
+          </dependency>
+        </dependencies>
       </plugin>
 
-      <!-- setup scalac -->
+      <!-- License header checking -->
       <plugin>
-        <groupId>net.alchim31.maven</groupId>
-        <artifactId>scala-maven-plugin</artifactId>
-        <version>${plugin.maven-scala.version}</version>
-        <executions>
-          <execution>
-            <goals>
-              <goal>compile</goal>
-              <goal>testCompile</goal>
-              <goal>add-source</goal>
-              <goal>doc-jar</goal>
-            </goals>
-          </execution>
-        </executions>
+        <groupId>com.mycila</groupId>
+        <artifactId>license-maven-plugin</artifactId>
+        <version>${plugin.license-maven.version}</version>
         <configuration>
-          <recompileMode>incremental</recompileMode>
-          <scalaVersion>${project.scala.version}</scalaVersion>
-          <scalaCompatVersion>${project.scala.binary.version}</scalaCompatVersion>
-          <encoding>${project.build.encoding}</encoding>
-          <args combine.children="append">
-            <!-- need to pass encoding to scalac manually -->
-            <arg>-encoding</arg>
-            <arg>${project.build.encoding}</arg>
-            <arg>-target:jvm-1.8</arg>
-            <arg>-unchecked</arg>
-            <arg>-deprecation</arg>
-            <arg>-feature</arg>
-            <arg>-Xfatal-warnings</arg>
-            <arg>-Xfuture</arg>
-            <arg>-Ywarn-adapted-args</arg>
-            <arg>-Yopt-warnings:at-inline-failed</arg>
-            <arg>-Yopt:l:project</arg>
-            <arg>-Ypartial-unification</arg>
-          </args>
-        </configuration>
-      </plugin>
-
-      <!-- scalastyle) -->
-      <plugin>
-        <groupId>org.scalastyle</groupId>
-        <artifactId>scalastyle-maven-plugin</artifactId>
-        <version>${plugin.maven-scalastyle.version}</version>
-        <configuration>
-          <verbose>false</verbose>
-          <failOnViolation>true</failOnViolation>
-          <includeTestSourceDirectory>true</includeTestSourceDirectory>
-          <failOnWarning>false</failOnWarning>
-          <inputEncoding>${project.build.encoding}</inputEncoding>
-          <sourceDirectory>${basedir}/src/main/scala</sourceDirectory>
-          <testSourceDirectory>${basedir}/src/test/scala</testSourceDirectory>
-          <configLocation>${project.rootdir}/etc/scalastyle_config.xml</configLocation>
-          <outputFile>${basedir}/target/scalastyle-output.xml</outputFile>
-          <outputEncoding>${project.build.encoding}</outputEncoding>
+          <header>${project.rootdir}/license-header.txt</header>
+          <basedir>${basedir}/src</basedir>
+          <mapping>
+            <scala>SLASHSTAR_STYLE</scala>
+          </mapping>
+          <excludes>
+            <exclude>test/resources/**</exclude>
+            <exclude>main/resources/**</exclude>
+          </excludes>
         </configuration>
         <executions>
           <execution>
-            <phase>test</phase>
+            <id>check-license-headers</id>
+            <phase>validate</phase>
             <goals>
               <goal>check</goal>
             </goals>
           </execution>
         </executions>
       </plugin>
-
-      <!-- add version information to jar -->
-      <plugin>
-        <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-jar-plugin</artifactId>
-        <version>${plugin.maven-jar.version}</version>
-        <executions>
-          <execution>
-            <goals>
-              <goal>test-jar</goal>
-            </goals>
-          </execution>
-        </executions>
-        <configuration>
-          <archive>
-            <index>true</index>
-            <addMavenDescriptor>true</addMavenDescriptor>
-            <manifest>
-              <addClasspath>true</addClasspath>
-              <addDefaultImplementationEntries>true</addDefaultImplementationEntries>
-              <addDefaultSpecificationEntries>true</addDefaultSpecificationEntries>
-            </manifest>
-          </archive>
-        </configuration>
-      </plugin>
-
-      <!-- disable surefire -->
-      <plugin>
-        <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-surefire-plugin</artifactId>
-        <version>${plugin.maven-surefire.version}</version>
-        <configuration>
-          <skipTests>true</skipTests>
-        </configuration>
-      </plugin>
-
-      <!-- enable scalatest -->
-      <plugin>
-        <groupId>org.scalatest</groupId>
-        <artifactId>scalatest-maven-plugin</artifactId>
-        <version>${plugin.maven-scalatest.version}</version>
-        <configuration>
-          <reportsDirectory>${project.build.directory}/surefire-reports</reportsDirectory>
-          <junitxml>.</junitxml>
-          <filereports>WDF TestSuite.txt</filereports>
-          <tagsToExclude>CAPSPatternGraphFactory</tagsToExclude>
-        </configuration>
-        <executions>
-          <execution>
-            <id>test</id>
-            <goals>
-              <goal>test</goal>
-            </goals>
-          </execution>
-        </executions>
-      </plugin>
-
-      <!-- setup ammonite repl runner -->
-      <plugin>
-        <groupId>org.codehaus.mojo</groupId>
-        <artifactId>exec-maven-plugin</artifactId>
-        <version>${plugin.exec-maven.version}</version>
-        <configuration>
-          <mainClass>org.opencypher.okapi.demo.Shell</mainClass>
-          <classpathScope>test</classpathScope>
-        </configuration>
-      </plugin>
     </plugins>
-  </build>
+  </pluginManagement>
+
+  <plugins>
+  <!-- javac -->
+  <plugin>
+    <groupId>org.apache.maven.plugins</groupId>
+    <artifactId>maven-compiler-plugin</artifactId>
+    <version>${plugin.maven-compiler.version}</version>
+    <configuration>
+      <source>${project.java.version}</source>
+      <target>${project.java.version}</target>
+    </configuration>
+  </plugin>
+
+  <!-- Builds a source JAR -->
+  <plugin>
+    <groupId>org.apache.maven.plugins</groupId>
+    <artifactId>maven-source-plugin</artifactId>
+    <version>3.0.0</version>
+    <executions>
+      <execution>
+        <id>attach-sources</id>
+        <goals>
+          <goal>jar</goal>
+        </goals>
+      </execution>
+    </executions>
+  </plugin>
+
+  <!-- setup scalac -->
+  <plugin>
+    <groupId>net.alchim31.maven</groupId>
+    <artifactId>scala-maven-plugin</artifactId>
+    <version>${plugin.maven-scala.version}</version>
+    <executions>
+      <execution>
+        <goals>
+          <goal>compile</goal>
+          <goal>testCompile</goal>
+          <goal>add-source</goal>
+          <goal>doc-jar</goal>
+        </goals>
+      </execution>
+    </executions>
+    <configuration>
+      <recompileMode>incremental</recompileMode>
+      <scalaVersion>${project.scala.version}</scalaVersion>
+      <scalaCompatVersion>${project.scala.binary.version}</scalaCompatVersion>
+      <encoding>${project.build.encoding}</encoding>
+      <args combine.children="append">
+        <!-- need to pass encoding to scalac manually -->
+        <arg>-encoding</arg>
+        <arg>${project.build.encoding}</arg>
+        <arg>-target:jvm-1.8</arg>
+        <arg>-unchecked</arg>
+        <arg>-deprecation</arg>
+        <arg>-feature</arg>
+        <arg>-Xfatal-warnings</arg>
+        <arg>-Xfuture</arg>
+        <arg>-Ywarn-adapted-args</arg>
+        <arg>-Yopt-warnings:at-inline-failed</arg>
+        <arg>-Yopt:l:project</arg>
+        <arg>-Ypartial-unification</arg>
+      </args>
+    </configuration>
+  </plugin>
+
+  <!-- scalastyle) -->
+  <plugin>
+    <groupId>org.scalastyle</groupId>
+    <artifactId>scalastyle-maven-plugin</artifactId>
+    <version>${plugin.maven-scalastyle.version}</version>
+    <configuration>
+      <verbose>false</verbose>
+      <failOnViolation>true</failOnViolation>
+      <includeTestSourceDirectory>true</includeTestSourceDirectory>
+      <failOnWarning>false</failOnWarning>
+      <inputEncoding>${project.build.encoding}</inputEncoding>
+      <sourceDirectory>${basedir}/src/main/scala</sourceDirectory>
+      <testSourceDirectory>${basedir}/src/test/scala</testSourceDirectory>
+      <configLocation>${project.rootdir}/etc/scalastyle_config.xml</configLocation>
+      <outputFile>${basedir}/target/scalastyle-output.xml</outputFile>
+      <outputEncoding>${project.build.encoding}</outputEncoding>
+    </configuration>
+    <executions>
+      <execution>
+        <phase>test</phase>
+        <goals>
+          <goal>check</goal>
+        </goals>
+      </execution>
+    </executions>
+  </plugin>
+
+  <!-- add version information to jar -->
+  <plugin>
+    <groupId>org.apache.maven.plugins</groupId>
+    <artifactId>maven-jar-plugin</artifactId>
+    <version>${plugin.maven-jar.version}</version>
+    <executions>
+      <execution>
+        <goals>
+          <goal>test-jar</goal>
+        </goals>
+      </execution>
+    </executions>
+    <configuration>
+      <archive>
+        <index>true</index>
+        <addMavenDescriptor>true</addMavenDescriptor>
+        <manifest>
+          <addClasspath>true</addClasspath>
+          <addDefaultImplementationEntries>true</addDefaultImplementationEntries>
+          <addDefaultSpecificationEntries>true</addDefaultSpecificationEntries>
+        </manifest>
+      </archive>
+    </configuration>
+  </plugin>
+
+  <!-- disable surefire -->
+  <plugin>
+    <groupId>org.apache.maven.plugins</groupId>
+    <artifactId>maven-surefire-plugin</artifactId>
+    <version>${plugin.maven-surefire.version}</version>
+    <configuration>
+      <skipTests>true</skipTests>
+    </configuration>
+  </plugin>
+
+  <!-- enable scalatest -->
+  <plugin>
+    <groupId>org.scalatest</groupId>
+    <artifactId>scalatest-maven-plugin</artifactId>
+    <version>${plugin.maven-scalatest.version}</version>
+    <configuration>
+      <reportsDirectory>${project.build.directory}/surefire-reports</reportsDirectory>
+      <junitxml>.</junitxml>
+      <filereports>WDF TestSuite.txt</filereports>
+      <tagsToExclude>CAPSPatternGraphFactory</tagsToExclude>
+    </configuration>
+    <executions>
+      <execution>
+        <id>test</id>
+        <goals>
+          <goal>test</goal>
+        </goals>
+      </execution>
+    </executions>
+  </plugin>
 
   <profiles>
 
@@ -470,24 +456,6 @@
                       <artifact>org.apache.spark:*</artifact>
                       <excludes>
                         <exclude>org/apache/spark/unused/UnusedStubClass.class</exclude>
-                      </excludes>
-                    </filter>
-
-                    <filter>
-                      <artifact>com.lihaoyi:ammonite-ops_${project.scala.binary.version}
-                      </artifact>
-                      <excludes>
-                        <exclude>ammonite/Constants.class</exclude>
-                        <exclude>ammonite/Constants$.class</exclude>
-                      </excludes>
-                    </filter>
-
-                    <filter>
-                      <artifact>com.lihaoyi:ammonite-terminal_${project.scala.binary.version}
-                      </artifact>
-                      <excludes>
-                        <exclude>ammonite/Constants.class</exclude>
-                        <exclude>ammonite/Constants$.class</exclude>
                       </excludes>
                     </filter>
 
