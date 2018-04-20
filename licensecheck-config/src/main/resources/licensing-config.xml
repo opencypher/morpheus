@@ -65,8 +65,8 @@
     <artifact id="javax.ws.rs:javax.ws.rs-api:jar:2.0.1">
       <license>Apache Software License, Version 2.0</license>
     </artifact>
-
   </override-licenses>
+
   <coalesced-licenses>
     <license name="Apache Software License, Version 2.0">
       <aka>The Apache Software License, Version 2.0</aka>

@@ -141,9 +141,9 @@
             <failIfDisliked>true</failIfDisliked>
             <failIfMissing>true</failIfMissing>
             <plainTextReport>true</plainTextReport>
-            <prependText>notice-header.txt</prependText>
+            <prependText>NOTICE-header.txt</prependText>
             <includedScopes>compile</includedScopes>
-            <excludedScopes>test</excludedScopes>
+            <excludedScopes>test provided</excludedScopes>
             <!-- A bunch of dependencies that come from neo4j-harness -->
             <excludedGroups>^((com.sun.jersey){1}|(org.apache.xbean){1})$</excludedGroups>
             <excludedArtifacts>
@@ -161,7 +161,7 @@
               <configuration>
                 <licensingRequirementFiles>
                   <licensingRequirementFile>
-                    licensing-requirements-base.xml
+                    licensing-config.xml
                   </licensingRequirementFile>
                 </licensingRequirementFiles>
                 <thirdPartyLicensingFilename>
@@ -170,7 +170,7 @@
                 <checkExistingNoticeFile>
                   ${project.build.directory}/../NOTICE.txt
                 </checkExistingNoticeFile>
-                <listPrependText>list-prefix.txt</listPrependText>
+                <listPrependText>LICENSES-header.txt</listPrependText>
                 <listReport>${project.artifactId}-${project.version}-LICENSES.txt</listReport>
                 <checkExistingLicensesFile>
                   ${project.build.directory}/../LICENSES.txt

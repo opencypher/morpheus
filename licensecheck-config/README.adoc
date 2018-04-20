@@ -1,4 +1,4 @@
-# License check configuration
+= License check configuration
 
 The plugin used is found here: https://github.com/neo4j/licensing-maven-plugin
 
@@ -8,3 +8,55 @@ Most open source licenses are allowed, https://www.apache.org/licenses/GPL-compa
 
 Apache Spark does bundle a number of GPL-licensed modules; most are dual-licensed with CDDL.
 We accept these as they are distributed to us through Spark.
+
+== Usage
+
+When a dependency is added or removed, the license listings need to be updated.
+The check is done via Maven, tied to the `compile` phase*.
+To make the tool generate new listings instead of comparing to the checked-in lists, add the `-Doverwite` parameter:
+
+```
+mvn compile -Doverwrite
+```
+
+*This is necessary because the configuration module must be compiled for an updated configuration to be available (if a new liked license is added).
+It would otherwise have been sufficient with `validate` phase.
+
+## Configuration
+
+The file [# License check configuration
+
+The plugin used is found here: https://github.com/neo4j/licensing-maven-plugin
+
+The plugin checks all dependencies and groups them by license.
+This module hosts the configuration, which is given to the plugin as a dependency.
+Most open source licenses are allowed, https://www.apache.org/licenses/GPL-compatibility.html[with the notable exception of GPL].
+
+Apache Spark does bundle a number of GPL-licensed modules; most are dual-licensed with CDDL.
+We accept these as they are distributed to us through Spark.
+
+## Usage
+
+When a dependency is added or removed, the license listings need to be updated.
+The check is done via Maven, tied to the `compile` phase*.
+To make the tool generate new listings instead of comparing to the checked-in lists, add the `-Doverwite` parameter:
+
+```
+mvn compile -Doverwrite
+```
+
+*This is necessary because the configuration module must be compiled for an updated configuration to be available (if a new liked license is added).
+It would otherwise have been sufficient with `validate` phase.
+
+== Configuration
+
+The configuration files for the plugin live in `src/main/resources`.
+Here are the license text files used to generate the collected license list files.
+The file `licensing-requirements-base.xml` contains configuration that decides
+
+- which licenses are liked
+- what license a dependency that didn't declare one it its pom has
+- overrides for dual-licensed dependencies
+- aliases for license names
+
+The plugin is also configured in the parent pom.
