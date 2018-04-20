@@ -21,10 +21,10 @@ object Hello extends App {
       .action((token, config) => config.copy(token = token))
       .text("GitHub API token.")
 
-    opt[String]('c',"capsRoot")
+    opt[String]('a',"artifactsDir")
       .required()
-      .action((path, config) => config.copy(capsRoot = path))
-      .text("Path of the CAPS root folder.")
+      .action((path, config) => config.copy(artifactsDir = path))
+      .text("Path of the directory containing the released artifacts.")
   }
 
   parser.parse(args, Config()) match {
@@ -84,7 +84,7 @@ object Hello extends App {
     val responseBodyJson = parse(responseBodyString).right.get
     val releaseId = responseBodyJson.asObject.get("id").get.toString
 
-    val targetPath = s"${config.capsRoot}/spark-cypher/target/artifacts/"
+    val targetPath = config.artifactsDir
     val clusterJarAsset = s"spark-cypher-$releaseVersion-cluster.jar"
     val clusterJarPath = targetPath + clusterJarAsset
     val standaloneJarAsset = s"spark-cypher-$releaseVersion.jar"
@@ -111,7 +111,7 @@ case class Config(
   releaseVersion: String = "",
   branch: String = "master",
   token: String = "",
-  capsRoot: String = ""
+  artifactsDir: String = ""
 )
 
 case class GithubReleaseCreationRequest(
