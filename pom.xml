@@ -9,6 +9,7 @@
   <version>1.0-SNAPSHOT</version>
 
   <name>Okapi - openCypher query compilation API and pipeline</name>
+  <packaging>pom</packaging>
 
   <description>
     Okapi is a compiler pipeline for Cypher queries, including a consumer API, which translates Cypher query strings
@@ -39,6 +40,7 @@
   </developers>
 
   <modules>
+    <module>licensecheck-config</module>
     <module>okapi-api</module>
     <module>okapi-ir</module>
     <module>okapi-logical</module>
@@ -115,8 +117,6 @@
     </repository>
   </repositories>
 
-  <packaging>pom</packaging>
-
   <build>
     <resources>
       <resource>
@@ -130,6 +130,91 @@
         <filtering>true</filtering>
       </testResource>
     </testResources>
+
+    <pluginManagement>
+      <plugins>
+        <plugin>
+          <groupId>org.neo4j.build.plugins</groupId>
+          <artifactId>licensing-maven-plugin</artifactId>
+          <version>1.7.6</version>
+          <configuration>
+            <failIfDisliked>true</failIfDisliked>
+            <failIfMissing>true</failIfMissing>
+            <plainTextReport>true</plainTextReport>
+            <prependText>notice-header.txt</prependText>
+            <includedScopes>compile</includedScopes>
+            <excludedScopes>test</excludedScopes>
+            <!-- A bunch of dependencies that come from neo4j-harness -->
+            <excludedGroups>^((com.sun.jersey){1}|(org.apache.xbean){1})$</excludedGroups>
+            <excludedArtifacts>
+              <!-- Dependencies that come from test scope -->
+              ^((jersey-guice)|(jaxb-impl)|(jaxb-api)|(stax-api))$
+            </excludedArtifacts>
+          </configuration>
+          <executions>
+            <execution>
+              <id>list-all-licenses</id>
+              <phase>compile</phase>
+              <goals>
+                <goal>check</goal>
+              </goals>
+              <configuration>
+                <licensingRequirementFiles>
+                  <licensingRequirementFile>
+                    licensing-requirements-base.xml
+                  </licensingRequirementFile>
+                </licensingRequirementFiles>
+                <thirdPartyLicensingFilename>
+                  ${project.artifactId}-${project.version}-NOTICE.txt
+                </thirdPartyLicensingFilename>
+                <checkExistingNoticeFile>
+                  ${project.build.directory}/../NOTICE.txt
+                </checkExistingNoticeFile>
+                <listPrependText>list-prefix.txt</listPrependText>
+                <listReport>${project.artifactId}-${project.version}-LICENSES.txt</listReport>
+                <checkExistingLicensesFile>
+                  ${project.build.directory}/../LICENSES.txt
+                </checkExistingLicensesFile>
+              </configuration>
+            </execution>
+          </executions>
+          <dependencies>
+            <dependency>
+              <groupId>org.opencypher</groupId>
+              <artifactId>okapi-licensecheck-config</artifactId>
+              <version>${project.version}</version>
+            </dependency>
+          </dependencies>
+        </plugin>
+
+        <!-- License header checking -->
+        <plugin>
+          <groupId>com.mycila</groupId>
+          <artifactId>license-maven-plugin</artifactId>
+          <version>${plugin.license-maven.version}</version>
+          <configuration>
+            <header>${project.rootdir}/license-header.txt</header>
+            <basedir>${basedir}/src</basedir>
+            <mapping>
+              <scala>SLASHSTAR_STYLE</scala>
+            </mapping>
+            <excludes>
+              <exclude>test/resources/**</exclude>
+              <exclude>main/resources/**</exclude>
+            </excludes>
+          </configuration>
+          <executions>
+            <execution>
+              <id>check-license-headers</id>
+              <phase>validate</phase>
+              <goals>
+                <goal>check</goal>
+              </goals>
+            </execution>
+          </executions>
+        </plugin>
+      </plugins>
+    </pluginManagement>
 
     <plugins>
       <!-- javac -->
@@ -289,37 +374,30 @@
           <classpathScope>test</classpathScope>
         </configuration>
       </plugin>
-
-      <!-- Licenses -->
-      <plugin>
-        <groupId>com.mycila</groupId>
-        <artifactId>license-maven-plugin</artifactId>
-        <version>${plugin.license-maven.version}</version>
-        <configuration>
-          <header>${project.rootdir}/license-header.txt</header>
-          <basedir>${basedir}/src</basedir>
-          <mapping>
-            <scala>SLASHSTAR_STYLE</scala>
-          </mapping>
-          <excludes>
-            <exclude>test/resources/**</exclude>
-            <exclude>main/resources/**</exclude>
-          </excludes>
-        </configuration>
-        <executions>
-          <execution>
-            <id>check-license-headers</id>
-            <phase>validate</phase>
-            <goals>
-              <goal>check</goal>
-            </goals>
-          </execution>
-        </executions>
-      </plugin>
     </plugins>
   </build>
 
   <profiles>
+
+    <!-- Only run license checking if there is a src/main/scala directory -->
+    <profile>
+      <id>has-sources</id>
+      <activation>
+        <activeByDefault>false</activeByDefault>
+        <file>
+          <exists>src/main/scala</exists>
+        </file>
+      </activation>
+      <build>
+        <plugins>
+          <plugin>
+            <groupId>org.neo4j.build.plugins</groupId>
+            <artifactId>licensing-maven-plugin</artifactId>
+          </plugin>
+        </plugins>
+      </build>
+    </profile>
+
     <profile>
       <id>databricks</id>
       <properties>

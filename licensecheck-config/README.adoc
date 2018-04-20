@@ -1,0 +1,10 @@
+# License check configuration
+
+The plugin used is found here: https://github.com/neo4j/licensing-maven-plugin
+
+The plugin checks all dependencies and groups them by license.
+This module hosts the configuration, which is given to the plugin as a dependency.
+Most open source licenses are allowed, https://www.apache.org/licenses/GPL-compatibility.html[with the notable exception of GPL].
+
+Apache Spark does bundle a number of GPL-licensed modules; most are dual-licensed with CDDL.
+We accept these as they are distributed to us through Spark.

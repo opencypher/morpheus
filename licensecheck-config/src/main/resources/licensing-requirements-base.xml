@@ -1,0 +1,110 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<licensing-requirements>
+
+  <liked-license>Apache Software License, Version 2.0</liked-license>
+  <liked-license>BSD License</liked-license>
+  <liked-license>BSD - Scala License</liked-license>
+  <liked-license>MIT-license</liked-license>
+  <liked-license>BSD License 2-clause</liked-license>
+  <liked-license>Bouncy Castle License</liked-license>
+  <liked-license>Public-domain</liked-license>
+
+  <missing-licenses>
+    <artifact id="oro:oro:jar:2.0.8">
+      <!-- https://mvnrepository.com/artifact/oro/oro/2.0.8 -->
+      <license>Apache Software License, Version 2.0</license>
+    </artifact>
+    <artifact id="org.codehaus.jettison:jettison:bundle:1.1">
+      <!-- https://github.com/codehaus/jettison/tree/jettison-1.1 -->
+      <license>Apache Software License, Version 2.0</license>
+    </artifact>
+    <artifact id="org.apache.zookeeper:zookeeper:pom:3.4.6">
+      <!-- https://github.com/apache/zookeeper/tree/branch-3.4 -->
+      <license>Apache Software License, Version 2.0</license>
+    </artifact>
+    <artifact id="org.apache.xbean:xbean-asm5-shaded:jar:4.4">
+      <!-- https://mvnrepository.com/artifact/org.apache.xbean/xbean-asm5-shaded/4.4 -->
+      <license>Apache Software License, Version 2.0</license>
+    </artifact>
+    <artifact id="javax.servlet:servlet-api:jar:2.5">
+      <!-- https://mvnrepository.com/artifact/javax.servlet/javax.servlet-api -->
+      <license>Apache Software License, Version 2.0</license>
+    </artifact>
+  </missing-licenses>
+
+  <override-licenses>
+    <artifact id="org.javassist:javassist:bundle:">
+      <!-- https://github.com/jboss-javassist/javassist/blob/master/pom.xml#L25-L45 -->
+      <license>Apache Software License, Version 2.0</license>
+    </artifact>
+    <artifact id="org.mortbay.jetty:jetty:">
+      <!-- Jetty is dual-licensed -->
+      <license>Apache Software License, Version 2.0</license>
+    </artifact>
+    <artifact id="org.mortbay.jetty:jetty-util:">
+      <!-- Jetty is dual-licensed -->
+      <license>Apache Software License, Version 2.0</license>
+    </artifact>
+
+    <!-- The following are Spark dependencies -->
+    <artifact id="org.glassfish">
+      <license>Apache Software License, Version 2.0</license>
+    </artifact>
+    <artifact id="javax.activation:activation:jar:1.1.1">
+      <license>Apache Software License, Version 2.0</license>
+    </artifact>
+    <artifact id="javax.annotation:javax.annotation-api:jar:1.2">
+      <license>Apache Software License, Version 2.0</license>
+    </artifact>
+    <artifact id="javax.mail:mail:jar:1.4.7">
+      <license>Apache Software License, Version 2.0</license>
+    </artifact>
+    <artifact id="javax.servlet:javax.servlet-api:jar:3.1.0">
+      <license>Apache Software License, Version 2.0</license>
+    </artifact>
+    <artifact id="javax.ws.rs:javax.ws.rs-api:jar:2.0.1">
+      <license>Apache Software License, Version 2.0</license>
+    </artifact>
+
+  </override-licenses>
+  <coalesced-licenses>
+    <license name="Apache Software License, Version 2.0">
+      <aka>The Apache Software License, Version 2.0</aka>
+      <aka>The Apache License, Version 2.0</aka>
+      <aka>Apache 2</aka>
+      <aka>Apache License, Version 2.0</aka>
+      <aka>Apache License, Version 2</aka>
+      <aka>Apache License 2.0</aka>
+      <aka>Apache License</aka>
+      <aka>Apache 2.0</aka>
+      <aka>Apache 2.0 License</aka>
+      <aka>ASL</aka>
+    </license>
+
+    <license name="BSD License">
+      <aka>BSD</aka>
+      <aka>The BSD License</aka>
+      <aka>The BSD 3-Clause License</aka>
+      <aka>BSD 3-Clause</aka>
+      <aka>BSD-style</aka>
+      <aka>New BSD License</aka>
+      <aka>The New BSD License</aka>
+    </license>
+
+    <license name="MIT-license">
+      <aka>MIT</aka>
+      <aka>MIT license</aka>
+      <aka>MIT License</aka>
+    </license>
+
+    <license name="Bouncy Castle License">
+      <aka>Bouncy Castle Licence</aka>
+    </license>
+
+    <license name="Public-domain">
+      <aka>Public domain</aka>
+      <aka>Public Domain</aka>
+    </license>
+  </coalesced-licenses>
+
+</licensing-requirements>
