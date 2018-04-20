@@ -84,7 +84,7 @@ object Hello extends App {
     val responseBodyJson = parse(responseBodyString).right.get
     val releaseId = responseBodyJson.asObject.get("id").get.toString
 
-    val targetPath = s"${config.capsRoot}/spark-cypher/target/"
+    val targetPath = s"${config.capsRoot}/spark-cypher/target/artifacts/"
     val clusterJarAsset = s"spark-cypher-$releaseVersion-cluster.jar"
     val clusterJarPath = targetPath + clusterJarAsset
     val standaloneJarAsset = s"spark-cypher-$releaseVersion.jar"
