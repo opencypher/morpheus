@@ -247,7 +247,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 
 ------------------------------------------------------------------------------
-MIT license
+MIT-license
   Cats core
   Cats kernel
   Cats macros

@@ -62,10 +62,7 @@ BSD License
   scalaz-core
   scalaz-effect
 
-MIT License
-  scopt
-
-MIT license
+MIT-license
   ammonite
   ammonite-compiler
   ammonite-ops
@@ -85,6 +82,7 @@ MIT license
   parser
   pprint
   scalaparse
+  scopt
   sourcecode
   upickle
 

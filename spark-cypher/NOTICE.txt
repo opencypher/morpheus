@@ -201,15 +201,7 @@ BSD License
 Bouncy Castle License
   Bouncy Castle Provider
 
-MIT License
-  JCL 1.1.1 implemented over SLF4J
-  JUL to SLF4J bridge
-  pyrolite
-  scopt
-  SLF4J API Module
-  SLF4J LOG4J-12 Binding
-
-MIT license
+MIT-license
   ammonite
   ammonite-compiler
   ammonite-ops
@@ -225,17 +217,21 @@ MIT license
   fastparse
   fastparse-utils
   geny
+  JCL 1.1.1 implemented over SLF4J
+  JUL to SLF4J bridge
   machinist
   parser
   pprint
+  pyrolite
   scalaparse
+  scopt
+  SLF4J API Module
+  SLF4J LOG4J-12 Binding
   sourcecode
   upickle
 
-Public Domain
+Public-domain
   AOP alliance
-  XZ for Java
-
-Public domain
   base64
+  XZ for Java
 

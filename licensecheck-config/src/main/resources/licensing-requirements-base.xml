@@ -4,12 +4,10 @@
   <liked-license>Apache Software License, Version 2.0</liked-license>
   <liked-license>BSD License</liked-license>
   <liked-license>BSD - Scala License</liked-license>
-  <liked-license>MIT license</liked-license>
-  <liked-license>MIT License</liked-license>
+  <liked-license>MIT-license</liked-license>
   <liked-license>BSD License 2-clause</liked-license>
   <liked-license>Bouncy Castle License</liked-license>
-  <liked-license>Public domain</liked-license>
-  <liked-license>Public Domain</liked-license>
+  <liked-license>Public-domain</liked-license>
 
   <missing-licenses>
     <artifact id="oro:oro:jar:2.0.8">
@@ -93,8 +91,9 @@
       <aka>The New BSD License</aka>
     </license>
 
-    <license name="MIT license">
+    <license name="MIT-license">
       <aka>MIT</aka>
+      <aka>MIT license</aka>
       <aka>MIT License</aka>
     </license>
 
@@ -102,7 +101,8 @@
       <aka>Bouncy Castle Licence</aka>
     </license>
 
-    <license name="Public domain">
+    <license name="Public-domain">
+      <aka>Public domain</aka>
       <aka>Public Domain</aka>
     </license>
   </coalesced-licenses>
