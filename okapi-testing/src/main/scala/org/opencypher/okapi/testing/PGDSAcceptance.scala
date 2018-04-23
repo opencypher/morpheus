@@ -19,7 +19,9 @@ trait PGDSAcceptance extends BeforeAndAfterAll {
       |CREATE (a:A { name: 'A' })
       |CREATE (b:B { name: 'B' })
       |CREATE (combo:A:B { name: 'COMBO', size: 2 })
-      |CREATE (a)-[r:R { since: 2004 }]->(b)
+      |CREATE (a)-[:R { since: 2004 }]->(b)
+      |CREATE (b)-[:R { since: 2005 }]->(combo)
+      |CREATE (combo)-[:S { since: 2006 }]->(combo)
     """.stripMargin
 
   lazy val testGraph = TestGraphFactory(createStatements)
@@ -62,6 +64,13 @@ trait PGDSAcceptance extends BeforeAndAfterAll {
       CypherMap("a.name" -> "A", "a.size" -> CypherNull),
       CypherMap("a.name" -> "B", "a.size" -> CypherNull),
       CypherMap("a.name" -> "COMBO", "a.size" -> 2)
+    ))
+  }
+
+  it("supports multi-hop paths") {
+    cypherSession.cypher(s"FROM GRAPH $ns.$gn MATCH (a)-[r1]->(b)-[r2]->(c) RETURN r1.since, r2.since, type(r2)").getRecords.iterator.toBag should equal(Bag(
+      CypherMap("r1.since" -> 2004, "r2.since" -> 2005, "type(r2)" -> "R"),
+      CypherMap("r1.since" -> 2005, "r2.since" -> 2006, "type(r2)" -> "S")
     ))
   }
 
