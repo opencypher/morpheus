@@ -8,7 +8,8 @@ import org.opencypher.okapi.testing.Bag._
 import org.opencypher.okapi.testing.propertygraph.{TestGraph, TestGraphFactory}
 import org.scalatest.BeforeAndAfterAll
 
-abstract class PGDSAcceptance extends BaseTestSuite with BeforeAndAfterAll {
+trait PGDSAcceptance extends BeforeAndAfterAll {
+  self: BaseTestSuite =>
 
   val createStatements =
     """
@@ -25,6 +26,7 @@ abstract class PGDSAcceptance extends BaseTestSuite with BeforeAndAfterAll {
   implicit val cypherSession: CypherSession = initSession()
 
   override def beforeAll(): Unit = {
+    super.beforeAll()
     val ds = create(gn, testGraph, createStatements)
     cypherSession.registerSource(ns, ds)
   }
