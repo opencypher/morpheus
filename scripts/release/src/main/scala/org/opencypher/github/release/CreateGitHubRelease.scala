@@ -40,8 +40,8 @@ object CreateGitHubRelease extends App {
 
 case class GithubRelease(config: Config) {
   implicit val backend: SttpBackend[Id, Nothing] = HttpURLConnectionBackend()
-  val GH_API_URL = "https://api.github.com/repos/DarthMax/release_script_test"
-  val GH_UPLOAD_URL = "https://upload.github.com/repos/DarthMax/release_script_test"
+  val GH_API_URL = "https://api.github.com/repos/opencypher/cypher-for-apache-spark"
+  val GH_UPLOAD_URL = "https://uploads.github.com/repos/opencypher/cypher-for-apache-spark"
 
   private val releaseId = createRelease
   uploadJars(releaseId)
