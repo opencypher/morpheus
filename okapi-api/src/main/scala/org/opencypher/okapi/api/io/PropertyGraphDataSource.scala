@@ -77,7 +77,7 @@ trait PropertyGraphDataSource {
   /**
     * Stores the given [[org.opencypher.okapi.api.graph.PropertyGraph]] under the given [[org.opencypher.okapi.api.graph.GraphName]] within the data source.
     *
-    * Throws an [[org.opencypher.okapi.impl.exception.UnsupportedOperationException]] if not supported.
+    * Throws an [[java.lang.UnsupportedOperationException]] if not supported.
     *
     * @param name  name under which the graph shall be stored
     * @param graph property graph to store
@@ -87,7 +87,7 @@ trait PropertyGraphDataSource {
   /**
     * Deletes the [[org.opencypher.okapi.api.graph.PropertyGraph]] within the data source that is stored under the given [[org.opencypher.okapi.api.graph.GraphName]].
     *
-    * Throws an [[org.opencypher.okapi.impl.exception.UnsupportedOperationException]] if not supported.
+    * Throws an [[java.lang.UnsupportedOperationException]] if not supported.
     *
     * This operation will do nothing if the graph is not found.
     *
