@@ -24,7 +24,7 @@
  * described as "implementation extensions to Cypher" or as "proposed changes to
  * Cypher that are not yet approved by the openCypher community".
  */
-package org.opencypher.okapi.ir.test.support.creation.propertygraph
+package org.opencypher.okapi.testing.propertygraph
 
 import java.util.concurrent.atomic.AtomicLong
 
@@ -33,21 +33,71 @@ import cats.data.State
 import cats.data.State._
 import cats.instances.list._
 import cats.syntax.all._
+import org.neo4j.cypher.internal.frontend.v3_4.AstRewritingMonitor
 import org.neo4j.cypher.internal.frontend.v3_4.ast._
-import org.neo4j.cypher.internal.util.v3_4.ASTNode
+import org.neo4j.cypher.internal.frontend.v3_4.ast.rewriters._
+import org.neo4j.cypher.internal.frontend.v3_4.helpers.rewriting.RewriterStepSequencer
+import org.neo4j.cypher.internal.frontend.v3_4.phases._
+import org.neo4j.cypher.internal.frontend.v3_4.semantics._
+import org.neo4j.cypher.internal.util.v3_4.{ASTNode, CypherException, InputPosition}
 import org.neo4j.cypher.internal.v3_4.expressions._
 import org.opencypher.okapi.api.value.CypherValue.{CypherEntity, CypherMap, CypherNode, CypherRelationship}
 import org.opencypher.okapi.impl.exception.{IllegalArgumentException, UnsupportedOperationException}
-import org.opencypher.okapi.ir.impl.parse.CypherParser
 
 import scala.collection.TraversableOnce
+import scala.reflect.ClassTag
+
+object TestParser {
+
+  val defaultContext = new BaseContext {
+    override def tracer: CompilationPhaseTracer = CompilationPhaseTracer.NO_TRACING
+
+    override def notificationLogger: InternalNotificationLogger = devNullLogger
+
+    override def exceptionCreator: (String, InputPosition) => CypherException = (_, _) => null
+
+    override def monitors: Monitors = new Monitors {
+      override def newMonitor[T <: AnyRef : ClassTag](tags: String*): T = {
+        new AstRewritingMonitor {
+          override def abortedRewriting(obj: AnyRef): Unit = ()
+
+          override def abortedRewritingDueToLargeDNF(obj: AnyRef): Unit = ()
+        }
+      }.asInstanceOf[T]
+
+      override def addMonitorListener[T](monitor: T, tags: String*): Unit = ()
+    }
+
+    override def errorHandler: Seq[SemanticErrorDef] => Unit = _ => ()
+  }
+
+  def process(query: String): (Statement, Map[String, Any], SemanticState) = {
+    val startState = InitialState(query, None, null, Map.empty)
+    val endState = pipeLine.transform(startState, defaultContext)
+    val params = endState.extractedParams
+    val rewritten = endState.statement
+    (rewritten, params, endState.maybeSemantics.get)
+  }
+
+  protected val pipeLine: Transformer[BaseContext, BaseState, BaseState] =
+    Parsing.adds(BaseContains[Statement]) andThen
+      SyntaxDeprecationWarnings andThen
+      PreparatoryRewriting andThen
+      SemanticAnalysis(warn = true).adds(BaseContains[SemanticState]) andThen
+      AstRewriting(RewriterStepSequencer.newPlain, Never, getDegreeRewriting = false) andThen
+      SemanticAnalysis(warn = false) andThen
+      Namespacer andThen
+      CNFNormalizer andThen
+      LateAstRewriting
+
+}
 
 object TestPropertyGraphFactory extends PropertyGraphFactory {
 
   type Result[A] = State[ParsingContext, A]
 
   def apply(createQuery: String, externalParams: Map[String, Any] = Map.empty): TestPropertyGraph = {
-    val (ast, params, _) = CypherParser.process(createQuery)(CypherParser.defaultContext)
+    val (ast, params, _) = TestParser.process(createQuery)
     val context = ParsingContext.fromParams(params ++ externalParams)
 
     ast match {
@@ -57,7 +107,7 @@ object TestPropertyGraphFactory extends PropertyGraphFactory {
 
   def processClauses(clauses: Seq[Clause]): Result[Unit] = {
     clauses match {
-      case (head :: tail) =>
+      case head :: tail =>
         head match {
           case Create(pattern) =>
             processPattern(pattern) >> processClauses(tail)

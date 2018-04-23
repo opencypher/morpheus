@@ -28,8 +28,8 @@ package org.opencypher.spark.test.support.creation.caps
 
 import org.opencypher.okapi.api.types.{CTNode, CTRelationship}
 import org.opencypher.okapi.ir.api.expr.Var
-import org.opencypher.okapi.ir.test.support.creation.propertygraph.TestPropertyGraph
 import org.opencypher.okapi.relational.impl.table.ColumnName
+import org.opencypher.okapi.testing.propertygraph.TestPropertyGraph
 import org.opencypher.spark.api.CAPSSession
 import org.opencypher.spark.impl.{CAPSGraph, CAPSPatternGraph, CAPSRecords}
 

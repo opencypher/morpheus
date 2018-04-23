@@ -29,7 +29,7 @@ package org.opencypher.okapi.ir.test.support.creation
 import org.opencypher.okapi.api.graph.{CypherSession, PropertyGraph}
 import org.opencypher.okapi.api.schema.Schema
 import org.opencypher.okapi.api.types.CypherType._
-import org.opencypher.okapi.ir.test.support.creation.propertygraph.{TestNode, TestPropertyGraph, TestRelationship}
+import org.opencypher.okapi.testing.propertygraph.{TestNode, TestPropertyGraph, TestRelationship}
 
 trait TestGraphFactory[C <: CypherSession] {
 

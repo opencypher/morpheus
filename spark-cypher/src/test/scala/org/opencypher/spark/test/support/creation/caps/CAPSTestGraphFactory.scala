@@ -27,7 +27,7 @@
 package org.opencypher.spark.test.support.creation.caps
 
 import org.opencypher.okapi.ir.test.support.creation.TestGraphFactory
-import org.opencypher.okapi.ir.test.support.creation.propertygraph.TestPropertyGraphFactory
+import org.opencypher.okapi.testing.propertygraph.TestPropertyGraphFactory
 import org.opencypher.spark.api.CAPSSession
 import org.opencypher.spark.impl.CAPSGraph
 import org.opencypher.spark.impl.CAPSConverters._

@@ -24,7 +24,7 @@
  * described as "implementation extensions to Cypher" or as "proposed changes to
  * Cypher that are not yet approved by the openCypher community".
  */
-package org.opencypher.okapi.ir.test.support.creation.propertygraph
+package org.opencypher.okapi.testing.propertygraph
 
 import org.opencypher.okapi.api.value.CypherValue.{CypherMap, CypherNode, CypherRelationship}
 

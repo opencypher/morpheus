@@ -30,6 +30,7 @@ import org.opencypher.okapi.api.value.CypherValue.CypherMap
 import org.opencypher.okapi.ir.test.support.Bag._
 import org.opencypher.okapi.ir.test.support.Bag
 import org.opencypher.okapi.test.BaseTestSuite
+import org.opencypher.okapi.testing.propertygraph.{TestNode, TestPropertyGraph, TestPropertyGraphFactory, TestRelationship}
 
 class TestPropertyGraphFactoryTest extends BaseTestSuite {
 

@@ -32,6 +32,8 @@ import org.neo4j.graphdb.GraphDatabaseService
 import org.neo4j.harness.TestServerBuilders
 import org.opencypher.okapi.api.value.CypherValue.CypherMap
 import org.opencypher.okapi.ir.test.support.creation.propertygraph._
+import org.opencypher.okapi.testing.propertygraph
+import org.opencypher.okapi.testing.propertygraph.{PropertyGraphFactory, TestNode, TestPropertyGraph, TestRelationship}
 
 import scala.collection.JavaConverters._
 import scala.collection.immutable.Map
@@ -85,7 +87,7 @@ class Neo4jPropertyGraphFactory {
       TestRelationship(id, sourceId, targetId, relType, properties)
     }
 
-    TestPropertyGraph(nodes, relationships)
+    propertygraph.TestPropertyGraph(nodes, relationships)
   }
 
   def close: Any = neo4jServer.close()

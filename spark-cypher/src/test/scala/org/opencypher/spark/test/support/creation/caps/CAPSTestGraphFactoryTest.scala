@@ -29,7 +29,7 @@ package org.opencypher.spark.test.support.creation.caps
 import org.opencypher.okapi.api.io.conversion.{NodeMapping, RelationshipMapping}
 import org.opencypher.okapi.api.schema.Schema
 import org.opencypher.okapi.api.types.CTString
-import org.opencypher.okapi.ir.test.support.creation.propertygraph.TestPropertyGraphFactory
+import org.opencypher.okapi.testing.propertygraph.TestPropertyGraphFactory
 import org.opencypher.spark.api.io.{CAPSNodeTable, CAPSRelationshipTable}
 import org.opencypher.spark.impl.CAPSConverters._
 import org.opencypher.spark.impl.CAPSGraph
