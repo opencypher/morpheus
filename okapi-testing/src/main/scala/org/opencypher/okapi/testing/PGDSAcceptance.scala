@@ -43,6 +43,24 @@ trait PGDSAcceptance extends BeforeAndAfterAll {
 
   def create(graphName: GraphName, testGraph: TestGraph, createStatements: String): PropertyGraphDataSource
 
+  it("supports `hasGraph`") {
+    cypherSession.dataSource(ns).hasGraph(gn) shouldBe true
+    cypherSession.dataSource(ns).hasGraph(GraphName("foo")) shouldBe false
+  }
+
+  it("supports `graph`") {
+    cypherSession.dataSource(ns).graph(gn).nodes("n").size shouldBe 3
+    intercept[GraphNotFoundException] {
+      cypherSession.dataSource(ns).graph(GraphName("foo"))
+    }
+  }
+
+  it("supports `graphNames`") {
+    val graphNames = cypherSession.dataSource(ns).graphNames
+    graphNames.size shouldBe 1
+    graphNames.head shouldBe gn
+  }
+
   it("supports queries through the API") {
     val g = cypherSession.graph(QualifiedGraphName(ns, gn))
 

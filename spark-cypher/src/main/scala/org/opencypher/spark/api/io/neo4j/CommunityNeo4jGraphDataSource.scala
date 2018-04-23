@@ -28,7 +28,7 @@ package org.opencypher.spark.api.io.neo4j
 
 import org.opencypher.okapi.api.graph.{GraphName, PropertyGraph}
 import org.opencypher.okapi.api.schema.Schema
-import org.opencypher.okapi.impl.exception.IllegalArgumentException
+import org.opencypher.okapi.impl.exception.{GraphNotFoundException, IllegalArgumentException}
 import org.opencypher.spark.api.CAPSSession
 import org.opencypher.spark.impl.io.CAPSPropertyGraphDataSource
 import org.opencypher.spark.impl.io.neo4j.Neo4jGraphLoader
@@ -65,7 +65,7 @@ case class CommunityNeo4jGraphDataSource(
 
   override def graph(name: GraphName): PropertyGraph = queries.get(name) match {
     case Some((nodeQuery, relQuery)) => Neo4jGraphLoader.fromNeo4j(config, nodeQuery, relQuery, schema(name))
-    case None => throw IllegalArgumentException(s"Neo4j graph with name '$name'")
+    case None => throw GraphNotFoundException(s"Neo4j graph with name '$name'")
   }
 
   override def schema(name: GraphName): Option[Schema] = schemata.get(name)
