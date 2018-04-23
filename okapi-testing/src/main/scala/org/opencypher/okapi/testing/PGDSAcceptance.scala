@@ -48,6 +48,17 @@ trait PGDSAcceptance extends BeforeAndAfterAll {
     ))
   }
 
+  it("stores a graph") {
+    Try(cypherSession.cypher(s"CREATE GRAPH $ns.${gn}2 { FROM GRAPH $ns.$gn RETURN GRAPH }")) match {
+      case Success(_) =>
+        withClue("`hasGraph` needs to return `true` after graph creation") {
+          cypherSession.dataSource(ns).hasGraph(GraphName(s"${gn}2")) shouldBe true
+        }
+      case Failure(_: UnsupportedOperationException) =>
+      case other => fail(s"Expected success or `UnsupportedOperationException`, got $other")
+    }
+  }
+
   it("deletes a graph") {
     Try(cypherSession.cypher(s"DELETE GRAPH $ns.$gn")) match {
       case Success(_) =>
