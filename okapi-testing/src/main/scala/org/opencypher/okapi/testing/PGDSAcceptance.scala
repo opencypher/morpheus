@@ -3,7 +3,7 @@ package org.opencypher.okapi.testing
 import org.opencypher.okapi.api.graph._
 import org.opencypher.okapi.api.io.PropertyGraphDataSource
 import org.opencypher.okapi.api.schema.Schema
-import org.opencypher.okapi.api.value.CypherValue.CypherMap
+import org.opencypher.okapi.api.value.CypherValue.{CypherMap, CypherNull}
 import org.opencypher.okapi.impl.exception.GraphNotFoundException
 import org.opencypher.okapi.testing.Bag._
 import org.opencypher.okapi.testing.propertygraph.{TestGraph, TestGraphFactory}
@@ -18,6 +18,7 @@ trait PGDSAcceptance extends BeforeAndAfterAll {
     """
       |CREATE (a:A { name: 'A' })
       |CREATE (b:B { name: 'B' })
+      |CREATE (combo:A:B { name: 'COMBO', size: 2 })
       |CREATE (a)-[r:R { since: 2004 }]->(b)
     """.stripMargin
 
@@ -44,7 +45,23 @@ trait PGDSAcceptance extends BeforeAndAfterAll {
     val g = cypherSession.graph(QualifiedGraphName(ns, gn))
 
     g.cypher("MATCH (a:A) RETURN a.name").getRecords.iterator.toBag should equal(Bag(
-      CypherMap("a.name" -> "A")
+      CypherMap("a.name" -> "A"),
+      CypherMap("a.name" -> "COMBO")
+    ))
+  }
+
+  it("supports queries through Cypher") {
+    cypherSession.cypher(s"FROM GRAPH $ns.$gn MATCH (a:B) RETURN a.name").getRecords.iterator.toBag should equal(Bag(
+      CypherMap("a.name" -> "B"),
+      CypherMap("a.name" -> "COMBO")
+    ))
+  }
+
+  it("supports scans over multiple labels") {
+    cypherSession.cypher(s"FROM GRAPH $ns.$gn MATCH (a) RETURN a.name, a.size").getRecords.iterator.toBag should equal(Bag(
+      CypherMap("a.name" -> "A", "a.size" -> CypherNull),
+      CypherMap("a.name" -> "B", "a.size" -> CypherNull),
+      CypherMap("a.name" -> "COMBO", "a.size" -> 2)
     ))
   }
 
