@@ -30,28 +30,29 @@ import org.opencypher.okapi.api.graph.{GraphName, PropertyGraph}
 import org.opencypher.okapi.api.schema.Schema
 
 /**
-  * The Property Graph Data Source (PGDS) is used to read and write property graphs from and to an external storage
-  * (e.g., a database system, a file system or an memory-based collections of graph data).
+  * Property Graph Data Source (PGDS) is used to read and write property graphs, for example from database or
+  * file systems, memory-based collections, etc.
   *
-  * The PGDS is the main interface for implementing custom data sources for specific openCypher implementations
-  * (e.g., for Apache Spark, etc.).
+  * [[PropertyGraphDataSource]] is the main interface for connecting custom data sources for specific openCypher implementations.
   *
-  * The (PGDS) is able to handle multiple property graphs and  distinguishes between them using [[org.opencypher.okapi.api.graph.GraphName]]s.
+  * A PGDS can handle multiple property graphs and distinguishes between them using [[org.opencypher.okapi.api.graph.GraphName]]s.
   * Furthermore, a PGDS can be registered at a [[org.opencypher.okapi.api.graph.CypherSession]] using a specific
-  * [[org.opencypher.okapi.api.graph.Namespace]] which enables accessing a [[org.opencypher.okapi.api.graph.PropertyGraph]] within a Cypher query.
+  * [[org.opencypher.okapi.api.graph.Namespace]] which enables accessing a [[org.opencypher.okapi.api.graph.PropertyGraph]] from within a Cypher query.
   */
 trait PropertyGraphDataSource {
 
   /**
-    * Returns `true` if the data source stores a graph under the given [[org.opencypher.okapi.api.graph.GraphName]].
+    * Returns `true` if the data source can provide a graph for the given [[org.opencypher.okapi.api.graph.GraphName]].
     *
     * @param name name of the graph within the data source
-    * @return `true`, iff the graph is stored within the data source
+    * @return `true`, iff the graph can be provided
     */
   def hasGraph(name: GraphName): Boolean
 
   /**
-    * Returns the [[org.opencypher.okapi.api.graph.PropertyGraph]] that is stored under the given name.
+    * Returns the [[org.opencypher.okapi.api.graph.PropertyGraph]] for the given name.
+    *
+    * Throws a [[org.opencypher.okapi.impl.exception.GraphNotFoundException]] when that graph cannot be provided.
     *
     * @param name name of the graph within the data source
     * @return property graph
@@ -63,32 +64,49 @@ trait PropertyGraphDataSource {
     *
     * This method gives implementers the ability to efficiently retrieve a graph schema from the data source directly.
     * For reasons of performance, it is highly recommended to make a schema available through this call. If an efficient
-    * retrieval is not possible, the call is typically forwarded to the graph using the [[org.opencypher.okapi.api.graph.PropertyGraph#schema]] call, which may require materialising the full graph.
+    * retrieval is not possible, the call is typically forwarded to the graph using the [[org.opencypher.okapi.api.graph.PropertyGraph#schema]]
+    * call, which may require materialising the full graph.
+    *
+    * Returns `None` when the schema cannot be provided.
     *
     * @param name name of the graph within the data source
-    * @return graph schema
+    * @return graph schema when available
     */
   def schema(name: GraphName): Option[Schema]
 
   /**
     * Stores the given [[org.opencypher.okapi.api.graph.PropertyGraph]] under the given [[org.opencypher.okapi.api.graph.GraphName]] within the data source.
     *
+    * Throws an [[org.opencypher.okapi.impl.exception.UnsupportedOperationException]] if not supported.
+    *
     * @param name  name under which the graph shall be stored
-    * @param graph property graph
+    * @param graph property graph to store
     */
   def store(name: GraphName, graph: PropertyGraph): Unit
 
   /**
     * Deletes the [[org.opencypher.okapi.api.graph.PropertyGraph]] within the data source that is stored under the given [[org.opencypher.okapi.api.graph.GraphName]].
     *
+    * Throws an [[org.opencypher.okapi.impl.exception.UnsupportedOperationException]] if not supported.
+    *
+    * This operation will do nothing if the graph is not found.
+    *
     * @param name name under which the graph is stored
     */
   def delete(name: GraphName): Unit
 
   /**
-    * Returns the [[org.opencypher.okapi.api.graph.GraphName]]s of all [[org.opencypher.okapi.api.graph.PropertyGraph]]s stored within the data source.
+    * Returns a set of [[org.opencypher.okapi.api.graph.GraphName]]s for [[org.opencypher.okapi.api.graph.PropertyGraph]]s
+    * that can be provided by this data source.
     *
-    * @return names of stored graphs
+    * For data sources that provide a known set of graphs, this returns the set of all graphs that can be provided.
+    *
+    * For data sources that can construct graphs dynamically, this merely returns the names of the graphs that have
+    * already been provided and not yet deleted.
+    *
+    * For every returned name, `hasGraph` is guaranteed to return `true`.
+    *
+    * @return names of graphs that can be provided
     */
   def graphNames: Set[GraphName]
 

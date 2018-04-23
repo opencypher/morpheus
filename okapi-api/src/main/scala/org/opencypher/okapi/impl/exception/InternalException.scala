@@ -45,3 +45,5 @@ final case class IllegalArgumentException(expected: Any, actual: Any = "none")
   extends InternalException(s"\nExpected:\n\t$expected\nFound:\n\t$actual")
 
 final case class UnsupportedOperationException(msg: String) extends InternalException(msg)
+
+final case class GraphNotFoundException(msg: String) extends InternalException(msg)
