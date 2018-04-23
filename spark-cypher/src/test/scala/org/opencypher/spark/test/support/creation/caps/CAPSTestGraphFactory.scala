@@ -27,13 +27,13 @@
 package org.opencypher.spark.test.support.creation.caps
 
 import org.opencypher.okapi.ir.test.support.creation.TestGraphFactory
-import org.opencypher.okapi.testing.propertygraph.TestPropertyGraphFactory
+import org.opencypher.okapi.testing.propertygraph.TestGraphFactory
 import org.opencypher.spark.api.CAPSSession
 import org.opencypher.spark.impl.CAPSGraph
 import org.opencypher.spark.impl.CAPSConverters._
 
 trait CAPSTestGraphFactory extends TestGraphFactory[CAPSSession] {
   def initGraph(createQuery: String)(implicit caps: CAPSSession): CAPSGraph = {
-    apply(TestPropertyGraphFactory(createQuery)).asCaps
+    apply(TestGraphFactory(createQuery)).asCaps
   }
 }

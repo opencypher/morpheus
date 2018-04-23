@@ -32,7 +32,7 @@ import org.opencypher.okapi.ir.api.expr._
 import org.opencypher.okapi.ir.api.{Label, PropertyKey, RelType}
 import org.opencypher.okapi.ir.test._
 import org.opencypher.okapi.relational.impl.syntax.RecordHeaderSyntax._
-import org.opencypher.okapi.test.BaseTestSuite
+import org.opencypher.okapi.testing.BaseTestSuite
 
 import scala.language.implicitConversions
 

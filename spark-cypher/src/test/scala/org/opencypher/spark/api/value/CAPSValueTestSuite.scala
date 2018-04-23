@@ -27,7 +27,7 @@
 package org.opencypher.okapi.api.value
 
 import org.opencypher.okapi.api.value.CypherValue.CypherFloat
-import org.opencypher.okapi.test.BaseTestSuite
+import org.opencypher.okapi.testing.BaseTestSuite
 import org.opencypher.spark.impl.encoders.CypherValueEncoders
 
 class CAPSValueTestSuite extends BaseTestSuite with CypherValueEncoders {

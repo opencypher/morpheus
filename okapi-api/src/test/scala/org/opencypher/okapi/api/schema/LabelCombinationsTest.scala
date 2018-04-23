@@ -27,7 +27,7 @@
 package org.opencypher.okapi.api.schema
 
 import org.opencypher.okapi.impl.schema.LabelCombinations
-import org.opencypher.okapi.test.BaseTestSuite
+import org.opencypher.okapi.testing.BaseTestSuite
 
 class LabelCombinationsTest extends BaseTestSuite {
 

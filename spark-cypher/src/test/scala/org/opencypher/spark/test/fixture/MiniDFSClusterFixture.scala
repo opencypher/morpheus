@@ -33,7 +33,7 @@ import org.apache.hadoop.conf.Configuration
 import org.apache.hadoop.fs.Path
 import org.apache.hadoop.hdfs.MiniDFSCluster
 import org.apache.http.client.utils.URIBuilder
-import org.opencypher.okapi.test.fixture.BaseTestFixture
+import org.opencypher.okapi.testing.BaseTestFixture
 import org.opencypher.spark.test.CAPSTestSuite
 
 trait MiniDFSClusterFixture extends BaseTestFixture {

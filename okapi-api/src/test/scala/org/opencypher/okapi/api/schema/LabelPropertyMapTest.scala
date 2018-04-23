@@ -27,7 +27,7 @@
 package org.opencypher.okapi.api.schema
 
 import org.opencypher.okapi.api.types.{CTAny, CTBoolean, CTInteger, CTString}
-import org.opencypher.okapi.test.BaseTestSuite
+import org.opencypher.okapi.testing.BaseTestSuite
 
 class LabelPropertyMapTest extends BaseTestSuite {
 

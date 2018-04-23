@@ -28,7 +28,7 @@ package org.opencypher.okapi.ir.impl.typer
 
 import org.neo4j.cypher.internal.util.v3_4.{symbols => frontend}
 import org.opencypher.okapi.api.types._
-import org.opencypher.okapi.test.BaseTestSuite
+import org.opencypher.okapi.testing.BaseTestSuite
 import org.scalatest.Assertion
 
 class toFrontendTypeTest extends BaseTestSuite {

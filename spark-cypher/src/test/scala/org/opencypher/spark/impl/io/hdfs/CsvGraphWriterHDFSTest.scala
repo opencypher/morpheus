@@ -26,7 +26,7 @@
  */
 package org.opencypher.spark.impl.io.hdfs
 
-import org.opencypher.okapi.ir.test.support.Bag._
+import org.opencypher.okapi.testing.Bag._
 import org.opencypher.spark.impl.CAPSConverters._
 import org.opencypher.spark.impl.CAPSGraph
 import org.opencypher.spark.test.CAPSTestSuite

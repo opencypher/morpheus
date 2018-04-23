@@ -27,7 +27,7 @@
 package org.opencypher.okapi.ir.api.pattern
 
 import org.opencypher.okapi.ir.api.IRField
-import org.opencypher.okapi.test.BaseTestSuite
+import org.opencypher.okapi.testing.BaseTestSuite
 
 class ConnectionTest extends BaseTestSuite {
 

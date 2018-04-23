@@ -27,15 +27,14 @@
 package org.opencypher.okapi.ir.test.support.creation.propertygraph
 
 import org.opencypher.okapi.api.value.CypherValue.CypherMap
-import org.opencypher.okapi.ir.test.support.Bag._
-import org.opencypher.okapi.ir.test.support.Bag
-import org.opencypher.okapi.test.BaseTestSuite
-import org.opencypher.okapi.testing.propertygraph.{TestNode, TestPropertyGraph, TestPropertyGraphFactory, TestRelationship}
+import org.opencypher.okapi.testing.Bag._
+import org.opencypher.okapi.testing.{Bag, BaseTestSuite}
+import org.opencypher.okapi.testing.propertygraph.{TestGraph, TestGraphFactory, TestNode, TestRelationship}
 
-class TestPropertyGraphFactoryTest extends BaseTestSuite {
+class TestGraphFactoryTest extends BaseTestSuite {
 
   test("parse single node create statement") {
-    val graph = TestPropertyGraphFactory(
+    val graph = TestGraphFactory(
       """
         |CREATE (a:Person {name: "Alice"})
       """.stripMargin)
@@ -48,7 +47,7 @@ class TestPropertyGraphFactoryTest extends BaseTestSuite {
   }
 
   test("parse multiple nodes in single create statement") {
-    val graph: TestPropertyGraph = TestPropertyGraphFactory(
+    val graph: TestGraph = TestGraphFactory(
       """
         |CREATE (a:Person {name: "Alice"}), (b:Person {name: "Bob"})
       """.stripMargin)
@@ -62,7 +61,7 @@ class TestPropertyGraphFactoryTest extends BaseTestSuite {
   }
 
   test("parse multiple nodes in separate create statements") {
-    val graph = TestPropertyGraphFactory(
+    val graph = TestGraphFactory(
       """
         |CREATE (a:Person {name: "Alice"})
         |CREATE (b:Person {name: "Bob"})
@@ -77,7 +76,7 @@ class TestPropertyGraphFactoryTest extends BaseTestSuite {
   }
 
   test("parse multiple nodes connected by relationship") {
-    val graph = TestPropertyGraphFactory(
+    val graph = TestGraphFactory(
       """
         |CREATE (a:Person {name: "Alice"})-[:KNOWS {since: 42}]->(b:Person {name: "Bob"})
       """.stripMargin)
@@ -93,7 +92,7 @@ class TestPropertyGraphFactoryTest extends BaseTestSuite {
   }
 
   test("parse multiple nodes and relationship in separate create statements") {
-    val graph = TestPropertyGraphFactory(
+    val graph = TestGraphFactory(
       """
         |CREATE (a:Person {name: "Alice"})
         |CREATE (b:Person {name: "Bob"})
@@ -111,7 +110,7 @@ class TestPropertyGraphFactoryTest extends BaseTestSuite {
   }
 
   test("simple unwind") {
-    val graph = TestPropertyGraphFactory(
+    val graph = TestGraphFactory(
       """
         |UNWIND [1,2,3] as i
         |CREATE (a {val: i})
@@ -127,7 +126,7 @@ class TestPropertyGraphFactoryTest extends BaseTestSuite {
   }
 
   test("stacked unwind") {
-    val graph = TestPropertyGraphFactory(
+    val graph = TestGraphFactory(
       """
         |UNWIND [1,2,3] AS i
         |UNWIND [4] AS j
@@ -144,7 +143,7 @@ class TestPropertyGraphFactoryTest extends BaseTestSuite {
   }
 
   test("unwind with variable reference") {
-    val graph = TestPropertyGraphFactory(
+    val graph = TestGraphFactory(
       """
         |UNWIND [[1,2,3]] AS i
         |UNWIND i AS j
@@ -161,7 +160,7 @@ class TestPropertyGraphFactoryTest extends BaseTestSuite {
   }
 
   test("unwind with parameter reference") {
-    val graph = TestPropertyGraphFactory(
+    val graph = TestGraphFactory(
       """
         |UNWIND $i AS j
         |CREATE (a {val: j})
@@ -177,7 +176,7 @@ class TestPropertyGraphFactoryTest extends BaseTestSuite {
   }
 
   test("create statement with property reference") {
-    val graph = TestPropertyGraphFactory(
+    val graph = TestGraphFactory(
       """
         |CREATE (a:Person {name: "Alice"})
         |CREATE (b:Person {name: a.name})

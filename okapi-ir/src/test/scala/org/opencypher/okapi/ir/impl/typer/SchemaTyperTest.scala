@@ -32,7 +32,7 @@ import org.neo4j.cypher.internal.v3_4.expressions.{Expression, Parameter}
 import org.opencypher.okapi.api.schema.Schema
 import org.opencypher.okapi.api.types._
 import org.opencypher.okapi.ir.test.support.Neo4jAstTestSupport
-import org.opencypher.okapi.test.BaseTestSuite
+import org.opencypher.okapi.testing.BaseTestSuite
 import org.scalatest.mockito.MockitoSugar
 
 import scala.language.reflectiveCalls

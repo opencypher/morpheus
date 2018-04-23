@@ -26,7 +26,7 @@
  */
 package org.opencypher.okapi.api.types
 
-import org.opencypher.okapi.test.BaseTestSuite
+import org.opencypher.okapi.testing.BaseTestSuite
 
 import scala.language.postfixOps
 

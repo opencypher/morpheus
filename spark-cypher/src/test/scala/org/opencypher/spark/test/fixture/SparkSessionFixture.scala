@@ -27,8 +27,7 @@
 package org.opencypher.spark.test.fixture
 
 import org.apache.spark.sql.SparkSession
-import org.opencypher.okapi.test.BaseTestSuite
-import org.opencypher.okapi.test.fixture.BaseTestFixture
+import org.opencypher.okapi.testing.{BaseTestFixture, BaseTestSuite}
 import org.opencypher.spark.test.TestSparkSession
 
 trait SparkSessionFixture extends BaseTestFixture {

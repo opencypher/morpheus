@@ -56,6 +56,13 @@
 
     <dependency>
       <groupId>org.opencypher</groupId>
+      <artifactId>okapi-testing</artifactId>
+      <scope>test</scope>
+      <version>${project.parent.version}</version>
+    </dependency>
+
+    <dependency>
+      <groupId>org.opencypher</groupId>
       <artifactId>okapi-api</artifactId>
       <version>${project.parent.version}</version>
       <type>test-jar</type>

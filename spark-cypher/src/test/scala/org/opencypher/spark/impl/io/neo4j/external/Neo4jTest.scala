@@ -27,7 +27,7 @@
 package org.opencypher.spark.impl.io.neo4j.external
 
 import org.junit.Assert.assertEquals
-import org.opencypher.okapi.test.BaseTestSuite
+import org.opencypher.okapi.testing.BaseTestSuite
 import org.opencypher.spark.test.fixture.{Neo4jServerFixture, SparkSessionFixture}
 
 class Neo4jTest extends BaseTestSuite

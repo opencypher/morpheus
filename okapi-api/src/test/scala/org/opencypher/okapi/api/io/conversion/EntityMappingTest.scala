@@ -27,7 +27,7 @@
 package org.opencypher.okapi.api.io.conversion
 
 import org.opencypher.okapi.impl.exception.IllegalArgumentException
-import org.opencypher.okapi.test.BaseTestSuite
+import org.opencypher.okapi.testing.BaseTestSuite
 
 class EntityMappingTest extends BaseTestSuite {
 

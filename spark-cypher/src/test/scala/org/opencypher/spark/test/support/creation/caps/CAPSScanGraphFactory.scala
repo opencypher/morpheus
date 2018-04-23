@@ -30,7 +30,7 @@ import org.apache.spark.sql.Row
 import org.apache.spark.sql.types.{LongType, StructField, StructType}
 import org.opencypher.okapi.api.io.conversion.{NodeMapping, RelationshipMapping}
 import org.opencypher.okapi.api.schema.PropertyKeys.PropertyKeys
-import org.opencypher.okapi.testing.propertygraph.TestPropertyGraph
+import org.opencypher.okapi.testing.propertygraph.TestGraph
 import org.opencypher.spark.api.CAPSSession
 import org.opencypher.spark.api.io.{CAPSNodeTable, CAPSRelationshipTable}
 import org.opencypher.spark.impl.convert.CAPSCypherType._
@@ -41,7 +41,7 @@ import scala.collection.JavaConverters._
 
 object CAPSScanGraphFactory extends CAPSTestGraphFactory {
 
-  override def apply(propertyGraph: TestPropertyGraph)(implicit caps: CAPSSession): CAPSGraph = {
+  override def apply(propertyGraph: TestGraph)(implicit caps: CAPSSession): CAPSGraph = {
     val schema = computeSchema(propertyGraph).asCaps
 
     val nodeScans = schema.labelCombinations.combos.map { labels =>

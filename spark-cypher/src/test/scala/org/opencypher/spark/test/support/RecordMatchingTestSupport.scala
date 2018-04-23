@@ -29,9 +29,9 @@ package org.opencypher.spark.test.support
 import org.opencypher.okapi.api.table.CypherRecords
 import org.opencypher.okapi.api.value.CypherValue._
 import org.opencypher.okapi.ir.api.expr.Var
-import org.opencypher.okapi.ir.test.support.Bag
-import org.opencypher.okapi.ir.test.support.Bag._
 import org.opencypher.okapi.relational.impl.table.{FieldSlotContent, OpaqueField, ProjectedExpr, RecordHeader}
+import org.opencypher.okapi.testing.Bag
+import org.opencypher.okapi.testing.Bag._
 import org.opencypher.spark.impl.CAPSConverters._
 import org.opencypher.spark.impl.CAPSRecords
 import org.opencypher.spark.impl.DataFrameOps._

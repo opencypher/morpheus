@@ -39,7 +39,7 @@ import org.opencypher.okapi.ir.api.expr._
 import org.opencypher.okapi.ir.test.support.MatchHelper.equalWithTracing
 import org.opencypher.okapi.ir.test.support.Neo4jAstTestSupport
 import org.opencypher.okapi.ir.test.toVar
-import org.opencypher.okapi.test.BaseTestSuite
+import org.opencypher.okapi.testing.BaseTestSuite
 import org.scalatest.mockito.MockitoSugar
 
 import scala.util.Random

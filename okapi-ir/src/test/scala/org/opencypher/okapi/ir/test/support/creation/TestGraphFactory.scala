@@ -29,17 +29,17 @@ package org.opencypher.okapi.ir.test.support.creation
 import org.opencypher.okapi.api.graph.{CypherSession, PropertyGraph}
 import org.opencypher.okapi.api.schema.Schema
 import org.opencypher.okapi.api.types.CypherType._
-import org.opencypher.okapi.testing.propertygraph.{TestNode, TestPropertyGraph, TestRelationship}
+import org.opencypher.okapi.testing.propertygraph.{TestNode, TestGraph, TestRelationship}
 
 trait TestGraphFactory[C <: CypherSession] {
 
-  def apply(propertyGraph: TestPropertyGraph)(implicit caps: C): PropertyGraph
+  def apply(propertyGraph: TestGraph)(implicit caps: C): PropertyGraph
 
   def name: String
 
   override def toString: String = name
 
-  def computeSchema(propertyGraph: TestPropertyGraph): Schema = {
+  def computeSchema(propertyGraph: TestGraph): Schema = {
     def extractFromNode(n: TestNode) =
       n.labels -> n.properties.value.map {
         case (name, prop) => name -> prop.cypherType

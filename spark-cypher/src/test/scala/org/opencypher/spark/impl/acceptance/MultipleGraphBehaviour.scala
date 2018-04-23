@@ -30,11 +30,11 @@ import org.opencypher.okapi.api.schema.{PropertyKeys, Schema}
 import org.opencypher.okapi.api.types.{CTInteger, CTString}
 import org.opencypher.okapi.api.value.CypherValue.CypherMap
 import org.opencypher.okapi.api.value.{CAPSNode, CAPSRelationship}
-import org.opencypher.okapi.ir.test.support.Bag
-import org.opencypher.okapi.ir.test.support.Bag._
+import org.opencypher.okapi.testing.Bag
+import org.opencypher.okapi.testing.Bag._
 import org.opencypher.spark.impl.CAPSConverters._
-import org.opencypher.spark.impl.{CAPSPatternGraph, CAPSUnionGraph}
 import org.opencypher.spark.impl.DataFrameOps._
+import org.opencypher.spark.impl.{CAPSPatternGraph, CAPSUnionGraph}
 import org.opencypher.spark.schema.CAPSSchema._
 import org.opencypher.spark.test.CAPSTestSuite
 import org.scalatest.DoNotDiscover

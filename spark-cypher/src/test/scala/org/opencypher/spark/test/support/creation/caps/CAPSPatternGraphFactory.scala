@@ -29,13 +29,13 @@ package org.opencypher.spark.test.support.creation.caps
 import org.opencypher.okapi.api.types.{CTNode, CTRelationship}
 import org.opencypher.okapi.ir.api.expr.Var
 import org.opencypher.okapi.relational.impl.table.ColumnName
-import org.opencypher.okapi.testing.propertygraph.TestPropertyGraph
+import org.opencypher.okapi.testing.propertygraph.TestGraph
 import org.opencypher.spark.api.CAPSSession
 import org.opencypher.spark.impl.{CAPSGraph, CAPSPatternGraph, CAPSRecords}
 
 object CAPSPatternGraphFactory extends CAPSTestGraphFactory {
 
-  override def apply(propertyGraph: TestPropertyGraph)(implicit caps: CAPSSession): CAPSGraph = {
+  override def apply(propertyGraph: TestGraph)(implicit caps: CAPSSession): CAPSGraph = {
     val scanGraph = CAPSScanGraphFactory(propertyGraph)
     val nodes = scanGraph.nodes("n")
     val rels = scanGraph.relationships("r")

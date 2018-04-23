@@ -92,11 +92,11 @@ object TestParser {
 
 }
 
-object TestPropertyGraphFactory extends PropertyGraphFactory {
+object TestGraphFactory extends GraphFactory {
 
   type Result[A] = State[ParsingContext, A]
 
-  def apply(createQuery: String, externalParams: Map[String, Any] = Map.empty): TestPropertyGraph = {
+  def apply(createQuery: String, externalParams: Map[String, Any] = Map.empty): TestGraph = {
     val (ast, params, _) = TestParser.process(createQuery)
     val context = ParsingContext.fromParams(params ++ externalParams)
 
@@ -250,7 +250,7 @@ object TestPropertyGraphFactory extends PropertyGraphFactory {
 final case class ParsingContext(
   parameter: Map[String, Any],
   variableMapping: Map[String, Any],
-  graph: TestPropertyGraph,
+  graph: TestGraph,
   protectedScopes: List[Map[String, Any]],
   idGenerator: AtomicLong) {
 
@@ -280,5 +280,5 @@ final case class ParsingContext(
 
 object ParsingContext {
   def fromParams(params: Map[String, Any]): ParsingContext =
-    ParsingContext(params, Map.empty, TestPropertyGraph.empty, List.empty, new AtomicLong())
+    ParsingContext(params, Map.empty, TestGraph.empty, List.empty, new AtomicLong())
 }

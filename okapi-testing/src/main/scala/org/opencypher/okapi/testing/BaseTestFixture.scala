@@ -24,16 +24,10 @@
  * described as "implementation extensions to Cypher" or as "proposed changes to
  * Cypher that are not yet approved by the openCypher community".
  */
-package org.opencypher.okapi.test
+package org.opencypher.okapi.testing
 
-import org.scalactic.source
-import org.scalatest.{FunSpec, Matchers, Tag}
+import org.scalatest.{BeforeAndAfterAll, BeforeAndAfterEach}
 
-abstract class BaseTestSuite extends FunSpec with Matchers {
-
-  /**
-    * Wraps an 'it' call for convenience
-    */
-  def test(name: String, tags: Tag*)(testFun: => Any /* Assertion */ )(implicit pos: source.Position): Unit =
-    it(name, tags: _*)(testFun)
+trait BaseTestFixture extends BeforeAndAfterEach with BeforeAndAfterAll {
+  self: BaseTestSuite  =>
 }

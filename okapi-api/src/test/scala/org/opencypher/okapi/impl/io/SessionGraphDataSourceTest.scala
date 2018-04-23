@@ -29,7 +29,7 @@ package org.opencypher.okapi.impl.io
 import org.mockito.Mockito._
 import org.opencypher.okapi.api.graph.{GraphName, PropertyGraph}
 import org.opencypher.okapi.api.schema.Schema
-import org.opencypher.okapi.test.BaseTestSuite
+import org.opencypher.okapi.testing.BaseTestSuite
 import org.scalatest.mockito.MockitoSugar
 
 class SessionGraphDataSourceTest extends BaseTestSuite with MockitoSugar {
