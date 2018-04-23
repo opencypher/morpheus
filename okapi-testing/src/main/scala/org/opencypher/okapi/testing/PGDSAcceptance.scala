@@ -122,6 +122,28 @@ trait PGDSAcceptance extends BeforeAndAfterAll {
     }
   }
 
+  it("stores a constructed graph") {
+    Try(cypherSession.cypher(
+      s"""
+         |CREATE GRAPH $ns.${gn}3 {
+         |  CONSTRUCT ON $ns.$gn
+         |    NEW (c: C { name: 'C' })
+         |  RETURN GRAPH
+         |}
+         |""".stripMargin)) match {
+      case Success(_) =>
+        withClue("`hasGraph` needs to return `true` after graph creation") {
+          cypherSession.dataSource(ns).hasGraph(GraphName(s"${gn}3")) shouldBe true
+        }
+        val result = cypherSession.cypher(s"FROM GRAPH $ns.${gn}3 MATCH (c:C) RETURN c.name").getRecords.iterator.toBag
+        result should equal(Bag(
+          CypherMap("c.name" -> "C")
+        ))
+      case Failure(_: UnsupportedOperationException) =>
+      case other => fail(s"Expected success or `UnsupportedOperationException`, got $other")
+    }
+  }
+
   it("deletes a graph") {
     Try(cypherSession.cypher(s"DELETE GRAPH $ns.$gn")) match {
       case Success(_) =>
