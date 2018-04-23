@@ -29,25 +29,25 @@ package org.opencypher.okapi.impl.io
 import org.mockito.Mockito._
 import org.opencypher.okapi.api.graph.{GraphName, PropertyGraph}
 import org.opencypher.okapi.api.schema.Schema
-import org.opencypher.okapi.testing.BaseTestSuite
+import org.scalatest.{FunSpec, Matchers}
 import org.scalatest.mockito.MockitoSugar
 
-class SessionGraphDataSourceTest extends BaseTestSuite with MockitoSugar {
+class SessionGraphDataSourceTest extends FunSpec with Matchers with MockitoSugar {
 
-  test("hasGraph should return true for existing graph") {
+  it("hasGraph should return true for existing graph") {
     val source = new SessionGraphDataSource
     val testGraphName = GraphName("test")
     source.store(testGraphName, null)
     source.hasGraph(testGraphName) shouldBe true
   }
 
-  test("hasGraph should return false for non-existing graph") {
+  it("hasGraph should return false for non-existing graph") {
     val source = new SessionGraphDataSource
     val testGraphName = GraphName("test")
     source.hasGraph(testGraphName) shouldBe false
   }
 
-  test("graph should return graph for existing graph") {
+  it("graph should return graph for existing graph") {
     val source = new SessionGraphDataSource
     val testGraphName = GraphName("test")
     val testGraph = mock[PropertyGraph]
@@ -55,19 +55,19 @@ class SessionGraphDataSourceTest extends BaseTestSuite with MockitoSugar {
     source.graph(testGraphName) should be(testGraph)
   }
 
-  test("graph should throw exception for non-existing graph") {
+  it("graph should throw exception for non-existing graph") {
     val source = new SessionGraphDataSource
     val testGraphName = GraphName("test")
     an[NoSuchElementException] should be thrownBy source.graph(testGraphName)
   }
 
-  test("schema should throw for non-existing graph") {
+  it("schema should throw for non-existing graph") {
     val source = new SessionGraphDataSource
     val testGraphName = GraphName("test")
     a [NoSuchElementException] shouldBe thrownBy(source.schema(testGraphName))
   }
 
-  test("schema should return schema for existing graph") {
+  it("schema should return schema for existing graph") {
     val source = new SessionGraphDataSource
     val testGraphName = GraphName("test")
     val propertyGraph = mock[PropertyGraph]
@@ -76,7 +76,7 @@ class SessionGraphDataSourceTest extends BaseTestSuite with MockitoSugar {
     source.schema(testGraphName).get should be(Schema.empty.withRelationshipType("foo"))
   }
 
-  test("graphNames should return all names of stored graphs") {
+  it("graphNames should return all names of stored graphs") {
     val source = new SessionGraphDataSource
     val testGraphName1 = GraphName("test1")
     val testGraphName2 = GraphName("test2")

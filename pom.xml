@@ -47,6 +47,7 @@
     <module>okapi-relational</module>
     <module>okapi-tck</module>
     <module>okapi-trees</module>
+    <module>okapi-testing</module>
     <module>spark-cypher</module>
     <module>spark-cypher-examples</module>
     <module>spark-cypher-tck</module>

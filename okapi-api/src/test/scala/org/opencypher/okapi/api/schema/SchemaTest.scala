@@ -27,11 +27,11 @@
 package org.opencypher.okapi.api.schema
 
 import org.opencypher.okapi.api.types._
-import org.scalatest.{FunSuite, Matchers}
+import org.scalatest.{FunSpec, Matchers}
 
-class SchemaTest extends FunSuite with Matchers {
+class SchemaTest extends FunSpec with Matchers {
 
-  test("lists of void and others") {
+  it("lists of void and others") {
     val s1 = Schema.empty.withNodePropertyKeys("A")("v" -> CTList(CTVoid))
     val s2 = Schema.empty.withNodePropertyKeys("A")("v" -> CTList(CTString).nullable)
 
@@ -39,18 +39,18 @@ class SchemaTest extends FunSuite with Matchers {
     joined should equal(s2)
   }
 
-  test("should provide all labels") {
+  it("should provide all labels") {
     Schema.empty.withNodePropertyKeys("Person")().labels should equal(Set("Person"))
   }
 
-  test("should provide all types") {
+  it("should provide all types") {
     Schema.empty
       .withRelationshipPropertyKeys("KNOWS")()
       .withRelationshipPropertyKeys("HAS")()
       .relationshipTypes should equal(Set("KNOWS", "HAS"))
   }
 
-  test("should give correct node property schema") {
+  it("should give correct node property schema") {
     val schema = Schema.empty.withNodePropertyKeys("Person")("name" -> CTString, "age" -> CTInteger)
 
     schema.nodeKeys("NotPerson") shouldBe empty
@@ -58,7 +58,7 @@ class SchemaTest extends FunSuite with Matchers {
     schema.labels should equal(Set("Person"))
   }
 
-  test("should give correct relationship property schema") {
+  it("should give correct relationship property schema") {
     val schema = Schema.empty.withRelationshipPropertyKeys("KNOWS")("since" -> CTInteger, "relative" -> CTBoolean)
 
     schema.relationshipKeys("NOT_KNOWS") shouldBe empty
@@ -66,7 +66,7 @@ class SchemaTest extends FunSuite with Matchers {
     schema.relationshipTypes should equal(Set("KNOWS"))
   }
 
-  test("should get simple implication correct") {
+  it("should get simple implication correct") {
     val schema = Schema.empty
       .withNodePropertyKeys("Foo", "Bar")("prop" -> CTBoolean)
       .withNodePropertyKeys("Person", "Employee")("name" -> CTString, "nbr" -> CTInteger)
@@ -83,7 +83,7 @@ class SchemaTest extends FunSuite with Matchers {
     schema.labels should equal(Set("Person", "Employee", "Foo", "Bar", "Dog"))
   }
 
-  test("should get chained implications correct") {
+  it("should get chained implications correct") {
     val schema = Schema.empty
       .withNodePropertyKeys("Employee", "Person", "Someone", "Human")()
       .withNodePropertyKeys("Person", "Someone", "Human")()
@@ -102,7 +102,7 @@ class SchemaTest extends FunSuite with Matchers {
     schema.labels should equal(Set("Person", "Employee", "Human", "Someone"))
   }
 
-  test("should get chained combinations correct") {
+  it("should get chained combinations correct") {
     val schema = Schema.empty
       .withNodePropertyKeys("Person", "Employee")()
       .withNodePropertyKeys("Person", "Director")()
@@ -115,7 +115,7 @@ class SchemaTest extends FunSuite with Matchers {
     schema.labels should equal(Set("Person", "Employee", "Director"))
   }
 
-  test("should get simple combinations correct") {
+  it("should get simple combinations correct") {
     val schema = Schema.empty
       .withNodePropertyKeys("Person", "Employee")()
       .withNodePropertyKeys("Dog", "Pet")()
@@ -128,7 +128,7 @@ class SchemaTest extends FunSuite with Matchers {
     schema.labels should equal(Set("Person", "Employee", "Dog", "Pet"))
   }
 
-  test("chaining calls should amend types") {
+  it("chaining calls should amend types") {
     val schema = Schema.empty
       .withNodePropertyKeys("Foo")("name" -> CTString)
       .withNodePropertyKeys("Foo")("name" -> CTString, "age" -> CTInteger)
@@ -139,7 +139,7 @@ class SchemaTest extends FunSuite with Matchers {
     schema.relationshipKeys("BAR") should equal(Map("p1" -> CTBoolean.nullable, "p2" -> CTFloat.nullable))
   }
 
-  test("combining schemas, separate keys") {
+  it("combining schemas, separate keys") {
     val schema1 = Schema.empty.withNodePropertyKeys("A")("foo" -> CTString)
     val schema2 = Schema.empty.withNodePropertyKeys("B")("bar" -> CTString)
     val schema3 = Schema.empty
@@ -156,7 +156,7 @@ class SchemaTest extends FunSuite with Matchers {
         .withNodePropertyKeys("A", "C", "X")("baz" -> CTString))
   }
 
-  test("combining schemas, key subset") {
+  it("combining schemas, key subset") {
     val schema1 = Schema.empty
       .withNodePropertyKeys("A")("foo" -> CTString, "bar" -> CTString)
     val schema2 = Schema.empty
@@ -167,7 +167,7 @@ class SchemaTest extends FunSuite with Matchers {
         .withNodePropertyKeys("A")("foo" -> CTString, "bar" -> CTString, "baz" -> CTString.nullable))
   }
 
-  test("combining schemas, partial key overlap") {
+  it("combining schemas, partial key overlap") {
     val schema1 = Schema.empty
       .withNodePropertyKeys("A")("foo" -> CTString, "bar" -> CTString)
     val schema2 = Schema.empty
@@ -178,7 +178,7 @@ class SchemaTest extends FunSuite with Matchers {
         .withNodePropertyKeys("A")("foo" -> CTString, "bar" -> CTString.nullable, "baz" -> CTString.nullable))
   }
 
-  test("combining type conflicting schemas should work across nullability") {
+  it("combining type conflicting schemas should work across nullability") {
     val schema1 = Schema.empty
       .withNodePropertyKeys("A")("foo" -> CTString.nullable, "bar" -> CTString)
     val schema2 = Schema.empty
@@ -189,7 +189,7 @@ class SchemaTest extends FunSuite with Matchers {
         .withNodePropertyKeys("A")("foo" -> CTString.nullable, "bar" -> CTString.nullable))
   }
 
-  test("combining schemas with restricting label implications") {
+  it("combining schemas with restricting label implications") {
     val schema1 = Schema.empty
       .withNodePropertyKeys("A", "B", "C")()
       .withNodePropertyKeys("B", "C")()
@@ -209,7 +209,7 @@ class SchemaTest extends FunSuite with Matchers {
         .withNodePropertyKeys("B", "F", "C", "D")())
   }
 
-  test("extract node schema") {
+  it("extract node schema") {
     val schema = Schema.empty
       .withNodePropertyKeys("Person")("name" -> CTString)
       .withNodePropertyKeys("Employee", "Person")("name" -> CTString, "salary" -> CTInteger)
@@ -234,7 +234,7 @@ class SchemaTest extends FunSuite with Matchers {
     )
   }
 
-  test("forRelationship") {
+  it("forRelationship") {
     val schema = Schema.empty
       .withNodePropertyKeys("Person")("name" -> CTString)
       .withNodePropertyKeys("Person", "Employee")("name" -> CTString)
@@ -266,7 +266,7 @@ class SchemaTest extends FunSuite with Matchers {
     )
   }
 
-  test("handles empty label set") {
+  it("handles empty label set") {
     val schema = Schema.empty
       .withNodePropertyKeys(Set.empty[String], Map("name" -> CTString))
       .withNodePropertyKeys("A")("name" -> CTInteger)
@@ -275,7 +275,7 @@ class SchemaTest extends FunSuite with Matchers {
     schema.nodeKeys(Set.empty[String]) should equal(Map("name" -> CTString))
   }
 
-  test("get node key type with all given semantics") {
+  it("get node key type with all given semantics") {
     val schema = Schema.empty
       .withNodePropertyKeys(Set("A"), Map("a" -> CTInteger, "b" -> CTString, "c" -> CTFloat, "d" -> CTFloat.nullable))
       .withNodePropertyKeys(Set.empty[String], Map("a" -> CTString))
@@ -287,7 +287,7 @@ class SchemaTest extends FunSuite with Matchers {
     schema.nodeKeyType(Set("A"), "x") should equal(None)
   }
 
-  test("get rel key type") {
+  it("get rel key type") {
     val schema = Schema.empty
       .withRelationshipPropertyKeys("A")("a" -> CTInteger, "b" -> CTString, "c" -> CTFloat, "d" -> CTFloat.nullable)
       .withRelationshipPropertyKeys("B")(
@@ -306,7 +306,7 @@ class SchemaTest extends FunSuite with Matchers {
     schema.relationshipKeyType(Set.empty, "a") should equal(Some(CTNumber.nullable))
   }
 
-  test("get all keys") {
+  it("get all keys") {
     val schema = Schema.empty
       .withNodePropertyKeys(Set.empty[String], Map("a" -> CTString, "c" -> CTString, "d" -> CTString.nullable, "f" -> CTString))
       .withNodePropertyKeys("A")("b" -> CTInteger, "c" -> CTString, "e" -> CTString, "f" -> CTInteger)
@@ -322,7 +322,7 @@ class SchemaTest extends FunSuite with Matchers {
         "f" -> CTAny))
   }
 
-  test("get keys for") {
+  it("get keys for") {
     val schema = Schema.empty
       .withNodePropertyKeys(Set.empty[String], Map("a" -> CTString, "c" -> CTString, "d" -> CTString.nullable, "f" -> CTString))
       .withNodePropertyKeys("A")("b" -> CTInteger, "c" -> CTString, "e" -> CTString, "f" -> CTInteger)
@@ -333,7 +333,7 @@ class SchemaTest extends FunSuite with Matchers {
     schema.keysFor("A", "B") should equal(Map("b" -> CTNumber, "c" -> CTString, "e" -> CTAny, "f" -> CTInteger.nullable))
   }
 
-  test("get keys for label combinations") {
+  it("get keys for label combinations") {
     val schema = Schema.empty
       .withNodePropertyKeys(Set.empty[String], Map("a" -> CTString, "c" -> CTString, "d" -> CTString.nullable, "f" -> CTString))
       .withNodePropertyKeys("A")("b" -> CTInteger, "c" -> CTString, "e" -> CTString, "f" -> CTInteger)
@@ -346,7 +346,7 @@ class SchemaTest extends FunSuite with Matchers {
     schema.keysFor(Set(Set.empty[String])) should equal(Map("a" -> CTString, "c" -> CTString, "d" -> CTString.nullable, "f" -> CTString))
   }
 
-  test("isEmpty") {
+  it("isEmpty") {
     Schema.empty.isEmpty shouldBe true
     (Schema.empty ++ Schema.empty).isEmpty shouldBe true
     val empty = Schema.empty

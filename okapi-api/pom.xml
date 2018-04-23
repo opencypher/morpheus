@@ -32,14 +32,6 @@
       <version>${project.parent.version}</version>
     </dependency>
 
-    <!-- Test dependencies -->
-    <dependency>
-      <groupId>org.opencypher</groupId>
-      <artifactId>okapi-testing</artifactId>
-      <scope>test</scope>
-      <version>${project.parent.version}</version>
-    </dependency>
-
     <!-- Workaround for https://youtrack.jetbrains.com/issue/SCL-13184 -->
     <dependency>
       <groupId>org.opencypher</groupId>

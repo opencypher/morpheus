@@ -27,11 +27,11 @@
 package org.opencypher.okapi.api.io.conversion
 
 import org.opencypher.okapi.impl.exception.IllegalArgumentException
-import org.opencypher.okapi.testing.BaseTestSuite
+import org.scalatest.{FunSpec, Matchers}
 
-class EntityMappingTest extends BaseTestSuite {
+class EntityMappingTest extends FunSpec with Matchers {
 
-  test("Construct node mapping") {
+  it("Construct node mapping") {
     val given = NodeMapping.on("id")
       .withImpliedLabel("Person")
       .withOptionalLabel("Employee" -> "is_emp")
@@ -47,7 +47,7 @@ class EntityMappingTest extends BaseTestSuite {
     given should equal(actual)
   }
 
-  test("Construct relationship mapping with static type") {
+  it("Construct relationship mapping with static type") {
     val given = RelationshipMapping.on("r")
       .from("src")
       .to("dst")
@@ -66,7 +66,7 @@ class EntityMappingTest extends BaseTestSuite {
     given should equal(actual)
   }
 
-  test("Construct relationship mapping with dynamic type") {
+  it("Construct relationship mapping with dynamic type") {
     val given = RelationshipMapping.on("r")
       .from("src")
       .to("dst")
@@ -85,17 +85,17 @@ class EntityMappingTest extends BaseTestSuite {
     given should equal(actual)
   }
 
-  test("Refuses to use the same source key for incompatible types when constructing node mappings") {
+  it("Refuses to use the same source key for incompatible types when constructing node mappings") {
     raisesIllegalArgument(NodeMapping.on("sourceKey").withOptionalLabel("Person" -> "sourceKey"))
   }
 
-  test("Refuses to overwrite a property with a different mapping") {
+  it("Refuses to overwrite a property with a different mapping") {
     raisesIllegalArgument(NodeMapping.on("sourceKey").withPropertyKey("a" -> "foo").withPropertyKey("a" -> "bar"))
     raisesIllegalArgument(RelationshipMapping.on("sourceKey").from("a").to("b").relType("KNOWS")
       .withPropertyKey("a" -> "foo").withPropertyKey("a" -> "bar"))
   }
 
-  test("Refuses to use the same source key for incompatible types when constructing relationships") {
+  it("Refuses to use the same source key for incompatible types when constructing relationships") {
     raisesIllegalArgument(RelationshipMapping.on("r").from("r").to("b").relType("KNOWS"))
     raisesIllegalArgument(RelationshipMapping.on("r").from("a").to("r").relType("KNOWS"))
     raisesIllegalArgument(RelationshipMapping.on("r").from("a").to("b").withSourceRelTypeKey("r", Set("KNOWS")))

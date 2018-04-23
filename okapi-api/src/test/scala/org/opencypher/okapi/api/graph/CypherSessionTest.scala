@@ -32,39 +32,39 @@ import org.opencypher.okapi.api.value.CypherValue.CypherMap
 import org.opencypher.okapi.impl.exception.IllegalArgumentException
 import org.opencypher.okapi.impl.io.SessionGraphDataSource
 import org.scalatest.mockito.MockitoSugar
-import org.scalatest.{FunSuite, Matchers}
+import org.scalatest.{FunSpec, Matchers}
 
-class CypherSessionTest extends FunSuite with MockitoSugar with Matchers {
+class CypherSessionTest extends FunSpec with MockitoSugar with Matchers {
 
-  test("avoid de-registering the session data source") {
+  it("avoid de-registering the session data source") {
     an[org.opencypher.okapi.impl.exception.UnsupportedOperationException] should be thrownBy
       createSession.deregisterSource(SessionGraphDataSource.Namespace)
   }
 
-  test("avoid de-registering a non-registered data source") {
+  it("avoid de-registering a non-registered data source") {
     an[IllegalArgumentException] should be thrownBy createSession.deregisterSource(Namespace("foo"))
   }
 
-  test("avoid retrieving a non-registered data source") {
+  it("avoid retrieving a non-registered data source") {
     an[IllegalArgumentException] should be thrownBy createSession.dataSource(Namespace("foo"))
   }
 
-  test("avoid retrieving a graph not stored in the session") {
+  it("avoid retrieving a graph not stored in the session") {
     an[NoSuchElementException] should be thrownBy createSession.graph("foo")
   }
 
-  test("avoid retrieving a graph from a non-registered data source") {
+  it("avoid retrieving a graph from a non-registered data source") {
     an[IllegalArgumentException] should be thrownBy createSession.graph(QualifiedGraphName(Namespace("foo"), GraphName("bar")))
   }
 
-  test("avoid registering a data source with an existing namespace") {
+  it("avoid registering a data source with an existing namespace") {
     val session = createSession
     val namespace = Namespace("foo")
     session.registerSource(namespace, mock[PropertyGraphDataSource])
     an[IllegalArgumentException] should be thrownBy session.registerSource(namespace, mock[PropertyGraphDataSource])
   }
 
-  test("register data source") {
+  it("register data source") {
     val session = createSession
     val namespace = Namespace("foo")
     val dataSource = mock[PropertyGraphDataSource]
@@ -72,7 +72,7 @@ class CypherSessionTest extends FunSuite with MockitoSugar with Matchers {
     session.dataSource(namespace) should equal(dataSource)
   }
 
-  test("de-register data source") {
+  it("de-register data source") {
     val session = createSession
     val namespace = Namespace("foo")
     val dataSource = mock[PropertyGraphDataSource]
@@ -82,7 +82,7 @@ class CypherSessionTest extends FunSuite with MockitoSugar with Matchers {
     an[IllegalArgumentException] should be thrownBy session.dataSource(namespace)
   }
 
-  test("namespaces") {
+  it("namespaces") {
     val session = createSession
     session.namespaces should equal(Set(SessionGraphDataSource.Namespace))
     val namespace = Namespace("foo")
