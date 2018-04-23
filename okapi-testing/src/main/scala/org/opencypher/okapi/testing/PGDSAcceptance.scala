@@ -2,9 +2,11 @@ package org.opencypher.okapi.testing
 
 import org.opencypher.okapi.api.graph._
 import org.opencypher.okapi.api.io.PropertyGraphDataSource
-import org.opencypher.okapi.api.schema.Schema
+import org.opencypher.okapi.api.schema.{LabelPropertyMap, RelTypePropertyMap, Schema}
+import org.opencypher.okapi.api.types.{CTInteger, CTString}
 import org.opencypher.okapi.api.value.CypherValue.{CypherMap, CypherNull}
 import org.opencypher.okapi.impl.exception.GraphNotFoundException
+import org.opencypher.okapi.impl.schema.SchemaImpl
 import org.opencypher.okapi.testing.Bag._
 import org.opencypher.okapi.testing.propertygraph.{TestGraph, TestGraphFactory}
 import org.scalatest.BeforeAndAfterAll
@@ -59,6 +61,23 @@ trait PGDSAcceptance extends BeforeAndAfterAll {
     val graphNames = cypherSession.dataSource(ns).graphNames
     graphNames.size shouldBe 1
     graphNames.head shouldBe gn
+  }
+
+  it("supports schema") {
+    val schema: Schema = SchemaImpl(
+      LabelPropertyMap(Map(Set("A") -> Map("name" -> CTString), Set("B") -> Map("name" -> CTString), Set("A", "B") -> Map("size" -> CTInteger, "name" -> CTString))),
+      RelTypePropertyMap(Map("R" -> Map("since" -> CTInteger), "S" -> Map("since" -> CTInteger)))
+    )
+
+    cypherSession.dataSource(ns).schema(gn) match {
+      case Some(s) =>
+        s.labelPropertyMap should equal(schema.labelPropertyMap)
+        s.relTypePropertyMap should equal(schema.relTypePropertyMap)
+      case None =>
+        val s = cypherSession.dataSource(ns).graph(gn).schema
+        s.labelPropertyMap should equal(schema.labelPropertyMap)
+        s.relTypePropertyMap should equal(schema.relTypePropertyMap)
+    }
   }
 
   it("supports queries through the API") {
