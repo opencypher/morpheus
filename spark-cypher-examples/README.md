@@ -12,6 +12,7 @@ These examples are currently present:
 * [`CaseClassExample`](src/main/scala/org/opencypher/spark/examples/CaseClassExample.scala)
 * [`CypherSQLRoundtripExample`](src/main/scala/org/opencypher/spark/examples/CypherSQLRoundtripExample.scala)
 * [`DataFrameInputExample`](src/main/scala/org/opencypher/spark/examples/DataFrameInputExample.scala)
+* [`CustomDataFrameInputExample`](src/main/scala/org/opencypher/spark/examples/CustomDataFrameInputExample.scala)
 * [`DataFrameOutputExample`](src/main/scala/org/opencypher/spark/examples/DataFrameOutputExample.scala)
 * [`DataSourceExample`](src/main/scala/org/opencypher/spark/examples/DataSourceExample.scala)
 * [`GraphXPageRankExample`](src/main/scala/org/opencypher/spark/examples/GraphXPageRankExample.scala)
