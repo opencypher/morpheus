@@ -11,6 +11,8 @@ env:
     - PROFILE=test
     - PROFILE=check
 
+install: true
+
 script:
   - if [ "$PROFILE" = "test" ]; then mvn clean test; fi
   - if [ "$PROFILE" = "check" ]; then mvn clean compile -Dcluster; fi
