@@ -153,7 +153,7 @@ object CAPSRelationshipTable {
   def apply[E <: Relationship : TypeTag](relationships: Seq[E])(implicit caps: CAPSSession): CAPSRelationshipTable = {
     val relationshipType: String = Annotation.relType[E]
     val relationshipDF = caps.sparkSession.createDataFrame(relationships)
-    val relationshipProperties = properties(relationshipDF.columns.toSet)
+    val relationshipProperties = properties(relationshipDF.columns)
 
     val relationshipMapping = RelationshipMapping.create(GraphEntity.sourceIdKey,
       Relationship.sourceStartNodeKey,
@@ -164,8 +164,32 @@ object CAPSRelationshipTable {
     CAPSRelationshipTable(relationshipMapping, relationshipDF)
   }
 
-  private def properties(relColumnNames: Set[String]): Set[String] = {
-    relColumnNames.filter(!Relationship.nonPropertyAttributes.contains(_))
+  /**
+    * Creates a relationship table from the given [[DataFrame]]. By convention, there needs to be one column storing
+    * relationship identifiers and named after [[GraphEntity.sourceIdKey]], one column storing source node identifiers
+    * and named after [[Relationship.sourceStartNodeKey]] and one column storing target node identifiers and named after
+    * [[Relationship.sourceEndNodeKey]]. All remaining columns are interpreted as relationship property columns, the
+    * column name is used as property key.
+    *
+    * @param relationshipType relationship type
+    * @param table            Spark table
+    * @return a relationship table with inferred relationship mapping
+    */
+  def apply(relationshipType: String, table: SparkTable): CAPSRelationshipTable = {
+    val relationshipDF = table.df
+    val relationshipProperties = properties(relationshipDF.columns)
+
+    val relationshipMapping = RelationshipMapping.create(GraphEntity.sourceIdKey,
+      Relationship.sourceStartNodeKey,
+      Relationship.sourceEndNodeKey,
+      relationshipType,
+      relationshipProperties)
+
+    CAPSRelationshipTable(relationshipMapping, relationshipDF)
+  }
+
+  private def properties(relColumnNames: Seq[String]): Set[String] = {
+    relColumnNames.filter(!Relationship.nonPropertyAttributes.contains(_)).toSet
   }
 }
 

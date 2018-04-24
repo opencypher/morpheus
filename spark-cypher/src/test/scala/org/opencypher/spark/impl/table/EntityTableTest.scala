@@ -160,7 +160,7 @@ class EntityTableTest extends CAPSTestSuite {
     }
   }
 
-  it("should infer the correct node mapping") {
+  test("NodeTable should infer the correct node mapping") {
     val df = session.createDataFrame(Seq((1, "Alice", 1984, true, 13.37)))
       .toDF("id", "name", "birthYear", "isGood", "luckyNumber")
 
@@ -175,7 +175,7 @@ class EntityTableTest extends CAPSTestSuite {
       .asCaps)
   }
 
-  it("should infer the correct node mapping including optional labels") {
+  test("NodeTable should infer the correct node mapping including optional labels") {
     val df = session.createDataFrame(Seq((1, "Alice", true))).toDF("id", "name", "IS_SWEDE")
 
     val nodeTable = CAPSNodeTable(Set("Person"), Map("Swede" -> "IS_SWEDE"), df)
@@ -183,6 +183,21 @@ class EntityTableTest extends CAPSTestSuite {
     nodeTable.schema should equal(Schema.empty
       .withNodePropertyKeys("Person", "Swede")("name" -> CTString.nullable)
       .withNodePropertyKeys("Person")("name" -> CTString.nullable)
+      .asCaps)
+  }
+
+  test("RelationshipTable should infer the correct relationship mapping") {
+    val df = session.createDataFrame(Seq((1, 1, 1, "Alice", 1984, true, 13.37)))
+      .toDF("id", "source", "target", "name", "birthYear", "isGood", "luckyNumber")
+
+    val relationshipTable = CAPSRelationshipTable("KNOWS", df)
+
+    relationshipTable.schema should equal(Schema.empty
+        .withRelationshipPropertyKeys("KNOWS")(
+        "name" -> CTString.nullable,
+        "birthYear" -> CTInteger,
+        "isGood" -> CTBoolean,
+        "luckyNumber" -> CTFloat)
       .asCaps)
   }
 }
