@@ -72,19 +72,19 @@ trait PGDSAcceptance extends BeforeAndAfterAll {
   def create(graphName: GraphName, testGraph: TestGraph, createStatements: String): PropertyGraphDataSource
 
   it("supports `hasGraph`") {
-    cypherSession.dataSource(ns).hasGraph(gn) shouldBe true
-    cypherSession.dataSource(ns).hasGraph(GraphName("foo")) shouldBe false
+    cypherSession.catalog.source(ns).hasGraph(gn) shouldBe true
+    cypherSession.catalog.source(ns).hasGraph(GraphName("foo")) shouldBe false
   }
 
   it("supports `graph`") {
-    cypherSession.dataSource(ns).graph(gn).nodes("n").size shouldBe 3
+    cypherSession.catalog.source(ns).graph(gn).nodes("n").size shouldBe 3
     intercept[GraphNotFoundException] {
-      cypherSession.dataSource(ns).graph(GraphName("foo"))
+      cypherSession.catalog.source(ns).graph(GraphName("foo"))
     }
   }
 
   it("supports `graphNames`") {
-    val graphNames = cypherSession.dataSource(ns).graphNames
+    val graphNames = cypherSession.catalog.source(ns).graphNames
     graphNames.size shouldBe 1
     graphNames.head shouldBe gn
   }
@@ -95,19 +95,19 @@ trait PGDSAcceptance extends BeforeAndAfterAll {
       RelTypePropertyMap(Map("R" -> Map("since" -> CTInteger), "S" -> Map("since" -> CTInteger)))
     )
 
-    cypherSession.dataSource(ns).schema(gn) match {
+    cypherSession.catalog.source(ns).schema(gn) match {
       case Some(s) =>
         s.labelPropertyMap should equal(schema.labelPropertyMap)
         s.relTypePropertyMap should equal(schema.relTypePropertyMap)
       case None =>
-        val s = cypherSession.dataSource(ns).graph(gn).schema
+        val s = cypherSession.catalog.source(ns).graph(gn).schema
         s.labelPropertyMap should equal(schema.labelPropertyMap)
         s.relTypePropertyMap should equal(schema.relTypePropertyMap)
     }
   }
 
   it("supports queries through the API") {
-    val g = cypherSession.graph(QualifiedGraphName(ns, gn))
+    val g = cypherSession.catalog.graph(QualifiedGraphName(ns, gn))
 
     g.cypher("MATCH (a:A) RETURN a.name").getRecords.iterator.toBag should equal(Bag(
       CypherMap("a.name" -> "A"),
@@ -141,7 +141,7 @@ trait PGDSAcceptance extends BeforeAndAfterAll {
     Try(cypherSession.cypher(s"CREATE GRAPH $ns.${gn}2 { FROM GRAPH $ns.$gn RETURN GRAPH }")) match {
       case Success(_) =>
         withClue("`hasGraph` needs to return `true` after graph creation") {
-          cypherSession.dataSource(ns).hasGraph(GraphName(s"${gn}2")) shouldBe true
+          cypherSession.catalog.source(ns).hasGraph(GraphName(s"${gn}2")) shouldBe true
         }
       case Failure(_: UnsupportedOperationException) =>
       case other => fail(s"Expected success or `UnsupportedOperationException`, got $other")
@@ -159,7 +159,7 @@ trait PGDSAcceptance extends BeforeAndAfterAll {
          |""".stripMargin)) match {
       case Success(_) =>
         withClue("`hasGraph` needs to return `true` after graph creation") {
-          cypherSession.dataSource(ns).hasGraph(GraphName(s"${gn}3")) shouldBe true
+          cypherSession.catalog.source(ns).hasGraph(GraphName(s"${gn}3")) shouldBe true
         }
         val result = cypherSession.cypher(s"FROM GRAPH $ns.${gn}3 MATCH (c:C) RETURN c.name").getRecords.iterator.toBag
         result should equal(Bag(
@@ -174,7 +174,7 @@ trait PGDSAcceptance extends BeforeAndAfterAll {
     Try(cypherSession.cypher(s"DELETE GRAPH $ns.$gn")) match {
       case Success(_) =>
         withClue("`hasGraph` needs to return `false` after graph deletion") {
-          cypherSession.dataSource(ns).hasGraph(gn) shouldBe false
+          cypherSession.catalog.source(ns).hasGraph(gn) shouldBe false
         }
       case Failure(_: UnsupportedOperationException) =>
       case other => fail(s"Expected success or `UnsupportedOperationException`, got $other")

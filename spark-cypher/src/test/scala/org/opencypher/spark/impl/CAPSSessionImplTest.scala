@@ -30,8 +30,8 @@ import org.opencypher.okapi.api.graph.{Namespace, QualifiedGraphName}
 import org.opencypher.okapi.api.value.CAPSNode
 import org.opencypher.okapi.api.value.CypherValue.CypherMap
 import org.opencypher.okapi.impl.io.SessionGraphDataSource
-import org.opencypher.okapi.ir.test.support.Bag
-import org.opencypher.okapi.ir.test.support.Bag._
+import org.opencypher.okapi.testing.Bag
+import org.opencypher.okapi.testing.Bag._
 import org.opencypher.spark.test.CAPSTestSuite
 import org.opencypher.spark.test.fixture.{GraphConstructionFixture, TeamDataFixture}
 
