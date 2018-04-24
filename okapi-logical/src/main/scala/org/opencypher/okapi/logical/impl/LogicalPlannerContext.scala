@@ -26,7 +26,7 @@
  */
 package org.opencypher.okapi.logical.impl
 
-import org.opencypher.okapi.api.graph.QualifiedGraphName
+import org.opencypher.okapi.api.graph.Namespace
 import org.opencypher.okapi.api.io.PropertyGraphDataSource
 import org.opencypher.okapi.api.schema.Schema
 import org.opencypher.okapi.ir.api.expr.Var
@@ -34,5 +34,5 @@ import org.opencypher.okapi.ir.api.expr.Var
 final case class LogicalPlannerContext(
   workingGraphSchema: Schema,
   inputRecordFields: Set[Var],
-  catalog: QualifiedGraphName => PropertyGraphDataSource
+  catalog: Namespace => PropertyGraphDataSource
 )

@@ -29,9 +29,6 @@ package org.opencypher.okapi.api.graph
 import org.opencypher.okapi.api.io._
 import org.opencypher.okapi.api.table.CypherRecords
 import org.opencypher.okapi.api.value.CypherValue._
-import org.opencypher.okapi.impl.exception.{IllegalArgumentException, UnsupportedOperationException}
-import org.opencypher.okapi.impl.io.SessionGraphDataSource
-import org.opencypher.okapi.impl.io.SessionGraphDataSource.{Namespace => SessionNamespace}
 
 /**
   * The Cypher Session is the main API for a Cypher-based application. It manages graphs which can be queried using
@@ -39,82 +36,6 @@ import org.opencypher.okapi.impl.io.SessionGraphDataSource.{Namespace => Session
   * the session-local storage.
   */
 trait CypherSession {
-
-  /**
-    * The [[org.opencypher.okapi.api.graph.Namespace]] used to to store graphs within this session.
-    *
-    * @return session namespace
-    */
-  def sessionNamespace: Namespace
-
-  /**
-    * Stores a mutable mapping between a data source [[org.opencypher.okapi.api.graph.Namespace]] and the specific [[org.opencypher.okapi.api.io.PropertyGraphDataSource]].
-    *
-    * This mapping also holds the [[org.opencypher.okapi.impl.io.SessionGraphDataSource]] by default.
-    */
-  protected var dataSourceMapping: Map[Namespace, PropertyGraphDataSource] =
-    Map(sessionNamespace -> new SessionGraphDataSource)
-
-  /**
-    * Register the given [[org.opencypher.okapi.api.io.PropertyGraphDataSource]] under the specific [[org.opencypher.okapi.api.graph.Namespace]] within this session.
-    *
-    * This enables a user to refer to that [[org.opencypher.okapi.api.io.PropertyGraphDataSource]] within a Cypher query.
-    *
-    * Note, that it is not allowed to overwrite an already registered [[org.opencypher.okapi.api.graph.Namespace]].
-    * Use [[CypherSession#deregisterSource]] first.
-    *
-    * @param namespace  namespace for lookup
-    * @param dataSource property graph data source
-    */
-  def registerSource(namespace: Namespace, dataSource: PropertyGraphDataSource): Unit = dataSourceMapping.get(namespace) match {
-    case Some(p) => throw IllegalArgumentException(s"no data source registered with namespace '$namespace'", p)
-    case None => dataSourceMapping = dataSourceMapping.updated(namespace, dataSource)
-  }
-
-  /**
-    * De-registers a [[org.opencypher.okapi.api.io.PropertyGraphDataSource]] from the session by its given [[org.opencypher.okapi.api.graph.Namespace]].
-    *
-    * @param namespace namespace for lookup
-    */
-  def deregisterSource(namespace: Namespace): Unit = {
-    if (namespace == sessionNamespace) throw UnsupportedOperationException("de-registering the session data source")
-    dataSourceMapping.get(namespace) match {
-      case Some(_) => dataSourceMapping = dataSourceMapping - namespace
-      case None => throw IllegalArgumentException(s"a data source registered with namespace '$namespace'")
-    }
-  }
-
-  /**
-    * Returns all [[org.opencypher.okapi.api.graph.Namespace]]s registered at this session.
-    *
-    * @return registered namespaces
-    */
-  def namespaces: Set[Namespace] = dataSourceMapping.keySet
-
-  /**
-    * Returns the [[org.opencypher.okapi.api.io.PropertyGraphDataSource]] that is registered under the given [[org.opencypher.okapi.api.graph.Namespace]].
-    *
-    * @param namespace namespace for lookup
-    * @return property graph data source
-    */
-  def dataSource(namespace: Namespace): PropertyGraphDataSource = dataSourceMapping.getOrElse(namespace,
-    throw IllegalArgumentException(s"a data source registered with namespace '$namespace'"))
-
-  /**
-    * Returns the full catalog known to the session, including all graphs hosted by registered
-    * [[org.opencypher.okapi.api.io.PropertyGraphDataSource]]s.
-    *
-    * @note This operation may not be lazy, since it looks up all graphs available in each graph data source and is thus subjected to the behaviour of those implementations.
-    * @return a map of all graphs known to this session, keyed by their [[org.opencypher.okapi.api.graph.QualifiedGraphName]]s.
-    */
-  def catalog: Map[QualifiedGraphName, PropertyGraph] =
-    dataSourceMapping.flatMap {
-      case (namespace, pgds) =>
-        pgds.graphNames.map(n => n -> pgds.graph(n)).map {
-          case (name, graph) =>
-            QualifiedGraphName(namespace, name) -> graph
-        }
-    }
 
   /**
     * Executes a Cypher query in this session on the current ambient graph.
@@ -126,68 +47,33 @@ trait CypherSession {
   def cypher(query: String, parameters: CypherMap = CypherMap.empty, drivingTable: Option[CypherRecords] = None): CypherResult
 
   /**
-    * Stores the given [[org.opencypher.okapi.api.graph.PropertyGraph]] using the [[org.opencypher.okapi.api.io.PropertyGraphDataSource]] registered under the [[org.opencypher.okapi.api.graph.Namespace]] of the specified string representation of a [[org.opencypher.okapi.api.graph.QualifiedGraphName]].
+    * Access this sessions [[org.opencypher.okapi.api.graph.PropertyGraphCatalog]].
     *
-    * If the given qualified graph name does not contain any period character (`.`),
-    * the default [[org.opencypher.okapi.impl.io.SessionGraphDataSource]] will be used.
-    *
-    * @param qualifiedGraphName qualified graph name
-    * @param graph              property graph to store
+    * @return session catalog
     */
-  def store(qualifiedGraphName: String, graph: PropertyGraph): Unit = {
-    store(QualifiedGraphName(qualifiedGraphName), graph)
-  }
+  def catalog: PropertyGraphCatalog
 
   /**
-    * Stores the given [[org.opencypher.okapi.api.graph.PropertyGraph]] using the [[org.opencypher.okapi.api.io.PropertyGraphDataSource]] registered under the [[org.opencypher.okapi.api.graph.Namespace]] of the
-    * specified [[org.opencypher.okapi.api.graph.QualifiedGraphName]].
+    * Register the given [[org.opencypher.okapi.api.io.PropertyGraphDataSource]] under the specific [[org.opencypher.okapi.api.graph.Namespace]] within the sessions catalog.
     *
-    * @param qualifiedGraphName qualified graph name
-    * @param graph              property graph to store
+    * This enables a user to refer to that [[org.opencypher.okapi.api.io.PropertyGraphDataSource]] within a Cypher query.
+    *
+    * Note, that it is not allowed to overwrite an already registered [[org.opencypher.okapi.api.graph.Namespace]].
+    * Use [[CypherSession#deregisterSource]] first.
+    *
+    * @param namespace  namespace for lookup
+    * @param dataSource property graph data source
     */
-  def store(qualifiedGraphName: QualifiedGraphName, graph: PropertyGraph): Unit =
-    dataSource(qualifiedGraphName.namespace).store(qualifiedGraphName.graphName, graph)
+  def registerSource(namespace: Namespace, dataSource: PropertyGraphDataSource): Unit =
+    catalog.registerSource(namespace, dataSource)
 
   /**
-    * Removes the [[org.opencypher.okapi.api.graph.PropertyGraph]] associated with the given qualified graph name.
+    * De-registers a [[org.opencypher.okapi.api.io.PropertyGraphDataSource]] from the sessions catalog by its given [[org.opencypher.okapi.api.graph.Namespace]].
     *
-    * If the given qualified graph name does not contain any period character (`.`),
-    * the default [[org.opencypher.okapi.impl.io.SessionGraphDataSource]] will be used.
-    *
-    * @param qualifiedGraphName name of the graph within the session.
+    * @param namespace namespace for lookup
     */
-  def delete(qualifiedGraphName: String): Unit =
-    delete(QualifiedGraphName(qualifiedGraphName))
-
-  /**
-    * Removes the [[org.opencypher.okapi.api.graph.PropertyGraph]] with the given qualified name from the data source associated with the specified
-    * [[org.opencypher.okapi.api.graph.Namespace]].
-    *
-    * @param qualifiedGraphName qualified graph name
-    */
-  def delete(qualifiedGraphName: QualifiedGraphName): Unit =
-    dataSource(qualifiedGraphName.namespace).delete(qualifiedGraphName.graphName)
-
-  /**
-    * Returns the [[org.opencypher.okapi.api.graph.PropertyGraph]] that is stored under the given string representation of a [[org.opencypher.okapi.api.graph.QualifiedGraphName]].
-    *
-    * If the given qualified graph name does not contain any period character (`.`),
-    * the default [[org.opencypher.okapi.impl.io.SessionGraphDataSource]] will be used.
-    *
-    * @param qualifiedGraphName qualified graph name
-    * @return property graph
-    */
-  def graph(qualifiedGraphName: String): PropertyGraph =
-    graph(QualifiedGraphName(qualifiedGraphName))
-
-  /**
-    * Returns the [[org.opencypher.okapi.api.graph.PropertyGraph]] that is stored under the given [[org.opencypher.okapi.api.graph.QualifiedGraphName]].
-    *
-    * @param qualifiedGraphName qualified graph name
-    * @return property graph
-    */
-  def graph(qualifiedGraphName: QualifiedGraphName): PropertyGraph =
-    dataSource(qualifiedGraphName.namespace).graph(qualifiedGraphName.graphName)
+  def deregisterSource(namespace: Namespace): Unit =
+    catalog.deregisterSource(namespace)
 
   /**
     * Executes a Cypher query in this session, using the argument graph as the ambient graph.

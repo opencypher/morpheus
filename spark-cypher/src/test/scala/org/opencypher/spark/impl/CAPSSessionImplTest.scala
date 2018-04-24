@@ -30,10 +30,10 @@ import org.opencypher.okapi.api.graph.{Namespace, QualifiedGraphName}
 import org.opencypher.okapi.api.value.CAPSNode
 import org.opencypher.okapi.api.value.CypherValue.CypherMap
 import org.opencypher.okapi.impl.io.SessionGraphDataSource
+import org.opencypher.okapi.ir.test.support.Bag
+import org.opencypher.okapi.ir.test.support.Bag._
 import org.opencypher.spark.test.CAPSTestSuite
 import org.opencypher.spark.test.fixture.{GraphConstructionFixture, TeamDataFixture}
-import org.opencypher.okapi.testing.Bag
-import org.opencypher.okapi.testing.Bag._
 
 class CAPSSessionImplTest extends CAPSTestSuite with TeamDataFixture with GraphConstructionFixture {
 
@@ -45,10 +45,10 @@ class CAPSSessionImplTest extends CAPSTestSuite with TeamDataFixture with GraphC
     val g2 = initGraph("CREATE (:B)")
     val g3 = initGraph("CREATE (:C)")
 
-    caps.store(QualifiedGraphName("session.a"), g1)
-    caps.store(QualifiedGraphName("working.a"), g2)
+    caps.catalog.store(QualifiedGraphName("session.a"), g1)
+    caps.catalog.store(QualifiedGraphName("working.a"), g2)
     caps.cypher("CREATE GRAPH working.b { FROM GRAPH working.a RETURN GRAPH }")
-    caps.store(QualifiedGraphName("foo.bar.baz.a"), g3)
+    caps.catalog.store(QualifiedGraphName("foo.bar.baz.a"), g3)
 
     val r1 = caps.cypher("FROM GRAPH a MATCH (n) RETURN n")
     val r2 = caps.cypher("FROM GRAPH working.a MATCH (n) RETURN n")

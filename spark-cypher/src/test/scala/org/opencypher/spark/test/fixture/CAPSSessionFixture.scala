@@ -33,12 +33,12 @@ import org.opencypher.spark.impl.CAPSGraph
 trait CAPSSessionFixture extends BaseTestFixture {
   self: SparkSessionFixture with BaseTestSuite =>
 
-  implicit lazy val caps: CAPSSession = CAPSSession.create()
+  implicit lazy val caps: CAPSSession = CAPSSession.create
 
   abstract override protected def afterEach(): Unit = {
     // delete all session graphs via their qualified graph name
-    caps.dataSource(caps.sessionNamespace).graphNames.map(_.value).foreach(caps.delete)
-    caps.store(caps.emptyGraphQgn, CAPSGraph.empty)
+    caps.catalog.source(caps.catalog.sessionNamespace).graphNames.map(_.value).foreach(caps.catalog.delete)
+    caps.catalog.store(caps.emptyGraphQgn, CAPSGraph.empty)
     super.afterEach()
   }
 }
