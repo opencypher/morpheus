@@ -9,6 +9,8 @@ Most open source licenses are allowed, https://www.apache.org/licenses/GPL-compa
 Apache Spark does bundle a number of GPL-licensed modules; most are dual-licensed with CDDL.
 We accept these as they are distributed to us through Spark.
 
+The license listing is only activated in the `cluster` Maven profile.
+
 == Usage
 
 When a dependency is added or removed, the license listings need to be updated.
@@ -16,11 +18,12 @@ The check is done via Maven, tied to the `compile` phase*.
 To make the tool generate new listings instead of comparing to the checked-in lists, add the `-Doverwrite` parameter:
 
 ```
-mvn compile -Doverwrite
+mvn install -Dcluster -Doverwrite -DskipTests
 ```
 
 *This is necessary because the configuration module must be compiled for an updated configuration to be available (if a new liked license is added).
 It would otherwise have been sufficient with `validate` phase.
+Unfortunately, due to the Maven profiles (we think?) we have to execute `install` for it to pick up inter-modular dependencies (api on trees, f.e.).
 
 == Configuration
 

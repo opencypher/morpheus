@@ -4,149 +4,25 @@ libraries. For an overview of the licenses see the NOTICE.txt file.
 
 ------------------------------------------------------------------------------
 Apache Software License, Version 2.0
-  aopalliance version 1.0 repackaged as a module
-  Apache Avro
-  Apache Avro IPC
-  Apache Avro Mapred API
-  Apache Commons Codec
-  Apache Commons Configuration
-  Apache Commons Crypto
   Apache Commons Lang
-  Apache Commons Logging
-  Apache Commons Math
-  Apache Directory API ASN.1 API
-  Apache Directory LDAP API Utilities
-  Apache Hadoop Annotations
-  Apache Hadoop Auth
-  Apache Hadoop Client
-  Apache Hadoop Common
-  Apache Hadoop HDFS
-  Apache HttpClient
-  Apache HttpCore
-  Apache Ivy
-  Apache Log4j
-  Apache Parquet Column
-  Apache Parquet Common
-  Apache Parquet Encodings
-  Apache Parquet Format
-  Apache Parquet Hadoop
-  Apache Parquet Jackson
-  ApacheDS I18n
-  ApacheDS Protocol Kerberos Codec
-  Bean Validation API
-  chill
-  chill-java
   Circe core
   Circe generic
   Circe jawn
   Circe numbers
   Circe parser
-  Commons CLI
-  Commons Collections
-  Commons Compress
-  Commons Daemon
-  Commons IO
-  Commons Lang
-  Commons Net
-  Compress-LZF
   core
   coreJVM
-  Curator Client
-  Curator Framework
-  Curator Recipes
-  Data Mapper for Jackson
-  empty
-  FindBugs-jsr305
-  Google Guice - Core Library
-  Google Guice - Extensions - Servlet
-  Graphite Integration for Metrics
-  Gson
-  Guava: Google Core Libraries for Java
-  hadoop-mapreduce-client-app
-  hadoop-mapreduce-client-common
-  hadoop-mapreduce-client-core
-  hadoop-mapreduce-client-jobclient
-  hadoop-mapreduce-client-shuffle
-  hadoop-yarn-api
-  hadoop-yarn-client
-  hadoop-yarn-common
-  hadoop-yarn-server-common
-  hadoop-yarn-server-nodemanager
-  hadoop-yarn-server-web-proxy
-  HK2 API module
-  HK2 Implementation Utilities
-  htrace-core
-  HttpClient
-  Jackson
-  Jackson Integration for Metrics
-  Jackson-annotations
-  Jackson-core
-  jackson-databind
-  Jackson-module-paranamer
-  jackson-module-scala
-  Java Servlet API
-  java-xmlbuilder
-  JavaBeans(TM) Activation Framework
-  JavaMail API (compat)
-  Javassist
-  javax.annotation API
-  javax.inject
-  javax.inject:1 as OSGi bundle
-  javax.ws.rs-api
-  JAX-RS provider for JSON content type
-  jersey-container-servlet
-  jersey-container-servlet-core
-  jersey-core-client
-  jersey-core-common
-  jersey-core-server
-  jersey-media-jaxb
-  jersey-repackaged-guava
-  JetS3t
-  Jettison
-  Jetty Server
-  Jetty Utilities
-  json4s-ast
-  json4s-core
-  json4s-jackson
-  JVM Integration for Metrics
-  LZ4 and xxHash
-  Metrics Core
-  MX4J
   Neo4j - Cypher Expressions 3.4
   Neo4j - Cypher Util 3.4
   Neo4j Java Driver
-  Netty
-  Netty/All-in-One
-  Objenesis
   Okapi - openCypher API
   Okapi IR - Declarative representation of Cypher queries
   Okapi Logical - Logical representation of Cypher queries
   Okapi Relational - Relational Algebra for Cypher
   Okapi Trees - Tree rewriting framework for Okapi
   openCypher Frontend
-  oro
-  OSGi resource locator bundle - used by various API providers that rely on META-INF/services mechanism to locate providers.
   parboiled-core
   parboiled-scala
-  RoaringBitmap
-  ServiceLocator Default Implementation
-  servlet-api
-  snappy-java
-  Spark Project Catalyst
-  Spark Project Core
-  Spark Project Launcher
-  Spark Project Networking
-  Spark Project Shuffle Streaming Service
-  Spark Project Sketch
-  Spark Project SQL
-  Spark Project Tags
-  Spark Project Unsafe
-  stream-lib
-  univocity-parsers
-  Xerces2 Java Parser
-  XML Commons External Components XML APIs
-  Xml Compatibility extensions for Jackson
-  zookeeper
 ------------------------------------------------------------------------------
 
                                  Apache License
@@ -355,22 +231,10 @@ Apache Software License, Version 2.0
 
 ------------------------------------------------------------------------------
 BSD License
-  ANTLR 4 Runtime
-  Commons Compiler
-  Janino
-  JSch
-  Kryo Shaded
-  leveldbjni-all
-  MinLog
-  ParaNamer Core
-  Protocol Buffer Java API
-  Py4J
   Scala Compiler
   Scala Library
   scala-parser-combinators
   scala-xml
-  Scalap
-  xmlenc Library
 ------------------------------------------------------------------------------
 
 Copyright (c) <year>, <copyright holder>
@@ -401,50 +265,13 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 
 ------------------------------------------------------------------------------
-Bouncy Castle License
-  Bouncy Castle Provider
-------------------------------------------------------------------------------
-
-Please note: our license is an adaptation of the MIT X11 License and should be
-read as such.
-
-LICENSE
-
-Copyright (c) 2000 - 2011 The Legion Of The Bouncy Castle
-(http://www.bouncycastle.org)
-
-Permission is hereby granted, free of charge, to any person obtaining a copy of
-this software and associated documentation files (the "Software"), to deal in
-the Software without restriction, including without limitation the rights to
-use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of
-the Software, and to permit persons to whom the Software is furnished to do so,
-subject to the following conditions:
-
-The above copyright notice and this permission notice shall be included in all
-copies or substantial portions of the Software.
-
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS
-FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR
-COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER
-IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
-CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
-
-
-
-------------------------------------------------------------------------------
 MIT-license
   Cats core
   Cats kernel
   Cats macros
   core
-  JCL 1.1.1 implemented over SLF4J
-  JUL to SLF4J bridge
   machinist
   parser
-  pyrolite
-  SLF4J API Module
-  SLF4J LOG4J-12 Binding
 ------------------------------------------------------------------------------
 
 The MIT License
@@ -468,16 +295,6 @@ AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
-
-
-
-------------------------------------------------------------------------------
-Public-domain
-  AOP alliance
-  base64
-  XZ for Java
-------------------------------------------------------------------------------
-
 
 
 

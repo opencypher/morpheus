@@ -8,6 +8,11 @@ scala:
 
 env:
   matrix:
-    - PROFILE=standalone
+    - PROFILE=test
+    - PROFILE=check
 
-script: "mvn clean install -P ${PROFILE}"
+install: echo "skip preparatory install"
+
+script:
+  - if [ "$PROFILE" = "test" ]; then mvn -q clean test; fi
+  - if [ "$PROFILE" = "check" ]; then mvn -q clean install -Dcluster -DskipTests; fi

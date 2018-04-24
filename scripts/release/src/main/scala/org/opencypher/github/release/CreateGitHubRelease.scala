@@ -70,10 +70,8 @@ case class GithubRelease(config: Config) {
 
   def uploadJars(releaseId: String): Unit = {
     val clusterJarAsset = s"spark-cypher-${config.releaseVersion}-cluster.jar"
-    val standaloneJarAsset = s"spark-cypher-${config.releaseVersion}.jar"
 
     val clusterJarPath = Paths.get(config.assetFolder, clusterJarAsset)
-    val standaloneJarPath = Paths.get(config.assetFolder, standaloneJarAsset)
 
     def uploadAsset(releaseId: String, assetName: String, file: File) = {
       val requestUri = buildRequestUri(GH_UPLOAD_URL, s"/releases/$releaseId/assets", "name" -> assetName)
@@ -90,7 +88,6 @@ case class GithubRelease(config: Config) {
     }
 
     uploadAsset(releaseId, clusterJarAsset, clusterJarPath.toFile)
-    uploadAsset(releaseId, standaloneJarAsset, standaloneJarPath.toFile)
   }
 
   private def buildRequestUri(base: String, path: String, parameters: (String, String)*): Uri = {
@@ -117,7 +114,8 @@ case class Config(
     s"""
        |### `spark-cypher-$releaseVersion`
        |
-       |This is the artifact deployed to [Maven Central](https://search.maven.org/#artifactdetails%7Corg.opencypher%7Cspark-cypher%7C$releaseVersion%7Cjar). To use this release in a Maven project, add the following dependency to your pom:
+       |The artifact is released to [Maven Central](https://search.maven.org/#artifactdetails%7Corg.opencypher%7Cspark-cypher%7C$releaseVersion%7Cjar).
+       |To use it in a Maven project, add the following dependency to your pom:
        |```
        |<dependency>
        |  <groupId>org.opencypher</groupId>

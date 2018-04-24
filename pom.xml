@@ -39,20 +39,6 @@
     </developer>
   </developers>
 
-  <modules>
-    <module>licensecheck-config</module>
-    <module>okapi-api</module>
-    <module>okapi-ir</module>
-    <module>okapi-logical</module>
-    <module>okapi-relational</module>
-    <module>okapi-tck</module>
-    <module>okapi-trees</module>
-    <module>okapi-testing</module>
-    <module>spark-cypher</module>
-    <module>spark-cypher-examples</module>
-    <module>spark-cypher-tck</module>
-  </modules>
-
   <properties>
     <!-- Encoding -->
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
@@ -380,6 +366,9 @@
         <file>
           <exists>src/main/scala</exists>
         </file>
+        <property>
+          <name>cluster</name>
+        </property>
       </activation>
       <build>
         <plugins>
@@ -395,12 +384,24 @@
       <activation>
         <activeByDefault>true</activeByDefault>
       </activation>
-      <id>standalone</id>
+      <id>testing</id>
       <properties>
-        <project.artifact.classifier>standalone</project.artifact.classifier>
         <dep.spark.scope>compile</dep.spark.scope>
-        <buildShade>true</buildShade>
       </properties>
+
+      <!-- No license listing for this profile -->
+      <modules>
+        <module>okapi-api</module>
+        <module>okapi-ir</module>
+        <module>okapi-logical</module>
+        <module>okapi-relational</module>
+        <module>okapi-tck</module>
+        <module>okapi-trees</module>
+        <module>okapi-testing</module>
+        <module>spark-cypher</module>
+        <module>spark-cypher-examples</module>
+        <module>spark-cypher-tck</module>
+      </modules>
     </profile>
 
     <profile>
@@ -409,6 +410,25 @@
         <project.artifact.classifier>cluster</project.artifact.classifier>
         <dep.spark.scope>provided</dep.spark.scope>
       </properties>
+      <activation>
+        <property>
+          <name>cluster</name>
+        </property>
+      </activation>
+
+      <!-- We're skipping TCK and examples -->
+      <modules>
+        <module>licensecheck-config</module>
+        <module>okapi-api</module>
+        <module>okapi-ir</module>
+        <module>okapi-logical</module>
+        <module>okapi-relational</module>
+        <module>okapi-tck</module>
+        <module>okapi-testing</module>
+        <module>okapi-trees</module>
+        <module>spark-cypher</module>
+      </modules>
+
       <build>
         <plugins>
           <!-- shade plugin -->
