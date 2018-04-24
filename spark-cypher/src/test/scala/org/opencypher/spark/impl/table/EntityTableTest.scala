@@ -30,7 +30,7 @@ import org.apache.spark.sql.Row
 import org.apache.spark.sql.types.DecimalType
 import org.opencypher.okapi.api.io.conversion.{NodeMapping, RelationshipMapping}
 import org.opencypher.okapi.api.schema.Schema
-import org.opencypher.okapi.api.types.{CTFloat, CTInteger, CTString}
+import org.opencypher.okapi.api.types.{CTBoolean, CTFloat, CTInteger, CTString}
 import org.opencypher.okapi.api.value.CypherValue.CypherMap
 import org.opencypher.okapi.impl.exception.IllegalArgumentException
 import org.opencypher.spark.api.io._
@@ -158,5 +158,31 @@ class EntityTableTest extends CAPSTestSuite {
       val nodeMapping = NodeMapping.on("ID").withOptionalLabel("A" -> "IS_A").withPropertyKey("PROP")
       CAPSNodeTable(nodeMapping, df)
     }
+  }
+
+  it("should infer the correct node mapping") {
+    val df = session.createDataFrame(Seq((1, "Alice", 1984, true, 13.37)))
+      .toDF("id", "name", "birthYear", "isGood", "luckyNumber")
+
+    val nodeTable = CAPSNodeTable(Set("Person"), df)
+
+    nodeTable.schema should equal(Schema.empty
+      .withNodePropertyKeys("Person")(
+        "name" -> CTString.nullable,
+        "birthYear" -> CTInteger,
+        "isGood" -> CTBoolean,
+        "luckyNumber" -> CTFloat)
+      .asCaps)
+  }
+
+  it("should infer the correct node mapping including optional labels") {
+    val df = session.createDataFrame(Seq((1, "Alice", true))).toDF("id", "name", "IS_SWEDE")
+
+    val nodeTable = CAPSNodeTable(Set("Person"), Map("Swede" -> "IS_SWEDE"), df)
+
+    nodeTable.schema should equal(Schema.empty
+      .withNodePropertyKeys("Person", "Swede")("name" -> CTString.nullable)
+      .withNodePropertyKeys("Person")("name" -> CTString.nullable)
+      .asCaps)
   }
 }

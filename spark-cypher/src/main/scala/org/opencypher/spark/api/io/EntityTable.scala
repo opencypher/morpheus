@@ -111,6 +111,36 @@ object CAPSNodeTable {
     CAPSNodeTable(nodeMapping, nodeDF)
   }
 
+  /**
+    * Creates a node table from the given [[DataFrame]]. By convention, there needs to be one column storing node
+    * identifiers and named after [[GraphEntity.sourceIdKey]]. All remaining columns are interpreted as node property
+    * columns, the column name is used as property key.
+    *
+    * @param impliedLabels implied node labels
+    * @param table         Spark table
+    * @return a node table with inferred node mapping
+    */
+  def apply(impliedLabels: Set[String], table: SparkTable): CAPSNodeTable =
+    CAPSNodeTable(impliedLabels, Map.empty, table)
+
+  /**
+    * Creates a node table from the given [[DataFrame]]. By convention, there needs to be one column storing node
+    * identifiers and named after [[GraphEntity.sourceIdKey]]. Optional labels are defined by a mapping from label to
+    * column name. All remaining columns are interpreted as node property columns, the column name is used as property
+    * key.
+    *
+    * @param impliedLabels  implied node labels
+    * @param optionalLabels mapping from optional labels to column names
+    * @param table          Spark table
+    * @return a node table with inferred node mapping
+    */
+  def apply(impliedLabels: Set[String], optionalLabels: Map[String, String], table: SparkTable): CAPSNodeTable = {
+    val nodeDF = table.df
+    val nodeProperties = (properties(nodeDF.columns) -- optionalLabels.values).map(col => col -> col).toMap
+    val nodeMapping = NodeMapping(GraphEntity.sourceIdKey, impliedLabels, optionalLabels, nodeProperties)
+    CAPSNodeTable(nodeMapping, nodeDF)
+  }
+
   private def properties(nodeColumnNames: Seq[String]): Set[String] = {
     nodeColumnNames.filter(_ != GraphEntity.sourceIdKey).toSet
   }
