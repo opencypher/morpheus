@@ -8,6 +8,7 @@ scala:
 
 env:
   matrix:
-    - PROFILE=standalone
+    - COMMAND=compile -Dcluster
+    - COMMAND=test
 
-script: "mvn clean install -P ${PROFILE}"
+script: "mvn clean ${COMMAND}"
