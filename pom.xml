@@ -423,6 +423,8 @@
         <module>okapi-ir</module>
         <module>okapi-logical</module>
         <module>okapi-relational</module>
+        <module>okapi-tck</module>
+        <module>okapi-testing</module>
         <module>okapi-trees</module>
         <module>spark-cypher</module>
       </modules>
