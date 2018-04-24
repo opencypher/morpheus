@@ -51,14 +51,11 @@ class CypherCatalog extends PropertyGraphCatalog{
     }
   }
 
-  override def listGraphs: Map[QualifiedGraphName, PropertyGraph] =
+  override def graphNames: Set[QualifiedGraphName] =
     dataSourceMapping.flatMap {
       case (namespace, pgds) =>
-        pgds.graphNames.map(n => n -> pgds.graph(n)).map {
-          case (name, graph) =>
-            QualifiedGraphName(namespace, name) -> graph
-        }
-    }
+        pgds.graphNames.map(n => QualifiedGraphName(namespace, n))
+    }.toSet
 
   override def store(qualifiedGraphName: QualifiedGraphName, graph: PropertyGraph): Unit =
     source(qualifiedGraphName.namespace).store(qualifiedGraphName.graphName, graph)

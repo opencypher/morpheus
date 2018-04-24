@@ -62,12 +62,12 @@ trait PropertyGraphCatalog {
   //################################################
 
   /**
-    * Returns all available [[org.opencypher.okapi.api.graph.PropertyGraph]]s.
+    * Returns a set of [[org.opencypher.okapi.api.graph.QualifiedGraphName]]s for [[org.opencypher.okapi.api.graph.PropertyGraph]]s
+    * that can be provided by this catalog.
     *
-    * @note This operation may not be lazy, since it looks up all graphs available in each graph data source and is thus subjected to the behaviour of those implementations.
-    * @return a map of all graphs known to this catalog, keyed by their [[org.opencypher.okapi.api.graph.QualifiedGraphName]]s.
+    * @return qualified names of graphs that can be provided
     */
-  def listGraphs: Map[QualifiedGraphName, PropertyGraph]
+  def graphNames: Set[QualifiedGraphName]
 
   /**
     * Stores the given [[org.opencypher.okapi.api.graph.PropertyGraph]] using
