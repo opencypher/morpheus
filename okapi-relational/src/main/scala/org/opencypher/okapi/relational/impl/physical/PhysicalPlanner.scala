@@ -229,22 +229,20 @@ class PhysicalPlanner[P <: PhysicalOperator[R, G, C], R <: CypherRecords, G <: P
     val lhsHeader = lhs.header
     val rhsHeader = rhs.header
 
-
     // 1. Compute fields between left and right side
-    val commonFields = lhsHeader.slots.intersect(rhsHeader.slots)
+    val commonFields = lhsHeader.slots.map(_.content).intersect(rhsHeader.slots.map(_.content))
 
     val (joinSlots, otherCommonSlots) = commonFields.partition {
-      case RecordSlot(_, _: OpaqueField) => true
-      case RecordSlot(_, _) => false
+      case _: OpaqueField => true
+      case _ => false
     }
 
     val joinFields = joinSlots
-      .map(_.content)
       .collect { case OpaqueField(v) => v }
       .distinct
 
     val otherCommonFields = otherCommonSlots
-      .map(_.content.key)
+      .map(_.key)
 
     // 2. Remove siblings of the join fields and other common fields
     val fieldsToRemove = joinFields
