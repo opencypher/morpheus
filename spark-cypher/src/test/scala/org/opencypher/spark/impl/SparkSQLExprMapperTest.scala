@@ -34,7 +34,7 @@ import org.opencypher.okapi.ir.api.expr.{Expr, Subtract, Var}
 import org.opencypher.okapi.ir.test._
 import org.opencypher.okapi.relational.impl.syntax.RecordHeaderSyntax._
 import org.opencypher.okapi.relational.impl.table.{OpaqueField, ProjectedField, RecordHeader}
-import org.opencypher.okapi.test.BaseTestSuite
+import org.opencypher.okapi.testing.BaseTestSuite
 import org.opencypher.spark.impl.SparkSQLExprMapper._
 import org.opencypher.spark.impl.physical.CAPSRuntimeContext
 import org.opencypher.spark.test.fixture.SparkSessionFixture

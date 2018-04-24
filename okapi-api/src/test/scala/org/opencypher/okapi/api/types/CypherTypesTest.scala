@@ -26,11 +26,11 @@
  */
 package org.opencypher.okapi.api.types
 
-import org.opencypher.okapi.test.BaseTestSuite
+import org.scalatest.{FunSpec, Matchers}
 
 import scala.language.postfixOps
 
-class CypherTypesTest extends BaseTestSuite {
+class CypherTypesTest extends FunSpec with Matchers {
 
   val materialTypes: Seq[MaterialCypherType] = Seq(
     CTAny,
@@ -60,7 +60,7 @@ class CypherTypesTest extends BaseTestSuite {
   val allTypes: Seq[CypherType] =
     materialTypes ++ nullableTypes
 
-  test("couldBe") {
+  it("couldBe") {
     CTAny couldBeSameTypeAs CTNode shouldBe true
     CTNode couldBeSameTypeAs CTAny shouldBe true
     CTInteger couldBeSameTypeAs CTNumber shouldBe true
@@ -77,7 +77,7 @@ class CypherTypesTest extends BaseTestSuite {
     CTList(CTAny) couldBeSameTypeAs CTList(CTInteger) shouldBe true
   }
 
-  test("joining with list of void") {
+  it("joining with list of void") {
     val voidList = CTList(CTVoid)
     val otherList = CTList(CTString).nullable
 
@@ -85,7 +85,7 @@ class CypherTypesTest extends BaseTestSuite {
     otherList join voidList should equal(otherList)
   }
 
-  test("type names") {
+  it("type names") {
     Seq[(CypherType, (String, String))](
       CTAny -> ("ANY" -> "ANY?"),
       CTString -> ("STRING" -> "STRING?"),
@@ -115,7 +115,7 @@ class CypherTypesTest extends BaseTestSuite {
     CTNull.toString shouldBe "NULL"
   }
 
-  test("RELATIONSHIP type") {
+  it("RELATIONSHIP type") {
     CTRelationship().superTypeOf(CTRelationship()) shouldBe True
     CTRelationship().superTypeOf(CTRelationship("KNOWS")) shouldBe True
     CTRelationship("KNOWS").superTypeOf(CTRelationship()) shouldBe False
@@ -126,7 +126,7 @@ class CypherTypesTest extends BaseTestSuite {
     CTRelationship("KNOWS").superTypeOf(CTRelationship("NOSE")) shouldBe False
   }
 
-  test("RELATIONSHIP? type") {
+  it("RELATIONSHIP? type") {
     CTRelationshipOrNull().superTypeOf(CTRelationshipOrNull()) shouldBe True
     CTRelationshipOrNull().superTypeOf(CTRelationshipOrNull("KNOWS")) shouldBe True
     CTRelationshipOrNull("KNOWS").superTypeOf(CTRelationshipOrNull("KNOWS")) shouldBe True
@@ -136,7 +136,7 @@ class CypherTypesTest extends BaseTestSuite {
     CTRelationshipOrNull("FOO").superTypeOf(CTNull) shouldBe True
   }
 
-  test("NODE type") {
+  it("NODE type") {
     CTNode().superTypeOf(CTNode()) shouldBe True
     CTNode().superTypeOf(CTNode("Person")) shouldBe True
     CTNode("Person").superTypeOf(CTNode()) shouldBe False
@@ -148,7 +148,7 @@ class CypherTypesTest extends BaseTestSuite {
     CTNode("Person").superTypeOf(CTNode) shouldBe False
   }
 
-  test("NODE? type") {
+  it("NODE? type") {
     CTNodeOrNull().superTypeOf(CTNodeOrNull()) shouldBe True
     CTNodeOrNull().superTypeOf(CTNodeOrNull("Person")) shouldBe True
     CTNodeOrNull("Person").superTypeOf(CTNodeOrNull("Person")) shouldBe True
@@ -158,22 +158,22 @@ class CypherTypesTest extends BaseTestSuite {
     CTNodeOrNull("Foo").superTypeOf(CTNull) shouldBe True
   }
 
-  test("conversion between VOID and NULL") {
+  it("conversion between VOID and NULL") {
     CTVoid.nullable shouldBe CTNull
     CTNull.material shouldBe CTVoid
   }
 
-  test("all nullable types contain their material types") {
+  it("all nullable types contain their material types") {
     materialTypes.foreach(t => t.nullable superTypeOf t)
     materialTypes.foreach(t => t subTypeOf t.nullable)
   }
 
-  test("conversion between material and nullable types") {
+  it("conversion between material and nullable types") {
     materialTypes.foreach(t => t.nullable.material == t)
     nullableTypes.foreach(t => t.material.nullable == t)
   }
 
-  test("subTypeOf as the inverse of superTypeOf") {
+  it("subTypeOf as the inverse of superTypeOf") {
     allTypes.foreach { t1 =>
       allTypes.foreach { t2 =>
         t1 subTypeOf t2 should be(t2 superTypeOf t1)
@@ -182,7 +182,7 @@ class CypherTypesTest extends BaseTestSuite {
     }
   }
 
-  test("basic type inheritance") {
+  it("basic type inheritance") {
     CTNumber superTypeOf CTInteger shouldBe True
     CTNumber superTypeOf CTFloat shouldBe True
     CTMap superTypeOf CTMap shouldBe True
@@ -218,7 +218,7 @@ class CypherTypesTest extends BaseTestSuite {
     CTAny superTypeOf CTBoolean.nullable shouldBe False
   }
 
-  test("join") {
+  it("join") {
     CTInteger join CTFloat shouldBe CTNumber
     CTFloat join CTInteger shouldBe CTNumber
     CTNumber join CTFloat shouldBe CTNumber
@@ -242,7 +242,7 @@ class CypherTypesTest extends BaseTestSuite {
     CTNode join CTNode("Person") shouldBe CTNode
   }
 
-  test("join with nullables") {
+  it("join with nullables") {
     CTInteger join CTFloat.nullable shouldBe CTNumber.nullable
     CTFloat.nullable join CTInteger.nullable shouldBe CTNumber.nullable
     CTNumber.nullable join CTString shouldBe CTAny.nullable
@@ -253,7 +253,7 @@ class CypherTypesTest extends BaseTestSuite {
     CTAny join CTInteger.nullable shouldBe CTAny.nullable
   }
 
-  test("join with labels and types") {
+  it("join with labels and types") {
     CTNode join CTNode("Person") shouldBe CTNode
     CTNode("Other") join CTNode("Person") shouldBe CTNode
     CTNode("Person") join CTNode("Person") shouldBe CTNode("Person")
@@ -274,7 +274,7 @@ class CypherTypesTest extends BaseTestSuite {
     CTRelationship("KNOWS") join CTNode shouldBe CTMap
   }
 
-  test("meet") {
+  it("meet") {
     CTInteger meet CTNumber shouldBe CTInteger
     CTAny meet CTNumber shouldBe CTNumber
 
@@ -294,7 +294,7 @@ class CypherTypesTest extends BaseTestSuite {
     CTNode meet CTNode("Person") shouldBe CTNode("Person")
   }
 
-  test("meet with labels and types") {
+  it("meet with labels and types") {
     CTMap meet CTNode shouldBe CTNode
     CTMap meet CTNode("Person") shouldBe CTNode("Person")
     CTMap meet CTRelationship("KNOWS") shouldBe CTRelationship("KNOWS")
@@ -308,7 +308,7 @@ class CypherTypesTest extends BaseTestSuite {
     CTRelationship("KNOWS", "LOVES") meet CTRelationship("LOVES") shouldBe CTRelationship("LOVES")
   }
 
-  test("type equality between different types") {
+  it("type equality between different types") {
     allTypes.foreach { t1 =>
       allTypes.foreach { t2 =>
         val result = t1 sameTypeAs t2
@@ -349,7 +349,7 @@ class CypherTypesTest extends BaseTestSuite {
     }
   }
 
-  test("antisymmetry of subtyping") {
+  it("antisymmetry of subtyping") {
     allTypes.foreach { t1 =>
       allTypes.foreach { t2 =>
         if (t1 subTypeOf t2 isTrue) (t2 subTypeOf t1 isTrue) shouldBe (t2 sameTypeAs t1 isTrue)
@@ -358,7 +358,7 @@ class CypherTypesTest extends BaseTestSuite {
     }
   }
 
-  test("type equality between the same type") {
+  it("type equality between the same type") {
     allTypes.foreach(t => t == t)
     allTypes.foreach(t => t superTypeOf t)
     allTypes.foreach(t => t subTypeOf t)
@@ -366,7 +366,7 @@ class CypherTypesTest extends BaseTestSuite {
     allTypes.foreach(t => (t meet t) == t)
   }
 
-  test("computing definite types (type erasure)") {
+  it("computing definite types (type erasure)") {
     CTWildcard.wildcardErasedSuperType sameTypeAs CTAny shouldBe True
     CTWildcard.nullable.wildcardErasedSuperType sameTypeAs CTAny.nullable shouldBe True
     CTList(CTWildcard).wildcardErasedSuperType sameTypeAs CTList(CTAny) shouldBe True
@@ -382,7 +382,7 @@ class CypherTypesTest extends BaseTestSuite {
     CTList(CTBoolean).nullable.wildcardErasedSubType sameTypeAs CTList(CTBoolean).nullable shouldBe True
   }
 
-  test("handling wildcard types") {
+  it("handling wildcard types") {
     (CTAny superTypeOf CTWildcard) shouldBe True
     (CTWildcard superTypeOf CTVoid) shouldBe True
     (CTWildcard superTypeOf CTAny) shouldBe Maybe
@@ -422,7 +422,7 @@ class CypherTypesTest extends BaseTestSuite {
     }
   }
 
-  test("contains wildcard") {
+  it("contains wildcard") {
     CTNode.containsWildcard shouldBe false
     CTWildcard.containsWildcard shouldBe true
     CTWildcard.nullable.containsWildcard shouldBe true
@@ -431,7 +431,7 @@ class CypherTypesTest extends BaseTestSuite {
     CTList(CTList(CTWildcard.nullable)).containsWildcard shouldBe true
   }
 
-  test("contains nullable") {
+  it("contains nullable") {
     CTNode.containsNullable shouldBe false
     CTNode.nullable.containsNullable shouldBe true
     CTWildcard.containsNullable shouldBe false
@@ -441,7 +441,7 @@ class CypherTypesTest extends BaseTestSuite {
     CTList(CTList(CTWildcard.nullable)).containsNullable shouldBe true
   }
 
-  test("is inhabited") {
+  it("is inhabited") {
     allTypes.foreach {
       case t @ CTAny      => t.isInhabited should be(True)
       case t @ CTVoid     => t.isInhabited should be(False)
@@ -450,7 +450,7 @@ class CypherTypesTest extends BaseTestSuite {
     }
   }
 
-  test("as nullable as") {
+  it("as nullable as") {
     materialTypes.foreach { t =>
       materialTypes.foreach { m =>
         m.asNullableAs(t) should equal(m)

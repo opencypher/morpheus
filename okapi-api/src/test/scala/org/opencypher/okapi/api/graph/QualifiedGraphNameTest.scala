@@ -27,21 +27,21 @@
 package org.opencypher.okapi.api.graph
 
 import org.opencypher.okapi.impl.io.SessionGraphDataSource.{Namespace => SessionNamespace}
-import org.scalatest.{FunSuite, Matchers}
+import org.scalatest.{FunSpec, Matchers}
 
-class QualifiedGraphNameTest extends FunSuite with Matchers {
+class QualifiedGraphNameTest extends FunSpec with Matchers {
 
-  test("apply with string representation containing single namespace and single graph name") {
+  it("apply with string representation containing single namespace and single graph name") {
     val string = "testNamespace.testGraphName"
     QualifiedGraphName(string) should be(QualifiedGraphName(Namespace("testNamespace"), GraphName("testGraphName")))
   }
 
-  test("apply with string representation containing single namespace and multiple graph name") {
+  it("apply with string representation containing single namespace and multiple graph name") {
     val string = "testNamespace.test.Graph.Name"
     QualifiedGraphName(string) should be(QualifiedGraphName(Namespace("testNamespace"), GraphName("test.Graph.Name")))
   }
 
-  test("apply with string representation containing single grap name") {
+  it("apply with string representation containing single grap name") {
     val string = "testGraphName"
     QualifiedGraphName(string) should be(QualifiedGraphName(SessionNamespace, GraphName("testGraphName")))
   }

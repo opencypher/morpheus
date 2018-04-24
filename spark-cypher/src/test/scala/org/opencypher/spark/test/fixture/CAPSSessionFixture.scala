@@ -26,8 +26,7 @@
  */
 package org.opencypher.spark.test.fixture
 
-import org.opencypher.okapi.test.BaseTestSuite
-import org.opencypher.okapi.test.fixture.BaseTestFixture
+import org.opencypher.okapi.testing.{BaseTestFixture, BaseTestSuite}
 import org.opencypher.spark.api.CAPSSession
 import org.opencypher.spark.impl.CAPSGraph
 

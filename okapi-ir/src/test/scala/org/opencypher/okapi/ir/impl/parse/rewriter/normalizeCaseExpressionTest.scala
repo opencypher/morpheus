@@ -27,7 +27,7 @@
 package org.opencypher.okapi.ir.impl.parse.rewriter
 
 import org.opencypher.okapi.ir.test.support.RewriterTestSupport
-import org.opencypher.okapi.test.BaseTestSuite
+import org.opencypher.okapi.testing.BaseTestSuite
 
 class normalizeCaseExpressionTest extends BaseTestSuite with RewriterTestSupport {
   override val rewriter = normalizeCaseExpression

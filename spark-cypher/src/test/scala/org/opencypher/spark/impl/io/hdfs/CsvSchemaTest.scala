@@ -26,7 +26,7 @@
  */
 package org.opencypher.spark.impl.io.hdfs
 
-import org.opencypher.okapi.test.BaseTestSuite
+import org.opencypher.okapi.testing.BaseTestSuite
 
 class CsvSchemaTest extends BaseTestSuite {
   test("read valid node schema") {

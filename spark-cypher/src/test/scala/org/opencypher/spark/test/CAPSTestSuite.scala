@@ -26,7 +26,7 @@
  */
 package org.opencypher.spark.test
 
-import org.opencypher.okapi.test.BaseTestSuite
+import org.opencypher.okapi.testing.BaseTestSuite
 import org.opencypher.spark.impl.physical.CAPSRuntimeContext
 import org.opencypher.spark.test.fixture.{CAPSSessionFixture, SparkSessionFixture}
 import org.opencypher.spark.test.support.{GraphMatchingTestSupport, RecordMatchingTestSupport}

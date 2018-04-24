@@ -31,18 +31,19 @@ import java.util.stream.Collectors
 import org.neo4j.graphdb.GraphDatabaseService
 import org.neo4j.harness.TestServerBuilders
 import org.opencypher.okapi.api.value.CypherValue.CypherMap
-import org.opencypher.okapi.ir.test.support.creation.propertygraph._
+import org.opencypher.okapi.testing.propertygraph
+import org.opencypher.okapi.testing.propertygraph.{GraphFactory, TestNode, TestGraph, TestRelationship}
 
 import scala.collection.JavaConverters._
 import scala.collection.immutable.Map
 
-object Neo4jPropertyGraphFactory extends PropertyGraphFactory {
-  lazy val factory = new Neo4jPropertyGraphFactory
+object Neo4JGraphFactory$ extends GraphFactory {
+  lazy val factory = new Neo4JGraphFactory$
 
-  def apply(createQuery: String, parameters: Map[String, Any]): TestPropertyGraph = factory.create(createQuery, parameters)
+  def apply(createQuery: String, parameters: Map[String, Any]): TestGraph = factory.create(createQuery, parameters)
 }
 
-class Neo4jPropertyGraphFactory {
+class Neo4JGraphFactory$ {
 
   private val neo4jServer = TestServerBuilders
     .newInProcessBuilder()
@@ -51,7 +52,7 @@ class Neo4jPropertyGraphFactory {
 
   val inputGraph: GraphDatabaseService = neo4jServer.graph()
 
-  def create(createQuery: String, parameters: Map[String, Any]): TestPropertyGraph = {
+  def create(createQuery: String, parameters: Map[String, Any]): TestGraph = {
     val tx = inputGraph.beginTx()
     inputGraph.execute("MATCH (a) DETACH DELETE a")
     inputGraph.execute(createQuery)
@@ -85,7 +86,7 @@ class Neo4jPropertyGraphFactory {
       TestRelationship(id, sourceId, targetId, relType, properties)
     }
 
-    TestPropertyGraph(nodes, relationships)
+    propertygraph.TestGraph(nodes, relationships)
   }
 
   def close: Any = neo4jServer.close()

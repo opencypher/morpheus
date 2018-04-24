@@ -30,7 +30,7 @@ import org.neo4j.cypher.internal.frontend.v3_4.ast.AstConstructionTestSupport
 import org.neo4j.cypher.internal.util.v3_4.Ref
 import org.neo4j.cypher.internal.v3_4.expressions.True
 import org.opencypher.okapi.api.types.{CTBoolean, CTString}
-import org.opencypher.okapi.test.BaseTestSuite
+import org.opencypher.okapi.testing.BaseTestSuite
 
 class TypeRecorderTest extends BaseTestSuite with AstConstructionTestSupport {
 

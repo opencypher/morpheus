@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+
+  <parent>
+    <groupId>org.opencypher</groupId>
+    <artifactId>okapi</artifactId>
+    <version>1.0-SNAPSHOT</version>
+  </parent>
+
+  <artifactId>okapi-testing</artifactId>
+
+  <name>Okapi Test Utilities</name>
+
+  <properties>
+    <project.rootdir>${project.parent.basedir}</project.rootdir>
+  </properties>
+
+  <dependencies>
+
+    <dependency>
+      <groupId>org.opencypher</groupId>
+      <artifactId>okapi-api</artifactId>
+      <version>${project.parent.version}</version>
+    </dependency>
+
+    <!-- Neo4j -->
+    <dependency>
+      <groupId>org.neo4j</groupId>
+      <artifactId>openCypher-frontend-1</artifactId>
+      <version>${dep.neo4j.frontend.version}</version>
+    </dependency>
+
+    <dependency>
+      <groupId>org.scalatest</groupId>
+      <artifactId>scalatest_${project.scala.binary.version}</artifactId>
+      <version>${dep.scalatest.version}</version>
+    </dependency>
+
+  </dependencies>
+</project>

@@ -29,7 +29,7 @@ package org.opencypher.spark.test.support.creation.caps
 import org.opencypher.okapi.api.io.conversion.{NodeMapping, RelationshipMapping}
 import org.opencypher.okapi.api.schema.Schema
 import org.opencypher.okapi.api.types.CTString
-import org.opencypher.okapi.ir.test.support.creation.propertygraph.TestPropertyGraphFactory
+import org.opencypher.okapi.testing.propertygraph.TestGraphFactory
 import org.opencypher.spark.api.io.{CAPSNodeTable, CAPSRelationshipTable}
 import org.opencypher.spark.impl.CAPSConverters._
 import org.opencypher.spark.impl.CAPSGraph
@@ -85,7 +85,7 @@ abstract class CAPSTestGraphFactoryTest extends CAPSTestSuite with GraphMatching
   ).toDF("SRC", "ID", "DST"))
 
   test("testSchema") {
-    val propertyGraph = TestPropertyGraphFactory(createQuery)
+    val propertyGraph = TestGraphFactory(createQuery)
     factory(propertyGraph).schema should equal(Schema.empty
       .withNodePropertyKeys("Person", "Astronaut")("name" -> CTString)
       .withNodePropertyKeys("Person", "Martian")("name" -> CTString)
@@ -95,7 +95,7 @@ abstract class CAPSTestGraphFactoryTest extends CAPSTestSuite with GraphMatching
   }
 
   test("testAsScanGraph") {
-    val propertyGraph = TestPropertyGraphFactory(createQuery)
+    val propertyGraph = TestGraphFactory(createQuery)
     factory(propertyGraph).asCaps shouldMatch CAPSGraph.create(personTable, languageTable, knowsScan)
   }
 }

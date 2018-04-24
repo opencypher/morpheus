@@ -34,10 +34,10 @@ import org.opencypher.okapi.api.value._
 import org.opencypher.okapi.ir.api.expr._
 import org.opencypher.okapi.ir.api.{Label, PropertyKey}
 import org.opencypher.okapi.ir.test._
-import org.opencypher.okapi.ir.test.support.Bag
-import org.opencypher.okapi.ir.test.support.Bag._
 import org.opencypher.okapi.relational.impl.syntax.RecordHeaderSyntax._
 import org.opencypher.okapi.relational.impl.table.{OpaqueField, ProjectedExpr, ProjectedField, RecordHeader}
+import org.opencypher.okapi.testing.Bag
+import org.opencypher.okapi.testing.Bag._
 import org.opencypher.spark.impl.table.CAPSRecordHeader
 import org.opencypher.spark.schema.CAPSSchema._
 import org.opencypher.spark.test.support.creation.caps.{CAPSPatternGraphFactory, CAPSTestGraphFactory}

@@ -26,53 +26,53 @@
  */
 package org.opencypher.okapi.api.types
 
-import org.opencypher.okapi.test.BaseTestSuite
+import org.scalatest.{FunSpec, Matchers}
 
-class TernaryTest extends BaseTestSuite {
+class TernaryTest extends FunSpec with Matchers {
 
-  test("Ternary.toString") {
+  it("Ternary.toString") {
     True.toString shouldBe "definitely true"
     False.toString shouldBe "definitely false"
     Maybe.toString shouldBe "maybe"
   }
 
-  test("Ternary.isTrue") {
+  it("Ternary.isTrue") {
     True.isTrue shouldBe true
     False.isTrue shouldBe false
     Maybe.isTrue shouldBe false
   }
 
-  test("Ternary.maybeTrue") {
+  it("Ternary.maybeTrue") {
     True.maybeTrue shouldBe true
     False.isTrue shouldBe false
     Maybe.maybeTrue shouldBe true
   }
 
-  test("Ternary.isFalse") {
+  it("Ternary.isFalse") {
     True.isFalse shouldBe false
     False.isFalse shouldBe true
     Maybe.isFalse shouldBe false
   }
 
-  test("Ternary.maybeFalse") {
+  it("Ternary.maybeFalse") {
     True.maybeFalse shouldBe false
     False.maybeFalse shouldBe true
     Maybe.maybeFalse shouldBe true
   }
 
-  test("Ternary.isDefinite") {
+  it("Ternary.isDefinite") {
     True.isDefinite shouldBe true
     False.isDefinite shouldBe true
     Maybe.isDefinite shouldBe false
   }
 
-  test("Ternary.isUnknown") {
+  it("Ternary.isUnknown") {
     True.isUnknown shouldBe false
     False.isUnknown shouldBe false
     Maybe.isUnknown shouldBe true
   }
 
-  test("Ternary.negated") {
+  it("Ternary.negated") {
     True.negated shouldBe False
     False.negated shouldBe True
     Maybe.negated shouldBe Maybe

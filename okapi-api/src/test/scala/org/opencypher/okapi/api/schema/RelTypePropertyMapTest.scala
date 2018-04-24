@@ -27,11 +27,11 @@
 package org.opencypher.okapi.api.schema
 
 import org.opencypher.okapi.api.types.{CTAny, CTBoolean, CTInteger, CTString}
-import org.opencypher.okapi.test.BaseTestSuite
+import org.scalatest.{FunSpec, Matchers}
 
-class RelTypePropertyMapTest extends BaseTestSuite {
+class RelTypePropertyMapTest extends FunSpec with Matchers {
 
-  test("++") {
+  it("++") {
     val map1 = RelTypePropertyMap.empty
       .register("A")("name" -> CTString, "age" -> CTInteger, "gender" -> CTString)
       .register("B")("p" -> CTBoolean)
@@ -48,7 +48,7 @@ class RelTypePropertyMapTest extends BaseTestSuite {
     )
   }
 
-  test("properties") {
+  it("properties") {
     val map = RelTypePropertyMap.empty
       .register("A")("name" -> CTString)
       .register("B")("foo" -> CTInteger)
@@ -58,7 +58,7 @@ class RelTypePropertyMapTest extends BaseTestSuite {
     map.properties("C") should equal(Map.empty)
   }
 
-  test("filter for rel types") {
+  it("filter for rel types") {
     val map = RelTypePropertyMap.empty
       .register("A")("name" -> CTString)
       .register("B")("foo" -> CTInteger)

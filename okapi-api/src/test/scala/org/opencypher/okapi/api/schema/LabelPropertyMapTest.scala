@@ -27,11 +27,11 @@
 package org.opencypher.okapi.api.schema
 
 import org.opencypher.okapi.api.types.{CTAny, CTBoolean, CTInteger, CTString}
-import org.opencypher.okapi.test.BaseTestSuite
+import org.scalatest.{FunSpec, Matchers}
 
-class LabelPropertyMapTest extends BaseTestSuite {
+class LabelPropertyMapTest extends FunSpec with Matchers {
 
-  test("++") {
+  it("++") {
     val map1 = LabelPropertyMap.empty
       .register("A")("name" -> CTString, "age" -> CTInteger, "gender" -> CTString)
       .register("B")("p" -> CTBoolean)
@@ -48,7 +48,7 @@ class LabelPropertyMapTest extends BaseTestSuite {
     )
   }
 
-  test("for labels") {
+  it("for labels") {
     val map = LabelPropertyMap.empty
       .register("A")("name" -> CTString)
       .register("B")("foo" -> CTInteger)

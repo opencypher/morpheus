@@ -24,45 +24,16 @@
  * described as "implementation extensions to Cypher" or as "proposed changes to
  * Cypher that are not yet approved by the openCypher community".
  */
-package org.opencypher.okapi.ir.test.support
+package org.opencypher.okapi.testing
 
-import java.util.Objects
+import org.scalactic.source
+import org.scalatest.{FunSpec, Matchers, Tag}
 
-import scala.collection.immutable.TreeMap
+abstract class BaseTestSuite extends FunSpec with Matchers {
 
-object Bag {
-
-  // Name for the ordered list representation that we use to check equality of results where the order does not matter
-  type Bag[T <: Any] = List[T]
-
-  def apply[E](elements: E*): Bag[E] = {
-    // Canonical ordered representation to determine the equality of bags (and have nice diffs when they're not equal)
-    implicit val ordering = new Ordering[E] {
-      override def compare(x: E, y: E): Int = {
-        if (Objects.equals(x, y)) {
-          0
-        } else if (x == null) {
-          -1
-        } else if (y == null) {
-          1
-        } else {
-          Ordering[String].compare(x.toString + x.hashCode, y.toString + y.hashCode)
-        }
-      }
-    }
-    List(elements: _*).sorted
-  }
-
-  implicit class TraversableToBag[E](val t: Traversable[E]) {
-    def toBag: Bag[E] = Bag(t.toSeq: _*)
-  }
-
-  implicit class IteratorToBag[E](val i: Iterator[E]) {
-    def toBag: Bag[E] = Bag(i.toSeq: _*)
-  }
-
-  implicit class ArrayToBag[E](val a: Array[E]) {
-    def toBag: Bag[E] = Bag(a: _*)
-  }
-
+  /**
+    * Wraps an 'it' call for convenience
+    */
+  def test(name: String, tags: Tag*)(testFun: => Any /* Assertion */ )(implicit pos: source.Position): Unit =
+    it(name, tags: _*)(testFun)
 }

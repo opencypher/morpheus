@@ -28,12 +28,12 @@ package org.opencypher.spark.api.io.neo4j
 
 import org.opencypher.okapi.api.graph.{CypherResult, GraphName, Namespace}
 import org.opencypher.okapi.api.value.CypherValue.{CypherMap, CypherNull}
+import org.opencypher.okapi.testing.Bag
+import org.opencypher.okapi.testing.Bag._
 import org.opencypher.spark.api.io.neo4j.CommunityNeo4jGraphDataSource._
 import org.opencypher.spark.impl.CAPSConverters._
 import org.opencypher.spark.test.CAPSTestSuite
 import org.opencypher.spark.test.fixture.{Neo4jServerFixture, TeamDataFixture}
-import org.opencypher.okapi.ir.test.support.Bag
-import org.opencypher.okapi.ir.test.support.Bag._
 
 class CommunityNeo4JGraphDataSourceTest
   extends CAPSTestSuite

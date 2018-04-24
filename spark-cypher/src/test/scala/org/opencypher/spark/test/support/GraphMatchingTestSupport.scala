@@ -27,7 +27,7 @@
 package org.opencypher.spark.test.support
 
 import org.apache.spark.sql.SparkSession
-import org.opencypher.okapi.test.BaseTestSuite
+import org.opencypher.okapi.testing.BaseTestSuite
 import org.opencypher.spark.impl.CAPSGraph
 import org.opencypher.spark.test.fixture.{CAPSSessionFixture, SparkSessionFixture}
 import org.scalatest.Assertion

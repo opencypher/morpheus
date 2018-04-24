@@ -24,7 +24,7 @@
  * described as "implementation extensions to Cypher" or as "proposed changes to
  * Cypher that are not yet approved by the openCypher community".
  */
-package org.opencypher.okapi.ir.test.support.creation.propertygraph
+package org.opencypher.okapi.testing.propertygraph
 
 import org.opencypher.okapi.api.value.CypherValue.{CypherMap, CypherNode, CypherRelationship}
 
@@ -45,14 +45,14 @@ trait Graph {
   }
 }
 
-case class TestPropertyGraph(nodes: Seq[TestNode], relationships: Seq[TestRelationship]) extends Graph {
-  def updated(node: TestNode): TestPropertyGraph = copy(nodes = node +: nodes)
+case class TestGraph(nodes: Seq[TestNode], relationships: Seq[TestRelationship]) extends Graph {
+  def updated(node: TestNode): TestGraph = copy(nodes = node +: nodes)
 
-  def updated(rel: TestRelationship): TestPropertyGraph = copy(relationships = rel +: relationships)
+  def updated(rel: TestRelationship): TestGraph = copy(relationships = rel +: relationships)
 }
 
-object TestPropertyGraph {
-  def empty: TestPropertyGraph = TestPropertyGraph(Seq.empty, Seq.empty)
+object TestGraph {
+  def empty: TestGraph = TestGraph(Seq.empty, Seq.empty)
 }
 
 case class TestNode(
@@ -84,7 +84,6 @@ case class TestRelationship(
 
 }
 
-
-trait PropertyGraphFactory {
-  def apply(createQuery: String, parameters: Map[String, Any]): TestPropertyGraph
+trait GraphFactory {
+  def apply(createQuery: String, parameters: Map[String, Any]): TestGraph
 }

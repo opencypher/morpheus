@@ -32,8 +32,8 @@ import org.opencypher.okapi.api.value.CypherValue.CypherMap
 import org.opencypher.okapi.impl.io.SessionGraphDataSource
 import org.opencypher.spark.test.CAPSTestSuite
 import org.opencypher.spark.test.fixture.{GraphConstructionFixture, TeamDataFixture}
-import org.opencypher.okapi.ir.test.support.Bag
-import org.opencypher.okapi.ir.test.support.Bag._
+import org.opencypher.okapi.testing.Bag
+import org.opencypher.okapi.testing.Bag._
 
 class CAPSSessionImplTest extends CAPSTestSuite with TeamDataFixture with GraphConstructionFixture {
 

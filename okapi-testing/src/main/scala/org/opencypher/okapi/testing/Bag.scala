@@ -24,11 +24,43 @@
  * described as "implementation extensions to Cypher" or as "proposed changes to
  * Cypher that are not yet approved by the openCypher community".
  */
-package org.opencypher.okapi.test.fixture
+package org.opencypher.okapi.testing
 
-import org.opencypher.okapi.test.BaseTestSuite
-import org.scalatest.{BeforeAndAfterAll, BeforeAndAfterEach}
+import java.util.Objects
 
-trait BaseTestFixture extends BeforeAndAfterEach with BeforeAndAfterAll {
-  self: BaseTestSuite  =>
+object Bag {
+
+  // Name for the ordered list representation that we use to check equality of results where the order does not matter
+  type Bag[T <: Any] = List[T]
+
+  def apply[E](elements: E*): Bag[E] = {
+    // Canonical ordered representation to determine the equality of bags (and have nice diffs when they're not equal)
+    implicit val ordering = new Ordering[E] {
+      override def compare(x: E, y: E): Int = {
+        if (Objects.equals(x, y)) {
+          0
+        } else if (x == null) {
+          -1
+        } else if (y == null) {
+          1
+        } else {
+          Ordering[String].compare(x.toString + x.hashCode, y.toString + y.hashCode)
+        }
+      }
+    }
+    List(elements: _*).sorted
+  }
+
+  implicit class TraversableToBag[E](val t: Traversable[E]) {
+    def toBag: Bag[E] = Bag(t.toSeq: _*)
+  }
+
+  implicit class IteratorToBag[E](val i: Iterator[E]) {
+    def toBag: Bag[E] = Bag(i.toSeq: _*)
+  }
+
+  implicit class ArrayToBag[E](val a: Array[E]) {
+    def toBag: Bag[E] = Bag(a: _*)
+  }
+
 }

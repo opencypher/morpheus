@@ -45,6 +45,13 @@
       <scope>test</scope>
     </dependency>
 
+    <dependency>
+      <groupId>org.opencypher</groupId>
+      <artifactId>okapi-testing</artifactId>
+      <version>${project.parent.version}</version>
+      <scope>test</scope>
+    </dependency>
+
     <!-- Workaround for https://youtrack.jetbrains.com/issue/SCL-13184 -->
     <dependency>
       <groupId>org.opencypher</groupId>

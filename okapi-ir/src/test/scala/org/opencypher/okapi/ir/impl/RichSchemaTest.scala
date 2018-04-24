@@ -30,7 +30,7 @@ import org.opencypher.okapi.api.schema.Schema
 import org.opencypher.okapi.api.types._
 import org.opencypher.okapi.ir.api.IRField
 import org.opencypher.okapi.ir.api.pattern.{DirectedRelationship, Pattern}
-import org.opencypher.okapi.test.BaseTestSuite
+import org.opencypher.okapi.testing.BaseTestSuite
 
 class RichSchemaTest extends BaseTestSuite {
     describe("fromFields") {

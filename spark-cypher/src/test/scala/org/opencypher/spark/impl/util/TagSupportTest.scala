@@ -26,7 +26,7 @@
  */
 package org.opencypher.spark.impl.util
 
-import org.opencypher.okapi.test.BaseTestSuite
+import org.opencypher.okapi.testing.BaseTestSuite
 import org.opencypher.spark.impl.util.TagSupport._
 
 class TagSupportTest extends BaseTestSuite {

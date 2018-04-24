@@ -35,7 +35,7 @@ import org.opencypher.okapi.ir.test._
 import org.opencypher.okapi.ir.test.support.MatchHelper._
 import org.opencypher.okapi.logical.impl.{Directed, LogicalGraph, LogicalOperatorProducer, Undirected}
 import org.opencypher.okapi.relational.impl.table.{FieldSlotContent, OpaqueField, ProjectedExpr, ProjectedField}
-import org.opencypher.okapi.test.BaseTestSuite
+import org.opencypher.okapi.testing.BaseTestSuite
 
 import scala.language.implicitConversions
 
