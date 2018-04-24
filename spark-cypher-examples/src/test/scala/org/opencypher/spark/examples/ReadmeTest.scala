@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016-2018 "Neo4j, Inc." [https://neo4j.com]
+ * Copyright (c) 2016-2018 "Neo4j Sweden, AB" [https://neo4j.com]
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -94,7 +94,7 @@ class ReadmeTest extends FunSuite with Matchers {
   /**
     * Check by testing if the license-header.txt file can be found. This works even if the root folder has a different name.
     */
-  def isRootFolderPath(path: String): Boolean = new File(s"$path${sep}license-header.txt").exists
+  def isRootFolderPath(path: String): Boolean = new File(s"$path$sep.travis.yml").exists
 
   def extractMarkdownScalaSourceBlocks(lines: Vector[String]): Seq[ScalaSourceCode] = {
     val currentParsingState: (Vector[ScalaSourceCode], Option[Vector[String]]) = (Vector.empty, None)
