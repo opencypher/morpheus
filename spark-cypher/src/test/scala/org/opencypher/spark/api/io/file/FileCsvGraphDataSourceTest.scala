@@ -27,9 +27,8 @@
 package org.opencypher.spark.api.io.file
 
 import org.opencypher.okapi.api.graph.{GraphName, Namespace}
-import org.opencypher.okapi.impl.exception.GraphNotFoundException
+import org.opencypher.okapi.impl.exception.{GraphNotFoundException, InvalidGraphException}
 import org.opencypher.okapi.testing.Bag._
-import org.opencypher.spark.api.io.hdfs.HdfsCsvGraphDataSource
 import org.opencypher.spark.impl.CAPSConverters._
 import org.opencypher.spark.test.CAPSTestSuite
 import org.opencypher.spark.test.fixture.TeamDataFixture
@@ -57,9 +56,10 @@ class FileCsvGraphDataSourceTest extends CAPSTestSuite with TeamDataFixture {
   test("graphNames should return all names of stored graphs") {
     val testGraphName1 = GraphName("sn")
     val testGraphName2 = GraphName("prod")
+    val testGraphName3 = GraphName("empty")
     val source = FileCsvGraphDataSource(rootPath = testRootPath)
 
-    source.graphNames should equal(Set(testGraphName1, testGraphName2))
+    source.graphNames should equal(Set(testGraphName1, testGraphName2, testGraphName3))
   }
 
   test("Load graph from file via DataSource") {
@@ -97,9 +97,11 @@ class FileCsvGraphDataSourceTest extends CAPSTestSuite with TeamDataFixture {
     a[GraphNotFoundException] shouldBe thrownBy {
       caps.cypher(s"FROM GRAPH $testNamespace.$testGraphName MATCH (n) RETURN n").getRecords.collect
     }
+
+    caps.deregisterSource(testNamespace)
   }
 
-  it("Loading from an empty graph folder should throw an appropriate exception") {
+  test("Loading from an empty graph folder should throw an appropriate exception") {
     val testNamespace = Namespace("myFS")
     val testGraphName = GraphName("empty")
 
@@ -107,8 +109,10 @@ class FileCsvGraphDataSourceTest extends CAPSTestSuite with TeamDataFixture {
 
     caps.registerSource(testNamespace, dataSource)
 
-    a[GraphNotFoundException] shouldBe thrownBy {
+    a[InvalidGraphException] shouldBe thrownBy {
       caps.cypher(s"FROM GRAPH $testNamespace.$testGraphName MATCH (n) RETURN n").getRecords.collect
     }
+
+    caps.deregisterSource(testNamespace)
   }
 }

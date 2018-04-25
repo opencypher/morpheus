@@ -29,9 +29,8 @@ package org.opencypher.spark.api.io.hdfs
 import java.net.URI
 
 import org.opencypher.okapi.api.graph.{GraphName, Namespace}
-import org.opencypher.okapi.impl.exception.GraphNotFoundException
+import org.opencypher.okapi.impl.exception.{GraphNotFoundException, InvalidGraphException}
 import org.opencypher.okapi.testing.Bag._
-import org.opencypher.spark.api.io.file.FileCsvGraphDataSource
 import org.opencypher.spark.impl.CAPSConverters._
 import org.opencypher.spark.test.CAPSTestSuite
 import org.opencypher.spark.test.fixture.{MiniDFSClusterFixture, TeamDataFixture}
@@ -102,7 +101,7 @@ class HdfsCsvGraphDataSourceTest
     caps.deregisterSource(testNamespace)
   }
 
-  it("Loading a non-existent graph should throw an appropriate exception") {
+  test("Loading a non-existent graph should throw an appropriate exception") {
     val testNamespace = Namespace("myHDFS")
     val testGraphName = GraphName("foo")
 
@@ -115,9 +114,10 @@ class HdfsCsvGraphDataSourceTest
     a[GraphNotFoundException] shouldBe thrownBy {
       caps.cypher(s"FROM GRAPH $testNamespace.$testGraphName MATCH (n) RETURN n").getRecords.collect
     }
+    caps.deregisterSource(testNamespace)
   }
 
-  it("Loading from an empty graph folder should throw an appropriate exception") {
+  test("Loading from an empty graph folder should throw an appropriate exception") {
     val testNamespace = Namespace("myHDFS")
     val testGraphName = GraphName("empty")
 
@@ -127,12 +127,14 @@ class HdfsCsvGraphDataSourceTest
 
     caps.registerSource(testNamespace, dataSource)
 
-    a[GraphNotFoundException] shouldBe thrownBy {
+    a[InvalidGraphException] shouldBe thrownBy {
       caps.cypher(s"FROM GRAPH $testNamespace.$testGraphName MATCH (n) RETURN n").getRecords.collect
     }
+
+    caps.deregisterSource(testNamespace)
   }
 
-  it("is robust about the path input") {
+  test("is robust about the path input") {
     val paths = Set("hdfs:///foo/bar", "/foo/bar", "hdfs://hostname/foo/bar", "hdfs://hostname:123/foo/bar")
 
     paths.foreach { path =>
