@@ -61,7 +61,7 @@ object CsvSchemaUtils {
   }
 }
 
-case class CsvField(name: String, column: Int, valueType: String) {
+case class CsvField(name: String, column: Int, valueType: String, nullable: Option[Boolean] = None) {
   private val listType = raw"list\[(\w+)\]".r
 
   /**
@@ -87,9 +87,9 @@ case class CsvField(name: String, column: Int, valueType: String) {
     case other => extractSimpleType(other)
   }
 
-  lazy val toSourceStructField: StructField = StructField(name, getSourceType, nullable = true)
+  lazy val toSourceStructField: StructField = StructField(name, getSourceType, nullable.getOrElse(false))
 
-  lazy val toTargetStructField: StructField = StructField(name, getTargetType, nullable = true)
+  lazy val toTargetStructField: StructField = StructField(name, getTargetType, nullable.getOrElse(false))
 
   private def extractSimpleType(typeString: String): DataType = typeString match {
     case "string" => StringType
@@ -105,8 +105,8 @@ case class CsvField(name: String, column: Int, valueType: String) {
 }
 
 object CsvField {
-  def apply(name: String, column: Int, valueType: CypherType): CsvField =
-    CsvField(name, column, typeName(valueType))
+  def apply(name: String, column: Int, valueType: CypherType, nullable: Boolean): CsvField =
+    CsvField(name, column, typeName(valueType), Some(nullable))
 
   def typeName(ct: CypherType): String = ct.material match {
     case CTString => "STRING"

@@ -68,8 +68,11 @@ class CsvGraphLoader(fileHandler: CsvFileHandler)(implicit capsSession: CAPSSess
     csvFiles.map(e => {
       val schema = parseSchema(e)(CsvNodeSchema(_))
 
+      val userDefinedSchema = schema.toStructType
+
       val intermediateDF = sparkSession.read
-        .schema(schema.toStructType)
+        // Spark does not respect the nullable member in StructField
+        .schema(userDefinedSchema)
         .csv(e.toString)
 
       val dataFrame = convertLists(intermediateDF, schema)
@@ -79,8 +82,10 @@ class CsvGraphLoader(fileHandler: CsvFileHandler)(implicit capsSession: CAPSSess
         optionalLabels = schema.optionalLabels.map(_.name).toSet,
         propertyKeys = schema.propertyFields.map(_.name).toSet)
 
-      val shouldBeNonNullable = schema.optionalLabels.map(_.name).toSet + schema.idField.name
-      val dfWithCorrectNullability = shouldBeNonNullable.foldLeft(dataFrame)(_.setNonNullable(_))
+      val nonNullableFields = userDefinedSchema.fields.filterNot(_.nullable)
+      val dfWithCorrectNullability = nonNullableFields.foldLeft(dataFrame) {
+        case (currentDF, structField) => currentDF.setNonNullable(structField.name)
+      }
 
       CAPSNodeTable(nodeMapping, dfWithCorrectNullability)
     })
@@ -93,9 +98,12 @@ class CsvGraphLoader(fileHandler: CsvFileHandler)(implicit capsSession: CAPSSess
 
       val schema = parseSchema(relationShipFile)(CsvRelSchema(_))
 
+      val userDefinedSchema = schema.toStructType
+
       val intermediateDF = sparkSession.read
         .option("timestampFormat", "yyyy-MM-dd'T'HH:mm:ss.SSS")
-        .schema(schema.toStructType)
+        // Spark does not respect the nullable member in StructField
+        .schema(userDefinedSchema)
         .csv(relationShipFile.toString)
 
       val dataFrame = convertLists(intermediateDF, schema)
@@ -106,8 +114,10 @@ class CsvGraphLoader(fileHandler: CsvFileHandler)(implicit capsSession: CAPSSess
         schema.relationshipType,
         schema.propertyFields.map(_.name).toSet)
 
-      val shouldBeNonNullable = Set(schema.idField.name, schema.startIdField.name, schema.endIdField.name)
-      val dfWithCorrectNullability = shouldBeNonNullable.foldLeft(dataFrame)(_.setNonNullable(_))
+      val nonNullableFields = userDefinedSchema.fields.filterNot(_.nullable)
+      val dfWithCorrectNullability = nonNullableFields.foldLeft(dataFrame) {
+        case (currentDF, structField) => currentDF.setNonNullable(structField.name)
+      }
 
       CAPSRelationshipTable(relMapping, dfWithCorrectNullability)
     })
