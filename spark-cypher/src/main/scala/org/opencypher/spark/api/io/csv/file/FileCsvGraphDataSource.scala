@@ -24,7 +24,7 @@
  * described as "implementation extensions to Cypher" or as "proposed changes to
  * Cypher that are not yet approved by the openCypher community".
  */
-package org.opencypher.spark.api.io.file
+package org.opencypher.spark.api.io.csv.file
 
 import java.net.URI
 import java.nio.file.{Files, Paths}

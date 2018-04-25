@@ -24,7 +24,7 @@
  * described as "implementation extensions to Cypher" or as "proposed changes to
  * Cypher that are not yet approved by the openCypher community".
  */
-package org.opencypher.spark.api.io.file
+package org.opencypher.spark.api.io.csv.file
 
 import org.opencypher.okapi.api.graph.{GraphName, Namespace}
 import org.opencypher.okapi.impl.exception.{GraphNotFoundException, InvalidGraphException}

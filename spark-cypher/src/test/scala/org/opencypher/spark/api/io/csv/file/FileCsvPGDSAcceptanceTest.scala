@@ -24,41 +24,13 @@
  * described as "implementation extensions to Cypher" or as "proposed changes to
  * Cypher that are not yet approved by the openCypher community".
  */
-package org.opencypher.spark.api.io
+package org.opencypher.spark.api.io.csv.file
 
-import java.nio.file.{Path, Paths}
-
-import org.junit.rules.TemporaryFolder
-import org.opencypher.okapi.api.graph.{CypherSession, GraphName}
 import org.opencypher.okapi.api.io.PropertyGraphDataSource
-import org.opencypher.okapi.testing.PGDSAcceptance
-import org.opencypher.okapi.testing.propertygraph.TestGraph
-import org.opencypher.spark.impl.io.hdfs.CsvGraphWriter
-import org.opencypher.spark.test.CAPSTestSuite
-import org.opencypher.spark.test.support.creation.caps.CAPSScanGraphFactory
+import org.opencypher.spark.api.io.csv.CsvPGDSAcceptanceTest
 
-abstract class CsvPGDSAcceptanceTest extends CAPSTestSuite with PGDSAcceptance {
+class FileCsvPGDSAcceptanceTest extends CsvPGDSAcceptanceTest  {
 
-  private val tempDir = new TemporaryFolder()
+  override protected def createInternal: PropertyGraphDataSource = FileCsvGraphDataSource(dsRoot.toString)
 
-  protected def dsRoot: Path = Paths.get(tempDir.getRoot.getAbsolutePath)
-
-  protected def graphPath: Path = Paths.get(dsRoot.toString, gn.value)
-
-  override def initSession(): CypherSession = caps
-
-  override def afterAll(): Unit = {
-//    tempDir.delete()
-    super.beforeAll()
-  }
-
-  override def create(graphName: GraphName, testGraph: TestGraph, createStatements: String): PropertyGraphDataSource = {
-    tempDir.create()
-    println(s"tempDir = ${tempDir.getRoot.getAbsolutePath}")
-    val propertyGraph = CAPSScanGraphFactory(testGraph)
-    CsvGraphWriter(propertyGraph, graphPath.toUri).store()
-    createInternal
-  }
-
-  protected def createInternal: PropertyGraphDataSource
 }
