@@ -33,7 +33,7 @@ import java.util.stream.Collectors
 
 import org.apache.hadoop.conf.Configuration
 import org.apache.hadoop.fs.{FileSystem, Path}
-import org.opencypher.okapi.impl.exception.IllegalArgumentException
+import org.opencypher.okapi.impl.exception.{GraphNotFoundException, IllegalArgumentException}
 import org.opencypher.spark.impl.io.hdfs.CsvGraphLoader._
 
 trait CsvFileHandler {
@@ -56,7 +56,11 @@ final class HadoopFileHandler(override val graphLocation: URI, private val hadoo
   private val fs: FileSystem = FileSystem.get(graphLocation, hadoopConfig)
 
   override def listDataFiles(directory: String): Array[URI] = {
-    fs.listStatus(new Path(graphLocation.getPath, directory))
+    val graphDirectory = graphLocation.getPath
+    if (!fs.exists(new Path(graphDirectory))) {
+      throw GraphNotFoundException(s"CSV graph with name '$graphDirectory'")
+    }
+    fs.listStatus(new Path(graphDirectory, directory))
       .filter(p => p.getPath.toString.toUpperCase.endsWith(CSV_SUFFIX))
       .map(_.getPath.toUri)
   }
@@ -87,8 +91,12 @@ final class LocalFileHandler(override val graphLocation: URI) extends CsvFileHan
   import scala.collection.JavaConverters._
 
   override def listDataFiles(directory: String): Array[URI] = {
+    val graphDirectory = graphLocation.getPath
+    if (Files.notExists(Paths.get(graphDirectory))) {
+      throw GraphNotFoundException(s"CSV graph with name '$graphDirectory'")
+    }
     Files
-      .list(Paths.get(graphLocation.getPath, directory))
+      .list(Paths.get(graphDirectory, directory))
       .collect(Collectors.toList())
       .asScala
       .filter(p => p.toString.toUpperCase.endsWith(CSV_SUFFIX))
