@@ -117,11 +117,11 @@ object CAPSNodeTable {
     * columns, the column name is used as property key.
     *
     * @param impliedLabels implied node labels
-    * @param table         Spark table
+    * @param nodeDF        node data
     * @return a node table with inferred node mapping
     */
-  def apply(impliedLabels: Set[String], table: SparkTable): CAPSNodeTable =
-    CAPSNodeTable(impliedLabels, Map.empty, table)
+  def apply(impliedLabels: Set[String], nodeDF: DataFrame): CAPSNodeTable =
+    CAPSNodeTable(impliedLabels, Map.empty, nodeDF)
 
   /**
     * Creates a node table from the given [[DataFrame]]. By convention, there needs to be one column storing node
@@ -131,11 +131,10 @@ object CAPSNodeTable {
     *
     * @param impliedLabels  implied node labels
     * @param optionalLabels mapping from optional labels to column names
-    * @param table          Spark table
+    * @param nodeDF         node data
     * @return a node table with inferred node mapping
     */
-  def apply(impliedLabels: Set[String], optionalLabels: Map[String, String], table: SparkTable): CAPSNodeTable = {
-    val nodeDF = table.df
+  def apply(impliedLabels: Set[String], optionalLabels: Map[String, String], nodeDF: DataFrame): CAPSNodeTable = {
     val nodeProperties = (properties(nodeDF.columns) -- optionalLabels.values).map(col => col -> col).toMap
     val nodeMapping = NodeMapping(GraphEntity.sourceIdKey, impliedLabels, optionalLabels, nodeProperties)
     CAPSNodeTable(nodeMapping, nodeDF)
@@ -172,11 +171,10 @@ object CAPSRelationshipTable {
     * column name is used as property key.
     *
     * @param relationshipType relationship type
-    * @param table            Spark table
+    * @param relationshipDF   relationship data
     * @return a relationship table with inferred relationship mapping
     */
-  def apply(relationshipType: String, table: SparkTable): CAPSRelationshipTable = {
-    val relationshipDF = table.df
+  def apply(relationshipType: String, relationshipDF: DataFrame): CAPSRelationshipTable = {
     val relationshipProperties = properties(relationshipDF.columns)
 
     val relationshipMapping = RelationshipMapping.create(GraphEntity.sourceIdKey,
