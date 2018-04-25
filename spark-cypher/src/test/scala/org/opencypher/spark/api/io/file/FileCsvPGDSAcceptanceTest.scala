@@ -24,17 +24,13 @@
  * described as "implementation extensions to Cypher" or as "proposed changes to
  * Cypher that are not yet approved by the openCypher community".
  */
-package org.opencypher.spark.api.io.hdfs
+package org.opencypher.spark.api.io.file
 
 import org.opencypher.okapi.api.io.PropertyGraphDataSource
 import org.opencypher.spark.api.io.CsvPGDSAcceptanceTest
-import org.opencypher.spark.test.fixture.MiniDFSClusterFixture
 
-class HdfsCsvPGDSAcceptanceTest extends CsvPGDSAcceptanceTest with MiniDFSClusterFixture {
+class FileCsvPGDSAcceptanceTest extends CsvPGDSAcceptanceTest  {
 
-  override def fsTestGraphPath = Some(graphPath.toString)
+  override protected def createInternal: PropertyGraphDataSource = FileCsvGraphDataSource(dsRoot.toString)
 
-  override def dfsTestGraphPath = Some(graphPath.toString)
-
-  override protected def createInternal: PropertyGraphDataSource = HdfsCsvGraphDataSource(clusterConfig, dsRoot.toString)
 }

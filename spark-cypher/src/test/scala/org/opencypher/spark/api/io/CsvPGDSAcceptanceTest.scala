@@ -24,17 +24,41 @@
  * described as "implementation extensions to Cypher" or as "proposed changes to
  * Cypher that are not yet approved by the openCypher community".
  */
-package org.opencypher.spark.api.io.hdfs
+package org.opencypher.spark.api.io
 
+import java.nio.file.{Path, Paths}
+
+import org.junit.rules.TemporaryFolder
+import org.opencypher.okapi.api.graph.{CypherSession, GraphName}
 import org.opencypher.okapi.api.io.PropertyGraphDataSource
-import org.opencypher.spark.api.io.CsvPGDSAcceptanceTest
-import org.opencypher.spark.test.fixture.MiniDFSClusterFixture
+import org.opencypher.okapi.testing.PGDSAcceptance
+import org.opencypher.okapi.testing.propertygraph.TestGraph
+import org.opencypher.spark.impl.io.hdfs.CsvGraphWriter
+import org.opencypher.spark.test.CAPSTestSuite
+import org.opencypher.spark.test.support.creation.caps.CAPSScanGraphFactory
 
-class HdfsCsvPGDSAcceptanceTest extends CsvPGDSAcceptanceTest with MiniDFSClusterFixture {
+abstract class CsvPGDSAcceptanceTest extends CAPSTestSuite with PGDSAcceptance {
 
-  override def fsTestGraphPath = Some(graphPath.toString)
+  private val tempDir = new TemporaryFolder()
 
-  override def dfsTestGraphPath = Some(graphPath.toString)
+  protected def dsRoot: Path = Paths.get(tempDir.getRoot.getAbsolutePath)
 
-  override protected def createInternal: PropertyGraphDataSource = HdfsCsvGraphDataSource(clusterConfig, dsRoot.toString)
+  protected def graphPath: Path = Paths.get(dsRoot.toString, gn.value)
+
+  override def initSession(): CypherSession = caps
+
+  override def afterAll(): Unit = {
+//    tempDir.delete()
+    super.beforeAll()
+  }
+
+  override def create(graphName: GraphName, testGraph: TestGraph, createStatements: String): PropertyGraphDataSource = {
+    tempDir.create()
+    println(s"tempDir = ${tempDir.getRoot.getAbsolutePath}")
+    val propertyGraph = CAPSScanGraphFactory(testGraph)
+    CsvGraphWriter(propertyGraph, graphPath.toUri).store()
+    createInternal
+  }
+
+  protected def createInternal: PropertyGraphDataSource
 }
