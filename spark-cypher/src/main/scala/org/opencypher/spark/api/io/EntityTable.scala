@@ -111,6 +111,35 @@ object CAPSNodeTable {
     CAPSNodeTable(nodeMapping, nodeDF)
   }
 
+  /**
+    * Creates a node table from the given [[DataFrame]]. By convention, there needs to be one column storing node
+    * identifiers and named after [[GraphEntity.sourceIdKey]]. All remaining columns are interpreted as node property
+    * columns, the column name is used as property key.
+    *
+    * @param impliedLabels implied node labels
+    * @param nodeDF        node data
+    * @return a node table with inferred node mapping
+    */
+  def apply(impliedLabels: Set[String], nodeDF: DataFrame): CAPSNodeTable =
+    CAPSNodeTable(impliedLabels, Map.empty, nodeDF)
+
+  /**
+    * Creates a node table from the given [[DataFrame]]. By convention, there needs to be one column storing node
+    * identifiers and named after [[GraphEntity.sourceIdKey]]. Optional labels are defined by a mapping from label to
+    * column name. All remaining columns are interpreted as node property columns, the column name is used as property
+    * key.
+    *
+    * @param impliedLabels  implied node labels
+    * @param optionalLabels mapping from optional labels to column names
+    * @param nodeDF         node data
+    * @return a node table with inferred node mapping
+    */
+  def apply(impliedLabels: Set[String], optionalLabels: Map[String, String], nodeDF: DataFrame): CAPSNodeTable = {
+    val nodeProperties = (properties(nodeDF.columns) -- optionalLabels.values).map(col => col -> col).toMap
+    val nodeMapping = NodeMapping(GraphEntity.sourceIdKey, impliedLabels, optionalLabels, nodeProperties)
+    CAPSNodeTable(nodeMapping, nodeDF)
+  }
+
   private def properties(nodeColumnNames: Seq[String]): Set[String] = {
     nodeColumnNames.filter(_ != GraphEntity.sourceIdKey).toSet
   }
@@ -123,7 +152,7 @@ object CAPSRelationshipTable {
   def apply[E <: Relationship : TypeTag](relationships: Seq[E])(implicit caps: CAPSSession): CAPSRelationshipTable = {
     val relationshipType: String = Annotation.relType[E]
     val relationshipDF = caps.sparkSession.createDataFrame(relationships)
-    val relationshipProperties = properties(relationshipDF.columns.toSet)
+    val relationshipProperties = properties(relationshipDF.columns)
 
     val relationshipMapping = RelationshipMapping.create(GraphEntity.sourceIdKey,
       Relationship.sourceStartNodeKey,
@@ -134,8 +163,31 @@ object CAPSRelationshipTable {
     CAPSRelationshipTable(relationshipMapping, relationshipDF)
   }
 
-  private def properties(relColumnNames: Set[String]): Set[String] = {
-    relColumnNames.filter(!Relationship.nonPropertyAttributes.contains(_))
+  /**
+    * Creates a relationship table from the given [[DataFrame]]. By convention, there needs to be one column storing
+    * relationship identifiers and named after [[GraphEntity.sourceIdKey]], one column storing source node identifiers
+    * and named after [[Relationship.sourceStartNodeKey]] and one column storing target node identifiers and named after
+    * [[Relationship.sourceEndNodeKey]]. All remaining columns are interpreted as relationship property columns, the
+    * column name is used as property key.
+    *
+    * @param relationshipType relationship type
+    * @param relationshipDF   relationship data
+    * @return a relationship table with inferred relationship mapping
+    */
+  def apply(relationshipType: String, relationshipDF: DataFrame): CAPSRelationshipTable = {
+    val relationshipProperties = properties(relationshipDF.columns)
+
+    val relationshipMapping = RelationshipMapping.create(GraphEntity.sourceIdKey,
+      Relationship.sourceStartNodeKey,
+      Relationship.sourceEndNodeKey,
+      relationshipType,
+      relationshipProperties)
+
+    CAPSRelationshipTable(relationshipMapping, relationshipDF)
+  }
+
+  private def properties(relColumnNames: Seq[String]): Set[String] = {
+    relColumnNames.filter(!Relationship.nonPropertyAttributes.contains(_)).toSet
   }
 }
 
