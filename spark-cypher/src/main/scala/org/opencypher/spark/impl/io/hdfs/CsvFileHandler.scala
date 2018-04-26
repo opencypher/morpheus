@@ -33,7 +33,7 @@ import java.util.stream.Collectors
 
 import org.apache.hadoop.conf.Configuration
 import org.apache.hadoop.fs.{FileSystem, Path}
-import org.opencypher.okapi.impl.exception.IllegalArgumentException
+import org.opencypher.okapi.impl.exception.{GraphNotFoundException, IllegalArgumentException, InvalidGraphException}
 import org.opencypher.spark.impl.io.hdfs.CsvGraphLoader._
 
 trait CsvFileHandler {
@@ -56,7 +56,15 @@ final class HadoopFileHandler(override val graphLocation: URI, private val hadoo
   private val fs: FileSystem = FileSystem.get(graphLocation, hadoopConfig)
 
   override def listDataFiles(directory: String): Array[URI] = {
-    fs.listStatus(new Path(graphLocation.getPath, directory))
+    val graphDirectory = graphLocation.getPath
+    if (!fs.exists(new Path(graphDirectory))) {
+      throw GraphNotFoundException(s"CSV graph with name '$graphDirectory'")
+    }
+    val entitiesDirectory = new Path(graphDirectory, directory)
+    if (!fs.exists(entitiesDirectory)) {
+      throw InvalidGraphException(s"CSV graph is missing required directory '$directory'")
+    }
+    fs.listStatus(entitiesDirectory)
       .filter(p => p.getPath.toString.toUpperCase.endsWith(CSV_SUFFIX))
       .map(_.getPath.toUri)
   }
@@ -87,8 +95,16 @@ final class LocalFileHandler(override val graphLocation: URI) extends CsvFileHan
   import scala.collection.JavaConverters._
 
   override def listDataFiles(directory: String): Array[URI] = {
+    val graphDirectory = graphLocation.getPath
+    if (Files.notExists(Paths.get(graphDirectory))) {
+      throw GraphNotFoundException(s"CSV graph with name '$graphDirectory'")
+    }
+    val entitiesDirectory = Paths.get(graphDirectory, directory)
+    if (Files.notExists(entitiesDirectory)) {
+      throw InvalidGraphException(s"CSV graph is missing required directory '$directory'")
+    }
     Files
-      .list(Paths.get(graphLocation.getPath, directory))
+      .list(entitiesDirectory)
       .collect(Collectors.toList())
       .asScala
       .filter(p => p.toString.toUpperCase.endsWith(CSV_SUFFIX))
@@ -106,7 +122,6 @@ final class LocalFileHandler(override val graphLocation: URI) extends CsvFileHan
     val schemaPath = optSchemaPath.getOrElse(throw IllegalArgumentException(s"Could not find schema file at $csvPath"))
     new String(Files.readAllBytes(Paths.get(schemaPath)))
   }
-
 
   override def writeSchemaFile(directory: String, filename: String, jsonSchema: String): Unit = {
     val file = new File(Paths.get(graphLocation.getPath, directory, filename).toString)

@@ -29,6 +29,7 @@ package org.opencypher.spark.api.io.hdfs
 import java.net.URI
 
 import org.opencypher.okapi.api.graph.{GraphName, Namespace}
+import org.opencypher.okapi.impl.exception.{GraphNotFoundException, InvalidGraphException}
 import org.opencypher.okapi.testing.Bag._
 import org.opencypher.spark.impl.CAPSConverters._
 import org.opencypher.spark.test.CAPSTestSuite
@@ -38,7 +39,7 @@ import org.opencypher.spark.test.support.RecordMatchingTestSupport
 class HdfsCsvGraphDataSourceTest
   extends CAPSTestSuite with MiniDFSClusterFixture with RecordMatchingTestSupport with TeamDataFixture {
 
-  protected override def dfsTestGraphPath = Some("/csv/sn")
+  protected override def dfsTestGraphPath = Some("/csv")
 
   test("hasGraph should return true for existing graph") {
     val testGraphName = GraphName("sn")
@@ -66,7 +67,7 @@ class HdfsCsvGraphDataSourceTest
       hadoopConfig = clusterConfig,
       rootPath = "/csv")
 
-    source.graphNames should equal(Set(testGraphName))
+    source.graphNames should equal(Set(testGraphName, GraphName("prod"), GraphName("empty")))
   }
 
   test("Load graph from HDFS via DataSource") {
@@ -96,9 +97,44 @@ class HdfsCsvGraphDataSourceTest
 
     val edges = caps.cypher(s"FROM GRAPH $testNamespace.$testGraphName MATCH ()-[r]->() RETURN r")
     edges.getRecords.asCaps.toDF().collect().toBag should equal(csvTestGraphRelsFromRecords)
+
+    caps.deregisterSource(testNamespace)
   }
 
-  it("is robust about the path input") {
+  test("Loading a non-existent graph should throw an appropriate exception") {
+    val testNamespace = Namespace("myHDFS")
+    val testGraphName = GraphName("foo")
+
+    val dataSource = HdfsCsvGraphDataSource(
+      hadoopConfig = sparkSession.sparkContext.hadoopConfiguration,
+      rootPath = "/csv")
+
+    caps.registerSource(testNamespace, dataSource)
+
+    a[GraphNotFoundException] shouldBe thrownBy {
+      caps.cypher(s"FROM GRAPH $testNamespace.$testGraphName MATCH (n) RETURN n").getRecords.collect
+    }
+    caps.deregisterSource(testNamespace)
+  }
+
+  test("Loading from an empty graph folder should throw an appropriate exception") {
+    val testNamespace = Namespace("myHDFS")
+    val testGraphName = GraphName("empty")
+
+    val dataSource = HdfsCsvGraphDataSource(
+      hadoopConfig = sparkSession.sparkContext.hadoopConfiguration,
+      rootPath = "/csv")
+
+    caps.registerSource(testNamespace, dataSource)
+
+    a[InvalidGraphException] shouldBe thrownBy {
+      caps.cypher(s"FROM GRAPH $testNamespace.$testGraphName MATCH (n) RETURN n").getRecords.collect
+    }
+
+    caps.deregisterSource(testNamespace)
+  }
+
+  test("is robust about the path input") {
     val paths = Set("hdfs:///foo/bar", "/foo/bar", "hdfs://hostname/foo/bar", "hdfs://hostname:123/foo/bar")
 
     paths.foreach { path =>

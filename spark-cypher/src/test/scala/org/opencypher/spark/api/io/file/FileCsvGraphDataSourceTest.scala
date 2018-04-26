@@ -27,6 +27,7 @@
 package org.opencypher.spark.api.io.file
 
 import org.opencypher.okapi.api.graph.{GraphName, Namespace}
+import org.opencypher.okapi.impl.exception.{GraphNotFoundException, InvalidGraphException}
 import org.opencypher.okapi.testing.Bag._
 import org.opencypher.spark.impl.CAPSConverters._
 import org.opencypher.spark.test.CAPSTestSuite
@@ -39,7 +40,7 @@ class FileCsvGraphDataSourceTest extends CAPSTestSuite with TeamDataFixture {
   test("hasGraph should return true for existing graph") {
     val testGraphName = GraphName("sn")
 
-    val dataSource = new FileCsvGraphDataSource(rootPath = testRootPath)
+    val dataSource = FileCsvGraphDataSource(rootPath = testRootPath)
 
     dataSource.hasGraph(testGraphName) should be(true)
   }
@@ -47,7 +48,7 @@ class FileCsvGraphDataSourceTest extends CAPSTestSuite with TeamDataFixture {
   test("hasGraph should return false for non-existing graph") {
     val testGraphName = GraphName("sn2")
 
-    val dataSource = new FileCsvGraphDataSource(rootPath = testRootPath)
+    val dataSource = FileCsvGraphDataSource(rootPath = testRootPath)
 
     dataSource.hasGraph(testGraphName) should be(false)
   }
@@ -55,15 +56,16 @@ class FileCsvGraphDataSourceTest extends CAPSTestSuite with TeamDataFixture {
   test("graphNames should return all names of stored graphs") {
     val testGraphName1 = GraphName("sn")
     val testGraphName2 = GraphName("prod")
-    val source = new FileCsvGraphDataSource(rootPath = testRootPath)
+    val testGraphName3 = GraphName("empty")
+    val source = FileCsvGraphDataSource(rootPath = testRootPath)
 
-    source.graphNames should equal(Set(testGraphName1, testGraphName2))
+    source.graphNames should equal(Set(testGraphName1, testGraphName2, testGraphName3))
   }
 
   test("Load graph from file via DataSource") {
     val testGraphName = GraphName("sn")
 
-    val dataSource = new FileCsvGraphDataSource(rootPath = testRootPath)
+    val dataSource = FileCsvGraphDataSource(rootPath = testRootPath)
 
     val graph = dataSource.graph(testGraphName)
     graph.nodes("n").asCaps.toDF().collect().toBag should equal(csvTestGraphNodes)
@@ -74,12 +76,43 @@ class FileCsvGraphDataSourceTest extends CAPSTestSuite with TeamDataFixture {
     val testNamespace = Namespace("myFS")
     val testGraphName = GraphName("sn")
 
-    val dataSource = new FileCsvGraphDataSource(rootPath = testRootPath)
+    val dataSource = FileCsvGraphDataSource(rootPath = testRootPath)
     caps.registerSource(testNamespace, dataSource)
 
     val nodes = caps.cypher(s"FROM GRAPH $testNamespace.$testGraphName MATCH (n) RETURN n")
     nodes.getRecords.asCaps.toDF().collect().toBag should equal(csvTestGraphNodes)
     val edges = caps.cypher(s"FROM GRAPH $testNamespace.$testGraphName MATCH ()-[r]->() RETURN r")
     edges.getRecords.asCaps.toDF().collect().toBag should equal(csvTestGraphRelsFromRecords)
+
+    caps.deregisterSource(testNamespace)
+  }
+
+  test("Loading a non-existent graph should throw the corresponding exception") {
+    val testNamespace = Namespace("myFS")
+    val testGraphName = GraphName("foo")
+
+    val dataSource = FileCsvGraphDataSource(rootPath = testRootPath)
+    caps.registerSource(testNamespace, dataSource)
+
+    a[GraphNotFoundException] shouldBe thrownBy {
+      caps.cypher(s"FROM GRAPH $testNamespace.$testGraphName MATCH (n) RETURN n").getRecords.collect
+    }
+
+    caps.deregisterSource(testNamespace)
+  }
+
+  test("Loading from an empty graph folder should throw an appropriate exception") {
+    val testNamespace = Namespace("myFS")
+    val testGraphName = GraphName("empty")
+
+    val dataSource = FileCsvGraphDataSource(rootPath = testRootPath)
+
+    caps.registerSource(testNamespace, dataSource)
+
+    a[InvalidGraphException] shouldBe thrownBy {
+      caps.cypher(s"FROM GRAPH $testNamespace.$testGraphName MATCH (n) RETURN n").getRecords.collect
+    }
+
+    caps.deregisterSource(testNamespace)
   }
 }
