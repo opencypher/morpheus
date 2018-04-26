@@ -84,8 +84,8 @@ trait CAPSGraph extends PropertyGraph with GraphOperations with Serializable {
         records.header.slotsFor(Property(nodeVar, PropertyKey(propertyName))(cypherType))
     }
 
-    val keepSlots = (Seq(idSlot) ++ labelSlots ++ propertySlots).map(_.content).toSet
-    val keepCols = keepSlots.map(ColumnName.of).toSeq
+    val keepSlots = (Seq(idSlot) ++ labelSlots ++ propertySlots).map(_.content)
+    val keepCols = keepSlots.map(ColumnName.of)
 
     // we only keep rows where all "other" labels are false
     val predicate = records.header.labelSlots(nodeVar)
@@ -107,7 +107,7 @@ trait CAPSGraph extends PropertyGraph with GraphOperations with Serializable {
         records.data.select(keepCols.head, keepCols.tail: _*)
     }
 
-    val updatedHeader = RecordHeader.from(keepSlots.toSeq: _*)
+    val updatedHeader = RecordHeader.from(keepSlots: _*)
 
     CAPSRecords.verifyAndCreate(updatedHeader, updatedData)(session)
   }
