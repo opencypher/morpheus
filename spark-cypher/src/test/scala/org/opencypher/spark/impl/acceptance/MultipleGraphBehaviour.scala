@@ -54,6 +54,43 @@ class MultipleGraphBehaviour extends CAPSTestSuite with ScanGraphInit {
        |CREATE (max)-[:HAS_SIMILAR_NAME]->(mats)
     """.stripMargin)
 
+  it("creates multiple copies of the same node") {
+    val g = caps.cypher(
+      """
+        |CONSTRUCT
+        |  NEW ()
+        |RETURN GRAPH
+      """.stripMargin).getGraph
+    val results = g.cypher(
+      """
+        |MATCH (a)
+        |CONSTRUCT
+        |  NEW (f COPY OF a)-[:FOO]->(g COPY OF a)
+        |RETURN GRAPH
+        |MATCH (n)
+        |RETURN n
+      """.stripMargin).getRecords
+
+    results.size shouldBe 2
+  }
+
+  it("can match on constructed graph") {
+    val results = caps.cypher(
+      """
+        |CONSTRUCT
+        |  NEW ()
+        |RETURN GRAPH
+        |MATCH (a)
+        |CONSTRUCT
+        |  NEW (f COPY OF a)-[:FOO]->(g COPY OF a)
+        |RETURN GRAPH
+        |MATCH (n)
+        |RETURN n
+      """.stripMargin).getRecords
+
+    results.size shouldBe 2
+  }
+
   it("CLONEs without an alias") {
     val query =
       """
@@ -332,9 +369,9 @@ class MultipleGraphBehaviour extends CAPSTestSuite with ScanGraphInit {
 
     val query =
       """MATCH ()-[s]->()
-         |CONSTRUCT
-         |  NEW ()-[t COPY OF s :BAZ {val2 : 'Donald'}]->()
-         |RETURN GRAPH""".stripMargin
+        |CONSTRUCT
+        |  NEW ()-[t COPY OF s :BAZ {val2 : 'Donald'}]->()
+        |RETURN GRAPH""".stripMargin
 
     val result = graph.cypher(query)
 
