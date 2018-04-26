@@ -147,8 +147,6 @@ trait TeamDataFixture extends TestDataFixture {
     mutable.WrappedArray.make(s)
   }
 
-
-
   private lazy val personMapping: NodeMapping = NodeMapping
     .on("ID")
     .withImpliedLabel("Person")
