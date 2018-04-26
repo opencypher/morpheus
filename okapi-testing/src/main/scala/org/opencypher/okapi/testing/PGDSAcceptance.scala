@@ -185,24 +185,24 @@ trait PGDSAcceptance extends BeforeAndAfterAll {
   //  it("supports UNION ALl (requires storing/loading graph tags for CAPS)") {
   //    val firstUnionGraphName = GraphName("first")
   //    val secondUnionGraphName = GraphName("second")
-  //    val graph = cypherSession.dataSource(ns).graph(gn)
+  //    val graph = cypherSession.catalog.source(ns).graph(gn)
   //    graph.nodes("n").size shouldBe 3
   //    val firstUnionGraph = graph.unionAll(graph)
   //    firstUnionGraph.nodes("n").size shouldBe 6
-  //    cypherSession.dataSource(ns).store(firstUnionGraphName, firstUnionGraph)
-  //    val retrievedUnionGraph = cypherSession.dataSource(ns).graph(firstUnionGraphName)
+  //    cypherSession.catalog.source(ns).store(firstUnionGraphName, firstUnionGraph)
+  //    val retrievedUnionGraph = cypherSession.catalog.source(ns).graph(firstUnionGraphName)
   //    retrievedUnionGraph.nodes("n").size shouldBe 6
   //    val secondUnionGraph = retrievedUnionGraph.unionAll(graph)
   //    secondUnionGraph.nodes("n").size shouldBe 9
-  //    cypherSession.dataSource(ns).store(firstUnionGraphName, firstUnionGraph)
-  //    val retrievedSecondUnionGraph = cypherSession.dataSource(ns).graph(secondUnionGraphName)
+  //    cypherSession.catalog.source(ns).store(firstUnionGraphName, firstUnionGraph)
+  //    val retrievedSecondUnionGraph = cypherSession.catalog.source(ns).graph(secondUnionGraphName)
   //    retrievedSecondUnionGraph.nodes("n").size shouldBe 9
   //  }
 
   it("supports repeated CONSTRUCT ON (requires storing/loading graph tags for CAPS)") {
     val firstConstructedGraphName = GraphName("first")
     val secondConstructedGraphName = GraphName("second")
-    val graph = cypherSession.dataSource(ns).graph(gn)
+    val graph = cypherSession.catalog.source(ns).graph(gn)
     graph.nodes("n").size shouldBe 3
     val firstConstructedGraph = graph.cypher(
       s"""
@@ -212,12 +212,12 @@ trait PGDSAcceptance extends BeforeAndAfterAll {
          |  RETURN GRAPH
         """.stripMargin).getGraph
     firstConstructedGraph.nodes("n").size shouldBe 4
-    val maybeStored = Try(cypherSession.dataSource(ns).store(firstConstructedGraphName, firstConstructedGraph))
+    val maybeStored = Try(cypherSession.catalog.source(ns).store(firstConstructedGraphName, firstConstructedGraph))
     maybeStored match {
       case Failure(_: UnsupportedOperationException) =>
       case Failure(f) => throw new Exception(s"Expected either an `UnsupportedOperationException` or a successful store", f)
       case Success(_) =>
-        val retrievedConstructedGraph = cypherSession.dataSource(ns).graph(firstConstructedGraphName)
+        val retrievedConstructedGraph = cypherSession.catalog.source(ns).graph(firstConstructedGraphName)
         retrievedConstructedGraph.nodes("n").size shouldBe 4
         val secondConstructedGraph = graph.cypher(
           s"""
@@ -227,8 +227,8 @@ trait PGDSAcceptance extends BeforeAndAfterAll {
              |  RETURN GRAPH
         """.stripMargin).getGraph
         secondConstructedGraph.nodes("n").size shouldBe 5
-        cypherSession.dataSource(ns).store(firstConstructedGraphName, secondConstructedGraph)
-        val retrievedSecondConstructedGraph = cypherSession.dataSource(ns).graph(secondConstructedGraphName)
+        cypherSession.catalog.source(ns).store(firstConstructedGraphName, secondConstructedGraph)
+        val retrievedSecondConstructedGraph = cypherSession.catalog.source(ns).graph(secondConstructedGraphName)
         retrievedSecondConstructedGraph.nodes("n").size shouldBe 5
     }
   }
