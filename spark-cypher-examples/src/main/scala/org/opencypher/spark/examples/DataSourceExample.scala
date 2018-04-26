@@ -35,7 +35,7 @@ object DataSourceExample extends App {
   // 2) Load social network data via case class instances
   val socialNetwork = session.readFrom(SocialNetworkData.persons, SocialNetworkData.friendships)
 
-  session.store("sn", socialNetwork)
+  session.catalog.store("sn", socialNetwork)
 
   val result = session.cypher("FROM GRAPH session.sn MATCH (n) RETURN n")
 

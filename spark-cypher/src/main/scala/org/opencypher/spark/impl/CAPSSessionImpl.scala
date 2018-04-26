@@ -30,13 +30,11 @@ import java.util.concurrent.atomic.AtomicLong
 
 import org.apache.spark.sql.SparkSession
 import org.opencypher.okapi.api.graph._
-import org.opencypher.okapi.api.io.PropertyGraphDataSource
 import org.opencypher.okapi.api.table.CypherRecords
 import org.opencypher.okapi.api.value.CypherValue._
 import org.opencypher.okapi.api.value._
 import org.opencypher.okapi.impl.io.SessionGraphDataSource
 import org.opencypher.okapi.impl.util.Measurement.time
-import org.opencypher.okapi.ir.api.configuration.IrConfiguration._
 import org.opencypher.okapi.ir.api._
 import org.opencypher.okapi.ir.api.configuration.IrConfiguration.PrintIr
 import org.opencypher.okapi.ir.api.expr.{Expr, Var}
@@ -51,7 +49,7 @@ import org.opencypher.spark.api.CAPSSession
 import org.opencypher.spark.impl.CAPSConverters._
 import org.opencypher.spark.impl.physical._
 
-sealed class CAPSSessionImpl(val sparkSession: SparkSession, val sessionNamespace: Namespace)
+sealed class CAPSSessionImpl(val sparkSession: SparkSession)
   extends CAPSSession
     with Serializable
     with CAPSSessionOps {
@@ -70,10 +68,6 @@ sealed class CAPSSessionImpl(val sparkSession: SparkSession, val sessionNamespac
 
   private val maxSessionGraphId: AtomicLong = new AtomicLong(0)
 
-  def catalog(qualifiedGraphName: QualifiedGraphName): PropertyGraphDataSource = {
-    dataSourceMapping(qualifiedGraphName.namespace)
-  }
-
   override def cypher(query: String, parameters: CypherMap, drivingTable: Option[CypherRecords]): CypherResult =
     cypherOnGraph(CAPSGraph.empty, query, parameters, drivingTable)
 
@@ -90,7 +84,7 @@ sealed class CAPSSessionImpl(val sparkSession: SparkSession, val sessionNamespac
 
     logStageProgress("IR translation ...", newLine = false)
 
-    val irBuilderContext = IRBuilderContext.initial(query, allParameters, semState, ambientGraphNew, qgnGenerator, dataSourceMapping, inputFields)
+    val irBuilderContext = IRBuilderContext.initial(query, allParameters, semState, ambientGraphNew, qgnGenerator, catalog.listSources, inputFields)
     val irOut = time("IR translation")(IRBuilder.process(stmt)(irBuilderContext))
 
     val ir = IRBuilder.extract(irOut)
@@ -110,29 +104,18 @@ sealed class CAPSSessionImpl(val sparkSession: SparkSession, val sessionNamespac
         val innerResult = planCypherQuery(graph, innerQueryIr, allParameters, inputFields, drivingTable)
         val resultGraph = innerResult.getGraph
 
-        store(targetGraph.qualifiedGraphName, resultGraph)
+        catalog.store(targetGraph.qualifiedGraphName, resultGraph)
 
         CAPSResult.empty(innerResult.plans)
 
       case DeleteGraphStatement(_, targetGraph) =>
-        delete(targetGraph.qualifiedGraphName)
+        catalog.delete(targetGraph.qualifiedGraphName)
         CAPSResult.empty()
     }
   }
 
   override def sql(query: String): CAPSRecords =
     CAPSRecords.wrap(sparkSession.sql(query))
-
-  override def delete(qgn: QualifiedGraphName): Unit = {
-    if (qgn.namespace == SessionGraphDataSource.Namespace) {
-      val g = dataSourceMapping(SessionGraphDataSource.Namespace).graph(qgn.graphName)
-      g.asCaps.unpersist()
-    }
-    super.delete(qgn)
-  }
-
-  private def graphAt(qualifiedGraphName: QualifiedGraphName): Option[CAPSGraph] =
-    Some(dataSource(qualifiedGraphName.namespace).graph(qualifiedGraphName.graphName).asCaps)
 
   private def logStageProgress(s: String, newLine: Boolean = true): Unit = {
     if (PrintQueryExecutionStages.isSet) {
@@ -193,7 +176,7 @@ sealed class CAPSSessionImpl(val sparkSession: SparkSession, val sessionNamespac
 
   private def planLogical(ir: CypherQuery[Expr], graph: PropertyGraph, inputFields: Set[Var]) = {
     logStageProgress("Logical planning ...", newLine = false)
-    val logicalPlannerContext = LogicalPlannerContext(graph.schema, inputFields, catalog)
+    val logicalPlannerContext = LogicalPlannerContext(graph.schema, inputFields, catalog.listSources)
     val logicalPlan = time("Logical planning")(logicalPlanner(ir)(logicalPlannerContext))
     logStageProgress("Done!")
     if (PrintLogicalPlan.isSet) {
@@ -215,7 +198,7 @@ sealed class CAPSSessionImpl(val sparkSession: SparkSession, val sessionNamespac
     records: CypherRecords,
     parameters: CypherMap,
     logicalPlan: LogicalOperator,
-    queryCatalog: QueryCatalog = QueryCatalog(dataSourceMapping)
+    queryCatalog: QueryCatalog = QueryCatalog(catalog.listSources)
   ): CAPSResult = {
     logStageProgress("Flat planning ... ", newLine = false)
     val flatPlannerContext = FlatPlannerContext(parameters)
@@ -244,6 +227,8 @@ sealed class CAPSSessionImpl(val sparkSession: SparkSession, val sessionNamespac
       println(optimizedPhysicalPlan.pretty())
     }
 
+    val graphAt = (qgn: QualifiedGraphName) => Some(catalog.graph(qgn).asCaps)
+
     CAPSResultBuilder.from(logicalPlan, flatPlan, optimizedPhysicalPlan)(
       CAPSRuntimeContext(physicalPlannerContext.parameters, graphAt, collection.mutable.Map.empty, collection.mutable.Map.empty))
   }
@@ -256,7 +241,7 @@ sealed class CAPSSessionImpl(val sparkSession: SparkSession, val sessionNamespac
 
   private def mountAmbientGraph(ambient: PropertyGraph): IRCatalogGraph = {
     val qgn = qgnGenerator.generate
-    store(qgn, ambient)
+    catalog.store(qgn, ambient)
     IRCatalogGraph(qgn, ambient.schema)
   }
 

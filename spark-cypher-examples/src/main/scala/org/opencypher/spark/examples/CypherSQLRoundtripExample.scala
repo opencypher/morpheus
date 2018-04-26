@@ -26,7 +26,7 @@
  */
 package org.opencypher.spark.examples
 
-import org.opencypher.okapi.api.graph.{Namespace, QualifiedGraphName}
+import org.opencypher.okapi.api.graph.Namespace
 import org.opencypher.spark.api.CAPSSession
 import org.opencypher.spark.api.io.file.FileCsvGraphDataSource
 import org.opencypher.spark.impl.CAPSConverters._
@@ -63,7 +63,7 @@ object CypherSQLRoundtripExample extends App {
   val sqlResults = session.sql("SELECT age, name FROM people")
 
   // 7) Use the results from the SQL query as driving table for a Cypher query on a graph contained in the data source
-  val result2 = session.graph("myDataSource.products").cypher(
+  val result2 = session.catalog.graph("myDataSource.products").cypher(
     s"""
        |MATCH (c:Customer {name: name})-->(p:Product)
        |RETURN c.name, age, p.title

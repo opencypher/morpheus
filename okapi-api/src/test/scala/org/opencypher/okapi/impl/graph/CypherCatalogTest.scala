@@ -24,15 +24,34 @@
  * described as "implementation extensions to Cypher" or as "proposed changes to
  * Cypher that are not yet approved by the openCypher community".
  */
-package org.opencypher.okapi.logical.impl
+package org.opencypher.okapi.impl.graph
 
-import org.opencypher.okapi.api.graph.Namespace
+import org.opencypher.okapi.api.graph._
 import org.opencypher.okapi.api.io.PropertyGraphDataSource
-import org.opencypher.okapi.api.schema.Schema
-import org.opencypher.okapi.ir.api.expr.Var
+import org.opencypher.okapi.impl.exception.IllegalArgumentException
+import org.opencypher.okapi.impl.io.SessionGraphDataSource
+import org.scalatest.mockito.MockitoSugar
+import org.scalatest.{FunSpec, Matchers}
 
-final case class LogicalPlannerContext(
-  workingGraphSchema: Schema,
-  inputRecordFields: Set[Var],
-  catalog: Namespace => PropertyGraphDataSource
-)
+class CypherCatalogTest extends FunSpec with MockitoSugar with Matchers  {
+  it("avoids retrieving a non-registered data source") {
+    an[IllegalArgumentException] should be thrownBy new CypherCatalog().source(Namespace("foo"))
+  }
+
+  it("avoids retrieving a graph not stored in the session") {
+    an[NoSuchElementException] should be thrownBy new CypherCatalog().graph(QualifiedGraphName("foo"))
+  }
+
+  it("avoids retrieving a graph from a non-registered data source") {
+    an[IllegalArgumentException] should be thrownBy new CypherCatalog().graph(QualifiedGraphName(Namespace("foo"), GraphName("bar")))
+  }
+
+  it("returns all available namespaces") {
+    val catalog = new CypherCatalog()
+    catalog.namespaces should equal(Set(SessionGraphDataSource.Namespace))
+    val namespace = Namespace("foo")
+    val dataSource = mock[PropertyGraphDataSource]
+    catalog.register(namespace, dataSource)
+    catalog.namespaces should equal(Set(SessionGraphDataSource.Namespace, namespace))
+  }
+}

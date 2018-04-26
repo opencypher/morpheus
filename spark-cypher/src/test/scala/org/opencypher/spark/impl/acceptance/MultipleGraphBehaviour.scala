@@ -89,7 +89,7 @@ class MultipleGraphBehaviour extends CAPSTestSuite with ScanGraphInit {
   }
 
   it("should switch to another graph and then return it") {
-    caps.store("graph2", testGraph2)
+    caps.catalog.store("graph2", testGraph2)
     val query =
       """FROM GRAPH graph2
         |RETURN GRAPH""".stripMargin
@@ -100,8 +100,8 @@ class MultipleGraphBehaviour extends CAPSTestSuite with ScanGraphInit {
   }
 
   it("can select a source graph to match data from") {
-    caps.store("graph1", testGraph1)
-    caps.store("graph2", testGraph2)
+    caps.catalog.store("graph1", testGraph1)
+    caps.catalog.store("graph2", testGraph2)
 
     val query =
       """FROM GRAPH graph2
@@ -117,9 +117,9 @@ class MultipleGraphBehaviour extends CAPSTestSuite with ScanGraphInit {
   }
 
   it("matches from different graphs") {
-    caps.store("graph1", testGraph1)
-    caps.store("graph2", testGraph2)
-    caps.store("graph3", testGraph3)
+    caps.catalog.store("graph1", testGraph1)
+    caps.catalog.store("graph2", testGraph2)
+    caps.catalog.store("graph3", testGraph3)
 
     val query =
       """FROM GRAPH graph2
@@ -556,7 +556,7 @@ class MultipleGraphBehaviour extends CAPSTestSuite with ScanGraphInit {
   }
 
   it("CONSTRUCTS ON a single graph") {
-    caps.store("one", testGraph1)
+    caps.catalog.store("one", testGraph1)
     val query =
       """
         |CONSTRUCT ON one
@@ -570,8 +570,8 @@ class MultipleGraphBehaviour extends CAPSTestSuite with ScanGraphInit {
   }
 
   it("CONSTRUCTS ON two graphs") {
-    caps.store("one", testGraph1)
-    caps.store("two", testGraph2)
+    caps.catalog.store("one", testGraph1)
+    caps.catalog.store("two", testGraph2)
     val query =
       """
         |CONSTRUCT ON one, two
@@ -585,8 +585,8 @@ class MultipleGraphBehaviour extends CAPSTestSuite with ScanGraphInit {
   }
 
   it("CONSTRUCTS ON two graphs and adds a relationship") {
-    caps.store("one", testGraph1)
-    caps.store("two", testGraph2)
+    caps.catalog.store("one", testGraph1)
+    caps.catalog.store("two", testGraph2)
     val query =
       """|FROM GRAPH one
          |MATCH (m: Person)
@@ -607,8 +607,8 @@ class MultipleGraphBehaviour extends CAPSTestSuite with ScanGraphInit {
   }
 
   it("implictly clones when CONSTRUCTing ON two graphs and adding a relationship") {
-    caps.store("one", testGraph1)
-    caps.store("two", testGraph2)
+    caps.catalog.store("one", testGraph1)
+    caps.catalog.store("two", testGraph2)
     val query =
       """|FROM GRAPH one
          |MATCH (m: Person)
@@ -645,7 +645,7 @@ class MultipleGraphBehaviour extends CAPSTestSuite with ScanGraphInit {
   }
 
   it("construct match construct") {
-    caps.store("g1", testGraphRels)
+    caps.catalog.store("g1", testGraphRels)
     val query =
       """
         |FROM GRAPH g1
@@ -672,8 +672,8 @@ class MultipleGraphBehaviour extends CAPSTestSuite with ScanGraphInit {
   }
 
   it("does not clone twice when a variable is both constructed on and matched") {
-    caps.store("g1", testGraph1)
-    caps.store("g2", testGraph2)
+    caps.catalog.store("g1", testGraph1)
+    caps.catalog.store("g2", testGraph2)
     val query =
       """
         |FROM GRAPH g1
@@ -697,8 +697,8 @@ class MultipleGraphBehaviour extends CAPSTestSuite with ScanGraphInit {
   }
 
   it("allows CONSTRUCT ON with relationships") {
-    caps.store("testGraphRels1", testGraphRels)
-    caps.store("testGraphRels2", testGraphRels)
+    caps.catalog.store("testGraphRels1", testGraphRels)
+    caps.catalog.store("testGraphRels2", testGraphRels)
     val query =
       """|FROM GRAPH testGraphRels1
          |MATCH (p1 :Person)-[r1]->(p2 :Person)
@@ -733,8 +733,8 @@ class MultipleGraphBehaviour extends CAPSTestSuite with ScanGraphInit {
          |CREATE (max)-[:HAS_SIMILAR_NAME]->(mats)
       """.stripMargin)
 
-    caps.store("testGraphRels1", testGraphRels)
-    caps.store("testGraphRels2", testGraphRels)
+    caps.catalog.store("testGraphRels1", testGraphRels)
+    caps.catalog.store("testGraphRels2", testGraphRels)
 
     val query =
       """|FROM GRAPH testGraphRels1

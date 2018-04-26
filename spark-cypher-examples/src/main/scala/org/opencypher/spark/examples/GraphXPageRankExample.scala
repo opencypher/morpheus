@@ -76,8 +76,8 @@ object GraphXPageRankExample extends App {
   val rankNodes = session.readFrom(CAPSNodeTable(ranksNodeMapping, rankTable))
 
   // 8) Mount both graphs in the session
-  session.store("ranks", rankNodes)
-  session.store("sn", socialNetwork)
+  session.catalog.store("ranks", rankNodes)
+  session.catalog.store("sn", socialNetwork)
 
   rankNodes.nodes("r").show
   socialNetwork.nodes("s").show

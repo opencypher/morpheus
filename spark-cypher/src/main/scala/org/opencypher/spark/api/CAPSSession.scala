@@ -34,7 +34,7 @@ import org.opencypher.okapi.api.graph._
 import org.opencypher.okapi.api.table.CypherRecords
 import org.opencypher.okapi.api.value.CypherValue.CypherMap
 import org.opencypher.okapi.impl.exception.{IllegalArgumentException, UnsupportedOperationException}
-import org.opencypher.okapi.impl.io.SessionGraphDataSource
+import org.opencypher.okapi.impl.graph.CypherCatalog
 import org.opencypher.okapi.relational.impl.table.ColumnName
 import org.opencypher.spark.api.io._
 import org.opencypher.spark.impl.{CAPSGraph, CAPSRecords, CAPSSessionImpl}
@@ -42,6 +42,8 @@ import org.opencypher.spark.impl.{CAPSGraph, CAPSRecords, CAPSSessionImpl}
 import scala.reflect.runtime.universe._
 
 trait CAPSSession extends CypherSession {
+
+  override val catalog: CypherCatalog = new CypherCatalog
 
   def sql(query: String): CypherRecords
 
@@ -85,10 +87,10 @@ trait CAPSSession extends CypherSession {
     CAPSGraph.create(nodeTable, entityTables: _*)(this)
   }
 
-  private[opencypher] val emptyGraphQgn = QualifiedGraphName(sessionNamespace, GraphName("emptyGraph"))
+  private[opencypher] val emptyGraphQgn = QualifiedGraphName(catalog.sessionNamespace, GraphName("emptyGraph"))
 
   // Store empty graph in catalog, so operators that start with an empty graph can refer to its QGN
-  store(emptyGraphQgn, CAPSGraph.empty(this))
+  catalog.store(emptyGraphQgn, CAPSGraph.empty(this))
 }
 
 object CAPSSession extends Serializable {
@@ -96,11 +98,9 @@ object CAPSSession extends Serializable {
   /**
     * Creates a new [[org.opencypher.spark.api.CAPSSession]] based on the given [[org.apache.spark.sql.SparkSession]].
     *
-    * @param sparkSession Spark session
     * @return CAPS session
     */
-  def create(sessionNamespace: Namespace = SessionGraphDataSource.Namespace)
-    (implicit sparkSession: SparkSession): CAPSSession = new CAPSSessionImpl(sparkSession, sessionNamespace)
+  def create(implicit sparkSession: SparkSession): CAPSSession = new CAPSSessionImpl(sparkSession)
 
   /**
     * Creates a new CAPSSession that wraps a local Spark session with CAPS default parameters.
@@ -120,7 +120,7 @@ object CAPSSession extends Serializable {
       .getOrCreate()
     session.sparkContext.setLogLevel("error")
 
-    create()(session)
+    create(session)
   }
 
   /**

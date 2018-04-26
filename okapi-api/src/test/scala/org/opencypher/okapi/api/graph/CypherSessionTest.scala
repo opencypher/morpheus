@@ -30,6 +30,7 @@ import org.opencypher.okapi.api.io.PropertyGraphDataSource
 import org.opencypher.okapi.api.table.CypherRecords
 import org.opencypher.okapi.api.value.CypherValue.CypherMap
 import org.opencypher.okapi.impl.exception.IllegalArgumentException
+import org.opencypher.okapi.impl.graph.CypherCatalog
 import org.opencypher.okapi.impl.io.SessionGraphDataSource
 import org.scalatest.mockito.MockitoSugar
 import org.scalatest.{FunSpec, Matchers}
@@ -45,19 +46,7 @@ class CypherSessionTest extends FunSpec with MockitoSugar with Matchers {
     an[IllegalArgumentException] should be thrownBy createSession.deregisterSource(Namespace("foo"))
   }
 
-  it("avoid retrieving a non-registered data source") {
-    an[IllegalArgumentException] should be thrownBy createSession.dataSource(Namespace("foo"))
-  }
-
-  it("avoid retrieving a graph not stored in the session") {
-    an[NoSuchElementException] should be thrownBy createSession.graph("foo")
-  }
-
-  it("avoid retrieving a graph from a non-registered data source") {
-    an[IllegalArgumentException] should be thrownBy createSession.graph(QualifiedGraphName(Namespace("foo"), GraphName("bar")))
-  }
-
-  it("avoid registering a data source with an existing namespace") {
+  it("avoids registering a data source with an existing namespace") {
     val session = createSession
     val namespace = Namespace("foo")
     session.registerSource(namespace, mock[PropertyGraphDataSource])
@@ -69,7 +58,7 @@ class CypherSessionTest extends FunSpec with MockitoSugar with Matchers {
     val namespace = Namespace("foo")
     val dataSource = mock[PropertyGraphDataSource]
     session.registerSource(namespace, dataSource)
-    session.dataSource(namespace) should equal(dataSource)
+    session.catalog.source(namespace) should equal(dataSource)
   }
 
   it("de-register data source") {
@@ -77,24 +66,25 @@ class CypherSessionTest extends FunSpec with MockitoSugar with Matchers {
     val namespace = Namespace("foo")
     val dataSource = mock[PropertyGraphDataSource]
     session.registerSource(namespace, dataSource)
-    session.dataSource(namespace) should equal(dataSource)
+    session.catalog.source(namespace) should equal(dataSource)
     session.deregisterSource(namespace)
-    an[IllegalArgumentException] should be thrownBy session.dataSource(namespace)
+    an[IllegalArgumentException] should be thrownBy session.catalog.source(namespace)
+    an[IllegalArgumentException] should be thrownBy session.catalog.source(namespace)
   }
 
   it("namespaces") {
     val session = createSession
-    session.namespaces should equal(Set(SessionGraphDataSource.Namespace))
+    session.catalog.namespaces should equal(Set(SessionGraphDataSource.Namespace))
     val namespace = Namespace("foo")
     val dataSource = mock[PropertyGraphDataSource]
     session.registerSource(namespace, dataSource)
-    session.namespaces should equal(Set(SessionGraphDataSource.Namespace, namespace))
+    session.catalog.namespaces should equal(Set(SessionGraphDataSource.Namespace, namespace))
   }
 
   private def createSession: CypherSession = new CypherSession {
-    override def cypher(query: String, parameters: CypherMap, drivingTable: Option[CypherRecords]): CypherResult = ???
+    override val catalog: PropertyGraphCatalog = new CypherCatalog()
 
-    override def sessionNamespace: Namespace = SessionGraphDataSource.Namespace
+    override def cypher(query: String, parameters: CypherMap, drivingTable: Option[CypherRecords]): CypherResult = ???
 
     override private[graph] def cypherOnGraph(graph: PropertyGraph, query: String, parameters: CypherMap, drivingTable: Option[CypherRecords]) = ???
   }

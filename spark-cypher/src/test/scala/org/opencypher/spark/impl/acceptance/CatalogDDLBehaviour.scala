@@ -40,7 +40,7 @@ class CatalogDDLBehaviour extends CAPSTestSuite with DefaultGraphInit {
           |CREATE (:A)
         """.stripMargin)
 
-      caps.store("foo", inputGraph)
+      caps.catalog.store("foo", inputGraph)
 
       val result = caps.cypher(
         """
@@ -50,7 +50,7 @@ class CatalogDDLBehaviour extends CAPSTestSuite with DefaultGraphInit {
           |}
         """.stripMargin)
 
-      val sessionSource = caps.dataSource(caps.sessionNamespace)
+      val sessionSource = caps.catalog.source(caps.catalog.sessionNamespace)
       sessionSource.hasGraph(GraphName("bar")) shouldBe true
       sessionSource.graph(GraphName("bar")) shouldEqual inputGraph
       result.graph shouldBe None
@@ -61,7 +61,7 @@ class CatalogDDLBehaviour extends CAPSTestSuite with DefaultGraphInit {
     describe("DELETE GRAPH") {
       it("can delete a session graph") {
 
-        caps.store("foo", initGraph("CREATE (:A)"))
+        caps.catalog.store("foo", initGraph("CREATE (:A)"))
 
       val result = caps.cypher(
         """
@@ -69,7 +69,7 @@ class CatalogDDLBehaviour extends CAPSTestSuite with DefaultGraphInit {
         """.stripMargin
       )
 
-        caps.dataSource(caps.sessionNamespace).hasGraph(GraphName("foo")) shouldBe false
+        caps.catalog.source(caps.catalog.sessionNamespace).hasGraph(GraphName("foo")) shouldBe false
         result.graph shouldBe None
         result.records shouldBe None
     }
