@@ -55,6 +55,11 @@ abstract class CsvPGDSAcceptanceTest extends CAPSTestSuite with PGDSAcceptance {
   override def create(graphName: GraphName, testGraph: TestGraph, createStatements: String): PropertyGraphDataSource = {
     tempDir.create()
     val propertyGraph = CAPSScanGraphFactory(testGraph)
+
+    // DO NOT DELETE THIS! If the config is not cleared, the FileCsvPGDSAcceptanceTest fails because of connecting to a
+    // non-existent HDFS cluster. We could not figure out why the afterAll call in MiniDFSClusterFixture does not handle
+    // the clearance of the config correctly.
+    session.sparkContext.hadoopConfiguration.clear()
     CsvGraphWriter(propertyGraph, graphPath.toUri).store()
     createInternal
   }
