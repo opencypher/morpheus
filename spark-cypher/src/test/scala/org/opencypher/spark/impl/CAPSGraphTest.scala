@@ -46,13 +46,13 @@ abstract class CAPSGraphTest extends CAPSTestSuite with GraphConstructionFixture
       Array(
         "n",
         "____n:Person",
-        "____n_dot_nameSTRING",
-        "____n_dot_luckyNumberINTEGER"
+        "____n_dot_luckyNumberINTEGER",
+        "____n_dot_nameSTRING"
       ))
 
     Bag(nodes.toDF().collect(): _*) should equal(
       Bag(
-        Row(4L, true, "Donald", 8L)
+        Row(4L, true, 8L, "Donald")
       ))
   }
 
@@ -66,15 +66,15 @@ abstract class CAPSGraphTest extends CAPSTestSuite with GraphConstructionFixture
         "n",
         "____n:German",
         "____n:Person",
-        "____n_dot_nameSTRING",
-        "____n_dot_luckyNumberINTEGER"
+        "____n_dot_luckyNumberINTEGER",
+        "____n_dot_nameSTRING"
       ))
 
     Bag(nodes.toDF().collect(): _*) should equal(
       Bag(
-        Row(2L, true, true, "Martin", 1337L),
-        Row(3L, true, true, "Max", 8L),
-        Row(0L, true, true, "Stefan", 42L)
+        Row(2L, true, true, 1337L, "Martin"),
+        Row(3L, true, true, 8L, "Max"),
+        Row(0L, true, true, 42L, "Stefan")
       ))
   }
 

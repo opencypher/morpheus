@@ -79,10 +79,11 @@ trait CAPSGraph extends PropertyGraph with GraphOperations with Serializable {
       .filter(slot => labels.contains(slot._1.label.name))
       .values
 
-    val propertySlots = schema.nodeKeys(labels).flatMap {
-      case (propertyName, cypherType) =>
-        records.header.slotsFor(Property(nodeVar, PropertyKey(propertyName))(cypherType))
-    }
+    // need to iterate the slots to maintain the correct order
+    val propertyExprs = schema.nodeKeys(labels).flatMap {
+      case (key, cypherType) => Property(nodeVar, PropertyKey(key))(cypherType)
+    }.toSet
+    val propertySlots = records.header.slotsFor(nodeVar).filter(sc => propertyExprs.contains(sc.content.key))
 
     val keepSlots = (Seq(idSlot) ++ labelSlots ++ propertySlots).map(_.content)
     val keepCols = keepSlots.map(ColumnName.of)

@@ -67,9 +67,19 @@ class CAPSScanGraph(val scans: Seq[CAPSEntityTable], val schema: CAPSSchema, val
 
   override def unpersist(blocking: Boolean): CAPSScanGraph = forEach(_.table.unpersist(blocking))
 
-  override def nodes(name: String, nodeCypherType: CTNode): CAPSRecords = {
+  override def nodes(name: String, nodeCypherType: CTNode): CAPSRecords =
+    nodesInternal(name, nodeCypherType, byExactType = false)
+
+  override def nodesWithExactLabels(name: String, labels: Set[String]): CAPSRecords =
+    nodesInternal(name, CTNode(labels), byExactType = true)
+
+  private def nodesInternal(name: String, nodeCypherType: CTNode, byExactType: Boolean): CAPSRecords = {
     val node = Var(name)(nodeCypherType)
-    val selectedTables = nodeEntityTables.byType(nodeCypherType)
+    val selectedTables = if (byExactType) {
+      nodeEntityTables.byExactType(nodeCypherType)
+    } else {
+      nodeEntityTables.byType(nodeCypherType)
+    }
     val schema = selectedTables.map(_.schema).foldLeft(Schema.empty)(_ ++ _)
     val targetNodeHeader = RecordHeader.nodeFromSchema(node, schema)
 
