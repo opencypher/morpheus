@@ -26,13 +26,14 @@
  */
 package org.opencypher.spark.impl
 
-import org.apache.spark.sql.Row
+import org.apache.spark.sql.{Row, functions}
 import org.opencypher.okapi.api.io.conversion.{NodeMapping, RelationshipMapping}
 import org.opencypher.okapi.api.types.{CTNode, CTRelationship}
 import org.opencypher.okapi.api.value.CypherValue.CypherMap
 import org.opencypher.okapi.api.value._
 import org.opencypher.okapi.testing.Bag
 import org.opencypher.okapi.testing.Bag._
+import org.opencypher.okapi.testing.propertygraph.TestGraphFactory
 import org.opencypher.spark.api.io.{CAPSNodeTable, CAPSRelationshipTable}
 import org.opencypher.spark.impl.DataFrameOps._
 import org.opencypher.spark.test.support.creation.caps.{CAPSScanGraphFactory, CAPSTestGraphFactory}
@@ -166,6 +167,46 @@ class CAPSScanGraphTest extends CAPSGraphTest {
         Row(30L, true, false, false, null, null, "The Eye of the World", 1990L),
         Row(40L, true, false, false, null, null, "The Circle", 2013L)
       ))
+  }
+
+  it("Align node scans") {
+    val fixture =
+      """
+        |CREATE (a:A { name: 'A' })
+        |CREATE (b:B { name: 'B' })
+        |CREATE (combo:A:B { name: 'COMBO', size: 2 })
+        |CREATE (a)-[:R { since: 2004 }]->(b)
+        |CREATE (b)-[:R { since: 2005 }]->(combo)
+        |CREATE (combo)-[:S { since: 2006 }]->(combo)
+      """.stripMargin
+
+    val graph = CAPSScanGraphFactory(TestGraphFactory(fixture))
+
+    graph.cypher("MATCH (n) RETURN n").getRecords.size should equal(3)
+  }
+
+  it("Align node scans when individual tables have the same node id and properties") {
+    val aDf = caps.sparkSession.createDataFrame(Seq(
+      (0L, "A")
+    )).toDF("_node_id", "name").withColumn("size", functions.lit(null))
+    val aMapping: NodeMapping = NodeMapping.create("_node_id").withPropertyKey("name").withPropertyKey("size").withImpliedLabel("A")
+    val aTable = CAPSNodeTable(aMapping, aDf)
+
+    val bDf = caps.sparkSession.createDataFrame(Seq(
+      (1L, "B")
+    )).toDF("_node_id", "name").withColumn("size", functions.lit(null))
+    val bMapping = NodeMapping.create("_node_id").withPropertyKey("name").withPropertyKey("size").withImpliedLabel("B")
+    val bTable = CAPSNodeTable(bMapping, bDf)
+
+    val comboDf = caps.sparkSession.createDataFrame(Seq(
+      (2L, "COMBO", 2)
+    )).toDF("_node_id", "name", "size")
+    val comboMapping = NodeMapping.create("_node_id").withPropertyKey("name").withPropertyKey("size").withImpliedLabels("A", "B")
+    val comboTable = CAPSNodeTable(comboMapping, comboDf)
+
+    val graph = CAPSGraph.create(aTable, bTable, comboTable)
+
+    graph.cypher("MATCH (n) RETURN n").getRecords.size should equal(3)
   }
 
   test("Construct graph from single node and single relationship scan") {
