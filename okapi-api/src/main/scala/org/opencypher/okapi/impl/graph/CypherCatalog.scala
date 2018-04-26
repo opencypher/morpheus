@@ -37,19 +37,19 @@ import org.opencypher.okapi.impl.io.SessionGraphDataSource
   * [[org.opencypher.okapi.api.graph.Namespace]]s and [[org.opencypher.okapi.api.io.PropertyGraphDataSource]]s.
   *
   * By default this catalog mounts a single [[org.opencypher.okapi.impl.io.SessionGraphDataSource]] under the namespace
-  * [[org.opencypher.okapi.impl.graph.CypherCatalog#sessionNamespace]]. This is PGDS is used to session local graphs.
+  * [[org.opencypher.okapi.impl.graph.CypherCatalog#sessionNamespace]]. This PGDS is used to store session local graphs.
   */
 class CypherCatalog extends PropertyGraphCatalog{
 
   /**
-    * The [[org.opencypher.okapi.api.graph.Namespace]] used to to store graphs within this session.
+    * The [[org.opencypher.okapi.api.graph.Namespace]] used to store graphs within this session.
     *
     * @return session namespace
     */
   def sessionNamespace: Namespace = SessionGraphDataSource.Namespace
 
   /**
-    * Stores a mutable mapping between a data source [[org.opencypher.okapi.api.graph.Namespace]] and the specific
+    * Stores a mutable mapping between a [[org.opencypher.okapi.api.graph.Namespace]] and the specific
     * [[org.opencypher.okapi.api.io.PropertyGraphDataSource]].
     *
     * This mapping also holds the [[org.opencypher.okapi.impl.io.SessionGraphDataSource]] by default.
@@ -64,12 +64,12 @@ class CypherCatalog extends PropertyGraphCatalog{
 
   override def listSources: Map[Namespace, PropertyGraphDataSource] = dataSourceMapping
 
-  override def registerSource(namespace: Namespace, dataSource: PropertyGraphDataSource): Unit = dataSourceMapping.get(namespace) match {
+  override def register(namespace: Namespace, dataSource: PropertyGraphDataSource): Unit = dataSourceMapping.get(namespace) match {
     case Some(p) => throw IllegalArgumentException(s"no data source registered with namespace '$namespace'", p)
     case None => dataSourceMapping = dataSourceMapping.updated(namespace, dataSource)
   }
 
-  override def deregisterSource(namespace: Namespace): Unit = {
+  override def deregister(namespace: Namespace): Unit = {
     if (namespace == sessionNamespace) throw UnsupportedOperationException("de-registering the session data source")
     dataSourceMapping.get(namespace) match {
       case Some(_) => dataSourceMapping = dataSourceMapping - namespace

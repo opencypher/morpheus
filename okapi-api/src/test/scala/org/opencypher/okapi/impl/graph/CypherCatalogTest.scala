@@ -51,7 +51,7 @@ class CypherCatalogTest extends FunSpec with MockitoSugar with Matchers  {
     catalog.namespaces should equal(Set(SessionGraphDataSource.Namespace))
     val namespace = Namespace("foo")
     val dataSource = mock[PropertyGraphDataSource]
-    catalog.registerSource(namespace, dataSource)
+    catalog.register(namespace, dataSource)
     catalog.namespaces should equal(Set(SessionGraphDataSource.Namespace, namespace))
   }
 }

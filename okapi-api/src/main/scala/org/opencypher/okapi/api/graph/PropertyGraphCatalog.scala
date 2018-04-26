@@ -46,9 +46,9 @@ trait PropertyGraphCatalog {
   def namespaces: Set[Namespace]
 
   /**
-    * Returns all available [[org.opencypher.okapi.api.io.PropertyGraphDataSource]]s.
+    * Returns all registered [[org.opencypher.okapi.api.io.PropertyGraphDataSource]]s.
     *
-    * @return a map of all PGDS known to this catalog, keyed by their [[org.opencypher.okapi.api.graph.Namespace]]s.
+    * @return a map of all PGDS registered at this catalog, keyed by their [[org.opencypher.okapi.api.graph.Namespace]]s.
     */
   def listSources: Map[Namespace, PropertyGraphDataSource]
 
@@ -73,7 +73,7 @@ trait PropertyGraphCatalog {
     * @param namespace  namespace for lookup
     * @param dataSource property graph data source
     */
-  def registerSource(namespace: Namespace, dataSource: PropertyGraphDataSource): Unit
+  def register(namespace: Namespace, dataSource: PropertyGraphDataSource): Unit
 
   /**
     * De-registers a [[org.opencypher.okapi.api.io.PropertyGraphDataSource]] from the catalog
@@ -81,7 +81,7 @@ trait PropertyGraphCatalog {
     *
     * @param namespace namespace for lookup
     */
-  def deregisterSource(namespace: Namespace): Unit
+  def deregister(namespace: Namespace): Unit
 
   //################################################
   // Property Graph specific functions

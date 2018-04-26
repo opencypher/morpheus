@@ -40,21 +40,22 @@ trait CypherSession {
   /**
     * Executes a Cypher query in this session on the current ambient graph.
     *
-    * @param query      Cypher query to execute
-    * @param parameters parameters used by the Cypher query
+    * @param query        Cypher query to execute
+    * @param parameters   parameters used by the Cypher query
+    * @param drivingTable seed data that can be accessed from within the query
     * @return result of the query
     */
   def cypher(query: String, parameters: CypherMap = CypherMap.empty, drivingTable: Option[CypherRecords] = None): CypherResult
 
   /**
-    * Access this sessions [[org.opencypher.okapi.api.graph.PropertyGraphCatalog]].
+    * Interface through which the user may (de-)register property graph datasources as well as read, write and delete property graphs.
     *
     * @return session catalog
     */
   def catalog: PropertyGraphCatalog
 
   /**
-    * Register the given [[org.opencypher.okapi.api.io.PropertyGraphDataSource]] under the specific [[org.opencypher.okapi.api.graph.Namespace]] within the sessions catalog.
+    * Register the given [[org.opencypher.okapi.api.io.PropertyGraphDataSource]] under the specific [[org.opencypher.okapi.api.graph.Namespace]] within the session catalog.
     *
     * This enables a user to refer to that [[org.opencypher.okapi.api.io.PropertyGraphDataSource]] within a Cypher query.
     *
@@ -65,7 +66,7 @@ trait CypherSession {
     * @param dataSource property graph data source
     */
   def registerSource(namespace: Namespace, dataSource: PropertyGraphDataSource): Unit =
-    catalog.registerSource(namespace, dataSource)
+    catalog.register(namespace, dataSource)
 
   /**
     * De-registers a [[org.opencypher.okapi.api.io.PropertyGraphDataSource]] from the sessions catalog by its given [[org.opencypher.okapi.api.graph.Namespace]].
@@ -73,7 +74,7 @@ trait CypherSession {
     * @param namespace namespace for lookup
     */
   def deregisterSource(namespace: Namespace): Unit =
-    catalog.deregisterSource(namespace)
+    catalog.deregister(namespace)
 
   /**
     * Executes a Cypher query in this session, using the argument graph as the ambient graph.
