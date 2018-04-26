@@ -49,7 +49,7 @@ abstract class CsvPGDSAcceptanceTest extends CAPSTestSuite with PGDSAcceptance {
 
   override def afterAll(): Unit = {
     tempDir.delete()
-    super.beforeAll()
+    super.afterAll()
   }
 
   override def create(graphName: GraphName, testGraph: TestGraph, createStatements: String): PropertyGraphDataSource = {
