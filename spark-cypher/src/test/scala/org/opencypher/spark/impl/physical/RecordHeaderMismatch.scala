@@ -41,7 +41,10 @@ class RecordHeaderMismatch extends CAPSTestSuite {
   it("throws a schema exception when the physical record header does not match the one computed based on the schema") {
     val buggyGraph = new CAPSGraph {
 
-      override def schema: CAPSSchema = Schema.empty.withNodePropertyKeys("A")("name" -> CTString).asCaps
+      override def schema: CAPSSchema = Schema.empty
+        .withNodePropertyKeys("A")("name" -> CTString)
+        .withRelationshipPropertyKeys("R")("name" -> CTString)
+        .asCaps
 
       // Always return empty records, which does not match what the schema promises
       override def nodes(name: String, nodeCypherType: CTNode): CAPSRecords = CAPSRecords.empty()(caps)
@@ -64,6 +67,9 @@ class RecordHeaderMismatch extends CAPSTestSuite {
     }
     intercept[SchemaException] {
       buggyGraph.cypher("MATCH (n) RETURN n").getRecords
+    }
+    intercept[SchemaException] {
+      buggyGraph.cypher("MATCH ()-[r]->() RETURN r").getRecords
     }
   }
 

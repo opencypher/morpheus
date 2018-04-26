@@ -94,7 +94,14 @@ final case class RelationshipScan(in: CAPSPhysicalOperator, v: Var, header: Reco
       case r: CTRelationship => graph.relationships(v.name, r)
       case other => throw IllegalArgumentException("Relationship variable", other)
     }
-    assert(header == records.header)
+    if (header != records.header) {
+      throw SchemaException(
+        s"""
+           |Graph schema does not match actual records returned for scan $v:
+           |  - Computed record header based on graph schema: ${header.slots.map(_.content).mkString("[", ",", "]")}
+           |  - Actual record header: ${records.header.slots.map(_.content).mkString("[", ",", "]")}
+        """.stripMargin)
+    }
     CAPSPhysicalResult(records, graph, v.cypherType.graph.get)
   }
 }
