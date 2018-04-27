@@ -27,15 +27,18 @@
 package org.opencypher.spark.impl.io.hdfs
 
 import java.net.URI
+import java.nio.file.Paths
 
 import org.apache.hadoop.conf.Configuration
 import org.apache.spark.sql.types._
 import org.apache.spark.sql.{DataFrame, SparkSession, functions}
 import org.opencypher.okapi.api.graph.PropertyGraph
 import org.opencypher.okapi.api.io.conversion.{NodeMapping, RelationshipMapping}
+import org.opencypher.okapi.impl.exception.{GraphNotFoundException, InvalidGraphException}
 import org.opencypher.spark.api.CAPSSession
 import org.opencypher.spark.api.io.{CAPSNodeTable, CAPSRelationshipTable}
 import org.opencypher.spark.impl.DataFrameOps._
+import CsvGraphLoader._
 
 /**
   * Loads a graph stored in indexed CSV format from HDFS or the local file system
@@ -60,7 +63,33 @@ class CsvGraphLoader(fileHandler: CsvFileHandler)(implicit capsSession: CAPSSess
 
   private val sparkSession: SparkSession = capsSession.sparkSession
 
-  def load: PropertyGraph = capsSession.readFrom(loadNodes ++ loadRels: _*)
+  def load: PropertyGraph = {
+
+    if (!fileHandler.exists(fileHandler.graphLocation.getPath)) {
+      throw GraphNotFoundException(s"CSV graph with name '${fileHandler.graphLocation.getPath}'")
+    }
+    if (!fileHandler.exists(Paths.get(fileHandler.graphLocation.getPath, NODES_DIRECTORY).toString)) {
+      throw InvalidGraphException(s"CSV graph is missing required directory '$NODES_DIRECTORY'")
+    }
+
+    val nodeTables = loadNodes
+
+    val relTables = if (fileHandler.exists(Paths.get(fileHandler.graphLocation.getPath, RELS_DIRECTORY).toString)) {
+      loadRels
+    } else {
+      List.empty[CAPSRelationshipTable]
+    }
+
+    val metaData = if (fileHandler.exists(Paths.get(fileHandler.graphLocation.getPath, NODES_DIRECTORY).toString)) {
+      loadMetaData
+    } else {
+      CsvGraphMetaData.empty
+    }
+    capsSession.readFrom(metaData.tags, nodeTables.head, nodeTables.tail ++ relTables: _*)
+  }
+
+  private def loadMetaData: CsvGraphMetaData =
+    fileHandler.readMetaData(METADATA_FILE)
 
   private def loadNodes: List[CAPSNodeTable] = {
     val csvFiles = fileHandler.listNodeFiles.toList
@@ -155,6 +184,8 @@ object CsvGraphLoader {
   val CSV_SUFFIX = ".CSV"
 
   val SCHEMA_SUFFIX = ".SCHEMA"
+
+  val METADATA_FILE = "metadata.json"
 
   def apply(location: URI, hadoopConfig: Configuration)(implicit caps: CAPSSession): CsvGraphLoader = {
     new CsvGraphLoader(new HadoopFileHandler(location, hadoopConfig))

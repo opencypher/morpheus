@@ -44,6 +44,7 @@ class CsvGraphWriterHDFSTest extends CAPSTestSuite with MiniDFSClusterFixture wi
     // Verification
     val loader = CsvGraphLoader(hdfsURI, session.sparkContext.hadoopConfiguration)
     val expected: CAPSGraph = loader.load.asCaps
+    expected.tags should equal(Set(0))
     val expectedNodes = expected.nodes("n").toDF()
     expectedNodes.collect().toBag should equal(csvTestGraphNodesWithoutArrays)
     val expectedRels = expected.relationships("rel").toDF()

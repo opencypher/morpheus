@@ -47,6 +47,7 @@ class CsvGraphLoaderTest extends CAPSTestSuite
     val loader = CsvGraphLoader(hdfsURI, session.sparkContext.hadoopConfiguration)
 
     val graph: CAPSGraph = loader.load.asCaps
+    graph.tags should equal(csvTestGraphTags)
     graph.nodes("n").toDF().collect().toBag should equal(csvTestGraphNodes)
     graph.relationships("rel").toDF().collect.toBag should equal(csvTestGraphRels)
   }
@@ -56,6 +57,7 @@ class CsvGraphLoaderTest extends CAPSTestSuite
     val loader = CsvGraphLoader(fileURI, session.sparkContext.hadoopConfiguration)
 
     val graph: CAPSGraph = loader.load.asCaps
+    graph.tags should equal(csvTestGraphTags)
     graph.nodes("n").toDF().collect().toBag should equal(csvTestGraphNodes)
     graph.relationships("rel").toDF().collect.toBag should equal(csvTestGraphRels)
   }

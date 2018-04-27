@@ -28,7 +28,6 @@ package org.opencypher.spark.impl.io.hdfs
 
 import io.circe.Decoder
 import io.circe.generic.auto._
-import io.circe.parser.parse
 import io.circe.syntax._
 import org.apache.spark.sql.types._
 import org.opencypher.okapi.api.types._
@@ -41,24 +40,6 @@ abstract class CsvSchema {
   def toStructType: StructType
 
   def toJson: String
-}
-
-// TODO: test
-object CsvSchemaUtils {
-  def parseJson[T](jsonString: String)(implicit decoder: Decoder[T]): T = {
-    parse(jsonString) match {
-      case Left(failure) => throw new RuntimeException(s"Invalid json file: $failure")
-      case Right(json) =>
-        json.hcursor.as[T] match {
-          case Left(failure) => {
-            val msg =
-              s"Invalid JSON schema: Could not find mandatory element '${failure.history.head.productElement(0)}'"
-            throw new RuntimeException(msg)
-          }
-          case Right(elem) => elem
-        }
-    }
-  }
 }
 
 case class CsvField(name: String, column: Int, valueType: String, nullable: Option[Boolean] = None) {
@@ -183,7 +164,7 @@ object CsvNodeSchema {
   } yield new CsvNodeSchema(idField, implicitLabels, optionalLabels, propertyFields)
 
   def apply(schemaJson: String): CsvNodeSchema = {
-    CsvSchemaUtils.parseJson(schemaJson)
+    CsvJsonUtils.parseJson(schemaJson)
   }
 }
 
@@ -246,6 +227,6 @@ object CsvRelSchema {
   } yield new CsvRelSchema(id, startIdField, endIdField, relType, propertyFields)
 
   def apply(schemaJson: String): CsvRelSchema = {
-    CsvSchemaUtils.parseJson(schemaJson)
+    CsvJsonUtils.parseJson(schemaJson)
   }
 }
