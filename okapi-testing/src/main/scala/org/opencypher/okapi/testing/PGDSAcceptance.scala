@@ -181,23 +181,28 @@ trait PGDSAcceptance extends BeforeAndAfterAll {
     }
   }
 
-  // TODO: Requires fixing https://github.com/opencypher/cypher-for-apache-spark/issues/402
-  //  it("supports UNION ALl (requires storing/loading graph tags for CAPS)") {
-  //    val firstUnionGraphName = GraphName("first")
-  //    val secondUnionGraphName = GraphName("second")
-  //    val graph = cypherSession.catalog.source(ns).graph(gn)
-  //    graph.nodes("n").size shouldBe 3
-  //    val firstUnionGraph = graph.unionAll(graph)
-  //    firstUnionGraph.nodes("n").size shouldBe 6
-  //    cypherSession.catalog.source(ns).store(firstUnionGraphName, firstUnionGraph)
-  //    val retrievedUnionGraph = cypherSession.catalog.source(ns).graph(firstUnionGraphName)
-  //    retrievedUnionGraph.nodes("n").size shouldBe 6
-  //    val secondUnionGraph = retrievedUnionGraph.unionAll(graph)
-  //    secondUnionGraph.nodes("n").size shouldBe 9
-  //    cypherSession.catalog.source(ns).store(firstUnionGraphName, firstUnionGraph)
-  //    val retrievedSecondUnionGraph = cypherSession.catalog.source(ns).graph(secondUnionGraphName)
-  //    retrievedSecondUnionGraph.nodes("n").size shouldBe 9
-  //  }
+  //TODO: Requires fixing https://github.com/opencypher/cypher-for-apache-spark/issues/402
+  ignore("supports UNION ALl (requires storing/loading graph tags for CAPS)") {
+    val firstUnionGraphName = GraphName("first")
+    val secondUnionGraphName = GraphName("second")
+
+    val graph = cypherSession.catalog.source(ns).graph(gn)
+    graph.nodes("n").size shouldBe 3
+
+    val firstUnionGraph = graph.unionAll(graph)
+    firstUnionGraph.nodes("n").size shouldBe 6
+
+    cypherSession.catalog.source(ns).store(firstUnionGraphName, firstUnionGraph)
+    val retrievedUnionGraph = cypherSession.catalog.source(ns).graph(firstUnionGraphName)
+    retrievedUnionGraph.nodes("n").size shouldBe 6
+
+    val secondUnionGraph = retrievedUnionGraph.unionAll(graph)
+    secondUnionGraph.nodes("n").size shouldBe 9
+
+    cypherSession.catalog.source(ns).store(firstUnionGraphName, firstUnionGraph)
+    val retrievedSecondUnionGraph = cypherSession.catalog.source(ns).graph(secondUnionGraphName)
+    retrievedSecondUnionGraph.nodes("n").size shouldBe 9
+  }
 
   it("supports repeated CONSTRUCT ON (requires storing/loading graph tags for CAPS)") {
     val firstConstructedGraphName = GraphName("first")
