@@ -31,7 +31,7 @@ import org.apache.spark.sql.functions.{asc, desc}
 import org.apache.spark.sql.types.{StructField, StructType}
 import org.opencypher.okapi.api.types._
 import org.opencypher.okapi.api.value.CypherValue._
-import org.opencypher.okapi.impl.exception.{IllegalArgumentException, IllegalStateException, NotImplementedException}
+import org.opencypher.okapi.impl.exception.{IllegalArgumentException, IllegalStateException, NotImplementedException, SchemaException}
 import org.opencypher.okapi.ir.api.block.{Asc, Desc, SortItem}
 import org.opencypher.okapi.ir.api.expr._
 import org.opencypher.okapi.ir.impl.syntax.ExprSyntax._
@@ -74,7 +74,14 @@ final case class NodeScan(in: CAPSPhysicalOperator, v: Var, header: RecordHeader
       case n: CTNode => graph.nodes(v.name, n)
       case other => throw IllegalArgumentException("Node variable", other)
     }
-    assert(header == records.header)
+    if (header != records.header) {
+      throw SchemaException(
+        s"""
+           |Graph schema does not match actual records returned for scan $v:
+           |  - Computed record header based on graph schema: ${header.slots.map(_.content).mkString("[", ",", "]")}
+           |  - Actual record header: ${records.header.slots.map(_.content).mkString("[", ",", "]")}
+        """.stripMargin)
+    }
     CAPSPhysicalResult(records, graph, prev.workingGraphName)
   }
 }
@@ -87,7 +94,14 @@ final case class RelationshipScan(in: CAPSPhysicalOperator, v: Var, header: Reco
       case r: CTRelationship => graph.relationships(v.name, r)
       case other => throw IllegalArgumentException("Relationship variable", other)
     }
-    assert(header == records.header)
+    if (header != records.header) {
+      throw SchemaException(
+        s"""
+           |Graph schema does not match actual records returned for scan $v:
+           |  - Computed record header based on graph schema: ${header.slots.map(_.content).mkString("[", ",", "]")}
+           |  - Actual record header: ${records.header.slots.map(_.content).mkString("[", ",", "]")}
+        """.stripMargin)
+    }
     CAPSPhysicalResult(records, graph, v.cypherType.graph.get)
   }
 }
