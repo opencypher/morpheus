@@ -66,15 +66,14 @@ class CAPSPatternGraphTest extends CAPSGraphTest {
       ))
   }
 
-  // TODO: Enable when frontend bug is fixed
-  ignore("projects a pattern graph with a relationship") {
+  it("projects a pattern graph with a relationship") {
     val inputGraph = initGraph(`:Person` + `:KNOWS`)
 
     val person = inputGraph.cypher(
       """MATCH (a:Person:Swedish)-[r]->(b)
         |CONSTRUCT
         |  CLONE a, b, r
-        |  NEW (a)-[r]-(b)
+        |  NEW (a)-[r]->(b)
         |RETURN GRAPH
       """.stripMargin)
 
