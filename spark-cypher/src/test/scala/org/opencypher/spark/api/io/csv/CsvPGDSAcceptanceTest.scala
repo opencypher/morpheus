@@ -29,15 +29,16 @@ package org.opencypher.spark.api.io.csv
 import java.nio.file.{Path, Paths}
 
 import org.junit.rules.TemporaryFolder
-import org.opencypher.okapi.api.graph.{CypherSession, GraphName}
+import org.opencypher.okapi.api.graph.GraphName
 import org.opencypher.okapi.api.io.PropertyGraphDataSource
-import org.opencypher.okapi.testing.PGDSAcceptance
 import org.opencypher.okapi.testing.propertygraph.TestGraph
+import org.opencypher.spark.api.CAPSSession
+import org.opencypher.spark.api.io.CAPSPGDSAcceptance
 import org.opencypher.spark.impl.io.hdfs.CsvGraphWriter
 import org.opencypher.spark.test.CAPSTestSuite
 import org.opencypher.spark.test.support.creation.caps.CAPSScanGraphFactory
 
-abstract class CsvPGDSAcceptanceTest extends CAPSTestSuite with PGDSAcceptance {
+abstract class CsvPGDSAcceptanceTest extends CAPSTestSuite with CAPSPGDSAcceptance {
 
   private val tempDir = new TemporaryFolder()
 
@@ -45,7 +46,7 @@ abstract class CsvPGDSAcceptanceTest extends CAPSTestSuite with PGDSAcceptance {
 
   protected def graphPath: Path = Paths.get(dsRoot.toString, gn.value)
 
-  override def initSession(): CypherSession = caps
+  override def initSession(): CAPSSession = caps
 
   override def afterAll(): Unit = {
     tempDir.delete()

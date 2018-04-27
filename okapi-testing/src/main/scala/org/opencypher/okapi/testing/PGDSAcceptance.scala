@@ -39,7 +39,7 @@ import org.scalatest.BeforeAndAfterAll
 
 import scala.util.{Failure, Success, Try}
 
-trait PGDSAcceptance extends BeforeAndAfterAll {
+trait PGDSAcceptance[Session <: CypherSession] extends BeforeAndAfterAll {
   self: BaseTestSuite =>
 
   val createStatements =
@@ -57,7 +57,7 @@ trait PGDSAcceptance extends BeforeAndAfterAll {
   val ns = Namespace("testing")
   val gn = GraphName("test")
 
-  implicit val cypherSession: CypherSession = initSession()
+  val cypherSession: Session = initSession()
 
   override def beforeAll(): Unit = {
     super.beforeAll()
@@ -67,7 +67,7 @@ trait PGDSAcceptance extends BeforeAndAfterAll {
 
   override def afterAll(): Unit = super.afterAll()
 
-  def initSession(): CypherSession
+  def initSession(): Session
 
   def create(graphName: GraphName, testGraph: TestGraph, createStatements: String): PropertyGraphDataSource
 
@@ -144,7 +144,7 @@ trait PGDSAcceptance extends BeforeAndAfterAll {
           cypherSession.catalog.source(ns).hasGraph(GraphName(s"${gn}2")) shouldBe true
         }
       case Failure(_: UnsupportedOperationException) =>
-      case other => fail(s"Expected success or `UnsupportedOperationException`, got $other")
+      case Failure(t) => badFailure(t)
     }
   }
 
@@ -166,7 +166,7 @@ trait PGDSAcceptance extends BeforeAndAfterAll {
           CypherMap("c.name" -> "C")
         ))
       case Failure(_: UnsupportedOperationException) =>
-      case other => fail(s"Expected success or `UnsupportedOperationException`, got $other")
+      case Failure(t) => badFailure(t)
     }
   }
 
@@ -188,7 +188,7 @@ trait PGDSAcceptance extends BeforeAndAfterAll {
           cypherSession.catalog.source(ns).graph(unionGraphName).nodes("n").size shouldBe 6
         }
       case Failure(_: UnsupportedOperationException) =>
-      case other => fail(s"Expected success or `UnsupportedOperationException`, got $other")
+      case Failure(t) => badFailure(t)
     }
   }
 
@@ -209,7 +209,7 @@ trait PGDSAcceptance extends BeforeAndAfterAll {
     val maybeStored = Try(cypherSession.catalog.source(ns).store(firstConstructedGraphName, firstConstructedGraph))
     maybeStored match {
       case Failure(_: UnsupportedOperationException) =>
-      case Failure(f) => throw new Exception(s"Expected either an `UnsupportedOperationException` or a successful store", f)
+      case Failure(f) => badFailure(f)
       case Success(_) =>
         val retrievedConstructedGraph = cypherSession.catalog.source(ns).graph(firstConstructedGraphName)
         retrievedConstructedGraph.nodes("n").size shouldBe 4
@@ -234,8 +234,12 @@ trait PGDSAcceptance extends BeforeAndAfterAll {
           cypherSession.catalog.source(ns).hasGraph(gn) shouldBe false
         }
       case Failure(_: UnsupportedOperationException) =>
-      case other => fail(s"Expected success or `UnsupportedOperationException`, got $other")
+      case Failure(t) => badFailure(t)
     }
+  }
+
+  protected def badFailure(t: Throwable): Unit = {
+    fail(s"Expected success or `UnsupportedOperationException`, got $t")
   }
 
 }
