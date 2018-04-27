@@ -221,7 +221,7 @@ trait PGDSAcceptance[Session <: CypherSession] extends BeforeAndAfterAll {
              |  RETURN GRAPH
         """.stripMargin).getGraph
         secondConstructedGraph.nodes("n").size shouldBe 5
-        cypherSession.catalog.source(ns).store(firstConstructedGraphName, secondConstructedGraph)
+        cypherSession.catalog.source(ns).store(secondConstructedGraphName, secondConstructedGraph)
         val retrievedSecondConstructedGraph = cypherSession.catalog.source(ns).graph(secondConstructedGraphName)
         retrievedSecondConstructedGraph.nodes("n").size shouldBe 5
     }

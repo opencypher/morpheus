@@ -30,8 +30,6 @@ import org.opencypher.okapi.api.io.PropertyGraphDataSource
 import org.opencypher.spark.api.io.csv.CsvPGDSAcceptanceTest
 import org.scalatest.Ignore
 
-// TODO: enable when https://github.com/opencypher/cypher-for-apache-spark/issues/408 is fixed
-@Ignore
 class FileCsvPGDSAcceptanceTest extends CsvPGDSAcceptanceTest  {
 
   override protected def createInternal: PropertyGraphDataSource = FileCsvGraphDataSource(dsRoot.toString)
