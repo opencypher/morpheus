@@ -170,18 +170,7 @@ trait PGDSAcceptance extends BeforeAndAfterAll {
     }
   }
 
-  it("deletes a graph") {
-    Try(cypherSession.cypher(s"DELETE GRAPH $ns.$gn")) match {
-      case Success(_) =>
-        withClue("`hasGraph` needs to return `false` after graph deletion") {
-          cypherSession.catalog.source(ns).hasGraph(gn) shouldBe false
-        }
-      case Failure(_: UnsupportedOperationException) =>
-      case other => fail(s"Expected success or `UnsupportedOperationException`, got $other")
-    }
-  }
-
-  //TODO: Requires fixing https://github.com/opencypher/cypher-for-apache-spark/issues/402
+  // TODO: Requires fixing https://github.com/opencypher/cypher-for-apache-spark/issues/402
   ignore("supports UNION ALl (requires storing/loading graph tags for CAPS)") {
     val firstUnionGraphName = GraphName("first")
     val secondUnionGraphName = GraphName("second")
@@ -204,7 +193,9 @@ trait PGDSAcceptance extends BeforeAndAfterAll {
     retrievedSecondUnionGraph.nodes("n").size shouldBe 9
   }
 
-  it("supports repeated CONSTRUCT ON (requires storing/loading graph tags for CAPS)") {
+  // TODO: https://github.com/opencypher/cypher-for-apache-spark/issues/408
+  // TODO: https://github.com/opencypher/cypher-for-apache-spark/issues/409
+  ignore("supports repeated CONSTRUCT ON (requires storing/loading graph tags for CAPS)") {
     val firstConstructedGraphName = GraphName("first")
     val secondConstructedGraphName = GraphName("second")
     val graph = cypherSession.catalog.source(ns).graph(gn)
@@ -235,6 +226,17 @@ trait PGDSAcceptance extends BeforeAndAfterAll {
         cypherSession.catalog.source(ns).store(firstConstructedGraphName, secondConstructedGraph)
         val retrievedSecondConstructedGraph = cypherSession.catalog.source(ns).graph(secondConstructedGraphName)
         retrievedSecondConstructedGraph.nodes("n").size shouldBe 5
+    }
+  }
+
+  it("deletes a graph") {
+    Try(cypherSession.cypher(s"DELETE GRAPH $ns.$gn")) match {
+      case Success(_) =>
+        withClue("`hasGraph` needs to return `false` after graph deletion") {
+          cypherSession.catalog.source(ns).hasGraph(gn) shouldBe false
+        }
+      case Failure(_: UnsupportedOperationException) =>
+      case other => fail(s"Expected success or `UnsupportedOperationException`, got $other")
     }
   }
 
