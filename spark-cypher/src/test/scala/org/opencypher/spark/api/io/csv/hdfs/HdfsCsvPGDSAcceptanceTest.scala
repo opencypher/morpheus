@@ -29,7 +29,10 @@ package org.opencypher.spark.api.io.csv.hdfs
 import org.opencypher.okapi.api.io.PropertyGraphDataSource
 import org.opencypher.spark.api.io.csv.CsvPGDSAcceptanceTest
 import org.opencypher.spark.test.fixture.MiniDFSClusterFixture
+import org.scalatest.Ignore
 
+// TODO: enable when https://github.com/opencypher/cypher-for-apache-spark/issues/408 is fixed
+@Ignore
 class HdfsCsvPGDSAcceptanceTest extends CsvPGDSAcceptanceTest with MiniDFSClusterFixture {
 
   override def fsTestGraphPath = Some(graphPath.toString)

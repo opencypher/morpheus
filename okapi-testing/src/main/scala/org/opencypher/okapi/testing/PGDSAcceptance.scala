@@ -170,32 +170,30 @@ trait PGDSAcceptance extends BeforeAndAfterAll {
     }
   }
 
-  // TODO: Requires fixing https://github.com/opencypher/cypher-for-apache-spark/issues/402
-  ignore("supports UNION ALl (requires storing/loading graph tags for CAPS)") {
-    val firstUnionGraphName = GraphName("first")
-    val secondUnionGraphName = GraphName("second")
+  // TODO: unionAll with same graph requires fixing https://github.com/opencypher/cypher-for-apache-spark/issues/402
+  ignore("supports UNION ALL (requires storing/loading graph tags for CAPS)") {
+    val unionGraphName = GraphName("union")
 
     val graph = cypherSession.catalog.source(ns).graph(gn)
     graph.nodes("n").size shouldBe 3
 
-    val firstUnionGraph = graph.unionAll(graph)
-    firstUnionGraph.nodes("n").size shouldBe 6
+    val unionGraph = graph.unionAll(graph)
+    unionGraph.nodes("n").size shouldBe 6
 
-    cypherSession.catalog.source(ns).store(firstUnionGraphName, firstUnionGraph)
-    val retrievedUnionGraph = cypherSession.catalog.source(ns).graph(firstUnionGraphName)
-    retrievedUnionGraph.nodes("n").size shouldBe 6
-
-    val secondUnionGraph = retrievedUnionGraph.unionAll(graph)
-    secondUnionGraph.nodes("n").size shouldBe 9
-
-    cypherSession.catalog.source(ns).store(firstUnionGraphName, firstUnionGraph)
-    val retrievedSecondUnionGraph = cypherSession.catalog.source(ns).graph(secondUnionGraphName)
-    retrievedSecondUnionGraph.nodes("n").size shouldBe 9
+    Try {
+      cypherSession.catalog.source(ns).store(unionGraphName, unionGraph)
+    } match {
+      case Success(_) =>
+        withClue("`graph` needs to return graph with correct node size after storing a union graph") {
+          cypherSession.catalog.source(ns).graph(unionGraphName).nodes("n").size shouldBe 6
+        }
+      case Failure(_: UnsupportedOperationException) =>
+      case other => fail(s"Expected success or `UnsupportedOperationException`, got $other")
+    }
   }
 
   // TODO: https://github.com/opencypher/cypher-for-apache-spark/issues/408
-  // TODO: https://github.com/opencypher/cypher-for-apache-spark/issues/409
-  ignore("supports repeated CONSTRUCT ON (requires storing/loading graph tags for CAPS)") {
+  it("supports repeated CONSTRUCT ON (requires storing/loading graph tags for CAPS)") {
     val firstConstructedGraphName = GraphName("first")
     val secondConstructedGraphName = GraphName("second")
     val graph = cypherSession.catalog.source(ns).graph(gn)
