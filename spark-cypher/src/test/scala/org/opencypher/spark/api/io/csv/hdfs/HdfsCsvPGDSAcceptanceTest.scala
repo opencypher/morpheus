@@ -26,12 +26,26 @@
  */
 package org.opencypher.spark.api.io.csv.hdfs
 
+import org.apache.hadoop.fs.Path
 import org.opencypher.okapi.api.io.PropertyGraphDataSource
 import org.opencypher.spark.api.io.csv.CsvPGDSAcceptanceTest
 import org.opencypher.spark.test.fixture.MiniDFSClusterFixture
-import org.scalatest.Ignore
 
 class HdfsCsvPGDSAcceptanceTest extends CsvPGDSAcceptanceTest with MiniDFSClusterFixture {
+
+  override protected def beforeEach(): Unit = {
+    super.beforeEach()
+    val localPath = new Path(fsTestGraphPath.get)
+    val dfsPath = new Path(dfsTestGraphPath.get)
+    if (!cluster.getFileSystem.exists(dfsPath)) {
+      cluster.getFileSystem.copyFromLocalFile(localPath, dfsPath)
+    }
+  }
+
+  override protected def afterEach(): Unit = {
+    cluster.getFileSystem.delete(new Path(dfsTestGraphPath.get), true)
+    super.afterEach()
+  }
 
   override def fsTestGraphPath = Some(graphPath.toString)
 

@@ -35,11 +35,11 @@ import org.opencypher.okapi.impl.exception.GraphNotFoundException
 import org.opencypher.okapi.impl.schema.SchemaImpl
 import org.opencypher.okapi.testing.Bag._
 import org.opencypher.okapi.testing.propertygraph.{TestGraph, TestGraphFactory}
-import org.scalatest.BeforeAndAfterAll
+import org.scalatest.BeforeAndAfterEach
 
 import scala.util.{Failure, Success, Try}
 
-trait PGDSAcceptance[Session <: CypherSession] extends BeforeAndAfterAll {
+trait PGDSAcceptance[Session <: CypherSession] extends BeforeAndAfterEach {
   self: BaseTestSuite =>
 
   val createStatements =
@@ -59,13 +59,16 @@ trait PGDSAcceptance[Session <: CypherSession] extends BeforeAndAfterAll {
 
   val cypherSession: Session = initSession()
 
-  override def beforeAll(): Unit = {
-    super.beforeAll()
+  override protected def beforeEach(): Unit = {
+    super.beforeEach()
     val ds = create(gn, testGraph, createStatements)
     cypherSession.registerSource(ns, ds)
   }
 
-  override def afterAll(): Unit = super.afterAll()
+  override protected def afterEach(): Unit = {
+    cypherSession.deregisterSource(ns)
+    super.afterEach()
+  }
 
   def initSession(): Session
 

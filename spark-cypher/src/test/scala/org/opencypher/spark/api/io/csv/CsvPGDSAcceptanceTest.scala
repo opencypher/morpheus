@@ -40,7 +40,7 @@ import org.opencypher.spark.test.support.creation.caps.CAPSScanGraphFactory
 
 abstract class CsvPGDSAcceptanceTest extends CAPSTestSuite with CAPSPGDSAcceptance {
 
-  private val tempDir = new TemporaryFolder()
+  private var tempDir = new TemporaryFolder()
 
   protected def dsRoot: Path = Paths.get(tempDir.getRoot.getAbsolutePath)
 
@@ -48,13 +48,18 @@ abstract class CsvPGDSAcceptanceTest extends CAPSTestSuite with CAPSPGDSAcceptan
 
   override def initSession(): CAPSSession = caps
 
-  override def afterAll(): Unit = {
+  override protected def beforeEach(): Unit = {
+    tempDir.create()
+    super.beforeEach()
+  }
+
+  override protected def afterEach(): Unit = {
     tempDir.delete()
-    super.afterAll()
+    tempDir = new TemporaryFolder()
+    super.afterEach()
   }
 
   override def create(graphName: GraphName, testGraph: TestGraph, createStatements: String): PropertyGraphDataSource = {
-    tempDir.create()
     val propertyGraph = CAPSScanGraphFactory(testGraph)
 
     // DO NOT DELETE THIS! If the config is not cleared, the FileCsvPGDSAcceptanceTest fails because of connecting to a
