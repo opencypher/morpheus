@@ -181,6 +181,63 @@ trait PGDSAcceptance extends BeforeAndAfterAll {
     }
   }
 
+  //TODO: Requires fixing https://github.com/opencypher/cypher-for-apache-spark/issues/402
+  ignore("supports UNION ALl (requires storing/loading graph tags for CAPS)") {
+    val firstUnionGraphName = GraphName("first")
+    val secondUnionGraphName = GraphName("second")
+
+    val graph = cypherSession.catalog.source(ns).graph(gn)
+    graph.nodes("n").size shouldBe 3
+
+    val firstUnionGraph = graph.unionAll(graph)
+    firstUnionGraph.nodes("n").size shouldBe 6
+
+    cypherSession.catalog.source(ns).store(firstUnionGraphName, firstUnionGraph)
+    val retrievedUnionGraph = cypherSession.catalog.source(ns).graph(firstUnionGraphName)
+    retrievedUnionGraph.nodes("n").size shouldBe 6
+
+    val secondUnionGraph = retrievedUnionGraph.unionAll(graph)
+    secondUnionGraph.nodes("n").size shouldBe 9
+
+    cypherSession.catalog.source(ns).store(firstUnionGraphName, firstUnionGraph)
+    val retrievedSecondUnionGraph = cypherSession.catalog.source(ns).graph(secondUnionGraphName)
+    retrievedSecondUnionGraph.nodes("n").size shouldBe 9
+  }
+
+  it("supports repeated CONSTRUCT ON (requires storing/loading graph tags for CAPS)") {
+    val firstConstructedGraphName = GraphName("first")
+    val secondConstructedGraphName = GraphName("second")
+    val graph = cypherSession.catalog.source(ns).graph(gn)
+    graph.nodes("n").size shouldBe 3
+    val firstConstructedGraph = graph.cypher(
+      s"""
+         |CONSTRUCT
+         |  ON $ns.$gn
+         |  NEW (:A {name: "A"})
+         |  RETURN GRAPH
+        """.stripMargin).getGraph
+    firstConstructedGraph.nodes("n").size shouldBe 4
+    val maybeStored = Try(cypherSession.catalog.source(ns).store(firstConstructedGraphName, firstConstructedGraph))
+    maybeStored match {
+      case Failure(_: UnsupportedOperationException) =>
+      case Failure(f) => throw new Exception(s"Expected either an `UnsupportedOperationException` or a successful store", f)
+      case Success(_) =>
+        val retrievedConstructedGraph = cypherSession.catalog.source(ns).graph(firstConstructedGraphName)
+        retrievedConstructedGraph.nodes("n").size shouldBe 4
+        val secondConstructedGraph = graph.cypher(
+          s"""
+             |CONSTRUCT
+             |  ON $ns.$firstConstructedGraphName
+             |  NEW (:A:B {name: "COMBO", size: 2})
+             |  RETURN GRAPH
+        """.stripMargin).getGraph
+        secondConstructedGraph.nodes("n").size shouldBe 5
+        cypherSession.catalog.source(ns).store(firstConstructedGraphName, secondConstructedGraph)
+        val retrievedSecondConstructedGraph = cypherSession.catalog.source(ns).graph(secondConstructedGraphName)
+        retrievedSecondConstructedGraph.nodes("n").size shouldBe 5
+    }
+  }
+
 }
 
 case class SingleGraphDataSource(graphName: GraphName, graph: PropertyGraph) extends PropertyGraphDataSource {
