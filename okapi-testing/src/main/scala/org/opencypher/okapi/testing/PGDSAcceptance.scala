@@ -173,30 +173,33 @@ trait PGDSAcceptance[Session <: CypherSession] extends BeforeAndAfterEach {
     }
   }
 
-  // TODO: unionAll with same graph requires fixing https://github.com/opencypher/cypher-for-apache-spark/issues/402
-  ignore("supports UNION ALL (requires storing/loading graph tags for CAPS)") {
+  it("supports storing a union graph") {
+    cypherSession.cypher("CREATE GRAPH g1 { CONSTRUCT NEW () RETURN GRAPH }")
+    cypherSession.cypher("CREATE GRAPH g2 { CONSTRUCT NEW () RETURN GRAPH }")
     val unionGraphName = GraphName("union")
 
-    val graph = cypherSession.catalog.source(ns).graph(gn)
-    graph.nodes("n").size shouldBe 3
+    val g1 = cypherSession.catalog.graph("g1")
+    val g2 = cypherSession.catalog.graph("g2")
 
-    val unionGraph = graph.unionAll(graph)
-    unionGraph.nodes("n").size shouldBe 6
+    g1.nodes("n").size shouldBe 1
+    g2.nodes("n").size shouldBe 1
+
+    val unionGraph = g1.unionAll(g2)
+    unionGraph.nodes("n").size shouldBe 2
 
     Try {
       cypherSession.catalog.source(ns).store(unionGraphName, unionGraph)
     } match {
       case Success(_) =>
         withClue("`graph` needs to return graph with correct node size after storing a union graph") {
-          cypherSession.catalog.source(ns).graph(unionGraphName).nodes("n").size shouldBe 6
+          cypherSession.catalog.source(ns).graph(unionGraphName).nodes("n").size shouldBe 2
         }
       case Failure(_: UnsupportedOperationException) =>
       case Failure(t) => badFailure(t)
     }
   }
 
-  // TODO: https://github.com/opencypher/cypher-for-apache-spark/issues/408
-  it("supports repeated CONSTRUCT ON (requires storing/loading graph tags for CAPS)") {
+  it("supports repeated CONSTRUCT ON") {
     val firstConstructedGraphName = GraphName("first")
     val secondConstructedGraphName = GraphName("second")
     val graph = cypherSession.catalog.source(ns).graph(gn)
