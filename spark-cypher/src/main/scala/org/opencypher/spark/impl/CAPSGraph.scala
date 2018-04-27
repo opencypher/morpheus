@@ -138,9 +138,13 @@ object CAPSGraph {
     }
 
   def create(nodeTable: CAPSNodeTable, entityTables: CAPSEntityTable*)(implicit caps: CAPSSession): CAPSGraph = {
+    create(Set(0), nodeTable, entityTables: _*)
+  }
+
+  def create(tags: Set[Int], nodeTable: CAPSNodeTable, entityTables: CAPSEntityTable*)(implicit caps: CAPSSession): CAPSGraph = {
     val allTables = nodeTable +: entityTables
     val schema = allTables.map(_.schema).reduce[Schema](_ ++ _).asCaps
-    new CAPSScanGraph(allTables, schema, Set(0))
+    new CAPSScanGraph(allTables, schema, tags)
   }
 
   def create(records: CypherRecords, schema: CAPSSchema, tags: Set[Int] = Set(0))(implicit caps: CAPSSession): CAPSGraph = {

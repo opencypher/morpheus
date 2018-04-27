@@ -33,7 +33,7 @@ import org.apache.spark.sql.{DataFrame, Dataset, SparkSession}
 import org.opencypher.okapi.api.graph._
 import org.opencypher.okapi.api.table.CypherRecords
 import org.opencypher.okapi.api.value.CypherValue.CypherMap
-import org.opencypher.okapi.impl.exception.{IllegalArgumentException, UnsupportedOperationException}
+import org.opencypher.okapi.impl.exception.UnsupportedOperationException
 import org.opencypher.okapi.impl.graph.CypherCatalog
 import org.opencypher.okapi.relational.impl.table.ColumnName
 import org.opencypher.spark.api.io._
@@ -66,17 +66,6 @@ trait CAPSSession extends CypherSession {
   }
 
   /**
-    * Reads a graph from a sequence of entity tables and expects that the first table is a node table.
-    *
-    * @param entityTables sequence of node and relationship tables defining the graph
-    * @return property graph
-    */
-  def readFrom(entityTables: CAPSEntityTable*): PropertyGraph = entityTables.head match {
-    case h: CAPSNodeTable => readFrom(h, entityTables.tail: _*)
-    case _ => throw IllegalArgumentException("first argument of type NodeTable", "RelationshipTable")
-  }
-
-  /**
     * Reads a graph from a sequence of entity tables that contains at least one node table.
     *
     * @param nodeTable    first parameter to guarantee there is at least one node table
@@ -84,7 +73,19 @@ trait CAPSSession extends CypherSession {
     * @return property graph
     */
   def readFrom(nodeTable: CAPSNodeTable, entityTables: CAPSEntityTable*): PropertyGraph = {
-    CAPSGraph.create(nodeTable, entityTables: _*)(this)
+    CAPSGraph.create(nodeTable, entityTables:_ *)(this)
+  }
+
+  /**
+    * Reads a graph from a sequence of entity tables that contains at least one node table.
+    *
+    * @param tags         tags that are used by graph entities
+    * @param nodeTable    first parameter to guarantee there is at least one node table
+    * @param entityTables sequence of node and relationship tables defining the graph
+    * @return property graph
+    */
+  def readFrom(tags: Set[Int], nodeTable: CAPSNodeTable, entityTables: CAPSEntityTable*): PropertyGraph = {
+    CAPSGraph.create(tags, nodeTable, entityTables: _*)(this)
   }
 
   private[opencypher] val emptyGraphQgn = QualifiedGraphName(catalog.sessionNamespace, GraphName("emptyGraph"))

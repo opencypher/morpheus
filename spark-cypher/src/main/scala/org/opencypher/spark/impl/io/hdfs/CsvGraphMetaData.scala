@@ -26,29 +26,17 @@
  */
 package org.opencypher.spark.impl.io.hdfs
 
-import org.opencypher.okapi.testing.Bag._
-import org.opencypher.spark.impl.CAPSConverters._
-import org.opencypher.spark.impl.CAPSGraph
-import org.opencypher.spark.test.CAPSTestSuite
-import org.opencypher.spark.test.fixture.{GraphConstructionFixture, MiniDFSClusterFixture, TeamDataFixture}
+import io.circe.Decoder
 
-// This tests depends on the id generation in Neo4j (harness)
-class CsvGraphWriterHDFSTest extends CAPSTestSuite with MiniDFSClusterFixture with TeamDataFixture with GraphConstructionFixture {
+case class CsvGraphMetaData(tags: Set[Int])
 
-  it("can store a graph to HDFS") {
+object CsvGraphMetaData {
 
-    val inputGraph = initGraph(dataFixtureWithoutArrays)
-    val fileHandler = new HadoopFileHandler(hdfsURI, clusterConfig)
-    new CsvGraphWriter(inputGraph, fileHandler).store()
+  implicit val decodeCsvGraphMetaData: Decoder[CsvGraphMetaData] = for {
+    tags <- Decoder.instance(_.getOrElse[Set[Int]]("tags")(Set()))
+  } yield new CsvGraphMetaData(tags)
 
-    // Verification
-    val loader = CsvGraphLoader(hdfsURI, session.sparkContext.hadoopConfiguration)
-    val expected: CAPSGraph = loader.load.asCaps
-    expected.tags should equal(Set(0))
-    val expectedNodes = expected.nodes("n").toDF()
-    expectedNodes.collect().toBag should equal(csvTestGraphNodesWithoutArrays)
-    val expectedRels = expected.relationships("rel").toDF()
-    expectedRels.collect.toBag should equal(csvTestGraphRelsWithoutArrays)
+  def apply(schemaJson: String): CsvGraphMetaData = {
+    CsvJsonUtils.parseJson(schemaJson)
   }
-
 }

@@ -31,6 +31,8 @@ import java.net.URI
 import java.nio.file.{Files, Paths}
 import java.util.stream.Collectors
 
+import io.circe.generic.auto._
+import io.circe.syntax._
 import org.apache.hadoop.conf.Configuration
 import org.apache.hadoop.fs.{FileSystem, Path}
 import org.opencypher.okapi.impl.exception.{GraphNotFoundException, IllegalArgumentException, InvalidGraphException}
@@ -47,7 +49,11 @@ trait CsvFileHandler {
 
   def readSchemaFile(path: URI): String
 
+  def readMetaData(fileName: String): CsvGraphMetaData
+
   def writeSchemaFile(directory: String, filename: String, jsonSchema: String): Unit
+
+  def writeMetaData(fileName: String, metaData: CsvGraphMetaData): Unit
 }
 
 final class HadoopFileHandler(override val graphLocation: URI, private val hadoopConfig: Configuration)
@@ -74,19 +80,32 @@ final class HadoopFileHandler(override val graphLocation: URI, private val hadoo
     val schemaPaths = Seq(hdfsPath.suffix(SCHEMA_SUFFIX.toLowerCase), hdfsPath.suffix(SCHEMA_SUFFIX))
     val optSchemaPath = schemaPaths.find(fs.exists)
     val schemaPath = optSchemaPath.getOrElse(throw IllegalArgumentException(s"to find a schema file at $path"))
-    val stream = new BufferedReader(new InputStreamReader(fs.open(schemaPath)))
-
-    def readLines = Stream.cons(stream.readLine(), Stream.continually(stream.readLine))
-
-    readLines.takeWhile(_ != null).mkString
+    readFile(schemaPath)
   }
 
-  override def writeSchemaFile(directory: String, filename: String, jsonSchema: String): Unit = {
-    val hdfsPath = new Path(new Path(graphLocation.getPath, directory), filename)
-    val outputStream = fs.create(hdfsPath)
+  override def readMetaData(fileName: String): CsvGraphMetaData = {
+    val graphDirectory = graphLocation.getPath
+    val metaDataPath = new Path(graphDirectory, fileName)
+    CsvGraphMetaData(readFile(metaDataPath))
+  }
+
+  override def writeSchemaFile(directory: String, filename: String, jsonSchema: String): Unit =
+    writeFile(new Path(new Path(graphLocation.getPath, directory), filename), jsonSchema)
+
+  override def writeMetaData(fileName: String, metaData: CsvGraphMetaData): Unit =
+    writeFile(new Path(graphLocation.getPath, fileName), metaData.asJson.toString())
+
+  private def writeFile(path: Path, content: String): Unit = {
+    val outputStream = fs.create(path)
     val bw = new BufferedWriter(new OutputStreamWriter(outputStream, "UTF-8"))
-    bw.write(jsonSchema)
+    bw.write(content)
     bw.close()
+  }
+
+  private def readFile(path: Path): String = {
+    val stream = new BufferedReader(new InputStreamReader(fs.open(path)))
+    def readLines = Stream.cons(stream.readLine(), Stream.continually(stream.readLine))
+    readLines.takeWhile(_ != null).mkString
   }
 }
 
@@ -125,10 +144,23 @@ final class LocalFileHandler(override val graphLocation: URI) extends CsvFileHan
     new String(Files.readAllBytes(schemaPath))
   }
 
-  override def writeSchemaFile(directory: String, filename: String, jsonSchema: String): Unit = {
-    val file = new File(Paths.get(graphLocation.getPath, directory, filename).toString)
+  override def readMetaData(fileName: String): CsvGraphMetaData = {
+    val graphDirectory = graphLocation.getPath
+    val metaDataPath = Paths.get(graphDirectory, fileName)
+    CsvGraphMetaData(new String(Files.readAllBytes(metaDataPath)))
+  }
+
+  override def writeSchemaFile(directory: String, filename: String, jsonSchema: String): Unit =
+    writeFile(Paths.get(graphLocation.getPath, directory, filename), jsonSchema)
+
+  override def writeMetaData(fileName: String, metaData: CsvGraphMetaData): Unit =
+    writeFile(Paths.get(graphLocation.getPath, fileName), metaData.asJson.toString())
+
+  private def writeFile(path: java.nio.file.Path, content: String): Unit = {
+    val file = new File(path.toString)
     val bw = new BufferedWriter(new FileWriter(file))
-    bw.write(jsonSchema)
+    bw.write(content)
     bw.close()
   }
+
 }

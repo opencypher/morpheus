@@ -26,29 +26,23 @@
  */
 package org.opencypher.spark.impl.io.hdfs
 
-import org.opencypher.okapi.testing.Bag._
-import org.opencypher.spark.impl.CAPSConverters._
-import org.opencypher.spark.impl.CAPSGraph
-import org.opencypher.spark.test.CAPSTestSuite
-import org.opencypher.spark.test.fixture.{GraphConstructionFixture, MiniDFSClusterFixture, TeamDataFixture}
+import io.circe.Decoder
+import io.circe.parser.parse
 
-// This tests depends on the id generation in Neo4j (harness)
-class CsvGraphWriterHDFSTest extends CAPSTestSuite with MiniDFSClusterFixture with TeamDataFixture with GraphConstructionFixture {
-
-  it("can store a graph to HDFS") {
-
-    val inputGraph = initGraph(dataFixtureWithoutArrays)
-    val fileHandler = new HadoopFileHandler(hdfsURI, clusterConfig)
-    new CsvGraphWriter(inputGraph, fileHandler).store()
-
-    // Verification
-    val loader = CsvGraphLoader(hdfsURI, session.sparkContext.hadoopConfiguration)
-    val expected: CAPSGraph = loader.load.asCaps
-    expected.tags should equal(Set(0))
-    val expectedNodes = expected.nodes("n").toDF()
-    expectedNodes.collect().toBag should equal(csvTestGraphNodesWithoutArrays)
-    val expectedRels = expected.relationships("rel").toDF()
-    expectedRels.collect.toBag should equal(csvTestGraphRelsWithoutArrays)
+// TODO: test
+object CsvJsonUtils {
+  def parseJson[T](jsonString: String)(implicit decoder: Decoder[T]): T = {
+    parse(jsonString) match {
+      case Left(failure) => throw new RuntimeException(s"Invalid json file: $failure")
+      case Right(json) =>
+        json.hcursor.as[T] match {
+          case Left(failure) => {
+            val msg =
+              s"Invalid JSON schema: Could not find mandatory element '${failure.history.head.productElement(0)}'"
+            throw new RuntimeException(msg)
+          }
+          case Right(elem) => elem
+        }
+    }
   }
-
 }

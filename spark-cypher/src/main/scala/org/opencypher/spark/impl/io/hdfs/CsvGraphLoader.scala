@@ -60,7 +60,15 @@ class CsvGraphLoader(fileHandler: CsvFileHandler)(implicit capsSession: CAPSSess
 
   private val sparkSession: SparkSession = capsSession.sparkSession
 
-  def load: PropertyGraph = capsSession.readFrom(loadNodes ++ loadRels: _*)
+  def load: PropertyGraph = {
+    val nodeTables = loadNodes
+    val relTables = loadRels
+    val metaData = loadMetaData
+    capsSession.readFrom(metaData.tags, nodeTables.head, nodeTables.tail ++ relTables: _*)
+  }
+
+  private def loadMetaData: CsvGraphMetaData =
+    fileHandler.readMetaData(CsvGraphLoader.METADATA_FILE)
 
   private def loadNodes: List[CAPSNodeTable] = {
     val csvFiles = fileHandler.listNodeFiles.toList
@@ -155,6 +163,8 @@ object CsvGraphLoader {
   val CSV_SUFFIX = ".CSV"
 
   val SCHEMA_SUFFIX = ".SCHEMA"
+
+  val METADATA_FILE = "metadata.json"
 
   def apply(location: URI, hadoopConfig: Configuration)(implicit caps: CAPSSession): CsvGraphLoader = {
     new CsvGraphLoader(new HadoopFileHandler(location, hadoopConfig))

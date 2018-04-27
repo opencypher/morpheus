@@ -80,6 +80,13 @@ trait TeamDataFixture extends TestDataFixture {
   )
 
   /**
+    * Returns the expected graph tags for the test graph in /resources/csv/sn
+    *
+    * @return expected graph tags
+    */
+  lazy val csvTestGraphTags: Set[Int] = Set(0, 1)
+
+  /**
     * Returns the expected nodes for the test graph in /resources/csv/sn
     *
     * @return expected nodes
