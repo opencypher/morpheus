@@ -28,7 +28,7 @@ package org.opencypher.spark.impl.io.hdfs
 
 import io.circe.Decoder
 
-case class CsvGraphMetaData(tags: Set[Int])
+case class CsvGraphMetaData(tags: Set[Int] = Set(0))
 
 object CsvGraphMetaData {
 
@@ -39,4 +39,6 @@ object CsvGraphMetaData {
   def apply(schemaJson: String): CsvGraphMetaData = {
     CsvJsonUtils.parseJson(schemaJson)
   }
+
+  def empty: CsvGraphMetaData = CsvGraphMetaData()
 }

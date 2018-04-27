@@ -29,6 +29,8 @@ package org.opencypher.spark.impl.io.hdfs
 import java.net.URI
 import java.nio.file.Files
 
+import org.apache.spark.sql.Row
+import org.opencypher.okapi.testing.Bag
 import org.opencypher.okapi.testing.Bag._
 import org.opencypher.spark.impl.CAPSConverters._
 import org.opencypher.spark.impl.CAPSGraph
@@ -54,6 +56,24 @@ class CsvGraphWriterLocalFSTest extends CAPSTestSuite with MiniDFSClusterFixture
     expectedNodes.collect().toBag should equal(csvTestGraphNodesWithoutArrays)
     val expectedRels = expected.relationships("rel").toDF()
     expectedRels.collect.toBag should equal(csvTestGraphRelsWithoutArrays)
+  }
+
+  it("can store a graph with no relationships") {
+    val tmpPath = Files.createTempDirectory("caps_graph")
+
+    val inputGraph = initGraph("CREATE (a:A)")
+    val fileHandler = new LocalFileHandler(new URI(tmpPath.toString))
+    new CsvGraphWriter(inputGraph, fileHandler).store()
+
+    // Verification
+    val fileURI: URI = new URI(s"file://${tmpPath.toString}")
+    val loader = CsvGraphLoader(fileURI, session.sparkContext.hadoopConfiguration)
+    val expected: CAPSGraph = loader.load.asCaps
+    expected.tags should equal(Set(0))
+    val expectedNodes = expected.nodes("n").toDF()
+    expectedNodes.collect().toBag should equal(Bag(Row(0L, true)))
+
+    expected.relationships("rel").size should equal(0)
   }
 
 }
