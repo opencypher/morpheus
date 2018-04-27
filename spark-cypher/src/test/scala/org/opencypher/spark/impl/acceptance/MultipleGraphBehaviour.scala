@@ -377,8 +377,6 @@ class MultipleGraphBehaviour extends CAPSTestSuite with ScanGraphInit {
 
     result.getRecords.toMaps shouldBe empty
 
-    result.getGraph.asInstanceOf[CAPSUnionGraph].graphs.keys.tail.head.asInstanceOf[CAPSPatternGraph].baseTable.data.show()
-
     result.getGraph.cypher("MATCH ()-[r]->() RETURN r.val, r.val2, type(r) as type").getRecords.iterator.toBag should equal(Bag(
       CypherMap("r.val" -> 1, "r.val2" -> "Donald", "type" -> "BAZ"),
       CypherMap("r.val" -> 1, "r.val2" -> "Donald", "type" -> "BAZ")

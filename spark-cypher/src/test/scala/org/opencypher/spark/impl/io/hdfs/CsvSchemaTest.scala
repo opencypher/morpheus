@@ -116,6 +116,44 @@ class CsvSchemaTest extends BaseTestSuite {
     ))
   }
 
+  test("read node schema with nullable fields") {
+    val schema =
+      """
+        |{
+        |  "idField": {
+        |    "name": "id",
+        |    "column": 0,
+        |    "valueType": "LONG"
+        |  },
+        |  "implicitLabels": ["Person","Employee"],
+        |  "propertyFields": [
+        |    {
+        |      "name": "name",
+        |      "column": 3,
+        |      "valueType": "STRING",
+        |      "nullable": true
+        |    },
+        |    {
+        |      "name": "luckyNumber",
+        |      "column": 4,
+        |      "valueType": "INTEGER",
+        |      "nullable": false
+        |    }
+        |  ]
+        |}
+      """.stripMargin
+
+    val csvSchema = CsvNodeSchema(schema)
+
+    csvSchema.idField should equal(CsvField("id", 0, "LONG"))
+    csvSchema.implicitLabels should equal(List("Person","Employee"))
+    csvSchema.optionalLabels should equal(List())
+    csvSchema.propertyFields should equal(List(
+      CsvField("name", 3, "STRING", Some(true)),
+      CsvField("luckyNumber", 4, "INTEGER", Some(false))
+    ))
+  }
+
   test("read valid relationship schema") {
     val schema =
       """

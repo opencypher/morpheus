@@ -37,7 +37,7 @@ class DataFrameOpsTest extends CAPSTestSuite with Matchers with GeneratorDrivenP
   it("sets tags - DF") {
     val tag = 1
 
-    val df = sparkSession.range(10)
+    val df = session.range(10)
     val ids = df.col("id")
     val tagged = ids.setTag(tag)
     val taggedDf = df.withColumn("tagged", tagged)
@@ -51,7 +51,7 @@ class DataFrameOpsTest extends CAPSTestSuite with Matchers with GeneratorDrivenP
     val tag1 = 1
     val tag2 = 2
 
-    val df = sparkSession.range(10)
+    val df = session.range(10)
     val ids = df.col("id")
     val tagged1 = ids.setTag(tag1)
     val tagged1Df = df.withColumn("tagged1", tagged1)
@@ -71,10 +71,10 @@ class DataFrameOpsTest extends CAPSTestSuite with Matchers with GeneratorDrivenP
     val tag2 = 2
     val tag3 = 3
 
-    val df1 = sparkSession.range(2)
+    val df1 = session.range(2)
     val taggedDf1 = df1.withColumn("id", df1.col("id").setTag(tag1))
 
-    val df2 = sparkSession.range(2)
+    val df2 = session.range(2)
     val taggedDf2 = df2.withColumn("id", df2.col("id").setTag(tag2))
 
     val unionDf = taggedDf1.union(taggedDf2)

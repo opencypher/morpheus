@@ -24,23 +24,46 @@
  * described as "implementation extensions to Cypher" or as "proposed changes to
  * Cypher that are not yet approved by the openCypher community".
  */
-package org.opencypher.spark.api.io.neo4j
+package org.opencypher.spark.api.io.csv
 
+import java.nio.file.{Path, Paths}
+
+import org.junit.rules.TemporaryFolder
 import org.opencypher.okapi.api.graph.GraphName
 import org.opencypher.okapi.api.io.PropertyGraphDataSource
 import org.opencypher.okapi.testing.propertygraph.TestGraph
 import org.opencypher.spark.api.CAPSSession
 import org.opencypher.spark.api.io.CAPSPGDSAcceptance
+import org.opencypher.spark.impl.io.hdfs.CsvGraphWriter
 import org.opencypher.spark.test.CAPSTestSuite
-import org.opencypher.spark.test.fixture.Neo4jServerFixture
+import org.opencypher.spark.test.support.creation.caps.CAPSScanGraphFactory
 
-class Neo4jPGDSAcceptanceTest extends CAPSTestSuite with Neo4jServerFixture with CAPSPGDSAcceptance {
+abstract class CsvPGDSAcceptanceTest extends CAPSTestSuite with CAPSPGDSAcceptance {
+
+  private val tempDir = new TemporaryFolder()
+
+  protected def dsRoot: Path = Paths.get(tempDir.getRoot.getAbsolutePath)
+
+  protected def graphPath: Path = Paths.get(dsRoot.toString, gn.value)
 
   override def initSession(): CAPSSession = caps
 
-  override def create(graphName: GraphName, testGraph: TestGraph, createStatements: String): PropertyGraphDataSource = {
-    new CommunityNeo4jGraphDataSource(neo4jConfig, Map(graphName -> CommunityNeo4jGraphDataSource.defaultQuery))
+  override def afterAll(): Unit = {
+    tempDir.delete()
+    super.afterAll()
   }
 
-  override def dataFixture: String = createStatements
+  override def create(graphName: GraphName, testGraph: TestGraph, createStatements: String): PropertyGraphDataSource = {
+    tempDir.create()
+    val propertyGraph = CAPSScanGraphFactory(testGraph)
+
+    // DO NOT DELETE THIS! If the config is not cleared, the FileCsvPGDSAcceptanceTest fails because of connecting to a
+    // non-existent HDFS cluster. We could not figure out why the afterAll call in MiniDFSClusterFixture does not handle
+    // the clearance of the config correctly.
+    session.sparkContext.hadoopConfiguration.clear()
+    CsvGraphWriter(propertyGraph, graphPath.toUri).store()
+    createInternal
+  }
+
+  protected def createInternal: PropertyGraphDataSource
 }

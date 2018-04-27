@@ -43,8 +43,11 @@ trait MiniDFSClusterFixture extends BaseTestFixture {
   private val HDFS_URI_SCHEME = "hdfs"
 
   // Override this to some String to trigger a copy from local FS into HDFS
-  // e.g. dfsTestGraph = "/foo" triggers a copy from 'file:///foo' to 'hdfs://host:port/foo'
+  // e.g. dfsTestGraph = "/foo" triggers a copy from 'file:/path/to/resources/foo' to 'hdfs://host:port/foo'
   protected def dfsTestGraphPath: Option[String] = None
+  // Override this to change the path to the graph in the local file system
+  // If None, it is assumed that the local graph is contained in resources/<dfsTestGraphPath>
+  protected def fsTestGraphPath: Option[String] = None
 
   protected lazy val cluster: MiniDFSCluster = {
     val cluster = new MiniDFSCluster.Builder(session.sparkContext.hadoopConfiguration).build()
@@ -52,10 +55,11 @@ trait MiniDFSClusterFixture extends BaseTestFixture {
 
     // copy from local FS to HDFS if necessary
     if (dfsTestGraphPath.isDefined) {
-      val pathString = dfsTestGraphPath.get
+      val dfsPathString = dfsTestGraphPath.get
+      val fsPathString = fsTestGraphPath.getOrElse(getClass.getResource(dfsPathString).toString)
       cluster.getFileSystem.copyFromLocalFile(
-        new Path(getClass.getResource(pathString).toString),
-        new Path(pathString))
+        new Path(fsPathString),
+        new Path(dfsPathString))
     }
     cluster
   }
@@ -67,18 +71,18 @@ trait MiniDFSClusterFixture extends BaseTestFixture {
     .build()
 
   protected def clusterConfig: Configuration = {
-    sparkSession.sparkContext.hadoopConfiguration
+    session.sparkContext.hadoopConfiguration
       .set("fs.default.name", new URIBuilder()
         .setScheme(HDFS_URI_SCHEME)
         .setHost(cluster.getNameNode.getHostAndPort)
         .build()
         .toString
       )
-    sparkSession.sparkContext.hadoopConfiguration
+    session.sparkContext.hadoopConfiguration
   }
 
   abstract override def afterAll: Unit = {
-    sparkSession.sparkContext.hadoopConfiguration.clear()
+    session.sparkContext.hadoopConfiguration.clear()
     cluster.shutdown(true)
     super.afterAll()
   }

@@ -112,15 +112,17 @@ final class LocalFileHandler(override val graphLocation: URI) extends CsvFileHan
       .map(_.toUri)
   }
 
-  override def readSchemaFile(csvPath: URI): String = {
-    val schemaPaths = Seq(
-      new URI(s"${csvPath.toString}${SCHEMA_SUFFIX.toLowerCase}"),
-      new URI(s"${csvPath.toString}$SCHEMA_SUFFIX")
+  override def readSchemaFile(csvUri: URI): String = {
+    val path = Paths.get(csvUri)
+
+    val schemaPathCandidates = Seq(
+      Paths.get(s"$path$SCHEMA_SUFFIX"),
+      Paths.get(s"$path${SCHEMA_SUFFIX.toLowerCase}")
     )
 
-    val optSchemaPath = schemaPaths.find(p => new File(p).exists())
-    val schemaPath = optSchemaPath.getOrElse(throw IllegalArgumentException(s"Could not find schema file at $csvPath"))
-    new String(Files.readAllBytes(Paths.get(schemaPath)))
+    val optSchemaPath = schemaPathCandidates.find(Files.exists(_))
+    val schemaPath = optSchemaPath.getOrElse(throw IllegalArgumentException(s"Could not find schema file at $csvUri"))
+    new String(Files.readAllBytes(schemaPath))
   }
 
   override def writeSchemaFile(directory: String, filename: String, jsonSchema: String): Unit = {

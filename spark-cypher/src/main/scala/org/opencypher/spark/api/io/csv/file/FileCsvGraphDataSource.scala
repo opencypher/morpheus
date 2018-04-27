@@ -24,11 +24,12 @@
  * described as "implementation extensions to Cypher" or as "proposed changes to
  * Cypher that are not yet approved by the openCypher community".
  */
-package org.opencypher.spark.api.io.file
+package org.opencypher.spark.api.io.csv.file
 
 import java.net.URI
 import java.nio.file.{Files, Paths}
 
+import org.apache.commons.io.FileUtils
 import org.apache.http.client.utils.URIBuilder
 import org.opencypher.okapi.api.graph.{GraphName, PropertyGraph}
 import org.opencypher.okapi.api.schema.Schema
@@ -45,9 +46,9 @@ import scala.collection.JavaConverters._
   * # Nodes
   *   - all files describing nodes are stored in a sub folder called "nodes"
   *   - create one file for each possible label combination that exists in the data. This means that a node can only
-  *     be present in one file. Example: All nodes with labels :Person:Employee are in a single file and all nodes that
-  *     have label :Person are stored in another file. A node that appears in :Person:Employee CANNOT appear again in the
-  *     file for :Person.
+  * be present in one file. Example: All nodes with labels :Person:Employee are in a single file and all nodes that
+  * have label :Person are stored in another file. A node that appears in :Person:Employee CANNOT appear again in the
+  * file for :Person.
   *   - for every node csv file create a schema file called FILE_NAME.csv.SCHEMA
   *   - for information about the structure of the node schema file see [[org.opencypher.spark.impl.io.hdfs.CsvNodeSchema]]
   *
@@ -71,7 +72,7 @@ case class FileCsvGraphDataSource(rootPath: String)(implicit val session: CAPSSe
     CsvGraphWriter(graph, graphPath(name)).store()
 
   override def delete(name: GraphName): Unit =
-    if (hasGraph(name)) Files.delete(Paths.get(graphPath(name)))
+    if (hasGraph(name)) FileUtils.deleteDirectory(Paths.get(graphPath(name)).toFile)
 
   override def graphNames: Set[GraphName] = Files.list(Paths.get(rootPath)).iterator().asScala
     .filter(p => Files.isDirectory(p))

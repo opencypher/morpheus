@@ -67,7 +67,7 @@ class CsvGraphWriter(graph: PropertyGraph, fileHandler: CsvFileHandler)(implicit
     val idFieldName = header.contents.collectFirst {
       case a: OpaqueField => ColumnName.of(a)
     }.get
-    val idField = CsvField("id", dfSchema.fieldIndex(idFieldName), "LONG")
+    val idField = CsvField("id", dfSchema.fieldIndex(idFieldName), "LONG", Some(false))
 
     val csvSchema = CsvNodeSchema(idField, labels.toList, List.empty, getPropertySchema(header, dfSchema).toList)
 
@@ -91,17 +91,17 @@ class CsvGraphWriter(graph: PropertyGraph, fileHandler: CsvFileHandler)(implicit
     val idFieldName = header.contents.collectFirst {
       case a: OpaqueField => ColumnName.of(a)
     }.get
-    val idField = CsvField("id", dfSchema.fieldIndex(idFieldName), "LONG")
+    val idField = CsvField("id", dfSchema.fieldIndex(idFieldName), "LONG", Some(false))
 
     val startIdFieldName = header.contents.collectFirst {
       case a@ProjectedExpr(StartNode(_)) => ColumnName.of(a)
     }.get
-    val startIdField = CsvField("startId", dfSchema.fieldIndex(startIdFieldName), "LONG")
+    val startIdField = CsvField("startId", dfSchema.fieldIndex(startIdFieldName), "LONG", Some(false))
 
     val endIdFieldName = header.contents.collectFirst {
       case a@ProjectedExpr(EndNode(_)) => ColumnName.of(a)
     }.get
-    val endIdField = CsvField("endId", dfSchema.fieldIndex(endIdFieldName), "LONG")
+    val endIdField = CsvField("endId", dfSchema.fieldIndex(endIdFieldName), "LONG", Some(false))
 
     val csvSchema = CsvRelSchema(idField, startIdField, endIdField, relType, getPropertySchema(header, dfSchema).toList)
 
@@ -112,7 +112,7 @@ class CsvGraphWriter(graph: PropertyGraph, fileHandler: CsvFileHandler)(implicit
     val propertyFields = header.contents.collect {
       case propertySlot@ProjectedExpr(pr: Property) =>
         val index = dfSchema.fieldIndex(ColumnName.of(propertySlot))
-        CsvField(pr.key.name, index, pr.cypherType)
+        CsvField(pr.key.name, index, pr.cypherType, dfSchema.fields(index).nullable)
     }
     propertyFields
   }

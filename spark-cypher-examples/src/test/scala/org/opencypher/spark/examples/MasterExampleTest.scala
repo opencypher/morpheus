@@ -37,7 +37,7 @@ import org.opencypher.okapi.api.types.{CTInteger, CTString}
 import org.opencypher.okapi.api.value.CypherValue.CypherMap
 import org.opencypher.okapi.testing.Bag
 import org.opencypher.okapi.testing.Bag._
-import org.opencypher.spark.api.io.hdfs.HdfsCsvGraphDataSource
+import org.opencypher.spark.api.io.csv.hdfs.HdfsCsvGraphDataSource
 import org.opencypher.spark.api.io.neo4j.CommunityNeo4jGraphDataSource
 import org.opencypher.spark.impl.CAPSRecords
 import org.opencypher.spark.test.CAPSTestSuite

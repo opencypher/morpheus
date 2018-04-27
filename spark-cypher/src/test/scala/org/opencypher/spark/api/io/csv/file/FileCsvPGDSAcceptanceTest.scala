@@ -24,23 +24,16 @@
  * described as "implementation extensions to Cypher" or as "proposed changes to
  * Cypher that are not yet approved by the openCypher community".
  */
-package org.opencypher.spark.api.io.neo4j
+package org.opencypher.spark.api.io.csv.file
 
-import org.opencypher.okapi.api.graph.GraphName
 import org.opencypher.okapi.api.io.PropertyGraphDataSource
-import org.opencypher.okapi.testing.propertygraph.TestGraph
-import org.opencypher.spark.api.CAPSSession
-import org.opencypher.spark.api.io.CAPSPGDSAcceptance
-import org.opencypher.spark.test.CAPSTestSuite
-import org.opencypher.spark.test.fixture.Neo4jServerFixture
+import org.opencypher.spark.api.io.csv.CsvPGDSAcceptanceTest
+import org.scalatest.Ignore
 
-class Neo4jPGDSAcceptanceTest extends CAPSTestSuite with Neo4jServerFixture with CAPSPGDSAcceptance {
+// TODO: enable when https://github.com/opencypher/cypher-for-apache-spark/issues/408 is fixed
+@Ignore
+class FileCsvPGDSAcceptanceTest extends CsvPGDSAcceptanceTest  {
 
-  override def initSession(): CAPSSession = caps
+  override protected def createInternal: PropertyGraphDataSource = FileCsvGraphDataSource(dsRoot.toString)
 
-  override def create(graphName: GraphName, testGraph: TestGraph, createStatements: String): PropertyGraphDataSource = {
-    new CommunityNeo4jGraphDataSource(neo4jConfig, Map(graphName -> CommunityNeo4jGraphDataSource.defaultQuery))
-  }
-
-  override def dataFixture: String = createStatements
 }

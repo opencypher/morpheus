@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016-2018 "Neo4j, Inc." [https://neo4j.com]
+ * Copyright (c) 2016-2018 "Neo4j Sweden, AB" [https://neo4j.com]
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -27,7 +27,7 @@
 package org.opencypher.spark.examples
 
 import org.apache.spark.sql.types._
-import org.apache.spark.sql.{DataFrame, Row, SparkSession}
+import org.apache.spark.sql.{DataFrame, Row}
 import org.opencypher.okapi.api.io.conversion.{NodeMapping, RelationshipMapping}
 import org.opencypher.spark.api.CAPSSession
 import org.opencypher.spark.api.io.{CAPSNodeTable, CAPSRelationshipTable}
