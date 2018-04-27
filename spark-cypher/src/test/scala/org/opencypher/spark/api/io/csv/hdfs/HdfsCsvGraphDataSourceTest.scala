@@ -87,7 +87,7 @@ class HdfsCsvGraphDataSourceTest
     val testGraphName = GraphName("sn")
 
     val dataSource = HdfsCsvGraphDataSource(
-      hadoopConfig = sparkSession.sparkContext.hadoopConfiguration,
+      hadoopConfig = session.sparkContext.hadoopConfiguration,
       rootPath = "/csv")
 
     caps.registerSource(testNamespace, dataSource)
@@ -106,7 +106,7 @@ class HdfsCsvGraphDataSourceTest
     val testGraphName = GraphName("foo")
 
     val dataSource = HdfsCsvGraphDataSource(
-      hadoopConfig = sparkSession.sparkContext.hadoopConfiguration,
+      hadoopConfig = session.sparkContext.hadoopConfiguration,
       rootPath = "/csv")
 
     caps.registerSource(testNamespace, dataSource)
@@ -122,7 +122,7 @@ class HdfsCsvGraphDataSourceTest
     val testGraphName = GraphName("empty")
 
     val dataSource = HdfsCsvGraphDataSource(
-      hadoopConfig = sparkSession.sparkContext.hadoopConfiguration,
+      hadoopConfig = session.sparkContext.hadoopConfiguration,
       rootPath = "/csv")
 
     caps.registerSource(testNamespace, dataSource)
@@ -138,7 +138,7 @@ class HdfsCsvGraphDataSourceTest
     val paths = Set("hdfs:///foo/bar", "/foo/bar", "hdfs://hostname/foo/bar", "hdfs://hostname:123/foo/bar")
 
     paths.foreach { path =>
-      val uri = HdfsCsvGraphDataSource(sparkSession.sparkContext.hadoopConfiguration, path).graphPath(GraphName("myGraph"))
+      val uri = HdfsCsvGraphDataSource(session.sparkContext.hadoopConfiguration, path).graphPath(GraphName("myGraph"))
 
       uri should equal(URI.create("hdfs:///foo/bar/myGraph"))
     }

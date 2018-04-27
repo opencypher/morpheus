@@ -71,18 +71,18 @@ trait MiniDFSClusterFixture extends BaseTestFixture {
     .build()
 
   protected def clusterConfig: Configuration = {
-    sparkSession.sparkContext.hadoopConfiguration
+    session.sparkContext.hadoopConfiguration
       .set("fs.default.name", new URIBuilder()
         .setScheme(HDFS_URI_SCHEME)
         .setHost(cluster.getNameNode.getHostAndPort)
         .build()
         .toString
       )
-    sparkSession.sparkContext.hadoopConfiguration
+    session.sparkContext.hadoopConfiguration
   }
 
   abstract override def afterAll: Unit = {
-    sparkSession.sparkContext.hadoopConfiguration.clear()
+    session.sparkContext.hadoopConfiguration.clear()
     cluster.shutdown(true)
     super.afterAll()
   }
