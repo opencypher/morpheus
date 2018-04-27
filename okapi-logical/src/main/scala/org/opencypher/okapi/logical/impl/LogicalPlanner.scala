@@ -160,6 +160,9 @@ class LogicalPlanner(producer: LogicalOperatorProducer)
         val withList = planInnerExpr(list, plan)
         producer.planUnwind(list, variable, withList)
 
+      case GraphResultBlock(_, graph) =>
+        producer.planReturnGraph(producer.planFromGraph(resolveGraph(graph, plan.fields), plan))
+
       case x =>
         throw NotImplementedException(s"Support for logical planning of $x not yet implemented. Tree:\n${x.pretty}")
     }
@@ -349,10 +352,10 @@ class LogicalPlanner(producer: LogicalOperatorProducer)
         val entitiesToCreate = newPatternEntities -- clonePatternEntities
 
         val clonedVarToInputVar: Map[Var, Var] = p.clones.map { case (clonedField, inputExpression) =>
-            val inputVar = inputExpression match {
-              case v: Var => v
-              case other => throw IllegalArgumentException("CLONED expression to be a variable", other)
-            }
+          val inputVar = inputExpression match {
+            case v: Var => v
+            case other => throw IllegalArgumentException("CLONED expression to be a variable", other)
+          }
           clonedField.toVar -> inputVar
         }
 
