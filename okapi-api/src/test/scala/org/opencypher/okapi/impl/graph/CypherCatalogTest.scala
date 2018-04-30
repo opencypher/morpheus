@@ -28,7 +28,7 @@ package org.opencypher.okapi.impl.graph
 
 import org.opencypher.okapi.api.graph._
 import org.opencypher.okapi.api.io.PropertyGraphDataSource
-import org.opencypher.okapi.impl.exception.IllegalArgumentException
+import org.opencypher.okapi.impl.exception.{GraphNotFoundException, IllegalArgumentException}
 import org.opencypher.okapi.impl.io.SessionGraphDataSource
 import org.scalatest.mockito.MockitoSugar
 import org.scalatest.{FunSpec, Matchers}
@@ -39,7 +39,7 @@ class CypherCatalogTest extends FunSpec with MockitoSugar with Matchers  {
   }
 
   it("avoids retrieving a graph not stored in the session") {
-    an[NoSuchElementException] should be thrownBy new CypherCatalog().graph(QualifiedGraphName("foo"))
+    an[GraphNotFoundException] should be thrownBy new CypherCatalog().graph(QualifiedGraphName("foo"))
   }
 
   it("avoids retrieving a graph from a non-registered data source") {
