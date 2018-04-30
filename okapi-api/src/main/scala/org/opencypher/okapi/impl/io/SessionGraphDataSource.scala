@@ -29,6 +29,7 @@ package org.opencypher.okapi.impl.io
 import org.opencypher.okapi.api.graph.{GraphName, PropertyGraph}
 import org.opencypher.okapi.api.io.PropertyGraphDataSource
 import org.opencypher.okapi.api.schema.Schema
+import org.opencypher.okapi.impl.exception.GraphNotFoundException
 
 object SessionGraphDataSource {
 
@@ -39,11 +40,15 @@ class SessionGraphDataSource() extends PropertyGraphDataSource {
 
   private var graphMap: Map[GraphName, PropertyGraph] = Map.empty
 
-  override def graph(name: GraphName): PropertyGraph = graphMap(name)
+  override def graph(name: GraphName): PropertyGraph = {
+    graphMap.getOrElse(name, throw GraphNotFoundException(s"Session graph with name `$name`."))
+  }
 
   override def schema(name: GraphName): Option[Schema] = Some(graph(name).schema)
 
-  override def store(name: GraphName, graph: PropertyGraph): Unit = graphMap = graphMap.updated(name, graph)
+  override def store(name: GraphName, graph: PropertyGraph): Unit = {
+    graphMap = graphMap.updated(name, graph)
+  }
 
   override def delete(name: GraphName): Unit = graphMap = graphMap.filterKeys(_ != name)
 
