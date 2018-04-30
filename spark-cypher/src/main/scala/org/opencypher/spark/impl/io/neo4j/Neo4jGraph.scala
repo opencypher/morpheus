@@ -44,11 +44,8 @@ import org.opencypher.spark.impl.{CAPSGraph, CAPSRecords}
 import org.opencypher.spark.schema.CAPSSchema
 
 class Neo4jGraph(val schema: CAPSSchema, val session: CAPSSession)(
-  inputNodes: RDD[InternalNode],
-  inputRels: RDD[InternalRelationship],
-  sourceNode: String = "source",
-  rel: String = "rel",
-  targetNode: String = "target")
+  val inputNodes: RDD[InternalNode],
+  val inputRels: RDD[InternalRelationship])
   extends CAPSGraph {
 
   override val tags = Set(0)
@@ -71,10 +68,7 @@ class Neo4jGraph(val schema: CAPSSchema, val session: CAPSSession)(
   // We need to construct new RDDs since otherwise providing a different storage level may fail
     new Neo4jGraph(schema, session)(
       f(inputNodes.filter(_ => true)),
-      g(inputRels.filter(_ => true)),
-      sourceNode,
-      rel,
-      targetNode)
+      g(inputRels.filter(_ => true)))
 
   override def nodes(name: String, cypherType: CTNode): CAPSRecords = {
     val header = RecordHeader.nodeFromSchema(Var(name)(cypherType), schema)
