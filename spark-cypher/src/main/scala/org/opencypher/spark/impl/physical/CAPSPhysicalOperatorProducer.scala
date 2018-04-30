@@ -74,8 +74,8 @@ final class CAPSPhysicalOperatorProducer(implicit caps: CAPSSession)
     header: RecordHeader
   ): CAPSPhysicalOperator = operators.Drop(in, dropFields, header)
 
-  override def planSelectFields(in: CAPSPhysicalOperator, fields: List[Var], header: RecordHeader): CAPSPhysicalOperator =
-    operators.SelectFields(in, fields, header)
+  override def planSelect(in: CAPSPhysicalOperator, exprs: List[Expr], header: RecordHeader): CAPSPhysicalOperator =
+    operators.Select(in, exprs, header)
 
   override def planReturnGraph(in: CAPSPhysicalOperator): CAPSPhysicalOperator = {
     operators.ReturnGraph(in)
