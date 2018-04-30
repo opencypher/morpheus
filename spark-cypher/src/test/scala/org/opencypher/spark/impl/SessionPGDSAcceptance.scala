@@ -24,34 +24,25 @@
  * described as "implementation extensions to Cypher" or as "proposed changes to
  * Cypher that are not yet approved by the openCypher community".
  */
-package org.opencypher.okapi.impl.graph
+package org.opencypher.spark.impl
 
-import org.opencypher.okapi.api.graph._
+import org.opencypher.okapi.api.graph.GraphName
 import org.opencypher.okapi.api.io.PropertyGraphDataSource
-import org.opencypher.okapi.impl.exception.{GraphNotFoundException, IllegalArgumentException}
 import org.opencypher.okapi.impl.io.SessionGraphDataSource
-import org.scalatest.mockito.MockitoSugar
-import org.scalatest.{FunSpec, Matchers}
+import org.opencypher.okapi.testing.propertygraph.TestGraph
+import org.opencypher.spark.api.CAPSSession
+import org.opencypher.spark.api.io.CAPSPGDSAcceptance
+import org.opencypher.spark.test.CAPSTestSuite
+import org.opencypher.spark.test.support.creation.caps.CAPSScanGraphFactory
 
-class CypherCatalogTest extends FunSpec with MockitoSugar with Matchers  {
-  it("avoids retrieving a non-registered data source") {
-    an[IllegalArgumentException] should be thrownBy new CypherCatalog().source(Namespace("foo"))
+class SessionPGDSAcceptance extends CAPSTestSuite with CAPSPGDSAcceptance {
+
+  override def initSession(): CAPSSession = caps
+
+  override def create(graphName: GraphName, testGraph: TestGraph, createStatements: String): PropertyGraphDataSource = {
+    val ds = new SessionGraphDataSource
+    ds.store(graphName, CAPSScanGraphFactory(testGraph))
+    ds
   }
 
-  it("avoids retrieving a graph not stored in the session") {
-    an[GraphNotFoundException] should be thrownBy new CypherCatalog().graph(QualifiedGraphName("foo"))
-  }
-
-  it("avoids retrieving a graph from a non-registered data source") {
-    an[IllegalArgumentException] should be thrownBy new CypherCatalog().graph(QualifiedGraphName(Namespace("foo"), GraphName("bar")))
-  }
-
-  it("returns all available namespaces") {
-    val catalog = new CypherCatalog()
-    catalog.namespaces should equal(Set(SessionGraphDataSource.Namespace))
-    val namespace = Namespace("foo")
-    val dataSource = mock[PropertyGraphDataSource]
-    catalog.register(namespace, dataSource)
-    catalog.namespaces should equal(Set(SessionGraphDataSource.Namespace, namespace))
-  }
 }

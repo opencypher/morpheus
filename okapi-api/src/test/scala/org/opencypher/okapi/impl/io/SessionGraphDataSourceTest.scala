@@ -29,6 +29,7 @@ package org.opencypher.okapi.impl.io
 import org.mockito.Mockito._
 import org.opencypher.okapi.api.graph.{GraphName, PropertyGraph}
 import org.opencypher.okapi.api.schema.Schema
+import org.opencypher.okapi.impl.exception.GraphNotFoundException
 import org.scalatest.{FunSpec, Matchers}
 import org.scalatest.mockito.MockitoSugar
 
@@ -58,13 +59,13 @@ class SessionGraphDataSourceTest extends FunSpec with Matchers with MockitoSugar
   it("graph should throw exception for non-existing graph") {
     val source = new SessionGraphDataSource
     val testGraphName = GraphName("test")
-    an[NoSuchElementException] should be thrownBy source.graph(testGraphName)
+    an[GraphNotFoundException] should be thrownBy source.graph(testGraphName)
   }
 
   it("schema should throw for non-existing graph") {
     val source = new SessionGraphDataSource
     val testGraphName = GraphName("test")
-    a [NoSuchElementException] shouldBe thrownBy(source.schema(testGraphName))
+    a [GraphNotFoundException] shouldBe thrownBy(source.schema(testGraphName))
   }
 
   it("schema should return schema for existing graph") {
