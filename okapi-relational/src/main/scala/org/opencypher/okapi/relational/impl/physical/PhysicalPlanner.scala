@@ -36,9 +36,10 @@ import org.opencypher.okapi.ir.api.util.DirectCompilationStage
 import org.opencypher.okapi.logical.impl._
 import org.opencypher.okapi.relational.api.physical.{PhysicalOperator, PhysicalOperatorProducer, PhysicalPlannerContext, RuntimeContext}
 import org.opencypher.okapi.relational.impl.flat.FlatOperator
-import org.opencypher.okapi.relational.impl.table.{OpaqueField, ProjectedExpr, RecordHeader, RecordSlot}
+import org.opencypher.okapi.relational.impl.table._
 import org.opencypher.okapi.relational.impl.{ColumnNameGenerator, flat}
 import org.opencypher.okapi.relational.impl.syntax.RecordHeaderSyntax._
+import org.opencypher.okapi.ir.impl.syntax.ExprSyntax._
 
 class PhysicalPlanner[P <: PhysicalOperator[R, G, C], R <: CypherRecords, G <: PropertyGraph, C <: RuntimeContext[R, G]](producer: PhysicalOperatorProducer[P, R, G, C])
 
@@ -56,7 +57,26 @@ class PhysicalPlanner[P <: PhysicalOperator[R, G, C], R <: CypherRecords, G <: P
         producer.planRemoveAliases(process(in), dependent, header)
 
       case flat.Select(fields, in, header) =>
-        producer.planSelectFields(process(in), fields, header)
+
+        val fieldIndices = fields.zipWithIndex.toMap
+
+        val groupedSlots = header.slots.sortBy {
+          _.content match {
+
+            case content: FieldSlotContent =>
+              fieldIndices.getOrElse(content.field, Int.MaxValue)
+
+            case ProjectedExpr(expr) =>
+              expr.dependencies.headOption
+                .filter(_ => expr.dependencies.size == 1)
+                .flatMap(fieldIndices.get)
+                .getOrElse(Int.MaxValue)
+          }
+        }
+
+        val selectExpressions = groupedSlots.map(_.content.key).toList
+
+        producer.planSelect(process(in), selectExpressions, header)
 
       case flat.EmptyRecords(in, header) =>
         producer.planEmptyRecords(process(in), header)

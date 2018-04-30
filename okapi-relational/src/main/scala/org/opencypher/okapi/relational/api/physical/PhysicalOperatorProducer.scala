@@ -142,14 +142,14 @@ trait PhysicalOperatorProducer[P <: PhysicalOperator[R, G, C], R <: CypherRecord
   def planFilter(in: P, expr: Expr, header: RecordHeader): P
 
   /**
-    * Selects the specified fields from the given records.
+    * Selects the specified expressions from the given records.
     *
-    * @param in     previous operator
-    * @param fields fields to select from the records (i.e., as specified in the RETURN clause)
-    * @param header resulting record header
-    * @return select fields operator
+    * @param in          previous operator
+    * @param expressions expressions to select from the records
+    * @param header      resulting record header
+    * @return select operator
     */
-  def planSelectFields(in: P, fields: List[Var], header: RecordHeader): P
+  def planSelect(in: P, expressions: List[Expr], header: RecordHeader): P
 
   /**
     * Returns the working graph
@@ -326,7 +326,8 @@ trait PhysicalOperatorProducer[P <: PhysicalOperator[R, G, C], R <: CypherRecord
     upper: Int,
     direction: Direction,
     header: RecordHeader,
-    isExpandInto: Boolean): P
+    isExpandInto: Boolean
+  ): P
 
   // N-ary operators
   /**
