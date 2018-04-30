@@ -27,9 +27,14 @@
 package org.opencypher.spark.api.io
 
 import org.opencypher.okapi.api.graph.GraphName
+import org.opencypher.okapi.api.value.{CAPSNode, CAPSRelationship}
 import org.opencypher.okapi.testing.{BaseTestSuite, PGDSAcceptance}
 import org.opencypher.spark.api.CAPSSession
+import org.opencypher.spark.api.CAPSSession._
 import org.opencypher.spark.impl.CAPSConverters._
+import org.opencypher.spark.impl.CAPSGraph
+import org.opencypher.spark.impl.DataFrameOps._
+import org.opencypher.spark.impl.encoders._
 
 import scala.util.{Failure, Success, Try}
 
@@ -37,7 +42,7 @@ trait CAPSPGDSAcceptance extends PGDSAcceptance[CAPSSession] {
   self: BaseTestSuite =>
 
   it("supports storing of graphs with tags, query variant") {
-    cypherSession.cypher("CREATE GRAPH g1 { CONSTRUCT NEW () RETURN GRAPH }")
+    cypherSession.cypher("CREATE GRAPH g1 { CONSTRUCT NEW ()-[:FOO]->() RETURN GRAPH }")
     cypherSession.cypher("CREATE GRAPH g2 { CONSTRUCT NEW () RETURN GRAPH }")
 
     Try(cypherSession.cypher(s"CREATE GRAPH $ns.g3 { CONSTRUCT ON g1, g2 RETURN GRAPH }")) match {
@@ -49,12 +54,13 @@ trait CAPSPGDSAcceptance extends PGDSAcceptance[CAPSSession] {
         withClue("tags should be restored correctly") {
           graph.tags should equal(Set(0, 1))
         }
-        graph.nodes("n").collect.length shouldBe 2
+
+        verify(graph, 3, 1)
     }
   }
 
   it("supports storing of graphs with tags, API variant") {
-    cypherSession.cypher("CREATE GRAPH g1 { CONSTRUCT NEW () RETURN GRAPH }")
+    cypherSession.cypher("CREATE GRAPH g1 { CONSTRUCT NEW ()-[:FOO]->() RETURN GRAPH }")
     cypherSession.cypher("CREATE GRAPH g2 { CONSTRUCT NEW () RETURN GRAPH }")
 
     val graphToStore = cypherSession.cypher("CONSTRUCT ON g1, g2 RETURN GRAPH").getGraph.asCaps
@@ -65,15 +71,30 @@ trait CAPSPGDSAcceptance extends PGDSAcceptance[CAPSSession] {
       case Failure(_: UnsupportedOperationException) =>
       case Failure(t) => badFailure(t)
       case Success(_) =>
-        val graphRead = cypherSession.catalog.source(ns).graph(name).asCaps
+        val graph = cypherSession.catalog.source(ns).graph(name).asCaps
 
         withClue("tags should be restored correctly") {
-          graphRead.tags should equal(graphToStore.tags)
-          graphRead.tags should equal(Set(0, 1))
+          graph.tags should equal(graphToStore.tags)
+          graph.tags should equal(Set(0, 1))
         }
-        graphRead.nodes("n").collect.length shouldBe 2
+
+        verify(graph, 3, 1)
     }
   }
 
+  private def verify(graph: CAPSGraph, expectedNodeSize: Int, expectedRelSize: Int): Unit = {
+    val nodes = graph.nodes("n").asDataset.map(row => row("n").cast[CAPSNode]).collect()
+    val rels = graph.relationships("r").asDataset.map(row => row("r").cast[CAPSRelationship]).collect()
 
+    nodes.length shouldBe expectedNodeSize
+    rels.length shouldBe expectedRelSize
+
+    val nodeTags = nodes.map(_.id.getTag).toSet
+    val relTags = rels.map(_.id.getTag).toSet
+
+    nodeTags.foreach(tag => graph.tags should contain(tag))
+    relTags.foreach(tag => graph.tags should contain(tag))
+
+    graph.tags -- (nodeTags ++ relTags) shouldBe empty
+  }
 }
