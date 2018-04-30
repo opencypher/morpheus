@@ -94,5 +94,7 @@ trait CAPSPGDSAcceptance extends PGDSAcceptance[CAPSSession] {
 
     nodeTags.foreach(tag => graph.tags should contain(tag))
     relTags.foreach(tag => graph.tags should contain(tag))
+
+    graph.tags -- (nodeTags ++ relTags) shouldBe empty
   }
 }
