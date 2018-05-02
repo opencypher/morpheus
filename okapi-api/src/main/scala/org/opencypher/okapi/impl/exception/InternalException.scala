@@ -49,3 +49,5 @@ final case class UnsupportedOperationException(msg: String) extends InternalExce
 final case class GraphNotFoundException(msg: String) extends InternalException(msg)
 
 final case class InvalidGraphException(msg: String) extends InternalException(msg)
+
+final case class GraphAlreadyExistsException(msg: String) extends InternalException(msg)

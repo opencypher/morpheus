@@ -77,6 +77,8 @@ trait PropertyGraphDataSource {
   /**
     * Stores the given [[org.opencypher.okapi.api.graph.PropertyGraph]] under the given [[org.opencypher.okapi.api.graph.GraphName]] within the data source.
     *
+    * If the data source already stores a graph under the given name, a [[org.opencypher.okapi.impl.exception.GraphAlreadyExistsException]] should be thrown.
+    *
     * Throws an [[java.lang.UnsupportedOperationException]] if not supported.
     *
     * @param name  name under which the graph shall be stored

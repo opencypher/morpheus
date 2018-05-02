@@ -29,7 +29,7 @@ package org.opencypher.okapi.impl.io
 import org.opencypher.okapi.api.graph.{GraphName, PropertyGraph}
 import org.opencypher.okapi.api.io.PropertyGraphDataSource
 import org.opencypher.okapi.api.schema.Schema
-import org.opencypher.okapi.impl.exception.GraphNotFoundException
+import org.opencypher.okapi.impl.exception.{GraphAlreadyExistsException, GraphNotFoundException}
 
 object SessionGraphDataSource {
 
@@ -47,6 +47,8 @@ class SessionGraphDataSource() extends PropertyGraphDataSource {
   override def schema(name: GraphName): Option[Schema] = Some(graph(name).schema)
 
   override def store(name: GraphName, graph: PropertyGraph): Unit = {
+    if (hasGraph(name))
+      throw GraphAlreadyExistsException(s"A graph with name $name is already stored in the session.")
     graphMap = graphMap.updated(name, graph)
   }
 

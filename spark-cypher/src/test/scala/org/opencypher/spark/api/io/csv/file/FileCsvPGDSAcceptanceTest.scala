@@ -28,7 +28,6 @@ package org.opencypher.spark.api.io.csv.file
 
 import org.opencypher.okapi.api.io.PropertyGraphDataSource
 import org.opencypher.spark.api.io.csv.CsvPGDSAcceptanceTest
-import org.scalatest.Ignore
 
 class FileCsvPGDSAcceptanceTest extends CsvPGDSAcceptanceTest  {
 
