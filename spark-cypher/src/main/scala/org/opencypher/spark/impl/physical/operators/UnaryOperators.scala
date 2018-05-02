@@ -149,14 +149,13 @@ final case class Project(in: CAPSPhysicalOperator, expr: Expr, header: RecordHea
       // TODO: Can optimise for var AS var2 case -- avoid duplicating data
       val newData = headerNames.diff(dataNames) match {
         case Seq(one) =>
-          // align the name of the column to what the header expects
-          val newCol = expr.asSparkSQLExpr(header, records.data, context).as(one)
-          val columnsToSelect = records.data.columns
-            .map(records.data.col) :+ newCol
+          records.data.withColumn(one, expr.asSparkSQLExpr(header, records.data, context))
 
-          records.data.select(columnsToSelect: _*)
-        case seq if seq.isEmpty => throw IllegalStateException(s"Did not find a slot for expression $expr in $headerNames")
-        case seq => throw IllegalStateException(s"Got multiple slots for expression $expr: $seq")
+        case seq if seq.isEmpty =>
+          throw IllegalStateException(s"Did not find a slot for expression $expr in $headerNames")
+
+        case seq =>
+          throw IllegalStateException(s"Got multiple slots for expression $expr: $seq")
       }
 
       CAPSRecords.verifyAndCreate(header, newData)(records.caps)
