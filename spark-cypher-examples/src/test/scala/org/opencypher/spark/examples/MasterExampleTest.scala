@@ -173,8 +173,7 @@ class MasterExampleTest extends CAPSTestSuite with SparkSessionFixture with Neo4
   }
 
   private def withBoltSession[T](f: Session => T): T = {
-    val driver = org.neo4j.driver.v1.GraphDatabase
-      .driver(neo4jHost, AuthTokens.basic(neo4jConfig.user, neo4jConfig.password.get), neo4jConfig.boltConfig())
+    val driver = neo4jConfig.driver()
 
     val session = driver.session()
     try {

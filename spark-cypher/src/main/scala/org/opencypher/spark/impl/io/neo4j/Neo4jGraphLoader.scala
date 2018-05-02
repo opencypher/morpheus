@@ -80,25 +80,18 @@ object Neo4jGraphLoader {
     fromNeo4j(config, "MATCH (n) RETURN n", "MATCH ()-[r]->() RETURN r")
 
   def fromNeo4j(config: Neo4jConfig, nodeQuery: String, relQuery: String)(implicit caps: CAPSSession): CAPSGraph =
-    fromNeo4j(config, nodeQuery, relQuery, "source", "rel", "target", None)
-
-  def fromNeo4j(config: Neo4jConfig, nodeQuery: String, relQuery: String, maybeSchema: Option[Schema])(
-    implicit caps: CAPSSession): CAPSGraph =
-    fromNeo4j(config, nodeQuery, relQuery, "source", "rel", "target", maybeSchema)
+    fromNeo4j(config, nodeQuery, relQuery,  None)
 
   def fromNeo4j(
     config: Neo4jConfig,
     nodeQuery: String,
     relQuery: String,
-    sourceNode: String,
-    rel: String,
-    targetNode: String,
     maybeSchema: Option[Schema] = None)(implicit caps: CAPSSession): CAPSGraph = {
     val (nodes, rels) = loadRDDs(config, nodeQuery, relQuery)
 
     val schema = maybeSchema.getOrElse(loadSchema(nodes, rels)).asCaps
 
-    new Neo4jGraph(schema, caps)(nodes, rels, sourceNode, rel, targetNode)
+    new Neo4jGraph(schema, caps)(nodes, rels)
   }
 
   private def loadRDDs(config: Neo4jConfig, nodeQ: String, relQ: String)(implicit caps: CAPSSession) = {
