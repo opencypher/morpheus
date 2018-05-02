@@ -42,10 +42,10 @@ import scala.util.{Failure, Success, Try}
 trait PGDSAcceptance[Session <: CypherSession] extends BeforeAndAfterEach {
   self: BaseTestSuite =>
 
-  val createStatements =
+  val createStatements: String =
     """
       |CREATE (a:A { name: 'A' })
-      |CREATE (b:B { name: 'B' })
+      |CREATE (b:B { prop: 'B' })
       |CREATE (combo:A:B { name: 'COMBO', size: 2 })
       |CREATE (a)-[:R { since: 2004 }]->(b)
       |CREATE (b)-[:R { since: 2005 }]->(combo)
@@ -94,7 +94,7 @@ trait PGDSAcceptance[Session <: CypherSession] extends BeforeAndAfterEach {
 
   it("supports schema") {
     val schema: Schema = SchemaImpl(
-      LabelPropertyMap(Map(Set("A") -> Map("name" -> CTString), Set("B") -> Map("name" -> CTString), Set("A", "B") -> Map("size" -> CTInteger, "name" -> CTString))),
+      LabelPropertyMap(Map(Set("A") -> Map("name" -> CTString), Set("B") -> Map("prop" -> CTString), Set("A", "B") -> Map("size" -> CTInteger, "name" -> CTString))),
       RelTypePropertyMap(Map("R" -> Map("since" -> CTInteger), "S" -> Map("since" -> CTInteger)))
     )
 
@@ -119,16 +119,16 @@ trait PGDSAcceptance[Session <: CypherSession] extends BeforeAndAfterEach {
   }
 
   it("supports queries through Cypher") {
-    cypherSession.cypher(s"FROM GRAPH $ns.$gn MATCH (a:B) RETURN a.name").getRecords.iterator.toBag should equal(Bag(
-      CypherMap("a.name" -> "B"),
-      CypherMap("a.name" -> "COMBO")
+    cypherSession.cypher(s"FROM GRAPH $ns.$gn MATCH (b:B) RETURN b.prop").getRecords.iterator.toBag should equal(Bag(
+      CypherMap("b.prop" -> "B"),
+      CypherMap("b.prop" -> CypherNull)
     ))
   }
 
   it("supports scans over multiple labels") {
     cypherSession.cypher(s"FROM GRAPH $ns.$gn MATCH (a) RETURN a.name, a.size").getRecords.iterator.toBag should equal(Bag(
       CypherMap("a.name" -> "A", "a.size" -> CypherNull),
-      CypherMap("a.name" -> "B", "a.size" -> CypherNull),
+      CypherMap("a.name" -> CypherNull, "a.size" -> CypherNull),
       CypherMap("a.name" -> "COMBO", "a.size" -> 2)
     ))
   }
