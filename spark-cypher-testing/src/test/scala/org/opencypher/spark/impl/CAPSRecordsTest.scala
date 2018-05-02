@@ -34,6 +34,7 @@ import org.opencypher.okapi.api.value.CypherValue._
 import org.opencypher.okapi.impl.exception.InternalException
 import org.opencypher.okapi.ir.api.expr._
 import org.opencypher.okapi.ir.api.{Label, PropertyKey}
+import org.opencypher.okapi.relational.api.configuration.CoraConfiguration.{PrintFlatPlan, PrintPhysicalPlan}
 import org.opencypher.okapi.relational.impl.table.{ColumnName, OpaqueField, ProjectedExpr, RecordHeader}
 import org.opencypher.okapi.testing.Bag
 import org.opencypher.okapi.testing.Bag._
@@ -251,7 +252,11 @@ class CAPSRecordsTest extends CAPSTestSuite with GraphConstructionFixture with T
     records.data.select("int").collect() should equal(Array(Row(1), Row(2)))
   }
 
-  test("toCypherMaps delegates to details") {
+  it("toCypherMaps delegates to details") {
+
+    PrintFlatPlan.set
+    PrintPhysicalPlan.set
+
     val g = initGraph("CREATE (:Foo {p: 1})")
 
     val result = g.cypher("MATCH (n) WITH 5 - n.p + 1 AS b, n RETURN n, b")

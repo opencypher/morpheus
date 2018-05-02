@@ -27,6 +27,7 @@
 package org.opencypher.spark.impl.acceptance
 
 import org.opencypher.okapi.api.value.CypherValue._
+import org.opencypher.okapi.relational.api.configuration.CoraConfiguration.{PrintFlatPlan, PrintPhysicalPlan}
 import org.opencypher.okapi.testing.Bag
 import org.opencypher.okapi.testing.Bag._
 import org.opencypher.spark.testing.CAPSTestSuite
@@ -54,7 +55,7 @@ class FunctionsBehaviour extends CAPSTestSuite with DefaultGraphInit {
 
   describe("type") {
 
-    test("type()") {
+    it("type()") {
       val given = initGraph("CREATE ()-[:KNOWS]->()-[:HATES]->()-[:REL]->()")
 
       val result = given.cypher("MATCH ()-[r]->() RETURN type(r)")
