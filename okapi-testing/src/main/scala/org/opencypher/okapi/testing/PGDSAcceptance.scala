@@ -147,12 +147,12 @@ trait PGDSAcceptance[Session <: CypherSession] extends BeforeAndAfterEach {
           cypherSession.catalog.source(ns).hasGraph(GraphName(s"${gn}2")) shouldBe true
         }
         cypherSession.catalog.graph(s"$ns.${gn}2").nodes("n").size shouldBe 3
+
+        a [GraphAlreadyExistsException] shouldBe thrownBy {
+          cypherSession.cypher(s"CREATE GRAPH $ns.$gn { RETURN GRAPH }")
+        }
       case Failure(_: UnsupportedOperationException) =>
       case Failure(t) => badFailure(t)
-    }
-
-    a [GraphAlreadyExistsException] shouldBe thrownBy {
-      cypherSession.cypher(s"CREATE GRAPH $ns.$gn { RETURN GRAPH }")
     }
   }
 
