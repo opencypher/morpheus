@@ -231,7 +231,7 @@ final case class Select(in: CAPSPhysicalOperator, expressions: List[(Expr, Optio
 
       val columns = expressions.map {
         case (expr, alias) =>
-          val column = expr.asSparkSQLExpr(prev.records.header, prev.records.data, context)
+          val column = expr.asSparkSQLExpr(header, prev.records.data, context)
           if (alias.isDefined) {
             val aliasName = ColumnName.of(header.slotsFor(alias.get).head)
             column.as(aliasName)
