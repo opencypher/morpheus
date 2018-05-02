@@ -56,8 +56,10 @@ case class HdfsCsvGraphDataSource(
 
   override def schema(name: GraphName): Option[Schema] = None
 
-  override def store(name: GraphName, graph: PropertyGraph): Unit =
+  override def store(name: GraphName, graph: PropertyGraph): Unit = {
+    checkStorable(name)
     CsvGraphWriter(graph, graphPath(name), hadoopConfig).store()
+  }
 
   override def delete(name: GraphName): Unit =
     if (hasGraph(name)) fileSystem.delete(new Path(rootPath), /* recursive = */ true)

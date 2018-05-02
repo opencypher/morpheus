@@ -31,7 +31,7 @@ import org.opencypher.okapi.api.io.PropertyGraphDataSource
 import org.opencypher.okapi.api.schema.{LabelPropertyMap, RelTypePropertyMap, Schema}
 import org.opencypher.okapi.api.types.{CTInteger, CTString}
 import org.opencypher.okapi.api.value.CypherValue.{CypherMap, CypherNull}
-import org.opencypher.okapi.impl.exception.GraphNotFoundException
+import org.opencypher.okapi.impl.exception.{GraphAlreadyExistsException, GraphNotFoundException}
 import org.opencypher.okapi.impl.schema.SchemaImpl
 import org.opencypher.okapi.testing.Bag._
 import org.opencypher.okapi.testing.propertygraph.{TestGraph, TestGraphFactory}
@@ -146,8 +146,13 @@ trait PGDSAcceptance[Session <: CypherSession] extends BeforeAndAfterEach {
         withClue("`hasGraph` needs to return `true` after graph creation") {
           cypherSession.catalog.source(ns).hasGraph(GraphName(s"${gn}2")) shouldBe true
         }
+        cypherSession.catalog.graph(s"$ns.${gn}2").nodes("n").size shouldBe 3
       case Failure(_: UnsupportedOperationException) =>
       case Failure(t) => badFailure(t)
+    }
+
+    a [GraphAlreadyExistsException] shouldBe thrownBy {
+      cypherSession.cypher(s"CREATE GRAPH $ns.$gn { RETURN GRAPH }")
     }
   }
 

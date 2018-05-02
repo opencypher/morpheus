@@ -68,8 +68,10 @@ case class FileCsvGraphDataSource(rootPath: String)(implicit val session: CAPSSe
 
   override def schema(name: GraphName): Option[Schema] = None
 
-  override def store(name: GraphName, graph: PropertyGraph): Unit =
+  override def store(name: GraphName, graph: PropertyGraph): Unit = {
+    checkStorable(name)
     CsvGraphWriter(graph, graphPath(name)).store()
+  }
 
   override def delete(name: GraphName): Unit =
     if (hasGraph(name)) FileUtils.deleteDirectory(Paths.get(graphPath(name)).toFile)
