@@ -52,6 +52,7 @@ class QueryMetrics extends CAPSTestSuite with DefaultGraphInit {
     val df = records.asCaps.data
     val optimizedPlan = df.queryExecution.optimizedPlan
     val cost = computeCostMetric(optimizedPlan)
+    //    println(s"plan cost = $cost")
     cost shouldBe 125995727L
   }
 
@@ -73,7 +74,7 @@ class QueryMetrics extends CAPSTestSuite with DefaultGraphInit {
     val df = records.asCaps.data
     val optimizedPlan = df.queryExecution.optimizedPlan
     val cost = computeCostMetric(optimizedPlan)
-    println(s"plan cost = $cost")
+    //    println(s"plan cost = $cost")
     cost shouldBe 348L
   }
 
@@ -95,20 +96,20 @@ class QueryMetrics extends CAPSTestSuite with DefaultGraphInit {
     val sparkPlan = res.queryExecution.sparkPlan
 
     optPlan.foreach {
-      case u@ Union(Seq(left, right)) =>
+      case u@Union(Seq(left, right)) =>
         println(s"*** Logical ****\n$u")
         left shouldEqual right
       case _ =>
     }
 
     sparkPlan.foreach {
-      case u@ UnionExec(Seq(left, right)) =>
+      case u@UnionExec(Seq(left, right)) =>
         println(s"*** Physical **** \n$u")
         left shouldEqual right
       case _ =>
     }
 
-    computeCostMetric(optPlan) shouldBe 784
+    computeCostMetric(optPlan) shouldBe 864L
 
   }
 
@@ -133,33 +134,33 @@ class QueryMetrics extends CAPSTestSuite with DefaultGraphInit {
     val sparkPlan = res.queryExecution.sparkPlan
 
     optPlan.foreach {
-      case u@ Union(Seq(left, right)) =>
+      case u@Union(Seq(left, right)) =>
         println(s"*** Logical ****\n$u")
         left shouldNot equal(right)
       case _ =>
     }
 
     sparkPlan.foreach {
-      case u@ UnionExec(Seq(left, right)) =>
+      case u@UnionExec(Seq(left, right)) =>
         println(s"*** Physical ****\n$u")
         left shouldNot equal(right)
       case _ =>
     }
 
-    computeCostMetric(optPlan) shouldBe 784
+    println(computeCostMetric(optPlan))
+
+    computeCostMetric(optPlan) shouldBe 1136L
   }
 
   def computeCostMetric(plan: LogicalPlan): Long = {
-    var nodes = Set(plan)
+    val distinctNodes = plan.map(identity).distinct
 
-    plan.foreach(nodes += _)
-
-    val sizeInBytes = nodes.map { node =>
+    val sizesInBytes = distinctNodes.map { node =>
       val stats = node.stats(session.sessionState.conf)
-      stats.sizeInBytes
+      stats.sizeInBytes.toLong
     }.sum
 
-    sizeInBytes.toLong
+    sizesInBytes
   }
 
 }
