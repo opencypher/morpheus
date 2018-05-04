@@ -26,10 +26,11 @@
  */
 package org.opencypher.spark.impl.metrics
 
-import org.apache.spark.sql.catalyst.plans.logical.{LogicalPlan, Union}
+import org.apache.spark.sql.catalyst.plans.logical.Union
 import org.apache.spark.sql.execution.UnionExec
 import org.opencypher.spark.impl.CAPSConverters._
 import org.opencypher.spark.impl.acceptance.DefaultGraphInit
+import org.opencypher.spark.impl.metrics.SparkQueryPlanCostEstimation._
 import org.opencypher.spark.test.CAPSTestSuite
 
 class QueryMetrics extends CAPSTestSuite with DefaultGraphInit {
@@ -51,8 +52,7 @@ class QueryMetrics extends CAPSTestSuite with DefaultGraphInit {
         .stripMargin).getRecords
     val df = records.asCaps.data
     val optimizedPlan = df.queryExecution.optimizedPlan
-    val cost = computeCostMetric(optimizedPlan)
-    //    println(s"plan cost = $cost")
+    val cost = optimizedPlan.cost
     cost shouldBe 125995727L
   }
 
@@ -73,13 +73,14 @@ class QueryMetrics extends CAPSTestSuite with DefaultGraphInit {
         .stripMargin).getRecords
     val df = records.asCaps.data
     val optimizedPlan = df.queryExecution.optimizedPlan
-    val cost = computeCostMetric(optimizedPlan)
-    //    println(s"plan cost = $cost")
+    val cost = optimizedPlan.cost
     cost shouldBe 348L
   }
 
   it("not aliasing column names enables plan reuse") {
     import session.implicits._
+
+    session.sessionState.conf.setConfString("spark.sql.inMemoryColumnarStorage.batchSize", "1")
 
     val inputDF = session.createDataFrame(Seq((0L, 1L))).toDF("a", "b")
     val df0 = session.createDataFrame(Seq((0L, 1L))).toDF("c", "d")
@@ -97,19 +98,19 @@ class QueryMetrics extends CAPSTestSuite with DefaultGraphInit {
 
     optPlan.foreach {
       case u@Union(Seq(left, right)) =>
-        println(s"*** Logical ****\n$u")
+//        println(s"*** Logical ****\n$u")
         left shouldEqual right
       case _ =>
     }
 
     sparkPlan.foreach {
       case u@UnionExec(Seq(left, right)) =>
-        println(s"*** Physical **** \n$u")
+//        println(s"*** Physical **** \n$u")
         left shouldEqual right
       case _ =>
     }
 
-    computeCostMetric(optPlan) shouldBe 864L
+    optPlan.cost shouldBe 864L
 
   }
 
@@ -135,32 +136,19 @@ class QueryMetrics extends CAPSTestSuite with DefaultGraphInit {
 
     optPlan.foreach {
       case u@Union(Seq(left, right)) =>
-        println(s"*** Logical ****\n$u")
+//        println(s"*** Logical ****\n$u")
         left shouldNot equal(right)
       case _ =>
     }
 
     sparkPlan.foreach {
       case u@UnionExec(Seq(left, right)) =>
-        println(s"*** Physical ****\n$u")
+//        println(s"*** Physical ****\n$u")
         left shouldNot equal(right)
       case _ =>
     }
 
-    println(computeCostMetric(optPlan))
-
-    computeCostMetric(optPlan) shouldBe 1136L
-  }
-
-  def computeCostMetric(plan: LogicalPlan): Long = {
-    val distinctNodes = plan.map(identity).distinct
-
-    val sizesInBytes = distinctNodes.map { node =>
-      val stats = node.stats(session.sessionState.conf)
-      stats.sizeInBytes.toLong
-    }.sum
-
-    sizesInBytes
+    optPlan.cost shouldBe 1136L
   }
 
 }
