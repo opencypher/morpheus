@@ -26,7 +26,8 @@
  */
 package org.opencypher.spark.impl.metrics
 
-import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan
+import org.apache.spark.sql.catalyst.plans.logical.{LogicalPlan, Union}
+import org.apache.spark.sql.execution.UnionExec
 import org.opencypher.spark.impl.CAPSConverters._
 import org.opencypher.spark.impl.acceptance.DefaultGraphInit
 import org.opencypher.spark.test.CAPSTestSuite
@@ -76,12 +77,89 @@ class QueryMetrics extends CAPSTestSuite with DefaultGraphInit {
     cost shouldBe 348L
   }
 
+  it("not aliasing column names enables plan reuse") {
+    import session.implicits._
+
+    val inputDF = session.createDataFrame(Seq((0L, 1L))).toDF("a", "b")
+    val df0 = session.createDataFrame(Seq((0L, 1L))).toDF("c", "d")
+
+    val df1 = inputDF.filter($"a" === 0)
+    val df2 = inputDF.filter($"a" === 0)
+
+    val joinedDf0 = df1.join(df0, $"a" === $"c")
+    val joinedDf1 = df2.join(df0, $"a" === $"c")
+
+    val res = joinedDf0.union(joinedDf1)
+
+    val optPlan = res.queryExecution.optimizedPlan
+    val sparkPlan = res.queryExecution.sparkPlan
+
+    optPlan.foreach {
+      case u@ Union(Seq(left, right)) =>
+        println(s"*** Logical ****\n$u")
+        left shouldEqual right
+      case _ =>
+    }
+
+    sparkPlan.foreach {
+      case u@ UnionExec(Seq(left, right)) =>
+        println(s"*** Physical **** \n$u")
+        left shouldEqual right
+      case _ =>
+    }
+
+    computeCostMetric(optPlan) shouldBe 784
+
+  }
+
+  it("aliasing column names undermines plan reuse") {
+    import session.implicits._
+
+    val inputDF = session.createDataFrame(Seq((0L, 1L))).toDF("a", "b")
+    val df0 = session.createDataFrame(Seq((0L, 1L))).toDF("c", "d")
+
+    val df1 = inputDF.filter($"a" === 0)
+    val df2 = inputDF.filter($"a" === 0)
+
+    val joinedDf0 = df1.join(df0, $"a" === $"c")
+
+    val df3 = df0.withColumnRenamed("c", "e")
+
+    val joinedDf1 = df2.join(df3, $"a" === $"e")
+
+    val res = joinedDf0.union(joinedDf1)
+
+    val optPlan = res.queryExecution.optimizedPlan
+    val sparkPlan = res.queryExecution.sparkPlan
+
+    optPlan.foreach {
+      case u@ Union(Seq(left, right)) =>
+        println(s"*** Logical ****\n$u")
+        left shouldNot equal(right)
+      case _ =>
+    }
+
+    sparkPlan.foreach {
+      case u@ UnionExec(Seq(left, right)) =>
+        println(s"*** Physical ****\n$u")
+        left shouldNot equal(right)
+      case _ =>
+    }
+
+    computeCostMetric(optPlan) shouldBe 784
+  }
+
   def computeCostMetric(plan: LogicalPlan): Long = {
-    val sizeInMb = plan.map { child =>
-      val stats = child.stats(session.sessionState.conf)
+    var nodes = Set(plan)
+
+    plan.foreach(nodes += _)
+
+    val sizeInBytes = nodes.map { node =>
+      val stats = node.stats(session.sessionState.conf)
       stats.sizeInBytes
     }.sum
-    sizeInMb.toLong
+
+    sizeInBytes.toLong
   }
 
 }
