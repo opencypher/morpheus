@@ -48,12 +48,12 @@ trait PGDSAcceptance[Session <: CypherSession] extends BeforeAndAfterEach {
       |CREATE (b2:B { type: 'B2', size: 5 })
       |CREATE (combo1:A:B { name: 'COMBO1', type: 'AB1', size: 2 })
       |CREATE (combo2:A:B { name: 'COMBO2', type: 'AB2' })
-      |CREATE (c:C { type: 'C' })
-      |CREATE (bc:B:C { type: 'BC' })
+      |CREATE (c:C { name: 'C' })
+      |CREATE (ac:A:C { name: 'AC' })
       |CREATE (a)-[:R { since: 2004 }]->(b1)
       |CREATE (b1)-[:R { since: 2005, before: false }]->(combo1)
       |CREATE (combo1)-[:S { since: 2006 }]->(combo1)
-      |CREATE (bc)-[:T]->(combo2)
+      |CREATE (ac)-[:T]->(combo2)
     """.stripMargin
 
   lazy val testGraph = TestGraphFactory(createStatements)
@@ -101,8 +101,8 @@ trait PGDSAcceptance[Session <: CypherSession] extends BeforeAndAfterEach {
       .withNodePropertyKeys("A")("name" -> CTString)
       .withNodePropertyKeys("B")("type" -> CTString, "size" -> CTInteger.nullable)
       .withNodePropertyKeys("A", "B")("name" -> CTString, "type" -> CTString, "size" -> CTInteger.nullable)
-      .withNodePropertyKeys("C")("type" -> CTString)
-      .withNodePropertyKeys("B", "C")("type" -> CTString)
+      .withNodePropertyKeys("C")("name" -> CTString)
+      .withNodePropertyKeys("A", "C")("name" -> CTString)
       .withRelationshipPropertyKeys("R")("since" -> CTInteger, "before" -> CTBoolean.nullable)
       .withRelationshipPropertyKeys("S")("since" -> CTInteger)
       .withRelationshipPropertyKeys("T")()
@@ -124,7 +124,8 @@ trait PGDSAcceptance[Session <: CypherSession] extends BeforeAndAfterEach {
     g.cypher("MATCH (a:A) RETURN a.name").getRecords.iterator.toBag should equal(Bag(
       CypherMap("a.name" -> "A"),
       CypherMap("a.name" -> "COMBO1"),
-      CypherMap("a.name" -> "COMBO2")
+      CypherMap("a.name" -> "COMBO2"),
+      CypherMap("a.name" -> "AC")
     ))
   }
 
@@ -133,19 +134,18 @@ trait PGDSAcceptance[Session <: CypherSession] extends BeforeAndAfterEach {
       CypherMap("b.type" -> "B1", "b.size" -> CypherNull),
       CypherMap("b.type" -> "B2", "b.size" -> 5),
       CypherMap("b.type" -> "AB1", "b.size" -> 2),
-      CypherMap("b.type" -> "AB2", "b.size" -> CypherNull),
-      CypherMap("b.type" -> "BC", "b.size" -> CypherNull)
+      CypherMap("b.type" -> "AB2", "b.size" -> CypherNull)
     ))
   }
 
   it("supports scans over multiple labels") {
     cypherSession.cypher(s"FROM GRAPH $ns.$gn MATCH (n) RETURN n.name, n.size").getRecords.iterator.toBag should equal(Bag(
       CypherMap("n.name" -> "A", "n.size" -> CypherNull),
+      CypherMap("n.name" -> "C", "n.size" -> CypherNull),
+      CypherMap("n.name" -> "AC", "n.size" -> CypherNull),
       CypherMap("n.name" -> "COMBO1", "n.size" -> 2),
       CypherMap("n.name" -> "COMBO2", "n.size" -> CypherNull),
       CypherMap("n.name" -> CypherNull, "n.size" -> 5),
-      CypherMap("n.name" -> CypherNull, "n.size" -> CypherNull),
-      CypherMap("n.name" -> CypherNull, "n.size" -> CypherNull),
       CypherMap("n.name" -> CypherNull, "n.size" -> CypherNull)
     ))
   }
@@ -178,7 +178,7 @@ trait PGDSAcceptance[Session <: CypherSession] extends BeforeAndAfterEach {
       s"""
          |CREATE GRAPH $ns.${gn}3 {
          |  CONSTRUCT ON $ns.$gn
-         |    NEW (c:C { type: 'new' })
+         |    NEW (c:C { name: 'new' })
          |  RETURN GRAPH
          |}
          |""".stripMargin)) match {
@@ -186,11 +186,11 @@ trait PGDSAcceptance[Session <: CypherSession] extends BeforeAndAfterEach {
         withClue("`hasGraph` needs to return `true` after graph creation") {
           cypherSession.catalog.source(ns).hasGraph(GraphName(s"${gn}3")) shouldBe true
         }
-        val result = cypherSession.cypher(s"FROM GRAPH $ns.${gn}3 MATCH (c:C) RETURN c.type").getRecords.iterator.toBag
+        val result = cypherSession.cypher(s"FROM GRAPH $ns.${gn}3 MATCH (c:C) RETURN c.name").getRecords.iterator.toBag
         result should equal(Bag(
-          CypherMap("c.type" -> "C"),
-          CypherMap("c.type" -> "BC"),
-          CypherMap("c.type" -> "new")
+          CypherMap("c.name" -> "C"),
+          CypherMap("c.name" -> "AC"),
+          CypherMap("c.name" -> "new")
         ))
       case Failure(_: UnsupportedOperationException) =>
       case Failure(t) => badFailure(t)
