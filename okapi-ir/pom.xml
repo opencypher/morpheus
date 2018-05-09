@@ -27,6 +27,7 @@
     </dependency>
 
     <!-- Neo4j -->
+
     <dependency>
       <groupId>org.neo4j</groupId>
       <artifactId>openCypher-frontend-1</artifactId>
@@ -34,6 +35,7 @@
     </dependency>
 
     <!-- Utils -->
+
     <dependency>
       <groupId>org.atnos</groupId>
       <artifactId>eff_${project.scala.binary.version}</artifactId>
@@ -44,7 +46,16 @@
 
     <dependency>
       <groupId>org.opencypher</groupId>
-      <artifactId>okapi-api</artifactId>
+      <artifactId>okapi-testing</artifactId>
+      <version>${project.parent.version}</version>
+      <scope>test</scope>
+    </dependency>
+
+    <!-- Workarounds for https://youtrack.jetbrains.com/issue/SCL-13184 -->
+
+    <dependency>
+      <groupId>org.opencypher</groupId>
+      <artifactId>okapi-trees</artifactId>
       <version>${project.parent.version}</version>
       <type>test-jar</type>
       <scope>test</scope>
@@ -52,16 +63,24 @@
 
     <dependency>
       <groupId>org.opencypher</groupId>
-      <artifactId>okapi-testing</artifactId>
+      <artifactId>okapi-api</artifactId>
       <version>${project.parent.version}</version>
+      <type>test-jar</type>
       <scope>test</scope>
     </dependency>
 
-    <!-- Workaround for https://youtrack.jetbrains.com/issue/SCL-13184 -->
     <dependency>
-      <groupId>org.opencypher</groupId>
-      <artifactId>okapi-trees</artifactId>
-      <version>${project.parent.version}</version>
+      <groupId>org.neo4j</groupId>
+      <artifactId>neo4j-cypher-util-3.4</artifactId>
+      <version>${dep.neo4j.version}</version>
+      <type>test-jar</type>
+      <scope>test</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>org.neo4j</groupId>
+      <artifactId>openCypher-frontend-1</artifactId>
+      <version>${dep.neo4j.frontend.version}</version>
       <type>test-jar</type>
       <scope>test</scope>
     </dependency>

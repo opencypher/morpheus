@@ -26,40 +26,16 @@
       <version>${project.parent.version}</version>
     </dependency>
 
-    <!-- Neo4j -->
-    <dependency>
-      <groupId>org.neo4j.driver</groupId>
-      <artifactId>neo4j-java-driver</artifactId>
-      <version>${dep.neo4j.driver.version}</version>
-    </dependency>
-
-    <!-- Utils -->
-    <dependency>
-      <groupId>io.circe</groupId>
-      <artifactId>circe-core_${project.scala.binary.version}</artifactId>
-      <version>${dep.circe.version}</version>
-    </dependency>
-
-    <dependency>
-      <groupId>io.circe</groupId>
-      <artifactId>circe-generic_${project.scala.binary.version}</artifactId>
-      <version>${dep.circe.version}</version>
-    </dependency>
-
-    <dependency>
-      <groupId>io.circe</groupId>
-      <artifactId>circe-parser_${project.scala.binary.version}</artifactId>
-      <version>${dep.circe.version}</version>
-    </dependency>
-
     <!-- Test dependencies -->
 
     <dependency>
       <groupId>org.opencypher</groupId>
       <artifactId>okapi-testing</artifactId>
-      <scope>test</scope>
       <version>${project.parent.version}</version>
+      <scope>test</scope>
     </dependency>
+
+    <!-- Workarounds for https://youtrack.jetbrains.com/issue/SCL-13184 -->
 
     <dependency>
       <groupId>org.opencypher</groupId>
@@ -77,7 +53,6 @@
       <scope>test</scope>
     </dependency>
 
-    <!-- Workaround for https://youtrack.jetbrains.com/issue/SCL-13184 -->
     <dependency>
       <groupId>org.opencypher</groupId>
       <artifactId>okapi-trees</artifactId>
@@ -86,7 +61,6 @@
       <scope>test</scope>
     </dependency>
 
-    <!-- Workaround for https://youtrack.jetbrains.com/issue/SCL-13184 -->
     <dependency>
       <groupId>org.opencypher</groupId>
       <artifactId>okapi-logical</artifactId>

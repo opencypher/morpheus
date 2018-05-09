@@ -33,7 +33,7 @@ import org.opencypher.okapi.api.types.{CTBoolean, CTInteger, CTString}
 import org.opencypher.okapi.api.value.CypherValue.{CypherMap, CypherNull}
 import org.opencypher.okapi.impl.exception.{GraphAlreadyExistsException, GraphNotFoundException}
 import org.opencypher.okapi.testing.Bag._
-import org.opencypher.okapi.testing.propertygraph.{TestGraph, TestGraphFactory}
+import org.opencypher.okapi.testing.propertygraph.{CreateGraphFactory, InMemoryTestGraph}
 import org.scalatest.BeforeAndAfterEach
 
 import scala.util.{Failure, Success, Try}
@@ -56,7 +56,7 @@ trait PGDSAcceptance[Session <: CypherSession] extends BeforeAndAfterEach {
       |CREATE (ac)-[:T]->(combo2)
     """.stripMargin
 
-  lazy val testGraph = TestGraphFactory(createStatements)
+  lazy val testGraph = CreateGraphFactory(createStatements)
 
   val ns = Namespace("testing")
   val gn = GraphName("test")
@@ -76,7 +76,7 @@ trait PGDSAcceptance[Session <: CypherSession] extends BeforeAndAfterEach {
 
   def initSession(): Session
 
-  def create(graphName: GraphName, testGraph: TestGraph, createStatements: String): PropertyGraphDataSource
+  def create(graphName: GraphName, testGraph: InMemoryTestGraph, createStatements: String): PropertyGraphDataSource
 
   it("supports `hasGraph`") {
     cypherSession.catalog.source(ns).hasGraph(gn) shouldBe true

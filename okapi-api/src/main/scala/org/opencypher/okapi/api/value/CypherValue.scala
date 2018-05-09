@@ -185,7 +185,7 @@ object CypherValue {
       str.replaceAllLiterally("'", "\\'").replaceAllLiterally("\"", "\\\"")
     }
 
-    private[okapi] def isOrContainsNull: Boolean = isNull || {
+    private[opencypher] def isOrContainsNull: Boolean = isNull || {
       this match {
         case l: CypherList => l.value.exists(_.isOrContainsNull)
         case m: CypherMap => m.value.valuesIterator.exists(_.isOrContainsNull)

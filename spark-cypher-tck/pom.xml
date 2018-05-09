@@ -37,61 +37,19 @@
 
   <dependencies>
 
-    <!-- Test -->
-
-    <dependency>
-      <groupId>org.opencypher</groupId>
-      <artifactId>okapi-api</artifactId>
-      <version>${project.parent.version}</version>
-      <type>test-jar</type>
-      <scope>test</scope>
-    </dependency>
-
-    <dependency>
-      <groupId>org.opencypher</groupId>
-      <artifactId>okapi-ir</artifactId>
-      <version>${project.parent.version}</version>
-      <type>test-jar</type>
-      <scope>test</scope>
-    </dependency>
-
-    <dependency>
-      <groupId>org.opencypher</groupId>
-      <artifactId>spark-cypher</artifactId>
-      <version>${project.parent.version}</version>
-      <scope>test</scope>
-    </dependency>
-
-    <dependency>
-      <groupId>org.opencypher</groupId>
-      <artifactId>spark-cypher</artifactId>
-      <version>${project.parent.version}</version>
-      <type>test-jar</type>
-      <scope>test</scope>
-    </dependency>
-
     <dependency>
       <groupId>org.opencypher</groupId>
       <artifactId>okapi-tck</artifactId>
       <version>${project.parent.version}</version>
-      <type>test-jar</type>
       <scope>test</scope>
     </dependency>
 
     <dependency>
       <groupId>org.opencypher</groupId>
-      <artifactId>tck</artifactId>
-      <version>${dep.tck.version}</version>
-      <scope>test</scope>
-    </dependency>
-
-    <dependency>
-      <groupId>org.opencypher</groupId>
-      <artifactId>okapi-testing</artifactId>
+      <artifactId>spark-cypher-testing</artifactId>
       <version>${project.parent.version}</version>
       <scope>test</scope>
     </dependency>
 
   </dependencies>
-
 </project>

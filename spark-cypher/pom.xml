@@ -47,56 +47,30 @@
       <scope>${dep.spark.scope}</scope>
     </dependency>
 
-    <!-- Test -->
-
+    <!-- Neo4j -->
     <dependency>
-      <groupId>org.opencypher</groupId>
-      <artifactId>okapi-api</artifactId>
-      <version>${project.parent.version}</version>
-      <type>test-jar</type>
-      <scope>test</scope>
+      <groupId>org.neo4j.driver</groupId>
+      <artifactId>neo4j-java-driver</artifactId>
+      <version>${dep.neo4j.driver.version}</version>
+    </dependency>
+
+    <!-- Utils -->
+    <dependency>
+      <groupId>io.circe</groupId>
+      <artifactId>circe-core_${project.scala.binary.version}</artifactId>
+      <version>${dep.circe.version}</version>
     </dependency>
 
     <dependency>
-      <groupId>org.opencypher</groupId>
-      <artifactId>okapi-ir</artifactId>
-      <version>${project.parent.version}</version>
-      <type>test-jar</type>
-      <scope>test</scope>
+      <groupId>io.circe</groupId>
+      <artifactId>circe-generic_${project.scala.binary.version}</artifactId>
+      <version>${dep.circe.version}</version>
     </dependency>
 
     <dependency>
-      <groupId>org.opencypher</groupId>
-      <artifactId>okapi-relational</artifactId>
-      <version>${project.parent.version}</version>
-      <type>test-jar</type>
-      <scope>test</scope>
+      <groupId>io.circe</groupId>
+      <artifactId>circe-parser_${project.scala.binary.version}</artifactId>
+      <version>${dep.circe.version}</version>
     </dependency>
-
-    <dependency>
-      <groupId>org.opencypher</groupId>
-      <artifactId>okapi-testing</artifactId>
-      <version>${project.parent.version}</version>
-      <scope>test</scope>
-    </dependency>
-
-    <!-- Workaround for https://youtrack.jetbrains.com/issue/SCL-13184 -->
-    <dependency>
-      <groupId>org.opencypher</groupId>
-      <artifactId>okapi-trees</artifactId>
-      <version>${project.parent.version}</version>
-      <type>test-jar</type>
-      <scope>test</scope>
-    </dependency>
-
-    <!-- Workaround for https://youtrack.jetbrains.com/issue/SCL-13184 -->
-    <dependency>
-      <groupId>org.opencypher</groupId>
-      <artifactId>okapi-logical</artifactId>
-      <version>${project.parent.version}</version>
-      <type>test-jar</type>
-      <scope>test</scope>
-    </dependency>
-
   </dependencies>
 </project>
