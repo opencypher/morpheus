@@ -33,7 +33,7 @@ import org.opencypher.spark.api.CAPSSession._
 /**
   * Shows how to access a Cypher query result as a [[DataFrame]].
   */
-object DataFrameOutputExample extends App {
+object DataFrameOutputExample extends ConsoleApp {
 
   // 1) Create CAPS session and retrieve Spark session
   implicit val session: CAPSSession = CAPSSession.local()

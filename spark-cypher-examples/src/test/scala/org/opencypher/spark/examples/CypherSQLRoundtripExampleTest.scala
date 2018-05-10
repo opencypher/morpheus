@@ -26,18 +26,18 @@
  */
 package org.opencypher.spark.examples
 
-import org.opencypher.spark.api.CAPSSession
-
-object DataSourceExample extends ConsoleApp {
-
-  implicit val session: CAPSSession = CAPSSession.local()
-
-  // 2) Load social network data via case class instances
-  val socialNetwork = session.readFrom(SocialNetworkData.persons, SocialNetworkData.friendships)
-
-  session.catalog.store("sn", socialNetwork)
-
-  val result = session.cypher("FROM GRAPH session.sn MATCH (n) RETURN n")
-
-  result.show
+class CypherSQLRoundtripExampleTest extends ExampleTest {
+  it("should produce the correct output") {
+    validate(CypherSQLRoundtripExample.main(Array.empty),
+      s"""|+---------------------------------+
+          || c.name  | age | p.title         |
+          |+---------------------------------+
+          || 'Carol' | 15  | 'Jurassic Park' |
+          || 'Alice' | 10  | '1984'          |
+          || 'Carol' | 15  | 'Shakira'       |
+          || 'Alice' | 10  | 'Terminator 2'  |
+          |+---------------------------------+
+          |(4 rows)
+          |""".stripMargin)
+  }
 }

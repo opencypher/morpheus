@@ -41,7 +41,7 @@ object PrintOptions {
     options
 }
 
-final case class PrintOptions(stream: PrintStream, maxColumnWidth: Int) {
+final case class PrintOptions(stream: PrintStream, maxColumnWidth: Int = PrintOptions.DEFAULT_MAX_COLUMN_WIDTH) {
   def stream(newStream: PrintStream): PrintOptions = copy(stream = newStream)
   def maxColumnWidth(maxColumnWidth: Int): PrintOptions = copy(maxColumnWidth = maxColumnWidth)
 }

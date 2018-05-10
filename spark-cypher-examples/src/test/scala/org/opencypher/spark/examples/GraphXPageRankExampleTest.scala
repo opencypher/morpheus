@@ -26,18 +26,34 @@
  */
 package org.opencypher.spark.examples
 
-import org.opencypher.spark.api.CAPSSession
+class GraphXPageRankExampleTest extends ExampleTest {
+  it("should produce the correct output") {
+    validate(GraphXPageRankExample.main(Array.empty),
+      s"""|+------------------------------+
+          || r                            |
+          |+------------------------------+
+          || ({rank: 0.5532503457814661}) |
+          || ({rank: 1.0235131396957122}) |
+          || ({rank: 1.4232365145228216}) |
+          |+------------------------------+
+          |(3 rows)
+          |+------------------------------------+
+          || s                                  |
+          |+------------------------------------+
+          || (:Person {age: 10, name: 'Alice'}) |
+          || (:Person {age: 20, name: 'Bob'})   |
+          || (:Person {age: 15, name: 'Carol'}) |
+          |+------------------------------------+
+          |(3 rows)
+          |+------------------------------+
+          || name    | rank               |
+          |+------------------------------+
+          || 'Carol' | 1.4232365145228216 |
+          || 'Bob'   | 1.0235131396957122 |
+          || 'Alice' | 0.5532503457814661 |
+          |+------------------------------+
+          |(3 rows)
+          |""".stripMargin)
+  }
 
-object DataSourceExample extends ConsoleApp {
-
-  implicit val session: CAPSSession = CAPSSession.local()
-
-  // 2) Load social network data via case class instances
-  val socialNetwork = session.readFrom(SocialNetworkData.persons, SocialNetworkData.friendships)
-
-  session.catalog.store("sn", socialNetwork)
-
-  val result = session.cypher("FROM GRAPH session.sn MATCH (n) RETURN n")
-
-  result.show
 }

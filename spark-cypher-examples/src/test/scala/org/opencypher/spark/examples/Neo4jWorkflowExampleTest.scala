@@ -26,18 +26,16 @@
  */
 package org.opencypher.spark.examples
 
-import org.opencypher.spark.api.CAPSSession
+class Neo4jWorkflowExampleTest extends ExampleTest {
 
-object DataSourceExample extends ConsoleApp {
-
-  implicit val session: CAPSSession = CAPSSession.local()
-
-  // 2) Load social network data via case class instances
-  val socialNetwork = session.readFrom(SocialNetworkData.persons, SocialNetworkData.friendships)
-
-  session.catalog.store("sn", socialNetwork)
-
-  val result = session.cypher("FROM GRAPH session.sn MATCH (n) RETURN n")
-
-  result.show
+  it("should produce the correct output") {
+    validate(Neo4jWorkflowExample.main(Array.empty),
+      s"""|+---------------------------------------------------------------+
+          || p.name | p.should_buy                                         |
+          |+---------------------------------------------------------------+
+          || 'Bob'  | ['1984', 'Jurassic Park', 'Shakira', 'Terminator 2'] |
+          |+---------------------------------------------------------------+
+          |(1 rows)
+          |""".stripMargin)
+  }
 }

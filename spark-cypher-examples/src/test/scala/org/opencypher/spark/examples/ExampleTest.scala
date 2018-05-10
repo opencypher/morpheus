@@ -26,18 +26,16 @@
  */
 package org.opencypher.spark.examples
 
-import org.opencypher.spark.api.CAPSSession
+import java.io.ByteArrayOutputStream
 
-object DataSourceExample extends ConsoleApp {
+import org.scalatest.{FunSpec, Matchers}
 
-  implicit val session: CAPSSession = CAPSSession.local()
+abstract class ExampleTest extends FunSpec with Matchers {
 
-  // 2) Load social network data via case class instances
-  val socialNetwork = session.readFrom(SocialNetworkData.persons, SocialNetworkData.friendships)
+  protected def validate(app: => Unit, expectedOut: String): Unit = {
+    val outCapture = new ByteArrayOutputStream()
+    Console.withOut(outCapture)(app)
+    outCapture.toString("UTF-8") shouldEqual expectedOut
+  }
 
-  session.catalog.store("sn", socialNetwork)
-
-  val result = session.cypher("FROM GRAPH session.sn MATCH (n) RETURN n")
-
-  result.show
 }

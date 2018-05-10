@@ -38,7 +38,7 @@ import org.opencypher.spark.examples.Neo4jHelpers._
   *
   * Writes updates back to the Neo4j database with Cypher queries.
   */
-object Neo4jWorkflow extends App {
+object Neo4jWorkflowExample extends ConsoleApp {
   // Create CAPS session
   implicit val session: CAPSSession = CAPSSession.local()
 
