@@ -34,6 +34,7 @@ import org.opencypher.okapi.api.table.CypherTable
 import org.opencypher.okapi.api.types._
 import org.opencypher.okapi.api.value.CypherValue
 import org.opencypher.okapi.api.value.CypherValue.CypherValue
+import org.opencypher.okapi.impl.exception.IllegalArgumentException
 import org.opencypher.spark.api.CAPSSession
 import org.opencypher.spark.api.io.EntityTable.SparkTable
 import org.opencypher.spark.impl.CAPSRecords
@@ -59,7 +60,11 @@ sealed trait EntityTable[T <: CypherTable[String]] {
   def table: T
 
   protected def verify(): Unit = {
-    table.verifyColumnType(mapping.sourceIdKey, CTInteger, "id key")
+    mapping.idKeys.foreach(key => table.verifyColumnType(key, CTInteger, "id key"))
+    if (table.columns != mapping.allSourceKeys) throw IllegalArgumentException(
+      s"Columns: ${mapping.allSourceKeys.mkString(", ")}",
+      s"Columns: ${table.columns.mkString(", ")}",
+      s"Use [Node|Relationship]Mapping#fromMapping to create a valid EntityTable")
   }
 
 }
@@ -99,7 +104,10 @@ trait CAPSEntityTable extends EntityTable[SparkTable] {
   private[spark] def records(implicit caps: CAPSSession): CAPSRecords = CAPSRecords.create(this)
 }
 
-case class CAPSNodeTable(mapping: NodeMapping, table: SparkTable) extends NodeTable(mapping, table) with CAPSEntityTable
+case class CAPSNodeTable(
+  mapping: NodeMapping,
+  table: SparkTable
+) extends NodeTable(mapping, table) with CAPSEntityTable
 
 object CAPSNodeTable {
 
@@ -108,7 +116,7 @@ object CAPSNodeTable {
     val nodeDF = caps.sparkSession.createDataFrame(nodes)
     val nodeProperties = properties(nodeDF.columns)
     val nodeMapping = NodeMapping.create(nodeIdKey = GraphEntity.sourceIdKey, impliedLabels = nodeLabels, propertyKeys = nodeProperties)
-    CAPSNodeTable(nodeMapping, nodeDF)
+    fromMapping(nodeMapping, nodeDF)
   }
 
   /**
@@ -137,7 +145,12 @@ object CAPSNodeTable {
   def apply(impliedLabels: Set[String], optionalLabels: Map[String, String], nodeDF: DataFrame): CAPSNodeTable = {
     val nodeProperties = (properties(nodeDF.columns) -- optionalLabels.values).map(col => col -> col).toMap
     val nodeMapping = NodeMapping(GraphEntity.sourceIdKey, impliedLabels, optionalLabels, nodeProperties)
-    CAPSNodeTable(nodeMapping, nodeDF)
+    fromMapping(nodeMapping, nodeDF)
+  }
+
+  def fromMapping(mapping: NodeMapping, initialTable: SparkTable): CAPSNodeTable = {
+    val colsToSelect = mapping.allSourceKeys
+    CAPSNodeTable(mapping, initialTable.df.select(colsToSelect.head, colsToSelect.tail: _*))
   }
 
   private def properties(nodeColumnNames: Seq[String]): Set[String] = {
@@ -145,7 +158,10 @@ object CAPSNodeTable {
   }
 }
 
-case class CAPSRelationshipTable(mapping: RelationshipMapping, table: SparkTable) extends RelationshipTable(mapping, table) with CAPSEntityTable
+case class CAPSRelationshipTable(
+  mapping: RelationshipMapping,
+  table: SparkTable
+) extends RelationshipTable(mapping, table) with CAPSEntityTable
 
 object CAPSRelationshipTable {
 
@@ -160,7 +176,7 @@ object CAPSRelationshipTable {
       relationshipType,
       relationshipProperties)
 
-    CAPSRelationshipTable(relationshipMapping, relationshipDF)
+    fromMapping(relationshipMapping, relationshipDF)
   }
 
   /**
@@ -183,7 +199,12 @@ object CAPSRelationshipTable {
       relationshipType,
       relationshipProperties)
 
-    CAPSRelationshipTable(relationshipMapping, relationshipDF)
+    fromMapping(relationshipMapping, relationshipDF)
+  }
+
+  def fromMapping(mapping: RelationshipMapping, initialTable: SparkTable): CAPSRelationshipTable = {
+    val colsToSelect = mapping.allSourceKeys
+    CAPSRelationshipTable(mapping, initialTable.df.select(colsToSelect.head, colsToSelect.tail: _*))
   }
 
   private def properties(relColumnNames: Seq[String]): Set[String] = {
@@ -225,7 +246,10 @@ abstract class NodeTable[T <: CypherTable[String]](mapping: NodeMapping, table: 
   * @param mapping mapping from input data description to a Cypher relationship
   * @param table   input data frame
   */
-abstract class RelationshipTable[T <: CypherTable[String]](mapping: RelationshipMapping, table: T) extends EntityTable[T] {
+abstract class RelationshipTable[T <: CypherTable[String]](
+  mapping: RelationshipMapping,
+  table: T
+) extends EntityTable[T] {
 
   override lazy val schema: CAPSSchema = {
     val relTypes = mapping.relTypeOrSourceRelTypeKey match {

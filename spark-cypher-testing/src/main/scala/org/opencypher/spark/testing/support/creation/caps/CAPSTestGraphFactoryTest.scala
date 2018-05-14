@@ -53,7 +53,7 @@ abstract class CAPSTestGraphFactoryTest extends CAPSTestSuite with GraphMatching
       |CREATE (martin)-[:SPEAKS]->(orbital)
     """.stripMargin
 
-  val personTable: CAPSNodeTable = CAPSNodeTable(NodeMapping
+  val personTable: CAPSNodeTable = CAPSNodeTable.fromMapping(NodeMapping
     .on("ID")
     .withImpliedLabel("Person")
     .withOptionalLabel("Astronaut" -> "IS_ASTRONAUT")
@@ -64,7 +64,7 @@ abstract class CAPSTestGraphFactoryTest extends CAPSTestSuite with GraphMatching
       (1L, false, true, "Martin"))
   ).toDF("ID", "IS_ASTRONAUT", "IS_MARTIAN", "NAME"))
 
-  val languageTable: CAPSNodeTable = CAPSNodeTable(NodeMapping
+  val languageTable: CAPSNodeTable = CAPSNodeTable.fromMapping(NodeMapping
     .on("ID")
     .withImpliedLabel("Language")
     .withPropertyKey("title" -> "TITLE"), caps.sparkSession.createDataFrame(
@@ -74,7 +74,7 @@ abstract class CAPSTestGraphFactoryTest extends CAPSTestSuite with GraphMatching
       (4L, "Orbital"))
   ).toDF("ID", "TITLE"))
 
-  val knowsScan: CAPSRelationshipTable = CAPSRelationshipTable(RelationshipMapping
+  val knowsScan: CAPSRelationshipTable = CAPSRelationshipTable.fromMapping(RelationshipMapping
     .on("ID")
     .from("SRC").to("DST").relType("KNOWS"), caps.sparkSession.createDataFrame(
     Seq(

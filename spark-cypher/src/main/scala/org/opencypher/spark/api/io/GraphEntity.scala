@@ -33,7 +33,7 @@ sealed trait GraphEntity extends Product {
 }
 
 object GraphEntity {
-  private[io] val sourceIdKey = "id"
+  val sourceIdKey = "id"
 }
 
 /**
@@ -44,12 +44,11 @@ object GraphEntity {
 trait Node extends GraphEntity
 
 object Relationship {
-  private[io] val sourceStartNodeKey = "source"
+  val sourceStartNodeKey = "source"
 
-  private[io] val sourceEndNodeKey = "target"
+  val sourceEndNodeKey = "target"
 
-  private[io] val nonPropertyAttributes =
-    Set(GraphEntity.sourceIdKey, sourceStartNodeKey, sourceEndNodeKey)
+  val nonPropertyAttributes = Set(GraphEntity.sourceIdKey, sourceStartNodeKey, sourceEndNodeKey)
 }
 
 /**

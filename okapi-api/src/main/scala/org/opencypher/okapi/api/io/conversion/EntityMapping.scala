@@ -41,6 +41,12 @@ trait EntityMapping {
 
   def propertyMapping: Map[String, String]
 
+  def idKeys: Seq[String]
+
+  def optionalLabelKeys: Seq[String] = Seq.empty
+
+  def allSourceKeys: Seq[String] = idKeys ++ optionalLabelKeys ++ propertyMapping.values.toSeq.sorted
+
   protected def preventOverwritingProperty(propertyKey: String): Unit =
     if (propertyMapping.contains(propertyKey))
       throw IllegalArgumentException("unique property key definitions",

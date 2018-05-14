@@ -188,9 +188,7 @@ final case class RelationshipMapping private[okapi](
     properties.foldLeft(this)((mapping, propertyKey) => mapping.withPropertyKey(propertyKey, propertyKey))
 
   private def validate(): Unit = {
-    val idKeys = Set(sourceIdKey, sourceStartNodeKey, sourceEndNodeKey)
-
-    if (idKeys.size != 3)
+    if (idKeys.distinct.size != 3)
       throw IllegalArgumentException(
         s"id ($sourceIdKey, start ($sourceStartNodeKey) and end ($sourceEndNodeKey) source keys need to be distinct",
         s"non-distinct source keys")
@@ -202,4 +200,6 @@ final case class RelationshipMapping private[okapi](
       case _ =>
     }
   }
+
+  override def idKeys: Seq[String] = Seq(sourceIdKey, sourceStartNodeKey, sourceEndNodeKey)
 }
