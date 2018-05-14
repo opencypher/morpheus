@@ -133,7 +133,7 @@
             <includedScopes>compile</includedScopes>
             <excludedScopes>test provided</excludedScopes>
             <!-- A bunch of dependencies that come from neo4j-harness -->
-            <excludedGroups>^((com.sun.jersey){1}|(org.apache.xbean){1})$</excludedGroups>
+            <excludedGroups>^((com.sun.jersey){1}|(org.apache.xbean){1}|(org.neo4j(.*)?){1})$</excludedGroups>
             <excludedArtifacts>
               <!-- Dependencies that come from test scope -->
               ^((jersey-guice)|(jaxb-impl)|(jaxb-api)|(stax-api))$
@@ -407,6 +407,7 @@
         <module>spark-cypher</module>
         <module>spark-cypher-examples</module>
         <module>spark-cypher-tck</module>
+        <module>spark-cypher-testing</module>
       </modules>
     </profile>
 
@@ -539,63 +540,11 @@
       <version>${project.scala.version}</version>
     </dependency>
 
-    <!-- Tests -->
-
-    <!-- TODO: Why necessary?-->
-    <dependency>
-      <groupId>org.neo4j</groupId>
-      <artifactId>openCypher-frontend-1</artifactId>
-      <version>${dep.neo4j.frontend.version}</version>
-      <type>test-jar</type>
-      <scope>test</scope>
-    </dependency>
-
-    <dependency>
-      <groupId>org.neo4j</groupId>
-      <artifactId>neo4j-cypher-util-3.4</artifactId>
-      <version>${dep.neo4j.version}</version>
-      <type>test-jar</type>
-      <scope>test</scope>
-    </dependency>
-
-    <dependency>
-      <groupId>org.neo4j.test</groupId>
-      <artifactId>neo4j-harness</artifactId>
-      <version>${dep.neo4j.harness.version}</version>
-      <scope>test</scope>
-    </dependency>
-
-    <dependency>
-      <groupId>org.bouncycastle</groupId>
-      <artifactId>bctls-jdk15on</artifactId>
-      <version>${dep.bouncycastle.version}</version>
-      <scope>test</scope>
-    </dependency>
 
     <dependency>
       <groupId>org.scalatest</groupId>
       <artifactId>scalatest_${project.scala.binary.version}</artifactId>
       <version>${dep.scalatest.version}</version>
-      <scope>test</scope>
-      <exclusions>
-        <exclusion>
-          <groupId>org.scala-lang</groupId>
-          <artifactId>scala-library</artifactId>
-        </exclusion>
-      </exclusions>
-    </dependency>
-
-    <dependency>
-      <groupId>org.scalacheck</groupId>
-      <artifactId>scalacheck_${project.scala.binary.version}</artifactId>
-      <version>${dep.scalacheck.version}</version>
-      <scope>test</scope>
-    </dependency>
-
-    <dependency>
-      <groupId>org.apache.hadoop</groupId>
-      <artifactId>hadoop-minicluster</artifactId>
-      <version>${dep.hadoop.version}</version>
       <scope>test</scope>
     </dependency>
 
@@ -607,9 +556,9 @@
     </dependency>
 
     <dependency>
-      <groupId>org.mockito</groupId>
-      <artifactId>mockito-all</artifactId>
-      <version>${dep.mockito.version}</version>
+      <groupId>org.scalacheck</groupId>
+      <artifactId>scalacheck_${project.scala.binary.version}</artifactId>
+      <version>${dep.scalacheck.version}</version>
       <scope>test</scope>
     </dependency>
 

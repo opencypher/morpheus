@@ -28,26 +28,73 @@ Third-party licenses
 --------------------
 
 Apache Software License, Version 2.0
+  Apache Commons Codec
+  Apache Commons Compress
+  Apache Commons Configuration
   Apache Commons Lang
-  Neo4j - Cypher Expressions 3.4
-  Neo4j - Cypher Util 3.4
+  Apache Commons Logging
+  Apache Commons Text
+  Apache HttpClient
+  Apache HttpCore
+  Caffeine cache
+  Commons IO
+  Commons Lang
+  ConcurrentLinkedHashMap
+  Data Mapper for Jackson
+  Jackson
+  Java Servlet API
+  JAX-RS provider for JSON content type
+  Jetty :: Http Utility
+  Jetty :: IO Utility
+  Jetty :: Security
+  Jetty :: Server Core
+  Jetty :: Servlet Handling
+  Jetty :: Utilities
+  Jetty :: Webapp Application Support
+  Jetty :: XML utilities
+  Lucene codecs
+  Lucene Common Analyzers
+  Lucene Core
+  Lucene Memory
+  Lucene QueryParsers
+  Netty/All-in-One
   Okapi - openCypher API
   Okapi Trees - Tree rewriting framework for Okapi
-  openCypher Frontend
+  opencsv
   parboiled-core
   parboiled-scala
   scalactic
   scalatest
 
 BSD License
+  ASM Analysis
+  ASM Core
+  ASM Tree
+  ASM Util
+  JLine
   Scala Compiler
   Scala Library
   scala-parser-combinators
   scala-xml
+  scalacheck
+  test-interface
+
+Bouncy Castle License
+  Bouncy Castle JSSE provider and TLS/DTLS API
+  Bouncy Castle PKIX, CMS, EAC, TSP, PKCS, OCSP, CMP, and CRMF APIs
+  Bouncy Castle Provider
+
+CDDL 1.1, GPL2 with CPE
+  jersey-multipart
+  MIME streaming extension
 
 MIT-license
   Cats core
   Cats kernel
   Cats macros
   machinist
+  Mockito
+
+Mozilla Public License, Version 2.0
+  Mozilla Rhino
 

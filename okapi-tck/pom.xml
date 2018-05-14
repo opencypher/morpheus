@@ -21,44 +21,34 @@
   </properties>
 
   <dependencies>
-    <!-- Test -->
-
     <dependency>
       <groupId>org.opencypher</groupId>
       <artifactId>tck</artifactId>
       <version>${dep.tck.version}</version>
-      <scope>test</scope>
     </dependency>
 
     <dependency>
-      <groupId>org.opencypher</groupId>
-      <artifactId>okapi-api</artifactId>
-      <version>${project.parent.version}</version>
-      <type>test-jar</type>
-      <scope>test</scope>
-    </dependency>
-
-    <dependency>
-      <groupId>org.opencypher</groupId>
-      <artifactId>okapi-ir</artifactId>
-      <version>${project.parent.version}</version>
-      <scope>test</scope>
+      <groupId>org.scalatest</groupId>
+      <artifactId>scalatest_${project.scala.binary.version}</artifactId>
+      <version>${dep.scalatest.version}</version>
+      <exclusions>
+        <exclusion>
+          <groupId>org.scala-lang</groupId>
+          <artifactId>scala-library</artifactId>
+        </exclusion>
+      </exclusions>
     </dependency>
 
     <dependency>
       <groupId>org.opencypher</groupId>
       <artifactId>okapi-testing</artifactId>
       <version>${project.parent.version}</version>
-      <scope>test</scope>
     </dependency>
 
-    <!-- Workaround for https://youtrack.jetbrains.com/issue/SCL-13184 -->
     <dependency>
       <groupId>org.opencypher</groupId>
       <artifactId>okapi-ir</artifactId>
       <version>${project.parent.version}</version>
-      <type>test-jar</type>
-      <scope>test</scope>
     </dependency>
 
   </dependencies>

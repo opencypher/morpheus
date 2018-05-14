@@ -29,12 +29,9 @@ Third-party licenses
 
 Apache Software License, Version 2.0
   Apache Commons Lang
-  Neo4j - Cypher Expressions 3.4
-  Neo4j - Cypher Util 3.4
   Okapi - openCypher API
   Okapi IR - Declarative representation of Cypher queries
   Okapi Trees - Tree rewriting framework for Okapi
-  openCypher Frontend
   parboiled-core
   parboiled-scala
 

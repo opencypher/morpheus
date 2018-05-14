@@ -30,7 +30,7 @@ import java.net.{URI, URLEncoder}
 
 import org.apache.http.client.utils.URIBuilder
 import org.apache.spark.sql.Row
-import org.neo4j.driver.v1.{AuthTokens, Session}
+import org.neo4j.driver.v1.Session
 import org.opencypher.okapi.api.graph.{CypherResult, GraphName, Namespace, PropertyGraph}
 import org.opencypher.okapi.api.schema.Schema
 import org.opencypher.okapi.api.types.{CTInteger, CTString}
@@ -40,8 +40,8 @@ import org.opencypher.okapi.testing.Bag._
 import org.opencypher.spark.api.io.csv.hdfs.HdfsCsvGraphDataSource
 import org.opencypher.spark.api.io.neo4j.CommunityNeo4jGraphDataSource
 import org.opencypher.spark.impl.CAPSRecords
-import org.opencypher.spark.test.CAPSTestSuite
-import org.opencypher.spark.test.fixture.{MiniDFSClusterFixture, Neo4jServerFixture, SparkSessionFixture}
+import org.opencypher.spark.testing.CAPSTestSuite
+import org.opencypher.spark.testing.fixture.{MiniDFSClusterFixture, Neo4jServerFixture, SparkSessionFixture}
 import org.scalatest.Assertion
 
 class MasterExampleTest extends CAPSTestSuite with SparkSessionFixture with Neo4jServerFixture with MiniDFSClusterFixture {

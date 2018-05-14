@@ -8,6 +8,9 @@
   <liked-license>BSD License 2-clause</liked-license>
   <liked-license>Bouncy Castle License</liked-license>
   <liked-license>Public-domain</liked-license>
+  <liked-license>CDDL 1.1, GPL2 with CPE</liked-license>
+  <liked-license>Mozilla Public License, Version 2.0</liked-license>
+
 
   <missing-licenses>
     <artifact id="oro:oro:jar:2.0.8">
@@ -65,6 +68,39 @@
     <artifact id="javax.ws.rs:javax.ws.rs-api:jar:2.0.1">
       <license>Apache Software License, Version 2.0</license>
     </artifact>
+
+    <!--Jetty dual license-->
+    <artifact id="org.eclipse.jetty:jetty-http:jar:9.2.22.v20170606">
+      <license>Apache Software License, Version 2.0</license>
+    </artifact>
+    <artifact id="org.eclipse.jetty:jetty-io:jar:9.2.22.v20170606">
+      <license>Apache Software License, Version 2.0</license>
+    </artifact>
+    <artifact id="org.eclipse.jetty:jetty-security:jar:9.2.22.v20170606">
+      <license>Apache Software License, Version 2.0</license>
+    </artifact>
+    <artifact id="org.eclipse.jetty:jetty-server:jar:9.2.22.v20170606">
+      <license>Apache Software License, Version 2.0</license>
+    </artifact>
+    <artifact id="org.eclipse.jetty:jetty-servlet:jar:9.2.22.v20170606">
+      <license>Apache Software License, Version 2.0</license>
+    </artifact>
+    <artifact id="org.eclipse.jetty:jetty-util:jar:9.2.22.v20170606">
+      <license>Apache Software License, Version 2.0</license>
+    </artifact>
+    <artifact id="org.eclipse.jetty:jetty-webapp:jar:9.2.22.v20170606">
+      <license>Apache Software License, Version 2.0</license>
+    </artifact>
+    <artifact id="org.eclipse.jetty:jetty-xml:jar:9.2.22.v20170606">
+      <license>Apache Software License, Version 2.0</license>
+    </artifact>
+
+    <artifact id="com.sun.jersey.contribs:jersey-multipart:jar:1.19">
+      <license>CDDL 1.1, GPL2 with CPE</license>
+    </artifact>
+    <artifact id="org.jvnet.mimepull:mimepull:jar:1.9.3">
+      <license>CDDL 1.1, GPL2 with CPE</license>
+    </artifact>
   </override-licenses>
 
   <coalesced-licenses>
@@ -96,6 +132,7 @@
       <aka>MIT</aka>
       <aka>MIT license</aka>
       <aka>MIT License</aka>
+      <aka>The MIT License</aka>
     </license>
 
     <license name="Bouncy Castle License">

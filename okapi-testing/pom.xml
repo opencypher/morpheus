@@ -26,7 +26,6 @@
       <version>${project.parent.version}</version>
     </dependency>
 
-    <!-- Neo4j -->
     <dependency>
       <groupId>org.neo4j</groupId>
       <artifactId>openCypher-frontend-1</artifactId>
@@ -34,9 +33,39 @@
     </dependency>
 
     <dependency>
+      <groupId>org.neo4j.test</groupId>
+      <artifactId>neo4j-harness</artifactId>
+      <version>${dep.neo4j.harness.version}</version>
+    </dependency>
+
+    <dependency>
+      <groupId>org.bouncycastle</groupId>
+      <artifactId>bctls-jdk15on</artifactId>
+      <version>${dep.bouncycastle.version}</version>
+    </dependency>
+
+    <dependency>
       <groupId>org.scalatest</groupId>
       <artifactId>scalatest_${project.scala.binary.version}</artifactId>
       <version>${dep.scalatest.version}</version>
+      <exclusions>
+        <exclusion>
+          <groupId>org.scala-lang</groupId>
+          <artifactId>scala-library</artifactId>
+        </exclusion>
+      </exclusions>
+    </dependency>
+
+    <dependency>
+      <groupId>org.scalacheck</groupId>
+      <artifactId>scalacheck_${project.scala.binary.version}</artifactId>
+      <version>${dep.scalacheck.version}</version>
+    </dependency>
+
+    <dependency>
+      <groupId>org.mockito</groupId>
+      <artifactId>mockito-all</artifactId>
+      <version>${dep.mockito.version}</version>
     </dependency>
 
   </dependencies>
