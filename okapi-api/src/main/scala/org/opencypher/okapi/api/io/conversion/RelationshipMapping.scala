@@ -202,4 +202,9 @@ final case class RelationshipMapping private[okapi](
   }
 
   override def idKeys: Seq[String] = Seq(sourceIdKey, sourceStartNodeKey, sourceEndNodeKey)
+
+  override def relTypeKey: Option[String] = relTypeOrSourceRelTypeKey match {
+    case Right((relTypeKey, _)) => Some(relTypeKey)
+    case _ => None
+  }
 }

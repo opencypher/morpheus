@@ -45,7 +45,9 @@ trait EntityMapping {
 
   def optionalLabelKeys: Seq[String] = Seq.empty
 
-  def allSourceKeys: Seq[String] = idKeys ++ optionalLabelKeys ++ propertyMapping.values.toSeq.sorted
+  def relTypeKey: Option[String] = None
+
+  def allSourceKeys: Seq[String] = idKeys ++ optionalLabelKeys ++ relTypeKey ++ propertyMapping.values.toSeq.sorted
 
   protected def preventOverwritingProperty(propertyKey: String): Unit =
     if (propertyMapping.contains(propertyKey))
