@@ -31,7 +31,7 @@ import org.apache.spark.sql.execution.UnionExec
 import org.opencypher.spark.impl.CAPSConverters._
 import org.opencypher.spark.impl.acceptance.DefaultGraphInit
 import org.opencypher.spark.impl.metrics.SparkQueryPlanCostEstimation._
-import org.opencypher.spark.test.CAPSTestSuite
+import org.opencypher.spark.testing.CAPSTestSuite
 
 class QueryMetrics extends CAPSTestSuite with DefaultGraphInit {
 
