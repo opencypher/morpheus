@@ -38,7 +38,7 @@ import org.opencypher.spark.examples.Neo4jHelpers._
   * recommendations. Two graphs are loaded from separate Neo4j databases, one graph is loaded from csv files stored in
   * the local file system.
   */
-object RecommendationExample extends App {
+object RecommendationExample extends ConsoleApp {
 
   // Create CAPS session
   implicit val caps: CAPSSession = CAPSSession.local()

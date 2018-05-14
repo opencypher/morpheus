@@ -37,7 +37,7 @@ import org.opencypher.spark.impl.CAPSConverters._
   * SQL table, and using the output of a SQL query as an input driving table
   * for a Cypher query.
   */
-object CypherSQLRoundtripExample extends App {
+object CypherSQLRoundtripExample extends ConsoleApp {
   // 1) Create CAPS session
   implicit val session: CAPSSession = CAPSSession.local()
 

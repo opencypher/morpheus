@@ -30,37 +30,51 @@ import java.io.File
 import java.nio.file.Paths
 
 import org.apache.hadoop.fs.PathNotFoundException
-import org.scalatest.{FunSuite, Matchers}
+import org.scalatest.{FunSpec, Matchers}
 
 import scala.annotation.tailrec
 import scala.io.Source
 import scala.util.Try
 
-/**
-  * Tests whether the README example is aligned with the code contained in [[CaseClassExample]].
-  */
-class ReadmeTest extends FunSuite with Matchers {
 
-  val sep = File.separator
+class MetaTest extends FunSpec with Matchers {
 
   val readmeName = "README.md"
-  val rootFolderPath = findRootFolderPath(Paths.get(".").toAbsolutePath.normalize.toString)
-  val readmePath = s"$rootFolderPath$sep$readmeName"
-
-  val testSourceFolderPath = s"${sep}src${sep}main${sep}scala$sep"
   val moduleName = "spark-cypher-examples"
-  val examplePackagePath = CaseClassExample.getClass.getName.dropRight(1).replace(".", sep)
-  val examplePath = s"$rootFolderPath$sep$moduleName$testSourceFolderPath$examplePackagePath.scala"
 
-  test("running the example code") {
-    CaseClassExample.main(Array.empty[String])
+  private val rootFolderPath = findRootFolderPath(Paths.get(".").toAbsolutePath.normalize.toString)
+  private val examplePath = CaseClassExample.getClass.getName.dropRight(1).replace(".", File.separator)
+  private val exampleClassName = examplePath.substring(examplePath.lastIndexOf(File.separator) + 1) + ".scala"
+  private val examplePackagePath = examplePath.substring(0, examplePath.lastIndexOf(File.separator))
+  private val readmePath = Paths.get(rootFolderPath, readmeName).toString
+
+  private def absolutePackagePath(scope: String) =
+    Paths.get(rootFolderPath, moduleName, Paths.get("src", scope, "scala").toString, examplePackagePath).toString
+
+  private val caseClassExamplePath =
+    Paths.get(absolutePackagePath("main"), exampleClassName).toString
+
+  it("should exist a test for each CAPS example") {
+    val exampleClassPrefixes = new File(absolutePackagePath("main")).listFiles()
+      .map(_.getName)
+      .filter(_.contains("Example"))
+      .map(example => example.substring(0, example.indexOf("Example")))
+
+    val exampleTestClassPrefixes = new File(absolutePackagePath("test")).listFiles()
+      .map(_.getName)
+      .filter(_.contains("Example"))
+
+    exampleClassPrefixes.forall(prefix => exampleTestClassPrefixes.exists(_.startsWith(prefix))) shouldBe true
   }
 
-  test("the code in the readme matches the example") {
+  /**
+    * Tests whether the README example is aligned with the code contained in [[CaseClassExample]].
+    */
+  it("the code in the readme matches the example") {
     val readmeLines = Source.fromFile(readmePath).getLines.toVector
     val readmeSourceCodeBlocks = extractMarkdownScalaSourceBlocks(readmeLines).map(_.canonical).toSet
 
-    val exampleSourceCodeLines = Source.fromFile(examplePath).getLines.toVector
+    val exampleSourceCodeLines = Source.fromFile(caseClassExamplePath).getLines.toVector
     val exampleSourceCode = ScalaSourceCode(exampleSourceCodeLines).canonical
 
     readmeSourceCodeBlocks should contain(exampleSourceCode)
@@ -94,7 +108,7 @@ class ReadmeTest extends FunSuite with Matchers {
   /**
     * Check by testing if the license-header.txt file can be found. This works even if the root folder has a different name.
     */
-  def isRootFolderPath(path: String): Boolean = new File(s"$path$sep.travis.yml").exists
+  def isRootFolderPath(path: String): Boolean = Paths.get(path, ".travis.yml").toFile.exists
 
   def extractMarkdownScalaSourceBlocks(lines: Vector[String]): Seq[ScalaSourceCode] = {
     val currentParsingState: (Vector[ScalaSourceCode], Option[Vector[String]]) = (Vector.empty, None)

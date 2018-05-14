@@ -26,18 +26,11 @@
  */
 package org.opencypher.spark.examples
 
-import org.opencypher.spark.api.CAPSSession
+import org.opencypher.okapi.impl.util.PrintOptions
 
-object DataSourceExample extends ConsoleApp {
+abstract class ConsoleApp extends App {
 
-  implicit val session: CAPSSession = CAPSSession.local()
+  // Redirects output to the current Console. This is needed for testing.
+  implicit val printOptions: PrintOptions = PrintOptions(Console.out)
 
-  // 2) Load social network data via case class instances
-  val socialNetwork = session.readFrom(SocialNetworkData.persons, SocialNetworkData.friendships)
-
-  session.catalog.store("sn", socialNetwork)
-
-  val result = session.cypher("FROM GRAPH session.sn MATCH (n) RETURN n")
-
-  result.show
 }

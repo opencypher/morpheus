@@ -33,7 +33,7 @@ import org.opencypher.spark.api.io.{Node, Relationship, RelationshipType}
   * Demonstrates basic usage of the CAPS API by loading an example network via Scala case classes and running a Cypher
   * query on it.
   */
-object CaseClassExample extends App {
+object CaseClassExample extends ConsoleApp {
 
   // 1) Create CAPS session
   implicit val session: CAPSSession = CAPSSession.local()

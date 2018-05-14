@@ -38,7 +38,8 @@ import scala.collection.JavaConverters._
   * Demonstrates basic usage of the CAPS API by loading an example network from existing [[DataFrame]]s including
   * custom entity mappings and running a Cypher query on it.
   */
-object CustomDataFrameInputExample extends App {
+object CustomDataFrameInputExample extends ConsoleApp {
+
   // 1) Create CAPS session and retrieve Spark session
   implicit val session: CAPSSession = CAPSSession.local()
   val spark = session.sparkSession

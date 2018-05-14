@@ -39,10 +39,10 @@ import org.opencypher.spark.api.io.EntityTable.SparkTable
   * This example demonstrates how CAPS results can be used to construct a GraphX graph and invoke a GraphX algorithm
   * on it. The computed ranks are imported back into CAPS and used in a Cypher query.
   */
-object GraphXPageRankExample extends App {
+object GraphXPageRankExample extends ConsoleApp {
 
   // 1) Create CAPS session
-  implicit val session = CAPSSession.local()
+  implicit val session: CAPSSession = CAPSSession.local()
 
   // 2) Load social network data via case class instances
   val socialNetwork = session.readFrom(SocialNetworkData.persons, SocialNetworkData.friendships)
@@ -79,9 +79,6 @@ object GraphXPageRankExample extends App {
   session.catalog.store("ranks", rankNodes)
   session.catalog.store("sn", socialNetwork)
 
-  rankNodes.nodes("r").show
-  socialNetwork.nodes("s").show
-
   // 9) Query across both graphs to print names with corresponding ranks, sorted by rank
   val result = session.cypher(
     """|FROM GRAPH ranks
@@ -93,7 +90,7 @@ object GraphXPageRankExample extends App {
        |RETURN p.name as name, rank
        |ORDER BY rank DESC""".stripMargin)
 
-  result.getRecords.show
+  result.show
   //+---------------------------------------------+
   //| name                 | rank                 |
   //+---------------------------------------------+
