@@ -90,8 +90,8 @@ object CustomDataFrameInputExample extends ConsoleApp {
     .withRelType("FRIEND_OF")
     .withPropertyKey("since", "CONNECTED_SINCE")
 
-  val personTable = CAPSNodeTable(personNodeMapping, nodesDF)
-  val friendsTable = CAPSRelationshipTable(friendOfMapping, relsDF)
+  val personTable = CAPSNodeTable.fromMapping(personNodeMapping, nodesDF)
+  val friendsTable = CAPSRelationshipTable.fromMapping(friendOfMapping, relsDF)
 
   // 4) Create property graph from graph scans
   val graph = session.readFrom(personTable, friendsTable)

@@ -73,7 +73,7 @@ object GraphXPageRankExample extends ConsoleApp {
 
   // 7) Create property graph from rank data
   val ranksNodeMapping = NodeMapping.on("id").withPropertyKey("rank")
-  val rankNodes = session.readFrom(CAPSNodeTable(ranksNodeMapping, rankTable))
+  val rankNodes = session.readFrom(CAPSNodeTable.fromMapping(ranksNodeMapping, rankTable))
 
   // 8) Mount both graphs in the session
   session.catalog.store("ranks", rankNodes)

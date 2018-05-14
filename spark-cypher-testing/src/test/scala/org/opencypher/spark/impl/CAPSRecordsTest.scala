@@ -58,7 +58,7 @@ class CAPSRecordsTest extends CAPSTestSuite with GraphConstructionFixture with T
       .withOptionalLabel("Swedish" -> "IS_SWEDE")
       .withPropertyKey("name" -> "NAME")
 
-    val nodeTable = CAPSNodeTable(givenMapping, givenDF)
+    val nodeTable = CAPSNodeTable.fromMapping(givenMapping, givenDF)
 
     val records = CAPSRecords.create(nodeTable)
 
@@ -89,7 +89,7 @@ class CAPSRecordsTest extends CAPSTestSuite with GraphConstructionFixture with T
       .to("TO")
       .withSourceRelTypeKey("COLOR", Set("RED", "BLUE", "GREEN", "YELLOW"))
 
-    val relTable = CAPSRelationshipTable(givenMapping, givenDF)
+    val relTable = CAPSRelationshipTable.fromMapping(givenMapping, givenDF)
 
     val records = CAPSRecords.create(relTable)
 
@@ -160,7 +160,7 @@ class CAPSRecordsTest extends CAPSTestSuite with GraphConstructionFixture with T
       .withOptionalLabel("Swedish" -> "IS_SWEDE")
       .withPropertyKey("name" -> "NAME")
 
-    val nodeTable = CAPSNodeTable(givenMapping, givenDF)
+    val nodeTable = CAPSNodeTable.fromMapping(givenMapping, givenDF)
 
     val records = CAPSRecords.create(nodeTable)
 
@@ -190,7 +190,7 @@ class CAPSRecordsTest extends CAPSTestSuite with GraphConstructionFixture with T
       .relType("NEXT")
       .withPropertyKey("color" -> "COLOR")
 
-    val relTable = CAPSRelationshipTable(givenMapping, givenDF)
+    val relTable = CAPSRelationshipTable.fromMapping(givenMapping, givenDF)
 
     val records = CAPSRecords.create(relTable)
 
@@ -219,7 +219,7 @@ class CAPSRecordsTest extends CAPSTestSuite with GraphConstructionFixture with T
       .to("TO")
       .withSourceRelTypeKey("COLOR", Set("RED", "BLUE", "GREEN", "YELLOW"))
 
-    val relTable = CAPSRelationshipTable(givenMapping, givenDF)
+    val relTable = CAPSRelationshipTable.fromMapping(givenMapping, givenDF)
 
     val records = CAPSRecords.create(relTable)
 

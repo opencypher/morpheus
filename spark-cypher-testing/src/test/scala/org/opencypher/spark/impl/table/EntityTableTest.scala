@@ -73,10 +73,25 @@ class EntityTableTest extends CAPSTestSuite {
       .withPropertyKey("since"))
   }
 
+  it("throws an IllegalArgumentException when a node table does not have the expected column ordering") {
+    val df = session.createDataFrame(Seq((1L, true, "Mats", 23L))).toDF("ID", "IS_C", "FOO", "BAR")
+    an[IllegalArgumentException] should be thrownBy {
+      CAPSNodeTable(nodeMapping, df)
+    }
+  }
+
+  it("throws an IllegalArgumentException when a relationship table does not have the expected column ordering") {
+    val df = session.createDataFrame(Seq((1, 1, 1, true))).toDF("ID", "TARGET", "SOURCE", "TYPE")
+    val relMapping = RelationshipMapping.on("ID").from("SOURCE").to("TARGET").withSourceRelTypeKey("TYPE", Set("A"))
+    an[IllegalArgumentException] should be thrownBy {
+      CAPSRelationshipTable(relMapping, df)
+    }
+  }
+
   test("NodeTable should create correct schema") {
     val df = session.createDataFrame(Seq((1L, true, "Mats", 23L))).toDF("ID", "IS_C", "FOO", "BAR")
 
-    val nodeTable = CAPSNodeTable(nodeMapping, df)
+    val nodeTable = CAPSNodeTable.fromMapping(nodeMapping, df)
 
     nodeTable.schema should equal(
       Schema.empty
@@ -89,7 +104,7 @@ class EntityTableTest extends CAPSTestSuite {
   test("NodeTable should cast compatible types in input DataFrame") {
     val df = session.createDataFrame(Seq((1, true, 10.toShort, 23.1f))).toDF("ID", "IS_C", "FOO", "BAR")
 
-    val nodeTable = CAPSNodeTable(nodeMapping, df)
+    val nodeTable = CAPSNodeTable.fromMapping(nodeMapping, df)
 
     nodeTable.schema should equal(
       Schema.empty
@@ -97,13 +112,13 @@ class EntityTableTest extends CAPSTestSuite {
         .withNodePropertyKeys("A", "B", "C")("foo" -> CTInteger, "bar" -> CTFloat)
         .asCaps)
 
-    nodeTable.records.toDF().collect().toSet should equal(Set(Row(1L, true, 10L, (23.1f).toDouble)))
+    nodeTable.records.toDF().collect().toSet should equal(Set(Row(1L, true, (23.1f).toDouble, 10L)))
   }
 
   test("NodeTable can handle shuffled columns due to cast") {
     val df = session.createDataFrame(Seq((1, true, 10.toShort, 23.1f))).toDF("ID", "IS_C", "FOO", "BAR")
 
-    val nodeTable = CAPSNodeTable(nodeMapping, df)
+    val nodeTable = CAPSNodeTable.fromMapping(nodeMapping, df)
 
     val graph = CAPSGraph.create(nodeTable)
     graph.nodes("n").collect.toSet {
@@ -115,7 +130,7 @@ class EntityTableTest extends CAPSTestSuite {
     an[IllegalArgumentException] should be thrownBy {
       val df = session.createDataFrame(Seq(("1", true))).toDF("ID", "IS_A")
       val nodeMapping = NodeMapping.on("ID").withOptionalLabel("A" -> "IS_A")
-      CAPSNodeTable(nodeMapping, df)
+      CAPSNodeTable.fromMapping(nodeMapping, df)
     }
   }
 
@@ -123,7 +138,7 @@ class EntityTableTest extends CAPSTestSuite {
     an[IllegalArgumentException] should be thrownBy {
       val df = session.createDataFrame(Seq((1, "true"))).toDF("ID", "IS_A")
       val nodeMapping = NodeMapping.on("ID").withOptionalLabel("A" -> "IS_A")
-      CAPSNodeTable(nodeMapping, df)
+      CAPSNodeTable.fromMapping(nodeMapping, df)
     }
   }
 
@@ -131,23 +146,23 @@ class EntityTableTest extends CAPSTestSuite {
     val relMapping = RelationshipMapping.on("ID").from("SOURCE").to("TARGET").relType("A")
     an[IllegalArgumentException] should be thrownBy {
       val df = session.createDataFrame(Seq(("1", 1, 1))).toDF("ID", "SOURCE", "TARGET")
-      CAPSRelationshipTable(relMapping, df)
+      CAPSRelationshipTable.fromMapping(relMapping, df)
     }
     an[IllegalArgumentException] should be thrownBy {
       val df = session.createDataFrame(Seq((1, "1", 1))).toDF("ID", "SOURCE", "TARGET")
-      CAPSRelationshipTable(relMapping, df)
+      CAPSRelationshipTable.fromMapping(relMapping, df)
     }
     an[IllegalArgumentException] should be thrownBy {
       val df = session.createDataFrame(Seq((1, 1, "1"))).toDF("ID", "SOURCE", "TARGET")
-      CAPSRelationshipTable(relMapping, df)
+      CAPSRelationshipTable.fromMapping(relMapping, df)
     }
   }
 
-  test("RelationshipTable should not accept wrong source relType key type (should be StringType") {
+  test("RelationshipTable should not accept wrong source relType key type (should be StringType)") {
     an[IllegalArgumentException] should be thrownBy {
       val relMapping = RelationshipMapping.on("ID").from("SOURCE").to("TARGET").withSourceRelTypeKey("TYPE", Set("A"))
       val df = session.createDataFrame(Seq((1, 1, 1, true))).toDF("ID", "SOURCE", "TARGET", "TYPE")
-      CAPSRelationshipTable(relMapping, df)
+      CAPSRelationshipTable.fromMapping(relMapping, df)
     }
   }
 
@@ -156,7 +171,7 @@ class EntityTableTest extends CAPSTestSuite {
     an[IllegalArgumentException] should be thrownBy {
       val df = session.createDataFrame(Seq((1, true, BigDecimal(13.37)))).toDF("ID", "IS_A", "PROP")
       val nodeMapping = NodeMapping.on("ID").withOptionalLabel("A" -> "IS_A").withPropertyKey("PROP")
-      CAPSNodeTable(nodeMapping, df)
+      CAPSNodeTable.fromMapping(nodeMapping, df)
     }
   }
 

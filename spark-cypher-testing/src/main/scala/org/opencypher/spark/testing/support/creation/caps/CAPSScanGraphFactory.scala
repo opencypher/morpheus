@@ -43,16 +43,20 @@ import scala.collection.JavaConverters._
 
 object CAPSScanGraphFactory extends CAPSTestGraphFactory {
 
+  val tableEntityIdKey = s"___$sourceIdKey"
+
   override def apply(propertyGraph: InMemoryTestGraph)(implicit caps: CAPSSession): CAPSGraph = {
+
+  override def apply(propertyGraph: TestGraph)(implicit caps: CAPSSession): CAPSGraph = {
     val schema = computeSchema(propertyGraph).asCaps
 
     val nodeScans = schema.labelCombinations.combos.map { labels =>
       val propKeys = schema.nodeKeys(labels)
 
-      val idStructField = Seq(StructField(sourceIdKey, LongType, nullable = false))
+      val idStructField = Seq(StructField(tableEntityIdKey, LongType, nullable = false))
       val structType = StructType(idStructField ++ getPropertyStructFields(propKeys))
 
-      val header = Seq(sourceIdKey) ++ propKeys.keys
+      val header = Seq(tableEntityIdKey) ++ propKeys.keys
       val rows = propertyGraph.nodes
         .filter(_.labels == labels)
         .map { node =>
@@ -65,7 +69,7 @@ object CAPSScanGraphFactory extends CAPSTestGraphFactory {
       val records = caps.sparkSession.createDataFrame(rows.asJava, structType).toDF(header: _*)
 
       CAPSNodeTable.fromMapping(NodeMapping
-        .on(sourceIdKey)
+        .on(tableEntityIdKey)
         .withImpliedLabels(labels.toSeq: _*)
         .withPropertyKeys(propKeys.keys.toSeq: _*), records)
     }
@@ -74,12 +78,12 @@ object CAPSScanGraphFactory extends CAPSTestGraphFactory {
       val propKeys = schema.relationshipKeys(relType)
 
       val idStructFields = Seq(
-        StructField(sourceIdKey, LongType, nullable = false),
+        StructField(tableEntityIdKey, LongType, nullable = false),
         StructField(sourceStartNodeKey, LongType, nullable = false),
         StructField(sourceEndNodeKey, LongType, nullable = false))
       val structType = StructType(idStructFields ++ getPropertyStructFields(propKeys))
 
-      val header = Seq(sourceIdKey, sourceStartNodeKey, sourceEndNodeKey) ++ propKeys.keys
+      val header = Seq(tableEntityIdKey, sourceStartNodeKey, sourceEndNodeKey) ++ propKeys.keys
       val rows = propertyGraph.relationships
         .filter(_.relType == relType)
         .map { rel =>
@@ -89,8 +93,8 @@ object CAPSScanGraphFactory extends CAPSTestGraphFactory {
 
       val records = caps.sparkSession.createDataFrame(rows.asJava, structType).toDF(header: _*)
 
-      CAPSRelationshipTable(RelationshipMapping
-        .on(sourceIdKey)
+      CAPSRelationshipTable.fromMapping(RelationshipMapping
+        .on(tableEntityIdKey)
         .from(sourceStartNodeKey)
         .to(sourceEndNodeKey)
         .relType(relType)
