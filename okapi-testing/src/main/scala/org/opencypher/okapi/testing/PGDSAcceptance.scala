@@ -28,11 +28,10 @@ package org.opencypher.okapi.testing
 
 import org.opencypher.okapi.api.graph._
 import org.opencypher.okapi.api.io.PropertyGraphDataSource
-import org.opencypher.okapi.api.schema.{LabelPropertyMap, RelTypePropertyMap, Schema}
-import org.opencypher.okapi.api.types.{CTInteger, CTString}
+import org.opencypher.okapi.api.schema.Schema
+import org.opencypher.okapi.api.types.{CTBoolean, CTInteger, CTString}
 import org.opencypher.okapi.api.value.CypherValue.{CypherMap, CypherNull}
 import org.opencypher.okapi.impl.exception.{GraphAlreadyExistsException, GraphNotFoundException}
-import org.opencypher.okapi.impl.schema.SchemaImpl
 import org.opencypher.okapi.testing.Bag._
 import org.opencypher.okapi.testing.propertygraph.{TestGraph, TestGraphFactory}
 import org.scalatest.BeforeAndAfterEach
@@ -45,11 +44,16 @@ trait PGDSAcceptance[Session <: CypherSession] extends BeforeAndAfterEach {
   val createStatements: String =
     """
       |CREATE (a:A { name: 'A' })
-      |CREATE (b:B { prop: 'B' })
-      |CREATE (combo:A:B { name: 'COMBO', size: 2 })
-      |CREATE (a)-[:R { since: 2004 }]->(b)
-      |CREATE (b)-[:R { since: 2005 }]->(combo)
-      |CREATE (combo)-[:S { since: 2006 }]->(combo)
+      |CREATE (b1:B { type: 'B1' })
+      |CREATE (b2:B { type: 'B2', size: 5 })
+      |CREATE (combo1:A:B { name: 'COMBO1', type: 'AB1', size: 2 })
+      |CREATE (combo2:A:B { name: 'COMBO2', type: 'AB2' })
+      |CREATE (c:C { name: 'C' })
+      |CREATE (ac:A:C { name: 'AC' })
+      |CREATE (a)-[:R { since: 2004 }]->(b1)
+      |CREATE (b1)-[:R { since: 2005, before: false }]->(combo1)
+      |CREATE (combo1)-[:S { since: 2006 }]->(combo1)
+      |CREATE (ac)-[:T]->(combo2)
     """.stripMargin
 
   lazy val testGraph = TestGraphFactory(createStatements)
@@ -80,7 +84,7 @@ trait PGDSAcceptance[Session <: CypherSession] extends BeforeAndAfterEach {
   }
 
   it("supports `graph`") {
-    cypherSession.catalog.source(ns).graph(gn).nodes("n").size shouldBe 3
+    cypherSession.catalog.source(ns).graph(gn).nodes("n").size shouldBe 7
     intercept[GraphNotFoundException] {
       cypherSession.catalog.source(ns).graph(GraphName("foo"))
     }
@@ -93,10 +97,15 @@ trait PGDSAcceptance[Session <: CypherSession] extends BeforeAndAfterEach {
   }
 
   it("supports schema") {
-    val schema: Schema = SchemaImpl(
-      LabelPropertyMap(Map(Set("A") -> Map("name" -> CTString), Set("B") -> Map("prop" -> CTString), Set("A", "B") -> Map("size" -> CTInteger, "name" -> CTString))),
-      RelTypePropertyMap(Map("R" -> Map("since" -> CTInteger), "S" -> Map("since" -> CTInteger)))
-    )
+    val schema = Schema.empty
+      .withNodePropertyKeys("A")("name" -> CTString)
+      .withNodePropertyKeys("B")("type" -> CTString, "size" -> CTInteger.nullable)
+      .withNodePropertyKeys("A", "B")("name" -> CTString, "type" -> CTString, "size" -> CTInteger.nullable)
+      .withNodePropertyKeys("C")("name" -> CTString)
+      .withNodePropertyKeys("A", "C")("name" -> CTString)
+      .withRelationshipPropertyKeys("R")("since" -> CTInteger, "before" -> CTBoolean.nullable)
+      .withRelationshipPropertyKeys("S")("since" -> CTInteger)
+      .withRelationshipPropertyKeys("T")()
 
     cypherSession.catalog.source(ns).schema(gn) match {
       case Some(s) =>
@@ -114,22 +123,30 @@ trait PGDSAcceptance[Session <: CypherSession] extends BeforeAndAfterEach {
 
     g.cypher("MATCH (a:A) RETURN a.name").getRecords.iterator.toBag should equal(Bag(
       CypherMap("a.name" -> "A"),
-      CypherMap("a.name" -> "COMBO")
+      CypherMap("a.name" -> "COMBO1"),
+      CypherMap("a.name" -> "COMBO2"),
+      CypherMap("a.name" -> "AC")
     ))
   }
 
   it("supports queries through Cypher") {
-    cypherSession.cypher(s"FROM GRAPH $ns.$gn MATCH (b:B) RETURN b.prop").getRecords.iterator.toBag should equal(Bag(
-      CypherMap("b.prop" -> "B"),
-      CypherMap("b.prop" -> CypherNull)
+    cypherSession.cypher(s"FROM GRAPH $ns.$gn MATCH (b:B) RETURN b.type, b.size").getRecords.iterator.toBag should equal(Bag(
+      CypherMap("b.type" -> "B1", "b.size" -> CypherNull),
+      CypherMap("b.type" -> "B2", "b.size" -> 5),
+      CypherMap("b.type" -> "AB1", "b.size" -> 2),
+      CypherMap("b.type" -> "AB2", "b.size" -> CypherNull)
     ))
   }
 
   it("supports scans over multiple labels") {
-    cypherSession.cypher(s"FROM GRAPH $ns.$gn MATCH (a) RETURN a.name, a.size").getRecords.iterator.toBag should equal(Bag(
-      CypherMap("a.name" -> "A", "a.size" -> CypherNull),
-      CypherMap("a.name" -> CypherNull, "a.size" -> CypherNull),
-      CypherMap("a.name" -> "COMBO", "a.size" -> 2)
+    cypherSession.cypher(s"FROM GRAPH $ns.$gn MATCH (n) RETURN n.name, n.size").getRecords.iterator.toBag should equal(Bag(
+      CypherMap("n.name" -> "A", "n.size" -> CypherNull),
+      CypherMap("n.name" -> "C", "n.size" -> CypherNull),
+      CypherMap("n.name" -> "AC", "n.size" -> CypherNull),
+      CypherMap("n.name" -> "COMBO1", "n.size" -> 2),
+      CypherMap("n.name" -> "COMBO2", "n.size" -> CypherNull),
+      CypherMap("n.name" -> CypherNull, "n.size" -> 5),
+      CypherMap("n.name" -> CypherNull, "n.size" -> CypherNull)
     ))
   }
 
@@ -146,7 +163,7 @@ trait PGDSAcceptance[Session <: CypherSession] extends BeforeAndAfterEach {
         withClue("`hasGraph` needs to return `true` after graph creation") {
           cypherSession.catalog.source(ns).hasGraph(GraphName(s"${gn}2")) shouldBe true
         }
-        cypherSession.catalog.graph(s"$ns.${gn}2").nodes("n").size shouldBe 3
+        cypherSession.catalog.graph(s"$ns.${gn}2").nodes("n").size shouldBe 7
 
         a [GraphAlreadyExistsException] shouldBe thrownBy {
           cypherSession.cypher(s"CREATE GRAPH $ns.$gn { RETURN GRAPH }")
@@ -161,7 +178,7 @@ trait PGDSAcceptance[Session <: CypherSession] extends BeforeAndAfterEach {
       s"""
          |CREATE GRAPH $ns.${gn}3 {
          |  CONSTRUCT ON $ns.$gn
-         |    NEW (c: C { name: 'C' })
+         |    NEW (c:C { name: 'new' })
          |  RETURN GRAPH
          |}
          |""".stripMargin)) match {
@@ -171,7 +188,9 @@ trait PGDSAcceptance[Session <: CypherSession] extends BeforeAndAfterEach {
         }
         val result = cypherSession.cypher(s"FROM GRAPH $ns.${gn}3 MATCH (c:C) RETURN c.name").getRecords.iterator.toBag
         result should equal(Bag(
-          CypherMap("c.name" -> "C")
+          CypherMap("c.name" -> "C"),
+          CypherMap("c.name" -> "AC"),
+          CypherMap("c.name" -> "new")
         ))
       case Failure(_: UnsupportedOperationException) =>
       case Failure(t) => badFailure(t)
@@ -208,7 +227,7 @@ trait PGDSAcceptance[Session <: CypherSession] extends BeforeAndAfterEach {
     val firstConstructedGraphName = GraphName("first")
     val secondConstructedGraphName = GraphName("second")
     val graph = cypherSession.catalog.source(ns).graph(gn)
-    graph.nodes("n").size shouldBe 3
+    graph.nodes("n").size shouldBe 7
     val firstConstructedGraph = graph.cypher(
       s"""
          |CONSTRUCT
@@ -216,14 +235,14 @@ trait PGDSAcceptance[Session <: CypherSession] extends BeforeAndAfterEach {
          |  NEW (:A {name: "A"})
          |  RETURN GRAPH
         """.stripMargin).getGraph
-    firstConstructedGraph.nodes("n").size shouldBe 4
+    firstConstructedGraph.nodes("n").size shouldBe 8
     val maybeStored = Try(cypherSession.catalog.source(ns).store(firstConstructedGraphName, firstConstructedGraph))
     maybeStored match {
       case Failure(_: UnsupportedOperationException) =>
       case Failure(f) => badFailure(f)
       case Success(_) =>
         val retrievedConstructedGraph = cypherSession.catalog.source(ns).graph(firstConstructedGraphName)
-        retrievedConstructedGraph.nodes("n").size shouldBe 4
+        retrievedConstructedGraph.nodes("n").size shouldBe 8
         val secondConstructedGraph = graph.cypher(
           s"""
              |CONSTRUCT
@@ -231,10 +250,10 @@ trait PGDSAcceptance[Session <: CypherSession] extends BeforeAndAfterEach {
              |  NEW (:A:B {name: "COMBO", size: 2})
              |  RETURN GRAPH
         """.stripMargin).getGraph
-        secondConstructedGraph.nodes("n").size shouldBe 5
+        secondConstructedGraph.nodes("n").size shouldBe 9
         cypherSession.catalog.source(ns).store(secondConstructedGraphName, secondConstructedGraph)
         val retrievedSecondConstructedGraph = cypherSession.catalog.source(ns).graph(secondConstructedGraphName)
-        retrievedSecondConstructedGraph.nodes("n").size shouldBe 5
+        retrievedSecondConstructedGraph.nodes("n").size shouldBe 9
     }
   }
 
@@ -262,7 +281,7 @@ case class SingleGraphDataSource(graphName: GraphName, graph: PropertyGraph) ext
   }
 
   override def graph(name: GraphName): PropertyGraph = {
-    if (name == graphName) graph else throw new GraphNotFoundException(s"Graph $name not found")
+    if (name == graphName) graph else throw GraphNotFoundException(s"Graph $name not found")
   }
 
   override def schema(name: GraphName): Option[Schema] = ???
