@@ -12,7 +12,7 @@
 
   <artifactId>spark-cypher-testing</artifactId>
 
-  <name>Test module for CAPS</name>
+  <name>Cypher for Apache Spark - Test Utilities</name>
 
   <properties>
     <project.rootdir>${project.parent.basedir}</project.rootdir>

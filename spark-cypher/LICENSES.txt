@@ -12,15 +12,11 @@ Apache Software License, Version 2.0
   Circe parser
   core
   coreJVM
-  Neo4j - Cypher Expressions 3.4
-  Neo4j - Cypher Util 3.4
-  Neo4j Java Driver
   Okapi - openCypher API
   Okapi IR - Declarative representation of Cypher queries
   Okapi Logical - Logical representation of Cypher queries
   Okapi Relational - Relational Algebra for Cypher
   Okapi Trees - Tree rewriting framework for Okapi
-  openCypher Frontend
   parboiled-core
   parboiled-scala
 ------------------------------------------------------------------------------

@@ -133,7 +133,7 @@
             <includedScopes>compile</includedScopes>
             <excludedScopes>test provided</excludedScopes>
             <!-- A bunch of dependencies that come from neo4j-harness -->
-            <excludedGroups>^((com.sun.jersey){1}|(org.apache.xbean){1})$</excludedGroups>
+            <excludedGroups>^((com.sun.jersey){1}|(org.apache.xbean){1}|(org.neo4j(.*)?){1})$</excludedGroups>
             <excludedArtifacts>
               <!-- Dependencies that come from test scope -->
               ^((jersey-guice)|(jaxb-impl)|(jaxb-api)|(stax-api))$

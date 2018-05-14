@@ -41,7 +41,7 @@
       <scope>test</scope>
     </dependency>
 
-    <!--Workarounds-->
+    <!--Workarounds for https://youtrack.jetbrains.com/issue/SCL-13184-->
 
     <dependency>
       <groupId>org.opencypher</groupId>

@@ -30,7 +30,7 @@ import org.opencypher.okapi.api.value.CypherValue.CypherMap
 import org.opencypher.okapi.testing.Bag._
 import org.opencypher.okapi.testing.{Bag, BaseTestSuite}
 
-class CreateQueryFactory extends BaseTestSuite {
+class CreateQueryFactoryTest extends BaseTestSuite {
 
   test("parse single node create statement") {
     val graph = CreateGraphFactory(
