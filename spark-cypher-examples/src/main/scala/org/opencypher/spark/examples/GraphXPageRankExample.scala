@@ -67,7 +67,7 @@ object GraphXPageRankExample extends ConsoleApp {
   val ranks = graph.pageRank(0.0001).vertices //.join(graphXNodeRDD).map { case (_, (rank, name)) => name -> rank }
 
   // 6) Convert RDD to DataFrame
-  val rankTable: SparkTable = session.sparkSession.createDataFrame(ranks)
+  val rankTable = session.sparkSession.createDataFrame(ranks)
     .withColumnRenamed("_1", "id")
     .withColumnRenamed("_2", "rank")
 

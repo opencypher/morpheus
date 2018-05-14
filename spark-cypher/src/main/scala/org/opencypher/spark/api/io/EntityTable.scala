@@ -148,9 +148,16 @@ object CAPSNodeTable {
     fromMapping(nodeMapping, nodeDF)
   }
 
-  def fromMapping(mapping: NodeMapping, initialTable: SparkTable): CAPSNodeTable = {
+  /**
+    * Creates a node table from the given [[NodeMapping]] and [[DataFrame]].
+    *
+    * @param mapping      node mapping
+    * @param initialTable node data
+    * @return a node table
+    */
+  def fromMapping(mapping: NodeMapping, initialTable: DataFrame): CAPSNodeTable = {
     val colsToSelect = mapping.allSourceKeys
-    CAPSNodeTable(mapping, initialTable.df.select(colsToSelect.head, colsToSelect.tail: _*))
+    CAPSNodeTable(mapping, initialTable.select(colsToSelect.head, colsToSelect.tail: _*))
   }
 
   private def properties(nodeColumnNames: Seq[String]): Set[String] = {
@@ -202,9 +209,16 @@ object CAPSRelationshipTable {
     fromMapping(relationshipMapping, relationshipDF)
   }
 
-  def fromMapping(mapping: RelationshipMapping, initialTable: SparkTable): CAPSRelationshipTable = {
+  /**
+    * Creates a relationship table from the given [[RelationshipMapping]] and [[DataFrame]].
+    *
+    * @param mapping      relationship mapping
+    * @param initialTable node data
+    * @return a relationship table
+    */
+  def fromMapping(mapping: RelationshipMapping, initialTable: DataFrame): CAPSRelationshipTable = {
     val colsToSelect = mapping.allSourceKeys
-    CAPSRelationshipTable(mapping, initialTable.df.select(colsToSelect.head, colsToSelect.tail: _*))
+    CAPSRelationshipTable(mapping, initialTable.select(colsToSelect.head, colsToSelect.tail: _*))
   }
 
   private def properties(relColumnNames: Seq[String]): Set[String] = {
@@ -214,6 +228,10 @@ object CAPSRelationshipTable {
 
 /**
   * A node table describes how to map an input data frame to a Cypher node.
+  *
+  * A node table needs to have the canonical column ordering specified by [[EntityMapping#allSourceKeys]].
+  * The easiest way to transform the table to a canonical column ordering is to use one of the constructors on the
+  * companion object.
   *
   * @param mapping mapping from input data description to a Cypher node
   * @param table   input data frame
@@ -242,6 +260,10 @@ abstract class NodeTable[T <: CypherTable[String]](mapping: NodeMapping, table: 
 
 /**
   * A relationship table describes how to map an input data frame to a Cypher relationship.
+  *
+  * A relationship table needs to have the canonical column ordering specified by [[EntityMapping#allSourceKeys]].
+  * The easiest way to transform the table to a canonical column ordering is to use one of the constructors on the
+  * companion object.
   *
   * @param mapping mapping from input data description to a Cypher relationship
   * @param table   input data frame
