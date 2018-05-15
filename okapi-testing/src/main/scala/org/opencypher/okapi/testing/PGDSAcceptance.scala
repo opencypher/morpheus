@@ -197,6 +197,28 @@ trait PGDSAcceptance[Session <: CypherSession] extends BeforeAndAfterEach {
     }
   }
 
+  it("supports European Latin unicode labels, rel types, property keys, and property values") {
+    Try(cypherSession.cypher(
+      s"""
+         |CREATE GRAPH $ns.${gn}4 {
+         |  CONSTRUCT
+         |    NEW (:Āſ { Āſ: 'Āſ' })-[:Āſ]->()
+         |  RETURN GRAPH
+         |}
+         |""".stripMargin)) match {
+      case Success(_) =>
+        withClue("`hasGraph` needs to return `true` after graph creation") {
+          cypherSession.catalog.source(ns).hasGraph(GraphName(s"${gn}4")) shouldBe true
+        }
+        val result = cypherSession.cypher(s"FROM GRAPH $ns.${gn}4 MATCH (c:Āſ)-[:Āſ]-() RETURN c.Āſ").getRecords.iterator.toBag
+        result should equal(Bag(
+          CypherMap("c.Āſ" -> "Āſ")
+        ))
+      case Failure(_: UnsupportedOperationException) =>
+      case Failure(t) => badFailure(t)
+    }
+  }
+
   it("supports storing a union graph") {
     cypherSession.cypher("CREATE GRAPH g1 { CONSTRUCT NEW () RETURN GRAPH }")
     cypherSession.cypher("CREATE GRAPH g2 { CONSTRUCT NEW () RETURN GRAPH }")
