@@ -11,7 +11,7 @@ import org.opencypher.spark.impl.CAPSGraph
 
 object CAPSGraphExport {
 
-  // TODO: Add prefixes for labels/properties to avoid collisions, ensure Cypher names are appropriateli encoded/decoded for Spark column name compatibility.
+  // TODO: Add prefixes for labels/properties to avoid collisions, ensure Cypher names are appropriately encoded/decoded for Spark column name compatibility.
   implicit class CanonicalTableSparkSchema(val schema: Schema) extends AnyVal {
 
     import org.opencypher.spark.impl.convert.CAPSCypherType._
