@@ -1,15 +1,8 @@
 package org.opencypher.spark.api.io.fs
 
-import java.io._
-import java.nio.file.{Files, Path => NioPath}
-
-import org.apache.commons.io.FileUtils
-import org.apache.hadoop.fs.{FileSystem, Path => HDFSPath}
 import org.opencypher.spark.api.CAPSSession
 
-import scala.collection.JavaConverters._
-
-trait FileSystemAdapter[Path] {
+trait FileSystemOperations[Path] {
 
   implicit val session: CAPSSession
 
@@ -22,7 +15,3 @@ trait FileSystemAdapter[Path] {
   protected def writeFile(path: Path, content: String): Unit
 
 }
-
-
-
-

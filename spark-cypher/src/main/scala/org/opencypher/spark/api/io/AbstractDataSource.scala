@@ -16,6 +16,8 @@ import scala.util.Try
 
 abstract class AbstractDataSource(implicit session: CAPSSession) extends CAPSPropertyGraphDataSource {
 
+  def tableStorageFormat: String
+
   protected var schemaCache: Map[GraphName, CAPSSchema] = Map.empty
 
   protected var graphNameCache: Set[GraphName] = listGraphNames.map(GraphName).toSet
@@ -32,9 +34,9 @@ abstract class AbstractDataSource(implicit session: CAPSSession) extends CAPSPro
 
   protected def writeCAPSGraphMetaData(graphName: GraphName, capsGraphMetaData: CAPSGraphMetaData): Unit
 
-  protected def readNodeTable(graphName: GraphName, labels: Set[String], sparkSchema: StructType): DataFrame
+  protected def readNodeTable(graphName: GraphName, tableStorageFormat: String, labels: Set[String], sparkSchema: StructType): DataFrame
 
-  protected def writeNodeTable(graphName: GraphName, labels: Set[String], table: DataFrame): Unit
+  protected def writeNodeTable(graphName: GraphName, tableStorageFormat: String, labels: Set[String], table: DataFrame): Unit
 
   protected def readRelationshipTable(graphName: GraphName, relKey: String, sparkSchema: StructType): DataFrame
 
@@ -59,7 +61,7 @@ abstract class AbstractDataSource(implicit session: CAPSSession) extends CAPSPro
           case (_, cypherType) => cypherType.isNullable
         }.keySet
         val nonNullableColumns = nonNullableProperties + GraphEntity.sourceIdKey
-        val df = readNodeTable(graphName, combo, capsSchema.canonicalNodeTableSchema(combo))
+        val df = readNodeTable(graphName, capsMetaData.tableStorageFormat, combo, capsSchema.canonicalNodeTableSchema(combo))
         CAPSNodeTable(combo, df.setNonNullable(nonNullableColumns))
       }
 
@@ -94,11 +96,11 @@ abstract class AbstractDataSource(implicit session: CAPSSession) extends CAPSPro
     val schema = capsGraph.schema
     schemaCache += graphName -> schema
     graphNameCache += graphName
-    writeCAPSGraphMetaData(graphName, CAPSGraphMetaData(capsGraph.tags))
+    writeCAPSGraphMetaData(graphName, CAPSGraphMetaData(tableStorageFormat, capsGraph.tags))
     writeSchema(graphName, schema)
 
     schema.labelCombinations.combos.foreach { combo =>
-      writeNodeTable(graphName, combo, capsGraph.canonicalNodeTable(combo))
+      writeNodeTable(graphName, tableStorageFormat, combo, capsGraph.canonicalNodeTable(combo))
     }
 
     schema.relationshipTypes.foreach { relType =>
