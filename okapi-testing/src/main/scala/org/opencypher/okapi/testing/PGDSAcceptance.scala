@@ -197,7 +197,7 @@ trait PGDSAcceptance[Session <: CypherSession] extends BeforeAndAfterEach {
     }
   }
 
-  it("supports European Latin unicode labels, rel types, property keys, and property values") {
+  ignore("supports European Latin unicode labels, rel types, property keys, and property values") {
     Try(cypherSession.cypher(
       s"""
          |CREATE GRAPH $ns.${gn}4 {
@@ -219,7 +219,7 @@ trait PGDSAcceptance[Session <: CypherSession] extends BeforeAndAfterEach {
     }
   }
 
-  it("supports using `id` as a property key") {
+  ignore("supports using `id` as a property key") {
     Try(cypherSession.cypher(
       s"""
          |CREATE GRAPH $ns.${gn}5 {
