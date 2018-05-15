@@ -8,7 +8,7 @@ import org.opencypher.spark.impl.io.CAPSPropertyGraphDataSource
 class MultipleFilesPerTableDataSourceAcceptance extends HdfsDataSourceAcceptance {
 
   override protected def createDs(graph: CAPSGraph): CAPSPropertyGraphDataSource = {
-    new FileBasedDataSource("hdfs:///", "csv", Some(10))
+    new FileBasedDataSource("hdfs:///", "csv",  filesPerTable = Some(10))
   }
 
 }

@@ -7,7 +7,7 @@ import org.opencypher.spark.impl.io.CAPSPropertyGraphDataSource
 object CsvDataSource {
 
   def apply(rootPath: String)(implicit session: CAPSSession): CAPSPropertyGraphDataSource = {
-    new FileBasedDataSource(rootPath, "csv", Some(10))
+    new FileBasedDataSource(rootPath, "csv")
   }
 
 }
