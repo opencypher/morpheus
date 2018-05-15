@@ -34,7 +34,7 @@ private[io] class FileBasedDataSource(rootPath: String, val tableStorageFormat: 
   }
 
   protected def readFile(path: String): String = {
-    using(new BufferedReader(new InputStreamReader(fileSystem.open(new Path(path))))) { reader =>
+    using(new BufferedReader(new InputStreamReader(fileSystem.open(new Path(path)), "UTF-8"))) { reader =>
       def readLines = Stream.cons(reader.readLine(), Stream.continually(reader.readLine))
       readLines.takeWhile(_ != null).mkString
     }
