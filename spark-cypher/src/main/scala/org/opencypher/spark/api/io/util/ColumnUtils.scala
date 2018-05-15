@@ -6,7 +6,11 @@ object ColumnUtils {
 
   val propertyPrefix: String = "property#"
 
-  implicit class StringConversion(val s: String) extends AnyVal {
+  implicit class CharOps(val c: Char) extends AnyVal {
+    def isAscii: Boolean = c.toInt <= 127
+  }
+
+  implicit class StringOps(val s: String) extends AnyVal {
 
     def toPropertyColumnName: String = {
       s"$propertyPrefix${s.encodeToSQLCompatible}"
@@ -24,7 +28,7 @@ object ColumnUtils {
 
     def encodeToSQLCompatible: String = {
       s.flatMap {
-        case c if c.isLetterOrDigit => Seq(c)
+        case c if c.isLetterOrDigit && c.isAscii => Seq(c)
         case u@'_' => Seq(u)
         case h@'#' => Seq(h)
         case special: Char =>

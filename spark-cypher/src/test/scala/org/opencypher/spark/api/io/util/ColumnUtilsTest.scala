@@ -13,7 +13,7 @@ class ColumnUtilsTest extends FunSpec with GeneratorDrivenPropertyChecks with Ma
       val decoded = encoded.decodeFromSQLCompatible
       s should equal(decoded)
       encoded.forall { c =>
-        c.isLetterOrDigit || c == '_' || c == '#' || c == '@'
+        (c.isLetterOrDigit && c.isAscii) || c == '_' || c == '#' || c == '@'
       }
     }
   }
