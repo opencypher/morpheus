@@ -31,7 +31,6 @@ import org.opencypher.okapi.api.io.conversion.NodeMapping
 import org.opencypher.spark.api.CAPSSession
 import org.opencypher.spark.api.CAPSSession._
 import org.opencypher.spark.api.io.CAPSNodeTable
-import org.opencypher.spark.api.io.EntityTable.SparkTable
 
 /**
   * Round trip CAPS -> GraphX -> CAPS
@@ -67,13 +66,13 @@ object GraphXPageRankExample extends ConsoleApp {
   val ranks = graph.pageRank(0.0001).vertices //.join(graphXNodeRDD).map { case (_, (rank, name)) => name -> rank }
 
   // 6) Convert RDD to DataFrame
-  val rankTable: SparkTable = session.sparkSession.createDataFrame(ranks)
+  val rankTable = session.sparkSession.createDataFrame(ranks)
     .withColumnRenamed("_1", "id")
     .withColumnRenamed("_2", "rank")
 
   // 7) Create property graph from rank data
   val ranksNodeMapping = NodeMapping.on("id").withPropertyKey("rank")
-  val rankNodes = session.readFrom(CAPSNodeTable(ranksNodeMapping, rankTable))
+  val rankNodes = session.readFrom(CAPSNodeTable.fromMapping(ranksNodeMapping, rankTable))
 
   // 8) Mount both graphs in the session
   session.catalog.store("ranks", rankNodes)

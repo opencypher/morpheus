@@ -135,7 +135,7 @@ class CAPSScanGraph(val scans: Seq[CAPSEntityTable], val schema: CAPSSchema, val
             val filteredDf = sparkTable.df
               .filter(typeColumn === functions.lit(relType))
               .drop(typeColumnName)
-            CAPSRelationshipTable(relMapping.copy(relTypeOrSourceRelTypeKey = Left(relType)), filteredDf)
+            CAPSRelationshipTable.fromMapping(relMapping.copy(relTypeOrSourceRelTypeKey = Left(relType)), filteredDf)
         }
       case other => Seq(other)
     }.toVector)

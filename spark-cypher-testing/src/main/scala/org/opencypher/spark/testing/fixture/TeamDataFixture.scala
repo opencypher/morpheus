@@ -169,7 +169,7 @@ trait TeamDataFixture extends TestDataFixture {
       (4L, false, "Stefan", 9L))
   ).toDF("ID", "IS_SWEDE", "NAME", "NUM")
 
-  lazy val personTable = CAPSNodeTable(personMapping, personDF)
+  lazy val personTable = CAPSNodeTable.fromMapping(personMapping, personDF)
 
   private lazy val knowsMapping: RelationshipMapping = RelationshipMapping
     .on("ID").from("SRC").to("DST").relType("KNOWS").withPropertyKey("since" -> "SINCE")
@@ -185,7 +185,7 @@ trait TeamDataFixture extends TestDataFixture {
       (3L, 6L, 4L, 2016L))
   ).toDF("SRC", "ID", "DST", "SINCE")
 
-  lazy val knowsTable = CAPSRelationshipTable(knowsMapping, knowsDF)
+  lazy val knowsTable = CAPSRelationshipTable.fromMapping(knowsMapping, knowsDF)
 
   private lazy val programmerMapping = NodeMapping
     .on("ID")
@@ -203,7 +203,7 @@ trait TeamDataFixture extends TestDataFixture {
       (400L, "Carl", 49L, "R")
     )).toDF("ID", "NAME", "NUM", "LANG")
 
-  lazy val programmerTable = CAPSNodeTable(programmerMapping, programmerDF)
+  lazy val programmerTable = CAPSNodeTable.fromMapping(programmerMapping, programmerDF)
 
   private lazy val brogrammerMapping = NodeMapping
     .on("ID")
@@ -220,7 +220,7 @@ trait TeamDataFixture extends TestDataFixture {
     )).toDF("ID", "LANG")
 
   // required to test conflicting input data
-  lazy val brogrammerTable = CAPSNodeTable(brogrammerMapping, brogrammerDF)
+  lazy val brogrammerTable = CAPSNodeTable.fromMapping(brogrammerMapping, brogrammerDF)
 
   private lazy val bookMapping = NodeMapping
     .on("ID")
@@ -236,7 +236,7 @@ trait TeamDataFixture extends TestDataFixture {
       (40L, "The Circle", 2013L)
     )).toDF("ID", "NAME", "YEAR")
 
-  lazy val bookTable = CAPSNodeTable(bookMapping, bookDF)
+  lazy val bookTable = CAPSNodeTable.fromMapping(bookMapping, bookDF)
 
   private lazy val readsMapping = RelationshipMapping
     .on("ID").from("SRC").to("DST").relType("READS").withPropertyKey("recommends" -> "RECOMMENDS")
@@ -249,7 +249,7 @@ trait TeamDataFixture extends TestDataFixture {
       (400L, 400L, 20L, false)
     )).toDF("SRC", "ID", "DST", "RECOMMENDS")
 
-  lazy val readsTable = CAPSRelationshipTable(readsMapping, readsDF)
+  lazy val readsTable = CAPSRelationshipTable.fromMapping(readsMapping, readsDF)
 
   private lazy val influencesMapping = RelationshipMapping
     .on("ID").from("SRC").to("DST").relType("INFLUENCES")
@@ -257,5 +257,5 @@ trait TeamDataFixture extends TestDataFixture {
   private lazy val influencesDF: DataFrame = caps.sparkSession.createDataFrame(
     Seq((10L, 1000L, 20L))).toDF("SRC", "ID", "DST")
 
-  lazy val influencesTable = CAPSRelationshipTable(influencesMapping, influencesDF)
+  lazy val influencesTable = CAPSRelationshipTable.fromMapping(influencesMapping, influencesDF)
 }

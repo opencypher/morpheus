@@ -84,7 +84,7 @@ class CAPSScanGraphTest extends CAPSGraphTest {
   }
 
   test("dont lose schema information when mapping") {
-    val nodes = CAPSNodeTable(NodeMapping.on("id"),
+    val nodes = CAPSNodeTable.fromMapping(NodeMapping.on("id"),
       caps.sparkSession.createDataFrame(
         Seq(
           Tuple1(10L),
@@ -99,7 +99,7 @@ class CAPSScanGraphTest extends CAPSGraphTest {
         )
       ).toDF("id"))
 
-    val rs = CAPSRelationshipTable(RelationshipMapping.on("ID").from("SRC").to("DST").relType("FOO"),
+    val rs = CAPSRelationshipTable.fromMapping(RelationshipMapping.on("ID").from("SRC").to("DST").relType("FOO"),
       caps.sparkSession.createDataFrame(
         Seq(
           (10L, 1000L, 20L),
@@ -190,19 +190,19 @@ class CAPSScanGraphTest extends CAPSGraphTest {
       (0L, "A")
     )).toDF("_node_id", "name").withColumn("size", functions.lit(null))
     val aMapping: NodeMapping = NodeMapping.create("_node_id").withPropertyKey("name").withPropertyKey("size").withImpliedLabel("A")
-    val aTable = CAPSNodeTable(aMapping, aDf)
+    val aTable = CAPSNodeTable.fromMapping(aMapping, aDf)
 
     val bDf = caps.sparkSession.createDataFrame(Seq(
       (1L, "B")
     )).toDF("_node_id", "name").withColumn("size", functions.lit(null))
     val bMapping = NodeMapping.create("_node_id").withPropertyKey("name").withPropertyKey("size").withImpliedLabel("B")
-    val bTable = CAPSNodeTable(bMapping, bDf)
+    val bTable = CAPSNodeTable.fromMapping(bMapping, bDf)
 
     val comboDf = caps.sparkSession.createDataFrame(Seq(
       (2L, "COMBO", 2)
     )).toDF("_node_id", "name", "size")
     val comboMapping = NodeMapping.create("_node_id").withPropertyKey("name").withPropertyKey("size").withImpliedLabels("A", "B")
-    val comboTable = CAPSNodeTable(comboMapping, comboDf)
+    val comboTable = CAPSNodeTable.fromMapping(comboMapping, comboDf)
 
     val graph = CAPSGraph.create(aTable, bTable, comboTable)
 

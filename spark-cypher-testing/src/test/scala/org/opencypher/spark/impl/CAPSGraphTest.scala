@@ -86,7 +86,7 @@ abstract class CAPSGraphTest extends CAPSTestSuite with GraphConstructionFixture
         (6L, false, "Hannes", 42L))
     ).toDF("ID", "IS_SWEDE", "NAME", "NUM")
 
-    val personTable2 = CAPSNodeTable(personTable.mapping, personsPart2)
+    val personTable2 = CAPSNodeTable.fromMapping(personTable.mapping, personsPart2)
 
     val graph = CAPSGraph.create(personTable, personTable2)
     graph.nodes("n").size shouldBe 6
@@ -100,7 +100,7 @@ abstract class CAPSGraphTest extends CAPSTestSuite with GraphConstructionFixture
         (1L, 8L, 3L, 2016L))
     ).toDF("SRC", "ID", "DST", "SINCE")
 
-    val knowsTable2 = CAPSRelationshipTable(knowsTable.mapping, knowsParts2)
+    val knowsTable2 = CAPSRelationshipTable.fromMapping(knowsTable.mapping, knowsParts2)
 
     val graph = CAPSGraph.create(personTable, knowsTable, knowsTable2)
     graph.relationships("r").size shouldBe 8
@@ -128,7 +128,7 @@ abstract class CAPSGraphTest extends CAPSTestSuite with GraphConstructionFixture
       .to("DST")
       .withSourceRelTypeKey("TYPE", Set("HATES", "LOVES"))
 
-    val relTable = CAPSRelationshipTable(relMapping, yingYang)
+    val relTable = CAPSRelationshipTable.fromMapping(relMapping, yingYang)
 
     val graph = CAPSGraph.create(personTable, relTable)
 

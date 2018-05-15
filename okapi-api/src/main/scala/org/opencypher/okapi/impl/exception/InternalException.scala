@@ -41,8 +41,14 @@ final case class NotImplementedException(msg: String) extends InternalException(
 
 final case class IllegalStateException(msg: String) extends InternalException(msg)
 
-final case class IllegalArgumentException(expected: Any, actual: Any = "none")
-  extends InternalException(s"\nExpected:\n\t$expected\nFound:\n\t$actual")
+final case class IllegalArgumentException(expected: Any, actual: Any = "none", explanation: String = "")
+  extends InternalException(
+    s"""
+       |${if (explanation.nonEmpty) s"Explanation:\n\t$explanation\n"}
+       |Expected:
+       |\t$expected
+       |Found:
+       |\t$actual""".stripMargin)
 
 final case class UnsupportedOperationException(msg: String) extends InternalException(msg)
 

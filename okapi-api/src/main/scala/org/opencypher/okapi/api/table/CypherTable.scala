@@ -67,12 +67,15 @@ object CypherTable {
       * @param expectedType excepted data type
       */
     def verifyColumnType(columnKey: K, expectedType: CypherType, keyDescription: String): Unit = {
-      val columnType = table.columnType(columnKey)
+      val columnType = table.columnType.getOrElse(columnKey, throw IllegalArgumentException(
+        s"table with column key $columnKey",
+        s"table with columns ${table.columns.mkString(", ")}"))
+
       if (!columnType.subTypeOf(expectedType).isTrue) {
         if (columnType.material == expectedType.material) {
           throw IllegalArgumentException(
-            s"a non-nullable type for $keyDescription column `$columnKey`",
-            "a nullable type")
+            s"non-nullable type for $keyDescription column `$columnKey`",
+            "nullable type")
         } else {
           throw IllegalArgumentException(
             s"$keyDescription column `$columnKey` of type $expectedType",

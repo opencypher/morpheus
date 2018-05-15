@@ -116,7 +116,7 @@ class CsvGraphLoader(fileHandler: CsvFileHandler)(implicit capsSession: CAPSSess
         case (currentDF, structField) => currentDF.setNonNullable(structField.name)
       }
 
-      CAPSNodeTable(nodeMapping, dfWithCorrectNullability)
+      CAPSNodeTable.fromMapping(nodeMapping, dfWithCorrectNullability)
     })
   }
 
@@ -148,7 +148,7 @@ class CsvGraphLoader(fileHandler: CsvFileHandler)(implicit capsSession: CAPSSess
         case (currentDF, structField) => currentDF.setNonNullable(structField.name)
       }
 
-      CAPSRelationshipTable(relMapping, dfWithCorrectNullability)
+      CAPSRelationshipTable.fromMapping(relMapping, dfWithCorrectNullability)
     })
   }
 
