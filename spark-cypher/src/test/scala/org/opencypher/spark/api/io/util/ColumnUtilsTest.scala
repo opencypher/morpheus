@@ -7,13 +7,13 @@ import ColumnUtils._
 
 class ColumnUtilsTest extends FunSpec with GeneratorDrivenPropertyChecks with Matchers {
 
-  it("encodes arbitrary strings with only letters, digits, underscores, and 'at' symbols") {
+  it("encodes arbitrary strings with only letters, digits, underscores, hashes, and 'at' symbols") {
     forAll { s: String =>
       val encoded = s.encodeToSQLCompatible
       val decoded = encoded.decodeFromSQLCompatible
       s should equal(decoded)
       encoded.forall { c =>
-        c.isLetterOrDigit || c == '_' || c == '@'
+        c.isLetterOrDigit || c == '_' || c == '#' || c == '@'
       }
     }
   }

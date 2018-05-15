@@ -2,14 +2,31 @@ package org.opencypher.spark.api.io.util
 
 import scala.annotation.tailrec
 
-object ColumnUtils extends App {
+object ColumnUtils {
+
+  val propertyPrefix: String = "property#"
 
   implicit class StringConversion(val s: String) extends AnyVal {
+
+    def toPropertyColumnName: String = {
+      s"$propertyPrefix${s.encodeToSQLCompatible}"
+    }
+
+    def isPropertyColumnName: Boolean = s.startsWith(propertyPrefix)
+
+    def toProperty: String = {
+      if (s.isPropertyColumnName) {
+        s.drop(propertyPrefix.length).decodeFromSQLCompatible
+      } else {
+        s
+      }
+    }
 
     def encodeToSQLCompatible: String = {
       s.flatMap {
         case c if c.isLetterOrDigit => Seq(c)
         case u@'_' => Seq(u)
+        case h@'#' => Seq(h)
         case special: Char =>
           "@" + special.toHexString.padOnLeft(4)
       }.mkString

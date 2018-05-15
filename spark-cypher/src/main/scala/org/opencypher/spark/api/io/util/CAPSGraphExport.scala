@@ -6,20 +6,19 @@ import org.opencypher.okapi.api.schema.Schema
 import org.opencypher.okapi.api.types.CTRelationship
 import org.opencypher.okapi.ir.api.expr.Var
 import org.opencypher.okapi.relational.impl.table.ColumnName
+import org.opencypher.spark.api.io.util.ColumnUtils._
 import org.opencypher.spark.api.io.{GraphEntity, Relationship}
 import org.opencypher.spark.impl.CAPSGraph
+import org.opencypher.spark.impl.convert.CAPSCypherType._
 
 object CAPSGraphExport {
 
-  // TODO: Add prefixes for labels/properties to avoid collisions, ensure Cypher names are appropriately encoded/decoded for Spark column name compatibility.
   implicit class CanonicalTableSparkSchema(val schema: Schema) extends AnyVal {
-
-    import org.opencypher.spark.impl.convert.CAPSCypherType._
 
     def canonicalNodeTableSchema(labels: Set[String]): StructType = {
       val id = StructField(GraphEntity.sourceIdKey, LongType, nullable = false)
       val properties = schema.nodeKeys(labels).toSeq.sortBy(_._1).map { case (propertyName, cypherType) =>
-        StructField(propertyName, cypherType.getSparkType, cypherType.isNullable)
+        StructField(propertyName.toPropertyColumnName, cypherType.getSparkType, cypherType.isNullable)
       }
       StructType(id +: properties)
     }
@@ -29,7 +28,7 @@ object CAPSGraphExport {
       val sourceId = StructField(Relationship.sourceStartNodeKey, LongType, nullable = false)
       val targetId = StructField(Relationship.sourceEndNodeKey, LongType, nullable = false)
       val properties = schema.relationshipKeys(relType).toSeq.sortBy(_._1).map { case (propertyName, cypherType) =>
-        StructField(propertyName, cypherType.getSparkType, cypherType.isNullable)
+        StructField(propertyName.toPropertyColumnName, cypherType.getSparkType, cypherType.isNullable)
       }
       StructType(id +: sourceId +: targetId +: properties)
     }
@@ -43,7 +42,7 @@ object CAPSGraphExport {
 
       val idRenaming = varName -> GraphEntity.sourceIdKey
       val propertyRenamings = nodeRecords.header.propertySlots(Var(varName)())
-        .map { case (p, slot) => ColumnName.of(slot) -> p.key.name }
+        .map { case (p, slot) => ColumnName.of(slot) -> p.key.name.toPropertyColumnName }
 
       val selectColumns = (idRenaming :: propertyRenamings.toList.sorted).map {
         case (oldName, newName) => nodeRecords.data.col(oldName).as(newName)
@@ -63,7 +62,7 @@ object CAPSGraphExport {
       val sourceIdRenaming = ColumnName.of(relRecords.header.sourceNodeSlot(v)) -> Relationship.sourceStartNodeKey
       val targetIdRenaming = ColumnName.of(relRecords.header.targetNodeSlot(v)) -> Relationship.sourceEndNodeKey
       val propertyRenamings = relRecords.header.propertySlots(Var(varName)())
-        .map { case (p, slot) => ColumnName.of(slot) -> p.key.name }
+        .map { case (p, slot) => ColumnName.of(slot) -> p.key.name.toPropertyColumnName }
 
       val selectColumns = (idRenaming :: sourceIdRenaming :: targetIdRenaming :: propertyRenamings.toList.sorted).map {
         case (oldName, newName) => relRecords.data.col(oldName).as(newName)

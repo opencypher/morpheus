@@ -37,6 +37,7 @@ import org.opencypher.okapi.api.value.CypherValue.CypherValue
 import org.opencypher.okapi.impl.exception.IllegalArgumentException
 import org.opencypher.spark.api.CAPSSession
 import org.opencypher.spark.api.io.EntityTable.SparkTable
+import org.opencypher.spark.api.io.util.ColumnUtils._
 import org.opencypher.spark.impl.CAPSRecords
 import org.opencypher.spark.impl.DataFrameOps._
 import org.opencypher.spark.impl.util.Annotation
@@ -143,8 +144,14 @@ object CAPSNodeTable {
     * @return a node table with inferred node mapping
     */
   def apply(impliedLabels: Set[String], optionalLabels: Map[String, String], nodeDF: DataFrame): CAPSNodeTable = {
-    val nodeProperties = (properties(nodeDF.columns) -- optionalLabels.values).map(col => col -> col).toMap
-    val nodeMapping = NodeMapping(GraphEntity.sourceIdKey, impliedLabels, optionalLabels, nodeProperties)
+    val propertyColumnNames = properties(nodeDF.columns) -- optionalLabels.values
+
+    val baseMapping = NodeMapping(GraphEntity.sourceIdKey, impliedLabels, optionalLabels)
+
+    val nodeMapping = propertyColumnNames.foldLeft(baseMapping) { (mapping, propertyColumn) =>
+      mapping.withPropertyKey(propertyColumn.toProperty, propertyColumn)
+    }
+
     fromMapping(nodeMapping, nodeDF)
   }
 
@@ -193,18 +200,24 @@ object CAPSRelationshipTable {
     * [[Relationship.sourceEndNodeKey]]. All remaining columns are interpreted as relationship property columns, the
     * column name is used as property key.
     *
+    * Column names prefixed with `property#` are decoded by [[org.opencypher.spark.api.io.util.ColumnUtils]] to
+    * recover the original property name.
+    *
     * @param relationshipType relationship type
     * @param relationshipDF   relationship data
     * @return a relationship table with inferred relationship mapping
     */
   def apply(relationshipType: String, relationshipDF: DataFrame): CAPSRelationshipTable = {
-    val relationshipProperties = properties(relationshipDF.columns)
+    val propertyColumnNames = properties(relationshipDF.columns)
 
-    val relationshipMapping = RelationshipMapping.create(GraphEntity.sourceIdKey,
+    val baseMapping = RelationshipMapping.create(GraphEntity.sourceIdKey,
       Relationship.sourceStartNodeKey,
       Relationship.sourceEndNodeKey,
-      relationshipType,
-      relationshipProperties)
+      relationshipType)
+
+    val relationshipMapping = propertyColumnNames.foldLeft(baseMapping) { (mapping, propertyColumn) =>
+      mapping.withPropertyKey(propertyColumn.toProperty, propertyColumn)
+    }
 
     fromMapping(relationshipMapping, relationshipDF)
   }
@@ -232,6 +245,9 @@ object CAPSRelationshipTable {
   * A node table needs to have the canonical column ordering specified by [[EntityMapping#allSourceKeys]].
   * The easiest way to transform the table to a canonical column ordering is to use one of the constructors on the
   * companion object.
+  *
+  * Column names prefixed with `property#` are decoded by [[org.opencypher.spark.api.io.util.ColumnUtils]] to
+  * recover the original property name.
   *
   * @param mapping mapping from input data description to a Cypher node
   * @param table   input data frame
