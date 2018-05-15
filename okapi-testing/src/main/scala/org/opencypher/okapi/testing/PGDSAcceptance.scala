@@ -219,6 +219,28 @@ trait PGDSAcceptance[Session <: CypherSession] extends BeforeAndAfterEach {
     }
   }
 
+  it("supports using `id` as a property key") {
+    Try(cypherSession.cypher(
+      s"""
+         |CREATE GRAPH $ns.${gn}5 {
+         |  CONSTRUCT
+         |    NEW ({ id: 100 })
+         |  RETURN GRAPH
+         |}
+         |""".stripMargin)) match {
+      case Success(_) =>
+        withClue("`hasGraph` needs to return `true` after graph creation") {
+          cypherSession.catalog.source(ns).hasGraph(GraphName(s"${gn}5")) shouldBe true
+        }
+        val result = cypherSession.cypher(s"FROM GRAPH $ns.${gn}5 MATCH (c) RETURN c.id").getRecords.iterator.toBag
+        result should equal(Bag(
+          CypherMap("c.id" -> 100)
+        ))
+      case Failure(_: UnsupportedOperationException) =>
+      case Failure(t) => badFailure(t)
+    }
+  }
+
   it("supports storing a union graph") {
     cypherSession.cypher("CREATE GRAPH g1 { CONSTRUCT NEW () RETURN GRAPH }")
     cypherSession.cypher("CREATE GRAPH g2 { CONSTRUCT NEW () RETURN GRAPH }")
