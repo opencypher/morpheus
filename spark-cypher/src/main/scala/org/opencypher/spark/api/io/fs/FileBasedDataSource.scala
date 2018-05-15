@@ -11,7 +11,11 @@ import org.opencypher.spark.api.io.AbstractDataSource
 import org.opencypher.spark.api.io.json.JsonSerialization
 import org.opencypher.spark.api.io.util.FileSystemUtils._
 
-private[io] class FileBasedDataSource(rootPath: String, val tableStorageFormat: String)(implicit session: CAPSSession)
+private[io] class FileBasedDataSource(
+  rootPath: String,
+  val tableStorageFormat: String,
+  filesPerTable: Option[Int] = Some(1)
+)(implicit session: CAPSSession)
   extends AbstractDataSource with JsonSerialization {
 
   protected val directoryStructure = DefaultGraphDirectoryStructure(rootPath)
@@ -36,6 +40,7 @@ private[io] class FileBasedDataSource(rootPath: String, val tableStorageFormat: 
   protected def readFile(path: String): String = {
     using(new BufferedReader(new InputStreamReader(fileSystem.open(new Path(path)), "UTF-8"))) { reader =>
       def readLines = Stream.cons(reader.readLine(), Stream.continually(reader.readLine))
+
       readLines.takeWhile(_ != null).mkString
     }
   }
@@ -53,7 +58,11 @@ private[io] class FileBasedDataSource(rootPath: String, val tableStorageFormat: 
   }
 
   protected def writeTable(path: String, tableStorageFormat: String, table: DataFrame): Unit = {
-    table.write.format(tableStorageFormat).save(path)
+    val coalescedTable = filesPerTable match {
+      case None => table
+      case Some(numFiles) => table.coalesce(numFiles)
+    }
+    coalescedTable.write.format(tableStorageFormat).save(path)
   }
 
   override protected def listGraphNames: List[String] = {
