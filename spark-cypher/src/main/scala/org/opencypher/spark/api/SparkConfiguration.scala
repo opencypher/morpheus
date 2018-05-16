@@ -28,7 +28,7 @@ package org.opencypher.spark.api
 
 import org.opencypher.okapi.impl.configuration.ConfigOption
 
-object SparkConfiguration extends App {
+object SparkConfiguration {
 
   object MasterAddress extends ConfigOption("caps.master", "local[*]")(Some(_))
 
