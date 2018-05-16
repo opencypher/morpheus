@@ -56,6 +56,8 @@ object DefaultGraphDirectoryStructure {
 
   val pathSeparator = "/"
 
+  val tableName = "table"
+
 }
 
 case class DefaultGraphDirectoryStructure(dataSourceRootPath: String) extends GraphDirectoryStructure {
@@ -75,11 +77,11 @@ case class DefaultGraphDirectoryStructure(dataSourceRootPath: String) extends Gr
   }
 
   override def pathToNodeTable(graphName: GraphName, labels: Set[String]): String = {
-    dataSourceRootPath / graphName.path / "nodes" / labels.toSeq.sorted.mkString("_")
+    dataSourceRootPath / graphName.path / "nodes" / labels.toSeq.sorted.mkString("_") / tableName
   }
 
   override def pathToRelationshipTable(graphName: GraphName, relKey: String): String = {
-    dataSourceRootPath / graphName.path / "relationships" / relKey
+    dataSourceRootPath / graphName.path / "relationships" / relKey / tableName
   }
 
 }
