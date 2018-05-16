@@ -29,7 +29,7 @@ package org.opencypher.spark.impl.encoders
 import org.apache.spark.sql.Encoders._
 import org.apache.spark.sql.catalyst.encoders.ExpressionEncoder
 import org.opencypher.okapi.api.value.CypherValue._
-import org.opencypher.okapi.api.value._
+import org.opencypher.spark.api.value.{CAPSNode, CAPSRelationship}
 
 trait CypherValueEncoders extends LowPriorityCypherValueEncoders {
   implicit def cypherNodeEncoder: ExpressionEncoder[CAPSNode] = kryo[CAPSNode]

@@ -27,7 +27,7 @@
 package org.opencypher.spark.impl
 
 import org.opencypher.okapi.api.graph.{Namespace, QualifiedGraphName}
-import org.opencypher.okapi.api.value.CAPSNode
+import org.opencypher.spark.api.value.CAPSNode
 import org.opencypher.okapi.api.value.CypherValue.CypherMap
 import org.opencypher.okapi.impl.io.SessionGraphDataSource
 import org.opencypher.okapi.testing.Bag

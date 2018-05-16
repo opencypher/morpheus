@@ -24,7 +24,7 @@
  * described as "implementation extensions to Cypher" or as "proposed changes to
  * Cypher that are not yet approved by the openCypher community".
  */
-package org.opencypher.okapi.api.value
+package org.opencypher.spark.api.value
 
 import org.opencypher.okapi.api.value.CypherValue._
 

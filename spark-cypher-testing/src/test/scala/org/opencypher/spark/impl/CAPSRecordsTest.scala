@@ -29,7 +29,7 @@ package org.opencypher.spark.impl
 import org.apache.spark.sql.{DataFrame, Row}
 import org.opencypher.okapi.api.io.conversion.{NodeMapping, RelationshipMapping}
 import org.opencypher.okapi.api.types._
-import org.opencypher.okapi.api.value.CAPSNode
+import org.opencypher.spark.api.value.CAPSNode
 import org.opencypher.okapi.api.value.CypherValue._
 import org.opencypher.okapi.impl.exception.InternalException
 import org.opencypher.okapi.ir.api.expr._

@@ -33,6 +33,7 @@ import org.opencypher.okapi.api.value._
 import org.opencypher.okapi.impl.exception.UnsupportedOperationException
 import org.opencypher.okapi.ir.api.expr.Var
 import org.opencypher.okapi.relational.impl.table.{ColumnName, RecordHeader}
+import org.opencypher.spark.api.value.{CAPSNode, CAPSRelationship}
 
 final case class rowToCypherMap(header: RecordHeader) extends (Row => CypherMap) {
   override def apply(row: Row): CypherMap = {

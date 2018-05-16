@@ -27,7 +27,7 @@
 package org.opencypher.spark.examples
 
 import org.apache.spark.sql.Dataset
-import org.opencypher.okapi.api.value.CAPSNode
+import org.opencypher.spark.api.value.CAPSNode
 import org.opencypher.okapi.api.value.CypherValue.CypherMap
 import org.opencypher.spark.api.CAPSSession
 import org.opencypher.spark.api.CAPSSession._
