@@ -310,7 +310,11 @@ sealed abstract class CAPSRecords(val header: RecordHeader, val data: DataFrame)
             case _: HasLabel => functions.lit(false)
             case _: Type if entityLabels.size == 1 => functions.lit(entityLabels.head)
             case _ =>
-              require(targetSlot.content.cypherType.isNullable, s"Cannot align by adding a NULL column, because the type for '${targetSlot.content.key}' is non-nullable")
+              if (targetSlot.content.cypherType.isNullable) {
+                throw UnsupportedOperationException(
+                  s"Cannot align scan on $v by adding a NULL column, because the type for '${targetSlot.content.key}' is non-nullable"
+                )
+              }
               functions.lit(null).cast(targetSlot.content.cypherType.getSparkType)
           }
           content.as(targetColName)
