@@ -1,0 +1,25 @@
+{
+  "labelPropertyMap" : {
+    "Person" : {
+      "name" : {
+        "CTStringOrNull" : {
+          
+        }
+      },
+      "age" : {
+        "CTInteger" : {
+          
+        }
+      }
+    }
+  },
+  "relTypePropertyMap" : {
+    "FRIEND_OF" : {
+      "since" : {
+        "CTStringOrNull" : {
+          
+        }
+      }
+    }
+  }
+}
