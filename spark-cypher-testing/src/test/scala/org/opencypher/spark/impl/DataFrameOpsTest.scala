@@ -26,8 +26,8 @@
  */
 package org.opencypher.spark.impl
 
-import org.opencypher.spark.api.SparkConfiguration._
 import org.opencypher.spark.api.Tags
+import org.opencypher.spark.api.Tags.tagBits
 import org.opencypher.spark.impl.DataFrameOps._
 import org.opencypher.spark.testing.CAPSTestSuite
 import org.scalatest.Matchers
@@ -88,7 +88,7 @@ class DataFrameOpsTest extends CAPSTestSuite with Matchers with GeneratorDrivenP
   }
 
   def toTag(n: Int) = (n & Int.MaxValue) % 1000
-  def toId(n: Int) = (n & Int.MaxValue) >>> Tags.tagBits
+  def toId(n: Int) = (n & Int.MaxValue) >>> tagBits
 
   it("sets tags - Scala") {
     forAll { (n1: Int, n2: Int) =>
