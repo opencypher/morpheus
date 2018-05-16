@@ -95,11 +95,11 @@ class CypherTypesTest extends FunSpec with Matchers {
       CTFloat -> ("FLOAT" -> "FLOAT?"),
       CTMap -> ("MAP" -> "MAP?"),
       CTNode -> ("NODE" -> "NODE?"),
-      CTNode("Person") -> (":Person NODE" -> ":Person NODE?"),
-      CTNode("Person", "Employee") -> (":Person:Employee NODE" -> ":Person:Employee NODE?"),
+      CTNode("Person") -> ("NODE(:Person)" -> "NODE(:Person)?"),
+      CTNode("Person", "Employee") -> ("NODE(:Person:Employee)" -> "NODE(:Person:Employee)?"),
       CTRelationship -> ("RELATIONSHIP" -> "RELATIONSHIP?"),
-      CTRelationship("KNOWS") -> (":KNOWS RELATIONSHIP" -> ":KNOWS RELATIONSHIP?"),
-      CTRelationship("KNOWS", "LOVES") -> (":KNOWS|LOVES RELATIONSHIP" -> ":KNOWS|LOVES RELATIONSHIP?"),
+      CTRelationship("KNOWS") -> ("RELATIONSHIP(:KNOWS)" -> "RELATIONSHIP(:KNOWS)?"),
+      CTRelationship("KNOWS", "LOVES") -> ("RELATIONSHIP(:KNOWS|LOVES)" -> "RELATIONSHIP(:KNOWS|LOVES)?"),
       CTPath -> ("PATH" -> "PATH?"),
       CTList(CTInteger) -> ("LIST OF INTEGER" -> "LIST? OF INTEGER"),
       CTList(CTInteger.nullable) -> ("LIST OF INTEGER?" -> "LIST? OF INTEGER?"),
@@ -113,6 +113,12 @@ class CypherTypesTest extends FunSpec with Matchers {
 
     CTVoid.toString shouldBe "VOID"
     CTNull.toString shouldBe "NULL"
+  }
+
+  it("can parse CypherType names into CypherTypes"){
+    allTypes.foreach { t =>
+      CypherType.fromName(t.name).get should equal(t)
+    }
   }
 
   it("RELATIONSHIP type") {
