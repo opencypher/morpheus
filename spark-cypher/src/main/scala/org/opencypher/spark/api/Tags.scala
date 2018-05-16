@@ -61,7 +61,7 @@ object Tags {
     } else {
       val maxUsed = usedTags.max
       if (maxUsed < maxTag) {
-        usedTags.max + 1
+        maxUsed + 1
       } else {
         val availableTags = allTags -- usedTags
         if (availableTags.nonEmpty) {
