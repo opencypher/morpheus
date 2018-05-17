@@ -26,6 +26,7 @@
  */
 package org.opencypher.okapi.api.types
 
+import org.opencypher.okapi.api.graph.QualifiedGraphName
 import org.scalatest.{FunSpec, Matchers}
 
 import scala.language.postfixOps
@@ -95,11 +96,13 @@ class CypherTypesTest extends FunSpec with Matchers {
       CTFloat -> ("FLOAT" -> "FLOAT?"),
       CTMap -> ("MAP" -> "MAP?"),
       CTNode -> ("NODE" -> "NODE?"),
-      CTNode("Person") -> (":Person NODE" -> ":Person NODE?"),
-      CTNode("Person", "Employee") -> (":Person:Employee NODE" -> ":Person:Employee NODE?"),
+      CTNode("Person") -> ("NODE(:Person)" -> "NODE(:Person)?"),
+      CTNode("Person", "Employee") -> ("NODE(:Person:Employee)" -> "NODE(:Person:Employee)?"),
+      CTNode(Set("Person"), Some(QualifiedGraphName("foo.bar"))) -> ("NODE(:Person) @ foo.bar" -> "NODE(:Person) @ foo.bar?"),
       CTRelationship -> ("RELATIONSHIP" -> "RELATIONSHIP?"),
-      CTRelationship("KNOWS") -> (":KNOWS RELATIONSHIP" -> ":KNOWS RELATIONSHIP?"),
-      CTRelationship("KNOWS", "LOVES") -> (":KNOWS|LOVES RELATIONSHIP" -> ":KNOWS|LOVES RELATIONSHIP?"),
+      CTRelationship(Set("KNOWS")) -> ("RELATIONSHIP(:KNOWS)" -> "RELATIONSHIP(:KNOWS)?"),
+      CTRelationship(Set("KNOWS", "LOVES")) -> ("RELATIONSHIP(:KNOWS|LOVES)" -> "RELATIONSHIP(:KNOWS|LOVES)?"),
+      CTRelationship(Set("KNOWS"), Some(QualifiedGraphName("foo.bar"))) -> ("RELATIONSHIP(:KNOWS) @ foo.bar" -> "RELATIONSHIP(:KNOWS) @ foo.bar?"),
       CTPath -> ("PATH" -> "PATH?"),
       CTList(CTInteger) -> ("LIST OF INTEGER" -> "LIST? OF INTEGER"),
       CTList(CTInteger.nullable) -> ("LIST OF INTEGER?" -> "LIST? OF INTEGER?"),
@@ -113,6 +116,12 @@ class CypherTypesTest extends FunSpec with Matchers {
 
     CTVoid.toString shouldBe "VOID"
     CTNull.toString shouldBe "NULL"
+  }
+
+  it("can parse CypherType names into CypherTypes"){
+    allTypes.foreach { t =>
+      CypherType.fromName(t.name).get should equal(t)
+    }
   }
 
   it("RELATIONSHIP type") {

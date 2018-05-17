@@ -34,6 +34,58 @@ import scala.language.postfixOps
 
 object CypherType {
 
+  /**
+    * Parses the name of CypherType into the actual CypherType object.
+    *
+    * @param name string representation of the CypherType
+    * @return
+    * @see {{{org.opencypher.okapi.api.types.CypherType#name}}}
+    */
+  def fromName(name: String): Option[CypherType] = {
+    def extractLabels(s: String, typ: String, sep: String): Set[String] = {
+      val regex = s"""$typ\\(:(.+)\\).?""".r
+      s match {
+        case regex(l) => l.split(sep).toSet
+        case _ => Set.empty[String]
+      }
+    }
+
+    val graphRegex = """\@ (.+)\\??\$""".r
+    def extractGraph(s: String): Option[QualifiedGraphName] = s match {
+      case graphRegex(g) => Some(QualifiedGraphName(g))
+      case _ => None
+    }
+
+    val noneNullType = name match {
+      case "STRING"  | "STRING?"  => Some(CTString)
+      case "INTEGER" | "INTEGER?" => Some(CTInteger)
+      case "FLOAT"   | "FLOAT?"   => Some(CTFloat)
+      case "NUMBER"  | "NUMBER?"  => Some(CTNumber)
+      case "BOOLEAN" | "BOOLEAN?" => Some(CTBoolean)
+      case "ANY"     | "ANY?"     => Some(CTAny)
+      case "VOID"    | "VOID?"    => Some(CTVoid)
+      case "NULL"    | "NULL?"    => Some(CTNull)
+      case "MAP"     | "MAP?"     => Some(CTMap)
+      case "PATH"    | "PATH?"    => Some(CTPath)
+      case "?"       | "??"       => Some(CTWildcard)
+
+      case node if node.startsWith("NODE") =>
+        Some(CTNode(extractLabels(node, "NODE", ":"), extractGraph(node)))
+
+      case rel if rel.startsWith("RELATIONSHIP") =>
+        Some(CTRelationship(extractLabels(rel, "RELATIONSHIP", """\|"""), extractGraph(rel)))
+
+      case list if list.startsWith("LIST") =>
+        CypherType
+          .fromName(list.replaceFirst("""LIST\?? OF """,""))
+          .map(CTList)
+
+      case _ => None
+    }
+
+    noneNullType.map(ct => if(name == ct.name) ct else ct.nullable)
+  }
+
   implicit class TypeCypherValue(cv: CypherValue) {
     def cypherType: CypherType = {
       cv match {
@@ -158,12 +210,12 @@ case object CTMap extends MaterialDefiniteCypherType with MaterialDefiniteCypher
   }
 }
 
-object CTNode extends CTNode(Set.empty[String], None) with Serializable {
-  def apply(labels: String*)(implicit graph: Option[QualifiedGraphName] = None): CTNode =
-    if (labels.isEmpty && graph.isEmpty) this else CTNode(labels.toSet, graph)
+object CTNode extends CTNode(Set.empty, None) with Serializable {
+  def apply(labels: String*): CTNode =
+    CTNode(labels.toSet)
 
   def apply(labels: Set[String]): CTNode =
-    if (labels.isEmpty) this else CTNode(labels, None)
+    CTNode(labels, None)
 }
 
 sealed case class CTNode(
@@ -173,13 +225,12 @@ sealed case class CTNode(
 
   self =>
 
-  private def graphToString = graph.map(_.graphName).map(n => s" @ $n").getOrElse("")
+  private def graphToString = graph.map(n => s" @ $n").getOrElse("")
 
   final override def name: String =
-    if (labels.isEmpty) s"NODE$graphToString" else s"${labels.mkString(":", ":", "")} NODE$graphToString"
+    if (labels.isEmpty) s"NODE$graphToString" else s"NODE(${labels.mkString(":", ":", "")})$graphToString"
 
-  final override def nullable: CTNodeOrNull =
-    if (labels.isEmpty) CTNodeOrNull else CTNodeOrNull(labels)
+  final override def nullable: CTNodeOrNull = CTNodeOrNull(labels, graph)
 
   final override def superTypeOf(other: CypherType): Ternary = other match {
     case CTNode(otherLabels, _) => Ternary(labels subsetOf otherLabels)
@@ -205,24 +256,29 @@ sealed case class CTNode(
   override def withGraph(qgn: QualifiedGraphName): CypherType = copy(graph = Some(qgn))
 }
 
-object CTNodeOrNull extends CTNodeOrNull(Set.empty) with Serializable {
+object CTNodeOrNull extends CTNodeOrNull(Set.empty, None) with Serializable {
   def apply(labels: String*): CTNodeOrNull =
-    if (labels.isEmpty) this else CTNodeOrNull(labels.toSet)
+    CTNodeOrNull(labels.toSet)
+
+  def apply(labels: Set[String]): CTNodeOrNull =
+    CTNodeOrNull(labels, None)
 }
 
-sealed case class CTNodeOrNull(labels: Set[String]) extends NullableDefiniteCypherType {
+sealed case class CTNodeOrNull(
+  labels: Set[String],
+  override val graph: Option[QualifiedGraphName]
+) extends NullableDefiniteCypherType {
   final override def name = s"$material?"
 
-  final override def material: CTNode =
-    if (labels.isEmpty) CTNode else CTNode(labels)
+  final override def material: CTNode = CTNode(labels, graph)
 }
 
 object CTRelationship extends CTRelationship(Set.empty, None) with Serializable {
-  def apply(types: String*)(implicit graph: Option[QualifiedGraphName] = None): CTRelationship =
-    if (types.isEmpty && graph.isEmpty) this else CTRelationship(types.toSet, graph)
+  def apply(types: String*): CTRelationship =
+    CTRelationship(types.toSet)
 
   def apply(types: Set[String]): CTRelationship =
-    if (types.isEmpty) this else CTRelationship(types, None)
+    CTRelationship(types, None)
 }
 
 sealed case class CTRelationship(
@@ -232,13 +288,13 @@ sealed case class CTRelationship(
 
   self =>
 
-  private def graphToString = graph.map(_.graphName).map(n => s" @ $n").getOrElse("")
+  private def graphToString = graph.map(n => s" @ $n").getOrElse("")
 
   final override def name: String =
-    if (types.isEmpty) s"RELATIONSHIP$graphToString" else s"${types.map(t => s"$t").mkString(":", "|", "")} RELATIONSHIP$graphToString"
+    if (types.isEmpty) s"RELATIONSHIP$graphToString" else s"RELATIONSHIP(${types.map(t => s"$t").mkString(":", "|", "")})$graphToString"
 
   final override def nullable: CTRelationshipOrNull =
-    if (types.isEmpty) CTRelationshipOrNull else CTRelationshipOrNull(types)
+    CTRelationshipOrNull(types, graph)
 
   final override def superTypeOf(other: CypherType): Ternary = other match {
     case CTRelationship(_, _) if types.isEmpty => True
@@ -278,16 +334,22 @@ sealed case class CTRelationship(
   override def withGraph(qgn: QualifiedGraphName): CypherType = copy(graph = Some(qgn))
 }
 
-object CTRelationshipOrNull extends CTRelationshipOrNull(Set.empty) with Serializable {
+object CTRelationshipOrNull extends CTRelationshipOrNull(Set.empty, None) with Serializable {
   def apply(types: String*): CTRelationshipOrNull =
-    if (types.isEmpty) this else CTRelationshipOrNull(types.toSet)
+   CTRelationshipOrNull(types.toSet)
+
+  def apply(types: Set[String]): CTRelationshipOrNull =
+    CTRelationshipOrNull(types, None)
 }
 
-sealed case class CTRelationshipOrNull(types: Set[String]) extends NullableDefiniteCypherType {
+sealed case class CTRelationshipOrNull(
+  types: Set[String],
+  override val graph: Option[QualifiedGraphName]
+) extends NullableDefiniteCypherType {
   final override def name = s"$material?"
 
   final override def material: CTRelationship =
-    if (types.isEmpty) CTRelationship else CTRelationship(types)
+    CTRelationship(types, graph)
 }
 
 case object CTPath extends MaterialDefiniteCypherLeafType {

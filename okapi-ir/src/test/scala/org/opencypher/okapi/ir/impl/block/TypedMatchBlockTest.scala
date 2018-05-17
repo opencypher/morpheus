@@ -42,9 +42,9 @@ class TypedMatchBlockTest extends IrTestSuite {
 
     typedMatchBlock.outputs(block).map(_.toTypedTuple) should equal(
       Set(
-        "n" -> CTNode("Person", "Foo"),
-        "r" -> CTRelationship("TYPE"),
-        "m" -> CTNode()
+        "n" -> CTNode(Set("Person", "Foo"), Some(testQualifiedGraphName)),
+        "r" -> CTRelationship(Set("TYPE"), Some(testQualifiedGraphName)),
+        "m" -> CTNode(Set.empty[String], Some(testQualifiedGraphName))
       ))
   }
 
@@ -53,9 +53,9 @@ class TypedMatchBlockTest extends IrTestSuite {
 
     typedMatchBlock.outputs(block).map(_.toTypedTuple) should equal(
       Set(
-        "n" -> CTNode("Person", "Foo", "Three"),
-        "r" -> CTRelationship("TYPE"),
-        "m" -> CTNode()
+        "n" -> CTNode(Set("Person", "Foo", "Three"), Some(testQualifiedGraphName)),
+        "r" -> CTRelationship(Set("TYPE"), Some(testQualifiedGraphName)),
+        "m" -> CTNode(Set.empty[String], Some(testQualifiedGraphName))
       ))
   }
 
