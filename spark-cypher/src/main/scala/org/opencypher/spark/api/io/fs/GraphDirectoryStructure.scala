@@ -26,6 +26,7 @@
  */
 package org.opencypher.spark.api.io.fs
 
+import org.apache.hadoop.fs.Path
 import org.opencypher.okapi.api.graph.GraphName
 
 trait GraphDirectoryStructure {
@@ -54,7 +55,7 @@ object DefaultGraphDirectoryStructure {
     def path: String = graphName.value.replace(".", pathSeparator)
   }
 
-  val pathSeparator = "/"
+  val pathSeparator = Path.SEPARATOR
 
 }
 
