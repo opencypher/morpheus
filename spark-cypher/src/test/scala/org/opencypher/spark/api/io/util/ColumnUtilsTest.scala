@@ -29,14 +29,14 @@ package org.opencypher.spark.api.io.util
 import org.scalatest.{FunSpec, Matchers}
 import org.scalatest.prop.GeneratorDrivenPropertyChecks
 
-import ColumnUtils._
+import StringEncodingUtilities._
 
 class ColumnUtilsTest extends FunSpec with GeneratorDrivenPropertyChecks with Matchers {
 
   it("encodes arbitrary strings with only letters, digits, underscores, hashes, and 'at' symbols") {
     forAll { s: String =>
-      val encoded = s.encodeToSQLCompatible
-      val decoded = encoded.decodeFromSQLCompatible
+      val encoded = s.encodeSpecialCharacters
+      val decoded = encoded.decodeSpecialCharacters
       s should equal(decoded)
       encoded.forall { c =>
         (c.isLetterOrDigit && c.isAscii) || c == '_' || c == '#' || c == '@'

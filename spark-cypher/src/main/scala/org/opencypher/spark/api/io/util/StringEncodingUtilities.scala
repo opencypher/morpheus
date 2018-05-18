@@ -28,7 +28,7 @@ package org.opencypher.spark.api.io.util
 
 import scala.annotation.tailrec
 
-object ColumnUtils {
+object StringEncodingUtilities {
 
   val propertyPrefix: String = "property#"
 
@@ -39,20 +39,28 @@ object ColumnUtils {
   implicit class StringOps(val s: String) extends AnyVal {
 
     def toPropertyColumnName: String = {
-      s"$propertyPrefix${s.encodeToSQLCompatible}"
+      s"$propertyPrefix${s.encodeSpecialCharacters}"
     }
 
     def isPropertyColumnName: Boolean = s.startsWith(propertyPrefix)
 
     def toProperty: String = {
       if (s.isPropertyColumnName) {
-        s.drop(propertyPrefix.length).decodeFromSQLCompatible
+        s.drop(propertyPrefix.length).decodeSpecialCharacters
       } else {
         s
       }
     }
 
-    def encodeToSQLCompatible: String = {
+    /**
+      * Encodes special characters in a string.
+      *
+      * The encoded string contains only ASCII letters, numbers, '_', '#', and '@'. The encoded string is compatible
+      * with both SQL column names and file paths.
+      *
+      * @return encoded string
+      */
+    def encodeSpecialCharacters: String = {
       s.flatMap {
         case c if c.isLetterOrDigit && c.isAscii => Seq(c)
         case u@'_' => Seq(u)
@@ -62,7 +70,12 @@ object ColumnUtils {
       }.mkString
     }
 
-    def decodeFromSQLCompatible: String = {
+    /**
+      * Recovers the original string from a string encoded with [[encodeSpecialCharacters]].
+      *
+      * @return original string
+      */
+    def decodeSpecialCharacters: String = {
       val sb = new StringBuilder
       @tailrec def recDecode(remaining: String): Unit = {
         if (remaining.nonEmpty) {

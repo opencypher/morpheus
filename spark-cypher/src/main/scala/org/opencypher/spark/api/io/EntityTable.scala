@@ -37,7 +37,7 @@ import org.opencypher.okapi.api.value.CypherValue.CypherValue
 import org.opencypher.okapi.impl.exception.IllegalArgumentException
 import org.opencypher.spark.api.CAPSSession
 import org.opencypher.spark.api.io.EntityTable.SparkTable
-import org.opencypher.spark.api.io.util.ColumnUtils._
+import org.opencypher.spark.api.io.util.StringEncodingUtilities._
 import org.opencypher.spark.impl.CAPSRecords
 import org.opencypher.spark.impl.DataFrameOps._
 import org.opencypher.spark.impl.util.Annotation
@@ -200,7 +200,7 @@ object CAPSRelationshipTable {
     * [[Relationship.sourceEndNodeKey]]. All remaining columns are interpreted as relationship property columns, the
     * column name is used as property key.
     *
-    * Column names prefixed with `property#` are decoded by [[org.opencypher.spark.api.io.util.ColumnUtils]] to
+    * Column names prefixed with `property#` are decoded by [[org.opencypher.spark.api.io.util.StringEncodingUtilities]] to
     * recover the original property name.
     *
     * @param relationshipType relationship type
@@ -246,7 +246,7 @@ object CAPSRelationshipTable {
   * The easiest way to transform the table to a canonical column ordering is to use one of the constructors on the
   * companion object.
   *
-  * Column names prefixed with `property#` are decoded by [[org.opencypher.spark.api.io.util.ColumnUtils]] to
+  * Column names prefixed with `property#` are decoded by [[org.opencypher.spark.api.io.util.StringEncodingUtilities]] to
   * recover the original property name.
   *
   * @param mapping mapping from input data description to a Cypher node

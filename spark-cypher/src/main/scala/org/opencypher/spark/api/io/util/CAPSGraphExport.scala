@@ -32,7 +32,7 @@ import org.opencypher.okapi.api.schema.Schema
 import org.opencypher.okapi.api.types.CTRelationship
 import org.opencypher.okapi.ir.api.expr.Var
 import org.opencypher.okapi.relational.impl.table.ColumnName
-import org.opencypher.spark.api.io.util.ColumnUtils._
+import org.opencypher.spark.api.io.util.StringEncodingUtilities._
 import org.opencypher.spark.api.io.{GraphEntity, Relationship}
 import org.opencypher.spark.impl.CAPSGraph
 import org.opencypher.spark.impl.convert.CAPSCypherType._

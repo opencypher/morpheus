@@ -28,6 +28,7 @@ package org.opencypher.spark.api.io.fs
 
 import org.apache.hadoop.fs.Path
 import org.opencypher.okapi.api.graph.GraphName
+import org.opencypher.spark.api.io.util.StringEncodingUtilities._
 
 trait GraphDirectoryStructure {
 
@@ -76,11 +77,11 @@ case class DefaultGraphDirectoryStructure(dataSourceRootPath: String) extends Gr
   }
 
   override def pathToNodeTable(graphName: GraphName, labels: Set[String]): String = {
-    dataSourceRootPath / graphName.path / "nodes" / labels.toSeq.sorted.mkString("_")
+    dataSourceRootPath / graphName.path / "nodes" / labels.toSeq.sorted.mkString("_").encodeSpecialCharacters
   }
 
   override def pathToRelationshipTable(graphName: GraphName, relKey: String): String = {
-    dataSourceRootPath / graphName.path / "relationships" / relKey
+    dataSourceRootPath / graphName.path / "relationships" / relKey.encodeSpecialCharacters
   }
 
 }
