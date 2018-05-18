@@ -31,10 +31,10 @@ import cats.data._
 import org.atnos.eff._
 import org.atnos.eff.all._
 import org.atnos.eff.syntax.all._
-import org.neo4j.cypher.internal.v3_4.expressions.Expression
 import org.opencypher.okapi.api.schema.Schema
 import org.opencypher.okapi.api.types._
 import org.opencypher.okapi.ir.impl.exception.TyperException
+import org.opencypher.v9_1.expressions.Expression
 
 package object typer {
 

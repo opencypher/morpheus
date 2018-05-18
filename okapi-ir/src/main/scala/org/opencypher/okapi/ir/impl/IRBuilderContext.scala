@@ -26,9 +26,6 @@
  */
 package org.opencypher.okapi.ir.impl
 
-import org.neo4j.cypher.internal.frontend.v3_4.semantics.SemanticState
-import org.neo4j.cypher.internal.util.v3_4.{InputPosition, Ref}
-import org.neo4j.cypher.internal.v3_4.{expressions => ast}
 import org.opencypher.okapi.api.graph.{Namespace, QualifiedGraphName}
 import org.opencypher.okapi.api.io.PropertyGraphDataSource
 import org.opencypher.okapi.api.schema.Schema
@@ -39,8 +36,11 @@ import org.opencypher.okapi.ir.api.block.SourceBlock
 import org.opencypher.okapi.ir.api.expr.{Expr, Var}
 import org.opencypher.okapi.ir.api.pattern.Pattern
 import org.opencypher.okapi.ir.api.{IRCatalogGraph, IRField, IRGraph}
-import org.opencypher.okapi.ir.impl.typer.exception.TypingException
 import org.opencypher.okapi.ir.impl.typer.{SchemaTyper, TypeTracker}
+import org.opencypher.okapi.ir.impl.typer.exception.TypingException
+import org.opencypher.v9_1.ast.semantics.SemanticState
+import org.opencypher.v9_1.util.{InputPosition, Ref}
+import org.opencypher.v9_1.{expressions => ast}
 
 final case class IRBuilderContext(
   qgnGenerator: QGNGenerator,

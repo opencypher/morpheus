@@ -26,9 +26,9 @@
  */
 package org.opencypher.okapi.ir.impl.parse.rewriter
 
-import org.neo4j.cypher.internal.frontend.v3_4.ast._
-import org.neo4j.cypher.internal.util.v3_4._
-import org.neo4j.cypher.internal.v3_4.expressions.{Property, Variable}
+import org.opencypher.v9_1.ast._
+import org.opencypher.v9_1.expressions.{Property, Variable}
+import org.opencypher.v9_1.util.{FreshIdNameGenerator, Rewriter, bottomUp}
 
 case object normalizeReturnClauses extends Rewriter {
 

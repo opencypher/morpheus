@@ -107,12 +107,5 @@
       <scope>test</scope>
     </dependency>
 
-    <dependency>
-      <groupId>org.neo4j</groupId>
-      <artifactId>openCypher-frontend-1</artifactId>
-      <version>${dep.neo4j.frontend.version}</version>
-      <type>test-jar</type>
-      <scope>test</scope>
-    </dependency>
   </dependencies>
 </project>

@@ -69,9 +69,9 @@
     <dep.eff.version>5.0.0</dep.eff.version>
     <dep.hadoop.version>2.7.0</dep.hadoop.version>
     <dep.neo4j.version>3.4.0-SNAPSHOT</dep.neo4j.version>
-    <dep.neo4j.frontend.version>3.4.0-0412</dep.neo4j.frontend.version>
     <dep.netty.version>4.1.8.Final</dep.netty.version>
     <dep.neo4j.driver.version>1.4.2</dep.neo4j.driver.version>
+    <dep.opencypher.front-end.version>1.0.0-SNAPSHOT</dep.opencypher.front-end.version>
     <dep.spark.version>2.2.1</dep.spark.version>
     <dep.spark.scope>compile</dep.spark.scope>
 
@@ -85,25 +85,6 @@
     <dep.scalatest.version>3.0.5</dep.scalatest.version>
     <dep.scalacheck.version>1.13.5</dep.scalacheck.version>
   </properties>
-
-  <repositories>
-    <repository>
-      <id>Neo4j snapshots</id>
-      <name>Neo4j snapshots repository</name>
-      <url>https://m2.neo4j.org/content/repositories/snapshots</url>
-      <snapshots>
-        <enabled>true</enabled>
-      </snapshots>
-    </repository>
-    <repository>
-      <id>snapshots</id>
-      <name>neo-snapshots</name>
-      <url>https://neo.jfrog.io/neo/opencypher-public</url>
-      <snapshots>
-        <enabled>true</enabled>
-      </snapshots>
-    </repository>
-  </repositories>
 
   <build>
     <resources>

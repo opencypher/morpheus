@@ -27,8 +27,8 @@
 package org.opencypher.okapi.ir.impl.typer
 
 import cats.syntax.show._
-import org.neo4j.cypher.internal.v3_4.expressions.Expression
 import org.opencypher.okapi.api.types._
+import org.opencypher.v9_1.expressions.Expression
 
 sealed trait TyperError
 

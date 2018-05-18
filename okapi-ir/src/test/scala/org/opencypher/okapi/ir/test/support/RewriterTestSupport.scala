@@ -26,11 +26,11 @@
  */
 package org.opencypher.okapi.ir.test.support
 
-import org.neo4j.cypher.internal.frontend.v3_4.ast.{AstConstructionTestSupport, Statement}
-import org.neo4j.cypher.internal.frontend.v3_4.parser.CypherParser
-import org.neo4j.cypher.internal.frontend.v3_4.semantics.SemanticChecker
-import org.neo4j.cypher.internal.util.v3_4.Rewriter
 import org.opencypher.okapi.testing.BaseTestSuite
+import org.opencypher.v9_1.ast.semantics.SemanticChecker
+import org.opencypher.v9_1.ast.{AstConstructionTestSupport, Statement}
+import org.opencypher.v9_1.parser.CypherParser
+import org.opencypher.v9_1.util.Rewriter
 
 import scala.language.implicitConversions
 

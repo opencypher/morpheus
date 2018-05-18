@@ -26,11 +26,7 @@
  */
 package org.opencypher.okapi.ir.impl
 
-import org.neo4j.cypher.internal.frontend.v3_4.semantics.SemanticState
-import org.neo4j.cypher.internal.util.v3_4.{Ref, symbols}
-import org.neo4j.cypher.internal.v3_4.{expressions => ast}
 import org.opencypher.okapi.api.graph.{GraphName, Namespace, QualifiedGraphName}
-import org.opencypher.okapi.api.io._
 import org.opencypher.okapi.api.schema.Schema
 import org.opencypher.okapi.api.types._
 import org.opencypher.okapi.api.value.CypherValue.CypherMap
@@ -40,6 +36,9 @@ import org.opencypher.okapi.ir.test.support.MatchHelper.equalWithTracing
 import org.opencypher.okapi.ir.test.support.Neo4jAstTestSupport
 import org.opencypher.okapi.ir.test.toVar
 import org.opencypher.okapi.testing.BaseTestSuite
+import org.opencypher.v9_1.ast.semantics.SemanticState
+import org.opencypher.v9_1.util.{Ref, symbols}
+import org.opencypher.v9_1.{expressions => ast}
 import org.scalatest.mockito.MockitoSugar
 
 import scala.util.Random
