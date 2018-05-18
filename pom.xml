@@ -88,14 +88,6 @@
 
   <repositories>
     <repository>
-      <id>Neo4j snapshots</id>
-      <name>Neo4j snapshots repository</name>
-      <url>https://m2.neo4j.org/content/repositories/snapshots</url>
-      <snapshots>
-        <enabled>true</enabled>
-      </snapshots>
-    </repository>
-    <repository>
       <id>snapshots</id>
       <name>neo-snapshots</name>
       <url>https://neo.jfrog.io/neo/opencypher-public</url>
