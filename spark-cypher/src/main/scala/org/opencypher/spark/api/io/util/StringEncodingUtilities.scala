@@ -77,11 +77,11 @@ object StringEncodingUtilities {
       */
     def decodeSpecialCharacters: String = {
       val sb = new StringBuilder
-      @tailrec def recDecode(remaining: String): Unit = {
+      @tailrec def recDecode(remaining: List[Char]): Unit = {
         if (remaining.nonEmpty) {
           remaining.head match {
             case '@' =>
-              val hexString = remaining.tail.take(4)
+              val hexString = remaining.tail.take(4).mkString
               sb.append(hexString.parseHex)
               recDecode(remaining.drop(5))
             case other =>
@@ -90,7 +90,7 @@ object StringEncodingUtilities {
           }
         }
       }
-      recDecode(s)
+      recDecode(s.toList)
       sb.toString
     }
 
