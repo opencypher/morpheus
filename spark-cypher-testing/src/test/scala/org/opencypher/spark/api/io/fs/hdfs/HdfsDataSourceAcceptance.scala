@@ -46,10 +46,6 @@ abstract class HdfsDataSourceAcceptance extends CAPSTestSuite with CAPSPGDSAccep
 
   override def initSession(): CAPSSession = caps
 
-  override protected def beforeEach(): Unit = {
-    super.beforeEach()
-  }
-
   override protected def afterEach(): Unit = {
     val fs = cluster.getFileSystem()
     fs.listStatus(new Path("/")).foreach { f =>
