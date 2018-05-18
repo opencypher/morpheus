@@ -35,6 +35,17 @@ import org.opencypher.spark.api.io.AbstractDataSource
 import org.opencypher.spark.api.io.fs.DefaultFileSystem._
 import org.opencypher.spark.api.io.json.JsonSerialization
 
+/**
+  * Data source implementation that handles the writing of files and tables to a filesystem.
+  *
+  * By default Spark is used to write tables and the Hadoop filesystem configured in Spark is used to write files.
+  * The file/folder/table structure into which the graphs are stored is defined in [[DefaultGraphDirectoryStructure]].
+  *
+  * @param rootPath path where the graphs are stored
+  * @param tableStorageFormat Spark configuration parameter for the table format
+  * @param customFileSystem optional alternative filesystem to use for writing files
+  * @param filesPerTable optional parameter that specifies how many files a table is coalesced into, by default 1
+  */
 private[io] class FileBasedDataSource(
   rootPath: String,
   val tableStorageFormat: String,

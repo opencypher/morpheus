@@ -41,7 +41,13 @@ import org.opencypher.spark.schema.CAPSSchema
 
 import scala.util.Try
 
-abstract class AbstractDataSource(implicit session: CAPSSession) extends CAPSPropertyGraphDataSource {
+/**
+  * Abstract data source implementation that takes care of caching graph names and schemas.
+  *
+  * It automatically creates initializes a ScanGraphs an only requires the implementor to provider simpler methods for
+  * reading/writing files and tables.
+  */
+private[io] abstract class AbstractDataSource(implicit session: CAPSSession) extends CAPSPropertyGraphDataSource {
 
   def tableStorageFormat: String
 
