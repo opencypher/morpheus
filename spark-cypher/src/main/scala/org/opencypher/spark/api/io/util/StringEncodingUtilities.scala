@@ -106,10 +106,6 @@ object StringEncodingUtilities {
 
     def parseHex: Char = Integer.parseInt(s, 16).toChar
 
-    def padOnLeft(chars: Int, char: Char = '0'): String = {
-      s.reverse.padTo(chars, char).reverse
-    }
-
   }
 
 }
