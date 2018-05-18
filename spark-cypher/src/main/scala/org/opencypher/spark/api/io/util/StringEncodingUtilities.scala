@@ -61,13 +61,23 @@ object StringEncodingUtilities {
       * @return encoded string
       */
     def encodeSpecialCharacters: String = {
-      s.flatMap {
-        case c if c.isLetterOrDigit && c.isAscii => Seq(c)
-        case u@'_' => Seq(u)
-        case h@'#' => Seq(h)
-        case special: Char =>
-          "@" + special.toHexString.padOnLeft(4)
-      }.mkString
+      val sb = new StringBuilder
+      @tailrec def recEncode(remaining: List[Char]): Unit = {
+        if (remaining.nonEmpty) {
+          val head :: tail = remaining
+          if ((head.isLetterOrDigit && head.isAscii) || head == '_' || head == '#') {
+            sb.append(head)
+          } else {
+            sb.append("@")
+            val hexString = head.toHexString // up to 4 characters
+            for (_ <- 0 until 4 - hexString.length) sb.append('0') // pad left to 4 characters with '0's
+            sb.append(hexString)
+          }
+          recEncode(tail)
+        }
+      }
+      recEncode(s.toList)
+      sb.toString
     }
 
     /**
