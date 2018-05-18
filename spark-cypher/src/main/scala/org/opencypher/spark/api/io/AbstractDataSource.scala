@@ -80,7 +80,9 @@ abstract class AbstractDataSource(implicit session: CAPSSession) extends CAPSPro
   }
 
   override def graph(graphName: GraphName): PropertyGraph = {
-    Try {
+    if (!hasGraph(graphName)) {
+      throw GraphNotFoundException(s"Graph with name '$graphName'")
+    } else {
       val capsSchema: CAPSSchema = schema(graphName).get
       val capsMetaData: CAPSGraphMetaData = readCAPSGraphMetaData(graphName)
       val nodeTables = capsSchema.allLabelCombinations.map { combo =>
@@ -101,7 +103,7 @@ abstract class AbstractDataSource(implicit session: CAPSSession) extends CAPSPro
         CAPSRelationshipTable(relType, df.setNonNullable(nonNullableColumns))
       }
       CAPSGraph.create(capsMetaData.tags, nodeTables.head, (nodeTables.tail ++ relTables).toSeq: _*)
-    }.toOption.getOrElse(throw GraphNotFoundException(s"Graph with name '$graphName'"))
+    }
   }
 
   override def schema(graphName: GraphName): Option[CAPSSchema] = {
