@@ -32,9 +32,7 @@ object StringEncodingUtilities {
 
   val propertyPrefix: String = "property#"
 
-  // Hex string length is up to 4 characters
-  protected val maxCharactersInHexStringEncoding: Int = 4
-  protected val totalEscapeSequenceLength: Int = maxCharactersInHexStringEncoding + 1
+  protected val maxCharactersInHexStringEncoding: Int = 4 // Hex string encoding of a `Char` is up to 4 characters
 
   implicit class CharOps(val c: Char) extends AnyVal {
     def isAscii: Boolean = c.toInt <= 127
@@ -66,6 +64,7 @@ object StringEncodingUtilities {
       */
     def encodeSpecialCharacters: String = {
       val sb = new StringBuilder
+
       @tailrec def recEncode(remaining: List[Char]): Unit = {
         if (remaining.nonEmpty) {
           val head :: tail = remaining
@@ -81,6 +80,7 @@ object StringEncodingUtilities {
           recEncode(tail)
         }
       }
+
       recEncode(s.toList)
       sb.toString
     }
@@ -92,19 +92,22 @@ object StringEncodingUtilities {
       */
     def decodeSpecialCharacters: String = {
       val sb = new StringBuilder
+
       @tailrec def recDecode(remaining: List[Char]): Unit = {
         if (remaining.nonEmpty) {
-          remaining.head match {
-            case '@' =>
-              val hexString = remaining.tail.take(maxCharactersInHexStringEncoding).mkString
-              sb.append(hexString.parseHex)
-              recDecode(remaining.drop(totalEscapeSequenceLength))
-            case other =>
-              sb.append(other)
-              recDecode(remaining.tail)
+          val head :: tail = remaining
+          val recRemaining = if (head == '@') {
+            val hexString = remaining.tail.take(maxCharactersInHexStringEncoding).mkString
+            sb.append(hexString.parseHex)
+            tail.drop(maxCharactersInHexStringEncoding)
+          } else {
+            sb.append(head)
+            tail
           }
+          recDecode(recRemaining)
         }
       }
+
       recDecode(s.toList)
       sb.toString
     }
