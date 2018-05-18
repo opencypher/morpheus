@@ -27,10 +27,10 @@
 package org.opencypher.spark.testing.api.io
 
 import org.opencypher.okapi.api.graph.GraphName
-import org.opencypher.okapi.api.value.{CAPSNode, CAPSRelationship}
 import org.opencypher.okapi.testing.{BaseTestSuite, PGDSAcceptance}
 import org.opencypher.spark.api.CAPSSession
 import org.opencypher.spark.api.CAPSSession._
+import org.opencypher.spark.api.value.{CAPSNode, CAPSRelationship}
 import org.opencypher.spark.impl.CAPSConverters._
 import org.opencypher.spark.impl.CAPSGraph
 import org.opencypher.spark.impl.DataFrameOps._

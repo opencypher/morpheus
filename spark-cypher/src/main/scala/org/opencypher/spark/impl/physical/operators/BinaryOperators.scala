@@ -30,7 +30,7 @@ import org.apache.spark.sql.{Column, functions}
 import org.apache.spark.sql.functions.monotonically_increasing_id
 import org.opencypher.okapi.api.graph.QualifiedGraphName
 import org.opencypher.okapi.api.types.{CTBoolean, CTInteger, CTString}
-import org.opencypher.okapi.impl.exception.IllegalArgumentException
+import org.opencypher.okapi.impl.exception.{IllegalArgumentException, IllegalStateException}
 import org.opencypher.okapi.ir.api.PropertyKey
 import org.opencypher.okapi.ir.api.expr.{Expr, Var, _}
 import org.opencypher.okapi.ir.api.set.SetPropertyItem
@@ -38,7 +38,7 @@ import org.opencypher.okapi.logical.impl.{ConstructedEntity, ConstructedNode, Co
 import org.opencypher.okapi.relational.impl.ColumnNameGenerator
 import org.opencypher.okapi.relational.impl.syntax.RecordHeaderSyntax.{addContent, addContents, _}
 import org.opencypher.okapi.relational.impl.table.{ColumnName, OpaqueField, RecordHeader, RecordSlot, _}
-import org.opencypher.spark.api.CAPSSession
+import org.opencypher.spark.api.{CAPSSession, Tags}
 import org.opencypher.spark.impl.CAPSUnionGraph.{apply => _, unapply => _}
 import org.opencypher.spark.impl.DataFrameOps._
 import org.opencypher.spark.impl.SparkSQLExprMapper._
@@ -230,8 +230,7 @@ final case class ConstructGraph(
 
   private def pickFreeTag(tagStrategy: Map[QualifiedGraphName, Map[Int, Int]]): Int = {
     val usedTags = tagStrategy.values.flatMap(_.values).toSet
-    if (usedTags.isEmpty) 0
-    else usedTags.max + 1
+    Tags.pickFreeTag(usedTags)
   }
 
   private def identityRetaggings(g: CAPSGraph): (CAPSGraph, Map[Int, Int]) = {

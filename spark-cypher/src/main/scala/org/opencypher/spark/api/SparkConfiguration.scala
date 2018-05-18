@@ -26,28 +26,10 @@
  */
 package org.opencypher.spark.api
 
-import org.apache.spark.sql.{Column, functions}
 import org.opencypher.okapi.impl.configuration.ConfigOption
 
 object SparkConfiguration {
 
   object MasterAddress extends ConfigOption("caps.master", "local[*]")(Some(_))
-
-  // Long representation using 64 bits containing graph tag and entity identifier
-  val totalBits: Int = 64
-
-  object IdBits extends ConfigOption("caps.idBits", 50)(idBitsString => Some(idBitsString.toInt))
-
-  // Number of Bits used to store entity identifier
-  val idBits: Int = IdBits.get
-
-  def tagBits = totalBits - idBits
-
-  // Mask to extract graph tag
-  val tagMask: Long = -1L << idBits
-
-  val invertedTagMask: Long = ~tagMask
-
-  val invertedTagMaskLit: Column = functions.lit(invertedTagMask)
 
 }

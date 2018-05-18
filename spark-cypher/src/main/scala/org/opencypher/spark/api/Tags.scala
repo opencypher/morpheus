@@ -24,41 +24,53 @@
  * described as "implementation extensions to Cypher" or as "proposed changes to
  * Cypher that are not yet approved by the openCypher community".
  */
-package org.opencypher.spark.examples
+package org.opencypher.spark.api
 
-import org.apache.spark.sql.Dataset
-import org.opencypher.spark.api.value.CAPSNode
-import org.opencypher.okapi.api.value.CypherValue.CypherMap
-import org.opencypher.spark.api.CAPSSession
-import org.opencypher.spark.api.CAPSSession._
-import org.opencypher.spark.impl.encoders._
+import org.apache.spark.sql.{Column, functions}
+import org.opencypher.okapi.impl.exception.IllegalStateException
 
-import scala.collection.JavaConverters._
+object Tags {
 
-/**
-  * Demonstrates how to retrieve Cypher entities as a Dataset and update them.
-  */
-object UpdateExample extends ConsoleApp {
-  // 1) Create CAPS session and retrieve Spark session
-  implicit val session: CAPSSession = CAPSSession.local()
+  // Long representation using 64 bits containing graph tag and entity identifier
+  val totalBits: Int = 64
 
-  // 2) Load social network data via case class instances
-  val socialNetwork = session.readFrom(SocialNetworkData.persons, SocialNetworkData.friendships)
+  // Number of Bits used to store entity identifier
+  val idBits: Int = 54
 
-  // 3) Query graph with Cypher
-  val results = socialNetwork.cypher(
-    """|MATCH (p:Person)
-       |WHERE p.age >= 18
-       |RETURN p""".stripMargin)
+  val tagBits = totalBits - idBits
 
-  // 4) Extract Dataset representing the query result
-  val ds = results.getRecords.asDataset
+  // 1023 with 10 tag bits
+  val maxTag: Int = (1 << tagBits) - 1
 
-  // 5) Add a new label and property to the nodes
-  val adults: Dataset[CAPSNode] = ds.map { record: CypherMap =>
-    record("p").cast[CAPSNode].withLabel("Adult").withProperty("canVote", true)
+  // All possible tags, 1024 entries with 10 tag bits.
+  val allTags: Set[Int] = (0 to maxTag).toSet
+
+  // Mask to extract graph tag
+  val tagMask: Long = -1L << idBits
+
+  val invertedTagMask: Long = ~tagMask
+
+  val invertedTagMaskLit: Column = functions.lit(invertedTagMask)
+
+  /**
+    * Returns a free tag given a set of used tags.
+    */
+  def pickFreeTag(usedTags: Set[Int]): Int = {
+    if (usedTags.isEmpty) {
+      0
+    } else {
+      val maxUsed = usedTags.max
+      if (maxUsed < maxTag) {
+        maxUsed + 1
+      } else {
+        val availableTags = allTags -- usedTags
+        if (availableTags.nonEmpty) {
+          availableTags.min
+        } else {
+          throw IllegalStateException("Could not complete this operation, ran out of tag space.")
+        }
+      }
+    }
   }
 
-  // 6) Print updated nodes
-  println(adults.toLocalIterator.asScala.toList.mkString("\n"))
 }

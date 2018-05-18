@@ -29,7 +29,7 @@ package org.opencypher.spark.impl.acceptance
 import org.opencypher.okapi.api.schema.{PropertyKeys, Schema}
 import org.opencypher.okapi.api.types.{CTInteger, CTString}
 import org.opencypher.okapi.api.value.CypherValue.CypherMap
-import org.opencypher.okapi.api.value.{CAPSNode, CAPSRelationship}
+import org.opencypher.spark.api.value.{CAPSNode, CAPSRelationship}
 import org.opencypher.okapi.testing.Bag
 import org.opencypher.okapi.testing.Bag._
 import org.opencypher.spark.impl.CAPSConverters._
@@ -636,7 +636,7 @@ class MultipleGraphBehaviour extends CAPSTestSuite with ScanGraphInit {
     result.schema should equal((testGraph1.schema ++ testGraph2.schema).withRelationshipPropertyKeys("KNOWS")().asCaps)
     result.nodes("n").toMaps should equal(testGraph1.unionAll(testGraph2).nodes("n").toMaps)
     result.relationships("r").toMapsWithCollectedEntities should equal(Bag(
-      CypherMap("r" -> CAPSRelationship(2251799813685248L, 0L, 1125899906842624L, "KNOWS")))
+      CypherMap("r" -> CAPSRelationship(36028797018963968L, 0L, 18014398509481984L, "KNOWS")))
     )
   }
 
@@ -657,7 +657,7 @@ class MultipleGraphBehaviour extends CAPSTestSuite with ScanGraphInit {
     result.schema should equal((testGraph1.schema ++ testGraph2.schema).withRelationshipPropertyKeys("KNOWS")().asCaps)
     result.nodes("n").toMaps should equal(testGraph1.unionAll(testGraph2).nodes("n").toMaps)
     result.relationships("r").toMapsWithCollectedEntities should equal(Bag(
-      CypherMap("r" -> CAPSRelationship(2251799813685248L, 0L, 1125899906842624L, "KNOWS")))
+      CypherMap("r" -> CAPSRelationship(36028797018963968L, 0L, 18014398509481984L, "KNOWS")))
     )
   }
 

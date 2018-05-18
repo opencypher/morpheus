@@ -31,7 +31,7 @@ import org.opencypher.okapi.api.io.conversion.{NodeMapping, RelationshipMapping}
 import org.opencypher.okapi.api.schema.Schema
 import org.opencypher.okapi.api.types.{CTInteger, CTList, CTString, CTVoid}
 import org.opencypher.okapi.api.value.CypherValue.{CypherList, CypherMap}
-import org.opencypher.okapi.api.value.{CAPSNode, CAPSRelationship}
+import org.opencypher.spark.api.value.{CAPSNode, CAPSRelationship}
 import org.opencypher.okapi.testing.Bag
 import org.opencypher.okapi.testing.Bag._
 import org.opencypher.spark.api.io.{CAPSNodeTable, CAPSRelationshipTable}

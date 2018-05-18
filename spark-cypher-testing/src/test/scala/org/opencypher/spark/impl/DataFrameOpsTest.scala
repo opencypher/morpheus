@@ -26,7 +26,8 @@
  */
 package org.opencypher.spark.impl
 
-import org.opencypher.spark.api.SparkConfiguration._
+import org.opencypher.spark.api.Tags
+import org.opencypher.spark.api.Tags.tagBits
 import org.opencypher.spark.impl.DataFrameOps._
 import org.opencypher.spark.testing.CAPSTestSuite
 import org.scalatest.Matchers

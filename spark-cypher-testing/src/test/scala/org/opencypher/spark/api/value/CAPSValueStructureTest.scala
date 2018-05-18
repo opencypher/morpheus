@@ -26,8 +26,8 @@
  */
 package org.opencypher.spark.api.value
 
+import org.opencypher.okapi.api.value.CypherValue
 import org.opencypher.okapi.api.value.CypherValue._
-import org.opencypher.okapi.api.value.{CAPSNode, CAPSRelationship, CypherValue}
 import org.opencypher.spark.testing.api.value.CAPSTestValues._
 
 class CAPSValueStructureTest extends CAPSValueTestSuite {

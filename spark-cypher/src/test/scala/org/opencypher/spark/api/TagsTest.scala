@@ -24,41 +24,24 @@
  * described as "implementation extensions to Cypher" or as "proposed changes to
  * Cypher that are not yet approved by the openCypher community".
  */
-package org.opencypher.spark.examples
+package org.opencypher.spark.api
 
-import org.apache.spark.sql.Dataset
-import org.opencypher.spark.api.value.CAPSNode
-import org.opencypher.okapi.api.value.CypherValue.CypherMap
-import org.opencypher.spark.api.CAPSSession
-import org.opencypher.spark.api.CAPSSession._
-import org.opencypher.spark.impl.encoders._
+import org.opencypher.okapi.impl.exception.IllegalStateException
+import org.opencypher.spark.api.Tags._
+import org.scalatest.{FunSpec, Matchers}
 
-import scala.collection.JavaConverters._
+class TagsTest extends FunSpec with Matchers {
 
-/**
-  * Demonstrates how to retrieve Cypher entities as a Dataset and update them.
-  */
-object UpdateExample extends ConsoleApp {
-  // 1) Create CAPS session and retrieve Spark session
-  implicit val session: CAPSSession = CAPSSession.local()
-
-  // 2) Load social network data via case class instances
-  val socialNetwork = session.readFrom(SocialNetworkData.persons, SocialNetworkData.friendships)
-
-  // 3) Query graph with Cypher
-  val results = socialNetwork.cypher(
-    """|MATCH (p:Person)
-       |WHERE p.age >= 18
-       |RETURN p""".stripMargin)
-
-  // 4) Extract Dataset representing the query result
-  val ds = results.getRecords.asDataset
-
-  // 5) Add a new label and property to the nodes
-  val adults: Dataset[CAPSNode] = ds.map { record: CypherMap =>
-    record("p").cast[CAPSNode].withLabel("Adult").withProperty("canVote", true)
+  it("picks a free tag") {
+    pickFreeTag(Set.empty) shouldBe 0
+    pickFreeTag(Set(0)) shouldBe 1
+    pickFreeTag((0 until maxTag).toSet) shouldBe maxTag
+    pickFreeTag((1 to maxTag).toSet) shouldBe 0
   }
 
-  // 6) Print updated nodes
-  println(adults.toLocalIterator.asScala.toList.mkString("\n"))
+  it("throws an error when it runs out of tag space") {
+    an[IllegalStateException] should be thrownBy pickFreeTag((0 to maxTag).toSet)
+
+  }
+
 }

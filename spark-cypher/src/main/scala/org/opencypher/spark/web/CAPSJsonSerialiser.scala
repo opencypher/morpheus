@@ -30,6 +30,7 @@ import io.circe.syntax._
 import io.circe.{Encoder, Json}
 import org.opencypher.okapi.api.value.CypherValue._
 import org.opencypher.okapi.api.value._
+import org.opencypher.spark.api.value.{CAPSNode, CAPSRelationship}
 import org.opencypher.spark.impl.{CAPSGraph, CAPSRecords}
 
 trait JsonSerialiser {
