@@ -125,20 +125,18 @@ object DataFrameOps {
     }
 
     def setNonNullable(columnName: String): DataFrame = {
+      setNonNullable(Set(columnName))
+    }
+
+    def setNonNullable(columnNames: Set[String]): DataFrame = {
       val newSchema = StructType(df.schema.map {
-        case s@StructField(cn, _, true, _) if cn == columnName => s.copy(nullable = false)
+        case s@StructField(cn, _, true, _) if columnNames.contains(cn) => s.copy(nullable = false)
         case other => other
       })
       if (newSchema == df.schema) {
         df
       } else {
         df.sparkSession.createDataFrame(df.rdd, newSchema)
-      }
-    }
-
-    def setNonNullable(columnNames: Set[String]): DataFrame = {
-      columnNames.foldLeft(df) {
-        case (currentDF, colName) => currentDF.setNonNullable(colName)
       }
     }
 
