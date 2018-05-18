@@ -65,23 +65,23 @@ object StringEncodingUtilities {
     def encodeSpecialCharacters: String = {
       val sb = new StringBuilder
 
-      @tailrec def recEncode(remaining: List[Char]): Unit = {
-        if (remaining.nonEmpty) {
-          val head :: tail = remaining
-          if ((head.isLetterOrDigit && head.isAscii) || head == '_' || head == '#') {
-            sb.append(head)
+      @tailrec def recEncode(index: Int): Unit = {
+        if (index < s.length) {
+          val charToEncode = s(index)
+          if ((charToEncode.isLetterOrDigit && charToEncode.isAscii) || charToEncode == '_' || charToEncode == '#') {
+            sb.append(charToEncode)
           } else {
             sb.append("@")
-            val hexString = head.toHexString
+            val hexString = charToEncode.toHexString
             // Pad left to max encoded length with '0's
             for (_ <- 0 until maxCharactersInHexStringEncoding - hexString.length) sb.append('0')
             sb.append(hexString)
           }
-          recEncode(tail)
+          recEncode(index + 1)
         }
       }
 
-      recEncode(s.toList)
+      recEncode(0)
       sb.toString
     }
 
@@ -93,22 +93,24 @@ object StringEncodingUtilities {
     def decodeSpecialCharacters: String = {
       val sb = new StringBuilder
 
-      @tailrec def recDecode(remaining: List[Char]): Unit = {
-        if (remaining.nonEmpty) {
-          val head :: tail = remaining
-          val recRemaining = if (head == '@') {
-            val hexString = remaining.tail.take(maxCharactersInHexStringEncoding).mkString
+      @tailrec def recDecode(index: Int): Unit = {
+        if (index < s.length) {
+          val charToDecode = s(index)
+          val nextIndex = if (charToDecode == '@') {
+            val encodedHexStringStart = index + 1
+            val indexAfterHexStringEnd = encodedHexStringStart + maxCharactersInHexStringEncoding
+            val hexString = s.substring(encodedHexStringStart, indexAfterHexStringEnd)
             sb.append(hexString.parseHex)
-            tail.drop(maxCharactersInHexStringEncoding)
+            indexAfterHexStringEnd
           } else {
-            sb.append(head)
-            tail
+            sb.append(charToDecode)
+            index + 1
           }
-          recDecode(recRemaining)
+          recDecode(nextIndex)
         }
       }
 
-      recDecode(s.toList)
+      recDecode(0)
       sb.toString
     }
 
