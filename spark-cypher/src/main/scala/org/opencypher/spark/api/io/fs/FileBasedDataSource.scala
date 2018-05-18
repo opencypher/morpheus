@@ -86,7 +86,7 @@ private[io] class FileBasedDataSource(
   }
 
   override protected def deleteGraph(graphName: GraphName): Unit = {
-    deleteDirectory(pathToGraphToDirectory(graphName))
+    deleteDirectory(pathToGraphDirectory(graphName))
   }
 
   override protected def readNodeTable(graphName: GraphName, tableStorageFormat: String, labels: Set[String], sparkSchema: StructType): DataFrame = {

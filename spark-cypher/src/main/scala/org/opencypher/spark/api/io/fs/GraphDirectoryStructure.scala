@@ -32,7 +32,7 @@ trait GraphDirectoryStructure {
 
   def dataSourceRootPath: String
 
-  def pathToGraphToDirectory(graphName: GraphName): String
+  def pathToGraphDirectory(graphName: GraphName): String
 
   def pathToGraphSchema(graphName: GraphName): String
 
@@ -62,7 +62,7 @@ case class DefaultGraphDirectoryStructure(dataSourceRootPath: String) extends Gr
 
   import DefaultGraphDirectoryStructure._
 
-  override def pathToGraphToDirectory(graphName: GraphName): String = {
+  override def pathToGraphDirectory(graphName: GraphName): String = {
     dataSourceRootPath / graphName.path
   }
 
