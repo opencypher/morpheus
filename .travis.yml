@@ -8,8 +8,8 @@ scala:
 
 env:
   matrix:
-    - PROFILE=test
     - PROFILE=check
+    #- PROFILE=test
 
 install: echo "skip preparatory install"
 

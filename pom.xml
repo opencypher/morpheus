@@ -258,6 +258,10 @@
             <arg>-Yopt:l:project</arg>
             <arg>-Ypartial-unification</arg>
           </args>
+          <jvmArgs>
+            <!-- Workaround for Scala compiler error: https://github.com/freechipsproject/firrtl/issues/66 -->
+            <jvmArg>-Xss256m</jvmArg>
+          </jvmArgs>
         </configuration>
       </plugin>
 
