@@ -40,8 +40,7 @@ import org.opencypher.spark.testing.support.creation.caps.CAPSScanGraphFactory
 
 import scala.collection.JavaConverters._
 
-
-abstract class HdfsDataSourceAcceptance  extends CAPSTestSuite with CAPSPGDSAcceptance with MiniDFSClusterFixture {
+abstract class HdfsDataSourceAcceptance extends CAPSTestSuite with CAPSPGDSAcceptance with MiniDFSClusterFixture {
 
   protected def createDs(graph: CAPSGraph): CAPSPropertyGraphDataSource
 
