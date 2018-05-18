@@ -26,12 +26,11 @@
  */
 package org.opencypher.spark.api.io.util
 
-import org.scalatest.{FunSpec, Matchers}
+import org.opencypher.spark.api.io.util.StringEncodingUtilities._
 import org.scalatest.prop.GeneratorDrivenPropertyChecks
+import org.scalatest.{FunSpec, Matchers}
 
-import StringEncodingUtilities._
-
-class ColumnUtilsTest extends FunSpec with GeneratorDrivenPropertyChecks with Matchers {
+class StringEncodingUtilitiesTest extends FunSpec with GeneratorDrivenPropertyChecks with Matchers {
 
   it("encodes arbitrary strings with only letters, digits, underscores, hashes, and 'at' symbols") {
     forAll { s: String =>
