@@ -85,7 +85,7 @@
     <dep.scalatest.version>3.0.5</dep.scalatest.version>
     <dep.scalacheck.version>1.13.5</dep.scalacheck.version>
   </properties>
-
+  
   <build>
     <resources>
       <resource>
@@ -247,6 +247,10 @@
             <arg>-Yopt:l:project</arg>
             <arg>-Ypartial-unification</arg>
           </args>
+          <jvmArgs>
+            <!-- Workaround for Scala compiler error: https://github.com/freechipsproject/firrtl/issues/66 -->
+            <jvmArg>-Xss256m</jvmArg>
+          </jvmArgs>
         </configuration>
       </plugin>
 

@@ -29,7 +29,7 @@ package org.opencypher.spark.examples
 import org.neo4j.harness.ServerControls
 import org.opencypher.okapi.api.graph.Namespace
 import org.opencypher.spark.api.CAPSSession
-import org.opencypher.spark.api.io.csv.file.FileCsvGraphDataSource
+import org.opencypher.spark.api.io.csv.CsvDataSource
 import org.opencypher.spark.api.io.neo4j.CommunityNeo4jGraphDataSource
 import org.opencypher.spark.examples.Neo4jHelpers._
 
@@ -55,7 +55,7 @@ object RecommendationExample extends ConsoleApp {
   caps.registerSource(Namespace("euSocialNetwork"), CommunityNeo4jGraphDataSource(neo4jServerEU.dataSourceConfig))
 
   // File-based CSV GDS
-  caps.registerSource(Namespace("purchases"), FileCsvGraphDataSource(rootPath = s"${getClass.getResource("/csv").getFile}"))
+  caps.registerSource(Namespace("purchases"), CsvDataSource(rootPath = s"${getClass.getResource("/csv").getFile}"))
 
   // Start analytical workload
 

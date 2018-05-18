@@ -1,0 +1,47 @@
+{
+  "labelPropertyMap" : {
+    "Product" : {
+      "title" : {
+        "CTString" : {
+          
+        }
+      },
+      "rank" : {
+        "CTInteger" : {
+          
+        }
+      },
+      "category" : {
+        "CTString" : {
+          
+        }
+      }
+    },
+    "Customer" : {
+      "name" : {
+        "CTString" : {
+          
+        }
+      }
+    }
+  },
+  "relTypePropertyMap" : {
+    "BOUGHT" : {
+      "rating" : {
+        "CTInteger" : {
+          
+        }
+      },
+      "helpful" : {
+        "CTInteger" : {
+          
+        }
+      },
+      "votes" : {
+        "CTInteger" : {
+          
+        }
+      }
+    }
+  }
+}

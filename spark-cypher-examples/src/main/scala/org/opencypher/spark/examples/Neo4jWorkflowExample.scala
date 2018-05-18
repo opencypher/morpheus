@@ -28,7 +28,7 @@ package org.opencypher.spark.examples
 
 import org.opencypher.okapi.api.graph.{Namespace, QualifiedGraphName}
 import org.opencypher.spark.api.CAPSSession
-import org.opencypher.spark.api.io.csv.file.FileCsvGraphDataSource
+import org.opencypher.spark.api.io.csv.CsvDataSource
 import org.opencypher.spark.api.io.neo4j.CommunityNeo4jGraphDataSource
 import org.opencypher.spark.api.io.neo4j.CommunityNeo4jGraphDataSource._
 import org.opencypher.spark.examples.Neo4jHelpers._
@@ -52,7 +52,7 @@ object Neo4jWorkflowExample extends ConsoleApp {
   val socialNetwork = session.catalog.graph("socialNetwork.graph")
 
   // Register a File-based data source in the Cypher session
-  session.registerSource(Namespace("csv"), FileCsvGraphDataSource(rootPath = getClass.getResource("/csv").getFile))
+  session.registerSource(Namespace("csv"), CsvDataSource(rootPath = getClass.getResource("/csv").getFile))
 
 
   // Access the graph via its qualified graph name
