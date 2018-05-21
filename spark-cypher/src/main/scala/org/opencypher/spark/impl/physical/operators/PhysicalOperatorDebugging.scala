@@ -28,6 +28,7 @@ package org.opencypher.spark.impl.physical.operators
 
 import org.apache.spark.sql.catalyst.expressions.Attribute
 import org.apache.spark.sql.catalyst.plans.logical.LeafNode
+import org.opencypher.okapi.impl.exception.UnsupportedOperationException
 import org.opencypher.spark.api.CAPSSession
 import org.opencypher.spark.configuration.CAPSConfiguration.DebugPhysicalOperators
 import org.opencypher.spark.impl.DataFrameOps._
@@ -39,39 +40,55 @@ trait PhysicalOperatorDebugging extends CAPSPhysicalOperator {
 
   abstract override def execute(implicit context: CAPSRuntimeContext): CAPSPhysicalResult = {
     if (DebugPhysicalOperators.get) {
-      val operatorName = getClass.getSimpleName.toUpperCase
       val output: CAPSPhysicalResult = super.execute
       implicit val caps: CAPSSession = output.records.caps
+
+      val operatorName = getClass.getSimpleName.toUpperCase
       println
       println(separator)
       println(s"**$operatorName**")
 
       val recordsDf = output.records.data
       val cachedRecordsDf = {
+        println
         recordsDf.printExecutionTiming(s"Computing $operatorName result records")
+        println
         recordsDf.printLogicalPlan
         recordsDf.cacheAndForce
       }
-      val cachedRecords = CAPSRecords.verifyAndCreate(output.records.header -> cachedRecordsDf)
 
-      val maybeCachedGraph: Option[CAPSGraph] = if (getClass != classOf[ConstructGraph]) {
-        None
-      } else {
+      val cachedRecords = CAPSRecords.verifyAndCreate(output.records.header -> cachedRecordsDf)
+      val maybeCachedGraph: Option[CAPSGraph] = if (getClass == classOf[ConstructGraph]) {
         output.workingGraph match {
           case unionGraph: CAPSUnionGraph =>
             unionGraph.graphs.collectFirst {
               case (patternGraph: CAPSPatternGraph, retaggings) =>
-              val baseTableDf = patternGraph.baseTable.data
-              baseTableDf.printExecutionTiming("Computing pattern graph")
-              baseTableDf.printLogicalPlan
-              val cachedBaseTableDf = baseTableDf.cacheAndForce
-              val cachedBaseTable = CAPSRecords.verifyAndCreate(patternGraph.baseTable.header, cachedBaseTableDf)
-              val cachedPatternGraph = patternGraph.copy(baseTable = cachedBaseTable)
-              val unionGraphWithCachedPatternGraph = unionGraph.copy(
-                graphs = (unionGraph.graphs - patternGraph) + (cachedPatternGraph -> retaggings))
-              unionGraphWithCachedPatternGraph
+                val baseTableDf = patternGraph.baseTable.data
+                baseTableDf.printExecutionTiming("Computing pattern graph")
+                println
+                baseTableDf.printLogicalPlan
+                val cachedBaseTableDf = baseTableDf.cacheAndForce
+                val cachedBaseTable = CAPSRecords.verifyAndCreate(patternGraph.baseTable.header, cachedBaseTableDf)
+                val cachedPatternGraph = patternGraph.copy(baseTable = cachedBaseTable)
+                val unionGraphWithCachedPatternGraph = unionGraph.copy(
+                  graphs = (unionGraph.graphs - patternGraph) + (cachedPatternGraph -> retaggings))
+                unionGraphWithCachedPatternGraph
             }
         }
+      } else {
+        None
+      }
+
+      childResults match {
+        case None => throw UnsupportedOperationException(s"Operator $operatorName did not store its input results")
+        case Some(inputs) =>
+          if (inputs.nonEmpty) {
+            println("Input operators:")
+            inputs.foreach { case (operator, result) =>
+              println(s"\t${operator.getClass.getSimpleName.toUpperCase} with ${result.records.size} records")
+            }
+            println
+          }
       }
 
       println(separator)
