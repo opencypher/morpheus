@@ -49,16 +49,13 @@ trait PhysicalOperatorDebugging extends CAPSPhysicalOperator {
       println(s"**$operatorName**")
 
       val recordsDf = output.records.data
-      val cachedRecordsDf = {
-        println
-        recordsDf.printExecutionTiming(s"Computing $operatorName result records")
-        println
-        recordsDf.printLogicalPlan
-        recordsDf.cacheAndForce
-      }
+      println
+      recordsDf.printExecutionTiming(s"Computing $operatorName result records")
+      println
+      recordsDf.printLogicalPlan
+      recordsDf.cacheAndForce(Some(operatorName))
 
-      val cachedRecords = CAPSRecords.verifyAndCreate(output.records.header -> cachedRecordsDf)
-      val maybeCachedGraph: Option[CAPSGraph] = if (getClass == classOf[ConstructGraph]) {
+      if (getClass == classOf[ConstructGraph]) {
         output.workingGraph match {
           case unionGraph: CAPSUnionGraph =>
             unionGraph.graphs.collectFirst {
@@ -67,38 +64,26 @@ trait PhysicalOperatorDebugging extends CAPSPhysicalOperator {
                 baseTableDf.printExecutionTiming("Computing pattern graph")
                 println
                 baseTableDf.printLogicalPlan
-                val cachedBaseTableDf = baseTableDf.cacheAndForce
-                val cachedBaseTable = CAPSRecords.verifyAndCreate(patternGraph.baseTable.header, cachedBaseTableDf)
-                val cachedPatternGraph = patternGraph.copy(baseTable = cachedBaseTable)
-                val unionGraphWithCachedPatternGraph = unionGraph.copy(
-                  graphs = (unionGraph.graphs - patternGraph) + (cachedPatternGraph -> retaggings))
-                unionGraphWithCachedPatternGraph
+                baseTableDf.cacheAndForce(Some("CAPSPatternGraph"))
             }
         }
-      } else {
-        None
       }
 
-      childResults match {
-        case None => throw UnsupportedOperationException(s"Operator $operatorName did not store its input results")
-        case Some(inputs) =>
-          if (inputs.nonEmpty) {
-            println("Input operators:")
-            inputs.foreach { case (operator, result) =>
-              println(s"\t${operator.getClass.getSimpleName.toUpperCase} with ${result.records.size} records")
-            }
-            println
-          }
+      val inputs = maybeChildResults.getOrElse(
+        throw UnsupportedOperationException(s"Operator $operatorName did not store its input results"))
+
+      if (inputs.nonEmpty) {
+        println("Input operators:")
+        inputs.foreach { case (operator, result) =>
+          println(s"\t${operator.getClass.getSimpleName.toUpperCase} with ${result.records.size} records")
+        }
+        println
       }
 
       println(separator)
       println
 
-      val cachedResult = output.copy(
-        records = cachedRecords,
-        workingGraph = maybeCachedGraph.getOrElse(output.workingGraph)
-      )
-      cachedResult
+      output
     } else {
       super.execute
     }
@@ -112,6 +97,8 @@ object PhysicalOperatorDebugging {
 
 }
 
-case object CachedOperatorInput extends LeafNode {
+case class CachedOperatorInput(tableName: Option[String] = None) extends LeafNode {
+
   override def output: Seq[Attribute] = Seq.empty
+
 }

@@ -50,7 +50,7 @@ private[spark] abstract class TernaryPhysicalOperator extends CAPSPhysicalOperat
     val firstResult = first.execute
     val secondResult = second.execute
     val thirdResult = third.execute
-    childResults = Some(List(first -> firstResult, second -> secondResult, third -> thirdResult))
+    maybeChildResults = Some(List(first -> firstResult, second -> secondResult, third -> thirdResult))
     executeTernary(firstResult, secondResult, thirdResult)
   }
 

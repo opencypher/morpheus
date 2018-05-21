@@ -35,7 +35,7 @@ import org.opencypher.spark.impl.physical.{CAPSPhysicalResult, CAPSRuntimeContex
 private[spark] abstract class LeafPhysicalOperator extends CAPSPhysicalOperator {
 
   override def execute(implicit context: CAPSRuntimeContext): CAPSPhysicalResult = {
-    childResults = Some(List.empty)
+    maybeChildResults = Some(List.empty)
     executeLeaf()
   }
 
