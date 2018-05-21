@@ -200,7 +200,7 @@ final case class TabularUnionAll(lhs: CAPSPhysicalOperator, rhs: CAPSPhysicalOpe
 }
 
 final case class CartesianProduct(lhs: CAPSPhysicalOperator, rhs: CAPSPhysicalOperator, header: RecordHeader)
-  extends BinaryPhysicalOperator {
+  extends BinaryPhysicalOperator with PhysicalOperatorDebugging {
 
   override def executeBinary(left: CAPSPhysicalResult, right: CAPSPhysicalResult)(
     implicit context: CAPSRuntimeContext
