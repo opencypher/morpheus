@@ -10,6 +10,7 @@ import org.opencypher.spark.impl.physical.operators.PhysicalOperatorDebugging.se
 import org.opencypher.spark.impl.physical.{CAPSPhysicalResult, CAPSRuntimeContext}
 import org.opencypher.spark.impl.util.Profiling.printTiming
 import org.opencypher.spark.impl.{CAPSPatternGraph, CAPSRecords, CAPSUnionGraph}
+import org.opencypher.spark.impl.util.SparkQueryPlanCostEstimation._
 
 trait PhysicalOperatorDebugging extends CAPSPhysicalOperator {
 
@@ -58,9 +59,10 @@ trait PhysicalOperatorDebugging extends CAPSPhysicalOperator {
     // Print Spark plan
     println("Spark plan:")
     val sparkPlan = df.queryExecution.optimizedPlan
+    implicit val sparkSession = df.sparkSession
     // Remove cached inputs from plan
     val planWithoutCached = sparkPlan.transformDown {
-      case _: InMemoryRelation => CachedOperatorInput()
+      case imr: InMemoryRelation => CachedOperatorInput
       case other => other
     }
     println(planWithoutCached.treeString)
@@ -81,6 +83,6 @@ object PhysicalOperatorDebugging {
 
 }
 
-case class CachedOperatorInput() extends LeafNode {
+case object CachedOperatorInput extends LeafNode {
   override def output: Seq[Attribute] = Seq.empty
 }
