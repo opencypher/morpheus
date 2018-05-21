@@ -69,7 +69,7 @@ trait PhysicalOperatorDebugging extends CAPSPhysicalOperator {
                 baseTableDf.printExecutionTiming("Computing pattern graph")
                 println
                 baseTableDf.printLogicalPlan
-                baseTableDf.cacheAndForce(Some("CAPSPatternGraph"))
+                baseTableDf.cacheAndForce(Some(operatorName))
             }
         }
       }
