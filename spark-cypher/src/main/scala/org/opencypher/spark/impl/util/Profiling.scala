@@ -24,22 +24,26 @@
  * described as "implementation extensions to Cypher" or as "proposed changes to
  * Cypher that are not yet approved by the openCypher community".
  */
-package org.opencypher.okapi.impl.configuration
+package org.opencypher.spark.impl.util
 
-import org.scalatest.{FunSpec, FunSuite, Matchers}
+object Profiling {
 
-class ConfigCachingTest extends FunSpec with Matchers {
+  // Returns the number of milliseconds for executing a method in addition to the result of the method.
+  def time[R](code: => R): (R, Long) = {
+    val start = System.currentTimeMillis()
+    val result = code
+    val end = System.currentTimeMillis()
+    (result, end - start)
+  }
 
-  object TestConfigWithCaching extends ConfigFlag("test") with ConfigCaching[Boolean]
+  def printTiming[R](code: => R): R = {
+    printTiming("Method")(code)
+  }
 
-  it("can read a set value") {
-    TestConfigWithCaching.set()
-    TestConfigWithCaching.get shouldBe true
-    TestConfigWithCaching.set("true")
-    TestConfigWithCaching.get shouldBe true
-    a[UnsupportedOperationException] shouldBe thrownBy {
-      TestConfigWithCaching.set("false")
-    }
+  def printTiming[R](description: String = "Method")(code: => R): R = {
+    val (result, timing) = time(code)
+    println(s"$description took ~$timing milliseconds to execute")
+    result
   }
 
 }
