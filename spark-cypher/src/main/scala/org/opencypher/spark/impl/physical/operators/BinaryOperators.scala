@@ -66,7 +66,7 @@ final case class Join(
   joinColumns: Seq[(Expr, Expr)],
   header: RecordHeader,
   joinType: String
-) extends BinaryPhysicalOperator {
+) extends BinaryPhysicalOperator with PhysicalOperatorDebugging {
 
   override def executeBinary(left: CAPSPhysicalResult, right: CAPSPhysicalResult)(
     implicit context: CAPSRuntimeContext
@@ -106,7 +106,7 @@ final case class ExistsSubQuery(
   targetField: Var,
   header: RecordHeader
 )
-  extends BinaryPhysicalOperator {
+  extends BinaryPhysicalOperator with PhysicalOperatorDebugging {
 
   override def executeBinary(left: CAPSPhysicalResult, right: CAPSPhysicalResult)(
     implicit context: CAPSRuntimeContext
@@ -179,7 +179,7 @@ final case class ExistsSubQuery(
   * @param rhs the second operand
   */
 final case class TabularUnionAll(lhs: CAPSPhysicalOperator, rhs: CAPSPhysicalOperator)
-  extends BinaryPhysicalOperator with InheritedHeader {
+  extends BinaryPhysicalOperator with InheritedHeader with PhysicalOperatorDebugging {
 
   override def executeBinary(left: CAPSPhysicalResult, right: CAPSPhysicalResult)
     (implicit context: CAPSRuntimeContext): CAPSPhysicalResult = {
@@ -219,7 +219,7 @@ final case class ConstructGraph(
   lhs: CAPSPhysicalOperator,
   rhs: CAPSPhysicalOperator,
   construct: LogicalPatternGraph
-) extends BinaryPhysicalOperator {
+) extends BinaryPhysicalOperator with PhysicalOperatorDebugging {
 
   override def toString: String = {
     val entities = construct.clones.keySet ++ construct.newEntities.map(_.v)

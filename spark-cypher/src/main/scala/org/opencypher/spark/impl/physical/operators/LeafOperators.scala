@@ -48,7 +48,7 @@ object Start {
 }
 
 final case class Start(qgn: QualifiedGraphName, recordsOpt: Option[CAPSRecords])
-  (implicit caps: CAPSSession) extends LeafPhysicalOperator {
+  (implicit caps: CAPSSession) extends LeafPhysicalOperator with PhysicalOperatorDebugging {
 
   override val header = recordsOpt.map(_.header).getOrElse(RecordHeader.empty)
 

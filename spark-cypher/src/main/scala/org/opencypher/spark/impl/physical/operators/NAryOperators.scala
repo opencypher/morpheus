@@ -31,12 +31,21 @@ import org.opencypher.spark.impl.physical.{CAPSPhysicalResult, CAPSRuntimeContex
 import org.opencypher.spark.impl.{CAPSGraph, CAPSRecords, CAPSUnionGraph}
 import org.opencypher.spark.impl.util.TagSupport._
 
+
+private[spark] abstract class NAryPhysicalOprator extends CAPSPhysicalOperator {
+
+  def inputs: List[CAPSPhysicalOperator]
+
+  override def execute(implicit context: CAPSRuntimeContext): CAPSPhysicalResult = executeNary(inputs.map(_.execute))
+
+  def executeNary(inputResults: List[CAPSPhysicalResult])(implicit context: CAPSRuntimeContext): CAPSPhysicalResult
+}
+
 final case class GraphUnionAll(inputs: List[CAPSPhysicalOperator], qgn: QualifiedGraphName)
-  extends CAPSPhysicalOperator with InheritedHeader {
+  extends NAryPhysicalOprator with InheritedHeader with PhysicalOperatorDebugging {
   require(inputs.nonEmpty, "GraphUnionAll requires at least one input")
 
-  override def execute(implicit context: CAPSRuntimeContext): CAPSPhysicalResult = {
-    val inputResults = inputs.map(_.execute)
+  override def executeNary(inputResults: List[CAPSPhysicalResult])(implicit context: CAPSRuntimeContext): CAPSPhysicalResult = {
     implicit val caps = inputResults.head.records.caps
 
     val graphTags = inputResults.map(r => r.workingGraphName -> r.workingGraph.tags).toMap

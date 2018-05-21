@@ -69,7 +69,7 @@ final case class BoundedVarExpand(
     direction: Direction,
     header: RecordHeader,
     isExpandInto: Boolean)
-    extends TernaryPhysicalOperator {
+    extends TernaryPhysicalOperator with PhysicalOperatorDebugging {
 
   override def executeTernary(first: CAPSPhysicalResult, second: CAPSPhysicalResult, third: CAPSPhysicalResult)
     (implicit context: CAPSRuntimeContext): CAPSPhysicalResult = {
