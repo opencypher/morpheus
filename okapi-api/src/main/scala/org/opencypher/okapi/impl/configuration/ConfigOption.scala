@@ -28,7 +28,8 @@ package org.opencypher.okapi.impl.configuration
 
 import scala.util.Try
 
-abstract class ConfigOption[T](val name: String, val defaultValue: T)(convert: String => Option[T]) {
+abstract class ConfigOption[T](val name: String, val defaultValue: T)(val convert: String => Option[T]) {
+
   def set(v: String): Unit = System.setProperty(name, v)
 
   def get: T = Option(System.getProperty(name)).flatMap(convert).getOrElse(defaultValue)
@@ -45,4 +46,21 @@ abstract class ConfigFlag(name: String, defaultValue: Boolean = false)
   def set(): Unit = set(true.toString)
 
   def isSet: Boolean = get
+}
+
+trait ConfigCaching[T] {
+
+  self: ConfigOption[T] =>
+
+  override lazy val get: T = Option(System.getProperty(name)).flatMap(convert).getOrElse(defaultValue)
+
+  override def set(v: String): Unit = {
+    System.setProperty(name, v)
+    if (get != convert(v).get) {
+      throw new UnsupportedOperationException(
+        "A cached config cannot be set to a different value after it was read"
+      )
+    }
+  }
+
 }
