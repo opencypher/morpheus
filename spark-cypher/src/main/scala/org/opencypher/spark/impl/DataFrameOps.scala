@@ -26,12 +26,11 @@
  */
 package org.opencypher.spark.impl
 
-import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan
-import org.apache.spark.sql.execution.columnar.InMemoryRelation
+import org.apache.spark.sql.execution.SparkPlan
+import org.apache.spark.sql.execution.columnar.InMemoryTableScanExec
 import org.apache.spark.sql.functions._
 import org.apache.spark.sql.types._
 import org.apache.spark.sql.{Column, DataFrame, Row, functions}
-import org.apache.spark.storage.StorageLevel
 import org.apache.spark.storage.StorageLevel.MEMORY_ONLY
 import org.opencypher.okapi.api.types._
 import org.opencypher.okapi.api.value.CypherValue
@@ -224,14 +223,15 @@ object DataFrameOps {
     }
 
     /**
-      * Prints Spark logical optimized plan.
+      * Prints Spark physical plan.
       */
-    def printLogicalPlan: Unit = {
+    def printPhysicalPlan: Unit = {
       println("Spark plan:")
-      val sparkPlan = df.queryExecution.optimizedPlan
+      implicit val sc = df.sparkSession.sparkContext
+      val sparkPlan: SparkPlan = df.queryExecution.executedPlan
       // Remove cached inputs from plan
       val planWithoutCached = sparkPlan.transformDown {
-        case imr: InMemoryRelation => CachedOperatorInput(imr.tableName)
+        case imts: InMemoryTableScanExec => CachedOperatorInput(imts.relation.tableName)
         case other => other
       }
       val planString = planWithoutCached.treeString(verbose = false).flatMap {
@@ -246,7 +246,9 @@ object DataFrameOps {
       */
     def cacheAndForce(tableName: Option[String] = None): Long = {
       df.sparkSession.sharedState.cacheManager.cacheQuery(df, tableName, MEMORY_ONLY)
-      df.count() // Force computation of cached DF
+      val rowCount = df.count() // Force computation of cached DF
+      assert(df.storageLevel.useMemory)
+      rowCount
     }
 
   }

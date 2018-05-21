@@ -26,8 +26,11 @@
  */
 package org.opencypher.spark.impl.physical.operators
 
+import org.apache.spark.SparkContext
+import org.apache.spark.rdd.RDD
+import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.sql.catalyst.expressions.Attribute
-import org.apache.spark.sql.catalyst.plans.logical.LeafNode
+import org.apache.spark.sql.execution.LeafExecNode
 import org.opencypher.okapi.impl.exception.UnsupportedOperationException
 import org.opencypher.okapi.relational.impl.table.RecordHeader
 import org.opencypher.spark.api.CAPSSession
@@ -35,7 +38,7 @@ import org.opencypher.spark.configuration.CAPSConfiguration.DebugPhysicalOperato
 import org.opencypher.spark.impl.DataFrameOps._
 import org.opencypher.spark.impl.physical.operators.PhysicalOperatorDebugging.separator
 import org.opencypher.spark.impl.physical.{CAPSPhysicalResult, CAPSRuntimeContext}
-import org.opencypher.spark.impl.{CAPSGraph, CAPSPatternGraph, CAPSRecords, CAPSUnionGraph}
+import org.opencypher.spark.impl.{CAPSPatternGraph, CAPSUnionGraph}
 
 trait PhysicalOperatorDebugging extends CAPSPhysicalOperator {
 
@@ -56,7 +59,7 @@ trait PhysicalOperatorDebugging extends CAPSPhysicalOperator {
         println
         recordsDf.printExecutionTiming(s"Computing $simpleOperatorName output records DataFrame")
         println
-        recordsDf.printLogicalPlan
+        recordsDf.printPhysicalPlan
       }
       val outputRecordsDfRowCount = recordsDf.cacheAndForce(Some(operatorName))
 
@@ -68,7 +71,7 @@ trait PhysicalOperatorDebugging extends CAPSPhysicalOperator {
                 val baseTableDf = patternGraph.baseTable.data
                 baseTableDf.printExecutionTiming("Computing pattern graph")
                 println
-                baseTableDf.printLogicalPlan
+                baseTableDf.printPhysicalPlan
                 val baseTableRowCount = baseTableDf.cacheAndForce(Some(operatorName))
                 println(s"Pattern graph base table DataFrame has $baseTableRowCount rows")
             }
@@ -105,8 +108,9 @@ object PhysicalOperatorDebugging {
 
 }
 
-case class CachedOperatorInput(tableName: Option[String] = None) extends LeafNode {
+case class CachedOperatorInput(tableName: Option[String] = None)(implicit sc: SparkContext) extends LeafExecNode {
+
+  override protected def doExecute(): RDD[InternalRow] = sc.emptyRDD
 
   override def output: Seq[Attribute] = Seq.empty
-
 }
