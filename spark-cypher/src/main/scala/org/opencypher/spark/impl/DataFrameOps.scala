@@ -26,6 +26,7 @@
  */
 package org.opencypher.spark.impl
 
+import org.apache.spark.sql.execution.columnar.InMemoryRelation
 import org.apache.spark.sql.functions._
 import org.apache.spark.sql.types._
 import org.apache.spark.sql.{Column, DataFrame, Row, functions}
@@ -38,6 +39,8 @@ import org.opencypher.okapi.relational.impl.table.RecordHeader
 import org.opencypher.spark.api.Tags._
 import org.opencypher.spark.impl.convert.CAPSCypherType._
 import org.opencypher.spark.impl.physical.CAPSRuntimeContext
+import org.opencypher.spark.impl.physical.operators.CachedOperatorInput
+import org.opencypher.spark.impl.util.Profiling.printTiming
 
 object DataFrameOps {
 
@@ -206,6 +209,40 @@ object DataFrameOps {
 
       df.join(other, joinExpr, joinType)
     }
+
+    /**
+      * Prints Spark computation timing.
+      */
+    def printExecutionTiming(description: String): Unit = {
+      // Print computation timing
+      printTiming(s"$description") {
+        df.count() // Force evaluation of operator
+      }
+    }
+
+    /**
+      * Prints Spark logical optimized plan.
+      */
+    def printLogicalPlan: Unit = {
+      println("Spark plan:")
+      val sparkPlan = df.queryExecution.optimizedPlan
+      // Remove cached inputs from plan
+      val planWithoutCached = sparkPlan.transformDown {
+        case _: InMemoryRelation => CachedOperatorInput
+        case other => other
+      }
+      println(planWithoutCached.treeString)
+    }
+
+    /**
+      * @return cached and forced version of the DF
+      */
+    def cacheAndForce: DataFrame = {
+      val cachedDf = df.cache()
+      cachedDf.count() // Force evaluation of cached DF
+      cachedDf
+    }
+
   }
 
 }
