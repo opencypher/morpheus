@@ -26,6 +26,7 @@
  */
 package org.opencypher.spark.impl
 
+import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan
 import org.apache.spark.sql.execution.columnar.InMemoryRelation
 import org.apache.spark.sql.functions._
 import org.apache.spark.sql.types._
@@ -182,7 +183,7 @@ object DataFrameOps {
 
     def safeRenameColumns(renamings: (String, String)*): DataFrame = {
       renamings.foldLeft(df) { case (tempDf, (oldName, newName)) =>
-          tempDf.safeRenameColumn(oldName, newName)
+        tempDf.safeRenameColumn(oldName, newName)
       }
     }
 
@@ -223,15 +224,19 @@ object DataFrameOps {
     /**
       * Prints Spark logical optimized plan.
       */
-    def printLogicalPlan: Unit = {
+    def printLogicalPlan(plansToRemove: Set[LogicalPlan]): Unit = {
       println("Spark plan:")
       val sparkPlan = df.queryExecution.optimizedPlan
       // Remove cached inputs from plan
       val planWithoutCached = sparkPlan.transformDown {
-        case _: InMemoryRelation => CachedOperatorInput
+        case _: InMemoryRelation => CachedOperatorInput()
         case other => other
       }
-      println(planWithoutCached.treeString)
+      val planString = planWithoutCached.treeString.flatMap {
+        case '\n' => Seq('\n', '\t')
+        case other => Seq(other)
+      }
+      println(s"\t$planString")
     }
 
     /**
