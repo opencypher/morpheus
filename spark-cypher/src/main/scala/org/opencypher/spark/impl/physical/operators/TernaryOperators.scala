@@ -33,10 +33,10 @@ import org.opencypher.okapi.logical.impl.{Directed, Direction, Undirected}
 import org.opencypher.okapi.relational.impl.ColumnNameGenerator
 import org.opencypher.okapi.relational.impl.table.{OpaqueField, ProjectedExpr, RecordHeader, RecordSlot}
 import org.opencypher.spark.impl.CAPSFunctions._
+import org.opencypher.spark.impl.CAPSRecords
 import org.opencypher.spark.impl.DataFrameOps._
 import org.opencypher.spark.impl.physical.operators.CAPSPhysicalOperator._
 import org.opencypher.spark.impl.physical.{CAPSPhysicalResult, CAPSRuntimeContext}
-import org.opencypher.spark.impl.CAPSRecords
 
 private[spark] abstract class TernaryPhysicalOperator extends CAPSPhysicalOperator {
 
@@ -46,8 +46,13 @@ private[spark] abstract class TernaryPhysicalOperator extends CAPSPhysicalOperat
 
   def third: CAPSPhysicalOperator
 
-  override def execute(implicit context: CAPSRuntimeContext): CAPSPhysicalResult =
-    executeTernary(first.execute, second.execute, third.execute)
+  override def execute(implicit context: CAPSRuntimeContext): CAPSPhysicalResult = {
+    val firstResult = first.execute
+    val secondResult = second.execute
+    val thirdResult = third.execute
+    childResults = Some(List(first -> firstResult, second -> secondResult, third -> thirdResult))
+    executeTernary(firstResult, secondResult, thirdResult)
+  }
 
   def executeTernary(first: CAPSPhysicalResult, second: CAPSPhysicalResult, third: CAPSPhysicalResult)(
       implicit context: CAPSRuntimeContext): CAPSPhysicalResult

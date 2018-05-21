@@ -26,11 +26,11 @@
  */
 package org.opencypher.spark.impl.physical.operators
 
-import org.apache.spark.sql.{Column, functions}
 import org.apache.spark.sql.functions.monotonically_increasing_id
+import org.apache.spark.sql.{Column, functions}
 import org.opencypher.okapi.api.graph.QualifiedGraphName
 import org.opencypher.okapi.api.types.{CTBoolean, CTInteger, CTString}
-import org.opencypher.okapi.impl.exception.{IllegalArgumentException, IllegalStateException}
+import org.opencypher.okapi.impl.exception.IllegalArgumentException
 import org.opencypher.okapi.ir.api.PropertyKey
 import org.opencypher.okapi.ir.api.expr.{Expr, Var, _}
 import org.opencypher.okapi.ir.api.set.SetPropertyItem
@@ -54,7 +54,12 @@ private[spark] abstract class BinaryPhysicalOperator extends CAPSPhysicalOperato
 
   def rhs: CAPSPhysicalOperator
 
-  override def execute(implicit context: CAPSRuntimeContext): CAPSPhysicalResult = executeBinary(lhs.execute, rhs.execute)
+  override def execute(implicit context: CAPSRuntimeContext): CAPSPhysicalResult = {
+    val lhsResult = lhs.execute
+    val rhsResult = rhs.execute
+    childResults = Some(List(lhs -> lhsResult, rhs -> rhsResult))
+    executeBinary(lhsResult, rhsResult)
+  }
 
   def executeBinary(left: CAPSPhysicalResult, right: CAPSPhysicalResult)
     (implicit context: CAPSRuntimeContext): CAPSPhysicalResult

@@ -28,15 +28,19 @@ package org.opencypher.spark.impl.physical.operators
 
 import org.opencypher.okapi.api.graph.QualifiedGraphName
 import org.opencypher.spark.impl.physical.{CAPSPhysicalResult, CAPSRuntimeContext}
-import org.opencypher.spark.impl.{CAPSGraph, CAPSRecords, CAPSUnionGraph}
 import org.opencypher.spark.impl.util.TagSupport._
+import org.opencypher.spark.impl.{CAPSRecords, CAPSUnionGraph}
 
 
 private[spark] abstract class NAryPhysicalOprator extends CAPSPhysicalOperator {
 
   def inputs: List[CAPSPhysicalOperator]
 
-  override def execute(implicit context: CAPSRuntimeContext): CAPSPhysicalResult = executeNary(inputs.map(_.execute))
+  override def execute(implicit context: CAPSRuntimeContext): CAPSPhysicalResult = {
+    val results = inputs.map(_.execute)
+    childResults = Some(inputs.zip(results))
+    executeNary(results)
+  }
 
   def executeNary(inputResults: List[CAPSPhysicalResult])(implicit context: CAPSRuntimeContext): CAPSPhysicalResult
 }

@@ -48,7 +48,11 @@ private[spark] abstract class UnaryPhysicalOperator extends CAPSPhysicalOperator
 
   def in: CAPSPhysicalOperator
 
-  override def execute(implicit context: CAPSRuntimeContext): CAPSPhysicalResult = executeUnary(in.execute)
+  override def execute(implicit context: CAPSRuntimeContext): CAPSPhysicalResult = {
+    val inResult = in.execute
+    childResults = Some(List(in -> inResult))
+    executeUnary(inResult)
+  }
 
   def executeUnary(prev: CAPSPhysicalResult)(implicit context: CAPSRuntimeContext): CAPSPhysicalResult
 }
