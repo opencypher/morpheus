@@ -40,7 +40,7 @@ import org.opencypher.spark.schema.CAPSSchema
   * to, including their corresponding graph tags. Note, that the initial schema does not include the graph tag used for
   * the constructed entities.
   */
-class CAPSPatternGraph(
+case class CAPSPatternGraph(
   private[spark] val baseTable: CAPSRecords,
   override val schema: CAPSSchema,
   override val tags: Set[Int]

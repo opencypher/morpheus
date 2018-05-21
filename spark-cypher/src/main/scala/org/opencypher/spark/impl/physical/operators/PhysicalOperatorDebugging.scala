@@ -33,7 +33,7 @@ import org.opencypher.spark.configuration.CAPSConfiguration.DebugPhysicalOperato
 import org.opencypher.spark.impl.DataFrameOps._
 import org.opencypher.spark.impl.physical.operators.PhysicalOperatorDebugging.separator
 import org.opencypher.spark.impl.physical.{CAPSPhysicalResult, CAPSRuntimeContext}
-import org.opencypher.spark.impl.{CAPSPatternGraph, CAPSRecords, CAPSUnionGraph}
+import org.opencypher.spark.impl.{CAPSGraph, CAPSPatternGraph, CAPSRecords, CAPSUnionGraph}
 
 trait PhysicalOperatorDebugging extends CAPSPhysicalOperator {
 
@@ -48,22 +48,28 @@ trait PhysicalOperatorDebugging extends CAPSPhysicalOperator {
 
       val recordsDf = output.records.data
       val cachedRecordsDf = {
-        recordsDf.printExecutionTiming("Compute result records")
+        recordsDf.printExecutionTiming(s"Computing $operatorName result records")
         recordsDf.printLogicalPlan
         recordsDf.cacheAndForce
       }
       val cachedRecords = CAPSRecords.verifyAndCreate(output.records.header -> cachedRecordsDf)
 
-      if (getClass == classOf[ConstructGraph]) {
+      val maybeCachedGraph: Option[CAPSGraph] = if (getClass != classOf[ConstructGraph]) {
+        None
+      } else {
         output.workingGraph match {
-          case ug: CAPSUnionGraph =>
-            ug.graphs.collectFirst {
-              case (patternGraph: CAPSPatternGraph, _) => patternGraph
-            }.map { pg =>
-              val baseTableDf = pg.baseTable.data
-              baseTableDf.printExecutionTiming("Compute pattern graph")
+          case unionGraph: CAPSUnionGraph =>
+            unionGraph.graphs.collectFirst {
+              case (patternGraph: CAPSPatternGraph, retaggings) =>
+              val baseTableDf = patternGraph.baseTable.data
+              baseTableDf.printExecutionTiming("Computing pattern graph")
               baseTableDf.printLogicalPlan
-              baseTableDf.cacheAndForce
+              val cachedBaseTableDf = baseTableDf.cacheAndForce
+              val cachedBaseTable = CAPSRecords.verifyAndCreate(patternGraph.baseTable.header, cachedBaseTableDf)
+              val cachedPatternGraph = patternGraph.copy(baseTable = cachedBaseTable)
+              val unionGraphWithCachedPatternGraph = unionGraph.copy(
+                graphs = (unionGraph.graphs - patternGraph) + (cachedPatternGraph -> retaggings))
+              unionGraphWithCachedPatternGraph
             }
         }
       }
@@ -71,14 +77,17 @@ trait PhysicalOperatorDebugging extends CAPSPhysicalOperator {
       println(separator)
       println
 
-      val cachedResult = output.copy(records = cachedRecords)
+      val cachedResult = output.copy(
+        records = cachedRecords,
+        workingGraph = maybeCachedGraph.getOrElse(output.workingGraph)
+      )
       cachedResult
     } else {
       super.execute
     }
   }
 
-  }
+}
 
 object PhysicalOperatorDebugging {
 
