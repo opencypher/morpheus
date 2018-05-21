@@ -234,7 +234,7 @@ object DataFrameOps {
         case imr: InMemoryRelation => CachedOperatorInput(imr.tableName)
         case other => other
       }
-      val planString = planWithoutCached.treeString.flatMap {
+      val planString = planWithoutCached.treeString(verbose = false).flatMap {
         case '\n' => Seq('\n', '\t')
         case other => Seq(other)
       }

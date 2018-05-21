@@ -29,6 +29,7 @@ package org.opencypher.spark.impl.physical.operators
 import org.apache.spark.sql.catalyst.expressions.Attribute
 import org.apache.spark.sql.catalyst.plans.logical.LeafNode
 import org.opencypher.okapi.impl.exception.UnsupportedOperationException
+import org.opencypher.okapi.relational.impl.table.RecordHeader
 import org.opencypher.spark.api.CAPSSession
 import org.opencypher.spark.configuration.CAPSConfiguration.DebugPhysicalOperators
 import org.opencypher.spark.impl.DataFrameOps._
@@ -43,16 +44,20 @@ trait PhysicalOperatorDebugging extends CAPSPhysicalOperator {
       val output: CAPSPhysicalResult = super.execute
       implicit val caps: CAPSSession = output.records.caps
 
-      val operatorName = getClass.getSimpleName.toUpperCase
+      val operatorName = toString
+      val simpleOperatorName = getClass.getSimpleName
+
       println
       println(separator)
       println(s"**$operatorName**")
 
       val recordsDf = output.records.data
-      println
-      recordsDf.printExecutionTiming(s"Computing $operatorName result records")
-      println
-      recordsDf.printLogicalPlan
+      if (output.records.header != RecordHeader.empty) {
+        println
+        recordsDf.printExecutionTiming(s"Computing $simpleOperatorName result records")
+        println
+        recordsDf.printLogicalPlan
+      }
       recordsDf.cacheAndForce(Some(operatorName))
 
       if (getClass == classOf[ConstructGraph]) {
@@ -70,7 +75,7 @@ trait PhysicalOperatorDebugging extends CAPSPhysicalOperator {
       }
 
       val inputs = maybeChildResults.getOrElse(
-        throw UnsupportedOperationException(s"Operator $operatorName did not store its input results"))
+        throw UnsupportedOperationException(s"Operator $simpleOperatorName did not store its input results"))
 
       if (inputs.nonEmpty) {
         println("Input operators:")
