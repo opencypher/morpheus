@@ -54,11 +54,11 @@ trait PhysicalOperatorDebugging extends CAPSPhysicalOperator {
       val recordsDf = output.records.data
       if (output.records.header != RecordHeader.empty) {
         println
-        recordsDf.printExecutionTiming(s"Computing $simpleOperatorName result records")
+        recordsDf.printExecutionTiming(s"Computing $simpleOperatorName output records DataFrame")
         println
         recordsDf.printLogicalPlan
       }
-      recordsDf.cacheAndForce(Some(operatorName))
+      val outputRecordsDfRowCount = recordsDf.cacheAndForce(Some(operatorName))
 
       if (getClass == classOf[ConstructGraph]) {
         output.workingGraph match {
@@ -69,7 +69,8 @@ trait PhysicalOperatorDebugging extends CAPSPhysicalOperator {
                 baseTableDf.printExecutionTiming("Computing pattern graph")
                 println
                 baseTableDf.printLogicalPlan
-                baseTableDf.cacheAndForce(Some(operatorName))
+                val baseTableRowCount = baseTableDf.cacheAndForce(Some(operatorName))
+                println(s"Pattern graph base table DataFrame has $baseTableRowCount rows")
             }
         }
       }
@@ -78,12 +79,14 @@ trait PhysicalOperatorDebugging extends CAPSPhysicalOperator {
         throw UnsupportedOperationException(s"Operator $simpleOperatorName did not store its input results"))
 
       if (inputs.nonEmpty) {
-        println("Input operators:")
+        println("Inputs:")
         inputs.foreach { case (operator, result) =>
-          println(s"\t${operator.getClass.getSimpleName.toUpperCase} with ${result.records.size} records")
+          println(s"\t${operator.getClass.getSimpleName.toUpperCase} records DataFrame has ${result.records.size} rows")
         }
         println
       }
+      println(s"Output records DataFrame has $outputRecordsDfRowCount rows")
+      println
 
       println(separator)
       println

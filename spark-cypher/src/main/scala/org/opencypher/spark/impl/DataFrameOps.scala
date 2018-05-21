@@ -244,7 +244,7 @@ object DataFrameOps {
     /**
       * @return cached and forced version of the DF
       */
-    def cacheAndForce(tableName: Option[String] = None): Unit = {
+    def cacheAndForce(tableName: Option[String] = None): Long = {
       df.sparkSession.sharedState.cacheManager.cacheQuery(df, tableName, MEMORY_ONLY)
       df.count() // Force computation of cached DF
     }
