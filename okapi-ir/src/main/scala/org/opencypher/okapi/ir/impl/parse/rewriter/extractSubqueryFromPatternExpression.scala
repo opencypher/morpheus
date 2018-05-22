@@ -26,13 +26,12 @@
  */
 package org.opencypher.okapi.ir.impl.parse.rewriter
 
-import org.neo4j.cypher.internal.frontend.v3_4.SemanticCheck
-import org.neo4j.cypher.internal.frontend.v3_4.ast._
-import org.neo4j.cypher.internal.frontend.v3_4.ast.rewriters.{nameMatchPatternElements, normalizeMatchPredicates}
-import org.neo4j.cypher.internal.frontend.v3_4.semantics.{SemanticCheckResult, SemanticCheckableExpression}
-import org.neo4j.cypher.internal.util.v3_4._
-import org.neo4j.cypher.internal.v3_4.expressions._
-import org.neo4j.cypher.internal.v3_4.functions.Exists
+import org.opencypher.v9_1.ast._
+import org.opencypher.v9_1.ast.semantics.{SemanticCheck, SemanticCheckResult, SemanticCheckableExpression}
+import org.opencypher.v9_1.expressions.functions.Exists
+import org.opencypher.v9_1.expressions._
+import org.opencypher.v9_1.rewriting.rewriters.{nameMatchPatternElements, normalizeMatchPredicates}
+import org.opencypher.v9_1.util._
 
 case class extractSubqueryFromPatternExpression(mkException: (String, InputPosition) => CypherException)
     extends Rewriter {

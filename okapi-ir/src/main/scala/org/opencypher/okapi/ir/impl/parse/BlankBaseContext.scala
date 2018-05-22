@@ -26,9 +26,9 @@
  */
 package org.opencypher.okapi.ir.impl.parse
 
-import org.neo4j.cypher.internal.frontend.v3_4.AstRewritingMonitor
-import org.neo4j.cypher.internal.frontend.v3_4.phases._
-import org.neo4j.cypher.internal.util.v3_4.{CypherException, InputPosition}
+import org.opencypher.v9_1.frontend.phases._
+import org.opencypher.v9_1.rewriting.AstRewritingMonitor
+import org.opencypher.v9_1.util.{CypherException, InputPosition}
 
 import scala.reflect.ClassTag
 

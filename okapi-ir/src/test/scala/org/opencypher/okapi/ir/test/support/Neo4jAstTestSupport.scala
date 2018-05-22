@@ -26,16 +26,16 @@
  */
 package org.opencypher.okapi.ir.test.support
 
-import org.neo4j.cypher.internal.frontend.v3_4.ast.rewriters.{CNFNormalizer, Namespacer, Never}
-import org.neo4j.cypher.internal.frontend.v3_4.ast.{AstConstructionTestSupport, _}
-import org.neo4j.cypher.internal.frontend.v3_4.helpers.rewriting.RewriterStepSequencer
-import org.neo4j.cypher.internal.frontend.v3_4.phases._
-import org.neo4j.cypher.internal.frontend.v3_4.semantics.{SemanticCheckResult, SemanticState}
-import org.neo4j.cypher.internal.util.v3_4.{CypherException, InputPosition}
-import org.neo4j.cypher.internal.v3_4.expressions.Expression
 import org.opencypher.okapi.impl.exception.IllegalArgumentException
 import org.opencypher.okapi.ir.impl.parse.CypherParser
 import org.opencypher.okapi.testing.BaseTestSuite
+import org.opencypher.v9_1.ast._
+import org.opencypher.v9_1.ast.semantics.{SemanticCheckResult, SemanticState}
+import org.opencypher.v9_1.expressions.Expression
+import org.opencypher.v9_1.frontend.phases._
+import org.opencypher.v9_1.rewriting.RewriterStepSequencer
+import org.opencypher.v9_1.rewriting.rewriters.Never
+import org.opencypher.v9_1.util.{CypherException, InputPosition}
 
 import scala.language.implicitConversions
 

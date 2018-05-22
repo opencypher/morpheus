@@ -26,10 +26,10 @@
  */
 package org.opencypher.okapi.ir.impl.typer
 
-import org.neo4j.cypher.internal.frontend.v3_4.ast.AstConstructionTestSupport
-import org.neo4j.cypher.internal.v3_4.expressions.{False, True}
 import org.opencypher.okapi.api.types.{CTBoolean, CTString}
 import org.opencypher.okapi.testing.BaseTestSuite
+import org.opencypher.v9_1.ast.AstConstructionTestSupport
+import org.opencypher.v9_1.expressions.{False, True}
 
 class TypeTrackerTest extends BaseTestSuite with AstConstructionTestSupport {
 

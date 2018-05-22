@@ -26,15 +26,15 @@
  */
 package org.opencypher.okapi.ir.impl
 
-import org.neo4j.cypher.internal.frontend.v3_4.parser.{Expressions, Patterns}
-import org.neo4j.cypher.internal.util.v3_4.InputPosition.NONE
-import org.neo4j.cypher.internal.util.v3_4.{InputPosition, SyntaxException}
-import org.neo4j.cypher.internal.v3_4.{expressions => ast}
 import org.opencypher.okapi.api.types.{CTNode, CTRelationship, CypherType}
 import org.opencypher.okapi.ir.api.IRField
 import org.opencypher.okapi.ir.api.expr._
 import org.opencypher.okapi.ir.api.pattern._
 import org.opencypher.okapi.ir.test.toField
+import org.opencypher.v9_1.parser.{Expressions, Patterns}
+import org.opencypher.v9_1.util.InputPosition.NONE
+import org.opencypher.v9_1.util.{InputPosition, SyntaxException}
+import org.opencypher.v9_1.{expressions => ast}
 import org.parboiled.scala.{EOI, Parser, Rule1}
 
 import scala.language.implicitConversions

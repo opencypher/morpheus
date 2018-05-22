@@ -33,16 +33,15 @@ import cats.data.State
 import cats.data.State._
 import cats.instances.list._
 import cats.syntax.all._
-import org.neo4j.cypher.internal.frontend.v3_4.AstRewritingMonitor
-import org.neo4j.cypher.internal.frontend.v3_4.ast._
-import org.neo4j.cypher.internal.frontend.v3_4.ast.rewriters._
-import org.neo4j.cypher.internal.frontend.v3_4.helpers.rewriting.RewriterStepSequencer
-import org.neo4j.cypher.internal.frontend.v3_4.phases._
-import org.neo4j.cypher.internal.frontend.v3_4.semantics._
-import org.neo4j.cypher.internal.util.v3_4.{ASTNode, CypherException, InputPosition}
-import org.neo4j.cypher.internal.v3_4.expressions._
+import org.opencypher.v9_1.ast._
 import org.opencypher.okapi.api.value.CypherValue.{CypherEntity, CypherMap, CypherNode, CypherRelationship}
 import org.opencypher.okapi.impl.exception.{IllegalArgumentException, UnsupportedOperationException}
+import org.opencypher.v9_1.ast.semantics.{SemanticErrorDef, SemanticState}
+import org.opencypher.v9_1.expressions._
+import org.opencypher.v9_1.frontend.phases._
+import org.opencypher.v9_1.rewriting.rewriters.Never
+import org.opencypher.v9_1.rewriting.{AstRewritingMonitor, RewriterStepSequencer}
+import org.opencypher.v9_1.util.{ASTNode, CypherException, InputPosition}
 
 import scala.collection.TraversableOnce
 import scala.reflect.ClassTag

@@ -26,8 +26,8 @@
  */
 package org.opencypher.okapi.ir.impl.parse.rewriter
 
-import org.neo4j.cypher.internal.util.v3_4._
-import org.neo4j.cypher.internal.v3_4.expressions._
+import org.opencypher.v9_1.expressions.{CaseExpression, Equals}
+import org.opencypher.v9_1.util.{Rewriter, topDown}
 
 /*
   Rewrites special CASE expressions to generic CASE expressions, e.g

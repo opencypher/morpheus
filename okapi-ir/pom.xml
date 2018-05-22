@@ -26,12 +26,12 @@
       <version>${project.parent.version}</version>
     </dependency>
 
-    <!-- Neo4j -->
+    <!-- openCypher -->
 
     <dependency>
-      <groupId>org.neo4j</groupId>
-      <artifactId>openCypher-frontend-1</artifactId>
-      <version>${dep.neo4j.frontend.version}</version>
+      <groupId>org.opencypher</groupId>
+      <artifactId>front-end-9.1</artifactId>
+      <version>${dep.opencypher.front-end.version}</version>
     </dependency>
 
     <!-- Utils -->
@@ -78,9 +78,17 @@
     </dependency>
 
     <dependency>
-      <groupId>org.neo4j</groupId>
-      <artifactId>openCypher-frontend-1</artifactId>
-      <version>${dep.neo4j.frontend.version}</version>
+      <groupId>org.opencypher</groupId>
+      <artifactId>ast-9.1</artifactId>
+      <version>${dep.opencypher.front-end.version}</version>
+      <type>test-jar</type>
+      <scope>test</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>org.opencypher</groupId>
+      <artifactId>util-9.1</artifactId>
+      <version>${dep.opencypher.front-end.version}</version>
       <type>test-jar</type>
       <scope>test</scope>
     </dependency>

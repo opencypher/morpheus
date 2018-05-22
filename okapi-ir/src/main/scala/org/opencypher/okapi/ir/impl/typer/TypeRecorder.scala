@@ -27,9 +27,9 @@
 package org.opencypher.okapi.ir.impl.typer
 
 import cats.kernel.Semigroup
-import org.neo4j.cypher.internal.util.v3_4.Ref
-import org.neo4j.cypher.internal.v3_4.expressions.Expression
 import org.opencypher.okapi.api.types.CypherType
+import org.opencypher.v9_1.expressions.Expression
+import org.opencypher.v9_1.util.Ref
 
 import scala.annotation.tailrec
 

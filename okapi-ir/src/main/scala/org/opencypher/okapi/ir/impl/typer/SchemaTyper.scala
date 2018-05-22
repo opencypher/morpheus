@@ -33,12 +33,12 @@ import cats.implicits._
 import cats.{Foldable, Monoid}
 import org.atnos.eff._
 import org.atnos.eff.all._
-import org.neo4j.cypher.internal.v3_4.expressions._
-import org.neo4j.cypher.internal.v3_4.functions.{Coalesce, Collect, Exists, Max, Min}
 import org.opencypher.okapi.api.schema.Schema
 import org.opencypher.okapi.api.types.CypherType.joinMonoid
 import org.opencypher.okapi.api.types._
 import org.opencypher.okapi.ir.impl.parse.rewriter.ExistsPattern
+import org.opencypher.v9_1.expressions._
+import org.opencypher.v9_1.expressions.functions.{Coalesce, Collect, Exists, Max, Min}
 
 import scala.util.Try
 

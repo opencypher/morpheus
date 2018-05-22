@@ -31,9 +31,7 @@ import cats.data.State
 import cats.data.State._
 import cats.instances.list._
 import cats.syntax.flatMap._
-import org.neo4j.cypher.internal.v3_4.expressions.SemanticDirection.{BOTH, INCOMING, OUTGOING}
-import org.neo4j.cypher.internal.v3_4.expressions.{Expression, LogicalVariable, RelTypeName}
-import org.neo4j.cypher.internal.v3_4.{expressions => ast}
+import org.opencypher.v9_1.{expressions => ast}
 import org.opencypher.okapi.api.graph.QualifiedGraphName
 import org.opencypher.okapi.api.types.{CTList, CTNode, CTRelationship, CypherType}
 import org.opencypher.okapi.impl.exception.{IllegalArgumentException, NotImplementedException}
@@ -41,6 +39,8 @@ import org.opencypher.okapi.ir.api._
 import org.opencypher.okapi.ir.api.expr._
 import org.opencypher.okapi.ir.api.pattern._
 import org.opencypher.okapi.ir.api.util.FreshVariableNamer
+import org.opencypher.v9_1.expressions.{Expression, LogicalVariable, RelTypeName}
+import org.opencypher.v9_1.expressions.SemanticDirection.{BOTH, INCOMING, OUTGOING}
 
 import scala.annotation.tailrec
 

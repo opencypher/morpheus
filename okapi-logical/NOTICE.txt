@@ -32,6 +32,12 @@ Apache Software License, Version 2.0
   Okapi - openCypher API
   Okapi IR - Declarative representation of Cypher queries
   Okapi Trees - Tree rewriting framework for Okapi
+  openCypher AST for the Cypher Query Language
+  openCypher Expressions
+  openCypher Front End
+  openCypher Parser
+  openCypher Rewriting
+  openCypher Utils
   parboiled-core
   parboiled-scala
 

@@ -27,7 +27,6 @@
 package org.opencypher.okapi.ir.impl
 
 import org.mockito.Mockito._
-import org.neo4j.cypher.internal.frontend.v3_4.semantics.SemanticState
 import org.opencypher.okapi.api.graph.{GraphName, Namespace, QualifiedGraphName}
 import org.opencypher.okapi.api.io._
 import org.opencypher.okapi.api.schema.Schema
@@ -38,6 +37,7 @@ import org.opencypher.okapi.ir.api.expr.Expr
 import org.opencypher.okapi.ir.api.pattern.Pattern
 import org.opencypher.okapi.ir.impl.parse.CypherParser
 import org.opencypher.okapi.testing.BaseTestSuite
+import org.opencypher.v9_1.ast.semantics.SemanticState
 import org.scalatest.mockito.MockitoSugar
 
 import scala.language.implicitConversions

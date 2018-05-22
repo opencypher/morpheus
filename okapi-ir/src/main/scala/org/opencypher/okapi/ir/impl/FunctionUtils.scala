@@ -26,11 +26,10 @@
  */
 package org.opencypher.okapi.ir.impl
 
-import org.neo4j.cypher.internal.v3_4.expressions.FunctionInvocation
-import org.neo4j.cypher.internal.v3_4.functions
 import org.opencypher.okapi.api.types.CypherType
 import org.opencypher.okapi.impl.exception.NotImplementedException
 import org.opencypher.okapi.ir.api.expr._
+import org.opencypher.v9_1.expressions.{FunctionInvocation, functions}
 
 object FunctionUtils {
 

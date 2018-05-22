@@ -26,10 +26,10 @@
  */
 package org.opencypher.okapi.ir.impl.parse.rewriter
 
-import org.neo4j.cypher.internal.frontend.v3_4.ast.rewriters.{CNFNormalizer, Forced, literalReplacement}
-import org.neo4j.cypher.internal.frontend.v3_4.phases.CompilationPhaseTracer.CompilationPhase.AST_REWRITE
-import org.neo4j.cypher.internal.frontend.v3_4.phases.{BaseContext, BaseState, Phase}
-import org.neo4j.cypher.internal.util.v3_4.{Rewriter, inSequence}
+import org.opencypher.v9_1.frontend.phases.CompilationPhaseTracer.CompilationPhase.AST_REWRITE
+import org.opencypher.v9_1.frontend.phases.{BaseContext, BaseState, CNFNormalizer, Phase}
+import org.opencypher.v9_1.rewriting.rewriters.{Forced, literalReplacement}
+import org.opencypher.v9_1.util.{Rewriter, inSequence}
 
 case object OkapiRewriting extends Phase[BaseContext, BaseState, BaseState] {
 

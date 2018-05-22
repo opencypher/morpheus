@@ -27,9 +27,9 @@
     </dependency>
 
     <dependency>
-      <groupId>org.neo4j</groupId>
-      <artifactId>openCypher-frontend-1</artifactId>
-      <version>${dep.neo4j.frontend.version}</version>
+      <groupId>org.opencypher</groupId>
+      <artifactId>front-end-9.1</artifactId>
+      <version>${dep.opencypher.front-end.version}</version>
     </dependency>
 
     <dependency>
