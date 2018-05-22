@@ -42,7 +42,7 @@ import org.opencypher.spark.api.Tags._
 import org.opencypher.spark.impl.convert.CAPSCypherType._
 import org.opencypher.spark.impl.physical.CAPSRuntimeContext
 import org.opencypher.spark.impl.physical.operators.CachedOperatorInput
-import org.opencypher.spark.impl.util.Profiling.printTiming
+import org.opencypher.okapi.impl.util.Measurement.printTiming
 
 object DataFrameOps {
 
