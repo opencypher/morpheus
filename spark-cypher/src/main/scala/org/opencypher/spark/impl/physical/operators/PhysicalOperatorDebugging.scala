@@ -45,8 +45,8 @@ trait PhysicalOperatorDebugging extends CAPSPhysicalOperator {
   /**
     * Wrapper around execute that measures how long an operator takes to execute.
     *
-    * If all input records are run with it as well, then they cached and their computation was forced before measuring
-    * how long forcing the computation required by the current operator takes (and runs that forcing without caching).
+    * If all input records are run with it as well, then they are cached and their computation was forced before measuring
+    * how long forcing the computation required by the current operator takes.
     *
     * Debugging computes every operator twice: once to measure how long the computation takes and once to force the
     * computation of a cached version of its result. The reason for this is that the caching itself might be associated
