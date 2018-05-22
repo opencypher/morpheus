@@ -80,9 +80,9 @@ trait PhysicalOperatorDebugging extends CAPSPhysicalOperator {
         output.workingGraph match {
           case unionGraph: CAPSUnionGraph =>
             unionGraph.graphs.collectFirst {
-              case (patternGraph: CAPSPatternGraph, retaggings) =>
+              case (patternGraph: CAPSPatternGraph, _) =>
                 val baseTableDf = patternGraph.baseTable.data
-                baseTableDf.printExecutionTiming("Computing pattern graph")
+                baseTableDf.printExecutionTiming("Computing pattern graph base table")
                 println
                 baseTableDf.printPhysicalPlan
                 val baseTableRowCount = baseTableDf.cacheAndForce(Some(operatorName))
