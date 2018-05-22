@@ -32,7 +32,7 @@ import org.opencypher.spark.impl.util.TagSupport._
 import org.opencypher.spark.impl.{CAPSRecords, CAPSUnionGraph}
 
 
-private[spark] abstract class NAryPhysicalOprator extends CAPSPhysicalOperator {
+private[spark] abstract class NAryPhysicalOperator extends CAPSPhysicalOperator {
 
   def inputs: List[CAPSPhysicalOperator]
 
@@ -46,7 +46,7 @@ private[spark] abstract class NAryPhysicalOprator extends CAPSPhysicalOperator {
 }
 
 final case class GraphUnionAll(inputs: List[CAPSPhysicalOperator], qgn: QualifiedGraphName)
-  extends NAryPhysicalOprator with InheritedHeader with PhysicalOperatorDebugging {
+  extends NAryPhysicalOperator with InheritedHeader with PhysicalOperatorDebugging {
   require(inputs.nonEmpty, "GraphUnionAll requires at least one input")
 
   override def executeNary(inputResults: List[CAPSPhysicalResult])(implicit context: CAPSRuntimeContext): CAPSPhysicalResult = {
