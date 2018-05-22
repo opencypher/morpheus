@@ -28,31 +28,159 @@ Third-party licenses
 --------------------
 
 Apache Software License, Version 2.0
+  Apache Avro
+  Apache Commons BeanUtils
+  Apache Commons Codec
+  Apache Commons Collections
+  Apache Commons Configuration
+  Apache Commons CSV
+  Apache Commons IO
   Apache Commons Lang
+  Apache Commons Math
+  Apache Commons Text
+  Apache Geronimo JCache Spec 1.0
+  Apache Hadoop Annotations
+  Apache Hadoop Auth
+  Apache Hadoop Common
+  Apache Hadoop HDFS
+  Apache Hadoop HDFS Client
+  Apache Hadoop MapReduce App
+  Apache Hadoop MapReduce Common
+  Apache Hadoop MapReduce Core
+  Apache Hadoop MapReduce HistoryServer
+  Apache Hadoop MapReduce JobClient
+  Apache Hadoop MapReduce Shuffle
+  Apache Hadoop Mini-Cluster
+  Apache Hadoop YARN API
+  Apache Hadoop YARN ApplicationHistoryService
+  Apache Hadoop YARN Client
+  Apache Hadoop YARN Common
+  Apache Hadoop YARN NodeManager
+  Apache Hadoop YARN Registry
+  Apache Hadoop YARN ResourceManager
+  Apache Hadoop YARN Server Common
+  Apache Hadoop YARN Server Tests
+  Apache Hadoop YARN Timeline Service
+  Apache Hadoop YARN Web Proxy
+  Apache HttpClient
+  Apache HttpCore
+  Apache Log4j
+  ASM based accessors helper used by json-smart
+  Caffeine cache
   Circe core
   Circe generic
   Circe jawn
   Circe numbers
   Circe parser
+  Commons CLI
+  Commons Compress
+  Commons Daemon
+  Commons Lang
+  Commons Logging
+  Commons Net
+  ConcurrentLinkedHashMap
   core
   coreJVM
-  Neo4j - Cypher Expressions 3.4
-  Neo4j - Cypher Util 3.4
-  Neo4j Java Driver
+  Curator Client
+  Curator Framework
+  Curator Recipes
+  Cypher for Apache Spark - CAPS
+  Data Mapper for Jackson
+  Ehcache
+  FindBugs-jsr305
+  fst
+  Google Guice - Core Library
+  Google Guice - Extensions - Servlet
+  Gson
+  Guava: Google Core Libraries for Java
+  HikariCP
+  htrace-core4
+  Jackson
+  Jackson-annotations
+  Jackson-core
+  jackson-databind
+  Jackson-JAXRS-base
+  Jackson-JAXRS-JSON
+  Jackson-module-JAXB-annotations
+  Java Servlet API
+  java-util
+  javax.inject
+  JAX-RS provider for JSON content type
+  JCIP Annotations under Apache License
+  Jettison
+  JSON Small and Fast Parser
+  json-io
+  Kerb Simple Kdc
+  Kerby ASN1 Project
+  Kerby Config
+  Kerby PKIX Project
+  Kerby Util
+  Kerby XDR Project
+  Kerby-kerb Admin
+  Kerby-kerb Client
+  Kerby-kerb Common
+  Kerby-kerb core
+  Kerby-kerb Crypto
+  Kerby-kerb Identity
+  Kerby-kerb Server
+  Kerby-kerb Util
+  Lucene codecs
+  Lucene Common Analyzers
+  Lucene Core
+  Lucene Memory
+  Lucene QueryParsers
+  Metrics Core
+  Netty
+  Netty/All-in-One
+  Nimbus JOSE+JWT
   Okapi - openCypher API
   Okapi IR - Declarative representation of Cypher queries
   Okapi Logical - Logical representation of Cypher queries
   Okapi Relational - Relational Algebra for Cypher
+  Okapi Test Utilities
   Okapi Trees - Tree rewriting framework for Okapi
-  openCypher Frontend
+  OkHttp
+  Okio
+  opencsv
+  openCypher AST for the Cypher Query Language
+  openCypher Expressions
+  openCypher Front End
+  openCypher Parser
+  openCypher Rewriting
+  openCypher Utils
   parboiled-core
   parboiled-scala
+  scalactic
+  scalatest
+  snappy-java
+  Token provider
+  Woodstox
+  Xml Compatibility extensions for Jackson
+  zookeeper
 
 BSD License
+  ASM Analysis
+  ASM Core
+  ASM Tree
+  ASM Util
+  JLine
+  leveldbjni-all
+  ParaNamer Core
+  Protocol Buffer Java API
   Scala Compiler
   Scala Library
   scala-parser-combinators
   scala-xml
+  Stax2 API
+
+Bouncy Castle License
+  Bouncy Castle JSSE provider and TLS/DTLS API
+  Bouncy Castle PKIX, CMS, EAC, TSP, PKCS, OCSP, CMP, and CRMF APIs
+  Bouncy Castle Provider
+
+CDDL 1.1, GPL2 with CPE
+  jersey-multipart
+  MIME streaming extension
 
 MIT-license
   Cats core
@@ -60,5 +188,15 @@ MIT-license
   Cats macros
   core
   machinist
+  Mockito
   parser
+  SLF4J API Module
+  SLF4J LOG4J-12 Binding
+
+Mozilla Public License, Version 2.0
+  Mozilla Rhino
+
+Public-domain
+  AOP alliance
+  XZ for Java
 
