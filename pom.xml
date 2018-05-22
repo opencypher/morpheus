@@ -86,7 +86,7 @@
     <dep.scalatest.version>3.0.5</dep.scalatest.version>
     <dep.scalacheck.version>1.13.5</dep.scalacheck.version>
   </properties>
-  
+
   <build>
     <resources>
       <resource>
@@ -372,7 +372,35 @@
     </profile>
 
     <profile>
-      <id>cluster</id>
+      <id>check-licenses</id>
+      <activation>
+        <activeByDefault>false</activeByDefault>
+        <file>
+          <exists>src/main/scala</exists>
+        </file>
+        <property>
+          <name>cluster</name>
+        </property>
+      </activation>
+      <build>
+        <plugins>
+          <!-- License file checking-->
+          <!--<plugin>-->
+            <!--<groupId>org.neo4j.build.plugins</groupId>-->
+            <!--<artifactId>licensing-maven-plugin</artifactId>-->
+          <!--</plugin>-->
+
+          <!-- License header checking -->
+          <plugin>
+            <groupId>com.mycila</groupId>
+            <artifactId>license-maven-plugin</artifactId>
+          </plugin>
+        </plugins>
+      </build>
+    </profile>
+
+    <profile>
+      <id>cluster-package</id>
       <properties>
         <project.artifact.classifier>cluster</project.artifact.classifier>
         <dep.spark.scope>provided</dep.spark.scope>
@@ -393,21 +421,11 @@
         <module>okapi-testing</module>
         <module>okapi-trees</module>
         <module>spark-cypher</module>
+        <module>spark-cypher-testing</module>
       </modules>
 
       <build>
         <plugins>
-          <!-- Licensing plugins-->
-          <plugin>
-            <groupId>org.neo4j.build.plugins</groupId>
-            <artifactId>licensing-maven-plugin</artifactId>
-          </plugin>
-
-          <plugin>
-            <groupId>com.mycila</groupId>
-            <artifactId>license-maven-plugin</artifactId>
-          </plugin>
-
           <!-- shade plugin -->
           <plugin>
             <groupId>org.apache.maven.plugins</groupId>
