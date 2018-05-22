@@ -26,11 +26,11 @@
  */
 package org.opencypher.spark.impl.physical.operators
 
-import org.apache.spark.sql.{Column, functions}
 import org.apache.spark.sql.functions.monotonically_increasing_id
+import org.apache.spark.sql.{Column, functions}
 import org.opencypher.okapi.api.graph.QualifiedGraphName
 import org.opencypher.okapi.api.types.{CTBoolean, CTInteger, CTString}
-import org.opencypher.okapi.impl.exception.{IllegalArgumentException, IllegalStateException}
+import org.opencypher.okapi.impl.exception.IllegalArgumentException
 import org.opencypher.okapi.ir.api.PropertyKey
 import org.opencypher.okapi.ir.api.expr.{Expr, Var, _}
 import org.opencypher.okapi.ir.api.set.SetPropertyItem
@@ -54,7 +54,9 @@ private[spark] abstract class BinaryPhysicalOperator extends CAPSPhysicalOperato
 
   def rhs: CAPSPhysicalOperator
 
-  override def execute(implicit context: CAPSRuntimeContext): CAPSPhysicalResult = executeBinary(lhs.execute, rhs.execute)
+  override def execute(implicit context: CAPSRuntimeContext): CAPSPhysicalResult = {
+    executeBinary(lhs.execute, rhs.execute)
+  }
 
   def executeBinary(left: CAPSPhysicalResult, right: CAPSPhysicalResult)
     (implicit context: CAPSRuntimeContext): CAPSPhysicalResult
@@ -66,7 +68,7 @@ final case class Join(
   joinColumns: Seq[(Expr, Expr)],
   header: RecordHeader,
   joinType: String
-) extends BinaryPhysicalOperator {
+) extends BinaryPhysicalOperator with PhysicalOperatorDebugging {
 
   override def executeBinary(left: CAPSPhysicalResult, right: CAPSPhysicalResult)(
     implicit context: CAPSRuntimeContext
@@ -106,7 +108,7 @@ final case class ExistsSubQuery(
   targetField: Var,
   header: RecordHeader
 )
-  extends BinaryPhysicalOperator {
+  extends BinaryPhysicalOperator with PhysicalOperatorDebugging {
 
   override def executeBinary(left: CAPSPhysicalResult, right: CAPSPhysicalResult)(
     implicit context: CAPSRuntimeContext
@@ -179,7 +181,7 @@ final case class ExistsSubQuery(
   * @param rhs the second operand
   */
 final case class TabularUnionAll(lhs: CAPSPhysicalOperator, rhs: CAPSPhysicalOperator)
-  extends BinaryPhysicalOperator with InheritedHeader {
+  extends BinaryPhysicalOperator with InheritedHeader with PhysicalOperatorDebugging {
 
   override def executeBinary(left: CAPSPhysicalResult, right: CAPSPhysicalResult)
     (implicit context: CAPSRuntimeContext): CAPSPhysicalResult = {
@@ -195,7 +197,7 @@ final case class TabularUnionAll(lhs: CAPSPhysicalOperator, rhs: CAPSPhysicalOpe
 }
 
 final case class CartesianProduct(lhs: CAPSPhysicalOperator, rhs: CAPSPhysicalOperator, header: RecordHeader)
-  extends BinaryPhysicalOperator {
+  extends BinaryPhysicalOperator with PhysicalOperatorDebugging {
 
   override def executeBinary(left: CAPSPhysicalResult, right: CAPSPhysicalResult)(
     implicit context: CAPSRuntimeContext
@@ -219,7 +221,7 @@ final case class ConstructGraph(
   lhs: CAPSPhysicalOperator,
   rhs: CAPSPhysicalOperator,
   construct: LogicalPatternGraph
-) extends BinaryPhysicalOperator {
+) extends BinaryPhysicalOperator with PhysicalOperatorDebugging {
 
   override def toString: String = {
     val entities = construct.clones.keySet ++ construct.newEntities.map(_.v)

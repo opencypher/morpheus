@@ -59,7 +59,7 @@ import scala.annotation.tailrec
 import scala.collection.JavaConverters._
 import scala.reflect.runtime.universe.TypeTag
 
-sealed abstract class CAPSRecords(val header: RecordHeader, val data: DataFrame)
+sealed abstract case class CAPSRecords(header: RecordHeader, data: DataFrame)
   (implicit val caps: CAPSSession) extends CypherRecords with Serializable {
 
   override def show(implicit options: PrintOptions): Unit =

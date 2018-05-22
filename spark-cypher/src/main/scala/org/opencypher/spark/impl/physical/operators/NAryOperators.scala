@@ -28,15 +28,26 @@ package org.opencypher.spark.impl.physical.operators
 
 import org.opencypher.okapi.api.graph.QualifiedGraphName
 import org.opencypher.spark.impl.physical.{CAPSPhysicalResult, CAPSRuntimeContext}
-import org.opencypher.spark.impl.{CAPSGraph, CAPSRecords, CAPSUnionGraph}
 import org.opencypher.spark.impl.util.TagSupport._
+import org.opencypher.spark.impl.{CAPSRecords, CAPSUnionGraph}
 
-final case class GraphUnionAll(inputs: List[CAPSPhysicalOperator], qgn: QualifiedGraphName)
-  extends CAPSPhysicalOperator with InheritedHeader {
-  require(inputs.nonEmpty, "GraphUnionAll requires at least one input")
+
+private[spark] abstract class NAryPhysicalOperator extends CAPSPhysicalOperator {
+
+  def inputs: List[CAPSPhysicalOperator]
 
   override def execute(implicit context: CAPSRuntimeContext): CAPSPhysicalResult = {
-    val inputResults = inputs.map(_.execute)
+    executeNary(inputs.map(_.execute))
+  }
+
+  def executeNary(inputResults: List[CAPSPhysicalResult])(implicit context: CAPSRuntimeContext): CAPSPhysicalResult
+}
+
+final case class GraphUnionAll(inputs: List[CAPSPhysicalOperator], qgn: QualifiedGraphName)
+  extends NAryPhysicalOperator with InheritedHeader with PhysicalOperatorDebugging {
+  require(inputs.nonEmpty, "GraphUnionAll requires at least one input")
+
+  override def executeNary(inputResults: List[CAPSPhysicalResult])(implicit context: CAPSRuntimeContext): CAPSPhysicalResult = {
     implicit val caps = inputResults.head.records.caps
 
     val graphTags = inputResults.map(r => r.workingGraphName -> r.workingGraph.tags).toMap

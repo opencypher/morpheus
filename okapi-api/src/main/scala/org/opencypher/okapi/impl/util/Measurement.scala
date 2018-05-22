@@ -26,17 +26,24 @@
  */
 package org.opencypher.okapi.impl.util
 
-import org.opencypher.okapi.api.configuration.Configuration.PrintTimings
-
-import scala.concurrent.duration.Duration
-
 object Measurement {
-  def time[T](name: String)(block: => T): T = {
-    val start = System.nanoTime
-    val res = block
-    val end = System.nanoTime
-    val total = Duration.fromNanos(end - start)
-    if (PrintTimings.isSet) println(s"$name took: ${total.toMillis} ms")
-    res
+
+  // Returns the number of milliseconds for executing a method in addition to the result of the method.
+  def time[R](code: => R): (R, Long) = {
+    val start = System.currentTimeMillis()
+    val result = code
+    val end = System.currentTimeMillis()
+    (result, end - start)
   }
+
+  def printTiming[R](code: => R): R = {
+    printTiming("Method")(code)
+  }
+
+  def printTiming[R](description: String = "Method")(code: => R): R = {
+    val (result, timing) = time(code)
+    println(s"$description took ~$timing milliseconds to execute")
+    result
+  }
+
 }

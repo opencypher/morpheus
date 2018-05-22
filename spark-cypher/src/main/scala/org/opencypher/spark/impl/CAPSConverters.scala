@@ -29,8 +29,9 @@ package org.opencypher.spark.impl
 import org.opencypher.okapi.api.graph.{CypherQueryPlans, CypherResult, CypherSession, PropertyGraph}
 import org.opencypher.okapi.api.table.CypherRecords
 import org.opencypher.okapi.impl.exception.UnsupportedOperationException
+import org.opencypher.okapi.relational.api.physical.PhysicalResult
 import org.opencypher.spark.api.CAPSSession
-import org.opencypher.spark.impl.physical.CAPSQueryPlans
+import org.opencypher.spark.impl.physical.{CAPSPhysicalResult, CAPSQueryPlans}
 
 object CAPSConverters {
 
@@ -66,6 +67,13 @@ object CAPSConverters {
     def asCaps: CAPSQueryPlans = plans match {
       case caps: CAPSQueryPlans => caps
       case _ => throw UnsupportedOperationException(s"can only handle CAPS plans, got $plans")
+    }
+  }
+
+  implicit class RichPhysicalResult(val result: PhysicalResult[_, _]) extends AnyVal {
+    def asCaps: CAPSPhysicalResult = result match {
+      case caps: CAPSPhysicalResult => caps
+      case _ => throw UnsupportedOperationException(s"can only handle CAPS physical result, got $result")
     }
   }
 

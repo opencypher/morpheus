@@ -31,8 +31,7 @@ import org.opencypher.okapi.impl.configuration.ConfigFlag
 object Configuration {
 
   /**
-    * If enabled, the time required for executing a code block wrapped in
-    * [[org.opencypher.okapi.impl.util.Measurement.time]] will be printed.
+    * If enabled, the time required for executing query processing phases will be printed.
     */
   object PrintTimings extends ConfigFlag("caps.printTimings")
 

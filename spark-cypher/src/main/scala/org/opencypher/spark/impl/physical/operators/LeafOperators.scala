@@ -34,7 +34,9 @@ import org.opencypher.spark.impl.physical.{CAPSPhysicalResult, CAPSRuntimeContex
 
 private[spark] abstract class LeafPhysicalOperator extends CAPSPhysicalOperator {
 
-  override def execute(implicit context: CAPSRuntimeContext): CAPSPhysicalResult = executeLeaf()
+  override def execute(implicit context: CAPSRuntimeContext): CAPSPhysicalResult = {
+    executeLeaf()
+  }
 
   def executeLeaf()(implicit context: CAPSRuntimeContext): CAPSPhysicalResult
 }
@@ -48,7 +50,7 @@ object Start {
 }
 
 final case class Start(qgn: QualifiedGraphName, recordsOpt: Option[CAPSRecords])
-  (implicit caps: CAPSSession) extends LeafPhysicalOperator {
+  (implicit caps: CAPSSession) extends LeafPhysicalOperator with PhysicalOperatorDebugging {
 
   override val header = recordsOpt.map(_.header).getOrElse(RecordHeader.empty)
 

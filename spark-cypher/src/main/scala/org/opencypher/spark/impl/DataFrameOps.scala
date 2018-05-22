@@ -26,9 +26,12 @@
  */
 package org.opencypher.spark.impl
 
+import org.apache.spark.sql.execution.SparkPlan
+import org.apache.spark.sql.execution.columnar.InMemoryTableScanExec
 import org.apache.spark.sql.functions._
 import org.apache.spark.sql.types._
 import org.apache.spark.sql.{Column, DataFrame, Row, functions}
+import org.apache.spark.storage.StorageLevel.MEMORY_ONLY
 import org.opencypher.okapi.api.types._
 import org.opencypher.okapi.api.value.CypherValue
 import org.opencypher.okapi.api.value.CypherValue.CypherValue
@@ -38,6 +41,8 @@ import org.opencypher.okapi.relational.impl.table.RecordHeader
 import org.opencypher.spark.api.Tags._
 import org.opencypher.spark.impl.convert.CAPSCypherType._
 import org.opencypher.spark.impl.physical.CAPSRuntimeContext
+import org.opencypher.spark.impl.physical.operators.NamedTableScan
+import org.opencypher.okapi.impl.util.Measurement.printTiming
 
 object DataFrameOps {
 
@@ -179,7 +184,7 @@ object DataFrameOps {
 
     def safeRenameColumns(renamings: (String, String)*): DataFrame = {
       renamings.foldLeft(df) { case (tempDf, (oldName, newName)) =>
-          tempDf.safeRenameColumn(oldName, newName)
+        tempDf.safeRenameColumn(oldName, newName)
       }
     }
 
@@ -206,6 +211,53 @@ object DataFrameOps {
 
       df.join(other, joinExpr, joinType)
     }
+
+    /**
+      * Prints timing of Spark computation for DF.
+      */
+    def printExecutionTiming(description: String): Unit = {
+      printTiming(s"$description") {
+        df.count() // Force computation of DF
+      }
+    }
+
+    /**
+      * Prints Spark physical plan.
+      */
+    def printPhysicalPlan(replacePlansForNamedTables: Boolean = true): Unit = {
+      println("Spark plan:")
+      implicit val sc = df.sparkSession.sparkContext
+      val sparkPlan: SparkPlan = df.queryExecution.executedPlan
+      // Remove cached inputs from plan
+      val planWithoutCached = sparkPlan.transformDown {
+        case inMemoryTableScan: InMemoryTableScanExec =>
+          val maybeTableName = inMemoryTableScan.relation.tableName
+          if (replacePlansForNamedTables && maybeTableName.isDefined) {
+            // Insert a dummy operator into the plan that is printed with the table name for the scan
+            NamedTableScan(maybeTableName)
+          } else {
+            inMemoryTableScan
+          }
+        case other => other
+      }
+      val planString = planWithoutCached.treeString(verbose = false).flatMap {
+        case '\n' => Seq('\n', '\t')
+        case other => Seq(other)
+      }
+      println(s"\t$planString")
+    }
+
+    /**
+      * Caches and forces the computation of the DF
+      * @return row count of the DF
+      */
+    def cacheAndForce(tableName: Option[String] = None): Long = {
+      df.sparkSession.sharedState.cacheManager.cacheQuery(df, tableName, MEMORY_ONLY)
+      val rowCount = df.count() // Force computation of cached DF
+      assert(df.storageLevel.useMemory)
+      rowCount
+    }
+
   }
 
 }

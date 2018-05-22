@@ -24,8 +24,22 @@
  * described as "implementation extensions to Cypher" or as "proposed changes to
  * Cypher that are not yet approved by the openCypher community".
  */
-package org.opencypher.spark.impl
+package org.opencypher.okapi.impl.configuration
 
-import org.opencypher.okapi.ir.impl.refactor.instances.ExprBlockInstances
+import org.scalatest.{FunSpec, FunSuite, Matchers}
 
-trait AllInstances extends ExprBlockInstances
+class ConfigCachingTest extends FunSpec with Matchers {
+
+  object TestConfigWithCaching extends ConfigFlag("test") with ConfigCaching[Boolean]
+
+  it("can read a set value") {
+    TestConfigWithCaching.set()
+    TestConfigWithCaching.get shouldBe true
+    TestConfigWithCaching.set("true")
+    TestConfigWithCaching.get shouldBe true
+    a[UnsupportedOperationException] shouldBe thrownBy {
+      TestConfigWithCaching.set("false")
+    }
+  }
+
+}

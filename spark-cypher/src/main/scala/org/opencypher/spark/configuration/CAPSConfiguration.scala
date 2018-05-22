@@ -24,8 +24,12 @@
  * described as "implementation extensions to Cypher" or as "proposed changes to
  * Cypher that are not yet approved by the openCypher community".
  */
-package org.opencypher.spark
+package org.opencypher.spark.configuration
 
-package object impl {
-  object all extends org.opencypher.spark.impl.AllInstances
+import org.opencypher.okapi.impl.configuration.{ConfigCaching, ConfigFlag}
+
+object CAPSConfiguration {
+
+  object DebugPhysicalOperators extends ConfigFlag("caps.debugPhysicalOperators") with ConfigCaching[Boolean]
+
 }
