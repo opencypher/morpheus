@@ -97,7 +97,7 @@ trait PhysicalOperatorDebugging extends CAPSPhysicalOperator {
       if (inputs.nonEmpty) {
         println("Inputs:")
         inputs.foreach { case (operator, result) =>
-          println(s"\t${operator.getClass.getSimpleName.toUpperCase} records DataFrame has $outputRecordsDfRowCount rows")
+          println(s"\t${operator.getClass.getSimpleName.toUpperCase} records DataFrame has ${result.records.data.count} rows")
         }
         println
       }
