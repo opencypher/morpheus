@@ -213,12 +213,11 @@ object DataFrameOps {
     }
 
     /**
-      * Prints Spark computation timing.
+      * Prints timing of Spark computation for DF.
       */
     def printExecutionTiming(description: String): Unit = {
-      // Print computation timing
       printTiming(s"$description") {
-        df.count() // Force evaluation of operator
+        df.count() // Force computation of DF
       }
     }
 

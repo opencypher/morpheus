@@ -42,6 +42,19 @@ import org.opencypher.spark.impl.{CAPSPatternGraph, CAPSUnionGraph}
 
 trait PhysicalOperatorDebugging extends CAPSPhysicalOperator {
 
+  /**
+    * Wrapper around execute that measures how long an operator takes to execute.
+    *
+    * If all input records are run with it as well, then they cached and their computation was forced before measuring
+    * how long forcing the computation required by the current operator takes (and runs that forcing without caching).
+    *
+    * Debugging computes every operator twice: once to measure how long the computation takes and once to force the
+    * computation of a cached version of its result. The reason for this is that the caching itself might be associated
+    * with overhead that we would like to exclude from the measurement.
+    *
+    * @param context backend-specific runtime context
+    * @return physical result
+    */
   abstract override def execute(implicit context: CAPSRuntimeContext): CAPSPhysicalResult = {
     if (DebugPhysicalOperators.get) {
       val output: CAPSPhysicalResult = super.execute
@@ -108,9 +121,16 @@ object PhysicalOperatorDebugging {
 
 }
 
+/**
+  * Placeholder operator to allow for more readable Spark plan trees that can name tables according to the CAPS operator
+  * that produces them.
+  *
+  * @param tableName name of the table, in CAPS used to name the table after the operator that produced it
+  */
 case class CachedOperatorInput(tableName: Option[String] = None)(implicit sc: SparkContext) extends LeafExecNode {
 
   override protected def doExecute(): RDD[InternalRow] = sc.emptyRDD
 
   override def output: Seq[Attribute] = Seq.empty
+
 }
