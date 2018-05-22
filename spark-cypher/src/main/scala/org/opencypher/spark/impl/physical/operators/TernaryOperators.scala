@@ -47,11 +47,7 @@ private[spark] abstract class TernaryPhysicalOperator extends CAPSPhysicalOperat
   def third: CAPSPhysicalOperator
 
   override def execute(implicit context: CAPSRuntimeContext): CAPSPhysicalResult = {
-    val firstResult = first.execute
-    val secondResult = second.execute
-    val thirdResult = third.execute
-    maybeChildResults = Some(List(first -> firstResult, second -> secondResult, third -> thirdResult))
-    executeTernary(firstResult, secondResult, thirdResult)
+    executeTernary(first.execute, second.execute, third.execute)
   }
 
   def executeTernary(first: CAPSPhysicalResult, second: CAPSPhysicalResult, third: CAPSPhysicalResult)(

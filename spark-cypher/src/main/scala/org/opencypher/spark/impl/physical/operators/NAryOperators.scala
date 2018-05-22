@@ -37,9 +37,7 @@ private[spark] abstract class NAryPhysicalOperator extends CAPSPhysicalOperator 
   def inputs: List[CAPSPhysicalOperator]
 
   override def execute(implicit context: CAPSRuntimeContext): CAPSPhysicalResult = {
-    val results = inputs.map(_.execute)
-    maybeChildResults = Some(inputs.zip(results))
-    executeNary(results)
+    executeNary(inputs.map(_.execute))
   }
 
   def executeNary(inputResults: List[CAPSPhysicalResult])(implicit context: CAPSRuntimeContext): CAPSPhysicalResult

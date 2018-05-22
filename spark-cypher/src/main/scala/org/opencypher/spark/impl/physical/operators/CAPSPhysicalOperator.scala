@@ -43,8 +43,6 @@ private[spark] abstract class CAPSPhysicalOperator
   extends AbstractTreeNode[CAPSPhysicalOperator]
   with PhysicalOperator[CAPSRecords, CAPSGraph, CAPSRuntimeContext] {
 
-  var maybeChildResults: Option[List[(CAPSPhysicalOperator, CAPSPhysicalResult)]] = None
-
   override def header: RecordHeader
 
   override def execute(implicit context: CAPSRuntimeContext): CAPSPhysicalResult

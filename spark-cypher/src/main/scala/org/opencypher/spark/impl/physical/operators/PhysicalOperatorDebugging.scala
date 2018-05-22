@@ -91,16 +91,6 @@ trait PhysicalOperatorDebugging extends CAPSPhysicalOperator {
         }
       }
 
-      val inputs = maybeChildResults.getOrElse(
-        throw UnsupportedOperationException(s"Operator $simpleOperatorName did not store its input results"))
-
-      if (inputs.nonEmpty) {
-        println("Inputs:")
-        inputs.foreach { case (operator, result) =>
-          println(s"\t${operator.getClass.getSimpleName.toUpperCase} records DataFrame has ${result.records.data.count} rows")
-        }
-        println
-      }
       println(s"Output records DataFrame has $outputRecordsDfRowCount rows")
       println
 

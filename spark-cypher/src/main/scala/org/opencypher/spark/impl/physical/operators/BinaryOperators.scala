@@ -55,10 +55,7 @@ private[spark] abstract class BinaryPhysicalOperator extends CAPSPhysicalOperato
   def rhs: CAPSPhysicalOperator
 
   override def execute(implicit context: CAPSRuntimeContext): CAPSPhysicalResult = {
-    val lhsResult = lhs.execute
-    val rhsResult = rhs.execute
-    maybeChildResults = Some(List(lhs -> lhsResult, rhs -> rhsResult))
-    executeBinary(lhsResult, rhsResult)
+    executeBinary(lhs.execute, rhs.execute)
   }
 
   def executeBinary(left: CAPSPhysicalResult, right: CAPSPhysicalResult)
