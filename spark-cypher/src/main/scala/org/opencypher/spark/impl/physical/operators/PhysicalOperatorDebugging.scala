@@ -72,7 +72,7 @@ trait PhysicalOperatorDebugging extends CAPSPhysicalOperator {
         println
         recordsDf.printExecutionTiming(s"Computing $simpleOperatorName output records DataFrame")
         println
-        recordsDf.printPhysicalPlan
+        recordsDf.printPhysicalPlan()
       }
       val outputRecordsDfRowCount = recordsDf.cacheAndForce(Some(operatorName))
 
@@ -84,7 +84,7 @@ trait PhysicalOperatorDebugging extends CAPSPhysicalOperator {
                 val baseTableDf = patternGraph.baseTable.data
                 baseTableDf.printExecutionTiming("Computing pattern graph base table")
                 println
-                baseTableDf.printPhysicalPlan
+                baseTableDf.printPhysicalPlan()
                 val baseTableRowCount = baseTableDf.cacheAndForce(Some(operatorName))
                 println(s"Pattern graph base table DataFrame has $baseTableRowCount rows")
             }
@@ -122,12 +122,13 @@ object PhysicalOperatorDebugging {
 }
 
 /**
-  * Placeholder operator to allow for more readable Spark plan trees that can name tables according to the CAPS operator
-  * that produces them.
+  * Dummy operator that allows for more readable Spark plan trees that can name tables.
+  *
+  * [[PhysicalOperatorDebugging]] names cached input tables according to the CAPS operator that produced them.
   *
   * @param tableName name of the table, in CAPS used to name the table after the operator that produced it
   */
-case class CachedOperatorInput(tableName: Option[String] = None)(implicit sc: SparkContext) extends LeafExecNode {
+case class NamedTableScan(tableName: Option[String] = None)(implicit sc: SparkContext) extends LeafExecNode {
 
   override protected def doExecute(): RDD[InternalRow] = sc.emptyRDD
 
