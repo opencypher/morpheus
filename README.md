@@ -23,7 +23,7 @@ integration with GraphX. To learn more about this, please see our [examples](htt
 The project is currently in a beta stage, which means that the code and the functionality is changing, but the APIs are stabilising.
 We invite you to try it and welcome any feedback.
 
-The first release for the project is targeted for May 2018. 
+The first 1.0 release for the project is targeted for September 2018. 
 
 ## CAPS Features
 
@@ -64,13 +64,13 @@ Maven:
 <dependency>
   <groupId>org.opencypher</groupId>
   <artifactId>spark-cypher</artifactId>
-  <version>1.0.0-beta.1</version>
+  <version>0.1.0</version>
 </dependency>
 ```
 
 sbt:
 ```
-libraryDependencies += "org.opencypher" % "spark-cypher" % "1.0.0-beta.1"
+libraryDependencies += "org.opencypher" % "spark-cypher" % "0.1.0"
 ```
 
 Remember to add `fork in run := true` in your `build.sbt` for scala projects; this is not CAPS
