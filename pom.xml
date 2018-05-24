@@ -85,6 +85,7 @@
     <dep.neo4j.harness.version>3.3.3</dep.neo4j.harness.version>
     <dep.scalatest.version>3.0.5</dep.scalatest.version>
     <dep.scalacheck.version>1.13.5</dep.scalacheck.version>
+    <dep.spark-measure.version>0.11</dep.spark-measure.version>
   </properties>
 
   <build>
@@ -250,7 +251,7 @@
           </args>
           <jvmArgs>
             <!-- Workaround for Scala compiler error: https://github.com/freechipsproject/firrtl/issues/66 -->
-            <jvmArg>-Xss256m</jvmArg>
+            <jvmArg>-Xss512m</jvmArg>
           </jvmArgs>
         </configuration>
       </plugin>

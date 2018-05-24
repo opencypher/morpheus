@@ -73,6 +73,18 @@
       <version>${dep.hadoop.version}</version>
     </dependency>
 
+    <dependency>
+      <groupId>ch.cern.sparkmeasure</groupId>
+      <artifactId>spark-measure_2.11</artifactId>
+      <version>${dep.spark-measure.version}</version>
+      <exclusions>
+        <exclusion>
+          <groupId>org.apache.logging.log4j</groupId>
+          <artifactId>log4j</artifactId>
+        </exclusion>
+      </exclusions>
+    </dependency>
+
     <!-- Workarounds for https://youtrack.jetbrains.com/issue/SCL-13184 -->
 
     <dependency>

@@ -26,6 +26,8 @@
  */
 package org.opencypher.spark
 
+import org.apache.spark.sql.execution.SparkPlan
+import org.opencypher.okapi.impl.util.Measurement
 import org.opencypher.spark.testing.CAPSTestSuite
 
 class SparkTests extends CAPSTestSuite {
@@ -51,5 +53,75 @@ class SparkTests extends CAPSTestSuite {
 
     val selected = joined.select("*")
     selected.show
+  }
+
+  ignore("generates Spark SQL plans and measures planning and execution costs") {
+    import session.implicits._
+
+    val stageMetrics = ch.cern.sparkmeasure.StageMetrics(session)
+
+
+    val minLength = 10
+    val maxLength = 15
+
+    val timings = (minLength to maxLength).foldLeft(Seq.empty[(SparkPlan, Long, Long, Long, Long, Long)]) {
+      (results, i) =>
+
+        val resultDF = (1 to i).foldLeft(session.createDataFrame(Seq(Tuple1(0L))).toDF("a0")) {
+          case (df, j) if j % 5 == 0 =>
+            df.select($"a${j - 1}".as(s"a$j"))
+          case (df, j) if j % 5 == 1 =>
+            df.join(df.withColumnRenamed(s"a${j - 1}", s"a$j"), $"a${j - 1}" === $"a$j")
+              .drop(s"a${j - 1}")
+          case (df, j) if j % 5 == 2 =>
+            df.union(df).withColumnRenamed(s"a${j - 1}", s"a$j")
+          case (df, j) if j % 5 == 3 =>
+            df.join(session.createDataFrame(Seq(Tuple1(0))).toDF(s"a$j"), $"a${j - 1}" === $"a$j")
+          case (df, j) if j % 5 == 4 =>
+            df.distinct().withColumnRenamed(s"a${j - 1}", s"a$j")
+
+        }
+
+        val ((sparkPlan, sparkPlanPlanningTime, executedPlanPlanningTime, beginSnapshot, endSnapshot), totalTime) = Measurement.time {
+          // spark plan planning time
+          val (_, sparkPlanPlanningTime) = Measurement.time(resultDF.queryExecution.sparkPlan)
+
+          // executed plan planning time
+          val (sparkPlan, executedPlanPlanningTime) = Measurement.time(resultDF.queryExecution.executedPlan)
+
+          // execution
+          val beginSnapshot = stageMetrics.begin()
+          resultDF.show()
+          val endSnapshot = stageMetrics.end()
+          (sparkPlan, sparkPlanPlanningTime, executedPlanPlanningTime, beginSnapshot, endSnapshot)
+        }
+
+        stageMetrics.createStageMetricsDF()
+        val aggregateDf = session.sql(s"SELECT " +
+          s"MIN(submissionTime) AS minSubmissionTime, " +
+          s"MAX(completionTime) - MIN(submissionTime) AS elapsedTime " +
+          s"FROM PerfStageMetrics " +
+          s"WHERE submissionTime >= $beginSnapshot AND completionTime <= $endSnapshot")
+
+        val aggregateValues = aggregateDf.take(1)(0).toSeq
+        val cols = aggregateDf.columns
+        val sqlTime = (cols zip aggregateValues).collectFirst { case (n: String, v: Long) if n == "elapsedTime" => v }.get
+        val submissionTime = (cols zip aggregateValues).collectFirst { case (n: String, v: Long) if n == "minSubmissionTime" => v }.get
+
+        val unknownTime = submissionTime - beginSnapshot
+
+        val run = (sparkPlan, sparkPlanPlanningTime, executedPlanPlanningTime, sqlTime, totalTime, unknownTime)
+        results :+ run
+    }
+
+    println(timings
+      .zip(minLength to maxLength)
+      .map {
+        case ((_, sparkPlanPlanningTime, executedPlanPlanningTime, sqlTime, totalTime, unknownTime), numOperators) =>
+          (numOperators, sparkPlanPlanningTime, executedPlanPlanningTime, sqlTime, totalTime, unknownTime)
+      })
+
+    // uncomment to keep Spark UI running for investigation
+    //    StdIn.readLine()
   }
 }
