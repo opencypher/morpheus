@@ -251,7 +251,7 @@
           </args>
           <jvmArgs>
             <!-- Workaround for Scala compiler error: https://github.com/freechipsproject/firrtl/issues/66 -->
-            <jvmArg>-Xss256m</jvmArg>
+            <jvmArg>-Xss512m</jvmArg>
           </jvmArgs>
         </configuration>
       </plugin>
