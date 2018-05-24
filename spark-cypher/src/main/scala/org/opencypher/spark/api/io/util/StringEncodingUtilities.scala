@@ -30,7 +30,7 @@ import scala.annotation.tailrec
 
 object StringEncodingUtilities {
 
-  val propertyPrefix: String = "property#"
+  val propertyPrefix: String = "property_"
 
   protected val maxCharactersInHexStringEncoding: Int = 4 // Hex string encoding of a `Char` is up to 4 characters
 
@@ -57,7 +57,7 @@ object StringEncodingUtilities {
     /**
       * Encodes special characters in a string.
       *
-      * The encoded string contains only ASCII letters, numbers, '_', '#', and '@'. The encoded string is compatible
+      * The encoded string contains only ASCII letters, numbers, '_', and '@'. The encoded string is compatible
       * with both SQL column names and file paths.
       *
       * @return encoded string
@@ -68,7 +68,7 @@ object StringEncodingUtilities {
       @tailrec def recEncode(index: Int): Unit = {
         if (index < s.length) {
           val charToEncode = s(index)
-          if ((charToEncode.isLetterOrDigit && charToEncode.isAscii) || charToEncode == '_' || charToEncode == '#') {
+          if (charToEncode == '_' || (charToEncode.isLetterOrDigit && charToEncode.isAscii)) {
             sb.append(charToEncode)
           } else {
             sb.append("@")
