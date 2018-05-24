@@ -56,9 +56,9 @@ class SparkTests extends CAPSTestSuite {
   }
 
   ignore("generates Spark SQL plans and measures planning and execution costs") {
-    import session.implicits._
+    import sparkSession.implicits._
 
-    val stageMetrics = ch.cern.sparkmeasure.StageMetrics(session)
+    val stageMetrics = ch.cern.sparkmeasure.StageMetrics(sparkSession)
 
 
     val minLength = 10
@@ -67,7 +67,7 @@ class SparkTests extends CAPSTestSuite {
     val timings = (minLength to maxLength).foldLeft(Seq.empty[(SparkPlan, Long, Long, Long, Long, Long)]) {
       (results, i) =>
 
-        val resultDF = (1 to i).foldLeft(session.createDataFrame(Seq(Tuple1(0L))).toDF("a0")) {
+        val resultDF = (1 to i).foldLeft(sparkSession.createDataFrame(Seq(Tuple1(0L))).toDF("a0")) {
           case (df, j) if j % 5 == 0 =>
             df.select($"a${j - 1}".as(s"a$j"))
           case (df, j) if j % 5 == 1 =>
@@ -76,7 +76,7 @@ class SparkTests extends CAPSTestSuite {
           case (df, j) if j % 5 == 2 =>
             df.union(df).withColumnRenamed(s"a${j - 1}", s"a$j")
           case (df, j) if j % 5 == 3 =>
-            df.join(session.createDataFrame(Seq(Tuple1(0))).toDF(s"a$j"), $"a${j - 1}" === $"a$j")
+            df.join(sparkSession.createDataFrame(Seq(Tuple1(0))).toDF(s"a$j"), $"a${j - 1}" === $"a$j")
           case (df, j) if j % 5 == 4 =>
             df.distinct().withColumnRenamed(s"a${j - 1}", s"a$j")
 
@@ -97,7 +97,7 @@ class SparkTests extends CAPSTestSuite {
         }
 
         stageMetrics.createStageMetricsDF()
-        val aggregateDf = session.sql(s"SELECT " +
+        val aggregateDf = sparkSession.sql(s"SELECT " +
           s"MIN(submissionTime) AS minSubmissionTime, " +
           s"MAX(completionTime) - MIN(submissionTime) AS elapsedTime " +
           s"FROM PerfStageMetrics " +
