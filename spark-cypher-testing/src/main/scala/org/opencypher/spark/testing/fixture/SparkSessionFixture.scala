@@ -33,5 +33,8 @@ import org.opencypher.spark.testing.TestSparkSession
 trait SparkSessionFixture extends BaseTestFixture {
   self: BaseTestSuite =>
 
-  implicit val session: SparkSession = TestSparkSession.instance
+  implicit lazy val sparkSession: SparkSession = initSparkSession
+
+  def initSparkSession: SparkSession = TestSparkSession.instance
+
 }

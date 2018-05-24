@@ -45,7 +45,7 @@ import org.opencypher.spark.testing.fixture.{GraphConstructionFixture, TeamDataF
 class CAPSRecordsTest extends CAPSTestSuite with GraphConstructionFixture with TeamDataFixture {
 
   test("retags a node variable") {
-    val givenDF = session.createDataFrame(
+    val givenDF = sparkSession.createDataFrame(
       Seq(
         (1L, true, "Mats"),
         (2L, false, "Martin"),
@@ -76,7 +76,7 @@ class CAPSRecordsTest extends CAPSTestSuite with GraphConstructionFixture with T
   }
 
   it("retags a relationship variable") {
-    val givenDF = session.createDataFrame(
+    val givenDF = sparkSession.createDataFrame(
       Seq(
         (10L, 1L, 2L, "RED"),
         (11L, 2L, 3L, "BLUE"),
@@ -135,7 +135,7 @@ class CAPSRecordsTest extends CAPSTestSuite with GraphConstructionFixture with T
     CAPSRecords.create(personTable).toDF().createOrReplaceTempView("people")
 
     // When
-    val df = session.sql("SELECT * FROM people")
+    val df = sparkSession.sql("SELECT * FROM people")
 
     // Then
     df.collect() should equal(Array(
@@ -147,7 +147,7 @@ class CAPSRecordsTest extends CAPSTestSuite with GraphConstructionFixture with T
   }
 
   test("verify CAPSRecords header") {
-    val givenDF = session.createDataFrame(
+    val givenDF = sparkSession.createDataFrame(
           Seq(
             (1L, true, "Mats"),
             (2L, false, "Martin"),
@@ -176,7 +176,7 @@ class CAPSRecordsTest extends CAPSTestSuite with GraphConstructionFixture with T
 
   test("verify CAPSRecords header for relationship with a fixed type") {
 
-    val givenDF = session.createDataFrame(
+    val givenDF = sparkSession.createDataFrame(
           Seq(
             (10L, 1L, 2L, "red"),
             (11L, 2L, 3L, "blue"),
@@ -206,7 +206,7 @@ class CAPSRecordsTest extends CAPSTestSuite with GraphConstructionFixture with T
   }
 
   test("contract relationships with a dynamic type") {
-    val givenDF = session.createDataFrame(
+    val givenDF = sparkSession.createDataFrame(
           Seq(
             (10L, 1L, 2L, "RED"),
             (11L, 2L, 3L, "BLUE"),
@@ -235,7 +235,7 @@ class CAPSRecordsTest extends CAPSTestSuite with GraphConstructionFixture with T
   }
 
   test("can not construct records with data/header column name conflict") {
-    val data = session.createDataFrame(Seq((1, "foo"), (2, "bar"))).toDF("int", "string")
+    val data = sparkSession.createDataFrame(Seq((1, "foo"), (2, "bar"))).toDF("int", "string")
     val header = RecordHeader.from(OpaqueField(Var("int")()), OpaqueField(Var("notString")()))
 
     a[InternalException] shouldBe thrownBy {
@@ -244,7 +244,7 @@ class CAPSRecordsTest extends CAPSTestSuite with GraphConstructionFixture with T
   }
 
   test("can construct records with matching data/header") {
-    val data = session.createDataFrame(Seq((1L, "foo"), (2L, "bar"))).toDF("int", "string")
+    val data = sparkSession.createDataFrame(Seq((1L, "foo"), (2L, "bar"))).toDF("int", "string")
     val header = RecordHeader.from(OpaqueField(Var("int")(CTInteger)), OpaqueField(Var("string")(CTString)))
 
     val records = CAPSRecords.verifyAndCreate(header, data) // no exception is thrown

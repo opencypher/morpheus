@@ -50,7 +50,7 @@ trait MiniDFSClusterFixture extends BaseTestFixture {
   protected def fsTestGraphPath: Option[String] = None
 
   protected lazy val cluster: MiniDFSCluster = {
-    val cluster = new MiniDFSCluster.Builder(session.sparkContext.hadoopConfiguration).build()
+    val cluster = new MiniDFSCluster.Builder(sparkSession.sparkContext.hadoopConfiguration).build()
     cluster.waitClusterUp()
 
     // copy from local FS to HDFS if necessary
@@ -71,18 +71,18 @@ trait MiniDFSClusterFixture extends BaseTestFixture {
     .build()
 
   protected def clusterConfig: Configuration = {
-    session.sparkContext.hadoopConfiguration
+    sparkSession.sparkContext.hadoopConfiguration
       .set("fs.default.name", new URIBuilder()
         .setScheme(HDFS_URI_SCHEME)
         .setHost(cluster.getNameNode.getHostAndPort)
         .build()
         .toString
       )
-    session.sparkContext.hadoopConfiguration
+    sparkSession.sparkContext.hadoopConfiguration
   }
 
   abstract override def afterAll: Unit = {
-    session.sparkContext.hadoopConfiguration.clear()
+    sparkSession.sparkContext.hadoopConfiguration.clear()
     cluster.shutdown(true)
     super.afterAll()
   }
