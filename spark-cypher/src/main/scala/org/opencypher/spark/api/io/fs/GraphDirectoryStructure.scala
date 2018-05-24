@@ -56,7 +56,19 @@ object DefaultGraphDirectoryStructure {
     def path: String = graphName.value.replace(".", pathSeparator)
   }
 
-  val pathSeparator = Path.SEPARATOR
+  val pathSeparator: String = Path.SEPARATOR
+
+  val schemaFileName: String = "schema.json"
+
+  val capsMetaDataFileName: String = "capsGraphMetaData.json"
+
+  val nodeTablesDirectory = "nodes"
+
+  val relationshipTablesDirectory = "relationships"
+
+  def nodeTableDirectory(labels: Set[String]): String = labels.toSeq.sorted.mkString("_").encodeSpecialCharacters
+
+  def relKeyTableDirectory(relKey: String): String = relKey.encodeSpecialCharacters
 
 }
 
@@ -69,19 +81,19 @@ case class DefaultGraphDirectoryStructure(dataSourceRootPath: String) extends Gr
   }
 
   override def pathToGraphSchema(graphName: GraphName): String = {
-    dataSourceRootPath / graphName.path / "schema.json"
+    pathToGraphDirectory(graphName) / schemaFileName
   }
 
   override def pathToCAPSMetaData(graphName: GraphName): String = {
-    dataSourceRootPath / graphName.path / "capsGraphMetaData.json"
+    pathToGraphDirectory(graphName) / capsMetaDataFileName
   }
 
   override def pathToNodeTable(graphName: GraphName, labels: Set[String]): String = {
-    dataSourceRootPath / graphName.path / "nodes" / labels.toSeq.sorted.mkString("_").encodeSpecialCharacters
+    pathToGraphDirectory(graphName) / nodeTablesDirectory / nodeTableDirectory(labels)
   }
 
   override def pathToRelationshipTable(graphName: GraphName, relKey: String): String = {
-    dataSourceRootPath / graphName.path / "relationships" / relKey.encodeSpecialCharacters
+    pathToGraphDirectory(graphName) / relationshipTablesDirectory / relKeyTableDirectory(relKey)
   }
 
 }
