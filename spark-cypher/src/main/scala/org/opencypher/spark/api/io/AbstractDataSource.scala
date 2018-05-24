@@ -47,7 +47,7 @@ import scala.util.Try
   * It automatically creates initializes a ScanGraphs an only requires the implementor to provider simpler methods for
   * reading/writing files and tables.
   */
-private[io] abstract class AbstractDataSource(implicit session: CAPSSession) extends CAPSPropertyGraphDataSource {
+abstract class AbstractDataSource(implicit val session: CAPSSession) extends CAPSPropertyGraphDataSource {
 
   def tableStorageFormat: String
 
