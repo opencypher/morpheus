@@ -38,7 +38,7 @@ class StringEncodingUtilitiesTest extends FunSpec with GeneratorDrivenPropertyCh
       val decoded = encoded.decodeSpecialCharacters
       s should equal(decoded)
       encoded.forall { c =>
-        (c.isLetterOrDigit && c.isAscii) || c == '_' || c == '#' || c == '@'
+        (c.isLetterOrDigit && c.isAscii) || c == '_' || c == '@'
       }
     }
   }
