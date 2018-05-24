@@ -34,7 +34,7 @@ import org.opencypher.spark.api.io.util.FileSystemUtils.using
 trait CAPSFileSystem {
 
   /**
-    * List the directories inside of the given path, create the path directory if it does not exist yet.
+    * List the directories inside of the given path, create the `path` directory if it does not exist yet.
     */
   def listDirectories(path: String): List[String]
 
@@ -43,7 +43,7 @@ trait CAPSFileSystem {
   def readFile(path: String): String
 
   /**
-    * Write the file content, create the path directories if it does not exist yet.
+    * Write the file content to `path`, create the parent directory if it does not exist yet.
     */
   def writeFile(path: String, content: String): Unit
 
