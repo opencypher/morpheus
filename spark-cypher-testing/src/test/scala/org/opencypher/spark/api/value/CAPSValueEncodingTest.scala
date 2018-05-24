@@ -34,70 +34,70 @@ class CAPSValueEncodingTest extends CAPSValueTestSuite with SparkSessionFixture 
 
   test("RELATIONSHIP encoding") {
     val values = RELATIONSHIP_valueGroups.flatten
-    val ds = session.createDataset[CypherValue](values)(cypherValueEncoder)
+    val ds = sparkSession.createDataset[CypherValue](values)(cypherValueEncoder)
 
     ds.collect().toList should equal(values)
   }
 
   test("NODE encoding") {
     val values = NODE_valueGroups.flatten
-    val ds = session.createDataset[CypherValue](values)(cypherValueEncoder)
+    val ds = sparkSession.createDataset[CypherValue](values)(cypherValueEncoder)
 
     ds.collect().toList should equal(values)
   }
 
   test("MAP encoding") {
     val values = MAP_valueGroups.flatten
-    val ds = session.createDataset[CypherValue](values)(cypherValueEncoder)
+    val ds = sparkSession.createDataset[CypherValue](values)(cypherValueEncoder)
 
     ds.collect().toList should equal(values)
   }
 
   test("LIST encoding") {
     val values = LIST_valueGroups.flatten
-    val ds = session.createDataset[CypherValue](values)(cypherValueEncoder)
+    val ds = sparkSession.createDataset[CypherValue](values)(cypherValueEncoder)
 
     ds.collect().toList should equal(values)
   }
 
   test("STRING encoding") {
     val values = STRING_valueGroups.flatten
-    val ds = session.createDataset[CypherValue](values)(cypherValueEncoder)
+    val ds = sparkSession.createDataset[CypherValue](values)(cypherValueEncoder)
 
     ds.collect().toList should equal(values)
   }
 
   test("BOOLEAN encoding") {
     val values = BOOLEAN_valueGroups.flatten
-    val ds = session.createDataset[CypherValue](values)(cypherValueEncoder)
+    val ds = sparkSession.createDataset[CypherValue](values)(cypherValueEncoder)
 
     ds.collect().toList should equal(values)
   }
 
   test("INTEGER encoding") {
     val values = INTEGER_valueGroups.flatten
-    val ds = session.createDataset[CypherValue](values)(cypherValueEncoder)
+    val ds = sparkSession.createDataset[CypherValue](values)(cypherValueEncoder)
 
     ds.collect().toList should equal(values)
   }
 
   test("FLOAT encoding") {
     val values = FLOAT_valueGroups.flatten
-    val ds = session.createDataset[CypherValue](values)(cypherValueEncoder)
+    val ds = sparkSession.createDataset[CypherValue](values)(cypherValueEncoder)
 
     ds.collect().toList.withoutNaNs should equal(values.withoutNaNs)
   }
 
   test("NUMBER encoding") {
     val values = NUMBER_valueGroups.flatten
-    val ds = session.createDataset[CypherValue](values)(cypherValueEncoder)
+    val ds = sparkSession.createDataset[CypherValue](values)(cypherValueEncoder)
 
     ds.collect().toList.withoutNaNs should equal(values.withoutNaNs)
   }
 
   test("ANY encoding") {
     val values = ANY_valueGroups.flatten
-    val ds = session.createDataset[CypherValue](values)(cypherValueEncoder)
+    val ds = sparkSession.createDataset[CypherValue](values)(cypherValueEncoder)
 
     ds.collect().toList.withoutNaNs should equal(values.withoutNaNs)
   }

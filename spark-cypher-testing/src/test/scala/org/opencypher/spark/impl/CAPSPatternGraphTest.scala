@@ -410,7 +410,7 @@ class CAPSPatternGraphTest extends CAPSGraphTest {
     )
     val (header, _) = RecordHeader.empty.update(addContents(fields))
 
-    val df = session.createDataFrame(
+    val df = sparkSession.createDataFrame(
       List(
         Row(0L, 1L, true, 2L),
         Row(10L, 11L, false, 12L)
@@ -451,7 +451,7 @@ class CAPSPatternGraphTest extends CAPSGraphTest {
     )
     val (header, _) = RecordHeader.empty.update(addContents(fields))
 
-    val df = session.createDataFrame(
+    val df = sparkSession.createDataFrame(
       List(
         Row(2001L, true, "Alice", 4L, true, "Alice", "US", 2001L, 4L, 4982162063360L, "IS"),
         Row(2002L, true, "Bob", 5L, true, "Bob", "US", 2002L, 5L, 4939212390400L, "IS"),
@@ -494,7 +494,7 @@ class CAPSPatternGraphTest extends CAPSGraphTest {
     val (header, _) = RecordHeader.empty.update(addContents(fields))
 
     val sparkHeader = CAPSRecordHeader.asSparkStructType(header)
-    val df = session.createDataFrame(
+    val df = sparkSession.createDataFrame(
       List(
         Row(0L, true, "PersonPeter"),
         Row(0L, true, "PersonPeter")
@@ -527,7 +527,7 @@ class CAPSPatternGraphTest extends CAPSGraphTest {
     val (header, _) = RecordHeader.empty.update(addContents(fields))
 
     val sparkHeader = CAPSRecordHeader.asSparkStructType(header)
-    val df = session.createDataFrame(
+    val df = sparkSession.createDataFrame(
       List(
         Row(0L, true, 1L, true, "PersonPeter", "EmployeePeter"),
         Row(10L, true, 11L, true, "PersonSusanna", "EmployeeSusanna")
@@ -567,7 +567,7 @@ class CAPSPatternGraphTest extends CAPSGraphTest {
     val (header, _) = RecordHeader.empty.update(addContents(fields))
 
     val sparkHeader = CAPSRecordHeader.asSparkStructType(header)
-    val df = session.createDataFrame(
+    val df = sparkSession.createDataFrame(
       List(
         Row(0L, 1L, 2L, "PersonPeter", "EmployeePeter", "HybridPeter"),
         Row(10L, 11L, 12L, "person.graphsusanna", null, "HybridSusanna")

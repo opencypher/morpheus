@@ -55,7 +55,7 @@ class SparkSQLExprMapperTest extends BaseTestSuite with SparkSessionFixture {
   }
 
   val _header: RecordHeader = RecordHeader.empty.update(addContents(Seq(OpaqueField(Var("a")()), OpaqueField(Var("b")()))))
-  val df: DataFrame = session.createDataFrame(
+  val df: DataFrame = sparkSession.createDataFrame(
     Collections.emptyList[Row](),
     StructType(Seq(StructField("a", IntegerType), StructField("b", IntegerType))))
 

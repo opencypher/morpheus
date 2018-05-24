@@ -68,10 +68,10 @@ abstract class HdfsDataSourceAcceptance extends CAPSTestSuite with CAPSPGDSAccep
   }
 
   def resetHadoopConfig(): Unit = {
-    session.sparkContext.hadoopConfiguration.clear()
+    sparkSession.sparkContext.hadoopConfiguration.clear()
     val hadoopParams = clusterConfig.asScala
     for (entry <- hadoopParams) {
-      session.sparkContext.hadoopConfiguration.set(entry.getKey, entry.getValue)
+      sparkSession.sparkContext.hadoopConfiguration.set(entry.getKey, entry.getValue)
     }
   }
 }
