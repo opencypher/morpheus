@@ -33,12 +33,18 @@ import org.opencypher.spark.api.io.util.FileSystemUtils.using
 
 trait CAPSFileSystem {
 
+  /**
+    * List the directories inside of the given path, create the path directory if it does not exist yet.
+    */
   def listDirectories(path: String): List[String]
 
   def deleteDirectory(path: String): Unit
 
   def readFile(path: String): String
 
+  /**
+    * Write the file content, create the path directories if it does not exist yet.
+    */
   def writeFile(path: String, content: String): Unit
 
 }
@@ -47,8 +53,16 @@ object DefaultFileSystem {
 
   implicit class HadoopFileSystemAdapter(fileSystem: FileSystem) extends CAPSFileSystem {
 
+    protected def createDirectoryIfNotExists(path: Path): Unit = {
+      if (!fileSystem.exists(path)) {
+        fileSystem.mkdirs(path)
+      }
+    }
+
     def listDirectories(path: String): List[String] = {
-      fileSystem.listStatus(new Path(path))
+      val p = new Path(path)
+      createDirectoryIfNotExists(p)
+      fileSystem.listStatus(p)
         .filter(_.isDirectory)
         .map(_.getPath.getName)
         .toList
@@ -66,7 +80,10 @@ object DefaultFileSystem {
     }
 
     def writeFile(path: String, content: String): Unit = {
-      using(fileSystem.create(new Path(path))) { outputStream =>
+      val p = new Path(path)
+      val parentDirectory = p.getParent
+      createDirectoryIfNotExists(parentDirectory)
+      using(fileSystem.create(p)) { outputStream =>
         using(new BufferedWriter(new OutputStreamWriter(outputStream, "UTF-8"))) { bufferedWriter =>
           bufferedWriter.write(content)
         }
