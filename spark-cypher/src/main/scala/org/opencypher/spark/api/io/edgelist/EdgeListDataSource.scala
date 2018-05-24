@@ -61,8 +61,7 @@ object EdgeListDataSource {
   * 0 1
   * 1 2
   *
-  * describes a graph with two edges (one from vertex 0 to 1 and one from vertex 1 to 2). The reader expects the file
-  * to not contain any comments.
+  * describes a graph with two edges (one from vertex 0 to 1 and one from vertex 1 to 2).
   *
   * The data source can be parameterized with options used by the underlying Spark Csv reader.
   *
