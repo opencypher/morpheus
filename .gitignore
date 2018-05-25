@@ -1,4 +1,3 @@
-.idea/
 *.iml
 spark-warehouse/
 target/
@@ -6,9 +5,12 @@ dependency-reduced-pom.xml
 version.txt
 build/test/
 */build
+out/**
 
 # IDE cruft
+.idea/
 .settings
 caps-core/.project
 caps-core/.classpath
 .project
+.idea_modules/
