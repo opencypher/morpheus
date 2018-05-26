@@ -52,7 +52,7 @@ class SessionGraphDataSource() extends PropertyGraphDataSource {
     graphMap = graphMap.updated(name, graph)
   }
 
-  override def delete(name: GraphName): Unit = graphMap = graphMap.filterKeys(_ != name)
+  override def delete(name: GraphName): Unit = graphMap = graphMap - name
 
   override def graphNames: Set[GraphName] = graphMap.keySet
 
