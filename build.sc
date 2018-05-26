@@ -25,7 +25,6 @@ object OkapiTesting extends shared.OkapiModule {
 
   override def ivyDeps = super.ivyDeps() ++ Agg(
     frontend,
-    bouncyCastle,
     scalaTest,
     neo4jHarness
   )

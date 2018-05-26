@@ -9,7 +9,6 @@ trait OkapiModule extends SbtModule {
 
   def cats = ivy"org.typelevel::cats-core:1.0.1"
   def frontend = ivy"org.opencypher:front-end-9.1:2.0.0"
-  def bouncyCastle = ivy"org.bouncycastle:bctls-jdk15on:1.59"
 
   def scalaTest = ivy"org.scalatest::scalatest:3.0.5"
   def scalaCheck = ivy"org.scalacheck::scalacheck:1.13.5"
