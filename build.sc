@@ -21,12 +21,15 @@ object OkapiApi extends shared.OkapiModule {
 
 object OkapiTesting extends shared.OkapiModule {
 
-  override def moduleDeps = Seq(OkapiTrees)
+  override def moduleDeps = Seq(OkapiApi)
 
-  override def ivyDeps = super.ivyDeps() ++ Agg(cats)
+  override def ivyDeps = super.ivyDeps() ++ Agg(
+    frontend,
+    bouncyCastle,
+    scalaTest,
+    neo4jHarness
+  )
 
-  object test extends OkapiTests {
-    override def ivyDeps = super.ivyDeps() ++ Agg(mockito)
-  }
+  object test extends OkapiTests
 
 }

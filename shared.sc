@@ -8,7 +8,13 @@ trait OkapiModule extends SbtModule {
   def scalaVersion = "2.11.12"
 
   def cats = ivy"org.typelevel::cats-core:1.0.1"
+  def frontend = ivy"org.opencypher:front-end-9.1:2.0.0"
+  def bouncyCastle = ivy"org.bouncycastle:bctls-jdk15on:1.59"
+
+  def scalaTest = ivy"org.scalatest::scalatest:3.0.5"
+  def scalaCheck = ivy"org.scalacheck::scalacheck:1.13.5"
   def mockito = ivy"org.mockito:mockito-all:1.10.19"
+  def neo4jHarness = ivy"org.neo4j.test:neo4j-harness:3.3.3"
 
   override def ivyDeps = Agg(
     ivy"org.scala-lang:scala-reflect:${scalaVersion()}"
@@ -16,7 +22,7 @@ trait OkapiModule extends SbtModule {
 
   trait OkapiTests extends Tests {
 
-    override def ivyDeps = Agg(ivy"org.scalatest::scalatest:3.0.5")
+    override def ivyDeps = Agg(scalaTest)
 
     def testFrameworks = Seq("org.scalatest.tools.Framework")
   }
