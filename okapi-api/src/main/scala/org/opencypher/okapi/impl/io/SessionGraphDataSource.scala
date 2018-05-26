@@ -31,6 +31,8 @@ import org.opencypher.okapi.api.io.PropertyGraphDataSource
 import org.opencypher.okapi.api.schema.Schema
 import org.opencypher.okapi.impl.exception.{GraphAlreadyExistsException, GraphNotFoundException}
 
+import scala.collection.mutable
+
 object SessionGraphDataSource {
 
   val Namespace = org.opencypher.okapi.api.graph.Namespace("session")
@@ -38,23 +40,21 @@ object SessionGraphDataSource {
 
 class SessionGraphDataSource() extends PropertyGraphDataSource {
 
-  private var graphMap: Map[GraphName, PropertyGraph] = Map.empty
+  private val graphMap: mutable.Map[GraphName, PropertyGraph] = mutable.Map.empty
 
-  override def graph(name: GraphName): PropertyGraph = {
+  override def graph(name: GraphName): PropertyGraph =
     graphMap.getOrElse(name, throw GraphNotFoundException(s"Session graph with name `$name`."))
-  }
 
   override def schema(name: GraphName): Option[Schema] = Some(graph(name).schema)
 
-  override def store(name: GraphName, graph: PropertyGraph): Unit = {
-    if (hasGraph(name))
-      throw GraphAlreadyExistsException(s"A graph with name $name is already stored in the session.")
-    graphMap = graphMap.updated(name, graph)
+  override def store(name: GraphName, graph: PropertyGraph): Unit = graphMap.get(name) match {
+    case None => graphMap.update(name, graph)
+    case Some(_) => throw GraphAlreadyExistsException(s"A graph with name $name is already stored in the session.")
   }
 
-  override def delete(name: GraphName): Unit = graphMap = graphMap - name
+  override def delete(name: GraphName): Unit = graphMap.remove(name)
 
-  override def graphNames: Set[GraphName] = graphMap.keySet
+  override def graphNames: Set[GraphName] = graphMap.keySet.toSet
 
   override def hasGraph(name: GraphName): Boolean = graphMap.contains(name)
 }
