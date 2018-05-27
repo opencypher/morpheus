@@ -244,6 +244,7 @@
             <arg>-feature</arg>
             <arg>-Xfatal-warnings</arg>
             <arg>-Xfuture</arg>
+            <arg>-Ytyper-debug</arg>
             <arg>-Ywarn-adapted-args</arg>
             <arg>-Yopt-warnings:at-inline-failed</arg>
             <arg>-Yopt:l:project</arg>
