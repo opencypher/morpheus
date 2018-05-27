@@ -1,5 +1,6 @@
 import $file.license
 import ammonite.ops._
+import coursier.core.Attributes
 import mill._
 import mill.scalalib._
 
@@ -7,13 +8,19 @@ trait OkapiModule extends SbtModule {
 
   def scalaVersion = "2.11.12"
 
+  def frontendVersion = "2.0.0"
+
   def cats = ivy"org.typelevel::cats-core:1.0.1"
-  def frontend = ivy"org.opencypher:front-end-9.1:2.0.0"
+  def frontend = ivy"org.opencypher:front-end-9.1:$frontendVersion"
+  def eff = ivy"org.atnos::eff:5.0.0"
 
   def scalaTest = ivy"org.scalatest::scalatest:3.0.5"
   def scalaCheck = ivy"org.scalacheck::scalacheck:1.13.5"
   def mockito = ivy"org.mockito:mockito-all:1.10.19"
   def neo4jHarness = ivy"org.neo4j.test:neo4j-harness:3.3.3"
+  def cypherTesting = ivy"org.neo4j:neo4j-cypher-util-3.4:3.4.0".configure(Attributes("type", "test-jar"))
+  def astTesting = ivy"org.opencypher:ast-9.1:$frontendVersion".configure(Attributes("type", "test-jar"))
+  def frontendTesting = ivy"org.opencypher:util-9.1:$frontendVersion".configure(Attributes("type", "test-jar"))
 
   override def ivyDeps = Agg(
     ivy"org.scala-lang:scala-reflect:${scalaVersion()}"
