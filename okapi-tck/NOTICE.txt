@@ -102,6 +102,13 @@ CDDL 1.1, GPL2 with CPE
   jersey-multipart
   MIME streaming extension
 
+Eclipse Public License 1.0
+  JUnit
+
+Eclipse Public License v2.0
+  org.junit.jupiter:junit-jupiter-api
+  org.junit.platform:junit-platform-commons
+
 MIT-license
   Cats core
   Cats kernel

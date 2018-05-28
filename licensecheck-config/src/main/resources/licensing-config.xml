@@ -5,14 +5,23 @@
   <liked-license>BSD License</liked-license>
   <liked-license>BSD - Scala License</liked-license>
   <liked-license>MIT-license</liked-license>
+  <liked-license>Eclipse Public License v2.0</liked-license>
+  <liked-license>Eclipse Public License 1.0</liked-license>
   <liked-license>BSD License 2-clause</liked-license>
   <liked-license>Bouncy Castle License</liked-license>
   <liked-license>Public-domain</liked-license>
   <liked-license>CDDL 1.1, GPL2 with CPE</liked-license>
   <liked-license>Mozilla Public License, Version 2.0</liked-license>
 
-
   <missing-licenses>
+    <artifact id="asm:asm:jar:3.1">
+      <!-- https://gitlab.ow2.org/asm/asm/blob/master/LICENSE.txt -->
+      <license>BSD License</license>
+    </artifact>
+    <artifact id="commons-beanutils:commons-beanutils:jar:1.7.0">
+      <!-- http://commons.apache.org/proper/commons-beanutils/ -->
+      <license>Apache Software License, Version 2.0</license>
+    </artifact>
     <artifact id="oro:oro:jar:2.0.8">
       <!-- https://mvnrepository.com/artifact/oro/oro/2.0.8 -->
       <license>Apache Software License, Version 2.0</license>
@@ -113,6 +122,7 @@
       <aka>Apache License 2.0</aka>
       <aka>Apache License</aka>
       <aka>Apache 2.0</aka>
+      <aka>Apache-2.0</aka>
       <aka>Apache 2.0 License</aka>
       <aka>ASL</aka>
       <aka>the Apache License, ASL Version 2.0</aka>
