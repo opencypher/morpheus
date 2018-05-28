@@ -39,6 +39,9 @@ object Schema {
     labelPropertyMap = LabelPropertyMap.empty,
     relTypePropertyMap = RelTypePropertyMap.empty
   )
+
+  def fromJson(jsonString: String): Schema =
+    upickle.default.read[SchemaImpl](jsonString)
 }
 
 /**
@@ -268,6 +271,8 @@ trait Schema {
   private[opencypher] def withOverwrittenRelationshipPropertyKeys(relType: String, propertyKeys: PropertyKeys): Schema
 
   def toString: String
+
+  def toJson: String
 
   def pretty: String
 

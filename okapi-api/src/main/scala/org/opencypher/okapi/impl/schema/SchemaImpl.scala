@@ -279,4 +279,6 @@ final case class SchemaImpl(
 
   override private[opencypher] def withOverwrittenRelationshipPropertyKeys(relType: String, propertyKeys: PropertyKeys) =
     copy(relTypePropertyMap = relTypePropertyMap.register(relType, propertyKeys))
+
+  override def toJson: String = upickle.default.write(this, indent = 4)
 }
