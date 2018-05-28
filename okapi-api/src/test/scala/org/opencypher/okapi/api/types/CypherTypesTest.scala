@@ -51,6 +51,7 @@ class CypherTypesTest extends FunSpec with Matchers {
     CTList(CTAny),
     CTList(CTList(CTBoolean)),
     CTList(CTWildcard),
+    CTList(CTString.nullable),
     CTWildcard,
     CTVoid
   )

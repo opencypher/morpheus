@@ -40,7 +40,7 @@ import org.opencypher.spark.impl.io.CAPSPropertyGraphDataSource
 import org.opencypher.spark.schema.CAPSSchema
 
 import scala.util.Try
-
+import org.opencypher.spark.api.io.util.StringEncodingUtilities._
 /**
   * Abstract data source implementation that takes care of caching graph names and schemas.
   *
@@ -95,7 +95,7 @@ abstract class AbstractDataSource(implicit val session: CAPSSession) extends CAP
         val nonNullableProperties = capsSchema.keysFor(Set(combo)).filterNot {
           case (_, cypherType) => cypherType.isNullable
         }.keySet
-        val nonNullableColumns = nonNullableProperties + GraphEntity.sourceIdKey
+        val nonNullableColumns = nonNullableProperties.map(_.toPropertyColumnName) + GraphEntity.sourceIdKey
         val df = readNodeTable(graphName, capsMetaData.tableStorageFormat, combo, capsSchema.canonicalNodeTableSchema(combo))
         CAPSNodeTable(combo, df.setNonNullable(nonNullableColumns))
       }
@@ -104,7 +104,7 @@ abstract class AbstractDataSource(implicit val session: CAPSSession) extends CAP
         val nonNullableProperties = capsSchema.relationshipKeys(relType).filterNot {
           case (_, cypherType) => cypherType.isNullable
         }.keySet
-        val nonNullableColumns = nonNullableProperties ++ Relationship.nonPropertyAttributes
+        val nonNullableColumns = nonNullableProperties.map(_.toPropertyColumnName) ++ Relationship.nonPropertyAttributes
         val df = readRelationshipTable(graphName, relType, capsSchema.canonicalRelTableSchema(relType))
         CAPSRelationshipTable(relType, df.setNonNullable(nonNullableColumns))
       }
