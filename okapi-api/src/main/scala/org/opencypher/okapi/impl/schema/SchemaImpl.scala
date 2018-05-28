@@ -37,14 +37,23 @@ import upickle.default._
 
 object SchemaImpl {
 
+  val VERSION = "version"
+  val LABEL_PROPERTY_MAP = "labelPropertyMap"
+  val REL_TYPE_PROPERTY_MAP = "relTypePropertyMap"
+
+  val LABELS = "labels"
+  val REL_TYPE = "relType"
+  val PROPERTIES = "properties"
+
+
   implicit def rw: ReadWriter[Schema] = readwriter[Js.Value].bimap[Schema](
     schema => Js.Obj(
-      "version" -> Js.Num(1),
-      "labelPropertyMap" -> writeJs(schema.labelPropertyMap),
-      "relTypePropertyMap" -> writeJs(schema.relTypePropertyMap)),
+      VERSION -> Js.Num(1),
+      LABEL_PROPERTY_MAP -> writeJs(schema.labelPropertyMap),
+      REL_TYPE_PROPERTY_MAP -> writeJs(schema.relTypePropertyMap)),
     json => {
-      val labelPropertyMap = readJs[LabelPropertyMap](json.obj("labelPropertyMap"))
-      val relTypePropertyMap = readJs[RelTypePropertyMap](json.obj("relTypePropertyMap"))
+      val labelPropertyMap = readJs[LabelPropertyMap](json.obj(LABEL_PROPERTY_MAP))
+      val relTypePropertyMap = readJs[RelTypePropertyMap](json.obj(REL_TYPE_PROPERTY_MAP))
       SchemaImpl(labelPropertyMap, relTypePropertyMap)
     }
   )
@@ -52,13 +61,13 @@ object SchemaImpl {
   implicit def lpmRw: ReadWriter[LabelPropertyMap] = readwriter[Js.Value].bimap[LabelPropertyMap](
     labelPropertyMap => {
       val jsonEntries = labelPropertyMap.map.map {
-        case (labelCombo, propKeys) => Js.Obj("labels" -> writeJs(labelCombo), "properties" -> writeJs(propKeys))
+        case (labelCombo, propKeys) => Js.Obj(LABELS -> writeJs(labelCombo), PROPERTIES -> writeJs(propKeys))
       }
       jsonEntries
     },
     json => {
       val content = json.arr
-        .map(value => readJs[Set[String]](value.obj("labels")) -> readJs[PropertyKeys](value.obj("properties")))
+        .map(value => readJs[Set[String]](value.obj(LABELS)) -> readJs[PropertyKeys](value.obj(PROPERTIES)))
       LabelPropertyMap(content.toMap)
     }
   )
@@ -66,13 +75,13 @@ object SchemaImpl {
   implicit def rpmRw: ReadWriter[RelTypePropertyMap] = readwriter[Js.Value].bimap[RelTypePropertyMap](
     relTypePropertyMap => {
       val jsonEntries = relTypePropertyMap.map.map {
-        case (relType, propKeys) => Js.Obj("relType" -> writeJs(relType), "properties" -> writeJs(propKeys))
+        case (relType, propKeys) => Js.Obj(REL_TYPE -> writeJs(relType), PROPERTIES -> writeJs(propKeys))
       }
       jsonEntries
     },
     json => {
       val content = json.arr
-        .map(value => readJs[String](value.obj("relType")) -> readJs[PropertyKeys](value.obj("properties")))
+        .map(value => readJs[String](value.obj(REL_TYPE)) -> readJs[PropertyKeys](value.obj(PROPERTIES)))
       RelTypePropertyMap(content.toMap)
     }
   )
