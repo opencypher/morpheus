@@ -31,6 +31,9 @@ import cats.syntax.semigroup._
 import org.opencypher.okapi.api.schema.PropertyKeys.PropertyKeys
 import org.opencypher.okapi.api.types.CypherType
 import org.opencypher.okapi.api.types.CypherType.joinMonoid
+import ujson.Js.Value
+import upickle.Js
+import upickle.default._
 
 object PropertyKeys {
   type PropertyKeys = Map[String, CypherType]
@@ -45,6 +48,20 @@ object PropertyKeys {
 object LabelPropertyMap {
 
   val empty: LabelPropertyMap = LabelPropertyMap(Map.empty)
+
+  implicit def rw: ReadWriter[LabelPropertyMap] = readwriter[Js.Value].bimap[LabelPropertyMap](
+    labelPropertyMap => {
+      val jsonEntries = labelPropertyMap.map.map {
+        case (labelCombo, propKeys) => Js.Obj("labels" -> writeJs(labelCombo), "properties" -> writeJs(propKeys))
+      }
+      jsonEntries
+    },
+    (json: Value) => {
+      val content = json.arr
+        .map(value => readJs[Set[String]](value.obj("labels")) -> readJs[PropertyKeys](value.obj("properties")))
+      LabelPropertyMap(content.toMap)
+    }
+  )
 }
 
 /**
@@ -54,9 +71,9 @@ final case class LabelPropertyMap(map: Map[Set[String], PropertyKeys]) {
 
   /**
     * Registers the given property keys to the specified labels.
-    * @note This will override any previous binding for the label combination.
     *
-    * @param labels set of labels
+    * @note This will override any previous binding for the label combination.
+    * @param labels     set of labels
     * @param properties property keys for the given set of labels
     * @return updated LabelPropertyMap
     */
@@ -83,6 +100,7 @@ final case class LabelPropertyMap(map: Map[Set[String], PropertyKeys]) {
 
   /**
     * Returns the label property map with the given label combination `combo` removed.
+    *
     * @param combo label combination to remove
     * @return updated label property map
     */

@@ -31,6 +31,11 @@ import org.opencypher.okapi.api.schema.{LabelPropertyMap, PropertyKeys, RelTypeP
 import org.opencypher.okapi.api.types._
 import org.opencypher.okapi.impl.exception.SchemaException
 import org.opencypher.okapi.impl.schema.SchemaUtils._
+import upickle.default._
+
+object SchemaImpl {
+  implicit def rw: ReadWriter[SchemaImpl] = macroRW
+}
 
 final case class SchemaImpl(
   labelPropertyMap: LabelPropertyMap,

@@ -31,6 +31,9 @@ import cats.syntax.semigroup._
 import org.opencypher.okapi.api.schema.PropertyKeys.PropertyKeys
 import org.opencypher.okapi.api.types.CypherType
 import org.opencypher.okapi.api.types.CypherType.joinMonoid
+import ujson.Js.Value
+import upickle.Js
+import upickle.default._
 
 object RelTypePropertyMap {
   val empty: RelTypePropertyMap = RelTypePropertyMap(Map.empty)
@@ -48,6 +51,20 @@ object RelTypePropertyMap {
       pair._1 -> pair._2.map(p2 => p2._1 -> (if (overlap.contains(p2._1)) p2._2 else p2._2.nullable))
     })
   }
+
+  implicit def rw: ReadWriter[RelTypePropertyMap] = readwriter[Js.Value].bimap[RelTypePropertyMap](
+    relTypePropertyMap => {
+      val jsonEntries = relTypePropertyMap.map.map {
+        case (relType, propKeys) => Js.Obj("relType" -> writeJs(relType), "properties" -> writeJs(propKeys))
+      }
+      jsonEntries
+    },
+    (json: Value) => {
+      val content = json.arr
+        .map(value => readJs[String](value.obj("relType")) -> readJs[PropertyKeys](value.obj("properties")))
+      RelTypePropertyMap(content.toMap)
+    }
+  )
 }
 
 final case class RelTypePropertyMap(map: Map[String, PropertyKeys]) {

@@ -32,6 +32,15 @@
       <version>${project.parent.version}</version>
     </dependency>
 
+    <!-- Util -->
+
+    <!-- Json serialization -->
+    <dependency>
+      <groupId>com.lihaoyi</groupId>
+      <artifactId>upickle_${project.scala.binary.version}</artifactId>
+      <version>${dep.upickle.version}</version>
+    </dependency>
+
     <!--Tests-->
 
     <dependency>

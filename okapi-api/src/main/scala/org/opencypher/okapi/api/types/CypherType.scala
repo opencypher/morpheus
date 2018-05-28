@@ -29,10 +29,13 @@ package org.opencypher.okapi.api.types
 import cats.Monoid
 import org.opencypher.okapi.api.graph.QualifiedGraphName
 import org.opencypher.okapi.api.value.CypherValue._
+import upickle.default._
 
 import scala.language.postfixOps
 
 object CypherType {
+
+  implicit def rw: ReadWriter[CypherType] = readwriter[String].bimap[CypherType](_.name, s => fromName(s).get)
 
   /**
     * Parses the name of CypherType into the actual CypherType object.

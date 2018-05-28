@@ -75,6 +75,7 @@
     <dep.opencypher.front-end.version>2.0.0</dep.opencypher.front-end.version>
     <dep.spark.version>2.2.1</dep.spark.version>
     <dep.spark.scope>compile</dep.spark.scope>
+    <dep.upickle.version>0.6.6</dep.upickle.version>
 
     <!-- Test scope dependencies -->
     <dep.bouncycastle.version>1.57</dep.bouncycastle.version>
@@ -244,7 +245,7 @@
             <arg>-feature</arg>
             <arg>-Xfatal-warnings</arg>
             <arg>-Xfuture</arg>
-            <arg>-Ytyper-debug</arg>
+            <!--<arg>-Ytyper-debug</arg>-->
             <arg>-Ywarn-adapted-args</arg>
             <arg>-Yopt-warnings:at-inline-failed</arg>
             <arg>-Yopt:l:project</arg>
