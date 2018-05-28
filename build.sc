@@ -57,3 +57,28 @@ object OkapiIr extends shared.OkapiModule {
   }
 
 }
+
+object OkapiLogical extends shared.OkapiModule {
+
+  override def moduleDeps = Seq(OkapiIr)
+
+  object test extends OkapiTests {
+    override def moduleDeps = super.moduleDeps ++ Seq(OkapiTesting, OkapiIr.test)
+  }
+
+}
+
+object OkapiRelational extends shared.OkapiModule {
+
+  override def moduleDeps = Seq(OkapiLogical)
+
+  override def scalacOptions = super.scalacOptions() ++ Seq("-Ypartial-unification")
+
+  object test extends OkapiTests {
+    override def moduleDeps = super.moduleDeps ++ Seq(OkapiTesting, OkapiIr.test)
+
+    override def ivyDeps = super.ivyDeps() ++ Agg(
+    )
+  }
+
+}
