@@ -1,47 +1,33 @@
 {
-  "labelPropertyMap" : {
-    "Product" : {
-      "title" : {
-        "CTString" : {
-          
-        }
-      },
-      "rank" : {
-        "CTInteger" : {
-          
-        }
-      },
-      "category" : {
-        "CTString" : {
-          
-        }
+  "version": 1,
+  "labelPropertyMap": [
+    {
+      "labels": [
+        "Product"
+      ],
+      "properties": {
+        "title": "STRING",
+        "rank": "INTEGER",
+        "category": "STRING"
       }
     },
-    "Customer" : {
-      "name" : {
-        "CTString" : {
-          
-        }
+    {
+      "labels": [
+        "Customer"
+      ],
+      "properties": {
+        "name": "STRING"
       }
     }
-  },
-  "relTypePropertyMap" : {
-    "BOUGHT" : {
-      "rating" : {
-        "CTInteger" : {
-          
-        }
-      },
-      "helpful" : {
-        "CTInteger" : {
-          
-        }
-      },
-      "votes" : {
-        "CTInteger" : {
-          
-        }
+  ],
+  "relTypePropertyMap": [
+    {
+      "relType": "BOUGHT",
+      "properties": {
+        "rating": "INTEGER",
+        "helpful": "INTEGER",
+        "votes": "INTEGER"
       }
     }
-  }
+  ]
 }
