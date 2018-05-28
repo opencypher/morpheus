@@ -29,9 +29,9 @@ package org.opencypher.spark.impl.acceptance
 import org.opencypher.okapi.api.schema.{PropertyKeys, Schema}
 import org.opencypher.okapi.api.types.{CTInteger, CTString}
 import org.opencypher.okapi.api.value.CypherValue.CypherMap
-import org.opencypher.spark.api.value.{CAPSNode, CAPSRelationship}
 import org.opencypher.okapi.testing.Bag
 import org.opencypher.okapi.testing.Bag._
+import org.opencypher.spark.api.value.{CAPSNode, CAPSRelationship}
 import org.opencypher.spark.impl.CAPSConverters._
 import org.opencypher.spark.impl.DataFrameOps._
 import org.opencypher.spark.schema.CAPSSchema._
@@ -843,6 +843,50 @@ class MultipleGraphBehaviour extends CAPSTestSuite with ScanGraphInit {
       .asCaps)
     result.getGraph.cypher("MATCH ()-[r]->() RETURN type(r)").getRecords.iterator.toBag should equal(Bag(
       CypherMap("type(r)" -> "KNOWS")
+    ))
+  }
+
+  it("can construct a copy of a node with matched label") {
+    caps.cypher("CREATE GRAPH foo { CONSTRUCT NEW (:A) RETURN GRAPH }")
+
+    val graph = caps.cypher("FROM GRAPH foo RETURN GRAPH").getGraph
+
+    graph.cypher(
+      """MATCH (a:A)
+        |CONSTRUCT
+        |  NEW (COPY OF a)
+        |MATCH (n)
+        |RETURN labels(n)
+      """.stripMargin).getRecords.iterator.toBag should equal(Bag(
+      CypherMap("labels(n)" -> Seq("A"))
+    ))
+  }
+
+  it("can construct with an input table expanded by unwind") {
+    caps.cypher("CREATE GRAPH foo { CONSTRUCT NEW (:A) RETURN GRAPH }")
+
+    val data = caps.cypher("FROM GRAPH foo RETURN GRAPH").getGraph.cypher(
+      """MATCH (a:A)
+        |UNWIND [1, 2, 3] AS i
+        |CONSTRUCT
+        |  NEW (f COPY OF a)-[:FOO]->(g COPY OF a)
+        |  NEW (:B {name: 'foo'})
+        |MATCH (n)
+        |RETURN n.name
+      """.stripMargin).getRecords
+
+    val nullRow = CypherMap("n.name" -> null)
+    val fooRow = CypherMap("n.name" -> "foo")
+    data.iterator.toBag should equal(Bag(
+      nullRow,
+      nullRow,
+      nullRow,
+      nullRow,
+      nullRow,
+      nullRow,
+      fooRow,
+      fooRow,
+      fooRow
     ))
   }
 }

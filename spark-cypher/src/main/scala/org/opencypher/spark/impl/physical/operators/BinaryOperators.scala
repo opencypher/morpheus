@@ -375,21 +375,23 @@ final case class ConstructGraph(
   ): Set[(SlotContent, Column)] = {
     val col = functions.lit(true)
 
-    val copiedLabelTuples: Set[(SlotContent, Column)] = node.baseEntity match {
-      case Some(origNode) => copySlotsContents(node.v, constructedTable)(_.labelSlots(origNode).values.toSet)
-      case None => Set.empty
+    val copiedLabelTuples: Map[SlotContent, Column] = node.baseEntity match {
+      case Some(origNode) => copySlotsContents(node.v, constructedTable)(_.labelSlots(origNode).values.toSet).toMap
+      case None => Map.empty
     }
 
-    val labelTuples: Set[(SlotContent, Column)] = node.labels.map { label =>
+    val labelTuples: Map[SlotContent, Column] = node.labels.map { label =>
       ProjectedExpr(HasLabel(node.v, label)(CTBoolean)) -> col
-    } ++ copiedLabelTuples
+    }.toMap ++ copiedLabelTuples
 
-    val propertyTuples: Set[(SlotContent, Column)] = node.baseEntity match {
-      case Some(origNode) => copySlotsContents(node.v, constructedTable)(_.propertySlots(origNode).values.toSet)
-      case None => Set.empty
+    val propertyTuples: Map[SlotContent, Column] = node.baseEntity match {
+      case Some(origNode) => copySlotsContents(node.v, constructedTable)(_.propertySlots(origNode).values.toSet).toMap
+      case None => Map.empty
     }
 
-    labelTuples ++ propertyTuples + (OpaqueField(node.v) -> generateId(columnIdPartition, numberOfColumnPartitions).setTag(newEntityTag))
+    val allTuples = labelTuples ++ propertyTuples + (OpaqueField(node.v) -> generateId(columnIdPartition, numberOfColumnPartitions).setTag(newEntityTag))
+
+    allTuples.toSet
   }
 
   /**
