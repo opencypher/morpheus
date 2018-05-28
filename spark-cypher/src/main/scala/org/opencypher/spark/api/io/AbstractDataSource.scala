@@ -29,18 +29,17 @@ package org.opencypher.spark.api.io
 import org.apache.spark.sql.DataFrame
 import org.apache.spark.sql.types.StructType
 import org.opencypher.okapi.api.graph.{GraphName, PropertyGraph}
+import org.opencypher.okapi.api.types.CTInteger
 import org.opencypher.okapi.impl.exception.{GraphAlreadyExistsException, GraphNotFoundException}
 import org.opencypher.spark.api.CAPSSession
 import org.opencypher.spark.api.io.metadata.CAPSGraphMetaData
 import org.opencypher.spark.api.io.util.CAPSGraphExport._
+import org.opencypher.spark.api.io.util.StringEncodingUtilities._
 import org.opencypher.spark.impl.CAPSConverters._
 import org.opencypher.spark.impl.CAPSGraph
 import org.opencypher.spark.impl.DataFrameOps._
 import org.opencypher.spark.impl.io.CAPSPropertyGraphDataSource
 import org.opencypher.spark.schema.CAPSSchema
-
-import scala.util.Try
-import org.opencypher.spark.api.io.util.StringEncodingUtilities._
 /**
   * Abstract data source implementation that takes care of caching graph names and schemas.
   *
@@ -92,21 +91,23 @@ abstract class AbstractDataSource(implicit val session: CAPSSession) extends CAP
       val capsSchema: CAPSSchema = schema(graphName).get
       val capsMetaData: CAPSGraphMetaData = readCAPSGraphMetaData(graphName)
       val nodeTables = capsSchema.allLabelCombinations.map { combo =>
-        val nonNullableProperties = capsSchema.keysFor(Set(combo)).filterNot {
-          case (_, cypherType) => cypherType.isNullable
-        }.keySet
-        val nonNullableColumns = nonNullableProperties.map(_.toPropertyColumnName) + GraphEntity.sourceIdKey
+        val propertyColsWithCypherType = capsSchema.keysFor(Set(combo)).map {
+          case (key, cypherType) => key.toPropertyColumnName -> cypherType
+        }
+
+        val columnsWithCypherType = propertyColsWithCypherType + (GraphEntity.sourceIdKey -> CTInteger)
         val df = readNodeTable(graphName, capsMetaData.tableStorageFormat, combo, capsSchema.canonicalNodeTableSchema(combo))
-        CAPSNodeTable(combo, df.setNonNullable(nonNullableColumns))
+        CAPSNodeTable(combo, df.setNullability(columnsWithCypherType))
       }
 
       val relTables = capsSchema.relationshipTypes.map { relType =>
-        val nonNullableProperties = capsSchema.relationshipKeys(relType).filterNot {
-          case (_, cypherType) => cypherType.isNullable
-        }.keySet
-        val nonNullableColumns = nonNullableProperties.map(_.toPropertyColumnName) ++ Relationship.nonPropertyAttributes
+        val propertyColsWithCypherType = capsSchema.relationshipKeys(relType).map {
+          case (key, cypherType) => key.toPropertyColumnName -> cypherType
+        }
+
+        val columnsWithCypherType = propertyColsWithCypherType ++ Relationship.nonPropertyAttributes.map(_ -> CTInteger)
         val df = readRelationshipTable(graphName, relType, capsSchema.canonicalRelTableSchema(relType))
-        CAPSRelationshipTable(relType, df.setNonNullable(nonNullableColumns))
+        CAPSRelationshipTable(relType, df.setNullability(columnsWithCypherType))
       }
       CAPSGraph.create(capsMetaData.tags, nodeTables.head, (nodeTables.tail ++ relTables).toSeq: _*)
     }

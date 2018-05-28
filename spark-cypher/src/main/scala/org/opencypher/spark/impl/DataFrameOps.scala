@@ -145,6 +145,35 @@ object DataFrameOps {
       }
     }
 
+    def setNullability(mapping: Map[String, CypherType]): DataFrame = {
+      val newSchema = StructType(df.schema.map {
+
+        case s@StructField(cn, array: ArrayType, _, _) if mapping.contains(cn) =>
+          val isListNullable = mapping(cn).isNullable
+          val isElementTypeNullable = mapping(cn) match {
+            case CTList(elementType) => elementType.isNullable
+            case CTListOrNull(elementType) => elementType.isNullable
+            case other => throw IllegalArgumentException("CTList or CTListOrNull", other)
+          }
+
+          s.copy(dataType = ArrayType(
+            array.elementType,
+            isElementTypeNullable),
+            nullable = isListNullable)
+
+        case s@StructField(cn, _, _, _) if mapping.contains(cn) =>
+          s.copy(nullable = mapping(cn).isNullable)
+
+        case other =>
+          other
+      })
+      if (newSchema == df.schema) {
+        df
+      } else {
+        df.sparkSession.createDataFrame(df.rdd, newSchema)
+      }
+    }
+
     def safeReplaceTags(columnName: String, replacements: Map[Int, Int]): DataFrame = {
       val dataType = structFieldForColumn(columnName).dataType
       require(dataType == LongType, s"Cannot remap long values in Column with type $dataType")
@@ -249,6 +278,7 @@ object DataFrameOps {
 
     /**
       * Caches and forces the computation of the DF
+      *
       * @return row count of the DF
       */
     def cacheAndForce(tableName: Option[String] = None): Long = {
