@@ -412,7 +412,6 @@
         </property>
       </activation>
 
-      <!-- We're skipping Spark testing, TCK and examples -->
       <modules>
         <module>licensecheck-config</module>
         <module>okapi-api</module>
@@ -420,6 +419,7 @@
         <module>okapi-logical</module>
         <module>okapi-relational</module>
         <module>okapi-testing</module>
+        <module>okapi-tck</module>
         <module>okapi-trees</module>
         <module>spark-cypher</module>
         <module>spark-cypher-testing</module>
