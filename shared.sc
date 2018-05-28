@@ -18,9 +18,9 @@ trait OkapiModule extends SbtModule {
   def scalaCheck = ivy"org.scalacheck::scalacheck:1.13.5"
   def mockito = ivy"org.mockito:mockito-all:1.10.19"
   def neo4jHarness = ivy"org.neo4j.test:neo4j-harness:3.3.3"
-  def cypherTesting = ivy"org.neo4j:neo4j-cypher-util-3.4:3.4.0".configure(Attributes("type", "test-jar"))
-  def astTesting = ivy"org.opencypher:ast-9.1:$frontendVersion".configure(Attributes("type", "test-jar"))
-  def frontendTesting = ivy"org.opencypher:util-9.1:$frontendVersion".configure(Attributes("type", "test-jar"))
+  def cypherTesting = ivy"org.neo4j:neo4j-cypher-util-3.4:3.4.0".configure(Attributes("test-jar", "tests"))
+  def astTesting = ivy"org.opencypher:ast-9.1:$frontendVersion".configure(Attributes("test-jar", "tests"))
+  def frontendTesting = ivy"org.opencypher:util-9.1:$frontendVersion".configure(Attributes("test-jar", "tests"))
 
   override def ivyDeps = Agg(
     ivy"org.scala-lang:scala-reflect:${scalaVersion()}"

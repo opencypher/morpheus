@@ -37,18 +37,7 @@ object OkapiIr extends shared.OkapiModule {
 
   override def moduleDeps = Seq(OkapiApi)
 
-  override def scalacOptions = super.scalacOptions() ++ Seq(
-    //    "-Ypartial-unification",
-    //    "-unchecked",
-    //    "-deprecation",
-    //    "-feature",
-    //    "-Xfatal-warnings",
-    //    "-Xfuture",
-    //    "-Ywarn-adapted-args",
-    //    "-Yopt-warnings:at-inline-failed",
-    //    "-Yopt:l:project",
-    "-Ypartial-unification"
-  )
+  override def scalacOptions = super.scalacOptions() ++ Seq("-Ypartial-unification")
 
   override def ivyDeps = super.ivyDeps() ++ Agg(
     frontend,
