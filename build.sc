@@ -82,3 +82,17 @@ object OkapiRelational extends shared.OkapiModule {
   }
 
 }
+
+object SparkCypher extends shared.OkapiModule {
+
+  override def moduleDeps = Seq(OkapiRelational)
+
+  override def ivyDeps = super.ivyDeps() ++ Agg(
+    spark,
+    sparkSql,
+    sparkCatalyst,
+    neo4jDriver,
+    circe
+  )
+
+}

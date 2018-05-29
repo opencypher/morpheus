@@ -9,10 +9,16 @@ trait OkapiModule extends SbtModule {
   def scalaVersion = "2.11.12"
 
   def frontendVersion = "2.0.0"
+  def sparkVersion = "2.2.1"
 
   def cats = ivy"org.typelevel::cats-core:1.0.1"
+
   def frontend = ivy"org.opencypher:front-end-9.1:$frontendVersion"
   def eff = ivy"org.atnos::eff:5.0.0"
+  def spark = ivy"org.apache.spark::spark-core:$sparkVersion"
+  def sparkSql = ivy"org.apache.spark::spark-sql:$sparkVersion"
+  def sparkCatalyst = ivy"org.apache.spark::spark-catalyst:$sparkVersion"
+  def neo4jDriver = ivy"org.neo4j.driver:neo4j-java-driver:1.4.2"
 
   def scalaTest = ivy"org.scalatest::scalatest:3.0.5"
   def scalaCheck = ivy"org.scalacheck::scalacheck:1.13.5"
