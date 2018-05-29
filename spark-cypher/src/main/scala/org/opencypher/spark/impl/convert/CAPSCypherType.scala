@@ -28,9 +28,10 @@ package org.opencypher.spark.impl.convert
 
 import org.apache.spark.sql.types._
 import org.opencypher.okapi.api.types._
-import org.opencypher.okapi.impl.exception.NotImplementedException
+import org.opencypher.okapi.impl.exception.{IllegalArgumentException, NotImplementedException}
 
 object CAPSCypherType {
+
   implicit class RichCypherType(val ct: CypherType) extends AnyVal {
     def toSparkType: Option[DataType] = ct match {
       case CTNull | CTVoid => Some(NullType)
@@ -56,6 +57,31 @@ object CAPSCypherType {
     }
 
     def isSparkCompatible: Boolean = toSparkType.isDefined
+
+    def toStructField(column: String): StructField = ct match {
+      case CTVoid | CTNull => StructField(column, NullType, nullable = true)
+
+      case CTNode | CTRelationship => StructField(column, LongType, nullable = false)
+      case CTNodeOrNull | CTRelationshipOrNull => StructField(column, LongType, nullable = true)
+
+      case CTInteger => StructField(column, LongType, nullable = false)
+      case CTIntegerOrNull => StructField(column, LongType, nullable = true)
+      case CTBoolean => StructField(column, BooleanType, nullable = false)
+      case CTBooleanOrNull => StructField(column, BooleanType, nullable = true)
+      case CTFloat => StructField(column, DoubleType, nullable = true)
+      case CTFloatOrNull => StructField(column, DoubleType, nullable = true)
+      case CTString => StructField(column, StringType, nullable = false)
+      case CTStringOrNull => StructField(column, StringType, nullable = true)
+
+      case CTList(elementType) =>
+        val elementStructField = elementType.toStructField(column)
+        StructField(column, ArrayType(elementStructField.dataType, containsNull = elementStructField.nullable), nullable = false)
+      case CTListOrNull(elementType) =>
+        val elementStructField = elementType.toStructField(column)
+        StructField(column, ArrayType(elementStructField.dataType, containsNull = elementStructField.nullable), nullable = true)
+
+      case other => throw IllegalArgumentException("CypherType supported by CAPS", other)
+    }
   }
 
   // Spark data types that are supported within the Cypher type system
@@ -113,4 +139,5 @@ object CAPSCypherType {
       case _ => None
     }
   }
+
 }

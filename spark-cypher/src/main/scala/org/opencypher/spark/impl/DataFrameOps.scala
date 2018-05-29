@@ -36,14 +36,13 @@ import org.opencypher.okapi.api.types._
 import org.opencypher.okapi.api.value.CypherValue
 import org.opencypher.okapi.api.value.CypherValue.CypherValue
 import org.opencypher.okapi.impl.exception.IllegalArgumentException
+import org.opencypher.okapi.impl.util.Measurement.printTiming
 import org.opencypher.okapi.ir.api.expr.{Expr, Param}
 import org.opencypher.okapi.relational.impl.table.RecordHeader
 import org.opencypher.spark.api.Tags._
 import org.opencypher.spark.impl.convert.CAPSCypherType._
 import org.opencypher.spark.impl.physical.CAPSRuntimeContext
 import org.opencypher.spark.impl.physical.operators.NamedTableScan
-import org.opencypher.okapi.impl.util.Measurement.printTiming
-
 object DataFrameOps {
 
   implicit class CypherRow(r: Row) {
@@ -147,25 +146,8 @@ object DataFrameOps {
 
     def setNullability(mapping: Map[String, CypherType]): DataFrame = {
       val newSchema = StructType(df.schema.map {
-
-        case s@StructField(cn, array: ArrayType, _, _) if mapping.contains(cn) =>
-          val isListNullable = mapping(cn).isNullable
-          val isElementTypeNullable = mapping(cn) match {
-            case CTList(elementType) => elementType.isNullable
-            case CTListOrNull(elementType) => elementType.isNullable
-            case other => throw IllegalArgumentException("CTList or CTListOrNull", other)
-          }
-
-          s.copy(dataType = ArrayType(
-            array.elementType,
-            isElementTypeNullable),
-            nullable = isListNullable)
-
-        case s@StructField(cn, _, _, _) if mapping.contains(cn) =>
-          s.copy(nullable = mapping(cn).isNullable)
-
-        case other =>
-          other
+        case s@StructField(cn, _, _, _) => mapping(cn).toStructField(cn)
+        case other => throw IllegalArgumentException(s"No mapping provided for $other")
       })
       if (newSchema == df.schema) {
         df
