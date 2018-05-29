@@ -36,14 +36,13 @@ import org.opencypher.okapi.api.types._
 import org.opencypher.okapi.api.value.CypherValue
 import org.opencypher.okapi.api.value.CypherValue.CypherValue
 import org.opencypher.okapi.impl.exception.IllegalArgumentException
+import org.opencypher.okapi.impl.util.Measurement.printTiming
 import org.opencypher.okapi.ir.api.expr.{Expr, Param}
 import org.opencypher.okapi.relational.impl.table.RecordHeader
 import org.opencypher.spark.api.Tags._
 import org.opencypher.spark.impl.convert.CAPSCypherType._
 import org.opencypher.spark.impl.physical.CAPSRuntimeContext
 import org.opencypher.spark.impl.physical.operators.NamedTableScan
-import org.opencypher.okapi.impl.util.Measurement.printTiming
-
 object DataFrameOps {
 
   implicit class CypherRow(r: Row) {
@@ -137,6 +136,18 @@ object DataFrameOps {
       val newSchema = StructType(df.schema.map {
         case s@StructField(cn, _, true, _) if columnNames.contains(cn) => s.copy(nullable = false)
         case other => other
+      })
+      if (newSchema == df.schema) {
+        df
+      } else {
+        df.sparkSession.createDataFrame(df.rdd, newSchema)
+      }
+    }
+
+    def setNullability(mapping: Map[String, CypherType]): DataFrame = {
+      val newSchema = StructType(df.schema.map {
+        case s@StructField(cn, _, _, _) => mapping(cn).toStructField(cn)
+        case other => throw IllegalArgumentException(s"No mapping provided for $other")
       })
       if (newSchema == df.schema) {
         df
@@ -249,6 +260,7 @@ object DataFrameOps {
 
     /**
       * Caches and forces the computation of the DF
+      *
       * @return row count of the DF
       */
     def cacheAndForce(tableName: Option[String] = None): Long = {

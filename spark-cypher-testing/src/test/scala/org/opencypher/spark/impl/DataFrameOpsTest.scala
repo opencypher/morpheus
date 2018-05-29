@@ -26,12 +26,17 @@
  */
 package org.opencypher.spark.impl
 
+import org.apache.spark.sql.Row
+import org.apache.spark.sql.types.{ArrayType, LongType, StructField, StructType}
+import org.opencypher.okapi.api.types.{CTInteger, CTList}
 import org.opencypher.spark.api.Tags
 import org.opencypher.spark.api.Tags.tagBits
 import org.opencypher.spark.impl.DataFrameOps._
 import org.opencypher.spark.testing.CAPSTestSuite
 import org.scalatest.Matchers
 import org.scalatest.prop.GeneratorDrivenPropertyChecks
+
+import scala.collection.JavaConverters._
 
 class DataFrameOpsTest extends CAPSTestSuite with Matchers with GeneratorDrivenPropertyChecks {
 
@@ -124,6 +129,46 @@ class DataFrameOpsTest extends CAPSTestSuite with Matchers with GeneratorDrivenP
         afterOpTag should equal(tag1)
       }
     }
+  }
+
+  it("should set the right nullability") {
+
+    val df = sparkSession.createDataFrame(List(
+      Row(0L, 0L, 0L, Array(0L), Array(0L), Array(0L), Array(0L), Array(0L))
+    ).asJava, StructType(Seq(
+      StructField("a", LongType, nullable = true),
+      StructField("b", LongType, nullable = false),
+      StructField("c", LongType, nullable = true),
+      StructField("d", ArrayType(LongType, containsNull = true), nullable = true),
+      StructField("e", ArrayType(LongType, containsNull = true), nullable = false),
+      StructField("f", ArrayType(LongType, containsNull = false), nullable = true),
+      StructField("g", ArrayType(LongType, containsNull = false), nullable = false),
+      StructField("h", ArrayType(LongType, containsNull = false), nullable = false)
+    )))
+
+    val nullabilities = Map(
+      "a" -> CTInteger,
+      "b" -> CTInteger,
+      "c" -> CTInteger.nullable,
+      "d" -> CTList(CTInteger),
+      "e" -> CTList(CTInteger).nullable,
+      "f" -> CTList(CTInteger.nullable),
+      "g" -> CTList(CTInteger.nullable).nullable,
+      "h" -> CTList(CTInteger)
+    )
+
+    val updatedDf = df.setNullability(nullabilities)
+
+    updatedDf.schema should equal(StructType(Seq(
+      StructField("a", LongType, nullable = false),
+      StructField("b", LongType, nullable = false),
+      StructField("c", LongType, nullable = true),
+      StructField("d", ArrayType(LongType, containsNull = false), nullable = false),
+      StructField("e", ArrayType(LongType, containsNull = false), nullable = true),
+      StructField("f", ArrayType(LongType, containsNull = true), nullable = false),
+      StructField("g", ArrayType(LongType, containsNull = true), nullable = true),
+      StructField("h", ArrayType(LongType, containsNull = false), nullable = false)
+    )))
   }
 
 }
