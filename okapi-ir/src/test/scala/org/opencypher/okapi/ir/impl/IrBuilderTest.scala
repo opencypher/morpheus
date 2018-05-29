@@ -35,8 +35,8 @@ import org.opencypher.okapi.ir.api._
 import org.opencypher.okapi.ir.api.block._
 import org.opencypher.okapi.ir.api.expr.{Expr, HasLabel, Property, Var}
 import org.opencypher.okapi.ir.api.pattern._
-import org.opencypher.okapi.ir.test._
-import org.opencypher.okapi.ir.test.support.MatchHelper.equalWithTracing
+import org.opencypher.okapi.ir.impl.util.VarConverters._
+import org.opencypher.okapi.testing.MatchHelper.equalWithTracing
 
 import scala.collection.immutable.Set
 

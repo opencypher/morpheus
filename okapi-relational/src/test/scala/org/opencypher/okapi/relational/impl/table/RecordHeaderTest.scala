@@ -27,14 +27,15 @@
 package org.opencypher.okapi.relational.impl.table
 
 import org.opencypher.okapi.api.types._
+import org.opencypher.okapi.ir.api.expr.Expr._
 import org.opencypher.okapi.ir.api.expr._
 import org.opencypher.okapi.ir.api.{Label, PropertyKey, RelType}
-import org.opencypher.okapi.ir.test.support.MatchHelper._
-import org.scalatest.{FunSpec, Matchers}
+import org.opencypher.okapi.testing.BaseTestSuite
+import org.opencypher.okapi.testing.MatchHelper._
 
-import Expr._
+import scala.language.implicitConversions
 
-class RecordHeaderTest extends FunSpec with Matchers {
+class RecordHeaderTest extends BaseTestSuite {
 
   val n: Var = Var("n")(CTNode("A", "B"))
   val m: Var = Var("m")(CTNode("A", "B"))

@@ -33,10 +33,10 @@ import org.opencypher.okapi.api.value.CypherValue._
 import org.opencypher.okapi.impl.exception.InternalException
 import org.opencypher.okapi.ir.api.expr._
 import org.opencypher.okapi.ir.api.{Label, PropertyKey, RelType}
-import org.opencypher.okapi.ir.test.support.MatchHelper.equalWithTracing
 import org.opencypher.okapi.relational.impl.table.RecordHeader
 import org.opencypher.okapi.testing.Bag
 import org.opencypher.okapi.testing.Bag._
+import org.opencypher.okapi.testing.MatchHelper.equalWithTracing
 import org.opencypher.spark.api.io.{CAPSNodeTable, CAPSRelationshipTable}
 import org.opencypher.spark.api.value.CAPSNode
 import org.opencypher.spark.impl.DataFrameOps._

@@ -31,13 +31,13 @@ import java.net.URI
 import org.opencypher.okapi.api.types.{CTBoolean, CTNode, CTRelationship}
 import org.opencypher.okapi.impl.exception.IllegalArgumentException
 import org.opencypher.okapi.ir.api.RelType
-import org.opencypher.okapi.ir.api.block.{Fields, ProjectedFieldsOf}
+import org.opencypher.okapi.ir.api.block._
 import org.opencypher.okapi.ir.api.expr.{Equals, Expr, _}
 import org.opencypher.okapi.ir.api.pattern.Pattern
-import org.opencypher.okapi.ir.impl.IrTestSuite
-import org.opencypher.okapi.ir.test._
+import org.opencypher.okapi.ir.impl.util.VarConverters._
+import org.opencypher.okapi.testing.BaseTestSuite
 
-class SolvedQueryModelTest extends IrTestSuite {
+class SolvedQueryModelTest extends BaseTestSuite with IrConstruction {
 
   implicit val uri = URI.create("test")
 

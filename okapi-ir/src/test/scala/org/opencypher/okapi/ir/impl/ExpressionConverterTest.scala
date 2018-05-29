@@ -32,18 +32,15 @@ import org.opencypher.okapi.api.types._
 import org.opencypher.okapi.api.value.CypherValue.CypherMap
 import org.opencypher.okapi.ir.api._
 import org.opencypher.okapi.ir.api.expr._
-import org.opencypher.okapi.ir.test.support.MatchHelper.equalWithTracing
+import org.opencypher.okapi.ir.impl.util.VarConverters.toVar
 import org.opencypher.okapi.ir.test.support.Neo4jAstTestSupport
-import org.opencypher.okapi.ir.test.toVar
 import org.opencypher.okapi.testing.BaseTestSuite
+import org.opencypher.okapi.testing.MatchHelper.equalWithTracing
 import org.opencypher.v9_1.ast.semantics.SemanticState
 import org.opencypher.v9_1.util.{Ref, symbols}
 import org.opencypher.v9_1.{expressions => ast}
-import org.scalatest.mockito.MockitoSugar
 
-import scala.util.Random
-
-class ExpressionConverterTest extends BaseTestSuite with Neo4jAstTestSupport with MockitoSugar {
+class ExpressionConverterTest extends BaseTestSuite with Neo4jAstTestSupport {
 
   private def testTypes(ref: Ref[ast.Expression]): CypherType = ref.value match {
     case ast.Variable("r") => CTRelationship
@@ -225,10 +222,6 @@ class ExpressionConverterTest extends BaseTestSuite with Neo4jAstTestSupport wit
     convert("id(a)") should equal(
       Id(Var("a")())()
     )
-  }
-
-  val qgnGenerator = new QGNGenerator {
-    override def generate: QualifiedGraphName = QualifiedGraphName(s"session.#${(Random.nextInt & Int.MaxValue) % 100}")
   }
 
   lazy val testContext = IRBuilderContext.initial(

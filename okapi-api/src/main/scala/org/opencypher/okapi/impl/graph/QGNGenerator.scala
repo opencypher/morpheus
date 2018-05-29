@@ -24,13 +24,12 @@
  * described as "implementation extensions to Cypher" or as "proposed changes to
  * Cypher that are not yet approved by the openCypher community".
  */
-package org.opencypher.okapi.logical
+package org.opencypher.okapi.impl.graph
 
-import org.opencypher.okapi.ir.impl.IrTestSuite
-import org.opencypher.okapi.logical.impl.{LogicalCatalogGraph, SolvedQueryModel, Start}
+import org.opencypher.okapi.api.graph.QualifiedGraphName
 
-abstract class LogicalTestSuite extends IrTestSuite {
+trait QGNGenerator {
 
-  def leafPlan: Start = Start(LogicalCatalogGraph(testGraph.qualifiedGraphName, testGraph.schema), SolvedQueryModel.empty)
+  def generate: QualifiedGraphName
 
 }

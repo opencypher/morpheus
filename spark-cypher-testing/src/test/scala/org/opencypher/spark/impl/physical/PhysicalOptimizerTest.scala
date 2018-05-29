@@ -39,9 +39,6 @@ import org.opencypher.spark.testing.fixture.GraphConstructionFixture
 
 class PhysicalOptimizerTest extends CAPSTestSuite with GraphConstructionFixture {
   val emptyRecords = CAPSRecords.empty(RecordHeader.empty)
-  val testNamespace = Namespace("testNamespace")
-  val testGraphName = GraphName("test")
-  val testQualifiedGraphName = QualifiedGraphName(testNamespace, testGraphName)
 
   def start(qgn: QualifiedGraphName, records: CAPSRecords)(implicit caps: CAPSSession): Start = {
     Start(qgn, Some(records), records.header)

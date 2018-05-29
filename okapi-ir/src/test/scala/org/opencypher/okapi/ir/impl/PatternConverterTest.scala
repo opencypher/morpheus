@@ -30,7 +30,7 @@ import org.opencypher.okapi.api.types.{CTNode, CTRelationship, CypherType}
 import org.opencypher.okapi.ir.api.IRField
 import org.opencypher.okapi.ir.api.expr._
 import org.opencypher.okapi.ir.api.pattern._
-import org.opencypher.okapi.ir.test.toField
+import org.opencypher.okapi.ir.impl.util.VarConverters.toField
 import org.opencypher.v9_1.parser.{Expressions, Patterns}
 import org.opencypher.v9_1.util.InputPosition.NONE
 import org.opencypher.v9_1.util.{InputPosition, SyntaxException}

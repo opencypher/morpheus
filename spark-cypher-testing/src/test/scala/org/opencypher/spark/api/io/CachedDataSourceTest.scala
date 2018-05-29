@@ -27,7 +27,7 @@
 package org.opencypher.spark.api.io
 
 import org.apache.spark.storage.StorageLevel
-import org.opencypher.okapi.api.graph.{GraphName, PropertyGraph}
+import org.opencypher.okapi.api.graph.{GraphName, Namespace, PropertyGraph}
 import org.opencypher.spark.api.io.util.CachedDataSource._
 import org.opencypher.spark.impl.CAPSConverters._
 import org.opencypher.spark.impl.CAPSScanGraph
@@ -37,8 +37,7 @@ import org.scalatest.BeforeAndAfterEach
 
 class CachedDataSourceTest extends CAPSTestSuite with GraphConstructionFixture with BeforeAndAfterEach {
 
-  private val testNamespace = caps.catalog.sessionNamespace
-  private val testGraphName = GraphName("test")
+  override val testNamespace: Namespace = caps.catalog.sessionNamespace
   private val testDataSource = caps.catalog.source(testNamespace)
 
   override protected def beforeEach(): Unit = {
