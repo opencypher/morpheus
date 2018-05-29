@@ -31,7 +31,6 @@ import org.apache.spark.sql.types.{LongType, StructField, StructType}
 import org.opencypher.okapi.api.schema.Schema
 import org.opencypher.okapi.api.types.CTRelationship
 import org.opencypher.okapi.ir.api.expr.Var
-import org.opencypher.okapi.relational.impl.table.ColumnName
 import org.opencypher.spark.api.io.util.StringEncodingUtilities._
 import org.opencypher.spark.api.io.{GraphEntity, Relationship}
 import org.opencypher.spark.impl.CAPSGraph
@@ -68,7 +67,7 @@ object CAPSGraphExport {
 
       val idRenaming = varName -> GraphEntity.sourceIdKey
       val propertyRenamings = nodeRecords.header.propertySlots(Var(varName)())
-        .map { case (p, slot) => ColumnName.of(slot) -> p.key.name.toPropertyColumnName }
+        .map { case (p, slot) => nodeRecords.header.of(slot) -> p.key.name.toPropertyColumnName }
 
       val selectColumns = (idRenaming :: propertyRenamings.toList.sorted).map {
         case (oldName, newName) => nodeRecords.data.col(oldName).as(newName)
@@ -83,12 +82,13 @@ object CAPSGraphExport {
       val v = Var(varName)(relCypherType)
 
       val relRecords = graph.relationships(varName, relCypherType)
+      val header = relRecords.header
 
       val idRenaming = varName -> GraphEntity.sourceIdKey
-      val sourceIdRenaming = ColumnName.of(relRecords.header.sourceNodeSlot(v)) -> Relationship.sourceStartNodeKey
-      val targetIdRenaming = ColumnName.of(relRecords.header.targetNodeSlot(v)) -> Relationship.sourceEndNodeKey
-      val propertyRenamings = relRecords.header.propertySlots(Var(varName)())
-        .map { case (p, slot) => ColumnName.of(slot) -> p.key.name.toPropertyColumnName }
+      val sourceIdRenaming = header.of(header.sourceNodeSlot(v)) -> Relationship.sourceStartNodeKey
+      val targetIdRenaming = header.of(header.targetNodeSlot(v)) -> Relationship.sourceEndNodeKey
+      val propertyRenamings = header.propertySlots(Var(varName)())
+        .map { case (p, slot) => header.of(slot) -> p.key.name.toPropertyColumnName }
 
       val selectColumns = (idRenaming :: sourceIdRenaming :: targetIdRenaming :: propertyRenamings.toList.sorted).map {
         case (oldName, newName) => relRecords.data.col(oldName).as(newName)

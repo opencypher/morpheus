@@ -34,7 +34,7 @@ import org.opencypher.okapi.api.types.{CTNode, CTRelationship}
 import org.opencypher.okapi.impl.exception.IllegalArgumentException
 import org.opencypher.okapi.ir.api.PropertyKey
 import org.opencypher.okapi.ir.api.expr._
-import org.opencypher.okapi.relational.impl.table.{ColumnName, OpaqueField, RecordHeader}
+import org.opencypher.okapi.relational.impl.table.{OpaqueField, RecordHeader}
 import org.opencypher.spark.api.CAPSSession
 import org.opencypher.spark.api.io.{CAPSEntityTable, CAPSNodeTable}
 import org.opencypher.spark.impl.CAPSConverters._
@@ -88,13 +88,13 @@ trait CAPSGraph extends PropertyGraph with GraphOperations with Serializable {
     }.values
 
     val keepSlots = (Seq(idSlot) ++ labelSlots ++ propertySlots).map(_.content)
-    val keepCols = keepSlots.map(ColumnName.of)
+    val keepCols = keepSlots.map(records.header.of)
 
     // we only keep rows where all "other" labels are false
     val predicate = records.header.labelSlots(nodeVar)
       .filterNot(slot => labels.contains(slot._1.label.name))
       .values
-      .map(ColumnName.of)
+      .map(records.header.of)
       .map(records.data.col(_) === false)
       .reduceOption(_ && _)
 

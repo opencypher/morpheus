@@ -36,7 +36,6 @@ import scala.annotation.tailrec
 import scala.io.Source
 import scala.util.Try
 
-
 class MetaTest extends FunSpec with Matchers {
 
   val readmeName = "README.md"

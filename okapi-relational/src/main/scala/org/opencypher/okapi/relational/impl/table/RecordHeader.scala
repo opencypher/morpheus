@@ -33,6 +33,9 @@ import org.opencypher.okapi.ir.api.expr._
 import org.opencypher.okapi.ir.api.{Label, PropertyKey}
 import org.opencypher.okapi.relational.impl.syntax.RecordHeaderSyntax._
 
+import scala.annotation.tailrec
+import scala.util.Random
+
 /**
   * A header for a CypherRecords.
   *
@@ -40,6 +43,32 @@ import org.opencypher.okapi.relational.impl.syntax.RecordHeaderSyntax._
   * The slots that represent variables (which is a kind of expression) are called <i>fields</i>.
   */
 final case class RecordHeader(internalHeader: InternalHeader) {
+
+  @tailrec
+  def generateUniqueName: String = {
+    val NAME_SIZE = 5
+
+    val chars = (1 to NAME_SIZE).map(_ => Random.nextPrintableChar())
+    val name = from(String.valueOf(chars.toArray))
+
+    if (slots.map(of).contains(name)) generateUniqueName
+    else name
+  }
+
+  def tempColName: String =
+    ColumnNamer.tempColName
+
+  def of(slot: RecordSlot): String = ColumnNamer.of(slot)
+
+  def of(slot: SlotContent): String = {
+    ColumnNamer.of(slot)
+  }
+
+  def of(expr: Expr): String = {
+    ColumnNamer.of(expr)
+  }
+
+  def from(name: String): String = ColumnNamer.from(name)
 
   /**
     * Computes the concatenation of this header and another header.

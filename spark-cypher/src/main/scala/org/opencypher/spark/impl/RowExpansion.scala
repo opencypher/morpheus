@@ -46,13 +46,13 @@ case class RowExpansion(
     case _              => Set.empty[String]
   }
 
-  private val rowSchema = StructType(targetHeader.slots.map(_.asStructField))
+  private val rowSchema = asSparkStructType(targetHeader)
 
   private lazy val labelIndexLookupTable = entitiesWithChildren.map {
     case (node, slots) =>
       val labelIndicesForNode = slots.collect {
         case RecordSlot(_, p @ ProjectedExpr(HasLabel(_, l))) if targetLabels.contains(l.name) =>
-          rowSchema.fieldIndex(ColumnName.of(p.withOwner(targetVar)))
+          rowSchema.fieldIndex(targetHeader.of(p.withOwner(targetVar)))
       }
       node -> labelIndicesForNode
   }
@@ -61,7 +61,7 @@ case class RowExpansion(
     case (rel, slots) =>
       val typeIndexForRel = slots.collectFirst {
         case RecordSlot(_, p @ ProjectedExpr(Type(r))) if r == rel =>
-          rowSchema.fieldIndex(ColumnName.of(p.withOwner(targetVar)))
+          rowSchema.fieldIndex(targetHeader.of(p.withOwner(targetVar)))
       }.getOrElse(throw IllegalArgumentException(s"a type column for relationship $rel"))
       rel -> typeIndexForRel
   }
@@ -94,7 +94,7 @@ case class RowExpansion(
 
   def adaptRowToNewHeader(row: Row, lookupTable: Map[String, String]): Row = {
     val orderedRowContent = targetHeader.slots.foldLeft(Seq.empty[Any]) { (newRowAcc, targetSlot) =>
-      val maybeColumnName = lookupTable.get(ColumnName.of(targetSlot))
+      val maybeColumnName = lookupTable.get(targetHeader.of(targetSlot))
       maybeColumnName match {
         case Some(columnName) =>
           val index = row.fieldIndex(columnName)
@@ -117,7 +117,7 @@ case class RowExpansion(
       case _ => false
     }.get
 
-    val index = rowSchema.fieldIndex(ColumnName.of(slot))
+    val index = rowSchema.fieldIndex(targetHeader.of(slot))
 
     rows.filterNot(_.isNullAt(index))
   }

@@ -31,7 +31,7 @@ import org.opencypher.okapi.api.graph.QualifiedGraphName
 import org.opencypher.okapi.api.types._
 import org.opencypher.okapi.impl.exception.IllegalArgumentException
 import org.opencypher.okapi.relational.api.physical.PhysicalOperator
-import org.opencypher.okapi.relational.impl.table.{ColumnName, RecordHeader, RecordSlot, SlotContent}
+import org.opencypher.okapi.relational.impl.table.{RecordHeader, RecordSlot}
 import org.opencypher.okapi.trees.AbstractTreeNode
 import org.opencypher.spark.api.CAPSSession
 import org.opencypher.spark.impl.CAPSConverters._
@@ -60,10 +60,6 @@ private[spark] abstract class CAPSPhysicalOperator
 }
 
 object CAPSPhysicalOperator {
-  def columnName(slot: RecordSlot): String = ColumnName.of(slot)
-
-  def columnName(content: SlotContent): String = ColumnName.of(content)
-
   def joinRecords(
       header: RecordHeader,
       joinSlots: Seq[(RecordSlot, RecordSlot)],
@@ -73,7 +69,7 @@ object CAPSPhysicalOperator {
     val lhsData = lhs.toDF()
     val rhsData = rhs.toDF()
 
-    val joinCols = joinSlots.map { case (left, right) => columnName(left) -> columnName(right) }
+    val joinCols = joinSlots.map { case (left, right) => header.of(left) -> header.of(right) }
 
     // TODO: the join produced corrupt data when the previous operator was a cross. We work around that by using a
     // subsequent select. This can be removed, once https://issues.apache.org/jira/browse/SPARK-23855 is solved or we

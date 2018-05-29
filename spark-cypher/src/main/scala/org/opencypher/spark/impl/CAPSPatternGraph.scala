@@ -29,7 +29,7 @@ package org.opencypher.spark.impl
 import org.apache.spark.storage.StorageLevel
 import org.opencypher.okapi.api.types.{CTNode, CTRelationship}
 import org.opencypher.okapi.ir.api.expr._
-import org.opencypher.okapi.relational.impl.table.{ColumnName, OpaqueField, RecordHeader, SlotContent}
+import org.opencypher.okapi.relational.impl.table.{OpaqueField, RecordHeader, SlotContent}
 import org.opencypher.spark.api.CAPSSession
 import org.opencypher.spark.impl.table.CAPSRecordHeader._
 import org.opencypher.spark.schema.CAPSSchema
@@ -88,21 +88,21 @@ case class CAPSPatternGraph(
 
     val relColumnsLookupTables = extractionSlots.map {
       case (relVar, slotsForRel) =>
-        relVar -> createScanToBaseTableLookup(targetVar, slotsForRel.map(_.content))
+        relVar -> createScanToBaseTableLookup(targetHeader, targetVar, slotsForRel.map(_.content))
     }
 
     val extractedDf = baseTable
       .toDF()
       .flatMap(RowExpansion(targetHeader, targetVar, extractionSlots, relColumnsLookupTables))(targetHeader.rowEncoder)
 
-    val distinctData = extractedDf.dropDuplicates(ColumnName.of(OpaqueField(targetVar)))
+    val distinctData = extractedDf.dropDuplicates(targetHeader.of(OpaqueField(targetVar)))
 
     CAPSRecords.verifyAndCreate(targetHeader, distinctData)
   }
 
-  private def createScanToBaseTableLookup(scanTableVar: Var, slotContents: Seq[SlotContent]): Map[String, String] = {
+  private def createScanToBaseTableLookup(header: RecordHeader, scanTableVar: Var, slotContents: Seq[SlotContent]): Map[String, String] = {
     slotContents.map { baseTableSlotContent =>
-      ColumnName.of(baseTableSlotContent.withOwner(scanTableVar)) -> ColumnName.of(baseTableSlotContent)
+      header.of(baseTableSlotContent.withOwner(scanTableVar)) -> header.of(baseTableSlotContent)
     }.toMap
   }
 }

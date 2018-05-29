@@ -32,7 +32,7 @@ import org.opencypher.okapi.ir.api.expr.{Expr, Property, Var}
 
 import scala.collection.mutable
 
-object ColumnName {
+object ColumnNamer {
 
   def tempColName: String =
     UUID.randomUUID().toString

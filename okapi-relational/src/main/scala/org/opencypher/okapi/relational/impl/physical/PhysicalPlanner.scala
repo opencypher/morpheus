@@ -35,10 +35,10 @@ import org.opencypher.okapi.ir.api.expr._
 import org.opencypher.okapi.ir.api.util.DirectCompilationStage
 import org.opencypher.okapi.logical.impl._
 import org.opencypher.okapi.relational.api.physical.{PhysicalOperator, PhysicalOperatorProducer, PhysicalPlannerContext, RuntimeContext}
+import org.opencypher.okapi.relational.impl.flat
 import org.opencypher.okapi.relational.impl.flat.FlatOperator
 import org.opencypher.okapi.relational.impl.syntax.RecordHeaderSyntax._
 import org.opencypher.okapi.relational.impl.table._
-import org.opencypher.okapi.relational.impl.{ColumnNameGenerator, flat}
 
 class PhysicalPlanner[P <: PhysicalOperator[R, G, C], R <: CypherRecords, G <: PropertyGraph, C <: RuntimeContext[R, G]](producer: PhysicalOperatorProducer[P, R, G, C])
 
@@ -261,7 +261,7 @@ class PhysicalPlanner[P <: PhysicalOperator[R, G, C], R <: CypherRecords, G <: P
     val rhsWithDropped = producer.planDrop(rhsData, fieldsToRemove, rhsHeaderWithDropped)
 
     // 3. Rename the join fields on the right hand side, in order to make them distinguishable after the join
-    val joinFieldRenames = joinFields.map(f => f -> Var(ColumnNameGenerator.generateUniqueName(rhsHeader))(f.cypherType)).toMap
+    val joinFieldRenames = joinFields.map(f => f -> Var(rhsHeader.generateUniqueName)(f.cypherType)).toMap
 
     val rhsWithRenamedSlots = rhsHeaderWithDropped.slots.collect {
       case RecordSlot(i, OpaqueField(v)) if joinFieldRenames.contains(v) => RecordSlot(i, OpaqueField(joinFieldRenames(v)))
