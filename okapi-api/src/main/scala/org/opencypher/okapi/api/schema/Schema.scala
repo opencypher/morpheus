@@ -28,6 +28,7 @@ package org.opencypher.okapi.api.schema
 
 import org.opencypher.okapi.api.schema.PropertyKeys.PropertyKeys
 import org.opencypher.okapi.api.types.{CTRelationship, CypherType}
+import org.opencypher.okapi.impl.schema.SchemaImpl._
 import org.opencypher.okapi.impl.schema.{ImpliedLabels, LabelCombinations, SchemaImpl}
 
 object Schema {
@@ -39,6 +40,9 @@ object Schema {
     labelPropertyMap = LabelPropertyMap.empty,
     relTypePropertyMap = RelTypePropertyMap.empty
   )
+
+  def fromJson(jsonString: String): Schema =
+    upickle.default.read[Schema](jsonString)
 }
 
 /**
@@ -268,6 +272,8 @@ trait Schema {
   private[opencypher] def withOverwrittenRelationshipPropertyKeys(relType: String, propertyKeys: PropertyKeys): Schema
 
   def toString: String
+
+  def toJson: String
 
   def pretty: String
 

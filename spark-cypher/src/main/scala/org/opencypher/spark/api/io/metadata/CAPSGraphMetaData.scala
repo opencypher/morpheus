@@ -26,7 +26,18 @@
  */
 package org.opencypher.spark.api.io.metadata
 
-case class CAPSGraphMetaData(
-  tableStorageFormat: String,
-  tags: Set[Int] = Set(0)
-)
+import org.opencypher.spark.api.io.metadata.CAPSGraphMetaData._
+import upickle.default._
+
+object CAPSGraphMetaData {
+  implicit def rw: ReadWriter[CAPSGraphMetaData] = macroRW
+
+  def fromJson(jsonString: String): CAPSGraphMetaData =
+    upickle.default.read[CAPSGraphMetaData](jsonString)
+}
+
+case class CAPSGraphMetaData(tableStorageFormat: String, tags: Set[Int] = Set(0)) {
+
+  def toJson: String =
+    upickle.default.write[CAPSGraphMetaData](this, indent = 4)
+}

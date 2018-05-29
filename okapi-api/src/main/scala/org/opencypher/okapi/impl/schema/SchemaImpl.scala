@@ -30,7 +30,62 @@ import org.opencypher.okapi.api.schema.PropertyKeys.PropertyKeys
 import org.opencypher.okapi.api.schema.{LabelPropertyMap, PropertyKeys, RelTypePropertyMap, Schema}
 import org.opencypher.okapi.api.types._
 import org.opencypher.okapi.impl.exception.SchemaException
+import org.opencypher.okapi.impl.schema.SchemaImpl._
 import org.opencypher.okapi.impl.schema.SchemaUtils._
+import upickle.Js
+import upickle.default._
+
+object SchemaImpl {
+
+  val VERSION = "version"
+  val LABEL_PROPERTY_MAP = "labelPropertyMap"
+  val REL_TYPE_PROPERTY_MAP = "relTypePropertyMap"
+
+  val LABELS = "labels"
+  val REL_TYPE = "relType"
+  val PROPERTIES = "properties"
+
+
+  implicit def rw: ReadWriter[Schema] = readwriter[Js.Value].bimap[Schema](
+    schema => Js.Obj(
+      VERSION -> Js.Num(1),
+      LABEL_PROPERTY_MAP -> writeJs(schema.labelPropertyMap),
+      REL_TYPE_PROPERTY_MAP -> writeJs(schema.relTypePropertyMap)),
+    json => {
+      val labelPropertyMap = readJs[LabelPropertyMap](json.obj(LABEL_PROPERTY_MAP))
+      val relTypePropertyMap = readJs[RelTypePropertyMap](json.obj(REL_TYPE_PROPERTY_MAP))
+      SchemaImpl(labelPropertyMap, relTypePropertyMap)
+    }
+  )
+
+  implicit def lpmRw: ReadWriter[LabelPropertyMap] = readwriter[Js.Value].bimap[LabelPropertyMap](
+    labelPropertyMap => {
+      val jsonEntries = labelPropertyMap.map.map {
+        case (labelCombo, propKeys) => Js.Obj(LABELS -> writeJs(labelCombo), PROPERTIES -> writeJs(propKeys))
+      }
+      jsonEntries
+    },
+    json => {
+      val content = json.arr
+        .map(value => readJs[Set[String]](value.obj(LABELS)) -> readJs[PropertyKeys](value.obj(PROPERTIES)))
+      LabelPropertyMap(content.toMap)
+    }
+  )
+
+  implicit def rpmRw: ReadWriter[RelTypePropertyMap] = readwriter[Js.Value].bimap[RelTypePropertyMap](
+    relTypePropertyMap => {
+      val jsonEntries = relTypePropertyMap.map.map {
+        case (relType, propKeys) => Js.Obj(REL_TYPE -> writeJs(relType), PROPERTIES -> writeJs(propKeys))
+      }
+      jsonEntries
+    },
+    json => {
+      val content = json.arr
+        .map(value => readJs[String](value.obj(REL_TYPE)) -> readJs[PropertyKeys](value.obj(PROPERTIES)))
+      RelTypePropertyMap(content.toMap)
+    }
+  )
+}
 
 final case class SchemaImpl(
   labelPropertyMap: LabelPropertyMap,
@@ -274,4 +329,6 @@ final case class SchemaImpl(
 
   override private[opencypher] def withOverwrittenRelationshipPropertyKeys(relType: String, propertyKeys: PropertyKeys) =
     copy(relTypePropertyMap = relTypePropertyMap.register(relType, propertyKeys))
+
+  override def toJson: String = upickle.default.write[Schema](this, indent = 4)
 }

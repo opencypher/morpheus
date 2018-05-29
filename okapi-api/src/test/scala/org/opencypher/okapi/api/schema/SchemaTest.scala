@@ -356,4 +356,17 @@ class SchemaTest extends FunSpec with Matchers {
     Schema.empty.withNodePropertyKeys("label")().isEmpty shouldBe false
     Schema.empty.withRelationshipPropertyKeys("type")("name" -> CTFloat).isEmpty shouldBe false
   }
+
+  it("should serialize and deserialize a schema") {
+
+    val schema = Schema.empty
+      .withNodePropertyKeys(Set("A"), PropertyKeys("foo" -> CTString, "bar" -> CTList(CTString.nullable)))
+      .withNodePropertyKeys(Set("A", "B"), PropertyKeys("foo" -> CTString, "bar" -> CTInteger))
+      .withRelationshipPropertyKeys("FOO", PropertyKeys.empty)
+
+    val serialized = schema.toJson
+
+    schema should equal(Schema.fromJson(serialized))
+
+  }
 }
