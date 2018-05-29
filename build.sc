@@ -11,7 +11,10 @@ object OkapiApi extends shared.OkapiModule {
 
   override def moduleDeps = Seq(OkapiTrees)
 
-  override def ivyDeps = super.ivyDeps() ++ Agg(cats)
+  override def ivyDeps = super.ivyDeps() ++ Agg(
+    cats,
+    uPickle
+  )
 
   object test extends OkapiTests {
     override def ivyDeps = super.ivyDeps() ++ Agg(mockito)
@@ -92,7 +95,7 @@ object SparkCypher extends shared.OkapiModule {
     sparkSql,
     sparkCatalyst,
     neo4jDriver,
-    circe
+    circeCore
   )
 
 }
