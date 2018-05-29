@@ -43,20 +43,12 @@ object CAPSRecordHeader {
           .getOrElse(throw IllegalArgumentException("a supported Spark type", field.dataType))))
     }: _*)
 
-  def asSparkStructType(header: RecordHeader): StructType = {
-    StructType(header.slots.map(slot => slot.content.cypherType.toStructField(header.of(slot.content))))
-  }
-
-  // TODO: Move to RecordHeader itself
   implicit class CAPSRecordHeader(header: RecordHeader) extends Serializable {
+    def toStructType: StructType = {
+      StructType(header.slots.map(slot => slot.content.cypherType.toStructField(header.of(slot.content))))
+    }
 
     def rowEncoder: ExpressionEncoder[Row] =
-      RowEncoder(asSparkStructType(header))
-
-    def columns = header.internalHeader.slots.map(computeColumnName).toVector
-
-    def column(slot: RecordSlot) = columns(slot.index)
-
-    private def computeColumnName(slot: RecordSlot): String = header.of(slot)
+      RowEncoder(header.toStructType)
   }
 }

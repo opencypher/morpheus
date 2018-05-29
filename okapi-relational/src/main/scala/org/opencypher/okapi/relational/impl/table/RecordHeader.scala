@@ -68,6 +68,10 @@ final case class RecordHeader(internalHeader: InternalHeader) {
     ColumnNamer.of(expr)
   }
 
+  def columns: Seq[String] = internalHeader.slots.map(of).toVector
+
+  def column(slot: RecordSlot) = columns(slot.index)
+
   def from(name: String): String = ColumnNamer.from(name)
 
   /**

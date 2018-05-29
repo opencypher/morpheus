@@ -38,7 +38,7 @@ import org.opencypher.okapi.relational.impl.table.{OpaqueField, ProjectedExpr, P
 import org.opencypher.okapi.testing.Bag
 import org.opencypher.okapi.testing.Bag._
 import org.opencypher.spark.api.value.CAPSNode
-import org.opencypher.spark.impl.table.CAPSRecordHeader
+import org.opencypher.spark.impl.table.CAPSRecordHeader._
 import org.opencypher.spark.schema.CAPSSchema._
 import org.opencypher.spark.testing.support.creation.caps.{CAPSPatternGraphFactory, CAPSTestGraphFactory}
 
@@ -415,7 +415,7 @@ class CAPSPatternGraphTest extends CAPSGraphTest {
         Row(0L, 1L, true, 2L),
         Row(10L, 11L, false, 12L)
       ).asJava,
-      CAPSRecordHeader.asSparkStructType(header))
+      header.toStructType)
 
     val schema = Schema.empty
       .withNodePropertyKeys("Person")()
@@ -466,7 +466,7 @@ class CAPSPatternGraphTest extends CAPSGraphTest {
         Row(2003L, true, "Eve", 6L, true, "Eve", "US", 2003L, 6L, 5480378269696L, "IS"),
         Row(2004L, true, "Carol", 7L, true, "Carol", "US", 2004L, 7L, 5626407157760L, "IS")
       ).asJava,
-      CAPSRecordHeader.asSparkStructType(header)
+      header.toStructType
     )
 
     val schema = Schema.empty
@@ -493,7 +493,7 @@ class CAPSPatternGraphTest extends CAPSGraphTest {
     )
     val (header, _) = RecordHeader.empty.update(addContents(fields))
 
-    val sparkHeader = CAPSRecordHeader.asSparkStructType(header)
+    val sparkHeader = header.toStructType
     val df = sparkSession.createDataFrame(
       List(
         Row(0L, true, "PersonPeter"),
@@ -526,7 +526,7 @@ class CAPSPatternGraphTest extends CAPSGraphTest {
     )
     val (header, _) = RecordHeader.empty.update(addContents(fields))
 
-    val sparkHeader = CAPSRecordHeader.asSparkStructType(header)
+    val sparkHeader = header.toStructType
     val df = sparkSession.createDataFrame(
       List(
         Row(0L, true, 1L, true, "PersonPeter", "EmployeePeter"),
@@ -566,7 +566,7 @@ class CAPSPatternGraphTest extends CAPSGraphTest {
     )
     val (header, _) = RecordHeader.empty.update(addContents(fields))
 
-    val sparkHeader = CAPSRecordHeader.asSparkStructType(header)
+    val sparkHeader = header.toStructType
     val df = sparkSession.createDataFrame(
       List(
         Row(0L, 1L, 2L, "PersonPeter", "EmployeePeter", "HybridPeter"),

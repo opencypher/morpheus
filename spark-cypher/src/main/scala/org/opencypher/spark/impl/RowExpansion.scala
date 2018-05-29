@@ -46,7 +46,7 @@ case class RowExpansion(
     case _              => Set.empty[String]
   }
 
-  private val rowSchema = asSparkStructType(targetHeader)
+  private val rowSchema = targetHeader.toStructType
 
   private lazy val labelIndexLookupTable = entitiesWithChildren.map {
     case (node, slots) =>
