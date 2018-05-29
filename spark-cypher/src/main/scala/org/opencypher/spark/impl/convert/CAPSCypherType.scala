@@ -61,8 +61,10 @@ object CAPSCypherType {
     def toStructField(column: String): StructField = ct match {
       case CTVoid | CTNull => StructField(column, NullType, nullable = true)
 
-      case CTNode | CTRelationship => StructField(column, LongType, nullable = false)
-      case CTNodeOrNull | CTRelationshipOrNull => StructField(column, LongType, nullable = true)
+      case _: CTNode => StructField(column, LongType, nullable = false)
+      case _: CTNodeOrNull => StructField(column, LongType, nullable = true)
+      case _: CTRelationship => StructField(column, LongType, nullable = false)
+      case _: CTRelationshipOrNull => StructField(column, LongType, nullable = true)
 
       case CTInteger => StructField(column, LongType, nullable = false)
       case CTIntegerOrNull => StructField(column, LongType, nullable = true)

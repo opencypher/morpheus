@@ -44,14 +44,7 @@ object CAPSRecordHeader {
     }: _*)
 
   def asSparkStructType(header: RecordHeader): StructType = {
-    val fields = header.slots.map(slot => structField(slot, !header.mandatory(slot)))
-    StructType(fields)
-  }
-
-  private def structField(slot: RecordSlot, nullable: Boolean): StructField = {
-    val name = ColumnName.of(slot.content)
-    val dataType = slot.content.cypherType.getSparkType
-    StructField(name, dataType, nullable)
+    StructType(header.slots.map(slot => slot.content.cypherType.toStructField(ColumnName.of(slot.content))))
   }
 
   implicit class CAPSRecordHeader(header: RecordHeader) extends Serializable {

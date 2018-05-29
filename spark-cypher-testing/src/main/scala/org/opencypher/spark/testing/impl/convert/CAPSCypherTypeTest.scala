@@ -36,6 +36,11 @@ class CAPSCypherTypeTest extends FunSpec with Matchers {
   it("should produce the correct StructField for non-nested types") {
     CTInteger.toStructField("foo") should equal(StructField("foo", LongType, nullable = false))
     CTIntegerOrNull.toStructField("foo") should equal(StructField("foo", LongType, nullable = true))
+
+    CTNode(Set("A")).toStructField("foo") should equal(StructField("foo", LongType, nullable = false))
+    CTNodeOrNull(Set("A")).toStructField("foo") should equal(StructField("foo", LongType, nullable = true))
+    CTRelationship("A").toStructField("foo") should equal(StructField("foo", LongType, nullable = false))
+    CTRelationshipOrNull("A").toStructField("foo") should equal(StructField("foo", LongType, nullable = true))
   }
 
   it("should produce the correct StructField for nested types") {
