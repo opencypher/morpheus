@@ -563,7 +563,9 @@ object CAPSRecords extends CypherRecordsCompanion[CAPSRecords, CAPSSession] {
     if (missingColumnNames.nonEmpty) {
       throw IllegalArgumentException(
         s"data with columns ${initialHeader.internalHeader.columns.sorted.mkString("\n", ", ", "\n")}",
-        s"data with missing columns ${missingColumnNames.toSeq.sorted.mkString("\n", ", ", "\n")}"
+        s"""data with columns ${dataColumnNames.toSeq.sorted.mkString("\n", ", ", "\n")}
+           |missing columns ${missingColumnNames.toSeq.sorted.mkString("\n", ", ", "\n")}
+         """.stripMargin
       )
     }
 

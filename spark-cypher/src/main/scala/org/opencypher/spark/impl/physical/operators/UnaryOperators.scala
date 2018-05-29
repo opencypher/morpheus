@@ -149,14 +149,13 @@ final case class Project(in: CAPSPhysicalOperator, expr: Expr, header: RecordHea
       // TODO: Can optimise for var AS var2 case -- avoid duplicating data
       val newData = headerNames.diff(dataNames) match {
         case Seq(one) =>
-          // align the name of the column to what the header expects
-          val newCol = expr.asSparkSQLExpr(header, records.data, context).as(one)
-          val columnsToSelect = records.data.columns
-            .map(records.data.col) :+ newCol
+          records.data.withColumn(one, expr.asSparkSQLExpr(header, records.data, context))
 
-          records.data.select(columnsToSelect: _*)
-        case seq if seq.isEmpty => throw IllegalStateException(s"Did not find a slot for expression $expr in $headerNames")
-        case seq => throw IllegalStateException(s"Got multiple slots for expression $expr: $seq")
+        case seq if seq.isEmpty =>
+          throw IllegalStateException(s"Did not find a slot for expression $expr in $headerNames")
+
+        case seq =>
+          throw IllegalStateException(s"Got multiple slots for expression $expr: $seq")
       }
 
       CAPSRecords.verifyAndCreate(header, newData)(records.caps)
@@ -221,7 +220,7 @@ final case class ReturnGraph(in: CAPSPhysicalOperator)
 
 }
 
-final case class Select(in: CAPSPhysicalOperator, expressions: List[Expr], header: RecordHeader)
+final case class Select(in: CAPSPhysicalOperator, expressions: List[(Expr, Option[Expr])], header: RecordHeader)
   extends UnaryPhysicalOperator with PhysicalOperatorDebugging {
 
   override def executeUnary(prev: CAPSPhysicalResult)(implicit context: CAPSRuntimeContext): CAPSPhysicalResult = {
@@ -229,7 +228,18 @@ final case class Select(in: CAPSPhysicalOperator, expressions: List[Expr], heade
 
       val data = records.data
 
-      val columns = expressions.map(expr => data.col(ColumnName.of(expr)))
+      val columns = expressions.map {
+        case (expr, alias) =>
+          val column = expr.asSparkSQLExpr(header, prev.records.data, context)
+          if (alias.isDefined) {
+            val aliasName = ColumnName.of(header.slotsFor(alias.get).head)
+            column.as(aliasName)
+          } else {
+            val aliasName = ColumnName.of(header.slotsFor(expr).head)
+            column.as(aliasName)
+          }
+
+      }
       val newData = data.select(columns: _*)
 
       CAPSRecords.verifyAndCreate(header, newData)(records.caps)

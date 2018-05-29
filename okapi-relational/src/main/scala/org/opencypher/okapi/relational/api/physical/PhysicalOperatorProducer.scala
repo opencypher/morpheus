@@ -149,7 +149,7 @@ trait PhysicalOperatorProducer[P <: PhysicalOperator[R, G, C], R <: CypherRecord
     * @param header      resulting record header
     * @return select operator
     */
-  def planSelect(in: P, expressions: List[Expr], header: RecordHeader): P
+  def planSelect(in: P, expressions: List[(Expr, Option[Expr])], header: RecordHeader): P
 
   /**
     * Returns the working graph

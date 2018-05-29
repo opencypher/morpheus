@@ -46,7 +46,7 @@ class PredicateBehaviour extends CAPSTestSuite with DefaultGraphInit {
     ))
   }
 
-  test("in") {
+  it("in") {
     // Given
     val given = initGraph("""CREATE (:A {val: 1}), (:A {val: 2}), (:A {val: 3})""")
 

@@ -29,7 +29,7 @@ package org.opencypher.okapi.relational.impl.physical
 import org.opencypher.okapi.api.graph.{CypherSession, PropertyGraph}
 import org.opencypher.okapi.api.table.CypherRecords
 import org.opencypher.okapi.api.types.{CTBoolean, CTNode, CTRelationship}
-import org.opencypher.okapi.impl.exception.NotImplementedException
+import org.opencypher.okapi.impl.exception.{IllegalArgumentException, NotImplementedException}
 import org.opencypher.okapi.ir.api.block.SortItem
 import org.opencypher.okapi.ir.api.expr._
 import org.opencypher.okapi.ir.api.util.DirectCompilationStage
@@ -62,7 +62,7 @@ class PhysicalPlanner[P <: PhysicalOperator[R, G, C], R <: CypherRecords, G <: P
           .map(_.content.key)
           .distinct
 
-        producer.planSelect(process(in), selectExpressions, header)
+        producer.planSelect(process(in), selectExpressions.map(_ -> None), header)
 
       case flat.EmptyRecords(in, header) =>
         producer.planEmptyRecords(process(in), header)
@@ -101,7 +101,22 @@ class PhysicalPlanner[P <: PhysicalOperator[R, G, C], R <: CypherRecords, G <: P
         val withExploded = producer.planProject(process(in), explodeExpr, withExplodedHeader)
         producer.planAlias(withExploded, explodeExpr, item, header)
 
-      case flat.Project(expr, in, header) => producer.planProject(process(in), expr, header)
+      case flat.Project(_, in, header) =>
+        val diffSlots = header.slots.toSet -- in.header.slots
+
+        // TODO: refactor into FlatPlanner Added.it
+        println(s"diffSlots = $diffSlots")
+        val projectExpressions = diffSlots.map(slot => slot.content match {
+          case ProjectedField(projVar, expr) => expr -> Some(projVar)
+          case ProjectedExpr(expr) => expr -> Some(expr)
+          case other => throw IllegalArgumentException("ProjectedField", other)
+        })
+
+        val selectExpressions = in.header.slots.map(_.content.key -> None) ++ projectExpressions
+        println(s"selectExpressions = $selectExpressions")
+        producer.planSelect(process(in), selectExpressions.toList, header)
+
+//        producer.planProject(process(in), expr, header)
 
       case flat.Aggregate(aggregations, group, in, header) => producer.planAggregate(process(in), group, aggregations, header)
 
