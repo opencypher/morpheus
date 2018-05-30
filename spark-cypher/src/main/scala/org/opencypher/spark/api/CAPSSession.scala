@@ -35,7 +35,7 @@ import org.opencypher.okapi.api.table.CypherRecords
 import org.opencypher.okapi.api.value.CypherValue.CypherMap
 import org.opencypher.okapi.impl.exception.UnsupportedOperationException
 import org.opencypher.okapi.impl.graph.CypherCatalog
-import org.opencypher.okapi.relational.impl.table.ColumnName
+import org.opencypher.okapi.relational.impl.table.RecordHeader
 import org.opencypher.spark.api.io._
 import org.opencypher.spark.impl.{CAPSGraph, CAPSRecords, CAPSSessionImpl}
 
@@ -124,22 +124,22 @@ object CAPSSession extends Serializable {
     create(session)
   }
 
-  /**
-    * Returns the DataFrame column name for the given Cypher RETURN item.
-    *
-    * {{{
-    * import org.opencypher.caps.api.CAPSSession._
-    * // ...
-    * val results = socialNetwork.cypher("MATCH (a) RETURN a.name")
-    * val dataFrame = results.records.asDF
-    * val projection = dataFrame.select(columnFor("a.name"))
-    * }}}
-    *
-    * @param returnItem Cypher RETURN item (e.g. "a.name")
-    * @return DataFrame column name for given RETURN item
-    */
-  // TODO: Consider moving this to CypherRecords instead
-  def columnFor(returnItem: String): String = ColumnName.from(returnItem)
+//  /**
+//    * Returns the DataFrame column name for the given Cypher RETURN item.
+//    *
+//    * {{{
+//    * import org.opencypher.caps.api.CAPSSession._
+//    * // ...
+//    * val results = socialNetwork.cypher("MATCH (a) RETURN a.name")
+//    * val dataFrame = results.records.asDF
+//    * val projection = dataFrame.select(columnFor("a.name"))
+//    * }}}
+//    *
+//    * @param returnItem Cypher RETURN item (e.g. "a.name")
+//    * @return DataFrame column name for given RETURN item
+//    */
+//  // TODO: Consider moving this to CypherRecords instead
+//  def columnFor(returnItem: String): String = RecordHeader.empty.from(returnItem)
 
   /**
     * Import this into scope in order to use:

@@ -26,7 +26,7 @@
  */
 package org.opencypher.spark.api.io.util
 
-import org.opencypher.spark.api.io.util.StringEncodingUtilities._
+import org.opencypher.okapi.relational.impl.util.StringEncodingUtilities._
 import org.scalatest.prop.GeneratorDrivenPropertyChecks
 import org.scalatest.{FunSpec, Matchers}
 

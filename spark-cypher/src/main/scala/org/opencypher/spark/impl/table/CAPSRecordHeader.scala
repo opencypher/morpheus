@@ -28,7 +28,7 @@ package org.opencypher.spark.impl.table
 
 import org.apache.spark.sql.Row
 import org.apache.spark.sql.catalyst.encoders.{ExpressionEncoder, RowEncoder}
-import org.apache.spark.sql.types.{StructField, StructType}
+import org.apache.spark.sql.types.StructType
 import org.opencypher.okapi.impl.exception.IllegalArgumentException
 import org.opencypher.okapi.ir.api.expr.Var
 import org.opencypher.okapi.relational.impl.table._
@@ -43,31 +43,12 @@ object CAPSRecordHeader {
           .getOrElse(throw IllegalArgumentException("a supported Spark type", field.dataType))))
     }: _*)
 
-  def asSparkStructType(header: RecordHeader): StructType = {
-    StructType(header.slots.map(slot => slot.content.cypherType.toStructField(ColumnName.of(slot.content))))
-  }
-
   implicit class CAPSRecordHeader(header: RecordHeader) extends Serializable {
-    def asSparkSchema: StructType =
-      StructType(header.internalHeader.slots.map(_.asStructField))
+    def toStructType: StructType = {
+      StructType(header.slots.map(slot => slot.content.cypherType.toStructField(header.of(slot.content))))
+    }
 
     def rowEncoder: ExpressionEncoder[Row] =
-      RowEncoder(asSparkSchema)
-  }
-
-  implicit class CAPSInternalHeader(internalHeader: InternalHeader) {
-    def columns = internalHeader.slots.map(computeColumnName).toVector
-
-    def column(slot: RecordSlot) = columns(slot.index)
-
-    private def computeColumnName(slot: RecordSlot): String = ColumnName.of(slot)
-  }
-
-  implicit class CAPSRecordSlot(slot: RecordSlot) {
-    def asStructField: StructField = {
-      val name = ColumnName.of(slot)
-      val sparkType = slot.content.cypherType.getSparkType
-      StructField(name, sparkType, slot.content.cypherType.isNullable)
-    }
+      RowEncoder(header.toStructType)
   }
 }

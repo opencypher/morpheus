@@ -53,6 +53,7 @@ class MultipleGraphBehaviour extends CAPSTestSuite with ScanGraphInit {
        |CREATE (max)-[:HAS_SIMILAR_NAME]->(mats)
     """.stripMargin)
 
+  // TODO: MATCH after RETURN is not allowed -> fix in Front-End
   it("creates multiple copies of the same node") {
     val g = caps.cypher(
       """

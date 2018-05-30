@@ -50,9 +50,10 @@ object DataFrameOutputExample extends ConsoleApp {
   val df: DataFrame = results.getRecords.asDataFrame
 
   // 5) Select specific return items from the query result
-  val projection: DataFrame = df.select(columnFor("a.name"), columnFor("b.name"))
+  // TODO: Solve this on CypherResult instead
+//  val projection: DataFrame = df.select(columnFor("a.name"), columnFor("b.name"))
 
-  projection.show()
+//  projection.show()
 }
 
 /**

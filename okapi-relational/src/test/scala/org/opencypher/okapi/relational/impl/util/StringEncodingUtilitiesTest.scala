@@ -24,22 +24,23 @@
  * described as "implementation extensions to Cypher" or as "proposed changes to
  * Cypher that are not yet approved by the openCypher community".
  */
-package org.opencypher.okapi.relational.impl
+package org.opencypher.okapi.relational.impl.util
 
-import org.opencypher.okapi.relational.impl.table.{ColumnName, RecordHeader}
+import org.opencypher.okapi.relational.impl.util.StringEncodingUtilities._
+import org.scalatest.prop.GeneratorDrivenPropertyChecks
+import org.scalatest.{FunSpec, Matchers}
 
-import scala.annotation.tailrec
-import scala.util.Random
+class StringEncodingUtilitiesTest extends FunSpec with GeneratorDrivenPropertyChecks with Matchers {
 
-object ColumnNameGenerator {
-  val NAME_SIZE = 5
-
-  @tailrec
-  def generateUniqueName(header: RecordHeader): String = {
-    val chars = (1 to NAME_SIZE).map(_ => Random.nextPrintableChar())
-    val name = ColumnName.from(String.valueOf(chars.toArray))
-
-    if (header.slots.map(ColumnName.of).contains(name)) generateUniqueName(header)
-    else name
+  it("encodes arbitrary strings with only letters, digits, underscores, hashes, and 'at' symbols") {
+    forAll { s: String =>
+      val encoded = s.encodeSpecialCharacters
+      val decoded = encoded.decodeSpecialCharacters
+      s should equal(decoded)
+      encoded.forall { c =>
+        (c.isLetterOrDigit && c.isAscii) || c == '_' || c == '@'
+      }
+    }
   }
+
 }

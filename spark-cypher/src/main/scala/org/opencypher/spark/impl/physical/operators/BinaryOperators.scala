@@ -35,9 +35,8 @@ import org.opencypher.okapi.ir.api.PropertyKey
 import org.opencypher.okapi.ir.api.expr.{Expr, Var, _}
 import org.opencypher.okapi.ir.api.set.SetPropertyItem
 import org.opencypher.okapi.logical.impl.{ConstructedEntity, ConstructedNode, ConstructedRelationship, LogicalPatternGraph}
-import org.opencypher.okapi.relational.impl.ColumnNameGenerator
 import org.opencypher.okapi.relational.impl.syntax.RecordHeaderSyntax.{addContent, addContents, _}
-import org.opencypher.okapi.relational.impl.table.{ColumnName, OpaqueField, RecordHeader, RecordSlot, _}
+import org.opencypher.okapi.relational.impl.table.{OpaqueField, RecordHeader, RecordSlot, _}
 import org.opencypher.spark.api.{CAPSSession, Tags}
 import org.opencypher.spark.impl.CAPSUnionGraph.{apply => _, unapply => _}
 import org.opencypher.spark.impl.DataFrameOps._
@@ -118,12 +117,12 @@ final case class ExistsSubQuery(
     val leftHeader = left.records.header
     val rightHeader = right.records.header
 
-    val joinFields = leftHeader.internalHeader.fields.intersect(rightHeader.internalHeader.fields)
+    val joinFields = leftHeader.fieldsAsVar.intersect(rightHeader.fieldsAsVar)
 
     val columnsToRemove = joinFields
       .flatMap(rightHeader.childSlots)
       .map(_.content)
-      .map(ColumnName.of)
+      .map(rightHeader.of)
       .toSeq
 
     val lhsJoinSlots = joinFields.map(leftHeader.slotFor)
@@ -136,10 +135,10 @@ final case class ExistsSubQuery(
         lhsSlot -> rhsJoinSlots.find(_.content == lhsSlot.content).get
       })
       .map(pair => {
-        val lhsCol = ColumnName.of(pair._1)
-        val rhsColName = ColumnName.of(pair._2)
+        val lhsCol = leftHeader.of(pair._1)
+        val rhsColName = rightHeader.of(pair._2)
 
-        (lhsCol, rhsColName, ColumnNameGenerator.generateUniqueName(rightHeader))
+        (lhsCol, rhsColName, rightHeader.generateUniqueName)
       })
       .toSeq
 
@@ -156,7 +155,7 @@ final case class ExistsSubQuery(
     val joinedRecords =
       joinDFs(left.records.data, distinctRightData, header, joinCols)("leftouter", deduplicate = true)(left.records.caps)
 
-    val targetFieldColumnName = ColumnName.of(rightHeader.slotFor(targetField))
+    val targetFieldColumnName = rightHeader.of(rightHeader.slotFor(targetField))
     val targetFieldColumn = joinedRecords.data.col(targetFieldColumnName)
 
     // If the targetField column contains no value we replace it with false, otherwise true.
@@ -278,7 +277,7 @@ final case class ConstructGraph(
     }
 
     // Remove all vars that were part the original pattern graph DF, except variables that were CLONEd without an alias
-    val allInputVars = baseTable.header.internalHeader.fields
+    val allInputVars = baseTable.header.fieldsAsVar
     val originalVarsToKeep = clonedVarsToInputVars.keySet -- aliasClones.keySet
     val varsToRemoveFromTable = allInputVars -- originalVarsToKeep
     val patternGraphTable = tableWithConstructedEntities.removeVars(varsToRemoveFromTable)
@@ -311,11 +310,11 @@ final case class ConstructGraph(
 
     val headerWithExistingRemoved = existingSlotsForProperty.foldLeft(constructedTable.header)(_ - _)
     val dataWithExistingRemoved = existingSlotsForProperty.foldLeft(constructedTable.data){
-      case (acc, toRemove) => acc.safeDropColumn(ColumnName.of(toRemove))
+      case (acc, toRemove) => acc.safeDropColumn(constructedTable.header.of(toRemove))
     }
 
-    val newData = dataWithExistingRemoved.safeAddColumn(ColumnName.of(propertySlotContent), propertyValueColumn)
     val newHeader = headerWithExistingRemoved.update(addContent(propertySlotContent))._1
+    val newData = dataWithExistingRemoved.safeAddColumn(newHeader.of(propertySlotContent), propertyValueColumn)
     CAPSRecords.verifyAndCreate(newHeader, newData)(constructedTable.caps)
   }
 
@@ -351,17 +350,17 @@ final case class ConstructGraph(
     columnsToAdd: Set[(SlotContent, Column)],
     constructedTable: CAPSRecords
   ): CAPSRecords = {
-    val newData = columnsToAdd.foldLeft(constructedTable.data) {
-      case (acc, (expr, col)) =>
-        acc.safeAddColumn(ColumnName.of(expr), col)
-    }
-
     // TODO: Move header construction to FlatPlanner
     val newHeader = constructedTable.header
       .update(
         addContents(columnsToAdd.map(_._1).toSeq)
       )
       ._1
+
+    val newData = columnsToAdd.foldLeft(constructedTable.data) {
+      case (acc, (expr, col)) =>
+        acc.safeAddColumn(newHeader.of(expr), col)
+    }
 
     CAPSRecords.verifyAndCreate(newHeader, newData)(constructedTable.caps)
   }
@@ -426,12 +425,12 @@ final case class ConstructGraph(
     // source and target are present: just copy
     val sourceTuple = {
       val slot = header.slotFor(source)
-      val col = inData.col(ColumnName.of(slot))
+      val col = inData.col(header.of(slot))
       ProjectedExpr(StartNode(rel)(CTInteger)) -> col
     }
     val targetTuple = {
       val slot = header.slotFor(target)
-      val col = inData.col(ColumnName.of(slot))
+      val col = inData.col(header.of(slot))
       ProjectedExpr(EndNode(rel)(CTInteger)) -> col
     }
 
@@ -464,7 +463,7 @@ final case class ConstructGraph(
     val header = records.header
     val origSlots = extractor(header)
     val copySlotContents = origSlots.map(_.withOwner(targetVar)).map(_.content)
-    val columns = origSlots.map(ColumnName.of).map(records.data.col)
+    val columns = origSlots.map(header.of).map(records.data.col)
     copySlotContents.zip(columns)
   }
 }

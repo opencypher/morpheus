@@ -33,7 +33,6 @@ import org.apache.spark.rdd.RDD
 import org.apache.spark.sql._
 import org.apache.spark.sql.types._
 import org.apache.spark.storage.StorageLevel
-import org.opencypher.okapi.api.graph.QualifiedGraphName
 import org.opencypher.okapi.api.io.conversion.{NodeMapping, RelationshipMapping}
 import org.opencypher.okapi.api.table.{CypherRecords, CypherRecordsCompanion}
 import org.opencypher.okapi.api.types._
@@ -45,7 +44,7 @@ import org.opencypher.okapi.ir.api.expr._
 import org.opencypher.okapi.ir.api.{Label, PropertyKey}
 import org.opencypher.okapi.relational.impl.exception.DuplicateSourceColumnException
 import org.opencypher.okapi.relational.impl.syntax.RecordHeaderSyntax._
-import org.opencypher.okapi.relational.impl.table.{ColumnName, _}
+import org.opencypher.okapi.relational.impl.table._
 import org.opencypher.spark.api.CAPSSession
 import org.opencypher.spark.api.io.EntityTable._
 import org.opencypher.spark.api.io.{CAPSEntityTable, CAPSNodeTable, CAPSRelationshipTable}
@@ -66,8 +65,6 @@ sealed abstract case class CAPSRecords(header: RecordHeader, data: DataFrame)
     RecordsPrinter.print(this)
 
   override def size: Long = data.count()
-
-  def sparkColumns: IndexedSeq[String] = header.internalHeader.columns
 
   override lazy val columnType: Map[String, CypherType] = data.columnType
 
@@ -102,9 +99,9 @@ sealed abstract case class CAPSRecords(header: RecordHeader, data: DataFrame)
   def retag(replacements: Map[Int, Int]): CAPSRecords = {
     val actualRetaggings = replacements.filterNot { case (from, to) => from == to }
     val idColumns = header.contents.collect {
-      case f: OpaqueField => ColumnName.of(f)
-      case p@ProjectedExpr(StartNode(_)) => ColumnName.of(p)
-      case p@ProjectedExpr(EndNode(_)) => ColumnName.of(p)
+      case f: OpaqueField => header.of(f)
+      case p@ProjectedExpr(StartNode(_)) => header.of(p)
+      case p@ProjectedExpr(EndNode(_)) => header.of(p)
     }
     val dfWithReplacedTags = idColumns.foldLeft(data) {
       case (df, column) => df.safeReplaceTags(column, actualRetaggings)
@@ -115,7 +112,7 @@ sealed abstract case class CAPSRecords(header: RecordHeader, data: DataFrame)
 
   def select(fields: Set[Var]): CAPSRecords = {
     val selectedHeader = header.select(fields)
-    val selectedColumnNames = selectedHeader.contents.map(ColumnName.of).toSeq
+    val selectedColumnNames = selectedHeader.contents.map(selectedHeader.of).toSeq
     val selectedColumns = data.select(selectedColumnNames.head, selectedColumnNames.tail: _*)
     CAPSRecords.verifyAndCreate(selectedHeader, selectedColumns)
   }
@@ -126,7 +123,7 @@ sealed abstract case class CAPSRecords(header: RecordHeader, data: DataFrame)
       this
     } else {
       val cachedData = {
-        val columns = cachedHeader.slots.map(c => new Column(ColumnName.of(c.content)))
+        val columns = cachedHeader.slots.map(c => new Column(cachedHeader.of(c.content)))
         data.select(columns: _*)
       }
 
@@ -140,8 +137,8 @@ sealed abstract case class CAPSRecords(header: RecordHeader, data: DataFrame)
         val originalSlots = tempHeader.selfWithChildren(nextOriginal).toList
         val slotsToAdd = originalSlots.map(_.withOwner(nextAlias))
         val updatedHeader = tempHeader ++ RecordHeader.from(slotsToAdd)
-        val originalColumns = originalSlots.map(ColumnName.of).map(tempDf.col)
-        val aliasColumns = slotsToAdd.map(ColumnName.of)
+        val originalColumns = originalSlots.map(updatedHeader.of).map(tempDf.col)
+        val aliasColumns = slotsToAdd.map(updatedHeader.of)
         val additions = aliasColumns.zip(originalColumns)
         val updatedDf = tempDf.safeAddColumns(additions: _*)
         updatedHeader -> updatedDf
@@ -159,7 +156,7 @@ sealed abstract case class CAPSRecords(header: RecordHeader, data: DataFrame)
         Set(idSlot, sourceSlot, targetSlot)
       case _ => Set.empty
     }
-    val columnsToRetag = slotsToRetag.map(ColumnName.of)
+    val columnsToRetag = slotsToRetag.map(header.of)
     val retaggedData = columnsToRetag.foldLeft(data) { case (df, columnName) =>
       df.safeReplaceTags(columnName, replacements)
     }
@@ -174,8 +171,8 @@ sealed abstract case class CAPSRecords(header: RecordHeader, data: DataFrame)
         val updatedHeader = tempHeader --
           RecordHeader.from(slotsToReassign) ++
           RecordHeader.from(reassignedSlots)
-        val originalColumns = slotsToReassign.map(ColumnName.of)
-        val aliasColumns = reassignedSlots.map(ColumnName.of)
+        val originalColumns = slotsToReassign.map(header.of)
+        val aliasColumns = reassignedSlots.map(header.of)
         val renamings = originalColumns.zip(aliasColumns)
         val updatedDf = tempDf.safeRenameColumns(renamings: _*)
         updatedHeader -> updatedDf
@@ -188,7 +185,7 @@ sealed abstract case class CAPSRecords(header: RecordHeader, data: DataFrame)
       case ((tempHeader, tempDf), nextFieldToRemove) =>
         val slotsToRemove = tempHeader.selfWithChildren(nextFieldToRemove)
         val updatedHeader = tempHeader -- RecordHeader.from(slotsToRemove.toList)
-        updatedHeader -> tempDf.drop(slotsToRemove.map(ColumnName.of): _*)
+        updatedHeader -> tempDf.drop(slotsToRemove.map(tempHeader.of): _*)
     }
     CAPSRecords.verifyAndCreate(updatedHeader, updatedData)
   }
@@ -203,7 +200,7 @@ sealed abstract case class CAPSRecords(header: RecordHeader, data: DataFrame)
   }
 
   def distinct(fields: Var*): CAPSRecords =
-    CAPSRecords.verifyAndCreate(header, data.dropDuplicates(fields.map(OpaqueField).map(ColumnName.of)))
+    CAPSRecords.verifyAndCreate(header, data.dropDuplicates(fields.map(OpaqueField).map(header.of)))
 
   /**
     * Converts all values stored in this table to instances of the corresponding CypherValue class.
@@ -252,7 +249,7 @@ sealed abstract case class CAPSRecords(header: RecordHeader, data: DataFrame)
     * @return a new instance of `CAPSRecords` aligned with the argument header
     */
   def alignWith(v: Var, targetHeader: RecordHeader): CAPSRecords = {
-    val oldEntity = this.header.internalHeader.fields.headOption
+    val oldEntity = this.header.fieldsAsVar.headOption
       .getOrElse(throw IllegalStateException("GraphScan table did not contain any fields"))
 
     val entityLabels: Set[String] = oldEntity.cypherType match {
@@ -262,11 +259,21 @@ sealed abstract case class CAPSRecords(header: RecordHeader, data: DataFrame)
     }
 
     val renamedSlotMapping = this.header.slots.map { slot =>
-      slot -> slot.withOwner(v)
+      val withNewOwner = slot.withOwner(v).content
+      slot -> targetHeader.slots.find(slot => slot.content == withNewOwner).get
     }
 
     val withRenamedColumns = renamedSlotMapping.foldLeft(data) {
-      case (acc, (oldCol, newCol)) => acc.withColumnRenamed(ColumnName.of(oldCol), ColumnName.of(newCol))
+      case (acc, (oldCol, newCol)) =>
+        val oldColName = header.of(oldCol)
+        val newColName = targetHeader.of(newCol)
+        if (oldColName != newColName) {
+          acc
+            .safeReplaceColumn(oldColName, acc.col(oldColName).cast(newCol.content.cypherType.toSparkType.get))
+            .safeRenameColumn(oldColName, newColName)
+        } else {
+          acc
+        }
     }
 
     val renamedSlots = renamedSlotMapping.map(_._2)
@@ -281,11 +288,11 @@ sealed abstract case class CAPSRecords(header: RecordHeader, data: DataFrame)
     }
 
     val relevantColumns = targetHeader.slots.map { targetSlot =>
-      val targetColName = ColumnName.of(targetSlot)
+      val targetColName = targetHeader.of(targetSlot)
 
       renamedSlots.find(_.content == targetSlot.content) match {
         case Some(sourceSlot) =>
-          val sourceColName = ColumnName.of(sourceSlot)
+          val sourceColName = targetHeader.of(sourceSlot)
 
           // the column exists in the source data
           if (sourceColName == targetColName) {
@@ -470,7 +477,7 @@ object CAPSRecords extends CypherRecordsCompanion[CAPSRecords, CAPSSession] {
         slot.content
     }
     val newHeader = RecordHeader.from(slotContents: _*)
-    val renamed = sourceDataFrame.toDF(newHeader.internalHeader.columns: _*)
+    val renamed = sourceDataFrame.toDF(newHeader.columns: _*)
 
     CAPSRecords.createInternal(newHeader, renamed)
   }
@@ -496,7 +503,7 @@ object CAPSRecords extends CypherRecordsCompanion[CAPSRecords, CAPSSession] {
   private def prepareDataFrame(initialDataFrame: DataFrame)(implicit caps: CAPSSession): (RecordHeader, DataFrame) = {
     val withCompatibleTypes = generalizeColumnTypes(initialDataFrame)
     val initialHeader = table.CAPSRecordHeader.fromSparkStructType(withCompatibleTypes.schema)
-    val withRenamedColumns = withCompatibleTypes.toDF(initialHeader.internalHeader.columns: _*)
+    val withRenamedColumns = withCompatibleTypes.toDF(initialHeader.columns: _*)
     (initialHeader, withRenamedColumns)
   }
 
@@ -557,12 +564,12 @@ object CAPSRecords extends CypherRecordsCompanion[CAPSRecords, CAPSSession] {
         s"a DataFrame with duplicate columns: $duplicateColumns")
 
     // Verify that all header column names exist in the data
-    val headerColumnNames = initialHeader.internalHeader.columns.toSet
+    val headerColumnNames = initialHeader.columns.toSet
     val dataColumnNames = initialData.columns.toSet
     val missingColumnNames = headerColumnNames -- dataColumnNames
     if (missingColumnNames.nonEmpty) {
       throw IllegalArgumentException(
-        s"data with columns ${initialHeader.internalHeader.columns.sorted.mkString("\n", ", ", "\n")}",
+        s"data with columns ${initialHeader.columns.sorted.mkString("\n", ", ", "\n")}",
         s"data with missing columns ${missingColumnNames.toSeq.sorted.mkString("\n", ", ", "\n")}"
       )
     }
@@ -570,7 +577,7 @@ object CAPSRecords extends CypherRecordsCompanion[CAPSRecords, CAPSSession] {
     // Verify column types
     initialHeader.slots.foreach { slot =>
       val dfSchema = initialData.schema
-      val field = dfSchema(ColumnName.of(slot))
+      val field = dfSchema(initialHeader.of(slot))
       val cypherType = field.dataType.toCypherType(field.nullable)
         .getOrElse(throw IllegalArgumentException("a supported Spark type", field.dataType))
       val headerType = slot.content.cypherType
@@ -584,7 +591,7 @@ object CAPSRecords extends CypherRecordsCompanion[CAPSRecords, CAPSSession] {
   }
 
   def empty(initialHeader: RecordHeader = RecordHeader.empty)(implicit caps: CAPSSession): CAPSRecords = {
-    val initialSparkStructType = table.CAPSRecordHeader.asSparkStructType(initialHeader)
+    val initialSparkStructType = initialHeader.toStructType
     val initialDataFrame = caps.sparkSession.createDataFrame(Collections.emptyList[Row](), initialSparkStructType)
     createInternal(initialHeader, initialDataFrame)
   }

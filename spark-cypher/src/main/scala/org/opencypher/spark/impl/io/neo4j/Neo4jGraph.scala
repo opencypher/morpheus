@@ -39,7 +39,7 @@ import org.opencypher.okapi.ir.api.expr._
 import org.opencypher.okapi.relational.impl.table.RecordHeader
 import org.opencypher.spark.api.CAPSSession
 import org.opencypher.spark.impl.io.neo4j.Neo4jGraph.{filterNode, filterRel, nodeToRow, relToRow}
-import org.opencypher.spark.impl.table.CAPSRecordHeader
+import org.opencypher.spark.impl.table.CAPSRecordHeader._
 import org.opencypher.spark.impl.{CAPSGraph, CAPSRecords}
 import org.opencypher.spark.schema.CAPSSchema
 
@@ -88,7 +88,7 @@ class Neo4jGraph(val schema: CAPSSchema, val session: CAPSSession)(
 
   private def computeRecords(name: String, cypherType: CypherType, header: RecordHeader)(
     computeRdd: (RecordHeader, StructType) => RDD[Row]): CAPSRecords = {
-    val struct = CAPSRecordHeader.asSparkStructType(header)
+    val struct = header.toStructType
     val rdd = computeRdd(header, struct)
     val slot = header.slotFor(Var(name)(cypherType))
     val rawData = session.sparkSession.createDataFrame(rdd, struct)

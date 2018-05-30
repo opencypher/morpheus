@@ -34,7 +34,7 @@ import org.opencypher.okapi.impl.exception.{GraphAlreadyExistsException, GraphNo
 import org.opencypher.spark.api.CAPSSession
 import org.opencypher.spark.api.io.metadata.CAPSGraphMetaData
 import org.opencypher.spark.api.io.util.CAPSGraphExport._
-import org.opencypher.spark.api.io.util.StringEncodingUtilities._
+import org.opencypher.okapi.relational.impl.util.StringEncodingUtilities._
 import org.opencypher.spark.impl.CAPSConverters._
 import org.opencypher.spark.impl.CAPSGraph
 import org.opencypher.spark.impl.DataFrameOps._

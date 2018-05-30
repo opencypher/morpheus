@@ -28,7 +28,6 @@ package org.opencypher.spark.testing.support.creation.caps
 
 import org.opencypher.okapi.api.types.{CTNode, CTRelationship}
 import org.opencypher.okapi.ir.api.expr.Var
-import org.opencypher.okapi.relational.impl.table.ColumnName
 import org.opencypher.okapi.testing.propertygraph.InMemoryTestGraph
 import org.opencypher.spark.api.CAPSSession
 import org.opencypher.spark.impl.{CAPSGraph, CAPSPatternGraph, CAPSRecords}
@@ -40,8 +39,8 @@ object CAPSPatternGraphFactory extends CAPSTestGraphFactory {
     val nodes = scanGraph.nodes("n")
     val rels = scanGraph.relationships("r")
 
-    val lhs = nodes.data.col(ColumnName.of(Var("n")(CTNode)))
-    val rhs = rels.data.col(ColumnName.of(rels.header.sourceNodeSlot(Var("r")(CTRelationship))))
+    val lhs = nodes.data.col(nodes.header.of(Var("n")(CTNode)))
+    val rhs = rels.data.col(rels.header.of(rels.header.sourceNodeSlot(Var("r")(CTRelationship))))
 
     val baseTableData = nodes.data.join(rels.data, lhs === rhs, "left_outer")
 

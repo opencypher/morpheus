@@ -28,7 +28,7 @@ package org.opencypher.spark.api.io.fs
 
 import org.apache.hadoop.fs.Path
 import org.opencypher.okapi.api.graph.GraphName
-import org.opencypher.spark.api.io.util.StringEncodingUtilities._
+import org.opencypher.okapi.relational.impl.util.StringEncodingUtilities._
 
 trait GraphDirectoryStructure {
 

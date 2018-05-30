@@ -30,7 +30,6 @@ import org.apache.spark.sql.DataFrame
 import org.opencypher.okapi.api.types.CTNode
 import org.opencypher.okapi.ir.api.expr.{EndNode, Var}
 import org.opencypher.okapi.logical.impl.{Directed, Direction, Undirected}
-import org.opencypher.okapi.relational.impl.ColumnNameGenerator
 import org.opencypher.okapi.relational.impl.table.{OpaqueField, ProjectedExpr, RecordHeader, RecordSlot}
 import org.opencypher.spark.impl.CAPSFunctions._
 import org.opencypher.spark.impl.CAPSRecords
@@ -79,7 +78,7 @@ final case class BoundedVarExpand(
     CAPSPhysicalResult(finalize(expanded, third.records), first.workingGraph, first.workingGraphName)
   }
 
-  private def iterate(lhs: DataFrame, rels: DataFrame)(
+  private def iterate(lhs: DataFrame, lhsHeader: RecordHeader, rels: DataFrame, relsHeader: RecordHeader)(
       endNode: RecordSlot,
       rel: Var,
       relStartNode: RecordSlot,
@@ -87,9 +86,9 @@ final case class BoundedVarExpand(
       edgeListColName: String,
       keep: Array[String]): DataFrame = {
 
-    val relIdColumn = rels.col(columnName(OpaqueField(rel)))
-    val startColumn = rels.col(columnName(relStartNode))
-    val expandColumnName = columnName(endNode)
+    val relIdColumn = rels.col(relsHeader.of(OpaqueField(rel)))
+    val startColumn = rels.col(relsHeader.of(relStartNode))
+    val expandColumnName = lhsHeader.of(endNode)
     val expandColumn = lhs.col(expandColumnName)
 
     val joined = lhs.join(rels, expandColumn === startColumn, "inner")
@@ -100,7 +99,7 @@ final case class BoundedVarExpand(
     val filtered = withExtendedArray.filter(!arrayContains)
 
     // TODO: Try and get rid of the Var rel here
-    val endNodeIdColNameOfJoinedRel = columnName(ProjectedExpr(EndNode(rel)(CTNode)))
+    val endNodeIdColNameOfJoinedRel = relsHeader.of(ProjectedExpr(EndNode(rel)(CTNode)))
 
     val columns = keep ++ Seq(listTempColName, endNodeIdColNameOfJoinedRel)
     val withoutRelProperties = filtered.select(columns.head, columns.tail: _*) // drops joined columns from relationship table
@@ -114,10 +113,10 @@ final case class BoundedVarExpand(
 
   private def finalize(expanded: CAPSRecords, targets: CAPSRecords): CAPSRecords = {
     val endNodeSlot = expanded.header.slotFor(initialEndNode)
-    val endNodeCol = columnName(endNodeSlot)
+    val endNodeCol = expanded.header.of(endNodeSlot)
 
     val targetNodeSlot = targets.header.slotFor(target)
-    val targetNodeCol = columnName(targetNodeSlot)
+    val targetNodeCol = targets.header.of(targetNodeSlot)
 
     // If the expansion ends in an already solved plan, the final join can be replaced by a filter.
     val result = if (isExpandInto) {
@@ -145,9 +144,9 @@ final case class BoundedVarExpand(
         secondRecords.data
       case Undirected =>
         // TODO this is a crude hack that will not work once we have proper path support
-        val startNodeSlot = columnName(secondRecords.header.sourceNodeSlot(rel))
-        val endNodeSlot = columnName(secondRecords.header.targetNodeSlot(rel))
-        val colOrder = secondRecords.header.slots.map(columnName)
+        val startNodeSlot = secondRecords.header.of(secondRecords.header.sourceNodeSlot(rel))
+        val endNodeSlot = secondRecords.header.of(secondRecords.header.targetNodeSlot(rel))
+        val colOrder = secondRecords.header.slots.map(secondRecords.header.of)
 
         val inverted = secondRecords.data
           .safeRenameColumn(startNodeSlot, "__tmp__")
@@ -158,21 +157,20 @@ final case class BoundedVarExpand(
         inverted.union(secondRecords.data)
     }
 
-    val edgeListColName = columnName(firstRecords.header.slotFor(edgeList))
+    val edgeListColName = firstRecords.header.of(firstRecords.header.slotFor(edgeList))
 
     val steps = new collection.mutable.HashMap[Int, DataFrame]
     steps(0) = initData
 
     val keep = initData.columns
 
-    val listTempColName =
-      ColumnNameGenerator.generateUniqueName(firstRecords.header)
+    val listTempColName = firstRecords.header.generateUniqueName
 
     val startSlot = secondRecords.header.sourceNodeSlot(rel)
     val endNodeSlot = firstRecords.header.slotFor(initialEndNode)
     (1 to upper).foreach { i =>
       // TODO: Check whether we can abort iteration if result has no cardinality (eg count > 0?)
-      steps(i) = iterate(steps(i - 1), relsData)(endNodeSlot, rel, startSlot, listTempColName, edgeListColName, keep)
+      steps(i) = iterate(steps(i - 1), firstRecords.header, relsData, secondRecords.header)(endNodeSlot, rel, startSlot, listTempColName, edgeListColName, keep)
     }
 
     val union = steps.filterKeys(_ >= lower).values.reduce[DataFrame] {
