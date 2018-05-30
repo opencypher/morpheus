@@ -32,7 +32,7 @@ import org.opencypher.okapi.ir.api.block.SortItem
 import org.opencypher.okapi.ir.api.expr.{Aggregator, Expr, Var}
 import org.opencypher.okapi.logical.impl._
 import org.opencypher.okapi.relational.impl.physical.{InnerJoin, JoinType}
-import org.opencypher.okapi.relational.impl.table.{ProjectedExpr, ProjectedField, RecordHeader}
+import org.opencypher.okapi.relational.impl.table.RecordHeader
 
 /**
   * Main interface to be implemented by custom (relational) back-ends to execute a Cypher query. Methods are being
@@ -121,17 +121,6 @@ trait PhysicalOperatorProducer[P <: PhysicalOperator[R, G, C], R <: CypherRecord
   def planDrop(in: P, dropFields: Seq[Expr], header: RecordHeader): P
 
   /**
-    * The operator takes a set of (field, expression) aliases and renames the columns identified by a field to the
-    * corresponding expression.
-    *
-    * @param in      previous operator
-    * @param aliases set of aliases
-    * @param header  resulting record header
-    * @return remove aliases operator
-    */
-  def planRemoveAliases(in: P, aliases: Set[(ProjectedField, ProjectedExpr)], header: RecordHeader): P
-
-  /**
     * Filters the incoming rows according to the specified expression.
     *
     * @param in     previous operator
@@ -149,7 +138,7 @@ trait PhysicalOperatorProducer[P <: PhysicalOperator[R, G, C], R <: CypherRecord
     * @param header      resulting record header
     * @return select operator
     */
-  def planSelect(in: P, expressions: List[Expr], header: RecordHeader): P
+  def planSelect(in: P, expressions: List[(Expr, Option[Var])], header: RecordHeader): P
 
   /**
     * Returns the working graph

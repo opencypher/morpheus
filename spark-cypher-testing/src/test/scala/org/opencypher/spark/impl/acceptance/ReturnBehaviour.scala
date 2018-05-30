@@ -39,7 +39,7 @@ import org.scalatest.DoNotDiscover
 class ReturnBehaviour extends CAPSTestSuite with DefaultGraphInit {
 
   describe("RETURN") {
-    it("returns only the returned fields") {
+    ignore("returns only the returned fields") {
       val g = initGraph("CREATE (:A {name: 'me'}), (:A)")
 
       val result = g.cypher("MATCH (a:A) WITH a, a.name AS foo RETURN a")
