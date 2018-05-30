@@ -267,9 +267,13 @@ sealed abstract case class CAPSRecords(header: RecordHeader, data: DataFrame)
       case (acc, (oldCol, newCol)) =>
         val oldColName = header.of(oldCol)
         val newColName = targetHeader.of(newCol)
-        acc
-          .safeReplaceColumn(oldColName, acc.col(oldColName).cast(newCol.content.cypherType.toSparkType.get))
-          .safeRenameColumn(oldColName, newColName)
+        if (oldColName != newColName) {
+          acc
+            .safeReplaceColumn(oldColName, acc.col(oldColName).cast(newCol.content.cypherType.toSparkType.get))
+            .safeRenameColumn(oldColName, newColName)
+        } else {
+          acc
+        }
     }
 
     val renamedSlots = renamedSlotMapping.map(_._2)
