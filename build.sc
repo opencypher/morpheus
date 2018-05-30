@@ -1,13 +1,14 @@
 import $file.shared
+import shared.OkapiModule
 import mill._
 
-object OkapiTrees extends shared.OkapiModule {
+object OkapiTrees extends OkapiModule {
 
   object test extends OkapiTests
 
 }
 
-object OkapiApi extends shared.OkapiModule {
+object OkapiApi extends OkapiModule {
 
   override def moduleDeps = Seq(OkapiTrees)
 
@@ -22,7 +23,7 @@ object OkapiApi extends shared.OkapiModule {
 
 }
 
-object OkapiTesting extends shared.OkapiModule {
+object OkapiTesting extends OkapiModule {
 
   override def moduleDeps = Seq(OkapiApi)
 
@@ -36,7 +37,7 @@ object OkapiTesting extends shared.OkapiModule {
 
 }
 
-object OkapiIr extends shared.OkapiModule {
+object OkapiIr extends OkapiModule {
 
   override def moduleDeps = Seq(OkapiApi)
 
@@ -61,7 +62,7 @@ object OkapiIr extends shared.OkapiModule {
 
 }
 
-object OkapiLogical extends shared.OkapiModule {
+object OkapiLogical extends OkapiModule {
 
   override def moduleDeps = Seq(OkapiIr)
 
@@ -71,7 +72,7 @@ object OkapiLogical extends shared.OkapiModule {
 
 }
 
-object OkapiRelational extends shared.OkapiModule {
+object OkapiRelational extends OkapiModule {
 
   override def moduleDeps = Seq(OkapiLogical)
 
@@ -86,7 +87,7 @@ object OkapiRelational extends shared.OkapiModule {
 
 }
 
-object SparkCypher extends shared.OkapiModule {
+object SparkCypher extends OkapiModule {
 
   override def moduleDeps = Seq(OkapiRelational)
 

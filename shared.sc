@@ -1,4 +1,5 @@
 import $file.license
+import license.License
 import ammonite.ops._
 import coursier.core.Attributes
 import mill._
@@ -41,30 +42,30 @@ trait OkapiModule extends SbtModule {
   }
 
   def checkLicenses = T {
-    val invalid = allSourceFiles().map(_.path).filterNot(license.License.check(_))
+    val invalid = allSourceFiles().map(_.path).filterNot(License.check(_))
     val numInvalid = invalid.size
     if (numInvalid == 0) {
-      T.ctx().log.info(license.License.successMsg)
+      T.ctx().log.info(License.successMsg)
     } else if (numInvalid == 1) {
       T.ctx().log.info(s"One license was invalid in file `${invalid.head.segments.last}`.")
     } else {
       T.ctx().log.info(
         s"""$numInvalid licenses were incorrect:
-           |${license.License.pathsAsListItems(invalid)}""".stripMargin)
+           |${License.pathsAsListItems(invalid)}""".stripMargin)
     }
   }
 
   def addLicenses = T {
-    val added = allSourceFiles().map(_.path).filter(license.License.add(_))
+    val added = allSourceFiles().map(_.path).filter(License.add(_))
     val numAdded = added.size
     if (numAdded == 0) {
-      T.ctx().log.info(license.License.successMsg)
+      T.ctx().log.info(License.successMsg)
     } else if (numAdded == 1) {
       T.ctx().log.info(s"One license was added to file `${added.head.segments.last}`.")
     } else {
       T.ctx().log.info(
         s"""$numAdded licenses were added to files:
-           |${license.License.pathsAsListItems(added)}""".stripMargin)
+           |${License.pathsAsListItems(added)}""".stripMargin)
     }
   }
 
