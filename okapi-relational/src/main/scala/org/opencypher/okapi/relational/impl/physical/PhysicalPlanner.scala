@@ -52,9 +52,6 @@ class PhysicalPlanner[P <: PhysicalOperator[R, G, C], R <: CypherRecords, G <: P
       case flat.CartesianProduct(lhs, rhs, header) =>
         producer.planCartesianProduct(process(lhs), process(rhs), header)
 
-      case flat.RemoveAliases(dependent, in, header) =>
-        producer.planRemoveAliases(process(in), dependent, header)
-
       case flat.Select(fields, in, header) =>
 
         val selectExpressions = fields
@@ -62,7 +59,7 @@ class PhysicalPlanner[P <: PhysicalOperator[R, G, C], R <: CypherRecords, G <: P
           .map(_.content.key)
           .distinct
 
-        producer.planSelect(process(in), selectExpressions, header)
+        producer.planSelect(process(in), selectExpressions.map(_ -> None), header)
 
       case flat.EmptyRecords(in, header) =>
         producer.planEmptyRecords(process(in), header)

@@ -63,18 +63,13 @@ final class CAPSPhysicalOperatorProducer(implicit caps: CAPSSession)
     rhs: CAPSPhysicalOperator,
     header: RecordHeader): CAPSPhysicalOperator = operators.CartesianProduct(lhs, rhs, header)
 
-  override def planRemoveAliases(
-    in: CAPSPhysicalOperator,
-    dependent: Set[(ProjectedField, ProjectedExpr)],
-    header: RecordHeader): CAPSPhysicalOperator = operators.RemoveAliases(in, dependent, header)
-
   override def planDrop(
     in: CAPSPhysicalOperator,
     dropFields: Seq[Expr],
     header: RecordHeader
   ): CAPSPhysicalOperator = operators.Drop(in, dropFields, header)
 
-  override def planSelect(in: CAPSPhysicalOperator, exprs: List[Expr], header: RecordHeader): CAPSPhysicalOperator =
+  override def planSelect(in: CAPSPhysicalOperator, exprs: List[(Expr, Option[Var])], header: RecordHeader): CAPSPhysicalOperator =
     operators.Select(in, exprs, header)
 
   override def planReturnGraph(in: CAPSPhysicalOperator): CAPSPhysicalOperator = {

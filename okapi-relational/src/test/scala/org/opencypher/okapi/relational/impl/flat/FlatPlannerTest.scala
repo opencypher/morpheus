@@ -322,40 +322,6 @@ class FlatPlannerTest extends BaseTestSuite {
       ))
   }
 
-  test("Construct selection with renamed alias") {
-    val n = Var("n")(CTNode("Person"))
-
-    val result = flatPlanner.process(
-      mkLogical.planSelect(
-        List(n),
-        prev = mkLogical.projectField(
-          IRField("foo")(CTString),
-          Property(n, PropertyKey("name"))(CTString),
-          logicalNodeScan("n", "Person")))
-    )
-    val headerContents = result.header.contents
-
-    result should equalWithTracing(
-      mkFlat.select(
-        List(n),
-        mkFlat.removeAliases(
-          List(n),
-          mkFlat.project(
-            ProjectedField(Var("foo")(CTString), Property(n, PropertyKey("name"))(CTString)),
-            flatNodeScan("n", "Person")
-          ))
-      )
-    )
-    headerContents should equalWithTracing(
-      Set(
-        OpaqueField(n),
-        ProjectedExpr(HasLabel(n, Label("Person"))(CTBoolean)),
-        ProjectedExpr(Property(n, PropertyKey("name"))(CTString)),
-        ProjectedExpr(Property(n, PropertyKey("age"))(CTInteger.nullable))
-      ))
-
-  }
-
   test("Construct selection with several fields") {
     val result = flatPlanner.process(
       mkLogical.planSelect(

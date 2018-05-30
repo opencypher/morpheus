@@ -72,28 +72,6 @@ class FlatOperatorProducer(implicit context: FlatPlannerContext) {
     ReturnGraph(in)
   }
 
-  def removeAliases(toKeep: List[Var], in: FlatOperator): FlatOperator = {
-    val renames = in.header.contents.collect {
-      case pf @ ProjectedField(v, _: Property | _: HasLabel | _: HasType) if !toKeep.contains(v) =>
-        pf -> ProjectedExpr(pf.expr)
-    }
-
-    if (renames.isEmpty) {
-      in
-    } else {
-      val newHeaderContents = in.header.contents.map {
-        case pf @ ProjectedField(v, _: Property | _: HasLabel | _: HasType) if !toKeep.contains(v) =>
-          ProjectedExpr(pf.expr)
-        case other =>
-          other
-      }
-
-      val (header, _) = RecordHeader.empty.update(addContents(newHeaderContents.toSeq))
-
-      RemoveAliases(renames, in, header)
-    }
-  }
-
   def filter(expr: Expr, in: FlatOperator): Filter = {
     in.header
 
