@@ -192,6 +192,7 @@ final case class Filter(in: CAPSPhysicalOperator, expr: Expr, header: RecordHead
   }
 }
 
+// TODO: fix in https://github.com/opencypher/cypher-for-apache-spark/pull/489 (Refactor select)
 final case class RemoveAliases(
   in: CAPSPhysicalOperator,
   dependentFields: Set[(ProjectedField, ProjectedExpr)],
@@ -202,7 +203,9 @@ final case class RemoveAliases(
     prev.mapRecordsWithDetails { records =>
       val renamed = dependentFields.foldLeft(records.data) {
         case (df, (v, expr)) =>
-          df.safeRenameColumn(records.header.of(v), header.of(expr))
+          val from = records.header.of(v)
+          val to = ColumnNamer.of(expr)
+          df.safeRenameColumn(from, to)
       }
 
       CAPSRecords.verifyAndCreate(header, renamed)(records.caps)
@@ -285,7 +288,7 @@ final case class Aggregate(
 
       val sparkAggFunctions = aggregations.map {
         case (to, inner) =>
-          val columnName = records.header.from(to.name)
+          val columnName = header.of(to)
           inner match {
             case Avg(expr) =>
               withInnerExpr(expr)(

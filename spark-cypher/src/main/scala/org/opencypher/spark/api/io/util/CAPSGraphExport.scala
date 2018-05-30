@@ -31,7 +31,7 @@ import org.apache.spark.sql.types.{LongType, StructField, StructType}
 import org.opencypher.okapi.api.schema.Schema
 import org.opencypher.okapi.api.types.CTRelationship
 import org.opencypher.okapi.ir.api.expr.Var
-import org.opencypher.spark.api.io.util.StringEncodingUtilities._
+import org.opencypher.okapi.relational.impl.util.StringEncodingUtilities._
 import org.opencypher.spark.api.io.{GraphEntity, Relationship}
 import org.opencypher.spark.impl.CAPSGraph
 import org.opencypher.spark.impl.convert.CAPSCypherType._

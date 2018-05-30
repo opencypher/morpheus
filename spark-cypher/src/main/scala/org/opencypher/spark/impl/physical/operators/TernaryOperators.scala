@@ -78,7 +78,7 @@ final case class BoundedVarExpand(
     CAPSPhysicalResult(finalize(expanded, third.records), first.workingGraph, first.workingGraphName)
   }
 
-  private def iterate(lhs: DataFrame, rels: DataFrame, relsHeader: RecordHeader)(
+  private def iterate(lhs: DataFrame, lhsHeader: RecordHeader, rels: DataFrame, relsHeader: RecordHeader)(
       endNode: RecordSlot,
       rel: Var,
       relStartNode: RecordSlot,
@@ -88,7 +88,7 @@ final case class BoundedVarExpand(
 
     val relIdColumn = rels.col(relsHeader.of(OpaqueField(rel)))
     val startColumn = rels.col(relsHeader.of(relStartNode))
-    val expandColumnName = relsHeader.of(endNode)
+    val expandColumnName = lhsHeader.of(endNode)
     val expandColumn = lhs.col(expandColumnName)
 
     val joined = lhs.join(rels, expandColumn === startColumn, "inner")
@@ -170,7 +170,7 @@ final case class BoundedVarExpand(
     val endNodeSlot = firstRecords.header.slotFor(initialEndNode)
     (1 to upper).foreach { i =>
       // TODO: Check whether we can abort iteration if result has no cardinality (eg count > 0?)
-      steps(i) = iterate(steps(i - 1), relsData, secondRecords.header)(endNodeSlot, rel, startSlot, listTempColName, edgeListColName, keep)
+      steps(i) = iterate(steps(i - 1), firstRecords.header, relsData, secondRecords.header)(endNodeSlot, rel, startSlot, listTempColName, edgeListColName, keep)
     }
 
     val union = steps.filterKeys(_ >= lower).values.reduce[DataFrame] {

@@ -185,7 +185,7 @@ sealed abstract case class CAPSRecords(header: RecordHeader, data: DataFrame)
       case ((tempHeader, tempDf), nextFieldToRemove) =>
         val slotsToRemove = tempHeader.selfWithChildren(nextFieldToRemove)
         val updatedHeader = tempHeader -- RecordHeader.from(slotsToRemove.toList)
-        updatedHeader -> tempDf.drop(slotsToRemove.map(updatedHeader.of): _*)
+        updatedHeader -> tempDf.drop(slotsToRemove.map(tempHeader.of): _*)
     }
     CAPSRecords.verifyAndCreate(updatedHeader, updatedData)
   }
@@ -263,7 +263,7 @@ sealed abstract case class CAPSRecords(header: RecordHeader, data: DataFrame)
     }
 
     val withRenamedColumns = renamedSlotMapping.foldLeft(data) {
-      case (acc, (oldCol, newCol)) => acc.withColumnRenamed(header.of(oldCol), header.of(newCol))
+      case (acc, (oldCol, newCol)) => acc.withColumnRenamed(header.of(oldCol), targetHeader.of(newCol))
     }
 
     val renamedSlots = renamedSlotMapping.map(_._2)

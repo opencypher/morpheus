@@ -24,7 +24,7 @@
  * described as "implementation extensions to Cypher" or as "proposed changes to
  * Cypher that are not yet approved by the openCypher community".
  */
-package org.opencypher.spark.api.io.util
+package org.opencypher.okapi.relational.impl.util
 
 import scala.annotation.tailrec
 

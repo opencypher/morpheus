@@ -313,8 +313,8 @@ final case class ConstructGraph(
       case (acc, toRemove) => acc.safeDropColumn(constructedTable.header.of(toRemove))
     }
 
-    val newData = dataWithExistingRemoved.safeAddColumn(constructedTable.header.of(propertySlotContent), propertyValueColumn)
     val newHeader = headerWithExistingRemoved.update(addContent(propertySlotContent))._1
+    val newData = dataWithExistingRemoved.safeAddColumn(newHeader.of(propertySlotContent), propertyValueColumn)
     CAPSRecords.verifyAndCreate(newHeader, newData)(constructedTable.caps)
   }
 
@@ -350,17 +350,17 @@ final case class ConstructGraph(
     columnsToAdd: Set[(SlotContent, Column)],
     constructedTable: CAPSRecords
   ): CAPSRecords = {
-    val newData = columnsToAdd.foldLeft(constructedTable.data) {
-      case (acc, (expr, col)) =>
-        acc.safeAddColumn(constructedTable.header.of(expr), col)
-    }
-
     // TODO: Move header construction to FlatPlanner
     val newHeader = constructedTable.header
       .update(
         addContents(columnsToAdd.map(_._1).toSeq)
       )
       ._1
+
+    val newData = columnsToAdd.foldLeft(constructedTable.data) {
+      case (acc, (expr, col)) =>
+        acc.safeAddColumn(newHeader.of(expr), col)
+    }
 
     CAPSRecords.verifyAndCreate(newHeader, newData)(constructedTable.caps)
   }

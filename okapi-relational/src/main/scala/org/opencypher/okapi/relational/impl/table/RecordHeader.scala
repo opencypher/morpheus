@@ -31,6 +31,7 @@ import org.opencypher.okapi.api.types.{CTBoolean, CTNode, CTString, _}
 import org.opencypher.okapi.impl.exception.IllegalArgumentException
 import org.opencypher.okapi.ir.api.expr._
 import org.opencypher.okapi.ir.api.{Label, PropertyKey}
+import org.opencypher.okapi.relational.impl.util.StringEncodingUtilities._
 import org.opencypher.okapi.relational.impl.syntax.RecordHeaderSyntax._
 
 import scala.annotation.tailrec
@@ -49,7 +50,7 @@ final case class RecordHeader(internalHeader: InternalHeader) {
     val NAME_SIZE = 5
 
     val chars = (1 to NAME_SIZE).map(_ => Random.nextPrintableChar())
-    val name = from(String.valueOf(chars.toArray))
+    val name = String.valueOf(chars.toArray).encodeSpecialCharacters
 
     if (slots.map(of).contains(name)) generateUniqueName
     else name
@@ -58,21 +59,27 @@ final case class RecordHeader(internalHeader: InternalHeader) {
   def tempColName: String =
     ColumnNamer.tempColName
 
-  def of(slot: RecordSlot): String = ColumnNamer.of(slot)
+  def of(slot: RecordSlot): String = {
+    val cn = ColumnNamer.of(slot)
+    assert(columns.contains(cn), s"the header did not contain $cn, had ${columns.mkString(", ")}")
+    cn
+  }
 
   def of(slot: SlotContent): String = {
-    ColumnNamer.of(slot)
+    val cn = ColumnNamer.of(slot)
+    assert(columns.contains(cn), s"the header did not contain $cn, had ${columns.mkString(", ")}")
+    cn
   }
 
   def of(expr: Expr): String = {
-    ColumnNamer.of(expr)
+    val cn = ColumnNamer.of(expr)
+    assert(columns.contains(cn), s"the header did not contain $cn, had ${columns.mkString(", ")}")
+    cn
   }
 
-  def columns: Seq[String] = internalHeader.slots.map(of).toVector
+  val columns: Seq[String] = internalHeader.slots.map(ColumnNamer.of)
 
   def column(slot: RecordSlot) = columns(slot.index)
-
-  def from(name: String): String = ColumnNamer.from(name)
 
   /**
     * Computes the concatenation of this header and another header.
