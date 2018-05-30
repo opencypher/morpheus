@@ -100,9 +100,14 @@ case class CAPSPatternGraph(
     CAPSRecords.verifyAndCreate(targetHeader, distinctData)
   }
 
-  private def createScanToBaseTableLookup(header: RecordHeader, scanTableVar: Var, slotContents: Seq[SlotContent]): Map[String, String] = {
-    slotContents.map { baseTableSlotContent =>
-      header.of(baseTableSlotContent.withOwner(scanTableVar)) -> header.of(baseTableSlotContent)
+  private def createScanToBaseTableLookup(targetHeader: RecordHeader, scanTableVar: Var, slotContents: Seq[SlotContent]): Map[String, String] = {
+    slotContents.flatMap { baseTableSlotContent =>
+      val targetSlotContent = baseTableSlotContent.withOwner(scanTableVar)
+      if (targetHeader.contents.contains(targetSlotContent)) {
+        Some(targetHeader.of(targetSlotContent) -> header.of(baseTableSlotContent))
+      } else {
+        None
+      }
     }.toMap
   }
 }
