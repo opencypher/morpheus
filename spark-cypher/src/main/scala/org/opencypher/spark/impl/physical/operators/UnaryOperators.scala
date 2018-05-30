@@ -192,27 +192,6 @@ final case class Filter(in: CAPSPhysicalOperator, expr: Expr, header: RecordHead
   }
 }
 
-// TODO: fix in https://github.com/opencypher/cypher-for-apache-spark/pull/489 (Refactor select)
-final case class RemoveAliases(
-  in: CAPSPhysicalOperator,
-  dependentFields: Set[(ProjectedField, ProjectedExpr)],
-  header: RecordHeader
-) extends UnaryPhysicalOperator with PhysicalOperatorDebugging {
-
-  override def executeUnary(prev: CAPSPhysicalResult)(implicit context: CAPSRuntimeContext): CAPSPhysicalResult = {
-    prev.mapRecordsWithDetails { records =>
-      val renamed = dependentFields.foldLeft(records.data) {
-        case (df, (v, expr)) =>
-          val from = records.header.of(v)
-          val to = ColumnNamer.of(expr)
-          df.safeRenameColumn(from, to)
-      }
-
-      CAPSRecords.verifyAndCreate(header, renamed)(records.caps)
-    }
-  }
-}
-
 final case class ReturnGraph(in: CAPSPhysicalOperator)
   extends UnaryPhysicalOperator with PhysicalOperatorDebugging {
 
@@ -224,7 +203,7 @@ final case class ReturnGraph(in: CAPSPhysicalOperator)
 
 }
 
-final case class Select(in: CAPSPhysicalOperator, expressions: List[Expr], header: RecordHeader)
+final case class Select(in: CAPSPhysicalOperator, expressions: List[(Expr, Option[Var])], header: RecordHeader)
   extends UnaryPhysicalOperator with PhysicalOperatorDebugging {
 
   override def executeUnary(prev: CAPSPhysicalResult)(implicit context: CAPSRuntimeContext): CAPSPhysicalResult = {
@@ -232,7 +211,19 @@ final case class Select(in: CAPSPhysicalOperator, expressions: List[Expr], heade
 
       val data = records.data
 
-      val columns = expressions.map(expr => data.col(records.header.of(expr)))
+      val columns = expressions.map {
+        case (expr, alias) =>
+          val column = expr.asSparkSQLExpr(header, prev.records.data, context)
+          if (alias.isDefined) {
+            val aliasName = header.of(header.slotsFor(alias.get).head)
+            column.as(aliasName)
+          } else {
+            val aliasName = header.of(header.slotsFor(expr).head)
+            column.as(aliasName)
+          }
+
+      }
+
       val newData = data.select(columns: _*)
 
       CAPSRecords.verifyAndCreate(header, newData)(records.caps)

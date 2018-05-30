@@ -75,12 +75,6 @@ final case class ReturnGraph(in: FlatOperator) extends StackingFlatOperator {
   override def header: RecordHeader = RecordHeader.empty
 }
 
-final case class RemoveAliases(
-    dependentFields: Set[(ProjectedField, ProjectedExpr)],
-    in: FlatOperator,
-    header: RecordHeader)
-    extends StackingFlatOperator
-
 final case class Project(expr: Expr, in: FlatOperator, header: RecordHeader) extends StackingFlatOperator
 
 final case class Unwind(expr: Expr, item: Var, in: FlatOperator, header: RecordHeader) extends StackingFlatOperator
