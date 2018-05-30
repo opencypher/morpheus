@@ -117,7 +117,7 @@ final case class ExistsSubQuery(
     val leftHeader = left.records.header
     val rightHeader = right.records.header
 
-    val joinFields = leftHeader.internalHeader.fields.intersect(rightHeader.internalHeader.fields)
+    val joinFields = leftHeader.fieldsAsVar.intersect(rightHeader.fieldsAsVar)
 
     val columnsToRemove = joinFields
       .flatMap(rightHeader.childSlots)
@@ -277,7 +277,7 @@ final case class ConstructGraph(
     }
 
     // Remove all vars that were part the original pattern graph DF, except variables that were CLONEd without an alias
-    val allInputVars = baseTable.header.internalHeader.fields
+    val allInputVars = baseTable.header.fieldsAsVar
     val originalVarsToKeep = clonedVarsToInputVars.keySet -- aliasClones.keySet
     val varsToRemoveFromTable = allInputVars -- originalVarsToKeep
     val patternGraphTable = tableWithConstructedEntities.removeVars(varsToRemoveFromTable)

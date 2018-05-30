@@ -79,7 +79,7 @@ sealed class CAPSSessionImpl(val sparkSession: SparkSession)
     val ambientGraphNew = mountAmbientGraph(graph)
 
     val drivingTable = maybeDrivingTable.getOrElse(CAPSRecords.unit())
-    val inputFields = drivingTable.asCaps.header.internalHeader.fields
+    val inputFields = drivingTable.asCaps.header.fieldsAsVar
 
     val (stmt, extractedLiterals, semState) = time("AST construction")(parser.process(query, inputFields)(CypherParser.defaultContext))
 
@@ -137,7 +137,7 @@ sealed class CAPSSessionImpl(val sparkSession: SparkSession)
     in: CypherRecords,
     expr: Expr,
     queryParameters: CypherMap): CAPSRecords = {
-    val scan = planStart(graph, in.asCaps.header.internalHeader.fields)
+    val scan = planStart(graph, in.asCaps.header.fieldsAsVar)
     val filter = producer.planFilter(expr, scan)
     planPhysical(in, queryParameters, filter).getRecords
   }
@@ -147,7 +147,7 @@ sealed class CAPSSessionImpl(val sparkSession: SparkSession)
     in: CypherRecords,
     fields: List[Var],
     queryParameters: CypherMap): CAPSRecords = {
-    val scan = planStart(graph, in.asCaps.header.internalHeader.fields)
+    val scan = planStart(graph, in.asCaps.header.fieldsAsVar)
     val select = producer.planSelect(fields, scan)
     planPhysical(in, queryParameters, select).getRecords
   }
@@ -157,7 +157,7 @@ sealed class CAPSSessionImpl(val sparkSession: SparkSession)
     in: CypherRecords,
     expr: Expr,
     queryParameters: CypherMap): CAPSRecords = {
-    val scan = planStart(graph, in.asCaps.header.internalHeader.fields)
+    val scan = planStart(graph, in.asCaps.header.fieldsAsVar)
     val project = producer.projectExpr(expr, scan)
     planPhysical(in, queryParameters, project).getRecords
   }
@@ -168,7 +168,7 @@ sealed class CAPSSessionImpl(val sparkSession: SparkSession)
     alias: (Expr, Var),
     queryParameters: CypherMap): CAPSRecords = {
     val (expr, v) = alias
-    val scan = planStart(graph, in.asCaps.header.internalHeader.fields)
+    val scan = planStart(graph, in.asCaps.header.fieldsAsVar)
     val select = producer.projectField(IRField(v.name)(v.cypherType), expr, scan)
     planPhysical(in, queryParameters, select).getRecords
   }

@@ -43,7 +43,7 @@ import scala.util.Random
   * The header consists of a number of slots, each of which represents a Cypher expression.
   * The slots that represent variables (which is a kind of expression) are called <i>fields</i>.
   */
-final case class RecordHeader(internalHeader: InternalHeader) {
+final case class RecordHeader(private[impl] val internalHeader: InternalHeader) {
 
   @tailrec
   def generateUniqueName: String = {
@@ -123,7 +123,9 @@ final case class RecordHeader(internalHeader: InternalHeader) {
     *
     * @return the fields in this header.
     */
-  def fields: Set[String] = internalHeader.fields.map(_.name)
+  def fields: Set[String] = fieldsAsVar.map(_.name)
+
+  def fieldsAsVar: Set[Var] = internalHeader.fields
 
   /**
     * The fields contained in this header, in the order they were defined.

@@ -249,7 +249,7 @@ sealed abstract case class CAPSRecords(header: RecordHeader, data: DataFrame)
     * @return a new instance of `CAPSRecords` aligned with the argument header
     */
   def alignWith(v: Var, targetHeader: RecordHeader): CAPSRecords = {
-    val oldEntity = this.header.internalHeader.fields.headOption
+    val oldEntity = this.header.fieldsAsVar.headOption
       .getOrElse(throw IllegalStateException("GraphScan table did not contain any fields"))
 
     val entityLabels: Set[String] = oldEntity.cypherType match {
