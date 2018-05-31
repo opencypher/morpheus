@@ -29,11 +29,11 @@ package org.opencypher.okapi.relational.impl.flat
 import org.opencypher.okapi.ir.api.block.SortItem
 import org.opencypher.okapi.ir.api.expr.{Aggregator, Expr, Var}
 import org.opencypher.okapi.logical.impl.{Direction, LogicalGraph}
-import org.opencypher.okapi.relational.impl.table.{OpaqueField, ProjectedExpr, ProjectedField, RecordHeader}
+import org.opencypher.okapi.relational.impl.table._
 import org.opencypher.okapi.trees.AbstractTreeNode
 
 sealed abstract class FlatOperator extends AbstractTreeNode[FlatOperator] {
-  def header: RecordHeader
+  def header: IRecordHeader
 
   def sourceGraph: LogicalGraph
 }
@@ -61,45 +61,45 @@ sealed abstract class StackingFlatOperator extends FlatOperator {
 
 sealed abstract class FlatLeafOperator extends FlatOperator
 
-final case class NodeScan(node: Var, in: FlatOperator, header: RecordHeader) extends StackingFlatOperator
+final case class NodeScan(node: Var, in: FlatOperator, header: IRecordHeader) extends StackingFlatOperator
 
-final case class EdgeScan(edge: Var, in: FlatOperator, header: RecordHeader) extends StackingFlatOperator
+final case class EdgeScan(edge: Var, in: FlatOperator, header: IRecordHeader) extends StackingFlatOperator
 
-final case class Filter(expr: Expr, in: FlatOperator, header: RecordHeader) extends StackingFlatOperator
+final case class Filter(expr: Expr, in: FlatOperator, header: IRecordHeader) extends StackingFlatOperator
 
-final case class Distinct(fields: Set[Var], in: FlatOperator, header: RecordHeader) extends StackingFlatOperator
+final case class Distinct(fields: Set[Var], in: FlatOperator, header: IRecordHeader) extends StackingFlatOperator
 
-final case class Select(fields: List[Var], in: FlatOperator, header: RecordHeader) extends StackingFlatOperator
+final case class Select(fields: List[Var], in: FlatOperator, header: IRecordHeader) extends StackingFlatOperator
 
 final case class ReturnGraph(in: FlatOperator) extends StackingFlatOperator {
-  override def header: RecordHeader = RecordHeader.empty
+  override def header: IRecordHeader = IRecordHeader.empty
 }
 
-final case class Project(expr: Expr, in: FlatOperator, header: RecordHeader) extends StackingFlatOperator
+final case class Project(expr: Expr, in: FlatOperator, header: IRecordHeader) extends StackingFlatOperator
 
-final case class Unwind(expr: Expr, item: Var, in: FlatOperator, header: RecordHeader) extends StackingFlatOperator
+final case class Unwind(expr: Expr, item: Var, in: FlatOperator, header: IRecordHeader) extends StackingFlatOperator
 
 final case class Aggregate(
     aggregations: Set[(Var, Aggregator)],
     group: Set[Var],
     in: FlatOperator,
-    header: RecordHeader)
+    header: IRecordHeader)
     extends StackingFlatOperator
 
-final case class Alias(expr: Expr, alias: Var, in: FlatOperator, header: RecordHeader) extends StackingFlatOperator
+final case class Alias(expr: Expr, alias: Var, in: FlatOperator, header: IRecordHeader) extends StackingFlatOperator
 
-final case class CartesianProduct(lhs: FlatOperator, rhs: FlatOperator, header: RecordHeader) extends BinaryFlatOperator
+final case class CartesianProduct(lhs: FlatOperator, rhs: FlatOperator, header: IRecordHeader) extends BinaryFlatOperator
 
-final case class Optional(lhs: FlatOperator, rhs: FlatOperator, header: RecordHeader) extends BinaryFlatOperator
+final case class Optional(lhs: FlatOperator, rhs: FlatOperator, header: IRecordHeader) extends BinaryFlatOperator
 
-final case class ExistsSubQuery(predicateField: Var, lhs: FlatOperator, rhs: FlatOperator, header: RecordHeader)
+final case class ExistsSubQuery(predicateField: Var, lhs: FlatOperator, rhs: FlatOperator, header: IRecordHeader)
     extends BinaryFlatOperator
 
 final case class ValueJoin(
     lhs: FlatOperator,
     rhs: FlatOperator,
     predicates: Set[org.opencypher.okapi.ir.api.expr.Equals],
-    header: RecordHeader)
+    header: IRecordHeader)
     extends BinaryFlatOperator
 
 final case class Expand(
@@ -109,8 +109,8 @@ final case class Expand(
     target: Var,
     sourceOp: FlatOperator,
     targetOp: FlatOperator,
-    header: RecordHeader,
-    relHeader: RecordHeader)
+    header: IRecordHeader,
+    relHeader: IRecordHeader)
     extends BinaryFlatOperator {
 
   override def lhs: FlatOperator = sourceOp
@@ -123,14 +123,14 @@ final case class ExpandInto(
     target: Var,
     direction: Direction,
     sourceOp: FlatOperator,
-    header: RecordHeader,
-    relHeader: RecordHeader)
+    header: IRecordHeader,
+    relHeader: IRecordHeader)
     extends StackingFlatOperator {
 
   override def in: FlatOperator = sourceOp
 }
 
-final case class InitVarExpand(source: Var, edgeList: Var, endNode: Var, in: FlatOperator, header: RecordHeader)
+final case class InitVarExpand(source: Var, edgeList: Var, endNode: Var, in: FlatOperator, header: IRecordHeader)
     extends StackingFlatOperator
 
 final case class BoundedVarExpand(
@@ -143,7 +143,7 @@ final case class BoundedVarExpand(
     sourceOp: InitVarExpand,
     relOp: FlatOperator,
     targetOp: FlatOperator,
-    header: RecordHeader,
+    header: IRecordHeader,
     isExpandInto: Boolean)
     extends TernaryFlatOperator {
 
@@ -152,20 +152,20 @@ final case class BoundedVarExpand(
   override def third: FlatOperator = targetOp
 }
 
-final case class OrderBy(sortItems: Seq[SortItem[Expr]], in: FlatOperator, header: RecordHeader)
+final case class OrderBy(sortItems: Seq[SortItem[Expr]], in: FlatOperator, header: IRecordHeader)
     extends StackingFlatOperator
 
-final case class Skip(expr: Expr, in: FlatOperator, header: RecordHeader) extends StackingFlatOperator
+final case class Skip(expr: Expr, in: FlatOperator, header: IRecordHeader) extends StackingFlatOperator
 
-final case class Limit(expr: Expr, in: FlatOperator, header: RecordHeader) extends StackingFlatOperator
+final case class Limit(expr: Expr, in: FlatOperator, header: IRecordHeader) extends StackingFlatOperator
 
-final case class EmptyRecords(in: FlatOperator, header: RecordHeader) extends StackingFlatOperator
+final case class EmptyRecords(in: FlatOperator, header: IRecordHeader) extends StackingFlatOperator
 
 final case class Start(sourceGraph: LogicalGraph, fields: Set[Var]) extends FlatLeafOperator {
-  override val header: RecordHeader = RecordHeader.from(fields.map(OpaqueField).toSeq: _*)
+  override val header: IRecordHeader = IRecordHeader.from(fields.map(OpaqueField).toSeq: _*)
 }
 
 final case class FromGraph(override val sourceGraph: LogicalGraph, in: FlatOperator)
     extends StackingFlatOperator {
-  override def header: RecordHeader = in.header
+  override def header: IRecordHeader = in.header
 }

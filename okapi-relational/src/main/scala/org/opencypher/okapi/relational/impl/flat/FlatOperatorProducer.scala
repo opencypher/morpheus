@@ -34,8 +34,6 @@ import org.opencypher.okapi.ir.api.block.SortItem
 import org.opencypher.okapi.ir.api.expr._
 import org.opencypher.okapi.ir.api.util.FreshVariableNamer
 import org.opencypher.okapi.logical.impl.{Direction, LogicalGraph}
-import org.opencypher.okapi.relational.impl.exception.RecordHeaderException
-import org.opencypher.okapi.relational.impl.syntax.RecordHeaderSyntax._
 import org.opencypher.okapi.relational.impl.table._
 
 import scala.annotation.tailrec
@@ -63,7 +61,7 @@ class FlatOperatorProducer(implicit context: FlatPlannerContext) {
 
     val finalContents = fieldContents ++ fields.flatMap(in.header.childSlots).map(_.content)
 
-    val (nextHeader, _) = RecordHeader.empty.update(addContents(finalContents))
+    val nextHeader = IRecordHeader.empty.addContents(finalContents)
 
     Select(fields, in, nextHeader)
   }
@@ -75,13 +73,13 @@ class FlatOperatorProducer(implicit context: FlatPlannerContext) {
   def filter(expr: Expr, in: FlatOperator): Filter = {
     in.header
 
-//    expr match {
-//      case HasLabel(n, label) =>
-//        in.header.contents.map { c =>
-//
-//        }
-//      case _ => in.header
-//    }
+    //    expr match {
+    //      case HasLabel(n, label) =>
+    //        in.header.contents.map { c =>
+    //
+    //        }
+    //      case _ => in.header
+    //    }
 
     // TODO: Should replace SlotContent expressions with detailed type of entity
     // TODO: Should reduce width of header due to more label information
@@ -98,13 +96,13 @@ class FlatOperatorProducer(implicit context: FlatPlannerContext) {
     * That means that it will discard any incoming fields from the ancestor header (assumes it is empty)
     */
   def nodeScan(node: Var, prev: FlatOperator): NodeScan = {
-    val header = RecordHeader.nodeFromSchema(node, prev.sourceGraph.schema)
+    val header = IRecordHeader.nodeFromSchema(node, prev.sourceGraph.schema)
 
     new NodeScan(node, prev, header)
   }
 
   def edgeScan(edge: Var, prev: FlatOperator): EdgeScan = {
-    val edgeHeader = RecordHeader.relationshipFromSchema(edge, prev.sourceGraph.schema)
+    val edgeHeader = IRecordHeader.relationshipFromSchema(edge, prev.sourceGraph.schema)
 
     EdgeScan(edge, prev, edgeHeader)
   }
@@ -112,9 +110,9 @@ class FlatOperatorProducer(implicit context: FlatPlannerContext) {
   @tailrec
   private def relTypeFromList(t: CypherType): Set[String] = {
     t match {
-      case l: CTList         => relTypeFromList(l.elementType)
+      case l: CTList => relTypeFromList(l.elementType)
       case r: CTRelationship => r.types
-      case _                 => throw IllegalStateException(s"Required CTList or CTRelationship, but got $t")
+      case _ => throw IllegalStateException(s"Required CTList or CTRelationship, but got $t")
     }
   }
 
@@ -125,48 +123,57 @@ class FlatOperatorProducer(implicit context: FlatPlannerContext) {
   }
 
   def aggregate(aggregations: Set[(Var, Aggregator)], group: Set[Var], in: FlatOperator): Aggregate = {
-    val (newHeader, _) = RecordHeader.empty.update(
-      addContents(
-        group.flatMap(in.header.selfWithChildren).map(_.content).toSeq ++ aggregations.map(agg => OpaqueField(agg._1)))
-    )
+    val newHeader = IRecordHeader.empty
+      .addContents(group.flatMap(in.header.selfWithChildren).map(_.content).toSeq ++ aggregations.map(agg => OpaqueField(agg._1)))
 
     Aggregate(aggregations, group, in, newHeader)
   }
 
   def unwind(list: Expr, item: Var, in: FlatOperator): Unwind = {
-    val (header, _) = in.header.update(addContent(OpaqueField(item)))
-
+    val header = in.header.addContent(OpaqueField(item))
     Unwind(list, item, in, header)
   }
 
   def project(it: ProjectedSlotContent, in: FlatOperator): FlatOperator = {
-    val (newHeader, result) = in.header.update(addContent(it))
+    val existing = in.header.contains(it)
+    val newHeader = in.header.addContent(it)
 
-    result match {
-      case _: Found[_]       => in
-      case _: Replaced[_]    => Alias(it.expr, it.alias.get, in, newHeader)
-      case _: Added[_]       => Project(it.expr, in, newHeader)
-      case f: FailedToAdd[_] => throw RecordHeaderException(s"Slot already exists: ${f.conflict}")
+    // TODO: we had a noop before when `it` has been found in the header.
+    // we now plan a project that just forwards the DF if the column already exists
+
+    if (existing) {
+      // TODO: noop
+      Alias(it.expr, it.alias.get, in, newHeader)
+    } else {
+      Project(it.expr, in, newHeader)
     }
   }
 
   def expand(
-      source: Var,
-      rel: Var,
-      direction: Direction,
-      target: Var,
-      schema: Schema,
-      sourceOp: FlatOperator,
-      targetOp: FlatOperator): FlatOperator = {
-    val relHeader = RecordHeader.relationshipFromSchema(rel, schema)
+    source: Var,
+    rel: Var,
+    direction: Direction,
+    target: Var,
+    schema: Schema,
+    sourceOp: FlatOperator,
+    targetOp: FlatOperator
+  ): FlatOperator = {
+    val relHeader = IRecordHeader.relationshipFromSchema(rel, schema)
 
     val expandHeader = sourceOp.header ++ relHeader ++ targetOp.header
 
     Expand(source, rel, direction, target, sourceOp, targetOp, expandHeader, relHeader)
   }
 
-  def expandInto(source: Var, rel: Var, target: Var, direction: Direction, schema: Schema, sourceOp: FlatOperator): FlatOperator = {
-    val relHeader = RecordHeader.relationshipFromSchema(rel, schema)
+  def expandInto(
+    source: Var,
+    rel: Var,
+    target: Var,
+    direction: Direction,
+    schema: Schema,
+    sourceOp: FlatOperator
+  ): FlatOperator = {
+    val relHeader = IRecordHeader.relationshipFromSchema(rel, schema)
 
     val expandHeader = sourceOp.header ++ relHeader
 
@@ -174,9 +181,10 @@ class FlatOperatorProducer(implicit context: FlatPlannerContext) {
   }
 
   def valueJoin(
-      lhs: FlatOperator,
-      rhs: FlatOperator,
-      predicates: Set[org.opencypher.okapi.ir.api.expr.Equals]): FlatOperator = {
+    lhs: FlatOperator,
+    rhs: FlatOperator,
+    predicates: Set[org.opencypher.okapi.ir.api.expr.Equals]
+  ): FlatOperator = {
     ValueJoin(lhs, rhs, predicates, lhs.header ++ rhs.header)
   }
 
@@ -185,7 +193,7 @@ class FlatOperatorProducer(implicit context: FlatPlannerContext) {
   }
 
   def planEmptyRecords(fields: Set[Var], prev: FlatOperator): EmptyRecords = {
-    val header = RecordHeader.from(fields.map(OpaqueField).toSeq: _*)
+    val header = IRecordHeader.from(fields.map(OpaqueField).toSeq: _*)
     EmptyRecords(prev, header)
   }
 
@@ -195,24 +203,24 @@ class FlatOperatorProducer(implicit context: FlatPlannerContext) {
 
   def initVarExpand(source: Var, edgeList: Var, in: FlatOperator): InitVarExpand = {
     val endNodeId = FreshVariableNamer(edgeList.name + "endNode", CTNode)
-    val (header, _) = in.header.update(addContents(Seq(OpaqueField(edgeList), OpaqueField(endNodeId))))
-
+    val header = in.header.addContents(Seq(OpaqueField(edgeList), OpaqueField(endNodeId)))
     InitVarExpand(source, edgeList, endNodeId, in, header)
   }
 
   def boundedVarExpand(
-      edge: Var,
-      edgeList: Var,
-      target: Var,
-      direction: Direction,
-      lower: Int,
-      upper: Int,
-      sourceOp: InitVarExpand,
-      edgeOp: FlatOperator,
-      targetOp: FlatOperator,
-      isExpandInto: Boolean): FlatOperator = {
+    edge: Var,
+    edgeList: Var,
+    target: Var,
+    direction: Direction,
+    lower: Int,
+    upper: Int,
+    sourceOp: InitVarExpand,
+    edgeOp: FlatOperator,
+    targetOp: FlatOperator,
+    isExpandInto: Boolean
+  ): FlatOperator = {
 
-    val (initHeader, _) = sourceOp.in.header.update(addContent(OpaqueField(edgeList)))
+    val initHeader = sourceOp.in.header.addContent(OpaqueField(edgeList))
     val header = initHeader ++ targetOp.header
 
     BoundedVarExpand(edge, edgeList, target, direction, lower, upper, sourceOp, edgeOp, targetOp, header, isExpandInto)
@@ -223,14 +231,8 @@ class FlatOperatorProducer(implicit context: FlatPlannerContext) {
   }
 
   def planExistsSubQuery(expr: ExistsPatternExpr, lhs: FlatOperator, rhs: FlatOperator): FlatOperator = {
-    val (header, status) = lhs.header.update(addContent(ProjectedField(expr.targetField, expr)))
-
-    // TODO: record header should have sealed effects or be a map
-    status match {
-      case _: Added[_]       => ExistsSubQuery(expr.targetField, lhs, rhs, header)
-      case f: FailedToAdd[_] => throw RecordHeaderException(s"Slot already exists: ${f.conflict}")
-      case _                 => throw RecordHeaderException("Invalid RecordHeader update status.")
-    }
+    val header = lhs.header.addContent(ProjectedField(expr.targetField, expr))
+    ExistsSubQuery(expr.targetField, lhs, rhs, header)
   }
 
   def orderBy(sortItems: Seq[SortItem[Expr]], sourceOp: FlatOperator): FlatOperator = {

@@ -27,7 +27,7 @@
 package org.opencypher.spark.impl.physical.operators
 
 import org.opencypher.okapi.api.graph.QualifiedGraphName
-import org.opencypher.okapi.relational.impl.table.RecordHeader
+import org.opencypher.okapi.relational.impl.table.IRecordHeader
 import org.opencypher.spark.api.CAPSSession
 import org.opencypher.spark.impl.CAPSRecords
 import org.opencypher.spark.impl.physical.{CAPSPhysicalResult, CAPSRuntimeContext}
@@ -52,7 +52,7 @@ object Start {
 final case class Start(qgn: QualifiedGraphName, recordsOpt: Option[CAPSRecords])
   (implicit caps: CAPSSession) extends LeafPhysicalOperator with PhysicalOperatorDebugging {
 
-  override val header = recordsOpt.map(_.header).getOrElse(RecordHeader.empty)
+  override val header = recordsOpt.map(_.header).getOrElse(IRecordHeader.empty)
 
   override def executeLeaf()(implicit context: CAPSRuntimeContext): CAPSPhysicalResult = {
     val records = recordsOpt.getOrElse(CAPSRecords.unit())
