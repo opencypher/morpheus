@@ -29,7 +29,7 @@ package org.opencypher.spark.impl.physical
 import org.opencypher.okapi.api.graph.{GraphName, Namespace, QualifiedGraphName}
 import org.opencypher.okapi.api.types.CTNode
 import org.opencypher.okapi.ir.api.expr.Var
-import org.opencypher.okapi.relational.impl.table.RecordHeader
+import org.opencypher.okapi.relational.impl.table.IRecordHeader
 import org.opencypher.spark.impl.CAPSConverters._
 import org.opencypher.spark.impl.CAPSRecords
 import org.opencypher.spark.impl.physical.operators.{Cache, CartesianProduct, NodeScan, Start}
@@ -37,7 +37,7 @@ import org.opencypher.spark.testing.CAPSTestSuite
 import org.opencypher.spark.testing.fixture.GraphConstructionFixture
 
 class PhysicalOptimizerTest extends CAPSTestSuite with GraphConstructionFixture {
-  val emptyRecords = CAPSRecords.empty(RecordHeader.empty)
+  val emptyRecords = CAPSRecords.empty(IRecordHeader.empty)
   val testNamespace = Namespace("testNamespace")
   val testGraphName = GraphName("test")
   val testQualifiedGraphName = QualifiedGraphName(testNamespace, testGraphName)
@@ -48,29 +48,29 @@ class PhysicalOptimizerTest extends CAPSTestSuite with GraphConstructionFixture 
         NodeScan(
           Start(testQualifiedGraphName, emptyRecords),
           Var("C")(CTNode),
-          RecordHeader.empty
+          IRecordHeader.empty
         ),
         NodeScan(
           Start(testQualifiedGraphName, emptyRecords),
           Var("B")(CTNode),
-          RecordHeader.empty
+          IRecordHeader.empty
         ),
-        RecordHeader.empty
+        IRecordHeader.empty
       ),
       CartesianProduct(
         NodeScan(
           Start(testQualifiedGraphName, emptyRecords),
           Var("C")(CTNode),
-          RecordHeader.empty
+          IRecordHeader.empty
         ),
         NodeScan(
           Start(testQualifiedGraphName, emptyRecords),
           Var("B")(CTNode),
-          RecordHeader.empty
+          IRecordHeader.empty
         ),
-        RecordHeader.empty
+        IRecordHeader.empty
       ),
-      RecordHeader.empty
+      IRecordHeader.empty
     )
 
     implicit val context = PhysicalOptimizerContext()
@@ -83,14 +83,14 @@ class PhysicalOptimizerTest extends CAPSTestSuite with GraphConstructionFixture 
             NodeScan(
               Start(testQualifiedGraphName, emptyRecords),
               Var("C")(CTNode),
-              RecordHeader.empty
+              IRecordHeader.empty
             ),
             NodeScan(
               Start(testQualifiedGraphName, emptyRecords),
               Var("B")(CTNode),
-              RecordHeader.empty
+              IRecordHeader.empty
             ),
-            RecordHeader.empty
+            IRecordHeader.empty
           )
         ),
         Cache(
@@ -98,17 +98,17 @@ class PhysicalOptimizerTest extends CAPSTestSuite with GraphConstructionFixture 
             NodeScan(
               Start(testQualifiedGraphName, emptyRecords),
               Var("C")(CTNode),
-              RecordHeader.empty
+              IRecordHeader.empty
             ),
             NodeScan(
               Start(testQualifiedGraphName, emptyRecords),
               Var("B")(CTNode),
-              RecordHeader.empty
+              IRecordHeader.empty
             ),
-            RecordHeader.empty
+            IRecordHeader.empty
           )
         ),
-        RecordHeader.empty
+        IRecordHeader.empty
       )
     )
   }
