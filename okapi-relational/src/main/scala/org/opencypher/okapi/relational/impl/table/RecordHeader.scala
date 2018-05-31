@@ -111,7 +111,7 @@ final case class RecordHeader(private[impl] val internalHeader: InternalHeader) 
     */
   override def slots: IndexedSeq[RecordSlot] = internalHeader.slots
 
-  override def contents: Seq[SlotContent] = slots.map(_.content)
+  override def contents: Set[SlotContent] = slots.map(_.content).toSet
 
   /**
     * The set of fields contained in this header.
