@@ -65,7 +65,7 @@ class CypherCatalog extends PropertyGraphCatalog{
   override def listSources: Map[Namespace, PropertyGraphDataSource] = dataSourceMapping
 
   override def register(namespace: Namespace, dataSource: PropertyGraphDataSource): Unit = dataSourceMapping.get(namespace) match {
-    case Some(p) => throw IllegalArgumentException(s"no data source registered with namespace '$namespace'", p)
+    case Some(p) => throw IllegalArgumentException(s"There is already a data source registered with namespace '$namespace'", p)
     case None => dataSourceMapping = dataSourceMapping.updated(namespace, dataSource)
   }
 
@@ -73,7 +73,7 @@ class CypherCatalog extends PropertyGraphCatalog{
     if (namespace == sessionNamespace) throw UnsupportedOperationException("de-registering the session data source")
     dataSourceMapping.get(namespace) match {
       case Some(_) => dataSourceMapping = dataSourceMapping - namespace
-      case None => throw IllegalArgumentException(s"a data source registered with namespace '$namespace'")
+      case None => throw IllegalArgumentException(s"No data source registered with namespace '$namespace'")
     }
   }
 
