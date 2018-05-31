@@ -149,7 +149,7 @@ trait IRecordHeader {
 
   def contains(slot: SlotContent): Boolean
 
-  def contents: Seq[SlotContent]
+  def contents: Set[SlotContent]
 
   def fields: Set[String]
 

@@ -50,6 +50,7 @@ object RecordHeader2 {
 
     def value: Set[Var] = fields
   }
+
 }
 
 case class RecordHeader2(header: Map[Expr, Set[Var]]) extends IRecordHeader {
@@ -198,10 +199,15 @@ case class RecordHeader2(header: Map[Expr, Set[Var]]) extends IRecordHeader {
       }
     }.toSeq
   }
+
   override val columns: Seq[String] = expressions.map(ColumnNamer.of).toSeq
+
   override def of(slot: RecordSlot): String = of(slot.content)
+
   override def of(slot: SlotContent): String = of(slot.key)
+
   override def of(expr: Expr): String = ColumnNamer.of(expr)
+
   override def pretty: String = toString
 
   final override def generateUniqueName: String = {
@@ -213,30 +219,50 @@ case class RecordHeader2(header: Map[Expr, Set[Var]]) extends IRecordHeader {
     if (slots.map(of).contains(name)) generateUniqueName
     else name
   }
+
   override def tempColName: String = ColumnNamer.tempColName
+
   override def column(slot: RecordSlot): String = of(slot)
+
   override def ++(other: IRecordHeader): IRecordHeader =
     withMappings(other.asInstanceOf[RecordHeader2].header.toSeq: _*)
+
   override def -(toRemove: RecordSlot): IRecordHeader = copy(header - toRemove.content.key)
+
   override def --(other: IRecordHeader): IRecordHeader = other.slots.foldLeft(this: IRecordHeader)(_ - _)
 
   override def slots: IndexedSeq[RecordSlot] = ???
-  override def contents: Seq[SlotContent] = ???
+
+  override def contents: Set[SlotContent] = ???
+
   override def fieldsInOrder: Seq[String] = ???
+
   override def slotsFor(expr: Expr): Seq[RecordSlot] = ???
+
   override def slotFor(variable: Var): RecordSlot = ???
+
   override def mandatory(slot: RecordSlot): Boolean = ???
+
   override def sourceNodeSlot(rel: Var): RecordSlot = ???
+
   override def targetNodeSlot(rel: Var): RecordSlot = ???
+
   override def typeSlot(rel: Expr): RecordSlot = ???
+
   override def select(fields: Set[Var]): IRecordHeader = ???
+
   override def selfWithChildren(field: Var): Seq[RecordSlot] = ???
+
   override def childSlots(entity: Var): Seq[RecordSlot] = ???
+
   override def labelSlots(node: Var): Map[HasLabel, RecordSlot] = ???
+
   override def propertySlots(entity: Var): Map[Property, RecordSlot] = ???
 
 
   override def addContents(contents: Seq[SlotContent]): IRecordHeader = contents.foldLeft(this: IRecordHeader)(_ addContent _)
+
   override def addContent(content: SlotContent): IRecordHeader = copy(header + (content.key -> content.owner.toSet))
+
   override def contains(content: SlotContent): Boolean = ???
 }
