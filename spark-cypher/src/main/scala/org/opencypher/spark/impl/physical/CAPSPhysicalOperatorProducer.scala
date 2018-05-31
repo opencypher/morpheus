@@ -61,22 +61,22 @@ final class CAPSPhysicalOperatorProducer(implicit caps: CAPSSession)
   override def planCartesianProduct(
     lhs: CAPSPhysicalOperator,
     rhs: CAPSPhysicalOperator,
-    header: RecordHeader): CAPSPhysicalOperator = operators.CartesianProduct(lhs, rhs, header)
+    header: IRecordHeader): CAPSPhysicalOperator = operators.CartesianProduct(lhs, rhs, header)
 
   override def planDrop(
     in: CAPSPhysicalOperator,
     dropFields: Seq[Expr],
-    header: RecordHeader
+    header: IRecordHeader
   ): CAPSPhysicalOperator = operators.Drop(in, dropFields, header)
 
-  override def planSelect(in: CAPSPhysicalOperator, exprs: List[(Expr, Option[Var])], header: RecordHeader): CAPSPhysicalOperator =
+  override def planSelect(in: CAPSPhysicalOperator, exprs: List[(Expr, Option[Var])], header: IRecordHeader): CAPSPhysicalOperator =
     operators.Select(in, exprs, header)
 
   override def planReturnGraph(in: CAPSPhysicalOperator): CAPSPhysicalOperator = {
     operators.ReturnGraph(in)
   }
 
-  override def planEmptyRecords(in: CAPSPhysicalOperator, header: RecordHeader): CAPSPhysicalOperator =
+  override def planEmptyRecords(in: CAPSPhysicalOperator, header: IRecordHeader): CAPSPhysicalOperator =
     operators.EmptyRecords(in, header)
 
   override def planStart(qgnOpt: Option[QualifiedGraphName] = None, in: Option[CAPSRecords] = None): CAPSPhysicalOperator =
@@ -90,18 +90,18 @@ final class CAPSPhysicalOperatorProducer(implicit caps: CAPSSession)
     in: CAPSPhysicalOperator,
     inGraph: LogicalGraph,
     v: Var,
-    header: RecordHeader): CAPSPhysicalOperator = operators.NodeScan(in, v, header)
+    header: IRecordHeader): CAPSPhysicalOperator = operators.NodeScan(in, v, header)
 
   override def planRelationshipScan(
     in: CAPSPhysicalOperator,
     inGraph: LogicalGraph,
     v: Var,
-    header: RecordHeader): CAPSPhysicalOperator = operators.RelationshipScan(in, v, header)
+    header: IRecordHeader): CAPSPhysicalOperator = operators.RelationshipScan(in, v, header)
 
-  override def planAlias(in: CAPSPhysicalOperator, aliases: Seq[(Expr, Var)], header: RecordHeader): CAPSPhysicalOperator =
+  override def planAlias(in: CAPSPhysicalOperator, aliases: Seq[(Expr, Var)], header: IRecordHeader): CAPSPhysicalOperator =
     operators.Alias(in, aliases, header)
 
-  override def planProject(in: CAPSPhysicalOperator, expr: Expr, header: RecordHeader): CAPSPhysicalOperator =
+  override def planProject(in: CAPSPhysicalOperator, expr: Expr, header: IRecordHeader): CAPSPhysicalOperator =
     operators.Project(in, expr, header)
 
   override def planConstructGraph(
@@ -111,16 +111,16 @@ final class CAPSPhysicalOperatorProducer(implicit caps: CAPSSession)
     operators.ConstructGraph(in, onGraph, construct)
   }
 
-  override def planAggregate(in: CAPSPhysicalOperator, group: Set[Var], aggregations: Set[(Var, Aggregator)], header: RecordHeader): CAPSPhysicalOperator = operators.Aggregate(in, aggregations, group, header)
+  override def planAggregate(in: CAPSPhysicalOperator, group: Set[Var], aggregations: Set[(Var, Aggregator)], header: IRecordHeader): CAPSPhysicalOperator = operators.Aggregate(in, aggregations, group, header)
 
-  override def planFilter(in: CAPSPhysicalOperator, expr: Expr, header: RecordHeader): CAPSPhysicalOperator =
+  override def planFilter(in: CAPSPhysicalOperator, expr: Expr, header: IRecordHeader): CAPSPhysicalOperator =
     operators.Filter(in, expr, header)
 
   override def planJoin(
     lhs: CAPSPhysicalOperator,
     rhs: CAPSPhysicalOperator,
     joinColumns: Seq[(Expr, Expr)],
-    header: RecordHeader,
+    header: IRecordHeader,
     joinType: JoinType): CAPSPhysicalOperator = {
 
     val joinTypeString = joinType match {
@@ -143,7 +143,7 @@ final class CAPSPhysicalOperatorProducer(implicit caps: CAPSSession)
     source: Var,
     edgeList: Var,
     target: Var,
-    header: RecordHeader): CAPSPhysicalOperator = operators.InitVarExpand(in, source, edgeList, target, header)
+    header: IRecordHeader): CAPSPhysicalOperator = operators.InitVarExpand(in, source, edgeList, target, header)
 
   override def planBoundedVarExpand(
     first: CAPSPhysicalOperator,
@@ -156,7 +156,7 @@ final class CAPSPhysicalOperatorProducer(implicit caps: CAPSSession)
     lower: Int,
     upper: Int,
     direction: Direction,
-    header: RecordHeader,
+    header: IRecordHeader,
     isExpandInto: Boolean): CAPSPhysicalOperator = operators.BoundedVarExpand(
     first, second, third, rel, edgeList, target, initialEndNode, lower, upper, direction, header, isExpandInto)
 
@@ -164,17 +164,17 @@ final class CAPSPhysicalOperatorProducer(implicit caps: CAPSSession)
     lhs: CAPSPhysicalOperator,
     rhs: CAPSPhysicalOperator,
     targetField: Var,
-    header: RecordHeader): CAPSPhysicalOperator = operators.ExistsSubQuery(lhs, rhs, targetField, header)
+    header: IRecordHeader): CAPSPhysicalOperator = operators.ExistsSubQuery(lhs, rhs, targetField, header)
 
   override def planOrderBy(
     in: CAPSPhysicalOperator,
     sortItems: Seq[SortItem[Expr]],
-    header: RecordHeader): CAPSPhysicalOperator = operators.OrderBy(in, sortItems)
+    header: IRecordHeader): CAPSPhysicalOperator = operators.OrderBy(in, sortItems)
 
-  override def planSkip(in: CAPSPhysicalOperator, expr: Expr, header: RecordHeader): CAPSPhysicalOperator =
+  override def planSkip(in: CAPSPhysicalOperator, expr: Expr, header: IRecordHeader): CAPSPhysicalOperator =
     operators.Skip(in, expr, header)
 
-  override def planLimit(in: CAPSPhysicalOperator, expr: Expr, header: RecordHeader): CAPSPhysicalOperator =
+  override def planLimit(in: CAPSPhysicalOperator, expr: Expr, header: IRecordHeader): CAPSPhysicalOperator =
     operators.Limit(in, expr, header)
 
   override def planGraphUnionAll(graphs: List[CAPSPhysicalOperator], qgn: QualifiedGraphName):

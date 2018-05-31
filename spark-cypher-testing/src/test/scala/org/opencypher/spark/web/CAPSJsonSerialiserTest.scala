@@ -28,8 +28,7 @@ package org.opencypher.spark.web
 
 import org.opencypher.okapi.api.types.CTNode
 import org.opencypher.okapi.ir.api.expr.Var
-import org.opencypher.okapi.relational.impl.syntax.RecordHeaderSyntax._
-import org.opencypher.okapi.relational.impl.table.{OpaqueField, RecordHeader}
+import org.opencypher.okapi.relational.impl.table.{IRecordHeader, OpaqueField}
 import org.opencypher.spark.impl.{CAPSGraph, CAPSRecords}
 import org.opencypher.spark.testing.CAPSTestSuite
 import org.opencypher.spark.testing.fixture.TeamDataFixture
@@ -443,9 +442,9 @@ class CAPSJsonSerialiserTest extends CAPSTestSuite with TeamDataFixture {
 
   private case class MapRow(strings: Map[String, String], integers: Map[String, Long], booleans: Map[String, Boolean])
 
-  private def headerOf(fields: Symbol*): RecordHeader = {
+  private def headerOf(fields: Symbol*): IRecordHeader = {
     val value1 = fields.map(f => OpaqueField(Var(f.name)(CTNode)))
-    val (header, _) = RecordHeader.empty.update(addContents(value1))
+    val header = IRecordHeader.empty.addContents(value1)
     header
   }
 }

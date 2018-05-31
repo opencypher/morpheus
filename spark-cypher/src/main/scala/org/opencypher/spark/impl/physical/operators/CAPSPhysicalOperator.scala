@@ -31,7 +31,7 @@ import org.opencypher.okapi.api.graph.QualifiedGraphName
 import org.opencypher.okapi.api.types._
 import org.opencypher.okapi.impl.exception.IllegalArgumentException
 import org.opencypher.okapi.relational.api.physical.PhysicalOperator
-import org.opencypher.okapi.relational.impl.table.{RecordHeader, RecordSlot}
+import org.opencypher.okapi.relational.impl.table.{IRecordHeader, RecordSlot}
 import org.opencypher.okapi.trees.AbstractTreeNode
 import org.opencypher.spark.api.CAPSSession
 import org.opencypher.spark.impl.CAPSConverters._
@@ -43,7 +43,7 @@ private[spark] abstract class CAPSPhysicalOperator
   extends AbstractTreeNode[CAPSPhysicalOperator]
   with PhysicalOperator[CAPSRecords, CAPSGraph, CAPSRuntimeContext] {
 
-  override def header: RecordHeader
+  override def header: IRecordHeader
 
   override def execute(implicit context: CAPSRuntimeContext): CAPSPhysicalResult
 
@@ -54,14 +54,14 @@ private[spark] abstract class CAPSPhysicalOperator
   protected def resolveTags(qgn: QualifiedGraphName)(implicit context: CAPSRuntimeContext): Set[Int] = context.patternGraphTags.getOrElse(qgn, resolve(qgn).tags)
 
   override def args: Iterator[Any] = super.args.flatMap {
-    case RecordHeader(_) | Some(RecordHeader(_)) => None
-    case other                                   => Some(other)
+    case IRecordHeader | Some(IRecordHeader) => None
+    case other                               => Some(other)
   }
 }
 
 object CAPSPhysicalOperator {
   def joinRecords(
-      header: RecordHeader,
+      header: IRecordHeader,
       joinSlots: Seq[(RecordSlot, RecordSlot)],
       joinType: String = "inner",
       deduplicate: Boolean = false)(lhs: CAPSRecords, rhs: CAPSRecords): CAPSRecords = {
@@ -79,7 +79,7 @@ object CAPSPhysicalOperator {
     CAPSRecords.verifyAndCreate(header, select)(lhs.caps)
   }
 
-  def joinDFs(lhsData: DataFrame, rhsData: DataFrame, header: RecordHeader, joinCols: Seq[(String, String)])(
+  def joinDFs(lhsData: DataFrame, rhsData: DataFrame, header: IRecordHeader, joinCols: Seq[(String, String)])(
       joinType: String,
       deduplicate: Boolean)(implicit caps: CAPSSession): CAPSRecords = {
 

@@ -29,15 +29,15 @@ package org.opencypher.spark.impl
 import org.apache.spark.sql.{DataFrame, Row}
 import org.opencypher.okapi.api.io.conversion.{NodeMapping, RelationshipMapping}
 import org.opencypher.okapi.api.types._
-import org.opencypher.spark.api.value.CAPSNode
 import org.opencypher.okapi.api.value.CypherValue._
 import org.opencypher.okapi.impl.exception.InternalException
 import org.opencypher.okapi.ir.api.expr._
 import org.opencypher.okapi.ir.api.{Label, PropertyKey}
-import org.opencypher.okapi.relational.impl.table.{OpaqueField, ProjectedExpr, RecordHeader}
+import org.opencypher.okapi.relational.impl.table.{IRecordHeader, OpaqueField, ProjectedExpr}
 import org.opencypher.okapi.testing.Bag
 import org.opencypher.okapi.testing.Bag._
 import org.opencypher.spark.api.io.{CAPSNodeTable, CAPSRelationshipTable}
+import org.opencypher.spark.api.value.CAPSNode
 import org.opencypher.spark.impl.DataFrameOps._
 import org.opencypher.spark.testing.CAPSTestSuite
 import org.opencypher.spark.testing.fixture.{GraphConstructionFixture, TeamDataFixture}
@@ -236,7 +236,7 @@ class CAPSRecordsTest extends CAPSTestSuite with GraphConstructionFixture with T
 
   test("can not construct records with data/header column name conflict") {
     val data = sparkSession.createDataFrame(Seq((1, "foo"), (2, "bar"))).toDF("int", "string")
-    val header = RecordHeader.from(OpaqueField(Var("int")()), OpaqueField(Var("notString")()))
+    val header = IRecordHeader.from(OpaqueField(Var("int")()), OpaqueField(Var("notString")()))
 
     a[InternalException] shouldBe thrownBy {
       CAPSRecords.verifyAndCreate(header, data)
@@ -245,7 +245,7 @@ class CAPSRecordsTest extends CAPSTestSuite with GraphConstructionFixture with T
 
   test("can construct records with matching data/header") {
     val data = sparkSession.createDataFrame(Seq((1L, "foo"), (2L, "bar"))).toDF("int", "string")
-    val header = RecordHeader.from(OpaqueField(Var("int")(CTInteger)), OpaqueField(Var("string")(CTString)))
+    val header = IRecordHeader.from(OpaqueField(Var("int")(CTInteger)), OpaqueField(Var("string")(CTString)))
 
     val records = CAPSRecords.verifyAndCreate(header, data) // no exception is thrown
     records.data.select("int").collect() should equal(Array(Row(1), Row(2)))
