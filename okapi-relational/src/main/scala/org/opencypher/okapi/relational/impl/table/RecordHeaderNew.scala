@@ -72,6 +72,18 @@ case class RecordHeaderNew(exprToColumn: Map[Expr, String]) {
     }
   }
 
+  def labelsFor(n: Var): Set[Expr] = {
+    ownedBy(n).collect {
+      case l: HasLabel => l
+    }
+  }
+
+  def typeFor(r: Var): HasType = {
+    ownedBy(r).collectFirst {
+      case t: HasType => t
+    }.get
+  }
+
   def idColumns: Set[String] = {
     exprToColumn.keySet.collect {
       case n if n.cypherType.superTypeOf(CTNode).isTrue => n
