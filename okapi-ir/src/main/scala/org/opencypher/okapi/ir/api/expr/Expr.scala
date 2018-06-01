@@ -40,13 +40,25 @@ import scala.reflect.ClassTag
   * @see [[http://neo4j.com/docs/developer-manual/current/cypher/syntax/expressions/ Cypher Expressions in the Neo4j Manual]]
   */
 sealed abstract class Expr extends AbstractTreeNode[Expr] {
-  self =>
+
+  type This >: this.type <: Expr
 
   def cypherType: CypherType
 
   def withoutType: String
 
   override def toString = s"$withoutType :: $cypherType"
+
+  /**
+    * Returns the node/relationship that this expression is owned by, if it is owned.
+    * A node/relationship owns its label/key/property mappings
+    */
+  def owner: Option[Var] = None
+
+  def isEntityExpression: Boolean = owner.isDefined
+
+  def withOwner(v: Var): This = this
+
 }
 
 final case class Param(name: String)(val cypherType: CypherType = CTWildcard) extends Expr {
@@ -54,19 +66,47 @@ final case class Param(name: String)(val cypherType: CypherType = CTWildcard) ex
 }
 
 final case class Var(name: String)(val cypherType: CypherType = CTWildcard) extends Expr {
+
+  type This = Var
+
+  override def owner: Option[Var] = Some(this)
+
+  override def withOwner(v: Var): Var = v
+
   override def withoutType: String = s"$name"
+
 }
 
-final case class StartNode(e: Expr)(val cypherType: CypherType = CTWildcard) extends Expr {
-  override def toString = s"source($e)"
+final case class StartNode(rel: Expr)(val cypherType: CypherType = CTWildcard) extends Expr {
 
-  override def withoutType: String = s"source(${e.withoutType})"
+  type This = StartNode
+
+  override def toString = s"source($rel)"
+
+  override def owner: Option[Var] = rel match {
+    case v: Var => Some(v)
+    case _ => None
+  }
+
+  override def withOwner(v: Var): StartNode = StartNode(v)(cypherType)
+
+  override def withoutType: String = s"source(${rel.withoutType})"
 }
 
-final case class EndNode(e: Expr)(val cypherType: CypherType = CTWildcard) extends Expr {
-  override def toString = s"target($e)"
+final case class EndNode(rel: Expr)(val cypherType: CypherType = CTWildcard) extends Expr {
 
-  override def withoutType: String = s"target(${e.withoutType})"
+  type This = EndNode
+
+  override def toString = s"target($rel)"
+
+  override def owner: Option[Var] = rel match {
+    case v: Var => Some(v)
+    case _ => None
+  }
+
+  override def withOwner(v: Var): EndNode = EndNode(v)(cypherType)
+
+  override def withoutType: String = s"target(${rel.withoutType})"
 }
 
 object FlattenOps {
@@ -138,13 +178,33 @@ final case class Not(expr: Expr)(val cypherType: CypherType = CTWildcard) extend
 }
 
 final case class HasLabel(node: Expr, label: Label)(val cypherType: CypherType = CTWildcard) extends PredicateExpression {
+
+  type This = HasLabel
+
   def inner = node
+
+  override def owner: Option[Var] = node match {
+    case v: Var => Some(v)
+    case _ => None
+  }
+
+  override def withOwner(v: Var): HasLabel = HasLabel(v, label)(cypherType)
 
   override def withoutType: String = s"${node.withoutType}:${label.name}"
 }
 
 final case class HasType(rel: Expr, relType: RelType)(val cypherType: CypherType = CTWildcard) extends PredicateExpression {
+
+  type This = HasType
+
   def inner = rel
+
+  override def owner: Option[Var] = rel match {
+    case v: Var => Some(v)
+    case _ => None
+  }
+
+  override def withOwner(v: Var): HasType = HasType(v, relType)(cypherType)
 
   override def withoutType: String = s"type(${rel.withoutType}) = '${relType.name}'"
 }
@@ -200,6 +260,16 @@ final case class In(lhs: Expr, rhs: Expr)(val cypherType: CypherType = CTWildcar
 }
 
 final case class Property(m: Expr, key: PropertyKey)(val cypherType: CypherType = CTWildcard) extends Expr {
+
+  type This = Property
+
+  override def owner: Option[Var] = m match {
+    case v: Var => Some(v)
+    case _ => None
+  }
+
+  override def withOwner(v: Var): Property = Property(v, key)(cypherType)
+
   override def withoutType: String = s"${m.withoutType}.${key.name}"
 }
 

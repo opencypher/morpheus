@@ -52,9 +52,6 @@ class PhysicalPlanner[P <: PhysicalOperator[R, G, C], R <: CypherRecords, G <: P
       case flat.CartesianProduct(lhs, rhs, header) =>
         producer.planCartesianProduct(process(lhs), process(rhs), header)
 
-      case flat.RemoveAliases(dependent, in, header) =>
-        producer.planRemoveAliases(process(in), dependent, header)
-
       case flat.Select(fields, in, header) =>
 
         val selectExpressions = fields
@@ -62,7 +59,7 @@ class PhysicalPlanner[P <: PhysicalOperator[R, G, C], R <: CypherRecords, G <: P
           .map(_.content.key)
           .distinct
 
-        producer.planSelect(process(in), selectExpressions, header)
+        producer.planSelect(process(in), selectExpressions.map(_ -> None), header)
 
       case flat.EmptyRecords(in, header) =>
         producer.planEmptyRecords(process(in), header)
@@ -97,7 +94,7 @@ class PhysicalPlanner[P <: PhysicalOperator[R, G, C], R <: CypherRecords, G <: P
 
       case flat.Unwind(list, item, in, header) =>
         val explodeExpr = Explode(list)(item.cypherType)
-        val withExplodedHeader = in.header.update(addContent(ProjectedExpr(explodeExpr)))._1
+        val withExplodedHeader = in.header.addContent(ProjectedExpr(explodeExpr))
         val withExploded = producer.planProject(process(in), explodeExpr, withExplodedHeader)
         producer.planAlias(withExploded, explodeExpr, item, header)
 
@@ -229,7 +226,7 @@ class PhysicalPlanner[P <: PhysicalOperator[R, G, C], R <: CypherRecords, G <: P
     constructGraphPlan
   }
 
-  private def planOptional(lhs: FlatOperator, rhs: FlatOperator, header: RecordHeader)(implicit context: PhysicalPlannerContext[P, R]) = {
+  private def planOptional(lhs: FlatOperator, rhs: FlatOperator, header: IRecordHeader)(implicit context: PhysicalPlannerContext[P, R]) = {
     val lhsData = process(lhs)
     val rhsData = process(rhs)
     val lhsHeader = lhs.header
@@ -267,7 +264,7 @@ class PhysicalPlanner[P <: PhysicalOperator[R, G, C], R <: CypherRecords, G <: P
       case RecordSlot(i, OpaqueField(v)) if joinFieldRenames.contains(v) => RecordSlot(i, OpaqueField(joinFieldRenames(v)))
       case other => other
     }
-    val rhsHeaderWithRenamed = RecordHeader.from(rhsWithRenamedSlots.toList)
+    val rhsHeaderWithRenamed = IRecordHeader.from(rhsWithRenamedSlots.toList)
     val rhsWithRenamed = producer.planAlias(rhsWithDropped, joinFieldRenames.toSeq, rhsHeaderWithRenamed)
 
     // 4. Left outer join the left side and the processed right side

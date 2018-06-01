@@ -31,42 +31,41 @@ import org.opencypher.okapi.api.types._
 import org.opencypher.okapi.ir.api.expr._
 import org.opencypher.okapi.ir.api.{Label, PropertyKey, RelType}
 import org.opencypher.okapi.ir.test._
-import org.opencypher.okapi.relational.impl.syntax.RecordHeaderSyntax._
 import org.opencypher.okapi.testing.BaseTestSuite
 
 import scala.language.implicitConversions
 
 class RecordHeaderTest extends BaseTestSuite {
 
-//  test("escape length 0 spark identifier") {
-//    fromString("") should equal("_empty_")
-//  }
-//
-//  test("escape length 1 spark identifiers") {
-//    fromString("a") should equal("a")
-//    fromString("1") should equal("_1")
-//    fromString("_") should equal("_bar_")
-//  }
-//
-//  test("escape length > 1 spark identifiers") {
-//    fromString("aa") should equal("aa")
-//    fromString("a1") should equal("a1")
-//    fromString("_1") should equal("_bar_1")
-//    fromString("a_") should equal("a_bar_")
-//  }
-//
-//  test("escape weird chars") {
-//    ".?!'\"`=@#$()^&%[]{}<>,:;|+*/\\-".foreach { ch =>
-//      fromString(s"$ch").forall(esc => Character.isLetter(esc) || esc == '_')
-//      fromString(s"a$ch").forall(esc => Character.isLetter(esc) || esc == '_')
-//      fromString(s"1$ch").forall(esc => Character.isLetterOrDigit(esc) || esc == '_')
-//      fromString(s"_$ch").forall(esc => Character.isLetter(esc) || esc == '_')
-//    }
-//  }
-//
-//  def fromString(text: String) = RecordHeader.empty.from(text)
+  //  it("escape length 0 spark identifier") {
+  //    fromString("") should equal("_empty_")
+  //  }
+  //
+  //  it("escape length 1 spark identifiers") {
+  //    fromString("a") should equal("a")
+  //    fromString("1") should equal("_1")
+  //    fromString("_") should equal("_bar_")
+  //  }
+  //
+  //  it("escape length > 1 spark identifiers") {
+  //    fromString("aa") should equal("aa")
+  //    fromString("a1") should equal("a1")
+  //    fromString("_1") should equal("_bar_1")
+  //    fromString("a_") should equal("a_bar_")
+  //  }
+  //
+  //  it("escape weird chars") {
+  //    ".?!'\"`=@#$()^&%[]{}<>,:;|+*/\\-".foreach { ch =>
+  //      fromString(s"$ch").forall(esc => Character.isLetter(esc) || esc == '_')
+  //      fromString(s"a$ch").forall(esc => Character.isLetter(esc) || esc == '_')
+  //      fromString(s"1$ch").forall(esc => Character.isLetterOrDigit(esc) || esc == '_')
+  //      fromString(s"_$ch").forall(esc => Character.isLetter(esc) || esc == '_')
+  //    }
+  //  }
+  //
+  //  def fromString(text: String) = IRecordHeader.empty.from(text)
 
-  test("select") {
+  it("select") {
     val nSlots = Set(
       OpaqueField('n),
       ProjectedExpr(Property('n, PropertyKey("prop"))()),
@@ -77,125 +76,109 @@ class RecordHeaderTest extends BaseTestSuite {
       ProjectedExpr(Property('p, PropertyKey("prop"))())
     )
 
-    val h1 = RecordHeader.empty.update(addContents((nSlots ++ pSlots).toSeq))._1
+    val h1 = IRecordHeader.empty.addContents((nSlots ++ pSlots).toSeq)
 
-    h1.select(Set('n)).slots.map(_.content).toSet should equal(nSlots)
-    h1.select(Set('p)).slots.map(_.content).toSet should equal(pSlots)
-    h1.select(Set('r)).slots.map(_.content).toSet should equal(Set.empty)
-    h1.select(Set('n, 'p, 'r)).slots.map(_.content).toSet should equal(nSlots ++ pSlots)
+    h1.select(Set('n)).contents should equal(nSlots)
+    h1.select(Set('p)).contents should equal(pSlots)
+    h1.select(Set('r)).contents should equal(Set.empty)
+    h1.select(Set('n, 'p, 'r)).contents should equal(nSlots ++ pSlots)
   }
 
-  test("Can add projected expressions") {
+  it("Can add projected expressions") {
     val content = ProjectedExpr(TrueLit())
-    val (result, Added(slot)) = RecordHeader.empty.update(addContent(content))
+    val result = IRecordHeader.empty.addContent(content)
 
-    slot should equal(RecordSlot(0, content))
-    result.slots should equal(Seq(slot))
+    result.contents should equal(Set(content))
     result.fields should equal(Set.empty)
   }
 
-  test("Can add opaque fields") {
+  it("Can add opaque fields") {
     val content = OpaqueField('n)
-    val (result, Added(slot)) = RecordHeader.empty.update(addContent(content))
+    val result = IRecordHeader.empty.addContent(content)
 
-    slot should equal(RecordSlot(0, content))
-    result.slots should equal(Seq(slot))
-    result.internalHeader.fields should equal(Set(toVar('n)))
+    result.contents should equal(Set(content))
+    result.fieldsAsVar should equal(Set(toVar('n)))
   }
 
-  test("Can re-add opaque fields") {
+  it("Can re-add opaque fields") {
     val content = OpaqueField('n)
-    val (result, slots) = RecordHeader.empty.update(addContents(Seq(content, content)))
+    val result = IRecordHeader.empty.addContents(Seq(content, content))
     val slot = RecordSlot(0, content)
 
-    slots should equal(Vector(Added(slot), Found(slot)))
-    result.slots should equal(Seq(slot))
-    result.internalHeader.fields should equal(Set(toVar('n)))
+    result.contents should equal(Set(content))
+    result.fieldsAsVar should equal(Set(toVar('n)))
   }
 
-  test("Can add projected fields") {
+  it("Can add projected fields") {
     val content = ProjectedField('n, TrueLit())
-    val (result, Added(slot)) = RecordHeader.empty.update(addContent(content))
+    val result = IRecordHeader.empty.addContent(content)
 
-    slot should equal(RecordSlot(0, content))
-    result.slots should equal(Seq(slot))
-    result.internalHeader.fields should equal(Set(toVar('n)))
+    result.contents should equal(Set(content))
+    result.fieldsAsVar should equal(Set(toVar('n)))
   }
 
-  test("Adding projected expressions re-uses previously added projected expressions") {
+  it("Adding projected expressions re-uses previously added projected expressions") {
     val content = ProjectedExpr(TrueLit())
-    val (oldHeader, Added(oldSlot)) = RecordHeader.empty.update(addContent(content))
-    val (newHeader, Found(newSlot)) = oldHeader.update(addContent(content))
+    val oldHeader = IRecordHeader.empty.addContent(content)
+    val newHeader = oldHeader.addContent(content)
 
-    oldSlot should equal(RecordSlot(0, content))
-    newSlot should equal(oldSlot)
-    newHeader.slots should equal(Seq(newSlot))
-    newHeader.internalHeader.fields should equal(Set.empty)
+    newHeader.contents should equal(Set(content))
+    newHeader.fieldsAsVar should equal(Set.empty)
   }
 
-  test("Adding projected expressions re-uses previously added projected fields") {
+  // Requires Found
+  ignore("Adding projected expressions re-uses previously added projected fields") {
     val oldContent = ProjectedField('n, TrueLit())
-    val (oldHeader, Added(oldSlot)) = RecordHeader.empty.update(addContent(oldContent))
+    val oldHeader = IRecordHeader.empty.addContent(oldContent)
     val newContent = ProjectedExpr(TrueLit())
-    val (newHeader, Found(newSlot)) = oldHeader.update(addContent(newContent))
+    val newHeader = oldHeader.addContent(newContent)
 
-    oldSlot should equal(RecordSlot(0, oldContent))
-    newSlot should equal(oldSlot)
-    newHeader.slots should equal(Seq(newSlot))
-    newHeader.internalHeader.fields should equal(Set(toVar('n)))
+    newHeader.contents should equal(Set(newContent))
+    newHeader.fieldsAsVar should equal(Set(toVar('n)))
   }
 
-  test("Adding projected field will alias previously added projected expression") {
+  it("Adding projected field will alias previously added projected expression") {
     val oldContent = ProjectedExpr(TrueLit())
-    val (oldHeader, Added(oldSlot)) = RecordHeader.empty.update(addContent(oldContent))
+    val oldHeader = IRecordHeader.empty.addContent(oldContent)
     val newContent = ProjectedField('n, TrueLit())
-    val (newHeader, Replaced(prevSlot, newSlot)) = oldHeader.update(addContent(newContent))
+    val newHeader = oldHeader.addContent(newContent)
 
-    oldSlot should equal(RecordSlot(0, oldContent))
-    prevSlot should equal(oldSlot)
-    newSlot should equal(RecordSlot(0, newContent))
-    newHeader.slots should equal(Seq(newSlot))
-    newHeader.internalHeader.fields should equal(Set(toVar('n)))
+    newHeader.contents should equal(Set(newContent))
+    newHeader.fieldsAsVar should equal(Set(toVar('n)))
   }
 
-  test("Adding projected field will alias previously added projected expression 2") {
+  it("Adding projected field will alias previously added projected expression 2") {
     val oldContent = ProjectedExpr(Property('n, PropertyKey("prop"))())
-    val (oldHeader, Added(oldSlot)) = RecordHeader.empty.update(addContent(oldContent))
+    val oldHeader = IRecordHeader.empty.addContent(oldContent)
     val newContent = ProjectedField(Var("n.text")(CTString), Property('n, PropertyKey("prop"))())
-    val (newHeader, Replaced(prevSlot, newSlot)) = oldHeader.update(addContent(newContent))
+    val newHeader = oldHeader.addContent(newContent)
 
-    oldSlot should equal(RecordSlot(0, oldContent))
-    prevSlot should equal(oldSlot)
-    newSlot should equal(RecordSlot(0, newContent))
-    newHeader.slots should equal(Seq(newSlot))
-    newHeader.internalHeader.fields should equal(Set(Var("n.text")(CTString)))
+    newHeader.contents should equal(Set(newContent))
+    newHeader.fieldsAsVar should equal(Set(Var("n.text")(CTString)))
   }
 
-  test("Adding opaque field will replace previously existing") {
+  it("Adding opaque field will replace previously existing") {
     val oldContent = OpaqueField(Var("n")(CTNode))
-    val (oldHeader, Added(oldSlot)) = RecordHeader.empty.update(addContent(oldContent))
+    val oldHeader = IRecordHeader.empty.addContent(oldContent)
     val newContent = OpaqueField(Var("n")(CTNode("User")))
-    val (newHeader, Replaced(prevSlot, newSlot)) = oldHeader.update(addContent(newContent))
+    val newHeader = oldHeader.addContent(newContent)
 
-    oldSlot should equal(RecordSlot(0, oldContent))
-    prevSlot should equal(oldSlot)
-    newSlot should equal(RecordSlot(0, newContent))
-    newHeader.slots should equal(Seq(newSlot))
-    newHeader.internalHeader.fields should equal(Set(Var("n")(CTNode("User"))))
+    newHeader.contents should equal(Set(newContent))
+    newHeader.fieldsAsVar should equal(Set(Var("n")(CTNode("User"))))
   }
 
-  test("concatenating headers") {
-    var lhs = RecordHeader.empty
-    var rhs = RecordHeader.empty
+  it("concatenating headers") {
+    var lhs = IRecordHeader.empty
+    var rhs = IRecordHeader.empty
 
     lhs ++ rhs should equal(lhs)
 
-    lhs = lhs.update(addContent(ProjectedExpr(Var("n")(CTNode))))._1
+    lhs = lhs.addContent(ProjectedExpr(Var("n")(CTNode)))
     lhs ++ rhs should equal(lhs)
 
-    rhs = rhs.update(addContent(OpaqueField(Var("m")(CTRelationship))))._1
-    (lhs ++ rhs).slots.map(_.content) should equal(
-      Seq(
+    rhs = rhs.addContent(OpaqueField(Var("m")(CTRelationship)))
+    (lhs ++ rhs).contents should equal(
+      Set(
         ProjectedExpr(Var("n")(CTNode)),
         OpaqueField(Var("m")(CTRelationship))
       ))
@@ -204,19 +187,19 @@ class RecordHeaderTest extends BaseTestSuite {
   // TODO: do we support this behaviour? If yes, Property#equals needs to be overwritten again
   ignore("concatenating headers with similar properties") {
     val n = Var("n")()
-    val (lhs, _) = RecordHeader.empty.update(addContent(ProjectedExpr(Property(n, PropertyKey("name"))(CTInteger))))
-    val (rhs, _) = RecordHeader.empty.update(addContent(ProjectedExpr(Property(n, PropertyKey("name"))(CTString))))
+    val lhs = IRecordHeader.empty.addContent(ProjectedExpr(Property(n, PropertyKey("name"))(CTInteger)))
+    val rhs = IRecordHeader.empty.addContent(ProjectedExpr(Property(n, PropertyKey("name"))(CTString)))
 
     val concatenated = lhs ++ rhs
 
-    concatenated.slots should equal(
-      IndexedSeq(
-        RecordSlot(0, ProjectedExpr(Property(n, PropertyKey("name"))(CTInteger))),
-        RecordSlot(1, ProjectedExpr(Property(n, PropertyKey("name"))(CTString)))
-      ))
+//    concatenated.slots should equal(
+//      IndexedSet(
+//        RecordSlot(0, ProjectedExpr(Property(n, PropertyKey("name"))(CTInteger))),
+//        RecordSlot(1, ProjectedExpr(Property(n, PropertyKey("name"))(CTString)))
+//      ))
   }
 
-  test("can get labels") {
+  it("can get labels") {
     val field1 = OpaqueField('n)
     val label1 = ProjectedExpr(HasLabel('n, Label("A"))(CTBoolean))
     val label2 = ProjectedExpr(HasLabel('n, Label("B"))(CTBoolean))
@@ -224,12 +207,12 @@ class RecordHeaderTest extends BaseTestSuite {
     val field2 = OpaqueField('m)
     val prop2 = ProjectedExpr(Property('m, PropertyKey("bar"))(CTString))
 
-    val (h1, _) = RecordHeader.empty.update(addContent(field1))
-    val (h2, _) = h1.update(addContent(label1))
-    val (h3, _) = h2.update(addContent(label2))
-    val (h4, _) = h3.update(addContent(prop))
-    val (h5, _) = h4.update(addContent(field2))
-    val (header, _) = h3.update(addContent(prop2))
+    val h1 = IRecordHeader.empty.addContent(field1)
+    val h2 = h1.addContent(label1)
+    val h3 = h2.addContent(label2)
+    val h4 = h3.addContent(prop)
+    val h5 = h4.addContent(field2)
+    val header = h3.addContent(prop2)
 
     header.labels(Var("n")(CTNode)) should equal(
       Seq(
@@ -239,7 +222,7 @@ class RecordHeaderTest extends BaseTestSuite {
     )
   }
 
-  test("can get all slots for a given node var") {
+  it("can get all slots for a given node var") {
     val field1 = OpaqueField('n)
     val label1 = ProjectedExpr(HasLabel('n, Label("A"))(CTBoolean))
     val label2 = ProjectedExpr(HasLabel('n, Label("B"))(CTBoolean))
@@ -247,12 +230,12 @@ class RecordHeaderTest extends BaseTestSuite {
     val field2 = OpaqueField('m)
     val prop2 = ProjectedExpr(Property('m, PropertyKey("bar"))(CTString))
 
-    val (h1, _) = RecordHeader.empty.update(addContent(field1))
-    val (h2, _) = h1.update(addContent(label1))
-    val (h3, _) = h2.update(addContent(label2))
-    val (h4, _) = h3.update(addContent(prop))
-    val (h5, _) = h4.update(addContent(field2))
-    val (header, _) = h5.update(addContent(prop2))
+    val h1 = IRecordHeader.empty.addContent(field1)
+    val h2 = h1.addContent(label1)
+    val h3 = h2.addContent(label2)
+    val h4 = h3.addContent(prop)
+    val h5 = h4.addContent(field2)
+    val header = h5.addContent(prop2)
 
     header.childSlots(Var("n")(CTNode)) should equal(
       Seq(
@@ -263,7 +246,7 @@ class RecordHeaderTest extends BaseTestSuite {
     )
   }
 
-  test("can get all slots for a given edge var") {
+  it("can get all slots for a given edge var") {
     val field1 = OpaqueField('e1)
     val source1 = ProjectedExpr(StartNode('e1)(CTNode))
     val target1 = ProjectedExpr(EndNode('e1)(CTNode))
@@ -275,16 +258,16 @@ class RecordHeaderTest extends BaseTestSuite {
     val type2 = ProjectedExpr(HasType('e2, RelType("KNOWS"))(CTInteger))
     val prop2 = ProjectedExpr(Property('e2, PropertyKey("bar"))(CTString))
 
-    val (h1, _) = RecordHeader.empty.update(addContent(field1))
-    val (h2, _) = h1.update(addContent(source1))
-    val (h3, _) = h2.update(addContent(target1))
-    val (h4, _) = h3.update(addContent(type1))
-    val (h5, _) = h4.update(addContent(prop1))
-    val (h6, _) = h5.update(addContent(field2))
-    val (h7, _) = h6.update(addContent(source2))
-    val (h8, _) = h7.update(addContent(target2))
-    val (h9, _) = h8.update(addContent(type2))
-    val (header, _) = h9.update(addContent(prop2))
+    val h1 = IRecordHeader.empty.addContent(field1)
+    val h2 = h1.addContent(source1)
+    val h3 = h2.addContent(target1)
+    val h4 = h3.addContent(type1)
+    val h5 = h4.addContent(prop1)
+    val h6 = h5.addContent(field2)
+    val h7 = h6.addContent(source2)
+    val h8 = h7.addContent(target2)
+    val h9 = h8.addContent(type2)
+    val header = h9.addContent(prop2)
 
     header.childSlots(Var("e1")(CTRelationship)) should equal(
       Seq(
@@ -296,7 +279,7 @@ class RecordHeaderTest extends BaseTestSuite {
     )
   }
 
-  test("labelSlots") {
+  it("labelSlots") {
     val field1 = OpaqueField('n)
     val field2 = OpaqueField('m)
     val label1 = ProjectedExpr(HasLabel('n, Label("A"))(CTBoolean))
@@ -304,14 +287,14 @@ class RecordHeaderTest extends BaseTestSuite {
     val label3 = ProjectedExpr(HasLabel('m, Label("B"))(CTBoolean))
     val prop = ProjectedExpr(Property('n, PropertyKey("foo"))(CTString))
 
-    val (header, _) = RecordHeader.empty.update(addContents(Seq(field1, label1, label2, prop, field2, label3)))
+    val header = IRecordHeader.empty.addContents(Seq(field1, label1, label2, prop, field2, label3))
 
     header.labelSlots('n).mapValues(_.content) should equal(Map(label1.expr -> label1, label2.expr -> label2))
     header.labelSlots('m).mapValues(_.content) should equal(Map(label3.expr -> label3))
     header.labelSlots('q).mapValues(_.content) should equal(Map.empty)
   }
 
-  test("propertySlots") {
+  it("propertySlots") {
     val node1 = OpaqueField('n)
     val node2 = OpaqueField('m)
     val rel = OpaqueField('r)
@@ -322,19 +305,18 @@ class RecordHeaderTest extends BaseTestSuite {
     val propFoo2 = ProjectedExpr(Property('r, PropertyKey("foo"))(CTString))
     val propBar2 = ProjectedExpr(Property('r, PropertyKey("bar"))(CTString))
 
-    val (header, _) = RecordHeader.empty.update(
-      addContents(
-        Seq(
-          node1,
-          node2,
-          rel,
-          label,
-          propFoo1,
-          propFoo2,
-          propBar1,
-          propBar2,
-          propBaz
-        )))
+    val header = IRecordHeader.empty.addContents(
+      Seq(
+        node1,
+        node2,
+        rel,
+        label,
+        propFoo1,
+        propFoo2,
+        propBar1,
+        propBar2,
+        propBaz
+      ))
 
     header.propertySlots('n).mapValues(_.content) should equal(
       Map(propFoo1.expr -> propFoo1, propBar1.expr -> propBar1, propBaz.expr -> propBaz))
@@ -343,7 +325,7 @@ class RecordHeaderTest extends BaseTestSuite {
       Map(propFoo2.expr -> propFoo2, propBar2.expr -> propBar2))
   }
 
-  test("nodesForType") {
+  it("nodesForType") {
     val p: Var = 'p -> CTNode("Person")
     val n: Var = 'n -> CTNode
     val q: Var = 'q -> CTNode("Foo")
@@ -357,7 +339,7 @@ class RecordHeaderTest extends BaseTestSuite {
       OpaqueField(q),
       OpaqueField('r -> CTRelationship("KNOWS"))
     )
-    val (header, _) = RecordHeader.empty.update(addContents(fields))
+    val header = IRecordHeader.empty.addContents(fields)
 
     header.nodesForType(CTNode) should equal(Seq(p, n, q))
     header.nodesForType(CTNode("Person")) should equal(Seq(p, n))
@@ -367,7 +349,7 @@ class RecordHeaderTest extends BaseTestSuite {
     header.nodesForType(CTNode("Nop")) should equal(Seq.empty)
   }
 
-  test("relsForType") {
+  it("relsForType") {
     val p: Var = 'p -> CTRelationship("KNOWS")
     val r: Var = 'r -> CTRelationship
     val q: Var = 'q -> CTRelationship("LOVES", "HATES")
@@ -377,7 +359,7 @@ class RecordHeaderTest extends BaseTestSuite {
       OpaqueField(q),
       OpaqueField('n -> CTNode("Foo"))
     )
-    val (header, _) = RecordHeader.empty.update(addContents(fields))
+    val header = IRecordHeader.empty.addContents(fields)
 
     header.relationshipsForType(CTRelationship) should equal(List(p, r, q))
     header.relationshipsForType(CTRelationship("KNOWS")) should equal(List(p, r))
@@ -385,7 +367,7 @@ class RecordHeaderTest extends BaseTestSuite {
     header.relationshipsForType(CTRelationship("LOVES", "HATES")) should equal(List(r, q))
   }
 
-  test("node from schema") {
+  it("node from schema") {
     val schema = Schema.empty
       .withNodePropertyKeys(Set.empty[String], Map("prop" -> CTString))
       .withNodePropertyKeys("A")("a" -> CTString.nullable)
@@ -399,15 +381,15 @@ class RecordHeaderTest extends BaseTestSuite {
     val c = Var("c")(CTNode("C"))
     val ab = Var("ab")(CTNode("A", "B"))
 
-    val nHeader = RecordHeader.nodeFromSchema(n, schema)
-    val aHeader = RecordHeader.nodeFromSchema(a, schema)
-    val bHeader = RecordHeader.nodeFromSchema(b, schema)
-    val cHeader = RecordHeader.nodeFromSchema(c, schema)
-    val abHeader = RecordHeader.nodeFromSchema(ab, schema)
+    val nHeader = IRecordHeader.nodeFromSchema(n, schema)
+    val aHeader = IRecordHeader.nodeFromSchema(a, schema)
+    val bHeader = IRecordHeader.nodeFromSchema(b, schema)
+    val cHeader = IRecordHeader.nodeFromSchema(c, schema)
+    val abHeader = IRecordHeader.nodeFromSchema(ab, schema)
 
     nHeader should equal(
-      RecordHeader.empty
-        .update(addContents(Seq(
+      IRecordHeader.empty
+        .addContents(Seq(
           OpaqueField(n),
           ProjectedExpr(HasLabel(n, Label("A"))(CTBoolean)),
           ProjectedExpr(HasLabel(n, Label("B"))(CTBoolean)),
@@ -418,11 +400,10 @@ class RecordHeaderTest extends BaseTestSuite {
           ProjectedExpr(Property(n, PropertyKey("extra"))(CTBoolean.nullable)),
           ProjectedExpr(Property(n, PropertyKey("prop"))(CTString.nullable))
         )))
-        ._1)
 
     aHeader should equal(
-      RecordHeader.empty
-        .update(addContents(Seq(
+      IRecordHeader.empty
+        .addContents(Seq(
           OpaqueField(a),
           ProjectedExpr(HasLabel(a, Label("A"))(CTBoolean)),
           ProjectedExpr(HasLabel(a, Label("B"))(CTBoolean)),
@@ -430,11 +411,10 @@ class RecordHeaderTest extends BaseTestSuite {
           ProjectedExpr(Property(a, PropertyKey("b"))(CTInteger.nullable)),
           ProjectedExpr(Property(a, PropertyKey("c"))(CTFloat.nullable))
         )))
-        ._1)
 
     bHeader should equal(
-      RecordHeader.empty
-        .update(addContents(Seq(
+      IRecordHeader.empty
+        .addContents(Seq(
           OpaqueField(b),
           ProjectedExpr(HasLabel(b, Label("A"))(CTBoolean)),
           ProjectedExpr(HasLabel(b, Label("B"))(CTBoolean)),
@@ -443,21 +423,18 @@ class RecordHeaderTest extends BaseTestSuite {
           ProjectedExpr(Property(b, PropertyKey("c"))(CTFloat)),
           ProjectedExpr(Property(b, PropertyKey("extra"))(CTBoolean.nullable))
         )))
-        ._1)
 
     cHeader should equal(
-      RecordHeader.empty
-        .update(
-          addContents(
-            Seq(
-              OpaqueField(c),
-              ProjectedExpr(HasLabel(c, Label("C"))(CTBoolean))
-            )))
-        ._1)
+      IRecordHeader.empty
+        .addContents(
+          Seq(
+            OpaqueField(c),
+            ProjectedExpr(HasLabel(c, Label("C"))(CTBoolean))
+          )))
 
     abHeader should equal(
-      RecordHeader.empty
-        .update(addContents(Seq(
+      IRecordHeader.empty
+        .addContents(Seq(
           OpaqueField(ab),
           ProjectedExpr(HasLabel(ab, Label("A"))(CTBoolean)),
           ProjectedExpr(HasLabel(ab, Label("B"))(CTBoolean)),
@@ -465,12 +442,11 @@ class RecordHeaderTest extends BaseTestSuite {
           ProjectedExpr(Property(ab, PropertyKey("b"))(CTInteger.nullable)),
           ProjectedExpr(Property(ab, PropertyKey("c"))(CTFloat))
         )))
-        ._1)
   }
 
-  test("node from schema with implication") {
+  it("node from schema with implication") {
     val schema = Schema.empty
-      .withNodePropertyKeys( Set.empty[String], Map("prop" -> CTString))
+      .withNodePropertyKeys(Set.empty[String], Map("prop" -> CTString))
       .withNodePropertyKeys("A")("a" -> CTString.nullable)
       .withNodePropertyKeys("A", "X")("a" -> CTString.nullable, "x" -> CTFloat)
       .withNodePropertyKeys("B")("b" -> CTInteger, "extra" -> CTBoolean)
@@ -478,11 +454,11 @@ class RecordHeaderTest extends BaseTestSuite {
 
     val x = Var("x")(CTNode("X"))
 
-    val xHeader = RecordHeader.nodeFromSchema(x, schema)
+    val xHeader = IRecordHeader.nodeFromSchema(x, schema)
 
     xHeader should equal(
-      RecordHeader.empty
-        .update(addContents(Seq(
+      IRecordHeader.empty
+        .addContents(Seq(
           OpaqueField(x),
           ProjectedExpr(HasLabel(x, Label("A"))(CTBoolean)),
           ProjectedExpr(HasLabel(x, Label("B"))(CTBoolean)),
@@ -491,10 +467,9 @@ class RecordHeaderTest extends BaseTestSuite {
           ProjectedExpr(Property(x, PropertyKey("b"))(CTInteger.nullable)),
           ProjectedExpr(Property(x, PropertyKey("x"))(CTFloat))
         )))
-        ._1)
   }
 
-  test("relationship from schema") {
+  it("relationship from schema") {
     val schema = Schema.empty
       .withRelationshipPropertyKeys("A")("a" -> CTString, "b" -> CTInteger.nullable)
       .withRelationshipPropertyKeys("B")("a" -> CTString, "c" -> CTFloat)
@@ -502,12 +477,12 @@ class RecordHeaderTest extends BaseTestSuite {
     val e = Var("e")(CTRelationship("A"))
     val r = Var("r")(CTRelationship)
 
-    val eHeader = RecordHeader.relationshipFromSchema(e, schema)
-    val rHeader = RecordHeader.relationshipFromSchema(r, schema)
+    val eHeader = IRecordHeader.relationshipFromSchema(e, schema)
+    val rHeader = IRecordHeader.relationshipFromSchema(r, schema)
 
     eHeader should equal(
-      RecordHeader.empty
-        .update(addContents(Seq(
+      IRecordHeader.empty
+        .addContents(Seq(
           ProjectedExpr(StartNode(e)(CTNode)),
           OpaqueField(e),
           ProjectedExpr(Type(e)(CTString)),
@@ -515,11 +490,10 @@ class RecordHeaderTest extends BaseTestSuite {
           ProjectedExpr(Property(e, PropertyKey("a"))(CTString)),
           ProjectedExpr(Property(e, PropertyKey("b"))(CTInteger.nullable))
         )))
-        ._1)
 
     rHeader should equal(
-      RecordHeader.empty
-        .update(addContents(Seq(
+      IRecordHeader.empty
+        .addContents(Seq(
           ProjectedExpr(StartNode(r)(CTNode)),
           OpaqueField(r),
           ProjectedExpr(Type(r)(CTString)),
@@ -528,21 +502,20 @@ class RecordHeaderTest extends BaseTestSuite {
           ProjectedExpr(Property(r, PropertyKey("b"))(CTInteger.nullable)),
           ProjectedExpr(Property(r, PropertyKey("c"))(CTFloat.nullable))
         )))
-        ._1)
   }
 
-  test("relationship from schema with given relationship types") {
+  it("relationship from schema with given relationship types") {
     val schema = Schema.empty
       .withRelationshipPropertyKeys("A")("a" -> CTString, "b" -> CTInteger.nullable)
       .withRelationshipPropertyKeys("B")("a" -> CTString, "b" -> CTInteger)
 
     val e = Var("e")(CTRelationship("A", "B"))
 
-    val eHeader = RecordHeader.relationshipFromSchema(e, schema)
+    val eHeader = IRecordHeader.relationshipFromSchema(e, schema)
 
     eHeader should equal(
-      RecordHeader.empty
-        .update(addContents(Seq(
+      IRecordHeader.empty
+        .addContents(Seq(
           ProjectedExpr(StartNode(e)(CTNode)),
           OpaqueField(e),
           ProjectedExpr(Type(e)(CTString)),
@@ -550,6 +523,5 @@ class RecordHeaderTest extends BaseTestSuite {
           ProjectedExpr(Property(e, PropertyKey("a"))(CTString)),
           ProjectedExpr(Property(e, PropertyKey("b"))(CTInteger.nullable))
         )))
-        ._1)
   }
 }

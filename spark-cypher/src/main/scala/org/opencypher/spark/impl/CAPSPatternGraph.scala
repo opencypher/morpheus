@@ -29,7 +29,7 @@ package org.opencypher.spark.impl
 import org.apache.spark.storage.StorageLevel
 import org.opencypher.okapi.api.types.{CTNode, CTRelationship}
 import org.opencypher.okapi.ir.api.expr._
-import org.opencypher.okapi.relational.impl.table.{OpaqueField, RecordHeader, SlotContent}
+import org.opencypher.okapi.relational.impl.table.{IRecordHeader, OpaqueField, SlotContent}
 import org.opencypher.spark.api.CAPSSession
 import org.opencypher.spark.impl.table.CAPSRecordHeader._
 import org.opencypher.spark.schema.CAPSSchema
@@ -67,7 +67,7 @@ case class CAPSPatternGraph(
   override def nodes(name: String, nodeCypherType: CTNode): CAPSRecords = {
     val targetNode = Var(name)(nodeCypherType)
     val nodeSchema = schema.forNode(nodeCypherType.labels)
-    val targetNodeHeader = RecordHeader.nodeFromSchema(targetNode, nodeSchema)
+    val targetNodeHeader = IRecordHeader.nodeFromSchema(targetNode, nodeSchema)
     val extractionNodes: Seq[Var] = header.nodesForType(nodeCypherType)
 
     extractRecordsFor(targetNode, targetNodeHeader, extractionNodes)
@@ -75,13 +75,13 @@ case class CAPSPatternGraph(
 
   override def relationships(name: String, relCypherType: CTRelationship): CAPSRecords = {
     val targetRel = Var(name)(relCypherType)
-    val targetRelHeader = RecordHeader.relationshipFromSchema(targetRel, schema.forRelationship(relCypherType))
+    val targetRelHeader = IRecordHeader.relationshipFromSchema(targetRel, schema.forRelationship(relCypherType))
     val extractionRels = header.relationshipsForType(relCypherType)
 
     extractRecordsFor(targetRel, targetRelHeader, extractionRels)
   }
 
-  private def extractRecordsFor(targetVar: Var, targetHeader: RecordHeader, extractionVars: Seq[Var]): CAPSRecords = {
+  private def extractRecordsFor(targetVar: Var, targetHeader: IRecordHeader, extractionVars: Seq[Var]): CAPSRecords = {
     val extractionSlots = extractionVars.map { candidate =>
       candidate -> (header.childSlots(candidate) :+ header.slotFor(candidate))
     }.toMap
@@ -100,7 +100,7 @@ case class CAPSPatternGraph(
     CAPSRecords.verifyAndCreate(targetHeader, distinctData)
   }
 
-  private def createScanToBaseTableLookup(targetHeader: RecordHeader, scanTableVar: Var, slotContents: Seq[SlotContent]): Map[String, String] = {
+  private def createScanToBaseTableLookup(targetHeader: IRecordHeader, scanTableVar: Var, slotContents: Seq[SlotContent]): Map[String, String] = {
     slotContents.flatMap { baseTableSlotContent =>
       val targetSlotContent = baseTableSlotContent.withOwner(scanTableVar)
       if (targetHeader.contents.contains(targetSlotContent)) {
