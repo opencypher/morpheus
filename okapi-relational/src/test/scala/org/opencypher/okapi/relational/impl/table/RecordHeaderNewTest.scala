@@ -54,12 +54,6 @@ class RecordHeaderNewTest extends FunSpec with Matchers {
     nHeader.ownedBy(n) should equal(nExprs)
   }
 
-//  it("can add a non-entity expression") {
-//    val header = RecordHeaderNew.empty.withExpr(countN)
-//
-//    header.column(countN)
-//  }
-
   it("can add an alias for an entity") {
     val withAlias = nHeader.withAlias(m, n)
 
@@ -99,6 +93,40 @@ class RecordHeaderNewTest extends FunSpec with Matchers {
     unionHeader.ownedBy(n) should equalWithTracing(nExprs)
     unionHeader.ownedBy(m) should equalWithTracing(mExprs)
     unionHeader.ownedBy(o) should equalWithTracing(oExprs)
+  }
+
+  it("can modify alias and original expression") {
+    val prop2 = Property(n, PropertyKey("bar"))(CTString)
+    val aliasHeader = nHeader.withAlias(m, n)
+    val withNewProp = aliasHeader.withExpr(prop2)
+
+    withNewProp.ownedBy(n) should equalWithTracing(nExprs + prop2)
+    withNewProp.ownedBy(m) should equalWithTracing(mExprs + prop2.withOwner(m))
+  }
+
+  it("can return all aliases for an expression") {
+    val s = Var("nPropFoo_Alias")(nPropFoo.cypherType)
+    val t = Var("nPropFoo_Alias")(nPropFoo.cypherType)
+    val aliasHeader = nHeader
+      .withAlias(m, n)
+      .withAlias(s, nPropFoo)
+      .withAlias(t, s)
+
+    aliasHeader.aliasesFor(n) should equalWithTracing(Set(m, n))
+    aliasHeader.aliasesFor(m) should equalWithTracing(Set(m, n))
+    aliasHeader.aliasesFor(nLabelA) should equalWithTracing(Set.empty)
+    aliasHeader.aliasesFor(nPropFoo) should equalWithTracing(Set(s, t))
+    aliasHeader.aliasesFor(s) should equalWithTracing(Set(s, t))
+  }
+
+  it("adds a new child expr for all aliases of owner") {
+    val prop2 = Property(n, PropertyKey("bar"))(CTString)
+    val aliasHeader = nHeader
+      .withAlias(m, n)
+      .withExpr(prop2)
+
+    aliasHeader.ownedBy(n) should equalWithTracing(nExprs + prop2)
+    aliasHeader.ownedBy(m) should equalWithTracing(mExprs + prop2.withOwner(m))
   }
 
 }
