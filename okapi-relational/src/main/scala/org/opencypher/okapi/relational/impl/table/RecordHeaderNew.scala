@@ -62,20 +62,28 @@ case class RecordHeaderNew(exprToColumn: Map[Expr, String]) {
   }
 
   def withExpr(expr: Expr): RecordHeaderNew = {
-    val existing = exprToColumn.get(expr)
-    existing match {
+    exprToColumn.get(expr) match {
       case Some(_) => this
-      case None => copy(exprToColumn = exprToColumn + (expr -> ColumnNamer.of(expr)))
+
+      case None =>
+        val newColumnName = ColumnNamer.of(expr)
+
+        // Aliases for (possible) owner of expr need to be updated as well
+        val exprsToAdd: Set[Expr] = expr.owner match {
+          case None => Set(expr)
+
+          case Some(exprOwner) => aliasesFor(exprOwner).map(alias => expr.withOwner(alias))
+        }
+
+        exprsToAdd.foldLeft(this) {
+          case (current, e) => current.addExprToColumn(e, newColumnName)
+        }
     }
   }
 
   def withExprs(expr: Expr, exprs: Expr*): RecordHeaderNew = (expr +: exprs).foldLeft(this)(_ withExpr _)
 
   def withExprs(exprs: Set[Expr]): RecordHeaderNew = withExprs(exprs.head, exprs.tail.toSeq: _*)
-
-  protected def addExprToColumn(expr: Expr, columnName: String): RecordHeaderNew = {
-    copy(exprToColumn = exprToColumn + (expr -> columnName))
-  }
 
   def withAlias(alias: Var, to: Expr): RecordHeaderNew = {
     require(
@@ -98,6 +106,24 @@ case class RecordHeaderNew(exprToColumn: Map[Expr, String]) {
   }
 
   def ++(other: RecordHeaderNew): RecordHeaderNew = copy(exprToColumn = exprToColumn ++ other.exprToColumn)
+
+  def aliasesFor(expr: Expr): Set[Var] = {
+    val aliasesFromHeader: Set[Var] = getColumn(expr) match {
+      case None => Set.empty
+      case Some(col) => exprToColumn.collect { case (k: Var, v) if v == col => k }.toSet
+    }
+
+    val aliasesFromParam: Set[Var] = expr match {
+      case v: Var => Set(v)
+      case _ => Set.empty
+    }
+
+    aliasesFromHeader ++ aliasesFromParam
+  }
+
+  protected def addExprToColumn(expr: Expr, columnName: String): RecordHeaderNew = {
+    copy(exprToColumn = exprToColumn + (expr -> columnName))
+  }
 
 }
 
