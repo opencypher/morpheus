@@ -152,9 +152,11 @@ final case class RecordHeader(
   override def sourceNodeSlot(rel: Var): RecordSlot = slotsFor(StartNode(rel)()).headOption.getOrElse(
     throw IllegalArgumentException(s"One of $fields", rel)
   )
+
   override def targetNodeSlot(rel: Var): RecordSlot = slotsFor(EndNode(rel)()).headOption.getOrElse(
     throw IllegalArgumentException(s"One of $fields", rel)
   )
+
   override def typeSlot(rel: Expr): RecordSlot = slotsFor(Type(rel)()).headOption.getOrElse(
     throw IllegalArgumentException(s"One of $fields", rel)
   )
@@ -267,13 +269,13 @@ final case class RecordHeader(
     // check number of physical columns
     val colsInOldHeader = oldHeader.slots.map(oldHeader.of).toSet
     val colsInNewHeader = newHeader.exprToColumn.values.toSet
-//    assert(colsInNewHeader == colsInOldHeader, s"different columns: \n$colsInOldHeader\n$colsInNewHeader\n$printPretty")
+    assert(colsInNewHeader == colsInOldHeader, s"different columns: \n$colsInOldHeader\n$colsInNewHeader\n$printPretty")
 
     // check column name equality
     oldHeader.slots.foreach { slot =>
       val exprInOldHeader = slot.content.key
       val colNameinOldHeader = oldHeader.of(slot)
-//      assert(newHeader.column(exprInOldHeader) == colNameinOldHeader, s"problem with expr in old header: $exprInOldHeader\n$printPretty")
+      assert(newHeader.column(exprInOldHeader) == colNameinOldHeader, s"problem with expr in old header: $exprInOldHeader\n$printPretty")
     }
   }
 
