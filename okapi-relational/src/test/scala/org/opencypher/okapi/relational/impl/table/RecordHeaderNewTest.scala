@@ -26,9 +26,9 @@
  */
 package org.opencypher.okapi.relational.impl.table
 
-import org.opencypher.okapi.api.types.{CTBoolean, CTInteger, CTNode, CTString}
+import org.opencypher.okapi.api.types._
 import org.opencypher.okapi.ir.api.expr._
-import org.opencypher.okapi.ir.api.{Label, PropertyKey}
+import org.opencypher.okapi.ir.api.{Label, PropertyKey, RelType}
 import org.opencypher.okapi.ir.test.support.MatchHelper._
 import org.scalatest.{FunSpec, Matchers}
 
@@ -127,6 +127,22 @@ class RecordHeaderNewTest extends FunSpec with Matchers {
 
     aliasHeader.ownedBy(n) should equalWithTracing(nExprs + prop2)
     aliasHeader.ownedBy(m) should equalWithTracing(mExprs + prop2.withOwner(m))
+  }
+
+  it("finds all id columns") {
+    nHeader.idColumns should equalWithTracing(Set(nHeader.column(n)))
+
+    val r: Var = Var("r")(CTRelationship)
+    val rStart: StartNode = StartNode(n)(CTNode)
+    val rEnd: EndNode = EndNode(n)(CTNode)
+    val rRelType: HasType = HasType(r, RelType("R"))(CTBoolean)
+    val rPropFoo: Property = Property(r, PropertyKey("foo"))(CTString)
+    val allRExprs: Set[Expr] = Set(r, rStart, rEnd, rRelType, rPropFoo)
+    val rHeader = nHeader.withExprs(allRExprs)
+
+    rHeader.idColumns should equalWithTracing(
+      Set(rHeader.column(n), rHeader.column(r), rHeader.column(rStart), rHeader.column(rEnd))
+    )
   }
 
 }
