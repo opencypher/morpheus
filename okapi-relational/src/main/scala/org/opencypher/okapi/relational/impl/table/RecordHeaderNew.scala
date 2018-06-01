@@ -26,13 +26,20 @@
  */
 package org.opencypher.okapi.relational.impl.table
 
-import org.opencypher.okapi.api.types.{CTNode, CTRelationship}
+import org.opencypher.okapi.api.types.{CTNode, CTRelationship, CypherType}
 import org.opencypher.okapi.impl.exception.IllegalArgumentException
 import org.opencypher.okapi.ir.api.expr._
 
 object RecordHeaderNew {
 
   def empty: RecordHeaderNew = RecordHeaderNew(Map.empty)
+
+  def from(expr: Expr, exprs: Expr*): RecordHeaderNew = empty.withExprs(expr, exprs: _*)
+
+  def from(exprs: Set[Expr]): RecordHeaderNew = empty.withExprs(exprs)
+
+  def from(exprs: Seq[Expr]): RecordHeaderNew = from(exprs.head, exprs.tail: _*)
+
 }
 
 case class RecordHeaderNew(exprToColumn: Map[Expr, String]) {
@@ -45,6 +52,55 @@ case class RecordHeaderNew(exprToColumn: Map[Expr, String]) {
   def ownedBy(expr: Var): Set[Expr] = {
     exprToColumn.keys.filter(e => e.owner.contains(expr)).toSet
   }
+
+  def nodeVars: Set[Var] = {
+    exprToColumn.keySet.collect {
+      case v: Var if v.cypherType.superTypeOf(CTNode).isTrue => v
+    }
+  }
+
+  def relationshipVars: Set[Var] = {
+    exprToColumn.keySet.collect {
+      case v: Var if v.cypherType.superTypeOf(CTRelationship).isTrue => v
+    }
+  }
+
+  def nodesForType(nodeType: CTNode): Set[Var] = {
+    val requiredLabels = nodeType.labels
+    nodeVars.filter { nodeVar =>
+      val physicalLabels = labelsFor(nodeVar).map(_.label.name)
+      val logicalLabels = nodeVar.cypherType match {
+        case CTNode(labels, _) => labels
+        case _ => Set.empty
+      }
+      requiredLabels.subsetOf(physicalLabels ++ logicalLabels)
+    }
+  }
+
+//  override def relationshipsForType(relType: CTRelationship): Set[Var] = {
+//    val possibleTypes = relType.types
+//    relationshipVars.filter { relVar =>
+//      val physicalType = typeFor(relVar)
+//      val logicalLabels = relVar.cypherType match {
+//        case CTNode(labels, _) => labels
+//        case _ => Set.empty
+//      }
+//      requiredLabels.subsetOf(physicalLabels ++ logicalLabels)
+//    }
+//
+//
+//    slots.collect {
+//      case RecordSlot(_, OpaqueField(v)) => v
+//    }.filter { v =>
+//      v.cypherType match {
+//        case t: CTRelationship if targetTypes.isEmpty || t.types.isEmpty => true
+//        case CTRelationship(types, _) =>
+//          types.exists(targetTypes.contains)
+//        case _ => false
+//      }
+//    }
+//  }
+
 
   def expressionsFor(expr: Expr): Set[Expr] = {
     expr match {
@@ -72,7 +128,7 @@ case class RecordHeaderNew(exprToColumn: Map[Expr, String]) {
     }
   }
 
-  def labelsFor(n: Var): Set[Expr] = {
+  def labelsFor(n: Var): Set[HasLabel] = {
     ownedBy(n).collect {
       case l: HasLabel => l
     }

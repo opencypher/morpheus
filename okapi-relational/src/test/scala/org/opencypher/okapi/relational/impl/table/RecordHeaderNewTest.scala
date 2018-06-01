@@ -174,4 +174,14 @@ class RecordHeaderNewTest extends FunSpec with Matchers {
     rHeader.typeFor(r) should equalWithTracing(rRelType)
   }
 
+  it("returns all node vars") {
+    nHeader.nodeVars should equalWithTracing(Set(n))
+    rHeader.nodeVars should equalWithTracing(Set.empty)
+  }
+
+  it("returns all rel vars") {
+    rHeader.relationshipVars should equalWithTracing(Set(r))
+    nHeader.relationshipVars should equalWithTracing(Set.empty)
+  }
+
 }
