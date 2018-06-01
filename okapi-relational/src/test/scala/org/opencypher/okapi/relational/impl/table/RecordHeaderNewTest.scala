@@ -37,6 +37,7 @@ class RecordHeaderNewTest extends FunSpec with Matchers {
   val n: Var = Var("n")(CTNode)
   val m: Var = Var("m")(CTNode)
   val o: Var = Var("o")(CTNode)
+  val r: Var = Var("r")(CTRelationship)
 
   val countN = CountStar(CTInteger)
 
@@ -47,8 +48,15 @@ class RecordHeaderNewTest extends FunSpec with Matchers {
   val mExprs: Set[Expr] = nExprs.map(_.withOwner(m))
   val oExprs: Set[Expr] = nExprs.map(_.withOwner(o))
 
+  val rStart: StartNode = StartNode(r)(CTNode)
+  val rEnd: EndNode = EndNode(r)(CTNode)
+  val rRelType: HasType = HasType(r, RelType("R"))(CTBoolean)
+  val rPropFoo: Property = Property(r, PropertyKey("foo"))(CTString)
+  val rExprs: Set[Expr] = Set(r, rStart, rEnd, rRelType, rPropFoo)
+
   val nHeader: RecordHeaderNew = RecordHeaderNew.empty.withExprs(nExprs)
   val mHeader: RecordHeaderNew = RecordHeaderNew.empty.withExprs(mExprs)
+  val rHeader: RecordHeaderNew = RecordHeaderNew.empty.withExprs(rExprs)
 
   it("can add an entity expression") {
     nHeader.ownedBy(n) should equal(nExprs)
@@ -132,17 +140,29 @@ class RecordHeaderNewTest extends FunSpec with Matchers {
   it("finds all id columns") {
     nHeader.idColumns should equalWithTracing(Set(nHeader.column(n)))
 
-    val r: Var = Var("r")(CTRelationship)
-    val rStart: StartNode = StartNode(n)(CTNode)
-    val rEnd: EndNode = EndNode(n)(CTNode)
-    val rRelType: HasType = HasType(r, RelType("R"))(CTBoolean)
-    val rPropFoo: Property = Property(r, PropertyKey("foo"))(CTString)
-    val allRExprs: Set[Expr] = Set(r, rStart, rEnd, rRelType, rPropFoo)
-    val rHeader = nHeader.withExprs(allRExprs)
-
     rHeader.idColumns should equalWithTracing(
-      Set(rHeader.column(n), rHeader.column(r), rHeader.column(rStart), rHeader.column(rEnd))
+      Set(rHeader.column(r), rHeader.column(rStart), rHeader.column(rEnd))
     )
+
+    val rExtendedHeader = nHeader ++ rHeader
+    rExtendedHeader.idColumns should equalWithTracing(
+      Set(rExtendedHeader.column(n), rExtendedHeader.column(r), rExtendedHeader.column(rStart), rExtendedHeader.column(rEnd))
+    )
+  }
+
+  it("finds entity properties") {
+    nHeader.propertiesFor(n) should equalWithTracing(Set(nPropFoo))
+    rHeader.propertiesFor(r) should equalWithTracing(Set(rPropFoo))
+  }
+
+  it("finds start and end nodes") {
+    rHeader.startNodeFor(r) should equalWithTracing(rStart)
+    rHeader.endNodeFor(r) should equalWithTracing(rEnd)
+  }
+
+  it("returns members for an entity") {
+    nHeader.ownedBy(n) should equalWithTracing(nExprs)
+    rHeader.ownedBy(r) should equalWithTracing(rExprs)
   }
 
 }
