@@ -36,14 +36,14 @@ import org.opencypher.spark.impl.convert.CAPSCypherType._
 
 object CAPSRecordHeader {
 
-  def fromSparkStructType(structType: StructType): RecordHeader =
-    RecordHeader.from(structType.fields.map { field =>
+  def fromSparkStructType(structType: StructType): IRecordHeader =
+    IRecordHeader.from(structType.fields.map { field =>
       OpaqueField(
         Var(field.name)(field.dataType.toCypherType(field.nullable)
           .getOrElse(throw IllegalArgumentException("a supported Spark type", field.dataType))))
     }: _*)
 
-  implicit class CAPSRecordHeader(header: RecordHeader) extends Serializable {
+  implicit class CAPSRecordHeader(header: IRecordHeader) extends Serializable {
     def toStructType: StructType = {
       StructType(header.slots.map(slot => slot.content.cypherType.toStructField(header.of(slot.content))))
     }

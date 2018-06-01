@@ -35,8 +35,7 @@ import org.opencypher.okapi.ir.api.PropertyKey
 import org.opencypher.okapi.ir.api.expr.{Expr, Var, _}
 import org.opencypher.okapi.ir.api.set.SetPropertyItem
 import org.opencypher.okapi.logical.impl.{ConstructedEntity, ConstructedNode, ConstructedRelationship, LogicalPatternGraph}
-import org.opencypher.okapi.relational.impl.syntax.RecordHeaderSyntax.{addContent, addContents, _}
-import org.opencypher.okapi.relational.impl.table.{OpaqueField, RecordHeader, RecordSlot, _}
+import org.opencypher.okapi.relational.impl.table.{IRecordHeader, OpaqueField, RecordSlot, _}
 import org.opencypher.spark.api.{CAPSSession, Tags}
 import org.opencypher.spark.impl.CAPSUnionGraph.{apply => _, unapply => _}
 import org.opencypher.spark.impl.DataFrameOps._
@@ -65,7 +64,7 @@ final case class Join(
   lhs: CAPSPhysicalOperator,
   rhs: CAPSPhysicalOperator,
   joinColumns: Seq[(Expr, Expr)],
-  header: RecordHeader,
+  header: IRecordHeader,
   joinType: String
 ) extends BinaryPhysicalOperator with PhysicalOperatorDebugging {
 
@@ -105,7 +104,7 @@ final case class ExistsSubQuery(
   lhs: CAPSPhysicalOperator,
   rhs: CAPSPhysicalOperator,
   targetField: Var,
-  header: RecordHeader
+  header: IRecordHeader
 )
   extends BinaryPhysicalOperator with PhysicalOperatorDebugging {
 
@@ -195,7 +194,7 @@ final case class TabularUnionAll(lhs: CAPSPhysicalOperator, rhs: CAPSPhysicalOpe
   }
 }
 
-final case class CartesianProduct(lhs: CAPSPhysicalOperator, rhs: CAPSPhysicalOperator, header: RecordHeader)
+final case class CartesianProduct(lhs: CAPSPhysicalOperator, rhs: CAPSPhysicalOperator, header: IRecordHeader)
   extends BinaryPhysicalOperator with PhysicalOperatorDebugging {
 
   override def executeBinary(left: CAPSPhysicalResult, right: CAPSPhysicalResult)(
@@ -227,7 +226,7 @@ final case class ConstructGraph(
     s"ConstructGraph(on=[${construct.onGraphs.mkString(", ")}], entities=[${entities.mkString(", ")}])"
   }
 
-  override def header: RecordHeader = RecordHeader.empty
+  override def header: IRecordHeader = IRecordHeader.empty
 
   private def pickFreeTag(tagStrategy: Map[QualifiedGraphName, Map[Int, Int]]): Int = {
     val usedTags = tagStrategy.values.flatMap(_.values).toSet
@@ -313,7 +312,7 @@ final case class ConstructGraph(
       case (acc, toRemove) => acc.safeDropColumn(constructedTable.header.of(toRemove))
     }
 
-    val newHeader = headerWithExistingRemoved.update(addContent(propertySlotContent))._1
+    val newHeader = headerWithExistingRemoved.addContent(propertySlotContent)
     val newData = dataWithExistingRemoved.safeAddColumn(newHeader.of(propertySlotContent), propertyValueColumn)
     CAPSRecords.verifyAndCreate(newHeader, newData)(constructedTable.caps)
   }
@@ -351,11 +350,8 @@ final case class ConstructGraph(
     constructedTable: CAPSRecords
   ): CAPSRecords = {
     // TODO: Move header construction to FlatPlanner
-    val newHeader = constructedTable.header
-      .update(
-        addContents(columnsToAdd.map(_._1).toSeq)
-      )
-      ._1
+    val newHeader = constructedTable.header.addContents(columnsToAdd.map(_._1).toSeq)
+
 
     val newData = columnsToAdd.foldLeft(constructedTable.data) {
       case (acc, (expr, col)) =>
@@ -459,7 +455,7 @@ final case class ConstructGraph(
   }
 
   private def copySlotsContents(targetVar: Var, records: CAPSRecords)
-    (extractor: RecordHeader => Set[RecordSlot]): Set[(SlotContent, Column)] = {
+    (extractor: IRecordHeader => Set[RecordSlot]): Set[(SlotContent, Column)] = {
     val header = records.header
     val origSlots = extractor(header)
     val copySlotContents = origSlots.map(_.withOwner(targetVar)).map(_.content)

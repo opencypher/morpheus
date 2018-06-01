@@ -33,7 +33,7 @@ import org.opencypher.okapi.api.io.conversion.RelationshipMapping
 import org.opencypher.okapi.api.schema._
 import org.opencypher.okapi.api.types.{CTNode, CTRelationship, CypherType, DefiniteCypherType}
 import org.opencypher.okapi.ir.api.expr._
-import org.opencypher.okapi.relational.impl.table.RecordHeader
+import org.opencypher.okapi.relational.impl.table.IRecordHeader
 import org.opencypher.spark.api.CAPSSession
 import org.opencypher.spark.api.io.{CAPSEntityTable, CAPSNodeTable, CAPSRelationshipTable}
 import org.opencypher.spark.schema.CAPSSchema
@@ -81,7 +81,7 @@ class CAPSScanGraph(val scans: Seq[CAPSEntityTable], val schema: CAPSSchema, val
       nodeEntityTables.byType(nodeCypherType)
     }
     val schema = selectedTables.map(_.schema).foldLeft(Schema.empty)(_ ++ _)
-    val targetNodeHeader = RecordHeader.nodeFromSchema(node, schema)
+    val targetNodeHeader = IRecordHeader.nodeFromSchema(node, schema)
 
     val scanRecords: Seq[CAPSRecords] = selectedTables.map(_.records)
     val alignedRecords = scanRecords.map(_.alignWith(node, targetNodeHeader))
@@ -92,7 +92,7 @@ class CAPSScanGraph(val scans: Seq[CAPSEntityTable], val schema: CAPSSchema, val
     val rel = Var(name)(relCypherType)
     val selectedScans = relEntityTables.byType(relCypherType)
     val schema = selectedScans.map(_.schema).foldLeft(Schema.empty)(_ ++ _)
-    val targetRelHeader = RecordHeader.relationshipFromSchema(rel, schema)
+    val targetRelHeader = IRecordHeader.relationshipFromSchema(rel, schema)
 
     val scanRecords = selectedScans.map(_.records)
     val alignedRecords = scanRecords.map(_.alignWith(rel, targetRelHeader))
