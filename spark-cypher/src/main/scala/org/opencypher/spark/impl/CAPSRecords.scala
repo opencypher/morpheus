@@ -57,7 +57,7 @@ import scala.annotation.tailrec
 import scala.collection.JavaConverters._
 import scala.reflect.runtime.universe.TypeTag
 
-sealed abstract case class CAPSRecords(header: IRecordHeader, data: DataFrame)
+sealed abstract case class CAPSRecords(header: RecordHeaderNew, data: DataFrame)
   (implicit val caps: CAPSSession) extends CypherRecords with Serializable {
 
   override def show(implicit options: PrintOptions): Unit =
@@ -97,11 +97,7 @@ sealed abstract case class CAPSRecords(header: IRecordHeader, data: DataFrame)
   // TODO: Forther optimize identity retaggings
   def retag(replacements: Map[Int, Int]): CAPSRecords = {
     val actualRetaggings = replacements.filterNot { case (from, to) => from == to }
-    val idColumns = header.contents.collect {
-      case f: OpaqueField => header.of(f)
-      case p@ProjectedExpr(StartNode(_)) => header.of(p)
-      case p@ProjectedExpr(EndNode(_)) => header.of(p)
-    }
+    val idColumns = header.idColumns
     val dfWithReplacedTags = idColumns.foldLeft(data) {
       case (df, column) => df.safeReplaceTags(column, actualRetaggings)
     }
@@ -543,7 +539,7 @@ object CAPSRecords extends CypherRecordsCompanion[CAPSRecords, CAPSSession] {
     * @param caps          CAPS session
     * @return CAPSRecords representing the input
     */
-  def verifyAndCreate(initialHeader: IRecordHeader, initialData: DataFrame)(implicit caps: CAPSSession): CAPSRecords = {
+  def verifyAndCreate(initialHeader: RecordHeaderNew, initialData: DataFrame)(implicit caps: CAPSSession): CAPSRecords = {
     if (initialData.sparkSession != caps.sparkSession) {
       throw IllegalArgumentException(
         "a DataFrame belonging to the same Spark session",

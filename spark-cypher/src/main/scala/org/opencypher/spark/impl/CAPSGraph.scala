@@ -73,9 +73,9 @@ trait CAPSGraph extends PropertyGraph with GraphOperations with Serializable {
     val records = nodes(name, nodeType)
 
     // compute slot contents to keep
-    val idSlot = records.header.slotFor(nodeVar)
+    val idColumn = records.header.column(nodeVar)
 
-    val labelSlots = records.header.labelSlots(nodeVar)
+    val labelColumns = records.header.labelsFor(nodeVar)
       .filter(slot => labels.contains(slot._1.label.name))
       .values
 
@@ -87,7 +87,7 @@ trait CAPSGraph extends PropertyGraph with GraphOperations with Serializable {
       case (_, propertySlot) => propertyExprs.contains(propertySlot.content.key)
     }.values
 
-    val keepSlots = (Seq(idSlot) ++ labelSlots ++ propertySlots).map(_.content)
+    val keepSlots = (Seq(idColumn) ++ labelColumns ++ propertySlots).map(_.content)
     val keepCols = keepSlots.map(records.header.of)
 
     // we only keep rows where all "other" labels are false
@@ -109,6 +109,46 @@ trait CAPSGraph extends PropertyGraph with GraphOperations with Serializable {
       case None =>
         records.data.select(keepCols.head, keepCols.tail: _*)
     }
+
+
+
+    //    // compute slot contents to keep
+//    val idSlot = records.header.slotFor(nodeVar)
+//
+//    val labelSlots = records.header.labelSlots(nodeVar)
+//      .filter(slot => labels.contains(slot._1.label.name))
+//      .values
+//
+//    // need to iterate the slots to maintain the correct order
+//    val propertyExprs = schema.nodeKeys(labels).flatMap {
+//      case (key, cypherType) => Property(nodeVar, PropertyKey(key))(cypherType)
+//    }.toSet
+//    val propertySlots = records.header.propertySlots(nodeVar).filter {
+//      case (_, propertySlot) => propertyExprs.contains(propertySlot.content.key)
+//    }.values
+//
+//    val keepSlots = (Seq(idSlot) ++ labelSlots ++ propertySlots).map(_.content)
+//    val keepCols = keepSlots.map(records.header.of)
+//
+//    // we only keep rows where all "other" labels are false
+//    val predicate = records.header.labelSlots(nodeVar)
+//      .filterNot(slot => labels.contains(slot._1.label.name))
+//      .values
+//      .map(records.header.of)
+//      .map(records.data.col(_) === false)
+//      .reduceOption(_ && _)
+//
+//    // filter rows and select only necessary columns
+//    val updatedData = predicate match {
+//
+//      case Some(filter) =>
+//        records.data
+//          .filter(filter)
+//          .select(keepCols.head, keepCols.tail: _*)
+//
+//      case None =>
+//        records.data.select(keepCols.head, keepCols.tail: _*)
+//    }
 
     val updatedHeader = IRecordHeader.from(keepSlots: _*)
 
