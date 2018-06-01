@@ -26,6 +26,7 @@
  */
 package org.opencypher.okapi.relational.impl.table
 
+import org.opencypher.okapi.api.types.{CTNode, CTRelationship}
 import org.opencypher.okapi.impl.exception.IllegalArgumentException
 import org.opencypher.okapi.ir.api.expr._
 
@@ -51,6 +52,13 @@ case class RecordHeaderNew(exprToColumn: Map[Expr, String]) {
       case e if exprToColumn.contains(e) => Set(e)
       case _ => Set.empty
     }
+  }
+
+  def idColumns: Set[String] = {
+    exprToColumn.keySet.collect {
+      case n if n.cypherType.superTypeOf(CTNode).isTrue => n
+      case r if r.cypherType.superTypeOf(CTRelationship).isTrue => r
+    }.map(column)
   }
 
   def node(name: Var): Set[Expr] = {
