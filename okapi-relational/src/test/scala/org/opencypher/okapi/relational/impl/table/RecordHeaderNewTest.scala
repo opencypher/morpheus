@@ -165,4 +165,13 @@ class RecordHeaderNewTest extends FunSpec with Matchers {
     rHeader.ownedBy(r) should equalWithTracing(rExprs)
   }
 
+  it("returns labels for a node") {
+    nHeader.labelsFor(n) should equalWithTracing(Set(nLabelA, nLabelB))
+    nHeader.labelsFor(m) should equalWithTracing(Set.empty)
+  }
+
+  it("returns type for a rel") {
+    rHeader.typeFor(r) should equalWithTracing(rRelType)
+  }
+
 }
