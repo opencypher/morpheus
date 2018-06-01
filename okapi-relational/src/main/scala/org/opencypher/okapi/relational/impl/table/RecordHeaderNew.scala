@@ -31,34 +31,15 @@ import org.opencypher.okapi.ir.api.expr._
 
 object RecordHeaderNew {
 
-  def empty: RecordHeaderNew = RecordHeaderNew(Map.empty, Map.empty)
+  def empty: RecordHeaderNew = RecordHeaderNew(Map.empty)
 }
 
-case class RecordHeaderNew(
-  exprToColumn: Map[Expr, String],
-  aliasToExpr: Map[Var, Expr]) {
+case class RecordHeaderNew(exprToColumn: Map[Expr, String]) {
 
-//  def getColumn(expr: Expr): Option[String] = {
-//    exprToColumn.get(expr) match {
-//      case s@Some(_) => s
-//      case None =>
-//        expr match {
-//          case v: Var => aliasToExpr.get(v).flatMap(exprToColumn.get)
-//          case _ => throw IllegalArgumentException(s"Header does not contain a column for $expr: ${this.toString}")
-//        }
-//    }
-//  }
+  def getColumn(expr: Expr): Option[String] = exprToColumn.get(expr)
 
-  def column(expr: Expr): String = {
-    exprToColumn.get(expr) match {
-      case Some(col) => col
-      case None =>
-        expr match {
-          case v: Var => exprToColumn(aliasToExpr(v))
-          case _ => throw IllegalArgumentException(s"Header does not contain a column for $expr: ${this.toString}")
-        }
-    }
-  }
+  def column(expr: Expr): String =
+    exprToColumn.getOrElse(expr, throw IllegalArgumentException(s"Header does not contain a column for $expr: ${this.toString}"))
 
   def ownedBy(expr: Var): Set[Expr] = {
     exprToColumn.keys.filter(e => e.owner.contains(expr)).toSet
@@ -96,27 +77,27 @@ case class RecordHeaderNew(
     copy(exprToColumn = exprToColumn + (expr -> columnName))
   }
 
-  protected def addAliasToExpr(alias: Var, expr: Expr): RecordHeaderNew = {
-    copy(aliasToExpr = aliasToExpr + (alias -> expr))
-  }
-
   def withAlias(alias: Var, to: Expr): RecordHeaderNew = {
+    require(
+      alias.cypherType.superTypeOf(to.cypherType).isTrue,
+      s"CypherType of expression $to cannot be assigned to CypherType of alias $alias")
+
     to match {
+      // Entity case
       case _: Var if exprToColumn.contains(to) =>
         expressionsFor(to).foldLeft(this) {
           case (current, nextExpr) => current.addExprToColumn(nextExpr.withOwner(alias), exprToColumn(nextExpr))
         }
 
-      case leafExpression if exprToColumn.contains(to) => addAliasToExpr(alias, leafExpression)
+      // Non-entity case
+      case expr if exprToColumn.contains(expr) => addExprToColumn(alias, exprToColumn(expr))
 
-      case aliasExpression: Var => addAliasToExpr(alias, aliasToExpr(aliasExpression))
-
-      case other => throw IllegalArgumentException(s"Expression or alias in $this", other)
+      // No expression to alias
+      case other => throw IllegalArgumentException(s"An expression in $this", s"Unknown expression $other")
     }
   }
 
-  def ++(other: RecordHeaderNew): RecordHeaderNew =
-    copy(exprToColumn = exprToColumn ++ other.exprToColumn, aliasToExpr = aliasToExpr ++ other.aliasToExpr)
+  def ++(other: RecordHeaderNew): RecordHeaderNew = copy(exprToColumn = exprToColumn ++ other.exprToColumn)
 
 }
 

@@ -68,15 +68,16 @@ class RecordHeaderNewTest extends FunSpec with Matchers {
   }
 
   it("can add an alias for a non-entity expression") {
-    val withAlias1 = nHeader.withAlias(m, nPropFoo)
-    val withAlias2 = withAlias1.withAlias(o, m)
+    val s = Var("nPropFoo_Alias")(nPropFoo.cypherType)
+    val t = Var("nPropFoo_Alias")(nPropFoo.cypherType)
+    val withAlias1 = nHeader.withAlias(s, nPropFoo)
+    val withAlias2 = withAlias1.withAlias(t, s)
 
-
-    withAlias2.column(o) should equalWithTracing(withAlias2.column(nPropFoo))
-    withAlias2.column(m) should equalWithTracing(withAlias2.column(nPropFoo))
+    withAlias2.column(s) should equalWithTracing(withAlias2.column(nPropFoo))
+    withAlias2.column(t) should equalWithTracing(withAlias2.column(nPropFoo))
     withAlias2.ownedBy(n) should equalWithTracing(nExprs)
-    withAlias2.ownedBy(o) should equalWithTracing(Set.empty)
-    withAlias2.ownedBy(m) should equalWithTracing(Set.empty)
+    withAlias2.ownedBy(s) should equalWithTracing(Set(s))
+    withAlias2.ownedBy(t) should equalWithTracing(Set(t))
   }
 
   it("can combine simple headers") {
