@@ -125,5 +125,7 @@ case class RecordHeaderNew(exprToColumn: Map[Expr, String]) {
     copy(exprToColumn = exprToColumn + (expr -> columnName))
   }
 
+  def pretty: String = exprToColumn.toSeq.sortBy(_._2).mkString("\n")
+
 }
 
