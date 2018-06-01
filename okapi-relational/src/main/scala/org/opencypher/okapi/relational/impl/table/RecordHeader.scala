@@ -41,7 +41,14 @@ import org.opencypher.okapi.relational.impl.syntax.RecordHeaderSyntax.{addConten
   * The header consists of a number of slots, each of which represents a Cypher expression.
   * The slots that represent variables (which is a kind of expression) are called <i>fields</i>.
   */
-final case class RecordHeader(private[impl] val internalHeader: InternalHeader) extends IRecordHeader {
+final case class RecordHeader(
+  private[impl] val internalHeader: InternalHeader
+) extends IRecordHeader {
+
+
+  var newHeader: RecordHeaderNew =
+    internalHeader.slots.map(_.content).foldLeft(RecordHeaderNew.empty)(addContentToNewHeader)
+
 
   override def generateUniqueName: String = {
     val NAME_SIZE = 5
@@ -89,6 +96,7 @@ final case class RecordHeader(private[impl] val internalHeader: InternalHeader) 
 
   /**
     * Removes the specified RecordSlot from the header
+    *
     * @param toRemove record slot to remove
     * @return new IRecordHeader with removed slot
     */
@@ -172,23 +180,23 @@ final case class RecordHeader(private[impl] val internalHeader: InternalHeader) 
 
   override def childSlots(entity: Var): Seq[RecordSlot] = {
     slots.filter {
-      case RecordSlot(_, OpaqueField(_))               => false
+      case RecordSlot(_, OpaqueField(_)) => false
       case slot if slot.content.owner.contains(entity) => true
-      case _                                           => false
+      case _ => false
     }
   }
 
   override def labelSlots(node: Var): Map[HasLabel, RecordSlot] = {
     slots.collect {
-      case s @ RecordSlot(_, ProjectedExpr(h: HasLabel)) if h.node == node     => h -> s
-      case s @ RecordSlot(_, ProjectedField(_, h: HasLabel)) if h.node == node => h -> s
+      case s@RecordSlot(_, ProjectedExpr(h: HasLabel)) if h.node == node => h -> s
+      case s@RecordSlot(_, ProjectedField(_, h: HasLabel)) if h.node == node => h -> s
     }.toMap
   }
 
   override def propertySlots(entity: Var): Map[Property, RecordSlot] = {
     slots.collect {
-      case s @ RecordSlot(_, ProjectedExpr(p: Property)) if p.m == entity     => p -> s
-      case s @ RecordSlot(_, ProjectedField(_, p: Property)) if p.m == entity => p -> s
+      case s@RecordSlot(_, ProjectedExpr(p: Property)) if p.m == entity => p -> s
+      case s@RecordSlot(_, ProjectedField(_, p: Property)) if p.m == entity => p -> s
     }.toMap
   }
 
@@ -222,11 +230,52 @@ final case class RecordHeader(private[impl] val internalHeader: InternalHeader) 
 
   override def toString: String = s"IRecordHeader with ${slots.size} slots"
 
-  override def pretty: String = s"IRecordHeader with ${slots.size} slots: \n\t ${slots.mkString("\n\t")}"
+  override def pretty: String = s"IRecordHeader with ${slots.size} slots: \n\t ${slots.map(slot => slot -> of(slot)).sortBy(_._2).mkString("\n\t")}"
 
-  override def addContents(contents: Seq[SlotContent]): IRecordHeader = new RecordHeaderOps(this).update(implicitAddContents(contents))._1
+  override def addContents(contents: Seq[SlotContent]): IRecordHeader = {
 
-  override def addContent(content: SlotContent): IRecordHeader = new RecordHeaderOps(this).update(implicitAddContent(content))._1
+    newHeader = contents.foldLeft(newHeader)(addContentToNewHeader)
+
+    val updatedOldHeader = new RecordHeaderOps(this).update(implicitAddContents(contents))._1
+    validate(updatedOldHeader, newHeader)
+
+    updatedOldHeader
+  }
+
+  override def addContent(content: SlotContent): IRecordHeader = {
+    newHeader = addContentToNewHeader(newHeader, content)
+
+    val updatedOldHeader = new RecordHeaderOps(this).update(implicitAddContent(content))._1
+
+    validate(updatedOldHeader, newHeader)
+    updatedOldHeader
+  }
+
+  private def addContentToNewHeader(header: RecordHeaderNew, content: SlotContent): RecordHeaderNew = {
+    header.withExpr(content.key)
+  }
+
+  private def validate(oldHeader: RecordHeader, newHeader: RecordHeaderNew): Unit = {
+    def printPretty =
+      s"""
+         |=== old header ===
+         |${oldHeader.pretty}
+         |=== new header ===
+         |${newHeader.pretty}
+       """.stripMargin
+
+    // check number of physical columns
+    val colsInOldHeader = oldHeader.slots.map(oldHeader.of).toSet
+    val colsInNewHeader = newHeader.exprToColumn.values.toSet
+//    assert(colsInNewHeader == colsInOldHeader, s"different columns: \n$colsInOldHeader\n$colsInNewHeader\n$printPretty")
+
+    // check column name equality
+    oldHeader.slots.foreach { slot =>
+      val exprInOldHeader = slot.content.key
+      val colNameinOldHeader = oldHeader.of(slot)
+//      assert(newHeader.column(exprInOldHeader) == colNameinOldHeader, s"problem with expr in old header: $exprInOldHeader\n$printPretty")
+    }
+  }
 
   override def contains(content: SlotContent): Boolean = new RecordHeaderOps(this).update(implicitAddContent(content))._2 match {
     case _: Replaced[_] => true
