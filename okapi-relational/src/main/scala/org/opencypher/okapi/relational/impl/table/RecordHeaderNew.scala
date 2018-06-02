@@ -28,6 +28,7 @@ package org.opencypher.okapi.relational.impl.table
 
 import org.opencypher.okapi.api.types.{CTNode, CTRelationship, CypherType}
 import org.opencypher.okapi.impl.exception.IllegalArgumentException
+import org.opencypher.okapi.ir.api.RelType
 import org.opencypher.okapi.ir.api.expr._
 
 object RecordHeaderNew {
@@ -66,41 +67,35 @@ case class RecordHeaderNew(exprToColumn: Map[Expr, String]) {
   }
 
   def nodesForType(nodeType: CTNode): Set[Var] = {
+    // and semantics
     val requiredLabels = nodeType.labels
+
     nodeVars.filter { nodeVar =>
       val physicalLabels = labelsFor(nodeVar).map(_.label.name)
       val logicalLabels = nodeVar.cypherType match {
         case CTNode(labels, _) => labels
-        case _ => Set.empty
+        case _ => Set.empty[String]
       }
       requiredLabels.subsetOf(physicalLabels ++ logicalLabels)
     }
   }
 
-//  override def relationshipsForType(relType: CTRelationship): Set[Var] = {
-//    val possibleTypes = relType.types
-//    relationshipVars.filter { relVar =>
-//      val physicalType = typeFor(relVar)
-//      val logicalLabels = relVar.cypherType match {
-//        case CTNode(labels, _) => labels
-//        case _ => Set.empty
-//      }
-//      requiredLabels.subsetOf(physicalLabels ++ logicalLabels)
-//    }
-//
-//
-//    slots.collect {
-//      case RecordSlot(_, OpaqueField(v)) => v
-//    }.filter { v =>
-//      v.cypherType match {
-//        case t: CTRelationship if targetTypes.isEmpty || t.types.isEmpty => true
-//        case CTRelationship(types, _) =>
-//          types.exists(targetTypes.contains)
-//        case _ => false
-//      }
-//    }
-//  }
+  def relationshipsForType(relType: CTRelationship): Set[Var] = {
+    // or semantics
+    val possibleTypes = relType.types
 
+    relationshipVars.filter { relVar =>
+      val physicalType = typeFor(relVar) match {
+        case Some(HasType(_, RelType(name))) => Set(name)
+        case None => Set.empty[String]
+      }
+      val logicalTypes = relVar.cypherType match {
+        case CTRelationship(types, _) => types
+        case _ => Set.empty[String]
+      }
+      (physicalType ++ logicalTypes).exists(possibleTypes.contains)
+    }
+  }
 
   def expressionsFor(expr: Expr): Set[Expr] = {
     expr match {
@@ -134,10 +129,10 @@ case class RecordHeaderNew(exprToColumn: Map[Expr, String]) {
     }
   }
 
-  def typeFor(r: Var): HasType = {
+  def typeFor(r: Var): Option[HasType] = {
     ownedBy(r).collectFirst {
       case t: HasType => t
-    }.get
+    }
   }
 
   def idColumns: Set[String] = {

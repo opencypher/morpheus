@@ -171,7 +171,8 @@ class RecordHeaderNewTest extends FunSpec with Matchers {
   }
 
   it("returns type for a rel") {
-    rHeader.typeFor(r) should equalWithTracing(rRelType)
+    rHeader.typeFor(r) should equalWithTracing(Some(rRelType))
+    nHeader.typeFor(r) should equalWithTracing(None)
   }
 
   it("returns all node vars") {
@@ -182,6 +183,18 @@ class RecordHeaderNewTest extends FunSpec with Matchers {
   it("returns all rel vars") {
     rHeader.relationshipVars should equalWithTracing(Set(r))
     nHeader.relationshipVars should equalWithTracing(Set.empty)
+  }
+
+  it("returns all node vars for a given node type") {
+    nHeader.nodesForType(CTNode("A")) should equalWithTracing(Set(n))
+    nHeader.nodesForType(CTNode("A", "B")) should equalWithTracing(Set(n))
+    nHeader.nodesForType(CTNode("C")) should equalWithTracing(Set.empty)
+  }
+
+  it("returns all rel vars for a given rel type") {
+    rHeader.relationshipsForType(CTRelationship("R")) should equalWithTracing(Set(r))
+    rHeader.relationshipsForType(CTRelationship("R", "S")) should equalWithTracing(Set(r))
+    rHeader.relationshipsForType(CTRelationship("S")) should equalWithTracing(Set.empty)
   }
 
 }
