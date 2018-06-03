@@ -52,6 +52,8 @@ case class RecordHeaderNew(exprToColumn: Map[Expr, String]) {
   // TODO: should this return expressions deterministically ordered by columns?
   def expressions: Set[Expr] = exprToColumn.keySet
 
+  def columns: Set[String] = exprToColumn.values.toSet
+
   def contains(expr: Expr): Boolean = exprToColumn.contains(expr)
 
   def getColumn(expr: Expr): Option[String] = exprToColumn.get(expr)
