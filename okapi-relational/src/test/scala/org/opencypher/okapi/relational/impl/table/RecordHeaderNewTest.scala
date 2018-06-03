@@ -238,9 +238,10 @@ class RecordHeaderNewTest extends FunSpec with Matchers {
   }
 
   it("returns original column names after cascaded select with 1:n aliasing") {
-    val aliasHeader = nHeader.withAlias(m, n).withAlias(o, n) // WITH n AS m, n AS o
-    val selectHeader = aliasHeader.select(Set(m, o))
+    val aliasHeader = nHeader.withAlias(m, n).withAlias(o, n) // WITH n, n AS m, n AS o
+    val selectHeader = aliasHeader.select(Set(n, m, o))
 
+    selectHeader.ownedBy(n).map(selectHeader.column) should equal(nHeader.ownedBy(n).map(nHeader.column))
     selectHeader.ownedBy(m).map(selectHeader.column) should equal(nHeader.ownedBy(n).map(nHeader.column))
     selectHeader.ownedBy(o).map(selectHeader.column) should equal(nHeader.ownedBy(n).map(nHeader.column))
   }
@@ -255,6 +256,27 @@ class RecordHeaderNewTest extends FunSpec with Matchers {
 
     selectHeader1.column(s) should equal(nHeader.column(nPropFoo))
     selectHeader2.column(t) should equal(nHeader.column(nPropFoo))
+  }
+
+  it("supports reusing previously used vars") {
+    val aliasHeader1 = nHeader.withAlias(m, n) // WITH n AS m
+    val selectHeader1 = aliasHeader1.select(Set(m))
+    val aliasHeader2 = selectHeader1.withAlias(n, m) // WITH m AS n
+    val selectHeader2 = aliasHeader2.select(Set(n))
+
+    selectHeader2 should equal(nHeader)
+  }
+
+  it("supports reusing previously used vars with same name but different type") {
+    val n2 = Var("n")(nPropFoo.cypherType)
+    val mPropFoo = nPropFoo.withOwner(m)
+
+    val aliasHeader1 = nHeader.withAlias(m, n) // WITH n AS m
+    val selectHeader1 = aliasHeader1.select(Set(m))
+    val aliasHeader2 = selectHeader1.withAlias(n2, mPropFoo) // WITH m.foo AS n
+    val selectHeader2 = aliasHeader2.select(Set(n2))
+
+    selectHeader2.column(n2) should equal(nHeader.column(nPropFoo))
   }
 
 }
