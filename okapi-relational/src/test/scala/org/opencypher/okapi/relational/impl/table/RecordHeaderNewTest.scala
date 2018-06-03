@@ -58,6 +58,11 @@ class RecordHeaderNewTest extends FunSpec with Matchers {
   val mHeader: RecordHeaderNew = RecordHeaderNew.empty.withExprs(mExprs)
   val rHeader: RecordHeaderNew = RecordHeaderNew.empty.withExprs(rExprs)
 
+  it("can check if an expression is contained") {
+    nHeader.contains(n) should equal(true)
+    nHeader.contains(m) should equal(false)
+  }
+
   it("can add an entity expression") {
     nHeader.ownedBy(n) should equal(nExprs)
   }

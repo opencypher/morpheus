@@ -47,6 +47,8 @@ case class RecordHeaderNew(exprToColumn: Map[Expr, String]) {
 
   def getColumn(expr: Expr): Option[String] = exprToColumn.get(expr)
 
+  def contains(expr: Expr): Boolean = exprToColumn.contains(expr)
+
   def column(expr: Expr): String =
     exprToColumn.getOrElse(expr, throw IllegalArgumentException(s"Header does not contain a column for $expr: ${this.toString}"))
 
