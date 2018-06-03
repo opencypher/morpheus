@@ -26,23 +26,23 @@
  */
 package org.opencypher.spark.impl.table
 
-import org.apache.spark.sql.Row
-import org.apache.spark.sql.catalyst.encoders.{ExpressionEncoder, RowEncoder}
 import org.apache.spark.sql.types.StructType
-import org.opencypher.okapi.relational.impl.table._
+import org.opencypher.okapi.impl.exception.IllegalArgumentException
+import org.opencypher.okapi.ir.api.expr.{Expr, Var}
+import org.opencypher.okapi.relational.impl.table.RecordHeaderNew
 import org.opencypher.spark.impl.convert.CAPSCypherType._
 
-object CAPSRecordHeader {
+object CAPSStructType {
 
-  implicit class RecordHeaderOps(header: RecordHeaderNew) extends Serializable {
+  implicit class StructTypeOps(val structType: StructType) {
 
-    def toStructType: StructType = {
-      StructType(header.expressions
-        .map(expr => expr.cypherType.toStructField(header.column(expr)))
-        .toSeq)
+    def toRecordHeader: RecordHeaderNew = {
+      val vars: Set[Expr] = structType.fields.map { field =>
+        Var(field.name)(field.dataType.toCypherType(field.nullable)
+          .getOrElse(throw IllegalArgumentException("a supported Spark type", field.dataType)))
+      }.toSet
+
+      RecordHeaderNew.from(vars)
     }
-
-    def rowEncoder: ExpressionEncoder[Row] =
-      RowEncoder(header.toStructType)
   }
 }

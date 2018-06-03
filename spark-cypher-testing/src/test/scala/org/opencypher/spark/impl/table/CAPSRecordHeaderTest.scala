@@ -26,23 +26,26 @@
  */
 package org.opencypher.spark.impl.table
 
-import org.apache.spark.sql.Row
-import org.apache.spark.sql.catalyst.encoders.{ExpressionEncoder, RowEncoder}
-import org.apache.spark.sql.types.StructType
-import org.opencypher.okapi.relational.impl.table._
-import org.opencypher.spark.impl.convert.CAPSCypherType._
+import org.scalatest.{FunSpec, Matchers}
+import CAPSRecordHeader._
+import org.apache.spark.sql.types.{ArrayType, StringType, StructField, StructType}
+import org.opencypher.okapi.api.types.{CTList, CTString}
+import org.opencypher.okapi.ir.api.expr.Var
+import org.opencypher.okapi.relational.impl.table.RecordHeaderNew
 
-object CAPSRecordHeader {
+class CAPSRecordHeaderTest extends FunSpec with Matchers {
 
-  implicit class RecordHeaderOps(header: RecordHeaderNew) extends Serializable {
+  it("computes a struct type from a given record header") {
+    val header = RecordHeaderNew.empty
+      .withExpr(Var("a")(CTString))
+      .withExpr(Var("b")(CTString.nullable))
+      .withExpr(Var("c")(CTList(CTString.nullable)))
 
-    def toStructType: StructType = {
-      StructType(header.expressions
-        .map(expr => expr.cypherType.toStructField(header.column(expr)))
-        .toSeq)
-    }
-
-    def rowEncoder: ExpressionEncoder[Row] =
-      RowEncoder(header.toStructType)
+    header.toStructType should equal(StructType(Seq(
+      StructField("a", StringType, nullable = false),
+      StructField("b", StringType, nullable = true),
+      StructField("c", ArrayType(StringType, containsNull = true), nullable = false)
+    )))
   }
+
 }
