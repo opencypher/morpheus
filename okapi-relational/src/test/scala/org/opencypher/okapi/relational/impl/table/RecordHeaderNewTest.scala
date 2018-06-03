@@ -62,6 +62,11 @@ class RecordHeaderNewTest extends FunSpec with Matchers {
     nHeader.expressions should equalWithTracing(nExprs)
   }
 
+  it("can return all contained columns") {
+    nHeader.columns should equalWithTracing(nHeader.expressions.map(nHeader.column))
+    nHeader.withAlias(m, n).columns should equalWithTracing(nHeader.expressions.map(nHeader.column))
+  }
+
   it("can check if an expression is contained") {
     nHeader.contains(n) should equal(true)
     nHeader.contains(m) should equal(false)
