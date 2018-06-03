@@ -151,6 +151,24 @@ class RecordHeaderNewTest extends FunSpec with Matchers {
     aliasHeader.ownedBy(m) should equalWithTracing(mExprs + prop2.withOwner(m))
   }
 
+  it("finds all id expressions") {
+    nHeader.idExpressions should equalWithTracing(Set(n))
+
+    rHeader.idExpressions should equalWithTracing(Set(r, rStart, rEnd))
+
+    (nHeader ++ rHeader).idExpressions should equalWithTracing(
+      Set(n, r, rStart, rEnd)
+    )
+  }
+
+  it("finds all id expression for given var") {
+    nHeader.idExpressions(n) should equalWithTracing(Set(n))
+    nHeader.idExpressions(m) should equalWithTracing(Set.empty)
+    rHeader.idExpressions(r) should equalWithTracing(Set(r, rStart, rEnd))
+    (nHeader ++ rHeader).idExpressions(n) should equalWithTracing(Set(n))
+    (nHeader ++ rHeader).idExpressions(r) should equalWithTracing(Set(r, rStart, rEnd))
+  }
+
   it("finds all id columns") {
     nHeader.idColumns should equalWithTracing(Set(nHeader.column(n)))
 
@@ -159,8 +177,27 @@ class RecordHeaderNewTest extends FunSpec with Matchers {
     )
 
     val rExtendedHeader = nHeader ++ rHeader
-    rExtendedHeader.idColumns should equalWithTracing(
-      Set(rExtendedHeader.column(n), rExtendedHeader.column(r), rExtendedHeader.column(rStart), rExtendedHeader.column(rEnd))
+    rExtendedHeader.idColumns should equalWithTracing(Set(
+      rExtendedHeader.column(n),
+      rExtendedHeader.column(r),
+      rExtendedHeader.column(rStart),
+      rExtendedHeader.column(rEnd))
+    )
+  }
+
+  it("finds all id columns for given var") {
+    nHeader.idColumns(n) should equalWithTracing(Set(nHeader.column(n)))
+
+    rHeader.idColumns(r) should equalWithTracing(
+      Set(rHeader.column(r), rHeader.column(rStart), rHeader.column(rEnd))
+    )
+
+    val rExtendedHeader = nHeader ++ rHeader
+    rExtendedHeader.idColumns(n) should equalWithTracing(Set(rExtendedHeader.column(n)))
+    rExtendedHeader.idColumns(r) should equalWithTracing(Set(
+      rExtendedHeader.column(r),
+      rExtendedHeader.column(rStart),
+      rExtendedHeader.column(rEnd))
     )
   }
 
