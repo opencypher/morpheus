@@ -27,8 +27,8 @@
 package org.opencypher.okapi.relational.api.schema
 
 import org.opencypher.okapi.api.schema.{PropertyKeys, Schema}
-import org.opencypher.okapi.api.types.{CTBoolean, CTNode}
-import org.opencypher.okapi.ir.api.expr.{HasLabel, Property, Var}
+import org.opencypher.okapi.api.types.{CTBoolean, CTNode, CTRelationship, CTString}
+import org.opencypher.okapi.ir.api.expr._
 import org.opencypher.okapi.ir.api.{Label, PropertyKey}
 import org.opencypher.okapi.relational.api.schema.RelationalSchema._
 import org.opencypher.okapi.relational.impl.table.RecordHeaderNew
@@ -62,5 +62,19 @@ class RelationalSchemaTest extends FunSpec with Matchers {
       .withExpr(HasLabel(n, Label("B"))(CTBoolean))
       .withExpr(Property(n, PropertyKey("foo"))(CTBoolean))
       .withExpr(Property(n, PropertyKey("bar"))(CTBoolean)))
+  }
+
+  it("creates a header for a given relationship") {
+    val schema = Schema.empty
+      .withRelationshipPropertyKeys("A", PropertyKeys("foo" -> CTBoolean))
+
+    val r = Var("r")(CTRelationship("A"))
+
+    schema.headerForRelationship(r) should equal(RecordHeaderNew.empty
+      .withExpr(r)
+      .withExpr(StartNode(r)(CTNode))
+      .withExpr(EndNode(r)(CTNode))
+      .withExpr(Type(r)(CTString))
+      .withExpr(Property(r, PropertyKey("foo"))(CTBoolean)))
   }
 }

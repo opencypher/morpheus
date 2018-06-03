@@ -27,11 +27,11 @@
 package org.opencypher.okapi.relational.api.schema
 
 import org.opencypher.okapi.api.schema.Schema
-import org.opencypher.okapi.api.types.{CTBoolean, CTNode}
+import org.opencypher.okapi.api.types.{CTBoolean, CTNode, CTRelationship, CTString}
 import org.opencypher.okapi.impl.exception.IllegalArgumentException
-import org.opencypher.okapi.ir.api.expr.{Expr, HasLabel, Property, Var}
+import org.opencypher.okapi.ir.api.expr._
 import org.opencypher.okapi.ir.api.{Label, PropertyKey}
-import org.opencypher.okapi.relational.impl.table.RecordHeaderNew
+import org.opencypher.okapi.relational.impl.table.{IRecordHeader, RecordHeaderNew}
 
 object RelationalSchema {
 
@@ -64,6 +64,45 @@ object RelationalSchema {
       }.toSet
 
       RecordHeaderNew.empty.withExprs(labelExpressions ++ propertyExpressions + node)
+    }
+
+    def headerForRelationship(rel: Var): RecordHeaderNew = {
+      val types: Set[String] = rel.cypherType match {
+        case CTRelationship(_types, _) if _types.isEmpty =>
+          schema.relationshipTypes
+        case CTRelationship(_types, _) =>
+          _types
+        case other =>
+          throw IllegalArgumentException("CTRelationship", other.asInstanceOf[IRecordHeader])
+      }
+
+      headerForRelationship(rel, types)
+    }
+
+    def headerForRelationship(rel: Var, relTypes: Set[String]): RecordHeaderNew = {
+      val relKeyHeaderProperties = relTypes.toSeq
+        .flatMap(t => schema.relationshipKeys(t).toSeq)
+        .groupBy(_._1)
+        .mapValues { keys =>
+          if (keys.size == relTypes.size && keys.forall(keys.head == _)) {
+            keys.head._2
+          } else {
+            keys.head._2.nullable
+          }
+        }
+
+      val propertyExpressions: Set[Expr] = relKeyHeaderProperties.map {
+        case (k, t) => Property(rel, PropertyKey(k))(t)
+      }.toSet
+
+      val startNodeExpr = StartNode(rel)(CTNode)
+      // TODO: should this be HasType instead? Resulting header cannot resolve ownership otherwise.
+      val typeExpr = Type(rel)(CTString)
+      val endNodeExpr = EndNode(rel)(CTNode)
+
+      val relationshipExpressions = propertyExpressions + rel + typeExpr + startNodeExpr + endNodeExpr
+
+      RecordHeaderNew.empty.withExprs(relationshipExpressions)
     }
   }
 
