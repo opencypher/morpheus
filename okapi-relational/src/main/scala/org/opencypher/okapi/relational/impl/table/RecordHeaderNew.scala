@@ -45,6 +45,8 @@ object RecordHeaderNew {
 
 case class RecordHeaderNew(exprToColumn: Map[Expr, String]) {
 
+  def expressions: Set[Expr] = exprToColumn.keySet
+
   def getColumn(expr: Expr): Option[String] = exprToColumn.get(expr)
 
   def contains(expr: Expr): Boolean = exprToColumn.contains(expr)
