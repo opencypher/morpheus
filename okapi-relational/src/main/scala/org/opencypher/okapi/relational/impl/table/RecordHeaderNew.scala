@@ -241,7 +241,7 @@ case class RecordHeaderNew(exprToColumn: Map[Expr, String]) {
 
   def ++(other: RecordHeaderNew): RecordHeaderNew = copy(exprToColumn = exprToColumn ++ other.exprToColumn)
 
-  def --(expressions: Set[Expr]): RecordHeaderNew = {
+  def --[T <: Expr](expressions: Set[T]): RecordHeaderNew = {
     val expressionToRemove = expressions.flatMap(expressionsFor)
     val updatedExprToColumn = exprToColumn.filterNot { case (e, _) => expressionToRemove.contains(e) }
     copy(exprToColumn = updatedExprToColumn)
