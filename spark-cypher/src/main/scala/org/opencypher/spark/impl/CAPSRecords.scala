@@ -107,7 +107,7 @@ sealed abstract case class CAPSRecords(header: RecordHeaderNew, data: DataFrame)
 
   def select(fields: Set[Var]): CAPSRecords = {
     val selectedHeader = header.select(fields)
-    val selectedColumnNames = selectedHeader.contents.map(selectedHeader.of).toSeq
+    val selectedColumnNames = selectedHeader.columns.toSeq
     val selectedColumns = data.select(selectedColumnNames.head, selectedColumnNames.tail: _*)
     CAPSRecords.verifyAndCreate(selectedHeader, selectedColumns)
   }
@@ -129,14 +129,17 @@ sealed abstract case class CAPSRecords(header: RecordHeaderNew, data: DataFrame)
   def addAliases(aliasToOriginal: Map[Var, Var]): CAPSRecords = {
     val (updatedHeader, updatedData) = aliasToOriginal.foldLeft((header, data)) {
       case ((tempHeader, tempDf), (nextAlias, nextOriginal)) =>
-        val originalSlots = tempHeader.selfWithChildren(nextOriginal).toList
-        val slotsToAdd = originalSlots.map(_.withOwner(nextAlias))
-        val updatedHeader = tempHeader ++ IRecordHeader.from(slotsToAdd)
-        val originalColumns = originalSlots.map(updatedHeader.of).map(tempDf.col)
-        val aliasColumns = slotsToAdd.map(updatedHeader.of)
-        val additions = aliasColumns.zip(originalColumns)
-        val updatedDf = tempDf.safeAddColumns(additions: _*)
-        updatedHeader -> updatedDf
+
+        val updatedHeader = tempHeader.withAlias(nextAlias, nextOriginal)
+
+        val aliasedExpressions = tempHeader
+          .ownedBy(nextOriginal)
+          .map(expr => expr -> expr.withOwner(nextAlias))
+
+        val additions = aliasedExpressions.map {
+          case (expr, alias) => updatedHeader.column(alias) -> tempDf.col(updatedHeader.column(expr))
+        }
+        updatedHeader -> tempDf.safeAddColumns(additions.toSeq: _*)
     }
     CAPSRecords.verifyAndCreate(updatedHeader, updatedData)
   }
