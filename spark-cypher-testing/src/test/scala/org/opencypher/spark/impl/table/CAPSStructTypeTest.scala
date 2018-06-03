@@ -26,23 +26,27 @@
  */
 package org.opencypher.spark.impl.table
 
-import org.apache.spark.sql.Row
-import org.apache.spark.sql.catalyst.encoders.{ExpressionEncoder, RowEncoder}
-import org.apache.spark.sql.types.StructType
-import org.opencypher.okapi.relational.impl.table._
-import org.opencypher.spark.impl.convert.CAPSCypherType._
+import org.scalatest.{FunSpec, Matchers}
+import CAPSStructType._
+import org.apache.spark.sql.types._
+import org.opencypher.okapi.api.types.{CTInteger, CTList, CTString}
+import org.opencypher.okapi.ir.api.expr.Var
+import org.opencypher.okapi.relational.impl.table.RecordHeaderNew
 
-object CAPSRecordHeader {
+class CAPSStructTypeTest extends FunSpec with Matchers {
 
-  implicit class RecordHeaderOps(header: RecordHeaderNew) extends Serializable {
+  it("computes a header from a given struct type") {
+    val structType = StructType(Seq(
+      StructField("a", LongType, nullable = true),
+      StructField("b", StringType, nullable = false),
+      StructField("c", ArrayType(StringType, containsNull = true), nullable = false)
+    ))
 
-    def toStructType: StructType = {
-      StructType(header.expressions
-        .map(expr => expr.cypherType.toStructField(header.column(expr)))
-        .toSeq)
-    }
-
-    def rowEncoder: ExpressionEncoder[Row] =
-      RowEncoder(header.toStructType)
+    structType.toRecordHeader should equal(RecordHeaderNew.empty
+      .withExpr(Var("a")(CTInteger.nullable))
+      .withExpr(Var("b")(CTString))
+      .withExpr(Var("c")(CTList(CTString.nullable)))
+    )
   }
+
 }
