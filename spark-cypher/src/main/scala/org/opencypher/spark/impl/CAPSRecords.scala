@@ -150,34 +150,31 @@ sealed abstract case class CAPSRecords(header: RecordHeaderNew, data: DataFrame)
     CAPSRecords.verifyAndCreate(header, updatedData)
   }
 
-  def renameVars(aliasToOriginal: Map[Var, Var]): CAPSRecords = {
-    val (updatedHeader, updatedData) = aliasToOriginal.foldLeft((header, data)) {
-      case ((tempHeader, tempDf), (nextAlias, nextOriginal)) =>
-        val slotsToReassign = tempHeader.selfWithChildren(nextOriginal).toList
-        val reassignedSlots = slotsToReassign.map(_.withOwner(nextAlias))
-        val updatedHeader = tempHeader --
-          IRecordHeader.from(slotsToReassign) ++
-          IRecordHeader.from(reassignedSlots)
-        val originalColumns = slotsToReassign.map(header.of)
-        val aliasColumns = reassignedSlots.map(header.of)
-        val renamings = originalColumns.zip(aliasColumns)
-        val updatedDf = tempDf.safeRenameColumns(renamings: _*)
-        updatedHeader -> updatedDf
-    }
-    CAPSRecords.verifyAndCreate(updatedHeader, updatedData)
-  }
+//  def renameVars(aliasToOriginal: Map[Var, Var]): CAPSRecords = {
+//    val (updatedHeader, updatedData) = aliasToOriginal.foldLeft((header, data)) {
+//      case ((tempHeader, tempDf), (nextAlias, nextOriginal)) =>
+//        val slotsToReassign = tempHeader.selfWithChildren(nextOriginal).toList
+//        val reassignedSlots = slotsToReassign.map(_.withOwner(nextAlias))
+//        val updatedHeader = tempHeader --
+//          IRecordHeader.from(slotsToReassign) ++
+//          IRecordHeader.from(reassignedSlots)
+//        val originalColumns = slotsToReassign.map(header.of)
+//        val aliasColumns = reassignedSlots.map(header.of)
+//        val renamings = originalColumns.zip(aliasColumns)
+//        val updatedDf = tempDf.safeRenameColumns(renamings: _*)
+//        updatedHeader -> updatedDf
+//    }
+//    CAPSRecords.verifyAndCreate(updatedHeader, updatedData)
+//  }
 
   def removeVars(vars: Set[Var]): CAPSRecords = {
-    val (updatedHeader, updatedData) = vars.foldLeft((header, data)) {
-      case ((tempHeader, tempDf), nextFieldToRemove) =>
-        val slotsToRemove = tempHeader.selfWithChildren(nextFieldToRemove)
-        val updatedHeader = tempHeader -- IRecordHeader.from(slotsToRemove.toList)
-        updatedHeader -> tempDf.drop(slotsToRemove.map(tempHeader.of): _*)
-    }
+    val updatedHeader = header -- vars
+    val keepColumns = updatedHeader.columns.toSeq
+    val updatedData = data.select(keepColumns.head, keepColumns.tail: _*)
     CAPSRecords.verifyAndCreate(updatedHeader, updatedData)
   }
 
-  def unionAll(header: IRecordHeader, other: CAPSRecords): CAPSRecords = {
+  def unionAll(header: RecordHeaderNew, other: CAPSRecords): CAPSRecords = {
     val unionData = data.union(other.data)
     CAPSRecords.verifyAndCreate(header, unionData)
   }
