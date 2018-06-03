@@ -206,4 +206,55 @@ class RecordHeaderNewTest extends FunSpec with Matchers {
     rHeader.relationshipsForType(CTRelationship("S")) should equalWithTracing(Set.empty)
   }
 
+  it("returns selected entity vars and their corresponding columns") {
+    nHeader.select(Set(n)) should equal(nHeader)
+    nHeader.select(Set(m)) should equal(RecordHeaderNew.empty)
+    (nHeader ++ mHeader).select(Set(n)) should equal(nHeader)
+    (nHeader ++ mHeader).select(Set(m)) should equal(mHeader)
+  }
+
+  it("returns selected entity and alias vars and their corresponding columns") {
+    val s = Var("nPropFoo_Alias")(nPropFoo.cypherType)
+    val aliasHeader = nHeader
+      .withAlias(m, n)
+      .withAlias(s, nPropFoo)
+
+    aliasHeader.select(Set(s)) should equal(RecordHeaderNew(Map(
+      s -> nHeader.column(nPropFoo)
+    )))
+
+    aliasHeader.select(Set(n, s)) should equal(nHeader.withAlias(s, nPropFoo))
+    aliasHeader.select(Set(n, m)) should equal(nHeader.withAlias(m, n))
+    aliasHeader.select(Set(n, m, s)) should equal(aliasHeader)
+  }
+
+  it("returns original column names after cascaded select") {
+    val aliasHeader1 = nHeader.withAlias(m, n) // WITH n as m
+    val selectHeader1 = aliasHeader1.select(Set(m))
+    val aliasHeader2 = selectHeader1.withAlias(o, m) // WITH m as o
+    val selectHeader2 = aliasHeader2.select(Set(o))
+
+    selectHeader2.ownedBy(o).map(selectHeader2.column) should equal(nHeader.ownedBy(n).map(nHeader.column))
+  }
+
+  it("returns original column names after cascaded select with 1:n aliasing") {
+    val aliasHeader = nHeader.withAlias(m, n).withAlias(o, n) // WITH n AS m, n AS o
+    val selectHeader = aliasHeader.select(Set(m, o))
+
+    selectHeader.ownedBy(m).map(selectHeader.column) should equal(nHeader.ownedBy(n).map(nHeader.column))
+    selectHeader.ownedBy(o).map(selectHeader.column) should equal(nHeader.ownedBy(n).map(nHeader.column))
+  }
+
+  it("returns original column names after cascaded select with property aliases") {
+    val s = Var("nPropFoo_Alias")(nPropFoo.cypherType)
+    val t = Var("nPropFoo_Alias")(nPropFoo.cypherType)
+    val aliasHeader1 = nHeader.withAlias(s, nPropFoo) // WITH n.foo AS s
+    val selectHeader1 = aliasHeader1.select(Set(s))
+    val aliasHeader2 = selectHeader1.withAlias(t, s) // WITH s AS t
+    val selectHeader2 = aliasHeader2.select(Set(t))
+
+    selectHeader1.column(s) should equal(nHeader.column(nPropFoo))
+    selectHeader2.column(t) should equal(nHeader.column(nPropFoo))
+  }
+
 }
