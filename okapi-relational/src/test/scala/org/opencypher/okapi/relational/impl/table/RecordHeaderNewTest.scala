@@ -117,6 +117,13 @@ class RecordHeaderNewTest extends FunSpec with Matchers {
     unionHeader.ownedBy(o) should equalWithTracing(oExprs)
   }
 
+  it("can remove expressions") {
+    nHeader -- nExprs should equal(RecordHeaderNew.empty)
+    nHeader -- Set(n) should equal(RecordHeaderNew.empty)
+    nHeader -- Set(nPropFoo) should equal(RecordHeaderNew.empty.withExpr(n).withExpr(nLabelA).withExpr(nLabelB))
+    nHeader -- Set(m) should equal(nHeader)
+  }
+
   it("can modify alias and original expression") {
     val prop2 = Property(n, PropertyKey("bar"))(CTString)
     val aliasHeader = nHeader.withAlias(m, n)
