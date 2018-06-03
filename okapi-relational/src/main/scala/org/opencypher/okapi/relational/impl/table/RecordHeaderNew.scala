@@ -91,12 +91,18 @@ case class RecordHeaderNew(exprToColumn: Map[Expr, String]) {
   // Convenience methods
   // ===================
 
-  def idColumns: Set[String] = {
+  def idExpressions(): Set[Expr] = {
     exprToColumn.keySet.collect {
       case n if n.cypherType.superTypeOf(CTNode).isTrue => n
       case r if r.cypherType.superTypeOf(CTRelationship).isTrue => r
-    }.map(column)
+    }
   }
+
+  def idExpressions(v: Var): Set[Expr] = idExpressions().filter(_.owner.get == v)
+
+  def idColumns(): Set[String] = idExpressions().map(column)
+
+  def idColumns(v: Var): Set[String] = idExpressions(v).map(column)
 
   def labelsFor(n: Var): Set[HasLabel] = {
     ownedBy(n).collect {
