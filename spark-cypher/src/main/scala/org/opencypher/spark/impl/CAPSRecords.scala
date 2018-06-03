@@ -50,8 +50,6 @@ import org.opencypher.spark.api.io.{CAPSEntityTable, CAPSNodeTable, CAPSRelation
 import org.opencypher.spark.impl.CAPSRecords.{prepareDataFrame, verifyAndCreate}
 import org.opencypher.spark.impl.DataFrameOps._
 import org.opencypher.spark.impl.convert.CAPSCypherType._
-import org.opencypher.spark.impl.convert.rowToCypherMap
-import org.opencypher.spark.impl.table.CAPSRecordHeader._
 
 import scala.annotation.tailrec
 import scala.collection.JavaConverters._
@@ -145,20 +143,11 @@ sealed abstract case class CAPSRecords(header: RecordHeaderNew, data: DataFrame)
   }
 
   def retagVariable(v: Var, replacements: Map[Int, Int]): CAPSRecords = {
-    val slotsToRetag = v.cypherType match {
-      case _: CTNode => Set(header.slotFor(v))
-      case _: CTRelationship =>
-        val idSlot = header.slotFor(v)
-        val sourceSlot = header.sourceNodeSlot(v)
-        val targetSlot = header.targetNodeSlot(v)
-        Set(idSlot, sourceSlot, targetSlot)
-      case _ => Set.empty
-    }
-    val columnsToRetag = slotsToRetag.map(header.of)
-    val retaggedData = columnsToRetag.foldLeft(data) { case (df, columnName) =>
+    val columnsToUpdate = header.idColumns(v)
+    val updatedData = columnsToUpdate.foldLeft(data) { case (df, columnName) =>
       df.safeReplaceTags(columnName, replacements)
     }
-    CAPSRecords.verifyAndCreate(header, retaggedData)
+    CAPSRecords.verifyAndCreate(header, updatedData)
   }
 
   def renameVars(aliasToOriginal: Map[Var, Var]): CAPSRecords = {
