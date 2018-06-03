@@ -45,18 +45,93 @@ object RecordHeaderNew {
 
 case class RecordHeaderNew(exprToColumn: Map[Expr, String]) {
 
+  // ==============
+  // Lookup methods
+  // ==============
+
   // TODO: should this return expressions deterministically ordered by columns?
   def expressions: Set[Expr] = exprToColumn.keySet
 
-  def getColumn(expr: Expr): Option[String] = exprToColumn.get(expr)
-
   def contains(expr: Expr): Boolean = exprToColumn.contains(expr)
+
+  def getColumn(expr: Expr): Option[String] = exprToColumn.get(expr)
 
   def column(expr: Expr): String =
     exprToColumn.getOrElse(expr, throw IllegalArgumentException(s"Header does not contain a column for $expr: ${this.toString}"))
 
   def ownedBy(expr: Var): Set[Expr] = {
     exprToColumn.keys.filter(e => e.owner.contains(expr)).toSet
+  }
+
+  def expressionsFor(expr: Expr): Set[Expr] = {
+    expr match {
+      case v: Var => ownedBy(v)
+      case e if exprToColumn.contains(e) => Set(e)
+      case _ => Set.empty
+    }
+  }
+
+  def aliasesFor(expr: Expr): Set[Var] = {
+    val aliasesFromHeader: Set[Var] = getColumn(expr) match {
+      case None => Set.empty
+      case Some(col) => exprToColumn.collect { case (k: Var, v) if v == col => k }.toSet
+    }
+
+    val aliasesFromParam: Set[Var] = expr match {
+      case v: Var => Set(v)
+      case _ => Set.empty
+    }
+
+    aliasesFromHeader ++ aliasesFromParam
+  }
+
+  // ===================
+  // Convenience methods
+  // ===================
+
+  def idColumns: Set[String] = {
+    exprToColumn.keySet.collect {
+      case n if n.cypherType.superTypeOf(CTNode).isTrue => n
+      case r if r.cypherType.superTypeOf(CTRelationship).isTrue => r
+    }.map(column)
+  }
+
+  def labelsFor(n: Var): Set[HasLabel] = {
+    ownedBy(n).collect {
+      case l: HasLabel => l
+    }
+  }
+
+  def typeFor(r: Var): Option[HasType] = {
+    ownedBy(r).collectFirst {
+      case t: HasType => t
+    }
+  }
+
+  def startNodeFor(r: Var): StartNode = {
+    ownedBy(r).collectFirst {
+      case s: StartNode => s
+    }.get
+  }
+
+  def endNodeFor(r: Var): EndNode = {
+    ownedBy(r).collectFirst {
+      case e: EndNode => e
+    }.get
+  }
+
+  def propertiesFor(v: Var): Set[Property] = {
+    ownedBy(v).collect {
+      case p: Property => p
+    }
+  }
+
+  def node(name: Var): Set[Expr] = {
+    exprToColumn.keys.collect {
+      case n: Var if name == n => n
+      case h@HasLabel(n: Var, _) if name == n => h
+      case p@Property(n: Var, _) if name == n => p
+    }.toSet
   }
 
   def nodeVars: Set[Var] = {
@@ -102,58 +177,9 @@ case class RecordHeaderNew(exprToColumn: Map[Expr, String]) {
     }
   }
 
-  def expressionsFor(expr: Expr): Set[Expr] = {
-    expr match {
-      case v: Var => ownedBy(v)
-      case e if exprToColumn.contains(e) => Set(e)
-      case _ => Set.empty
-    }
-  }
-
-  def startNodeFor(r: Var): StartNode = {
-    ownedBy(r).collectFirst {
-      case s: StartNode => s
-    }.get
-  }
-
-  def endNodeFor(r: Var): EndNode = {
-    ownedBy(r).collectFirst {
-      case e: EndNode => e
-    }.get
-  }
-
-  def propertiesFor(v: Var): Set[Property] = {
-    ownedBy(v).collect {
-      case p: Property => p
-    }
-  }
-
-  def labelsFor(n: Var): Set[HasLabel] = {
-    ownedBy(n).collect {
-      case l: HasLabel => l
-    }
-  }
-
-  def typeFor(r: Var): Option[HasType] = {
-    ownedBy(r).collectFirst {
-      case t: HasType => t
-    }
-  }
-
-  def idColumns: Set[String] = {
-    exprToColumn.keySet.collect {
-      case n if n.cypherType.superTypeOf(CTNode).isTrue => n
-      case r if r.cypherType.superTypeOf(CTRelationship).isTrue => r
-    }.map(column)
-  }
-
-  def node(name: Var): Set[Expr] = {
-    exprToColumn.keys.collect {
-      case n: Var if name == n => n
-      case h@HasLabel(n: Var, _) if name == n => h
-      case p@Property(n: Var, _) if name == n => p
-    }.toSet
-  }
+  // ================
+  // Mutation methods
+  // ================
 
   def withExpr(expr: Expr): RecordHeaderNew = {
     exprToColumn.get(expr) match {
@@ -200,20 +226,6 @@ case class RecordHeaderNew(exprToColumn: Map[Expr, String]) {
   }
 
   def ++(other: RecordHeaderNew): RecordHeaderNew = copy(exprToColumn = exprToColumn ++ other.exprToColumn)
-
-  def aliasesFor(expr: Expr): Set[Var] = {
-    val aliasesFromHeader: Set[Var] = getColumn(expr) match {
-      case None => Set.empty
-      case Some(col) => exprToColumn.collect { case (k: Var, v) if v == col => k }.toSet
-    }
-
-    val aliasesFromParam: Set[Var] = expr match {
-      case v: Var => Set(v)
-      case _ => Set.empty
-    }
-
-    aliasesFromHeader ++ aliasesFromParam
-  }
 
   protected def addExprToColumn(expr: Expr, columnName: String): RecordHeaderNew = {
     copy(exprToColumn = exprToColumn + (expr -> columnName))
