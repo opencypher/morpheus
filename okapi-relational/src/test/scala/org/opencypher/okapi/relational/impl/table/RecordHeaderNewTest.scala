@@ -74,6 +74,11 @@ class RecordHeaderNewTest extends FunSpec with Matchers {
     nHeader.contains(m) should equal(false)
   }
 
+  it("can check for an empty header") {
+    nHeader.isEmpty should equal(false)
+    RecordHeaderNew.empty.isEmpty should equal(true)
+  }
+
   it("can add an entity expression") {
     nHeader.ownedBy(n) should equal(nExprs)
   }
