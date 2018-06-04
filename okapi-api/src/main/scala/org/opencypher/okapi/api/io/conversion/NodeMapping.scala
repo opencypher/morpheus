@@ -141,12 +141,14 @@ final case class NodeMapping private[okapi](
   def withPropertyKeys(properties: String*): NodeMapping =
     properties.foldLeft(this)((mapping, propertyKey) => mapping.withPropertyKey(propertyKey, propertyKey))
 
-  private def validate(): Unit = {
+  override def idKeys: Seq[String] = Seq(sourceIdKey)
+
+  override def optionalLabelKeys: Seq[String] = optionalLabelMapping.values.toSeq.sorted
+
+  protected override def validate(): Unit = {
+    super.validate()
     if (optionalLabelMapping.values.toSet.contains(sourceIdKey))
       throw IllegalArgumentException("source id key and optional labels referring to different source keys",
         s"$sourceIdKey used for source id key and optional label")
   }
-  override def idKeys: Seq[String] = Seq(sourceIdKey)
-
-  override def optionalLabelKeys: Seq[String] = optionalLabelMapping.values.toSeq.sorted
 }

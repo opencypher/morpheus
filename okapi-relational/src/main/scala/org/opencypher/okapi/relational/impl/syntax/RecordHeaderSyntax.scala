@@ -39,7 +39,7 @@ trait RecordHeaderSyntax {
   implicit def sparkRecordHeaderSyntax(header: RecordHeader): RecordHeaderOps =
     new RecordHeaderOps(header)
 
-  type HeaderState[X] = State[RecordHeader, X]
+  type HeaderState[X] = State[IRecordHeader, X]
 
   def addContents(contents: Seq[SlotContent]): State[RecordHeader, Vector[AdditiveUpdateResult[RecordSlot]]] =
     exec(InternalHeader.addContents(contents))

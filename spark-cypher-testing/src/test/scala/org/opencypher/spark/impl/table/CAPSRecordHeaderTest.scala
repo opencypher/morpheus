@@ -24,44 +24,28 @@
  * described as "implementation extensions to Cypher" or as "proposed changes to
  * Cypher that are not yet approved by the openCypher community".
  */
-package org.opencypher.okapi.api.io.conversion
+package org.opencypher.spark.impl.table
 
-import org.opencypher.okapi.api.types.{CypherType, DefiniteCypherType}
-import org.opencypher.okapi.impl.exception.IllegalArgumentException
+import org.scalatest.{FunSpec, Matchers}
+import CAPSRecordHeader._
+import org.apache.spark.sql.types.{ArrayType, StringType, StructField, StructType}
+import org.opencypher.okapi.api.types.{CTList, CTString}
+import org.opencypher.okapi.ir.api.expr.Var
+import org.opencypher.okapi.relational.impl.table.RecordHeaderNew
 
-/**
-  * Represents a map from node property keys to keys in the source data.
-  */
-trait EntityMapping {
+class CAPSRecordHeaderTest extends FunSpec with Matchers {
 
-  // TODO: CTEntity
-  def cypherType: CypherType with DefiniteCypherType
+  it("computes a struct type from a given record header") {
+    val header = RecordHeaderNew.empty
+      .withExpr(Var("a")(CTString))
+      .withExpr(Var("b")(CTString.nullable))
+      .withExpr(Var("c")(CTList(CTString.nullable)))
 
-  def sourceIdKey: String
-
-  def propertyMapping: Map[String, String]
-
-  def idKeys: Seq[String]
-
-  def optionalLabelKeys: Seq[String] = Seq.empty
-
-  def relTypeKey: Option[String] = None
-
-  def allSourceKeys: Seq[String] = idKeys ++ optionalLabelKeys ++ relTypeKey ++ propertyMapping.values.toSeq.sorted
-
-  protected def preventOverwritingProperty(propertyKey: String): Unit =
-    if (propertyMapping.contains(propertyKey))
-      throw IllegalArgumentException("unique property key definitions",
-        s"given key $propertyKey overwrites existing mapping")
-
-  protected def validate(): Unit = {
-    val sourceKeys = allSourceKeys
-    if (allSourceKeys.size != sourceKeys.toSet.size) {
-      val duplicateColumns = sourceKeys.groupBy(_).filter { case (_, items) => items.size > 1 }
-      throw IllegalArgumentException(
-        "One-to-one mapping from entity elements to source keys",
-        s"Duplicate columns: $duplicateColumns")
-    }
+    header.toStructType should equal(StructType(Seq(
+      StructField("a", StringType, nullable = false),
+      StructField("b", StringType, nullable = true),
+      StructField("c", ArrayType(StringType, containsNull = true), nullable = false)
+    )))
   }
 
 }

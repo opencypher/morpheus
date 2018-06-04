@@ -29,7 +29,8 @@ package org.opencypher.spark.impl
 import org.apache.spark.storage.StorageLevel
 import org.opencypher.okapi.api.types.{CTNode, CTRelationship}
 import org.opencypher.okapi.ir.api.expr._
-import org.opencypher.okapi.relational.impl.table.{OpaqueField, RecordHeader, SlotContent}
+import org.opencypher.okapi.relational.api.schema.RelationalSchema._
+import org.opencypher.okapi.relational.impl.table.RecordHeaderNew
 import org.opencypher.spark.api.CAPSSession
 import org.opencypher.spark.impl.table.CAPSRecordHeader._
 import org.opencypher.spark.schema.CAPSSchema
@@ -62,49 +63,49 @@ case class CAPSPatternGraph(
   override def unpersist(blocking: Boolean): CAPSPatternGraph = map(_.unpersist(blocking))
 
   private def map(f: CAPSRecords => CAPSRecords) =
-    new CAPSPatternGraph(f(baseTable), schema, tags)
+    CAPSPatternGraph(f(baseTable), schema, tags)
 
   override def nodes(name: String, nodeCypherType: CTNode): CAPSRecords = {
     val targetNode = Var(name)(nodeCypherType)
     val nodeSchema = schema.forNode(nodeCypherType.labels)
-    val targetNodeHeader = RecordHeader.nodeFromSchema(targetNode, nodeSchema)
-    val extractionNodes: Seq[Var] = header.nodesForType(nodeCypherType)
+    val targetNodeHeader = nodeSchema.headerForNode(targetNode)
+    val extractionNodes: Set[Var] = header.nodesForType(nodeCypherType)
 
     extractRecordsFor(targetNode, targetNodeHeader, extractionNodes)
   }
 
   override def relationships(name: String, relCypherType: CTRelationship): CAPSRecords = {
     val targetRel = Var(name)(relCypherType)
-    val targetRelHeader = RecordHeader.relationshipFromSchema(targetRel, schema.forRelationship(relCypherType))
+    val relSchema = schema.forRelationship(relCypherType)
+    val targetRelHeader = relSchema.headerForRelationship(targetRel)
     val extractionRels = header.relationshipsForType(relCypherType)
 
     extractRecordsFor(targetRel, targetRelHeader, extractionRels)
   }
 
-  private def extractRecordsFor(targetVar: Var, targetHeader: RecordHeader, extractionVars: Seq[Var]): CAPSRecords = {
-    val extractionSlots = extractionVars.map { candidate =>
-      candidate -> (header.childSlots(candidate) :+ header.slotFor(candidate))
-    }.toMap
+  private def extractRecordsFor(targetVar: Var, targetHeader: RecordHeaderNew, extractionVars: Set[Var]): CAPSRecords = {
+    val extractionExpressions = extractionVars.map(candidate => candidate -> header.ownedBy(candidate)).toMap
 
-    val relColumnsLookupTables = extractionSlots.map {
-      case (relVar, slotsForRel) =>
-        relVar -> createScanToBaseTableLookup(targetHeader, targetVar, slotsForRel.map(_.content))
+    val relColumnsLookupTables = extractionExpressions.map {
+      case (relVar, expressionsForRel) =>
+        relVar -> createScanToBaseTableLookup(targetHeader, targetVar, expressionsForRel)
     }
 
     val extractedDf = baseTable
       .toDF()
-      .flatMap(RowExpansion(targetHeader, targetVar, extractionSlots, relColumnsLookupTables))(targetHeader.rowEncoder)
+      .flatMap(RowExpansion(targetHeader, targetVar, extractionExpressions, relColumnsLookupTables))(targetHeader.rowEncoder)
 
-    val distinctData = extractedDf.dropDuplicates(targetHeader.of(OpaqueField(targetVar)))
+    val distinctData = extractedDf.dropDuplicates(targetHeader.column(targetVar))
 
     CAPSRecords.verifyAndCreate(targetHeader, distinctData)
   }
 
-  private def createScanToBaseTableLookup(targetHeader: RecordHeader, scanTableVar: Var, slotContents: Seq[SlotContent]): Map[String, String] = {
-    slotContents.flatMap { baseTableSlotContent =>
-      val targetSlotContent = baseTableSlotContent.withOwner(scanTableVar)
-      if (targetHeader.contents.contains(targetSlotContent)) {
-        Some(targetHeader.of(targetSlotContent) -> header.of(baseTableSlotContent))
+  private def createScanToBaseTableLookup(targetHeader: RecordHeaderNew, scanTableVar: Var, baseTableExpressions: Set[Expr]): Map[String, String] = {
+    baseTableExpressions.flatMap { baseTableExpression =>
+      val scanTableExpression = baseTableExpression.withOwner(scanTableVar)
+
+      if (targetHeader.contains(scanTableExpression)) {
+        Some(targetHeader.column(scanTableExpression) -> header.column(baseTableExpression))
       } else {
         None
       }

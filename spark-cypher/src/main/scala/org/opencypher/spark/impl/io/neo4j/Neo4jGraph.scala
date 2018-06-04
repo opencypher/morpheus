@@ -36,7 +36,7 @@ import org.opencypher.okapi.api.value.CypherValue
 import org.opencypher.okapi.impl.exception.IllegalArgumentException
 import org.opencypher.okapi.ir.api.PropertyKey
 import org.opencypher.okapi.ir.api.expr._
-import org.opencypher.okapi.relational.impl.table.RecordHeader
+import org.opencypher.okapi.relational.impl.table.IRecordHeader
 import org.opencypher.spark.api.CAPSSession
 import org.opencypher.spark.impl.io.neo4j.Neo4jGraph.{filterNode, filterRel, nodeToRow, relToRow}
 import org.opencypher.spark.impl.table.CAPSRecordHeader._
@@ -71,7 +71,7 @@ class Neo4jGraph(val schema: CAPSSchema, val session: CAPSSession)(
       g(inputRels.filter(_ => true)))
 
   override def nodes(name: String, cypherType: CTNode): CAPSRecords = {
-    val header = RecordHeader.nodeFromSchema(Var(name)(cypherType), schema)
+    val header = IRecordHeader.nodeFromSchema(Var(name)(cypherType), schema)
 
     computeRecords(name, cypherType, header) { (header, struct) =>
       inputNodes.filter(filterNode(cypherType)).map(nodeToRow(header, struct))
@@ -79,15 +79,15 @@ class Neo4jGraph(val schema: CAPSSchema, val session: CAPSSession)(
   }
 
   override def relationships(name: String, cypherType: CTRelationship): CAPSRecords = {
-    val header = RecordHeader.relationshipFromSchema(Var(name)(cypherType), schema)
+    val header = IRecordHeader.relationshipFromSchema(Var(name)(cypherType), schema)
 
     computeRecords(name, cypherType, header) { (header, struct) =>
       inputRels.filter(filterRel(cypherType)).map(relToRow(header, struct))
     }
   }
 
-  private def computeRecords(name: String, cypherType: CypherType, header: RecordHeader)(
-    computeRdd: (RecordHeader, StructType) => RDD[Row]): CAPSRecords = {
+  private def computeRecords(name: String, cypherType: CypherType, header: IRecordHeader)(
+    computeRdd: (IRecordHeader, StructType) => RDD[Row]): CAPSRecords = {
     val struct = header.toStructType
     val rdd = computeRdd(header, struct)
     val slot = header.slotFor(Var(name)(cypherType))
@@ -110,7 +110,7 @@ object Neo4jGraph {
       requiredLabels.forall(importedNode.hasLabel)
   }
 
-  private case class nodeToRow(header: RecordHeader, schema: StructType) extends (InternalNode => Row) {
+  private case class nodeToRow(header: IRecordHeader, schema: StructType) extends (InternalNode => Row) {
 
     override def apply(importedNode: InternalNode): Row = {
       import scala.collection.JavaConverters._
@@ -146,7 +146,7 @@ object Neo4jGraph {
       relType.types.isEmpty || relType.types.exists(importedRel.hasType)
   }
 
-  private case class relToRow(header: RecordHeader, schema: StructType) extends (InternalRelationship => Row) {
+  private case class relToRow(header: IRecordHeader, schema: StructType) extends (InternalRelationship => Row) {
     override def apply(importedRel: InternalRelationship): Row = {
       import scala.collection.JavaConverters._
 

@@ -24,44 +24,25 @@
  * described as "implementation extensions to Cypher" or as "proposed changes to
  * Cypher that are not yet approved by the openCypher community".
  */
-package org.opencypher.okapi.api.io.conversion
+package org.opencypher.spark.impl.table
 
-import org.opencypher.okapi.api.types.{CypherType, DefiniteCypherType}
+import org.apache.spark.sql.types.StructType
 import org.opencypher.okapi.impl.exception.IllegalArgumentException
+import org.opencypher.okapi.ir.api.expr.{Expr, Var}
+import org.opencypher.okapi.relational.impl.table.RecordHeaderNew
+import org.opencypher.spark.impl.convert.CAPSCypherType._
 
-/**
-  * Represents a map from node property keys to keys in the source data.
-  */
-trait EntityMapping {
+object CAPSStructType {
 
-  // TODO: CTEntity
-  def cypherType: CypherType with DefiniteCypherType
+  implicit class StructTypeOps(val structType: StructType) {
 
-  def sourceIdKey: String
+    def toRecordHeader: RecordHeaderNew = {
+      val vars: Set[Expr] = structType.fields.map { field =>
+        Var(field.name)(field.dataType.toCypherType(field.nullable)
+          .getOrElse(throw IllegalArgumentException("a supported Spark type", field.dataType)))
+      }.toSet
 
-  def propertyMapping: Map[String, String]
-
-  def idKeys: Seq[String]
-
-  def optionalLabelKeys: Seq[String] = Seq.empty
-
-  def relTypeKey: Option[String] = None
-
-  def allSourceKeys: Seq[String] = idKeys ++ optionalLabelKeys ++ relTypeKey ++ propertyMapping.values.toSeq.sorted
-
-  protected def preventOverwritingProperty(propertyKey: String): Unit =
-    if (propertyMapping.contains(propertyKey))
-      throw IllegalArgumentException("unique property key definitions",
-        s"given key $propertyKey overwrites existing mapping")
-
-  protected def validate(): Unit = {
-    val sourceKeys = allSourceKeys
-    if (allSourceKeys.size != sourceKeys.toSet.size) {
-      val duplicateColumns = sourceKeys.groupBy(_).filter { case (_, items) => items.size > 1 }
-      throw IllegalArgumentException(
-        "One-to-one mapping from entity elements to source keys",
-        s"Duplicate columns: $duplicateColumns")
+      RecordHeaderNew.from(vars)
     }
   }
-
 }

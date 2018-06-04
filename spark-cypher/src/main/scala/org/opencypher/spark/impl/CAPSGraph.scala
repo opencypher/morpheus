@@ -34,7 +34,7 @@ import org.opencypher.okapi.api.types.{CTNode, CTRelationship}
 import org.opencypher.okapi.impl.exception.IllegalArgumentException
 import org.opencypher.okapi.ir.api.PropertyKey
 import org.opencypher.okapi.ir.api.expr._
-import org.opencypher.okapi.relational.impl.table.{OpaqueField, RecordHeader}
+import org.opencypher.okapi.relational.impl.table.{IRecordHeader, OpaqueField, RecordHeaderNew}
 import org.opencypher.spark.api.CAPSSession
 import org.opencypher.spark.api.io.{CAPSEntityTable, CAPSNodeTable}
 import org.opencypher.spark.impl.CAPSConverters._
@@ -72,29 +72,29 @@ trait CAPSGraph extends PropertyGraph with GraphOperations with Serializable {
     val nodeVar = Var(name)(nodeType)
     val records = nodes(name, nodeType)
 
-    // compute slot contents to keep
-    val idSlot = records.header.slotFor(nodeVar)
+    val header = records.header
 
-    val labelSlots = records.header.labelSlots(nodeVar)
-      .filter(slot => labels.contains(slot._1.label.name))
-      .values
+    // compute slot contents to keep
+    val idColumn = header.column(nodeVar)
+
+    val labelExprs = header.labelsFor(nodeVar)
+
+    val labelColumns = labelExprs.map(header.column)
 
     // need to iterate the slots to maintain the correct order
     val propertyExprs = schema.nodeKeys(labels).flatMap {
       case (key, cypherType) => Property(nodeVar, PropertyKey(key))(cypherType)
     }.toSet
-    val propertySlots = records.header.propertySlots(nodeVar).filter {
-      case (_, propertySlot) => propertyExprs.contains(propertySlot.content.key)
-    }.values
+    val headerPropertyExprs = header.propertiesFor(nodeVar).filter(propertyExprs.contains)
 
-    val keepSlots = (Seq(idSlot) ++ labelSlots ++ propertySlots).map(_.content)
-    val keepCols = keepSlots.map(records.header.of)
+    val keepExprs: Seq[Expr] = Seq(nodeVar) ++ labelExprs ++ headerPropertyExprs
+
+    val keepColumns = keepExprs.map(header.column)
 
     // we only keep rows where all "other" labels are false
-    val predicate = records.header.labelSlots(nodeVar)
-      .filterNot(slot => labels.contains(slot._1.label.name))
-      .values
-      .map(records.header.of)
+    val predicate = labelExprs
+      .filterNot(l => labels.contains(l.label.name))
+      .map(header.column)
       .map(records.data.col(_) === false)
       .reduceOption(_ && _)
 
@@ -104,13 +104,13 @@ trait CAPSGraph extends PropertyGraph with GraphOperations with Serializable {
       case Some(filter) =>
         records.data
           .filter(filter)
-          .select(keepCols.head, keepCols.tail: _*)
+          .select(keepColumns.head, keepColumns.tail: _*)
 
       case None =>
-        records.data.select(keepCols.head, keepCols.tail: _*)
+        records.data.select(keepColumns.head, keepColumns.tail: _*)
     }
 
-    val updatedHeader = RecordHeader.from(keepSlots: _*)
+    val updatedHeader = RecordHeaderNew.from(keepExprs)
 
     CAPSRecords.verifyAndCreate(updatedHeader, updatedData)(session)
   }
@@ -203,10 +203,10 @@ object CAPSGraph {
     override val schema: CAPSSchema = CAPSSchema.empty
 
     override def nodes(name: String, cypherType: CTNode): CAPSRecords =
-      CAPSRecords.empty(RecordHeader.from(OpaqueField(Var(name)(cypherType))))
+      CAPSRecords.empty(IRecordHeader.from(OpaqueField(Var(name)(cypherType))))
 
     override def relationships(name: String, cypherType: CTRelationship): CAPSRecords =
-      CAPSRecords.empty(RecordHeader.from(OpaqueField(Var(name)(cypherType))))
+      CAPSRecords.empty(IRecordHeader.from(OpaqueField(Var(name)(cypherType))))
   }
 
 }

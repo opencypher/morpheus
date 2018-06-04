@@ -35,9 +35,9 @@ import org.opencypher.okapi.relational.impl.table._
 import org.opencypher.spark.impl.table.CAPSRecordHeader._
 
 case class RowExpansion(
-    targetHeader: RecordHeader,
+    targetHeader: RecordHeaderNew,
     targetVar: Var,
-    entitiesWithChildren: Map[Var, Seq[RecordSlot]],
+    entitiesWithChildren: Map[Var, Set[Expr]],
     propertyColumnLookupTables: Map[Var, Map[String, String]]
 ) extends (Row => Seq[Row]) {
 
