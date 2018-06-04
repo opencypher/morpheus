@@ -32,7 +32,7 @@ import org.opencypher.okapi.api.types._
 import org.opencypher.okapi.api.value.CypherValue.CypherList
 import org.opencypher.okapi.impl.exception.{IllegalArgumentException, IllegalStateException, NotImplementedException}
 import org.opencypher.okapi.ir.api.expr._
-import org.opencypher.okapi.relational.impl.table.IRecordHeader
+import org.opencypher.okapi.relational.impl.table.{IRecordHeader, RecordHeaderNew}
 import org.opencypher.spark.impl.CAPSFunctions.{array_contains, get_node_labels, get_property_keys}
 import org.opencypher.spark.impl.convert.CAPSCypherType._
 import org.opencypher.spark.impl.physical.CAPSRuntimeContext
@@ -71,7 +71,7 @@ object SparkSQLExprMapper {
       * @param context context with helper functions, such as column names.
       * @return Some Spark SQL expression if the input was mappable, otherwise None.
       */
-    def asSparkSQLExpr(implicit header: IRecordHeader, df: DataFrame, context: CAPSRuntimeContext): Column = {
+    def asSparkSQLExpr(implicit header: RecordHeaderNew, df: DataFrame, context: CAPSRuntimeContext): Column = {
 
       expr match {
 

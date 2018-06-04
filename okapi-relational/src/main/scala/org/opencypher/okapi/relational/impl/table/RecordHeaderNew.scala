@@ -30,6 +30,7 @@ import org.opencypher.okapi.api.types.{CTNode, CTRelationship, CypherType}
 import org.opencypher.okapi.impl.exception.IllegalArgumentException
 import org.opencypher.okapi.ir.api.RelType
 import org.opencypher.okapi.ir.api.expr._
+import org.opencypher.okapi.relational.api.io.RelationalOps
 
 object RecordHeaderNew {
 
@@ -192,10 +193,13 @@ case class RecordHeaderNew(exprToColumn: Map[Expr, String]) {
   // Mutation methods
   // ================
 
-  def select(vars: Var*): RecordHeaderNew = select(vars.toSet)
+  def select(exprs: Expr*): RecordHeaderNew = select(exprs.toSet)
 
-  def select(vars: Set[Var]): RecordHeaderNew = {
-    val selectExpressions = vars.flatMap(ownedBy)
+  def select(exprs: Set[Expr]): RecordHeaderNew = {
+    val selectExpressions = exprs.flatMap {
+      case v: Var => ownedBy(v)
+      case nonVar => Set(nonVar)
+    }
     val selectMappings = exprToColumn.filterKeys(selectExpressions.contains)
     RecordHeaderNew(selectMappings)
   }

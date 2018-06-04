@@ -41,21 +41,22 @@ import org.opencypher.okapi.impl.table._
 import org.opencypher.okapi.impl.util.PrintOptions
 import org.opencypher.okapi.ir.api.expr.Expr._
 import org.opencypher.okapi.ir.api.expr._
+import org.opencypher.okapi.relational.api.io.RelationalCypherRecords
 import org.opencypher.okapi.relational.impl.table._
 import org.opencypher.spark.api.CAPSSession
 import org.opencypher.spark.api.io.CAPSEntityTable
-import org.opencypher.spark.api.io.EntityTable._
 import org.opencypher.spark.impl.CAPSRecords.{prepareDataFrame, verifyAndCreate}
 import org.opencypher.spark.impl.DataFrameOps._
 import org.opencypher.spark.impl.convert.CAPSCypherType._
 import org.opencypher.spark.impl.convert.rowToCypherMap
+import org.opencypher.spark.api.io.SparkCypherTable._
 
 import scala.annotation.tailrec
 import scala.collection.JavaConverters._
 import scala.reflect.runtime.universe.TypeTag
 
 sealed abstract case class CAPSRecords(header: RecordHeaderNew, data: DataFrame)
-  (implicit val caps: CAPSSession) extends CypherRecords with Serializable {
+  (implicit val caps: CAPSSession) extends RelationalCypherRecords[SparkCypherTable] with Serializable {
 
   override def show(implicit options: PrintOptions): Unit =
     RecordsPrinter.print(this)
@@ -102,89 +103,12 @@ sealed abstract case class CAPSRecords(header: RecordHeaderNew, data: DataFrame)
     CAPSRecords.verifyAndCreate(header, dfWithReplacedTags)
   }
 
-  def select(fields: Set[Var]): CAPSRecords = {
-    val selectedHeader = header.select(fields)
-    val selectedColumnNames = selectedHeader.columns.toSeq
-    val selectedColumns = data.select(selectedColumnNames.head, selectedColumnNames.tail: _*)
-    CAPSRecords.verifyAndCreate(selectedHeader, selectedColumns)
-  }
-
-  //  def compact(implicit details: RetainedDetails): CAPSRecords = {
-  //    val cachedHeader = header.update(compactFields)._1
-  //    if (header == cachedHeader) {
-  //      this
-  //    } else {
-  //      val cachedData = {
-  //        val columns = cachedHeader.slots.map(c => new Column(cachedHeader.of(c.content)))
-  //        data.select(columns: _*)
-  //      }
-  //
-  //      CAPSRecords.verifyAndCreate(cachedHeader, cachedData)
-  //    }
-  //  }
-
-  def addAliases(aliasToOriginal: Map[Var, Var]): CAPSRecords = {
-    val (updatedHeader, updatedData) = aliasToOriginal.foldLeft((header, data)) {
-      case ((tempHeader, tempDf), (nextAlias, nextOriginal)) =>
-
-        val updatedHeader = tempHeader.withAlias(nextOriginal as nextAlias)
-
-        val aliasedExpressions = tempHeader
-          .ownedBy(nextOriginal)
-          .map(expr => expr -> expr.withOwner(nextAlias))
-
-        val additions = aliasedExpressions.map {
-          case (expr, alias) => updatedHeader.column(alias) -> tempDf.col(updatedHeader.column(expr))
-        }
-        updatedHeader -> tempDf.safeAddColumns(additions.toSeq: _*)
-    }
-    CAPSRecords.verifyAndCreate(updatedHeader, updatedData)
-  }
-
   def retagVariable(v: Var, replacements: Map[Int, Int]): CAPSRecords = {
     val columnsToUpdate = header.idColumns(v)
     val updatedData = columnsToUpdate.foldLeft(data) { case (df, columnName) =>
       df.safeReplaceTags(columnName, replacements)
     }
     CAPSRecords.verifyAndCreate(header, updatedData)
-  }
-
-  //  def renameVars(aliasToOriginal: Map[Var, Var]): CAPSRecords = {
-  //    val (updatedHeader, updatedData) = aliasToOriginal.foldLeft((header, data)) {
-  //      case ((tempHeader, tempDf), (nextAlias, nextOriginal)) =>
-  //        val slotsToReassign = tempHeader.selfWithChildren(nextOriginal).toList
-  //        val reassignedSlots = slotsToReassign.map(_.withOwner(nextAlias))
-  //        val updatedHeader = tempHeader --
-  //          IRecordHeader.from(slotsToReassign) ++
-  //          IRecordHeader.from(reassignedSlots)
-  //        val originalColumns = slotsToReassign.map(header.of)
-  //        val aliasColumns = reassignedSlots.map(header.of)
-  //        val renamings = originalColumns.zip(aliasColumns)
-  //        val updatedDf = tempDf.safeRenameColumns(renamings: _*)
-  //        updatedHeader -> updatedDf
-  //    }
-  //    CAPSRecords.verifyAndCreate(updatedHeader, updatedData)
-  //  }
-
-  def removeVars(vars: Set[Var]): CAPSRecords = {
-    val updatedHeader = header -- vars
-    val keepColumns = updatedHeader.columns.toSeq
-    val updatedData = data.select(keepColumns.head, keepColumns.tail: _*)
-    CAPSRecords.verifyAndCreate(updatedHeader, updatedData)
-  }
-
-  def unionAll(header: RecordHeaderNew, other: CAPSRecords): CAPSRecords = {
-    val unionData = data.union(other.data)
-    CAPSRecords.verifyAndCreate(header, unionData)
-  }
-
-  def distinct: CAPSRecords = {
-    CAPSRecords.verifyAndCreate(header, data.distinct())
-  }
-
-  def distinct(fields: Var*): CAPSRecords = {
-    val distinctData = data.dropDuplicates(fields.flatMap(header.expressionsFor).map(header.column))
-    CAPSRecords.verifyAndCreate(header, distinctData)
   }
 
   /**
@@ -200,8 +124,6 @@ sealed abstract case class CAPSRecords(header: RecordHeaderNew, data: DataFrame)
     import encoders._
     data.map(rowToCypherMap(header))
   }
-
-  override def columns: Seq[String] = header.columns.toSeq
 
   override def rows: Iterator[String => CypherValue] = {
     toLocalIterator.asScala.map(_.value)
@@ -221,7 +143,6 @@ sealed abstract case class CAPSRecords(header: RecordHeaderNew, data: DataFrame)
 
   override def collect: Array[CypherMap] =
     toCypherMaps.collect()
-
 
   protected val trueLit = functions.lit(true)
   protected val falseLit = functions.lit(false)

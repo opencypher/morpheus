@@ -26,7 +26,7 @@
  */
 package org.opencypher.spark.api.io
 
-import org.apache.spark.sql.DataFrame
+import org.apache.spark.sql.{DataFrame, functions}
 import org.apache.spark.storage.StorageLevel
 import org.opencypher.okapi.api.io.conversion.{EntityMapping, NodeMapping, RelationshipMapping}
 import org.opencypher.okapi.api.schema.Schema
@@ -34,7 +34,7 @@ import org.opencypher.okapi.api.table.CypherTable
 import org.opencypher.okapi.api.types._
 import org.opencypher.okapi.api.value.CypherValue
 import org.opencypher.okapi.api.value.CypherValue.CypherValue
-import org.opencypher.okapi.relational.api.io.EntityTable
+import org.opencypher.okapi.relational.api.io.{EntityTable, FlatRelationalTable}
 import org.opencypher.okapi.relational.impl.util.StringEncodingUtilities
 import org.opencypher.okapi.relational.impl.util.StringEncodingUtilities._
 import org.opencypher.spark.api.CAPSSession
@@ -51,7 +51,7 @@ import scala.reflect.runtime.universe._
 
 object SparkCypherTable {
 
-  implicit class SparkCypherTable(val df: DataFrame) extends CypherTable {
+  implicit class SparkCypherTable(val df: DataFrame) extends FlatRelationalTable[SparkCypherTable] {
 
     override def columns: Seq[String] = df.columns
 
@@ -73,7 +73,25 @@ object SparkCypherTable {
 
     def unpersist(blocking: Boolean): SparkCypherTable = df.unpersist(blocking)
 
+    override def select(cols: String*): SparkCypherTable = {
+      df.select(cols.head, cols.tail: _*)
+    }
+
+    override def unionAll(other: SparkCypherTable): SparkCypherTable = {
+      df.union(other.df)
+    }
+
+    override def distinct: SparkCypherTable = df.distinct
+
+    override def distinct(cols: String*): SparkCypherTable = df.dropDuplicates(cols)
+
+    override def withNullColumn(col: String): SparkCypherTable = df.withColumn(col, functions.lit(null))
+
+    override def withTrueColumn(col: String): SparkCypherTable = df.withColumn(col, functions.lit(true))
+
+    override def withFalseColumn(col: String): SparkCypherTable = df.withColumn(col, functions.lit(false))
   }
+
 }
 
 trait CAPSEntityTable extends EntityTable[SparkCypherTable] {

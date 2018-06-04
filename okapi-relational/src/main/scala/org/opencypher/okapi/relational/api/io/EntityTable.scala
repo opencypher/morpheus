@@ -2,7 +2,7 @@ package org.opencypher.okapi.relational.api.io
 
 import org.opencypher.okapi.api.io.conversion.{EntityMapping, NodeMapping, RelationshipMapping}
 import org.opencypher.okapi.api.schema.Schema
-import org.opencypher.okapi.api.table.CypherTable
+import org.opencypher.okapi.api.table.{CypherRecords, CypherTable}
 import org.opencypher.okapi.api.types.{CTBoolean, CTInteger, CTNode, CypherType}
 import org.opencypher.okapi.impl.exception.IllegalArgumentException
 import org.opencypher.okapi.ir.api.expr._
@@ -10,18 +10,78 @@ import org.opencypher.okapi.ir.api.{Label, PropertyKey}
 import org.opencypher.okapi.relational.api.io.EntityMapping._
 import org.opencypher.okapi.relational.impl.table.RecordHeaderNew
 
+trait FlatRelationalTable[T <: FlatRelationalTable[T]] extends CypherTable {
+
+  def select(cols: String*): T
+
+  def unionAll(other: T): T
+
+  def distinct: T
+
+  def distinct(cols: String*): T
+
+  def withNullColumn(col: String): T
+
+  def withTrueColumn(col: String): T
+
+  def withFalseColumn(col: String): T
+
+}
+
+trait RelationalCypherRecords[T <: FlatRelationalTable[T]] extends CypherRecords {
+
+  def from(header: RecordHeaderNew, table: T): RelationalCypherRecords[T]
+
+  def table: T
+
+  def header: RecordHeaderNew
+
+  def select(exprs: Expr*): RelationalCypherRecords[T] = {
+    val selectHeader = header.select(exprs: _*)
+    val selectedColumns = selectHeader.columns
+    val selectedData = table.select(selectedColumns.toSeq.sorted: _*)
+    from(selectHeader, selectedData)
+  }
+
+  def withAliases(originalToAlias: (Expr, Var)*): RelationalCypherRecords[T] = {
+    val headerWithAliases = header.withAlias(originalToAlias: _*)
+    from(headerWithAliases, table)
+  }
+
+  def removeVars(vars: Set[Var]): RelationalCypherRecords[T] = {
+    val updatedHeader = header -- vars
+    val keepColumns = updatedHeader.columns.toSeq.sorted
+    val updatedData = table.select(keepColumns: _*)
+    from(updatedHeader, updatedData)
+  }
+
+  def unionAll(other: RelationalCypherRecords[T]): RelationalCypherRecords[T] = {
+    val unionData = table.unionAll(other.table)
+    from(header, unionData)
+  }
+
+  def distinct: RelationalCypherRecords[T] = {
+    from(header, table.distinct)
+  }
+
+  def distinct(fields: Var*): RelationalCypherRecords[T] = {
+    from(header, table.distinct(fields.flatMap(header.expressionsFor).map(header.column).sorted: _*))
+  }
+
+
+
+}
+
 /**
   * An entity table describes how to map an input data frame to a Cypher entity (i.e. nodes or relationships).
   */
-trait EntityTable[T <: CypherTable] {
+trait EntityTable[T <: CypherTable] extends RelationalCypherRecords[T] {
 
   verify()
 
   def schema: Schema
 
   def mapping: EntityMapping
-
-  def table: T
 
   def header: RecordHeaderNew = mapping match {
     case n: NodeMapping => headerFrom(n)
@@ -85,4 +145,5 @@ object EntityMapping {
 
     def endNode(rel: Var): (EndNode, String) = EndNode(rel)(CTNode) -> mapping.sourceEndNodeKey
   }
+
 }
