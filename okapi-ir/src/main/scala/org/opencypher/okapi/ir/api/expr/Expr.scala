@@ -34,6 +34,12 @@ import org.opencypher.okapi.trees.AbstractTreeNode
 import scala.annotation.tailrec
 import scala.reflect.ClassTag
 
+object Expr {
+  implicit class ExprOps(val expr: Expr) extends AnyVal {
+    def as(alias: Var): (Expr, Var) = expr -> alias
+  }
+}
+
 /**
   * Describes a Cypher expression.
   *
@@ -177,7 +183,8 @@ final case class Not(expr: Expr)(val cypherType: CypherType = CTWildcard) extend
   override def withoutType = s"NOT ${expr.withoutType}"
 }
 
-final case class HasLabel(node: Expr, label: Label)(val cypherType: CypherType = CTWildcard) extends PredicateExpression {
+final case class HasLabel(node: Expr, label: Label)
+  (val cypherType: CypherType = CTWildcard) extends PredicateExpression {
 
   type This = HasLabel
 
@@ -193,7 +200,8 @@ final case class HasLabel(node: Expr, label: Label)(val cypherType: CypherType =
   override def withoutType: String = s"${node.withoutType}:${label.name}"
 }
 
-final case class HasType(rel: Expr, relType: RelType)(val cypherType: CypherType = CTWildcard) extends PredicateExpression {
+final case class HasType(rel: Expr, relType: RelType)
+  (val cypherType: CypherType = CTWildcard) extends PredicateExpression {
 
   type This = HasType
 

@@ -222,7 +222,11 @@ case class RecordHeaderNew(exprToColumn: Map[Expr, String]) {
 
   def withExprs(exprs: Set[Expr]): RecordHeaderNew = withExprs(exprs.head, exprs.tail.toSeq: _*)
 
-  def withAlias(alias: Var, to: Expr): RecordHeaderNew = {
+  def withAlias(exprAsVar: (Expr, Var)*): RecordHeaderNew = exprAsVar.foldLeft(this){
+    case (currentHeader, (expr, alias)) => currentHeader.withAlias(expr, alias)
+  }
+
+  def withAlias(to: Expr, alias: Var): RecordHeaderNew = {
     require(
       alias.cypherType.superTypeOf(to.cypherType).isTrue,
       s"CypherType of expression $to cannot be assigned to CypherType of alias $alias")
