@@ -38,16 +38,16 @@ import org.opencypher.okapi.impl.exception.IllegalArgumentException
   * it can also be used to assemble complex Cypher values such as CypherNode/CypherRelationship that are stored over
   * multiple columns in a low-level Cypher table.
   */
-trait CypherTable[K] {
+trait CypherTable {
 
-  def columns: Seq[K]
+  def columns: Seq[String]
 
-  def columnType: Map[K, CypherType]
+  def columnType: Map[String, CypherType]
 
   /**
     * Iterator over the rows in this table.
     */
-  def rows: Iterator[K => CypherValue]
+  def rows: Iterator[String => CypherValue]
 
   /**
     * @return number of rows in this Table.
@@ -58,7 +58,7 @@ trait CypherTable[K] {
 
 object CypherTable {
 
-  implicit class RichCypherTable[K](table: CypherTable[K]) {
+  implicit class RichCypherTable(table: CypherTable) {
 
     /**
       * Checks if the data type of the given column is compatible with the expected type.
@@ -66,7 +66,7 @@ object CypherTable {
       * @param columnKey    column to be checked
       * @param expectedType excepted data type
       */
-    def verifyColumnType(columnKey: K, expectedType: CypherType, keyDescription: String): Unit = {
+    def verifyColumnType(columnKey: String, expectedType: CypherType, keyDescription: String): Unit = {
       val columnType = table.columnType.getOrElse(columnKey, throw IllegalArgumentException(
         s"table with column key $columnKey",
         s"table with columns ${table.columns.mkString(", ")}"))

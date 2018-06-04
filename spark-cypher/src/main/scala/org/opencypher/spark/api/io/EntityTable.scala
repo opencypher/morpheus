@@ -34,11 +34,11 @@ import org.opencypher.okapi.api.table.CypherTable
 import org.opencypher.okapi.api.types._
 import org.opencypher.okapi.api.value.CypherValue
 import org.opencypher.okapi.api.value.CypherValue.CypherValue
-import org.opencypher.okapi.impl.exception.IllegalArgumentException
+import org.opencypher.okapi.relational.api.io.EntityTable
 import org.opencypher.okapi.relational.impl.util.StringEncodingUtilities
-import org.opencypher.spark.api.CAPSSession
-import org.opencypher.spark.api.io.EntityTable.SparkTable
 import org.opencypher.okapi.relational.impl.util.StringEncodingUtilities._
+import org.opencypher.spark.api.CAPSSession
+import org.opencypher.spark.api.io.SparkCypherTable.SparkCypherTable
 import org.opencypher.spark.impl.CAPSRecords
 import org.opencypher.spark.impl.DataFrameOps._
 import org.opencypher.spark.impl.util.Annotation
@@ -48,32 +48,10 @@ import org.opencypher.spark.schema.CAPSSchema._
 import scala.collection.JavaConverters._
 import scala.reflect.runtime.universe._
 
-/**
-  * An entity table describes how to map an input data frame to a Cypher entity (i.e. nodes or relationships).
-  */
-sealed trait EntityTable[T <: CypherTable[String]] {
 
-  verify()
+object SparkCypherTable {
 
-  def schema: CAPSSchema
-
-  def mapping: EntityMapping
-
-  def table: T
-
-  protected def verify(): Unit = {
-    mapping.idKeys.foreach(key => table.verifyColumnType(key, CTInteger, "id key"))
-    if (table.columns != mapping.allSourceKeys) throw IllegalArgumentException(
-      s"Columns: ${mapping.allSourceKeys.mkString(", ")}",
-      s"Columns: ${table.columns.mkString(", ")}",
-      s"Use CAPS[Node|Relationship]Table#fromMapping to create a valid EntityTable")
-  }
-
-}
-
-object EntityTable {
-
-  implicit class SparkTable(val df: DataFrame) extends CypherTable[String] {
+  implicit class SparkCypherTable(val df: DataFrame) extends CypherTable {
 
     override def columns: Seq[String] = df.columns
 
@@ -85,21 +63,20 @@ object EntityTable {
 
     override def size: Long = df.count()
 
-    def cache(): SparkTable = df.cache()
+    def cache(): SparkCypherTable = df.cache()
 
-    def persist(): SparkTable = df.persist()
+    def persist(): SparkCypherTable = df.persist()
 
-    def persist(newLevel: StorageLevel): SparkTable = df.persist(newLevel)
+    def persist(newLevel: StorageLevel): SparkCypherTable = df.persist(newLevel)
 
-    def unpersist(): SparkTable = df.unpersist()
+    def unpersist(): SparkCypherTable = df.unpersist()
 
-    def unpersist(blocking: Boolean): SparkTable = df.unpersist(blocking)
+    def unpersist(blocking: Boolean): SparkCypherTable = df.unpersist(blocking)
 
   }
-
 }
 
-trait CAPSEntityTable extends EntityTable[SparkTable] {
+trait CAPSEntityTable extends EntityTable[SparkCypherTable] {
   // TODO: create CTEntity type
   private[spark] def entityType: CypherType with DefiniteCypherType = mapping.cypherType
 
@@ -108,7 +85,7 @@ trait CAPSEntityTable extends EntityTable[SparkTable] {
 
 case class CAPSNodeTable(
   mapping: NodeMapping,
-  table: SparkTable
+  table: SparkCypherTable
 ) extends NodeTable(mapping, table) with CAPSEntityTable
 
 object CAPSNodeTable {
@@ -175,7 +152,7 @@ object CAPSNodeTable {
 
 case class CAPSRelationshipTable(
   mapping: RelationshipMapping,
-  table: SparkTable
+  table: SparkCypherTable
 ) extends RelationshipTable(mapping, table) with CAPSEntityTable
 
 object CAPSRelationshipTable {
@@ -253,7 +230,7 @@ object CAPSRelationshipTable {
   * @param mapping mapping from input data description to a Cypher node
   * @param table   input data frame
   */
-abstract class NodeTable[T <: CypherTable[String]](mapping: NodeMapping, table: T) extends EntityTable[T] {
+abstract class NodeTable[T <: CypherTable](mapping: NodeMapping, table: T) extends EntityTable[T] {
 
   override lazy val schema: CAPSSchema = {
     val propertyKeys = mapping.propertyMapping.toSeq.map {
@@ -285,7 +262,7 @@ abstract class NodeTable[T <: CypherTable[String]](mapping: NodeMapping, table: 
   * @param mapping mapping from input data description to a Cypher relationship
   * @param table   input data frame
   */
-abstract class RelationshipTable[T <: CypherTable[String]](
+abstract class RelationshipTable[T <: CypherTable](
   mapping: RelationshipMapping,
   table: T
 ) extends EntityTable[T] {
