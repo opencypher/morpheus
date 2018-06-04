@@ -29,7 +29,7 @@ package org.opencypher.okapi.relational.api.schema
 import org.opencypher.okapi.api.schema.{PropertyKeys, Schema}
 import org.opencypher.okapi.api.types.{CTBoolean, CTNode, CTRelationship, CTString}
 import org.opencypher.okapi.ir.api.expr._
-import org.opencypher.okapi.ir.api.{Label, PropertyKey}
+import org.opencypher.okapi.ir.api.{Label, PropertyKey, RelType}
 import org.opencypher.okapi.relational.api.schema.RelationalSchema._
 import org.opencypher.okapi.relational.impl.table.RecordHeaderNew
 import org.scalatest.{FunSpec, Matchers}
@@ -74,7 +74,7 @@ class RelationalSchemaTest extends FunSpec with Matchers {
       .withExpr(r)
       .withExpr(StartNode(r)(CTNode))
       .withExpr(EndNode(r)(CTNode))
-      .withExpr(Type(r)(CTString))
+      .withExpr(HasType(r, RelType("A"))(CTBoolean))
       .withExpr(Property(r, PropertyKey("foo"))(CTBoolean)))
   }
 }

@@ -256,7 +256,7 @@ sealed abstract case class CAPSRecords(header: RecordHeaderNew, data: DataFrame)
 
     val entityLabels: Set[String] = oldEntity.cypherType match {
       case CTNode(labels, _) => labels
-      case CTRelationship(typ, _) => typ
+      case CTRelationship(types, _) => types
       case _ => throw IllegalArgumentException("CTNode or CTRelationship", oldEntity.cypherType)
     }
 
@@ -285,10 +285,8 @@ sealed abstract case class CAPSRecords(header: RecordHeaderNew, data: DataFrame)
     val (dataWithMissingColumns, _) = missingExpressions.foldLeft(dataWithColumnsRenamed -> updatedHeader) {
       case ((currentDf, currentHeader), expr) =>
         val newColumn = expr match {
-          case HasLabel(_, label) if entityLabels.contains(label.name) => trueLit
-          case _: HasLabel => falseLit
-          // TODO: change to HasType
-          case _: Type if entityLabels.size == 1 => functions.lit(entityLabels.head)
+          case HasLabel(_, label) => if (entityLabels.contains(label.name)) trueLit else falseLit
+          case HasType(_, relType) => if (entityLabels.contains(relType.name)) trueLit else falseLit
           case _ =>
             if (expr.cypherType.isNullable) {
               throw UnsupportedOperationException(
