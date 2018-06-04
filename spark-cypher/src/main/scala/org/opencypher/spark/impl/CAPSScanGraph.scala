@@ -85,6 +85,7 @@ class CAPSScanGraph(val scans: Seq[CAPSEntityTable], val schema: CAPSSchema, val
 
     val scanRecords: Seq[CAPSRecords] = selectedTables.map(_.records)
     val alignedRecords = scanRecords.map(_.alignWith(node, targetNodeHeader))
+    // TODO: select records using ordered target header fields before applying union
     alignedRecords.reduceOption(_ unionAll(targetNodeHeader, _)).getOrElse(CAPSRecords.empty(targetNodeHeader))
   }
 
@@ -96,6 +97,7 @@ class CAPSScanGraph(val scans: Seq[CAPSEntityTable], val schema: CAPSSchema, val
 
     val scanRecords = selectedScans.map(_.records)
     val alignedRecords = scanRecords.map(_.alignWith(rel, targetRelHeader))
+    // TODO: select records using ordered target header fields before applying union
     alignedRecords.reduceOption(_ unionAll(targetRelHeader, _)).getOrElse(CAPSRecords.empty(targetRelHeader))
   }
 
