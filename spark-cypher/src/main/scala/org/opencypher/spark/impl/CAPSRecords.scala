@@ -50,6 +50,7 @@ import org.opencypher.spark.api.io.{CAPSEntityTable, CAPSNodeTable, CAPSRelation
 import org.opencypher.spark.impl.CAPSRecords.{prepareDataFrame, verifyAndCreate}
 import org.opencypher.spark.impl.DataFrameOps._
 import org.opencypher.spark.impl.convert.CAPSCypherType._
+import org.opencypher.spark.impl.convert.rowToCypherMap
 
 import scala.annotation.tailrec
 import scala.collection.JavaConverters._
@@ -183,8 +184,10 @@ sealed abstract case class CAPSRecords(header: RecordHeaderNew, data: DataFrame)
     CAPSRecords.verifyAndCreate(header, data.distinct())
   }
 
-  def distinct(fields: Var*): CAPSRecords =
-    CAPSRecords.verifyAndCreate(header, data.dropDuplicates(fields.map(OpaqueField).map(header.of)))
+  def distinct(fields: Var*): CAPSRecords = {
+    val distinctData = data.dropDuplicates(fields.flatMap(header.expressionsFor).map(header.column))
+    CAPSRecords.verifyAndCreate(header, distinctData)
+  }
 
   /**
     * Converts all values stored in this table to instances of the corresponding CypherValue class.
@@ -200,7 +203,7 @@ sealed abstract case class CAPSRecords(header: RecordHeaderNew, data: DataFrame)
     data.map(rowToCypherMap(header))
   }
 
-  override def columns: Seq[String] = header.fieldsInOrder
+  override def columns: Seq[String] = header.columns.toSeq
 
   override def rows: Iterator[String => CypherValue] = {
     toLocalIterator.asScala.map(_.value)
@@ -221,6 +224,11 @@ sealed abstract case class CAPSRecords(header: RecordHeaderNew, data: DataFrame)
   override def collect: Array[CypherMap] =
     toCypherMaps.collect()
 
+
+  protected val trueLit = functions.lit(true)
+  protected val falseLit = functions.lit(false)
+  protected val nullLit = functions.lit(null)
+
   /**
     * Align the record header to the target header and rename the stored entity to `v`.
     *
@@ -232,9 +240,17 @@ sealed abstract case class CAPSRecords(header: RecordHeaderNew, data: DataFrame)
     * @param targetHeader the header to align with
     * @return a new instance of `CAPSRecords` aligned with the argument header
     */
-  def alignWith(v: Var, targetHeader: IRecordHeader): CAPSRecords = {
-    val oldEntity = this.header.fieldsAsVar.headOption
-      .getOrElse(throw IllegalStateException("GraphScan table did not contain any fields"))
+  def alignWith(v: Var, targetHeader: RecordHeaderNew): CAPSRecords = {
+
+    val entityVars = header.nodeVars ++ header.relationshipVars
+
+    val oldEntity = entityVars.toSeq match {
+      case head :: Nil => head
+      case Nil => throw IllegalArgumentException("one entity in the record header", s"no entity in $header")
+      case _ => throw IllegalArgumentException("one entity in the record header", s"multiple entities in $header")
+    }
+
+    assert(header.ownedBy(oldEntity) == header.expressions, s"header describes more than one entity")
 
     val entityLabels: Set[String] = oldEntity.cypherType match {
       case CTNode(labels, _) => labels
@@ -242,80 +258,50 @@ sealed abstract case class CAPSRecords(header: RecordHeaderNew, data: DataFrame)
       case _ => throw IllegalArgumentException("CTNode or CTRelationship", oldEntity.cypherType)
     }
 
-    val renamedSlotMapping = this.header.slots.map { slot =>
-      val withNewOwner = slot.withOwner(v).content
-      slot -> targetHeader.slots.find(slot => slot.content == withNewOwner).get
-    }
+    val updatedHeader = header
+      .withAlias(v, oldEntity)
+      .select(v)
 
-    val withRenamedColumns = renamedSlotMapping.foldLeft(data) {
-      case (acc, (oldCol, newCol)) =>
-        val oldColName = header.of(oldCol)
-        val newColName = targetHeader.of(newCol)
-        if (oldColName != newColName) {
-          acc
-            .safeReplaceColumn(oldColName, acc.col(oldColName).cast(newCol.content.cypherType.toSparkType.get))
-            .safeRenameColumn(oldColName, newColName)
+    val missingExpressions = targetHeader.expressions -- updatedHeader.expressions
+    val overlapExpressions = targetHeader.expressions -- missingExpressions
+
+    // rename existing columns according to target header
+    val dataWithColumnsRenamed = overlapExpressions.foldLeft(data) {
+      case (currentDf, expr) =>
+        val oldColumn = updatedHeader.column(expr)
+        val newColumn = targetHeader.column(expr)
+        if (oldColumn != newColumn) {
+          currentDf
+            .safeReplaceColumn(oldColumn, currentDf.col(oldColumn).cast(expr.cypherType.toSparkType.get))
+            .safeRenameColumn(oldColumn, newColumn)
         } else {
-          acc
+          currentDf
         }
     }
 
-    val renamedSlots = renamedSlotMapping.map(_._2)
-
-    def typeAlignmentError(alignWithSlot: RecordSlot, varToAlign: Var, typeToAlign: CypherType) = {
-      val varToAlignName = varToAlign.name
-      val varToAlignString = if (varToAlignName.isEmpty) "table" else s"variable '$varToAlignName'"
-
-      throw UnsupportedOperationException(
-        s"""|Cannot align $varToAlignString with '${v.name}' due the alignment target type for ${alignWithSlot.content.key.withoutType}:
-            |  The target type on '${v.name}' is ${alignWithSlot.content.cypherType}, whilst the $varToAlignString type is $typeToAlign""".stripMargin)
-    }
-
-    val relevantColumns = targetHeader.slots.map { targetSlot =>
-      val targetColName = targetHeader.of(targetSlot)
-
-      renamedSlots.find(_.content == targetSlot.content) match {
-        case Some(sourceSlot) =>
-          val sourceColName = targetHeader.of(sourceSlot)
-
-          // the column exists in the source data
-          if (sourceColName == targetColName) {
-            withRenamedColumns.col(targetColName)
-            // the column exists in the source data but has a different data type (and thus different column name)
-          } else {
-            val slotType = targetSlot.content.cypherType
-            val sparkTypeOpt = slotType.toSparkType
-            sparkTypeOpt match {
-              case Some(sparkType) =>
-                withRenamedColumns.col(sourceColName)
-                  .cast(sparkType)
-                  .as(targetColName)
-              case None => typeAlignmentError(targetSlot, oldEntity, sourceSlot.content.cypherType)
-
+    // add missing columns
+    val (dataWithMissingColumns, _) = missingExpressions.foldLeft(dataWithColumnsRenamed -> updatedHeader) {
+      case ((currentDf, currentHeader), expr) =>
+        val newColumn = expr match {
+          case HasLabel(_, label) if entityLabels.contains(label.name) => trueLit
+          case _: HasLabel => falseLit
+          case _: Type if entityLabels.size == 1 => functions.lit(entityLabels.head)
+          case _ =>
+            if (expr.cypherType.isNullable) {
+              throw UnsupportedOperationException(
+                s"Cannot align scan on $v by adding a NULL column, because the type for '$expr' is non-nullable"
+              )
             }
-          }
+            nullLit.cast(expr.cypherType.getSparkType)
+        }
+        val headerWithColumn = currentHeader.withExpr(expr)
 
-        case None =>
-          val content = targetSlot.content.key match {
-            case HasLabel(_, label) if entityLabels.contains(label.name) => functions.lit(true)
-            case _: HasLabel => functions.lit(false)
-            case _: Type if entityLabels.size == 1 => functions.lit(entityLabels.head)
-            case _ =>
-              // TODO: This check cannot be enabled, because nullability of slot contents is often not correct in tests
-//              if (targetSlot.content.cypherType.isNullable) {
-//                throw UnsupportedOperationException(
-//                  s"Cannot align scan on $v by adding a NULL column, because the type for '${targetSlot.content.key}' is non-nullable"
-//                )
-//              }
-              functions.lit(null).cast(targetSlot.content.cypherType.getSparkType)
-          }
-          content.as(targetColName)
-      }
-
+        currentDf.withColumn(
+          currentHeader.column(expr), // TODO: possible mismatch between column name in updated header and new column name
+          newColumn.as(targetHeader.column(expr))) -> headerWithColumn
     }
 
-    val withRelevantColumns = withRenamedColumns.select(relevantColumns: _*)
-    CAPSRecords.verifyAndCreate(targetHeader, withRelevantColumns)
+    CAPSRecords.verifyAndCreate(targetHeader, dataWithMissingColumns)
   }
 
   //noinspection AccessorLikeMethodIsEmptyParen
@@ -484,10 +470,11 @@ object CAPSRecords extends CypherRecordsCompanion[CAPSRecords, CAPSSession] {
     * @param caps             caps session
     * @return record header and according data frame
     */
-  private def prepareDataFrame(initialDataFrame: DataFrame)(implicit caps: CAPSSession): (IRecordHeader, DataFrame) = {
+  private def prepareDataFrame(initialDataFrame: DataFrame)(implicit caps: CAPSSession): (RecordHeaderNew, DataFrame) = {
+    import org.opencypher.spark.impl.table.CAPSStructType._
     val withCompatibleTypes = generalizeColumnTypes(initialDataFrame)
-    val initialHeader = table.CAPSRecordHeader.fromSparkStructType(withCompatibleTypes.schema)
-    val withRenamedColumns = withCompatibleTypes.toDF(initialHeader.columns: _*)
+    val initialHeader = withCompatibleTypes.schema.toRecordHeader
+    val withRenamedColumns = withCompatibleTypes.toDF(initialHeader.columns.toSeq: _*)
     (initialHeader, withRenamedColumns)
   }
 
@@ -515,7 +502,7 @@ object CAPSRecords extends CypherRecordsCompanion[CAPSRecords, CAPSSession] {
     * @param caps          CAPS session
     * @return CAPSRecords representing the input
     */
-  def verifyAndCreate(headerAndData: (IRecordHeader, DataFrame))(implicit caps: CAPSSession): CAPSRecords = {
+  def verifyAndCreate(headerAndData: (RecordHeaderNew, DataFrame))(implicit caps: CAPSSession): CAPSRecords = {
     verifyAndCreate(headerAndData._1, headerAndData._2)
   }
 

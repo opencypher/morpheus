@@ -52,6 +52,7 @@ case class RecordHeaderNew(exprToColumn: Map[Expr, String]) {
   // TODO: should this return expressions deterministically ordered by columns?
   def expressions: Set[Expr] = exprToColumn.keySet
 
+  // TODO: should this return columns deterministically ordered?
   def columns: Set[String] = exprToColumn.values.toSet
 
   def contains(expr: Expr): Boolean = exprToColumn.contains(expr)
@@ -188,6 +189,8 @@ case class RecordHeaderNew(exprToColumn: Map[Expr, String]) {
   // ================
   // Mutation methods
   // ================
+
+  def select(vars: Var*): RecordHeaderNew = select(vars.toSet)
 
   def select(vars: Set[Var]): RecordHeaderNew = {
     val selectExpressions = vars.flatMap(ownedBy)
