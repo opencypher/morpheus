@@ -32,6 +32,8 @@ import org.opencypher.okapi.ir.api.{Label, PropertyKey, RelType}
 import org.opencypher.okapi.ir.test.support.MatchHelper._
 import org.scalatest.{FunSpec, Matchers}
 
+import Expr._
+
 class RecordHeaderNewTest extends FunSpec with Matchers {
 
   val n: Var = Var("n")(CTNode)
@@ -64,7 +66,7 @@ class RecordHeaderNewTest extends FunSpec with Matchers {
 
   it("can return all contained columns") {
     nHeader.columns should equalWithTracing(nHeader.expressions.map(nHeader.column))
-    nHeader.withAlias(m, n).columns should equalWithTracing(nHeader.expressions.map(nHeader.column))
+    nHeader.withAlias(n, m).columns should equalWithTracing(nHeader.expressions.map(nHeader.column))
   }
 
   it("can check if an expression is contained") {
@@ -77,7 +79,7 @@ class RecordHeaderNewTest extends FunSpec with Matchers {
   }
 
   it("can add an alias for an entity") {
-    val withAlias = nHeader.withAlias(m, n)
+    val withAlias = nHeader.withAlias(n as m)
 
     withAlias.ownedBy(n) should equalWithTracing(nExprs)
     withAlias.ownedBy(m) should equalWithTracing(mExprs)
@@ -86,8 +88,8 @@ class RecordHeaderNewTest extends FunSpec with Matchers {
   it("can add an alias for a non-entity expression") {
     val s = Var("nPropFoo_Alias")(nPropFoo.cypherType)
     val t = Var("nPropFoo_Alias")(nPropFoo.cypherType)
-    val withAlias1 = nHeader.withAlias(s, nPropFoo)
-    val withAlias2 = withAlias1.withAlias(t, s)
+    val withAlias1 = nHeader.withAlias(nPropFoo as s)
+    val withAlias2 = withAlias1.withAlias(s as t)
 
     withAlias2.column(s) should equalWithTracing(withAlias2.column(nPropFoo))
     withAlias2.column(t) should equalWithTracing(withAlias2.column(nPropFoo))
@@ -106,8 +108,8 @@ class RecordHeaderNewTest extends FunSpec with Matchers {
   it("can combine complex headers") {
     val p = Var("nPropFoo_Alias")(nPropFoo.cypherType)
 
-    val nHeaderWithAlias = nHeader.withAlias(p, nPropFoo)
-    val mHeaderWithAlias = mHeader.withAlias(o, m)
+    val nHeaderWithAlias = nHeader.withAlias(nPropFoo as p)
+    val mHeaderWithAlias = mHeader.withAlias(m as o)
 
     val unionHeader = nHeaderWithAlias ++ mHeaderWithAlias
 
@@ -126,7 +128,7 @@ class RecordHeaderNewTest extends FunSpec with Matchers {
 
   it("can modify alias and original expression") {
     val prop2 = Property(n, PropertyKey("bar"))(CTString)
-    val aliasHeader = nHeader.withAlias(m, n)
+    val aliasHeader = nHeader.withAlias(n as m)
     val withNewProp = aliasHeader.withExpr(prop2)
 
     withNewProp.ownedBy(n) should equalWithTracing(nExprs + prop2)
@@ -137,9 +139,9 @@ class RecordHeaderNewTest extends FunSpec with Matchers {
     val s = Var("nPropFoo_Alias")(nPropFoo.cypherType)
     val t = Var("nPropFoo_Alias")(nPropFoo.cypherType)
     val aliasHeader = nHeader
-      .withAlias(m, n)
-      .withAlias(s, nPropFoo)
-      .withAlias(t, s)
+          .withAlias(n as m)
+          .withAlias(nPropFoo as s)
+          .withAlias(s as t)
 
     aliasHeader.aliasesFor(n) should equalWithTracing(Set(m, n))
     aliasHeader.aliasesFor(m) should equalWithTracing(Set(m, n))
@@ -151,7 +153,7 @@ class RecordHeaderNewTest extends FunSpec with Matchers {
   it("adds a new child expr for all aliases of owner") {
     val prop2 = Property(n, PropertyKey("bar"))(CTString)
     val aliasHeader = nHeader
-      .withAlias(m, n)
+          .withAlias(n as m)
       .withExpr(prop2)
 
     aliasHeader.ownedBy(n) should equalWithTracing(nExprs + prop2)
@@ -265,29 +267,29 @@ class RecordHeaderNewTest extends FunSpec with Matchers {
   it("returns selected entity and alias vars and their corresponding columns") {
     val s = Var("nPropFoo_Alias")(nPropFoo.cypherType)
     val aliasHeader = nHeader
-      .withAlias(m, n)
-      .withAlias(s, nPropFoo)
+          .withAlias(n as m)
+          .withAlias(nPropFoo as s)
 
     aliasHeader.select(Set(s)) should equal(RecordHeaderNew(Map(
       s -> nHeader.column(nPropFoo)
     )))
 
-    aliasHeader.select(Set(n, s)) should equal(nHeader.withAlias(s, nPropFoo))
-    aliasHeader.select(Set(n, m)) should equal(nHeader.withAlias(m, n))
+    aliasHeader.select(Set(n, s)) should equal(nHeader.withAlias(nPropFoo as s))
+    aliasHeader.select(Set(n, m)) should equal(nHeader.withAlias(n as m))
     aliasHeader.select(Set(n, m, s)) should equal(aliasHeader)
   }
 
   it("returns original column names after cascaded select") {
-    val aliasHeader1 = nHeader.withAlias(m, n) // WITH n as m
+    val aliasHeader1 = nHeader.withAlias(n as m) // WITH n as m
     val selectHeader1 = aliasHeader1.select(Set(m))
-    val aliasHeader2 = selectHeader1.withAlias(o, m) // WITH m as o
+    val aliasHeader2 = selectHeader1.withAlias(m as o) // WITH m as o
     val selectHeader2 = aliasHeader2.select(Set(o))
 
     selectHeader2.ownedBy(o).map(selectHeader2.column) should equal(nHeader.ownedBy(n).map(nHeader.column))
   }
 
   it("returns original column names after cascaded select with 1:n aliasing") {
-    val aliasHeader = nHeader.withAlias(m, n).withAlias(o, n) // WITH n, n AS m, n AS o
+    val aliasHeader = nHeader.withAlias(n as m).withAlias(n as o) // WITH n, n AS m, n AS o
     val selectHeader = aliasHeader.select(Set(n, m, o))
 
     selectHeader.ownedBy(n).map(selectHeader.column) should equal(nHeader.ownedBy(n).map(nHeader.column))
@@ -298,9 +300,9 @@ class RecordHeaderNewTest extends FunSpec with Matchers {
   it("returns original column names after cascaded select with property aliases") {
     val s = Var("nPropFoo_Alias")(nPropFoo.cypherType)
     val t = Var("nPropFoo_Alias")(nPropFoo.cypherType)
-    val aliasHeader1 = nHeader.withAlias(s, nPropFoo) // WITH n.foo AS s
+    val aliasHeader1 = nHeader.withAlias(nPropFoo as s) // WITH n.foo AS s
     val selectHeader1 = aliasHeader1.select(Set(s))
-    val aliasHeader2 = selectHeader1.withAlias(t, s) // WITH s AS t
+    val aliasHeader2 = selectHeader1.withAlias(s as t) // WITH s AS t
     val selectHeader2 = aliasHeader2.select(Set(t))
 
     selectHeader1.column(s) should equal(nHeader.column(nPropFoo))
@@ -308,9 +310,9 @@ class RecordHeaderNewTest extends FunSpec with Matchers {
   }
 
   it("supports reusing previously used vars") {
-    val aliasHeader1 = nHeader.withAlias(m, n) // WITH n AS m
+    val aliasHeader1 = nHeader.withAlias(n as m) // WITH n AS m
     val selectHeader1 = aliasHeader1.select(Set(m))
-    val aliasHeader2 = selectHeader1.withAlias(n, m) // WITH m AS n
+    val aliasHeader2 = selectHeader1.withAlias(m as n) // WITH m AS n
     val selectHeader2 = aliasHeader2.select(Set(n))
 
     selectHeader2 should equal(nHeader)
@@ -320,9 +322,9 @@ class RecordHeaderNewTest extends FunSpec with Matchers {
     val n2 = Var("n")(nPropFoo.cypherType)
     val mPropFoo = nPropFoo.withOwner(m)
 
-    val aliasHeader1 = nHeader.withAlias(m, n) // WITH n AS m
+    val aliasHeader1 = nHeader.withAlias(n as m) // WITH n AS m
     val selectHeader1 = aliasHeader1.select(Set(m))
-    val aliasHeader2 = selectHeader1.withAlias(n2, mPropFoo) // WITH m.foo AS n
+    val aliasHeader2 = selectHeader1.withAlias(mPropFoo as n2) // WITH m.foo AS n
     val selectHeader2 = aliasHeader2.select(Set(n2))
 
     selectHeader2.column(n2) should equal(nHeader.column(nPropFoo))
