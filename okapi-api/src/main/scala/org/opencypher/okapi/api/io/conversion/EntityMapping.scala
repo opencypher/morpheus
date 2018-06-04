@@ -54,4 +54,14 @@ trait EntityMapping {
       throw IllegalArgumentException("unique property key definitions",
         s"given key $propertyKey overwrites existing mapping")
 
+  protected def validate(): Unit = {
+    val sourceKeys = allSourceKeys
+    if (allSourceKeys.size != sourceKeys.toSet.size) {
+      val duplicateColumns = sourceKeys.groupBy(_).filter { case (_, items) => items.size > 1 }
+      throw IllegalArgumentException(
+        "One-to-one mapping from entity elements to source keys",
+        s"Duplicate columns: $duplicateColumns")
+    }
+  }
+
 }

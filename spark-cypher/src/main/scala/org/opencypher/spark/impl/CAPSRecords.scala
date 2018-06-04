@@ -33,26 +33,22 @@ import org.apache.spark.rdd.RDD
 import org.apache.spark.sql._
 import org.apache.spark.sql.types._
 import org.apache.spark.storage.StorageLevel
-import org.opencypher.okapi.api.io.conversion.{NodeMapping, RelationshipMapping}
 import org.opencypher.okapi.api.table.{CypherRecords, CypherRecordsCompanion}
 import org.opencypher.okapi.api.types._
 import org.opencypher.okapi.api.value.CypherValue.{CypherMap, CypherValue}
-import org.opencypher.okapi.impl.exception.{IllegalArgumentException, IllegalStateException, UnsupportedOperationException}
+import org.opencypher.okapi.impl.exception.{IllegalArgumentException, UnsupportedOperationException}
 import org.opencypher.okapi.impl.table._
 import org.opencypher.okapi.impl.util.PrintOptions
+import org.opencypher.okapi.ir.api.expr.Expr._
 import org.opencypher.okapi.ir.api.expr._
-import org.opencypher.okapi.ir.api.{Label, PropertyKey}
-import org.opencypher.okapi.relational.impl.exception.DuplicateSourceColumnException
 import org.opencypher.okapi.relational.impl.table._
 import org.opencypher.spark.api.CAPSSession
+import org.opencypher.spark.api.io.CAPSEntityTable
 import org.opencypher.spark.api.io.EntityTable._
-import org.opencypher.spark.api.io.{CAPSEntityTable, CAPSNodeTable, CAPSRelationshipTable}
 import org.opencypher.spark.impl.CAPSRecords.{prepareDataFrame, verifyAndCreate}
 import org.opencypher.spark.impl.DataFrameOps._
 import org.opencypher.spark.impl.convert.CAPSCypherType._
 import org.opencypher.spark.impl.convert.rowToCypherMap
-
-import Expr._
 
 import scala.annotation.tailrec
 import scala.collection.JavaConverters._
@@ -310,9 +306,9 @@ sealed abstract case class CAPSRecords(header: RecordHeaderNew, data: DataFrame)
 
   override def toString: String = {
     val numRows = data.size
-    if (header.slots.isEmpty && numRows == 0) {
+    if (header.isEmpty && numRows == 0) {
       s"CAPSRecords.empty"
-    } else if (header.slots.isEmpty && numRows == 1) {
+    } else if (header.isEmpty && numRows == 1) {
       s"CAPSRecords.unit"
     } else {
       s"CAPSRecords($header, table with $numRows rows)"
@@ -363,95 +359,7 @@ object CAPSRecords extends CypherRecordsCompanion[CAPSRecords, CAPSSession] {
     verifyAndCreate(prepareDataFrame(caps.sparkSession.createDataFrame(rdd, beanClass)))
 
   def create(entityTable: CAPSEntityTable)(implicit caps: CAPSSession): CAPSRecords = {
-    def sourceColumnToPropertyExpressionMapping(variable: Var): Map[String, Expr] = {
-      val keyMap = entityTable.mapping.propertyMapping.map {
-        case (key, sourceColumn) => sourceColumn -> Property(variable, PropertyKey(key))()
-      }.foldLeft(Map.empty[String, Expr]) {
-        case (m, (sourceColumn, propertyExpr)) =>
-          if (m.contains(sourceColumn))
-            throw DuplicateSourceColumnException(sourceColumn, variable)
-          else m.updated(sourceColumn, propertyExpr)
-      }
-      val sourceKey = entityTable.mapping.sourceIdKey
-      if (keyMap.contains(sourceKey))
-        throw DuplicateSourceColumnException(sourceKey, variable)
-      else keyMap.updated(sourceKey, variable)
-    }
-
-    // Computes map of sourceColumn -> Expression for nodes
-    def sourceColumnNodeToExpressionMapping(nodeMapping: NodeMapping): Map[String, Expr] = {
-      // TODO: Generate var. Nice-to-have property: Same DF gets same var.
-      // TODO: Labels on node var?
-      val generatedVar = Var(placeHolderVarName)(nodeMapping.cypherType)
-
-      val entityMappings = sourceColumnToPropertyExpressionMapping(generatedVar)
-
-      nodeMapping.optionalLabelMapping.map {
-        case (label, sourceColumn) => {
-          sourceColumn -> HasLabel(generatedVar, Label(label))(CTBoolean)
-        }
-      }.foldLeft(entityMappings) {
-        case (m, (sourceColumn, expr)) =>
-          if (m.contains(sourceColumn))
-            throw DuplicateSourceColumnException(sourceColumn, generatedVar)
-          else m.updated(sourceColumn, expr)
-      }
-    }
-
-    // Computes map of sourceColumn -> Expression for relationships
-    def sourceColumnRelationshipToExpressionMapping(relMapping: RelationshipMapping): Map[String, Expr] = {
-      // TODO: Generate var. Nice-to-have property: Same DF gets same var.
-      // TODO: Labels on node var?
-      val relVar = Var(placeHolderVarName)(relMapping.cypherType)
-      val entityMappings = sourceColumnToPropertyExpressionMapping(relVar)
-
-      val sourceColumnToExpressionMapping: Map[String, Expr] = Seq(
-        relMapping.sourceStartNodeKey -> StartNode(relVar)(CTInteger),
-        relMapping.sourceEndNodeKey -> EndNode(relVar)(CTInteger)
-      ).foldLeft(entityMappings) {
-        case (acc, (slot, expr)) =>
-          if (acc.contains(slot))
-            throw DuplicateSourceColumnException(slot, relVar)
-          else acc.updated(slot, expr)
-      }
-      relMapping.relTypeOrSourceRelTypeKey match {
-        case Right((sourceRelTypeColumn, _)) if sourceColumnToExpressionMapping.contains(sourceRelTypeColumn) =>
-          throw DuplicateSourceColumnException(sourceRelTypeColumn, relVar)
-        case Right((sourceRelTypeColumn, _)) => sourceColumnToExpressionMapping.updated(sourceRelTypeColumn, Type(relVar)(CTString))
-        case Left(_) => sourceColumnToExpressionMapping
-      }
-    }
-
-    val sourceColumnToExpressionMap = entityTable match {
-      case nt: CAPSNodeTable => sourceColumnNodeToExpressionMapping(nt.mapping)
-      case rt: CAPSRelationshipTable => sourceColumnRelationshipToExpressionMapping(rt.mapping)
-    }
-
-    val (sourceHeader, sourceDataFrame) = {
-      prepareDataFrame(entityTable.table.df)
-    }
-
-    // Remove columns from source data that are not contained in the mapping.
-    // Wrap source expressions in OpaqueField/ProjectedExpr
-    // TODO: Map source columns instead of sourceHeader.slots?
-    val slotContents: Seq[SlotContent] = sourceHeader.slots.map {
-      case slot@RecordSlot(_, content: FieldSlotContent) =>
-        def sourceColumnName = content.field.name
-
-        val expressionForColumn = sourceColumnToExpressionMap.get(sourceColumnName)
-        expressionForColumn.map {
-          case expr: Var => OpaqueField(expr)
-          case expr: Property => ProjectedExpr(expr.copy()(cypherType = content.cypherType))
-          case expr => ProjectedExpr(expr)
-        }.getOrElse(slot.content)
-
-      case slot =>
-        slot.content
-    }
-    val newHeader = IRecordHeader.from(slotContents: _*)
-    val renamed = sourceDataFrame.toDF(newHeader.columns: _*)
-
-    CAPSRecords.createInternal(newHeader, renamed)
+    ???
   }
 
   /**
