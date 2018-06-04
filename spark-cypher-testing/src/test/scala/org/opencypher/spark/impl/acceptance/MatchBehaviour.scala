@@ -27,6 +27,7 @@
 package org.opencypher.spark.impl.acceptance
 
 import org.opencypher.okapi.api.value.CypherValue._
+import org.opencypher.okapi.relational.api.configuration.CoraConfiguration.PrintPhysicalPlan
 import org.opencypher.okapi.testing.Bag
 import org.opencypher.okapi.testing.Bag._
 import org.opencypher.spark.impl.CAPSConverters._
@@ -171,6 +172,7 @@ class MatchBehaviour extends CAPSTestSuite with DefaultGraphInit {
     }
 
     it("joined components") {
+      PrintPhysicalPlan.set
       // Given
       val given = initGraph(
         """

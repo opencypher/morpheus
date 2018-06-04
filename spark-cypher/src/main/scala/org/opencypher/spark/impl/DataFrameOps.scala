@@ -38,7 +38,7 @@ import org.opencypher.okapi.api.value.CypherValue.CypherValue
 import org.opencypher.okapi.impl.exception.IllegalArgumentException
 import org.opencypher.okapi.impl.util.Measurement.printTiming
 import org.opencypher.okapi.ir.api.expr.{Expr, Param}
-import org.opencypher.okapi.relational.impl.table.RecordHeader
+import org.opencypher.okapi.relational.impl.table.IRecordHeader
 import org.opencypher.spark.api.Tags._
 import org.opencypher.spark.impl.convert.CAPSCypherType._
 import org.opencypher.spark.impl.physical.CAPSRuntimeContext
@@ -46,7 +46,7 @@ import org.opencypher.spark.impl.physical.operators.NamedTableScan
 object DataFrameOps {
 
   implicit class CypherRow(r: Row) {
-    def getCypherValue(expr: Expr, header: RecordHeader)(implicit context: CAPSRuntimeContext): CypherValue = {
+    def getCypherValue(expr: Expr, header: IRecordHeader)(implicit context: CAPSRuntimeContext): CypherValue = {
       expr match {
         case Param(name) => context.parameters(name)
         case _ =>

@@ -31,8 +31,7 @@ import java.util.Collections
 import org.apache.spark.sql.types.{IntegerType, StructField, StructType}
 import org.apache.spark.sql.{Column, DataFrame, Row}
 import org.opencypher.okapi.ir.api.expr.{Expr, Subtract, Var}
-import org.opencypher.okapi.relational.impl.syntax.RecordHeaderSyntax._
-import org.opencypher.okapi.relational.impl.table.{OpaqueField, ProjectedField, RecordHeader}
+import org.opencypher.okapi.relational.impl.table.{IRecordHeader, OpaqueField, ProjectedField}
 import org.opencypher.okapi.testing.BaseTestSuite
 import org.opencypher.spark.impl.SparkSQLExprMapper._
 import org.opencypher.spark.impl.physical.CAPSRuntimeContext
@@ -45,19 +44,19 @@ class SparkSQLExprMapperTest extends BaseTestSuite with SparkSessionFixture {
   test("can map subtract") {
     val expr = Subtract(Var("a")(), Var("b")())()
 
-    convert(expr, _header.update(addContent(ProjectedField(Var("foo")(), expr)))) should equal(
+    convert(expr, _header.addContent(ProjectedField(Var("foo")(), expr))) should equal(
       df.col("a") - df.col("b")
     )
   }
 
-  private def convert(expr: Expr, header: RecordHeader = _header): Column = {
+  private def convert(expr: Expr, header: IRecordHeader = _header): Column = {
     expr.asSparkSQLExpr(header, df, CAPSRuntimeContext.empty)
   }
 
-  val _header: RecordHeader = RecordHeader.empty.update(addContents(Seq(OpaqueField(Var("a")()), OpaqueField(Var("b")()))))
+  val _header: IRecordHeader = IRecordHeader.empty.addContents(Seq(OpaqueField(Var("a")()), OpaqueField(Var("b")())))
   val df: DataFrame = sparkSession.createDataFrame(
     Collections.emptyList[Row](),
     StructType(Seq(StructField("a", IntegerType), StructField("b", IntegerType))))
 
-  implicit def extractRecordHeaderFromResult[T](tuple: (RecordHeader, T)): RecordHeader = tuple._1
+  implicit def extractRecordHeaderFromResult[T](tuple: (IRecordHeader, T)): IRecordHeader = tuple._1
 }

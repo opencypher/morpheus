@@ -29,13 +29,12 @@ package org.opencypher.spark.testing.support
 import org.opencypher.okapi.api.table.CypherRecords
 import org.opencypher.okapi.api.value.CypherValue._
 import org.opencypher.okapi.ir.api.expr.Var
-import org.opencypher.okapi.relational.impl.table.{FieldSlotContent, OpaqueField, ProjectedExpr, RecordHeader}
+import org.opencypher.okapi.relational.impl.table._
 import org.opencypher.okapi.testing.Bag
 import org.opencypher.okapi.testing.Bag._
 import org.opencypher.spark.impl.CAPSConverters._
 import org.opencypher.spark.impl.CAPSRecords
 import org.opencypher.spark.impl.DataFrameOps._
-import org.opencypher.spark.impl.table.CAPSRecordHeader._
 import org.opencypher.spark.testing.CAPSTestSuite
 import org.scalatest.Assertion
 
@@ -67,7 +66,7 @@ trait RecordMatchingTestSupport {
         case slot: FieldSlotContent => OpaqueField(slot.field)
         case slot: ProjectedExpr    => OpaqueField(Var(slot.expr.withoutType)(slot.cypherType))
       }
-      val newHeader = RecordHeader.from(newSlots: _*)
+      val newHeader = IRecordHeader.from(newSlots: _*)
       val newData = records.data.toDF(newHeader.columns: _*)
       CAPSRecords.verifyAndCreate(newHeader, newData)(records.caps)
     }
