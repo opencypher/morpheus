@@ -34,7 +34,7 @@ import org.opencypher.okapi.api.types.{CTNode, CTRelationship}
 import org.opencypher.okapi.impl.exception.IllegalArgumentException
 import org.opencypher.okapi.ir.api.PropertyKey
 import org.opencypher.okapi.ir.api.expr._
-import org.opencypher.okapi.relational.impl.table.{IRecordHeader, OpaqueField, RecordHeaderNew}
+import org.opencypher.okapi.relational.impl.table.RecordHeaderNew
 import org.opencypher.spark.api.CAPSSession
 import org.opencypher.spark.api.io.{CAPSEntityTable, CAPSNodeTable}
 import org.opencypher.spark.impl.CAPSConverters._
@@ -112,7 +112,7 @@ trait CAPSGraph extends PropertyGraph with GraphOperations with Serializable {
 
     val updatedHeader = RecordHeaderNew.from(keepExprs)
 
-    CAPSRecords.verifyAndCreate(updatedHeader, updatedData)(session)
+    CAPSRecords(updatedHeader, updatedData)(session)
   }
 
 }
@@ -207,10 +207,10 @@ object CAPSGraph {
     override val schema: CAPSSchema = CAPSSchema.empty
 
     override def nodes(name: String, cypherType: CTNode): CAPSRecords =
-      CAPSRecords.empty(IRecordHeader.from(OpaqueField(Var(name)(cypherType))))
+      CAPSRecords.empty(RecordHeaderNew.from(Var(name)(cypherType)))
 
     override def relationships(name: String, cypherType: CTRelationship): CAPSRecords =
-      CAPSRecords.empty(IRecordHeader.from(OpaqueField(Var(name)(cypherType))))
+      CAPSRecords.empty(RecordHeaderNew.from(Var(name)(cypherType)))
   }
 
 }
