@@ -64,6 +64,13 @@ class RecordHeaderNewTest extends FunSpec with Matchers {
     nHeader.expressions should equalWithTracing(nExprs)
   }
 
+  it("can return all vars") {
+    nHeader.vars should equalWithTracing(Set(n))
+    rHeader.vars should equalWithTracing(Set(r))
+    val s = Var("s")(nPropFoo.cypherType)
+    nHeader.withAlias(nPropFoo as s).vars should equalWithTracing(Set(n, s))
+  }
+
   it("can return all contained columns") {
     nHeader.columns should equalWithTracing(nHeader.expressions.map(nHeader.column))
     nHeader.withAlias(n, m).columns should equalWithTracing(nHeader.expressions.map(nHeader.column))

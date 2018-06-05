@@ -79,7 +79,7 @@ sealed class CAPSSessionImpl(val sparkSession: SparkSession)
     val ambientGraphNew = mountAmbientGraph(graph)
 
     val drivingTable = maybeDrivingTable.getOrElse(CAPSRecords.unit())
-    val inputFields = drivingTable.asCaps.header.fieldsAsVar
+    val inputFields = drivingTable.asCaps.header.vars
 
     val (stmt, extractedLiterals, semState) = time("AST construction")(parser.process(query, inputFields)(CypherParser.defaultContext))
 

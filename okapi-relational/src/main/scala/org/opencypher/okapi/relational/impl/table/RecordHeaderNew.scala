@@ -49,10 +49,10 @@ case class RecordHeaderNew(exprToColumn: Map[Expr, String]) {
   // Lookup methods
   // ==============
 
-  // TODO: should this return expressions deterministically ordered by columns?
   def expressions: Set[Expr] = exprToColumn.keySet
 
-  // TODO: should this return columns deterministically ordered?
+  def vars: Set[Var] = expressions.collect { case v: Var => v }
+
   def columns: Set[String] = exprToColumn.values.toSet
 
   def isEmpty: Boolean = exprToColumn.isEmpty
