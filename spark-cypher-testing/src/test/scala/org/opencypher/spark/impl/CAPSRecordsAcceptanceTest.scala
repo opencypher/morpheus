@@ -166,7 +166,7 @@ class CAPSRecordsAcceptanceTest extends CAPSTestSuite with Neo4jServerFixture wi
     val capsRecords = records.asCaps
 
     def shouldHaveSize(size: Int) = {
-      val tuples = capsRecords.data.collect().toSeq.map { r =>
+      val tuples = capsRecords.df.collect().toSeq.map { r =>
         val cells = capsRecords.header.slots.map { s =>
           r.get(s.index)
         }

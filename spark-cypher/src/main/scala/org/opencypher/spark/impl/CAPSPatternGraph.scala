@@ -50,7 +50,7 @@ case class CAPSPatternGraph(
 
   private val header = baseTable.header
 
-  def show(): Unit = baseTable.data.show()
+  def show(): Unit = baseTable.df.show()
 
   override def cache(): CAPSPatternGraph = map(_.cache())
 

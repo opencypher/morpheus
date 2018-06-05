@@ -39,10 +39,10 @@ object CAPSPatternGraphFactory extends CAPSTestGraphFactory {
     val nodes = scanGraph.nodes("n")
     val rels = scanGraph.relationships("r")
 
-    val lhs = nodes.data.col(nodes.header.of(Var("n")(CTNode)))
-    val rhs = rels.data.col(rels.header.of(rels.header.sourceNodeSlot(Var("r")(CTRelationship))))
+    val lhs = nodes.df.col(nodes.header.of(Var("n")(CTNode)))
+    val rhs = rels.df.col(rels.header.of(rels.header.sourceNodeSlot(Var("r")(CTRelationship))))
 
-    val baseTableData = nodes.data.join(rels.data, lhs === rhs, "left_outer")
+    val baseTableData = nodes.df.join(rels.df, lhs === rhs, "left_outer")
 
     val baseTable = CAPSRecords.verifyAndCreate(nodes.header ++ rels.header, baseTableData)
 

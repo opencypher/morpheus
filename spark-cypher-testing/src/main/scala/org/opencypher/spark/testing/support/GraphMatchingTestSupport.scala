@@ -38,10 +38,10 @@ trait GraphMatchingTestSupport {
   self: BaseTestSuite with SparkSessionFixture with CAPSSessionFixture =>
 
   private def verify(actual: CAPSGraph, expected: CAPSGraph): Assertion = {
-    val expectedNodeIds = expected.nodes("n").data.select("n").collect().map(_.getLong(0)).toSet
-    val expectedRelIds = expected.relationships("r").data.select("r").collect().map(_.getLong(0)).toSet
-    val actualNodeIds = actual.nodes("n").data.select("n").collect().map(_.getLong(0)).toSet
-    val actualRelIds = actual.relationships("r").data.select("r").collect().map(_.getLong(0)).toSet
+    val expectedNodeIds = expected.nodes("n").df.select("n").collect().map(_.getLong(0)).toSet
+    val expectedRelIds = expected.relationships("r").df.select("r").collect().map(_.getLong(0)).toSet
+    val actualNodeIds = actual.nodes("n").df.select("n").collect().map(_.getLong(0)).toSet
+    val actualRelIds = actual.relationships("r").df.select("r").collect().map(_.getLong(0)).toSet
 
     expectedNodeIds should equal(actualNodeIds)
     expectedRelIds should equal(actualRelIds)

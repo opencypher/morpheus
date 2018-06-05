@@ -39,7 +39,7 @@ import org.opencypher.okapi.relational.impl.physical._
 import org.opencypher.okapi.relational.impl.util.StringEncodingUtilities
 import org.opencypher.okapi.relational.impl.util.StringEncodingUtilities._
 import org.opencypher.spark.api.CAPSSession
-import org.opencypher.spark.api.io.SparkCypherTable.SparkCypherTable
+import org.opencypher.spark.api.io.SparkCypherTable.DataFrameTable
 import org.opencypher.spark.impl.CAPSRecords
 import org.opencypher.spark.impl.DataFrameOps._
 import org.opencypher.spark.impl.util.Annotation
@@ -51,7 +51,7 @@ import scala.reflect.runtime.universe._
 
 object SparkCypherTable {
 
-  implicit class SparkCypherTable(val df: DataFrame) extends FlatRelationalTable[SparkCypherTable] {
+  implicit class DataFrameTable(val df: DataFrame) extends FlatRelationalTable[DataFrameTable] {
 
     override def columns: Seq[String] = df.columns
 
@@ -63,25 +63,25 @@ object SparkCypherTable {
 
     override def size: Long = df.count()
 
-    def cache(): SparkCypherTable = df.cache()
+    def cache(): DataFrameTable = df.cache()
 
-    def persist(): SparkCypherTable = df.persist()
+    def persist(): DataFrameTable = df.persist()
 
-    def persist(newLevel: StorageLevel): SparkCypherTable = df.persist(newLevel)
+    def persist(newLevel: StorageLevel): DataFrameTable = df.persist(newLevel)
 
-    def unpersist(): SparkCypherTable = df.unpersist()
+    def unpersist(): DataFrameTable = df.unpersist()
 
-    def unpersist(blocking: Boolean): SparkCypherTable = df.unpersist(blocking)
+    def unpersist(blocking: Boolean): DataFrameTable = df.unpersist(blocking)
 
-    override def select(cols: String*): SparkCypherTable = {
+    override def select(cols: String*): DataFrameTable = {
       df.select(cols.head, cols.tail: _*)
     }
 
-    override def unionAll(other: SparkCypherTable): SparkCypherTable = {
+    override def unionAll(other: DataFrameTable): DataFrameTable = {
       df.union(other.df)
     }
 
-    override def join(other: SparkCypherTable, joinType: JoinType, joinCols: (String, String)*): SparkCypherTable = {
+    override def join(other: DataFrameTable, joinType: JoinType, joinCols: (String, String)*): DataFrameTable = {
       val joinTypeString = joinType match {
         case InnerJoin => "inner"
         case LeftOuterJoin => "left_outer"
@@ -96,20 +96,20 @@ object SparkCypherTable {
       df.join(other.df, joinExpr, joinTypeString)
     }
 
-    override def distinct: SparkCypherTable = df.distinct
+    override def distinct: DataFrameTable = df.distinct
 
-    override def distinct(cols: String*): SparkCypherTable = df.dropDuplicates(cols)
+    override def distinct(cols: String*): DataFrameTable = df.dropDuplicates(cols)
 
-    override def withNullColumn(col: String): SparkCypherTable = df.withColumn(col, functions.lit(null))
+    override def withNullColumn(col: String): DataFrameTable = df.withColumn(col, functions.lit(null))
 
-    override def withTrueColumn(col: String): SparkCypherTable = df.withColumn(col, functions.lit(true))
+    override def withTrueColumn(col: String): DataFrameTable = df.withColumn(col, functions.lit(true))
 
-    override def withFalseColumn(col: String): SparkCypherTable = df.withColumn(col, functions.lit(false))
+    override def withFalseColumn(col: String): DataFrameTable = df.withColumn(col, functions.lit(false))
   }
 
 }
 
-trait CAPSEntityTable extends EntityTable[SparkCypherTable] {
+trait CAPSEntityTable extends EntityTable[DataFrameTable] {
   // TODO: create CTEntity type
   private[spark] def entityType: CypherType with DefiniteCypherType = mapping.cypherType
 
@@ -118,7 +118,7 @@ trait CAPSEntityTable extends EntityTable[SparkCypherTable] {
 
 case class CAPSNodeTable(
   mapping: NodeMapping,
-  table: SparkCypherTable
+  table: DataFrameTable
 ) extends NodeTable(mapping, table) with CAPSEntityTable
 
 object CAPSNodeTable {
@@ -185,7 +185,7 @@ object CAPSNodeTable {
 
 case class CAPSRelationshipTable(
   mapping: RelationshipMapping,
-  table: SparkCypherTable
+  table: DataFrameTable
 ) extends RelationshipTable(mapping, table) with CAPSEntityTable
 
 object CAPSRelationshipTable {

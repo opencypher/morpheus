@@ -95,19 +95,19 @@ trait CAPSGraph extends PropertyGraph with GraphOperations with Serializable {
     val predicate = labelExprs
       .filterNot(l => labels.contains(l.label.name))
       .map(header.column)
-      .map(records.data.col(_) === false)
+      .map(records.df.col(_) === false)
       .reduceOption(_ && _)
 
     // filter rows and select only necessary columns
     val updatedData = predicate match {
 
       case Some(filter) =>
-        records.data
+        records.df
           .filter(filter)
           .select(keepColumns.head, keepColumns.tail: _*)
 
       case None =>
-        records.data.select(keepColumns.head, keepColumns.tail: _*)
+        records.df.select(keepColumns.head, keepColumns.tail: _*)
     }
 
     val updatedHeader = RecordHeaderNew.from(keepExprs)

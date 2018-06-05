@@ -75,8 +75,8 @@ object CAPSPhysicalOperator {
     // subsequent select. This can be removed, once https://issues.apache.org/jira/browse/SPARK-23855 is solved or we
     // upgrade to Spark 2.3.0
     val potentiallyCorruptedResult = joinDFs(lhsData, rhsData, header, joinCols)(joinType, deduplicate)(lhs.caps)
-    val select = potentiallyCorruptedResult.data.select("*")
-    CAPSRecords.verifyAndCreate(header, select)(lhs.caps)
+    val select = potentiallyCorruptedResult.df.select("*")
+    CAPSRecords.verify(header, select)(lhs.caps)
   }
 
   def joinDFs(lhsData: DataFrame, rhsData: DataFrame, header: IRecordHeader, joinCols: Seq[(String, String)])(
@@ -90,7 +90,7 @@ object CAPSPhysicalOperator {
       joinedData.safeDropColumns(colsToDrop: _*)
     } else joinedData
 
-    CAPSRecords.verifyAndCreate(header, returnData)
+    CAPSRecords.verify(header, returnData)
   }
 
   def assertIsNode(slot: RecordSlot): Unit = {

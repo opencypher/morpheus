@@ -40,7 +40,7 @@ import org.opencypher.okapi.impl.util.Measurement.printTiming
 import org.opencypher.okapi.ir.api.expr.{Expr, Param}
 import org.opencypher.okapi.relational.impl.table.IRecordHeader
 import org.opencypher.spark.api.Tags._
-import org.opencypher.spark.impl.convert.CAPSCypherType._
+import org.opencypher.spark.impl.convert.SparkConversions._
 import org.opencypher.spark.impl.physical.CAPSRuntimeContext
 import org.opencypher.spark.impl.physical.operators.NamedTableScan
 object DataFrameOps {
@@ -221,6 +221,22 @@ object DataFrameOps {
       }.reduce((acc, expr) => acc && expr)
 
       df.join(other, joinExpr, joinType)
+    }
+
+    /**
+      * Normalises the dataframe by lifting numeric fields to Long and similar ops.
+      */
+    def withCypherCompatibleTypes: DataFrame = {
+      val toCast = df.schema.fields.filter(f => f.toCypherType.isEmpty)
+      val dfWithCompatibleTypes: DataFrame = toCast.foldLeft(df) {
+        case (currentDf, field) =>
+          val castType = field.dataType.cypherCompatibleDataType.getOrElse(
+            throw IllegalArgumentException(
+              s"a Spark type supported by Cypher: ${supportedTypes.mkString("[", ", ", "]")}",
+              s"type ${field.dataType} of field $field"))
+          currentDf.mapColumn(field.name)(_.cast(castType))
+      }
+      dfWithCompatibleTypes
     }
 
     /**

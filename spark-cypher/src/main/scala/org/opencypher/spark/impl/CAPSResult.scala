@@ -51,7 +51,7 @@ trait CAPSResult extends CypherResult {
     records match {
       case Some(r) =>
         implicit val encoder = ExpressionEncoder[E]
-        r.asCaps.data.as[E].toLocalIterator().asScala
+        r.asCaps.df.as[E].toLocalIterator().asScala
       case None =>
         Iterator.empty
     }

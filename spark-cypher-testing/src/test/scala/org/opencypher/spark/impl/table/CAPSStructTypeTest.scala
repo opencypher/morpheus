@@ -26,12 +26,12 @@
  */
 package org.opencypher.spark.impl.table
 
-import org.scalatest.{FunSpec, Matchers}
-import CAPSStructType._
 import org.apache.spark.sql.types._
 import org.opencypher.okapi.api.types.{CTInteger, CTList, CTString}
 import org.opencypher.okapi.ir.api.expr.Var
 import org.opencypher.okapi.relational.impl.table.RecordHeaderNew
+import org.opencypher.spark.impl.convert.SparkConversions._
+import org.scalatest.{FunSpec, Matchers}
 
 class CAPSStructTypeTest extends FunSpec with Matchers {
 

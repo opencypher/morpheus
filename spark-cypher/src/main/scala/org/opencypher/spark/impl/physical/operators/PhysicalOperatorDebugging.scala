@@ -66,7 +66,7 @@ trait PhysicalOperatorDebugging extends CAPSPhysicalOperator {
       println(separator)
       println(s"**$operatorName**")
 
-      val recordsDf = output.records.data
+      val recordsDf = output.records.df
       if (output.records.header != IRecordHeader.empty) {
         println
         recordsDf.printExecutionTiming(s"Computing $simpleOperatorName output records DataFrame")
@@ -80,7 +80,7 @@ trait PhysicalOperatorDebugging extends CAPSPhysicalOperator {
           case unionGraph: CAPSUnionGraph =>
             unionGraph.graphs.collectFirst {
               case (patternGraph: CAPSPatternGraph, _) =>
-                val baseTableDf = patternGraph.baseTable.data
+                val baseTableDf = patternGraph.baseTable.df
                 baseTableDf.printExecutionTiming("Computing pattern graph base table")
                 println
                 baseTableDf.printPhysicalPlan()

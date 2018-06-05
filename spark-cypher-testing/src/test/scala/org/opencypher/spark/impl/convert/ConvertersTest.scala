@@ -31,7 +31,7 @@ import org.opencypher.okapi.api.types.CypherType._
 import org.opencypher.okapi.api.types._
 import org.opencypher.okapi.api.value.CypherValue
 import org.opencypher.okapi.testing.BaseTestSuite
-import org.opencypher.spark.impl.convert.CAPSCypherType._
+import org.opencypher.spark.impl.convert.SparkConversions._
 
 class ConvertersTest extends BaseTestSuite {
 

@@ -37,6 +37,8 @@ trait RelationalCypherRecords[T <: FlatRelationalTable[T]] extends CypherRecords
 
   def table: T
 
+  override def columns: Seq[String] = table.columns
+
   def header: RecordHeaderNew
 
   def select(exprs: Expr*): RelationalCypherRecords[T] = {

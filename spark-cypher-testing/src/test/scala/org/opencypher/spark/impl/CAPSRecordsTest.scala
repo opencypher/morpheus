@@ -71,8 +71,8 @@ class CAPSRecordsTest extends CAPSTestSuite with GraphConstructionFixture with T
 
     val nodeIdCol = records.header.of(records.header.slotFor(entityVar))
 
-    validateTag(records.data, nodeIdCol, fromTag)
-    validateTag(retagged.data, nodeIdCol, toTag)
+    validateTag(records.df, nodeIdCol, fromTag)
+    validateTag(retagged.df, nodeIdCol, toTag)
   }
 
   it("retags a relationship variable") {
@@ -104,14 +104,14 @@ class CAPSRecordsTest extends CAPSTestSuite with GraphConstructionFixture with T
     val sourceIdCol = records.header.of(records.header.sourceNodeSlot(entityVar))
     val targetIdCol = records.header.of(records.header.targetNodeSlot(entityVar))
 
-    validateTag(records.data, relIdCol, fromTag)
-    validateTag(retagged.data, relIdCol, toTag)
+    validateTag(records.df, relIdCol, fromTag)
+    validateTag(retagged.df, relIdCol, toTag)
 
-    validateTag(records.data, sourceIdCol, fromTag)
-    validateTag(retagged.data, sourceIdCol, toTag)
+    validateTag(records.df, sourceIdCol, fromTag)
+    validateTag(retagged.df, sourceIdCol, toTag)
 
-    validateTag(records.data, targetIdCol, fromTag)
-    validateTag(retagged.data, targetIdCol, toTag)
+    validateTag(records.df, targetIdCol, fromTag)
+    validateTag(retagged.df, targetIdCol, toTag)
   }
 
   private def validateTag(df: DataFrame, col: String, tag: Int): Unit = {
@@ -239,7 +239,7 @@ class CAPSRecordsTest extends CAPSTestSuite with GraphConstructionFixture with T
     val header = IRecordHeader.from(OpaqueField(Var("int")()), OpaqueField(Var("notString")()))
 
     a[InternalException] shouldBe thrownBy {
-      CAPSRecords.verifyAndCreate(header, data)
+      CAPSRecords.verify(header, data)
     }
   }
 
@@ -247,7 +247,7 @@ class CAPSRecordsTest extends CAPSTestSuite with GraphConstructionFixture with T
     val data = sparkSession.createDataFrame(Seq((1L, "foo"), (2L, "bar"))).toDF("int", "string")
     val header = IRecordHeader.from(OpaqueField(Var("int")(CTInteger)), OpaqueField(Var("string")(CTString)))
 
-    val records = CAPSRecords.verifyAndCreate(header, data) // no exception is thrown
+    val records = CAPSRecords.verify(header, data) // no exception is thrown
     records.data.select("int").collect() should equal(Array(Row(1), Row(2)))
   }
 

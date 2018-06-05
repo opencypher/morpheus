@@ -67,8 +67,8 @@ trait RecordMatchingTestSupport {
         case slot: ProjectedExpr    => OpaqueField(Var(slot.expr.withoutType)(slot.cypherType))
       }
       val newHeader = IRecordHeader.from(newSlots: _*)
-      val newData = records.data.toDF(newHeader.columns: _*)
-      CAPSRecords.verifyAndCreate(newHeader, newData)(records.caps)
+      val newData = records.df.toDF(newHeader.columns: _*)
+      CAPSRecords.verify(newHeader, newData)(records.caps)
     }
   }
 

@@ -35,7 +35,7 @@ import org.opencypher.okapi.api.value.CypherValue.CypherMap
 import org.opencypher.okapi.impl.exception.IllegalArgumentException
 import org.opencypher.spark.api.io._
 import org.opencypher.spark.impl.CAPSGraph
-import org.opencypher.spark.impl.convert.CAPSCypherType
+import org.opencypher.spark.impl.convert.SparkConversions
 import org.opencypher.spark.schema.CAPSSchema._
 import org.opencypher.spark.testing.CAPSTestSuite
 
@@ -167,7 +167,7 @@ class EntityTableTest extends CAPSTestSuite {
   }
 
   test("NodeTable should not accept wrong source property key type") {
-    assert(!CAPSCypherType.supportedTypes.contains(DecimalType))
+    assert(!SparkConversions.supportedTypes.contains(DecimalType))
     an[IllegalArgumentException] should be thrownBy {
       val df = sparkSession.createDataFrame(Seq((1, true, BigDecimal(13.37)))).toDF("ID", "IS_A", "PROP")
       val nodeMapping = NodeMapping.on("ID").withOptionalLabel("A" -> "IS_A").withPropertyKey("PROP")

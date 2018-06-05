@@ -121,7 +121,7 @@ final case class BoundedVarExpand(
     // If the expansion ends in an already solved plan, the final join can be replaced by a filter.
     val result = if (isExpandInto) {
       val data = expanded.toDF()
-      CAPSRecords.verifyAndCreate(header, data.filter(data.col(targetNodeCol) === data.col(endNodeCol)))(expanded.caps)
+      CAPSRecords.verify(header, data.filter(data.col(targetNodeCol) === data.col(endNodeCol)))(expanded.caps)
     } else {
       val joinHeader = expanded.header ++ targets.header
 
@@ -134,27 +134,27 @@ final case class BoundedVarExpand(
       joinRecords(joinHeader, Seq(lhsSlot -> rhsSlot))(expanded, targets)
     }
 
-    CAPSRecords.verifyAndCreate(header, result.toDF().safeDropColumn(endNodeCol))(expanded.caps)
+    CAPSRecords.verify(header, result.toDF().safeDropColumn(endNodeCol))(expanded.caps)
   }
 
   private def expand(firstRecords: CAPSRecords, secondRecords: CAPSRecords): CAPSRecords = {
-    val initData = firstRecords.data
+    val initData = firstRecords.df
     val relsData = direction match {
       case Directed =>
-        secondRecords.data
+        secondRecords.df
       case Undirected =>
         // TODO this is a crude hack that will not work once we have proper path support
         val startNodeSlot = secondRecords.header.of(secondRecords.header.sourceNodeSlot(rel))
         val endNodeSlot = secondRecords.header.of(secondRecords.header.targetNodeSlot(rel))
         val colOrder = secondRecords.header.slots.map(secondRecords.header.of)
 
-        val inverted = secondRecords.data
+        val inverted = secondRecords.df
           .safeRenameColumn(startNodeSlot, "__tmp__")
           .safeRenameColumn(endNodeSlot, startNodeSlot)
           .safeRenameColumn("__tmp__", endNodeSlot)
           .select(colOrder.head, colOrder.tail: _*)
 
-        inverted.union(secondRecords.data)
+        inverted.union(secondRecords.df)
     }
 
     val edgeListColName = firstRecords.header.of(firstRecords.header.slotFor(edgeList))

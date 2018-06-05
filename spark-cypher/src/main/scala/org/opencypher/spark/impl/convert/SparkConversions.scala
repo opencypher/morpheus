@@ -26,13 +26,32 @@
  */
 package org.opencypher.spark.impl.convert
 
+import org.apache.spark.sql.Row
+import org.apache.spark.sql.catalyst.encoders.{ExpressionEncoder, RowEncoder}
 import org.apache.spark.sql.types._
 import org.opencypher.okapi.api.types._
 import org.opencypher.okapi.impl.exception.{IllegalArgumentException, NotImplementedException}
+import org.opencypher.okapi.ir.api.expr.{Expr, Var}
+import org.opencypher.okapi.relational.impl.table.RecordHeaderNew
 
-object CAPSCypherType {
+object SparkConversions {
 
-  implicit class RichCypherType(val ct: CypherType) extends AnyVal {
+  // Spark data types that are supported within the Cypher type system
+  val supportedTypes = Seq(
+    // numeric
+    ByteType,
+    ShortType,
+    IntegerType,
+    LongType,
+    FloatType,
+    DoubleType,
+    // other
+    StringType,
+    BooleanType,
+    NullType
+  )
+
+  implicit class CypherTypeOps(val ct: CypherType) extends AnyVal {
     def toSparkType: Option[DataType] = ct match {
       case CTNull | CTVoid => Some(NullType)
       case _ =>
@@ -86,22 +105,22 @@ object CAPSCypherType {
     }
   }
 
-  // Spark data types that are supported within the Cypher type system
-  val supportedTypes = Seq(
-    // numeric
-    ByteType,
-    ShortType,
-    IntegerType,
-    LongType,
-    FloatType,
-    DoubleType,
-    // other
-    StringType,
-    BooleanType,
-    NullType
-  )
+  implicit class StructTypeOps(val structType: StructType) {
+    def toRecordHeader: RecordHeaderNew = {
+      val vars: Set[Expr] = structType.fields.map { field =>
+        Var(field.name)(field.dataType.toCypherType(field.nullable)
+          .getOrElse(throw IllegalArgumentException("a supported Spark type", field.dataType)))
+      }.toSet
 
-  implicit class RichDataType(val dt: DataType) extends AnyVal {
+      RecordHeaderNew.from(vars)
+    }
+  }
+
+  implicit class StructFieldOps(val field: StructField) extends AnyVal {
+    def toCypherType: Option[CypherType] = field.dataType.toCypherType(field.nullable)
+  }
+
+  implicit class DataTypeOps(val dt: DataType) extends AnyVal {
     def toCypherType(nullable: Boolean = false): Option[CypherType] = {
       val result = dt match {
         case StringType => Some(CTString)
@@ -140,6 +159,18 @@ object CAPSCypherType {
       case compatible if dt.toCypherType().isDefined => Some(compatible)
       case _ => None
     }
+  }
+
+  implicit class RecordHeaderOps(header: RecordHeaderNew) extends Serializable {
+
+    def toStructType: StructType = {
+      StructType(header.expressions
+        .map(expr => expr.cypherType.toStructField(header.column(expr)))
+        .toSeq)
+    }
+
+    def rowEncoder: ExpressionEncoder[Row] =
+      RowEncoder(header.toStructType)
   }
 
 }

@@ -55,7 +55,7 @@ class CAPSPhysicalOperatorTest extends CAPSTestSuite {
 
     val cacheContent = context.cache(toCache)
     cacheContent should equal(expectedResult)
-    cacheContent.records.data.storageLevel should equal(StorageLevel.MEMORY_AND_DISK)
+    cacheContent.records.df.storageLevel should equal(StorageLevel.MEMORY_AND_DISK)
   }
 
   test("cache operator with cache reuse") {

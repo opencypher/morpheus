@@ -35,7 +35,7 @@ import org.opencypher.spark.api.CAPSSession
 import org.opencypher.spark.api.io.GraphEntity.sourceIdKey
 import org.opencypher.spark.api.io.Relationship.{sourceEndNodeKey, sourceStartNodeKey}
 import org.opencypher.spark.api.io.{CAPSNodeTable, CAPSRelationshipTable}
-import org.opencypher.spark.impl.convert.CAPSCypherType._
+import org.opencypher.spark.impl.convert.SparkConversions._
 import org.opencypher.spark.impl.{CAPSGraph, CAPSScanGraph}
 import org.opencypher.spark.schema.CAPSSchema._
 

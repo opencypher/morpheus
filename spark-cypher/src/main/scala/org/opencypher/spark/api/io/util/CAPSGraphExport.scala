@@ -34,7 +34,7 @@ import org.opencypher.okapi.ir.api.expr.{Property, Var}
 import org.opencypher.okapi.relational.impl.util.StringEncodingUtilities._
 import org.opencypher.spark.api.io.{GraphEntity, Relationship}
 import org.opencypher.spark.impl.CAPSGraph
-import org.opencypher.spark.impl.convert.CAPSCypherType._
+import org.opencypher.spark.impl.convert.SparkConversions._
 
 object CAPSGraphExport {
 
@@ -70,10 +70,10 @@ object CAPSGraphExport {
       val propertyRenamings = properties.map { p => nodeRecords.header.column(p) -> p.key.name.toPropertyColumnName }
 
       val selectColumns = (idRenaming :: propertyRenamings.toList.sorted).map {
-        case (oldName, newName) => nodeRecords.data.col(oldName).as(newName)
+        case (oldName, newName) => nodeRecords.df.col(oldName).as(newName)
       }
 
-      nodeRecords.data.select(selectColumns: _*)
+      nodeRecords.df.select(selectColumns: _*)
     }
 
     def canonicalRelationshipTable(relType: String): DataFrame = {
@@ -91,10 +91,10 @@ object CAPSGraphExport {
       val propertyRenamings = properties.map { p => relRecords.header.column(p) -> p.key.name.toPropertyColumnName }
 
       val selectColumns = (idRenaming :: sourceIdRenaming :: targetIdRenaming :: propertyRenamings.toList.sorted).map {
-        case (oldName, newName) => relRecords.data.col(oldName).as(newName)
+        case (oldName, newName) => relRecords.df.col(oldName).as(newName)
       }
 
-      relRecords.data.select(selectColumns: _*)
+      relRecords.df.select(selectColumns: _*)
     }
 
   }

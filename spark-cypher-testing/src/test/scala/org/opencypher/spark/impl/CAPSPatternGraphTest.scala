@@ -183,7 +183,7 @@ class CAPSPatternGraphTest extends CAPSGraphTest {
     val patternGraph = CAPSGraph.create(inputRels, inputGraph.schema.asCaps)
     val outputRels = patternGraph.relationships("r", CTRelationship("KNOWS"))
 
-    outputRels.data.count() shouldBe 6
+    outputRels.df.count() shouldBe 6
   }
 
   test("relationship scan for disjunction of types") {
@@ -193,7 +193,7 @@ class CAPSPatternGraphTest extends CAPSGraphTest {
     val patternGraph = CAPSGraph.create(inputRels, inputGraph.schema.asCaps)
     val outputRels = patternGraph.relationships("r", CTRelationship("KNOWS", "INFLUENCES"))
 
-    outputRels.data.count() shouldBe 7
+    outputRels.df.count() shouldBe 7
   }
 
   test("relationship scan for all types") {
@@ -203,7 +203,7 @@ class CAPSPatternGraphTest extends CAPSGraphTest {
     val patternGraph = CAPSGraph.create(inputRels, inputGraph.schema)
     val outputRels = patternGraph.relationships("r", CTRelationship)
 
-    outputRels.data.count() shouldBe 10
+    outputRels.df.count() shouldBe 10
   }
 
   it("projects a pattern graph with a created node that has labels") {
@@ -422,7 +422,7 @@ class CAPSPatternGraphTest extends CAPSGraphTest {
       .withNodePropertyKeys("Foo")()
       .asCaps
 
-    val patternGraph = CAPSGraph.create(CAPSRecords.verifyAndCreate(header, df), schema)
+    val patternGraph = CAPSGraph.create(CAPSRecords.verify(header, df), schema)
 
     patternGraph.nodes("n", CTNode("Person")).collect.toBag should equal(
       Bag(
@@ -475,7 +475,7 @@ class CAPSPatternGraphTest extends CAPSGraphTest {
       .withRelationshipType("IN")
       .asCaps
 
-    val patternGraph = CAPSGraph.create(CAPSRecords.verifyAndCreate(header, df), schema)
+    val patternGraph = CAPSGraph.create(CAPSRecords.verify(header, df), schema)
 
     //    patternGraph.nodes("n").toCypherMaps.collect().toSet should equal(Set(
     //      CypherMap("n" ->  0L),
@@ -505,7 +505,7 @@ class CAPSPatternGraphTest extends CAPSGraphTest {
       .withNodePropertyKeys("Person")("name" -> CTString)
       .asCaps
 
-    val patternGraph = CAPSGraph.create(CAPSRecords.verifyAndCreate(header, df), schema)
+    val patternGraph = CAPSGraph.create(CAPSRecords.verify(header, df), schema)
 
     patternGraph.nodes("n", CTNode).collect.toBag should equal(
       Bag(
@@ -539,7 +539,7 @@ class CAPSPatternGraphTest extends CAPSGraphTest {
       .withNodePropertyKeys("Employee")("name" -> CTString)
       .asCaps
 
-    val patternGraph = CAPSGraph.create(CAPSRecords.verifyAndCreate(header, df), schema)
+    val patternGraph = CAPSGraph.create(CAPSRecords.verify(header, df), schema)
 
     patternGraph.nodes("n", CTNode).collect.toBag should equal(
       Bag(
@@ -580,7 +580,7 @@ class CAPSPatternGraphTest extends CAPSGraphTest {
       .withNodePropertyKeys("Employee", "Person")("name" -> CTString)
       .asCaps
 
-    val patternGraph = CAPSGraph.create(CAPSRecords.verifyAndCreate(header, df), schema)
+    val patternGraph = CAPSGraph.create(CAPSRecords.verify(header, df), schema)
 
     patternGraph.nodes("n", CTNode).toMaps should equal(
       Bag(
@@ -614,7 +614,7 @@ class CAPSPatternGraphTest extends CAPSGraphTest {
         |RETURN GRAPH
       """.stripMargin)
 
-    when.getGraph.asInstanceOf[CAPSPatternGraph].baseTable.data.count() should equal(3)
+    when.getGraph.asInstanceOf[CAPSPatternGraph].baseTable.df.count() should equal(3)
   }
 
   it("should create a single relationship between unique merged node pair") {
@@ -728,6 +728,6 @@ class CAPSPatternGraphTest extends CAPSGraphTest {
     val slots = persons.header.slots ++ reads.header.slots ++ books.header.slots
     val joinHeader = IRecordHeader.from(slots.map(_.content): _*)
 
-    CAPSGraph.create(CAPSRecords.verifyAndCreate(joinHeader, joinedDf), inputGraph.schema)
+    CAPSGraph.create(CAPSRecords.verify(joinHeader, joinedDf), inputGraph.schema)
   }
 }

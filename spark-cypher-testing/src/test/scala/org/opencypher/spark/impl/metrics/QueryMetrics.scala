@@ -50,7 +50,7 @@ class QueryMetrics extends CAPSTestSuite with DefaultGraphInit {
         |MATCH (a)-[r1]->(b)-[r2]->(c)
         |RETURN r1.since, r2.since, type(r2)"""
         .stripMargin).getRecords
-    val df = records.asCaps.data
+    val df = records.asCaps.df
     val optimizedPlan = df.queryExecution.optimizedPlan
     val cost = optimizedPlan.cost
     cost shouldBe 125995727L
@@ -71,7 +71,7 @@ class QueryMetrics extends CAPSTestSuite with DefaultGraphInit {
         |MATCH (a)
         |RETURN a"""
         .stripMargin).getRecords
-    val df = records.asCaps.data
+    val df = records.asCaps.df
     val optimizedPlan = df.queryExecution.optimizedPlan
     val cost = optimizedPlan.cost
     cost shouldBe 348L
