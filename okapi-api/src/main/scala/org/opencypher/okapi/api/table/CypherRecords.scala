@@ -26,7 +26,6 @@
  */
 package org.opencypher.okapi.api.table
 
-import org.opencypher.okapi.api.graph.CypherSession
 import org.opencypher.okapi.api.value.CypherValue.CypherMap
 
 /**
@@ -52,8 +51,4 @@ trait CypherRecords extends CypherTable with CypherPrintable {
     */
   def collect: Array[CypherMap]
 
-}
-
-trait CypherRecordsCompanion[R <: CypherRecords, S <: CypherSession] {
-  def unit()(implicit session: S): R
 }

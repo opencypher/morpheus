@@ -30,7 +30,6 @@ import java.util.Collections
 
 import org.apache.spark.sql._
 import org.apache.spark.storage.StorageLevel
-import org.opencypher.okapi.api.table.CypherRecordsCompanion
 import org.opencypher.okapi.api.types._
 import org.opencypher.okapi.api.value.CypherValue.{CypherMap, CypherValue}
 import org.opencypher.okapi.impl.exception.{IllegalArgumentException, UnsupportedOperationException}
@@ -49,6 +48,39 @@ import org.opencypher.spark.impl.convert.rowToCypherMap
 
 import scala.annotation.tailrec
 import scala.collection.JavaConverters._
+
+object CAPSRecords {
+
+  def empty(initialHeader: RecordHeaderNew = RecordHeaderNew.empty)(implicit caps: CAPSSession): CAPSRecords = {
+    val initialSparkStructType = initialHeader.toStructType
+    val initialDataFrame = caps.sparkSession.createDataFrame(Collections.emptyList[Row](), initialSparkStructType)
+    CAPSRecords(initialHeader, initialDataFrame)
+  }
+
+  def unit()(implicit caps: CAPSSession): CAPSRecords = {
+    val initialDataFrame = caps.sparkSession.createDataFrame(Seq(EmptyRow()))
+    CAPSRecords(RecordHeaderNew.empty, initialDataFrame)
+  }
+
+  def create(entityTable: CAPSEntityTable)(implicit caps: CAPSSession): CAPSRecords = {
+    val withCypherCompatibleTypes = entityTable.table.df.withCypherCompatibleTypes
+    CAPSRecords(entityTable.header, withCypherCompatibleTypes)
+  }
+
+  /**
+    * Wraps a Spark SQL table (DataFrame) in a CAPSRecords, making it understandable by Cypher.
+    *
+    * @param df   table to wrap.
+    * @param caps session to which the resulting CAPSRecords is tied.
+    * @return a Cypher table.
+    */
+  private[spark] def wrap(df: DataFrame)(implicit caps: CAPSSession): CAPSRecords = {
+    val compatibleDf = df.withCypherCompatibleTypes
+    CAPSRecords(compatibleDf.schema.toRecordHeader, compatibleDf)
+  }
+
+  private case class EmptyRow()
+}
 
 case class CAPSRecords(header: RecordHeaderNew, df: DataFrame)
   (implicit val caps: CAPSSession) extends RelationalCypherRecords[DataFrameTable] with Serializable {
@@ -287,37 +319,4 @@ case class CAPSRecords(header: RecordHeaderNew, df: DataFrame)
       s"CAPSRecords($header, table with $numRows rows)"
     }
   }
-}
-
-object CAPSRecords extends CypherRecordsCompanion[CAPSRecords, CAPSSession] {
-
-  def empty(initialHeader: RecordHeaderNew = RecordHeaderNew.empty)(implicit caps: CAPSSession): CAPSRecords = {
-    val initialSparkStructType = initialHeader.toStructType
-    val initialDataFrame = caps.sparkSession.createDataFrame(Collections.emptyList[Row](), initialSparkStructType)
-    CAPSRecords(initialHeader, initialDataFrame)
-  }
-
-  override def unit()(implicit caps: CAPSSession): CAPSRecords = {
-    val initialDataFrame = caps.sparkSession.createDataFrame(Seq(EmptyRow()))
-    CAPSRecords(RecordHeaderNew.empty, initialDataFrame)
-  }
-
-  def create(entityTable: CAPSEntityTable)(implicit caps: CAPSSession): CAPSRecords = {
-    val withCypherCompatibleTypes = entityTable.table.df.withCypherCompatibleTypes
-    CAPSRecords(entityTable.header, withCypherCompatibleTypes)
-  }
-
-  /**
-    * Wraps a Spark SQL table (DataFrame) in a CAPSRecords, making it understandable by Cypher.
-    *
-    * @param df   table to wrap.
-    * @param caps session to which the resulting CAPSRecords is tied.
-    * @return a Cypher table.
-    */
-  private[spark] def wrap(df: DataFrame)(implicit caps: CAPSSession): CAPSRecords = {
-    val compatibleDf = df.withCypherCompatibleTypes
-    CAPSRecords(compatibleDf.schema.toRecordHeader, compatibleDf)
-  }
-
-  private case class EmptyRow()
 }

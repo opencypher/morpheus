@@ -76,6 +76,10 @@ case class RecordHeaderNew(exprToColumn: Map[Expr, String]) {
     }
   }
 
+  def expressionsFor(column: String): Set[Expr] = {
+    exprToColumn.collect { case (k, v) if v == column => k }.toSet
+  }
+
   def aliasesFor(expr: Expr): Set[Var] = {
     val aliasesFromHeader: Set[Var] = getColumn(expr) match {
       case None => Set.empty

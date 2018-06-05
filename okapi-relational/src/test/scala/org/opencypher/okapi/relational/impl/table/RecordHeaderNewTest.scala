@@ -83,6 +83,17 @@ class RecordHeaderNewTest extends FunSpec with Matchers {
     nHeader.ownedBy(n) should equal(nExprs)
   }
 
+  it("can return all expressions for a given expression") {
+    nHeader.expressionsFor(n) should equalWithTracing(nExprs)
+    nHeader.expressionsFor(nPropFoo) should equalWithTracing(Set(nPropFoo))
+    nHeader.expressionsFor(m) should equalWithTracing(Set.empty)
+  }
+
+  it("can return all expressions for a given column") {
+    nHeader.expressionsFor(nHeader.column(n)) should equalWithTracing(Set(n))
+    nHeader.withAlias(n as m).expressionsFor(nHeader.column(n)) should equalWithTracing(Set(n, m))
+  }
+
   it("can add an alias for an entity") {
     val withAlias = nHeader.withAlias(n as m)
 
