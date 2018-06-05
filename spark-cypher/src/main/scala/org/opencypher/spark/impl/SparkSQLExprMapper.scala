@@ -41,8 +41,8 @@ object SparkSQLExprMapper {
 
   implicit class RichExpression(expr: Expr) {
 
-    def verify(implicit header: IRecordHeader): Unit = {
-      if (header.slotsFor(expr).isEmpty) throw IllegalStateException(s"No slot for expression $expr")
+    def verify(implicit header: RecordHeaderNew): Unit = {
+      if (header.expressionsFor(expr).isEmpty) throw IllegalStateException(s"Expression $expr not in header ${header.pretty}")
     }
 
     /**
@@ -51,7 +51,7 @@ object SparkSQLExprMapper {
       *   - We never have multiple types per column in CAPS (yet)
       */
     def compare(comparator: Column => (Column => Column), lhs: Expr, rhs: Expr)
-      (implicit header: IRecordHeader, df: DataFrame, context: CAPSRuntimeContext): Column = {
+      (implicit header: RecordHeaderNew, df: DataFrame, context: CAPSRuntimeContext): Column = {
       comparator(lhs.asSparkSQLExpr)(rhs.asSparkSQLExpr)
     }
 
@@ -88,12 +88,8 @@ object SparkSQLExprMapper {
         case _: Var | _: Param | _: Property | _: HasLabel | _: StartNode | _: EndNode =>
           verify
 
-          val slot = header.slotsFor(expr).head
-
-          val columns = df.columns.toSet
-          val colName = header.of(slot)
-
-          if (columns.contains(colName)) {
+          val colName = header.column(expr)
+          if (df.columns.contains(colName)) {
             df.col(colName)
           } else {
             functions.lit(null)
@@ -151,38 +147,35 @@ object SparkSQLExprMapper {
         case Exists(e) => e.asSparkSQLExpr.isNotNull
         case Id(e) => e.asSparkSQLExpr
         case Labels(e) =>
-          val node = Var(header.of(header.slotsFor(e).head))(CTNode)
-          val labelExprs = header.labels(node)
-          val labelColumns = labelExprs.map(_.asSparkSQLExpr)
-          val labelNames = labelExprs.map(_.label.name)
+          val node = e.owner.get
+          val labelExprs = header.labelsFor(node)
+          val (labelNames, labelColumns) = labelExprs.toSeq.map(e => e.label.name -> e.asSparkSQLExpr).unzip
           val booleanLabelFlagColumn = functions.array(labelColumns: _*)
           get_node_labels(labelNames)(booleanLabelFlagColumn)
 
         case Keys(e) =>
-          val node = Var(header.of(header.slotsFor(e).head))(CTNode)
-          val propertyExprs = header.properties(node)
-          val propertyColumns = propertyExprs.map(_.asSparkSQLExpr)
-          val keyNames = propertyExprs.map(_.key.name)
+          val node = e.owner.get
+          val propertyExprs = header.propertiesFor(node)
+          val (propertyKeys, propertyColumns) = propertyExprs.toSeq.map(e => e.key.name -> e.asSparkSQLExpr).unzip
           val valuesColumn = functions.array(propertyColumns: _*)
-          get_property_keys(keyNames)(valuesColumn)
+          get_property_keys(propertyKeys)(valuesColumn)
 
         case Type(inner) =>
           inner match {
             case v: Var =>
-              val typeSlot = header.typeSlot(v)
-              val typeCol = df.col(header.of(typeSlot))
-              typeCol
+              val typeExpr = header.typeFor(v).get
+              df.col(header.column(typeExpr))
             case _ =>
               throw NotImplementedException(s"Inner expression $inner of $expr is not yet supported (only variables)")
           }
 
         case StartNodeFunction(e) =>
-          val rel = Var(header.of(header.slotsFor(e).head))(CTNode)
-          header.sourceNodeSlot(rel).content.key.asSparkSQLExpr
+          val rel = e.owner.get
+          header.startNodeFor(rel).asSparkSQLExpr
 
         case EndNodeFunction(e) =>
-          val rel = Var(header.of(header.slotsFor(e).head))(CTNode)
-          header.targetNodeSlot(rel).content.key.asSparkSQLExpr
+          val rel = e.owner.get
+          header.endNodeFor(rel).asSparkSQLExpr
 
         case ToFloat(e) => e.asSparkSQLExpr.cast(DoubleType)
 
