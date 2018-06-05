@@ -192,12 +192,14 @@ case class RecordHeaderNew(exprToColumn: Map[Expr, String]) {
   // Mutation methods
   // ================
 
-  def select(exprs: Expr*): RecordHeaderNew = select(exprs.toSet)
+  def select[T <: Expr](exprs: T*): RecordHeaderNew = select(exprs.toSet)
 
-  def select(exprs: Set[Expr]): RecordHeaderNew = {
-    val selectExpressions = exprs.flatMap {
-      case v: Var => ownedBy(v)
-      case nonVar => Set(nonVar)
+  def select[T <: Expr](exprs: Set[T]): RecordHeaderNew = {
+    val selectExpressions = exprs.flatMap { e: Expr =>
+      e match {
+        case v: Var => ownedBy(v)
+        case nonVar => Set(nonVar)
+      }
     }
     val selectMappings = exprToColumn.filterKeys(selectExpressions.contains)
     RecordHeaderNew(selectMappings)

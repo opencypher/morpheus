@@ -288,14 +288,14 @@ class RecordHeaderNewTest extends FunSpec with Matchers {
     val aliasHeader1 = nHeader.withAlias(n as m) // WITH n as m
     val selectHeader1 = aliasHeader1.select(Set(m))
     val aliasHeader2 = selectHeader1.withAlias(m as o) // WITH m as o
-    val selectHeader2 = aliasHeader2.select(Set(o))
+    val selectHeader2 = aliasHeader2.select(Set[Expr](o))
 
     selectHeader2.ownedBy(o).map(selectHeader2.column) should equal(nHeader.ownedBy(n).map(nHeader.column))
   }
 
   it("returns original column names after cascaded select with 1:n aliasing") {
     val aliasHeader = nHeader.withAlias(n as m).withAlias(n as o) // WITH n, n AS m, n AS o
-    val selectHeader = aliasHeader.select(Set(n, m, o))
+    val selectHeader = aliasHeader.select(Set[Expr](n, m, o))
 
     selectHeader.ownedBy(n).map(selectHeader.column) should equal(nHeader.ownedBy(n).map(nHeader.column))
     selectHeader.ownedBy(m).map(selectHeader.column) should equal(nHeader.ownedBy(n).map(nHeader.column))
