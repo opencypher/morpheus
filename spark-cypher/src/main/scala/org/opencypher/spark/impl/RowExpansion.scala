@@ -27,12 +27,12 @@
 package org.opencypher.spark.impl
 
 import org.apache.spark.sql.Row
-import org.apache.spark.sql.types.StructType
 import org.opencypher.okapi.api.types.{CTNode, CTRelationship}
 import org.opencypher.okapi.impl.exception.IllegalArgumentException
+import org.opencypher.okapi.ir.api.Label
 import org.opencypher.okapi.ir.api.expr._
 import org.opencypher.okapi.relational.impl.table._
-import org.opencypher.spark.impl.table.CAPSRecordHeader._
+import org.opencypher.spark.impl.convert.SparkConversions._
 
 case class RowExpansion(
     targetHeader: RecordHeaderNew,
@@ -43,16 +43,16 @@ case class RowExpansion(
 
   private lazy val targetLabels = targetVar.cypherType match {
     case CTNode(labels, _) => labels
-    case _              => Set.empty[String]
+    case _ => Set.empty[String]
   }
 
-  private val rowSchema = targetHeader.toStructType
+  private val structType = targetHeader.toStructType
 
   private lazy val labelIndexLookupTable = entitiesWithChildren.map {
-    case (node, slots) =>
-      val labelIndicesForNode = slots.collect {
-        case RecordSlot(_, p @ ProjectedExpr(HasLabel(_, l))) if targetLabels.contains(l.name) =>
-          rowSchema.fieldIndex(targetHeader.of(p.withOwner(targetVar)))
+    case (node, exprs) =>
+      val labelIndicesForNode = exprs.collect {
+        case l@HasLabel(_, Label(name)) if targetLabels.contains(name) =>
+          structType.fieldIndex(targetHeader.column(l.withOwner(targetVar)))
       }
       node -> labelIndicesForNode
   }
@@ -60,8 +60,8 @@ case class RowExpansion(
   private lazy val typeIndexLookupTable = entitiesWithChildren.map {
     case (rel, slots) =>
       val typeIndexForRel = slots.collectFirst {
-        case RecordSlot(_, p @ ProjectedExpr(Type(r))) if r == rel =>
-          rowSchema.fieldIndex(targetHeader.of(p.withOwner(targetVar)))
+        case h@HasType(r, _) if r == rel =>
+          structType.fieldIndex(targetHeader.column(h.withOwner(targetVar)))
       }.getOrElse(throw IllegalArgumentException(s"a type column for relationship $rel"))
       rel -> typeIndexForRel
   }
@@ -93,32 +93,28 @@ case class RowExpansion(
   }
 
   def adaptRowToNewHeader(row: Row, lookupTable: Map[String, String]): Row = {
-    val orderedRowContent = targetHeader.slots.foldLeft(Seq.empty[Any]) { (newRowAcc, targetSlot) =>
-      val maybeColumnName = lookupTable.get(targetHeader.of(targetSlot))
+    val orderedRowContent = targetHeader.columns.toSeq.sorted.foldLeft(Seq.empty[Any]) { (currentRow, column) =>
+      val maybeColumnName = lookupTable.get(column)
       maybeColumnName match {
         case Some(columnName) =>
           val index = row.fieldIndex(columnName)
-          newRowAcc :+ row.get(index)
+          currentRow :+ row.get(index)
         case None =>
-          val value = targetSlot.content match {
-            case ProjectedExpr(HasLabel(_, _)) => false
-            case ProjectedExpr(Property(_, _)) => null
-            case other                         => throw IllegalArgumentException("a projected expression of label or property", other)
+          // TODO: this is wrong but might usually work
+          val value = targetHeader.expressionsFor(column).head match {
+            case HasLabel(_, _) => false
+            case Property(_, _) => null
+            case other => throw IllegalArgumentException("a projected expression of label or property", other)
           }
-          newRowAcc :+ value
+          currentRow :+ value
       }
     }
     Row.fromSeq(orderedRowContent)
   }
 
   def filterNullRows(rows: Seq[Row]): Seq[Row] = {
-    val slot = targetHeader.contents.find {
-      case _: OpaqueField => true
-      case _ => false
-    }.get
-
-    val index = rowSchema.fieldIndex(targetHeader.of(slot))
-
+    val entityVar = targetHeader.entityVars.head
+    val index = structType.fieldIndex(targetHeader.column(entityVar))
     rows.filterNot(_.isNullAt(index))
   }
 }

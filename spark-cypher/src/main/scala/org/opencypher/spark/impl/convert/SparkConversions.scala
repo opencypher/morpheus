@@ -164,9 +164,15 @@ object SparkConversions {
   implicit class RecordHeaderOps(header: RecordHeaderNew) extends Serializable {
 
     def toStructType: StructType = {
-      StructType(header.expressions
-        .map(expr => expr.cypherType.toStructField(header.column(expr)))
-        .toSeq)
+      val structFields = header.columns.toSeq.sorted.map { column =>
+        val expressions = header.expressionsFor(column)
+        val commonType = expressions.map(_.cypherType).reduce(_ join _)
+        assert(commonType.isSparkCompatible,s"""
+         |Expressions $expressions with common super type $commonType mapped to column $column have no compatible data type.
+         """.stripMargin)
+        commonType.toStructField(column)
+      }
+      StructType(structFields)
     }
 
     def rowEncoder: ExpressionEncoder[Row] =

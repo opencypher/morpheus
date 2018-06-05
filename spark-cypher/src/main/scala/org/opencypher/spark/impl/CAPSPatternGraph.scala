@@ -32,7 +32,7 @@ import org.opencypher.okapi.ir.api.expr._
 import org.opencypher.okapi.relational.api.schema.RelationalSchema._
 import org.opencypher.okapi.relational.impl.table.RecordHeaderNew
 import org.opencypher.spark.api.CAPSSession
-import org.opencypher.spark.impl.table.CAPSRecordHeader._
+import org.opencypher.spark.impl.convert.SparkConversions._
 import org.opencypher.spark.schema.CAPSSchema
 
 /**
@@ -97,7 +97,7 @@ case class CAPSPatternGraph(
 
     val distinctData = extractedDf.dropDuplicates(targetHeader.column(targetVar))
 
-    CAPSRecords.verifyAndCreate(targetHeader, distinctData)
+    CAPSRecords(targetHeader, distinctData)
   }
 
   private def createScanToBaseTableLookup(targetHeader: RecordHeaderNew, scanTableVar: Var, baseTableExpressions: Set[Expr]): Map[String, String] = {

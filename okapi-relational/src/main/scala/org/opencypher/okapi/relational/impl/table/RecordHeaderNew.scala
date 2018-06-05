@@ -149,6 +149,8 @@ case class RecordHeaderNew(exprToColumn: Map[Expr, String]) {
     }.toSet
   }
 
+  def entityVars: Set[Var] = nodeVars ++ relationshipVars
+
   def nodeVars: Set[Var] = {
     exprToColumn.keySet.collect {
       case v: Var if v.cypherType.superTypeOf(CTNode).isTrue => v

@@ -30,6 +30,7 @@ import java.util.Collections
 
 import org.apache.spark.sql._
 import org.apache.spark.storage.StorageLevel
+import org.opencypher.okapi.api.table.CypherRecordsCompanion
 import org.opencypher.okapi.api.types._
 import org.opencypher.okapi.api.value.CypherValue.{CypherMap, CypherValue}
 import org.opencypher.okapi.impl.exception.{IllegalArgumentException, UnsupportedOperationException}
@@ -192,7 +193,7 @@ case class CAPSRecords(header: RecordHeaderNew, df: DataFrame)
     */
   def alignWith(v: Var, targetHeader: RecordHeaderNew): CAPSRecords = {
 
-    val entityVars = header.nodeVars ++ header.relationshipVars
+    val entityVars = header.entityVars
 
     val oldEntity = entityVars.toSeq match {
       case head :: Nil => head
