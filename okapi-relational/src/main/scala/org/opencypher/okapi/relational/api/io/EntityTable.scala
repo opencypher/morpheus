@@ -33,7 +33,9 @@ trait FlatRelationalTable[T <: FlatRelationalTable[T]] extends CypherTable {
 
 trait RelationalCypherRecords[T <: FlatRelationalTable[T]] extends CypherRecords {
 
-  def from(header: RecordHeaderNew, table: T): RelationalCypherRecords[T]
+  type R <: RelationalCypherRecords[T]
+
+  def from(header: RecordHeaderNew, table: T): R
 
   def table: T
 
@@ -41,39 +43,39 @@ trait RelationalCypherRecords[T <: FlatRelationalTable[T]] extends CypherRecords
 
   def header: RecordHeaderNew
 
-  def select(exprs: Expr*): RelationalCypherRecords[T] = {
+  def select(exprs: Expr*): R = {
     val selectHeader = header.select(exprs: _*)
     val selectedColumns = selectHeader.columns
     val selectedData = table.select(selectedColumns.toSeq.sorted: _*)
     from(selectHeader, selectedData)
   }
 
-  def withAliases(originalToAlias: (Expr, Var)*): RelationalCypherRecords[T] = {
+  def withAliases(originalToAlias: (Expr, Var)*): R = {
     val headerWithAliases = header.withAlias(originalToAlias: _*)
     from(headerWithAliases, table)
   }
 
-  def removeVars(vars: Set[Var]): RelationalCypherRecords[T] = {
+  def removeVars(vars: Set[Var]): R = {
     val updatedHeader = header -- vars
     val keepColumns = updatedHeader.columns.toSeq.sorted
     val updatedData = table.select(keepColumns: _*)
     from(updatedHeader, updatedData)
   }
 
-  def unionAll(other: RelationalCypherRecords[T]): RelationalCypherRecords[T] = {
+  def unionAll(other: R): R = {
     val unionData = table.unionAll(other.table)
     from(header, unionData)
   }
 
-  def distinct: RelationalCypherRecords[T] = {
+  def distinct: R = {
     from(header, table.distinct)
   }
 
-  def distinct(fields: Var*): RelationalCypherRecords[T] = {
+  def distinct(fields: Var*): R = {
     from(header, table.distinct(fields.flatMap(header.expressionsFor).map(header.column).sorted: _*))
   }
 
-  def join(other: RelationalCypherRecords[T], joinType: JoinType, joinExprs: (Expr, Expr)*): RelationalCypherRecords[T] = {
+  def join(other: R, joinType: JoinType, joinExprs: (Expr, Expr)*): R = {
     val joinCols = joinExprs.map { case (l, r) => header.column(l) -> header.column(r) }
     val joinHeader = header ++ other.header
     val joinData = table.join(other.table, joinType, joinCols: _*)

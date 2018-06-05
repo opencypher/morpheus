@@ -30,7 +30,6 @@ import java.util.Collections
 
 import org.apache.spark.sql._
 import org.apache.spark.storage.StorageLevel
-import org.opencypher.okapi.api.table.CypherRecordsCompanion
 import org.opencypher.okapi.api.types._
 import org.opencypher.okapi.api.value.CypherValue.{CypherMap, CypherValue}
 import org.opencypher.okapi.impl.exception.{IllegalArgumentException, UnsupportedOperationException}
@@ -86,9 +85,11 @@ object CAPSRecords {
 case class CAPSRecords(header: RecordHeaderNew, df: DataFrame)
   (implicit val caps: CAPSSession) extends RelationalCypherRecords[DataFrameTable] with Serializable {
 
+  override type R = CAPSRecords
+
   verify()
 
-  override def from(header: RecordHeaderNew, table: DataFrameTable): RelationalCypherRecords[DataFrameTable] =
+  override def from(header: RecordHeaderNew, table: DataFrameTable): CAPSRecords =
     copy(header, table.df)
 
   override def table: DataFrameTable = df
