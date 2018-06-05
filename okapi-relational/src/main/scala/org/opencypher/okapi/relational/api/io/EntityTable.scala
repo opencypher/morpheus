@@ -7,7 +7,8 @@ import org.opencypher.okapi.api.types.{CTBoolean, CTInteger, CTNode, CypherType}
 import org.opencypher.okapi.impl.exception.IllegalArgumentException
 import org.opencypher.okapi.ir.api.expr._
 import org.opencypher.okapi.ir.api.{Label, PropertyKey}
-import org.opencypher.okapi.relational.api.io.EntityMapping._
+import org.opencypher.okapi.relational.api.io.RelationalEntityMapping._
+import org.opencypher.okapi.relational.impl.physical.JoinType
 import org.opencypher.okapi.relational.impl.table.RecordHeaderNew
 
 trait FlatRelationalTable[T <: FlatRelationalTable[T]] extends CypherTable {
@@ -25,6 +26,8 @@ trait FlatRelationalTable[T <: FlatRelationalTable[T]] extends CypherTable {
   def withTrueColumn(col: String): T
 
   def withFalseColumn(col: String): T
+
+  def join(other: T, joinType: JoinType, joinCols: (String, String)*): T
 
 }
 
@@ -68,14 +71,18 @@ trait RelationalCypherRecords[T <: FlatRelationalTable[T]] extends CypherRecords
     from(header, table.distinct(fields.flatMap(header.expressionsFor).map(header.column).sorted: _*))
   }
 
-
-
+  def join(other: RelationalCypherRecords[T], joinType: JoinType, joinExprs: (Expr, Expr)*): RelationalCypherRecords[T] = {
+    val joinCols = joinExprs.map { case (l, r) => header.column(l) -> header.column(r) }
+    val joinHeader = header ++ other.header
+    val joinData = table.join(other.table, joinType, joinCols: _*)
+    from(joinHeader, joinData)
+  }
 }
 
 /**
   * An entity table describes how to map an input data frame to a Cypher entity (i.e. nodes or relationships).
   */
-trait EntityTable[T <: CypherTable] extends RelationalCypherRecords[T] {
+trait EntityTable[T <: FlatRelationalTable[T]] extends RelationalCypherRecords[T] {
 
   verify()
 
@@ -118,7 +125,7 @@ trait EntityTable[T <: CypherTable] extends RelationalCypherRecords[T] {
   }
 }
 
-object EntityMapping {
+object RelationalEntityMapping {
 
   implicit class EntityMappingOps(val mapping: EntityMapping) {
 

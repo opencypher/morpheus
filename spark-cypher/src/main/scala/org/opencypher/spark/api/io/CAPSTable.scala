@@ -35,6 +35,7 @@ import org.opencypher.okapi.api.types._
 import org.opencypher.okapi.api.value.CypherValue
 import org.opencypher.okapi.api.value.CypherValue.CypherValue
 import org.opencypher.okapi.relational.api.io.{EntityTable, FlatRelationalTable}
+import org.opencypher.okapi.relational.impl.physical._
 import org.opencypher.okapi.relational.impl.util.StringEncodingUtilities
 import org.opencypher.okapi.relational.impl.util.StringEncodingUtilities._
 import org.opencypher.spark.api.CAPSSession
@@ -47,7 +48,6 @@ import org.opencypher.spark.schema.CAPSSchema._
 
 import scala.collection.JavaConverters._
 import scala.reflect.runtime.universe._
-
 
 object SparkCypherTable {
 
@@ -79,6 +79,21 @@ object SparkCypherTable {
 
     override def unionAll(other: SparkCypherTable): SparkCypherTable = {
       df.union(other.df)
+    }
+
+    override def join(other: SparkCypherTable, joinType: JoinType, joinCols: (String, String)*): SparkCypherTable = {
+      val joinTypeString = joinType match {
+        case InnerJoin => "inner"
+        case LeftOuterJoin => "left_outer"
+        case RightOuterJoin => "right_outer"
+        case FullOuterJoin => "full_outer"
+      }
+
+      val joinExpr = joinCols.map {
+        case (l, r) => df.col(l) === other.df.col(r)
+      }.reduce((acc, expr) => acc && expr)
+
+      df.join(other.df, joinExpr, joinTypeString)
     }
 
     override def distinct: SparkCypherTable = df.distinct

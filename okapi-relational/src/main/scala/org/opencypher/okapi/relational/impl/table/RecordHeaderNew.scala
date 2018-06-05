@@ -26,11 +26,10 @@
  */
 package org.opencypher.okapi.relational.impl.table
 
-import org.opencypher.okapi.api.types.{CTNode, CTRelationship, CypherType}
+import org.opencypher.okapi.api.types.{CTNode, CTRelationship}
 import org.opencypher.okapi.impl.exception.IllegalArgumentException
 import org.opencypher.okapi.ir.api.RelType
 import org.opencypher.okapi.ir.api.expr._
-import org.opencypher.okapi.relational.api.io.RelationalOps
 
 object RecordHeaderNew {
 
