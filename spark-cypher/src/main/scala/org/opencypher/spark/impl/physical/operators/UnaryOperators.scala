@@ -155,7 +155,7 @@ final case class Project(in: CAPSPhysicalOperator, expr: Expr, header: RecordHea
           // TODO: column was already there (test was MatchBehaviour#it("joined components"))
           // see comment in FlatOperatorProducer#project
           records.df
-//          throw IllegalStateException(s"Did not find a slot for expression $expr in $headerColumns")
+        //          throw IllegalStateException(s"Did not find a slot for expression $expr in $headerColumns")
         case seq => throw IllegalStateException(s"Got multiple slots for expression $expr: $seq")
       }
 
@@ -202,19 +202,7 @@ final case class Select(in: CAPSPhysicalOperator, expressions: List[(Expr, Optio
   extends UnaryPhysicalOperator with PhysicalOperatorDebugging {
 
   override def executeUnary(prev: CAPSPhysicalResult)(implicit context: CAPSRuntimeContext): CAPSPhysicalResult = {
-    prev.mapRecordsWithDetails { records =>
-
-      val aliases = expressions.collect { case (e, Some(v)) => e -> v }
-
-      val recordsWithAliases = records.withAliases(aliases: _*)
-
-      val selectExprs = expressions.collect {
-        case (_, Some(v)) => v
-        case (e, None) => e
-      }
-
-      recordsWithAliases.select(selectExprs: _*)
-    }
+    prev.mapRecordsWithDetails { records => records.select(expressions.head, expressions.tail: _*) }
   }
 }
 
@@ -374,7 +362,13 @@ final case class Limit(in: CAPSPhysicalOperator, expr: Expr, header: RecordHeade
 }
 
 // Initialises the table in preparation for variable length expand.
-final case class InitVarExpand(in: CAPSPhysicalOperator, source: Var, edgeList: Var, target: Var, header: RecordHeaderNew)
+final case class InitVarExpand(
+  in: CAPSPhysicalOperator,
+  source: Var,
+  edgeList: Var,
+  target: Var,
+  header: RecordHeaderNew
+)
   extends UnaryPhysicalOperator with PhysicalOperatorDebugging {
 
   override def executeUnary(prev: CAPSPhysicalResult)(implicit context: CAPSRuntimeContext): CAPSPhysicalResult = {

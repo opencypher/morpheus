@@ -38,23 +38,23 @@ import org.opencypher.okapi.api.value.CypherValue.CypherValue
 import org.opencypher.okapi.impl.exception.IllegalArgumentException
 import org.opencypher.okapi.impl.util.Measurement.printTiming
 import org.opencypher.okapi.ir.api.expr.{Expr, Param}
-import org.opencypher.okapi.relational.impl.table.IRecordHeader
+import org.opencypher.okapi.relational.impl.table.RecordHeaderNew
 import org.opencypher.spark.api.Tags._
 import org.opencypher.spark.impl.convert.SparkConversions._
 import org.opencypher.spark.impl.physical.CAPSRuntimeContext
 import org.opencypher.spark.impl.physical.operators.NamedTableScan
+
 object DataFrameOps {
 
   implicit class CypherRow(r: Row) {
-    def getCypherValue(expr: Expr, header: IRecordHeader)(implicit context: CAPSRuntimeContext): CypherValue = {
+
+    def getCypherValue(expr: Expr, header: RecordHeaderNew)(implicit context: CAPSRuntimeContext): CypherValue = {
       expr match {
         case Param(name) => context.parameters(name)
         case _ =>
-          header.slotsFor(expr).headOption match {
-            case None => throw IllegalArgumentException(s"slot for $expr")
-            case Some(slot) =>
-              val index = slot.index
-              CypherValue(r.get(index))
+          header.getColumn(expr) match {
+            case None => throw IllegalArgumentException(s"column for $expr")
+            case Some(column) => CypherValue(r.get(r.schema.fieldIndex(column)))
           }
       }
     }

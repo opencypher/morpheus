@@ -57,6 +57,20 @@ trait RelationalCypherRecords[T <: FlatRelationalTable[T]] extends CypherRecords
     from(selectHeader, selectedData)
   }
 
+  def select(expr: (Expr, Option[Var]), epxrs: (Expr, Option[Var])*): R = {
+    val allExprs = expr +: epxrs
+    val aliases = allExprs.collect { case (e, Some(v)) => e -> v }
+
+    val headerWithAliases = header.withAlias(aliases: _*)
+
+    val selectExprs = allExprs.collect {
+      case (_, Some(v)) => v
+      case (e, None) => e
+    }
+
+    from(headerWithAliases, table.select(selectExprs.map(headerWithAliases.column): _*))
+  }
+
   def drop(exprs: Expr*): R = {
     select((header.expressions -- exprs).toSeq: _*)
   }
