@@ -26,263 +26,252 @@
  */
 package org.opencypher.okapi.relational.impl.table
 
-import org.opencypher.okapi.api.types.{CTNode, _}
+import org.opencypher.okapi.api.types.{CTNode, CTRelationship}
 import org.opencypher.okapi.impl.exception.IllegalArgumentException
+import org.opencypher.okapi.ir.api.RelType
 import org.opencypher.okapi.ir.api.expr._
-import org.opencypher.okapi.relational.impl.syntax.RecordHeaderOps
-import org.opencypher.okapi.relational.impl.util.StringEncodingUtilities._
 
-import scala.util.Random
-import org.opencypher.okapi.relational.impl.syntax.RecordHeaderSyntax.{addContent => implicitAddContent, addContents => implicitAddContents}
+object RecordHeader {
 
-/**
-  * A header for a CypherRecords.
-  *
-  * The header consists of a number of slots, each of which represents a Cypher expression.
-  * The slots that represent variables (which is a kind of expression) are called <i>fields</i>.
-  */
-final case class RecordHeader(
-  private[impl] val internalHeader: InternalHeader
-) extends IRecordHeader {
+  def empty: RecordHeader = RecordHeader(Map.empty)
 
+  def from[T <: Expr](expr: T, exprs: T*): RecordHeader = empty.withExprs(expr, exprs: _*)
 
-  var newHeader: RecordHeaderNew =
-    internalHeader.slots.map(_.content).foldLeft(RecordHeaderNew.empty)(addContentToNewHeader)
+  def from[T <: Expr](exprs: Set[T]): RecordHeader = empty.withExprs(exprs)
 
+  def from[T <: Expr](exprs: Seq[T]): RecordHeader = from(exprs.head, exprs.tail: _*)
 
-  override def generateUniqueName: String = {
-    val NAME_SIZE = 5
+}
 
-    val chars = (1 to NAME_SIZE).map(_ => Random.nextPrintableChar())
-    val name = String.valueOf(chars.toArray).encodeSpecialCharacters
+case class RecordHeader(exprToColumn: Map[Expr, String]) {
 
-    if (slots.map(of).contains(name)) generateUniqueName
-    else name
+  // ==============
+  // Lookup methods
+  // ==============
+
+  def expressions: Set[Expr] = exprToColumn.keySet
+
+  def vars: Set[Var] = expressions.collect { case v: Var => v }
+
+  def columns: Set[String] = exprToColumn.values.toSet
+
+  def isEmpty: Boolean = exprToColumn.isEmpty
+
+  def contains(expr: Expr): Boolean = exprToColumn.contains(expr)
+
+  def getColumn(expr: Expr): Option[String] = exprToColumn.get(expr)
+
+  def column(expr: Expr): String =
+    exprToColumn.getOrElse(expr, throw IllegalArgumentException(s"Header does not contain a column for $expr: ${this.toString}"))
+
+  def ownedBy(expr: Var): Set[Expr] = {
+    exprToColumn.keys.filter(e => e.owner.contains(expr)).toSet
   }
 
-  override def tempColName: String =
-    ColumnNamer.tempColName
-
-  override def of(slot: RecordSlot): String = {
-    val cn = ColumnNamer.of(slot)
-    assert(columns.contains(cn), s"the header did not contain $cn, had ${columns.mkString(", ")}")
-    cn
+  def expressionsFor(expr: Expr): Set[Expr] = {
+    expr match {
+      case v: Var => ownedBy(v)
+      case e if exprToColumn.contains(e) => Set(e)
+      case _ => Set.empty
+    }
   }
 
-  override def of(slot: SlotContent): String = {
-    val cn = ColumnNamer.of(slot)
-    assert(columns.contains(cn), s"the header did not contain $cn, had ${columns.mkString(", ")}")
-    cn
+  def expressionsFor(column: String): Set[Expr] = {
+    exprToColumn.collect { case (k, v) if v == column => k }.toSet
   }
 
-  override def of(expr: Expr): String = {
-    val cn = ColumnNamer.of(expr)
-    assert(columns.contains(cn), s"the header did not contain $cn, had ${columns.mkString(", ")}")
-    cn
+  def aliasesFor(expr: Expr): Set[Var] = {
+    val aliasesFromHeader: Set[Var] = getColumn(expr) match {
+      case None => Set.empty
+      case Some(col) => exprToColumn.collect { case (k: Var, v) if v == col => k }.toSet
+    }
+
+    val aliasesFromParam: Set[Var] = expr match {
+      case v: Var => Set(v)
+      case _ => Set.empty
+    }
+
+    aliasesFromHeader ++ aliasesFromParam
   }
 
-  override val columns: Seq[String] = internalHeader.slots.map(ColumnNamer.of)
+  // ===================
+  // Convenience methods
+  // ===================
 
-  override def column(slot: RecordSlot): String = columns(slot.index)
+  def idExpressions(): Set[Expr] = {
+    exprToColumn.keySet.collect {
+      case n if n.cypherType.superTypeOf(CTNode).isTrue => n
+      case r if r.cypherType.superTypeOf(CTRelationship).isTrue => r
+    }
+  }
 
-  /**
-    * Computes the concatenation of this header and another header.
-    *
-    * @param other the header with which to concatenate.
-    * @return the concatenation of this and the argument header.
-    */
-  override def ++(other: IRecordHeader): IRecordHeader =
-    copy(internalHeader ++ other.asInstanceOf[RecordHeader].internalHeader)
+  def idExpressions(v: Var): Set[Expr] = idExpressions().filter(_.owner.get == v)
 
-  /**
-    * Removes the specified RecordSlot from the header
-    *
-    * @param toRemove record slot to remove
-    * @return new IRecordHeader with removed slot
-    */
-  override def -(toRemove: RecordSlot): IRecordHeader =
-    copy(internalHeader - toRemove)
+  def idColumns(): Set[String] = idExpressions().map(column)
 
-  /**
-    * Returns this record header with all fields of the other record header removed.
-    *
-    * @param other the header to remove
-    * @return updated header
-    */
-  override def --(other: IRecordHeader): IRecordHeader =
-    copy(internalHeader -- other.asInstanceOf[RecordHeader].internalHeader)
+  def idColumns(v: Var): Set[String] = idExpressions(v).map(column)
 
-  /**
-    * The ordered sequence of slots stored in this header.
-    *
-    * @return the slots in this header.
-    */
-  override def slots: IndexedSeq[RecordSlot] = internalHeader.slots
+  def labelsFor(n: Var): Set[HasLabel] = {
+    ownedBy(n).collect {
+      case l: HasLabel => l
+    }
+  }
 
-  override def contents: Set[SlotContent] = slots.map(_.content).toSet
+  def typeFor(r: Var): Option[HasType] = {
+    ownedBy(r).collectFirst {
+      case t: HasType => t
+    }
+  }
 
-  /**
-    * The set of fields contained in this header.
-    *
-    * @return the fields in this header.
-    */
-  override def fields: Set[String] = fieldsAsVar.map(_.name)
+  def startNodeFor(r: Var): StartNode = {
+    ownedBy(r).collectFirst {
+      case s: StartNode => s
+    }.get
+  }
 
-  override def fieldsAsVar: Set[Var] = internalHeader.fields
+  def endNodeFor(r: Var): EndNode = {
+    ownedBy(r).collectFirst {
+      case e: EndNode => e
+    }.get
+  }
 
-  /**
-    * The fields contained in this header, in the order they were defined.
-    *
-    * @return the ordered fields in this header.
-    */
-  override def fieldsInOrder: Seq[String] = slots.flatMap(_.content.alias.map(_.name))
+  def propertiesFor(v: Var): Set[Property] = {
+    ownedBy(v).collect {
+      case p: Property => p
+    }
+  }
 
-  override def slotsFor(expr: Expr): Seq[RecordSlot] =
-    internalHeader.slotsFor(expr)
+  def node(name: Var): Set[Expr] = {
+    exprToColumn.keys.collect {
+      case n: Var if name == n => n
+      case h@HasLabel(n: Var, _) if name == n => h
+      case p@Property(n: Var, _) if name == n => p
+    }.toSet
+  }
 
-  // TODO: Push error handling to API consumers
+  def entityVars: Set[Var] = nodeVars ++ relationshipVars
 
-  override def slotFor(variable: Var): RecordSlot = slotsFor(variable).headOption.getOrElse(
-    throw IllegalArgumentException(s"One of $fields", variable)
-  )
+  def nodeVars: Set[Var] = {
+    exprToColumn.keySet.collect {
+      case v: Var if v.cypherType.superTypeOf(CTNode).isTrue => v
+    }
+  }
 
-  override def mandatory(slot: RecordSlot): Boolean =
-    internalHeader.mandatory(slot)
+  def relationshipVars: Set[Var] = {
+    exprToColumn.keySet.collect {
+      case v: Var if v.cypherType.superTypeOf(CTRelationship).isTrue => v
+    }
+  }
 
-  override def sourceNodeSlot(rel: Var): RecordSlot = slotsFor(StartNode(rel)()).headOption.getOrElse(
-    throw IllegalArgumentException(s"One of $fields", rel)
-  )
+  def nodesForType(nodeType: CTNode): Set[Var] = {
+    // and semantics
+    val requiredLabels = nodeType.labels
 
-  override def targetNodeSlot(rel: Var): RecordSlot = slotsFor(EndNode(rel)()).headOption.getOrElse(
-    throw IllegalArgumentException(s"One of $fields", rel)
-  )
+    nodeVars.filter { nodeVar =>
+      val physicalLabels = labelsFor(nodeVar).map(_.label.name)
+      val logicalLabels = nodeVar.cypherType match {
+        case CTNode(labels, _) => labels
+        case _ => Set.empty[String]
+      }
+      requiredLabels.subsetOf(physicalLabels ++ logicalLabels)
+    }
+  }
 
-  override def typeSlot(rel: Expr): RecordSlot = slotsFor(Type(rel)()).headOption.getOrElse(
-    throw IllegalArgumentException(s"One of $fields", rel)
-  )
+  def relationshipsForType(relType: CTRelationship): Set[Var] = {
+    // or semantics
+    val possibleTypes = relType.types
 
-  override def labels(node: Var): Seq[HasLabel] = labelSlots(node).keys.toSeq
+    relationshipVars.filter { relVar =>
+      val physicalType = typeFor(relVar) match {
+        case Some(HasType(_, RelType(name))) => Set(name)
+        case None => Set.empty[String]
+      }
+      val logicalTypes = relVar.cypherType match {
+        case CTRelationship(types, _) => types
+        case _ => Set.empty[String]
+      }
+      (physicalType ++ logicalTypes).exists(possibleTypes.contains)
+    }
+  }
 
-  override def properties(node: Var): Seq[Property] = propertySlots(node).keys.toSeq
+  // ================
+  // Mutation methods
+  // ================
 
-  override def select(fields: Set[Var]): IRecordHeader = {
-    fields.foldLeft(IRecordHeader.empty) {
-      case (acc, next) =>
-        val contents = childSlots(next).map(_.content)
-        if (contents.nonEmpty) {
-          acc.addContents(OpaqueField(next) +: contents)
-        } else {
-          acc
+  def select[T <: Expr](exprs: T*): RecordHeader = select(exprs.toSet)
+
+  def select[T <: Expr](exprs: Set[T]): RecordHeader = {
+    val selectExpressions = exprs.flatMap { e: Expr =>
+      e match {
+        case v: Var => ownedBy(v)
+        case nonVar => Set(nonVar)
+      }
+    }
+    val selectMappings = exprToColumn.filterKeys(selectExpressions.contains)
+    RecordHeader(selectMappings)
+  }
+
+  def withExpr(expr: Expr): RecordHeader = {
+    exprToColumn.get(expr) match {
+      case Some(_) => this
+
+      case None =>
+        val newColumnName = ColumnNamer.of(expr)
+
+        // Aliases for (possible) owner of expr need to be updated as well
+        val exprsToAdd: Set[Expr] = expr.owner match {
+          case None => Set(expr)
+
+          case Some(exprOwner) => aliasesFor(exprOwner).map(alias => expr.withOwner(alias))
+        }
+
+        exprsToAdd.foldLeft(this) {
+          case (current, e) => current.addExprToColumn(e, newColumnName)
         }
     }
   }
 
-  override def selfWithChildren(field: Var): Seq[RecordSlot] =
-    slotFor(field) +: childSlots(field)
+  def withExprs[T <: Expr](expr: T, exprs: T*): RecordHeader = (expr +: exprs).foldLeft(this)(_ withExpr _)
 
-  override def childSlots(entity: Var): Seq[RecordSlot] = {
-    slots.filter {
-      case RecordSlot(_, OpaqueField(_)) => false
-      case slot if slot.content.owner.contains(entity) => true
-      case _ => false
+  def withExprs[T <: Expr](exprs: Set[T]): RecordHeader = withExprs(exprs.head, exprs.tail.toSeq: _*)
+
+  def withAlias(exprAsVar: (Expr, Var)*): RecordHeader = exprAsVar.foldLeft(this){
+    case (currentHeader, (expr, alias)) => currentHeader.withAlias(expr, alias)
+  }
+
+  def withAlias(to: Expr, alias: Var): RecordHeader = {
+    require(
+      alias.cypherType.superTypeOf(to.cypherType).isTrue,
+      s"CypherType of expression $to cannot be assigned to CypherType of alias $alias")
+
+    to match {
+      // Entity case
+      case _: Var if exprToColumn.contains(to) =>
+        expressionsFor(to).foldLeft(this) {
+          case (current, nextExpr) => current.addExprToColumn(nextExpr.withOwner(alias), exprToColumn(nextExpr))
+        }
+
+      // Non-entity case
+      case expr if exprToColumn.contains(expr) => addExprToColumn(alias, exprToColumn(expr))
+
+      // No expression to alias
+      case other => throw IllegalArgumentException(s"An expression in $this", s"Unknown expression $other")
     }
   }
 
-  override def labelSlots(node: Var): Map[HasLabel, RecordSlot] = {
-    slots.collect {
-      case s@RecordSlot(_, ProjectedExpr(h: HasLabel)) if h.node == node => h -> s
-      case s@RecordSlot(_, ProjectedField(_, h: HasLabel)) if h.node == node => h -> s
-    }.toMap
+  def ++(other: RecordHeader): RecordHeader = copy(exprToColumn = exprToColumn ++ other.exprToColumn)
+
+  def --[T <: Expr](expressions: Set[T]): RecordHeader = {
+    val expressionToRemove = expressions.flatMap(expressionsFor)
+    val updatedExprToColumn = exprToColumn.filterNot { case (e, _) => expressionToRemove.contains(e) }
+    copy(exprToColumn = updatedExprToColumn)
   }
 
-  override def propertySlots(entity: Var): Map[Property, RecordSlot] = {
-    slots.collect {
-      case s@RecordSlot(_, ProjectedExpr(p: Property)) if p.m == entity => p -> s
-      case s@RecordSlot(_, ProjectedField(_, p: Property)) if p.m == entity => p -> s
-    }.toMap
+  protected def addExprToColumn(expr: Expr, columnName: String): RecordHeader = {
+    copy(exprToColumn = exprToColumn + (expr -> columnName))
   }
 
-  override def nodesForType(nodeType: CTNode): Seq[Var] = {
-    slots.collect {
-      case RecordSlot(_, OpaqueField(v)) => v
-    }.filter { v =>
-      v.cypherType match {
-        case CTNode(labels, _) =>
-          val allPossibleLabels = this.labels(v).map(_.label.name).toSet ++ labels
-          nodeType.labels.subsetOf(allPossibleLabels)
-        case _ => false
-      }
-    }
-  }
+  def pretty: String = exprToColumn.toSeq.sortBy(_._2).mkString("\n")
 
-  override def relationshipsForType(relType: CTRelationship): Seq[Var] = {
-    val targetTypes = relType.types
-
-    slots.collect {
-      case RecordSlot(_, OpaqueField(v)) => v
-    }.filter { v =>
-      v.cypherType match {
-        case t: CTRelationship if targetTypes.isEmpty || t.types.isEmpty => true
-        case CTRelationship(types, _) =>
-          types.exists(targetTypes.contains)
-        case _ => false
-      }
-    }
-  }
-
-  override def toString: String = s"IRecordHeader with ${slots.size} slots"
-
-  override def pretty: String = s"IRecordHeader with ${slots.size} slots: \n\t ${slots.map(slot => slot -> of(slot)).sortBy(_._2).mkString("\n\t")}"
-
-  override def addContents(contents: Seq[SlotContent]): IRecordHeader = {
-
-    newHeader = contents.foldLeft(newHeader)(addContentToNewHeader)
-
-    val updatedOldHeader = new RecordHeaderOps(this).update(implicitAddContents(contents))._1
-    validate(updatedOldHeader, newHeader)
-
-    updatedOldHeader
-  }
-
-  override def addContent(content: SlotContent): IRecordHeader = {
-    newHeader = addContentToNewHeader(newHeader, content)
-
-    val updatedOldHeader = new RecordHeaderOps(this).update(implicitAddContent(content))._1
-
-    validate(updatedOldHeader, newHeader)
-    updatedOldHeader
-  }
-
-  private def addContentToNewHeader(header: RecordHeaderNew, content: SlotContent): RecordHeaderNew = {
-    header.withExpr(content.key)
-  }
-
-  private def validate(oldHeader: RecordHeader, newHeader: RecordHeaderNew): Unit = {
-    def printPretty =
-      s"""
-         |=== old header ===
-         |${oldHeader.pretty}
-         |=== new header ===
-         |${newHeader.pretty}
-       """.stripMargin
-
-    // check number of physical columns
-    val colsInOldHeader = oldHeader.slots.map(oldHeader.of).toSet
-    val colsInNewHeader = newHeader.exprToColumn.values.toSet
-    assert(colsInNewHeader == colsInOldHeader, s"different columns: \n$colsInOldHeader\n$colsInNewHeader\n$printPretty")
-
-    // check column name equality
-    oldHeader.slots.foreach { slot =>
-      val exprInOldHeader = slot.content.key
-      val colNameinOldHeader = oldHeader.of(slot)
-      assert(newHeader.column(exprInOldHeader) == colNameinOldHeader, s"problem with expr in old header: $exprInOldHeader\n$printPretty")
-    }
-  }
-
-  override def contains(content: SlotContent): Boolean = new RecordHeaderOps(this).update(implicitAddContent(content))._2 match {
-    case _: Replaced[_] => true
-    case _ => false
-  }
 }
-
 

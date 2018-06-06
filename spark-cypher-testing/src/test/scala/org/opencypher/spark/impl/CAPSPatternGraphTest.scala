@@ -406,7 +406,7 @@ class CAPSPatternGraphTest extends CAPSGraphTest {
       HasLabel(n, Label("Person"))(CTBoolean),
       Var("q")(CTNode("Foo"))
     )
-    val header = RecordHeaderNew.from(exprs)
+    val header = RecordHeader.from(exprs)
 
     val df = sparkSession.createDataFrame(
       List(
@@ -448,7 +448,7 @@ class CAPSPatternGraphTest extends CAPSGraphTest {
       x,
       Type(x)(CTString)
     )
-    val header = RecordHeaderNew.from(exprs)
+    val header = RecordHeader.from(exprs)
 
     val df = sparkSession.createDataFrame(
       List(
@@ -490,7 +490,7 @@ class CAPSPatternGraphTest extends CAPSGraphTest {
       HasLabel(p, Label("Person"))(CTBoolean),
       Property(p, PropertyKey("name"))(CTString)
     )
-    val header = RecordHeaderNew.from(exprs)
+    val header = RecordHeader.from(exprs)
 
     val sparkHeader = header.toStructType
     val df = sparkSession.createDataFrame(
@@ -523,7 +523,7 @@ class CAPSPatternGraphTest extends CAPSGraphTest {
       Property(p, PropertyKey("name"))(CTString),
       Var("foo")(CTString), Property(e, PropertyKey("name"))(CTString)
     )
-    val header = RecordHeaderNew.from(exprs)
+    val header = RecordHeader.from(exprs)
 
     val sparkHeader = header.toStructType
     val df = sparkSession.createDataFrame(
@@ -563,7 +563,7 @@ class CAPSPatternGraphTest extends CAPSGraphTest {
       Property(e, PropertyKey("name"))(CTString.nullable),
       Property(pe, PropertyKey("name"))(CTString)
     )
-    val header = RecordHeaderNew.from(exprs)
+    val header = RecordHeader.from(exprs)
 
     val sparkHeader = header.toStructType
     val df = sparkSession.createDataFrame(
@@ -725,7 +725,7 @@ class CAPSPatternGraphTest extends CAPSGraphTest {
       .join(booksDf, readsDf.col("____target(r)") === booksDf.col("b"))
 
     val exprs = persons.header.expressions ++ reads.header.expressions ++ books.header.expressions
-    val joinHeader = RecordHeaderNew.from(exprs)
+    val joinHeader = RecordHeader.from(exprs)
 
     CAPSGraph.create(CAPSRecords(joinHeader, joinedDf), inputGraph.schema)
   }

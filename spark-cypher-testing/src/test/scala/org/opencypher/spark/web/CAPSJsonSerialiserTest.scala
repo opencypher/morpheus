@@ -28,7 +28,7 @@ package org.opencypher.spark.web
 
 import org.opencypher.okapi.api.types.CTNode
 import org.opencypher.okapi.ir.api.expr.Var
-import org.opencypher.okapi.relational.impl.table.{IRecordHeader, OpaqueField}
+import org.opencypher.okapi.relational.impl.table.RecordHeader
 import org.opencypher.spark.impl.{CAPSGraph, CAPSRecords}
 import org.opencypher.spark.testing.CAPSTestSuite
 import org.opencypher.spark.testing.fixture.TeamDataFixture
@@ -74,7 +74,8 @@ class CAPSJsonSerialiserTest extends CAPSTestSuite with TeamDataFixture {
 
   test("single column, three rows") {
     // Given
-    val records = CAPSRecords.create(Seq(Row1("myString"), Row1("foo"), Row1(null)))
+    val df = sparkSession.createDataFrame(Seq(Row1("myString"), Row1("foo"), Row1(null)))
+    val records = CAPSRecords.wrap(df)
 
     // Then
     toJsonString(records) should equal(
@@ -99,12 +100,12 @@ class CAPSJsonSerialiserTest extends CAPSTestSuite with TeamDataFixture {
 
   test("three columns, three rows") {
     // Given
-    val records = CAPSRecords.create(
-      Seq(
-        Row3("myString", 4L, false),
-        Row3("foo", 99999999L, true),
-        Row3(null, -1L, true)
-      ))
+    val df = sparkSession.createDataFrame(Seq(
+      Row3("myString", 4L, false),
+      Row3("foo", 99999999L, true),
+      Row3(null, -1L, true)
+    ))
+    val records = CAPSRecords.wrap(df)
 
     // Then
     toJsonString(records) should equal(
@@ -137,11 +138,11 @@ class CAPSJsonSerialiserTest extends CAPSTestSuite with TeamDataFixture {
 
   test("serialize lists") {
     // Given
-    val records = CAPSRecords.create(
-      Seq(
-        ListRow(Seq("foo", "bar", "baz"), Seq(42, 23, 8), Seq(true, false, false)),
-        ListRow(null, Seq.empty, Seq.empty)
-      ))
+    val df = sparkSession.createDataFrame(Seq(
+      ListRow(Seq("foo", "bar", "baz"), Seq(42, 23, 8), Seq(true, false, false)),
+      ListRow(null, Seq.empty, Seq.empty)
+    ))
+    val records = CAPSRecords.wrap(df)
 
     // Then
     toJsonString(records) should equal(
@@ -183,15 +184,15 @@ class CAPSJsonSerialiserTest extends CAPSTestSuite with TeamDataFixture {
 
   ignore("serialize maps") {
     // Given
-    val records = CAPSRecords.create(
-      Seq(
-        MapRow(
-          Map("foo" -> "Alice", "bar" -> "Bob", "baz" -> "Carols"),
-          Map("foo" -> 42, "bar" -> 23, "baz" -> 8),
-          Map("foo" -> true, "bar" -> false, "baz" -> false)
-        ),
-        MapRow(null, Map.empty, Map.empty)
-      ))
+    val df = sparkSession.createDataFrame( Seq(
+      MapRow(
+        Map("foo" -> "Alice", "bar" -> "Bob", "baz" -> "Carols"),
+        Map("foo" -> 42, "bar" -> 23, "baz" -> 8),
+        Map("foo" -> true, "bar" -> false, "baz" -> false)
+      ),
+      MapRow(null, Map.empty, Map.empty)
+    ))
+    val records = CAPSRecords.wrap(df)
 
     // Then
     toJsonString(records) should equal(
@@ -442,9 +443,7 @@ class CAPSJsonSerialiserTest extends CAPSTestSuite with TeamDataFixture {
 
   private case class MapRow(strings: Map[String, String], integers: Map[String, Long], booleans: Map[String, Boolean])
 
-  private def headerOf(fields: Symbol*): IRecordHeader = {
-    val value1 = fields.map(f => OpaqueField(Var(f.name)(CTNode)))
-    val header = IRecordHeader.empty.addContents(value1)
-    header
+  private def headerOf(exprs: Symbol*): RecordHeader = {
+    RecordHeader.from(exprs.map(f => Var(f.name)(CTNode)))
   }
 }

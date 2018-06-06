@@ -224,7 +224,7 @@ class PhysicalPlanner[P <: PhysicalOperator[R, G, C], R <: CypherRecords, G <: P
     constructGraphPlan
   }
 
-  private def planOptional(lhs: FlatOperator, rhs: FlatOperator, header: RecordHeaderNew)(implicit context: PhysicalPlannerContext[P, R]) = {
+  private def planOptional(lhs: FlatOperator, rhs: FlatOperator, header: RecordHeader)(implicit context: PhysicalPlannerContext[P, R]) = {
     val lhsData = process(lhs)
     val rhsData = process(rhs)
     val lhsHeader = lhs.header
@@ -251,7 +251,7 @@ class PhysicalPlanner[P <: PhysicalOperator[R, G, C], R <: CypherRecords, G <: P
       case v: Var if joinFieldRenames.contains(v) => joinFieldRenames(v)
       case other => other
     }
-    val rhsHeaderWithRenamed = RecordHeaderNew.from(rhsWithRenamedSlots.toList)
+    val rhsHeaderWithRenamed = RecordHeader.from(rhsWithRenamedSlots.toList)
     val rhsWithRenamed = producer.planAlias(rhsWithDropped, joinFieldRenames.toSeq, rhsHeaderWithRenamed)
 
     // 4. Left outer join the left side and the processed right side

@@ -30,7 +30,7 @@ import org.apache.spark.storage.StorageLevel
 import org.opencypher.okapi.api.types.{CTNode, CTRelationship}
 import org.opencypher.okapi.ir.api.expr._
 import org.opencypher.okapi.relational.api.schema.RelationalSchema._
-import org.opencypher.okapi.relational.impl.table.RecordHeaderNew
+import org.opencypher.okapi.relational.impl.table.RecordHeader
 import org.opencypher.spark.api.CAPSSession
 import org.opencypher.spark.impl.convert.SparkConversions._
 import org.opencypher.spark.schema.CAPSSchema
@@ -83,7 +83,7 @@ case class CAPSPatternGraph(
     extractRecordsFor(targetRel, targetRelHeader, extractionRels)
   }
 
-  private def extractRecordsFor(targetVar: Var, targetHeader: RecordHeaderNew, extractionVars: Set[Var]): CAPSRecords = {
+  private def extractRecordsFor(targetVar: Var, targetHeader: RecordHeader, extractionVars: Set[Var]): CAPSRecords = {
     val extractionExpressions = extractionVars.map(candidate => candidate -> header.ownedBy(candidate)).toMap
 
     val relColumnsLookupTables = extractionExpressions.map {
@@ -100,7 +100,7 @@ case class CAPSPatternGraph(
     CAPSRecords(targetHeader, distinctData)
   }
 
-  private def createScanToBaseTableLookup(targetHeader: RecordHeaderNew, scanTableVar: Var, baseTableExpressions: Set[Expr]): Map[String, String] = {
+  private def createScanToBaseTableLookup(targetHeader: RecordHeader, scanTableVar: Var, baseTableExpressions: Set[Expr]): Map[String, String] = {
     baseTableExpressions.flatMap { baseTableExpression =>
       val scanTableExpression = baseTableExpression.withOwner(scanTableVar)
 

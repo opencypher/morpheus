@@ -31,13 +31,13 @@ import org.opencypher.okapi.api.types.{CTBoolean, CTNode, CTRelationship}
 import org.opencypher.okapi.impl.exception.IllegalArgumentException
 import org.opencypher.okapi.ir.api.expr._
 import org.opencypher.okapi.ir.api.{Label, PropertyKey, RelType}
-import org.opencypher.okapi.relational.impl.table.{IRecordHeader, RecordHeaderNew}
+import org.opencypher.okapi.relational.impl.table.RecordHeader
 
 object RelationalSchema {
 
   implicit class SchemaOps(val schema: Schema) {
 
-    def headerForNode(node: Var): RecordHeaderNew = {
+    def headerForNode(node: Var): RecordHeader = {
       val labels: Set[String] = node.cypherType match {
         case CTNode(l, _) => l
         case other     => throw IllegalArgumentException("CTNode", other)
@@ -45,7 +45,7 @@ object RelationalSchema {
       headerForNode(node, labels)
     }
 
-    def headerForNode(node: Var, labels: Set[String]): RecordHeaderNew = {
+    def headerForNode(node: Var, labels: Set[String]): RecordHeader = {
       val labelCombos = if (labels.isEmpty) {
         // all nodes scan
         schema.allLabelCombinations
@@ -63,23 +63,23 @@ object RelationalSchema {
         case (k, t) => Property(node, PropertyKey(k))(t)
       }
 
-      RecordHeaderNew.from(labelExpressions ++ propertyExpressions + node)
+      RecordHeader.from(labelExpressions ++ propertyExpressions + node)
     }
 
-    def headerForRelationship(rel: Var): RecordHeaderNew = {
+    def headerForRelationship(rel: Var): RecordHeader = {
       val types: Set[String] = rel.cypherType match {
         case CTRelationship(_types, _) if _types.isEmpty =>
           schema.relationshipTypes
         case CTRelationship(_types, _) =>
           _types
         case other =>
-          throw IllegalArgumentException("CTRelationship", other.asInstanceOf[IRecordHeader])
+          throw IllegalArgumentException("CTRelationship", other.asInstanceOf[RecordHeader])
       }
 
       headerForRelationship(rel, types)
     }
 
-    def headerForRelationship(rel: Var, relTypes: Set[String]): RecordHeaderNew = {
+    def headerForRelationship(rel: Var, relTypes: Set[String]): RecordHeader = {
       val relKeyHeaderProperties = relTypes
         .flatMap(t => schema.relationshipKeys(t))
         .groupBy(_._1)
@@ -101,7 +101,7 @@ object RelationalSchema {
 
       val relationshipExpressions = hasTypeExprs ++ propertyExpressions + rel + startNodeExpr + endNodeExpr
 
-      RecordHeaderNew.from(relationshipExpressions)
+      RecordHeader.from(relationshipExpressions)
     }
   }
 

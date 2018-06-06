@@ -26,17 +26,17 @@
  */
 package org.opencypher.spark.impl.table
 
-import org.scalatest.{FunSpec, Matchers}
-import CAPSRecordHeader._
 import org.apache.spark.sql.types.{ArrayType, StringType, StructField, StructType}
 import org.opencypher.okapi.api.types.{CTList, CTString}
 import org.opencypher.okapi.ir.api.expr.Var
-import org.opencypher.okapi.relational.impl.table.RecordHeaderNew
+import org.opencypher.okapi.relational.impl.table.RecordHeader
+import org.opencypher.spark.impl.convert.SparkConversions._
+import org.scalatest.{FunSpec, Matchers}
 
 class CAPSRecordHeaderTest extends FunSpec with Matchers {
 
   it("computes a struct type from a given record header") {
-    val header = RecordHeaderNew.empty
+    val header = RecordHeader.empty
       .withExpr(Var("a")(CTString))
       .withExpr(Var("b")(CTString.nullable))
       .withExpr(Var("c")(CTList(CTString.nullable)))

@@ -34,7 +34,7 @@ import org.opencypher.okapi.api.types.CTNode
 import org.opencypher.okapi.impl.table.RecordsPrinter
 import org.opencypher.okapi.impl.util.PrintOptions
 import org.opencypher.okapi.ir.api.expr.Var
-import org.opencypher.okapi.relational.impl.table.RecordHeaderNew
+import org.opencypher.okapi.relational.impl.table.RecordHeader
 import org.opencypher.spark.testing.CAPSTestSuite
 import org.opencypher.spark.testing.fixture.GraphConstructionFixture
 
@@ -163,8 +163,8 @@ class CAPSRecordsPrinterTest extends CAPSTestSuite with GraphConstructionFixture
 
   private case class Row3(foo: String, v: Long, veryLongColumnNameWithBoolean: Boolean)
 
-  private def headerOf(fields: Symbol*): RecordHeaderNew = {
-    RecordHeaderNew.from(fields.map(f => Var(f.name)(CTNode)))
+  private def headerOf(fields: Symbol*): RecordHeader = {
+    RecordHeader.from(fields.map(f => Var(f.name)(CTNode)))
   }
 
   private def getString =

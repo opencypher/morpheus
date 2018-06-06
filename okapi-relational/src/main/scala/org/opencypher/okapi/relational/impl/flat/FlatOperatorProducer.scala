@@ -113,7 +113,7 @@ class FlatOperatorProducer(implicit context: FlatPlannerContext) {
   }
 
   def aggregate(aggregations: Set[(Var, Aggregator)], group: Set[Var], in: FlatOperator): Aggregate = {
-    val newHeader = RecordHeaderNew.from(group.flatMap(in.header.ownedBy) ++ aggregations.map(_._1))
+    val newHeader = RecordHeader.from(group.flatMap(in.header.ownedBy) ++ aggregations.map(_._1))
     Aggregate(aggregations, group, in, newHeader)
   }
 
@@ -171,7 +171,7 @@ class FlatOperatorProducer(implicit context: FlatPlannerContext) {
   }
 
   def planEmptyRecords(fields: Set[Var], prev: FlatOperator): EmptyRecords = {
-    EmptyRecords(prev, RecordHeaderNew.from(fields))
+    EmptyRecords(prev, RecordHeader.from(fields))
   }
 
   def planStart(graph: LogicalGraph, fields: Set[Var]): Start = {

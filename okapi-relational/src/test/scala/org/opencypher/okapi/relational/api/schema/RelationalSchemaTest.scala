@@ -31,7 +31,7 @@ import org.opencypher.okapi.api.types.{CTBoolean, CTNode, CTRelationship, CTStri
 import org.opencypher.okapi.ir.api.expr._
 import org.opencypher.okapi.ir.api.{Label, PropertyKey, RelType}
 import org.opencypher.okapi.relational.api.schema.RelationalSchema._
-import org.opencypher.okapi.relational.impl.table.RecordHeaderNew
+import org.opencypher.okapi.relational.impl.table.RecordHeader
 import org.scalatest.{FunSpec, Matchers}
 
 class RelationalSchemaTest extends FunSpec with Matchers {
@@ -42,7 +42,7 @@ class RelationalSchemaTest extends FunSpec with Matchers {
 
     val n = Var("n")(CTNode(Set("A", "B")))
 
-    schema.headerForNode(n) should equal(RecordHeaderNew.empty
+    schema.headerForNode(n) should equal(RecordHeader.empty
       .withExpr(n)
       .withExpr(HasLabel(n, Label("A"))(CTBoolean))
       .withExpr(HasLabel(n, Label("B"))(CTBoolean))
@@ -56,7 +56,7 @@ class RelationalSchemaTest extends FunSpec with Matchers {
 
     val n = Var("n")(CTNode(Set("A")))
 
-    schema.headerForNode(n) should equal(RecordHeaderNew.empty
+    schema.headerForNode(n) should equal(RecordHeader.empty
       .withExpr(n)
       .withExpr(HasLabel(n, Label("A"))(CTBoolean))
       .withExpr(HasLabel(n, Label("B"))(CTBoolean))
@@ -70,7 +70,7 @@ class RelationalSchemaTest extends FunSpec with Matchers {
 
     val r = Var("r")(CTRelationship("A"))
 
-    schema.headerForRelationship(r) should equal(RecordHeaderNew.empty
+    schema.headerForRelationship(r) should equal(RecordHeader.empty
       .withExpr(r)
       .withExpr(StartNode(r)(CTNode))
       .withExpr(EndNode(r)(CTNode))

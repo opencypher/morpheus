@@ -32,7 +32,7 @@ import org.apache.spark.sql.types._
 import org.opencypher.okapi.api.types._
 import org.opencypher.okapi.impl.exception.{IllegalArgumentException, NotImplementedException}
 import org.opencypher.okapi.ir.api.expr.{Expr, Var}
-import org.opencypher.okapi.relational.impl.table.RecordHeaderNew
+import org.opencypher.okapi.relational.impl.table.RecordHeader
 
 object SparkConversions {
 
@@ -106,13 +106,13 @@ object SparkConversions {
   }
 
   implicit class StructTypeOps(val structType: StructType) {
-    def toRecordHeader: RecordHeaderNew = {
+    def toRecordHeader: RecordHeader = {
       val vars: Set[Expr] = structType.fields.map { field =>
         Var(field.name)(field.dataType.toCypherType(field.nullable)
           .getOrElse(throw IllegalArgumentException("a supported Spark type", field.dataType)))
       }.toSet
 
-      RecordHeaderNew.from(vars)
+      RecordHeader.from(vars)
     }
   }
 
@@ -161,7 +161,7 @@ object SparkConversions {
     }
   }
 
-  implicit class RecordHeaderOps(header: RecordHeaderNew) extends Serializable {
+  implicit class RecordHeaderOps(header: RecordHeader) extends Serializable {
 
     def toStructType: StructType = {
       val structFields = header.columns.toSeq.sorted.map { column =>

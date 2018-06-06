@@ -30,7 +30,7 @@ import org.apache.spark.sql.DataFrame
 import org.opencypher.okapi.api.types.CTNode
 import org.opencypher.okapi.ir.api.expr.{EndNode, StartNode, Var}
 import org.opencypher.okapi.logical.impl.{Directed, Direction, Undirected}
-import org.opencypher.okapi.relational.impl.table.RecordHeaderNew
+import org.opencypher.okapi.relational.impl.table.RecordHeader
 import org.opencypher.spark.impl.CAPSFunctions._
 import org.opencypher.spark.impl.CAPSRecords
 import org.opencypher.spark.impl.DataFrameOps._
@@ -67,7 +67,7 @@ final case class BoundedVarExpand(
     lower: Int,
     upper: Int,
     direction: Direction,
-    header: RecordHeaderNew,
+    header: RecordHeader,
     isExpandInto: Boolean)
     extends TernaryPhysicalOperator with PhysicalOperatorDebugging {
 
@@ -78,7 +78,7 @@ final case class BoundedVarExpand(
     CAPSPhysicalResult(finalize(expanded, third.records), first.workingGraph, first.workingGraphName)
   }
 
-  private def iterate(lhs: DataFrame, lhsHeader: RecordHeaderNew, rels: DataFrame, relsHeader: RecordHeaderNew)(
+  private def iterate(lhs: DataFrame, lhsHeader: RecordHeader, rels: DataFrame, relsHeader: RecordHeader)(
       endNode: Var,
       rel: Var,
       relStartNode: StartNode,

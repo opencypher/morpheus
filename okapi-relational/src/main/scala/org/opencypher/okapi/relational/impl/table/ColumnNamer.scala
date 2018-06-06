@@ -37,17 +37,6 @@ object ColumnNamer {
   def tempColName: String =
     UUID.randomUUID().toString
 
-  def of(slot: RecordSlot): String = of(slot.content)
-
-  def of(slot: SlotContent): String = {
-    val builder = slot match {
-      case fieldContent: FieldSlotContent => new NameBuilder() += fieldContent.field.name
-      case ProjectedExpr(p: Property) => new NameBuilder() += None += p.withoutType + p.cypherType.material.name
-      case ProjectedExpr(expr) => new NameBuilder() += None += expr.withoutType
-    }
-    builder.result()
-  }
-
   def of(expr: Expr): String = {
     val builder = expr match {
       case Var(name) => new NameBuilder() += name

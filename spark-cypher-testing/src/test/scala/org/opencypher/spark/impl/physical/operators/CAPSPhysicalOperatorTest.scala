@@ -37,6 +37,7 @@ class CAPSPhysicalOperatorTest extends CAPSTestSuite {
   case class TestContent(foo: Int, bar: String)
 
   val testContents = Seq(TestContent(42, "foo"), TestContent(23, "bar"))
+  val testDf = sparkSession.createDataFrame(testContents)
 
   case class DummyOp(physicalResult: CAPSPhysicalResult) extends LeafPhysicalOperator {
 
@@ -46,7 +47,7 @@ class CAPSPhysicalOperatorTest extends CAPSTestSuite {
   }
 
   test("cache operator with single input") {
-    val expectedResult = CAPSPhysicalResult(CAPSRecords.create(testContents), CAPSGraph.empty, QualifiedGraphName("foo"))
+    val expectedResult = CAPSPhysicalResult(CAPSRecords.wrap(testDf), CAPSGraph.empty, QualifiedGraphName("foo"))
 
     val toCache = DummyOp(expectedResult)
 
@@ -59,7 +60,7 @@ class CAPSPhysicalOperatorTest extends CAPSTestSuite {
   }
 
   test("cache operator with cache reuse") {
-    val expectedResult = CAPSPhysicalResult(CAPSRecords.create(testContents), CAPSGraph.empty, QualifiedGraphName("foo"))
+    val expectedResult = CAPSPhysicalResult(CAPSRecords.wrap(testDf), CAPSGraph.empty, QualifiedGraphName("foo"))
 
     val toCache0 = DummyOp(expectedResult)
     val toCache1 = DummyOp(expectedResult)

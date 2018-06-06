@@ -34,7 +34,7 @@ import org.opencypher.okapi.api.schema._
 import org.opencypher.okapi.api.types.{CTNode, CTRelationship, CypherType, DefiniteCypherType}
 import org.opencypher.okapi.ir.api.expr._
 import org.opencypher.okapi.relational.api.io.RelationalCypherRecords
-import org.opencypher.okapi.relational.impl.table.IRecordHeader
+import org.opencypher.okapi.relational.impl.table.RecordHeader
 import org.opencypher.spark.api.CAPSSession
 import org.opencypher.spark.api.io.{CAPSEntityTable, CAPSNodeTable, CAPSRelationshipTable, SparkCypherTable}
 import org.opencypher.spark.schema.CAPSSchema

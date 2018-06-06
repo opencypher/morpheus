@@ -10,7 +10,7 @@ import org.opencypher.okapi.ir.api.expr._
 import org.opencypher.okapi.ir.api.{Label, PropertyKey}
 import org.opencypher.okapi.relational.api.io.RelationalEntityMapping._
 import org.opencypher.okapi.relational.impl.physical.{Ascending, Descending, JoinType, Order}
-import org.opencypher.okapi.relational.impl.table.RecordHeaderNew
+import org.opencypher.okapi.relational.impl.table.RecordHeader
 
 trait FlatRelationalTable[T <: FlatRelationalTable[T]] extends CypherTable {
 
@@ -42,13 +42,13 @@ trait RelationalCypherRecords[T <: FlatRelationalTable[T]] extends CypherRecords
 
   type R <: RelationalCypherRecords[T]
 
-  def from(header: RecordHeaderNew, table: T): R
+  def from(header: RecordHeader, table: T): R
 
   def table: T
 
   override def columns: Seq[String] = table.columns
 
-  def header: RecordHeaderNew
+  def header: RecordHeader
 
   def select(exprs: Expr*): R = {
     val selectHeader = header.select(exprs: _*)
@@ -127,7 +127,7 @@ trait EntityTable[T <: FlatRelationalTable[T]] extends RelationalCypherRecords[T
 
   def mapping: EntityMapping
 
-  def header: RecordHeaderNew = mapping match {
+  def header: RecordHeader = mapping match {
     case n: NodeMapping => headerFrom(n)
     case r: RelationshipMapping => headerFrom(r)
   }
@@ -140,17 +140,17 @@ trait EntityTable[T <: FlatRelationalTable[T]] extends RelationalCypherRecords[T
       s"Use CAPS[Node|Relationship]Table#fromMapping to create a valid EntityTable")
   }
 
-  protected def headerFrom(nodeMapping: NodeMapping): RecordHeaderNew = {
+  protected def headerFrom(nodeMapping: NodeMapping): RecordHeader = {
     val nodeVar = Var("")(nodeMapping.cypherType)
 
     val exprToColumn = Map[Expr, String](nodeMapping.id(nodeVar)) ++
       nodeMapping.optionalLabels(nodeVar) ++
       nodeMapping.properties(nodeVar, table.columnType)
 
-    RecordHeaderNew(exprToColumn)
+    RecordHeader(exprToColumn)
   }
 
-  protected def headerFrom(relationshipMapping: RelationshipMapping): RecordHeaderNew = {
+  protected def headerFrom(relationshipMapping: RelationshipMapping): RecordHeader = {
     val relVar = Var("")(relationshipMapping.cypherType)
 
     val exprToColumn = Map[Expr, String](
@@ -158,7 +158,7 @@ trait EntityTable[T <: FlatRelationalTable[T]] extends RelationalCypherRecords[T
       relationshipMapping.startNode(relVar),
       relationshipMapping.endNode(relVar)) ++ relationshipMapping.properties(relVar, table.columnType)
 
-    RecordHeaderNew(exprToColumn)
+    RecordHeader(exprToColumn)
   }
 }
 

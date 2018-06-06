@@ -36,7 +36,7 @@ import org.opencypher.okapi.api.value.CypherValue
 import org.opencypher.okapi.api.value.CypherValue.CypherValue
 import org.opencypher.okapi.relational.api.io.{EntityTable, FlatRelationalTable}
 import org.opencypher.okapi.relational.impl.physical._
-import org.opencypher.okapi.relational.impl.table.RecordHeaderNew
+import org.opencypher.okapi.relational.impl.table.RecordHeader
 import org.opencypher.okapi.relational.impl.util.StringEncodingUtilities
 import org.opencypher.okapi.relational.impl.util.StringEncodingUtilities._
 import org.opencypher.spark.api.CAPSSession
@@ -141,7 +141,7 @@ case class CAPSNodeTable(
 
   override type R = CAPSNodeTable
 
-  override def from(header: RecordHeaderNew, table: DataFrameTable): CAPSNodeTable = CAPSNodeTable(mapping, table)
+  override def from(header: RecordHeader, table: DataFrameTable): CAPSNodeTable = CAPSNodeTable(mapping, table)
 }
 
 object CAPSNodeTable {
@@ -214,7 +214,7 @@ case class CAPSRelationshipTable(
   override type R = CAPSRelationshipTable
 
   override def from(
-    header: RecordHeaderNew,
+    header: RecordHeader,
     table: DataFrameTable): CAPSRelationshipTable = CAPSRelationshipTable(mapping, table)
 }
 

@@ -37,7 +37,7 @@ import org.opencypher.okapi.impl.exception.IllegalArgumentException
 import org.opencypher.okapi.ir.api.PropertyKey
 import org.opencypher.okapi.ir.api.expr._
 import org.opencypher.okapi.relational.api.schema.RelationalSchema._
-import org.opencypher.okapi.relational.impl.table.RecordHeaderNew
+import org.opencypher.okapi.relational.impl.table.RecordHeader
 import org.opencypher.spark.api.CAPSSession
 import org.opencypher.spark.impl.convert.SparkConversions._
 import org.opencypher.spark.impl.io.neo4j.Neo4jGraph.{filterNode, filterRel, nodeToRow, relToRow}
@@ -89,8 +89,8 @@ class Neo4jGraph(val schema: CAPSSchema, val session: CAPSSession)(
     }
   }
 
-  private def computeRecords(name: String, cypherType: CypherType, header: RecordHeaderNew)(
-    computeRdd: (RecordHeaderNew, StructType) => RDD[Row]
+  private def computeRecords(name: String, cypherType: CypherType, header: RecordHeader)(
+    computeRdd: (RecordHeader, StructType) => RDD[Row]
   ): CAPSRecords = {
     val rdd = computeRdd(header, header.toStructType)
     val column = header.column(Var(name)(cypherType))
@@ -113,7 +113,7 @@ object Neo4jGraph {
       requiredLabels.forall(importedNode.hasLabel)
   }
 
-  private case class nodeToRow(header: RecordHeaderNew, schema: StructType) extends (InternalNode => Row) {
+  private case class nodeToRow(header: RecordHeader, schema: StructType) extends (InternalNode => Row) {
 
     private def orderedColumns = header.columns.toSeq.sorted
     private val orderedExpressions = orderedColumns.map { column =>
@@ -154,7 +154,7 @@ object Neo4jGraph {
       relType.types.isEmpty || relType.types.exists(importedRel.hasType)
   }
 
-  private case class relToRow(header: RecordHeaderNew, schema: StructType) extends (InternalRelationship => Row) {
+  private case class relToRow(header: RecordHeader, schema: StructType) extends (InternalRelationship => Row) {
 
     private def orderedColumns = header.columns.toSeq.sorted
     private val orderedExpressions = orderedColumns.map { column =>

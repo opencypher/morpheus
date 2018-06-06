@@ -32,7 +32,7 @@ import org.opencypher.okapi.api.types._
 import org.opencypher.okapi.api.value.CypherValue.CypherList
 import org.opencypher.okapi.impl.exception.{IllegalArgumentException, IllegalStateException, NotImplementedException}
 import org.opencypher.okapi.ir.api.expr._
-import org.opencypher.okapi.relational.impl.table.{IRecordHeader, RecordHeaderNew}
+import org.opencypher.okapi.relational.impl.table.RecordHeader
 import org.opencypher.spark.impl.CAPSFunctions.{array_contains, get_node_labels, get_property_keys}
 import org.opencypher.spark.impl.convert.SparkConversions._
 import org.opencypher.spark.impl.physical.CAPSRuntimeContext
@@ -41,7 +41,7 @@ object SparkSQLExprMapper {
 
   implicit class RichExpression(expr: Expr) {
 
-    def verify(implicit header: RecordHeaderNew): Unit = {
+    def verify(implicit header: RecordHeader): Unit = {
       if (header.expressionsFor(expr).isEmpty) throw IllegalStateException(s"Expression $expr not in header ${header.pretty}")
     }
 
@@ -51,7 +51,7 @@ object SparkSQLExprMapper {
       *   - We never have multiple types per column in CAPS (yet)
       */
     def compare(comparator: Column => (Column => Column), lhs: Expr, rhs: Expr)
-      (implicit header: RecordHeaderNew, df: DataFrame, context: CAPSRuntimeContext): Column = {
+      (implicit header: RecordHeader, df: DataFrame, context: CAPSRuntimeContext): Column = {
       comparator(lhs.asSparkSQLExpr)(rhs.asSparkSQLExpr)
     }
 
@@ -71,7 +71,7 @@ object SparkSQLExprMapper {
       * @param context context with helper functions, such as column names.
       * @return Some Spark SQL expression if the input was mappable, otherwise None.
       */
-    def asSparkSQLExpr(implicit header: RecordHeaderNew, df: DataFrame, context: CAPSRuntimeContext): Column = {
+    def asSparkSQLExpr(implicit header: RecordHeader, df: DataFrame, context: CAPSRuntimeContext): Column = {
 
       expr match {
 

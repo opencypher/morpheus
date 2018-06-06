@@ -35,7 +35,7 @@ import org.opencypher.okapi.ir.api.set.SetPropertyItem
 import org.opencypher.okapi.ir.api.{PropertyKey, RelType}
 import org.opencypher.okapi.logical.impl.{ConstructedEntity, ConstructedNode, ConstructedRelationship, LogicalPatternGraph}
 import org.opencypher.okapi.relational.impl.physical.JoinType
-import org.opencypher.okapi.relational.impl.table.RecordHeaderNew
+import org.opencypher.okapi.relational.impl.table.RecordHeader
 import org.opencypher.spark.api.{CAPSSession, Tags}
 import org.opencypher.spark.impl.CAPSUnionGraph.{apply => _, unapply => _}
 import org.opencypher.spark.impl.DataFrameOps._
@@ -64,7 +64,7 @@ final case class Join(
   lhs: CAPSPhysicalOperator,
   rhs: CAPSPhysicalOperator,
   joinExprs: Seq[(Expr, Expr)],
-  header: RecordHeaderNew,
+  header: RecordHeader,
   joinType: JoinType
 ) extends BinaryPhysicalOperator with PhysicalOperatorDebugging {
 
@@ -91,7 +91,7 @@ final case class ExistsSubQuery(
   lhs: CAPSPhysicalOperator,
   rhs: CAPSPhysicalOperator,
   targetField: Var,
-  header: RecordHeaderNew
+  header: RecordHeader
 )
   extends BinaryPhysicalOperator with PhysicalOperatorDebugging {
 
@@ -180,7 +180,7 @@ final case class TabularUnionAll(lhs: CAPSPhysicalOperator, rhs: CAPSPhysicalOpe
   }
 }
 
-final case class CartesianProduct(lhs: CAPSPhysicalOperator, rhs: CAPSPhysicalOperator, header: RecordHeaderNew)
+final case class CartesianProduct(lhs: CAPSPhysicalOperator, rhs: CAPSPhysicalOperator, header: RecordHeader)
   extends BinaryPhysicalOperator with PhysicalOperatorDebugging {
 
   override def executeBinary(left: CAPSPhysicalResult, right: CAPSPhysicalResult)(
@@ -212,7 +212,7 @@ final case class ConstructGraph(
     s"ConstructGraph(on=[${construct.onGraphs.mkString(", ")}], entities=[${entities.mkString(", ")}])"
   }
 
-  override def header: RecordHeaderNew = RecordHeaderNew.empty
+  override def header: RecordHeader = RecordHeader.empty
 
   private def pickFreeTag(tagStrategy: Map[QualifiedGraphName, Map[Int, Int]]): Int = {
     val usedTags = tagStrategy.values.flatMap(_.values).toSet
@@ -433,7 +433,7 @@ final case class ConstructGraph(
   }
 
   private def copyExpressions[T <: Expr](targetVar: Var, records: CAPSRecords)
-    (extractor: RecordHeaderNew => Set[T]): Map[Expr, Column] = {
+    (extractor: RecordHeader => Set[T]): Map[Expr, Column] = {
     val header = records.header
     val origExprs = extractor(header)
     val copyExprs = origExprs.map(_.withOwner(targetVar))

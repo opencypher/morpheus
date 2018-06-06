@@ -32,10 +32,10 @@ import org.opencypher.okapi.api.value.CypherValue._
 import org.opencypher.okapi.api.value._
 import org.opencypher.okapi.impl.exception.UnsupportedOperationException
 import org.opencypher.okapi.ir.api.expr.Var
-import org.opencypher.okapi.relational.impl.table.RecordHeaderNew
+import org.opencypher.okapi.relational.impl.table.RecordHeader
 import org.opencypher.spark.api.value.{CAPSNode, CAPSRelationship}
 
-final case class rowToCypherMap(header: RecordHeaderNew) extends (Row => CypherMap) {
+final case class rowToCypherMap(header: RecordHeader) extends (Row => CypherMap) {
 
   override def apply(row: Row): CypherMap = {
     val values = header.vars.map(v => v.name -> constructValue(row, v)).toSeq

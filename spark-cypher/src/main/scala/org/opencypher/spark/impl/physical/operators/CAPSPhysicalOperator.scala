@@ -32,7 +32,7 @@ import org.opencypher.okapi.api.types._
 import org.opencypher.okapi.impl.exception.IllegalArgumentException
 import org.opencypher.okapi.ir.api.expr.Expr
 import org.opencypher.okapi.relational.api.physical.PhysicalOperator
-import org.opencypher.okapi.relational.impl.table.{RecordHeaderNew, RecordSlot}
+import org.opencypher.okapi.relational.impl.table.RecordHeader
 import org.opencypher.okapi.trees.AbstractTreeNode
 import org.opencypher.spark.api.CAPSSession
 import org.opencypher.spark.impl.CAPSConverters._
@@ -53,14 +53,14 @@ private[spark] abstract class CAPSPhysicalOperator
   protected def resolveTags(qgn: QualifiedGraphName)(implicit context: CAPSRuntimeContext): Set[Int] = context.patternGraphTags.getOrElse(qgn, resolve(qgn).tags)
 
   override def args: Iterator[Any] = super.args.flatMap {
-    case RecordHeaderNew | Some(RecordHeaderNew) => None
+    case RecordHeader | Some(RecordHeader) => None
     case other                               => Some(other)
   }
 }
 
 object CAPSPhysicalOperator {
   def joinRecords(
-      header: RecordHeaderNew,
+      header: RecordHeader,
       joinColumns: Seq[(String, String)],
       joinType: String = "inner",
       deduplicate: Boolean = false)(lhs: CAPSRecords, rhs: CAPSRecords): CAPSRecords = {
@@ -76,7 +76,7 @@ object CAPSPhysicalOperator {
     CAPSRecords(header, select)(lhs.caps)
   }
 
-  def joinDFs(lhsData: DataFrame, rhsData: DataFrame, header: RecordHeaderNew, joinCols: Seq[(String, String)])(
+  def joinDFs(lhsData: DataFrame, rhsData: DataFrame, header: RecordHeader, joinCols: Seq[(String, String)])(
       joinType: String,
       deduplicate: Boolean)(implicit caps: CAPSSession): CAPSRecords = {
 

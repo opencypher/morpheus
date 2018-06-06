@@ -33,7 +33,7 @@ import org.opencypher.okapi.api.value.CypherValue._
 import org.opencypher.okapi.impl.exception.InternalException
 import org.opencypher.okapi.ir.api.expr._
 import org.opencypher.okapi.ir.api.{Label, PropertyKey}
-import org.opencypher.okapi.relational.impl.table.{IRecordHeader, OpaqueField, ProjectedExpr, RecordHeaderNew}
+import org.opencypher.okapi.relational.impl.table.RecordHeader
 import org.opencypher.okapi.testing.Bag
 import org.opencypher.okapi.testing.Bag._
 import org.opencypher.spark.api.io.{CAPSNodeTable, CAPSRelationshipTable}
@@ -238,7 +238,7 @@ class CAPSRecordsTest extends CAPSTestSuite with GraphConstructionFixture with T
 
   test("can not construct records with data/header column name conflict") {
     val data = sparkSession.createDataFrame(Seq((1, "foo"), (2, "bar"))).toDF("int", "string")
-    val header = RecordHeaderNew.from(Var("int")(), Var("notString")())
+    val header = RecordHeader.from(Var("int")(), Var("notString")())
 
     a[InternalException] shouldBe thrownBy {
       CAPSRecords(header, data)
@@ -247,7 +247,7 @@ class CAPSRecordsTest extends CAPSTestSuite with GraphConstructionFixture with T
 
   test("can construct records with matching data/header") {
     val data = sparkSession.createDataFrame(Seq((1L, "foo"), (2L, "bar"))).toDF("int", "string")
-    val header = RecordHeaderNew.from(Var("int")(CTInteger), Var("string")(CTString))
+    val header = RecordHeader.from(Var("int")(CTInteger), Var("string")(CTString))
 
     val records = CAPSRecords(header, data) // no exception is thrown
     records.df.select("int").collect() should equal(Array(Row(1), Row(2)))

@@ -51,7 +51,7 @@ import scala.collection.JavaConverters._
 
 object CAPSRecords {
 
-  def empty(initialHeader: RecordHeaderNew = RecordHeaderNew.empty)(implicit caps: CAPSSession): CAPSRecords = {
+  def empty(initialHeader: RecordHeader = RecordHeader.empty)(implicit caps: CAPSSession): CAPSRecords = {
     val initialSparkStructType = initialHeader.toStructType
     val initialDataFrame = caps.sparkSession.createDataFrame(Collections.emptyList[Row](), initialSparkStructType)
     CAPSRecords(initialHeader, initialDataFrame)
@@ -59,7 +59,7 @@ object CAPSRecords {
 
   def unit()(implicit caps: CAPSSession): CAPSRecords = {
     val initialDataFrame = caps.sparkSession.createDataFrame(Seq(EmptyRow()))
-    CAPSRecords(RecordHeaderNew.empty, initialDataFrame)
+    CAPSRecords(RecordHeader.empty, initialDataFrame)
   }
 
   def create(entityTable: CAPSEntityTable)(implicit caps: CAPSSession): CAPSRecords = {
@@ -82,7 +82,7 @@ object CAPSRecords {
   private case class EmptyRow()
 }
 
-case class CAPSRecords(header: RecordHeaderNew, df: DataFrame)(implicit val caps: CAPSSession)
+case class CAPSRecords(header: RecordHeader, df: DataFrame)(implicit val caps: CAPSSession)
   extends RelationalCypherRecords[DataFrameTable]
     with RecordBehaviour
     with Serializable {
@@ -91,7 +91,7 @@ case class CAPSRecords(header: RecordHeaderNew, df: DataFrame)(implicit val caps
 
   verify()
 
-  override def from(header: RecordHeaderNew, table: DataFrameTable): CAPSRecords =
+  override def from(header: RecordHeader, table: DataFrameTable): CAPSRecords =
     copy(header, table.df)
 
   override def table: DataFrameTable = df
@@ -159,7 +159,7 @@ case class CAPSRecords(header: RecordHeaderNew, df: DataFrame)(implicit val caps
     * @param targetHeader the header to align with
     * @return a new instance of `CAPSRecords` aligned with the argument header
     */
-  def alignWith(v: Var, targetHeader: RecordHeaderNew): CAPSRecords = {
+  def alignWith(v: Var, targetHeader: RecordHeader): CAPSRecords = {
 
     val entityVars = header.entityVars
 

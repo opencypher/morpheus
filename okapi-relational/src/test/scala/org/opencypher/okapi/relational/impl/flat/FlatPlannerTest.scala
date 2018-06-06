@@ -34,7 +34,6 @@ import org.opencypher.okapi.ir.api.{IRField, Label, PropertyKey}
 import org.opencypher.okapi.ir.test._
 import org.opencypher.okapi.ir.test.support.MatchHelper._
 import org.opencypher.okapi.logical.impl.{Directed, LogicalGraph, LogicalOperatorProducer, Undirected}
-import org.opencypher.okapi.relational.impl.table.{OpaqueField, ProjectedExpr, ProjectedField}
 import org.opencypher.okapi.testing.BaseTestSuite
 
 import scala.language.implicitConversions
@@ -68,7 +67,7 @@ class FlatPlannerTest extends BaseTestSuite {
     result should equal(mkFlat.project(expr -> Some('c), flatStartOperator))
     headerExpressions should equal(
       Set(
-        ProjectedField('c, expr)
+        expr as 'c
       ))
   }
 
@@ -85,10 +84,10 @@ class FlatPlannerTest extends BaseTestSuite {
     result should equal(flatNodeScan(nodeVar))
     headerExpressions should equal(
       Set(
-        OpaqueField(nodeVar),
-        ProjectedExpr(HasLabel(nodeVar, Label("Person"))(CTBoolean)),
-        ProjectedExpr(Property(nodeVar, PropertyKey("name"))(CTString)),
-        ProjectedExpr(Property(nodeVar, PropertyKey("age"))(CTInteger.nullable))
+        nodeVar,
+        HasLabel(nodeVar, Label("Person"))(CTBoolean),
+        Property(nodeVar, PropertyKey("name"))(CTString),
+        Property(nodeVar, PropertyKey("age"))(CTInteger.nullable)
       ))
   }
 
@@ -101,12 +100,12 @@ class FlatPlannerTest extends BaseTestSuite {
     result should equal(flatNodeScan(nodeVar))
     headerExpressions should equal(
       Set(
-        OpaqueField(nodeVar),
-        ProjectedExpr(HasLabel(nodeVar, Label("Person"))(CTBoolean)),
-        ProjectedExpr(HasLabel(nodeVar, Label("Employee"))(CTBoolean)),
-        ProjectedExpr(Property(nodeVar, PropertyKey("name"))(CTString)),
-        ProjectedExpr(Property(nodeVar, PropertyKey("age"))(CTInteger.nullable)),
-        ProjectedExpr(Property(nodeVar, PropertyKey("salary"))(CTFloat.nullable))
+        nodeVar,
+        HasLabel(nodeVar, Label("Person"))(CTBoolean),
+        HasLabel(nodeVar, Label("Employee"))(CTBoolean),
+        Property(nodeVar, PropertyKey("name"))(CTString),
+        Property(nodeVar, PropertyKey("age"))(CTInteger.nullable),
+        Property(nodeVar, PropertyKey("salary"))(CTFloat.nullable)
       ))
   }
 
@@ -126,12 +125,12 @@ class FlatPlannerTest extends BaseTestSuite {
     )
     headerExpressions should equal(
       Set(
-        OpaqueField(nodeVar),
-        ProjectedExpr(HasLabel(nodeVar, Label("Person"))(CTBoolean)),
-        ProjectedExpr(HasLabel(nodeVar, Label("Employee"))(CTBoolean)),
-        ProjectedExpr(Property(nodeVar, PropertyKey("name"))(CTString)),
-        ProjectedExpr(Property(nodeVar, PropertyKey("age"))(CTInteger.nullable)),
-        ProjectedExpr(Property(nodeVar, PropertyKey("salary"))(CTFloat.nullable))
+        nodeVar,
+        HasLabel(nodeVar, Label("Person"))(CTBoolean),
+        HasLabel(nodeVar, Label("Employee"))(CTBoolean),
+        Property(nodeVar, PropertyKey("name"))(CTString),
+        Property(nodeVar, PropertyKey("age"))(CTInteger.nullable),
+        Property(nodeVar, PropertyKey("salary"))(CTFloat.nullable)
       ))
   }
 
@@ -156,25 +155,26 @@ class FlatPlannerTest extends BaseTestSuite {
     )
     headerExpressions should equal(
       Set(
-        OpaqueField(source),
-        ProjectedExpr(HasLabel(source, Label("Person"))(CTBoolean)),
-        ProjectedExpr(HasLabel(source, Label("Employee"))(CTBoolean)),
-        ProjectedExpr(Property(source, PropertyKey("name"))(CTString)),
-        ProjectedExpr(Property(source, PropertyKey("age"))(CTInteger.nullable)),
-        ProjectedExpr(Property(source, PropertyKey("salary"))(CTFloat.nullable)),
-        ProjectedExpr(StartNode(rel)(CTInteger)),
-        OpaqueField(rel),
-        ProjectedExpr(Type(rel)(CTString)),
-        ProjectedExpr(EndNode(rel)(CTInteger)),
-        ProjectedExpr(Property(rel, PropertyKey("since"))(CTString.nullable)),
-        ProjectedExpr(Property(rel, PropertyKey("bar"))(CTBoolean.nullable)),
-        OpaqueField(target),
-        ProjectedExpr(HasLabel(target, Label("Person"))(CTBoolean)),
-        ProjectedExpr(HasLabel(target, Label("Employee"))(CTBoolean)),
-        ProjectedExpr(Property(target, PropertyKey("name"))(CTString)),
-        ProjectedExpr(Property(target, PropertyKey("age"))(CTInteger.nullable)),
-        ProjectedExpr(Property(target, PropertyKey("salary"))(CTFloat.nullable))
-      ))
+        source,
+        HasLabel(source, Label("Person"))(CTBoolean),
+        HasLabel(source, Label("Employee"))(CTBoolean),
+        Property(source, PropertyKey("name"))(CTString),
+        Property(source, PropertyKey("age"))(CTInteger.nullable),
+        Property(source, PropertyKey("salary"))(CTFloat.nullable),
+        StartNode(rel)(CTInteger),
+        rel,
+        Type(rel)(CTString),
+        EndNode(rel)(CTInteger),
+        Property(rel, PropertyKey("since"))(CTString.nullable),
+        Property(rel, PropertyKey("bar"))(CTBoolean.nullable),
+        target,
+        HasLabel(target, Label("Person"))(CTBoolean),
+        HasLabel(target, Label("Employee"))(CTBoolean),
+        Property(target, PropertyKey("name"))(CTString),
+        Property(target, PropertyKey("age"))(CTInteger.nullable),
+        Property(target, PropertyKey("salary"))(CTFloat.nullable)
+      )
+    )
   }
 
   test("flat plan for expand with rel type info") {
@@ -199,23 +199,23 @@ class FlatPlannerTest extends BaseTestSuite {
     )
     headerExpressions should equal(
       Set(
-        OpaqueField(source),
-        ProjectedExpr(HasLabel(source, Label("Person"))(CTBoolean)),
-        ProjectedExpr(HasLabel(source, Label("Employee"))(CTBoolean)),
-        ProjectedExpr(Property(source, PropertyKey("name"))(CTString)),
-        ProjectedExpr(Property(source, PropertyKey("age"))(CTInteger.nullable)),
-        ProjectedExpr(Property(source, PropertyKey("salary"))(CTFloat.nullable)),
-        ProjectedExpr(StartNode(rel)(CTInteger)),
-        OpaqueField(rel),
-        ProjectedExpr(Type(rel)(CTString)),
-        ProjectedExpr(EndNode(rel)(CTInteger)),
-        ProjectedExpr(Property(rel, PropertyKey("since"))(CTString)),
-        OpaqueField(target),
-        ProjectedExpr(HasLabel(target, Label("Person"))(CTBoolean)),
-        ProjectedExpr(HasLabel(target, Label("Employee"))(CTBoolean)),
-        ProjectedExpr(Property(target, PropertyKey("name"))(CTString)),
-        ProjectedExpr(Property(target, PropertyKey("age"))(CTInteger.nullable)),
-        ProjectedExpr(Property(target, PropertyKey("salary"))(CTFloat.nullable))
+        source,
+        HasLabel(source, Label("Person"))(CTBoolean),
+        HasLabel(source, Label("Employee"))(CTBoolean),
+        Property(source, PropertyKey("name"))(CTString),
+        Property(source, PropertyKey("age"))(CTInteger.nullable),
+        Property(source, PropertyKey("salary"))(CTFloat.nullable),
+        StartNode(rel)(CTInteger),
+        rel,
+        Type(rel)(CTString),
+        EndNode(rel)(CTInteger),
+        Property(rel, PropertyKey("since"))(CTString),
+        target,
+        HasLabel(target, Label("Person"))(CTBoolean),
+        HasLabel(target, Label("Employee"))(CTBoolean),
+        Property(target, PropertyKey("name"))(CTString),
+        Property(target, PropertyKey("age"))(CTInteger.nullable),
+        Property(target, PropertyKey("salary"))(CTFloat.nullable)
       ))
   }
 
@@ -256,19 +256,19 @@ class FlatPlannerTest extends BaseTestSuite {
 
     val headerExpressions = result.header.expressions should equal(
       Set(
-        OpaqueField(source),
-        ProjectedExpr(HasLabel(source, Label("Person"))(CTBoolean)),
-        ProjectedExpr(HasLabel(source, Label("Employee"))(CTBoolean)),
-        ProjectedExpr(Property(source, PropertyKey("name"))(CTString)),
-        ProjectedExpr(Property(source, PropertyKey("age"))(CTInteger.nullable)),
-        ProjectedExpr(Property(source, PropertyKey("salary"))(CTFloat.nullable)),
-        OpaqueField(edgeList),
-        OpaqueField(target),
-        ProjectedExpr(HasLabel(target, Label("Person"))(CTBoolean)),
-        ProjectedExpr(HasLabel(target, Label("Employee"))(CTBoolean)),
-        ProjectedExpr(Property(target, PropertyKey("name"))(CTString)),
-        ProjectedExpr(Property(target, PropertyKey("age"))(CTInteger.nullable)),
-        ProjectedExpr(Property(target, PropertyKey("salary"))(CTFloat.nullable))
+        source,
+        HasLabel(source, Label("Person"))(CTBoolean),
+        HasLabel(source, Label("Employee"))(CTBoolean),
+        Property(source, PropertyKey("name"))(CTString),
+        Property(source, PropertyKey("age"))(CTInteger.nullable),
+        Property(source, PropertyKey("salary"))(CTFloat.nullable),
+        edgeList,
+        target,
+        HasLabel(target, Label("Person"))(CTBoolean),
+        HasLabel(target, Label("Employee"))(CTBoolean),
+        Property(target, PropertyKey("name"))(CTString),
+        Property(target, PropertyKey("age"))(CTInteger.nullable),
+        Property(target, PropertyKey("salary"))(CTFloat.nullable)
       ))
   }
 
@@ -288,10 +288,10 @@ class FlatPlannerTest extends BaseTestSuite {
     )
     headerExpressions should equal(
       Set(
-        OpaqueField(nodeVar),
-        ProjectedExpr(HasLabel(nodeVar, Label("Person"))(CTBoolean)),
-        ProjectedExpr(Property(nodeVar, PropertyKey("name"))(CTString)),
-        ProjectedExpr(Property(nodeVar, PropertyKey("age"))(CTInteger.nullable))
+        nodeVar,
+        HasLabel(nodeVar, Label("Person"))(CTBoolean),
+        Property(nodeVar, PropertyKey("name"))(CTString),
+        Property(nodeVar, PropertyKey("age"))(CTInteger.nullable)
       ))
   }
 
@@ -318,7 +318,8 @@ class FlatPlannerTest extends BaseTestSuite {
     )
     headerExpressions should equalWithTracing(
       Set(
-        ProjectedField(Var("foo")(CTString), Property(Var("n")(CTNode), PropertyKey("name"))(CTString))
+        Var("foo")(CTString),
+        Property(Var("n")(CTNode), PropertyKey("name"))(CTString)
       ))
   }
 
