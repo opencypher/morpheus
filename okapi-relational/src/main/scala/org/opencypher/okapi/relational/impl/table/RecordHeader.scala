@@ -233,16 +233,22 @@ case class RecordHeader(exprToColumn: Map[Expr, String]) {
 
   def withExprs[T <: Expr](expr: T, exprs: T*): RecordHeader = (expr +: exprs).foldLeft(this)(_ withExpr _)
 
-  def withExprs[T <: Expr](exprs: Set[T]): RecordHeader = withExprs(exprs.head, exprs.tail.toSeq: _*)
+  def withExprs[T <: Expr](exprs: Set[T]): RecordHeader = {
+    if (exprs.isEmpty) {
+      RecordHeader.empty
+    } else {
+      withExprs(exprs.head, exprs.tail.toSeq: _*)
+    }
+  }
 
   def withAlias(exprAsVar: (Expr, Var)*): RecordHeader = exprAsVar.foldLeft(this){
     case (currentHeader, (expr, alias)) => currentHeader.withAlias(expr, alias)
   }
 
   def withAlias(to: Expr, alias: Var): RecordHeader = {
-    require(
-      alias.cypherType.superTypeOf(to.cypherType).isTrue,
-      s"CypherType of expression $to cannot be assigned to CypherType of alias $alias")
+//    require(
+//      alias.cypherType.superTypeOf(to.cypherType).isTrue,
+//      s"CypherType of expression $to cannot be assigned to CypherType of alias $alias")
 
     to match {
       // Entity case
