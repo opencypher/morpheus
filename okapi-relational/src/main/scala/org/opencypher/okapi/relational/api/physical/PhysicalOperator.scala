@@ -28,7 +28,7 @@ package org.opencypher.okapi.relational.api.physical
 
 import org.opencypher.okapi.api.graph.PropertyGraph
 import org.opencypher.okapi.api.table.CypherRecords
-import org.opencypher.okapi.relational.impl.table.IRecordHeader
+import org.opencypher.okapi.relational.impl.table.RecordHeaderNew
 
 /**
   * Represents a backend-specific implementation of a physical query operation on the underlying data.
@@ -44,7 +44,7 @@ trait PhysicalOperator[R <: CypherRecords, G <: PropertyGraph, C <: RuntimeConte
     *
     * @return record header describing the output data
     */
-  def header: IRecordHeader
+  def header: RecordHeaderNew
 
   /**
     * Triggers the execution of that operator.

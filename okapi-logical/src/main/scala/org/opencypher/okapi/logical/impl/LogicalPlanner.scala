@@ -172,17 +172,17 @@ class LogicalPlanner(producer: LogicalOperatorProducer)
     implicit context: LogicalPlannerContext) = {
     exprs.foldLeft(in) {
       case (acc, (f, p: Property)) =>
-        producer.projectField(f, p, acc)
+        producer.projectField(p, f, acc)
 
       case (acc, (f, func: FunctionExpr)) =>
         val projectArg = func.exprs.foldLeft(acc) {
           case (acc2, expr) => planInnerExpr(expr, acc2)
         }
-        producer.projectField(f, func, projectArg)
+        producer.projectField(func, f, projectArg)
 
       // this is for aliasing
       case (acc, (f, v: Var)) if f.name != v.name =>
-        producer.projectField(f, v, acc)
+        producer.projectField(v, f, acc)
 
       case (acc, (_, _: Var)) =>
         acc
@@ -190,22 +190,22 @@ class LogicalPlanner(producer: LogicalOperatorProducer)
       case (acc, (f, be: BinaryExpr)) =>
         val projectLhs = planInnerExpr(be.lhs, acc)
         val projectRhs = planInnerExpr(be.rhs, projectLhs)
-        producer.projectField(f, be, projectRhs)
+        producer.projectField(be, f, projectRhs)
 
       case (acc, (f, c: Param)) =>
-        producer.projectField(f, c, acc)
+        producer.projectField(c, f, acc)
 
       case (acc, (f, c: Lit[_])) =>
-        producer.projectField(f, c, acc)
+        producer.projectField(c, f, acc)
 
       case (acc, (f, ex: ExistsPatternExpr)) =>
         val subqueryPlan = this (ex.ir)
         val existsPlan = producer.planExistsSubQuery(ex, acc, subqueryPlan)
-        producer.projectField(f, existsPlan.expr.targetField, existsPlan)
+        producer.projectField(existsPlan.expr.targetField, f, existsPlan)
 
       case (acc, (f, e: PredicateExpression)) =>
         val projectInner = planInnerExpr(e.inner, acc)
-        producer.projectField(f, e, projectInner)
+        producer.projectField(e, f, projectInner)
 
       case (acc, (f, c: CaseExpr)) =>
         val (leftExprs, rightExprs) = c.alternatives.unzip
@@ -215,11 +215,11 @@ class LogicalPlanner(producer: LogicalOperatorProducer)
           case Some(inner) => planInnerExpr(inner, plannedAlternatives)
           case None => plannedAlternatives
         }
-        producer.projectField(f, c, plannedAll)
+        producer.projectField(c, f, plannedAll)
 
       case (acc, (f, a@Ands(inner))) =>
         val plannedInner = inner.foldLeft(acc)((op, expr) => planInnerExpr(expr, op))
-        producer.projectField(f, a, plannedInner)
+        producer.projectField(a, f, plannedInner)
 
       case (_, (_, x)) =>
         throw NotImplementedException(s"Support for projection of $x not yet implemented. Tree:\n${x.pretty}")

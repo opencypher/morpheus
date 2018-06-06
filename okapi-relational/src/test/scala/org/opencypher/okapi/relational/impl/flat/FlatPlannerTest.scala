@@ -34,7 +34,7 @@ import org.opencypher.okapi.ir.api.{IRField, Label, PropertyKey}
 import org.opencypher.okapi.ir.test._
 import org.opencypher.okapi.ir.test.support.MatchHelper._
 import org.opencypher.okapi.logical.impl.{Directed, LogicalGraph, LogicalOperatorProducer, Undirected}
-import org.opencypher.okapi.relational.impl.table.{FieldSlotContent, OpaqueField, ProjectedExpr, ProjectedField}
+import org.opencypher.okapi.relational.impl.table.{OpaqueField, ProjectedExpr, ProjectedField}
 import org.opencypher.okapi.testing.BaseTestSuite
 
 import scala.language.implicitConversions
@@ -62,11 +62,11 @@ class FlatPlannerTest extends BaseTestSuite {
 
   test("projecting a new expression") {
     val expr = Subtract('a, 'b)()
-    val result = flatPlanner.process(mkLogical.projectField('c, expr, logicalStartOperator))
-    val headerContents = result.header.contents
+    val result = flatPlanner.process(mkLogical.projectField(expr, 'c, logicalStartOperator))
+    val headerExpressions = result.header.expressions
 
-    result should equal(mkFlat.project(ProjectedField('c, expr), flatStartOperator))
-    headerContents should equal(
+    result should equal(mkFlat.project(expr -> Some('c), flatStartOperator))
+    headerExpressions should equal(
       Set(
         ProjectedField('c, expr)
       ))
@@ -78,12 +78,12 @@ class FlatPlannerTest extends BaseTestSuite {
 
   test("Construct node scan") {
     val result = flatPlanner.process(logicalNodeScan("n", "Person"))
-    val headerContents = result.header.contents
+    val headerExpressions = result.header.expressions
 
     val nodeVar = Var("n")(CTNode("Person"))
 
     result should equal(flatNodeScan(nodeVar))
-    headerContents should equal(
+    headerExpressions should equal(
       Set(
         OpaqueField(nodeVar),
         ProjectedExpr(HasLabel(nodeVar, Label("Person"))(CTBoolean)),
@@ -94,12 +94,12 @@ class FlatPlannerTest extends BaseTestSuite {
 
   test("Construct unlabeled node scan") {
     val result = flatPlanner.process(logicalNodeScan("n"))
-    val headerContents = result.header.contents
+    val headerExpressions = result.header.expressions
 
     val nodeVar = Var("n")(CTNode)
 
     result should equal(flatNodeScan(nodeVar))
-    headerContents should equal(
+    headerExpressions should equal(
       Set(
         OpaqueField(nodeVar),
         ProjectedExpr(HasLabel(nodeVar, Label("Person"))(CTBoolean)),
@@ -114,7 +114,7 @@ class FlatPlannerTest extends BaseTestSuite {
     val result = flatPlanner.process(
       mkLogical.planFilter(TrueLit(), logicalNodeScan("n"))
     )
-    val headerContents = result.header.contents
+    val headerExpressions = result.header.expressions
 
     val nodeVar = Var("n")(CTNode)
 
@@ -124,7 +124,7 @@ class FlatPlannerTest extends BaseTestSuite {
         flatNodeScan(nodeVar)
       )
     )
-    headerContents should equal(
+    headerExpressions should equal(
       Set(
         OpaqueField(nodeVar),
         ProjectedExpr(HasLabel(nodeVar, Label("Person"))(CTBoolean)),
@@ -145,7 +145,7 @@ class FlatPlannerTest extends BaseTestSuite {
         logicalNodeScan("n"),
         logicalNodeScan("m"))
     )
-    val headerContents = result.header.contents
+    val headerExpressions = result.header.expressions
 
     val source = Var("n")(CTNode)
     val rel = Var("r")(CTRelationship)
@@ -154,7 +154,7 @@ class FlatPlannerTest extends BaseTestSuite {
     result should equal(
       mkFlat.expand(source, rel, Undirected, target, schema, flatNodeScan(source), flatNodeScan(target))
     )
-    headerContents should equal(
+    headerExpressions should equal(
       Set(
         OpaqueField(source),
         ProjectedExpr(HasLabel(source, Label("Person"))(CTBoolean)),
@@ -188,7 +188,7 @@ class FlatPlannerTest extends BaseTestSuite {
         logicalNodeScan("m")
       )
     )
-    val headerContents = result.header.contents
+    val headerExpressions = result.header.expressions
 
     val source = Var("n")(CTNode)
     val rel = Var("r")(CTRelationship("KNOWS"))
@@ -197,7 +197,7 @@ class FlatPlannerTest extends BaseTestSuite {
     result should equal(
       mkFlat.expand(source, rel, Directed, target, schema, flatNodeScan(source), flatNodeScan(target))
     )
-    headerContents should equal(
+    headerExpressions should equal(
       Set(
         OpaqueField(source),
         ProjectedExpr(HasLabel(source, Label("Person"))(CTBoolean)),
@@ -241,7 +241,7 @@ class FlatPlannerTest extends BaseTestSuite {
 
     val edgeScan = flatVarLengthEdgeScan(initVarExpand.edgeList)
     val flatOp = mkFlat.boundedVarExpand(
-      edgeScan.edge,
+      edgeScan.rel,
       edgeList,
       target,
       Directed,
@@ -254,7 +254,7 @@ class FlatPlannerTest extends BaseTestSuite {
 
     result should equal(flatOp)
 
-    result.header.contents should equal(
+    val headerExpressions = result.header.expressions should equal(
       Set(
         OpaqueField(source),
         ProjectedExpr(HasLabel(source, Label("Person"))(CTBoolean)),
@@ -278,7 +278,7 @@ class FlatPlannerTest extends BaseTestSuite {
     val result = flatPlanner.process(
       mkLogical.planFilter(HasLabel(nodeVar, Label("Person"))(CTBoolean), logicalNodeScan("n"))
     )
-    val headerContents = result.header.contents
+    val headerExpressions = result.header.expressions
 
     result should equal(
       mkFlat.filter(
@@ -286,7 +286,7 @@ class FlatPlannerTest extends BaseTestSuite {
         flatNodeScan(nodeVar.name)
       )
     )
-    headerContents should equal(
+    headerExpressions should equal(
       Set(
         OpaqueField(nodeVar),
         ProjectedExpr(HasLabel(nodeVar, Label("Person"))(CTBoolean)),
@@ -300,23 +300,23 @@ class FlatPlannerTest extends BaseTestSuite {
       mkLogical.planSelect(
         List(Var("foo")(CTString)),
         prev = mkLogical.projectField(
-          IRField("foo")(CTString),
           Property(Var("n")(CTNode), PropertyKey("name"))(CTString),
+          IRField("foo")(CTString),
           logicalNodeScan("n", "Person"))
       )
     )
-    val headerContents = result.header.contents
+    val headerExpressions = result.header.expressions
 
     result should equalWithTracing(
       mkFlat.select(
         List(Var("foo")(CTString)),
         mkFlat.project(
-          ProjectedField(Var("foo")(CTString), Property(Var("n")(CTNode), PropertyKey("name"))(CTString)),
+          Property(Var("n")(CTNode), PropertyKey("name"))(CTString) -> Some(Var("foo")(CTString)),
           flatNodeScan("n", "Person")
         )
       )
     )
-    headerContents should equalWithTracing(
+    headerExpressions should equalWithTracing(
       Set(
         ProjectedField(Var("foo")(CTString), Property(Var("n")(CTNode), PropertyKey("name"))(CTString))
       ))
@@ -327,31 +327,29 @@ class FlatPlannerTest extends BaseTestSuite {
       mkLogical.planSelect(
         List(Var("foo")(CTString), Var("n")(CTNode), Var("baz")(CTInteger.nullable)),
         prev = mkLogical.projectField(
-          IRField("baz")(CTInteger),
           Property(Var("n")(CTNode), PropertyKey("age"))(CTInteger.nullable),
+          IRField("baz")(CTInteger),
           mkLogical.projectField(
-            IRField("foo")(CTString),
             Property(Var("n")(CTNode), PropertyKey("name"))(CTString),
+            IRField("foo")(CTString),
             logicalNodeScan("n", "Person"))
         )
       )
     )
-    val orderedContents = result.header.slots.map(_.content).collect { case content: FieldSlotContent => content.key }
+    val headerExpressions = result.header.expressions
 
     result should equal(
       mkFlat.select(
         List(Var("foo")(CTString), Var("n")(CTNode), Var("baz")(CTInteger.nullable)),
         mkFlat.project(
-          ProjectedField(
-            Var("baz")(CTInteger.nullable),
-            Property(Var("n")(CTNode), PropertyKey("age"))(CTInteger.nullable)),
+            Property(Var("n")(CTNode), PropertyKey("age"))(CTInteger.nullable) -> Some(Var("baz")(CTInteger.nullable)),
           mkFlat.project(
-            ProjectedField(Var("foo")(CTString), Property(Var("n")(CTNode), PropertyKey("name"))(CTString)),
+            Property(Var("n")(CTNode), PropertyKey("name"))(CTString) -> Some(Var("foo")(CTString)),
             flatNodeScan("n", "Person"))
         )
       )
     )
-    orderedContents should equal(List(Var("foo")(CTString), Var("n")(CTNode), Var("baz")(CTInteger)))
+    headerExpressions should equal(Set(Var("foo")(CTString), Var("n")(CTNode), Var("baz")(CTInteger)))
   }
 
   private def logicalNodeScan(nodeField: String, labelNames: String*) =
@@ -364,5 +362,5 @@ class FlatPlannerTest extends BaseTestSuite {
     flatNodeScan(Var(node)(CTNode(labelNames.toSet)))
 
   private def flatVarLengthEdgeScan(edgeList: Var) =
-    mkFlat.varLengthEdgeScan(edgeList, flatStartOperator)
+    mkFlat.varLengthRelationshipScan(edgeList, flatStartOperator)
 }

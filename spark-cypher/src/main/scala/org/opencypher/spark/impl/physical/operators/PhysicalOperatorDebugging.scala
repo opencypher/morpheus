@@ -31,7 +31,7 @@ import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.sql.catalyst.expressions.Attribute
 import org.apache.spark.sql.execution.LeafExecNode
-import org.opencypher.okapi.relational.impl.table.IRecordHeader
+import org.opencypher.okapi.relational.impl.table.RecordHeaderNew
 import org.opencypher.spark.api.CAPSSession
 import org.opencypher.spark.configuration.CAPSConfiguration.DebugPhysicalOperators
 import org.opencypher.spark.impl.DataFrameOps._
@@ -67,7 +67,7 @@ trait PhysicalOperatorDebugging extends CAPSPhysicalOperator {
       println(s"**$operatorName**")
 
       val recordsDf = output.records.df
-      if (output.records.header != IRecordHeader.empty) {
+      if (output.records.header != RecordHeaderNew.empty) {
         println
         recordsDf.printExecutionTiming(s"Computing $simpleOperatorName output records DataFrame")
         println

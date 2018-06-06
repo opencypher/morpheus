@@ -35,11 +35,11 @@ object RecordHeaderNew {
 
   def empty: RecordHeaderNew = RecordHeaderNew(Map.empty)
 
-  def from(expr: Expr, exprs: Expr*): RecordHeaderNew = empty.withExprs(expr, exprs: _*)
+  def from[T <: Expr](expr: T, exprs: T*): RecordHeaderNew = empty.withExprs(expr, exprs: _*)
 
-  def from(exprs: Set[Expr]): RecordHeaderNew = empty.withExprs(exprs)
+  def from[T <: Expr](exprs: Set[T]): RecordHeaderNew = empty.withExprs(exprs)
 
-  def from(exprs: Seq[Expr]): RecordHeaderNew = from(exprs.head, exprs.tail: _*)
+  def from[T <: Expr](exprs: Seq[T]): RecordHeaderNew = from(exprs.head, exprs.tail: _*)
 
 }
 
@@ -231,9 +231,9 @@ case class RecordHeaderNew(exprToColumn: Map[Expr, String]) {
     }
   }
 
-  def withExprs(expr: Expr, exprs: Expr*): RecordHeaderNew = (expr +: exprs).foldLeft(this)(_ withExpr _)
+  def withExprs[T <: Expr](expr: T, exprs: T*): RecordHeaderNew = (expr +: exprs).foldLeft(this)(_ withExpr _)
 
-  def withExprs(exprs: Set[Expr]): RecordHeaderNew = withExprs(exprs.head, exprs.tail.toSeq: _*)
+  def withExprs[T <: Expr](exprs: Set[T]): RecordHeaderNew = withExprs(exprs.head, exprs.tail.toSeq: _*)
 
   def withAlias(exprAsVar: (Expr, Var)*): RecordHeaderNew = exprAsVar.foldLeft(this){
     case (currentHeader, (expr, alias)) => currentHeader.withAlias(expr, alias)

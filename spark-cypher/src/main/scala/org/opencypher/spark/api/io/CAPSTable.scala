@@ -26,23 +26,24 @@
  */
 package org.opencypher.spark.api.io
 
+import org.apache.spark.sql.functions._
 import org.apache.spark.sql.{DataFrame, functions}
 import org.apache.spark.storage.StorageLevel
 import org.opencypher.okapi.api.io.conversion.{EntityMapping, NodeMapping, RelationshipMapping}
 import org.opencypher.okapi.api.schema.Schema
-import org.opencypher.okapi.api.table.CypherTable
 import org.opencypher.okapi.api.types._
 import org.opencypher.okapi.api.value.CypherValue
 import org.opencypher.okapi.api.value.CypherValue.CypherValue
 import org.opencypher.okapi.relational.api.io.{EntityTable, FlatRelationalTable}
 import org.opencypher.okapi.relational.impl.physical._
+import org.opencypher.okapi.relational.impl.table.RecordHeaderNew
 import org.opencypher.okapi.relational.impl.util.StringEncodingUtilities
 import org.opencypher.okapi.relational.impl.util.StringEncodingUtilities._
 import org.opencypher.spark.api.CAPSSession
 import org.opencypher.spark.api.io.SparkCypherTable.DataFrameTable
-import org.opencypher.spark.impl.CAPSRecords
 import org.opencypher.spark.impl.DataFrameOps._
 import org.opencypher.spark.impl.util.Annotation
+import org.opencypher.spark.impl.{CAPSRecords, RecordBehaviour}
 import org.opencypher.spark.schema.CAPSSchema
 import org.opencypher.spark.schema.CAPSSchema._
 
@@ -77,6 +78,19 @@ object SparkCypherTable {
       df.select(cols.head, cols.tail: _*)
     }
 
+    override def drop(cols: String*): DataFrameTable = {
+      df.drop(cols: _*)
+    }
+
+    override def orderBy(sortItems: (String, Order)*): DataFrameTable = {
+      val sortExpression = sortItems.map {
+        case (column, Ascending) => asc(column)
+        case (column, Descending) => desc(column)
+      }
+
+      df.sort(sortExpression: _*)
+    }
+
     override def unionAll(other: DataFrameTable): DataFrameTable = {
       df.union(other.df)
     }
@@ -93,7 +107,11 @@ object SparkCypherTable {
         case (l, r) => df.col(l) === other.df.col(r)
       }.reduce((acc, expr) => acc && expr)
 
-      df.join(other.df, joinExpr, joinTypeString)
+      // TODO: the join produced corrupt data when the previous operator was a cross. We work around that by using a
+      // subsequent select. This can be removed, once https://issues.apache.org/jira/browse/SPARK-23855 is solved or we
+      // upgrade to Spark 2.3.0
+      val potentiallyCorruptedResult = df.join(other.df, joinExpr, joinTypeString)
+      potentiallyCorruptedResult.select("*")
     }
 
     override def distinct: DataFrameTable = df.distinct
@@ -117,9 +135,14 @@ trait CAPSEntityTable extends EntityTable[DataFrameTable] {
 }
 
 case class CAPSNodeTable(
-  mapping: NodeMapping,
-  table: DataFrameTable
-) extends NodeTable(mapping, table) with CAPSEntityTable
+  override val mapping: NodeMapping,
+  override val table: DataFrameTable
+) extends NodeTable(mapping, table) with CAPSEntityTable {
+
+  override type R = CAPSNodeTable
+
+  override def from(header: RecordHeaderNew, table: DataFrameTable): CAPSNodeTable = CAPSNodeTable(mapping, table)
+}
 
 object CAPSNodeTable {
 
@@ -184,9 +207,16 @@ object CAPSNodeTable {
 }
 
 case class CAPSRelationshipTable(
-  mapping: RelationshipMapping,
-  table: DataFrameTable
-) extends RelationshipTable(mapping, table) with CAPSEntityTable
+  override val mapping: RelationshipMapping,
+  override val table: DataFrameTable
+) extends RelationshipTable(mapping, table) with CAPSEntityTable {
+
+  override type R = CAPSRelationshipTable
+
+  override def from(
+    header: RecordHeaderNew,
+    table: DataFrameTable): CAPSRelationshipTable = CAPSRelationshipTable(mapping, table)
+}
 
 object CAPSRelationshipTable {
 
@@ -263,7 +293,8 @@ object CAPSRelationshipTable {
   * @param mapping mapping from input data description to a Cypher node
   * @param table   input data frame
   */
-abstract class NodeTable[T <: CypherTable](mapping: NodeMapping, table: T) extends EntityTable[T] {
+abstract class NodeTable(mapping: NodeMapping, table: DataFrameTable)
+  extends EntityTable[DataFrameTable] with RecordBehaviour {
 
   override lazy val schema: CAPSSchema = {
     val propertyKeys = mapping.propertyMapping.toSeq.map {
@@ -295,10 +326,8 @@ abstract class NodeTable[T <: CypherTable](mapping: NodeMapping, table: T) exten
   * @param mapping mapping from input data description to a Cypher relationship
   * @param table   input data frame
   */
-abstract class RelationshipTable[T <: CypherTable](
-  mapping: RelationshipMapping,
-  table: T
-) extends EntityTable[T] {
+abstract class RelationshipTable(mapping: RelationshipMapping, table: DataFrameTable)
+  extends EntityTable[DataFrameTable] with RecordBehaviour {
 
   override lazy val schema: CAPSSchema = {
     val relTypes = mapping.relTypeOrSourceRelTypeKey match {

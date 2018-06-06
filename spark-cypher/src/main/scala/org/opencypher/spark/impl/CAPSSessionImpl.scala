@@ -166,7 +166,7 @@ sealed class CAPSSessionImpl(val sparkSession: SparkSession)
     queryParameters: CypherMap): CAPSRecords = {
     val (expr, v) = alias
     val scan = planStart(graph, in.asCaps.header.vars)
-    val select = producer.projectField(IRField(v.name)(v.cypherType), expr, scan)
+    val select = producer.projectField(expr, IRField(v.name)(v.cypherType), scan)
     planPhysical(in, queryParameters, select).getRecords
   }
 

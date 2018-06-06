@@ -82,8 +82,10 @@ object CAPSRecords {
   private case class EmptyRow()
 }
 
-case class CAPSRecords(header: RecordHeaderNew, df: DataFrame)
-  (implicit val caps: CAPSSession) extends RelationalCypherRecords[DataFrameTable] with Serializable {
+case class CAPSRecords(header: RecordHeaderNew, df: DataFrame)(implicit val caps: CAPSSession)
+  extends RelationalCypherRecords[DataFrameTable]
+    with RecordBehaviour
+    with Serializable {
 
   override type R = CAPSRecords
 
@@ -97,42 +99,7 @@ case class CAPSRecords(header: RecordHeaderNew, df: DataFrame)
   //noinspection AccessorLikeMethodIsEmptyParen
   def toDF(): DataFrame = df
 
-  override lazy val columnType: Map[String, CypherType] = df.columnType
 
-  override def rows: Iterator[String => CypherValue] = {
-    toLocalIterator.asScala.map(_.value)
-  }
-
-  override def iterator: Iterator[CypherMap] = {
-    toLocalIterator.asScala
-  }
-
-  def toLocalIterator: java.util.Iterator[CypherMap] = {
-    toCypherMaps.toLocalIterator()
-  }
-
-  def foreachPartition(f: Iterator[CypherMap] => Unit): Unit = {
-    toCypherMaps.foreachPartition(f)
-  }
-
-  override def collect: Array[CypherMap] =
-    toCypherMaps.collect()
-
-  /**
-    * Converts all values stored in this table to instances of the corresponding CypherValue class.
-    * In particular, this de-flattens, or collects, flattened entities (nodes and relationships) into
-    * compact CypherNode/CypherRelationship objects.
-    *
-    * All values on each row are inserted into a CypherMap object mapped to the corresponding field name.
-    *
-    * @return a dataset of CypherMaps.
-    */
-  def toCypherMaps: Dataset[CypherMap] = {
-    import encoders._
-    df.map(rowToCypherMap(header))
-  }
-
-  override def size: Long = df.count()
 
   def cache(): CAPSRecords = {
     df.cache()
@@ -308,9 +275,6 @@ case class CAPSRecords(header: RecordHeaderNew, df: DataFrame)
     }
   }
 
-  override def show(implicit options: PrintOptions): Unit =
-    RecordsPrinter.print(this)
-
   override def toString: String = {
     val numRows = df.size
     if (header.isEmpty && numRows == 0) {
@@ -320,5 +284,39 @@ case class CAPSRecords(header: RecordHeaderNew, df: DataFrame)
     } else {
       s"CAPSRecords($header, table with $numRows rows)"
     }
+  }
+}
+
+trait RecordBehaviour extends RelationalCypherRecords[DataFrameTable] {
+
+  override def show(implicit options: PrintOptions): Unit =
+    RecordsPrinter.print(this)
+
+  override lazy val columnType: Map[String, CypherType] = table.df.columnType
+
+  override def rows: Iterator[String => CypherValue] = {
+    toLocalIterator.asScala.map(_.value)
+  }
+
+  override def iterator: Iterator[CypherMap] = {
+    toLocalIterator.asScala
+  }
+
+  def toLocalIterator: java.util.Iterator[CypherMap] = {
+    toCypherMaps.toLocalIterator()
+  }
+
+  def foreachPartition(f: Iterator[CypherMap] => Unit): Unit = {
+    toCypherMaps.foreachPartition(f)
+  }
+
+  override def collect: Array[CypherMap] =
+    toCypherMaps.collect()
+
+  override def size: Long = table.df.count()
+
+  def toCypherMaps: Dataset[CypherMap] = {
+    import encoders._
+    table.df.map(rowToCypherMap(header))
   }
 }

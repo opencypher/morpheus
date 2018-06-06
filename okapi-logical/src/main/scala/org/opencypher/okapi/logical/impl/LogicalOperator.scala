@@ -193,10 +193,10 @@ final case class ExpandInto(source: Var, rel: Var, target: Var, direction: Direc
   def rhs: LogicalOperator = in
 }
 
-final case class Project(expr: Expr, field: Option[Var], in: LogicalOperator, solved: SolvedQueryModel)
+final case class Project(projectExpr: (Expr, Option[Var]), in: LogicalOperator, solved: SolvedQueryModel)
     extends StackingLogicalOperator {
 
-  override val fields: Set[Var] = in.fields ++ field
+  override val fields: Set[Var] = in.fields ++ projectExpr._2
 }
 
 final case class Unwind(expr: Expr, field: Var, in: LogicalOperator, solved: SolvedQueryModel)

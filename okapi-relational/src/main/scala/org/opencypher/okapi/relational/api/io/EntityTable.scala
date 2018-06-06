@@ -5,17 +5,24 @@ import org.opencypher.okapi.api.schema.Schema
 import org.opencypher.okapi.api.table.{CypherRecords, CypherTable}
 import org.opencypher.okapi.api.types.{CTBoolean, CTInteger, CTNode, CypherType}
 import org.opencypher.okapi.impl.exception.IllegalArgumentException
+import org.opencypher.okapi.ir.api.block.{Asc, Desc, SortItem}
 import org.opencypher.okapi.ir.api.expr._
 import org.opencypher.okapi.ir.api.{Label, PropertyKey}
 import org.opencypher.okapi.relational.api.io.RelationalEntityMapping._
-import org.opencypher.okapi.relational.impl.physical.JoinType
+import org.opencypher.okapi.relational.impl.physical.{Ascending, Descending, JoinType, Order}
 import org.opencypher.okapi.relational.impl.table.RecordHeaderNew
 
 trait FlatRelationalTable[T <: FlatRelationalTable[T]] extends CypherTable {
 
+  this: T =>
+
   def select(cols: String*): T
 
+  def drop(cols: String*): T
+
   def unionAll(other: T): T
+
+  def orderBy(sortItems: (String, Order)*): T
 
   def distinct: T
 
@@ -48,6 +55,18 @@ trait RelationalCypherRecords[T <: FlatRelationalTable[T]] extends CypherRecords
     val selectedColumns = selectHeader.columns
     val selectedData = table.select(selectedColumns.toSeq.sorted: _*)
     from(selectHeader, selectedData)
+  }
+
+  def drop(exprs: Expr*): R = {
+    select((header.expressions -- exprs).toSeq: _*)
+  }
+
+  def orderBy(sortItems: SortItem[Expr]*): R = {
+    val tableSortItems: Seq[(String, Order)] = sortItems.map {
+      case Asc(expr) => header.column(expr) -> Ascending
+      case Desc(expr) => header.column(expr) -> Descending
+    }
+    from(header, table.orderBy(tableSortItems: _*))
   }
 
   def withAliases(originalToAlias: (Expr, Var)*): R = {

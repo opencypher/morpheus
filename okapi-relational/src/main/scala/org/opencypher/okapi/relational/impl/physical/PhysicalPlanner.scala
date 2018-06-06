@@ -28,7 +28,7 @@ package org.opencypher.okapi.relational.impl.physical
 
 import org.opencypher.okapi.api.graph.{CypherSession, PropertyGraph}
 import org.opencypher.okapi.api.table.CypherRecords
-import org.opencypher.okapi.api.types.{CTBoolean, CTNode, CTRelationship}
+import org.opencypher.okapi.api.types.{CTBoolean, CTNode}
 import org.opencypher.okapi.impl.exception.NotImplementedException
 import org.opencypher.okapi.ir.api.block.SortItem
 import org.opencypher.okapi.ir.api.expr._
@@ -37,7 +37,6 @@ import org.opencypher.okapi.logical.impl._
 import org.opencypher.okapi.relational.api.physical.{PhysicalOperator, PhysicalOperatorProducer, PhysicalPlannerContext, RuntimeContext}
 import org.opencypher.okapi.relational.impl.flat
 import org.opencypher.okapi.relational.impl.flat.FlatOperator
-import org.opencypher.okapi.relational.impl.syntax.RecordHeaderSyntax._
 import org.opencypher.okapi.relational.impl.table._
 
 class PhysicalPlanner[P <: PhysicalOperator[R, G, C], R <: CypherRecords, G <: PropertyGraph, C <: RuntimeContext[R, G]](producer: PhysicalOperatorProducer[P, R, G, C])
@@ -55,8 +54,7 @@ class PhysicalPlanner[P <: PhysicalOperator[R, G, C], R <: CypherRecords, G <: P
       case flat.Select(fields, in, header) =>
 
         val selectExpressions = fields
-          .flatMap(header.selfWithChildren)
-          .map(_.content.key)
+          .flatMap(header.ownedBy)
           .distinct
 
         producer.planSelect(process(in), selectExpressions.map(_ -> None), header)
@@ -88,13 +86,13 @@ class PhysicalPlanner[P <: PhysicalOperator[R, G, C], R <: CypherRecords, G <: P
         @flat.NodeScan(v, in, header) => producer.planNodeScan(process(in), op.sourceGraph, v, header)
 
       case op
-        @flat.EdgeScan(e, in, header) => producer.planRelationshipScan(process(in), op.sourceGraph, e, header)
+        @flat.RelationshipScan(e, in, header) => producer.planRelationshipScan(process(in), op.sourceGraph, e, header)
 
       case flat.Alias(expr, alias, in, header) => producer.planAlias(process(in), expr, alias, header)
 
       case flat.Unwind(list, item, in, header) =>
         val explodeExpr = Explode(list)(item.cypherType)
-        val withExplodedHeader = in.header.addContent(ProjectedExpr(explodeExpr))
+        val withExplodedHeader = in.header.withExpr(explodeExpr)
         val withExploded = producer.planProject(process(in), explodeExpr, withExplodedHeader)
         producer.planAlias(withExploded, explodeExpr, item, header)
 
@@ -226,56 +224,40 @@ class PhysicalPlanner[P <: PhysicalOperator[R, G, C], R <: CypherRecords, G <: P
     constructGraphPlan
   }
 
-  private def planOptional(lhs: FlatOperator, rhs: FlatOperator, header: IRecordHeader)(implicit context: PhysicalPlannerContext[P, R]) = {
+  private def planOptional(lhs: FlatOperator, rhs: FlatOperator, header: RecordHeaderNew)(implicit context: PhysicalPlannerContext[P, R]) = {
     val lhsData = process(lhs)
     val rhsData = process(rhs)
     val lhsHeader = lhs.header
     val rhsHeader = rhs.header
 
-    // 1. Compute fields between left and right side
-    val commonFields = lhsHeader.slots.map(_.content).intersect(rhsHeader.slots.map(_.content))
+    def generateUniqueName = s"tmp${System.nanoTime}"
 
-    val (joinSlots, otherCommonSlots) = commonFields.partition {
-      case _: OpaqueField => true
-      case _ => false
-    }
+    // 1. Compute expressions between left and right side
+    val commonExpressions = lhsHeader.expressions.intersect(rhsHeader.expressions)
+    val joinExprs = commonExpressions.collect { case v: Var => v }
+    val otherExpressions = commonExpressions -- joinExprs
 
-    val joinFields = joinSlots
-      .collect { case OpaqueField(v) => v }
-      .distinct
+    // 2. Remove siblings of the join expressions and other common fields
+    val expressionsToRemove = joinExprs
+      .flatMap(v => rhsHeader.ownedBy(v) - v)
+      .union(otherExpressions)
+    val rhsHeaderWithDropped = rhsHeader.select(rhsHeader.expressions -- expressionsToRemove)
+    val rhsWithDropped = producer.planDrop(rhsData, expressionsToRemove, rhsHeaderWithDropped)
 
-    val otherCommonFields = otherCommonSlots
-      .map(_.key)
+    // 3. Rename the join expressions on the right hand side, in order to make them distinguishable after the join
+    val joinFieldRenames = joinExprs.map(e => e -> Var(generateUniqueName)(e.cypherType)).toMap
 
-    // 2. Remove siblings of the join fields and other common fields
-    val fieldsToRemove = joinFields
-      .flatMap(rhsHeader.childSlots)
-      .map(_.content.key)
-      .union(otherCommonFields)
-      .distinct
-
-    val rhsHeaderWithDropped = fieldsToRemove.flatMap(rhsHeader.slotsFor).foldLeft(rhsHeader)(_ - _)
-    val rhsWithDropped = producer.planDrop(rhsData, fieldsToRemove, rhsHeaderWithDropped)
-
-    // 3. Rename the join fields on the right hand side, in order to make them distinguishable after the join
-    val joinFieldRenames = joinFields.map(f => f -> Var(rhsHeader.generateUniqueName)(f.cypherType)).toMap
-
-    val rhsWithRenamedSlots = rhsHeaderWithDropped.slots.collect {
-      case RecordSlot(i, OpaqueField(v)) if joinFieldRenames.contains(v) => RecordSlot(i, OpaqueField(joinFieldRenames(v)))
+    val rhsWithRenamedSlots = rhsHeaderWithDropped.expressions.collect {
+      case v: Var if joinFieldRenames.contains(v) => joinFieldRenames(v)
       case other => other
     }
-    val rhsHeaderWithRenamed = IRecordHeader.from(rhsWithRenamedSlots.toList)
+    val rhsHeaderWithRenamed = RecordHeaderNew.from(rhsWithRenamedSlots.toList)
     val rhsWithRenamed = producer.planAlias(rhsWithDropped, joinFieldRenames.toSeq, rhsHeaderWithRenamed)
 
     // 4. Left outer join the left side and the processed right side
     val joined = producer.planJoin(lhsData, rhsWithRenamed, joinFieldRenames.toSeq, lhsHeader ++ rhsHeaderWithRenamed, LeftOuterJoin)
 
-    // 5. Drop the duplicate join fields
-    producer.planDrop(joined, joinFieldRenames.values.toSeq, header)
-  }
-
-  private def relTypes(r: Var): Set[String] = r.cypherType match {
-    case t: CTRelationship => t.types
-    case _ => Set.empty
+    // 5. Drop the duplicate join expressions
+    producer.planDrop(joined, joinFieldRenames.values.toSet, header)
   }
 }
