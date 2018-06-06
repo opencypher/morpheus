@@ -30,15 +30,13 @@ import org.apache.spark.sql.Row
 import org.opencypher.okapi.api.schema.Schema
 import org.opencypher.okapi.api.types._
 import org.opencypher.okapi.api.value.CypherValue._
-import org.opencypher.okapi.api.value._
 import org.opencypher.okapi.ir.api.expr._
 import org.opencypher.okapi.ir.api.{Label, PropertyKey}
-import org.opencypher.okapi.relational.impl.syntax.RecordHeaderSyntax._
 import org.opencypher.okapi.relational.impl.table._
 import org.opencypher.okapi.testing.Bag
 import org.opencypher.okapi.testing.Bag._
 import org.opencypher.spark.api.value.CAPSNode
-import org.opencypher.spark.impl.table.CAPSRecordHeader._
+import org.opencypher.spark.impl.convert.SparkConversions._
 import org.opencypher.spark.schema.CAPSSchema._
 import org.opencypher.spark.testing.support.creation.caps.{CAPSPatternGraphFactory, CAPSTestGraphFactory}
 
@@ -402,13 +400,13 @@ class CAPSPatternGraphTest extends CAPSGraphTest {
 
   test("Supports node scans from ad-hoc table") {
     val n: Var = Var("n")(CTNode)
-    val fields = Seq(
-      OpaqueField(Var("p")(CTNode("Person"))),
-      OpaqueField(n),
-      ProjectedExpr(HasLabel(n, Label("Person"))(CTBoolean)),
-      OpaqueField(Var("q")(CTNode("Foo")))
+    val exprs = Set(
+      Var("p")(CTNode("Person")),
+      n,
+      HasLabel(n, Label("Person"))(CTBoolean),
+      Var("q")(CTNode("Foo"))
     )
-    val header = IRecordHeader.empty.addContents(fields)
+    val header = RecordHeaderNew.from(exprs)
 
     val df = sparkSession.createDataFrame(
       List(
@@ -422,7 +420,7 @@ class CAPSPatternGraphTest extends CAPSGraphTest {
       .withNodePropertyKeys("Foo")()
       .asCaps
 
-    val patternGraph = CAPSGraph.create(CAPSRecords.verify(header, df), schema)
+    val patternGraph = CAPSGraph.create(CAPSRecords(header, df), schema)
 
     patternGraph.nodes("n", CTNode("Person")).collect.toBag should equal(
       Bag(
@@ -436,20 +434,21 @@ class CAPSPatternGraphTest extends CAPSGraphTest {
     val p: Var = Var("p")(CTNode)
     val c: Var = Var("c")(CTNode)
     val x: Var = Var("x")(CTRelationship("IN"))
-    val fields = Seq(
-      OpaqueField(c),
-      ProjectedExpr(HasLabel(c, Label("Customer"))(CTBoolean)),
-      ProjectedField(Var("cName")(CTString.nullable), Property(c, PropertyKey("name"))(CTString.nullable)),
-      OpaqueField(p),
-      ProjectedExpr(HasLabel(p, Label("Person"))(CTBoolean)),
-      ProjectedField(Var("pName")(CTString.nullable), Property(p, PropertyKey("name"))(CTString)),
-      ProjectedExpr(Property(p, PropertyKey("region"))(CTString)),
-      ProjectedExpr(StartNode(x)(CTInteger)),
-      ProjectedExpr(EndNode(x)(CTInteger)),
-      OpaqueField(x),
-      ProjectedExpr(Type(x)(CTString))
+    val exprs = Seq(
+      c,
+      HasLabel(c, Label("Customer"))(CTBoolean),
+      Var("cName")(CTString.nullable),
+      Property(c, PropertyKey("name"))(CTString.nullable),
+      p,
+      HasLabel(p, Label("Person"))(CTBoolean),
+      Var("pName")(CTString.nullable), Property(p, PropertyKey("name"))(CTString),
+      Property(p, PropertyKey("region"))(CTString),
+      StartNode(x)(CTInteger),
+      EndNode(x)(CTInteger),
+      x,
+      Type(x)(CTString)
     )
-    val header = IRecordHeader.empty.addContents(fields)
+    val header = RecordHeaderNew.from(exprs)
 
     val df = sparkSession.createDataFrame(
       List(
@@ -475,7 +474,7 @@ class CAPSPatternGraphTest extends CAPSGraphTest {
       .withRelationshipType("IN")
       .asCaps
 
-    val patternGraph = CAPSGraph.create(CAPSRecords.verify(header, df), schema)
+    val patternGraph = CAPSGraph.create(CAPSRecords(header, df), schema)
 
     //    patternGraph.nodes("n").toCypherMaps.collect().toSet should equal(Set(
     //      CypherMap("n" ->  0L),
@@ -486,12 +485,12 @@ class CAPSPatternGraphTest extends CAPSGraphTest {
 
   test("Returns only distinct results") {
     val p = Var("p")(CTNode("Person"))
-    val fields = Seq(
-      OpaqueField(p),
-      ProjectedExpr(HasLabel(p, Label("Person"))(CTBoolean)),
-      ProjectedExpr(Property(p, PropertyKey("name"))(CTString))
+    val exprs = Seq(
+      p,
+      HasLabel(p, Label("Person"))(CTBoolean),
+      Property(p, PropertyKey("name"))(CTString)
     )
-    val header = IRecordHeader.empty.addContents(fields)
+    val header = RecordHeaderNew.from(exprs)
 
     val sparkHeader = header.toStructType
     val df = sparkSession.createDataFrame(
@@ -505,7 +504,7 @@ class CAPSPatternGraphTest extends CAPSGraphTest {
       .withNodePropertyKeys("Person")("name" -> CTString)
       .asCaps
 
-    val patternGraph = CAPSGraph.create(CAPSRecords.verify(header, df), schema)
+    val patternGraph = CAPSGraph.create(CAPSRecords(header, df), schema)
 
     patternGraph.nodes("n", CTNode).collect.toBag should equal(
       Bag(
@@ -516,15 +515,15 @@ class CAPSPatternGraphTest extends CAPSGraphTest {
   test("Supports node scans when different variables have the same property keys") {
     val p = Var("p")(CTNode("Person"))
     val e = Var("e")(CTNode("Employee"))
-    val fields = Seq(
-      OpaqueField(p),
-      ProjectedExpr(HasLabel(p, Label("Person"))(CTBoolean)),
-      OpaqueField(e),
-      ProjectedExpr(HasLabel(e, Label("Employee"))(CTBoolean)),
-      ProjectedExpr(Property(p, PropertyKey("name"))(CTString)),
-      ProjectedField(Var("foo")(CTString), Property(e, PropertyKey("name"))(CTString))
+    val exprs = Seq(
+      p,
+      HasLabel(p, Label("Person"))(CTBoolean),
+      e,
+      HasLabel(e, Label("Employee"))(CTBoolean),
+      Property(p, PropertyKey("name"))(CTString),
+      Var("foo")(CTString), Property(e, PropertyKey("name"))(CTString)
     )
-    val header = IRecordHeader.empty.addContents(fields)
+    val header = RecordHeaderNew.from(exprs)
 
     val sparkHeader = header.toStructType
     val df = sparkSession.createDataFrame(
@@ -539,7 +538,7 @@ class CAPSPatternGraphTest extends CAPSGraphTest {
       .withNodePropertyKeys("Employee")("name" -> CTString)
       .asCaps
 
-    val patternGraph = CAPSGraph.create(CAPSRecords.verify(header, df), schema)
+    val patternGraph = CAPSGraph.create(CAPSRecords(header, df), schema)
 
     patternGraph.nodes("n", CTNode).collect.toBag should equal(
       Bag(
@@ -556,15 +555,15 @@ class CAPSPatternGraphTest extends CAPSGraphTest {
     val p = Var("p")(CTNode("Person"))
     val e = Var("e")(CTNode("Employee"))
     val pe = Var("pe")(CTNode("Person", "Employee"))
-    val fields = Seq(
-      OpaqueField(p),
-      OpaqueField(e),
-      OpaqueField(pe),
-      ProjectedExpr(Property(p, PropertyKey("name"))(CTString)),
-      ProjectedExpr(Property(e, PropertyKey("name"))(CTString.nullable)),
-      ProjectedExpr(Property(pe, PropertyKey("name"))(CTString))
+    val exprs = Seq(
+      p,
+      e,
+      pe,
+      Property(p, PropertyKey("name"))(CTString),
+      Property(e, PropertyKey("name"))(CTString.nullable),
+      Property(pe, PropertyKey("name"))(CTString)
     )
-    val header = IRecordHeader.empty.addContents(fields)
+    val header = RecordHeaderNew.from(exprs)
 
     val sparkHeader = header.toStructType
     val df = sparkSession.createDataFrame(
@@ -580,7 +579,7 @@ class CAPSPatternGraphTest extends CAPSGraphTest {
       .withNodePropertyKeys("Employee", "Person")("name" -> CTString)
       .asCaps
 
-    val patternGraph = CAPSGraph.create(CAPSRecords.verify(header, df), schema)
+    val patternGraph = CAPSGraph.create(CAPSRecords(header, df), schema)
 
     patternGraph.nodes("n", CTNode).toMaps should equal(
       Bag(
@@ -725,9 +724,9 @@ class CAPSPatternGraphTest extends CAPSGraphTest {
       .join(readsDf, personsDf.col("p") === readsDf.col("____source(r)"))
       .join(booksDf, readsDf.col("____target(r)") === booksDf.col("b"))
 
-    val slots = persons.header.slots ++ reads.header.slots ++ books.header.slots
-    val joinHeader = IRecordHeader.from(slots.map(_.content): _*)
+    val exprs = persons.header.expressions ++ reads.header.expressions ++ books.header.expressions
+    val joinHeader = RecordHeaderNew.from(exprs)
 
-    CAPSGraph.create(CAPSRecords.verify(joinHeader, joinedDf), inputGraph.schema)
+    CAPSGraph.create(CAPSRecords(joinHeader, joinedDf), inputGraph.schema)
   }
 }
