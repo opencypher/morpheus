@@ -138,12 +138,16 @@ object CAPSGraph {
     }
 
   def create(nodeTable: CAPSNodeTable, entityTables: CAPSEntityTable*)(implicit caps: CAPSSession): CAPSGraph = {
-    create(Set(0), nodeTable, entityTables: _*)
+    create(Set(0), None, nodeTable, entityTables: _*)
   }
 
-  def create(tags: Set[Int], nodeTable: CAPSNodeTable, entityTables: CAPSEntityTable*)(implicit caps: CAPSSession): CAPSGraph = {
+  def create(maybeSchema: Option[CAPSSchema], nodeTable: CAPSNodeTable, entityTables: CAPSEntityTable*)(implicit caps: CAPSSession): CAPSGraph = {
+    create(Set(0), maybeSchema, nodeTable, entityTables: _*)
+  }
+
+  def create(tags: Set[Int], maybeSchema: Option[CAPSSchema], nodeTable: CAPSNodeTable, entityTables: CAPSEntityTable*)(implicit caps: CAPSSession): CAPSGraph = {
     val allTables = nodeTable +: entityTables
-    val schema = allTables.map(_.schema).reduce[Schema](_ ++ _).asCaps
+    val schema = maybeSchema.getOrElse(allTables.map(_.schema).reduce[Schema](_ ++ _).asCaps)
     new CAPSScanGraph(allTables, schema, tags)
   }
 
