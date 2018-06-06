@@ -70,7 +70,7 @@ object CAPSCypherType {
       case CTIntegerOrNull => StructField(column, LongType, nullable = true)
       case CTBoolean => StructField(column, BooleanType, nullable = false)
       case CTBooleanOrNull => StructField(column, BooleanType, nullable = true)
-      case CTFloat => StructField(column, DoubleType, nullable = true)
+      case CTFloat => StructField(column, DoubleType, nullable = false)
       case CTFloatOrNull => StructField(column, DoubleType, nullable = true)
       case CTString => StructField(column, StringType, nullable = false)
       case CTStringOrNull => StructField(column, StringType, nullable = true)
