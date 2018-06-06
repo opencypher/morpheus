@@ -28,6 +28,7 @@ package org.opencypher.spark.impl
 
 import org.apache.spark.sql.Row
 import org.opencypher.okapi.api.table.CypherRecords
+import org.opencypher.okapi.api.value.CypherValue.{CypherMap, CypherValue}
 import org.opencypher.okapi.impl.exception.IllegalArgumentException
 import org.opencypher.okapi.testing.Bag
 import org.opencypher.okapi.testing.Bag._
@@ -161,24 +162,17 @@ class CAPSRecordsAcceptanceTest extends CAPSTestSuite with Neo4jServerFixture wi
     result.getRecords shouldHaveSize 79 andContain tuple
   }
 
-  // TODO: Replace with Bag testing
   implicit class OtherRichRecords(records: CypherRecords) {
     val capsRecords = records.asCaps
 
     def shouldHaveSize(size: Int) = {
-      val tuples = capsRecords.df.collect().toSeq.map { r =>
-        val cells = capsRecords.header.slots.map { s =>
-          r.get(s.index)
-        }
+      val maps: Bag[CypherMap] = capsRecords.toMaps
 
-        asProduct(cells)
-      }
-
-      tuples.size shouldBe size
+      maps.size shouldBe size
 
       new {
-        def andContain(contents: Product): Unit = {
-          tuples should contain(contents)
+        def andContain(contents: Map[String, CypherValue]): Unit = {
+          maps should contain(contents)
         }
 
         def andContain(contents: Any): Unit = andContain(Tuple1(contents))

@@ -34,7 +34,7 @@ import org.opencypher.okapi.api.types.CTNode
 import org.opencypher.okapi.impl.table.RecordsPrinter
 import org.opencypher.okapi.impl.util.PrintOptions
 import org.opencypher.okapi.ir.api.expr.Var
-import org.opencypher.okapi.relational.impl.table.{IRecordHeader, OpaqueField}
+import org.opencypher.okapi.relational.impl.table.RecordHeaderNew
 import org.opencypher.spark.testing.CAPSTestSuite
 import org.opencypher.spark.testing.fixture.GraphConstructionFixture
 
@@ -80,7 +80,8 @@ class CAPSRecordsPrinterTest extends CAPSTestSuite with GraphConstructionFixture
 
   it("prints a single column with three rows") {
     // Given
-    val records = CAPSRecords.create(Seq(Row1("myString"), Row1("foo"), Row1(null)))
+    val df = sparkSession.createDataFrame(Seq(Row1("myString"), Row1("foo"), Row1(null))).toDF("foo")
+    val records = CAPSRecords.wrap(df)
 
     // When
     print(records)
@@ -102,12 +103,12 @@ class CAPSRecordsPrinterTest extends CAPSTestSuite with GraphConstructionFixture
 
   it("prints three columns with three rows") {
     // Given
-    val records = CAPSRecords.create(
-      Seq(
-        Row3("myString", 4L, false),
-        Row3("foo", 99999999L, true),
-        Row3(null, -1L, true)
-      ))
+    val df = sparkSession.createDataFrame(Seq(
+      Row3("myString", 4L, false),
+      Row3("foo", 99999999L, true),
+      Row3(null, -1L, true)
+    )).toDF("foo", "v", "veryLongColumnNameWithBoolean")
+    val records = CAPSRecords.wrap(df)
 
     // When
     print(records)
@@ -162,10 +163,8 @@ class CAPSRecordsPrinterTest extends CAPSTestSuite with GraphConstructionFixture
 
   private case class Row3(foo: String, v: Long, veryLongColumnNameWithBoolean: Boolean)
 
-  private def headerOf(fields: Symbol*): IRecordHeader = {
-    val value1 = fields.map(f => OpaqueField(Var(f.name)(CTNode)))
-    val header = IRecordHeader.empty.addContents(value1)
-    header
+  private def headerOf(fields: Symbol*): RecordHeaderNew = {
+    RecordHeaderNew.from(fields.map(f => Var(f.name)(CTNode)))
   }
 
   private def getString =
