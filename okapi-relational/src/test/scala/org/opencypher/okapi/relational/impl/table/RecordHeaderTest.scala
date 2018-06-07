@@ -64,6 +64,10 @@ class RecordHeaderTest extends FunSpec with Matchers {
     nHeader.expressions should equalWithTracing(nExprs)
   }
 
+  it("should return the same header if added expressions are empty") {
+    nHeader.withExprs(Set.empty) should equal(nHeader)
+  }
+
   it("can return all vars") {
     nHeader.vars should equalWithTracing(Set(n))
     rHeader.vars should equalWithTracing(Set(r))
@@ -283,6 +287,7 @@ class RecordHeaderTest extends FunSpec with Matchers {
     rHeader.relationshipsForType(CTRelationship("R")) should equalWithTracing(Set(r))
     rHeader.relationshipsForType(CTRelationship("R", "S")) should equalWithTracing(Set(r))
     rHeader.relationshipsForType(CTRelationship("S")) should equalWithTracing(Set.empty)
+    rHeader.relationshipsForType(CTRelationship) should equalWithTracing(Set(r))
   }
 
   it("returns selected entity vars and their corresponding columns") {

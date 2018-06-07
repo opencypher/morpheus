@@ -189,7 +189,7 @@ case class RecordHeader(exprToColumn: Map[Expr, String]) {
         case CTRelationship(types, _) => types
         case _ => Set.empty[String]
       }
-      (physicalTypes ++ logicalTypes).exists(possibleTypes.contains)
+      possibleTypes.isEmpty || (physicalTypes ++ logicalTypes).exists(possibleTypes.contains)
     }
   }
 
@@ -234,7 +234,7 @@ case class RecordHeader(exprToColumn: Map[Expr, String]) {
 
   def withExprs[T <: Expr](exprs: Set[T]): RecordHeader = {
     if (exprs.isEmpty) {
-      RecordHeader.empty
+      this
     } else {
       withExprs(exprs.head, exprs.tail.toSeq: _*)
     }

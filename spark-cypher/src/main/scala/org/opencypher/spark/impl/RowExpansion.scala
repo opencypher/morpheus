@@ -29,7 +29,7 @@ package org.opencypher.spark.impl
 import org.apache.spark.sql.Row
 import org.opencypher.okapi.api.types.{CTNode, CTRelationship}
 import org.opencypher.okapi.impl.exception.IllegalArgumentException
-import org.opencypher.okapi.ir.api.Label
+import org.opencypher.okapi.ir.api.{Label, RelType}
 import org.opencypher.okapi.ir.api.expr._
 import org.opencypher.okapi.relational.impl.table._
 import org.opencypher.spark.impl.convert.SparkConversions._
@@ -46,12 +46,17 @@ case class RowExpansion(
     case _ => Set.empty[String]
   }
 
+  private lazy val targetRelTypes = targetVar.cypherType match {
+    case CTRelationship(relTypes, _) => relTypes
+    case _ => Set.empty[String]
+  }
+
   private val structType = targetHeader.toStructType
 
   private lazy val labelIndexLookupTable = entitiesWithChildren.map {
     case (node, exprs) =>
       val labelIndicesForNode = exprs.collect {
-        case l@HasLabel(_, Label(name)) if targetLabels.contains(name) =>
+        case l@HasLabel(n, Label(name)) if n == node && targetLabels.contains(name) =>
           structType.fieldIndex(targetHeader.column(l.withOwner(targetVar)))
       }
       node -> labelIndicesForNode
@@ -59,10 +64,10 @@ case class RowExpansion(
 
   private lazy val typeIndexLookupTable = entitiesWithChildren.map {
     case (rel, slots) =>
-      val typeIndexForRel = slots.collectFirst {
-        case h@HasType(r, _) if r == rel =>
+      val typeIndexForRel = slots.collect {
+        case h@HasType(r, RelType(relType)) if r == rel && targetRelTypes.contains(relType)=>
           structType.fieldIndex(targetHeader.column(h.withOwner(targetVar)))
-      }.getOrElse(throw IllegalArgumentException(s"a type column for relationship $rel"))
+      }
       rel -> typeIndexForRel
   }
 
@@ -76,14 +81,18 @@ case class RowExpansion(
             val hasAllRequiredLabels = indices.forall(adaptedRow.getBoolean)
             if (hasAllRequiredLabels) Some(adaptedRow)
             else None
-          case CTRelationship(types, _) if types.isEmpty =>
+
+            // OR-semantics and no target type
+          case CTRelationship(_, _) if targetRelTypes.isEmpty =>
             Some(adaptedRow)
-          case CTRelationship(types, _) =>
-            val index = typeIndexLookupTable(entity)
-            val relType = adaptedRow.getString(index)
-            val hasMatchingType = types.contains(relType)
-            if (hasMatchingType) Some(adaptedRow)
+
+          // OR-semantics and one or more target types
+          case CTRelationship(_, _) =>
+            val indices = typeIndexLookupTable(entity)
+            val hasRelType = indices.exists(adaptedRow.getBoolean)
+            if (hasRelType) Some(adaptedRow)
             else None
+
           case _ =>
             throw IllegalArgumentException("an entity variable", entity)
         }
