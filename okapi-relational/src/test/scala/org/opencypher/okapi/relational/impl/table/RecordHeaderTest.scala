@@ -254,8 +254,8 @@ class RecordHeaderTest extends FunSpec with Matchers {
   }
 
   it("returns type for a rel") {
-    rHeader.typeFor(r) should equalWithTracing(Some(rRelType))
-    nHeader.typeFor(r) should equalWithTracing(None)
+    rHeader.typesFor(r) should equalWithTracing(Set(rRelType))
+    nHeader.typesFor(r) should equalWithTracing(Set.empty)
   }
 
   it("returns all entity vars") {

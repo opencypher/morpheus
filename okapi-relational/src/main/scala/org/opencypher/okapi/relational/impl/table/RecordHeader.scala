@@ -117,8 +117,8 @@ case class RecordHeader(exprToColumn: Map[Expr, String]) {
     }
   }
 
-  def typeFor(r: Var): Option[HasType] = {
-    ownedBy(r).collectFirst {
+  def typesFor(r: Var): Set[HasType] = {
+    ownedBy(r).collect {
       case t: HasType => t
     }
   }
@@ -182,15 +182,14 @@ case class RecordHeader(exprToColumn: Map[Expr, String]) {
     val possibleTypes = relType.types
 
     relationshipVars.filter { relVar =>
-      val physicalType = typeFor(relVar) match {
-        case Some(HasType(_, RelType(name))) => Set(name)
-        case None => Set.empty[String]
+      val physicalTypes = typesFor(relVar).map {
+        case HasType(_, RelType(name)) => name
       }
       val logicalTypes = relVar.cypherType match {
         case CTRelationship(types, _) => types
         case _ => Set.empty[String]
       }
-      (physicalType ++ logicalTypes).exists(possibleTypes.contains)
+      (physicalTypes ++ logicalTypes).exists(possibleTypes.contains)
     }
   }
 

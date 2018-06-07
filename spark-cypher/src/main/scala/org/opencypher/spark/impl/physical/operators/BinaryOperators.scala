@@ -351,22 +351,27 @@ final case class ConstructGraph(
     node: ConstructedNode,
     constructedTable: CAPSRecords
   ): Map[Expr, Column] = {
-    val col = functions.lit(true)
 
-    // TODO: why not Map instead of Set?
+    val idTuple = node.v -> generateId(columnIdPartition, numberOfColumnPartitions).setTag(newEntityTag)
+
     val copiedLabelTuples = node.baseEntity match {
       case Some(origNode) => copyExpressions(node.v, constructedTable)(_.labelsFor(origNode))
       case None => Map.empty
     }
 
-    val labelTuples = node.labels.map { label => HasLabel(node.v, label)(CTBoolean) -> col }.toMap ++ copiedLabelTuples
+    val newLabelTuples = node.labels.map {
+      label => HasLabel(node.v, label)(CTBoolean) -> functions.lit(true)
+    }.toMap
 
     val propertyTuples = node.baseEntity match {
       case Some(origNode) => copyExpressions(node.v, constructedTable)(_.propertiesFor(origNode))
       case None => Map.empty
     }
 
-    labelTuples ++ propertyTuples + (node.v -> generateId(columnIdPartition, numberOfColumnPartitions).setTag(newEntityTag))
+    newLabelTuples ++
+      copiedLabelTuples ++
+      propertyTuples +
+      idTuple
   }
 
   /**
@@ -398,6 +403,9 @@ final case class ConstructGraph(
     val header = constructedTable.header
     val inData = constructedTable.df
 
+    // id needs to be generated
+    val idTuple = rel -> generateId(columnIdPartition, numberOfColumnPartitions).setTag(newEntityTag)
+
     // source and target are present: just copy
     val sourceTuple = {
       val dfColumn = inData.col(header.column(source))
@@ -408,18 +416,14 @@ final case class ConstructGraph(
       EndNode(rel)(CTInteger) -> dfColumn
     }
 
-    // id needs to be generated
-    val relTuple = rel -> generateId(columnIdPartition, numberOfColumnPartitions).setTag(newEntityTag)
-
-    val typeTuple = {
+    val typeTuple: Map[Expr, Column] = {
       typOpt match {
         // type is set
         case Some(t) =>
-          val col = functions.lit(t)
-          HasType(rel, RelType(t))(CTString) -> col
+          Map(HasType(rel, RelType(t))(CTBoolean) -> functions.lit(true))
         case None =>
           // When no type is present, it needs to be a copy of a base relationship
-          copyExpressions(rel, constructedTable)(header => Set(header.typeFor(baseRelOpt.get).get)).head
+          copyExpressions(rel, constructedTable)(_.typesFor(baseRelOpt.get))
       }
     }
 
@@ -429,7 +433,7 @@ final case class ConstructGraph(
       case None => Map.empty
     }
 
-    propertyTuples + relTuple + typeTuple + sourceTuple + targetTuple
+    propertyTuples ++ typeTuple + idTuple + sourceTuple + targetTuple
   }
 
   private def copyExpressions[T <: Expr](targetVar: Var, records: CAPSRecords)

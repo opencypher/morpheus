@@ -49,6 +49,10 @@ object CAPSFunctions {
     array :+ element
   }
 
+  def get_rel_types(relTypeNames: Seq[String]): UserDefinedFunction = {
+    get_node_labels(relTypeNames)
+  }
+
   def get_node_labels(labelNames: Seq[String]): UserDefinedFunction = {
     functions.udf(filterWithMask(labelNames) _, ArrayType(StringType, containsNull = false))
   }

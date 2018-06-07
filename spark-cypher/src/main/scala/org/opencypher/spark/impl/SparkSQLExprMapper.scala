@@ -33,7 +33,7 @@ import org.opencypher.okapi.api.value.CypherValue.CypherList
 import org.opencypher.okapi.impl.exception.{IllegalArgumentException, IllegalStateException, NotImplementedException}
 import org.opencypher.okapi.ir.api.expr._
 import org.opencypher.okapi.relational.impl.table.RecordHeader
-import org.opencypher.spark.impl.CAPSFunctions.{array_contains, get_node_labels, get_property_keys}
+import org.opencypher.spark.impl.CAPSFunctions.{array_contains, get_node_labels, get_property_keys, get_rel_types}
 import org.opencypher.spark.impl.convert.SparkConversions._
 import org.opencypher.spark.impl.physical.CAPSRuntimeContext
 
@@ -163,8 +163,10 @@ object SparkSQLExprMapper {
         case Type(inner) =>
           inner match {
             case v: Var =>
-              val typeExpr = header.typeFor(v).get
-              df.col(header.column(typeExpr))
+              val typeExprs = header.typesFor(v)
+              val (relTypeNames, relTypeColumn) = typeExprs.toSeq.map(e => e.relType.name -> e.asSparkSQLExpr).unzip
+              val booleanLabelFlagColumn = functions.array(relTypeColumn: _*)
+              get_rel_types(relTypeNames)(booleanLabelFlagColumn)
             case _ =>
               throw NotImplementedException(s"Inner expression $inner of $expr is not yet supported (only variables)")
           }
