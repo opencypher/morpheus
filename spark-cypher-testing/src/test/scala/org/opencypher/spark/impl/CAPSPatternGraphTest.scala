@@ -287,8 +287,8 @@ class CAPSPatternGraphTest extends CAPSGraphTest with RecordsVerificationFixture
       "____n:Swedish",
       "____n_dot_luckyNumberINTEGER",
       "____n_dot_nameSTRING",
-      "____n_dot_yearINTEGER",
-      "____n_dot_titleSTRING"
+      "____n_dot_titleSTRING",
+      "____n_dot_yearINTEGER"
     )
     val data = Bag(
       Row(0L, false, true, true, 23L, "Mats", null, null),
