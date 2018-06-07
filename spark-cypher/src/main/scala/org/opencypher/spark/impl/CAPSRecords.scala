@@ -164,7 +164,7 @@ case class CAPSRecords(header: RecordHeader, df: DataFrame)(implicit val caps: C
     val entityVars = header.entityVars
 
     val oldEntity = entityVars.toSeq match {
-      case head :: Nil => head
+      case Seq(one) => one
       case Nil => throw IllegalArgumentException("one entity in the record header", s"no entity in $header")
       case _ => throw IllegalArgumentException("one entity in the record header", s"multiple entities in $header")
     }
@@ -215,7 +215,7 @@ case class CAPSRecords(header: RecordHeader, df: DataFrame)(implicit val caps: C
         val headerWithColumn = currentHeader.withExpr(expr)
 
         currentDf.withColumn(
-          currentHeader.column(expr), // TODO: possible mismatch between column name in updated header and new column name
+          headerWithColumn.column(expr), // TODO: possible mismatch between column name in updated header and new column name
           newColumn.as(targetHeader.column(expr))) -> headerWithColumn
     }
     copy(targetHeader, dataWithMissingColumns)

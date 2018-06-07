@@ -153,13 +153,13 @@ case class RecordHeader(exprToColumn: Map[Expr, String]) {
 
   def nodeVars: Set[Var] = {
     exprToColumn.keySet.collect {
-      case v: Var if v.cypherType.superTypeOf(CTNode).isTrue => v
+      case v: Var if v.cypherType.subTypeOf(CTNode).isTrue => v
     }
   }
 
   def relationshipVars: Set[Var] = {
     exprToColumn.keySet.collect {
-      case v: Var if v.cypherType.superTypeOf(CTRelationship).isTrue => v
+      case v: Var if v.cypherType.subTypeOf(CTRelationship).isTrue => v
     }
   }
 

@@ -36,8 +36,8 @@ import Expr._
 
 class RecordHeaderTest extends FunSpec with Matchers {
 
-  val n: Var = Var("n")(CTNode)
-  val m: Var = Var("m")(CTNode)
+  val n: Var = Var("n")(CTNode("A", "B"))
+  val m: Var = Var("m")(CTNode("A", "B"))
   val o: Var = Var("o")(CTNode)
   val r: Var = Var("r")(CTRelationship)
 
