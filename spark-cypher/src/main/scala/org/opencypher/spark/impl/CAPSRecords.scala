@@ -205,7 +205,7 @@ case class CAPSRecords(header: RecordHeader, df: DataFrame)(implicit val caps: C
           case HasLabel(_, label) => if (entityLabels.contains(label.name)) TRUE_LIT else FALSE_LIT
           case HasType(_, relType) => if (entityLabels.contains(relType.name)) TRUE_LIT else FALSE_LIT
           case _ =>
-            if (expr.cypherType.isNullable) {
+            if (!expr.cypherType.isNullable) {
               throw UnsupportedOperationException(
                 s"Cannot align scan on $v by adding a NULL column, because the type for '$expr' is non-nullable"
               )

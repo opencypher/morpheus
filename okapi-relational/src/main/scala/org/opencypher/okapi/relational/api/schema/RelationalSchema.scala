@@ -40,7 +40,7 @@ object RelationalSchema {
     def headerForNode(node: Var): RecordHeader = {
       val labels: Set[String] = node.cypherType match {
         case CTNode(l, _) => l
-        case other     => throw IllegalArgumentException("CTNode", other)
+        case other     => throw IllegalArgumentException(CTNode, other)
       }
       headerForNode(node, labels)
     }
@@ -73,7 +73,7 @@ object RelationalSchema {
         case CTRelationship(_types, _) =>
           _types
         case other =>
-          throw IllegalArgumentException("CTRelationship", other.asInstanceOf[RecordHeader])
+          throw IllegalArgumentException(CTRelationship, other)
       }
 
       headerForRelationship(rel, types)
