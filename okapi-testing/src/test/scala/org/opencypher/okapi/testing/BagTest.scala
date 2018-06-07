@@ -26,26 +26,23 @@
  */
 package org.opencypher.okapi.testing
 
-object Bag {
+import org.opencypher.okapi.api.value.CypherValue.CypherMap
+import org.scalatest.{FunSpec, Matchers}
 
-  // Name for the map representation that we use to check equality of results where the order does not matter.
-  // Keys are the elements, the count is the number of times they appear.
-  type Bag[T <: Any] = Map[T, Int]
+class BagTest extends FunSpec with Matchers {
 
-  def apply[E](elements: E*): Bag[E] = {
-    elements.groupBy(identity).mapValues(_.size)
-  }
-
-  implicit class TraversableToBag[E](val t: Traversable[E]) {
-    def toBag: Bag[E] = Bag(t.toSeq: _*)
-  }
-
-  implicit class IteratorToBag[E](val i: Iterator[E]) {
-    def toBag: Bag[E] = Bag(i.toSeq: _*)
-  }
-
-  implicit class ArrayToBag[E](val a: Array[E]) {
-    def toBag: Bag[E] = Bag(a: _*)
+  it("considers maps with the same content equal") {
+    Bag(
+      CypherMap("p1" -> "a", "p2" -> "a"),
+      CypherMap("p1" -> "a", "p2" -> "b"),
+      CypherMap("p1" -> "b", "p2" -> "a"),
+      CypherMap("p1" -> "b", "p2" -> "b")
+    ) should equal(Bag(
+      CypherMap("p2" -> "a", "p1" -> "a"),
+      CypherMap("p2" -> "b", "p1" -> "a"),
+      CypherMap("p2" -> "a", "p1" -> "b"),
+      CypherMap("p2" -> "b", "p1" -> "b")
+    ))
   }
 
 }
