@@ -29,6 +29,7 @@ package org.opencypher.spark.impl
 import org.apache.spark.storage.StorageLevel
 import org.opencypher.okapi.api.schema.Schema
 import org.opencypher.okapi.api.types.{CTNode, CTRelationship}
+import org.opencypher.okapi.ir.api.expr.Expr._
 import org.opencypher.okapi.ir.api.expr.Var
 import org.opencypher.okapi.relational.api.schema.RelationalSchema._
 import org.opencypher.spark.api.CAPSSession
@@ -79,7 +80,9 @@ final case class CAPSUnionGraph(graphs: Map[CAPSGraph, Map[Int, Int]])
           nodeScan.retag(graphs(graph))
       }
 
-    val alignedScans = nodeScans.map(_.alignWith(node, targetHeader))
+    val alignedScans = nodeScans
+      .map(_.alignWith(node, targetHeader))
+      .map(_.select(targetHeader.expressions.toSeq.sorted: _*))
 
     alignedScans
       .reduceOption(_ unionAll _)
@@ -97,7 +100,10 @@ final case class CAPSUnionGraph(graphs: Map[CAPSGraph, Map[Int, Int]])
         relScan.retag(graphs(graph))
       }
 
-    val alignedScans = relScans.map(_.alignWith(rel, targetHeader))
+    val alignedScans = relScans
+      .map(_.alignWith(rel, targetHeader))
+      .map(_.select(targetHeader.expressions.toSeq.sorted: _*))
+
     alignedScans
       .reduceOption(_ unionAll _)
       .map(_.distinct(rel))

@@ -38,6 +38,9 @@ object Expr {
   implicit class ExprOps(val expr: Expr) extends AnyVal {
     def as(alias: Var): (Expr, Var) = expr -> alias
   }
+
+  implicit def alphabeticalOrdering[A <: Expr]: Ordering[Expr] =
+    Ordering.by(e => (e.toString, e.toString))
 }
 
 /**

@@ -41,7 +41,21 @@ class CAPSGraphOperationsTest extends CAPSTestSuite with TeamDataFixture {
 
     val result = graph1 unionAll graph2
 
-    val nodes = result.nodes("n").toDF().collect.toBag
+    val nodes = result.nodes("n").toDF()
+      .select(
+        "n",
+        "____n:Book",
+        "____n:Person",
+        "____n:Programmer",
+        "____n:Swedish",
+        "____n_dot_languageSTRING",
+        "____n_dot_luckyNumberINTEGER",
+        "____n_dot_nameSTRING",
+        "____n_dot_titleSTRING",
+        "____n_dot_yearINTEGER")
+      .collect
+      .toBag
+
     nodes should equal(
       Bag(
         Row(1L, false, true, false, true, null, 23L, "Mats", null, null),
@@ -59,19 +73,30 @@ class CAPSGraphOperationsTest extends CAPSTestSuite with TeamDataFixture {
       )
     )
 
-    val rels = result.relationships("r").toDF().collect.toBag
+    val rels = result.relationships("r").toDF()
+      .select(
+          "____source(r)",
+          "r",
+          "____type(r)_space__eq__space__single_quote_KNOWS_single_quote_",
+          "____type(r)_space__eq__space__single_quote_READS_single_quote_",
+          "____target(r)",
+          "____r_dot_recommendsBOOLEAN",
+          "____r_dot_sinceINTEGER")
+      .collect()
+      .toBag
+
     rels should equal(
       Bag(
-        Row(1L, 1L, "KNOWS", 2L, null, 2017L),
-        Row(1L, 2L, "KNOWS", 3L, null, 2016L),
-        Row(1L, 3L, "KNOWS", 4L, null, 2015L),
-        Row(2L, 4L, "KNOWS", 3L, null, 2016L),
-        Row(2L, 5L, "KNOWS", 4L, null, 2013L),
-        Row(3L, 6L, "KNOWS", 4L, null, 2016L),
-        Row(100L.setTag(1), 100L.setTag(1), "READS", 10L.setTag(1), true, null),
-        Row(200L.setTag(1), 200L.setTag(1), "READS", 40L.setTag(1), true, null),
-        Row(300L.setTag(1), 300L.setTag(1), "READS", 30L.setTag(1), true, null),
-        Row(400L.setTag(1), 400L.setTag(1), "READS", 20L.setTag(1), false, null)
+        Row(1L, 1L, true, false, 2L, null, 2017L),
+        Row(1L, 2L, true, false, 3L, null, 2016L),
+        Row(1L, 3L, true, false, 4L, null, 2015L),
+        Row(2L, 4L, true, false, 3L, null, 2016L),
+        Row(2L, 5L, true, false, 4L, null, 2013L),
+        Row(3L, 6L, true, false, 4L, null, 2016L),
+        Row(100L.setTag(1), 100L.setTag(1), false, true, 10L.setTag(1), true, null),
+        Row(200L.setTag(1), 200L.setTag(1), false, true, 40L.setTag(1), true, null),
+        Row(300L.setTag(1), 300L.setTag(1), false, true, 30L.setTag(1), true, null),
+        Row(400L.setTag(1), 400L.setTag(1), false, true, 20L.setTag(1), false, null)
       )
     )
   }

@@ -32,14 +32,12 @@ import org.apache.spark.storage.StorageLevel
 import org.opencypher.okapi.api.io.conversion.RelationshipMapping
 import org.opencypher.okapi.api.schema._
 import org.opencypher.okapi.api.types.{CTNode, CTRelationship, CypherType, DefiniteCypherType}
+import org.opencypher.okapi.ir.api.expr.Expr._
 import org.opencypher.okapi.ir.api.expr._
-import org.opencypher.okapi.relational.api.io.RelationalCypherRecords
-import org.opencypher.okapi.relational.impl.table.RecordHeader
-import org.opencypher.spark.api.CAPSSession
-import org.opencypher.spark.api.io.{CAPSEntityTable, CAPSNodeTable, CAPSRelationshipTable, SparkCypherTable}
-import org.opencypher.spark.schema.CAPSSchema
 import org.opencypher.okapi.relational.api.schema.RelationalSchema._
-import org.opencypher.spark.api.io.SparkCypherTable.DataFrameTable
+import org.opencypher.spark.api.CAPSSession
+import org.opencypher.spark.api.io.{CAPSEntityTable, CAPSNodeTable, CAPSRelationshipTable}
+import org.opencypher.spark.schema.CAPSSchema
 
 class CAPSScanGraph(val scans: Seq[CAPSEntityTable], val schema: CAPSSchema, val tags: Set[Int])
   (implicit val session: CAPSSession)
@@ -87,8 +85,11 @@ class CAPSScanGraph(val scans: Seq[CAPSEntityTable], val schema: CAPSSchema, val
     val targetNodeHeader = schema.headerForNode(node)
 
     val scanRecords: Seq[CAPSRecords] = selectedTables.map(_.records)
-    val alignedRecords = scanRecords.map(_.alignWith(node, targetNodeHeader))
-    // TODO: select records using ordered target header fields before applying union
+
+    val alignedRecords = scanRecords
+      .map(_.alignWith(node, targetNodeHeader))
+      .map(_.select(targetNodeHeader.expressions.toSeq.sorted: _*))
+
     alignedRecords.reduceOption(_ unionAll _).getOrElse(CAPSRecords.empty(targetNodeHeader))
   }
 
@@ -99,8 +100,11 @@ class CAPSScanGraph(val scans: Seq[CAPSEntityTable], val schema: CAPSSchema, val
     val targetRelHeader = schema.headerForRelationship(rel)
 
     val scanRecords = selectedScans.map(_.records)
-    val alignedRecords = scanRecords.map(_.alignWith(rel, targetRelHeader))
-    // TODO: select records using ordered target header fields before applying union
+
+    val alignedRecords = scanRecords
+      .map(_.alignWith(rel, targetRelHeader))
+      .map(_.select(targetRelHeader.expressions.toSeq.sorted: _*))
+
     alignedRecords.reduceOption(_ unionAll _).getOrElse(CAPSRecords.empty(targetRelHeader))
   }
 
