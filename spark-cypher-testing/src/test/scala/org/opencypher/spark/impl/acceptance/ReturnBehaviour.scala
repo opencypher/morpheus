@@ -30,7 +30,7 @@ import org.opencypher.okapi.api.value.CypherValue
 import org.opencypher.okapi.api.value.CypherValue._
 import org.opencypher.okapi.testing.Bag
 import org.opencypher.okapi.testing.Bag._
-import org.opencypher.spark.api.value.CAPSNode
+import org.opencypher.spark.api.value.{CAPSNode, CAPSRelationship}
 import org.opencypher.spark.impl.CAPSConverters._
 import org.opencypher.spark.testing.CAPSTestSuite
 import org.scalatest.DoNotDiscover
@@ -39,7 +39,7 @@ import org.scalatest.DoNotDiscover
 class ReturnBehaviour extends CAPSTestSuite with DefaultGraphInit {
 
   describe("RETURN") {
-    ignore("returns only the returned fields") {
+    it("returns only the returned fields") {
       val g = initGraph("CREATE (:A {name: 'me'}), (:A)")
 
       val result = g.cypher("MATCH (a:A) WITH a, a.name AS foo RETURN a")
@@ -61,7 +61,7 @@ class ReturnBehaviour extends CAPSTestSuite with DefaultGraphInit {
       ))
     }
 
-    ignore("return only returned fields with trickier aliasing") {
+    it("return only returned fields with trickier aliasing") {
       val g = initGraph("CREATE (:A {name: 'me'}), (:A)")
 
       // we need to somehow track lineage of aliased entities
@@ -69,8 +69,8 @@ class ReturnBehaviour extends CAPSTestSuite with DefaultGraphInit {
       val result = g.cypher("MATCH (a:A) WITH a, a AS foo RETURN foo AS b")
 
       result.getRecords.collect.toBag should equal(Bag(
-        CypherMap("a" -> CAPSNode(0L, Set("A"), CypherMap("name" -> "me"))),
-        CypherMap("a" -> CAPSNode(1L, Set("A"), CypherMap.empty))
+        CypherMap("b" -> CAPSNode(0L, Set("A"), CypherMap("name" -> "me"))),
+        CypherMap("b" -> CAPSNode(1L, Set("A"), CypherMap.empty))
       ))
     }
 
@@ -100,17 +100,6 @@ class ReturnBehaviour extends CAPSTestSuite with DefaultGraphInit {
       result.getRecords shouldMatch CypherMap("foo" -> 1, "str" -> "")
     }
 
-//    it("returns compact node") {
-//      val given = initGraph("CREATE (:Person {foo:'bar'}),()")
-//
-//      val result = given.cypher("MATCH (n) RETURN n").asCaps
-//
-//      result.getRecords.compact.toMaps should equal(Bag(
-//        CypherMap("n" -> 0),
-//        CypherMap("n" -> 1))
-//      )
-//    }
-
     it("returns full node") {
       val given = initGraph("CREATE ({foo:'bar'}),()")
 
@@ -122,25 +111,14 @@ class ReturnBehaviour extends CAPSTestSuite with DefaultGraphInit {
       )
     }
 
-//    it("returns compact rel") {
-//      val given = initGraph("CREATE ()-[:Rel {foo:'bar'}]->()-[:Rel]->()")
-//
-//      val result = given.cypher("MATCH ()-[r]->() RETURN r").asCaps
-//
-//      result.getRecords.compact.toMaps should equal(Bag(
-//        CypherMap("r" -> 2),
-//        CypherMap("r" -> 4)
-//      ))
-//    }
-
     it("returns full rel") {
       val given = initGraph("CREATE ()-[:Rel {foo:'bar'}]->()-[:Rel]->()")
 
       val result = given.cypher("MATCH ()-[r]->() RETURN r")
 
-      result.getRecords.toMaps should equal(Bag(
-        CypherMap("r" -> 2, "source(r)" -> 0, "target(r)" -> 1, "type(r)" -> "Rel", "r.foo" -> "bar"),
-        CypherMap("r" -> 4, "source(r)" -> 1, "target(r)" -> 3, "type(r)" -> "Rel", "r.foo" -> null)
+      result.getRecords.collect.toBag should equal(Bag(
+        CypherMap("r" -> CAPSRelationship(2, 0, 1, "Rel", CypherMap("foo" -> "bar"))),
+        CypherMap("r" -> CAPSRelationship(4, 1, 3, "Rel"))
       ))
     }
 
@@ -205,10 +183,10 @@ class ReturnBehaviour extends CAPSTestSuite with DefaultGraphInit {
       val result = given.cypher("MATCH (n) RETURN DISTINCT n.p1 as p1, n.p2 as p2")
 
       result.getRecords.toMaps should equal(Bag(
-        CypherMap("p1" -> "a", "p2" -> "a"),
-        CypherMap("p1" -> "a", "p2" -> "b"),
-        CypherMap("p1" -> "b", "p2" -> "a"),
-        CypherMap("p1" -> "b", "p2" -> "b")
+        CypherMap("p2" -> "a", "p1" -> "a"),
+        CypherMap("p2" -> "a", "p1" -> "b"),
+        CypherMap("p2" -> "b", "p1" -> "a"),
+        CypherMap("p2" -> "b", "p1" -> "b")
       ))
     }
   }
