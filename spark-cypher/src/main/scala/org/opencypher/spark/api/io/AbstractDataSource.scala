@@ -31,10 +31,10 @@ import org.apache.spark.sql.types.StructType
 import org.opencypher.okapi.api.graph.{GraphName, PropertyGraph}
 import org.opencypher.okapi.api.types.CTInteger
 import org.opencypher.okapi.impl.exception.{GraphAlreadyExistsException, GraphNotFoundException}
+import org.opencypher.okapi.relational.impl.util.StringEncodingUtilities._
 import org.opencypher.spark.api.CAPSSession
 import org.opencypher.spark.api.io.metadata.CAPSGraphMetaData
 import org.opencypher.spark.api.io.util.CAPSGraphExport._
-import org.opencypher.okapi.relational.impl.util.StringEncodingUtilities._
 import org.opencypher.spark.impl.CAPSConverters._
 import org.opencypher.spark.impl.CAPSGraph
 import org.opencypher.spark.impl.DataFrameOps._
@@ -109,7 +109,7 @@ abstract class AbstractDataSource(implicit val session: CAPSSession) extends CAP
         val df = readRelationshipTable(graphName, relType, capsSchema.canonicalRelTableSchema(relType))
         CAPSRelationshipTable(relType, df.setNullability(columnsWithCypherType))
       }
-      CAPSGraph.create(capsMetaData.tags, nodeTables.head, (nodeTables.tail ++ relTables).toSeq: _*)
+      CAPSGraph.create(capsMetaData.tags, Some(capsSchema), nodeTables.head, (nodeTables.tail ++ relTables).toSeq: _*)
     }
   }
 

@@ -26,16 +26,22 @@
  */
 package org.opencypher.spark.testing.impl.convert
 
-import org.apache.spark.sql.types.{ArrayType, LongType, StructField}
+import org.apache.spark.sql.types._
 import org.opencypher.okapi.api.types._
-import org.scalatest.{FunSpec, Matchers}
 import org.opencypher.spark.impl.convert.CAPSCypherType._
+import org.scalatest.{FunSpec, Matchers}
 
 class CAPSCypherTypeTest extends FunSpec with Matchers {
 
   it("should produce the correct StructField for non-nested types") {
     CTInteger.toStructField("foo") should equal(StructField("foo", LongType, nullable = false))
     CTIntegerOrNull.toStructField("foo") should equal(StructField("foo", LongType, nullable = true))
+    CTFloat.toStructField("foo") should equal(StructField("foo", DoubleType, nullable = false))
+    CTFloatOrNull.toStructField("foo") should equal(StructField("foo", DoubleType, nullable = true))
+    CTBoolean.toStructField("foo") should equal(StructField("foo", BooleanType, nullable = false))
+    CTBooleanOrNull.toStructField("foo") should equal(StructField("foo", BooleanType, nullable = true))
+    CTString.toStructField("foo") should equal(StructField("foo", StringType, nullable = false))
+    CTStringOrNull.toStructField("foo") should equal(StructField("foo", StringType, nullable = true))
 
     CTNode(Set("A")).toStructField("foo") should equal(StructField("foo", LongType, nullable = false))
     CTNodeOrNull(Set("A")).toStructField("foo") should equal(StructField("foo", LongType, nullable = true))
