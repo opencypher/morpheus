@@ -114,23 +114,7 @@ final case class Alias(in: CAPSPhysicalOperator, aliases: Seq[(Expr, Var)], head
   extends UnaryPhysicalOperator with PhysicalOperatorDebugging {
 
   override def executeUnary(prev: CAPSPhysicalResult)(implicit context: CAPSRuntimeContext): CAPSPhysicalResult = {
-    prev.mapRecordsWithDetails { records =>
-      val inHeader = records.header
-
-      val newData = aliases.foldLeft(records.df) {
-        case (acc, (expr, alias)) =>
-          val oldColumnName = inHeader.column(expr)
-          val newColumnName = header.column(alias)
-
-          if (records.df.columns.contains(oldColumnName)) {
-            acc.safeRenameColumn(oldColumnName, newColumnName)
-          } else {
-            throw IllegalArgumentException(s"a column with name $oldColumnName")
-          }
-      }
-
-      CAPSRecords(header, newData)(records.caps)
-    }
+    prev.mapRecordsWithDetails { records => CAPSRecords(header, records.df)(records.caps) }
   }
 }
 

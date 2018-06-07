@@ -49,6 +49,21 @@ class RelationalSchemaTest extends FunSpec with Matchers {
       .withExpr(Property(n, PropertyKey("foo"))(CTBoolean)))
   }
 
+  it("creates a header for a given node and changes nullability if necessary") {
+    val schema = Schema.empty
+      .withNodePropertyKeys(Set("A", "B"), PropertyKeys.empty)
+      .withNodePropertyKeys(Set("A", "C"), PropertyKeys("foo" -> CTString))
+
+    val n = Var("n")(CTNode(Set("A")))
+
+    schema.headerForNode(n) should equal(RecordHeader.empty
+      .withExpr(n)
+      .withExpr(HasLabel(n, Label("A"))(CTBoolean))
+      .withExpr(HasLabel(n, Label("B"))(CTBoolean))
+      .withExpr(HasLabel(n, Label("C"))(CTBoolean))
+      .withExpr(Property(n, PropertyKey("foo"))(CTString.nullable)))
+  }
+
   it("creates a header for given node with implied labels") {
     val schema = Schema.empty
       .withNodePropertyKeys(Set("A"), PropertyKeys("foo" -> CTBoolean))
