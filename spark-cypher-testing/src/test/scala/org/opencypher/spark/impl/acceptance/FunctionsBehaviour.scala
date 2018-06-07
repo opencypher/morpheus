@@ -37,7 +37,7 @@ class FunctionsBehaviour extends CAPSTestSuite with DefaultGraphInit {
 
   describe("exists") {
 
-    test("exists()") {
+    it("exists()") {
       val given = initGraph("CREATE ({id: 1}), ({id: 2}), ({other: 'foo'}), ()")
 
       val result = given.cypher("MATCH (n) RETURN exists(n.id) AS exists")
@@ -54,7 +54,7 @@ class FunctionsBehaviour extends CAPSTestSuite with DefaultGraphInit {
 
   describe("type") {
 
-    test("type()") {
+    it("type()") {
       val given = initGraph("CREATE ()-[:KNOWS]->()-[:HATES]->()-[:REL]->()")
 
       val result = given.cypher("MATCH ()-[r]->() RETURN type(r)")
@@ -70,7 +70,7 @@ class FunctionsBehaviour extends CAPSTestSuite with DefaultGraphInit {
 
   describe("id") {
 
-    test("id for node") {
+    it("id for node") {
       val given = initGraph("CREATE (),()")
 
       val result = given.cypher("MATCH (n) RETURN id(n)")
@@ -78,7 +78,7 @@ class FunctionsBehaviour extends CAPSTestSuite with DefaultGraphInit {
       result.getRecords.toMaps should equal(Bag(CypherMap("id(n)" -> 0), CypherMap("id(n)" -> 1)))
     }
 
-    test("id for rel") {
+    it("id for rel") {
       val given = initGraph("CREATE ()-[:REL]->()-[:REL]->()")
 
       val result = given.cypher("MATCH ()-[e]->() RETURN id(e)")
@@ -90,7 +90,7 @@ class FunctionsBehaviour extends CAPSTestSuite with DefaultGraphInit {
 
   describe("labels") {
 
-    test("get single label") {
+    it("get single label") {
       val given = initGraph("CREATE (:A), (:B)")
 
       val result = given.cypher("MATCH (a) RETURN labels(a)")
@@ -102,7 +102,7 @@ class FunctionsBehaviour extends CAPSTestSuite with DefaultGraphInit {
         ))
     }
 
-    test("get multiple labels") {
+    it("get multiple labels") {
       val given = initGraph("CREATE (:A:B), (:C:D)")
 
       val result = given.cypher("MATCH (a) RETURN labels(a)")
@@ -114,7 +114,7 @@ class FunctionsBehaviour extends CAPSTestSuite with DefaultGraphInit {
         ))
     }
 
-    test("unlabeled nodes") {
+    it("unlabeled nodes") {
       val given = initGraph("CREATE (:A), (:C:D), ()")
 
       val result = given.cypher("MATCH (a) RETURN labels(a)")
@@ -131,7 +131,7 @@ class FunctionsBehaviour extends CAPSTestSuite with DefaultGraphInit {
 
   describe("size") {
 
-    test("size() on literal list") {
+    it("size() on literal list") {
       val given = initGraph("CREATE ()")
 
       val result = given.cypher("MATCH () RETURN size(['Alice', 'Bob']) as s")
@@ -142,7 +142,7 @@ class FunctionsBehaviour extends CAPSTestSuite with DefaultGraphInit {
         ))
     }
 
-    test("size() on literal string") {
+    it("size() on literal string") {
       val given = initGraph("CREATE ()")
 
       val result = given.cypher("MATCH () RETURN size('Alice') as s")
@@ -153,7 +153,7 @@ class FunctionsBehaviour extends CAPSTestSuite with DefaultGraphInit {
         ))
     }
 
-    test("size() on retrieved string") {
+    it("size() on retrieved string") {
       val given = initGraph("CREATE ({name: 'Alice'})")
 
       val result = given.cypher("MATCH (a) RETURN size(a.name) as s")
@@ -164,7 +164,7 @@ class FunctionsBehaviour extends CAPSTestSuite with DefaultGraphInit {
         ))
     }
 
-    test("size() on constructed list") {
+    it("size() on constructed list") {
       val given = initGraph("CREATE (:A:B), (:C:D), (:A), ()")
 
       val result = given.cypher("MATCH (a) RETURN size(labels(a)) as s")
@@ -190,7 +190,7 @@ class FunctionsBehaviour extends CAPSTestSuite with DefaultGraphInit {
 
   describe("keys") {
 
-    test("keys()") {
+    it("keys()") {
       val given = initGraph("CREATE ({name:'Alice', age: 64, eyes:'brown'})")
 
       val result = given.cypher("MATCH (a) WHERE a.name = 'Alice' RETURN keys(a) as k")
@@ -203,7 +203,7 @@ class FunctionsBehaviour extends CAPSTestSuite with DefaultGraphInit {
         ))
     }
 
-    test("keys() does not return keys of unset properties") {
+    it("keys() does not return keys of unset properties") {
       val given = initGraph(
         """
           |CREATE (:Person {name:'Alice', age: 64, eyes:'brown'})
@@ -234,7 +234,7 @@ class FunctionsBehaviour extends CAPSTestSuite with DefaultGraphInit {
 
   describe("startNode") {
 
-    test("startNode()") {
+    it("startNode()") {
       val given = initGraph("CREATE ()-[:FOO {val: 'a'}]->(),()-[:FOO {val: 'b'}]->()")
 
       val result = given.cypher("MATCH ()-[r:FOO]->() RETURN r.val, startNode(r)")
@@ -249,7 +249,7 @@ class FunctionsBehaviour extends CAPSTestSuite with DefaultGraphInit {
 
   describe("endNode") {
 
-    test("endNode()") {
+    it("endNode()") {
       val given = initGraph("CREATE ()-[:FOO {val: 'a'}]->(),()-[:FOO {val: 'b'}]->()")
 
       val result = given.cypher("MATCH (a)-[r]->() RETURN r.val, endNode(r)")
@@ -264,7 +264,7 @@ class FunctionsBehaviour extends CAPSTestSuite with DefaultGraphInit {
 
   describe("toFloat") {
 
-    test("toFloat from integers") {
+    it("toFloat from integers") {
       val given = initGraph("CREATE (a {val: 1})")
 
       val result = given.cypher("MATCH (a) RETURN toFloat(a.val) as myFloat")
@@ -275,7 +275,7 @@ class FunctionsBehaviour extends CAPSTestSuite with DefaultGraphInit {
         ))
     }
 
-    test("toFloat from float") {
+    it("toFloat from float") {
       val given = initGraph("CREATE (a {val: 1.0d})")
 
       val result = given.cypher("MATCH (a) RETURN toFloat(a.val) as myFloat")
@@ -286,7 +286,7 @@ class FunctionsBehaviour extends CAPSTestSuite with DefaultGraphInit {
         ))
     }
 
-    test("toFloat from string") {
+    it("toFloat from string") {
       val given = initGraph("CREATE (a {val: '42'})")
 
       val result = given.cypher("MATCH (a) RETURN toFloat(a.val) as myFloat")

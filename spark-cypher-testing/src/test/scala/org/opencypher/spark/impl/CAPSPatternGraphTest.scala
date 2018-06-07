@@ -256,22 +256,21 @@ class CAPSPatternGraphTest extends CAPSGraphTest with RecordsVerificationFixture
     val patternGraph = CAPSGraph.create(inputNodes, inputGraph.schema)
     val outputNodes = patternGraph.nodes("n")
 
-    outputNodes.toDF().columns should equal(
-      Array(
-        "n",
-        "____n:Person",
-        "____n:Swedish",
-        "____n_dot_luckyNumberINTEGER",
-        "____n_dot_nameSTRING"
-      ))
+    val cols = Seq(
+      "n",
+      "____n:Person",
+      "____n:Swedish",
+      "____n_dot_luckyNumberINTEGER",
+      "____n_dot_nameSTRING"
+    )
+    val data = Bag(
+      Row(0L, true, true, 23L, "Mats"),
+      Row(1L, true, false, 42L, "Martin"),
+      Row(2L, true, false, 1337L, "Max"),
+      Row(3L, true, false, 9L, "Stefan")
+    )
 
-    outputNodes.toDF().collect().toSet should equal(
-      Set(
-        Row(0L, true, true, 23L, "Mats"),
-        Row(1L, true, false, 42L, "Martin"),
-        Row(2L, true, false, 1337L, "Max"),
-        Row(3L, true, false, 9L, "Stefan")
-      ))
+    verify(outputNodes, cols, data)
   }
 
   it("Node scan from mixed node CapsRecords") {
@@ -281,29 +280,28 @@ class CAPSPatternGraphTest extends CAPSGraphTest with RecordsVerificationFixture
     val patternGraph = CAPSGraph.create(inputNodes, inputGraph.schema)
     val outputNodes = patternGraph.nodes("n")
 
-    outputNodes.toDF().columns.toSet should equal(
-      Set(
-        "n",
-        "____n:Person",
-        "____n:Swedish",
-        "____n:Book",
-        "____n_dot_nameSTRING",
-        "____n_dot_luckyNumberINTEGER",
-        "____n_dot_yearINTEGER",
-        "____n_dot_titleSTRING"
-      ))
+    val col = Seq(
+      "n",
+      "____n:Book",
+      "____n:Person",
+      "____n:Swedish",
+      "____n_dot_luckyNumberINTEGER",
+      "____n_dot_nameSTRING",
+      "____n_dot_yearINTEGER",
+      "____n_dot_titleSTRING"
+    )
+    val data = Bag(
+      Row(0L, false, true, true, 23L, "Mats", null, null),
+      Row(1L, false, true, false, 42L, "Martin", null, null),
+      Row(2L, false, true, false, 1337L, "Max", null, null),
+      Row(3L, false, true, false, 9L, "Stefan", null, null),
+      Row(4L, true, false, false, null, null, "1984", 1949L),
+      Row(5L, true, false, false, null, null, "Cryptonomicon", 1999L),
+      Row(6L, true, false, false, null, null, "The Eye of the World", 1990L),
+      Row(7L, true, false, false, null, null, "The Circle", 2013L)
+    )
 
-    Bag(outputNodes.toDF().collect(): _*) should equal(
-      Bag(
-        Row(0L, false, true, true, 23L, "Mats", null, null),
-        Row(1L, false, true, false, 42L, "Martin", null, null),
-        Row(2L, false, true, false, 1337L, "Max", null, null),
-        Row(3L, false, true, false, 9L, "Stefan", null, null),
-        Row(4L, true, false, false, null, null, "1984", 1949L),
-        Row(5L, true, false, false, null, null, "Cryptonomicon", 1999L),
-        Row(6L, true, false, false, null, null, "The Eye of the World", 1990L),
-        Row(7L, true, false, false, null, null, "The Circle", 2013L)
-      ))
+    verify(outputNodes, col, data)
   }
 
   it("Node scan from multiple connected nodes") {

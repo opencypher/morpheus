@@ -124,9 +124,11 @@ class FlatOperatorProducer(implicit context: FlatPlannerContext) {
   def project(projectExpr: (Expr, Option[Var]), in: FlatOperator): FlatOperator = {
     val (expr, maybeAlias) = projectExpr
     val updatedHeader = in.header.withExpr(expr)
+    val containsExpr = in.header.contains(expr)
 
     maybeAlias match {
-      case Some(alias) => Alias(expr, alias, in, updatedHeader.withAlias(expr as alias))
+      case Some(alias) if containsExpr => Alias(expr, alias, in, updatedHeader.withAlias(expr as alias))
+      case Some(alias) => Project(expr, in, updatedHeader.withAlias(expr as alias))
       case None => Project(expr, in, updatedHeader)
     }
   }
