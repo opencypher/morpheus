@@ -33,7 +33,7 @@ import org.opencypher.okapi.api.value.CypherValue.CypherList
 import org.opencypher.okapi.impl.exception.{IllegalArgumentException, IllegalStateException, NotImplementedException}
 import org.opencypher.okapi.ir.api.expr._
 import org.opencypher.okapi.relational.impl.table.RecordHeader
-import org.opencypher.spark.impl.CAPSFunctions.{array_contains, get_node_labels, get_property_keys, get_rel_types}
+import org.opencypher.spark.impl.CAPSFunctions.{array_contains, get_node_labels, get_property_keys, get_rel_type}
 import org.opencypher.spark.impl.convert.SparkConversions._
 import org.opencypher.spark.impl.physical.CAPSRuntimeContext
 
@@ -85,7 +85,7 @@ object SparkSQLExprMapper {
           functions.lit(context.parameters(name).unwrap)
 
         // direct column lookup
-        case _: Var | _: Param | _: Property | _: HasLabel | _: StartNode | _: EndNode =>
+        case _: Var | _: Param | _: Property | _: HasLabel | _: HasType | _: StartNode | _: EndNode =>
           verify
 
           val colName = header.column(expr)
@@ -129,9 +129,6 @@ object SparkSQLExprMapper {
             array_contains(array, element)
           }
 
-        case HasType(rel, relType) =>
-          Type(rel)().asSparkSQLExpr === relType.name
-
         case LessThan(lhs, rhs) => compare(lt, lhs, rhs)
         case LessThanOrEqual(lhs, rhs) => compare(lteq, lhs, rhs)
         case GreaterThanOrEqual(lhs, rhs) => compare(gteq, lhs, rhs)
@@ -166,7 +163,7 @@ object SparkSQLExprMapper {
               val typeExprs = header.typesFor(v)
               val (relTypeNames, relTypeColumn) = typeExprs.toSeq.map(e => e.relType.name -> e.asSparkSQLExpr).unzip
               val booleanLabelFlagColumn = functions.array(relTypeColumn: _*)
-              get_rel_types(relTypeNames)(booleanLabelFlagColumn)
+              get_rel_type(relTypeNames)(booleanLabelFlagColumn)
             case _ =>
               throw NotImplementedException(s"Inner expression $inner of $expr is not yet supported (only variables)")
           }
