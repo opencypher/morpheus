@@ -317,6 +317,6 @@ trait RecordBehaviour extends RelationalCypherRecords[DataFrameTable] {
 
   def toCypherMaps: Dataset[CypherMap] = {
     import encoders._
-    table.df.map(rowToCypherMap(header))
+    table.df.map(rowToCypherMap(header.exprToColumn.toSeq))
   }
 }

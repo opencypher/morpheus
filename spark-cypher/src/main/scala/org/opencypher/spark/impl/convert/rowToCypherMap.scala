@@ -31,11 +31,14 @@ import org.opencypher.okapi.api.types.{CTNode, CTRelationship}
 import org.opencypher.okapi.api.value.CypherValue._
 import org.opencypher.okapi.api.value._
 import org.opencypher.okapi.impl.exception.UnsupportedOperationException
-import org.opencypher.okapi.ir.api.expr.Var
+import org.opencypher.okapi.ir.api.expr.{Expr, Var}
 import org.opencypher.okapi.relational.impl.table.RecordHeader
 import org.opencypher.spark.api.value.{CAPSNode, CAPSRelationship}
 
-final case class rowToCypherMap(header: RecordHeader) extends (Row => CypherMap) {
+// TODO: argument cannot be a Map due to Scala issue https://issues.scala-lang.org/browse/SI-7005
+final case class rowToCypherMap(exprToColumn: Seq[(Expr, String)]) extends (Row => CypherMap) {
+
+  private val header = RecordHeader(exprToColumn.toMap)
 
   override def apply(row: Row): CypherMap = {
     val values = header.vars.map(v => v.name -> constructValue(row, v)).toSeq
