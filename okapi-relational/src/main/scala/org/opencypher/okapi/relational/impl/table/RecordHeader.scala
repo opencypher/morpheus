@@ -62,7 +62,7 @@ case class RecordHeader(exprToColumn: Map[Expr, String]) {
   def getColumn(expr: Expr): Option[String] = exprToColumn.get(expr)
 
   def column(expr: Expr): String =
-    exprToColumn.getOrElse(expr, throw IllegalArgumentException(s"Header does not contain a column for $expr: ${this.toString}"))
+    exprToColumn.getOrElse(expr, throw IllegalArgumentException(s"Header does not contain a column for $expr.\n\t${this.toString}"))
 
   def ownedBy(expr: Var): Set[Expr] = {
     exprToColumn.keys.filter(e => e.owner.contains(expr)).toSet
@@ -100,8 +100,8 @@ case class RecordHeader(exprToColumn: Map[Expr, String]) {
 
   def idExpressions(): Set[Expr] = {
     exprToColumn.keySet.collect {
-      case n if n.cypherType.superTypeOf(CTNode).isTrue => n
-      case r if r.cypherType.superTypeOf(CTRelationship).isTrue => r
+      case n if n.cypherType.subTypeOf(CTNode).isTrue => n
+      case r if r.cypherType.subTypeOf(CTRelationship).isTrue => r
     }
   }
 
