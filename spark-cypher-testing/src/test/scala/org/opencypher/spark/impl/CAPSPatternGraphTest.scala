@@ -38,11 +38,12 @@ import org.opencypher.okapi.testing.Bag._
 import org.opencypher.spark.api.value.CAPSNode
 import org.opencypher.spark.impl.convert.SparkConversions._
 import org.opencypher.spark.schema.CAPSSchema._
+import org.opencypher.spark.testing.fixture.RecordsVerificationFixture
 import org.opencypher.spark.testing.support.creation.caps.{CAPSPatternGraphFactory, CAPSTestGraphFactory}
 
 import scala.collection.JavaConverters._
 
-class CAPSPatternGraphTest extends CAPSGraphTest {
+class CAPSPatternGraphTest extends CAPSGraphTest with RecordsVerificationFixture {
 
   import CAPSGraphTestData._
 

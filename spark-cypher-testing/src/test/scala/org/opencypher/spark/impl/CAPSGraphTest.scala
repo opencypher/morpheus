@@ -30,13 +30,15 @@ import org.apache.spark.sql.Row
 import org.opencypher.okapi.api.io.conversion.RelationshipMapping
 import org.opencypher.okapi.api.types.{CTNode, CTRelationship}
 import org.opencypher.okapi.testing.Bag
-import org.opencypher.okapi.testing.Bag._
 import org.opencypher.spark.api.io.{CAPSNodeTable, CAPSRelationshipTable}
 import org.opencypher.spark.impl.DataFrameOps._
 import org.opencypher.spark.testing.CAPSTestSuite
-import org.opencypher.spark.testing.fixture.{GraphConstructionFixture, TeamDataFixture}
+import org.opencypher.spark.testing.fixture.{GraphConstructionFixture, RecordsVerificationFixture, TeamDataFixture}
 
-abstract class CAPSGraphTest extends CAPSTestSuite with GraphConstructionFixture with TeamDataFixture {
+abstract class CAPSGraphTest extends CAPSTestSuite
+  with GraphConstructionFixture
+  with RecordsVerificationFixture
+  with TeamDataFixture {
 
   it("should return only nodes with that exact label (single label)") {
     val graph = initGraph(dataFixtureWithoutArrays)
@@ -124,10 +126,5 @@ abstract class CAPSGraphTest extends CAPSTestSuite with GraphConstructionFixture
 
     graph.relationships("l", CTRelationship("LOVES")).size shouldBe 3
     graph.relationships("h", CTRelationship("HATES")).size shouldBe 2
-  }
-
-  protected def verify(records: CAPSRecords, expectedColumns: Seq[String], expectedData: Bag[Row]): Unit = {
-    records.toDF().columns.toSet should equal(expectedColumns.toSet)
-    records.toDF().select(expectedColumns.head, expectedColumns.tail: _*).collect().toBag should equal(expectedData)
   }
 }
