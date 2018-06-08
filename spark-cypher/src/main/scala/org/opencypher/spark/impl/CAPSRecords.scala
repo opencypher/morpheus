@@ -255,8 +255,8 @@ case class CAPSRecords(header: RecordHeader, df: DataFrame)(implicit val caps: C
     val missingColumnNames = headerColumnNames -- dataColumnNames
     if (missingColumnNames.nonEmpty) {
       throw IllegalArgumentException(
-        s"data with columns ${header.columns.toSeq.sorted.mkString("\n", ", ", "\n")}",
-        s"data with missing columns ${missingColumnNames.toSeq.sorted.mkString("\n", ", ", "\n")}"
+        s"data with columns ${header.columns.toSeq.sorted.mkString("\n[", ", ", "]\n")}",
+        s"data with columns ${dataColumnNames.toSeq.sorted.mkString("\n[", ", ", "]\n")}"
       )
     }
 

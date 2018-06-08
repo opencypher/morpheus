@@ -118,7 +118,9 @@ class FlatOperatorProducer(implicit context: FlatPlannerContext) {
   }
 
   def unwind(list: Expr, item: Var, in: FlatOperator): Unwind = {
-    Unwind(list, item, in, in.header.withExpr(item))
+    val explodeExpr = Explode(list)(item.cypherType)
+    val explodeHeader = in.header.withExpr(explodeExpr).withAlias(explodeExpr as item)
+    Unwind(explodeExpr, item, in, explodeHeader)
   }
 
   def project(projectExpr: (Expr, Option[Var]), in: FlatOperator): FlatOperator = {

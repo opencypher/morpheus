@@ -27,7 +27,7 @@
 package org.opencypher.okapi.relational.impl.flat
 
 import org.opencypher.okapi.ir.api.block.SortItem
-import org.opencypher.okapi.ir.api.expr.{Aggregator, Expr, Var}
+import org.opencypher.okapi.ir.api.expr.{Aggregator, Explode, Expr, Var}
 import org.opencypher.okapi.logical.impl.{Direction, LogicalGraph}
 import org.opencypher.okapi.relational.impl.table._
 import org.opencypher.okapi.trees.AbstractTreeNode
@@ -77,7 +77,7 @@ final case class ReturnGraph(in: FlatOperator) extends StackingFlatOperator {
 
 final case class Project(expr: Expr, in: FlatOperator, header: RecordHeader) extends StackingFlatOperator
 
-final case class Unwind(expr: Expr, item: Var, in: FlatOperator, header: RecordHeader) extends StackingFlatOperator
+final case class Unwind(expr: Explode, item: Var, in: FlatOperator, header: RecordHeader) extends StackingFlatOperator
 
 final case class Aggregate(
     aggregations: Set[(Var, Aggregator)],
