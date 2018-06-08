@@ -54,6 +54,8 @@ trait FlatRelationalTable[T <: FlatRelationalTable[T]] extends CypherTable {
 
   def distinct(cols: String*): T
 
+  def withColumnRenamed(oldColumn: String, newColumn: String): T
+
   def withNullColumn(col: String): T
 
   def withTrueColumn(col: String): T
@@ -100,7 +102,25 @@ trait RelationalCypherRecords[T <: FlatRelationalTable[T]] extends CypherRecords
   }
 
   def drop(exprs: Expr*): R = {
-    select((header.expressions -- exprs).toSeq: _*)
+    val updatedHeader = header -- exprs.toSet
+    val updatedTable = table.drop(exprs.map(header.column): _*)
+    from(updatedHeader, updatedTable)
+  }
+
+  def withColumnsRenamed(renamings: (Expr, String)*): R = {
+    val updatedHeader = renamings.foldLeft(header) {
+      case (currentHeader, (expr, newColumn)) => currentHeader.withColumnRenamed(expr, newColumn)
+    }
+    val updatedTable = renamings.foldLeft(table) {
+      case (currentTable, (expr, newColumn)) => currentTable.withColumnRenamed(header.column(expr), newColumn)
+    }
+    from(updatedHeader, updatedTable)
+  }
+
+  def withColumnRenamed(oldColumn: Expr, newColumn: String): R = {
+    val updatedHeader = header.withColumnRenamed(oldColumn, newColumn)
+    val updatedTable = table.withColumnRenamed(header.column(oldColumn), newColumn)
+    from(updatedHeader, updatedTable)
   }
 
   def orderBy(sortItems: SortItem[Expr]*): R = {

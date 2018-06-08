@@ -163,7 +163,6 @@ final case class Project(in: CAPSPhysicalOperator, expr: Expr, header: RecordHea
   }
 }
 
-// TODO: replace with select in PhysicalPlanner
 final case class Drop(
   in: CAPSPhysicalOperator,
   dropFields: Set[Expr],
@@ -171,6 +170,15 @@ final case class Drop(
 ) extends UnaryPhysicalOperator with PhysicalOperatorDebugging {
   override def executeUnary(prev: CAPSPhysicalResult)(implicit context: CAPSRuntimeContext): CAPSPhysicalResult = {
     prev.mapRecordsWithDetails { records => records.drop(dropFields.toSeq: _*) }
+  }
+}
+
+final case class RenameColumns(
+  in: CAPSPhysicalOperator,
+  renameExprs: Map[Expr, String],
+  header: RecordHeader) extends UnaryPhysicalOperator with PhysicalOperatorDebugging {
+  override def executeUnary(prev: CAPSPhysicalResult)(implicit context: CAPSRuntimeContext): CAPSPhysicalResult = {
+    prev.mapRecordsWithDetails { records => records.withColumnsRenamed(renameExprs.toSeq: _*)}
   }
 }
 

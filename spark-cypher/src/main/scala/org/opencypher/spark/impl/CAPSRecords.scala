@@ -247,7 +247,7 @@ case class CAPSRecords(header: RecordHeader, df: DataFrame)(implicit val caps: C
     if (duplicateColumns.nonEmpty)
       throw IllegalArgumentException(
         "a DataFrame with distinct columns",
-        s"a DataFrame with duplicate columns: $duplicateColumns")
+        s"a DataFrame with duplicate columns: ${initialDataColumns.sorted.mkString("[", ", ", "]")}")
 
     // Verify that all header column names exist in the data
     val headerColumnNames = header.columns

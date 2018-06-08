@@ -210,6 +210,21 @@ case class RecordHeader(exprToColumn: Map[Expr, String]) {
     RecordHeader(selectMappings)
   }
 
+  def withColumnsRenamed[T <: Expr](renamings: Map[T, String]): RecordHeader = {
+    renamings.foldLeft(this) {
+      case (currentHeader, (expr, newColumn)) => currentHeader.withColumnRenamed(expr, newColumn)
+    }
+  }
+
+  def withColumnRenamed[T <: Expr](expr: T, newColumn: String): RecordHeader = {
+    withColumnRenamed(column(expr), newColumn)
+  }
+
+  def withColumnRenamed(oldColumn: String, newColumn: String): RecordHeader = {
+    val exprs = expressionsFor(oldColumn)
+    copy(exprToColumn ++ exprs.map(_ -> newColumn))
+  }
+
   def withExpr(expr: Expr): RecordHeader = {
     exprToColumn.get(expr) match {
       case Some(_) => this

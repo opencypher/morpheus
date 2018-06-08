@@ -121,6 +121,16 @@ trait PhysicalOperatorProducer[P <: PhysicalOperator[R, G, C], R <: CypherRecord
   def planDrop(in: P, dropFields: Set[Expr], header: RecordHeader): P
 
   /**
+    * Renames the columns associated with the given expressions to the specified new column names.
+    *
+    * @param in          previous operator
+    * @param renameExprs expressions to new columns
+    * @param header      resulting record header
+    * @return Rename operator
+    */
+  def planRenameColumns(in: P, renameExprs: Map[Expr, String], header: RecordHeader): P
+
+  /**
     * Filters the incoming rows according to the specified expression.
     *
     * @param in     previous operator

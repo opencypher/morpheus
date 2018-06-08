@@ -108,6 +108,9 @@ object SparkCypherTable {
         case FullOuterJoin => "full_outer"
       }
 
+      val overlap = this.columns.toSet.intersect(other.columns.toSet)
+      assert(overlap.isEmpty, s"overlapping columns: $overlap")
+
       val joinExpr = joinCols.map {
         case (l, r) => df.col(l) === other.df.col(r)
       }.reduce((acc, expr) => acc && expr)
@@ -119,9 +122,14 @@ object SparkCypherTable {
       potentiallyCorruptedResult.select("*")
     }
 
-    override def distinct: DataFrameTable = df.distinct
+    override def distinct: DataFrameTable =
+      df.distinct
 
-    override def distinct(cols: String*): DataFrameTable = df.dropDuplicates(cols)
+    override def distinct(cols: String*): DataFrameTable =
+      df.dropDuplicates(cols)
+
+    override def withColumnRenamed(oldColumn: String, newColumn: String): DataFrameTable =
+      df.safeRenameColumn(oldColumn, newColumn)
 
     override def withNullColumn(col: String): DataFrameTable = df.withColumn(col, functions.lit(null))
 

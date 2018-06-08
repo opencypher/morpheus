@@ -363,4 +363,26 @@ class RecordHeaderTest extends FunSpec with Matchers {
     selectHeader2.column(n2) should equal(nHeader.column(nPropFoo))
   }
 
+  it("renames columns") {
+    val newColumnName = "newName"
+    val modifiedHeader = nHeader.withColumnRenamed(nPropFoo, newColumnName)
+    modifiedHeader.column(nPropFoo) should equal(newColumnName)
+  }
+
+  it("renames aliases columns") {
+    val newColumnName = "newName"
+    val modifiedHeader = nHeader.withAlias(n as m).withColumnRenamed(nPropFoo, newColumnName)
+
+    modifiedHeader.column(nPropFoo) should equal(newColumnName)
+    modifiedHeader.column(nPropFoo.withOwner(m)) should equal(newColumnName)
+  }
+
+  it("renames multiple columns") {
+    val newName1 = "foo"
+    val newName2 = "lalala"
+    val modifiedHeader = nHeader.withColumnsRenamed(Map(nPropFoo -> newName1, nLabelA -> newName2))
+    modifiedHeader.column(nPropFoo) should equal(newName1)
+    modifiedHeader.column(nLabelA) should equal(newName2)
+  }
+
 }

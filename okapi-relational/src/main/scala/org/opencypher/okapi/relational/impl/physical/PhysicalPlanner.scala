@@ -238,23 +238,18 @@ class PhysicalPlanner[P <: PhysicalOperator[R, G, C], R <: CypherRecords, G <: P
     val expressionsToRemove = joinExprs
       .flatMap(v => rhsHeader.ownedBy(v) - v)
       .union(otherExpressions)
-    val rhsHeaderWithDropped = rhsHeader.select(rhsHeader.expressions -- expressionsToRemove)
+    val rhsHeaderWithDropped = rhsHeader -- expressionsToRemove
     val rhsWithDropped = producer.planDrop(rhsData, expressionsToRemove, rhsHeaderWithDropped)
 
     // 3. Rename the join expressions on the right hand side, in order to make them distinguishable after the join
-    val joinFieldRenames = joinExprs.map(e => e -> Var(generateUniqueName)(e.cypherType)).toMap
-
-    val rhsWithRenamedSlots = rhsHeaderWithDropped.expressions.collect {
-      case v: Var if joinFieldRenames.contains(v) => joinFieldRenames(v)
-      case other => other
-    }
-    val rhsHeaderWithRenamed = RecordHeader.from(rhsWithRenamedSlots.toList)
-    val rhsWithRenamed = producer.planAlias(rhsWithDropped, joinFieldRenames.toSeq, rhsHeaderWithRenamed)
+    val joinFieldRenames: Map[Expr, String] = joinExprs.map(e => e -> generateUniqueName).toMap
+    val rhsHeaderWithRenames = rhsHeaderWithDropped.withColumnsRenamed(joinFieldRenames)
+    val rhsWithRenamed = producer.planRenameColumns(rhsWithDropped, joinFieldRenames, rhsHeaderWithRenames)
 
     // 4. Left outer join the left side and the processed right side
-    val joined = producer.planJoin(lhsData, rhsWithRenamed, joinFieldRenames.toSeq, lhsHeader ++ rhsHeaderWithRenamed, LeftOuterJoin)
+    val joined = producer.planJoin(lhsData, rhsWithRenamed, joinExprs.map(e => e -> e).toSeq, rhsHeaderWithRenames ++ lhsHeader , LeftOuterJoin)
 
-    // 5. Drop the duplicate join expressions
-    producer.planDrop(joined, joinFieldRenames.values.toSet, header)
+    // 5. Select the resulting header expressions
+    producer.planSelect(joined, header.expressions.map(e => e -> Option.empty[Var]).toList, header)
   }
 }
