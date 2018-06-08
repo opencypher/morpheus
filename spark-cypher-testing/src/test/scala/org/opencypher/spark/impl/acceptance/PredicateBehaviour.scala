@@ -35,7 +35,7 @@ import org.scalatest.DoNotDiscover
 @DoNotDiscover
 class PredicateBehaviour extends CAPSTestSuite with DefaultGraphInit {
 
-  test("exists()") {
+  it("exists()") {
     val given = initGraph("CREATE ({id: 1}), ({id: 2}), ({other: 'foo'}), ()")
 
     val result = given.cypher("MATCH (n) WHERE exists(n.id) RETURN n.id")
@@ -46,7 +46,7 @@ class PredicateBehaviour extends CAPSTestSuite with DefaultGraphInit {
     ))
   }
 
-  test("in") {
+  it("in") {
     // Given
     val given = initGraph("""CREATE (:A {val: 1}), (:A {val: 2}), (:A {val: 3})""")
 
@@ -59,7 +59,7 @@ class PredicateBehaviour extends CAPSTestSuite with DefaultGraphInit {
     ))
   }
 
-  test("in with parameter") {
+  it("in with parameter") {
     // Given
     val given = initGraph("""CREATE (:A {val: 1}), (:A {val: 2}), (:A {val: 3})""")
 
@@ -86,7 +86,7 @@ class PredicateBehaviour extends CAPSTestSuite with DefaultGraphInit {
     ))
   }
 
-  test("or on labels") {
+  it("or on labels") {
     // Given
     val given = initGraph("""CREATE (:A {val: 1}), (:B {val: 2}), (:C {val: 3})""")
 
@@ -100,7 +100,7 @@ class PredicateBehaviour extends CAPSTestSuite with DefaultGraphInit {
     ))
   }
 
-  test("or with and") {
+  it("or with and") {
     // Given
     val given = initGraph(
       """CREATE (:A {val: 1, name: 'a'})
@@ -120,7 +120,7 @@ class PredicateBehaviour extends CAPSTestSuite with DefaultGraphInit {
     ))
   }
 
-  test("equality between properties") {
+  it("equality between properties") {
     // Given
     val given = initGraph(
       """ CREATE (:A {val: 1})-[:REL]->(:B {p: 2})
@@ -141,7 +141,7 @@ class PredicateBehaviour extends CAPSTestSuite with DefaultGraphInit {
   }
 
   describe("comparison operators") {
-    test("less than") {
+    it("less than") {
 
       // Given
       val given = initGraph("""CREATE (:Node {val: 4})-[:REL]->(:Node {val: 5})""")
@@ -167,7 +167,7 @@ class PredicateBehaviour extends CAPSTestSuite with DefaultGraphInit {
       result.getRecords.collect.toBag shouldBe empty
     }
 
-    test("less than or equal") {
+    it("less than or equal") {
       // Given
       val given = initGraph(
         """
@@ -197,7 +197,7 @@ class PredicateBehaviour extends CAPSTestSuite with DefaultGraphInit {
       result.getRecords.collect.toBag shouldBe empty
     }
 
-    test("greater than") {
+    it("greater than") {
       // Given
       val given = initGraph("""CREATE (:Node {val: 4})-[:REL]->(:Node {val: 5})""")
 
@@ -222,7 +222,7 @@ class PredicateBehaviour extends CAPSTestSuite with DefaultGraphInit {
       result.getRecords.collect.toBag shouldBe empty
     }
 
-    test("greater than or equal") {
+    it("greater than or equal") {
       // Given
       val given = initGraph("""CREATE (:Node {id: 1, val: 4})-[:REL]->(:Node {id: 2, val: 5})-[:REL]->(:Node {id: 3, val: 5})""")
 
@@ -264,7 +264,7 @@ class PredicateBehaviour extends CAPSTestSuite with DefaultGraphInit {
     ))
   }
 
-  test("float conversion for integer division") {
+  it("float conversion for integer division") {
     // Given
     val given = initGraph("""CREATE (:Node {id: 1, val: 4}), (:Node {id: 2, val: 5}), (:Node {id: 3, val: 5})""")
 
@@ -278,7 +278,7 @@ class PredicateBehaviour extends CAPSTestSuite with DefaultGraphInit {
     ))
   }
 
-  test("basic pattern predicate") {
+  it("basic pattern predicate") {
     // Given
     val given = initGraph(
       """
@@ -296,7 +296,7 @@ class PredicateBehaviour extends CAPSTestSuite with DefaultGraphInit {
     ))
   }
 
-  test("pattern predicate with var-length-expand") {
+  it("pattern predicate with var-length-expand") {
     // Given
     val given = initGraph("CREATE (v {id: 1})-[:REL]->({id: 2})-[:REL]->({id: 3})<-[:REL]-(v)")
 
@@ -309,7 +309,7 @@ class PredicateBehaviour extends CAPSTestSuite with DefaultGraphInit {
     ))
   }
 
-  test("simple pattern predicate with node predicate") {
+  it("simple pattern predicate with node predicate") {
     // Given
     val given = initGraph(
       """
@@ -326,7 +326,7 @@ class PredicateBehaviour extends CAPSTestSuite with DefaultGraphInit {
     ))
   }
 
-  test("simple pattern predicate with relationship predicate") {
+  it("simple pattern predicate with relationship predicate") {
     // Given
     val given = initGraph(
       """
@@ -343,7 +343,7 @@ class PredicateBehaviour extends CAPSTestSuite with DefaultGraphInit {
     ))
   }
 
-  test("simple pattern predicate with node label predicate") {
+  it("simple pattern predicate with node label predicate") {
     // Given
     val given = initGraph(
       """
@@ -360,7 +360,7 @@ class PredicateBehaviour extends CAPSTestSuite with DefaultGraphInit {
     ))
   }
 
-  test("simple pattern predicate with relationship type predicate") {
+  it("simple pattern predicate with relationship type predicate") {
     // Given
     val given = initGraph(
       """
@@ -377,7 +377,7 @@ class PredicateBehaviour extends CAPSTestSuite with DefaultGraphInit {
     ))
   }
 
-  test("inverse pattern predicate") {
+  it("inverse pattern predicate") {
     // Given
     val given = initGraph("CREATE (v {id: 1})-[:REL]->({id: 2})-[:REL]->({id: 3})<-[:REL]-(v)")
 
@@ -391,7 +391,7 @@ class PredicateBehaviour extends CAPSTestSuite with DefaultGraphInit {
     ))
   }
 
-  test("nested pattern predicate") {
+  it("nested pattern predicate") {
     val given = initGraph(
       """
         |CREATE ({id: 1, age: 21})
@@ -413,7 +413,7 @@ class PredicateBehaviour extends CAPSTestSuite with DefaultGraphInit {
     ))
   }
 
-  test("pattern predicate with derived node predicate") {
+  it("pattern predicate with derived node predicate") {
     // Given
     val given = initGraph(
       """
@@ -430,7 +430,7 @@ class PredicateBehaviour extends CAPSTestSuite with DefaultGraphInit {
     ))
   }
 
-  test("multiple predicate patterns") {
+  it("multiple predicate patterns") {
     // Given
     val given = initGraph("CREATE ({id: 1})-[:REL]->({id: 2, foo: true})")
 
@@ -444,7 +444,7 @@ class PredicateBehaviour extends CAPSTestSuite with DefaultGraphInit {
   }
 
   describe("Inline pattern predicates") {
-    test("basic pattern predicate") {
+    it("basic pattern predicate") {
       // Given
       val given = initGraph(
         """
@@ -462,7 +462,7 @@ class PredicateBehaviour extends CAPSTestSuite with DefaultGraphInit {
       ))
     }
 
-    test("pattern predicate with var-length-expand") {
+    it("pattern predicate with var-length-expand") {
       // Given
       val given = initGraph("CREATE (v {id: 1})-[:REL]->({id: 2})-[:REL]->({id: 3})<-[:REL]-(v)")
 
@@ -475,7 +475,7 @@ class PredicateBehaviour extends CAPSTestSuite with DefaultGraphInit {
       ))
     }
 
-    test("simple pattern predicate with node predicate") {
+    it("simple pattern predicate with node predicate") {
       // Given
       val given = initGraph(
         """
@@ -492,7 +492,7 @@ class PredicateBehaviour extends CAPSTestSuite with DefaultGraphInit {
       ))
     }
 
-    test("simple pattern predicate with relationship predicate") {
+    it("simple pattern predicate with relationship predicate") {
       // Given
       val given = initGraph(
         """
@@ -509,7 +509,7 @@ class PredicateBehaviour extends CAPSTestSuite with DefaultGraphInit {
       ))
     }
 
-    test("simple pattern predicate with node label predicate") {
+    it("simple pattern predicate with node label predicate") {
       // Given
       val given = initGraph(
         """
@@ -526,7 +526,7 @@ class PredicateBehaviour extends CAPSTestSuite with DefaultGraphInit {
       ))
     }
 
-    test("simple pattern predicate with relationship type predicate") {
+    it("simple pattern predicate with relationship type predicate") {
       // Given
       val given = initGraph(
         """
@@ -543,7 +543,7 @@ class PredicateBehaviour extends CAPSTestSuite with DefaultGraphInit {
       ))
     }
 
-    test("inverse pattern predicate") {
+    it("inverse pattern predicate") {
       // Given
       val given = initGraph("CREATE (v {id: 1})-[:REL]->({id: 2})-[:REL]->({id: 3})<-[:REL]-(v)")
 
@@ -557,7 +557,7 @@ class PredicateBehaviour extends CAPSTestSuite with DefaultGraphInit {
       ))
     }
 
-    test("nested pattern predicate") {
+    it("nested pattern predicate") {
       val given = initGraph(
         """
           |CREATE ({id: 1, age: 21})
@@ -579,7 +579,7 @@ class PredicateBehaviour extends CAPSTestSuite with DefaultGraphInit {
       ))
     }
 
-    test("pattern predicate with derived node predicate") {
+    it("pattern predicate with derived node predicate") {
       // Given
       val given = initGraph(
         """
@@ -596,7 +596,7 @@ class PredicateBehaviour extends CAPSTestSuite with DefaultGraphInit {
       ))
     }
 
-    test("multiple predicate patterns") {
+    it("multiple predicate patterns") {
       // Given
       val given = initGraph("CREATE ({id: 1})-[:REL]->({id: 2, foo: true})")
 
@@ -611,7 +611,7 @@ class PredicateBehaviour extends CAPSTestSuite with DefaultGraphInit {
   }
 
   describe("Pattern predicates via exists") {
-    test("basic pattern predicate") {
+    it("basic pattern predicate") {
       // Given
       val given = initGraph(
         """
@@ -629,7 +629,7 @@ class PredicateBehaviour extends CAPSTestSuite with DefaultGraphInit {
       ))
     }
 
-    test("pattern predicate with var-length-expand") {
+    it("pattern predicate with var-length-expand") {
       // Given
       val given = initGraph("CREATE (v {id: 1})-[:REL]->({id: 2})-[:REL]->({id: 3})<-[:REL]-(v)")
 
@@ -642,7 +642,7 @@ class PredicateBehaviour extends CAPSTestSuite with DefaultGraphInit {
       ))
     }
 
-    test("simple pattern predicate with node predicate") {
+    it("simple pattern predicate with node predicate") {
       // Given
       val given = initGraph(
         """
@@ -659,7 +659,7 @@ class PredicateBehaviour extends CAPSTestSuite with DefaultGraphInit {
       ))
     }
 
-    test("simple pattern predicate with relationship predicate") {
+    it("simple pattern predicate with relationship predicate") {
       // Given
       val given = initGraph(
         """
@@ -676,7 +676,7 @@ class PredicateBehaviour extends CAPSTestSuite with DefaultGraphInit {
       ))
     }
 
-    test("simple pattern predicate with node label predicate") {
+    it("simple pattern predicate with node label predicate") {
       // Given
       val given = initGraph(
         """
@@ -693,7 +693,7 @@ class PredicateBehaviour extends CAPSTestSuite with DefaultGraphInit {
       ))
     }
 
-    test("simple pattern predicate with relationship type predicate") {
+    it("simple pattern predicate with relationship type predicate") {
       // Given
       val given = initGraph(
         """
@@ -710,7 +710,7 @@ class PredicateBehaviour extends CAPSTestSuite with DefaultGraphInit {
       ))
     }
 
-    test("inverse pattern predicate") {
+    it("inverse pattern predicate") {
       // Given
       val given = initGraph("CREATE (v {id: 1})-[:REL]->({id: 2})-[:REL]->({id: 3})<-[:REL]-(v)")
 
@@ -724,7 +724,7 @@ class PredicateBehaviour extends CAPSTestSuite with DefaultGraphInit {
       ))
     }
 
-    test("nested pattern predicate") {
+    it("nested pattern predicate") {
       val given = initGraph(
         """
           |CREATE ({id: 1, age: 21})
@@ -746,7 +746,7 @@ class PredicateBehaviour extends CAPSTestSuite with DefaultGraphInit {
       ))
     }
 
-    test("pattern predicate with derived node predicate") {
+    it("pattern predicate with derived node predicate") {
       // Given
       val given = initGraph(
         """
@@ -763,7 +763,7 @@ class PredicateBehaviour extends CAPSTestSuite with DefaultGraphInit {
       ))
     }
 
-    test("multiple predicate patterns") {
+    it("multiple predicate patterns") {
       // Given
       val given = initGraph("CREATE ({id: 1})-[:REL]->({id: 2, foo: true})")
 
