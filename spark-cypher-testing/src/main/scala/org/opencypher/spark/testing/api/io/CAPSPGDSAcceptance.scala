@@ -47,7 +47,7 @@ trait CAPSPGDSAcceptance extends PGDSAcceptance[CAPSSession] {
 
     Try(cypherSession.cypher(s"CREATE GRAPH $ns.g3 { CONSTRUCT ON g1, g2 RETURN GRAPH }")) match {
       case Failure(_: UnsupportedOperationException) =>
-      case Failure(t) => badFailure(t)
+      case Failure(t) => throw t
       case Success(_) =>
         val graph = cypherSession.cypher(s"FROM GRAPH $ns.g3 RETURN GRAPH").getGraph.asCaps
 
@@ -69,7 +69,7 @@ trait CAPSPGDSAcceptance extends PGDSAcceptance[CAPSSession] {
 
     Try(cypherSession.catalog.source(ns).store(name, graphToStore)) match {
       case Failure(_: UnsupportedOperationException) =>
-      case Failure(t) => badFailure(t)
+      case Failure(t) => throw t
       case Success(_) =>
         val graph = cypherSession.catalog.source(ns).graph(name).asCaps
 

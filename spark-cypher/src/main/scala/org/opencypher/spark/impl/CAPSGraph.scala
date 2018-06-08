@@ -119,23 +119,7 @@ trait CAPSGraph extends PropertyGraph with GraphOperations with Serializable {
 
 object CAPSGraph {
 
-  def empty(implicit caps: CAPSSession): CAPSGraph =
-    new EmptyGraph() {
-
-      override def session: CAPSSession = caps
-
-      override def cache(): CAPSGraph = this
-
-      override def persist(): CAPSGraph = this
-
-      override def persist(storageLevel: StorageLevel): CAPSGraph = this
-
-      override def unpersist(): CAPSGraph = this
-
-      override def unpersist(blocking: Boolean): CAPSGraph = this
-
-      override def tags: Set[Int] = Set.empty
-    }
+  def empty(implicit caps: CAPSSession): CAPSGraph = EmptyGraph()
 
   def create(nodeTable: CAPSNodeTable, entityTables: CAPSEntityTable*)(implicit caps: CAPSSession): CAPSGraph = {
     create(Set(0), None, nodeTable, entityTables: _*)
@@ -202,7 +186,7 @@ object CAPSGraph {
     }
   }
 
-  sealed abstract class EmptyGraph(implicit val caps: CAPSSession) extends CAPSGraph {
+  sealed case class EmptyGraph(implicit val caps: CAPSSession) extends CAPSGraph {
 
     override val schema: CAPSSchema = CAPSSchema.empty
 
@@ -211,6 +195,20 @@ object CAPSGraph {
 
     override def relationships(name: String, cypherType: CTRelationship): CAPSRecords =
       CAPSRecords.empty(RecordHeader.from(Var(name)(cypherType)))
+
+    override def session: CAPSSession = caps
+
+    override def cache(): CAPSGraph = this
+
+    override def persist(): CAPSGraph = this
+
+    override def persist(storageLevel: StorageLevel): CAPSGraph = this
+
+    override def unpersist(): CAPSGraph = this
+
+    override def unpersist(blocking: Boolean): CAPSGraph = this
+
+    override def tags: Set[Int] = Set.empty
   }
 
 }

@@ -29,7 +29,7 @@ package org.opencypher.spark.impl.physical.operators
 import org.apache.spark.sql.functions.monotonically_increasing_id
 import org.apache.spark.sql.{Column, functions}
 import org.opencypher.okapi.api.graph.QualifiedGraphName
-import org.opencypher.okapi.api.types.{CTBoolean, CTInteger, CTString}
+import org.opencypher.okapi.api.types.{CTBoolean, CTInteger}
 import org.opencypher.okapi.ir.api.expr.{Expr, Var, _}
 import org.opencypher.okapi.ir.api.set.SetPropertyItem
 import org.opencypher.okapi.ir.api.{PropertyKey, RelType}
@@ -37,6 +37,7 @@ import org.opencypher.okapi.logical.impl.{ConstructedEntity, ConstructedNode, Co
 import org.opencypher.okapi.relational.impl.physical.JoinType
 import org.opencypher.okapi.relational.impl.table.RecordHeader
 import org.opencypher.spark.api.{CAPSSession, Tags}
+import org.opencypher.spark.impl.CAPSGraph.EmptyGraph
 import org.opencypher.spark.impl.CAPSUnionGraph.{apply => _, unapply => _}
 import org.opencypher.spark.impl.DataFrameOps._
 import org.opencypher.spark.impl.SparkSQLExprMapper._
@@ -274,7 +275,11 @@ final case class ConstructGraph(
     }
 
     val patternGraph = CAPSGraph.create(patternGraphTable, schema.asCaps, tagsUsed)
-    val constructedCombinedWithOn = CAPSUnionGraph(Map(identityRetaggings(onGraph), identityRetaggings(patternGraph)))
+
+    val constructedCombinedWithOn = onGraph match {
+      case _: EmptyGraph => CAPSUnionGraph(Map(identityRetaggings(patternGraph)))
+      case _ => CAPSUnionGraph(Map(identityRetaggings(onGraph), identityRetaggings(patternGraph)))
+    }
 
     context.patternGraphTags.update(construct.name, constructedCombinedWithOn.tags)
 

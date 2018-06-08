@@ -169,7 +169,7 @@ trait PGDSAcceptance[Session <: CypherSession] extends BeforeAndAfterEach {
           cypherSession.cypher(s"CREATE GRAPH $ns.$gn { RETURN GRAPH }")
         }
       case Failure(_: UnsupportedOperationException) =>
-      case Failure(t) => badFailure(t)
+      case Failure(t) => throw t
     }
   }
 
@@ -193,7 +193,7 @@ trait PGDSAcceptance[Session <: CypherSession] extends BeforeAndAfterEach {
           CypherMap("c.name" -> "new")
         ))
       case Failure(_: UnsupportedOperationException) =>
-      case Failure(t) => badFailure(t)
+      case Failure(t) => throw t
     }
   }
 
@@ -215,7 +215,7 @@ trait PGDSAcceptance[Session <: CypherSession] extends BeforeAndAfterEach {
           CypherMap("c.Āſ" -> "Āſ")
         ))
       case Failure(_: UnsupportedOperationException) =>
-      case Failure(t) => badFailure(t)
+      case Failure(t) => throw t
     }
   }
 
@@ -237,7 +237,7 @@ trait PGDSAcceptance[Session <: CypherSession] extends BeforeAndAfterEach {
           CypherMap("c.id" -> 100)
         ))
       case Failure(_: UnsupportedOperationException) =>
-      case Failure(t) => badFailure(t)
+      case Failure(t) => throw t
     }
   }
 
@@ -263,7 +263,7 @@ trait PGDSAcceptance[Session <: CypherSession] extends BeforeAndAfterEach {
           cypherSession.catalog.source(ns).graph(unionGraphName).nodes("n").size shouldBe 2
         }
       case Failure(_: UnsupportedOperationException) =>
-      case Failure(t) => badFailure(t)
+      case Failure(t) => throw t
     }
   }
 
@@ -283,7 +283,7 @@ trait PGDSAcceptance[Session <: CypherSession] extends BeforeAndAfterEach {
     val maybeStored = Try(cypherSession.catalog.source(ns).store(firstConstructedGraphName, firstConstructedGraph))
     maybeStored match {
       case Failure(_: UnsupportedOperationException) =>
-      case Failure(f) => badFailure(f)
+      case Failure(t) => throw t
       case Success(_) =>
         val retrievedConstructedGraph = cypherSession.catalog.source(ns).graph(firstConstructedGraphName)
         retrievedConstructedGraph.nodes("n").size shouldBe 8
@@ -308,12 +308,8 @@ trait PGDSAcceptance[Session <: CypherSession] extends BeforeAndAfterEach {
           cypherSession.catalog.source(ns).hasGraph(gn) shouldBe false
         }
       case Failure(_: UnsupportedOperationException) =>
-      case Failure(t) => badFailure(t)
+      case Failure(t) => throw t
     }
-  }
-
-  protected def badFailure(t: Throwable): Unit = {
-    fail(s"Expected success or `UnsupportedOperationException`, got $t")
   }
 
 }

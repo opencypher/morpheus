@@ -75,7 +75,12 @@ object SparkCypherTable {
     def unpersist(blocking: Boolean): DataFrameTable = df.unpersist(blocking)
 
     override def select(cols: String*): DataFrameTable = {
-      df.select(cols.head, cols.tail: _*)
+      if (cols.nonEmpty) {
+        df.select(cols.head, cols.tail: _*)
+      } else {
+        // TODO: this is used in Construct, check why this is necessary
+        df.select()
+      }
     }
 
     override def drop(cols: String*): DataFrameTable = {
@@ -215,7 +220,8 @@ case class CAPSRelationshipTable(
 
   override def from(
     header: RecordHeader,
-    table: DataFrameTable): CAPSRelationshipTable = CAPSRelationshipTable(mapping, table)
+    table: DataFrameTable
+  ): CAPSRelationshipTable = CAPSRelationshipTable(mapping, table)
 }
 
 object CAPSRelationshipTable {

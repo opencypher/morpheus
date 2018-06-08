@@ -392,17 +392,18 @@ class CAPSPatternGraphTest extends CAPSGraphTest with RecordsVerificationFixture
   it("Supports node scans from ad-hoc table") {
     val n: Var = Var("n")(CTNode)
     val exprs = Set(
-      Var("p")(CTNode("Person")),
-      n,
       HasLabel(n, Label("Person"))(CTBoolean),
+      n,
+      Var("p")(CTNode("Person")),
       Var("q")(CTNode("Foo"))
     )
     val header = RecordHeader.from(exprs)
 
     val df = sparkSession.createDataFrame(
+      // [____n:Person, n, p, q]
       List(
-        Row(0L, 1L, true, 2L),
-        Row(10L, 11L, false, 12L)
+        Row(true, 1L, 0L, 2L),
+        Row(false, 11L, 10L, 12L)
       ).asJava,
       header.toStructType)
 
