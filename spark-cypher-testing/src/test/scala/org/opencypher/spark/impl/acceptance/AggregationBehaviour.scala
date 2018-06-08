@@ -27,6 +27,7 @@
 package org.opencypher.spark.impl.acceptance
 
 import org.opencypher.okapi.api.value.CypherValue._
+import org.opencypher.okapi.relational.api.configuration.CoraConfiguration.{PrintFlatPlan, PrintPhysicalPlan}
 import org.opencypher.okapi.testing.Bag
 import org.opencypher.okapi.testing.Bag._
 import org.opencypher.spark.testing.CAPSTestSuite
@@ -37,7 +38,7 @@ class AggregationBehaviour extends CAPSTestSuite with DefaultGraphInit {
 
   describe("AVG") {
 
-    test("avg(prop) with integers in WITH") {
+    it("avg(prop) with integers in WITH") {
       val graph = initGraph("CREATE ({val:2}),({val:4}),({val:6})")
 
       val result = graph.cypher("MATCH (n) WITH AVG(n.val) AS res RETURN res")
@@ -47,7 +48,7 @@ class AggregationBehaviour extends CAPSTestSuite with DefaultGraphInit {
       ))
     }
 
-    test("avg(prop) with integers in RETURN") {
+    it("avg(prop) with integers in RETURN") {
       val graph = initGraph("CREATE ({val: 2}),({val: 4}),({val: 6})")
 
       val result = graph.cypher("MATCH (n) RETURN AVG(n.val) AS res")
@@ -57,7 +58,7 @@ class AggregationBehaviour extends CAPSTestSuite with DefaultGraphInit {
       ))
     }
 
-    test("avg(prop) with integers in RETURN without alias") {
+    it("avg(prop) with integers in RETURN without alias") {
       val graph = initGraph("CREATE ({val: 2}),({val: 4}),({val: 6})")
 
       val result = graph.cypher("MATCH (n) RETURN AVG(n.val)")
@@ -67,7 +68,7 @@ class AggregationBehaviour extends CAPSTestSuite with DefaultGraphInit {
       ))
     }
 
-    test("avg(prop) with floats in WITH") {
+    it("avg(prop) with floats in WITH") {
       val graph = initGraph("CREATE ({val:5.0D}),({val:5.0D}),({val:0.5D})")
 
       val result = graph.cypher("MATCH (n) WITH AVG(n.val) AS res RETURN res")
@@ -77,7 +78,7 @@ class AggregationBehaviour extends CAPSTestSuite with DefaultGraphInit {
       ))
     }
 
-    test("avg(prop) with floats in RETURN") {
+    it("avg(prop) with floats in RETURN") {
       val graph = initGraph("CREATE ({val:5.0D}),({val:5.0D}),({val:0.5D})")
 
       val result = graph.cypher("MATCH (n) RETURN AVG(n.val) AS res")
@@ -87,7 +88,7 @@ class AggregationBehaviour extends CAPSTestSuite with DefaultGraphInit {
       ))
     }
 
-    test("avg(prop) with single null value in WITH") {
+    it("avg(prop) with single null value in WITH") {
       val graph = initGraph("CREATE ({val:42.0D}),({val:23.0D}),()")
 
       val result = graph.cypher("MATCH (n) WITH AVG(n.val) AS res RETURN res")
@@ -97,7 +98,7 @@ class AggregationBehaviour extends CAPSTestSuite with DefaultGraphInit {
       ))
     }
 
-    test("avg(prop) with single null value in RETURN") {
+    it("avg(prop) with single null value in RETURN") {
       val graph = initGraph("CREATE ({val:42.0D}),({val:23.0D}),()")
 
       val result = graph.cypher("MATCH (n) RETURN AVG(n.val) AS res")
@@ -130,7 +131,7 @@ class AggregationBehaviour extends CAPSTestSuite with DefaultGraphInit {
 
   describe("COUNT") {
 
-    test("count(*) in WITH") {
+    it("count(*) in WITH") {
       val graph = initGraph("CREATE ({name: 'foo'}), ({name: 'bar'}), (), (), (), ({name: 'baz'})")
 
       val result = graph.cypher("MATCH (n) WITH count(*) AS nbrRows RETURN nbrRows")
@@ -140,7 +141,7 @@ class AggregationBehaviour extends CAPSTestSuite with DefaultGraphInit {
       ))
     }
 
-    test("count(*) in RETURN") {
+    it("count(*) in RETURN") {
       val graph = initGraph("CREATE ({name: 'foo'}), ({name: 'bar'}), (), (), (), ({name: 'baz'})")
 
       val result = graph.cypher("MATCH (n) RETURN count(*) AS nbrRows")
@@ -150,7 +151,7 @@ class AggregationBehaviour extends CAPSTestSuite with DefaultGraphInit {
       ))
     }
 
-    test("count(n) in RETURN") {
+    it("count(n) in RETURN") {
       val graph = initGraph("CREATE ({name: 'foo'}), ({name: 'bar'}), (), (), (), ({name: 'baz'})")
 
       val result = graph.cypher("MATCH (n) RETURN count(n) AS nbrRows")
@@ -160,7 +161,7 @@ class AggregationBehaviour extends CAPSTestSuite with DefaultGraphInit {
       ))
     }
 
-    test("count(n) in RETURN without alias") {
+    it("count(n) in RETURN without alias") {
       val graph = initGraph("CREATE ({name: 'foo'}), ({name: 'bar'}), (), (), (), ({name: 'baz'})")
 
       val result = graph.cypher("MATCH (n) RETURN count(n)")
@@ -170,7 +171,7 @@ class AggregationBehaviour extends CAPSTestSuite with DefaultGraphInit {
       ))
     }
 
-    test("count(*) in return without alias") {
+    it("count(*) in return without alias") {
       val graph = initGraph("CREATE ({name: 'foo'}), ({name: 'bar'}), (), (), (), ({name: 'baz'})")
 
       val result = graph.cypher("MATCH (n) RETURN count(*)")
@@ -180,7 +181,7 @@ class AggregationBehaviour extends CAPSTestSuite with DefaultGraphInit {
       ))
     }
 
-    test("simple count(prop)") {
+    it("simple count(prop)") {
       val graph = initGraph("CREATE ({name: 'foo'}), ({name: 'bar'}), (), (), (), ({name: 'baz'})")
 
       val result = graph.cypher("MATCH (n) WITH count(n.name) AS nonNullNames RETURN nonNullNames")
@@ -190,7 +191,7 @@ class AggregationBehaviour extends CAPSTestSuite with DefaultGraphInit {
       ))
     }
 
-    test("simple count(node)") {
+    it("simple count(node)") {
       val graph = initGraph("CREATE ({name: 'foo'}), ({name: 'bar'}), (), (), (), ({name: 'baz'})")
 
       val result = graph.cypher("MATCH (n) WITH count(n) AS nodes RETURN nodes")
@@ -200,7 +201,7 @@ class AggregationBehaviour extends CAPSTestSuite with DefaultGraphInit {
       ))
     }
 
-    test("count after expand") {
+    it("count after expand") {
       val graph = initGraph("CREATE ({name: 'foo'})-[:A]->(:B), ({name: 'bar'}), (), ()-[:A]->(:B), (), ({name: 'baz'})")
 
       val result = graph.cypher("MATCH (n)-->(b:B) WITH count(b) AS nodes RETURN nodes")
@@ -210,7 +211,10 @@ class AggregationBehaviour extends CAPSTestSuite with DefaultGraphInit {
       ))
     }
 
-    test("count() with grouping in RETURN clause") {
+    it("count() with grouping in RETURN clause") {
+      PrintFlatPlan.set()
+      PrintPhysicalPlan.set()
+
       val graph = initGraph("CREATE ({name: 'foo'}), ({name: 'foo'}), (), (), (), ({name: 'baz'})")
 
       val result = graph.cypher("MATCH (n) RETURN n.name as name, count(*) AS amount")
@@ -222,7 +226,7 @@ class AggregationBehaviour extends CAPSTestSuite with DefaultGraphInit {
       ))
     }
 
-    test("count() with grouping in WITH clause") {
+    it("count() with grouping in WITH clause") {
       val graph = initGraph("CREATE ({name: 'foo'}), ({name: 'foo'}), (), (), (), ({name: 'baz'})")
 
       val result = graph.cypher("MATCH (n) WITH n.name as name, count(*) AS amount RETURN name, amount")
@@ -234,7 +238,7 @@ class AggregationBehaviour extends CAPSTestSuite with DefaultGraphInit {
       ))
     }
 
-    test("count() with grouping on multiple keys") {
+    it("count() with grouping on multiple keys") {
       val graph = initGraph("CREATE ({name: 'foo', age: 42}), ({name: 'foo', age: 42}), ({name: 'foo', age: 23}), (), (), ({name: 'baz', age: 23})")
 
       val result = graph
@@ -272,7 +276,7 @@ class AggregationBehaviour extends CAPSTestSuite with DefaultGraphInit {
 
   describe("MIN") {
 
-    test("min(prop) in WITH") {
+    it("min(prop) in WITH") {
       val graph = initGraph("CREATE ({val: 42}),({val: 23}),({val: 84})")
 
       val result = graph.cypher("MATCH (n) WITH MIN(n.val) AS res RETURN res")
@@ -282,7 +286,7 @@ class AggregationBehaviour extends CAPSTestSuite with DefaultGraphInit {
       ))
     }
 
-    test("min(prop) in RETURN") {
+    it("min(prop) in RETURN") {
       val graph = initGraph("CREATE ({val: 42}),({val: 23}),({val: 84})")
 
       val result = graph.cypher("MATCH (n) RETURN MIN(n.val) AS res")
@@ -292,7 +296,7 @@ class AggregationBehaviour extends CAPSTestSuite with DefaultGraphInit {
       ))
     }
 
-    test("min(prop) with single null value in WITH") {
+    it("min(prop) with single null value in WITH") {
       val graph = initGraph("CREATE ({val: 42}),({val: 23}),()")
 
       val result = graph.cypher("MATCH (n) WITH MIN(n.val) AS res RETURN res")
@@ -302,7 +306,7 @@ class AggregationBehaviour extends CAPSTestSuite with DefaultGraphInit {
       ))
     }
 
-    test("min(prop) with single null value in RETURN") {
+    it("min(prop) with single null value in RETURN") {
       val graph = initGraph("CREATE ({val: 42}),({val: 23}),()")
 
       val result = graph.cypher("MATCH (n) RETURN MIN(n.val) AS res")
@@ -312,7 +316,7 @@ class AggregationBehaviour extends CAPSTestSuite with DefaultGraphInit {
       ))
     }
 
-    test("min(prop) with single null value in RETURN without alias") {
+    it("min(prop) with single null value in RETURN without alias") {
       val graph = initGraph("CREATE ({val: 42}),({val: 23}),()")
 
       val result = graph.cypher("MATCH (n) RETURN MIN(n.val)")
@@ -345,7 +349,7 @@ class AggregationBehaviour extends CAPSTestSuite with DefaultGraphInit {
 
   describe("MAX") {
 
-    test("max(prop) in WITH") {
+    it("max(prop) in WITH") {
       val graph = initGraph("CREATE ({val: 42}),({val: 23}),({val: 84})")
 
       val result = graph.cypher("MATCH (n) WITH MAX(n.val) AS res RETURN res")
@@ -355,7 +359,7 @@ class AggregationBehaviour extends CAPSTestSuite with DefaultGraphInit {
       ))
     }
 
-    test("max(prop) in RETURN") {
+    it("max(prop) in RETURN") {
       val graph = initGraph("CREATE ({val: 42}),({val: 23}),({val: 84})")
 
       val result = graph.cypher("MATCH (n) RETURN MAX(n.val) AS res")
@@ -365,7 +369,7 @@ class AggregationBehaviour extends CAPSTestSuite with DefaultGraphInit {
       ))
     }
 
-    test("max(prop) with single null value in WITH") {
+    it("max(prop) with single null value in WITH") {
       val graph = initGraph("CREATE ({val: 42}),({val: 23}),()")
 
       val result = graph.cypher("MATCH (n) WITH MAX(n.val) AS res RETURN res")
@@ -375,7 +379,7 @@ class AggregationBehaviour extends CAPSTestSuite with DefaultGraphInit {
       ))
     }
 
-    test("max(prop) with single null value in RETURN") {
+    it("max(prop) with single null value in RETURN") {
       val graph = initGraph("CREATE ({val: 42}),({val: 23}),()")
 
       val result = graph.cypher("MATCH (n) RETURN MAX(n.val) AS res")
@@ -385,7 +389,7 @@ class AggregationBehaviour extends CAPSTestSuite with DefaultGraphInit {
       ))
     }
 
-    test("max(prop) with single null value in RETURN without alias") {
+    it("max(prop) with single null value in RETURN without alias") {
       val graph = initGraph("CREATE ({val: 42}),({val: 23}),()")
 
       val result = graph.cypher("MATCH (n) RETURN MAX(n.val)")
@@ -419,7 +423,7 @@ class AggregationBehaviour extends CAPSTestSuite with DefaultGraphInit {
 
   describe("SUM") {
 
-    test("sum(prop) with integers in WITH") {
+    it("sum(prop) with integers in WITH") {
       val graph = initGraph("CREATE ({val: 2}),({val: 4}),({val: 6})")
 
       val result = graph.cypher("MATCH (n) WITH SUM(n.val) AS res RETURN res")
@@ -429,7 +433,7 @@ class AggregationBehaviour extends CAPSTestSuite with DefaultGraphInit {
       ))
     }
 
-    test("sum(prop) with integers in RETURN") {
+    it("sum(prop) with integers in RETURN") {
       val graph = initGraph("CREATE ({val: 2}),({val: 4}),({val: 6})")
 
       val result = graph.cypher("MATCH (n) RETURN SUM(n.val) AS res")
@@ -439,7 +443,7 @@ class AggregationBehaviour extends CAPSTestSuite with DefaultGraphInit {
       ))
     }
 
-    test("sum(prop) with floats in WITH") {
+    it("sum(prop) with floats in WITH") {
       val graph = initGraph("CREATE ({val:5.0D}),({val:5.0D}),({val:0.5D})")
 
       val result = graph.cypher("MATCH (n) WITH SUM(n.val) AS res RETURN res")
@@ -449,7 +453,7 @@ class AggregationBehaviour extends CAPSTestSuite with DefaultGraphInit {
       ))
     }
 
-    test("sum(prop) with floats in RETURN") {
+    it("sum(prop) with floats in RETURN") {
       val graph = initGraph("CREATE ({val:5.0D}),({val:5.0D}),({val:0.5D})")
 
       val result = graph.cypher("MATCH (n) RETURN SUM(n.val) AS res")
@@ -459,7 +463,7 @@ class AggregationBehaviour extends CAPSTestSuite with DefaultGraphInit {
       ))
     }
 
-    test("sum(prop) with floats in RETURN without alias") {
+    it("sum(prop) with floats in RETURN without alias") {
       val graph = initGraph("CREATE ({val:5.0D}),({val:5.0D}),({val:0.5D})")
 
       val result = graph.cypher("MATCH (n) RETURN SUM(n.val)")
@@ -469,7 +473,7 @@ class AggregationBehaviour extends CAPSTestSuite with DefaultGraphInit {
       ))
     }
 
-    test("simple sum(prop) with single null value in WITH") {
+    it("simple sum(prop) with single null value in WITH") {
       val graph = initGraph("CREATE ({val:42.0D}),({val:23.0D}),()")
 
       val result = graph.cypher("MATCH (n) WITH SUM(n.val) AS res RETURN res")
@@ -479,7 +483,7 @@ class AggregationBehaviour extends CAPSTestSuite with DefaultGraphInit {
       ))
     }
 
-    test("simple sum(prop) with single null value in RETURN") {
+    it("simple sum(prop) with single null value in RETURN") {
       val graph = initGraph("CREATE ({val:42.0D}),({val:23.0D}),()")
 
       val result = graph.cypher("MATCH (n) RETURN SUM(n.val) AS res")
@@ -512,7 +516,7 @@ class AggregationBehaviour extends CAPSTestSuite with DefaultGraphInit {
 
   describe("COLLECT") {
 
-    test("collect(prop) with integers in WITH") {
+    it("collect(prop) with integers in WITH") {
       val graph = initGraph("CREATE ({val: 2}),({val: 4}),({val: 6})")
 
       val result = graph.cypher("MATCH (n) WITH COLLECT(n.val) AS res RETURN res")
@@ -522,7 +526,7 @@ class AggregationBehaviour extends CAPSTestSuite with DefaultGraphInit {
       ))
     }
 
-    test("collect(prop) with integers in RETURN") {
+    it("collect(prop) with integers in RETURN") {
       val graph = initGraph("CREATE ({val: 2}),({val: 4}),({val: 6})")
 
       val result = graph.cypher("MATCH (n) RETURN COLLECT(n.val) AS res")
@@ -533,7 +537,7 @@ class AggregationBehaviour extends CAPSTestSuite with DefaultGraphInit {
     }
 
 
-    test("simple collect(prop) with single null value in WITH") {
+    it("simple collect(prop) with single null value in WITH") {
       val graph = initGraph("CREATE ({val:42.0D}),({val:23.0D}),()")
 
       val result = graph.cypher("MATCH (n) WITH COLLECT(n.val) AS res RETURN res")
@@ -543,7 +547,7 @@ class AggregationBehaviour extends CAPSTestSuite with DefaultGraphInit {
       ))
     }
 
-    test("simple collect(prop) with single null value in RETURN") {
+    it("simple collect(prop) with single null value in RETURN") {
       val graph = initGraph("CREATE ({val:42.0D}),({val:23.0D}),()")
 
       val result = graph.cypher("MATCH (n) RETURN COLLECT(n.val) AS res")
@@ -554,7 +558,7 @@ class AggregationBehaviour extends CAPSTestSuite with DefaultGraphInit {
     }
 
 
-    test("simple collect(prop) with only null values in WITH") {
+    it("simple collect(prop) with only null values in WITH") {
       val graph = initGraph("CREATE ({val:NULL}),(),()")
 
       val result = graph.cypher("MATCH (n) WITH Collect(n.val) AS res RETURN res")
@@ -564,7 +568,7 @@ class AggregationBehaviour extends CAPSTestSuite with DefaultGraphInit {
       ))
     }
 
-    test("simple collect(prop) with only null values in RETURN") {
+    it("simple collect(prop) with only null values in RETURN") {
       val graph = initGraph("CREATE ({val:NULL}),(),()")
 
       val result = graph.cypher("MATCH (n) RETURN COLLECT(n.val) AS res")
@@ -614,7 +618,7 @@ class AggregationBehaviour extends CAPSTestSuite with DefaultGraphInit {
 
   describe("Combinations") {
 
-    test("multiple aggregates in WITH") {
+    it("multiple aggregates in WITH") {
       val graph = initGraph("CREATE ({val: 42}),({val: 23}),({val: 84})")
 
       val result = graph.cypher(
@@ -633,7 +637,7 @@ class AggregationBehaviour extends CAPSTestSuite with DefaultGraphInit {
       ))
     }
 
-    test("multiple aggregates in RETURN") {
+    it("multiple aggregates in RETURN") {
       val graph = initGraph("CREATE ({val: 42}),({val: 23}),({val: 84})")
 
       val result = graph.cypher(
