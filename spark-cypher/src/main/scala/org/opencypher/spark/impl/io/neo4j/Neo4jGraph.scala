@@ -182,8 +182,8 @@ object Neo4jGraph {
         case _: EndNode =>
           importedRel.endNodeId()
 
-        case _: HasType =>
-          relType
+        case HasType(_, rType) =>
+          relType == rType.name
 
         case _: Var =>
           importedRel.id()
