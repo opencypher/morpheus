@@ -482,14 +482,12 @@ class CAPSPatternGraphTest extends CAPSGraphTest with RecordsVerificationFixture
       Property(p, PropertyKey("name"))(CTString)
     )
     val header = RecordHeader.from(exprs)
-
-    val sparkHeader = header.toStructType
     val df = sparkSession.createDataFrame(
+      // [____p:Person, ____p_dot_nameSTRING, p]
       List(
-        Row(0L, true, "PersonPeter"),
-        Row(0L, true, "PersonPeter")
-      ).asJava,
-      sparkHeader)
+        Row(true, "PersonPeter", 0L),
+        Row(true, "PersonPeter", 0L)
+      ).asJava, header.toStructType)
 
     val schema = Schema.empty
       .withNodePropertyKeys("Person")("name" -> CTString)
@@ -509,20 +507,18 @@ class CAPSPatternGraphTest extends CAPSGraphTest with RecordsVerificationFixture
     val exprs = Seq(
       p,
       HasLabel(p, Label("Person"))(CTBoolean),
+      Property(p, PropertyKey("name"))(CTString),
       e,
       HasLabel(e, Label("Employee"))(CTBoolean),
-      Property(p, PropertyKey("name"))(CTString),
-      Var("foo")(CTString), Property(e, PropertyKey("name"))(CTString)
+      Property(e, PropertyKey("name"))(CTString)
     )
     val header = RecordHeader.from(exprs)
-
-    val sparkHeader = header.toStructType
     val df = sparkSession.createDataFrame(
+      // [____e:Employee, ____e_dot_nameSTRING, ____p:Person, ____p_dot_nameSTRING, e, p]
       List(
-        Row(0L, true, 1L, true, "PersonPeter", "EmployeePeter"),
-        Row(10L, true, 11L, true, "PersonSusanna", "EmployeeSusanna")
-      ).asJava,
-      sparkHeader)
+        Row(true, "EmployeePeter", true, "PersonPeter", 1L, 0L),
+        Row(true, "EmployeeSusanna", true, "PersonSusanna", 11L, 10L)
+      ).asJava, header.toStructType)
 
     val schema = Schema.empty
       .withNodePropertyKeys("Person")("name" -> CTString)
