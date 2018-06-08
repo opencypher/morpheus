@@ -145,6 +145,21 @@ final case class Project(in: CAPSPhysicalOperator, expr: Expr, header: RecordHea
 
       CAPSRecords(header, newData)(records.caps)
     }
+
+//    val exists = in.header.contains(expr)
+//
+//    val updatedData = if (exists) {
+//      records.df
+//    } else {
+//      val projectColumn = header.column(expr)
+//      //        if (in.header.columns.contains(projectColumn)) {
+//      //          CAPSRecords(header.withAlias(e))
+//      //        }
+//      val dfColumn = expr.asSparkSQLExpr(header, records.df, context).as(projectColumn)
+//      records.df.safeAddColumn(projectColumn, dfColumn)
+//    }
+//    CAPSRecords(header, updatedData)(records.caps)
+//  }
   }
 }
 

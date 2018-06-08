@@ -30,6 +30,7 @@ import org.apache.spark.sql.Row
 import org.opencypher.okapi.api.table.CypherRecords
 import org.opencypher.okapi.api.value.CypherValue.CypherMap
 import org.opencypher.okapi.impl.exception.IllegalArgumentException
+import org.opencypher.okapi.relational.api.configuration.CoraConfiguration.{PrintFlatPlan, PrintPhysicalPlan}
 import org.opencypher.okapi.testing.Bag
 import org.opencypher.okapi.testing.Bag._
 import org.opencypher.spark.impl.CAPSConverters._
@@ -44,7 +45,7 @@ class CAPSRecordsAcceptanceTest extends CAPSTestSuite with Neo4jServerFixture wi
   private lazy val graph: CAPSGraph =
     Neo4jGraphLoader.fromNeo4j(neo4jConfig)
 
-  test("convert to CypherMaps") {
+  it("convert to CypherMaps") {
     // When
     val result = graph.cypher("MATCH (a:Person) WHERE a.birthyear < 1930 RETURN a, a.name")
 
@@ -60,7 +61,7 @@ class CAPSRecordsAcceptanceTest extends CAPSTestSuite with Neo4jServerFixture wi
       ))
   }
 
-  test("label scan and project") {
+  it("label scan and project") {
     // When
     val result = graph.cypher("MATCH (a:Person) RETURN a.name")
 
@@ -68,7 +69,7 @@ class CAPSRecordsAcceptanceTest extends CAPSTestSuite with Neo4jServerFixture wi
     result.getRecords shouldHaveSize 15 // andContain "Rachel Kempson"
   }
 
-  test("expand and project") {
+  it("expand and project") {
     // When
     val result = graph.cypher("MATCH (a:Actor)-[r]->(m:Film) RETURN a.birthyear, m.title")
 
@@ -76,7 +77,7 @@ class CAPSRecordsAcceptanceTest extends CAPSTestSuite with Neo4jServerFixture wi
     result.getRecords shouldHaveSize 8 // andContain 1952 -> "Batman Begins"
   }
 
-  test("filter rels on property") {
+  it("filter rels on property") {
     // Given
     val query = "MATCH (a:Actor)-[r:ACTED_IN]->() WHERE r.charactername = 'Guenevere' RETURN a, r"
 
@@ -90,7 +91,7 @@ class CAPSRecordsAcceptanceTest extends CAPSTestSuite with Neo4jServerFixture wi
       ))
   }
 
-  test("filter nodes on property") {
+  it("filter nodes on property") {
     // When
     val result = graph.cypher("MATCH (p:Person) WHERE p.birthyear = 1970 RETURN p.name")
 
@@ -98,7 +99,7 @@ class CAPSRecordsAcceptanceTest extends CAPSTestSuite with Neo4jServerFixture wi
     result.getRecords shouldHaveSize 3 // andContain "Christopher Nolan"
   }
 
-  test("expand and project, three properties") {
+  it("expand and project, three properties") {
     // Given
     val query = "MATCH (a:Actor)-[:ACTED_IN]->(f:Film) RETURN a.name, f.title, a.birthyear"
 
@@ -130,7 +131,7 @@ class CAPSRecordsAcceptanceTest extends CAPSTestSuite with Neo4jServerFixture wi
     filmResult.getRecords shouldHaveSize 5 // andContain "Camelot"
   }
 
-  test("multiple hops of expand with different reltypes") {
+  it("multiple hops of expand with different reltypes") {
     // Given
     val query = "MATCH (c:City)<-[:BORN_IN]-(a:Actor)-[r:ACTED_IN]->(f:Film) RETURN a.name, c.name, f.title"
 

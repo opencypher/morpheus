@@ -146,7 +146,11 @@ object SparkSQLExprMapper {
         case Labels(e) =>
           val node = e.owner.get
           val labelExprs = header.labelsFor(node)
-          val (labelNames, labelColumns) = labelExprs.toSeq.map(e => e.label.name -> e.asSparkSQLExpr).unzip
+          val (labelNames, labelColumns) = labelExprs
+            .toSeq
+            .map(e => e.label.name -> e.asSparkSQLExpr)
+            .sortBy(_._1)
+            .unzip
           val booleanLabelFlagColumn = functions.array(labelColumns: _*)
           get_node_labels(labelNames)(booleanLabelFlagColumn)
 

@@ -53,7 +53,7 @@ class QueryMetrics extends CAPSTestSuite with DefaultGraphInit {
     val df = records.asCaps.df
     val optimizedPlan = df.queryExecution.optimizedPlan
     val cost = optimizedPlan.cost
-    cost shouldBe 125995727L
+    cost shouldBe 80781091L
   }
 
   it("generates a query plan for a really simple query") {
