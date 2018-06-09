@@ -33,10 +33,11 @@ import org.opencypher.okapi.api.types.{CTBoolean, CTInteger, CTNode, CypherType}
 import org.opencypher.okapi.impl.exception.IllegalArgumentException
 import org.opencypher.okapi.ir.api.block.{Asc, Desc, SortItem}
 import org.opencypher.okapi.ir.api.expr._
-import org.opencypher.okapi.ir.api.{Label, PropertyKey}
+import org.opencypher.okapi.ir.api.{Label, PropertyKey, RelType}
 import org.opencypher.okapi.relational.api.io.RelationalEntityMapping._
 import org.opencypher.okapi.relational.impl.physical.{Ascending, Descending, JoinType, Order}
 import org.opencypher.okapi.relational.impl.table.RecordHeader
+import org.opencypher.okapi.impl.util.StringEncodingUtilities._
 
 trait FlatRelationalTable[T <: FlatRelationalTable[T]] extends CypherTable {
 
@@ -199,12 +200,15 @@ trait EntityTable[T <: FlatRelationalTable[T]] extends RelationalCypherRecords[T
   }
 
   protected def headerFrom(relationshipMapping: RelationshipMapping): RecordHeader = {
-    val relVar = Var("")(relationshipMapping.cypherType)
+    val cypherType = relationshipMapping.cypherType
+    val relVar = Var("")(cypherType)
 
     val exprToColumn = Map[Expr, String](
       relationshipMapping.id(relVar),
       relationshipMapping.startNode(relVar),
-      relationshipMapping.endNode(relVar)) ++ relationshipMapping.properties(relVar, table.columnType)
+      relationshipMapping.endNode(relVar)) ++
+      relationshipMapping.relTypes(relVar) ++
+      relationshipMapping.properties(relVar, table.columnType)
 
     RecordHeader(exprToColumn)
   }
@@ -232,6 +236,13 @@ object RelationalEntityMapping {
   }
 
   implicit class RelationshipMappingOps(val mapping: RelationshipMapping) {
+
+    def relTypes(rel: Var): Map[HasType, String] = mapping.relTypeOrSourceRelTypeKey match {
+      case Right((_, names)) =>
+        names.map(name => HasType(rel, RelType(name))(CTBoolean) -> name.toRelTypeColumnName).toMap
+      case Left(_) =>
+        Map.empty
+    }
 
     def startNode(rel: Var): (StartNode, String) = StartNode(rel)(CTNode) -> mapping.sourceStartNodeKey
 

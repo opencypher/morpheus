@@ -41,6 +41,31 @@ class CAPSScanGraphTest extends CAPSGraphTest {
 
   override def capsGraphFactory: CAPSTestGraphFactory = CAPSScanGraphFactory
 
+
+  it("foo") {
+    val yingYang = caps.sparkSession.createDataFrame(
+      Seq(
+        (1L, 8L, 3L, "HATES"),
+        (1L, 3L, 4L, "HATES"),
+        (2L, 4L, 3L, "LOVES"),
+        (2L, 5L, 4L, "LOVES"),
+        (3L, 6L, 4L, "LOVES"))
+    ).toDF("SRC", "ID", "DST", "TYPE").setNonNullable("TYPE")
+
+    val relMapping = RelationshipMapping
+      .on("ID")
+      .from("SRC")
+      .to("DST")
+      .withSourceRelTypeKey("TYPE", Set("HATES", "LOVES"))
+
+    val relTable = CAPSRelationshipTable.fromMapping(relMapping, yingYang)
+
+    val graph = CAPSGraph.create(personTable, relTable)
+
+    graph.relationships("l", CTRelationship("LOVES")).size shouldBe 3
+    graph.relationships("h", CTRelationship("HATES")).size shouldBe 2
+  }
+
   it("executes union") {
     val graph1 = CAPSGraph.create(personTable, knowsTable)
     val graph2 = CAPSGraph.create(programmerTable, bookTable, readsTable)

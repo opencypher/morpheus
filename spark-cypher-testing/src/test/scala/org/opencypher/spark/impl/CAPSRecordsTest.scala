@@ -45,7 +45,7 @@ import org.opencypher.spark.testing.fixture.{GraphConstructionFixture, TeamDataF
 
 class CAPSRecordsTest extends CAPSTestSuite with GraphConstructionFixture with TeamDataFixture {
 
-  test("retags a node variable") {
+  it("retags a node variable") {
     val givenDF = sparkSession.createDataFrame(
       Seq(
         (1L, true, "Mats"),
@@ -147,7 +147,7 @@ class CAPSRecordsTest extends CAPSTestSuite with GraphConstructionFixture with T
     ))
   }
 
-  test("verify CAPSRecords header") {
+  it("verify CAPSRecords header") {
     val givenDF = sparkSession.createDataFrame(
           Seq(
             (1L, true, "Mats"),
@@ -175,7 +175,7 @@ class CAPSRecordsTest extends CAPSTestSuite with GraphConstructionFixture with T
       ))
   }
 
-  test("verify CAPSRecords header for relationship with a fixed type") {
+  it("verify CAPSRecords header for relationship with a fixed type") {
 
     val givenDF = sparkSession.createDataFrame(
           Seq(
@@ -207,7 +207,7 @@ class CAPSRecordsTest extends CAPSTestSuite with GraphConstructionFixture with T
     )
   }
 
-  test("contract relationships with a dynamic type") {
+  it("contract relationships with a dynamic type") {
     val givenDF = sparkSession.createDataFrame(
           Seq(
             (10L, 1L, 2L, "RED"),
@@ -240,7 +240,7 @@ class CAPSRecordsTest extends CAPSTestSuite with GraphConstructionFixture with T
     )
   }
 
-  test("can not construct records with data/header column name conflict") {
+  it("can not construct records with data/header column name conflict") {
     val data = sparkSession.createDataFrame(Seq((1, "foo"), (2, "bar"))).toDF("int", "string")
     val header = RecordHeader.from(Var("int")(), Var("notString")())
 
@@ -249,7 +249,7 @@ class CAPSRecordsTest extends CAPSTestSuite with GraphConstructionFixture with T
     }
   }
 
-  test("can construct records with matching data/header") {
+  it("can construct records with matching data/header") {
     val data = sparkSession.createDataFrame(Seq((1L, "foo"), (2L, "bar"))).toDF("int", "string")
     val header = RecordHeader.from(Var("int")(CTInteger), Var("string")(CTString))
 
@@ -257,7 +257,7 @@ class CAPSRecordsTest extends CAPSTestSuite with GraphConstructionFixture with T
     records.df.select("int").collect() should equal(Array(Row(1), Row(2)))
   }
 
-  test("toCypherMaps delegates to details") {
+  it("toCypherMaps delegates to details") {
     val g = initGraph("CREATE (:Foo {p: 1})")
 
     val result = g.cypher("MATCH (n) WITH 5 - n.p + 1 AS b, n RETURN n, b")

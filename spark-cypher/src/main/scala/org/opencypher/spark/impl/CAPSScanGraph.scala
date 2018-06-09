@@ -29,7 +29,6 @@ package org.opencypher.spark.impl
 import cats.data.NonEmptyVector
 import org.apache.spark.sql.functions
 import org.apache.spark.storage.StorageLevel
-import org.opencypher.okapi.api.io.conversion.RelationshipMapping
 import org.opencypher.okapi.api.schema._
 import org.opencypher.okapi.api.types.{CTNode, CTRelationship, CypherType, DefiniteCypherType}
 import org.opencypher.okapi.ir.api.expr.Expr._
@@ -49,9 +48,9 @@ class CAPSScanGraph(val scans: Seq[CAPSEntityTable], val schema: CAPSSchema, val
 
   override def toString = s"CAPSScanGraph(${scans.map(_.entityType).mkString(", ")})"
 
-  private val nodeEntityTables = EntityTables(scans.collect { case it: CAPSNodeTable => it })
+  private val nodeEntityTables = new EntityTables(scans.collect { case it: CAPSNodeTable => it }.toVector)
 
-  private val relEntityTables = EntityTables(scans.collect { case it: CAPSRelationshipTable => it })
+  private val relEntityTables = new EntityTables(scans.collect { case it: CAPSRelationshipTable => it }.toVector)
 
   override def cache(): CAPSScanGraph = forEach(_.table.cache())
 
@@ -102,6 +101,26 @@ class CAPSScanGraph(val scans: Seq[CAPSEntityTable], val schema: CAPSSchema, val
     val scanRecords = selectedScans.map(_.records)
 
     val alignedRecords = scanRecords
+      // Filter rows that are relevant for the requested relationship type
+      .map { records =>
+        val scanHeader = records.header
+        val typeExprs = scanHeader
+          .typesFor(Var("")(relCypherType))
+          .filter(relType => relCypherType.types.contains(relType.relType.name))
+          .toSeq
+
+        typeExprs match {
+          // no explicit type column
+          case Nil =>
+            records
+          // multiple type columns
+          case other =>
+            val relTypeFilter = other
+              .map(typeExpr => records.df.col(scanHeader.column(typeExpr)) === functions.lit(true))
+              .reduce(_ || _)
+            CAPSRecords(scanHeader, records.df.filter(relTypeFilter))
+        }
+      }
       .map(_.alignWith(rel, targetRelHeader))
       .map(_.select(targetRelHeader.expressions.toSeq.sorted: _*))
 
@@ -123,31 +142,12 @@ class CAPSScanGraph(val scans: Seq[CAPSEntityTable], val schema: CAPSSchema, val
 
     def byType(entityType: EntityType): Seq[CAPSEntityTable] = {
 
-      def isSubType(tableType: EntityType) = tableType.subTypeOf(entityType).isTrue
+      def isSubType(tableType: EntityType): Boolean =
+        tableType.subTypeOf(entityType).isTrue
 
       entityTableTypes
         .filter(isSubType)
         .flatMap(typ => entityTablesByType(typ).toVector).toSeq
     }
   }
-
-  private object EntityTables {
-
-    /**
-      * Splits up relation tables containing multiple relationship types into single relationship tables
-      */
-    def apply(entityTables: Seq[CAPSEntityTable]): EntityTables = new EntityTables(entityTables.flatMap {
-      case CAPSRelationshipTable(relMapping@RelationshipMapping(_, _, _, Right((typeColumnName, relTypes)), _), sparkTable) =>
-        val typeColumn = sparkTable.df.col(typeColumnName)
-        relTypes.map {
-          relType =>
-            val filteredDf = sparkTable.df
-              .filter(typeColumn === functions.lit(relType))
-              .drop(typeColumnName)
-            CAPSRelationshipTable.fromMapping(relMapping.copy(relTypeOrSourceRelTypeKey = Left(relType)), filteredDf)
-        }
-      case other => Seq(other)
-    }.toVector)
-  }
-
 }

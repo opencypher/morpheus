@@ -302,7 +302,7 @@ sealed case class CTRelationship(
   final override def superTypeOf(other: CypherType): Ternary = other match {
     case CTRelationship(_, _) if types.isEmpty => True
     case CTRelationship(otherTypes, _) if otherTypes.isEmpty => False
-    case CTRelationship(otherTypes, _) => otherTypes subsetOf types
+    case CTRelationship(otherTypes, _) => (types subsetOf otherTypes) || (otherTypes subsetOf types)
     case CTWildcard => Maybe
     case CTVoid => True
     case _ => False

@@ -34,11 +34,10 @@ import org.opencypher.okapi.api.schema.Schema
 import org.opencypher.okapi.api.types._
 import org.opencypher.okapi.api.value.CypherValue
 import org.opencypher.okapi.api.value.CypherValue.CypherValue
+import org.opencypher.okapi.impl.util.StringEncodingUtilities._
 import org.opencypher.okapi.relational.api.io.{EntityTable, FlatRelationalTable}
 import org.opencypher.okapi.relational.impl.physical._
 import org.opencypher.okapi.relational.impl.table.RecordHeader
-import org.opencypher.okapi.relational.impl.util.StringEncodingUtilities
-import org.opencypher.okapi.relational.impl.util.StringEncodingUtilities._
 import org.opencypher.spark.api.CAPSSession
 import org.opencypher.spark.api.io.SparkCypherTable.DataFrameTable
 import org.opencypher.spark.impl.DataFrameOps._
@@ -255,7 +254,7 @@ object CAPSRelationshipTable {
     * [[Relationship.sourceEndNodeKey]]. All remaining columns are interpreted as relationship property columns, the
     * column name is used as property key.
     *
-    * Column names prefixed with `property#` are decoded by [[StringEncodingUtilities]] to
+    * Column names prefixed with `property#` are decoded by [[org.opencypher.okapi.impl.util.StringEncodingUtilities]] to
     * recover the original property name.
     *
     * @param relationshipType relationship type
@@ -285,8 +284,27 @@ object CAPSRelationshipTable {
     * @return a relationship table
     */
   def fromMapping(mapping: RelationshipMapping, initialTable: DataFrame): CAPSRelationshipTable = {
+
+    val updatedTable = mapping.relTypeOrSourceRelTypeKey match {
+
+      // Flatten rel type column into boolean columns
+      case Right((typeColumnName, relTypes)) =>
+        DataFrameTable(initialTable).verifyColumnType(typeColumnName, CTString, "relationship type")
+        val updatedTable = relTypes.foldLeft(initialTable) { case (currentDf, relType) =>
+          val typeColumn = currentDf.col(typeColumnName)
+          val relTypeColumnName = relType.toRelTypeColumnName
+          currentDf
+            .withColumn(relTypeColumnName, typeColumn === functions.lit(relType))
+            .setNonNullable(relTypeColumnName)
+        }
+        updatedTable.drop(updatedTable.col(typeColumnName))
+
+      case _ => initialTable
+    }
+
     val colsToSelect = mapping.allSourceKeys
-    CAPSRelationshipTable(mapping, initialTable.select(colsToSelect.head, colsToSelect.tail: _*))
+
+    CAPSRelationshipTable(mapping, updatedTable.select(colsToSelect.head, colsToSelect.tail: _*))
   }
 
   private def properties(relColumnNames: Seq[String]): Set[String] = {
@@ -301,7 +319,7 @@ object CAPSRelationshipTable {
   * The easiest way to transform the table to a canonical column ordering is to use one of the constructors on the
   * companion object.
   *
-  * Column names prefixed with `property#` are decoded by [[StringEncodingUtilities]] to
+  * Column names prefixed with `property#` are decoded by [[org.opencypher.okapi.impl.util.StringEncodingUtilities]] to
   * recover the original property name.
   *
   * @param mapping mapping from input data description to a Cypher node
@@ -362,8 +380,10 @@ abstract class RelationshipTable(mapping: RelationshipMapping, table: DataFrameT
     super.verify()
     table.verifyColumnType(mapping.sourceStartNodeKey, CTInteger, "start node")
     table.verifyColumnType(mapping.sourceEndNodeKey, CTInteger, "end node")
-    mapping.relTypeOrSourceRelTypeKey.right.foreach { key =>
-      table.verifyColumnType(key._1, CTString, "relationship type")
+    mapping.relTypeOrSourceRelTypeKey.right.map { case (_, relTypes) =>
+      relTypes.foreach { relType =>
+        table.verifyColumnType(relType.toRelTypeColumnName, CTBoolean, "relationship type")
+      }
     }
   }
 }
