@@ -44,7 +44,7 @@ class SparkSQLExprMapperTest extends BaseTestSuite with SparkSessionFixture {
   test("can map subtract") {
     val expr = Subtract(Var("a")(), Var("b")())()
 
-    convert(expr, _header.withAlias(expr as Var("foo")())) should equal(
+    convert(expr, _header.withExpr(expr).withAlias(expr as Var("foo")())) should equal(
       df.col("a") - df.col("b")
     )
   }
