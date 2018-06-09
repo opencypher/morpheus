@@ -32,7 +32,8 @@ import org.opencypher.okapi.api.types._
 import org.opencypher.okapi.api.value.CypherValue._
 import org.opencypher.okapi.impl.exception.InternalException
 import org.opencypher.okapi.ir.api.expr._
-import org.opencypher.okapi.ir.api.{Label, PropertyKey}
+import org.opencypher.okapi.ir.api.{Label, PropertyKey, RelType}
+import org.opencypher.okapi.ir.test.support.MatchHelper.equalWithTracing
 import org.opencypher.okapi.relational.impl.table.RecordHeader
 import org.opencypher.okapi.testing.Bag
 import org.opencypher.okapi.testing.Bag._
@@ -226,12 +227,15 @@ class CAPSRecordsTest extends CAPSTestSuite with GraphConstructionFixture with T
 
     val entityVar = Var("")(CTRelationship("RED", "BLUE", "GREEN", "YELLOW"))
 
-    records.header.expressions should equal(
+    records.header.expressions should equalWithTracing(
       Set(
         entityVar,
         StartNode(entityVar)(CTNode),
         EndNode(entityVar)(CTNode),
-        Type(entityVar)(CTRelationship("RED", "BLUE", "GREEN", "YELLOW"))
+        HasType(entityVar, RelType("RED"))(CTBoolean),
+        HasType(entityVar, RelType("BLUE"))(CTBoolean),
+        HasType(entityVar, RelType("GREEN"))(CTBoolean),
+        HasType(entityVar, RelType("YELLOW"))(CTBoolean)
       )
     )
   }

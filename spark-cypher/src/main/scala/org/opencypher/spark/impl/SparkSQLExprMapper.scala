@@ -156,8 +156,8 @@ object SparkSQLExprMapper {
 
         case Keys(e) =>
           val node = e.owner.get
-          val propertyExprs = header.propertiesFor(node)
-          val (propertyKeys, propertyColumns) = propertyExprs.toSeq.map(e => e.key.name -> e.asSparkSQLExpr).unzip
+          val propertyExprs = header.propertiesFor(node).toSeq.sortBy(_.key.name)
+          val (propertyKeys, propertyColumns) = propertyExprs.map(e => e.key.name -> e.asSparkSQLExpr).unzip
           val valuesColumn = functions.array(propertyColumns: _*)
           get_property_keys(propertyKeys)(valuesColumn)
 
