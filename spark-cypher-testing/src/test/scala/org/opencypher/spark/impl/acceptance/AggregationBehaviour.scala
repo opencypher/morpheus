@@ -27,7 +27,6 @@
 package org.opencypher.spark.impl.acceptance
 
 import org.opencypher.okapi.api.value.CypherValue._
-import org.opencypher.okapi.relational.api.configuration.CoraConfiguration.{PrintFlatPlan, PrintPhysicalPlan}
 import org.opencypher.okapi.testing.Bag
 import org.opencypher.okapi.testing.Bag._
 import org.opencypher.spark.testing.CAPSTestSuite
@@ -212,9 +211,6 @@ class AggregationBehaviour extends CAPSTestSuite with DefaultGraphInit {
     }
 
     it("count() with grouping in RETURN clause") {
-      PrintFlatPlan.set()
-      PrintPhysicalPlan.set()
-
       val graph = initGraph("CREATE ({name: 'foo'}), ({name: 'foo'}), (), (), (), ({name: 'baz'})")
 
       val result = graph.cypher("MATCH (n) RETURN n.name as name, count(*) AS amount")

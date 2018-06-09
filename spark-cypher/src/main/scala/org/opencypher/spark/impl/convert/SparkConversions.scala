@@ -183,4 +183,11 @@ object SparkConversions {
       RowEncoder(header.toStructType)
   }
 
+  implicit class RowOps(row: Row) {
+
+    def allNull: Boolean = allNull(row.size)
+
+    def allNull(rowSize: Int): Boolean = (for (i <- 0 until rowSize) yield row.isNullAt(i)).reduce(_ && _)
+  }
+
 }

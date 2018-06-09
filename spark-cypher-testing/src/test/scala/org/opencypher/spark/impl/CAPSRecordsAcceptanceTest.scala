@@ -30,7 +30,6 @@ import org.apache.spark.sql.Row
 import org.opencypher.okapi.api.table.CypherRecords
 import org.opencypher.okapi.api.value.CypherValue.CypherMap
 import org.opencypher.okapi.impl.exception.IllegalArgumentException
-import org.opencypher.okapi.relational.api.configuration.CoraConfiguration.{PrintFlatPlan, PrintPhysicalPlan}
 import org.opencypher.okapi.testing.Bag
 import org.opencypher.okapi.testing.Bag._
 import org.opencypher.spark.impl.CAPSConverters._

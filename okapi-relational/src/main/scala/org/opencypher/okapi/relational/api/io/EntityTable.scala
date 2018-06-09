@@ -158,7 +158,7 @@ trait RelationalCypherRecords[T <: FlatRelationalTable[T]] extends CypherRecords
 
   def join(other: R, joinType: JoinType, joinExprs: (Expr, Expr)*): R = {
     val joinCols = joinExprs.map { case (l, r) => header.column(l) -> other.header.column(r) }
-    val joinHeader = header ++ other.header
+    val joinHeader = other.header ++ header
     val joinData = table.join(other.table, joinType, joinCols: _*)
     from(joinHeader, joinData)
   }

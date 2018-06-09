@@ -29,8 +29,8 @@ package org.opencypher.spark.impl
 import org.apache.spark.sql.Row
 import org.opencypher.okapi.api.types.{CTNode, CTRelationship}
 import org.opencypher.okapi.impl.exception.IllegalArgumentException
-import org.opencypher.okapi.ir.api.{Label, RelType}
 import org.opencypher.okapi.ir.api.expr._
+import org.opencypher.okapi.ir.api.{Label, RelType}
 import org.opencypher.okapi.relational.impl.table._
 import org.opencypher.spark.impl.convert.SparkConversions._
 
@@ -75,6 +75,7 @@ case class RowExpansion(
     val adaptedRows = propertyColumnLookupTables.flatMap {
       case (entity, nodeLookupTable) =>
         val adaptedRow = adaptRowToNewHeader(row, nodeLookupTable)
+        val adaptedRowSize = adaptedRow.size
         targetVar.cypherType match {
           case _: CTNode =>
             val indices = labelIndexLookupTable(entity)
@@ -84,12 +85,16 @@ case class RowExpansion(
 
             // OR-semantics and no target type
           case CTRelationship(_, _) if targetRelTypes.isEmpty =>
-            Some(adaptedRow)
+            if (row.allNull(adaptedRowSize)) {
+              None
+            } else {
+              Some(adaptedRow)
+            }
 
           // OR-semantics and one or more target types
           case CTRelationship(_, _) =>
             val indices = typeIndexLookupTable(entity)
-            val hasRelType = indices.exists(adaptedRow.getBoolean)
+            val hasRelType = indices.exists(i => !adaptedRow.isNullAt(i) && adaptedRow.getBoolean(i))
             if (hasRelType) Some(adaptedRow)
             else None
 
@@ -112,6 +117,7 @@ case class RowExpansion(
           // TODO: this is wrong but might usually work
           val value = targetHeader.expressionsFor(column).head match {
             case HasLabel(_, _) => false
+            case HasType(_, _) => false
             case Property(_, _) => null
             case other => throw IllegalArgumentException("a projected expression of label or property", other)
           }

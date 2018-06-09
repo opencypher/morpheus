@@ -34,10 +34,10 @@ import org.scalatest.DoNotDiscover
 @DoNotDiscover
 class BoundedVarExpandBehaviour extends CAPSTestSuite with DefaultGraphInit {
 
-  test("bounded to single relationship") {
+  it("bounded to single relationship") {
 
     // Given
-    val given = initGraph("CREATE (:Node {val: 'source'})-[:REL]->(:Node {val: 'mid1'})-[:REL]->(:Node {val: 'end'})")
+    val given = initGraph("CREATE (s:Node {val: 'source'})-[:REL]->(:Node {val: 'mid1'})-[:REL]->(:Node {val: 'end'})")
 
     // When
     val result = given.cypher("MATCH (n:Node)-[r*0..1]->(m:Node) RETURN m.val")
@@ -52,7 +52,7 @@ class BoundedVarExpandBehaviour extends CAPSTestSuite with DefaultGraphInit {
     ))
   }
 
-  test("bounded with lower bound") {
+  it("bounded with lower bound") {
 
     // Given
     val given = initGraph("CREATE (:Node {val: 'source'})-[:REL]->(:Node {val: 'mid1'})-[:REL]->(:Node {val: 'end'})")
@@ -66,7 +66,7 @@ class BoundedVarExpandBehaviour extends CAPSTestSuite with DefaultGraphInit {
     ))
   }
 
-  test("var expand with default lower and loop") {
+  it("var expand with default lower and loop") {
     // Given
     val given = initGraph("CREATE (a:Node {v: 'a'})-[:REL]->(:Node {v: 'b'})-[:REL]->(:Node {v: 'c'})-[:REL]->(a)")
 
@@ -87,7 +87,7 @@ class BoundedVarExpandBehaviour extends CAPSTestSuite with DefaultGraphInit {
     ))
   }
 
-  test("var expand return list of rel ids") {
+  it("var expand return list of rel ids") {
     // Given
     val given = initGraph("CREATE (a:Node {v: 'a'})-[:REL]->(:Node {v: 'b'})-[:REL]->(:Node {v: 'c'})-[:REL]->(a)")
 
@@ -108,7 +108,7 @@ class BoundedVarExpandBehaviour extends CAPSTestSuite with DefaultGraphInit {
     ))
   }
 
-  test("var expand with rel type") {
+  it("var expand with rel type") {
     // Given
     val given = initGraph("CREATE (a:Node {v: 'a'})-[:LOVES]->(:Node {v: 'b'})-[:KNOWS]->(:Node {v: 'c'})-[:HATES]->(a)")
 
@@ -140,7 +140,7 @@ class BoundedVarExpandBehaviour extends CAPSTestSuite with DefaultGraphInit {
     ))
   }
 
-  test("var expand with additional hop") {
+  it("var expand with additional hop") {
     // Given
     val given = initGraph("CREATE (a:Node {v: 'a'})-[:KNOWS]->(:Node {v: 'b'})-[:KNOWS]->(:Node {v: 'c'})-[:HATES]->(d:Node {v: 'd'})")
 
@@ -154,7 +154,7 @@ class BoundedVarExpandBehaviour extends CAPSTestSuite with DefaultGraphInit {
     ))
   }
 
-  test("var expand with expand into") {
+  it("var expand with expand into") {
     // Given
     val given = initGraph(
       """

@@ -260,10 +260,6 @@ case class RecordHeader(exprToColumn: Map[Expr, String]) {
   }
 
   def withAlias(to: Expr, alias: Var): RecordHeader = {
-//    require(
-//      alias.cypherType.superTypeOf(to.cypherType).isTrue,
-//      s"CypherType of expression $to cannot be assigned to CypherType of alias $alias")
-
     to match {
       // Entity case
       case _: Var if exprToColumn.contains(to) =>
@@ -291,7 +287,11 @@ case class RecordHeader(exprToColumn: Map[Expr, String]) {
     copy(exprToColumn = exprToColumn + (expr -> columnName))
   }
 
-  def pretty: String = exprToColumn.toSeq.sortBy(_._2).mkString("\n")
+  def pretty: String = exprToColumn
+    .toSeq
+    .sortBy(_._2)
+    .map { case (expr, column) => s"Expr: $expr ===> $column" }
+    .mkString("\n")
 
 }
 
