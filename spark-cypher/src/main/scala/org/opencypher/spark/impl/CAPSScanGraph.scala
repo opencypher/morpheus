@@ -26,11 +26,10 @@
  */
 package org.opencypher.spark.impl
 
-import cats.data.NonEmptyVector
 import org.apache.spark.sql.functions
 import org.apache.spark.storage.StorageLevel
 import org.opencypher.okapi.api.schema._
-import org.opencypher.okapi.api.types.{CTNode, CTRelationship, CypherType, DefiniteCypherType}
+import org.opencypher.okapi.api.types.{CTNode, CTRelationship}
 import org.opencypher.okapi.ir.api.expr.Expr._
 import org.opencypher.okapi.ir.api.expr._
 import org.opencypher.okapi.relational.api.schema.RelationalSchema._
@@ -48,9 +47,9 @@ class CAPSScanGraph(val scans: Seq[CAPSEntityTable], val schema: CAPSSchema, val
 
   override def toString = s"CAPSScanGraph(${scans.map(_.entityType).mkString(", ")})"
 
-  private val nodeEntityTables = new EntityTables(scans.collect { case it: CAPSNodeTable => it }.toVector)
+  private lazy val nodeTables = scans.collect { case it: CAPSNodeTable => it }
 
-  private val relEntityTables = new EntityTables(scans.collect { case it: CAPSRelationshipTable => it }.toVector)
+  private lazy val relTables = scans.collect { case it: CAPSRelationshipTable => it }
 
   override def cache(): CAPSScanGraph = forEach(_.table.cache())
 
@@ -76,10 +75,11 @@ class CAPSScanGraph(val scans: Seq[CAPSEntityTable], val schema: CAPSSchema, val
   private def nodesInternal(name: String, nodeCypherType: CTNode, byExactType: Boolean): CAPSRecords = {
     val node = Var(name)(nodeCypherType)
     val selectedTables = if (byExactType) {
-      nodeEntityTables.byExactType(nodeCypherType)
+      nodeTables.filter(_.entityType == nodeCypherType)
     } else {
-      nodeEntityTables.byType(nodeCypherType)
+      nodeTables.filter(_.entityType.subTypeOf(nodeCypherType).isTrue)
     }
+
     val schema = selectedTables.map(_.schema).foldLeft(Schema.empty)(_ ++ _)
     val targetNodeHeader = schema.headerForNode(node)
 
@@ -94,7 +94,8 @@ class CAPSScanGraph(val scans: Seq[CAPSEntityTable], val schema: CAPSSchema, val
 
   override def relationships(name: String, relCypherType: CTRelationship): CAPSRecords = {
     val rel = Var(name)(relCypherType)
-    val selectedScans = relEntityTables.byType(relCypherType)
+    val scanTypes = relCypherType.types
+    val selectedScans = relTables.filter(relTable => scanTypes.isEmpty || scanTypes.exists(relTable.entityType.types.contains))
     val schema = selectedScans.map(_.schema).foldLeft(Schema.empty)(_ ++ _)
     val targetRelHeader = schema.headerForRelationship(rel)
 
@@ -125,29 +126,5 @@ class CAPSScanGraph(val scans: Seq[CAPSEntityTable], val schema: CAPSSchema, val
       .map(_.select(targetRelHeader.expressions.toSeq.sorted: _*))
 
     alignedRecords.reduceOption(_ unionAll _).getOrElse(CAPSRecords.empty(targetRelHeader))
-  }
-
-  private class EntityTables(entityTables: Vector[CAPSEntityTable]) {
-
-    type EntityType = CypherType with DefiniteCypherType
-
-    lazy val entityTableTypes: Set[EntityType] = entityTables.map(_.entityType).toSet
-
-    lazy val entityTablesByType: Map[EntityType, NonEmptyVector[CAPSEntityTable]] =
-      entityTables
-        .groupBy(_.entityType)
-        .flatMap { case (k, entityScans) => NonEmptyVector.fromVector(entityScans).map(k -> _) }
-
-    def byExactType(entityType: EntityType): Seq[CAPSEntityTable] = entityTablesByType(entityType).toVector
-
-    def byType(entityType: EntityType): Seq[CAPSEntityTable] = {
-
-      def isSubType(tableType: EntityType): Boolean =
-        tableType.subTypeOf(entityType).isTrue
-
-      entityTableTypes
-        .filter(isSubType)
-        .flatMap(typ => entityTablesByType(typ).toVector).toSeq
-    }
   }
 }
