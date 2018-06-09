@@ -240,7 +240,9 @@ final case class ConstructGraph(
     val constructTagStrategy = computeRetaggings(tagsForGraph, unionTagStrategy)
 
     // Apply aliases in CLONE to input table in order to create the base table, on which CONSTRUCT happens
-    val aliasClones = clonedVarsToInputVars.filter { case (alias, original) => alias != original }
+    val aliasClones = clonedVarsToInputVars
+      .filter { case (alias, original) => alias != original }
+      .map(_.swap)
     val baseTable = left.records.withAliases(aliasClones.toSeq: _*)
 
     val retaggedBaseTable = clonedVarsToInputVars.foldLeft(baseTable) { case (df, clone) =>
