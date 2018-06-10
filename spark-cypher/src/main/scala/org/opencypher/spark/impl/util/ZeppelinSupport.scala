@@ -26,32 +26,65 @@
  */
 package org.opencypher.spark.impl.util
 
-import io.circe.Json
+import org.opencypher.okapi.api.value.CypherValue.CypherEntity._
+import org.opencypher.okapi.api.value.CypherValue.CypherNode._
+import org.opencypher.okapi.api.value.CypherValue.CypherRelationship._
+import org.opencypher.okapi.api.value.CypherValue.{CypherNode, CypherRelationship}
+import org.opencypher.okapi.impl.exception.IllegalArgumentException
 import org.opencypher.spark.impl.{CAPSGraph, CAPSRecords, CAPSResult}
-import org.opencypher.spark.web.JsonSerialiser
+import upickle.Js
 
+import scala.collection.JavaConverters._
 import scala.util.Random
 
 /**
   * Provides helper methods for Apache Zeppelin integration
   */
 object ZeppelinSupport {
+
   implicit class ResultVisualizer(result: CAPSResult) {
 
     /**
       * Visualizes the result in Zeppelin.
-      * If the result contains a graph, it is shown as a network (see [[org.opencypher.spark.impl.util.ZeppelinSupport.GraphVisualizer#asZeppelinGraph]]).
-      * If the result contains a tabular result, they are visualized as a table (see [[org.opencypher.spark.impl.util.ZeppelinSupport.RecordsVisualizer#asZeppelingTable]]).
+      * If the result contains a graph, it is shown as a network (see [[org.opencypher.spark.impl.util.ZeppelinSupport.ZeppelinGraph#printGraph]]).
+      * If the result contains a tabular result, they are visualized as a table (see [[org.opencypher.spark.impl.util.ZeppelinSupport.ZeppelinRecords#printTable]]).
       */
-    def asZeppelin(): Unit = {
+    def printZeppelin(): Unit = {
       result.graph match {
-        case Some(g) => g.asZeppelinGraph()
-        case None => result.records.get.asZeppelinTable()
+        case Some(g) => g.printGraph()
+        case None => result.records.get.printTable()
       }
     }
   }
 
-  implicit class RecordsVisualizer(records: CAPSRecords) {
+  implicit class ZeppelinRecords(r: CAPSRecords) {
+
+    /**
+      * Serialises CAPSRecords to JSON. The format is as follows:
+      *
+      * {{{
+      * {
+      *   "columns" : [ "key" ]   // array of columns
+      *   "rows" : [              // array of rows
+      *     {                     // each row is an object
+      *       "key" : "value"     // each cell is a tuple
+      *     }
+      *   ]
+      * }
+      * }}}
+      **/
+    def toZeppelinJson: Js.Value = {
+      val rows = Js.Arr.from(r.collect.map { row =>
+        r.header.fieldsInOrder.map { field =>
+          field -> row(field).toJson
+        }
+      })
+      Js.Obj(
+        "columns" -> r.header.fieldsInOrder.map(Js.Str),
+        "rows" -> rows
+      )
+    }
+
 
     /**
       * Prints the records in the Zeppelin `%table` format
@@ -69,21 +102,87 @@ object ZeppelinSupport {
       *   Bob\t42
       * }}}
       */
-    def asZeppelinTable(): Unit = {
-      val vars = records.header.vars.map(records.header.column)
-      val header = vars.mkString("\t")
-      val rows = records.collect.map { data =>
-        vars.map(field => data.get(field).get).mkString("\t")
+    def printTable(): Unit = {
+      val fields = r.header.fieldsInOrder
+      val header = fields.mkString("\t")
+      val rows = r.collect.map { data =>
+        fields.map(field => data.get(field).get).mkString("\t")
       }.mkString("\n")
 
-      print(s"""
-               |%table
-               |$header
-               |$rows""".stripMargin)
+      print(
+        s"""
+           |%table
+           |$header
+           |$rows""".stripMargin)
     }
   }
 
-  implicit class GraphVisualizer(graph: CAPSGraph) {
+  val labelJsonKey: String = "label"
+  val dataJsonKey: String = "data"
+  val sourceJsonKey: String = "source"
+  val targetJsonKey: String = "target"
+
+  implicit class ZeppelinNode(n: CypherNode[_]) {
+
+    /**
+      * Returns a Json formatted node:
+      *
+      * {{{
+      *   "n" : {
+      *     "id" : 0,           // id is a string
+      *     "labels" : [        // labels is an array of strings
+      *       "A",
+      *       "B"
+      *     ],
+      *     "properties" : {    // properties is an object
+      *       "key" : "value",  // key-value is a tuple
+      *       "foo" : bar
+      *     }
+      *   }
+      * }}}
+      */
+    def toZeppelinJson: Js.Value = {
+      val default = n.toJson
+      Js.Obj(
+        idJsonKey -> default(idJsonKey),
+        labelJsonKey -> Js.Str(n.labels.headOption.getOrElse("")),
+        labelsJsonKey -> default(labelsJsonKey),
+        dataJsonKey -> default(propertiesJsonKey)
+      )
+    }
+  }
+
+  implicit class ZeppelinRelationship(r: CypherRelationship[_]) {
+
+    /**
+      * Returns a Json formatted relationship:
+      *
+      * {{{
+      *   "n" : {
+      *     "id" : "0",           // id is a string
+      *     "source" : "0",       // id of start node is a string
+      *     "target" : "0",       // id of end node is a string
+      *     "type" : "T"        // relationship type is a string
+      *     "properties" : {    // properties is an object
+      *       "key" : "value",
+      *       "foo" : bar
+      *     }
+      *   }
+      * }}}
+      */
+    def toZeppelinJson: Js.Value = {
+      val default = r.toJson
+      Js.Obj(
+        idJsonKey -> default(idJsonKey),
+        sourceJsonKey -> default(startIdJsonKey),
+        targetJsonKey -> default(endIdJsonKey),
+        labelJsonKey -> default(typeJsonKey),
+        dataJsonKey -> default(propertiesJsonKey)
+      )
+    }
+  }
+
+  implicit class ZeppelinGraph(g: CAPSGraph) {
 
     /**
       * Prints the specified graph in Zeppelins `%network` format
@@ -92,7 +191,7 @@ object ZeppelinSupport {
       *   g.cypher("""
       *     MATCH (p:Person)-[k:KNOWS]->(f)
       *     RETURN GRAPH friends of (p)-[k]->(f)
-      *   """).asZeppelinTable("friends")
+      *   """).printGraph
       * }}}
       *
       * will print the following data
@@ -107,11 +206,11 @@ object ZeppelinSupport {
       *         "labels": ["Person"],
       *         "data": {
       *           "name": "Alice",
-      *           "age": 20
+      *           "age": "20"
       *         }
       *       },
       *       {
-      *         "id": 2,
+      *         "id": "2",
       *         "label": "Person",
       *         "labels": ["Person"],
       *         "data": {
@@ -137,53 +236,50 @@ object ZeppelinSupport {
       *   }
       * }}}
       */
-    def asZeppelinGraph(): Unit = {
-      val graphJson = ZeppelinJsonSerialiser.toJsonString(graph)
-      print(s"""
+    def printGraph(): Unit = {
+      val graphJson = g.toZeppelinJson
+      print(
+        s"""
            |%network
-           |$graphJson
+           |${graphJson.render(2)}
         """.stripMargin)
     }
-  }
 
-  object ZeppelinJsonSerialiser extends JsonSerialiser {
-    override protected def formatNode(id: Long, labels: Set[String], properties: Map[String, Json]): Json = {
-      Json.obj(
-        "id" -> Json.fromLong(id),
-        "label" -> Json.fromString(labels.headOption.getOrElse("")),
-        "labels" -> Json.arr(
-          labels.toSeq.map(Json.fromString): _*
-        ),
-        "data" -> Json.obj(
-          properties.toSeq: _*
-        )
-      )
-    }
+    /**
+      * CAPSGraphs are serialized in the following format:
+      *
+      * {{{
+      * {
+      *   "nodes" : [ LIST_OF_NODES ]   // array of nodes
+      *   "edges" : [ LIST_OF_EDGES ]   // array of relationships
+      *   "labels": [ "Person", "Book"] // each label present in the graph
+      *   "types": [ "KNOWS", "READS"]  // each relationship type present in the graph
+      * }
+      * }}}
+      *
+      * The format of scalar values follows the format of [[org.opencypher.okapi.api.value.CypherValue.CypherValue#toString]].
+      */
+    def toZeppelinJson: Js.Value = {
+      val nodeJson: Js.Value = g.nodes("n").toCypherMaps.toLocalIterator.asScala.map { node =>
+        node("n") match {
+          case n: CypherNode[_] => n.toZeppelinJson
+          case notANode => throw IllegalArgumentException("a node", notANode)
+        }
+      }
 
-    override protected def formatRel(
-        id: Long,
-        source: Long,
-        target: Long,
-        typ: String,
-        properties: Map[String, Json]): Json = {
-      Json.obj(
-        "id" -> Json.fromLong(id),
-        "source" -> Json.fromLong(source),
-        "target" -> Json.fromLong(target),
-        "label" -> Json.fromString(typ),
-        "data" -> Json.obj(
-          properties.toSeq: _*
-        )
-      )
-    }
+      val relJson: Js.Value = g.relationships("r").toCypherMaps.toLocalIterator.asScala.map { rel =>
+        rel("r") match {
+          case r: CypherRelationship[_] => r.toZeppelinJson
+          case notARel => throw IllegalArgumentException("a relationship", notARel)
+        }
+      }
 
-    override protected def formatGraph(graph: CAPSGraph, nodes: Seq[Json], rels: Seq[Json]): Json = {
-      Json.obj(
-        "nodes" -> Json.arr(nodes: _*),
-        "edges" -> Json.arr(rels: _*),
-        "labels" -> Json.obj(graph.schema.labels.map(l => l -> Json.fromString(randomColor)).toSeq: _*),
-        "directed" -> Json.True,
-        "types" -> Json.arr(graph.schema.relationshipTypes.map(Json.fromString).toSeq: _*)
+      Map[String, Js.Value](
+        "nodes" -> nodeJson,
+        "edges" -> relJson,
+        "labels" -> g.schema.labels.toSeq.map(l => l -> Js.Str(randomColor)),
+        "directed" -> Js.True,
+        "types" -> g.schema.relationshipTypes.toSeq.sorted.map(Js.Str)
       )
     }
 
@@ -195,4 +291,5 @@ object ZeppelinSupport {
       s"#${r.toHexString}${g.toHexString}${b.toHexString}"
     }
   }
+
 }
