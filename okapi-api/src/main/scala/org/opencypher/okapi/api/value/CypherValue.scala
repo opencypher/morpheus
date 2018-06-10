@@ -28,7 +28,11 @@ package org.opencypher.okapi.api.value
 
 import java.util.Objects
 
+import org.opencypher.okapi.api.value.CypherValue.CypherEntity._
+import org.opencypher.okapi.api.value.CypherValue.CypherNode._
+import org.opencypher.okapi.api.value.CypherValue.CypherRelationship._
 import org.opencypher.okapi.impl.exception.{IllegalArgumentException, UnsupportedOperationException}
+import upickle.Js
 
 import scala.reflect.{ClassTag, classTag}
 import scala.util.hashing.MurmurHash3
@@ -181,6 +185,33 @@ object CypherValue {
       }
     }
 
+    def toJson: Js.Value = {
+      this match {
+        case CypherNull => Js.Null
+        case CypherString(s) => Js.Str(s)
+        case CypherList(l) => l.map(_.toJson)
+        case CypherMap(m) => m.mapValues(_.toJson).toSeq.sortBy(_._1)
+        case CypherRelationship(id, startId, endId, relType, properties) =>
+          Js.Obj(
+            idJsonKey -> Js.Str(id.toString),
+            typeJsonKey -> Js.Str(relType),
+            startIdJsonKey -> Js.Str(startId.toString),
+            endIdJsonKey -> Js.Str(endId.toString),
+            propertiesJsonKey -> properties.toJson
+          )
+        case CypherNode(id, labels, properties) =>
+          Js.Obj(
+            idJsonKey -> Js.Str(id.toString),
+            labelsJsonKey -> labels.toSeq.sorted.map(Js.Str),
+            propertiesJsonKey -> properties.toJson
+          )
+        case CypherFloat(d) => Js.Num(d)
+        case CypherInteger(l) => Js.Str(l.toString) // `Js.Num` would lose precision
+        case CypherBoolean(b) => Js.Bool(b)
+        case other => Js.Str(other.value.toString)
+      }
+    }
+
     private def escape(str: String): String = {
       str.replaceAllLiterally("'", "\\'").replaceAllLiterally("\"", "\\\"")
     }
@@ -283,6 +314,13 @@ object CypherValue {
 
   }
 
+  object CypherEntity {
+
+    val idJsonKey: String = "id"
+    val propertiesJsonKey: String = "properties"
+
+  }
+
   trait CypherNode[Id] extends CypherEntity[Id] with MaterialCypherValue[CypherNode[Id]] {
 
     override type I <: CypherNode[Id]
@@ -318,18 +356,21 @@ object CypherValue {
 
   object CypherNode {
 
+    val labelsJsonKey: String = "labels"
+
     def unapply[Id](n: CypherNode[Id]): Option[(Id, Set[String], CypherMap)] = {
       Option(n).map(node => (node.id, node.labels, node.properties))
     }
+
   }
 
   trait CypherRelationship[Id] extends CypherEntity[Id] with MaterialCypherValue[CypherRelationship[Id]] with Product {
 
     override type I <: CypherRelationship[Id]
 
-    def source: Id
+    def startId: Id
 
-    def target: Id
+    def endId: Id
 
     def relType: String
 
@@ -341,8 +382,8 @@ object CypherValue {
 
     override def productElement(n: Int): Any = n match {
       case 0 => id
-      case 1 => source
-      case 2 => target
+      case 1 => startId
+      case 2 => endId
       case 3 => relType
       case 4 => properties
       case other => throw IllegalArgumentException("a valid product index", s"$other")
@@ -352,8 +393,8 @@ object CypherValue {
 
     def copy(
       id: Id = id,
-      source: Id = source,
-      target: Id = target,
+      source: Id = startId,
+      target: Id = endId,
       relType: String = relType,
       properties: CypherMap = properties): I
 
@@ -369,9 +410,14 @@ object CypherValue {
 
   object CypherRelationship {
 
+    val typeJsonKey: String = "type"
+    val startIdJsonKey: String = "startId"
+    val endIdJsonKey: String = "endId"
+
     def unapply[Id](r: CypherRelationship[Id]): Option[(Id, Id, Id, String, CypherMap)] = {
-      Option(r).map(rel => (rel.id, rel.source, rel.target, rel.relType, rel.properties))
+      Option(r).map(rel => (rel.id, rel.startId, rel.endId, rel.relType, rel.properties))
     }
+
   }
 
   trait MaterialCypherValue[+T] extends Any with CypherValue {
