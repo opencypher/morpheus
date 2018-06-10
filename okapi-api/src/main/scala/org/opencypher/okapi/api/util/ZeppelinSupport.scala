@@ -60,7 +60,7 @@ object ZeppelinSupport {
   implicit class ZeppelinRecords(r: CypherRecords) {
 
     /**
-      * Serialises CAPSRecords to JSON. The format is as follows:
+      * Serialises CypherRecords to JSON. The format is as follows:
       *
       * {{{
       * {
@@ -126,17 +126,18 @@ object ZeppelinSupport {
       * Returns a Json formatted node:
       *
       * {{{
-      *   "n" : {
-      *     "id" : 0,           // id is a string
-      *     "labels" : [        // labels is an array of strings
-      *       "A",
-      *       "B"
-      *     ],
-      *     "properties" : {    // properties is an object
-      *       "key" : "value",  // key-value is a tuple
-      *       "foo" : bar
-      *     }
+      * {
+      *   "id": 0,           // id is a string
+      *   "label": "A"       // the main label is a string
+      *   "labels": [        // labels is an array of strings
+      *     "A",
+      *     "B"
+      *   ],
+      *   "data" : {          // data is an object that contains the properties
+      *     "key" : "value",  // key-value is a tuple
+      *     "foo" : bar
       *   }
+      * }
       * }}}
       */
     def toZeppelinJson: Js.Value = {
@@ -156,16 +157,16 @@ object ZeppelinSupport {
       * Returns a Json formatted relationship:
       *
       * {{{
-      *   "n" : {
-      *     "id" : "0",           // id is a string
-      *     "source" : "0",       // id of start node is a string
-      *     "target" : "0",       // id of end node is a string
-      *     "type" : "T"        // relationship type is a string
-      *     "properties" : {    // properties is an object
-      *       "key" : "value",
-      *       "foo" : bar
-      *     }
+      * {
+      *   "id" : "0",         // id is a string
+      *   "source" : "0",     // id of start node is a string
+      *   "target" : "0",     // id of end node is a string
+      *   "label" : "T"       // relationship type is a string
+      *   "data" : {          // data is an object that contains the properties
+      *     "key" : "value",  // key-value is a tuple
+      *     "foo" : bar
       *   }
+      * }
       * }}}
       */
     def toZeppelinJson: Js.Value = {
@@ -213,22 +214,22 @@ object ZeppelinSupport {
       *         "labels": ["Person"],
       *         "data": {
       *           "name": "Bob",
-      *           "age": 42
+      *           "age": "42"
       *         }
       *       }
       *     ],
       *     "edges" : [
       *       {
-      *         "id": 3,
-      *         "source": 1,
-      *         "target": 2,
+      *         "id": "3",
+      *         "source": "1",
+      *         "target": "2",
       *         "label": "KNOWS",
       *         "data": {
-      *           "since": 2000
+      *           "since": "2000"
       *         }
       *       }
       *     ],
-      *     "labels": {"Person": "#abababa"},
+      *     "labels": {"Person": "#cbfe79"},
       *     "types": [ "KNOWS"],
       *     "directed": true
       *   }
@@ -252,6 +253,7 @@ object ZeppelinSupport {
       *   "edges" : [ LIST_OF_EDGES ]   // array of relationships
       *   "labels": [ "Person", "Book"] // each label present in the graph
       *   "types": [ "KNOWS", "READS"]  // each relationship type present in the graph
+      *   "directed": true              // indicate that the graph has directed relationships
       * }
       * }}}
       *
