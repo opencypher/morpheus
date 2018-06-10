@@ -24,7 +24,7 @@
  * described as "implementation extensions to Cypher" or as "proposed changes to
  * Cypher that are not yet approved by the openCypher community".
  */
-package org.opencypher.spark.impl.util
+package org.opencypher.okapi.api.util
 
 import org.opencypher.okapi.api.graph.{CypherResult, PropertyGraph}
 import org.opencypher.okapi.api.table.CypherRecords
@@ -46,8 +46,8 @@ object ZeppelinSupport {
 
     /**
       * Visualizes the result in Zeppelin.
-      * If the result contains a graph, it is shown as a network (see [[org.opencypher.spark.impl.util.ZeppelinSupport.ZeppelinGraph#printGraph]]).
-      * If the result contains a tabular result, they are visualized as a table (see [[org.opencypher.spark.impl.util.ZeppelinSupport.ZeppelinRecords#printTable]]).
+      * If the result contains a graph, it is shown as a network (see [[ZeppelinSupport.ZeppelinGraph#printGraph]]).
+      * If the result contains a tabular result, they are visualized as a table (see [[ZeppelinSupport.ZeppelinRecords#printTable]]).
       */
     def printZeppelin(): Unit = {
       result.graph match {
@@ -76,7 +76,7 @@ object ZeppelinSupport {
     def toJson: Js.Value = {
       val columns = r.columns
       val rows = Js.Arr.from(r.collect.map { row =>
-        columns.map(row(_).toJson)
+        columns.map(column => column -> row(column).toJson)
       })
       Js.Obj(
         "columns" -> columns.map(Js.Str),

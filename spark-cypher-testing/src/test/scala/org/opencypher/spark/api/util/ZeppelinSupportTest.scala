@@ -24,17 +24,16 @@
  * described as "implementation extensions to Cypher" or as "proposed changes to
  * Cypher that are not yet approved by the openCypher community".
  */
-package org.opencypher.spark.web
+package org.opencypher.spark.api.util
 
 import org.opencypher.okapi.api.types.CTNode
+import org.opencypher.okapi.api.util.ZeppelinSupport._
 import org.opencypher.okapi.ir.api.expr.Var
 import org.opencypher.okapi.relational.impl.syntax.RecordHeaderSyntax._
 import org.opencypher.okapi.relational.impl.table.{OpaqueField, RecordHeader}
-import org.opencypher.spark.impl.util.ZeppelinSupport._
 import org.opencypher.spark.impl.{CAPSGraph, CAPSRecords}
 import org.opencypher.spark.testing.CAPSTestSuite
 import org.opencypher.spark.testing.fixture.TeamDataFixture
-import ujson.Js
 
 //noinspection NameBooleanParameters
 class ZeppelinSupportTest extends CAPSTestSuite with TeamDataFixture {
