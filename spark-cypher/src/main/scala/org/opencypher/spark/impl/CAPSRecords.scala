@@ -100,9 +100,10 @@ case class CAPSRecords(
   override def table: DataFrameTable = df
 
   //noinspection AccessorLikeMethodIsEmptyParen
-  def toDF(colNames: String*): DataFrame = df.toDF(colNames: _*)
-
-
+  def toDF(colNames: String*): DataFrame = colNames match {
+    case Nil => df
+    case _ => df.toDF(colNames:_ *)
+  }
 
   def cache(): CAPSRecords = {
     df.cache()
