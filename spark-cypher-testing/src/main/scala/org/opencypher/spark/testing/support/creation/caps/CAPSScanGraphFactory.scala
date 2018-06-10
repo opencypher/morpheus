@@ -86,7 +86,7 @@ object CAPSScanGraphFactory extends CAPSTestGraphFactory {
         .filter(_.relType == relType)
         .map { rel =>
           val propertyValues = propKeys.map(key => rel.properties.unwrap.getOrElse(key._1, null))
-          Row.fromSeq(Seq(rel.id, rel.source, rel.target) ++ propertyValues)
+          Row.fromSeq(Seq(rel.id, rel.startId, rel.endId) ++ propertyValues)
         }
 
       val records = caps.sparkSession.createDataFrame(rows.asJava, structType).toDF(header: _*)

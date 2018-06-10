@@ -70,15 +70,15 @@ case class InMemoryTestNode(
 
 case class InMemoryTestRelationship(
   override val id: Long,
-  override val source: Long,
-  override val target: Long,
+  override val startId: Long,
+  override val endId: Long,
   override val relType: String,
   override val properties: CypherMap
 ) extends CypherRelationship[Long] {
 
   type I = InMemoryTestRelationship
 
-  override def copy(id: Long = id, source: Long = source, target: Long = target, relType: String = relType, properties: CypherMap = properties) = {
+  override def copy(id: Long = id, source: Long = startId, target: Long = endId, relType: String = relType, properties: CypherMap = properties) = {
     InMemoryTestRelationship(id, source, target, relType, properties).asInstanceOf[this.type]
   }
 

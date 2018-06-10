@@ -170,7 +170,7 @@ object CreateGraphFactory extends InMemoryGraphFactory {
           source <- processPatternElement(first)
           sourceId <- pure[ParsingContext, Long](source match {
             case n: CypherNode[Long] => n.id
-            case r: CypherRelationship[Long] => r.target
+            case r: CypherRelationship[Long] => r.endId
           })
           target <- processPatternElement(third)
           properties <- props match {
