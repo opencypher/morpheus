@@ -175,55 +175,6 @@ class ZeppelinSupportTest extends CAPSTestSuite with TeamDataFixture {
         |}""".stripMargin))
   }
 
-  it("serialize maps") {
-    // Given
-    val records = CAPSRecords.create(
-      Seq(
-        MapRow(
-          Map("foo" -> "Alice", "bar" -> "Bob", "baz" -> "Carols"),
-          Map("foo" -> 42, "bar" -> 23, "baz" -> 8),
-          Map("foo" -> true, "bar" -> false, "baz" -> false)
-        ),
-        MapRow(null, Map.empty, Map.empty)
-      ))
-
-    // Then
-    records.toZeppelinJson should equal(ujson.read(
-      """{
-        |  "columns": [
-        |    "strings",
-        |    "integers",
-        |    "booleans"
-        |  ],
-        |  "rows": [
-        |    {
-        |      "booleans": [
-        |        true,
-        |        false,
-        |        false
-        |      ],
-        |      "integers": [
-        |        "42",
-        |        "23",
-        |        "8"
-        |      ],
-        |      "strings": [
-        |        "foo",
-        |        "bar",
-        |        "baz"
-        |      ]
-        |    },
-        |    {
-        |      "booleans": [
-        |      ],
-        |      "integers": [
-        |      ],
-        |      "strings": null
-        |    }
-        |  ]
-        |}""".stripMargin))
-  }
-
   it("graph serialization") {
     val graph = CAPSGraph.create(personTable, bookTable, readsTable, knowsTable, influencesTable)
     val asJson = graph.toZeppelinJson
