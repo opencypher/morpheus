@@ -51,7 +51,7 @@ object CAPSFunctions {
 
   def get_rel_type(relTypeNames: Seq[String]): UserDefinedFunction = {
     val extractRelTypes = (booleanMask: Seq[Boolean]) => filterWithMask(relTypeNames)(booleanMask)
-    functions.udf(extractRelTypes.andThen(_.head), StringType)
+    functions.udf(extractRelTypes.andThen(_.headOption.orNull), StringType)
   }
 
   def get_node_labels(labelNames: Seq[String]): UserDefinedFunction = {
