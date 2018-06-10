@@ -30,7 +30,6 @@ import org.apache.spark.sql.functions
 import org.apache.spark.storage.StorageLevel
 import org.opencypher.okapi.api.schema._
 import org.opencypher.okapi.api.types.{CTNode, CTRelationship}
-import org.opencypher.okapi.ir.api.expr.Expr._
 import org.opencypher.okapi.ir.api.expr._
 import org.opencypher.okapi.relational.api.schema.RelationalSchema._
 import org.opencypher.spark.api.CAPSSession
@@ -79,17 +78,10 @@ class CAPSScanGraph(val scans: Seq[CAPSEntityTable], val schema: CAPSSchema, val
     } else {
       nodeTables.filter(_.entityType.subTypeOf(nodeCypherType).isTrue)
     }
-
     val schema = selectedTables.map(_.schema).foldLeft(Schema.empty)(_ ++ _)
     val targetNodeHeader = schema.headerForNode(node)
 
-    val scanRecords: Seq[CAPSRecords] = selectedTables.map(_.records)
-
-    val alignedRecords = scanRecords
-      .map(_.alignWith(node, targetNodeHeader))
-      .map(_.select(targetNodeHeader.expressions.toSeq.sorted: _*))
-
-    alignedRecords.reduceOption(_ unionAll _).getOrElse(CAPSRecords.empty(targetNodeHeader))
+    alignRecords(selectedTables.map(_.records), node, targetNodeHeader).getOrElse(CAPSRecords.empty(targetNodeHeader))
   }
 
   override def relationships(name: String, relCypherType: CTRelationship): CAPSRecords = {
@@ -101,8 +93,8 @@ class CAPSScanGraph(val scans: Seq[CAPSEntityTable], val schema: CAPSSchema, val
 
     val scanRecords = selectedScans.map(_.records)
 
-    val alignedRecords = scanRecords
-      // Filter rows that are relevant for the requested relationship type
+    // Filter rows that are relevant for the requested relationship type
+    val filteredRecords = scanRecords
       .map { records =>
         val scanHeader = records.header
         val typeExprs = scanHeader
@@ -122,9 +114,7 @@ class CAPSScanGraph(val scans: Seq[CAPSEntityTable], val schema: CAPSSchema, val
             CAPSRecords(scanHeader, records.df.filter(relTypeFilter))
         }
       }
-      .map(_.alignWith(rel, targetRelHeader))
-      .map(_.select(targetRelHeader.expressions.toSeq.sorted: _*))
 
-    alignedRecords.reduceOption(_ unionAll _).getOrElse(CAPSRecords.empty(targetRelHeader))
+    alignRecords(filteredRecords, rel, targetRelHeader).getOrElse(CAPSRecords.empty(targetRelHeader))
   }
 }

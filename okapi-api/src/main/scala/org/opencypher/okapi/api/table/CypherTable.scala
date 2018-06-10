@@ -40,8 +40,21 @@ import org.opencypher.okapi.impl.exception.IllegalArgumentException
   */
 trait CypherTable {
 
-  def columns: Seq[String]
+  /**
+    * Physical column names in this table.
+    *
+    * Note, that there might be less physical then logical columns due to aliasing.
+    */
+  def physicalColumns: Seq[String]
 
+  /**
+    * Logical column names in this table as requested by a RETURN statement.
+    */
+  def logicalColumns: Option[Seq[String]] = None
+
+  /**
+    * CypherType of columns stored in this table.
+    */
   def columnType: Map[String, CypherType]
 
   /**
@@ -50,9 +63,13 @@ trait CypherTable {
   def rows: Iterator[String => CypherValue]
 
   /**
-    * @return number of rows in this Table.
+    * Number of rows in this Table.
     */
   def size: Long
+
+}
+
+trait ColumnOrder {
 
 }
 
@@ -69,7 +86,7 @@ object CypherTable {
     def verifyColumnType(columnKey: String, expectedType: CypherType, keyDescription: String): Unit = {
       val columnType = table.columnType.getOrElse(columnKey, throw IllegalArgumentException(
         s"table with column key $columnKey",
-        s"table with columns ${table.columns.mkString(", ")}"))
+        s"table with columns ${table.physicalColumns.mkString(", ")}"))
 
       if (!columnType.subTypeOf(expectedType).isTrue) {
         if (columnType.material == expectedType.material) {

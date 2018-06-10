@@ -102,7 +102,7 @@ case class TCKGraph[C <: CypherSession](testGraphFactory: CypherTestGraphFactory
   }
 
   private def convertToTckStrings(records: CypherRecords): StringRecords = {
-    val header = records.columns.toList
+    val header = records.logicalColumns.getOrElse(records.physicalColumns).toList
     val rows: List[Map[String, String]] = records.collect.map { cypherMap: OKAPICypherMap =>
       cypherMap.keys.map(k => k -> cypherMap(k).toCypherString).toMap
     }.toList

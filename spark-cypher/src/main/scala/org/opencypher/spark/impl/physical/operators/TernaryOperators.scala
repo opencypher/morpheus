@@ -143,7 +143,7 @@ final case class BoundedVarExpand(
         // TODO this is a crude hack that will not work once we have proper path support
         val startNodeSlot = secondRecords.header.column(secondRecords.header.startNodeFor(rel))
         val endNodeSlot = secondRecords.header.column(secondRecords.header.endNodeFor(rel))
-        val columns = secondRecords.header.columns.toSeq.sorted
+        val columns = secondRecords.physicalColumns
 
         val inverted = secondRecords.df
           .safeRenameColumn(startNodeSlot, "__tmp__")

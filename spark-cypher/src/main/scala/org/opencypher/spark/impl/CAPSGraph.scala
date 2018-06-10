@@ -115,6 +115,16 @@ trait CAPSGraph extends PropertyGraph with GraphOperations with Serializable {
     CAPSRecords(updatedHeader, updatedData)(session)
   }
 
+  protected def alignRecords(records: Seq[CAPSRecords], targetVar: Var, targetHeader: RecordHeader): Option[CAPSRecords] = {
+    // Align entity tables to target header
+    val alignedRecords = records.map(_.alignWith(targetVar, targetHeader))
+    // Ensure a consistent column order for the subsequent union
+    val selectExpressions = targetHeader.expressions.toSeq.sorted.map(_ -> Option.empty[Var])
+    val consistentRecords = alignedRecords.map(_.select(selectExpressions.head, selectExpressions.tail: _*))
+    // Union all entity tables
+    consistentRecords.reduceOption(_ unionAll _)
+  }
+
 }
 
 object CAPSGraph {

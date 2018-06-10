@@ -82,7 +82,10 @@ object CAPSRecords {
   private case class EmptyRow()
 }
 
-case class CAPSRecords(header: RecordHeader, df: DataFrame)(implicit val caps: CAPSSession)
+case class CAPSRecords(
+  header: RecordHeader,
+  df: DataFrame,
+  override val logicalColumns: Option[Seq[String]] = None)(implicit val caps: CAPSSession)
   extends RelationalCypherRecords[DataFrameTable]
     with RecordBehaviour
     with Serializable {
@@ -91,8 +94,8 @@ case class CAPSRecords(header: RecordHeader, df: DataFrame)(implicit val caps: C
 
   verify()
 
-  override def from(header: RecordHeader, table: DataFrameTable): CAPSRecords =
-    copy(header, table.df)
+  override def from(header: RecordHeader, table: DataFrameTable, displayNames: Option[Seq[String]]): CAPSRecords =
+    copy(header, table.df, displayNames)
 
   override def table: DataFrameTable = df
 

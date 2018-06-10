@@ -31,13 +31,13 @@ import org.opencypher.okapi.api.schema.Schema
 import org.opencypher.okapi.api.table.{CypherRecords, CypherTable}
 import org.opencypher.okapi.api.types.{CTBoolean, CTInteger, CTNode, CypherType}
 import org.opencypher.okapi.impl.exception.IllegalArgumentException
+import org.opencypher.okapi.impl.util.StringEncodingUtilities._
 import org.opencypher.okapi.ir.api.block.{Asc, Desc, SortItem}
 import org.opencypher.okapi.ir.api.expr._
 import org.opencypher.okapi.ir.api.{Label, PropertyKey, RelType}
 import org.opencypher.okapi.relational.api.io.RelationalEntityMapping._
 import org.opencypher.okapi.relational.impl.physical.{Ascending, Descending, JoinType, Order}
 import org.opencypher.okapi.relational.impl.table.RecordHeader
-import org.opencypher.okapi.impl.util.StringEncodingUtilities._
 
 trait FlatRelationalTable[T <: FlatRelationalTable[T]] extends CypherTable {
 
@@ -71,20 +71,13 @@ trait RelationalCypherRecords[T <: FlatRelationalTable[T]] extends CypherRecords
 
   type R <: RelationalCypherRecords[T]
 
-  def from(header: RecordHeader, table: T): R
+  def from(header: RecordHeader, table: T, displayNames: Option[Seq[String]] = None): R
 
   def table: T
 
-  override def columns: Seq[String] = table.columns
+  override def physicalColumns: Seq[String] = table.physicalColumns
 
   def header: RecordHeader
-
-  def select(exprs: Expr*): R = {
-    val selectHeader = header.select(exprs: _*)
-    val selectedColumns = selectHeader.columns
-    val selectedData = table.select(selectedColumns.toSeq.sorted: _*)
-    from(selectHeader, selectedData)
-  }
 
   def select(expr: (Expr, Option[Var]), epxrs: (Expr, Option[Var])*): R = {
     val allExprs = expr +: epxrs
@@ -98,8 +91,9 @@ trait RelationalCypherRecords[T <: FlatRelationalTable[T]] extends CypherRecords
     }
 
     val selectHeader = headerWithAliases.select(selectExprs: _*)
+    val logicalColumns = selectExprs.collect { case e: Var => e.withoutType }
 
-    from(selectHeader, table.select(selectExprs.map(headerWithAliases.column).distinct: _*))
+    from(selectHeader, table.select(selectExprs.map(headerWithAliases.column).distinct: _*), Some(logicalColumns))
   }
 
   def drop(exprs: Expr*): R = {
@@ -183,9 +177,9 @@ trait EntityTable[T <: FlatRelationalTable[T]] extends RelationalCypherRecords[T
 
   protected def verify(): Unit = {
     mapping.idKeys.foreach(key => table.verifyColumnType(key, CTInteger, "id key"))
-    if (table.columns != mapping.allSourceKeys) throw IllegalArgumentException(
+    if (table.physicalColumns != mapping.allSourceKeys) throw IllegalArgumentException(
       s"Columns: ${mapping.allSourceKeys.mkString(", ")}",
-      s"Columns: ${table.columns.mkString(", ")}",
+      s"Columns: ${table.physicalColumns.mkString(", ")}",
       s"Use CAPS[Node|Relationship]Table#fromMapping to create a valid EntityTable")
   }
 

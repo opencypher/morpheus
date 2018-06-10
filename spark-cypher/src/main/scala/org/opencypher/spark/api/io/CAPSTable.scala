@@ -53,12 +53,12 @@ object SparkCypherTable {
 
   implicit class DataFrameTable(val df: DataFrame) extends FlatRelationalTable[DataFrameTable] {
 
-    override def columns: Seq[String] = df.columns
+    override def physicalColumns: Seq[String] = df.columns
 
-    override def columnType: Map[String, CypherType] = columns.map(c => c -> df.cypherTypeForColumn(c)).toMap
+    override def columnType: Map[String, CypherType] = physicalColumns.map(c => c -> df.cypherTypeForColumn(c)).toMap
 
     override def rows: Iterator[String => CypherValue] = df.toLocalIterator.asScala.map { row =>
-      columns.map(c => c -> CypherValue(row.get(row.fieldIndex(c)))).toMap
+      physicalColumns.map(c => c -> CypherValue(row.get(row.fieldIndex(c)))).toMap
     }
 
     override def size: Long = df.count()
@@ -107,7 +107,7 @@ object SparkCypherTable {
         case FullOuterJoin => "full_outer"
       }
 
-      val overlap = this.columns.toSet.intersect(other.columns.toSet)
+      val overlap = this.physicalColumns.toSet.intersect(other.physicalColumns.toSet)
       assert(overlap.isEmpty, s"overlapping columns: $overlap")
 
       val joinExpr = joinCols.map {
@@ -153,7 +153,10 @@ case class CAPSNodeTable(
 
   override type R = CAPSNodeTable
 
-  override def from(header: RecordHeader, table: DataFrameTable): CAPSNodeTable = CAPSNodeTable(mapping, table)
+  override def from(
+    header: RecordHeader,
+    table: DataFrameTable,
+    columnNames: Option[Seq[String]] = None): CAPSNodeTable = CAPSNodeTable(mapping, table)
 
   override private[spark] def entityType = mapping.cypherType
 }
@@ -229,7 +232,8 @@ case class CAPSRelationshipTable(
 
   override def from(
     header: RecordHeader,
-    table: DataFrameTable
+    table: DataFrameTable,
+    columnNames: Option[Seq[String]] = None
   ): CAPSRelationshipTable = CAPSRelationshipTable(mapping, table)
 
   override private[spark] def entityType = mapping.cypherType
