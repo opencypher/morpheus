@@ -69,10 +69,6 @@ trait CypherTable {
 
 }
 
-trait ColumnOrder {
-
-}
-
 object CypherTable {
 
   implicit class RichCypherTable(table: CypherTable) {
