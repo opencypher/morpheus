@@ -94,7 +94,7 @@ trait JsonSerialiser {
         labels.toSeq.sorted.map(Json.fromString): _*
       ),
       "properties" -> Json.obj(
-        properties.toSeq: _*
+        properties.toSeq.sortBy(_._1): _*
       )
     )
   }

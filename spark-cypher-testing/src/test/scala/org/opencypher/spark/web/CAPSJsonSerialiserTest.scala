@@ -148,34 +148,34 @@ class CAPSJsonSerialiserTest extends CAPSTestSuite with TeamDataFixture {
     toJsonString(records) should equal(
       """{
         |  "columns" : [
-        |    "strings",
+        |    "booleans",
         |    "integers",
-        |    "booleans"
+        |    "strings"
         |  ],
         |  "rows" : [
         |    {
-        |      "strings" : [
-        |        "foo",
-        |        "bar",
-        |        "baz"
+        |      "booleans" : [
+        |        true,
+        |        false,
+        |        false
         |      ],
         |      "integers" : [
         |        42,
         |        23,
         |        8
         |      ],
-        |      "booleans" : [
-        |        true,
-        |        false,
-        |        false
+        |      "strings" : [
+        |        "foo",
+        |        "bar",
+        |        "baz"
         |      ]
         |    },
         |    {
-        |      "strings" : null,
+        |      "booleans" : [
+        |      ],
         |      "integers" : [
         |      ],
-        |      "booleans" : [
-        |      ]
+        |      "strings" : null
         |    }
         |  ]
         |}""".stripMargin
