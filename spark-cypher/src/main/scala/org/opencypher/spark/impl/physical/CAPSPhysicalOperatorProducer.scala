@@ -107,8 +107,8 @@ final class CAPSPhysicalOperatorProducer(implicit caps: CAPSSession)
   override def planAlias(in: CAPSPhysicalOperator, aliases: Seq[(Expr, Var)], header: RecordHeader): CAPSPhysicalOperator =
     operators.Alias(in, aliases, header)
 
-  override def planProject(in: CAPSPhysicalOperator, expr: Expr, header: RecordHeader): CAPSPhysicalOperator =
-    operators.Project(in, expr, header)
+  override def planProject(in: CAPSPhysicalOperator, expr: Expr, to: Option[Var], header: RecordHeader): CAPSPhysicalOperator =
+    operators.Project(in, expr, to, header)
 
   override def planConstructGraph(
     in: CAPSPhysicalOperator,

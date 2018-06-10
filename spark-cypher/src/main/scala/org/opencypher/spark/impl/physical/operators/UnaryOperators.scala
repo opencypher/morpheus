@@ -29,7 +29,7 @@ package org.opencypher.spark.impl.physical.operators
 import org.apache.spark.sql._
 import org.opencypher.okapi.api.types._
 import org.opencypher.okapi.api.value.CypherValue._
-import org.opencypher.okapi.impl.exception.{IllegalArgumentException, IllegalStateException, NotImplementedException, SchemaException}
+import org.opencypher.okapi.impl.exception.{IllegalArgumentException, NotImplementedException, SchemaException}
 import org.opencypher.okapi.ir.api.block.SortItem
 import org.opencypher.okapi.ir.api.expr._
 import org.opencypher.okapi.logical.impl._
@@ -118,48 +118,21 @@ final case class Alias(in: CAPSPhysicalOperator, aliases: Seq[(Expr, Var)], head
   }
 }
 
-final case class Project(in: CAPSPhysicalOperator, expr: Expr, header: RecordHeader)
+final case class Project(in: CAPSPhysicalOperator, expr: Expr, alias: Option[Var], header: RecordHeader)
   extends UnaryPhysicalOperator with PhysicalOperatorDebugging {
 
   override def executeUnary(prev: CAPSPhysicalResult)(implicit context: CAPSRuntimeContext): CAPSPhysicalResult = {
     prev.mapRecordsWithDetails { records =>
-      val headerColumns = header.columns
-      val dfColumns = records.df.columns.toSet
-
-      // TODO: Can optimise for var AS var2 case -- avoid duplicating data
-      val newData = headerColumns.diff(dfColumns).toSeq match {
-        case Seq(one) =>
-          // align the name of the column to what the header expects
-          val newCol = expr.asSparkSQLExpr(header, records.df, context).as(one)
-          val columnsToSelect = records.df.columns
-            .map(records.df.col) :+ newCol
-
-          records.df.select(columnsToSelect: _*)
-        case seq if seq.isEmpty =>
-          // TODO: column was already there (test was MatchBehaviour#it("joined components"))
-          // see comment in FlatOperatorProducer#project
-          records.df
-        //          throw IllegalStateException(s"Did not find a slot for expression $expr in $headerColumns")
-        case seq => throw IllegalStateException(s"Got multiple slots for expression $expr: $seq")
+      val newColumn = alias.getOrElse(expr)
+      val updatedData = if (in.header.contains(newColumn)) {
+        records.df
+      } else {
+        val dfColumn = expr.asSparkSQLExpr(header, records.df, context).as(header.column(newColumn))
+        val columnsToSelect = in.header.columns.toSeq.map(records.df.col) :+ dfColumn
+        records.df.select(columnsToSelect: _*)
       }
-
-      CAPSRecords(header, newData)(records.caps)
+      CAPSRecords(header, updatedData)(records.caps)
     }
-
-//    val exists = in.header.contains(expr)
-//
-//    val updatedData = if (exists) {
-//      records.df
-//    } else {
-//      val projectColumn = header.column(expr)
-//      //        if (in.header.columns.contains(projectColumn)) {
-//      //          CAPSRecords(header.withAlias(e))
-//      //        }
-//      val dfColumn = expr.asSparkSQLExpr(header, records.df, context).as(projectColumn)
-//      records.df.safeAddColumn(projectColumn, dfColumn)
-//    }
-//    CAPSRecords(header, updatedData)(records.caps)
-//  }
   }
 }
 
@@ -176,9 +149,10 @@ final case class Drop(
 final case class RenameColumns(
   in: CAPSPhysicalOperator,
   renameExprs: Map[Expr, String],
-  header: RecordHeader) extends UnaryPhysicalOperator with PhysicalOperatorDebugging {
+  header: RecordHeader
+) extends UnaryPhysicalOperator with PhysicalOperatorDebugging {
   override def executeUnary(prev: CAPSPhysicalResult)(implicit context: CAPSRuntimeContext): CAPSPhysicalResult = {
-    prev.mapRecordsWithDetails { records => records.withColumnsRenamed(renameExprs.toSeq: _*)}
+    prev.mapRecordsWithDetails { records => records.withColumnsRenamed(renameExprs.toSeq: _*) }
   }
 }
 
@@ -339,7 +313,7 @@ final case class Skip(in: CAPSPhysicalOperator, expr: Expr, header: RecordHeader
           .toDF()
           .rdd
           .zipWithIndex()
-          .filter((pair) => pair._2 >= skip)
+          .filter(pair => pair._2 >= skip)
           .map(_._1),
         records.toDF().schema
       )

@@ -171,10 +171,11 @@ trait PhysicalOperatorProducer[P <: PhysicalOperator[R, G, C], R <: CypherRecord
     *
     * @param in     previous operator
     * @param expr   expression to evaluate
+    * @param alias  alias to project expr to
     * @param header resulting record header
     * @return project operator
     */
-  def planProject(in: P, expr: Expr, header: RecordHeader): P
+  def planProject(in: P, expr: Expr, alias: Option[Var], header: RecordHeader): P
 
   /**
     * Creates a new record containing the specified entities (i.e. as defined in a construction pattern).
