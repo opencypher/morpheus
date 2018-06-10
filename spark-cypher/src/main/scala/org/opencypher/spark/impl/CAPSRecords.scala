@@ -100,7 +100,7 @@ case class CAPSRecords(
   override def table: DataFrameTable = df
 
   //noinspection AccessorLikeMethodIsEmptyParen
-  def toDF(): DataFrame = df
+  def toDF(colNames: String*): DataFrame = df.toDF(colNames: _*)
 
 
 
