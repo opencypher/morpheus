@@ -34,6 +34,7 @@ import org.opencypher.spark.impl.util.ZeppelinSupport._
 import org.opencypher.spark.impl.{CAPSGraph, CAPSRecords}
 import org.opencypher.spark.testing.CAPSTestSuite
 import org.opencypher.spark.testing.fixture.TeamDataFixture
+import ujson.Js
 
 //noinspection NameBooleanParameters
 class ZeppelinSupportTest extends CAPSTestSuite with TeamDataFixture {
@@ -179,85 +180,100 @@ class ZeppelinSupportTest extends CAPSTestSuite with TeamDataFixture {
     val graph = CAPSGraph.create(personTable, bookTable, readsTable, knowsTable, influencesTable)
     val asJson = graph.toZeppelinJson
     val expected = ujson.read(
-      s"""{
+      s"""
+         |{
+         |  "directed": true,
+         |  "labels": {
+         |    "Book": "#40c294",
+         |    "Person": "#cbfe79",
+         |    "Swedish": "#6f27a9"
+         |  },
          |  "nodes": [
          |    {
          |      "id": "1",
+         |      "label": "Person",
          |      "labels": [
          |        "Person",
          |        "Swedish"
          |      ],
-         |      "properties": {
+         |      "data": {
          |        "luckyNumber": "23",
          |        "name": "Mats"
          |      }
          |    },
          |    {
          |      "id": "2",
+         |      "label": "Person",
          |      "labels": [
          |        "Person"
          |      ],
-         |      "properties": {
+         |      "data": {
          |        "luckyNumber": "42",
          |        "name": "Martin"
          |      }
          |    },
          |    {
          |      "id": "3",
+         |      "label": "Person",
          |      "labels": [
          |        "Person"
          |      ],
-         |      "properties": {
+         |      "data": {
          |        "luckyNumber": "1337",
          |        "name": "Max"
          |      }
          |    },
          |    {
          |      "id": "4",
+         |      "label": "Person",
          |      "labels": [
          |        "Person"
          |      ],
-         |      "properties": {
+         |      "data": {
          |        "luckyNumber": "9",
          |        "name": "Stefan"
          |      }
          |    },
          |    {
          |      "id": "10",
+         |      "label": "Book",
          |      "labels": [
          |        "Book"
          |      ],
-         |      "properties": {
+         |      "data": {
          |        "title": "1984",
          |        "year": "1949"
          |      }
          |    },
          |    {
          |      "id": "20",
+         |      "label": "Book",
          |      "labels": [
          |        "Book"
          |      ],
-         |      "properties": {
+         |      "data": {
          |        "title": "Cryptonomicon",
          |        "year": "1999"
          |      }
          |    },
          |    {
          |      "id": "30",
+         |      "label": "Book",
          |      "labels": [
          |        "Book"
          |      ],
-         |      "properties": {
+         |      "data": {
          |        "title": "The Eye of the World",
          |        "year": "1990"
          |      }
          |    },
          |    {
          |      "id": "40",
+         |      "label": "Book",
          |      "labels": [
          |        "Book"
          |      ],
-         |      "properties": {
+         |      "data": {
          |        "title": "The Circle",
          |        "year": "2013"
          |      }
@@ -268,8 +284,8 @@ class ZeppelinSupportTest extends CAPSTestSuite with TeamDataFixture {
          |      "id": "100",
          |      "source": "100",
          |      "target": "10",
-         |      "type": "READS",
-         |      "properties": {
+         |      "label": "READS",
+         |      "data": {
          |        "recommends": true
          |      }
          |    },
@@ -277,8 +293,8 @@ class ZeppelinSupportTest extends CAPSTestSuite with TeamDataFixture {
          |      "id": "200",
          |      "source": "200",
          |      "target": "40",
-         |      "type": "READS",
-         |      "properties": {
+         |      "label": "READS",
+         |      "data": {
          |        "recommends": true
          |      }
          |    },
@@ -286,8 +302,8 @@ class ZeppelinSupportTest extends CAPSTestSuite with TeamDataFixture {
          |      "id": "300",
          |      "source": "300",
          |      "target": "30",
-         |      "type": "READS",
-         |      "properties": {
+         |      "label": "READS",
+         |      "data": {
          |        "recommends": true
          |      }
          |    },
@@ -295,8 +311,8 @@ class ZeppelinSupportTest extends CAPSTestSuite with TeamDataFixture {
          |      "id": "400",
          |      "source": "400",
          |      "target": "20",
-         |      "type": "READS",
-         |      "properties": {
+         |      "label": "READS",
+         |      "data": {
          |        "recommends": false
          |      }
          |    },
@@ -304,8 +320,8 @@ class ZeppelinSupportTest extends CAPSTestSuite with TeamDataFixture {
          |      "id": "1",
          |      "source": "1",
          |      "target": "2",
-         |      "type": "KNOWS",
-         |      "properties": {
+         |      "label": "KNOWS",
+         |      "data": {
          |        "since": "2017"
          |      }
          |    },
@@ -313,8 +329,8 @@ class ZeppelinSupportTest extends CAPSTestSuite with TeamDataFixture {
          |      "id": "2",
          |      "source": "1",
          |      "target": "3",
-         |      "type": "KNOWS",
-         |      "properties": {
+         |      "label": "KNOWS",
+         |      "data": {
          |        "since": "2016"
          |      }
          |    },
@@ -322,8 +338,8 @@ class ZeppelinSupportTest extends CAPSTestSuite with TeamDataFixture {
          |      "id": "3",
          |      "source": "1",
          |      "target": "4",
-         |      "type": "KNOWS",
-         |      "properties": {
+         |      "label": "KNOWS",
+         |      "data": {
          |        "since": "2015"
          |      }
          |    },
@@ -331,8 +347,8 @@ class ZeppelinSupportTest extends CAPSTestSuite with TeamDataFixture {
          |      "id": "4",
          |      "source": "2",
          |      "target": "3",
-         |      "type": "KNOWS",
-         |      "properties": {
+         |      "label": "KNOWS",
+         |      "data": {
          |        "since": "2016"
          |      }
          |    },
@@ -340,8 +356,8 @@ class ZeppelinSupportTest extends CAPSTestSuite with TeamDataFixture {
          |      "id": "5",
          |      "source": "2",
          |      "target": "4",
-         |      "type": "KNOWS",
-         |      "properties": {
+         |      "label": "KNOWS",
+         |      "data": {
          |        "since": "2013"
          |      }
          |    },
@@ -349,8 +365,8 @@ class ZeppelinSupportTest extends CAPSTestSuite with TeamDataFixture {
          |      "id": "6",
          |      "source": "3",
          |      "target": "4",
-         |      "type": "KNOWS",
-         |      "properties": {
+         |      "label": "KNOWS",
+         |      "data": {
          |        "since": "2016"
          |      }
          |    },
@@ -358,22 +374,19 @@ class ZeppelinSupportTest extends CAPSTestSuite with TeamDataFixture {
          |      "id": "1000",
          |      "source": "10",
          |      "target": "20",
-         |      "type": "INFLUENCES",
-         |      "properties": {
+         |      "label": "INFLUENCES",
+         |      "data": {
+         |
          |      }
          |    }
          |  ],
-         |  "labels": [
-         |    "Swedish",
-         |    "Person",
-         |    "Book"
-         |  ],
          |  "types": [
+         |    "INFLUENCES",
          |    "KNOWS",
-         |    "READS",
-         |    "INFLUENCES"
+         |    "READS"
          |  ]
          |}""".stripMargin)
+    
     asJson should equal(expected)
   }
 

@@ -277,14 +277,14 @@ object ZeppelinSupport {
       Map[String, Js.Value](
         "nodes" -> nodeJson,
         "edges" -> relJson,
-        "labels" -> g.schema.labels.toSeq.map(l => l -> Js.Str(randomColor)),
-        "directed" -> Js.True,
-        "types" -> g.schema.relationshipTypes.toSeq.sorted.map(Js.Str)
+        "labels" -> g.schema.labels.toSeq.sorted.map(l => l -> Js.Str(colorForLabel(l))),
+        "types" -> g.schema.relationshipTypes.toSeq.sorted.map(Js.Str),
+        "directed" -> Js.True
       )
     }
 
-    private def randomColor: String = {
-      val rand = new Random()
+    private def colorForLabel(label: String): String = {
+      val rand = new Random(label.hashCode)
       val r = rand.nextInt(255)
       val g = rand.nextInt(255)
       val b = rand.nextInt(255)
