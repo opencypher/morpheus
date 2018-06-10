@@ -26,156 +26,14 @@
  */
 package org.opencypher.spark.api.util
 
-import org.opencypher.okapi.api.types.CTNode
 import org.opencypher.okapi.api.util.ZeppelinSupport._
-import org.opencypher.okapi.ir.api.expr.Var
-import org.opencypher.okapi.relational.impl.syntax.RecordHeaderSyntax._
-import org.opencypher.okapi.relational.impl.table.{OpaqueField, RecordHeader}
-import org.opencypher.spark.impl.{CAPSGraph, CAPSRecords}
+import org.opencypher.spark.impl.CAPSGraph
 import org.opencypher.spark.testing.CAPSTestSuite
 import org.opencypher.spark.testing.fixture.TeamDataFixture
 
-//noinspection NameBooleanParameters
 class ZeppelinSupportTest extends CAPSTestSuite with TeamDataFixture {
 
-  it("unit table") {
-    // Given
-    val records = CAPSRecords.unit()
-
-    // Then
-    records.toJson should equal(ujson.read(
-      s"""{
-         |  "columns": [
-         |  ],
-         |  "rows": [
-         |    {
-         |    }
-         |  ]
-         |}""".stripMargin))
-  }
-
-  it("single column, no rows") {
-    // Given
-    val records = CAPSRecords.empty(headerOf('foo))
-
-    // Then
-    records.toJson should equal(ujson.read(
-      s"""{
-         |  "columns": [
-         |    "foo"
-         |  ],
-         |  "rows": [
-         |  ]
-         |}""".stripMargin))
-  }
-
-  it("single column, three rows") {
-    // Given
-    val records = CAPSRecords.create(Seq(Row1("myString"), Row1("foo"), Row1(null)))
-
-    // Then
-    records.toJson should equal(ujson.read(
-      """{
-        |  "columns": [
-        |    "foo"
-        |  ],
-        |  "rows": [
-        |    {
-        |      "foo": "myString"
-        |    },
-        |    {
-        |      "foo": "foo"
-        |    },
-        |    {
-        |      "foo": null
-        |    }
-        |  ]
-        |}""".stripMargin))
-  }
-
-  it("three columns, three rows") {
-    // Given
-    val records = CAPSRecords.create(
-      Seq(
-        Row3("myString", 4L, false),
-        Row3("foo", 99999999L, true),
-        Row3(null, -1L, true)
-      ))
-
-    // Then
-    records.toJson should equal(ujson.read(
-        """{
-          |  "columns": [
-          |    "foo",
-          |    "v",
-          |    "veryLongColumnNameWithBoolean"
-          |  ],
-          |  "rows": [
-          |    {
-          |      "foo": "myString",
-          |      "v": "4",
-          |      "veryLongColumnNameWithBoolean": false
-          |    },
-          |    {
-          |      "foo": "foo",
-          |      "v": "99999999",
-          |      "veryLongColumnNameWithBoolean": true
-          |    },
-          |    {
-          |      "foo": null,
-          |      "v": "-1",
-          |      "veryLongColumnNameWithBoolean": true
-          |    }
-          |  ]
-          |}""".stripMargin))
-  }
-
-  it("serialize lists") {
-    // Given
-    val records = CAPSRecords.create(
-      Seq(
-        ListRow(Seq("foo", "bar", "baz"), Seq(42, 23, 8), Seq(true, false, false)),
-        ListRow(null, Seq.empty, Seq.empty)
-      ))
-
-    // Then
-    records.toJson should equal(ujson.read(
-      """{
-        |  "columns": [
-        |    "strings",
-        |    "integers",
-        |    "booleans"
-        |  ],
-        |  "rows": [
-        |    {
-        |      "strings": [
-        |        "foo",
-        |        "bar",
-        |        "baz"
-        |      ],
-        |      "integers": [
-        |        "42",
-        |        "23",
-        |        "8"
-        |      ],
-        |      "booleans": [
-        |        true,
-        |        false,
-        |        false
-        |      ]
-        |    },
-        |    {
-        |      "strings": null,
-        |      "integers": [
-        |      ],
-        |      "booleans": [
-        |      ]
-        |    }
-        |  ]
-        |}""".stripMargin))
-  }
-
-  it("graph serialization") {
+  it("supports graph serialization") {
     val graph = CAPSGraph.create(personTable, bookTable, readsTable, knowsTable, influencesTable)
     val asJson = graph.toZeppelinJson
     val expected = ujson.read(
@@ -389,17 +247,4 @@ class ZeppelinSupportTest extends CAPSTestSuite with TeamDataFixture {
     asJson should equal(expected)
   }
 
-  private case class Row1(foo: String)
-
-  private case class Row3(foo: String, v: Long, veryLongColumnNameWithBoolean: Boolean)
-
-  private case class ListRow(strings: Seq[String], integers: Seq[Long], booleans: Seq[Boolean])
-
-  private case class MapRow(strings: Map[String, String], integers: Map[String, Long], booleans: Map[String, Boolean])
-
-  private def headerOf(fields: Symbol*): RecordHeader = {
-    val value1 = fields.map(f => OpaqueField(Var(f.name)(CTNode)))
-    val (header, _) = RecordHeader.empty.update(addContents(value1))
-    header
-  }
 }

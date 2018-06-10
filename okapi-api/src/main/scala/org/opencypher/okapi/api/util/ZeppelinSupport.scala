@@ -49,7 +49,7 @@ object ZeppelinSupport {
       * If the result contains a graph, it is shown as a network (see [[ZeppelinSupport.ZeppelinGraph#printGraph]]).
       * If the result contains a tabular result, they are visualized as a table (see [[ZeppelinSupport.ZeppelinRecords#printTable]]).
       */
-    def printZeppelin(): Unit = {
+    def visualize(): Unit = {
       result.graph match {
         case Some(g) => g.printGraph()
         case None => result.records.get.printTable()
@@ -58,31 +58,6 @@ object ZeppelinSupport {
   }
 
   implicit class ZeppelinRecords(r: CypherRecords) {
-
-    /**
-      * Serialises CypherRecords to JSON. The format is as follows:
-      *
-      * {{{
-      * {
-      *   "columns" : [ "key" ]   // array of columns
-      *   "rows" : [              // array of rows
-      *     {                     // each row is an object
-      *       "key" : "value"     // each cell is a tuple
-      *     }
-      *   ]
-      * }
-      * }}}
-      **/
-    def toJson: Js.Value = {
-      val columns = r.columns
-      val rows = Js.Arr.from(r.collect.map { row =>
-        columns.map(column => column -> row(column).toJson)
-      })
-      Js.Obj(
-        "columns" -> columns.map(Js.Str),
-        "rows" -> rows
-      )
-    }
 
     /**
       * Prints the records in the Zeppelin `%table` format
@@ -123,7 +98,7 @@ object ZeppelinSupport {
   implicit class ZeppelinNode(n: CypherNode[_]) {
 
     /**
-      * Returns a Json formatted node:
+      * Returns a Zeppelin compatible Json representation of a node:
       *
       * {{{
       * {
@@ -154,7 +129,7 @@ object ZeppelinSupport {
   implicit class ZeppelinRelationship(r: CypherRelationship[_]) {
 
     /**
-      * Returns a Json formatted relationship:
+      * Returns a Zeppelin compatible Json representation of a relationship:
       *
       * {{{
       * {
@@ -184,7 +159,7 @@ object ZeppelinSupport {
   implicit class ZeppelinGraph(g: PropertyGraph) {
 
     /**
-      * Prints the specified graph in Zeppelins `%network` format
+      * Prints the graph in Zeppelin's `%network` format
       *
       * {{{
       *   g.cypher("""
@@ -245,7 +220,7 @@ object ZeppelinSupport {
     }
 
     /**
-      * CAPSGraphs are serialized in the following format:
+      * Returns a Zeppelin compatible Json representation of a PropertyGraph:
       *
       * {{{
       * {
