@@ -26,15 +26,15 @@
  */
 package org.opencypher.spark.impl.util
 
+import org.opencypher.okapi.api.graph.{CypherResult, PropertyGraph}
+import org.opencypher.okapi.api.table.CypherRecords
 import org.opencypher.okapi.api.value.CypherValue.CypherEntity._
 import org.opencypher.okapi.api.value.CypherValue.CypherNode._
 import org.opencypher.okapi.api.value.CypherValue.CypherRelationship._
 import org.opencypher.okapi.api.value.CypherValue.{CypherNode, CypherRelationship}
 import org.opencypher.okapi.impl.exception.IllegalArgumentException
-import org.opencypher.spark.impl.{CAPSGraph, CAPSRecords, CAPSResult}
 import upickle.Js
 
-import scala.collection.JavaConverters._
 import scala.util.Random
 
 /**
@@ -42,7 +42,7 @@ import scala.util.Random
   */
 object ZeppelinSupport {
 
-  implicit class ResultVisualizer(result: CAPSResult) {
+  implicit class ResultVisualizer(result: CypherResult) {
 
     /**
       * Visualizes the result in Zeppelin.
@@ -57,7 +57,7 @@ object ZeppelinSupport {
     }
   }
 
-  implicit class ZeppelinRecords(r: CAPSRecords) {
+  implicit class ZeppelinRecords(r: CypherRecords) {
 
     /**
       * Serialises CAPSRecords to JSON. The format is as follows:
@@ -73,18 +73,16 @@ object ZeppelinSupport {
       * }
       * }}}
       **/
-    def toZeppelinJson: Js.Value = {
+    def toJson: Js.Value = {
+      val columns = r.columns
       val rows = Js.Arr.from(r.collect.map { row =>
-        r.header.fieldsInOrder.map { field =>
-          field -> row(field).toJson
-        }
+        columns.map(row(_).toJson)
       })
       Js.Obj(
-        "columns" -> r.header.fieldsInOrder.map(Js.Str),
+        "columns" -> columns.map(Js.Str),
         "rows" -> rows
       )
     }
-
 
     /**
       * Prints the records in the Zeppelin `%table` format
@@ -103,10 +101,10 @@ object ZeppelinSupport {
       * }}}
       */
     def printTable(): Unit = {
-      val fields = r.header.fieldsInOrder
-      val header = fields.mkString("\t")
-      val rows = r.collect.map { data =>
-        fields.map(field => data.get(field).get).mkString("\t")
+      val columns = r.columns
+      val header = columns.mkString("\t")
+      val rows = r.collect.map { row =>
+        columns.map(row(_)).mkString("\t")
       }.mkString("\n")
 
       print(
@@ -182,7 +180,7 @@ object ZeppelinSupport {
     }
   }
 
-  implicit class ZeppelinGraph(g: CAPSGraph) {
+  implicit class ZeppelinGraph(g: PropertyGraph) {
 
     /**
       * Prints the specified graph in Zeppelins `%network` format
@@ -260,14 +258,14 @@ object ZeppelinSupport {
       * The format of scalar values follows the format of [[org.opencypher.okapi.api.value.CypherValue.CypherValue#toString]].
       */
     def toZeppelinJson: Js.Value = {
-      val nodeJson: Js.Value = g.nodes("n").toCypherMaps.toLocalIterator.asScala.map { node =>
+      val nodeJson: Js.Value = g.nodes("n").iterator.map { node =>
         node("n") match {
           case n: CypherNode[_] => n.toZeppelinJson
           case notANode => throw IllegalArgumentException("a node", notANode)
         }
       }
 
-      val relJson: Js.Value = g.relationships("r").toCypherMaps.toLocalIterator.asScala.map { rel =>
+      val relJson: Js.Value = g.relationships("r").iterator.map { rel =>
         rel("r") match {
           case r: CypherRelationship[_] => r.toZeppelinJson
           case notARel => throw IllegalArgumentException("a relationship", notARel)

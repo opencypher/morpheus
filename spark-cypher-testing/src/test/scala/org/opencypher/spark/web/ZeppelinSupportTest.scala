@@ -44,7 +44,7 @@ class ZeppelinSupportTest extends CAPSTestSuite with TeamDataFixture {
     val records = CAPSRecords.unit()
 
     // Then
-    records.toZeppelinJson should equal(ujson.read(
+    records.toJson should equal(ujson.read(
       s"""{
          |  "columns": [
          |  ],
@@ -60,7 +60,7 @@ class ZeppelinSupportTest extends CAPSTestSuite with TeamDataFixture {
     val records = CAPSRecords.empty(headerOf('foo))
 
     // Then
-    records.toZeppelinJson should equal(ujson.read(
+    records.toJson should equal(ujson.read(
       s"""{
          |  "columns": [
          |    "foo"
@@ -75,7 +75,7 @@ class ZeppelinSupportTest extends CAPSTestSuite with TeamDataFixture {
     val records = CAPSRecords.create(Seq(Row1("myString"), Row1("foo"), Row1(null)))
 
     // Then
-    records.toZeppelinJson should equal(ujson.read(
+    records.toJson should equal(ujson.read(
       """{
         |  "columns": [
         |    "foo"
@@ -104,7 +104,7 @@ class ZeppelinSupportTest extends CAPSTestSuite with TeamDataFixture {
       ))
 
     // Then
-    records.toZeppelinJson should equal(ujson.read(
+    records.toJson should equal(ujson.read(
         """{
           |  "columns": [
           |    "foo",
@@ -140,7 +140,7 @@ class ZeppelinSupportTest extends CAPSTestSuite with TeamDataFixture {
       ))
 
     // Then
-    records.toZeppelinJson should equal(ujson.read(
+    records.toJson should equal(ujson.read(
       """{
         |  "columns": [
         |    "strings",
@@ -386,7 +386,7 @@ class ZeppelinSupportTest extends CAPSTestSuite with TeamDataFixture {
          |    "READS"
          |  ]
          |}""".stripMargin)
-    
+
     asJson should equal(expected)
   }
 
