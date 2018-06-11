@@ -26,8 +26,6 @@
  */
 package org.opencypher.okapi.relational.impl.table
 
-import java.util.concurrent.atomic.AtomicLong
-
 import org.opencypher.okapi.api.types.{CTNode, CTRelationship}
 import org.opencypher.okapi.impl.exception.IllegalArgumentException
 import org.opencypher.okapi.ir.api.RelType

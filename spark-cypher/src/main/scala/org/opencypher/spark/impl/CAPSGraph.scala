@@ -31,7 +31,6 @@ import org.opencypher.okapi.api.graph.{GraphOperations, PropertyGraph}
 import org.opencypher.okapi.api.schema._
 import org.opencypher.okapi.api.table.CypherRecords
 import org.opencypher.okapi.api.types.{CTNode, CTRelationship}
-import org.opencypher.okapi.impl.exception.IllegalArgumentException
 import org.opencypher.okapi.ir.api.PropertyKey
 import org.opencypher.okapi.ir.api.expr._
 import org.opencypher.okapi.relational.impl.table.RecordHeader
@@ -148,52 +147,6 @@ object CAPSGraph {
   def create(records: CypherRecords, schema: CAPSSchema, tags: Set[Int] = Set(0))(implicit caps: CAPSSession): CAPSGraph = {
     val capsRecords = records.asCaps
     new CAPSPatternGraph(capsRecords, schema, tags)
-  }
-
-  def createLazy(theSchema: CAPSSchema, loadGraph: => CAPSGraph)(implicit caps: CAPSSession): CAPSGraph =
-    new LazyGraph(theSchema, loadGraph) {}
-
-  sealed abstract class LazyGraph(override val schema: CAPSSchema, loadGraph: => CAPSGraph)(implicit caps: CAPSSession)
-    extends CAPSGraph {
-    protected lazy val lazyGraph: CAPSGraph = {
-      val g = loadGraph
-      if (g.schema == schema) g else throw IllegalArgumentException(s"a graph with schema $schema", g.schema)
-    }
-
-    override def tags: Set[Int] = lazyGraph.tags
-
-    override def session: CAPSSession = caps
-
-    override def nodes(name: String, nodeCypherType: CTNode): CAPSRecords =
-      lazyGraph.nodes(name, nodeCypherType)
-
-    override def relationships(name: String, relCypherType: CTRelationship): CAPSRecords =
-      lazyGraph.relationships(name, relCypherType)
-
-    override def cache(): CAPSGraph = {
-      lazyGraph.cache()
-      this
-    }
-
-    override def persist(): CAPSGraph = {
-      lazyGraph.persist()
-      this
-    }
-
-    override def persist(storageLevel: StorageLevel): CAPSGraph = {
-      lazyGraph.persist(storageLevel)
-      this
-    }
-
-    override def unpersist(): CAPSGraph = {
-      lazyGraph.unpersist()
-      this
-    }
-
-    override def unpersist(blocking: Boolean): CAPSGraph = {
-      lazyGraph.unpersist(blocking)
-      this
-    }
   }
 
   sealed case class EmptyGraph(implicit val caps: CAPSSession) extends CAPSGraph {
