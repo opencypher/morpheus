@@ -53,6 +53,15 @@ sealed abstract class TernaryFlatOperator extends FlatOperator {
   override def sourceGraph: LogicalGraph = first.sourceGraph
 }
 
+sealed abstract class QuaternaryFlatOperator extends FlatOperator {
+  def first: FlatOperator
+  def second: FlatOperator
+  def third: FlatOperator
+  def fourth: FlatOperator
+
+  override def sourceGraph: LogicalGraph = first.sourceGraph
+}
+
 sealed abstract class StackingFlatOperator extends FlatOperator {
   def in: FlatOperator
 
@@ -130,26 +139,26 @@ final case class ExpandInto(
   override def in: FlatOperator = sourceOp
 }
 
-final case class InitVarExpand(source: Var, edgeList: Var, endNode: Var, in: FlatOperator, header: RecordHeader)
-    extends StackingFlatOperator
-
 final case class BoundedVarExpand(
+    source: Var,
     rel: Var,
-    edgeList: Var,
+    innerNode: Var,
     target: Var,
     direction: Direction,
     lower: Int,
     upper: Int,
-    sourceOp: InitVarExpand,
+    sourceOp: FlatOperator,
     relOp: FlatOperator,
+    innerNodeOp: FlatOperator,
     targetOp: FlatOperator,
     header: RecordHeader,
     isExpandInto: Boolean)
-    extends TernaryFlatOperator {
+    extends QuaternaryFlatOperator {
 
   override def first: FlatOperator = sourceOp
   override def second: FlatOperator = relOp
-  override def third: FlatOperator = targetOp
+  override def third: FlatOperator = innerNodeOp
+  override def fourth: FlatOperator = targetOp
 }
 
 final case class OrderBy(sortItems: Seq[SortItem[Expr]], in: FlatOperator, header: RecordHeader)
