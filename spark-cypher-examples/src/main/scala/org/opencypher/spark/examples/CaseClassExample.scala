@@ -44,11 +44,12 @@ object CaseClassExample extends ConsoleApp {
   // 3) Query graph with Cypher
   val results = socialNetwork.cypher(
     """|MATCH (a:Person)-[r:FRIEND_OF]->(b)
-       |RETURN a.name, b.name, r.since""".stripMargin
+       |RETURN a.name, b.name, r.since
+       |ORDER BY a.name""".stripMargin
   )
 
-  // 4) Convert to maps and print to console
-  println(results.getRecords.collect.mkString("\n"))
+  // 4) Print result to console
+  results.show
 }
 
 /**

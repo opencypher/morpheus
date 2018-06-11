@@ -36,16 +36,18 @@ import org.opencypher.okapi.api.value.CypherValue
 import org.opencypher.okapi.impl.exception.IllegalArgumentException
 import org.opencypher.okapi.ir.api.PropertyKey
 import org.opencypher.okapi.ir.api.expr._
+import org.opencypher.okapi.relational.api.schema.RelationalSchema._
 import org.opencypher.okapi.relational.impl.table.RecordHeader
 import org.opencypher.spark.api.CAPSSession
+import org.opencypher.spark.impl.convert.SparkConversions._
 import org.opencypher.spark.impl.io.neo4j.Neo4jGraph.{filterNode, filterRel, nodeToRow, relToRow}
-import org.opencypher.spark.impl.table.CAPSRecordHeader._
 import org.opencypher.spark.impl.{CAPSGraph, CAPSRecords}
 import org.opencypher.spark.schema.CAPSSchema
 
 class Neo4jGraph(val schema: CAPSSchema, val session: CAPSSession)(
   val inputNodes: RDD[InternalNode],
-  val inputRels: RDD[InternalRelationship])
+  val inputRels: RDD[InternalRelationship]
+)
   extends CAPSGraph {
 
   override val tags = Set(0)
@@ -64,14 +66,15 @@ class Neo4jGraph(val schema: CAPSSchema, val session: CAPSSession)(
 
   private def map(
     f: RDD[InternalNode] => RDD[InternalNode],
-    g: RDD[InternalRelationship] => RDD[InternalRelationship]) =
+    g: RDD[InternalRelationship] => RDD[InternalRelationship]
+  ) =
   // We need to construct new RDDs since otherwise providing a different storage level may fail
     new Neo4jGraph(schema, session)(
       f(inputNodes.filter(_ => true)),
       g(inputRels.filter(_ => true)))
 
   override def nodes(name: String, cypherType: CTNode): CAPSRecords = {
-    val header = RecordHeader.nodeFromSchema(Var(name)(cypherType), schema)
+    val header = schema.headerForNode(Var(name)(cypherType))
 
     computeRecords(name, cypherType, header) { (header, struct) =>
       inputNodes.filter(filterNode(cypherType)).map(nodeToRow(header, struct))
@@ -79,7 +82,7 @@ class Neo4jGraph(val schema: CAPSSchema, val session: CAPSSession)(
   }
 
   override def relationships(name: String, cypherType: CTRelationship): CAPSRecords = {
-    val header = RecordHeader.relationshipFromSchema(Var(name)(cypherType), schema)
+    val header = schema.headerForRelationship(Var(name)(cypherType))
 
     computeRecords(name, cypherType, header) { (header, struct) =>
       inputRels.filter(filterRel(cypherType)).map(relToRow(header, struct))
@@ -87,14 +90,14 @@ class Neo4jGraph(val schema: CAPSSchema, val session: CAPSSession)(
   }
 
   private def computeRecords(name: String, cypherType: CypherType, header: RecordHeader)(
-    computeRdd: (RecordHeader, StructType) => RDD[Row]): CAPSRecords = {
-    val struct = header.toStructType
-    val rdd = computeRdd(header, struct)
-    val slot = header.slotFor(Var(name)(cypherType))
-    val rawData = session.sparkSession.createDataFrame(rdd, struct)
-    val col = rawData.col(rawData.columns(slot.index))
-    val recordData = rawData.repartition(col).sortWithinPartitions(col)
-    CAPSRecords.verifyAndCreate(header, recordData)(session)
+    computeRdd: (RecordHeader, StructType) => RDD[Row]
+  ): CAPSRecords = {
+    val rdd = computeRdd(header, header.toStructType)
+    val column = header.column(Var(name)(cypherType))
+    val rawData = session.sparkSession.createDataFrame(rdd, header.toStructType)
+    val sparkColumn = rawData.col(column)
+    val recordData = rawData.repartition(sparkColumn).sortWithinPartitions(sparkColumn)
+    CAPSRecords(header, recordData)(session)
   }
 
   override def toString = "Neo4jGraph"
@@ -112,28 +115,33 @@ object Neo4jGraph {
 
   private case class nodeToRow(header: RecordHeader, schema: StructType) extends (InternalNode => Row) {
 
+    private def orderedColumns = header.columns.toSeq.sorted
+    private val orderedExpressions = orderedColumns.map { column =>
+      header.expressionsFor(column).toSeq match {
+        case Seq(one) => one
+        case other => throw IllegalArgumentException(s"single expression for column $column", other)
+      }
+    }
+
     override def apply(importedNode: InternalNode): Row = {
       import scala.collection.JavaConverters._
 
       val props = importedNode.asMap().asScala
       val labels = importedNode.labels().asScala.toSet
 
-      val values = header.slots.map { slot =>
-        slot.content.key match {
-          case Property(_, PropertyKey(keyName)) =>
-            val propValue = props.get(keyName).orNull
-            CypherValue(propValue).unwrap
+      val values = orderedExpressions.map {
+        case Property(_, PropertyKey(keyName)) =>
+          val propValue = props.get(keyName).orNull
+          CypherValue(propValue).unwrap
 
-          case HasLabel(_, label) =>
-            labels(label.name)
+        case HasLabel(_, label) =>
+          labels(label.name)
 
-          case _: Var =>
-            importedNode.id()
+        case _: Var =>
+          importedNode.id()
 
-          case x =>
-            throw IllegalArgumentException("a node member expression (property, label, node variable)", x)
-
-        }
+        case x =>
+          throw IllegalArgumentException("a node member expression (property, label, node variable)", x)
       }
 
       Row(values: _*)
@@ -147,39 +155,46 @@ object Neo4jGraph {
   }
 
   private case class relToRow(header: RecordHeader, schema: StructType) extends (InternalRelationship => Row) {
+
+    private def orderedColumns = header.columns.toSeq.sorted
+    private val orderedExpressions = orderedColumns.map { column =>
+      header.expressionsFor(column).toSeq match {
+        case Seq(one) => one
+        case other => throw IllegalArgumentException(s"single expression for column $column", other)
+      }
+    }
+
     override def apply(importedRel: InternalRelationship): Row = {
       import scala.collection.JavaConverters._
 
       val relType = importedRel.`type`()
       val props = importedRel.asMap().asScala
 
-      val values = header.slots.map { slot =>
-        slot.content.key match {
-          case Property(_, PropertyKey(keyName)) =>
-            val propValue = props.get(keyName).orNull
-            CypherValue(propValue).unwrap
+      val values = orderedExpressions.map {
 
-          case _: StartNode =>
-            importedRel.startNodeId()
+        case Property(_, PropertyKey(keyName)) =>
+          val propValue = props.get(keyName).orNull
+          CypherValue(propValue).unwrap
 
-          case _: EndNode =>
-            importedRel.endNodeId()
+        case _: StartNode =>
+          importedRel.startNodeId()
 
-          case _: Type =>
-            relType
+        case _: EndNode =>
+          importedRel.endNodeId()
 
-          case _: Var =>
-            importedRel.id()
+        case HasType(_, rType) =>
+          relType == rType.name
 
-          case x =>
-            throw IllegalArgumentException(
-              "a relationship member expression (property, start node, end node, type, relationship variable)",
-              x)
-        }
+        case _: Var =>
+          importedRel.id()
+
+        case x =>
+          throw IllegalArgumentException(
+            "a relationship member expression (property, start node, end node, type, relationship variable)",
+            x)
       }
 
       Row(values: _*)
     }
   }
-
 }

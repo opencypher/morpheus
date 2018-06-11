@@ -24,8 +24,16 @@
  * described as "implementation extensions to Cypher" or as "proposed changes to
  * Cypher that are not yet approved by the openCypher community".
  */
-package org.opencypher.okapi.relational.impl.syntax
+package org.opencypher.okapi.relational.impl.physical
 
-import org.opencypher.okapi.relational.refactor.syntax.RegisterSyntax
+sealed trait JoinType
 
-trait AllSyntax extends RegisterSyntax with RecordHeaderSyntax
+case object InnerJoin extends JoinType
+case object LeftOuterJoin extends JoinType
+case object RightOuterJoin extends JoinType
+case object FullOuterJoin extends JoinType
+
+sealed trait Order
+
+case object  Ascending extends Order
+case object  Descending extends Order

@@ -160,7 +160,7 @@ object CAPSSession extends Serializable {
       * @return [[org.apache.spark.sql#DataFrame]] representing the records
       */
     def asDataFrame: DataFrame = records match {
-      case caps: CAPSRecords => caps.data
+      case caps: CAPSRecords => caps.df
       case _ => throw UnsupportedOperationException(s"can only handle CAPS records, got $records")
     }
 

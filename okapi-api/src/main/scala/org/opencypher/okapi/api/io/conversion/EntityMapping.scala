@@ -45,13 +45,23 @@ trait EntityMapping {
 
   def optionalLabelKeys: Seq[String] = Seq.empty
 
-  def relTypeKey: Option[String] = None
+  def relTypeKeys: Seq[String] = Seq.empty
 
-  def allSourceKeys: Seq[String] = idKeys ++ optionalLabelKeys ++ relTypeKey ++ propertyMapping.values.toSeq.sorted
+  def allSourceKeys: Seq[String] = idKeys ++ optionalLabelKeys ++ relTypeKeys ++ propertyMapping.values.toSeq.sorted
 
   protected def preventOverwritingProperty(propertyKey: String): Unit =
     if (propertyMapping.contains(propertyKey))
       throw IllegalArgumentException("unique property key definitions",
         s"given key $propertyKey overwrites existing mapping")
+
+  protected def validate(): Unit = {
+    val sourceKeys = allSourceKeys
+    if (allSourceKeys.size != sourceKeys.toSet.size) {
+      val duplicateColumns = sourceKeys.groupBy(identity).filter { case (_, items) => items.size > 1 }
+      throw IllegalArgumentException(
+        "One-to-one mapping from entity elements to source keys",
+        s"Duplicate columns: $duplicateColumns")
+    }
+  }
 
 }

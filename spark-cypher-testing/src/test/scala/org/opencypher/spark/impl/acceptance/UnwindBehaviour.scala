@@ -26,16 +26,16 @@
  */
 package org.opencypher.spark.impl.acceptance
 
-import org.opencypher.spark.api.value.CAPSNode
 import org.opencypher.okapi.api.value.CypherValue._
 import org.opencypher.okapi.testing.Bag
+import org.opencypher.spark.api.value.CAPSNode
 import org.opencypher.spark.testing.CAPSTestSuite
 import org.scalatest.DoNotDiscover
 
 @DoNotDiscover
 class UnwindBehaviour extends CAPSTestSuite with DefaultGraphInit {
 
-  test("standalone unwind from parameter") {
+  it("standalone unwind from parameter") {
     val query = "UNWIND $param AS item RETURN item"
 
     val result = caps.cypher(query, Map("param" -> CypherList(1, 2, 3)))
@@ -48,7 +48,7 @@ class UnwindBehaviour extends CAPSTestSuite with DefaultGraphInit {
       ))
   }
 
-  test("standalone unwind from literal") {
+  it("standalone unwind from literal") {
     val query = "UNWIND [1, 2, 3] AS item RETURN item"
 
     val result = caps.cypher(query)
@@ -61,7 +61,7 @@ class UnwindBehaviour extends CAPSTestSuite with DefaultGraphInit {
       ))
   }
 
-  test("unwind after match") {
+  it("unwind after match") {
     val graph = initGraph("CREATE (:A)-[:T]->(:B {item: '1'})-[:T]->(:C)")
 
     val query = "MATCH (a)-[r]->(b) UNWIND $param AS item RETURN a, item"
@@ -79,7 +79,7 @@ class UnwindBehaviour extends CAPSTestSuite with DefaultGraphInit {
       ).map(_.toString))
   }
 
-  test("unwind from expression, aggregation") {
+  it("unwind from expression, aggregation") {
     val graph = initGraph("CREATE (:A {v: 1}), (:A:B {v: 15}), (:A:C {v: -32}), (:A)")
 
     val query = "MATCH (a:A) WITH collect(a.v) AS list UNWIND list AS item RETURN item"
@@ -94,7 +94,7 @@ class UnwindBehaviour extends CAPSTestSuite with DefaultGraphInit {
       ))
   }
 
-  test("unwind from expression") {
+  it("unwind from expression") {
     val graph = initGraph("CREATE (:A {v: [1, 2]}), (:A:B {v: [-4]})")
 
     val query = "MATCH (a:A) WITH a.v AS list UNWIND list AS item RETURN item"

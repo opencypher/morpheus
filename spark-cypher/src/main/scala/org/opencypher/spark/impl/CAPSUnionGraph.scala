@@ -30,7 +30,7 @@ import org.apache.spark.storage.StorageLevel
 import org.opencypher.okapi.api.schema.Schema
 import org.opencypher.okapi.api.types.{CTNode, CTRelationship}
 import org.opencypher.okapi.ir.api.expr.Var
-import org.opencypher.okapi.relational.impl.table.RecordHeader
+import org.opencypher.okapi.relational.api.schema.RelationalSchema._
 import org.opencypher.spark.api.CAPSSession
 import org.opencypher.spark.impl.util.TagSupport.computeRetaggings
 import org.opencypher.spark.schema.CAPSSchema
@@ -70,7 +70,7 @@ final case class CAPSUnionGraph(graphs: Map[CAPSGraph, Map[Int, Int]])
 
   override def nodes(name: String, nodeCypherType: CTNode): CAPSRecords = {
     val node = Var(name)(nodeCypherType)
-    val targetHeader = RecordHeader.nodeFromSchema(node, schema)
+    val targetHeader = schema.headerForNode(node)
     val nodeScans = graphs.keys
       .filter(nodeCypherType.labels.isEmpty || _.schema.labels.intersect(nodeCypherType.labels).nonEmpty)
       .map {
@@ -79,17 +79,14 @@ final case class CAPSUnionGraph(graphs: Map[CAPSGraph, Map[Int, Int]])
           nodeScan.retag(graphs(graph))
       }
 
-    val alignedScans = nodeScans.map(_.alignWith(node, targetHeader))
-
-    alignedScans
-      .reduceOption(_ unionAll(targetHeader, _))
+    alignRecords(nodeScans.toSeq, node, targetHeader)
       .map(_.distinct(node))
       .getOrElse(CAPSRecords.empty(targetHeader))
   }
 
   override def relationships(name: String, relCypherType: CTRelationship): CAPSRecords = {
     val rel = Var(name)(relCypherType)
-    val targetHeader = RecordHeader.relationshipFromSchema(rel, schema)
+    val targetHeader = schema.headerForRelationship(rel)
     val relScans = graphs.keys
       .filter(relCypherType.types.isEmpty || _.schema.relationshipTypes.intersect(relCypherType.types).nonEmpty)
       .map { graph =>
@@ -97,9 +94,7 @@ final case class CAPSUnionGraph(graphs: Map[CAPSGraph, Map[Int, Int]])
         relScan.retag(graphs(graph))
       }
 
-    val alignedScans = relScans.map(_.alignWith(rel, targetHeader))
-    alignedScans
-      .reduceOption(_ unionAll(targetHeader, _))
+    alignRecords(relScans.toSeq, rel, targetHeader)
       .map(_.distinct(rel))
       .getOrElse(CAPSRecords.empty(targetHeader))
   }

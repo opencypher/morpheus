@@ -40,21 +40,21 @@ import org.opencypher.okapi.impl.util.Measurement.printTiming
 import org.opencypher.okapi.ir.api.expr.{Expr, Param}
 import org.opencypher.okapi.relational.impl.table.RecordHeader
 import org.opencypher.spark.api.Tags._
-import org.opencypher.spark.impl.convert.CAPSCypherType._
+import org.opencypher.spark.impl.convert.SparkConversions._
 import org.opencypher.spark.impl.physical.CAPSRuntimeContext
 import org.opencypher.spark.impl.physical.operators.NamedTableScan
+
 object DataFrameOps {
 
   implicit class CypherRow(r: Row) {
+
     def getCypherValue(expr: Expr, header: RecordHeader)(implicit context: CAPSRuntimeContext): CypherValue = {
       expr match {
         case Param(name) => context.parameters(name)
         case _ =>
-          header.slotsFor(expr).headOption match {
-            case None => throw IllegalArgumentException(s"slot for $expr")
-            case Some(slot) =>
-              val index = slot.index
-              CypherValue(r.get(index))
+          header.getColumn(expr) match {
+            case None => throw IllegalArgumentException(s"column for $expr")
+            case Some(column) => CypherValue(r.get(r.schema.fieldIndex(column)))
           }
       }
     }
@@ -221,6 +221,22 @@ object DataFrameOps {
       }.reduce((acc, expr) => acc && expr)
 
       df.join(other, joinExpr, joinType)
+    }
+
+    /**
+      * Normalises the dataframe by lifting numeric fields to Long and similar ops.
+      */
+    def withCypherCompatibleTypes: DataFrame = {
+      val toCast = df.schema.fields.filter(f => f.toCypherType.isEmpty)
+      val dfWithCompatibleTypes: DataFrame = toCast.foldLeft(df) {
+        case (currentDf, field) =>
+          val castType = field.dataType.cypherCompatibleDataType.getOrElse(
+            throw IllegalArgumentException(
+              s"a Spark type supported by Cypher: ${supportedTypes.mkString("[", ", ", "]")}",
+              s"type ${field.dataType} of field $field"))
+          currentDf.mapColumn(field.name)(_.cast(castType))
+      }
+      dfWithCompatibleTypes
     }
 
     /**

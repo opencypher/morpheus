@@ -117,8 +117,7 @@ class LogicalPlannerTest extends LogicalTestSuite {
     val result = plan(irFor(block))
 
     val expected = Project(
-      Property('n, PropertyKey("prop"))(CTFloat), // n is a dangling reference here
-      Some('a),
+      Property('n, PropertyKey("prop"))(CTFloat) -> Some('a), // n is a dangling reference here
       leafPlan,
       emptySqm.withFields('a))
     result should equalWithoutResult(expected)
@@ -130,14 +129,12 @@ class LogicalPlannerTest extends LogicalTestSuite {
     val result = plan(ir)
 
     val expected = Project(
-      Property(Var("a")(CTNode(Set("Administrator"))), PropertyKey("name"))(CTNull),
-      Some(Var("a.name")(CTNull)),
+      Property(Var("a")(CTNode(Set("Administrator"))), PropertyKey("name"))(CTNull) -> Some(Var("a.name")(CTNull)),
       Filter(
         Equals(Property(Var("g")(CTNode(Set("Group"))), PropertyKey("name"))(CTNull), Param("foo")(CTString))(
           CTBoolean),
         Project(
-          Property(Var("g")(CTNode(Set("Group"))), PropertyKey("name"))(CTNull),
-          None,
+          Property(Var("g")(CTNode(Set("Group"))), PropertyKey("name"))(CTNull) -> None,
           Filter(
             HasLabel(Var("g")(CTNode), Label("Group"))(CTBoolean),
             Filter(
@@ -210,14 +207,12 @@ class LogicalPlannerTest extends LogicalTestSuite {
     val result = plan(ir, schema)
 
     val expected = Project(
-      Property(Var("a")(CTNode(Set("Administrator"))), PropertyKey("name"))(CTFloat),
-      Some(Var("a.name")(CTFloat)),
+      Property(Var("a")(CTNode(Set("Administrator"))), PropertyKey("name"))(CTFloat) -> Some(Var("a.name")(CTFloat)),
       Filter(
         Equals(Property(Var("g")(CTNode(Set("Group"))), PropertyKey("name"))(CTString), Param("foo")(CTString))(
           CTBoolean),
         Project(
-          Property(Var("g")(CTNode(Set("Group"))), PropertyKey("name"))(CTString),
-          None,
+          Property(Var("g")(CTNode(Set("Group"))), PropertyKey("name"))(CTString) -> None,
           Filter(
             HasLabel(Var("g")(CTNode), Label("Group"))(CTBoolean),
             Filter(
@@ -302,8 +297,7 @@ class LogicalPlannerTest extends LogicalTestSuite {
     val result = plan(ir)
 
     val expected = Project(
-      Property(Var("a")(CTNode), PropertyKey("prop"))(CTNull),
-      Some(Var("a.prop")(CTNull)),
+      Property(Var("a")(CTNode), PropertyKey("prop"))(CTNull) -> Some(Var("a.prop")(CTNull)),
       Filter(
         Not(Equals(Param("p1")(CTInteger), Param("p2")(CTBoolean))(CTBoolean))(CTBoolean),
         NodeScan(

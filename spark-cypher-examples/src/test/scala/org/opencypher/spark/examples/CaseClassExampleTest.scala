@@ -29,8 +29,13 @@ package org.opencypher.spark.examples
 class CaseClassExampleTest extends ExampleTest {
   it("should produce the correct output") {
     validate(CaseClassExample.main(Array.empty),
-      s"""|Map(a.name -> Alice, b.name -> Bob, r.since -> 23/01/1987)
-          |Map(a.name -> Bob, b.name -> Carol, r.since -> 12/12/2009)
+      s"""|+----------------------------------+
+          || a.name  | b.name  | r.since      |
+          |+----------------------------------+
+          || 'Alice' | 'Bob'   | '23/01/1987' |
+          || 'Bob'   | 'Carol' | '12/12/2009' |
+          |+----------------------------------+
+          |(2 rows)
           |""".stripMargin)
   }
 }

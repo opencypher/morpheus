@@ -26,295 +26,272 @@
  */
 package org.opencypher.okapi.relational.impl.table
 
-import org.opencypher.okapi.api.schema.Schema
-import org.opencypher.okapi.api.types.{CTBoolean, CTNode, CTString, _}
+import org.opencypher.okapi.api.types.{CTNode, CTRelationship}
 import org.opencypher.okapi.impl.exception.IllegalArgumentException
+import org.opencypher.okapi.ir.api.RelType
 import org.opencypher.okapi.ir.api.expr._
-import org.opencypher.okapi.ir.api.{Label, PropertyKey}
-import org.opencypher.okapi.relational.impl.util.StringEncodingUtilities._
-import org.opencypher.okapi.relational.impl.syntax.RecordHeaderSyntax._
-
-import scala.annotation.tailrec
-import scala.util.Random
-
-/**
-  * A header for a CypherRecords.
-  *
-  * The header consists of a number of slots, each of which represents a Cypher expression.
-  * The slots that represent variables (which is a kind of expression) are called <i>fields</i>.
-  */
-final case class RecordHeader(private[impl] val internalHeader: InternalHeader) {
-
-  @tailrec
-  def generateUniqueName: String = {
-    val NAME_SIZE = 5
-
-    val chars = (1 to NAME_SIZE).map(_ => Random.nextPrintableChar())
-    val name = String.valueOf(chars.toArray).encodeSpecialCharacters
-
-    if (slots.map(of).contains(name)) generateUniqueName
-    else name
-  }
-
-  def tempColName: String =
-    ColumnNamer.tempColName
-
-  def of(slot: RecordSlot): String = {
-    val cn = ColumnNamer.of(slot)
-    assert(columns.contains(cn), s"the header did not contain $cn, had ${columns.mkString(", ")}")
-    cn
-  }
-
-  def of(slot: SlotContent): String = {
-    val cn = ColumnNamer.of(slot)
-    assert(columns.contains(cn), s"the header did not contain $cn, had ${columns.mkString(", ")}")
-    cn
-  }
-
-  def of(expr: Expr): String = {
-    val cn = ColumnNamer.of(expr)
-    assert(columns.contains(cn), s"the header did not contain $cn, had ${columns.mkString(", ")}")
-    cn
-  }
-
-  val columns: Seq[String] = internalHeader.slots.map(ColumnNamer.of)
-
-  def column(slot: RecordSlot) = columns(slot.index)
-
-  /**
-    * Computes the concatenation of this header and another header.
-    *
-    * @param other the header with which to concatenate.
-    * @return the concatenation of this and the argument header.
-    */
-  def ++(other: RecordHeader): RecordHeader =
-    copy(internalHeader ++ other.internalHeader)
-
-  /**
-    * Removes the specified RecordSlot from the header
-    * @param toRemove record slot to remove
-    * @return new RecordHeader with removed slot
-    */
-  def -(toRemove: RecordSlot): RecordHeader =
-    copy(internalHeader - toRemove)
-
-  /**
-    * Returns this record header with all fields of the other record header removed.
-    *
-    * @param other the header to remove
-    * @return updated header
-    */
-  def --(other: RecordHeader): RecordHeader =
-    copy(internalHeader -- other.internalHeader)
-
-
-  def indexOf(content: SlotContent): Option[Int] = slots.find(_.content == content).map(_.index)
-
-  /**
-    * The ordered sequence of slots stored in this header.
-    *
-    * @return the slots in this header.
-    */
-  def slots: IndexedSeq[RecordSlot] = internalHeader.slots
-  def contents: Set[SlotContent] = slots.map(_.content).toSet
-
-  /**
-    * The set of fields contained in this header.
-    *
-    * @return the fields in this header.
-    */
-  def fields: Set[String] = fieldsAsVar.map(_.name)
-
-  def fieldsAsVar: Set[Var] = internalHeader.fields
-
-  /**
-    * The fields contained in this header, in the order they were defined.
-    *
-    * @return the ordered fields in this header.
-    */
-  def fieldsInOrder: Seq[String] = slots.flatMap(_.content.alias.map(_.name))
-
-  def slotsFor(expr: Expr): Seq[RecordSlot] =
-    internalHeader.slotsFor(expr)
-
-  // TODO: Push error handling to API consumers
-
-  def slotFor(variable: Var): RecordSlot = slotsFor(variable).headOption.getOrElse(
-    throw IllegalArgumentException(s"One of $fields", variable)
-  )
-
-  def mandatory(slot: RecordSlot): Boolean =
-    internalHeader.mandatory(slot)
-
-  def sourceNodeSlot(rel: Var): RecordSlot = slotsFor(StartNode(rel)()).headOption.getOrElse(
-    throw IllegalArgumentException(s"One of $fields", rel)
-  )
-  def targetNodeSlot(rel: Var): RecordSlot = slotsFor(EndNode(rel)()).headOption.getOrElse(
-    throw IllegalArgumentException(s"One of $fields", rel)
-  )
-  def typeSlot(rel: Expr): RecordSlot = slotsFor(Type(rel)()).headOption.getOrElse(
-    throw IllegalArgumentException(s"One of $fields", rel)
-  )
-
-  def labels(node: Var): Seq[HasLabel] = labelSlots(node).keys.toSeq
-
-  def properties(node: Var): Seq[Property] = propertySlots(node).keys.toSeq
-
-  def select(fields: Set[Var]): RecordHeader = {
-    fields.foldLeft(RecordHeader.empty) {
-      case (acc, next) =>
-        val contents = childSlots(next).map(_.content)
-        if (contents.nonEmpty) {
-          acc.update(addContents(OpaqueField(next) +: contents))._1
-        } else {
-          acc
-        }
-    }
-  }
-
-  def selfWithChildren(field: Var): Seq[RecordSlot] =
-    slotFor(field) +: childSlots(field)
-
-  def childSlots(entity: Var): Seq[RecordSlot] = {
-    slots.filter {
-      case RecordSlot(_, OpaqueField(_))               => false
-      case slot if slot.content.owner.contains(entity) => true
-      case _                                           => false
-    }
-  }
-
-  def labelSlots(node: Var): Map[HasLabel, RecordSlot] = {
-    slots.collect {
-      case s @ RecordSlot(_, ProjectedExpr(h: HasLabel)) if h.node == node     => h -> s
-      case s @ RecordSlot(_, ProjectedField(_, h: HasLabel)) if h.node == node => h -> s
-    }.toMap
-  }
-
-  def propertySlots(entity: Var): Map[Property, RecordSlot] = {
-    slots.collect {
-      case s @ RecordSlot(_, ProjectedExpr(p: Property)) if p.m == entity     => p -> s
-      case s @ RecordSlot(_, ProjectedField(_, p: Property)) if p.m == entity => p -> s
-    }.toMap
-  }
-
-  def nodesForType(nodeType: CTNode): Seq[Var] = {
-    slots.collect {
-      case RecordSlot(_, OpaqueField(v)) => v
-    }.filter { v =>
-      v.cypherType match {
-        case CTNode(labels, _) =>
-          val allPossibleLabels = this.labels(v).map(_.label.name).toSet ++ labels
-          nodeType.labels.subsetOf(allPossibleLabels)
-        case _ => false
-      }
-    }
-  }
-
-  def relationshipsForType(relType: CTRelationship): Seq[Var] = {
-    val targetTypes = relType.types
-
-    slots.collect {
-      case RecordSlot(_, OpaqueField(v)) => v
-    }.filter { v =>
-      v.cypherType match {
-        case t: CTRelationship if targetTypes.isEmpty || t.types.isEmpty => true
-        case CTRelationship(types, _) =>
-          types.exists(targetTypes.contains)
-        case _ => false
-      }
-    }
-  }
-
-  override def toString: String = s"RecordHeader with ${slots.size} slots"
-
-  def pretty: String = s"RecordHeader with ${slots.size} slots: \n\t ${slots.mkString("\n\t")}"
-}
 
 object RecordHeader {
 
-  def empty: RecordHeader =
-    RecordHeader(InternalHeader.empty)
+  def empty: RecordHeader = RecordHeader(Map.empty)
 
-  def from(slots: List[RecordSlot]): RecordHeader =
-    from(slots.map(_.content): _*)
+  def from[T <: Expr](expr: T, exprs: T*): RecordHeader = empty.withExprs(expr, exprs: _*)
 
-  def from(contents: SlotContent*): RecordHeader =
-    RecordHeader(contents.foldLeft(InternalHeader.empty) { case (header, slot) => header + slot })
+  def from[T <: Expr](exprs: Set[T]): RecordHeader = empty.withExprs(exprs)
 
-  // TODO: Probably move this to an implicit class RichSchema?
-  def nodeFromSchema(node: Var, schema: Schema): RecordHeader = {
-    val labels: Set[String] = node.cypherType match {
-      case CTNode(l, _) => l
-      case other     => throw IllegalArgumentException("CTNode", other)
-    }
-    nodeFromSchema(node, schema, labels)
-  }
+  def from[T <: Expr](exprs: Seq[T]): RecordHeader = from(exprs.head, exprs.tail: _*)
 
-  def nodeFromSchema(node: Var, schema: Schema, labels: Set[String]): RecordHeader = {
-
-    val labelCombos = if (labels.isEmpty) {
-      // all nodes scan
-      schema.allLabelCombinations
-    } else {
-      // label scan
-      val impliedLabels = schema.impliedLabels.transitiveImplicationsFor(labels)
-      schema.combinationsFor(impliedLabels)
-    }
-
-    // create a label column for each possible label
-    // optimisation enabled: will not add columns for implied or impossible labels
-    val labelExprs = labelCombos.flatten.toSeq.sorted.map { label =>
-      ProjectedExpr(HasLabel(node, Label(label))(CTBoolean))
-    }
-
-    val propertyKeys = schema.keysFor(labelCombos)
-    val propertyExprs = propertyKeys.toSeq.sortBy(_._1).map {
-      case (k, t) => ProjectedExpr(Property(node, PropertyKey(k))(t))
-    }
-
-    val projectedExprs = labelExprs ++ propertyExprs
-    val (header, _) = RecordHeader.empty
-      .update(addContents(OpaqueField(node) +: projectedExprs))
-
-    header
-  }
-
-  def relationshipFromSchema(rel: Var, schema: Schema): RecordHeader = {
-    val types: Set[String] = rel.cypherType match {
-      case CTRelationship(_types, _) if _types.isEmpty =>
-        schema.relationshipTypes
-      case CTRelationship(_types, _) =>
-        _types
-      case other =>
-        throw IllegalArgumentException("CTRelationship", other)
-    }
-
-    relationshipFromSchema(rel, schema, types)
-  }
-
-  def relationshipFromSchema(rel: Var, schema: Schema, relTypes: Set[String]): RecordHeader = {
-    val relKeyHeaderProperties = relTypes.toSeq
-      .flatMap(t => schema.relationshipKeys(t).toSeq)
-      .groupBy(_._1)
-      .mapValues { keys =>
-        if (keys.size == relTypes.size && keys.forall(keys.head == _)) {
-          keys.head._2
-        } else {
-          keys.head._2.nullable
-        }
-      }
-
-    val relKeyHeaderContents = relKeyHeaderProperties.toSeq.sortBy(_._1).map {
-      case ((k, t)) => ProjectedExpr(Property(rel, PropertyKey(k))(t))
-    }
-
-    val startNode = ProjectedExpr(StartNode(rel)(CTNode))
-    val typeString = ProjectedExpr(Type(rel)(CTString))
-    val endNode = ProjectedExpr(EndNode(rel)(CTNode))
-
-    val relHeaderContents = Seq(startNode, OpaqueField(rel), typeString, endNode) ++ relKeyHeaderContents
-    val (relHeader, _) = RecordHeader.empty.update(addContents(relHeaderContents))
-
-    relHeader
-  }
 }
+
+case class RecordHeader(exprToColumn: Map[Expr, String]) {
+
+  // ==============
+  // Lookup methods
+  // ==============
+
+  def expressions: Set[Expr] = exprToColumn.keySet
+
+  def vars: Set[Var] = expressions.collect { case v: Var => v }
+
+  def columns: Set[String] = exprToColumn.values.toSet
+
+  def isEmpty: Boolean = exprToColumn.isEmpty
+
+  def contains(expr: Expr): Boolean = exprToColumn.contains(expr)
+
+  def getColumn(expr: Expr): Option[String] = exprToColumn.get(expr)
+
+  def column(expr: Expr): String =
+    exprToColumn.getOrElse(expr, throw IllegalArgumentException(s"Header does not contain a column for $expr.\n\t${this.toString}"))
+
+  def ownedBy(expr: Var): Set[Expr] = {
+    exprToColumn.keys.filter(e => e.owner.contains(expr)).toSet
+  }
+
+  def expressionsFor(expr: Expr): Set[Expr] = {
+    expr match {
+      case v: Var => ownedBy(v)
+      case e if exprToColumn.contains(e) => Set(e)
+      case _ => Set.empty
+    }
+  }
+
+  def expressionsFor(column: String): Set[Expr] = {
+    exprToColumn.collect { case (k, v) if v == column => k }.toSet
+  }
+
+  def aliasesFor(expr: Expr): Set[Var] = {
+    val aliasesFromHeader: Set[Var] = getColumn(expr) match {
+      case None => Set.empty
+      case Some(col) => exprToColumn.collect { case (k: Var, v) if v == col => k }.toSet
+    }
+
+    val aliasesFromParam: Set[Var] = expr match {
+      case v: Var => Set(v)
+      case _ => Set.empty
+    }
+
+    aliasesFromHeader ++ aliasesFromParam
+  }
+
+  // ===================
+  // Convenience methods
+  // ===================
+
+  def idExpressions(): Set[Expr] = {
+    exprToColumn.keySet.collect {
+      case n if n.cypherType.subTypeOf(CTNode).isTrue => n
+      case r if r.cypherType.subTypeOf(CTRelationship).isTrue => r
+    }
+  }
+
+  def idExpressions(v: Var): Set[Expr] = idExpressions().filter(_.owner.get == v)
+
+  def idColumns(): Set[String] = idExpressions().map(column)
+
+  def idColumns(v: Var): Set[String] = idExpressions(v).map(column)
+
+  def labelsFor(n: Var): Set[HasLabel] = {
+    ownedBy(n).collect {
+      case l: HasLabel => l
+    }
+  }
+
+  def typesFor(r: Var): Set[HasType] = {
+    ownedBy(r).collect {
+      case t: HasType => t
+    }
+  }
+
+  def startNodeFor(r: Var): StartNode = {
+    ownedBy(r).collectFirst {
+      case s: StartNode => s
+    }.get
+  }
+
+  def endNodeFor(r: Var): EndNode = {
+    ownedBy(r).collectFirst {
+      case e: EndNode => e
+    }.get
+  }
+
+  def propertiesFor(v: Var): Set[Property] = {
+    ownedBy(v).collect {
+      case p: Property => p
+    }
+  }
+
+  def node(name: Var): Set[Expr] = {
+    exprToColumn.keys.collect {
+      case n: Var if name == n => n
+      case h@HasLabel(n: Var, _) if name == n => h
+      case p@Property(n: Var, _) if name == n => p
+    }.toSet
+  }
+
+  def entityVars: Set[Var] = nodeVars ++ relationshipVars
+
+  def nodeVars: Set[Var] = {
+    exprToColumn.keySet.collect {
+      case v: Var if v.cypherType.subTypeOf(CTNode).isTrue => v
+    }
+  }
+
+  def relationshipVars: Set[Var] = {
+    exprToColumn.keySet.collect {
+      case v: Var if v.cypherType.subTypeOf(CTRelationship).isTrue => v
+    }
+  }
+
+  def nodesForType(nodeType: CTNode): Set[Var] = {
+    // and semantics
+    val requiredLabels = nodeType.labels
+
+    nodeVars.filter { nodeVar =>
+      val physicalLabels = labelsFor(nodeVar).map(_.label.name)
+      val logicalLabels = nodeVar.cypherType match {
+        case CTNode(labels, _) => labels
+        case _ => Set.empty[String]
+      }
+      requiredLabels.subsetOf(physicalLabels ++ logicalLabels)
+    }
+  }
+
+  def relationshipsForType(relType: CTRelationship): Set[Var] = {
+    // or semantics
+    val possibleTypes = relType.types
+
+    relationshipVars.filter { relVar =>
+      val physicalTypes = typesFor(relVar).map {
+        case HasType(_, RelType(name)) => name
+      }
+      val logicalTypes = relVar.cypherType match {
+        case CTRelationship(types, _) => types
+        case _ => Set.empty[String]
+      }
+      possibleTypes.isEmpty || (physicalTypes ++ logicalTypes).exists(possibleTypes.contains)
+    }
+  }
+
+  // ================
+  // Mutation methods
+  // ================
+
+  def select[T <: Expr](exprs: T*): RecordHeader = select(exprs.toSet)
+
+  def select[T <: Expr](exprs: Set[T]): RecordHeader = {
+    val selectExpressions = exprs.flatMap { e: Expr =>
+      e match {
+        case v: Var => ownedBy(v)
+        case nonVar => Set(nonVar)
+      }
+    }
+    val selectMappings = exprToColumn.filterKeys(selectExpressions.contains)
+    RecordHeader(selectMappings)
+  }
+
+  def withColumnsRenamed[T <: Expr](renamings: Map[T, String]): RecordHeader = {
+    renamings.foldLeft(this) {
+      case (currentHeader, (expr, newColumn)) => currentHeader.withColumnRenamed(expr, newColumn)
+    }
+  }
+
+  def withColumnRenamed[T <: Expr](expr: T, newColumn: String): RecordHeader = {
+    withColumnRenamed(column(expr), newColumn)
+  }
+
+  def withColumnRenamed(oldColumn: String, newColumn: String): RecordHeader = {
+    val exprs = expressionsFor(oldColumn)
+    copy(exprToColumn ++ exprs.map(_ -> newColumn))
+  }
+
+  def withExpr(expr: Expr): RecordHeader = {
+    exprToColumn.get(expr) match {
+      case Some(_) => this
+
+      case None =>
+        val newColumnName = ColumnNamer.of(expr)
+
+        // Aliases for (possible) owner of expr need to be updated as well
+        val exprsToAdd: Set[Expr] = expr.owner match {
+          case None => Set(expr)
+
+          case Some(exprOwner) => aliasesFor(exprOwner).map(alias => expr.withOwner(alias))
+        }
+
+        exprsToAdd.foldLeft(this) {
+          case (current, e) => current.addExprToColumn(e, newColumnName)
+        }
+    }
+  }
+
+  def withExprs[T <: Expr](expr: T, exprs: T*): RecordHeader = (expr +: exprs).foldLeft(this)(_ withExpr _)
+
+  def withExprs[T <: Expr](exprs: Set[T]): RecordHeader = {
+    if (exprs.isEmpty) {
+      this
+    } else {
+      withExprs(exprs.head, exprs.tail.toSeq: _*)
+    }
+  }
+
+  def withAlias(exprAsVar: (Expr, Var)*): RecordHeader = exprAsVar.foldLeft(this){
+    case (currentHeader, (expr, alias)) => currentHeader.withAlias(expr, alias)
+  }
+
+  def withAlias(to: Expr, alias: Var): RecordHeader = {
+    to match {
+      // Entity case
+      case _: Var if exprToColumn.contains(to) =>
+        expressionsFor(to).foldLeft(this) {
+          case (current, nextExpr) => current.addExprToColumn(nextExpr.withOwner(alias), exprToColumn(nextExpr))
+        }
+
+      // Non-entity case
+      case expr if exprToColumn.contains(expr) => addExprToColumn(alias, exprToColumn(expr))
+
+      // No expression to alias
+      case other => throw IllegalArgumentException(s"An expression in $this", s"Unknown expression $other")
+    }
+  }
+
+  def ++(other: RecordHeader): RecordHeader = copy(exprToColumn = exprToColumn ++ other.exprToColumn)
+
+  def --[T <: Expr](expressions: Set[T]): RecordHeader = {
+    val expressionToRemove = expressions.flatMap(expressionsFor)
+    val updatedExprToColumn = exprToColumn.filterNot { case (e, _) => expressionToRemove.contains(e) }
+    copy(exprToColumn = updatedExprToColumn)
+  }
+
+  protected def addExprToColumn(expr: Expr, columnName: String): RecordHeader = {
+    copy(exprToColumn = exprToColumn + (expr -> columnName))
+  }
+
+  def pretty: String = exprToColumn
+    .toSeq
+    .sortBy(_._2)
+    .map { case (expr, column) => s"Expr: $expr ===> $column" }
+    .mkString("\n")
+
+}
+

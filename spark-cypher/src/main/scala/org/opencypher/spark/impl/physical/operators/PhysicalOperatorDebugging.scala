@@ -31,7 +31,6 @@ import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.sql.catalyst.expressions.Attribute
 import org.apache.spark.sql.execution.LeafExecNode
-import org.opencypher.okapi.impl.exception.UnsupportedOperationException
 import org.opencypher.okapi.relational.impl.table.RecordHeader
 import org.opencypher.spark.api.CAPSSession
 import org.opencypher.spark.configuration.CAPSConfiguration.DebugPhysicalOperators
@@ -67,7 +66,7 @@ trait PhysicalOperatorDebugging extends CAPSPhysicalOperator {
       println(separator)
       println(s"**$operatorName**")
 
-      val recordsDf = output.records.data
+      val recordsDf = output.records.df
       if (output.records.header != RecordHeader.empty) {
         println
         recordsDf.printExecutionTiming(s"Computing $simpleOperatorName output records DataFrame")
@@ -81,7 +80,7 @@ trait PhysicalOperatorDebugging extends CAPSPhysicalOperator {
           case unionGraph: CAPSUnionGraph =>
             unionGraph.graphs.collectFirst {
               case (patternGraph: CAPSPatternGraph, _) =>
-                val baseTableDf = patternGraph.baseTable.data
+                val baseTableDf = patternGraph.baseTable.df
                 baseTableDf.printExecutionTiming("Computing pattern graph base table")
                 println
                 baseTableDf.printPhysicalPlan()

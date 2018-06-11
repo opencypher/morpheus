@@ -46,7 +46,7 @@ object ZeppelinSupport {
     def asZeppelin(): Unit = {
       result.graph match {
         case Some(g) => g.asZeppelinGraph()
-        case None => result.records.get.asZeppelingTable()
+        case None => result.records.get.asZeppelinTable()
       }
     }
   }
@@ -69,11 +69,11 @@ object ZeppelinSupport {
       *   Bob\t42
       * }}}
       */
-    def asZeppelingTable(): Unit = {
-      val fields = records.header.fieldsInOrder
-      val header = fields.mkString("\t")
+    def asZeppelinTable(): Unit = {
+      val vars = records.header.vars.map(records.header.column)
+      val header = vars.mkString("\t")
       val rows = records.collect.map { data =>
-        fields.map(field => data.get(field).get).mkString("\t")
+        vars.map(field => data.get(field).get).mkString("\t")
       }.mkString("\n")
 
       print(s"""

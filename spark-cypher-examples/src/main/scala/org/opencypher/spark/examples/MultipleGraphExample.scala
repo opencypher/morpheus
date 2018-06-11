@@ -69,6 +69,7 @@ object MultipleGraphExample extends ConsoleApp {
        |      (friend)-[:IS]->(customer:Customer),
        |      (customer)-[:BOUGHT]->(product:Product)
        |RETURN DISTINCT product.title AS recommendation, person.name AS for
+       |ORDER BY recommendation
     """.stripMargin)
 
   recommendations.show

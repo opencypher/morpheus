@@ -38,14 +38,14 @@ object RecordsPrinter {
     * @param records the records to be printed.
     */
   def print(records: CypherRecords)(implicit options: PrintOptions): Unit = {
-    val columnNames = records.columns
+    val columns = records.logicalColumns.getOrElse(records.physicalColumns)
 
     val rows: Seq[CypherValue.CypherMap] = records.collect
 
     // Dynamically sets the column width for each column to the longest string stored in the column
     val columnWidths: Map[String, Int] = {
       for {
-        columnName <- columnNames
+        columnName <- columns
         headerWidth = columnName.length
         columnRowValueLengths = rows.map(row => row.getOrElse(columnName).toCypherString.length)
         maxColumnRowValueWidth = columnRowValueLengths.foldLeft(headerWidth)(math.max)
@@ -59,7 +59,7 @@ object RecordsPrinter {
     val noColumnsStringWidth = math.max(noColumnsHeader.length, emptyRow.length)
 
     val totalContentWidth = {
-      if (columnNames.isEmpty) {
+      if (columns.isEmpty) {
         noColumnsStringWidth + 3
       } else {
         columnWidths.values.sum
@@ -71,31 +71,33 @@ object RecordsPrinter {
     val stream = options.stream
     val --- = "+" + repeat("-", lineWidth) + "+"
 
+    // header
     stream.println(---)
     var sep = "| "
-    if (columnNames.isEmpty) {
+    if (columns.isEmpty) {
       stream.print(sep)
       stream.print(fitToColumn(noColumnsHeader, noColumnsStringWidth))
     } else
-      columnNames.foreach { field =>
+      columns.foreach { headerCell =>
         stream.print(sep)
-        stream.print(fitToColumn(field, columnWidths(field)))
+        stream.print(fitToColumn(headerCell, columnWidths(headerCell)))
         sep = " | "
       }
     stream.println(" |")
     stream.println(---)
 
+    // data
     sep = "| "
     var count = 0
     rows.foreach { map =>
-      if (columnNames.isEmpty) {
+      if (columns.isEmpty) {
         stream.print(sep)
         stream.print(fitToColumn(emptyRow, noColumnsStringWidth))
       } else {
-        columnNames.foreach { field =>
-          val value = map.getOrElse(field)
+        columns.foreach { headerCell =>
+          val value = map.getOrElse(headerCell)
           stream.print(sep)
-          stream.print(fitToColumn(value.toCypherString, columnWidths(field)))
+          stream.print(fitToColumn(value.toCypherString, columnWidths(headerCell)))
           sep = " | "
         }
       }

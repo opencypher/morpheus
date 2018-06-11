@@ -38,19 +38,32 @@ import org.opencypher.okapi.impl.exception.IllegalArgumentException
   * it can also be used to assemble complex Cypher values such as CypherNode/CypherRelationship that are stored over
   * multiple columns in a low-level Cypher table.
   */
-trait CypherTable[K] {
+trait CypherTable {
 
-  def columns: Seq[K]
+  /**
+    * Physical column names in this table.
+    *
+    * Note, that there might be less physical then logical columns due to aliasing.
+    */
+  def physicalColumns: Seq[String]
 
-  def columnType: Map[K, CypherType]
+  /**
+    * Logical column names in this table as requested by a RETURN statement.
+    */
+  def logicalColumns: Option[Seq[String]] = None
+
+  /**
+    * CypherType of columns stored in this table.
+    */
+  def columnType: Map[String, CypherType]
 
   /**
     * Iterator over the rows in this table.
     */
-  def rows: Iterator[K => CypherValue]
+  def rows: Iterator[String => CypherValue]
 
   /**
-    * @return number of rows in this Table.
+    * Number of rows in this Table.
     */
   def size: Long
 
@@ -58,7 +71,7 @@ trait CypherTable[K] {
 
 object CypherTable {
 
-  implicit class RichCypherTable[K](table: CypherTable[K]) {
+  implicit class RichCypherTable(table: CypherTable) {
 
     /**
       * Checks if the data type of the given column is compatible with the expected type.
@@ -66,10 +79,10 @@ object CypherTable {
       * @param columnKey    column to be checked
       * @param expectedType excepted data type
       */
-    def verifyColumnType(columnKey: K, expectedType: CypherType, keyDescription: String): Unit = {
+    def verifyColumnType(columnKey: String, expectedType: CypherType, keyDescription: String): Unit = {
       val columnType = table.columnType.getOrElse(columnKey, throw IllegalArgumentException(
         s"table with column key $columnKey",
-        s"table with columns ${table.columns.mkString(", ")}"))
+        s"table with columns ${table.physicalColumns.mkString(", ")}"))
 
       if (!columnType.subTypeOf(expectedType).isTrue) {
         if (columnType.material == expectedType.material) {

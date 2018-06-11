@@ -32,7 +32,7 @@ import org.opencypher.okapi.api.types.{CTRelationship, CypherType}
 import org.opencypher.okapi.impl.exception.{SchemaException, UnsupportedOperationException}
 import org.opencypher.okapi.impl.schema.SchemaUtils._
 import org.opencypher.okapi.impl.schema.{ImpliedLabels, LabelCombinations}
-import org.opencypher.spark.impl.convert.CAPSCypherType._
+import org.opencypher.spark.impl.convert.SparkConversions._
 
 object CAPSSchema {
   val empty: CAPSSchema = Schema.empty.asCaps

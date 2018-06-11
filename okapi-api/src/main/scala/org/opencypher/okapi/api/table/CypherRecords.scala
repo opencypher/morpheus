@@ -26,14 +26,13 @@
  */
 package org.opencypher.okapi.api.table
 
-import org.opencypher.okapi.api.graph.CypherSession
 import org.opencypher.okapi.api.value.CypherValue.CypherMap
 
 /**
   * Represents a table of records containing Cypher values.
   * Each column (or slot) in this table represents an evaluated Cypher expression.
   */
-trait CypherRecords extends CypherTable[String] with CypherPrintable {
+trait CypherRecords extends CypherTable with CypherPrintable {
 
   /**
     * Consume these records as an iterator.
@@ -52,8 +51,4 @@ trait CypherRecords extends CypherTable[String] with CypherPrintable {
     */
   def collect: Array[CypherMap]
 
-}
-
-trait CypherRecordsCompanion[R <: CypherRecords, S <: CypherSession] {
-  def unit()(implicit session: S): R
 }

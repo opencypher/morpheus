@@ -28,6 +28,7 @@ package org.opencypher.okapi.api.io.conversion
 
 import org.opencypher.okapi.api.types.CTRelationship
 import org.opencypher.okapi.impl.exception.IllegalArgumentException
+import org.opencypher.okapi.impl.util.StringEncodingUtilities._
 
 object RelationshipMapping {
 
@@ -187,7 +188,15 @@ final case class RelationshipMapping private[okapi](
   def withPropertyKeys(properties: String*): RelationshipMapping =
     properties.foldLeft(this)((mapping, propertyKey) => mapping.withPropertyKey(propertyKey, propertyKey))
 
-  private def validate(): Unit = {
+  override def idKeys: Seq[String] = Seq(sourceIdKey, sourceStartNodeKey, sourceEndNodeKey)
+
+  override def relTypeKeys: Seq[String] = relTypeOrSourceRelTypeKey match {
+    case Right((_, relTypes)) => relTypes.map(_.toRelTypeColumnName).toSeq.sorted
+    case _ => Seq.empty
+  }
+
+  protected override def validate(): Unit = {
+    super.validate()
     if (idKeys.distinct.size != 3)
       throw IllegalArgumentException(
         s"id ($sourceIdKey, start ($sourceStartNodeKey) and end ($sourceEndNodeKey) source keys need to be distinct",
@@ -199,12 +208,5 @@ final case class RelationshipMapping private[okapi](
           s"relationship type source column $sourceKey is referring to one of id, start or end column")
       case _ =>
     }
-  }
-
-  override def idKeys: Seq[String] = Seq(sourceIdKey, sourceStartNodeKey, sourceEndNodeKey)
-
-  override def relTypeKey: Option[String] = relTypeOrSourceRelTypeKey match {
-    case Right((relTypeKey, _)) => Some(relTypeKey)
-    case _ => None
   }
 }

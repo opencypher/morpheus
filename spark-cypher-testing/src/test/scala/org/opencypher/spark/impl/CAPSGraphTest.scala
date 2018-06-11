@@ -33,49 +33,41 @@ import org.opencypher.okapi.testing.Bag
 import org.opencypher.spark.api.io.{CAPSNodeTable, CAPSRelationshipTable}
 import org.opencypher.spark.impl.DataFrameOps._
 import org.opencypher.spark.testing.CAPSTestSuite
-import org.opencypher.spark.testing.fixture.{GraphConstructionFixture, TeamDataFixture}
+import org.opencypher.spark.testing.fixture.{GraphConstructionFixture, RecordsVerificationFixture, TeamDataFixture}
 
-abstract class CAPSGraphTest extends CAPSTestSuite with GraphConstructionFixture with TeamDataFixture {
+abstract class CAPSGraphTest extends CAPSTestSuite
+  with GraphConstructionFixture
+  with RecordsVerificationFixture
+  with TeamDataFixture {
 
   it("should return only nodes with that exact label (single label)") {
     val graph = initGraph(dataFixtureWithoutArrays)
-
     val nodes = graph.nodesWithExactLabels("n", Set("Person"))
-
-    nodes.toDF().columns should equal(
-      Array(
-        "n",
-        "____n:Person",
-        "____n_dot_luckyNumberINTEGER",
-        "____n_dot_nameSTRING"
-      ))
-
-    Bag(nodes.toDF().collect(): _*) should equal(
-      Bag(
-        Row(4L, true, 8L, "Donald")
-      ))
+    val cols = Seq(
+      "n",
+      "____n:Person",
+      "____n_dot_luckyNumberINTEGER",
+      "____n_dot_nameSTRING"
+    )
+    verify(nodes, cols, Bag(Row(4L, true, 8L, "Donald")))
   }
 
   it("should return only nodes with that exact label (multiple labels)") {
     val graph = initGraph(dataFixtureWithoutArrays)
-
     val nodes = graph.nodesWithExactLabels("n", Set("Person", "German"))
-
-    nodes.toDF().columns should equal(
-      Array(
-        "n",
-        "____n:German",
-        "____n:Person",
-        "____n_dot_luckyNumberINTEGER",
-        "____n_dot_nameSTRING"
-      ))
-
-    Bag(nodes.toDF().collect(): _*) should equal(
-      Bag(
-        Row(2L, true, true, 1337L, "Martin"),
-        Row(3L, true, true, 8L, "Max"),
-        Row(0L, true, true, 42L, "Stefan")
-      ))
+    val cols = Seq(
+      "n",
+      "____n:German",
+      "____n:Person",
+      "____n_dot_luckyNumberINTEGER",
+      "____n_dot_nameSTRING"
+    )
+    val data = Bag(
+      Row(2L, true, true, 1337L, "Martin"),
+      Row(3L, true, true, 8L, "Max"),
+      Row(0L, true, true, 42L, "Stefan")
+    )
+    verify(nodes, cols, data)
   }
 
   it("should support the same node label from multiple node tables") {

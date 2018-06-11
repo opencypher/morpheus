@@ -63,18 +63,19 @@ final class CAPSPhysicalOperatorProducer(implicit caps: CAPSSession)
     rhs: CAPSPhysicalOperator,
     header: RecordHeader): CAPSPhysicalOperator = operators.CartesianProduct(lhs, rhs, header)
 
-  override def planRemoveAliases(
-    in: CAPSPhysicalOperator,
-    dependent: Set[(ProjectedField, ProjectedExpr)],
-    header: RecordHeader): CAPSPhysicalOperator = operators.RemoveAliases(in, dependent, header)
-
   override def planDrop(
     in: CAPSPhysicalOperator,
-    dropFields: Seq[Expr],
+    dropFields: Set[Expr],
     header: RecordHeader
   ): CAPSPhysicalOperator = operators.Drop(in, dropFields, header)
 
-  override def planSelect(in: CAPSPhysicalOperator, exprs: List[Expr], header: RecordHeader): CAPSPhysicalOperator =
+  override def planRenameColumns(
+    in: CAPSPhysicalOperator,
+    renameExprs: Map[Expr, String],
+    header: RecordHeader
+  ): CAPSPhysicalOperator = operators.RenameColumns(in, renameExprs, header)
+
+  override def planSelect(in: CAPSPhysicalOperator, exprs: List[(Expr, Option[Var])], header: RecordHeader): CAPSPhysicalOperator =
     operators.Select(in, exprs, header)
 
   override def planReturnGraph(in: CAPSPhysicalOperator): CAPSPhysicalOperator = {
@@ -106,8 +107,8 @@ final class CAPSPhysicalOperatorProducer(implicit caps: CAPSSession)
   override def planAlias(in: CAPSPhysicalOperator, aliases: Seq[(Expr, Var)], header: RecordHeader): CAPSPhysicalOperator =
     operators.Alias(in, aliases, header)
 
-  override def planProject(in: CAPSPhysicalOperator, expr: Expr, header: RecordHeader): CAPSPhysicalOperator =
-    operators.Project(in, expr, header)
+  override def planProject(in: CAPSPhysicalOperator, expr: Expr, to: Option[Var], header: RecordHeader): CAPSPhysicalOperator =
+    operators.Project(in, expr, to, header)
 
   override def planConstructGraph(
     in: CAPSPhysicalOperator,
@@ -128,13 +129,7 @@ final class CAPSPhysicalOperatorProducer(implicit caps: CAPSSession)
     header: RecordHeader,
     joinType: JoinType): CAPSPhysicalOperator = {
 
-    val joinTypeString = joinType match {
-      case InnerJoin => "inner"
-      case LeftOuterJoin => "left_outer"
-      case RightOuterJoin => "right_outer"
-      case FullOuterJoin => "full_outer"
-    }
-    operators.Join(lhs, rhs, joinColumns, header, joinTypeString)
+    operators.Join(lhs, rhs, joinColumns, header, joinType)
   }
 
   override def planDistinct(in: CAPSPhysicalOperator, fields: Set[Var]): CAPSPhysicalOperator =

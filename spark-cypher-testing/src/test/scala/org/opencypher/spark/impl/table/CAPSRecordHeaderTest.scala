@@ -24,17 +24,28 @@
  * described as "implementation extensions to Cypher" or as "proposed changes to
  * Cypher that are not yet approved by the openCypher community".
  */
-package org.opencypher.okapi.relational.impl.table
+package org.opencypher.spark.impl.table
 
-object RetainedDetails {
-  implicit val default: RetainedDetails =
-    RetainedDetails(nodeLabels = false, properties = false)
+import org.apache.spark.sql.types.{ArrayType, StringType, StructField, StructType}
+import org.opencypher.okapi.api.types.{CTList, CTString}
+import org.opencypher.okapi.ir.api.expr.Var
+import org.opencypher.okapi.relational.impl.table.RecordHeader
+import org.opencypher.spark.impl.convert.SparkConversions._
+import org.scalatest.{FunSpec, Matchers}
 
-  def current(implicit options: RetainedDetails): RetainedDetails =
-    options
-}
+class CAPSRecordHeaderTest extends FunSpec with Matchers {
 
-final case class RetainedDetails(nodeLabels: Boolean, properties: Boolean) {
-  def withLabels: RetainedDetails = copy(nodeLabels = true)
-  def withProperties: RetainedDetails = copy(properties = true)
+  it("computes a struct type from a given record header") {
+    val header = RecordHeader.empty
+      .withExpr(Var("a")(CTString))
+      .withExpr(Var("b")(CTString.nullable))
+      .withExpr(Var("c")(CTList(CTString.nullable)))
+
+    header.toStructType should equal(StructType(Seq(
+      StructField("a", StringType, nullable = false),
+      StructField("b", StringType, nullable = true),
+      StructField("c", ArrayType(StringType, containsNull = true), nullable = false)
+    )))
+  }
+
 }

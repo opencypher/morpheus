@@ -24,13 +24,15 @@
  * described as "implementation extensions to Cypher" or as "proposed changes to
  * Cypher that are not yet approved by the openCypher community".
  */
-package org.opencypher.okapi.relational.impl.util
+package org.opencypher.okapi.impl.util
 
 import scala.annotation.tailrec
 
 object StringEncodingUtilities {
 
   val propertyPrefix: String = "property_"
+
+  val relTypePrefix: String = "relType_"
 
   protected val maxCharactersInHexStringEncoding: Int = 4 // Hex string encoding of a `Char` is up to 4 characters
 
@@ -53,6 +55,12 @@ object StringEncodingUtilities {
         s
       }
     }
+
+    def toRelTypeColumnName: String = {
+      s"$relTypePrefix${s.encodeSpecialCharacters}"
+    }
+
+    def isRelTypeColumnName: Boolean = s.startsWith(relTypePrefix)
 
     /**
       * Encodes special characters in a string.

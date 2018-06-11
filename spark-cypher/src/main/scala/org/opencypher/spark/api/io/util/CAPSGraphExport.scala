@@ -30,11 +30,11 @@ import org.apache.spark.sql.DataFrame
 import org.apache.spark.sql.types.{LongType, StructField, StructType}
 import org.opencypher.okapi.api.schema.Schema
 import org.opencypher.okapi.api.types.CTRelationship
-import org.opencypher.okapi.ir.api.expr.Var
-import org.opencypher.okapi.relational.impl.util.StringEncodingUtilities._
+import org.opencypher.okapi.ir.api.expr.{Property, Var}
+import org.opencypher.okapi.impl.util.StringEncodingUtilities._
 import org.opencypher.spark.api.io.{GraphEntity, Relationship}
 import org.opencypher.spark.impl.CAPSGraph
-import org.opencypher.spark.impl.convert.CAPSCypherType._
+import org.opencypher.spark.impl.convert.SparkConversions._
 
 object CAPSGraphExport {
 
@@ -66,35 +66,35 @@ object CAPSGraphExport {
       val nodeRecords = graph.nodesWithExactLabels(varName, labels)
 
       val idRenaming = varName -> GraphEntity.sourceIdKey
-      val propertyRenamings = nodeRecords.header.propertySlots(Var(varName)())
-        .map { case (p, slot) => nodeRecords.header.of(slot) -> p.key.name.toPropertyColumnName }
+      val properties: Set[Property] = nodeRecords.header.propertiesFor(Var(varName)())
+      val propertyRenamings = properties.map { p => nodeRecords.header.column(p) -> p.key.name.toPropertyColumnName }
 
       val selectColumns = (idRenaming :: propertyRenamings.toList.sorted).map {
-        case (oldName, newName) => nodeRecords.data.col(oldName).as(newName)
+        case (oldName, newName) => nodeRecords.df.col(oldName).as(newName)
       }
 
-      nodeRecords.data.select(selectColumns: _*)
+      nodeRecords.df.select(selectColumns: _*)
     }
 
     def canonicalRelationshipTable(relType: String): DataFrame = {
       val varName = "r"
       val relCypherType = CTRelationship(relType)
-      val v = Var(varName)(relCypherType)
+      val r = Var(varName)(relCypherType)
 
       val relRecords = graph.relationships(varName, relCypherType)
       val header = relRecords.header
 
       val idRenaming = varName -> GraphEntity.sourceIdKey
-      val sourceIdRenaming = header.of(header.sourceNodeSlot(v)) -> Relationship.sourceStartNodeKey
-      val targetIdRenaming = header.of(header.targetNodeSlot(v)) -> Relationship.sourceEndNodeKey
-      val propertyRenamings = header.propertySlots(Var(varName)())
-        .map { case (p, slot) => header.of(slot) -> p.key.name.toPropertyColumnName }
+      val sourceIdRenaming = header.column(header.startNodeFor(r)) -> Relationship.sourceStartNodeKey
+      val targetIdRenaming = header.column(header.endNodeFor(r)) -> Relationship.sourceEndNodeKey
+      val properties: Set[Property] = relRecords.header.propertiesFor(Var(varName)())
+      val propertyRenamings = properties.map { p => relRecords.header.column(p) -> p.key.name.toPropertyColumnName }
 
       val selectColumns = (idRenaming :: sourceIdRenaming :: targetIdRenaming :: propertyRenamings.toList.sorted).map {
-        case (oldName, newName) => relRecords.data.col(oldName).as(newName)
+        case (oldName, newName) => relRecords.df.col(oldName).as(newName)
       }
 
-      relRecords.data.select(selectColumns: _*)
+      relRecords.df.select(selectColumns: _*)
     }
 
   }

@@ -33,10 +33,10 @@ class MultipleGraphExampleTest extends ExampleTest {
       s"""|+-------------------------+
           || recommendation  | for   |
           |+-------------------------+
-          || 'Terminator 2'  | 'Bob' |
-          || 'Jurassic Park' | 'Bob' |
           || '1984'          | 'Bob' |
+          || 'Jurassic Park' | 'Bob' |
           || 'Shakira'       | 'Bob' |
+          || 'Terminator 2'  | 'Bob' |
           |+-------------------------+
           |(4 rows)
           |""".stripMargin)

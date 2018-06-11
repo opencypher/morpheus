@@ -30,21 +30,20 @@ import org.apache.spark.sql.Row
 import org.opencypher.okapi.api.schema.Schema
 import org.opencypher.okapi.api.types._
 import org.opencypher.okapi.api.value.CypherValue._
-import org.opencypher.okapi.api.value._
 import org.opencypher.okapi.ir.api.expr._
 import org.opencypher.okapi.ir.api.{Label, PropertyKey}
-import org.opencypher.okapi.relational.impl.syntax.RecordHeaderSyntax._
-import org.opencypher.okapi.relational.impl.table.{OpaqueField, ProjectedExpr, ProjectedField, RecordHeader}
+import org.opencypher.okapi.relational.impl.table._
 import org.opencypher.okapi.testing.Bag
 import org.opencypher.okapi.testing.Bag._
 import org.opencypher.spark.api.value.CAPSNode
-import org.opencypher.spark.impl.table.CAPSRecordHeader._
+import org.opencypher.spark.impl.convert.SparkConversions._
 import org.opencypher.spark.schema.CAPSSchema._
+import org.opencypher.spark.testing.fixture.RecordsVerificationFixture
 import org.opencypher.spark.testing.support.creation.caps.{CAPSPatternGraphFactory, CAPSTestGraphFactory}
 
 import scala.collection.JavaConverters._
 
-class CAPSPatternGraphTest extends CAPSGraphTest {
+class CAPSPatternGraphTest extends CAPSGraphTest with RecordsVerificationFixture {
 
   import CAPSGraphTestData._
 
@@ -133,7 +132,7 @@ class CAPSPatternGraphTest extends CAPSGraphTest {
       ))
   }
 
-  test("projects a pattern graph with a created node") {
+  it("projects a pattern graph with a created node") {
     val inputGraph = initGraph(`:Person` + `:KNOWS`)
 
     val person = inputGraph.cypher(
@@ -155,7 +154,7 @@ class CAPSPatternGraphTest extends CAPSGraphTest {
       ))
   }
 
-  test("implictly clones when projecting a pattern graph with a created node") {
+  it("implictly clones when projecting a pattern graph with a created node") {
     val inputGraph = initGraph(`:Person` + `:KNOWS`)
 
     val person = inputGraph.cypher(
@@ -176,34 +175,34 @@ class CAPSPatternGraphTest extends CAPSGraphTest {
       ))
   }
 
-  test("relationship scan for specific type") {
+  it("relationship scan for specific type") {
     val inputGraph = initGraph(`:KNOWS` + `:READS`)
     val inputRels = inputGraph.relationships("r")
 
     val patternGraph = CAPSGraph.create(inputRels, inputGraph.schema.asCaps)
     val outputRels = patternGraph.relationships("r", CTRelationship("KNOWS"))
 
-    outputRels.data.count() shouldBe 6
+    outputRels.df.count() shouldBe 6
   }
 
-  test("relationship scan for disjunction of types") {
+  it("relationship scan for disjunction of types") {
     val inputGraph = initGraph(`:KNOWS` + `:READS` + `:INFLUENCES`)
     val inputRels = inputGraph.relationships("r")
 
     val patternGraph = CAPSGraph.create(inputRels, inputGraph.schema.asCaps)
     val outputRels = patternGraph.relationships("r", CTRelationship("KNOWS", "INFLUENCES"))
 
-    outputRels.data.count() shouldBe 7
+    outputRels.df.count() shouldBe 7
   }
 
-  test("relationship scan for all types") {
+  it("relationship scan for all types") {
     val inputGraph = initGraph(`:KNOWS` + `:READS`)
     val inputRels = inputGraph.relationships("r")
 
     val patternGraph = CAPSGraph.create(inputRels, inputGraph.schema)
     val outputRels = patternGraph.relationships("r", CTRelationship)
 
-    outputRels.data.count() shouldBe 10
+    outputRels.df.count() shouldBe 10
   }
 
   it("projects a pattern graph with a created node that has labels") {
@@ -250,141 +249,131 @@ class CAPSPatternGraphTest extends CAPSGraphTest {
   //TODO: Test creating literal property value
   //TODO: Test creating computed property value
 
-  test("Node scan from single node CAPSRecords") {
+  it("Node scan from single node CAPSRecords") {
     val inputGraph = initGraph(`:Person`)
     val inputNodes = inputGraph.nodes("n")
 
     val patternGraph = CAPSGraph.create(inputNodes, inputGraph.schema)
     val outputNodes = patternGraph.nodes("n")
 
-    outputNodes.toDF().columns should equal(
-      Array(
-        "n",
-        "____n:Person",
-        "____n:Swedish",
-        "____n_dot_luckyNumberINTEGER",
-        "____n_dot_nameSTRING"
-      ))
+    val cols = Seq(
+      "n",
+      "____n:Person",
+      "____n:Swedish",
+      "____n_dot_luckyNumberINTEGER",
+      "____n_dot_nameSTRING"
+    )
+    val data = Bag(
+      Row(0L, true, true, 23L, "Mats"),
+      Row(1L, true, false, 42L, "Martin"),
+      Row(2L, true, false, 1337L, "Max"),
+      Row(3L, true, false, 9L, "Stefan")
+    )
 
-    outputNodes.toDF().collect().toSet should equal(
-      Set(
-        Row(0L, true, true, 23L, "Mats"),
-        Row(1L, true, false, 42L, "Martin"),
-        Row(2L, true, false, 1337L, "Max"),
-        Row(3L, true, false, 9L, "Stefan")
-      ))
+    verify(outputNodes, cols, data)
   }
 
-  test("Node scan from mixed node CapsRecords") {
+  it("Node scan from mixed node CapsRecords") {
     val inputGraph = initGraph(`:Person` + `:Book`)
     val inputNodes = inputGraph.nodes("n")
 
     val patternGraph = CAPSGraph.create(inputNodes, inputGraph.schema)
     val outputNodes = patternGraph.nodes("n")
 
-    outputNodes.toDF().columns.toSet should equal(
-      Set(
-        "n",
-        "____n:Person",
-        "____n:Swedish",
-        "____n:Book",
-        "____n_dot_nameSTRING",
-        "____n_dot_luckyNumberINTEGER",
-        "____n_dot_yearINTEGER",
-        "____n_dot_titleSTRING"
-      ))
+    val col = Seq(
+      "n",
+      "____n:Book",
+      "____n:Person",
+      "____n:Swedish",
+      "____n_dot_luckyNumberINTEGER",
+      "____n_dot_nameSTRING",
+      "____n_dot_titleSTRING",
+      "____n_dot_yearINTEGER"
+    )
+    val data = Bag(
+      Row(0L, false, true, true, 23L, "Mats", null, null),
+      Row(1L, false, true, false, 42L, "Martin", null, null),
+      Row(2L, false, true, false, 1337L, "Max", null, null),
+      Row(3L, false, true, false, 9L, "Stefan", null, null),
+      Row(4L, true, false, false, null, null, "1984", 1949L),
+      Row(5L, true, false, false, null, null, "Cryptonomicon", 1999L),
+      Row(6L, true, false, false, null, null, "The Eye of the World", 1990L),
+      Row(7L, true, false, false, null, null, "The Circle", 2013L)
+    )
 
-    Bag(outputNodes.toDF().collect(): _*) should equal(
-      Bag(
-        Row(0L, false, true, true, 23L, "Mats", null, null),
-        Row(1L, false, true, false, 42L, "Martin", null, null),
-        Row(2L, false, true, false, 1337L, "Max", null, null),
-        Row(3L, false, true, false, 9L, "Stefan", null, null),
-        Row(4L, true, false, false, null, null, "1984", 1949L),
-        Row(5L, true, false, false, null, null, "Cryptonomicon", 1999L),
-        Row(6L, true, false, false, null, null, "The Eye of the World", 1990L),
-        Row(7L, true, false, false, null, null, "The Circle", 2013L)
-      ))
+    verify(outputNodes, col, data)
   }
 
-  test("Node scan from multiple connected nodes") {
+  it("Node scan from multiple connected nodes") {
     val patternGraph = initPersonReadsBookGraph
-    val outputNodes = patternGraph.nodes("n")
+    val nodes = patternGraph.nodes("n")
+    val cols = Seq(
+      "n",
+      "____n:Book",
+      "____n:Person",
+      "____n:Swedish",
+      "____n_dot_luckyNumberINTEGER",
+      "____n_dot_nameSTRING",
+      "____n_dot_titleSTRING",
+      "____n_dot_yearINTEGER"
+    )
+    val data = Bag(
+      Row(0L, false, true, true, 23L, "Mats", null, null),
+      Row(1L, false, true, false, 42L, "Martin", null, null),
+      Row(2L, false, true, false, 1337L, "Max", null, null),
+      Row(3L, false, true, false, 9L, "Stefan", null, null),
+      Row(4L, true, false, false, null, null, "1984", 1949L),
+      Row(5L, true, false, false, null, null, "Cryptonomicon", 1999L),
+      Row(6L, true, false, false, null, null, "The Eye of the World", 1990L),
+      Row(7L, true, false, false, null, null, "The Circle", 2013L)
+    )
 
-    outputNodes.toDF().columns should equal(
-      Array(
-        "n",
-        "____n:Book",
-        "____n:Person",
-        "____n:Swedish",
-        "____n_dot_luckyNumberINTEGER",
-        "____n_dot_nameSTRING",
-        "____n_dot_titleSTRING",
-        "____n_dot_yearINTEGER"
-      ))
-
-    outputNodes.toDF().collect().toSet should equal(
-      Set(
-        Row(0L, false, true, true, 23L, "Mats", null, null),
-        Row(1L, false, true, false, 42L, "Martin", null, null),
-        Row(2L, false, true, false, 1337L, "Max", null, null),
-        Row(3L, false, true, false, 9L, "Stefan", null, null),
-        Row(4L, true, false, false, null, null, "1984", 1949L),
-        Row(5L, true, false, false, null, null, "Cryptonomicon", 1999L),
-        Row(6L, true, false, false, null, null, "The Eye of the World", 1990L),
-        Row(7L, true, false, false, null, null, "The Circle", 2013L)
-      ))
+    verify(nodes, cols, data)
   }
 
-  test("Specific node scan from multiple connected nodes") {
+  it("Specific node scan from multiple connected nodes") {
     val patternGraph = initPersonReadsBookGraph
-
-    val outputNodes = patternGraph.nodes("n", CTNode("Person"))
-
-    outputNodes.toDF().columns should equal(
-      Array(
-        "n",
-        "____n:Person",
-        "____n:Swedish",
-        "____n_dot_luckyNumberINTEGER",
-        "____n_dot_nameSTRING"
-      ))
-
-    outputNodes.toDF().collect().toSet should equal(
-      Set(
-        Row(0L, true, true, 23L, "Mats"),
-        Row(1L, true, false, 42L, "Martin"),
-        Row(2L, true, false, 1337L, "Max"),
-        Row(3L, true, false, 9L, "Stefan")
-      ))
+    val nodes = patternGraph.nodes("n", CTNode("Person"))
+    val cols = Seq(
+      "n",
+      "____n:Person",
+      "____n:Swedish",
+      "____n_dot_luckyNumberINTEGER",
+      "____n_dot_nameSTRING"
+    )
+    val data = Bag(
+      Row(0L, true, true, 23L, "Mats"),
+      Row(1L, true, false, 42L, "Martin"),
+      Row(2L, true, false, 1337L, "Max"),
+      Row(3L, true, false, 9L, "Stefan")
+    )
+    verify(nodes, cols, data)
   }
 
-  test("Specific node scan from mixed node CapsRecords") {
+  it("Specific node scan from mixed node CapsRecords") {
     val inputGraph = initGraph(`:Person` + `:Book`)
     val inputNodes = inputGraph.nodes("n")
 
     val patternGraph = CAPSGraph.create(inputNodes, inputGraph.schema)
-    val outputNodes = patternGraph.nodes("n", CTNode("Person"))
+    val nodes = patternGraph.nodes("n", CTNode("Person"))
 
-    outputNodes.toDF().columns should equal(
-      Array(
-        "n",
-        "____n:Person",
-        "____n:Swedish",
-        "____n_dot_luckyNumberINTEGER",
-        "____n_dot_nameSTRING"
-      ))
-
-    outputNodes.toDF().collect().toSet should equal(
-      Set(
-        Row(0L, true, true, 23L, "Mats"),
-        Row(1L, true, false, 42L, "Martin"),
-        Row(2L, true, false, 1337L, "Max"),
-        Row(3L, true, false, 9L, "Stefan")
-      ))
+    val cols = Seq(
+      "n",
+      "____n:Person",
+      "____n:Swedish",
+      "____n_dot_luckyNumberINTEGER",
+      "____n_dot_nameSTRING"
+    )
+    val data = Bag(
+      Row(0L, true, true, 23L, "Mats"),
+      Row(1L, true, false, 42L, "Martin"),
+      Row(2L, true, false, 1337L, "Max"),
+      Row(3L, true, false, 9L, "Stefan")
+    )
+    verify(nodes, cols, data)
   }
 
-  test("Node scan for missing label") {
+  it("Node scan for missing label") {
     val inputGraph = initGraph(`:Book`)
     val inputNodes = inputGraph.nodes("n")
 
@@ -393,27 +382,28 @@ class CAPSPatternGraphTest extends CAPSGraphTest {
     patternGraph.nodes("n", CTNode("Person")).toDF().collect().toSet shouldBe empty
   }
 
-  test("Supports .cypher node scans") {
+  it("Supports .cypher node scans") {
     val patternGraph = initPersonReadsBookGraph
 
     patternGraph.cypher("MATCH (p:Person {name: 'Mats'}) RETURN p.luckyNumber").getRecords.collect.toBag should equal(
       Bag(CypherMap("p.luckyNumber" -> 23)))
   }
 
-  test("Supports node scans from ad-hoc table") {
+  it("Supports node scans from ad-hoc table") {
     val n: Var = Var("n")(CTNode)
-    val fields = Seq(
-      OpaqueField(Var("p")(CTNode("Person"))),
-      OpaqueField(n),
-      ProjectedExpr(HasLabel(n, Label("Person"))(CTBoolean)),
-      OpaqueField(Var("q")(CTNode("Foo")))
+    val exprs = Set(
+      HasLabel(n, Label("Person"))(CTBoolean),
+      n,
+      Var("p")(CTNode("Person")),
+      Var("q")(CTNode("Foo"))
     )
-    val (header, _) = RecordHeader.empty.update(addContents(fields))
+    val header = RecordHeader.from(exprs)
 
     val df = sparkSession.createDataFrame(
+      // [____n:Person, n, p, q]
       List(
-        Row(0L, 1L, true, 2L),
-        Row(10L, 11L, false, 12L)
+        Row(true, 1L, 0L, 2L),
+        Row(false, 11L, 10L, 12L)
       ).asJava,
       header.toStructType)
 
@@ -422,7 +412,7 @@ class CAPSPatternGraphTest extends CAPSGraphTest {
       .withNodePropertyKeys("Foo")()
       .asCaps
 
-    val patternGraph = CAPSGraph.create(CAPSRecords.verifyAndCreate(header, df), schema)
+    val patternGraph = CAPSGraph.create(CAPSRecords(header, df), schema)
 
     patternGraph.nodes("n", CTNode("Person")).collect.toBag should equal(
       Bag(
@@ -436,20 +426,21 @@ class CAPSPatternGraphTest extends CAPSGraphTest {
     val p: Var = Var("p")(CTNode)
     val c: Var = Var("c")(CTNode)
     val x: Var = Var("x")(CTRelationship("IN"))
-    val fields = Seq(
-      OpaqueField(c),
-      ProjectedExpr(HasLabel(c, Label("Customer"))(CTBoolean)),
-      ProjectedField(Var("cName")(CTString.nullable), Property(c, PropertyKey("name"))(CTString.nullable)),
-      OpaqueField(p),
-      ProjectedExpr(HasLabel(p, Label("Person"))(CTBoolean)),
-      ProjectedField(Var("pName")(CTString.nullable), Property(p, PropertyKey("name"))(CTString)),
-      ProjectedExpr(Property(p, PropertyKey("region"))(CTString)),
-      ProjectedExpr(StartNode(x)(CTInteger)),
-      ProjectedExpr(EndNode(x)(CTInteger)),
-      OpaqueField(x),
-      ProjectedExpr(Type(x)(CTString))
+    val exprs = Seq(
+      c,
+      HasLabel(c, Label("Customer"))(CTBoolean),
+      Var("cName")(CTString.nullable),
+      Property(c, PropertyKey("name"))(CTString.nullable),
+      p,
+      HasLabel(p, Label("Person"))(CTBoolean),
+      Var("pName")(CTString.nullable), Property(p, PropertyKey("name"))(CTString),
+      Property(p, PropertyKey("region"))(CTString),
+      StartNode(x)(CTInteger),
+      EndNode(x)(CTInteger),
+      x,
+      Type(x)(CTString)
     )
-    val (header, _) = RecordHeader.empty.update(addContents(fields))
+    val header = RecordHeader.from(exprs)
 
     val df = sparkSession.createDataFrame(
       List(
@@ -475,7 +466,7 @@ class CAPSPatternGraphTest extends CAPSGraphTest {
       .withRelationshipType("IN")
       .asCaps
 
-    val patternGraph = CAPSGraph.create(CAPSRecords.verifyAndCreate(header, df), schema)
+    val patternGraph = CAPSGraph.create(CAPSRecords(header, df), schema)
 
     //    patternGraph.nodes("n").toCypherMaps.collect().toSet should equal(Set(
     //      CypherMap("n" ->  0L),
@@ -484,28 +475,26 @@ class CAPSPatternGraphTest extends CAPSGraphTest {
     //    ))
   }
 
-  test("Returns only distinct results") {
+  it("Returns only distinct results") {
     val p = Var("p")(CTNode("Person"))
-    val fields = Seq(
-      OpaqueField(p),
-      ProjectedExpr(HasLabel(p, Label("Person"))(CTBoolean)),
-      ProjectedExpr(Property(p, PropertyKey("name"))(CTString))
+    val exprs = Seq(
+      p,
+      HasLabel(p, Label("Person"))(CTBoolean),
+      Property(p, PropertyKey("name"))(CTString)
     )
-    val (header, _) = RecordHeader.empty.update(addContents(fields))
-
-    val sparkHeader = header.toStructType
+    val header = RecordHeader.from(exprs)
     val df = sparkSession.createDataFrame(
+      // [____p:Person, ____p_dot_nameSTRING, p]
       List(
-        Row(0L, true, "PersonPeter"),
-        Row(0L, true, "PersonPeter")
-      ).asJava,
-      sparkHeader)
+        Row(true, "PersonPeter", 0L),
+        Row(true, "PersonPeter", 0L)
+      ).asJava, header.toStructType)
 
     val schema = Schema.empty
       .withNodePropertyKeys("Person")("name" -> CTString)
       .asCaps
 
-    val patternGraph = CAPSGraph.create(CAPSRecords.verifyAndCreate(header, df), schema)
+    val patternGraph = CAPSGraph.create(CAPSRecords(header, df), schema)
 
     patternGraph.nodes("n", CTNode).collect.toBag should equal(
       Bag(
@@ -513,33 +502,31 @@ class CAPSPatternGraphTest extends CAPSGraphTest {
     )
   }
 
-  test("Supports node scans when different variables have the same property keys") {
+  it("Supports node scans when different variables have the same property keys") {
     val p = Var("p")(CTNode("Person"))
     val e = Var("e")(CTNode("Employee"))
-    val fields = Seq(
-      OpaqueField(p),
-      ProjectedExpr(HasLabel(p, Label("Person"))(CTBoolean)),
-      OpaqueField(e),
-      ProjectedExpr(HasLabel(e, Label("Employee"))(CTBoolean)),
-      ProjectedExpr(Property(p, PropertyKey("name"))(CTString)),
-      ProjectedField(Var("foo")(CTString), Property(e, PropertyKey("name"))(CTString))
+    val exprs = Seq(
+      p,
+      HasLabel(p, Label("Person"))(CTBoolean),
+      Property(p, PropertyKey("name"))(CTString),
+      e,
+      HasLabel(e, Label("Employee"))(CTBoolean),
+      Property(e, PropertyKey("name"))(CTString)
     )
-    val (header, _) = RecordHeader.empty.update(addContents(fields))
-
-    val sparkHeader = header.toStructType
+    val header = RecordHeader.from(exprs)
     val df = sparkSession.createDataFrame(
+      // [____e:Employee, ____e_dot_nameSTRING, ____p:Person, ____p_dot_nameSTRING, e, p]
       List(
-        Row(0L, true, 1L, true, "PersonPeter", "EmployeePeter"),
-        Row(10L, true, 11L, true, "PersonSusanna", "EmployeeSusanna")
-      ).asJava,
-      sparkHeader)
+        Row(true, "EmployeePeter", true, "PersonPeter", 1L, 0L),
+        Row(true, "EmployeeSusanna", true, "PersonSusanna", 11L, 10L)
+      ).asJava, header.toStructType)
 
     val schema = Schema.empty
       .withNodePropertyKeys("Person")("name" -> CTString)
       .withNodePropertyKeys("Employee")("name" -> CTString)
       .asCaps
 
-    val patternGraph = CAPSGraph.create(CAPSRecords.verifyAndCreate(header, df), schema)
+    val patternGraph = CAPSGraph.create(CAPSRecords(header, df), schema)
 
     patternGraph.nodes("n", CTNode).collect.toBag should equal(
       Bag(
@@ -556,15 +543,15 @@ class CAPSPatternGraphTest extends CAPSGraphTest {
     val p = Var("p")(CTNode("Person"))
     val e = Var("e")(CTNode("Employee"))
     val pe = Var("pe")(CTNode("Person", "Employee"))
-    val fields = Seq(
-      OpaqueField(p),
-      OpaqueField(e),
-      OpaqueField(pe),
-      ProjectedExpr(Property(p, PropertyKey("name"))(CTString)),
-      ProjectedExpr(Property(e, PropertyKey("name"))(CTString.nullable)),
-      ProjectedExpr(Property(pe, PropertyKey("name"))(CTString))
+    val exprs = Seq(
+      p,
+      e,
+      pe,
+      Property(p, PropertyKey("name"))(CTString),
+      Property(e, PropertyKey("name"))(CTString.nullable),
+      Property(pe, PropertyKey("name"))(CTString)
     )
-    val (header, _) = RecordHeader.empty.update(addContents(fields))
+    val header = RecordHeader.from(exprs)
 
     val sparkHeader = header.toStructType
     val df = sparkSession.createDataFrame(
@@ -580,7 +567,7 @@ class CAPSPatternGraphTest extends CAPSGraphTest {
       .withNodePropertyKeys("Employee", "Person")("name" -> CTString)
       .asCaps
 
-    val patternGraph = CAPSGraph.create(CAPSRecords.verifyAndCreate(header, df), schema)
+    val patternGraph = CAPSGraph.create(CAPSRecords(header, df), schema)
 
     patternGraph.nodes("n", CTNode).toMaps should equal(
       Bag(
@@ -614,7 +601,7 @@ class CAPSPatternGraphTest extends CAPSGraphTest {
         |RETURN GRAPH
       """.stripMargin)
 
-    when.getGraph.asInstanceOf[CAPSPatternGraph].baseTable.data.count() should equal(3)
+    when.getGraph.asInstanceOf[CAPSPatternGraph].baseTable.df.count() should equal(3)
   }
 
   it("should create a single relationship between unique merged node pair") {
@@ -725,9 +712,9 @@ class CAPSPatternGraphTest extends CAPSGraphTest {
       .join(readsDf, personsDf.col("p") === readsDf.col("____source(r)"))
       .join(booksDf, readsDf.col("____target(r)") === booksDf.col("b"))
 
-    val slots = persons.header.slots ++ reads.header.slots ++ books.header.slots
-    val joinHeader = RecordHeader.from(slots.map(_.content): _*)
+    val exprs = persons.header.expressions ++ reads.header.expressions ++ books.header.expressions
+    val joinHeader = RecordHeader.from(exprs)
 
-    CAPSGraph.create(CAPSRecords.verifyAndCreate(joinHeader, joinedDf), inputGraph.schema)
+    CAPSGraph.create(CAPSRecords(joinHeader, joinedDf), inputGraph.schema)
   }
 }

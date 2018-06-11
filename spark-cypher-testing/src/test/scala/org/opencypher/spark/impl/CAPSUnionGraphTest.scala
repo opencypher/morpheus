@@ -28,13 +28,15 @@ package org.opencypher.spark.impl
 
 import org.apache.spark.sql.Row
 import org.opencypher.okapi.testing.Bag
-import org.opencypher.okapi.testing.Bag._
 import org.opencypher.spark.impl
 import org.opencypher.spark.impl.DataFrameOps._
 import org.opencypher.spark.testing.CAPSTestSuite
-import org.opencypher.spark.testing.fixture.{GraphConstructionFixture, TeamDataFixture}
+import org.opencypher.spark.testing.fixture.{GraphConstructionFixture, RecordsVerificationFixture, TeamDataFixture}
 
-class CAPSUnionGraphTest extends CAPSTestSuite with GraphConstructionFixture with TeamDataFixture {
+class CAPSUnionGraphTest extends CAPSTestSuite
+  with GraphConstructionFixture
+  with RecordsVerificationFixture
+  with TeamDataFixture {
 
   import CAPSGraphTestData._
 
@@ -50,29 +52,29 @@ class CAPSUnionGraphTest extends CAPSTestSuite with GraphConstructionFixture wit
     val inputNodes = inputGraph.nodes("n")
 
     val patternGraph = CAPSUnionGraph(CAPSGraph.create(inputNodes, inputGraph.schema))
-    val outputNodes = patternGraph.nodes("n")
+    val nodes = patternGraph.nodes("n")
 
-    outputNodes.toDF().columns should equal(Array(
+    val cols = Seq(
       "n",
       "____n:Person",
       "____n:Swedish",
       "____n_dot_luckyNumberINTEGER",
       "____n_dot_nameSTRING"
-    ))
-
-    outputNodes.toDF().collect().toBag should equal(Bag(
+    )
+    val data = Bag(
       Row(0L, true, true, 23L, "Mats"),
       Row(1L, true, false, 42L, "Martin"),
       Row(2L, true, false, 1337L, "Max"),
-      Row(3L, true, false, 9L, "Stefan"))
+      Row(3L, true, false, 9L, "Stefan")
     )
+
+    verify(nodes, cols, data)
   }
 
   test("Node scan from multiple single node CAPSRecords") {
     val unionGraph = impl.CAPSUnionGraph(initGraph(`:Person`), initGraph(`:Book`))
-    val outputNodes = unionGraph.nodes("n")
-
-    outputNodes.toDF().columns should equal(Array(
+    val nodes = unionGraph.nodes("n")
+    val cols = Seq(
       "n",
       "____n:Book",
       "____n:Person",
@@ -81,9 +83,8 @@ class CAPSUnionGraphTest extends CAPSTestSuite with GraphConstructionFixture wit
       "____n_dot_nameSTRING",
       "____n_dot_titleSTRING",
       "____n_dot_yearINTEGER"
-    ))
-
-    outputNodes.toDF().collect().toBag should equal(Bag(
+    )
+    val data = Bag(
       Row(0L, false, true, true, 23L, "Mats", null, null),
       Row(1L, false, true, false, 42L, "Martin", null, null),
       Row(2L, false, true, false, 1337L, "Max", null, null),
@@ -91,7 +92,10 @@ class CAPSUnionGraphTest extends CAPSTestSuite with GraphConstructionFixture wit
       Row(0L.setTag(1), true, false, false, null, null, "1984", 1949L),
       Row(1L.setTag(1), true, false, false, null, null, "Cryptonomicon", 1999L),
       Row(2L.setTag(1), true, false, false, null, null, "The Eye of the World", 1990L),
-      Row(3L.setTag(1), true, false, false, null, null, "The Circle", 2013L)))
+      Row(3L.setTag(1), true, false, false, null, null, "The Circle", 2013L)
+    )
+
+    verify(nodes, cols, data)
   }
 
   test("Returns only distinct results") {
@@ -99,17 +103,16 @@ class CAPSUnionGraphTest extends CAPSTestSuite with GraphConstructionFixture wit
     val scanGraph2 = CAPSGraph.create(personTable)
 
     val unionGraph = CAPSUnionGraph(scanGraph1, scanGraph2)
-    val outputNodes = unionGraph.nodes("n")
+    val nodes = unionGraph.nodes("n")
 
-    outputNodes.toDF().columns should equal(Array(
+    val cols = Seq(
       "n",
       "____n:Person",
       "____n:Swedish",
       "____n_dot_luckyNumberINTEGER",
       "____n_dot_nameSTRING"
-    ))
-
-    outputNodes.toDF().collect().toBag should equal(Bag(
+    )
+    val data = Bag(
       Row(1L, true, true, 23L, "Mats"),
       Row(2L, true, false, 42L, "Martin"),
       Row(3L, true, false, 1337L, "Max"),
@@ -118,7 +121,9 @@ class CAPSUnionGraphTest extends CAPSTestSuite with GraphConstructionFixture wit
       Row(2L.setTag(1), true, false, 42L, "Martin"),
       Row(3L.setTag(1), true, false, 1337L, "Max"),
       Row(4L.setTag(1), true, false, 9L, "Stefan")
-    ))
+    )
+
+    verify(nodes, cols, data)
   }
 
   it("assigns non-conflicting tags to graphs") {

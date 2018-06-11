@@ -24,23 +24,21 @@
  * described as "implementation extensions to Cypher" or as "proposed changes to
  * Cypher that are not yet approved by the openCypher community".
  */
-package org.opencypher.okapi.relational.impl.util
+package org.opencypher.spark.testing.fixture
 
-import org.opencypher.okapi.relational.impl.util.StringEncodingUtilities._
-import org.scalatest.prop.GeneratorDrivenPropertyChecks
-import org.scalatest.{FunSpec, Matchers}
+import org.apache.spark.sql.Row
+import org.opencypher.okapi.testing.Bag._
+import org.opencypher.spark.impl.CAPSRecords
+import org.opencypher.spark.testing.CAPSTestSuite
 
-class StringEncodingUtilitiesTest extends FunSpec with GeneratorDrivenPropertyChecks with Matchers {
+trait RecordsVerificationFixture {
 
-  it("encodes arbitrary strings with only letters, digits, underscores, hashes, and 'at' symbols") {
-    forAll { s: String =>
-      val encoded = s.encodeSpecialCharacters
-      val decoded = encoded.decodeSpecialCharacters
-      s should equal(decoded)
-      encoded.forall { c =>
-        (c.isLetterOrDigit && c.isAscii) || c == '_' || c == '@'
-      }
-    }
+  self: CAPSTestSuite  =>
+
+  protected def verify(records: CAPSRecords, expectedColumns: Seq[String], expectedData: Bag[Row]): Unit = {
+    val df = records.toDF()
+    df.columns.length should equal(expectedColumns.size)
+    df.columns.toSet should equal(expectedColumns.toSet)
+    df.select(expectedColumns.head, expectedColumns.tail: _*).collect().toBag should equal(expectedData)
   }
-
 }

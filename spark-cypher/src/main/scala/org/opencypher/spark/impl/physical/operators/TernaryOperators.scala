@@ -28,9 +28,9 @@ package org.opencypher.spark.impl.physical.operators
 
 import org.apache.spark.sql.DataFrame
 import org.opencypher.okapi.api.types.CTNode
-import org.opencypher.okapi.ir.api.expr.{EndNode, Var}
+import org.opencypher.okapi.ir.api.expr.{EndNode, StartNode, Var}
 import org.opencypher.okapi.logical.impl.{Directed, Direction, Undirected}
-import org.opencypher.okapi.relational.impl.table.{OpaqueField, ProjectedExpr, RecordHeader, RecordSlot}
+import org.opencypher.okapi.relational.impl.table.RecordHeader
 import org.opencypher.spark.impl.CAPSFunctions._
 import org.opencypher.spark.impl.CAPSRecords
 import org.opencypher.spark.impl.DataFrameOps._
@@ -79,16 +79,16 @@ final case class BoundedVarExpand(
   }
 
   private def iterate(lhs: DataFrame, lhsHeader: RecordHeader, rels: DataFrame, relsHeader: RecordHeader)(
-      endNode: RecordSlot,
+      endNode: Var,
       rel: Var,
-      relStartNode: RecordSlot,
+      relStartNode: StartNode,
       listTempColName: String,
       edgeListColName: String,
       keep: Array[String]): DataFrame = {
 
-    val relIdColumn = rels.col(relsHeader.of(OpaqueField(rel)))
-    val startColumn = rels.col(relsHeader.of(relStartNode))
-    val expandColumnName = lhsHeader.of(endNode)
+    val relIdColumn = rels.col(relsHeader.column(rel))
+    val startColumn = rels.col(relsHeader.column(relStartNode))
+    val expandColumnName = lhsHeader.column(endNode)
     val expandColumn = lhs.col(expandColumnName)
 
     val joined = lhs.join(rels, expandColumn === startColumn, "inner")
@@ -99,7 +99,7 @@ final case class BoundedVarExpand(
     val filtered = withExtendedArray.filter(!arrayContains)
 
     // TODO: Try and get rid of the Var rel here
-    val endNodeIdColNameOfJoinedRel = relsHeader.of(ProjectedExpr(EndNode(rel)(CTNode)))
+    val endNodeIdColNameOfJoinedRel = relsHeader.column(EndNode(rel)(CTNode))
 
     val columns = keep ++ Seq(listTempColName, endNodeIdColNameOfJoinedRel)
     val withoutRelProperties = filtered.select(columns.head, columns.tail: _*) // drops joined columns from relationship table
@@ -112,71 +112,69 @@ final case class BoundedVarExpand(
   }
 
   private def finalize(expanded: CAPSRecords, targets: CAPSRecords): CAPSRecords = {
-    val endNodeSlot = expanded.header.slotFor(initialEndNode)
-    val endNodeCol = expanded.header.of(endNodeSlot)
-
-    val targetNodeSlot = targets.header.slotFor(target)
-    val targetNodeCol = targets.header.of(targetNodeSlot)
+    val endNodeColumn = expanded.header.column(initialEndNode)
+    val targetNodeColumn = targets.header.column(target)
 
     // If the expansion ends in an already solved plan, the final join can be replaced by a filter.
     val result = if (isExpandInto) {
       val data = expanded.toDF()
-      CAPSRecords.verifyAndCreate(header, data.filter(data.col(targetNodeCol) === data.col(endNodeCol)))(expanded.caps)
+      CAPSRecords(header, data.filter(data.col(targetNodeColumn) === data.col(endNodeColumn)))(expanded.caps)
     } else {
       val joinHeader = expanded.header ++ targets.header
 
-      val lhsSlot = expanded.header.slotFor(initialEndNode)
-      val rhsSlot = targets.header.slotFor(target)
+      assertIsNode(initialEndNode)
+      assertIsNode(target)
 
-      assertIsNode(lhsSlot)
-      assertIsNode(rhsSlot)
+      val lhsColumn = expanded.header.column(initialEndNode)
+      val rhsColumn = targets.header.column(target)
 
-      joinRecords(joinHeader, Seq(lhsSlot -> rhsSlot))(expanded, targets)
+      joinRecords(joinHeader, Seq(lhsColumn -> rhsColumn))(expanded, targets)
     }
 
-    CAPSRecords.verifyAndCreate(header, result.toDF().safeDropColumn(endNodeCol))(expanded.caps)
+    CAPSRecords(header, result.toDF().safeDropColumn(endNodeColumn))(expanded.caps)
   }
 
   private def expand(firstRecords: CAPSRecords, secondRecords: CAPSRecords): CAPSRecords = {
-    val initData = firstRecords.data
+    val initData = firstRecords.df
     val relsData = direction match {
       case Directed =>
-        secondRecords.data
+        secondRecords.df
       case Undirected =>
         // TODO this is a crude hack that will not work once we have proper path support
-        val startNodeSlot = secondRecords.header.of(secondRecords.header.sourceNodeSlot(rel))
-        val endNodeSlot = secondRecords.header.of(secondRecords.header.targetNodeSlot(rel))
-        val colOrder = secondRecords.header.slots.map(secondRecords.header.of)
+        val startNodeSlot = secondRecords.header.column(secondRecords.header.startNodeFor(rel))
+        val endNodeSlot = secondRecords.header.column(secondRecords.header.endNodeFor(rel))
+        val columns = secondRecords.physicalColumns
 
-        val inverted = secondRecords.data
+        val inverted = secondRecords.df
           .safeRenameColumn(startNodeSlot, "__tmp__")
           .safeRenameColumn(endNodeSlot, startNodeSlot)
           .safeRenameColumn("__tmp__", endNodeSlot)
-          .select(colOrder.head, colOrder.tail: _*)
+          .select(columns.head, columns.tail: _*)
 
-        inverted.union(secondRecords.data)
+        inverted.union(secondRecords.df)
     }
 
-    val edgeListColName = firstRecords.header.of(firstRecords.header.slotFor(edgeList))
+    def generateUniqueName = s"tmp${System.nanoTime}"
+
+    val edgeListColName = firstRecords.header.column(edgeList)
 
     val steps = new collection.mutable.HashMap[Int, DataFrame]
     steps(0) = initData
 
     val keep = initData.columns
 
-    val listTempColName = firstRecords.header.generateUniqueName
+    val listTempColName = generateUniqueName
 
-    val startSlot = secondRecords.header.sourceNodeSlot(rel)
-    val endNodeSlot = firstRecords.header.slotFor(initialEndNode)
+    val relStartNode = secondRecords.header.startNodeFor(rel)
     (1 to upper).foreach { i =>
       // TODO: Check whether we can abort iteration if result has no cardinality (eg count > 0?)
-      steps(i) = iterate(steps(i - 1), firstRecords.header, relsData, secondRecords.header)(endNodeSlot, rel, startSlot, listTempColName, edgeListColName, keep)
+      steps(i) = iterate(steps(i - 1), firstRecords.header, relsData, secondRecords.header)(initialEndNode, rel, relStartNode, listTempColName, edgeListColName, keep)
     }
 
     val union = steps.filterKeys(_ >= lower).values.reduce[DataFrame] {
       case (l, r) => l.union(r)
     }
 
-    CAPSRecords.verifyAndCreate(firstRecords.header, union)(firstRecords.caps)
+    CAPSRecords(firstRecords.header, union)(firstRecords.caps)
   }
 }

@@ -26,29 +26,27 @@
  */
 package org.opencypher.spark.impl.table
 
-import org.apache.spark.sql.Row
-import org.apache.spark.sql.catalyst.encoders.{ExpressionEncoder, RowEncoder}
-import org.apache.spark.sql.types.StructType
-import org.opencypher.okapi.impl.exception.IllegalArgumentException
+import org.apache.spark.sql.types._
+import org.opencypher.okapi.api.types.{CTInteger, CTList, CTString}
 import org.opencypher.okapi.ir.api.expr.Var
-import org.opencypher.okapi.relational.impl.table._
-import org.opencypher.spark.impl.convert.CAPSCypherType._
+import org.opencypher.okapi.relational.impl.table.RecordHeader
+import org.opencypher.spark.impl.convert.SparkConversions._
+import org.scalatest.{FunSpec, Matchers}
 
-object CAPSRecordHeader {
+class CAPSStructTypeTest extends FunSpec with Matchers {
 
-  def fromSparkStructType(structType: StructType): RecordHeader =
-    RecordHeader.from(structType.fields.map { field =>
-      OpaqueField(
-        Var(field.name)(field.dataType.toCypherType(field.nullable)
-          .getOrElse(throw IllegalArgumentException("a supported Spark type", field.dataType))))
-    }: _*)
+  it("computes a header from a given struct type") {
+    val structType = StructType(Seq(
+      StructField("a", LongType, nullable = true),
+      StructField("b", StringType, nullable = false),
+      StructField("c", ArrayType(StringType, containsNull = true), nullable = false)
+    ))
 
-  implicit class CAPSRecordHeader(header: RecordHeader) extends Serializable {
-    def toStructType: StructType = {
-      StructType(header.slots.map(slot => slot.content.cypherType.toStructField(header.of(slot.content))))
-    }
-
-    def rowEncoder: ExpressionEncoder[Row] =
-      RowEncoder(header.toStructType)
+    structType.toRecordHeader should equal(RecordHeader.empty
+      .withExpr(Var("a")(CTInteger.nullable))
+      .withExpr(Var("b")(CTString))
+      .withExpr(Var("c")(CTList(CTString.nullable)))
+    )
   }
+
 }

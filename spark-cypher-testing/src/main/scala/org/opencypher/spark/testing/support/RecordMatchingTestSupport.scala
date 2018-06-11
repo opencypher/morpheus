@@ -29,13 +29,11 @@ package org.opencypher.spark.testing.support
 import org.opencypher.okapi.api.table.CypherRecords
 import org.opencypher.okapi.api.value.CypherValue._
 import org.opencypher.okapi.ir.api.expr.Var
-import org.opencypher.okapi.relational.impl.table.{FieldSlotContent, OpaqueField, ProjectedExpr, RecordHeader}
 import org.opencypher.okapi.testing.Bag
 import org.opencypher.okapi.testing.Bag._
 import org.opencypher.spark.impl.CAPSConverters._
 import org.opencypher.spark.impl.CAPSRecords
 import org.opencypher.spark.impl.DataFrameOps._
-import org.opencypher.spark.impl.table.CAPSRecordHeader._
 import org.opencypher.spark.testing.CAPSTestSuite
 import org.scalatest.Assertion
 
@@ -63,13 +61,14 @@ trait RecordMatchingTestSupport {
     }
 
     private def projected(records: CAPSRecords): CAPSRecords = {
-      val newSlots = records.header.slots.map(_.content).map {
-        case slot: FieldSlotContent => OpaqueField(slot.field)
-        case slot: ProjectedExpr    => OpaqueField(Var(slot.expr.withoutType)(slot.cypherType))
-      }
-      val newHeader = RecordHeader.from(newSlots: _*)
-      val newData = records.data.toDF(newHeader.columns: _*)
-      CAPSRecords.verifyAndCreate(newHeader, newData)(records.caps)
+      val aliases = records.header.expressions.map { expr =>
+        expr -> (expr match {
+          case _: Var => None
+          case e => Some(Var(e.withoutType)(e.cypherType))
+        })
+      }.toSeq
+
+      records.select(aliases.head, aliases.tail: _*)
     }
   }
 
@@ -80,11 +79,9 @@ trait RecordMatchingTestSupport {
     // probably use this name though, and have not collecting be the special case
     def toMaps: Bag[CypherMap] = {
       val rows = capsRecords.toDF().collect().map { r =>
-        val properties = capsRecords.header.slots.map { s =>
-          s.content match {
-            case f: FieldSlotContent => f.field.name -> r.getCypherValue(f.key, capsRecords.header)
-            case x                   => x.key.withoutType -> r.getCypherValue(x.key, capsRecords.header)
-          }
+        val properties = capsRecords.header.expressions.map {
+          case v: Var => v.name -> r.getCypherValue(v, capsRecords.header)
+          case e => e.withoutType -> r.getCypherValue(e, capsRecords.header)
         }.toMap
         CypherMap(properties)
       }

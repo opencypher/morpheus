@@ -32,7 +32,7 @@ import org.opencypher.okapi.ir.api.block.SortItem
 import org.opencypher.okapi.ir.api.expr.{Aggregator, Expr, Var}
 import org.opencypher.okapi.logical.impl._
 import org.opencypher.okapi.relational.impl.physical.{InnerJoin, JoinType}
-import org.opencypher.okapi.relational.impl.table.{ProjectedExpr, ProjectedField, RecordHeader}
+import org.opencypher.okapi.relational.impl.table.RecordHeader
 
 /**
   * Main interface to be implemented by custom (relational) back-ends to execute a Cypher query. Methods are being
@@ -118,18 +118,17 @@ trait PhysicalOperatorProducer[P <: PhysicalOperator[R, G, C], R <: CypherRecord
     * @param header     resulting record header
     * @return Drop operator
     */
-  def planDrop(in: P, dropFields: Seq[Expr], header: RecordHeader): P
+  def planDrop(in: P, dropFields: Set[Expr], header: RecordHeader): P
 
   /**
-    * The operator takes a set of (field, expression) aliases and renames the columns identified by a field to the
-    * corresponding expression.
+    * Renames the columns associated with the given expressions to the specified new column names.
     *
-    * @param in      previous operator
-    * @param aliases set of aliases
-    * @param header  resulting record header
-    * @return remove aliases operator
+    * @param in          previous operator
+    * @param renameExprs expressions to new columns
+    * @param header      resulting record header
+    * @return Rename operator
     */
-  def planRemoveAliases(in: P, aliases: Set[(ProjectedField, ProjectedExpr)], header: RecordHeader): P
+  def planRenameColumns(in: P, renameExprs: Map[Expr, String], header: RecordHeader): P
 
   /**
     * Filters the incoming rows according to the specified expression.
@@ -149,7 +148,7 @@ trait PhysicalOperatorProducer[P <: PhysicalOperator[R, G, C], R <: CypherRecord
     * @param header      resulting record header
     * @return select operator
     */
-  def planSelect(in: P, expressions: List[Expr], header: RecordHeader): P
+  def planSelect(in: P, expressions: List[(Expr, Option[Var])], header: RecordHeader): P
 
   /**
     * Returns the working graph
@@ -172,10 +171,11 @@ trait PhysicalOperatorProducer[P <: PhysicalOperator[R, G, C], R <: CypherRecord
     *
     * @param in     previous operator
     * @param expr   expression to evaluate
+    * @param alias  alias to project expr to
     * @param header resulting record header
     * @return project operator
     */
-  def planProject(in: P, expr: Expr, header: RecordHeader): P
+  def planProject(in: P, expr: Expr, alias: Option[Var], header: RecordHeader): P
 
   /**
     * Creates a new record containing the specified entities (i.e. as defined in a construction pattern).

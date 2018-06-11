@@ -37,14 +37,21 @@ trait JsonSerialiser {
   implicit val recordsEncoder: Encoder[CAPSRecords] = new Encoder[CAPSRecords] {
     override final def apply(records: CAPSRecords): Json = {
       val rows = records.collect.map { map =>
-        val unit = records.header.fieldsInOrder.map { field =>
-          field -> constructValue(map(field))
-        }
+        val unit = records.header.vars
+          .map(records.header.column)
+          .toSeq.sorted
+          .map { field =>
+            field -> constructValue(map(field))
+          }
         Json.obj(unit: _*)
       }
 
       Json.obj(
-        "columns" -> Json.arr(records.header.fieldsInOrder.map(Json.fromString): _*),
+        "columns" -> Json.arr(records.header.vars
+          .map(records.header.column)
+          .toSeq
+          .sorted
+          .map(Json.fromString): _*),
         "rows" -> Json.arr(rows.toSeq: _*)
       )
     }
@@ -87,7 +94,7 @@ trait JsonSerialiser {
         labels.toSeq.sorted.map(Json.fromString): _*
       ),
       "properties" -> Json.obj(
-        properties.toSeq: _*
+        properties.toSeq.sortBy(_._1): _*
       )
     )
   }

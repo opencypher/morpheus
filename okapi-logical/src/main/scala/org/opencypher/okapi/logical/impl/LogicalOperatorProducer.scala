@@ -108,12 +108,12 @@ class LogicalOperatorProducer {
     Aggregate(transformed, group.map(toVar), prev, prev.solved.withFields(aggregations.fields.toSeq: _*))
   }
 
-  def projectField(field: IRField, expr: Expr, prev: LogicalOperator): Project = {
-    Project(expr, Some(field), prev, prev.solved.withField(field))
+  def projectField(expr: Expr, field: IRField, prev: LogicalOperator): Project = {
+    Project(expr -> Some(field), prev, prev.solved.withField(field))
   }
 
   def projectExpr(expr: Expr, prev: LogicalOperator): Project = {
-    Project(expr, None, prev, prev.solved)
+    Project(expr -> None, prev, prev.solved)
   }
 
   def planUnwind(list: Expr, variable: IRField, withList: LogicalOperator): Unwind = {
