@@ -75,19 +75,15 @@ object ZeppelinSupport {
       *   Bob\t42
       * }}}
       */
+    // TODO: Soon the physical column names will be useless for a user. Need to use a new tbd logical view.
     def printTable(): Unit = {
-      val rows = r.collect
-      val columns = if (rows.isEmpty) {
-        Array[String]()
-      } else {
-        rows(0).value.keys.toArray
-      }
+      val columns = r.physicalColumns
       print(
         s"""
            |%table
            |${columns.mkString("\t")}
            |${
-          rows.map { row =>
+          r.iterator.map { row =>
             columns.map(row(_)).mkString("\t")
           }.mkString("\n")
         }""".
