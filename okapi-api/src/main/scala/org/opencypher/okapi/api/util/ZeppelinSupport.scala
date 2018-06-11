@@ -231,8 +231,6 @@ object ZeppelinSupport {
       *   "directed": true              // indicate that the graph has directed relationships
       * }
       * }}}
-      *
-      * The format of scalar values follows the format of [[org.opencypher.okapi.api.value.CypherValue.CypherValue#toString]].
       */
     def toZeppelinJson: Js.Value = {
       val nodeJson: Js.Value = g.nodes("n").iterator.map { node =>
