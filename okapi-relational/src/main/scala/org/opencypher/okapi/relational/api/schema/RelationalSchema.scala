@@ -40,7 +40,7 @@ object RelationalSchema {
     def headerForNode(node: Var): RecordHeader = {
       val labels: Set[String] = node.cypherType match {
         case CTNode(l, _) => l
-        case other     => throw IllegalArgumentException(CTNode, other)
+        case other => throw IllegalArgumentException(CTNode, other)
       }
       headerForNode(node, labels)
     }
@@ -67,11 +67,11 @@ object RelationalSchema {
     }
 
     def headerForRelationship(rel: Var): RecordHeader = {
-      val types: Set[String] = rel.cypherType match {
-        case CTRelationship(_types, _) if _types.isEmpty =>
+      val types = rel.cypherType match {
+        case CTRelationship(relTypes, _) if relTypes.isEmpty =>
           schema.relationshipTypes
-        case CTRelationship(_types, _) =>
-          _types
+        case CTRelationship(relTypes, _) =>
+          relTypes
         case other =>
           throw IllegalArgumentException(CTRelationship, other)
       }
@@ -82,12 +82,11 @@ object RelationalSchema {
     def headerForRelationship(rel: Var, relTypes: Set[String]): RecordHeader = {
       val relKeyHeaderProperties = relTypes
         .flatMap(t => schema.relationshipKeys(t))
-        .groupBy(_._1)
-        .mapValues { keys =>
-          if (keys.size == relTypes.size && keys.forall(keys.head == _)) {
-            keys.head._2
-          } else {
-            keys.head._2.nullable
+        .groupBy { case (propertyKey, _) => propertyKey }
+        .mapValues { keysWithType =>
+          keysWithType.toSeq.unzip match {
+            case (keys, types) if keys.size == relTypes.size && types.forall(_ == types.head) => types.head
+            case (_, types) => types.head.nullable
           }
         }
 

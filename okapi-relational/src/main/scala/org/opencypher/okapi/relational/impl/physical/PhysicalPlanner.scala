@@ -93,8 +93,8 @@ class PhysicalPlanner[P <: PhysicalOperator[R, G, C], R <: CypherRecords, G <: P
       case flat.Unwind(explodeExpr: Explode, item, in, header) =>
         producer.planProject(process(in), explodeExpr, Some(item), header)
 
-      case flat.Project(expr, in, header) =>
-        producer.planProject(process(in), expr, None, header)
+      case flat.Project(expr, alias, in, header) =>
+        producer.planProject(process(in), expr, alias, header)
 
       case flat.Aggregate(aggregations, group, in, header) => producer.planAggregate(process(in), group, aggregations, header)
 

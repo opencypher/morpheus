@@ -65,19 +65,6 @@ class FlatOperatorProducer(implicit context: FlatPlannerContext) {
   }
 
   def filter(expr: Expr, in: FlatOperator): Filter = {
-    in.header
-
-    //    expr match {
-    //      case HasLabel(n, label) =>
-    //        in.header.contents.map { c =>
-    //
-    //        }
-    //      case _ => in.header
-    //    }
-
-    // TODO: Should replace SlotContent expressions with detailed type of entity
-    // TODO: Should reduce width of header due to more label information
-
     Filter(expr, in, in.header)
   }
 
@@ -130,8 +117,8 @@ class FlatOperatorProducer(implicit context: FlatPlannerContext) {
 
     maybeAlias match {
       case Some(alias) if containsExpr => Alias(expr, alias, in, updatedHeader.withAlias(expr as alias))
-      case Some(alias) => Project(expr, in, updatedHeader.withAlias(expr as alias))
-      case None => Project(expr, in, updatedHeader)
+      case Some(alias) => Project(expr, Some(alias), in, updatedHeader.withAlias(expr as alias))
+      case None => Project(expr, None, in, updatedHeader)
     }
   }
 
