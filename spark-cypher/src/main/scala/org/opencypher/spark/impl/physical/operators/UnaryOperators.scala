@@ -54,17 +54,6 @@ private[spark] abstract class UnaryPhysicalOperator extends CAPSPhysicalOperator
   def executeUnary(prev: CAPSPhysicalResult)(implicit context: CAPSRuntimeContext): CAPSPhysicalResult
 }
 
-final case class Cache(in: CAPSPhysicalOperator) extends UnaryPhysicalOperator with InheritedHeader {
-
-  override def executeUnary(prev: CAPSPhysicalResult)(implicit context: CAPSRuntimeContext): CAPSPhysicalResult = {
-    context.cache.getOrElse(in, {
-      prev.records.cache()
-      context.cache(in) = prev
-      prev
-    })
-  }
-}
-
 final case class NodeScan(in: CAPSPhysicalOperator, v: Var, header: RecordHeader)
   extends UnaryPhysicalOperator with PhysicalOperatorDebugging {
 
