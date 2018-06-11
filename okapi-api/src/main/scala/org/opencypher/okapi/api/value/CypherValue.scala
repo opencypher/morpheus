@@ -161,17 +161,17 @@ object CypherValue {
         case CypherMap(m) =>
           m.toSeq
             .sortBy(_._1)
-            .map { case (k, v) => s"$k: ${v.toCypherString}" }
+            .map { case (k, v) => s"`${escape(k)}`: ${v.toCypherString}" }
             .mkString("{", ", ", "}")
         case CypherRelationship(_, _, _, relType, props) =>
-          s"[:$relType${
+          s"[:`${escape(relType)}`${
             if (props.isEmpty) ""
             else s" ${props.toCypherString}"
           }]"
         case CypherNode(_, labels, props) =>
           val labelString =
             if (labels.isEmpty) ""
-            else labels.toSeq.sorted.mkString(":", ":", "")
+            else labels.toSeq.sorted.map(escape).mkString(":`", "`:`", "`")
           val propertyString = if (props.isEmpty) ""
           else s"${props.toCypherString}"
           Seq(labelString, propertyString)
@@ -182,7 +182,10 @@ object CypherValue {
     }
 
     private def escape(str: String): String = {
-      str.replaceAllLiterally("'", "\\'").replaceAllLiterally("\"", "\\\"")
+      str
+        .replaceAllLiterally("""\""", """\\""")
+        .replaceAllLiterally("'", "\\'")
+        .replaceAllLiterally("\"", "\\\"")
     }
 
     private[opencypher] def isOrContainsNull: Boolean = isNull || {

@@ -33,42 +33,16 @@ class CAPSValueToStringTest extends BaseTestSuite {
 
   test("node") {
     CAPSNode(1L, Set.empty, CypherMap.empty).toCypherString should equal("()")
-    CAPSNode(1L, Set("A"), CypherMap.empty).toCypherString should equal("(:A)")
-    CAPSNode(1L, Set("A", "B"), CypherMap.empty).toCypherString should equal("(:A:B)")
-    CAPSNode(1L, Set("A", "B"), CypherMap("a" -> "b")).toCypherString should equal("(:A:B {a: 'b'})")
-    CAPSNode(1L, Set("A", "B"), CypherMap("a" -> "b", "b" -> 1)).toCypherString should equal("(:A:B {a: 'b', b: 1})")
-    CAPSNode(1L, Set.empty, CypherMap("a" -> "b", "b" -> 1)).toCypherString should equal("({a: 'b', b: 1})")
+    CAPSNode(1L, Set("A"), CypherMap.empty).toCypherString should equal("(:`A`)")
+    CAPSNode(1L, Set("A", "B"), CypherMap.empty).toCypherString should equal("(:`A`:`B`)")
+    CAPSNode(1L, Set("A", "B"), CypherMap("a" -> "b")).toCypherString should equal("(:`A`:`B` {`a`: 'b'})")
+    CAPSNode(1L, Set("A", "B"), CypherMap("a" -> "b", "b" -> 1)).toCypherString should equal("(:`A`:`B` {`a`: 'b', `b`: 1})")
+    CAPSNode(1L, Set.empty, CypherMap("a" -> "b", "b" -> 1)).toCypherString should equal("({`a`: 'b', `b`: 1})")
   }
 
   test("relationship") {
-    CAPSRelationship(1L, 1L, 1L, "A", CypherMap.empty).toCypherString should equal("[:A]")
-    CAPSRelationship(1L, 1L, 1L, "A", CypherMap("a" -> "b")).toCypherString should equal("[:A {a: 'b'}]")
-    CAPSRelationship(1L, 1L, 1L, "A", CypherMap("a" -> "b", "b" -> 1)).toCypherString should equal("[:A {a: 'b', b: 1}]")
-  }
-
-  test("literals") {
-    CypherInteger(1L).toCypherString should equal("1")
-    CypherFloat(3.14).toCypherString should equal("3.14")
-    CypherString("foo").toCypherString should equal("'foo'")
-    CypherString("").toCypherString should equal("''")
-    CypherBoolean(true).toCypherString should equal("true")
-  }
-
-  test("list") {
-    CypherList().toCypherString should equal("[]")
-    CypherList("A", "B", 1L).toCypherString should equal("['A', 'B', 1]")
-  }
-
-  test("map") {
-    CypherMap().toCypherString should equal("{}")
-    CypherMap("a" -> 1).toCypherString should equal("{a: 1}")
-    CypherMap("a" -> 1, "b" -> true).toCypherString should equal("{a: 1, b: true}")
-  }
-
-  test("should escape apostrophes in strings") {
-    CypherMap("street" -> "59 rue de l'Abbaye").toCypherString should equal("{street: '59 rue de l\\'Abbaye'}")
-    CypherMap("street" -> "59 rue de l\"Abbaye'").toCypherString should equal("{street: '59 rue de l\\\"Abbaye\\''}")
-    CAPSNode(1, Set.empty, CypherMap("street" -> "59 rue de l\"Abbaye'")).toCypherString should equal("({street: '59 rue de l\\\"Abbaye\\''})")
-    CAPSRelationship(1, 2, 3, "FOO", CypherMap("street" -> "59 rue de l\"Abbaye'")).toCypherString should equal("[:FOO {street: '59 rue de l\\\"Abbaye\\''}]")
+    CAPSRelationship(1L, 1L, 1L, "A", CypherMap.empty).toCypherString should equal("[:`A`]")
+    CAPSRelationship(1L, 1L, 1L, "A", CypherMap("a" -> "b")).toCypherString should equal("[:`A` {`a`: 'b'}]")
+    CAPSRelationship(1L, 1L, 1L, "A", CypherMap("a" -> "b", "b" -> 1)).toCypherString should equal("[:`A` {`a`: 'b', `b`: 1}]")
   }
 }
