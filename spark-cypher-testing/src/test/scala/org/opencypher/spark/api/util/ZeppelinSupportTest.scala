@@ -33,7 +33,7 @@ import org.opencypher.spark.testing.fixture.TeamDataFixture
 
 class ZeppelinSupportTest extends CAPSTestSuite with TeamDataFixture {
 
-  it("supports graph serialization") {
+  it("supports Zeppelin network representation") {
     val graph = CAPSGraph.create(personTable, bookTable, readsTable, knowsTable, influencesTable)
     val asJson = graph.toZeppelinJson
     val expected = ujson.read(

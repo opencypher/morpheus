@@ -76,18 +76,24 @@ object ZeppelinSupport {
       * }}}
       */
     def printTable(): Unit = {
-      val columns = r.columns
-      val header = columns.mkString("\t")
-      val rows = r.collect.map { row =>
-        columns.map(row(_)).mkString("\t")
-      }.mkString("\n")
-
+      val rows = r.collect
+      val columns = if (rows.isEmpty) {
+        Array[String]()
+      } else {
+        rows(0).value.keys.toArray
+      }
       print(
         s"""
            |%table
-           |$header
-           |$rows""".stripMargin)
+           |${columns.mkString("\t")}
+           |${
+          rows.map { row =>
+            columns.map(row(_)).mkString("\t")
+          }.mkString("\n")
+        }""".
+          stripMargin)
     }
+
   }
 
   val labelJsonKey: String = "label"
