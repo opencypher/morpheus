@@ -318,11 +318,25 @@ I <: RuntimeContext[A, P]](producer: PhysicalOperatorProducer[O, K, A, P, I])
     }.filter(_._2.size >= lower )
 
     val withTarget = expands.map {
+      case (exp, edges) if isExpandInto =>
+        val filterExpr = Equals(target, exp.header.endNodeFor(edges.last))(CTBoolean)
+        producer.planFilter(exp, filterExpr, exp.header)
       case (exp, edges) =>
         producer.planJoin(exp, physicalTargetOp, Seq(exp.header.endNodeFor(edges.last) -> target), exp.header ++ physicalTargetOp.header)
     }
 
-    val aligned = withTarget.map { exp =>
+    val unaligned = if(lower == 0 ){
+      val zeroLenghtExpand = physicalSourceOp.header.expressionsFor(source).foldLeft(physicalSourceOp) {
+        case (acc, next) =>
+          val targetExpr = next.withOwner(target)
+          val targetHeader = acc.header.withExpr(targetExpr)
+          producer.planProject(acc, next, Some(targetExpr), targetHeader)
+      }
+
+      withTarget :+ zeroLenghtExpand
+    } else withTarget
+
+    val aligned = unaligned.map { exp =>
       val nullExpressions = header.expressions -- exp.header.expressions
       nullExpressions.foldLeft(exp) {
         case (acc, expr) => producer.planProject(acc, NullLit(expr.cypherType), Some(expr), acc.header.withExpr(expr))
