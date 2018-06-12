@@ -58,7 +58,7 @@ object DefaultGraphDirectoryStructure {
 
   val pathSeparator: String = Path.SEPARATOR
 
-  val schemaFileName: String = "schema.json"
+  val schemaFileName: String = "propertyGraphSchema.json"
 
   val capsMetaDataFileName: String = "capsGraphMetaData.json"
 
