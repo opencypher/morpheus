@@ -28,7 +28,6 @@ package org.opencypher.spark.examples
 
 import org.neo4j.harness.ServerControls
 import org.opencypher.okapi.api.graph.Namespace
-import org.opencypher.spark.api.io.neo4j.Neo4jReadOnlyQueryGraphSource
 import org.opencypher.spark.api.{CAPSSession, GraphSources}
 import org.opencypher.spark.examples.Neo4jHelpers._
 
@@ -50,8 +49,8 @@ object RecommendationExample extends ConsoleApp {
 
   // The graph within Neo4j is partitioned into regions using a property key. Within the data source, we map each
   // partition to a separate graph name (i.e. US and EU)
-  caps.registerSource(Namespace("usSocialNetwork"), Neo4jReadOnlyQueryGraphSource(neo4jServerUS.dataSourceConfig))
-  caps.registerSource(Namespace("euSocialNetwork"), Neo4jReadOnlyQueryGraphSource(neo4jServerEU.dataSourceConfig))
+  caps.registerSource(Namespace("usSocialNetwork"), GraphSources.cypher.neo4jReadOnly(neo4jServerUS.dataSourceConfig))
+  caps.registerSource(Namespace("euSocialNetwork"), GraphSources.cypher.neo4jReadOnly(neo4jServerEU.dataSourceConfig))
 
   // File-based CSV GDS
   caps.registerSource(Namespace("purchases"), GraphSources.fs.csv(rootPath = s"${getClass.getResource("/csv").getFile}"))
