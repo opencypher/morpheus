@@ -37,7 +37,7 @@ import org.opencypher.okapi.api.types.{CTInteger, CTString}
 import org.opencypher.okapi.api.value.CypherValue.CypherMap
 import org.opencypher.okapi.testing.Bag
 import org.opencypher.okapi.testing.Bag._
-import org.opencypher.spark.api.io.csv.CsvDataSource
+import org.opencypher.spark.api.GraphSources
 import org.opencypher.spark.api.io.neo4j.Neo4jReadOnlyQueryGraphSource
 import org.opencypher.spark.impl.CAPSRecords
 import org.opencypher.spark.testing.CAPSTestSuite
@@ -61,7 +61,7 @@ class MasterExampleTest extends CAPSTestSuite with SparkSessionFixture with Neo4
       GraphName("EU") -> (nodeQuery("EU") -> relQuery("EU")))
     ))
     // HDFS CSV PDGS
-    caps.registerSource(Namespace("hdfs"), CsvDataSource(rootPath = "/csv"))
+    caps.registerSource(Namespace("hdfs"), GraphSources.fs.csv(rootPath = "/csv"))
 
     /**
       * Returns a query that creates a graph containing persons that live in the same city and
