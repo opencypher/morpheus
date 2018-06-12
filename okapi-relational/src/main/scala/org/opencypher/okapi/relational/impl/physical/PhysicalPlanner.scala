@@ -104,7 +104,7 @@ I <: RuntimeContext[A, P]](producer: PhysicalOperatorProducer[O, K, A, P, I])
       case flat.Aggregate(aggregations, group, in, header) => producer.planAggregate(process(in), group, aggregations, header)
 
       case flat.Filter(expr, in, header) => expr match {
-        case TrueLit() =>
+        case TrueLit =>
           process(in) // optimise away filter
         case _ =>
           producer.planFilter(process(in), expr, header)
@@ -169,27 +169,13 @@ I <: RuntimeContext[A, P]](producer: PhysicalOperatorProducer[O, K, A, P, I])
             producer.planTabularUnionAll(outgoing, incoming)
         }
 
-      case flat.InitVarExpand(source, edgeList, endNode, in, header) =>
-        producer.planInitVarExpand(process(in), source, edgeList, endNode, header)
+      case flat.BoundedVarExpand(
+      source, edge, edgeScan, innerNode, target,
+      direction, lower, upper,
+      sourceOp, edgeOp, innerNodeOp, targetOp,
+      header, isExpandInto) =>
 
-      case flat.BoundedVarExpand(rel, edgeList, target, direction, lower, upper, sourceOp, relOp, targetOp, header, isExpandInto) =>
-        val first = process(sourceOp)
-        val second = process(relOp)
-        val third = process(targetOp)
-
-        producer.planBoundedVarExpand(
-          first,
-          second,
-          third,
-          rel,
-          edgeList,
-          target,
-          sourceOp.endNode,
-          lower,
-          upper,
-          direction,
-          header,
-          isExpandInto)
+        planBoundedVarLengthExpand(source, edge, edgeScan, innerNode, target, direction, lower, upper, sourceOp, edgeOp, innerNodeOp, targetOp, header, isExpandInto)
 
       case flat.Optional(lhs, rhs, header) => planOptional(lhs, rhs, header)
 
@@ -209,7 +195,8 @@ I <: RuntimeContext[A, P]](producer: PhysicalOperatorProducer[O, K, A, P, I])
     }
   }
 
-  private def planConstructGraph(in: Option[FlatOperator], construct: LogicalPatternGraph)(implicit context: PhysicalPlannerContext[K, A]) = {
+  private def planConstructGraph(in: Option[FlatOperator], construct: LogicalPatternGraph)
+    (implicit context: PhysicalPlannerContext[K, A]) = {
     val onGraphPlan = {
       construct.onGraphs match {
         case Nil => producer.planStart() // Empty start
@@ -227,7 +214,8 @@ I <: RuntimeContext[A, P]](producer: PhysicalOperatorProducer[O, K, A, P, I])
     constructGraphPlan
   }
 
-  private def planOptional(lhs: FlatOperator, rhs: FlatOperator, header: RecordHeader)(implicit context: PhysicalPlannerContext[K, A]) = {
+  private def planOptional(lhs: FlatOperator, rhs: FlatOperator, header: RecordHeader)
+    (implicit context: PhysicalPlannerContext[K, A]) = {
     val lhsData = process(lhs)
     val rhsData = process(rhs)
     val lhsHeader = lhs.header
@@ -253,9 +241,94 @@ I <: RuntimeContext[A, P]](producer: PhysicalOperatorProducer[O, K, A, P, I])
     val rhsWithRenamed = producer.planRenameColumns(rhsWithDropped, joinFieldRenames, rhsHeaderWithRenames)
 
     // 4. Left outer join the left side and the processed right side
-    val joined = producer.planJoin(lhsData, rhsWithRenamed, joinExprs.map(e => e -> e).toSeq, rhsHeaderWithRenames ++ lhsHeader , LeftOuterJoin)
+    val joined = producer.planJoin(lhsData, rhsWithRenamed, joinExprs.map(e => e -> e).toSeq, rhsHeaderWithRenames ++ lhsHeader, LeftOuterJoin)
 
     // 5. Select the resulting header expressions
     producer.planSelect(joined, header.expressions.map(e => e -> Option.empty[Var]).toList, header)
+  }
+
+
+  private def planBoundedVarLengthExpand(
+    source: Var,
+    edge: Var,
+    edgeScan: Var,
+    innerNode: Var,
+    target: Var,
+    direction: Direction,
+    lower: Int,
+    upper: Int,
+    sourceOp: FlatOperator,
+    edgeScanOp: FlatOperator,
+    innerNodeOp: FlatOperator,
+    targetOp: FlatOperator,
+    header: RecordHeader,
+    isExpandInto: Boolean
+  )(implicit context: PhysicalPlannerContext[P, R]): P = {
+    val physicalSourceOp = process(sourceOp)
+    val physicalEdgeOp = process(edgeScanOp)
+    val physicalInnerNodeOp = process(innerNodeOp)
+    val physicalTargetOp = process(targetOp)
+
+    val expandCache = producer.planJoin(
+      physicalInnerNodeOp, physicalEdgeOp,
+      Seq(innerNode -> edgeScanOp.header.startNodeFor(edgeScan)),
+      innerNodeOp.header ++ edgeScanOp.header
+    )
+
+    def expand(i: Int, iterationTable: P, edgeVars: Seq[Var]): (P, Var) = {
+      val nextNodeVar = header.entityVars.find(_.name == s"${innerNode.name}_${i-1}").get
+      val nextEdgeVar = header.entityVars.find(_.name == s"${edgeScan.name}_$i").get
+
+      val aliasedHeader = expandCache.header
+        .withColumnRenamed(edgeScan, nextEdgeVar)
+        .withColumnRenamed(innerNode, nextNodeVar)
+        .select(nextEdgeVar, nextNodeVar)
+
+      val aliasedCache = producer.planRenameColumnsExpr(
+        expandCache, Map(edgeScan -> nextEdgeVar, innerNode -> nextNodeVar),
+        aliasedHeader
+      )
+
+      val expanded = producer.planJoin(
+        iterationTable,
+        aliasedCache,
+        Seq(iterationTable.header.endNodeFor(edgeVars.last) -> nextNodeVar),
+        iterationTable.header ++ aliasedCache.header
+      )
+
+      val isomporphismFilterExpr = Ands(
+        edgeVars.map(e => Not(Equals(e, nextEdgeVar)(CTBoolean))(CTBoolean)).toList
+      )
+      producer.planFilter(expanded, isomporphismFilterExpr, expanded.header) -> nextEdgeVar
+    }
+
+    val start = producer.planJoin(
+      physicalSourceOp, physicalEdgeOp,
+      Seq(source -> edgeScanOp.header.startNodeFor(edgeScan)),
+      sourceOp.header ++ edgeScanOp.header
+    )
+    val aliasedEdge = header.entityVars.find(_.name == s"${edgeScan.name}_1").get
+    val aliasedStart = producer.planRenameColumnsExpr(start, Map(edge -> aliasedEdge), start.header.withColumnRenamed(edge, aliasedEdge))
+
+    val expands = (2 to upper).foldLeft(Seq(aliasedStart -> Seq(aliasedEdge))) {
+      case (acc, i) =>
+        val (last, edgeVars) = acc.last
+        val (next, nextEdge)  = expand(i, last, edgeVars)
+        acc :+ (next -> (edgeVars :+ nextEdge))
+    }.filter(_._2.size >= lower )
+
+    val withTarget = expands.map {
+      case (exp, edges) =>
+        producer.planJoin(exp, physicalTargetOp, Seq(exp.header.endNodeFor(edges.last) -> target), exp.header ++ physicalTargetOp.header)
+    }
+
+    val aligned = withTarget.map { exp =>
+      val nullExpressions = header.expressions -- exp.header.expressions
+      nullExpressions.foldLeft(exp) {
+        case (acc, expr) => producer.planProject(acc, NullLit(expr.cypherType), Some(expr), acc.header.withExpr(expr))
+      }
+    }
+
+    aligned.reduce(producer.planTabularUnionAll)
   }
 }

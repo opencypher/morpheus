@@ -27,6 +27,8 @@
 package org.opencypher.okapi.relational.api.physical
 
 import org.opencypher.okapi.api.graph.{PropertyGraph, QualifiedGraphName}
+import org.opencypher.okapi.api.table.CypherRecords
+import org.opencypher.okapi.impl.exception.IllegalArgumentException
 import org.opencypher.okapi.ir.api.block.SortItem
 import org.opencypher.okapi.ir.api.expr.{Aggregator, Expr, Var}
 import org.opencypher.okapi.logical.impl._
@@ -181,7 +183,7 @@ I <: RuntimeContext[A, P]] {
     * @param header resulting record header
     * @return project operator
     */
-  def planProject(in: K, expr: Expr, alias: Option[Var], header: RecordHeader): K
+  def planProject(in: K, expr: Expr, alias: Option[Expr], header: RecordHeader): K
 
   /**
     * Creates a new record containing the specified entities (i.e. as defined in a construction pattern).
@@ -301,39 +303,6 @@ I <: RuntimeContext[A, P]] {
     */
   def planExistsSubQuery(lhs: K, rhs: K, targetField: Var, header: RecordHeader): K
 
-  // Ternary operators
-
-  /**
-    * Performs a bounded variable length path expression.
-    *
-    * @param first          first previous operator
-    * @param second         second previous operator
-    * @param third          third previous operator
-    * @param rel            relationship variable to expand from
-    * @param edgeList       refers to the column in which the path is stored
-    * @param target         node variable in the third input
-    * @param initialEndNode initial end node
-    * @param lower          lower bound
-    * @param upper          upper bound
-    * @param direction      path direction
-    * @param header         resulting record header
-    * @param isExpandInto   true, iff the target variable is solved and can be replaced by a filter
-    * @return bounded var expand operator
-    */
-  def planBoundedVarExpand(
-    first: K,
-    second: K,
-    third: K,
-    rel: Var,
-    edgeList: Var,
-    target: Var,
-    initialEndNode: Var,
-    lower: Int,
-    upper: Int,
-    direction: Direction,
-    header: RecordHeader,
-    isExpandInto: Boolean
-  ): K
 
   // N-ary operators
   /**

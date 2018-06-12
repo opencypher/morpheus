@@ -26,7 +26,7 @@
  */
 package org.opencypher.okapi.relational.impl.table
 
-import org.opencypher.okapi.api.types.{CTNode, CTRelationship}
+import org.opencypher.okapi.api.types.{CTNode, CTNodeOrNull, CTRelationship, CTRelationshipOrNull}
 import org.opencypher.okapi.impl.exception.IllegalArgumentException
 import org.opencypher.okapi.impl.util.TablePrinter
 import org.opencypher.okapi.ir.api.RelType
@@ -154,13 +154,13 @@ case class RecordHeader(exprToColumn: Map[Expr, String]) {
 
   def nodeVars: Set[Var] = {
     exprToColumn.keySet.collect {
-      case v: Var if v.cypherType.subTypeOf(CTNode).isTrue => v
+      case v: Var if v.cypherType.subTypeOf(CTNodeOrNull).isTrue => v
     }
   }
 
   def relationshipVars: Set[Var] = {
     exprToColumn.keySet.collect {
-      case v: Var if v.cypherType.subTypeOf(CTRelationship).isTrue => v
+      case v: Var if v.cypherType.subTypeOf(CTRelationshipOrNull).isTrue => v
     }
   }
 
@@ -219,6 +219,23 @@ case class RecordHeader(exprToColumn: Map[Expr, String]) {
 
   def withColumnRenamed[T <: Expr](expr: T, newColumn: String): RecordHeader = {
     withColumnRenamed(column(expr), newColumn)
+  }
+
+  def withColumnRenamed(from: Expr, to: Expr): RecordHeader = {
+    (from, to) match {
+      // Entity case
+      case (_: Var, toVar: Var) =>
+        val renames = expressionsFor(from).map { (nextExpr) => nextExpr ->ColumnNamer.of(nextExpr.withOwner(toVar)) }.toMap
+        withColumnsRenamed(renames).withAlias(from, toVar)
+
+      // Non-entity case
+      case (_, _) if exprToColumn.contains(from) =>
+        val columnName = ColumnNamer.of(to)
+        withColumnRenamed(from,columnName ).addExprToColumn(to, columnName)
+
+      // No expression to alias
+      case (other, _) => throw IllegalArgumentException(s"An expression in $this", s"Unknown expression $other")
+    }
   }
 
   def withColumnRenamed(oldColumn: String, newColumn: String): RecordHeader = {

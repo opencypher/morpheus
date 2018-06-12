@@ -141,7 +141,8 @@ final case class ExpandInto(
 
 final case class BoundedVarExpand(
     source: Var,
-    rel: Var,
+    edge: Var,
+    edgeScan: Var,
     innerNode: Var,
     target: Var,
     direction: Direction,

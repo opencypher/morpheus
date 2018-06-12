@@ -153,6 +153,7 @@ class FlatOperatorProducer(implicit context: FlatPlannerContext) {
   def boundedVarExpand(
     source: Var,
     edge: Var,
+    edgeScan: Var,
     innerNode: Var,
     target: Var,
     direction: Direction,
@@ -168,10 +169,10 @@ class FlatOperatorProducer(implicit context: FlatPlannerContext) {
     val edgeHeader = edgeOp.header
     val edgesHeader = (1 to upper).foldLeft(RecordHeader.empty) {
       case (acc, i) =>
-        val cypherType = if(i > lower) edge.cypherType.nullable else edge.cypherType
-        val newEdge = Var(s"${edge.name}_$i")(cypherType)
+        val cypherType = if(i > lower) edgeScan.cypherType.nullable else edgeScan.cypherType
+        val newEdge = Var(s"${edgeScan.name}_$i")(cypherType)
         acc ++ edgeHeader
-          .withAlias(edge as newEdge)
+          .withColumnRenamed(edgeScan, newEdge)
           .select(newEdge)
     }
 
@@ -181,12 +182,12 @@ class FlatOperatorProducer(implicit context: FlatPlannerContext) {
         val cypherType = if(i >= lower) innerNode.cypherType.nullable else innerNode.cypherType
         val newNode = Var(s"${innerNode.name}_$i")(cypherType)
         acc ++ innerNodeHeader
-          .withAlias(innerNode as newNode)
+          .withColumnRenamed(innerNode, newNode)
           .select(newNode)
     }
 
     val header = sourceOp.header ++ edgesHeader ++ innerNodesHeader ++ targetOp.header
-    BoundedVarExpand(source, edge, innerNode, target, direction, lower, upper, sourceOp, edgeOp, innerNodeOp, targetOp, header, isExpandInto)
+    BoundedVarExpand(source, edge, edgeScan, innerNode, target, direction, lower, upper, sourceOp, edgeOp, innerNodeOp, targetOp, header, isExpandInto)
 
   }
 

@@ -102,10 +102,11 @@ trait RelationalCypherRecords[T <: FlatRelationalTable[T]] extends CypherRecords
     from(updatedHeader, updatedTable)
   }
 
-  def withColumnsRenamed(renamings: (Expr, String)*): R = {
-    val updatedHeader = renamings.foldLeft(header) {
+  def withColumnsRenamed(renamings: (Expr, String)*)(headerOpt: Option[RecordHeader] = None): R = {
+    val updatedHeader = headerOpt.getOrElse(renamings.foldLeft(header) {
       case (currentHeader, (expr, newColumn)) => currentHeader.withColumnRenamed(expr, newColumn)
-    }
+    })
+
     val updatedTable = renamings.foldLeft(table) {
       case (currentTable, (expr, newColumn)) => currentTable.withColumnRenamed(header.column(expr), newColumn)
     }

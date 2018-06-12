@@ -271,7 +271,7 @@ class LogicalPlanner(producer: LogicalOperatorProducer)
         val project = planInnerExpr(expr, acc)
         producer.planFilter(isNotNull, project)
 
-      case (acc, t: TrueLit) =>
+      case (acc, t @ TrueLit) =>
         producer.planFilter(t, acc) // optimise away this one somehow... currently we do that in PhysicalPlanner
 
       case (acc, v: Var) =>

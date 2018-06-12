@@ -92,13 +92,19 @@ class FlatPlanner extends DirectCompilationStage[LogicalOperator, FlatOperator, 
         val flatSourceOp = process(sourceOp)
         val flatTargetOp = process(targetOp)
 
-        val edgeScan = Var(edge.name)(CTRelationship(relTypeFromList(edge.cypherType), edge.cypherType.graph))
+        val edgeScanType = CTRelationship(relTypeFromList(edge.cypherType), edge.cypherType.graph)
+        val edgeScan = Var(edge.name)(edgeScanType)
         val edgeScanOp = producer.relationshipScan(edgeScan, producer.planStart(input.graph, Set.empty))
 
         val innerNode = FreshVariableNamer(s"innerNode($edgeScan)", CTNode)
         val innerNodeScan = producer.nodeScan(innerNode, producer.planStart(input.graph, Set.empty))
 
-        producer.boundedVarExpand(source, edgeScan, innerNode, target, direction, lower, upper, flatSourceOp, edgeScanOp, innerNodeScan, flatTargetOp, sourceOp == targetOp )
+        producer.boundedVarExpand(
+          source, edge, edgeScan, innerNode, target,
+          direction, lower, upper,
+          flatSourceOp, edgeScanOp, innerNodeScan, flatTargetOp,
+          sourceOp == targetOp
+        )
 
       case logical.Optional(lhs, rhs, _) =>
         producer.planOptional(process(lhs), process(rhs))
