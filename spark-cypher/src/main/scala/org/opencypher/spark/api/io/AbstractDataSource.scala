@@ -96,7 +96,7 @@ abstract class AbstractDataSource(implicit val session: CAPSSession) extends CAP
         }
 
         val columnsWithCypherType = propertyColsWithCypherType + (GraphEntity.sourceIdKey -> CTInteger)
-        val df = readNodeTable(graphName, capsMetaData.tableStorageFormat, combo, capsSchema.canonicalNodeTableSchema(combo))
+        val df = readNodeTable(graphName, capsMetaData.tableStorageFormat, combo, capsSchema.canonicalNodeStructType(combo))
         CAPSNodeTable(combo, df.setNullability(columnsWithCypherType))
       }
 
@@ -106,7 +106,7 @@ abstract class AbstractDataSource(implicit val session: CAPSSession) extends CAP
         }
 
         val columnsWithCypherType = propertyColsWithCypherType ++ Relationship.nonPropertyAttributes.map(_ -> CTInteger)
-        val df = readRelationshipTable(graphName, relType, capsSchema.canonicalRelTableSchema(relType))
+        val df = readRelationshipTable(graphName, relType, capsSchema.canonicalRelStructType(relType))
         CAPSRelationshipTable(relType, df.setNullability(columnsWithCypherType))
       }
       CAPSGraph.create(capsMetaData.tags, Some(capsSchema), nodeTables.head, (nodeTables.tail ++ relTables).toSeq: _*)

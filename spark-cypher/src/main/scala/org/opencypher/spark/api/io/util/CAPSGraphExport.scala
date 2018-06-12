@@ -36,19 +36,23 @@ import org.opencypher.spark.api.io.{GraphEntity, Relationship}
 import org.opencypher.spark.impl.CAPSGraph
 import org.opencypher.spark.impl.convert.SparkConversions._
 
+// TODO: Add documentation that describes the canonical table format
 object CAPSGraphExport {
 
   implicit class CanonicalTableSparkSchema(val schema: Schema) extends AnyVal {
 
-    def canonicalNodeTableSchema(labels: Set[String]): StructType = {
+    def canonicalNodeStructType(labels: Set[String]): StructType = {
       val id = StructField(GraphEntity.sourceIdKey, LongType, nullable = false)
-      val properties = schema.nodeKeys(labels).toSeq.sortBy(_._1).map { case (propertyName, cypherType) =>
-        StructField(propertyName.toPropertyColumnName, cypherType.getSparkType, cypherType.isNullable)
-      }
+      val properties = schema.nodeKeys(labels).toSeq
+        .map { case (propertyName, cypherType) => propertyName.toPropertyColumnName -> cypherType }
+        .sortBy { case (propertyColumnName, _) => propertyColumnName }
+        .map { case (propertyColumnName, cypherType) =>
+          StructField(propertyColumnName, cypherType.getSparkType, cypherType.isNullable)
+        }
       StructType(id +: properties)
     }
 
-    def canonicalRelTableSchema(relType: String): StructType = {
+    def canonicalRelStructType(relType: String): StructType = {
       val id = StructField(GraphEntity.sourceIdKey, LongType, nullable = false)
       val sourceId = StructField(Relationship.sourceStartNodeKey, LongType, nullable = false)
       val targetId = StructField(Relationship.sourceEndNodeKey, LongType, nullable = false)
@@ -70,7 +74,7 @@ object CAPSGraphExport {
       val properties: Set[Property] = header.propertiesFor(v)
       val propertyRenamings = properties.map { p => header.column(p) -> p.key.name.toPropertyColumnName }
 
-      val selectColumns = (idRenaming :: propertyRenamings.toList.sorted).map {
+      val selectColumns = (idRenaming :: propertyRenamings.toList.sortBy(_._2)).map {
         case (oldName, newName) => nodeRecords.df.col(oldName).as(newName)
       }
 
