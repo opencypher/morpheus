@@ -39,7 +39,7 @@ class Neo4jPGDSAcceptanceTest extends CAPSTestSuite with Neo4jServerFixture with
   override def initSession(): CAPSSession = caps
 
   override def create(graphName: GraphName, testGraph: InMemoryTestGraph, createStatements: String): PropertyGraphDataSource = {
-    new CommunityNeo4jGraphDataSource(neo4jConfig, Map(graphName -> CommunityNeo4jGraphDataSource.defaultQuery))
+    new Neo4jReadOnlyQueryGraphSource(neo4jConfig, Map(graphName -> Neo4jReadOnlyQueryGraphSource.defaultQuery))
   }
 
   override def dataFixture: String = createStatements

@@ -38,7 +38,7 @@ import org.opencypher.okapi.api.value.CypherValue.CypherMap
 import org.opencypher.okapi.testing.Bag
 import org.opencypher.okapi.testing.Bag._
 import org.opencypher.spark.api.io.csv.CsvDataSource
-import org.opencypher.spark.api.io.neo4j.CommunityNeo4jGraphDataSource
+import org.opencypher.spark.api.io.neo4j.Neo4jReadOnlyQueryGraphSource
 import org.opencypher.spark.impl.CAPSRecords
 import org.opencypher.spark.testing.CAPSTestSuite
 import org.opencypher.spark.testing.fixture.{MiniDFSClusterFixture, Neo4jServerFixture, SparkSessionFixture}
@@ -56,7 +56,7 @@ class MasterExampleTest extends CAPSTestSuite with SparkSessionFixture with Neo4
     // Neo4j PGDS
     def nodeQuery(region: String) = s"MATCH (n {region: '$region'}) RETURN n"
     def relQuery(region: String) = s"MATCH ()-[r {region: '$region'}]->() RETURN r"
-    caps.registerSource(Namespace("neo4j"), new CommunityNeo4jGraphDataSource(neo4jConfig, Map(
+    caps.registerSource(Namespace("neo4j"), new Neo4jReadOnlyQueryGraphSource(neo4jConfig, Map(
       GraphName("US") -> (nodeQuery("US") -> relQuery("US")),
       GraphName("EU") -> (nodeQuery("EU") -> relQuery("EU")))
     ))
@@ -187,7 +187,7 @@ class MasterExampleTest extends CAPSTestSuite with SparkSessionFixture with Neo4
     val regionGraphName = GraphName(region)
     val nodeQuery = URLEncoder.encode(s"MATCH (n {region: '$region'}) RETURN n", "UTF-8")
     val relQuery = URLEncoder.encode(s"MATCH ()-[r {region: '$region'}]->() RETURN r", "UTF-8")
-    new CommunityNeo4jGraphDataSource(neo4jConfig, Map(regionGraphName -> (nodeQuery -> relQuery)))
+    new Neo4jReadOnlyQueryGraphSource(neo4jConfig, Map(regionGraphName -> (nodeQuery -> relQuery)))
       .graph(regionGraphName)
   }
 
