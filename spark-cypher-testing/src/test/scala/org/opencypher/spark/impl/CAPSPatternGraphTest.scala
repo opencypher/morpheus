@@ -32,6 +32,7 @@ import org.opencypher.okapi.api.types._
 import org.opencypher.okapi.api.value.CypherValue._
 import org.opencypher.okapi.ir.api.expr._
 import org.opencypher.okapi.ir.api.{Label, PropertyKey}
+import org.opencypher.okapi.relational.impl.physical.InnerJoin
 import org.opencypher.okapi.relational.impl.table._
 import org.opencypher.okapi.testing.Bag
 import org.opencypher.okapi.testing.Bag._
@@ -257,11 +258,11 @@ class CAPSPatternGraphTest extends CAPSGraphTest with RecordsVerificationFixture
     val outputNodes = patternGraph.nodes("n")
 
     val cols = Seq(
-      "n",
-      "____n:Person",
-      "____n:Swedish",
-      "____n_dot_luckyNumberINTEGER",
-      "____n_dot_nameSTRING"
+      n,
+      nHasLabelPerson,
+      nHasLabelSwedish,
+      nHasPropertyLuckyNumber,
+      nHasPropertyName
     )
     val data = Bag(
       Row(0L, true, true, 23L, "Mats"),
@@ -281,14 +282,14 @@ class CAPSPatternGraphTest extends CAPSGraphTest with RecordsVerificationFixture
     val outputNodes = patternGraph.nodes("n")
 
     val col = Seq(
-      "n",
-      "____n:Book",
-      "____n:Person",
-      "____n:Swedish",
-      "____n_dot_luckyNumberINTEGER",
-      "____n_dot_nameSTRING",
-      "____n_dot_titleSTRING",
-      "____n_dot_yearINTEGER"
+      n,
+      nHasLabelBook,
+      nHasLabelPerson,
+      nHasLabelSwedish,
+      nHasPropertyLuckyNumber,
+      nHasPropertyName,
+      nHasPropertyTitle,
+      nHasPropertyYear
     )
     val data = Bag(
       Row(0L, false, true, true, 23L, "Mats", null, null),
@@ -308,14 +309,14 @@ class CAPSPatternGraphTest extends CAPSGraphTest with RecordsVerificationFixture
     val patternGraph = initPersonReadsBookGraph
     val nodes = patternGraph.nodes("n")
     val cols = Seq(
-      "n",
-      "____n:Book",
-      "____n:Person",
-      "____n:Swedish",
-      "____n_dot_luckyNumberINTEGER",
-      "____n_dot_nameSTRING",
-      "____n_dot_titleSTRING",
-      "____n_dot_yearINTEGER"
+      n,
+      nHasLabelBook,
+      nHasLabelPerson,
+      nHasLabelSwedish,
+      nHasPropertyLuckyNumber,
+      nHasPropertyName,
+      nHasPropertyTitle,
+      nHasPropertyYear
     )
     val data = Bag(
       Row(0L, false, true, true, 23L, "Mats", null, null),
@@ -335,11 +336,11 @@ class CAPSPatternGraphTest extends CAPSGraphTest with RecordsVerificationFixture
     val patternGraph = initPersonReadsBookGraph
     val nodes = patternGraph.nodes("n", CTNode("Person"))
     val cols = Seq(
-      "n",
-      "____n:Person",
-      "____n:Swedish",
-      "____n_dot_luckyNumberINTEGER",
-      "____n_dot_nameSTRING"
+      n,
+      nHasLabelPerson,
+      nHasLabelSwedish,
+      nHasPropertyLuckyNumber,
+      nHasPropertyName
     )
     val data = Bag(
       Row(0L, true, true, 23L, "Mats"),
@@ -358,11 +359,11 @@ class CAPSPatternGraphTest extends CAPSGraphTest with RecordsVerificationFixture
     val nodes = patternGraph.nodes("n", CTNode("Person"))
 
     val cols = Seq(
-      "n",
-      "____n:Person",
-      "____n:Swedish",
-      "____n_dot_luckyNumberINTEGER",
-      "____n_dot_nameSTRING"
+      n,
+      nHasLabelPerson,
+      nHasLabelSwedish,
+      nHasPropertyLuckyNumber,
+      nHasPropertyName
     )
     val data = Bag(
       Row(0L, true, true, 23L, "Mats"),
@@ -387,221 +388,6 @@ class CAPSPatternGraphTest extends CAPSGraphTest with RecordsVerificationFixture
 
     patternGraph.cypher("MATCH (p:Person {name: 'Mats'}) RETURN p.luckyNumber").getRecords.collect.toBag should equal(
       Bag(CypherMap("p.luckyNumber" -> 23)))
-  }
-
-  it("Supports node scans from ad-hoc table") {
-    val n: Var = Var("n")(CTNode)
-    val exprs = Set(
-      HasLabel(n, Label("Person"))(CTBoolean),
-      n,
-      Var("p")(CTNode("Person")),
-      Var("q")(CTNode("Foo"))
-    )
-    val header = RecordHeader.from(exprs)
-
-    val df = sparkSession.createDataFrame(
-      // [____n:Person, n, p, q]
-      List(
-        Row(true, 1L, 0L, 2L),
-        Row(false, 11L, 10L, 12L)
-      ).asJava,
-      header.toStructType)
-
-    val schema = Schema.empty
-      .withNodePropertyKeys("Person")()
-      .withNodePropertyKeys("Foo")()
-      .asCaps
-
-    val patternGraph = CAPSGraph.create(CAPSRecords(header, df), schema)
-
-    patternGraph.nodes("n", CTNode("Person")).collect.toBag should equal(
-      Bag(
-        CypherMap("n" -> CAPSNode(0L, Set())),
-        CypherMap("n" -> CAPSNode(1L, Set("Person"))),
-        CypherMap("n" -> CAPSNode(10L, Set()))
-      ))
-  }
-
-  ignore("Supports node scans from ad-hoc table 2") {
-    val p: Var = Var("p")(CTNode)
-    val c: Var = Var("c")(CTNode)
-    val x: Var = Var("x")(CTRelationship("IN"))
-    val exprs = Seq(
-      c,
-      HasLabel(c, Label("Customer"))(CTBoolean),
-      Var("cName")(CTString.nullable),
-      Property(c, PropertyKey("name"))(CTString.nullable),
-      p,
-      HasLabel(p, Label("Person"))(CTBoolean),
-      Var("pName")(CTString.nullable), Property(p, PropertyKey("name"))(CTString),
-      Property(p, PropertyKey("region"))(CTString),
-      StartNode(x)(CTInteger),
-      EndNode(x)(CTInteger),
-      x,
-      Type(x)(CTString)
-    )
-    val header = RecordHeader.from(exprs)
-
-    val df = sparkSession.createDataFrame(
-      List(
-        Row(2001L, true, "Alice", 4L, true, "Alice", "US", 2001L, 4L, 4982162063360L, "IS"),
-        Row(2002L, true, "Bob", 5L, true, "Bob", "US", 2002L, 5L, 4939212390400L, "IS"),
-        Row(2008L, true, "Trudy", 11L, true, "Trudy", "EU", 2008L, 11L, 4947802324992L, "IS"),
-        Row(2005L, true, "Carl", 8L, true, "Carl", "US", 2005L, 8L, 4698694221824L, "IS"),
-        Row(2010L, true, "Oscar", 13L, true, "Oscar", "EU", 2010L, 13L, 5162550689792L, "IS"),
-        Row(2011L, true, "Victor", 14L, true, "Victor", "EU", 2011L, 14L, 5076651343872L, "IS"),
-        Row(2012L, true, "Peggy", 15L, true, "Peggy", "EU", 2012L, 15L, 5677946765312L, "IS"),
-        Row(2006L, true, "Dave", 9L, true, "Dave", "US", 2006L, 9L, 5506148073472L, "IS"),
-        Row(2009L, true, "Trent", 12L, true, "Trent", "EU", 2009L, 12L, 4466765987840L, "IS"),
-        Row(2007L, true, "Mallory", 10L, true, "Mallory", "EU", 2007L, 10L, 5849745457152L, "IS"),
-        Row(2003L, true, "Eve", 6L, true, "Eve", "US", 2003L, 6L, 5480378269696L, "IS"),
-        Row(2004L, true, "Carol", 7L, true, "Carol", "US", 2004L, 7L, 5626407157760L, "IS")
-      ).asJava,
-      header.toStructType
-    )
-
-    val schema = Schema.empty
-      .withNodePropertyKeys("Person")("name" -> CTString, "region" -> CTString)
-      .withNodePropertyKeys("Customer")("name" -> CTString.nullable)
-      .withRelationshipType("IN")
-      .asCaps
-
-    val patternGraph = CAPSGraph.create(CAPSRecords(header, df), schema)
-
-    //    patternGraph.nodes("n").toCypherMaps.collect().toSet should equal(Set(
-    //      CypherMap("n" ->  0L),
-    //      CypherMap("n" ->  1L),
-    //      CypherMap("n" -> 10L)
-    //    ))
-  }
-
-  it("Returns only distinct results") {
-    val p = Var("p")(CTNode("Person"))
-    val exprs = Seq(
-      p,
-      HasLabel(p, Label("Person"))(CTBoolean),
-      Property(p, PropertyKey("name"))(CTString)
-    )
-    val header = RecordHeader.from(exprs)
-    val df = sparkSession.createDataFrame(
-      // [____p:Person, ____p_dot_nameSTRING, p]
-      List(
-        Row(true, "PersonPeter", 0L),
-        Row(true, "PersonPeter", 0L)
-      ).asJava, header.toStructType)
-
-    val schema = Schema.empty
-      .withNodePropertyKeys("Person")("name" -> CTString)
-      .asCaps
-
-    val patternGraph = CAPSGraph.create(CAPSRecords(header, df), schema)
-
-    patternGraph.nodes("n", CTNode).collect.toBag should equal(
-      Bag(
-        CypherMap("n" -> CAPSNode(0L, Set("Person"), CypherMap("name" -> "PersonPeter"))))
-    )
-  }
-
-  it("Supports node scans when different variables have the same property keys") {
-    val p = Var("p")(CTNode("Person"))
-    val e = Var("e")(CTNode("Employee"))
-    val exprs = Seq(
-      p,
-      HasLabel(p, Label("Person"))(CTBoolean),
-      Property(p, PropertyKey("name"))(CTString),
-      e,
-      HasLabel(e, Label("Employee"))(CTBoolean),
-      Property(e, PropertyKey("name"))(CTString)
-    )
-    val header = RecordHeader.from(exprs)
-    val df = sparkSession.createDataFrame(
-      // [____e:Employee, ____e_dot_nameSTRING, ____p:Person, ____p_dot_nameSTRING, e, p]
-      List(
-        Row(true, "EmployeePeter", true, "PersonPeter", 1L, 0L),
-        Row(true, "EmployeeSusanna", true, "PersonSusanna", 11L, 10L)
-      ).asJava, header.toStructType)
-
-    val schema = Schema.empty
-      .withNodePropertyKeys("Person")("name" -> CTString)
-      .withNodePropertyKeys("Employee")("name" -> CTString)
-      .asCaps
-
-    val patternGraph = CAPSGraph.create(CAPSRecords(header, df), schema)
-
-    patternGraph.nodes("n", CTNode).collect.toBag should equal(
-      Bag(
-        CypherMap("n" -> CAPSNode(0L, Set("Person"), CypherMap("name" -> "PersonPeter"))),
-        CypherMap("n" -> CAPSNode(1L, Set("Employee"), CypherMap("name" -> "EmployeePeter"))),
-        CypherMap("n" -> CAPSNode(10L, Set("Person"), CypherMap("name" -> "PersonSusanna"))),
-        CypherMap("n" -> CAPSNode(11L, Set("Employee"), CypherMap("name" -> "EmployeeSusanna")))
-      )
-    )
-  }
-
-  //TODO: Requires changes to schema verification
-  ignore("Supports node scans when variables have the same label and property") {
-    val p = Var("p")(CTNode("Person"))
-    val e = Var("e")(CTNode("Employee"))
-    val pe = Var("pe")(CTNode("Person", "Employee"))
-    val exprs = Seq(
-      p,
-      e,
-      pe,
-      Property(p, PropertyKey("name"))(CTString),
-      Property(e, PropertyKey("name"))(CTString.nullable),
-      Property(pe, PropertyKey("name"))(CTString)
-    )
-    val header = RecordHeader.from(exprs)
-
-    val sparkHeader = header.toStructType
-    val df = sparkSession.createDataFrame(
-      List(
-        Row(0L, 1L, 2L, "PersonPeter", "EmployeePeter", "HybridPeter"),
-        Row(10L, 11L, 12L, "person.graphsusanna", null, "HybridSusanna")
-      ).asJava,
-      sparkHeader)
-
-    val schema = Schema.empty
-      .withNodePropertyKeys("Person")("name" -> CTString)
-      .withNodePropertyKeys("Employee")("name" -> CTString.nullable)
-      .withNodePropertyKeys("Employee", "Person")("name" -> CTString)
-      .asCaps
-
-    val patternGraph = CAPSGraph.create(CAPSRecords(header, df), schema)
-
-    patternGraph.nodes("n", CTNode).toMaps should equal(
-      Bag(
-        CypherMap("n" -> 0L, "n.name" -> "PersonPeter", "n:Person" -> true, "n:Employee" -> false),
-        CypherMap("n" -> 1L, "n.name" -> "EmployeePeter", "n:Person" -> false, "n:Employee" -> true),
-        CypherMap("n" -> 2L, "n.name" -> "HybridPeter", "n:Person" -> true, "n:Employee" -> true),
-        CypherMap("n" -> 10L, "n.name" -> "person.graphsusanna", "n:Person" -> true, "n:Employee" -> false),
-        CypherMap("n" -> 11L, "n.name" -> null, "n:Person" -> false, "n:Employee" -> true),
-        CypherMap("n" -> 12L, "n.name" -> "HybridSusanna", "n:Person" -> true, "n:Employee" -> true)
-      ))
-  }
-
-  // TODO: Rewrite with equivalence merge
-  ignore("Reduce cardinality of the pattern graph base table") {
-    val given = initGraph(
-      """
-        |CREATE (a: Person)
-        |CREATE (b: Person)
-        |CREATE (a)-[:HAS_INTEREST]->(i1:Interest {val: 1})
-        |CREATE (a)-[:HAS_INTEREST]->(i2:Interest {val: 2})
-        |CREATE (a)-[:HAS_INTEREST]->(i3:Interest {val: 3})
-        |CREATE (a)-[:KNOWS]->(b)
-      """.stripMargin)
-
-    val when = given.cypher(
-      """
-        |MATCH (i:Interest)<-[h:HAS_INTEREST]-(a:Person)-[k:KNOWS]->(b:Person)
-        |CONSTRUCT
-        |  CLONE a, k, b
-        |  NEW (a)-[k]->(b)
-        |RETURN GRAPH
-      """.stripMargin)
-
-    when.getGraph.asInstanceOf[CAPSPatternGraph].baseTable.df.count() should equal(3)
   }
 
   it("should create a single relationship between unique merged node pair") {
@@ -701,20 +487,14 @@ class CAPSPatternGraphTest extends CAPSGraphTest with RecordsVerificationFixture
   private def initPersonReadsBookGraph: CAPSGraph = {
     val inputGraph = initGraph(`:Person` + `:Book` + `:READS`)
 
-    val books = inputGraph.nodes("b", CTNode("Book"))
-    val booksDf = books.toDF().as("b")
-    val reads = inputGraph.relationships("r", CTRelationship("READS"))
-    val readsDf = reads.toDF().as("r")
     val persons = inputGraph.nodes("p", CTNode("Person"))
-    val personsDf = persons.toDF().as("p")
+    val reads = inputGraph.relationships("r", CTRelationship("READS"))
+    val books = inputGraph.nodes("b", CTNode("Book"))
 
-    val joinedDf = personsDf
-      .join(readsDf, personsDf.col("p") === readsDf.col("____source(r)"))
-      .join(booksDf, readsDf.col("____target(r)") === booksDf.col("b"))
+    val personReadsBook = persons
+      .join(reads, InnerJoin, Var("p")(CTNode) -> rStart)
+      .join(books, InnerJoin, rEnd -> Var("b")(CTNode))
 
-    val exprs = persons.header.expressions ++ reads.header.expressions ++ books.header.expressions
-    val joinHeader = RecordHeader.from(exprs)
-
-    CAPSGraph.create(CAPSRecords(joinHeader, joinedDf), inputGraph.schema)
+    CAPSGraph.create(personReadsBook, inputGraph.schema)
   }
 }

@@ -48,25 +48,25 @@ class CAPSScanGraphTest extends CAPSGraphTest {
     val result = graph1 unionAll graph2
 
     val nodeCols = Seq(
-      "n",
-      "____n:Book",
-      "____n:Person",
-      "____n:Programmer",
-      "____n:Swedish",
-      "____n_dot_languageSTRING",
-      "____n_dot_luckyNumberINTEGER",
-      "____n_dot_nameSTRING",
-      "____n_dot_titleSTRING",
-      "____n_dot_yearINTEGER"
+      n,
+      nHasLabelBook,
+      nHasLabelPerson,
+      nHasLabelProgrammer,
+      nHasLabelSwedish,
+      nHasPropertyLanguage,
+      nHasPropertyLuckyNumber,
+      nHasPropertyName,
+      nHasPropertyTitle,
+      nHasPropertyYear
     )
     val relCols = Seq(
-      "____source(r)",
-      "r",
-      "____type(r)_space__eq__space__single_quote_KNOWS_single_quote_",
-      "____type(r)_space__eq__space__single_quote_READS_single_quote_",
-      "____target(r)",
-      "____r_dot_recommendsBOOLEAN",
-      "____r_dot_sinceINTEGER"
+      rStart,
+      r,
+      rHasTypeKnows,
+      rHasTypeReads,
+      rEnd,
+      rHasPropertyRecommends,
+      rHasPropertySince
     )
     val nodeData = Bag(
       Row(1L, false, true, false, true, null, 23L, "Mats", null, null),
@@ -140,11 +140,11 @@ class CAPSScanGraphTest extends CAPSGraphTest {
     val graph = CAPSGraph.create(personTable)
     val nodes = graph.nodes("n")
     val cols = Seq(
-      "n",
-      "____n:Person",
-      "____n:Swedish",
-      "____n_dot_luckyNumberINTEGER",
-      "____n_dot_nameSTRING"
+      n,
+      nHasLabelPerson,
+      nHasLabelSwedish,
+      nHasPropertyLuckyNumber,
+      nHasPropertyName
     )
     val data = Bag(
       Row(1L, true, true, 23L, "Mats"),
@@ -159,14 +159,14 @@ class CAPSScanGraphTest extends CAPSGraphTest {
     val graph = CAPSGraph.create(personTable, bookTable)
     val nodes = graph.nodes("n")
     val cols = Seq(
-      "n",
-      "____n:Book",
-      "____n:Person",
-      "____n:Swedish",
-      "____n_dot_luckyNumberINTEGER",
-      "____n_dot_nameSTRING",
-      "____n_dot_titleSTRING",
-      "____n_dot_yearINTEGER"
+      n,
+      nHasLabelBook,
+      nHasLabelPerson,
+      nHasLabelSwedish,
+      nHasPropertyLuckyNumber,
+      nHasPropertyName,
+      nHasPropertyTitle,
+      nHasPropertyYear
     )
     val data = Bag(
       Row(1L, false, true, true, 23L, "Mats", null, null),
@@ -224,14 +224,14 @@ class CAPSScanGraphTest extends CAPSGraphTest {
 
   it("Construct graph from single node and single relationship scan") {
     val graph = CAPSGraph.create(personTable, knowsTable)
-    val rels = graph.relationships("e")
+    val rels = graph.relationships("r")
 
     val cols = Seq(
-      "____source(e)",
-      "e",
-      "____type(e)_space__eq__space__single_quote_KNOWS_single_quote_",
-      "____target(e)",
-      "____e_dot_sinceINTEGER"
+      rStart,
+      r,
+      rHasTypeKnows,
+      rEnd,
+      rHasPropertySince
     )
     val data = Bag(
       Row(1L, 1L, true, 2L, 2017L),
@@ -249,14 +249,14 @@ class CAPSScanGraphTest extends CAPSGraphTest {
     val graph = CAPSGraph.create(personTable, bookTable)
     val nodes = graph.nodes("n", CTNode())
     val cols = Seq(
-      "n",
-      "____n:Book",
-      "____n:Person",
-      "____n:Swedish",
-      "____n_dot_luckyNumberINTEGER",
-      "____n_dot_nameSTRING",
-      "____n_dot_titleSTRING",
-      "____n_dot_yearINTEGER"
+      n,
+      nHasLabelBook,
+      nHasLabelPerson,
+      nHasLabelSwedish,
+      nHasPropertyLuckyNumber,
+      nHasPropertyName,
+      nHasPropertyTitle,
+      nHasPropertyYear
     )
     val data = Bag(
       Row(1L, false, true, true, 23L, "Mats", null, null),
@@ -276,11 +276,11 @@ class CAPSScanGraphTest extends CAPSGraphTest {
     val graph = CAPSGraph.create(personTable, bookTable)
     val nodes = graph.nodes("n", CTNode("Person"))
     val cols = Seq(
-      "n",
-      "____n:Person",
-      "____n:Swedish",
-      "____n_dot_luckyNumberINTEGER",
-      "____n_dot_nameSTRING"
+      n,
+      nHasLabelPerson,
+      nHasLabelSwedish,
+      nHasPropertyLuckyNumber,
+      nHasPropertyName
     )
     val data = Bag(
       Row(1L, true, true, 23L, "Mats"),
@@ -293,15 +293,15 @@ class CAPSScanGraphTest extends CAPSGraphTest {
 
   it("Extract all relationship scans") {
     val graph = CAPSGraph.create(personTable, bookTable, knowsTable, readsTable)
-    val rels = graph.relationships("e")
+    val rels = graph.relationships("r")
     val cols = Seq(
-      "____source(e)",
-      "e",
-      "____type(e)_space__eq__space__single_quote_KNOWS_single_quote_",
-      "____type(e)_space__eq__space__single_quote_READS_single_quote_",
-      "____target(e)",
-      "____e_dot_recommendsBOOLEAN",
-      "____e_dot_sinceINTEGER"
+      rStart,
+      r,
+      rHasTypeKnows,
+      rHasTypeReads,
+      rEnd,
+      rHasPropertyRecommends,
+      rHasPropertySince
     )
     val data = Bag(
       Row(1L, 1L, true, false, 2L, null, 2017L),
@@ -321,13 +321,13 @@ class CAPSScanGraphTest extends CAPSGraphTest {
 
   it("Extract relationship scan subset") {
     val graph = CAPSGraph.create(personTable, bookTable, knowsTable, readsTable)
-    val rels = graph.relationships("e", CTRelationship("KNOWS"))
+    val rels = graph.relationships("r", CTRelationship("KNOWS"))
     val cols = Seq(
-      "____source(e)",
-      "e",
-      "____type(e)_space__eq__space__single_quote_KNOWS_single_quote_",
-      "____target(e)",
-      "____e_dot_sinceINTEGER"
+      rStart,
+      r,
+      rHasTypeKnows,
+      rEnd,
+      rHasPropertySince
     )
     val data = Bag(
       Row(1L, 1L, true, 2L, 2017L),
@@ -343,14 +343,14 @@ class CAPSScanGraphTest extends CAPSGraphTest {
 
   it("Extract relationship scan strict subset") {
     val graph = CAPSGraph.create(personTable, bookTable, knowsTable, readsTable, influencesTable)
-    val rels = graph.relationships("e", CTRelationship("KNOWS", "INFLUENCES"))
+    val rels = graph.relationships("r", CTRelationship("KNOWS", "INFLUENCES"))
     val cols = Seq(
-      "____source(e)",
-      "e",
-      "____type(e)_space__eq__space__single_quote_INFLUENCES_single_quote_",
-      "____type(e)_space__eq__space__single_quote_KNOWS_single_quote_",
-      "____target(e)",
-      "____e_dot_sinceINTEGER"
+      rStart,
+      r,
+      rHasTypeInfluences,
+      rHasTypeKnows,
+      rEnd,
+      rHasPropertySince
     )
     val data = Bag(
       // :KNOWS
@@ -371,13 +371,13 @@ class CAPSScanGraphTest extends CAPSGraphTest {
     val graph = CAPSGraph.create(personTable, programmerTable)
     val nodes = graph.nodes("n", CTNode("Person"))
     val cols = Seq(
-      "n",
-      "____n:Person",
-      "____n:Programmer",
-      "____n:Swedish",
-      "____n_dot_languageSTRING",
-      "____n_dot_luckyNumberINTEGER",
-      "____n_dot_nameSTRING"
+      n,
+      nHasLabelPerson,
+      nHasLabelProgrammer,
+      nHasLabelSwedish,
+      nHasPropertyLanguage,
+      nHasPropertyLuckyNumber,
+      nHasPropertyName
     )
     val data = Bag(
       Row(1L, true, false, true, null, 23L, "Mats"),
@@ -397,13 +397,13 @@ class CAPSScanGraphTest extends CAPSGraphTest {
     val graph = CAPSGraph.create(personTable, brogrammerTable)
     val nodes = graph.nodes("n", CTNode("Person"))
     val cols = Seq(
-      "n",
-      "____n:Brogrammer",
-      "____n:Person",
-      "____n:Swedish",
-      "____n_dot_languageSTRING",
-      "____n_dot_luckyNumberINTEGER",
-      "____n_dot_nameSTRING"
+      n,
+      nHasLabelBrogrammer,
+      nHasLabelPerson,
+      nHasLabelSwedish,
+      nHasPropertyLanguage,
+      nHasPropertyLuckyNumber,
+      nHasPropertyName
     )
     val data = Bag(
       Row(1L, false, true, true, null, 23L, "Mats"),

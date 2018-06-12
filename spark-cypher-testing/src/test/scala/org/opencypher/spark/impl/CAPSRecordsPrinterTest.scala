@@ -28,7 +28,10 @@ package org.opencypher.spark.impl
 
 import java.io.{ByteArrayOutputStream, PrintStream}
 import java.nio.charset.StandardCharsets.UTF_8
+import java.util.Collections
 
+import org.apache.spark.sql.Row
+import org.apache.spark.sql.types.{LongType, StructField, StructType}
 import org.opencypher.okapi.api.table.CypherRecords
 import org.opencypher.okapi.api.types.CTNode
 import org.opencypher.okapi.impl.table.RecordsPrinter
@@ -63,14 +66,18 @@ class CAPSRecordsPrinterTest extends CAPSTestSuite with GraphConstructionFixture
 
   it("prints a single column with no rows") {
     // Given
-    val records = CAPSRecords.empty(headerOf('foo))
+    val header = RecordHeader.from(Var("foo")(CTNode))
+    val emptyDf = caps.sparkSession.createDataFrame(
+      Collections.emptyList[Row](),
+      StructType(Seq(StructField(header.column(Var("foo")()), LongType))))
+    val records = CAPSRecords(header, emptyDf, Some(Seq("foo")))
 
     // When
     print(records)
 
     // Then
     getString should equal(
-      """!+-----+
+      s"""!+-----+
          !| foo |
          !+-----+
          !(no rows)
@@ -162,10 +169,6 @@ class CAPSRecordsPrinterTest extends CAPSTestSuite with GraphConstructionFixture
   private case class Row1(foo: String)
 
   private case class Row3(foo: String, v: Long, veryLongColumnNameWithBoolean: Boolean)
-
-  private def headerOf(fields: Symbol*): RecordHeader = {
-    RecordHeader.from(fields.map(f => Var(f.name)(CTNode)))
-  }
 
   private def getString =
     new String(baos.toByteArray, UTF_8)
