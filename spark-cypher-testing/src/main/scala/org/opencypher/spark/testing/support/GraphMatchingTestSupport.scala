@@ -27,7 +27,7 @@
 package org.opencypher.spark.testing.support
 
 import org.opencypher.okapi.testing.BaseTestSuite
-import org.opencypher.spark.impl.CAPSGraph
+import org.opencypher.spark.impl.{CAPSGraph, CAPSRecords}
 import org.opencypher.spark.testing.fixture.{CAPSSessionFixture, SparkSessionFixture}
 import org.scalatest.Assertion
 
@@ -37,11 +37,21 @@ trait GraphMatchingTestSupport {
 
   self: BaseTestSuite with SparkSessionFixture with CAPSSessionFixture =>
 
+  private def getEntityIds(records: CAPSRecords): Set[Long] = {
+    val entityVar = records.header.vars.toSeq match {
+      case Seq(v) => v
+      case other => throw new UnsupportedOperationException(s"Expected records with 1 entity, got $other")
+    }
+
+    records.df.select(records.header.column(entityVar)).collect().map(_.getLong(0)).toSet
+  }
+
   private def verify(actual: CAPSGraph, expected: CAPSGraph): Assertion = {
-    val expectedNodeIds = expected.nodes("n").df.select("n").collect().map(_.getLong(0)).toSet
-    val expectedRelIds = expected.relationships("r").df.select("r").collect().map(_.getLong(0)).toSet
-    val actualNodeIds = actual.nodes("n").df.select("n").collect().map(_.getLong(0)).toSet
-    val actualRelIds = actual.relationships("r").df.select("r").collect().map(_.getLong(0)).toSet
+    val expectedNodeIds = getEntityIds(expected.nodes("n"))
+    val expectedRelIds = getEntityIds(expected.relationships("r"))
+
+    val actualNodeIds = getEntityIds(actual.nodes("n"))
+    val actualRelIds = getEntityIds(actual.relationships("r"))
 
     expectedNodeIds should equal(actualNodeIds)
     expectedRelIds should equal(actualRelIds)
