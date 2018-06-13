@@ -70,7 +70,6 @@ class LogicalOptimizerTest extends IrTestSuite {
         Var("a")(CTNode(Set("Animal"))),
         Start(
           animalGraph,
-          Set(),
           emptySqm
         ),
         SolvedQueryModel(Set(), Set(HasLabel(Var("a")(CTNode(Set("Animal"))), Label("Animal"))(CTBoolean)))
@@ -92,7 +91,7 @@ class LogicalOptimizerTest extends IrTestSuite {
       List(Var("a")(CTNode(Set("Animal")))),
       EmptyRecords(
         Set(Var("a")(CTNode(Set("Animal")))),
-        Start(logicalGraph, Set(), emptySqm),
+        Start(logicalGraph, emptySqm),
         SolvedQueryModel(Set(), Set(HasLabel(Var("a")(CTNode(Set("Animal"))), Label("Animal"))(CTBoolean)))
       ),
       SolvedQueryModel(Set(IRField("a")(CTNode)), Set(HasLabel(Var("a")(CTNode), Label("Animal"))(CTBoolean)))
@@ -115,7 +114,7 @@ class LogicalOptimizerTest extends IrTestSuite {
       List(Var("a")(CTNode(Set("Animal", "Astronaut")))),
       EmptyRecords(
         Set(Var("a")(CTNode(Set("Astronaut", "Animal")))),
-        Start(logicalGraph, Set(), emptySqm),
+        Start(logicalGraph, emptySqm),
         SolvedQueryModel(
           Set(),
           Set(

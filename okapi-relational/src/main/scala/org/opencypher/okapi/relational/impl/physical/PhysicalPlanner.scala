@@ -67,7 +67,7 @@ I <: RuntimeContext[A, P]](producer: PhysicalOperatorProducer[O, K, A, P, I])
       case flat.EmptyRecords(in, header) =>
         producer.planEmptyRecords(process(in), header)
 
-      case flat.Start(graph, _, header) =>
+      case flat.Start(graph, header) =>
         graph match {
           case g: LogicalCatalogGraph =>
             producer.planStart(Some(g.qualifiedGraphName), Some(context.inputRecords), header)

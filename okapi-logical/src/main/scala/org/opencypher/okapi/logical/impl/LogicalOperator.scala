@@ -48,6 +48,12 @@ sealed abstract class LogicalOperator extends AbstractTreeNode[LogicalOperator] 
   }
 }
 
+trait EmptyFields extends LogicalOperator {
+  self: LogicalOperator =>
+
+  override val fields: Set[Var] = Set.empty
+}
+
 trait LogicalGraph {
   def schema: Schema
 
@@ -239,8 +245,8 @@ final case class Select(
   override val fields: Set[Var] = orderedFields.toSet
 }
 
-final case class ReturnGraph(in: LogicalOperator, solved: SolvedQueryModel) extends StackingLogicalOperator {
-  override val fields: Set[Var] = Set.empty
+final case class ReturnGraph(in: LogicalOperator, solved: SolvedQueryModel)
+  extends StackingLogicalOperator with EmptyFields {
 }
 
 final case class OrderBy(sortItems: Seq[SortItem[Expr]], in: LogicalOperator, solved: SolvedQueryModel)
@@ -301,8 +307,4 @@ final case class FromGraph(
 final case class EmptyRecords(fields: Set[Var], in: LogicalOperator, solved: SolvedQueryModel)
   extends StackingLogicalOperator
 
-final case class Start(graph: LogicalGraph, fields: Set[Var], solved: SolvedQueryModel)
-  extends LogicalLeafOperator
-
-final case class DrivingTable(graph: LogicalGraph, fields: Set[Var], solved: SolvedQueryModel)
-  extends LogicalLeafOperator
+final case class Start(graph: LogicalGraph, solved: SolvedQueryModel) extends LogicalLeafOperator with EmptyFields

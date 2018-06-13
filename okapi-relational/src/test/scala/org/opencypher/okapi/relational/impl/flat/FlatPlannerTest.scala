@@ -58,7 +58,7 @@ class FlatPlannerTest extends BaseTestSuite {
   val flatPlanner = new FlatPlanner
 
   val logicalStartOperator = mkLogical.planStart(TestGraph(schema), Set.empty)
-  val flatStartOperator = mkFlat.planStart(TestGraph(schema), Set.empty, RecordHeader.empty)
+  val flatStartOperator = mkFlat.planStart(TestGraph(schema), RecordHeader.empty)
 
   test("projecting a new expression") {
     val expr = Subtract('a, 'b)()
