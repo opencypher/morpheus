@@ -333,7 +333,7 @@ I <: RuntimeContext[A, P]](producer: PhysicalOperatorProducer[O, K, A, P, I])
     }
 
     // check whether to include paths of length 0
-    val unalignedOps = if(lower == 0 ){
+    val unalignedOps = if( lower == 0 ){
       val zeroLenghtExpand = physicalSourceOp.header.expressionsFor(source).foldLeft(physicalSourceOp) {
         case (acc, next) =>
           val targetExpr = next.withOwner(target)
@@ -348,7 +348,7 @@ I <: RuntimeContext[A, P]](producer: PhysicalOperatorProducer[O, K, A, P, I])
     val alignedOps = unalignedOps.map { exp =>
       val nullExpressions = header.expressions -- exp.header.expressions
       nullExpressions.foldLeft(exp) {
-        case (acc, expr) => producer.planProject(acc, NullLit(expr.cypherType), Some(expr), acc.header.withExpr(expr))
+        case (acc, expr) => producer.planProject(acc, NullLit(expr.cypherType), Some(expr), acc.header.addExprToColumn(expr, header.column(expr)))
       }
     }
 

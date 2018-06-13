@@ -297,7 +297,7 @@ case class RecordHeader(exprToColumn: Map[Expr, String]) {
     copy(exprToColumn = updatedExprToColumn)
   }
 
-  protected def addExprToColumn(expr: Expr, columnName: String): RecordHeader = {
+  def addExprToColumn(expr: Expr, columnName: String): RecordHeader = {
     copy(exprToColumn = exprToColumn + (expr -> columnName))
   }
 
