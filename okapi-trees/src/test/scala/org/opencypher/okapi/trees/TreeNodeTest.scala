@@ -26,34 +26,34 @@
  */
 package org.opencypher.okapi.trees
 
-import org.scalatest.{FunSuite, Matchers}
+import org.scalatest.{FunSpec, FunSuite, Matchers}
 
-class TreeNodeTest extends FunSuite with Matchers {
+class TreeNodeTest extends FunSpec with Matchers {
 
   val calculation = Add(Number(5), Add(Number(4), Number(3)))
 
   val leaf = Number(1)
 
-  test("aggregate") {
+  it("aggregate") {
     calculation.eval should equal(12)
   }
 
-  test("leaf") {
+  it("leaf") {
     calculation.isLeaf should equal(false)
     leaf.isLeaf should equal(true)
   }
 
-  test("arity") {
+  it("arity") {
     calculation.arity should equal(2)
     leaf.arity should equal(0)
   }
 
-  test("height") {
+  it("height") {
     calculation.height should equal(3)
     leaf.height should equal(1)
   }
 
-  test("lists of children") {
+  it("lists of children") {
     val addList1 = AddList(List(1), Number(1), 2, List(Number(2)), List[Object]("a", "b"))
     addList1.eval should equal(3)
     val addList2 = AddList(List(1), Number(1), 2, List(Number(2), Number(3)), List[Object]("a", "b"))
@@ -65,7 +65,7 @@ class TreeNodeTest extends FunSuite with Matchers {
     addList3.eval should equal(28)
   }
 
-  test("unsupported uses of lists of children") {
+  it("unsupported uses of lists of children") {
     // Test errors when violating list requirements
 
     // - a list of children cannot be empty
@@ -86,7 +86,8 @@ class TreeNodeTest extends FunSuite with Matchers {
     intercept[InvalidConstructorArgument] {
       case class Unsupported(elems: List[Object]) extends AbstractTreeNode[Unsupported]
       val fail = Unsupported(List(Unsupported(List.empty), "2"))
-    }.getMessage should equal(s"""Expected a list that contains either no children or only children
+    }.getMessage should equal(
+      s"""Expected a list that contains either no children or only children
          |but found a mixed list that contains a child as the head element,
          |but also one with a non-child type: java.lang.String cannot be cast to ${classOf[AbstractTreeNode[_]].getName}.
          |""".stripMargin)
@@ -110,11 +111,11 @@ class TreeNodeTest extends FunSuite with Matchers {
         "after a list of children.")
   }
 
-  test("rewrite") {
+  it("rewrite") {
     val addNoops: PartialFunction[CalcExpr, CalcExpr] = {
       case Add(n1: Number, n2: Number) => Add(NoOp(n1), NoOp(n2))
-      case Add(n1: Number, n2)         => Add(NoOp(n1), n2)
-      case Add(n1, n2: Number)         => Add(n1, NoOp(n2))
+      case Add(n1: Number, n2) => Add(NoOp(n1), n2)
+      case Add(n1, n2: Number) => Add(n1, NoOp(n2))
     }
 
     val expected = Add(NoOp(Number(5)), Add(NoOp(Number(4)), NoOp(Number(3))))
@@ -125,7 +126,7 @@ class TreeNodeTest extends FunSuite with Matchers {
     up should equal(expected)
   }
 
-  test("support relatively high trees without stack overflow") {
+  it("support relatively high trees without stack overflow") {
     val highTree = (1 to 1000).foldLeft(Number(1): CalcExpr) {
       case (t, n) => Add(t, Number(n))
     }
@@ -143,26 +144,29 @@ class TreeNodeTest extends FunSuite with Matchers {
     noOpTree.height should equal(2000)
   }
 
-  test("arg string") {
+  it("arg string") {
     Number(12).argString should equal("12")
     Add(Number(1), Number(2)).argString should equal("")
   }
 
-  test("to string") {
+  it("to string") {
     Number(12).toString should equal("Number(12)")
     Add(Number(1), Number(2)).toString should equal("Add")
   }
 
-  test("pretty") {
-    calculation.pretty should equal("""#|-Add
-                                       #· |-Number(5)
-                                       #· |-Add
-                                       #· · |-Number(4)
-                                       #· · |-Number(3)
-                                       #""".stripMargin('#'))
+  it("pretty") {
+    val t = Add(Add(Number(4), Number(3)), Add(Number(4), Number(3)))
+    t.pretty should equal(
+      """|╙──Add
+         |    ╟──Add
+         |    ║   ╟──Number(4)
+         |    ║   ╙──Number(3)
+         |    ╙──Add
+         |        ╟──Number(4)
+         |        ╙──Number(3)""".stripMargin)
   }
 
-  test("copy with the same children returns the same instance") {
+  it("copy with the same children returns the same instance") {
     calculation.withNewChildren(Array(calculation.left, calculation.right)) should be theSameInstanceAs calculation
   }
 
@@ -171,7 +175,7 @@ class TreeNodeTest extends FunSuite with Matchers {
   }
 
   case class AddList(dummy1: List[Int], first: CalcExpr, dummy2: Int, remaining: List[CalcExpr], dummy3: List[Object])
-      extends CalcExpr {
+    extends CalcExpr {
     def eval = first.eval + remaining.map(_.eval).sum
   }
 

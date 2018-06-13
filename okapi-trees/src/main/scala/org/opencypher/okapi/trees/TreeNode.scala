@@ -26,6 +26,7 @@
  */
 package org.opencypher.okapi.trees
 
+import scala.collection.mutable.ArrayBuffer
 import scala.reflect.ClassTag
 import scala.util.hashing.MurmurHash3
 
@@ -126,19 +127,35 @@ abstract class TreeNode[T <: TreeNode[T]: ClassTag] extends Product with Travers
   }
 
   /**
-    * Prints the tree node and its children recursively in a tree-style layout.
+    * Returns a string-tree representation of the node.
     *
-    * @param depth indentation depth used by the recursive call
-    * @return tree-style representation of that node and all (grand-)children
+    * @return tree-style representation of that node and all children
     */
-  def pretty(implicit depth: Int = 0): String = {
+  def pretty: String = {
+    val lines = new ArrayBuffer[String]
 
-    def prefix(depth: Int): String = ("· " * depth) + "|-"
-
-    val childrenString = children.foldLeft(new StringBuilder()) {
-      case (agg, s) => agg.append(s.pretty(depth + 1))
+    def recTreeToString(toPrint: List[T], prefix: String): Unit = {
+      toPrint match {
+        case Nil =>
+        case last :: Nil =>
+          lines += s"$prefix╙──${last.toString}"
+          recTreeToString(last.children.toList, s"$prefix    ")
+        case next :: siblings =>
+          lines += s"$prefix╟──${next.toString}"
+          recTreeToString(next.children.toList, s"$prefix║   ")
+          recTreeToString(siblings, prefix)
+      }
     }
-    s"${prefix(depth)}$self\n$childrenString"
+
+    recTreeToString(List(this), "")
+    lines.mkString("\n")
+  }
+
+  /**
+    * Prints a tree representation of the node.
+    */
+  def show(): Unit = {
+    println(pretty)
   }
 
   /**
