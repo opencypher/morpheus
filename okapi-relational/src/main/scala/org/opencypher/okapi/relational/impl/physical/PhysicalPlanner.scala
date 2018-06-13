@@ -241,12 +241,12 @@ I <: RuntimeContext[A, P]](producer: PhysicalOperatorProducer[O, K, A, P, I])
     val rhsWithDropped = producer.planDrop(rhsData, expressionsToRemove, rhsHeaderWithDropped)
 
     // 3. Rename the join expressions on the right hand side, in order to make them distinguishable after the join
-    val joinFieldRenames: Map[Expr, String] = joinExprs.map(e => e -> generateUniqueName).toMap
-    val rhsHeaderWithRenames = rhsHeaderWithDropped.withColumnsRenamed(joinFieldRenames)
-    val rhsWithRenamed = producer.planRenameColumns(rhsWithDropped, joinFieldRenames, rhsHeaderWithRenames)
+    val joinExprRenames: Map[Var, Var] = joinExprs.map(e => e -> Var(generateUniqueName)(e.cypherType)).toMap
+    val rhsHeaderWithRenames = rhsHeaderWithDropped.withAlias(joinExprRenames.toSeq: _*) -- joinExprs
+    val rhsWithRenamed = producer.planAlias(rhsWithDropped, joinExprRenames.toSeq, rhsHeaderWithRenames)
 
     // 4. Left outer join the left side and the processed right side
-    val joined = producer.planJoin(lhsData, rhsWithRenamed, joinExprs.map(e => e -> e).toSeq, rhsHeaderWithRenames ++ lhsHeader, LeftOuterJoin)
+    val joined = producer.planJoin(lhsData, rhsWithRenamed, joinExprs.map(e => e -> joinExprRenames(e)).toSeq, lhsHeader join rhsHeaderWithRenames, LeftOuterJoin)
 
     // 5. Select the resulting header expressions
     producer.planSelect(joined, header.expressions.map(e => e -> Option.empty[Var]).toList, header)
@@ -272,6 +272,12 @@ I <: RuntimeContext[A, P]](producer: PhysicalOperatorProducer[O, K, A, P, I])
     val physicalEdgeScanOp = process(edgeScanOp)
     val physicalInnerNodeOp = process(innerNodeOp)
     val physicalTargetOp = process(targetOp)
+
+    if (direction == Undirected) {
+      val startExpr = physicalEdgeScanOp.header.startNodeFor(edgeScan)
+      val endExpr = physicalEdgeScanOp.header.endNodeFor(edgeScan)
+
+    }
 
     val expandCacheOp = producer.planJoin(
       physicalInnerNodeOp, physicalEdgeScanOp,
@@ -346,7 +352,7 @@ I <: RuntimeContext[A, P]](producer: PhysicalOperatorProducer[O, K, A, P, I])
           producer.planProject(acc, next, Some(targetExpr), targetHeader)
       }
 
-      withTargetOps :+ zeroLenghtExpand
+      if (upper == 0) Seq(zeroLenghtExpand) else withTargetOps :+ zeroLenghtExpand
     } else withTargetOps
 
     // fill shorter paths with nulls

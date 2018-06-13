@@ -87,7 +87,7 @@ class BoundedVarExpandBehaviour extends CAPSTestSuite with DefaultGraphInit {
     ))
   }
 
-  it("var expand return list of rel ids") {
+  ignore("var expand return list of rel ids") {
     // Given
     val given = initGraph("CREATE (a:Node {v: 'a'})-[:REL]->(:Node {v: 'b'})-[:REL]->(:Node {v: 'c'})-[:REL]->(a)")
 

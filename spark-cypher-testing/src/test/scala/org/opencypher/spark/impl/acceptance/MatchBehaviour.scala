@@ -322,7 +322,7 @@ class MatchBehaviour extends CAPSTestSuite with DefaultGraphInit {
       ))
     }
 
-    it("matches an undirected variable-length relationship") {
+    ignore("matches an undirected variable-length relationship") {
       val given = initGraph(
         """
           |CREATE (a:A {prop: 'a'})
