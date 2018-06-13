@@ -27,7 +27,6 @@
 package org.opencypher.okapi.impl.table
 
 import org.opencypher.okapi.api.table.CypherRecords
-import org.opencypher.okapi.api.value.CypherValue
 import org.opencypher.okapi.api.value.CypherValue.CypherValue
 import org.opencypher.okapi.impl.util.{PrintOptions, TablePrinter}
 
@@ -48,7 +47,7 @@ object RecordsPrinter {
     }
 
     options.stream
-      .append(TablePrinter.toTable(columns, rows)(CypherValue.toCypherString))
+      .append(TablePrinter.toTable(columns, rows)(v => v.toCypherString))
       .flush()
   }
 }

@@ -86,8 +86,6 @@ object CypherValue {
     Option(cv).flatMap(v => Option(v.value))
   }
 
-  def toCypherString(value: CypherValue): String = value.toCypherString
-
   /**
     * CypherValue is a wrapper for Scala/Java classes that represent valid Cypher values.
     */

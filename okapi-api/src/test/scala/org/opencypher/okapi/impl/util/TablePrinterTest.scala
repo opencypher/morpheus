@@ -106,7 +106,7 @@ class TablePrinterTest extends FunSpec with Matchers {
     val header = Seq("String", "Integer", "Float", "Boolean")
     val data = Seq(Seq(CypherValue("foo"), CypherValue(42), CypherValue(42.23), CypherValue(true)))
 
-    implicit val f: CypherValue => String = CypherValue.toCypherString
+    implicit val f: CypherValue => String = v => v.toCypherString
 
     toTable(header, data) should equal(
       """|+--------+---------+-------+---------+
@@ -125,7 +125,7 @@ class TablePrinterTest extends FunSpec with Matchers {
     val header = Seq("n", "r")
     val data = Seq(Seq(n, r))
 
-    implicit val f: CypherValue => String = CypherValue.toCypherString
+    implicit val f: CypherValue => String = v => v.toCypherString
 
     toTable(header, data) should equal(
       """|+-------------------+------------------------+
