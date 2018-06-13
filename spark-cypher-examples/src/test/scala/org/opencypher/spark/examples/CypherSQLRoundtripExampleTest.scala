@@ -37,6 +37,7 @@ class CypherSQLRoundtripExampleTest extends ExampleTest {
           || 'Carol' | 15  | 'Shakira'       |
           || 'Alice' | 10  | 'Terminator 2'  |
           |+---------+-----+-----------------+
-          |(4 rows)""".stripMargin)
+          |(4 rows)
+          |""".stripMargin)
   }
 }

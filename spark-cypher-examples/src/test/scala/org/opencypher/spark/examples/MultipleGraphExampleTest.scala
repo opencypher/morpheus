@@ -38,6 +38,7 @@ class MultipleGraphExampleTest extends ExampleTest {
           || 'Shakira'       | 'Bob' |
           || 'Terminator 2'  | 'Bob' |
           |+-----------------+-------+
-          |(4 rows)""".stripMargin)
+          |(4 rows)
+          |""".stripMargin)
   }
 }

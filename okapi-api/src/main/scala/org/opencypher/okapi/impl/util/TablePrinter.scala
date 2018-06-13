@@ -51,7 +51,7 @@ object TablePrinter {
     val bodyRows = if (rows.tail.nonEmpty) rows.tail :+ rowSep else Seq.empty
     val footerRow = rowCountFooter(data.size)
 
-    (headerRows ++ bodyRows :+ footerRow).mkString("\n")
+    (headerRows ++ bodyRows :+ footerRow).mkString("", "\n", "\n")
   }
 
   def rowSeparator(colSizes: Seq[Int]): String =

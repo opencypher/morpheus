@@ -36,7 +36,8 @@ class GraphXPageRankExampleTest extends ExampleTest {
           || 'Bob'   | 1.0235131396957122 |
           || 'Alice' | 0.5532503457814661 |
           |+---------+--------------------+
-          |(3 rows)""".stripMargin)
+          |(3 rows)
+          |""".stripMargin)
   }
 
 }

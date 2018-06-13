@@ -43,7 +43,8 @@ class TablePrinterTest extends FunSpec with Matchers {
          |+--------------+
          || (empty row)  |
          |+--------------+
-         |(no rows)""".stripMargin)
+         |(no rows)
+         |""".stripMargin)
   }
 
   it("prints empty table") {
@@ -54,7 +55,8 @@ class TablePrinterTest extends FunSpec with Matchers {
       """|+--------+
          || column |
          |+--------+
-         |(no rows)""".stripMargin)
+         |(no rows)
+         |""".stripMargin)
   }
 
   it("prints single row") {
@@ -67,7 +69,8 @@ class TablePrinterTest extends FunSpec with Matchers {
          |+--------+
          || 1      |
          |+--------+
-         |(1 row)""".stripMargin)
+         |(1 row)
+         |""".stripMargin)
   }
 
   it("prints n rows") {
@@ -80,7 +83,8 @@ class TablePrinterTest extends FunSpec with Matchers {
          || 1      |
          || 2      |
          |+--------+
-         |(2 rows)""".stripMargin)
+         |(2 rows)
+         |""".stripMargin)
   }
 
   it("prints simple scala values") {
@@ -93,7 +97,8 @@ class TablePrinterTest extends FunSpec with Matchers {
          |+--------+---------+-------+---------+
          || foo    | 42      | 42.23 | true    |
          |+--------+---------+-------+---------+
-         |(1 row)""".stripMargin)
+         |(1 row)
+         |""".stripMargin)
   }
 
   it("prints simple cypher values correctly") {
@@ -109,7 +114,8 @@ class TablePrinterTest extends FunSpec with Matchers {
          |+--------+---------+-------+---------+
          || 'foo'  | 42      | 42.23 | true    |
          |+--------+---------+-------+---------+
-         |(1 row)""".stripMargin)
+         |(1 row)
+         |""".stripMargin)
   }
 
   it("prints nested cypher values correctly") {
@@ -127,7 +133,8 @@ class TablePrinterTest extends FunSpec with Matchers {
          |+-------------------+------------------------+
          || (:A:B {prop: 42}) | [:KNOWS {prop: 'foo'}] |
          |+-------------------+------------------------+
-         |(1 row)""".stripMargin
+         |(1 row)
+         |""".stripMargin
     )
   }
 

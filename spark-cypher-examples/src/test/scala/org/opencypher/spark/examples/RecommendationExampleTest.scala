@@ -36,7 +36,8 @@ class RecommendationExampleTest extends ExampleTest {
           || 'Cryptonomicon' | 'Trudy' |
           || '1984'          | 'Bob'   |
           |+-----------------+---------+
-          |(3 rows)""".stripMargin)
+          |(3 rows)
+          |""".stripMargin)
   }
 
 }

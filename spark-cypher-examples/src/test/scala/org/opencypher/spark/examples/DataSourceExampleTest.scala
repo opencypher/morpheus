@@ -36,6 +36,7 @@ class DataSourceExampleTest extends ExampleTest {
           || (:Person {age: 20, name: 'Bob'})   |
           || (:Person {age: 15, name: 'Carol'}) |
           |+------------------------------------+
-          |(3 rows)""".stripMargin)
+          |(3 rows)
+          |""".stripMargin)
   }
 }

@@ -56,7 +56,8 @@ class CAPSRecordsPrinterTest extends CAPSTestSuite with GraphConstructionFixture
          |+--------------+
          || (empty row)  |
          |+--------------+
-         |(1 row)""".stripMargin
+         |(1 row)
+         |""".stripMargin
     )
   }
 
@@ -72,7 +73,8 @@ class CAPSRecordsPrinterTest extends CAPSTestSuite with GraphConstructionFixture
       """|+-----+
          || foo |
          |+-----+
-         |(no rows)""".stripMargin
+         |(no rows)
+         |""".stripMargin
     )
   }
 
@@ -93,7 +95,8 @@ class CAPSRecordsPrinterTest extends CAPSTestSuite with GraphConstructionFixture
          || 'foo'      |
          || null       |
          |+------------+
-         |(3 rows)""".stripMargin
+         |(3 rows)
+         |""".stripMargin
     )
   }
 
@@ -109,8 +112,6 @@ class CAPSRecordsPrinterTest extends CAPSTestSuite with GraphConstructionFixture
     // When
     print(records)
 
-    println(getString)
-
     // Then
     getString should equal(
       """|+------------+----------+-------------------------------+
@@ -120,7 +121,8 @@ class CAPSRecordsPrinterTest extends CAPSTestSuite with GraphConstructionFixture
          || 'foo'      | 99999999 | true                          |
          || null       | -1       | true                          |
          |+------------+----------+-------------------------------+
-         |(3 rows)""".stripMargin
+         |(3 rows)
+         |""".stripMargin
     )
   }
 
@@ -139,8 +141,6 @@ class CAPSRecordsPrinterTest extends CAPSTestSuite with GraphConstructionFixture
 
     print(when.getRecords)
 
-    println(getString)
-
     getString should equal(
       """|+---------+---------+
          || a.name  | b.name  |
@@ -148,7 +148,8 @@ class CAPSRecordsPrinterTest extends CAPSTestSuite with GraphConstructionFixture
          || 'Alice' | 'Bob'   |
          || 'Bob'   | 'Alice' |
          |+---------+---------+
-         |(2 rows)""".stripMargin)
+         |(2 rows)
+         |""".stripMargin)
   }
 
   var baos: ByteArrayOutputStream = _

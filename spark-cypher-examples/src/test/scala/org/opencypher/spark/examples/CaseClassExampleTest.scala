@@ -35,6 +35,7 @@ class CaseClassExampleTest extends ExampleTest {
           || 'Alice' | 'Bob'   | '23/01/1987' |
           || 'Bob'   | 'Carol' | '12/12/2009' |
           |+---------+---------+--------------+
-          |(2 rows)""".stripMargin)
+          |(2 rows)
+          |""".stripMargin)
   }
 }

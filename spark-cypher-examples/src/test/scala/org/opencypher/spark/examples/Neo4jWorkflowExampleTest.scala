@@ -35,6 +35,7 @@ class Neo4jWorkflowExampleTest extends ExampleTest {
           |+--------+------------------------------------------------------+
           || 'Bob'  | ['1984', 'Jurassic Park', 'Shakira', 'Terminator 2'] |
           |+--------+------------------------------------------------------+
-          |(1 row)""".stripMargin)
+          |(1 row)
+          |""".stripMargin)
   }
 }
