@@ -191,7 +191,7 @@ class FlatOperatorProducer(implicit context: FlatPlannerContext) {
       case (acc, i) => expand(i, acc)
     }
 
-    val header = expandHeader join targetOp.header
+    val header = if(isExpandInto) expandHeader else expandHeader join targetOp.header
 
     BoundedVarExpand(source, edgeScan, innerNode, target, direction, lower, upper, sourceOp, edgeScanOp, innerNodeOp, targetOp, header, isExpandInto)
   }
