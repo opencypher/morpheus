@@ -293,6 +293,19 @@ case class RecordHeader(exprToColumn: Map[Expr, String]) {
     }
   }
 
+  def join(other: RecordHeader): RecordHeader = {
+    val expressionOverlap = expressions.intersect(other.expressions)
+    if(expressionOverlap.nonEmpty) {
+      throw IllegalArgumentException("two headers with non overlapping expressions", s"overlapping expressions: $expressionOverlap")
+    }
+
+    val cleanOther = if (columns.intersect(other.columns).nonEmpty) {
+      RecordHeader.empty.withExprs(other.expressions)
+    } else other
+
+    this ++ cleanOther
+  }
+
   def ++(other: RecordHeader): RecordHeader = copy(exprToColumn = exprToColumn ++ other.exprToColumn)
 
   def --[T <: Expr](expressions: Set[T]): RecordHeader = {
