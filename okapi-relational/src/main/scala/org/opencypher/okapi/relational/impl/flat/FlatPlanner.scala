@@ -100,7 +100,7 @@ class FlatPlanner extends DirectCompilationStage[LogicalOperator, FlatOperator, 
         val innerNodeScan = producer.nodeScan(innerNode, producer.planStart(input.graph, Set.empty))
 
         producer.boundedVarExpand(
-          source, edge, edgeScan, innerNode, target,
+          source, edgeScan, innerNode, target,
           direction, lower, upper,
           flatSourceOp, edgeScanOp, innerNodeScan, flatTargetOp,
           sourceOp == targetOp

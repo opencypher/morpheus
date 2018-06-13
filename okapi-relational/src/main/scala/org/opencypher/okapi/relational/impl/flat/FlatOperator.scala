@@ -141,7 +141,6 @@ final case class ExpandInto(
 
 final case class BoundedVarExpand(
     source: Var,
-    edge: Var,
     edgeScan: Var,
     innerNode: Var,
     target: Var,
@@ -149,7 +148,7 @@ final case class BoundedVarExpand(
     lower: Int,
     upper: Int,
     sourceOp: FlatOperator,
-    relOp: FlatOperator,
+    edgeScanOp: FlatOperator,
     innerNodeOp: FlatOperator,
     targetOp: FlatOperator,
     header: RecordHeader,
@@ -157,7 +156,7 @@ final case class BoundedVarExpand(
     extends QuaternaryFlatOperator {
 
   override def first: FlatOperator = sourceOp
-  override def second: FlatOperator = relOp
+  override def second: FlatOperator = edgeScanOp
   override def third: FlatOperator = innerNodeOp
   override def fourth: FlatOperator = targetOp
 }

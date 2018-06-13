@@ -170,12 +170,12 @@ I <: RuntimeContext[A, P]](producer: PhysicalOperatorProducer[O, K, A, P, I])
         }
 
       case flat.BoundedVarExpand(
-      source, edge, edgeScan, innerNode, target,
+      source, edgeScan, innerNode, target,
       direction, lower, upper,
-      sourceOp, edgeOp, innerNodeOp, targetOp,
+      sourceOp, edgeScanOp, innerNodeOp, targetOp,
       header, isExpandInto) =>
 
-        planBoundedVarLengthExpand(source, edge, edgeScan, innerNode, target, direction, lower, upper, sourceOp, edgeOp, innerNodeOp, targetOp, header, isExpandInto)
+        planBoundedVarLengthExpand(source, edgeScan, innerNode, target, direction, lower, upper, sourceOp, edgeScanOp, innerNodeOp, targetOp, header, isExpandInto)
 
       case flat.Optional(lhs, rhs, header) => planOptional(lhs, rhs, header)
 
@@ -250,7 +250,6 @@ I <: RuntimeContext[A, P]](producer: PhysicalOperatorProducer[O, K, A, P, I])
 
   private def planBoundedVarLengthExpand(
     source: Var,
-    edge: Var,
     edgeScan: Var,
     innerNode: Var,
     target: Var,
@@ -265,71 +264,76 @@ I <: RuntimeContext[A, P]](producer: PhysicalOperatorProducer[O, K, A, P, I])
     isExpandInto: Boolean
   )(implicit context: PhysicalPlannerContext[P, R]): P = {
     val physicalSourceOp = process(sourceOp)
-    val physicalEdgeOp = process(edgeScanOp)
+    val physicalEdgeScanOp = process(edgeScanOp)
     val physicalInnerNodeOp = process(innerNodeOp)
     val physicalTargetOp = process(targetOp)
 
-    val expandCache = producer.planJoin(
-      physicalInnerNodeOp, physicalEdgeOp,
+    val expandCacheOp = producer.planJoin(
+      physicalInnerNodeOp, physicalEdgeScanOp,
       Seq(innerNode -> edgeScanOp.header.startNodeFor(edgeScan)),
       innerNodeOp.header join edgeScanOp.header
     )
 
+    def isomorphismFilter(rel: Var, candidates: Set[Var]): Ands = Ands(
+      candidates.map(e => Not(Equals(e, rel)(CTBoolean))(CTBoolean)).toList
+    )
+
     def expand(i: Int, iterationTable: P, edgeVars: Seq[Var]): (P, Var) = {
-      val nextNodeVar = header.entityVars.find(_.name == s"${innerNode.name}_${i-1}").get
-      val nextEdgeVar = header.entityVars.find(_.name == s"${edgeScan.name}_$i").get
+      val nextNode = header.entityVars.find(_.name == s"${innerNode.name}_${i-1}").get
+      val nextEdge = header.entityVars.find(_.name == s"${edgeScan.name}_$i").get
 
-      val aliasedHeader = expandCache.header
-        .withAlias(edgeScan -> nextEdgeVar, innerNode -> nextNodeVar)
-        .select(nextEdgeVar, nextNodeVar)
+      val aliasedCacheHeader = expandCacheOp.header
+        .withAlias(edgeScan -> nextEdge, innerNode -> nextNode)
+        .select(nextEdge, nextNode)
 
-      val aliasedCache = producer.planAlias(
-        expandCache, Seq(edgeScan -> nextEdgeVar, innerNode -> nextNodeVar),
-        aliasedHeader
+      val aliasedCacheOp = producer.planAlias(
+        expandCacheOp, Seq(edgeScan -> nextEdge, innerNode -> nextNode),
+        aliasedCacheHeader
       )
 
-      val expanded = producer.planJoin(
+      val expandedOp = producer.planJoin(
         iterationTable,
-        aliasedCache,
-        Seq(iterationTable.header.endNodeFor(edgeVars.last) -> nextNodeVar),
-        iterationTable.header join aliasedHeader
+        aliasedCacheOp,
+        Seq(iterationTable.header.endNodeFor(edgeVars.last) -> nextNode),
+        iterationTable.header join aliasedCacheHeader
       )
 
-      val isomporphismFilterExpr = Ands(
-        edgeVars.map(e => Not(Equals(e, nextEdgeVar)(CTBoolean))(CTBoolean)).toList
-      )
-      producer.planFilter(expanded, isomporphismFilterExpr, expanded.header) -> nextEdgeVar
+      producer.planFilter(expandedOp, isomorphismFilter(nextEdge, edgeVars.toSet), expandedOp.header) -> nextEdge
     }
 
+    // Execute the first expand
     val aliasedEdgeScan = header.entityVars.find(_.name == s"${edgeScan.name}_1").get
     val aliasedEdgeScanOp = producer.planAlias(
-      physicalEdgeOp,
+      physicalEdgeScanOp,
       edgeScan, aliasedEdgeScan,
       edgeScanOp.header.withAlias(edgeScan -> aliasedEdgeScan).select(aliasedEdgeScan)
     )
-
-    val start = producer.planJoin(
+    val startOp = producer.planJoin(
       physicalSourceOp, aliasedEdgeScanOp,
       Seq(source -> aliasedEdgeScanOp.header.startNodeFor(aliasedEdgeScan)),
       sourceOp.header join aliasedEdgeScanOp.header
     )
+    val filteredStartOp = producer.planFilter(startOp, isomorphismFilter(aliasedEdgeScan, sourceOp.header.relationshipVars), startOp.header)
 
-    val expands = (2 to upper).foldLeft(Seq(start -> Seq(aliasedEdgeScan))) {
+    // Iteratively expand beginning from startOp with cacheOp
+    val expandOps = (2 to upper).foldLeft(Seq(filteredStartOp -> Seq(aliasedEdgeScan))) {
       case (acc, i) =>
         val (last, edgeVars) = acc.last
         val (next, nextEdge)  = expand(i, last, edgeVars)
         acc :+ (next -> (edgeVars :+ nextEdge))
     }.filter(_._2.size >= lower )
 
-    val withTarget = expands.map {
-      case (exp, edges) if isExpandInto =>
-        val filterExpr = Equals(target, exp.header.endNodeFor(edges.last))(CTBoolean)
-        producer.planFilter(exp, filterExpr, exp.header)
-      case (exp, edges) =>
-        producer.planJoin(exp, physicalTargetOp, Seq(exp.header.endNodeFor(edges.last) -> target), exp.header join physicalTargetOp.header)
+    // Join target nodes on expand ops
+    val withTargetOps = expandOps.map {
+      case (op, edges) if isExpandInto =>
+        val filterExpr = Equals(target, op.header.endNodeFor(edges.last))(CTBoolean)
+        producer.planFilter(op, filterExpr, op.header)
+      case (op, edges) =>
+        producer.planJoin(op, physicalTargetOp, Seq(op.header.endNodeFor(edges.last) -> target), op.header join physicalTargetOp.header)
     }
 
-    val unaligned = if(lower == 0 ){
+    // check whether to include paths of length 0
+    val unalignedOps = if(lower == 0 ){
       val zeroLenghtExpand = physicalSourceOp.header.expressionsFor(source).foldLeft(physicalSourceOp) {
         case (acc, next) =>
           val targetExpr = next.withOwner(target)
@@ -337,16 +341,18 @@ I <: RuntimeContext[A, P]](producer: PhysicalOperatorProducer[O, K, A, P, I])
           producer.planProject(acc, next, Some(targetExpr), targetHeader)
       }
 
-      withTarget :+ zeroLenghtExpand
-    } else withTarget
+      withTargetOps :+ zeroLenghtExpand
+    } else withTargetOps
 
-    val aligned = unaligned.map { exp =>
+    // fill shorter paths with nulls
+    val alignedOps = unalignedOps.map { exp =>
       val nullExpressions = header.expressions -- exp.header.expressions
       nullExpressions.foldLeft(exp) {
         case (acc, expr) => producer.planProject(acc, NullLit(expr.cypherType), Some(expr), acc.header.withExpr(expr))
       }
     }
 
-    aligned.reduce(producer.planTabularUnionAll)
+    // union expands of different lengths
+    alignedOps.reduce(producer.planTabularUnionAll)
   }
 }
