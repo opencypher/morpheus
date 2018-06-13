@@ -166,29 +166,34 @@ class FlatOperatorProducer(implicit context: FlatPlannerContext) {
     isExpandInto: Boolean
   ): FlatOperator = {
 
-    val edgeHeader = edgeOp.header
-    val edgesHeader = (1 to upper).foldLeft(RecordHeader.empty) {
-      case (acc, i) =>
-        val cypherType = if(i > lower) edgeScan.cypherType.nullable else edgeScan.cypherType
-        val newEdge = Var(s"${edgeScan.name}_$i")(cypherType)
-        acc ++ edgeHeader
-          .withColumnRenamed(edgeScan, newEdge)
-          .select(newEdge)
+    val cypherType = if(lower == 0) edgeScan.cypherType.nullable else edgeScan.cypherType
+    val aliasedEdgeScan = Var(s"${edgeScan.name}_1")(cypherType)
+    val aliasedEdgeScanHeader = edgeOp.header.withAlias(edgeScan -> aliasedEdgeScan).select(aliasedEdgeScan)
+    val startHeader = sourceOp.header join aliasedEdgeScanHeader
+
+    val expandCacheHeader = innerNodeOp.header join edgeOp.header
+
+    def expand(i: Int, prev: RecordHeader): RecordHeader = {
+      val innerNodeCypherType = if(i >= lower) innerNode.cypherType.nullable else innerNode.cypherType
+      val newNode = Var(s"${innerNode.name}_${i-1}")(innerNodeCypherType)
+
+      val edgeCypherType = if(i > lower) edgeScan.cypherType.nullable else edgeScan.cypherType
+      val newEdge = Var(s"${edgeScan.name}_$i")(edgeCypherType)
+
+      val aliasedCacheHeader = expandCacheHeader
+        .withAlias(edgeScan -> newEdge, innerNode -> newNode)
+        .select(newEdge, newNode)
+
+      prev join aliasedCacheHeader
     }
 
-    val innerNodeHeader = innerNodeOp.header
-    val innerNodesHeader = (1 until upper).foldLeft(RecordHeader.empty) {
-      case (acc, i) =>
-        val cypherType = if(i >= lower) innerNode.cypherType.nullable else innerNode.cypherType
-        val newNode = Var(s"${innerNode.name}_$i")(cypherType)
-        acc ++ innerNodeHeader
-          .withColumnRenamed(innerNode, newNode)
-          .select(newNode)
+    val expandHeader = (2 to upper).foldLeft(startHeader) {
+      case (acc, i) => expand(i, acc)
     }
 
-    val header = sourceOp.header ++ edgesHeader ++ innerNodesHeader ++ targetOp.header
+    val header = expandHeader join targetOp.header
+
     BoundedVarExpand(source, edge, edgeScan, innerNode, target, direction, lower, upper, sourceOp, edgeOp, innerNodeOp, targetOp, header, isExpandInto)
-
   }
 
   def planOptional(lhs: FlatOperator, rhs: FlatOperator): FlatOperator = {

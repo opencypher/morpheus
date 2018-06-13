@@ -272,7 +272,7 @@ I <: RuntimeContext[A, P]](producer: PhysicalOperatorProducer[O, K, A, P, I])
     val expandCache = producer.planJoin(
       physicalInnerNodeOp, physicalEdgeOp,
       Seq(innerNode -> edgeScanOp.header.startNodeFor(edgeScan)),
-      innerNodeOp.header ++ edgeScanOp.header
+      innerNodeOp.header join edgeScanOp.header
     )
 
     def expand(i: Int, iterationTable: P, edgeVars: Seq[Var]): (P, Var) = {
@@ -280,12 +280,11 @@ I <: RuntimeContext[A, P]](producer: PhysicalOperatorProducer[O, K, A, P, I])
       val nextEdgeVar = header.entityVars.find(_.name == s"${edgeScan.name}_$i").get
 
       val aliasedHeader = expandCache.header
-        .withColumnRenamed(edgeScan, nextEdgeVar)
-        .withColumnRenamed(innerNode, nextNodeVar)
+        .withAlias(edgeScan -> nextEdgeVar, innerNode -> nextNodeVar)
         .select(nextEdgeVar, nextNodeVar)
 
-      val aliasedCache = producer.planRenameColumnsExpr(
-        expandCache, Map(edgeScan -> nextEdgeVar, innerNode -> nextNodeVar),
+      val aliasedCache = producer.planAlias(
+        expandCache, Seq(edgeScan -> nextEdgeVar, innerNode -> nextNodeVar),
         aliasedHeader
       )
 
@@ -293,7 +292,7 @@ I <: RuntimeContext[A, P]](producer: PhysicalOperatorProducer[O, K, A, P, I])
         iterationTable,
         aliasedCache,
         Seq(iterationTable.header.endNodeFor(edgeVars.last) -> nextNodeVar),
-        iterationTable.header ++ aliasedCache.header
+        iterationTable.header join aliasedHeader
       )
 
       val isomporphismFilterExpr = Ands(
@@ -302,15 +301,20 @@ I <: RuntimeContext[A, P]](producer: PhysicalOperatorProducer[O, K, A, P, I])
       producer.planFilter(expanded, isomporphismFilterExpr, expanded.header) -> nextEdgeVar
     }
 
-    val start = producer.planJoin(
-      physicalSourceOp, physicalEdgeOp,
-      Seq(source -> edgeScanOp.header.startNodeFor(edgeScan)),
-      sourceOp.header ++ edgeScanOp.header
+    val aliasedEdgeScan = header.entityVars.find(_.name == s"${edgeScan.name}_1").get
+    val aliasedEdgeScanOp = producer.planAlias(
+      physicalEdgeOp,
+      edgeScan, aliasedEdgeScan,
+      edgeScanOp.header.withAlias(edgeScan -> aliasedEdgeScan).select(aliasedEdgeScan)
     )
-    val aliasedEdge = header.entityVars.find(_.name == s"${edgeScan.name}_1").get
-    val aliasedStart = producer.planRenameColumnsExpr(start, Map(edge -> aliasedEdge), start.header.withColumnRenamed(edge, aliasedEdge))
 
-    val expands = (2 to upper).foldLeft(Seq(aliasedStart -> Seq(aliasedEdge))) {
+    val start = producer.planJoin(
+      physicalSourceOp, aliasedEdgeScanOp,
+      Seq(source -> aliasedEdgeScanOp.header.startNodeFor(aliasedEdgeScan)),
+      sourceOp.header join aliasedEdgeScanOp.header
+    )
+
+    val expands = (2 to upper).foldLeft(Seq(start -> Seq(aliasedEdgeScan))) {
       case (acc, i) =>
         val (last, edgeVars) = acc.last
         val (next, nextEdge)  = expand(i, last, edgeVars)
@@ -322,7 +326,7 @@ I <: RuntimeContext[A, P]](producer: PhysicalOperatorProducer[O, K, A, P, I])
         val filterExpr = Equals(target, exp.header.endNodeFor(edges.last))(CTBoolean)
         producer.planFilter(exp, filterExpr, exp.header)
       case (exp, edges) =>
-        producer.planJoin(exp, physicalTargetOp, Seq(exp.header.endNodeFor(edges.last) -> target), exp.header ++ physicalTargetOp.header)
+        producer.planJoin(exp, physicalTargetOp, Seq(exp.header.endNodeFor(edges.last) -> target), exp.header join physicalTargetOp.header)
     }
 
     val unaligned = if(lower == 0 ){
