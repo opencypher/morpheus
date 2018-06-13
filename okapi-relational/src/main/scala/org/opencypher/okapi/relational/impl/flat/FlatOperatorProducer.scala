@@ -165,7 +165,7 @@ class FlatOperatorProducer(implicit context: FlatPlannerContext) {
     isExpandInto: Boolean
   ): FlatOperator = {
 
-    val aliasedEdgeScanCypherType = if(lower == 0) edgeScan.cypherType.nullable else edgeScan.cypherType
+    val aliasedEdgeScanCypherType = if (lower == 0) edgeScan.cypherType.nullable else edgeScan.cypherType
     val aliasedEdgeScan = Var(s"${edgeScan.name}_1")(aliasedEdgeScanCypherType)
     val aliasedEdgeScanHeader = edgeScanOp.header.withAlias(edgeScan -> aliasedEdgeScan).select(aliasedEdgeScan)
 
@@ -174,10 +174,10 @@ class FlatOperatorProducer(implicit context: FlatPlannerContext) {
     val expandCacheHeader = innerNodeOp.header join edgeScanOp.header
 
     def expand(i: Int, prev: RecordHeader): RecordHeader = {
-      val innerNodeCypherType = if(i >= lower) innerNode.cypherType.nullable else innerNode.cypherType
-      val nextNode = Var(s"${innerNode.name}_${i-1}")(innerNodeCypherType)
+      val innerNodeCypherType = if (i >= lower) innerNode.cypherType.nullable else innerNode.cypherType
+      val nextNode = Var(s"${innerNode.name}_${i - 1}")(innerNodeCypherType)
 
-      val edgeCypherType = if(i > lower) edgeScan.cypherType.nullable else edgeScan.cypherType
+      val edgeCypherType = if (i > lower) edgeScan.cypherType.nullable else edgeScan.cypherType
       val nextEdge = Var(s"${edgeScan.name}_$i")(edgeCypherType)
 
       val aliasedCacheHeader = expandCacheHeader
@@ -191,7 +191,7 @@ class FlatOperatorProducer(implicit context: FlatPlannerContext) {
       case (acc, i) => expand(i, acc)
     }
 
-    val header = if(isExpandInto) expandHeader else expandHeader join targetOp.header
+    val header = if (isExpandInto) expandHeader else expandHeader join targetOp.header
 
     BoundedVarExpand(source, edgeScan, innerNode, target, direction, lower, upper, sourceOp, edgeScanOp, innerNodeOp, targetOp, header, isExpandInto)
   }

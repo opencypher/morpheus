@@ -225,18 +225,6 @@ I <: RuntimeContext[A, P]] {
   def planOrderBy(in: K, sortItems: Seq[SortItem[Expr]], header: RecordHeader): K
 
   /**
-    * Initializes the underlying records for a variable expand computation (e.g., (a)-[:A*1..3]->(b)).
-    *
-    * @param in       previous operator
-    * @param source   variable to expand from (e.g. (a))
-    * @param edgeList variable to identify column which later stores relationship identifiers of the computed paths
-    * @param target   variable to expand into (e.g. (b))
-    * @param header   resulting record header
-    * @return init var expand operator
-    */
-  def planInitVarExpand(in: K, source: Var, edgeList: Var, target: Var, header: RecordHeader): K
-
-  /**
     * Skips the given amount of rows in the input records. The number of rows is specified by an expression which can be
     * a literal or a query parameter.
     *

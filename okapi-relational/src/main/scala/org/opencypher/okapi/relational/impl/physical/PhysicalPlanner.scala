@@ -170,12 +170,17 @@ I <: RuntimeContext[A, P]](producer: PhysicalOperatorProducer[O, K, A, P, I])
         }
 
       case flat.BoundedVarExpand(
-      source, edgeScan, innerNode, target,
-      direction, lower, upper,
-      sourceOp, edgeScanOp, innerNodeOp, targetOp,
-      header, isExpandInto) =>
-
-        planBoundedVarLengthExpand(source, edgeScan, innerNode, target, direction, lower, upper, sourceOp, edgeScanOp, innerNodeOp, targetOp, header, isExpandInto)
+        source, edgeScan, innerNode, target,
+        direction, lower, upper,
+        sourceOp, edgeScanOp, innerNodeOp, targetOp,
+        header, isExpandInto
+      ) =>
+        planBoundedVarLengthExpand(
+          source, edgeScan, innerNode, target,
+          direction, lower, upper,
+          sourceOp, edgeScanOp, innerNodeOp, targetOp,
+          header, isExpandInto
+        )
 
       case flat.Optional(lhs, rhs, header) => planOptional(lhs, rhs, header)
 
@@ -279,7 +284,7 @@ I <: RuntimeContext[A, P]](producer: PhysicalOperatorProducer[O, K, A, P, I])
     )
 
     def expand(i: Int, iterationTable: P, edgeVars: Seq[Var]): (P, Var) = {
-      val nextNode = header.entityVars.find(_.name == s"${innerNode.name}_${i-1}").get
+      val nextNode = header.entityVars.find(_.name == s"${innerNode.name}_${i - 1}").get
       val nextEdge = header.entityVars.find(_.name == s"${edgeScan.name}_$i").get
 
       val aliasedCacheHeader = expandCacheOp.header
@@ -319,9 +324,9 @@ I <: RuntimeContext[A, P]](producer: PhysicalOperatorProducer[O, K, A, P, I])
     val expandOps = (2 to upper).foldLeft(Seq(filteredStartOp -> Seq(aliasedEdgeScan))) {
       case (acc, i) =>
         val (last, edgeVars) = acc.last
-        val (next, nextEdge)  = expand(i, last, edgeVars)
+        val (next, nextEdge) = expand(i, last, edgeVars)
         acc :+ (next -> (edgeVars :+ nextEdge))
-    }.filter(_._2.size >= lower )
+    }.filter(_._2.size >= lower)
 
     // Join target nodes on expand ops
     val withTargetOps = expandOps.map {
@@ -333,7 +338,7 @@ I <: RuntimeContext[A, P]](producer: PhysicalOperatorProducer[O, K, A, P, I])
     }
 
     // check whether to include paths of length 0
-    val unalignedOps = if( lower == 0 ){
+    val unalignedOps = if (lower == 0) {
       val zeroLenghtExpand = physicalSourceOp.header.expressionsFor(source).foldLeft(physicalSourceOp) {
         case (acc, next) =>
           val targetExpr = next.withOwner(target)

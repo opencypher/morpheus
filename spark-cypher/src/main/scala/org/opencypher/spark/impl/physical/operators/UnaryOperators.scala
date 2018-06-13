@@ -37,10 +37,8 @@ import org.opencypher.okapi.relational.impl.table._
 import org.opencypher.spark.api.CAPSSession
 import org.opencypher.spark.impl.CAPSRecords
 import org.opencypher.spark.impl.CAPSUnionGraph.{apply => _, unapply => _}
-import org.opencypher.spark.impl.DataFrameOps._
 import org.opencypher.spark.impl.SparkSQLExprMapper._
 import org.opencypher.spark.impl.convert.SparkConversions._
-import org.opencypher.spark.impl.physical.operators.CAPSPhysicalOperator._
 import org.opencypher.spark.impl.physical.{CAPSPhysicalResult, CAPSRuntimeContext}
 
 private[spark] abstract class UnaryPhysicalOperator extends CAPSPhysicalOperator {
@@ -338,41 +336,6 @@ final case class Limit(in: CAPSPhysicalOperator, expr: Expr, header: RecordHeade
 
     prev.mapRecordsWithDetails { records =>
       CAPSRecords(header, records.toDF().limit(limit.toInt))(records.caps)
-    }
-  }
-}
-
-// Initialises the table in preparation for variable length expand.
-final case class InitVarExpand(
-  in: CAPSPhysicalOperator,
-  source: Var,
-  edgeList: Var,
-  target: Var,
-  header: RecordHeader
-)
-  extends UnaryPhysicalOperator with PhysicalOperatorDebugging {
-
-  override def executeUnary(prev: CAPSPhysicalResult)(implicit context: CAPSRuntimeContext): CAPSPhysicalResult = {
-    assertIsNode(target)
-
-    val sourceColumn = header.column(source)
-    val edgeListColumn = header.column(edgeList)
-    val targetColumn = header.column(target)
-
-    prev.mapRecordsWithDetails { records =>
-      val inputData = records.df
-      val keep = inputData.columns.map(inputData.col)
-
-      val edgeListDfColumn = functions.typedLit(Array[Long]())
-      val withEmptyList = inputData.safeAddColumn(edgeListColumn, edgeListDfColumn)
-
-      val cols = keep ++ Seq(
-        withEmptyList.col(edgeListColumn),
-        inputData.col(sourceColumn).as(targetColumn))
-
-      val initializedData = withEmptyList.select(cols: _*)
-
-      CAPSRecords(header, initializedData)(records.caps)
     }
   }
 }
