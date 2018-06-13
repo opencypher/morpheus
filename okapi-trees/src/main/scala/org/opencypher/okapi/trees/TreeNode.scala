@@ -26,6 +26,7 @@
  */
 package org.opencypher.okapi.trees
 
+import scala.annotation.tailrec
 import scala.collection.mutable.ArrayBuffer
 import scala.reflect.ClassTag
 import scala.util.hashing.MurmurHash3
@@ -134,20 +135,25 @@ abstract class TreeNode[T <: TreeNode[T]: ClassTag] extends Product with Travers
   def pretty: String = {
     val lines = new ArrayBuffer[String]
 
-    def recTreeToString(toPrint: List[T], prefix: String): Unit = {
+    @tailrec
+    def recTreeToString(toPrint: List[T], prefix: String, stack: List[List[T]]): Unit = {
       toPrint match {
         case Nil =>
+          stack match {
+            case Nil =>
+            case top :: remainingStack =>
+              recTreeToString(top, prefix.dropRight(4), remainingStack)
+          }
         case last :: Nil =>
           lines += s"$prefix╙──${last.toString}"
-          recTreeToString(last.children.toList, s"$prefix    ")
+          recTreeToString(last.children.toList, s"$prefix    ", Nil :: stack)
         case next :: siblings =>
           lines += s"$prefix╟──${next.toString}"
-          recTreeToString(next.children.toList, s"$prefix║   ")
-          recTreeToString(siblings, prefix)
+          recTreeToString(next.children.toList, s"$prefix║   ", siblings :: stack)
       }
     }
 
-    recTreeToString(List(this), "")
+    recTreeToString(List(this), "", Nil)
     lines.mkString("\n")
   }
 
