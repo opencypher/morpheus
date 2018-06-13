@@ -31,8 +31,9 @@ import org.opencypher.okapi.impl.exception.NotImplementedException
 import org.opencypher.okapi.ir.api.util.DirectCompilationStage
 import org.opencypher.okapi.logical.impl.LogicalOperator
 import org.opencypher.okapi.logical.{impl => logical}
+import org.opencypher.okapi.relational.impl.table.RecordHeader
 
-final case class FlatPlannerContext(parameters: CypherMap)
+final case class FlatPlannerContext(parameters: CypherMap, drivingTableHeader: RecordHeader)
 
 class FlatPlanner extends DirectCompilationStage[LogicalOperator, FlatOperator, FlatPlannerContext] {
 
@@ -78,14 +79,17 @@ class FlatPlanner extends DirectCompilationStage[LogicalOperator, FlatOperator, 
         producer.planEmptyRecords(fields, process(in))
 
       case logical.Start(graph, fields, _) =>
-        producer.planStart(graph, fields)
+        producer.planStart(graph, fields, context.drivingTableHeader)
 
       case logical.FromGraph(graph, in, _) =>
         producer.planFromGraph(graph, process(in))
 
       case logical.BoundedVarLengthExpand(source, edgeList, target, direction, lower, upper, sourceOp, targetOp, _) =>
         val initVarExpand = producer.initVarExpand(source, edgeList, process(sourceOp))
-        val edgeScan = producer.varLengthRelationshipScan(edgeList, producer.planStart(input.graph, Set.empty))
+        val edgeScan = producer.varLengthRelationshipScan(
+          edgeList,
+          producer.planStart(input.graph, Set.empty, RecordHeader.empty))
+
         producer.boundedVarExpand(
           edgeScan.rel,
           edgeList,

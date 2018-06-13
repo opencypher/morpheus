@@ -27,23 +27,28 @@
 package org.opencypher.okapi.relational.impl.physical
 
 import org.opencypher.okapi.api.graph.{CypherSession, PropertyGraph}
-import org.opencypher.okapi.api.table.CypherRecords
 import org.opencypher.okapi.api.types.{CTBoolean, CTNode}
 import org.opencypher.okapi.impl.exception.NotImplementedException
 import org.opencypher.okapi.ir.api.block.SortItem
 import org.opencypher.okapi.ir.api.expr._
 import org.opencypher.okapi.ir.api.util.DirectCompilationStage
 import org.opencypher.okapi.logical.impl._
+import org.opencypher.okapi.relational.api.io.{FlatRelationalTable, RelationalCypherRecords}
 import org.opencypher.okapi.relational.api.physical.{PhysicalOperator, PhysicalOperatorProducer, PhysicalPlannerContext, RuntimeContext}
 import org.opencypher.okapi.relational.impl.flat
 import org.opencypher.okapi.relational.impl.flat.FlatOperator
 import org.opencypher.okapi.relational.impl.table._
 
-class PhysicalPlanner[P <: PhysicalOperator[R, G, C], R <: CypherRecords, G <: PropertyGraph, C <: RuntimeContext[R, G]](producer: PhysicalOperatorProducer[P, R, G, C])
+class PhysicalPlanner[
+O <: FlatRelationalTable[O],
+K <: PhysicalOperator[A, P, I],
+A <: RelationalCypherRecords[O],
+P <: PropertyGraph,
+I <: RuntimeContext[A, P]](producer: PhysicalOperatorProducer[O, K, A, P, I])
 
-  extends DirectCompilationStage[FlatOperator, P, PhysicalPlannerContext[P, R]] {
+  extends DirectCompilationStage[FlatOperator, K, PhysicalPlannerContext[K, A]] {
 
-  def process(flatPlan: FlatOperator)(implicit context: PhysicalPlannerContext[P, R]): P = {
+  def process(flatPlan: FlatOperator)(implicit context: PhysicalPlannerContext[K, A]): K = {
 
     implicit val caps: CypherSession = context.session
 
@@ -62,10 +67,10 @@ class PhysicalPlanner[P <: PhysicalOperator[R, G, C], R <: CypherRecords, G <: P
       case flat.EmptyRecords(in, header) =>
         producer.planEmptyRecords(process(in), header)
 
-      case flat.Start(graph, _) =>
+      case flat.Start(graph, _, header) =>
         graph match {
           case g: LogicalCatalogGraph =>
-            producer.planStart(Some(g.qualifiedGraphName), Some(context.inputRecords))
+            producer.planStart(Some(g.qualifiedGraphName), Some(context.inputRecords), header)
           case p: LogicalPatternGraph =>
             context.constructedGraphPlans.get(p.name) match {
               case Some(plan) => plan // the graph was already constructed
@@ -204,7 +209,7 @@ class PhysicalPlanner[P <: PhysicalOperator[R, G, C], R <: CypherRecords, G <: P
     }
   }
 
-  private def planConstructGraph(in: Option[FlatOperator], construct: LogicalPatternGraph)(implicit context: PhysicalPlannerContext[P, R]) = {
+  private def planConstructGraph(in: Option[FlatOperator], construct: LogicalPatternGraph)(implicit context: PhysicalPlannerContext[K, A]) = {
     val onGraphPlan = {
       construct.onGraphs match {
         case Nil => producer.planStart() // Empty start
@@ -222,7 +227,7 @@ class PhysicalPlanner[P <: PhysicalOperator[R, G, C], R <: CypherRecords, G <: P
     constructGraphPlan
   }
 
-  private def planOptional(lhs: FlatOperator, rhs: FlatOperator, header: RecordHeader)(implicit context: PhysicalPlannerContext[P, R]) = {
+  private def planOptional(lhs: FlatOperator, rhs: FlatOperator, header: RecordHeader)(implicit context: PhysicalPlannerContext[K, A]) = {
     val lhsData = process(lhs)
     val rhsData = process(rhs)
     val lhsHeader = lhs.header

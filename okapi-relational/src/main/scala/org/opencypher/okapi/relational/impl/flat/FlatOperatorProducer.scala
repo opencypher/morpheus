@@ -165,8 +165,8 @@ class FlatOperatorProducer(implicit context: FlatPlannerContext) {
     EmptyRecords(prev, RecordHeader.from(fields))
   }
 
-  def planStart(graph: LogicalGraph, fields: Set[Var]): Start = {
-    Start(graph, fields)
+  def planStart(graph: LogicalGraph, fields: Set[Var], header: RecordHeader): Start = {
+    Start(graph, fields, header)
   }
 
   def initVarExpand(source: Var, edgeList: Var, in: FlatOperator): InitVarExpand = {
