@@ -30,15 +30,14 @@ class MultipleGraphExampleTest extends ExampleTest {
 
   it("should produce the correct output") {
     validate(MultipleGraphExample.main(Array.empty),
-      s"""|+-------------------------+
+      s"""|+-----------------+-------+
           || recommendation  | for   |
-          |+-------------------------+
+          |+-----------------+-------+
           || '1984'          | 'Bob' |
           || 'Jurassic Park' | 'Bob' |
           || 'Shakira'       | 'Bob' |
           || 'Terminator 2'  | 'Bob' |
-          |+-------------------------+
-          |(4 rows)
-          |""".stripMargin)
+          |+-----------------+-------+
+          |(4 rows)""".stripMargin)
   }
 }

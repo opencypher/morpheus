@@ -29,13 +29,12 @@ package org.opencypher.spark.examples
 class CaseClassExampleTest extends ExampleTest {
   it("should produce the correct output") {
     validate(CaseClassExample.main(Array.empty),
-      s"""|+----------------------------------+
+      s"""|+---------+---------+--------------+
           || a.name  | b.name  | r.since      |
-          |+----------------------------------+
+          |+---------+---------+--------------+
           || 'Alice' | 'Bob'   | '23/01/1987' |
           || 'Bob'   | 'Carol' | '12/12/2009' |
-          |+----------------------------------+
-          |(2 rows)
-          |""".stripMargin)
+          |+---------+---------+--------------+
+          |(2 rows)""".stripMargin)
   }
 }

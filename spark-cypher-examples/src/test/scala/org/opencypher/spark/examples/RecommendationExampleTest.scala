@@ -29,15 +29,14 @@ package org.opencypher.spark.examples
 class RecommendationExampleTest extends ExampleTest {
   it("should produce the correct output") {
     validate(RecommendationExample.main(Array.empty),
-      s"""|+---------------------------+
+      s"""|+-----------------+---------+
           || product         | name    |
-          |+---------------------------+
+          |+-----------------+---------+
           || 'Terminator 2'  | 'Eve'   |
           || 'Cryptonomicon' | 'Trudy' |
           || '1984'          | 'Bob'   |
-          |+---------------------------+
-          |(3 rows)
-          |""".stripMargin)
+          |+-----------------+---------+
+          |(3 rows)""".stripMargin)
   }
 
 }
