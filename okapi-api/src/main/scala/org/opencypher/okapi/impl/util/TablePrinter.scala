@@ -24,31 +24,43 @@
  * described as "implementation extensions to Cypher" or as "proposed changes to
  * Cypher that are not yet approved by the openCypher community".
  */
-package org.opencypher.okapi.impl.table
+package org.opencypher.okapi.impl.util
 
-import org.opencypher.okapi.api.table.CypherRecords
-import org.opencypher.okapi.api.value.CypherValue
-import org.opencypher.okapi.api.value.CypherValue.CypherValue
-import org.opencypher.okapi.impl.util.{PrintOptions, TablePrinter}
+object TablePrinter {
 
-object RecordsPrinter {
+  private val emptyColumns = "(no columns)"
+  private val emptyRow = "(empty row)"
 
-  /**
-    * Prints the given CypherRecords to stdout
-    *
-    * @param records the records to be printed.
-    */
-  def print(records: CypherRecords)(implicit options: PrintOptions): Unit = {
-    val columns = records.logicalColumns.getOrElse(records.physicalColumns)
+  def toTable[T](header: Seq[String], data: Seq[Seq[T]])(implicit toString: T => String = (t: T) => t.toString): String = {
+    val inputRows = header match {
+      case Nil => Seq(Seq(emptyColumns),Seq(emptyRow)).toList
+      case _ => header :: data.map(row => row.map(cell => toString(cell))).toList
+    }
+    val cellSizes = inputRows.map { row => row.map { cell => cell.length } }
+    val colSizes = cellSizes.transpose.map { cellSizes => cellSizes.max }
 
-    val rows: Seq[Seq[CypherValue]] = records.collect.map { row =>
-      columns.foldLeft(Seq.empty[CypherValue]) {
-        case (currentSeq, column) => currentSeq :+ row(column)
-      }
+    val rowSep = rowSeparator(colSizes)
+
+    val rows = inputRows.map { row =>
+      row.zip(colSizes).map {
+        case (cell, colSize) => (" %" + (-1 * colSize) + "s ").format(cell)
+      }.mkString("|", "|", "|")
     }
 
-    options.stream
-      .append(TablePrinter.toTable(columns, rows)(CypherValue.toCypherString))
-      .flush()
+    val headerRows = Seq(rowSep, rows.head, rowSep)
+    val bodyRows = if (rows.tail.nonEmpty) rows.tail :+ rowSep else Seq.empty
+    val footerRow = rowCountFooter(data.size)
+
+    (headerRows ++ bodyRows :+ footerRow).mkString("\n")
   }
+
+  def rowSeparator(colSizes: Seq[Int]): String =
+    colSizes.map { colSize => "-" * (colSize + 2) }.mkString("+", "+", "+")
+
+  def rowCountFooter(rowCount: Int): String = rowCount match {
+    case 0 => s"(no rows)"
+    case 1 => s"(1 row)"
+    case n => s"($n rows)"
+  }
+
 }
