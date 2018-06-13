@@ -43,7 +43,7 @@ private[spark] abstract class LeafPhysicalOperator extends CAPSPhysicalOperator 
 
 final case class Start(qgn: QualifiedGraphName, recordsOpt: Option[CAPSRecords], header: RecordHeader)
   (implicit caps: CAPSSession) extends LeafPhysicalOperator with PhysicalOperatorDebugging {
-  
+
   override def executeLeaf()(implicit context: CAPSRuntimeContext): CAPSPhysicalResult = {
     val records = recordsOpt.getOrElse(CAPSRecords.unit())
     CAPSPhysicalResult(records, resolve(qgn), qgn)
