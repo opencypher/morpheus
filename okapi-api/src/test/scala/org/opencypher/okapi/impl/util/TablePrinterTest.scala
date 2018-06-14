@@ -128,12 +128,14 @@ class TablePrinterTest extends FunSpec with Matchers {
 
     implicit val f: CypherValue => String = v => v.toCypherString
 
+    println(toTable(header, data))
+
     toTable(header, data) should equal(
-      """|╔═══════════════════╤════════════════════════╗
-         |║ n                 │ r                      ║
-         |╠═══════════════════╪════════════════════════╣
-         |║ (:A:B {prop: 42}) │ [:KNOWS {prop: 'foo'}] ║
-         |╚═══════════════════╧════════════════════════╝
+      """|╔═════════════════════════╤════════════════════════════╗
+         |║ n                       │ r                          ║
+         |╠═════════════════════════╪════════════════════════════╣
+         |║ (:`A`:`B` {`prop`: 42}) │ [:`KNOWS` {`prop`: 'foo'}] ║
+         |╚═════════════════════════╧════════════════════════════╝
          |(1 row)
          |""".stripMargin
     )
