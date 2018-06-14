@@ -51,24 +51,6 @@
       <scope>test</scope>
     </dependency>
 
-    <!-- Workarounds for https://youtrack.jetbrains.com/issue/SCL-13184 -->
-
-    <dependency>
-      <groupId>org.opencypher</groupId>
-      <artifactId>okapi-trees</artifactId>
-      <version>${project.parent.version}</version>
-      <type>test-jar</type>
-      <scope>test</scope>
-    </dependency>
-
-    <dependency>
-      <groupId>org.opencypher</groupId>
-      <artifactId>okapi-api</artifactId>
-      <version>${project.parent.version}</version>
-      <type>test-jar</type>
-      <scope>test</scope>
-    </dependency>
-
     <dependency>
       <groupId>org.neo4j</groupId>
       <artifactId>neo4j-cypher-util-3.4</artifactId>

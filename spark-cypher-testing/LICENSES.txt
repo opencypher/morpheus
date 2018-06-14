@@ -5,55 +5,39 @@ libraries. For an overview of the licenses see the NOTICE.txt file.
 ------------------------------------------------------------------------------
 Apache Software License, Version 2.0
   Apache Avro
-  Apache Commons BeanUtils
   Apache Commons Codec
-  Apache Commons Collections
-  Apache Commons Configuration
-  Apache Commons CSV
-  Apache Commons IO
   Apache Commons Lang
   Apache Commons Math
   Apache Commons Text
-  Apache Geronimo JCache Spec 1.0
+  Apache Directory API ASN.1 API
+  Apache Directory LDAP API Utilities
   Apache Hadoop Annotations
   Apache Hadoop Auth
   Apache Hadoop Common
   Apache Hadoop HDFS
-  Apache Hadoop HDFS Client
-  Apache Hadoop MapReduce App
-  Apache Hadoop MapReduce Common
-  Apache Hadoop MapReduce Core
-  Apache Hadoop MapReduce HistoryServer
-  Apache Hadoop MapReduce JobClient
-  Apache Hadoop MapReduce Shuffle
   Apache Hadoop Mini-Cluster
-  Apache Hadoop YARN API
-  Apache Hadoop YARN ApplicationHistoryService
-  Apache Hadoop YARN Client
-  Apache Hadoop YARN Common
-  Apache Hadoop YARN NodeManager
-  Apache Hadoop YARN Registry
-  Apache Hadoop YARN ResourceManager
-  Apache Hadoop YARN Server Common
-  Apache Hadoop YARN Server Tests
-  Apache Hadoop YARN Timeline Service
-  Apache Hadoop YARN Web Proxy
   Apache HttpClient
   Apache HttpCore
   Apache Log4j
-  ASM based accessors helper used by json-smart
+  ApacheDS I18n
+  ApacheDS Protocol Kerberos Codec
   Caffeine cache
   Circe core
   Circe generic
   Circe jawn
   Circe numbers
   Circe parser
+  Commons BeanUtils Core
   Commons CLI
+  Commons Collections
   Commons Compress
+  Commons Configuration
   Commons Daemon
+  Commons IO
   Commons Lang
   Commons Logging
   Commons Net
+  commons-beanutils
   ConcurrentLinkedHashMap
   core
   coreJVM
@@ -62,61 +46,62 @@ Apache Software License, Version 2.0
   Curator Recipes
   Cypher for Apache Spark - CAPS
   Data Mapper for Jackson
-  Ehcache
+  Digester
   FindBugs-jsr305
-  fst
   Google Guice - Core Library
   Google Guice - Extensions - Servlet
   Gson
   Guava: Google Core Libraries for Java
-  HikariCP
-  htrace-core4
+  hadoop-mapreduce-client-app
+  hadoop-mapreduce-client-common
+  hadoop-mapreduce-client-core
+  hadoop-mapreduce-client-hs
+  hadoop-mapreduce-client-jobclient
+  hadoop-mapreduce-client-shuffle
+  hadoop-yarn-api
+  hadoop-yarn-client
+  hadoop-yarn-common
+  hadoop-yarn-server-applicationhistoryservice
+  hadoop-yarn-server-common
+  hadoop-yarn-server-nodemanager
+  hadoop-yarn-server-resourcemanager
+  hadoop-yarn-server-tests
+  hadoop-yarn-server-web-proxy
+  htrace-core
+  HttpClient
   Jackson
-  Jackson-annotations
-  Jackson-core
-  jackson-databind
-  Jackson-JAXRS-base
-  Jackson-JAXRS-JSON
-  Jackson-module-JAXB-annotations
   Java Servlet API
-  java-util
+  java-xmlbuilder
+  JavaBeans(TM) Activation Framework
+  JavaMail API (compat)
   javax.inject
   JAX-RS provider for JSON content type
-  JCIP Annotations under Apache License
+  JetS3t
   Jettison
-  JSON Small and Fast Parser
-  json-io
-  Kerb Simple Kdc
-  Kerby ASN1 Project
-  Kerby Config
-  Kerby PKIX Project
-  Kerby Util
-  Kerby XDR Project
-  Kerby-kerb Admin
-  Kerby-kerb Client
-  Kerby-kerb Common
-  Kerby-kerb core
-  Kerby-kerb Crypto
-  Kerby-kerb Identity
-  Kerby-kerb Server
-  Kerby-kerb Util
+  Jetty :: Http Utility
+  Jetty :: IO Utility
+  Jetty :: Security
+  Jetty :: Server Core
+  Jetty :: Servlet Handling
+  Jetty :: Utilities
+  Jetty :: Webapp Application Support
+  Jetty :: XML utilities
+  Jetty Server
+  Jetty Utilities
   Lucene codecs
   Lucene Common Analyzers
   Lucene Core
   Lucene Memory
   Lucene QueryParsers
-  Metrics Core
+  MX4J
   Netty
   Netty/All-in-One
-  Nimbus JOSE+JWT
   Okapi - openCypher API
   Okapi IR - Declarative representation of Cypher queries
   Okapi Logical - Logical representation of Cypher queries
   Okapi Relational - Relational Algebra for Cypher
   Okapi Test Utilities
   Okapi Trees - Tree rewriting framework for Okapi
-  OkHttp
-  Okio
   opencsv
   openCypher AST for the Cypher Query Language
   openCypher Expressions
@@ -128,9 +113,11 @@ Apache Software License, Version 2.0
   parboiled-scala
   scalactic
   scalatest
+  servlet-api
   snappy-java
-  Token provider
-  Woodstox
+  spark-measure
+  Xerces2 Java Parser
+  XML Commons External Components XML APIs
   Xml Compatibility extensions for Jackson
   zookeeper
 ------------------------------------------------------------------------------
@@ -346,6 +333,7 @@ BSD License
   ASM Tree
   ASM Util
   JLine
+  JSch
   leveldbjni-all
   ParaNamer Core
   Protocol Buffer Java API
@@ -353,7 +341,7 @@ BSD License
   Scala Library
   scala-parser-combinators
   scala-xml
-  Stax2 API
+  xmlenc Library
 ------------------------------------------------------------------------------
 
 Copyright (c) <year>, <copyright holder>
@@ -1558,6 +1546,7 @@ Exhibit B - "Incompatible With Secondary Licenses" Notice
 ------------------------------------------------------------------------------
 Public-domain
   AOP alliance
+  base64
   XZ for Java
 ------------------------------------------------------------------------------
 

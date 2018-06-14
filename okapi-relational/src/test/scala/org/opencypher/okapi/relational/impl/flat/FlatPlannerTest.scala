@@ -31,11 +31,11 @@ import org.opencypher.okapi.api.types._
 import org.opencypher.okapi.api.value.CypherValue.CypherMap
 import org.opencypher.okapi.ir.api.expr._
 import org.opencypher.okapi.ir.api.{IRField, Label, PropertyKey, RelType}
-import org.opencypher.okapi.ir.test._
-import org.opencypher.okapi.ir.test.support.MatchHelper._
+import org.opencypher.okapi.ir.impl.util.VarConverters._
 import org.opencypher.okapi.logical.impl.{Directed, LogicalGraph, LogicalOperatorProducer, Undirected}
 import org.opencypher.okapi.relational.impl.table.RecordHeader
 import org.opencypher.okapi.testing.BaseTestSuite
+import org.opencypher.okapi.testing.MatchHelper._
 
 import scala.language.implicitConversions
 

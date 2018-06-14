@@ -27,20 +27,10 @@
 package org.opencypher.okapi.ir
 
 import org.opencypher.okapi.api.schema.Schema
-import org.opencypher.okapi.api.types.CypherType
-import org.opencypher.okapi.ir.api.expr.Var
-import org.opencypher.okapi.ir.api.{IRCatalogGraph, IRField}
+import org.opencypher.okapi.ir.api.IRCatalogGraph
 
 import scala.language.implicitConversions
 
 package object test {
-  implicit def toVar(s: Symbol): Var = Var(s.name)()
-
-  implicit def toVar(t: (Symbol, CypherType)): Var = Var(t._1.name)(t._2)
-
-  implicit def toField(s: Symbol): IRField = IRField(s.name)()
-
-  implicit def toField(t: (Symbol, CypherType)): IRField = IRField(t._1.name)(t._2)
-
   implicit def toGraph(s: Symbol): IRCatalogGraph = IRCatalogGraph(s.name, Schema.empty)
 }

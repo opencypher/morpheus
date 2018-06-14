@@ -30,13 +30,13 @@ import org.opencypher.okapi.api.schema.Schema
 import org.opencypher.okapi.api.types.{CTNode, _}
 import org.opencypher.okapi.ir.api.expr._
 import org.opencypher.okapi.ir.api.{Label, _}
-import org.opencypher.okapi.ir.impl.IrTestSuite
-import org.opencypher.okapi.ir.test.support.MatchHelper._
+import org.opencypher.okapi.testing.MatchHelper._
 import org.opencypher.okapi.logical.impl._
+import org.opencypher.okapi.testing.BaseTestSuite
 
 import scala.language.implicitConversions
 
-class LogicalOptimizerTest extends IrTestSuite {
+class LogicalOptimizerTest extends BaseTestSuite with IrConstruction {
 
   val emptySqm = SolvedQueryModel.empty
   val logicalGraph = LogicalCatalogGraph(testQualifiedGraphName, Schema.empty)

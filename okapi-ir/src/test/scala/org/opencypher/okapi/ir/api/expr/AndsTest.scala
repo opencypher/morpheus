@@ -26,10 +26,9 @@
  */
 package org.opencypher.okapi.ir.api.expr
 
-import org.opencypher.okapi.impl.exception.IllegalStateException
 import org.opencypher.okapi.ir.api.Label
-import org.opencypher.okapi.ir.test.support.MatchHelper.equalWithTracing
 import org.opencypher.okapi.testing.BaseTestSuite
+import org.opencypher.okapi.testing.MatchHelper.equalWithTracing
 
 class AndsTest extends BaseTestSuite {
 

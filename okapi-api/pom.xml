@@ -50,16 +50,6 @@
       <scope>test</scope>
     </dependency>
 
-    <!--Workarounds for https://youtrack.jetbrains.com/issue/SCL-13184-->
-
-    <dependency>
-      <groupId>org.opencypher</groupId>
-      <artifactId>okapi-trees</artifactId>
-      <version>${project.parent.version}</version>
-      <type>test-jar</type>
-      <scope>test</scope>
-    </dependency>
-
   </dependencies>
 
 </project>

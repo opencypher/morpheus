@@ -26,9 +26,7 @@
  */
 package org.opencypher.okapi.ir.impl
 
-import org.mockito.Mockito._
-import org.opencypher.okapi.api.graph.{GraphName, Namespace, QualifiedGraphName}
-import org.opencypher.okapi.api.io._
+import org.opencypher.okapi.api.graph.GraphName
 import org.opencypher.okapi.api.schema.Schema
 import org.opencypher.okapi.api.value.CypherValue._
 import org.opencypher.okapi.ir.api._
@@ -38,35 +36,16 @@ import org.opencypher.okapi.ir.api.pattern.Pattern
 import org.opencypher.okapi.ir.impl.parse.CypherParser
 import org.opencypher.okapi.testing.BaseTestSuite
 import org.opencypher.v9_1.ast.semantics.SemanticState
-import org.scalatest.mockito.MockitoSugar
 
 import scala.language.implicitConversions
 import scala.reflect.ClassTag
-import scala.util.Random
 
-abstract class IrTestSuite extends BaseTestSuite with MockitoSugar {
-
-  val testNamespace = Namespace("testNamespace")
-  val testGraphName = GraphName("test")
-  val testGraphSchema = Schema.empty
-  val testQualifiedGraphName = QualifiedGraphName(testNamespace, testGraphName)
-
-  val qgnGenerator = new QGNGenerator {
-    override def generate: QualifiedGraphName = QualifiedGraphName(s"session.#${(Random.nextInt & Int.MaxValue) % 100}")
-  }
+abstract class IrTestSuite extends BaseTestSuite {
 
   def testGraph()(implicit schema: Schema = testGraphSchema) =
     IRCatalogGraph(testQualifiedGraphName, schema)
 
-  def testGraphSource(graphsWithSchema: (GraphName, Schema)*): PropertyGraphDataSource = {
-    val gs = mock[PropertyGraphDataSource]
-    graphsWithSchema.foreach {
-      case (graphName, schema) => when(gs.schema(graphName)).thenReturn(Some(schema))
-    }
-    gs
-  }
-
-  def leafBlock(): SourceBlock[Expr] = SourceBlock[Expr](testGraph)
+  def leafBlock: SourceBlock[Expr] = SourceBlock[Expr](testGraph)
 
   val graphBlock: SourceBlock[Expr] = SourceBlock[Expr](testGraph)
 

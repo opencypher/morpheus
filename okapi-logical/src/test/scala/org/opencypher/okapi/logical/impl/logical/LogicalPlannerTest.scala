@@ -35,17 +35,16 @@ import org.opencypher.okapi.ir.api._
 import org.opencypher.okapi.ir.api.block._
 import org.opencypher.okapi.ir.api.expr._
 import org.opencypher.okapi.ir.api.pattern.{CyclicRelationship, DirectedRelationship, Pattern}
-import org.opencypher.okapi.ir.impl.util.VarConverters.{toVar => irFieldToVar}
-import org.opencypher.okapi.ir.test.support.MatchHelper
-import org.opencypher.okapi.ir.test.support.MatchHelper._
-import org.opencypher.okapi.ir.test.{toField, toVar}
-import org.opencypher.okapi.logical.LogicalTestSuite
+import org.opencypher.okapi.ir.impl.util.VarConverters._
 import org.opencypher.okapi.logical.impl._
+import org.opencypher.okapi.testing.{BaseTestSuite, MatchHelper}
+import org.opencypher.okapi.testing.MatchHelper._
 import org.scalatest.matchers._
 
 import scala.language.implicitConversions
 
-class LogicalPlannerTest extends LogicalTestSuite {
+class LogicalPlannerTest extends BaseTestSuite with IrConstruction {
+
   val nodeA = IRField("a")(CTNode)
   val nodeB = IRField("b")(CTNode)
   val nodeG = IRField("g")(CTNode)

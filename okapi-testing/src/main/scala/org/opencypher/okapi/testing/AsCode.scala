@@ -24,7 +24,7 @@
  * described as "implementation extensions to Cypher" or as "proposed changes to
  * Cypher that are not yet approved by the openCypher community".
  */
-package org.opencypher.okapi.ir.test.support
+package org.opencypher.okapi.testing
 
 import org.opencypher.okapi.api.types.CypherType
 

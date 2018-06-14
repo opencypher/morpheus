@@ -28,7 +28,7 @@ package org.opencypher.okapi.ir.api.pattern
 
 import org.opencypher.okapi.ir.api.expr.Expr
 import org.opencypher.okapi.ir.impl.IrTestSuite
-import org.opencypher.okapi.ir.test.toField
+import org.opencypher.okapi.ir.impl.util.VarConverters.toField
 
 class PatternTest extends IrTestSuite {
 

@@ -26,6 +26,7 @@
  */
 package org.opencypher.okapi.ir.impl.util
 
+import org.opencypher.okapi.api.types.CypherType
 import org.opencypher.okapi.ir.api.IRField
 import org.opencypher.okapi.ir.api.expr.Var
 
@@ -40,4 +41,13 @@ object VarConverters {
   implicit def toVar(f: IRField): Var = f.toVar
 
   implicit def toVars(fields: Set[IRField]): Set[Var] = fields.map(toVar)
+
+  implicit def toVar(s: Symbol): Var = Var(s.name)()
+
+  implicit def toVar(t: (Symbol, CypherType)): Var = Var(t._1.name)(t._2)
+
+  implicit def toField(s: Symbol): IRField = IRField(s.name)()
+
+  implicit def toField(t: (Symbol, CypherType)): IRField = IRField(t._1.name)(t._2)
+
 }
