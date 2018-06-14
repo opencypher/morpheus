@@ -190,7 +190,7 @@ sealed class CAPSSessionImpl(val sparkSession: SparkSession)
     logStageProgress("Done!")
     if (PrintLogicalPlan.isSet) {
       println("Optimized logical plan:")
-      println(optimizedLogicalPlan.pretty())
+      optimizedLogicalPlan.show()
     }
     optimizedLogicalPlan
   }
@@ -207,7 +207,7 @@ sealed class CAPSSessionImpl(val sparkSession: SparkSession)
     logStageProgress("Done!")
     if (PrintFlatPlan.isSet) {
       println("Flat plan:")
-      println(flatPlan.pretty())
+      flatPlan.show()
     }
 
     logStageProgress("Physical planning ... ", newLine = false)
@@ -216,7 +216,7 @@ sealed class CAPSSessionImpl(val sparkSession: SparkSession)
     logStageProgress("Done!")
     if (PrintPhysicalPlan.isSet) {
       println("Physical plan:")
-      println(physicalPlan.pretty())
+      physicalPlan.show()
     }
 
 
@@ -225,7 +225,7 @@ sealed class CAPSSessionImpl(val sparkSession: SparkSession)
     logStageProgress("Done!")
     if (PrintOptimizedPhysicalPlan.isSet) {
       println("Optimized physical plan:")
-      println(optimizedPhysicalPlan.pretty())
+      optimizedPhysicalPlan.show()
     }
 
     val graphAt = (qgn: QualifiedGraphName) => Some(catalog.graph(qgn).asCaps)
