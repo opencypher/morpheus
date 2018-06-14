@@ -26,10 +26,12 @@
  */
 package org.opencypher.okapi.tck.test
 
+import java.util.Objects
+
 import org.opencypher.okapi.api.graph.{CypherSession, PropertyGraph}
 import org.opencypher.okapi.api.table.CypherRecords
 import org.opencypher.okapi.api.value.CypherValue
-import org.opencypher.okapi.api.value.CypherValue.{CypherList => OKAPICypherList, CypherMap => OKAPICypherMap, CypherValue => OKAPICypherValue}
+import org.opencypher.okapi.api.value.CypherValue.{CypherList => OKAPICypherList, CypherMap => OKAPICypherMap, CypherNode => OKAPICypherNode, CypherRelationship => OKAPICypherRelationship, CypherString => OKAPICypherString, CypherValue => OKAPICypherValue}
 import org.opencypher.okapi.impl.exception.NotImplementedException
 import org.opencypher.okapi.ir.impl.typer.exception.TypingException
 import org.opencypher.okapi.tck.test.TCKFixture._
@@ -104,7 +106,7 @@ case class TCKGraph[C <: CypherSession](testGraphFactory: CypherTestGraphFactory
   private def convertToTckStrings(records: CypherRecords): StringRecords = {
     val header = records.logicalColumns.getOrElse(records.physicalColumns).toList
     val rows: List[Map[String, String]] = records.collect.map { cypherMap: OKAPICypherMap =>
-      cypherMap.keys.map(k => k -> cypherMap(k).toCypherString).toMap
+      cypherMap.keys.map(k => k -> cypherMap(k).toTCKString).toMap
     }.toList
     StringRecords(header, rows)
   }
@@ -120,6 +122,40 @@ case class TCKGraph[C <: CypherSession](testGraphFactory: CypherTestGraphFactory
     case CypherNull => CypherValue(null)
     case other =>
       throw NotImplementedException(s"Converting Cypher value $cypherValue of type `${other.getClass.getSimpleName}`")
+  }
+
+  implicit class RichTCKCypherValue(value: OKAPICypherValue) {
+
+    def toTCKString: String = {
+      value match {
+        case OKAPICypherString(s) => s"'${escape(s)}'"
+        case OKAPICypherList(l) => l.map(_.toTCKString).mkString("[", ", ", "]")
+        case OKAPICypherMap(m) =>
+          m.toSeq
+            .sortBy(_._1)
+            .map { case (k, v) => s"$k: ${v.toTCKString}" }
+            .mkString("{", ", ", "}")
+        case OKAPICypherRelationship(_, _, _, relType, props) =>
+          s"[:$relType${
+            if (props.isEmpty) ""
+            else s" ${props.toTCKString}"
+          }]"
+        case OKAPICypherNode(_, labels, props) =>
+          val labelString =
+            if (labels.isEmpty) ""
+            else labels.toSeq.sorted.mkString(":", ":", "")
+          val propertyString = if (props.isEmpty) ""
+          else s"${props.toTCKString}"
+          Seq(labelString, propertyString)
+            .filter(_.nonEmpty)
+            .mkString("(", " ", ")")
+        case _ => Objects.toString(value)
+      }
+    }
+
+    private def escape(str: String): String = {
+      str.replaceAllLiterally("'", "\\'").replaceAllLiterally("\"", "\\\"")
+    }
   }
 }
 

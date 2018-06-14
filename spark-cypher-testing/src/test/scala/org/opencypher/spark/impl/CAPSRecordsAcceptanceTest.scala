@@ -54,9 +54,9 @@ class CAPSRecordsAcceptanceTest extends CAPSTestSuite with Neo4jServerFixture wi
     // We do string comparisons here because CypherNode.equals() does not check labels/properties
     strings should equal(
       Set(
-        "{a: (:Actor:Person {birthyear: 1910, name: 'Rachel Kempson'}), a.name: 'Rachel Kempson'}",
-        "{a: (:Actor:Person {birthyear: 1908, name: 'Michael Redgrave'}), a.name: 'Michael Redgrave'}",
-        "{a: (:Actor:Person {birthyear: 1873, name: 'Roy Redgrave'}), a.name: 'Roy Redgrave'}"
+        "{`a`: (:`Actor`:`Person` {`birthyear`: 1910, `name`: 'Rachel Kempson'}), `a.name`: 'Rachel Kempson'}",
+        "{`a`: (:`Actor`:`Person` {`birthyear`: 1908, `name`: 'Michael Redgrave'}), `a.name`: 'Michael Redgrave'}",
+        "{`a`: (:`Actor`:`Person` {`birthyear`: 1873, `name`: 'Roy Redgrave'}), `a.name`: 'Roy Redgrave'}"
       ))
   }
 
