@@ -38,11 +38,11 @@ class TablePrinterTest extends FunSpec with Matchers {
     val data = Seq.empty
 
     toTable(header, data) should equal(
-      """|+--------------+
-         || (no columns) |
-         |+--------------+
-         || (empty row)  |
-         |+--------------+
+      """|╔══════════════╗
+         |║ (no columns) ║
+         |╠══════════════╣
+         |║ (empty row)  ║
+         |╚══════════════╝
          |(no rows)
          |""".stripMargin)
   }
@@ -52,9 +52,9 @@ class TablePrinterTest extends FunSpec with Matchers {
     val data = Seq.empty
 
     toTable(header, data) should equal(
-      """|+--------+
-         || column |
-         |+--------+
+      """|╔════════╗
+         |║ column ║
+         |╚════════╝
          |(no rows)
          |""".stripMargin)
   }
@@ -64,11 +64,11 @@ class TablePrinterTest extends FunSpec with Matchers {
     val data = Seq(Seq(1))
 
     toTable(header, data) should equal(
-      """|+--------+
-         || column |
-         |+--------+
-         || 1      |
-         |+--------+
+      """|╔════════╗
+         |║ column ║
+         |╠════════╣
+         |║ 1      ║
+         |╚════════╝
          |(1 row)
          |""".stripMargin)
   }
@@ -76,13 +76,14 @@ class TablePrinterTest extends FunSpec with Matchers {
   it("prints n rows") {
     val header = Seq("column")
     val data = Seq(Seq(1), Seq(2))
+
     toTable(header, data) should equal(
-      """|+--------+
-         || column |
-         |+--------+
-         || 1      |
-         || 2      |
-         |+--------+
+      """|╔════════╗
+         |║ column ║
+         |╠════════╣
+         |║ 1      ║
+         |║ 2      ║
+         |╚════════╝
          |(2 rows)
          |""".stripMargin)
   }
@@ -92,11 +93,11 @@ class TablePrinterTest extends FunSpec with Matchers {
     val data = Seq(Seq("foo", 42, 42.23, true))
 
     toTable(header, data) should equal(
-      """|+--------+---------+-------+---------+
-         || String | Integer | Float | Boolean |
-         |+--------+---------+-------+---------+
-         || foo    | 42      | 42.23 | true    |
-         |+--------+---------+-------+---------+
+      """|╔════════╤═════════╤═══════╤═════════╗
+         |║ String │ Integer │ Float │ Boolean ║
+         |╠════════╪═════════╪═══════╪═════════╣
+         |║ foo    │ 42      │ 42.23 │ true    ║
+         |╚════════╧═════════╧═══════╧═════════╝
          |(1 row)
          |""".stripMargin)
   }
@@ -109,11 +110,11 @@ class TablePrinterTest extends FunSpec with Matchers {
     implicit val f: CypherValue => String = v => v.toCypherString
 
     toTable(header, data) should equal(
-      """|+--------+---------+-------+---------+
-         || String | Integer | Float | Boolean |
-         |+--------+---------+-------+---------+
-         || 'foo'  | 42      | 42.23 | true    |
-         |+--------+---------+-------+---------+
+      """|╔════════╤═════════╤═══════╤═════════╗
+         |║ String │ Integer │ Float │ Boolean ║
+         |╠════════╪═════════╪═══════╪═════════╣
+         |║ 'foo'  │ 42      │ 42.23 │ true    ║
+         |╚════════╧═════════╧═══════╧═════════╝
          |(1 row)
          |""".stripMargin)
   }
@@ -128,11 +129,11 @@ class TablePrinterTest extends FunSpec with Matchers {
     implicit val f: CypherValue => String = v => v.toCypherString
 
     toTable(header, data) should equal(
-      """|+-------------------+------------------------+
-         || n                 | r                      |
-         |+-------------------+------------------------+
-         || (:A:B {prop: 42}) | [:KNOWS {prop: 'foo'}] |
-         |+-------------------+------------------------+
+      """|╔═══════════════════╤════════════════════════╗
+         |║ n                 │ r                      ║
+         |╠═══════════════════╪════════════════════════╣
+         |║ (:A:B {prop: 42}) │ [:KNOWS {prop: 'foo'}] ║
+         |╚═══════════════════╧════════════════════════╝
          |(1 row)
          |""".stripMargin
     )

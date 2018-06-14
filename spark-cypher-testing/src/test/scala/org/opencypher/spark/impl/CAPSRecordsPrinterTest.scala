@@ -51,11 +51,11 @@ class CAPSRecordsPrinterTest extends CAPSTestSuite with GraphConstructionFixture
 
     // Then
     getString should equal(
-      """|+--------------+
-         || (no columns) |
-         |+--------------+
-         || (empty row)  |
-         |+--------------+
+      """|╔══════════════╗
+         |║ (no columns) ║
+         |╠══════════════╣
+         |║ (empty row)  ║
+         |╚══════════════╝
          |(1 row)
          |""".stripMargin
     )
@@ -70,9 +70,9 @@ class CAPSRecordsPrinterTest extends CAPSTestSuite with GraphConstructionFixture
 
     // Then
     getString should equal(
-      """|+-----+
-         || foo |
-         |+-----+
+      """|╔═════╗
+         |║ foo ║
+         |╚═════╝
          |(no rows)
          |""".stripMargin
     )
@@ -88,13 +88,13 @@ class CAPSRecordsPrinterTest extends CAPSTestSuite with GraphConstructionFixture
 
     // Then
     getString should equal(
-      """|+------------+
-         || foo        |
-         |+------------+
-         || 'myString' |
-         || 'foo'      |
-         || null       |
-         |+------------+
+      """|╔════════════╗
+         |║ foo        ║
+         |╠════════════╣
+         |║ 'myString' ║
+         |║ 'foo'      ║
+         |║ null       ║
+         |╚════════════╝
          |(3 rows)
          |""".stripMargin
     )
@@ -114,13 +114,13 @@ class CAPSRecordsPrinterTest extends CAPSTestSuite with GraphConstructionFixture
 
     // Then
     getString should equal(
-      """|+------------+----------+-------------------------------+
-         || foo        | v        | veryLongColumnNameWithBoolean |
-         |+------------+----------+-------------------------------+
-         || 'myString' | 4        | false                         |
-         || 'foo'      | 99999999 | true                          |
-         || null       | -1       | true                          |
-         |+------------+----------+-------------------------------+
+      """|╔════════════╤══════════╤═══════════════════════════════╗
+         |║ foo        │ v        │ veryLongColumnNameWithBoolean ║
+         |╠════════════╪══════════╪═══════════════════════════════╣
+         |║ 'myString' │ 4        │ false                         ║
+         |║ 'foo'      │ 99999999 │ true                          ║
+         |║ null       │ -1       │ true                          ║
+         |╚════════════╧══════════╧═══════════════════════════════╝
          |(3 rows)
          |""".stripMargin
     )
@@ -142,12 +142,12 @@ class CAPSRecordsPrinterTest extends CAPSTestSuite with GraphConstructionFixture
     print(when.getRecords)
 
     getString should equal(
-      """|+---------+---------+
-         || a.name  | b.name  |
-         |+---------+---------+
-         || 'Alice' | 'Bob'   |
-         || 'Bob'   | 'Alice' |
-         |+---------+---------+
+      """|╔═════════╤═════════╗
+         |║ a.name  │ b.name  ║
+         |╠═════════╪═════════╣
+         |║ 'Alice' │ 'Bob'   ║
+         |║ 'Bob'   │ 'Alice' ║
+         |╚═════════╧═════════╝
          |(2 rows)
          |""".stripMargin)
   }

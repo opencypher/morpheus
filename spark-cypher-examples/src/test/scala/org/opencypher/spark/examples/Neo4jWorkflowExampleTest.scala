@@ -30,11 +30,11 @@ class Neo4jWorkflowExampleTest extends ExampleTest {
 
   it("should produce the correct output") {
     validate(Neo4jWorkflowExample.main(Array.empty),
-      s"""|+--------+------------------------------------------------------+
-          || p.name | p.should_buy                                         |
-          |+--------+------------------------------------------------------+
-          || 'Bob'  | ['1984', 'Jurassic Park', 'Shakira', 'Terminator 2'] |
-          |+--------+------------------------------------------------------+
+      s"""|╔════════╤══════════════════════════════════════════════════════╗
+          |║ p.name │ p.should_buy                                         ║
+          |╠════════╪══════════════════════════════════════════════════════╣
+          |║ 'Bob'  │ ['1984', 'Jurassic Park', 'Shakira', 'Terminator 2'] ║
+          |╚════════╧══════════════════════════════════════════════════════╝
           |(1 row)
           |""".stripMargin)
   }

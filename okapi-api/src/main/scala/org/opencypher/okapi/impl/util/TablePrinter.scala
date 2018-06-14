@@ -31,33 +31,36 @@ object TablePrinter {
   private val emptyColumns = "(no columns)"
   private val emptyRow = "(empty row)"
 
-  def toTable[T](header: Seq[String], data: Seq[Seq[T]])(implicit toString: T => String = (t: T) => t.toString): String = {
-    val inputRows = header match {
+  def toTable[T](headerNames: Seq[String], data: Seq[Seq[T]])(implicit toString: T => String = (t: T) => t.toString): String = {
+    val inputRows = headerNames match {
       case Nil => Seq(Seq(emptyColumns),Seq(emptyRow)).toList
-      case _ => header :: data.map(row => row.map(cell => toString(cell))).toList
+      case _ => headerNames :: data.map(row => row.map(cell => toString(cell))).toList
     }
     val cellSizes = inputRows.map { row => row.map { cell => cell.length } }
     val colSizes = cellSizes.transpose.map { cellSizes => cellSizes.max }
 
-    val rowSep = rowSeparator(colSizes)
-
     val rows = inputRows.map { row =>
       row.zip(colSizes).map {
         case (cell, colSize) => (" %" + (-1 * colSize) + "s ").format(cell)
-      }.mkString("|", "|", "|")
+      }.mkString("║", "│", "║")
     }
 
-    val headerRows = Seq(rowSep, rows.head, rowSep)
-    val bodyRows = if (rows.tail.nonEmpty) rows.tail :+ rowSep else Seq.empty
-    val footerRow = rowCountFooter(data.size)
+    val separatorFor = rowSeparator(colSizes) _
+    val topRow    = separatorFor("╔", "═", "╤", "╗")
+    val headerRow = separatorFor("╠", "═", "╪", "╣")
+    val bottomRow = separatorFor("╚", "═", "╧", "╝")
 
-    (headerRows ++ bodyRows :+ footerRow).mkString("", "\n", "\n")
+    val header = Seq(topRow, rows.head)
+    val body = if (rows.tail.nonEmpty) headerRow +: rows.tail else Seq.empty
+    val footer = Seq(bottomRow, rowCount(data.size))
+
+    (header ++ body ++ footer).mkString("", "\n", "\n")
   }
 
-  def rowSeparator(colSizes: Seq[Int]): String =
-    colSizes.map { colSize => "-" * (colSize + 2) }.mkString("+", "+", "+")
+  def rowSeparator(colSizes: Seq[Int])(left: String, mid: String, cross: String, end: String): String =
+    colSizes.map { colSize => mid * (colSize + 2) }.mkString(left, cross, end)
 
-  def rowCountFooter(rowCount: Int): String = rowCount match {
+  def rowCount(rows: Int): String = rows match {
     case 0 => s"(no rows)"
     case 1 => s"(1 row)"
     case n => s"($n rows)"
