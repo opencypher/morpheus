@@ -27,7 +27,7 @@
 package org.opencypher.spark.examples
 
 class DataSourceExampleTest extends ExampleTest {
-  it(("should produce the correct output")) {
+  it("should produce the correct output") {
     validate(DataSourceExample.main(Array.empty),
       s"""|╔════════════════════════════════════╗
           |║ n                                  ║
