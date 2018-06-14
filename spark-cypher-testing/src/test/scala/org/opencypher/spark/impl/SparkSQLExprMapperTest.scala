@@ -41,22 +41,23 @@ import scala.language.implicitConversions
 
 class SparkSQLExprMapperTest extends BaseTestSuite with SparkSessionFixture {
 
+  val vA = Var("a")()
+  val vB = Var("b")()
+  val header: RecordHeader = RecordHeader.from(vA, vB)
+
   test("can map subtract") {
     val expr = Subtract(Var("a")(), Var("b")())()
-
-    convert(expr, _header.withExpr(expr).withAlias(expr as Var("foo")())) should equal(
-      df.col("a") - df.col("b")
+    convert(expr, header.withExpr(expr).withAlias(expr as Var("foo")())) should equal(
+    df.col(header.column(vA)) - df.col(header.column(vB))
     )
   }
 
-  private def convert(expr: Expr, header: RecordHeader = _header): Column = {
+  private def convert(expr: Expr, header: RecordHeader = header): Column = {
     expr.asSparkSQLExpr(header, df, CAPSRuntimeContext.empty)
   }
-
-  val _header: RecordHeader = RecordHeader.from(Var("a")(), Var("b")())
   val df: DataFrame = sparkSession.createDataFrame(
     Collections.emptyList[Row](),
-    StructType(Seq(StructField("a", IntegerType), StructField("b", IntegerType))))
+    StructType(Seq(StructField(header.column(vA), IntegerType), StructField(header.column(vB), IntegerType))))
 
   implicit def extractRecordHeaderFromResult[T](tuple: (RecordHeader, T)): RecordHeader = tuple._1
 }

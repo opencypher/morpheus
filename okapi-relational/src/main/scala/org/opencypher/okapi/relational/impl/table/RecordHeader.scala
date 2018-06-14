@@ -230,7 +230,7 @@ case class RecordHeader(exprToColumn: Map[Expr, String]) {
       case Some(_) => this
 
       case None =>
-        val newColumnName = ColumnNamer.of(expr)
+        val newColumnName = (expr.toString.hashCode & Int.MaxValue).toString
 
         // Aliases for (possible) owner of expr need to be updated as well
         val exprsToAdd: Set[Expr] = expr.owner match {

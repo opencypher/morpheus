@@ -29,8 +29,10 @@ package org.opencypher.spark.testing.fixture
 import org.apache.spark.sql.{DataFrame, Row}
 import org.opencypher.okapi.api.io.conversion.{NodeMapping, RelationshipMapping}
 import org.opencypher.okapi.api.schema.Schema
-import org.opencypher.okapi.api.types.{CTInteger, CTList, CTString, CTVoid}
+import org.opencypher.okapi.api.types._
 import org.opencypher.okapi.api.value.CypherValue.{CypherList, CypherMap}
+import org.opencypher.okapi.ir.api.{Label, PropertyKey, RelType}
+import org.opencypher.okapi.ir.api.expr._
 import org.opencypher.spark.api.value.{CAPSNode, CAPSRelationship}
 import org.opencypher.okapi.testing.Bag
 import org.opencypher.okapi.testing.Bag._
@@ -42,6 +44,28 @@ import scala.collection.mutable
 trait TeamDataFixture extends TestDataFixture {
 
   self: CAPSSessionFixture =>
+
+  val n: Expr = Var("n")(CTNode)
+  val nHasLabelGerman: Expr = HasLabel(n, Label("German"))(CTBoolean)
+  val nHasLabelBook: Expr = HasLabel(n, Label("Book"))(CTBoolean)
+  val nHasLabelPerson: Expr = HasLabel(n, Label("Person"))(CTBoolean)
+  val nHasLabelProgrammer: Expr = HasLabel(n, Label("Programmer"))(CTBoolean)
+  val nHasLabelSwedish: Expr = HasLabel(n, Label("Swedish"))(CTBoolean)
+  val nHasLabelBrogrammer: Expr = HasLabel(n, Label("Brogrammer"))(CTBoolean)
+  val nHasPropertyLanguage: Expr = Property(n, PropertyKey("language"))(CTString)
+  val nHasPropertyLuckyNumber: Expr = Property(n, PropertyKey("luckyNumber"))(CTInteger)
+  val nHasPropertyTitle: Expr = Property(n, PropertyKey("title"))(CTString)
+  val nHasPropertyYear: Expr = Property(n, PropertyKey("year"))(CTInteger)
+  val nHasPropertyName: Expr = Property(n, PropertyKey("name"))(CTString)
+
+  val r: Expr = Var("r")(CTRelationship)
+  val rStart: Expr = StartNode(r)(CTNode)
+  val rEnd: Expr = EndNode(r)(CTNode)
+  val rHasTypeKnows: Expr = HasType(r, RelType("KNOWS"))(CTBoolean)
+  val rHasTypeReads: Expr = HasType(r, RelType("READS"))(CTBoolean)
+  val rHasTypeInfluences: Expr = HasType(r, RelType("INFLUENCES"))(CTBoolean)
+  val rHasPropertyRecommends: Expr = Property(r, PropertyKey("recommends"))(CTBoolean)
+  val rHasPropertySince: Expr = Property(r, PropertyKey("since"))(CTInteger)
 
   override lazy val dataFixture =
     """
@@ -137,11 +161,11 @@ trait TeamDataFixture extends TestDataFixture {
     """
 
   lazy val csvTestGraphNodesWithoutArrays: Bag[Row] = Bag(
-    Row(0L, true,  true, false, 42L,   "Stefan"),
-    Row(1L, false, true, true,  23L,   "Mats"),
-    Row(2L, true,  true, false, 1337L, "Martin"),
-    Row(3L, true,  true, false, 8L,    "Max"),
-    Row(4L, false, true, false, 8L,    "Donald")
+    Row(0L, true, true, false, 42L, "Stefan"),
+    Row(1L, false, true, true, 23L, "Mats"),
+    Row(2L, true, true, false, 1337L, "Martin"),
+    Row(3L, true, true, false, 8L, "Max"),
+    Row(4L, false, true, false, 8L, "Donald")
   )
 
   lazy val csvTestGraphRelsWithoutArrays: Bag[Row] = Bag(

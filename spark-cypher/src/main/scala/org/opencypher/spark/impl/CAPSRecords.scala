@@ -203,8 +203,8 @@ case class CAPSRecords(
     }
 
     // add missing columns
-    val (dataWithMissingColumns, _) = missingExpressions.foldLeft(dataWithColumnsRenamed -> updatedHeader) {
-      case ((currentDf, currentHeader), expr) =>
+    val dataWithMissingColumns = missingExpressions.foldLeft(dataWithColumnsRenamed) {
+      case (currentDf, expr) =>
         val newColumn = expr match {
           case HasLabel(_, label) => if (entityLabels.contains(label.name)) TRUE_LIT else FALSE_LIT
           case HasType(_, relType) => if (entityLabels.contains(relType.name)) TRUE_LIT else FALSE_LIT
@@ -216,11 +216,9 @@ case class CAPSRecords(
             }
             NULL_LIT.cast(expr.cypherType.getSparkType)
         }
-        val headerWithColumn = currentHeader.withExpr(expr)
-
         currentDf.withColumn(
-          headerWithColumn.column(expr), // TODO: possible mismatch between column name in updated header and new column name
-          newColumn.as(targetHeader.column(expr))) -> headerWithColumn
+          targetHeader.column(expr),
+          newColumn.as(targetHeader.column(expr)))
     }
     copy(targetHeader, dataWithMissingColumns)
   }

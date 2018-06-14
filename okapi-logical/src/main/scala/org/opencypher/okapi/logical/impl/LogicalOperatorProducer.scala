@@ -136,7 +136,7 @@ class LogicalOperatorProducer {
     val irFields = fields.map { v =>
       IRField(v.name)(v.cypherType)
     }
-    Start(graph, fields, SolvedQueryModel(irFields))
+    Start(graph, SolvedQueryModel(irFields))
   }
 
   def planOrderBy(sortItems: Seq[SortItem[Expr]], prev: LogicalOperator): OrderBy = {

@@ -55,11 +55,11 @@ class CAPSUnionGraphTest extends CAPSTestSuite
     val nodes = patternGraph.nodes("n")
 
     val cols = Seq(
-      "n",
-      "____n:Person",
-      "____n:Swedish",
-      "____n_dot_luckyNumberINTEGER",
-      "____n_dot_nameSTRING"
+      n,
+      nHasLabelPerson,
+      nHasLabelSwedish,
+      nHasPropertyLuckyNumber,
+      nHasPropertyName
     )
     val data = Bag(
       Row(0L, true, true, 23L, "Mats"),
@@ -75,14 +75,14 @@ class CAPSUnionGraphTest extends CAPSTestSuite
     val unionGraph = impl.CAPSUnionGraph(initGraph(`:Person`), initGraph(`:Book`))
     val nodes = unionGraph.nodes("n")
     val cols = Seq(
-      "n",
-      "____n:Book",
-      "____n:Person",
-      "____n:Swedish",
-      "____n_dot_luckyNumberINTEGER",
-      "____n_dot_nameSTRING",
-      "____n_dot_titleSTRING",
-      "____n_dot_yearINTEGER"
+      n,
+      nHasLabelBook,
+      nHasLabelPerson,
+      nHasLabelSwedish,
+      nHasPropertyLuckyNumber,
+      nHasPropertyName,
+      nHasPropertyTitle,
+      nHasPropertyYear
     )
     val data = Bag(
       Row(0L, false, true, true, 23L, "Mats", null, null),
@@ -106,11 +106,11 @@ class CAPSUnionGraphTest extends CAPSTestSuite
     val nodes = unionGraph.nodes("n")
 
     val cols = Seq(
-      "n",
-      "____n:Person",
-      "____n:Swedish",
-      "____n_dot_luckyNumberINTEGER",
-      "____n_dot_nameSTRING"
+      n,
+      nHasLabelPerson,
+      nHasLabelSwedish,
+      nHasPropertyLuckyNumber,
+      nHasPropertyName
     )
     val data = Bag(
       Row(1L, true, true, 23L, "Mats"),

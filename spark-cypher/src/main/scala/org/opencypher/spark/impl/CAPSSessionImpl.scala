@@ -202,7 +202,7 @@ sealed class CAPSSessionImpl(val sparkSession: SparkSession)
     queryCatalog: QueryCatalog = QueryCatalog(catalog.listSources)
   ): CAPSResult = {
     logStageProgress("Flat planning ... ", newLine = false)
-    val flatPlannerContext = FlatPlannerContext(parameters)
+    val flatPlannerContext = FlatPlannerContext(parameters, records.asCaps.header)
     val flatPlan = time("Flat planning")(flatPlanner(logicalPlan)(flatPlannerContext))
     logStageProgress("Done!")
     if (PrintFlatPlan.isSet) {
