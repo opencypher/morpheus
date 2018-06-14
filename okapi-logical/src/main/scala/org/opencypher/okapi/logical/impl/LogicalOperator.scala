@@ -246,8 +246,7 @@ final case class Select(
 }
 
 final case class ReturnGraph(in: LogicalOperator, solved: SolvedQueryModel)
-  extends StackingLogicalOperator with EmptyFields {
-}
+  extends StackingLogicalOperator with EmptyFields
 
 final case class OrderBy(sortItems: Seq[SortItem[Expr]], in: LogicalOperator, solved: SolvedQueryModel)
   extends StackingLogicalOperator {
