@@ -5,13 +5,6 @@ libraries. For an overview of the licenses see the NOTICE.txt file.
 ------------------------------------------------------------------------------
 Apache Software License, Version 2.0
   Apache Commons Lang
-  Circe core
-  Circe generic
-  Circe jawn
-  Circe numbers
-  Circe parser
-  core
-  coreJVM
   Okapi - openCypher API
   Okapi IR - Declarative representation of Cypher queries
   Okapi Logical - Logical representation of Cypher queries
@@ -273,7 +266,8 @@ MIT-license
   Cats macros
   core
   machinist
-  parser
+  ujson_2.11
+  upickle_2.11
 ------------------------------------------------------------------------------
 
 The MIT License

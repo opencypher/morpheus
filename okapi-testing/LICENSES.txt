@@ -1057,6 +1057,8 @@ MIT-license
   Cats macros
   machinist
   Mockito
+  ujson_2.11
+  upickle_2.11
 ------------------------------------------------------------------------------
 
 The MIT License

@@ -121,6 +121,8 @@ MIT-license
   Gherkin
   machinist
   Mockito
+  ujson_2.11
+  upickle_2.11
 
 Mozilla Public License, Version 2.0
   Mozilla Rhino

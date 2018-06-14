@@ -265,6 +265,8 @@ MIT-license
   Cats macros
   core
   machinist
+  ujson_2.11
+  upickle_2.11
 ------------------------------------------------------------------------------
 
 The MIT License

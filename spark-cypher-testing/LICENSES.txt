@@ -22,11 +22,6 @@ Apache Software License, Version 2.0
   ApacheDS I18n
   ApacheDS Protocol Kerberos Codec
   Caffeine cache
-  Circe core
-  Circe generic
-  Circe jawn
-  Circe numbers
-  Circe parser
   Commons BeanUtils Core
   Commons CLI
   Commons Collections
@@ -39,8 +34,6 @@ Apache Software License, Version 2.0
   Commons Net
   commons-beanutils
   ConcurrentLinkedHashMap
-  core
-  coreJVM
   Curator Client
   Curator Framework
   Curator Recipes
@@ -1134,9 +1127,10 @@ MIT-license
   core
   machinist
   Mockito
-  parser
   SLF4J API Module
   SLF4J LOG4J-12 Binding
+  ujson_2.11
+  upickle_2.11
 ------------------------------------------------------------------------------
 
 The MIT License
