@@ -85,8 +85,8 @@ class CypherValueTest extends FunSpec with Matchers {
   }
 
   private case class TestRelationship(override val id: Long,
-                                      override val source: Long,
-                                      override val target: Long,
+                                      override val startId: Long,
+                                      override val endId: Long,
                                       override val relType: String,
                                       override val properties: CypherMap =
                                         CypherMap.empty)
@@ -95,11 +95,11 @@ class CypherValueTest extends FunSpec with Matchers {
     override type I = TestRelationship
 
     override def copy(id: Long = id,
-                      source: Long = source,
-                      target: Long = target,
+                      startId: Long = startId,
+                      endId: Long = endId,
                       relType: String = relType,
                       properties: CypherMap = properties): TestRelationship = {
-      TestRelationship(id, source, target, relType, properties)
+      TestRelationship(id, startId, endId, relType, properties)
         .asInstanceOf[this.type]
     }
   }
