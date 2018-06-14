@@ -27,7 +27,7 @@
 package org.opencypher.okapi.relational.api.schema
 
 import org.opencypher.okapi.api.schema.{PropertyKeys, Schema}
-import org.opencypher.okapi.api.types.{CTBoolean, CTNode, CTRelationship, CTString}
+import org.opencypher.okapi.api.types._
 import org.opencypher.okapi.ir.api.expr._
 import org.opencypher.okapi.ir.api.{Label, PropertyKey, RelType}
 import org.opencypher.okapi.relational.api.schema.RelationalSchema._
@@ -75,8 +75,8 @@ class RelationalSchemaTest extends FunSpec with Matchers {
       .withExpr(n)
       .withExpr(HasLabel(n, Label("A"))(CTBoolean))
       .withExpr(HasLabel(n, Label("B"))(CTBoolean))
-      .withExpr(Property(n, PropertyKey("foo"))(CTBoolean))
-      .withExpr(Property(n, PropertyKey("bar"))(CTBoolean)))
+      .withExpr(Property(n, PropertyKey("foo"))(CTBoolean.nullable))
+      .withExpr(Property(n, PropertyKey("bar"))(CTBoolean.nullable)))
   }
 
   it("creates a header for a given relationship") {

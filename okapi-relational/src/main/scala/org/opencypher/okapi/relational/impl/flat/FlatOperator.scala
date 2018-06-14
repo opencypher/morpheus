@@ -161,9 +161,7 @@ final case class Limit(expr: Expr, in: FlatOperator, header: RecordHeader) exten
 
 final case class EmptyRecords(in: FlatOperator, header: RecordHeader) extends StackingFlatOperator
 
-final case class Start(sourceGraph: LogicalGraph, vars: Set[Var]) extends FlatLeafOperator {
-  override val header: RecordHeader = RecordHeader.from(vars)
-}
+final case class Start(sourceGraph: LogicalGraph, header: RecordHeader) extends FlatLeafOperator
 
 final case class FromGraph(override val sourceGraph: LogicalGraph, in: FlatOperator)
     extends StackingFlatOperator {

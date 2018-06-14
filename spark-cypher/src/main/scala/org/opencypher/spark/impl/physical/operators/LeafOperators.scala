@@ -41,25 +41,15 @@ private[spark] abstract class LeafPhysicalOperator extends CAPSPhysicalOperator 
   def executeLeaf()(implicit context: CAPSRuntimeContext): CAPSPhysicalResult
 }
 
-object Start {
-
-  def apply(qgn: QualifiedGraphName, records: CAPSRecords)(implicit caps: CAPSSession): Start = {
-    Start(qgn, Some(records))
-  }
-
-}
-
-final case class Start(qgn: QualifiedGraphName, recordsOpt: Option[CAPSRecords])
+final case class Start(qgn: QualifiedGraphName, recordsOpt: Option[CAPSRecords], header: RecordHeader)
   (implicit caps: CAPSSession) extends LeafPhysicalOperator with PhysicalOperatorDebugging {
-
-  override val header = recordsOpt.map(_.header).getOrElse(RecordHeader.empty)
 
   override def executeLeaf()(implicit context: CAPSRuntimeContext): CAPSPhysicalResult = {
     val records = recordsOpt.getOrElse(CAPSRecords.unit())
     CAPSPhysicalResult(records, resolve(qgn), qgn)
   }
 
-  override def toString = {
+  override def toString: String = {
     val graphArg = qgn.toString
     val recordsArg = recordsOpt.map(_.toString)
     val allArgs = List(recordsArg, graphArg).mkString(", ")

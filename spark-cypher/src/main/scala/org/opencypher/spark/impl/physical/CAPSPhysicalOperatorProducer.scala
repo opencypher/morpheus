@@ -36,6 +36,7 @@ import org.opencypher.okapi.relational.api.physical.{PhysicalOperatorProducer, P
 import org.opencypher.okapi.relational.impl.physical._
 import org.opencypher.okapi.relational.impl.table._
 import org.opencypher.spark.api.CAPSSession
+import org.opencypher.spark.api.io.SparkCypherTable.DataFrameTable
 import org.opencypher.spark.impl.physical.operators.CAPSPhysicalOperator
 import org.opencypher.spark.impl.{CAPSGraph, CAPSRecords}
 
@@ -56,7 +57,7 @@ object CAPSPhysicalPlannerContext {
 }
 
 final class CAPSPhysicalOperatorProducer(implicit caps: CAPSSession)
-  extends PhysicalOperatorProducer[CAPSPhysicalOperator, CAPSRecords, CAPSGraph, CAPSRuntimeContext] {
+  extends PhysicalOperatorProducer[DataFrameTable, CAPSPhysicalOperator, CAPSRecords, CAPSGraph, CAPSRuntimeContext] {
 
   override def planCartesianProduct(
     lhs: CAPSPhysicalOperator,
@@ -85,8 +86,11 @@ final class CAPSPhysicalOperatorProducer(implicit caps: CAPSSession)
   override def planEmptyRecords(in: CAPSPhysicalOperator, header: RecordHeader): CAPSPhysicalOperator =
     operators.EmptyRecords(in, header)
 
-  override def planStart(qgnOpt: Option[QualifiedGraphName] = None, in: Option[CAPSRecords] = None): CAPSPhysicalOperator =
-    operators.Start(qgnOpt.getOrElse(caps.emptyGraphQgn), in)
+  override def planStart(
+    qgnOpt: Option[QualifiedGraphName] = None,
+    in: Option[CAPSRecords] = None,
+    header: RecordHeader): CAPSPhysicalOperator =
+    operators.Start(qgnOpt.getOrElse(caps.emptyGraphQgn), in, header)
 
   // TODO: Make catalog usage consistent between Start/FROM GRAPH
   override def planFromGraph(in: CAPSPhysicalOperator, g: LogicalCatalogGraph): CAPSPhysicalOperator =

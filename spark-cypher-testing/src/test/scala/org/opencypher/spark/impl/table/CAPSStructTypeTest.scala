@@ -42,11 +42,12 @@ class CAPSStructTypeTest extends FunSpec with Matchers {
       StructField("c", ArrayType(StringType, containsNull = true), nullable = false)
     ))
 
-    structType.toRecordHeader should equal(RecordHeader.empty
-      .withExpr(Var("a")(CTInteger.nullable))
-      .withExpr(Var("b")(CTString))
-      .withExpr(Var("c")(CTList(CTString.nullable)))
+    structType.toRecordHeader should equal(RecordHeader(Map(
+      Var("a")(CTInteger.nullable) -> "a",
+      Var("b")(CTString) -> "b",
+      Var("c")(CTList(CTString.nullable)) -> "c"
     )
+    ))
   }
 
 }

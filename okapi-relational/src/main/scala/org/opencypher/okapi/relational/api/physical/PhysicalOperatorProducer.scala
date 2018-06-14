@@ -27,10 +27,10 @@
 package org.opencypher.okapi.relational.api.physical
 
 import org.opencypher.okapi.api.graph.{PropertyGraph, QualifiedGraphName}
-import org.opencypher.okapi.api.table.CypherRecords
 import org.opencypher.okapi.ir.api.block.SortItem
 import org.opencypher.okapi.ir.api.expr.{Aggregator, Expr, Var}
 import org.opencypher.okapi.logical.impl._
+import org.opencypher.okapi.relational.api.io.{FlatRelationalTable, RelationalCypherRecords}
 import org.opencypher.okapi.relational.impl.physical.{InnerJoin, JoinType}
 import org.opencypher.okapi.relational.impl.table.RecordHeader
 
@@ -38,12 +38,18 @@ import org.opencypher.okapi.relational.impl.table.RecordHeader
   * Main interface to be implemented by custom (relational) back-ends to execute a Cypher query. Methods are being
   * called by [[org.opencypher.okapi.relational.impl.physical.PhysicalPlanner]], a default implementation for physical planning.
   *
-  * @tparam P backend-specific physical operators
-  * @tparam R backend-specific cypher records
-  * @tparam G backend-specific property graph
-  * @tparam C backend-specific runtime context
+  * @tparam O backend-specific flat relational table
+  * @tparam K backend-specific physical operators
+  * @tparam A backend-specific cypher records
+  * @tparam P backend-specific property graph
+  * @tparam I backend-specific runtime context
   */
-trait PhysicalOperatorProducer[P <: PhysicalOperator[R, G, C], R <: CypherRecords, G <: PropertyGraph, C <: RuntimeContext[R, G]] {
+trait PhysicalOperatorProducer[
+O <: FlatRelationalTable[O],
+K <: PhysicalOperator[A, P, I],
+A <: RelationalCypherRecords[O],
+P <: PropertyGraph,
+I <: RuntimeContext[A, P]] {
 
   // Unary operators
 
@@ -54,7 +60,7 @@ trait PhysicalOperatorProducer[P <: PhysicalOperator[R, G, C], R <: CypherRecord
     * @param in     backend-specific records
     * @return start operator
     */
-  def planStart(qgnOpt: Option[QualifiedGraphName] = None, in: Option[R] = None): P
+  def planStart(qgnOpt: Option[QualifiedGraphName] = None, in: Option[A] = None, header: RecordHeader = RecordHeader.empty): K
 
   /**
     * Scans the node set of the input graph and returns all nodes that match the given CTNode type.
@@ -65,7 +71,7 @@ trait PhysicalOperatorProducer[P <: PhysicalOperator[R, G, C], R <: CypherRecord
     * @param header  resulting record header
     * @return node scan operator
     */
-  def planNodeScan(in: P, inGraph: LogicalGraph, v: Var, header: RecordHeader): P
+  def planNodeScan(in: K, inGraph: LogicalGraph, v: Var, header: RecordHeader): K
 
   /**
     * Scans the relationship set of the input graph and returns all relationships that match the given CTRelationship
@@ -77,7 +83,7 @@ trait PhysicalOperatorProducer[P <: PhysicalOperator[R, G, C], R <: CypherRecord
     * @param header  resulting record header
     * @return relationship scan operator
     */
-  def planRelationshipScan(in: P, inGraph: LogicalGraph, v: Var, header: RecordHeader): P
+  def planRelationshipScan(in: K, inGraph: LogicalGraph, v: Var, header: RecordHeader): K
 
   /**
     * Creates an empty record set thereby disregarding the input. The records are described by the given record header.
@@ -86,7 +92,7 @@ trait PhysicalOperatorProducer[P <: PhysicalOperator[R, G, C], R <: CypherRecord
     * @param header record header describing the created records
     * @return empty records operator
     */
-  def planEmptyRecords(in: P, header: RecordHeader): P
+  def planEmptyRecords(in: K, header: RecordHeader): K
 
   /**
     * Renames the columns identified by the given expressions to the specified aliases.
@@ -96,7 +102,7 @@ trait PhysicalOperatorProducer[P <: PhysicalOperator[R, G, C], R <: CypherRecord
     * @param header resulting record header
     * @return Alias operator
     */
-  def planAlias(in: P, tuples: Seq[(Expr, Var)], header: RecordHeader): P
+  def planAlias(in: K, tuples: Seq[(Expr, Var)], header: RecordHeader): K
 
   /**
     * Renames the column identified by the given expression to the specified alias.
@@ -107,7 +113,7 @@ trait PhysicalOperatorProducer[P <: PhysicalOperator[R, G, C], R <: CypherRecord
     * @param header resulting record header
     * @return Alias operator
     */
-  def planAlias(in: P, expr: Expr, alias: Var, header: RecordHeader): P = planAlias(in, Seq(expr -> alias), header)
+  def planAlias(in: K, expr: Expr, alias: Var, header: RecordHeader): K = planAlias(in, Seq(expr -> alias), header)
 
   /**
     * Drops the columns identified by the given expressions from the input records.
@@ -118,7 +124,7 @@ trait PhysicalOperatorProducer[P <: PhysicalOperator[R, G, C], R <: CypherRecord
     * @param header     resulting record header
     * @return Drop operator
     */
-  def planDrop(in: P, dropFields: Set[Expr], header: RecordHeader): P
+  def planDrop(in: K, dropFields: Set[Expr], header: RecordHeader): K
 
   /**
     * Renames the columns associated with the given expressions to the specified new column names.
@@ -128,7 +134,7 @@ trait PhysicalOperatorProducer[P <: PhysicalOperator[R, G, C], R <: CypherRecord
     * @param header      resulting record header
     * @return Rename operator
     */
-  def planRenameColumns(in: P, renameExprs: Map[Expr, String], header: RecordHeader): P
+  def planRenameColumns(in: K, renameExprs: Map[Expr, String], header: RecordHeader): K
 
   /**
     * Filters the incoming rows according to the specified expression.
@@ -138,7 +144,7 @@ trait PhysicalOperatorProducer[P <: PhysicalOperator[R, G, C], R <: CypherRecord
     * @param header resulting record header
     * @return filter operator
     */
-  def planFilter(in: P, expr: Expr, header: RecordHeader): P
+  def planFilter(in: K, expr: Expr, header: RecordHeader): K
 
   /**
     * Selects the specified expressions from the given records.
@@ -148,14 +154,14 @@ trait PhysicalOperatorProducer[P <: PhysicalOperator[R, G, C], R <: CypherRecord
     * @param header      resulting record header
     * @return select operator
     */
-  def planSelect(in: P, expressions: List[(Expr, Option[Var])], header: RecordHeader): P
+  def planSelect(in: K, expressions: List[(Expr, Option[Var])], header: RecordHeader): K
 
   /**
     * Returns the working graph
     *
     * @param in previous operator
     */
-  def planReturnGraph(in: P): P
+  def planReturnGraph(in: K): K
 
   /**
     * Use the specified graph.
@@ -164,7 +170,7 @@ trait PhysicalOperatorProducer[P <: PhysicalOperator[R, G, C], R <: CypherRecord
     * @param graph graph to select from the catalog
     * @return select graph operator
     */
-  def planFromGraph(in: P, graph: LogicalCatalogGraph): P
+  def planFromGraph(in: K, graph: LogicalCatalogGraph): K
 
   /**
     * Evaluates the given expression and projects it to a new column in the input records.
@@ -175,7 +181,7 @@ trait PhysicalOperatorProducer[P <: PhysicalOperator[R, G, C], R <: CypherRecord
     * @param header resulting record header
     * @return project operator
     */
-  def planProject(in: P, expr: Expr, alias: Option[Var], header: RecordHeader): P
+  def planProject(in: K, expr: Expr, alias: Option[Var], header: RecordHeader): K
 
   /**
     * Creates a new record containing the specified entities (i.e. as defined in a construction pattern).
@@ -185,7 +191,7 @@ trait PhysicalOperatorProducer[P <: PhysicalOperator[R, G, C], R <: CypherRecord
     * @param construct graph to construct
     * @return project pattern graph operator
     */
-  def planConstructGraph(table: P, onGraph: P, construct: LogicalPatternGraph): P
+  def planConstructGraph(table: K, onGraph: K, construct: LogicalPatternGraph): K
 
   /**
     * Groups the underlying records by the specified expressions and evaluates the given aggregate functions.
@@ -196,7 +202,7 @@ trait PhysicalOperatorProducer[P <: PhysicalOperator[R, G, C], R <: CypherRecord
     * @param header       resulting record header
     * @return aggregate operator
     */
-  def planAggregate(in: P, group: Set[Var], aggregations: Set[(Var, Aggregator)], header: RecordHeader): P
+  def planAggregate(in: K, group: Set[Var], aggregations: Set[(Var, Aggregator)], header: RecordHeader): K
 
   /**
     * Performs a distinct operation on the specified fields.
@@ -205,7 +211,7 @@ trait PhysicalOperatorProducer[P <: PhysicalOperator[R, G, C], R <: CypherRecord
     * @param fields fields to compute distinct on
     * @return distinct operator
     */
-  def planDistinct(in: P, fields: Set[Var]): P
+  def planDistinct(in: K, fields: Set[Var]): K
 
   /**
     * Orders the underlying records by the given expressions.
@@ -215,7 +221,7 @@ trait PhysicalOperatorProducer[P <: PhysicalOperator[R, G, C], R <: CypherRecord
     * @param header    resulting record header
     * @return order by operator
     */
-  def planOrderBy(in: P, sortItems: Seq[SortItem[Expr]], header: RecordHeader): P
+  def planOrderBy(in: K, sortItems: Seq[SortItem[Expr]], header: RecordHeader): K
 
   /**
     * Initializes the underlying records for a variable expand computation (e.g., (a)-[:A*1..3]->(b)).
@@ -227,7 +233,7 @@ trait PhysicalOperatorProducer[P <: PhysicalOperator[R, G, C], R <: CypherRecord
     * @param header   resulting record header
     * @return init var expand operator
     */
-  def planInitVarExpand(in: P, source: Var, edgeList: Var, target: Var, header: RecordHeader): P
+  def planInitVarExpand(in: K, source: Var, edgeList: Var, target: Var, header: RecordHeader): K
 
   /**
     * Skips the given amount of rows in the input records. The number of rows is specified by an expression which can be
@@ -238,7 +244,7 @@ trait PhysicalOperatorProducer[P <: PhysicalOperator[R, G, C], R <: CypherRecord
     * @param header resulting record header
     * @return skip operator
     */
-  def planSkip(in: P, expr: Expr, header: RecordHeader): P
+  def planSkip(in: K, expr: Expr, header: RecordHeader): K
 
   /**
     * Limits the number of input records to the specified amount. The number of rows is specified by an expression which
@@ -249,7 +255,7 @@ trait PhysicalOperatorProducer[P <: PhysicalOperator[R, G, C], R <: CypherRecord
     * @param header resulting record header
     * @return limit operator
     */
-  def planLimit(in: P, expr: Expr, header: RecordHeader): P
+  def planLimit(in: K, expr: Expr, header: RecordHeader): K
 
   // Binary operators
 
@@ -261,7 +267,7 @@ trait PhysicalOperatorProducer[P <: PhysicalOperator[R, G, C], R <: CypherRecord
     * @param header resulting record header
     * @return cross operator
     */
-  def planCartesianProduct(lhs: P, rhs: P, header: RecordHeader): P
+  def planCartesianProduct(lhs: K, rhs: K, header: RecordHeader): K
 
   /**
     * Joins the two input records using the given expressions.
@@ -273,7 +279,7 @@ trait PhysicalOperatorProducer[P <: PhysicalOperator[R, G, C], R <: CypherRecord
     * @param joinType    type of the join
     * @return join operator
     */
-  def planJoin(lhs: P, rhs: P, joinColumns: Seq[(Expr, Expr)], header: RecordHeader, joinType: JoinType = InnerJoin): P
+  def planJoin(lhs: K, rhs: K, joinColumns: Seq[(Expr, Expr)], header: RecordHeader, joinType: JoinType = InnerJoin): K
 
   /**
     * Unions the input records.
@@ -282,7 +288,7 @@ trait PhysicalOperatorProducer[P <: PhysicalOperator[R, G, C], R <: CypherRecord
     * @param rhs second previous operator
     * @return union operator
     */
-  def planTabularUnionAll(lhs: P, rhs: P): P
+  def planTabularUnionAll(lhs: K, rhs: K): K
 
   /**
     * Filters the rows of the first input by checking if there exists a corresponding row in the second input.
@@ -293,7 +299,7 @@ trait PhysicalOperatorProducer[P <: PhysicalOperator[R, G, C], R <: CypherRecord
     * @param header      resulting record header
     * @return exists subquery operator
     */
-  def planExistsSubQuery(lhs: P, rhs: P, targetField: Var, header: RecordHeader): P
+  def planExistsSubQuery(lhs: K, rhs: K, targetField: Var, header: RecordHeader): K
 
   // Ternary operators
 
@@ -315,9 +321,9 @@ trait PhysicalOperatorProducer[P <: PhysicalOperator[R, G, C], R <: CypherRecord
     * @return bounded var expand operator
     */
   def planBoundedVarExpand(
-    first: P,
-    second: P,
-    third: P,
+    first: K,
+    second: K,
+    third: K,
     rel: Var,
     edgeList: Var,
     target: Var,
@@ -327,7 +333,7 @@ trait PhysicalOperatorProducer[P <: PhysicalOperator[R, G, C], R <: CypherRecord
     direction: Direction,
     header: RecordHeader,
     isExpandInto: Boolean
-  ): P
+  ): K
 
   // N-ary operators
   /**
@@ -337,5 +343,5 @@ trait PhysicalOperatorProducer[P <: PhysicalOperator[R, G, C], R <: CypherRecord
     * @param qgn    name for the union graph
     * @return union all operator
     */
-  def planGraphUnionAll(graphs: List[P], qgn: QualifiedGraphName): P
+  def planGraphUnionAll(graphs: List[K], qgn: QualifiedGraphName): K
 }

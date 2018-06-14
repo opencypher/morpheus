@@ -34,6 +34,7 @@ import org.opencypher.okapi.ir.api.{IRField, Label, PropertyKey, RelType}
 import org.opencypher.okapi.ir.test._
 import org.opencypher.okapi.ir.test.support.MatchHelper._
 import org.opencypher.okapi.logical.impl.{Directed, LogicalGraph, LogicalOperatorProducer, Undirected}
+import org.opencypher.okapi.relational.impl.table.RecordHeader
 import org.opencypher.okapi.testing.BaseTestSuite
 
 import scala.language.implicitConversions
@@ -50,14 +51,14 @@ class FlatPlannerTest extends BaseTestSuite {
     .withRelationshipPropertyKeys("KNOWS")("since" -> CTString)
     .withRelationshipPropertyKeys("FOO")("bar" -> CTBoolean)
 
-  implicit val flatContext: FlatPlannerContext = FlatPlannerContext(CypherMap.empty)
+  implicit val flatContext: FlatPlannerContext = FlatPlannerContext(CypherMap.empty, RecordHeader.empty)
 
   val mkLogical = new LogicalOperatorProducer
   val mkFlat = new FlatOperatorProducer()
   val flatPlanner = new FlatPlanner
 
   val logicalStartOperator = mkLogical.planStart(TestGraph(schema), Set.empty)
-  val flatStartOperator = mkFlat.planStart(TestGraph(schema), logicalStartOperator.fields)
+  val flatStartOperator = mkFlat.planStart(TestGraph(schema), RecordHeader.empty)
 
   test("projecting a new expression") {
     val expr = Subtract('a, 'b)()

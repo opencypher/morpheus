@@ -28,7 +28,7 @@ package org.opencypher.spark.impl
 
 import org.apache.spark.sql.Row
 import org.opencypher.okapi.api.io.conversion.RelationshipMapping
-import org.opencypher.okapi.api.types.{CTNode, CTRelationship}
+import org.opencypher.okapi.api.types._
 import org.opencypher.okapi.testing.Bag
 import org.opencypher.spark.api.io.{CAPSNodeTable, CAPSRelationshipTable}
 import org.opencypher.spark.impl.DataFrameOps._
@@ -44,10 +44,10 @@ abstract class CAPSGraphTest extends CAPSTestSuite
     val graph = initGraph(dataFixtureWithoutArrays)
     val nodes = graph.nodesWithExactLabels("n", Set("Person"))
     val cols = Seq(
-      "n",
-      "____n:Person",
-      "____n_dot_luckyNumberINTEGER",
-      "____n_dot_nameSTRING"
+      n,
+      nHasLabelPerson,
+      nHasPropertyLuckyNumber,
+      nHasPropertyName
     )
     verify(nodes, cols, Bag(Row(4L, true, 8L, "Donald")))
   }
@@ -56,11 +56,11 @@ abstract class CAPSGraphTest extends CAPSTestSuite
     val graph = initGraph(dataFixtureWithoutArrays)
     val nodes = graph.nodesWithExactLabels("n", Set("Person", "German"))
     val cols = Seq(
-      "n",
-      "____n:German",
-      "____n:Person",
-      "____n_dot_luckyNumberINTEGER",
-      "____n_dot_nameSTRING"
+      n,
+      nHasLabelGerman,
+      nHasLabelPerson,
+      nHasPropertyLuckyNumber,
+      nHasPropertyName
     )
     val data = Bag(
       Row(2L, true, true, 1337L, "Martin"),

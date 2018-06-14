@@ -27,6 +27,7 @@
 package org.opencypher.spark.testing.fixture
 
 import org.apache.spark.sql.Row
+import org.opencypher.okapi.ir.api.expr.Expr
 import org.opencypher.okapi.testing.Bag._
 import org.opencypher.spark.impl.CAPSRecords
 import org.opencypher.spark.testing.CAPSTestSuite
@@ -35,8 +36,10 @@ trait RecordsVerificationFixture {
 
   self: CAPSTestSuite  =>
 
-  protected def verify(records: CAPSRecords, expectedColumns: Seq[String], expectedData: Bag[Row]): Unit = {
+  protected def verify(records: CAPSRecords, expectedExprs: Seq[Expr], expectedData: Bag[Row]): Unit = {
     val df = records.toDF()
+    val header = records.header
+    val expectedColumns = expectedExprs.map(header.column)
     df.columns.length should equal(expectedColumns.size)
     df.columns.toSet should equal(expectedColumns.toSet)
     df.select(expectedColumns.head, expectedColumns.tail: _*).collect().toBag should equal(expectedData)

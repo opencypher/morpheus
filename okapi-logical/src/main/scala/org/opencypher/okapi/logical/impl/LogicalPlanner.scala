@@ -115,7 +115,7 @@ class LogicalPlanner(producer: LogicalOperatorProducer)
         } else {
           plan match {
             // If the inner plan is a start, simply rewrite it to start with the required graph
-            case Start(_, fields, solved) => Start(lg, fields, solved)
+            case Start(_, solved) => Start(lg, solved)
             case _ => planFromGraph(lg, plan)
           }
         }
@@ -407,7 +407,7 @@ class LogicalPlanner(producer: LogicalOperatorProducer)
       filteredPlan
     } else {
       // TODO: Find a way to feed the same input into all arms of the cartesian product without recomputing it
-      val bases = plan +: components.map(_ => Start(plan.graph, Set.empty, SolvedQueryModel.empty)).tail
+      val bases = plan +: components.map(_ => Start(plan.graph, SolvedQueryModel.empty)).tail
       val plans = bases.zip(components).map {
         case (base, component) =>
           val componentPlan = planComponentPattern(base, component, graph)

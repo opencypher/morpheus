@@ -146,12 +146,12 @@ class LogicalPlannerTest extends LogicalTestSuite {
                 Directed,
                 NodeScan(
                   Var("a")(CTNode),
-                  Start(LogicalCatalogGraph(testQualifiedGraphName, Schema.empty), Set(), emptySqm),
+                  Start(LogicalCatalogGraph(testQualifiedGraphName, Schema.empty), emptySqm),
                   SolvedQueryModel(Set(nodeA), Set())
                 ),
                 NodeScan(
                   Var("g")(CTNode),
-                  Start(LogicalCatalogGraph(testQualifiedGraphName, Schema.empty), Set(), emptySqm),
+                  Start(LogicalCatalogGraph(testQualifiedGraphName, Schema.empty), emptySqm),
                   SolvedQueryModel(Set(IRField("g")(CTNode)), Set())),
                 SolvedQueryModel(Set(nodeA, IRField("g")(CTNode), relR))
               ),
@@ -229,7 +229,6 @@ class LogicalPlannerTest extends LogicalTestSuite {
                       testQualifiedGraphName,
                       schema
                     ),
-                    Set(),
                     emptySqm
                   ),
                   SolvedQueryModel(Set(nodeA), Set())
@@ -241,7 +240,6 @@ class LogicalPlannerTest extends LogicalTestSuite {
                       testQualifiedGraphName,
                       schema
                     ),
-                    Set(),
                     emptySqm
                   ),
                   SolvedQueryModel(Set(IRField("g")(CTNode)), Set())
@@ -302,7 +300,7 @@ class LogicalPlannerTest extends LogicalTestSuite {
         Not(Equals(Param("p1")(CTInteger), Param("p2")(CTBoolean))(CTBoolean))(CTBoolean),
         NodeScan(
           Var("a")(CTNode),
-          Start(LogicalCatalogGraph(testQualifiedGraphName, Schema.empty), Set(), emptySqm),
+          Start(LogicalCatalogGraph(testQualifiedGraphName, Schema.empty), emptySqm),
           SolvedQueryModel(Set(nodeA), Set())
         ),
         SolvedQueryModel(
