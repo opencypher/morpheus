@@ -35,6 +35,7 @@ import org.opencypher.okapi.ir.api.util.DirectCompilationStage
 import org.opencypher.okapi.logical.impl._
 import org.opencypher.okapi.relational.api.io.{FlatRelationalTable, RelationalCypherRecords}
 import org.opencypher.okapi.relational.api.physical.{PhysicalOperator, PhysicalOperatorProducer, PhysicalPlannerContext, RuntimeContext}
+import org.opencypher.okapi.relational.impl.exception.RecordHeaderException
 import org.opencypher.okapi.relational.impl.flat
 import org.opencypher.okapi.relational.impl.flat.FlatOperator
 import org.opencypher.okapi.relational.impl.table._
@@ -104,7 +105,7 @@ I <: RuntimeContext[A, P]](producer: PhysicalOperatorProducer[O, K, A, P, I])
       case flat.Aggregate(aggregations, group, in, header) => producer.planAggregate(process(in), group, aggregations, header)
 
       case flat.Filter(expr, in, header) => expr match {
-        case TrueLit() =>
+        case TrueLit =>
           process(in) // optimise away filter
         case _ =>
           producer.planFilter(process(in), expr, header)
@@ -169,27 +170,18 @@ I <: RuntimeContext[A, P]](producer: PhysicalOperatorProducer[O, K, A, P, I])
             producer.planTabularUnionAll(outgoing, incoming)
         }
 
-      case flat.InitVarExpand(source, edgeList, endNode, in, header) =>
-        producer.planInitVarExpand(process(in), source, edgeList, endNode, header)
-
-      case flat.BoundedVarExpand(rel, edgeList, target, direction, lower, upper, sourceOp, relOp, targetOp, header, isExpandInto) =>
-        val first = process(sourceOp)
-        val second = process(relOp)
-        val third = process(targetOp)
-
-        producer.planBoundedVarExpand(
-          first,
-          second,
-          third,
-          rel,
-          edgeList,
-          target,
-          sourceOp.endNode,
-          lower,
-          upper,
-          direction,
-          header,
-          isExpandInto)
+      case flat.BoundedVarExpand(
+        source, edgeScan, innerNode, target,
+        direction, lower, upper,
+        sourceOp, edgeScanOp, innerNodeOp, targetOp,
+        header, isExpandInto
+      ) =>
+        planBoundedVarLengthExpand(
+          source, edgeScan, innerNode, target,
+          direction, lower, upper,
+          sourceOp, edgeScanOp, innerNodeOp, targetOp,
+          header, isExpandInto
+        )
 
       case flat.Optional(lhs, rhs, header) => planOptional(lhs, rhs, header)
 
@@ -209,7 +201,8 @@ I <: RuntimeContext[A, P]](producer: PhysicalOperatorProducer[O, K, A, P, I])
     }
   }
 
-  private def planConstructGraph(in: Option[FlatOperator], construct: LogicalPatternGraph)(implicit context: PhysicalPlannerContext[K, A]) = {
+  private def planConstructGraph(in: Option[FlatOperator], construct: LogicalPatternGraph)
+    (implicit context: PhysicalPlannerContext[K, A]) = {
     val onGraphPlan = {
       construct.onGraphs match {
         case Nil => producer.planStart() // Empty start
@@ -227,7 +220,8 @@ I <: RuntimeContext[A, P]](producer: PhysicalOperatorProducer[O, K, A, P, I])
     constructGraphPlan
   }
 
-  private def planOptional(lhs: FlatOperator, rhs: FlatOperator, header: RecordHeader)(implicit context: PhysicalPlannerContext[K, A]) = {
+  private def planOptional(lhs: FlatOperator, rhs: FlatOperator, header: RecordHeader)
+    (implicit context: PhysicalPlannerContext[K, A]) = {
     val lhsData = process(lhs)
     val rhsData = process(rhs)
     val lhsHeader = lhs.header
@@ -248,14 +242,148 @@ I <: RuntimeContext[A, P]](producer: PhysicalOperatorProducer[O, K, A, P, I])
     val rhsWithDropped = producer.planDrop(rhsData, expressionsToRemove, rhsHeaderWithDropped)
 
     // 3. Rename the join expressions on the right hand side, in order to make them distinguishable after the join
-    val joinFieldRenames: Map[Expr, String] = joinExprs.map(e => e -> generateUniqueName).toMap
-    val rhsHeaderWithRenames = rhsHeaderWithDropped.withColumnsRenamed(joinFieldRenames)
-    val rhsWithRenamed = producer.planRenameColumns(rhsWithDropped, joinFieldRenames, rhsHeaderWithRenames)
+    val joinExprRenames: Map[Var, Var] = joinExprs.map(e => e -> Var(generateUniqueName)(e.cypherType)).toMap
+    val rhsHeaderWithRenames = rhsHeaderWithDropped.withAlias(joinExprRenames.toSeq: _*) -- joinExprs
+    val rhsWithRenamed = producer.planAlias(rhsWithDropped, joinExprRenames.toSeq, rhsHeaderWithRenames)
 
     // 4. Left outer join the left side and the processed right side
-    val joined = producer.planJoin(lhsData, rhsWithRenamed, joinExprs.map(e => e -> e).toSeq, rhsHeaderWithRenames ++ lhsHeader , LeftOuterJoin)
+    val joined = producer.planJoin(lhsData, rhsWithRenamed, joinExprs.map(e => e -> joinExprRenames(e)).toSeq, lhsHeader join rhsHeaderWithRenames, LeftOuterJoin)
 
     // 5. Select the resulting header expressions
     producer.planSelect(joined, header.expressions.map(e => e -> Option.empty[Var]).toList, header)
+  }
+
+  private def planBoundedVarLengthExpand(
+    source: Var,
+    edgeScan: Var,
+    innerNode: Var,
+    target: Var,
+    direction: Direction,
+    lower: Int,
+    upper: Int,
+    sourceOp: FlatOperator,
+    edgeScanOp: FlatOperator,
+    innerNodeOp: FlatOperator,
+    targetOp: FlatOperator,
+    header: RecordHeader,
+    isExpandInto: Boolean
+  )(implicit context: PhysicalPlannerContext[K, A]): K = {
+    val physicalSourceOp = process(sourceOp)
+    val physicalEdgeScanOp = process(edgeScanOp)
+    val physicalInnerNodeOp = process(innerNodeOp)
+    val physicalTargetOp = process(targetOp)
+
+    if (direction == Undirected) {
+      val startExpr = physicalEdgeScanOp.header.startNodeFor(edgeScan)
+      val endExpr = physicalEdgeScanOp.header.endNodeFor(edgeScan)
+
+    }
+
+    val expandCacheOp = producer.planJoin(
+      physicalInnerNodeOp, physicalEdgeScanOp,
+      Seq(innerNode -> edgeScanOp.header.startNodeFor(edgeScan)),
+      innerNodeOp.header join edgeScanOp.header
+    )
+
+    def isomorphismFilter(rel: Var, candidates: Set[Var]): Ands = Ands(
+      candidates.map(e => Not(Equals(e, rel)(CTBoolean))(CTBoolean)).toList
+    )
+
+    def expand(i: Int, iterationTable: K, edgeVars: Seq[Var]): (K, Var) = {
+      val nextNode = header.entityVars.find(_.name == s"${innerNode.name}_${i - 1}").get
+      val nextEdge = header.entityVars.find(_.name == s"${edgeScan.name}_$i").get
+
+      val aliasedCacheHeader = expandCacheOp.header
+        .withAlias(edgeScan -> nextEdge, innerNode -> nextNode)
+        .select(nextEdge, nextNode)
+
+      val aliasedCacheOp = producer.planAlias(
+        expandCacheOp, Seq(edgeScan -> nextEdge, innerNode -> nextNode),
+        aliasedCacheHeader
+      )
+
+      val expandedOp = producer.planJoin(
+        iterationTable,
+        aliasedCacheOp,
+        Seq(iterationTable.header.endNodeFor(edgeVars.last) -> nextNode),
+        iterationTable.header join aliasedCacheHeader
+      )
+
+      producer.planFilter(expandedOp, isomorphismFilter(nextEdge, edgeVars.toSet), expandedOp.header) -> nextEdge
+    }
+
+    // Execute the first expand
+    val aliasedEdgeScan = header.entityVars.find(_.name == s"${edgeScan.name}_1").get
+    val aliasedEdgeScanOp = producer.planAlias(
+      physicalEdgeScanOp,
+      edgeScan, aliasedEdgeScan,
+      edgeScanOp.header.withAlias(edgeScan -> aliasedEdgeScan).select(aliasedEdgeScan)
+    )
+    val startOp = producer.planJoin(
+      physicalSourceOp, aliasedEdgeScanOp,
+      Seq(source -> aliasedEdgeScanOp.header.startNodeFor(aliasedEdgeScan)),
+      sourceOp.header join aliasedEdgeScanOp.header
+    )
+    val filteredStartOp = producer.planFilter(startOp, isomorphismFilter(aliasedEdgeScan, sourceOp.header.relationshipVars), startOp.header)
+
+    // Iteratively expand beginning from startOp with cacheOp
+    val expandOps = (2 to upper).foldLeft(Seq(filteredStartOp -> Seq(aliasedEdgeScan))) {
+      case (acc, i) =>
+        val (last, edgeVars) = acc.last
+        val (next, nextEdge) = expand(i, last, edgeVars)
+        acc :+ (next -> (edgeVars :+ nextEdge))
+    }.filter(_._2.size >= lower)
+
+    // Join target nodes on expand ops
+    val withTargetOps = expandOps.map {
+      case (op, edges) if isExpandInto =>
+        val filterExpr = Equals(target, op.header.endNodeFor(edges.last))(CTBoolean)
+        producer.planFilter(op, filterExpr, op.header)
+      case (op, edges) =>
+        producer.planJoin(op, physicalTargetOp, Seq(op.header.endNodeFor(edges.last) -> target), op.header join physicalTargetOp.header)
+    }
+
+    // check whether to include paths of length 0
+    val unalignedOps = if (lower == 0) {
+      val zeroLengthExpand: K = copyVar(source, target, header, physicalSourceOp)
+      if (upper == 0) Seq(zeroLengthExpand) else withTargetOps :+ zeroLengthExpand
+    } else withTargetOps
+
+    // fill shorter paths with nulls
+    val alignedOps = unalignedOps.map { exp =>
+      val nullExpressions = header.expressions -- exp.header.expressions
+      nullExpressions.foldLeft(exp) {
+        case (acc, expr) => producer.planProject(acc, NullLit(expr.cypherType), Some(expr), acc.header.addExprToColumn(expr, header.column(expr)))
+      }
+    }
+
+    // union expands of different lengths
+    alignedOps.reduce(producer.planTabularUnionAll)
+  }
+
+  private def copyVar(
+    from: Var,
+    to: Var,
+    header: RecordHeader,
+    physicalOp: K
+  ) = {
+    // TODO: remove when https://github.com/opencypher/cypher-for-apache-spark/issues/513 is resolved
+    val correctTarget = header.entityVars.find(_ == to).get
+    val sourceChildren = header.expressionsFor(from)
+    val targetChildren = header.expressionsFor(correctTarget)
+
+    val childMapping: Set[(Expr, Expr)] = sourceChildren.map(expr => expr -> expr.withOwner(correctTarget))
+    val missingMapping = (targetChildren -- childMapping.map(_._2) - correctTarget).map {
+      case l: HasLabel => FalseLit -> l
+      case p: Property => NullLit(p.cypherType) -> p
+      case other => throw RecordHeaderException(s"$correctTarget can only own HasLabel and Property but found $other")
+    }
+
+    val zeroLenghtExpand = (childMapping ++ missingMapping).foldLeft(physicalOp) {
+      case (acc, (f, t)) =>
+        val targetHeader = acc.header.withExpr(t)
+        producer.planProject(acc, f, Some(t), targetHeader)
+    }
+    zeroLenghtExpand
   }
 }

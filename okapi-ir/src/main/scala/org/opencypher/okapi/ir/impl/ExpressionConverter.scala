@@ -26,14 +26,14 @@
  */
 package org.opencypher.okapi.ir.impl
 
-import org.opencypher.v9_1.{expressions => ast}
-import org.opencypher.v9_1.expressions.functions
 import org.opencypher.okapi.api.types._
 import org.opencypher.okapi.impl.exception.NotImplementedException
 import org.opencypher.okapi.ir.api.expr._
 import org.opencypher.okapi.ir.api.{CypherQuery, Label, PropertyKey, RelType}
 import org.opencypher.okapi.ir.impl.FunctionUtils._
+import org.opencypher.v9_1.expressions.functions
 import org.opencypher.v9_1.util.Ref
+import org.opencypher.v9_1.{expressions => ast}
 
 import scala.language.implicitConversions
 
@@ -53,9 +53,9 @@ final class ExpressionConverter(implicit context: IRBuilderContext) {
     case ast.StringLiteral(value) =>
       StringLit(value)(typings(e))
     case _: ast.True =>
-      TrueLit()
+      TrueLit
     case _: ast.False =>
-      FalseLit()
+      FalseLit
     case ast.ListLiteral(exprs) =>
       ListLit(exprs.map(convert).toIndexedSeq)(typings(e))
 

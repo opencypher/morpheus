@@ -111,7 +111,7 @@ final class CAPSPhysicalOperatorProducer(implicit caps: CAPSSession)
   override def planAlias(in: CAPSPhysicalOperator, aliases: Seq[(Expr, Var)], header: RecordHeader): CAPSPhysicalOperator =
     operators.Alias(in, aliases, header)
 
-  override def planProject(in: CAPSPhysicalOperator, expr: Expr, to: Option[Var], header: RecordHeader): CAPSPhysicalOperator =
+  override def planProject(in: CAPSPhysicalOperator, expr: Expr, to: Option[Expr], header: RecordHeader): CAPSPhysicalOperator =
     operators.Project(in, expr, to, header)
 
   override def planConstructGraph(
@@ -141,28 +141,6 @@ final class CAPSPhysicalOperatorProducer(implicit caps: CAPSSession)
 
   override def planTabularUnionAll(lhs: CAPSPhysicalOperator, rhs: CAPSPhysicalOperator): CAPSPhysicalOperator =
     operators.TabularUnionAll(lhs, rhs)
-
-  override def planInitVarExpand(
-    in: CAPSPhysicalOperator,
-    source: Var,
-    edgeList: Var,
-    target: Var,
-    header: RecordHeader): CAPSPhysicalOperator = operators.InitVarExpand(in, source, edgeList, target, header)
-
-  override def planBoundedVarExpand(
-    first: CAPSPhysicalOperator,
-    second: CAPSPhysicalOperator,
-    third: CAPSPhysicalOperator,
-    rel: Var,
-    edgeList: Var,
-    target: Var,
-    initialEndNode: Var,
-    lower: Int,
-    upper: Int,
-    direction: Direction,
-    header: RecordHeader,
-    isExpandInto: Boolean): CAPSPhysicalOperator = operators.BoundedVarExpand(
-    first, second, third, rel, edgeList, target, initialEndNode, lower, upper, direction, header, isExpandInto)
 
   override def planExistsSubQuery(
     lhs: CAPSPhysicalOperator,

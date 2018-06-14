@@ -161,8 +161,8 @@ class ExpressionConverterTest extends BaseTestSuite with Neo4jAstTestSupport {
   test("can convert literals") {
     convert(literalInt(1)) should equal(IntegerLit(1L)())
     convert(ast.StringLiteral("Hello") _) should equal(StringLit("Hello")())
-    convert(parseExpr("false")) should equal(FalseLit())
-    convert(parseExpr("true")) should equal(TrueLit())
+    convert(parseExpr("false")) should equal(FalseLit)
+    convert(parseExpr("true")) should equal(TrueLit)
   }
 
   test("can convert property access") {

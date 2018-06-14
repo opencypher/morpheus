@@ -99,6 +99,9 @@ object SparkSQLExprMapper {
         case ListLit(exprs) =>
           functions.array(exprs.map(_.asSparkSQLExpr): _*)
 
+        case NullLit(ct) =>
+          functions.lit(null).cast(ct.toSparkType.get)
+
         case l: Lit[_] => functions.lit(l.v)
 
         // predicates

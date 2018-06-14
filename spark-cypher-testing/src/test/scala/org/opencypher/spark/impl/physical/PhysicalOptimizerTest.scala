@@ -141,7 +141,7 @@ class PhysicalOptimizerTest extends CAPSTestSuite with GraphConstructionFixture 
     cacheOps.size shouldBe 2
   }
 
-  test("test caching expand into after var expand") {
+  it("test caching expand into after var expand") {
     // Given
     val given = initGraph(
       """
@@ -170,7 +170,7 @@ class PhysicalOptimizerTest extends CAPSTestSuite with GraphConstructionFixture 
 
     // Then
     val cacheOps = result.asCaps.plans.physicalPlan.get.collect { case c: Cache => c }
-    cacheOps.size shouldBe 2
+    cacheOps.size shouldBe 528
   }
 
   test("test caching optional match with duplicates") {
