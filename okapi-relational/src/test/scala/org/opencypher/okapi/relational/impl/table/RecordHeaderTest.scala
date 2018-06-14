@@ -166,9 +166,9 @@ class RecordHeaderTest extends FunSpec with Matchers {
     val s = Var("nPropFoo_Alias")(nPropFoo.cypherType)
     val t = Var("nPropFoo_Alias")(nPropFoo.cypherType)
     val aliasHeader = nHeader
-          .withAlias(n as m)
-          .withAlias(nPropFoo as s)
-          .withAlias(s as t)
+      .withAlias(n as m)
+      .withAlias(nPropFoo as s)
+      .withAlias(s as t)
 
     aliasHeader.aliasesFor(n) should equalWithTracing(Set(m, n))
     aliasHeader.aliasesFor(m) should equalWithTracing(Set(m, n))
@@ -180,7 +180,7 @@ class RecordHeaderTest extends FunSpec with Matchers {
   it("adds a new child expr for all aliases of owner") {
     val prop2 = Property(n, PropertyKey("bar"))(CTString)
     val aliasHeader = nHeader
-          .withAlias(n as m)
+      .withAlias(n as m)
       .withExpr(prop2)
 
     aliasHeader.ownedBy(n) should equalWithTracing(nExprs + prop2)
@@ -300,8 +300,8 @@ class RecordHeaderTest extends FunSpec with Matchers {
   it("returns selected entity and alias vars and their corresponding columns") {
     val s = Var("nPropFoo_Alias")(nPropFoo.cypherType)
     val aliasHeader = nHeader
-          .withAlias(n as m)
-          .withAlias(nPropFoo as s)
+      .withAlias(n as m)
+      .withAlias(nPropFoo as s)
 
     aliasHeader.select(Set(s)) should equal(RecordHeader(Map(
       s -> nHeader.column(nPropFoo)
@@ -383,6 +383,17 @@ class RecordHeaderTest extends FunSpec with Matchers {
     val modifiedHeader = nHeader.withColumnsRenamed(Map(nPropFoo -> newName1, nLabelA -> newName2))
     modifiedHeader.column(nPropFoo) should equal(newName1)
     modifiedHeader.column(nLabelA) should equal(newName2)
+  }
+
+  it("pretty prints a record header") {
+    nHeader.pretty should equal(
+      """|╔════════════════╤════════════════╤═══════════════════════╤═════════════════╗
+         |║ n:A :: BOOLEAN │ n:B :: BOOLEAN │ n.foo :: STRING       │ n :: NODE(:A:B) ║
+         |╠════════════════╪════════════════╪═══════════════════════╪═════════════════╣
+         |║ '____n:A'      │ '____n:B'      │ '____n_dot_fooSTRING' │ 'n'             ║
+         |╚════════════════╧════════════════╧═══════════════════════╧═════════════════╝
+         |(1 row)
+         |""".stripMargin)
   }
 
 }

@@ -29,13 +29,13 @@ package org.opencypher.spark.examples
 class GraphXPageRankExampleTest extends ExampleTest {
   it("should produce the correct output") {
     validate(GraphXPageRankExample.main(Array.empty),
-      s"""|+------------------------------+
-          || name    | rank               |
-          |+------------------------------+
-          || 'Carol' | 1.4232365145228216 |
-          || 'Bob'   | 1.0235131396957122 |
-          || 'Alice' | 0.5532503457814661 |
-          |+------------------------------+
+      s"""|╔═════════╤════════════════════╗
+          |║ name    │ rank               ║
+          |╠═════════╪════════════════════╣
+          |║ 'Carol' │ 1.4232365145228216 ║
+          |║ 'Bob'   │ 1.0235131396957122 ║
+          |║ 'Alice' │ 0.5532503457814661 ║
+          |╚═════════╧════════════════════╝
           |(3 rows)
           |""".stripMargin)
   }

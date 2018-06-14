@@ -29,13 +29,13 @@ package org.opencypher.spark.examples
 class DataSourceExampleTest extends ExampleTest {
   it("should produce the correct output") {
     validate(DataSourceExample.main(Array.empty),
-      s"""|+------------------------------------------+
-          || n                                        |
-          |+------------------------------------------+
-          || (:`Person` {`age`: 10, `name`: 'Alice'}) |
-          || (:`Person` {`age`: 20, `name`: 'Bob'})   |
-          || (:`Person` {`age`: 15, `name`: 'Carol'}) |
-          |+------------------------------------------+
+      s"""|╔══════════════════════════════════════════╗
+          |║ n                                        ║
+          |╠══════════════════════════════════════════╣
+          |║ (:`Person` {`age`: 10, `name`: 'Alice'}) ║
+          |║ (:`Person` {`age`: 20, `name`: 'Bob'})   ║
+          |║ (:`Person` {`age`: 15, `name`: 'Carol'}) ║
+          |╚══════════════════════════════════════════╝
           |(3 rows)
           |""".stripMargin)
   }

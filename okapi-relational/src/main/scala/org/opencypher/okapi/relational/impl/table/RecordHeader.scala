@@ -28,6 +28,7 @@ package org.opencypher.okapi.relational.impl.table
 
 import org.opencypher.okapi.api.types.{CTNode, CTRelationship}
 import org.opencypher.okapi.impl.exception.IllegalArgumentException
+import org.opencypher.okapi.impl.util.TablePrinter
 import org.opencypher.okapi.ir.api.RelType
 import org.opencypher.okapi.ir.api.expr._
 
@@ -287,11 +288,15 @@ case class RecordHeader(exprToColumn: Map[Expr, String]) {
     copy(exprToColumn = exprToColumn + (expr -> columnName))
   }
 
-  def pretty: String = exprToColumn
-    .toSeq
-    .sortBy(_._2)
-    .map { case (expr, column) => s"Expr: $expr ===> $column" }
-    .mkString("\n")
+  def pretty: String = {
+    val formatCell: String => String = s => s"'$s'"
+    val (header, row) = exprToColumn
+      .toSeq
+      .sortBy(_._2)
+      .map { case (expr, column) => expr.toString -> column }
+      .unzip
+    TablePrinter.toTable(header, Seq(row))(formatCell)
+  }
 
 }
 

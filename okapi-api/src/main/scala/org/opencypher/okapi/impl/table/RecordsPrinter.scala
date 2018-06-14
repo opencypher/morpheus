@@ -27,8 +27,8 @@
 package org.opencypher.okapi.impl.table
 
 import org.opencypher.okapi.api.table.CypherRecords
-import org.opencypher.okapi.api.value.CypherValue
-import org.opencypher.okapi.impl.util.PrintOptions
+import org.opencypher.okapi.api.value.CypherValue.CypherValue
+import org.opencypher.okapi.impl.util.{PrintOptions, TablePrinter}
 
 object RecordsPrinter {
 
@@ -40,87 +40,14 @@ object RecordsPrinter {
   def print(records: CypherRecords)(implicit options: PrintOptions): Unit = {
     val columns = records.logicalColumns.getOrElse(records.physicalColumns)
 
-    val rows: Seq[CypherValue.CypherMap] = records.collect
-
-    // Dynamically sets the column width for each column to the longest string stored in the column
-    val columnWidths: Map[String, Int] = {
-      for {
-        columnName <- columns
-        headerWidth = columnName.length
-        columnRowValueLengths = rows.map(row => row.getOrElse(columnName).toCypherString.length)
-        maxColumnRowValueWidth = columnRowValueLengths.foldLeft(headerWidth)(math.max)
-        columnWidth = math.min(options.maxColumnWidth, maxColumnRowValueWidth)
-      } yield columnName -> columnWidth
-    }.toMap
-
-    val noColumnsHeader = "(no columns)"
-    val emptyRow = "(empty row)"
-
-    val noColumnsStringWidth = math.max(noColumnsHeader.length, emptyRow.length)
-
-    val totalContentWidth = {
-      if (columns.isEmpty) {
-        noColumnsStringWidth + 3
-      } else {
-        columnWidths.values.sum
+    val rows: Seq[Seq[CypherValue]] = records.collect.map { row =>
+      columns.foldLeft(Seq.empty[CypherValue]) {
+        case (currentSeq, column) => currentSeq :+ row(column)
       }
     }
 
-    val lineWidth: Int = totalContentWidth + 3 * columnWidths.size - 1
-
-    val stream = options.stream
-    val --- = "+" + repeat("-", lineWidth) + "+"
-
-    // header
-    stream.println(---)
-    var sep = "| "
-    if (columns.isEmpty) {
-      stream.print(sep)
-      stream.print(fitToColumn(noColumnsHeader, noColumnsStringWidth))
-    } else
-      columns.foreach { headerCell =>
-        stream.print(sep)
-        stream.print(fitToColumn(headerCell, columnWidths(headerCell)))
-        sep = " | "
-      }
-    stream.println(" |")
-    stream.println(---)
-
-    // data
-    sep = "| "
-    var count = 0
-    rows.foreach { map =>
-      if (columns.isEmpty) {
-        stream.print(sep)
-        stream.print(fitToColumn(emptyRow, noColumnsStringWidth))
-      } else {
-        columns.foreach { headerCell =>
-          val value = map.getOrElse(headerCell)
-          stream.print(sep)
-          stream.print(fitToColumn(value.toCypherString, columnWidths(headerCell)))
-          sep = " | "
-        }
-      }
-      stream.println(" |")
-      sep = "| "
-      count += 1
-    }
-
-    if (count == 0) {
-      stream.println("(no rows)")
-    } else {
-      stream.println(---)
-      stream.println(s"($count rows)")
-    }
-
-    stream.flush()
-  }
-
-  private def repeat(x: String, size: Int): String = (1 to size).map((_) => x).mkString
-
-  private def fitToColumn(s: String, width: Int)(implicit options: PrintOptions) = {
-    val spaces: String = (1 until width).map(_ => " ").foldLeft("")(_ + _)
-    val cell = s + spaces
-    cell.take(width)
+    options.stream
+      .append(TablePrinter.toTable(columns, rows)(v => v.toCypherString))
+      .flush()
   }
 }
