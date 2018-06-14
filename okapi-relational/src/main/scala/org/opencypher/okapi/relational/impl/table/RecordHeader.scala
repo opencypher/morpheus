@@ -283,7 +283,19 @@ case class RecordHeader(exprToColumn: Map[Expr, String]) {
     }
 
     val cleanOther = if (columns.intersect(other.columns).nonEmpty) {
-      RecordHeader.empty.withExprs(other.expressions)
+      val (rename, keep) = other.expressions.partition(e => this.columns.contains(other.column(e)))
+      val withKept = keep.foldLeft(RecordHeader.empty){
+        case (acc, next) => acc.addExprToColumn(next, other.column(next))
+      }
+
+      rename.groupBy(other.column).mapValues(_.toSeq.sorted).foldLeft(withKept) {
+        case (acc, (_, exprs)) =>
+          val add = acc.withExpr(exprs.head)
+          val newColumn = add.column(exprs.head)
+          exprs.tail.foldLeft(add) {
+            case (acc2, expr) => acc2.addExprToColumn(expr, newColumn)
+          }
+      }
     } else other
 
     this ++ cleanOther

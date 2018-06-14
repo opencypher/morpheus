@@ -407,6 +407,11 @@ class RecordHeaderTest extends BaseTestSuite {
       nHeader.join(aliased) should equal(nHeader ++ mHeader)
     }
 
+    it("joins record headers with overlapping column names and multiple expressions per column") {
+      val aliased = nHeader.withAlias(n, m).withAlias(n, o).select(m, o)
+      nHeader.join(aliased) should equal(nHeader ++ mHeader.withAlias(m, o))
+    }
+
     it("raises an error when joining header with overlapping expressions"){
       intercept[org.opencypher.okapi.impl.exception.IllegalArgumentException] {
         nHeader join nHeader
