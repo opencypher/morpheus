@@ -40,6 +40,12 @@ import org.opencypher.spark.impl.CAPSGraph
 import org.opencypher.spark.impl.DataFrameOps._
 import org.opencypher.spark.impl.io.CAPSPropertyGraphDataSource
 import org.opencypher.spark.schema.CAPSSchema
+
+import scala.concurrent.ExecutionContext.Implicits.global
+import scala.concurrent.duration.Duration
+import scala.concurrent.{Await, Future}
+import scala.util.{Failure, Success}
+
 /**
   * Abstract data source implementation that takes care of caching graph names and schemas.
   *
@@ -133,13 +139,24 @@ abstract class AbstractPropertyGraphDataSource(implicit val session: CAPSSession
     writeCAPSGraphMetaData(graphName, CAPSGraphMetaData(tableStorageFormat, capsGraph.tags))
     writeSchema(graphName, schema)
 
-    schema.labelCombinations.combos.foreach { combo =>
-      writeNodeTable(graphName, combo, capsGraph.canonicalNodeTable(combo))
+    // Asynchronously writes for nodes and relationships
+    val writeFutures = schema.labelCombinations.combos.map { combo =>
+      Future {
+        writeNodeTable(graphName, combo, capsGraph.canonicalNodeTable(combo))
+      }
+    } ++ schema.relationshipTypes.map { relType =>
+      Future {
+        writeRelationshipTable(graphName, relType, capsGraph.canonicalRelationshipTable(relType))
+      }
     }
 
-    schema.relationshipTypes.foreach { relType =>
-      writeRelationshipTable(graphName, relType, capsGraph.canonicalRelationshipTable(relType))
+    // Wait for node/relationship writes to finish
+    writeFutures.foreach { writeFuture =>
+      Await.ready(writeFuture, Duration.Inf)
+      writeFuture.onComplete {
+        case Success(_) =>
+        case Failure(e) => throw e
+      }
     }
   }
-
 }
