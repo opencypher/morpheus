@@ -15,6 +15,6 @@ object FSGraphSources {
 }
 
 object CypherGraphSources {
-  def neo4jReadOnly(config: Neo4jConfig)(implicit session: CAPSSession): Neo4jReadOnlyNamedQueryGraphSource =
+  def neo4jReadOnlyNamedQuery(config: Neo4jConfig)(implicit session: CAPSSession): Neo4jReadOnlyNamedQueryGraphSource =
     Neo4jReadOnlyNamedQueryGraphSource(config)
 }

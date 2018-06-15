@@ -44,7 +44,7 @@ object Neo4jWorkflowExample extends ConsoleApp {
   val neo4j = Neo4jHelpers.startNeo4j(personNetwork)
 
   // Register Graph Data Sources (GDS)
-  session.registerSource(Namespace("socialNetwork"), GraphSources.cypher.neo4jReadOnly(neo4j.dataSourceConfig))
+  session.registerSource(Namespace("socialNetwork"), GraphSources.cypher.neo4jReadOnlyNamedQuery(neo4j.dataSourceConfig))
 
   // Access the graph via its qualified graph name
   val socialNetwork = session.catalog.graph("socialNetwork.graph")
@@ -86,7 +86,7 @@ object Neo4jWorkflowExample extends ConsoleApp {
   }
 
   // Proof that the write-back to Neo4j worked, retrieve and print updated Neo4j results
-  val updatedNeo4jSource = GraphSources.cypher.neo4jReadOnly(neo4j.dataSourceConfig)
+  val updatedNeo4jSource = GraphSources.cypher.neo4jReadOnlyNamedQuery(neo4j.dataSourceConfig)
   session.registerSource(Namespace("updated-neo4j"), updatedNeo4jSource)
   val socialNetworkWithRanks = session.catalog.graph(QualifiedGraphName(Namespace("updated-neo4j"), neo4jDefaultGraphName))
   socialNetworkWithRanks.cypher("MATCH (p) WHERE p.should_buy IS NOT NULL RETURN p.name, p.should_buy").show
