@@ -44,29 +44,24 @@ object Neo4jWorkflowExample extends ConsoleApp {
   // Start a Neo4j instance and populate it with social network data
   val neo4j = Neo4jHelpers.startNeo4j(personNetwork)
 
-  // Register Graph Data Sources (GDS)
+  // Register Property Graph Data Sources (PGDS)
   session.registerSource(Namespace("socialNetwork"), GraphSources.cypher.neo4jReadOnlyNamedQuery(neo4j.dataSourceConfig))
+  session.registerSource(Namespace("purchases"), GraphSources.fs.csv(rootPath = getClass.getResource("/csv").getFile))
 
-  // Access the graph via its qualified graph name
+  // Access the graphs via their qualified graph names
   val socialNetwork = session.catalog.graph("socialNetwork.graph")
-
-  // Register a File-based data source in the Cypher session
-  session.registerSource(Namespace("csv"), GraphSources.fs.csv(rootPath = getClass.getResource("/csv").getFile))
-
-
-  // Access the graph via its qualified graph name
-  val purchaseNetwork = session.catalog.graph("csv.products")
+  val purchaseNetwork = session.catalog.graph("purchases.products")
 
   // Build new recommendation graph that connects the social and product graphs and
   // create new edges between users and customers with the same name
   val recommendationGraph = session.cypher(
     """|FROM GRAPH socialNetwork.graph
        |MATCH (p:Person)
-       |FROM GRAPH csv.products
+       |FROM GRAPH purchases.products
        |MATCH (c:Customer)
        |WHERE p.name = c.name
        |CONSTRUCT
-       |  ON socialNetwork.graph, csv.products
+       |  ON socialNetwork.graph, purchases.products
        |  NEW (p)-[:IS]->(c)
        |RETURN GRAPH
     """.stripMargin

@@ -46,7 +46,7 @@ object RecommendationExample extends ConsoleApp {
   implicit val neo4jServerUS: ServerControls = startNeo4j(socialNetworkUS)
   implicit val neo4jServerEU: ServerControls = startNeo4j(socialNetworkEU)
 
-  // Register Graph Data Sources (GDS)
+  // Register Property Graph Data Sources (PGDS)
 
   // The graph within Neo4j is partitioned into regions using a property key. Within the data source, we map each
   // partition to a separate graph name (i.e. US and EU)
