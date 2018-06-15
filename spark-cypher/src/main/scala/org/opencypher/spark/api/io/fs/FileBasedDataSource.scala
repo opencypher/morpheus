@@ -69,11 +69,11 @@ class FileBasedDataSource(
 
   protected def writeFile(path: String, content: String): Unit = fileSystem.writeFile(path, content)
 
-  protected def readTable(path: String, tableStorageFormat: String, schema: StructType): DataFrame = {
+  protected def readTable(path: String, schema: StructType): DataFrame = {
     session.sparkSession.read.format(tableStorageFormat).schema(schema).load(path)
   }
 
-  protected def writeTable(path: String, tableStorageFormat: String, table: DataFrame): Unit = {
+  protected def writeTable(path: String, table: DataFrame): Unit = {
     val coalescedTable = filesPerTable match {
       case None => table
       case Some(numFiles) => table.coalesce(numFiles)
@@ -89,20 +89,20 @@ class FileBasedDataSource(
     deleteDirectory(pathToGraphDirectory(graphName))
   }
 
-  override protected def readNodeTable(graphName: GraphName, tableStorageFormat: String, labels: Set[String], sparkSchema: StructType): DataFrame = {
-    readTable(pathToNodeTable(graphName, labels), tableStorageFormat, sparkSchema)
+  override protected def readNodeTable(graphName: GraphName, labels: Set[String], sparkSchema: StructType): DataFrame = {
+    readTable(pathToNodeTable(graphName, labels), sparkSchema)
   }
 
-  override protected def writeNodeTable(graphName: GraphName, tableStorageFormat: String, labels: Set[String], table: DataFrame): Unit = {
-    writeTable(pathToNodeTable(graphName, labels), tableStorageFormat, table)
+  override protected def writeNodeTable(graphName: GraphName, labels: Set[String], table: DataFrame): Unit = {
+    writeTable(pathToNodeTable(graphName, labels), table)
   }
 
   override protected def readRelationshipTable(graphName: GraphName, relKey: String, sparkSchema: StructType): DataFrame = {
-    readTable(pathToRelationshipTable(graphName, relKey), tableStorageFormat: String, sparkSchema)
+    readTable(pathToRelationshipTable(graphName, relKey), sparkSchema)
   }
 
   override protected def writeRelationshipTable(graphName: GraphName, relKey: String, table: DataFrame): Unit = {
-    writeTable(pathToRelationshipTable(graphName, relKey), tableStorageFormat: String, table)
+    writeTable(pathToRelationshipTable(graphName, relKey), table)
   }
 
   override protected def readJsonSchema(graphName: GraphName): String = {
