@@ -24,7 +24,7 @@
  * described as "implementation extensions to Cypher" or as "proposed changes to
  * Cypher that are not yet approved by the openCypher community".
  */
-package org.opencypher.spark.examples
+package org.opencypher.spark.util
 
 import org.opencypher.okapi.impl.util.PrintOptions
 

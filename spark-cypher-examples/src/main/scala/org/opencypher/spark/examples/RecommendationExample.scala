@@ -29,7 +29,8 @@ package org.opencypher.spark.examples
 import org.neo4j.harness.ServerControls
 import org.opencypher.okapi.api.graph.Namespace
 import org.opencypher.spark.api.{CAPSSession, GraphSources}
-import org.opencypher.spark.examples.Neo4jHelpers._
+import org.opencypher.spark.util.Neo4jHelpers._
+import org.opencypher.spark.util.ConsoleApp
 
 /**
   * This application demonstrates the integration of three data sources into a single graph which is used for computing

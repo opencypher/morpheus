@@ -28,6 +28,7 @@ package org.opencypher.spark.examples
 
 import org.opencypher.spark.api.CAPSSession
 import org.opencypher.spark.api.io.{Node, Relationship, RelationshipType}
+import org.opencypher.spark.util.ConsoleApp
 
 /**
   * Demonstrates basic usage of the CAPS API by loading an example network via Scala case classes and running a Cypher

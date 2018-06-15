@@ -29,6 +29,7 @@ package org.opencypher.spark.examples
 import org.opencypher.okapi.api.graph.Namespace
 import org.opencypher.spark.api.{CAPSSession, GraphSources}
 import org.opencypher.spark.impl.CAPSConverters._
+import org.opencypher.spark.util.ConsoleApp
 
 /**
   * Demonstrates usage patterns where Cypher and SQL can be interleaved in the

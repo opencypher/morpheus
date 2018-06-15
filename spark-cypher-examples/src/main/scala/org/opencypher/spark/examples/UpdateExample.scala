@@ -32,6 +32,7 @@ import org.opencypher.okapi.api.value.CypherValue.CypherMap
 import org.opencypher.spark.api.CAPSSession
 import org.opencypher.spark.api.CAPSSession._
 import org.opencypher.spark.impl.encoders._
+import org.opencypher.spark.util.ConsoleApp
 
 import scala.collection.JavaConverters._
 

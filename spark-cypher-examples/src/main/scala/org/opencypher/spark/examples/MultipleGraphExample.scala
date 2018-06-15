@@ -28,6 +28,7 @@ package org.opencypher.spark.examples
 
 import org.opencypher.okapi.api.graph.Namespace
 import org.opencypher.spark.api.{CAPSSession, GraphSources}
+import org.opencypher.spark.util.ConsoleApp
 
 /**
   * Demonstrates multiple graph capabilities by loading a social network from case class objects and a purchase network

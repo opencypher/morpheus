@@ -31,6 +31,7 @@ import org.opencypher.okapi.api.io.conversion.NodeMapping
 import org.opencypher.spark.api.CAPSSession
 import org.opencypher.spark.api.CAPSSession._
 import org.opencypher.spark.api.io.CAPSNodeTable
+import org.opencypher.spark.util.ConsoleApp
 
 /**
   * Round trip CAPS -> GraphX -> CAPS
