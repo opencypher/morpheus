@@ -27,7 +27,7 @@
 package org.opencypher.spark.examples
 
 import org.opencypher.okapi.api.graph.{Namespace, QualifiedGraphName}
-import org.opencypher.spark.api.io.neo4j.Neo4jReadOnlyQueryGraphSource._
+import org.opencypher.spark.api.io.neo4j.Neo4jReadOnlyNamedQueryGraphSource._
 import org.opencypher.spark.api.{CAPSSession, GraphSources}
 import org.opencypher.spark.examples.Neo4jHelpers._
 

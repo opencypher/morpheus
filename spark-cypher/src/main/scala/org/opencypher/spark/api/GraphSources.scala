@@ -1,7 +1,7 @@
 package org.opencypher.spark.api
 
 import org.opencypher.spark.api.io.fs.FSGraphSource
-import org.opencypher.spark.api.io.neo4j.{Neo4jConfig, Neo4jReadOnlyQueryGraphSource}
+import org.opencypher.spark.api.io.neo4j.{Neo4jConfig, Neo4jReadOnlyNamedQueryGraphSource}
 
 object GraphSources {
   def fs = FSGraphSources
@@ -15,6 +15,6 @@ object FSGraphSources {
 }
 
 object CypherGraphSources {
-  def neo4jReadOnly(config: Neo4jConfig)(implicit session: CAPSSession): Neo4jReadOnlyQueryGraphSource =
-    Neo4jReadOnlyQueryGraphSource(config)
+  def neo4jReadOnly(config: Neo4jConfig)(implicit session: CAPSSession): Neo4jReadOnlyNamedQueryGraphSource =
+    Neo4jReadOnlyNamedQueryGraphSource(config)
 }
