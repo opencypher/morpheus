@@ -121,11 +121,10 @@ final case class Project(in: CAPSPhysicalOperator, expr: Expr, header: RecordHea
 
   override def executeUnary(prev: CAPSPhysicalResult)(implicit context: CAPSRuntimeContext): CAPSPhysicalResult = {
     prev.mapRecordsWithDetails { records =>
-
-      if (header.contains(expr)) {
+      if (in.header.contains(expr)) {
         records
       } else {
-        val dfColumn = expr.asSparkSQLExpr(header, records.df, context.parameters)
+        val dfColumn = expr.asSparkSQLExpr(header, records.df, context.parameters).as(header.column(expr))
         val columnsToSelect = in.header.columns.toSeq.map(records.df.col) :+ dfColumn
         val updatedData = records.df.select(columnsToSelect: _*)
         CAPSRecords(header, updatedData)(records.caps)
@@ -158,7 +157,7 @@ final case class Filter(in: CAPSPhysicalOperator, expr: Expr, header: RecordHead
   extends UnaryPhysicalOperator with PhysicalOperatorDebugging {
 
   override def executeUnary(prev: CAPSPhysicalResult)(implicit context: CAPSRuntimeContext): CAPSPhysicalResult = {
-    prev.mapRecordsWithDetails { records =>records.filter(expr)(context.parameters) }
+    prev.mapRecordsWithDetails { records => records.filter(expr)(context.parameters) }
   }
 }
 

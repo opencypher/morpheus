@@ -58,12 +58,17 @@ case class RecordHeader(exprToColumn: Map[Expr, String]) {
 
   def isEmpty: Boolean = exprToColumn.isEmpty
 
-  def contains(expr: Expr): Boolean = exprToColumn.contains(expr)
+  def contains(expr: Expr): Boolean = expr match {
+    case AliasExpr(_, alias) => contains(alias)
+    case _ => exprToColumn.contains(expr)
+  }
 
   def getColumn(expr: Expr): Option[String] = exprToColumn.get(expr)
 
-  def column(expr: Expr): String =
-    exprToColumn.getOrElse(expr, throw IllegalArgumentException(s"Header does not contain a column for $expr.\n\t${this.toString}"))
+  def column(expr: Expr): String = expr match {
+    case AliasExpr(innerExpr, _) => column(innerExpr)
+    case _ => exprToColumn.getOrElse(expr, throw IllegalArgumentException(s"Header does not contain a column for $expr.\n\t${this.toString}"))
+  }
 
   def ownedBy(expr: Var): Set[Expr] = {
     exprToColumn.keys.filter(e => e.owner.contains(expr)).toSet
