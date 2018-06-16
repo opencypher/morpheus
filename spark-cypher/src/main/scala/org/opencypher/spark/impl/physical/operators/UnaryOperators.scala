@@ -116,20 +116,11 @@ final case class Alias(in: CAPSPhysicalOperator, aliases: Seq[AliasExpr], header
   }
 }
 
-final case class Project(in: CAPSPhysicalOperator, expr: Expr, header: RecordHeader)
+final case class WithColumn(in: CAPSPhysicalOperator, expr: Expr, header: RecordHeader)
   extends UnaryPhysicalOperator with PhysicalOperatorDebugging {
 
   override def executeUnary(prev: CAPSPhysicalResult)(implicit context: CAPSRuntimeContext): CAPSPhysicalResult = {
-    prev.mapRecordsWithDetails { records =>
-      if (in.header.contains(expr)) {
-        records
-      } else {
-        val dfColumn = expr.asSparkSQLExpr(header, records.df, context.parameters).as(header.column(expr))
-        val columnsToSelect = in.header.columns.toSeq.map(records.df.col) :+ dfColumn
-        val updatedData = records.df.select(columnsToSelect: _*)
-        CAPSRecords(header, updatedData)(records.caps)
-      }
-    }
+    prev.mapRecordsWithDetails { records => records.withColumn(expr)(context.parameters) }
   }
 }
 

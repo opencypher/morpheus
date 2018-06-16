@@ -98,8 +98,8 @@ class FlatOperatorProducer(implicit context: FlatPlannerContext) {
 
     maybeAlias match {
       case Some(alias) if containsExpr => org.opencypher.okapi.relational.impl.flat.Alias(expr as alias, in, updatedHeader.withAlias(expr as alias))
-      case Some(alias) => Project(expr as alias, in, updatedHeader.withAlias(expr as alias))
-      case None => Project(expr, in, updatedHeader)
+      case Some(alias) => WithColumn(expr as alias, in, updatedHeader.withAlias(expr as alias))
+      case None => WithColumn(expr, in, updatedHeader)
     }
   }
 

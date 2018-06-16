@@ -58,6 +58,8 @@ trait FlatRelationalTable[T <: FlatRelationalTable[T]] extends CypherTable {
 
   def distinct(cols: String*): T
 
+  def withColumn(column: String, expr: Expr)(implicit header: RecordHeader, parameters: CypherMap): T
+
   def withColumnRenamed(oldColumn: String, newColumn: String): T
 
   def withNullColumn(col: String): T
@@ -103,6 +105,23 @@ trait RelationalCypherRecords[T <: FlatRelationalTable[T]] extends CypherRecords
     val updatedHeader = header -- exprs.toSet
     val updatedTable = table.drop(exprs.map(header.column): _*)
     from(updatedHeader, updatedTable)
+  }
+
+  def withColumn(expr: Expr)(implicit parameters: CypherMap): R = {
+    if (header.contains(expr)) {
+      val updatedHeader = expr match {
+        case a: AliasExpr => header.withAlias(a)
+        case _ => header
+      }
+      from(updatedHeader, table)
+    } else {
+      val updatedHeader = expr match {
+        case a: AliasExpr => header.withExpr(a.expr).withAlias(a)
+        case _ => header.withExpr(expr)
+      }
+      val updatedTable = table.withColumn(updatedHeader.column(expr), expr)(updatedHeader, parameters)
+      from(updatedHeader, updatedTable)
+    }
   }
 
   def withColumnsRenamed(renamings: (Expr, String)*)(headerOpt: Option[RecordHeader] = None): R = {

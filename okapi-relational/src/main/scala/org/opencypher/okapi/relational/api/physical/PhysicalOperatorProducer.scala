@@ -179,7 +179,7 @@ I <: RuntimeContext[A, P]] {
     * @param header resulting record header
     * @return project operator
     */
-  def planProject(in: K, expr: Expr, header: RecordHeader): K
+  def planWithColumn(in: K, expr: Expr, header: RecordHeader): K
 
   /**
     * Creates a new record containing the specified entities (i.e. as defined in a construction pattern).

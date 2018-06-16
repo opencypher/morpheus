@@ -65,16 +65,6 @@ object SparkCypherTable {
 
     override def size: Long = df.count()
 
-    def cache(): DataFrameTable = df.cache()
-
-    def persist(): DataFrameTable = df.persist()
-
-    def persist(newLevel: StorageLevel): DataFrameTable = df.persist(newLevel)
-
-    def unpersist(): DataFrameTable = df.unpersist()
-
-    def unpersist(blocking: Boolean): DataFrameTable = df.unpersist(blocking)
-
     override def select(cols: String*): DataFrameTable = {
       if (cols.nonEmpty) {
         df.select(cols.head, cols.tail: _*)
@@ -86,6 +76,10 @@ object SparkCypherTable {
 
     override def filter(expr: Expr)(implicit header: RecordHeader, parameters: CypherMap): DataFrameTable = {
       df.where(expr.asSparkSQLExpr(header, df, parameters))
+    }
+
+    override def withColumn(column: String, expr: Expr)(implicit header: RecordHeader, parameters: CypherMap): DataFrameTable = {
+      df.withColumn(column, expr.asSparkSQLExpr(header, df, parameters))
     }
 
     override def drop(cols: String*): DataFrameTable = {
@@ -141,6 +135,16 @@ object SparkCypherTable {
     override def withTrueColumn(col: String): DataFrameTable = df.withColumn(col, functions.lit(true))
 
     override def withFalseColumn(col: String): DataFrameTable = df.withColumn(col, functions.lit(false))
+
+    def cache(): DataFrameTable = df.cache()
+
+    def persist(): DataFrameTable = df.persist()
+
+    def persist(newLevel: StorageLevel): DataFrameTable = df.persist(newLevel)
+
+    def unpersist(): DataFrameTable = df.unpersist()
+
+    def unpersist(blocking: Boolean): DataFrameTable = df.unpersist(blocking)
   }
 
 }

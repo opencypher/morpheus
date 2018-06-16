@@ -261,7 +261,7 @@ case class RecordHeader(exprToColumn: Map[Expr, String]) {
     }
   }
 
-  def withAlias(aliases: AliasExpr*): RecordHeader = aliases.foldLeft(this){
+  def withAlias(aliases: AliasExpr*): RecordHeader = aliases.foldLeft(this) {
     case (currentHeader, alias) => currentHeader.withAlias(alias)
   }
 
@@ -285,13 +285,13 @@ case class RecordHeader(exprToColumn: Map[Expr, String]) {
 
   def join(other: RecordHeader): RecordHeader = {
     val expressionOverlap = expressions.intersect(other.expressions)
-    if(expressionOverlap.nonEmpty) {
+    if (expressionOverlap.nonEmpty) {
       throw IllegalArgumentException("two headers with non overlapping expressions", s"overlapping expressions: $expressionOverlap")
     }
 
     val cleanOther = if (columns.intersect(other.columns).nonEmpty) {
       val (rename, keep) = other.expressions.partition(e => this.columns.contains(other.column(e)))
-      val withKept = keep.foldLeft(RecordHeader.empty){
+      val withKept = keep.foldLeft(RecordHeader.empty) {
         case (acc, next) => acc.addExprToColumn(next, other.column(next))
       }
 
