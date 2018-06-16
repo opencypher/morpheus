@@ -85,10 +85,10 @@ class FlatOperatorProducer(implicit context: FlatPlannerContext) {
     Aggregate(aggregations, group, in, newHeader)
   }
 
-  def unwind(list: Expr, item: Var, in: FlatOperator): Unwind = {
+  def unwind(list: Expr, item: Var, in: FlatOperator): WithColumn = {
     val explodeExpr = Explode(list)(item.cypherType)
     val explodeHeader = in.header.withExpr(explodeExpr).withAlias(explodeExpr as item)
-    Unwind(explodeExpr, item, in, explodeHeader)
+    WithColumn(explodeExpr as item, in, explodeHeader)
   }
 
   def project(projectExpr: (Expr, Option[Var]), in: FlatOperator): FlatOperator = {

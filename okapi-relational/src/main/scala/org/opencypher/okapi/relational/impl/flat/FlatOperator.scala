@@ -86,8 +86,6 @@ final case class ReturnGraph(in: FlatOperator) extends StackingFlatOperator {
 
 final case class WithColumn(expr: Expr, in: FlatOperator, header: RecordHeader) extends StackingFlatOperator
 
-final case class Unwind(expr: Explode, item: Var, in: FlatOperator, header: RecordHeader) extends StackingFlatOperator
-
 final case class Aggregate(
     aggregations: Set[(Var, Aggregator)],
     group: Set[Var],
