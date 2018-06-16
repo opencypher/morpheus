@@ -30,6 +30,7 @@ import org.opencypher.okapi.api.io.conversion.{EntityMapping, NodeMapping, Relat
 import org.opencypher.okapi.api.schema.Schema
 import org.opencypher.okapi.api.table.{CypherRecords, CypherTable}
 import org.opencypher.okapi.api.types.{CTBoolean, CTInteger, CTNode, CypherType}
+import org.opencypher.okapi.api.value.CypherValue.CypherMap
 import org.opencypher.okapi.impl.exception.IllegalArgumentException
 import org.opencypher.okapi.impl.util.StringEncodingUtilities._
 import org.opencypher.okapi.ir.api.block.{Asc, Desc, SortItem}
@@ -44,6 +45,8 @@ trait FlatRelationalTable[T <: FlatRelationalTable[T]] extends CypherTable {
   this: T =>
 
   def select(cols: String*): T
+
+  def filter(expr: Expr)(implicit header: RecordHeader, parameters: CypherMap): T
 
   def drop(cols: String*): T
 
@@ -94,6 +97,11 @@ trait RelationalCypherRecords[T <: FlatRelationalTable[T]] extends CypherRecords
     val logicalColumns = selectExprs.collect { case e: Var => e.withoutType }
 
     from(selectHeader, table.select(selectExprs.map(headerWithAliases.column).distinct: _*), Some(logicalColumns))
+  }
+
+  def filter(expr: Expr)(implicit parameters: CypherMap): R = {
+    val filteredTable = table.filter(expr)(header, parameters)
+    from(header, filteredTable)
   }
 
   def drop(exprs: Expr*): R = {

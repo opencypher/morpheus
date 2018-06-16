@@ -154,15 +154,11 @@ final case class RenameColumns(
   }
 }
 
-// TODO: Move to RelationalCypherRecords
 final case class Filter(in: CAPSPhysicalOperator, expr: Expr, header: RecordHeader)
   extends UnaryPhysicalOperator with PhysicalOperatorDebugging {
 
   override def executeUnary(prev: CAPSPhysicalResult)(implicit context: CAPSRuntimeContext): CAPSPhysicalResult = {
-    prev.mapRecordsWithDetails { records =>
-      val filteredRows = records.df.where(expr.asSparkSQLExpr(header, records.df, context.parameters))
-      CAPSRecords(header, filteredRows)(records.caps)
-    }
+    prev.mapRecordsWithDetails { records =>records.filter(expr)(context.parameters) }
   }
 }
 

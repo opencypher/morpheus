@@ -33,8 +33,9 @@ import org.opencypher.okapi.api.io.conversion.{EntityMapping, NodeMapping, Relat
 import org.opencypher.okapi.api.schema.Schema
 import org.opencypher.okapi.api.types.{DefiniteCypherType, _}
 import org.opencypher.okapi.api.value.CypherValue
-import org.opencypher.okapi.api.value.CypherValue.CypherValue
+import org.opencypher.okapi.api.value.CypherValue.{CypherMap, CypherValue}
 import org.opencypher.okapi.impl.util.StringEncodingUtilities._
+import org.opencypher.okapi.ir.api.expr.Expr
 import org.opencypher.okapi.relational.api.io.{EntityTable, FlatRelationalTable}
 import org.opencypher.okapi.relational.impl.physical._
 import org.opencypher.okapi.relational.impl.table.RecordHeader
@@ -45,6 +46,7 @@ import org.opencypher.spark.impl.util.Annotation
 import org.opencypher.spark.impl.{CAPSRecords, RecordBehaviour}
 import org.opencypher.spark.schema.CAPSSchema
 import org.opencypher.spark.schema.CAPSSchema._
+import org.opencypher.spark.impl.SparkSQLExprMapper._
 
 import scala.collection.JavaConverters._
 import scala.reflect.runtime.universe._
@@ -80,6 +82,10 @@ object SparkCypherTable {
         // TODO: this is used in Construct, check why this is necessary
         df.select()
       }
+    }
+
+    override def filter(expr: Expr)(implicit header: RecordHeader, parameters: CypherMap): DataFrameTable = {
+      df.where(expr.asSparkSQLExpr(header, df, parameters))
     }
 
     override def drop(cols: String*): DataFrameTable = {
