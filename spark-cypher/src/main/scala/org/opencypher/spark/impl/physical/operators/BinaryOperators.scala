@@ -291,7 +291,7 @@ final case class ConstructGraph(
 
   def constructProperty(variable: Var, propertyKey: String, propertyValue: Expr, constructedTable: CAPSRecords)
     (implicit context: CAPSRuntimeContext): CAPSRecords = {
-    val propertyValueColumn: Column = propertyValue.asSparkSQLExpr(constructedTable.header, constructedTable.df, context)
+    val propertyValueColumn: Column = propertyValue.asSparkSQLExpr(constructedTable.header, constructedTable.df, context.parameters)
 
     val propertyExpression = Property(variable, PropertyKey(propertyKey))(propertyValue.cypherType)
 

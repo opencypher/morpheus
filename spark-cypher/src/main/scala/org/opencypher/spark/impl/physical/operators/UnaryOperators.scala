@@ -125,7 +125,7 @@ final case class Project(in: CAPSPhysicalOperator, expr: Expr, alias: Option[Exp
       val updatedData = if (in.header.contains(newColumn)) {
         records.df
       } else {
-        val dfColumn = expr.asSparkSQLExpr(header, records.df, context).as(header.column(newColumn))
+        val dfColumn = expr.asSparkSQLExpr(header, records.df, context.parameters).as(header.column(newColumn))
         val columnsToSelect = in.header.columns.toSeq.map(records.df.col) :+ dfColumn
         records.df.select(columnsToSelect: _*)
       }
@@ -160,7 +160,7 @@ final case class Filter(in: CAPSPhysicalOperator, expr: Expr, header: RecordHead
 
   override def executeUnary(prev: CAPSPhysicalResult)(implicit context: CAPSRuntimeContext): CAPSPhysicalResult = {
     prev.mapRecordsWithDetails { records =>
-      val filteredRows = records.df.where(expr.asSparkSQLExpr(header, records.df, context))
+      val filteredRows = records.df.where(expr.asSparkSQLExpr(header, records.df, context.parameters))
       CAPSRecords(header, filteredRows)(records.caps)
     }
   }
@@ -213,7 +213,7 @@ final case class Aggregate(
       val inData = records.df
 
       def withInnerExpr(expr: Expr)(f: Column => Column) =
-        f(expr.asSparkSQLExpr(records.header, inData, context))
+        f(expr.asSparkSQLExpr(records.header, inData, context.parameters))
 
       val data: Either[RelationalGroupedDataset, DataFrame] =
         if (group.nonEmpty) {

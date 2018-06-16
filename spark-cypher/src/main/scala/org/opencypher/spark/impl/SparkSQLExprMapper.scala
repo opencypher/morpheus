@@ -29,13 +29,12 @@ package org.opencypher.spark.impl
 import org.apache.spark.sql.types.{BooleanType, DoubleType, LongType}
 import org.apache.spark.sql.{Column, DataFrame, functions}
 import org.opencypher.okapi.api.types._
-import org.opencypher.okapi.api.value.CypherValue.CypherList
+import org.opencypher.okapi.api.value.CypherValue.{CypherList, CypherMap}
 import org.opencypher.okapi.impl.exception.{IllegalArgumentException, IllegalStateException, NotImplementedException}
 import org.opencypher.okapi.ir.api.expr._
 import org.opencypher.okapi.relational.impl.table.RecordHeader
 import org.opencypher.spark.impl.CAPSFunctions.{array_contains, get_node_labels, get_property_keys, get_rel_type}
 import org.opencypher.spark.impl.convert.SparkConversions._
-import org.opencypher.spark.impl.physical.CAPSRuntimeContext
 
 object SparkSQLExprMapper {
 
@@ -51,7 +50,7 @@ object SparkSQLExprMapper {
       *   - We never have multiple types per column in CAPS (yet)
       */
     def compare(comparator: Column => (Column => Column), lhs: Expr, rhs: Expr)
-      (implicit header: RecordHeader, df: DataFrame, context: CAPSRuntimeContext): Column = {
+      (implicit header: RecordHeader, df: DataFrame, parameters: CypherMap): Column = {
       comparator(lhs.asSparkSQLExpr)(rhs.asSparkSQLExpr)
     }
 
@@ -66,23 +65,23 @@ object SparkSQLExprMapper {
     /**
       * Attempts to create a Spark SQL expression from the CAPS expression.
       *
-      * @param header  the header of the CAPSRecords in which the expression should be evaluated.
-      * @param df      the dataframe containing the data over which the expression should be evaluated.
-      * @param context context with helper functions, such as column names.
+      * @param header     the header of the CAPSRecords in which the expression should be evaluated.
+      * @param df         the dataframe containing the data over which the expression should be evaluated.
+      * @param parameters query parameters
       * @return Some Spark SQL expression if the input was mappable, otherwise None.
       */
-    def asSparkSQLExpr(implicit header: RecordHeader, df: DataFrame, context: CAPSRuntimeContext): Column = {
+    def asSparkSQLExpr(implicit header: RecordHeader, df: DataFrame, parameters: CypherMap): Column = {
 
       expr match {
 
         // context based lookups
         case p@Param(name) if p.cypherType.isInstanceOf[CTList] =>
-          context.parameters(name) match {
+          parameters(name) match {
             case CypherList(l) => functions.array(l.unwrap.map(functions.lit): _*)
             case notAList => throw IllegalArgumentException("a Cypher list", notAList)
           }
         case Param(name) =>
-          functions.lit(context.parameters(name).unwrap)
+          functions.lit(parameters(name).unwrap)
 
         // direct column lookup
         case _: Var | _: Param | _: Property | _: HasLabel | _: HasType | _: StartNode | _: EndNode =>

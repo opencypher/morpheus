@@ -30,6 +30,7 @@ import java.util.Collections
 
 import org.apache.spark.sql.types.{IntegerType, StructField, StructType}
 import org.apache.spark.sql.{Column, DataFrame, Row}
+import org.opencypher.okapi.api.value.CypherValue.CypherMap
 import org.opencypher.okapi.ir.api.expr.{Expr, Subtract, Var}
 import org.opencypher.okapi.relational.impl.table.RecordHeader
 import org.opencypher.okapi.testing.BaseTestSuite
@@ -53,7 +54,7 @@ class SparkSQLExprMapperTest extends BaseTestSuite with SparkSessionFixture {
   }
 
   private def convert(expr: Expr, header: RecordHeader = header): Column = {
-    expr.asSparkSQLExpr(header, df, CAPSRuntimeContext.empty)
+    expr.asSparkSQLExpr(header, df, CypherMap.empty)
   }
   val df: DataFrame = sparkSession.createDataFrame(
     Collections.emptyList[Row](),
