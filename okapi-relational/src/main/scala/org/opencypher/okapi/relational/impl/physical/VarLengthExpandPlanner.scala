@@ -85,8 +85,8 @@ I <: RuntimeContext[A, P]] {
   val startEdgeScan: Var = header.entityVars.find(_.name == s"${edgeScan.name}_1").get
   val startEdgeScanOp: K = producer.planAlias(
     physicalEdgeScanOp,
-    edgeScan, startEdgeScan,
-    edgeScanOp.header.withAlias(edgeScan -> startEdgeScan).select(startEdgeScan)
+    edgeScan as startEdgeScan,
+    edgeScanOp.header.withAlias(edgeScan as startEdgeScan).select(startEdgeScan)
   )
 
   /**
@@ -123,11 +123,11 @@ I <: RuntimeContext[A, P]] {
     val nextEdge = header.entityVars.find(_.name == s"${edgeScan.name}_$i").get
 
     val aliasedCacheHeader = expandCacheOp.header
-      .withAlias(edgeScan -> nextEdge, innerNode -> nextNode)
+      .withAlias(edgeScan as nextEdge, innerNode as nextNode)
       .select(nextEdge, nextNode)
 
-    val aliasedCacheOp = producer.planAlias(
-      expandCacheOp, Seq(edgeScan -> nextEdge, innerNode -> nextNode),
+    val aliasedCacheOp = producer.planAliases(
+      expandCacheOp, Seq(edgeScan as nextEdge, innerNode as nextNode),
       aliasedCacheHeader
     )
 
@@ -162,15 +162,16 @@ I <: RuntimeContext[A, P]] {
     } else paths
 
     // fill shorter paths with nulls
-    val alignedOps = unalignedOps.map { exp =>
-      val nullExpressions = header.expressions -- exp.header.expressions
-      nullExpressions.foldLeft(exp) {
-        case (acc, expr) => producer.planProject(acc, NullLit(expr.cypherType), Some(expr), acc.header.addExprToColumn(expr, header.column(expr)))
-      }
-    }
+//    val alignedOps = unalignedOps.map { exp =>
+//      val nullExpressions = header.expressions -- exp.header.expressions
+//      nullExpressions.foldLeft(exp) {
+//        case (acc, expr) => producer.planProject(acc, NullLit(expr.cypherType) as expr, acc.header.addExprToColumn(expr, header.column(expr)))
+//      }
+//    }
 
     // union expands of different lengths
-    alignedOps.reduce(producer.planTabularUnionAll)
+//    alignedOps.reduce(producer.planTabularUnionAll)
+    ???
   }
 
   /**
@@ -210,11 +211,13 @@ I <: RuntimeContext[A, P]] {
       case other => throw RecordHeaderException(s"$correctTarget can only own HasLabel and Property but found $other")
     }
 
-    (childMapping ++ missingMapping).foldLeft(physicalOp) {
-      case (acc, (f, t)) =>
-        val targetHeader = acc.header.withExpr(t)
-        producer.planProject(acc, f, Some(t), targetHeader)
-    }
+    // TODO: replace with withColumn + renameColumn
+//    (childMapping ++ missingMapping).foldLeft(physicalOp) {
+//      case (acc, (f, t)) =>
+//        val targetHeader = acc.header.withExpr(t)
+//        producer.planProject(acc, f as t, targetHeader)
+//    }
+    ???
   }
 
   /**

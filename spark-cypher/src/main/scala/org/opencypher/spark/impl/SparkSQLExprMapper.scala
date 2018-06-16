@@ -94,6 +94,9 @@ object SparkSQLExprMapper {
             functions.lit(null)
           }
 
+        case AliasExpr(innerExpr, alias) =>
+          innerExpr.asSparkSQLExpr.as(header.column(alias))
+
         // Literals
         case ListLit(exprs) =>
           functions.array(exprs.map(_.asSparkSQLExpr): _*)

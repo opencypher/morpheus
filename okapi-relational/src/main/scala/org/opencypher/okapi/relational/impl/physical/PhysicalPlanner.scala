@@ -93,13 +93,13 @@ I <: RuntimeContext[A, P]](val producer: PhysicalOperatorProducer[O, K, A, P, I]
       case op
         @flat.RelationshipScan(e, in, header) => producer.planRelationshipScan(process(in), op.sourceGraph, e, header)
 
-      case flat.Alias(expr, alias, in, header) => producer.planAlias(process(in), expr, alias, header)
+      case flat.Alias(expr, in, header) => producer.planAlias(process(in), expr, header)
 
       case flat.Unwind(explodeExpr: Explode, item, in, header) =>
-        producer.planProject(process(in), explodeExpr, Some(item), header)
+        producer.planProject(process(in), explodeExpr as item, header)
 
-      case flat.Project(expr, alias, in, header) =>
-        producer.planProject(process(in), expr, alias, header)
+      case flat.Project(expr, in, header) =>
+        producer.planProject(process(in), expr, header)
 
       case flat.Aggregate(aggregations, group, in, header) => producer.planAggregate(process(in), group, aggregations, header)
 
@@ -250,12 +250,12 @@ I <: RuntimeContext[A, P]](val producer: PhysicalOperatorProducer[O, K, A, P, I]
     val rhsWithDropped = producer.planDrop(rhsData, expressionsToRemove, rhsHeaderWithDropped)
 
     // 3. Rename the join expressions on the right hand side, in order to make them distinguishable after the join
-    val joinExprRenames: Map[Var, Var] = joinExprs.map(e => e -> Var(generateUniqueName)(e.cypherType)).toMap
+    val joinExprRenames = joinExprs.map(e => e as Var(generateUniqueName)(e.cypherType))
     val rhsHeaderWithRenames = rhsHeaderWithDropped.withAlias(joinExprRenames.toSeq: _*) -- joinExprs
-    val rhsWithRenamed = producer.planAlias(rhsWithDropped, joinExprRenames.toSeq, rhsHeaderWithRenames)
+    val rhsWithRenamed = producer.planAliases(rhsWithDropped, joinExprRenames.toSeq, rhsHeaderWithRenames)
 
     // 4. Left outer join the left side and the processed right side
-    val joined = producer.planJoin(lhsData, rhsWithRenamed, joinExprs.map(e => e -> joinExprRenames(e)).toSeq, lhsHeader join rhsHeaderWithRenames, LeftOuterJoin)
+    val joined = producer.planJoin(lhsData, rhsWithRenamed, joinExprRenames.map(a => a.expr -> a.alias).toSeq, lhsHeader join rhsHeaderWithRenames, LeftOuterJoin)
 
     // 5. Select the resulting header expressions
     producer.planSelect(joined, header.expressions.map(e => e -> Option.empty[Var]).toList, header)

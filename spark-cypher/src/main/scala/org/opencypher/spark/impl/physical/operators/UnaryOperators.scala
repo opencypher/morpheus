@@ -108,7 +108,7 @@ final case class RelationshipScan(
   }
 }
 
-final case class Alias(in: CAPSPhysicalOperator, aliases: Seq[(Expr, Var)], header: RecordHeader)
+final case class Alias(in: CAPSPhysicalOperator, aliases: Seq[AliasExpr], header: RecordHeader)
   extends UnaryPhysicalOperator with PhysicalOperatorDebugging {
 
   override def executeUnary(prev: CAPSPhysicalResult)(implicit context: CAPSRuntimeContext): CAPSPhysicalResult = {
@@ -116,20 +116,20 @@ final case class Alias(in: CAPSPhysicalOperator, aliases: Seq[(Expr, Var)], head
   }
 }
 
-final case class Project(in: CAPSPhysicalOperator, expr: Expr, alias: Option[Expr], header: RecordHeader)
+final case class Project(in: CAPSPhysicalOperator, expr: Expr, header: RecordHeader)
   extends UnaryPhysicalOperator with PhysicalOperatorDebugging {
 
   override def executeUnary(prev: CAPSPhysicalResult)(implicit context: CAPSRuntimeContext): CAPSPhysicalResult = {
     prev.mapRecordsWithDetails { records =>
-      val newColumn = alias.getOrElse(expr)
-      val updatedData = if (in.header.contains(newColumn)) {
-        records.df
+
+      if (header.contains(expr)) {
+        records
       } else {
-        val dfColumn = expr.asSparkSQLExpr(header, records.df, context.parameters).as(header.column(newColumn))
+        val dfColumn = expr.asSparkSQLExpr(header, records.df, context.parameters)
         val columnsToSelect = in.header.columns.toSeq.map(records.df.col) :+ dfColumn
-        records.df.select(columnsToSelect: _*)
+        val updatedData = records.df.select(columnsToSelect: _*)
+        CAPSRecords(header, updatedData)(records.caps)
       }
-      CAPSRecords(header, updatedData)(records.caps)
     }
   }
 }

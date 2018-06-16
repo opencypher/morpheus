@@ -243,7 +243,7 @@ final case class ConstructGraph(
     val aliasClones = clonedVarsToInputVars
       .filter { case (alias, original) => alias != original }
       .map(_.swap)
-    val baseTable = left.records.withAliases(aliasClones.toSeq: _*)
+    val baseTable = left.records.withAliases(aliasClones.map { case (expr, alias) => expr as alias }.toSeq: _*)
 
     val retaggedBaseTable = clonedVarsToInputVars.foldLeft(baseTable) { case (df, clone) =>
       df.retagVariable(clone._1, constructTagStrategy(clone._2.cypherType.graph.get))

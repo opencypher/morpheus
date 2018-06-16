@@ -35,9 +35,6 @@ import scala.annotation.tailrec
 import scala.reflect.ClassTag
 
 object Expr {
-  implicit class ExprOps(val expr: Expr) extends AnyVal {
-    def as(alias: Var): (Expr, Var) = expr -> alias
-  }
 
   implicit def alphabeticalOrdering[A <: Expr]: Ordering[Expr] =
     Ordering.by(e => (e.toString, e.toString))
@@ -68,6 +65,14 @@ sealed abstract class Expr extends AbstractTreeNode[Expr] {
 
   def withOwner(v: Var): This = this
 
+  def as(alias: Var) = AliasExpr(this, alias)
+}
+
+final case class AliasExpr(expr: Expr, alias: Var) extends Expr {
+
+  override def cypherType: CypherType = expr.cypherType
+
+  override def withoutType: String = s"$expr AS $alias"
 }
 
 final case class Param(name: String)(val cypherType: CypherType = CTWildcard) extends Expr {

@@ -97,9 +97,9 @@ class FlatOperatorProducer(implicit context: FlatPlannerContext) {
     val containsExpr = in.header.contains(expr)
 
     maybeAlias match {
-      case Some(alias) if containsExpr => Alias(expr, alias, in, updatedHeader.withAlias(expr as alias))
-      case Some(alias) => Project(expr, Some(alias), in, updatedHeader.withAlias(expr as alias))
-      case None => Project(expr, None, in, updatedHeader)
+      case Some(alias) if containsExpr => org.opencypher.okapi.relational.impl.flat.Alias(expr as alias, in, updatedHeader.withAlias(expr as alias))
+      case Some(alias) => Project(expr as alias, in, updatedHeader.withAlias(expr as alias))
+      case None => Project(expr, in, updatedHeader)
     }
   }
 
@@ -167,7 +167,7 @@ class FlatOperatorProducer(implicit context: FlatPlannerContext) {
 
     val aliasedEdgeScanCypherType = if (lower == 0) edgeScan.cypherType.nullable else edgeScan.cypherType
     val aliasedEdgeScan = Var(s"${edgeScan.name}_1")(aliasedEdgeScanCypherType)
-    val aliasedEdgeScanHeader = edgeScanOp.header.withAlias(edgeScan -> aliasedEdgeScan).select(aliasedEdgeScan)
+    val aliasedEdgeScanHeader = edgeScanOp.header.withAlias(edgeScan as aliasedEdgeScan).select(aliasedEdgeScan)
 
     val startHeader = sourceOp.header join aliasedEdgeScanHeader
 
@@ -181,7 +181,7 @@ class FlatOperatorProducer(implicit context: FlatPlannerContext) {
       val nextEdge = Var(s"${edgeScan.name}_$i")(edgeCypherType)
 
       val aliasedCacheHeader = expandCacheHeader
-        .withAlias(edgeScan -> nextEdge, innerNode -> nextNode)
+        .withAlias(edgeScan as nextEdge, innerNode as nextNode)
         .select(nextEdge, nextNode)
 
       prev join aliasedCacheHeader

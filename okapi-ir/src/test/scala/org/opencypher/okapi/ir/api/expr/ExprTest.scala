@@ -63,4 +63,9 @@ class ExprTest extends FunSuite with Matchers {
     p.hashCode should not equal (v.hashCode)
   }
 
+  test("alias expression has same type") {
+    val n = Var("n")(CTNode)
+    (n as Var("m")()).cypherType should equal(n.cypherType)
+  }
+
 }

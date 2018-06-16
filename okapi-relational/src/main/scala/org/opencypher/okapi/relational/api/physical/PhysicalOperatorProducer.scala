@@ -27,9 +27,8 @@
 package org.opencypher.okapi.relational.api.physical
 
 import org.opencypher.okapi.api.graph.{PropertyGraph, QualifiedGraphName}
-import org.opencypher.okapi.api.table.CypherRecords
 import org.opencypher.okapi.ir.api.block.SortItem
-import org.opencypher.okapi.ir.api.expr.{Aggregator, Expr, Var}
+import org.opencypher.okapi.ir.api.expr.{Aggregator, AliasExpr, Expr, Var}
 import org.opencypher.okapi.logical.impl._
 import org.opencypher.okapi.relational.api.io.{FlatRelationalTable, RelationalCypherRecords}
 import org.opencypher.okapi.relational.impl.physical.{InnerJoin, JoinType}
@@ -103,18 +102,17 @@ I <: RuntimeContext[A, P]] {
     * @param header resulting record header
     * @return Alias operator
     */
-  def planAlias(in: K, tuples: Seq[(Expr, Var)], header: RecordHeader): K
+  def planAliases(in: K, tuples: Seq[AliasExpr], header: RecordHeader): K
 
   /**
     * Renames the column identified by the given expression to the specified alias.
     *
     * @param in     previous operator
-    * @param expr   expression to be aliased
-    * @param alias  alias
+    * @param expr   alias expression
     * @param header resulting record header
     * @return Alias operator
     */
-  def planAlias(in: K, expr: Expr, alias: Var, header: RecordHeader): K = planAlias(in, Seq(expr -> alias), header)
+  def planAlias(in: K, expr: AliasExpr, header: RecordHeader): K = planAliases(in, Seq(expr), header)
 
   /**
     * Drops the columns identified by the given expressions from the input records.
@@ -178,11 +176,10 @@ I <: RuntimeContext[A, P]] {
     *
     * @param in     previous operator
     * @param expr   expression to evaluate
-    * @param alias  alias to project expr to
     * @param header resulting record header
     * @return project operator
     */
-  def planProject(in: K, expr: Expr, alias: Option[Expr], header: RecordHeader): K
+  def planProject(in: K, expr: Expr, header: RecordHeader): K
 
   /**
     * Creates a new record containing the specified entities (i.e. as defined in a construction pattern).

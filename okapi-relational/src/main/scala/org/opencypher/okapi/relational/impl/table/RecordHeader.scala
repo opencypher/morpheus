@@ -256,11 +256,13 @@ case class RecordHeader(exprToColumn: Map[Expr, String]) {
     }
   }
 
-  def withAlias(exprAsVar: (Expr, Var)*): RecordHeader = exprAsVar.foldLeft(this){
-    case (currentHeader, (expr, alias)) => currentHeader.withAlias(expr, alias)
+  def withAlias(aliases: AliasExpr*): RecordHeader = aliases.foldLeft(this){
+    case (currentHeader, alias) => currentHeader.withAlias(alias)
   }
 
-  def withAlias(to: Expr, alias: Var): RecordHeader = {
+  def withAlias(expr: AliasExpr): RecordHeader = {
+    val to = expr.expr
+    val alias = expr.alias
     to match {
       // Entity case
       case _: Var if exprToColumn.contains(to) =>
@@ -269,7 +271,7 @@ case class RecordHeader(exprToColumn: Map[Expr, String]) {
         }
 
       // Non-entity case
-      case expr if exprToColumn.contains(expr) => addExprToColumn(alias, exprToColumn(expr))
+      case e if exprToColumn.contains(e) => addExprToColumn(alias, exprToColumn(e))
 
       // No expression to alias
       case other => throw IllegalArgumentException(s"An expression in $this", s"Unknown expression $other")
