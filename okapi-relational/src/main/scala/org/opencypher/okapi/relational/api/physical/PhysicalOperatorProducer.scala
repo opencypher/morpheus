@@ -153,7 +153,7 @@ I <: RuntimeContext[A, P]] {
     * @param header      resulting record header
     * @return select operator
     */
-  def planSelect(in: K, expressions: List[(Expr, Option[Var])], header: RecordHeader): K
+  def planSelect(in: K, expressions: List[Expr], header: RecordHeader): K
 
   /**
     * Returns the working graph

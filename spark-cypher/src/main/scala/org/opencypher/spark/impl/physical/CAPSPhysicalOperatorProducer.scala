@@ -76,7 +76,7 @@ final class CAPSPhysicalOperatorProducer(implicit caps: CAPSSession)
     header: RecordHeader
   ): CAPSPhysicalOperator = operators.RenameColumns(in, renameExprs, header)
 
-  override def planSelect(in: CAPSPhysicalOperator, exprs: List[(Expr, Option[Var])], header: RecordHeader): CAPSPhysicalOperator =
+  override def planSelect(in: CAPSPhysicalOperator, exprs: List[Expr], header: RecordHeader): CAPSPhysicalOperator =
     operators.Select(in, exprs, header)
 
   override def planReturnGraph(in: CAPSPhysicalOperator): CAPSPhysicalOperator = {

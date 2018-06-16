@@ -172,7 +172,7 @@ final case class ReturnGraph(in: CAPSPhysicalOperator)
 
 }
 
-final case class Select(in: CAPSPhysicalOperator, expressions: List[(Expr, Option[Var])], header: RecordHeader)
+final case class Select(in: CAPSPhysicalOperator, expressions: List[Expr], header: RecordHeader)
   extends UnaryPhysicalOperator with PhysicalOperatorDebugging {
 
   override def executeUnary(prev: CAPSPhysicalResult)(implicit context: CAPSRuntimeContext): CAPSPhysicalResult = {

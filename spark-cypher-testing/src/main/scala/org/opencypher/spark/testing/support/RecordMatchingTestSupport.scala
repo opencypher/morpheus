@@ -61,11 +61,9 @@ trait RecordMatchingTestSupport {
     }
 
     private def projected(records: CAPSRecords): CAPSRecords = {
-      val aliases = records.header.expressions.map { expr =>
-        expr -> (expr match {
-          case _: Var => None
-          case e => Some(Var(e.withoutType)(e.cypherType))
-        })
+      val aliases = records.header.expressions.map {
+        case v: Var => v
+        case e => e as Var(e.withoutType)(e.cypherType)
       }.toSeq
 
       records.select(aliases.head, aliases.tail: _*)

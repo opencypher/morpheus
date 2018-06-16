@@ -62,7 +62,7 @@ I <: RuntimeContext[A, P]](val producer: PhysicalOperatorProducer[O, K, A, P, I]
           .flatMap(header.ownedBy)
           .distinct
 
-        producer.planSelect(process(in), selectExpressions.map(_ -> None), header)
+        producer.planSelect(process(in), selectExpressions, header)
 
       case flat.EmptyRecords(in, header) =>
         producer.planEmptyRecords(process(in), header)
@@ -258,6 +258,6 @@ I <: RuntimeContext[A, P]](val producer: PhysicalOperatorProducer[O, K, A, P, I]
     val joined = producer.planJoin(lhsData, rhsWithRenamed, joinExprRenames.map(a => a.expr -> a.alias).toSeq, lhsHeader join rhsHeaderWithRenames, LeftOuterJoin)
 
     // 5. Select the resulting header expressions
-    producer.planSelect(joined, header.expressions.map(e => e -> Option.empty[Var]).toList, header)
+    producer.planSelect(joined, header.expressions.toList, header)
   }
 }
