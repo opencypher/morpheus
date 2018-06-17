@@ -112,7 +112,7 @@ final case class Alias(in: CAPSPhysicalOperator, aliases: Seq[AliasExpr], header
   extends UnaryPhysicalOperator with PhysicalOperatorDebugging {
 
   override def executeUnary(prev: CAPSPhysicalResult)(implicit context: CAPSRuntimeContext): CAPSPhysicalResult = {
-    prev.mapRecordsWithDetails { records => CAPSRecords(header, records.df)(records.caps) }
+    prev.mapRecordsWithDetails { records => records.withAliases(aliases: _*) }
   }
 }
 

@@ -248,11 +248,13 @@ I <: RuntimeContext[A, P]](val producer: PhysicalOperatorProducer[O, K, A, P, I]
 
     // 3. Rename the join expressions on the right hand side, in order to make them distinguishable after the join
     val joinExprRenames = joinExprs.map(e => e as Var(generateUniqueName)(e.cypherType))
-    val rhsHeaderWithRenames = rhsHeaderWithDropped.withAlias(joinExprRenames.toSeq: _*) -- joinExprs
-    val rhsWithRenamed = producer.planAliases(rhsWithDropped, joinExprRenames.toSeq, rhsHeaderWithRenames)
+    val rhsHeaderWithRenames = rhsHeaderWithDropped.withAlias(joinExprRenames.toSeq: _*)
+    val rhsWithAlias = producer.planAliases(rhsWithDropped, joinExprRenames.toSeq, rhsHeaderWithRenames)
+    val rhsHeaderJoinReady = rhsHeaderWithRenames -- joinExprs
+    val rhsJoinReady = producer.planDrop(rhsWithAlias, joinExprs.asInstanceOf[Set[Expr]], rhsHeaderJoinReady)
 
     // 4. Left outer join the left side and the processed right side
-    val joined = producer.planJoin(lhsData, rhsWithRenamed, joinExprRenames.map(a => a.expr -> a.alias).toSeq, lhsHeader join rhsHeaderWithRenames, LeftOuterJoin)
+    val joined = producer.planJoin(lhsData, rhsJoinReady, joinExprRenames.map(a => a.expr -> a.alias).toSeq, lhsHeader join rhsHeaderJoinReady, LeftOuterJoin)
 
     // 5. Select the resulting header expressions
     producer.planSelect(joined, header.expressions.toList, header)

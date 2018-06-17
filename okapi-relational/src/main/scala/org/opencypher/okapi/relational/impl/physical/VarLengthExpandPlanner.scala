@@ -124,12 +124,26 @@ I <: RuntimeContext[A, P]] {
 
     val aliasedCacheHeader = expandCacheOp.header
       .withAlias(edgeScan as nextEdge, innerNode as nextNode)
-      .select(nextEdge, nextNode)
 
     val aliasedCacheOp = producer.planAliases(
       expandCacheOp, Seq(edgeScan as nextEdge, innerNode as nextNode),
       aliasedCacheHeader
     )
+
+    // We just want to select id columns, select always selects also the children. we need to drop them first
+    // TODO: this is a planning performance killer, we need to squash these steps into a single table operation
+    val idExprs = Set(
+      nextEdge,
+      aliasedCacheHeader.startNodeFor(nextEdge),
+      aliasedCacheHeader.endNodeFor(nextEdge),
+      nextNode)
+
+    val dropExprs = idExprs.flatMap(aliasedCacheHeader.expressionsFor) -- idExprs
+    val dropHeader = aliasedCacheHeader -- dropExprs
+    val withChildExprsDropped = producer.planDrop(aliasedCacheOp, dropExprs, dropHeader)
+
+    val aliasSelectHeader = dropHeader.select(idExprs)
+    val selectedCacheOp = producer.planSelect(withChildExprsDropped, idExprs.toList, aliasSelectHeader)
 
     val leftJoinExpr = dir match {
       case Outbound => iterationTable.header.endNodeFor(edgeVars.last)
@@ -138,16 +152,16 @@ I <: RuntimeContext[A, P]] {
 
     val expandedOp = producer.planJoin(
       iterationTable,
-      aliasedCacheOp,
+      selectedCacheOp,
       Seq(leftJoinExpr -> nextNode),
-      iterationTable.header join aliasedCacheHeader
+      iterationTable.header join aliasSelectHeader
     )
 
     producer.planFilter(expandedOp, isomorphismFilter(nextEdge, edgeVars.toSet), expandedOp.header) -> nextEdge
   }
 
   /**
-    * Finializes the expansions
+    * Finalize the expansions
     *   1. adds paths of length zero if needed
     *   2. fills empty columns with null values
     *   3. unions paths of different lengths
@@ -167,6 +181,7 @@ I <: RuntimeContext[A, P]] {
       nullExpressions.foldLeft(exp) {
         case (acc, expr) =>
 
+          // TODO: this is a planning performance killer, we need to squash these steps into a single table operation
           val lit = NullLit(expr.cypherType)
           val withLitHeader = acc.header.withExpr(lit)
           val withLit = producer.planAddColumn(acc, lit, header)

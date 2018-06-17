@@ -103,8 +103,12 @@ trait RelationalCypherRecords[T <: FlatRelationalTable[T]] extends CypherRecords
 
   def drop(exprs: Expr*): R = {
     val updatedHeader = header -- exprs.toSet
-    val updatedTable = table.drop(exprs.map(header.column): _*)
-    from(updatedHeader, updatedTable)
+    if (updatedHeader.columns.size < header.columns.size) {
+      val updatedTable = table.drop(exprs.map(header.column): _*)
+      from(updatedHeader, updatedTable)
+    } else {
+      from(updatedHeader, table)
+    }
   }
 
   def addColumn(expr: Expr)(implicit parameters: CypherMap): R = {
