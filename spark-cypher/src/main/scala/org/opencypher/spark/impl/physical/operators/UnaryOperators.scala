@@ -116,21 +116,29 @@ final case class Alias(in: CAPSPhysicalOperator, aliases: Seq[AliasExpr], header
   }
 }
 
-final case class WithColumn(in: CAPSPhysicalOperator, expr: Expr, header: RecordHeader)
+final case class AddColumn(in: CAPSPhysicalOperator, expr: Expr, header: RecordHeader)
   extends UnaryPhysicalOperator with PhysicalOperatorDebugging {
 
   override def executeUnary(prev: CAPSPhysicalResult)(implicit context: CAPSRuntimeContext): CAPSPhysicalResult = {
-    prev.mapRecordsWithDetails { records => records.withColumn(expr)(context.parameters) }
+    prev.mapRecordsWithDetails { records => records.addColumn(expr)(context.parameters) }
   }
 }
 
-final case class Drop(
+final case class CopyColumn(in: CAPSPhysicalOperator, from: Expr, to: Expr, header: RecordHeader)
+  extends UnaryPhysicalOperator with PhysicalOperatorDebugging {
+
+  override def executeUnary(prev: CAPSPhysicalResult)(implicit context: CAPSRuntimeContext): CAPSPhysicalResult = {
+    prev.mapRecordsWithDetails { records => records.copyColumn(from, to)(context.parameters)}
+  }
+}
+
+final case class DropColumns(
   in: CAPSPhysicalOperator,
-  dropFields: Set[Expr],
+  exprs: Set[Expr],
   header: RecordHeader
 ) extends UnaryPhysicalOperator with PhysicalOperatorDebugging {
   override def executeUnary(prev: CAPSPhysicalResult)(implicit context: CAPSRuntimeContext): CAPSPhysicalResult = {
-    prev.mapRecordsWithDetails { records => records.drop(dropFields.toSeq: _*) }
+    prev.mapRecordsWithDetails { records => records.drop(exprs.toSeq: _*) }
   }
 }
 
@@ -140,7 +148,7 @@ final case class RenameColumns(
   header: RecordHeader
 ) extends UnaryPhysicalOperator with PhysicalOperatorDebugging {
   override def executeUnary(prev: CAPSPhysicalResult)(implicit context: CAPSRuntimeContext): CAPSPhysicalResult = {
-    prev.mapRecordsWithDetails { records => records.withColumnsRenamed(renameExprs.toSeq: _*)(Some(header)) }
+    prev.mapRecordsWithDetails { records => records.renameColumns(renameExprs.toSeq: _*)(Some(header)) }
   }
 }
 

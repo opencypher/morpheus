@@ -96,7 +96,7 @@ I <: RuntimeContext[A, P]](val producer: PhysicalOperatorProducer[O, K, A, P, I]
       case flat.Alias(expr, in, header) => producer.planAlias(process(in), expr, header)
 
       case flat.WithColumn(expr, in, header) =>
-        producer.planWithColumn(process(in), expr, header)
+        producer.planAddColumn(process(in), expr, header)
 
       case flat.Aggregate(aggregations, group, in, header) => producer.planAggregate(process(in), group, aggregations, header)
 

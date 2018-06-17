@@ -162,16 +162,33 @@ I <: RuntimeContext[A, P]] {
     } else paths
 
     // fill shorter paths with nulls
-//    val alignedOps = unalignedOps.map { exp =>
-//      val nullExpressions = header.expressions -- exp.header.expressions
-//      nullExpressions.foldLeft(exp) {
-//        case (acc, expr) => producer.planProject(acc, NullLit(expr.cypherType) as expr, acc.header.addExprToColumn(expr, header.column(expr)))
-//      }
-//    }
+    val alignedOps = unalignedOps.map { exp =>
+      val nullExpressions = header.expressions -- exp.header.expressions
+      nullExpressions.foldLeft(exp) {
+        case (acc, expr) =>
+
+          val lit = NullLit(expr.cypherType)
+          val withLitHeader = acc.header.withExpr(lit)
+          val withLit = producer.planAddColumn(acc, lit, header)
+
+          val withExprHeader = withLitHeader.withExpr(expr)
+          val withExpr = producer.planCopyColumn(withLit, lit, expr, withExprHeader)
+
+          val withoutLitHeader = withExprHeader -- Set(lit)
+          val withoutLit = producer.planDrop(withExpr, Set(lit), withoutLitHeader)
+
+          if (withoutLitHeader.column(expr) == header.column(expr)) {
+            withoutLit
+          } else {
+            val withRenamedHeader = (withoutLitHeader -- Set(expr)).addExprToColumn(expr, header.column(expr))
+            val withRenamed = producer.planRenameColumns(withoutLit, Map(expr -> header.column(expr)), withRenamedHeader)
+            withRenamed
+          }
+      }
+    }
 
     // union expands of different lengths
-//    alignedOps.reduce(producer.planTabularUnionAll)
-    ???
+    alignedOps.reduce(producer.planTabularUnionAll)
   }
 
   /**
@@ -211,13 +228,11 @@ I <: RuntimeContext[A, P]] {
       case other => throw RecordHeaderException(s"$correctTarget can only own HasLabel and Property but found $other")
     }
 
-    // TODO: replace with withColumn + renameColumn
-//    (childMapping ++ missingMapping).foldLeft(physicalOp) {
-//      case (acc, (f, t)) =>
-//        val targetHeader = acc.header.withExpr(t)
-//        producer.planProject(acc, f as t, targetHeader)
-//    }
-    ???
+    (childMapping ++ missingMapping).foldLeft(physicalOp) {
+      case (acc, (f, t)) =>
+        val targetHeader = acc.header.withExpr(t)
+        producer.planCopyColumn(acc, f, t, targetHeader)
+    }
   }
 
   /**

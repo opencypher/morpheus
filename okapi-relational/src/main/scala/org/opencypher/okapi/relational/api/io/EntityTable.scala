@@ -107,7 +107,7 @@ trait RelationalCypherRecords[T <: FlatRelationalTable[T]] extends CypherRecords
     from(updatedHeader, updatedTable)
   }
 
-  def withColumn(expr: Expr)(implicit parameters: CypherMap): R = {
+  def addColumn(expr: Expr)(implicit parameters: CypherMap): R = {
     if (header.contains(expr)) {
       val updatedHeader = expr match {
         case a: AliasExpr => header.withAlias(a)
@@ -124,7 +124,16 @@ trait RelationalCypherRecords[T <: FlatRelationalTable[T]] extends CypherRecords
     }
   }
 
-  def withColumnsRenamed(renamings: (Expr, String)*)(headerOpt: Option[RecordHeader] = None): R = {
+  def copyColumn(fromColumn: Expr, toColumn: Expr)(implicit parameters: CypherMap): R = {
+    if (!header.contains(fromColumn)) {
+      throw IllegalArgumentException(s"expr in header $fromColumn")
+    }
+    val updatedHeader = header.withExpr(toColumn)
+    val updatedData = table.withColumn(updatedHeader.column(toColumn), fromColumn)(header, parameters)
+    from(updatedHeader, updatedData)
+  }
+
+  def renameColumns(renamings: (Expr, String)*)(headerOpt: Option[RecordHeader] = None): R = {
     val updatedHeader = headerOpt.getOrElse(renamings.foldLeft(header) {
       case (currentHeader, (expr, newColumn)) => currentHeader.withColumnRenamed(expr, newColumn)
     })
@@ -181,7 +190,7 @@ trait RelationalCypherRecords[T <: FlatRelationalTable[T]] extends CypherRecords
       val renameColumns = other.header.expressions
         .filter(expr => other.header.column(expr) != joinHeader.column(expr))
         .map { expr => expr -> joinHeader.column(expr) }.toSeq
-      other.withColumnsRenamed(renameColumns: _*)().asInstanceOf[R]
+      other.renameColumns(renameColumns: _*)().asInstanceOf[R]
     } else other
 
     val joinCols = joinExprs.map { case (l, r) => header.column(l) -> cleanOther.header.column(r) }

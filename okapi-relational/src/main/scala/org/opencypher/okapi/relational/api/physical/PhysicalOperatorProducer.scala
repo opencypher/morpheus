@@ -177,9 +177,20 @@ I <: RuntimeContext[A, P]] {
     * @param in     previous operator
     * @param expr   expression to evaluate
     * @param header resulting record header
-    * @return project operator
+    * @return add column operator
     */
-  def planWithColumn(in: K, expr: Expr, header: RecordHeader): K
+  def planAddColumn(in: K, expr: Expr, header: RecordHeader): K
+
+  /**
+    * Evaluates the first expression and copies the result into the column identified by the second expression.
+    *
+    * @param in     previous operator
+    * @param expr   expression to evaluate
+    * @param column expression to store result in
+    * @param header resulting record header
+    * @return add column operator
+    */
+  def planCopyColumn(in: K, expr: Expr, column: Expr, header: RecordHeader): K
 
   /**
     * Creates a new record containing the specified entities (i.e. as defined in a construction pattern).
