@@ -27,7 +27,7 @@
 package org.opencypher.okapi.relational.impl.flat
 
 import org.opencypher.okapi.ir.api.block.SortItem
-import org.opencypher.okapi.ir.api.expr.{Aggregator, Explode, Expr, Var}
+import org.opencypher.okapi.ir.api.expr.{Aggregator, EntityExpr, Explode, Expr}
 import org.opencypher.okapi.logical.impl.{Direction, LogicalGraph}
 import org.opencypher.okapi.relational.impl.table._
 import org.opencypher.okapi.trees.AbstractTreeNode
@@ -70,15 +70,15 @@ sealed abstract class StackingFlatOperator extends FlatOperator {
 
 sealed abstract class FlatLeafOperator extends FlatOperator
 
-final case class NodeScan(node: Var, in: FlatOperator, header: RecordHeader) extends StackingFlatOperator
+final case class NodeScan(node: EntityExpr, in: FlatOperator, header: RecordHeader) extends StackingFlatOperator
 
-final case class RelationshipScan(rel: Var, in: FlatOperator, header: RecordHeader) extends StackingFlatOperator
+final case class RelationshipScan(rel: EntityExpr, in: FlatOperator, header: RecordHeader) extends StackingFlatOperator
 
 final case class Filter(expr: Expr, in: FlatOperator, header: RecordHeader) extends StackingFlatOperator
 
-final case class Distinct(fields: Set[Var], in: FlatOperator, header: RecordHeader) extends StackingFlatOperator
+final case class Distinct(fields: Set[EntityExpr], in: FlatOperator, header: RecordHeader) extends StackingFlatOperator
 
-final case class Select(fields: List[Var], in: FlatOperator, header: RecordHeader) extends StackingFlatOperator
+final case class Select(fields: List[EntityExpr], in: FlatOperator, header: RecordHeader) extends StackingFlatOperator
 
 final case class ReturnGraph(in: FlatOperator) extends StackingFlatOperator {
   override def header: RecordHeader = RecordHeader.empty
@@ -87,8 +87,8 @@ final case class ReturnGraph(in: FlatOperator) extends StackingFlatOperator {
 final case class WithColumn(expr: Expr, in: FlatOperator, header: RecordHeader) extends StackingFlatOperator
 
 final case class Aggregate(
-    aggregations: Set[(Var, Aggregator)],
-    group: Set[Var],
+    aggregations: Set[(EntityExpr, Aggregator)],
+    group: Set[EntityExpr],
     in: FlatOperator,
     header: RecordHeader)
     extends StackingFlatOperator
@@ -99,7 +99,7 @@ final case class CartesianProduct(lhs: FlatOperator, rhs: FlatOperator, header: 
 
 final case class Optional(lhs: FlatOperator, rhs: FlatOperator, header: RecordHeader) extends BinaryFlatOperator
 
-final case class ExistsSubQuery(predicateField: Var, lhs: FlatOperator, rhs: FlatOperator, header: RecordHeader)
+final case class ExistsSubQuery(predicateField: EntityExpr, lhs: FlatOperator, rhs: FlatOperator, header: RecordHeader)
     extends BinaryFlatOperator
 
 final case class ValueJoin(
@@ -110,10 +110,10 @@ final case class ValueJoin(
     extends BinaryFlatOperator
 
 final case class Expand(
-    source: Var,
-    rel: Var,
+    source: EntityExpr,
+    rel: EntityExpr,
     direction: Direction,
-    target: Var,
+    target: EntityExpr,
     sourceOp: FlatOperator,
     targetOp: FlatOperator,
     header: RecordHeader,
@@ -125,9 +125,9 @@ final case class Expand(
 }
 
 final case class ExpandInto(
-    source: Var,
-    rel: Var,
-    target: Var,
+    source: EntityExpr,
+    rel: EntityExpr,
+    target: EntityExpr,
     direction: Direction,
     sourceOp: FlatOperator,
     header: RecordHeader,
@@ -138,10 +138,11 @@ final case class ExpandInto(
 }
 
 final case class BoundedVarExpand(
-    source: Var,
-    edgeScan: Var,
-    innerNode: Var,
-    target: Var,
+    source: EntityExpr,
+    path: EntityExpr,
+    edgeScan: EntityExpr,
+    innerNode: EntityExpr,
+    target: EntityExpr,
     direction: Direction,
     lower: Int,
     upper: Int,

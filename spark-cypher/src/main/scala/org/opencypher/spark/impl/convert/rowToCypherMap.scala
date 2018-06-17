@@ -31,7 +31,7 @@ import org.opencypher.okapi.api.types.{CTNode, CTRelationship}
 import org.opencypher.okapi.api.value.CypherValue._
 import org.opencypher.okapi.api.value._
 import org.opencypher.okapi.impl.exception.UnsupportedOperationException
-import org.opencypher.okapi.ir.api.expr.{Expr, Var}
+import org.opencypher.okapi.ir.api.expr.{EntityExpr, Expr}
 import org.opencypher.okapi.relational.impl.table.RecordHeader
 import org.opencypher.spark.api.value.{CAPSNode, CAPSRelationship}
 
@@ -46,7 +46,7 @@ final case class rowToCypherMap(exprToColumn: Seq[(Expr, String)]) extends (Row 
   }
 
   // TODO: Validate all column types. At the moment null values are cast to the expected type...
-  private def constructValue(row: Row, v: Var): CypherValue = {
+  private def constructValue(row: Row, v: EntityExpr): CypherValue = {
     v.cypherType match {
       case _: CTNode =>
         collectNode(row, v)
@@ -60,7 +60,7 @@ final case class rowToCypherMap(exprToColumn: Seq[(Expr, String)]) extends (Row 
     }
   }
 
-  private def collectNode(row: Row, v: Var): CypherValue = {
+  private def collectNode(row: Row, v: EntityExpr): CypherValue = {
     val idValue = row.getAs[Any](header.column(v))
     idValue match {
       case null => CypherNull
@@ -82,7 +82,7 @@ final case class rowToCypherMap(exprToColumn: Seq[(Expr, String)]) extends (Row 
     }
   }
 
-  private def collectRel(row: Row, v: Var): CypherValue = {
+  private def collectRel(row: Row, v: EntityExpr): CypherValue = {
     val idValue = row.getAs[Any](header.column(v))
     idValue match {
       case null => CypherNull

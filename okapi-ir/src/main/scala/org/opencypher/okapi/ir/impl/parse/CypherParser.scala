@@ -26,11 +26,11 @@
  */
 package org.opencypher.okapi.ir.impl.parse
 
-import org.opencypher.v9_1.ast._
-import org.opencypher.okapi.ir.api.expr.Var
+import org.opencypher.okapi.ir.api.expr.EntityExpr
 import org.opencypher.okapi.ir.impl.exception.ParsingException
 import org.opencypher.okapi.ir.impl.parse.rewriter.OkapiRewriting
 import org.opencypher.okapi.ir.impl.typer.toFrontendType
+import org.opencypher.v9_1.ast._
 import org.opencypher.v9_1.ast.semantics.{SemanticErrorDef, SemanticFeature, SemanticState}
 import org.opencypher.v9_1.frontend.phases._
 import org.opencypher.v9_1.rewriting.RewriterStepSequencer
@@ -53,7 +53,7 @@ trait CypherParser {
 
   def apply(query: String)(implicit context: BaseContext): Statement = process(query)._1
 
-  def process(query: String, drivingTableFields: Set[Var] = Set.empty)(implicit context: BaseContext): (Statement, Map[String, Any], SemanticState) = {
+  def process(query: String, drivingTableFields: Set[EntityExpr] = Set.empty)(implicit context: BaseContext): (Statement, Map[String, Any], SemanticState) = {
     val fieldsWithFrontendTypes = drivingTableFields.map(v => v.name -> toFrontendType(v.cypherType)).toMap
     val startState = InitialState(query, None, null, fieldsWithFrontendTypes)
     val endState = pipeLine.transform(startState, context)

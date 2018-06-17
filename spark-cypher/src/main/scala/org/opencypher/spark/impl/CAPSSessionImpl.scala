@@ -39,7 +39,7 @@ import org.opencypher.okapi.impl.io.SessionGraphDataSource
 import org.opencypher.okapi.impl.util.Measurement.printTiming
 import org.opencypher.okapi.ir.api._
 import org.opencypher.okapi.ir.api.configuration.IrConfiguration.PrintIr
-import org.opencypher.okapi.ir.api.expr.{Expr, Var}
+import org.opencypher.okapi.ir.api.expr.{EntityExpr, Expr, Var}
 import org.opencypher.okapi.ir.impl.parse.CypherParser
 import org.opencypher.okapi.ir.impl.{IRBuilder, IRBuilderContext, QueryCatalog}
 import org.opencypher.okapi.logical.api.configuration.LogicalConfiguration.PrintLogicalPlan
@@ -171,12 +171,12 @@ sealed class CAPSSessionImpl(val sparkSession: SparkSession)
     planPhysical(in, queryParameters, select).getRecords
   }
 
-  private def planCypherQuery(graph: PropertyGraph, cypherQuery: CypherQuery[Expr], allParameters: CypherMap, inputFields: Set[Var], drivingTable: CypherRecords) = {
+  private def planCypherQuery(graph: PropertyGraph, cypherQuery: CypherQuery[Expr], allParameters: CypherMap, inputFields: Set[EntityExpr], drivingTable: CypherRecords) = {
     val LogicalPlan = planLogical(cypherQuery, graph, inputFields)
     planPhysical(drivingTable, allParameters, LogicalPlan)
   }
 
-  private def planLogical(ir: CypherQuery[Expr], graph: PropertyGraph, inputFields: Set[Var]) = {
+  private def planLogical(ir: CypherQuery[Expr], graph: PropertyGraph, inputFields: Set[EntityExpr]) = {
     logStageProgress("Logical planning ...", newLine = false)
     val logicalPlannerContext = LogicalPlannerContext(graph.schema, inputFields, catalog.listSources)
     val logicalPlan = time("Logical planning")(logicalPlanner(ir)(logicalPlannerContext))
@@ -251,7 +251,7 @@ sealed class CAPSSessionImpl(val sparkSession: SparkSession)
     IRCatalogGraph(qgn, ambient.schema)
   }
 
-  private def planStart(graph: PropertyGraph, fields: Set[Var]): LogicalOperator = {
+  private def planStart(graph: PropertyGraph, fields: Set[EntityExpr]): LogicalOperator = {
     val ambientGraph = mountAmbientGraph(graph)
 
     producer.planStart(LogicalCatalogGraph(ambientGraph.qualifiedGraphName, graph.schema), fields)

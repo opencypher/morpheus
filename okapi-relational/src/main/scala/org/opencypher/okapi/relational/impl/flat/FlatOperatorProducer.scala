@@ -52,7 +52,7 @@ class FlatOperatorProducer(implicit context: FlatPlannerContext) {
     CartesianProduct(lhs, rhs, header)
   }
 
-  def select(vars: List[Var], in: FlatOperator): Select = {
+  def select(vars: List[EntityExpr], in: FlatOperator): Select = {
     Select(vars, in, in.header.select(vars: _*))
   }
 
@@ -64,7 +64,7 @@ class FlatOperatorProducer(implicit context: FlatPlannerContext) {
     Filter(expr, in, in.header)
   }
 
-  def distinct(fields: Set[Var], in: FlatOperator): Distinct = {
+  def distinct(fields: Set[EntityExpr], in: FlatOperator): Distinct = {
     Distinct(fields, in, in.header)
   }
 
@@ -72,26 +72,26 @@ class FlatOperatorProducer(implicit context: FlatPlannerContext) {
     * This acts like a leaf operator even though it has an ancestor in the tree.
     * That means that it will discard any incoming fields from the ancestor header (assumes it is empty)
     */
-  def nodeScan(node: Var, prev: FlatOperator): NodeScan = {
+  def nodeScan(node: EntityExpr, prev: FlatOperator): NodeScan = {
     NodeScan(node, prev, prev.sourceGraph.schema.headerForNode(node))
   }
 
-  def relationshipScan(rel: Var, prev: FlatOperator): RelationshipScan = {
+  def relationshipScan(rel: EntityExpr, prev: FlatOperator): RelationshipScan = {
     RelationshipScan(rel, prev, prev.sourceGraph.schema.headerForRelationship(rel))
   }
 
-  def aggregate(aggregations: Set[(Var, Aggregator)], group: Set[Var], in: FlatOperator): Aggregate = {
+  def aggregate(aggregations: Set[(EntityExpr, Aggregator)], group: Set[EntityExpr], in: FlatOperator): Aggregate = {
     val newHeader = in.header.select(group).withExprs(aggregations.map(_._1))
     Aggregate(aggregations, group, in, newHeader)
   }
 
-  def unwind(list: Expr, item: Var, in: FlatOperator): WithColumn = {
+  def unwind(list: Expr, item: EntityExpr, in: FlatOperator): WithColumn = {
     val explodeExpr = Explode(list)(item.cypherType)
     val explodeHeader = in.header.withExpr(explodeExpr).withAlias(explodeExpr as item)
     WithColumn(explodeExpr as item, in, explodeHeader)
   }
 
-  def project(projectExpr: (Expr, Option[Var]), in: FlatOperator): FlatOperator = {
+  def project(projectExpr: (Expr, Option[EntityExpr]), in: FlatOperator): FlatOperator = {
     val (expr, maybeAlias) = projectExpr
     val updatedHeader = in.header.withExpr(expr)
     val containsExpr = in.header.contains(expr)
@@ -104,10 +104,10 @@ class FlatOperatorProducer(implicit context: FlatPlannerContext) {
   }
 
   def expand(
-    source: Var,
-    rel: Var,
+    source: EntityExpr,
+    rel: EntityExpr,
     direction: Direction,
-    target: Var,
+    target: EntityExpr,
     schema: Schema,
     sourceOp: FlatOperator,
     targetOp: FlatOperator
@@ -118,9 +118,9 @@ class FlatOperatorProducer(implicit context: FlatPlannerContext) {
   }
 
   def expandInto(
-    source: Var,
-    rel: Var,
-    target: Var,
+    source: EntityExpr,
+    rel: EntityExpr,
+    target: EntityExpr,
     direction: Direction,
     schema: Schema,
     sourceOp: FlatOperator
@@ -142,7 +142,7 @@ class FlatOperatorProducer(implicit context: FlatPlannerContext) {
     FromGraph(graph, prev)
   }
 
-  def planEmptyRecords(fields: Set[Var], prev: FlatOperator): EmptyRecords = {
+  def planEmptyRecords(fields: Set[EntityExpr], prev: FlatOperator): EmptyRecords = {
     EmptyRecords(prev, RecordHeader.from(fields))
   }
 
@@ -151,10 +151,11 @@ class FlatOperatorProducer(implicit context: FlatPlannerContext) {
   }
 
   def boundedVarExpand(
-    source: Var,
-    edgeScan: Var,
-    innerNode: Var,
-    target: Var,
+    source: EntityExpr,
+    path: EntityExpr,
+    edgeScan: EntityExpr,
+    innerNode: EntityExpr,
+    target: EntityExpr,
     direction: Direction,
     lower: Int,
     upper: Int,
@@ -166,7 +167,7 @@ class FlatOperatorProducer(implicit context: FlatPlannerContext) {
   ): FlatOperator = {
 
     val aliasedEdgeScanCypherType = if (lower == 0) edgeScan.cypherType.nullable else edgeScan.cypherType
-    val aliasedEdgeScan = Var(s"${edgeScan.name}_1")(aliasedEdgeScanCypherType)
+    val aliasedEdgeScan = PathSegment(1, path)(aliasedEdgeScanCypherType)
     val aliasedEdgeScanHeader = edgeScanOp.header.withAlias(edgeScan as aliasedEdgeScan).select(aliasedEdgeScan)
 
     val startHeader = sourceOp.header join aliasedEdgeScanHeader
@@ -175,10 +176,10 @@ class FlatOperatorProducer(implicit context: FlatPlannerContext) {
 
     def expand(i: Int, prev: RecordHeader): RecordHeader = {
       val innerNodeCypherType = if (i >= lower) innerNode.cypherType.nullable else innerNode.cypherType
-      val nextNode = Var(s"${innerNode.name}_${i - 1}")(innerNodeCypherType)
+      val nextNode = PathSegment((i-1)*2, path)(innerNodeCypherType)
 
       val edgeCypherType = if (i > lower) edgeScan.cypherType.nullable else edgeScan.cypherType
-      val nextEdge = Var(s"${edgeScan.name}_$i")(edgeCypherType)
+      val nextEdge = PathSegment(2*i-1, path)(edgeCypherType)
 
       val aliasedCacheHeader = expandCacheHeader
         .withAlias(edgeScan as nextEdge, innerNode as nextNode)
@@ -193,7 +194,7 @@ class FlatOperatorProducer(implicit context: FlatPlannerContext) {
 
     val header = if (isExpandInto) expandHeader else expandHeader join targetOp.header
 
-    BoundedVarExpand(source, edgeScan, innerNode, target, direction, lower, upper, sourceOp, edgeScanOp, innerNodeOp, targetOp, header, isExpandInto)
+    BoundedVarExpand(source, path, edgeScan, innerNode, target, direction, lower, upper, sourceOp, edgeScanOp, innerNodeOp, targetOp, header, isExpandInto)
   }
 
   def planOptional(lhs: FlatOperator, rhs: FlatOperator): FlatOperator = {

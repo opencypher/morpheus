@@ -140,7 +140,7 @@ case class CAPSRecords(
     copy(header, dfWithReplacedTags)
   }
 
-  def retagVariable(v: Var, replacements: Map[Int, Int]): CAPSRecords = {
+  def retagVariable(v: EntityExpr, replacements: Map[Int, Int]): CAPSRecords = {
     val columnsToUpdate = header.idColumns(v)
     val updatedData = columnsToUpdate.foldLeft(df) { case (df, columnName) =>
       df.safeReplaceTags(columnName, replacements)
@@ -165,7 +165,7 @@ case class CAPSRecords(
     */
   def alignWith(v: Var, targetHeader: RecordHeader): CAPSRecords = {
 
-    val entityVars = header.entityVars
+    val entityVars = header.entityExpressions
 
     val oldEntity = entityVars.toSeq match {
       case Seq(one) => one

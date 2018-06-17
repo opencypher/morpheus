@@ -270,18 +270,18 @@ class RecordHeaderTest extends BaseTestSuite {
   }
 
   it("returns all entity vars") {
-    nHeader.entityVars should equalWithTracing(Set(n))
-    (nHeader ++ rHeader).entityVars should equalWithTracing(Set(n, r))
+    nHeader.entityExpressions should equalWithTracing(Set(n))
+    (nHeader ++ rHeader).entityExpressions should equalWithTracing(Set(n, r))
   }
 
   it("returns all node vars") {
-    nHeader.nodeVars should equalWithTracing(Set(n))
-    rHeader.nodeVars should equalWithTracing(Set.empty)
+    nHeader.nodeExpressions should equalWithTracing(Set(n))
+    rHeader.nodeExpressions should equalWithTracing(Set.empty)
   }
 
   it("returns all rel vars") {
-    rHeader.relationshipVars should equalWithTracing(Set(r))
-    nHeader.relationshipVars should equalWithTracing(Set.empty)
+    rHeader.relationshipExpressions should equalWithTracing(Set(r))
+    nHeader.relationshipExpressions should equalWithTracing(Set.empty)
   }
 
   it("returns all node vars for a given node type") {

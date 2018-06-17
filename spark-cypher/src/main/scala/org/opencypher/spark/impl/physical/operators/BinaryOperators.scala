@@ -352,7 +352,7 @@ final case class ConstructGraph(
     propertyTuples ++ typeTuple + idTuple + sourceTuple + targetTuple
   }
 
-  private def copyExpressions[T <: Expr](targetVar: Var, records: CAPSRecords)
+  private def copyExpressions[T <: Expr](targetVar: EntityExpr, records: CAPSRecords)
     (extractor: RecordHeader => Set[T]): Map[Expr, Column] = {
     val header = records.header
     val origExprs = extractor(header)

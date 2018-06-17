@@ -28,7 +28,6 @@ package org.opencypher.okapi.ir.impl.syntax
 
 import org.opencypher.okapi.ir.api.expr._
 
-import scala.annotation.tailrec
 import scala.language.implicitConversions
 
 object ExprSyntax {
@@ -37,9 +36,9 @@ object ExprSyntax {
 
 final class ExprOps(val e: Expr) extends AnyVal {
 
-  def canEvaluate(given: Set[Var]): Boolean =
+  def canEvaluate(given: Set[EntityExpr]): Boolean =
     (dependencies -- given).isEmpty
 
-  def dependencies: Set[Var] = e.collect { case v: Var => v }.toSet
+  def dependencies: Set[EntityExpr] = e.collect { case v: Var => v }.toSet
 
 }

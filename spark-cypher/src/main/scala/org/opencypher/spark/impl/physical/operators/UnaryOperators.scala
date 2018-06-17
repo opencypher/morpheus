@@ -63,7 +63,7 @@ final case class Cache(in: CAPSPhysicalOperator) extends UnaryPhysicalOperator w
   }
 }
 
-final case class NodeScan(in: CAPSPhysicalOperator, v: Var, header: RecordHeader)
+final case class NodeScan(in: CAPSPhysicalOperator, v: EntityExpr, header: RecordHeader)
   extends UnaryPhysicalOperator with PhysicalOperatorDebugging {
 
   override def executeUnary(prev: CAPSPhysicalResult)(implicit context: CAPSRuntimeContext): CAPSPhysicalResult = {
@@ -86,7 +86,7 @@ final case class NodeScan(in: CAPSPhysicalOperator, v: Var, header: RecordHeader
 
 final case class RelationshipScan(
   in: CAPSPhysicalOperator,
-  v: Var,
+  v: EntityExpr,
   header: RecordHeader
 ) extends UnaryPhysicalOperator with PhysicalOperatorDebugging {
 
@@ -179,7 +179,7 @@ final case class Select(in: CAPSPhysicalOperator, expressions: List[Expr], heade
   }
 }
 
-final case class Distinct(in: CAPSPhysicalOperator, fields: Set[Var])
+final case class Distinct(in: CAPSPhysicalOperator, fields: Set[EntityExpr])
   extends UnaryPhysicalOperator with InheritedHeader with PhysicalOperatorDebugging {
 
   override def executeUnary(prev: CAPSPhysicalResult)(implicit context: CAPSRuntimeContext): CAPSPhysicalResult = {
@@ -197,8 +197,8 @@ final case class SimpleDistinct(in: CAPSPhysicalOperator)
 
 final case class Aggregate(
   in: CAPSPhysicalOperator,
-  aggregations: Set[(Var, Aggregator)],
-  group: Set[Var],
+  aggregations: Set[(EntityExpr, Aggregator)],
+  group: Set[EntityExpr],
   header: RecordHeader
 ) extends UnaryPhysicalOperator with PhysicalOperatorDebugging {
 

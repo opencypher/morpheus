@@ -46,13 +46,15 @@ A <: RelationalCypherRecords[O],
 P <: PropertyGraph,
 I <: RuntimeContext[O, A, P]] {
 
-  def source: Var
+  def source: EntityExpr
 
-  def edgeScan: Var
+  def path: EntityExpr
 
-  def innerNode: Var
+  def edgeScan: EntityExpr
 
-  def target: Var
+  def innerNode: EntityExpr
+
+  def target: EntityExpr
 
   def lower: Int
 
@@ -82,7 +84,7 @@ I <: RuntimeContext[O, A, P]] {
   val physicalInnerNodeOp: K = planner.process(innerNodeOp)
   val physicalTargetOp: K = planner.process(targetOp)
 
-  val startEdgeScan: Var = header.entityVars.find(_.name == s"${edgeScan.name}_1").get
+  val startEdgeScan: EntityExpr = PathSegment(1, path)(edgeScan.cypherType)
   val startEdgeScanOp: K = producer.planAlias(
     physicalEdgeScanOp,
     edgeScan as startEdgeScan,
@@ -106,7 +108,7 @@ I <: RuntimeContext[O, A, P]] {
       Seq(source -> edgeJoinExpr),
       sourceOp.header join startEdgeScanOp.header
     )
-    producer.planFilter(startOp, isomorphismFilter(startEdgeScan, sourceOp.header.relationshipVars), startOp.header)
+    producer.planFilter(startOp, isomorphismFilter(startEdgeScan, sourceOp.header.relationshipExpressions), startOp.header)
   }
 
   /**
@@ -118,9 +120,11 @@ I <: RuntimeContext[O, A, P]] {
     * @param dir            expansion direction
     * @param edgeVars       edges already travesed
     */
-  def expand(i: Int, iterationTable: K, expandCacheOp: K, dir: ExpandDirection, edgeVars: Seq[Var]): (K, Var) = {
-    val nextNode = header.entityVars.find(_.name == s"${innerNode.name}_${i - 1}").get
-    val nextEdge = header.entityVars.find(_.name == s"${edgeScan.name}_$i").get
+  def expand(i: Int, iterationTable: K, expandCacheOp: K, dir: ExpandDirection, edgeVars: Seq[EntityExpr]): (K, EntityExpr) = {
+    val nextNodeCT = if (i >= lower) innerNode.cypherType.nullable else innerNode.cypherType
+    val nextNode = PathSegment((i-1)*2, path)(nextNodeCT)
+    val nextEdgeCT = if (i > lower) edgeScan.cypherType.nullable else edgeScan.cypherType
+    val nextEdge = PathSegment(2*i-1, path)(nextEdgeCT)
 
     val aliasedCacheHeader = expandCacheOp.header
       .withAlias(edgeScan as nextEdge, innerNode as nextNode)
@@ -171,7 +175,7 @@ I <: RuntimeContext[O, A, P]] {
   protected def finalize(paths: Seq[K]): K = {
     // check whether to include paths of length 0
     val unalignedOps = if (lower == 0) {
-      val zeroLengthExpand: K = copyVar(source, target, header, physicalSourceOp)
+      val zeroLengthExpand: K = copyEntity(source, target, header, physicalSourceOp)
       if (upper == 0) Seq(zeroLengthExpand) else paths :+ zeroLengthExpand
     } else paths
 
@@ -210,7 +214,7 @@ I <: RuntimeContext[O, A, P]] {
     * @param rel        new edge
     * @param candidates candidate edges
     */
-  protected def isomorphismFilter(rel: Var, candidates: Set[Var]): Ands = Ands(
+  protected def isomorphismFilter(rel: EntityExpr, candidates: Set[EntityExpr]): Ands = Ands(
     candidates.map(e => Not(Equals(e, rel)(CTBoolean))(CTBoolean)).toList
   )
 
@@ -222,14 +226,14 @@ I <: RuntimeContext[O, A, P]] {
     * @param header     target header
     * @param physicalOp base operation
     */
-  protected def copyVar(
-    from: Var,
-    to: Var,
+  protected def copyEntity(
+    from: EntityExpr,
+    to: EntityExpr,
     header: RecordHeader,
     physicalOp: K
   ): K = {
     // TODO: remove when https://github.com/opencypher/cypher-for-apache-spark/issues/513 is resolved
-    val correctTarget = header.entityVars.find(_ == to).get
+    val correctTarget = header.entityExpressions.find(_ == to).get
 
     val sourceChildren = header.expressionsFor(from)
     val targetChildren = header.expressionsFor(correctTarget)
@@ -255,7 +259,7 @@ I <: RuntimeContext[O, A, P]] {
     * @param edge the paths last edge
     * @param dir  expand direction
     */
-  protected def addTargetOps(path: K, edge: Var, dir: ExpandDirection): K = {
+  protected def addTargetOps(path: K, edge: EntityExpr, dir: ExpandDirection): K = {
     val expr = dir match {
       case Outbound => path.header.endNodeFor(edge)
       case Inbound => path.header.startNodeFor(edge)
@@ -276,10 +280,11 @@ K <: PhysicalOperator[O, A, P, I],
 A <: RelationalCypherRecords[O],
 P <: PropertyGraph,
 I <: RuntimeContext[O, A, P]](
-  override val source: Var,
-  override val edgeScan: Var,
-  override val innerNode: Var,
-  override val target: Var,
+  override val source: EntityExpr,
+  override val path: EntityExpr,
+  override val edgeScan: EntityExpr,
+  override val innerNode: EntityExpr,
+  override val target: EntityExpr,
   override val lower: Int,
   override val upper: Int,
   override val sourceOp: FlatOperator,
@@ -321,10 +326,11 @@ K <: PhysicalOperator[O, A, P, I],
 A <: RelationalCypherRecords[O],
 P <: PropertyGraph,
 I <: RuntimeContext[O, A, P]](
-  override val source: Var,
-  override val edgeScan: Var,
-  override val innerNode: Var,
-  override val target: Var,
+  override val source: EntityExpr,
+  override val path: EntityExpr,
+  override val edgeScan: EntityExpr,
+  override val innerNode: EntityExpr,
+  override val target: EntityExpr,
   override val lower: Int,
   override val upper: Int,
   override val sourceOp: FlatOperator,

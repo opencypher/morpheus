@@ -31,16 +31,16 @@ import cats.data.State
 import cats.data.State._
 import cats.instances.list._
 import cats.syntax.flatMap._
-import org.opencypher.v9_1.{expressions => ast}
 import org.opencypher.okapi.api.graph.QualifiedGraphName
-import org.opencypher.okapi.api.types.{CTList, CTNode, CTRelationship, CypherType}
+import org.opencypher.okapi.api.types._
 import org.opencypher.okapi.impl.exception.{IllegalArgumentException, NotImplementedException}
 import org.opencypher.okapi.ir.api._
 import org.opencypher.okapi.ir.api.expr._
 import org.opencypher.okapi.ir.api.pattern._
 import org.opencypher.okapi.ir.api.util.FreshVariableNamer
-import org.opencypher.v9_1.expressions.{Expression, LogicalVariable, RelTypeName}
 import org.opencypher.v9_1.expressions.SemanticDirection.{BOTH, INCOMING, OUTGOING}
+import org.opencypher.v9_1.expressions.{Expression, LogicalVariable, RelTypeName}
+import org.opencypher.v9_1.{expressions => ast}
 
 import scala.annotation.tailrec
 
@@ -114,7 +114,7 @@ final class PatternConverter()(implicit val irBuilderContext: IRBuilderContext) 
 
       case rc@ast.RelationshipChain(left, ast.RelationshipPattern(eOpt, types, rangeOpt, propertiesOpt, dir, _, baseRelVar), right) =>
 
-        val rel = createRelationshipVar(knownTypes, rc.position.offset, eOpt, types, baseRelVar, qualifiedGraphName)
+        val relVar = createRelationshipVar(knownTypes, rc.position.offset, eOpt, types, baseRelVar, qualifiedGraphName)
         val convertedProperties = extractProperties(propertiesOpt)
 
         val baseRelField = baseRelVar.map(x => IRField(x.name)(knownTypes(x)))
@@ -122,7 +122,7 @@ final class PatternConverter()(implicit val irBuilderContext: IRBuilderContext) 
         for {
           source <- convertElement(left, knownTypes, qualifiedGraphName)
           target <- convertElement(right, knownTypes, qualifiedGraphName)
-          rel <- pure(IRField(rel.name)(if (rangeOpt.isDefined) CTList(rel.cypherType) else rel.cypherType))
+          rel <- pure(IRField(relVar.name)(if (rangeOpt.isDefined) CTPath else relVar.cypherType))
           _ <- modify[Pattern[Expr]] { given =>
             val registered = given
               .withEntity(rel)
@@ -134,6 +134,7 @@ final class PatternConverter()(implicit val irBuilderContext: IRBuilderContext) 
                 val upper = range.upper
                   .map(_.value.intValue())
                   .getOrElse(throw NotImplementedException("Support for unbounded var-length not yet implemented"))
+                val relType = relVar.cypherType.asInstanceOf[CTRelationship]
 
                 Endpoints.apply(source, target) match {
                   case _: IdenticalEndpoints =>
@@ -142,13 +143,13 @@ final class PatternConverter()(implicit val irBuilderContext: IRBuilderContext) 
                   case ends: DifferentEndpoints =>
                     dir match {
                       case OUTGOING =>
-                        registered.withConnection(rel, DirectedVarLengthRelationship(ends, lower, Some(upper)), convertedProperties)
+                        registered.withConnection(rel, DirectedVarLengthRelationship(relType, ends, lower, Some(upper)), convertedProperties)
 
                       case INCOMING =>
-                        registered.withConnection(rel, DirectedVarLengthRelationship(ends.flip, lower, Some(upper)), convertedProperties)
+                        registered.withConnection(rel, DirectedVarLengthRelationship(relType, ends.flip, lower, Some(upper)), convertedProperties)
 
                       case BOTH =>
-                        registered.withConnection(rel, UndirectedVarLengthRelationship(ends.flip, lower, Some(upper)), convertedProperties)
+                        registered.withConnection(rel, UndirectedVarLengthRelationship(relType, ends.flip, lower, Some(upper)), convertedProperties)
                     }
                 }
 

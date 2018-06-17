@@ -100,13 +100,13 @@ final class CAPSPhysicalOperatorProducer(implicit caps: CAPSSession)
   override def planNodeScan(
     in: CAPSPhysicalOperator,
     inGraph: LogicalGraph,
-    v: Var,
+    v: EntityExpr,
     header: RecordHeader): CAPSPhysicalOperator = operators.NodeScan(in, v, header)
 
   override def planRelationshipScan(
     in: CAPSPhysicalOperator,
     inGraph: LogicalGraph,
-    v: Var,
+    v: EntityExpr,
     header: RecordHeader): CAPSPhysicalOperator = operators.RelationshipScan(in, v, header)
 
   override def planAliases(in: CAPSPhysicalOperator, aliases: Seq[AliasExpr], header: RecordHeader): CAPSPhysicalOperator =
@@ -125,7 +125,7 @@ final class CAPSPhysicalOperatorProducer(implicit caps: CAPSSession)
     operators.ConstructGraph(in, onGraph, construct)
   }
 
-  override def planAggregate(in: CAPSPhysicalOperator, group: Set[Var], aggregations: Set[(Var, Aggregator)], header: RecordHeader): CAPSPhysicalOperator = operators.Aggregate(in, aggregations, group, header)
+  override def planAggregate(in: CAPSPhysicalOperator, group: Set[EntityExpr], aggregations: Set[(EntityExpr, Aggregator)], header: RecordHeader): CAPSPhysicalOperator = operators.Aggregate(in, aggregations, group, header)
 
   override def planFilter(in: CAPSPhysicalOperator, expr: Expr, header: RecordHeader): CAPSPhysicalOperator =
     operators.Filter(in, expr, header)
@@ -140,7 +140,7 @@ final class CAPSPhysicalOperatorProducer(implicit caps: CAPSSession)
     operators.Join(lhs, rhs, joinColumns, header, joinType)
   }
 
-  override def planDistinct(in: CAPSPhysicalOperator, fields: Set[Var]): CAPSPhysicalOperator =
+  override def planDistinct(in: CAPSPhysicalOperator, fields: Set[EntityExpr]): CAPSPhysicalOperator =
     operators.Distinct(in, fields)
 
   override def planTabularUnionAll(lhs: CAPSPhysicalOperator, rhs: CAPSPhysicalOperator): CAPSPhysicalOperator =

@@ -336,7 +336,7 @@ class LogicalPlanner(producer: LogicalOperatorProducer)
     }
   }
 
-  private def resolveGraph(graph: IRGraph, fieldsInScope: Set[Var])(
+  private def resolveGraph(graph: IRGraph, fieldsInScope: Set[EntityExpr])(
     implicit context: LogicalPlannerContext): LogicalGraph = {
 
     graph match {
@@ -351,7 +351,7 @@ class LogicalPlanner(producer: LogicalOperatorProducer)
 
         val entitiesToCreate = newPatternEntities -- clonePatternEntities
 
-        val clonedVarToInputVar: Map[Var, Var] = p.clones.map { case (clonedField, inputExpression) =>
+        val clonedVarToInputVar: Map[EntityExpr, EntityExpr] = p.clones.map { case (clonedField, inputExpression) =>
           val inputVar = inputExpression match {
             case v: Var => v
             case other => throw IllegalArgumentException("CLONED expression to be a variable", other)
@@ -504,7 +504,7 @@ class LogicalPlanner(producer: LogicalOperatorProducer)
           case _: DirectedVarLengthRelationship => Directed
           case _: UndirectedVarLengthRelationship => Undirected
         }
-        producer.planBoundedVarLengthExpand(c.source, r, c.target, direction, v.lower, v.upper.get, sourcePlan, targetPlan)
+        producer.planBoundedVarLengthExpand(c.source, r, c.target, v.edgeType, direction, v.lower, v.upper.get, sourcePlan, targetPlan)
 
       case _: UndirectedConnection if sourcePlan == targetPlan =>
         producer.planExpandInto(c.source, r, c.target, Undirected, sourcePlan)

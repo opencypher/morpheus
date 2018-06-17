@@ -26,6 +26,7 @@
  */
 package org.opencypher.okapi.logical.impl
 
+import org.opencypher.okapi.api.types.CTRelationship
 import org.opencypher.okapi.ir.api.IRField
 import org.opencypher.okapi.ir.api.block.{Aggregations, SortItem}
 import org.opencypher.okapi.ir.api.expr._
@@ -52,6 +53,7 @@ class LogicalOperatorProducer {
       source: IRField,
       r: IRField,
       target: IRField,
+      edgeType: CTRelationship,
       direction: Direction,
       lower: Int,
       upper: Int,
@@ -59,7 +61,7 @@ class LogicalOperatorProducer {
       targetPlan: LogicalOperator): BoundedVarLengthExpand = {
     val prevSolved = sourcePlan.solved ++ targetPlan.solved
 
-    BoundedVarLengthExpand(source, r, target, direction, lower, upper, sourcePlan, targetPlan, prevSolved.withField(r))
+    BoundedVarLengthExpand(source, r, target, edgeType, direction, lower, upper, sourcePlan, targetPlan, prevSolved.withField(r))
   }
 
   def planExpand(
@@ -103,7 +105,7 @@ class LogicalOperatorProducer {
   }
 
   def aggregate(aggregations: Aggregations[Expr], group: Set[IRField], prev: LogicalOperator): Aggregate = {
-    val transformed = aggregations.pairs.collect { case (field, aggregator: Aggregator) => toVar(field) -> aggregator }
+    val transformed: Set[(EntityExpr, Aggregator)] = aggregations.pairs.collect { case (field, aggregator: Aggregator) => toVar(field) -> aggregator }
 
     Aggregate(transformed, group.map(toVar), prev, prev.solved.withFields(aggregations.fields.toSeq: _*))
   }
@@ -132,7 +134,7 @@ class LogicalOperatorProducer {
     FromGraph(graph, prev, prev.solved)
   }
 
-  def planStart(graph: LogicalGraph, fields: Set[Var]): Start = {
+  def planStart(graph: LogicalGraph, fields: Set[EntityExpr]): Start = {
     val irFields = fields.map { v =>
       IRField(v.name)(v.cypherType)
     }
