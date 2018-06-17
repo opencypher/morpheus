@@ -34,6 +34,27 @@ import org.scalatest.DoNotDiscover
 @DoNotDiscover
 class BoundedVarExpandBehaviour extends CAPSTestSuite with DefaultGraphInit {
 
+  it("explicitly bound to zero length") {
+
+    val given = initGraph(
+      """
+      CREATE (n0:A {name: 'n0'}),
+             (n00:B {name: 'n00'})
+      CREATE (n0)-[:LIKES]->(n00)
+      """
+    )
+
+    val result = given.cypher(
+      """
+        |MATCH (a:A)
+        |MATCH (a)-[:LIKES*0]->(c)
+        |RETURN c.name""".stripMargin)
+
+    result.getRecords.toMaps should equal(Bag(
+      CypherMap("c.name" -> "n0")
+    ))
+  }
+
   it("bounded to single relationship") {
 
     // Given

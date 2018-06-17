@@ -125,9 +125,6 @@ trait RelationalCypherRecords[T <: FlatRelationalTable[T]] extends CypherRecords
   }
 
   def copyColumn(fromColumn: Expr, toColumn: Expr)(implicit parameters: CypherMap): R = {
-    if (!header.contains(fromColumn)) {
-      throw IllegalArgumentException(s"expr in header $fromColumn")
-    }
     val updatedHeader = header.withExpr(toColumn)
     val updatedData = table.withColumn(updatedHeader.column(toColumn), fromColumn)(header, parameters)
     from(updatedHeader, updatedData)
