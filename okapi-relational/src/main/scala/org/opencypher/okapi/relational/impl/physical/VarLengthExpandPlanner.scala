@@ -183,11 +183,9 @@ I <: RuntimeContext[A, P]] {
 
           // TODO: this is a planning performance killer, we need to squash these steps into a single table operation
           val lit = NullLit(expr.cypherType)
-          val withLitHeader = acc.header.withExpr(lit)
-          val withLit = producer.planAddColumn(acc, lit, header)
 
-          val withExprHeader = withLitHeader.withExpr(expr)
-          val withExpr = producer.planCopyColumn(withLit, lit, expr, withExprHeader)
+          val withExprHeader = acc.header.withExpr(expr)
+          val withExpr = producer.planCopyColumn(acc, lit, expr, withExprHeader)
 
           val withoutLitHeader = withExprHeader -- Set(lit)
           val withoutLit = producer.planDrop(withExpr, Set(lit), withoutLitHeader)

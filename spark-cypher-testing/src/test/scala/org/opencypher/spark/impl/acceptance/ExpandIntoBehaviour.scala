@@ -109,7 +109,7 @@ class ExpandIntoBehaviour extends CAPSTestSuite with DefaultGraphInit {
     ))
   }
 
-  ignore("Expand into after var expand") {
+  it("Expand into after var expand") {
     // Given
     val given = initGraph(
       """
