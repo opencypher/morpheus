@@ -27,7 +27,6 @@
 package org.opencypher.okapi.relational.impl.table
 
 import org.opencypher.okapi.api.types._
-import org.opencypher.okapi.ir.api.expr.Expr._
 import org.opencypher.okapi.ir.api.expr._
 import org.opencypher.okapi.ir.api.{Label, PropertyKey, RelType}
 import org.opencypher.okapi.testing.BaseTestSuite
@@ -78,7 +77,7 @@ class RecordHeaderTest extends BaseTestSuite {
 
   it("can return all contained columns") {
     nHeader.columns should equalWithTracing(nHeader.expressions.map(nHeader.column))
-    nHeader.withAlias(n, m).columns should equalWithTracing(nHeader.expressions.map(nHeader.column))
+    nHeader.withAlias(n as m).columns should equalWithTracing(nHeader.expressions.map(nHeader.column))
   }
 
   it("can check if an expression is contained") {
@@ -104,6 +103,13 @@ class RecordHeaderTest extends BaseTestSuite {
   it("can return all expressions for a given column") {
     nHeader.expressionsFor(nHeader.column(n)) should equalWithTracing(Set(n))
     nHeader.withAlias(n as m).expressionsFor(nHeader.column(n)) should equalWithTracing(Set(n, m))
+  }
+
+  it("can correctly handles AliasExpr using withExpr") {
+    val header = RecordHeader.empty.withExpr(n).withExpr(n as m)
+    header.contains(n) shouldBe true
+    header.contains(m) shouldBe true
+    header.contains(n as m) shouldBe true
   }
 
   it("can add an alias for an entity") {
@@ -386,30 +392,19 @@ class RecordHeaderTest extends BaseTestSuite {
     modifiedHeader.column(nLabelA) should equal(newName2)
   }
 
-  it("pretty prints a record header") {
-    nHeader.pretty should equal(
-      """|╔════════════════╤════════════════╤═════════════════╤═════════════════╗
-         |║ n:A :: BOOLEAN │ n:B :: BOOLEAN │ n.foo :: STRING │ n :: NODE(:A:B) ║
-         |╠════════════════╪════════════════╪═════════════════╪═════════════════╣
-         |║ '1117703155'   │ '1246785874'   │ '2020204695'    │ '225729346'     ║
-         |╚════════════════╧════════════════╧═════════════════╧═════════════════╝
-         |(1 row)
-         |""".stripMargin)
-  }
-
   describe("join") {
     it("joins two none conflicting headers") {
       nHeader.join(mHeader) should equal(nHeader ++ mHeader)
     }
 
     it("joins record headers with overlapping column names") {
-      val aliased = nHeader.withAlias(n, m).select(m)
+      val aliased = nHeader.withAlias(n as m).select(m)
       nHeader.join(aliased) should equal(nHeader ++ mHeader)
     }
 
     it("joins record headers with overlapping column names and multiple expressions per column") {
-      val aliased = nHeader.withAlias(n, m).withAlias(n, o).select(m, o)
-      nHeader.join(aliased) should equal(nHeader ++ mHeader.withAlias(m, o))
+      val aliased = nHeader.withAlias(n as m).withAlias(n as o).select(m, o)
+      nHeader.join(aliased) should equal(nHeader ++ mHeader.withAlias(m as o))
     }
 
     it("raises an error when joining header with overlapping expressions"){

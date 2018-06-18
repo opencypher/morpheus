@@ -243,7 +243,7 @@ final case class ConstructGraph(
     val aliasClones = clonedVarsToInputVars
       .filter { case (alias, original) => alias != original }
       .map(_.swap)
-    val baseTable = left.records.withAliases(aliasClones.toSeq: _*)
+    val baseTable = left.records.withAliases(aliasClones.map { case (expr, alias) => expr as alias }.toSeq: _*)
 
     val retaggedBaseTable = clonedVarsToInputVars.foldLeft(baseTable) { case (df, clone) =>
       df.retagVariable(clone._1, constructTagStrategy(clone._2.cypherType.graph.get))
@@ -291,7 +291,7 @@ final case class ConstructGraph(
 
   def constructProperty(variable: Var, propertyKey: String, propertyValue: Expr, constructedTable: CAPSRecords)
     (implicit context: CAPSRuntimeContext): CAPSRecords = {
-    val propertyValueColumn: Column = propertyValue.asSparkSQLExpr(constructedTable.header, constructedTable.df, context)
+    val propertyValueColumn: Column = propertyValue.asSparkSQLExpr(constructedTable.header, constructedTable.df, context.parameters)
 
     val propertyExpression = Property(variable, PropertyKey(propertyKey))(propertyValue.cypherType)
 

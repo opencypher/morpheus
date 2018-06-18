@@ -44,6 +44,7 @@ trait PhysicalOperator[R <: CypherRecords, G <: PropertyGraph, C <: RuntimeConte
     *
     * @return record header describing the output data
     */
+  // TODO: remove
   def header: RecordHeader
 
   /**

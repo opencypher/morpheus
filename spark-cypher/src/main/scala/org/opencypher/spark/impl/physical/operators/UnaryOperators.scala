@@ -108,39 +108,37 @@ final case class RelationshipScan(
   }
 }
 
-final case class Alias(in: CAPSPhysicalOperator, aliases: Seq[(Expr, Var)], header: RecordHeader)
+final case class Alias(in: CAPSPhysicalOperator, aliases: Seq[AliasExpr], header: RecordHeader)
   extends UnaryPhysicalOperator with PhysicalOperatorDebugging {
 
   override def executeUnary(prev: CAPSPhysicalResult)(implicit context: CAPSRuntimeContext): CAPSPhysicalResult = {
-    prev.mapRecordsWithDetails { records => CAPSRecords(header, records.df)(records.caps) }
+    prev.mapRecordsWithDetails { records => records.withAliases(aliases: _*) }
   }
 }
 
-final case class Project(in: CAPSPhysicalOperator, expr: Expr, alias: Option[Expr], header: RecordHeader)
+final case class AddColumn(in: CAPSPhysicalOperator, expr: Expr, header: RecordHeader)
   extends UnaryPhysicalOperator with PhysicalOperatorDebugging {
 
   override def executeUnary(prev: CAPSPhysicalResult)(implicit context: CAPSRuntimeContext): CAPSPhysicalResult = {
-    prev.mapRecordsWithDetails { records =>
-      val newColumn = alias.getOrElse(expr)
-      val updatedData = if (in.header.contains(newColumn)) {
-        records.df
-      } else {
-        val dfColumn = expr.asSparkSQLExpr(header, records.df, context).as(header.column(newColumn))
-        val columnsToSelect = in.header.columns.toSeq.map(records.df.col) :+ dfColumn
-        records.df.select(columnsToSelect: _*)
-      }
-      CAPSRecords(header, updatedData)(records.caps)
-    }
+    prev.mapRecordsWithDetails { records => records.addColumn(expr)(context.parameters) }
   }
 }
 
-final case class Drop(
+final case class CopyColumn(in: CAPSPhysicalOperator, from: Expr, to: Expr, header: RecordHeader)
+  extends UnaryPhysicalOperator with PhysicalOperatorDebugging {
+
+  override def executeUnary(prev: CAPSPhysicalResult)(implicit context: CAPSRuntimeContext): CAPSPhysicalResult = {
+    prev.mapRecordsWithDetails { records => records.copyColumn(from, to)(context.parameters)}
+  }
+}
+
+final case class DropColumns(
   in: CAPSPhysicalOperator,
-  dropFields: Set[Expr],
+  exprs: Set[Expr],
   header: RecordHeader
 ) extends UnaryPhysicalOperator with PhysicalOperatorDebugging {
   override def executeUnary(prev: CAPSPhysicalResult)(implicit context: CAPSRuntimeContext): CAPSPhysicalResult = {
-    prev.mapRecordsWithDetails { records => records.drop(dropFields.toSeq: _*) }
+    prev.mapRecordsWithDetails { records => records.drop(exprs.toSeq: _*) }
   }
 }
 
@@ -150,19 +148,15 @@ final case class RenameColumns(
   header: RecordHeader
 ) extends UnaryPhysicalOperator with PhysicalOperatorDebugging {
   override def executeUnary(prev: CAPSPhysicalResult)(implicit context: CAPSRuntimeContext): CAPSPhysicalResult = {
-    prev.mapRecordsWithDetails { records => records.withColumnsRenamed(renameExprs.toSeq: _*)(Some(header)) }
+    prev.mapRecordsWithDetails { records => records.renameColumns(renameExprs.toSeq: _*)(Some(header)) }
   }
 }
 
-// TODO: Move to RelationalCypherRecords
 final case class Filter(in: CAPSPhysicalOperator, expr: Expr, header: RecordHeader)
   extends UnaryPhysicalOperator with PhysicalOperatorDebugging {
 
   override def executeUnary(prev: CAPSPhysicalResult)(implicit context: CAPSRuntimeContext): CAPSPhysicalResult = {
-    prev.mapRecordsWithDetails { records =>
-      val filteredRows = records.df.where(expr.asSparkSQLExpr(header, records.df, context))
-      CAPSRecords(header, filteredRows)(records.caps)
-    }
+    prev.mapRecordsWithDetails { records => records.filter(expr)(context.parameters) }
   }
 }
 
@@ -177,7 +171,7 @@ final case class ReturnGraph(in: CAPSPhysicalOperator)
 
 }
 
-final case class Select(in: CAPSPhysicalOperator, expressions: List[(Expr, Option[Var])], header: RecordHeader)
+final case class Select(in: CAPSPhysicalOperator, expressions: List[Expr], header: RecordHeader)
   extends UnaryPhysicalOperator with PhysicalOperatorDebugging {
 
   override def executeUnary(prev: CAPSPhysicalResult)(implicit context: CAPSRuntimeContext): CAPSPhysicalResult = {
@@ -213,7 +207,7 @@ final case class Aggregate(
       val inData = records.df
 
       def withInnerExpr(expr: Expr)(f: Column => Column) =
-        f(expr.asSparkSQLExpr(records.header, inData, context))
+        f(expr.asSparkSQLExpr(records.header, inData, context.parameters))
 
       val data: Either[RelationalGroupedDataset, DataFrame] =
         if (group.nonEmpty) {

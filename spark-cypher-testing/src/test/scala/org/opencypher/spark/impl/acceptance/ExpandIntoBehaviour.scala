@@ -27,6 +27,7 @@
 package org.opencypher.spark.impl.acceptance
 
 import org.opencypher.okapi.api.value.CypherValue.CypherMap
+import org.opencypher.okapi.relational.api.configuration.CoraConfiguration.{PrintFlatPlan, PrintPhysicalPlan}
 import org.opencypher.okapi.testing.Bag
 import org.opencypher.spark.testing.CAPSTestSuite
 import org.scalatest.DoNotDiscover
@@ -34,7 +35,7 @@ import org.scalatest.DoNotDiscover
 @DoNotDiscover
 class ExpandIntoBehaviour extends CAPSTestSuite with DefaultGraphInit {
 
-  test("test expand into for dangling edge") {
+  it("test expand into for dangling edge") {
     // Given
     val given = initGraph(
       """
@@ -77,7 +78,7 @@ class ExpandIntoBehaviour extends CAPSTestSuite with DefaultGraphInit {
     ))
   }
 
-  test("test expand into for triangle") {
+  it("test expand into for triangle") {
     // Given
     val given = initGraph(
       """
@@ -108,7 +109,7 @@ class ExpandIntoBehaviour extends CAPSTestSuite with DefaultGraphInit {
     ))
   }
 
-  test("Expand into after var expand") {
+  it("Expand into after var expand") {
     // Given
     val given = initGraph(
       """

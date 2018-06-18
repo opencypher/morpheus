@@ -85,8 +85,8 @@ I <: RuntimeContext[A, P]] {
   val startEdgeScan: Var = header.entityVars.find(_.name == s"${edgeScan.name}_1").get
   val startEdgeScanOp: K = producer.planAlias(
     physicalEdgeScanOp,
-    edgeScan, startEdgeScan,
-    edgeScanOp.header.withAlias(edgeScan -> startEdgeScan).select(startEdgeScan)
+    edgeScan as startEdgeScan,
+    edgeScanOp.header.withAlias(edgeScan as startEdgeScan).select(startEdgeScan)
   )
 
   /**
@@ -123,13 +123,27 @@ I <: RuntimeContext[A, P]] {
     val nextEdge = header.entityVars.find(_.name == s"${edgeScan.name}_$i").get
 
     val aliasedCacheHeader = expandCacheOp.header
-      .withAlias(edgeScan -> nextEdge, innerNode -> nextNode)
-      .select(nextEdge, nextNode)
+      .withAlias(edgeScan as nextEdge, innerNode as nextNode)
 
-    val aliasedCacheOp = producer.planAlias(
-      expandCacheOp, Seq(edgeScan -> nextEdge, innerNode -> nextNode),
+    val aliasedCacheOp = producer.planAliases(
+      expandCacheOp, Seq(edgeScan as nextEdge, innerNode as nextNode),
       aliasedCacheHeader
     )
+
+    // We just want to select id columns, select always selects also the children. we need to drop them first
+    // TODO: this is a planning performance killer, we need to squash these steps into a single table operation
+    val idExprs = Set(
+      nextEdge,
+      aliasedCacheHeader.startNodeFor(nextEdge),
+      aliasedCacheHeader.endNodeFor(nextEdge),
+      nextNode)
+
+    val dropExprs = idExprs.flatMap(aliasedCacheHeader.expressionsFor) -- idExprs
+    val dropHeader = aliasedCacheHeader -- dropExprs
+    val withChildExprsDropped = producer.planDrop(aliasedCacheOp, dropExprs, dropHeader)
+
+    val aliasSelectHeader = dropHeader.select(idExprs)
+    val selectedCacheOp = producer.planSelect(withChildExprsDropped, idExprs.toList, aliasSelectHeader)
 
     val leftJoinExpr = dir match {
       case Outbound => iterationTable.header.endNodeFor(edgeVars.last)
@@ -138,16 +152,16 @@ I <: RuntimeContext[A, P]] {
 
     val expandedOp = producer.planJoin(
       iterationTable,
-      aliasedCacheOp,
+      selectedCacheOp,
       Seq(leftJoinExpr -> nextNode),
-      iterationTable.header join aliasedCacheHeader
+      iterationTable.header join aliasSelectHeader
     )
 
     producer.planFilter(expandedOp, isomorphismFilter(nextEdge, edgeVars.toSet), expandedOp.header) -> nextEdge
   }
 
   /**
-    * Finializes the expansions
+    * Finalize the expansions
     *   1. adds paths of length zero if needed
     *   2. fills empty columns with null values
     *   3. unions paths of different lengths
@@ -165,7 +179,24 @@ I <: RuntimeContext[A, P]] {
     val alignedOps = unalignedOps.map { exp =>
       val nullExpressions = header.expressions -- exp.header.expressions
       nullExpressions.foldLeft(exp) {
-        case (acc, expr) => producer.planProject(acc, NullLit(expr.cypherType), Some(expr), acc.header.addExprToColumn(expr, header.column(expr)))
+        case (acc, expr) =>
+
+          // TODO: this is a planning performance killer, we need to squash these steps into a single table operation
+          val lit = NullLit(expr.cypherType)
+
+          val withExprHeader = acc.header.withExpr(expr)
+          val withExpr = producer.planCopyColumn(acc, lit, expr, withExprHeader)
+
+          val withoutLitHeader = withExprHeader -- Set(lit)
+          val withoutLit = producer.planDrop(withExpr, Set(lit), withoutLitHeader)
+
+          if (withoutLitHeader.column(expr) == header.column(expr)) {
+            withoutLit
+          } else {
+            val withRenamedHeader = (withoutLitHeader -- Set(expr)).addExprToColumn(expr, header.column(expr))
+            val withRenamed = producer.planRenameColumns(withoutLit, Map(expr -> header.column(expr)), withRenamedHeader)
+            withRenamed
+          }
       }
     }
 
@@ -213,7 +244,7 @@ I <: RuntimeContext[A, P]] {
     (childMapping ++ missingMapping).foldLeft(physicalOp) {
       case (acc, (f, t)) =>
         val targetHeader = acc.header.withExpr(t)
-        producer.planProject(acc, f, Some(t), targetHeader)
+        producer.planCopyColumn(acc, f, t, targetHeader)
     }
   }
 

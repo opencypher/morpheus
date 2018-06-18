@@ -30,6 +30,7 @@ import org.opencypher.okapi.api.io.conversion.{EntityMapping, NodeMapping, Relat
 import org.opencypher.okapi.api.schema.Schema
 import org.opencypher.okapi.api.table.{CypherRecords, CypherTable}
 import org.opencypher.okapi.api.types.{CTBoolean, CTInteger, CTNode, CypherType}
+import org.opencypher.okapi.api.value.CypherValue.CypherMap
 import org.opencypher.okapi.impl.exception.IllegalArgumentException
 import org.opencypher.okapi.impl.util.StringEncodingUtilities._
 import org.opencypher.okapi.ir.api.block.{Asc, Desc, SortItem}
@@ -45,6 +46,8 @@ trait FlatRelationalTable[T <: FlatRelationalTable[T]] extends CypherTable {
 
   def select(cols: String*): T
 
+  def filter(expr: Expr)(implicit header: RecordHeader, parameters: CypherMap): T
+
   def drop(cols: String*): T
 
   def unionAll(other: T): T
@@ -54,6 +57,8 @@ trait FlatRelationalTable[T <: FlatRelationalTable[T]] extends CypherTable {
   def distinct: T
 
   def distinct(cols: String*): T
+
+  def withColumn(column: String, expr: Expr)(implicit header: RecordHeader, parameters: CypherMap): T
 
   def withColumnRenamed(oldColumn: String, newColumn: String): T
 
@@ -79,30 +84,57 @@ trait RelationalCypherRecords[T <: FlatRelationalTable[T]] extends CypherRecords
 
   def header: RecordHeader
 
-  def select(expr: (Expr, Option[Var]), epxrs: (Expr, Option[Var])*): R = {
+  def select(expr: Expr, epxrs: Expr*): R = {
     val allExprs = expr +: epxrs
-    val aliases = allExprs.collect { case (e, Some(v)) => e -> v }
+    val aliasExprs = allExprs.collect { case a: AliasExpr => a }
 
-    val headerWithAliases = header.withAlias(aliases: _*)
+    val headerWithAliases = header.withAlias(aliasExprs: _*)
 
-    val selectExprs = allExprs.collect {
-      case (_, Some(v)) => v
-      case (e, None) => e
-    }
+    val selectHeader = headerWithAliases.select(allExprs: _*)
+    val logicalColumns = allExprs.collect { case e: Var => e.withoutType }
 
-    val selectHeader = headerWithAliases.select(selectExprs: _*)
-    val logicalColumns = selectExprs.collect { case e: Var => e.withoutType }
+    from(selectHeader, table.select(allExprs.map(headerWithAliases.column).distinct: _*), Some(logicalColumns))
+  }
 
-    from(selectHeader, table.select(selectExprs.map(headerWithAliases.column).distinct: _*), Some(logicalColumns))
+  def filter(expr: Expr)(implicit parameters: CypherMap): R = {
+    val filteredTable = table.filter(expr)(header, parameters)
+    from(header, filteredTable)
   }
 
   def drop(exprs: Expr*): R = {
     val updatedHeader = header -- exprs.toSet
-    val updatedTable = table.drop(exprs.map(header.column): _*)
-    from(updatedHeader, updatedTable)
+    if (updatedHeader.columns.size < header.columns.size) {
+      val updatedTable = table.drop(exprs.map(header.column): _*)
+      from(updatedHeader, updatedTable)
+    } else {
+      from(updatedHeader, table)
+    }
   }
 
-  def withColumnsRenamed(renamings: (Expr, String)*)(headerOpt: Option[RecordHeader] = None): R = {
+  def addColumn(expr: Expr)(implicit parameters: CypherMap): R = {
+    if (header.contains(expr)) {
+      val updatedHeader = expr match {
+        case a: AliasExpr => header.withAlias(a)
+        case _ => header
+      }
+      from(updatedHeader, table)
+    } else {
+      val updatedHeader = expr match {
+        case a: AliasExpr => header.withExpr(a.expr).withAlias(a)
+        case _ => header.withExpr(expr)
+      }
+      val updatedTable = table.withColumn(updatedHeader.column(expr), expr)(updatedHeader, parameters)
+      from(updatedHeader, updatedTable)
+    }
+  }
+
+  def copyColumn(fromColumn: Expr, toColumn: Expr)(implicit parameters: CypherMap): R = {
+    val updatedHeader = header.withExpr(toColumn)
+    val updatedData = table.withColumn(updatedHeader.column(toColumn), fromColumn)(header, parameters)
+    from(updatedHeader, updatedData)
+  }
+
+  def renameColumns(renamings: (Expr, String)*)(headerOpt: Option[RecordHeader] = None): R = {
     val updatedHeader = headerOpt.getOrElse(renamings.foldLeft(header) {
       case (currentHeader, (expr, newColumn)) => currentHeader.withColumnRenamed(expr, newColumn)
     })
@@ -127,7 +159,7 @@ trait RelationalCypherRecords[T <: FlatRelationalTable[T]] extends CypherRecords
     from(header, table.orderBy(tableSortItems: _*))
   }
 
-  def withAliases(originalToAlias: (Expr, Var)*): R = {
+  def withAliases(originalToAlias: AliasExpr*): R = {
     val headerWithAliases = header.withAlias(originalToAlias: _*)
     from(headerWithAliases, table)
   }
@@ -159,7 +191,7 @@ trait RelationalCypherRecords[T <: FlatRelationalTable[T]] extends CypherRecords
       val renameColumns = other.header.expressions
         .filter(expr => other.header.column(expr) != joinHeader.column(expr))
         .map { expr => expr -> joinHeader.column(expr) }.toSeq
-      other.withColumnsRenamed(renameColumns: _*)().asInstanceOf[R]
+      other.renameColumns(renameColumns: _*)().asInstanceOf[R]
     } else other
 
     val joinCols = joinExprs.map { case (l, r) => header.column(l) -> cleanOther.header.column(r) }

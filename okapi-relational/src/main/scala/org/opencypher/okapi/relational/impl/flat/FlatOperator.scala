@@ -84,9 +84,7 @@ final case class ReturnGraph(in: FlatOperator) extends StackingFlatOperator {
   override def header: RecordHeader = RecordHeader.empty
 }
 
-final case class Project(expr: Expr, alias: Option[Var], in: FlatOperator, header: RecordHeader) extends StackingFlatOperator
-
-final case class Unwind(expr: Explode, item: Var, in: FlatOperator, header: RecordHeader) extends StackingFlatOperator
+final case class WithColumn(expr: Expr, in: FlatOperator, header: RecordHeader) extends StackingFlatOperator
 
 final case class Aggregate(
     aggregations: Set[(Var, Aggregator)],
@@ -95,7 +93,7 @@ final case class Aggregate(
     header: RecordHeader)
     extends StackingFlatOperator
 
-final case class Alias(expr: Expr, alias: Var, in: FlatOperator, header: RecordHeader) extends StackingFlatOperator
+final case class Alias(expr: org.opencypher.okapi.ir.api.expr.AliasExpr, in: FlatOperator, header: RecordHeader) extends StackingFlatOperator
 
 final case class CartesianProduct(lhs: FlatOperator, rhs: FlatOperator, header: RecordHeader) extends BinaryFlatOperator
 
