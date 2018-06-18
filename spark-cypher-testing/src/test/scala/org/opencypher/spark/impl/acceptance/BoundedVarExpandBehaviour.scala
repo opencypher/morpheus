@@ -28,6 +28,7 @@ package org.opencypher.spark.impl.acceptance
 
 import org.opencypher.okapi.api.value.CypherValue._
 import org.opencypher.okapi.testing.Bag
+import org.opencypher.spark.api.value.CAPSPath
 import org.opencypher.spark.testing.CAPSTestSuite
 import org.scalatest.DoNotDiscover
 
@@ -108,25 +109,19 @@ class BoundedVarExpandBehaviour extends CAPSTestSuite with DefaultGraphInit {
     ))
   }
 
-  ignore("var expand return list of rel ids") {
+  it("var expand return var length rel as path") {
     // Given
     val given = initGraph("CREATE (a:Node {v: 'a'})-[:REL]->(:Node {v: 'b'})-[:REL]->(:Node {v: 'c'})-[:REL]->(a)")
 
     // When
     val result = given.cypher("MATCH (a:Node)-[r*..6]->(b:Node) RETURN r")
 
-    // Then
-    result.getRecords.toMaps should equal(Bag(
-      CypherMap("r" -> List(2)),
-      CypherMap("r" -> List(2, 4)),
-      CypherMap("r" -> List(2, 4, 5)),
-      CypherMap("r" -> List(4)),
-      CypherMap("r" -> List(4, 5)),
-      CypherMap("r" -> List(4, 5, 2)),
-      CypherMap("r" -> List(5)),
-      CypherMap("r" -> List(5, 2)),
-      CypherMap("r" -> List(5, 2, 4))
-    ))
+    result.getRecords.iterator.foreach { map =>
+        map.keys should equal(Set("r"))
+        map("r").getClass should equal(classOf[CAPSPath])
+        map("r").asInstanceOf[CAPSPath].value.size should(be >= 1 and be <= 5)
+    }
+
   }
 
   it("var expand with rel type") {

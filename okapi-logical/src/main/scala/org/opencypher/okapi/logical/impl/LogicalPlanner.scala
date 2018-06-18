@@ -351,7 +351,7 @@ class LogicalPlanner(producer: LogicalOperatorProducer)
 
         val entitiesToCreate = newPatternEntities -- clonePatternEntities
 
-        val clonedVarToInputVar: Map[EntityExpr, EntityExpr] = p.clones.map { case (clonedField, inputExpression) =>
+        val clonedVarToInputVar: Map[Var, Var] = p.clones.map { case (clonedField, inputExpression) =>
           val inputVar = inputExpression match {
             case v: Var => v
             case other => throw IllegalArgumentException("CLONED expression to be a variable", other)

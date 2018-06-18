@@ -134,7 +134,7 @@ class LogicalOperatorProducer {
     FromGraph(graph, prev, prev.solved)
   }
 
-  def planStart(graph: LogicalGraph, fields: Set[EntityExpr]): Start = {
+  def planStart(graph: LogicalGraph, fields: Set[Var]): Start = {
     val irFields = fields.map { v =>
       IRField(v.name)(v.cypherType)
     }

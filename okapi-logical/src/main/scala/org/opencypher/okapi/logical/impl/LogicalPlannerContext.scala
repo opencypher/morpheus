@@ -29,10 +29,10 @@ package org.opencypher.okapi.logical.impl
 import org.opencypher.okapi.api.graph.Namespace
 import org.opencypher.okapi.api.io.PropertyGraphDataSource
 import org.opencypher.okapi.api.schema.Schema
-import org.opencypher.okapi.ir.api.expr.EntityExpr
+import org.opencypher.okapi.ir.api.expr.Var
 
 final case class LogicalPlannerContext(
   workingGraphSchema: Schema,
-  inputRecordFields: Set[EntityExpr],
+  inputRecordFields: Set[Var],
   catalog: Namespace => PropertyGraphDataSource
 )

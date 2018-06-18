@@ -34,7 +34,7 @@ import org.opencypher.okapi.api.types._
 import org.opencypher.okapi.api.value.CypherValue.CypherMap
 import org.opencypher.okapi.impl.graph.QGNGenerator
 import org.opencypher.okapi.ir.api.block.SourceBlock
-import org.opencypher.okapi.ir.api.expr.{EntityExpr, Expr}
+import org.opencypher.okapi.ir.api.expr.{Expr, Var}
 import org.opencypher.okapi.ir.api.pattern.Pattern
 import org.opencypher.okapi.ir.api.{IRCatalogGraph, IRField, IRGraph}
 import org.opencypher.okapi.ir.impl.typer.exception.TypingException
@@ -107,7 +107,7 @@ object IRBuilderContext {
     workingGraph: IRCatalogGraph,
     qgnGenerator: QGNGenerator,
     sessionCatalog: Map[Namespace, PropertyGraphDataSource],
-    fieldsFromDrivingTable: Set[EntityExpr] = Set.empty
+    fieldsFromDrivingTable: Set[Var] = Set.empty
   ): IRBuilderContext = {
     val registry = BlockRegistry.empty[Expr]
     val block = SourceBlock[Expr](workingGraph)

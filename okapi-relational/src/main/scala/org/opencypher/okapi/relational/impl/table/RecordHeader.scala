@@ -52,7 +52,7 @@ case class RecordHeader(exprToColumn: Map[Expr, String]) {
 
   def expressions: Set[Expr] = exprToColumn.keySet
 
-  def vars: Set[EntityExpr] = expressions.collect { case v: EntityExpr => v }
+  def vars: Set[Var] = expressions.flatMap(_.owner()).collect { case v: Var => v }
 
   def columns: Set[String] = exprToColumn.values.toSet
 
@@ -71,7 +71,13 @@ case class RecordHeader(exprToColumn: Map[Expr, String]) {
   }
 
   def ownedBy(expr: EntityExpr): Set[Expr] = {
-    exprToColumn.keys.filter(e => e.owner.contains(expr)).toSet
+    val a = exprToColumn.keys.filter(e => e.owner.contains(expr)).toSet
+
+    a.flatMap {
+      case e: EntityExpr if e==expr => Seq(e)
+      case e: EntityExpr => ownedBy(e) + e
+      case other => Seq(other)
+    }
   }
 
   def expressionsFor(expr: Expr): Set[Expr] = {

@@ -90,13 +90,13 @@ trait RelationalCypherRecords[T <: FlatRelationalTable[T]] extends CypherRecords
 
     val headerWithAliases = header.withAlias(aliasExprs: _*)
 
-    val selectHeader = headerWithAliases.select(allExprs: _*)
-    val logicalColumns = allExprs.collect { case e: EntityExpr => e.withoutType }
+    val selectHeader = headerWithAliases.select(selectExprs: _*)
+    val logicalColumns = selectHeader.vars.map(_.withoutType).toSeq
 
     from(selectHeader, table.select(allExprs.map(headerWithAliases.column).distinct: _*), Some(logicalColumns))
   }
 
-  def filter(expr: Expr)(implicit parameters: CypherMap): R = {
+    def filter(expr: Expr)(implicit parameters: CypherMap): R = {
     val filteredTable = table.filter(expr)(header, parameters)
     from(header, filteredTable)
   }
@@ -164,7 +164,7 @@ trait RelationalCypherRecords[T <: FlatRelationalTable[T]] extends CypherRecords
     from(headerWithAliases, table)
   }
 
-  def removeVars(vars: Set[EntityExpr]): R = {
+  def removeVars(vars: Set[Var]): R = {
     val updatedHeader = header -- vars
     val keepColumns = updatedHeader.columns.toSeq.sorted
     val updatedData = table.select(keepColumns: _*)

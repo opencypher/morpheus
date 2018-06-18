@@ -68,7 +68,7 @@ final case class LogicalCatalogGraph(qualifiedGraphName: QualifiedGraphName, sch
 
 final case class LogicalPatternGraph(
   schema: Schema,
-  clones: Map[EntityExpr, EntityExpr],
+  clones: Map[Var, Var],
   newEntities: Set[ConstructedEntity],
   sets: List[SetPropertyItem[Expr]],
   onGraphs: List[QualifiedGraphName],
@@ -82,22 +82,22 @@ final case class LogicalPatternGraph(
 }
 
 sealed trait ConstructedEntity {
-  def v: EntityExpr
+  def v: Var
 
-  def baseEntity: Option[EntityExpr]
+  def baseEntity: Option[Var]
 }
 case class ConstructedNode(
-  v: EntityExpr,
+  v: Var,
   labels: Set[Label],
-  baseEntity: Option[EntityExpr]
+  baseEntity: Option[Var]
 ) extends ConstructedEntity
 
 case class ConstructedRelationship(
-  v: EntityExpr,
+  v: Var,
   source: EntityExpr,
   target: EntityExpr,
   typ: Option[String],
-  baseEntity: Option[EntityExpr]
+  baseEntity: Option[Var]
 ) extends ConstructedEntity {
   require(typ.isDefined || baseEntity.isDefined, s"$this: Need to define either the rel type or an equivalence model to construct a relationship")
 }
