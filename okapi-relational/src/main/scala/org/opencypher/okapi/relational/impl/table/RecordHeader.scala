@@ -28,6 +28,7 @@ package org.opencypher.okapi.relational.impl.table
 
 import org.opencypher.okapi.api.types.{CTNode, CTNodeOrNull, CTRelationship, CTRelationshipOrNull}
 import org.opencypher.okapi.impl.exception.IllegalArgumentException
+import org.opencypher.okapi.impl.util.StringEncodingUtilities._
 import org.opencypher.okapi.impl.util.TablePrinter
 import org.opencypher.okapi.ir.api.RelType
 import org.opencypher.okapi.ir.api.expr._
@@ -236,7 +237,7 @@ case class RecordHeader(exprToColumn: Map[Expr, String]) {
       case Some(_) => this
 
       case None =>
-        val newColumnName = (expr.toString.hashCode & Int.MaxValue).toString
+        val newColumnName = expr.toString.encodeSpecialCharacters
 
         // Aliases for (possible) owner of expr need to be updated as well
         val exprsToAdd: Set[Expr] = expr.owner match {
