@@ -105,6 +105,13 @@ class RecordHeaderTest extends BaseTestSuite {
     nHeader.withAlias(n as m).expressionsFor(nHeader.column(n)) should equalWithTracing(Set(n, m))
   }
 
+  it("can correctly handles AliasExpr using withExpr") {
+    val header = RecordHeader.empty.withExpr(n).withExpr(n as m)
+    header.contains(n) shouldBe true
+    header.contains(m) shouldBe true
+    header.contains(n as m) shouldBe true
+  }
+
   it("can add an alias for an entity") {
     val withAlias = nHeader.withAlias(n as m)
 
@@ -383,17 +390,6 @@ class RecordHeaderTest extends BaseTestSuite {
     val modifiedHeader = nHeader.withColumnsRenamed(Map(nPropFoo -> newName1, nLabelA -> newName2))
     modifiedHeader.column(nPropFoo) should equal(newName1)
     modifiedHeader.column(nLabelA) should equal(newName2)
-  }
-
-  it("pretty prints a record header") {
-    nHeader.pretty should equal(
-      """|╔════════════════╤════════════════╤═════════════════╤═════════════════╗
-         |║ n:A :: BOOLEAN │ n:B :: BOOLEAN │ n.foo :: STRING │ n :: NODE(:A:B) ║
-         |╠════════════════╪════════════════╪═════════════════╪═════════════════╣
-         |║ '1117703155'   │ '1246785874'   │ '2020204695'    │ '225729346'     ║
-         |╚════════════════╧════════════════╧═════════════════╧═════════════════╝
-         |(1 row)
-         |""".stripMargin)
   }
 
   describe("join") {

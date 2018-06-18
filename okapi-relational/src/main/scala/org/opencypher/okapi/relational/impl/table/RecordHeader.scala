@@ -233,22 +233,28 @@ case class RecordHeader(exprToColumn: Map[Expr, String]) {
   }
 
   def withExpr(expr: Expr): RecordHeader = {
-    exprToColumn.get(expr) match {
-      case Some(_) => this
+    expr match {
+      case a: AliasExpr => withAlias(a)
+      case _ => exprToColumn.get(expr) match {
+        case Some(_) => this
 
-      case None =>
-        val newColumnName = expr.toString.encodeSpecialCharacters
+        case None =>
+          val newColumnName = expr.toString
+            .replaceAll("-", "_")
+            .replaceAll(":", "_")
+            .replaceAll("\\.", "_")
 
-        // Aliases for (possible) owner of expr need to be updated as well
-        val exprsToAdd: Set[Expr] = expr.owner match {
-          case None => Set(expr)
+          // Aliases for (possible) owner of expr need to be updated as well
+          val exprsToAdd: Set[Expr] = expr.owner match {
+            case None => Set(expr)
 
-          case Some(exprOwner) => aliasesFor(exprOwner).map(alias => expr.withOwner(alias))
-        }
+            case Some(exprOwner) => aliasesFor(exprOwner).map(alias => expr.withOwner(alias))
+          }
 
-        exprsToAdd.foldLeft(this) {
-          case (current, e) => current.addExprToColumn(e, newColumnName)
-        }
+          exprsToAdd.foldLeft(this) {
+            case (current, e) => current.addExprToColumn(e, newColumnName)
+          }
+      }
     }
   }
 

@@ -251,7 +251,7 @@ I <: RuntimeContext[A, P]](val producer: PhysicalOperatorProducer[O, K, A, P, I]
     val rhsHeaderWithRenames = rhsHeaderWithDropped.withAlias(joinExprRenames.toSeq: _*)
     val rhsWithAlias = producer.planAliases(rhsWithDropped, joinExprRenames.toSeq, rhsHeaderWithRenames)
     val rhsHeaderJoinReady = rhsHeaderWithRenames -- joinExprs
-    val rhsJoinReady = producer.planDrop(rhsWithAlias, joinExprs.asInstanceOf[Set[Expr]], rhsHeaderJoinReady)
+    val rhsJoinReady = producer.planDrop(rhsWithAlias, joinExprs.collect { case e: Expr => e }, rhsHeaderJoinReady)
 
     // 4. Left outer join the left side and the processed right side
     val joined = producer.planJoin(lhsData, rhsJoinReady, joinExprRenames.map(a => a.expr -> a.alias).toSeq, lhsHeader join rhsHeaderJoinReady, LeftOuterJoin)
