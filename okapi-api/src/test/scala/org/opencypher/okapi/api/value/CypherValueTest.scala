@@ -26,7 +26,7 @@
  */
 package org.opencypher.okapi.api.value
 
-import org.opencypher.okapi.api.value.CypherValue.{CypherBoolean, CypherFloat, CypherInteger, CypherList, CypherMap, CypherNode, CypherRelationship, CypherString}
+import org.opencypher.okapi.api.value.CypherValue.{CypherBoolean, CypherEntity, CypherFloat, CypherInteger, CypherList, CypherMap, CypherNode, CypherPath, CypherRelationship, CypherString}
 import org.scalatest.{FunSpec, Matchers}
 
 class CypherValueTest extends FunSpec with Matchers {
@@ -82,6 +82,20 @@ class CypherValueTest extends FunSpec with Matchers {
         case (input, expected) => input.toCypherString should equal(expected)
       }
     }
+
+    it("converts a CypherPath") {
+      val node = TestNode(1, Set("A"), CypherMap("foo" -> 42))
+      val rel = TestRelationship(1, 1, 1, "REL", CypherMap("foo" -> 42))
+
+      val mapping = Map(
+        TestPath(Seq(node, rel, node)) -> s"<${node.toCypherString}--${rel.toCypherString}--${node.toCypherString}>",
+        TestPath(Seq.empty) -> "<>"
+      )
+
+      mapping.foreach {
+        case (input, expected) => input.toCypherString should equal(expected)
+      }
+    }
   }
 
   private case class TestRelationship(override val id: Long,
@@ -118,5 +132,7 @@ class CypherValueTest extends FunSpec with Matchers {
     }
 
   }
+
+  case class TestPath(override val value: Seq[CypherEntity[Long]]) extends CypherPath[Long]
 
 }
