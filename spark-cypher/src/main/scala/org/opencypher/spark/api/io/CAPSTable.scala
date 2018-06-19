@@ -78,7 +78,8 @@ object SparkCypherTable {
       df.where(expr.asSparkSQLExpr(header, df, parameters))
     }
 
-    override def withColumn(column: String, expr: Expr)(implicit header: RecordHeader, parameters: CypherMap): DataFrameTable = {
+    override def withColumn(column: String, expr: Expr)
+      (implicit header: RecordHeader, parameters: CypherMap): DataFrameTable = {
       df.withColumn(column, expr.asSparkSQLExpr(header, df, parameters))
     }
 
@@ -120,12 +121,11 @@ object SparkCypherTable {
             case (l, r) => df.col(l) === other.df.col(r)
           }.reduce((acc, expr) => acc && expr)
 
-          df.join(other.df, joinExpr, joinTypeString)
-//          // TODO: the join produced corrupt data when the previous operator was a cross. We work around that by using a
-//          // subsequent select. This can be removed, once https://issues.apache.org/jira/browse/SPARK-23855 is solved or we
-//          // upgrade to Spark 2.3.0
-//          val potentiallyCorruptedResult = df.join(other.df, joinExpr, joinTypeString)
-//          potentiallyCorruptedResult.select("*")
+          // TODO: the join produced corrupt data when the previous operator was a cross. We work around that by using a
+          // subsequent select. This can be removed, once https://issues.apache.org/jira/browse/SPARK-23855 is solved or we
+          // upgrade to Spark 2.3.0
+          val potentiallyCorruptedResult = df.join(other.df, joinExpr, joinTypeString)
+          potentiallyCorruptedResult.select("*")
       }
     }
 
@@ -174,7 +174,8 @@ case class CAPSNodeTable(
   override def from(
     header: RecordHeader,
     table: DataFrameTable,
-    columnNames: Option[Seq[String]] = None): CAPSNodeTable = CAPSNodeTable(mapping, table)
+    columnNames: Option[Seq[String]] = None
+  ): CAPSNodeTable = CAPSNodeTable(mapping, table)
 
   override private[spark] def entityType = mapping.cypherType
 }

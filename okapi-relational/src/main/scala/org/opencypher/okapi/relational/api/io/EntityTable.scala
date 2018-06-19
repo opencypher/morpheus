@@ -172,8 +172,18 @@ trait RelationalCypherRecords[T <: FlatRelationalTable[T]] extends CypherRecords
   }
 
   def unionAll(other: R): R = {
-    val orderedTable = if (table.physicalColumns != other.table.physicalColumns) {
-      other.table.select(table.physicalColumns: _*)
+    val leftColumns = table.physicalColumns
+    val rightColumns = other.table.physicalColumns
+
+    if (leftColumns.size != rightColumns.size) {
+      throw IllegalArgumentException("same number of columns", s"left: $leftColumns right: $rightColumns")
+    }
+    if (leftColumns.toSet != rightColumns.toSet) {
+      throw IllegalArgumentException("same column names", s"left: $leftColumns right: $rightColumns")
+    }
+
+    val orderedTable = if (leftColumns != rightColumns) {
+      other.table.select(leftColumns: _*)
     } else {
       other.table
     }
