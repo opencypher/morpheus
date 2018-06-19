@@ -85,11 +85,17 @@ I <: RuntimeContext[O, A, P]] {
   val physicalTargetOp: K = planner.process(targetOp)
 
   val startEdgeScan: EntityExpr = PathSegment(1, path)(edgeScan.cypherType)
-  val startEdgeScanOp: K = producer.planAlias(
+  val startEdgeScanOpAlias: K = producer.planAlias(
     physicalEdgeScanOp,
     edgeScan as startEdgeScan,
+    edgeScanOp.header.withAlias(edgeScan as startEdgeScan)
+  )
+  val startEdgeScanOp: K = producer.planSelect(
+    startEdgeScanOpAlias,
+    startEdgeScanOpAlias.header.expressions.toList,
     edgeScanOp.header.withAlias(edgeScan as startEdgeScan).select(startEdgeScan)
   )
+
 
   /**
     * Performs the initial expand from the start node
@@ -126,28 +132,16 @@ I <: RuntimeContext[O, A, P]] {
     val nextEdgeCT = if (i > lower) edgeScan.cypherType.nullable else edgeScan.cypherType
     val nextEdge = PathSegment(2*i-1, path)(nextEdgeCT)
 
-    val aliasedCacheHeader = expandCacheOp.header
-      .withAlias(edgeScan as nextEdge, innerNode as nextNode)
-
-    val aliasedCacheOp = producer.planAliases(
+    val cacheOpWithAlias = producer.planAliases(
       expandCacheOp, Seq(edgeScan as nextEdge, innerNode as nextNode),
-      aliasedCacheHeader
+      expandCacheOp.header.withAlias(edgeScan as nextEdge, innerNode as nextNode)
     )
 
-    // We just want to select id columns, select always selects also the children. we need to drop them first
-    // TODO: this is a planning performance killer, we need to squash these steps into a single table operation
-    val idExprs = Set(
-      nextEdge,
-      aliasedCacheHeader.startNodeFor(nextEdge),
-      aliasedCacheHeader.endNodeFor(nextEdge),
-      nextNode)
-
-    val dropExprs = idExprs.flatMap(aliasedCacheHeader.expressionsFor) -- idExprs
-    val dropHeader = aliasedCacheHeader -- dropExprs
-    val withChildExprsDropped = producer.planDrop(aliasedCacheOp, dropExprs, dropHeader)
-
-    val aliasSelectHeader = dropHeader.select(idExprs)
-    val selectedCacheOp = producer.planSelect(withChildExprsDropped, idExprs.toList, aliasSelectHeader)
+    val aliasedCacheHeader = cacheOpWithAlias.header.select(nextNode, nextEdge)
+    val selectExprs = aliasedCacheHeader.expressionsFor(nextNode) ++ aliasedCacheHeader.expressionsFor(nextEdge)
+    val aliasedCacheOp = producer.planSelect(
+      cacheOpWithAlias, selectExprs.toList, aliasedCacheHeader
+    )
 
     val leftJoinExpr = dir match {
       case Outbound => iterationTable.header.endNodeFor(edgeVars.last)
@@ -156,9 +150,9 @@ I <: RuntimeContext[O, A, P]] {
 
     val expandedOp = producer.planJoin(
       iterationTable,
-      selectedCacheOp,
+      aliasedCacheOp,
       Seq(leftJoinExpr -> nextNode),
-      iterationTable.header join aliasSelectHeader
+      iterationTable.header join aliasedCacheHeader
     )
 
     producer.planFilter(expandedOp, isomorphismFilter(nextEdge, edgeVars.toSet), expandedOp.header) -> nextEdge
@@ -197,7 +191,7 @@ I <: RuntimeContext[O, A, P]] {
           if (withoutLitHeader.column(expr) == header.column(expr)) {
             withoutLit
           } else {
-            val withRenamedHeader = (withoutLitHeader -- Set(expr)).addExprToColumn(expr, header.column(expr))
+            val withRenamedHeader = withoutLitHeader.addExprToColumn(expr, header.column(expr))
             val withRenamed = producer.planRenameColumns(withoutLit, Map(expr -> header.column(expr)), withRenamedHeader)
             withRenamed
           }

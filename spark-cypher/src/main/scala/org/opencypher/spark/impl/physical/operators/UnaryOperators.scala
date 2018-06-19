@@ -179,7 +179,7 @@ final case class Select(in: CAPSPhysicalOperator, expressions: List[Expr], heade
   }
 }
 
-final case class Distinct(in: CAPSPhysicalOperator, fields: Set[EntityExpr])
+final case class Distinct(in: CAPSPhysicalOperator, fields: Set[Var])
   extends UnaryPhysicalOperator with InheritedHeader with PhysicalOperatorDebugging {
 
   override def executeUnary(prev: CAPSPhysicalResult)(implicit context: CAPSRuntimeContext): CAPSPhysicalResult = {
@@ -197,8 +197,8 @@ final case class SimpleDistinct(in: CAPSPhysicalOperator)
 
 final case class Aggregate(
   in: CAPSPhysicalOperator,
-  aggregations: Set[(EntityExpr, Aggregator)],
-  group: Set[EntityExpr],
+  aggregations: Set[(Var, Aggregator)],
+  group: Set[Var],
   header: RecordHeader
 ) extends UnaryPhysicalOperator with PhysicalOperatorDebugging {
 

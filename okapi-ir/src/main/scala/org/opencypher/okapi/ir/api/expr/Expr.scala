@@ -65,10 +65,10 @@ sealed abstract class Expr extends AbstractTreeNode[Expr] {
 
   def withOwner(v: EntityExpr): This = this
 
-  def as(alias: Var) = AliasExpr(this, alias)
+  def as(alias: EntityExpr) = AliasExpr(this, alias)
 }
 
-final case class AliasExpr(expr: Expr, alias: Var) extends Expr {
+final case class AliasExpr(expr: Expr, alias: EntityExpr) extends Expr {
 
   override def cypherType: CypherType = expr.cypherType
 

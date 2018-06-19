@@ -336,7 +336,7 @@ class LogicalPlanner(producer: LogicalOperatorProducer)
     }
   }
 
-  private def resolveGraph(graph: IRGraph, fieldsInScope: Set[EntityExpr])(
+  private def resolveGraph(graph: IRGraph, fieldsInScope: Set[Var])(
     implicit context: LogicalPlannerContext): LogicalGraph = {
 
     graph match {

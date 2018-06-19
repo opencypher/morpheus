@@ -28,7 +28,7 @@ package org.opencypher.okapi.relational.api.physical
 
 import org.opencypher.okapi.api.graph.{PropertyGraph, QualifiedGraphName}
 import org.opencypher.okapi.ir.api.block.SortItem
-import org.opencypher.okapi.ir.api.expr.{Aggregator,AliasExpr, EntityExpr, Expr}
+import org.opencypher.okapi.ir.api.expr._
 import org.opencypher.okapi.logical.impl._
 import org.opencypher.okapi.relational.api.io.{FlatRelationalTable, RelationalCypherRecords}
 import org.opencypher.okapi.relational.impl.physical.{InnerJoin, JoinType}
@@ -211,7 +211,7 @@ I <: RuntimeContext[O, A, P]] {
     * @param header       resulting record header
     * @return aggregate operator
     */
-  def planAggregate(in: K, group: Set[EntityExpr], aggregations: Set[(EntityExpr, Aggregator)], header: RecordHeader): K
+  def planAggregate(in: K, group: Set[Var], aggregations: Set[(Var, Aggregator)], header: RecordHeader): K
 
   /**
     * Performs a distinct operation on the specified fields.
@@ -220,7 +220,7 @@ I <: RuntimeContext[O, A, P]] {
     * @param fields fields to compute distinct on
     * @return distinct operator
     */
-  def planDistinct(in: K, fields: Set[EntityExpr]): K
+  def planDistinct(in: K, fields: Set[Var]): K
 
   /**
     * Orders the underlying records by the given expressions.

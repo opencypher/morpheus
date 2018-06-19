@@ -52,7 +52,7 @@ class FlatOperatorProducer(implicit context: FlatPlannerContext) {
     CartesianProduct(lhs, rhs, header)
   }
 
-  def select(vars: List[EntityExpr], in: FlatOperator): Select = {
+  def select(vars: List[Var], in: FlatOperator): Select = {
     Select(vars, in, in.header.select(vars: _*))
   }
 
@@ -64,7 +64,7 @@ class FlatOperatorProducer(implicit context: FlatPlannerContext) {
     Filter(expr, in, in.header)
   }
 
-  def distinct(fields: Set[EntityExpr], in: FlatOperator): Distinct = {
+  def distinct(fields: Set[Var], in: FlatOperator): Distinct = {
     Distinct(fields, in, in.header)
   }
 
@@ -80,12 +80,12 @@ class FlatOperatorProducer(implicit context: FlatPlannerContext) {
     RelationshipScan(rel, prev, prev.sourceGraph.schema.headerForRelationship(rel))
   }
 
-  def aggregate(aggregations: Set[(EntityExpr, Aggregator)], group: Set[EntityExpr], in: FlatOperator): Aggregate = {
+  def aggregate(aggregations: Set[(Var, Aggregator)], group: Set[Var], in: FlatOperator): Aggregate = {
     val newHeader = in.header.select(group).withExprs(aggregations.map(_._1))
     Aggregate(aggregations, group, in, newHeader)
   }
 
-  def unwind(list: Expr, item: EntityExpr, in: FlatOperator): WithColumn = {
+  def unwind(list: Expr, item: Var, in: FlatOperator): WithColumn = {
     val explodeExpr = Explode(list)(item.cypherType)
     val explodeHeader = in.header.withExpr(explodeExpr).withAlias(explodeExpr as item)
     WithColumn(explodeExpr as item, in, explodeHeader)
@@ -142,7 +142,7 @@ class FlatOperatorProducer(implicit context: FlatPlannerContext) {
     FromGraph(graph, prev)
   }
 
-  def planEmptyRecords(fields: Set[EntityExpr], prev: FlatOperator): EmptyRecords = {
+  def planEmptyRecords(fields: Set[Var], prev: FlatOperator): EmptyRecords = {
     EmptyRecords(prev, RecordHeader.from(fields))
   }
 

@@ -38,7 +38,7 @@ import org.opencypher.okapi.trees.AbstractTreeNode
 sealed abstract class LogicalOperator extends AbstractTreeNode[LogicalOperator] {
   def solved: SolvedQueryModel
 
-  val fields: Set[EntityExpr]
+  val fields: Set[Var]
 
   def graph: LogicalGraph
 
@@ -51,7 +51,7 @@ sealed abstract class LogicalOperator extends AbstractTreeNode[LogicalOperator] 
 trait EmptyFields extends LogicalOperator {
   self: LogicalOperator =>
 
-  override val fields: Set[EntityExpr] = Set.empty
+  override val fields: Set[Var] = Set.empty
 }
 
 trait LogicalGraph {
@@ -128,17 +128,20 @@ final case class NodeScan(node: EntityExpr, in: LogicalOperator, solved: SolvedQ
 
   def labels: Set[String] = node.cypherType.asInstanceOf[CTNode].labels
 
-  override val fields: Set[EntityExpr] = in.fields + node
+  override val fields: Set[Var] = node match {
+    case v: Var => in.fields + v
+    case _ => in.fields
+  }
 }
 
-final case class Distinct(fields: Set[EntityExpr], in: LogicalOperator, solved: SolvedQueryModel)
+final case class Distinct(fields: Set[Var], in: LogicalOperator, solved: SolvedQueryModel)
   extends StackingLogicalOperator
 
 final case class Filter(expr: Expr, in: LogicalOperator, solved: SolvedQueryModel)
   extends StackingLogicalOperator {
 
   // TODO: Add more precise type information based on predicates (?)
-  override val fields: Set[EntityExpr] = in.fields
+  override val fields: Set[Var] = in.fields
 }
 
 sealed trait ExpandOperator {
@@ -163,7 +166,13 @@ final case class Expand(
   extends BinaryLogicalOperator
     with ExpandOperator {
 
-  override val fields: Set[EntityExpr] = lhs.fields ++ rhs.fields + rel
+  override val fields: Set[Var] = {
+    val lhsRhs = lhs.fields ++ rhs.fields
+    rel match {
+      case v: Var => lhsRhs + v
+      case _ => lhsRhs
+    }
+  }
 }
 
 final case class BoundedVarLengthExpand(
@@ -184,7 +193,7 @@ final case class BoundedVarLengthExpand(
 
   override def rel: EntityExpr = path
 
-  override val fields: Set[EntityExpr] = lhs.fields ++ rhs.fields
+  override val fields: Set[Var] = lhs.fields ++ rhs.fields
 }
 
 final case class ValueJoin(
@@ -195,7 +204,7 @@ final case class ValueJoin(
 )
   extends BinaryLogicalOperator {
 
-  override val fields: Set[EntityExpr] = lhs.fields ++ rhs.fields
+  override val fields: Set[Var] = lhs.fields ++ rhs.fields
 }
 
 final case class ExpandInto(
@@ -209,7 +218,7 @@ final case class ExpandInto(
   extends StackingLogicalOperator
     with ExpandOperator {
 
-  override val fields: Set[EntityExpr] = lhs.fields ++ rhs.fields
+  override val fields: Set[Var] = lhs.fields ++ rhs.fields
 
   def lhs: LogicalOperator = in
 
@@ -219,34 +228,37 @@ final case class ExpandInto(
 final case class Project(projectExpr: (Expr, Option[EntityExpr]), in: LogicalOperator, solved: SolvedQueryModel)
   extends StackingLogicalOperator {
 
-  override val fields: Set[EntityExpr] = in.fields ++ projectExpr._2
+  override val fields: Set[Var] = projectExpr._2 match {
+    case Some(v: Var) => in.fields + v
+    case _ => in.fields
+  }
 }
 
-final case class Unwind(expr: Expr, field: EntityExpr, in: LogicalOperator, solved: SolvedQueryModel)
+final case class Unwind(expr: Expr, field: Var, in: LogicalOperator, solved: SolvedQueryModel)
   extends StackingLogicalOperator {
 
-  override val fields: Set[EntityExpr] = in.fields + field
+  override val fields: Set[Var] = in.fields + field
 }
 
 final case class Aggregate(
-  aggregations: Set[(EntityExpr, Aggregator)],
-  group: Set[EntityExpr],
+  aggregations: Set[(Var, Aggregator)],
+  group: Set[Var],
   in: LogicalOperator,
   solved: SolvedQueryModel
 )
   extends StackingLogicalOperator {
 
-  override val fields: Set[EntityExpr] = in.fields ++ aggregations.map(_._1) ++ group
+  override val fields: Set[Var] = in.fields ++ aggregations.map(_._1) ++ group
 }
 
 final case class Select(
-  orderedFields: List[EntityExpr],
+  orderedFields: List[Var],
   in: LogicalOperator,
   solved: SolvedQueryModel
 )
   extends StackingLogicalOperator {
 
-  override val fields: Set[EntityExpr] = orderedFields.toSet
+  override val fields: Set[Var] = orderedFields.toSet
 }
 
 final case class ReturnGraph(in: LogicalOperator, solved: SolvedQueryModel)
@@ -255,30 +267,30 @@ final case class ReturnGraph(in: LogicalOperator, solved: SolvedQueryModel)
 final case class OrderBy(sortItems: Seq[SortItem[Expr]], in: LogicalOperator, solved: SolvedQueryModel)
   extends StackingLogicalOperator {
 
-  override val fields: Set[EntityExpr] = in.fields
+  override val fields: Set[Var] = in.fields
 }
 
 final case class Skip(expr: Expr, in: LogicalOperator, solved: SolvedQueryModel) extends StackingLogicalOperator {
 
-  override val fields: Set[EntityExpr] = in.fields
+  override val fields: Set[Var] = in.fields
 }
 
 final case class Limit(expr: Expr, in: LogicalOperator, solved: SolvedQueryModel)
   extends StackingLogicalOperator {
 
-  override val fields: Set[EntityExpr] = in.fields
+  override val fields: Set[Var] = in.fields
 }
 
 final case class CartesianProduct(lhs: LogicalOperator, rhs: LogicalOperator, solved: SolvedQueryModel)
   extends BinaryLogicalOperator {
 
-  override val fields: Set[EntityExpr] = lhs.fields ++ rhs.fields
+  override val fields: Set[Var] = lhs.fields ++ rhs.fields
 }
 
 final case class Optional(lhs: LogicalOperator, rhs: LogicalOperator, solved: SolvedQueryModel)
   extends BinaryLogicalOperator {
 
-  override val fields: Set[EntityExpr] = lhs.fields ++ rhs.fields
+  override val fields: Set[Var] = lhs.fields ++ rhs.fields
 }
 
 final case class ExistsSubQuery(
@@ -289,7 +301,7 @@ final case class ExistsSubQuery(
 )
   extends BinaryLogicalOperator {
 
-  override val fields: Set[EntityExpr] = lhs.fields + expr.targetField
+  override val fields: Set[Var] = lhs.fields + expr.targetField
 }
 
 final case class FromGraph(
@@ -301,13 +313,13 @@ final case class FromGraph(
 
   // Pattern graph consumes input table, so no fields are bound afterwards
   // TODO: adopt yield for construct
-  override val fields: Set[EntityExpr] = graph match {
+  override val fields: Set[Var] = graph match {
     case _: LogicalPatternGraph => Set.empty
     case _: LogicalCatalogGraph => in.fields
   }
 }
 
-final case class EmptyRecords(fields: Set[EntityExpr], in: LogicalOperator, solved: SolvedQueryModel)
+final case class EmptyRecords(fields: Set[Var], in: LogicalOperator, solved: SolvedQueryModel)
   extends StackingLogicalOperator
 
 final case class Start(graph: LogicalGraph, solved: SolvedQueryModel) extends LogicalLeafOperator with EmptyFields

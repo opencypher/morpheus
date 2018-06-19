@@ -27,7 +27,7 @@
 package org.opencypher.okapi.relational.impl.flat
 
 import org.opencypher.okapi.ir.api.block.SortItem
-import org.opencypher.okapi.ir.api.expr.{Aggregator, EntityExpr, Explode, Expr}
+import org.opencypher.okapi.ir.api.expr._
 import org.opencypher.okapi.logical.impl.{Direction, LogicalGraph}
 import org.opencypher.okapi.relational.impl.table._
 import org.opencypher.okapi.trees.AbstractTreeNode
@@ -76,9 +76,9 @@ final case class RelationshipScan(rel: EntityExpr, in: FlatOperator, header: Rec
 
 final case class Filter(expr: Expr, in: FlatOperator, header: RecordHeader) extends StackingFlatOperator
 
-final case class Distinct(fields: Set[EntityExpr], in: FlatOperator, header: RecordHeader) extends StackingFlatOperator
+final case class Distinct(fields: Set[Var], in: FlatOperator, header: RecordHeader) extends StackingFlatOperator
 
-final case class Select(fields: List[EntityExpr], in: FlatOperator, header: RecordHeader) extends StackingFlatOperator
+final case class Select(fields: List[Var], in: FlatOperator, header: RecordHeader) extends StackingFlatOperator
 
 final case class ReturnGraph(in: FlatOperator) extends StackingFlatOperator {
   override def header: RecordHeader = RecordHeader.empty
@@ -87,8 +87,8 @@ final case class ReturnGraph(in: FlatOperator) extends StackingFlatOperator {
 final case class WithColumn(expr: Expr, in: FlatOperator, header: RecordHeader) extends StackingFlatOperator
 
 final case class Aggregate(
-    aggregations: Set[(EntityExpr, Aggregator)],
-    group: Set[EntityExpr],
+    aggregations: Set[(Var, Aggregator)],
+    group: Set[Var],
     in: FlatOperator,
     header: RecordHeader)
     extends StackingFlatOperator

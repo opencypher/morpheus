@@ -265,7 +265,7 @@ class RecordHeaderTest extends BaseTestSuite {
 
   it("can return transitive members for an entity") {
     val segment = PathSegment(1, n)(n.cypherType)
-    val withSegment = nHeader.withAlias(n, segment).select(segment)
+    val withSegment = nHeader.withAlias(n as segment).select(segment)
 
     withSegment.ownedBy(n) should equal(withSegment.expressions)
   }

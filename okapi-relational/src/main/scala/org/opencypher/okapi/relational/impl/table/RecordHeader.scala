@@ -82,7 +82,7 @@ case class RecordHeader(exprToColumn: Map[Expr, String]) {
 
   def expressionsFor(expr: Expr): Set[Expr] = {
     expr match {
-      case v: EntityExpr => ownedBy(v)
+      case v: EntityExpr => ownedBy(v) + v
       case e if exprToColumn.contains(e) => Set(e)
       case _ => Set.empty
     }

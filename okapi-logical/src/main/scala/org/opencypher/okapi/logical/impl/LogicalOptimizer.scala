@@ -62,10 +62,16 @@ object LogicalOptimizer extends DirectCompilationStage[LogicalOperator, LogicalO
   }
 
   def discardScansForNonexistentLabels: PartialFunction[LogicalOperator, LogicalOperator] = {
-    case scan@NodeScan(v, in, _) =>
+    case scan@NodeScan(eexpr, in, _) =>
       def graphSchema = in.graph.schema
 
-      def emptyRecords = EmptyRecords(Set(v), in, scan.solved)
+      def emptyRecords = {
+        val fields = eexpr match {
+          case v: Var => Set(v)
+          case _ => Set.empty[Var]
+        }
+        EmptyRecords(fields, in, scan.solved)
+      }
 
       if ((scan.labels.size == 1 && !graphSchema.labels.contains(scan.labels.head)) ||
         (scan.labels.size > 1 && !graphSchema.labelCombinations.combos.exists(scan.labels.subsetOf(_)))) {

@@ -105,7 +105,7 @@ class LogicalOperatorProducer {
   }
 
   def aggregate(aggregations: Aggregations[Expr], group: Set[IRField], prev: LogicalOperator): Aggregate = {
-    val transformed: Set[(EntityExpr, Aggregator)] = aggregations.pairs.collect { case (field, aggregator: Aggregator) => toVar(field) -> aggregator }
+    val transformed: Set[(Var, Aggregator)] = aggregations.pairs.collect { case (field, aggregator: Aggregator) => toVar(field) -> aggregator }
 
     Aggregate(transformed, group.map(toVar), prev, prev.solved.withFields(aggregations.fields.toSeq: _*))
   }
