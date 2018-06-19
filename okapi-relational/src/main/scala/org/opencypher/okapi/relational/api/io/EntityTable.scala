@@ -37,7 +37,7 @@ import org.opencypher.okapi.ir.api.block.{Asc, Desc, SortItem}
 import org.opencypher.okapi.ir.api.expr._
 import org.opencypher.okapi.ir.api.{Label, PropertyKey, RelType}
 import org.opencypher.okapi.relational.api.io.RelationalEntityMapping._
-import org.opencypher.okapi.relational.impl.physical.{Ascending, Descending, JoinType, Order}
+import org.opencypher.okapi.relational.impl.physical._
 import org.opencypher.okapi.relational.impl.table.RecordHeader
 
 trait FlatRelationalTable[T <: FlatRelationalTable[T]] extends CypherTable {
@@ -172,7 +172,22 @@ trait RelationalCypherRecords[T <: FlatRelationalTable[T]] extends CypherRecords
   }
 
   def unionAll(other: R): R = {
-    val unionData = table.unionAll(other.table)
+    val leftColumns = table.physicalColumns
+    val rightColumns = other.table.physicalColumns
+
+    if (leftColumns.size != rightColumns.size) {
+      throw IllegalArgumentException("same number of columns", s"left: $leftColumns right: $rightColumns")
+    }
+    if (leftColumns.toSet != rightColumns.toSet) {
+      throw IllegalArgumentException("same column names", s"left: $leftColumns right: $rightColumns")
+    }
+
+    val orderedTable = if (leftColumns != rightColumns) {
+      other.table.select(leftColumns: _*)
+    } else {
+      other.table
+    }
+    val unionData = table.unionAll(orderedTable)
     from(header, unionData)
   }
 
