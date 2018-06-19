@@ -170,14 +170,8 @@ final case class TabularUnionAll(lhs: CAPSPhysicalOperator, rhs: CAPSPhysicalOpe
 
   override def executeBinary(left: CAPSPhysicalResult, right: CAPSPhysicalResult)
     (implicit context: CAPSRuntimeContext): CAPSPhysicalResult = {
-    val leftData = left.records.df
-    // left and right have the same set of columns, but the order must also match
-    val rightData = right.records.df.select(leftData.columns.head, leftData.columns.tail: _*)
-
-    val unionedData = leftData.union(rightData)
-    val records = CAPSRecords(header, unionedData)(left.records.caps)
-
-    CAPSPhysicalResult(records, left.workingGraph, left.workingGraphName)
+    val unionRecords = left.records.unionAll(right.records)
+    CAPSPhysicalResult(unionRecords, left.workingGraph, left.workingGraphName)
   }
 }
 

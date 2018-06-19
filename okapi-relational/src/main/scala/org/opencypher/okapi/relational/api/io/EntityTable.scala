@@ -172,7 +172,12 @@ trait RelationalCypherRecords[T <: FlatRelationalTable[T]] extends CypherRecords
   }
 
   def unionAll(other: R): R = {
-    val unionData = table.unionAll(other.table)
+    val orderedTable = if (table.physicalColumns != other.table.physicalColumns) {
+      other.table.select(table.physicalColumns: _*)
+    } else {
+      other.table
+    }
+    val unionData = table.unionAll(orderedTable)
     from(header, unionData)
   }
 
