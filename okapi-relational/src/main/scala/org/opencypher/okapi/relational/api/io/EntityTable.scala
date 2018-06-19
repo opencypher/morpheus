@@ -37,7 +37,7 @@ import org.opencypher.okapi.ir.api.block.{Asc, Desc, SortItem}
 import org.opencypher.okapi.ir.api.expr._
 import org.opencypher.okapi.ir.api.{Label, PropertyKey, RelType}
 import org.opencypher.okapi.relational.api.io.RelationalEntityMapping._
-import org.opencypher.okapi.relational.impl.physical.{Ascending, Descending, JoinType, Order}
+import org.opencypher.okapi.relational.impl.physical._
 import org.opencypher.okapi.relational.impl.table.RecordHeader
 
 trait FlatRelationalTable[T <: FlatRelationalTable[T]] extends CypherTable {

@@ -105,20 +105,27 @@ object SparkCypherTable {
         case LeftOuterJoin => "left_outer"
         case RightOuterJoin => "right_outer"
         case FullOuterJoin => "full_outer"
+        case CrossJoin => "cross"
       }
 
       val overlap = this.physicalColumns.toSet.intersect(other.physicalColumns.toSet)
       assert(overlap.isEmpty, s"overlapping columns: $overlap")
 
-      val joinExpr = joinCols.map {
-        case (l, r) => df.col(l) === other.df.col(r)
-      }.reduce((acc, expr) => acc && expr)
+      joinType match {
+        case CrossJoin =>
+          df.crossJoin(other.df)
 
-      // TODO: the join produced corrupt data when the previous operator was a cross. We work around that by using a
-      // subsequent select. This can be removed, once https://issues.apache.org/jira/browse/SPARK-23855 is solved or we
-      // upgrade to Spark 2.3.0
-      val potentiallyCorruptedResult = df.join(other.df, joinExpr, joinTypeString)
-      potentiallyCorruptedResult.select("*")
+        case _ =>
+          val joinExpr = joinCols.map {
+            case (l, r) => df.col(l) === other.df.col(r)
+          }.reduce((acc, expr) => acc && expr)
+
+          // TODO: the join produced corrupt data when the previous operator was a cross. We work around that by using a
+          // subsequent select. This can be removed, once https://issues.apache.org/jira/browse/SPARK-23855 is solved or we
+          // upgrade to Spark 2.3.0
+          val potentiallyCorruptedResult = df.join(other.df, joinExpr, joinTypeString)
+          potentiallyCorruptedResult.select("*")
+      }
     }
 
     override def distinct: DataFrameTable =

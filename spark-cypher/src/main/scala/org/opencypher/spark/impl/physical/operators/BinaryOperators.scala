@@ -34,7 +34,7 @@ import org.opencypher.okapi.ir.api.expr.{Expr, Var, _}
 import org.opencypher.okapi.ir.api.set.SetPropertyItem
 import org.opencypher.okapi.ir.api.{PropertyKey, RelType}
 import org.opencypher.okapi.logical.impl.{ConstructedEntity, ConstructedNode, ConstructedRelationship, LogicalPatternGraph}
-import org.opencypher.okapi.relational.impl.physical.JoinType
+import org.opencypher.okapi.relational.impl.physical.{CrossJoin, JoinType}
 import org.opencypher.okapi.relational.impl.table.RecordHeader
 import org.opencypher.spark.api.{CAPSSession, Tags}
 import org.opencypher.spark.impl.CAPSGraph.EmptyGraph
@@ -179,15 +179,9 @@ final case class CartesianProduct(lhs: CAPSPhysicalOperator, rhs: CAPSPhysicalOp
   extends BinaryPhysicalOperator with PhysicalOperatorDebugging {
 
   override def executeBinary(left: CAPSPhysicalResult, right: CAPSPhysicalResult)(
-    implicit context: CAPSRuntimeContext
-  ): CAPSPhysicalResult = {
-
-    val data = left.records.df
-    val otherData = right.records.df
-    val newData = data.crossJoin(otherData)
-
-    val records = CAPSRecords(header, newData)(left.records.caps)
-    CAPSPhysicalResult(records, left.workingGraph, left.workingGraphName)
+    implicit context: CAPSRuntimeContext): CAPSPhysicalResult = {
+    val crossRecords = left.records.join(right.records, CrossJoin)
+    CAPSPhysicalResult(crossRecords, left.workingGraph, left.workingGraphName)
   }
 }
 
