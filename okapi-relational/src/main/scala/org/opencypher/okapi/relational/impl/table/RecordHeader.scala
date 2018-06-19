@@ -71,9 +71,9 @@ case class RecordHeader(exprToColumn: Map[Expr, String]) {
   }
 
   def ownedBy(expr: EntityExpr): Set[Expr] = {
-    val a = exprToColumn.keys.filter(e => e.owner.contains(expr)).toSet
+    val members = exprToColumn.keys.filter(e => e.owner.contains(expr)).toSet
 
-    a.flatMap {
+    members.flatMap {
       case e: EntityExpr if e==expr => Seq(e)
       case e: EntityExpr => ownedBy(e) + e
       case other => Seq(other)

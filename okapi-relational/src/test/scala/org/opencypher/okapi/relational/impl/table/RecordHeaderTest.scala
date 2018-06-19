@@ -75,6 +75,10 @@ class RecordHeaderTest extends BaseTestSuite {
     nHeader.withAlias(nPropFoo as s).vars should equalWithTracing(Set(n, s))
   }
 
+  it("can return vars that are not present in the header, but own an expression in the header") {
+    RecordHeader.empty.withExpr(PathSegment(1, m)(CTNode)).vars should equal(Set(m))
+  }
+
   it("can return all contained columns") {
     nHeader.columns should equalWithTracing(nHeader.expressions.map(nHeader.column))
     nHeader.withAlias(n as m).columns should equalWithTracing(nHeader.expressions.map(nHeader.column))
@@ -257,6 +261,13 @@ class RecordHeaderTest extends BaseTestSuite {
   it("returns members for an entity") {
     nHeader.ownedBy(n) should equalWithTracing(nExprs)
     rHeader.ownedBy(r) should equalWithTracing(rExprs)
+  }
+
+  it("can return transitive members for an entity") {
+    val segment = PathSegment(1, n)(n.cypherType)
+    val withSegment = nHeader.withAlias(n, segment).select(segment)
+
+    withSegment.ownedBy(n) should equal(withSegment.expressions)
   }
 
   it("returns labels for a node") {
