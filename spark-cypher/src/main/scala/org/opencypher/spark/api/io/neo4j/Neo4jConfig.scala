@@ -28,7 +28,7 @@ package org.opencypher.spark.api.io.neo4j
 
 import java.net.URI
 
-import org.neo4j.driver.v1.{AuthTokens, Config, Driver, GraphDatabase}
+import org.neo4j.driver.v1._
 
 case class Neo4jConfig(
   uri: URI,
