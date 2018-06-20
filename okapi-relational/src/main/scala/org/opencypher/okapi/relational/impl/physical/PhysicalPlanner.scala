@@ -191,7 +191,34 @@ I <: RuntimeContext[A, P]](val producer: PhysicalOperatorProducer[O, K, A, P, I]
       case flat.Optional(lhs, rhs, header) => planOptional(lhs, rhs, header)
 
       case flat.ExistsSubQuery(predicateField, lhs, rhs, header) =>
-        producer.planExistsSubQuery(process(lhs), process(rhs), predicateField, header)
+
+        val leftResult = process(lhs)
+        val rightResult = process(rhs)
+
+        val leftHeader = leftResult.header
+        val rightHeader = rightResult.header
+
+        // 0. Find common expressions, i.e. join expressions
+        val joinExprs = leftHeader.vars.intersect(rightHeader.vars)
+        // 1. Alias join expressions on rhs
+        val renameExprs = joinExprs.map(e => e as Var(s"${e.name}${System.nanoTime}")(e.cypherType))
+        val rightHeaderAliases = renameExprs.foldLeft(rightHeader) {
+          case (currentHeader, aliasExpr) => currentHeader.withAlias(aliasExpr)
+        }
+        val rightWithAliases = producer.planAliases(rightResult, renameExprs.toSeq, rightHeaderAliases)
+        // 2. Drop Join expressions and their children in rhs
+        val epxrsToRemove = joinExprs.flatMap(v => rightHeader.ownedBy(v))
+        val reducedRhsDataHeader = rightHeaderAliases -- epxrsToRemove
+        val reducedRhsData = producer.planDrop(rightWithAliases, epxrsToRemove, rightHeaderAliases)
+        // 3. Compute distinct rows in rhs
+        val distinctRhsData = producer.planDistinct(reducedRhsData, renameExprs.map(_.alias))
+        // 4. Join lhs and prepared rhs using a left outer join
+        val joinedDataHeader = leftHeader.join(reducedRhsDataHeader)
+        val joinedData = producer.planJoin(leftResult, distinctRhsData, renameExprs.map(a => a.expr -> a.alias).toSeq, joinedDataHeader, LeftOuterJoin)
+        // 5. If at least one rhs join column is not null, the sub-query exists and true is projected to the target expression
+        val targetExpr = renameExprs.head.alias
+        val withIndicatorHeader = joinedDataHeader.withExpr(predicateField)
+        producer.planCopyColumn(joinedData, IsNotNull(targetExpr)(CTBoolean), predicateField, withIndicatorHeader)
 
       case flat.OrderBy(sortItems: Seq[SortItem[Expr]], in, header) =>
         producer.planOrderBy(process(in), sortItems, header)
