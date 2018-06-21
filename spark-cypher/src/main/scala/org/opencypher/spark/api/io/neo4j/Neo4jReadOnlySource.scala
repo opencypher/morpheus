@@ -167,8 +167,22 @@ case class Neo4jReadOnlySource(
     val metaLabel = getMetaLabel(graphName)
 
     val nodeVar = "n"
-    val props = schema.nodeKeys(labels).keys.mkString(s", $nodeVar.", s", $nodeVar.", "")
+    val props = schema.nodeKeys(labels).keys.toList match {
+      case Nil => ""
+      case nonempty => nonempty.mkString(s", $nodeVar.", s", $nodeVar.", "")
+    }
     s"MATCH ($nodeVar:${(labels ++ metaLabel).mkString(":")}) RETURN id($nodeVar) AS id$props"
+  }
+
+  def flatRelQuery(graphName: GraphName, relType: String, schema: Schema): String = {
+    val metaLabelPredicate = getMetaLabel(graphName).map(":" + _).getOrElse("")
+
+    val relVar = "r"
+    val props = schema.relationshipKeys(relType).keys.toList match {
+      case Nil => ""
+      case nonempty => nonempty.mkString(s", $relVar.", s", $relVar.", "")
+    }
+    s"MATCH ($metaLabelPredicate)-[$relVar:$relType]->($metaLabelPredicate) RETURN id($relVar) AS id$props"
   }
 
   override protected def readRelationshipTable(
@@ -177,14 +191,8 @@ case class Neo4jReadOnlySource(
     sparkSchema: StructType
   ): DataFrame = {
     val graphSchema = schema(graphName).get
-    val metaLabel = getMetaLabel(graphName)
-    val metaLabelPredicate = metaLabel.map(":" + _).getOrElse("")
 
-    val relVar = "r"
-
-    val props = graphSchema.relationshipKeys(relKey).keys.mkString(s", $relVar.", s", $relVar.", "")
-    val flatQuery = s"MATCH ($metaLabelPredicate)-[$relVar:$relKey]->($metaLabelPredicate) RETURN id($relVar) AS id $props"
-
+    val flatQuery = flatRelQuery(graphName, relKey, graphSchema)
 
     ???
   }
