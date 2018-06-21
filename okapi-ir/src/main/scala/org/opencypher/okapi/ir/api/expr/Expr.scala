@@ -83,16 +83,16 @@ trait EntityExpr extends Expr {
   def name: String
 }
 
-final case class PathSegment(index: Int, path: EntityExpr)(val cypherType: CypherType= CTWildcard) extends EntityExpr {
-  override type This = PathSegment
+final case class ListSegment(index: Int, listVar: EntityExpr)(val cypherType: CypherType= CTWildcard) extends EntityExpr {
+  override type This = ListSegment
 
-  override def owner(): Option[EntityExpr] = Some(path)
+  override def owner(): Option[EntityExpr] = Some(listVar)
 
-  override def withOwner(v: EntityExpr): PathSegment = copy(path = v)(cypherType)
+  override def withOwner(v: EntityExpr): ListSegment = copy(listVar = v)(cypherType)
 
-  override def withoutType: String = s"${path.withoutType}($index)"
+  override def withoutType: String = s"${listVar.withoutType}($index)"
 
-  override def name: String = s"${path.name}($index)"
+  override def name: String = s"${listVar.name}($index)"
 }
 
 final case class Var(name: String)(val cypherType: CypherType = CTWildcard) extends EntityExpr {
@@ -103,7 +103,7 @@ final case class Var(name: String)(val cypherType: CypherType = CTWildcard) exte
 
   override def withOwner(expr: EntityExpr): Var = expr match {
     case v: Var =>  v
-    case path: PathSegment => Var(path.index.toString)(path.cypherType)
+    case path: ListSegment => Var(path.index.toString)(path.cypherType)
   }
 
   override def withoutType: String = s"$name"

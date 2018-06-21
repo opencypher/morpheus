@@ -177,7 +177,7 @@ final case class Expand(
 
 final case class BoundedVarLengthExpand(
   source: EntityExpr,
-  path: EntityExpr,
+  list: EntityExpr,
   target: EntityExpr,
   edgeType: CTRelationship,
   direction: Direction,
@@ -191,7 +191,7 @@ final case class BoundedVarLengthExpand(
     with ExpandOperator {
 
 
-  override def rel: EntityExpr = path
+  override def rel: EntityExpr = list
 
   override val fields: Set[Var] = lhs.fields ++ rhs.fields
 }

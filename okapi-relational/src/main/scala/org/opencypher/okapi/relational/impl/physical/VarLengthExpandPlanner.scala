@@ -48,11 +48,9 @@ I <: RuntimeContext[O, A, P]] {
 
   def source: EntityExpr
 
-  def path: EntityExpr
+  def list: EntityExpr
 
   def edgeScan: EntityExpr
-
-  def innerNode: EntityExpr
 
   def target: EntityExpr
 
@@ -63,8 +61,6 @@ I <: RuntimeContext[O, A, P]] {
   def sourceOp: FlatOperator
 
   def edgeScanOp: FlatOperator
-
-  def innerNodeOp: FlatOperator
 
   def targetOp: FlatOperator
 
@@ -81,10 +77,9 @@ I <: RuntimeContext[O, A, P]] {
 
   val physicalSourceOp: K = planner.process(sourceOp)
   val physicalEdgeScanOp: K = planner.process(edgeScanOp)
-  val physicalInnerNodeOp: K = planner.process(innerNodeOp)
   val physicalTargetOp: K = planner.process(targetOp)
 
-  val startEdgeScan: EntityExpr = PathSegment(1, path)(edgeScan.cypherType)
+  val startEdgeScan: EntityExpr = ListSegment(1, list)(edgeScan.cypherType)
   val startEdgeScanOpAlias: K = producer.planAlias(
     physicalEdgeScanOp,
     edgeScan as startEdgeScan,
@@ -122,36 +117,33 @@ I <: RuntimeContext[O, A, P]] {
     *
     * @param i              number of the iteration
     * @param iterationTable result of the i-1th iteration
-    * @param expandCacheOp  expand cache used for this expand
     * @param dir            expansion direction
     * @param edgeVars       edges already travesed
     */
-  def expand(i: Int, iterationTable: K, expandCacheOp: K, dir: ExpandDirection, edgeVars: Seq[EntityExpr]): (K, EntityExpr) = {
-    val nextNodeCT = if (i >= lower) innerNode.cypherType.nullable else innerNode.cypherType
-    val nextNode = PathSegment((i-1)*2, path)(nextNodeCT)
+  def expand(i: Int, iterationTable: K, dir: ExpandDirection, edgeVars: Seq[EntityExpr]): (K, EntityExpr) = {
     val nextEdgeCT = if (i > lower) edgeScan.cypherType.nullable else edgeScan.cypherType
-    val nextEdge = PathSegment(2*i-1, path)(nextEdgeCT)
+    val nextEdge = ListSegment(i, list)(nextEdgeCT)
 
-    val cacheOpWithAlias = producer.planAliases(
-      expandCacheOp, Seq(edgeScan as nextEdge, innerNode as nextNode),
-      expandCacheOp.header.withAlias(edgeScan as nextEdge, innerNode as nextNode)
+    val edgeScanOpWithAlias = producer.planAliases(
+      physicalEdgeScanOp, Seq(edgeScan as nextEdge),
+      edgeScanOp.header.withAlias(edgeScan as nextEdge)
     )
 
-    val aliasedCacheHeader = cacheOpWithAlias.header.select(nextNode, nextEdge)
-    val selectExprs = aliasedCacheHeader.expressionsFor(nextNode) ++ aliasedCacheHeader.expressionsFor(nextEdge)
-    val aliasedCacheOp = producer.planSelect(
-      cacheOpWithAlias, selectExprs.toList, aliasedCacheHeader
+    val aliasedCacheHeader = edgeScanOpWithAlias.header.select( nextEdge)
+    val selectExprs = aliasedCacheHeader.expressionsFor(nextEdge)
+    val aliasedEdgeScanOp = producer.planSelect(
+      edgeScanOpWithAlias, selectExprs.toList, aliasedCacheHeader
     )
 
-    val leftJoinExpr = dir match {
-      case Outbound => iterationTable.header.endNodeFor(edgeVars.last)
-      case Inbound => iterationTable.header.startNodeFor(edgeVars.last)
+    val joinExpr = dir match {
+      case Outbound => iterationTable.header.endNodeFor(edgeVars.last) -> aliasedCacheHeader.startNodeFor(nextEdge)
+      case Inbound => iterationTable.header.startNodeFor(edgeVars.last) -> aliasedCacheHeader.endNodeFor(nextEdge)
     }
 
     val expandedOp = producer.planJoin(
       iterationTable,
-      aliasedCacheOp,
-      Seq(leftJoinExpr -> nextNode),
+      aliasedEdgeScanOp,
+      Seq(joinExpr),
       iterationTable.header join aliasedCacheHeader
     )
 
@@ -275,15 +267,13 @@ A <: RelationalCypherRecords[O],
 P <: PropertyGraph,
 I <: RuntimeContext[O, A, P]](
   override val source: EntityExpr,
-  override val path: EntityExpr,
+  override val list: EntityExpr,
   override val edgeScan: EntityExpr,
-  override val innerNode: EntityExpr,
   override val target: EntityExpr,
   override val lower: Int,
   override val upper: Int,
   override val sourceOp: FlatOperator,
   override val edgeScanOp: FlatOperator,
-  override val innerNodeOp: FlatOperator,
   override val targetOp: FlatOperator,
   override val header: RecordHeader,
   override val isExpandInto: Boolean
@@ -292,18 +282,12 @@ I <: RuntimeContext[O, A, P]](
   override implicit val context: PhysicalPlannerContext[O, K, A]
 ) extends VarLengthExpandPlanner[O, K, A, P, I] {
 
-  private val expandCacheOp = producer.planJoin(
-    physicalInnerNodeOp, physicalEdgeScanOp,
-    Seq(innerNode -> edgeScanOp.header.startNodeFor(edgeScan)),
-    innerNodeOp.header join edgeScanOp.header
-  )
-
   override def plan: K = {
     // Iteratively expand beginning from startOp with cacheOp
     val expandOps = (2 to upper).foldLeft(Seq(init(Outbound) -> Seq(startEdgeScan))) {
       case (acc, i) =>
         val (last, edgeVars) = acc.last
-        val (next, nextEdge) = expand(i, last, expandCacheOp, Outbound, edgeVars)
+        val (next, nextEdge) = expand(i, last, Outbound, edgeVars)
         acc :+ (next -> (edgeVars :+ nextEdge))
     }.filter(_._2.size >= lower)
 
@@ -321,15 +305,13 @@ A <: RelationalCypherRecords[O],
 P <: PropertyGraph,
 I <: RuntimeContext[O, A, P]](
   override val source: EntityExpr,
-  override val path: EntityExpr,
+  override val list: EntityExpr,
   override val edgeScan: EntityExpr,
-  override val innerNode: EntityExpr,
   override val target: EntityExpr,
   override val lower: Int,
   override val upper: Int,
   override val sourceOp: FlatOperator,
   override val edgeScanOp: FlatOperator,
-  override val innerNodeOp: FlatOperator,
   override val targetOp: FlatOperator,
   override val header: RecordHeader,
   override val isExpandInto: Boolean
@@ -337,18 +319,6 @@ I <: RuntimeContext[O, A, P]](
   override val planner: PhysicalPlanner[O, K, A, P, I],
   override implicit val context: PhysicalPlannerContext[O, K, A]
 ) extends VarLengthExpandPlanner[O, K, A, P, I] {
-
-  private val expandCacheOp = producer.planJoin(
-    physicalInnerNodeOp, physicalEdgeScanOp,
-    Seq(innerNode -> edgeScanOp.header.startNodeFor(edgeScan)),
-    innerNodeOp.header join edgeScanOp.header
-  )
-
-  private val reversedExpandCacheOp = producer.planJoin(
-    physicalInnerNodeOp, physicalEdgeScanOp,
-    Seq(innerNode -> edgeScanOp.header.endNodeFor(edgeScan)),
-    innerNodeOp.header join edgeScanOp.header
-  )
 
   override def plan: K = {
 
@@ -360,10 +330,10 @@ I <: RuntimeContext[O, A, P]](
       case (acc, i) =>
         val ((last, lastRevered), edgeVars) = acc.last
 
-        val (outOut, nextEdge) = expand(i, last, expandCacheOp, Outbound, edgeVars)
-        val (outIn, _) = expand(i, last, reversedExpandCacheOp, Outbound, edgeVars)
-        val (inOut, _) = expand(i, lastRevered, expandCacheOp, Inbound, edgeVars)
-        val (inIn, _) = expand(i, lastRevered, reversedExpandCacheOp, Inbound, edgeVars)
+        val (outOut, nextEdge) = expand(i, last, Outbound, edgeVars)
+        val (outIn, _) = expand(i, last, Outbound, edgeVars)
+        val (inOut, _) = expand(i, lastRevered, Inbound, edgeVars)
+        val (inIn, _) = expand(i, lastRevered, Inbound, edgeVars)
         val nextOps = producer.planTabularUnionAll(outOut, inOut) -> producer.planTabularUnionAll(outIn, inIn)
 
         acc :+ nextOps -> (edgeVars :+ nextEdge)

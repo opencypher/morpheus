@@ -122,7 +122,7 @@ final class PatternConverter()(implicit val irBuilderContext: IRBuilderContext) 
         for {
           source <- convertElement(left, knownTypes, qualifiedGraphName)
           target <- convertElement(right, knownTypes, qualifiedGraphName)
-          rel <- pure(IRField(relVar.name)(if (rangeOpt.isDefined) CTPath else relVar.cypherType))
+          rel <- pure(IRField(relVar.name)(if (rangeOpt.isDefined) CTList(relVar.cypherType) else relVar.cypherType))
           _ <- modify[Pattern[Expr]] { given =>
             val registered = given
               .withEntity(rel)

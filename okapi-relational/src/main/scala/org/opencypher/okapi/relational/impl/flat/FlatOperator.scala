@@ -139,25 +139,22 @@ final case class ExpandInto(
 
 final case class BoundedVarExpand(
     source: EntityExpr,
-    path: EntityExpr,
+    list: EntityExpr,
     edgeScan: EntityExpr,
-    innerNode: EntityExpr,
     target: EntityExpr,
     direction: Direction,
     lower: Int,
     upper: Int,
     sourceOp: FlatOperator,
     edgeScanOp: FlatOperator,
-    innerNodeOp: FlatOperator,
     targetOp: FlatOperator,
     header: RecordHeader,
     isExpandInto: Boolean)
-    extends QuaternaryFlatOperator {
+    extends TernaryFlatOperator {
 
   override def first: FlatOperator = sourceOp
   override def second: FlatOperator = edgeScanOp
-  override def third: FlatOperator = innerNodeOp
-  override def fourth: FlatOperator = targetOp
+  override def third: FlatOperator = targetOp
 }
 
 final case class OrderBy(sortItems: Seq[SortItem[Expr]], in: FlatOperator, header: RecordHeader)

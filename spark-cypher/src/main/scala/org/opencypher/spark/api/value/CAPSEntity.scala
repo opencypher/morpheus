@@ -71,5 +71,3 @@ case class CAPSRelationship(
   }
 
 }
-
-case class CAPSPath(override val value: Seq[CypherEntity[Long]]) extends CypherPath[Long]

@@ -28,7 +28,7 @@ package org.opencypher.spark.impl.acceptance
 
 import org.opencypher.okapi.api.value.CypherValue._
 import org.opencypher.okapi.testing.Bag
-import org.opencypher.spark.api.value.CAPSPath
+import org.opencypher.spark.api.value.CAPSRelationship
 import org.opencypher.spark.testing.CAPSTestSuite
 import org.scalatest.DoNotDiscover
 
@@ -109,18 +109,30 @@ class BoundedVarExpandBehaviour extends CAPSTestSuite with DefaultGraphInit {
     ))
   }
 
-  it("var expand return var length rel as path") {
+  it("var expand return var length rel as list of relationships") {
     // Given
     val given = initGraph("CREATE (a:Node {v: 'a'})-[:REL]->(:Node {v: 'b'})-[:REL]->(:Node {v: 'c'})-[:REL]->(a)")
 
     // When
     val result = given.cypher("MATCH (a:Node)-[r*..6]->(b:Node) RETURN r")
 
-    result.getRecords.iterator.foreach { map =>
-        map.keys should equal(Set("r"))
-        map("r").getClass should equal(classOf[CAPSPath])
-        map("r").asInstanceOf[CAPSPath].value.size should(be >= 1 and be <= 5)
-    }
+    val rel1 = CAPSRelationship(2, 0, 1, "REL")
+    val rel2 = CAPSRelationship(4, 1, 3, "REL")
+    val rel3 = CAPSRelationship(5, 3, 0, "REL")
+
+
+    val entities = result.getRecords.toMapsWithCollectedEntities
+    entities should equal(Bag(
+      CypherMap("r" -> CypherList(Seq(rel1))),
+      CypherMap("r" -> CypherList(Seq(rel1, rel2))),
+      CypherMap("r" -> CypherList(Seq(rel1, rel2, rel3))),
+      CypherMap("r" -> CypherList(Seq(rel2))),
+      CypherMap("r" -> CypherList(Seq(rel2, rel3))),
+      CypherMap("r" -> CypherList(Seq(rel2, rel3, rel1))),
+      CypherMap("r" -> CypherList(Seq(rel3))),
+      CypherMap("r" -> CypherList(Seq(rel3, rel1))),
+      CypherMap("r" -> CypherList(Seq(rel3, rel1, rel2)))
+    ))
 
   }
 

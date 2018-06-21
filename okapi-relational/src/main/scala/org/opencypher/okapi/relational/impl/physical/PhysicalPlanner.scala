@@ -167,22 +167,22 @@ I <: RuntimeContext[O, A, P]](val producer: PhysicalOperatorProducer[O, K, A, P,
         }
 
       case flat.BoundedVarExpand(
-        source, path, edgeScan, innerNode, target,
+        source, list, edgeScan, target,
         direction, lower, upper,
-        sourceOp, edgeScanOp, innerNodeOp, targetOp,
+        sourceOp, edgeScanOp, targetOp,
         header, isExpandInto
       ) =>
         val planner = direction match {
           case Directed => new DirectedVarLengthExpandPlanner[O, K, A, P, I](
-            source, path, edgeScan, innerNode, target,
+            source, list, edgeScan, target,
             lower, upper,
-            sourceOp, edgeScanOp, innerNodeOp, targetOp,
+            sourceOp, edgeScanOp, targetOp,
             header, isExpandInto)(this, context)
 
           case Undirected => new UndirectedVarLengthExpandPlanner[O, K, A, P, I](
-            source, path, edgeScan, innerNode, target,
+            source, list, edgeScan, target,
             lower, upper,
-            sourceOp, edgeScanOp, innerNodeOp, targetOp,
+            sourceOp, edgeScanOp, targetOp,
             header, isExpandInto)(this, context)
         }
 

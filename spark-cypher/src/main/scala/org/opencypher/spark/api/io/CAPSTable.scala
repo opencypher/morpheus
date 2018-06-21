@@ -42,11 +42,11 @@ import org.opencypher.okapi.relational.impl.table.RecordHeader
 import org.opencypher.spark.api.CAPSSession
 import org.opencypher.spark.api.io.SparkCypherTable.DataFrameTable
 import org.opencypher.spark.impl.DataFrameOps._
+import org.opencypher.spark.impl.SparkSQLExprMapper._
 import org.opencypher.spark.impl.util.Annotation
 import org.opencypher.spark.impl.{CAPSRecords, RecordBehaviour}
 import org.opencypher.spark.schema.CAPSSchema
 import org.opencypher.spark.schema.CAPSSchema._
-import org.opencypher.spark.impl.SparkSQLExprMapper._
 
 import scala.collection.JavaConverters._
 import scala.reflect.runtime.universe._

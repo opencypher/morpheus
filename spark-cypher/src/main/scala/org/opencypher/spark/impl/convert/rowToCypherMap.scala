@@ -27,13 +27,13 @@
 package org.opencypher.spark.impl.convert
 
 import org.apache.spark.sql.Row
-import org.opencypher.okapi.api.types.{CTNode, CTPath, CTRelationship}
+import org.opencypher.okapi.api.types.{CTList, CTNode, CTRelationship}
 import org.opencypher.okapi.api.value.CypherValue._
 import org.opencypher.okapi.api.value._
-import org.opencypher.okapi.impl.exception.{IllegalArgumentException, UnsupportedOperationException}
-import org.opencypher.okapi.ir.api.expr.{EntityExpr, Expr, PathSegment, Var}
+import org.opencypher.okapi.impl.exception.UnsupportedOperationException
+import org.opencypher.okapi.ir.api.expr.{EntityExpr, Expr, ListSegment}
 import org.opencypher.okapi.relational.impl.table.RecordHeader
-import org.opencypher.spark.api.value.{CAPSNode, CAPSPath, CAPSRelationship}
+import org.opencypher.spark.api.value.{CAPSNode, CAPSRelationship}
 
 // TODO: argument cannot be a Map due to Scala issue https://issues.scala-lang.org/browse/SI-7005
 final case class rowToCypherMap(exprToColumn: Seq[(Expr, String)]) extends (Row => CypherMap) {
@@ -46,16 +46,16 @@ final case class rowToCypherMap(exprToColumn: Seq[(Expr, String)]) extends (Row 
   }
 
   // TODO: Validate all column types. At the moment null values are cast to the expected type...
-  private def constructValue(row: Row, v: Var): CypherValue = {
-    v.cypherType match {
+  private def constructValue(row: Row, v: EntityExpr): CypherValue = {
+    v.cypherType.material match {
       case _: CTNode =>
         collectNode(row, v)
 
       case _: CTRelationship =>
         collectRel(row, v)
 
-      case _@ CTPath =>
-        collectPath(row, v)
+      case CTList(_) if !header.exprToColumn.contains(v) =>
+        collectComplexList(row, v)
 
       case _ =>
         val raw = row.getAs[Any](header.column(v))
@@ -110,23 +110,18 @@ final case class rowToCypherMap(exprToColumn: Seq[(Expr, String)]) extends (Row 
     }
   }
 
-  private def collectPath(row: Row, expr: Var): CypherValue = {
-    val segments = header.ownedBy(expr).collect {
-      case p: PathSegment => p
+  private def collectComplexList(row: Row, expr: EntityExpr): CypherList = {
+    val elements = header.ownedBy(expr).collect {
+      case p: ListSegment => p
     }.toSeq.sortBy(_.index)
 
-    val values: Seq[CypherEntity[Long]] = segments.map { expr =>
-      expr.cypherType.material match {
-        case _: CTNode => collectNode(row, expr)
-        case _: CTRelationship => collectRel(row, expr)
-        case other =>
-          throw IllegalArgumentException("the type of a PathSegment to be CTNode or CTRelationship", other)
+    val values = elements
+      .map(constructValue(row, _))
+      .filter {
+        case CypherNull => false
+        case _ => true
       }
-    }.collect {
-      case e: CAPSNode => e
-      case e: CAPSRelationship => e
-    }
 
-    CAPSPath(values.toList)
+    CypherList(values)
   }
 }

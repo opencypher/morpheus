@@ -181,7 +181,6 @@ object CypherValue {
           Seq(labelString, propertyString)
             .filter(_.nonEmpty)
             .mkString("(", " ", ")")
-        case CypherPath(values) => values.map(_.toCypherString).mkString("<", "--", ">")
         case _ => Objects.toString(value)
       }
     }
@@ -283,23 +282,6 @@ object CypherValue {
     def apply(elem: Any*): CypherList = elem.map(CypherValue(_)).toList
 
     val empty: CypherList = List.empty[CypherValue]
-  }
-
-  trait CypherPath[Id] extends Product with MaterialCypherValue[Seq[CypherEntity[Id]]] {
-    type I <: Seq[CypherEntity[Id]]
-
-    def value: Seq[CypherEntity[Id]]
-
-    override def unwrap: Any = value.map(_.unwrap)
-
-    override def toString: String = s"${getClass.getSimpleName}(${value.mkString("--")})"
-  }
-
-  object CypherPath {
-
-    def unapply[Id](p: CypherPath[Id]): Option[Seq[CypherEntity[Id]]] = {
-      Some(p.value)
-    }
   }
 
   trait CypherEntity[Id] extends Product with MaterialCypherValue[CypherEntity[Id]] {
