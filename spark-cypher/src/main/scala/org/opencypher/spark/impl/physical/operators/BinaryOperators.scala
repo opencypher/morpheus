@@ -41,7 +41,6 @@ import org.opencypher.spark.impl.CAPSGraph.EmptyGraph
 import org.opencypher.spark.impl.CAPSUnionGraph.{apply => _, unapply => _}
 import org.opencypher.spark.impl.DataFrameOps._
 import org.opencypher.spark.impl.SparkSQLExprMapper._
-import org.opencypher.spark.impl.physical.operators.CAPSPhysicalOperator._
 import org.opencypher.spark.impl.physical.{CAPSPhysicalResult, CAPSRuntimeContext}
 import org.opencypher.spark.impl.util.TagSupport._
 import org.opencypher.spark.impl.{CAPSGraph, CAPSRecords, CAPSUnionGraph}
@@ -75,84 +74,6 @@ final case class Join(
 
     val joinedRecords = left.records.join(right.records, joinType, joinExprs: _*)
     CAPSPhysicalResult(joinedRecords, left.workingGraph, left.workingGraphName)
-  }
-}
-
-/**
-  * This operator performs a left outer join between the already matched path and the pattern path. If, for a given,
-  * already bound match, there is a non-null partner, we set a target column to true, otherwise false.
-  * Only the mandatory match data and the target column are kept in the result.
-  *
-  * @param lhs         mandatory match data
-  * @param rhs         expanded pattern predicate data
-  * @param targetField field that will store the subquery value (exists true/false)
-  * @param header      result header (lhs header + predicateField)
-  */
-final case class ExistsSubQuery(
-  lhs: CAPSPhysicalOperator,
-  rhs: CAPSPhysicalOperator,
-  targetField: Var,
-  header: RecordHeader
-)
-  extends BinaryPhysicalOperator with PhysicalOperatorDebugging {
-
-  override def executeBinary(left: CAPSPhysicalResult, right: CAPSPhysicalResult)(
-    implicit context: CAPSRuntimeContext
-  ): CAPSPhysicalResult = {
-    val leftData = left.records.toDF()
-    val rightData = right.records.toDF()
-    val leftHeader = left.records.header
-    val rightHeader = right.records.header
-
-    val joinFields = leftHeader.vars.intersect(rightHeader.vars)
-
-    val columnsToRemove = joinFields
-      .flatMap(v => rightHeader.ownedBy(v) - v)
-      .map(rightHeader.column)
-      .toSeq
-
-    val lhsJoinColumns = joinFields.map(leftHeader.column)
-    val rhsJoinColumns = joinFields.map(rightHeader.column)
-
-    // TODO: Fix
-    def generateUniqueColumnName: String = {
-      s"tmp${System.nanoTime}"
-    }
-
-
-    // Find the join pairs and introduce an alias for the right hand side
-    // This is necessary to be able to deduplicate the join columns later
-    val joinColumnMapping = lhsJoinColumns
-      .map(lhsColumn => lhsColumn -> rhsJoinColumns.find(_ == lhsColumn).get)
-      .map(pair => (pair._1, pair._2, generateUniqueColumnName))
-      .toSeq
-
-    // TODO: replace with CAPSRecords#select and CAPSRecords#join
-    // Rename join columns on the right hand side and drop common non-join columns
-    val reducedRhsData = joinColumnMapping
-      .foldLeft(rightData)((acc, col) => acc.safeRenameColumn(col._2, col._3))
-      .safeDropColumns(columnsToRemove: _*)
-
-    // Compute distinct rows based on join columns
-    val distinctRightData = reducedRhsData.dropDuplicates(joinColumnMapping.map(_._3))
-
-    val joinCols = joinColumnMapping.map(t => t._1 -> t._3)
-
-    val joinedRecords =
-      joinDFs(left.records.df, distinctRightData, header, joinCols)("leftouter", deduplicate = true)(left.records.caps)
-
-    val targetFieldColumnName = rightHeader.column(targetField)
-    val targetFieldColumn = joinedRecords.df.col(targetFieldColumnName)
-
-    // If the targetField column contains no value we replace it with false, otherwise true.
-    // After that we drop all right columns and only keep the predicate field.
-    // The predicate field is later checked by a filter operator.
-    val updatedJoinedRecords = joinedRecords.df
-      .safeReplaceColumn(
-        targetFieldColumnName,
-        functions.when(functions.isnull(targetFieldColumn), false).otherwise(true))
-
-    CAPSPhysicalResult(CAPSRecords(header, updatedJoinedRecords)(left.records.caps), left.workingGraph, left.workingGraphName)
   }
 }
 

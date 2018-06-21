@@ -145,12 +145,6 @@ final class CAPSPhysicalOperatorProducer(implicit caps: CAPSSession)
   override def planTabularUnionAll(lhs: CAPSPhysicalOperator, rhs: CAPSPhysicalOperator): CAPSPhysicalOperator =
     operators.TabularUnionAll(lhs, rhs)
 
-  override def planExistsSubQuery(
-    lhs: CAPSPhysicalOperator,
-    rhs: CAPSPhysicalOperator,
-    targetField: Var,
-    header: RecordHeader): CAPSPhysicalOperator = operators.ExistsSubQuery(lhs, rhs, targetField, header)
-
   override def planOrderBy(
     in: CAPSPhysicalOperator,
     sortItems: Seq[SortItem[Expr]],

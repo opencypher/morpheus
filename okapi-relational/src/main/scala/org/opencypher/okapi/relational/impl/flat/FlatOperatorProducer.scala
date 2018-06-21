@@ -201,8 +201,7 @@ class FlatOperatorProducer(implicit context: FlatPlannerContext) {
   }
 
   def planExistsSubQuery(expr: ExistsPatternExpr, lhs: FlatOperator, rhs: FlatOperator): FlatOperator = {
-    val existsFilterColumn = rhs.header.column(expr.targetField)
-    val header = RecordHeader(lhs.header.exprToColumn + (expr -> existsFilterColumn)).withAlias(expr as expr.targetField)
+    val header = lhs.header.withExpr(expr).withAlias(expr as expr.targetField)
     ExistsSubQuery(expr.targetField, lhs, rhs, header)
   }
 
