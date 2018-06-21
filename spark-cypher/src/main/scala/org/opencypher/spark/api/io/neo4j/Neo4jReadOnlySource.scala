@@ -33,13 +33,12 @@ import org.opencypher.okapi.api.schema.Schema
 import org.opencypher.okapi.impl.exception.UnsupportedOperationException
 import org.opencypher.okapi.impl.schema.SchemaImpl
 import org.opencypher.spark.api.CAPSSession
-import org.opencypher.spark.api.io.AbstractDataSource
+import org.opencypher.spark.api.io.ROAbstractGraphSource
 import org.opencypher.spark.api.io.metadata.CAPSGraphMetaData
 import org.opencypher.spark.api.io.neo4j.Neo4jReadOnlySource.metaPrefix
 import org.opencypher.spark.impl.io.neo4j.external.Neo4j
 import org.opencypher.spark.schema.CAPSSchema
 import org.opencypher.spark.schema.CAPSSchema._
-
 
 /**
   * A data source implementation that enables loading property graphs from a Neo4j database. A graph is identified by a
@@ -54,7 +53,7 @@ case class Neo4jReadOnlySource(
   config: Neo4jConfig,
   entireGraph: GraphName = GraphName("graph")
 )(implicit session: CAPSSession)
-  extends AbstractDataSource {
+  extends ROAbstractGraphSource {
 
   override def tableStorageFormat: String = "neo4j"
 
@@ -90,19 +89,31 @@ case class Neo4jReadOnlySource(
     sparkSchema: StructType
   ): DataFrame = {
     val graphSchema = schema(graphName).get
-
-    val neo4jConnection = Neo4j(config, session.sparkSession)
-
     val flatQuery = flatNodeQuery(graphName, labels, graphSchema)
 
-    session.sparkSession.createDataFrame(neo4jConnection.cypher(flatQuery).loadRowRdd, sparkSchema)
+    val neo4jConnection = Neo4j(config, session.sparkSession)
+    val rdd = neo4jConnection.cypher(flatQuery).loadRowRdd
+    session.sparkSession.createDataFrame(rdd, sparkSchema)
+  }
+
+  override protected def readRelationshipTable(
+    graphName: GraphName,
+    relKey: String,
+    sparkSchema: StructType
+  ): DataFrame = {
+    val graphSchema = schema(graphName).get
+    val flatQuery = flatRelQuery(graphName, relKey, graphSchema)
+
+    val neo4jConnection = Neo4j(config, session.sparkSession)
+    val rdd = neo4jConnection.cypher(flatQuery).loadRowRdd
+    session.sparkSession.createDataFrame(rdd, sparkSchema)
   }
 
   def flatNodeQuery(graphName: GraphName, labels: Set[String], schema: Schema): String = {
     val metaLabel = getMetaLabel(graphName)
 
     val nodeVar = "n"
-    val props = schema.nodeKeys(labels).keys.toList match {
+    val props = schema.nodeKeys(labels).keys.toList.sorted match {
       case Nil => ""
       case nonempty => nonempty.mkString(s", $nodeVar.", s", $nodeVar.", "")
     }
@@ -113,44 +124,12 @@ case class Neo4jReadOnlySource(
     val metaLabelPredicate = getMetaLabel(graphName).map(":" + _).getOrElse("")
 
     val relVar = "r"
-    val props = schema.relationshipKeys(relType).keys.toList match {
+    val props = schema.relationshipKeys(relType).keys.toList.sorted match {
       case Nil => ""
       case nonempty => nonempty.mkString(s", $relVar.", s", $relVar.", "")
     }
     s"MATCH ($metaLabelPredicate)-[$relVar:$relType]->($metaLabelPredicate) RETURN id($relVar) AS id$props"
   }
-
-  override protected def readRelationshipTable(
-    graphName: GraphName,
-    relKey: String,
-    sparkSchema: StructType
-  ): DataFrame = {
-    val graphSchema = schema(graphName).get
-
-    val flatQuery = flatRelQuery(graphName, relKey, graphSchema)
-
-    ???
-  }
-
-  override protected def deleteGraph(graphName: GraphName): Unit = ???
-  override protected def writeSchema(
-    graphName: GraphName,
-    schema: CAPSSchema
-  ): Unit = ???
-  override protected def writeCAPSGraphMetaData(
-    graphName: GraphName,
-    capsGraphMetaData: CAPSGraphMetaData
-  ): Unit = ???
-  override protected def writeNodeTable(
-    graphName: GraphName,
-    labels: Set[String],
-    table: DataFrame
-  ): Unit = ???
-  override protected def writeRelationshipTable(
-    graphName: GraphName,
-    relKey: String,
-    table: DataFrame
-  ): Unit = ???
 }
 
 object Neo4jReadOnlySource {

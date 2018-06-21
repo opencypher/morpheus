@@ -24,29 +24,31 @@
  * described as "implementation extensions to Cypher" or as "proposed changes to
  * Cypher that are not yet approved by the openCypher community".
  */
-package org.opencypher.spark.impl.io.neo4j
+package org.opencypher.spark.api.io
+import org.apache.spark.sql.DataFrame
+import org.opencypher.okapi.api.graph.GraphName
+import org.opencypher.spark.api.io.metadata.CAPSGraphMetaData
+import org.opencypher.spark.schema.CAPSSchema
 
-import org.neo4j.driver.v1.Session
-import org.opencypher.okapi.api.value.CypherValue
-import org.opencypher.okapi.api.value.CypherValue.CypherValue
-import org.opencypher.spark.api.io.neo4j.Neo4jConfig
-
-import scala.collection.JavaConverters._
-
-object Neo4jHelpers {
-  implicit class RichConfig(val config: Neo4jConfig) extends AnyVal {
-
-    def execute[T](f: Session => T): T = {
-      val session = config.driver().session
-      val t = f(session)
-      session.close()
-      t
-    }
-
-    def cypher(query: String): List[Map[String, CypherValue]] = {
-      execute { session =>
-        session.run(query).list().asScala.map(_.asMap().asScala.mapValues(CypherValue(_)).toMap).toList
-      }
-    }
-  }
+trait ROAbstractGraphSource extends AbstractDataSource {
+  override protected def deleteGraph(graphName: GraphName): Unit =
+    throw new UnsupportedOperationException("Read-only graph sources can not delete graphs")
+  override protected def writeSchema(
+    graphName: GraphName,
+    schema: CAPSSchema
+  ): Unit = throw new UnsupportedOperationException("Read-only graph sources can not delete graphs")
+  override protected def writeCAPSGraphMetaData(
+    graphName: GraphName,
+    capsGraphMetaData: CAPSGraphMetaData
+  ): Unit = throw new UnsupportedOperationException("Read-only graph sources can not delete graphs")
+  override protected def writeNodeTable(
+    graphName: GraphName,
+    labels: Set[String],
+    table: DataFrame
+  ): Unit = throw new UnsupportedOperationException("Read-only graph sources can not delete graphs")
+  override protected def writeRelationshipTable(
+    graphName: GraphName,
+    relKey: String,
+    table: DataFrame
+  ): Unit = throw new UnsupportedOperationException("Read-only graph sources can not delete graphs")
 }
