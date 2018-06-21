@@ -64,13 +64,13 @@ Maven:
 <dependency>
   <groupId>org.opencypher</groupId>
   <artifactId>spark-cypher</artifactId>
-  <version>0.1.1</version>
+  <version>0.1.3</version>
 </dependency>
 ```
 
 sbt:
 ```
-libraryDependencies += "org.opencypher" % "spark-cypher" % "0.1.1"
+libraryDependencies += "org.opencypher" % "spark-cypher" % "0.1.3"
 ```
 
 Remember to add `fork in run := true` in your `build.sbt` for scala projects; this is not CAPS
