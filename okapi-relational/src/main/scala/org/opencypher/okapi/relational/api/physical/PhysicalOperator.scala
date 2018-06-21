@@ -27,7 +27,7 @@
 package org.opencypher.okapi.relational.api.physical
 
 import org.opencypher.okapi.api.graph.PropertyGraph
-import org.opencypher.okapi.api.table.CypherRecords
+import org.opencypher.okapi.relational.api.io.{FlatRelationalTable, RelationalCypherRecords}
 import org.opencypher.okapi.relational.impl.table.RecordHeader
 
 /**
@@ -37,14 +37,13 @@ import org.opencypher.okapi.relational.impl.table.RecordHeader
   * @tparam G backend-specific property graph
   * @tparam C backend-specific runtime context
   */
-trait PhysicalOperator[R <: CypherRecords, G <: PropertyGraph, C <: RuntimeContext[R, G]] {
+trait PhysicalOperator[T <: FlatRelationalTable[T], R <: RelationalCypherRecords[T], G <: PropertyGraph, C <: RuntimeContext[T, R, G]] {
 
   /**
     * The record header constructed by that operator.
     *
     * @return record header describing the output data
     */
-  // TODO: remove
   def header: RecordHeader
 
   /**
@@ -53,6 +52,6 @@ trait PhysicalOperator[R <: CypherRecords, G <: PropertyGraph, C <: RuntimeConte
     * @param context backend-specific runtime context
     * @return physical result
     */
-  def execute(implicit context: C): PhysicalResult[R, G]
+  def execute(implicit context: C): PhysicalResult[T, R, G]
 
 }

@@ -46,10 +46,10 @@ import org.opencypher.okapi.relational.impl.table.RecordHeader
   */
 trait PhysicalOperatorProducer[
 O <: FlatRelationalTable[O],
-K <: PhysicalOperator[A, P, I],
+K <: PhysicalOperator[O, A, P, I],
 A <: RelationalCypherRecords[O],
 P <: PropertyGraph,
-I <: RuntimeContext[A, P]] {
+I <: RuntimeContext[O, A, P]] {
 
   // Unary operators
 

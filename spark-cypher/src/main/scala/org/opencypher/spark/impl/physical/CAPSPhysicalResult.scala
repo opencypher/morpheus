@@ -28,6 +28,7 @@ package org.opencypher.spark.impl.physical
 
 import org.opencypher.okapi.api.graph.QualifiedGraphName
 import org.opencypher.okapi.relational.api.physical.PhysicalResult
+import org.opencypher.spark.api.io.SparkCypherTable.DataFrameTable
 import org.opencypher.spark.impl.{CAPSGraph, CAPSRecords}
 
 case class CAPSPhysicalResult(
@@ -35,8 +36,7 @@ case class CAPSPhysicalResult(
   workingGraph: CAPSGraph,
   workingGraphName: QualifiedGraphName,
   tagStrategy: Map[QualifiedGraphName, Map[Int, Int]] = Map.empty
-)
-  extends PhysicalResult[CAPSRecords, CAPSGraph] {
+) extends PhysicalResult[DataFrameTable, CAPSRecords, CAPSGraph] {
 
   override def mapRecordsWithDetails(f: CAPSRecords => CAPSRecords): CAPSPhysicalResult =
     copy(records = f(records))

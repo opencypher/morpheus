@@ -41,10 +41,10 @@ case object Inbound extends ExpandDirection
 
 trait VarLengthExpandPlanner[
 O <: FlatRelationalTable[O],
-K <: PhysicalOperator[A, P, I],
+K <: PhysicalOperator[O, A, P, I],
 A <: RelationalCypherRecords[O],
 P <: PropertyGraph,
-I <: RuntimeContext[A, P]] {
+I <: RuntimeContext[O, A, P]] {
 
   def source: Var
 
@@ -74,7 +74,7 @@ I <: RuntimeContext[A, P]] {
 
   def plan: K
 
-  implicit val context: PhysicalPlannerContext[K, A]
+  implicit val context: PhysicalPlannerContext[O, K, A]
   val producer: PhysicalOperatorProducer[O, K, A, P, I] = planner.producer
 
   val physicalSourceOp: K = planner.process(sourceOp)
@@ -272,10 +272,10 @@ I <: RuntimeContext[A, P]] {
 
 class DirectedVarLengthExpandPlanner[
 O <: FlatRelationalTable[O],
-K <: PhysicalOperator[A, P, I],
+K <: PhysicalOperator[O, A, P, I],
 A <: RelationalCypherRecords[O],
 P <: PropertyGraph,
-I <: RuntimeContext[A, P]](
+I <: RuntimeContext[O, A, P]](
   override val source: Var,
   override val edgeScan: Var,
   override val innerNode: Var,
@@ -290,7 +290,7 @@ I <: RuntimeContext[A, P]](
   override val isExpandInto: Boolean
 )(
   override val planner: PhysicalPlanner[O, K, A, P, I],
-  override implicit val context: PhysicalPlannerContext[K, A]
+  override implicit val context: PhysicalPlannerContext[O, K, A]
 ) extends VarLengthExpandPlanner[O, K, A, P, I] {
 
   private val expandCacheOp = producer.planJoin(
@@ -317,10 +317,10 @@ I <: RuntimeContext[A, P]](
 
 class UndirectedVarLengthExpandPlanner[
 O <: FlatRelationalTable[O],
-K <: PhysicalOperator[A, P, I],
+K <: PhysicalOperator[O, A, P, I],
 A <: RelationalCypherRecords[O],
 P <: PropertyGraph,
-I <: RuntimeContext[A, P]](
+I <: RuntimeContext[O, A, P]](
   override val source: Var,
   override val edgeScan: Var,
   override val innerNode: Var,
@@ -335,7 +335,7 @@ I <: RuntimeContext[A, P]](
   override val isExpandInto: Boolean
 )(
   override val planner: PhysicalPlanner[O, K, A, P, I],
-  override implicit val context: PhysicalPlannerContext[K, A]
+  override implicit val context: PhysicalPlannerContext[O, K, A]
 ) extends VarLengthExpandPlanner[O, K, A, P, I] {
 
   private val expandCacheOp = producer.planJoin(

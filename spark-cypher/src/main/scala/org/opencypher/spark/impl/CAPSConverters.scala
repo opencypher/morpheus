@@ -70,7 +70,7 @@ object CAPSConverters {
     }
   }
 
-  implicit class RichPhysicalResult(val result: PhysicalResult[_, _]) extends AnyVal {
+  implicit class RichPhysicalResult(val result: PhysicalResult[_, _, _]) extends AnyVal {
     def asCaps: CAPSPhysicalResult = result match {
       case caps: CAPSPhysicalResult => caps
       case _ => throw UnsupportedOperationException(s"can only handle CAPS physical result, got $result")

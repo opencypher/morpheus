@@ -29,6 +29,7 @@ package org.opencypher.spark.impl.physical
 import org.opencypher.okapi.api.graph.QualifiedGraphName
 import org.opencypher.okapi.api.value.CypherValue.CypherMap
 import org.opencypher.okapi.relational.api.physical.RuntimeContext
+import org.opencypher.spark.api.io.SparkCypherTable.DataFrameTable
 import org.opencypher.spark.impl.physical.operators.CAPSPhysicalOperator
 import org.opencypher.spark.impl.{CAPSGraph, CAPSRecords}
 
@@ -43,4 +44,4 @@ case class CAPSRuntimeContext(
   resolve: QualifiedGraphName => Option[CAPSGraph],
   cache: mutable.Map[CAPSPhysicalOperator, CAPSPhysicalResult],
   patternGraphTags: mutable.Map[QualifiedGraphName, Set[Int]])
-  extends RuntimeContext[CAPSRecords, CAPSGraph]
+  extends RuntimeContext[DataFrameTable, CAPSRecords, CAPSGraph]
