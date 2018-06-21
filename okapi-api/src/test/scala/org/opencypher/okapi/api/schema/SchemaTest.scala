@@ -369,4 +369,34 @@ class SchemaTest extends FunSpec with Matchers {
     schema should equal(Schema.fromJson(serialized))
 
   }
+
+  it("concatenating schemas should make missing relationship properties nullable") {
+    val schema1 = Schema.empty
+      .withRelationshipPropertyKeys("FOO")()
+
+    val schema2 = Schema.empty
+      .withRelationshipPropertyKeys("FOO")("p" -> CTString)
+
+    val schemaSum = schema1 ++ schema2
+
+    schemaSum should equal(
+      Schema.empty
+        .withRelationshipPropertyKeys("FOO")("p" -> CTString.nullable)
+    )
+  }
+
+  it("concatenating schemas should make missing node properties nullable") {
+    val schema1 = Schema.empty
+      .withNodePropertyKeys("Foo")()
+
+    val schema2 = Schema.empty
+      .withNodePropertyKeys("Foo")("p" -> CTString)
+
+    val schemaSum = schema1 ++ schema2
+
+    schemaSum should equal(
+      Schema.empty
+        .withNodePropertyKeys("Foo")("p" -> CTString.nullable)
+    )
+  }
 }
