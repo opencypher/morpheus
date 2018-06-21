@@ -41,14 +41,14 @@ import org.opencypher.okapi.relational.impl.table._
 
 class PhysicalPlanner[
 O <: FlatRelationalTable[O],
-K <: PhysicalOperator[A, P, I],
+K <: PhysicalOperator[O, A, P, I],
 A <: RelationalCypherRecords[O],
 P <: PropertyGraph,
-I <: RuntimeContext[A, P]](val producer: PhysicalOperatorProducer[O, K, A, P, I])
+I <: RuntimeContext[O, A, P]](val producer: PhysicalOperatorProducer[O, K, A, P, I])
 
-  extends DirectCompilationStage[FlatOperator, K, PhysicalPlannerContext[K, A]] {
+  extends DirectCompilationStage[FlatOperator, K, PhysicalPlannerContext[O, K, A]] {
 
-  def process(flatPlan: FlatOperator)(implicit context: PhysicalPlannerContext[K, A]): K = {
+  def process(flatPlan: FlatOperator)(implicit context: PhysicalPlannerContext[O, K, A]): K = {
 
     implicit val caps: CypherSession = context.session
 
@@ -234,7 +234,7 @@ I <: RuntimeContext[A, P]](val producer: PhysicalOperatorProducer[O, K, A, P, I]
   }
 
   private def planConstructGraph(in: Option[FlatOperator], construct: LogicalPatternGraph)
-    (implicit context: PhysicalPlannerContext[K, A]) = {
+    (implicit context: PhysicalPlannerContext[O, K, A]) = {
     val onGraphPlan = {
       construct.onGraphs match {
         case Nil => producer.planStart() // Empty start
@@ -253,7 +253,7 @@ I <: RuntimeContext[A, P]](val producer: PhysicalOperatorProducer[O, K, A, P, I]
   }
 
   private def planOptional(lhs: FlatOperator, rhs: FlatOperator, header: RecordHeader)
-    (implicit context: PhysicalPlannerContext[K, A]) = {
+    (implicit context: PhysicalPlannerContext[O, K, A]) = {
     val lhsData = process(lhs)
     val rhsData = process(rhs)
     val lhsHeader = lhs.header

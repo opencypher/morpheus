@@ -27,8 +27,8 @@
 package org.opencypher.okapi.relational.api.physical
 
 import org.opencypher.okapi.api.graph.{PropertyGraph, QualifiedGraphName}
-import org.opencypher.okapi.api.table.CypherRecords
 import org.opencypher.okapi.api.value.CypherValue.CypherMap
+import org.opencypher.okapi.relational.api.io.{FlatRelationalTable, RelationalCypherRecords}
 
 /**
   * Represents a back-end specific runtime context that is being used by [[PhysicalOperator]] implementations.
@@ -36,7 +36,7 @@ import org.opencypher.okapi.api.value.CypherValue.CypherMap
   * @tparam R backend-specific cypher records
   * @tparam G backend-specific property graph
   */
-trait RuntimeContext[R <: CypherRecords, G <: PropertyGraph] {
+trait RuntimeContext[T <: FlatRelationalTable[T], R <: RelationalCypherRecords[T], G <: PropertyGraph] {
 
   /**
     * Returns the graph referenced by the given QualifiedGraphName.
