@@ -1,17 +1,34 @@
 package org.opencypher.spark.api
 
-import org.opencypher.spark.api.io.fs.FSGraphSource
+import org.opencypher.spark.api.io.fs.{CAPSFileSystem, FSGraphSource}
 import org.opencypher.spark.api.io.neo4j.{Neo4jConfig, Neo4jReadOnlyNamedQueryGraphSource}
 
 object GraphSources {
-  def fs = FSGraphSources
+  def fs(
+    rootPath: String,
+    customFileSystem: Option[CAPSFileSystem] = None,
+    filesPerTable: Option[Int] = Some(1)
+  ) = FSGraphSources(rootPath, customFileSystem, filesPerTable)
+
   def cypher = CypherGraphSources
 }
 
 object FSGraphSources {
-  def csv(rootPath: String)(implicit session: CAPSSession): FSGraphSource =
-    new FSGraphSource(rootPath, "csv")
+  def apply(
+    rootPath: String,
+    customFileSystem: Option[CAPSFileSystem] = None,
+    filesPerTable: Option[Int] = Some(1)
+  ): FSGraphSourceFactory = FSGraphSourceFactory(rootPath, customFileSystem, filesPerTable)
 
+  case class FSGraphSourceFactory(
+    rootPath: String,
+    customFileSystem: Option[CAPSFileSystem] = None,
+    filesPerTable: Option[Int] = Some(1)
+  ) {
+
+    def csv(implicit session: CAPSSession): FSGraphSource =
+      new FSGraphSource(rootPath, "csv", customFileSystem, filesPerTable)
+  }
 }
 
 object CypherGraphSources {

@@ -61,7 +61,7 @@ class MasterExampleTest extends CAPSTestSuite with SparkSessionFixture with Neo4
       GraphName("EU") -> (nodeQuery("EU") -> relQuery("EU")))
     ))
     // HDFS CSV PDGS
-    caps.registerSource(Namespace("hdfs"), GraphSources.fs.csv(rootPath = "/csv"))
+    caps.registerSource(Namespace("hdfs"), GraphSources.fs(rootPath = "/csv").csv)
 
     /**
       * Returns a query that creates a graph containing persons that live in the same city and

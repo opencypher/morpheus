@@ -54,7 +54,7 @@ object RecommendationExample extends ConsoleApp {
   caps.registerSource(Namespace("euSocialNetwork"), GraphSources.cypher.neo4jReadOnlyNamedQuery(neo4jServerEU.dataSourceConfig))
 
   // File-based CSV GDS
-  caps.registerSource(Namespace("purchases"), GraphSources.fs.csv(rootPath = s"${getClass.getResource("/csv").getFile}"))
+  caps.registerSource(Namespace("purchases"), GraphSources.fs(rootPath = s"${getClass.getResource("/csv").getFile}").csv)
 
   // Start analytical workload
 

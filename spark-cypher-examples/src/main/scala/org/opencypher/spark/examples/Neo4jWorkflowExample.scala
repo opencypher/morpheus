@@ -46,7 +46,7 @@ object Neo4jWorkflowExample extends ConsoleApp {
 
   // Register Property Graph Data Sources (PGDS)
   session.registerSource(Namespace("socialNetwork"), GraphSources.cypher.neo4jReadOnlyNamedQuery(neo4j.dataSourceConfig))
-  session.registerSource(Namespace("purchases"), GraphSources.fs.csv(rootPath = getClass.getResource("/csv").getFile))
+  session.registerSource(Namespace("purchases"), GraphSources.fs(rootPath = getClass.getResource("/csv").getFile).csv)
 
   // Access the graphs via their qualified graph names
   val socialNetwork = session.catalog.graph("socialNetwork.graph")

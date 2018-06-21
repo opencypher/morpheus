@@ -54,8 +54,7 @@ class DefaultFileSystemTest extends CAPSTestSuite {
         |  NEW ()
         |RETURN GRAPH
       """.stripMargin).getGraph
-    val ds = FSGraphSources.csv(
-      s"${tempDir.getRoot.getAbsolutePath}${pathSeparator}someNewFolder1${pathSeparator}someNewFolder2")
+    val ds = FSGraphSources(s"${tempDir.getRoot.getAbsolutePath}${pathSeparator}someNewFolder1${pathSeparator}someNewFolder2").csv
     ds.store(GraphName("foo"), graph)
   }
 
