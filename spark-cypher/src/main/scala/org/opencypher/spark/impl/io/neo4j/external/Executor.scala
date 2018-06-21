@@ -30,8 +30,9 @@ import org.apache.spark.sql.catalyst.expressions.GenericRowWithSchema
 import org.apache.spark.sql.types._
 import org.apache.spark.sql.{Row, types}
 import org.neo4j.driver.internal.types.InternalTypeSystem
+import org.neo4j.driver.internal.value.ListValue
 import org.neo4j.driver.v1.types.{Type, TypeSystem}
-import org.neo4j.driver.v1.{Driver, Session, StatementResult}
+import org.neo4j.driver.v1.{Driver, Session, StatementResult, Value}
 import org.opencypher.spark.api.io.neo4j.Neo4jConfig
 
 import scala.collection.JavaConverters._
@@ -102,7 +103,7 @@ private object Executor {
         val row = new Array[Any](keyCount)
         var i = 0
         while (i < keyCount) {
-          row.update(i, record.get(i).asObject())
+          row.update(i, convertLists(record.get(i)))
           i = i + 1
         }
         if (!result.hasNext) {
@@ -115,6 +116,12 @@ private object Executor {
     } finally {
       close(driver, session)
     }
+  }
+
+  private def convertLists(v: Value): AnyRef = v match {
+    case list: ListValue =>
+      list.asList().toArray
+    case other => other.asObject()
   }
 }
 
