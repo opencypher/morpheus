@@ -197,7 +197,7 @@ trait RelationalCypherRecords[T <: FlatRelationalTable[T]] extends CypherRecords
     from(header, table.distinct)
   }
 
-  def distinct(fields: EntityExpr*): R = {
+  def distinct(fields: Var*): R = {
     from(header, table.distinct(fields.flatMap(header.expressionsFor).map(header.column).sorted: _*))
   }
 

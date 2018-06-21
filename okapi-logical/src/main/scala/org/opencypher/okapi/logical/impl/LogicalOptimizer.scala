@@ -62,11 +62,11 @@ object LogicalOptimizer extends DirectCompilationStage[LogicalOperator, LogicalO
   }
 
   def discardScansForNonexistentLabels: PartialFunction[LogicalOperator, LogicalOperator] = {
-    case scan@NodeScan(eexpr, in, _) =>
+    case scan@NodeScan(entityExpr, in, _) =>
       def graphSchema = in.graph.schema
 
       def emptyRecords = {
-        val fields = eexpr match {
+        val fields = entityExpr match {
           case v: Var => Set(v)
           case _ => Set.empty[Var]
         }

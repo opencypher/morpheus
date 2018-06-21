@@ -282,9 +282,9 @@ case class RecordHeader(exprToColumn: Map[Expr, String]) {
     val alias = expr.alias
     to match {
       // Entity case
-      case eexpr: EntityExpr if exprToColumn.contains(to) =>
+      case entityExpr: EntityExpr if exprToColumn.contains(to) =>
         val withEntityExpr = addExprToColumn(alias, exprToColumn(to))
-        ownedBy(eexpr).filterNot(_ == eexpr).foldLeft(withEntityExpr) {
+        ownedBy(entityExpr).filterNot(_ == entityExpr).foldLeft(withEntityExpr) {
           case (current, nextExpr) => current.addExprToColumn(nextExpr.withOwner(alias), exprToColumn(nextExpr))
         }
 
