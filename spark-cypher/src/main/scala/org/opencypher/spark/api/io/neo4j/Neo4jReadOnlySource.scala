@@ -33,7 +33,9 @@ import org.opencypher.okapi.api.schema.Schema
 import org.opencypher.okapi.impl.exception.UnsupportedOperationException
 import org.opencypher.okapi.impl.schema.SchemaImpl
 import org.opencypher.spark.api.CAPSSession
+import org.opencypher.spark.api.io.GraphEntity.sourceIdKey
 import org.opencypher.spark.api.io.ROAbstractGraphSource
+import org.opencypher.spark.api.io.Relationship.{sourceEndNodeKey, sourceStartNodeKey}
 import org.opencypher.spark.api.io.metadata.CAPSGraphMetaData
 import org.opencypher.spark.api.io.neo4j.Neo4jReadOnlySource.metaPrefix
 import org.opencypher.spark.impl.io.neo4j.external.Neo4j
@@ -117,7 +119,7 @@ case class Neo4jReadOnlySource(
       case Nil => ""
       case nonempty => nonempty.mkString(s", $nodeVar.", s", $nodeVar.", "")
     }
-    s"MATCH ($nodeVar:${(labels ++ metaLabel).mkString(":")}) RETURN id($nodeVar) AS id$props"
+    s"MATCH ($nodeVar:${(labels ++ metaLabel).mkString(":")}) RETURN id($nodeVar) AS $sourceIdKey$props"
   }
 
   def flatRelQuery(graphName: GraphName, relType: String, schema: Schema): String = {
@@ -128,7 +130,7 @@ case class Neo4jReadOnlySource(
       case Nil => ""
       case nonempty => nonempty.mkString(s", $relVar.", s", $relVar.", "")
     }
-    s"MATCH ($metaLabelPredicate)-[$relVar:$relType]->($metaLabelPredicate) RETURN id($relVar) AS id$props"
+    s"MATCH (s$metaLabelPredicate)-[$relVar:$relType]->(e$metaLabelPredicate) RETURN id($relVar) AS $sourceIdKey, id(s) AS $sourceStartNodeKey, id(e) AS $sourceEndNodeKey$props"
   }
 }
 

@@ -33,6 +33,8 @@ import org.opencypher.okapi.api.schema.Schema
 import org.opencypher.okapi.api.types.{CTBoolean, CTFloat, CTInteger, CTString}
 import org.opencypher.okapi.testing.BaseTestSuite
 import org.opencypher.spark.api.CAPSSession
+import org.opencypher.spark.api.io.GraphEntity.sourceIdKey
+import org.opencypher.spark.api.io.Relationship.{sourceEndNodeKey, sourceStartNodeKey}
 
 class Neo4jReadOnlySourceUnitTest extends BaseTestSuite {
 
@@ -47,25 +49,25 @@ class Neo4jReadOnlySourceUnitTest extends BaseTestSuite {
 
   it("constructs flat node queries from schema") {
     pgds.flatNodeQuery(GraphName(entireGraph), Set("A"), schema) should equal(
-      "MATCH (n:A) RETURN id(n) AS id, n.bar, n.foo"
+      s"MATCH (n:A) RETURN id(n) AS $sourceIdKey, n.bar, n.foo"
     )
   }
 
   it("constructs flat node queries from schema without properties") {
     pgds.flatNodeQuery(GraphName(entireGraph), Set("B"), schema) should equal(
-      "MATCH (n:B) RETURN id(n) AS id"
+      s"MATCH (n:B) RETURN id(n) AS $sourceIdKey"
     )
   }
 
   it("constructs flat relationship queries from schema") {
     pgds.flatRelQuery(GraphName(entireGraph), "TYPE", schema) should equal(
-      "MATCH ()-[r:TYPE]->() RETURN id(r) AS id, r.f, r.foo"
+      s"MATCH (s)-[r:TYPE]->(e) RETURN id(r) AS $sourceIdKey, id(s) AS $sourceStartNodeKey, id(e) AS $sourceEndNodeKey, r.f, r.foo"
     )
   }
 
   it("constructs flat relationship queries from schema with no properties") {
     pgds.flatRelQuery(GraphName(entireGraph), "TYPE2", schema) should equal(
-      "MATCH ()-[r:TYPE2]->() RETURN id(r) AS id"
+      s"MATCH (s)-[r:TYPE2]->(e) RETURN id(r) AS $sourceIdKey, id(s) AS $sourceStartNodeKey, id(e) AS $sourceEndNodeKey"
     )
   }
 }
