@@ -24,47 +24,31 @@
  * described as "implementation extensions to Cypher" or as "proposed changes to
  * Cypher that are not yet approved by the openCypher community".
  */
-package org.opencypher.okapi.relational.api.physical
+package org.opencypher.spark.api.io
+import org.apache.spark.sql.DataFrame
+import org.opencypher.okapi.api.graph.GraphName
+import org.opencypher.spark.api.io.metadata.CAPSGraphMetaData
+import org.opencypher.spark.schema.CAPSSchema
 
-import org.opencypher.okapi.api.graph.{CypherSession, QualifiedGraphName}
-import org.opencypher.okapi.api.value.CypherValue.CypherMap
-import org.opencypher.okapi.ir.impl.QueryCatalog
-import org.opencypher.okapi.relational.api.io.{FlatRelationalTable, RelationalCypherRecords}
-
-/**
-  * Represents a back-end specific context which is used by the [[org.opencypher.okapi.relational.impl.physical.PhysicalPlanner]].
-  *
-  * @tparam R backend-specific cypher records
-  */
-trait PhysicalPlannerContext[T<: FlatRelationalTable[T], P <: PhysicalOperator[T, R, _, _], R <: RelationalCypherRecords[T]] {
-  /**
-    * Refers to the session in which that query is executed.
-    *
-    * @return back-end specific cypher session
-    */
-  def session: CypherSession
-
-  /**
-    * Lookup function that resolves QGNs to property graphs.
-    *
-    * @return lookup function
-    */
-  def catalog: QueryCatalog
-
-  // TODO: Improve design
-  def constructedGraphPlans: collection.mutable.Map[QualifiedGraphName, P]
-
-  /**
-    * Initial records for physical planning.
-    *
-    * @return
-    */
-  def inputRecords: R
-
-  /**
-    * Query parameters
-    *
-    * @return query parameters
-    */
-  def parameters: CypherMap
+trait ROAbstractGraphSource extends AbstractDataSource {
+  override protected def deleteGraph(graphName: GraphName): Unit =
+    throw new UnsupportedOperationException("Read-only graph sources can not delete graphs")
+  override protected def writeSchema(
+    graphName: GraphName,
+    schema: CAPSSchema
+  ): Unit = throw new UnsupportedOperationException("Read-only graph sources can not delete graphs")
+  override protected def writeCAPSGraphMetaData(
+    graphName: GraphName,
+    capsGraphMetaData: CAPSGraphMetaData
+  ): Unit = throw new UnsupportedOperationException("Read-only graph sources can not delete graphs")
+  override protected def writeNodeTable(
+    graphName: GraphName,
+    labels: Set[String],
+    table: DataFrame
+  ): Unit = throw new UnsupportedOperationException("Read-only graph sources can not delete graphs")
+  override protected def writeRelationshipTable(
+    graphName: GraphName,
+    relKey: String,
+    table: DataFrame
+  ): Unit = throw new UnsupportedOperationException("Read-only graph sources can not delete graphs")
 }

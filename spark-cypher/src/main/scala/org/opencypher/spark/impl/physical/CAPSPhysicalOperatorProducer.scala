@@ -45,13 +45,14 @@ case class CAPSPhysicalPlannerContext(
   catalog: QueryCatalog,
   inputRecords: CAPSRecords,
   parameters: CypherMap,
-  constructedGraphPlans: collection.mutable.Map[QualifiedGraphName, CAPSPhysicalOperator]) extends PhysicalPlannerContext[CAPSPhysicalOperator, CAPSRecords]
+  constructedGraphPlans: collection.mutable.Map[QualifiedGraphName, CAPSPhysicalOperator]
+) extends PhysicalPlannerContext[DataFrameTable, CAPSPhysicalOperator, CAPSRecords]
 
 object CAPSPhysicalPlannerContext {
   def from(
     catalog: QueryCatalog,
     inputRecords: CAPSRecords,
-    parameters: CypherMap)(implicit session: CAPSSession): PhysicalPlannerContext[CAPSPhysicalOperator, CAPSRecords] = {
+    parameters: CypherMap)(implicit session: CAPSSession): PhysicalPlannerContext[DataFrameTable, CAPSPhysicalOperator, CAPSRecords] = {
     CAPSPhysicalPlannerContext(session, catalog, inputRecords, parameters, collection.mutable.Map.empty)
   }
 }
@@ -144,12 +145,6 @@ final class CAPSPhysicalOperatorProducer(implicit caps: CAPSSession)
 
   override def planTabularUnionAll(lhs: CAPSPhysicalOperator, rhs: CAPSPhysicalOperator): CAPSPhysicalOperator =
     operators.TabularUnionAll(lhs, rhs)
-
-  override def planExistsSubQuery(
-    lhs: CAPSPhysicalOperator,
-    rhs: CAPSPhysicalOperator,
-    targetField: Var,
-    header: RecordHeader): CAPSPhysicalOperator = operators.ExistsSubQuery(lhs, rhs, targetField, header)
 
   override def planOrderBy(
     in: CAPSPhysicalOperator,

@@ -26,23 +26,19 @@
  */
 package org.opencypher.spark.impl.physical.operators
 
-import org.apache.spark.sql.DataFrame
 import org.opencypher.okapi.api.graph.QualifiedGraphName
-import org.opencypher.okapi.api.types._
 import org.opencypher.okapi.impl.exception.IllegalArgumentException
-import org.opencypher.okapi.ir.api.expr.Expr
 import org.opencypher.okapi.relational.api.physical.PhysicalOperator
 import org.opencypher.okapi.relational.impl.table.RecordHeader
 import org.opencypher.okapi.trees.AbstractTreeNode
-import org.opencypher.spark.api.CAPSSession
+import org.opencypher.spark.api.io.SparkCypherTable.DataFrameTable
 import org.opencypher.spark.impl.CAPSConverters._
-import org.opencypher.spark.impl.DataFrameOps._
 import org.opencypher.spark.impl.physical.{CAPSPhysicalResult, CAPSRuntimeContext}
 import org.opencypher.spark.impl.{CAPSGraph, CAPSRecords}
 
 private[spark] abstract class CAPSPhysicalOperator
   extends AbstractTreeNode[CAPSPhysicalOperator]
-  with PhysicalOperator[CAPSRecords, CAPSGraph, CAPSRuntimeContext] {
+    with PhysicalOperator[DataFrameTable, CAPSRecords, CAPSGraph, CAPSRuntimeContext] {
 
   override def execute(implicit context: CAPSRuntimeContext): CAPSPhysicalResult
 
@@ -50,51 +46,11 @@ private[spark] abstract class CAPSPhysicalOperator
     context.resolve(qualifiedGraphName).map(_.asCaps).getOrElse(throw IllegalArgumentException(s"a graph at $qualifiedGraphName"))
   }
 
-  protected def resolveTags(qgn: QualifiedGraphName)(implicit context: CAPSRuntimeContext): Set[Int] = context.patternGraphTags.getOrElse(qgn, resolve(qgn).tags)
+  protected def resolveTags(qgn: QualifiedGraphName)
+    (implicit context: CAPSRuntimeContext): Set[Int] = context.patternGraphTags.getOrElse(qgn, resolve(qgn).tags)
 
   override def args: Iterator[Any] = super.args.flatMap {
     case RecordHeader | Some(RecordHeader) => None
-    case other                               => Some(other)
+    case other => Some(other)
   }
-}
-
-object CAPSPhysicalOperator {
-  def joinRecords(
-      header: RecordHeader,
-      joinColumns: Seq[(String, String)],
-      joinType: String = "inner",
-      deduplicate: Boolean = false)(lhs: CAPSRecords, rhs: CAPSRecords): CAPSRecords = {
-
-    val lhsData = lhs.toDF()
-    val rhsData = rhs.toDF()
-
-    // TODO: the join produced corrupt data when the previous operator was a cross. We work around that by using a
-    // subsequent select. This can be removed, once https://issues.apache.org/jira/browse/SPARK-23855 is solved or we
-    // upgrade to Spark 2.3.0
-    val potentiallyCorruptedResult = joinDFs(lhsData, rhsData, header, joinColumns)(joinType, deduplicate)(lhs.caps)
-    val select = potentiallyCorruptedResult.df.select("*")
-    CAPSRecords(header, select)(lhs.caps)
-  }
-
-  def joinDFs(lhsData: DataFrame, rhsData: DataFrame, header: RecordHeader, joinCols: Seq[(String, String)])(
-      joinType: String,
-      deduplicate: Boolean)(implicit caps: CAPSSession): CAPSRecords = {
-
-    val joinedData = lhsData.safeJoin(rhsData, joinCols, joinType)
-
-    val returnData = if (deduplicate) {
-      val colsToDrop = joinCols.map(col => col._2)
-      joinedData.safeDropColumns(colsToDrop: _*)
-    } else joinedData
-
-    CAPSRecords(header, returnData)
-  }
-
-  def assertIsNode(e: Expr): Unit = {
-    e.cypherType match {
-      case CTNode(_, _) =>
-      case x => throw IllegalArgumentException(s"Expected $e to contain a node, but was $x")
-    }
-  }
-
 }

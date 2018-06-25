@@ -41,14 +41,14 @@ import org.opencypher.okapi.relational.impl.table._
 
 class PhysicalPlanner[
 O <: FlatRelationalTable[O],
-K <: PhysicalOperator[A, P, I],
+K <: PhysicalOperator[O, A, P, I],
 A <: RelationalCypherRecords[O],
 P <: PropertyGraph,
-I <: RuntimeContext[A, P]](val producer: PhysicalOperatorProducer[O, K, A, P, I])
+I <: RuntimeContext[O, A, P]](val producer: PhysicalOperatorProducer[O, K, A, P, I])
 
-  extends DirectCompilationStage[FlatOperator, K, PhysicalPlannerContext[K, A]] {
+  extends DirectCompilationStage[FlatOperator, K, PhysicalPlannerContext[O, K, A]] {
 
-  def process(flatPlan: FlatOperator)(implicit context: PhysicalPlannerContext[K, A]): K = {
+  def process(flatPlan: FlatOperator)(implicit context: PhysicalPlannerContext[O, K, A]): K = {
 
     implicit val caps: CypherSession = context.session
 
@@ -191,7 +191,34 @@ I <: RuntimeContext[A, P]](val producer: PhysicalOperatorProducer[O, K, A, P, I]
       case flat.Optional(lhs, rhs, header) => planOptional(lhs, rhs, header)
 
       case flat.ExistsSubQuery(predicateField, lhs, rhs, header) =>
-        producer.planExistsSubQuery(process(lhs), process(rhs), predicateField, header)
+
+        val leftResult = process(lhs)
+        val rightResult = process(rhs)
+
+        val leftHeader = leftResult.header
+        val rightHeader = rightResult.header
+
+        // 0. Find common expressions, i.e. join expressions
+        val joinExprs = leftHeader.vars.intersect(rightHeader.vars)
+        // 1. Alias join expressions on rhs
+        val renameExprs = joinExprs.map(e => e as Var(s"${e.name}${System.nanoTime}")(e.cypherType))
+        val rightHeaderAliases = renameExprs.foldLeft(rightHeader) {
+          case (currentHeader, aliasExpr) => currentHeader.withAlias(aliasExpr)
+        }
+        val rightWithAliases = producer.planAliases(rightResult, renameExprs.toSeq, rightHeaderAliases)
+        // 2. Drop Join expressions and their children in rhs
+        val epxrsToRemove = joinExprs.flatMap(v => rightHeader.ownedBy(v))
+        val reducedRhsDataHeader = rightHeaderAliases -- epxrsToRemove
+        val reducedRhsData = producer.planDrop(rightWithAliases, epxrsToRemove, rightHeaderAliases)
+        // 3. Compute distinct rows in rhs
+        val distinctRhsData = producer.planDistinct(reducedRhsData, renameExprs.map(_.alias))
+        // 4. Join lhs and prepared rhs using a left outer join
+        val joinedDataHeader = leftHeader.join(reducedRhsDataHeader)
+        val joinedData = producer.planJoin(leftResult, distinctRhsData, renameExprs.map(a => a.expr -> a.alias).toSeq, joinedDataHeader, LeftOuterJoin)
+        // 5. If at least one rhs join column is not null, the sub-query exists and true is projected to the target expression
+        val targetExpr = renameExprs.head.alias
+        val withIndicatorHeader = joinedDataHeader.withExpr(predicateField)
+        producer.planCopyColumn(joinedData, IsNotNull(targetExpr)(CTBoolean), predicateField, withIndicatorHeader)
 
       case flat.OrderBy(sortItems: Seq[SortItem[Expr]], in, header) =>
         producer.planOrderBy(process(in), sortItems, header)
@@ -207,7 +234,7 @@ I <: RuntimeContext[A, P]](val producer: PhysicalOperatorProducer[O, K, A, P, I]
   }
 
   private def planConstructGraph(in: Option[FlatOperator], construct: LogicalPatternGraph)
-    (implicit context: PhysicalPlannerContext[K, A]) = {
+    (implicit context: PhysicalPlannerContext[O, K, A]) = {
     val onGraphPlan = {
       construct.onGraphs match {
         case Nil => producer.planStart() // Empty start
@@ -226,7 +253,7 @@ I <: RuntimeContext[A, P]](val producer: PhysicalOperatorProducer[O, K, A, P, I]
   }
 
   private def planOptional(lhs: FlatOperator, rhs: FlatOperator, header: RecordHeader)
-    (implicit context: PhysicalPlannerContext[K, A]) = {
+    (implicit context: PhysicalPlannerContext[O, K, A]) = {
     val lhsData = process(lhs)
     val rhsData = process(rhs)
     val lhsHeader = lhs.header
