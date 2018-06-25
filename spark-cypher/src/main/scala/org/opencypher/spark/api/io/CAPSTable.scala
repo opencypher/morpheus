@@ -37,7 +37,7 @@ import org.opencypher.okapi.api.types.{DefiniteCypherType, _}
 import org.opencypher.okapi.api.value.CypherValue
 import org.opencypher.okapi.api.value.CypherValue.{CypherMap, CypherValue}
 import org.opencypher.okapi.impl.util.StringEncodingUtilities._
-import org.opencypher.okapi.ir.api.expr.Expr
+import org.opencypher.okapi.ir.api.expr.{Expr, Var}
 import org.opencypher.okapi.relational.api.io.{EntityTable, FlatRelationalTable}
 import org.opencypher.okapi.relational.impl.physical._
 import org.opencypher.okapi.relational.impl.table.RecordHeader
@@ -171,6 +171,10 @@ object SparkCypherTable {
     override def withTrueColumn(col: String): DataFrameTable = df.withColumn(col, functions.lit(true))
 
     override def withFalseColumn(col: String): DataFrameTable = df.withColumn(col, functions.lit(false))
+
+    override def retagColumn(replacements: Map[Int, Int], column: String): DataFrameTable = {
+      df.safeReplaceTags(column, replacements)
+    }
 
     def cache(): DataFrameTable = df.cache()
 

@@ -31,6 +31,7 @@ import org.opencypher.okapi.impl.exception.IllegalArgumentException
 import org.opencypher.okapi.relational.api.physical.PhysicalOperator
 import org.opencypher.okapi.relational.impl.table.RecordHeader
 import org.opencypher.okapi.trees.AbstractTreeNode
+import org.opencypher.spark.api.CAPSSession
 import org.opencypher.spark.api.io.SparkCypherTable.DataFrameTable
 import org.opencypher.spark.impl.CAPSConverters._
 import org.opencypher.spark.impl.physical.CAPSRuntimeContext
@@ -45,6 +46,8 @@ private[spark] abstract class CAPSPhysicalOperator
   override def table: DataFrameTable = children.head.table
 
   override implicit def context: CAPSRuntimeContext = children.head.context
+
+  implicit def session: CAPSSession = context.session
 
   override def graph: CAPSGraph = children.head.graph
 

@@ -30,50 +30,50 @@ import org.apache.spark.sql.functions.monotonically_increasing_id
 import org.apache.spark.sql.{Column, functions}
 import org.opencypher.okapi.api.graph.QualifiedGraphName
 import org.opencypher.okapi.api.types.{CTBoolean, CTInteger}
+import org.opencypher.okapi.impl.exception.IllegalArgumentException
 import org.opencypher.okapi.ir.api.expr.{Expr, Var, _}
 import org.opencypher.okapi.ir.api.set.SetPropertyItem
 import org.opencypher.okapi.ir.api.{PropertyKey, RelType}
 import org.opencypher.okapi.logical.impl.{ConstructedEntity, ConstructedNode, ConstructedRelationship, LogicalPatternGraph}
-import org.opencypher.okapi.relational.impl.physical.{CrossJoin, JoinType}
+import org.opencypher.okapi.relational.impl.physical.JoinType
 import org.opencypher.okapi.relational.impl.table.RecordHeader
-import org.opencypher.spark.api.{CAPSSession, Tags}
+import org.opencypher.spark.api.Tags
+import org.opencypher.spark.api.io.SparkCypherTable.DataFrameTable
 import org.opencypher.spark.impl.CAPSGraph.EmptyGraph
 import org.opencypher.spark.impl.CAPSUnionGraph.{apply => _, unapply => _}
 import org.opencypher.spark.impl.DataFrameOps._
 import org.opencypher.spark.impl.SparkSQLExprMapper._
-import org.opencypher.spark.impl.physical.{CAPSPhysicalResult, CAPSRuntimeContext}
+import org.opencypher.spark.impl.physical.CAPSRuntimeContext
 import org.opencypher.spark.impl.util.TagSupport._
 import org.opencypher.spark.impl.{CAPSGraph, CAPSRecords, CAPSUnionGraph}
 import org.opencypher.spark.schema.CAPSSchema._
-
-private[spark] abstract class BinaryPhysicalOperator extends CAPSPhysicalOperator {
-
-  def lhs: CAPSPhysicalOperator
-
-  def rhs: CAPSPhysicalOperator
-
-  override def execute(implicit context: CAPSRuntimeContext): CAPSPhysicalResult = {
-    executeBinary(lhs.execute, rhs.execute)
-  }
-
-  def executeBinary(left: CAPSPhysicalResult, right: CAPSPhysicalResult)
-    (implicit context: CAPSRuntimeContext): CAPSPhysicalResult
-}
 
 final case class Join(
   lhs: CAPSPhysicalOperator,
   rhs: CAPSPhysicalOperator,
   joinExprs: Seq[(Expr, Expr)],
-  header: RecordHeader,
   joinType: JoinType
-) extends BinaryPhysicalOperator with PhysicalOperatorDebugging {
+) extends CAPSPhysicalOperator {
 
-  override def executeBinary(left: CAPSPhysicalResult, right: CAPSPhysicalResult)(
-    implicit context: CAPSRuntimeContext
-  ): CAPSPhysicalResult = {
+  override lazy val header: RecordHeader = lhs.header join rhs.header
 
-    val joinedRecords = left.records.join(right.records, joinType, joinExprs: _*)
-    CAPSPhysicalResult(joinedRecords, left.workingGraph, left.workingGraphName)
+  override lazy val table: DataFrameTable = {
+
+    val lhsTable = lhs.table
+    val rhsTable = rhs.table
+
+    // TODO: move conflict resolution to relational planner
+    val cleanOther = if (lhsTable.physicalColumns.toSet ++ rhsTable.physicalColumns.toSet != header.columns) {
+      val renameColumns = rhs.header.expressions
+        .filter(expr => rhs.header.column(expr) != header.column(expr))
+        .map { expr => expr -> header.column(expr) }.toSeq
+      RenameColumns(rhs, renameColumns.toMap)
+    } else {
+      rhs
+    }
+
+    val joinCols = joinExprs.map { case (l, r) => header.column(l) -> cleanOther.header.column(r) }
+    table.join(cleanOther.table, joinType, joinCols: _*)
   }
 }
 
@@ -86,23 +86,31 @@ final case class Join(
   * @param lhs the first operand
   * @param rhs the second operand
   */
-final case class TabularUnionAll(lhs: CAPSPhysicalOperator, rhs: CAPSPhysicalOperator)
-  extends BinaryPhysicalOperator with InheritedHeader with PhysicalOperatorDebugging {
+// TODO: rename to UnionByName
+// TODO: refactor to n-ary operator (i.e. take List[PhysicalOperator] as input)
+final case class TabularUnionAll(lhs: CAPSPhysicalOperator, rhs: CAPSPhysicalOperator) extends CAPSPhysicalOperator {
 
-  override def executeBinary(left: CAPSPhysicalResult, right: CAPSPhysicalResult)
-    (implicit context: CAPSRuntimeContext): CAPSPhysicalResult = {
-    val unionRecords = left.records.unionAll(right.records)
-    CAPSPhysicalResult(unionRecords, left.workingGraph, left.workingGraphName)
-  }
-}
+  override lazy val table: DataFrameTable = {
+    val lhsTable = lhs.table
+    val rhsTable = rhs.table
 
-final case class CartesianProduct(lhs: CAPSPhysicalOperator, rhs: CAPSPhysicalOperator, header: RecordHeader)
-  extends BinaryPhysicalOperator with PhysicalOperatorDebugging {
+    val leftColumns = lhsTable.physicalColumns
+    val rightColumns = rhsTable.physicalColumns
 
-  override def executeBinary(left: CAPSPhysicalResult, right: CAPSPhysicalResult)(
-    implicit context: CAPSRuntimeContext): CAPSPhysicalResult = {
-    val crossRecords = left.records.join(right.records, CrossJoin)
-    CAPSPhysicalResult(crossRecords, left.workingGraph, left.workingGraphName)
+    if (leftColumns.size != rightColumns.size) {
+      throw IllegalArgumentException("same number of columns", s"left: $leftColumns right: $rightColumns")
+    }
+    if (leftColumns.toSet != rightColumns.toSet) {
+      throw IllegalArgumentException("same column names", s"left: $leftColumns right: $rightColumns")
+    }
+
+    val orderedColumns = if (leftColumns != rightColumns) {
+      rhsTable.select(leftColumns: _*)
+    } else {
+      rhsTable
+    }
+
+    table.unionAll(orderedColumns)
   }
 }
 
@@ -115,14 +123,17 @@ final case class ConstructGraph(
   lhs: CAPSPhysicalOperator,
   rhs: CAPSPhysicalOperator,
   construct: LogicalPatternGraph
-) extends BinaryPhysicalOperator with PhysicalOperatorDebugging {
+) extends CAPSPhysicalOperator {
+
+  override lazy val header: RecordHeader = RecordHeader.empty
+
+  override lazy val table: DataFrameTable = lhs.table.unit
 
   override def toString: String = {
     val entities = construct.clones.keySet ++ construct.newEntities.map(_.v)
     s"ConstructGraph(on=[${construct.onGraphs.mkString(", ")}], entities=[${entities.mkString(", ")}])"
   }
 
-  override def header: RecordHeader = RecordHeader.empty
 
   private def pickFreeTag(tagStrategy: Map[QualifiedGraphName, Map[Int, Int]]): Int = {
     val usedTags = tagStrategy.values.flatMap(_.values).toSet
@@ -133,12 +144,11 @@ final case class ConstructGraph(
     g -> g.tags.zip(g.tags).toMap
   }
 
-  override def executeBinary(left: CAPSPhysicalResult, right: CAPSPhysicalResult)
-    (implicit context: CAPSRuntimeContext): CAPSPhysicalResult = {
-    implicit val session: CAPSSession = left.records.caps
+  override lazy val (graph, graphName, tagStrategy): (CAPSGraph, QualifiedGraphName, TagStrategy) = {
 
-    val onGraph = right.workingGraph
-    val unionTagStrategy: Map[QualifiedGraphName, Map[Int, Int]] = right.tagStrategy
+    val onGraph = rhs.graph
+
+    val unionTagStrategy: Map[QualifiedGraphName, Map[Int, Int]] = rhs.tagStrategy
 
     val LogicalPatternGraph(schema, clonedVarsToInputVars, newEntities, sets, _, name) = construct
 
@@ -152,32 +162,39 @@ final case class ConstructGraph(
     val aliasClones = clonedVarsToInputVars
       .filter { case (alias, original) => alias != original }
       .map(_.swap)
-    val baseTable = left.records.withAliases(aliasClones.map { case (expr, alias) => expr as alias }.toSeq: _*)
+
+
+    val aliasedLhs = Alias(lhs, aliasClones.map { case (expr, alias) => expr as alias }.toSeq)
+    val baseTableHeader = aliasedLhs.header
+    val baseTable = aliasedLhs.table
 
     val retaggedBaseTable = clonedVarsToInputVars.foldLeft(baseTable) { case (df, clone) =>
-      df.retagVariable(clone._1, constructTagStrategy(clone._2.cypherType.graph.get))
+      df.retagColumn(constructTagStrategy(clone._2.cypherType.graph.get), baseTableHeader.column(clone._1))
     }
 
     // Construct NEW entities
-    val (newEntityTags, tableWithConstructedEntities) = {
+    val (newEntityTags, (headerWithConstructedEntities, tableWithConstructedEntities)) = {
       if (newEntities.isEmpty) {
-        Set.empty[Int] -> retaggedBaseTable
+        Set.empty[Int] -> (baseTableHeader -> retaggedBaseTable)
       } else {
         val newEntityTag = pickFreeTag(constructTagStrategy)
-        val entityTable = createEntities(newEntities, retaggedBaseTable, newEntityTag)
-        val entityTableWithProperties = sets.foldLeft(entityTable) {
-          case (df, SetPropertyItem(key, v, expr)) =>
-            constructProperty(v, key, expr, df)
+        val (entityHeader, entityTable) = createEntities(newEntities, baseTableHeader, retaggedBaseTable, newEntityTag)
+        val entityTableWithProperties = sets.foldLeft(entityHeader -> entityTable) {
+          case ((currentHeader, currentTable), SetPropertyItem(key, v, expr)) =>
+            constructProperty(v, key, expr, currentHeader, currentTable)
         }
         Set(newEntityTag) -> entityTableWithProperties
       }
     }
 
     // Remove all vars that were part the original pattern graph DF, except variables that were CLONEd without an alias
-    val allInputVars = baseTable.header.vars
+    val allInputVars = aliasedLhs.header.vars
     val originalVarsToKeep = clonedVarsToInputVars.keySet -- aliasClones.keySet
     val varsToRemoveFromTable = allInputVars -- originalVarsToKeep
-    val patternGraphTable = tableWithConstructedEntities.removeVars(varsToRemoveFromTable)
+
+    val recordsWithConstructedEntities = CAPSRecords(headerWithConstructedEntities, tableWithConstructedEntities.df)
+    val patternGraphTable = DropColumns(Start(context.session.emptyGraphQgn, Some(recordsWithConstructedEntities)), varsToRemoveFromTable)
+
 
     val tagsUsed = constructTagStrategy.foldLeft(newEntityTags) {
       case (tags, (qgn, remapping)) =>
@@ -185,7 +202,8 @@ final case class ConstructGraph(
         tags ++ remappedTags
     }
 
-    val patternGraph = CAPSGraph.create(patternGraphTable, schema.asCaps, tagsUsed)
+    val patternRecords = CAPSRecords(patternGraphTable.header, patternGraphTable.table.df)
+    val patternGraph = CAPSGraph.create(patternRecords, schema.asCaps, tagsUsed)
 
     val constructedCombinedWithOn = onGraph match {
       case _: EmptyGraph => CAPSUnionGraph(Map(identityRetaggings(patternGraph)))
@@ -194,70 +212,79 @@ final case class ConstructGraph(
 
     context.patternGraphTags.update(construct.name, constructedCombinedWithOn.tags)
 
-    CAPSPhysicalResult(CAPSRecords.unit(), constructedCombinedWithOn, name, constructTagStrategy)
+    (patternGraph, name, constructTagStrategy)
   }
 
-
-  def constructProperty(variable: Var, propertyKey: String, propertyValue: Expr, constructedTable: CAPSRecords)
-    (implicit context: CAPSRuntimeContext): CAPSRecords = {
-    val propertyValueColumn: Column = propertyValue.asSparkSQLExpr(constructedTable.header, constructedTable.df, context.parameters)
+  def constructProperty(
+    variable: Var,
+    propertyKey: String,
+    propertyValue: Expr,
+    constructedHeader: RecordHeader,
+    constructedTable: DataFrameTable
+  )(implicit context: CAPSRuntimeContext): (RecordHeader, DataFrameTable) = {
+    val propertyValueColumn: Column = propertyValue.asSparkSQLExpr(constructedHeader, constructedTable.df, context.parameters)
 
     val propertyExpression = Property(variable, PropertyKey(propertyKey))(propertyValue.cypherType)
 
-    val existingPropertyExpressionsForKey = constructedTable.header.propertiesFor(variable).collect({
+    val existingPropertyExpressionsForKey = constructedHeader.propertiesFor(variable).collect({
       case p@Property(_, PropertyKey(name)) if name == propertyKey => p
     })
 
-    val headerWithExistingRemoved = constructedTable.header -- existingPropertyExpressionsForKey
+    val headerWithExistingRemoved = constructedHeader -- existingPropertyExpressionsForKey
     val dataWithExistingRemoved = existingPropertyExpressionsForKey.foldLeft(constructedTable.df) {
-      case (acc, toRemove) => acc.safeDropColumn(constructedTable.header.column(toRemove))
+      case (acc, toRemove) => acc.safeDropColumn(constructedHeader.column(toRemove))
     }
 
     val newHeader = headerWithExistingRemoved.withExpr(propertyExpression)
     val newData = dataWithExistingRemoved.safeAddColumn(newHeader.column(propertyExpression), propertyValueColumn)
-    CAPSRecords(newHeader, newData)(constructedTable.caps)
+
+    newHeader -> newData
   }
 
   private def createEntities(
     toCreate: Set[ConstructedEntity],
-    constructedTable: CAPSRecords,
-    newEntityTag: Int): CAPSRecords = {
+    constructedHeader: RecordHeader,
+    constructedTable: DataFrameTable,
+    newEntityTag: Int
+  ): (RecordHeader, DataFrameTable) = {
     // Construct nodes before relationships, as relationships might depend on nodes
     val nodes = toCreate.collect {
-      case c: ConstructedNode if !constructedTable.header.vars.contains(c.v) => c
+      case c: ConstructedNode if !constructedHeader.vars.contains(c.v) => c
     }
     val rels = toCreate.collect {
-      case r: ConstructedRelationship if !constructedTable.header.vars.contains(r.v) => r
+      case r: ConstructedRelationship if !constructedHeader.vars.contains(r.v) => r
     }
 
     val (_, createdNodes) = nodes.foldLeft(0 -> Map.empty[Expr, Column]) {
       case ((nextColumnPartitionId, constructedNodes), nextNodeToConstruct) =>
-        (nextColumnPartitionId + 1) -> (constructedNodes ++ constructNode(newEntityTag, nextColumnPartitionId, nodes.size, nextNodeToConstruct, constructedTable))
+        (nextColumnPartitionId + 1) -> (constructedNodes ++ constructNode(newEntityTag, nextColumnPartitionId, nodes.size, nextNodeToConstruct, constructedHeader, constructedTable))
     }
 
-    val recordsWithNodes = addEntitiesToRecords(createdNodes, constructedTable)
+    val (headerWithNodes, tableWithNodes) = addEntitiesToRecords(createdNodes, constructedHeader, constructedTable)
 
     val (_, createdRels) = rels.foldLeft(0 -> Map.empty[Expr, Column]) {
       case ((nextColumnPartitionId, constructedRels), nextRelToConstruct) =>
-        (nextColumnPartitionId + 1) -> (constructedRels ++ constructRel(newEntityTag, nextColumnPartitionId, rels.size, nextRelToConstruct, recordsWithNodes))
+        (nextColumnPartitionId + 1) -> (constructedRels ++ constructRel(newEntityTag, nextColumnPartitionId, rels.size, nextRelToConstruct, headerWithNodes, tableWithNodes))
     }
 
-    addEntitiesToRecords(createdRels, recordsWithNodes)
+    addEntitiesToRecords(createdRels, headerWithNodes, tableWithNodes)
   }
 
+  // TODO: refactor to own physical operator
   private def addEntitiesToRecords(
     columnsToAdd: Map[Expr, Column],
-    constructedTable: CAPSRecords
-  ): CAPSRecords = {
+    constructedHeader: RecordHeader,
+    constructedTable: DataFrameTable
+  ): (RecordHeader, DataFrameTable) = {
     // TODO: Move header construction to FlatPlanner
-    val newHeader = constructedTable.header.withExprs(columnsToAdd.keySet)
+    val newHeader = constructedHeader.withExprs(columnsToAdd.keySet)
 
     val newData = columnsToAdd.foldLeft(constructedTable.df) {
       case (acc, (expr, col)) =>
         acc.safeAddColumn(newHeader.column(expr), col)
     }
 
-    CAPSRecords(newHeader, newData)(constructedTable.caps)
+    newHeader -> newData
   }
 
   private def constructNode(
@@ -265,13 +292,14 @@ final case class ConstructGraph(
     columnIdPartition: Int,
     numberOfColumnPartitions: Int,
     node: ConstructedNode,
-    constructedTable: CAPSRecords
+    constructedTableHeader: RecordHeader,
+    constructedTable: DataFrameTable
   ): Map[Expr, Column] = {
 
     val idTuple = node.v -> generateId(columnIdPartition, numberOfColumnPartitions).setTag(newEntityTag)
 
     val copiedLabelTuples = node.baseEntity match {
-      case Some(origNode) => copyExpressions(node.v, constructedTable)(_.labelsFor(origNode))
+      case Some(origNode) => copyExpressions(node.v, constructedTableHeader, constructedTable)(_.labelsFor(origNode))
       case None => Map.empty
     }
 
@@ -280,7 +308,7 @@ final case class ConstructGraph(
     }.toMap
 
     val propertyTuples = node.baseEntity match {
-      case Some(origNode) => copyExpressions(node.v, constructedTable)(_.propertiesFor(origNode))
+      case Some(origNode) => copyExpressions(node.v, constructedTableHeader, constructedTable)(_.propertiesFor(origNode))
       case None => Map.empty
     }
 
@@ -313,10 +341,11 @@ final case class ConstructGraph(
     columnIdPartition: Int,
     numberOfColumnPartitions: Int,
     toConstruct: ConstructedRelationship,
-    constructedTable: CAPSRecords
+    constructedTableHeader: RecordHeader,
+    constructedTable: DataFrameTable
   ): Map[Expr, Column] = {
     val ConstructedRelationship(rel, source, target, typOpt, baseRelOpt) = toConstruct
-    val header = constructedTable.header
+    val header = constructedTableHeader
     val inData = constructedTable.df
 
     // id needs to be generated
@@ -339,22 +368,21 @@ final case class ConstructGraph(
           Map(HasType(rel, RelType(t))(CTBoolean) -> functions.lit(true))
         case None =>
           // When no type is present, it needs to be a copy of a base relationship
-          copyExpressions(rel, constructedTable)(_.typesFor(baseRelOpt.get))
+          copyExpressions(rel, constructedTableHeader, constructedTable)(_.typesFor(baseRelOpt.get))
       }
     }
 
     val propertyTuples: Map[Expr, Column] = baseRelOpt match {
       case Some(baseRel) =>
-        copyExpressions(rel, constructedTable)(_.propertiesFor(baseRel))
+        copyExpressions(rel, constructedTableHeader, constructedTable)(_.propertiesFor(baseRel))
       case None => Map.empty
     }
 
     propertyTuples ++ typeTuple + idTuple + sourceTuple + targetTuple
   }
 
-  private def copyExpressions[T <: Expr](targetVar: Var, records: CAPSRecords)
+  private def copyExpressions[T <: Expr](targetVar: Var, header: RecordHeader, records: DataFrameTable)
     (extractor: RecordHeader => Set[T]): Map[Expr, Column] = {
-    val header = records.header
     val origExprs = extractor(header)
     val copyExprs = origExprs.map(_.withOwner(targetVar))
     val dfColumns = origExprs.map(header.column).map(records.df.col)

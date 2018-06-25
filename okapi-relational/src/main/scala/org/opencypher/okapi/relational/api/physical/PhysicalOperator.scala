@@ -40,6 +40,8 @@ import org.opencypher.okapi.relational.impl.table.RecordHeader
   */
 trait PhysicalOperator[T <: FlatRelationalTable[T], R <: RelationalCypherRecords[T], G <: PropertyGraph, C <: RuntimeContext[T, R, G]] {
 
+  type TagStrategy = Map[QualifiedGraphName, Map[Int, Int]]
+
   def context: C
 
   /**
@@ -57,6 +59,6 @@ trait PhysicalOperator[T <: FlatRelationalTable[T], R <: RelationalCypherRecords
 
   def graphName: QualifiedGraphName
 
-  def tagStrategy: Map[QualifiedGraphName, Map[Int, Int]] = Map.empty
+  def tagStrategy: TagStrategy = Map.empty
 
 }

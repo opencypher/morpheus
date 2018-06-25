@@ -78,6 +78,8 @@ trait FlatRelationalTable[T <: FlatRelationalTable[T]] extends CypherTable {
 
   def join(other: T, joinType: JoinType, joinCols: (String, String)*): T
 
+  // TODO: introduce function expression for retagging and use withColumn and backend-specific expression resolver
+  def retagColumn(replacements: Map[Int, Int], column: String): T
 }
 
 trait RelationalCypherRecords[T <: FlatRelationalTable[T]] extends CypherRecords {

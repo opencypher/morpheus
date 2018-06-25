@@ -107,7 +107,7 @@ final case class CopyColumn(in: CAPSPhysicalOperator, from: Expr, to: Expr) exte
   override lazy val table: DataFrameTable = in.table.withColumn(header.column(to), from)(header, context.parameters)
 }
 
-final case class DropColumns(in: CAPSPhysicalOperator, exprs: Set[Expr]) extends CAPSPhysicalOperator {
+final case class DropColumns[T <: Expr](in: CAPSPhysicalOperator, exprs: Set[T]) extends CAPSPhysicalOperator {
 
   override lazy val header: RecordHeader = header -- exprs
 
