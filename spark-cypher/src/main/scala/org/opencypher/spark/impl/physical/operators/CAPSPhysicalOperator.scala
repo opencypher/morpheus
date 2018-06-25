@@ -33,14 +33,22 @@ import org.opencypher.okapi.relational.impl.table.RecordHeader
 import org.opencypher.okapi.trees.AbstractTreeNode
 import org.opencypher.spark.api.io.SparkCypherTable.DataFrameTable
 import org.opencypher.spark.impl.CAPSConverters._
-import org.opencypher.spark.impl.physical.{CAPSPhysicalResult, CAPSRuntimeContext}
+import org.opencypher.spark.impl.physical.CAPSRuntimeContext
 import org.opencypher.spark.impl.{CAPSGraph, CAPSRecords}
 
 private[spark] abstract class CAPSPhysicalOperator
   extends AbstractTreeNode[CAPSPhysicalOperator]
     with PhysicalOperator[DataFrameTable, CAPSRecords, CAPSGraph, CAPSRuntimeContext] {
 
-  override def execute(implicit context: CAPSRuntimeContext): CAPSPhysicalResult
+  override def header: RecordHeader = children.head.header
+
+  override def table: DataFrameTable = children.head.table
+
+  override implicit def context: CAPSRuntimeContext = children.head.context
+
+  override def graph: CAPSGraph = children.head.graph
+
+  override def graphName: QualifiedGraphName = children.head.graphName
 
   protected def resolve(qualifiedGraphName: QualifiedGraphName)(implicit context: CAPSRuntimeContext): CAPSGraph = {
     context.resolve(qualifiedGraphName).map(_.asCaps).getOrElse(throw IllegalArgumentException(s"a graph at $qualifiedGraphName"))

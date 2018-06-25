@@ -26,8 +26,10 @@
  */
 package org.opencypher.spark.api.io
 
+import java.util.Collections
+
 import org.apache.spark.sql.functions._
-import org.apache.spark.sql.{DataFrame, functions}
+import org.apache.spark.sql.{DataFrame, Row, functions}
 import org.apache.spark.storage.StorageLevel
 import org.opencypher.okapi.api.io.conversion.{EntityMapping, NodeMapping, RelationshipMapping}
 import org.opencypher.okapi.api.schema.Schema
@@ -43,6 +45,7 @@ import org.opencypher.spark.api.CAPSSession
 import org.opencypher.spark.api.io.SparkCypherTable.DataFrameTable
 import org.opencypher.spark.impl.DataFrameOps._
 import org.opencypher.spark.impl.SparkSQLExprMapper._
+import org.opencypher.spark.impl.convert.SparkConversions._
 import org.opencypher.spark.impl.util.Annotation
 import org.opencypher.spark.impl.{CAPSRecords, RecordBehaviour}
 import org.opencypher.spark.schema.CAPSSchema
@@ -54,6 +57,16 @@ import scala.reflect.runtime.universe._
 object SparkCypherTable {
 
   implicit class DataFrameTable(val df: DataFrame) extends FlatRelationalTable[DataFrameTable] {
+
+    override def empty(initialHeader: RecordHeader = RecordHeader.empty): DataFrameTable = {
+      df.sparkSession.createDataFrame(Collections.emptyList[Row](), initialHeader.toStructType)
+    }
+
+    private case class EmptyRow()
+
+    override def unit: DataFrameTable = {
+      df.sparkSession.createDataFrame(Seq(EmptyRow()))
+    }
 
     override def physicalColumns: Seq[String] = df.columns
 
@@ -94,6 +107,21 @@ object SparkCypherTable {
       }
 
       df.sort(sortExpression: _*)
+    }
+
+    override def skip(items: Long): DataFrameTable = {
+      // TODO: Replace with data frame based implementation ASAP
+      df.sparkSession.createDataFrame(
+        df.toDF().rdd
+          .zipWithIndex()
+          .filter(pair => pair._2 >= items)
+          .map(_._1),
+        df.toDF().schema
+      )
+    }
+
+    override def limit(items: Long): DataFrameTable = {
+      df.limit(items)
     }
 
     override def unionAll(other: DataFrameTable): DataFrameTable = {
@@ -154,7 +182,6 @@ object SparkCypherTable {
 
     def unpersist(blocking: Boolean): DataFrameTable = df.unpersist(blocking)
   }
-
 }
 
 trait CAPSEntityTable extends EntityTable[DataFrameTable] {

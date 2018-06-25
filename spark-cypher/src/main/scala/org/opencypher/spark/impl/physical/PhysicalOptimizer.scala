@@ -73,7 +73,7 @@ class PhysicalOptimizer extends DirectCompilationStage[CAPSPhysicalOperator, CAP
             }
         }
       }
-
+      // TODO: filter by opCount and always point at first op in group (avoids mutable map)
       opsToCache.map(op => op -> Cache(op)).toMap
     }
 

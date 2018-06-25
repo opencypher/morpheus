@@ -26,7 +26,8 @@
  */
 package org.opencypher.okapi.relational.api.physical
 
-import org.opencypher.okapi.api.graph.PropertyGraph
+import org.opencypher.okapi.api.graph.{PropertyGraph, QualifiedGraphName}
+import org.opencypher.okapi.ir.api.expr.Var
 import org.opencypher.okapi.relational.api.io.{FlatRelationalTable, RelationalCypherRecords}
 import org.opencypher.okapi.relational.impl.table.RecordHeader
 
@@ -39,6 +40,8 @@ import org.opencypher.okapi.relational.impl.table.RecordHeader
   */
 trait PhysicalOperator[T <: FlatRelationalTable[T], R <: RelationalCypherRecords[T], G <: PropertyGraph, C <: RuntimeContext[T, R, G]] {
 
+  def context: C
+
   /**
     * The record header constructed by that operator.
     *
@@ -46,12 +49,14 @@ trait PhysicalOperator[T <: FlatRelationalTable[T], R <: RelationalCypherRecords
     */
   def header: RecordHeader
 
-  /**
-    * Triggers the execution of that operator.
-    *
-    * @param context backend-specific runtime context
-    * @return physical result
-    */
-  def execute(implicit context: C): PhysicalResult[T, R, G]
+  def returnItems: Option[Seq[Var]] = None
+
+  def table: T
+
+  def graph: G
+
+  def graphName: QualifiedGraphName
+
+  def tagStrategy: Map[QualifiedGraphName, Map[Int, Int]] = Map.empty
 
 }

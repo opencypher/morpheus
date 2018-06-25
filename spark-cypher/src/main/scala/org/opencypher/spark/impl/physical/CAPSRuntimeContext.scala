@@ -42,6 +42,6 @@ object CAPSRuntimeContext {
 case class CAPSRuntimeContext(
   parameters: CypherMap,
   resolve: QualifiedGraphName => Option[CAPSGraph],
-  cache: mutable.Map[CAPSPhysicalOperator, CAPSPhysicalResult],
+  cache: mutable.Map[CAPSPhysicalOperator, DataFrameTable],
   patternGraphTags: mutable.Map[QualifiedGraphName, Set[Int]])
   extends RuntimeContext[DataFrameTable, CAPSRecords, CAPSGraph]
