@@ -83,7 +83,7 @@ case class Neo4jReadOnlyNamedQueryGraphSource(
     case schema => schema
   }
 
-  import CommunityNeo4jGraphDataSource.schemaProcedureName
+  import Neo4jReadOnlyNamedQueryGraphSource.schemaProcedureName
 
   private def computeSchema(name: GraphName): Option[Schema] = {
     Try {
