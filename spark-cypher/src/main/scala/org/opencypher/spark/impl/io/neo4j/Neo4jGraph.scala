@@ -76,23 +76,23 @@ class Neo4jGraph(val schema: CAPSSchema, val session: CAPSSession)(
   override def nodes(name: String, cypherType: CTNode): CAPSRecords = {
     val header = schema.headerForNode(Var(name)(cypherType))
 
-    computeRecords(name, cypherType, header) { (header, struct) =>
-      inputNodes.filter(filterNode(cypherType)).map(nodeToRow(header, struct))
+    computeRecords(name, cypherType, header) { header =>
+      inputNodes.filter(filterNode(cypherType)).map(nodeToRow(header))
     }
   }
 
   override def relationships(name: String, cypherType: CTRelationship): CAPSRecords = {
     val header = schema.headerForRelationship(Var(name)(cypherType))
 
-    computeRecords(name, cypherType, header) { (header, struct) =>
-      inputRels.filter(filterRel(cypherType)).map(relToRow(header, struct))
+    computeRecords(name, cypherType, header) { header =>
+      inputRels.filter(filterRel(cypherType)).map(relToRow(header))
     }
   }
 
   private def computeRecords(name: String, cypherType: CypherType, header: RecordHeader)(
-    computeRdd: (RecordHeader, StructType) => RDD[Row]
+    computeRdd: RecordHeader => RDD[Row]
   ): CAPSRecords = {
-    val rdd = computeRdd(header, header.toStructType)
+    val rdd = computeRdd(header)
     val column = header.column(Var(name)(cypherType))
     val rawData = session.sparkSession.createDataFrame(rdd, header.toStructType)
     val sparkColumn = rawData.col(column)
@@ -113,7 +113,7 @@ object Neo4jGraph {
       requiredLabels.forall(importedNode.hasLabel)
   }
 
-  private case class nodeToRow(header: RecordHeader, schema: StructType) extends (InternalNode => Row) {
+  case class nodeToRow(header: RecordHeader) extends (InternalNode => Row) {
 
     private def orderedColumns = header.columns.toSeq.sorted
     private val orderedExpressions = orderedColumns.map { column =>
@@ -154,7 +154,7 @@ object Neo4jGraph {
       relType.types.isEmpty || relType.types.exists(importedRel.hasType)
   }
 
-  private case class relToRow(header: RecordHeader, schema: StructType) extends (InternalRelationship => Row) {
+  private case class relToRow(header: RecordHeader) extends (InternalRelationship => Row) {
 
     private def orderedColumns = header.columns.toSeq.sorted
     private val orderedExpressions = orderedColumns.map { column =>
