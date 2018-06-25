@@ -36,7 +36,7 @@ import org.opencypher.okapi.api.table.CypherRecords
 import org.opencypher.okapi.api.types.CTNode
 import org.opencypher.okapi.impl.table.RecordsPrinter
 import org.opencypher.okapi.impl.util.PrintOptions
-import org.opencypher.okapi.ir.api.expr.Var
+import org.opencypher.okapi.ir.api.expr.NodeVar
 import org.opencypher.okapi.relational.impl.table.RecordHeader
 import org.opencypher.spark.testing.CAPSTestSuite
 import org.opencypher.spark.testing.fixture.GraphConstructionFixture
@@ -66,10 +66,10 @@ class CAPSRecordsPrinterTest extends CAPSTestSuite with GraphConstructionFixture
 
   it("prints a single column with no rows") {
     // Given
-    val header = RecordHeader.from(Var("foo")(CTNode))
+    val header = RecordHeader.from(NodeVar("foo")(CTNode))
     val emptyDf = caps.sparkSession.createDataFrame(
       Collections.emptyList[Row](),
-      StructType(Seq(StructField(header.column(Var("foo")()), LongType))))
+      StructType(Seq(StructField(header.column(NodeVar("foo")()), LongType))))
     val records = CAPSRecords(header, emptyDf, Some(Seq("foo")))
 
     // When

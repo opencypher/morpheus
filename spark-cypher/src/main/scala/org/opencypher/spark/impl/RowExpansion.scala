@@ -36,9 +36,9 @@ import org.opencypher.spark.impl.convert.SparkConversions._
 
 case class RowExpansion(
     targetHeader: RecordHeader,
-    targetVar: EntityExpr,
-    entitiesWithChildren: Map[EntityExpr, Set[Expr]],
-    propertyColumnLookupTables: Map[EntityExpr, Map[String, String]]
+    targetVar: Var,
+    entitiesWithChildren: Map[Var, Set[Expr]],
+    propertyColumnLookupTables: Map[Var, Map[String, String]]
 ) extends (Row => Seq[Row]) {
 
   private lazy val targetLabels = targetVar.cypherType match {
@@ -128,7 +128,7 @@ case class RowExpansion(
   }
 
   def filterNullRows(rows: Seq[Row]): Seq[Row] = {
-    val entityVar = targetHeader.entityExpressions.head
+    val entityVar = targetHeader.entityVars.head
     val index = structType.fieldIndex(targetHeader.column(entityVar))
     rows.filterNot(_.isNullAt(index))
   }

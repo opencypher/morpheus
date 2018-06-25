@@ -69,7 +69,7 @@ case class CAPSPatternGraph(
     val targetNode = Var(name)(nodeCypherType)
     val nodeSchema = schema.forNode(nodeCypherType.labels)
     val targetNodeHeader = nodeSchema.headerForNode(targetNode)
-    val extractionNodes: Set[EntityExpr] = header.nodesForType(nodeCypherType)
+    val extractionNodes: Set[Var] = header.nodesForType(nodeCypherType)
 
     extractRecordsFor(targetNode, targetNodeHeader, extractionNodes)
   }
@@ -78,12 +78,12 @@ case class CAPSPatternGraph(
     val targetRel = Var(name)(relCypherType)
     val relSchema = schema.forRelationship(relCypherType)
     val targetRelHeader = relSchema.headerForRelationship(targetRel)
-    val extractionRels = header.relationshipsForType(relCypherType)
+    val extractionRels: Set[Var] = header.relationshipsForType(relCypherType)
 
     extractRecordsFor(targetRel, targetRelHeader, extractionRels)
   }
 
-  private def extractRecordsFor(targetVar: EntityExpr, targetHeader: RecordHeader, extractionVars: Set[EntityExpr]): CAPSRecords = {
+  private def extractRecordsFor(targetVar: Var, targetHeader: RecordHeader, extractionVars: Set[Var]): CAPSRecords = {
     val extractionExpressions = extractionVars.map(candidate => candidate -> header.ownedBy(candidate)).toMap
 
     val relColumnsLookupTables = extractionExpressions.map {
@@ -100,7 +100,7 @@ case class CAPSPatternGraph(
     CAPSRecords(targetHeader, distinctData)
   }
 
-  private def createScanToBaseTableLookup(targetHeader: RecordHeader, scanTableVar: EntityExpr, baseTableExpressions: Set[Expr]): Map[String, String] = {
+  private def createScanToBaseTableLookup(targetHeader: RecordHeader, scanTableVar: Var, baseTableExpressions: Set[Expr]): Map[String, String] = {
     baseTableExpressions.flatMap { baseTableExpression =>
       val scanTableExpression = baseTableExpression.withOwner(scanTableVar)
 

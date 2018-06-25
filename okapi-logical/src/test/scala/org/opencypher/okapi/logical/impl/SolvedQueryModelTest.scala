@@ -80,7 +80,7 @@ class SolvedQueryModelTest extends BaseTestSuite with IrConstruction {
     s.solves(p.withEntity('x -> CTNode)) shouldBe false
   }
 
-  test("solve relationship") {
+  it("can solve a relationship") {
     val s = SolvedQueryModel.empty
 
     an [IllegalArgumentException] should be thrownBy s.solveRelationship('a)
@@ -94,9 +94,9 @@ class SolvedQueryModelTest extends BaseTestSuite with IrConstruction {
       SolvedQueryModel.empty
         .withField('r -> CTRelationship)
         .withPredicate(Ors(
-          HasType(Var("r")(), RelType("KNOWS"))(CTBoolean),
-          HasType(Var("r")(), RelType("LOVES"))(CTBoolean),
-          HasType(Var("r")(), RelType("HATES"))(CTBoolean)))
+          HasType(RelationshipVar("r")(), RelType("KNOWS"))(CTBoolean),
+          HasType(RelationshipVar("r")(), RelType("LOVES"))(CTBoolean),
+          HasType(RelationshipVar("r")(), RelType("HATES"))(CTBoolean)))
     )
   }
 }

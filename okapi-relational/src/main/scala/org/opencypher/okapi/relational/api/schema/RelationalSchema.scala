@@ -37,7 +37,7 @@ object RelationalSchema {
 
   implicit class SchemaOps(val schema: Schema) {
 
-    def headerForNode(node: EntityExpr): RecordHeader = {
+    def headerForNode(node: Var): RecordHeader = {
       val labels: Set[String] = node.cypherType match {
         case CTNode(l, _) => l
         case other => throw IllegalArgumentException(CTNode, other)
@@ -45,7 +45,7 @@ object RelationalSchema {
       headerForNode(node, labels)
     }
 
-    def headerForNode(node: EntityExpr, labels: Set[String]): RecordHeader = {
+    def headerForNode(node: Var, labels: Set[String]): RecordHeader = {
       val labelCombos = if (labels.isEmpty) {
         // all nodes scan
         schema.allLabelCombinations
@@ -66,7 +66,7 @@ object RelationalSchema {
       RecordHeader.from(labelExpressions ++ propertyExpressions + node)
     }
 
-    def headerForRelationship(rel: EntityExpr): RecordHeader = {
+    def headerForRelationship(rel: Var): RecordHeader = {
       val types = rel.cypherType match {
         case CTRelationship(relTypes, _) if relTypes.isEmpty =>
           schema.relationshipTypes
@@ -79,7 +79,7 @@ object RelationalSchema {
       headerForRelationship(rel, types)
     }
 
-    def headerForRelationship(rel: EntityExpr, relTypes: Set[String]): RecordHeader = {
+    def headerForRelationship(rel: Var, relTypes: Set[String]): RecordHeader = {
       val relKeyHeaderProperties = relTypes
         .flatMap(t => schema.relationshipKeys(t))
         .groupBy { case (propertyKey, _) => propertyKey }

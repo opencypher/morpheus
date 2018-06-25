@@ -35,7 +35,6 @@ import org.opencypher.okapi.api.value.CypherValue.{CypherMap, CypherValue}
 import org.opencypher.okapi.impl.exception.{IllegalArgumentException, UnsupportedOperationException}
 import org.opencypher.okapi.impl.table._
 import org.opencypher.okapi.impl.util.PrintOptions
-import org.opencypher.okapi.ir.api.expr.Expr._
 import org.opencypher.okapi.ir.api.expr._
 import org.opencypher.okapi.relational.api.io.RelationalCypherRecords
 import org.opencypher.okapi.relational.impl.table._
@@ -140,7 +139,7 @@ case class CAPSRecords(
     copy(header, dfWithReplacedTags)
   }
 
-  def retagVariable(v: EntityExpr, replacements: Map[Int, Int]): CAPSRecords = {
+  def retagVariable(v: Var, replacements: Map[Int, Int]): CAPSRecords = {
     val columnsToUpdate = header.idColumns(v)
     val updatedData = columnsToUpdate.foldLeft(df) { case (df, columnName) =>
       df.safeReplaceTags(columnName, replacements)
@@ -165,7 +164,7 @@ case class CAPSRecords(
     */
   def alignWith(v: Var, targetHeader: RecordHeader): CAPSRecords = {
 
-    val entityVars = header.entityExpressions
+    val entityVars = header.entityVars
 
     val oldEntity = entityVars.toSeq match {
       case Seq(one) => one

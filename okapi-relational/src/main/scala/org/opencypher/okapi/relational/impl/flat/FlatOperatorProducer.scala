@@ -72,11 +72,11 @@ class FlatOperatorProducer(implicit context: FlatPlannerContext) {
     * This acts like a leaf operator even though it has an ancestor in the tree.
     * That means that it will discard any incoming fields from the ancestor header (assumes it is empty)
     */
-  def nodeScan(node: EntityExpr, prev: FlatOperator): NodeScan = {
+  def nodeScan(node: Var, prev: FlatOperator): NodeScan = {
     NodeScan(node, prev, prev.sourceGraph.schema.headerForNode(node))
   }
 
-  def relationshipScan(rel: EntityExpr, prev: FlatOperator): RelationshipScan = {
+  def relationshipScan(rel: Var, prev: FlatOperator): RelationshipScan = {
     RelationshipScan(rel, prev, prev.sourceGraph.schema.headerForRelationship(rel))
   }
 
@@ -91,7 +91,7 @@ class FlatOperatorProducer(implicit context: FlatPlannerContext) {
     WithColumn(explodeExpr as item, in, explodeHeader)
   }
 
-  def project(projectExpr: (Expr, Option[EntityExpr]), in: FlatOperator): FlatOperator = {
+  def project(projectExpr: (Expr, Option[Var]), in: FlatOperator): FlatOperator = {
     val (expr, maybeAlias) = projectExpr
     val updatedHeader = in.header.withExpr(expr)
     val containsExpr = in.header.contains(expr)
@@ -104,10 +104,10 @@ class FlatOperatorProducer(implicit context: FlatPlannerContext) {
   }
 
   def expand(
-    source: EntityExpr,
-    rel: EntityExpr,
+    source: Var,
+    rel: Var,
     direction: Direction,
-    target: EntityExpr,
+    target: Var,
     schema: Schema,
     sourceOp: FlatOperator,
     targetOp: FlatOperator
@@ -118,9 +118,9 @@ class FlatOperatorProducer(implicit context: FlatPlannerContext) {
   }
 
   def expandInto(
-    source: EntityExpr,
-    rel: EntityExpr,
-    target: EntityExpr,
+    source: Var,
+    rel: Var,
+    target: Var,
     direction: Direction,
     schema: Schema,
     sourceOp: FlatOperator
@@ -151,10 +151,10 @@ class FlatOperatorProducer(implicit context: FlatPlannerContext) {
   }
 
   def boundedVarExpand(
-    source: EntityExpr,
-    list: EntityExpr,
-    edgeScan: EntityExpr,
-    target: EntityExpr,
+    source: Var,
+    list: Var,
+    edgeScan: Var,
+    target: Var,
     direction: Direction,
     lower: Int,
     upper: Int,

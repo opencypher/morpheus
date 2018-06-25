@@ -70,9 +70,9 @@ sealed abstract class StackingFlatOperator extends FlatOperator {
 
 sealed abstract class FlatLeafOperator extends FlatOperator
 
-final case class NodeScan(node: EntityExpr, in: FlatOperator, header: RecordHeader) extends StackingFlatOperator
+final case class NodeScan(node: Var, in: FlatOperator, header: RecordHeader) extends StackingFlatOperator
 
-final case class RelationshipScan(rel: EntityExpr, in: FlatOperator, header: RecordHeader) extends StackingFlatOperator
+final case class RelationshipScan(rel: Var, in: FlatOperator, header: RecordHeader) extends StackingFlatOperator
 
 final case class Filter(expr: Expr, in: FlatOperator, header: RecordHeader) extends StackingFlatOperator
 
@@ -99,7 +99,7 @@ final case class CartesianProduct(lhs: FlatOperator, rhs: FlatOperator, header: 
 
 final case class Optional(lhs: FlatOperator, rhs: FlatOperator, header: RecordHeader) extends BinaryFlatOperator
 
-final case class ExistsSubQuery(predicateField: EntityExpr, lhs: FlatOperator, rhs: FlatOperator, header: RecordHeader)
+final case class ExistsSubQuery(predicateField: Var, lhs: FlatOperator, rhs: FlatOperator, header: RecordHeader)
     extends BinaryFlatOperator
 
 final case class ValueJoin(
@@ -110,10 +110,10 @@ final case class ValueJoin(
     extends BinaryFlatOperator
 
 final case class Expand(
-    source: EntityExpr,
-    rel: EntityExpr,
+    source: Var,
+    rel: Var,
     direction: Direction,
-    target: EntityExpr,
+    target: Var,
     sourceOp: FlatOperator,
     targetOp: FlatOperator,
     header: RecordHeader,
@@ -125,9 +125,9 @@ final case class Expand(
 }
 
 final case class ExpandInto(
-    source: EntityExpr,
-    rel: EntityExpr,
-    target: EntityExpr,
+    source: Var,
+    rel: Var,
+    target: Var,
     direction: Direction,
     sourceOp: FlatOperator,
     header: RecordHeader,
@@ -138,10 +138,10 @@ final case class ExpandInto(
 }
 
 final case class BoundedVarExpand(
-    source: EntityExpr,
-    list: EntityExpr,
-    edgeScan: EntityExpr,
-    target: EntityExpr,
+    source: Var,
+    list: Var,
+    edgeScan: Var,
+    target: Var,
     direction: Direction,
     lower: Int,
     upper: Int,

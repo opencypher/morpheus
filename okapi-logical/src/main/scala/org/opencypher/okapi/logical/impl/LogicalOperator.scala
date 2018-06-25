@@ -94,8 +94,8 @@ case class ConstructedNode(
 
 case class ConstructedRelationship(
   v: Var,
-  source: EntityExpr,
-  target: EntityExpr,
+  source: Var,
+  target: Var,
   typ: Option[String],
   baseEntity: Option[Var]
 ) extends ConstructedEntity {
@@ -122,7 +122,7 @@ sealed abstract class BinaryLogicalOperator extends LogicalOperator {
 
 sealed abstract class LogicalLeafOperator extends LogicalOperator
 
-final case class NodeScan(node: EntityExpr, in: LogicalOperator, solved: SolvedQueryModel)
+final case class NodeScan(node: Var, in: LogicalOperator, solved: SolvedQueryModel)
   extends StackingLogicalOperator {
   require(node.cypherType.isInstanceOf[CTNode], "A variable for a node scan needs to have type CTNode")
 
@@ -145,19 +145,19 @@ final case class Filter(expr: Expr, in: LogicalOperator, solved: SolvedQueryMode
 }
 
 sealed trait ExpandOperator {
-  def source: EntityExpr
+  def source: Var
 
-  def rel: EntityExpr
+  def rel: Var
 
-  def target: EntityExpr
+  def target: Var
 
   def direction: Direction
 }
 
 final case class Expand(
-  source: EntityExpr,
-  rel: EntityExpr,
-  target: EntityExpr,
+  source: Var,
+  rel: Var,
+  target: Var,
   direction: Direction,
   lhs: LogicalOperator,
   rhs: LogicalOperator,
@@ -176,9 +176,9 @@ final case class Expand(
 }
 
 final case class BoundedVarLengthExpand(
-  source: EntityExpr,
-  list: EntityExpr,
-  target: EntityExpr,
+  source: Var,
+  list: Var,
+  target: Var,
   edgeType: CTRelationship,
   direction: Direction,
   lower: Int,
@@ -191,7 +191,7 @@ final case class BoundedVarLengthExpand(
     with ExpandOperator {
 
 
-  override def rel: EntityExpr = list
+  override def rel: Var = list
 
   override val fields: Set[Var] = lhs.fields ++ rhs.fields
 }
@@ -208,9 +208,9 @@ final case class ValueJoin(
 }
 
 final case class ExpandInto(
-  source: EntityExpr,
-  rel: EntityExpr,
-  target: EntityExpr,
+  source: Var,
+  rel: Var,
+  target: Var,
   direction: Direction,
   in: LogicalOperator,
   solved: SolvedQueryModel
@@ -225,7 +225,7 @@ final case class ExpandInto(
   def rhs: LogicalOperator = in
 }
 
-final case class Project(projectExpr: (Expr, Option[EntityExpr]), in: LogicalOperator, solved: SolvedQueryModel)
+final case class Project(projectExpr: (Expr, Option[Var]), in: LogicalOperator, solved: SolvedQueryModel)
   extends StackingLogicalOperator {
 
   override val fields: Set[Var] = projectExpr._2 match {

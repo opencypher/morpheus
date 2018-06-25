@@ -33,7 +33,7 @@ import org.opencypher.okapi.api.value.CypherValue._
 import org.opencypher.okapi.impl.exception.UnsupportedOperationException
 import org.opencypher.okapi.ir.api._
 import org.opencypher.okapi.ir.api.block._
-import org.opencypher.okapi.ir.api.expr.{Expr, HasLabel, Property, Var}
+import org.opencypher.okapi.ir.api.expr._
 import org.opencypher.okapi.ir.api.pattern._
 import org.opencypher.okapi.ir.impl.util.VarConverters._
 import org.opencypher.okapi.testing.MatchHelper.equalWithTracing
@@ -87,7 +87,7 @@ class IrBuilderTest extends IrTestSuite {
         case GraphResultBlock(_, IRPatternGraph(qgn, _, clones, _, _)) =>
           clones.keys.size should equal(1)
           val (b, a) = clones.head
-          a should equal(Var("a")())
+          a should equal(NodeVar("a")())
           a.asInstanceOf[Var].cypherType.graph should equal(Some(testGraph.qualifiedGraphName))
           b.cypherType.graph should equal(Some(qgn))
         case _ => fail("no matching graph result found")
@@ -733,13 +733,13 @@ class IrBuilderTest extends IrTestSuite {
               deps should equalWithTracing(List(loadBlock))
               fields should equal(Set(toField('a -> CTNode)))
               topo shouldBe empty
-              exprs should equalWithTracing(Set(HasLabel(toVar('a), Label("Person"))()))
+              exprs should equalWithTracing(Set(HasLabel(toNodeVar('a), Label("Person"))()))
           }
 
           val projectBlock = model.findExactlyOne {
             case NoWhereBlock(ProjectBlock(deps, Fields(map), _, _, _)) =>
               deps should equalWithTracing(List(matchBlock))
-              map should equal(Map(toField('a) -> toVar('a)))
+              map should equal(Map(toField('a) -> toNodeVar('a)))
           }
 
           model.result match {
@@ -775,9 +775,9 @@ class IrBuilderTest extends IrTestSuite {
               deps should equalWithTracing(List(matchBlock))
               map should equal(
                 Map(
-                  toField('a) -> toVar('a),
-                  toField('otherB) -> toVar('b),
-                  toField('r) -> toVar('r)
+                  toField('a) -> toNodeVar('a),
+                  toField('otherB) -> toNodeVar('b),
+                  toField('r) -> toRelVar('r)
                 ))
           }
 
@@ -804,7 +804,7 @@ class IrBuilderTest extends IrTestSuite {
               deps should equalWithTracing(List(loadBlock))
               fields should equal(Set(toField('a -> CTNode)))
               topo shouldBe empty
-              exprs should equalWithTracing(Set(HasLabel(toVar('a), Label("Person"))()))
+              exprs should equalWithTracing(Set(HasLabel(toNodeVar('a), Label("Person"))()))
           }
 
           val projectBlock1 = model.findExactlyOne {

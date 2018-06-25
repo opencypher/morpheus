@@ -27,6 +27,7 @@
 package org.opencypher.okapi.ir.api.expr
 
 import org.opencypher.okapi.api.types._
+import org.opencypher.okapi.impl.exception.IllegalArgumentException
 import org.opencypher.okapi.ir.api._
 import org.opencypher.okapi.ir.api.expr.FlattenOps._
 import org.opencypher.okapi.trees.AbstractTreeNode
@@ -59,16 +60,16 @@ sealed abstract class Expr extends AbstractTreeNode[Expr] {
     * Returns the node/relationship that this expression is owned by, if it is owned.
     * A node/relationship owns its label/key/property mappings
     */
-  def owner(): Option[EntityExpr] = None
+  def owner: Option[Var] = None
 
   def isEntityExpression: Boolean = owner.isDefined
 
-  def withOwner(v: EntityExpr): This = this
+  def withOwner(v: Var): This = this
 
-  def as(alias: EntityExpr) = AliasExpr(this, alias)
+  def as(alias: Var) = AliasExpr(this, alias)
 }
 
-final case class AliasExpr(expr: Expr, alias: EntityExpr) extends Expr {
+final case class AliasExpr(expr: Expr, alias: Var) extends Expr {
 
   override def cypherType: CypherType = expr.cypherType
 
@@ -79,33 +80,74 @@ final case class Param(name: String)(val cypherType: CypherType = CTWildcard) ex
   override def withoutType: String = s"$$$name"
 }
 
-trait EntityExpr extends Expr {
+trait Var extends Expr {
   def name: String
 }
 
-final case class ListSegment(index: Int, listVar: EntityExpr)(val cypherType: CypherType= CTWildcard) extends EntityExpr {
+object Var {
+  def apply(name: String)(cypherType: CypherType = CTWildcard): Var = cypherType.material match {
+    case n: CTNode => NodeVar(name)(n)
+    case r: CTRelationship => RelationshipVar(name)(r)
+    case _ => ScalarVar(name)(cypherType)
+  }
+
+  def unapply(arg: Var): Option[String] = Some(arg.name)
+}
+
+final case class ListSegment(index: Int, listVar: Var)(val cypherType: CypherType= CTWildcard) extends Var {
   override type This = ListSegment
 
-  override def owner(): Option[EntityExpr] = Some(listVar)
+  override def owner(): Option[Var] = Some(listVar)
 
-  override def withOwner(v: EntityExpr): ListSegment = copy(listVar = v)(cypherType)
+  override def withOwner(v: Var): ListSegment = copy(listVar = v)(cypherType)
 
   override def withoutType: String = s"${listVar.withoutType}($index)"
 
   override def name: String = s"${listVar.name}($index)"
 }
 
-final case class Var(name: String)(val cypherType: CypherType = CTWildcard) extends EntityExpr {
+trait ReturnItem extends Var
 
-  type This = Var
+final case class NodeVar(name: String)(val cypherType: CTNode = CTNode) extends ReturnItem {
 
-  override def owner(): Option[EntityExpr] = Some(this)
+  override type This = NodeVar
 
-  override def withOwner(expr: EntityExpr): Var = expr match {
-    case v: Var =>  v
-    case path: ListSegment => Var(path.index.toString)(path.cypherType)
+  override def owner(): Option[Var] = Some(this)
+
+  override def withOwner(expr: Var): NodeVar = expr match {
+    case n: NodeVar => n
+    case other => other.cypherType match {
+      case n: CTNode => NodeVar(other.name)(n)
+      case o => throw IllegalArgumentException(CTNode, o)
+    }
   }
 
+  override def withoutType: String = s"$name"
+}
+
+final case class RelationshipVar(name: String)(val cypherType: CTRelationship = CTRelationship) extends ReturnItem {
+
+  override type This = RelationshipVar
+
+  override def owner(): Option[Var] = Some(this)
+
+  override def withOwner(expr: Var): RelationshipVar = expr match {
+    case r: RelationshipVar => r
+    case other => other.cypherType match {
+      case r: CTRelationship => RelationshipVar(other.name)(r)
+      case o => throw IllegalArgumentException(CTRelationship, o)
+    }
+  }
+  override def withoutType: String = s"$name"
+}
+
+final case class ScalarVar(name: String)(val cypherType: CypherType) extends ReturnItem {
+
+  override type This = ScalarVar
+
+  override def owner(): Option[Var] = Some(this)
+
+  override def withOwner(expr: Var): ScalarVar = ScalarVar(expr.name)(expr.cypherType)
   override def withoutType: String = s"$name"
 }
 
@@ -115,12 +157,12 @@ final case class StartNode(rel: Expr)(val cypherType: CypherType = CTWildcard) e
 
   override def toString = s"source($rel)"
 
-  override def owner(): Option[EntityExpr] = rel match {
-    case v: EntityExpr => Some(v)
+  override def owner(): Option[Var] = rel match {
+    case v: Var => Some(v)
     case _ => None
   }
 
-  override def withOwner(v: EntityExpr): StartNode = StartNode(v)(cypherType)
+  override def withOwner(v: Var): StartNode = StartNode(v)(cypherType)
 
   override def withoutType: String = s"source(${rel.withoutType})"
 }
@@ -131,12 +173,12 @@ final case class EndNode(rel: Expr)(val cypherType: CypherType = CTWildcard) ext
 
   override def toString = s"target($rel)"
 
-  override def owner(): Option[EntityExpr] = rel match {
-    case v: EntityExpr => Some(v)
+  override def owner(): Option[Var] = rel match {
+    case v: Var => Some(v)
     case _ => None
   }
 
-  override def withOwner(v: EntityExpr): EndNode = EndNode(v)(cypherType)
+  override def withOwner(v: Var): EndNode = EndNode(v)(cypherType)
 
   override def withoutType: String = s"target(${rel.withoutType})"
 }
@@ -216,12 +258,12 @@ final case class HasLabel(node: Expr, label: Label)
 
   def inner = node
 
-  override def owner(): Option[EntityExpr] = node match {
-    case v: EntityExpr => Some(v)
+  override def owner(): Option[Var] = node match {
+    case v: Var => Some(v)
     case _ => None
   }
 
-  override def withOwner(v: EntityExpr): HasLabel = HasLabel(v, label)(cypherType)
+  override def withOwner(v: Var): HasLabel = HasLabel(v, label)(cypherType)
 
   override def withoutType: String = s"${node.withoutType}:${label.name}"
 }
@@ -233,12 +275,12 @@ final case class HasType(rel: Expr, relType: RelType)
 
   def inner = rel
 
-  override def owner(): Option[EntityExpr] = rel match {
-    case v: EntityExpr => Some(v)
+  override def owner(): Option[Var] = rel match {
+    case v: Var => Some(v)
     case _ => None
   }
 
-  override def withOwner(v: EntityExpr): HasType = HasType(v, relType)(cypherType)
+  override def withOwner(v: Var): HasType = HasType(v, relType)(cypherType)
 
   override def withoutType: String = s"type(${rel.withoutType}) = '${relType.name}'"
 }
@@ -297,12 +339,12 @@ final case class Property(m: Expr, key: PropertyKey)(val cypherType: CypherType 
 
   type This = Property
 
-  override def owner(): Option[EntityExpr] = m match {
-    case v: EntityExpr => Some(v)
+  override def owner(): Option[Var] = m match {
+    case v: Var => Some(v)
     case _ => None
   }
 
-  override def withOwner(v: EntityExpr): Property = Property(v, key)(cypherType)
+  override def withOwner(v: Var): Property = Property(v, key)(cypherType)
 
   override def withoutType: String = s"${m.withoutType}.${key.name}"
 }

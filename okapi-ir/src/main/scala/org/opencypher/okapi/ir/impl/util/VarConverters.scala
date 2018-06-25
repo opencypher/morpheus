@@ -28,7 +28,7 @@ package org.opencypher.okapi.ir.impl.util
 
 import org.opencypher.okapi.api.types.CypherType
 import org.opencypher.okapi.ir.api.IRField
-import org.opencypher.okapi.ir.api.expr.Var
+import org.opencypher.okapi.ir.api.expr.{NodeVar, RelationshipVar, Var}
 
 import scala.language.implicitConversions
 
@@ -43,6 +43,10 @@ object VarConverters {
   implicit def toVars(fields: Set[IRField]): Set[Var] = fields.map(toVar)
 
   implicit def toVar(s: Symbol): Var = Var(s.name)()
+
+  def toNodeVar(s: Symbol): Var = NodeVar(s.name)()
+
+  def toRelVar(s: Symbol): Var = RelationshipVar(s.name)()
 
   implicit def toVar(t: (Symbol, CypherType)): Var = Var(t._1.name)(t._2)
 

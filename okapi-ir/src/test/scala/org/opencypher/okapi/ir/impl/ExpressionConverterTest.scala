@@ -32,7 +32,7 @@ import org.opencypher.okapi.api.types._
 import org.opencypher.okapi.api.value.CypherValue.CypherMap
 import org.opencypher.okapi.ir.api._
 import org.opencypher.okapi.ir.api.expr._
-import org.opencypher.okapi.ir.impl.util.VarConverters.toVar
+import org.opencypher.okapi.ir.impl.util.VarConverters.{toVar, _}
 import org.opencypher.okapi.ir.test.support.Neo4jAstTestSupport
 import org.opencypher.okapi.testing.BaseTestSuite
 import org.opencypher.okapi.testing.MatchHelper.equalWithTracing
@@ -65,8 +65,8 @@ class ExpressionConverterTest extends BaseTestSuite with Neo4jAstTestSupport {
   }
 
   test("exists") {
-    convert(parseExpr("exists(n.key)")) should equal(
-      Exists(Property('n, PropertyKey("key"))())()
+    convert(parseExpr("exists(n.key)")) should equalWithTracing(
+      Exists(Property(toNodeVar('n), PropertyKey("key"))())()
     )
   }
 
@@ -77,8 +77,8 @@ class ExpressionConverterTest extends BaseTestSuite with Neo4jAstTestSupport {
   }
 
   test("converting or predicate") {
-    convert(parseExpr("n = a OR n > b")) should equal(
-      Ors(Equals('n, 'a)(), GreaterThan('n, 'b)())
+    convert(parseExpr("n = a OR n > b")) should equalWithTracing(
+      Ors(Equals(toNodeVar('n), 'a)(), GreaterThan(toNodeVar('n), 'b)())
     )
   }
 
@@ -155,7 +155,7 @@ class ExpressionConverterTest extends BaseTestSuite with Neo4jAstTestSupport {
   }
 
   test("can convert variables") {
-    convert(varFor("n")) should equal(toVar('n))
+    convert(varFor("n")) should equal(toNodeVar('n))
   }
 
   test("can convert literals") {
@@ -166,7 +166,7 @@ class ExpressionConverterTest extends BaseTestSuite with Neo4jAstTestSupport {
   }
 
   test("can convert property access") {
-    convert(prop("n", "key")) should equal(Property('n, PropertyKey("key"))(CTWildcard))
+    convert(prop("n", "key")) should equal(Property(toNodeVar('n), PropertyKey("key"))(CTWildcard))
   }
 
   test("can convert equals") {
@@ -215,7 +215,7 @@ class ExpressionConverterTest extends BaseTestSuite with Neo4jAstTestSupport {
     val given = parseExpr("$p1 AND n:Foo AND $p2 AND m:Bar")
 
     convert(given).asInstanceOf[Ands].exprs should equalWithTracing(
-      Set(HasLabel('n, Label("Foo"))(), HasLabel('m, Label("Bar"))(), Param("p1")(), Param("p2")()))
+      Set(HasLabel(toNodeVar('n), Label("Foo"))(), HasLabel(toNodeVar('m), Label("Bar"))(), Param("p1")(), Param("p2")()))
   }
 
   test("can convert id function") {

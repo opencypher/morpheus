@@ -71,7 +71,7 @@ I <: RuntimeContext[O, A, P]] {
     * @param header  resulting record header
     * @return node scan operator
     */
-  def planNodeScan(in: K, inGraph: LogicalGraph, v: EntityExpr, header: RecordHeader): K
+  def planNodeScan(in: K, inGraph: LogicalGraph, v: Var, header: RecordHeader): K
 
   /**
     * Scans the relationship set of the input graph and returns all relationships that match the given CTRelationship
@@ -83,7 +83,7 @@ I <: RuntimeContext[O, A, P]] {
     * @param header  resulting record header
     * @return relationship scan operator
     */
-  def planRelationshipScan(in: K, inGraph: LogicalGraph, v: EntityExpr, header: RecordHeader): K
+  def planRelationshipScan(in: K, inGraph: LogicalGraph, v: Var, header: RecordHeader): K
 
   /**
     * Creates an empty record set thereby disregarding the input. The records are described by the given record header.

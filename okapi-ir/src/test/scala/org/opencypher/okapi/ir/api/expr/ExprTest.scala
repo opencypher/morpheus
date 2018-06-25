@@ -26,14 +26,14 @@
  */
 package org.opencypher.okapi.ir.api.expr
 
-import org.opencypher.okapi.api.types.{CTNode, CTRelationship, CTWildcard}
+import org.opencypher.okapi.api.types._
 import org.scalatest.{FunSuite, Matchers}
 
 class ExprTest extends FunSuite with Matchers {
 
   test("expressions ignore cypher type in equality") {
-    val n = Var("a")(CTNode)
-    val r = Var("a")(CTRelationship)
+    val n = Var("a")(CTInteger)
+    val r = Var("a")(CTString)
     n should equal(r)
 
     val a = StartNode(Var("rel")(CTRelationship))(CTWildcard)

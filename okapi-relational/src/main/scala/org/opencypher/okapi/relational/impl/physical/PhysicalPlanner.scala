@@ -112,7 +112,8 @@ I <: RuntimeContext[O, A, P]](val producer: PhysicalOperatorProducer[O, K, A, P,
         producer.planJoin(process(lhs), process(rhs), joinExpressions, header)
 
       case flat.Distinct(fields, in, _) =>
-        producer.planDistinct(process(in), fields)
+        val entityExprs: Set[Var] = Set(fields.toSeq: _*)
+        producer.planDistinct(process(in), entityExprs)
 
       // TODO: This needs to be a ternary operator taking source, rels and target records instead of just source and target and planning rels only at the physical layer
       case op@flat.Expand(source, rel, direction, target, sourceOp, targetOp, header, relHeader) =>

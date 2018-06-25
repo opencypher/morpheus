@@ -63,7 +63,7 @@ final case class Cache(in: CAPSPhysicalOperator) extends UnaryPhysicalOperator w
   }
 }
 
-final case class NodeScan(in: CAPSPhysicalOperator, v: EntityExpr, header: RecordHeader)
+final case class NodeScan(in: CAPSPhysicalOperator, v: Var, header: RecordHeader)
   extends UnaryPhysicalOperator with PhysicalOperatorDebugging {
 
   override def executeUnary(prev: CAPSPhysicalResult)(implicit context: CAPSRuntimeContext): CAPSPhysicalResult = {
@@ -86,7 +86,7 @@ final case class NodeScan(in: CAPSPhysicalOperator, v: EntityExpr, header: Recor
 
 final case class RelationshipScan(
   in: CAPSPhysicalOperator,
-  v: EntityExpr,
+  v: Var,
   header: RecordHeader
 ) extends UnaryPhysicalOperator with PhysicalOperatorDebugging {
 

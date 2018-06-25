@@ -40,6 +40,10 @@ class RecordHeaderTest extends BaseTestSuite {
   val m: Var = Var("m")(CTNode("A", "B"))
   val o: Var = Var("o")(CTNode)
   val r: Var = Var("r")(CTRelationship)
+  val nodeList: Var = Var("l")(CTList(CTNode))
+  val nodeListSegment: ListSegment = ListSegment(0, nodeList)(CTNode("A", "B"))
+  val relList: Var = Var("l")(CTList(CTRelationship))
+  val relListSegment: ListSegment = ListSegment(0, relList)(CTRelationship)
 
   val countN = CountStar(CTInteger)
 
@@ -49,16 +53,20 @@ class RecordHeaderTest extends BaseTestSuite {
   val nExprs: Set[Expr] = Set(n, nLabelA, nLabelB, nPropFoo)
   val mExprs: Set[Expr] = nExprs.map(_.withOwner(m))
   val oExprs: Set[Expr] = nExprs.map(_.withOwner(o))
+  val nodeListExprs: Set[Expr] = Set(nodeListSegment) ++ Set(nLabelA, nLabelB, nPropFoo).map(_.withOwner(nodeListSegment))
 
   val rStart: StartNode = StartNode(r)(CTNode)
   val rEnd: EndNode = EndNode(r)(CTNode)
   val rRelType: HasType = HasType(r, RelType("R"))(CTBoolean)
   val rPropFoo: Property = Property(r, PropertyKey("foo"))(CTString)
   val rExprs: Set[Expr] = Set(r, rStart, rEnd, rRelType, rPropFoo)
+  val relListExprs: Set[Expr] = Set(relListSegment) ++ Set(rStart, rEnd, rRelType, rPropFoo).map(_.withOwner(relListSegment))
 
   val nHeader: RecordHeader = RecordHeader.empty.withExprs(nExprs)
   val mHeader: RecordHeader = RecordHeader.empty.withExprs(mExprs)
   val rHeader: RecordHeader = RecordHeader.empty.withExprs(rExprs)
+  val nodeListHeader: RecordHeader = RecordHeader.empty.withExprs(nodeListExprs)
+  val relListHeader: RecordHeader = RecordHeader.empty.withExprs(relListExprs)
 
   it("can return all contained expressions") {
     nHeader.expressions should equalWithTracing(nExprs)
@@ -77,6 +85,12 @@ class RecordHeaderTest extends BaseTestSuite {
 
   it("can return vars that are not present in the header, but own an expression in the header") {
     RecordHeader.empty.withExpr(ListSegment(1, m)(CTNode)).vars should equal(Set(m))
+  }
+
+  it("can return all return items") {
+    nHeader.returnItems should equal(Set(n))
+    val header = nHeader ++ relListHeader
+    header.returnItems should equal(Set(n, nodeList))
   }
 
   it("can return all contained columns") {
@@ -281,18 +295,26 @@ class RecordHeaderTest extends BaseTestSuite {
   }
 
   it("returns all entity vars") {
-    nHeader.entityExpressions should equalWithTracing(Set(n))
-    (nHeader ++ rHeader).entityExpressions should equalWithTracing(Set(n, r))
+    nHeader.entityVars should equalWithTracing(Set(n))
+    (nHeader ++ rHeader).entityVars should equalWithTracing(Set(n, r))
   }
 
   it("returns all node vars") {
-    nHeader.nodeExpressions should equalWithTracing(Set(n))
-    rHeader.nodeExpressions should equalWithTracing(Set.empty)
+    nHeader.nodeVars should equalWithTracing(Set(n))
+    rHeader.nodeVars should equalWithTracing(Set.empty)
   }
 
   it("returns all rel vars") {
-    rHeader.relationshipExpressions should equalWithTracing(Set(r))
-    nHeader.relationshipExpressions should equalWithTracing(Set.empty)
+    rHeader.relationshipVars should equalWithTracing(Set(r))
+    nHeader.relationshipVars should equalWithTracing(Set.empty)
+    relListHeader.relationshipVars should equalWithTracing(Set.empty)
+  }
+
+  it("returns all rel entities") {
+    rHeader.relationshipEntities should equalWithTracing(Set(r))
+    nHeader.relationshipEntities should equalWithTracing(Set.empty)
+    (nHeader ++ relListHeader).relationshipEntities should equalWithTracing(Set(relListSegment))
+    (rHeader ++ relListHeader).relationshipEntities should equalWithTracing(Set(r, relListSegment))
   }
 
   it("returns all node vars for a given node type") {

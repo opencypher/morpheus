@@ -84,7 +84,7 @@ object SparkSQLExprMapper {
           functions.lit(parameters(name).unwrap)
 
         // direct column lookup
-        case _: EntityExpr | _: Param | _: Property | _: HasLabel | _: HasType | _: StartNode | _: EndNode =>
+        case _: Var | _: Param | _: Property | _: HasLabel | _: HasType | _: StartNode | _: EndNode =>
           verify
 
           val colName = header.column(expr)

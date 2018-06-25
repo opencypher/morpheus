@@ -46,13 +46,13 @@ A <: RelationalCypherRecords[O],
 P <: PropertyGraph,
 I <: RuntimeContext[O, A, P]] {
 
-  def source: EntityExpr
+  def source: Var
 
-  def list: EntityExpr
+  def list: Var
 
-  def edgeScan: EntityExpr
+  def edgeScan: Var
 
-  def target: EntityExpr
+  def target: Var
 
   def lower: Int
 
@@ -79,18 +79,7 @@ I <: RuntimeContext[O, A, P]] {
   val physicalEdgeScanOp: K = planner.process(edgeScanOp)
   val physicalTargetOp: K = planner.process(targetOp)
 
-  val startEdgeScan: EntityExpr = ListSegment(1, list)(edgeScan.cypherType)
-  val startEdgeScanOpAlias: K = producer.planAlias(
-    physicalEdgeScanOp,
-    edgeScan as startEdgeScan,
-    edgeScanOp.header.withAlias(edgeScan as startEdgeScan)
-  )
-  val startEdgeScanOp: K = producer.planSelect(
-    startEdgeScanOpAlias,
-    startEdgeScanOpAlias.header.expressions.toList,
-    edgeScanOp.header.withAlias(edgeScan as startEdgeScan).select(startEdgeScan)
-  )
-
+  protected val startEdgeScan: Var = ListSegment(1, list)(edgeScan.cypherType)
 
   /**
     * Performs the initial expand from the start node
@@ -98,6 +87,17 @@ I <: RuntimeContext[O, A, P]] {
     * @param dir expand direction
     */
   protected def init(dir: ExpandDirection): K = {
+    val startEdgeScanOpAlias: K = producer.planAlias(
+      physicalEdgeScanOp,
+      edgeScan as startEdgeScan,
+      edgeScanOp.header.withAlias(edgeScan as startEdgeScan)
+    )
+    val startEdgeScanOp: K = producer.planSelect(
+      startEdgeScanOpAlias,
+      startEdgeScanOpAlias.header.expressions.toList,
+      edgeScanOp.header.withAlias(edgeScan as startEdgeScan).select(startEdgeScan)
+    )
+
     // Execute the first expand
     val edgeJoinExpr = dir match {
       case Outbound => startEdgeScanOp.header.startNodeFor(startEdgeScan)
@@ -109,7 +109,7 @@ I <: RuntimeContext[O, A, P]] {
       Seq(source -> edgeJoinExpr),
       sourceOp.header join startEdgeScanOp.header
     )
-    producer.planFilter(startOp, isomorphismFilter(startEdgeScan, sourceOp.header.relationshipExpressions), startOp.header)
+    producer.planFilter(startOp, isomorphismFilter(startEdgeScan, sourceOp.header.relationshipEntities), startOp.header)
   }
 
   /**
@@ -117,10 +117,10 @@ I <: RuntimeContext[O, A, P]] {
     *
     * @param i              number of the iteration
     * @param iterationTable result of the i-1th iteration
-    * @param dir            expansion direction
+    * @param directions     expansion directions
     * @param edgeVars       edges already travesed
     */
-  def expand(i: Int, iterationTable: K, dir: ExpandDirection, edgeVars: Seq[EntityExpr]): (K, EntityExpr) = {
+  def expand(i: Int, iterationTable: K, directions: (ExpandDirection, ExpandDirection), edgeVars: Seq[Var]): (K, Var) = {
     val nextEdgeCT = if (i > lower) edgeScan.cypherType.nullable else edgeScan.cypherType
     val nextEdge = ListSegment(i, list)(nextEdgeCT)
 
@@ -135,9 +135,11 @@ I <: RuntimeContext[O, A, P]] {
       edgeScanOpWithAlias, selectExprs.toList, aliasedCacheHeader
     )
 
-    val joinExpr = dir match {
-      case Outbound => iterationTable.header.endNodeFor(edgeVars.last) -> aliasedCacheHeader.startNodeFor(nextEdge)
-      case Inbound => iterationTable.header.startNodeFor(edgeVars.last) -> aliasedCacheHeader.endNodeFor(nextEdge)
+    val joinExpr = directions match {
+      case (Outbound,Outbound) => iterationTable.header.endNodeFor(edgeVars.last) -> aliasedCacheHeader.startNodeFor(nextEdge)
+      case (Outbound,Inbound) => iterationTable.header.endNodeFor(edgeVars.last) -> aliasedCacheHeader.endNodeFor(nextEdge)
+      case (Inbound, Outbound) => iterationTable.header.startNodeFor(edgeVars.last) -> aliasedCacheHeader.endNodeFor(nextEdge)
+      case (Inbound, Inbound) => iterationTable.header.startNodeFor(edgeVars.last) -> aliasedCacheHeader.startNodeFor(nextEdge)
     }
 
     val expandedOp = producer.planJoin(
@@ -200,7 +202,7 @@ I <: RuntimeContext[O, A, P]] {
     * @param rel        new edge
     * @param candidates candidate edges
     */
-  protected def isomorphismFilter(rel: EntityExpr, candidates: Set[EntityExpr]): Ands = Ands(
+  protected def isomorphismFilter(rel: Var, candidates: Set[Var]): Ands = Ands(
     candidates.map(e => Not(Equals(e, rel)(CTBoolean))(CTBoolean)).toList
   )
 
@@ -213,13 +215,13 @@ I <: RuntimeContext[O, A, P]] {
     * @param physicalOp base operation
     */
   protected def copyEntity(
-    from: EntityExpr,
-    to: EntityExpr,
+    from: Var,
+    to: Var,
     header: RecordHeader,
     physicalOp: K
   ): K = {
     // TODO: remove when https://github.com/opencypher/cypher-for-apache-spark/issues/513 is resolved
-    val correctTarget = header.entityExpressions.find(_ == to).get
+    val correctTarget = header.entityVars.find(_ == to).get
 
     val sourceChildren = header.expressionsFor(from)
     val targetChildren = header.expressionsFor(correctTarget)
@@ -245,7 +247,7 @@ I <: RuntimeContext[O, A, P]] {
     * @param edge the paths last edge
     * @param dir  expand direction
     */
-  protected def addTargetOps(path: K, edge: EntityExpr, dir: ExpandDirection): K = {
+  protected def addTargetOps(path: K, edge: Var, dir: ExpandDirection): K = {
     val expr = dir match {
       case Outbound => path.header.endNodeFor(edge)
       case Inbound => path.header.startNodeFor(edge)
@@ -266,10 +268,10 @@ K <: PhysicalOperator[O, A, P, I],
 A <: RelationalCypherRecords[O],
 P <: PropertyGraph,
 I <: RuntimeContext[O, A, P]](
-  override val source: EntityExpr,
-  override val list: EntityExpr,
-  override val edgeScan: EntityExpr,
-  override val target: EntityExpr,
+  override val source: Var,
+  override val list: Var,
+  override val edgeScan: Var,
+  override val target: Var,
   override val lower: Int,
   override val upper: Int,
   override val sourceOp: FlatOperator,
@@ -287,7 +289,7 @@ I <: RuntimeContext[O, A, P]](
     val expandOps = (2 to upper).foldLeft(Seq(init(Outbound) -> Seq(startEdgeScan))) {
       case (acc, i) =>
         val (last, edgeVars) = acc.last
-        val (next, nextEdge) = expand(i, last, Outbound, edgeVars)
+        val (next, nextEdge) = expand(i, last, Outbound -> Outbound, edgeVars)
         acc :+ (next -> (edgeVars :+ nextEdge))
     }.filter(_._2.size >= lower)
 
@@ -304,10 +306,10 @@ K <: PhysicalOperator[O, A, P, I],
 A <: RelationalCypherRecords[O],
 P <: PropertyGraph,
 I <: RuntimeContext[O, A, P]](
-  override val source: EntityExpr,
-  override val list: EntityExpr,
-  override val edgeScan: EntityExpr,
-  override val target: EntityExpr,
+  override val source: Var,
+  override val list: Var,
+  override val edgeScan: Var,
+  override val target: Var,
   override val lower: Int,
   override val upper: Int,
   override val sourceOp: FlatOperator,
@@ -330,10 +332,10 @@ I <: RuntimeContext[O, A, P]](
       case (acc, i) =>
         val ((last, lastRevered), edgeVars) = acc.last
 
-        val (outOut, nextEdge) = expand(i, last, Outbound, edgeVars)
-        val (outIn, _) = expand(i, last, Outbound, edgeVars)
-        val (inOut, _) = expand(i, lastRevered, Inbound, edgeVars)
-        val (inIn, _) = expand(i, lastRevered, Inbound, edgeVars)
+        val (outOut, nextEdge) = expand(i, last, Outbound -> Outbound, edgeVars)
+        val (outIn, _) = expand(i, last, Outbound -> Inbound, edgeVars)
+        val (inOut, _) = expand(i, lastRevered, Inbound -> Outbound, edgeVars)
+        val (inIn, _) = expand(i, lastRevered, Inbound ->Inbound, edgeVars)
         val nextOps = producer.planTabularUnionAll(outOut, inOut) -> producer.planTabularUnionAll(outIn, inIn)
 
         acc :+ nextOps -> (edgeVars :+ nextEdge)

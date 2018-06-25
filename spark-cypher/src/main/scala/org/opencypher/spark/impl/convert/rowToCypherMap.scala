@@ -31,7 +31,7 @@ import org.opencypher.okapi.api.types.{CTList, CTNode, CTRelationship}
 import org.opencypher.okapi.api.value.CypherValue._
 import org.opencypher.okapi.api.value._
 import org.opencypher.okapi.impl.exception.UnsupportedOperationException
-import org.opencypher.okapi.ir.api.expr.{EntityExpr, Expr, ListSegment}
+import org.opencypher.okapi.ir.api.expr.{Expr, ListSegment, Var}
 import org.opencypher.okapi.relational.impl.table.RecordHeader
 import org.opencypher.spark.api.value.{CAPSNode, CAPSRelationship}
 
@@ -41,12 +41,12 @@ final case class rowToCypherMap(exprToColumn: Seq[(Expr, String)]) extends (Row 
   private val header = RecordHeader(exprToColumn.toMap)
 
   override def apply(row: Row): CypherMap = {
-    val values = header.vars.map(v => v.name -> constructValue(row, v)).toSeq
+    val values = header.returnItems.map(r => r.name -> constructValue(row, r)).toSeq
     CypherMap(values: _*)
   }
 
   // TODO: Validate all column types. At the moment null values are cast to the expected type...
-  private def constructValue(row: Row, v: EntityExpr): CypherValue = {
+  private def constructValue(row: Row, v: Var): CypherValue = {
     v.cypherType.material match {
       case _: CTNode =>
         collectNode(row, v)
@@ -63,7 +63,7 @@ final case class rowToCypherMap(exprToColumn: Seq[(Expr, String)]) extends (Row 
     }
   }
 
-  private def collectNode(row: Row, v: EntityExpr): CypherValue = {
+  private def collectNode(row: Row, v: Var): CypherValue = {
     val idValue = row.getAs[Any](header.column(v))
     idValue match {
       case null => CypherNull
@@ -85,7 +85,7 @@ final case class rowToCypherMap(exprToColumn: Seq[(Expr, String)]) extends (Row 
     }
   }
 
-  private def collectRel(row: Row, v: EntityExpr): CypherValue = {
+  private def collectRel(row: Row, v: Var): CypherValue = {
     val idValue = row.getAs[Any](header.column(v))
     idValue match {
       case null => CypherNull
@@ -110,7 +110,7 @@ final case class rowToCypherMap(exprToColumn: Seq[(Expr, String)]) extends (Row 
     }
   }
 
-  private def collectComplexList(row: Row, expr: EntityExpr): CypherList = {
+  private def collectComplexList(row: Row, expr: Var): CypherList = {
     val elements = header.ownedBy(expr).collect {
       case p: ListSegment => p
     }.toSeq.sortBy(_.index)
