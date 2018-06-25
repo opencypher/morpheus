@@ -88,7 +88,7 @@ object Var {
   def apply(name: String)(cypherType: CypherType = CTWildcard): Var = cypherType.material match {
     case n: CTNode => NodeVar(name)(n)
     case r: CTRelationship => RelationshipVar(name)(r)
-    case _ => ScalarVar(name)(cypherType)
+    case _ => SimpleVar(name)(cypherType)
   }
 
   def unapply(arg: Var): Option[String] = Some(arg.name)
@@ -141,13 +141,13 @@ final case class RelationshipVar(name: String)(val cypherType: CTRelationship = 
   override def withoutType: String = s"$name"
 }
 
-final case class ScalarVar(name: String)(val cypherType: CypherType) extends ReturnItem {
+final case class SimpleVar(name: String)(val cypherType: CypherType) extends ReturnItem {
 
-  override type This = ScalarVar
+  override type This = SimpleVar
 
   override def owner(): Option[Var] = Some(this)
 
-  override def withOwner(expr: Var): ScalarVar = ScalarVar(expr.name)(expr.cypherType)
+  override def withOwner(expr: Var): SimpleVar = SimpleVar(expr.name)(expr.cypherType)
   override def withoutType: String = s"$name"
 }
 
