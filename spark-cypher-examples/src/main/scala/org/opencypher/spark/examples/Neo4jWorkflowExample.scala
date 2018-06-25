@@ -27,11 +27,10 @@
 package org.opencypher.spark.examples
 
 import org.opencypher.okapi.api.graph.{Namespace, QualifiedGraphName}
-import org.opencypher.spark.api.CAPSSession
-import org.opencypher.spark.api.io.csv.CsvDataSource
-import org.opencypher.spark.api.io.neo4j.CommunityNeo4jGraphDataSource
-import org.opencypher.spark.api.io.neo4j.CommunityNeo4jGraphDataSource._
-import org.opencypher.spark.examples.Neo4jHelpers._
+import org.opencypher.spark.api.io.neo4j.Neo4jReadOnlyNamedQueryGraphSource._
+import org.opencypher.spark.api.{CAPSSession, GraphSources}
+import org.opencypher.spark.util.Neo4jHelpers._
+import org.opencypher.spark.util.{ConsoleApp, Neo4jHelpers}
 
 /**
   * Demonstrates connecting a graph from a CSV data source with a graph from a Neo4j data source.
@@ -45,29 +44,24 @@ object Neo4jWorkflowExample extends ConsoleApp {
   // Start a Neo4j instance and populate it with social network data
   val neo4j = Neo4jHelpers.startNeo4j(personNetwork)
 
-  // Register Graph Data Sources (GDS)
-  session.registerSource(Namespace("socialNetwork"), CommunityNeo4jGraphDataSource(neo4j.dataSourceConfig))
+  // Register Property Graph Data Sources (PGDS)
+  session.registerSource(Namespace("socialNetwork"), GraphSources.cypher.neo4jReadOnlyNamedQuery(neo4j.dataSourceConfig))
+  session.registerSource(Namespace("purchases"), GraphSources.fs(rootPath = getClass.getResource("/csv").getFile).csv)
 
-  // Access the graph via its qualified graph name
+  // Access the graphs via their qualified graph names
   val socialNetwork = session.catalog.graph("socialNetwork.graph")
-
-  // Register a File-based data source in the Cypher session
-  session.registerSource(Namespace("csv"), CsvDataSource(rootPath = getClass.getResource("/csv").getFile))
-
-
-  // Access the graph via its qualified graph name
-  val purchaseNetwork = session.catalog.graph("csv.products")
+  val purchaseNetwork = session.catalog.graph("purchases.products")
 
   // Build new recommendation graph that connects the social and product graphs and
   // create new edges between users and customers with the same name
   val recommendationGraph = session.cypher(
     """|FROM GRAPH socialNetwork.graph
        |MATCH (p:Person)
-       |FROM GRAPH csv.products
+       |FROM GRAPH purchases.products
        |MATCH (c:Customer)
        |WHERE p.name = c.name
        |CONSTRUCT
-       |  ON socialNetwork.graph, csv.products
+       |  ON socialNetwork.graph, purchases.products
        |  NEW (p)-[:IS]->(c)
        |RETURN GRAPH
     """.stripMargin
@@ -88,7 +82,7 @@ object Neo4jWorkflowExample extends ConsoleApp {
   }
 
   // Proof that the write-back to Neo4j worked, retrieve and print updated Neo4j results
-  val updatedNeo4jSource = CommunityNeo4jGraphDataSource(neo4j.dataSourceConfig)
+  val updatedNeo4jSource = GraphSources.cypher.neo4jReadOnlyNamedQuery(neo4j.dataSourceConfig)
   session.registerSource(Namespace("updated-neo4j"), updatedNeo4jSource)
   val socialNetworkWithRanks = session.catalog.graph(QualifiedGraphName(Namespace("updated-neo4j"), neo4jDefaultGraphName))
   socialNetworkWithRanks.cypher("MATCH (p) WHERE p.should_buy IS NOT NULL RETURN p.name, p.should_buy").show

@@ -27,8 +27,8 @@
 package org.opencypher.spark.examples
 
 import org.opencypher.okapi.api.graph.Namespace
-import org.opencypher.spark.api.CAPSSession
-import org.opencypher.spark.api.io.csv.CsvDataSource
+import org.opencypher.spark.api.{CAPSSession, GraphSources}
+import org.opencypher.spark.util.ConsoleApp
 
 /**
   * Demonstrates multiple graph capabilities by loading a social network from case class objects and a purchase network
@@ -43,21 +43,21 @@ object MultipleGraphExample extends ConsoleApp {
   val socialNetwork = session.readFrom(SocialNetworkData.persons, SocialNetworkData.friendships)
   session.catalog.store("socialNetwork", socialNetwork)
 
-  // 3) Register a File-based data source in the Cypher session
+  // 3) Register a file system graph source to the catalog
+  // Note: if files were stored in HDFS, the file path would indicate so by starting with hdfs://
   val csvFolder = getClass.getResource("/csv").getFile
-  // Note: if files were stored in HDFS, change the data source to HdfsCsvPropertyGraphDataSource
-  session.registerSource(Namespace("csv"), CsvDataSource(rootPath = csvFolder))
-  // access the graph via its qualified graph name
-  val purchaseNetwork = session.catalog.graph("csv.products")
+  session.registerSource(Namespace("purchases"), GraphSources.fs(rootPath = csvFolder).csv)
+  // access the graph from the catalog via its qualified graph name
+  val purchaseNetwork = session.catalog.graph("purchases.products")
 
   // 5) Create new edges between users and customers with the same name
   val recommendationGraph = session.cypher(
     """|FROM GRAPH socialNetwork
        |MATCH (p:Person)
-       |FROM GRAPH csv.products
+       |FROM GRAPH purchases.products
        |MATCH (c:Customer)
        |WHERE p.name = c.name
-       |CONSTRUCT ON socialNetwork, csv.products
+       |CONSTRUCT ON socialNetwork, purchases.products
        |  NEW (p)-[:IS]->(c)
        |RETURN GRAPH
     """.stripMargin

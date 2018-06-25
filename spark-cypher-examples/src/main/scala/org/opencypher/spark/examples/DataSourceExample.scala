@@ -27,6 +27,7 @@
 package org.opencypher.spark.examples
 
 import org.opencypher.spark.api.CAPSSession
+import org.opencypher.spark.util.ConsoleApp
 
 object DataSourceExample extends ConsoleApp {
 

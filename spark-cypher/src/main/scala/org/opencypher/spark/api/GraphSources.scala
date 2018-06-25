@@ -24,40 +24,40 @@
  * described as "implementation extensions to Cypher" or as "proposed changes to
  * Cypher that are not yet approved by the openCypher community".
  */
-package org.opencypher.spark.examples
+package org.opencypher.spark.api
 
-import org.neo4j.graphdb.Result
-import org.neo4j.harness.{ServerControls, TestServerBuilders}
-import org.opencypher.spark.api.io.neo4j.Neo4jConfig
+import org.opencypher.spark.api.io.fs.{CAPSFileSystem, FSGraphSource}
+import org.opencypher.spark.api.io.neo4j.{Neo4jConfig, Neo4jReadOnlyNamedQueryGraphSource}
 
-object Neo4jHelpers {
+object GraphSources {
+  def fs(
+    rootPath: String,
+    customFileSystem: Option[CAPSFileSystem] = None,
+    filesPerTable: Option[Int] = Some(1)
+  ) = FSGraphSources(rootPath, customFileSystem, filesPerTable)
 
-  implicit class RichServerControls(val server: ServerControls) extends AnyVal {
+  def cypher = CypherGraphSources
+}
 
-    def dataSourceConfig =
-      Neo4jConfig(server.boltURI(), user = "anonymous", password = Some("password"), encrypted = false)
+object FSGraphSources {
+  def apply(
+    rootPath: String,
+    customFileSystem: Option[CAPSFileSystem] = None,
+    filesPerTable: Option[Int] = Some(1)
+  ): FSGraphSourceFactory = FSGraphSourceFactory(rootPath, customFileSystem, filesPerTable)
 
-    def uri: String = {
-      val scheme = server.boltURI().getScheme
-      val userInfo = s"anonymous:password@"
-      val host = server.boltURI().getAuthority
-      s"$scheme://$userInfo$host"
-    }
+  case class FSGraphSourceFactory(
+    rootPath: String,
+    customFileSystem: Option[CAPSFileSystem] = None,
+    filesPerTable: Option[Int] = Some(1)
+  ) {
 
-    def stop(): Unit = {
-      server.close()
-    }
-
-    def execute(cypher: String): Result =
-      server.graph().execute(cypher)
+    def csv(implicit session: CAPSSession): FSGraphSource =
+      new FSGraphSource(rootPath, "csv", customFileSystem, filesPerTable)
   }
+}
 
-  def startNeo4j(dataFixture: String): ServerControls = {
-    TestServerBuilders
-      .newInProcessBuilder()
-      .withConfig("dbms.security.auth_enabled", "true")
-      .withFixture("CALL dbms.security.createUser('anonymous', 'password', false)")
-      .withFixture(dataFixture)
-      .newServer()
-  }
+object CypherGraphSources {
+  def neo4jReadOnlyNamedQuery(config: Neo4jConfig)(implicit session: CAPSSession): Neo4jReadOnlyNamedQueryGraphSource =
+    Neo4jReadOnlyNamedQueryGraphSource(config)
 }

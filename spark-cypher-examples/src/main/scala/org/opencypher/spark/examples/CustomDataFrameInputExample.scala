@@ -31,6 +31,7 @@ import org.apache.spark.sql.{DataFrame, Row}
 import org.opencypher.okapi.api.io.conversion.{NodeMapping, RelationshipMapping}
 import org.opencypher.spark.api.CAPSSession
 import org.opencypher.spark.api.io.{CAPSNodeTable, CAPSRelationshipTable}
+import org.opencypher.spark.util.ConsoleApp
 
 import scala.collection.JavaConverters._
 

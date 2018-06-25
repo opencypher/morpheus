@@ -24,16 +24,40 @@
  * described as "implementation extensions to Cypher" or as "proposed changes to
  * Cypher that are not yet approved by the openCypher community".
  */
-package org.opencypher.spark.api.io.csv
+package org.opencypher.spark.util
 
-import org.opencypher.spark.api.CAPSSession
-import org.opencypher.spark.api.io.fs.FileBasedDataSource
-import org.opencypher.spark.impl.io.CAPSPropertyGraphDataSource
+import org.neo4j.graphdb.Result
+import org.neo4j.harness.{ServerControls, TestServerBuilders}
+import org.opencypher.spark.api.io.neo4j.Neo4jConfig
 
-object CsvDataSource {
+object Neo4jHelpers {
 
-  def apply(rootPath: String)(implicit session: CAPSSession): CAPSPropertyGraphDataSource = {
-    new FileBasedDataSource(rootPath, "csv")
+  implicit class RichServerControls(val server: ServerControls) extends AnyVal {
+
+    def dataSourceConfig =
+      Neo4jConfig(server.boltURI(), user = "anonymous", password = Some("password"), encrypted = false)
+
+    def uri: String = {
+      val scheme = server.boltURI().getScheme
+      val userInfo = s"anonymous:password@"
+      val host = server.boltURI().getAuthority
+      s"$scheme://$userInfo$host"
+    }
+
+    def stop(): Unit = {
+      server.close()
+    }
+
+    def execute(cypher: String): Result =
+      server.graph().execute(cypher)
   }
 
+  def startNeo4j(dataFixture: String): ServerControls = {
+    TestServerBuilders
+      .newInProcessBuilder()
+      .withConfig("dbms.security.auth_enabled", "true")
+      .withFixture("CALL dbms.security.createUser('anonymous', 'password', false)")
+      .withFixture(dataFixture)
+      .newServer()
+  }
 }

@@ -99,6 +99,7 @@ Once the property graph is constructed, it supports Cypher queries via its `cyph
 ```scala
 import org.opencypher.spark.api.CAPSSession
 import org.opencypher.spark.api.io.{Node, Relationship, RelationshipType}
+import org.opencypher.spark.util.ConsoleApp
 
 /**
   * Demonstrates basic usage of the CAPS API by loading an example network via Scala case classes and running a Cypher

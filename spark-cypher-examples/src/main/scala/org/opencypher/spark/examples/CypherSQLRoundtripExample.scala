@@ -27,9 +27,9 @@
 package org.opencypher.spark.examples
 
 import org.opencypher.okapi.api.graph.Namespace
-import org.opencypher.spark.api.CAPSSession
-import org.opencypher.spark.api.io.csv.CsvDataSource
+import org.opencypher.spark.api.{CAPSSession, GraphSources}
 import org.opencypher.spark.impl.CAPSConverters._
+import org.opencypher.spark.util.ConsoleApp
 
 /**
   * Demonstrates usage patterns where Cypher and SQL can be interleaved in the
@@ -44,7 +44,7 @@ object CypherSQLRoundtripExample extends ConsoleApp {
   // 2) Register a file based data source at the session
   //    It contains a purchase network graph called 'products'
   val graphDir = getClass.getResource("/csv").getFile
-  session.registerSource(Namespace("myDataSource"), CsvDataSource(rootPath = graphDir))
+  session.registerSource(Namespace("myDataSource"), GraphSources.fs(rootPath = graphDir).csv)
 
   // 3) Load social network data via case class instances
   val socialNetwork = session.readFrom(SocialNetworkData.persons, SocialNetworkData.friendships)

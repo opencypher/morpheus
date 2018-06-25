@@ -46,7 +46,7 @@ import org.opencypher.spark.api.io.json.JsonSerialization
   * @param customFileSystem optional alternative filesystem to use for writing files
   * @param filesPerTable optional parameter that specifies how many files a table is coalesced into, by default 1
   */
-class FileBasedDataSource(
+class FSGraphSource(
   val rootPath: String,
   val tableStorageFormat: String,
   val customFileSystem: Option[CAPSFileSystem] = None,

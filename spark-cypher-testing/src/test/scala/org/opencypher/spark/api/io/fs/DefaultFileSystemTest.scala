@@ -28,7 +28,7 @@ package org.opencypher.spark.api.io.fs
 
 import org.junit.rules.TemporaryFolder
 import org.opencypher.okapi.api.graph.GraphName
-import org.opencypher.spark.api.io.csv.CsvDataSource
+import org.opencypher.spark.api.FSGraphSources
 import org.opencypher.spark.api.io.fs.DefaultGraphDirectoryStructure.pathSeparator
 import org.opencypher.spark.testing.CAPSTestSuite
 
@@ -54,8 +54,7 @@ class DefaultFileSystemTest extends CAPSTestSuite {
         |  NEW ()
         |RETURN GRAPH
       """.stripMargin).getGraph
-    val ds = CsvDataSource(
-      s"${tempDir.getRoot.getAbsolutePath}${pathSeparator}someNewFolder1${pathSeparator}someNewFolder2")
+    val ds = FSGraphSources(s"${tempDir.getRoot.getAbsolutePath}${pathSeparator}someNewFolder1${pathSeparator}someNewFolder2").csv
     ds.store(GraphName("foo"), graph)
   }
 

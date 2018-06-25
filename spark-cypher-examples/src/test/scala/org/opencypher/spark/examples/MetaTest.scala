@@ -30,13 +30,13 @@ import java.io.File
 import java.nio.file.Paths
 
 import org.apache.hadoop.fs.PathNotFoundException
-import org.scalatest.{FunSpec, Matchers}
+import org.opencypher.okapi.testing.BaseTestSuite
 
 import scala.annotation.tailrec
 import scala.io.Source
 import scala.util.Try
 
-class MetaTest extends FunSpec with Matchers {
+class MetaTest extends BaseTestSuite {
 
   val readmeName = "README.md"
   val moduleName = "spark-cypher-examples"

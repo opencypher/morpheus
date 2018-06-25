@@ -28,10 +28,9 @@ package org.opencypher.spark.examples
 
 import org.neo4j.harness.ServerControls
 import org.opencypher.okapi.api.graph.Namespace
-import org.opencypher.spark.api.CAPSSession
-import org.opencypher.spark.api.io.csv.CsvDataSource
-import org.opencypher.spark.api.io.neo4j.CommunityNeo4jGraphDataSource
-import org.opencypher.spark.examples.Neo4jHelpers._
+import org.opencypher.spark.api.{CAPSSession, GraphSources}
+import org.opencypher.spark.util.Neo4jHelpers._
+import org.opencypher.spark.util.ConsoleApp
 
 /**
   * This application demonstrates the integration of three data sources into a single graph which is used for computing
@@ -47,15 +46,15 @@ object RecommendationExample extends ConsoleApp {
   implicit val neo4jServerUS: ServerControls = startNeo4j(socialNetworkUS)
   implicit val neo4jServerEU: ServerControls = startNeo4j(socialNetworkEU)
 
-  // Register Graph Data Sources (GDS)
+  // Register Property Graph Data Sources (PGDS)
 
   // The graph within Neo4j is partitioned into regions using a property key. Within the data source, we map each
   // partition to a separate graph name (i.e. US and EU)
-  caps.registerSource(Namespace("usSocialNetwork"), CommunityNeo4jGraphDataSource(neo4jServerUS.dataSourceConfig))
-  caps.registerSource(Namespace("euSocialNetwork"), CommunityNeo4jGraphDataSource(neo4jServerEU.dataSourceConfig))
+  caps.registerSource(Namespace("usSocialNetwork"), GraphSources.cypher.neo4jReadOnlyNamedQuery(neo4jServerUS.dataSourceConfig))
+  caps.registerSource(Namespace("euSocialNetwork"), GraphSources.cypher.neo4jReadOnlyNamedQuery(neo4jServerEU.dataSourceConfig))
 
   // File-based CSV GDS
-  caps.registerSource(Namespace("purchases"), CsvDataSource(rootPath = s"${getClass.getResource("/csv").getFile}"))
+  caps.registerSource(Namespace("purchases"), GraphSources.fs(rootPath = s"${getClass.getResource("/csv").getFile}").csv)
 
   // Start analytical workload
 
