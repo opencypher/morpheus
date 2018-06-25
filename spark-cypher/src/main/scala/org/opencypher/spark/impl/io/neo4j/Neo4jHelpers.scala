@@ -24,30 +24,29 @@
  * described as "implementation extensions to Cypher" or as "proposed changes to
  * Cypher that are not yet approved by the openCypher community".
  */
-package org.opencypher.spark.api.io.neo4j
+package org.opencypher.spark.impl.io.neo4j
 
-import java.net.URI
+import org.neo4j.driver.v1.Session
+import org.opencypher.okapi.api.value.CypherValue
+import org.opencypher.okapi.api.value.CypherValue.CypherValue
+import org.opencypher.spark.api.io.neo4j.Neo4jConfig
 
-import org.neo4j.driver.v1._
+import scala.collection.JavaConverters._
 
-case class Neo4jConfig(
-  uri: URI,
-  user: String = "neo4j",
-  password: Option[String] = None,
-  encrypted: Boolean = true
-) {
+object Neo4jHelpers {
+  implicit class RichConfig(val config: Neo4jConfig) extends AnyVal {
 
-  def driver(): Driver = password match {
-    case Some(pwd) => GraphDatabase.driver(uri, AuthTokens.basic(user, pwd), boltConfig())
-    case _ => GraphDatabase.driver(uri, boltConfig())
-  }
+    def execute[T](f: Session => T): T = {
+      val session = config.driver().session
+      val t = f(session)
+      session.close()
+      t
+    }
 
-  private def boltConfig(): Config = {
-    val builder = Config.build
-
-    if (encrypted)
-      builder.withEncryption().toConfig
-    else
-      builder.withoutEncryption().toConfig
+    def cypher(query: String): List[Map[String, CypherValue]] = {
+      execute { session =>
+        session.run(query).list().asScala.map(_.asMap().asScala.mapValues(CypherValue(_)).toMap).toList
+      }
+    }
   }
 }

@@ -28,64 +28,19 @@ package org.opencypher.spark.api.io.neo4j
 
 import org.neo4j.driver.v1.Value
 import org.neo4j.driver.v1.util.Function
-import org.opencypher.okapi.api.graph.{GraphName, PropertyGraph}
+import org.opencypher.okapi.api.graph.GraphName
 import org.opencypher.okapi.api.schema.Schema
 import org.opencypher.okapi.api.types.CypherType
-import org.opencypher.okapi.impl.exception.GraphNotFoundException
-import org.opencypher.spark.api.CAPSSession
-import org.opencypher.spark.impl.io.CAPSPropertyGraphDataSource
-import org.opencypher.spark.impl.io.neo4j.Neo4jGraphLoader
 import org.opencypher.spark.impl.io.neo4j.Neo4jHelpers._
 
 import scala.collection.JavaConverters._
 import scala.util.{Failure, Success, Try}
 
-object CommunityNeo4jGraphDataSource {
-
-  val neo4jDefaultGraphName = GraphName("graph")
-
-  val defaultQuery = "MATCH (n) RETURN n" -> "MATCH ()-[r]->() RETURN r"
-
-  val defaultQueries: Map[GraphName, (String, String)] =
-    Map(neo4jDefaultGraphName -> defaultQuery)
+object SchemaFromProcedure {
 
   val schemaProcedureName = "org.neo4j.morpheus.procedures.schema"
 
-}
-
-/**
-  * A data source implementation that enables loading property graphs from a Neo4j database. A graph is identified by a
-  * [[GraphName]] and parameterized by a node and a relationship query which are used to load the graph from Neo4j.
-  *
-  * If the [[Schema]] of a Neo4j graph is known upfront, it can be provided to the data source. Otherwise, the schema
-  * will be computed during graph loading.
-  *
-  * @param config Neo4j connection configuration
-  * @param queries node and relationship queries for a specific graph
-  * @param schemata an optional schema of the loaded graph
-  * @param session CAPS session
-  */
-case class CommunityNeo4jGraphDataSource(
-  config: Neo4jConfig,
-  queries: Map[GraphName, (String, String)] = CommunityNeo4jGraphDataSource.defaultQueries,
-  schemata: Map[GraphName, Schema] = Map.empty)
-  (implicit val session: CAPSSession)
-  extends CAPSPropertyGraphDataSource {
-
-  override def graph(name: GraphName): PropertyGraph = queries.get(name) match {
-    case Some((nodeQuery, relQuery)) => Neo4jGraphLoader.fromNeo4j(config, nodeQuery, relQuery, schema(name))
-    case None => throw GraphNotFoundException(s"Neo4j graph with name '$name'")
-  }
-
-  override def schema(name: GraphName): Option[Schema] = schemata.get(name) match {
-    case None =>
-      computeSchema(name)
-    case schema => schema
-  }
-
-  import CommunityNeo4jGraphDataSource.schemaProcedureName
-
-  private def computeSchema(name: GraphName): Option[Schema] = {
+  def apply(config: Neo4jConfig): Option[Schema] = {
     Try {
       config.cypher("CALL dbms.procedures() YIELD name AS name").exists { map =>
         map("name").value == schemaProcedureName
@@ -146,13 +101,4 @@ case class CommunityNeo4jGraphDataSource(
     }
   }
 
-  override def store(name: GraphName, graph: PropertyGraph): Unit =
-    throw new UnsupportedOperationException("'store' operation is not supported by the Neo4j data source")
-
-  override def delete(name: GraphName): Unit =
-    throw new UnsupportedOperationException("'delete' operation is not supported by the Neo4j data source")
-
-  override def graphNames: Set[GraphName] = queries.keySet
-
-  override def hasGraph(name: GraphName): Boolean = queries.contains(name)
 }

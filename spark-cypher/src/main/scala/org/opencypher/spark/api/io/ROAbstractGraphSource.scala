@@ -24,30 +24,31 @@
  * described as "implementation extensions to Cypher" or as "proposed changes to
  * Cypher that are not yet approved by the openCypher community".
  */
-package org.opencypher.spark.api.io.neo4j
+package org.opencypher.spark.api.io
+import org.apache.spark.sql.DataFrame
+import org.opencypher.okapi.api.graph.GraphName
+import org.opencypher.spark.api.io.metadata.CAPSGraphMetaData
+import org.opencypher.spark.schema.CAPSSchema
 
-import java.net.URI
-
-import org.neo4j.driver.v1._
-
-case class Neo4jConfig(
-  uri: URI,
-  user: String = "neo4j",
-  password: Option[String] = None,
-  encrypted: Boolean = true
-) {
-
-  def driver(): Driver = password match {
-    case Some(pwd) => GraphDatabase.driver(uri, AuthTokens.basic(user, pwd), boltConfig())
-    case _ => GraphDatabase.driver(uri, boltConfig())
-  }
-
-  private def boltConfig(): Config = {
-    val builder = Config.build
-
-    if (encrypted)
-      builder.withEncryption().toConfig
-    else
-      builder.withoutEncryption().toConfig
-  }
+trait ROAbstractGraphSource extends AbstractDataSource {
+  override protected def deleteGraph(graphName: GraphName): Unit =
+    throw new UnsupportedOperationException("Read-only graph sources can not delete graphs")
+  override protected def writeSchema(
+    graphName: GraphName,
+    schema: CAPSSchema
+  ): Unit = throw new UnsupportedOperationException("Read-only graph sources can not delete graphs")
+  override protected def writeCAPSGraphMetaData(
+    graphName: GraphName,
+    capsGraphMetaData: CAPSGraphMetaData
+  ): Unit = throw new UnsupportedOperationException("Read-only graph sources can not delete graphs")
+  override protected def writeNodeTable(
+    graphName: GraphName,
+    labels: Set[String],
+    table: DataFrame
+  ): Unit = throw new UnsupportedOperationException("Read-only graph sources can not delete graphs")
+  override protected def writeRelationshipTable(
+    graphName: GraphName,
+    relKey: String,
+    table: DataFrame
+  ): Unit = throw new UnsupportedOperationException("Read-only graph sources can not delete graphs")
 }

@@ -212,7 +212,6 @@ final case class SchemaImpl(
   }
 
   override def ++(other: Schema): SchemaImpl = {
-    val newRelTypePropertyMap = relTypePropertyMap ++ other.relTypePropertyMap
     val conflictingLabels = labelPropertyMap.labelCombinations intersect other.labelPropertyMap.labelCombinations
     val nulledOut = conflictingLabels.foldLeft(Map.empty[Set[String], PropertyKeys]) {
       case (acc, next) =>
@@ -220,6 +219,15 @@ final case class SchemaImpl(
         acc + (next -> keys)
     }
     val newNodeKeyMap = labelPropertyMap ++ other.labelPropertyMap ++ LabelPropertyMap(nulledOut)
+
+
+    val conflictingRelTypes = relationshipTypes intersect other.relationshipTypes
+    val nulledRelProps = conflictingRelTypes.foldLeft(Map.empty[String, PropertyKeys]) {
+      case (acc, next) =>
+        val keys = computePropertyTypes(relTypePropertyMap.properties(next), other.relTypePropertyMap.properties(next))
+        acc + (next -> keys)
+    }
+    val newRelTypePropertyMap = relTypePropertyMap ++ other.relTypePropertyMap ++ RelTypePropertyMap(nulledRelProps)
 
     copy(labelPropertyMap = newNodeKeyMap, relTypePropertyMap = newRelTypePropertyMap)
   }
