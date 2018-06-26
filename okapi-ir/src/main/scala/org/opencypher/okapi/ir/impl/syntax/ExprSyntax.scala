@@ -28,7 +28,6 @@ package org.opencypher.okapi.ir.impl.syntax
 
 import org.opencypher.okapi.ir.api.expr._
 
-import scala.annotation.tailrec
 import scala.language.implicitConversions
 
 object ExprSyntax {

@@ -152,37 +152,32 @@ class FlatOperatorProducer(implicit context: FlatPlannerContext) {
 
   def boundedVarExpand(
     source: Var,
+    list: Var,
     edgeScan: Var,
-    innerNode: Var,
     target: Var,
     direction: Direction,
     lower: Int,
     upper: Int,
     sourceOp: FlatOperator,
     edgeScanOp: FlatOperator,
-    innerNodeOp: FlatOperator,
     targetOp: FlatOperator,
     isExpandInto: Boolean
   ): FlatOperator = {
 
     val aliasedEdgeScanCypherType = if (lower == 0) edgeScan.cypherType.nullable else edgeScan.cypherType
-    val aliasedEdgeScan = Var(s"${edgeScan.name}_1")(aliasedEdgeScanCypherType)
+    val aliasedEdgeScan = ListSegment(1, list)(aliasedEdgeScanCypherType)
     val aliasedEdgeScanHeader = edgeScanOp.header.withAlias(edgeScan as aliasedEdgeScan).select(aliasedEdgeScan)
 
     val startHeader = sourceOp.header join aliasedEdgeScanHeader
 
-    val expandCacheHeader = innerNodeOp.header join edgeScanOp.header
 
     def expand(i: Int, prev: RecordHeader): RecordHeader = {
-      val innerNodeCypherType = if (i >= lower) innerNode.cypherType.nullable else innerNode.cypherType
-      val nextNode = Var(s"${innerNode.name}_${i - 1}")(innerNodeCypherType)
-
       val edgeCypherType = if (i > lower) edgeScan.cypherType.nullable else edgeScan.cypherType
-      val nextEdge = Var(s"${edgeScan.name}_$i")(edgeCypherType)
+      val nextEdge = ListSegment(i, list)(edgeCypherType)
 
-      val aliasedCacheHeader = expandCacheHeader
-        .withAlias(edgeScan as nextEdge, innerNode as nextNode)
-        .select(nextEdge, nextNode)
+      val aliasedCacheHeader = edgeScanOp.header
+        .withAlias(edgeScan as nextEdge)
+        .select(nextEdge)
 
       prev join aliasedCacheHeader
     }
@@ -193,7 +188,7 @@ class FlatOperatorProducer(implicit context: FlatPlannerContext) {
 
     val header = if (isExpandInto) expandHeader else expandHeader join targetOp.header
 
-    BoundedVarExpand(source, edgeScan, innerNode, target, direction, lower, upper, sourceOp, edgeScanOp, innerNodeOp, targetOp, header, isExpandInto)
+    BoundedVarExpand(source, list, edgeScan, target, direction, lower, upper, sourceOp, edgeScanOp, targetOp, header, isExpandInto)
   }
 
   def planOptional(lhs: FlatOperator, rhs: FlatOperator): FlatOperator = {

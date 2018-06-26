@@ -26,6 +26,7 @@
  */
 package org.opencypher.okapi.ir.api.pattern
 
+import org.opencypher.okapi.api.types.CTRelationship
 import org.opencypher.okapi.ir.api._
 import org.opencypher.okapi.ir.api.pattern.Orientation.{Cyclic, Directed, Undirected}
 
@@ -155,12 +156,13 @@ sealed trait VarLengthRelationship extends Connection {
 
   def lower: Int
   def upper: Option[Int]
+  def edgeType: CTRelationship
 }
 
-final case class DirectedVarLengthRelationship(endpoints: DifferentEndpoints, lower: Int, upper: Option[Int]) extends VarLengthRelationship with DirectedConnection {
+final case class DirectedVarLengthRelationship(edgeType: CTRelationship, endpoints: DifferentEndpoints, lower: Int, upper: Option[Int]) extends VarLengthRelationship with DirectedConnection {
   override type SELF[XO, XE] = DirectedVarLengthRelationship { type O = XO; type E = XE }
 
-  override def flip: DirectedVarLengthRelationship = copy(endpoints.flip)
+  override def flip: DirectedVarLengthRelationship = copy(endpoints = endpoints.flip)
 
   override protected def equalsIfNotEq(obj: Any): Boolean = obj match {
     case other: DirectedVarLengthRelationship => orientation.eqv(endpoints, other.endpoints)
@@ -168,7 +170,7 @@ final case class DirectedVarLengthRelationship(endpoints: DifferentEndpoints, lo
   }
 }
 
-final case class UndirectedVarLengthRelationship(endpoints: DifferentEndpoints, lower: Int, upper: Option[Int]) extends VarLengthRelationship with UndirectedConnection {
+final case class UndirectedVarLengthRelationship(edgeType: CTRelationship, endpoints: DifferentEndpoints, lower: Int, upper: Option[Int]) extends VarLengthRelationship with UndirectedConnection {
   override type SELF[XO, XE] = UndirectedVarLengthRelationship { type O = XO; type E = XE }
 
   override def flip: UndirectedVarLengthRelationship = this

@@ -28,7 +28,7 @@ package org.opencypher.okapi.logical.impl
 
 import org.opencypher.okapi.api.graph.QualifiedGraphName
 import org.opencypher.okapi.api.schema.Schema
-import org.opencypher.okapi.api.types.CTNode
+import org.opencypher.okapi.api.types.{CTNode, CTRelationship}
 import org.opencypher.okapi.ir.api.Label
 import org.opencypher.okapi.ir.api.block.SortItem
 import org.opencypher.okapi.ir.api.expr._
@@ -128,7 +128,10 @@ final case class NodeScan(node: Var, in: LogicalOperator, solved: SolvedQueryMod
 
   def labels: Set[String] = node.cypherType.asInstanceOf[CTNode].labels
 
-  override val fields: Set[Var] = in.fields + node
+  override val fields: Set[Var] = node match {
+    case v: Var => in.fields + v
+    case _ => in.fields
+  }
 }
 
 final case class Distinct(fields: Set[Var], in: LogicalOperator, solved: SolvedQueryModel)
@@ -163,13 +166,20 @@ final case class Expand(
   extends BinaryLogicalOperator
     with ExpandOperator {
 
-  override val fields: Set[Var] = lhs.fields ++ rhs.fields + rel
+  override val fields: Set[Var] = {
+    val lhsRhs = lhs.fields ++ rhs.fields
+    rel match {
+      case v: Var => lhsRhs + v
+      case _ => lhsRhs
+    }
+  }
 }
 
 final case class BoundedVarLengthExpand(
   source: Var,
-  rel: Var,
+  list: Var,
   target: Var,
+  edgeType: CTRelationship,
   direction: Direction,
   lower: Int,
   upper: Int,
@@ -179,6 +189,9 @@ final case class BoundedVarLengthExpand(
 )
   extends BinaryLogicalOperator
     with ExpandOperator {
+
+
+  override def rel: Var = list
 
   override val fields: Set[Var] = lhs.fields ++ rhs.fields
 }
@@ -215,7 +228,10 @@ final case class ExpandInto(
 final case class Project(projectExpr: (Expr, Option[Var]), in: LogicalOperator, solved: SolvedQueryModel)
   extends StackingLogicalOperator {
 
-  override val fields: Set[Var] = in.fields ++ projectExpr._2
+  override val fields: Set[Var] = projectExpr._2 match {
+    case Some(v: Var) => in.fields + v
+    case _ => in.fields
+  }
 }
 
 final case class Unwind(expr: Expr, field: Var, in: LogicalOperator, solved: SolvedQueryModel)

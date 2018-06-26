@@ -26,7 +26,7 @@
  */
 package org.opencypher.spark.impl.physical
 
-import org.opencypher.okapi.api.graph.{GraphName, Namespace, QualifiedGraphName}
+import org.opencypher.okapi.api.graph.QualifiedGraphName
 import org.opencypher.okapi.api.types.CTNode
 import org.opencypher.okapi.ir.api.expr.Var
 import org.opencypher.okapi.relational.impl.table.RecordHeader
@@ -170,7 +170,7 @@ class PhysicalOptimizerTest extends CAPSTestSuite with GraphConstructionFixture 
 
     // Then
     val cacheOps = result.asCaps.plans.physicalPlan.get.collect { case c: Cache => c }
-    cacheOps.size shouldBe 528
+    cacheOps.size shouldBe 348
   }
 
   test("test caching optional match with duplicates") {

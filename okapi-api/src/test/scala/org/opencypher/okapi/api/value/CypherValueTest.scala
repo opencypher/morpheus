@@ -118,5 +118,4 @@ class CypherValueTest extends FunSpec with Matchers {
     }
 
   }
-
 }

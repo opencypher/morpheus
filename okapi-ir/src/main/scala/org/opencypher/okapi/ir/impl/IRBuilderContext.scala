@@ -37,8 +37,8 @@ import org.opencypher.okapi.ir.api.block.SourceBlock
 import org.opencypher.okapi.ir.api.expr.{Expr, Var}
 import org.opencypher.okapi.ir.api.pattern.Pattern
 import org.opencypher.okapi.ir.api.{IRCatalogGraph, IRField, IRGraph}
-import org.opencypher.okapi.ir.impl.typer.{SchemaTyper, TypeTracker}
 import org.opencypher.okapi.ir.impl.typer.exception.TypingException
+import org.opencypher.okapi.ir.impl.typer.{SchemaTyper, TypeTracker}
 import org.opencypher.v9_1.ast.semantics.SemanticState
 import org.opencypher.v9_1.util.{InputPosition, Ref}
 import org.opencypher.v9_1.{expressions => ast}

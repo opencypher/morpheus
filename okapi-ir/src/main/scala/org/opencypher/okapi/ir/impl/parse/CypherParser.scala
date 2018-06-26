@@ -26,11 +26,11 @@
  */
 package org.opencypher.okapi.ir.impl.parse
 
-import org.opencypher.v9_1.ast._
 import org.opencypher.okapi.ir.api.expr.Var
 import org.opencypher.okapi.ir.impl.exception.ParsingException
 import org.opencypher.okapi.ir.impl.parse.rewriter.OkapiRewriting
 import org.opencypher.okapi.ir.impl.typer.toFrontendType
+import org.opencypher.v9_1.ast._
 import org.opencypher.v9_1.ast.semantics.{SemanticErrorDef, SemanticFeature, SemanticState}
 import org.opencypher.v9_1.frontend.phases._
 import org.opencypher.v9_1.rewriting.RewriterStepSequencer

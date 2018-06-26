@@ -26,7 +26,7 @@
  */
 package org.opencypher.okapi.relational.impl.table
 
-import org.opencypher.okapi.api.types.{CTNode, CTNodeOrNull, CTRelationship, CTRelationshipOrNull}
+import org.opencypher.okapi.api.types.{CTNode, CTRelationship}
 import org.opencypher.okapi.impl.exception.IllegalArgumentException
 import org.opencypher.okapi.impl.util.TablePrinter
 import org.opencypher.okapi.ir.api.RelType
@@ -52,7 +52,9 @@ case class RecordHeader(exprToColumn: Map[Expr, String]) {
 
   def expressions: Set[Expr] = exprToColumn.keySet
 
-  def vars: Set[Var] = expressions.collect { case v: Var => v }
+  def vars: Set[Var] = expressions.flatMap(_.owner).collect { case v: Var => v }
+
+  def returnItems: Set[ReturnItem] = expressions.flatMap(_.owner).collect { case r: ReturnItem => r }
 
   def columns: Set[String] = exprToColumn.values.toSet
 
@@ -71,12 +73,18 @@ case class RecordHeader(exprToColumn: Map[Expr, String]) {
   }
 
   def ownedBy(expr: Var): Set[Expr] = {
-    exprToColumn.keys.filter(e => e.owner.contains(expr)).toSet
+    val members = exprToColumn.keys.filter(e => e.owner.contains(expr)).toSet
+
+    members.flatMap {
+      case e: Var if e==expr => Seq(e)
+      case e: Var => ownedBy(e) + e
+      case other => Seq(other)
+    }
   }
 
   def expressionsFor(expr: Expr): Set[Expr] = {
     expr match {
-      case v: Var => ownedBy(v)
+      case v: Var => if (exprToColumn.contains(v)) ownedBy(v) + v else ownedBy(v)
       case e if exprToColumn.contains(e) => Set(e)
       case _ => Set.empty
     }
@@ -157,23 +165,35 @@ case class RecordHeader(exprToColumn: Map[Expr, String]) {
 
   def entityVars: Set[Var] = nodeVars ++ relationshipVars
 
-  def nodeVars: Set[Var] = {
+  def nodeVars[T >: NodeVar <: Var]: Set[T] = {
     exprToColumn.keySet.collect {
-      case v: Var if v.cypherType.subTypeOf(CTNodeOrNull).isTrue => v
+      case v: NodeVar => v
     }
   }
 
-  def relationshipVars: Set[Var] = {
+  def nodeEntities: Set[Var] = {
     exprToColumn.keySet.collect {
-      case v: Var if v.cypherType.subTypeOf(CTRelationshipOrNull).isTrue => v
+      case v: Var if v.cypherType.subTypeOf(CTNode).isTrue => v
     }
   }
 
-  def nodesForType(nodeType: CTNode): Set[Var] = {
+  def relationshipVars[T >: RelationshipVar <: Var]: Set[T] = {
+    exprToColumn.keySet.collect {
+      case v: RelationshipVar => v
+    }
+  }
+
+  def relationshipEntities: Set[Var] = {
+    exprToColumn.keySet.collect {
+      case v: Var if v.cypherType.subTypeOf(CTRelationship).isTrue => v
+    }
+  }
+
+  def nodesForType[T >: NodeVar <: Var](nodeType: CTNode): Set[T] = {
     // and semantics
     val requiredLabels = nodeType.labels
 
-    nodeVars.filter { nodeVar =>
+    nodeVars[T].filter { nodeVar =>
       val physicalLabels = labelsFor(nodeVar).map(_.label.name)
       val logicalLabels = nodeVar.cypherType match {
         case CTNode(labels, _) => labels
@@ -183,11 +203,11 @@ case class RecordHeader(exprToColumn: Map[Expr, String]) {
     }
   }
 
-  def relationshipsForType(relType: CTRelationship): Set[Var] = {
+  def relationshipsForType[T >: RelationshipVar <: Var](relType: CTRelationship): Set[T] = {
     // or semantics
     val possibleTypes = relType.types
 
-    relationshipVars.filter { relVar =>
+    relationshipVars[T].filter { relVar =>
       val physicalTypes = typesFor(relVar).map {
         case HasType(_, RelType(name)) => name
       }
@@ -208,7 +228,7 @@ case class RecordHeader(exprToColumn: Map[Expr, String]) {
   def select[T <: Expr](exprs: Set[T]): RecordHeader = {
     val selectExpressions = exprs.flatMap { e: Expr =>
       e match {
-        case v: Var => ownedBy(v)
+        case v: Var => ownedBy(v) + v
         case nonVar => Set(nonVar)
       }
     }
@@ -276,8 +296,9 @@ case class RecordHeader(exprToColumn: Map[Expr, String]) {
     val alias = expr.alias
     to match {
       // Entity case
-      case _: Var if exprToColumn.contains(to) =>
-        expressionsFor(to).foldLeft(this) {
+      case entityExpr: Var if exprToColumn.contains(to) =>
+        val withEntityExpr = addExprToColumn(alias, exprToColumn(to))
+        ownedBy(entityExpr).filterNot(_ == entityExpr).foldLeft(withEntityExpr) {
           case (current, nextExpr) => current.addExprToColumn(nextExpr.withOwner(alias), exprToColumn(nextExpr))
         }
 

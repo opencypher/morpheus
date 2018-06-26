@@ -504,7 +504,7 @@ class LogicalPlanner(producer: LogicalOperatorProducer)
           case _: DirectedVarLengthRelationship => Directed
           case _: UndirectedVarLengthRelationship => Undirected
         }
-        producer.planBoundedVarLengthExpand(c.source, r, c.target, direction, v.lower, v.upper.get, sourcePlan, targetPlan)
+        producer.planBoundedVarLengthExpand(c.source, r, c.target, v.edgeType, direction, v.lower, v.upper.get, sourcePlan, targetPlan)
 
       case _: UndirectedConnection if sourcePlan == targetPlan =>
         producer.planExpandInto(c.source, r, c.target, Undirected, sourcePlan)

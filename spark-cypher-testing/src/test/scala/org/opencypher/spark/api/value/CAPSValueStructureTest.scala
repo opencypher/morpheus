@@ -216,7 +216,6 @@ class CAPSValueStructureTest extends CAPSValueTestSuite {
         case CAPSRelationship(id, source, target, relType, properties) =>
           CypherValue(CAPSRelationship(id, source, target, relType, properties))
         case CypherMap(map) => CypherValue(map)
-        //case elements: Seq[_] if isPathLike(elements) => CypherPath(elements.asInstanceOf[Seq[CypherEntityValue]])
         case CypherList(l) => CypherValue(l)
         case CypherBoolean(b) => CypherValue(b)
         case CypherString(s) => CypherString(s)

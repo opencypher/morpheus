@@ -27,7 +27,7 @@
 package org.opencypher.okapi.relational.impl.flat
 
 import org.opencypher.okapi.ir.api.block.SortItem
-import org.opencypher.okapi.ir.api.expr.{Aggregator, Explode, Expr, Var}
+import org.opencypher.okapi.ir.api.expr._
 import org.opencypher.okapi.logical.impl.{Direction, LogicalGraph}
 import org.opencypher.okapi.relational.impl.table._
 import org.opencypher.okapi.trees.AbstractTreeNode
@@ -139,24 +139,22 @@ final case class ExpandInto(
 
 final case class BoundedVarExpand(
     source: Var,
+    list: Var,
     edgeScan: Var,
-    innerNode: Var,
     target: Var,
     direction: Direction,
     lower: Int,
     upper: Int,
     sourceOp: FlatOperator,
     edgeScanOp: FlatOperator,
-    innerNodeOp: FlatOperator,
     targetOp: FlatOperator,
     header: RecordHeader,
     isExpandInto: Boolean)
-    extends QuaternaryFlatOperator {
+    extends TernaryFlatOperator {
 
   override def first: FlatOperator = sourceOp
   override def second: FlatOperator = edgeScanOp
-  override def third: FlatOperator = innerNodeOp
-  override def fourth: FlatOperator = targetOp
+  override def third: FlatOperator = targetOp
 }
 
 final case class OrderBy(sortItems: Seq[SortItem[Expr]], in: FlatOperator, header: RecordHeader)

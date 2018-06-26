@@ -78,7 +78,7 @@ case class CAPSPatternGraph(
     val targetRel = Var(name)(relCypherType)
     val relSchema = schema.forRelationship(relCypherType)
     val targetRelHeader = relSchema.headerForRelationship(targetRel)
-    val extractionRels = header.relationshipsForType(relCypherType)
+    val extractionRels: Set[Var] = header.relationshipsForType(relCypherType)
 
     extractRecordsFor(targetRel, targetRelHeader, extractionRels)
   }
