@@ -42,7 +42,6 @@ import org.opencypher.okapi.relational.impl.table.RecordHeader
 import org.opencypher.spark.api.Tags._
 import org.opencypher.spark.impl.convert.SparkConversions._
 import org.opencypher.spark.impl.physical.CAPSRuntimeContext
-import org.opencypher.spark.impl.physical.operators.NamedTableScan
 
 object DataFrameOps {
 
@@ -251,23 +250,11 @@ object DataFrameOps {
     /**
       * Prints Spark physical plan.
       */
-    def printPhysicalPlan(replacePlansForNamedTables: Boolean = true): Unit = {
+    def printPhysicalPlan: Unit = {
       println("Spark plan:")
       implicit val sc = df.sparkSession.sparkContext
       val sparkPlan: SparkPlan = df.queryExecution.executedPlan
-      // Remove cached inputs from plan
-      val planWithoutCached = sparkPlan.transformDown {
-        case inMemoryTableScan: InMemoryTableScanExec =>
-          val maybeTableName = inMemoryTableScan.relation.tableName
-          if (replacePlansForNamedTables && maybeTableName.isDefined) {
-            // Insert a dummy operator into the plan that is printed with the table name for the scan
-            NamedTableScan(maybeTableName)
-          } else {
-            inMemoryTableScan
-          }
-        case other => other
-      }
-      val planString = planWithoutCached.treeString(verbose = false).flatMap {
+      val planString = sparkPlan.treeString(verbose = false).flatMap {
         case '\n' => Seq('\n', '\t')
         case other => Seq(other)
       }
