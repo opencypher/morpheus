@@ -128,7 +128,7 @@ class FlatOperatorProducer(implicit context: FlatPlannerContext) {
   }
 
   def planEmptyRecords(fields: Set[Var], prev: FlatOperator): EmptyRecords = {
-    EmptyRecords(prev, RecordHeader.from(fields))
+    EmptyRecords(prev, fields)
   }
 
   def planStart(graph: LogicalGraph): Start = {

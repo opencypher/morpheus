@@ -87,10 +87,10 @@ I <: RuntimeContext[O, A, P]] {
     * Creates an empty record set thereby disregarding the input. The records are described by the given record header.
     *
     * @param in     previous operator
-    * @param header record header describing the created records
+    * @param fields fields contained in the empty records
     * @return empty records operator
     */
-  def planEmptyRecords(in: K, header: RecordHeader): K
+  def planEmptyRecords(in: K, fields: Set[Var]): K
 
   /**
     * Renames the columns identified by the given expressions to the specified aliases.

@@ -156,7 +156,7 @@ final case class Skip(expr: Expr, in: FlatOperator) extends StackingFlatOperator
 
 final case class Limit(expr: Expr, in: FlatOperator) extends StackingFlatOperator
 
-final case class EmptyRecords(in: FlatOperator, header: RecordHeader) extends StackingFlatOperator
+final case class EmptyRecords(in: FlatOperator, fields: Set[Var]) extends StackingFlatOperator
 
 final case class Start(sourceGraph: LogicalGraph) extends FlatLeafOperator
 

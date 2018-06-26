@@ -31,31 +31,19 @@ import org.opencypher.spark.impl.physical.{CAPSPhysicalResult, CAPSRuntimeContex
 import org.opencypher.spark.impl.util.TagSupport._
 import org.opencypher.spark.impl.{CAPSRecords, CAPSUnionGraph}
 
-
-private[spark] abstract class NAryPhysicalOperator extends CAPSPhysicalOperator {
-
-  def inputs: List[CAPSPhysicalOperator]
-
-  override def execute(implicit context: CAPSRuntimeContext): CAPSPhysicalResult = {
-    executeNary(inputs.map(_.execute))
-  }
-
-  def executeNary(inputResults: List[CAPSPhysicalResult])(implicit context: CAPSRuntimeContext): CAPSPhysicalResult
-}
-
 final case class GraphUnionAll(inputs: List[CAPSPhysicalOperator], qgn: QualifiedGraphName)
-  extends NAryPhysicalOperator with InheritedHeader with PhysicalOperatorDebugging {
+  extends CAPSPhysicalOperator {
   require(inputs.nonEmpty, "GraphUnionAll requires at least one input")
 
-  override def executeNary(inputResults: List[CAPSPhysicalResult])(implicit context: CAPSRuntimeContext): CAPSPhysicalResult = {
-    implicit val caps = inputResults.head.records.caps
-
-    val graphTags = inputResults.map(r => r.workingGraphName -> r.workingGraph.tags).toMap
-    val tagStrategy = computeRetaggings(graphTags)
-    val graphWithTagStrategy = inputResults.map(r => r.workingGraph -> tagStrategy(r.workingGraphName)).toMap
-
-    val unionGraph = CAPSUnionGraph(graphWithTagStrategy)
-
-    CAPSPhysicalResult(CAPSRecords.unit(), unionGraph, qgn, tagStrategy)
+  override lazy val tagStrategy = {
+    computeRetaggings(inputs.map(r => r.graphName -> r.graph.tags).toMap)
   }
+
+  override lazy val graphName = qgn
+
+  override lazy val graph = {
+    val graphWithTagStrategy = inputs.map(i => i.graph -> tagStrategy(i.graphName)).toMap
+    CAPSUnionGraph(graphWithTagStrategy)
+  }
+
 }

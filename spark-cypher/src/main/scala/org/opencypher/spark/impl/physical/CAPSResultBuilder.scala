@@ -30,16 +30,23 @@ import org.opencypher.okapi.api.graph.CypherQueryPlans
 import org.opencypher.okapi.logical.impl.LogicalOperator
 import org.opencypher.okapi.relational.impl.flat.FlatOperator
 import org.opencypher.okapi.trees.TreeNode
+import org.opencypher.spark.api.CAPSSession
 import org.opencypher.spark.impl.physical.operators.CAPSPhysicalOperator
 import org.opencypher.spark.impl.{CAPSGraph, CAPSRecords, CAPSResult}
 
 object CAPSResultBuilder {
 
-  def from(logical: LogicalOperator, flat: FlatOperator, physical: CAPSPhysicalOperator)(
-    implicit context: CAPSRuntimeContext): CAPSResult = {
+  def from(logical: LogicalOperator, flat: FlatOperator, physical: CAPSPhysicalOperator): CAPSResult = {
+
+    implicit def session: CAPSSession = physical.context.session
 
     new CAPSResult {
-      lazy val result: CAPSPhysicalResult = physical.execute
+      lazy val result: CAPSPhysicalResult = CAPSPhysicalResult(
+        CAPSRecords(physical.header, physical.table.df),
+        physical.graph,
+        physical.graphName,
+        physical.tagStrategy
+      )
 
       override def records: Option[CAPSRecords] = Some(result.records)
 

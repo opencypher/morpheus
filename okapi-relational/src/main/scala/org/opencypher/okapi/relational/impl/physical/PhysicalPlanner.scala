@@ -76,8 +76,8 @@ I <: RuntimeContext[O, A, P]](val producer: PhysicalOperatorProducer[O, K, A, P,
           case None => producer.planAddColumn(inOp, expr)
         }
 
-      case flat.EmptyRecords(in, header) =>
-        producer.planEmptyRecords(process(in), header)
+      case flat.EmptyRecords(in, fields) =>
+        producer.planEmptyRecords(process(in), fields)
 
       case flat.Start(graph) =>
         graph match {

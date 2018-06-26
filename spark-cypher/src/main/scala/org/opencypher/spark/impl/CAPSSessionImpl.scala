@@ -64,7 +64,6 @@ sealed class CAPSSessionImpl(val sparkSession: SparkSession)
   private val logicalPlanner = new LogicalPlanner(producer)
   private val logicalOptimizer = LogicalOptimizer
   private val flatPlanner = new FlatPlanner()
-  private val physicalPlanner = new PhysicalPlanner(new CAPSPhysicalOperatorProducer()(self))
   private val physicalOptimizer = new PhysicalOptimizer()
   private val parser = CypherParser
 
@@ -212,14 +211,16 @@ sealed class CAPSSessionImpl(val sparkSession: SparkSession)
     }
 
     logStageProgress("Physical planning ... ", newLine = false)
+    // TODO: Refactor so physical operator producer is reusable or easy to instantiate
     val physicalPlannerContext = CAPSPhysicalPlannerContext.from(queryCatalog, records.asCaps, parameters)(self)
+    val graphAt = (qgn: QualifiedGraphName) => Some(catalog.graph(qgn).asCaps)
+    val physicalPlanner = new PhysicalPlanner(new CAPSPhysicalOperatorProducer()(CAPSRuntimeContext(physicalPlannerContext.parameters, graphAt, collection.mutable.Map.empty, collection.mutable.Map.empty)))
     val physicalPlan = time("Physical planning")(physicalPlanner(flatPlan)(physicalPlannerContext))
     logStageProgress("Done!")
     if (PrintPhysicalPlan.isSet) {
       println("Physical plan:")
       physicalPlan.show()
     }
-
 
     logStageProgress("Physical optimization ... ", newLine = false)
     val optimizedPhysicalPlan = time("Physical optimization")(physicalOptimizer(physicalPlan)(PhysicalOptimizerContext()))
@@ -229,10 +230,7 @@ sealed class CAPSSessionImpl(val sparkSession: SparkSession)
       optimizedPhysicalPlan.show()
     }
 
-    val graphAt = (qgn: QualifiedGraphName) => Some(catalog.graph(qgn).asCaps)
-
-    CAPSResultBuilder.from(logicalPlan, flatPlan, optimizedPhysicalPlan)(
-      CAPSRuntimeContext(physicalPlannerContext.parameters, graphAt, collection.mutable.Map.empty, collection.mutable.Map.empty))
+    CAPSResultBuilder.from(logicalPlan, flatPlan, optimizedPhysicalPlan)
   }
 
   private[opencypher] def time[T](description: String)(code: => T): T = {
