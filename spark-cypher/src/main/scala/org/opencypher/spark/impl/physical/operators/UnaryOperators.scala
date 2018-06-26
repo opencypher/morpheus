@@ -51,6 +51,7 @@ final case class Cache(in: CAPSPhysicalOperator) extends CAPSPhysicalOperator {
     context.cache(in) = in.table
     in.table
   })
+
 }
 
 final case class NodeScan(in: CAPSPhysicalOperator, v: Var) extends CAPSPhysicalOperator {

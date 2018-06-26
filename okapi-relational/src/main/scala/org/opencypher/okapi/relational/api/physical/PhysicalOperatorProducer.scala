@@ -60,7 +60,7 @@ I <: RuntimeContext[O, A, P]] {
     * @param in     backend-specific records
     * @return start operator
     */
-  def planStart(qgnOpt: Option[QualifiedGraphName] = None, in: Option[A] = None, header: RecordHeader = RecordHeader.empty): K
+  def planStart(qgnOpt: Option[QualifiedGraphName] = None, in: Option[A] = None): K
 
   /**
     * Scans the node set of the input graph and returns all nodes that match the given CTNode type.
@@ -68,10 +68,9 @@ I <: RuntimeContext[O, A, P]] {
     * @param in      previous operator
     * @param inGraph graph to scan nodes from
     * @param v       node variable carrying the node type to scan for
-    * @param header  resulting record header
     * @return node scan operator
     */
-  def planNodeScan(in: K, inGraph: LogicalGraph, v: Var, header: RecordHeader): K
+  def planNodeScan(in: K, inGraph: LogicalGraph, v: Var): K
 
   /**
     * Scans the relationship set of the input graph and returns all relationships that match the given CTRelationship
@@ -80,10 +79,9 @@ I <: RuntimeContext[O, A, P]] {
     * @param in      previous operator
     * @param inGraph graph to scan relationships from
     * @param v       node variable carrying the relationship type to scan for
-    * @param header  resulting record header
     * @return relationship scan operator
     */
-  def planRelationshipScan(in: K, inGraph: LogicalGraph, v: Var, header: RecordHeader): K
+  def planRelationshipScan(in: K, inGraph: LogicalGraph, v: Var): K
 
   /**
     * Creates an empty record set thereby disregarding the input. The records are described by the given record header.
@@ -99,20 +97,18 @@ I <: RuntimeContext[O, A, P]] {
     *
     * @param in     previous operator
     * @param tuples pairs of source expressions to target aliases
-    * @param header resulting record header
     * @return Alias operator
     */
-  def planAliases(in: K, tuples: Seq[AliasExpr], header: RecordHeader): K
+  def planAliases(in: K, tuples: Seq[AliasExpr]): K
 
   /**
     * Renames the column identified by the given expression to the specified alias.
     *
-    * @param in     previous operator
-    * @param expr   alias expression
-    * @param header resulting record header
+    * @param in   previous operator
+    * @param expr alias expression
     * @return Alias operator
     */
-  def planAlias(in: K, expr: AliasExpr, header: RecordHeader): K = planAliases(in, Seq(expr), header)
+  def planAlias(in: K, expr: AliasExpr): K = planAliases(in, Seq(expr))
 
   /**
     * Drops the columns identified by the given expressions from the input records.
@@ -120,40 +116,36 @@ I <: RuntimeContext[O, A, P]] {
     *
     * @param in         previous operator
     * @param dropFields expressions to be dropped
-    * @param header     resulting record header
     * @return Drop operator
     */
-  def planDrop(in: K, dropFields: Set[Expr], header: RecordHeader): K
+  def planDrop(in: K, dropFields: Set[Expr]): K
 
   /**
     * Renames the columns associated with the given expressions to the specified new column names.
     *
     * @param in          previous operator
     * @param renameExprs expressions to new columns
-    * @param header      resulting record header
     * @return Rename operator
     */
-  def planRenameColumns(in: K, renameExprs: Map[Expr, String], header: RecordHeader): K
+  def planRenameColumns(in: K, renameExprs: Map[Expr, String]): K
 
   /**
     * Filters the incoming rows according to the specified expression.
     *
-    * @param in     previous operator
-    * @param expr   expression to be evaluated
-    * @param header resulting record header
+    * @param in   previous operator
+    * @param expr expression to be evaluated
     * @return filter operator
     */
-  def planFilter(in: K, expr: Expr, header: RecordHeader): K
+  def planFilter(in: K, expr: Expr): K
 
   /**
     * Selects the specified expressions from the given records.
     *
     * @param in          previous operator
     * @param expressions expressions to select from the records
-    * @param header      resulting record header
     * @return select operator
     */
-  def planSelect(in: K, expressions: List[Expr], header: RecordHeader): K
+  def planSelect(in: K, expressions: List[Expr]): K
 
   /**
     * Returns the working graph
@@ -174,12 +166,11 @@ I <: RuntimeContext[O, A, P]] {
   /**
     * Evaluates the given expression and projects it to a new column in the input records.
     *
-    * @param in     previous operator
-    * @param expr   expression to evaluate
-    * @param header resulting record header
+    * @param in   previous operator
+    * @param expr expression to evaluate
     * @return add column operator
     */
-  def planAddColumn(in: K, expr: Expr, header: RecordHeader): K
+  def planAddColumn(in: K, expr: Expr): K
 
   /**
     * Evaluates the first expression and copies the result into the column identified by the second expression.
@@ -187,10 +178,9 @@ I <: RuntimeContext[O, A, P]] {
     * @param in     previous operator
     * @param expr   expression to evaluate
     * @param column expression to store result in
-    * @param header resulting record header
     * @return add column operator
     */
-  def planCopyColumn(in: K, expr: Expr, column: Expr, header: RecordHeader): K
+  def planCopyColumn(in: K, expr: Expr, column: Expr): K
 
   /**
     * Creates a new record containing the specified entities (i.e. as defined in a construction pattern).
@@ -208,10 +198,9 @@ I <: RuntimeContext[O, A, P]] {
     * @param in           previous operator
     * @param group        vars to group records by
     * @param aggregations aggregate functions
-    * @param header       resulting record header
     * @return aggregate operator
     */
-  def planAggregate(in: K, group: Set[Var], aggregations: Set[(Var, Aggregator)], header: RecordHeader): K
+  def planAggregate(in: K, group: Set[Var], aggregations: Set[(Var, Aggregator)]): K
 
   /**
     * Performs a distinct operation on the specified fields.
@@ -227,44 +216,40 @@ I <: RuntimeContext[O, A, P]] {
     *
     * @param in        previous operator
     * @param sortItems fields to order records by
-    * @param header    resulting record header
     * @return order by operator
     */
-  def planOrderBy(in: K, sortItems: Seq[SortItem[Expr]], header: RecordHeader): K
+  def planOrderBy(in: K, sortItems: Seq[SortItem[Expr]]): K
 
   /**
     * Skips the given amount of rows in the input records. The number of rows is specified by an expression which can be
     * a literal or a query parameter.
     *
-    * @param in     previous operator
-    * @param expr   expression which contains or refers to the number of rows to skip
-    * @param header resulting record header
+    * @param in   previous operator
+    * @param expr expression which contains or refers to the number of rows to skip
     * @return skip operator
     */
-  def planSkip(in: K, expr: Expr, header: RecordHeader): K
+  def planSkip(in: K, expr: Expr): K
 
   /**
     * Limits the number of input records to the specified amount. The number of rows is specified by an expression which
     * can be a literal or a query parameter.
     *
-    * @param in     previous operator
-    * @param expr   expression which contains or refers to the maximum number of rows to return
-    * @param header resulting record header
+    * @param in   previous operator
+    * @param expr expression which contains or refers to the maximum number of rows to return
     * @return limit operator
     */
-  def planLimit(in: K, expr: Expr, header: RecordHeader): K
+  def planLimit(in: K, expr: Expr): K
 
   // Binary operators
 
   /**
     * Computes a cartesian product between the two input records.
     *
-    * @param lhs    first previous operator
-    * @param rhs    second previous operator
-    * @param header resulting record header
+    * @param lhs first previous operator
+    * @param rhs second previous operator
     * @return cross operator
     */
-  def planCartesianProduct(lhs: K, rhs: K, header: RecordHeader): K
+  def planCartesianProduct(lhs: K, rhs: K): K
 
   /**
     * Joins the two input records using the given expressions.
@@ -272,11 +257,10 @@ I <: RuntimeContext[O, A, P]] {
     * @param lhs         first previous operator
     * @param rhs         second previous operator
     * @param joinColumns sequence of left and right join columns
-    * @param header      resulting record header
     * @param joinType    type of the join
     * @return join operator
     */
-  def planJoin(lhs: K, rhs: K, joinColumns: Seq[(Expr, Expr)], header: RecordHeader, joinType: JoinType = InnerJoin): K
+  def planJoin(lhs: K, rhs: K, joinColumns: Seq[(Expr, Expr)], joinType: JoinType = InnerJoin): K
 
   /**
     * Unions the input records.

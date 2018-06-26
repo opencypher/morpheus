@@ -64,8 +64,6 @@ I <: RuntimeContext[O, A, P]] {
 
   def targetOp: FlatOperator
 
-  def header: RecordHeader
-
   def isExpandInto: Boolean
 
   def planner: PhysicalPlanner[O, K, A, P, I]
@@ -79,6 +77,32 @@ I <: RuntimeContext[O, A, P]] {
   val physicalEdgeScanOp: K = planner.process(edgeScanOp)
   val physicalTargetOp: K = planner.process(targetOp)
 
+  val targetHeader: RecordHeader = {
+    val aliasedEdgeScanCypherType = if (lower == 0) edgeScan.cypherType.nullable else edgeScan.cypherType
+    val aliasedEdgeScan = ListSegment(1, list)(aliasedEdgeScanCypherType)
+    val aliasedEdgeScanHeader = physicalEdgeScanOp.header.withAlias(edgeScan as aliasedEdgeScan).select(aliasedEdgeScan)
+
+    val startHeader = physicalSourceOp.header join aliasedEdgeScanHeader
+
+
+    def expand(i: Int, prev: RecordHeader): RecordHeader = {
+      val edgeCypherType = if (i > lower) edgeScan.cypherType.nullable else edgeScan.cypherType
+      val nextEdge = ListSegment(i, list)(edgeCypherType)
+
+      val aliasedCacheHeader = physicalEdgeScanOp.header
+        .withAlias(edgeScan as nextEdge)
+        .select(nextEdge)
+
+      prev join aliasedCacheHeader
+    }
+
+    val expandHeader = (2 to upper).foldLeft(startHeader) {
+      case (acc, i) => expand(i, acc)
+    }
+
+    if (isExpandInto) expandHeader else expandHeader join physicalTargetOp.header
+  }
+
   protected val startEdgeScan: Var = ListSegment(1, list)(edgeScan.cypherType)
 
   /**
@@ -89,13 +113,11 @@ I <: RuntimeContext[O, A, P]] {
   protected def init(dir: ExpandDirection): K = {
     val startEdgeScanOpAlias: K = producer.planAlias(
       physicalEdgeScanOp,
-      edgeScan as startEdgeScan,
-      edgeScanOp.header.withAlias(edgeScan as startEdgeScan)
+      edgeScan as startEdgeScan
     )
     val startEdgeScanOp: K = producer.planSelect(
       startEdgeScanOpAlias,
-      startEdgeScanOpAlias.header.expressions.toList,
-      edgeScanOp.header.withAlias(edgeScan as startEdgeScan).select(startEdgeScan)
+      startEdgeScanOpAlias.header.expressions.toList
     )
 
     // Execute the first expand
@@ -106,10 +128,9 @@ I <: RuntimeContext[O, A, P]] {
 
     val startOp = producer.planJoin(
       physicalSourceOp, startEdgeScanOp,
-      Seq(source -> edgeJoinExpr),
-      sourceOp.header join startEdgeScanOp.header
+      Seq(source -> edgeJoinExpr)
     )
-    producer.planFilter(startOp, isomorphismFilter(startEdgeScan, sourceOp.header.relationshipEntities), startOp.header)
+    producer.planFilter(startOp, isomorphismFilter(startEdgeScan, physicalSourceOp.header.relationshipEntities))
   }
 
   /**
@@ -118,22 +139,17 @@ I <: RuntimeContext[O, A, P]] {
     * @param i              number of the iteration
     * @param iterationTable result of the i-1th iteration
     * @param directions     expansion directions
-    * @param edgeVars       edges already travesed
+    * @param edgeVars       edges already traversed
     */
   def expand(i: Int, iterationTable: K, directions: (ExpandDirection, ExpandDirection), edgeVars: Seq[Var]): (K, Var) = {
     val nextEdgeCT = if (i > lower) edgeScan.cypherType.nullable else edgeScan.cypherType
     val nextEdge = ListSegment(i, list)(nextEdgeCT)
 
-    val edgeScanOpWithAlias = producer.planAliases(
-      physicalEdgeScanOp, Seq(edgeScan as nextEdge),
-      edgeScanOp.header.withAlias(edgeScan as nextEdge)
-    )
+    val edgeScanOpWithAlias = producer.planAliases(physicalEdgeScanOp, Seq(edgeScan as nextEdge))
 
     val aliasedCacheHeader = edgeScanOpWithAlias.header.select( nextEdge)
     val selectExprs = aliasedCacheHeader.expressionsFor(nextEdge)
-    val aliasedEdgeScanOp = producer.planSelect(
-      edgeScanOpWithAlias, selectExprs.toList, aliasedCacheHeader
-    )
+    val aliasedEdgeScanOp = producer.planSelect(edgeScanOpWithAlias, selectExprs.toList)
 
     val joinExpr = directions match {
       case (Outbound,Outbound) => iterationTable.header.endNodeFor(edgeVars.last) -> aliasedCacheHeader.startNodeFor(nextEdge)
@@ -142,14 +158,10 @@ I <: RuntimeContext[O, A, P]] {
       case (Inbound, Inbound) => iterationTable.header.startNodeFor(edgeVars.last) -> aliasedCacheHeader.startNodeFor(nextEdge)
     }
 
-    val expandedOp = producer.planJoin(
-      iterationTable,
-      aliasedEdgeScanOp,
-      Seq(joinExpr),
-      iterationTable.header join aliasedCacheHeader
+    val expandedOp = producer.planJoin(iterationTable, aliasedEdgeScanOp, Seq(joinExpr)
     )
 
-    producer.planFilter(expandedOp, isomorphismFilter(nextEdge, edgeVars.toSet), expandedOp.header) -> nextEdge
+    producer.planFilter(expandedOp, isomorphismFilter(nextEdge, edgeVars.toSet)) -> nextEdge
   }
 
   /**
@@ -162,31 +174,28 @@ I <: RuntimeContext[O, A, P]] {
     */
   protected def finalize(paths: Seq[K]): K = {
     // check whether to include paths of length 0
-    val unalignedOps = if (lower == 0) {
-      val zeroLengthExpand: K = copyEntity(source, target, header, physicalSourceOp)
+    val unalignedOps: Seq[K] = if (lower == 0) {
+      val zeroLengthExpand: K = copyEntity(source, target, targetHeader, physicalSourceOp)
       if (upper == 0) Seq(zeroLengthExpand) else paths :+ zeroLengthExpand
     } else paths
 
     // fill shorter paths with nulls
     val alignedOps = unalignedOps.map { exp =>
-      val nullExpressions = header.expressions -- exp.header.expressions
+      val nullExpressions = targetHeader.expressions -- exp.header.expressions
       nullExpressions.foldLeft(exp) {
         case (acc, expr) =>
 
           // TODO: this is a planning performance killer, we need to squash these steps into a single table operation
           val lit = NullLit(expr.cypherType)
 
-          val withExprHeader = acc.header.withExpr(expr)
-          val withExpr = producer.planCopyColumn(acc, lit, expr, withExprHeader)
+          val withExpr = producer.planCopyColumn(acc, lit, expr)
 
-          val withoutLitHeader = withExprHeader -- Set(lit)
-          val withoutLit = producer.planDrop(withExpr, Set(lit), withoutLitHeader)
+          val withoutLit = producer.planDrop(withExpr, Set(lit))
 
-          if (withoutLitHeader.column(expr) == header.column(expr)) {
+          if (withoutLit.header.column(expr) == targetHeader.column(expr)) {
             withoutLit
           } else {
-            val withRenamedHeader = withoutLitHeader.addExprToColumn(expr, header.column(expr))
-            val withRenamed = producer.planRenameColumns(withoutLit, Map(expr -> header.column(expr)), withRenamedHeader)
+            val withRenamed = producer.planRenameColumns(withoutLit, Map(expr -> targetHeader.column(expr)))
             withRenamed
           }
       }
@@ -211,20 +220,20 @@ I <: RuntimeContext[O, A, P]] {
     *
     * @param from       source variable
     * @param to         target variable
-    * @param header     target header
+    * @param targetHeader     target header
     * @param physicalOp base operation
     */
   protected def copyEntity(
     from: Var,
     to: Var,
-    header: RecordHeader,
+    targetHeader: RecordHeader,
     physicalOp: K
   ): K = {
     // TODO: remove when https://github.com/opencypher/cypher-for-apache-spark/issues/513 is resolved
-    val correctTarget = header.entityVars.find(_ == to).get
+    val correctTarget = targetHeader.entityVars.find(_ == to).get
 
-    val sourceChildren = header.expressionsFor(from)
-    val targetChildren = header.expressionsFor(correctTarget)
+    val sourceChildren = targetHeader.expressionsFor(from)
+    val targetChildren = targetHeader.expressionsFor(correctTarget)
 
     val childMapping: Set[(Expr, Expr)] = sourceChildren.map(expr => expr -> expr.withOwner(correctTarget))
     val missingMapping = (targetChildren -- childMapping.map(_._2) - correctTarget).map {
@@ -234,9 +243,7 @@ I <: RuntimeContext[O, A, P]] {
     }
 
     (childMapping ++ missingMapping).foldLeft(physicalOp) {
-      case (acc, (f, t)) =>
-        val targetHeader = acc.header.withExpr(t)
-        producer.planCopyColumn(acc, f, t, targetHeader)
+      case (acc, (f, t)) => producer.planCopyColumn(acc, f, t)
     }
   }
 
@@ -255,9 +262,9 @@ I <: RuntimeContext[O, A, P]] {
 
     if (isExpandInto) {
       val filterExpr = Equals(target, expr)(CTBoolean)
-      producer.planFilter(path, filterExpr, path.header)
+      producer.planFilter(path, filterExpr)
     } else {
-      producer.planJoin(path, physicalTargetOp, Seq(expr -> target), path.header join physicalTargetOp.header)
+      producer.planJoin(path, physicalTargetOp, Seq(expr -> target))
     }
   }
 }
@@ -277,7 +284,6 @@ I <: RuntimeContext[O, A, P]](
   override val sourceOp: FlatOperator,
   override val edgeScanOp: FlatOperator,
   override val targetOp: FlatOperator,
-  override val header: RecordHeader,
   override val isExpandInto: Boolean
 )(
   override val planner: PhysicalPlanner[O, K, A, P, I],
@@ -315,7 +321,6 @@ I <: RuntimeContext[O, A, P]](
   override val sourceOp: FlatOperator,
   override val edgeScanOp: FlatOperator,
   override val targetOp: FlatOperator,
-  override val header: RecordHeader,
   override val isExpandInto: Boolean
 )(
   override val planner: PhysicalPlanner[O, K, A, P, I],

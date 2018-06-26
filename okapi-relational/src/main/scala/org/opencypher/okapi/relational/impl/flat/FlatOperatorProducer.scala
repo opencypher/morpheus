@@ -48,12 +48,11 @@ class FlatOperatorProducer(implicit context: FlatPlannerContext) {
   }
 
   def cartesianProduct(lhs: FlatOperator, rhs: FlatOperator): CartesianProduct = {
-    val header = lhs.header ++ rhs.header
-    CartesianProduct(lhs, rhs, header)
+    CartesianProduct(lhs, rhs)
   }
 
   def select(vars: List[Var], in: FlatOperator): Select = {
-    Select(vars, in, in.header.select(vars: _*))
+    Select(vars, in)
   }
 
   def returnGraph(in: FlatOperator): ReturnGraph = {
@@ -61,11 +60,11 @@ class FlatOperatorProducer(implicit context: FlatPlannerContext) {
   }
 
   def filter(expr: Expr, in: FlatOperator): Filter = {
-    Filter(expr, in, in.header)
+    Filter(expr, in)
   }
 
   def distinct(fields: Set[Var], in: FlatOperator): Distinct = {
-    Distinct(fields, in, in.header)
+    Distinct(fields, in)
   }
 
   /**
@@ -73,34 +72,24 @@ class FlatOperatorProducer(implicit context: FlatPlannerContext) {
     * That means that it will discard any incoming fields from the ancestor header (assumes it is empty)
     */
   def nodeScan(node: Var, prev: FlatOperator): NodeScan = {
-    NodeScan(node, prev, prev.sourceGraph.schema.headerForNode(node))
+    NodeScan(node, prev)
   }
 
   def relationshipScan(rel: Var, prev: FlatOperator): RelationshipScan = {
-    RelationshipScan(rel, prev, prev.sourceGraph.schema.headerForRelationship(rel))
+    RelationshipScan(rel, prev)
   }
 
   def aggregate(aggregations: Set[(Var, Aggregator)], group: Set[Var], in: FlatOperator): Aggregate = {
-    val newHeader = in.header.select(group).withExprs(aggregations.map(_._1))
-    Aggregate(aggregations, group, in, newHeader)
+    Aggregate(aggregations, group, in)
   }
 
   def unwind(list: Expr, item: Var, in: FlatOperator): WithColumn = {
     val explodeExpr = Explode(list)(item.cypherType)
-    val explodeHeader = in.header.withExpr(explodeExpr).withAlias(explodeExpr as item)
-    WithColumn(explodeExpr as item, in, explodeHeader)
+    WithColumn(explodeExpr as item, in)
   }
 
   def project(projectExpr: (Expr, Option[Var]), in: FlatOperator): FlatOperator = {
-    val (expr, maybeAlias) = projectExpr
-    val updatedHeader = in.header.withExpr(expr)
-    val containsExpr = in.header.contains(expr)
-
-    maybeAlias match {
-      case Some(alias) if containsExpr => org.opencypher.okapi.relational.impl.flat.Alias(expr as alias, in, updatedHeader.withAlias(expr as alias))
-      case Some(alias) => WithColumn(expr as alias, in, updatedHeader.withAlias(expr as alias))
-      case None => WithColumn(expr, in, updatedHeader)
-    }
+    Project(projectExpr, in)
   }
 
   def expand(
@@ -112,9 +101,7 @@ class FlatOperatorProducer(implicit context: FlatPlannerContext) {
     sourceOp: FlatOperator,
     targetOp: FlatOperator
   ): FlatOperator = {
-    val relHeader = schema.headerForRelationship(rel)
-    val expandHeader = sourceOp.header ++ relHeader ++ targetOp.header
-    Expand(source, rel, direction, target, sourceOp, targetOp, expandHeader, relHeader)
+    Expand(source, rel, direction, target, sourceOp, targetOp)
   }
 
   def expandInto(
@@ -125,9 +112,7 @@ class FlatOperatorProducer(implicit context: FlatPlannerContext) {
     schema: Schema,
     sourceOp: FlatOperator
   ): FlatOperator = {
-    val relHeader = schema.headerForRelationship(rel)
-    val expandHeader = sourceOp.header ++ relHeader
-    ExpandInto(source, rel, target, direction, sourceOp, expandHeader, relHeader)
+    ExpandInto(source, rel, target, direction, sourceOp)
   }
 
   def valueJoin(
@@ -135,7 +120,7 @@ class FlatOperatorProducer(implicit context: FlatPlannerContext) {
     rhs: FlatOperator,
     predicates: Set[org.opencypher.okapi.ir.api.expr.Equals]
   ): FlatOperator = {
-    ValueJoin(lhs, rhs, predicates, lhs.header ++ rhs.header)
+    ValueJoin(lhs, rhs, predicates)
   }
 
   def planFromGraph(graph: LogicalGraph, prev: FlatOperator): FromGraph = {
@@ -146,8 +131,8 @@ class FlatOperatorProducer(implicit context: FlatPlannerContext) {
     EmptyRecords(prev, RecordHeader.from(fields))
   }
 
-  def planStart(graph: LogicalGraph, header: RecordHeader): Start = {
-    Start(graph, header)
+  def planStart(graph: LogicalGraph): Start = {
+    Start(graph)
   }
 
   def boundedVarExpand(
@@ -163,52 +148,26 @@ class FlatOperatorProducer(implicit context: FlatPlannerContext) {
     targetOp: FlatOperator,
     isExpandInto: Boolean
   ): FlatOperator = {
-
-    val aliasedEdgeScanCypherType = if (lower == 0) edgeScan.cypherType.nullable else edgeScan.cypherType
-    val aliasedEdgeScan = ListSegment(1, list)(aliasedEdgeScanCypherType)
-    val aliasedEdgeScanHeader = edgeScanOp.header.withAlias(edgeScan as aliasedEdgeScan).select(aliasedEdgeScan)
-
-    val startHeader = sourceOp.header join aliasedEdgeScanHeader
-
-
-    def expand(i: Int, prev: RecordHeader): RecordHeader = {
-      val edgeCypherType = if (i > lower) edgeScan.cypherType.nullable else edgeScan.cypherType
-      val nextEdge = ListSegment(i, list)(edgeCypherType)
-
-      val aliasedCacheHeader = edgeScanOp.header
-        .withAlias(edgeScan as nextEdge)
-        .select(nextEdge)
-
-      prev join aliasedCacheHeader
-    }
-
-    val expandHeader = (2 to upper).foldLeft(startHeader) {
-      case (acc, i) => expand(i, acc)
-    }
-
-    val header = if (isExpandInto) expandHeader else expandHeader join targetOp.header
-
-    BoundedVarExpand(source, list, edgeScan, target, direction, lower, upper, sourceOp, edgeScanOp, targetOp, header, isExpandInto)
+    BoundedVarExpand(source, list, edgeScan, target, direction, lower, upper, sourceOp, edgeScanOp, targetOp, isExpandInto)
   }
 
   def planOptional(lhs: FlatOperator, rhs: FlatOperator): FlatOperator = {
-    Optional(lhs, rhs, rhs.header)
+    Optional(lhs, rhs)
   }
 
   def planExistsSubQuery(expr: ExistsPatternExpr, lhs: FlatOperator, rhs: FlatOperator): FlatOperator = {
-    val header = lhs.header.withExpr(expr).withAlias(expr as expr.targetField)
-    ExistsSubQuery(expr.targetField, lhs, rhs, header)
+    ExistsSubQuery(expr.targetField, lhs, rhs)
   }
 
   def orderBy(sortItems: Seq[SortItem[Expr]], sourceOp: FlatOperator): FlatOperator = {
-    OrderBy(sortItems, sourceOp, sourceOp.header)
+    OrderBy(sortItems, sourceOp)
   }
 
   def skip(expr: Expr, sourceOp: FlatOperator): FlatOperator = {
-    Skip(expr, sourceOp, sourceOp.header)
+    Skip(expr, sourceOp)
   }
 
   def limit(expr: Expr, sourceOp: FlatOperator): FlatOperator = {
-    Limit(expr, sourceOp, sourceOp.header)
+    Limit(expr, sourceOp)
   }
 }
