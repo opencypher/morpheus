@@ -27,6 +27,7 @@
 package org.opencypher.spark.impl.physical.operators
 
 import org.opencypher.okapi.api.graph.QualifiedGraphName
+import org.opencypher.okapi.ir.api.expr.Var
 import org.opencypher.okapi.relational.impl.table.RecordHeader
 import org.opencypher.spark.api.io.SparkCypherTable.DataFrameTable
 import org.opencypher.spark.impl.physical.CAPSRuntimeContext
@@ -42,6 +43,8 @@ final case class Start(qgn: QualifiedGraphName, recordsOpt: Option[CAPSRecords])
   override lazy val graph: CAPSGraph = resolve(qgn)
 
   override lazy val graphName: QualifiedGraphName = qgn
+
+  override lazy val returnItems: Option[Seq[Var]] = None
 
   override def toString: String = {
     val graphArg = qgn.toString
