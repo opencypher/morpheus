@@ -215,18 +215,13 @@ I <: RuntimeContext[O, A, P]](val producer: PhysicalOperatorProducer[O, K, A, P,
         val joinExprs = leftHeader.vars.intersect(rightHeader.vars)
         // 1. Alias join expressions on rhs
         val renameExprs = joinExprs.map(e => e as Var(s"${e.name}${System.nanoTime}")(e.cypherType))
-        val rightHeaderAliases = renameExprs.foldLeft(rightHeader) {
-          case (currentHeader, aliasExpr) => currentHeader.withAlias(aliasExpr)
-        }
         val rightWithAliases = producer.planAliases(rightResult, renameExprs.toSeq)
         // 2. Drop Join expressions and their children in rhs
         val epxrsToRemove = joinExprs.flatMap(v => rightHeader.ownedBy(v))
-        val reducedRhsDataHeader = rightHeaderAliases -- epxrsToRemove
         val reducedRhsData = producer.planDrop(rightWithAliases, epxrsToRemove)
         // 3. Compute distinct rows in rhs
         val distinctRhsData = producer.planDistinct(reducedRhsData, renameExprs.map(_.alias))
         // 4. Join lhs and prepared rhs using a left outer join
-        val joinedDataHeader = leftHeader.join(reducedRhsDataHeader)
         val joinedData = producer.planJoin(leftResult, distinctRhsData, renameExprs.map(a => a.expr -> a.alias).toSeq, LeftOuterJoin)
         // 5. If at least one rhs join column is not null, the sub-query exists and true is projected to the target expression
         val targetExpr = renameExprs.head.alias

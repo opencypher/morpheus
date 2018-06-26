@@ -128,7 +128,7 @@ final case class RenameColumns(in: CAPSPhysicalOperator, renameExprs: Map[Expr, 
   }
 
   override lazy val table: DataFrameTable = renameExprs.foldLeft(in.table) {
-    case (currentTable, (expr, newColumn)) => currentTable.withColumnRenamed(header.column(expr), newColumn)
+    case (currentTable, (expr, newColumn)) => currentTable.withColumnRenamed(in.header.column(expr), newColumn)
   }
 }
 
