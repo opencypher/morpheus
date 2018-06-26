@@ -138,9 +138,6 @@ object SparkCypherTable {
         case CrossJoin => "cross"
       }
 
-      val overlap = this.physicalColumns.toSet.intersect(other.physicalColumns.toSet)
-      assert(overlap.isEmpty, s"overlapping columns: $overlap")
-
       joinType match {
         case CrossJoin =>
           df.crossJoin(other.df)
