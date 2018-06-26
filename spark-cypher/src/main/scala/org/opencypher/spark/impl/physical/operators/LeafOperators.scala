@@ -27,25 +27,21 @@
 package org.opencypher.spark.impl.physical.operators
 
 import org.opencypher.okapi.api.graph.QualifiedGraphName
-import org.opencypher.spark.api.CAPSSession
-import org.opencypher.spark.impl.CAPSRecords
-import org.opencypher.spark.impl.physical.{CAPSPhysicalResult, CAPSRuntimeContext}
+import org.opencypher.okapi.relational.impl.table.RecordHeader
+import org.opencypher.spark.api.io.SparkCypherTable.DataFrameTable
+import org.opencypher.spark.impl.physical.CAPSRuntimeContext
+import org.opencypher.spark.impl.{CAPSGraph, CAPSRecords}
 
-private[spark] abstract class LeafPhysicalOperator extends CAPSPhysicalOperator {
+final case class Start(qgn: QualifiedGraphName, recordsOpt: Option[CAPSRecords])
+  (implicit override val context: CAPSRuntimeContext) extends CAPSPhysicalOperator {
 
-  override def execute(implicit context: CAPSRuntimeContext): CAPSPhysicalResult = {
-    executeLeaf()
-  }
+  override def header: RecordHeader = recordsOpt.map(_.header).getOrElse(RecordHeader.empty)
 
-  def executeLeaf()(implicit context: CAPSRuntimeContext): CAPSPhysicalResult
-}
+  override def table: DataFrameTable = recordsOpt.map(_.table).getOrElse(CAPSRecords.unit().table)
 
-final case class Start(qgn: QualifiedGraphName, recordsOpt: Option[CAPSRecords])(implicit caps: CAPSSession) extends LeafPhysicalOperator {
+  override def graph: CAPSGraph = resolve(qgn)
 
-  override def executeLeaf()(implicit context: CAPSRuntimeContext): CAPSPhysicalResult = {
-    val records = recordsOpt.getOrElse(CAPSRecords.unit())
-    CAPSPhysicalResult(records, resolve(qgn), qgn)
-  }
+  override def graphName: QualifiedGraphName = children.head.graphName
 
   override def toString: String = {
     val graphArg = qgn.toString
