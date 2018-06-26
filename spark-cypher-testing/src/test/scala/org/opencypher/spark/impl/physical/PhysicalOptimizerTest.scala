@@ -41,7 +41,7 @@ class PhysicalOptimizerTest extends CAPSTestSuite with GraphConstructionFixture 
   val emptyRecords = CAPSRecords.empty(RecordHeader.empty)
 
   def start(qgn: QualifiedGraphName, records: CAPSRecords)(implicit caps: CAPSSession): Start = {
-    Start(qgn, Some(records), records.header)
+    Start(qgn, Some(records))
   }
 
   test("Test insert Cache operators") {

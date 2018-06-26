@@ -39,11 +39,12 @@ class CAPSPhysicalOperatorTest extends CAPSTestSuite {
   val testContents = Seq(TestContent(42, "foo"), TestContent(23, "bar"))
   val testDf = sparkSession.createDataFrame(testContents)
 
-  case class DummyOp(physicalResult: CAPSPhysicalResult) extends LeafPhysicalOperator {
+  case class DummyOp(physicalResult: CAPSPhysicalResult)(implicit override val context: CAPSRuntimeContext) extends CAPSPhysicalOperator {
 
-    override val header = physicalResult.records.header
+    override lazy val header = physicalResult.records.header
 
-    override def executeLeaf()(implicit context: CAPSRuntimeContext): CAPSPhysicalResult = physicalResult
+    override lazy val table = physicalResult.records.table
+
   }
 
   test("cache operator with single input") {
@@ -52,11 +53,11 @@ class CAPSPhysicalOperatorTest extends CAPSTestSuite {
     val toCache = DummyOp(expectedResult)
 
     val cache = Cache(toCache)
-    cache.execute
+    cache.table.size // Force execution
 
-    val cacheContent = context.cache(toCache)
-    cacheContent should equal(expectedResult)
-    cacheContent.records.df.storageLevel should equal(StorageLevel.MEMORY_AND_DISK)
+    val cachedDf = context.cache(toCache).df
+    cachedDf should equal(testDf)
+    cachedDf.storageLevel should equal(StorageLevel.MEMORY_AND_DISK)
   }
 
   test("cache operator with cache reuse") {
@@ -65,8 +66,8 @@ class CAPSPhysicalOperatorTest extends CAPSTestSuite {
     val toCache0 = DummyOp(expectedResult)
     val toCache1 = DummyOp(expectedResult)
 
-    val r1 = Cache(toCache0).execute
-    val r2 = Cache(toCache1).execute
+    val r1 = Cache(toCache0).table
+    val r2 = Cache(toCache1).table
      r1 should equal(r2)
   }
 }
