@@ -57,7 +57,7 @@ final case class Join(
 
   override lazy val header: RecordHeader = lhs.header join rhs.header
 
-  override lazy val table: DataFrameTable = {
+  override lazy val _table: DataFrameTable = {
 
     val lhsTable = lhs.table
     val rhsTable = rhs.table
@@ -90,7 +90,7 @@ final case class Join(
 // TODO: refactor to n-ary operator (i.e. take List[PhysicalOperator] as input)
 final case class TabularUnionAll(lhs: CAPSPhysicalOperator, rhs: CAPSPhysicalOperator) extends CAPSPhysicalOperator {
 
-  override lazy val table: DataFrameTable = {
+  override lazy val _table: DataFrameTable = {
     val lhsTable = lhs.table
     val rhsTable = rhs.table
 
@@ -127,7 +127,7 @@ final case class ConstructGraph(
 
   override lazy val header: RecordHeader = RecordHeader.empty
 
-  override lazy val table: DataFrameTable = lhs.table.unit
+  override lazy val _table: DataFrameTable = lhs.table.unit
 
   override def toString: String = {
     val entities = construct.clones.keySet ++ construct.newEntities.map(_.v)

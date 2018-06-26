@@ -27,6 +27,8 @@
 package org.opencypher.okapi.relational.api.physical
 
 import org.opencypher.okapi.api.graph.{PropertyGraph, QualifiedGraphName}
+import org.opencypher.okapi.api.types.{CTInteger, CTNodeOrNull, CTRelationshipOrNull}
+import org.opencypher.okapi.impl.exception.IllegalArgumentException
 import org.opencypher.okapi.ir.api.expr.Var
 import org.opencypher.okapi.relational.api.io.{FlatRelationalTable, RelationalCypherRecords}
 import org.opencypher.okapi.relational.impl.table.RecordHeader
@@ -53,7 +55,61 @@ trait PhysicalOperator[T <: FlatRelationalTable[T], R <: RelationalCypherRecords
 
   def returnItems: Option[Seq[Var]] = None
 
-  def table: T
+  protected def _table: T
+
+  def table: T = {
+    val t = _table
+
+    if (t.physicalColumns.toSet != header.columns) {
+      // Ensure no duplicate columns in initialData
+      val initialDataColumns = t.physicalColumns
+
+      val duplicateColumns = initialDataColumns.groupBy(identity).collect {
+        case (key, values) if values.size > 1 => key
+      }
+
+      if (duplicateColumns.nonEmpty)
+        throw IllegalArgumentException(
+          "a table with distinct columns",
+          s"a table with duplicate columns: ${initialDataColumns.sorted.mkString("[", ", ", "]")}")
+
+      // Verify that all header column names exist in the data
+      val headerColumnNames = header.columns
+      val dataColumnNames = t.physicalColumns.toSet
+      val missingTableColumns = headerColumnNames -- dataColumnNames
+      if (missingTableColumns.nonEmpty) {
+        throw IllegalArgumentException(
+          s"data with columns ${header.columns.toSeq.sorted.mkString("\n[", ", ", "]\n")}",
+          s"data with columns ${dataColumnNames.toSeq.sorted.mkString("\n[", ", ", "]\n")}"
+        )
+      }
+      // TODO: uncomment and fix expectations
+//      val missingHeaderColumns = dataColumnNames -- headerColumnNames
+//      if (missingHeaderColumns.nonEmpty) {
+//        throw IllegalArgumentException(
+//          s"data with columns ${header.columns.toSeq.sorted.mkString("\n[", ", ", "]\n")}",
+//          s"data with columns ${dataColumnNames.toSeq.sorted.mkString("\n[", ", ", "]\n")}"
+//        )
+//      }
+
+      // Verify column types
+      header.expressions.foreach { expr =>
+        val tableType = t.columnType(header.column(expr))
+        val headerType = expr.cypherType
+        // if the type in the data doesn't correspond to the type in the header we fail
+        // except: we encode nodes, rels and integers with the same data type, so we can't fail
+        // on conflicts when we expect entities (alternative: change reverse-mapping function somehow)
+
+        headerType match {
+          case _: CTNodeOrNull if tableType == CTInteger =>
+          case _: CTRelationshipOrNull if tableType == CTInteger =>
+          case _ if tableType == headerType =>
+          case _ => throw IllegalArgumentException(s"data matching header type $headerType for expression $expr", tableType)
+        }
+      }
+    }
+    t
+  }
 
   def graph: G
 

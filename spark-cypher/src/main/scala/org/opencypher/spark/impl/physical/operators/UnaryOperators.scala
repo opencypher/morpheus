@@ -30,7 +30,7 @@ import org.apache.spark.sql._
 import org.opencypher.okapi.api.graph.QualifiedGraphName
 import org.opencypher.okapi.api.types._
 import org.opencypher.okapi.api.value.CypherValue._
-import org.opencypher.okapi.impl.exception.{IllegalArgumentException, NotImplementedException}
+import org.opencypher.okapi.impl.exception.{IllegalArgumentException, NotImplementedException, SchemaException}
 import org.opencypher.okapi.ir.api.block.{Asc, Desc, SortItem}
 import org.opencypher.okapi.ir.api.expr._
 import org.opencypher.okapi.logical.impl._
@@ -46,7 +46,7 @@ import org.opencypher.spark.impl.convert.SparkConversions._
 
 final case class Cache(in: CAPSPhysicalOperator) extends CAPSPhysicalOperator {
 
-  override lazy val table: DataFrameTable = context.cache.getOrElse(in, {
+  override lazy val _table: DataFrameTable = context.cache.getOrElse(in, {
     in.table.cache()
     context.cache(in) = in.table
     in.table
@@ -59,8 +59,19 @@ final case class NodeScan(in: CAPSPhysicalOperator, v: Var) extends CAPSPhysical
   override lazy val header: RecordHeader = in.graph.schema.headerForNode(v)
 
   // TODO: replace with NodeVar
-  override lazy val table: DataFrameTable = in.graph.nodes(v.name, v.cypherType.asInstanceOf[CTNode]).table
+  override lazy val _table: DataFrameTable = {
+    val nodeTable = in.graph.nodes(v.name, v.cypherType.asInstanceOf[CTNode]).table
 
+    if (header.columns != nodeTable.physicalColumns.toSet) {
+      throw SchemaException(
+        s"""
+           |Graph schema does not match actual records returned for scan $v:
+           |  - Computed columns based on graph schema: ${header.columns.toSeq.sorted.mkString(", ")}
+           |  - Actual columns in scan table: ${nodeTable.physicalColumns.sorted.mkString(", ")}
+        """.stripMargin)
+    }
+    nodeTable
+  }
 }
 
 final case class RelationshipScan(in: CAPSPhysicalOperator, v: Var) extends CAPSPhysicalOperator {
@@ -68,7 +79,19 @@ final case class RelationshipScan(in: CAPSPhysicalOperator, v: Var) extends CAPS
   override lazy val header: RecordHeader = in.graph.schema.headerForRelationship(v)
 
   // TODO: replace with RelationshipVar
-  override lazy val table: DataFrameTable = in.graph.relationships(v.name, v.cypherType.asInstanceOf[CTRelationship]).table
+  override lazy val _table: DataFrameTable = {
+    val relTable = in.graph.relationships(v.name, v.cypherType.asInstanceOf[CTRelationship]).table
+
+    if (header.columns != relTable.physicalColumns.toSet) {
+      throw SchemaException(
+        s"""
+           |Graph schema does not match actual records returned for scan $v:
+           |  - Computed columns based on graph schema: ${header.columns.toSeq.sorted.mkString(", ")}
+           |  - Actual columns in scan table: ${relTable.physicalColumns.sorted.mkString(", ")}
+        """.stripMargin)
+    }
+    relTable
+  }
 }
 
 final case class Alias(in: CAPSPhysicalOperator, aliases: Seq[AliasExpr]) extends CAPSPhysicalOperator {
@@ -92,7 +115,7 @@ final case class AddColumn(in: CAPSPhysicalOperator, expr: Expr) extends CAPSPhy
     }
   }
 
-  override lazy val table: DataFrameTable = {
+  override lazy val _table: DataFrameTable = {
     if (in.header.contains(expr)) {
       in.table
     } else {
@@ -105,14 +128,14 @@ final case class CopyColumn(in: CAPSPhysicalOperator, from: Expr, to: Expr) exte
 
   override lazy val header: RecordHeader = in.header.withExpr(to)
 
-  override lazy val table: DataFrameTable = in.table.withColumn(header.column(to), from)(header, context.parameters)
+  override lazy val _table: DataFrameTable = in.table.withColumn(header.column(to), from)(header, context.parameters)
 }
 
 final case class DropColumns[T <: Expr](in: CAPSPhysicalOperator, exprs: Set[T]) extends CAPSPhysicalOperator {
 
   override lazy val header: RecordHeader = in.header -- exprs
 
-  override lazy val table: DataFrameTable = {
+  override lazy val _table: DataFrameTable = {
     if (header.columns.size < in.header.columns.size) {
       in.table.drop(exprs.map(in.header.column).toSeq: _*)
     } else {
@@ -127,21 +150,21 @@ final case class RenameColumns(in: CAPSPhysicalOperator, renameExprs: Map[Expr, 
     case (currentHeader, (expr, newColumn)) => currentHeader.withColumnRenamed(expr, newColumn)
   }
 
-  override lazy val table: DataFrameTable = renameExprs.foldLeft(in.table) {
+  override lazy val _table: DataFrameTable = renameExprs.foldLeft(in.table) {
     case (currentTable, (expr, newColumn)) => currentTable.withColumnRenamed(in.header.column(expr), newColumn)
   }
 }
 
 final case class Filter(in: CAPSPhysicalOperator, expr: Expr) extends CAPSPhysicalOperator {
 
-  override lazy val table: DataFrameTable = in.table.filter(expr)(header, context.parameters)
+  override lazy val _table: DataFrameTable = in.table.filter(expr)(header, context.parameters)
 }
 
 final case class ReturnGraph(in: CAPSPhysicalOperator) extends CAPSPhysicalOperator {
 
   override lazy val header: RecordHeader = RecordHeader.empty
 
-  override lazy val table: DataFrameTable = in.table.empty()
+  override lazy val _table: DataFrameTable = in.table.empty()
 }
 
 final case class Select(in: CAPSPhysicalOperator, expressions: List[Expr]) extends CAPSPhysicalOperator {
@@ -152,7 +175,7 @@ final case class Select(in: CAPSPhysicalOperator, expressions: List[Expr]) exten
     headerWithAliases.select(expressions: _*)
   }
 
-  override lazy val table: SparkCypherTable.DataFrameTable = {
+  override lazy val _table: SparkCypherTable.DataFrameTable = {
     in.table.select(expressions.map(header.column).distinct: _*)
   }
 
@@ -161,13 +184,13 @@ final case class Select(in: CAPSPhysicalOperator, expressions: List[Expr]) exten
 
 final case class Distinct(in: CAPSPhysicalOperator, fields: Set[Var]) extends CAPSPhysicalOperator {
 
-  override lazy val table: DataFrameTable = in.table.distinct(fields.flatMap(header.expressionsFor).map(header.column).toSeq: _*)
+  override lazy val _table: DataFrameTable = in.table.distinct(fields.flatMap(header.expressionsFor).map(header.column).toSeq: _*)
 
 }
 
 final case class SimpleDistinct(in: CAPSPhysicalOperator) extends CAPSPhysicalOperator {
 
-  override lazy val table: DataFrameTable = in.table.distinct
+  override lazy val _table: DataFrameTable = in.table.distinct
 }
 
 final case class Aggregate(
@@ -178,7 +201,7 @@ final case class Aggregate(
 
   override lazy val header: RecordHeader = in.header.select(group).withExprs(aggregations.map(_._1))
 
-  override lazy val table: DataFrameTable = {
+  override lazy val _table: DataFrameTable = {
 
     val inDF = in.table.df
 
@@ -251,7 +274,7 @@ final case class Aggregate(
 
 final case class OrderBy(in: CAPSPhysicalOperator, sortItems: Seq[SortItem[Expr]]) extends CAPSPhysicalOperator {
 
-  override lazy val table: DataFrameTable = {
+  override lazy val _table: DataFrameTable = {
     val tableSortItems: Seq[(String, Order)] = sortItems.map {
       case Asc(expr) => header.column(expr) -> Ascending
       case Desc(expr) => header.column(expr) -> Descending
@@ -262,7 +285,7 @@ final case class OrderBy(in: CAPSPhysicalOperator, sortItems: Seq[SortItem[Expr]
 
 final case class Skip(in: CAPSPhysicalOperator, expr: Expr) extends CAPSPhysicalOperator {
 
-  override lazy val table: DataFrameTable = {
+  override lazy val _table: DataFrameTable = {
     val skip: Long = expr match {
       case IntegerLit(v) => v
       case Param(name) =>
@@ -278,7 +301,7 @@ final case class Skip(in: CAPSPhysicalOperator, expr: Expr) extends CAPSPhysical
 
 final case class Limit(in: CAPSPhysicalOperator, expr: Expr) extends CAPSPhysicalOperator {
 
-  override lazy val table: DataFrameTable = {
+  override lazy val _table: DataFrameTable = {
     val limit: Long = expr match {
       case IntegerLit(v) => v
       case Param(name) =>
@@ -296,7 +319,7 @@ final case class EmptyRecords(in: CAPSPhysicalOperator, fields: Set[Var] = Set.e
 
   override lazy val header: RecordHeader = RecordHeader.from(fields)
 
-  override lazy val table: DataFrameTable = in.table.empty(header)
+  override lazy val _table: DataFrameTable = in.table.empty(header)
 }
 
 final case class FromGraph(in: CAPSPhysicalOperator, logicalGraph: LogicalCatalogGraph) extends CAPSPhysicalOperator {

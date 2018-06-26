@@ -37,7 +37,7 @@ final case class Start(qgn: QualifiedGraphName, recordsOpt: Option[CAPSRecords])
 
   override lazy val header: RecordHeader = recordsOpt.map(_.header).getOrElse(RecordHeader.empty)
 
-  override lazy val table: DataFrameTable = recordsOpt.map(_.table).getOrElse(CAPSRecords.unit().table)
+  override lazy val _table: DataFrameTable = recordsOpt.map(_.table).getOrElse(CAPSRecords.unit().table)
 
   override lazy val graph: CAPSGraph = resolve(qgn)
 

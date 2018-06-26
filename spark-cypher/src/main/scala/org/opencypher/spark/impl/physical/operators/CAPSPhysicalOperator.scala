@@ -43,7 +43,7 @@ private[spark] abstract class CAPSPhysicalOperator
 
   override def header: RecordHeader = children.head.header
 
-  override def table: DataFrameTable = children.head.table
+  override def _table: DataFrameTable = children.head.table
 
   override implicit def context: CAPSRuntimeContext = children.head.context
 

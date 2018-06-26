@@ -43,7 +43,7 @@ class CAPSPhysicalOperatorTest extends CAPSTestSuite {
 
     override lazy val header = physicalResult.records.header
 
-    override lazy val table = physicalResult.records.table
+    override lazy val _table = physicalResult.records.table
 
   }
 
