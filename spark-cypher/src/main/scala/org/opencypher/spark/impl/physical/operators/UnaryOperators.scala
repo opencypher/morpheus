@@ -110,11 +110,11 @@ final case class CopyColumn(in: CAPSPhysicalOperator, from: Expr, to: Expr) exte
 
 final case class DropColumns[T <: Expr](in: CAPSPhysicalOperator, exprs: Set[T]) extends CAPSPhysicalOperator {
 
-  override lazy val header: RecordHeader = header -- exprs
+  override lazy val header: RecordHeader = in.header -- exprs
 
   override lazy val table: DataFrameTable = {
     if (header.columns.size < in.header.columns.size) {
-      in.table.drop(exprs.map(header.column).toSeq: _*)
+      in.table.drop(exprs.map(in.header.column).toSeq: _*)
     } else {
       in.table
     }
@@ -148,7 +148,7 @@ final case class Select(in: CAPSPhysicalOperator, expressions: List[Expr]) exten
 
   override lazy val header: RecordHeader = {
     val aliasExprs = expressions.collect { case a: AliasExpr => a }
-    val headerWithAliases = header.withAlias(aliasExprs: _*)
+    val headerWithAliases = in.header.withAlias(aliasExprs: _*)
     headerWithAliases.select(expressions: _*)
   }
 
@@ -256,7 +256,7 @@ final case class OrderBy(in: CAPSPhysicalOperator, sortItems: Seq[SortItem[Expr]
       case Asc(expr) => header.column(expr) -> Ascending
       case Desc(expr) => header.column(expr) -> Descending
     }
-    table.orderBy(tableSortItems: _*)
+    in.table.orderBy(tableSortItems: _*)
   }
 }
 

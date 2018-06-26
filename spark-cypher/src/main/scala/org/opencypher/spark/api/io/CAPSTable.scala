@@ -121,7 +121,8 @@ object SparkCypherTable {
     }
 
     override def limit(items: Long): DataFrameTable = {
-      df.limit(items)
+      // TODO: Unsafe `toInt`
+      df.limit(items.toInt)
     }
 
     override def unionAll(other: DataFrameTable): DataFrameTable = {

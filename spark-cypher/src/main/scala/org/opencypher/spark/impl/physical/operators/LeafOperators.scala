@@ -35,13 +35,13 @@ import org.opencypher.spark.impl.{CAPSGraph, CAPSRecords}
 final case class Start(qgn: QualifiedGraphName, recordsOpt: Option[CAPSRecords])
   (implicit override val context: CAPSRuntimeContext) extends CAPSPhysicalOperator {
 
-  override def header: RecordHeader = recordsOpt.map(_.header).getOrElse(RecordHeader.empty)
+  override lazy val header: RecordHeader = recordsOpt.map(_.header).getOrElse(RecordHeader.empty)
 
-  override def table: DataFrameTable = recordsOpt.map(_.table).getOrElse(CAPSRecords.unit().table)
+  override lazy val table: DataFrameTable = recordsOpt.map(_.table).getOrElse(CAPSRecords.unit().table)
 
-  override def graph: CAPSGraph = resolve(qgn)
+  override lazy val graph: CAPSGraph = resolve(qgn)
 
-  override def graphName: QualifiedGraphName = children.head.graphName
+  override lazy val graphName: QualifiedGraphName = qgn
 
   override def toString: String = {
     val graphArg = qgn.toString

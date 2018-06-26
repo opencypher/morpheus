@@ -63,7 +63,7 @@ final case class Join(
     val rhsTable = rhs.table
 
     // TODO: move conflict resolution to relational planner
-    val cleanOther = if (lhsTable.physicalColumns.toSet ++ rhsTable.physicalColumns.toSet != header.columns) {
+    val conflictFreeRhs = if (lhsTable.physicalColumns.toSet ++ rhsTable.physicalColumns.toSet != header.columns) {
       val renameColumns = rhs.header.expressions
         .filter(expr => rhs.header.column(expr) != header.column(expr))
         .map { expr => expr -> header.column(expr) }.toSeq
@@ -72,8 +72,8 @@ final case class Join(
       rhs
     }
 
-    val joinCols = joinExprs.map { case (l, r) => header.column(l) -> cleanOther.header.column(r) }
-    table.join(cleanOther.table, joinType, joinCols: _*)
+    val joinCols = joinExprs.map { case (l, r) => header.column(l) -> conflictFreeRhs.header.column(r) }
+    lhs.table.join(conflictFreeRhs.table, joinType, joinCols: _*)
   }
 }
 
@@ -104,13 +104,13 @@ final case class TabularUnionAll(lhs: CAPSPhysicalOperator, rhs: CAPSPhysicalOpe
       throw IllegalArgumentException("same column names", s"left: $leftColumns right: $rightColumns")
     }
 
-    val orderedColumns = if (leftColumns != rightColumns) {
+    val orderedRhsTable = if (leftColumns != rightColumns) {
       rhsTable.select(leftColumns: _*)
     } else {
       rhsTable
     }
 
-    table.unionAll(orderedColumns)
+    lhsTable.unionAll(orderedRhsTable)
   }
 }
 
