@@ -134,6 +134,7 @@ class CAPSRecordsPrinterTest extends CAPSTestSuite with GraphConstructionFixture
   }
 
   it("prints return property values without alias") {
+
     val given =
       initGraph(
         """

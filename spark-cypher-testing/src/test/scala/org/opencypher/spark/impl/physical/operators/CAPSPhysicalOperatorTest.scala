@@ -56,7 +56,7 @@ class CAPSPhysicalOperatorTest extends CAPSTestSuite {
     cache.table.size // Force execution
 
     val cachedDf = context.cache(toCache).df
-    cachedDf should equal(testDf)
+    cachedDf should equal(expectedResult.records.df)
     cachedDf.storageLevel should equal(StorageLevel.MEMORY_AND_DISK)
   }
 

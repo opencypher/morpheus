@@ -42,7 +42,7 @@ object CAPSResultBuilder {
 
     new CAPSResult {
       lazy val result: CAPSPhysicalResult = CAPSPhysicalResult(
-        CAPSRecords(physical.header, physical.table.df),
+        CAPSRecords(physical.header, physical.table.df, physical.returnItems.map(_.map(_.withoutType))),
         physical.graph,
         physical.graphName,
         physical.tagStrategy

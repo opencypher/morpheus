@@ -28,6 +28,7 @@ package org.opencypher.spark.impl.physical.operators
 
 import org.opencypher.okapi.api.graph.QualifiedGraphName
 import org.opencypher.okapi.impl.exception.IllegalArgumentException
+import org.opencypher.okapi.ir.api.expr.Var
 import org.opencypher.okapi.relational.api.physical.PhysicalOperator
 import org.opencypher.okapi.relational.impl.table.RecordHeader
 import org.opencypher.okapi.trees.AbstractTreeNode
@@ -52,6 +53,8 @@ private[spark] abstract class CAPSPhysicalOperator
   override def graph: CAPSGraph = children.head.graph
 
   override def graphName: QualifiedGraphName = children.head.graphName
+
+  override def returnItems: Option[Seq[Var]] = children.head.returnItems
 
   protected def resolve(qualifiedGraphName: QualifiedGraphName)(implicit context: CAPSRuntimeContext): CAPSGraph = {
     context.resolve(qualifiedGraphName).map(_.asCaps).getOrElse(throw IllegalArgumentException(s"a graph at $qualifiedGraphName"))
