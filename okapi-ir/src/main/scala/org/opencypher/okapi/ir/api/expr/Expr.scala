@@ -112,7 +112,7 @@ final case class NodeVar(name: String)(val cypherType: CTNode = CTNode) extends 
 
   override type This = NodeVar
 
-  override def owner(): Option[Var] = Some(this)
+  override def owner: Option[Var] = Some(this)
 
   override def withOwner(expr: Var): NodeVar = expr match {
     case n: NodeVar => n
@@ -129,7 +129,7 @@ final case class RelationshipVar(name: String)(val cypherType: CTRelationship = 
 
   override type This = RelationshipVar
 
-  override def owner(): Option[Var] = Some(this)
+  override def owner: Option[Var] = Some(this)
 
   override def withOwner(expr: Var): RelationshipVar = expr match {
     case r: RelationshipVar => r
@@ -145,7 +145,7 @@ final case class SimpleVar(name: String)(val cypherType: CypherType) extends Ret
 
   override type This = SimpleVar
 
-  override def owner(): Option[Var] = Some(this)
+  override def owner: Option[Var] = Some(this)
 
   override def withOwner(expr: Var): SimpleVar = SimpleVar(expr.name)(expr.cypherType)
   override def withoutType: String = s"$name"
@@ -157,7 +157,7 @@ final case class StartNode(rel: Expr)(val cypherType: CypherType = CTWildcard) e
 
   override def toString = s"source($rel)"
 
-  override def owner(): Option[Var] = rel match {
+  override def owner: Option[Var] = rel match {
     case v: Var => Some(v)
     case _ => None
   }
