@@ -35,7 +35,7 @@ import org.opencypher.okapi.ir.api.expr.{Expr, Var, _}
 import org.opencypher.okapi.ir.api.set.SetPropertyItem
 import org.opencypher.okapi.ir.api.{PropertyKey, RelType}
 import org.opencypher.okapi.logical.impl.{ConstructedEntity, ConstructedNode, ConstructedRelationship, LogicalPatternGraph}
-import org.opencypher.okapi.relational.impl.physical.JoinType
+import org.opencypher.okapi.relational.impl.physical.{CrossJoin, JoinType}
 import org.opencypher.okapi.relational.impl.table.RecordHeader
 import org.opencypher.spark.api.Tags
 import org.opencypher.spark.api.io.SparkCypherTable.DataFrameTable
@@ -51,8 +51,8 @@ import org.opencypher.spark.schema.CAPSSchema._
 final case class Join(
   lhs: CAPSPhysicalOperator,
   rhs: CAPSPhysicalOperator,
-  joinExprs: Seq[(Expr, Expr)],
-  joinType: JoinType
+  joinExprs: Seq[(Expr, Expr)] = Seq.empty,
+  joinType: JoinType = CrossJoin
 ) extends CAPSPhysicalOperator {
 
   override lazy val header: RecordHeader = lhs.header join rhs.header
