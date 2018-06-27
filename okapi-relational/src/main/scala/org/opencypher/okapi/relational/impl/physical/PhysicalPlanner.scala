@@ -37,6 +37,7 @@ import org.opencypher.okapi.relational.api.io.{FlatRelationalTable, RelationalCy
 import org.opencypher.okapi.relational.api.physical.{PhysicalOperator, PhysicalOperatorProducer, PhysicalPlannerContext, RuntimeContext}
 import org.opencypher.okapi.relational.impl.flat
 import org.opencypher.okapi.relational.impl.flat.FlatOperator
+import org.opencypher.okapi.relational.impl.physical.ConstructGraphPlanner._
 
 class PhysicalPlanner[
 O <: FlatRelationalTable[O],
@@ -44,8 +45,9 @@ K <: PhysicalOperator[O, A, P, I],
 A <: RelationalCypherRecords[O],
 P <: PropertyGraph,
 I <: RuntimeContext[O, A, P]](val producer: PhysicalOperatorProducer[O, K, A, P, I])
-
   extends DirectCompilationStage[FlatOperator, K, PhysicalPlannerContext[O, K, A]] {
+
+  private implicit val planner: PhysicalPlanner[O, K, A, P, I] = this
 
   def process(flatPlan: FlatOperator)(implicit context: PhysicalPlannerContext[O, K, A]): K = {
 
@@ -86,7 +88,8 @@ I <: RuntimeContext[O, A, P]](val producer: PhysicalOperatorProducer[O, K, A, P,
           case p: LogicalPatternGraph =>
             context.constructedGraphPlans.get(p.name) match {
               case Some(plan) => plan // the graph was already constructed
-              case None => planConstructGraph(None, p) // plan starts with a construct graph, thus we have to plan it
+                // TODO: investigate why the implicit context is not found in scope
+              case None => planConstructGraph(None, p)(context, planner) // plan starts with a construct graph, thus we have to plan it
             }
         }
 
@@ -96,7 +99,7 @@ I <: RuntimeContext[O, A, P]](val producer: PhysicalOperatorProducer[O, K, A, P,
             producer.planFromGraph(process(in), g)
 
           case construct: LogicalPatternGraph =>
-            planConstructGraph(Some(in), construct)
+            planConstructGraph(Some(in), construct)(context, planner)
         }
 
       case op
@@ -239,25 +242,25 @@ I <: RuntimeContext[O, A, P]](val producer: PhysicalOperatorProducer[O, K, A, P,
       case other => throw NotImplementedException(s"Physical planning of operator $other")
     }
   }
-
-  private def planConstructGraph(in: Option[FlatOperator], construct: LogicalPatternGraph)
-    (implicit context: PhysicalPlannerContext[O, K, A]) = {
-    val onGraphPlan = {
-      construct.onGraphs match {
-        case Nil => producer.planStart() // Empty start
-        //TODO: Optimize case where no union is necessary
-        //case h :: Nil => producer.planStart(Some(h)) // Just one graph, no union required
-        case several =>
-          val onGraphPlans = several.map(qgn => producer.planStart(Some(qgn)))
-          producer.planGraphUnionAll(onGraphPlans, construct.name)
-      }
-    }
-    val inputTablePlan = in.map(process).getOrElse(producer.planStart())
-
-    val constructGraphPlan = producer.planConstructGraph(inputTablePlan, onGraphPlan, construct)
-    context.constructedGraphPlans.update(construct.name, constructGraphPlan)
-    constructGraphPlan
-  }
+  //
+  //  private def planConstructGraph(in: Option[FlatOperator], construct: LogicalPatternGraph)
+  //    (implicit context: PhysicalPlannerContext[O, K, A]) = {
+  //    val onGraphPlan = {
+  //      construct.onGraphs match {
+  //        case Nil => producer.planStart() // Empty start
+  //        //TODO: Optimize case where no union is necessary
+  //        //case h :: Nil => producer.planStart(Some(h)) // Just one graph, no union required
+  //        case several =>
+  //          val onGraphPlans = several.map(qgn => producer.planStart(Some(qgn)))
+  //          producer.planGraphUnionAll(onGraphPlans, construct.name)
+  //      }
+  //    }
+  //    val inputTablePlan = in.map(process).getOrElse(producer.planStart())
+  //
+  //    val constructGraphPlan = producer.planConstructGraph(inputTablePlan, onGraphPlan, construct)
+  //    context.constructedGraphPlans.update(construct.name, constructGraphPlan)
+  //    constructGraphPlan
+  //  }
 
   private def planOptional(lhs: FlatOperator, rhs: FlatOperator)
     (implicit context: PhysicalPlannerContext[O, K, A]) = {

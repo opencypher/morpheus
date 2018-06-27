@@ -269,6 +269,7 @@ I <: RuntimeContext[O, A, P]] {
   }
 }
 
+// TODO: use object instead
 class DirectedVarLengthExpandPlanner[
 O <: FlatRelationalTable[O],
 K <: PhysicalOperator[O, A, P, I],
@@ -306,6 +307,7 @@ I <: RuntimeContext[O, A, P]](
   }
 }
 
+// TODO: use object instead
 class UndirectedVarLengthExpandPlanner[
 O <: FlatRelationalTable[O],
 K <: PhysicalOperator[O, A, P, I],
