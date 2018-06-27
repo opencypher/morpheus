@@ -181,7 +181,7 @@ final case class Select(in: CAPSPhysicalOperator, expressions: List[Expr]) exten
     in.table.select(expressions.map(header.column).distinct: _*)
   }
 
-  override lazy val returnItems: Option[Seq[Var]] = Some(expressions.flatMap(_.owner).collect { case e: Var => e })
+  override lazy val returnItems: Option[Seq[Var]] = Some(expressions.flatMap(_.owner).collect { case e: Var => e }.distinct)
 }
 
 final case class Distinct(in: CAPSPhysicalOperator, fields: Set[Var]) extends CAPSPhysicalOperator {
