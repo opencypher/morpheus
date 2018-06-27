@@ -27,7 +27,7 @@
 package org.opencypher.okapi.relational.api.physical
 
 import org.opencypher.okapi.api.graph.{PropertyGraph, QualifiedGraphName}
-import org.opencypher.okapi.api.types.{CTInteger, CTNodeOrNull, CTRelationshipOrNull}
+import org.opencypher.okapi.api.types._
 import org.opencypher.okapi.impl.exception.IllegalArgumentException
 import org.opencypher.okapi.ir.api.expr.Var
 import org.opencypher.okapi.relational.api.io.{FlatRelationalTable, RelationalCypherRecords}
@@ -101,7 +101,9 @@ trait PhysicalOperator[T <: FlatRelationalTable[T], R <: RelationalCypherRecords
         // on conflicts when we expect entities (alternative: change reverse-mapping function somehow)
 
         headerType match {
+          case _: CTNode if tableType == CTInteger =>
           case _: CTNodeOrNull if tableType == CTInteger =>
+          case _: CTRelationship  if tableType == CTInteger =>
           case _: CTRelationshipOrNull if tableType == CTInteger =>
           case _ if tableType == headerType =>
           case _ => throw IllegalArgumentException(s"data matching header type $headerType for expression $expr", tableType)

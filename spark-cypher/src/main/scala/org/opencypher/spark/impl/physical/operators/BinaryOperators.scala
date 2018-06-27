@@ -163,36 +163,36 @@ final case class ConstructGraph(
       .filter { case (alias, original) => alias != original }
       .map(_.swap)
 
+    val aliasOp: CAPSPhysicalOperator = Alias(lhs, aliasClones.map { case (expr, alias) => expr as alias }.toSeq)
 
-    val aliasedLhs = Alias(lhs, aliasClones.map { case (expr, alias) => expr as alias }.toSeq)
-    val baseTableHeader = aliasedLhs.header
-    val baseTable = aliasedLhs.table
-
-    val retaggedBaseTable = clonedVarsToInputVars.foldLeft(baseTable) { case (df, clone) =>
-      df.retagColumn(constructTagStrategy(clone._2.cypherType.graph.get), baseTableHeader.column(clone._1))
+    val retagBaseTableOp = clonedVarsToInputVars.foldLeft(aliasOp) {
+      case (op, (alias, original)) => RetagColumn(op, constructTagStrategy(original.cypherType.graph.get), alias)
     }
 
     // Construct NEW entities
-    val (newEntityTags, (headerWithConstructedEntities, tableWithConstructedEntities)) = {
+    val (newEntityTags, constructedEntitiesOp) = {
       if (newEntities.isEmpty) {
-        Set.empty[Int] -> (baseTableHeader -> retaggedBaseTable)
+        Set.empty[Int] -> retagBaseTableOp
       } else {
         val newEntityTag = pickFreeTag(constructTagStrategy)
-        val (entityHeader, entityTable) = createEntities(newEntities, baseTableHeader, retaggedBaseTable, newEntityTag)
-        val entityTableWithProperties = sets.foldLeft(entityHeader -> entityTable) {
-          case ((currentHeader, currentTable), SetPropertyItem(key, v, expr)) =>
-            constructProperty(v, key, expr, currentHeader, currentTable)
+        val entitiesOp = createEntities(retagBaseTableOp, newEntities, newEntityTag)
+
+        val entityTableWithProperties = sets.foldLeft(entitiesOp) {
+          case (currentOp, SetPropertyItem(propertyKey, v, valueExpr)) =>
+            val propertyExpression = Property(v, PropertyKey(propertyKey))(valueExpr.cypherType)
+            ConstructProperty(currentOp, v, propertyExpression, valueExpr)
         }
         Set(newEntityTag) -> entityTableWithProperties
       }
     }
 
     // Remove all vars that were part the original pattern graph DF, except variables that were CLONEd without an alias
-    val allInputVars = aliasedLhs.header.vars
+    val allInputVars = aliasOp.header.vars
     val originalVarsToKeep = clonedVarsToInputVars.keySet -- aliasClones.keySet
     val varsToRemoveFromTable = allInputVars -- originalVarsToKeep
 
-    val recordsWithConstructedEntities = CAPSRecords(headerWithConstructedEntities, tableWithConstructedEntities.df)
+    // TODO: could we plan FromGraph on constructEntitiesOp instead?
+    val recordsWithConstructedEntities = CAPSRecords(constructedEntitiesOp.header, constructedEntitiesOp.table.df)
     val patternGraphTable = DropColumns(Start(context.session.emptyGraphQgn, Some(recordsWithConstructedEntities)), varsToRemoveFromTable)
 
 
@@ -215,91 +215,47 @@ final case class ConstructGraph(
     (patternGraph, name, constructTagStrategy)
   }
 
-  def constructProperty(
-    variable: Var,
-    propertyKey: String,
-    propertyValue: Expr,
-    constructedHeader: RecordHeader,
-    constructedTable: DataFrameTable
-  )(implicit context: CAPSRuntimeContext): (RecordHeader, DataFrameTable) = {
-    val propertyValueColumn: Column = propertyValue.asSparkSQLExpr(constructedHeader, constructedTable.df, context.parameters)
-
-    val propertyExpression = Property(variable, PropertyKey(propertyKey))(propertyValue.cypherType)
-
-    val existingPropertyExpressionsForKey = constructedHeader.propertiesFor(variable).collect({
-      case p@Property(_, PropertyKey(name)) if name == propertyKey => p
-    })
-
-    val headerWithExistingRemoved = constructedHeader -- existingPropertyExpressionsForKey
-    val dataWithExistingRemoved = existingPropertyExpressionsForKey.foldLeft(constructedTable.df) {
-      case (acc, toRemove) => acc.safeDropColumn(constructedHeader.column(toRemove))
-    }
-
-    val newHeader = headerWithExistingRemoved.withExpr(propertyExpression)
-    val newData = dataWithExistingRemoved.safeAddColumn(newHeader.column(propertyExpression), propertyValueColumn)
-
-    newHeader -> newData
-  }
-
   private def createEntities(
+    inOp: CAPSPhysicalOperator,
     toCreate: Set[ConstructedEntity],
-    constructedHeader: RecordHeader,
-    constructedTable: DataFrameTable,
     newEntityTag: Int
-  ): (RecordHeader, DataFrameTable) = {
+  ): CAPSPhysicalOperator = {
+
     // Construct nodes before relationships, as relationships might depend on nodes
     val nodes = toCreate.collect {
-      case c: ConstructedNode if !constructedHeader.vars.contains(c.v) => c
+      case c: ConstructedNode if !inOp.header.vars.contains(c.v) => c
     }
     val rels = toCreate.collect {
-      case r: ConstructedRelationship if !constructedHeader.vars.contains(r.v) => r
+      case r: ConstructedRelationship if !inOp.header.vars.contains(r.v) => r
     }
 
-    val (_, createdNodes) = nodes.foldLeft(0 -> Map.empty[Expr, Column]) {
+    val (_, nodesToCreate) = nodes.foldLeft(0 -> Map.empty[Expr, Column]) {
       case ((nextColumnPartitionId, constructedNodes), nextNodeToConstruct) =>
-        (nextColumnPartitionId + 1) -> (constructedNodes ++ constructNode(newEntityTag, nextColumnPartitionId, nodes.size, nextNodeToConstruct, constructedHeader, constructedTable))
+        (nextColumnPartitionId + 1) -> (constructedNodes ++ constructNode(inOp, newEntityTag, nextColumnPartitionId, nodes.size, nextNodeToConstruct))
     }
 
-    val (headerWithNodes, tableWithNodes) = addEntitiesToRecords(createdNodes, constructedHeader, constructedTable)
+    val createdNodesOp = AddEntitiesToRecords(inOp, nodesToCreate)
 
-    val (_, createdRels) = rels.foldLeft(0 -> Map.empty[Expr, Column]) {
+    val (_, relsToCreate) = rels.foldLeft(0 -> Map.empty[Expr, Column]) {
       case ((nextColumnPartitionId, constructedRels), nextRelToConstruct) =>
-        (nextColumnPartitionId + 1) -> (constructedRels ++ constructRel(newEntityTag, nextColumnPartitionId, rels.size, nextRelToConstruct, headerWithNodes, tableWithNodes))
+        (nextColumnPartitionId + 1) -> (constructedRels ++ constructRel(createdNodesOp, newEntityTag, nextColumnPartitionId, rels.size, nextRelToConstruct))
     }
 
-    addEntitiesToRecords(createdRels, headerWithNodes, tableWithNodes)
-  }
-
-  // TODO: refactor to own physical operator
-  private def addEntitiesToRecords(
-    columnsToAdd: Map[Expr, Column],
-    constructedHeader: RecordHeader,
-    constructedTable: DataFrameTable
-  ): (RecordHeader, DataFrameTable) = {
-    // TODO: Move header construction to FlatPlanner
-    val newHeader = constructedHeader.withExprs(columnsToAdd.keySet)
-
-    val newData = columnsToAdd.foldLeft(constructedTable.df) {
-      case (acc, (expr, col)) =>
-        acc.safeAddColumn(newHeader.column(expr), col)
-    }
-
-    newHeader -> newData
+    AddEntitiesToRecords(createdNodesOp, relsToCreate)
   }
 
   private def constructNode(
+    inOp: CAPSPhysicalOperator,
     newEntityTag: Int,
     columnIdPartition: Int,
     numberOfColumnPartitions: Int,
-    node: ConstructedNode,
-    constructedTableHeader: RecordHeader,
-    constructedTable: DataFrameTable
+    node: ConstructedNode
   ): Map[Expr, Column] = {
 
     val idTuple = node.v -> generateId(columnIdPartition, numberOfColumnPartitions).setTag(newEntityTag)
 
     val copiedLabelTuples = node.baseEntity match {
-      case Some(origNode) => copyExpressions(node.v, constructedTableHeader, constructedTable)(_.labelsFor(origNode))
+      case Some(origNode) => copyExpressions(inOp, node.v)(_.labelsFor(origNode))
       case None => Map.empty
     }
 
@@ -308,7 +264,7 @@ final case class ConstructGraph(
     }.toMap
 
     val propertyTuples = node.baseEntity match {
-      case Some(origNode) => copyExpressions(node.v, constructedTableHeader, constructedTable)(_.propertiesFor(origNode))
+      case Some(origNode) => copyExpressions(inOp, node.v)(_.propertiesFor(origNode))
       case None => Map.empty
     }
 
@@ -337,16 +293,15 @@ final case class ConstructGraph(
   }
 
   private def constructRel(
+    inOp: CAPSPhysicalOperator,
     newEntityTag: Int,
     columnIdPartition: Int,
     numberOfColumnPartitions: Int,
-    toConstruct: ConstructedRelationship,
-    constructedTableHeader: RecordHeader,
-    constructedTable: DataFrameTable
+    toConstruct: ConstructedRelationship
   ): Map[Expr, Column] = {
     val ConstructedRelationship(rel, source, target, typOpt, baseRelOpt) = toConstruct
-    val header = constructedTableHeader
-    val inData = constructedTable.df
+    val header = inOp.header
+    val inData = inOp.table.df
 
     // id needs to be generated
     val idTuple = rel -> generateId(columnIdPartition, numberOfColumnPartitions).setTag(newEntityTag)
@@ -368,24 +323,73 @@ final case class ConstructGraph(
           Map(HasType(rel, RelType(t))(CTBoolean) -> functions.lit(true))
         case None =>
           // When no type is present, it needs to be a copy of a base relationship
-          copyExpressions(rel, constructedTableHeader, constructedTable)(_.typesFor(baseRelOpt.get))
+          copyExpressions(inOp, rel)(_.typesFor(baseRelOpt.get))
       }
     }
 
     val propertyTuples: Map[Expr, Column] = baseRelOpt match {
       case Some(baseRel) =>
-        copyExpressions(rel, constructedTableHeader, constructedTable)(_.propertiesFor(baseRel))
+        copyExpressions(inOp, rel)(_.propertiesFor(baseRel))
       case None => Map.empty
     }
 
     propertyTuples ++ typeTuple + idTuple + sourceTuple + targetTuple
   }
 
-  private def copyExpressions[T <: Expr](targetVar: Var, header: RecordHeader, records: DataFrameTable)
+  private def copyExpressions[T <: Expr](inOp: CAPSPhysicalOperator, targetVar: Var)
     (extractor: RecordHeader => Set[T]): Map[Expr, Column] = {
-    val origExprs = extractor(header)
+    val origExprs = extractor(inOp.header)
     val copyExprs = origExprs.map(_.withOwner(targetVar))
-    val dfColumns = origExprs.map(header.column).map(records.df.col)
+    val dfColumns = origExprs.map(inOp.header.column).map(inOp.table.df.col)
     copyExprs.zip(dfColumns).toMap
   }
 }
+
+
+case class RetagColumn(in: CAPSPhysicalOperator, replacements: Map[Int, Int], expr: Expr) extends CAPSPhysicalOperator {
+
+  override lazy val _table: DataFrameTable = in.table.retagColumn(replacements, in.header.column(expr))
+
+}
+
+final case class AddEntitiesToRecords(in: CAPSPhysicalOperator, columnsToAdd: Map[Expr, Column]) extends CAPSPhysicalOperator {
+
+  override lazy val header: RecordHeader = in.header.withExprs(columnsToAdd.keySet)
+
+  override lazy val _table: DataFrameTable = columnsToAdd.foldLeft(in.table.df) {
+    case (acc, (expr, col)) =>
+      acc.safeAddColumn(header.column(expr), col)
+  }
+}
+
+
+final case class ConstructProperty(in: CAPSPhysicalOperator, v: Var, propertyExpr: Property, valueExpr: Expr)(implicit context: CAPSRuntimeContext) extends CAPSPhysicalOperator {
+
+  private lazy val existingPropertyExpressionsForKey = in.header.propertiesFor(v).collect({
+    case p@Property(_, PropertyKey(name)) if name == propertyExpr.key.name => p
+  })
+
+  override lazy val header: RecordHeader = {
+    val inHeader = in.header
+
+    val headerWithExistingRemoved = inHeader -- existingPropertyExpressionsForKey
+    headerWithExistingRemoved.withExpr(propertyExpr)
+  }
+
+  override lazy val _table: DataFrameTable = {
+    val inHeader = in.header
+    val inTable = in.table
+
+    val propertyValueColumn: Column = valueExpr.asSparkSQLExpr(inHeader, inTable.df, context.parameters)
+
+
+    val dataWithExistingRemoved = existingPropertyExpressionsForKey.foldLeft(inTable.df) {
+      case (acc, toRemove) => acc.safeDropColumn(inHeader.column(toRemove))
+    }
+
+    dataWithExistingRemoved.safeAddColumn(header.column(propertyExpr), propertyValueColumn)
+  }
+}
+
+
+
