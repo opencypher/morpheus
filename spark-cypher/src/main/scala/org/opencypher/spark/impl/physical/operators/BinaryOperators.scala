@@ -363,7 +363,9 @@ final case class AddEntitiesToRecords(
 
   override lazy val _table: DataFrameTable = columnsToAdd.foldLeft(in.table.df) {
     case (acc, (expr, col)) =>
-      acc.safeAddColumn(header.column(expr), col)
+      acc
+        .safeAddColumn(header.column(expr), col)
+        .setNullability(Map(header.column(expr) -> expr.cypherType))
   }
 }
 

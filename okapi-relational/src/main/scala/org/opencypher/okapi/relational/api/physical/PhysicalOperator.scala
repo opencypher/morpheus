@@ -70,7 +70,7 @@ trait PhysicalOperator[T <: FlatRelationalTable[T], R <: RelationalCypherRecords
 
       if (duplicateColumns.nonEmpty)
         throw IllegalArgumentException(
-          "a table with distinct columns",
+          s"${getClass.getSimpleName}: a table with distinct columns",
           s"a table with duplicate columns: ${initialDataColumns.sorted.mkString("[", ", ", "]")}")
 
       // Verify that all header column names exist in the data
@@ -79,7 +79,7 @@ trait PhysicalOperator[T <: FlatRelationalTable[T], R <: RelationalCypherRecords
       val missingTableColumns = headerColumnNames -- dataColumnNames
       if (missingTableColumns.nonEmpty) {
         throw IllegalArgumentException(
-          s"data with columns ${header.columns.toSeq.sorted.mkString("\n[", ", ", "]\n")}",
+          s"${getClass.getSimpleName}: data with columns ${header.columns.toSeq.sorted.mkString("\n[", ", ", "]\n")}",
           s"data with columns ${dataColumnNames.toSeq.sorted.mkString("\n[", ", ", "]\n")}"
         )
       }
@@ -106,7 +106,8 @@ trait PhysicalOperator[T <: FlatRelationalTable[T], R <: RelationalCypherRecords
           case _: CTRelationship  if tableType == CTInteger =>
           case _: CTRelationshipOrNull if tableType == CTInteger =>
           case _ if tableType == headerType =>
-          case _ => throw IllegalArgumentException(s"data matching header type $headerType for expression $expr", tableType)
+          case _ => throw IllegalArgumentException(
+            s"${getClass.getSimpleName}: data matching header type $headerType for expression $expr", tableType)
         }
       }
     }

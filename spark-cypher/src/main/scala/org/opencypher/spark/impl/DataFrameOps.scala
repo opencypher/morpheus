@@ -145,7 +145,10 @@ object DataFrameOps {
 
     def setNullability(mapping: Map[String, CypherType]): DataFrame = {
       val newSchema = StructType(df.schema.map {
-        case s@StructField(cn, _, _, _) => mapping(cn).toStructField(cn)
+        case s@StructField(cn, _, _, _) => mapping.get(cn) match {
+          case Some(ct) => ct.toStructField(cn)
+          case None => s
+        }
         case other => throw IllegalArgumentException(s"No mapping provided for $other")
       })
       if (newSchema == df.schema) {

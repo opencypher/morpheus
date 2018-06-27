@@ -133,11 +133,15 @@ final case class CopyColumn(in: CAPSPhysicalOperator, from: Expr, to: Expr) exte
 
 final case class DropColumns[T <: Expr](in: CAPSPhysicalOperator, exprs: Set[T]) extends CAPSPhysicalOperator {
 
-  override lazy val header: RecordHeader = in.header -- exprs
+  private lazy val columnsToDrop = exprs.flatMap(in.header.expressionsFor).map(in.header.column)
+
+  private lazy val expressionsToDrop = columnsToDrop.flatMap(in.header.expressionsFor)
+
+  override lazy val header: RecordHeader = in.header -- expressionsToDrop
 
   override lazy val _table: DataFrameTable = {
-    if (header.columns.size < in.header.columns.size) {
-      in.table.drop(exprs.map(in.header.column).toSeq: _*)
+    if (expressionsToDrop.nonEmpty) {
+      in.table.drop(columnsToDrop.toSeq: _*)
     } else {
       in.table
     }
