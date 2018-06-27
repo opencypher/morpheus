@@ -191,7 +191,7 @@ final case class ConstructGraph(
     val originalVarsToKeep = clonedVarsToInputVars.keySet -- aliasClones.keySet
     val varsToRemoveFromTable = allInputVars -- originalVarsToKeep
 
-    val patternGraphTable = DropColumns(constructedEntitiesOp, varsToRemoveFromTable)
+    val patternGraphTable = Drop(constructedEntitiesOp, varsToRemoveFromTable)
 
     val tagsUsed = constructTagStrategy.foldLeft(newEntityTags) {
       case (tags, (qgn, remapping)) =>
@@ -219,10 +219,10 @@ final case class ConstructGraph(
   ): CAPSPhysicalOperator = {
 
     // Construct nodes before relationships, as relationships might depend on nodes
-    val nodes = toCreate.collect {
+    val nodes: Set[ConstructedNode] = toCreate.collect {
       case c: ConstructedNode if !inOp.header.vars.contains(c.v) => c
     }
-    val rels = toCreate.collect {
+    val rels: Set[ConstructedRelationship] = toCreate.collect {
       case r: ConstructedRelationship if !inOp.header.vars.contains(r.v) => r
     }
 
@@ -342,7 +342,6 @@ final case class ConstructGraph(
   }
 }
 
-
 case class RetagVariable(in: CAPSPhysicalOperator, v: Var, replacements: Map[Int, Int]) extends CAPSPhysicalOperator {
 
   override lazy val _table: DataFrameTable = {
@@ -361,14 +360,14 @@ final case class AddEntitiesToRecords(
 
   override lazy val header: RecordHeader = in.header.withExprs(columnsToAdd.keySet)
 
-  override lazy val _table: DataFrameTable = columnsToAdd.foldLeft(in.table.df) {
-    case (acc, (expr, col)) =>
-      acc
-        .safeAddColumn(header.column(expr), col)
-        .setNullability(Map(header.column(expr) -> expr.cypherType))
+  override lazy val _table: DataFrameTable = {
+    val dfWithColumns = columnsToAdd.foldLeft(in.table.df) {
+      case (acc, (expr, col)) => acc.safeAddColumn(header.column(expr), col)
+    }
+    dfWithColumns.setNullability(columnsToAdd.keys.map(e => header.column(e) -> e.cypherType).toMap)
   }
-}
 
+}
 
 final case class ConstructProperty(in: CAPSPhysicalOperator, v: Var, propertyExpr: Property, valueExpr: Expr)
   (implicit context: CAPSRuntimeContext) extends CAPSPhysicalOperator {

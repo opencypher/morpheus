@@ -170,17 +170,17 @@ I <: RuntimeContext[O, A, P]] {
     * @param expr expression to evaluate
     * @return add column operator
     */
-  def planAddColumn(in: K, expr: Expr): K
+  def planAdd(in: K, expr: Expr): K
 
   /**
     * Evaluates the first expression and copies the result into the column identified by the second expression.
     *
     * @param in     previous operator
-    * @param expr   expression to evaluate
-    * @param column expression to store result in
+    * @param add   expression to evaluate
+    * @param into expression to store result in
     * @return add column operator
     */
-  def planCopyColumn(in: K, expr: Expr, column: Expr): K
+  def planAddInto(in: K, add: Expr, into: Expr): K
 
   /**
     * Creates a new record containing the specified entities (i.e. as defined in a construction pattern).
@@ -254,13 +254,13 @@ I <: RuntimeContext[O, A, P]] {
   /**
     * Joins the two input records using the given expressions.
     *
-    * @param lhs         first previous operator
-    * @param rhs         second previous operator
-    * @param joinColumns sequence of left and right join columns
-    * @param joinType    type of the join
+    * @param lhs             first previous operator
+    * @param rhs             second previous operator
+    * @param joinExpressions sequence of left and right join expressions
+    * @param joinType        type of the join
     * @return join operator
     */
-  def planJoin(lhs: K, rhs: K, joinColumns: Seq[(Expr, Expr)], joinType: JoinType = InnerJoin): K
+  def planJoin(lhs: K, rhs: K, joinExpressions: Seq[(Expr, Expr)], joinType: JoinType = InnerJoin): K
 
   /**
     * Unions the input records.

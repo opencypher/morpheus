@@ -188,7 +188,7 @@ I <: RuntimeContext[O, A, P]] {
           // TODO: this is a planning performance killer, we need to squash these steps into a single table operation
           val lit = NullLit(expr.cypherType)
 
-          val withExpr = producer.planCopyColumn(acc, lit, expr)
+          val withExpr = producer.planAddInto(acc, lit, expr)
 
           val withoutLit = producer.planDrop(withExpr, Set(lit))
 
@@ -243,7 +243,7 @@ I <: RuntimeContext[O, A, P]] {
     }
 
     (childMapping ++ missingMapping).foldLeft(physicalOp) {
-      case (acc, (f, t)) => producer.planCopyColumn(acc, f, t)
+      case (acc, (f, t)) => producer.planAddInto(acc, f, t)
     }
   }
 

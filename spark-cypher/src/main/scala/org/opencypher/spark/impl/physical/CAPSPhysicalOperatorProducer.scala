@@ -67,7 +67,7 @@ final class CAPSPhysicalOperatorProducer(implicit context: CAPSRuntimeContext)
   override def planDrop(
     in: CAPSPhysicalOperator,
     dropFields: Set[Expr]
-  ): CAPSPhysicalOperator = operators.DropColumns(in, dropFields)
+  ): CAPSPhysicalOperator = operators.Drop(in, dropFields)
 
   override def planRenameColumns(
     in: CAPSPhysicalOperator,
@@ -106,11 +106,11 @@ final class CAPSPhysicalOperatorProducer(implicit context: CAPSRuntimeContext)
   override def planAliases(in: CAPSPhysicalOperator, aliases: Seq[AliasExpr]): CAPSPhysicalOperator =
     operators.Alias(in, aliases)
 
-  override def planAddColumn(in: CAPSPhysicalOperator, expr: Expr): CAPSPhysicalOperator =
-    operators.AddColumn(in, expr)
+  override def planAdd(in: CAPSPhysicalOperator, expr: Expr): CAPSPhysicalOperator =
+    operators.Add(in, expr)
 
-  override def planCopyColumn(in: CAPSPhysicalOperator, from: Expr, to: Expr): CAPSPhysicalOperator =
-    operators.CopyColumn(in, from, to)
+  override def planAddInto(in: CAPSPhysicalOperator, from: Expr, to: Expr): CAPSPhysicalOperator =
+    operators.AddInto(in, from, to)
 
   override def planConstructGraph(
     in: CAPSPhysicalOperator,

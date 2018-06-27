@@ -99,7 +99,7 @@ final case class Alias(in: CAPSPhysicalOperator, aliases: Seq[AliasExpr]) extend
   override lazy val header: RecordHeader = in.header.withAlias(aliases: _*)
 }
 
-final case class AddColumn(in: CAPSPhysicalOperator, expr: Expr) extends CAPSPhysicalOperator {
+final case class Add(in: CAPSPhysicalOperator, expr: Expr) extends CAPSPhysicalOperator {
 
   override lazy val header: RecordHeader = {
     if (in.header.contains(expr)) {
@@ -124,23 +124,21 @@ final case class AddColumn(in: CAPSPhysicalOperator, expr: Expr) extends CAPSPhy
   }
 }
 
-final case class CopyColumn(in: CAPSPhysicalOperator, from: Expr, to: Expr) extends CAPSPhysicalOperator {
+final case class AddInto(in: CAPSPhysicalOperator, add: Expr, into: Expr) extends CAPSPhysicalOperator {
 
-  override lazy val header: RecordHeader = in.header.withExpr(to)
+  override lazy val header: RecordHeader = in.header.withExpr(into)
 
-  override lazy val _table: DataFrameTable = in.table.withColumn(header.column(to), from)(header, context.parameters)
+  override lazy val _table: DataFrameTable = in.table.withColumn(header.column(into), add)(header, context.parameters)
 }
 
-final case class DropColumns[T <: Expr](in: CAPSPhysicalOperator, exprs: Set[T]) extends CAPSPhysicalOperator {
+final case class Drop[T <: Expr](in: CAPSPhysicalOperator, exprs: Set[T]) extends CAPSPhysicalOperator {
 
-  private lazy val columnsToDrop = exprs.flatMap(in.header.expressionsFor).map(in.header.column)
+  override lazy val header: RecordHeader = in.header -- exprs
 
-  private lazy val expressionsToDrop = columnsToDrop.flatMap(in.header.expressionsFor)
-
-  override lazy val header: RecordHeader = in.header -- expressionsToDrop
+  private lazy val columnsToDrop = in.header.columns -- header.columns
 
   override lazy val _table: DataFrameTable = {
-    if (expressionsToDrop.nonEmpty) {
+    if (columnsToDrop.nonEmpty) {
       in.table.drop(columnsToDrop.toSeq: _*)
     } else {
       in.table

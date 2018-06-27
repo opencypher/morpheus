@@ -74,8 +74,8 @@ I <: RuntimeContext[O, A, P]](val producer: PhysicalOperatorProducer[O, K, A, P,
 
         maybeAlias match {
           case Some(alias) if containsExpr => producer.planAlias(inOp, expr as alias)
-          case Some(alias) => producer.planAddColumn(inOp, expr as alias)
-          case None => producer.planAddColumn(inOp, expr)
+          case Some(alias) => producer.planAdd(inOp, expr as alias)
+          case None => producer.planAdd(inOp, expr)
         }
 
       case flat.EmptyRecords(in, fields) =>
@@ -111,7 +111,7 @@ I <: RuntimeContext[O, A, P]](val producer: PhysicalOperatorProducer[O, K, A, P,
       case flat.Alias(expr, in) => producer.planAlias(process(in), expr)
 
       case flat.WithColumn(expr, in) =>
-        producer.planAddColumn(process(in), expr)
+        producer.planAdd(process(in), expr)
 
       case flat.Aggregate(aggregations, group, in) => producer.planAggregate(process(in), group, aggregations)
 
@@ -228,7 +228,7 @@ I <: RuntimeContext[O, A, P]](val producer: PhysicalOperatorProducer[O, K, A, P,
         val joinedData = producer.planJoin(leftResult, distinctRhsData, renameExprs.map(a => a.expr -> a.alias).toSeq, LeftOuterJoin)
         // 5. If at least one rhs join column is not null, the sub-query exists and true is projected to the target expression
         val targetExpr = renameExprs.head.alias
-        producer.planCopyColumn(joinedData, IsNotNull(targetExpr)(CTBoolean), predicateField)
+        producer.planAddInto(joinedData, IsNotNull(targetExpr)(CTBoolean), predicateField)
 
       case flat.OrderBy(sortItems: Seq[SortItem[Expr]], in) =>
         producer.planOrderBy(process(in), sortItems)
