@@ -191,10 +191,7 @@ final case class ConstructGraph(
     val originalVarsToKeep = clonedVarsToInputVars.keySet -- aliasClones.keySet
     val varsToRemoveFromTable = allInputVars -- originalVarsToKeep
 
-    // TODO: could we plan FromGraph on constructEntitiesOp instead?
-    val recordsWithConstructedEntities = CAPSRecords(constructedEntitiesOp.header, constructedEntitiesOp.table.df)
-    val patternGraphTable = DropColumns(Start(context.session.emptyGraphQgn, Some(recordsWithConstructedEntities)), varsToRemoveFromTable)
-
+    val patternGraphTable = DropColumns(constructedEntitiesOp, varsToRemoveFromTable)
 
     val tagsUsed = constructTagStrategy.foldLeft(newEntityTags) {
       case (tags, (qgn, remapping)) =>
