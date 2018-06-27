@@ -166,7 +166,7 @@ final case class ConstructGraph(
     val aliasOp: CAPSPhysicalOperator = Alias(lhs, aliasClones.map { case (expr, alias) => expr as alias }.toSeq)
 
     val retagBaseTableOp = clonedVarsToInputVars.foldLeft(aliasOp) {
-      case (op, (alias, original)) => RetagColumn(op, constructTagStrategy(original.cypherType.graph.get), alias)
+      case (op, (alias, original)) => RetagVariable(op, alias, constructTagStrategy(original.cypherType.graph.get))
     }
 
     // Construct NEW entities
@@ -209,7 +209,7 @@ final case class ConstructGraph(
 
     context.patternGraphTags.update(construct.name, constructedCombinedWithOn.tags)
 
-    (patternGraph, name, constructTagStrategy)
+    (constructedCombinedWithOn, name, constructTagStrategy)
   }
 
   private def createEntities(
@@ -343,13 +343,21 @@ final case class ConstructGraph(
 }
 
 
-case class RetagColumn(in: CAPSPhysicalOperator, replacements: Map[Int, Int], expr: Expr) extends CAPSPhysicalOperator {
+case class RetagVariable(in: CAPSPhysicalOperator, v: Var, replacements: Map[Int, Int]) extends CAPSPhysicalOperator {
 
-  override lazy val _table: DataFrameTable = in.table.retagColumn(replacements, in.header.column(expr))
-
+  override lazy val _table: DataFrameTable = {
+    val columnsToUpdate = header.idColumns(v)
+    // TODO: implement efficiently for multiple columns
+    columnsToUpdate.foldLeft(in.table.df) { case (currentDf, columnName) =>
+      currentDf.safeReplaceTags(columnName, replacements)
+    }
+  }
 }
 
-final case class AddEntitiesToRecords(in: CAPSPhysicalOperator, columnsToAdd: Map[Expr, Column]) extends CAPSPhysicalOperator {
+final case class AddEntitiesToRecords(
+  in: CAPSPhysicalOperator,
+  columnsToAdd: Map[Expr, Column]
+) extends CAPSPhysicalOperator {
 
   override lazy val header: RecordHeader = in.header.withExprs(columnsToAdd.keySet)
 
@@ -360,7 +368,8 @@ final case class AddEntitiesToRecords(in: CAPSPhysicalOperator, columnsToAdd: Ma
 }
 
 
-final case class ConstructProperty(in: CAPSPhysicalOperator, v: Var, propertyExpr: Property, valueExpr: Expr)(implicit context: CAPSRuntimeContext) extends CAPSPhysicalOperator {
+final case class ConstructProperty(in: CAPSPhysicalOperator, v: Var, propertyExpr: Property, valueExpr: Expr)
+  (implicit context: CAPSRuntimeContext) extends CAPSPhysicalOperator {
 
   private lazy val existingPropertyExpressionsForKey = in.header.propertiesFor(v).collect({
     case p@Property(_, PropertyKey(name)) if name == propertyExpr.key.name => p
