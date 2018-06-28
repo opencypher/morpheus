@@ -97,7 +97,6 @@ case class CAPSRecords(
   }
 
   def cache(): CAPSRecords = {
-    println(s"caching\n$header")
     df.cache()
     this
   }
