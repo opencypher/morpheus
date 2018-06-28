@@ -46,6 +46,13 @@ import org.opencypher.spark.impl.convert.SparkConversions._
 import scala.collection.JavaConverters._
 
 object SparkFlatRelationalTable {
+
+  private val NULL_LIT: Column = functions.lit(null)
+
+  private val TRUE_LIT: Column = functions.lit(true)
+
+  private val FALSE_LIT: Column = functions.lit(false)
+
   implicit class DataFrameTable(val df: DataFrame) extends FlatRelationalTable[DataFrameTable] {
 
     override def empty(initialHeader: RecordHeader = RecordHeader.empty): DataFrameTable = {
@@ -225,12 +232,12 @@ object SparkFlatRelationalTable {
 
     override def withNullColumn(col: String, cypherType: CypherType = CTNull): DataFrameTable = {
       assert(cypherType.isNullable)
-      df.withColumn(col, functions.lit(null).cast(cypherType.getSparkType))
+      df.withColumn(col, NULL_LIT.cast(cypherType.getSparkType))
     }
 
-    override def withTrueColumn(col: String): DataFrameTable = df.withColumn(col, functions.lit(true))
+    override def withTrueColumn(col: String): DataFrameTable = df.withColumn(col, TRUE_LIT)
 
-    override def withFalseColumn(col: String): DataFrameTable = df.withColumn(col, functions.lit(false))
+    override def withFalseColumn(col: String): DataFrameTable = df.withColumn(col, FALSE_LIT)
 
     override def retagColumn(replacements: Map[Int, Int], column: String): DataFrameTable = {
       df.safeReplaceTags(column, replacements)

@@ -82,17 +82,22 @@ object CAPSRecords {
 case class CAPSRecords(
   header: RecordHeader,
   table: DataFrameTable,
-  override val logicalColumns: Option[Seq[String]] = None)
+  override val logicalColumns: Option[Seq[String]] = None
+)
   extends RelationalCypherRecords[DataFrameTable] with RecordBehaviour {
   override type R = CAPSRecords
 
   def df: DataFrame = table.df
 
-  override def from(header: RecordHeader, table: DataFrameTable, displayNames: Option[Seq[String]]): CAPSRecords = {
-    copy(header, table, displayNames)
+  override def from(header: RecordHeader, table: DataFrameTable, logicalColumns: Option[Seq[String]]): CAPSRecords = {
+    copy(header, table, logicalColumns match {
+      case s@Some(_) => s
+      case None => Some(header.vars.map(_.withoutType).toSeq)
+    })
   }
 
   def cache(): CAPSRecords = {
+    println(s"caching\n$header")
     df.cache()
     this
   }
@@ -117,6 +122,13 @@ case class CAPSRecords(
     this
   }
 
+  override def toString: String = {
+    if (header.isEmpty) {
+      s"CAPSRecords.empty"
+    } else {
+      s"CAPSRecords(header: $header)"
+    }
+  }
 }
 
 trait RecordBehaviour extends RelationalCypherRecords[DataFrameTable] {

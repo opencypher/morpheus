@@ -32,7 +32,6 @@ import org.opencypher.okapi.api.types.{CTNode, CTRelationship}
 import org.opencypher.okapi.ir.api.expr.Var
 import org.opencypher.okapi.relational.api.schema.RelationalSchema._
 import org.opencypher.spark.api.CAPSSession
-import org.opencypher.spark.impl.physical.operators.{RetagVariable, Start}
 import org.opencypher.spark.impl.util.TagSupport.computeRetaggings
 import org.opencypher.spark.schema.CAPSSchema
 import org.opencypher.spark.schema.CAPSSchema._
@@ -44,17 +43,17 @@ object CAPSUnionGraph {
 }
 
 // TODO: This should be a planned tree of physical operators instead of a graph
-final case class CAPSUnionGraph(graphs: Map[CAPSGraph, Map[Int, Int]])
+final case class CAPSUnionGraph(replacementsMap: Map[CAPSGraph, Map[Int, Int]])
   (implicit val session: CAPSSession) extends CAPSGraph {
 
-  require(graphs.nonEmpty, "Union requires at least one graph")
+  require(replacementsMap.nonEmpty, "Union requires at least one graph")
 
-  override lazy val tags: Set[Int] = graphs.values.flatMap(_.values).toSet
+  override lazy val tags: Set[Int] = replacementsMap.values.flatMap(_.values).toSet
 
-  override def toString = s"CAPSUnionGraph(graphs=[${graphs.mkString(",")}])"
+  override def toString = s"CAPSUnionGraph(graphs=[${replacementsMap.mkString(",")}])"
 
   override lazy val schema: CAPSSchema = {
-    graphs.keys.map(g => g.schema).foldLeft(Schema.empty)(_ ++ _).asCaps
+    replacementsMap.keys.map(g => g.schema).foldLeft(Schema.empty)(_ ++ _).asCaps
   }
 
   override def cache(): CAPSUnionGraph = map(_.cache())
@@ -68,18 +67,24 @@ final case class CAPSUnionGraph(graphs: Map[CAPSGraph, Map[Int, Int]])
   override def unpersist(blocking: Boolean): CAPSUnionGraph = map(_.unpersist(blocking))
 
   private def map(f: CAPSGraph => CAPSGraph): CAPSUnionGraph =
-    CAPSUnionGraph(graphs.keys.map(f).zip(graphs.keys).toMap.mapValues(graphs))
+    CAPSUnionGraph(replacementsMap.keys.map(f).zip(replacementsMap.keys).toMap.mapValues(replacementsMap))
 
   override def nodes(name: String, nodeCypherType: CTNode): CAPSRecords = {
     val node = Var(name)(nodeCypherType)
     val targetHeader = schema.headerForNode(node)
-    val nodeScans = graphs.keys
+    val nodeScans = replacementsMap.keys
       .filter(nodeCypherType.labels.isEmpty || _.schema.labels.intersect(nodeCypherType.labels).nonEmpty)
       .map {
         graph =>
           val nodeScan = graph.nodes(name, nodeCypherType)
-          val nodeIdColumn = nodeScan.header.column(node)
-          nodeScan.from(nodeScan.header, nodeScan.table.retagColumn(graphs(graph), nodeIdColumn))
+          val replacements = replacementsMap(graph).filterNot { case (from, to) => from == to }
+
+          val retaggedTable = nodeScan.header.idColumns(node).foldLeft(nodeScan.table) {
+            case (currentTable, idColumn) =>
+              currentTable.retagColumn(replacements, idColumn)
+          }
+
+          nodeScan.from(nodeScan.header, retaggedTable)
       }
 
     alignRecords(nodeScans.toSeq, node, targetHeader)
@@ -90,18 +95,16 @@ final case class CAPSUnionGraph(graphs: Map[CAPSGraph, Map[Int, Int]])
   override def relationships(name: String, relCypherType: CTRelationship): CAPSRecords = {
     val rel = Var(name)(relCypherType)
     val targetHeader = schema.headerForRelationship(rel)
-    val relScans = graphs.keys
+    val relScans = replacementsMap.keys
       .filter(relCypherType.types.isEmpty || _.schema.relationshipTypes.intersect(relCypherType.types).nonEmpty)
       .map { graph =>
-        val replacements = graphs(graph)
         val relScan = graph.relationships(name, relCypherType)
-        val relIdColumn = relScan.header.column(rel)
-        val relStartColumn = relScan.header.column(relScan.header.startNodeFor(rel))
-        val relEndColumn = relScan.header.column(relScan.header.endNodeFor(rel))
-        val retaggedTable = relScan.table
-          .retagColumn(replacements, relIdColumn)
-          .retagColumn(replacements, relStartColumn)
-          .retagColumn(replacements, relEndColumn)
+        val replacements = replacementsMap(graph).filterNot { case (from, to) => from == to }
+
+        val retaggedTable = relScan.header.idColumns(rel).foldLeft(relScan.table) {
+          case (currentTable, idColumn) =>
+            currentTable.retagColumn(replacements, idColumn)
+        }
         relScan.from(relScan.header, retaggedTable)
       }
 

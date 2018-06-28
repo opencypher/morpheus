@@ -32,10 +32,7 @@ import org.opencypher.okapi.api.schema.Schema
 
 case class QueryCatalog(dataSourceMapping: Map[Namespace, PropertyGraphDataSource], registeredSchemas: Map[QualifiedGraphName, Schema]) {
   def schema(qgn: QualifiedGraphName): Schema = {
-    registeredSchemas.getOrElse(
-      qgn,
-      schemaFromDataSource(qgn)
-    )
+    registeredSchemas.getOrElse(qgn, schemaFromDataSource(qgn))
   }
 
   def graph(qgn: QualifiedGraphName): PropertyGraph = dataSourceMapping(qgn.namespace).graph(qgn.graphName)

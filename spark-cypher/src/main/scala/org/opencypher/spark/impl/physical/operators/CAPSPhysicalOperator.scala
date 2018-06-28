@@ -81,10 +81,7 @@ private[spark] abstract class CAPSPhysicalOperator
   protected def resolveTags(qgn: QualifiedGraphName)
     (implicit context: CAPSRuntimeContext): Set[Int] = context.patternGraphTags.getOrElse(qgn, resolve(qgn).tags)
 
-  override def args: Iterator[Any] = super.args.flatMap {
-    case RecordHeader | Some(RecordHeader) => None
-    case other => Some(other)
-  }
+  override def args: Iterator[Any] = super.args
 }
 
 // Leaf

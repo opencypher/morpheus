@@ -76,7 +76,7 @@ case class RecordHeader(exprToColumn: Map[Expr, String]) {
     val members = exprToColumn.keys.filter(e => e.owner.contains(expr)).toSet
 
     members.flatMap {
-      case e: Var if e==expr => Seq(e)
+      case e: Var if e == expr => Seq(e)
       case e: Var => ownedBy(e) + e
       case other => Seq(other)
     }
@@ -346,6 +346,13 @@ case class RecordHeader(exprToColumn: Map[Expr, String]) {
   def addExprToColumn(expr: Expr, columnName: String): RecordHeader = {
     copy(exprToColumn = exprToColumn + (expr -> columnName))
   }
+
+  override def toString: String = exprToColumn.keys
+    .map(_.withoutType)
+    .map(e => s"`$e`")
+    .toSeq
+    .sorted
+    .mkString("[", ", ", "]")
 
   def pretty: String = {
     val formatCell: String => String = s => s"'$s'"
