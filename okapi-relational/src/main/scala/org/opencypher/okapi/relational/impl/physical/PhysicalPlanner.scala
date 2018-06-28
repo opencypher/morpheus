@@ -33,8 +33,8 @@ import org.opencypher.okapi.ir.api.block.SortItem
 import org.opencypher.okapi.ir.api.expr._
 import org.opencypher.okapi.ir.api.util.DirectCompilationStage
 import org.opencypher.okapi.logical.impl._
-import org.opencypher.okapi.relational.api.io.{FlatRelationalTable, RelationalCypherRecords}
 import org.opencypher.okapi.relational.api.physical.{PhysicalOperator, PhysicalOperatorProducer, PhysicalPlannerContext, RuntimeContext}
+import org.opencypher.okapi.relational.api.table.{FlatRelationalTable, RelationalCypherRecords}
 import org.opencypher.okapi.relational.impl.flat
 import org.opencypher.okapi.relational.impl.flat.FlatOperator
 import org.opencypher.okapi.relational.impl.physical.ConstructGraphPlanner._

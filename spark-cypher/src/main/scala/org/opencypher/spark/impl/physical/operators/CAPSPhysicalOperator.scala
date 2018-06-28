@@ -33,7 +33,7 @@ import org.opencypher.okapi.relational.api.physical.PhysicalOperator
 import org.opencypher.okapi.relational.impl.table.RecordHeader
 import org.opencypher.okapi.trees.AbstractTreeNode
 import org.opencypher.spark.api.CAPSSession
-import org.opencypher.spark.api.io.SparkCypherTable.DataFrameTable
+import org.opencypher.spark.impl.table.SparkFlatRelationalTable._
 import org.opencypher.spark.impl.CAPSConverters._
 import org.opencypher.spark.impl.physical.CAPSRuntimeContext
 import org.opencypher.spark.impl.{CAPSGraph, CAPSRecords}

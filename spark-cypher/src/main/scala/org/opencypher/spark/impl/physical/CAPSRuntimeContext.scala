@@ -30,8 +30,8 @@ import org.opencypher.okapi.api.graph.QualifiedGraphName
 import org.opencypher.okapi.api.value.CypherValue.CypherMap
 import org.opencypher.okapi.relational.api.physical.RuntimeContext
 import org.opencypher.spark.api.CAPSSession
-import org.opencypher.spark.api.io.SparkCypherTable.DataFrameTable
 import org.opencypher.spark.impl.physical.operators.CAPSPhysicalOperator
+import org.opencypher.spark.impl.table.SparkFlatRelationalTable._
 import org.opencypher.spark.impl.{CAPSGraph, CAPSRecords}
 
 import scala.collection.mutable

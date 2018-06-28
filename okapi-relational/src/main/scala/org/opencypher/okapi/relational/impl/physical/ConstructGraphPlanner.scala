@@ -28,8 +28,8 @@ package org.opencypher.okapi.relational.impl.physical
 
 import org.opencypher.okapi.api.graph.PropertyGraph
 import org.opencypher.okapi.logical.impl.LogicalPatternGraph
-import org.opencypher.okapi.relational.api.io.{FlatRelationalTable, RelationalCypherRecords}
 import org.opencypher.okapi.relational.api.physical.{PhysicalOperator, PhysicalPlannerContext, RuntimeContext}
+import org.opencypher.okapi.relational.api.table.{FlatRelationalTable, RelationalCypherRecords}
 import org.opencypher.okapi.relational.impl.flat.FlatOperator
 
 object ConstructGraphPlanner {

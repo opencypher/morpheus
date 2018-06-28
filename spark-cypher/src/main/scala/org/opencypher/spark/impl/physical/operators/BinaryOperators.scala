@@ -38,7 +38,7 @@ import org.opencypher.okapi.logical.impl.{ConstructedEntity, ConstructedNode, Co
 import org.opencypher.okapi.relational.impl.physical.{CrossJoin, JoinType}
 import org.opencypher.okapi.relational.impl.table.RecordHeader
 import org.opencypher.spark.api.Tags
-import org.opencypher.spark.api.io.SparkCypherTable.DataFrameTable
+import org.opencypher.spark.impl.table.SparkFlatRelationalTable._
 import org.opencypher.spark.impl.CAPSGraph.EmptyGraph
 import org.opencypher.spark.impl.CAPSUnionGraph.{apply => _, unapply => _}
 import org.opencypher.spark.impl.DataFrameOps._

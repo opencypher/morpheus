@@ -27,7 +27,7 @@
 package org.opencypher.okapi.relational.api.physical
 
 import org.opencypher.okapi.api.graph.PropertyGraph
-import org.opencypher.okapi.relational.api.io.{FlatRelationalTable, RelationalCypherRecords}
+import org.opencypher.okapi.relational.api.table.{FlatRelationalTable, RelationalCypherRecords}
 
 /**
   * Represents a back-end specific physical result that is being produced by a [[PhysicalOperator]].

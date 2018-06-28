@@ -36,14 +36,14 @@ import org.opencypher.okapi.impl.exception.{IllegalArgumentException, Unsupporte
 import org.opencypher.okapi.impl.table._
 import org.opencypher.okapi.impl.util.PrintOptions
 import org.opencypher.okapi.ir.api.expr._
-import org.opencypher.okapi.relational.api.io.RelationalCypherRecords
+import org.opencypher.okapi.relational.api.table.RelationalCypherRecords
 import org.opencypher.okapi.relational.impl.table._
 import org.opencypher.spark.api.CAPSSession
 import org.opencypher.spark.api.io.CAPSEntityTable
-import org.opencypher.spark.api.io.SparkCypherTable._
 import org.opencypher.spark.impl.DataFrameOps._
 import org.opencypher.spark.impl.convert.SparkConversions._
 import org.opencypher.spark.impl.convert.rowToCypherMap
+import org.opencypher.spark.impl.table.SparkFlatRelationalTable._
 
 import scala.annotation.tailrec
 import scala.collection.JavaConverters._

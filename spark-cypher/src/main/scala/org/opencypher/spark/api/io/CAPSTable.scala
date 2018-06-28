@@ -26,165 +26,22 @@
  */
 package org.opencypher.spark.api.io
 
-import java.util.Collections
-
-import org.apache.spark.sql.functions._
-import org.apache.spark.sql.{DataFrame, Row, functions}
-import org.apache.spark.storage.StorageLevel
+import org.apache.spark.sql._
 import org.opencypher.okapi.api.io.conversion.{EntityMapping, NodeMapping, RelationshipMapping}
 import org.opencypher.okapi.api.schema.Schema
 import org.opencypher.okapi.api.types.{DefiniteCypherType, _}
-import org.opencypher.okapi.api.value.CypherValue
-import org.opencypher.okapi.api.value.CypherValue.{CypherMap, CypherValue}
 import org.opencypher.okapi.impl.util.StringEncodingUtilities._
-import org.opencypher.okapi.ir.api.expr.{Expr, Var}
-import org.opencypher.okapi.relational.api.io.{EntityTable, FlatRelationalTable}
-import org.opencypher.okapi.relational.impl.physical._
+import org.opencypher.okapi.relational.api.io.EntityTable
 import org.opencypher.okapi.relational.impl.table.RecordHeader
 import org.opencypher.spark.api.CAPSSession
-import org.opencypher.spark.api.io.SparkCypherTable.DataFrameTable
 import org.opencypher.spark.impl.DataFrameOps._
-import org.opencypher.spark.impl.SparkSQLExprMapper._
-import org.opencypher.spark.impl.convert.SparkConversions._
+import org.opencypher.spark.impl.table.SparkFlatRelationalTable.DataFrameTable
 import org.opencypher.spark.impl.util.Annotation
 import org.opencypher.spark.impl.{CAPSRecords, RecordBehaviour}
 import org.opencypher.spark.schema.CAPSSchema
 import org.opencypher.spark.schema.CAPSSchema._
 
-import scala.collection.JavaConverters._
 import scala.reflect.runtime.universe._
-
-object SparkCypherTable {
-
-  implicit class DataFrameTable(val df: DataFrame) extends FlatRelationalTable[DataFrameTable] {
-
-    override def empty(initialHeader: RecordHeader = RecordHeader.empty): DataFrameTable = {
-      df.sparkSession.createDataFrame(Collections.emptyList[Row](), initialHeader.toStructType)
-    }
-
-    private case class EmptyRow()
-
-    override def unit: DataFrameTable = {
-      df.sparkSession.createDataFrame(Seq(EmptyRow()))
-    }
-
-    override def physicalColumns: Seq[String] = df.columns
-
-    override def columnType: Map[String, CypherType] = physicalColumns.map(c => c -> df.cypherTypeForColumn(c)).toMap
-
-    override def rows: Iterator[String => CypherValue] = df.toLocalIterator.asScala.map { row =>
-      physicalColumns.map(c => c -> CypherValue(row.get(row.fieldIndex(c)))).toMap
-    }
-
-    override def size: Long = df.count()
-
-    override def select(cols: String*): DataFrameTable = {
-      if (cols.nonEmpty) {
-        df.select(cols.head, cols.tail: _*)
-      } else {
-        // TODO: this is used in Construct, check why this is necessary
-        df.select()
-      }
-    }
-
-    override def filter(expr: Expr)(implicit header: RecordHeader, parameters: CypherMap): DataFrameTable = {
-      df.where(expr.asSparkSQLExpr(header, df, parameters))
-    }
-
-    override def withColumn(column: String, expr: Expr)
-      (implicit header: RecordHeader, parameters: CypherMap): DataFrameTable = {
-      df.withColumn(column, expr.asSparkSQLExpr(header, df, parameters))
-    }
-
-    override def drop(cols: String*): DataFrameTable = {
-      df.drop(cols: _*)
-    }
-
-    override def orderBy(sortItems: (String, Order)*): DataFrameTable = {
-      val sortExpression = sortItems.map {
-        case (column, Ascending) => asc(column)
-        case (column, Descending) => desc(column)
-      }
-
-      df.sort(sortExpression: _*)
-    }
-
-    override def skip(items: Long): DataFrameTable = {
-      // TODO: Replace with data frame based implementation ASAP
-      df.sparkSession.createDataFrame(
-        df.toDF().rdd
-          .zipWithIndex()
-          .filter(pair => pair._2 >= items)
-          .map(_._1),
-        df.toDF().schema
-      )
-    }
-
-    override def limit(items: Long): DataFrameTable = {
-      // TODO: Unsafe `toInt`
-      df.limit(items.toInt)
-    }
-
-    override def unionAll(other: DataFrameTable): DataFrameTable = {
-      df.union(other.df)
-    }
-
-    override def join(other: DataFrameTable, joinType: JoinType, joinCols: (String, String)*): DataFrameTable = {
-      val joinTypeString = joinType match {
-        case InnerJoin => "inner"
-        case LeftOuterJoin => "left_outer"
-        case RightOuterJoin => "right_outer"
-        case FullOuterJoin => "full_outer"
-        case CrossJoin => "cross"
-      }
-
-      joinType match {
-        case CrossJoin =>
-          df.crossJoin(other.df)
-
-        case _ =>
-          val joinExpr = joinCols.map {
-            case (l, r) => df.col(l) === other.df.col(r)
-          }.reduce((acc, expr) => acc && expr)
-
-          // TODO: the join produced corrupt data when the previous operator was a cross. We work around that by using a
-          // subsequent select. This can be removed, once https://issues.apache.org/jira/browse/SPARK-23855 is solved or we
-          // upgrade to Spark 2.3.0
-          val potentiallyCorruptedResult = df.join(other.df, joinExpr, joinTypeString)
-          potentiallyCorruptedResult.select("*")
-      }
-    }
-
-    override def distinct: DataFrameTable =
-      df.distinct
-
-    override def distinct(cols: String*): DataFrameTable =
-      df.dropDuplicates(cols)
-
-    override def withColumnRenamed(oldColumn: String, newColumn: String): DataFrameTable =
-      df.safeRenameColumn(oldColumn, newColumn)
-
-    override def withNullColumn(col: String): DataFrameTable = df.withColumn(col, functions.lit(null))
-
-    override def withTrueColumn(col: String): DataFrameTable = df.withColumn(col, functions.lit(true))
-
-    override def withFalseColumn(col: String): DataFrameTable = df.withColumn(col, functions.lit(false))
-
-    override def retagColumn(replacements: Map[Int, Int], column: String): DataFrameTable = {
-      df.safeReplaceTags(column, replacements)
-    }
-
-    def cache(): DataFrameTable = df.cache()
-
-    def persist(): DataFrameTable = df.persist()
-
-    def persist(newLevel: StorageLevel): DataFrameTable = df.persist(newLevel)
-
-    def unpersist(): DataFrameTable = df.unpersist()
-
-    def unpersist(blocking: Boolean): DataFrameTable = df.unpersist(blocking)
-  }
-}
 
 trait CAPSEntityTable extends EntityTable[DataFrameTable] {
   // TODO: create CTEntity type

@@ -30,9 +30,8 @@ import org.opencypher.okapi.api.graph.{PropertyGraph, QualifiedGraphName}
 import org.opencypher.okapi.ir.api.block.SortItem
 import org.opencypher.okapi.ir.api.expr._
 import org.opencypher.okapi.logical.impl._
-import org.opencypher.okapi.relational.api.io.{FlatRelationalTable, RelationalCypherRecords}
+import org.opencypher.okapi.relational.api.table.{FlatRelationalTable, RelationalCypherRecords}
 import org.opencypher.okapi.relational.impl.physical.{InnerJoin, JoinType}
-import org.opencypher.okapi.relational.impl.table.RecordHeader
 
 /**
   * Main interface to be implemented by custom (relational) back-ends to execute a Cypher query. Methods are being

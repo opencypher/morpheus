@@ -41,7 +41,7 @@ object SparkSQLExprMapper {
   implicit class RichExpression(expr: Expr) {
 
     def verify(implicit header: RecordHeader): Unit = {
-      if (header.expressionsFor(expr).isEmpty) throw IllegalStateException(s"Expression $expr not in header ${header.pretty}")
+      if (header.expressionsFor(expr).isEmpty) throw IllegalStateException(s"Expression $expr not in header:\n${header.pretty}")
     }
 
     /**

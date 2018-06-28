@@ -26,23 +26,19 @@
  */
 package org.opencypher.spark.impl.physical.operators
 
-import org.apache.spark.sql._
 import org.opencypher.okapi.api.graph.QualifiedGraphName
 import org.opencypher.okapi.api.types._
 import org.opencypher.okapi.api.value.CypherValue._
-import org.opencypher.okapi.impl.exception.{IllegalArgumentException, NotImplementedException, SchemaException}
+import org.opencypher.okapi.impl.exception.{IllegalArgumentException, SchemaException}
 import org.opencypher.okapi.ir.api.block.{Asc, Desc, SortItem}
 import org.opencypher.okapi.ir.api.expr._
 import org.opencypher.okapi.logical.impl._
 import org.opencypher.okapi.relational.api.schema.RelationalSchema._
 import org.opencypher.okapi.relational.impl.physical.{Ascending, Descending, Order}
 import org.opencypher.okapi.relational.impl.table._
-import org.opencypher.spark.api.io.SparkCypherTable
-import org.opencypher.spark.api.io.SparkCypherTable.DataFrameTable
 import org.opencypher.spark.impl.CAPSGraph
 import org.opencypher.spark.impl.CAPSUnionGraph.{apply => _, unapply => _}
-import org.opencypher.spark.impl.SparkSQLExprMapper._
-import org.opencypher.spark.impl.convert.SparkConversions._
+import org.opencypher.spark.impl.table.SparkFlatRelationalTable._
 
 final case class Cache(in: CAPSPhysicalOperator) extends CAPSPhysicalOperator {
 
@@ -177,7 +173,7 @@ final case class Select(in: CAPSPhysicalOperator, expressions: List[Expr]) exten
     headerWithAliases.select(expressions: _*)
   }
 
-  override lazy val _table: SparkCypherTable.DataFrameTable = {
+  override lazy val _table: DataFrameTable = {
     in.table.select(expressions.map(header.column).distinct: _*)
   }
 
@@ -203,75 +199,7 @@ final case class Aggregate(
 
   override lazy val header: RecordHeader = in.header.select(group).withExprs(aggregations.map(_._1))
 
-  override lazy val _table: DataFrameTable = {
-
-    val inDF = in.table.df
-
-    def withInnerExpr(expr: Expr)(f: Column => Column) =
-      f(expr.asSparkSQLExpr(in.header, inDF, context.parameters))
-
-    val data: Either[RelationalGroupedDataset, DataFrame] =
-      if (group.nonEmpty) {
-        val columns = group.flatMap { expr =>
-          val withChildren = in.header.ownedBy(expr)
-          withChildren.map(e => withInnerExpr(e)(identity))
-        }
-        Left(inDF.groupBy(columns.toSeq: _*))
-      } else Right(inDF)
-
-    val sparkAggFunctions = aggregations.map {
-      case (to, inner) =>
-        val columnName = header.column(to)
-        inner match {
-          case Avg(expr) =>
-            withInnerExpr(expr)(
-              functions
-                .avg(_)
-                .cast(to.cypherType.getSparkType)
-                .as(columnName))
-
-          case CountStar(_) =>
-            functions.count(functions.lit(0)).as(columnName)
-
-          // TODO: Consider not implicitly projecting the inner expr here, but rewriting it into a variable in logical planning or IR construction
-          case Count(expr, distinct) => withInnerExpr(expr) { column =>
-            val count = {
-              if (distinct) functions.countDistinct(column)
-              else functions.count(column)
-            }
-
-            count.as(columnName)
-          }
-
-          case Max(expr) =>
-            withInnerExpr(expr)(functions.max(_).as(columnName))
-
-          case Min(expr) =>
-            withInnerExpr(expr)(functions.min(_).as(columnName))
-
-          case Sum(expr) =>
-            withInnerExpr(expr)(functions.sum(_).as(columnName))
-
-          case Collect(expr, distinct) => withInnerExpr(expr) { column =>
-            val list = {
-              if (distinct) functions.collect_set(column)
-              else functions.collect_list(column)
-            }
-            // sort for deterministic aggregation results
-            val sorted = functions.sort_array(list)
-            sorted.as(columnName)
-          }
-
-          case x =>
-            throw NotImplementedException(s"Aggregation function $x")
-        }
-    }
-
-    data.fold(
-      _.agg(sparkAggFunctions.head, sparkAggFunctions.tail.toSeq: _*),
-      _.agg(sparkAggFunctions.head, sparkAggFunctions.tail.toSeq: _*)
-    )
-  }
+  override lazy val _table: DataFrameTable = in.table.group(group, aggregations)(in.header, header, context.parameters)
 }
 
 final case class OrderBy(in: CAPSPhysicalOperator, sortItems: Seq[SortItem[Expr]]) extends CAPSPhysicalOperator {
