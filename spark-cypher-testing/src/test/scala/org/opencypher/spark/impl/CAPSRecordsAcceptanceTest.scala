@@ -84,7 +84,7 @@ class CAPSRecordsAcceptanceTest extends CAPSTestSuite with Neo4jServerFixture wi
     val result = graph.cypher(query)
 
     // Then
-    result.getRecords.asCaps.toDF().collect().toBag should equal(
+    result.getRecords.asCaps.df.collect().toBag should equal(
       Bag(
         Row(1937L, "Vanessa Redgrave", 2L, true, true, true, 21L, 2L, 20L, "Guenevere")
       ))
@@ -137,7 +137,7 @@ class CAPSRecordsAcceptanceTest extends CAPSTestSuite with Neo4jServerFixture wi
     // When
     val records = graph.cypher(query).getRecords
 
-    records.asCaps.toDF().collect().toBag should equal(
+    records.asCaps.df.collect().toBag should equal(
       Bag(
         Row("Natasha Richardson", "London", "The Parent Trap"),
         Row("Dennis Quaid", "Houston", "The Parent Trap"),

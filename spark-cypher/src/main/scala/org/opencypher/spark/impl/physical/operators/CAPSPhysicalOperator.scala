@@ -58,6 +58,8 @@ private[spark] abstract class CAPSPhysicalOperator
   extends AbstractTreeNode[CAPSPhysicalOperator]
     with PhysicalOperator[DataFrameTable, CAPSRecords, CAPSGraph, CAPSRuntimeContext] {
 
+  lazy val records = CAPSRecords(header, table, returnItems.map(_.map(_.withoutType)))
+
   override def header: RecordHeader = children.head.header
 
   override def _table: DataFrameTable = children.head.table

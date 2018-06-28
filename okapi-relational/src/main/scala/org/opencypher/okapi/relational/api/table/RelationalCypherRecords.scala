@@ -27,10 +27,11 @@
 package org.opencypher.okapi.relational.api.table
 
 import org.opencypher.okapi.api.table.CypherRecords
+import org.opencypher.okapi.api.types.{CTNode, CTRelationship}
 import org.opencypher.okapi.api.value.CypherValue.CypherMap
-import org.opencypher.okapi.impl.exception.IllegalArgumentException
+import org.opencypher.okapi.impl.exception.{IllegalArgumentException, UnsupportedOperationException}
 import org.opencypher.okapi.ir.api.block.{Asc, Desc, SortItem}
-import org.opencypher.okapi.ir.api.expr.{AliasExpr, Expr, Var}
+import org.opencypher.okapi.ir.api.expr._
 import org.opencypher.okapi.relational.impl.physical.{Ascending, Descending, JoinType, Order}
 import org.opencypher.okapi.relational.impl.table.RecordHeader
 
@@ -46,14 +47,91 @@ trait RelationalCypherRecords[T <: FlatRelationalTable[T]] extends CypherRecords
 
   def header: RecordHeader
 
-  def select(expr: Expr, epxrs: Expr*): R = {
-    val allExprs = expr +: epxrs
+  /**
+    * Align the record header to the target header and rename the stored entity to `v`.
+    *
+    * It is required that the `CAPSRecords` instance is a scan, meaning that it must contain exactly a single entity
+    * (node or relationship) and its parts (flattened). The stored entity is renamed by this function to the argument
+    * variable `v`.
+    *
+    * @param v            the variable that the aligned scan should contain
+    * @param targetHeader the header to align with
+    * @return a new instance of `CAPSRecords` aligned with the argument header
+    */
+  def alignWith(v: Var, targetHeader: RecordHeader): R = {
+
+    val entityVars = header.entityVars
+
+    val oldEntity = entityVars.toSeq match {
+      case Seq(one) => one
+      case Nil => throw IllegalArgumentException("one entity in the record header", s"no entity in $header")
+      case _ => throw IllegalArgumentException("one entity in the record header", s"multiple entities in $header")
+    }
+
+    assert(header.ownedBy(oldEntity) == header.expressions, s"header describes more than one entity")
+
+    val entityLabels: Set[String] = oldEntity.cypherType match {
+      case CTNode(labels, _) => labels
+      case CTRelationship(types, _) => types
+      case _ => throw IllegalArgumentException("CTNode or CTRelationship", oldEntity.cypherType)
+    }
+
+    val updatedHeader = header
+      .withAlias(oldEntity as v)
+      .select(v)
+
+    val missingExpressions = targetHeader.expressions -- updatedHeader.expressions
+    val overlapExpressions = targetHeader.expressions -- missingExpressions
+
+    // rename existing columns according to target header
+    val dataWithColumnsRenamed = overlapExpressions.foldLeft(table) {
+      case (currentTable, expr) =>
+        val oldColumn = updatedHeader.column(expr)
+        val newColumn = targetHeader.column(expr)
+        if (oldColumn != newColumn) {
+          currentTable.withColumnRenamed(oldColumn, newColumn)
+        } else {
+          currentTable
+        }
+    }
+
+    // add missing columns
+    val dataWithMissingColumns = missingExpressions.foldLeft(dataWithColumnsRenamed) {
+      case (currentTable, expr) =>
+        val columnName = targetHeader.column(expr)
+        expr match {
+          case HasLabel(_, label) =>
+            if (entityLabels.contains(label.name)) {
+              currentTable.withTrueColumn(columnName)
+            } else {
+              currentTable.withFalseColumn(columnName)
+            }
+          case HasType(_, relType) =>
+            if (entityLabels.contains(relType.name)) {
+              currentTable.withTrueColumn(columnName)
+            } else {
+              currentTable.withFalseColumn(columnName)
+            }
+          case _ =>
+            if (!expr.cypherType.isNullable) {
+              throw UnsupportedOperationException(
+                s"Cannot align scan on $v by adding a NULL column, because the type for '$expr' is non-nullable"
+              )
+            }
+            currentTable.withNullColumn(columnName, expr.cypherType)
+        }
+    }
+    from(targetHeader, dataWithMissingColumns)
+  }
+
+  def select(expr: Expr, exprs: Expr*): R = {
+    val allExprs = expr +: exprs
     val aliasExprs = allExprs.collect { case a: AliasExpr => a }
 
     val headerWithAliases = header.withAlias(aliasExprs: _*)
 
     val selectHeader = headerWithAliases.select(allExprs: _*)
-    val logicalColumns = allExprs.flatMap(_.owner).collect{
+    val logicalColumns = allExprs.flatMap(_.owner).collect {
       case v: Var => v.withoutType
     }.distinct
 

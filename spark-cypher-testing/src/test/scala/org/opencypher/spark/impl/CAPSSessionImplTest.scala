@@ -70,8 +70,8 @@ class CAPSSessionImplTest extends CAPSTestSuite with TeamDataFixture with GraphC
   }
 
   it("can execute sql on registered tables") {
-    CAPSRecords.wrap(personDF).toDF().createOrReplaceTempView("people")
-    CAPSRecords.wrap(knowsDF).toDF().createOrReplaceTempView("knows")
+    CAPSRecords.wrap(personDF).df.createOrReplaceTempView("people")
+    CAPSRecords.wrap(knowsDF).df.createOrReplaceTempView("knows")
 
     val sqlResult = caps.sql(
       """

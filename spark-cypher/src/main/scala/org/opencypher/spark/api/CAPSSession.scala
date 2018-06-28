@@ -123,23 +123,6 @@ object CAPSSession extends Serializable {
     create(session)
   }
 
-//  /**
-//    * Returns the DataFrame column name for the given Cypher RETURN item.
-//    *
-//    * {{{
-//    * import org.opencypher.caps.api.CAPSSession._
-//    * // ...
-//    * val results = socialNetwork.cypher("MATCH (a) RETURN a.name")
-//    * val dataFrame = results.records.asDF
-//    * val projection = dataFrame.select(columnFor("a.name"))
-//    * }}}
-//    *
-//    * @param returnItem Cypher RETURN item (e.g. "a.name")
-//    * @return DataFrame column name for given RETURN item
-//    */
-//  // TODO: Consider moving this to CypherRecords instead
-//  def columnFor(returnItem: String): String = RecordHeader.empty.from(returnItem)
-
   /**
     * Import this into scope in order to use:
     *
@@ -154,13 +137,12 @@ object CAPSSession extends Serializable {
       * Extracts the underlying [[org.apache.spark.sql#DataFrame]] from the given [[records]].
       *
       * Note that the column names in the returned DF do not necessarily correspond to the names of the Cypher RETURN
-      * items, e.g. "RETURN n.name" does not mean that the column for that item is named "n.name". In order to get the
-      * column name for a RETURN item, use [[columnFor]].
+      * items, e.g. "RETURN n.name" does not mean that the column for that item is named "n.name".
       *
       * @return [[org.apache.spark.sql#DataFrame]] representing the records
       */
     def asDataFrame: DataFrame = records match {
-      case caps: CAPSRecords => caps.df
+      case caps: CAPSRecords => caps.table.df
       case _ => throw UnsupportedOperationException(s"can only handle CAPS records, got $records")
     }
 

@@ -202,7 +202,7 @@ class EntityTableTest extends CAPSTestSuite {
         .withNodePropertyKeys("A", "B", "C")("foo" -> CTInteger, "bar" -> CTFloat)
         .asCaps)
 
-    nodeTable.records.toDF().collect().toSet should equal(Set(Row(1L, true, (23.1f).toDouble, 10L)))
+    nodeTable.records.df.collect().toSet should equal(Set(Row(1L, true, (23.1f).toDouble, 10L)))
   }
 
   it("NodeTable can handle shuffled columns due to cast") {

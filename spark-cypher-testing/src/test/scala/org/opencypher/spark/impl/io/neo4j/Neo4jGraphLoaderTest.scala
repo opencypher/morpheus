@@ -38,16 +38,16 @@ class Neo4jGraphLoaderTest extends CAPSTestSuite with Neo4jServerFixture with Op
     val graph = Neo4jGraphLoader.fromNeo4j(neo4jConfig)
 
     graph.schema should equal(schema)
-    graph.nodes("n").toDF().count() shouldBe nbrNodes
-    graph.relationships("r").toDF().count() shouldBe nbrRels
+    graph.nodes("n").df.count() shouldBe nbrNodes
+    graph.relationships("r").df.count() shouldBe nbrRels
   }
 
   test("import only some nodes from Neo4j") {
     val graph = Neo4jGraphLoader.fromNeo4j(neo4jConfig, "MATCH (f:Film) RETURN f", "UNWIND [] AS i RETURN i")
 
     graph.schema should equal(Schema.empty.withNodePropertyKeys("Film")("title" -> CTString).asCaps)
-    graph.nodes("n").toDF().count() shouldBe 5
-    graph.relationships("r").toDF().count() shouldBe 0
+    graph.nodes("n").df.count() shouldBe 5
+    graph.relationships("r").df.count() shouldBe 0
   }
 
   test("import only some rels (and their endnodes) from Neo4j") {
@@ -59,7 +59,7 @@ class Neo4jGraphLoaderTest extends CAPSTestSuite with Neo4jServerFixture with Op
       .withRelationshipPropertyKeys("ACTED_IN")("charactername" -> CTString)
       .asCaps
     )
-    graph.nodes("n").toDF().count() shouldBe 12
-    graph.relationships("r").toDF().count() shouldBe 8
+    graph.nodes("n").df.count() shouldBe 12
+    graph.relationships("r").df.count() shouldBe 8
   }
 }

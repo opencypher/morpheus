@@ -380,7 +380,7 @@ class CAPSPatternGraphTest extends CAPSGraphTest with RecordsVerificationFixture
 
     val patternGraph = CAPSGraph.create(inputNodes, inputGraph.schema)
 
-    patternGraph.nodes("n", CTNode("Person")).toDF().collect().toSet shouldBe empty
+    patternGraph.nodes("n", CTNode("Person")).df.collect().toSet shouldBe empty
   }
 
   it("Supports .cypher node scans") {

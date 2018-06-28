@@ -32,6 +32,7 @@ import org.opencypher.okapi.api.types.{CTNode, CTRelationship}
 import org.opencypher.okapi.ir.api.expr.Var
 import org.opencypher.okapi.relational.api.schema.RelationalSchema._
 import org.opencypher.spark.api.CAPSSession
+import org.opencypher.spark.impl.physical.operators.{RetagVariable, Start}
 import org.opencypher.spark.impl.util.TagSupport.computeRetaggings
 import org.opencypher.spark.schema.CAPSSchema
 import org.opencypher.spark.schema.CAPSSchema._
@@ -42,6 +43,7 @@ object CAPSUnionGraph {
   }
 }
 
+// TODO: This should be a planned tree of physical operators instead of a graph
 final case class CAPSUnionGraph(graphs: Map[CAPSGraph, Map[Int, Int]])
   (implicit val session: CAPSSession) extends CAPSGraph {
 
@@ -76,7 +78,8 @@ final case class CAPSUnionGraph(graphs: Map[CAPSGraph, Map[Int, Int]])
       .map {
         graph =>
           val nodeScan = graph.nodes(name, nodeCypherType)
-          nodeScan.retag(graphs(graph))
+          val nodeIdColumn = nodeScan.header.column(node)
+          nodeScan.from(nodeScan.header, nodeScan.table.retagColumn(graphs(graph), nodeIdColumn))
       }
 
     alignRecords(nodeScans.toSeq, node, targetHeader)
@@ -90,8 +93,16 @@ final case class CAPSUnionGraph(graphs: Map[CAPSGraph, Map[Int, Int]])
     val relScans = graphs.keys
       .filter(relCypherType.types.isEmpty || _.schema.relationshipTypes.intersect(relCypherType.types).nonEmpty)
       .map { graph =>
+        val replacements = graphs(graph)
         val relScan = graph.relationships(name, relCypherType)
-        relScan.retag(graphs(graph))
+        val relIdColumn = relScan.header.column(rel)
+        val relStartColumn = relScan.header.column(relScan.header.startNodeFor(rel))
+        val relEndColumn = relScan.header.column(relScan.header.endNodeFor(rel))
+        val retaggedTable = relScan.table
+          .retagColumn(replacements, relIdColumn)
+          .retagColumn(replacements, relStartColumn)
+          .retagColumn(replacements, relEndColumn)
+        relScan.from(relScan.header, retaggedTable)
       }
 
     alignRecords(relScans.toSeq, rel, targetHeader)

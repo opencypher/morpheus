@@ -223,7 +223,10 @@ object SparkFlatRelationalTable {
     override def withColumnRenamed(oldColumn: String, newColumn: String): DataFrameTable =
       df.safeRenameColumn(oldColumn, newColumn)
 
-    override def withNullColumn(col: String): DataFrameTable = df.withColumn(col, functions.lit(null))
+    override def withNullColumn(col: String, cypherType: CypherType = CTNull): DataFrameTable = {
+      assert(cypherType.isNullable)
+      df.withColumn(col, functions.lit(null).cast(cypherType.getSparkType))
+    }
 
     override def withTrueColumn(col: String): DataFrameTable = df.withColumn(col, functions.lit(true))
 
