@@ -115,36 +115,37 @@ object SparkFlatRelationalTable {
       df.limit(items.toInt)
     }
 
-    override def group(exprs: Set[Var], aggregations: Set[(Var, Aggregator)])(implicit inHeader: RecordHeader, outHeader: RecordHeader, parameters: CypherMap): DataFrameTable = {
-      val inDF = df
+    override def group(by: Set[Var], aggregations: Set[(Aggregator, (String, CypherType))])
+      (implicit header: RecordHeader, parameters: CypherMap): DataFrameTable = {
 
       def withInnerExpr(expr: Expr)(f: Column => Column) =
-        f(expr.asSparkSQLExpr(inHeader, inDF, parameters))
+        f(expr.asSparkSQLExpr(header, df, parameters))
 
       val data: Either[RelationalGroupedDataset, DataFrame] =
-        if (exprs.nonEmpty) {
-          val columns = exprs.flatMap { expr =>
-            val withChildren = outHeader.ownedBy(expr)
+        if (by.nonEmpty) {
+          val columns = by.flatMap { expr =>
+            val withChildren = header.ownedBy(expr)
             withChildren.map(e => withInnerExpr(e)(identity))
           }
-          Left(inDF.groupBy(columns.toSeq: _*))
-        } else Right(inDF)
+          Left(df.groupBy(columns.toSeq: _*))
+        } else {
+          Right(df)
+        }
 
       val sparkAggFunctions = aggregations.map {
-        case (to, inner) =>
-          val columnName = outHeader.column(to)
-          inner match {
+        case (aggFunc, (columnName, cypherType)) =>
+          aggFunc match {
             case Avg(expr) =>
               withInnerExpr(expr)(
                 functions
                   .avg(_)
-                  .cast(to.cypherType.getSparkType)
+                  .cast(cypherType.getSparkType)
                   .as(columnName))
 
             case CountStar(_) =>
               functions.count(functions.lit(0)).as(columnName)
 
-            // TODO: Consider not implicitly projecting the inner expr here, but rewriting it into a variable in logical planning or IR construction
+            // TODO: Consider not implicitly projecting the aggFunc expr here, but rewriting it into a variable in logical planning or IR construction
             case Count(expr, distinct) => withInnerExpr(expr) { column =>
               val count = {
                 if (distinct) functions.countDistinct(column)

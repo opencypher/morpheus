@@ -199,7 +199,10 @@ final case class Aggregate(
 
   override lazy val header: RecordHeader = in.header.select(group).withExprs(aggregations.map(_._1))
 
-  override lazy val _table: DataFrameTable = in.table.group(group, aggregations)(in.header, header, context.parameters)
+  override lazy val _table: DataFrameTable = {
+    val preparedAggregations = aggregations.map { case (v, agg) => agg -> (header.column(v) -> v.cypherType) }
+    in.table.group(group, preparedAggregations)(in.header, context.parameters)
+  }
 }
 
 final case class OrderBy(in: CAPSPhysicalOperator, sortItems: Seq[SortItem[Expr]]) extends CAPSPhysicalOperator {
