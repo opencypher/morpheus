@@ -24,25 +24,40 @@
  * described as "implementation extensions to Cypher" or as "proposed changes to
  * Cypher that are not yet approved by the openCypher community".
  */
-package org.opencypher.okapi.relational.api.physical
+package org.opencypher.okapi.relational.impl.physical
 
 import org.opencypher.okapi.api.graph.PropertyGraph
+import org.opencypher.okapi.logical.impl.LogicalPatternGraph
+import org.opencypher.okapi.relational.api.physical.{PhysicalOperator, PhysicalPlannerContext, RuntimeContext}
 import org.opencypher.okapi.relational.api.table.{FlatRelationalTable, RelationalCypherRecords}
+import org.opencypher.okapi.relational.impl.flat.FlatOperator
 
-/**
-  * Represents a back-end specific physical result that is being produced by a [[PhysicalOperator]].
-  *
-  * @tparam R backend-specific cypher records
-  * @tparam G backend-specific property graph
-  */
-trait PhysicalResult[T <: FlatRelationalTable[T], R <: RelationalCypherRecords[T], G <: PropertyGraph] {
+object ConstructGraphPlanner {
 
-  /**
-    * Performs the given function on the underlying records and returns the updated records.
-    *
-    * @param f map function
-    * @return updated result
-    */
-  def mapRecordsWithDetails(f: R => R): PhysicalResult[T, R, G]
+  def planConstructGraph[
+  O <: FlatRelationalTable[O],
+  K <: PhysicalOperator[O, A, P, I],
+  A <: RelationalCypherRecords[O],
+  P <: PropertyGraph,
+  I <: RuntimeContext[O, A, P]](in: Option[FlatOperator], construct: LogicalPatternGraph)
+    (implicit context: PhysicalPlannerContext[O, K, A], planner: PhysicalPlanner[O, K, A, P, I]): K = {
 
+    import planner.producer._
+
+    val onGraphPlan = {
+      construct.onGraphs match {
+        case Nil => planStart() // Empty start
+        //TODO: Optimize case where no union is necessary
+        //case h :: Nil => operatorProducer.planStart(Some(h)) // Just one graph, no union required
+        case several =>
+          val onGraphPlans = several.map(qgn => planStart(Some(qgn)))
+          planGraphUnionAll(onGraphPlans, construct.name)
+      }
+    }
+    val inputTablePlan = in.map(planner.process).getOrElse(planStart())
+
+    val constructGraphPlan = planner.producer.planConstructGraph(inputTablePlan, onGraphPlan, construct)
+    context.constructedGraphPlans.update(construct.name, constructGraphPlan)
+    constructGraphPlan
+  }
 }

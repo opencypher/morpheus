@@ -335,18 +335,18 @@ final case class In(lhs: Expr, rhs: Expr)(val cypherType: CypherType = CTWildcar
   override val op = "IN"
 }
 
-final case class Property(m: Expr, key: PropertyKey)(val cypherType: CypherType = CTWildcard) extends Expr {
+final case class Property(entity: Expr, key: PropertyKey)(val cypherType: CypherType = CTWildcard) extends Expr {
 
   type This = Property
 
-  override def owner(): Option[Var] = m match {
+  override def owner(): Option[Var] = entity match {
     case v: Var => Some(v)
     case _ => None
   }
 
   override def withOwner(v: Var): Property = Property(v, key)(cypherType)
 
-  override def withoutType: String = s"${m.withoutType}.${key.name}"
+  override def withoutType: String = s"${entity.withoutType}.${key.name}"
 }
 
 final case class MapExpression(items: Map[String, Expr])(val cypherType: CypherType = CTWildcard) extends Expr {

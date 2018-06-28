@@ -74,11 +74,7 @@ trait CAPSGraph extends PropertyGraph with GraphOperations with Serializable {
     val header = records.header
 
     // compute slot contents to keep
-    val idColumn = header.column(nodeVar)
-
     val labelExprs = header.labelsFor(nodeVar)
-
-    val labelColumns = labelExprs.map(header.column)
 
     // need to iterate the slots to maintain the correct order
     val propertyExprs = schema.nodeKeys(labels).flatMap {
@@ -140,7 +136,7 @@ object CAPSGraph {
 
   def create(records: CypherRecords, schema: CAPSSchema, tags: Set[Int] = Set(0))(implicit caps: CAPSSession): CAPSGraph = {
     val capsRecords = records.asCaps
-    new CAPSPatternGraph(capsRecords, schema, tags)
+    CAPSPatternGraph(capsRecords, schema, tags)
   }
 
   sealed case class EmptyGraph(implicit val caps: CAPSSession) extends CAPSGraph {

@@ -29,7 +29,7 @@ package org.opencypher.okapi.relational.api.physical
 import org.opencypher.okapi.api.graph.{CypherSession, QualifiedGraphName}
 import org.opencypher.okapi.api.value.CypherValue.CypherMap
 import org.opencypher.okapi.ir.impl.QueryCatalog
-import org.opencypher.okapi.relational.api.io.{FlatRelationalTable, RelationalCypherRecords}
+import org.opencypher.okapi.relational.api.table.{FlatRelationalTable, RelationalCypherRecords}
 
 /**
   * Represents a back-end specific context which is used by the [[org.opencypher.okapi.relational.impl.physical.PhysicalPlanner]].

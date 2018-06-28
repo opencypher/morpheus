@@ -83,7 +83,7 @@ class FlatPlanner extends DirectCompilationStage[LogicalOperator, FlatOperator, 
         producer.planEmptyRecords(fields, process(in))
 
       case logical.Start(graph, _) =>
-        producer.planStart(graph, context.drivingTableHeader)
+        producer.planStart(graph)
 
       case logical.FromGraph(graph, in, _) =>
         producer.planFromGraph(graph, process(in))
@@ -93,7 +93,7 @@ class FlatPlanner extends DirectCompilationStage[LogicalOperator, FlatOperator, 
         val flatTargetOp = process(targetOp)
 
         val edgeScan = Var(list.name)(edgeScanType)
-        val edgeScanOp = producer.relationshipScan(edgeScan, producer.planStart(input.graph, RecordHeader.empty))
+        val edgeScanOp = producer.relationshipScan(edgeScan, producer.planStart(input.graph))
 
         producer.boundedVarExpand(
           source, list, edgeScan, target,

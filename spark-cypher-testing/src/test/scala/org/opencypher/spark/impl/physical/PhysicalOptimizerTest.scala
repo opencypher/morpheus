@@ -33,7 +33,7 @@ import org.opencypher.okapi.relational.impl.table.RecordHeader
 import org.opencypher.spark.api.CAPSSession
 import org.opencypher.spark.impl.CAPSConverters._
 import org.opencypher.spark.impl.CAPSRecords
-import org.opencypher.spark.impl.physical.operators.{Cache, CartesianProduct, NodeScan, Start}
+import org.opencypher.spark.impl.physical.operators.{Cache, Join, NodeScan, Start}
 import org.opencypher.spark.testing.CAPSTestSuite
 import org.opencypher.spark.testing.fixture.GraphConstructionFixture
 
@@ -41,76 +41,62 @@ class PhysicalOptimizerTest extends CAPSTestSuite with GraphConstructionFixture 
   val emptyRecords = CAPSRecords.empty(RecordHeader.empty)
 
   def start(qgn: QualifiedGraphName, records: CAPSRecords)(implicit caps: CAPSSession): Start = {
-    Start(qgn, Some(records), records.header)
+    Start(qgn, Some(records))
   }
 
   test("Test insert Cache operators") {
-    val plan = CartesianProduct(
-      CartesianProduct(
+    val plan = Join(
+      Join(
         NodeScan(
           start(testQualifiedGraphName, emptyRecords),
-          Var("C")(CTNode),
-          RecordHeader.empty
+          Var("C")(CTNode)
         ),
         NodeScan(
           start(testQualifiedGraphName, emptyRecords),
-          Var("B")(CTNode),
-          RecordHeader.empty
-        ),
-        RecordHeader.empty
+          Var("B")(CTNode)
+        )
       ),
-      CartesianProduct(
+      Join(
         NodeScan(
           start(testQualifiedGraphName, emptyRecords),
-          Var("C")(CTNode),
-          RecordHeader.empty
+          Var("C")(CTNode)
         ),
         NodeScan(
           start(testQualifiedGraphName, emptyRecords),
-          Var("B")(CTNode),
-          RecordHeader.empty
-        ),
-        RecordHeader.empty
-      ),
-      RecordHeader.empty
+          Var("B")(CTNode)
+        )
+      )
     )
 
     implicit val context = PhysicalOptimizerContext()
     val rewrittenPlan = new PhysicalOptimizer().process(plan)
 
     rewrittenPlan should equal(
-      CartesianProduct(
+      Join(
         Cache(
-          CartesianProduct(
+          Join(
             NodeScan(
               start(testQualifiedGraphName, emptyRecords),
-              Var("C")(CTNode),
-              RecordHeader.empty
+              Var("C")(CTNode)
             ),
             NodeScan(
               start(testQualifiedGraphName, emptyRecords),
-              Var("B")(CTNode),
-              RecordHeader.empty
-            ),
-            RecordHeader.empty
+              Var("B")(CTNode)
+            )
           )
         ),
         Cache(
-          CartesianProduct(
+          Join(
             NodeScan(
               start(testQualifiedGraphName, emptyRecords),
-              Var("C")(CTNode),
-              RecordHeader.empty
+              Var("C")(CTNode)
             ),
             NodeScan(
               start(testQualifiedGraphName, emptyRecords),
-              Var("B")(CTNode),
-              RecordHeader.empty
-            ),
-            RecordHeader.empty
+              Var("B")(CTNode)
+            )
           )
-        ),
-        RecordHeader.empty
+        )
       )
     )
   }

@@ -34,10 +34,9 @@ import org.opencypher.okapi.ir.impl.QueryCatalog
 import org.opencypher.okapi.logical.impl._
 import org.opencypher.okapi.relational.api.physical.{PhysicalOperatorProducer, PhysicalPlannerContext}
 import org.opencypher.okapi.relational.impl.physical._
-import org.opencypher.okapi.relational.impl.table._
 import org.opencypher.spark.api.CAPSSession
-import org.opencypher.spark.api.io.SparkCypherTable.DataFrameTable
 import org.opencypher.spark.impl.physical.operators.CAPSPhysicalOperator
+import org.opencypher.spark.impl.table.SparkFlatRelationalTable._
 import org.opencypher.spark.impl.{CAPSGraph, CAPSRecords}
 
 case class CAPSPhysicalPlannerContext(
@@ -57,41 +56,37 @@ object CAPSPhysicalPlannerContext {
   }
 }
 
-final class CAPSPhysicalOperatorProducer(implicit caps: CAPSSession)
+final class CAPSPhysicalOperatorProducer(implicit context: CAPSRuntimeContext)
   extends PhysicalOperatorProducer[DataFrameTable, CAPSPhysicalOperator, CAPSRecords, CAPSGraph, CAPSRuntimeContext] {
 
   override def planCartesianProduct(
     lhs: CAPSPhysicalOperator,
-    rhs: CAPSPhysicalOperator,
-    header: RecordHeader): CAPSPhysicalOperator = operators.CartesianProduct(lhs, rhs, header)
+    rhs: CAPSPhysicalOperator): CAPSPhysicalOperator = operators.Join(lhs, rhs, Seq.empty, CrossJoin)
 
   override def planDrop(
     in: CAPSPhysicalOperator,
-    dropFields: Set[Expr],
-    header: RecordHeader
-  ): CAPSPhysicalOperator = operators.DropColumns(in, dropFields, header)
+    dropFields: Set[Expr]
+  ): CAPSPhysicalOperator = operators.Drop(in, dropFields)
 
   override def planRenameColumns(
     in: CAPSPhysicalOperator,
-    renameExprs: Map[Expr, String],
-    header: RecordHeader
-  ): CAPSPhysicalOperator = operators.RenameColumns(in, renameExprs, header)
+    renameExprs: Map[Expr, String]
+  ): CAPSPhysicalOperator = operators.RenameColumns(in, renameExprs)
 
-  override def planSelect(in: CAPSPhysicalOperator, exprs: List[Expr], header: RecordHeader): CAPSPhysicalOperator =
-    operators.Select(in, exprs, header)
+  override def planSelect(in: CAPSPhysicalOperator, exprs: List[Expr]): CAPSPhysicalOperator =
+    operators.Select(in, exprs)
 
   override def planReturnGraph(in: CAPSPhysicalOperator): CAPSPhysicalOperator = {
     operators.ReturnGraph(in)
   }
 
-  override def planEmptyRecords(in: CAPSPhysicalOperator, header: RecordHeader): CAPSPhysicalOperator =
-    operators.EmptyRecords(in, header)
+  override def planEmptyRecords(in: CAPSPhysicalOperator, fields: Set[Var]): CAPSPhysicalOperator =
+    operators.EmptyRecords(in, fields)
 
   override def planStart(
     qgnOpt: Option[QualifiedGraphName] = None,
-    in: Option[CAPSRecords] = None,
-    header: RecordHeader): CAPSPhysicalOperator =
-    operators.Start(qgnOpt.getOrElse(caps.emptyGraphQgn), in, header)
+    in: Option[CAPSRecords] = None): CAPSPhysicalOperator =
+    operators.Start(qgnOpt.getOrElse(context.session.emptyGraphQgn), in)
 
   // TODO: Make catalog usage consistent between Start/FROM GRAPH
   override def planFromGraph(in: CAPSPhysicalOperator, g: LogicalCatalogGraph): CAPSPhysicalOperator =
@@ -100,23 +95,21 @@ final class CAPSPhysicalOperatorProducer(implicit caps: CAPSSession)
   override def planNodeScan(
     in: CAPSPhysicalOperator,
     inGraph: LogicalGraph,
-    v: Var,
-    header: RecordHeader): CAPSPhysicalOperator = operators.NodeScan(in, v, header)
+    v: Var): CAPSPhysicalOperator = operators.NodeScan(in, v)
 
   override def planRelationshipScan(
     in: CAPSPhysicalOperator,
     inGraph: LogicalGraph,
-    v: Var,
-    header: RecordHeader): CAPSPhysicalOperator = operators.RelationshipScan(in, v, header)
+    v: Var): CAPSPhysicalOperator = operators.RelationshipScan(in, v)
 
-  override def planAliases(in: CAPSPhysicalOperator, aliases: Seq[AliasExpr], header: RecordHeader): CAPSPhysicalOperator =
-    operators.Alias(in, aliases, header)
+  override def planAliases(in: CAPSPhysicalOperator, aliases: Seq[AliasExpr]): CAPSPhysicalOperator =
+    operators.Alias(in, aliases)
 
-  override def planAddColumn(in: CAPSPhysicalOperator, expr: Expr, header: RecordHeader): CAPSPhysicalOperator =
-    operators.AddColumn(in, expr, header)
+  override def planAdd(in: CAPSPhysicalOperator, expr: Expr): CAPSPhysicalOperator =
+    operators.Add(in, expr)
 
-  override def planCopyColumn(in: CAPSPhysicalOperator, from: Expr, to: Expr, header: RecordHeader): CAPSPhysicalOperator =
-    operators.CopyColumn(in, from, to, header)
+  override def planAddInto(in: CAPSPhysicalOperator, from: Expr, to: Expr): CAPSPhysicalOperator =
+    operators.AddInto(in, from, to)
 
   override def planConstructGraph(
     in: CAPSPhysicalOperator,
@@ -125,19 +118,18 @@ final class CAPSPhysicalOperatorProducer(implicit caps: CAPSSession)
     operators.ConstructGraph(in, onGraph, construct)
   }
 
-  override def planAggregate(in: CAPSPhysicalOperator, group: Set[Var], aggregations: Set[(Var, Aggregator)], header: RecordHeader): CAPSPhysicalOperator = operators.Aggregate(in, aggregations, group, header)
+  override def planAggregate(in: CAPSPhysicalOperator, group: Set[Var], aggregations: Set[(Var, Aggregator)]): CAPSPhysicalOperator = operators.Aggregate(in, aggregations, group)
 
-  override def planFilter(in: CAPSPhysicalOperator, expr: Expr, header: RecordHeader): CAPSPhysicalOperator =
-    operators.Filter(in, expr, header)
+  override def planFilter(in: CAPSPhysicalOperator, expr: Expr): CAPSPhysicalOperator =
+    operators.Filter(in, expr)
 
   override def planJoin(
     lhs: CAPSPhysicalOperator,
     rhs: CAPSPhysicalOperator,
     joinColumns: Seq[(Expr, Expr)],
-    header: RecordHeader,
     joinType: JoinType): CAPSPhysicalOperator = {
 
-    operators.Join(lhs, rhs, joinColumns, header, joinType)
+    operators.Join(lhs, rhs, joinColumns, joinType)
   }
 
   override def planDistinct(in: CAPSPhysicalOperator, fields: Set[Var]): CAPSPhysicalOperator =
@@ -148,14 +140,13 @@ final class CAPSPhysicalOperatorProducer(implicit caps: CAPSSession)
 
   override def planOrderBy(
     in: CAPSPhysicalOperator,
-    sortItems: Seq[SortItem[Expr]],
-    header: RecordHeader): CAPSPhysicalOperator = operators.OrderBy(in, sortItems)
+    sortItems: Seq[SortItem[Expr]]): CAPSPhysicalOperator = operators.OrderBy(in, sortItems)
 
-  override def planSkip(in: CAPSPhysicalOperator, expr: Expr, header: RecordHeader): CAPSPhysicalOperator =
-    operators.Skip(in, expr, header)
+  override def planSkip(in: CAPSPhysicalOperator, expr: Expr): CAPSPhysicalOperator =
+    operators.Skip(in, expr)
 
-  override def planLimit(in: CAPSPhysicalOperator, expr: Expr, header: RecordHeader): CAPSPhysicalOperator =
-    operators.Limit(in, expr, header)
+  override def planLimit(in: CAPSPhysicalOperator, expr: Expr): CAPSPhysicalOperator =
+    operators.Limit(in, expr)
 
   override def planGraphUnionAll(graphs: List[CAPSPhysicalOperator], qgn: QualifiedGraphName):
     CAPSPhysicalOperator = {
