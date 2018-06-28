@@ -263,7 +263,6 @@ Feature "PathEquality": Scenario "Direction of traversed relationship is not sig
 Feature "OrderByAcceptance": Scenario "ORDER BY of a column introduced in RETURN should return salient results in ascending order"
 Feature "OrderByAcceptance": Scenario "ORDER BY with negative parameter for LIMIT should not generate errors"
 Feature "OrderByAcceptance": Scenario "ORDER BY with a negative LIMIT should fail with a syntax exception"
-Feature "OptionalMatchAcceptance": Scenario "Returning label predicate on null node"
 Feature "OptionalMatchAcceptance": Scenario "WITH after OPTIONAL MATCH"
 Feature "OptionalMatchAcceptance": Scenario "Named paths in optional matches"
 Feature "OptionalMatchAcceptance": Scenario "Named paths inside optional matches with node predicates"
