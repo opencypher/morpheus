@@ -43,17 +43,17 @@ object CAPSUnionGraph {
 }
 
 // TODO: This should be a planned tree of physical operators instead of a graph
-final case class CAPSUnionGraph(replacementsMap: Map[CAPSGraph, Map[Int, Int]])
+final case class CAPSUnionGraph(graphsToReplacements: Map[CAPSGraph, Map[Int, Int]])
   (implicit val session: CAPSSession) extends CAPSGraph {
 
-  require(replacementsMap.nonEmpty, "Union requires at least one graph")
+  require(graphsToReplacements.nonEmpty, "Union requires at least one graph")
 
-  override lazy val tags: Set[Int] = replacementsMap.values.flatMap(_.values).toSet
+  override lazy val tags: Set[Int] = graphsToReplacements.values.flatMap(_.values).toSet
 
-  override def toString = s"CAPSUnionGraph(graphs=[${replacementsMap.mkString(",")}])"
+  override def toString = s"CAPSUnionGraph(graphs=[${graphsToReplacements.mkString(",")}])"
 
   override lazy val schema: CAPSSchema = {
-    replacementsMap.keys.map(g => g.schema).foldLeft(Schema.empty)(_ ++ _).asCaps
+    graphsToReplacements.keys.map(g => g.schema).foldLeft(Schema.empty)(_ ++ _).asCaps
   }
 
   override def cache(): CAPSUnionGraph = map(_.cache())
@@ -67,17 +67,17 @@ final case class CAPSUnionGraph(replacementsMap: Map[CAPSGraph, Map[Int, Int]])
   override def unpersist(blocking: Boolean): CAPSUnionGraph = map(_.unpersist(blocking))
 
   private def map(f: CAPSGraph => CAPSGraph): CAPSUnionGraph =
-    CAPSUnionGraph(replacementsMap.keys.map(f).zip(replacementsMap.keys).toMap.mapValues(replacementsMap))
+    CAPSUnionGraph(graphsToReplacements.keys.map(f).zip(graphsToReplacements.keys).toMap.mapValues(graphsToReplacements))
 
   override def nodes(name: String, nodeCypherType: CTNode): CAPSRecords = {
     val node = Var(name)(nodeCypherType)
     val targetHeader = schema.headerForNode(node)
-    val nodeScans = replacementsMap.keys
+    val nodeScans = graphsToReplacements.keys
       .filter(nodeCypherType.labels.isEmpty || _.schema.labels.intersect(nodeCypherType.labels).nonEmpty)
       .map {
         graph =>
           val nodeScan = graph.nodes(name, nodeCypherType)
-          val replacements = replacementsMap(graph).filterNot { case (from, to) => from == to }
+          val replacements = graphsToReplacements(graph)
 
           val retaggedTable = nodeScan.header.idColumns(node).foldLeft(nodeScan.table) {
             case (currentTable, idColumn) =>
@@ -95,11 +95,11 @@ final case class CAPSUnionGraph(replacementsMap: Map[CAPSGraph, Map[Int, Int]])
   override def relationships(name: String, relCypherType: CTRelationship): CAPSRecords = {
     val rel = Var(name)(relCypherType)
     val targetHeader = schema.headerForRelationship(rel)
-    val relScans = replacementsMap.keys
+    val relScans = graphsToReplacements.keys
       .filter(relCypherType.types.isEmpty || _.schema.relationshipTypes.intersect(relCypherType.types).nonEmpty)
       .map { graph =>
         val relScan = graph.relationships(name, relCypherType)
-        val replacements = replacementsMap(graph).filterNot { case (from, to) => from == to }
+        val replacements = graphsToReplacements(graph)
 
         val retaggedTable = relScan.header.idColumns(rel).foldLeft(relScan.table) {
           case (currentTable, idColumn) =>
