@@ -68,6 +68,14 @@
     </dependency>
 
     <dependency>
+      <groupId>org.opencypher</groupId>
+      <artifactId>okapi-neo4j-io</artifactId>
+      <version>${project.parent.version}</version>
+      <type>test-jar</type>
+      <scope>test</scope>
+    </dependency>
+
+    <dependency>
       <groupId>org.apache.hadoop</groupId>
       <artifactId>hadoop-minicluster</artifactId>
       <version>${dep.hadoop.version}</version>

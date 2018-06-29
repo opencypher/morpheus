@@ -28,12 +28,47 @@ Third-party licenses
 --------------------
 
 Apache Software License, Version 2.0
+  Apache Commons Codec
+  Apache Commons Collections
   Apache Commons Lang
+  Apache Commons Text
+  Apache HttpClient
+  Apache HttpCore
+  Caffeine cache
+  Commons BeanUtils Core
+  Commons Compress
+  Commons Configuration
+  Commons IO
+  Commons Lang
+  commons-beanutils
+  ConcurrentLinkedHashMap
+  Data Mapper for Jackson
+  Digester
+  Jackson
+  Java Servlet API
+  JAX-RS provider for JSON content type
+  Jetty :: Http Utility
+  Jetty :: IO Utility
+  Jetty :: Security
+  Jetty :: Server Core
+  Jetty :: Servlet Handling
+  Jetty :: Utilities
+  Jetty :: Webapp Application Support
+  Jetty :: XML utilities
+  Lucene codecs
+  Lucene Common Analyzers
+  Lucene Core
+  Lucene Memory
+  Lucene QueryParsers
+  Netty/All-in-One
+  Okapi - Neo4j IO
   Okapi - openCypher API
   Okapi IR - Declarative representation of Cypher queries
   Okapi Logical - Logical representation of Cypher queries
   Okapi Relational - Relational Algebra for Cypher
+  Okapi Test Utilities
   Okapi Trees - Tree rewriting framework for Okapi
+  opencsv
   openCypher AST for the Cypher Query Language
   openCypher Expressions
   openCypher Front End
@@ -44,10 +79,24 @@ Apache Software License, Version 2.0
   parboiled-scala
 
 BSD License
+  ASM Analysis
+  ASM Core
+  ASM Tree
+  ASM Util
+  JLine
   Scala Compiler
   Scala Library
   scala-parser-combinators
   scala-xml
+
+Bouncy Castle License
+  Bouncy Castle JSSE provider and TLS/DTLS API
+  Bouncy Castle PKIX, CMS, EAC, TSP, PKCS, OCSP, CMP, and CRMF APIs
+  Bouncy Castle Provider
+
+CDDL 1.1, GPL2 with CPE
+  jersey-multipart
+  MIME streaming extension
 
 MIT-license
   Cats core
@@ -55,6 +104,13 @@ MIT-license
   Cats macros
   core
   machinist
+  Mockito
   ujson_2.11
   upickle_2.11
+
+Mozilla Public License, Version 2.0
+  Mozilla Rhino
+
+Public-domain
+  XZ for Java
 

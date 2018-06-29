@@ -32,10 +32,10 @@ import org.opencypher.okapi.api.graph.{GraphName, PropertyGraph}
 import org.opencypher.okapi.api.schema.Schema
 import org.opencypher.okapi.api.types.CypherType
 import org.opencypher.okapi.impl.exception.GraphNotFoundException
+import org.opencypher.okapi.neo4j.io.Neo4jConfig
 import org.opencypher.spark.api.CAPSSession
 import org.opencypher.spark.impl.io.CAPSPropertyGraphDataSource
 import org.opencypher.spark.impl.io.neo4j.Neo4jGraphLoader
-import org.opencypher.spark.impl.io.neo4j.Neo4jHelpers._
 
 import scala.collection.JavaConverters._
 import scala.util.{Failure, Success, Try}

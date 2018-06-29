@@ -28,23 +28,23 @@ package org.opencypher.spark.impl.io.neo4j
 
 import org.opencypher.okapi.api.schema.Schema
 import org.opencypher.okapi.api.types._
+import org.opencypher.okapi.neo4j.io.Neo4jServerFixture
 import org.opencypher.spark.schema.CAPSSchema
 import org.opencypher.spark.schema.CAPSSchema._
 import org.opencypher.spark.testing.CAPSTestSuite
-import org.opencypher.spark.testing.fixture.Neo4jServerFixture
 
 class Neo4jSchemaLoaderTest extends CAPSTestSuite with Neo4jServerFixture {
 
   val emptyQ = "WITH 1 AS a LIMIT 0 RETURN *"
 
   test("read empty") {
-    val schema = Neo4jGraphLoader.loadSchema(neo4jConfig, emptyQ, emptyQ)
+    val schema = Neo4jGraphLoader.loadSchema(neo4j, emptyQ, emptyQ)
 
     schema should equal(CAPSSchema.empty)
   }
 
   test("read nodes") {
-    val schema = Neo4jGraphLoader.loadSchema(neo4jConfig, "MATCH (n) RETURN n", emptyQ)
+    val schema = Neo4jGraphLoader.loadSchema(neo4j, "MATCH (n) RETURN n", emptyQ)
 
     schema should equal(
       Schema.empty
@@ -61,7 +61,7 @@ class Neo4jSchemaLoaderTest extends CAPSTestSuite with Neo4jServerFixture {
   }
 
   test("read relationships") {
-    val schema = Neo4jGraphLoader.loadSchema(neo4jConfig, emptyQ, "MATCH ()-[r]->() RETURN r")
+    val schema = Neo4jGraphLoader.loadSchema(neo4j, emptyQ, "MATCH ()-[r]->() RETURN r")
 
     schema should equal(
       Schema.empty
@@ -72,7 +72,7 @@ class Neo4jSchemaLoaderTest extends CAPSTestSuite with Neo4jServerFixture {
   }
 
   test("load full graph") {
-    val schema = Neo4jGraphLoader.loadSchema(neo4jConfig, "MATCH (n) RETURN n", "MATCH ()-[r]->() RETURN r")
+    val schema = Neo4jGraphLoader.loadSchema(neo4j, "MATCH (n) RETURN n", "MATCH ()-[r]->() RETURN r")
 
     schema should equal(
       Schema.empty

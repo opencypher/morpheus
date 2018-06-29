@@ -28,10 +28,9 @@ package org.opencypher.spark.api.io.neo4j
 
 import org.neo4j.driver.v1.Value
 import org.neo4j.driver.v1.util.Function
-import org.opencypher.okapi.api.graph.GraphName
 import org.opencypher.okapi.api.schema.Schema
 import org.opencypher.okapi.api.types.CypherType
-import org.opencypher.spark.impl.io.neo4j.Neo4jHelpers._
+import org.opencypher.okapi.neo4j.io.Neo4jConfig
 
 import scala.collection.JavaConverters._
 import scala.util.{Failure, Success, Try}

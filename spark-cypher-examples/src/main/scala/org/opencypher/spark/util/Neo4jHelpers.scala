@@ -28,7 +28,7 @@ package org.opencypher.spark.util
 
 import org.neo4j.graphdb.Result
 import org.neo4j.harness.{ServerControls, TestServerBuilders}
-import org.opencypher.spark.api.io.neo4j.Neo4jConfig
+import org.opencypher.okapi.neo4j.io.Neo4jConfig
 
 object Neo4jHelpers {
 

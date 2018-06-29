@@ -32,6 +32,7 @@ import org.opencypher.okapi.api.graph.GraphName
 import org.opencypher.okapi.api.schema.Schema
 import org.opencypher.okapi.impl.exception.UnsupportedOperationException
 import org.opencypher.okapi.impl.schema.SchemaImpl
+import org.opencypher.okapi.neo4j.io.Neo4jConfig
 import org.opencypher.spark.api.CAPSSession
 import org.opencypher.spark.api.io.GraphEntity.sourceIdKey
 import org.opencypher.spark.api.io.ROAbstractGraphSource

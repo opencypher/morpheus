@@ -24,43 +24,26 @@
  * described as "implementation extensions to Cypher" or as "proposed changes to
  * Cypher that are not yet approved by the openCypher community".
  */
-package org.opencypher.spark.testing.fixture
+package org.opencypher.okapi.api.value
 
-import org.neo4j.harness.{ServerControls, TestServerBuilders}
-import org.opencypher.okapi.testing.{BaseTestFixture, BaseTestSuite}
-import org.opencypher.spark.api.io.neo4j.Neo4jConfig
+import org.opencypher.okapi.api.value.CypherValue.{CypherMap, CypherRelationship}
 
-trait Neo4jServerFixture extends BaseTestFixture {
-  self: SparkSessionFixture with BaseTestSuite =>
+case class TestRelationship(override val id: Long,
+  override val startId: Long,
+  override val endId: Long,
+  override val relType: String,
+  override val properties: CypherMap =
+  CypherMap.empty)
+  extends CypherRelationship[Long] {
 
-  var neo4jServer: ServerControls = _
+  override type I = TestRelationship
 
-  def neo4jConfig =
-    Neo4jConfig(neo4jServer.boltURI(), user = "anonymous", password = Some("password"), encrypted = false)
-
-  def neo4jHost: String = {
-    val scheme = neo4jServer.boltURI().getScheme
-    val userInfo = s"${neo4jConfig.user}:${neo4jConfig.password.get}@"
-    val host = neo4jServer.boltURI().getAuthority
-    s"$scheme://$userInfo$host"
-  }
-
-  def userFixture: String = "CALL dbms.security.createUser('anonymous', 'password', false)"
-
-  def dataFixture: String
-
-  abstract override def beforeAll(): Unit = {
-    super.beforeAll()
-    neo4jServer = TestServerBuilders
-      .newInProcessBuilder()
-      .withConfig("dbms.security.auth_enabled", "true")
-      .withFixture(userFixture)
-      .withFixture(dataFixture)
-      .newServer()
-  }
-
-  abstract override def afterAll(): Unit = {
-    neo4jServer.close()
-    super.afterAll()
+  override def copy(id: Long = id,
+    startId: Long = startId,
+    endId: Long = endId,
+    relType: String = relType,
+    properties: CypherMap = properties): TestRelationship = {
+    TestRelationship(id, startId, endId, relType, properties)
+      .asInstanceOf[this.type]
   }
 }

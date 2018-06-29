@@ -33,7 +33,7 @@ import org.neo4j.driver.internal.types.InternalTypeSystem
 import org.neo4j.driver.internal.value.ListValue
 import org.neo4j.driver.v1.types.{Type, TypeSystem}
 import org.neo4j.driver.v1.{Driver, Session, StatementResult, Value}
-import org.opencypher.spark.api.io.neo4j.Neo4jConfig
+import org.opencypher.okapi.neo4j.io.Neo4jConfig
 
 import scala.collection.JavaConverters._
 

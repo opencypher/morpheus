@@ -26,8 +26,9 @@
  */
 package org.opencypher.spark.api
 
+import org.opencypher.okapi.neo4j.io.Neo4jConfig
 import org.opencypher.spark.api.io.fs.{CAPSFileSystem, FSGraphSource}
-import org.opencypher.spark.api.io.neo4j.{Neo4jConfig, Neo4jReadOnlyNamedQueryGraphSource}
+import org.opencypher.spark.api.io.neo4j.Neo4jReadOnlyNamedQueryGraphSource
 
 object GraphSources {
   def fs(

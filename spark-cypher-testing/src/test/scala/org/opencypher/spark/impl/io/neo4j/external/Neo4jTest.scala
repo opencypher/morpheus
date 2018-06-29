@@ -27,8 +27,9 @@
 package org.opencypher.spark.impl.io.neo4j.external
 
 import org.junit.Assert.assertEquals
+import org.opencypher.okapi.neo4j.io.Neo4jServerFixture
 import org.opencypher.okapi.testing.BaseTestSuite
-import org.opencypher.spark.testing.fixture.{Neo4jServerFixture, SparkSessionFixture}
+import org.opencypher.spark.testing.fixture.SparkSessionFixture
 
 class Neo4jTest extends BaseTestSuite
   with SparkSessionFixture
@@ -44,30 +45,30 @@ class Neo4jTest extends BaseTestSuite
       CREATE (p1)-[:KNOWS]->(p2)
       """
 
-  lazy private val neo4j = Neo4j(neo4jConfig, sparkSession)
+  lazy private val neo4jSession = Neo4j(neo4j, sparkSession)
 
   test("run Cypher Query With Params") {
-    val result = neo4j.cypher("MATCH (n:Person) WHERE n.id <= {maxId} RETURN id(n)").param("maxId", 10)
+    val result = neo4jSession.cypher("MATCH (n:Person) WHERE n.id <= {maxId} RETURN id(n)").param("maxId", 10)
     assertEquals(10, result.loadRowRdd.count())
   }
 
   test("run Cypher Node Query") {
-    val result = neo4j.cypher("MATCH (n:Person) RETURN id(n)")
+    val result = neo4jSession.cypher("MATCH (n:Person) RETURN id(n)")
     assertEquals(100, result.loadRowRdd.count())
   }
 
   test("run Cypher Rel Query") {
-    val result = neo4j.cypher("MATCH ()-[r:KNOWS]->() RETURN id(r)")
+    val result = neo4jSession.cypher("MATCH ()-[r:KNOWS]->() RETURN id(r)")
     assertEquals(1000, result.loadRowRdd.count())
   }
 
   test("run Cypher Query With Partition") {
-    val result = neo4j.cypher("MATCH (n:Person) RETURN id(n) SKIP {_skip} LIMIT {_limit}").partitions(4).batch(25)
+    val result = neo4jSession.cypher("MATCH (n:Person) RETURN id(n) SKIP {_skip} LIMIT {_limit}").partitions(4).batch(25)
     assertEquals(100, result.loadRowRdd.count())
   }
 
   test("run Cypher Rel Query WithPartition") {
-    val result = neo4j.cypher("MATCH (n:Person)-[r:KNOWS]->(m:Person) RETURN id(n) as src,id(m) as dst,type(r) as value SKIP {_skip} LIMIT {_limit}").partitions(7).batch(200)
+    val result = neo4jSession.cypher("MATCH (n:Person)-[r:KNOWS]->(m:Person) RETURN id(n) as src,id(m) as dst,type(r) as value SKIP {_skip} LIMIT {_limit}").partitions(7).batch(200)
     assertEquals(1000, result.loadRowRdd.count())
   }
 }

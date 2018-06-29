@@ -4,73 +4,22 @@ libraries. For an overview of the licenses see the NOTICE.txt file.
 
 ------------------------------------------------------------------------------
 Apache Software License, Version 2.0
-  Apache Avro
   Apache Commons Codec
+  Apache Commons Compress
+  Apache Commons Configuration
   Apache Commons Lang
-  Apache Commons Math
+  Apache Commons Logging
   Apache Commons Text
-  Apache Directory API ASN.1 API
-  Apache Directory LDAP API Utilities
-  Apache Hadoop Annotations
-  Apache Hadoop Auth
-  Apache Hadoop Common
-  Apache Hadoop HDFS
-  Apache Hadoop Mini-Cluster
   Apache HttpClient
   Apache HttpCore
-  Apache Log4j
-  ApacheDS I18n
-  ApacheDS Protocol Kerberos Codec
   Caffeine cache
-  Commons BeanUtils Core
-  Commons CLI
-  Commons Collections
-  Commons Compress
-  Commons Configuration
-  Commons Daemon
   Commons IO
   Commons Lang
-  Commons Logging
-  Commons Net
-  commons-beanutils
   ConcurrentLinkedHashMap
-  Curator Client
-  Curator Framework
-  Curator Recipes
-  Cypher for Apache Spark - CAPS
   Data Mapper for Jackson
-  Digester
-  FindBugs-jsr305
-  Google Guice - Core Library
-  Google Guice - Extensions - Servlet
-  Gson
-  Guava: Google Core Libraries for Java
-  hadoop-mapreduce-client-app
-  hadoop-mapreduce-client-common
-  hadoop-mapreduce-client-core
-  hadoop-mapreduce-client-hs
-  hadoop-mapreduce-client-jobclient
-  hadoop-mapreduce-client-shuffle
-  hadoop-yarn-api
-  hadoop-yarn-client
-  hadoop-yarn-common
-  hadoop-yarn-server-applicationhistoryservice
-  hadoop-yarn-server-common
-  hadoop-yarn-server-nodemanager
-  hadoop-yarn-server-resourcemanager
-  hadoop-yarn-server-tests
-  hadoop-yarn-server-web-proxy
-  htrace-core
-  HttpClient
   Jackson
   Java Servlet API
-  java-xmlbuilder
-  JavaBeans(TM) Activation Framework
-  JavaMail API (compat)
-  javax.inject
   JAX-RS provider for JSON content type
-  JetS3t
-  Jettison
   Jetty :: Http Utility
   Jetty :: IO Utility
   Jetty :: Security
@@ -79,21 +28,13 @@ Apache Software License, Version 2.0
   Jetty :: Utilities
   Jetty :: Webapp Application Support
   Jetty :: XML utilities
-  Jetty Server
-  Jetty Utilities
   Lucene codecs
   Lucene Common Analyzers
   Lucene Core
   Lucene Memory
   Lucene QueryParsers
-  MX4J
-  Netty
   Netty/All-in-One
-  Okapi - Neo4j IO
   Okapi - openCypher API
-  Okapi IR - Declarative representation of Cypher queries
-  Okapi Logical - Logical representation of Cypher queries
-  Okapi Relational - Relational Algebra for Cypher
   Okapi Test Utilities
   Okapi Trees - Tree rewriting framework for Okapi
   opencsv
@@ -105,15 +46,6 @@ Apache Software License, Version 2.0
   openCypher Utils
   parboiled-core
   parboiled-scala
-  scalactic
-  scalatest
-  servlet-api
-  snappy-java
-  spark-measure
-  Xerces2 Java Parser
-  XML Commons External Components XML APIs
-  Xml Compatibility extensions for Jackson
-  zookeeper
 ------------------------------------------------------------------------------
 
                                  Apache License
@@ -327,15 +259,10 @@ BSD License
   ASM Tree
   ASM Util
   JLine
-  JSch
-  leveldbjni-all
-  ParaNamer Core
-  Protocol Buffer Java API
   Scala Compiler
   Scala Library
   scala-parser-combinators
   scala-xml
-  xmlenc Library
 ------------------------------------------------------------------------------
 
 Copyright (c) <year>, <copyright holder>
@@ -1125,11 +1052,8 @@ MIT-license
   Cats core
   Cats kernel
   Cats macros
-  core
   machinist
   Mockito
-  SLF4J API Module
-  SLF4J LOG4J-12 Binding
   ujson_2.11
   upickle_2.11
 ------------------------------------------------------------------------------
@@ -1536,16 +1460,6 @@ Exhibit B - "Incompatible With Secondary Licenses" Notice
 
   This Source Code Form is "Incompatible With Secondary Licenses", as
   defined by the Mozilla Public License, v. 2.0.
-
-
-------------------------------------------------------------------------------
-Public-domain
-  AOP alliance
-  base64
-  XZ for Java
-------------------------------------------------------------------------------
-
-
 
 
 

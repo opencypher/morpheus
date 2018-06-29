@@ -24,29 +24,42 @@
  * described as "implementation extensions to Cypher" or as "proposed changes to
  * Cypher that are not yet approved by the openCypher community".
  */
-package org.opencypher.spark.impl.io.neo4j
+package org.opencypher.okapi.neo4j.io
 
-import org.neo4j.driver.v1.Session
-import org.opencypher.okapi.api.value.CypherValue
-import org.opencypher.okapi.api.value.CypherValue.CypherValue
-import org.opencypher.spark.api.io.neo4j.Neo4jConfig
+import org.neo4j.harness.{ServerControls, TestServerBuilders}
+import org.opencypher.okapi.testing.{BaseTestFixture, BaseTestSuite}
 
-import scala.collection.JavaConverters._
+trait Neo4jServerFixture extends BaseTestSuite with BaseTestFixture {
 
-object Neo4jHelpers {
-  implicit class RichConfig(val config: Neo4jConfig) extends AnyVal {
+  var neo4jServer: ServerControls = _
 
-    def execute[T](f: Session => T): T = {
-      val session = config.driver().session
-      val t = f(session)
-      session.close()
-      t
-    }
+  implicit lazy val neo4j =
+    Neo4jConfig(neo4jServer.boltURI(), user = "anonymous", password = Some("password"), encrypted = false)
 
-    def cypher(query: String): List[Map[String, CypherValue]] = {
-      execute { session =>
-        session.run(query).list().asScala.map(_.asMap().asScala.mapValues(CypherValue(_)).toMap).toList
-      }
-    }
+  def neo4jHost: String = {
+    val scheme = neo4jServer.boltURI().getScheme
+    val userInfo = s"${neo4j.user}:${neo4j.password.get}@"
+    val host = neo4jServer.boltURI().getAuthority
+    s"$scheme://$userInfo$host"
   }
+
+  def userFixture: String = "CALL dbms.security.createUser('anonymous', 'password', false)"
+
+  def dataFixture: String
+
+  abstract override def beforeAll(): Unit = {
+    super.beforeAll()
+    neo4jServer = TestServerBuilders
+      .newInProcessBuilder()
+      .withConfig("dbms.security.auth_enabled", "true")
+      .withFixture(userFixture)
+      .withFixture(dataFixture)
+      .newServer()
+  }
+
+  abstract override def afterAll(): Unit = {
+    neo4jServer.close()
+    super.afterAll()
+  }
+
 }
