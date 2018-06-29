@@ -286,7 +286,7 @@ class MasterExampleTest extends CAPSTestSuite with SparkSessionFixture with Neo4
         Row(22L, false, true, false, false, false, "Video", null, "US", null, null)
       ))
 
-    graph.relationships("r").asInstanceOf[CAPSRecords].toDF().drop("r").collect().toBag should equal(
+    graph.relationships("r").asInstanceOf[CAPSRecords].df.drop("r").collect().toBag should equal(
       Bag(
         Row(18L, "KNOWS", 16L, "EU", null, null, null),
         Row(18L, "CLOSE_TO", 16L, null, null, null, null),
@@ -391,7 +391,7 @@ class MasterExampleTest extends CAPSTestSuite with SparkSessionFixture with Neo4
         Row(2011L, false, true, "Victor", null)
       ))
 
-    val relsWithoutRelId = graph.relationships("r").asInstanceOf[CAPSRecords].toDF().drop("r")
+    val relsWithoutRelId = graph.relationships("r").asInstanceOf[CAPSRecords].df.drop("r")
     relsWithoutRelId.collect().toBag should equal(
       Bag(
         Row(2009L, "IS", 15L),
@@ -427,7 +427,7 @@ class MasterExampleTest extends CAPSTestSuite with SparkSessionFixture with Neo4
         Row(12L, true, "Dave", "US")
       ))
 
-    val relsWithoutRelId = g.relationships("r").asInstanceOf[CAPSRecords].toDF().drop("r")
+    val relsWithoutRelId = g.relationships("r").asInstanceOf[CAPSRecords].df.drop("r")
     relsWithoutRelId.collect().toBag should equal(
       Bag(
         Row(7L, "CLOSE_TO", 8L),
@@ -457,7 +457,7 @@ class MasterExampleTest extends CAPSTestSuite with SparkSessionFixture with Neo4
         Row(18L, true, "Peggy", "EU")
       ))
 
-    val relsWithoutRelId = g.relationships("r").asInstanceOf[CAPSRecords].toDF().drop("r")
+    val relsWithoutRelId = g.relationships("r").asInstanceOf[CAPSRecords].df.drop("r")
     relsWithoutRelId.collect().toBag should equal(
       Bag(
         Row(13L, "CLOSE_TO", 14L),
@@ -493,7 +493,7 @@ class MasterExampleTest extends CAPSTestSuite with SparkSessionFixture with Neo4
         Row(18L, true, "Peggy", "EU")
       ))
 
-    val relsWithoutRelId = g.relationships("r").asInstanceOf[CAPSRecords].toDF().drop("r")
+    val relsWithoutRelId = g.relationships("r").asInstanceOf[CAPSRecords].df.drop("r")
     Bag(relsWithoutRelId.collect(): _*) should equal(
       Bag(
         Row(7L, "CLOSE_TO", 8L),

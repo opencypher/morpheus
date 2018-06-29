@@ -76,7 +76,7 @@ trait RecordMatchingTestSupport {
     // TODO: Remove this and replace usages with toMapsWithCollectedEntities below
     // probably use this name though, and have not collecting be the special case
     def toMaps: Bag[CypherMap] = {
-      val rows = capsRecords.toDF().collect().map { r =>
+      val rows = capsRecords.df.collect().map { r =>
         val properties = capsRecords.header.expressions.map {
           case v: Var => v.name -> r.getCypherValue(v, capsRecords.header)
           case e => e.withoutType -> r.getCypherValue(e, capsRecords.header)

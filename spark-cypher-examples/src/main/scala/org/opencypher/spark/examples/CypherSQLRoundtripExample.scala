@@ -57,7 +57,7 @@ object CypherSQLRoundtripExample extends ConsoleApp {
   )
 
   // 5) Register the result as a table called people
-  result.getRecords.asCaps.toDF("age", "name").createOrReplaceTempView("people")
+  result.getRecords.asCaps.df.toDF("age", "name").createOrReplaceTempView("people")
 
   // 6) Query the registered table using SQL
   val sqlResults = session.sql("SELECT age, name FROM people")

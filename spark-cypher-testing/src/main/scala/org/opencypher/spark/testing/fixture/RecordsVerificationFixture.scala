@@ -37,7 +37,7 @@ trait RecordsVerificationFixture {
   self: CAPSTestSuite  =>
 
   protected def verify(records: CAPSRecords, expectedExprs: Seq[Expr], expectedData: Bag[Row]): Unit = {
-    val df = records.toDF()
+    val df = records.df
     val header = records.header
     val expectedColumns = expectedExprs.map(header.column)
     df.columns.length should equal(expectedColumns.size)

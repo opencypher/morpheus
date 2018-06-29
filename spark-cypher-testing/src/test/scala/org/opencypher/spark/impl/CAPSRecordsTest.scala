@@ -68,7 +68,7 @@ class CAPSRecordsTest extends CAPSTestSuite with GraphConstructionFixture with T
     val fromTag = 0
     val toTag = 1
 
-    val retagged = records.retagVariable(entityVar, Map(fromTag -> toTag))
+    val retagged = records.table.retagColumn(Map(fromTag -> toTag), records.header.column(entityVar))
 
     val nodeIdCol = records.header.column(entityVar)
 
@@ -99,11 +99,13 @@ class CAPSRecordsTest extends CAPSTestSuite with GraphConstructionFixture with T
     val fromTag = 0
     val toTag = 1
 
-    val retagged = records.retagVariable(entityVar, Map(fromTag -> toTag))
-
     val relIdCol = records.header.column(entityVar)
     val sourceIdCol = records.header.column(records.header.startNodeFor(entityVar))
     val targetIdCol = records.header.column(records.header.endNodeFor(entityVar))
+
+    val retagged = Seq(relIdCol, sourceIdCol, targetIdCol).foldLeft(records.table) {
+      case (currentTable, idColumn) => currentTable.retagColumn(Map(fromTag -> toTag), idColumn)
+    }
 
     validateTag(records.df, relIdCol, fromTag)
     validateTag(retagged.df, relIdCol, toTag)
@@ -133,7 +135,7 @@ class CAPSRecordsTest extends CAPSTestSuite with GraphConstructionFixture with T
 
   it("can be registered and queried from SQL") {
     // Given
-    CAPSRecords.create(personTable).toDF().createOrReplaceTempView("people")
+    CAPSRecords.create(personTable).df.createOrReplaceTempView("people")
 
     // When
     val df = sparkSession.sql("SELECT * FROM people")
@@ -240,7 +242,8 @@ class CAPSRecordsTest extends CAPSTestSuite with GraphConstructionFixture with T
     )
   }
 
-  it("can not construct records with data/header column name conflict") {
+  // Validation happens in operators instead
+  ignore("can not construct records with data/header column name conflict") {
     val data = sparkSession.createDataFrame(Seq((1, "foo"), (2, "bar"))).toDF("int", "string")
     val header = RecordHeader.from(Var("int")(), Var("notString")())
 

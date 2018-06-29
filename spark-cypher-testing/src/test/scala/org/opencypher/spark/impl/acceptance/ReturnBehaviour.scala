@@ -238,7 +238,7 @@ class ReturnBehaviour extends CAPSTestSuite with DefaultGraphInit {
       val result = given.cypher("MATCH (a) RETURN a.val as val SKIP 2").asCaps
 
       // Then
-      result.getRecords.toDF().count() should equal(1)
+      result.getRecords.df.count() should equal(1)
     }
 
     it("can order with skip") {
@@ -272,7 +272,7 @@ class ReturnBehaviour extends CAPSTestSuite with DefaultGraphInit {
       val result = given.cypher("MATCH (a) RETURN a.val as val LIMIT 1").asCaps
 
       // Then
-      result.getRecords.toDF().count() should equal(1)
+      result.getRecords.df.count() should equal(1)
     }
 
     it("can evaluate limit with parameter value") {

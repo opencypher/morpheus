@@ -32,10 +32,8 @@ import org.apache.spark.sql._
 import org.apache.spark.storage.StorageLevel
 import org.opencypher.okapi.api.types._
 import org.opencypher.okapi.api.value.CypherValue.{CypherMap, CypherValue}
-import org.opencypher.okapi.impl.exception.{IllegalArgumentException, UnsupportedOperationException}
 import org.opencypher.okapi.impl.table._
 import org.opencypher.okapi.impl.util.PrintOptions
-import org.opencypher.okapi.ir.api.expr._
 import org.opencypher.okapi.relational.api.table.RelationalCypherRecords
 import org.opencypher.okapi.relational.impl.table._
 import org.opencypher.spark.api.CAPSSession
@@ -45,7 +43,6 @@ import org.opencypher.spark.impl.convert.SparkConversions._
 import org.opencypher.spark.impl.convert.rowToCypherMap
 import org.opencypher.spark.impl.table.SparkFlatRelationalTable._
 
-import scala.annotation.tailrec
 import scala.collection.JavaConverters._
 
 object CAPSRecords {
@@ -79,29 +76,24 @@ object CAPSRecords {
   }
 
   private case class EmptyRow()
+
 }
 
 case class CAPSRecords(
   header: RecordHeader,
-  df: DataFrame,
-  override val logicalColumns: Option[Seq[String]] = None)(implicit val caps: CAPSSession)
-  extends RelationalCypherRecords[DataFrameTable]
-    with RecordBehaviour
-    with Serializable {
-
+  table: DataFrameTable,
+  override val logicalColumns: Option[Seq[String]] = None
+)
+  extends RelationalCypherRecords[DataFrameTable] with RecordBehaviour {
   override type R = CAPSRecords
 
-  verify()
+  def df: DataFrame = table.df
 
-  override def from(header: RecordHeader, table: DataFrameTable, displayNames: Option[Seq[String]]): CAPSRecords =
-    copy(header, table.df, displayNames)
-
-  override def table: DataFrameTable = df
-
-  //noinspection AccessorLikeMethodIsEmptyParen
-  def toDF(colNames: String*): DataFrame = colNames match {
-    case Nil => df
-    case _ => df.toDF(colNames:_ *)
+  override def from(header: RecordHeader, table: DataFrameTable, logicalColumns: Option[Seq[String]]): CAPSRecords = {
+    copy(header, table, logicalColumns match {
+      case s@Some(_) => s
+      case None => Some(header.vars.map(_.withoutType).toSeq)
+    })
   }
 
   def cache(): CAPSRecords = {
@@ -129,161 +121,11 @@ case class CAPSRecords(
     this
   }
 
-  // TODO: Further optimize identity retaggings
-  def retag(replacements: Map[Int, Int]): CAPSRecords = {
-    val actualRetaggings = replacements.filterNot { case (from, to) => from == to }
-    val idColumns = header.idColumns()
-    val dfWithReplacedTags = idColumns.foldLeft(df) {
-      case (df, column) => df.safeReplaceTags(column, actualRetaggings)
-    }
-    copy(header, dfWithReplacedTags)
-  }
-
-  def retagVariable(v: Var, replacements: Map[Int, Int]): CAPSRecords = {
-    val columnsToUpdate = header.idColumns(v)
-    val updatedData = columnsToUpdate.foldLeft(df) { case (df, columnName) =>
-      df.safeReplaceTags(columnName, replacements)
-    }
-    copy(header, updatedData)
-  }
-
-  protected val TRUE_LIT: Column = functions.lit(true)
-  protected val FALSE_LIT: Column = functions.lit(false)
-  protected val NULL_LIT: Column = functions.lit(null)
-
-  /**
-    * Align the record header to the target header and rename the stored entity to `v`.
-    *
-    * It is required that the `CAPSRecords` instance is a scan, meaning that it must contain exactly a single entity
-    * (node or relationship) and its parts (flattened). The stored entity is renamed by this function to the argument
-    * variable `v`.
-    *
-    * @param v            the variable that the aligned scan should contain
-    * @param targetHeader the header to align with
-    * @return a new instance of `CAPSRecords` aligned with the argument header
-    */
-  def alignWith(v: Var, targetHeader: RecordHeader): CAPSRecords = {
-
-    val entityVars = header.entityVars
-
-    val oldEntity = entityVars.toSeq match {
-      case Seq(one) => one
-      case Nil => throw IllegalArgumentException("one entity in the record header", s"no entity in $header")
-      case _ => throw IllegalArgumentException("one entity in the record header", s"multiple entities in $header")
-    }
-
-    assert(header.ownedBy(oldEntity) == header.expressions, s"header describes more than one entity")
-
-    val entityLabels: Set[String] = oldEntity.cypherType match {
-      case CTNode(labels, _) => labels
-      case CTRelationship(types, _) => types
-      case _ => throw IllegalArgumentException("CTNode or CTRelationship", oldEntity.cypherType)
-    }
-
-    val updatedHeader = header
-      .withAlias(oldEntity as v)
-      .select(v)
-
-    val missingExpressions = targetHeader.expressions -- updatedHeader.expressions
-    val overlapExpressions = targetHeader.expressions -- missingExpressions
-
-    // rename existing columns according to target header
-    val dataWithColumnsRenamed = overlapExpressions.foldLeft(df) {
-      case (currentDf, expr) =>
-        val oldColumn = updatedHeader.column(expr)
-        val newColumn = targetHeader.column(expr)
-        if (oldColumn != newColumn) {
-          currentDf
-            .safeReplaceColumn(oldColumn, currentDf.col(oldColumn).cast(expr.cypherType.toSparkType.get))
-            .safeRenameColumn(oldColumn, newColumn)
-        } else {
-          currentDf
-        }
-    }
-
-    // add missing columns
-    val dataWithMissingColumns = missingExpressions.foldLeft(dataWithColumnsRenamed) {
-      case (currentDf, expr) =>
-        val newColumn = expr match {
-          case HasLabel(_, label) => if (entityLabels.contains(label.name)) TRUE_LIT else FALSE_LIT
-          case HasType(_, relType) => if (entityLabels.contains(relType.name)) TRUE_LIT else FALSE_LIT
-          case _ =>
-            if (!expr.cypherType.isNullable) {
-              throw UnsupportedOperationException(
-                s"Cannot align scan on $v by adding a NULL column, because the type for '$expr' is non-nullable"
-              )
-            }
-            NULL_LIT.cast(expr.cypherType.getSparkType)
-        }
-        currentDf.withColumn(
-          targetHeader.column(expr),
-          newColumn.as(targetHeader.column(expr)))
-    }
-    copy(targetHeader, dataWithMissingColumns)
-  }
-
-  private def verify(): Unit = {
-
-    @tailrec
-    def containsEntity(t: CypherType): Boolean = t match {
-      case _: CTNode => true
-      case _: CTRelationship => true
-      case l: CTList => containsEntity(l.elementType)
-      case _ => false
-    }
-
-    if (df.sparkSession != caps.sparkSession) {
-      throw IllegalArgumentException(
-        "a DataFrame belonging to the same Spark session",
-        "DataFrame from different session")
-    }
-
-    // Ensure no duplicate columns in initialData
-    val initialDataColumns = df.columns.toSeq
-
-    val duplicateColumns = initialDataColumns.groupBy(identity).collect {
-      case (key, values) if values.size > 1 => key
-    }
-
-    if (duplicateColumns.nonEmpty)
-      throw IllegalArgumentException(
-        "a DataFrame with distinct columns",
-        s"a DataFrame with duplicate columns: ${initialDataColumns.sorted.mkString("[", ", ", "]")}")
-
-    // Verify that all header column names exist in the data
-    val headerColumnNames = header.columns
-    val dataColumnNames = df.columns.toSet
-    val missingColumnNames = headerColumnNames -- dataColumnNames
-    if (missingColumnNames.nonEmpty) {
-      throw IllegalArgumentException(
-        s"data with columns ${header.columns.toSeq.sorted.mkString("\n[", ", ", "]\n")}",
-        s"data with columns ${dataColumnNames.toSeq.sorted.mkString("\n[", ", ", "]\n")}"
-      )
-    }
-
-    // Verify column types
-    header.expressions.foreach { expr =>
-      val structType = df.schema
-      val structField = structType(header.column(expr))
-      val cypherType = structField.toCypherType
-        .getOrElse(throw IllegalArgumentException("a supported Spark type", structField.dataType))
-      val headerType = expr.cypherType
-      // if the type in the data doesn't correspond to the type in the header we fail
-      // except: we encode nodes, rels and integers with the same data type, so we can't fail
-      // on conflicts when we expect entities (alternative: change reverse-mapping function somehow)
-      if (headerType.toSparkType != cypherType.toSparkType && !containsEntity(headerType))
-        throw IllegalArgumentException(s"a valid data type for column ${structField.name} of type $headerType", cypherType)
-    }
-  }
-
   override def toString: String = {
-    val numRows = df.size
-    if (header.isEmpty && numRows == 0) {
+    if (header.isEmpty) {
       s"CAPSRecords.empty"
-    } else if (header.isEmpty && numRows == 1) {
-      s"CAPSRecords.unit"
     } else {
-      s"CAPSRecords($header, table with $numRows rows)"
+      s"CAPSRecords(header: $header)"
     }
   }
 }

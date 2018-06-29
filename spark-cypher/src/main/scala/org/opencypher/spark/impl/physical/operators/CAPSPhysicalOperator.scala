@@ -58,6 +58,8 @@ private[spark] abstract class CAPSPhysicalOperator
   extends AbstractTreeNode[CAPSPhysicalOperator]
     with PhysicalOperator[DataFrameTable, CAPSRecords, CAPSGraph, CAPSRuntimeContext] {
 
+  lazy val records = CAPSRecords(header, table, returnItems.map(_.map(_.withoutType)))
+
   override def header: RecordHeader = children.head.header
 
   override def _table: DataFrameTable = children.head.table
@@ -79,10 +81,7 @@ private[spark] abstract class CAPSPhysicalOperator
   protected def resolveTags(qgn: QualifiedGraphName)
     (implicit context: CAPSRuntimeContext): Set[Int] = context.patternGraphTags.getOrElse(qgn, resolve(qgn).tags)
 
-  override def args: Iterator[Any] = super.args.flatMap {
-    case RecordHeader | Some(RecordHeader) => None
-    case other => Some(other)
-  }
+  override def args: Iterator[Any] = super.args
 }
 
 // Leaf

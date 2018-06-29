@@ -107,7 +107,7 @@ trait CAPSGraph extends PropertyGraph with GraphOperations with Serializable {
 
     val updatedHeader = RecordHeader.from(keepExprs)
 
-    CAPSRecords(updatedHeader, updatedData)(session)
+    CAPSRecords(updatedHeader, updatedData)
   }
 
   protected def alignRecords(records: Seq[CAPSRecords], targetVar: Var, targetHeader: RecordHeader): Option[CAPSRecords] = {

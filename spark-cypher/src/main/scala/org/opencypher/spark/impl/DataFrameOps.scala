@@ -163,9 +163,11 @@ object DataFrameOps {
       require(dataType == LongType, s"Cannot remap long values in Column with type $dataType")
       val col = df.col(columnName)
 
-      val updatedCol = replacements.foldLeft(col) {
-        case (current, (from, to)) => current.replaceTag(from, to)
-      }
+      val updatedCol = replacements
+        .filterNot { case (from, to) => from == to }
+        .foldLeft(col) {
+          case (current, (from, to)) => current.replaceTag(from, to)
+        }
 
       safeReplaceColumn(columnName, updatedCol)
     }

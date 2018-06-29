@@ -92,7 +92,7 @@ case class CAPSPatternGraph(
     }
 
     val extractedDf = baseTable
-      .toDF()
+      .df
       .flatMap(RowExpansion(targetHeader, targetVar, extractionExpressions, relColumnsLookupTables))(targetHeader.rowEncoder)
 
     val distinctData = extractedDf.dropDuplicates(targetHeader.column(targetVar))
