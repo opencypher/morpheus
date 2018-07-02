@@ -43,7 +43,6 @@ import org.opencypher.okapi.relational.impl.physical.{CrossJoin, JoinType, _}
 import org.opencypher.okapi.relational.impl.table.RecordHeader
 import org.opencypher.okapi.trees.AbstractTreeNode
 import org.opencypher.spark.api.{CAPSSession, Tags}
-import org.opencypher.spark.impl.CAPSConverters._
 import org.opencypher.spark.impl.CAPSGraph.EmptyGraph
 import org.opencypher.spark.impl.CAPSUnionGraph.{apply => _, unapply => _}
 import org.opencypher.spark.impl.DataFrameOps._
@@ -74,12 +73,10 @@ private[spark] abstract class CAPSPhysicalOperator
 
   override def returnItems: Option[Seq[Var]] = children.head.returnItems
 
-  protected def resolve(qualifiedGraphName: QualifiedGraphName)(implicit context: CAPSRuntimeContext): CAPSGraph = {
-    context.resolve(qualifiedGraphName).map(_.asCaps).getOrElse(throw IllegalArgumentException(s"a graph at $qualifiedGraphName"))
-  }
+  protected def resolve(qualifiedGraphName: QualifiedGraphName)(implicit context: CAPSRuntimeContext): CAPSGraph =
+    context.resolveGraph(qualifiedGraphName)
 
-  protected def resolveTags(qgn: QualifiedGraphName)
-    (implicit context: CAPSRuntimeContext): Set[Int] = context.patternGraphTags.getOrElse(qgn, resolve(qgn).tags)
+  protected def resolveTags(qgn: QualifiedGraphName)(implicit context: CAPSRuntimeContext): Set[Int] = resolve(qgn).tags
 
   override def args: Iterator[Any] = super.args
 }
@@ -550,7 +547,7 @@ final case class ConstructGraph(
       case _ => CAPSUnionGraph(Map(identityRetaggings(onGraph), identityRetaggings(patternGraph)))
     }
 
-    context.patternGraphTags.update(construct.name, constructedCombinedWithOn.tags)
+    context.queryCatalog.update(construct.name, constructedCombinedWithOn)
 
     (constructedCombinedWithOn, name, constructTagStrategy)
   }

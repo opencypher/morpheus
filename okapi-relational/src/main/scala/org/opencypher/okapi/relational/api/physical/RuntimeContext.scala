@@ -43,7 +43,7 @@ trait RuntimeContext[T <: FlatRelationalTable[T], R <: RelationalCypherRecords[T
     *
     * @return back-end specific property graph
     */
-  def resolve: QualifiedGraphName => Option[G]
+  def resolveGraph(qgn: QualifiedGraphName): G
 
   /**
     * Query parameters
