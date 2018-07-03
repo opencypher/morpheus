@@ -45,8 +45,7 @@ import org.opencypher.okapi.ir.impl.{IRBuilder, IRBuilderContext, QueryCatalog}
 import org.opencypher.okapi.logical.api.configuration.LogicalConfiguration.PrintLogicalPlan
 import org.opencypher.okapi.logical.impl._
 import org.opencypher.okapi.relational.api.configuration.CoraConfiguration.{PrintFlatPlan, PrintOptimizedPhysicalPlan, PrintPhysicalPlan, PrintQueryExecutionStages}
-import org.opencypher.okapi.relational.impl.flat.{FlatPlanner, FlatPlannerContext}
-import org.opencypher.okapi.relational.impl.physical.{PhysicalPlanner, RelationalOptimizer}
+import org.opencypher.okapi.relational.impl.physical.{RelationalPlanner, RelationalOptimizer}
 import org.opencypher.spark.api.CAPSSession
 import org.opencypher.spark.impl.CAPSConverters._
 import org.opencypher.spark.impl.physical._
@@ -63,8 +62,7 @@ sealed class CAPSSessionImpl(val sparkSession: SparkSession)
   private val producer = new LogicalOperatorProducer
   private val logicalPlanner = new LogicalPlanner(producer)
   private val logicalOptimizer = LogicalOptimizer
-  private val flatPlanner = new FlatPlanner()
-  private val physicalOptimizer = new RelationalOptimizer()
+  private val relationalOptimizer = new RelationalOptimizer()
   private val parser = CypherParser
 
   private val maxSessionGraphId: AtomicLong = new AtomicLong(0)
@@ -136,7 +134,7 @@ sealed class CAPSSessionImpl(val sparkSession: SparkSession)
     queryParameters: CypherMap): CAPSRecords = {
     val scan = planStart(graph, in.asCaps.header.vars)
     val filter = producer.planFilter(expr, scan)
-    planPhysical(in, queryParameters, filter).getRecords
+    planRelational(in, queryParameters, filter).getRecords
   }
 
   override def select(
@@ -146,7 +144,7 @@ sealed class CAPSSessionImpl(val sparkSession: SparkSession)
     queryParameters: CypherMap): CAPSRecords = {
     val scan = planStart(graph, in.asCaps.header.vars)
     val select = producer.planSelect(fields, scan)
-    planPhysical(in, queryParameters, select).getRecords
+    planRelational(in, queryParameters, select).getRecords
   }
 
   override def project(
@@ -156,7 +154,7 @@ sealed class CAPSSessionImpl(val sparkSession: SparkSession)
     queryParameters: CypherMap): CAPSRecords = {
     val scan = planStart(graph, in.asCaps.header.vars)
     val project = producer.projectExpr(expr, scan)
-    planPhysical(in, queryParameters, project).getRecords
+    planRelational(in, queryParameters, project).getRecords
   }
 
   override def alias(
@@ -167,12 +165,12 @@ sealed class CAPSSessionImpl(val sparkSession: SparkSession)
     val (expr, v) = alias
     val scan = planStart(graph, in.asCaps.header.vars)
     val select = producer.projectField(expr, IRField(v.name)(v.cypherType), scan)
-    planPhysical(in, queryParameters, select).getRecords
+    planRelational(in, queryParameters, select).getRecords
   }
 
   private def planCypherQuery(graph: PropertyGraph, cypherQuery: CypherQuery[Expr], allParameters: CypherMap, inputFields: Set[Var], drivingTable: CypherRecords) = {
     val LogicalPlan = planLogical(cypherQuery, graph, inputFields)
-    planPhysical(drivingTable, allParameters, LogicalPlan)
+    planRelational(drivingTable, allParameters, LogicalPlan)
   }
 
   private def planLogical(ir: CypherQuery[Expr], graph: PropertyGraph, inputFields: Set[Var]) = {
@@ -195,26 +193,18 @@ sealed class CAPSSessionImpl(val sparkSession: SparkSession)
     optimizedLogicalPlan
   }
 
-  private def planPhysical(
+  private def planRelational(
     records: CypherRecords,
     parameters: CypherMap,
     logicalPlan: LogicalOperator,
     queryCatalog: QueryCatalog = QueryCatalog(catalog.listSources)
   ): CAPSResult = {
-    logStageProgress("Flat planning ... ", newLine = false)
-    val flatPlannerContext = FlatPlannerContext(parameters, records.asCaps.header)
-    val flatPlan = time("Flat planning")(flatPlanner(logicalPlan)(flatPlannerContext))
-    logStageProgress("Done!")
-    if (PrintFlatPlan.isSet) {
-      println("Flat plan:")
-      flatPlan.show()
-    }
 
-    logStageProgress("Physical planning ... ", newLine = false)
+    logStageProgress("Relational planning ... ", newLine = false)
     // TODO: Refactor so physical operator producer is reusable or easy to instantiate
     val physicalPlannerContext = CAPSPhysicalPlannerContext.from(queryCatalog, records.asCaps, parameters)(self)
     val graphAt = (qgn: QualifiedGraphName) => Some(catalog.graph(qgn).asCaps)
-    val physicalPlanner = new PhysicalPlanner(new CAPSPhysicalOperatorProducer()(CAPSRuntimeContext(physicalPlannerContext.parameters, graphAt, collection.mutable.Map.empty, collection.mutable.Map.empty)))
+    val physicalPlanner = new RelationalPlanner(new CAPSPhysicalOperatorProducer()(CAPSRuntimeContext(physicalPlannerContext.parameters, graphAt, collection.mutable.Map.empty, collection.mutable.Map.empty)))
     val physicalPlan = time("Physical planning")(physicalPlanner(flatPlan)(physicalPlannerContext))
     logStageProgress("Done!")
     if (PrintPhysicalPlan.isSet) {
@@ -222,8 +212,8 @@ sealed class CAPSSessionImpl(val sparkSession: SparkSession)
       physicalPlan.show()
     }
 
-    logStageProgress("Physical optimization ... ", newLine = false)
-    val optimizedPhysicalPlan = time("Physical optimization")(physicalOptimizer(physicalPlan)(PhysicalOptimizerContext()))
+    logStageProgress("Relational optimization ... ", newLine = false)
+    val optimizedPhysicalPlan = time("Physical optimization")(relationalOptimizer(physicalPlan)(PhysicalOptimizerContext()))
     logStageProgress("Done!")
     if (PrintOptimizedPhysicalPlan.isSet) {
       println("Optimized physical plan:")

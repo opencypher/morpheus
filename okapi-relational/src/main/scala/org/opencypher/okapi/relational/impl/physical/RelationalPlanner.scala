@@ -26,40 +26,39 @@
  */
 package org.opencypher.okapi.relational.impl.physical
 
-import org.opencypher.okapi.api.graph.{CypherSession, PropertyGraph}
+import org.opencypher.okapi.api.graph.CypherSession
 import org.opencypher.okapi.api.types.{CTBoolean, CTNode}
 import org.opencypher.okapi.impl.exception.NotImplementedException
 import org.opencypher.okapi.ir.api.block.SortItem
 import org.opencypher.okapi.ir.api.expr._
 import org.opencypher.okapi.ir.api.util.DirectCompilationStage
 import org.opencypher.okapi.logical.impl._
+import org.opencypher.okapi.logical.{impl => logical}
 import org.opencypher.okapi.relational.api.graph.RelationalCypherGraph
-import org.opencypher.okapi.relational.api.physical.{PhysicalOperatorProducer, PhysicalPlannerContext, RuntimeContext}
+import org.opencypher.okapi.relational.api.physical.{PhysicalOperatorProducer, RelationalPlannerContext, RuntimeContext}
 import org.opencypher.okapi.relational.api.table.{FlatRelationalTable, RelationalCypherRecords}
-import org.opencypher.okapi.relational.impl.flat
-import org.opencypher.okapi.relational.impl.flat.FlatOperator
 import org.opencypher.okapi.relational.impl.operators.RelationalOperator
 import org.opencypher.okapi.relational.impl.physical.ConstructGraphPlanner._
 
-class PhysicalPlanner[
+class RelationalPlanner[
 O <: FlatRelationalTable[O],
 K <: RelationalOperator[O, K, A, P, I],
 A <: RelationalCypherRecords[O],
 P <: RelationalCypherGraph[O],
 I <: RuntimeContext[O, K, A, P, I]](val producer: PhysicalOperatorProducer[O, K, A, P, I])
-  extends DirectCompilationStage[FlatOperator, K, PhysicalPlannerContext[O, K, A]] {
+  extends DirectCompilationStage[LogicalOperator, K, RelationalPlannerContext[O, K, A]] {
 
-  private implicit val planner: PhysicalPlanner[O, K, A, P, I] = this
+  private implicit val planner: RelationalPlanner[O, K, A, P, I] = this
 
-  def process(flatPlan: FlatOperator)(implicit context: PhysicalPlannerContext[O, K, A]): K = {
+  def process(input: LogicalOperator)(implicit context: RelationalPlannerContext[O, K, A]): K = {
 
     implicit val caps: CypherSession = context.session
 
-    flatPlan match {
-      case flat.CartesianProduct(lhs, rhs) =>
+    input match {
+      case logical.CartesianProduct(lhs, rhs, _) =>
         producer.planCartesianProduct(process(lhs), process(rhs))
 
-      case flat.Select(fields, in) =>
+      case logical.Select(fields, in, _) =>
 
         val inOp = process(in)
 
@@ -69,7 +68,7 @@ I <: RuntimeContext[O, K, A, P, I]](val producer: PhysicalOperatorProducer[O, K,
 
         producer.planSelect(inOp, selectExpressions)
 
-      case flat.Project(projectExpr, in) =>
+      case logical.Project(projectExpr, in, _) =>
         val inOp = process(in)
         val (expr, maybeAlias) = projectExpr
         val containsExpr = inOp.header.contains(expr)
@@ -80,22 +79,12 @@ I <: RuntimeContext[O, K, A, P, I]](val producer: PhysicalOperatorProducer[O, K,
           case None => producer.planAdd(inOp, expr)
         }
 
-      case flat.EmptyRecords(in, fields) =>
+      case logical.EmptyRecords(fields, in, _) =>
         producer.planEmptyRecords(process(in), fields)
 
-      case flat.Start(graph) =>
-        graph match {
-          case g: LogicalCatalogGraph =>
-            producer.planStart(Some(g.qualifiedGraphName), Some(context.inputRecords))
-          case p: LogicalPatternGraph =>
-            context.constructedGraphPlans.get(p.name) match {
-              case Some(plan) => plan // the graph was already constructed
-                // TODO: investigate why the implicit context is not found in scope
-              case None => planConstructGraph(None, p)(context, planner) // plan starts with a construct graph, thus we have to plan it
-            }
-        }
+      case logical.Start(graph, _) => planStart(graph)
 
-      case flat.FromGraph(graph, in) =>
+      case logical.FromGraph(graph, in, _) =>
         graph match {
           case g: LogicalCatalogGraph =>
             producer.planFromGraph(process(in), g)
@@ -104,40 +93,35 @@ I <: RuntimeContext[O, K, A, P, I]](val producer: PhysicalOperatorProducer[O, K,
             planConstructGraph(Some(in), construct)(context, planner)
         }
 
-      case op
-        @flat.NodeScan(v, in) => producer.planNodeScan(process(in), op.sourceGraph, v)
+      case logical.Unwind(list, item, in, _) =>
+        val explodeExpr = Explode(list)(item.cypherType)
+        producer.planAdd(process(in), explodeExpr as item)
 
-      case op
-        @flat.RelationshipScan(e, in) => producer.planRelationshipScan(process(in), op.sourceGraph, e)
+      case op@logical.NodeScan(v, in, _) => producer.planNodeScan(process(in), op.graph, v)
 
-      case flat.Alias(expr, in) => producer.planAlias(process(in), expr)
+      case logical.Aggregate(aggregations, group, in, _) => producer.planAggregate(process(in), group, aggregations)
 
-      case flat.WithColumn(expr, in) =>
-        producer.planAdd(process(in), expr)
-
-      case flat.Aggregate(aggregations, group, in) => producer.planAggregate(process(in), group, aggregations)
-
-      case flat.Filter(expr, in) => expr match {
+      case logical.Filter(expr, in, _) => expr match {
         case TrueLit =>
           process(in) // optimise away filter
         case _ =>
           producer.planFilter(process(in), expr)
       }
 
-      case flat.ValueJoin(lhs, rhs, predicates) =>
+      case logical.ValueJoin(lhs, rhs, predicates, _) =>
         val joinExpressions = predicates.map(p => p.lhs -> p.rhs).toSeq
         producer.planJoin(process(lhs), process(rhs), joinExpressions)
 
-      case flat.Distinct(fields, in) =>
+      case logical.Distinct(fields, in, _) =>
         val entityExprs: Set[Var] = Set(fields.toSeq: _*)
         producer.planDistinct(process(in), entityExprs)
 
       // TODO: This needs to be a ternary operator taking source, rels and target records instead of just source and target and planning rels only at the physical layer
-      case op@flat.Expand(source, rel, direction, target, sourceOp, targetOp) =>
+      case op@logical.Expand(source, rel, target, direction, sourceOp, targetOp, _) =>
         val first = process(sourceOp)
         val third = process(targetOp)
 
-        val startFrom = sourceOp.sourceGraph match {
+        val startFrom = sourceOp.graph match {
           case e: LogicalCatalogGraph =>
             producer.planStart(Some(e.qualifiedGraphName))
 
@@ -145,7 +129,7 @@ I <: RuntimeContext[O, K, A, P, I]](val producer: PhysicalOperatorProducer[O, K,
             context.constructedGraphPlans(c.name)
         }
 
-        val second = producer.planRelationshipScan(startFrom, op.sourceGraph, rel)
+        val second = producer.planRelationshipScan(startFrom, op.graph, rel)
         val startNode = StartNode(rel)(CTNode)
         val endNode = EndNode(rel)(CTNode)
 
@@ -167,9 +151,9 @@ I <: RuntimeContext[O, K, A, P, I]](val producer: PhysicalOperatorProducer[O, K,
             producer.planTabularUnionAll(outgoing, incoming)
         }
 
-      case op@flat.ExpandInto(source, rel, target, direction, sourceOp) =>
+      case op@logical.ExpandInto(source, rel, target, direction, sourceOp, _) =>
         val in = process(sourceOp)
-        val relationships = producer.planRelationshipScan(in, op.sourceGraph, rel)
+        val relationships = producer.planRelationshipScan(in, op.graph, rel)
 
         val startNode = StartNode(rel)()
         val endNode = EndNode(rel)()
@@ -184,12 +168,13 @@ I <: RuntimeContext[O, K, A, P, I]](val producer: PhysicalOperatorProducer[O, K,
             producer.planTabularUnionAll(outgoing, incoming)
         }
 
-      case flat.BoundedVarExpand(
-      source, list, edgeScan, target,
-      direction, lower, upper,
-      sourceOp, edgeScanOp, targetOp,
-      isExpandInto
-      ) =>
+      case logical.BoundedVarLengthExpand(source, list, target, edgeScanType, direction, lower, upper, sourceOp, targetOp, _) =>
+
+        val edgeScan = Var(list.name)(edgeScanType)
+        val edgeScanOp = producer.planRelationshipScan(planStart(input.graph), input.graph, edgeScan)
+
+        val isExpandInto = sourceOp == targetOp
+
         val planner = direction match {
           case Directed => new DirectedVarLengthExpandPlanner[O, K, A, P, I](
             source, list, edgeScan, target,
@@ -206,9 +191,9 @@ I <: RuntimeContext[O, K, A, P, I]](val producer: PhysicalOperatorProducer[O, K,
 
         planner.plan
 
-      case flat.Optional(lhs, rhs) => planOptional(lhs, rhs)
+      case logical.Optional(lhs, rhs, _) => planOptional(lhs, rhs)
 
-      case flat.ExistsSubQuery(predicateField, lhs, rhs) =>
+      case logical.ExistsSubQuery(predicateField, lhs, rhs, _) =>
 
         val leftResult = process(lhs)
         val rightResult = process(rhs)
@@ -232,20 +217,20 @@ I <: RuntimeContext[O, K, A, P, I]](val producer: PhysicalOperatorProducer[O, K,
         val targetExpr = renameExprs.head.alias
         producer.planAddInto(joinedData, IsNotNull(targetExpr)(CTBoolean), predicateField)
 
-      case flat.OrderBy(sortItems: Seq[SortItem[Expr]], in) =>
+      case logical.OrderBy(sortItems: Seq[SortItem[Expr]], in, _) =>
         producer.planOrderBy(process(in), sortItems)
 
-      case flat.Skip(expr, in) => producer.planSkip(process(in), expr)
+      case logical.Skip(expr, in, _) => producer.planSkip(process(in), expr)
 
-      case flat.Limit(expr, in) => producer.planLimit(process(in), expr)
+      case logical.Limit(expr, in, _) => producer.planLimit(process(in), expr)
 
-      case flat.ReturnGraph(in) => producer.planReturnGraph(process(in))
+      case logical.ReturnGraph(in, _) => producer.planReturnGraph(process(in))
 
       case other => throw NotImplementedException(s"Physical planning of operator $other")
     }
   }
   //
-  //  private def planConstructGraph(in: Option[FlatOperator], construct: LogicalPatternGraph)
+  //  private def planConstructGraph(in: Option[LogicalOperator], construct: LogicalPatternGraph)
   //    (implicit context: PhysicalPlannerContext[O, K, A]) = {
   //    val onGraphPlan = {
   //      construct.onGraphs match {
@@ -264,8 +249,21 @@ I <: RuntimeContext[O, K, A, P, I]](val producer: PhysicalOperatorProducer[O, K,
   //    constructGraphPlan
   //  }
 
-  private def planOptional(lhs: FlatOperator, rhs: FlatOperator)
-    (implicit context: PhysicalPlannerContext[O, K, A]) = {
+  private def planStart(graph: LogicalGraph)(implicit context: RelationalPlannerContext[O, K, A]): K = {
+    graph match {
+      case g: LogicalCatalogGraph =>
+        producer.planStart(Some(g.qualifiedGraphName), Some(context.inputRecords))
+      case p: LogicalPatternGraph =>
+        context.constructedGraphPlans.get(p.name) match {
+          case Some(plan) => plan // the graph was already constructed
+          // TODO: investigate why the implicit context is not found in scope
+          case None => planConstructGraph(None, p)(context, planner) // plan starts with a construct graph, thus we have to plan it
+        }
+    }
+  }
+
+  private def planOptional(lhs: LogicalOperator, rhs: LogicalOperator)
+    (implicit context: RelationalPlannerContext[O, K, A]) = {
     val lhsOp = process(lhs)
     val rhsOp = process(rhs)
 

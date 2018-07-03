@@ -26,14 +26,13 @@
  */
 package org.opencypher.okapi.relational.impl.physical
 
-import org.opencypher.okapi.api.graph.PropertyGraph
 import org.opencypher.okapi.api.types.CTBoolean
 import org.opencypher.okapi.ir.api.expr._
+import org.opencypher.okapi.logical.impl.LogicalOperator
 import org.opencypher.okapi.relational.api.graph.RelationalCypherGraph
-import org.opencypher.okapi.relational.api.physical.{PhysicalOperatorProducer, PhysicalPlannerContext, RuntimeContext}
+import org.opencypher.okapi.relational.api.physical.{PhysicalOperatorProducer, RelationalPlannerContext, RuntimeContext}
 import org.opencypher.okapi.relational.api.table.{FlatRelationalTable, RelationalCypherRecords}
 import org.opencypher.okapi.relational.impl.exception.RecordHeaderException
-import org.opencypher.okapi.relational.impl.flat.FlatOperator
 import org.opencypher.okapi.relational.impl.operators.RelationalOperator
 import org.opencypher.okapi.relational.impl.table.RecordHeader
 
@@ -60,23 +59,23 @@ I <: RuntimeContext[O, K, A, P, I]] {
 
   def upper: Int
 
-  def sourceOp: FlatOperator
+  def sourceOp: LogicalOperator
 
-  def edgeScanOp: FlatOperator
+  def relEdgeScanOp: K
 
-  def targetOp: FlatOperator
+  def targetOp: LogicalOperator
 
   def isExpandInto: Boolean
 
-  def planner: PhysicalPlanner[O, K, A, P, I]
+  def planner: RelationalPlanner[O, K, A, P, I]
 
   def plan: K
 
-  implicit val context: PhysicalPlannerContext[O, K, A]
+  implicit val context: RelationalPlannerContext[O, K, A]
   val producer: PhysicalOperatorProducer[O, K, A, P, I] = planner.producer
 
   val physicalSourceOp: K = planner.process(sourceOp)
-  val physicalEdgeScanOp: K = planner.process(edgeScanOp)
+  val physicalEdgeScanOp: K = relEdgeScanOp
   val physicalTargetOp: K = planner.process(targetOp)
 
   val targetHeader: RecordHeader = {
@@ -284,13 +283,13 @@ I <: RuntimeContext[O, K, A, P, I]](
   override val target: Var,
   override val lower: Int,
   override val upper: Int,
-  override val sourceOp: FlatOperator,
-  override val edgeScanOp: FlatOperator,
-  override val targetOp: FlatOperator,
+  override val sourceOp: LogicalOperator,
+  override val relEdgeScanOp: K,
+  override val targetOp: LogicalOperator,
   override val isExpandInto: Boolean
 )(
-  override val planner: PhysicalPlanner[O, K, A, P, I],
-  override implicit val context: PhysicalPlannerContext[O, K, A]
+  override val planner: RelationalPlanner[O, K, A, P, I],
+  override implicit val context: RelationalPlannerContext[O, K, A]
 ) extends VarLengthExpandPlanner[O, K, A, P, I] {
 
   override def plan: K = {
@@ -322,13 +321,13 @@ I <: RuntimeContext[O, K, A, P, I]](
   override val target: Var,
   override val lower: Int,
   override val upper: Int,
-  override val sourceOp: FlatOperator,
-  override val edgeScanOp: FlatOperator,
-  override val targetOp: FlatOperator,
+  override val sourceOp: LogicalOperator,
+  override val relEdgeScanOp: K,
+  override val targetOp: LogicalOperator,
   override val isExpandInto: Boolean
 )(
-  override val planner: PhysicalPlanner[O, K, A, P, I],
-  override implicit val context: PhysicalPlannerContext[O, K, A]
+  override val planner: RelationalPlanner[O, K, A, P, I],
+  override implicit val context: RelationalPlannerContext[O, K, A]
 ) extends VarLengthExpandPlanner[O, K, A, P, I] {
 
   override def plan: K = {

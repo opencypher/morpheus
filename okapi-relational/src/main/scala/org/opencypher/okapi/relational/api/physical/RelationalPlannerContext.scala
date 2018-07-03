@@ -33,11 +33,11 @@ import org.opencypher.okapi.relational.api.table.{FlatRelationalTable, Relationa
 import org.opencypher.okapi.relational.impl.operators.RelationalOperator
 
 /**
-  * Represents a back-end specific context which is used by the [[org.opencypher.okapi.relational.impl.physical.PhysicalPlanner]].
+  * Represents a back-end specific context which is used by the [[org.opencypher.okapi.relational.impl.physical.RelationalPlanner]].
   *
   * @tparam K backend-specific cypher records
   */
-trait PhysicalPlannerContext[O <: FlatRelationalTable[O], K <: RelationalOperator[O, K, _, _, _], A <: RelationalCypherRecords[O]] {
+trait RelationalPlannerContext[O <: FlatRelationalTable[O], K <: RelationalOperator[O, K, _, _, _], A <: RelationalCypherRecords[O]] {
   /**
     * Refers to the session in which that query is executed.
     *

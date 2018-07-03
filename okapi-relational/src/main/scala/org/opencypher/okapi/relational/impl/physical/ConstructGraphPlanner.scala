@@ -26,11 +26,10 @@
  */
 package org.opencypher.okapi.relational.impl.physical
 
-import org.opencypher.okapi.logical.impl.LogicalPatternGraph
+import org.opencypher.okapi.logical.impl.{LogicalOperator, LogicalPatternGraph}
 import org.opencypher.okapi.relational.api.graph.RelationalCypherGraph
-import org.opencypher.okapi.relational.api.physical.{PhysicalPlannerContext, RuntimeContext}
+import org.opencypher.okapi.relational.api.physical.{RelationalPlannerContext, RuntimeContext}
 import org.opencypher.okapi.relational.api.table.{FlatRelationalTable, RelationalCypherRecords}
-import org.opencypher.okapi.relational.impl.flat.FlatOperator
 import org.opencypher.okapi.relational.impl.operators.RelationalOperator
 
 object ConstructGraphPlanner {
@@ -40,8 +39,8 @@ object ConstructGraphPlanner {
   K <: RelationalOperator[O, K, A, P, I],
   A <: RelationalCypherRecords[O],
   P <: RelationalCypherGraph[O],
-  I <: RuntimeContext[O, K, A, P, I]](in: Option[FlatOperator], construct: LogicalPatternGraph)
-    (implicit context: PhysicalPlannerContext[O, K, A], planner: PhysicalPlanner[O, K, A, P, I]): K = {
+  I <: RuntimeContext[O, K, A, P, I]](in: Option[LogicalOperator], construct: LogicalPatternGraph)
+    (implicit context: RelationalPlannerContext[O, K, A], planner: RelationalPlanner[O, K, A, P, I]): K = {
 
     import planner.producer._
 

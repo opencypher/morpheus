@@ -37,7 +37,7 @@ import org.opencypher.okapi.relational.impl.physical.{InnerJoin, JoinType}
 
 /**
   * Main interface to be implemented by custom (relational) back-ends to execute a Cypher query. Methods are being
-  * called by [[org.opencypher.okapi.relational.impl.physical.PhysicalPlanner]], a default implementation for physical planning.
+  * called by [[org.opencypher.okapi.relational.impl.physical.RelationalPlanner]], a default implementation for physical planning.
   *
   * @tparam O backend-specific flat relational table
   * @tparam K backend-specific physical operators

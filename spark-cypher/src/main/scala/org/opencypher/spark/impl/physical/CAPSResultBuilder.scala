@@ -28,31 +28,29 @@ package org.opencypher.spark.impl.physical
 
 import org.opencypher.okapi.api.graph.CypherQueryPlans
 import org.opencypher.okapi.logical.impl.LogicalOperator
-import org.opencypher.okapi.relational.impl.flat.FlatOperator
 import org.opencypher.okapi.trees.TreeNode
 import org.opencypher.spark.api.CAPSSession
-import org.opencypher.spark.impl.physical.operators.CAPSPhysicalOperator
 import org.opencypher.spark.impl.{CAPSGraph, CAPSRecords, CAPSResult}
 
 object CAPSResultBuilder {
 
-  def from(logical: LogicalOperator, flat: FlatOperator, physical: CAPSPhysicalOperator): CAPSResult = {
+  def from(logical: LogicalOperator, relational: CAPSPhysicalOperator): CAPSResult = {
 
-    implicit def session: CAPSSession = physical.context.session
+    implicit def session: CAPSSession = relational.context.session
 
     new CAPSResult {
       lazy val result: CAPSPhysicalResult = CAPSPhysicalResult(
-        physical.records,
-        physical.graph,
-        physical.graphName,
-        physical.tagStrategy
+        relational.records,
+        relational.graph,
+        relational.graphName,
+        relational.tagStrategy
       )
 
       override def records: Option[CAPSRecords] = Some(result.records)
 
       override def graph: Option[CAPSGraph] = Some(result.workingGraph)
 
-      override def plans = CAPSQueryPlans(Some(logical), Some(flat), Some(physical))
+      override def plans = CAPSQueryPlans(Some(logical), Some(flat), Some(relational))
 
     }
   }
@@ -60,7 +58,6 @@ object CAPSResultBuilder {
 
 case class CAPSQueryPlans(
   logicalPlan: Option[TreeNode[LogicalOperator]],
-  flatPlan: Option[TreeNode[FlatOperator]],
   physicalPlan: Option[TreeNode[CAPSPhysicalOperator]]) extends CypherQueryPlans {
 
   override def logical: String = logicalPlan.map(_.pretty).getOrElse("")
