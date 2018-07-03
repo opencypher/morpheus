@@ -38,7 +38,7 @@ import org.opencypher.okapi.api.types.CypherType.joinMonoid
 import org.opencypher.okapi.api.types._
 import org.opencypher.okapi.ir.impl.parse.rewriter.ExistsPattern
 import org.opencypher.v9_1.expressions._
-import org.opencypher.v9_1.expressions.functions.{Coalesce, Collect, Exists, Max, Min}
+import org.opencypher.v9_1.expressions.functions.{Coalesce, Collect, Exists, Max, Min, ToString}
 
 import scala.util.Try
 
@@ -230,6 +230,17 @@ object SchemaTyper {
           } yield existsType
         case Seq(nonProp) =>
           error(InvalidArgument(expr, nonProp))
+        case seq =>
+          error(WrongNumberOfArguments(expr, 1, seq.size))
+      }
+
+    case expr: FunctionInvocation if expr.function == ToString =>
+      expr.arguments match {
+        case Seq(first) =>
+          for {
+            _ <- process[R](first)
+            existsType <- recordAndUpdate(expr -> CTString)
+          } yield existsType
         case seq =>
           error(WrongNumberOfArguments(expr, 1, seq.size))
       }

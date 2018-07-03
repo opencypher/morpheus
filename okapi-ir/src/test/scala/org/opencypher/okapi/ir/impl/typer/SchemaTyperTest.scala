@@ -66,7 +66,6 @@ class SchemaTyperTest extends BaseTestSuite with Neo4jAstTestSupport with Mockit
       WrongNumberOfArguments("coalesce()", 1, 0)
   }
 
-
   test("typing exists()") {
     implicit val context = typeTracker("n" -> CTNode)
 
@@ -85,6 +84,15 @@ class SchemaTyperTest extends BaseTestSuite with Neo4jAstTestSupport with Mockit
     assertExpr.from("count(*)") shouldHaveInferredType CTInteger
     assertExpr.from("count(a)") shouldHaveInferredType CTInteger
     assertExpr.from("count(a.name)") shouldHaveInferredType CTInteger
+  }
+
+  test("typing toString()") {
+    implicit val context = typeTracker("a" -> CTInteger, "b" -> CTBoolean, "c" -> CTFloat, "d" -> CTString)
+
+    assertExpr.from("toString(a)") shouldHaveInferredType CTString
+    assertExpr.from("toString(b)") shouldHaveInferredType CTString
+    assertExpr.from("toString(c)") shouldHaveInferredType CTString
+    assertExpr.from("toString(d)") shouldHaveInferredType CTString
   }
 
   test("typing property of node without label") {

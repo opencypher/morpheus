@@ -26,7 +26,7 @@
  */
 package org.opencypher.spark.impl.acceptance
 
-import org.opencypher.okapi.api.value.CypherValue._
+import org.opencypher.okapi.api.value.CypherValue.CypherMap
 import org.opencypher.okapi.testing.Bag
 import org.opencypher.okapi.testing.Bag._
 import org.opencypher.spark.testing.CAPSTestSuite
@@ -35,7 +35,7 @@ import org.scalatest.DoNotDiscover
 @DoNotDiscover
 class FunctionsBehaviour extends CAPSTestSuite with DefaultGraphInit {
 
-  describe("exists") {
+   describe("exists") {
 
     it("exists()") {
       val given = initGraph("CREATE ({id: 1}), ({id: 2}), ({other: 'foo'}), ()")
@@ -295,6 +295,74 @@ class FunctionsBehaviour extends CAPSTestSuite with DefaultGraphInit {
         Bag(
           CypherMap("myFloat" -> 42.0)
         ))
+    }
+  }
+
+  describe("toString") {
+
+    it("toString() on existing integer property") {
+      val given = initGraph("CREATE ({id: 1}), ({id: 2})")
+
+      val result = given.cypher("MATCH (n) RETURN toString(n.id) AS nId")
+
+      result.getRecords.toMaps should equal(
+        Bag(
+          CypherMap("nId" -> "1"),
+          CypherMap("nId" -> "2")
+        )
+      )
+    }
+
+    it("toString() on existing float property") {
+      val given = initGraph("CREATE ({id: 1.0}), ({id: 2.0})")
+
+      val result = given.cypher("MATCH (n) RETURN toString(n.id) AS nId")
+
+      result.getRecords.toMaps should equal(
+        Bag(
+          CypherMap("nId" -> "1.0"),
+          CypherMap("nId" -> "2.0")
+        )
+      )
+    }
+
+    it("toString() on existing boolean property") {
+      val given = initGraph("CREATE ({id: true}), ({id: false})")
+
+      val result = given.cypher("MATCH (n) RETURN toString(n.id) AS nId")
+
+      result.getRecords.toMaps should equal(
+        Bag(
+          CypherMap("nId" -> "true"),
+          CypherMap("nId" -> "false")
+        )
+      )
+    }
+
+    it("toString() on existing string property") {
+      val given = initGraph("CREATE ({id: 'true'}), ({id: 'false'})")
+
+      val result = given.cypher("MATCH (n) RETURN toString(n.id) AS nId")
+
+      result.getRecords.toMaps should equal(
+        Bag(
+          CypherMap("nId" -> "true"),
+          CypherMap("nId" -> "false")
+        )
+      )
+    }
+
+    it("toString() on non-existing properties") {
+      val given = initGraph("CREATE ({id: 1}), ()")
+
+      val result = given.cypher("MATCH (n) RETURN toString(n.id) AS nId")
+
+      result.getRecords.toMaps should equal(
+        Bag(
+          CypherMap("nId" -> "1"),
+          CypherMap("nId" -> null)
+        )
+      )
     }
   }
 
