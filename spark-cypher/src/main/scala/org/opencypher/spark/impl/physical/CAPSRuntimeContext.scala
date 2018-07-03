@@ -28,6 +28,7 @@ package org.opencypher.spark.impl.physical
 
 import org.opencypher.okapi.api.graph.QualifiedGraphName
 import org.opencypher.okapi.api.value.CypherValue.CypherMap
+import org.opencypher.okapi.impl.exception.IllegalArgumentException
 import org.opencypher.okapi.relational.api.physical.RuntimeContext
 import org.opencypher.spark.api.CAPSSession
 import org.opencypher.spark.impl.physical.operators.CAPSPhysicalOperator
@@ -42,7 +43,13 @@ object CAPSRuntimeContext {
 
 case class CAPSRuntimeContext(
   parameters: CypherMap,
-  resolve: QualifiedGraphName => Option[CAPSGraph],
-  cache: mutable.Map[CAPSPhysicalOperator, DataFrameTable],
-  patternGraphTags: mutable.Map[QualifiedGraphName, Set[Int]])(implicit val session: CAPSSession)
-  extends RuntimeContext[DataFrameTable, CAPSRecords, CAPSGraph]
+  sessionCatalog: QualifiedGraphName => Option[CAPSGraph],
+  queryCatalog: mutable.Map[QualifiedGraphName, CAPSGraph],
+  cache: mutable.Map[CAPSPhysicalOperator, DataFrameTable])(implicit val session: CAPSSession)
+  extends RuntimeContext[DataFrameTable, CAPSRecords, CAPSGraph] {
+
+  override def resolveGraph(qgn: QualifiedGraphName): CAPSGraph = queryCatalog.get(qgn) match {
+    case None => sessionCatalog(qgn).getOrElse(throw IllegalArgumentException(s"a graph at $qgn"))
+    case Some(g) => g
+  }
+}
