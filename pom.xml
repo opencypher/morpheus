@@ -72,7 +72,7 @@
     <dep.netty.version>4.1.8.Final</dep.netty.version>
     <dep.neo4j.driver.version>1.4.2</dep.neo4j.driver.version>
     <dep.opencypher.front-end.version>2.0.0</dep.opencypher.front-end.version>
-    <dep.spark.version>2.2.1</dep.spark.version>
+    <dep.spark.version>2.3.0</dep.spark.version>
     <dep.spark.scope>compile</dep.spark.scope>
     <dep.upickle.version>0.6.6</dep.upickle.version>
 
