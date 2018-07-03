@@ -29,10 +29,12 @@ package org.opencypher.okapi.relational.impl.physical
 import org.opencypher.okapi.api.graph.PropertyGraph
 import org.opencypher.okapi.api.types.CTBoolean
 import org.opencypher.okapi.ir.api.expr._
-import org.opencypher.okapi.relational.api.physical.{PhysicalOperator, PhysicalOperatorProducer, PhysicalPlannerContext, RuntimeContext}
+import org.opencypher.okapi.relational.api.graph.RelationalCypherGraph
+import org.opencypher.okapi.relational.api.physical.{PhysicalOperatorProducer, PhysicalPlannerContext, RuntimeContext}
 import org.opencypher.okapi.relational.api.table.{FlatRelationalTable, RelationalCypherRecords}
 import org.opencypher.okapi.relational.impl.exception.RecordHeaderException
 import org.opencypher.okapi.relational.impl.flat.FlatOperator
+import org.opencypher.okapi.relational.impl.operators.RelationalOperator
 import org.opencypher.okapi.relational.impl.table.RecordHeader
 
 trait ExpandDirection
@@ -41,10 +43,10 @@ case object Inbound extends ExpandDirection
 
 trait VarLengthExpandPlanner[
 O <: FlatRelationalTable[O],
-K <: PhysicalOperator[O, A, P, I],
+K <: RelationalOperator[O, K, A, P, I],
 A <: RelationalCypherRecords[O],
-P <: PropertyGraph,
-I <: RuntimeContext[O, A, P]] {
+P <: RelationalCypherGraph[O],
+I <: RuntimeContext[O, K, A, P, I]] {
 
   def source: Var
 
@@ -272,10 +274,10 @@ I <: RuntimeContext[O, A, P]] {
 // TODO: use object instead
 class DirectedVarLengthExpandPlanner[
 O <: FlatRelationalTable[O],
-K <: PhysicalOperator[O, A, P, I],
+K <: RelationalOperator[O, K, A, P, I],
 A <: RelationalCypherRecords[O],
-P <: PropertyGraph,
-I <: RuntimeContext[O, A, P]](
+P <: RelationalCypherGraph[O],
+I <: RuntimeContext[O, K, A, P, I]](
   override val source: Var,
   override val list: Var,
   override val edgeScan: Var,
@@ -310,10 +312,10 @@ I <: RuntimeContext[O, A, P]](
 // TODO: use object instead
 class UndirectedVarLengthExpandPlanner[
 O <: FlatRelationalTable[O],
-K <: PhysicalOperator[O, A, P, I],
+K <: RelationalOperator[O, K, A, P, I],
 A <: RelationalCypherRecords[O],
-P <: PropertyGraph,
-I <: RuntimeContext[O, A, P]](
+P <: RelationalCypherGraph[O],
+I <: RuntimeContext[O, K, A, P, I]](
   override val source: Var,
   override val list: Var,
   override val edgeScan: Var,

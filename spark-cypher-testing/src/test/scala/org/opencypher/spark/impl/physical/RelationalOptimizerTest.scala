@@ -29,6 +29,7 @@ package org.opencypher.spark.impl.physical
 import org.opencypher.okapi.api.graph.QualifiedGraphName
 import org.opencypher.okapi.api.types.CTNode
 import org.opencypher.okapi.ir.api.expr.Var
+import org.opencypher.okapi.relational.impl.physical.{RelationalOptimizerContext, RelationalOptimizer}
 import org.opencypher.okapi.relational.impl.table.RecordHeader
 import org.opencypher.spark.api.CAPSSession
 import org.opencypher.spark.impl.CAPSConverters._
@@ -37,7 +38,7 @@ import org.opencypher.spark.impl.physical.operators.{Cache, Join, NodeScan, Star
 import org.opencypher.spark.testing.CAPSTestSuite
 import org.opencypher.spark.testing.fixture.GraphConstructionFixture
 
-class PhysicalOptimizerTest extends CAPSTestSuite with GraphConstructionFixture {
+class RelationalOptimizerTest extends CAPSTestSuite with GraphConstructionFixture {
   val emptyRecords = CAPSRecords.empty(RecordHeader.empty)
 
   def start(qgn: QualifiedGraphName, records: CAPSRecords)(implicit caps: CAPSSession): Start = {
@@ -68,8 +69,8 @@ class PhysicalOptimizerTest extends CAPSTestSuite with GraphConstructionFixture 
       )
     )
 
-    implicit val context = PhysicalOptimizerContext()
-    val rewrittenPlan = new PhysicalOptimizer().process(plan)
+    implicit val context = RelationalOptimizerContext()
+    val rewrittenPlan = new RelationalOptimizer().process(plan)
 
     rewrittenPlan should equal(
       Join(

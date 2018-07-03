@@ -26,20 +26,21 @@
  */
 package org.opencypher.okapi.relational.impl.physical
 
-import org.opencypher.okapi.api.graph.PropertyGraph
 import org.opencypher.okapi.logical.impl.LogicalPatternGraph
-import org.opencypher.okapi.relational.api.physical.{PhysicalOperator, PhysicalPlannerContext, RuntimeContext}
+import org.opencypher.okapi.relational.api.graph.RelationalCypherGraph
+import org.opencypher.okapi.relational.api.physical.{PhysicalPlannerContext, RuntimeContext}
 import org.opencypher.okapi.relational.api.table.{FlatRelationalTable, RelationalCypherRecords}
 import org.opencypher.okapi.relational.impl.flat.FlatOperator
+import org.opencypher.okapi.relational.impl.operators.RelationalOperator
 
 object ConstructGraphPlanner {
 
   def planConstructGraph[
   O <: FlatRelationalTable[O],
-  K <: PhysicalOperator[O, A, P, I],
+  K <: RelationalOperator[O, K, A, P, I],
   A <: RelationalCypherRecords[O],
-  P <: PropertyGraph,
-  I <: RuntimeContext[O, A, P]](in: Option[FlatOperator], construct: LogicalPatternGraph)
+  P <: RelationalCypherGraph[O],
+  I <: RuntimeContext[O, K, A, P, I]](in: Option[FlatOperator], construct: LogicalPatternGraph)
     (implicit context: PhysicalPlannerContext[O, K, A], planner: PhysicalPlanner[O, K, A, P, I]): K = {
 
     import planner.producer._

@@ -24,43 +24,52 @@
  * described as "implementation extensions to Cypher" or as "proposed changes to
  * Cypher that are not yet approved by the openCypher community".
  */
-package org.opencypher.spark.impl.physical
+package org.opencypher.okapi.relational.impl.physical
 
 import org.opencypher.okapi.ir.api.util.DirectCompilationStage
+import org.opencypher.okapi.relational.api.graph.RelationalCypherGraph
+import org.opencypher.okapi.relational.api.physical.RuntimeContext
+import org.opencypher.okapi.relational.api.table.{FlatRelationalTable, RelationalCypherRecords}
+import org.opencypher.okapi.relational.impl.operators.{Cache, RelationalOperator, Start}
 import org.opencypher.okapi.trees.TopDown
-import org.opencypher.spark.impl.physical.operators.{CAPSPhysicalOperator, Cache, Start}
 
-case class PhysicalOptimizerContext()
+case class RelationalOptimizerContext()
 
-class PhysicalOptimizer extends DirectCompilationStage[CAPSPhysicalOperator, CAPSPhysicalOperator, PhysicalOptimizerContext] {
+class RelationalOptimizer[
+O <: FlatRelationalTable[O],
+K <: RelationalOperator[O, K, A, P, I],
+A <: RelationalCypherRecords[O],
+P <: RelationalCypherGraph[O],
+I <: RuntimeContext[O, K, A, P, I]] extends DirectCompilationStage[K, K, RelationalOptimizerContext] {
 
-  override def process(input: CAPSPhysicalOperator)(implicit context: PhysicalOptimizerContext): CAPSPhysicalOperator = {
+  override def process(input: K)(implicit context: RelationalOptimizerContext): K = {
     InsertCachingOperators(input)
   }
 
-  object InsertCachingOperators extends (CAPSPhysicalOperator => CAPSPhysicalOperator) {
-    def apply(input: CAPSPhysicalOperator): CAPSPhysicalOperator = {
+  object InsertCachingOperators extends (K => K) {
+    def apply(input: K): K = {
       val replacements = calculateReplacementMap(input).filterKeys {
-        case _: Start => false
+        case _: Start[O, K, A, P, I] => false
         case _                           => true
       }
 
       val nodesToReplace = replacements.keySet
 
-      TopDown[CAPSPhysicalOperator] {
-        case cache: Cache => cache
-        case parent if (parent.childrenAsSet intersect nodesToReplace).nonEmpty =>
-          val newChildren = parent.children.map(c => replacements.getOrElse(c, c))
-          parent.withNewChildren(newChildren)
-      }.rewrite(input)
+      TopDown[RelationalOperator[O, K, A, P, I]] {
+        case cache: Cache[O, K, A, P, I] => cache
+          // TODO: fix self type issue
+        case parent if (parent.childrenAsSet.asInstanceOf[Set[K]] intersect nodesToReplace).nonEmpty =>
+          val newChildren: Array[RelationalOperator[O, K, A, P, I]] = parent.children.asInstanceOf[Array[K]].map(c => replacements.getOrElse(c, c))
+          parent.withNewChildren(newChildren).asInstanceOf[K]
+      }.rewrite(input).asInstanceOf[K]
     }
 
-    private def calculateReplacementMap(input: CAPSPhysicalOperator): Map[CAPSPhysicalOperator, CAPSPhysicalOperator] = {
+    private def calculateReplacementMap(input: K): Map[K, K] = {
       val opCounts = identifyDuplicates(input)
       val opsByHeight = opCounts.keys.toSeq.sortWith((a, b) => a.height > b.height)
-      val (opsToCache, _) = opsByHeight.foldLeft(Set.empty[CAPSPhysicalOperator] -> opCounts) { (agg, currentOp) =>
+      val (opsToCache, _) = opsByHeight.foldLeft(Set.empty[K] -> opCounts) { (agg, currentOp) =>
         agg match {
-          case (currentOpsToCache: Set[CAPSPhysicalOperator], currentCounts: Map[CAPSPhysicalOperator, Int]) =>
+          case (currentOpsToCache: Set[K], currentCounts: Map[K, Int]) =>
             val currentOpCount = currentCounts(currentOp)
             if (currentOpCount > 1) {
               val updatedOps = currentOpsToCache + currentOp
@@ -74,13 +83,14 @@ class PhysicalOptimizer extends DirectCompilationStage[CAPSPhysicalOperator, CAP
         }
       }
       // TODO: filter by opCount and always point at first op in group (avoids mutable map)
-      opsToCache.map(op => op -> Cache(op)).toMap
+      opsToCache.map(op => op -> Cache[O, K, A, P, I](op).asInstanceOf[K]).toMap
     }
 
-    private def identifyDuplicates(input: CAPSPhysicalOperator): Map[CAPSPhysicalOperator, Int] = {
+    private def identifyDuplicates(input: K): Map[K, Int] = {
       input
-        .foldLeft(Map.empty[CAPSPhysicalOperator, Int].withDefaultValue(0)) {
-          case (agg, op) => agg.updated(op, agg(op) + 1)
+        .foldLeft(Map.empty[K, Int].withDefaultValue(0)) {
+          // TODO: fix self type issue
+          case (agg, op) => agg.updated(op.asInstanceOf[K], agg(op.asInstanceOf[K]) + 1)
         }
         .filter(_._2 > 1)
     }

@@ -30,7 +30,7 @@ import org.opencypher.okapi.api.graph.PropertyGraph
 import org.opencypher.okapi.relational.api.table.{FlatRelationalTable, RelationalCypherRecords}
 
 /**
-  * Represents a back-end specific physical result that is being produced by a [[PhysicalOperator]].
+  * Represents a back-end specific physical result that is being produced by a [[RelationalOperator]].
   *
   * @tparam R backend-specific cypher records
   * @tparam G backend-specific property graph

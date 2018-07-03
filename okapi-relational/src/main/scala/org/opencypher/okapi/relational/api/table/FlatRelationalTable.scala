@@ -41,6 +41,8 @@ trait FlatRelationalTable[T <: FlatRelationalTable[T]] extends CypherTable {
 
   def unit: T
 
+  def cache: T = this
+
   def select(cols: String*): T
 
   def filter(expr: Expr)(implicit header: RecordHeader, parameters: CypherMap): T

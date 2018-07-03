@@ -46,7 +46,7 @@ import org.opencypher.okapi.logical.api.configuration.LogicalConfiguration.Print
 import org.opencypher.okapi.logical.impl._
 import org.opencypher.okapi.relational.api.configuration.CoraConfiguration.{PrintFlatPlan, PrintOptimizedPhysicalPlan, PrintPhysicalPlan, PrintQueryExecutionStages}
 import org.opencypher.okapi.relational.impl.flat.{FlatPlanner, FlatPlannerContext}
-import org.opencypher.okapi.relational.impl.physical.PhysicalPlanner
+import org.opencypher.okapi.relational.impl.physical.{PhysicalPlanner, RelationalOptimizer}
 import org.opencypher.spark.api.CAPSSession
 import org.opencypher.spark.impl.CAPSConverters._
 import org.opencypher.spark.impl.physical._
@@ -64,7 +64,7 @@ sealed class CAPSSessionImpl(val sparkSession: SparkSession)
   private val logicalPlanner = new LogicalPlanner(producer)
   private val logicalOptimizer = LogicalOptimizer
   private val flatPlanner = new FlatPlanner()
-  private val physicalOptimizer = new PhysicalOptimizer()
+  private val physicalOptimizer = new RelationalOptimizer()
   private val parser = CypherParser
 
   private val maxSessionGraphId: AtomicLong = new AtomicLong(0)

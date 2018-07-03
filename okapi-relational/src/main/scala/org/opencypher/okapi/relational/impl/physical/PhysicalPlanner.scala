@@ -33,18 +33,20 @@ import org.opencypher.okapi.ir.api.block.SortItem
 import org.opencypher.okapi.ir.api.expr._
 import org.opencypher.okapi.ir.api.util.DirectCompilationStage
 import org.opencypher.okapi.logical.impl._
-import org.opencypher.okapi.relational.api.physical.{PhysicalOperator, PhysicalOperatorProducer, PhysicalPlannerContext, RuntimeContext}
+import org.opencypher.okapi.relational.api.graph.RelationalCypherGraph
+import org.opencypher.okapi.relational.api.physical.{PhysicalOperatorProducer, PhysicalPlannerContext, RuntimeContext}
 import org.opencypher.okapi.relational.api.table.{FlatRelationalTable, RelationalCypherRecords}
 import org.opencypher.okapi.relational.impl.flat
 import org.opencypher.okapi.relational.impl.flat.FlatOperator
+import org.opencypher.okapi.relational.impl.operators.RelationalOperator
 import org.opencypher.okapi.relational.impl.physical.ConstructGraphPlanner._
 
 class PhysicalPlanner[
 O <: FlatRelationalTable[O],
-K <: PhysicalOperator[O, A, P, I],
+K <: RelationalOperator[O, K, A, P, I],
 A <: RelationalCypherRecords[O],
-P <: PropertyGraph,
-I <: RuntimeContext[O, A, P]](val producer: PhysicalOperatorProducer[O, K, A, P, I])
+P <: RelationalCypherGraph[O],
+I <: RuntimeContext[O, K, A, P, I]](val producer: PhysicalOperatorProducer[O, K, A, P, I])
   extends DirectCompilationStage[FlatOperator, K, PhysicalPlannerContext[O, K, A]] {
 
   private implicit val planner: PhysicalPlanner[O, K, A, P, I] = this

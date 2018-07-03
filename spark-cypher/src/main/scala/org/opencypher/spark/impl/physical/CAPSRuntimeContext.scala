@@ -46,7 +46,7 @@ case class CAPSRuntimeContext(
   sessionCatalog: QualifiedGraphName => Option[CAPSGraph],
   queryCatalog: mutable.Map[QualifiedGraphName, CAPSGraph],
   cache: mutable.Map[CAPSPhysicalOperator, DataFrameTable])(implicit val session: CAPSSession)
-  extends RuntimeContext[DataFrameTable, CAPSRecords, CAPSGraph] {
+  extends RuntimeContext[DataFrameTable, CAPSPhysicalOperator, CAPSRecords, CAPSGraph, CAPSRuntimeContext] {
 
   override def resolveGraph(qgn: QualifiedGraphName): CAPSGraph = queryCatalog.get(qgn) match {
     case None => sessionCatalog(qgn).getOrElse(throw IllegalArgumentException(s"a graph at $qgn"))

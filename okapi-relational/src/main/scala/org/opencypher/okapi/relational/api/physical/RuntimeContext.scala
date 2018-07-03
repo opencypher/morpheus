@@ -26,24 +26,33 @@
  */
 package org.opencypher.okapi.relational.api.physical
 
-import org.opencypher.okapi.api.graph.{PropertyGraph, QualifiedGraphName}
+import org.opencypher.okapi.api.graph.{CypherSession, QualifiedGraphName}
 import org.opencypher.okapi.api.value.CypherValue.CypherMap
+import org.opencypher.okapi.relational.api.graph.RelationalCypherGraph
 import org.opencypher.okapi.relational.api.table.{FlatRelationalTable, RelationalCypherRecords}
+import org.opencypher.okapi.relational.impl.operators.RelationalOperator
+
+import scala.collection.mutable
 
 /**
-  * Represents a back-end specific runtime context that is being used by [[PhysicalOperator]] implementations.
+  * Represents a back-end specific runtime context that is being used by [[RelationalOperator]] implementations.
   *
-  * @tparam R backend-specific cypher records
-  * @tparam G backend-specific property graph
+  * @tparam K backend-specific cypher records
+  * @tparam P backend-specific property graph
   */
-trait RuntimeContext[T <: FlatRelationalTable[T], R <: RelationalCypherRecords[T], G <: PropertyGraph] {
+trait RuntimeContext[
+O <: FlatRelationalTable[O],
+K <: RelationalOperator[O, K, A, P, I],
+A <: RelationalCypherRecords[O], 
+P <: RelationalCypherGraph[O],
+I <: RuntimeContext[O, K, A, P, I]] {
 
   /**
     * Returns the graph referenced by the given QualifiedGraphName.
     *
     * @return back-end specific property graph
     */
-  def resolveGraph(qgn: QualifiedGraphName): G
+  def resolveGraph(qgn: QualifiedGraphName): P
 
   /**
     * Query parameters
@@ -51,4 +60,17 @@ trait RuntimeContext[T <: FlatRelationalTable[T], R <: RelationalCypherRecords[T
     * @return query parameters
     */
   def parameters: CypherMap
+
+  /**
+    * The session the query runs on.
+    *
+    * @return cypher session
+    */
+  def session: CypherSession
+
+  /**
+    * Operator cache
+    */
+  var cache: mutable.Map[K, O]
+
 }

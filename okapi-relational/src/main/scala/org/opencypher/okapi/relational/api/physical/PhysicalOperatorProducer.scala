@@ -30,7 +30,9 @@ import org.opencypher.okapi.api.graph.{PropertyGraph, QualifiedGraphName}
 import org.opencypher.okapi.ir.api.block.SortItem
 import org.opencypher.okapi.ir.api.expr._
 import org.opencypher.okapi.logical.impl._
+import org.opencypher.okapi.relational.api.graph.RelationalCypherGraph
 import org.opencypher.okapi.relational.api.table.{FlatRelationalTable, RelationalCypherRecords}
+import org.opencypher.okapi.relational.impl.operators.RelationalOperator
 import org.opencypher.okapi.relational.impl.physical.{InnerJoin, JoinType}
 
 /**
@@ -45,10 +47,10 @@ import org.opencypher.okapi.relational.impl.physical.{InnerJoin, JoinType}
   */
 trait PhysicalOperatorProducer[
 O <: FlatRelationalTable[O],
-K <: PhysicalOperator[O, A, P, I],
+K <: RelationalOperator[O, K, A, P, I],
 A <: RelationalCypherRecords[O],
-P <: PropertyGraph,
-I <: RuntimeContext[O, A, P]] {
+P <: RelationalCypherGraph[O],
+I <: RuntimeContext[O, K, A, P, I]] {
 
   // Unary operators
 
