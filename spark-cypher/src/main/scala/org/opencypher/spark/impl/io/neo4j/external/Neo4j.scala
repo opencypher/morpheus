@@ -29,7 +29,7 @@ package org.opencypher.spark.impl.io.neo4j.external
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.{Row, SparkSession}
 import org.opencypher.okapi.impl.exception.IllegalArgumentException
-import org.opencypher.spark.api.io.neo4j.Neo4jConfig
+import org.opencypher.okapi.neo4j.io.Neo4jConfig
 import org.opencypher.spark.impl.io.neo4j.external.Neo4j._
 
 import scala.reflect.ClassTag

@@ -28,12 +28,13 @@ package org.opencypher.spark.api.io.neo4j
 
 import org.opencypher.okapi.api.graph.{CypherResult, GraphName, Namespace}
 import org.opencypher.okapi.api.value.CypherValue.{CypherMap, CypherNull}
+import org.opencypher.okapi.neo4j.io.Neo4jServerFixture
 import org.opencypher.okapi.testing.Bag
 import org.opencypher.okapi.testing.Bag._
 import org.opencypher.spark.api.io.neo4j.Neo4jReadOnlyNamedQueryGraphSource._
 import org.opencypher.spark.impl.CAPSConverters._
 import org.opencypher.spark.testing.CAPSTestSuite
-import org.opencypher.spark.testing.fixture.{Neo4jServerFixture, TeamDataFixture}
+import org.opencypher.spark.testing.fixture.TeamDataFixture
 
 class Neo4JReadOnlyNamedQueryGraphSourceTest
   extends CAPSTestSuite
@@ -41,7 +42,7 @@ class Neo4JReadOnlyNamedQueryGraphSourceTest
     with TeamDataFixture {
 
   it("can read lists from Neo4j") {
-    val dataSource = new Neo4jReadOnlyNamedQueryGraphSource(neo4jConfig)
+    val dataSource = new Neo4jReadOnlyNamedQueryGraphSource(neo4j)
 
     val graph = dataSource.graph(neo4jDefaultGraphName).asCaps
     graph.cypher("MATCH (n) RETURN n.languages").getRecords.iterator.toBag should equal(Bag(
@@ -56,7 +57,7 @@ class Neo4JReadOnlyNamedQueryGraphSourceTest
   it("should return true for existing graph") {
     val testGraphName = GraphName("sn")
 
-    val dataSource = new Neo4jReadOnlyNamedQueryGraphSource(neo4jConfig, Map(
+    val dataSource = new Neo4jReadOnlyNamedQueryGraphSource(neo4j, Map(
       testGraphName -> ("MATCH (n) RETURN n" -> "MATCH ()-[r]->() RETURN r")
     ))
 
@@ -66,7 +67,7 @@ class Neo4JReadOnlyNamedQueryGraphSourceTest
   it("should return false for non-existing graph") {
     val testGraphName = GraphName("sn")
 
-    val dataSource = new Neo4jReadOnlyNamedQueryGraphSource(neo4jConfig, Map(
+    val dataSource = new Neo4jReadOnlyNamedQueryGraphSource(neo4j, Map(
       GraphName("sn2") -> ("MATCH (n) RETURN n" -> "MATCH ()-[r]->() RETURN r")
     ))
 
@@ -76,13 +77,13 @@ class Neo4JReadOnlyNamedQueryGraphSourceTest
   it("should return all names of stored graphs") {
     val testGraphName1 = GraphName("test1")
     val testGraphName2 = GraphName("test2")
-    val source = new Neo4jReadOnlyNamedQueryGraphSource(neo4jConfig,
+    val source = new Neo4jReadOnlyNamedQueryGraphSource(neo4j,
       Map(testGraphName1 -> defaultQuery, testGraphName2 -> defaultQuery))
     source.graphNames should equal(Set(testGraphName1, testGraphName2))
   }
 
   it("should load a graph from Neo4j via DataSource") {
-    val dataSource = new Neo4jReadOnlyNamedQueryGraphSource(neo4jConfig)
+    val dataSource = new Neo4jReadOnlyNamedQueryGraphSource(neo4j)
 
     val graph = dataSource.graph(neo4jDefaultGraphName).asCaps
     graph.nodes("n").toCypherMaps.collect.toBag should equal(teamDataGraphNodes)
@@ -90,7 +91,7 @@ class Neo4JReadOnlyNamedQueryGraphSourceTest
   }
 
   it("should load a graph from Neo4j via DataSource using a given schema") {
-    val dataSource = new Neo4jReadOnlyNamedQueryGraphSource(neo4jConfig, schemata = Map(neo4jDefaultGraphName -> dataFixtureSchema))
+    val dataSource = new Neo4jReadOnlyNamedQueryGraphSource(neo4j, schemata = Map(neo4jDefaultGraphName -> dataFixtureSchema))
 
     val graph = dataSource.graph(neo4jDefaultGraphName).asCaps
     graph.nodes("n").toCypherMaps.collect.toBag should equal(teamDataGraphNodes)
@@ -101,7 +102,7 @@ class Neo4JReadOnlyNamedQueryGraphSourceTest
     val testNamespace = Namespace("myNeo4j")
     val testGraphName = neo4jDefaultGraphName
 
-    val dataSource = new Neo4jReadOnlyNamedQueryGraphSource(neo4jConfig)
+    val dataSource = new Neo4jReadOnlyNamedQueryGraphSource(neo4j)
 
     caps.registerSource(testNamespace, dataSource)
 

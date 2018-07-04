@@ -31,6 +31,7 @@ import java.net.URI
 import org.opencypher.okapi.api.graph.GraphName
 import org.opencypher.okapi.api.schema.Schema
 import org.opencypher.okapi.api.types.{CTBoolean, CTFloat, CTInteger, CTString}
+import org.opencypher.okapi.neo4j.io.Neo4jConfig
 import org.opencypher.okapi.testing.BaseTestSuite
 import org.opencypher.spark.api.CAPSSession
 import org.opencypher.spark.api.io.GraphEntity.sourceIdKey

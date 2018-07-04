@@ -10,47 +10,34 @@
     <version>1.0.0-SNAPSHOT</version>
   </parent>
 
-  <artifactId>spark-cypher</artifactId>
+  <artifactId>okapi-neo4j-io</artifactId>
 
-  <name>Cypher for Apache Spark - CAPS</name>
+  <name>Okapi - Neo4j IO</name>
 
   <properties>
     <project.rootdir>${project.parent.basedir}</project.rootdir>
   </properties>
 
   <dependencies>
+
     <dependency>
       <groupId>org.opencypher</groupId>
-      <artifactId>okapi-relational</artifactId>
+      <artifactId>okapi-api</artifactId>
       <version>${project.parent.version}</version>
     </dependency>
 
     <dependency>
       <groupId>org.opencypher</groupId>
-      <artifactId>okapi-neo4j-io</artifactId>
+      <artifactId>okapi-api</artifactId>
       <version>${project.parent.version}</version>
-    </dependency>
-
-    <!-- Spark -->
-    <dependency>
-      <groupId>org.apache.spark</groupId>
-      <artifactId>spark-core_${project.scala.binary.version}</artifactId>
-      <version>${dep.spark.version}</version>
-      <scope>${dep.spark.scope}</scope>
+      <type>test-jar</type>
+      <scope>test</scope>
     </dependency>
 
     <dependency>
-      <groupId>org.apache.spark</groupId>
-      <artifactId>spark-sql_${project.scala.binary.version}</artifactId>
-      <version>${dep.spark.version}</version>
-      <scope>${dep.spark.scope}</scope>
-    </dependency>
-
-    <dependency>
-      <groupId>org.apache.spark</groupId>
-      <artifactId>spark-catalyst_${project.scala.binary.version}</artifactId>
-      <version>${dep.spark.version}</version>
-      <scope>${dep.spark.scope}</scope>
+      <groupId>org.opencypher</groupId>
+      <artifactId>okapi-testing</artifactId>
+      <version>${project.parent.version}</version>
     </dependency>
 
     <!-- Neo4j -->
@@ -61,4 +48,5 @@
     </dependency>
 
   </dependencies>
+
 </project>

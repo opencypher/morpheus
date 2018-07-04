@@ -24,32 +24,46 @@
  * described as "implementation extensions to Cypher" or as "proposed changes to
  * Cypher that are not yet approved by the openCypher community".
  */
-package org.opencypher.spark.impl.io.neo4j.external
+package org.opencypher.okapi.neo4j.io
 
-import org.apache.spark.rdd.RDD
-import org.apache.spark.sql.Row
-import org.apache.spark.{Partition, SparkContext, TaskContext}
-import org.opencypher.okapi.neo4j.io.Neo4jConfig
+import java.net.URI
 
-private class Neo4jRDD(
-    sc: SparkContext,
-    val query: String,
-    val neo4jConfig: Neo4jConfig,
-    val parameters: Map[String, Any] = Map.empty,
-    partitions: Partitions = Partitions())
-    extends RDD[Row](sc, Nil) {
+import org.neo4j.driver.v1._
+import org.opencypher.okapi.api.value.CypherValue
+import org.opencypher.okapi.api.value.CypherValue.CypherValue
+import scala.collection.JavaConverters._
 
-  override def compute(partition: Partition, context: TaskContext): Iterator[Row] = {
+case class Neo4jConfig(
+  uri: URI,
+  user: String = "neo4j",
+  password: Option[String] = None,
+  encrypted: Boolean = true
+) {
 
-    val neo4jPartition: Neo4jPartition = partition.asInstanceOf[Neo4jPartition]
-
-    Executor.execute(neo4jConfig, query, parameters ++ neo4jPartition.window).sparkRows
+  def driver(): Driver = password match {
+    case Some(pwd) => GraphDatabase.driver(uri, AuthTokens.basic(user, pwd), boltConfig())
+    case _ => GraphDatabase.driver(uri, boltConfig())
   }
 
-  override protected def getPartitions: Array[Partition] = {
-    val p = partitions.effective()
-    Range(0, p.partitions.toInt).map(idx => new Neo4jPartition(idx, p.skip(idx), p.limit(idx))).toArray
+  private def boltConfig(): Config = {
+    val builder = Config.build
+
+    if (encrypted)
+      builder.withEncryption().toConfig
+    else
+      builder.withoutEncryption().toConfig
   }
 
-  override def toString(): String = s"Neo4jRDD partitions $partitions $query using $parameters"
+  def execute[T](f: Session => T): T = {
+    val session = driver().session
+    val t = f(session)
+    session.close()
+    t
+  }
+
+  def cypher(query: String): List[Map[String, CypherValue]] = {
+    execute { session =>
+      session.run(query).list().asScala.map(_.asMap().asScala.mapValues(CypherValue(_)).toMap).toList
+    }
+  }
 }

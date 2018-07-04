@@ -28,14 +28,15 @@ package org.opencypher.spark.impl.io.neo4j
 
 import org.opencypher.okapi.api.schema.Schema
 import org.opencypher.okapi.api.types._
+import org.opencypher.okapi.neo4j.io.Neo4jServerFixture
 import org.opencypher.spark.schema.CAPSSchema._
 import org.opencypher.spark.testing.CAPSTestSuite
-import org.opencypher.spark.testing.fixture.{Neo4jServerFixture, OpenCypherDataFixture}
+import org.opencypher.spark.testing.fixture.OpenCypherDataFixture
 
 class Neo4jGraphLoaderTest extends CAPSTestSuite with Neo4jServerFixture with OpenCypherDataFixture {
 
   test("import a graph from Neo4j") {
-    val graph = Neo4jGraphLoader.fromNeo4j(neo4jConfig)
+    val graph = Neo4jGraphLoader.fromNeo4j(neo4j)
 
     graph.schema should equal(schema)
     graph.nodes("n").df.count() shouldBe nbrNodes
@@ -43,7 +44,7 @@ class Neo4jGraphLoaderTest extends CAPSTestSuite with Neo4jServerFixture with Op
   }
 
   test("import only some nodes from Neo4j") {
-    val graph = Neo4jGraphLoader.fromNeo4j(neo4jConfig, "MATCH (f:Film) RETURN f", "UNWIND [] AS i RETURN i")
+    val graph = Neo4jGraphLoader.fromNeo4j(neo4j, "MATCH (f:Film) RETURN f", "UNWIND [] AS i RETURN i")
 
     graph.schema should equal(Schema.empty.withNodePropertyKeys("Film")("title" -> CTString).asCaps)
     graph.nodes("n").df.count() shouldBe 5
@@ -51,7 +52,7 @@ class Neo4jGraphLoaderTest extends CAPSTestSuite with Neo4jServerFixture with Op
   }
 
   test("import only some rels (and their endnodes) from Neo4j") {
-    val graph = Neo4jGraphLoader.fromNeo4j(neo4jConfig, "MATCH (s)-[:ACTED_IN]->(t) WITH collect(s) AS sources, collect(t) AS targets WITH sources + targets AS nodes UNWIND nodes AS n RETURN DISTINCT n", "MATCH ()-[a:ACTED_IN]->() RETURN a")
+    val graph = Neo4jGraphLoader.fromNeo4j(neo4j, "MATCH (s)-[:ACTED_IN]->(t) WITH collect(s) AS sources, collect(t) AS targets WITH sources + targets AS nodes UNWIND nodes AS n RETURN DISTINCT n", "MATCH ()-[a:ACTED_IN]->() RETURN a")
 
     graph.schema should equal(Schema.empty
       .withNodePropertyKeys("Person", "Actor")("name" -> CTString, "birthyear" -> CTInteger)

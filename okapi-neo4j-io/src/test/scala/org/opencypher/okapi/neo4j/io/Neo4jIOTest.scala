@@ -24,30 +24,18 @@
  * described as "implementation extensions to Cypher" or as "proposed changes to
  * Cypher that are not yet approved by the openCypher community".
  */
-package org.opencypher.spark.api.io.neo4j
+package org.opencypher.okapi.neo4j.io
 
-import java.net.URI
+import org.opencypher.okapi.api.value.CypherValue.CypherMap
+import org.opencypher.okapi.api.value.TestNode
 
-import org.neo4j.driver.v1._
+class Neo4jIOTest extends Neo4jServerFixture {
 
-case class Neo4jConfig(
-  uri: URI,
-  user: String = "neo4j",
-  password: Option[String] = None,
-  encrypted: Boolean = true
-) {
-
-  def driver(): Driver = password match {
-    case Some(pwd) => GraphDatabase.driver(uri, AuthTokens.basic(user, pwd), boltConfig())
-    case _ => GraphDatabase.driver(uri, boltConfig())
+  it("can write nodes to Neo4j") {
+    val n1 = TestNode(1, Set("A"), CypherMap("name" -> "Bob"))
+    Neo4jIO.writeNodesBaseline(Iterator(n1))
+    val nodes = Neo4jIO.readNodesBaseline(Set("A"))
   }
 
-  private def boltConfig(): Config = {
-    val builder = Config.build
-
-    if (encrypted)
-      builder.withEncryption().toConfig
-    else
-      builder.withoutEncryption().toConfig
-  }
+  override def dataFixture: String = ""
 }

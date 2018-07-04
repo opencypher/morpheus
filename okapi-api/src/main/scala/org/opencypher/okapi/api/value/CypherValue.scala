@@ -266,6 +266,11 @@ object CypherValue {
   }
 
   object CypherMap extends UnapplyValue[Map[String, CypherValue], CypherMap] {
+
+    def apply(m: Map[String, Any]): CypherMap = {
+      m.mapValues(CypherValue(_))
+    }
+
     def apply(values: (String, Any)*): CypherMap = {
       values.map { case (k, v) => k -> CypherValue(v) }.toMap
     }

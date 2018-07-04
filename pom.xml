@@ -360,6 +360,7 @@
       <!-- No license listing for this profile -->
       <modules>
         <module>okapi-api</module>
+        <module>okapi-neo4j-io</module>
         <module>okapi-ir</module>
         <module>okapi-logical</module>
         <module>okapi-relational</module>
@@ -416,6 +417,7 @@
       <modules>
         <module>licensecheck-config</module>
         <module>okapi-api</module>
+        <module>okapi-neo4j-io</module>
         <module>okapi-ir</module>
         <module>okapi-logical</module>
         <module>okapi-relational</module>
