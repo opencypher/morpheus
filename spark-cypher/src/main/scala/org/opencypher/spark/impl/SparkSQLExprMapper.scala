@@ -26,7 +26,7 @@
  */
 package org.opencypher.spark.impl
 
-import org.apache.spark.sql.types.{BooleanType, DoubleType, LongType}
+import org.apache.spark.sql.types.{BooleanType, DoubleType, LongType, StringType}
 import org.apache.spark.sql.{Column, DataFrame, functions}
 import org.opencypher.okapi.api.types._
 import org.opencypher.okapi.api.value.CypherValue.{CypherList, CypherMap}
@@ -186,6 +186,8 @@ object SparkSQLExprMapper {
           header.endNodeFor(rel).asSparkSQLExpr
 
         case ToFloat(e) => e.asSparkSQLExpr.cast(DoubleType)
+
+        case ToString(e) => e.asSparkSQLExpr.cast(StringType)
 
         case Explode(list) => list.cypherType match {
           case CTList(_) | CTListOrNull(_) => functions.explode(list.asSparkSQLExpr)

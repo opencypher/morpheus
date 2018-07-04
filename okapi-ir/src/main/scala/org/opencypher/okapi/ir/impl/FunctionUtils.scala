@@ -54,6 +54,7 @@ object FunctionUtils {
         case functions.ToFloat   => ToFloat(expr.head)(cypherType)
         case functions.Collect   => Collect(expr.head, distinct)(cypherType)
         case functions.Coalesce  => Coalesce(expr)(cypherType)
+        case functions.ToString  => ToString(expr.head)(cypherType)
         case a: functions.Function =>
           throw NotImplementedException(s"Support for converting ${a.name} function not yet implemented")
       }
