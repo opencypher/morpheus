@@ -37,10 +37,18 @@ import org.opencypher.spark.api.io.GraphEntity.sourceIdKey
 import org.opencypher.spark.api.io.ROAbstractGraphSource
 import org.opencypher.spark.api.io.Relationship.{sourceEndNodeKey, sourceStartNodeKey}
 import org.opencypher.spark.api.io.metadata.CAPSGraphMetaData
-import org.opencypher.spark.api.io.neo4j.Neo4jPropertyGraphDataSource.metaPrefix
+import org.opencypher.spark.api.io.neo4j.Neo4jPropertyGraphDataSource.{defaultEntireGraphName, metaPrefix}
 import org.opencypher.spark.impl.io.neo4j.external.Neo4j
 import org.opencypher.spark.schema.CAPSSchema
 import org.opencypher.spark.schema.CAPSSchema._
+
+object Neo4jPropertyGraphDataSource {
+
+  val defaultEntireGraphName =  GraphName("graph")
+
+  val metaPrefix: String = "___"
+
+}
 
 /**
   * A data source implementation that enables loading property graphs from a Neo4j database. A graph is identified by a
@@ -53,7 +61,7 @@ import org.opencypher.spark.schema.CAPSSchema._
   */
 case class Neo4jPropertyGraphDataSource(
   config: Neo4jConfig,
-  entireGraph: GraphName = GraphName("graph")
+  entireGraph: GraphName = defaultEntireGraphName
 )(implicit session: CAPSSession)
   extends ROAbstractGraphSource {
 
@@ -132,8 +140,4 @@ case class Neo4jPropertyGraphDataSource(
     }
     s"MATCH (s$metaLabelPredicate)-[$relVar:$relType]->(e$metaLabelPredicate) RETURN id($relVar) AS $sourceIdKey, id(s) AS $sourceStartNodeKey, id(e) AS $sourceEndNodeKey$props"
   }
-}
-
-object Neo4jPropertyGraphDataSource {
-  val metaPrefix: String = "___"
 }

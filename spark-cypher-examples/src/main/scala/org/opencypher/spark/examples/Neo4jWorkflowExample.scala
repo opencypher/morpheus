@@ -27,7 +27,8 @@
 package org.opencypher.spark.examples
 
 import org.opencypher.okapi.api.graph.{Namespace, QualifiedGraphName}
-import org.opencypher.spark.api.io.neo4j.Neo4jReadOnlyNamedQueryGraphSource._
+import org.opencypher.spark.api.io.neo4j.Neo4jPropertyGraphDataSource
+import org.opencypher.spark.api.io.neo4j.Neo4jPropertyGraphDataSource.defaultEntireGraphName
 import org.opencypher.spark.api.{CAPSSession, GraphSources}
 import org.opencypher.spark.util.Neo4jHelpers._
 import org.opencypher.spark.util.{ConsoleApp, Neo4jHelpers}
@@ -45,7 +46,7 @@ object Neo4jWorkflowExample extends ConsoleApp {
   val neo4j = Neo4jHelpers.startNeo4j(personNetwork)
 
   // Register Property Graph Data Sources (PGDS)
-  session.registerSource(Namespace("socialNetwork"), GraphSources.cypher.neo4jReadOnlyNamedQuery(neo4j.dataSourceConfig))
+  session.registerSource(Namespace("socialNetwork"), GraphSources.cypher.neo4j(neo4j.dataSourceConfig))
   session.registerSource(Namespace("purchases"), GraphSources.fs(rootPath = getClass.getResource("/csv").getFile).csv)
 
   // Access the graphs via their qualified graph names
@@ -82,9 +83,9 @@ object Neo4jWorkflowExample extends ConsoleApp {
   }
 
   // Proof that the write-back to Neo4j worked, retrieve and print updated Neo4j results
-  val updatedNeo4jSource = GraphSources.cypher.neo4jReadOnlyNamedQuery(neo4j.dataSourceConfig)
+  val updatedNeo4jSource = GraphSources.cypher.neo4j(neo4j.dataSourceConfig)
   session.registerSource(Namespace("updated-neo4j"), updatedNeo4jSource)
-  val socialNetworkWithRanks = session.catalog.graph(QualifiedGraphName(Namespace("updated-neo4j"), neo4jDefaultGraphName))
+  val socialNetworkWithRanks = session.catalog.graph(QualifiedGraphName(Namespace("updated-neo4j"), defaultEntireGraphName))
   socialNetworkWithRanks.cypher("MATCH (p) WHERE p.should_buy IS NOT NULL RETURN p.name, p.should_buy").show
 
   // Shutdown Neo4j test instance

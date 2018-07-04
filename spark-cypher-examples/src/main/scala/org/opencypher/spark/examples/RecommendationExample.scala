@@ -28,6 +28,8 @@ package org.opencypher.spark.examples
 
 import org.neo4j.harness.ServerControls
 import org.opencypher.okapi.api.graph.Namespace
+import org.opencypher.spark.api.io.neo4j.Neo4jPropertyGraphDataSource
+import org.opencypher.spark.api.io.neo4j.Neo4jPropertyGraphDataSource.defaultEntireGraphName
 import org.opencypher.spark.api.{CAPSSession, GraphSources}
 import org.opencypher.spark.util.Neo4jHelpers._
 import org.opencypher.spark.util.ConsoleApp
@@ -50,8 +52,8 @@ object RecommendationExample extends ConsoleApp {
 
   // The graph within Neo4j is partitioned into regions using a property key. Within the data source, we map each
   // partition to a separate graph name (i.e. US and EU)
-  caps.registerSource(Namespace("usSocialNetwork"), GraphSources.cypher.neo4jReadOnlyNamedQuery(neo4jServerUS.dataSourceConfig))
-  caps.registerSource(Namespace("euSocialNetwork"), GraphSources.cypher.neo4jReadOnlyNamedQuery(neo4jServerEU.dataSourceConfig))
+  caps.registerSource(Namespace("usSocialNetwork"), GraphSources.cypher.neo4j(neo4jServerUS.dataSourceConfig))
+  caps.registerSource(Namespace("euSocialNetwork"), GraphSources.cypher.neo4j(neo4jServerEU.dataSourceConfig))
 
   // File-based CSV GDS
   caps.registerSource(Namespace("purchases"), GraphSources.fs(rootPath = s"${getClass.getResource("/csv").getFile}").csv)
@@ -74,9 +76,9 @@ object RecommendationExample extends ConsoleApp {
       """.stripMargin
 
   // Find persons that are close to each other in the US social network
-  val usFriends = caps.cypher(cityFriendsQuery("usSocialNetwork.graph")).getGraph
+  val usFriends = caps.cypher(cityFriendsQuery(s"usSocialNetwork.$defaultEntireGraphName")).getGraph
   // Find persons that are close to each other in the EU social network
-  val euFriends = caps.cypher(cityFriendsQuery("euSocialNetwork.graph")).getGraph
+  val euFriends = caps.cypher(cityFriendsQuery(s"euSocialNetwork.$defaultEntireGraphName")).getGraph
 
   // Union the US and EU graphs into a single graph 'allFriends' and store it in the session
   caps.catalog.store("allFriends", usFriends.unionAll(euFriends))

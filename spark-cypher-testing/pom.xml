@@ -28,6 +28,12 @@
 
     <dependency>
       <groupId>org.opencypher</groupId>
+      <artifactId>okapi-neo4j-procedures</artifactId>
+      <version>${project.parent.version}</version>
+    </dependency>
+
+    <dependency>
+      <groupId>org.opencypher</groupId>
       <artifactId>okapi-testing</artifactId>
       <version>${project.parent.version}</version>
     </dependency>

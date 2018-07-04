@@ -67,7 +67,7 @@
     <dep.cats.version>1.0.1</dep.cats.version>
     <dep.eff.version>5.0.0</dep.eff.version>
     <dep.hadoop.version>2.7.0</dep.hadoop.version>
-    <dep.neo4j.version>3.4.0</dep.neo4j.version>
+    <dep.neo4j.version>3.4.1</dep.neo4j.version>
     <dep.netty.version>4.1.8.Final</dep.netty.version>
     <dep.netty.version>4.1.8.Final</dep.netty.version>
     <dep.neo4j.driver.version>1.4.2</dep.neo4j.driver.version>
@@ -77,12 +77,11 @@
     <dep.upickle.version>0.6.6</dep.upickle.version>
 
     <!-- Test scope dependencies -->
-    <dep.bouncycastle.version>1.57</dep.bouncycastle.version>
+    <dep.bouncycastle.version>1.59</dep.bouncycastle.version>
     <dep.junit.version>5.0.2</dep.junit.version>
     <dep.junit.platform.version>1.0.2</dep.junit.platform.version>
     <dep.junit.vintage.version>4.12.2</dep.junit.vintage.version>
     <dep.mockito.version>1.10.19</dep.mockito.version>
-    <dep.neo4j.harness.version>3.3.3</dep.neo4j.harness.version>
     <dep.scalatest.version>3.0.5</dep.scalatest.version>
     <dep.scalacheck.version>1.13.5</dep.scalacheck.version>
     <dep.spark-measure.version>0.11</dep.spark-measure.version>
@@ -197,6 +196,13 @@
           <source>${project.java.version}</source>
           <target>${project.java.version}</target>
         </configuration>
+        <executions>
+          <execution>
+            <!-- Disable default Maven Java compile to allow mixed Scala/Java compilation -->
+            <id>default-compile</id>
+            <phase>none</phase>
+          </execution>
+        </executions>
       </plugin>
 
       <!-- Builds a source JAR -->
@@ -361,6 +367,7 @@
       <modules>
         <module>okapi-api</module>
         <module>okapi-ir</module>
+        <module>okapi-neo4j-procedures</module>
         <module>okapi-logical</module>
         <module>okapi-relational</module>
         <module>okapi-tck</module>
@@ -417,6 +424,7 @@
         <module>licensecheck-config</module>
         <module>okapi-api</module>
         <module>okapi-ir</module>
+        <module>okapi-neo4j-procedures</module>
         <module>okapi-logical</module>
         <module>okapi-relational</module>
         <module>okapi-testing</module>

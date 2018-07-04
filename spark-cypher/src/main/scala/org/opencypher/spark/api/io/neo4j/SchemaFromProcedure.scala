@@ -38,7 +38,7 @@ import scala.util.{Failure, Success, Try}
 
 object SchemaFromProcedure {
 
-  val schemaProcedureName = "org.neo4j.morpheus.procedures.schema"
+  val schemaProcedureName = "org.opencypher.okapi.procedures.schema"
 
   def apply(config: Neo4jConfig): Option[Schema] = {
     Try {
