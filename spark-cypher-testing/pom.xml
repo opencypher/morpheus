@@ -44,6 +44,13 @@
       <artifactId>spark-core_${project.scala.binary.version}</artifactId>
       <version>${dep.spark.version}</version>
       <scope>${dep.spark.scope}</scope>
+      <exclusions>
+        <!-- exclude netty-all as it interferes with neo4j-harness 3.4.1 -->
+        <exclusion>
+          <groupId>io.netty</groupId>
+          <artifactId>netty-all</artifactId>
+        </exclusion>
+      </exclusions>
     </dependency>
 
     <dependency>
@@ -77,6 +84,13 @@
       <groupId>org.apache.hadoop</groupId>
       <artifactId>hadoop-minicluster</artifactId>
       <version>${dep.hadoop.version}</version>
+      <exclusions>
+        <!-- exclude netty-all as it interferes with neo4j-harness 3.4.1 -->
+        <exclusion>
+          <groupId>io.netty</groupId>
+          <artifactId>netty-all</artifactId>
+        </exclusion>
+      </exclusions>
     </dependency>
 
     <dependency>
