@@ -105,6 +105,8 @@ Apache Software License, Version 2.0
   Jetty :: XML utilities
   Jetty Server
   Jetty Utilities
+  jPowerShell
+  jProcesses
   Lucene codecs
   Lucene Common Analyzers
   Lucene Core
@@ -133,6 +135,7 @@ Apache Software License, Version 2.0
   servlet-api
   snappy-java
   spark-measure
+  WMI4Java
   Xerces2 Java Parser
   XML Commons External Components XML APIs
   Xml Compatibility extensions for Jackson
@@ -158,10 +161,6 @@ Bouncy Castle License
   Bouncy Castle JSSE provider and TLS/DTLS API
   Bouncy Castle PKIX, CMS, EAC, TSP, PKCS, OCSP, CMP, and CRMF APIs
   Bouncy Castle Provider
-
-CDDL 1.1, GPL2 with CPE
-  jersey-multipart
-  MIME streaming extension
 
 MIT-license
   Cats core
