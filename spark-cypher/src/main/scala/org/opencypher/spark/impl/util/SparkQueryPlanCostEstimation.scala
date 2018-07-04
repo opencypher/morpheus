@@ -43,7 +43,7 @@ object SparkQueryPlanCostEstimation {
         // Estimate instead as cost of its direct children.
         case m: InMemoryRelation => m.children.map(_.operatorCost).sum
         case node =>
-          val estimate = sparkPlan.stats(session.sessionState.conf).sizeInBytes.toLong
+          val estimate = sparkPlan.stats.sizeInBytes.toLong
           if (estimate > 0L) estimate else 0L
       }
     }
