@@ -28,14 +28,14 @@ package org.opencypher.spark.api.io.neo4j
 
 import org.opencypher.okapi.api.graph.GraphName
 import org.opencypher.okapi.api.io.PropertyGraphDataSource
+import org.opencypher.okapi.testing.PGDSAcceptance
 import org.opencypher.okapi.testing.propertygraph.InMemoryTestGraph
 import org.opencypher.spark.api.{CAPSSession, CypherGraphSources}
 import org.opencypher.spark.testing.CAPSTestSuite
-import org.opencypher.spark.testing.api.io.CAPSPGDSAcceptance
 import org.opencypher.spark.testing.fixture.Neo4jServerFixture
 import org.opencypher.spark.testing.support.creation.caps.CAPSScanGraphFactory
 
-class Neo4jPGDSAcceptanceTest extends CAPSTestSuite with Neo4jServerFixture with CAPSPGDSAcceptance {
+class Neo4jPGDSAcceptanceTest extends CAPSTestSuite with Neo4jServerFixture with PGDSAcceptance[CAPSSession] {
 
   override def initSession(): CAPSSession = caps
 
