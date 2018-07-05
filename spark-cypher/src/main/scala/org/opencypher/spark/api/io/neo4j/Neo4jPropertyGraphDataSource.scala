@@ -29,7 +29,8 @@ package org.opencypher.spark.api.io.neo4j
 import org.apache.spark.sql.DataFrame
 import org.apache.spark.sql.types.StructType
 import org.opencypher.okapi.api.graph.{GraphName, PropertyGraph}
-import org.opencypher.okapi.api.schema.{LabelPropertyMap, Schema}
+import org.opencypher.okapi.api.schema.PropertyKeys.PropertyKeys
+import org.opencypher.okapi.api.schema.{LabelPropertyMap, RelTypePropertyMap, Schema}
 import org.opencypher.okapi.api.types.CTRelationship
 import org.opencypher.okapi.api.value.CypherValue.CypherList
 import org.opencypher.okapi.impl.exception.UnsupportedOperationException
@@ -80,6 +81,27 @@ case class Neo4jPropertyGraphDataSource(
     }
   }
 
+  private implicit class RichPropertyKeys(keys: PropertyKeys) {
+
+    def withoutMetaProperty: PropertyKeys =
+      keys.filterKeys(k => k != metaPropertyKey)
+  }
+
+  private implicit class RichLabelPropertyMap(map: LabelPropertyMap) {
+
+    def withoutMetaLabel(metaLabel: String): LabelPropertyMap =
+      LabelPropertyMap(map.map.map { case (k, v) => (k - metaLabel) -> v })
+
+    def withoutMetaProperty: LabelPropertyMap =
+      LabelPropertyMap(map.map.mapValues(_.withoutMetaProperty))
+  }
+
+  private implicit class RichRelTypePropertyMap(map: RelTypePropertyMap) {
+
+    def withoutMetaProperty: RelTypePropertyMap =
+      RelTypePropertyMap(map.map.mapValues(_.withoutMetaProperty))
+  }
+
   override def tableStorageFormat: String = "neo4j"
 
   override protected def listGraphNames: List[String] = {
@@ -109,8 +131,10 @@ case class Neo4jPropertyGraphDataSource(
 
       case Some(metaLabel) =>
         val containsMetaLabel = graphSchema.labelPropertyMap.filterForLabels(metaLabel)
-        val withoutMetaLabel = LabelPropertyMap(containsMetaLabel.map.map { case (k, v) => (k - metaLabel) -> v })
-        SchemaImpl(withoutMetaLabel, graphSchema.relTypePropertyMap)
+        val cleanLabelPropertyMap = containsMetaLabel.withoutMetaLabel(metaLabel).withoutMetaProperty
+        val cleanRelTypePropertyMap = graphSchema.relTypePropertyMap.withoutMetaProperty
+
+        SchemaImpl(cleanLabelPropertyMap, cleanRelTypePropertyMap)
     }
 
     filteredSchema.asCaps
