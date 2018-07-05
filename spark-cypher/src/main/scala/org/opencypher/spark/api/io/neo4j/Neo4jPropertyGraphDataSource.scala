@@ -95,6 +95,11 @@ case class Neo4jPropertyGraphDataSource(
 
   override def tableStorageFormat: String = "neo4j"
 
+  override def hasGraph(graphName: GraphName): Boolean = graphName match {
+    case `defaultEntireGraphName` => true
+    case _ => super.hasGraph(graphName)
+  }
+
   override protected def listGraphNames: List[String] = {
     val labelResult = config.cypher(
       """|CALL db.labels()
@@ -215,7 +220,7 @@ case class Neo4jPropertyGraphDataSource(
       case Nil => ""
       case nonempty => nonempty.mkString(s", $nodeVar.", s", $nodeVar.", "")
     }
-    val labelCount = labels.size + 1
+    val labelCount = labels.size + graphName.metaLabel.size
     s"""|MATCH ($nodeVar:${(labels ++ graphName.metaLabel).mkString(":")})
         |WHERE LENGTH(LABELS($nodeVar)) = $labelCount
         |RETURN id($nodeVar) AS $sourceIdKey$props""".stripMargin
