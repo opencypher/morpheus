@@ -28,25 +28,33 @@ package org.opencypher.spark.api.io.neo4j
 
 import org.apache.spark.sql.DataFrame
 import org.apache.spark.sql.types.StructType
-import org.opencypher.okapi.api.graph.GraphName
-import org.opencypher.okapi.api.schema.Schema
+import org.opencypher.okapi.api.graph.{GraphName, PropertyGraph}
+import org.opencypher.okapi.api.schema.{LabelPropertyMap, Schema}
+import org.opencypher.okapi.api.types.CTRelationship
+import org.opencypher.okapi.api.value.CypherValue.CypherList
 import org.opencypher.okapi.impl.exception.UnsupportedOperationException
 import org.opencypher.okapi.impl.schema.SchemaImpl
 import org.opencypher.spark.api.CAPSSession
+import org.opencypher.spark.api.io.AbstractPropertyGraphDataSource
 import org.opencypher.spark.api.io.GraphEntity.sourceIdKey
-import org.opencypher.spark.api.io.ROAbstractGraphSource
 import org.opencypher.spark.api.io.Relationship.{sourceEndNodeKey, sourceStartNodeKey}
 import org.opencypher.spark.api.io.metadata.CAPSGraphMetaData
-import org.opencypher.spark.api.io.neo4j.Neo4jPropertyGraphDataSource.{defaultEntireGraphName, metaPrefix}
+import org.opencypher.spark.api.io.neo4j.Neo4jPropertyGraphDataSource.{defaultEntireGraphName, metaPrefix, metaPropertyKey}
+import org.opencypher.spark.api.value.{CAPSNode, CAPSRelationship}
+import org.opencypher.spark.impl.CAPSConverters._
+import org.opencypher.spark.impl.encoders._
+import org.opencypher.spark.impl.io.neo4j.Neo4jHelpers._
 import org.opencypher.spark.impl.io.neo4j.external.Neo4j
 import org.opencypher.spark.schema.CAPSSchema
 import org.opencypher.spark.schema.CAPSSchema._
 
 object Neo4jPropertyGraphDataSource {
 
-  val defaultEntireGraphName =  GraphName("graph")
+  val defaultEntireGraphName = GraphName("graph")
 
   val metaPrefix: String = "___"
+
+  val metaPropertyKey: String = s"${metaPrefix}morpheusID"
 
 }
 
@@ -63,15 +71,31 @@ case class Neo4jPropertyGraphDataSource(
   config: Neo4jConfig,
   entireGraph: GraphName = defaultEntireGraphName
 )(implicit session: CAPSSession)
-  extends ROAbstractGraphSource {
+  extends AbstractPropertyGraphDataSource {
+
+  private implicit class RichGraphName(graphName: GraphName) {
+    def metaLabel: Option[String] = graphName match {
+      case `entireGraph` => None
+      case subGraph => Some(metaPrefix + subGraph)
+    }
+  }
 
   override def tableStorageFormat: String = "neo4j"
 
-  override protected def listGraphNames: List[String] = List(entireGraph.value) // TODO: extend with meta label approach
+  override protected def listGraphNames: List[String] = {
+    val labelResult = config.cypher(
+      """|CALL db.labels()
+         |YIELD label
+         |RETURN collect(label) AS labels
+      """.stripMargin)
+    val allLabels = labelResult.head("labels").cast[CypherList].value.map(_.toString)
 
-  private def getMetaLabel(graphName: GraphName): Option[String] = graphName match {
-    case `entireGraph` => None
-    case subGraph => Some(metaPrefix + subGraph)
+    val metaLabelGraphNames = allLabels
+      .filter(_.startsWith(metaPrefix))
+      .map(_.drop(metaPrefix.length))
+      .distinct
+
+    metaLabelGraphNames
   }
 
   override protected def readSchema(graphName: GraphName): CAPSSchema = {
@@ -79,13 +103,14 @@ case class Neo4jPropertyGraphDataSource(
       case None => throw UnsupportedOperationException("needs the procedure")
       case Some(schema) => schema
     }
-    val filteredSchema = getMetaLabel(graphName) match {
+    val filteredSchema = graphName.metaLabel match {
       case None =>
         graphSchema
 
       case Some(metaLabel) =>
-        val labelPropertyMap = graphSchema.labelPropertyMap.filterForLabels(metaLabel)
-        SchemaImpl(labelPropertyMap, graphSchema.relTypePropertyMap)
+        val containsMetaLabel = graphSchema.labelPropertyMap.filterForLabels(metaLabel)
+        val withoutMetaLabel = LabelPropertyMap(containsMetaLabel.map.map { case (k, v) => (k - metaLabel) -> v })
+        SchemaImpl(withoutMetaLabel, graphSchema.relTypePropertyMap)
     }
 
     filteredSchema.asCaps
@@ -103,6 +128,7 @@ case class Neo4jPropertyGraphDataSource(
 
     val neo4jConnection = Neo4j(config, session.sparkSession)
     val rdd = neo4jConnection.cypher(flatQuery).loadRowRdd
+
     session.sparkSession.createDataFrame(rdd, sparkSchema)
   }
 
@@ -119,25 +145,131 @@ case class Neo4jPropertyGraphDataSource(
     session.sparkSession.createDataFrame(rdd, sparkSchema)
   }
 
-  def flatNodeQuery(graphName: GraphName, labels: Set[String], schema: Schema): String = {
-    val metaLabel = getMetaLabel(graphName)
+  override protected def deleteGraph(graphName: GraphName): Unit = {
+    graphName.metaLabel match {
+      case Some(metaLabel) =>
+        config.cypher(
+          s"""|MATCH (n:$metaLabel)
+              |DETACH DELETE n
+        """.stripMargin)
 
+      case None => throw UnsupportedOperationException("Deleting the entire Neo4j graph is not supported")
+    }
+  }
+
+  // Query construction for reading
+
+  override def store(graphName: GraphName, graph: PropertyGraph): Unit = {
+    checkStorable(graphName)
+
+    val metaLabel = graphName.metaLabel match {
+      case Some(meta) => meta
+      case None => throw UnsupportedOperationException("Writing to the global Neo4j graph is not supported")
+    }
+
+    graph.schema.labelCombinations.combos.foreach { combo =>
+      graph.asCaps.nodesWithExactLabels("n", combo)
+        .asCaps
+        .toCypherMaps
+        .map(map => map("n").cast[CAPSNode])
+        .foreachPartition(writeNodes(config, metaLabel))
+    }
+
+    config.execute { session =>
+      session.run(s"CREATE CONSTRAINT ON (n:$metaLabel) ASSERT n.$metaPropertyKey IS UNIQUE").consume()
+    }
+
+    graph.schema.relationshipTypes.foreach { relType =>
+      graph.relationships("r", CTRelationship(relType))
+        .asCaps
+        .toCypherMaps
+        .map(map => map("r").cast[CAPSRelationship])
+        .foreachPartition(writeRels(config, metaLabel))
+    }
+
+    graphNameCache += graphName
+  }
+
+  private[neo4j] def flatNodeQuery(graphName: GraphName, labels: Set[String], schema: Schema): String = {
     val nodeVar = "n"
     val props = schema.nodeKeys(labels).keys.toList.sorted match {
       case Nil => ""
       case nonempty => nonempty.mkString(s", $nodeVar.", s", $nodeVar.", "")
     }
-    s"MATCH ($nodeVar:${(labels ++ metaLabel).mkString(":")}) RETURN id($nodeVar) AS $sourceIdKey$props"
+    val labelCount = labels.size + 1
+    s"""|MATCH ($nodeVar:${(labels ++ graphName.metaLabel).mkString(":")})
+        |WHERE LENGTH(LABELS($nodeVar)) = $labelCount
+        |RETURN id($nodeVar) AS $sourceIdKey$props""".stripMargin
   }
 
-  def flatRelQuery(graphName: GraphName, relType: String, schema: Schema): String = {
-    val metaLabelPredicate = getMetaLabel(graphName).map(":" + _).getOrElse("")
+  private[neo4j] def flatRelQuery(graphName: GraphName, relType: String, schema: Schema): String = {
+    val metaLabelPredicate = graphName.metaLabel.map(":" + _).getOrElse("")
 
     val relVar = "r"
     val props = schema.relationshipKeys(relType).keys.toList.sorted match {
       case Nil => ""
       case nonempty => nonempty.mkString(s", $relVar.", s", $relVar.", "")
     }
-    s"MATCH (s$metaLabelPredicate)-[$relVar:$relType]->(e$metaLabelPredicate) RETURN id($relVar) AS $sourceIdKey, id(s) AS $sourceStartNodeKey, id(e) AS $sourceEndNodeKey$props"
+    s"""|MATCH (s$metaLabelPredicate)-[$relVar:$relType]->(e$metaLabelPredicate)
+        |RETURN id($relVar) AS $sourceIdKey, id(s) AS $sourceStartNodeKey, id(e) AS $sourceEndNodeKey$props""".stripMargin
+  }
+
+  // Not used by that PGDS
+  // TODO: rename AbstractPGDS to RelationalPGDS and have an abstract version for non-relational
+
+  override protected def writeSchema(graphName: GraphName, schema: CAPSSchema): Unit = ()
+
+  override protected def writeCAPSGraphMetaData(graphName: GraphName, capsGraphMetaData: CAPSGraphMetaData): Unit = ()
+
+  override protected def writeNodeTable(graphName: GraphName, labels: Set[String], table: DataFrame): Unit = ()
+
+  override protected def writeRelationshipTable(graphName: GraphName, relKey: String, table: DataFrame): Unit = ()
+}
+
+case class writeNodes(config: Neo4jConfig, graphNameLabel: String) extends (Iterator[CAPSNode] => Unit) {
+  override def apply(nodes: Iterator[CAPSNode]): Unit = {
+    config.execute { session =>
+      nodes.foreach { node =>
+        val labels = node.labels
+        val id = node.id
+
+        val nodeLabels = if (labels.isEmpty) ""
+        else labels.mkString(":`", "`:`", "`")
+
+        val props = if (node.properties.isEmpty) ""
+        else node.properties.toCypherString
+
+        val createQ =
+          s"""
+             |CREATE (n:$graphNameLabel$nodeLabels $props)
+             |SET n.$metaPropertyKey = $id
+         """.stripMargin
+        session.run(createQ).consume()
+      }
+    }
+  }
+}
+
+case class writeRels(config: Neo4jConfig, graphNameLabel: String) extends (Iterator[CAPSRelationship] => Unit) {
+  override def apply(rels: Iterator[CAPSRelationship]): Unit = {
+    config.execute { session =>
+      rels.foreach { relationship =>
+        val id = relationship.id
+        val startId = relationship.startId
+        val endId = relationship.endId
+
+        val props = if (relationship.properties.isEmpty) ""
+        else relationship.properties.toCypherString
+
+        val createQ =
+          s"""
+             |MATCH (a:$graphNameLabel), (b:$graphNameLabel)
+             |WHERE a.$metaPropertyKey = $startId AND b.$metaPropertyKey = $endId
+             |CREATE (a)-[r:${relationship.relType} $props]->(b)
+             |SET r.$metaPropertyKey = $id
+         """.stripMargin
+        session.run(createQ).consume()
+      }
+    }
   }
 }

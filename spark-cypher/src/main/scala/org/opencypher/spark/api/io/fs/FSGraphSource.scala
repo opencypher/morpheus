@@ -31,7 +31,7 @@ import org.apache.spark.sql.DataFrame
 import org.apache.spark.sql.types.StructType
 import org.opencypher.okapi.api.graph.GraphName
 import org.opencypher.spark.api.CAPSSession
-import org.opencypher.spark.api.io.AbstractDataSource
+import org.opencypher.spark.api.io.AbstractPropertyGraphDataSource
 import org.opencypher.spark.api.io.fs.DefaultFileSystem._
 import org.opencypher.spark.api.io.json.JsonSerialization
 
@@ -52,7 +52,7 @@ class FSGraphSource(
   val customFileSystem: Option[CAPSFileSystem] = None,
   val filesPerTable: Option[Int] = Some(1)
 )(implicit session: CAPSSession)
-  extends AbstractDataSource with JsonSerialization {
+  extends AbstractPropertyGraphDataSource with JsonSerialization {
 
   protected val directoryStructure = DefaultGraphDirectoryStructure(rootPath)
 

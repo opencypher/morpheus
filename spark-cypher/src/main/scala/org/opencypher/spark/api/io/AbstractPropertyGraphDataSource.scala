@@ -46,7 +46,7 @@ import org.opencypher.spark.schema.CAPSSchema
   * It automatically creates initializes a ScanGraphs an only requires the implementor to provider simpler methods for
   * reading/writing files and tables.
   */
-abstract class AbstractDataSource(implicit val session: CAPSSession) extends CAPSPropertyGraphDataSource {
+abstract class AbstractPropertyGraphDataSource(implicit val session: CAPSSession) extends CAPSPropertyGraphDataSource {
 
   def tableStorageFormat: String
 
@@ -124,9 +124,7 @@ abstract class AbstractDataSource(implicit val session: CAPSSession) extends CAP
   }
 
   override def store(graphName: GraphName, graph: PropertyGraph): Unit = {
-    if (hasGraph(graphName)) {
-      throw GraphAlreadyExistsException(s"A graph with name $graphName is already stored in this graph data source.")
-    }
+    checkStorable(graphName)
 
     val capsGraph = graph.asCaps
     val schema = capsGraph.schema
