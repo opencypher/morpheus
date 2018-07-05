@@ -30,7 +30,10 @@ Third-party licenses
 Apache Software License, Version 2.0
   Apache Avro
   Apache Commons Codec
+  Apache Commons Configuration
+  Apache Commons IO
   Apache Commons Lang
+  Apache Commons Logging
   Apache Commons Math
   Apache Commons Text
   Apache Directory API ASN.1 API
@@ -46,24 +49,18 @@ Apache Software License, Version 2.0
   ApacheDS I18n
   ApacheDS Protocol Kerberos Codec
   Caffeine cache
-  Commons BeanUtils Core
   Commons CLI
   Commons Collections
   Commons Compress
-  Commons Configuration
   Commons Daemon
-  Commons IO
   Commons Lang
-  Commons Logging
   Commons Net
-  commons-beanutils
   ConcurrentLinkedHashMap
   Curator Client
   Curator Framework
   Curator Recipes
   Cypher for Apache Spark - CAPS
   Data Mapper for Jackson
-  Digester
   FindBugs-jsr305
   Google Guice - Core Library
   Google Guice - Extensions - Servlet
@@ -105,6 +102,8 @@ Apache Software License, Version 2.0
   Jetty :: XML utilities
   Jetty Server
   Jetty Utilities
+  jPowerShell
+  jProcesses
   Lucene codecs
   Lucene Common Analyzers
   Lucene Core
@@ -113,6 +112,7 @@ Apache Software License, Version 2.0
   MX4J
   Netty
   Netty/All-in-One
+  Okapi - Neo4j procedures
   Okapi - openCypher API
   Okapi IR - Declarative representation of Cypher queries
   Okapi Logical - Logical representation of Cypher queries
@@ -133,6 +133,7 @@ Apache Software License, Version 2.0
   servlet-api
   snappy-java
   spark-measure
+  WMI4Java
   Xerces2 Java Parser
   XML Commons External Components XML APIs
   Xml Compatibility extensions for Jackson
@@ -158,10 +159,6 @@ Bouncy Castle License
   Bouncy Castle JSSE provider and TLS/DTLS API
   Bouncy Castle PKIX, CMS, EAC, TSP, PKCS, OCSP, CMP, and CRMF APIs
   Bouncy Castle Provider
-
-CDDL 1.1, GPL2 with CPE
-  jersey-multipart
-  MIME streaming extension
 
 MIT-license
   Cats core

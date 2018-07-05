@@ -40,9 +40,7 @@ Apache Software License, Version 2.0
   Caffeine cache
   Commons Lang
   ConcurrentLinkedHashMap
-  Cucumber-JVM Repackaged Dependencies
   Data Mapper for Jackson
-  Gherkin Repackaged Dependencies
   Jackson
   Java Servlet API
   JAX-RS provider for JSON content type
@@ -64,33 +62,17 @@ Apache Software License, Version 2.0
   Netty/All-in-One
   Objenesis
   Okapi - openCypher API
-  Okapi IR - Declarative representation of Cypher queries
-  Okapi Test Utilities
   Okapi Trees - Tree rewriting framework for Okapi
   opencsv
-  openCypher AST for the Cypher Query Language
-  openCypher Expressions
-  openCypher Front End
-  openCypher Parser
-  openCypher Rewriting
-  openCypher TCK Developer Tools
-  openCypher Utils
-  org.apiguardian:apiguardian-api
-  org.opentest4j:opentest4j
   parboiled-core
   parboiled-scala
-  scalactic
-  scalatest
   WMI4Java
 
 BSD License
-  ANTLR 4 Runtime
   ASM Analysis
   ASM Core
   ASM Tree
   ASM Util
-  Cucumber-JVM Repackaged Dependencies
-  Hamcrest Core
   JLine
   Scala Compiler
   Scala Library
@@ -98,46 +80,17 @@ BSD License
   scala-xml
 
 Bouncy Castle License
-  Bouncy Castle JSSE provider and TLS/DTLS API
   Bouncy Castle PKIX, CMS, EAC, TSP, PKCS, OCSP, CMP, and CRMF APIs
   Bouncy Castle Provider
-
-Eclipse Public License 1.0
-  JUnit
-
-Eclipse Public License v2.0
-  org.junit.jupiter:junit-jupiter-api
-  org.junit.platform:junit-platform-commons
 
 MIT-license
   Cats core
   Cats kernel
   Cats macros
-  core
-  Cucumber-HTML
-  Cucumber-JVM: Core
-  Cucumber-JVM: JUnit
-  Cucumber-JVM: Scala (2.11)
-  Gherkin
   machinist
-  Mockito
   ujson_2.11
   upickle_2.11
 
 Mozilla Public License, Version 2.0
   Mozilla Rhino
-
-Public-domain
-  Gherkin Repackaged Dependencies
-
-Dependencies with multiple licenses
------------------------------------
-
-Cucumber-JVM Repackaged Dependencies
-  Apache Software License, Version 2.0
-  BSD License
-
-Gherkin Repackaged Dependencies
-  Apache Software License, Version 2.0
-  Public-domain
 
