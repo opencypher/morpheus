@@ -186,6 +186,8 @@ case class Neo4jPropertyGraphDataSource(
   override def store(graphName: GraphName, graph: PropertyGraph): Unit = {
     checkStorable(graphName)
 
+    val executorCount = session.sparkSession.sparkContext.statusTracker.getExecutorInfos.length
+
     val metaLabel = graphName.metaLabel match {
       case Some(meta) => meta
       case None => throw UnsupportedOperationException("Writing to the global Neo4j graph is not supported")
@@ -195,6 +197,7 @@ case class Neo4jPropertyGraphDataSource(
       graph.asCaps.nodesWithExactLabels("n", combo)
         .asCaps
         .toCypherMaps
+        .coalesce(executorCount)
         .map(map => map("n").cast[CAPSNode])
         .foreachPartition(writeNodes(config, metaLabel))
     }
@@ -207,6 +210,7 @@ case class Neo4jPropertyGraphDataSource(
       graph.relationships("r", CTRelationship(relType))
         .asCaps
         .toCypherMaps
+        .coalesce(executorCount)
         .map(map => map("r").cast[CAPSRelationship])
         .foreachPartition(writeRels(config, metaLabel))
     }
