@@ -185,24 +185,6 @@
     </pluginManagement>
 
     <plugins>
-      <!-- javac -->
-      <plugin>
-        <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-compiler-plugin</artifactId>
-        <version>${plugin.maven-compiler.version}</version>
-        <configuration>
-          <source>${project.java.version}</source>
-          <target>${project.java.version}</target>
-        </configuration>
-        <executions>
-          <execution>
-            <!-- Disable default Maven Java compile to allow mixed Scala/Java compilation -->
-            <id>default-compile</id>
-            <phase>none</phase>
-          </execution>
-        </executions>
-      </plugin>
-
       <!-- Builds a source JAR -->
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
@@ -218,21 +200,11 @@
         </executions>
       </plugin>
 
-      <!-- setup scalac -->
+      <!-- Scalac settings -->
       <plugin>
         <groupId>net.alchim31.maven</groupId>
         <artifactId>scala-maven-plugin</artifactId>
         <version>${plugin.maven-scala.version}</version>
-        <executions>
-          <execution>
-            <goals>
-              <goal>compile</goal>
-              <goal>testCompile</goal>
-              <goal>add-source</goal>
-              <goal>doc-jar</goal>
-            </goals>
-          </execution>
-        </executions>
         <configuration>
           <recompileMode>incremental</recompileMode>
           <scalaVersion>${project.scala.version}</scalaVersion>
@@ -242,7 +214,7 @@
             <!-- need to pass encoding to scalac manually -->
             <arg>-encoding</arg>
             <arg>${project.build.encoding}</arg>
-            <arg>-target:jvm-1.8</arg>
+            <arg>-target:jvm-${project.java.version}</arg>
             <arg>-unchecked</arg>
             <arg>-deprecation</arg>
             <arg>-feature</arg>
@@ -259,6 +231,26 @@
             <jvmArg>-Xss512m</jvmArg>
           </jvmArgs>
         </configuration>
+
+        <!-- This is needed to mix scala and java code in the same module -->
+        <executions>
+          <execution>
+            <id>scala-compile</id>
+            <phase>process-resources</phase>
+            <goals>
+              <goal>add-source</goal>
+              <goal>compile</goal>
+              <goal>doc-jar</goal>
+            </goals>
+          </execution>
+          <execution>
+            <id>scala-test-compile</id>
+            <phase>process-test-resources</phase>
+            <goals>
+              <goal>testCompile</goal>
+            </goals>
+          </execution>
+        </executions>
       </plugin>
 
       <!-- scalastyle) -->
