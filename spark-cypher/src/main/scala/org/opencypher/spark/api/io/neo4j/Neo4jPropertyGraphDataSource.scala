@@ -59,15 +59,6 @@ object Neo4jPropertyGraphDataSource {
 
 }
 
-/**
-  * A data source implementation that enables loading property graphs from a Neo4j database. A graph is identified by a
-  * [[GraphName]] and parameterized by a node and a relationship query which are used to load the graph from Neo4j.
-  *
-  * If the [[Schema]] of a Neo4j graph is known upfront, it can be provided to the data source. Otherwise, the schema
-  * will be computed during graph loading.
-  *
-  * @param config Neo4j connection configuration
-  */
 case class Neo4jPropertyGraphDataSource(
   config: Neo4jConfig,
   entireGraph: GraphName = defaultEntireGraphName
