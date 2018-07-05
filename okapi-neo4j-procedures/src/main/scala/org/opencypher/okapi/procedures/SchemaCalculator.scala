@@ -31,8 +31,10 @@ import java.util.stream.Stream
 
 import org.neo4j.graphdb._
 import org.neo4j.kernel.api.KernelTransaction
+import org.neo4j.logging.Log
 import org.opencypher.okapi.api.schema.PropertyKeys.PropertyKeys
 import org.opencypher.okapi.api.schema.Schema
+import org.opencypher.okapi.api.types.CypherType
 import org.opencypher.okapi.api.types.CypherType._
 import org.opencypher.okapi.api.value.CypherValue
 
@@ -41,7 +43,8 @@ import scala.collection.mutable
 import scala.concurrent.duration.Duration
 import scala.concurrent.{Await, ExecutionContext, Future}
 
-class SchemaCalculator(db: GraphDatabaseService, tx: KernelTransaction) {
+class SchemaCalculator(db: GraphDatabaseService, tx: KernelTransaction, log: Log) {
+
   /**
     * Computes the schema of the Neo4j graph as used by Okapi
     *
@@ -101,8 +104,18 @@ class SchemaCalculator(db: GraphDatabaseService, tx: KernelTransaction) {
     * @param allProperties property map of a Node/Relationship
     * @return
     */
-  private def extractPropertyTypes(allProperties: mutable.Map[String, AnyRef]) = {
-    allProperties.mapValues(CypherValue(_).cypherType)
+  private def extractPropertyTypes(allProperties: mutable.Map[String, AnyRef]): mutable.Map[String, CypherType] = {
+    allProperties.flatMap {
+      case (key, value) =>
+        CypherValue.get(value).map(_.cypherType) match {
+          case Some(cypherType) =>
+            Some(key -> cypherType)
+
+          case None =>
+            log.warn(s"Schema procedure does not support type for property $key = $value of type ${value.getClass.getSimpleName}")
+            None
+        }
+    }
   }
 
   /**

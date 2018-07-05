@@ -31,9 +31,12 @@ import org.opencypher.okapi.api.value.CypherValue.{CypherMap, CypherNull}
 import org.opencypher.okapi.testing.Bag
 import org.opencypher.okapi.testing.Bag._
 import org.opencypher.spark.api.CypherGraphSources
+import org.opencypher.spark.api.io.neo4j.Neo4jPropertyGraphDataSource.metaPrefix
+import org.opencypher.spark.api.value.CAPSNode
+import org.opencypher.spark.impl.CAPSConverters._
+import org.opencypher.spark.impl.io.neo4j.Neo4jHelpers._
 import org.opencypher.spark.testing.CAPSTestSuite
 import org.opencypher.spark.testing.fixture.{Neo4jServerFixture, TeamDataFixture}
-import org.opencypher.spark.impl.CAPSConverters._
 
 class Neo4jPropertyGraphDataSourceTest
   extends CAPSTestSuite
@@ -73,5 +76,15 @@ class Neo4jPropertyGraphDataSourceTest
 
     val edges = caps.cypher(s"FROM GRAPH $testNamespace.$testGraphName MATCH ()-[r]->() RETURN r")
     edges.getRecords.collect.toBag should equal(teamDataGraphRels)
+  }
+
+  it("should ignore properties with unsupported types") {
+    neo4jConfig.cypher(s"""CREATE (n:Unsupported:${metaPrefix}test { foo: time(), bar: 42 })""")
+
+    val dataSource = CypherGraphSources.neo4j(neo4jConfig)
+    val graph = dataSource.graph(GraphName("test")).asCaps
+    graph.nodes("n").toCypherMaps.collect.toBag should equal(Bag(
+      CypherMap("n" -> CAPSNode(5L, Set("Unsupported"), CypherMap("bar" -> 42L)))
+    ))
   }
 }

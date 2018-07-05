@@ -68,7 +68,7 @@
     <dep.eff.version>5.0.0</dep.eff.version>
     <dep.hadoop.version>2.7.0</dep.hadoop.version>
     <dep.neo4j.version>3.4.1</dep.neo4j.version>
-    <dep.neo4j.driver.version>1.4.2</dep.neo4j.driver.version>
+    <dep.neo4j.driver.version>1.6.1</dep.neo4j.driver.version>
     <dep.opencypher.front-end.version>2.0.0</dep.opencypher.front-end.version>
     <dep.spark.version>2.2.1</dep.spark.version>
     <dep.spark.scope>compile</dep.spark.scope>
@@ -185,6 +185,17 @@
     </pluginManagement>
 
     <plugins>
+      <!-- javac settings -->
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-compiler-plugin</artifactId>
+        <version>${plugin.maven-compiler.version}</version>
+        <configuration>
+          <source>${project.java.version}</source>
+          <target>${project.java.version}</target>
+        </configuration>
+      </plugin>
+
       <!-- Builds a source JAR -->
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
@@ -200,7 +211,7 @@
         </executions>
       </plugin>
 
-      <!-- Scalac settings -->
+      <!-- scalac settings -->
       <plugin>
         <groupId>net.alchim31.maven</groupId>
         <artifactId>scala-maven-plugin</artifactId>
