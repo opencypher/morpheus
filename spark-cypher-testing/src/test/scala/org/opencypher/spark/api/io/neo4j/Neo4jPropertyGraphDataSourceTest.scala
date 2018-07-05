@@ -28,6 +28,7 @@ package org.opencypher.spark.api.io.neo4j
 
 import org.opencypher.okapi.api.graph.{CypherResult, GraphName, Namespace}
 import org.opencypher.okapi.api.value.CypherValue.{CypherMap, CypherNull}
+import org.opencypher.okapi.impl.exception.IllegalArgumentException
 import org.opencypher.okapi.testing.Bag
 import org.opencypher.okapi.testing.Bag._
 import org.opencypher.spark.api.CypherGraphSources
@@ -83,8 +84,11 @@ class Neo4jPropertyGraphDataSourceTest
 
     val dataSource = CypherGraphSources.neo4j(neo4jConfig)
     val graph = dataSource.graph(GraphName("test")).asCaps
-    graph.nodes("n").toCypherMaps.collect.toBag should equal(Bag(
-      CypherMap("n" -> CAPSNode(5L, Set("Unsupported"), CypherMap("bar" -> 42L)))
-    ))
+    val nodes = graph.nodes("n").toCypherMaps.collect.toList
+    nodes.size shouldBe 1
+    nodes.head.value match {
+      case n: CAPSNode => n should equal(CAPSNode(n.id, Set("Unsupported"), CypherMap("bar" -> 42L)))
+      case other => IllegalArgumentException("a CAPSNode", other)
+    }
   }
 }
