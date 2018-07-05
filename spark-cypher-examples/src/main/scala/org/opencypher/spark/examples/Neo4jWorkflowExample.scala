@@ -27,11 +27,10 @@
 package org.opencypher.spark.examples
 
 import org.opencypher.okapi.api.graph.{Namespace, QualifiedGraphName}
-import org.opencypher.spark.api.io.neo4j.Neo4jPropertyGraphDataSource
 import org.opencypher.spark.api.io.neo4j.Neo4jPropertyGraphDataSource.defaultEntireGraphName
 import org.opencypher.spark.api.{CAPSSession, GraphSources}
-import org.opencypher.spark.util.Neo4jHelpers._
-import org.opencypher.spark.util.{ConsoleApp, Neo4jHelpers}
+import org.opencypher.spark.testing.api.neo4j.Neo4jHarnessUtils._
+import org.opencypher.spark.util.ConsoleApp
 
 /**
   * Demonstrates connecting a graph from a CSV data source with a graph from a Neo4j data source.
@@ -43,7 +42,7 @@ object Neo4jWorkflowExample extends ConsoleApp {
   implicit val session: CAPSSession = CAPSSession.local()
 
   // Start a Neo4j instance and populate it with social network data
-  val neo4j = Neo4jHelpers.startNeo4j(personNetwork)
+  val neo4j = startNeo4j(personNetwork)
 
   // Register Property Graph Data Sources (PGDS)
   session.registerSource(Namespace("socialNetwork"), GraphSources.cypher.neo4j(neo4j.dataSourceConfig))

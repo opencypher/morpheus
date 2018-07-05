@@ -24,32 +24,52 @@
  * described as "implementation extensions to Cypher" or as "proposed changes to
  * Cypher that are not yet approved by the openCypher community".
  */
-package org.opencypher.spark.util
+package org.opencypher.spark.testing.api.neo4j
 
 import org.neo4j.graphdb.Result
 import org.neo4j.harness.{ServerControls, TestServerBuilders}
+import org.neo4j.kernel.impl.proc.Procedures
+import org.neo4j.kernel.internal.GraphDatabaseAPI
+import org.opencypher.okapi.procedures.OkapiProcedures
 import org.opencypher.spark.api.io.neo4j.Neo4jConfig
 
-object Neo4jHelpers {
+object Neo4jHarnessUtils {
 
-  implicit class RichServerControls(val server: ServerControls) extends AnyVal {
+  implicit class RichServerControls(val neo4j: ServerControls) extends AnyVal {
 
     def dataSourceConfig =
-      Neo4jConfig(server.boltURI(), user = "anonymous", password = Some("password"), encrypted = false)
+      Neo4jConfig(neo4j.boltURI(), user = "anonymous", password = Some("password"), encrypted = false)
 
     def uri: String = {
-      val scheme = server.boltURI().getScheme
+      val scheme = neo4j.boltURI().getScheme
       val userInfo = s"anonymous:password@"
-      val host = server.boltURI().getAuthority
+      val host = neo4j.boltURI().getAuthority
       s"$scheme://$userInfo$host"
     }
 
     def stop(): Unit = {
-      server.close()
+      neo4j.close()
     }
 
     def execute(cypher: String): Result =
-      server.graph().execute(cypher)
+      neo4j.graph().execute(cypher)
+
+    def withSchemaProcedure: ServerControls =
+      withProcedure(classOf[OkapiProcedures])
+
+    def withProcedure(procedures: Class[_]*): ServerControls = {
+      val proceduresService = neo4j.graph()
+        .asInstanceOf[GraphDatabaseAPI]
+        .getDependencyResolver.
+        resolveDependency(classOf[Procedures])
+
+      for (procedure <- procedures) {
+        proceduresService.registerProcedure(procedure, true)
+        proceduresService.registerFunction(procedure, true)
+        proceduresService.registerAggregationFunction(procedure, true)
+      }
+      neo4j
+    }
   }
 
   def startNeo4j(dataFixture: String): ServerControls = {
@@ -59,5 +79,7 @@ object Neo4jHelpers {
       .withFixture("CALL dbms.security.createUser('anonymous', 'password', false)")
       .withFixture(dataFixture)
       .newServer()
+      .withSchemaProcedure
   }
+
 }

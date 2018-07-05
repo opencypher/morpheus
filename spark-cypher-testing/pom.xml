@@ -38,6 +38,13 @@
       <version>${project.parent.version}</version>
     </dependency>
 
+    <!-- Neo4j -->
+    <dependency>
+      <groupId>org.neo4j.test</groupId>
+      <artifactId>neo4j-harness</artifactId>
+      <version>${dep.neo4j.version}</version>
+    </dependency>
+
     <!-- Spark -->
     <dependency>
       <groupId>org.apache.spark</groupId>

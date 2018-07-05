@@ -23,6 +23,13 @@
       <groupId>org.opencypher</groupId>
       <artifactId>spark-cypher</artifactId>
       <version>${project.parent.version}</version>
+      <exclusions>
+        <!-- exclude netty-all as it interferes with neo4j-harness 3.4.1 -->
+        <exclusion>
+          <groupId>io.netty</groupId>
+          <artifactId>netty-all</artifactId>
+        </exclusion>
+      </exclusions>
     </dependency>
 
     <dependency>
@@ -37,12 +44,10 @@
       <version>${dep.neo4j.version}</version>
     </dependency>
 
-    <!-- Test -->
     <dependency>
       <groupId>org.opencypher</groupId>
       <artifactId>spark-cypher-testing</artifactId>
       <version>${project.parent.version}</version>
-      <scope>test</scope>
     </dependency>
 
   </dependencies>

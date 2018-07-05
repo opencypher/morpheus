@@ -28,10 +28,9 @@ package org.opencypher.spark.examples
 
 import org.neo4j.harness.ServerControls
 import org.opencypher.okapi.api.graph.Namespace
-import org.opencypher.spark.api.io.neo4j.Neo4jPropertyGraphDataSource
 import org.opencypher.spark.api.io.neo4j.Neo4jPropertyGraphDataSource.defaultEntireGraphName
 import org.opencypher.spark.api.{CAPSSession, GraphSources}
-import org.opencypher.spark.util.Neo4jHelpers._
+import org.opencypher.spark.testing.api.neo4j.Neo4jHarnessUtils._
 import org.opencypher.spark.util.ConsoleApp
 
 /**

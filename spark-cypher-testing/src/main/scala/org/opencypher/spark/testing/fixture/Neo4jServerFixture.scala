@@ -26,13 +26,10 @@
  */
 package org.opencypher.spark.testing.fixture
 
-import org.neo4j.graphdb.GraphDatabaseService
 import org.neo4j.harness.{ServerControls, TestServerBuilders}
-import org.neo4j.kernel.impl.proc.Procedures
-import org.neo4j.kernel.internal.GraphDatabaseAPI
-import org.opencypher.okapi.procedures.OkapiProcedures
 import org.opencypher.okapi.testing.{BaseTestFixture, BaseTestSuite}
 import org.opencypher.spark.api.io.neo4j.Neo4jConfig
+import org.opencypher.spark.testing.api.neo4j.Neo4jHarnessUtils._
 
 trait Neo4jServerFixture extends BaseTestFixture {
   self: SparkSessionFixture with BaseTestSuite =>
@@ -61,20 +58,11 @@ trait Neo4jServerFixture extends BaseTestFixture {
       .withFixture(userFixture)
       .withFixture(dataFixture)
       .newServer()
-    registerProcedure(neo4jServer.graph(), classOf[OkapiProcedures])
+      .withSchemaProcedure
   }
 
   abstract override def afterAll(): Unit = {
     neo4jServer.close()
     super.afterAll()
-  }
-
-  private def registerProcedure(db: GraphDatabaseService, procedures: Class[_]*): Unit = {
-    val proceduresService = db.asInstanceOf[GraphDatabaseAPI].getDependencyResolver.resolveDependency(classOf[Procedures])
-    for (procedure <- procedures) {
-      proceduresService.registerProcedure(procedure, true)
-      proceduresService.registerFunction(procedure, true)
-      proceduresService.registerAggregationFunction(procedure, true)
-    }
   }
 }
