@@ -118,7 +118,10 @@ case class Neo4jPropertyGraphDataSource(
 
   override protected def readSchema(graphName: GraphName): CAPSSchema = {
     val graphSchema = SchemaFromProcedure(config) match {
-      case None => throw UnsupportedOperationException("needs the procedure")
+      case None =>
+        // TODO: add link to procedure installation
+        throw UnsupportedOperationException("Neo4j PGDS requires okapi-neo4j-procedures to be installed in Neo4j")
+
       case Some(schema) => schema
     }
     val filteredSchema = graphName.metaLabel match {
