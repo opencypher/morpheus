@@ -29,7 +29,7 @@ object CypherType {
         case CypherString(_) => CTString
         case CypherNode(_, labels, _) => CTNode(labels)
         case CypherRelationship(_, _, _, relType, _) => CTRelationship(relType)
-        case CypherList(l) => CTList(l.map(_.cypherType).foldLeft[CypherType](CTVoid)(_.join(_)))
+        case CypherList(l) => CTList(l.map(_.cypherType).foldLeft[CypherType](CTVoid)(_.union(_)))
       }
     }
   }
@@ -37,7 +37,7 @@ object CypherType {
   implicit val joinMonoid: Monoid[CypherType] = new Monoid[CypherType] {
     override def empty: CypherType = CTVoid
 
-    override def combine(x: CypherType, y: CypherType): CypherType = x join y
+    override def combine(x: CypherType, y: CypherType): CypherType = x union y
   }
 
   implicit def rw: ReadWriter[CypherType] = readwriter[String].bimap[CypherType](_.name, s => parse(s))
@@ -74,9 +74,6 @@ trait CypherType {
     }
   }
 
-  // TODO: Remove
-  def meet(other: CypherType): CypherType = intersect(other)
-
   def union(other: CypherType): CypherType = {
     if (this == CTAny || other == CTAny) {
       CTAny
@@ -91,15 +88,12 @@ trait CypherType {
     }
   }
 
-  // TODO: Remove
-  def join(other: CypherType): CypherType = union(other)
-
   def isNullable: Boolean = {
     alternatives.contains(CTNull)
   }
 
   def nullable: CypherType = {
-    if (this.alternatives.contains(CTNull)) {
+    if (isNullable) {
       this
     } else {
       UnionType(alternatives + CTNull)
