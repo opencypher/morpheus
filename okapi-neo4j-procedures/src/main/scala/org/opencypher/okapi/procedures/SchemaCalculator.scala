@@ -89,8 +89,11 @@ class SchemaCalculator(db: GraphDatabaseService, tx: KernelTransaction, log: Log
       case (relType, properties) => getOkapiSchemaInfo("Relationship", Seq(relType), properties)
     }
 
-    val  metaSchemaInfo = getOkapiSchemaInfo("Meta", Seq.empty, PropertyKeys.empty, warnings)
-
+    val metaSchemaInfo = if (warnings.nonEmpty) {
+      getOkapiSchemaInfo("Meta", Seq.empty, PropertyKeys.empty, warnings)
+    } else {
+      Seq.empty
+    }
     (nodeStream ++ relStream ++ metaSchemaInfo).asJavaCollection.stream()
   }
 

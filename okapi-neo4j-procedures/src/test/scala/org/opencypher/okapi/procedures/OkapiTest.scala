@@ -34,6 +34,7 @@ import org.neo4j.test.TestGraphDatabaseFactory
 import org.scalatest.{BeforeAndAfter, FunSuite, Matchers}
 
 import scala.collection.JavaConverters._
+import scala.collection.convert.Wrappers
 import scala.collection.mutable
 
 class OkapiTest extends FunSuite with BeforeAndAfter with Matchers {
@@ -52,7 +53,7 @@ class OkapiTest extends FunSuite with BeforeAndAfter with Matchers {
     db.shutdown()
   }
 
-  test("testOkapiSchemaForSingleLabel") {
+  test("Okapi schema for single label") {
     db.execute("CREATE (:A {val1: 'String', val2: 1})" + "CREATE (:A {val1: 'String', val2: 1.2})").close()
     testResult(db, "CALL org.opencypher.okapi.procedures.schema", (result) => {
       val expected = Set(
@@ -60,20 +61,22 @@ class OkapiTest extends FunSuite with BeforeAndAfter with Matchers {
           "type" -> "Node",
           "nodeLabelsOrRelType" -> Seq("A").asJava,
           "property" -> "val1",
-          "cypherType" -> "STRING"
+          "cypherType" -> "STRING",
+          "warnings" -> Seq.empty.asJava
         ),
         Map(
           "type" -> "Node",
           "nodeLabelsOrRelType" -> Seq("A").asJava,
           "property" -> "val2",
-          "cypherType" -> "NUMBER"
+          "cypherType" -> "NUMBER",
+          "warnings" -> Seq.empty.asJava
         )
       )
       result.toSet should equal(expected)
     })
   }
 
-  test("testOkapiSchemaForSingleMultipleLabels") {
+  test("Okapi schema for single and multiple labels") {
     db.execute("CREATE (:A {val1: 'String'})" + "CREATE (:B {val2: 2})" + "CREATE (:A:B {val1: 'String', val2: 2})").close()
     testResult(db, "CALL org.opencypher.okapi.procedures.schema", (result) => {
       val expected = Set(
@@ -81,32 +84,36 @@ class OkapiTest extends FunSuite with BeforeAndAfter with Matchers {
           "type" -> "Node",
           "nodeLabelsOrRelType" -> Seq("A").asJava,
           "property" -> "val1",
-          "cypherType" -> "STRING"
+          "cypherType" -> "STRING",
+          "warnings" -> Seq.empty.asJava
         ),
         Map(
           "type" -> "Node",
           "nodeLabelsOrRelType" -> Seq("B").asJava,
           "property" -> "val2",
-          "cypherType" -> "INTEGER"
+          "cypherType" -> "INTEGER",
+          "warnings" -> Seq.empty.asJava
         ),
         Map(
           "type" -> "Node",
           "nodeLabelsOrRelType" -> Seq("A", "B").asJava,
           "property" -> "val1",
-          "cypherType" -> "STRING"
+          "cypherType" -> "STRING",
+          "warnings" -> Seq.empty.asJava
         ),
         Map(
           "type" -> "Node",
           "nodeLabelsOrRelType" -> Seq("A", "B").asJava,
           "property" -> "val2",
-          "cypherType" -> "INTEGER"
+          "cypherType" -> "INTEGER",
+          "warnings" -> Seq.empty.asJava
         )
       )
       result.toSet should equal(expected)
     })
   }
 
-  test("testOkapiSchemaForLabelWithEmptyLabel") {
+  test("Okapi schema for label with empty label") {
     db.execute("CREATE ({val1: 'String'})").close()
     testResult(db, "CALL org.opencypher.okapi.procedures.schema", (result) => {
       val expected = Set(
@@ -114,14 +121,15 @@ class OkapiTest extends FunSuite with BeforeAndAfter with Matchers {
           "type" -> "Node",
           "nodeLabelsOrRelType" -> Seq.empty.asJava,
           "property" -> "val1",
-          "cypherType" -> "STRING"
+          "cypherType" -> "STRING",
+          "warnings" -> Seq.empty.asJava
         )
       )
       result.toSet should equal(expected)
     })
   }
 
-  test("testOkapiSchemaForLabelWithoutProperties") {
+  test("Okapi schema for label without properties") {
     db.execute("CREATE (:A)").close()
     testResult(db, "CALL org.opencypher.okapi.procedures.schema", (result) => {
       val expected = Set(
@@ -129,14 +137,15 @@ class OkapiTest extends FunSuite with BeforeAndAfter with Matchers {
           "type" -> "Node",
           "nodeLabelsOrRelType" -> Seq("A").asJava,
           "property" -> "",
-          "cypherType" -> ""
+          "cypherType" -> "",
+          "warnings" -> Seq.empty.asJava
         )
       )
       result.toSet should equal(expected)
     })
   }
 
-  test("testOkapiSchemaForNullableProperty") {
+  test("Okapi schema for nullable property") {
     db.execute("CREATE (:A {val: 1}), (:A)").close()
     testResult(db, "CALL org.opencypher.okapi.procedures.schema", (result) => {
       val expected = Set(
@@ -144,14 +153,15 @@ class OkapiTest extends FunSuite with BeforeAndAfter with Matchers {
           "type" -> "Node",
           "nodeLabelsOrRelType" -> Seq("A").asJava,
           "property" -> "val",
-          "cypherType" -> "INTEGER?"
+          "cypherType" -> "INTEGER?",
+          "warnings" -> Seq.empty.asJava
         )
       )
       result.toSet should equal(expected)
     })
   }
 
-  test("testOkapiSchemaForSingleRelationship") {
+  test("Okapi schema for single relationship") {
     db.execute("CREATE (a:A)" + "CREATE (b:A)" + "CREATE (a)-[:REL {val1: 'String', val2: true}]->(b)" + "CREATE (a)-[:REL {val1: 'String', val2: 2.0}]->(b)").close()
     testResult(db, "CALL org.opencypher.okapi.procedures.schema", (result) => {
       val expected = Set(
@@ -159,28 +169,31 @@ class OkapiTest extends FunSuite with BeforeAndAfter with Matchers {
           "type" -> "Node",
           "nodeLabelsOrRelType" -> Seq("A").asJava,
           "property" -> "",
-          "cypherType" -> ""
+          "cypherType" -> "",
+          "warnings" -> Seq.empty.asJava
         ),
 
         Map(
           "type" -> "Relationship",
           "nodeLabelsOrRelType" -> Seq("REL").asJava,
           "property" -> "val1",
-          "cypherType" -> "STRING"
+          "cypherType" -> "STRING",
+          "warnings" -> Seq.empty.asJava
         ),
 
         Map(
           "type" -> "Relationship",
           "nodeLabelsOrRelType" -> Seq("REL").asJava,
           "property" -> "val2",
-          "cypherType" -> "ANY"
+          "cypherType" -> "ANY",
+          "warnings" -> Seq.empty.asJava
         )
       )
       result.toSet should equal(expected)
     })
   }
 
-  test("testOkapiSchemaForRelationshipWithoutProperties") {
+  test("Okapi schema for relationship without properties") {
     db.execute("CREATE (a:A)" + "CREATE (b:A)" + "CREATE (a)-[:REL]->(b)").close()
     testResult(db, "CALL org.opencypher.okapi.procedures.schema", (result) => {
       val expected = Set(
@@ -188,19 +201,51 @@ class OkapiTest extends FunSuite with BeforeAndAfter with Matchers {
           "type" -> "Node",
           "nodeLabelsOrRelType" -> Seq("A").asJava,
           "property" -> "",
-          "cypherType" -> ""
+          "cypherType" -> "",
+          "warnings" -> Seq.empty.asJava
         ),
 
         Map(
           "type" -> "Relationship",
           "nodeLabelsOrRelType" -> Seq("REL").asJava,
           "property" -> "",
-          "cypherType" -> ""
+          "cypherType" -> "",
+          "warnings" -> Seq.empty.asJava
         )
       )
       result.toSet should equal(expected)
     })
   }
+
+  test("Okapi schema with unsupported data types") {
+    db.execute("CREATE (a:A { foo: time(), bar : 42 })" + "CREATE (b:A)" + "CREATE (a)-[:REL]->(b)").close()
+    testResult(db, "CALL org.opencypher.okapi.procedures.schema", (result) => {
+      val expected = Set(
+        Map(
+          "type" -> "Node",
+          "nodeLabelsOrRelType" -> Seq("A").asJava,
+          "property" -> "bar",
+          "cypherType" -> "INTEGER?",
+          "warnings" -> Seq.empty.asJava
+        ),
+        Map(
+          "type" -> "Relationship",
+          "nodeLabelsOrRelType" -> Seq("REL").asJava,
+          "property" -> "",
+          "cypherType" -> "",
+          "warnings" -> Seq.empty.asJava
+        )
+      )
+      val (meta, normal) = result.toSet.partition { map => map("type") == "Meta" }
+      normal should equal(expected)
+
+      meta.size should equal(1)
+      val warnings = meta.head("warnings").asInstanceOf[Wrappers.SeqWrapper[String]].asScala
+      warnings.length should equal(1)
+      warnings.head should include("unsupported type OffsetTime")
+    })
+  }
+
 
   private def registerProcedure(db: GraphDatabaseService, procedures: Class[_]*): Unit = {
     val proceduresService = db.asInstanceOf[GraphDatabaseAPI].getDependencyResolver.resolveDependency(classOf[Procedures])
