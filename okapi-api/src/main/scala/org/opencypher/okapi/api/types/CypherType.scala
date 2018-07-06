@@ -1,70 +1,48 @@
 package org.opencypher.okapi.api.types
 
-object CypherType extends App {
+import cats.Monoid
+import org.opencypher.okapi.api.schema.Schema
+import org.opencypher.okapi.api.value.CypherValue._
+import upickle.default._
+
+import scala.language.postfixOps
+
+object CypherType {
 
   val CTNumber: CypherType = CTInteger union CTFloat
-  val CTVoid: CypherType = UnionType(Set.empty)
 
-  println(s"CTInteger = $CTInteger")
-  println(s"CTInteger.nullable = ${CTInteger.nullable}")
-  println(s"CTFloat = $CTFloat")
-  println(s"CTNull = $CTNull")
-  println(s"CTVoid = $CTVoid")
-  println(s"CTInteger union CTFloat = ${CTInteger union CTFloat}")
-  println(s"(CTInteger union CTFloat).nullable = ${(CTInteger union CTFloat).nullable}")
-  println(s"CTInteger intersect CTFloat = ${CTInteger intersect CTFloat}")
-  println(s"CTList(CTInteger union CTFloat) = ${CTList(CTInteger union CTFloat)}")
-  println(s"CTWildcard = ${CTWildcard}")
-  println(s"CTWildcard union CTInteger = ${CTWildcard union CTInteger}")
-  println(s"CTWildcard intersect CTInteger = ${CTWildcard intersect CTInteger}")
-  println(s"CTNode(Set(A)) = ${CTNode(Set("A"))}")
-  println(s"CTNode(Set(A)) isSubTypeOf CTNode(Set(A, B)) = ${CTNode(Set("A")) isSubTypeOf CTNode(Set("A", "B"))}")
-  println(s"CTNode(Set(A)) isSuperTypeOf CTNode(Set(A, B)) = ${CTNode(Set("A")) isSuperTypeOf CTNode(Set("A", "B"))}")
+  def anyNode(implicit schema: Schema): CypherType = CTNode.any
 
-}
+  def anyRelationship(implicit schema: Schema): CypherType = CTRelationship.any
 
-// BASIC
-trait BasicType extends CypherType {
-  override def alternatives: Set[CypherType] = Set(this)
+  def parse(typeString: String): CypherType = {
+    ???
+  }
 
-  override def name: String = getClass.getSimpleName.filterNot(_ == '$')
-}
-
-case object CTInteger extends BasicType
-
-case object CTFloat extends BasicType
-
-case object CTNull extends BasicType
-
-case object CTWildcard extends BasicType
-
-case class CTNode(labels: Set[String]) extends BasicType {
-  override def isSubTypeOf(other: CypherType): Boolean = {
-    other match {
-      case CTWildcard => true
-      case CTNode(otherLabels) if labels subsetOf otherLabels => true
-      case _ => false
+  implicit class TypeCypherValue(cv: CypherValue) {
+    def cypherType: CypherType = {
+      cv match {
+        case CypherNull => CTNull
+        case CypherBoolean(_) => CTBoolean
+        case CypherFloat(_) => CTFloat
+        case CypherInteger(_) => CTInteger
+        case CypherString(_) => CTString
+        case CypherNode(_, labels, _) => CTNode(labels)
+        case CypherRelationship(_, _, _, relType, _) => CTRelationship(relType)
+        case CypherList(l) => CTList(l.map(_.cypherType).foldLeft[CypherType](CTVoid)(_.join(_)))
+      }
     }
   }
 
-  override def isSuperTypeOf(other: CypherType): Boolean = {
-    other match {
-      case CTWildcard => false
-      case CTNode(otherLabels) if otherLabels subsetOf labels => true
-      case _ => false
-    }
+  implicit val joinMonoid: Monoid[CypherType] = new Monoid[CypherType] {
+    override def empty: CypherType = CTVoid
+
+    override def combine(x: CypherType, y: CypherType): CypherType = x join y
   }
 
-  override def intersect(other: CypherType): CypherType = super.intersect(other)
+  implicit def rw: ReadWriter[CypherType] = readwriter[String].bimap[CypherType](_.name, s => parse(s))
+
 }
-
-case class CTList(elementType: CypherType) extends BasicType {
-  override def name: String = s"CTList$elementType"
-}
-
-// UNION
-case class UnionType(alternatives: Set[CypherType]) extends CypherType
-
 
 trait CypherType {
 
@@ -72,26 +50,18 @@ trait CypherType {
 
   def material: Set[CypherType] = alternatives.filterNot(_ == CTNull)
 
-  def isSubTypeOf(other: CypherType): Boolean = {
-    if (other == CTWildcard) {
-      true
-    } else {
-      alternatives.subsetOf(other.alternatives)
-    }
+  def subTypeOf(other: CypherType): Boolean = {
+    other == CTAny || this == other || alternatives.subsetOf(other.alternatives)
   }
 
-  def isSuperTypeOf(other: CypherType): Boolean = {
-    if (this == CTWildcard) {
-      true
-    } else {
-      other.alternatives.subsetOf(alternatives)
-    }
+  def superTypeOf(other: CypherType): Boolean = {
+    this == CTAny || this == other || other.alternatives.subsetOf(alternatives)
   }
 
   def intersect(other: CypherType): CypherType = {
-    if (this == CTWildcard) {
+    if (this == CTAny) {
       other
-    } else if (other == CTWildcard) {
+    } else if (other == CTAny) {
       this
     } else if (this == other) {
       this
@@ -104,12 +74,12 @@ trait CypherType {
     }
   }
 
-  @deprecated
+  // TODO: Remove
   def meet(other: CypherType): CypherType = intersect(other)
 
   def union(other: CypherType): CypherType = {
-    if (this == CTWildcard || other == CTWildcard) {
-      CTWildcard
+    if (this == CTAny || other == CTAny) {
+      CTAny
     } else if (this == other) {
       this
     } else if (alternatives.contains(other)) {
@@ -121,7 +91,7 @@ trait CypherType {
     }
   }
 
-  @deprecated
+  // TODO: Remove
   def join(other: CypherType): CypherType = union(other)
 
   def isNullable: Boolean = {
@@ -136,28 +106,91 @@ trait CypherType {
     }
   }
 
-  def name: String = alternatives.map(_.name).mkString("|")
+  def name: String = alternatives.map(_.name).toSeq.sorted.mkString("|")
 
   override def toString: String = s"[$name]"
 
-  override def equals(other: Any): Boolean = {
-    other match {
-      case otherBasic: BasicType => this.eq(otherBasic) || {
-        this match {
-          case _: BasicType => false
-          case _ => this.alternatives.size == 1 && this.alternatives.head == other
-        }
-      }
-      case that: CypherType => this.eq(that) || alternatives == that.alternatives
-      case _ => false
-    }
+}
+
+// BASIC
+trait BasicType extends CypherType {
+  override def alternatives: Set[CypherType] = Set(this)
+
+  override def name: String = getClass.getSimpleName.filterNot(_ == '$')
+}
+
+case object CTBoolean extends BasicType
+
+case object CTString extends BasicType
+
+case object CTInteger extends BasicType
+
+case object CTFloat extends BasicType
+
+case object CTNull extends BasicType
+
+case object CTVoid extends BasicType {
+  override def alternatives: Set[CypherType] = Set.empty
+}
+
+case object CTAny extends BasicType
+
+trait CTEntity extends BasicType
+
+object CTNode {
+
+  def any(implicit schema: Schema): CypherType = {
+    UnionType(schema.allLabelCombinations.map(CTNode(_)))
   }
 
-  override def hashCode: Int = {
-    this match {
-      case _: UnionType => alternatives.hashCode
-      case _ => super.hashCode
+  def apply(labels: String*)(implicit schema: Schema): CypherType = {
+    if (labels.isEmpty) {
+      CTNode(Set.empty[String])
+    } else {
+      val requiredLabels = labels.toSet
+      val allPossibleCombos = schema.allLabelCombinations.filter(requiredLabels.subsetOf)
+      UnionType(allPossibleCombos.map { ls: Set[String] => CTNode(ls) })
     }
   }
+}
+
+case class CTNode(labels: Set[String]) extends CTEntity {
+
+  override def name: String = s"CTNode(${labels.toSeq.sorted.mkString(", ")})"
 
 }
+
+object CTRelationship {
+
+  def any(implicit schema: Schema): CypherType = {
+    CTRelationship(schema.relationshipTypes)
+  }
+
+  def apply(relType: String, relTypes: String*)(implicit schema: Schema): CypherType = {
+    CTRelationship(relTypes.toSet + relType)
+  }
+
+  def apply(relTypes: Set[String])(implicit schema: Schema): CypherType = {
+    val possibleTypes = schema.relationshipTypes intersect relTypes
+    if (possibleTypes.isEmpty) {
+      CTVoid
+    } else {
+      possibleTypes.tail.map(e => CTRelationship(e)).foldLeft(CTRelationship(possibleTypes.head): CypherType) { case (t, n) =>
+        t.union(n)
+      }
+    }
+  }
+}
+
+case class CTRelationship(relType: String) extends CTEntity {
+
+  override def name: String = s"CTRelationship($relType)"
+
+}
+
+case class CTList(elementType: CypherType) extends BasicType {
+  override def name: String = s"CTList$elementType"
+}
+
+// UNION
+case class UnionType(alternatives: Set[CypherType]) extends CypherType
