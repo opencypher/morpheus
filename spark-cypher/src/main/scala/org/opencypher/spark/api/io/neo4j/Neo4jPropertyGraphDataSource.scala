@@ -61,13 +61,14 @@ object Neo4jPropertyGraphDataSource {
 
 case class Neo4jPropertyGraphDataSource(
   config: Neo4jConfig,
-  entireGraph: GraphName = defaultEntireGraphName
+  omitImportFailures: Boolean = false,
+  entireGraphName: GraphName = defaultEntireGraphName
 )(implicit session: CAPSSession)
   extends AbstractPropertyGraphDataSource {
 
   private implicit class RichGraphName(graphName: GraphName) {
     def metaLabel: Option[String] = graphName match {
-      case `entireGraph` => None
+      case `entireGraphName` => None
       case subGraph => Some(metaPrefix + subGraph)
     }
   }
@@ -117,7 +118,7 @@ case class Neo4jPropertyGraphDataSource(
   }
 
   override protected def readSchema(graphName: GraphName): CAPSSchema = {
-    val graphSchema = SchemaFromProcedure(config) match {
+    val graphSchema = SchemaFromProcedure(config, omitImportFailures) match {
       case None =>
         // TODO: add link to procedure installation
         throw UnsupportedOperationException("Neo4j PGDS requires okapi-neo4j-procedures to be installed in Neo4j")

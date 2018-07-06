@@ -48,7 +48,7 @@ class Neo4jPropertyGraphDataSourceUnitTest extends CAPSTestSuite with Neo4jServe
   private val entireGraph = "allOfIt"
 
   it("constructs flat node queries from schema") {
-    Neo4jPropertyGraphDataSource(neo4jConfig, GraphName(entireGraph))
+    Neo4jPropertyGraphDataSource(neo4jConfig, entireGraphName = GraphName(entireGraph))
       .flatNodeQuery(GraphName(entireGraph), Set("A"), schema) should equal(
       s"""|MATCH (n:A)
           |WHERE LENGTH(LABELS(n)) = 1
@@ -57,7 +57,7 @@ class Neo4jPropertyGraphDataSourceUnitTest extends CAPSTestSuite with Neo4jServe
   }
 
   it("constructs flat node queries from schema without properties") {
-    Neo4jPropertyGraphDataSource(neo4jConfig, GraphName(entireGraph))
+    Neo4jPropertyGraphDataSource(neo4jConfig, entireGraphName = GraphName(entireGraph))
       .flatNodeQuery(GraphName(entireGraph), Set("B"), schema) should equal(
       s"""|MATCH (n:B)
           |WHERE LENGTH(LABELS(n)) = 1
@@ -66,7 +66,7 @@ class Neo4jPropertyGraphDataSourceUnitTest extends CAPSTestSuite with Neo4jServe
   }
 
   it("constructs flat relationship queries from schema") {
-    Neo4jPropertyGraphDataSource(neo4jConfig, GraphName(entireGraph))
+    Neo4jPropertyGraphDataSource(neo4jConfig, entireGraphName = GraphName(entireGraph))
       .flatRelQuery(GraphName(entireGraph), "TYPE", schema) should equal(
       s"""|MATCH (s)-[r:TYPE]->(e)
           |RETURN id(r) AS $sourceIdKey, id(s) AS $sourceStartNodeKey, id(e) AS $sourceEndNodeKey, r.f, r.foo""".stripMargin
@@ -74,7 +74,7 @@ class Neo4jPropertyGraphDataSourceUnitTest extends CAPSTestSuite with Neo4jServe
   }
 
   it("constructs flat relationship queries from schema with no properties") {
-    Neo4jPropertyGraphDataSource(neo4jConfig, GraphName(entireGraph))
+    Neo4jPropertyGraphDataSource(neo4jConfig, entireGraphName = GraphName(entireGraph))
       .flatRelQuery(GraphName(entireGraph), "TYPE2", schema) should equal(
       s"""|MATCH (s)-[r:TYPE2]->(e)
           |RETURN id(r) AS $sourceIdKey, id(s) AS $sourceStartNodeKey, id(e) AS $sourceEndNodeKey""".stripMargin

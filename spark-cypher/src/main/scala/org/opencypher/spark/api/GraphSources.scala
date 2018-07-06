@@ -58,6 +58,16 @@ object FSGraphSources {
 }
 
 object CypherGraphSources {
-  def neo4j(config: Neo4jConfig)(implicit session: CAPSSession): Neo4jPropertyGraphDataSource =
-    Neo4jPropertyGraphDataSource(config)
+  /**
+    * Creates a Neo4j Property Graph Data Source
+    *
+    * @param config             Neo4j connection configuration
+    * @param omitImportFailures If set to true, import failures do not throw runtime exceptions but omit the unsupported
+    *                           properties instead and log warnings
+    * @param session            CAPS session
+    * @return Neo4j Property Graph Data Source
+    */
+  def neo4j(config: Neo4jConfig, omitImportFailures: Boolean = false)
+    (implicit session: CAPSSession): Neo4jPropertyGraphDataSource =
+    Neo4jPropertyGraphDataSource(config, omitImportFailures = omitImportFailures)
 }

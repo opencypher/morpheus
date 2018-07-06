@@ -28,7 +28,8 @@ package org.opencypher.okapi.procedures;
 
 import java.util.List;
 
-public class OkapiSchemaInfo {
+public class OkapiSchemaInfo
+{
     /**
      * Indicates whether the entry is a node or a relationship
      */
@@ -45,11 +46,22 @@ public class OkapiSchemaInfo {
      * The CypherType of the given property on the given label combination / relationship type
      */
     public final String cypherType;
+    /**
+     * List of warnings created during schema creation.
+     */
+    public final List<String> warnings;
 
-    public OkapiSchemaInfo( String type, List<String> nodeLabelsOrRelType, String property, String cypherType ) {
+    public OkapiSchemaInfo(
+            String type,
+            List<String> nodeLabelsOrRelType,
+            String property,
+            String cypherType,
+            List<String> warnings )
+    {
         this.type = type;
         this.nodeLabelsOrRelType = nodeLabelsOrRelType;
         this.property = property;
         this.cypherType = cypherType;
+        this.warnings = warnings;
     }
 }

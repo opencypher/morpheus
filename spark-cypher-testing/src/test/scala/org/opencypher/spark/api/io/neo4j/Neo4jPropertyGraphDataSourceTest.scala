@@ -29,6 +29,7 @@ package org.opencypher.spark.api.io.neo4j
 import org.opencypher.okapi.api.graph.{CypherResult, GraphName, Namespace}
 import org.opencypher.okapi.api.value.CypherValue.{CypherMap, CypherNull}
 import org.opencypher.okapi.impl.exception.IllegalArgumentException
+import org.opencypher.okapi.impl.exception.UnsupportedOperationException
 import org.opencypher.okapi.testing.Bag
 import org.opencypher.okapi.testing.Bag._
 import org.opencypher.spark.api.CypherGraphSources
@@ -47,7 +48,7 @@ class Neo4jPropertyGraphDataSourceTest
   it("can read lists from Neo4j") {
     val dataSource = CypherGraphSources.neo4j(neo4jConfig)
 
-    val graph = dataSource.graph(dataSource.entireGraph).asCaps
+    val graph = dataSource.graph(dataSource.entireGraphName).asCaps
     graph.cypher("MATCH (n) RETURN n.languages").getRecords.iterator.toBag should equal(Bag(
       CypherMap("n.languages" -> Seq("German", "English", "Klingon")),
       CypherMap("n.languages" -> Seq()),
@@ -60,7 +61,7 @@ class Neo4jPropertyGraphDataSourceTest
   it("should load a graph from Neo4j via DataSource") {
     val dataSource = CypherGraphSources.neo4j(neo4jConfig)
 
-    val graph = dataSource.graph(dataSource.entireGraph).asCaps
+    val graph = dataSource.graph(dataSource.entireGraphName).asCaps
     graph.nodes("n").toCypherMaps.collect.toBag should equal(teamDataGraphNodes)
     graph.relationships("r").toCypherMaps.collect.toBag should equal(teamDataGraphRels)
   }
@@ -68,7 +69,7 @@ class Neo4jPropertyGraphDataSourceTest
   it("should load a graph from Neo4j via catalog") {
     val testNamespace = Namespace("myNeo4j")
     val dataSource = CypherGraphSources.neo4j(neo4jConfig)
-    val testGraphName = dataSource.entireGraph
+    val testGraphName = dataSource.entireGraphName
 
     caps.registerSource(testNamespace, dataSource)
 
@@ -79,10 +80,10 @@ class Neo4jPropertyGraphDataSourceTest
     edges.getRecords.collect.toBag should equal(teamDataGraphRels)
   }
 
-  it("should ignore properties with unsupported types") {
+  it("should omit properties with unsupported types if corresponding flag is set") {
     neo4jConfig.cypher(s"""CREATE (n:Unsupported:${metaPrefix}test { foo: time(), bar: 42 })""")
 
-    val dataSource = CypherGraphSources.neo4j(neo4jConfig)
+    val dataSource = CypherGraphSources.neo4j(neo4jConfig, omitImportFailures = true)
     val graph = dataSource.graph(GraphName("test")).asCaps
     val nodes = graph.nodes("n").toCypherMaps.collect.toList
     nodes.size shouldBe 1
@@ -91,4 +92,16 @@ class Neo4jPropertyGraphDataSourceTest
       case other => IllegalArgumentException("a CAPSNode", other)
     }
   }
+
+  it("should throw exception if properties with unsupported types are being imported") {
+    an[UnsupportedOperationException] should be thrownBy {
+      neo4jConfig.cypher(s"""CREATE (n:Unsupported:${metaPrefix}test { foo: time(), bar: 42 })""")
+
+      val dataSource = CypherGraphSources.neo4j(neo4jConfig)
+      val graph = dataSource.graph(GraphName("test")).asCaps
+      graph.nodes("n").toCypherMaps.collect.toList
+    }
+  }
+
+
 }

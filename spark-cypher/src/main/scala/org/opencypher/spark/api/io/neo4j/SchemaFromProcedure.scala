@@ -26,10 +26,12 @@
  */
 package org.opencypher.spark.api.io.neo4j
 
+import org.apache.log4j.LogManager
 import org.neo4j.driver.v1.Value
 import org.neo4j.driver.v1.util.Function
 import org.opencypher.okapi.api.schema.Schema
 import org.opencypher.okapi.api.types.CypherType
+import org.opencypher.okapi.impl.exception.UnsupportedOperationException
 import org.opencypher.spark.impl.io.neo4j.Neo4jHelpers._
 
 import scala.collection.JavaConverters._
@@ -37,16 +39,18 @@ import scala.util.{Failure, Success, Try}
 
 object SchemaFromProcedure {
 
+  private val log = LogManager.getLogger(getClass)
+
   val schemaProcedureName = "org.opencypher.okapi.procedures.schema"
 
-  def apply(config: Neo4jConfig): Option[Schema] = {
+  def apply(config: Neo4jConfig, omitImportFailures: Boolean): Option[Schema] = {
     Try {
       config.cypher("CALL dbms.procedures() YIELD name AS name").exists { map =>
         map("name").value == schemaProcedureName
       }
     } match {
       case Success(true) =>
-        schemaFromProcedure(config)
+        schemaFromProcedure(config, omitImportFailures)
       case Success(false) =>
         System.err.println("Neo4j schema procedure not activated. Consider activating the procedure `" + schemaProcedureName + "`.")
         None
@@ -56,24 +60,44 @@ object SchemaFromProcedure {
     }
   }
 
-  private[neo4j] def schemaFromProcedure(config: Neo4jConfig): Option[Schema] = {
+  private[neo4j] def schemaFromProcedure(config: Neo4jConfig, omitImportFailures: Boolean): Option[Schema] = {
     Try {
       val rows = config.execute { session =>
         val result = session.run("CALL " + schemaProcedureName)
 
-        result.list().asScala.map { row =>
-          val typ = row.get("type").asString()
-          val labels = row.get("nodeLabelsOrRelType").asList(new Function[Value, String] {
-            override def apply(v1: Value): String = v1.asString()
-          }).asScala.toList
+        result.list().asScala.flatMap { row =>
+          if (row.get("type").asString() == "Meta") {
 
-          row.get("property").asString() match {
-            case "" => // this label/type has no properties
-              (typ, labels, None, None)
-            case property =>
-              val typeString = row.get("cypherType").asString()
-              val cypherType = CypherType.fromName(typeString)
-              (typ, labels, Some(property), cypherType)
+            val isEmpty = row.get("warnings").isEmpty
+
+            if (!isEmpty && !omitImportFailures) {
+              val firstWarning = row.get("warnings").asList(new Function[Value, String] {
+                override def apply(warning: Value): String = warning.toString
+              }).get(0)
+
+              throw UnsupportedOperationException(
+                s"$firstWarning To omit unsupported properties during import set flag `GraphSources.cypher.neo4j(omitImportFailures = true)`")
+            }
+            if (!isEmpty) {
+              row.get("warnings").asList(new Function[Value, Unit] {
+                override def apply(warning: Value): Unit = log.warn(s"$warning This property is omitted on this entity.")
+              })
+            }
+            Seq.empty
+          } else {
+            val typ = row.get("type").asString()
+            val labels = row.get("nodeLabelsOrRelType").asList(new Function[Value, String] {
+              override def apply(v1: Value): String = v1.asString()
+            }).asScala.toList
+
+            row.get("property").asString() match {
+              case "" => // this label/type has no properties
+                Seq((typ, labels, None, None))
+              case property =>
+                val typeString = row.get("cypherType").asString()
+                val cypherType = CypherType.fromName(typeString)
+                Seq((typ, labels, Some(property), cypherType))
+            }
           }
         }
       }

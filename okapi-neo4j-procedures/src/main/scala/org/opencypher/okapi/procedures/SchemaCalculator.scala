@@ -33,7 +33,7 @@ import org.neo4j.graphdb._
 import org.neo4j.kernel.api.KernelTransaction
 import org.neo4j.logging.Log
 import org.opencypher.okapi.api.schema.PropertyKeys.PropertyKeys
-import org.opencypher.okapi.api.schema.Schema
+import org.opencypher.okapi.api.schema.{PropertyKeys, Schema}
 import org.opencypher.okapi.api.types.CypherType
 import org.opencypher.okapi.api.types.CypherType._
 import org.opencypher.okapi.api.value.CypherValue
@@ -45,6 +45,20 @@ import scala.concurrent.{Await, ExecutionContext, Future}
 
 class SchemaCalculator(db: GraphDatabaseService, tx: KernelTransaction, log: Log) {
 
+  private trait EntityType {
+    def name: String
+  }
+
+  private case object Node extends EntityType {
+    override val name: String = "Node"
+  }
+
+  private case object Relationship extends EntityType {
+    override val name: String = "Relationship"
+  }
+
+  private var warnings: Seq[String] = Seq.empty
+
   /**
     * Computes the schema of the Neo4j graph as used by Okapi
     *
@@ -53,18 +67,18 @@ class SchemaCalculator(db: GraphDatabaseService, tx: KernelTransaction, log: Log
   def constructOkapiSchemaInfo(): Stream[OkapiSchemaInfo] = {
 
     val nodes: Iterator[Node] = db.getAllNodes.iterator().asScala
-    val nodesSchema = computerEntitySchema(nodes){ node =>
-        val propertyTypes = extractPropertyTypes(node.getAllProperties.asScala)
-        val labelSet = node.getLabels.iterator().asScala.map(_.name).toSet
-        val schema = Schema.empty.withNodePropertyKeys(labelSet.toSeq: _*)(propertyTypes.toSeq: _*)
-        schema
+    val nodesSchema = computerEntitySchema(nodes) { node: Node =>
+      val labelSet = node.getLabels.iterator().asScala.map(_.name).toSet
+      val propertyTypes = extractPropertyTypes(Node, node.getId, node.getAllProperties.asScala)
+      val schema = Schema.empty.withNodePropertyKeys(labelSet.toSeq: _*)(propertyTypes.toSeq: _*)
+      schema
     }
 
     val relationships = db.getAllRelationships.iterator().asScala
-    val relationshipsSchema = computerEntitySchema(relationships){ relationship =>
-        val propertyTypes = extractPropertyTypes(relationship.getAllProperties.asScala)
-        val relType = relationship.getType.name
-        Schema.empty.withRelationshipPropertyKeys(relType)(propertyTypes.toSeq: _*)
+    val relationshipsSchema = computerEntitySchema(relationships) { relationship =>
+      val relType = relationship.getType.name
+      val propertyTypes = extractPropertyTypes(Relationship, relationship.getId, relationship.getAllProperties.asScala)
+      Schema.empty.withRelationshipPropertyKeys(relType)(propertyTypes.toSeq: _*)
     }
 
     val nodeStream = nodesSchema.labelPropertyMap.map.flatMap {
@@ -75,14 +89,16 @@ class SchemaCalculator(db: GraphDatabaseService, tx: KernelTransaction, log: Log
       case (relType, properties) => getOkapiSchemaInfo("Relationship", Seq(relType), properties)
     }
 
-    (nodeStream ++ relStream).asJavaCollection.stream()
+    val  metaSchemaInfo = getOkapiSchemaInfo("Meta", Seq.empty, PropertyKeys.empty, warnings)
+
+    (nodeStream ++ relStream ++ metaSchemaInfo).asJavaCollection.stream()
   }
 
   /**
     * Computes the entity schema for the given entities by computing the schema for each individual entity and then
     * combining them. Uses batching to parallelize the computation
     *
-    * @param entities entities for which to calculate the schema
+    * @param entities  entities for which to calculate the schema
     * @param extractor function that computes the schema for a given entity
     * @tparam T entity type
     * @return
@@ -104,7 +120,11 @@ class SchemaCalculator(db: GraphDatabaseService, tx: KernelTransaction, log: Log
     * @param allProperties property map of a Node/Relationship
     * @return
     */
-  private def extractPropertyTypes(allProperties: mutable.Map[String, AnyRef]): mutable.Map[String, CypherType] = {
+  private def extractPropertyTypes(
+    entityType: EntityType,
+    id: Long,
+    allProperties: mutable.Map[String, AnyRef]
+  ): mutable.Map[String, CypherType] = {
     allProperties.flatMap {
       case (key, value) =>
         CypherValue.get(value).map(_.cypherType) match {
@@ -112,7 +132,10 @@ class SchemaCalculator(db: GraphDatabaseService, tx: KernelTransaction, log: Log
             Some(key -> cypherType)
 
           case None =>
-            log.warn(s"Schema procedure does not support type for property $key = $value of type ${value.getClass.getSimpleName}")
+            val warning =
+              s"${entityType.name}($id) has property `$key = $value` of unsupported type ${value.getClass.getSimpleName}."
+            log.warn(warning)
+            warnings = warnings :+ warning
             None
         }
     }
@@ -121,21 +144,22 @@ class SchemaCalculator(db: GraphDatabaseService, tx: KernelTransaction, log: Log
   /**
     * Generates the OkapiSchemaInfo entries for a given label combination / relationship type
     *
-    * @param typ identifies the created entries (Label or Relationship)
-    * @param labels label combination / relationship type for which the property keys are computed
+    * @param typ          identifies the created entries (Label or Relationship)
+    * @param labels       label combination / relationship type for which the property keys are computed
     * @param propertyKeys propertyKeys for the given labels/ relationship type
     * @return
     */
   private def getOkapiSchemaInfo(
     typ: String,
     labels: Seq[String],
-    propertyKeys: PropertyKeys
+    propertyKeys: PropertyKeys,
+    warnings: Seq[String] = Seq.empty
   ): Seq[OkapiSchemaInfo] = {
     if (propertyKeys.isEmpty) {
-      Seq( new OkapiSchemaInfo(typ, labels.asJava, "", "" ) )
+      Seq(new OkapiSchemaInfo(typ, labels.asJava, "", "", warnings.asJava))
     } else {
       propertyKeys.map {
-        case (property, cypherType) => new OkapiSchemaInfo(typ, labels.asJava, property, cypherType.toString())
+        case (property, cypherType) => new OkapiSchemaInfo(typ, labels.asJava, property, cypherType.toString(), warnings.asJava)
       }
     }.toSeq
   }
