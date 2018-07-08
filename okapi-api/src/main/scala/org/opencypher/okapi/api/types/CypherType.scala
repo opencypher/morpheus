@@ -12,8 +12,6 @@ object CypherType {
 
   val CTVoid: CypherType = Union()
 
-  //case object CTVoid extends CypherType
-
   def parse(typeString: String): CypherType = {
     ???
   }
@@ -61,21 +59,22 @@ trait CypherType {
     }
   }
 
+  // Intersect is only supported between CTAny and CTNode
   def intersect(other: CypherType): CypherType = {
     if (this.subTypeOf(other)) {
       this
     } else if (other.subTypeOf(this)) {
       other
     } else {
-      Intersection(this, other)
+      CypherType.CTVoid
     }
   }
 
   def subTypeOf(other: CypherType): Boolean = this == other || {
     other match {
       case CTAny => true
-      case u: Union => u.superTypeOf(this)
-      case i: Intersection => i.subTypeOf(this)
+      case u: Union => u.ors.exists(this.subTypeOf)
+      case i: Intersection => i.ands.forall(this.subTypeOf)
       case _ => false
     }
   }
@@ -99,12 +98,6 @@ trait CypherType {
 
   override def toString: String = s"[$name]"
 
-  // TODO: Remove
-  def meet(other: CypherType): CypherType = intersect(other)
-
-  // TODO: Remove
-  def join(other: CypherType): CypherType = union(other)
-
 }
 
 case object CTBoolean extends CypherType
@@ -121,7 +114,11 @@ case object CTNull extends CypherType {
 
 }
 
-case object CTAny extends CypherType
+case object CTAny extends CypherType {
+
+  override def intersect(other: CypherType): CypherType = other
+
+}
 
 trait CTEntity extends CypherType
 
@@ -140,7 +137,22 @@ object CTNode {
 
 }
 
-trait CTNode extends CTEntity {
+trait CTNode extends CTEntity
+
+case object CTAnyNode extends CTNode {
+
+  override def intersect(other: CypherType): CypherType = {
+    other match {
+      case _: CTNode => other
+      case _ => super.intersect(other)
+    }
+  }
+
+}
+
+case class CTNodeWithLabel(label: String) extends CTNode {
+
+  override def name: String = s"CTNode($label)"
 
   override def subTypeOf(other: CypherType): Boolean = {
     other match {
@@ -149,15 +161,14 @@ trait CTNode extends CTEntity {
     }
   }
 
-}
-
-case object CTAnyNode extends CTNode
-
-case class CTNodeWithLabel(label: String) extends CTNode {
-
-  override def name: String = s"CTNode($label)" //.toSeq.sorted.mkString(", ")
-
-  override def isNode: Boolean = true
+  override def intersect(other: CypherType): CypherType = {
+    other match {
+      case CTAny => this
+      case CTAnyNode => this
+      case n: CTNodeWithLabel => Intersection(this, n)
+      case _ => super.intersect(other)
+    }
+  }
 
 }
 
@@ -210,6 +221,13 @@ case class CTList(elementType: CypherType) extends CypherType {
     }
   }
 
+  override def intersect(other: CypherType): CypherType = {
+    other match {
+      case CTList(otherElementType) => CTList(elementType.intersect(otherElementType))
+      case _ => super.intersect(other)
+    }
+  }
+
 }
 
 case class Intersection(ands: Set[CypherType]) extends CypherType {
@@ -226,9 +244,9 @@ case class Intersection(ands: Set[CypherType]) extends CypherType {
 
   override def intersect(other: CypherType): CypherType = {
     if (other.subTypeOf(this)) {
-      this
-    } else if (this.subTypeOf(other)) {
       other
+    } else if (this.subTypeOf(other)) {
+      this
     } else {
       Intersection((ands + other).toSeq: _*)
     }
@@ -258,17 +276,13 @@ object Intersection {
 }
 
 case class Union(ors: Set[CypherType]) extends CypherType {
-  require(ors.forall(!_.isInstanceOf[Union]), s"Nested unions are not allowed, got ${ors.mkString(", ")}")
+  require(ors.forall(!_.isInstanceOf[Union]), s"Nested unions are not allowed: ${ors.mkString(", ")}")
 
   override def subTypeOf(other: CypherType): Boolean = {
-    this == other || ors.forall(_.subTypeOf(other))
-  }
-
-  override def superTypeOf(other: CypherType): Boolean = {
     this == other || {
       other match {
-        case Union(otherOrs) => otherOrs.forall(otherOr => ors.exists(_.superTypeOf(otherOr)))
-        case _ => ors.exists(_.superTypeOf(other))
+        case Union(otherOrs) => ors.forall(or => otherOrs.exists(or.subTypeOf))
+        case _ => ors.forall(_.subTypeOf(other))
       }
     }
   }

@@ -84,7 +84,7 @@ object CypherTable {
         s"table with column key $columnKey",
         s"table with columns ${table.physicalColumns.mkString(", ")}"))
 
-      if (!columnType.subTypeOf(expectedType).isTrue) {
+      if (!columnType.subTypeOf(expectedType)) {
         if (columnType.material == expectedType.material) {
           throw IllegalArgumentException(
             s"non-nullable type for $keyDescription column `$columnKey`",

@@ -87,7 +87,7 @@ object SchemaTyper {
           case n: CTNode if n.labels.isEmpty =>
             val propType = schema.allLabelCombinations
               .map(l => schema.nodeKeyType(l, name).getOrElse(CTNull))
-              .foldLeft(CTVoid: CypherType)(_ join _)
+              .foldLeft(CTVoid: CypherType)(_ union _)
             recordType(v -> varTyp) >> recordAndUpdate(expr -> propType)
 
           // User specified label constraints - we can use those for type inference
@@ -249,7 +249,7 @@ object SchemaTyper {
       for {
         argExprs <- pure(expr.arguments)
         argTypes <- argExprs.toList.traverse(process[R])
-        computedType <- argTypes.reduceLeftOption(_ join _) match {
+        computedType <- argTypes.reduceLeftOption(_ union _) match {
           case Some(innerType) =>
             pure[R, CypherType](CTList(innerType.nullable).nullable)
           case None =>
@@ -267,7 +267,7 @@ object SchemaTyper {
             case -1 => argTypes
             case other => argTypes.slice(0, other + 1)
           }
-          relevantArguments.reduceLeftOption(_ join _) match {
+          relevantArguments.reduceLeftOption(_ union _) match {
             case Some(innerType) =>
               pure[R, CypherType](innerType)
             case None =>
@@ -317,7 +317,7 @@ object SchemaTyper {
 
           // TODO: Test all cases
           case (CTList(eltTyp), CTInteger) =>
-            updateTyping(expr -> eltTyp.asNullableAs(indexTyp join eltTyp))
+            updateTyping(expr -> eltTyp.asNullableAs(indexTyp union eltTyp))
 
           case (CTListOrNull(eltTyp), CTInteger) =>
             updateTyping(expr -> eltTyp.nullable)
@@ -340,7 +340,7 @@ object SchemaTyper {
           case Some(expression) => process[R](expression)
           case None => pure[R, CypherType](alternativeType)
         }
-        result <- recordAndUpdate(expr -> alternativeType.join(defaultType))
+        result <- recordAndUpdate(expr -> alternativeType.union(defaultType))
       } yield result
 
     case _ =>
@@ -426,7 +426,7 @@ object SchemaTyper {
         argTypes <- argExprs.toList.traverse(process[R])
         arguments <- pure(argExprs.zip(argTypes))
         signatures <- selectSignaturesFor(expr, arguments)
-        computedType <- signatures.map(_._2).reduceLeftOption(_ join _) match {
+        computedType <- signatures.map(_._2).reduceLeftOption(_ union _) match {
           case Some(outputType) =>
             pure[R, CypherType](if (argTypes.exists(_.isNullable)) outputType.nullable else outputType)
 
@@ -500,14 +500,14 @@ object SchemaTyper {
           }
       }) match {
         case Some(CTVoid) => wrong[R, TyperError](UnsupportedExpr(expr)) >> pure(Set(Seq(left, right) -> CTVoid))
-        case Some(t)      => pure(Set(Seq(left, right) -> t.asNullableAs(left join right)))
+        case Some(t)      => pure(Set(Seq(left, right) -> t.asNullableAs(left union right)))
         case None         => pure(Set.empty)
       }
     }
 
     private implicit class RichCTList(val left: CTList) extends AnyVal {
       def listConcatJoin(right: CypherType): CypherType = (left, right) match {
-        case (CTList(lInner), CTList(rInner)) => CTList(lInner join rInner)
+        case (CTList(lInner), CTList(rInner)) => CTList(lInner union rInner)
         case (CTList(CTString), CTString)     => left
         case (CTList(CTInteger), CTInteger)   => left
         case (CTList(CTFloat), CTInteger)     => CTList(CTNumber)

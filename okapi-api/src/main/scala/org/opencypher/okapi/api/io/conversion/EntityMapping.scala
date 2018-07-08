@@ -26,7 +26,7 @@
  */
 package org.opencypher.okapi.api.io.conversion
 
-import org.opencypher.okapi.api.types.{CypherType, DefiniteCypherType}
+import org.opencypher.okapi.api.types.CypherType
 import org.opencypher.okapi.impl.exception.IllegalArgumentException
 
 /**
@@ -34,8 +34,7 @@ import org.opencypher.okapi.impl.exception.IllegalArgumentException
   */
 trait EntityMapping {
 
-  // TODO: CTEntity
-  def cypherType: CypherType with DefiniteCypherType
+  def cypherType: CypherType
 
   def sourceIdKey: String
 

@@ -171,7 +171,7 @@ object SparkConversions {
     def toStructType: StructType = {
       val structFields = header.columns.toSeq.sorted.map { column =>
         val expressions = header.expressionsFor(column)
-        val commonType = expressions.map(_.cypherType).reduce(_ join _)
+        val commonType = expressions.map(_.cypherType).reduce(_ union _)
         assert(commonType.isSparkCompatible,s"""
          |Expressions $expressions with common super type $commonType mapped to column $column have no compatible data type.
          """.stripMargin)

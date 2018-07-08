@@ -259,7 +259,7 @@ trait Schema {
     * @param relType Specifies the type for which the schema is extracted
     * @return sub-schema for `relType`
     */
-  private[opencypher] def forRelationship(relType: CTRelationship): Schema
+  private[opencypher] def forRelationship(relType: CypherType): Schema
 
   /**
     * Returns the updated schema, but overwrites any existing node property keys for the given labels.

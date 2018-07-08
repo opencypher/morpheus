@@ -26,6 +26,9 @@
  */
 package org.opencypher.okapi.api.schema
 
+import org.opencypher.okapi.api.types.CypherType
+import org.opencypher.okapi.api.types.CypherType._
+import org.opencypher.okapi.api.types._
 import org.opencypher.okapi.api.types._
 import org.scalatest.{FunSpec, Matchers}
 
@@ -251,7 +254,7 @@ class SchemaTest extends FunSpec with Matchers {
         .withRelationshipPropertyKeys("KNOWS")("name" -> CTString)
     )
 
-    schema.forRelationship(CTRelationship) should equal(
+    schema.forRelationship(CTAnyRelationship) should equal(
       Schema.empty
         .withRelationshipPropertyKeys("KNOWS")("name" -> CTString)
         .withRelationshipPropertyKeys("LOVES")("deeply" -> CTBoolean, "salary" -> CTInteger)

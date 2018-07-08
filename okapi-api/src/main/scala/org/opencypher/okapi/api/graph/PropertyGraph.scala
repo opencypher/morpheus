@@ -28,7 +28,7 @@ package org.opencypher.okapi.api.graph
 
 import org.opencypher.okapi.api.schema.Schema
 import org.opencypher.okapi.api.table.CypherRecords
-import org.opencypher.okapi.api.types.{CTNode, CTRelationship}
+import org.opencypher.okapi.api.types._
 import org.opencypher.okapi.api.value.CypherValue.CypherMap
 
 /**
@@ -65,7 +65,7 @@ trait PropertyGraph extends GraphOperations {
     * @param nodeCypherType node type used for selection
     * @return table of nodes of the specified type
     */
-  def nodes(name: String, nodeCypherType: CTNode = CTNode): CypherRecords
+  def nodes(name: String, nodeCypherType: CTNode = CTAnyNode): CypherRecords
 
   /**
     * Returns all relationships in this graph with the given [[org.opencypher.okapi.api.types.CTRelationship]] type.
@@ -74,7 +74,7 @@ trait PropertyGraph extends GraphOperations {
     * @param relCypherType relationship type used for selection
     * @return table of relationships of the specified type
     */
-  def relationships(name: String, relCypherType: CTRelationship = CTRelationship): CypherRecords
+  def relationships(name: String, relCypherType: CTRelationship = CTAnyRelationship): CypherRecords
 
   /**
     * Executes a Cypher query in the session that manages this graph, using this graph as the input graph.

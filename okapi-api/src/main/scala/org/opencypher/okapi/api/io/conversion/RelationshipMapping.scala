@@ -26,7 +26,7 @@
  */
 package org.opencypher.okapi.api.io.conversion
 
-import org.opencypher.okapi.api.types.CTRelationship
+import org.opencypher.okapi.api.types.{CTRelationship, CypherType}
 import org.opencypher.okapi.impl.exception.IllegalArgumentException
 import org.opencypher.okapi.impl.util.StringEncodingUtilities._
 
@@ -166,7 +166,7 @@ final case class RelationshipMapping private[okapi](
   // on construction
   validate()
 
-  def cypherType: CTRelationship = {
+  def cypherType: CypherType = {
     val possibleRelTypes = relTypeOrSourceRelTypeKey match {
       case Left(relType) => Set(relType)
       case Right((_, possibleRelValues)) => possibleRelValues

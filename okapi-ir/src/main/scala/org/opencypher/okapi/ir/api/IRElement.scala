@@ -33,14 +33,7 @@ import org.opencypher.okapi.impl.io.SessionGraphDataSource
 import org.opencypher.okapi.ir.api.pattern._
 import org.opencypher.okapi.ir.api.set.SetPropertyItem
 
-object IRField {
-  def relTypes(field: IRField): Set[String] = field.cypherType match {
-    case CTRelationship(types, _) => types
-    case _ => Set.empty
-  }
-}
-
-final case class IRField(name: String)(val cypherType: CypherType = CTWildcard) {
+final case class IRField(name: String)(val cypherType: CypherType = CTAny) {
   override def toString = s"$name :: $cypherType"
 
   def escapedName: String = name.replaceAll("`", "``")

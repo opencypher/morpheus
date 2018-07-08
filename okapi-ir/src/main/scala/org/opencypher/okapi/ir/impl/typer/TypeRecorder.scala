@@ -44,7 +44,7 @@ final case class TypeRecorder(recordedTypes: List[(Ref[Expression], CypherType)]
     recorded.headOption match {
       case Some((ref, t)) =>
         m.get(ref) match {
-          case Some(t2) => toMap(m.updated(ref, t.join(t2)), recorded.tail)
+          case Some(t2) => toMap(m.updated(ref, t.union(t2)), recorded.tail)
           case None     => toMap(m.updated(ref, t), recorded.tail)
         }
       case None =>

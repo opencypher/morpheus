@@ -27,10 +27,11 @@
 package org.opencypher.okapi.impl.schema
 
 import org.opencypher.okapi.api.schema.PropertyKeys.PropertyKeys
-import org.opencypher.okapi.api.schema.{LabelPropertyMap, PropertyKeys, RelTypePropertyMap, Schema}
+import org.opencypher.okapi.api.schema.{LabelPropertyMap, RelTypePropertyMap, Schema}
+import org.opencypher.okapi.api.types.CypherType._
 import org.opencypher.okapi.api.types._
 import org.opencypher.okapi.impl.exception.SchemaException
-import org.opencypher.okapi.impl.schema.SchemaImpl._
+import org.opencypher.okapi.impl.schema.SchemaImpl.rw
 import org.opencypher.okapi.impl.schema.SchemaUtils._
 import upickle.Js
 import upickle.default._
@@ -124,7 +125,7 @@ final case class SchemaImpl(
       }
 
     keyToTypes
-      .mapValues(types => types.foldLeft[CypherType](CTVoid)(_ join _))
+      .mapValues(types => types.foldLeft[CypherType](CTVoid)(_ union _))
       .map {
         case (key, tpe) =>
           if (allLabelCombinations.map(nodeKeys).forall(_.get(key).isDefined))
@@ -150,9 +151,9 @@ final case class SchemaImpl(
       if (seq.size == labelCombinations.size && seq.forall(seq.head == _)) {
         seq.head._2
       } else if (seq.size < labelCombinations.size) {
-        seq.map(_._2).foldLeft(CTNull: CypherType)(_ join _)
+        seq.map(_._2).foldLeft(CTNull: CypherType)(_ union _)
       } else {
-        seq.map(_._2).reduce(_ join _)
+        seq.map(_._2).reduce(_ union _)
       }
     }
 
@@ -164,7 +165,7 @@ final case class SchemaImpl(
     val relevantTypes = if (types.isEmpty) relationshipTypes else types
 
     relevantTypes.map(relationshipKeys).foldLeft(CTVoid: CypherType) {
-      case (inferred, next) => inferred.join(next.getOrElse(key, CTNull))
+      case (inferred, next) => inferred.union(next.getOrElse(key, CTNull))
     } match {
       case CTNull => None
       case tpe => Some(tpe)
@@ -189,7 +190,7 @@ final case class SchemaImpl(
     val keysWithJoinedTypes = input.map {
       case (key, propType) =>
         val inType = existing.getOrElse(key, CTNull)
-        key -> propType.join(inType)
+        key -> propType.union(inType)
     }
 
     // Map over the rest of the existing keys to mark them all nullable
@@ -260,23 +261,25 @@ final case class SchemaImpl(
     )
   }
 
-  def forRelationship(relType: CTRelationship): Schema = {
-    val givenRelTypes = if (relType.types.isEmpty) {
-      relationshipTypes
-    } else {
-      relType.types
-    }
-
-    val updatedRelTypePropertyMap = this.relTypePropertyMap.filterForRelTypes(givenRelTypes)
-    val updatedMap = givenRelTypes.foldLeft(updatedRelTypePropertyMap.map) {
-      case (map, givenRelType) =>
-        if (!map.contains(givenRelType)) map.updated(givenRelType, PropertyKeys.empty) else map
-    }
-
-    SchemaImpl(
-      labelPropertyMap = LabelPropertyMap.empty,
-      relTypePropertyMap = RelTypePropertyMap(updatedMap)
-    )
+  def forRelationship(relType: CypherType): Schema = {
+    ???
+    // TODO: Add helper to CypherType
+//    val givenRelTypes = if (AnyRelationship.subTypeOf(relType)) {
+//      relationshipTypes
+//    } else {
+//      relType.alternatives.collect { case r: CTRelationship => r }.flatMap(_.relType)
+//    }
+//
+//    val updatedRelTypePropertyMap = this.relTypePropertyMap.filterForRelTypes(givenRelTypes)
+//    val updatedMap = givenRelTypes.foldLeft(updatedRelTypePropertyMap.map) {
+//      case (map, givenRelType) =>
+//        if (!map.contains(givenRelType)) map.updated(givenRelType, PropertyKeys.empty) else map
+//    }
+//
+//    SchemaImpl(
+//      labelPropertyMap = LabelPropertyMap.empty,
+//      relTypePropertyMap = RelTypePropertyMap(updatedMap)
+//    )
   }
 
   override def pretty: String =

@@ -61,7 +61,7 @@ object CAPSSchema {
                 (keys1.keySet intersect keys2.keySet).foreach { k =>
                   val t1 = keys1(k)
                   val t2 = keys2(k)
-                  val join = t1.join(t2)
+                  val join = t1.union(t2)
                   if (!join.isSparkCompatible) {
                     val explanation = if (combo1 == combo2) {
                       s"The unsupported type is specified on label combination ${combo1.mkString("[", ", ", "]")}."
