@@ -29,12 +29,13 @@ package org.opencypher.okapi.relational.impl.physical
 import org.opencypher.okapi.api.types.CTBoolean
 import org.opencypher.okapi.ir.api.expr._
 import org.opencypher.okapi.logical.impl.LogicalOperator
-import org.opencypher.okapi.relational.api.graph.RelationalCypherGraph
-import org.opencypher.okapi.relational.api.physical.{RelationalPlannerContext, RuntimeContext}
-import org.opencypher.okapi.relational.api.table.{FlatRelationalTable, RelationalCypherRecords}
+import org.opencypher.okapi.relational.api.physical.RelationalPlannerContext
+import org.opencypher.okapi.relational.api.table.FlatRelationalTable
 import org.opencypher.okapi.relational.impl.exception.RecordHeaderException
 import org.opencypher.okapi.relational.impl.operators.RelationalOperator
+import org.opencypher.okapi.relational.impl.physical.RelationalPlanner.process
 import org.opencypher.okapi.relational.impl.table.RecordHeader
+import org.opencypher.okapi.relational.impl.{operators => relational}
 
 trait ExpandDirection
 case object Outbound extends ExpandDirection
@@ -65,11 +66,10 @@ trait VarLengthExpandPlanner[T <: FlatRelationalTable[T]] {
   def plan: RelationalOperator[T]
 
   implicit val context: RelationalPlannerContext[T]
-  val producer: PhysicalOperatorProducer[T] = planner.producer
 
-  val physicalSourceOp: T = planner.process(sourceOp)
-  val physicalEdgeScanOp: T = relEdgeScanOp
-  val physicalTargetOp: T = planner.process(targetOp)
+  val physicalSourceOp: RelationalOperator[T] = process(sourceOp)
+  val physicalEdgeScanOp: RelationalOperator[T] = relEdgeScanOp
+  val physicalTargetOp: RelationalOperator[T] = process(targetOp)
 
   val targetHeader: RecordHeader = {
     val aliasedEdgeScanCypherType = if (lower == 0) edgeScan.cypherType.nullable else edgeScan.cypherType
@@ -104,12 +104,12 @@ trait VarLengthExpandPlanner[T <: FlatRelationalTable[T]] {
     *
     * @param dir expand direction
     */
-  protected def init(dir: ExpandDirection): T = {
-    val startEdgeScanOpAlias: T = producer.planAlias(
+  protected def init(dir: ExpandDirection): RelationalOperator[T] = {
+    val startEdgeScanOpAlias: RelationalOperator[T] = relational.Alias(
       physicalEdgeScanOp,
-      edgeScan as startEdgeScan
+      Seq(edgeScan as startEdgeScan)
     )
-    val startEdgeScanOp: T = producer.planSelect(
+    val startEdgeScanOp: RelationalOperator[T] = relational.Select(
       startEdgeScanOpAlias,
       startEdgeScanOpAlias.header.expressions.toList
     )
@@ -120,11 +120,12 @@ trait VarLengthExpandPlanner[T <: FlatRelationalTable[T]] {
       case Inbound => startEdgeScanOp.header.endNodeFor(startEdgeScan)
     }
 
-    val startOp = producer.planJoin(
+    val startOp = relational.Join(
       physicalSourceOp, startEdgeScanOp,
-      Seq(source -> edgeJoinExpr)
+      Seq(source -> edgeJoinExpr),
+      InnerJoin
     )
-    producer.planFilter(startOp, isomorphismFilter(startEdgeScan, physicalSourceOp.header.relationshipEntities))
+    relational.Filter(startOp, isomorphismFilter(startEdgeScan, physicalSourceOp.header.relationshipEntities))
   }
 
   /**
@@ -135,15 +136,15 @@ trait VarLengthExpandPlanner[T <: FlatRelationalTable[T]] {
     * @param directions     expansion directions
     * @param edgeVars       edges already traversed
     */
-  def expand(i: Int, iterationTable: T, directions: (ExpandDirection, ExpandDirection), edgeVars: Seq[Var]): (K, Var) = {
+  def expand(i: Int, iterationTable: RelationalOperator[T], directions: (ExpandDirection, ExpandDirection), edgeVars: Seq[Var]): (RelationalOperator[T], Var) = {
     val nextEdgeCT = if (i > lower) edgeScan.cypherType.nullable else edgeScan.cypherType
     val nextEdge = ListSegment(i, list)(nextEdgeCT)
 
-    val edgeScanOpWithAlias = producer.planAliases(physicalEdgeScanOp, Seq(edgeScan as nextEdge))
+    val edgeScanOpWithAlias = relational.Alias(physicalEdgeScanOp, Seq(edgeScan as nextEdge))
 
     val aliasedCacheHeader = edgeScanOpWithAlias.header.select( nextEdge)
     val selectExprs = aliasedCacheHeader.expressionsFor(nextEdge)
-    val aliasedEdgeScanOp = producer.planSelect(edgeScanOpWithAlias, selectExprs.toList)
+    val aliasedEdgeScanOp = relational.Select(edgeScanOpWithAlias, selectExprs.toList)
 
     val joinExpr = directions match {
       case (Outbound,Outbound) => iterationTable.header.endNodeFor(edgeVars.last) -> aliasedCacheHeader.startNodeFor(nextEdge)
@@ -152,10 +153,9 @@ trait VarLengthExpandPlanner[T <: FlatRelationalTable[T]] {
       case (Inbound, Inbound) => iterationTable.header.startNodeFor(edgeVars.last) -> aliasedCacheHeader.startNodeFor(nextEdge)
     }
 
-    val expandedOp = producer.planJoin(iterationTable, aliasedEdgeScanOp, Seq(joinExpr)
-    )
+    val expandedOp = relational.Join(iterationTable, aliasedEdgeScanOp, Seq(joinExpr), InnerJoin)
 
-    producer.planFilter(expandedOp, isomorphismFilter(nextEdge, edgeVars.toSet)) -> nextEdge
+    relational.Filter(expandedOp, isomorphismFilter(nextEdge, edgeVars.toSet)) -> nextEdge
   }
 
   /**
@@ -166,10 +166,10 @@ trait VarLengthExpandPlanner[T <: FlatRelationalTable[T]] {
     *
     * @param paths valid paths
     */
-  protected def finalize(paths: Seq[K]): T = {
+  protected def finalize(paths: Seq[RelationalOperator[T]]): RelationalOperator[T] = {
     // check whether to include paths of length 0
-    val unalignedOps: Seq[K] = if (lower == 0) {
-      val zeroLengthExpand: T = copyEntity(source, target, targetHeader, physicalSourceOp)
+    val unalignedOps: Seq[RelationalOperator[T]] = if (lower == 0) {
+      val zeroLengthExpand: RelationalOperator[T] = copyEntity(source, target, targetHeader, physicalSourceOp)
       if (upper == 0) Seq(zeroLengthExpand) else paths :+ zeroLengthExpand
     } else paths
 
@@ -179,24 +179,24 @@ trait VarLengthExpandPlanner[T <: FlatRelationalTable[T]] {
       nullExpressions.foldLeft(exp) {
         case (acc, expr) =>
 
-          // TODO: this is a planning performance killer, we need to squash these steps into a single table operation
+          // TODO: RelationalOperator[T]his is a planning performance killer, we need to squash these steps into a single table operation
           val lit = NullLit(expr.cypherType)
 
-          val withExpr = producer.planAddInto(acc, lit, expr)
+          val withExpr = relational.AddInto(acc, lit, expr)
 
-          val withoutLit = producer.planDrop(withExpr, Set(lit))
+          val withoutLit = relational.Drop(withExpr, Set(lit))
 
           if (withoutLit.header.column(expr) == targetHeader.column(expr)) {
             withoutLit
           } else {
-            val withRenamed = producer.planRenameColumns(withoutLit, Map(expr -> targetHeader.column(expr)))
+            val withRenamed = relational.RenameColumns(withoutLit, Map(expr -> targetHeader.column(expr)))
             withRenamed
           }
       }
     }
 
     // union expands of different lengths
-    alignedOps.reduce(producer.planTabularUnionAll)
+    alignedOps.reduce((agg, next) => relational.TabularUnionAll(agg, next))
   }
 
   /**
@@ -221,8 +221,8 @@ trait VarLengthExpandPlanner[T <: FlatRelationalTable[T]] {
     from: Var,
     to: Var,
     targetHeader: RecordHeader,
-    physicalOp: T
-  ): T = {
+    physicalOp: RelationalOperator[T]
+  ): RelationalOperator[T] = {
     // TODO: remove when https://github.com/opencypher/cypher-for-apache-spark/issues/513 is resolved
     val correctTarget = targetHeader.entityVars.find(_ == to).get
 
@@ -237,7 +237,7 @@ trait VarLengthExpandPlanner[T <: FlatRelationalTable[T]] {
     }
 
     (childMapping ++ missingMapping).foldLeft(physicalOp) {
-      case (acc, (f, t)) => producer.planAddInto(acc, f, t)
+      case (acc, (f, t)) => relational.AddInto(acc, f, t)
     }
   }
 
@@ -248,7 +248,7 @@ trait VarLengthExpandPlanner[T <: FlatRelationalTable[T]] {
     * @param edge the paths last edge
     * @param dir  expand direction
     */
-  protected def addTargetOps(path: T, edge: Var, dir: ExpandDirection): T = {
+  protected def addTargetOps(path: RelationalOperator[T], edge: Var, dir: ExpandDirection): RelationalOperator[T] = {
     val expr = dir match {
       case Outbound => path.header.endNodeFor(edge)
       case Inbound => path.header.startNodeFor(edge)
@@ -256,9 +256,9 @@ trait VarLengthExpandPlanner[T <: FlatRelationalTable[T]] {
 
     if (isExpandInto) {
       val filterExpr = Equals(target, expr)(CTBoolean)
-      producer.planFilter(path, filterExpr)
+      relational.Filter(path, filterExpr)
     } else {
-      producer.planJoin(path, physicalTargetOp, Seq(expr -> target))
+      relational.Join(path, physicalTargetOp, Seq(expr -> target), InnerJoin)
     }
   }
 }
@@ -276,11 +276,10 @@ class DirectedVarLengthExpandPlanner[T <: FlatRelationalTable[T]](
   override val targetOp: LogicalOperator,
   override val isExpandInto: Boolean
 )(
-  override val planner: RelationalPlanner[T],
   override implicit val context: RelationalPlannerContext[T]
 ) extends VarLengthExpandPlanner[T] {
 
-  override def plan: T = {
+  override def plan: RelationalOperator[T] = {
     // Iteratively expand beginning from startOp with cacheOp
     val expandOps = (2 to upper).foldLeft(Seq(init(Outbound) -> Seq(startEdgeScan))) {
       case (acc, i) =>
@@ -312,7 +311,7 @@ class UndirectedVarLengthExpandPlanner[T <: FlatRelationalTable[T]](
   override implicit val context: RelationalPlannerContext[T]
 ) extends VarLengthExpandPlanner[T] {
 
-  override def plan: T = {
+  override def plan: RelationalOperator[T] = {
 
     val outStartOp = init(Outbound)
     val inStartOp = init(Inbound)
@@ -326,7 +325,7 @@ class UndirectedVarLengthExpandPlanner[T <: FlatRelationalTable[T]](
         val (outIn, _) = expand(i, last, Outbound -> Inbound, edgeVars)
         val (inOut, _) = expand(i, lastRevered, Inbound -> Outbound, edgeVars)
         val (inIn, _) = expand(i, lastRevered, Inbound ->Inbound, edgeVars)
-        val nextOps = producer.planTabularUnionAll(outOut, inOut) -> producer.planTabularUnionAll(outIn, inIn)
+        val nextOps = relational.TabularUnionAll(outOut, inOut) -> relational.TabularUnionAll(outIn, inIn)
 
         acc :+ nextOps -> (edgeVars :+ nextEdge)
     }.filter(_._2.size >= lower)
@@ -335,7 +334,7 @@ class UndirectedVarLengthExpandPlanner[T <: FlatRelationalTable[T]](
     // Join target nodes on expand ops
     val withTargetOps = expandOps.map {
       case ((out, in), edges) =>
-        producer.planTabularUnionAll(
+        relational.TabularUnionAll(
           addTargetOps(out, edges.last, Outbound),
           addTargetOps(in, edges.last, Inbound)
         )

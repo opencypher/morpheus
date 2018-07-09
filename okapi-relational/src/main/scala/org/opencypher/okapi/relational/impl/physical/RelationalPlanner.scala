@@ -41,6 +41,7 @@ import org.opencypher.okapi.relational.impl.{operators => relational}
 
 object RelationalPlanner {
 
+  // TODO: rename to 'plan'
   def process[T <: FlatRelationalTable[T]](input: LogicalOperator)(implicit context: RelationalPlannerContext[T]): RelationalOperator[T] = {
 
     implicit val caps: CypherSession = context.session
