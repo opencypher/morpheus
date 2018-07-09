@@ -28,19 +28,25 @@ package org.opencypher.spark.api.io.neo4j
 
 import org.opencypher.okapi.api.graph.GraphName
 import org.opencypher.okapi.api.io.PropertyGraphDataSource
+import org.opencypher.okapi.testing.PGDSAcceptance
 import org.opencypher.okapi.testing.propertygraph.InMemoryTestGraph
-import org.opencypher.spark.api.CAPSSession
+import org.opencypher.spark.api.{CAPSSession, CypherGraphSources}
 import org.opencypher.spark.testing.CAPSTestSuite
-import org.opencypher.spark.testing.api.io.CAPSPGDSAcceptance
 import org.opencypher.spark.testing.fixture.Neo4jServerFixture
+import org.opencypher.spark.testing.support.creation.caps.CAPSScanGraphFactory
 
-class Neo4jPGDSAcceptanceTest extends CAPSTestSuite with Neo4jServerFixture with CAPSPGDSAcceptance {
+class Neo4jPGDSAcceptanceTest extends CAPSTestSuite with Neo4jServerFixture with PGDSAcceptance[CAPSSession] {
 
   override def initSession(): CAPSSession = caps
 
   override def create(graphName: GraphName, testGraph: InMemoryTestGraph, createStatements: String): PropertyGraphDataSource = {
-    new Neo4jReadOnlyNamedQueryGraphSource(neo4jConfig, Map(graphName -> Neo4jReadOnlyNamedQueryGraphSource.defaultQuery))
+    val graph = CAPSScanGraphFactory(testGraph)
+    val ds = CypherGraphSources.neo4j(neo4jConfig)
+    ds.graphNames.foreach(ds.delete)
+    ds.store(graphName, graph)
+    ds
   }
 
-  override def dataFixture: String = createStatements
+  override def dataFixture: String = ""
+
 }

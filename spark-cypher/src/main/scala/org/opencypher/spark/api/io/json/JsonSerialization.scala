@@ -28,12 +28,12 @@ package org.opencypher.spark.api.io.json
 
 import org.opencypher.okapi.api.graph.GraphName
 import org.opencypher.okapi.api.schema.Schema
-import org.opencypher.spark.api.io.AbstractDataSource
+import org.opencypher.spark.api.io.AbstractPropertyGraphDataSource
 import org.opencypher.spark.api.io.metadata.CAPSGraphMetaData
 import org.opencypher.spark.schema.CAPSSchema
 
 trait JsonSerialization {
-  self: AbstractDataSource =>
+  self: AbstractPropertyGraphDataSource =>
 
   import CAPSSchema._
 

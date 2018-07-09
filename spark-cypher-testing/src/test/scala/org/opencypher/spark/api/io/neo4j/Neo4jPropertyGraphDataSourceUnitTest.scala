@@ -26,17 +26,18 @@
  */
 package org.opencypher.spark.api.io.neo4j
 
-import java.net.URI
-
 import org.opencypher.okapi.api.graph.GraphName
 import org.opencypher.okapi.api.schema.Schema
 import org.opencypher.okapi.api.types.{CTBoolean, CTFloat, CTInteger, CTString}
-import org.opencypher.okapi.testing.BaseTestSuite
-import org.opencypher.spark.api.CAPSSession
 import org.opencypher.spark.api.io.GraphEntity.sourceIdKey
 import org.opencypher.spark.api.io.Relationship.{sourceEndNodeKey, sourceStartNodeKey}
+import org.opencypher.spark.testing.CAPSTestSuite
+import org.opencypher.spark.testing.fixture.Neo4jServerFixture
+import org.scalatest.BeforeAndAfterAll
 
-class Neo4jReadOnlySourceUnitTest extends BaseTestSuite {
+class Neo4jPropertyGraphDataSourceUnitTest extends CAPSTestSuite with Neo4jServerFixture with BeforeAndAfterAll {
+
+  override def dataFixture: String = ""
 
   private val schema = Schema.empty
     .withNodePropertyKeys("A")("foo" -> CTInteger, "bar" -> CTString.nullable)
@@ -45,29 +46,39 @@ class Neo4jReadOnlySourceUnitTest extends BaseTestSuite {
     .withRelationshipPropertyKeys("TYPE2")()
 
   private val entireGraph = "allOfIt"
-  private val pgds = Neo4jReadOnlySource(Neo4jConfig(URI.create("test://foo")), GraphName(entireGraph))(mock[CAPSSession])
 
   it("constructs flat node queries from schema") {
-    pgds.flatNodeQuery(GraphName(entireGraph), Set("A"), schema) should equal(
-      s"MATCH (n:A) RETURN id(n) AS $sourceIdKey, n.bar, n.foo"
+    Neo4jPropertyGraphDataSource(neo4jConfig, entireGraphName = GraphName(entireGraph))
+      .flatNodeQuery(GraphName(entireGraph), Set("A"), schema) should equal(
+      s"""|MATCH (n:A)
+          |WHERE LENGTH(LABELS(n)) = 1
+          |RETURN id(n) AS $sourceIdKey, n.bar, n.foo""".stripMargin
     )
   }
 
   it("constructs flat node queries from schema without properties") {
-    pgds.flatNodeQuery(GraphName(entireGraph), Set("B"), schema) should equal(
-      s"MATCH (n:B) RETURN id(n) AS $sourceIdKey"
+    Neo4jPropertyGraphDataSource(neo4jConfig, entireGraphName = GraphName(entireGraph))
+      .flatNodeQuery(GraphName(entireGraph), Set("B"), schema) should equal(
+      s"""|MATCH (n:B)
+          |WHERE LENGTH(LABELS(n)) = 1
+          |RETURN id(n) AS $sourceIdKey""".stripMargin
     )
   }
 
   it("constructs flat relationship queries from schema") {
-    pgds.flatRelQuery(GraphName(entireGraph), "TYPE", schema) should equal(
-      s"MATCH (s)-[r:TYPE]->(e) RETURN id(r) AS $sourceIdKey, id(s) AS $sourceStartNodeKey, id(e) AS $sourceEndNodeKey, r.f, r.foo"
+    Neo4jPropertyGraphDataSource(neo4jConfig, entireGraphName = GraphName(entireGraph))
+      .flatRelQuery(GraphName(entireGraph), "TYPE", schema) should equal(
+      s"""|MATCH (s)-[r:TYPE]->(e)
+          |RETURN id(r) AS $sourceIdKey, id(s) AS $sourceStartNodeKey, id(e) AS $sourceEndNodeKey, r.f, r.foo""".stripMargin
     )
   }
 
   it("constructs flat relationship queries from schema with no properties") {
-    pgds.flatRelQuery(GraphName(entireGraph), "TYPE2", schema) should equal(
-      s"MATCH (s)-[r:TYPE2]->(e) RETURN id(r) AS $sourceIdKey, id(s) AS $sourceStartNodeKey, id(e) AS $sourceEndNodeKey"
+    Neo4jPropertyGraphDataSource(neo4jConfig, entireGraphName = GraphName(entireGraph))
+      .flatRelQuery(GraphName(entireGraph), "TYPE2", schema) should equal(
+      s"""|MATCH (s)-[r:TYPE2]->(e)
+          |RETURN id(r) AS $sourceIdKey, id(s) AS $sourceStartNodeKey, id(e) AS $sourceEndNodeKey""".stripMargin
     )
   }
+
 }

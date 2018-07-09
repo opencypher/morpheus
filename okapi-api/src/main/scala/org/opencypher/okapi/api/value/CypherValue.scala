@@ -35,6 +35,7 @@ import org.opencypher.okapi.impl.exception.{IllegalArgumentException, Unsupporte
 import upickle.Js
 
 import scala.reflect.{ClassTag, classTag}
+import scala.util.Try
 import scala.util.hashing.MurmurHash3
 
 object CypherValue {
@@ -74,6 +75,16 @@ object CypherValue {
         throw IllegalArgumentException(
           "a value that can be converted to a Cypher value", s"$invalid of type ${invalid.getClass.getName}")
     }
+  }
+
+  /**
+    * Converts a Scala/Java value to a compatible Cypher value.
+    *
+    * @param v value to convert
+    * @return Some compatible CypherValue or None
+    */
+  def get(v: Any): Option[CypherValue] = {
+    Try(apply(v)).toOption
   }
 
   /**

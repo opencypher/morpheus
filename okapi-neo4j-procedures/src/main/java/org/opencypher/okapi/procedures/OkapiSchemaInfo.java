@@ -1,4 +1,4 @@
-/*
+/**
  * Copyright (c) 2016-2018 "Neo4j Sweden, AB" [https://neo4j.com]
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -24,31 +24,44 @@
  * described as "implementation extensions to Cypher" or as "proposed changes to
  * Cypher that are not yet approved by the openCypher community".
  */
-package org.opencypher.spark.api.io
-import org.apache.spark.sql.DataFrame
-import org.opencypher.okapi.api.graph.GraphName
-import org.opencypher.spark.api.io.metadata.CAPSGraphMetaData
-import org.opencypher.spark.schema.CAPSSchema
+package org.opencypher.okapi.procedures;
 
-trait ROAbstractGraphSource extends AbstractDataSource {
-  override protected def deleteGraph(graphName: GraphName): Unit =
-    throw new UnsupportedOperationException("Read-only graph sources can not delete graphs")
-  override protected def writeSchema(
-    graphName: GraphName,
-    schema: CAPSSchema
-  ): Unit = throw new UnsupportedOperationException("Read-only graph sources can not delete graphs")
-  override protected def writeCAPSGraphMetaData(
-    graphName: GraphName,
-    capsGraphMetaData: CAPSGraphMetaData
-  ): Unit = throw new UnsupportedOperationException("Read-only graph sources can not delete graphs")
-  override protected def writeNodeTable(
-    graphName: GraphName,
-    labels: Set[String],
-    table: DataFrame
-  ): Unit = throw new UnsupportedOperationException("Read-only graph sources can not delete graphs")
-  override protected def writeRelationshipTable(
-    graphName: GraphName,
-    relKey: String,
-    table: DataFrame
-  ): Unit = throw new UnsupportedOperationException("Read-only graph sources can not delete graphs")
+import java.util.List;
+
+public class OkapiSchemaInfo
+{
+    /**
+     * Indicates whether the entry is a node or a relationship
+     */
+    public final String type;
+    /**
+     * A combination of labels or a relationship
+     */
+    public final List<String> nodeLabelsOrRelType;
+    /**
+     * A property that occurs on the given label combination / relationship type
+     */
+    public final String property;
+    /**
+     * The CypherType of the given property on the given label combination / relationship type
+     */
+    public final String cypherType;
+    /**
+     * List of warnings created during schema creation.
+     */
+    public final List<String> warnings;
+
+    public OkapiSchemaInfo(
+            String type,
+            List<String> nodeLabelsOrRelType,
+            String property,
+            String cypherType,
+            List<String> warnings )
+    {
+        this.type = type;
+        this.nodeLabelsOrRelType = nodeLabelsOrRelType;
+        this.property = property;
+        this.cypherType = cypherType;
+        this.warnings = warnings;
+    }
 }

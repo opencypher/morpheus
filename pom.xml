@@ -67,22 +67,19 @@
     <dep.cats.version>1.0.1</dep.cats.version>
     <dep.eff.version>5.0.0</dep.eff.version>
     <dep.hadoop.version>2.7.0</dep.hadoop.version>
-    <dep.neo4j.version>3.4.0</dep.neo4j.version>
-    <dep.netty.version>4.1.8.Final</dep.netty.version>
-    <dep.netty.version>4.1.8.Final</dep.netty.version>
-    <dep.neo4j.driver.version>1.4.2</dep.neo4j.driver.version>
+    <dep.neo4j.version>3.4.1</dep.neo4j.version>
+    <dep.neo4j.driver.version>1.6.1</dep.neo4j.driver.version>
     <dep.opencypher.front-end.version>2.0.0</dep.opencypher.front-end.version>
     <dep.spark.version>2.2.1</dep.spark.version>
     <dep.spark.scope>compile</dep.spark.scope>
     <dep.upickle.version>0.6.6</dep.upickle.version>
 
     <!-- Test scope dependencies -->
-    <dep.bouncycastle.version>1.57</dep.bouncycastle.version>
+    <dep.bouncycastle.version>1.59</dep.bouncycastle.version>
     <dep.junit.version>5.0.2</dep.junit.version>
     <dep.junit.platform.version>1.0.2</dep.junit.platform.version>
     <dep.junit.vintage.version>4.12.2</dep.junit.vintage.version>
     <dep.mockito.version>1.10.19</dep.mockito.version>
-    <dep.neo4j.harness.version>3.3.3</dep.neo4j.harness.version>
     <dep.scalatest.version>3.0.5</dep.scalatest.version>
     <dep.scalacheck.version>1.13.5</dep.scalacheck.version>
     <dep.spark-measure.version>0.11</dep.spark-measure.version>
@@ -188,7 +185,7 @@
     </pluginManagement>
 
     <plugins>
-      <!-- javac -->
+      <!-- javac settings -->
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-compiler-plugin</artifactId>
@@ -214,21 +211,11 @@
         </executions>
       </plugin>
 
-      <!-- setup scalac -->
+      <!-- scalac settings -->
       <plugin>
         <groupId>net.alchim31.maven</groupId>
         <artifactId>scala-maven-plugin</artifactId>
         <version>${plugin.maven-scala.version}</version>
-        <executions>
-          <execution>
-            <goals>
-              <goal>compile</goal>
-              <goal>testCompile</goal>
-              <goal>add-source</goal>
-              <goal>doc-jar</goal>
-            </goals>
-          </execution>
-        </executions>
         <configuration>
           <recompileMode>incremental</recompileMode>
           <scalaVersion>${project.scala.version}</scalaVersion>
@@ -238,7 +225,7 @@
             <!-- need to pass encoding to scalac manually -->
             <arg>-encoding</arg>
             <arg>${project.build.encoding}</arg>
-            <arg>-target:jvm-1.8</arg>
+            <arg>-target:jvm-${project.java.version}</arg>
             <arg>-unchecked</arg>
             <arg>-deprecation</arg>
             <arg>-feature</arg>
@@ -255,6 +242,26 @@
             <jvmArg>-Xss512m</jvmArg>
           </jvmArgs>
         </configuration>
+
+        <!-- This is needed to mix scala and java code in the same module -->
+        <executions>
+          <execution>
+            <id>scala-compile</id>
+            <phase>process-resources</phase>
+            <goals>
+              <goal>add-source</goal>
+              <goal>compile</goal>
+              <goal>doc-jar</goal>
+            </goals>
+          </execution>
+          <execution>
+            <id>scala-test-compile</id>
+            <phase>process-test-resources</phase>
+            <goals>
+              <goal>testCompile</goal>
+            </goals>
+          </execution>
+        </executions>
       </plugin>
 
       <!-- scalastyle) -->
@@ -361,6 +368,7 @@
       <modules>
         <module>okapi-api</module>
         <module>okapi-ir</module>
+        <module>okapi-neo4j-procedures</module>
         <module>okapi-logical</module>
         <module>okapi-relational</module>
         <module>okapi-tck</module>
@@ -417,6 +425,7 @@
         <module>licensecheck-config</module>
         <module>okapi-api</module>
         <module>okapi-ir</module>
+        <module>okapi-neo4j-procedures</module>
         <module>okapi-logical</module>
         <module>okapi-relational</module>
         <module>okapi-testing</module>

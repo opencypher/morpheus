@@ -28,22 +28,27 @@ package org.opencypher.spark.api.io.neo4j
 
 import org.opencypher.okapi.api.graph.{CypherResult, GraphName, Namespace}
 import org.opencypher.okapi.api.value.CypherValue.{CypherMap, CypherNull}
+import org.opencypher.okapi.impl.exception.IllegalArgumentException
+import org.opencypher.okapi.impl.exception.UnsupportedOperationException
 import org.opencypher.okapi.testing.Bag
 import org.opencypher.okapi.testing.Bag._
-import org.opencypher.spark.api.io.neo4j.Neo4jReadOnlyNamedQueryGraphSource._
+import org.opencypher.spark.api.CypherGraphSources
+import org.opencypher.spark.api.io.neo4j.Neo4jPropertyGraphDataSource.metaPrefix
+import org.opencypher.spark.api.value.CAPSNode
 import org.opencypher.spark.impl.CAPSConverters._
+import org.opencypher.spark.impl.io.neo4j.Neo4jHelpers._
 import org.opencypher.spark.testing.CAPSTestSuite
 import org.opencypher.spark.testing.fixture.{Neo4jServerFixture, TeamDataFixture}
 
-class Neo4JReadOnlyNamedQueryGraphSourceTest
+class Neo4jPropertyGraphDataSourceTest
   extends CAPSTestSuite
     with Neo4jServerFixture
     with TeamDataFixture {
 
   it("can read lists from Neo4j") {
-    val dataSource = new Neo4jReadOnlyNamedQueryGraphSource(neo4jConfig)
+    val dataSource = CypherGraphSources.neo4j(neo4jConfig)
 
-    val graph = dataSource.graph(neo4jDefaultGraphName).asCaps
+    val graph = dataSource.graph(dataSource.entireGraphName).asCaps
     graph.cypher("MATCH (n) RETURN n.languages").getRecords.iterator.toBag should equal(Bag(
       CypherMap("n.languages" -> Seq("German", "English", "Klingon")),
       CypherMap("n.languages" -> Seq()),
@@ -53,55 +58,18 @@ class Neo4JReadOnlyNamedQueryGraphSourceTest
     ))
   }
 
-  it("should return true for existing graph") {
-    val testGraphName = GraphName("sn")
-
-    val dataSource = new Neo4jReadOnlyNamedQueryGraphSource(neo4jConfig, Map(
-      testGraphName -> ("MATCH (n) RETURN n" -> "MATCH ()-[r]->() RETURN r")
-    ))
-
-    dataSource.hasGraph(testGraphName) should be(true)
-  }
-
-  it("should return false for non-existing graph") {
-    val testGraphName = GraphName("sn")
-
-    val dataSource = new Neo4jReadOnlyNamedQueryGraphSource(neo4jConfig, Map(
-      GraphName("sn2") -> ("MATCH (n) RETURN n" -> "MATCH ()-[r]->() RETURN r")
-    ))
-
-    dataSource.hasGraph(testGraphName) should be(false)
-  }
-
-  it("should return all names of stored graphs") {
-    val testGraphName1 = GraphName("test1")
-    val testGraphName2 = GraphName("test2")
-    val source = new Neo4jReadOnlyNamedQueryGraphSource(neo4jConfig,
-      Map(testGraphName1 -> defaultQuery, testGraphName2 -> defaultQuery))
-    source.graphNames should equal(Set(testGraphName1, testGraphName2))
-  }
-
   it("should load a graph from Neo4j via DataSource") {
-    val dataSource = new Neo4jReadOnlyNamedQueryGraphSource(neo4jConfig)
+    val dataSource = CypherGraphSources.neo4j(neo4jConfig)
 
-    val graph = dataSource.graph(neo4jDefaultGraphName).asCaps
-    graph.nodes("n").toCypherMaps.collect.toBag should equal(teamDataGraphNodes)
-    graph.relationships("r").toCypherMaps.collect.toBag should equal(teamDataGraphRels)
-  }
-
-  it("should load a graph from Neo4j via DataSource using a given schema") {
-    val dataSource = new Neo4jReadOnlyNamedQueryGraphSource(neo4jConfig, schemata = Map(neo4jDefaultGraphName -> dataFixtureSchema))
-
-    val graph = dataSource.graph(neo4jDefaultGraphName).asCaps
+    val graph = dataSource.graph(dataSource.entireGraphName).asCaps
     graph.nodes("n").toCypherMaps.collect.toBag should equal(teamDataGraphNodes)
     graph.relationships("r").toCypherMaps.collect.toBag should equal(teamDataGraphRels)
   }
 
   it("should load a graph from Neo4j via catalog") {
     val testNamespace = Namespace("myNeo4j")
-    val testGraphName = neo4jDefaultGraphName
-
-    val dataSource = new Neo4jReadOnlyNamedQueryGraphSource(neo4jConfig)
+    val dataSource = CypherGraphSources.neo4j(neo4jConfig)
+    val testGraphName = dataSource.entireGraphName
 
     caps.registerSource(testNamespace, dataSource)
 
@@ -111,4 +79,29 @@ class Neo4JReadOnlyNamedQueryGraphSourceTest
     val edges = caps.cypher(s"FROM GRAPH $testNamespace.$testGraphName MATCH ()-[r]->() RETURN r")
     edges.getRecords.collect.toBag should equal(teamDataGraphRels)
   }
+
+  it("should omit properties with unsupported types if corresponding flag is set") {
+    neo4jConfig.cypher(s"""CREATE (n:Unsupported:${metaPrefix}test { foo: time(), bar: 42 })""")
+
+    val dataSource = CypherGraphSources.neo4j(neo4jConfig, omitImportFailures = true)
+    val graph = dataSource.graph(GraphName("test")).asCaps
+    val nodes = graph.nodes("n").toCypherMaps.collect.toList
+    nodes.size shouldBe 1
+    nodes.head.value match {
+      case n: CAPSNode => n should equal(CAPSNode(n.id, Set("Unsupported"), CypherMap("bar" -> 42L)))
+      case other => IllegalArgumentException("a CAPSNode", other)
+    }
+  }
+
+  it("should throw exception if properties with unsupported types are being imported") {
+    an[UnsupportedOperationException] should be thrownBy {
+      neo4jConfig.cypher(s"""CREATE (n:Unsupported:${metaPrefix}test { foo: time(), bar: 42 })""")
+
+      val dataSource = CypherGraphSources.neo4j(neo4jConfig)
+      val graph = dataSource.graph(GraphName("test")).asCaps
+      graph.nodes("n").toCypherMaps.collect.toList
+    }
+  }
+
+
 }

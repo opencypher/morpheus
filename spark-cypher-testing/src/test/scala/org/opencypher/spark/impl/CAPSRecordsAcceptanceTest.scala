@@ -32,8 +32,9 @@ import org.opencypher.okapi.api.value.CypherValue.CypherMap
 import org.opencypher.okapi.impl.exception.IllegalArgumentException
 import org.opencypher.okapi.testing.Bag
 import org.opencypher.okapi.testing.Bag._
+import org.opencypher.spark.api.GraphSources
+import org.opencypher.spark.api.io.neo4j.Neo4jPropertyGraphDataSource
 import org.opencypher.spark.impl.CAPSConverters._
-import org.opencypher.spark.impl.io.neo4j.Neo4jGraphLoader
 import org.opencypher.spark.testing.CAPSTestSuite
 import org.opencypher.spark.testing.fixture.{Neo4jServerFixture, OpenCypherDataFixture}
 
@@ -42,7 +43,7 @@ import scala.language.reflectiveCalls
 class CAPSRecordsAcceptanceTest extends CAPSTestSuite with Neo4jServerFixture with OpenCypherDataFixture {
 
   private lazy val graph: CAPSGraph =
-    Neo4jGraphLoader.fromNeo4j(neo4jConfig)
+    GraphSources.cypher.neo4j(neo4jConfig).graph(Neo4jPropertyGraphDataSource.defaultEntireGraphName).asCaps
 
   it("convert to CypherMaps") {
     // When

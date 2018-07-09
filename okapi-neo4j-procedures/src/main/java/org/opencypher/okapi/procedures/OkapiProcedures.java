@@ -1,4 +1,4 @@
-/*
+/**
  * Copyright (c) 2016-2018 "Neo4j Sweden, AB" [https://neo4j.com]
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -24,40 +24,33 @@
  * described as "implementation extensions to Cypher" or as "proposed changes to
  * Cypher that are not yet approved by the openCypher community".
  */
-package org.opencypher.spark.util
+package org.opencypher.okapi.procedures;
 
-import org.neo4j.graphdb.Result
-import org.neo4j.harness.{ServerControls, TestServerBuilders}
-import org.opencypher.spark.api.io.neo4j.Neo4jConfig
+import org.neo4j.graphdb.GraphDatabaseService;
+import org.neo4j.kernel.api.KernelTransaction;
+import org.neo4j.logging.Log;
+import org.neo4j.procedure.Context;
+import org.neo4j.procedure.Description;
+import org.neo4j.procedure.Mode;
+import org.neo4j.procedure.Procedure;
 
-object Neo4jHelpers {
+import java.util.stream.Stream;
 
-  implicit class RichServerControls(val server: ServerControls) extends AnyVal {
+@SuppressWarnings( {"unused", "WeakerAccess"} )
+public class OkapiProcedures
+{
+    @Context
+    public Log log;
 
-    def dataSourceConfig =
-      Neo4jConfig(server.boltURI(), user = "anonymous", password = Some("password"), encrypted = false)
+    @Context
+    public GraphDatabaseService db;
 
-    def uri: String = {
-      val scheme = server.boltURI().getScheme
-      val userInfo = s"anonymous:password@"
-      val host = server.boltURI().getAuthority
-      s"$scheme://$userInfo$host"
+    @Context
+    public KernelTransaction tx;
+
+    @Procedure(value = "org.opencypher.okapi.procedures.schema", mode = Mode.SCHEMA)
+    @Description("CALL org.opencypher.okapi.procedures.schema yields type, nodeLabelsOrRelType, property and cypherType - Returns schema information of this graph in Okapi format.")
+    public Stream<OkapiSchemaInfo> schema() {
+        return new SchemaCalculator( db, tx, log ).constructOkapiSchemaInfo();
     }
-
-    def stop(): Unit = {
-      server.close()
-    }
-
-    def execute(cypher: String): Result =
-      server.graph().execute(cypher)
-  }
-
-  def startNeo4j(dataFixture: String): ServerControls = {
-    TestServerBuilders
-      .newInProcessBuilder()
-      .withConfig("dbms.security.auth_enabled", "true")
-      .withFixture("CALL dbms.security.createUser('anonymous', 'password', false)")
-      .withFixture(dataFixture)
-      .newServer()
-  }
 }
