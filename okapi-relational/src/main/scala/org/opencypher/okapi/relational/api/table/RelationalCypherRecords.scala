@@ -27,7 +27,7 @@
 package org.opencypher.okapi.relational.api.table
 
 import org.opencypher.okapi.api.table.CypherRecords
-import org.opencypher.okapi.api.types.{CTNode, CTRelationship}
+import org.opencypher.okapi.api.types.CypherType.{CTNode, CTRelationship}
 import org.opencypher.okapi.api.value.CypherValue.CypherMap
 import org.opencypher.okapi.impl.exception.{IllegalArgumentException, UnsupportedOperationException}
 import org.opencypher.okapi.ir.api.block.{Asc, Desc, SortItem}
@@ -71,8 +71,8 @@ trait RelationalCypherRecords[T <: FlatRelationalTable[T]] extends CypherRecords
     assert(header.ownedBy(oldEntity) == header.expressions, s"header describes more than one entity")
 
     val entityLabels: Set[String] = oldEntity.cypherType match {
-      case CTNode(labels, _) => labels
-      case CTRelationship(types, _) => types
+      case CTNode(labels) => labels
+      case CTRelationship(types) => types
       case _ => throw IllegalArgumentException("CTNode or CTRelationship", oldEntity.cypherType)
     }
 

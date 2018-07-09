@@ -28,10 +28,10 @@ package org.opencypher.okapi.ir.api
 
 import org.opencypher.okapi.api.graph.{GraphName, QualifiedGraphName}
 import org.opencypher.okapi.api.schema.Schema
-import org.opencypher.okapi.api.types._
+import org.opencypher.okapi.api.types.CypherType
+import org.opencypher.okapi.api.types.CypherType._
 import org.opencypher.okapi.impl.io.SessionGraphDataSource
 import org.opencypher.okapi.ir.api.pattern._
-import org.opencypher.okapi.ir.api.set.SetPropertyItem
 
 final case class IRField(name: String)(val cypherType: CypherType = CTAny) {
   override def toString = s"$name :: $cypherType"

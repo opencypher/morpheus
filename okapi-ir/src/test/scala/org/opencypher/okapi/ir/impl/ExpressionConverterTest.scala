@@ -28,6 +28,7 @@ package org.opencypher.okapi.ir.impl
 
 import org.opencypher.okapi.api.graph.{GraphName, Namespace, QualifiedGraphName}
 import org.opencypher.okapi.api.schema.Schema
+import org.opencypher.okapi.api.types.CypherType._
 import org.opencypher.okapi.api.types._
 import org.opencypher.okapi.api.value.CypherValue.CypherMap
 import org.opencypher.okapi.ir.api._
@@ -43,10 +44,10 @@ import org.opencypher.v9_1.{expressions => ast}
 class ExpressionConverterTest extends BaseTestSuite with Neo4jAstTestSupport {
 
   private def testTypes(ref: Ref[ast.Expression]): CypherType = ref.value match {
-    case ast.Variable("r") => CTRelationship
-    case ast.Variable("n") => CTNode
-    case ast.Variable("m") => CTNode
-    case _                 => CTWildcard
+    case ast.Variable("r") => AnyRelationship
+    case ast.Variable("n") => AnyNode
+    case ast.Variable("m") => AnyNode
+    case _                 => CTAny
   }
 
   it("should convert CASE") {
@@ -150,7 +151,7 @@ class ExpressionConverterTest extends BaseTestSuite with Neo4jAstTestSupport {
 
   test("can convert type function calls used as predicates") {
     convert(parseExpr("type(r) = 'REL_TYPE'")) should equal(
-      HasType(Var("r")(CTRelationship), RelType("REL_TYPE"))(CTBoolean)
+      HasType(Var("r")(AnyRelationship), RelType("REL_TYPE"))(CTBoolean)
     )
   }
 
@@ -166,7 +167,7 @@ class ExpressionConverterTest extends BaseTestSuite with Neo4jAstTestSupport {
   }
 
   test("can convert property access") {
-    convert(prop("n", "key")) should equal(Property(toNodeVar('n), PropertyKey("key"))(CTWildcard))
+    convert(prop("n", "key")) should equal(Property(toNodeVar('n), PropertyKey("key"))(CTAny))
   }
 
   test("can convert equals") {
@@ -180,7 +181,7 @@ class ExpressionConverterTest extends BaseTestSuite with Neo4jAstTestSupport {
 
   test("can convert parameters") {
     val given = ast.Parameter("p", symbols.CTString) _
-    convert(given) should equal(Param("p")(CTWildcard))
+    convert(given) should equal(Param("p")(CTAny))
   }
 
   test("can convert has-labels") {

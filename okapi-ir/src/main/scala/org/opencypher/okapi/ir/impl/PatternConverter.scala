@@ -32,7 +32,8 @@ import cats.data.State._
 import cats.instances.list._
 import cats.syntax.flatMap._
 import org.opencypher.okapi.api.graph.QualifiedGraphName
-import org.opencypher.okapi.api.types._
+import org.opencypher.okapi.api.types.CypherType
+import org.opencypher.okapi.api.types.CypherType._
 import org.opencypher.okapi.impl.exception.{IllegalArgumentException, NotImplementedException}
 import org.opencypher.okapi.ir.api._
 import org.opencypher.okapi.ir.api.expr._
@@ -94,15 +95,17 @@ final class PatternConverter()(implicit val irBuilderContext: IRBuilderContext) 
 
         // labels defined in outside scope, passed in by IRBuilder
         val (knownLabels, qgnOption) = vOpt.flatMap(expr => knownTypes.get(expr)).flatMap {
-          case n: CTNode => Some(n.labels -> n.graph)
+          case n@CTNode(labels) => Some(labels -> n.graph)
           case _ => None
         }.getOrElse(Set.empty[String] -> Some(qualifiedGraphName))
 
-        val allLabels = patternLabels ++ knownLabels ++ baseNodeLabels
+        val allLabels = (patternLabels ++ knownLabels ++ baseNodeLabels).toSeq
 
         val nodeVar = vOpt match {
-          case Some(v) => Var(v.name)(CTNode(allLabels, qgnOption))
-          case None => FreshVariableNamer(np.position.offset, CTNode(allLabels, qgnOption))
+            // TODO: Graph: , qgnOption
+          case Some(v) => Var(v.name)(CTNode(allLabels: _*))
+          // TODO: Graph: , qgnOption
+          case None => FreshVariableNamer(np.position.offset, CTNode(allLabels: _*))
         }
 
         val baseNodeField = baseNodeVar.map(x => IRField(x.name)(knownTypes(x)))
@@ -200,11 +203,12 @@ final class PatternConverter()(implicit val irBuilderContext: IRBuilderContext) 
     val patternTypes = types.map(_.name).toSet
 
     val baseRelCypherTypeOpt = baseRelOpt.map(knownTypes)
-    val baseRelTypes = baseRelCypherTypeOpt.map(_.asInstanceOf[CTRelationship].types).getOrElse(Set.empty)
+    val baseRelTypes = baseRelCypherTypeOpt.map(_.asInstanceOf[CTRelationship].relTypes).getOrElse(Set.empty)
 
     // types defined in outside scope, passed in by IRBuilder
     val (knownRelTypes, qgnOption) = eOpt.flatMap(expr => knownTypes.get(expr)).flatMap {
-      case CTRelationship(t, qgn) => Some(t -> qgn)
+      // TODO: Graph: qgn
+      case CTRelationship(t) => Some(t -> None)
       case _ => None
     }.getOrElse(Set.empty[String] -> Some(qualifiedGraphName))
 
@@ -215,8 +219,10 @@ final class PatternConverter()(implicit val irBuilderContext: IRBuilderContext) 
     }
 
     val rel = eOpt match {
-      case Some(v) => Var(v.name)(CTRelationship(relTypes, qgnOption))
-      case None => FreshVariableNamer(offset, CTRelationship(relTypes, qgnOption))
+        // TODO: , qgnOption
+      case Some(v) => Var(v.name)(CTRelationship(relTypes))
+      // TODO: , qgnOption
+      case None => FreshVariableNamer(offset, CTRelationship(relTypes))
     }
     rel
   }

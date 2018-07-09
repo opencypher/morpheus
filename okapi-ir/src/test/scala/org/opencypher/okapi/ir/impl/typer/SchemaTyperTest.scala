@@ -28,6 +28,7 @@ package org.opencypher.okapi.ir.impl.typer
 
 import cats.data.NonEmptyList
 import org.opencypher.okapi.api.schema.Schema
+import org.opencypher.okapi.api.types.CypherType._
 import org.opencypher.okapi.api.types._
 import org.opencypher.okapi.ir.test.support.Neo4jAstTestSupport
 import org.opencypher.okapi.testing.BaseTestSuite
@@ -67,7 +68,7 @@ class SchemaTyperTest extends BaseTestSuite with Neo4jAstTestSupport with Mockit
   }
 
   test("typing exists()") {
-    implicit val context = typeTracker("n" -> CTNode)
+    implicit val context = typeTracker("n" -> AnyNode)
 
     assertExpr.from("exists(n.prop)") shouldHaveInferredType CTBoolean
     assertExpr.from("exists([n.prop])") shouldFailToInferTypeWithErrors
@@ -79,7 +80,7 @@ class SchemaTyperTest extends BaseTestSuite with Neo4jAstTestSupport with Mockit
   }
 
   test("typing count()") {
-    implicit val context = typeTracker("a" -> CTNode)
+    implicit val context = typeTracker("a" -> AnyNode)
 
     assertExpr.from("count(*)") shouldHaveInferredType CTInteger
     assertExpr.from("count(a)") shouldHaveInferredType CTInteger
@@ -96,7 +97,7 @@ class SchemaTyperTest extends BaseTestSuite with Neo4jAstTestSupport with Mockit
   }
 
   test("typing property of node without label") {
-    implicit val context = typeTracker("a" -> CTNode)
+    implicit val context = typeTracker("a" -> AnyNode)
 
     assertExpr.from("a.name") shouldHaveInferredType CTAny
     assertExpr.from("a.age") shouldHaveInferredType CTNumber
@@ -227,12 +228,12 @@ class SchemaTyperTest extends BaseTestSuite with Neo4jAstTestSupport with Mockit
   }
 
   test("should detail entity type from predicate") {
-    implicit val context = typeTracker("n" -> CTNode)
+    implicit val context = typeTracker("n" -> AnyNode)
 
     assertExpr.from("n:Person") shouldMake varFor("n") haveType CTNode("Person")
     assertExpr.from("n:Person AND n:Dog") shouldMake varFor("n") haveType CTNode("Person", "Dog")
 
-    assertExpr.from("n:Person OR n:Dog") shouldMake varFor("n") haveType CTNode // not enough information for us to act
+    assertExpr.from("n:Person OR n:Dog") shouldMake varFor("n") haveType AnyNode // not enough information for us to act
   }
 
   test("typing equality") {
@@ -282,7 +283,7 @@ class SchemaTyperTest extends BaseTestSuite with Neo4jAstTestSupport with Mockit
     assertExpr.from("n.name = 'foo'") shouldHaveInferredType CTBoolean
     assertExpr.from("n.name IN ['foo', 'bar']") shouldHaveInferredType CTBoolean
     assertExpr.from("n.name IN 'foo'") shouldFailToInferTypeWithErrors
-      InvalidType(parseExpr("'foo'"), CTList(CTWildcard), CTString)
+      InvalidType(parseExpr("'foo'"), AnyList, CTString)
   }
 
   test("typing of unsupported expressions") {

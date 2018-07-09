@@ -27,7 +27,7 @@
 package org.opencypher.okapi.impl.schema
 
 import org.opencypher.okapi.api.schema.PropertyKeys.PropertyKeys
-import org.opencypher.okapi.api.schema.{LabelPropertyMap, RelTypePropertyMap, Schema}
+import org.opencypher.okapi.api.schema.{LabelPropertyMap, PropertyKeys, RelTypePropertyMap, Schema}
 import org.opencypher.okapi.api.types.CypherType._
 import org.opencypher.okapi.api.types._
 import org.opencypher.okapi.impl.exception.SchemaException
@@ -261,25 +261,23 @@ final case class SchemaImpl(
     )
   }
 
-  def forRelationship(relType: CypherType): Schema = {
-    ???
-    // TODO: Add helper to CypherType
-//    val givenRelTypes = if (AnyRelationship.subTypeOf(relType)) {
-//      relationshipTypes
-//    } else {
-//      relType.alternatives.collect { case r: CTRelationship => r }.flatMap(_.relType)
-//    }
-//
-//    val updatedRelTypePropertyMap = this.relTypePropertyMap.filterForRelTypes(givenRelTypes)
-//    val updatedMap = givenRelTypes.foldLeft(updatedRelTypePropertyMap.map) {
-//      case (map, givenRelType) =>
-//        if (!map.contains(givenRelType)) map.updated(givenRelType, PropertyKeys.empty) else map
-//    }
-//
-//    SchemaImpl(
-//      labelPropertyMap = LabelPropertyMap.empty,
-//      relTypePropertyMap = RelTypePropertyMap(updatedMap)
-//    )
+  def forRelationship(relTypes: Set[String]): Schema = {
+    val givenRelTypes = if (relTypes.isEmpty) {
+      relationshipTypes
+    } else {
+      relTypes
+    }
+
+    val updatedRelTypePropertyMap = this.relTypePropertyMap.filterForRelTypes(givenRelTypes)
+    val updatedMap = givenRelTypes.foldLeft(updatedRelTypePropertyMap.map) {
+      case (map, givenRelType) =>
+        if (!map.contains(givenRelType)) map.updated(givenRelType, PropertyKeys.empty) else map
+    }
+
+    SchemaImpl(
+      labelPropertyMap = LabelPropertyMap.empty,
+      relTypePropertyMap = RelTypePropertyMap(updatedMap)
+    )
   }
 
   override def pretty: String =

@@ -26,7 +26,8 @@
  */
 package org.opencypher.okapi.ir.api.pattern
 
-import org.opencypher.okapi.api.types.{CTAnyNode, CTAnyRelationship, CypherType}
+import org.opencypher.okapi.api.types.CypherType
+import org.opencypher.okapi.api.types.CypherType._
 import org.opencypher.okapi.ir.api._
 import org.opencypher.okapi.ir.api.block.Binds
 import org.opencypher.okapi.ir.api.expr.MapExpression
@@ -47,8 +48,8 @@ final case class Pattern[E](
   baseFields: Map[IRField, IRField]= Map.empty
 ) extends Binds[E] {
 
-  lazy val nodes: Set[IRField] = getEntity(CTAnyNode)
-  lazy val rels: Set[IRField] = getEntity(CTAnyRelationship)
+  lazy val nodes: Set[IRField] = getEntity(AnyNode)
+  lazy val rels: Set[IRField] = getEntity(AnyRelationship)
 
   private def getEntity(t: CypherType) =
     fields.collect { case e if e.cypherType.subTypeOf(t) => e }

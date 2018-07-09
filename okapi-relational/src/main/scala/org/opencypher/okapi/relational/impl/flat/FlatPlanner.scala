@@ -26,7 +26,8 @@
  */
 package org.opencypher.okapi.relational.impl.flat
 
-import org.opencypher.okapi.api.types.{CTList, CTRelationship, CypherType}
+import org.opencypher.okapi.api.types.CypherType
+import org.opencypher.okapi.api.types.CypherType._
 import org.opencypher.okapi.api.value.CypherValue._
 import org.opencypher.okapi.impl.exception.{IllegalStateException, NotImplementedException}
 import org.opencypher.okapi.ir.api.expr.Var
@@ -125,12 +126,4 @@ class FlatPlanner extends DirectCompilationStage[LogicalOperator, FlatOperator, 
     }
   }
 
-  @tailrec
-  private def relTypeFromList(t: CypherType): Set[String] = {
-    t match {
-      case l: CTList => relTypeFromList(l.elementType)
-      case r: CTRelationship => r.types
-      case _ => throw IllegalStateException(s"Required CTList or CTRelationship, but got $t")
-    }
-  }
 }

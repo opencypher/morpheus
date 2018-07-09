@@ -249,12 +249,12 @@ class SchemaTest extends FunSpec with Matchers {
       .withNodePropertyKeys("Pet")()
       .withRelationshipPropertyKeys("OWNER")("since" -> CTInteger)
 
-    schema.forRelationship(CTRelationship("KNOWS")) should equal(
+    schema.forRelationship(Set("KNOWS")) should equal(
       Schema.empty
         .withRelationshipPropertyKeys("KNOWS")("name" -> CTString)
     )
 
-    schema.forRelationship(CTAnyRelationship) should equal(
+    schema.forRelationship(Set.empty) should equal(
       Schema.empty
         .withRelationshipPropertyKeys("KNOWS")("name" -> CTString)
         .withRelationshipPropertyKeys("LOVES")("deeply" -> CTBoolean, "salary" -> CTInteger)
@@ -262,7 +262,7 @@ class SchemaTest extends FunSpec with Matchers {
         .withRelationshipPropertyKeys("OWNER")("since" -> CTInteger)
     )
 
-    schema.forRelationship(CTRelationship("KNOWS", "LOVES")) should equal(
+    schema.forRelationship(Set("KNOWS", "LOVES")) should equal(
       Schema.empty
         .withRelationshipPropertyKeys("KNOWS")("name" -> CTString)
         .withRelationshipPropertyKeys("LOVES")("deeply" -> CTBoolean, "salary" -> CTInteger)

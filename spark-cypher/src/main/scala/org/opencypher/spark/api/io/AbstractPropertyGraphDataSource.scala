@@ -29,7 +29,7 @@ package org.opencypher.spark.api.io
 import org.apache.spark.sql.DataFrame
 import org.apache.spark.sql.types.StructType
 import org.opencypher.okapi.api.graph.{GraphName, PropertyGraph}
-import org.opencypher.okapi.api.types.CTInteger
+import org.opencypher.okapi.api.types.CypherType.CTInteger
 import org.opencypher.okapi.impl.exception.{GraphAlreadyExistsException, GraphNotFoundException}
 import org.opencypher.okapi.impl.util.StringEncodingUtilities._
 import org.opencypher.spark.api.CAPSSession

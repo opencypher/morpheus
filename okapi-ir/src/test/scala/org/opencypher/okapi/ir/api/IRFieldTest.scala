@@ -26,14 +26,14 @@
  */
 package org.opencypher.okapi.ir.api
 
-import org.opencypher.okapi.api.types.{CTNode, CTRelationship}
+import org.opencypher.okapi.api.types.CypherType._
 import org.scalatest.{FunSuite, Matchers}
 
 class IRFieldTest extends FunSuite with Matchers {
 
   test("IRField ignores cypher type in equality") {
-    val a = IRField("a")(CTNode)
-    val b = IRField("a")(CTRelationship)
+    val a = IRField("a")(AnyNode)
+    val b = IRField("a")(AnyRelationship)
     a should equal(b)
   }
 
@@ -46,13 +46,13 @@ class IRFieldTest extends FunSuite with Matchers {
   test("different IRFields are not equal") {
     val a = IRField("a")()
     val b = IRField("b")()
-    a should not equal(b)
+    a should not equal b
   }
 
   test("different IRFields have different hash codes") {
     val a = IRField("a")()
     val b = IRField("b")()
-    a.hashCode should not equal(b.hashCode)
+    a.hashCode should not equal b.hashCode
   }
 
 }

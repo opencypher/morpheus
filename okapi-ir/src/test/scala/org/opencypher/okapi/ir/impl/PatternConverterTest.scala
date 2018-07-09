@@ -26,7 +26,8 @@
  */
 package org.opencypher.okapi.ir.impl
 
-import org.opencypher.okapi.api.types.{CTNode, CTRelationship, CypherType}
+import org.opencypher.okapi.api.types.CypherType._
+import org.opencypher.okapi.api.types.CypherType
 import org.opencypher.okapi.ir.api.IRField
 import org.opencypher.okapi.ir.api.expr._
 import org.opencypher.okapi.ir.api.pattern._
@@ -45,7 +46,7 @@ class PatternConverterTest extends IrTestSuite {
     val pattern = parse("(x)")
 
     convert(pattern) should equal(
-      Pattern.empty.withEntity('x -> CTNode)
+      Pattern.empty.withEntity('x -> AnyNode)
     )
   }
 
@@ -67,9 +68,9 @@ class PatternConverterTest extends IrTestSuite {
 
     convert(pattern) should equal(
       Pattern.empty
-        .withEntity('x -> CTNode)
-        .withEntity('b -> CTNode)
-        .withEntity('r -> CTRelationship)
+        .withEntity('x -> AnyNode)
+        .withEntity('b -> AnyNode)
+        .withEntity('r -> AnyRelationship)
         .withConnection('r, DirectedRelationship('x, 'b))
     )
   }
@@ -79,11 +80,11 @@ class PatternConverterTest extends IrTestSuite {
 
     convert(pattern) should equal(
       Pattern.empty
-        .withEntity('x -> CTNode)
-        .withEntity('y -> CTNode)
-        .withEntity('z -> CTNode)
-        .withEntity('r1 -> CTRelationship)
-        .withEntity('r2 -> CTRelationship)
+        .withEntity('x -> AnyNode)
+        .withEntity('y -> AnyNode)
+        .withEntity('z -> AnyNode)
+        .withEntity('r1 -> AnyRelationship)
+        .withEntity('r2 -> AnyRelationship)
         .withConnection('r1, DirectedRelationship('x, 'y))
         .withConnection('r2, DirectedRelationship('y, 'z))
     )
@@ -94,11 +95,11 @@ class PatternConverterTest extends IrTestSuite {
 
     convert(pattern) should equal(
       Pattern.empty
-        .withEntity('x -> CTNode)
-        .withEntity('y -> CTNode)
-        .withEntity('z -> CTNode)
-        .withEntity('foo -> CTNode)
-        .withEntity('r -> CTRelationship)
+        .withEntity('x -> AnyNode)
+        .withEntity('y -> AnyNode)
+        .withEntity('z -> AnyNode)
+        .withEntity('foo -> AnyNode)
+        .withEntity('r -> AnyRelationship)
         .withConnection('r, DirectedRelationship('y, 'z))
     )
   }
@@ -108,9 +109,9 @@ class PatternConverterTest extends IrTestSuite {
 
     convert(pattern) should equal(
       Pattern.empty
-        .withEntity('x -> CTNode)
-        .withEntity('y -> CTNode)
-        .withEntity('r -> CTRelationship)
+        .withEntity('x -> AnyNode)
+        .withEntity('y -> AnyNode)
+        .withEntity('r -> AnyRelationship)
         .withConnection('r, UndirectedRelationship('y, 'x))
     )
   }
@@ -130,8 +131,8 @@ class PatternConverterTest extends IrTestSuite {
 
     convert(pattern) should equal(
       Pattern.empty
-        .withEntity('x -> CTNode)
-        .withEntity('y -> CTNode)
+        .withEntity('x -> AnyNode)
+        .withEntity('y -> AnyNode)
         .withEntity('r -> CTRelationship("KNOWS", "LOVES"))
         .withConnection('r, DirectedRelationship('x, 'y))
     )

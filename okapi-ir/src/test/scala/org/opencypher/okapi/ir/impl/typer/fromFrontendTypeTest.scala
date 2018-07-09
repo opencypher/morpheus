@@ -26,6 +26,7 @@
  */
 package org.opencypher.okapi.ir.impl.typer
 
+import org.opencypher.okapi.api.types.CypherType._
 import org.opencypher.okapi.api.types._
 import org.opencypher.okapi.testing.BaseTestSuite
 import org.opencypher.v9_1.util.{symbols => frontend}
@@ -43,14 +44,14 @@ class fromFrontendTypeTest extends BaseTestSuite {
   }
 
   test("should convert entity types") {
-    frontend.CTNode shouldBeConvertedTo CTNode
-    frontend.CTRelationship shouldBeConvertedTo CTRelationship
+    frontend.CTNode shouldBeConvertedTo AnyNode
+    frontend.CTRelationship shouldBeConvertedTo AnyRelationship
     frontend.CTPath shouldBeConvertedTo CTPath
   }
 
   test("should convert container types") {
     frontend.CTList(frontend.CTInteger) shouldBeConvertedTo CTList(CTInteger)
-    frontend.CTMap shouldBeConvertedTo CTMap
+    frontend.CTMap shouldBeConvertedTo AnyNode
   }
 
   implicit class RichType(t: frontend.CypherType) {

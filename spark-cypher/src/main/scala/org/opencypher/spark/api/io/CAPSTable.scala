@@ -29,7 +29,7 @@ package org.opencypher.spark.api.io
 import org.apache.spark.sql._
 import org.opencypher.okapi.api.io.conversion.{EntityMapping, NodeMapping, RelationshipMapping}
 import org.opencypher.okapi.api.schema.Schema
-import org.opencypher.okapi.api.types.{DefiniteCypherType, _}
+import org.opencypher.okapi.api.types.CypherType.{CTBoolean, CTEntity, CTInteger, CTNode, CTRelationship, CTString}
 import org.opencypher.okapi.impl.util.StringEncodingUtilities._
 import org.opencypher.okapi.relational.api.io.EntityTable
 import org.opencypher.okapi.relational.impl.table.RecordHeader
@@ -44,8 +44,8 @@ import org.opencypher.spark.schema.CAPSSchema._
 import scala.reflect.runtime.universe._
 
 trait CAPSEntityTable extends EntityTable[DataFrameTable] {
-  // TODO: create CTEntity type
-  private[spark] def entityType: CypherType with DefiniteCypherType
+
+  private[spark] def entityType: CTEntity
 
   private[spark] def records(implicit caps: CAPSSession): CAPSRecords = CAPSRecords.create(this)
 }
@@ -63,7 +63,7 @@ case class CAPSNodeTable(
     columnNames: Option[Seq[String]] = None
   ): CAPSNodeTable = CAPSNodeTable(mapping, table)
 
-  override private[spark] def entityType = mapping.cypherType
+  override private[spark] def entityType: CTNode = mapping.cypherType
 }
 
 object CAPSNodeTable {
@@ -141,7 +141,7 @@ case class CAPSRelationshipTable(
     columnNames: Option[Seq[String]] = None
   ): CAPSRelationshipTable = CAPSRelationshipTable(mapping, table)
 
-  override private[spark] def entityType = mapping.cypherType
+  override private[spark] def entityType: CTRelationship = mapping.cypherType
 }
 
 object CAPSRelationshipTable {

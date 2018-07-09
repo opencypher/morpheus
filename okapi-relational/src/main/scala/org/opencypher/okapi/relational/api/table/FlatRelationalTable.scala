@@ -27,7 +27,8 @@
 package org.opencypher.okapi.relational.api.table
 
 import org.opencypher.okapi.api.table.CypherTable
-import org.opencypher.okapi.api.types.{CTNull, CypherType}
+import org.opencypher.okapi.api.types.CypherType
+import org.opencypher.okapi.api.types.CypherType.CTNull
 import org.opencypher.okapi.api.value.CypherValue.CypherMap
 import org.opencypher.okapi.ir.api.expr.{Aggregator, Expr, Var}
 import org.opencypher.okapi.relational.impl.physical.{JoinType, Order}

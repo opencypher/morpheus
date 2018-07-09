@@ -42,6 +42,8 @@ import org.opencypher.okapi.ir.api.pattern.Pattern
 import org.opencypher.okapi.ir.api.util.CompilationStage
 import org.opencypher.okapi.ir.impl.refactor.instances._
 import org.opencypher.okapi.ir.impl.util.VarConverters.RichIrField
+import org.opencypher.okapi.api.types.CypherType
+import org.opencypher.okapi.api.types.CypherType._
 import org.opencypher.v9_1.util.InputPosition
 
 
@@ -428,7 +430,7 @@ object IRBuilder extends CompilationStage[ast.Statement, CypherStatement[Expr], 
         case CTAny =>
           pure[R, CypherType](CTAny)
         case x =>
-          error(IRBuilderError(s"unwind expression was not a list: $x"))(CTWildcard: CypherType)
+          error(IRBuilderError(s"unwind expression was not a list: $x"))(CTAny: CypherType)
       }
       field <- {
         val field = IRField(variable.name)(typ)
@@ -516,7 +518,7 @@ object IRBuilder extends CompilationStage[ast.Statement, CypherStatement[Expr], 
       .getOrElse(Map.empty)
 
     field.cypherType match {
-      case CTNode(newLabels, _) =>
+      case CTNode(newLabels) =>
         val oldLabelCombosToNewLabelCombos = if (baseFieldSchema.labels.nonEmpty)
           baseFieldSchema.allLabelCombinations.map(oldLabels => oldLabels -> (oldLabels ++ newLabels))
         else
@@ -531,7 +533,7 @@ object IRBuilder extends CompilationStage[ast.Statement, CypherStatement[Expr], 
         }
 
       // if there is only one relationship type we need to merge all existing types and update them
-      case CTRelationship(newTypes, _) if newTypes.size == 1 =>
+      case CTRelationship(newTypes) if newTypes.size == 1 =>
         val possiblePropertyKeys = baseFieldSchema.relTypePropertyMap.map
           .values
           .map(_.keySet)
@@ -545,7 +547,7 @@ object IRBuilder extends CompilationStage[ast.Statement, CypherStatement[Expr], 
 
         Schema.empty.withRelationshipPropertyKeys(newTypes.head, updatedPropertyKeys)
 
-      case CTRelationship(newTypes, _) =>
+      case CTRelationship(newTypes) =>
         val actualTypes = if (newTypes.nonEmpty) newTypes else baseFieldSchema.relationshipTypes
 
         actualTypes.foldLeft(Schema.empty) {

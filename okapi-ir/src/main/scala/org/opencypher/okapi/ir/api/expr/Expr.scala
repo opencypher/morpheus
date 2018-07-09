@@ -26,12 +26,14 @@
  */
 package org.opencypher.okapi.ir.api.expr
 
-import org.opencypher.okapi.api.types.CypherType.CTVoid
-import org.opencypher.okapi.api.types._
+import org.opencypher.okapi.api.types.CypherType
+import org.opencypher.okapi.api.types.CypherType.{CTVoid, _}
 import org.opencypher.okapi.impl.exception.IllegalArgumentException
 import org.opencypher.okapi.ir.api._
 import org.opencypher.okapi.ir.api.expr.FlattenOps._
 import org.opencypher.okapi.trees.AbstractTreeNode
+import org.opencypher.okapi.api.types.CypherType
+import org.opencypher.okapi.api.types.CypherType._
 
 import scala.annotation.tailrec
 import scala.reflect.ClassTag
@@ -109,7 +111,7 @@ final case class ListSegment(index: Int, listVar: Var)(val cypherType: CypherTyp
 
 trait ReturnItem extends Var
 
-final case class NodeVar(name: String)(val cypherType: CTNode = CTAnyNode) extends ReturnItem {
+final case class NodeVar(name: String)(val cypherType: CTNode = AnyNode) extends ReturnItem {
 
   override type This = NodeVar
 
@@ -126,7 +128,7 @@ final case class NodeVar(name: String)(val cypherType: CTNode = CTAnyNode) exten
   override def withoutType: String = s"$name"
 }
 
-final case class RelationshipVar(name: String)(val cypherType: CTRelationship = CTAnyRelationship) extends ReturnItem {
+final case class RelationshipVar(name: String)(val cypherType: CTRelationship = AnyRelationship) extends ReturnItem {
 
   override type This = RelationshipVar
 

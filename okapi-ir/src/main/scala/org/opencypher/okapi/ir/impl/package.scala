@@ -31,7 +31,8 @@ import org.atnos.eff._
 import org.atnos.eff.all._
 import org.atnos.eff.syntax.all._
 import org.opencypher.okapi.api.schema.Schema
-import org.opencypher.okapi.api.types.{CTNode, CTRelationship, CypherType}
+import org.opencypher.okapi.api.types.CypherType
+import org.opencypher.okapi.api.types.CypherType._
 import org.opencypher.okapi.impl.exception.IllegalArgumentException
 import org.opencypher.okapi.ir.api.expr.Expr
 
@@ -60,10 +61,8 @@ package object impl {
   implicit final class RichSchema(schema: Schema) {
 
     def forEntityType(cypherType: CypherType): Schema = cypherType match {
-      case CTNode(labels, _) =>
-        schema.forNode(labels)
-      case r: CTRelationship =>
-        schema.forRelationship(r)
+      case CTNode(labels) => schema.forNode(labels)
+      case CTRelationship(relTypes) => schema.forRelationship(relTypes)
       case x => throw IllegalArgumentException("entity type", x)
     }
 
@@ -76,14 +75,14 @@ package object impl {
 
     def addPropertyToEntity(propertyKey: String, propertyType: CypherType, entityType: CypherType): Schema = {
       entityType match {
-        case CTNode(labels, _) =>
+        case CTNode(labels) =>
           val allRelevantLabelCombinations = schema.combinationsFor(labels)
           val property = if (allRelevantLabelCombinations.size == 1) propertyType else propertyType.nullable
           allRelevantLabelCombinations.foldLeft(schema) { case (innerCurrentSchema, combo) =>
             val updatedPropertyKeys = innerCurrentSchema.keysFor(Set(combo)).updated(propertyKey, property)
             innerCurrentSchema.withOverwrittenNodePropertyKeys(combo, updatedPropertyKeys)
           }
-        case CTRelationship(types, _) =>
+        case CTRelationship(types) =>
           val typesToUpdate = if (types.isEmpty) schema.relationshipTypes else types
           typesToUpdate.foldLeft(schema) { case (innerCurrentSchema, relType) =>
             val updatedPropertyKeys = innerCurrentSchema.relationshipKeys(relType).updated(propertyKey, propertyType)

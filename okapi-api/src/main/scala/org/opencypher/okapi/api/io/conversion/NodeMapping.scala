@@ -26,7 +26,8 @@
  */
 package org.opencypher.okapi.api.io.conversion
 
-import org.opencypher.okapi.api.types.{CTNode, CypherType}
+import org.opencypher.okapi.api.types.CypherType
+import org.opencypher.okapi.api.types.CypherType._
 import org.opencypher.okapi.impl.exception.IllegalArgumentException
 
 object NodeMapping {
@@ -107,7 +108,7 @@ final case class NodeMapping private[okapi](
   // on construction
   validate()
 
-  def cypherType: CypherType = CTNode(impliedLabels.toSeq: _*)
+  def cypherType: CTNode = CTNode(impliedLabels.toSeq: _*)
 
   def withImpliedLabels(labels: String*): NodeMapping =
     labels.foldLeft(this)((mapping, label) => mapping.withImpliedLabel(label))

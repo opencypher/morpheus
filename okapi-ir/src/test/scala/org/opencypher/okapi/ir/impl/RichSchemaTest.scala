@@ -27,7 +27,7 @@
 package org.opencypher.okapi.ir.impl
 
 import org.opencypher.okapi.api.schema.Schema
-import org.opencypher.okapi.api.types._
+import org.opencypher.okapi.api.types.CypherType._
 import org.opencypher.okapi.ir.api.IRField
 import org.opencypher.okapi.ir.api.pattern.{DirectedRelationship, Pattern}
 import org.opencypher.okapi.testing.BaseTestSuite

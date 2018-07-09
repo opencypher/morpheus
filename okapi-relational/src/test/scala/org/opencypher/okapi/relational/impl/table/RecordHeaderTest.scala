@@ -26,7 +26,7 @@
  */
 package org.opencypher.okapi.relational.impl.table
 
-import org.opencypher.okapi.api.types._
+import org.opencypher.okapi.api.types.CypherType._
 import org.opencypher.okapi.ir.api.expr._
 import org.opencypher.okapi.ir.api.{Label, PropertyKey, RelType}
 import org.opencypher.okapi.testing.BaseTestSuite
@@ -38,12 +38,12 @@ class RecordHeaderTest extends BaseTestSuite {
 
   val n: Var = Var("n")(CTNode("A", "B"))
   val m: Var = Var("m")(CTNode("A", "B"))
-  val o: Var = Var("o")(CTNode)
-  val r: Var = Var("r")(CTRelationship)
-  val nodeList: Var = Var("l")(CTList(CTNode))
+  val o: Var = Var("o")(AnyNode)
+  val r: Var = Var("r")(AnyRelationship)
+  val nodeList: Var = Var("l")(CTList(AnyNode))
   val nodeListSegment: ListSegment = ListSegment(0, nodeList)(CTNode("A", "B"))
-  val relList: Var = Var("l")(CTList(CTRelationship))
-  val relListSegment: ListSegment = ListSegment(0, relList)(CTRelationship)
+  val relList: Var = Var("l")(CTList(AnyRelationship))
+  val relListSegment: ListSegment = ListSegment(0, relList)(AnyRelationship)
 
   val countN = CountStar(CTInteger)
 
@@ -55,8 +55,8 @@ class RecordHeaderTest extends BaseTestSuite {
   val oExprs: Set[Expr] = nExprs.map(_.withOwner(o))
   val nodeListExprs: Set[Expr] = Set(nodeListSegment) ++ Set(nLabelA, nLabelB, nPropFoo).map(_.withOwner(nodeListSegment))
 
-  val rStart: StartNode = StartNode(r)(CTNode)
-  val rEnd: EndNode = EndNode(r)(CTNode)
+  val rStart: StartNode = StartNode(r)(AnyNode)
+  val rEnd: EndNode = EndNode(r)(AnyNode)
   val rRelType: HasType = HasType(r, RelType("R"))(CTBoolean)
   val rPropFoo: Property = Property(r, PropertyKey("foo"))(CTString)
   val rExprs: Set[Expr] = Set(r, rStart, rEnd, rRelType, rPropFoo)
@@ -84,7 +84,7 @@ class RecordHeaderTest extends BaseTestSuite {
   }
 
   it("can return vars that are not present in the header, but own an expression in the header") {
-    RecordHeader.empty.withExpr(ListSegment(1, m)(CTNode)).vars should equal(Set(m))
+    RecordHeader.empty.withExpr(ListSegment(1, m)(AnyNode)).vars should equal(Set(m))
   }
 
   it("can return all return items") {
@@ -327,7 +327,7 @@ class RecordHeaderTest extends BaseTestSuite {
     rHeader.relationshipsForType(CTRelationship("R")) should equalWithTracing(Set(r))
     rHeader.relationshipsForType(CTRelationship("R", "S")) should equalWithTracing(Set(r))
     rHeader.relationshipsForType(CTRelationship("S")) should equalWithTracing(Set.empty)
-    rHeader.relationshipsForType(CTRelationship) should equalWithTracing(Set(r))
+    rHeader.relationshipsForType(AnyRelationship) should equalWithTracing(Set(r))
   }
 
   it("returns selected entity vars and their corresponding columns") {

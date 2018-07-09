@@ -27,7 +27,7 @@
 package org.opencypher.okapi.relational.impl.physical
 
 import org.opencypher.okapi.api.graph.{CypherSession, PropertyGraph}
-import org.opencypher.okapi.api.types.{CTBoolean, CTNode}
+import org.opencypher.okapi.api.types.CypherType._
 import org.opencypher.okapi.impl.exception.NotImplementedException
 import org.opencypher.okapi.ir.api.block.SortItem
 import org.opencypher.okapi.ir.api.expr._
@@ -144,8 +144,8 @@ I <: RuntimeContext[O, A, P]](val producer: PhysicalOperatorProducer[O, K, A, P,
         }
 
         val second = producer.planRelationshipScan(startFrom, op.sourceGraph, rel)
-        val startNode = StartNode(rel)(CTNode)
-        val endNode = EndNode(rel)(CTNode)
+        val startNode = StartNode(rel)(AnyNode)
+        val endNode = EndNode(rel)(AnyNode)
 
         direction match {
           case Directed =>

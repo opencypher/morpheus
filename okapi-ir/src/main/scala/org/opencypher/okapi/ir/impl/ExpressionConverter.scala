@@ -29,6 +29,8 @@ package org.opencypher.okapi.ir.impl
 import org.opencypher.okapi.api.types._
 import org.opencypher.okapi.impl.exception.NotImplementedException
 import org.opencypher.okapi.ir.api.expr._
+import org.opencypher.okapi.api.types.CypherType
+import org.opencypher.okapi.api.types.CypherType._
 import org.opencypher.okapi.ir.api.{CypherQuery, Label, PropertyKey, RelType}
 import org.opencypher.okapi.ir.impl.FunctionUtils._
 import org.opencypher.v9_1.expressions.functions

@@ -27,7 +27,7 @@
 package org.opencypher.okapi.relational.api.schema
 
 import org.opencypher.okapi.api.schema.{PropertyKeys, Schema}
-import org.opencypher.okapi.api.types._
+import org.opencypher.okapi.api.types.CypherType._
 import org.opencypher.okapi.ir.api.expr._
 import org.opencypher.okapi.ir.api.{Label, PropertyKey, RelType}
 import org.opencypher.okapi.relational.api.schema.RelationalSchema._
@@ -40,7 +40,7 @@ class RelationalSchemaTest extends FunSpec with Matchers {
     val schema = Schema.empty
       .withNodePropertyKeys(Set("A", "B"), PropertyKeys("foo" -> CTBoolean))
 
-    val n = Var("n")(CTNode(Set("A", "B")))
+    val n = Var("n")(CTNode("A", "B"))
 
     schema.headerForNode(n) should equal(RecordHeader.empty
       .withExpr(n)
@@ -54,7 +54,7 @@ class RelationalSchemaTest extends FunSpec with Matchers {
       .withNodePropertyKeys(Set("A", "B"), PropertyKeys.empty)
       .withNodePropertyKeys(Set("A", "C"), PropertyKeys("foo" -> CTString))
 
-    val n = Var("n")(CTNode(Set("A")))
+    val n = Var("n")(CTNode("A"))
 
     schema.headerForNode(n) should equal(RecordHeader.empty
       .withExpr(n)
@@ -69,7 +69,7 @@ class RelationalSchemaTest extends FunSpec with Matchers {
       .withNodePropertyKeys(Set("A"), PropertyKeys("foo" -> CTBoolean))
       .withNodePropertyKeys(Set("A", "B"), PropertyKeys("bar" -> CTBoolean))
 
-    val n = Var("n")(CTNode(Set("A")))
+    val n = Var("n")(CTNode("A"))
 
     schema.headerForNode(n) should equal(RecordHeader.empty
       .withExpr(n)
@@ -87,8 +87,8 @@ class RelationalSchemaTest extends FunSpec with Matchers {
 
     schema.headerForRelationship(r) should equal(RecordHeader.empty
       .withExpr(r)
-      .withExpr(StartNode(r)(CTNode))
-      .withExpr(EndNode(r)(CTNode))
+      .withExpr(StartNode(r)(AnyNode))
+      .withExpr(EndNode(r)(AnyNode))
       .withExpr(HasType(r, RelType("A"))(CTBoolean))
       .withExpr(Property(r, PropertyKey("foo"))(CTBoolean)))
   }

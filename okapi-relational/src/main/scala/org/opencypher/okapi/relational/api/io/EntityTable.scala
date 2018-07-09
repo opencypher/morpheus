@@ -28,7 +28,8 @@ package org.opencypher.okapi.relational.api.io
 
 import org.opencypher.okapi.api.io.conversion.{EntityMapping, NodeMapping, RelationshipMapping}
 import org.opencypher.okapi.api.schema.Schema
-import org.opencypher.okapi.api.types.{CTBoolean, CTInteger, CTNode, CypherType}
+import org.opencypher.okapi.api.types.CypherType
+import org.opencypher.okapi.api.types.CypherType._
 import org.opencypher.okapi.impl.exception.IllegalArgumentException
 import org.opencypher.okapi.impl.util.StringEncodingUtilities._
 import org.opencypher.okapi.ir.api.expr._
@@ -116,9 +117,9 @@ object RelationalEntityMapping {
         Map.empty
     }
 
-    def startNode(rel: Var): (StartNode, String) = StartNode(rel)(CTNode) -> mapping.sourceStartNodeKey
+    def startNode(rel: Var): (StartNode, String) = StartNode(rel)(AnyNode) -> mapping.sourceStartNodeKey
 
-    def endNode(rel: Var): (EndNode, String) = EndNode(rel)(CTNode) -> mapping.sourceEndNodeKey
+    def endNode(rel: Var): (EndNode, String) = EndNode(rel)(AnyNode) -> mapping.sourceEndNodeKey
   }
 
 }

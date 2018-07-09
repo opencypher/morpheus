@@ -26,7 +26,8 @@
  */
 package org.opencypher.okapi.ir.impl.typer
 
-import org.opencypher.okapi.api.types._
+import org.opencypher.okapi.api.types.CypherType
+import org.opencypher.okapi.api.types.CypherType._
 import org.opencypher.v9_1.util.{symbols => frontend}
 
 case object fromFrontendType extends (frontend.CypherType => CypherType) {
@@ -37,10 +38,10 @@ case object fromFrontendType extends (frontend.CypherType => CypherType) {
     case frontend.CTFloat         => CTFloat
     case frontend.CTBoolean       => CTBoolean
     case frontend.CTString        => CTString
-    case frontend.CTNode          => CTNode
-    case frontend.CTRelationship  => CTRelationship
+    case frontend.CTNode          => AnyNode
+    case frontend.CTRelationship  => AnyRelationship
     case frontend.CTPath          => CTPath
-    case frontend.CTMap           => CTMap
+    case frontend.CTMap           => AnyMap
     case frontend.ListType(inner) => CTList(fromFrontendType(inner))
     case x                        => throw new UnsupportedOperationException(s"Can not convert openCypher frontend type $x to an internal type")
   }

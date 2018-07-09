@@ -27,7 +27,7 @@
 package org.opencypher.okapi.relational.api.schema
 
 import org.opencypher.okapi.api.schema.Schema
-import org.opencypher.okapi.api.types.{CTBoolean, CTNode, CTRelationship}
+import org.opencypher.okapi.api.types.CypherType._
 import org.opencypher.okapi.impl.exception.IllegalArgumentException
 import org.opencypher.okapi.ir.api.expr._
 import org.opencypher.okapi.ir.api.{Label, PropertyKey, RelType}
@@ -39,7 +39,7 @@ object RelationalSchema {
 
     def headerForNode(node: Var): RecordHeader = {
       val labels: Set[String] = node.cypherType match {
-        case CTNode(l, _) => l
+        case CTNode(l) => l
         case other => throw IllegalArgumentException(CTNode, other)
       }
       headerForNode(node, labels)
@@ -68,9 +68,9 @@ object RelationalSchema {
 
     def headerForRelationship(rel: Var): RecordHeader = {
       val types = rel.cypherType match {
-        case CTRelationship(relTypes, _) if relTypes.isEmpty =>
+        case CTRelationship(relTypes) if relTypes.isEmpty =>
           schema.relationshipTypes
-        case CTRelationship(relTypes, _) =>
+        case CTRelationship(relTypes) =>
           relTypes
         case other =>
           throw IllegalArgumentException(CTRelationship, other)
@@ -94,9 +94,9 @@ object RelationalSchema {
         case (k, t) => Property(rel, PropertyKey(k))(t)
       }.toSet
 
-      val startNodeExpr = StartNode(rel)(CTNode)
+      val startNodeExpr = StartNode(rel)(AnyNode)
       val hasTypeExprs = relTypes.map(relType => HasType(rel, RelType(relType))(CTBoolean))
-      val endNodeExpr = EndNode(rel)(CTNode)
+      val endNodeExpr = EndNode(rel)(AnyNode)
 
       val relationshipExpressions = hasTypeExprs ++ propertyExpressions + rel + startNodeExpr + endNodeExpr
 

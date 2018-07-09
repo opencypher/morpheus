@@ -26,7 +26,7 @@
  */
 package org.opencypher.okapi.logical.impl
 
-import org.opencypher.okapi.api.types.{CTBoolean, CTNode}
+import org.opencypher.okapi.api.types.CypherType._
 import org.opencypher.okapi.ir.api.Label
 import org.opencypher.okapi.ir.api.expr.{HasLabel, Var}
 import org.opencypher.okapi.ir.api.util.DirectCompilationStage
@@ -55,7 +55,8 @@ object LogicalOptimizer extends DirectCompilationStage[LogicalOperator, LogicalO
   def pushLabelsIntoScans(labelMap: Map[Var, Set[String]]): PartialFunction[LogicalOperator, LogicalOperator] = {
     case ns@NodeScan(v@Var(name), in, solved) =>
       val updatedLabels = labelMap(v)
-      val updatedVar = Var(name)(CTNode(ns.labels ++ updatedLabels, v.cypherType.graph))
+      // TODO: qgn
+      val updatedVar = Var(name)(CTNode((ns.labels ++ updatedLabels).toSeq: _*)) // , v.cypherType.graph))
       val updatedSolved = in.solved.withPredicates(updatedLabels.map(l => HasLabel(v, Label(l))(CTBoolean)).toSeq: _*)
       NodeScan(updatedVar, in, updatedSolved)
     case Filter(_: HasLabel, in, _) => in

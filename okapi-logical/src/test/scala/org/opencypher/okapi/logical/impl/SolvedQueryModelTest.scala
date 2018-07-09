@@ -28,7 +28,7 @@ package org.opencypher.okapi.logical.impl
 
 import java.net.URI
 
-import org.opencypher.okapi.api.types.{CTBoolean, CTNode, CTRelationship}
+import org.opencypher.okapi.api.types.CypherType._
 import org.opencypher.okapi.impl.exception.IllegalArgumentException
 import org.opencypher.okapi.ir.api.RelType
 import org.opencypher.okapi.ir.api.block._
@@ -55,8 +55,8 @@ class SolvedQueryModelTest extends BaseTestSuite with IrConstruction {
   }
 
   test("contains several blocks") {
-    val block1 = matchBlock(Pattern.empty.withEntity('a -> CTNode))
-    val block2 = matchBlock(Pattern.empty.withEntity('b -> CTNode))
+    val block1 = matchBlock(Pattern.empty.withEntity('a -> AnyNode))
+    val block2 = matchBlock(Pattern.empty.withEntity('b -> AnyNode))
     val binds: Fields[Expr] = Fields(Map(toField('c) -> Equals('a, 'b)(CTBoolean)))
     val block3 = project(binds)
     val block4 = project(ProjectedFieldsOf(toField('d) -> Equals('c, 'b)(CTBoolean)))
@@ -71,28 +71,28 @@ class SolvedQueryModelTest extends BaseTestSuite with IrConstruction {
 
   test("solves") {
     val s = SolvedQueryModel.empty.withField('a).withFields('b, 'c)
-    val p = Pattern.empty[Expr].withEntity('a -> CTNode).withEntity('b -> CTNode).withEntity('c -> CTNode)
+    val p = Pattern.empty[Expr].withEntity('a -> AnyNode).withEntity('b -> AnyNode).withEntity('c -> AnyNode)
 
     s.solves(toField('a)) shouldBe true
     s.solves(toField('b)) shouldBe true
     s.solves(toField('x)) shouldBe false
     s.solves(p) shouldBe true
-    s.solves(p.withEntity('x -> CTNode)) shouldBe false
+    s.solves(p.withEntity('x -> AnyNode)) shouldBe false
   }
 
   it("can solve a relationship") {
     val s = SolvedQueryModel.empty
 
     an [IllegalArgumentException] should be thrownBy s.solveRelationship('a)
-    s.solveRelationship('r -> CTRelationship) should equal(SolvedQueryModel.empty.withField('r -> CTRelationship))
+    s.solveRelationship('r -> AnyRelationship) should equal(SolvedQueryModel.empty.withField('r -> AnyRelationship))
     s.solveRelationship('r -> CTRelationship("KNOWS")) should equal(
       SolvedQueryModel.empty
-        .withField('r -> CTRelationship)
+        .withField('r -> AnyRelationship)
         .withPredicate(HasType(Var("r")(CTRelationship("KNOWS")), RelType("KNOWS"))(CTBoolean))
     )
     s.solveRelationship('r -> CTRelationship("KNOWS", "LOVES", "HATES")) should equal(
       SolvedQueryModel.empty
-        .withField('r -> CTRelationship)
+        .withField('r -> AnyRelationship)
         .withPredicate(Ors(
           HasType(RelationshipVar("r")(), RelType("KNOWS"))(CTBoolean),
           HasType(RelationshipVar("r")(), RelType("LOVES"))(CTBoolean),

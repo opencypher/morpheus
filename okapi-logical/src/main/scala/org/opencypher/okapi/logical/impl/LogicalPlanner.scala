@@ -26,7 +26,7 @@
  */
 package org.opencypher.okapi.logical.impl
 
-import org.opencypher.okapi.api.types.{CTNode, CTRelationship}
+import org.opencypher.okapi.api.types.CypherType.{AnyNode, CTNode, CTRelationship}
 import org.opencypher.okapi.impl.exception.{IllegalArgumentException, IllegalStateException, NotImplementedException}
 import org.opencypher.okapi.ir.api.block._
 import org.opencypher.okapi.ir.api.expr._
@@ -377,10 +377,10 @@ class LogicalPlanner(producer: LogicalOperatorProducer)
   }
 
   private def extractConstructedEntities(pattern: Pattern[Expr], e: IRField, baseField: Option[Var]) = e.cypherType match {
-    case CTRelationship(relTypes, _) if relTypes.size <= 1 =>
+    case CTRelationship(relTypes) if relTypes.size <= 1 =>
       val connection = pattern.topology(e)
       ConstructedRelationship(e, connection.source, connection.target, relTypes.headOption, baseField)
-    case CTNode(labels, _) =>
+    case CTNode(labels) =>
       ConstructedNode(e, labels.map(Label), baseField)
     case other =>
       throw InvalidCypherTypeException(s"Expected an entity type (CTNode, CTRelationship), got $other")
@@ -440,7 +440,7 @@ class LogicalPlanner(producer: LogicalOperatorProducer)
     implicit context: LogicalPlannerContext): LogicalOperator = {
 
     // find all unsolved nodes from the pattern
-    val nodes = pattern.fields.filter(_.cypherType.subTypeOf(CTNode).isTrue)
+    val nodes = pattern.fields.filter(_.cypherType.subTypeOf(AnyNode))
 
     if (pattern.topology.isEmpty) { // there is no connection in the pattern => plan a node scan
       val field = nodes.head

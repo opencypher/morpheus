@@ -26,22 +26,23 @@
  */
 package org.opencypher.okapi.ir.impl.typer
 
+import org.opencypher.okapi.api.types.CypherType._
 import org.opencypher.okapi.api.types._
 import org.opencypher.v9_1.util.{symbols => frontend}
 
 case object toFrontendType extends (CypherType => frontend.CypherType) {
   override def apply(in: CypherType): frontend.CypherType = in.material match {
-    case CTAny          => frontend.CTAny
-    case CTNumber       => frontend.CTNumber
-    case CTInteger      => frontend.CTInteger
-    case CTFloat        => frontend.CTFloat
-    case CTBoolean      => frontend.CTBoolean
-    case CTString       => frontend.CTString
-    case CTNode         => frontend.CTNode
-    case CTRelationship => frontend.CTRelationship
-    case CTPath         => frontend.CTPath
-    case CTMap          => frontend.CTMap
-    case CTList(inner)  => frontend.ListType(toFrontendType(inner))
+    case CTAny => frontend.CTAny
+    case CTNumber => frontend.CTNumber
+    case CTInteger => frontend.CTInteger
+    case CTFloat => frontend.CTFloat
+    case CTBoolean => frontend.CTBoolean
+    case CTString => frontend.CTString
+    case n: CTNode if n.subTypeOf(AnyNode) => frontend.CTNode
+    case r: CTRelationship if r.subTypeOf(AnyRelationship) => frontend.CTRelationship
+    case CTPath => frontend.CTPath
+    case CTMap(_) => frontend.CTMap
+    case CTList(inner) => frontend.ListType(toFrontendType(inner))
     case x => throw new UnsupportedOperationException(s"Can not convert internal type $x to an openCypher frontend type")
   }
 }

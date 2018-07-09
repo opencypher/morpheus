@@ -26,7 +26,7 @@
  */
 package org.opencypher.okapi.relational.impl.table
 
-import org.opencypher.okapi.api.types.{CTNode, CTRelationship}
+import org.opencypher.okapi.api.types.CypherType.{AnyNode, AnyRelationship, CTNode, CTRelationship}
 import org.opencypher.okapi.impl.exception.IllegalArgumentException
 import org.opencypher.okapi.impl.util.TablePrinter
 import org.opencypher.okapi.ir.api.RelType
@@ -114,8 +114,8 @@ case class RecordHeader(exprToColumn: Map[Expr, String]) {
 
   def idExpressions(): Set[Expr] = {
     exprToColumn.keySet.collect {
-      case n if n.cypherType.subTypeOf(CTNode).isTrue => n
-      case r if r.cypherType.subTypeOf(CTRelationship).isTrue => r
+      case n if n.cypherType.subTypeOf(AnyNode) => n
+      case r if r.cypherType.subTypeOf(AnyRelationship) => r
     }
   }
 
@@ -173,7 +173,7 @@ case class RecordHeader(exprToColumn: Map[Expr, String]) {
 
   def nodeEntities: Set[Var] = {
     exprToColumn.keySet.collect {
-      case v: Var if v.cypherType.subTypeOf(CTNode).isTrue => v
+      case v: Var if v.cypherType.subTypeOf(AnyNode) => v
     }
   }
 
@@ -185,7 +185,7 @@ case class RecordHeader(exprToColumn: Map[Expr, String]) {
 
   def relationshipEntities: Set[Var] = {
     exprToColumn.keySet.collect {
-      case v: Var if v.cypherType.subTypeOf(CTRelationship).isTrue => v
+      case v: Var if v.cypherType.subTypeOf(AnyRelationship) => v
     }
   }
 
@@ -196,7 +196,7 @@ case class RecordHeader(exprToColumn: Map[Expr, String]) {
     nodeVars[T].filter { nodeVar =>
       val physicalLabels = labelsFor(nodeVar).map(_.label.name)
       val logicalLabels = nodeVar.cypherType match {
-        case CTNode(labels, _) => labels
+        case CTNode(labels) => labels
         case _ => Set.empty[String]
       }
       requiredLabels.subsetOf(physicalLabels ++ logicalLabels)
@@ -205,14 +205,14 @@ case class RecordHeader(exprToColumn: Map[Expr, String]) {
 
   def relationshipsForType[T >: RelationshipVar <: Var](relType: CTRelationship): Set[T] = {
     // or semantics
-    val possibleTypes = relType.types
+    val possibleTypes = relType.relTypes
 
     relationshipVars[T].filter { relVar =>
       val physicalTypes = typesFor(relVar).map {
         case HasType(_, RelType(name)) => name
       }
       val logicalTypes = relVar.cypherType match {
-        case CTRelationship(types, _) => types
+        case CTRelationship(types) => types
         case _ => Set.empty[String]
       }
       possibleTypes.isEmpty || (physicalTypes ++ logicalTypes).exists(possibleTypes.contains)

@@ -42,10 +42,10 @@ class CypherTypesTest extends FunSpec with Matchers {
     CTFloat,
     CTString,
 //    CTMap,
-    CTAnyNode,
+    AnyNode,
     CTNode("Person"),
     CTNode("Person", "Employee"),
-    CTAnyRelationship,
+    AnyRelationship,
     CTRelationship("KNOWS"),
     CTRelationship("KNOWS", "LOVES"),
 //    CTPath,
@@ -127,10 +127,10 @@ class CypherTypesTest extends FunSpec with Matchers {
 //  }
 //
   it("RELATIONSHIP type") {
-    CTAnyRelationship.superTypeOf(CTAnyRelationship) shouldBe true
-    CTAnyRelationship.superTypeOf(CTRelationship("KNOWS")) shouldBe true
-    CTRelationship("KNOWS").superTypeOf(CTAnyRelationship) shouldBe false
-    CTAnyRelationship.subTypeOf(CTRelationship("KNOWS")) shouldBe false
+    AnyRelationship.superTypeOf(AnyRelationship) shouldBe true
+    AnyRelationship.superTypeOf(CTRelationship("KNOWS")) shouldBe true
+    CTRelationship("KNOWS").superTypeOf(AnyRelationship) shouldBe false
+    AnyRelationship.subTypeOf(CTRelationship("KNOWS")) shouldBe false
     CTRelationship("KNOWS").superTypeOf(CTRelationship("KNOWS")) shouldBe true
     CTRelationship("KNOWS").superTypeOf(CTRelationship("KNOWS", "LOVES")) shouldBe false
     CTRelationship("KNOWS", "LOVES").superTypeOf(CTRelationship("LOVES")) shouldBe true
@@ -138,8 +138,8 @@ class CypherTypesTest extends FunSpec with Matchers {
   }
 
   it("RELATIONSHIP? type") {
-    CTAnyRelationship.nullable.superTypeOf(CTAnyRelationship.nullable) shouldBe true
-    CTAnyRelationship.nullable.superTypeOf(CTRelationship("KNOWS").nullable) shouldBe true
+    AnyRelationship.nullable.superTypeOf(AnyRelationship.nullable) shouldBe true
+    AnyRelationship.nullable.superTypeOf(CTRelationship("KNOWS").nullable) shouldBe true
     CTRelationship("KNOWS").nullable.superTypeOf(CTRelationship("KNOWS").nullable) shouldBe true
     CTRelationship("KNOWS").nullable.superTypeOf(CTRelationship("KNOWS", "LOVES").nullable) shouldBe false
     CTRelationship("KNOWS", "LOVES").nullable.superTypeOf(CTRelationship("LOVES").nullable) shouldBe true
@@ -148,26 +148,28 @@ class CypherTypesTest extends FunSpec with Matchers {
   }
 
   it("NODE type") {
-    CTAnyNode.superTypeOf(CTAnyNode) shouldBe true
-    CTAnyNode.superTypeOf(CTNode("Person")) shouldBe true
-    CTNode("Person").superTypeOf(CTAnyNode) shouldBe false
-    CTAnyNode.subTypeOf(CTNode("Person")) shouldBe false
+    AnyNode.superTypeOf(AnyNode) shouldBe true
+    AnyNode.superTypeOf(CTNode("Person")) shouldBe true
+    CTNode("Person").superTypeOf(AnyNode) shouldBe false
+    AnyNode.subTypeOf(CTNode("Person")) shouldBe false
     CTNode("Person").superTypeOf(CTNode("Person")) shouldBe true
     CTNode("Person").superTypeOf(CTNode("Person", "Employee")) shouldBe true
     CTNode("Person", "Employee").superTypeOf(CTNode("Employee")) shouldBe false
     CTNode("Person").superTypeOf(CTNode("Foo")) shouldBe false
-    CTNode("Person").superTypeOf(CTAnyNode) shouldBe false
+    CTNode("Person").superTypeOf(AnyNode) shouldBe false
   }
 
   it("NODE? type") {
-    CTAnyNode.nullable.superTypeOf(CTAnyNode.nullable) shouldBe true
-    CTAnyNode.nullable.superTypeOf(CTNode("Person")) shouldBe true
+    AnyNode.nullable.superTypeOf(AnyNode.nullable) shouldBe true
+    AnyNode.nullable.superTypeOf(CTNode("Person")) shouldBe true
     CTNode("Person").nullable.superTypeOf(CTNode("Person").nullable) shouldBe true
     CTNode("Person").union(CTNode("Employee"))
     CTNode("Person").nullable.superTypeOf(CTNode("Person", "Employee").nullable) shouldBe true
     CTNode("Person", "Employee").nullable.superTypeOf(CTNode("Employee").nullable) shouldBe false
     CTNode("Person").nullable.superTypeOf(CTNode("Foo").nullable) shouldBe false
     CTNode("Foo").nullable.superTypeOf(CTNull) shouldBe true
+
+    println(CTNode("Person", "Employee").nullable)
   }
 
   it("conversion between VOID and NULL") {
@@ -206,8 +208,8 @@ class CypherTypesTest extends FunSpec with Matchers {
     CTAny superTypeOf CTNumber shouldBe true
     CTAny superTypeOf CTBoolean shouldBe true
 //    CTAny superTypeOf CTMap shouldBe true
-    CTAny superTypeOf CTAnyNode shouldBe true
-    CTAny superTypeOf CTAnyRelationship shouldBe true
+    CTAny superTypeOf AnyNode shouldBe true
+    CTAny superTypeOf AnyRelationship shouldBe true
 //    CTAny superTypeOf CTPath shouldBe true
     CTAny superTypeOf CTList(CTAny) shouldBe true
     CTAny superTypeOf CTVoid shouldBe true
@@ -219,8 +221,8 @@ class CypherTypesTest extends FunSpec with Matchers {
     CTVoid subTypeOf CTNumber shouldBe true
     CTVoid subTypeOf CTBoolean shouldBe true
 //    CTVoid subTypeOf CTMap shouldBe true
-    CTVoid subTypeOf CTAnyNode shouldBe true
-    CTVoid subTypeOf CTAnyRelationship shouldBe true
+    CTVoid subTypeOf AnyNode shouldBe true
+    CTVoid subTypeOf AnyRelationship shouldBe true
 //    CTVoid subTypeOf CTPath shouldBe true
     CTVoid subTypeOf CTList(CTAny) shouldBe true
     CTVoid subTypeOf CTVoid shouldBe true
@@ -229,6 +231,9 @@ class CypherTypesTest extends FunSpec with Matchers {
     CTBoolean.nullable superTypeOf CTAny shouldBe false
     // TODO: Disagree
 //    CTAny superTypeOf CTBoolean.nullable shouldBe false
+
+
+    AnyNode.nullable.isInstanceOf[CTNode] should be(true)
   }
 
   it("union") {
@@ -246,15 +251,15 @@ class CypherTypesTest extends FunSpec with Matchers {
     // TODO: Disagree
 //    CTList(CTInteger) union CTList(CTFloat) shouldBe CTList(CTNumber)
     CTList(CTInteger) union CTList(CTFloat) shouldBe Union(CTList(CTInteger), CTList(CTFloat))
-    CTList(CTInteger) union CTAnyNode shouldBe Union(CTAnyNode, CTList(CTInteger))
+    CTList(CTInteger) union AnyNode shouldBe Union(AnyNode, CTList(CTInteger))
 
 //    CTAny union CTWildcard shouldBe CTAny
     CTAny union CTVoid shouldBe CTAny
 //    CTWildcard union CTAny shouldBe CTAny
     CTVoid union CTAny shouldBe CTAny
 
-    CTNode("Car") union CTAnyNode shouldBe CTAnyNode
-    CTAnyNode union CTNode("Person") shouldBe CTAnyNode
+    CTNode("Car") union AnyNode shouldBe AnyNode
+    AnyNode union CTNode("Person") shouldBe AnyNode
   }
 
   it("union with nullables") {
@@ -269,13 +274,13 @@ class CypherTypesTest extends FunSpec with Matchers {
   }
 
   it("union with labels and types") {
-    CTAnyNode union CTNode("Person") shouldBe CTAnyNode
+    AnyNode union CTNode("Person") shouldBe AnyNode
     CTNode("Other") union CTNode("Person") shouldBe Union(CTNode("Other"), CTNode("Person"))
     CTNode("Person") union CTNode("Person") shouldBe CTNode("Person")
 
     CTNode("L1", "L2", "Lx") union CTNode("L1", "L2", "Ly") shouldBe CTNode("L1", "L2")
 
-    CTAnyRelationship union CTRelationship("KNOWS") shouldBe CTAnyRelationship
+    AnyRelationship union CTRelationship("KNOWS") shouldBe AnyRelationship
     CTRelationship("OTHER") union CTRelationship("KNOWS") shouldBe CTRelationship("KNOWS", "OTHER")
     CTRelationship("KNOWS") union CTRelationship("KNOWS") shouldBe CTRelationship("KNOWS")
     CTRelationship("T1", "T2", "Tx") union CTRelationship("T1", "T2", "Ty") shouldBe CTRelationship(
@@ -295,7 +300,7 @@ class CypherTypesTest extends FunSpec with Matchers {
     CTAny intersect CTNumber shouldBe CTNumber
 
     CTList(CTInteger) intersect CTList(CTFloat) shouldBe CTList(CTVoid)
-    CTList(CTInteger) intersect CTAnyNode shouldBe CTVoid
+    CTList(CTInteger) intersect AnyNode shouldBe CTVoid
     // TODO: Disagree
     CTList(CTAny) intersect CTList(CTNumber) shouldBe CTList(CTNumber)
 
@@ -306,7 +311,7 @@ class CypherTypesTest extends FunSpec with Matchers {
     CTInteger intersect CTVoid shouldBe CTVoid
     CTAny intersect CTVoid shouldBe CTVoid
 
-    CTAnyNode intersect CTNode("Person") shouldBe CTNode("Person")
+    AnyNode intersect CTNode("Person") shouldBe CTNode("Person")
   }
 
   it("intersect with labels and types") {
@@ -314,11 +319,11 @@ class CypherTypesTest extends FunSpec with Matchers {
 //    CTMap intersect CTNode("Person") shouldBe CTNode("Person")
 //    CTMap intersect CTRelationship("KNOWS") shouldBe CTRelationship("KNOWS")
 
-    CTNode("Person") intersect CTAnyNode shouldBe CTNode("Person")
+    CTNode("Person") intersect AnyNode shouldBe CTNode("Person")
     CTNode("Person") intersect CTNode("Foo") shouldBe CTNode("Person", "Foo")
     CTNode("Person", "Foo") intersect CTNode("Foo") shouldBe CTNode("Person", "Foo")
 
-    CTRelationship("KNOWS") intersect CTAnyRelationship shouldBe CTRelationship("KNOWS")
+    CTRelationship("KNOWS") intersect AnyRelationship shouldBe CTRelationship("KNOWS")
     CTRelationship("KNOWS") intersect CTRelationship("LOVES") shouldBe CTVoid
     CTRelationship("KNOWS", "LOVES") intersect CTRelationship("LOVES") shouldBe CTRelationship("LOVES")
   }

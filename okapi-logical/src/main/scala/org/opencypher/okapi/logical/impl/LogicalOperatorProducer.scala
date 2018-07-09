@@ -26,7 +26,7 @@
  */
 package org.opencypher.okapi.logical.impl
 
-import org.opencypher.okapi.api.types.CTRelationship
+import org.opencypher.okapi.api.types.CypherType.CTRelationship
 import org.opencypher.okapi.ir.api.IRField
 import org.opencypher.okapi.ir.api.block.{Aggregations, SortItem}
 import org.opencypher.okapi.ir.api.expr._

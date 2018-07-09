@@ -28,7 +28,8 @@ package org.opencypher.okapi.ir.impl
 
 import org.opencypher.okapi.api.graph.{GraphName, Namespace, QualifiedGraphName}
 import org.opencypher.okapi.api.schema.{PropertyKeys, Schema}
-import org.opencypher.okapi.api.types._
+import org.opencypher.okapi.api.types.CypherType._
+import org.opencypher.okapi.api.types.CypherType
 import org.opencypher.okapi.api.value.CypherValue._
 import org.opencypher.okapi.impl.exception.UnsupportedOperationException
 import org.opencypher.okapi.ir.api._
@@ -731,7 +732,7 @@ class IrBuilderTest extends IrTestSuite {
           val matchBlock = model.findExactlyOne {
             case MatchBlock(deps, Pattern(fields, topo, _, _), exprs, _, _) =>
               deps should equalWithTracing(List(loadBlock))
-              fields should equal(Set(toField('a -> CTNode)))
+              fields should equal(Set(toField('a -> AnyNode)))
               topo shouldBe empty
               exprs should equalWithTracing(Set(HasLabel(toNodeVar('a), Label("Person"))()))
           }
@@ -765,7 +766,7 @@ class IrBuilderTest extends IrTestSuite {
           val matchBlock = model.findExactlyOne {
             case NoWhereBlock(MatchBlock(deps, Pattern(fields, topo, _, _), _, _, _)) =>
               deps should equalWithTracing(List(loadBlock))
-              fields should equal(Set[IRField]('a -> CTNode, 'b -> CTNode, 'r -> CTRelationship))
+              fields should equal(Set[IRField]('a -> AnyNode, 'b -> AnyNode, 'r -> AnyRelationship))
               val map = Map(toField('r) -> DirectedRelationship('a, 'b))
               topo should equal(map)
           }
@@ -802,7 +803,7 @@ class IrBuilderTest extends IrTestSuite {
           val matchBlock = model.findExactlyOne {
             case MatchBlock(deps, Pattern(fields, topo, _, _), exprs, _, _) =>
               deps should equalWithTracing(List(loadBlock))
-              fields should equal(Set(toField('a -> CTNode)))
+              fields should equal(Set(toField('a -> AnyNode)))
               topo shouldBe empty
               exprs should equalWithTracing(Set(HasLabel(toNodeVar('a), Label("Person"))()))
           }
@@ -812,8 +813,8 @@ class IrBuilderTest extends IrTestSuite {
               deps should equalWithTracing(List(matchBlock))
               map should equal(
                 Map(
-                  toField('name) -> Property(Var("a")(CTNode), PropertyKey("name"))(CTNull),
-                  toField('age) -> Property(Var("a")(CTNode), PropertyKey("age"))(CTNull)
+                  toField('name) -> Property(Var("a")(AnyNode), PropertyKey("name"))(CTNull),
+                  toField('age) -> Property(Var("a")(AnyNode), PropertyKey("age"))(CTNull)
                 ))
           }
 

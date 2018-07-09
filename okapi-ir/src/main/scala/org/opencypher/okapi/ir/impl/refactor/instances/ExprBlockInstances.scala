@@ -26,7 +26,7 @@
  */
 package org.opencypher.okapi.ir.impl.refactor.instances
 
-import org.opencypher.okapi.api.types.{CTNode, CTRelationship}
+import org.opencypher.okapi.api.types.CypherType._
 import org.opencypher.okapi.impl.exception.NotImplementedException
 import org.opencypher.okapi.ir.api.block.MatchBlock
 import org.opencypher.okapi.ir.api.expr.{Expr, HasLabel, HasType, Var}
@@ -37,11 +37,12 @@ trait ExprBlockInstances {
 
   private implicit class RichIRField(f: IRField) {
     def representsNode(v: Var): Boolean =
-      f.name == v.name && f.cypherType.subTypeOf(CTNode).isTrue
+      f.name == v.name && f.cypherType.subTypeOf(AnyNode)
     def representsRel(v: Var): Boolean =
-      f.name == v.name && f.cypherType.subTypeOf(CTRelationship).isTrue
+      f.name == v.name && f.cypherType.subTypeOf(AnyRelationship)
     def withLabel(l: Label): IRField = {
-      f.copy()(cypherType = f.cypherType.intersect(CTNode(Set(l.name), f.cypherType.graph)))
+      // TODO: Graph , f.cypherType.graph
+      f.copy()(cypherType = f.cypherType.intersect(CTNode(l.name)))
     }
   }
 

@@ -28,7 +28,7 @@ package org.opencypher.okapi.logical.impl
 
 import org.opencypher.okapi.api.graph.QualifiedGraphName
 import org.opencypher.okapi.api.schema.Schema
-import org.opencypher.okapi.api.types.{CTNode, CTRelationship}
+import org.opencypher.okapi.api.types.CypherType._
 import org.opencypher.okapi.ir.api.Label
 import org.opencypher.okapi.ir.api.block.SortItem
 import org.opencypher.okapi.ir.api.expr._

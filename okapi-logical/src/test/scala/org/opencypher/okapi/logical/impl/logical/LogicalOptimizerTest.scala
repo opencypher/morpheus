@@ -27,7 +27,7 @@
 package org.opencypher.okapi.logical.impl.logical
 
 import org.opencypher.okapi.api.schema.Schema
-import org.opencypher.okapi.api.types.{CTNode, _}
+import org.opencypher.okapi.api.types.CypherType._
 import org.opencypher.okapi.ir.api.expr._
 import org.opencypher.okapi.ir.api.{Label, _}
 import org.opencypher.okapi.testing.MatchHelper._
@@ -65,16 +65,16 @@ class LogicalOptimizerTest extends BaseTestSuite with IrConstruction {
     val optimizedLogicalPlan = LogicalOptimizer(plan)(plannerContext(animalSchema))
 
     val expected = Select(
-      List(Var("a")(CTNode(Set("Animal")))),
+      List(Var("a")(CTNode("Animal"))),
       NodeScan(
-        Var("a")(CTNode(Set("Animal"))),
+        Var("a")(CTNode("Animal")),
         Start(
           animalGraph,
           emptySqm
         ),
-        SolvedQueryModel(Set(), Set(HasLabel(Var("a")(CTNode(Set("Animal"))), Label("Animal"))(CTBoolean)))
+        SolvedQueryModel(Set(), Set(HasLabel(Var("a")(CTNode("Animal")), Label("Animal"))(CTBoolean)))
       ),
-      SolvedQueryModel(Set(IRField("a")(CTNode)), Set(HasLabel(Var("a")(CTNode), Label("Animal"))(CTBoolean)))
+      SolvedQueryModel(Set(IRField("a")(AnyNode)), Set(HasLabel(Var("a")(AnyNode), Label("Animal"))(CTBoolean)))
     )
 
     optimizedLogicalPlan should equalWithTracing(expected)
@@ -88,13 +88,13 @@ class LogicalOptimizerTest extends BaseTestSuite with IrConstruction {
     val optimizedLogicalPlan = LogicalOptimizer(plan)(plannerContext(schema))
 
     val expected = Select(
-      List(Var("a")(CTNode(Set("Animal")))),
+      List(Var("a")(CTNode("Animal"))),
       EmptyRecords(
-        Set(Var("a")(CTNode(Set("Animal")))),
+        Set(Var("a")(CTNode("Animal"))),
         Start(logicalGraph, emptySqm),
-        SolvedQueryModel(Set(), Set(HasLabel(Var("a")(CTNode(Set("Animal"))), Label("Animal"))(CTBoolean)))
+        SolvedQueryModel(Set(), Set(HasLabel(Var("a")(CTNode("Animal")), Label("Animal"))(CTBoolean)))
       ),
-      SolvedQueryModel(Set(IRField("a")(CTNode)), Set(HasLabel(Var("a")(CTNode), Label("Animal"))(CTBoolean)))
+      SolvedQueryModel(Set(IRField("a")(AnyNode)), Set(HasLabel(Var("a")(AnyNode), Label("Animal"))(CTBoolean)))
     )
 
     optimizedLogicalPlan should equalWithTracing(expected)
@@ -111,23 +111,23 @@ class LogicalOptimizerTest extends BaseTestSuite with IrConstruction {
     val optimizedLogicalPlan = LogicalOptimizer(plan)(plannerContext(schema))
 
     val expected = Select(
-      List(Var("a")(CTNode(Set("Animal", "Astronaut")))),
+      List(Var("a")(CTNode("Animal", "Astronaut"))),
       EmptyRecords(
-        Set(Var("a")(CTNode(Set("Astronaut", "Animal")))),
+        Set(Var("a")(CTNode("Astronaut", "Animal"))),
         Start(logicalGraph, emptySqm),
         SolvedQueryModel(
           Set(),
           Set(
-            HasLabel(Var("a")(CTNode(Set("Astronaut", "Animal"))), Label("Astronaut"))(CTBoolean),
-            HasLabel(Var("a")(CTNode(Set("Astronaut", "Animal"))), Label("Animal"))(CTBoolean)
+            HasLabel(Var("a")(CTNode("Astronaut", "Animal")), Label("Astronaut"))(CTBoolean),
+            HasLabel(Var("a")(CTNode("Astronaut", "Animal")), Label("Animal"))(CTBoolean)
           )
         )
       ),
       SolvedQueryModel(
-        Set(IRField("a")(CTNode)),
+        Set(IRField("a")(AnyNode)),
         Set(
-          HasLabel(Var("a")(CTNode), Label("Animal"))(CTBoolean),
-          HasLabel(Var("a")(CTNode), Label("Astronaut"))(CTBoolean)))
+          HasLabel(Var("a")(AnyNode), Label("Animal"))(CTBoolean),
+          HasLabel(Var("a")(AnyNode), Label("Astronaut"))(CTBoolean)))
     )
 
     optimizedLogicalPlan should equalWithTracing(expected)

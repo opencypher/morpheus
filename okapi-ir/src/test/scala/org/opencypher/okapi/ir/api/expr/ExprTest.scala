@@ -26,7 +26,7 @@
  */
 package org.opencypher.okapi.ir.api.expr
 
-import org.opencypher.okapi.api.types._
+import org.opencypher.okapi.api.types.CypherType._
 import org.scalatest.{FunSuite, Matchers}
 
 class ExprTest extends FunSuite with Matchers {
@@ -36,8 +36,8 @@ class ExprTest extends FunSuite with Matchers {
     val r = Var("a")(CTString)
     n should equal(r)
 
-    val a = StartNode(Var("rel")(CTRelationship))(CTWildcard)
-    val b = StartNode(Var("rel")(CTRelationship))(CTNode)
+    val a = StartNode(Var("rel")(AnyRelationship))(AnyRelationship)
+    val b = StartNode(Var("rel")(AnyNode))(AnyNode)
     a should equal(b)
   }
 
@@ -46,25 +46,25 @@ class ExprTest extends FunSuite with Matchers {
     val r = Var("a")(CTRelationship("b"))
     n.hashCode should equal(r.hashCode)
 
-    val a = StartNode(Var("rel")(CTRelationship))(CTWildcard)
-    val b = StartNode(Var("rel")(CTRelationship))(CTNode)
+    val a = StartNode(Var("rel")(AnyRelationship))(CTAny)
+    val b = StartNode(Var("rel")(AnyRelationship))(AnyRelationship)
     a.hashCode should equal(b.hashCode)
   }
 
   test("different expressions are not equal") {
     val p = Param("a")()
     val v = Var("a")()
-    p should not equal (v)
+    p should not equal v
   }
 
   test("different expressions have different hash codes") {
     val p = Param("a")()
     val v = Var("b")()
-    p.hashCode should not equal (v.hashCode)
+    p.hashCode should not equal v.hashCode
   }
 
   test("alias expression has same type") {
-    val n = Var("n")(CTNode)
+    val n = Var("n")(AnyNode)
     (n as Var("m")()).cypherType should equal(n.cypherType)
   }
 

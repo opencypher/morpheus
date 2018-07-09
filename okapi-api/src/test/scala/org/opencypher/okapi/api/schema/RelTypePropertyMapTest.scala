@@ -26,7 +26,7 @@
  */
 package org.opencypher.okapi.api.schema
 
-import org.opencypher.okapi.api.types.{CTAny, CTBoolean, CTInteger, CTString}
+import org.opencypher.okapi.api.types.CypherType._
 import org.scalatest.{FunSpec, Matchers}
 
 class RelTypePropertyMapTest extends FunSpec with Matchers {

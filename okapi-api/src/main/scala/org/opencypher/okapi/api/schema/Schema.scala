@@ -27,7 +27,7 @@
 package org.opencypher.okapi.api.schema
 
 import org.opencypher.okapi.api.schema.PropertyKeys.PropertyKeys
-import org.opencypher.okapi.api.types.{CTRelationship, CypherType}
+import org.opencypher.okapi.api.types.CypherType
 import org.opencypher.okapi.impl.schema.SchemaImpl._
 import org.opencypher.okapi.impl.schema.{ImpliedLabels, LabelCombinations, SchemaImpl}
 
@@ -256,10 +256,10 @@ trait Schema {
   /**
     * Returns the sub-schema for `relType`
     *
-    * @param relType Specifies the type for which the schema is extracted
+    * @param relTypes Specifies the types for which the schema is extracted
     * @return sub-schema for `relType`
     */
-  private[opencypher] def forRelationship(relType: CypherType): Schema
+  private[opencypher] def forRelationship(relTypes: Set[String]): Schema
 
   /**
     * Returns the updated schema, but overwrites any existing node property keys for the given labels.

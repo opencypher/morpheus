@@ -26,7 +26,7 @@
  */
 package org.opencypher.okapi.logical.impl
 
-import org.opencypher.okapi.api.types.{CTBoolean, CTRelationship}
+import org.opencypher.okapi.api.types.CypherType._
 import org.opencypher.okapi.impl.exception.IllegalArgumentException
 import org.opencypher.okapi.ir.api.block.Block
 import org.opencypher.okapi.ir.api.expr.{Expr, HasType, Ors}
@@ -63,9 +63,9 @@ case class SolvedQueryModel(
 
   def solveRelationship(r: IRField): SolvedQueryModel = {
     r.cypherType match {
-      case CTRelationship(types, _) if types.isEmpty =>
+      case CTRelationship(types) if types.isEmpty =>
         withField(r)
-      case CTRelationship(types, _) =>
+      case CTRelationship(types) =>
         val predicate =
           if (types.size == 1)
             HasType(r, RelType(types.head))(CTBoolean)

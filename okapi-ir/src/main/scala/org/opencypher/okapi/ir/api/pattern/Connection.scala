@@ -26,7 +26,7 @@
  */
 package org.opencypher.okapi.ir.api.pattern
 
-import org.opencypher.okapi.api.types.CTRelationship
+import org.opencypher.okapi.api.types.CypherType._
 import org.opencypher.okapi.ir.api._
 import org.opencypher.okapi.ir.api.pattern.Orientation.{Cyclic, Directed, Undirected}
 

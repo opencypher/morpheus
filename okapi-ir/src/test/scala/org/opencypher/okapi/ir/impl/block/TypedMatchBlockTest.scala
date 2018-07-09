@@ -26,7 +26,7 @@
  */
 package org.opencypher.okapi.ir.impl.block
 
-import org.opencypher.okapi.api.types.{CTNode, CTRelationship}
+import org.opencypher.okapi.api.types.CypherType._
 import org.opencypher.okapi.api.value.CypherValue._
 import org.opencypher.okapi.ir.api.block.MatchBlock
 import org.opencypher.okapi.ir.api.expr.Expr
@@ -40,11 +40,13 @@ class TypedMatchBlockTest extends IrTestSuite {
   it("computes detailed types of pattern variables") {
     implicit val (block, globals) = matchBlock("MATCH (n:Person:Foo)-[r:TYPE]->(m) RETURN n")
 
+    // TODO: Graph on node/rel type
+
     typedMatchBlock.outputs(block).map(_.toTypedTuple) should equal(
       Set(
-        "n" -> CTNode(Set("Person", "Foo"), Some(testQualifiedGraphName)),
-        "r" -> CTRelationship(Set("TYPE"), Some(testQualifiedGraphName)),
-        "m" -> CTNode(Set.empty[String], Some(testQualifiedGraphName))
+        "n" -> CTNode("Person", "Foo"),// Some(testQualifiedGraphName)),
+        "r" -> CTRelationship("TYPE"),// Some(testQualifiedGraphName)),
+        "m" -> AnyNode//, Some(testQualifiedGraphName))
       ))
   }
 
@@ -53,9 +55,9 @@ class TypedMatchBlockTest extends IrTestSuite {
 
     typedMatchBlock.outputs(block).map(_.toTypedTuple) should equal(
       Set(
-        "n" -> CTNode(Set("Person", "Foo", "Three"), Some(testQualifiedGraphName)),
-        "r" -> CTRelationship(Set("TYPE"), Some(testQualifiedGraphName)),
-        "m" -> CTNode(Set.empty[String], Some(testQualifiedGraphName))
+        "n" -> CTNode("Person", "Foo", "Three"),// Some(testQualifiedGraphName)),
+        "r" -> CTRelationship("TYPE"), //Some(testQualifiedGraphName)),
+        "m" -> AnyNode //, Some(testQualifiedGraphName))
       ))
   }
 
