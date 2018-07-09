@@ -26,7 +26,7 @@
  */
 package org.opencypher.okapi.ir.api.expr
 
-import org.opencypher.okapi.api.types.CypherType.{AnyNode, AnyRelationship}
+import org.opencypher.okapi.api.types.CypherType.CTVoid
 import org.opencypher.okapi.api.types._
 import org.opencypher.okapi.impl.exception.IllegalArgumentException
 import org.opencypher.okapi.ir.api._

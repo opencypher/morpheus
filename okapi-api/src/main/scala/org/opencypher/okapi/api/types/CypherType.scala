@@ -59,7 +59,6 @@ trait CypherType {
     }
   }
 
-  // Intersect is only supported between CTAny and CTNode
   def intersect(other: CypherType): CypherType = {
     if (this.subTypeOf(other)) {
       this
@@ -114,22 +113,23 @@ case object CTNull extends CypherType {
 
 }
 
-case object CTAny extends CypherType {
+case object CTAny extends CypherType with CTNode {
 
-  override def intersect(other: CypherType): CypherType = other
+  override def intersect(other: CTNode): CTNode = other
 
+  override def labelCombination: Set[String] = Set.empty
 }
 
 trait CTEntity extends CypherType
 
 object CTNode {
 
-  def apply(labels: String*): CypherType = {
+  def apply(labels: String*): CTNode = {
     val ls = labels.toList
     ls match {
       case Nil => CTAnyNode
       case h :: Nil => CTNodeWithLabel(h)
-      case h :: t => t.foldLeft(CTNodeWithLabel(h): CypherType) { case (ct, l) =>
+      case h :: t => t.foldLeft(CTNodeWithLabel(h): CTNode) { case (ct, l) =>
         ct.intersect(CTNodeWithLabel(l))
       }
     }
@@ -137,16 +137,19 @@ object CTNode {
 
 }
 
-trait CTNode extends CTEntity
+trait CTNode extends CTEntity {
+
+  def intersect(other: CTNode): CTNode
+
+  def labelCombination: Set[String]
+
+}
 
 case object CTAnyNode extends CTNode {
 
-  override def intersect(other: CypherType): CypherType = {
-    other match {
-      case _: CTNode => other
-      case _ => super.intersect(other)
-    }
-  }
+  override def intersect(other: CTNode): CTNode = other
+
+  override def labelCombination: Set[String] = Set.empty
 
 }
 
@@ -161,14 +164,16 @@ case class CTNodeWithLabel(label: String) extends CTNode {
     }
   }
 
-  override def intersect(other: CypherType): CypherType = {
+  override def intersect(other: CTNode): CTNode = {
     other match {
       case CTAny => this
       case CTAnyNode => this
       case n: CTNodeWithLabel => Intersection(this, n)
-      case _ => super.intersect(other)
+      case Intersection(ands) => Intersection((ands + this).toSeq: _*)
     }
   }
+
+  override def labelCombination: Set[String] = Set(label)
 
 }
 
@@ -230,7 +235,7 @@ case class CTList(elementType: CypherType) extends CypherType {
 
 }
 
-case class Intersection(ands: Set[CypherType]) extends CypherType {
+case class Intersection(ands: Set[CTNode]) extends CypherType with CTNode {
 
   override def subTypeOf(other: CypherType): Boolean = {
     this == other || {
@@ -242,7 +247,7 @@ case class Intersection(ands: Set[CypherType]) extends CypherType {
     }
   }
 
-  override def intersect(other: CypherType): CypherType = {
+  override def intersect(other: CTNode): CTNode = {
     if (other.subTypeOf(this)) {
       other
     } else if (this.subTypeOf(other)) {
@@ -261,11 +266,13 @@ case class Intersection(ands: Set[CypherType]) extends CypherType {
 
   override def name: String = ands.map(_.name).toSeq.sorted.mkString("&")
 
+  override def labelCombination: Set[String] = ands.flatMap(_.labelCombination)
+
 }
 
 object Intersection {
 
-  def apply(ands: CypherType*): CypherType = {
+  def apply(ands: CTNode*): CTNode = {
     if (ands.size == 1) {
       ands.head
     } else {
