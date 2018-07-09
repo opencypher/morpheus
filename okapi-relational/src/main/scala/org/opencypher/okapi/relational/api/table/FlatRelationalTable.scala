@@ -33,6 +33,7 @@ import org.opencypher.okapi.ir.api.expr.{Aggregator, Expr, Var}
 import org.opencypher.okapi.relational.impl.physical.{JoinType, Order}
 import org.opencypher.okapi.relational.impl.table.RecordHeader
 
+// TODO: rename to Table
 trait FlatRelationalTable[T <: FlatRelationalTable[T]] extends CypherTable {
 
   this: T =>

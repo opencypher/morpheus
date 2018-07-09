@@ -34,13 +34,8 @@ import org.opencypher.okapi.relational.impl.operators.RelationalOperator
 
 object ConstructGraphPlanner {
 
-  def planConstructGraph[
-  O <: FlatRelationalTable[O],
-  K <: RelationalOperator[O, K, A, P, I],
-  A <: RelationalCypherRecords[O],
-  P <: RelationalCypherGraph[O],
-  I <: RuntimeContext[O, K, A, P, I]](in: Option[LogicalOperator], construct: LogicalPatternGraph)
-    (implicit context: RelationalPlannerContext[O, K, A], planner: RelationalPlanner[O, K, A, P, I]): K = {
+  def planConstructGraph[T <: FlatRelationalTable[T]](in: Option[LogicalOperator], construct: LogicalPatternGraph)
+    (implicit context: RelationalPlannerContext[T]): RelationalOperator[T] = {
 
     import planner.producer._
 

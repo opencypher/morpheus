@@ -34,10 +34,8 @@ import org.opencypher.okapi.relational.impl.operators.RelationalOperator
 
 /**
   * Represents a back-end specific context which is used by the [[org.opencypher.okapi.relational.impl.physical.RelationalPlanner]].
-  *
-  * @tparam K backend-specific cypher records
   */
-trait RelationalPlannerContext[O <: FlatRelationalTable[O], K <: RelationalOperator[O, K, _, _, _], A <: RelationalCypherRecords[O]] {
+trait RelationalPlannerContext[T <: FlatRelationalTable[T]] {
   /**
     * Refers to the session in which that query is executed.
     *
@@ -53,14 +51,14 @@ trait RelationalPlannerContext[O <: FlatRelationalTable[O], K <: RelationalOpera
   def catalog: QueryCatalog
 
   // TODO: Improve design
-  def constructedGraphPlans: collection.mutable.Map[QualifiedGraphName, K]
+  def constructedGraphPlans: collection.mutable.Map[QualifiedGraphName, RelationalOperator[T]]
 
   /**
     * Initial records for physical planning.
     *
     * @return
     */
-  def inputRecords: A
+  def inputRecords: RelationalCypherRecords[T]
 
   /**
     * Query parameters

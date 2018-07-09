@@ -31,158 +31,149 @@ import org.opencypher.okapi.api.types.{CTBoolean, CTNode}
 import org.opencypher.okapi.impl.exception.NotImplementedException
 import org.opencypher.okapi.ir.api.block.SortItem
 import org.opencypher.okapi.ir.api.expr._
-import org.opencypher.okapi.ir.api.util.DirectCompilationStage
 import org.opencypher.okapi.logical.impl._
 import org.opencypher.okapi.logical.{impl => logical}
-import org.opencypher.okapi.relational.api.graph.RelationalCypherGraph
-import org.opencypher.okapi.relational.api.physical.{PhysicalOperatorProducer, RelationalPlannerContext, RuntimeContext}
-import org.opencypher.okapi.relational.api.table.{FlatRelationalTable, RelationalCypherRecords}
-import org.opencypher.okapi.relational.impl.operators.RelationalOperator
+import org.opencypher.okapi.relational.api.physical.RelationalPlannerContext
+import org.opencypher.okapi.relational.api.table.FlatRelationalTable
+import org.opencypher.okapi.relational.impl.operators.{RelationalOperator, RenameColumns}
 import org.opencypher.okapi.relational.impl.physical.ConstructGraphPlanner._
+import org.opencypher.okapi.relational.impl.{operators => relational}
 
-class RelationalPlanner[
-O <: FlatRelationalTable[O],
-K <: RelationalOperator[O, K, A, P, I],
-A <: RelationalCypherRecords[O],
-P <: RelationalCypherGraph[O],
-I <: RuntimeContext[O, K, A, P, I]](val producer: PhysicalOperatorProducer[O, K, A, P, I])
-  extends DirectCompilationStage[LogicalOperator, K, RelationalPlannerContext[O, K, A]] {
+object RelationalPlanner {
 
-  private implicit val planner: RelationalPlanner[O, K, A, P, I] = this
-
-  def process(input: LogicalOperator)(implicit context: RelationalPlannerContext[O, K, A]): K = {
+  def process[T <: FlatRelationalTable[T]](input: LogicalOperator)(implicit context: RelationalPlannerContext[T]): RelationalOperator[T] = {
 
     implicit val caps: CypherSession = context.session
 
     input match {
       case logical.CartesianProduct(lhs, rhs, _) =>
-        producer.planCartesianProduct(process(lhs), process(rhs))
+        planJoin(process[T](lhs), process[T](rhs), Seq.empty, CrossJoin)
 
       case logical.Select(fields, in, _) =>
 
-        val inOp = process(in)
+        val inOp = process[T](in)
 
         val selectExpressions = fields
           .flatMap(inOp.header.ownedBy)
           .distinct
 
-        producer.planSelect(inOp, selectExpressions)
+        relational.Select(process[T](in), selectExpressions)
 
       case logical.Project(projectExpr, in, _) =>
-        val inOp = process(in)
+        val inOp = process[T](in)
         val (expr, maybeAlias) = projectExpr
         val containsExpr = inOp.header.contains(expr)
 
         maybeAlias match {
-          case Some(alias) if containsExpr => producer.planAlias(inOp, expr as alias)
-          case Some(alias) => producer.planAdd(inOp, expr as alias)
-          case None => producer.planAdd(inOp, expr)
+          case Some(alias) if containsExpr => relational.Alias(inOp, Seq(expr as alias))
+          case Some(alias) => relational.Add(inOp, expr as alias)
+          case None => relational.Add(inOp, expr)
         }
 
       case logical.EmptyRecords(fields, in, _) =>
-        producer.planEmptyRecords(process(in), fields)
+        relational.EmptyRecords(process[T](in), fields)
 
       case logical.Start(graph, _) => planStart(graph)
 
       case logical.FromGraph(graph, in, _) =>
         graph match {
           case g: LogicalCatalogGraph =>
-            producer.planFromGraph(process(in), g)
+            relational.FromGraph(process[T](in), g)
 
           case construct: LogicalPatternGraph =>
-            planConstructGraph(Some(in), construct)(context, planner)
+            planConstructGraph(Some(in), construct)(context)
         }
 
       case logical.Unwind(list, item, in, _) =>
         val explodeExpr = Explode(list)(item.cypherType)
-        producer.planAdd(process(in), explodeExpr as item)
+        relational.Add(process[T](in), explodeExpr as item)
 
-      case op@logical.NodeScan(v, in, _) => producer.planNodeScan(process(in), op.graph, v)
+      case op@logical.NodeScan(v, in, _) => relational.NodeScan(process[T](in), v)
 
-      case logical.Aggregate(aggregations, group, in, _) => producer.planAggregate(process(in), group, aggregations)
+      case logical.Aggregate(aggregations, group, in, _) => relational.Aggregate(process[T](in), group, aggregations)
 
       case logical.Filter(expr, in, _) => expr match {
         case TrueLit =>
-          process(in) // optimise away filter
+          process[T](in) // optimise away filter
         case _ =>
-          producer.planFilter(process(in), expr)
+          relational.Filter(process[T](in), expr)
       }
 
       case logical.ValueJoin(lhs, rhs, predicates, _) =>
         val joinExpressions = predicates.map(p => p.lhs -> p.rhs).toSeq
-        producer.planJoin(process(lhs), process(rhs), joinExpressions)
+        planJoin(process[T](lhs), process[T](rhs), joinExpressions, InnerJoin)
 
       case logical.Distinct(fields, in, _) =>
         val entityExprs: Set[Var] = Set(fields.toSeq: _*)
-        producer.planDistinct(process(in), entityExprs)
+        relational.Distinct(process[T](in), entityExprs)
 
       // TODO: This needs to be a ternary operator taking source, rels and target records instead of just source and target and planning rels only at the physical layer
-      case op@logical.Expand(source, rel, target, direction, sourceOp, targetOp, _) =>
-        val first = process(sourceOp)
-        val third = process(targetOp)
+      case logical.Expand(source, rel, target, direction, sourceOp, targetOp, _) =>
+        val first = process[T](sourceOp)
+        val third = process[T](targetOp)
 
         val startFrom = sourceOp.graph match {
           case e: LogicalCatalogGraph =>
-            producer.planStart(Some(e.qualifiedGraphName))
+            relational.Start(e.qualifiedGraphName)
 
           case c: LogicalPatternGraph =>
             context.constructedGraphPlans(c.name)
         }
 
-        val second = producer.planRelationshipScan(startFrom, op.graph, rel)
+        val second = relational.RelationshipScan(startFrom, rel)
         val startNode = StartNode(rel)(CTNode)
         val endNode = EndNode(rel)(CTNode)
 
         direction match {
           case Directed =>
-            val tempResult = producer.planJoin(first, second, Seq(source -> startNode))
-            producer.planJoin(tempResult, third, Seq(endNode -> target))
+            val tempResult = planJoin(first, second, Seq(source -> startNode), InnerJoin)
+            planJoin(tempResult, third, Seq(endNode -> target), InnerJoin)
 
           case Undirected =>
-            val tempOutgoing = producer.planJoin(first, second, Seq(source -> startNode))
-            val outgoing = producer.planJoin(tempOutgoing, third, Seq(endNode -> target))
+            val tempOutgoing = planJoin(first, second, Seq(source -> startNode), InnerJoin)
+            val outgoing = planJoin(tempOutgoing, third, Seq(endNode -> target), InnerJoin)
 
             val filterExpression = Not(Equals(startNode, endNode)(CTBoolean))(CTBoolean)
-            val relsWithoutLoops = producer.planFilter(second, filterExpression)
+            val relsWithoutLoops = relational.Filter(second, filterExpression)
 
-            val tempIncoming = producer.planJoin(third, relsWithoutLoops, Seq(target -> startNode))
-            val incoming = producer.planJoin(tempIncoming, first, Seq(endNode -> source))
+            val tempIncoming = planJoin(third, relsWithoutLoops, Seq(target -> startNode), InnerJoin)
+            val incoming = planJoin(tempIncoming, first, Seq(endNode -> source), InnerJoin)
 
-            producer.planTabularUnionAll(outgoing, incoming)
+            relational.TabularUnionAll(outgoing, incoming)
         }
 
-      case op@logical.ExpandInto(source, rel, target, direction, sourceOp, _) =>
-        val in = process(sourceOp)
-        val relationships = producer.planRelationshipScan(in, op.graph, rel)
+      case logical.ExpandInto(source, rel, target, direction, sourceOp, _) =>
+        val in = process[T](sourceOp)
+        val relationships = relational.RelationshipScan(in, rel)
 
         val startNode = StartNode(rel)()
         val endNode = EndNode(rel)()
 
         direction match {
           case Directed =>
-            producer.planJoin(in, relationships, Seq(source -> startNode, target -> endNode))
+            planJoin(in, relationships, Seq(source -> startNode, target -> endNode), InnerJoin)
 
           case Undirected =>
-            val outgoing = producer.planJoin(in, relationships, Seq(source -> startNode, target -> endNode))
-            val incoming = producer.planJoin(in, relationships, Seq(target -> startNode, source -> endNode))
-            producer.planTabularUnionAll(outgoing, incoming)
+            val outgoing = planJoin(in, relationships, Seq(source -> startNode, target -> endNode), InnerJoin)
+            val incoming = planJoin(in, relationships, Seq(target -> startNode, source -> endNode), InnerJoin)
+            relational.TabularUnionAll(outgoing, incoming)
         }
 
       case logical.BoundedVarLengthExpand(source, list, target, edgeScanType, direction, lower, upper, sourceOp, targetOp, _) =>
 
         val edgeScan = Var(list.name)(edgeScanType)
-        val edgeScanOp = producer.planRelationshipScan(planStart(input.graph), input.graph, edgeScan)
+        val edgeScanOp = relational.RelationshipScan(planStart(input.graph), edgeScan)
 
         val isExpandInto = sourceOp == targetOp
 
         val planner = direction match {
-          case Directed => new DirectedVarLengthExpandPlanner[O, K, A, P, I](
+          case Directed => new DirectedVarLengthExpandPlanner[T](
             source, list, edgeScan, target,
             lower, upper,
             sourceOp, edgeScanOp, targetOp,
             isExpandInto)(this, context)
 
-          case Undirected => new UndirectedVarLengthExpandPlanner[O, K, A, P, I](
+          case Undirected => new UndirectedVarLengthExpandPlanner[T](
             source, list, edgeScan, target,
             lower, upper,
             sourceOp, edgeScanOp, targetOp,
@@ -195,8 +186,8 @@ I <: RuntimeContext[O, K, A, P, I]](val producer: PhysicalOperatorProducer[O, K,
 
       case logical.ExistsSubQuery(predicateField, lhs, rhs, _) =>
 
-        val leftResult = process(lhs)
-        val rightResult = process(rhs)
+        val leftResult = process[T](lhs)
+        val rightResult = process[T](rhs)
 
         val leftHeader = leftResult.header
         val rightHeader = rightResult.header
@@ -205,26 +196,26 @@ I <: RuntimeContext[O, K, A, P, I]](val producer: PhysicalOperatorProducer[O, K,
         val joinExprs = leftHeader.vars.intersect(rightHeader.vars)
         // 1. Alias join expressions on rhs
         val renameExprs = joinExprs.map(e => e as Var(s"${e.name}${System.nanoTime}")(e.cypherType))
-        val rightWithAliases = producer.planAliases(rightResult, renameExprs.toSeq)
+        val rightWithAliases = relational.Alias(rightResult, renameExprs.toSeq)
         // 2. Drop Join expressions and their children in rhs
         val epxrsToRemove = joinExprs.flatMap(v => rightHeader.ownedBy(v))
-        val reducedRhsData = producer.planDrop(rightWithAliases, epxrsToRemove)
+        val reducedRhsData = relational.Drop(rightWithAliases, epxrsToRemove)
         // 3. Compute distinct rows in rhs
-        val distinctRhsData = producer.planDistinct(reducedRhsData, renameExprs.map(_.alias))
+        val distinctRhsData = relational.Distinct(reducedRhsData, renameExprs.map(_.alias))
         // 4. Join lhs and prepared rhs using a left outer join
-        val joinedData = producer.planJoin(leftResult, distinctRhsData, renameExprs.map(a => a.expr -> a.alias).toSeq, LeftOuterJoin)
+        val joinedData = planJoin(leftResult, distinctRhsData, renameExprs.map(a => a.expr -> a.alias).toSeq, LeftOuterJoin)
         // 5. If at least one rhs join column is not null, the sub-query exists and true is projected to the target expression
         val targetExpr = renameExprs.head.alias
-        producer.planAddInto(joinedData, IsNotNull(targetExpr)(CTBoolean), predicateField)
+        relational.AddInto(joinedData, IsNotNull(targetExpr)(CTBoolean), predicateField)
 
       case logical.OrderBy(sortItems: Seq[SortItem[Expr]], in, _) =>
-        producer.planOrderBy(process(in), sortItems)
+        relational.OrderBy(process[T](in), sortItems)
 
-      case logical.Skip(expr, in, _) => producer.planSkip(process(in), expr)
+      case logical.Skip(expr, in, _) => relational.Skip(process[T](in), expr)
 
-      case logical.Limit(expr, in, _) => producer.planLimit(process(in), expr)
+      case logical.Limit(expr, in, _) => relational.Limit(process[T](in), expr)
 
-      case logical.ReturnGraph(in, _) => producer.planReturnGraph(process(in))
+      case logical.ReturnGraph(in, _) => relational.ReturnGraph(process[T](in))
 
       case other => throw NotImplementedException(s"Physical planning of operator $other")
     }
@@ -234,38 +225,58 @@ I <: RuntimeContext[O, K, A, P, I]](val producer: PhysicalOperatorProducer[O, K,
   //    (implicit context: PhysicalPlannerContext[O, K, A]) = {
   //    val onGraphPlan = {
   //      construct.onGraphs match {
-  //        case Nil => producer.planStart() // Empty start
+  //        case Nil => relational.Start() // Empty start
   //        //TODO: Optimize case where no union is necessary
-  //        //case h :: Nil => producer.planStart(Some(h)) // Just one graph, no union required
+  //        //case h :: Nil => relational.Start(Some(h)) // Just one graph, no union required
   //        case several =>
-  //          val onGraphPlans = several.map(qgn => producer.planStart(Some(qgn)))
-  //          producer.planGraphUnionAll(onGraphPlans, construct.name)
+  //          val onGraphPlans = several.map(qgn => relational.Start(Some(qgn)))
+  //          relational.GraphUnionAll(onGraphPlans, construct.name)
   //      }
   //    }
-  //    val inputTablePlan = in.map(process).getOrElse(producer.planStart())
+  //    val inputTablePlan = in.map(process).getOrElse(relational.Start())
   //
-  //    val constructGraphPlan = producer.planConstructGraph(inputTablePlan, onGraphPlan, construct)
+  //    val constructGraphPlan = relational.ConstructGraph(inputTablePlan, onGraphPlan, construct)
   //    context.constructedGraphPlans.update(construct.name, constructGraphPlan)
   //    constructGraphPlan
   //  }
+  
+  private def planJoin[T <: FlatRelationalTable[T]](lhs: RelationalOperator[T], rhs: RelationalOperator[T], joinExprs: Seq[(Expr, Expr)], joinType: JoinType): RelationalOperator[T] = {
+    
+    val joinHeader = lhs.header join rhs.header
+    val leftColumns = lhs.header.columns
+    val rightColumns = rhs.header.columns
+    
+    val conflictFreeRhs = if (leftColumns ++ rightColumns != joinHeader.columns) {
+      val renameColumns = rhs.header.expressions
+        .filter(expr => rhs.header.column(expr) != joinHeader.column(expr))
+        .map { expr => expr -> joinHeader.column(expr) }.toSeq
+      
+      RenameColumns(rhs, renameColumns.toMap)
+    } else {
+      rhs
+    }
 
-  private def planStart(graph: LogicalGraph)(implicit context: RelationalPlannerContext[O, K, A]): K = {
+    planJoin(lhs, conflictFreeRhs, joinExprs, joinType)
+  }
+
+  private def planStart[T <: FlatRelationalTable[T]](graph: LogicalGraph)(implicit context: RelationalPlannerContext[T]): RelationalOperator[T] = {
     graph match {
       case g: LogicalCatalogGraph =>
-        producer.planStart(Some(g.qualifiedGraphName), Some(context.inputRecords))
+        relational.Start(g.qualifiedGraphName, Some(context.inputRecords))
       case p: LogicalPatternGraph =>
         context.constructedGraphPlans.get(p.name) match {
           case Some(plan) => plan // the graph was already constructed
           // TODO: investigate why the implicit context is not found in scope
-          case None => planConstructGraph(None, p)(context, planner) // plan starts with a construct graph, thus we have to plan it
+          case None => ??? //planConstructGraph(context.session.emptyGraphQgn, p)(context, planner) // plan starts with a construct graph, thus we have to plan it
         }
     }
   }
 
-  private def planOptional(lhs: LogicalOperator, rhs: LogicalOperator)
-    (implicit context: RelationalPlannerContext[O, K, A]) = {
-    val lhsOp = process(lhs)
-    val rhsOp = process(rhs)
+  // TODO: process operator outside of def
+  private def planOptional[T <: FlatRelationalTable[T]](lhs: LogicalOperator, rhs: LogicalOperator)
+    (implicit context: RelationalPlannerContext[T]): RelationalOperator[T] = {
+    val lhsOp = process[T](lhs)
+    val rhsOp = process[T](rhs)
 
     val lhsHeader = lhsOp.header
     val rhsHeader = rhsOp.header
@@ -281,17 +292,17 @@ I <: RuntimeContext[O, K, A, P, I]](val producer: PhysicalOperatorProducer[O, K,
     val expressionsToRemove = joinExprs
       .flatMap(v => rhsHeader.ownedBy(v) - v)
       .union(otherExpressions)
-    val rhsWithDropped = producer.planDrop(rhsOp, expressionsToRemove)
+    val rhsWithDropped = relational.Drop(rhsOp, expressionsToRemove)
 
     // 3. Rename the join expressions on the right hand side, in order to make them distinguishable after the join
     val joinExprRenames = joinExprs.map(e => e as Var(generateUniqueName)(e.cypherType))
-    val rhsWithAlias = producer.planAliases(rhsWithDropped, joinExprRenames.toSeq)
-    val rhsJoinReady = producer.planDrop(rhsWithAlias, joinExprs.collect { case e: Expr => e })
+    val rhsWithAlias = relational.Alias(rhsWithDropped, joinExprRenames.toSeq)
+    val rhsJoinReady = relational.Drop(rhsWithAlias, joinExprs.collect { case e: Expr => e })
 
     // 4. Left outer join the left side and the processed right side
-    val joined = producer.planJoin(lhsOp, rhsJoinReady, joinExprRenames.map(a => a.expr -> a.alias).toSeq, LeftOuterJoin)
+    val joined = planJoin(lhsOp, rhsJoinReady, joinExprRenames.map(a => a.expr -> a.alias).toSeq, LeftOuterJoin)
 
     // 5. Select the resulting header expressions
-    producer.planSelect(joined, joined.header.expressions.toList)
+    relational.Select(joined, joined.header.expressions.toList)
   }
 }

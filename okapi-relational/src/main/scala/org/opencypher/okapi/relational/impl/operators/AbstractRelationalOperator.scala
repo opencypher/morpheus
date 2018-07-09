@@ -15,12 +15,7 @@ import org.opencypher.okapi.relational.impl.physical._
 import org.opencypher.okapi.relational.impl.table.RecordHeader
 import org.opencypher.okapi.trees.AbstractTreeNode
 
-abstract class RelationalOperator[
-O <: FlatRelationalTable[O],
-K <: RelationalOperator[O, K, A, P, I],
-A <: RelationalCypherRecords[O],
-P <: RelationalCypherGraph[O],
-I <: RuntimeContext[O, K, A, P, I]] extends AbstractTreeNode[RelationalOperator[O, K, A, P, I]] {
+abstract class RelationalOperator[T <: FlatRelationalTable[T]] extends AbstractTreeNode[RelationalOperator[T]] {
 
   type TagStrategy = Map[QualifiedGraphName, Map[Int, Int]]
 
@@ -28,25 +23,26 @@ I <: RuntimeContext[O, K, A, P, I]] extends AbstractTreeNode[RelationalOperator[
 
   def header: RecordHeader = children.head.header
 
-  def _table: O = children.head.table
+  def _table: T = children.head.table
 
-  implicit def context: I = children.head.context
+  implicit def context: RuntimeContext[T] = children.head.context
 
   implicit def session: CypherSession = context.session
 
-  def graph: P = children.head.graph
+  def graph: RelationalCypherGraph[T] = children.head.graph
 
   def graphName: QualifiedGraphName = children.head.graphName
 
   def returnItems: Option[Seq[Var]] = children.head.returnItems
 
-  protected def resolve(qualifiedGraphName: QualifiedGraphName)(implicit context: I): P =
+  protected def resolve(qualifiedGraphName: QualifiedGraphName)
+    (implicit context: RuntimeContext[T]): RelationalCypherGraph[T] =
     context.resolveGraph(qualifiedGraphName)
 
-  protected def resolveTags(qgn: QualifiedGraphName)(implicit context: I): Set[Int] =
+  protected def resolveTags(qgn: QualifiedGraphName)(implicit context: RuntimeContext[T]): Set[Int] =
     resolve(qgn).tags
 
-  def table: O = {
+  def table: T = {
     val t = _table
 
     if (t.physicalColumns.toSet != header.columns) {
@@ -92,7 +88,7 @@ I <: RuntimeContext[O, K, A, P, I]] extends AbstractTreeNode[RelationalOperator[
         headerType match {
           case _: CTNode if tableType == CTInteger =>
           case _: CTNodeOrNull if tableType == CTInteger =>
-          case _: CTRelationship  if tableType == CTInteger =>
+          case _: CTRelationship if tableType == CTInteger =>
           case _: CTRelationshipOrNull if tableType == CTInteger =>
           case _ if tableType == headerType =>
           case _ => throw IllegalArgumentException(
@@ -106,20 +102,17 @@ I <: RuntimeContext[O, K, A, P, I]] extends AbstractTreeNode[RelationalOperator[
 
 // Leaf
 
-final case class Start[
-O <: FlatRelationalTable[O],
-K <: RelationalOperator[O, K, A, P, I],
-A <: RelationalCypherRecords[O],
-P <: RelationalCypherGraph[O],
-I <: RuntimeContext[O, K, A, P, I]](qgn: QualifiedGraphName, recordsOpt: Option[A])
-  (implicit override val context: I) extends RelationalOperator[O, K, A, P, I] {
+final case class Start[T <: FlatRelationalTable[T]](
+  qgn: QualifiedGraphName,
+  recordsOpt: Option[RelationalCypherRecords[T]] = None
+)(implicit override val context: RuntimeContext[T]) extends RelationalOperator[T] {
 
   override lazy val header: RecordHeader = recordsOpt.map(_.header).getOrElse(RecordHeader.empty)
 
-//  override lazy val _table: O = recordsOpt.map(_.table).getOrElse(CAPSRecords.unit().table)
-  override lazy val _table: O = recordsOpt.map(_.table).getOrElse(table.unit)
+  //  override lazy val _table: T = recordsOpt.map(_.table).getOrElse(CAPSRecords.unit().table)
+  override lazy val _table: T = recordsOpt.map(_.table).getOrElse(table.unit)
 
-  override lazy val graph: P = resolve(qgn)
+  override lazy val graph: RelationalCypherGraph[T] = resolve(qgn)
 
   override lazy val graphName: QualifiedGraphName = qgn
 
@@ -136,14 +129,9 @@ I <: RuntimeContext[O, K, A, P, I]](qgn: QualifiedGraphName, recordsOpt: Option[
 
 // Unary
 
-final case class Cache[
-O <: FlatRelationalTable[O],
-K <: RelationalOperator[O, K, A, P, I],
-A <: RelationalCypherRecords[O],
-P <: RelationalCypherGraph[O],
-I <: RuntimeContext[O, K, A, P, I]](in: K) extends RelationalOperator[O, K, A, P, I] {
+final case class Cache[T <: FlatRelationalTable[T]](in: RelationalOperator[T]) extends RelationalOperator[T] {
 
-  override lazy val _table: O = context.cache.getOrElse(in, {
+  override lazy val _table: T = context.cache.getOrElse(in, {
     in.table.cache
     context.cache(in) = in.table
     in.table
@@ -151,17 +139,15 @@ I <: RuntimeContext[O, K, A, P, I]](in: K) extends RelationalOperator[O, K, A, P
 
 }
 
-final case class NodeScan[
-O <: FlatRelationalTable[O],
-K <: RelationalOperator[O, K, A, P, I],
-A <: RelationalCypherRecords[O],
-P <: RelationalCypherGraph[O],
-I <: RuntimeContext[O, K, A, P, I]](in: K, v: Var) extends RelationalOperator[O, K, A, P, I] {
+final case class NodeScan[T <: FlatRelationalTable[T]](
+  in: RelationalOperator[T],
+  v: Var
+) extends RelationalOperator[T] {
 
   override lazy val header: RecordHeader = in.graph.schema.headerForNode(v)
 
   // TODO: replace with NodeVar
-  override lazy val _table: O = {
+  override lazy val _table: T = {
     val nodeTable = in.graph.nodes(v.name, v.cypherType.asInstanceOf[CTNode]).table
 
     if (header.columns != nodeTable.physicalColumns.toSet) {
@@ -176,17 +162,15 @@ I <: RuntimeContext[O, K, A, P, I]](in: K, v: Var) extends RelationalOperator[O,
   }
 }
 
-final case class RelationshipScan[
-O <: FlatRelationalTable[O],
-K <: RelationalOperator[O, K, A, P, I],
-A <: RelationalCypherRecords[O],
-P <: RelationalCypherGraph[O],
-I <: RuntimeContext[O, K, A, P, I]](in: K, v: Var) extends RelationalOperator[O, K, A, P, I] {
+final case class RelationshipScan[T <: FlatRelationalTable[T]](
+  in: RelationalOperator[T],
+  v: Var
+) extends RelationalOperator[T] {
 
   override lazy val header: RecordHeader = in.graph.schema.headerForRelationship(v)
 
   // TODO: replace with RelationshipVar
-  override lazy val _table: O = {
+  override lazy val _table: T = {
     val relTable = in.graph.relationships(v.name, v.cypherType.asInstanceOf[CTRelationship]).table
 
     if (header.columns != relTable.physicalColumns.toSet) {
@@ -201,22 +185,15 @@ I <: RuntimeContext[O, K, A, P, I]](in: K, v: Var) extends RelationalOperator[O,
   }
 }
 
-final case class Alias[
-O <: FlatRelationalTable[O],
-K <: RelationalOperator[O, K, A, P, I],
-A <: RelationalCypherRecords[O],
-P <: RelationalCypherGraph[O],
-I <: RuntimeContext[O, K, A, P, I]](in: K, aliases: Seq[AliasExpr]) extends RelationalOperator[O, K, A, P, I] {
+final case class Alias[T <: FlatRelationalTable[T]](
+  in: RelationalOperator[T],
+  aliases: Seq[AliasExpr]
+) extends RelationalOperator[T] {
 
   override lazy val header: RecordHeader = in.header.withAlias(aliases: _*)
 }
 
-final case class Add[
-O <: FlatRelationalTable[O],
-K <: RelationalOperator[O, K, A, P, I],
-A <: RelationalCypherRecords[O],
-P <: RelationalCypherGraph[O],
-I <: RuntimeContext[O, K, A, P, I]](in: K, expr: Expr) extends RelationalOperator[O, K, A, P, I] {
+final case class Add[T <: FlatRelationalTable[T]](in: RelationalOperator[T], expr: Expr) extends RelationalOperator[T] {
 
   override lazy val header: RecordHeader = {
     if (in.header.contains(expr)) {
@@ -232,7 +209,7 @@ I <: RuntimeContext[O, K, A, P, I]](in: K, expr: Expr) extends RelationalOperato
     }
   }
 
-  override lazy val _table: O = {
+  override lazy val _table: T = {
     if (in.header.contains(expr)) {
       in.table
     } else {
@@ -241,31 +218,27 @@ I <: RuntimeContext[O, K, A, P, I]](in: K, expr: Expr) extends RelationalOperato
   }
 }
 
-final case class AddInto[
-O <: FlatRelationalTable[O],
-K <: RelationalOperator[O, K, A, P, I],
-A <: RelationalCypherRecords[O],
-P <: RelationalCypherGraph[O],
-I <: RuntimeContext[O, K, A, P, I]](in: K, add: Expr, into: Expr) extends RelationalOperator[O, K, A, P, I] {
+final case class AddInto[T <: FlatRelationalTable[T]](
+  in: RelationalOperator[T],
+  add: Expr,
+  into: Expr
+) extends RelationalOperator[T] {
 
   override lazy val header: RecordHeader = in.header.withExpr(into)
 
-  override lazy val _table: O = in.table.withColumn(header.column(into), add)(header, context.parameters)
+  override lazy val _table: T = in.table.withColumn(header.column(into), add)(header, context.parameters)
 }
 
-final case class Drop[
-T <: Expr,
-O <: FlatRelationalTable[O],
-K <: RelationalOperator[O, K, A, P, I],
-A <: RelationalCypherRecords[O],
-P <: RelationalCypherGraph[O],
-I <: RuntimeContext[O, K, A, P, I]](in: K, exprs: Set[T]) extends RelationalOperator[O, K, A, P, I] {
+final case class Drop[E <: Expr, T <: FlatRelationalTable[T]](
+  in: RelationalOperator[T],
+  exprs: Set[E]
+) extends RelationalOperator[T] {
 
   override lazy val header: RecordHeader = in.header -- exprs
 
   private lazy val columnsToDrop = in.header.columns -- header.columns
 
-  override lazy val _table: O = {
+  override lazy val _table: T = {
     if (columnsToDrop.nonEmpty) {
       in.table.drop(columnsToDrop.toSeq: _*)
     } else {
@@ -274,50 +247,39 @@ I <: RuntimeContext[O, K, A, P, I]](in: K, exprs: Set[T]) extends RelationalOper
   }
 }
 
-final case class RenameColumns[
-O <: FlatRelationalTable[O],
-K <: RelationalOperator[O, K, A, P, I],
-A <: RelationalCypherRecords[O],
-P <: RelationalCypherGraph[O],
-I <: RuntimeContext[O, K, A, P, I]](in: K, renameExprs: Map[Expr, String]) extends RelationalOperator[O, K, A, P, I] {
+final case class RenameColumns[T <: FlatRelationalTable[T]](
+  in: RelationalOperator[T],
+  renameExprs: Map[Expr, String]
+) extends RelationalOperator[T] {
 
   override lazy val header: RecordHeader = renameExprs.foldLeft(in.header) {
     case (currentHeader, (expr, newColumn)) => currentHeader.withColumnRenamed(expr, newColumn)
   }
 
-  override lazy val _table: O = renameExprs.foldLeft(in.table) {
+  override lazy val _table: T = renameExprs.foldLeft(in.table) {
     case (currentTable, (expr, newColumn)) => currentTable.withColumnRenamed(in.header.column(expr), newColumn)
   }
 }
 
-final case class Filter[
-O <: FlatRelationalTable[O],
-K <: RelationalOperator[O, K, A, P, I],
-A <: RelationalCypherRecords[O],
-P <: RelationalCypherGraph[O],
-I <: RuntimeContext[O, K, A, P, I]](in: K, expr: Expr) extends RelationalOperator[O, K, A, P, I] {
+final case class Filter[T <: FlatRelationalTable[T]](
+  in: RelationalOperator[T],
+  expr: Expr
+) extends RelationalOperator[T] {
 
-  override lazy val _table: O = in.table.filter(expr)(header, context.parameters)
+  override lazy val _table: T = in.table.filter(expr)(header, context.parameters)
 }
 
-final case class ReturnGraph[
-O <: FlatRelationalTable[O],
-K <: RelationalOperator[O, K, A, P, I],
-A <: RelationalCypherRecords[O],
-P <: RelationalCypherGraph[O],
-I <: RuntimeContext[O, K, A, P, I]](in: K) extends RelationalOperator[O, K, A, P, I] {
+final case class ReturnGraph[T <: FlatRelationalTable[T]](in: RelationalOperator[T]) extends RelationalOperator[T] {
 
   override lazy val header: RecordHeader = RecordHeader.empty
 
-  override lazy val _table: O = in.table.empty()
+  override lazy val _table: T = in.table.empty()
 }
 
-final case class Select[
-O <: FlatRelationalTable[O],
-K <: RelationalOperator[O, K, A, P, I],
-A <: RelationalCypherRecords[O],
-P <: RelationalCypherGraph[O],
-I <: RuntimeContext[O, K, A, P, I]](in: K, expressions: List[Expr]) extends RelationalOperator[O, K, A, P, I] {
+final case class Select[T <: FlatRelationalTable[T]](
+  in: RelationalOperator[T],
+  expressions: List[Expr]
+) extends RelationalOperator[T] {
 
   override lazy val header: RecordHeader = {
     val aliasExprs = expressions.collect { case a: AliasExpr => a }
@@ -325,61 +287,47 @@ I <: RuntimeContext[O, K, A, P, I]](in: K, expressions: List[Expr]) extends Rela
     headerWithAliases.select(expressions: _*)
   }
 
-  override lazy val _table: O = {
+  override lazy val _table: T = {
     in.table.select(expressions.map(header.column).distinct: _*)
   }
 
   override lazy val returnItems: Option[Seq[Var]] = Some(expressions.flatMap(_.owner).collect { case e: Var => e }.distinct)
 }
 
-final case class Distinct[
-O <: FlatRelationalTable[O],
-K <: RelationalOperator[O, K, A, P, I],
-A <: RelationalCypherRecords[O],
-P <: RelationalCypherGraph[O],
-I <: RuntimeContext[O, K, A, P, I]](in: K, fields: Set[Var]) extends RelationalOperator[O, K, A, P, I] {
+final case class Distinct[T <: FlatRelationalTable[T]](
+  in: RelationalOperator[T],
+  fields: Set[Var]
+) extends RelationalOperator[T] {
 
-  override lazy val _table: O = in.table.distinct(fields.flatMap(header.expressionsFor).map(header.column).toSeq: _*)
+  override lazy val _table: T = in.table.distinct(fields.flatMap(header.expressionsFor).map(header.column).toSeq: _*)
 
 }
 
-final case class SimpleDistinct[
-O <: FlatRelationalTable[O],
-K <: RelationalOperator[O, K, A, P, I],
-A <: RelationalCypherRecords[O],
-P <: RelationalCypherGraph[O],
-I <: RuntimeContext[O, K, A, P, I]](in: K) extends RelationalOperator[O, K, A, P, I] {
+final case class SimpleDistinct[T <: FlatRelationalTable[T]](in: RelationalOperator[T]) extends RelationalOperator[T] {
 
-  override lazy val _table: O = in.table.distinct
+  override lazy val _table: T = in.table.distinct
 }
 
-final case class Aggregate[
-O <: FlatRelationalTable[O],
-K <: RelationalOperator[O, K, A, P, I],
-A <: RelationalCypherRecords[O],
-P <: RelationalCypherGraph[O],
-I <: RuntimeContext[O, K, A, P, I]](
-  in: K,
-  aggregations: Set[(Var, Aggregator)],
-  group: Set[Var]
-) extends RelationalOperator[O, K, A, P, I] {
+final case class Aggregate[T <: FlatRelationalTable[T]](
+  in: RelationalOperator[T],
+  group: Set[Var],
+  aggregations: Set[(Var, Aggregator)]
+) extends RelationalOperator[T] {
 
   override lazy val header: RecordHeader = in.header.select(group).withExprs(aggregations.map(_._1))
 
-  override lazy val _table: O = {
+  override lazy val _table: T = {
     val preparedAggregations = aggregations.map { case (v, agg) => agg -> (header.column(v) -> v.cypherType) }
     in.table.group(group, preparedAggregations)(in.header, context.parameters)
   }
 }
 
-final case class OrderBy[
-O <: FlatRelationalTable[O],
-K <: RelationalOperator[O, K, A, P, I],
-A <: RelationalCypherRecords[O],
-P <: RelationalCypherGraph[O],
-I <: RuntimeContext[O, K, A, P, I]](in: K, sortItems: Seq[SortItem[Expr]]) extends RelationalOperator[O, K, A, P, I] {
+final case class OrderBy[T <: FlatRelationalTable[T]](
+  in: RelationalOperator[T],
+  sortItems: Seq[SortItem[Expr]]
+) extends RelationalOperator[T] {
 
-  override lazy val _table: O = {
+  override lazy val _table: T = {
     val tableSortItems: Seq[(String, Order)] = sortItems.map {
       case Asc(expr) => header.column(expr) -> Ascending
       case Desc(expr) => header.column(expr) -> Descending
@@ -388,14 +336,12 @@ I <: RuntimeContext[O, K, A, P, I]](in: K, sortItems: Seq[SortItem[Expr]]) exten
   }
 }
 
-final case class Skip[
-O <: FlatRelationalTable[O],
-K <: RelationalOperator[O, K, A, P, I],
-A <: RelationalCypherRecords[O],
-P <: RelationalCypherGraph[O],
-I <: RuntimeContext[O, K, A, P, I]](in: K, expr: Expr) extends RelationalOperator[O, K, A, P, I] {
+final case class Skip[T <: FlatRelationalTable[T]](
+  in: RelationalOperator[T],
+  expr: Expr
+) extends RelationalOperator[T] {
 
-  override lazy val _table: O = {
+  override lazy val _table: T = {
     val skip: Long = expr match {
       case IntegerLit(v) => v
       case Param(name) =>
@@ -409,14 +355,12 @@ I <: RuntimeContext[O, K, A, P, I]](in: K, expr: Expr) extends RelationalOperato
   }
 }
 
-final case class Limit[
-O <: FlatRelationalTable[O],
-K <: RelationalOperator[O, K, A, P, I],
-A <: RelationalCypherRecords[O],
-P <: RelationalCypherGraph[O],
-I <: RuntimeContext[O, K, A, P, I]](in: K, expr: Expr) extends RelationalOperator[O, K, A, P, I] {
+final case class Limit[T <: FlatRelationalTable[T]](
+  in: RelationalOperator[T],
+  expr: Expr
+) extends RelationalOperator[T] {
 
-  override lazy val _table: O = {
+  override lazy val _table: T = {
     val limit: Long = expr match {
       case IntegerLit(v) => v
       case Param(name) =>
@@ -430,26 +374,22 @@ I <: RuntimeContext[O, K, A, P, I]](in: K, expr: Expr) extends RelationalOperato
   }
 }
 
-final case class EmptyRecords[
-O <: FlatRelationalTable[O],
-K <: RelationalOperator[O, K, A, P, I],
-A <: RelationalCypherRecords[O],
-P <: RelationalCypherGraph[O],
-I <: RuntimeContext[O, K, A, P, I]](in: K, fields: Set[Var] = Set.empty) extends RelationalOperator[O, K, A, P, I] {
+final case class EmptyRecords[T <: FlatRelationalTable[T]](
+  in: RelationalOperator[T],
+  fields: Set[Var] = Set.empty
+) extends RelationalOperator[T] {
 
   override lazy val header: RecordHeader = RecordHeader.from(fields)
 
-  override lazy val _table: O = in.table.empty(header)
+  override lazy val _table: T = in.table.empty(header)
 }
 
-final case class FromGraph[
-O <: FlatRelationalTable[O],
-K <: RelationalOperator[O, K, A, P, I],
-A <: RelationalCypherRecords[O],
-P <: RelationalCypherGraph[O],
-I <: RuntimeContext[O, K, A, P, I]](in: K, logicalGraph: LogicalCatalogGraph) extends RelationalOperator[O, K, A, P, I] {
+final case class FromGraph[T <: FlatRelationalTable[T]](
+  in: RelationalOperator[T],
+  logicalGraph: LogicalCatalogGraph
+) extends RelationalOperator[T] {
 
-  override def graph: P = resolve(logicalGraph.qualifiedGraphName)
+  override def graph: RelationalCypherGraph[T] = resolve(logicalGraph.qualifiedGraphName)
 
   override def graphName: QualifiedGraphName = logicalGraph.qualifiedGraphName
 
@@ -457,37 +397,18 @@ I <: RuntimeContext[O, K, A, P, I]](in: K, logicalGraph: LogicalCatalogGraph) ex
 
 // Binary
 
-final case class Join[
-O <: FlatRelationalTable[O],
-K <: RelationalOperator[O, K, A, P, I],
-A <: RelationalCypherRecords[O],
-P <: RelationalCypherGraph[O],
-I <: RuntimeContext[O, K, A, P, I]](
-  lhs: K,
-  rhs: K,
+final case class Join[T <: FlatRelationalTable[T]](
+  lhs: RelationalOperator[T],
+  rhs: RelationalOperator[T],
   joinExprs: Seq[(Expr, Expr)] = Seq.empty,
-  joinType: JoinType = CrossJoin
-) extends RelationalOperator[O, K, A, P, I] {
+  joinType: JoinType
+) extends RelationalOperator[T] {
 
   override lazy val header: RecordHeader = lhs.header join rhs.header
 
-  override lazy val _table: O = {
-
-    val lhsTable = lhs.table
-    val rhsTable = rhs.table
-
-    // TODO: move conflict resolution to relational planner
-    val conflictFreeRhs = if (lhsTable.physicalColumns.toSet ++ rhsTable.physicalColumns.toSet != header.columns) {
-      val renameColumns = rhs.header.expressions
-        .filter(expr => rhs.header.column(expr) != header.column(expr))
-        .map { expr => expr -> header.column(expr) }.toSeq
-      RenameColumns[O, K, A, P, I](rhs, renameColumns.toMap)
-    } else {
-      rhs
-    }
-
-    val joinCols = joinExprs.map { case (l, r) => header.column(l) -> conflictFreeRhs.header.column(r) }
-    lhs.table.join(conflictFreeRhs.table, joinType, joinCols: _*)
+  override lazy val _table: T = {
+    val joinCols = joinExprs.map { case (l, r) => header.column(l) -> rhs.header.column(r) }
+    lhs.table.join(rhs.table, joinType, joinCols: _*)
   }
 }
 
@@ -502,14 +423,12 @@ I <: RuntimeContext[O, K, A, P, I]](
   */
 // TODO: rename to UnionByName
 // TODO: refactor to n-ary operator (i.e. take List[PhysicalOperator] as input)
-final case class TabularUnionAll[
-O <: FlatRelationalTable[O],
-K <: RelationalOperator[O, K, A, P, I],
-A <: RelationalCypherRecords[O],
-P <: RelationalCypherGraph[O],
-I <: RuntimeContext[O, K, A, P, I]](lhs: K, rhs: K) extends RelationalOperator[O, K, A, P, I] {
+final case class TabularUnionAll[T <: FlatRelationalTable[T]](
+  lhs: RelationalOperator[T],
+  rhs: RelationalOperator[T]
+) extends RelationalOperator[T] {
 
-  override lazy val _table: O = {
+  override lazy val _table: T = {
     val lhsTable = lhs.table
     val rhsTable = rhs.table
 
@@ -534,16 +453,15 @@ I <: RuntimeContext[O, K, A, P, I]](lhs: K, rhs: K) extends RelationalOperator[O
 }
 
 
-
 // N-ary
 
 //final case class GraphUnionAll[
-//O <: FlatRelationalTable[O],
-//K <: RelationalOperator[O, K, A, P, I],
-//A <: RelationalCypherRecords[O],
-//P <: RelationalCypherGraph[O],
-//I <: RuntimeContext[O, K, A, P, I]](inputs: List[K], qgn: QualifiedGraphName)
-//  extends RelationalOperator[O, K, A, P, I] {
+//T <: FlatRelationalTable[T]
+//
+//
+//
+//](inputs: List[K], qgn: QualifiedGraphName)
+//  extends RelationalOperator[T] {
 //  require(inputs.nonEmpty, "GraphUnionAll requires at least one input")
 //
 //  override lazy val tagStrategy = {

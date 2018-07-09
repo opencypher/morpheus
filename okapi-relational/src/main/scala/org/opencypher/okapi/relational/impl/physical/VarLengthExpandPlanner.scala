@@ -30,7 +30,7 @@ import org.opencypher.okapi.api.types.CTBoolean
 import org.opencypher.okapi.ir.api.expr._
 import org.opencypher.okapi.logical.impl.LogicalOperator
 import org.opencypher.okapi.relational.api.graph.RelationalCypherGraph
-import org.opencypher.okapi.relational.api.physical.{PhysicalOperatorProducer, RelationalPlannerContext, RuntimeContext}
+import org.opencypher.okapi.relational.api.physical.{RelationalPlannerContext, RuntimeContext}
 import org.opencypher.okapi.relational.api.table.{FlatRelationalTable, RelationalCypherRecords}
 import org.opencypher.okapi.relational.impl.exception.RecordHeaderException
 import org.opencypher.okapi.relational.impl.operators.RelationalOperator
@@ -40,12 +40,7 @@ trait ExpandDirection
 case object Outbound extends ExpandDirection
 case object Inbound extends ExpandDirection
 
-trait VarLengthExpandPlanner[
-O <: FlatRelationalTable[O],
-K <: RelationalOperator[O, K, A, P, I],
-A <: RelationalCypherRecords[O],
-P <: RelationalCypherGraph[O],
-I <: RuntimeContext[O, K, A, P, I]] {
+trait VarLengthExpandPlanner[T <: FlatRelationalTable[T]] {
 
   def source: Var
 
@@ -61,22 +56,20 @@ I <: RuntimeContext[O, K, A, P, I]] {
 
   def sourceOp: LogicalOperator
 
-  def relEdgeScanOp: K
+  def relEdgeScanOp: RelationalOperator[T]
 
   def targetOp: LogicalOperator
 
   def isExpandInto: Boolean
 
-  def planner: RelationalPlanner[O, K, A, P, I]
+  def plan: RelationalOperator[T]
 
-  def plan: K
+  implicit val context: RelationalPlannerContext[T]
+  val producer: PhysicalOperatorProducer[T] = planner.producer
 
-  implicit val context: RelationalPlannerContext[O, K, A]
-  val producer: PhysicalOperatorProducer[O, K, A, P, I] = planner.producer
-
-  val physicalSourceOp: K = planner.process(sourceOp)
-  val physicalEdgeScanOp: K = relEdgeScanOp
-  val physicalTargetOp: K = planner.process(targetOp)
+  val physicalSourceOp: T = planner.process(sourceOp)
+  val physicalEdgeScanOp: T = relEdgeScanOp
+  val physicalTargetOp: T = planner.process(targetOp)
 
   val targetHeader: RecordHeader = {
     val aliasedEdgeScanCypherType = if (lower == 0) edgeScan.cypherType.nullable else edgeScan.cypherType
@@ -111,12 +104,12 @@ I <: RuntimeContext[O, K, A, P, I]] {
     *
     * @param dir expand direction
     */
-  protected def init(dir: ExpandDirection): K = {
-    val startEdgeScanOpAlias: K = producer.planAlias(
+  protected def init(dir: ExpandDirection): T = {
+    val startEdgeScanOpAlias: T = producer.planAlias(
       physicalEdgeScanOp,
       edgeScan as startEdgeScan
     )
-    val startEdgeScanOp: K = producer.planSelect(
+    val startEdgeScanOp: T = producer.planSelect(
       startEdgeScanOpAlias,
       startEdgeScanOpAlias.header.expressions.toList
     )
@@ -142,7 +135,7 @@ I <: RuntimeContext[O, K, A, P, I]] {
     * @param directions     expansion directions
     * @param edgeVars       edges already traversed
     */
-  def expand(i: Int, iterationTable: K, directions: (ExpandDirection, ExpandDirection), edgeVars: Seq[Var]): (K, Var) = {
+  def expand(i: Int, iterationTable: T, directions: (ExpandDirection, ExpandDirection), edgeVars: Seq[Var]): (K, Var) = {
     val nextEdgeCT = if (i > lower) edgeScan.cypherType.nullable else edgeScan.cypherType
     val nextEdge = ListSegment(i, list)(nextEdgeCT)
 
@@ -173,10 +166,10 @@ I <: RuntimeContext[O, K, A, P, I]] {
     *
     * @param paths valid paths
     */
-  protected def finalize(paths: Seq[K]): K = {
+  protected def finalize(paths: Seq[K]): T = {
     // check whether to include paths of length 0
     val unalignedOps: Seq[K] = if (lower == 0) {
-      val zeroLengthExpand: K = copyEntity(source, target, targetHeader, physicalSourceOp)
+      val zeroLengthExpand: T = copyEntity(source, target, targetHeader, physicalSourceOp)
       if (upper == 0) Seq(zeroLengthExpand) else paths :+ zeroLengthExpand
     } else paths
 
@@ -228,8 +221,8 @@ I <: RuntimeContext[O, K, A, P, I]] {
     from: Var,
     to: Var,
     targetHeader: RecordHeader,
-    physicalOp: K
-  ): K = {
+    physicalOp: T
+  ): T = {
     // TODO: remove when https://github.com/opencypher/cypher-for-apache-spark/issues/513 is resolved
     val correctTarget = targetHeader.entityVars.find(_ == to).get
 
@@ -255,7 +248,7 @@ I <: RuntimeContext[O, K, A, P, I]] {
     * @param edge the paths last edge
     * @param dir  expand direction
     */
-  protected def addTargetOps(path: K, edge: Var, dir: ExpandDirection): K = {
+  protected def addTargetOps(path: T, edge: Var, dir: ExpandDirection): T = {
     val expr = dir match {
       case Outbound => path.header.endNodeFor(edge)
       case Inbound => path.header.startNodeFor(edge)
@@ -271,12 +264,7 @@ I <: RuntimeContext[O, K, A, P, I]] {
 }
 
 // TODO: use object instead
-class DirectedVarLengthExpandPlanner[
-O <: FlatRelationalTable[O],
-K <: RelationalOperator[O, K, A, P, I],
-A <: RelationalCypherRecords[O],
-P <: RelationalCypherGraph[O],
-I <: RuntimeContext[O, K, A, P, I]](
+class DirectedVarLengthExpandPlanner[T <: FlatRelationalTable[T]](
   override val source: Var,
   override val list: Var,
   override val edgeScan: Var,
@@ -284,15 +272,15 @@ I <: RuntimeContext[O, K, A, P, I]](
   override val lower: Int,
   override val upper: Int,
   override val sourceOp: LogicalOperator,
-  override val relEdgeScanOp: K,
+  override val relEdgeScanOp: RelationalOperator[T],
   override val targetOp: LogicalOperator,
   override val isExpandInto: Boolean
 )(
-  override val planner: RelationalPlanner[O, K, A, P, I],
-  override implicit val context: RelationalPlannerContext[O, K, A]
-) extends VarLengthExpandPlanner[O, K, A, P, I] {
+  override val planner: RelationalPlanner[T],
+  override implicit val context: RelationalPlannerContext[T]
+) extends VarLengthExpandPlanner[T] {
 
-  override def plan: K = {
+  override def plan: T = {
     // Iteratively expand beginning from startOp with cacheOp
     val expandOps = (2 to upper).foldLeft(Seq(init(Outbound) -> Seq(startEdgeScan))) {
       case (acc, i) =>
@@ -309,12 +297,7 @@ I <: RuntimeContext[O, K, A, P, I]](
 }
 
 // TODO: use object instead
-class UndirectedVarLengthExpandPlanner[
-O <: FlatRelationalTable[O],
-K <: RelationalOperator[O, K, A, P, I],
-A <: RelationalCypherRecords[O],
-P <: RelationalCypherGraph[O],
-I <: RuntimeContext[O, K, A, P, I]](
+class UndirectedVarLengthExpandPlanner[T <: FlatRelationalTable[T]](
   override val source: Var,
   override val list: Var,
   override val edgeScan: Var,
@@ -322,15 +305,14 @@ I <: RuntimeContext[O, K, A, P, I]](
   override val lower: Int,
   override val upper: Int,
   override val sourceOp: LogicalOperator,
-  override val relEdgeScanOp: K,
+  override val relEdgeScanOp: RelationalOperator[T],
   override val targetOp: LogicalOperator,
   override val isExpandInto: Boolean
 )(
-  override val planner: RelationalPlanner[O, K, A, P, I],
-  override implicit val context: RelationalPlannerContext[O, K, A]
-) extends VarLengthExpandPlanner[O, K, A, P, I] {
+  override implicit val context: RelationalPlannerContext[T]
+) extends VarLengthExpandPlanner[T] {
 
-  override def plan: K = {
+  override def plan: T = {
 
     val outStartOp = init(Outbound)
     val inStartOp = init(Inbound)

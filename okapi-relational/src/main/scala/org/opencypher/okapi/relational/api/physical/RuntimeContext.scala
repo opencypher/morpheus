@@ -29,7 +29,7 @@ package org.opencypher.okapi.relational.api.physical
 import org.opencypher.okapi.api.graph.{CypherSession, QualifiedGraphName}
 import org.opencypher.okapi.api.value.CypherValue.CypherMap
 import org.opencypher.okapi.relational.api.graph.RelationalCypherGraph
-import org.opencypher.okapi.relational.api.table.{FlatRelationalTable, RelationalCypherRecords}
+import org.opencypher.okapi.relational.api.table.FlatRelationalTable
 import org.opencypher.okapi.relational.impl.operators.RelationalOperator
 
 import scala.collection.mutable
@@ -37,22 +37,15 @@ import scala.collection.mutable
 /**
   * Represents a back-end specific runtime context that is being used by [[RelationalOperator]] implementations.
   *
-  * @tparam K backend-specific cypher records
-  * @tparam P backend-specific property graph
   */
-trait RuntimeContext[
-O <: FlatRelationalTable[O],
-K <: RelationalOperator[O, K, A, P, I],
-A <: RelationalCypherRecords[O], 
-P <: RelationalCypherGraph[O],
-I <: RuntimeContext[O, K, A, P, I]] {
+trait RuntimeContext[T <: FlatRelationalTable[T]] {
 
   /**
     * Returns the graph referenced by the given QualifiedGraphName.
     *
     * @return back-end specific property graph
     */
-  def resolveGraph(qgn: QualifiedGraphName): P
+  def resolveGraph(qgn: QualifiedGraphName): RelationalCypherGraph[T]
 
   /**
     * Query parameters
@@ -71,6 +64,6 @@ I <: RuntimeContext[O, K, A, P, I]] {
   /**
     * Operator cache
     */
-  var cache: mutable.Map[K, O]
+  var cache: mutable.Map[RelationalOperator[T], T]
 
 }
