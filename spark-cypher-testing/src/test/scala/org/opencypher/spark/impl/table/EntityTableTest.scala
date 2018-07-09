@@ -30,7 +30,7 @@ import org.apache.spark.sql.Row
 import org.apache.spark.sql.types.DecimalType
 import org.opencypher.okapi.api.io.conversion.{NodeMapping, RelationshipMapping}
 import org.opencypher.okapi.api.schema.Schema
-import org.opencypher.okapi.api.types._
+import org.opencypher.okapi.api.types.CypherType._
 import org.opencypher.okapi.api.value.CypherValue.CypherMap
 import org.opencypher.okapi.impl.exception.IllegalArgumentException
 import org.opencypher.okapi.impl.util.StringEncodingUtilities._
@@ -161,8 +161,8 @@ class EntityTableTest extends CAPSTestSuite {
 
     relationshipTable.header should equal(RecordHeader(Map(
       v -> "ID",
-      StartNode(v)(CTNode) -> "FROM",
-      EndNode(v)(CTNode) -> "TO",
+      StartNode(v)(AnyNode) -> "FROM",
+      EndNode(v)(AnyNode) -> "TO",
       Property(v, PropertyKey("foo"))(CTString) -> "FOO",
       Property(v, PropertyKey("bar"))(CTInteger) -> "BAR")
     ))
@@ -181,8 +181,8 @@ class EntityTableTest extends CAPSTestSuite {
     val createdHeader = relationshipTable.header
     createdHeader should equal(RecordHeader(Map(
       v -> "ID",
-      StartNode(v)(CTNode) -> "FROM",
-      EndNode(v)(CTNode) -> "TO",
+      StartNode(v)(AnyNode) -> "FROM",
+      EndNode(v)(AnyNode) -> "TO",
       HasType(v, RelType("A"))(CTBoolean) -> "A".toRelTypeColumnName,
       HasType(v, RelType("B"))(CTBoolean) -> "B".toRelTypeColumnName,
       HasType(v, RelType("C"))(CTBoolean) -> "C".toRelTypeColumnName,

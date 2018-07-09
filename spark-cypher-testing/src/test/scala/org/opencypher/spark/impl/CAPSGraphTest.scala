@@ -28,7 +28,7 @@ package org.opencypher.spark.impl
 
 import org.apache.spark.sql.Row
 import org.opencypher.okapi.api.io.conversion.RelationshipMapping
-import org.opencypher.okapi.api.types._
+import org.opencypher.okapi.api.types.CypherType.{CTNode, CTRelationship}
 import org.opencypher.okapi.testing.Bag
 import org.opencypher.spark.api.io.{CAPSNodeTable, CAPSRelationshipTable}
 import org.opencypher.spark.impl.DataFrameOps._

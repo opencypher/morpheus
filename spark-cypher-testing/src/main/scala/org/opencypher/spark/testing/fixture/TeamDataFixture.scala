@@ -29,14 +29,14 @@ package org.opencypher.spark.testing.fixture
 import org.apache.spark.sql.{DataFrame, Row}
 import org.opencypher.okapi.api.io.conversion.{NodeMapping, RelationshipMapping}
 import org.opencypher.okapi.api.schema.Schema
-import org.opencypher.okapi.api.types._
+import org.opencypher.okapi.api.types.CypherType._
 import org.opencypher.okapi.api.value.CypherValue.{CypherList, CypherMap}
-import org.opencypher.okapi.ir.api.{Label, PropertyKey, RelType}
 import org.opencypher.okapi.ir.api.expr._
-import org.opencypher.spark.api.value.{CAPSNode, CAPSRelationship}
+import org.opencypher.okapi.ir.api.{Label, PropertyKey, RelType}
 import org.opencypher.okapi.testing.Bag
 import org.opencypher.okapi.testing.Bag._
 import org.opencypher.spark.api.io.{CAPSNodeTable, CAPSRelationshipTable}
+import org.opencypher.spark.api.value.{CAPSNode, CAPSRelationship}
 import org.opencypher.spark.impl.{CAPSGraph, CAPSResult}
 
 import scala.collection.mutable
@@ -45,7 +45,7 @@ trait TeamDataFixture extends TestDataFixture {
 
   self: CAPSSessionFixture =>
 
-  val n: Expr = Var("n")(CTNode)
+  val n: Expr = Var("n")(AnyNode)
   val nHasLabelGerman: Expr = HasLabel(n, Label("German"))(CTBoolean)
   val nHasLabelBook: Expr = HasLabel(n, Label("Book"))(CTBoolean)
   val nHasLabelPerson: Expr = HasLabel(n, Label("Person"))(CTBoolean)
@@ -58,9 +58,9 @@ trait TeamDataFixture extends TestDataFixture {
   val nHasPropertyYear: Expr = Property(n, PropertyKey("year"))(CTInteger)
   val nHasPropertyName: Expr = Property(n, PropertyKey("name"))(CTString)
 
-  val r: Expr = Var("r")(CTRelationship)
-  val rStart: Expr = StartNode(r)(CTNode)
-  val rEnd: Expr = EndNode(r)(CTNode)
+  val r: Expr = Var("r")(AnyRelationship)
+  val rStart: Expr = StartNode(r)(AnyNode)
+  val rEnd: Expr = EndNode(r)(AnyNode)
   val rHasTypeKnows: Expr = HasType(r, RelType("KNOWS"))(CTBoolean)
   val rHasTypeReads: Expr = HasType(r, RelType("READS"))(CTBoolean)
   val rHasTypeInfluences: Expr = HasType(r, RelType("INFLUENCES"))(CTBoolean)

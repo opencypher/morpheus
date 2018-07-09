@@ -28,7 +28,7 @@ package org.opencypher.spark.impl
 
 import org.apache.spark.sql.{Row, functions}
 import org.opencypher.okapi.api.io.conversion.{NodeMapping, RelationshipMapping}
-import org.opencypher.okapi.api.types.{CTNode, CTRelationship}
+import org.opencypher.okapi.api.types.CypherType.{CTNode, CTRelationship}
 import org.opencypher.okapi.api.value.CypherValue.CypherMap
 import org.opencypher.okapi.testing.Bag
 import org.opencypher.okapi.testing.propertygraph.CreateGraphFactory

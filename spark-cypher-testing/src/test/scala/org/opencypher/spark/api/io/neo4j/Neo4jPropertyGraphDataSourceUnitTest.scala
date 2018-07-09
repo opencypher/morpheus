@@ -28,7 +28,7 @@ package org.opencypher.spark.api.io.neo4j
 
 import org.opencypher.okapi.api.graph.GraphName
 import org.opencypher.okapi.api.schema.Schema
-import org.opencypher.okapi.api.types.{CTBoolean, CTFloat, CTInteger, CTString}
+import org.opencypher.okapi.api.types.CypherType._
 import org.opencypher.spark.api.io.GraphEntity.sourceIdKey
 import org.opencypher.spark.api.io.Relationship.{sourceEndNodeKey, sourceStartNodeKey}
 import org.opencypher.spark.testing.CAPSTestSuite

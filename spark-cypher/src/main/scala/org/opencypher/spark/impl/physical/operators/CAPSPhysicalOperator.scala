@@ -29,7 +29,7 @@ package org.opencypher.spark.impl.physical.operators
 import org.apache.spark.sql.functions.monotonically_increasing_id
 import org.apache.spark.sql.{Column, functions}
 import org.opencypher.okapi.api.graph.QualifiedGraphName
-import org.opencypher.okapi.api.types.{CTBoolean, CTInteger, CTNode, CTRelationship}
+import org.opencypher.okapi.api.types.CypherType._
 import org.opencypher.okapi.api.value.CypherValue.CypherInteger
 import org.opencypher.okapi.impl.exception.{IllegalArgumentException, SchemaException}
 import org.opencypher.okapi.ir.api.block.{Asc, Desc, SortItem}

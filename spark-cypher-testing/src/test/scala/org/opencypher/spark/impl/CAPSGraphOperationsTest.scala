@@ -27,7 +27,7 @@
 package org.opencypher.spark.impl
 
 import org.apache.spark.sql.Row
-import org.opencypher.okapi.api.types._
+import org.opencypher.okapi.api.types.CypherType.AnyNode
 import org.opencypher.okapi.ir.api.expr._
 import org.opencypher.okapi.testing.Bag
 import org.opencypher.spark.impl.DataFrameOps._
@@ -42,7 +42,7 @@ class CAPSGraphOperationsTest extends CAPSTestSuite with TeamDataFixture with Re
 
     val result = graph1 unionAll graph2
     val nodeRecords: CAPSRecords = result.nodes("n")
-    val n = Var("n")(CTNode)
+    val n = Var("n")(AnyNode)
 
     val nExprs = Seq(
       n,

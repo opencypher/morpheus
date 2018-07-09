@@ -28,7 +28,7 @@ package org.opencypher.spark.impl.physical
 
 import org.apache.spark.storage.StorageLevel
 import org.opencypher.okapi.api.schema.Schema
-import org.opencypher.okapi.api.types.{CTNode, CTRelationship, CTString}
+import org.opencypher.okapi.api.types.CypherType.{CTNode, CTRelationship, CTString}
 import org.opencypher.okapi.impl.exception.SchemaException
 import org.opencypher.spark.api.CAPSSession
 import org.opencypher.spark.impl.{CAPSGraph, CAPSRecords}

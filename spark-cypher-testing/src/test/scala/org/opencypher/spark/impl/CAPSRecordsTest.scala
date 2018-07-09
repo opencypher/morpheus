@@ -28,7 +28,7 @@ package org.opencypher.spark.impl
 
 import org.apache.spark.sql.{DataFrame, Row}
 import org.opencypher.okapi.api.io.conversion.{NodeMapping, RelationshipMapping}
-import org.opencypher.okapi.api.types._
+import org.opencypher.okapi.api.types.CypherType._
 import org.opencypher.okapi.api.value.CypherValue._
 import org.opencypher.okapi.impl.exception.InternalException
 import org.opencypher.okapi.ir.api.expr._
@@ -202,8 +202,8 @@ class CAPSRecordsTest extends CAPSTestSuite with GraphConstructionFixture with T
     records.header.expressions should equal(
       Set(
         entityVar,
-        StartNode(entityVar)(CTNode),
-        EndNode(entityVar)(CTNode),
+        StartNode(entityVar)(AnyNode),
+        EndNode(entityVar)(AnyNode),
         Property(entityVar, PropertyKey("color"))(CTString.nullable)
       )
     )
@@ -232,8 +232,8 @@ class CAPSRecordsTest extends CAPSTestSuite with GraphConstructionFixture with T
     records.header.expressions should equalWithTracing(
       Set(
         entityVar,
-        StartNode(entityVar)(CTNode),
-        EndNode(entityVar)(CTNode),
+        StartNode(entityVar)(AnyNode),
+        EndNode(entityVar)(AnyNode),
         HasType(entityVar, RelType("RED"))(CTBoolean),
         HasType(entityVar, RelType("BLUE"))(CTBoolean),
         HasType(entityVar, RelType("GREEN"))(CTBoolean),

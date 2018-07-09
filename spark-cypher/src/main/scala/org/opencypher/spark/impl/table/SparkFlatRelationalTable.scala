@@ -31,6 +31,7 @@ import java.util.Collections
 import org.apache.spark.sql._
 import org.apache.spark.sql.functions._
 import org.apache.spark.storage.StorageLevel
+import org.opencypher.okapi.api.types.CypherType.CTNull
 import org.opencypher.okapi.api.types._
 import org.opencypher.okapi.api.value.CypherValue
 import org.opencypher.okapi.api.value.CypherValue.{CypherMap, CypherValue}

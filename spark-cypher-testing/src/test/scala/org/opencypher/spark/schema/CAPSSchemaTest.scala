@@ -27,7 +27,7 @@
 package org.opencypher.spark.schema
 
 import org.opencypher.okapi.api.schema.Schema
-import org.opencypher.okapi.api.types.{CTBoolean, CTFloat, CTInteger, CTString}
+import org.opencypher.okapi.api.types.CypherType._
 import org.opencypher.okapi.impl.exception.SchemaException
 import org.opencypher.okapi.testing.BaseTestSuite
 import org.opencypher.spark.schema.CAPSSchema._

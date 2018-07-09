@@ -9,7 +9,55 @@ import org.opencypher.okapi.api.graph.QualifiedGraphName
 
 import scala.language.postfixOps
 
+// TODO: Turn expensive computations into lazy vals
 object CypherType {
+
+  /**
+    * Parses the name of CypherType into the actual CypherType object.
+    *
+    * @param name string representation of the CypherType
+    * @return
+    * @see {{{org.opencypher.okapi.api.types.CypherType#name}}}
+    */
+  // TODO: Rename to `parse`
+  def fromName(name: String): Option[CypherType] = {
+    def extractLabels(s: String, typ: String, sep: String): Set[String] = {
+      val regex = s"""$typ\\(:(.+)\\).?""".r
+      s match {
+        case regex(l) => l.split(sep).toSet
+        case _ => Set.empty[String]
+      }
+    }
+
+    val noneNullType: Option[CypherType] = name match {
+      case "STRING"  | "STRING?"  => Some(CTString)
+      case "INTEGER" | "INTEGER?" => Some(CTInteger)
+      case "FLOAT"   | "FLOAT?"   => Some(CTFloat)
+      case "NUMBER"  | "NUMBER?"  => Some(CTNumber)
+      case "BOOLEAN" | "BOOLEAN?" => Some(CTBoolean)
+      case "ANY"     | "ANY?"     => Some(CTAny)
+      case "VOID"    | "VOID?"    => Some(CTVoid)
+      case "NULL"    | "NULL?"    => Some(CTNull)
+      case "MAP"     | "MAP?"     => Some(AnyMap)
+      case "PATH"    | "PATH?"    => Some(CTPath)
+      case "?"       | "??"       => Some(CTAny)
+
+      case node if node.startsWith("NODE") =>
+        Some(CTNode(extractLabels(node, "NODE", ":")))
+
+      case rel if rel.startsWith("RELATIONSHIP") =>
+        Some(CTRelationship(extractLabels(rel, "RELATIONSHIP", """\|""")))
+
+      case list if list.startsWith("LIST") =>
+        CypherType
+          .fromName(list.replaceFirst("""LIST\?? OF """,""))
+          .map(CTList)
+
+      case _ => None
+    }
+
+    noneNullType.map(ct => if (name == ct.name) ct else ct.nullable)
+  }
 
   val CTNumber: CypherType = CTInteger union CTFloat
 
@@ -18,10 +66,6 @@ object CypherType {
   val AnyList: CypherType = CTList().nullable
 
   val AnyMap: CypherType = CTMap().nullable
-
-  def parse(typeString: String): CypherType = {
-    ???
-  }
 
   implicit class TypeCypherValue(cv: CypherValue) {
     def cypherType: CypherType = {
@@ -45,7 +89,7 @@ object CypherType {
     override def combine(x: CypherType, y: CypherType): CypherType = x union y
   }
 
-  implicit def rw: ReadWriter[CypherType] = readwriter[String].bimap[CypherType](_.name, s => parse(s))
+  implicit def rw: ReadWriter[CypherType] = readwriter[String].bimap[CypherType](_.name, s => fromName(s).get)
 
   case object CTBoolean extends CypherType
 
@@ -83,6 +127,10 @@ object CypherType {
           ct.intersect(CTLabel(l))
         }
       }
+    }
+
+    def apply(labels: Set[String]): CTNode = {
+      CTNode(labels.toSeq: _*)
     }
 
     def unapply(v: CypherType): Option[Set[String]] = v match {
@@ -135,11 +183,7 @@ object CypherType {
 
   object CTRelationship {
 
-    def apply(relType: String, relTypes: String*): CTRelationship = {
-      CTRelationship(relTypes.toSet + relType)
-    }
-
-    def apply(relTypes: Set[String]): CTRelationship = {
+    def apply(relTypes: String*): CTRelationship = {
       if (relTypes.isEmpty) {
         AnyRelationship
       } else {
@@ -147,6 +191,10 @@ object CypherType {
           t.union(n)
         }
       }
+    }
+
+    def apply(labels: Set[String]): CTRelationship = {
+      CTRelationship(labels.toSeq: _*)
     }
 
     def unapply(v: CypherType): Option[Set[String]] = v match {

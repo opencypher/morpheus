@@ -27,7 +27,7 @@
 package org.opencypher.spark.impl.physical
 
 import org.opencypher.okapi.api.graph.QualifiedGraphName
-import org.opencypher.okapi.api.types.CTNode
+import org.opencypher.okapi.api.types.CypherType._
 import org.opencypher.okapi.ir.api.expr.Var
 import org.opencypher.okapi.relational.impl.table.RecordHeader
 import org.opencypher.spark.api.CAPSSession
@@ -49,21 +49,21 @@ class PhysicalOptimizerTest extends CAPSTestSuite with GraphConstructionFixture 
       Join(
         NodeScan(
           start(testQualifiedGraphName, emptyRecords),
-          Var("C")(CTNode)
+          Var("C")(AnyNode)
         ),
         NodeScan(
           start(testQualifiedGraphName, emptyRecords),
-          Var("B")(CTNode)
+          Var("B")(AnyNode)
         )
       ),
       Join(
         NodeScan(
           start(testQualifiedGraphName, emptyRecords),
-          Var("C")(CTNode)
+          Var("C")(AnyNode)
         ),
         NodeScan(
           start(testQualifiedGraphName, emptyRecords),
-          Var("B")(CTNode)
+          Var("B")(AnyNode)
         )
       )
     )
@@ -77,11 +77,11 @@ class PhysicalOptimizerTest extends CAPSTestSuite with GraphConstructionFixture 
           Join(
             NodeScan(
               start(testQualifiedGraphName, emptyRecords),
-              Var("C")(CTNode)
+              Var("C")(AnyNode)
             ),
             NodeScan(
               start(testQualifiedGraphName, emptyRecords),
-              Var("B")(CTNode)
+              Var("B")(AnyNode)
             )
           )
         ),
@@ -89,11 +89,11 @@ class PhysicalOptimizerTest extends CAPSTestSuite with GraphConstructionFixture 
           Join(
             NodeScan(
               start(testQualifiedGraphName, emptyRecords),
-              Var("C")(CTNode)
+              Var("C")(AnyNode)
             ),
             NodeScan(
               start(testQualifiedGraphName, emptyRecords),
-              Var("B")(CTNode)
+              Var("B")(AnyNode)
             )
           )
         )

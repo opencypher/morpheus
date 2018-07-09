@@ -27,7 +27,7 @@
 package org.opencypher.spark.impl.acceptance
 
 import org.opencypher.okapi.api.schema.{PropertyKeys, Schema}
-import org.opencypher.okapi.api.types.{CTInteger, CTString}
+import org.opencypher.okapi.api.types.CypherType._
 import org.opencypher.okapi.api.value.CypherValue.CypherMap
 import org.opencypher.okapi.testing.Bag
 import org.opencypher.okapi.testing.Bag._

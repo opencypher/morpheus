@@ -27,7 +27,7 @@
 package org.opencypher.spark.impl
 
 import org.apache.spark.storage.StorageLevel
-import org.opencypher.okapi.api.types.{CTNode, CTRelationship}
+import org.opencypher.okapi.api.types.CypherType.{CTNode, CTRelationship}
 import org.opencypher.okapi.ir.api.expr._
 import org.opencypher.okapi.relational.api.schema.RelationalSchema._
 import org.opencypher.okapi.relational.impl.table.RecordHeader
@@ -76,7 +76,7 @@ case class CAPSPatternGraph(
 
   override def relationships(name: String, relCypherType: CTRelationship): CAPSRecords = {
     val targetRel = Var(name)(relCypherType)
-    val relSchema = schema.forRelationship(relCypherType)
+    val relSchema = schema.forRelationship(relCypherType.relTypes)
     val targetRelHeader = relSchema.headerForRelationship(targetRel)
     val extractionRels: Set[Var] = header.relationshipsForType(relCypherType)
 

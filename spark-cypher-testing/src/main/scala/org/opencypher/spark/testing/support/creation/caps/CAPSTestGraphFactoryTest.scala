@@ -28,7 +28,7 @@ package org.opencypher.spark.testing.support.creation.caps
 
 import org.opencypher.okapi.api.io.conversion.{NodeMapping, RelationshipMapping}
 import org.opencypher.okapi.api.schema.Schema
-import org.opencypher.okapi.api.types.CTString
+import org.opencypher.okapi.api.types.CypherType.CTString
 import org.opencypher.okapi.testing.propertygraph.CreateGraphFactory
 import org.opencypher.spark.api.io.{CAPSNodeTable, CAPSRelationshipTable}
 import org.opencypher.spark.impl.CAPSConverters._

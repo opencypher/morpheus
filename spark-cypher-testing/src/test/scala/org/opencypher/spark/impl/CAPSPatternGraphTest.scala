@@ -27,22 +27,15 @@
 package org.opencypher.spark.impl
 
 import org.apache.spark.sql.Row
-import org.opencypher.okapi.api.schema.Schema
-import org.opencypher.okapi.api.types._
+import org.opencypher.okapi.api.types.CypherType.{AnyNode, AnyRelationship, CTNode, CTRelationship}
 import org.opencypher.okapi.api.value.CypherValue._
 import org.opencypher.okapi.ir.api.expr._
-import org.opencypher.okapi.ir.api.{Label, PropertyKey}
 import org.opencypher.okapi.relational.impl.physical.InnerJoin
-import org.opencypher.okapi.relational.impl.table._
 import org.opencypher.okapi.testing.Bag
 import org.opencypher.okapi.testing.Bag._
-import org.opencypher.spark.api.value.CAPSNode
-import org.opencypher.spark.impl.convert.SparkConversions._
 import org.opencypher.spark.schema.CAPSSchema._
 import org.opencypher.spark.testing.fixture.RecordsVerificationFixture
 import org.opencypher.spark.testing.support.creation.caps.{CAPSPatternGraphFactory, CAPSTestGraphFactory}
-
-import scala.collection.JavaConverters._
 
 class CAPSPatternGraphTest extends CAPSGraphTest with RecordsVerificationFixture {
 
@@ -201,7 +194,7 @@ class CAPSPatternGraphTest extends CAPSGraphTest with RecordsVerificationFixture
     val inputRels = inputGraph.relationships("r")
 
     val patternGraph = CAPSGraph.create(inputRels, inputGraph.schema)
-    val outputRels = patternGraph.relationships("r", CTRelationship)
+    val outputRels = patternGraph.relationships("r", AnyRelationship)
 
     outputRels.df.count() shouldBe 10
   }
@@ -492,8 +485,8 @@ class CAPSPatternGraphTest extends CAPSGraphTest with RecordsVerificationFixture
     val books = inputGraph.nodes("b", CTNode("Book"))
 
     val personReadsBook = persons
-      .join(reads, InnerJoin, Var("p")(CTNode) -> rStart)
-      .join(books, InnerJoin, rEnd -> Var("b")(CTNode))
+      .join(reads, InnerJoin, Var("p")(AnyNode) -> rStart)
+      .join(books, InnerJoin, rEnd -> Var("b")(AnyNode))
 
     CAPSGraph.create(personReadsBook, inputGraph.schema)
   }

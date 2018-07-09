@@ -28,7 +28,7 @@ package org.opencypher.spark.impl
 
 import org.apache.spark.sql.Row
 import org.apache.spark.sql.types.{ArrayType, LongType, StructField, StructType}
-import org.opencypher.okapi.api.types.{CTInteger, CTList}
+import org.opencypher.okapi.api.types.CypherType.{CTInteger, CTList}
 import org.opencypher.spark.api.Tags
 import org.opencypher.spark.api.Tags.tagBits
 import org.opencypher.spark.impl.DataFrameOps._

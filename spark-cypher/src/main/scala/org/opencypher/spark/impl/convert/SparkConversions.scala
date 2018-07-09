@@ -29,6 +29,7 @@ package org.opencypher.spark.impl.convert
 import org.apache.spark.sql.Row
 import org.apache.spark.sql.catalyst.encoders.{ExpressionEncoder, RowEncoder}
 import org.apache.spark.sql.types._
+import org.opencypher.okapi.api.types.CypherType._
 import org.opencypher.okapi.api.types._
 import org.opencypher.okapi.impl.exception.{IllegalArgumentException, NotImplementedException}
 import org.opencypher.okapi.ir.api.expr.Var
@@ -60,14 +61,12 @@ object SparkConversions {
           case CTInteger => Some(LongType)
           case CTBoolean => Some(BooleanType)
           case CTFloat => Some(DoubleType)
-          case _: CTNode => Some(LongType)
-          case _: CTRelationship => Some(LongType)
           case CTList(CTVoid) => Some(ArrayType(NullType, containsNull = true))
           case CTList(CTNull) => Some(ArrayType(NullType, containsNull = true))
-          case CTList(elemType) =>
-            elemType.toSparkType.map(ArrayType(_, elemType.isNullable))
-          case _ =>
-            None
+          case CTList(elemType) => elemType.toSparkType.map(ArrayType(_, elemType.isNullable))
+          case n if n.subTypeOf(AnyNode) => Some(LongType)
+          case r if r.subTypeOf(AnyRelationship) => Some(LongType)
+          case _ => None
         }
     }
 
@@ -81,26 +80,17 @@ object SparkConversions {
     def toStructField(column: String): StructField = ct match {
       case CTVoid | CTNull => StructField(column, NullType, nullable = true)
 
-      case _: CTNode => StructField(column, LongType, nullable = false)
-      case _: CTNodeOrNull => StructField(column, LongType, nullable = true)
-      case _: CTRelationship => StructField(column, LongType, nullable = false)
-      case _: CTRelationshipOrNull => StructField(column, LongType, nullable = true)
+      case i if i.subTypeOf(CTInteger) => StructField(column, LongType, nullable = i.isNullable)
+      case b if b.subTypeOf(CTBoolean) => StructField(column, BooleanType, nullable = b.isNullable)
+      case f if f.subTypeOf(CTFloat) => StructField(column, DoubleType, nullable = f.isNullable)
+      case s if s.subTypeOf(CTString) => StructField(column, StringType, nullable = s.isNullable)
 
-      case CTInteger => StructField(column, LongType, nullable = false)
-      case CTIntegerOrNull => StructField(column, LongType, nullable = true)
-      case CTBoolean => StructField(column, BooleanType, nullable = false)
-      case CTBooleanOrNull => StructField(column, BooleanType, nullable = true)
-      case CTFloat => StructField(column, DoubleType, nullable = false)
-      case CTFloatOrNull => StructField(column, DoubleType, nullable = true)
-      case CTString => StructField(column, StringType, nullable = false)
-      case CTStringOrNull => StructField(column, StringType, nullable = true)
+      case n if n.subTypeOf(AnyNode) => StructField(column, LongType, nullable = n.isNullable)
+      case r if r.subTypeOf(AnyRelationship) => StructField(column, LongType, nullable = r.isNullable)
 
-      case CTList(elementType) =>
-        val elementStructField = elementType.toStructField(column)
-        StructField(column, ArrayType(elementStructField.dataType, containsNull = elementStructField.nullable), nullable = false)
-      case CTListOrNull(elementType) =>
-        val elementStructField = elementType.toStructField(column)
-        StructField(column, ArrayType(elementStructField.dataType, containsNull = elementStructField.nullable), nullable = true)
+      case l if l.subTypeOf(AnyList) =>
+        val elementStructField = l.maybeElementType.get.toStructField(column)
+        StructField(column, ArrayType(elementStructField.dataType, containsNull = elementStructField.nullable), nullable = l.isNullable)
 
       case other => throw IllegalArgumentException("CypherType supported by CAPS", other)
     }

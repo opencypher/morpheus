@@ -28,7 +28,7 @@ package org.opencypher.spark.schema
 
 import org.opencypher.okapi.api.schema.PropertyKeys.PropertyKeys
 import org.opencypher.okapi.api.schema.{LabelPropertyMap, RelTypePropertyMap, Schema}
-import org.opencypher.okapi.api.types.{CTRelationship, CypherType}
+import org.opencypher.okapi.api.types.CypherType
 import org.opencypher.okapi.impl.exception.{SchemaException, UnsupportedOperationException}
 import org.opencypher.okapi.impl.schema.SchemaUtils._
 import org.opencypher.okapi.impl.schema.{ImpliedLabels, LabelCombinations}
@@ -128,7 +128,7 @@ case class CAPSSchema private[schema](schema: Schema) extends Schema {
 
   override def forNode(labelConstraints: Set[String]): Schema = schema.forNode(labelConstraints)
 
-  override def forRelationship(relType: CTRelationship): Schema = schema.forRelationship(relType)
+  override def forRelationship(relTypes: Set[String]): Schema = schema.forRelationship(relTypes)
 
   override def dropPropertiesFor(combo: Set[String]): Schema = schema.dropPropertiesFor(combo)
 

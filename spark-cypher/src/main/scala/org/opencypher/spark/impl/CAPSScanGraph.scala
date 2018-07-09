@@ -29,7 +29,7 @@ package org.opencypher.spark.impl
 import org.apache.spark.sql.functions
 import org.apache.spark.storage.StorageLevel
 import org.opencypher.okapi.api.schema._
-import org.opencypher.okapi.api.types.{CTNode, CTRelationship}
+import org.opencypher.okapi.api.types.CypherType._
 import org.opencypher.okapi.ir.api.expr._
 import org.opencypher.okapi.relational.api.schema.RelationalSchema._
 import org.opencypher.spark.api.CAPSSession
@@ -76,7 +76,7 @@ class CAPSScanGraph(val scans: Seq[CAPSEntityTable], val schema: CAPSSchema, val
     val selectedTables = if (byExactType) {
       nodeTables.filter(_.entityType == nodeCypherType)
     } else {
-      nodeTables.filter(_.entityType.subTypeOf(nodeCypherType).isTrue)
+      nodeTables.filter(_.entityType.subTypeOf(nodeCypherType))
     }
     val schema = selectedTables.map(_.schema).foldLeft(Schema.empty)(_ ++ _)
     val targetNodeHeader = schema.headerForNode(node)
@@ -86,8 +86,8 @@ class CAPSScanGraph(val scans: Seq[CAPSEntityTable], val schema: CAPSSchema, val
 
   override def relationships(name: String, relCypherType: CTRelationship): CAPSRecords = {
     val rel = Var(name)(relCypherType)
-    val scanTypes = relCypherType.types
-    val selectedScans = relTables.filter(relTable => scanTypes.isEmpty || scanTypes.exists(relTable.entityType.types.contains))
+    val scanTypes = relCypherType.relTypes
+    val selectedScans = relTables.filter(relTable => scanTypes.isEmpty || scanTypes.exists(relTable.entityType.relTypes.contains))
     val schema = selectedScans.map(_.schema).foldLeft(Schema.empty)(_ ++ _)
     val targetRelHeader = schema.headerForRelationship(rel)
 
@@ -99,7 +99,7 @@ class CAPSScanGraph(val scans: Seq[CAPSEntityTable], val schema: CAPSSchema, val
         val scanHeader = records.header
         val typeExprs = scanHeader
           .typesFor(Var("")(relCypherType))
-          .filter(relType => relCypherType.types.contains(relType.relType.name))
+          .filter(relExpr => scanTypes.contains(relExpr.relType.name))
           .toSeq
 
         typeExprs match {

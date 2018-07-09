@@ -29,9 +29,9 @@ package org.opencypher.spark.api.io.util
 import org.apache.spark.sql.DataFrame
 import org.apache.spark.sql.types.{LongType, StructField, StructType}
 import org.opencypher.okapi.api.schema.Schema
-import org.opencypher.okapi.api.types.{CTNode, CTRelationship}
-import org.opencypher.okapi.ir.api.expr.{Property, Var}
+import org.opencypher.okapi.api.types.CypherType.{CTNode, CTRelationship}
 import org.opencypher.okapi.impl.util.StringEncodingUtilities._
+import org.opencypher.okapi.ir.api.expr.{Property, Var}
 import org.opencypher.spark.api.io.{GraphEntity, Relationship}
 import org.opencypher.spark.impl.CAPSGraph
 import org.opencypher.spark.impl.convert.SparkConversions._

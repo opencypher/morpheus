@@ -26,8 +26,8 @@
  */
 package org.opencypher.spark.impl.table
 
-import org.apache.spark.sql.types.{ArrayType, StringType, StructField, StructType}
-import org.opencypher.okapi.api.types.{CTList, CTString}
+import org.apache.spark.sql.types.{ArrayType, StringType, StructField}
+import org.opencypher.okapi.api.types.CypherType._
 import org.opencypher.okapi.ir.api.expr.Var
 import org.opencypher.okapi.relational.impl.table.RecordHeader
 import org.opencypher.spark.impl.convert.SparkConversions._

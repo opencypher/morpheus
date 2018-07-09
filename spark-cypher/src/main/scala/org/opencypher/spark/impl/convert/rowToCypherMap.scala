@@ -27,7 +27,7 @@
 package org.opencypher.spark.impl.convert
 
 import org.apache.spark.sql.Row
-import org.opencypher.okapi.api.types.{CTList, CTNode, CTRelationship}
+import org.opencypher.okapi.api.types.CypherType._
 import org.opencypher.okapi.api.value.CypherValue._
 import org.opencypher.okapi.api.value._
 import org.opencypher.okapi.impl.exception.UnsupportedOperationException
@@ -48,18 +48,10 @@ final case class rowToCypherMap(exprToColumn: Seq[(Expr, String)]) extends (Row 
   // TODO: Validate all column types. At the moment null values are cast to the expected type...
   private def constructValue(row: Row, v: Var): CypherValue = {
     v.cypherType.material match {
-      case _: CTNode =>
-        collectNode(row, v)
-
-      case _: CTRelationship =>
-        collectRel(row, v)
-
-      case CTList(_) if !header.exprToColumn.contains(v) =>
-        collectComplexList(row, v)
-
-      case _ =>
-        val raw = row.getAs[Any](header.column(v))
-        CypherValue(raw)
+      case n if n.subTypeOf(AnyNode) => collectNode(row, v)
+      case r if r.subTypeOf(AnyRelationship) => collectRel(row, v)
+      case l if l.subTypeOf(AnyList) && !header.exprToColumn.contains(v) => collectComplexList(row, v)
+      case _ => CypherValue(row.getAs[Any](header.column(v)))
     }
   }
 

@@ -42,7 +42,7 @@
 package org.opencypher.spark.testing.fixture
 
 import org.opencypher.okapi.api.schema.Schema
-import org.opencypher.okapi.api.types.{CTInteger, CTString}
+import org.opencypher.okapi.api.types.CypherType.{CTInteger, CTString}
 import org.opencypher.spark.schema.CAPSSchema
 import org.opencypher.spark.schema.CAPSSchema._
 

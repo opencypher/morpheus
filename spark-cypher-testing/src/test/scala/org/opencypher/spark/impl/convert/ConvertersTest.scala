@@ -28,7 +28,6 @@ package org.opencypher.spark.impl.convert
 
 import org.apache.spark.sql.types._
 import org.opencypher.okapi.api.types.CypherType._
-import org.opencypher.okapi.api.types._
 import org.opencypher.okapi.api.value.CypherValue
 import org.opencypher.okapi.testing.BaseTestSuite
 import org.opencypher.spark.impl.convert.SparkConversions._
@@ -69,9 +68,9 @@ class ConvertersTest extends BaseTestSuite {
       CTBoolean -> BooleanType,
       CTList(CTInteger) -> ArrayType(LongType, containsNull = false),
       CTList(CTString.nullable) -> ArrayType(StringType, containsNull = true),
-      CTNode -> LongType,
+      AnyNode -> LongType,
       CTNode("Foo") -> LongType,
-      CTRelationship -> LongType,
+      AnyRelationship -> LongType,
       CTRelationship("BAR") -> LongType
     )
 

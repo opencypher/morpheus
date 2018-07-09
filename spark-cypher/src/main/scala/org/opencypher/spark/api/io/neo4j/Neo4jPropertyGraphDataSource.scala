@@ -31,7 +31,7 @@ import org.apache.spark.sql.types.StructType
 import org.opencypher.okapi.api.graph.{GraphName, PropertyGraph}
 import org.opencypher.okapi.api.schema.PropertyKeys.PropertyKeys
 import org.opencypher.okapi.api.schema.{LabelPropertyMap, RelTypePropertyMap, Schema}
-import org.opencypher.okapi.api.types.CTRelationship
+import org.opencypher.okapi.api.types.CypherType.CTRelationship
 import org.opencypher.okapi.api.value.CypherValue.CypherList
 import org.opencypher.okapi.impl.exception.UnsupportedOperationException
 import org.opencypher.okapi.impl.schema.SchemaImpl

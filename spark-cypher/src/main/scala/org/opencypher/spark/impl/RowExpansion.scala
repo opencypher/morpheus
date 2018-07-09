@@ -27,7 +27,7 @@
 package org.opencypher.spark.impl
 
 import org.apache.spark.sql.Row
-import org.opencypher.okapi.api.types.{CTNode, CTRelationship}
+import org.opencypher.okapi.api.types.CypherType._
 import org.opencypher.okapi.impl.exception.IllegalArgumentException
 import org.opencypher.okapi.ir.api.expr._
 import org.opencypher.okapi.ir.api.{Label, RelType}
@@ -42,12 +42,12 @@ case class RowExpansion(
 ) extends (Row => Seq[Row]) {
 
   private lazy val targetLabels = targetVar.cypherType match {
-    case CTNode(labels, _) => labels
+    case CTNode(labels) => labels
     case _ => Set.empty[String]
   }
 
   private lazy val targetRelTypes = targetVar.cypherType match {
-    case CTRelationship(relTypes, _) => relTypes
+    case CTRelationship(relTypes) => relTypes
     case _ => Set.empty[String]
   }
 
@@ -84,7 +84,7 @@ case class RowExpansion(
             else None
 
             // OR-semantics and no target type
-          case CTRelationship(_, _) if targetRelTypes.isEmpty =>
+          case r if r.subTypeOf(AnyRelationship) && targetRelTypes.isEmpty =>
             if (row.allNull(adaptedRowSize)) {
               None
             } else {
@@ -92,7 +92,7 @@ case class RowExpansion(
             }
 
           // OR-semantics and one or more target types
-          case CTRelationship(_, _) =>
+          case r if r.subTypeOf(AnyRelationship) =>
             val indices = typeIndexLookupTable(entity)
             val hasRelType = indices.exists(i => !adaptedRow.isNullAt(i) && adaptedRow.getBoolean(i))
             if (hasRelType) Some(adaptedRow)

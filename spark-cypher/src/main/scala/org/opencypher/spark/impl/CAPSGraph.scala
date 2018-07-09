@@ -30,7 +30,7 @@ import org.apache.spark.storage.StorageLevel
 import org.opencypher.okapi.api.graph.{GraphOperations, PropertyGraph}
 import org.opencypher.okapi.api.schema._
 import org.opencypher.okapi.api.table.CypherRecords
-import org.opencypher.okapi.api.types.{CTNode, CTRelationship}
+import org.opencypher.okapi.api.types.CypherType._
 import org.opencypher.okapi.ir.api.PropertyKey
 import org.opencypher.okapi.ir.api.expr._
 import org.opencypher.okapi.relational.impl.table.RecordHeader
@@ -46,9 +46,9 @@ trait CAPSGraph extends PropertyGraph with GraphOperations with Serializable {
 
   implicit def session: CAPSSession
 
-  override def nodes(name: String, nodeCypherType: CTNode = CTNode): CAPSRecords
+  override def nodes(name: String, nodeCypherType: CTNode = AnyNode): CAPSRecords
 
-  override def relationships(name: String, relCypherType: CTRelationship = CTRelationship): CAPSRecords
+  override def relationships(name: String, relCypherType: CTRelationship = AnyRelationship): CAPSRecords
 
   override def unionAll(others: PropertyGraph*): CAPSGraph = {
     CAPSUnionGraph(this :: others.map(_.asCaps).toList: _*)

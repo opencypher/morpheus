@@ -28,7 +28,7 @@ package org.opencypher.spark.impl
 
 import org.apache.spark.storage.StorageLevel
 import org.opencypher.okapi.api.schema.Schema
-import org.opencypher.okapi.api.types.{CTNode, CTRelationship}
+import org.opencypher.okapi.api.types.CypherType.{CTNode, CTRelationship}
 import org.opencypher.okapi.ir.api.expr.Var
 import org.opencypher.okapi.relational.api.schema.RelationalSchema._
 import org.opencypher.spark.api.CAPSSession
@@ -96,7 +96,7 @@ final case class CAPSUnionGraph(graphsToReplacements: Map[CAPSGraph, Map[Int, In
     val rel = Var(name)(relCypherType)
     val targetHeader = schema.headerForRelationship(rel)
     val relScans = graphsToReplacements.keys
-      .filter(relCypherType.types.isEmpty || _.schema.relationshipTypes.intersect(relCypherType.types).nonEmpty)
+      .filter(relCypherType.relTypes.isEmpty || _.schema.relationshipTypes.intersect(relCypherType.relTypes).nonEmpty)
       .map { graph =>
         val relScan = graph.relationships(name, relCypherType)
         val replacements = graphsToReplacements(graph)
