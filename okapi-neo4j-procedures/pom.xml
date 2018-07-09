@@ -16,7 +16,6 @@
 
   <properties>
     <project.rootdir>${project.parent.basedir}</project.rootdir>
-    <plugin.maven-shade.version>2.4.3</plugin.maven-shade.version>
   </properties>
 
   <dependencies>
@@ -43,33 +42,5 @@
     </dependency>
 
   </dependencies>
-
-  <build>
-    <plugins>
-      <plugin>
-        <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-shade-plugin</artifactId>
-        <version>${plugin.maven-shade.version}</version>
-
-        <executions>
-          <!-- run shade goal on package phase -->
-          <execution>
-            <phase>package</phase>
-            <goals>
-              <goal>shade</goal>
-            </goals>
-            <configuration>
-              <shadedArtifactAttached>false</shadedArtifactAttached>
-              <createDependencyReducedPom>false</createDependencyReducedPom>
-              <artifactSet>
-                <excludes>
-                </excludes>
-              </artifactSet>
-            </configuration>
-          </execution>
-        </executions>
-      </plugin>
-    </plugins>
-  </build>
 
 </project>

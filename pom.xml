@@ -465,40 +465,7 @@
                       <exclude>javax.inject:*</exclude>
                     </excludes>
                   </artifactSet>
-                  <transformers>
-                    <transformer
-                        implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
-                      <mainClass>org.opencypher.okapi.demo.Shell</mainClass>
-                    </transformer>
-                  </transformers>
                   <filters>
-
-                    <filter>
-                      <artifact>jline:jline</artifact>
-                      <excludes>
-                        <exclude>org/fusesource/hawtjni/runtime/Library.class</exclude>
-                        <exclude>org/fusesource/hawtjni/runtime/PointerMath.class</exclude>
-                        <exclude>org/fusesource/hawtjni/runtime/Callback.class</exclude>
-                        <exclude>org/fusesource/hawtjni/runtime/JNIEnv.class</exclude>
-                      </excludes>
-                    </filter>
-
-                    <filter>
-                      <artifact>org.apache.spark:*</artifact>
-                      <excludes>
-                        <exclude>org/apache/spark/unused/UnusedStubClass.class</exclude>
-                      </excludes>
-                    </filter>
-
-                    <filter>
-                      <artifact>org.apache.hadoop:hadoop-yarn-api</artifact>
-                      <excludes>
-                        <exclude>org/apache/hadoop/yarn/util/package-info.class</exclude>
-                        <exclude>org/apache/hadoop/yarn/factories/package-info.class</exclude>
-                        <exclude>org/apache/hadoop/yarn/factory/providers/package-info.class
-                        </exclude>
-                      </excludes>
-                    </filter>
 
                     <filter>
                       <artifact>*:*</artifact>
