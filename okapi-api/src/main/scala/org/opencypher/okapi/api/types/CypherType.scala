@@ -1,6 +1,7 @@
 package org.opencypher.okapi.api.types
 
 import cats.Monoid
+import org.opencypher.okapi.api.types.CypherType.CTVoid
 import org.opencypher.okapi.api.value.CypherValue._
 import upickle.default._
 
@@ -59,13 +60,14 @@ trait CypherType {
     }
   }
 
+  // In general, intersect is only supported when one type is a sub-type of the other.
   def intersect(other: CypherType): CypherType = {
     if (this.subTypeOf(other)) {
       this
     } else if (other.subTypeOf(this)) {
       other
     } else {
-      CypherType.CTVoid
+      CTVoid
     }
   }
 
@@ -109,7 +111,7 @@ case object CTFloat extends CypherType
 
 case object CTNull extends CypherType {
 
-  override def material: CypherType = CypherType.CTVoid
+  override def material: CypherType = CTVoid
 
 }
 
@@ -137,7 +139,7 @@ object CTNode {
 
 }
 
-trait CTNode extends CTEntity {
+sealed trait CTNode extends CTEntity {
 
   def intersect(other: CTNode): CTNode
 
@@ -179,22 +181,22 @@ case class CTNodeWithLabel(label: String) extends CTNode {
 
 object CTRelationship {
 
-  def apply(relType: String, relTypes: String*): CypherType = {
+  def apply(relType: String, relTypes: String*): CTRelationship = {
     CTRelationship(relTypes.toSet + relType)
   }
 
-  def apply(relTypes: Set[String]): CypherType = {
+  def apply(relTypes: Set[String]): CTRelationship = {
     if (relTypes.isEmpty) {
       CTAnyRelationship
     } else {
-      relTypes.tail.map(e => CTRelationshipWithType(e)).foldLeft(CTRelationshipWithType(relTypes.head): CypherType) { case (t, n) =>
+      relTypes.tail.map(e => CTRelationshipWithType(e)).foldLeft(CTRelationshipWithType(relTypes.head): CTRelationship) { case (t, n) =>
         t.union(n)
       }
     }
   }
 }
 
-trait CTRelationship extends CTEntity {
+sealed trait CTRelationship extends CTEntity {
 
   override def subTypeOf(other: CypherType): Boolean = {
     other match {
@@ -203,15 +205,38 @@ trait CTRelationship extends CTEntity {
     }
   }
 
+  def union(other: CTRelationship): CTRelationship = {
+    other match {
+      case CTAnyRelationship => CTAnyRelationship
+      case _ =>
+        val rs = (relTypes ++ other.relTypes).map(CTRelationshipWithType).toList
+        rs match {
+          case Nil => CTAnyRelationship
+          case r :: Nil => r
+          case _ => Union(rs.toSet)
+        }
+    }
+  }
+
+  def relTypes: Set[String]
+
 }
 
-case object CTAnyRelationship extends CTRelationship
+case object CTAnyRelationship extends CTRelationship {
+
+  override def relTypes: Set[String] = Set.empty
+
+  override def union(other: CTRelationship): CTRelationship = this
+
+}
 
 case class CTRelationshipWithType(relType: String) extends CTRelationship {
 
   override def name: String = s"CTRelationship($relType)"
 
   override def isRelationship: Boolean = true
+
+  override def relTypes: Set[String] = Set(relType)
 
 }
 
@@ -282,7 +307,7 @@ object Intersection {
 
 }
 
-case class Union(ors: Set[CypherType]) extends CypherType {
+case class Union(ors: Set[CypherType]) extends CypherType with CTRelationship {
   require(ors.forall(!_.isInstanceOf[Union]), s"Nested unions are not allowed: ${ors.mkString(", ")}")
 
   override def subTypeOf(other: CypherType): Boolean = {
@@ -311,6 +336,9 @@ case class Union(ors: Set[CypherType]) extends CypherType {
   }
 
   override def name: String = ors.map(_.name).toSeq.sorted.mkString("|")
+
+  override def relTypes: Set[String] = ors.collect { case r: CTRelationship => r.relTypes }.flatten
+
 }
 
 object Union {
