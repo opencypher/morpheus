@@ -68,9 +68,9 @@ object SchemaFromProcedure {
         result.list().asScala.flatMap { row =>
           if (row.get("type").asString() == "Meta") {
 
-            val isEmpty = row.get("warnings").isEmpty
+            val hasWarnings = !row.get("warnings").isEmpty
 
-            if (!isEmpty && !omitImportFailures) {
+            if (hasWarnings && !omitImportFailures) {
               val firstWarning = row.get("warnings").asList(new Function[Value, String] {
                 override def apply(warning: Value): String = warning.toString
               }).get(0)
@@ -78,7 +78,7 @@ object SchemaFromProcedure {
               throw UnsupportedOperationException(
                 s"$firstWarning To omit unsupported properties during import set flag `GraphSources.cypher.neo4j(omitImportFailures = true)`")
             }
-            if (!isEmpty) {
+            if (hasWarnings) {
               row.get("warnings").asList(new Function[Value, Unit] {
                 override def apply(warning: Value): Unit = log.warn(s"$warning This property is omitted on this entity.")
               })
