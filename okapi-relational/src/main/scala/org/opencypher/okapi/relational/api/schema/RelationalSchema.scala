@@ -94,9 +94,9 @@ object RelationalSchema {
         case (k, t) => Property(rel, PropertyKey(k))(t)
       }.toSet
 
-      val startNodeExpr = StartNode(rel)(AnyNode)
+      val startNodeExpr = StartNode(rel)(CTAnyNode)
       val hasTypeExprs = relTypes.map(relType => HasType(rel, RelType(relType))(CTBoolean))
-      val endNodeExpr = EndNode(rel)(AnyNode)
+      val endNodeExpr = EndNode(rel)(CTAnyNode)
 
       val relationshipExpressions = hasTypeExprs ++ propertyExpressions + rel + startNodeExpr + endNodeExpr
 

@@ -38,12 +38,12 @@ class RecordHeaderTest extends BaseTestSuite {
 
   val n: Var = Var("n")(CTNode("A", "B"))
   val m: Var = Var("m")(CTNode("A", "B"))
-  val o: Var = Var("o")(AnyNode)
-  val r: Var = Var("r")(AnyRelationship)
-  val nodeList: Var = Var("l")(CTList(AnyNode))
+  val o: Var = Var("o")(CTAnyNode)
+  val r: Var = Var("r")(CTAnyRelationship)
+  val nodeList: Var = Var("l")(CTList(CTAnyNode))
   val nodeListSegment: ListSegment = ListSegment(0, nodeList)(CTNode("A", "B"))
-  val relList: Var = Var("l")(CTList(AnyRelationship))
-  val relListSegment: ListSegment = ListSegment(0, relList)(AnyRelationship)
+  val relList: Var = Var("l")(CTList(CTAnyRelationship))
+  val relListSegment: ListSegment = ListSegment(0, relList)(CTAnyRelationship)
 
   val countN = CountStar(CTInteger)
 
@@ -55,8 +55,8 @@ class RecordHeaderTest extends BaseTestSuite {
   val oExprs: Set[Expr] = nExprs.map(_.withOwner(o))
   val nodeListExprs: Set[Expr] = Set(nodeListSegment) ++ Set(nLabelA, nLabelB, nPropFoo).map(_.withOwner(nodeListSegment))
 
-  val rStart: StartNode = StartNode(r)(AnyNode)
-  val rEnd: EndNode = EndNode(r)(AnyNode)
+  val rStart: StartNode = StartNode(r)(CTAnyNode)
+  val rEnd: EndNode = EndNode(r)(CTAnyNode)
   val rRelType: HasType = HasType(r, RelType("R"))(CTBoolean)
   val rPropFoo: Property = Property(r, PropertyKey("foo"))(CTString)
   val rExprs: Set[Expr] = Set(r, rStart, rEnd, rRelType, rPropFoo)
@@ -84,7 +84,7 @@ class RecordHeaderTest extends BaseTestSuite {
   }
 
   it("can return vars that are not present in the header, but own an expression in the header") {
-    RecordHeader.empty.withExpr(ListSegment(1, m)(AnyNode)).vars should equal(Set(m))
+    RecordHeader.empty.withExpr(ListSegment(1, m)(CTAnyNode)).vars should equal(Set(m))
   }
 
   it("can return all return items") {
@@ -327,7 +327,7 @@ class RecordHeaderTest extends BaseTestSuite {
     rHeader.relationshipsForType(CTRelationship("R")) should equalWithTracing(Set(r))
     rHeader.relationshipsForType(CTRelationship("R", "S")) should equalWithTracing(Set(r))
     rHeader.relationshipsForType(CTRelationship("S")) should equalWithTracing(Set.empty)
-    rHeader.relationshipsForType(AnyRelationship) should equalWithTracing(Set(r))
+    rHeader.relationshipsForType(CTAnyRelationship) should equalWithTracing(Set(r))
   }
 
   it("returns selected entity vars and their corresponding columns") {

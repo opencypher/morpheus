@@ -111,7 +111,7 @@ final case class ListSegment(index: Int, listVar: Var)(val cypherType: CypherTyp
 
 trait ReturnItem extends Var
 
-final case class NodeVar(name: String)(val cypherType: CTNode = AnyNode) extends ReturnItem {
+final case class NodeVar(name: String)(val cypherType: CTNode = CTAnyNode) extends ReturnItem {
 
   override type This = NodeVar
 
@@ -128,7 +128,7 @@ final case class NodeVar(name: String)(val cypherType: CTNode = AnyNode) extends
   override def withoutType: String = s"$name"
 }
 
-final case class RelationshipVar(name: String)(val cypherType: CTRelationship = AnyRelationship) extends ReturnItem {
+final case class RelationshipVar(name: String)(val cypherType: CTRelationship = CTAnyRelationship) extends ReturnItem {
 
   override type This = RelationshipVar
 

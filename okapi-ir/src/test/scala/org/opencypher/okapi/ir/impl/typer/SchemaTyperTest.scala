@@ -68,7 +68,7 @@ class SchemaTyperTest extends BaseTestSuite with Neo4jAstTestSupport with Mockit
   }
 
   test("typing exists()") {
-    implicit val context = typeTracker("n" -> AnyNode)
+    implicit val context = typeTracker("n" -> CTAnyNode)
 
     assertExpr.from("exists(n.prop)") shouldHaveInferredType CTBoolean
     assertExpr.from("exists([n.prop])") shouldFailToInferTypeWithErrors
@@ -80,7 +80,7 @@ class SchemaTyperTest extends BaseTestSuite with Neo4jAstTestSupport with Mockit
   }
 
   test("typing count()") {
-    implicit val context = typeTracker("a" -> AnyNode)
+    implicit val context = typeTracker("a" -> CTAnyNode)
 
     assertExpr.from("count(*)") shouldHaveInferredType CTInteger
     assertExpr.from("count(a)") shouldHaveInferredType CTInteger
@@ -97,7 +97,7 @@ class SchemaTyperTest extends BaseTestSuite with Neo4jAstTestSupport with Mockit
   }
 
   test("typing property of node without label") {
-    implicit val context = typeTracker("a" -> AnyNode)
+    implicit val context = typeTracker("a" -> CTAnyNode)
 
     assertExpr.from("a.name") shouldHaveInferredType CTAny
     assertExpr.from("a.age") shouldHaveInferredType CTNumber
@@ -228,12 +228,12 @@ class SchemaTyperTest extends BaseTestSuite with Neo4jAstTestSupport with Mockit
   }
 
   test("should detail entity type from predicate") {
-    implicit val context = typeTracker("n" -> AnyNode)
+    implicit val context = typeTracker("n" -> CTAnyNode)
 
     assertExpr.from("n:Person") shouldMake varFor("n") haveType CTNode("Person")
     assertExpr.from("n:Person AND n:Dog") shouldMake varFor("n") haveType CTNode("Person", "Dog")
 
-    assertExpr.from("n:Person OR n:Dog") shouldMake varFor("n") haveType AnyNode // not enough information for us to act
+    assertExpr.from("n:Person OR n:Dog") shouldMake varFor("n") haveType CTAnyNode // not enough information for us to act
   }
 
   test("typing equality") {
@@ -283,7 +283,7 @@ class SchemaTyperTest extends BaseTestSuite with Neo4jAstTestSupport with Mockit
     assertExpr.from("n.name = 'foo'") shouldHaveInferredType CTBoolean
     assertExpr.from("n.name IN ['foo', 'bar']") shouldHaveInferredType CTBoolean
     assertExpr.from("n.name IN 'foo'") shouldFailToInferTypeWithErrors
-      InvalidType(parseExpr("'foo'"), AnyList, CTString)
+      InvalidType(parseExpr("'foo'"), CTAnyList, CTString)
   }
 
   test("typing of unsupported expressions") {

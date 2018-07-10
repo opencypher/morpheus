@@ -102,8 +102,8 @@ trait PhysicalOperator[T <: FlatRelationalTable[T], R <: RelationalCypherRecords
 
         headerType match {
           case _ if tableType == headerType =>
-          case n: CTNode if n.subTypeOf(AnyNode.nullable) && tableType == CTInteger =>
-          case r: CTRelationship  if r.subTypeOf(AnyRelationship.nullable) && tableType == CTInteger =>
+          case n: CTNode if n.subTypeOf(CTAnyNode.nullable) && tableType == CTInteger =>
+          case r: CTRelationship  if r.subTypeOf(CTAnyRelationship.nullable) && tableType == CTInteger =>
           case _ => throw IllegalArgumentException(
             s"${getClass.getSimpleName}: data matching header type $headerType for expression $expr", tableType)
         }

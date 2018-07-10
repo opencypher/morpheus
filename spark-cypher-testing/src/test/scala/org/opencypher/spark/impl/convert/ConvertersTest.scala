@@ -68,9 +68,9 @@ class ConvertersTest extends BaseTestSuite {
       CTBoolean -> BooleanType,
       CTList(CTInteger) -> ArrayType(LongType, containsNull = false),
       CTList(CTString.nullable) -> ArrayType(StringType, containsNull = true),
-      AnyNode -> LongType,
+      CTAnyNode -> LongType,
       CTNode("Foo") -> LongType,
-      AnyRelationship -> LongType,
+      CTAnyRelationship -> LongType,
       CTRelationship("BAR") -> LongType
     )
 

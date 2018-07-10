@@ -161,8 +161,8 @@ class EntityTableTest extends CAPSTestSuite {
 
     relationshipTable.header should equal(RecordHeader(Map(
       v -> "ID",
-      StartNode(v)(AnyNode) -> "FROM",
-      EndNode(v)(AnyNode) -> "TO",
+      StartNode(v)(CTAnyNode) -> "FROM",
+      EndNode(v)(CTAnyNode) -> "TO",
       Property(v, PropertyKey("foo"))(CTString) -> "FOO",
       Property(v, PropertyKey("bar"))(CTInteger) -> "BAR")
     ))
@@ -181,8 +181,8 @@ class EntityTableTest extends CAPSTestSuite {
     val createdHeader = relationshipTable.header
     createdHeader should equal(RecordHeader(Map(
       v -> "ID",
-      StartNode(v)(AnyNode) -> "FROM",
-      EndNode(v)(AnyNode) -> "TO",
+      StartNode(v)(CTAnyNode) -> "FROM",
+      EndNode(v)(CTAnyNode) -> "TO",
       HasType(v, RelType("A"))(CTBoolean) -> "A".toRelTypeColumnName,
       HasType(v, RelType("B"))(CTBoolean) -> "B".toRelTypeColumnName,
       HasType(v, RelType("C"))(CTBoolean) -> "C".toRelTypeColumnName,

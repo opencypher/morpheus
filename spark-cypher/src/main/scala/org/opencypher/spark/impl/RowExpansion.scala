@@ -84,7 +84,7 @@ case class RowExpansion(
             else None
 
             // OR-semantics and no target type
-          case r if r.subTypeOf(AnyRelationship) && targetRelTypes.isEmpty =>
+          case r if r.subTypeOf(CTAnyRelationship) && targetRelTypes.isEmpty =>
             if (row.allNull(adaptedRowSize)) {
               None
             } else {
@@ -92,7 +92,7 @@ case class RowExpansion(
             }
 
           // OR-semantics and one or more target types
-          case r if r.subTypeOf(AnyRelationship) =>
+          case r if r.subTypeOf(CTAnyRelationship) =>
             val indices = typeIndexLookupTable(entity)
             val hasRelType = indices.exists(i => !adaptedRow.isNullAt(i) && adaptedRow.getBoolean(i))
             if (hasRelType) Some(adaptedRow)

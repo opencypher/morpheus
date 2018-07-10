@@ -50,10 +50,10 @@ class toFrontendTypeTest extends BaseTestSuite {
   }
 
   test("should convert entity types") {
-    AnyNode shouldBeConvertedTo frontend.CTNode
-    AnyNode.nullable shouldBeConvertedTo frontend.CTNode
-    AnyRelationship shouldBeConvertedTo frontend.CTRelationship
-    AnyRelationship.nullable shouldBeConvertedTo frontend.CTRelationship
+    CTAnyNode shouldBeConvertedTo frontend.CTNode
+    CTAnyNode.nullable shouldBeConvertedTo frontend.CTNode
+    CTAnyRelationship shouldBeConvertedTo frontend.CTRelationship
+    CTAnyRelationship.nullable shouldBeConvertedTo frontend.CTRelationship
     CTPath shouldBeConvertedTo frontend.CTPath
   }
 
@@ -61,8 +61,8 @@ class toFrontendTypeTest extends BaseTestSuite {
     CTList(CTInteger) shouldBeConvertedTo frontend.CTList(frontend.CTInteger)
     CTList(CTInteger).nullable shouldBeConvertedTo frontend.CTList(frontend.CTInteger)
     CTList(CTInteger.nullable) shouldBeConvertedTo frontend.CTList(frontend.CTInteger)
-    AnyMap shouldBeConvertedTo frontend.CTMap
-    AnyMap.nullable shouldBeConvertedTo frontend.CTMap
+    CTAnyMap shouldBeConvertedTo frontend.CTMap
+    CTAnyMap.nullable shouldBeConvertedTo frontend.CTMap
   }
 
   implicit class RichType(t: CypherType) {

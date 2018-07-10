@@ -46,7 +46,7 @@ class PatternConverterTest extends IrTestSuite {
     val pattern = parse("(x)")
 
     convert(pattern) should equal(
-      Pattern.empty.withEntity('x -> AnyNode)
+      Pattern.empty.withEntity('x -> CTAnyNode)
     )
   }
 
@@ -68,9 +68,9 @@ class PatternConverterTest extends IrTestSuite {
 
     convert(pattern) should equal(
       Pattern.empty
-        .withEntity('x -> AnyNode)
-        .withEntity('b -> AnyNode)
-        .withEntity('r -> AnyRelationship)
+        .withEntity('x -> CTAnyNode)
+        .withEntity('b -> CTAnyNode)
+        .withEntity('r -> CTAnyRelationship)
         .withConnection('r, DirectedRelationship('x, 'b))
     )
   }
@@ -80,11 +80,11 @@ class PatternConverterTest extends IrTestSuite {
 
     convert(pattern) should equal(
       Pattern.empty
-        .withEntity('x -> AnyNode)
-        .withEntity('y -> AnyNode)
-        .withEntity('z -> AnyNode)
-        .withEntity('r1 -> AnyRelationship)
-        .withEntity('r2 -> AnyRelationship)
+        .withEntity('x -> CTAnyNode)
+        .withEntity('y -> CTAnyNode)
+        .withEntity('z -> CTAnyNode)
+        .withEntity('r1 -> CTAnyRelationship)
+        .withEntity('r2 -> CTAnyRelationship)
         .withConnection('r1, DirectedRelationship('x, 'y))
         .withConnection('r2, DirectedRelationship('y, 'z))
     )
@@ -95,11 +95,11 @@ class PatternConverterTest extends IrTestSuite {
 
     convert(pattern) should equal(
       Pattern.empty
-        .withEntity('x -> AnyNode)
-        .withEntity('y -> AnyNode)
-        .withEntity('z -> AnyNode)
-        .withEntity('foo -> AnyNode)
-        .withEntity('r -> AnyRelationship)
+        .withEntity('x -> CTAnyNode)
+        .withEntity('y -> CTAnyNode)
+        .withEntity('z -> CTAnyNode)
+        .withEntity('foo -> CTAnyNode)
+        .withEntity('r -> CTAnyRelationship)
         .withConnection('r, DirectedRelationship('y, 'z))
     )
   }
@@ -109,9 +109,9 @@ class PatternConverterTest extends IrTestSuite {
 
     convert(pattern) should equal(
       Pattern.empty
-        .withEntity('x -> AnyNode)
-        .withEntity('y -> AnyNode)
-        .withEntity('r -> AnyRelationship)
+        .withEntity('x -> CTAnyNode)
+        .withEntity('y -> CTAnyNode)
+        .withEntity('r -> CTAnyRelationship)
         .withConnection('r, UndirectedRelationship('y, 'x))
     )
   }
@@ -131,8 +131,8 @@ class PatternConverterTest extends IrTestSuite {
 
     convert(pattern) should equal(
       Pattern.empty
-        .withEntity('x -> AnyNode)
-        .withEntity('y -> AnyNode)
+        .withEntity('x -> CTAnyNode)
+        .withEntity('y -> CTAnyNode)
         .withEntity('r -> CTRelationship("KNOWS", "LOVES"))
         .withConnection('r, DirectedRelationship('x, 'y))
     )

@@ -133,7 +133,7 @@ object SchemaTyper {
               recordAndUpdate[R](expr -> CTBoolean)
 
           case x =>
-            error(InvalidType(node, AnyNode, x))
+            error(InvalidType(node, CTAnyNode, x))
         }
       } yield result
 
@@ -186,10 +186,10 @@ object SchemaTyper {
         lhsType <- process[R](lhs)
         rhsType <- process[R](rhs)
         result <- rhsType match {
-          case l if l.subTypeOf(AnyList) =>
+          case l if l.subTypeOf(CTAnyList) =>
             recordTypes(lhs -> lhsType, rhs -> rhsType) >> recordAndUpdate(expr -> CTBoolean)
           case x =>
-            error(InvalidType(rhs, AnyList, x))
+            error(InvalidType(rhs, CTAnyList, x))
         }
       } yield result
 
@@ -324,10 +324,10 @@ object SchemaTyper {
           case (CTList(eltTyp), CTInteger) =>
             updateTyping(expr -> eltTyp.setNullable((indexTyp union eltTyp).isNullable))
 
-          case (l, CTInteger) if l.subTypeOf(AnyList) =>
+          case (l, CTInteger) if l.subTypeOf(CTAnyList) =>
             updateTyping(expr -> l.maybeElementType.get)
 
-          case (m, CTString) if m.subTypeOf(AnyMap) =>
+          case (m, CTString) if m.subTypeOf(CTAnyMap) =>
             updateTyping(expr -> m.maybeElementType.get)
 
           case _ =>

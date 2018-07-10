@@ -38,10 +38,10 @@ case object fromFrontendType extends (frontend.CypherType => CypherType) {
     case frontend.CTFloat         => CTFloat
     case frontend.CTBoolean       => CTBoolean
     case frontend.CTString        => CTString
-    case frontend.CTNode          => AnyNode
-    case frontend.CTRelationship  => AnyRelationship
+    case frontend.CTNode          => CTAnyNode
+    case frontend.CTRelationship  => CTAnyRelationship
     case frontend.CTPath          => CTPath
-    case frontend.CTMap           => AnyMap
+    case frontend.CTMap           => CTAnyMap
     case frontend.ListType(inner) => CTList(fromFrontendType(inner))
     case x                        => throw new UnsupportedOperationException(s"Can not convert openCypher frontend type $x to an internal type")
   }

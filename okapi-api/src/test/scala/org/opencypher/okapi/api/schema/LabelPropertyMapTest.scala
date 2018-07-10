@@ -42,7 +42,7 @@ class LabelPropertyMapTest extends FunSpec with Matchers {
 
     map1 ++ map2 should equal(
       LabelPropertyMap.empty
-        .register("A")("name" -> CTString, "age" -> CTInteger, "gender" -> CTAny)
+        .register("A")("name" -> CTString, "age" -> CTInteger, "gender" -> CTUnion(CTString, CTBoolean))
         .register("B")("p" -> CTBoolean)
         .register("C")("name" -> CTString)
     )

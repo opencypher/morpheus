@@ -202,8 +202,8 @@ class CAPSRecordsTest extends CAPSTestSuite with GraphConstructionFixture with T
     records.header.expressions should equal(
       Set(
         entityVar,
-        StartNode(entityVar)(AnyNode),
-        EndNode(entityVar)(AnyNode),
+        StartNode(entityVar)(CTAnyNode),
+        EndNode(entityVar)(CTAnyNode),
         Property(entityVar, PropertyKey("color"))(CTString.nullable)
       )
     )
@@ -232,8 +232,8 @@ class CAPSRecordsTest extends CAPSTestSuite with GraphConstructionFixture with T
     records.header.expressions should equalWithTracing(
       Set(
         entityVar,
-        StartNode(entityVar)(AnyNode),
-        EndNode(entityVar)(AnyNode),
+        StartNode(entityVar)(CTAnyNode),
+        EndNode(entityVar)(CTAnyNode),
         HasType(entityVar, RelType("RED"))(CTBoolean),
         HasType(entityVar, RelType("BLUE"))(CTBoolean),
         HasType(entityVar, RelType("GREEN"))(CTBoolean),

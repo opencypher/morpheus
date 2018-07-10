@@ -46,9 +46,9 @@ trait CAPSGraph extends PropertyGraph with GraphOperations with Serializable {
 
   implicit def session: CAPSSession
 
-  override def nodes(name: String, nodeCypherType: CTNode = AnyNode): CAPSRecords
+  override def nodes(name: String, nodeCypherType: CTNode = CTAnyNode): CAPSRecords
 
-  override def relationships(name: String, relCypherType: CTRelationship = AnyRelationship): CAPSRecords
+  override def relationships(name: String, relCypherType: CTRelationship = CTAnyRelationship): CAPSRecords
 
   override def unionAll(others: PropertyGraph*): CAPSGraph = {
     CAPSUnionGraph(this :: others.map(_.asCaps).toList: _*)

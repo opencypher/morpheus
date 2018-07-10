@@ -26,7 +26,7 @@
  */
 package org.opencypher.okapi.logical.impl
 
-import org.opencypher.okapi.api.types.CypherType.{AnyNode, CTNode, CTRelationship}
+import org.opencypher.okapi.api.types.CypherType.{CTAnyNode, CTNode, CTRelationship}
 import org.opencypher.okapi.impl.exception.{IllegalArgumentException, IllegalStateException, NotImplementedException}
 import org.opencypher.okapi.ir.api.block._
 import org.opencypher.okapi.ir.api.expr._
@@ -440,7 +440,7 @@ class LogicalPlanner(producer: LogicalOperatorProducer)
     implicit context: LogicalPlannerContext): LogicalOperator = {
 
     // find all unsolved nodes from the pattern
-    val nodes = pattern.fields.filter(_.cypherType.subTypeOf(AnyNode))
+    val nodes = pattern.fields.filter(_.cypherType.subTypeOf(CTAnyNode))
 
     if (pattern.topology.isEmpty) { // there is no connection in the pattern => plan a node scan
       val field = nodes.head

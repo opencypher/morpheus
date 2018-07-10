@@ -44,9 +44,9 @@ import org.opencypher.v9_1.{expressions => ast}
 class ExpressionConverterTest extends BaseTestSuite with Neo4jAstTestSupport {
 
   private def testTypes(ref: Ref[ast.Expression]): CypherType = ref.value match {
-    case ast.Variable("r") => AnyRelationship
-    case ast.Variable("n") => AnyNode
-    case ast.Variable("m") => AnyNode
+    case ast.Variable("r") => CTAnyRelationship
+    case ast.Variable("n") => CTAnyNode
+    case ast.Variable("m") => CTAnyNode
     case _                 => CTAny
   }
 
@@ -151,7 +151,7 @@ class ExpressionConverterTest extends BaseTestSuite with Neo4jAstTestSupport {
 
   test("can convert type function calls used as predicates") {
     convert(parseExpr("type(r) = 'REL_TYPE'")) should equal(
-      HasType(Var("r")(AnyRelationship), RelType("REL_TYPE"))(CTBoolean)
+      HasType(Var("r")(CTAnyRelationship), RelType("REL_TYPE"))(CTBoolean)
     )
   }
 

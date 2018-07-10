@@ -26,7 +26,7 @@
  */
 package org.opencypher.okapi.relational.impl.table
 
-import org.opencypher.okapi.api.types.CypherType.{AnyNode, AnyRelationship, CTNode, CTRelationship}
+import org.opencypher.okapi.api.types.CypherType.{CTAnyNode, CTAnyRelationship, CTNode, CTRelationship}
 import org.opencypher.okapi.impl.exception.IllegalArgumentException
 import org.opencypher.okapi.impl.util.TablePrinter
 import org.opencypher.okapi.ir.api.RelType
@@ -114,8 +114,8 @@ case class RecordHeader(exprToColumn: Map[Expr, String]) {
 
   def idExpressions(): Set[Expr] = {
     exprToColumn.keySet.collect {
-      case n if n.cypherType.subTypeOf(AnyNode) => n
-      case r if r.cypherType.subTypeOf(AnyRelationship) => r
+      case n if n.cypherType.subTypeOf(CTAnyNode) => n
+      case r if r.cypherType.subTypeOf(CTAnyRelationship) => r
     }
   }
 
@@ -173,7 +173,7 @@ case class RecordHeader(exprToColumn: Map[Expr, String]) {
 
   def nodeEntities: Set[Var] = {
     exprToColumn.keySet.collect {
-      case v: Var if v.cypherType.subTypeOf(AnyNode) => v
+      case v: Var if v.cypherType.subTypeOf(CTAnyNode) => v
     }
   }
 
@@ -185,7 +185,7 @@ case class RecordHeader(exprToColumn: Map[Expr, String]) {
 
   def relationshipEntities: Set[Var] = {
     exprToColumn.keySet.collect {
-      case v: Var if v.cypherType.subTypeOf(AnyRelationship) => v
+      case v: Var if v.cypherType.subTypeOf(CTAnyRelationship) => v
     }
   }
 

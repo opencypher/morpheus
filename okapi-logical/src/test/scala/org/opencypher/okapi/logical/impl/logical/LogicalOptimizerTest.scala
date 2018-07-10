@@ -74,7 +74,7 @@ class LogicalOptimizerTest extends BaseTestSuite with IrConstruction {
         ),
         SolvedQueryModel(Set(), Set(HasLabel(Var("a")(CTNode("Animal")), Label("Animal"))(CTBoolean)))
       ),
-      SolvedQueryModel(Set(IRField("a")(AnyNode)), Set(HasLabel(Var("a")(AnyNode), Label("Animal"))(CTBoolean)))
+      SolvedQueryModel(Set(IRField("a")(CTAnyNode)), Set(HasLabel(Var("a")(CTAnyNode), Label("Animal"))(CTBoolean)))
     )
 
     optimizedLogicalPlan should equalWithTracing(expected)
@@ -94,7 +94,7 @@ class LogicalOptimizerTest extends BaseTestSuite with IrConstruction {
         Start(logicalGraph, emptySqm),
         SolvedQueryModel(Set(), Set(HasLabel(Var("a")(CTNode("Animal")), Label("Animal"))(CTBoolean)))
       ),
-      SolvedQueryModel(Set(IRField("a")(AnyNode)), Set(HasLabel(Var("a")(AnyNode), Label("Animal"))(CTBoolean)))
+      SolvedQueryModel(Set(IRField("a")(CTAnyNode)), Set(HasLabel(Var("a")(CTAnyNode), Label("Animal"))(CTBoolean)))
     )
 
     optimizedLogicalPlan should equalWithTracing(expected)
@@ -124,10 +124,10 @@ class LogicalOptimizerTest extends BaseTestSuite with IrConstruction {
         )
       ),
       SolvedQueryModel(
-        Set(IRField("a")(AnyNode)),
+        Set(IRField("a")(CTAnyNode)),
         Set(
-          HasLabel(Var("a")(AnyNode), Label("Animal"))(CTBoolean),
-          HasLabel(Var("a")(AnyNode), Label("Astronaut"))(CTBoolean)))
+          HasLabel(Var("a")(CTAnyNode), Label("Animal"))(CTBoolean),
+          HasLabel(Var("a")(CTAnyNode), Label("Astronaut"))(CTBoolean)))
     )
 
     optimizedLogicalPlan should equalWithTracing(expected)

@@ -37,9 +37,9 @@ trait ExprBlockInstances {
 
   private implicit class RichIRField(f: IRField) {
     def representsNode(v: Var): Boolean =
-      f.name == v.name && f.cypherType.subTypeOf(AnyNode)
+      f.name == v.name && f.cypherType.subTypeOf(CTAnyNode)
     def representsRel(v: Var): Boolean =
-      f.name == v.name && f.cypherType.subTypeOf(AnyRelationship)
+      f.name == v.name && f.cypherType.subTypeOf(CTAnyRelationship)
     def withLabel(l: Label): IRField = {
       // TODO: Graph , f.cypherType.graph
       f.copy()(cypherType = f.cypherType.intersect(CTNode(l.name)))

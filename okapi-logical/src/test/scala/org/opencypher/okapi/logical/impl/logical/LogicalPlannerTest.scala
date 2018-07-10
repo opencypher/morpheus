@@ -45,10 +45,10 @@ import scala.language.implicitConversions
 
 class LogicalPlannerTest extends BaseTestSuite with IrConstruction {
 
-  val nodeA = IRField("a")(AnyNode)
-  val nodeB = IRField("b")(AnyNode)
-  val nodeG = IRField("g")(AnyNode)
-  val relR = IRField("r")(AnyRelationship)
+  val nodeA = IRField("a")(CTAnyNode)
+  val nodeB = IRField("b")(CTAnyNode)
+  val nodeG = IRField("g")(CTAnyNode)
+  val relR = IRField("r")(CTAnyRelationship)
 
 
   val emptySqm = SolvedQueryModel.empty
@@ -135,58 +135,58 @@ class LogicalPlannerTest extends BaseTestSuite with IrConstruction {
         Project(
           Property(Var("g")(CTNode("Group")), PropertyKey("name"))(CTNull) -> None,
           Filter(
-            HasLabel(Var("g")(AnyNode), Label("Group"))(CTBoolean),
+            HasLabel(Var("g")(CTAnyNode), Label("Group"))(CTBoolean),
             Filter(
-              HasLabel(Var("a")(AnyNode), Label("Administrator"))(CTBoolean),
+              HasLabel(Var("a")(CTAnyNode), Label("Administrator"))(CTBoolean),
               Expand(
-                Var("a")(AnyNode),
-                Var("r")(AnyRelationship),
-                Var("g")(AnyNode),
+                Var("a")(CTAnyNode),
+                Var("r")(CTAnyRelationship),
+                Var("g")(CTAnyNode),
                 Directed,
                 NodeScan(
-                  Var("a")(AnyNode),
+                  Var("a")(CTAnyNode),
                   Start(LogicalCatalogGraph(testQualifiedGraphName, Schema.empty), emptySqm),
                   SolvedQueryModel(Set(nodeA), Set())
                 ),
                 NodeScan(
-                  Var("g")(AnyNode),
+                  Var("g")(CTAnyNode),
                   Start(LogicalCatalogGraph(testQualifiedGraphName, Schema.empty), emptySqm),
-                  SolvedQueryModel(Set(IRField("g")(AnyNode)), Set())),
-                SolvedQueryModel(Set(nodeA, IRField("g")(AnyNode), relR))
+                  SolvedQueryModel(Set(IRField("g")(CTAnyNode)), Set())),
+                SolvedQueryModel(Set(nodeA, IRField("g")(CTAnyNode), relR))
               ),
               SolvedQueryModel(
-                Set(nodeA, IRField("g")(AnyNode), relR),
-                Set(HasLabel(Var("a")(AnyNode), Label("Administrator"))(CTBoolean)))
+                Set(nodeA, IRField("g")(CTAnyNode), relR),
+                Set(HasLabel(Var("a")(CTAnyNode), Label("Administrator"))(CTBoolean)))
             ),
             SolvedQueryModel(
-              Set(nodeA, IRField("g")(AnyNode), relR),
+              Set(nodeA, IRField("g")(CTAnyNode), relR),
               Set(
-                HasLabel(Var("a")(AnyNode), Label("Administrator"))(CTBoolean),
-                HasLabel(Var("g")(AnyNode), Label("Group"))(CTBoolean))
+                HasLabel(Var("a")(CTAnyNode), Label("Administrator"))(CTBoolean),
+                HasLabel(Var("g")(CTAnyNode), Label("Group"))(CTBoolean))
             )
           ),
           SolvedQueryModel(
-            Set(nodeA, IRField("g")(AnyNode), relR),
+            Set(nodeA, IRField("g")(CTAnyNode), relR),
             Set(
-              HasLabel(Var("a")(AnyNode), Label("Administrator"))(CTBoolean),
-              HasLabel(Var("g")(AnyNode), Label("Group"))(CTBoolean))
+              HasLabel(Var("a")(CTAnyNode), Label("Administrator"))(CTBoolean),
+              HasLabel(Var("g")(CTAnyNode), Label("Group"))(CTBoolean))
           )
         ),
         SolvedQueryModel(
-          Set(nodeA, IRField("g")(AnyNode), relR),
+          Set(nodeA, IRField("g")(CTAnyNode), relR),
           Set(
-            HasLabel(Var("a")(AnyNode), Label("Administrator"))(CTBoolean),
-            HasLabel(Var("g")(AnyNode), Label("Group"))(CTBoolean),
+            HasLabel(Var("a")(CTAnyNode), Label("Administrator"))(CTBoolean),
+            HasLabel(Var("g")(CTAnyNode), Label("Group"))(CTBoolean),
             Equals(Property(Var("g")(CTNode("Group")), PropertyKey("name"))(CTNull), Param("foo")(CTString))(
               CTBoolean)
           )
         )
       ),
       SolvedQueryModel(
-        Set(nodeA, IRField("g")(AnyNode), relR, IRField("a.name")(CTNull)),
+        Set(nodeA, IRField("g")(CTAnyNode), relR, IRField("a.name")(CTNull)),
         Set(
-          HasLabel(Var("a")(AnyNode), Label("Administrator"))(CTBoolean),
-          HasLabel(Var("g")(AnyNode), Label("Group"))(CTBoolean),
+          HasLabel(Var("a")(CTAnyNode), Label("Administrator"))(CTBoolean),
+          HasLabel(Var("g")(CTAnyNode), Label("Group"))(CTBoolean),
           Equals(Property(Var("g")(CTNode("Group")), PropertyKey("name"))(CTNull), Param("foo")(CTString))(
             CTBoolean)
         )
@@ -213,16 +213,16 @@ class LogicalPlannerTest extends BaseTestSuite with IrConstruction {
         Project(
           Property(Var("g")(CTNode("Group")), PropertyKey("name"))(CTString) -> None,
           Filter(
-            HasLabel(Var("g")(AnyNode), Label("Group"))(CTBoolean),
+            HasLabel(Var("g")(CTAnyNode), Label("Group"))(CTBoolean),
             Filter(
-              HasLabel(Var("a")(AnyNode), Label("Administrator"))(CTBoolean),
+              HasLabel(Var("a")(CTAnyNode), Label("Administrator"))(CTBoolean),
               Expand(
-                Var("a")(AnyNode),
-                Var("r")(AnyRelationship),
-                Var("g")(AnyNode),
+                Var("a")(CTAnyNode),
+                Var("r")(CTAnyRelationship),
+                Var("g")(CTAnyNode),
                 Directed,
                 NodeScan(
-                  Var("a")(AnyNode),
+                  Var("a")(CTAnyNode),
                   Start(
                     LogicalCatalogGraph(
                       testQualifiedGraphName,
@@ -233,7 +233,7 @@ class LogicalPlannerTest extends BaseTestSuite with IrConstruction {
                   SolvedQueryModel(Set(nodeA), Set())
                 ),
                 NodeScan(
-                  Var("g")(AnyNode),
+                  Var("g")(CTAnyNode),
                   Start(
                     LogicalCatalogGraph(
                       testQualifiedGraphName,
@@ -241,43 +241,43 @@ class LogicalPlannerTest extends BaseTestSuite with IrConstruction {
                     ),
                     emptySqm
                   ),
-                  SolvedQueryModel(Set(IRField("g")(AnyNode)), Set())
+                  SolvedQueryModel(Set(IRField("g")(CTAnyNode)), Set())
                 ),
-                SolvedQueryModel(Set(nodeA, IRField("g")(AnyNode), relR), Set())
+                SolvedQueryModel(Set(nodeA, IRField("g")(CTAnyNode), relR), Set())
               ),
               SolvedQueryModel(
-                Set(nodeA, IRField("g")(AnyNode), relR),
-                Set(HasLabel(Var("a")(AnyNode), Label("Administrator"))(CTBoolean)))
+                Set(nodeA, IRField("g")(CTAnyNode), relR),
+                Set(HasLabel(Var("a")(CTAnyNode), Label("Administrator"))(CTBoolean)))
             ),
             SolvedQueryModel(
-              Set(nodeA, IRField("g")(AnyNode), relR),
+              Set(nodeA, IRField("g")(CTAnyNode), relR),
               Set(
-                HasLabel(Var("a")(AnyNode), Label("Administrator"))(CTBoolean),
-                HasLabel(Var("g")(AnyNode), Label("Group"))(CTBoolean))
+                HasLabel(Var("a")(CTAnyNode), Label("Administrator"))(CTBoolean),
+                HasLabel(Var("g")(CTAnyNode), Label("Group"))(CTBoolean))
             )
           ),
           SolvedQueryModel(
-            Set(nodeA, IRField("g")(AnyNode), relR),
+            Set(nodeA, IRField("g")(CTAnyNode), relR),
             Set(
-              HasLabel(Var("a")(AnyNode), Label("Administrator"))(CTBoolean),
-              HasLabel(Var("g")(AnyNode), Label("Group"))(CTBoolean))
+              HasLabel(Var("a")(CTAnyNode), Label("Administrator"))(CTBoolean),
+              HasLabel(Var("g")(CTAnyNode), Label("Group"))(CTBoolean))
           )
         ),
         SolvedQueryModel(
-          Set(nodeA, IRField("g")(AnyNode), relR),
+          Set(nodeA, IRField("g")(CTAnyNode), relR),
           Set(
-            HasLabel(Var("a")(AnyNode), Label("Administrator"))(CTBoolean),
-            HasLabel(Var("g")(AnyNode), Label("Group"))(CTBoolean),
+            HasLabel(Var("a")(CTAnyNode), Label("Administrator"))(CTBoolean),
+            HasLabel(Var("g")(CTAnyNode), Label("Group"))(CTBoolean),
             Equals(Property(Var("g")(CTNode("Group")), PropertyKey("name"))(CTString), Param("foo")(CTString))(
               CTBoolean)
           )
         )
       ),
       SolvedQueryModel(
-        Set(nodeA, IRField("g")(AnyNode), relR, IRField("a.name")(CTFloat)),
+        Set(nodeA, IRField("g")(CTAnyNode), relR, IRField("a.name")(CTFloat)),
         Set(
-          HasLabel(Var("a")(AnyNode), Label("Administrator"))(CTBoolean),
-          HasLabel(Var("g")(AnyNode), Label("Group"))(CTBoolean),
+          HasLabel(Var("a")(CTAnyNode), Label("Administrator"))(CTBoolean),
+          HasLabel(Var("g")(CTAnyNode), Label("Group"))(CTBoolean),
           Equals(Property(Var("g")(CTNode("Group")), PropertyKey("name"))(CTString), Param("foo")(CTString))(
             CTBoolean)
         )
@@ -294,11 +294,11 @@ class LogicalPlannerTest extends BaseTestSuite with IrConstruction {
     val result = plan(ir)
 
     val expected = Project(
-      Property(Var("a")(AnyNode), PropertyKey("prop"))(CTNull) -> Some(Var("a.prop")(CTNull)),
+      Property(Var("a")(CTAnyNode), PropertyKey("prop"))(CTNull) -> Some(Var("a.prop")(CTNull)),
       Filter(
         Not(Equals(Param("p1")(CTInteger), Param("p2")(CTBoolean))(CTBoolean))(CTBoolean),
         NodeScan(
-          Var("a")(AnyNode),
+          Var("a")(CTAnyNode),
           Start(LogicalCatalogGraph(testQualifiedGraphName, Schema.empty), emptySqm),
           SolvedQueryModel(Set(nodeA), Set())
         ),

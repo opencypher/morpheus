@@ -144,8 +144,8 @@ I <: RuntimeContext[O, A, P]](val producer: PhysicalOperatorProducer[O, K, A, P,
         }
 
         val second = producer.planRelationshipScan(startFrom, op.sourceGraph, rel)
-        val startNode = StartNode(rel)(AnyNode)
-        val endNode = EndNode(rel)(AnyNode)
+        val startNode = StartNode(rel)(CTAnyNode)
+        val endNode = EndNode(rel)(CTAnyNode)
 
         direction match {
           case Directed =>

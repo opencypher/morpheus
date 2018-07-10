@@ -95,7 +95,7 @@ object SchemaFromProcedure {
                 Seq((typ, labels, None, None))
               case property =>
                 val typeString = row.get("cypherType").asString()
-                val cypherType = CypherType.fromName(typeString)
+                val cypherType = CypherType.fromLegacyName(typeString)
                 Seq((typ, labels, Some(property), cypherType))
             }
           }

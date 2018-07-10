@@ -74,7 +74,7 @@ class SparkConversionsTest extends FunSpec with Matchers {
 
   it("should throw for unsupported CypherTypes") {
     a[org.opencypher.okapi.impl.exception.IllegalArgumentException] shouldBe thrownBy {
-      AnyMap.toStructField("foo")
+      CTAnyMap.toStructField("foo")
     }
   }
 

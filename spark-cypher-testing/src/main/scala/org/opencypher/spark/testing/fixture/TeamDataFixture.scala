@@ -45,7 +45,7 @@ trait TeamDataFixture extends TestDataFixture {
 
   self: CAPSSessionFixture =>
 
-  val n: Expr = Var("n")(AnyNode)
+  val n: Expr = Var("n")(CTAnyNode)
   val nHasLabelGerman: Expr = HasLabel(n, Label("German"))(CTBoolean)
   val nHasLabelBook: Expr = HasLabel(n, Label("Book"))(CTBoolean)
   val nHasLabelPerson: Expr = HasLabel(n, Label("Person"))(CTBoolean)
@@ -58,9 +58,9 @@ trait TeamDataFixture extends TestDataFixture {
   val nHasPropertyYear: Expr = Property(n, PropertyKey("year"))(CTInteger)
   val nHasPropertyName: Expr = Property(n, PropertyKey("name"))(CTString)
 
-  val r: Expr = Var("r")(AnyRelationship)
-  val rStart: Expr = StartNode(r)(AnyNode)
-  val rEnd: Expr = EndNode(r)(AnyNode)
+  val r: Expr = Var("r")(CTAnyRelationship)
+  val rStart: Expr = StartNode(r)(CTAnyNode)
+  val rEnd: Expr = EndNode(r)(CTAnyNode)
   val rHasTypeKnows: Expr = HasType(r, RelType("KNOWS"))(CTBoolean)
   val rHasTypeReads: Expr = HasType(r, RelType("READS"))(CTBoolean)
   val rHasTypeInfluences: Expr = HasType(r, RelType("INFLUENCES"))(CTBoolean)

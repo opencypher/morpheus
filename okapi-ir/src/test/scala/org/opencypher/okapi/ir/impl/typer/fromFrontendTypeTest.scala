@@ -44,14 +44,14 @@ class fromFrontendTypeTest extends BaseTestSuite {
   }
 
   test("should convert entity types") {
-    frontend.CTNode shouldBeConvertedTo AnyNode
-    frontend.CTRelationship shouldBeConvertedTo AnyRelationship
+    frontend.CTNode shouldBeConvertedTo CTAnyNode
+    frontend.CTRelationship shouldBeConvertedTo CTAnyRelationship
     frontend.CTPath shouldBeConvertedTo CTPath
   }
 
   test("should convert container types") {
     frontend.CTList(frontend.CTInteger) shouldBeConvertedTo CTList(CTInteger)
-    frontend.CTMap shouldBeConvertedTo AnyNode
+    frontend.CTMap shouldBeConvertedTo CTAnyNode
   }
 
   implicit class RichType(t: frontend.CypherType) {

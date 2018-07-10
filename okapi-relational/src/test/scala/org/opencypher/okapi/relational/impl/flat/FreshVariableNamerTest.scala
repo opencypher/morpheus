@@ -26,12 +26,12 @@
  */
 package org.opencypher.okapi.relational.impl.flat
 
-import org.opencypher.okapi.api.types.CypherType.AnyNode
+import org.opencypher.okapi.api.types.CypherType.CTAnyNode
 import org.opencypher.okapi.ir.api.util.FreshVariableNamer
 import org.opencypher.okapi.testing.BaseTestSuite
 
 class FreshVariableNamerTest extends BaseTestSuite {
   test("generates prefixed name") {
-    FreshVariableNamer("Foobar", AnyNode).name should equal("  Foobar")
+    FreshVariableNamer("Foobar", CTAnyNode).name should equal("  Foobar")
   }
 }

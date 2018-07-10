@@ -732,7 +732,7 @@ class IrBuilderTest extends IrTestSuite {
           val matchBlock = model.findExactlyOne {
             case MatchBlock(deps, Pattern(fields, topo, _, _), exprs, _, _) =>
               deps should equalWithTracing(List(loadBlock))
-              fields should equal(Set(toField('a -> AnyNode)))
+              fields should equal(Set(toField('a -> CTAnyNode)))
               topo shouldBe empty
               exprs should equalWithTracing(Set(HasLabel(toNodeVar('a), Label("Person"))()))
           }
@@ -766,7 +766,7 @@ class IrBuilderTest extends IrTestSuite {
           val matchBlock = model.findExactlyOne {
             case NoWhereBlock(MatchBlock(deps, Pattern(fields, topo, _, _), _, _, _)) =>
               deps should equalWithTracing(List(loadBlock))
-              fields should equal(Set[IRField]('a -> AnyNode, 'b -> AnyNode, 'r -> AnyRelationship))
+              fields should equal(Set[IRField]('a -> CTAnyNode, 'b -> CTAnyNode, 'r -> CTAnyRelationship))
               val map = Map(toField('r) -> DirectedRelationship('a, 'b))
               topo should equal(map)
           }
@@ -803,7 +803,7 @@ class IrBuilderTest extends IrTestSuite {
           val matchBlock = model.findExactlyOne {
             case MatchBlock(deps, Pattern(fields, topo, _, _), exprs, _, _) =>
               deps should equalWithTracing(List(loadBlock))
-              fields should equal(Set(toField('a -> AnyNode)))
+              fields should equal(Set(toField('a -> CTAnyNode)))
               topo shouldBe empty
               exprs should equalWithTracing(Set(HasLabel(toNodeVar('a), Label("Person"))()))
           }
@@ -813,8 +813,8 @@ class IrBuilderTest extends IrTestSuite {
               deps should equalWithTracing(List(matchBlock))
               map should equal(
                 Map(
-                  toField('name) -> Property(Var("a")(AnyNode), PropertyKey("name"))(CTNull),
-                  toField('age) -> Property(Var("a")(AnyNode), PropertyKey("age"))(CTNull)
+                  toField('name) -> Property(Var("a")(CTAnyNode), PropertyKey("name"))(CTNull),
+                  toField('age) -> Property(Var("a")(CTAnyNode), PropertyKey("age"))(CTNull)
                 ))
           }
 

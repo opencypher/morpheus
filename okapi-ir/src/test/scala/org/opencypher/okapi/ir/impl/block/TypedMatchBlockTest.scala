@@ -46,7 +46,7 @@ class TypedMatchBlockTest extends IrTestSuite {
       Set(
         "n" -> CTNode("Person", "Foo"),// Some(testQualifiedGraphName)),
         "r" -> CTRelationship("TYPE"),// Some(testQualifiedGraphName)),
-        "m" -> AnyNode//, Some(testQualifiedGraphName))
+        "m" -> CTAnyNode//, Some(testQualifiedGraphName))
       ))
   }
 
@@ -57,7 +57,7 @@ class TypedMatchBlockTest extends IrTestSuite {
       Set(
         "n" -> CTNode("Person", "Foo", "Three"),// Some(testQualifiedGraphName)),
         "r" -> CTRelationship("TYPE"), //Some(testQualifiedGraphName)),
-        "m" -> AnyNode //, Some(testQualifiedGraphName))
+        "m" -> CTAnyNode //, Some(testQualifiedGraphName))
       ))
   }
 

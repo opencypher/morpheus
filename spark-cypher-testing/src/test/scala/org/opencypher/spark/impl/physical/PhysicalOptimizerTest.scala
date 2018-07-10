@@ -49,21 +49,21 @@ class PhysicalOptimizerTest extends CAPSTestSuite with GraphConstructionFixture 
       Join(
         NodeScan(
           start(testQualifiedGraphName, emptyRecords),
-          Var("C")(AnyNode)
+          Var("C")(CTAnyNode)
         ),
         NodeScan(
           start(testQualifiedGraphName, emptyRecords),
-          Var("B")(AnyNode)
+          Var("B")(CTAnyNode)
         )
       ),
       Join(
         NodeScan(
           start(testQualifiedGraphName, emptyRecords),
-          Var("C")(AnyNode)
+          Var("C")(CTAnyNode)
         ),
         NodeScan(
           start(testQualifiedGraphName, emptyRecords),
-          Var("B")(AnyNode)
+          Var("B")(CTAnyNode)
         )
       )
     )
@@ -77,11 +77,11 @@ class PhysicalOptimizerTest extends CAPSTestSuite with GraphConstructionFixture 
           Join(
             NodeScan(
               start(testQualifiedGraphName, emptyRecords),
-              Var("C")(AnyNode)
+              Var("C")(CTAnyNode)
             ),
             NodeScan(
               start(testQualifiedGraphName, emptyRecords),
-              Var("B")(AnyNode)
+              Var("B")(CTAnyNode)
             )
           )
         ),
@@ -89,11 +89,11 @@ class PhysicalOptimizerTest extends CAPSTestSuite with GraphConstructionFixture 
           Join(
             NodeScan(
               start(testQualifiedGraphName, emptyRecords),
-              Var("C")(AnyNode)
+              Var("C")(CTAnyNode)
             ),
             NodeScan(
               start(testQualifiedGraphName, emptyRecords),
-              Var("B")(AnyNode)
+              Var("B")(CTAnyNode)
             )
           )
         )

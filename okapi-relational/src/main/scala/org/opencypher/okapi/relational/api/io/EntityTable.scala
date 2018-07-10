@@ -117,9 +117,9 @@ object RelationalEntityMapping {
         Map.empty
     }
 
-    def startNode(rel: Var): (StartNode, String) = StartNode(rel)(AnyNode) -> mapping.sourceStartNodeKey
+    def startNode(rel: Var): (StartNode, String) = StartNode(rel)(CTAnyNode) -> mapping.sourceStartNodeKey
 
-    def endNode(rel: Var): (EndNode, String) = EndNode(rel)(AnyNode) -> mapping.sourceEndNodeKey
+    def endNode(rel: Var): (EndNode, String) = EndNode(rel)(CTAnyNode) -> mapping.sourceEndNodeKey
   }
 
 }

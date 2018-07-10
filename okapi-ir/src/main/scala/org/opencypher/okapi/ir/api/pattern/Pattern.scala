@@ -48,8 +48,8 @@ final case class Pattern[E](
   baseFields: Map[IRField, IRField]= Map.empty
 ) extends Binds[E] {
 
-  lazy val nodes: Set[IRField] = getEntity(AnyNode)
-  lazy val rels: Set[IRField] = getEntity(AnyRelationship)
+  lazy val nodes: Set[IRField] = getEntity(CTAnyNode)
+  lazy val rels: Set[IRField] = getEntity(CTAnyRelationship)
 
   private def getEntity(t: CypherType) =
     fields.collect { case e if e.cypherType.subTypeOf(t) => e }

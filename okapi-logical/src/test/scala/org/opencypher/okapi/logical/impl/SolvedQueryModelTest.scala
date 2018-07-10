@@ -55,8 +55,8 @@ class SolvedQueryModelTest extends BaseTestSuite with IrConstruction {
   }
 
   test("contains several blocks") {
-    val block1 = matchBlock(Pattern.empty.withEntity('a -> AnyNode))
-    val block2 = matchBlock(Pattern.empty.withEntity('b -> AnyNode))
+    val block1 = matchBlock(Pattern.empty.withEntity('a -> CTAnyNode))
+    val block2 = matchBlock(Pattern.empty.withEntity('b -> CTAnyNode))
     val binds: Fields[Expr] = Fields(Map(toField('c) -> Equals('a, 'b)(CTBoolean)))
     val block3 = project(binds)
     val block4 = project(ProjectedFieldsOf(toField('d) -> Equals('c, 'b)(CTBoolean)))
@@ -71,28 +71,28 @@ class SolvedQueryModelTest extends BaseTestSuite with IrConstruction {
 
   test("solves") {
     val s = SolvedQueryModel.empty.withField('a).withFields('b, 'c)
-    val p = Pattern.empty[Expr].withEntity('a -> AnyNode).withEntity('b -> AnyNode).withEntity('c -> AnyNode)
+    val p = Pattern.empty[Expr].withEntity('a -> CTAnyNode).withEntity('b -> CTAnyNode).withEntity('c -> CTAnyNode)
 
     s.solves(toField('a)) shouldBe true
     s.solves(toField('b)) shouldBe true
     s.solves(toField('x)) shouldBe false
     s.solves(p) shouldBe true
-    s.solves(p.withEntity('x -> AnyNode)) shouldBe false
+    s.solves(p.withEntity('x -> CTAnyNode)) shouldBe false
   }
 
   it("can solve a relationship") {
     val s = SolvedQueryModel.empty
 
     an [IllegalArgumentException] should be thrownBy s.solveRelationship('a)
-    s.solveRelationship('r -> AnyRelationship) should equal(SolvedQueryModel.empty.withField('r -> AnyRelationship))
+    s.solveRelationship('r -> CTAnyRelationship) should equal(SolvedQueryModel.empty.withField('r -> CTAnyRelationship))
     s.solveRelationship('r -> CTRelationship("KNOWS")) should equal(
       SolvedQueryModel.empty
-        .withField('r -> AnyRelationship)
+        .withField('r -> CTAnyRelationship)
         .withPredicate(HasType(Var("r")(CTRelationship("KNOWS")), RelType("KNOWS"))(CTBoolean))
     )
     s.solveRelationship('r -> CTRelationship("KNOWS", "LOVES", "HATES")) should equal(
       SolvedQueryModel.empty
-        .withField('r -> AnyRelationship)
+        .withField('r -> CTAnyRelationship)
         .withPredicate(Ors(
           HasType(RelationshipVar("r")(), RelType("KNOWS"))(CTBoolean),
           HasType(RelationshipVar("r")(), RelType("LOVES"))(CTBoolean),

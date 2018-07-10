@@ -32,8 +32,8 @@ import org.scalatest.{FunSuite, Matchers}
 class IRFieldTest extends FunSuite with Matchers {
 
   test("IRField ignores cypher type in equality") {
-    val a = IRField("a")(AnyNode)
-    val b = IRField("a")(AnyRelationship)
+    val a = IRField("a")(CTAnyNode)
+    val b = IRField("a")(CTAnyRelationship)
     a should equal(b)
   }
 

@@ -64,8 +64,8 @@ object SparkConversions {
           case CTList(CTVoid) => Some(ArrayType(NullType, containsNull = true))
           case CTList(CTNull) => Some(ArrayType(NullType, containsNull = true))
           case CTList(elemType) => elemType.toSparkType.map(ArrayType(_, elemType.isNullable))
-          case n if n.subTypeOf(AnyNode) => Some(LongType)
-          case r if r.subTypeOf(AnyRelationship) => Some(LongType)
+          case n if n.subTypeOf(CTAnyNode) => Some(LongType)
+          case r if r.subTypeOf(CTAnyRelationship) => Some(LongType)
           case _ => None
         }
     }
@@ -85,10 +85,10 @@ object SparkConversions {
       case f if f.subTypeOf(CTFloat) => StructField(column, DoubleType, nullable = f.isNullable)
       case s if s.subTypeOf(CTString) => StructField(column, StringType, nullable = s.isNullable)
 
-      case n if n.subTypeOf(AnyNode) => StructField(column, LongType, nullable = n.isNullable)
-      case r if r.subTypeOf(AnyRelationship) => StructField(column, LongType, nullable = r.isNullable)
+      case n if n.subTypeOf(CTAnyNode) => StructField(column, LongType, nullable = n.isNullable)
+      case r if r.subTypeOf(CTAnyRelationship) => StructField(column, LongType, nullable = r.isNullable)
 
-      case l if l.subTypeOf(AnyList) =>
+      case l if l.subTypeOf(CTAnyList) =>
         val elementStructField = l.maybeElementType.get.toStructField(column)
         StructField(column, ArrayType(elementStructField.dataType, containsNull = elementStructField.nullable), nullable = l.isNullable)
 

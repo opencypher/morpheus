@@ -36,8 +36,8 @@ class ExprTest extends FunSuite with Matchers {
     val r = Var("a")(CTString)
     n should equal(r)
 
-    val a = StartNode(Var("rel")(AnyRelationship))(AnyRelationship)
-    val b = StartNode(Var("rel")(AnyNode))(AnyNode)
+    val a = StartNode(Var("rel")(CTAnyRelationship))(CTAnyRelationship)
+    val b = StartNode(Var("rel")(CTAnyNode))(CTAnyNode)
     a should equal(b)
   }
 
@@ -46,8 +46,8 @@ class ExprTest extends FunSuite with Matchers {
     val r = Var("a")(CTRelationship("b"))
     n.hashCode should equal(r.hashCode)
 
-    val a = StartNode(Var("rel")(AnyRelationship))(CTAny)
-    val b = StartNode(Var("rel")(AnyRelationship))(AnyRelationship)
+    val a = StartNode(Var("rel")(CTAnyRelationship))(CTAny)
+    val b = StartNode(Var("rel")(CTAnyRelationship))(CTAnyRelationship)
     a.hashCode should equal(b.hashCode)
   }
 
@@ -64,7 +64,7 @@ class ExprTest extends FunSuite with Matchers {
   }
 
   test("alias expression has same type") {
-    val n = Var("n")(AnyNode)
+    val n = Var("n")(CTAnyNode)
     (n as Var("m")()).cypherType should equal(n.cypherType)
   }
 

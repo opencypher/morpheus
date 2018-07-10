@@ -94,7 +94,7 @@ class FlatPlannerTest extends BaseTestSuite {
     val result = flatPlanner.process(logicalNodeScan("n"))
 //    val headerExpressions = result.header.expressions
 
-    val nodeVar = Var("n")(AnyNode)
+    val nodeVar = Var("n")(CTAnyNode)
 
     result should equalWithTracing(flatNodeScan(nodeVar))
 //    headerExpressions should equalWithTracing(
@@ -114,7 +114,7 @@ class FlatPlannerTest extends BaseTestSuite {
     )
 //    val headerExpressions = result.header.expressions
 
-    val nodeVar = Var("n")(AnyNode)
+    val nodeVar = Var("n")(CTAnyNode)
 
     result should equalWithTracing(
       mkFlat.filter(
@@ -136,18 +136,18 @@ class FlatPlannerTest extends BaseTestSuite {
   test("flat plan for expand") {
     val result = flatPlanner.process(
       mkLogical.planExpand(
-        IRField("n")(AnyNode),
-        IRField("r")(AnyRelationship),
-        IRField("m")(AnyNode),
+        IRField("n")(CTAnyNode),
+        IRField("r")(CTAnyRelationship),
+        IRField("m")(CTAnyNode),
         Undirected,
         logicalNodeScan("n"),
         logicalNodeScan("m"))
     )
 //    val headerExpressions = result.header.expressions
 
-    val source = Var("n")(AnyNode)
-    val rel = Var("r")(AnyRelationship)
-    val target = Var("m")(AnyNode)
+    val source = Var("n")(CTAnyNode)
+    val rel = Var("r")(CTAnyRelationship)
+    val target = Var("m")(CTAnyNode)
 
     result should equalWithTracing(
       mkFlat.expand(source, rel, Undirected, target, schema, flatNodeScan(source), flatNodeScan(target))
@@ -180,9 +180,9 @@ class FlatPlannerTest extends BaseTestSuite {
   test("flat plan for expand with rel type info") {
     val result = flatPlanner.process(
       mkLogical.planExpand(
-        IRField("n")(AnyNode),
+        IRField("n")(CTAnyNode),
         IRField("r")(CTRelationship("KNOWS")),
-        IRField("m")(AnyNode),
+        IRField("m")(CTAnyNode),
         Directed,
         logicalNodeScan("n"),
         logicalNodeScan("m")
@@ -190,9 +190,9 @@ class FlatPlannerTest extends BaseTestSuite {
     )
 //    val headerExpressions = result.header.expressions
 
-    val source = Var("n")(AnyNode)
+    val source = Var("n")(CTAnyNode)
     val rel = Var("r")(CTRelationship("KNOWS"))
-    val target = Var("m")(AnyNode)
+    val target = Var("m")(CTAnyNode)
 
     result should equalWithTracing(
       mkFlat.expand(source, rel, Directed, target, schema, flatNodeScan(source), flatNodeScan(target))
@@ -273,7 +273,7 @@ class FlatPlannerTest extends BaseTestSuite {
 //  }
 
   ignore("Construct label-filtered node scan") {
-    val nodeVar = Var("n")(AnyNode)
+    val nodeVar = Var("n")(CTAnyNode)
 
     val result = flatPlanner.process(
       mkLogical.planFilter(HasLabel(nodeVar, Label("Person"))(CTBoolean), logicalNodeScan("n"))
@@ -300,7 +300,7 @@ class FlatPlannerTest extends BaseTestSuite {
       mkLogical.planSelect(
         List(Var("foo")(CTString)),
         prev = mkLogical.projectField(
-          Property(Var("n")(AnyNode), PropertyKey("name"))(CTString),
+          Property(Var("n")(CTAnyNode), PropertyKey("name"))(CTString),
           IRField("foo")(CTString),
           logicalNodeScan("n", "Person"))
       )
@@ -322,12 +322,12 @@ class FlatPlannerTest extends BaseTestSuite {
   test("Construct selection with several fields") {
     val result = flatPlanner.process(
       mkLogical.planSelect(
-        List(Var("foo")(CTString), Var("n")(AnyNode), Var("baz")(CTInteger.nullable)),
+        List(Var("foo")(CTString), Var("n")(CTAnyNode), Var("baz")(CTInteger.nullable)),
         prev = mkLogical.projectField(
-          Property(Var("n")(AnyNode), PropertyKey("age"))(CTInteger.nullable),
+          Property(Var("n")(CTAnyNode), PropertyKey("age"))(CTInteger.nullable),
           IRField("baz")(CTInteger),
           mkLogical.projectField(
-            Property(Var("n")(AnyNode), PropertyKey("name"))(CTString),
+            Property(Var("n")(CTAnyNode), PropertyKey("name"))(CTString),
             IRField("foo")(CTString),
             logicalNodeScan("n", "Person"))
         )
@@ -338,11 +338,11 @@ class FlatPlannerTest extends BaseTestSuite {
 
     result should equalWithTracing(
       mkFlat.select(
-        List(Var("foo")(CTString), Var("n")(AnyNode), Var("baz")(CTInteger.nullable)),
+        List(Var("foo")(CTString), Var("n")(CTAnyNode), Var("baz")(CTInteger.nullable)),
         mkFlat.project(
-          Property(Var("n")(AnyNode), PropertyKey("age"))(CTInteger.nullable) -> Some(Var("baz")(CTInteger.nullable)),
+          Property(Var("n")(CTAnyNode), PropertyKey("age"))(CTInteger.nullable) -> Some(Var("baz")(CTInteger.nullable)),
           mkFlat.project(
-            Property(Var("n")(AnyNode), PropertyKey("name"))(CTString) -> Some(Var("foo")(CTString)),
+            Property(Var("n")(CTAnyNode), PropertyKey("name"))(CTString) -> Some(Var("foo")(CTString)),
             flatNodeScan("n", "Person"))
         )
       )

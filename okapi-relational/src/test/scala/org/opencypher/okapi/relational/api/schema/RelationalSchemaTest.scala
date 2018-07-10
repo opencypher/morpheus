@@ -87,8 +87,8 @@ class RelationalSchemaTest extends FunSpec with Matchers {
 
     schema.headerForRelationship(r) should equal(RecordHeader.empty
       .withExpr(r)
-      .withExpr(StartNode(r)(AnyNode))
-      .withExpr(EndNode(r)(AnyNode))
+      .withExpr(StartNode(r)(CTAnyNode))
+      .withExpr(EndNode(r)(CTAnyNode))
       .withExpr(HasType(r, RelType("A"))(CTBoolean))
       .withExpr(Property(r, PropertyKey("foo"))(CTBoolean)))
   }
