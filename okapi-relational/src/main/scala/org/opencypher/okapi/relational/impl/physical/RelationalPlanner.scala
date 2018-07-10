@@ -33,7 +33,7 @@ import org.opencypher.okapi.ir.api.block.SortItem
 import org.opencypher.okapi.ir.api.expr._
 import org.opencypher.okapi.logical.impl._
 import org.opencypher.okapi.logical.{impl => logical}
-import org.opencypher.okapi.relational.api.physical.RelationalPlannerContext
+import org.opencypher.okapi.relational.api.physical.{RelationalPlannerContext, RelationalRuntimeContext}
 import org.opencypher.okapi.relational.api.table.FlatRelationalTable
 import org.opencypher.okapi.relational.impl.operators.{RelationalOperator, RenameColumns}
 import org.opencypher.okapi.relational.impl.physical.ConstructGraphPlanner._
@@ -42,9 +42,12 @@ import org.opencypher.okapi.relational.impl.{operators => relational}
 object RelationalPlanner {
 
   // TODO: rename to 'plan'
-  def process[T <: FlatRelationalTable[T]](input: LogicalOperator)(implicit context: RelationalPlannerContext[T]): RelationalOperator[T] = {
+  def process[T <: FlatRelationalTable[T]](input: LogicalOperator)(
+    // TODO: unify contexts?
+    implicit plannerContext: RelationalPlannerContext[T],
+    runtimeContext: RelationalRuntimeContext[T]): RelationalOperator[T] = {
 
-    implicit val caps: CypherSession = context.session
+    implicit val caps: CypherSession = plannerContext.session
 
     input match {
       case logical.CartesianProduct(lhs, rhs, _) =>
@@ -82,7 +85,7 @@ object RelationalPlanner {
             relational.FromGraph(process[T](in), g)
 
           case construct: LogicalPatternGraph =>
-            planConstructGraph(Some(in), construct)(context)
+            planConstructGraph(Some(in), construct)(plannerContext)
         }
 
       case logical.Unwind(list, item, in, _) =>
@@ -118,7 +121,7 @@ object RelationalPlanner {
             relational.Start(e.qualifiedGraphName)
 
           case c: LogicalPatternGraph =>
-            context.constructedGraphPlans(c.name)
+            plannerContext.constructedGraphPlans(c.name)
         }
 
         val second = relational.RelationshipScan(startFrom, rel)
@@ -172,13 +175,13 @@ object RelationalPlanner {
             source, list, edgeScan, target,
             lower, upper,
             sourceOp, edgeScanOp, targetOp,
-            isExpandInto)(this, context)
+            isExpandInto)(this, plannerContext)
 
           case Undirected => new UndirectedVarLengthExpandPlanner[T](
             source, list, edgeScan, target,
             lower, upper,
             sourceOp, edgeScanOp, targetOp,
-            isExpandInto)(this, context)
+            isExpandInto)(this, plannerContext)
         }
 
         planner.plan

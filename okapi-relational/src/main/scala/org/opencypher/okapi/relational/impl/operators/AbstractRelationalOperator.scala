@@ -8,7 +8,7 @@ import org.opencypher.okapi.ir.api.block.{Asc, Desc, SortItem}
 import org.opencypher.okapi.ir.api.expr._
 import org.opencypher.okapi.logical.impl._
 import org.opencypher.okapi.relational.api.graph.RelationalCypherGraph
-import org.opencypher.okapi.relational.api.physical.RuntimeContext
+import org.opencypher.okapi.relational.api.physical.RelationalRuntimeContext
 import org.opencypher.okapi.relational.api.schema.RelationalSchema._
 import org.opencypher.okapi.relational.api.table.{FlatRelationalTable, RelationalCypherRecords}
 import org.opencypher.okapi.relational.impl.physical._
@@ -25,7 +25,7 @@ abstract class RelationalOperator[T <: FlatRelationalTable[T]] extends AbstractT
 
   def _table: T = children.head.table
 
-  implicit def context: RuntimeContext[T] = children.head.context
+  implicit def context: RelationalRuntimeContext[T] = children.head.context
 
   implicit def session: CypherSession = context.session
 
@@ -36,10 +36,10 @@ abstract class RelationalOperator[T <: FlatRelationalTable[T]] extends AbstractT
   def returnItems: Option[Seq[Var]] = children.head.returnItems
 
   protected def resolve(qualifiedGraphName: QualifiedGraphName)
-    (implicit context: RuntimeContext[T]): RelationalCypherGraph[T] =
+    (implicit context: RelationalRuntimeContext[T]): RelationalCypherGraph[T] =
     context.resolveGraph(qualifiedGraphName)
 
-  protected def resolveTags(qgn: QualifiedGraphName)(implicit context: RuntimeContext[T]): Set[Int] =
+  protected def resolveTags(qgn: QualifiedGraphName)(implicit context: RelationalRuntimeContext[T]): Set[Int] =
     resolve(qgn).tags
 
   def table: T = {
@@ -105,7 +105,7 @@ abstract class RelationalOperator[T <: FlatRelationalTable[T]] extends AbstractT
 final case class Start[T <: FlatRelationalTable[T]](
   qgn: QualifiedGraphName,
   recordsOpt: Option[RelationalCypherRecords[T]] = None
-)(implicit override val context: RuntimeContext[T]) extends RelationalOperator[T] {
+)(implicit override val context: RelationalRuntimeContext[T]) extends RelationalOperator[T] {
 
   override lazy val header: RecordHeader = recordsOpt.map(_.header).getOrElse(RecordHeader.empty)
 

@@ -32,38 +32,47 @@ import org.opencypher.okapi.ir.impl.QueryCatalog
 import org.opencypher.okapi.relational.api.table.{FlatRelationalTable, RelationalCypherRecords}
 import org.opencypher.okapi.relational.impl.operators.RelationalOperator
 
+object RelationalPlannerContext {
+  def from[T <: FlatRelationalTable[T]](
+    session: CypherSession,
+    catalog: QueryCatalog,
+    inputRecords: RelationalCypherRecords[T],
+    parameters: CypherMap
+  ): RelationalPlannerContext[T] = RelationalPlannerContext(session, catalog, collection.mutable.Map.empty, inputRecords, parameters)
+}
+
 /**
   * Represents a back-end specific context which is used by the [[org.opencypher.okapi.relational.impl.physical.RelationalPlanner]].
   */
-trait RelationalPlannerContext[T <: FlatRelationalTable[T]] {
+case class RelationalPlannerContext[T <: FlatRelationalTable[T]](
   /**
     * Refers to the session in which that query is executed.
     *
     * @return back-end specific cypher session
     */
-  def session: CypherSession
+  session: CypherSession,
 
   /**
     * Lookup function that resolves QGNs to property graphs.
     *
     * @return lookup function
     */
-  def catalog: QueryCatalog
+  catalog: QueryCatalog,
 
   // TODO: Improve design
-  def constructedGraphPlans: collection.mutable.Map[QualifiedGraphName, RelationalOperator[T]]
+  constructedGraphPlans: collection.mutable.Map[QualifiedGraphName, RelationalOperator[T]] = collection.mutable.Map.empty,
 
   /**
     * Initial records for physical planning.
     *
     * @return
     */
-  def inputRecords: RelationalCypherRecords[T]
+  inputRecords: RelationalCypherRecords[T],
 
   /**
     * Query parameters
     *
     * @return query parameters
     */
-  def parameters: CypherMap
-}
+  parameters: CypherMap
+)

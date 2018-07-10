@@ -30,11 +30,9 @@ import org.opencypher.okapi.impl.configuration.ConfigFlag
 
 object CoraConfiguration {
 
-  object PrintFlatPlan extends ConfigFlag("cora.explainFlat")
+  object PrintRelationalPlan extends ConfigFlag("cora.explainRelational", false)
 
-  object PrintPhysicalPlan extends ConfigFlag("cora.explainPhysical", false)
-
-  object PrintOptimizedPhysicalPlan extends ConfigFlag("cora.explainOptimizedPhysical", false)
+  object PrintOptimizedRelationalPlan extends ConfigFlag("cora.explainOptimizedRelational", false)
 
   object DebugPhysicalResult extends ConfigFlag("cora.debugPhysical", false)
 

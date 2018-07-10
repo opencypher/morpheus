@@ -44,8 +44,9 @@ import org.opencypher.okapi.ir.impl.parse.CypherParser
 import org.opencypher.okapi.ir.impl.{IRBuilder, IRBuilderContext, QueryCatalog}
 import org.opencypher.okapi.logical.api.configuration.LogicalConfiguration.PrintLogicalPlan
 import org.opencypher.okapi.logical.impl._
-import org.opencypher.okapi.relational.api.configuration.CoraConfiguration.{PrintFlatPlan, PrintOptimizedPhysicalPlan, PrintPhysicalPlan, PrintQueryExecutionStages}
-import org.opencypher.okapi.relational.impl.physical.{RelationalPlanner, RelationalOptimizer}
+import org.opencypher.okapi.relational.api.configuration.CoraConfiguration.{PrintOptimizedRelationalPlan, PrintQueryExecutionStages, PrintRelationalPlan}
+import org.opencypher.okapi.relational.api.physical.{RelationalPlannerContext, RelationalRuntimeContext}
+import org.opencypher.okapi.relational.impl.physical.{RelationalOptimizer, RelationalPlanner}
 import org.opencypher.spark.api.CAPSSession
 import org.opencypher.spark.impl.CAPSConverters._
 import org.opencypher.spark.impl.physical._
@@ -201,21 +202,21 @@ sealed class CAPSSessionImpl(val sparkSession: SparkSession)
   ): CAPSResult = {
 
     logStageProgress("Relational planning ... ", newLine = false)
-    // TODO: Refactor so physical operator producer is reusable or easy to instantiate
-    val physicalPlannerContext = CAPSPhysicalPlannerContext.from(queryCatalog, records.asCaps, parameters)(self)
+    val relationalPlannerContext = RelationalPlannerContext.from(self, queryCatalog, records.asCaps, parameters)
     val graphAt = (qgn: QualifiedGraphName) => Some(catalog.graph(qgn).asCaps)
-    val physicalPlanner = new RelationalPlanner(new CAPSPhysicalOperatorProducer()(CAPSRuntimeContext(physicalPlannerContext.parameters, graphAt, collection.mutable.Map.empty, collection.mutable.Map.empty)))
-    val physicalPlan = time("Physical planning")(physicalPlanner(flatPlan)(physicalPlannerContext))
+    val relationalRuntimeContext = RelationalRuntimeContext.from(graphAt, parameters)
+
+    val relationalPlan = time("Relational planning")(RelationalPlanner.process(logicalPlan)(relationalPlannerContext, relationalRuntimeContext))
     logStageProgress("Done!")
-    if (PrintPhysicalPlan.isSet) {
-      println("Physical plan:")
-      physicalPlan.show()
+    if (PrintRelationalPlan.isSet) {
+      println("Relational plan:")
+      relationalPlan.show()
     }
 
     logStageProgress("Relational optimization ... ", newLine = false)
-    val optimizedPhysicalPlan = time("Physical optimization")(relationalOptimizer(physicalPlan)(PhysicalOptimizerContext()))
+    val optimizedPhysicalPlan = time("Physical optimization")(relationalOptimizer(relationalPlan)(PhysicalOptimizerContext()))
     logStageProgress("Done!")
-    if (PrintOptimizedPhysicalPlan.isSet) {
+    if (PrintOptimizedRelationalPlan.isSet) {
       println("Optimized physical plan:")
       optimizedPhysicalPlan.show()
     }

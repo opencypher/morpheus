@@ -28,7 +28,7 @@ package org.opencypher.okapi.relational.impl.physical
 
 import org.opencypher.okapi.ir.api.util.DirectCompilationStage
 import org.opencypher.okapi.relational.api.graph.RelationalCypherGraph
-import org.opencypher.okapi.relational.api.physical.RuntimeContext
+import org.opencypher.okapi.relational.api.physical.RelationalRuntimeContext
 import org.opencypher.okapi.relational.api.table.{FlatRelationalTable, RelationalCypherRecords}
 import org.opencypher.okapi.relational.impl.operators.{Cache, RelationalOperator, Start}
 import org.opencypher.okapi.trees.TopDown
@@ -40,7 +40,7 @@ O <: FlatRelationalTable[O],
 K <: RelationalOperator[O, K, A, P, I],
 A <: RelationalCypherRecords[O],
 P <: RelationalCypherGraph[O],
-I <: RuntimeContext[O, K, A, P, I]] extends DirectCompilationStage[K, K, RelationalOptimizerContext] {
+I <: RelationalRuntimeContext[O, K, A, P, I]] extends DirectCompilationStage[K, K, RelationalOptimizerContext] {
 
   override def process(input: K)(implicit context: RelationalOptimizerContext): K = {
     InsertCachingOperators(input)
