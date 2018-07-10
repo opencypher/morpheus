@@ -63,7 +63,6 @@ sealed class CAPSSessionImpl(val sparkSession: SparkSession)
   private val producer = new LogicalOperatorProducer
   private val logicalPlanner = new LogicalPlanner(producer)
   private val logicalOptimizer = LogicalOptimizer
-  private val relationalOptimizer = new RelationalOptimizer()
   private val parser = CypherParser
 
   private val maxSessionGraphId: AtomicLong = new AtomicLong(0)
@@ -214,10 +213,10 @@ sealed class CAPSSessionImpl(val sparkSession: SparkSession)
     }
 
     logStageProgress("Relational optimization ... ", newLine = false)
-    val optimizedPhysicalPlan = time("Physical optimization")(relationalOptimizer(relationalPlan)(PhysicalOptimizerContext()))
+    val optimizedPhysicalPlan = time("Relational optimization")(RelationalOptimizer.process(relationalPlan))
     logStageProgress("Done!")
     if (PrintOptimizedRelationalPlan.isSet) {
-      println("Optimized physical plan:")
+      println("Optimized Relational plan:")
       optimizedPhysicalPlan.show()
     }
 

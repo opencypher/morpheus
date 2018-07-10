@@ -26,50 +26,40 @@
  */
 package org.opencypher.okapi.relational.impl.physical
 
-import org.opencypher.okapi.ir.api.util.DirectCompilationStage
-import org.opencypher.okapi.relational.api.graph.RelationalCypherGraph
-import org.opencypher.okapi.relational.api.physical.RelationalRuntimeContext
-import org.opencypher.okapi.relational.api.table.{FlatRelationalTable, RelationalCypherRecords}
+import org.opencypher.okapi.relational.api.table.FlatRelationalTable
 import org.opencypher.okapi.relational.impl.operators.{Cache, RelationalOperator, Start}
 import org.opencypher.okapi.trees.TopDown
 
-case class RelationalOptimizerContext()
+object RelationalOptimizer {
 
-class RelationalOptimizer[
-O <: FlatRelationalTable[O],
-K <: RelationalOperator[O, K, A, P, I],
-A <: RelationalCypherRecords[O],
-P <: RelationalCypherGraph[O],
-I <: RelationalRuntimeContext[O, K, A, P, I]] extends DirectCompilationStage[K, K, RelationalOptimizerContext] {
-
-  override def process(input: K)(implicit context: RelationalOptimizerContext): K = {
-    InsertCachingOperators(input)
+  def process[T <: FlatRelationalTable[T]](input: RelationalOperator[T]): RelationalOperator[T] = {
+    InsertCachingOperators()(input)
   }
 
-  object InsertCachingOperators extends (K => K) {
-    def apply(input: K): K = {
+  case class InsertCachingOperators[T <: FlatRelationalTable[T]]() extends (RelationalOperator[T] => RelationalOperator[T]) {
+
+    def apply(input: RelationalOperator[T]): RelationalOperator[T] = {
       val replacements = calculateReplacementMap(input).filterKeys {
-        case _: Start[O, K, A, P, I] => false
-        case _                           => true
+        case _: Start[T] => false
+        case _ => true
       }
 
       val nodesToReplace = replacements.keySet
 
-      TopDown[RelationalOperator[O, K, A, P, I]] {
-        case cache: Cache[O, K, A, P, I] => cache
-          // TODO: fix self type issue
-        case parent if (parent.childrenAsSet.asInstanceOf[Set[K]] intersect nodesToReplace).nonEmpty =>
-          val newChildren: Array[RelationalOperator[O, K, A, P, I]] = parent.children.asInstanceOf[Array[K]].map(c => replacements.getOrElse(c, c))
-          parent.withNewChildren(newChildren).asInstanceOf[K]
-      }.rewrite(input).asInstanceOf[K]
+      TopDown[RelationalOperator[T]] {
+        case cache: Cache[T] => cache
+        case parent if (parent.childrenAsSet intersect nodesToReplace).nonEmpty =>
+          val newChildren = parent.children.map(c => replacements.getOrElse(c, c))
+          parent.withNewChildren(newChildren)
+      }.rewrite(input)
     }
 
-    private def calculateReplacementMap(input: K): Map[K, K] = {
+    private def calculateReplacementMap(input: RelationalOperator[T]): Map[RelationalOperator[T], RelationalOperator[T]] = {
       val opCounts = identifyDuplicates(input)
       val opsByHeight = opCounts.keys.toSeq.sortWith((a, b) => a.height > b.height)
-      val (opsToCache, _) = opsByHeight.foldLeft(Set.empty[K] -> opCounts) { (agg, currentOp) =>
+      val (opsToCache, _) = opsByHeight.foldLeft(Set.empty[RelationalOperator[T]] -> opCounts) { (agg, currentOp) =>
         agg match {
-          case (currentOpsToCache: Set[K], currentCounts: Map[K, Int]) =>
+          case (currentOpsToCache, currentCounts) =>
             val currentOpCount = currentCounts(currentOp)
             if (currentOpCount > 1) {
               val updatedOps = currentOpsToCache + currentOp
@@ -83,14 +73,13 @@ I <: RelationalRuntimeContext[O, K, A, P, I]] extends DirectCompilationStage[K, 
         }
       }
       // TODO: filter by opCount and always point at first op in group (avoids mutable map)
-      opsToCache.map(op => op -> Cache[O, K, A, P, I](op).asInstanceOf[K]).toMap
+      opsToCache.map(op => op -> Cache[T](op)).toMap
     }
 
-    private def identifyDuplicates(input: K): Map[K, Int] = {
+    private def identifyDuplicates(input: RelationalOperator[T]): Map[RelationalOperator[T], Int] = {
       input
-        .foldLeft(Map.empty[K, Int].withDefaultValue(0)) {
-          // TODO: fix self type issue
-          case (agg, op) => agg.updated(op.asInstanceOf[K], agg(op.asInstanceOf[K]) + 1)
+        .foldLeft(Map.empty[RelationalOperator[T], Int].withDefaultValue(0)) {
+          case (agg, op) => agg.updated(op, agg(op) + 1)
         }
         .filter(_._2 > 1)
     }

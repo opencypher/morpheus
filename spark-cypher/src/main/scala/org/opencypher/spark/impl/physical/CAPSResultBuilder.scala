@@ -28,6 +28,7 @@ package org.opencypher.spark.impl.physical
 
 import org.opencypher.okapi.api.graph.CypherQueryPlans
 import org.opencypher.okapi.logical.impl.LogicalOperator
+import org.opencypher.okapi.relational.impl.operators.RelationalOperator
 import org.opencypher.okapi.trees.TreeNode
 import org.opencypher.spark.api.CAPSSession
 import org.opencypher.spark.impl.{CAPSGraph, CAPSRecords, CAPSResult}
