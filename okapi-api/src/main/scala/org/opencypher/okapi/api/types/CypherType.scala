@@ -29,17 +29,17 @@ object CypherType {
     }
 
     val noneNullType: Option[CypherType] = name match {
-      case "STRING"  | "STRING?"  => Some(CTString)
+      case "STRING" | "STRING?" => Some(CTString)
       case "INTEGER" | "INTEGER?" => Some(CTInteger)
-      case "FLOAT"   | "FLOAT?"   => Some(CTFloat)
-      case "NUMBER"  | "NUMBER?"  => Some(CTNumber)
+      case "FLOAT" | "FLOAT?" => Some(CTFloat)
+      case "NUMBER" | "NUMBER?" => Some(CTNumber)
       case "BOOLEAN" | "BOOLEAN?" => Some(CTBoolean)
-      case "ANY"     | "ANY?"     => Some(CTAny)
-      case "VOID"    | "VOID?"    => Some(CTVoid)
-      case "NULL"    | "NULL?"    => Some(CTNull)
-      case "MAP"     | "MAP?"     => Some(CTAnyMap)
-      case "PATH"    | "PATH?"    => Some(CTPath)
-      case "?"       | "??"       => Some(CTAny)
+      case "ANY" | "ANY?" => Some(CTAny)
+      case "VOID" | "VOID?" => Some(CTVoid)
+      case "NULL" | "NULL?" => Some(CTNull)
+      case "MAP" | "MAP?" => Some(CTAnyMap)
+      case "PATH" | "PATH?" => Some(CTPath)
+      case "?" | "??" => Some(CTAny)
 
       case node if node.startsWith("NODE") =>
         Some(CTNode(extractLabels(node, "NODE", ":")))
@@ -49,7 +49,7 @@ object CypherType {
 
       case list if list.startsWith("LIST") =>
         CypherType
-          .fromLegacyName(list.replaceFirst("""LIST\?? OF """,""))
+          .fromLegacyName(list.replaceFirst("""LIST\?? OF """, ""))
           .map(CTList)
 
       case _ => None
@@ -178,6 +178,8 @@ object CypherType {
 
     override def labels: Set[String] = Set(label)
 
+    override def name: String = s"LABEL($label)"
+
     override def legacyName: String = s"NODE(:$label)"
 
   }
@@ -242,6 +244,8 @@ object CypherType {
   case class CTRelType(relType: String) extends CTRelationship {
 
     override def relTypes: Set[String] = Set(relType)
+
+    override def name: String = s"RELTYPE($relType)"
 
     override def legacyName: String = s"RELATIONSHIP(:$relType)"
 
@@ -346,7 +350,18 @@ object CypherType {
       }
     }
 
-    override def name: String = ands.map(_.name).toSeq.sorted.mkString("&")
+    override def name: String = {
+      if (ands.isEmpty) {
+        "NOLABEL"
+      } else {
+        val inner = ands.map(_.name).toSeq.sorted.mkString("&")
+        if (ands.size > 1) {
+          s"($inner)"
+        } else {
+          inner
+        }
+      }
+    }
 
     override def toString: String = s"Intersection(${ands.mkString(", ")})"
 
@@ -423,7 +438,19 @@ object CypherType {
       }
     }
 
-    override def name: String = ors.map(_.name).toSeq.sorted.mkString("|")
+    override def name: String = {
+      if (ors.isEmpty) {
+        "VOID"
+      } else if (isNullable) {
+        if (ors.size > 2) {
+          s"(${material.name})?"
+        } else {
+          s"${material.name}?"
+        }
+      } else {
+        ors.map(_.name).toSeq.sorted.mkString("|")
+      }
+    }
 
     override def toString: String = s"Union(${ors.mkString(", ")})"
 
@@ -463,9 +490,9 @@ object CypherType {
       } else if (this == CTNumber || this == CTNumber.nullable) {
         s"NUMBER$nullableSuffix"
       } else if (this == CTNoLabelNode) {
-        "CTNode()"
+        "NODE()"
       } else if (this == CTNoLabelNode.nullable) {
-        s"CTNode()?"
+        s"NODE()?"
       } else if (subTypeOf(CTAnyNode.nullable)) {
         if (labels.isEmpty) {
           s"NODE$nullableSuffix"
@@ -479,7 +506,7 @@ object CypherType {
           s"RELATIONSHIP(${relTypes.mkString(":", "|", "")})$nullableSuffix"
         }
       } else if (subTypeOf(CTAnyList.nullable)) {
-        val elementType = ors.collect{case CTList(et) => et }.head
+        val elementType = ors.collect { case CTList(et) => et }.head
         s"LIST$nullableSuffix OF ${elementType.legacyName}"
       } else if (isNullable && ors.size == 2) {
         s"${material.legacyName}$nullableSuffix"
@@ -528,7 +555,7 @@ trait CypherType {
     other match {
       case CTAny => true
       case u: CTUnion => u.ors.exists(this.subTypeOf)
-      case i: CTIntersection => i.ands.forall(this.subTypeOf)
+      case i: CTIntersection => i.ands.nonEmpty && i.ands.forall(this.subTypeOf)
       case _ => false
     }
   }

@@ -91,6 +91,7 @@ class CypherTypesTest extends FunSpec with Matchers {
     CTNode("Person", "Employee").legacyName
 
     Seq[(CypherType, (String, String))](
+      CTNoLabelNode -> ("NODE()" -> "NODE()?"),
       CTString -> ("STRING" -> "STRING?"),
       CTBoolean -> ("BOOLEAN" -> "BOOLEAN?"),
       CTNumber -> ("NUMBER" -> "NUMBER?"),
@@ -111,7 +112,6 @@ class CypherTypesTest extends FunSpec with Matchers {
 //      CTWildcard -> ("?" -> "??")
     ).foreach {
       case (t, (materialName, nullableName)) =>
-        println(t)
         t.isNullable shouldBe false
         t.legacyName shouldBe materialName
         t.nullable.legacyName shouldBe nullableName
