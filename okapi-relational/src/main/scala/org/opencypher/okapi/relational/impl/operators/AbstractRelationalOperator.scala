@@ -452,27 +452,30 @@ final case class TabularUnionAll[T <: FlatRelationalTable[T]](
   }
 }
 
+final case class ConstructGraph[T <: FlatRelationalTable[T]](
+  lhs: RelationalOperator[T],
+  rhs: RelationalOperator[T],
+  construct: LogicalPatternGraph) extends RelationalOperator[T] {
+
+}
 
 // N-ary
 
-//final case class GraphUnionAll[
-//T <: FlatRelationalTable[T]
-//
-//
-//
-//](inputs: List[K], qgn: QualifiedGraphName)
-//  extends RelationalOperator[T] {
-//  require(inputs.nonEmpty, "GraphUnionAll requires at least one input")
-//
-//  override lazy val tagStrategy = {
-//    computeRetaggings(inputs.map(r => r.graphName -> r.graph.tags).toMap)
-//  }
-//
-//  override lazy val graphName = qgn
-//
-//  override lazy val graph = {
-//    val graphWithTagStrategy = inputs.map(i => i.graph -> tagStrategy(i.graphName)).toMap
-//    CAPSUnionGraph(graphWithTagStrategy)
-//  }
-//
-//}
+final case class GraphUnionAll[T <: FlatRelationalTable[T]](
+  inputs: List[RelationalOperator[T]],
+  qgn: QualifiedGraphName) extends RelationalOperator[T] {
+  //  require(inputs.nonEmpty, "GraphUnionAll requires at least one input")
+  //
+  //  override lazy val tagStrategy = {
+  //    computeRetaggings(inputs.map(r => r.graphName -> r.graph.tags).toMap)
+  //  }
+  //
+  //  override lazy val graphName = qgn
+  //
+  //  override lazy val graph = {
+  //    val graphWithTagStrategy = inputs.map(i => i.graph -> tagStrategy(i.graphName)).toMap
+  //    CAPSUnionGraph(graphWithTagStrategy)
+  //  }
+  //
+  //}
+}

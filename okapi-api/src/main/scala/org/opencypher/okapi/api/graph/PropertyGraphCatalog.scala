@@ -46,6 +46,13 @@ trait PropertyGraphCatalog {
   def namespaces: Set[Namespace]
 
   /**
+    * Returns the namespace associated with the session.
+    *
+    * @return session namespace
+    */
+  def sessionNamespace: Namespace
+
+  /**
     * Returns all registered [[org.opencypher.okapi.api.io.PropertyGraphDataSource]]s.
     *
     * @return a map of all PGDS registered at this catalog, keyed by their [[org.opencypher.okapi.api.graph.Namespace]]s.

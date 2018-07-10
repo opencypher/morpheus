@@ -27,31 +27,29 @@
 package org.opencypher.okapi.relational.impl.physical
 
 import org.opencypher.okapi.logical.impl.{LogicalOperator, LogicalPatternGraph}
-import org.opencypher.okapi.relational.api.graph.RelationalCypherGraph
-import org.opencypher.okapi.relational.api.physical.{RelationalPlannerContext, RuntimeContext}
-import org.opencypher.okapi.relational.api.table.{FlatRelationalTable, RelationalCypherRecords}
+import org.opencypher.okapi.relational.api.physical.RelationalPlannerContext
+import org.opencypher.okapi.relational.api.table.FlatRelationalTable
 import org.opencypher.okapi.relational.impl.operators.RelationalOperator
+import org.opencypher.okapi.relational.impl.{operators => relational}
 
 object ConstructGraphPlanner {
 
   def planConstructGraph[T <: FlatRelationalTable[T]](in: Option[LogicalOperator], construct: LogicalPatternGraph)
     (implicit context: RelationalPlannerContext[T]): RelationalOperator[T] = {
 
-    import planner.producer._
-
-    val onGraphPlan = {
+    val onGraphPlan: RelationalOperator[T] = {
       construct.onGraphs match {
-        case Nil => planStart() // Empty start
+        case Nil => relational.Start[T](context.session.emptyGraphQgn) // Empty start
         //TODO: Optimize case where no union is necessary
         //case h :: Nil => operatorProducer.planStart(Some(h)) // Just one graph, no union required
         case several =>
-          val onGraphPlans = several.map(qgn => planStart(Some(qgn)))
-          planGraphUnionAll(onGraphPlans, construct.name)
+          val onGraphPlans = several.map(qgn => relational.Start[T](qgn))
+          relational.GraphUnionAll[T](onGraphPlans, construct.name)
       }
     }
-    val inputTablePlan = in.map(planner.process).getOrElse(planStart())
+    val inputTablePlan = in.map(RelationalPlanner.process).getOrElse(relational.Start[T](context.session.emptyGraphQgn))
 
-    val constructGraphPlan = planner.producer.planConstructGraph(inputTablePlan, onGraphPlan, construct)
+    val constructGraphPlan = relational.ConstructGraph(inputTablePlan, onGraphPlan, construct)
     context.constructedGraphPlans.update(construct.name, constructGraphPlan)
     constructGraphPlan
   }
