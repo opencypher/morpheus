@@ -27,6 +27,7 @@
 package org.opencypher.okapi.api.types
 
 import org.opencypher.okapi.api.types.CypherType._
+import org.opencypher.okapi.api.types.LegacyNames._
 import org.scalatest.{FunSpec, Matchers}
 
 import scala.language.postfixOps
@@ -126,8 +127,7 @@ class CypherTypesTest extends FunSpec with Matchers {
 
   it("can parse CypherType names into CypherTypes") {
     allTypes.foreach { t =>
-      println(t)
-      CypherType.fromLegacyName(t.legacyName).get should equal(t)
+      fromLegacyName(t.legacyName).get should equal(t)
     }
   }
 

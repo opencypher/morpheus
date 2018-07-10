@@ -1,61 +1,52 @@
+/*
+ * Copyright (c) 2016-2018 "Neo4j Sweden, AB" [https://neo4j.com]
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ *
+ * Attribution Notice under the terms of the Apache License 2.0
+ *
+ * This work was created by the collective efforts of the openCypher community.
+ * Without limiting the terms of Section 6, any Derivative Work that is not
+ * approved by the public consensus process of the openCypher Implementers Group
+ * should not be described as “Cypher” (and Cypher® is a registered trademark of
+ * Neo4j Inc.) or as "openCypher". Extensions by implementers or prototypes or
+ * proposals for change that have been documented or implemented should only be
+ * described as "implementation extensions to Cypher" or as "proposed changes to
+ * Cypher that are not yet approved by the openCypher community".
+ */
 package org.opencypher.okapi.api.types
 
 import cats.Monoid
-import org.opencypher.okapi.api.types.CypherType.CTVoid
+import org.opencypher.okapi.api.graph.QualifiedGraphName
+import org.opencypher.okapi.api.types.CypherType.{CTVoid, _}
 import org.opencypher.okapi.api.value.CypherValue._
 import upickle.default._
-import CypherType._
-import org.opencypher.okapi.api.graph.QualifiedGraphName
 
 import scala.language.postfixOps
 
 // TODO: Turn expensive computations into lazy vals
 object CypherType {
 
-  /**
-    * Parses the name of CypherType into the actual CypherType object.
-    *
-    * @param name string representation of the CypherType
-    * @return
-    * @see {{{org.opencypher.okapi.api.types.CypherType#name}}}
-    */
-  def fromLegacyName(name: String): Option[CypherType] = {
-    def extractLabels(s: String, typ: String, sep: String): Set[String] = {
-      val regex = s"""$typ\\(:(.+)\\).?""".r
-      s match {
-        case regex(l) => l.split(sep).toSet
-        case _ => Set.empty[String]
-      }
-    }
+  // TODO: Use new type names
+  implicit def rw: ReadWriter[CypherType] = {
+    import LegacyNames._
+    readwriter[String].bimap[CypherType](_.legacyName, s => fromLegacyName(s).get)
+  }
 
-    val noneNullType: Option[CypherType] = name match {
-      case "STRING" | "STRING?" => Some(CTString)
-      case "INTEGER" | "INTEGER?" => Some(CTInteger)
-      case "FLOAT" | "FLOAT?" => Some(CTFloat)
-      case "NUMBER" | "NUMBER?" => Some(CTNumber)
-      case "BOOLEAN" | "BOOLEAN?" => Some(CTBoolean)
-      case "ANY" | "ANY?" => Some(CTAny)
-      case "VOID" | "VOID?" => Some(CTVoid)
-      case "NULL" | "NULL?" => Some(CTNull)
-      case "MAP" | "MAP?" => Some(CTAnyMap)
-      case "PATH" | "PATH?" => Some(CTPath)
-      case "?" | "??" => Some(CTAny)
+  implicit val joinMonoid: Monoid[CypherType] = new Monoid[CypherType] {
+    override def empty: CypherType = CTVoid
 
-      case node if node.startsWith("NODE") =>
-        Some(CTNode(extractLabels(node, "NODE", ":")))
-
-      case rel if rel.startsWith("RELATIONSHIP") =>
-        Some(CTRelationship(extractLabels(rel, "RELATIONSHIP", """\|""")))
-
-      case list if list.startsWith("LIST") =>
-        CypherType
-          .fromLegacyName(list.replaceFirst("""LIST\?? OF """, ""))
-          .map(CTList)
-
-      case _ => None
-    }
-
-    noneNullType.map(ct => if (name == ct.legacyName) ct else ct.nullable)
+    override def combine(x: CypherType, y: CypherType): CypherType = x union y
   }
 
   val CTNumber: CTUnion = CTUnion(Set(CTInteger, CTFloat))
@@ -83,14 +74,6 @@ object CypherType {
       }
     }
   }
-
-  implicit val joinMonoid: Monoid[CypherType] = new Monoid[CypherType] {
-    override def empty: CypherType = CTVoid
-
-    override def combine(x: CypherType, y: CypherType): CypherType = x union y
-  }
-
-  implicit def rw: ReadWriter[CypherType] = readwriter[String].bimap[CypherType](_.legacyName, s => fromLegacyName(s).get)
 
   case object CTBoolean extends CypherType
 
@@ -180,8 +163,6 @@ object CypherType {
 
     override def name: String = s"LABEL($label)"
 
-    override def legacyName: String = s"NODE(:$label)"
-
   }
 
   object CTRelationship {
@@ -247,8 +228,6 @@ object CypherType {
 
     override def name: String = s"RELTYPE($relType)"
 
-    override def legacyName: String = s"RELATIONSHIP(:$relType)"
-
   }
 
   case class CTMap(elementType: CypherType = CTAny) extends CypherType with Container {
@@ -303,10 +282,6 @@ object CypherType {
       s"LIST(${elementType.name})"
     }
 
-    override def legacyName: String = {
-      s"LIST OF ${elementType.legacyName}"
-    }
-
   }
 
   object CTIntersection {
@@ -352,7 +327,7 @@ object CypherType {
 
     override def name: String = {
       if (ands.isEmpty) {
-        "NOLABEL"
+        "NO-LABEL"
       } else {
         val inner = ands.map(_.name).toSeq.sorted.mkString("&")
         if (ands.size > 1) {
@@ -363,7 +338,7 @@ object CypherType {
       }
     }
 
-    override def toString: String = s"Intersection(${ands.mkString(", ")})"
+    override def toString: String = s"CTIntersection(${ands.mkString(", ")})"
 
     override def labels: Set[String] = ands.flatMap(_.labels)
 
@@ -373,15 +348,6 @@ object CypherType {
         Some(elementTypes.flatten.foldLeft(CTAny: CypherType)(_ intersect _))
       } else {
         None
-      }
-    }
-
-    override def legacyName: String = {
-      if (subTypeOf(CTAnyNode)) {
-        s"NODE(${labels.mkString(":", ":", "")})"
-      } else {
-        // Non-legacy type
-        name
       }
     }
 
@@ -452,7 +418,7 @@ object CypherType {
       }
     }
 
-    override def toString: String = s"Union(${ors.mkString(", ")})"
+    override def toString: String = s"CTUnion(${ors.mkString(", ")})"
 
     override def relTypes: Set[String] = {
       if (ors.contains(CTAnyRelationship)) Set.empty
@@ -481,41 +447,6 @@ object CypherType {
     override def labels: Set[String] = {
       if (ors.contains(CTAnyNode)) Set.empty
       else ors.collect { case n: CTNode => n.labels }.reduce(_ ++ _)
-    }
-
-    override def legacyName: String = {
-      val nullableSuffix = if (isNullable) "?" else ""
-      if (this == CTVoid) {
-        "VOID"
-      } else if (this == CTNumber || this == CTNumber.nullable) {
-        s"NUMBER$nullableSuffix"
-      } else if (this == CTNoLabelNode) {
-        "NODE()"
-      } else if (this == CTNoLabelNode.nullable) {
-        s"NODE()?"
-      } else if (subTypeOf(CTAnyNode.nullable)) {
-        if (labels.isEmpty) {
-          s"NODE$nullableSuffix"
-        } else {
-          s"NODE(${labels.mkString(":", ":", "")})$nullableSuffix"
-        }
-      } else if (subTypeOf(CTAnyRelationship.nullable)) {
-        if (relTypes.isEmpty) {
-          s"RELATIONSHIP$nullableSuffix"
-        } else {
-          s"RELATIONSHIP(${relTypes.mkString(":", "|", "")})$nullableSuffix"
-        }
-      } else if (subTypeOf(CTAnyList.nullable)) {
-        val elementType = ors.collect { case CTList(et) => et }.head
-        s"LIST$nullableSuffix OF ${elementType.legacyName}"
-      } else if (isNullable && ors.size == 2) {
-        s"${material.legacyName}$nullableSuffix"
-      } else if (!isNullable && ors.size == 1) {
-        ors.head.legacyName
-      } else {
-        // Non-legacy type
-        name
-      }
     }
 
   }
@@ -590,7 +521,5 @@ trait CypherType {
   }
 
   def pretty: String = s"[$name]"
-
-  def legacyName: String = name
 
 }

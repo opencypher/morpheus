@@ -52,7 +52,7 @@ class SchemaTyperTest extends BaseTestSuite with Neo4jAstTestSupport with Mockit
 
     assertExpr.from("CASE WHEN a > b THEN c END") shouldHaveInferredType CTString
     assertExpr.from("CASE WHEN c THEN a WHEN c THEN b END") shouldHaveInferredType CTInteger.nullable
-    assertExpr.from("CASE WHEN c THEN a WHEN a THEN b ELSE c END") shouldHaveInferredType CTAny.nullable
+    assertExpr.from("CASE WHEN c THEN a WHEN a THEN b ELSE c END") shouldHaveInferredType CTUnion(CTInteger, CTString).nullable
   }
 
   it("should type coalesce()") {
@@ -62,7 +62,7 @@ class SchemaTyperTest extends BaseTestSuite with Neo4jAstTestSupport with Mockit
     assertExpr.from("coalesce(b, b)") shouldHaveInferredType CTInteger.nullable
     assertExpr.from("coalesce(a, b)") shouldHaveInferredType CTInteger
     assertExpr.from("coalesce(a, c)") shouldHaveInferredType CTInteger
-    assertExpr.from("coalesce(b, c)") shouldHaveInferredType CTAny.nullable
+    assertExpr.from("coalesce(b, c)") shouldHaveInferredType CTUnion(CTInteger, CTString).nullable
     assertExpr.from("coalesce()") shouldFailToInferTypeWithErrors
       WrongNumberOfArguments("coalesce()", 1, 0)
   }
@@ -324,7 +324,7 @@ class SchemaTyperTest extends BaseTestSuite with Neo4jAstTestSupport with Mockit
     assertExpr.from("[]") shouldHaveInferredType CTList(CTVoid)
     assertExpr.from("[1, 2]") shouldHaveInferredType CTList(CTInteger)
     assertExpr.from("[1, 1.0]") shouldHaveInferredType CTList(CTNumber)
-    assertExpr.from("[1, 1.0, '']") shouldHaveInferredType CTList(CTAny)
+    assertExpr.from("[1, 1.0, '']") shouldHaveInferredType CTList(CTUnion(CTInteger, CTFloat, CTString))
     assertExpr.from("[1, 1.0, null]") shouldHaveInferredType CTList(CTNumber.nullable)
   }
 
@@ -338,7 +338,7 @@ class SchemaTyperTest extends BaseTestSuite with Neo4jAstTestSupport with Mockit
     implicit val context = TypeTracker.empty.updated(Parameter("param", symbols.CTAny)(pos), CTInteger)
 
     assertExpr.from("[3.14, -1, 5000][$param]")(TypeTracker.empty.withParameters(Map("param" -> CTInteger))) shouldHaveInferredType CTNumber
-    assertExpr.from("[[], 1, true][$param]")(TypeTracker.empty.withParameters(Map("param" -> CTInteger))) shouldHaveInferredType CTAny
+    assertExpr.from("[[], 1, true][$param]")(TypeTracker.empty.withParameters(Map("param" -> CTInteger))) shouldHaveInferredType CTUnion(CTList(CTVoid), CTInteger, CTBoolean)
   }
 
   test("infer type of node property lookup") {
