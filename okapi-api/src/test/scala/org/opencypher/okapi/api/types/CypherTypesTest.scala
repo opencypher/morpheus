@@ -190,33 +190,43 @@ class CypherTypesTest extends FunSpec with Matchers {
     //    employee.show()
     //
     //
+
+    println(CTNumber.name)
+    println(CTNumber.nullable.name)
+    println(CTNumber.intersect(CTInteger).name)
+    println(CTList(CTInteger | CTFloat).name)
+    println((CTList(CTInteger | CTFloat) & CTList(CTString)).name)
+    println((CTList(CTAny) & CTList(CTString)).nullable.name)
+
     val employee = CTLabel("Person") & CTProperty("name", CTString) & CTProperty("age", CTInteger)
     val car = CTLabel("Car") & CTProperty("name", CTString) & CTProperty("top-speed", CTInteger)
-    car.show()
     val schema = car | employee
     schema.show()
 
-    println(car.subTypeOf(schema))
-
-    println(employee.subTypeOf(schema))
-
-    val moreAccepting = CTLabel("Person") & CTProperty("name", CTAny)
-
-    println(employee.subTypeOf(moreAccepting))
-
-    println(moreAccepting.subTypeOf(employee))
-
-    println(schema.couldBeSubTypeOf(moreAccepting))
-
-    println(schema.possibleTypes.mkString("\n"))
-
-    val typesSatisfyingMoreAccepting = schema.possibleTypes.filter(_.subTypeOf(moreAccepting))
-
-    println(typesSatisfyingMoreAccepting.mkString("\n"))
-
-    println(schema.possibleTypes.filter(_.subTypeOf(CTProperty("name"))))
-
     println(schema.possibleTypes.filter(_.subTypeOf(CTProperty("age", CTNumber))))
+    println(schema.possibleTypes.filter(_.subTypeOf(CTProperty("age", CTFloat))))
+    println(schema.couldBeSubTypeOf(CTLabel("Person") & CTProperty("name", CTAny)))
+    println(schema.couldBeSubTypeOf(CTLabel("Person") & CTProperty("name", CTInteger)))
+
+//    println(car.subTypeOf(schema))
+//
+//    println(employee.subTypeOf(schema))
+//
+//    val moreAccepting = CTLabel("Person") & CTProperty("name", CTAny)
+//
+//    println(employee.subTypeOf(moreAccepting))
+//
+//    println(moreAccepting.subTypeOf(employee))
+//
+//    println(schema.couldBeSubTypeOf(moreAccepting))
+//
+//    println(schema.possibleTypes.mkString("\n"))
+//
+//    val typesSatisfyingMoreAccepting = schema.possibleTypes.filter(_.subTypeOf(moreAccepting))
+//
+//    println(typesSatisfyingMoreAccepting.map(_.pretty).mkString("\n"))
+//
+//    println(schema.possibleTypes.filter(_.subTypeOf(CTProperty("name"))))
 
     //    val nodesWithNames = schema & CTProperty("name", CTString)
     //    nodesWithNames.show()
