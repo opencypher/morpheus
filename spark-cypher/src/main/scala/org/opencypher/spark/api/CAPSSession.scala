@@ -42,7 +42,7 @@ import scala.reflect.runtime.universe._
 
 trait CAPSSession extends CypherSession {
 
-  override val catalog: CypherCatalog = new CypherCatalog
+  override lazy val catalog: CypherCatalog = new CypherCatalog
 
   def sql(query: String): CypherRecords
 

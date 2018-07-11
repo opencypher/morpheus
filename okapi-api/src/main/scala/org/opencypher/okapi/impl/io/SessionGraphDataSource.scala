@@ -36,6 +36,7 @@ import scala.collection.mutable
 object SessionGraphDataSource {
 
   val Namespace = org.opencypher.okapi.api.graph.Namespace("session")
+
 }
 
 class SessionGraphDataSource() extends PropertyGraphDataSource {

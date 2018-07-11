@@ -93,5 +93,5 @@ trait CypherSession {
     parameters: CypherMap = CypherMap.empty,
     drivingTable: Option[CypherRecords]): CypherResult
 
-  private[opencypher] val emptyGraphQgn = QualifiedGraphName(catalog.sessionNamespace, GraphName("emptyGraph"))
+  private[opencypher] lazy val emptyGraphQgn = QualifiedGraphName(catalog.sessionNamespace, GraphName("emptyGraph"))
 }
