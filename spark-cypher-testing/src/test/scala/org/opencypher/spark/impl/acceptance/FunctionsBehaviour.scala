@@ -305,7 +305,7 @@ class FunctionsBehaviour extends CAPSTestSuite with DefaultGraphInit {
 
       val result = given.cypher("MATCH (n) RETURN toString(n.id) AS nId")
 
-      result.getRecords.toMaps should equal(
+      result.records.toMaps should equal(
         Bag(
           CypherMap("nId" -> "1"),
           CypherMap("nId" -> "2")
@@ -318,7 +318,7 @@ class FunctionsBehaviour extends CAPSTestSuite with DefaultGraphInit {
 
       val result = given.cypher("MATCH (n) RETURN toString(n.id) AS nId")
 
-      result.getRecords.toMaps should equal(
+      result.records.toMaps should equal(
         Bag(
           CypherMap("nId" -> "1.0"),
           CypherMap("nId" -> "2.0")
@@ -331,7 +331,7 @@ class FunctionsBehaviour extends CAPSTestSuite with DefaultGraphInit {
 
       val result = given.cypher("MATCH (n) RETURN toString(n.id) AS nId")
 
-      result.getRecords.toMaps should equal(
+      result.records.toMaps should equal(
         Bag(
           CypherMap("nId" -> "true"),
           CypherMap("nId" -> "false")
@@ -344,7 +344,7 @@ class FunctionsBehaviour extends CAPSTestSuite with DefaultGraphInit {
 
       val result = given.cypher("MATCH (n) RETURN toString(n.id) AS nId")
 
-      result.getRecords.toMaps should equal(
+      result.records.toMaps should equal(
         Bag(
           CypherMap("nId" -> "true"),
           CypherMap("nId" -> "false")
@@ -357,7 +357,7 @@ class FunctionsBehaviour extends CAPSTestSuite with DefaultGraphInit {
 
       val result = given.cypher("MATCH (n) RETURN toString(n.id) AS nId")
 
-      result.getRecords.toMaps should equal(
+      result.records.toMaps should equal(
         Bag(
           CypherMap("nId" -> "1"),
           CypherMap("nId" -> null)
