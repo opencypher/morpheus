@@ -76,7 +76,7 @@ object CypherType {
     override def isNullable: Boolean = ors.exists(_.subTypeOf(CTNull))
 
     override def material: CypherType = {
-      if (isNullable) union(ors - CTNull) else this
+      if (isNullable) flattenAndUnion(ors - CTNull) else this
     }
 
   }
@@ -251,7 +251,16 @@ object CypherType {
 
   case class CTProperty(key: String, elementType: CypherType = CTAny) extends CypherType with ContainerType[CypherType] {
 
-    override def newInstance(et: CypherType): CypherType = CTProperty(key, elementType)
+    override def isContainerSubType(other: CypherType): Boolean = other match {
+      case CTProperty(otherKey, otherElementType) => key == otherKey && elementType.subTypeOf(otherElementType)
+      case _ => false
+    }
+
+    override def intersectContainer(other: CypherType): Option[CypherType] = other match {
+      case CTProperty(otherKey, otherElementType) if key == otherKey =>
+        Some(copy(elementType = elementType.intersect(otherElementType)))
+      case _ => None
+    }
 
     override def canIntersect(other: CypherType): Boolean = other match {
       case CTNoLabel => true
@@ -262,11 +271,12 @@ object CypherType {
     }
 
     override def name: String = s"PROPERTY($key)"
+
+    override protected def copyWithNewElementType(newElementType: CypherType): CypherType = copy(elementType = newElementType)
+
   }
 
   case class CTMap(elementType: CypherType = CTAny) extends CypherType with ContainerType[CypherType] {
-
-    override def newInstance(et: CypherType): CypherType = CTMap(et)
 
     override def canIntersect(other: CypherType): Boolean = other match {
       case CTMap(_) => true
@@ -275,11 +285,11 @@ object CypherType {
 
     override def name: String = s"MAP(${elementType.name})"
 
+    override protected  def copyWithNewElementType(newElementType: CypherType): CypherType = copy(elementType = newElementType)
+
   }
 
   case class CTList(elementType: CypherType = CTAny) extends CypherType with ContainerType[CypherType] {
-
-    override def newInstance(et: CypherType): CypherType = CTList(et)
 
     override def canIntersect(other: CypherType): Boolean = other match {
       case CTList(_) => true
@@ -287,6 +297,8 @@ object CypherType {
     }
 
     override def name: String = s"LIST(${elementType.name})"
+
+    override protected def copyWithNewElementType(newElementType: CypherType): CypherType = copy(elementType = newElementType)
 
   }
 
@@ -336,7 +348,7 @@ abstract class CypherType extends Type[CypherType] {
     if (isNullable) {
       this
     } else {
-      union(this, CTNull)
+      flattenAndUnion(this, CTNull)
     }
   }
 

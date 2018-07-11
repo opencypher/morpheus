@@ -102,15 +102,15 @@ class CypherTypesTest extends FunSpec with Matchers {
       CTAnyNode -> ("NODE" -> "NODE?"),
       CTNode("Person") -> ("NODE(:Person)" -> "NODE(:Person)?"),
       CTNode("Employee", "Person") -> ("NODE(:Employee:Person)" -> "NODE(:Employee:Person)?"),
-//      CTNode(Set("Person"), Some(QualifiedGraphName("foo.bar"))) -> ("NODE(:Person) @ foo.bar" -> "NODE(:Person) @ foo.bar?"),
+      //      CTNode(Set("Person"), Some(QualifiedGraphName("foo.bar"))) -> ("NODE(:Person) @ foo.bar" -> "NODE(:Person) @ foo.bar?"),
       CTAnyRelationship -> ("RELATIONSHIP" -> "RELATIONSHIP?"),
       CTRelationship(Set("KNOWS")) -> ("RELATIONSHIP(:KNOWS)" -> "RELATIONSHIP(:KNOWS)?"),
       CTRelationship(Set("KNOWS", "LOVES")) -> ("RELATIONSHIP(:KNOWS|LOVES)" -> "RELATIONSHIP(:KNOWS|LOVES)?"),
-//      CTRelationship(Set("KNOWS"), Some(QualifiedGraphName("foo.bar"))) -> ("RELATIONSHIP(:KNOWS) @ foo.bar" -> "RELATIONSHIP(:KNOWS) @ foo.bar?"),
+      //      CTRelationship(Set("KNOWS"), Some(QualifiedGraphName("foo.bar"))) -> ("RELATIONSHIP(:KNOWS) @ foo.bar" -> "RELATIONSHIP(:KNOWS) @ foo.bar?"),
       CTPath -> ("PATH" -> "PATH?"),
       CTList(CTInteger) -> ("LIST OF INTEGER" -> "LIST? OF INTEGER"),
       CTList(CTInteger.nullable) -> ("LIST OF INTEGER?" -> "LIST? OF INTEGER?")
-//      CTWildcard -> ("?" -> "??")
+      //      CTWildcard -> ("?" -> "??")
     ).foreach {
       case (t, (materialName, nullableName)) =>
         t.isNullable shouldBe false
@@ -176,21 +176,53 @@ class CypherTypesTest extends FunSpec with Matchers {
   }
 
   it("can model a graph schema") {
+    //    val person = CTLabel("Person")
+    //    person.show()
+    //    val name =  CTProperty("name", CTString)
+    //    name.show()
+    //    val personWithName = person & name
+    //    personWithName.show()
+    //    val age = CTProperty("age", CTInteger)
+    //    val personWithNameAndAge = personWithName & age
+    //    personWithNameAndAge.show()
+    //
+    //
+    //    employee.show()
+    //
+    //
     val employee = CTLabel("Person") & CTProperty("name", CTString) & CTProperty("age", CTInteger)
-    employee.show()
-
-
     val car = CTLabel("Car") & CTProperty("name", CTString) & CTProperty("top-speed", CTInteger)
     car.show()
+    val schema = car | employee
+    schema.show()
 
-//    val schema = car | employee
-//    schema.show()
-//
-//    val nodesWithNames = schema & CTProperty("name", CTString)
-//    nodesWithNames.show()
-//
-//    val nodesWithAge = schema & CTProperty("age", CTInteger)
-//    nodesWithAge.show()
+    println(car.subTypeOf(schema))
+
+    println(employee.subTypeOf(schema))
+
+    val moreAccepting = CTLabel("Person") & CTProperty("name", CTAny)
+
+    println(employee.subTypeOf(moreAccepting))
+
+    println(moreAccepting.subTypeOf(employee))
+
+    println(schema.couldBeSubTypeOf(moreAccepting))
+
+    println(schema.possibleTypes.mkString("\n"))
+
+    val typesSatisfyingMoreAccepting = schema.possibleTypes.filter(_.subTypeOf(moreAccepting))
+
+    println(typesSatisfyingMoreAccepting.mkString("\n"))
+
+    println(schema.possibleTypes.filter(_.subTypeOf(CTProperty("name"))))
+
+    println(schema.possibleTypes.filter(_.subTypeOf(CTProperty("age", CTNumber))))
+
+    //    val nodesWithNames = schema & CTProperty("name", CTString)
+    //    nodesWithNames.show()
+    //
+    //    val nodesWithAge = schema & CTProperty("age", CTInteger)
+    //    nodesWithAge.show()
   }
 
   it("conversion between VOID and NULL") {
@@ -295,13 +327,13 @@ class CypherTypesTest extends FunSpec with Matchers {
     CTNode("Other") union CTNode("Person") shouldBe CTUnion(CTNode("Other"), CTNode("Person"))
     CTNode("Person") union CTNode("Person") shouldBe CTNode("Person")
 
-//    val n0 = CTLabel("L1").intersect(CTLabel("L2"))
-//    val lx = CTLabel("Lx")
-//    val n1 = n0.intersect(lx)
-//    val n2 = CTNode("L1", "L2", "Ly")
-//    val u = n1.union(n2)
+    //    val n0 = CTLabel("L1").intersect(CTLabel("L2"))
+    //    val lx = CTLabel("Lx")
+    //    val n1 = n0.intersect(lx)
+    //    val n2 = CTNode("L1", "L2", "Ly")
+    //    val u = n1.union(n2)
 
-//    CTNode("L1", "L2", "Lx") union CTNode("L1", "L2", "Ly") shouldBe CTNode("L1", "L2")
+    //    CTNode("L1", "L2", "Lx") union CTNode("L1", "L2", "Ly") shouldBe CTNode("L1", "L2")
 
     CTAnyRelationship union CTRelationship("KNOWS") shouldBe CTAnyRelationship
     CTRelationship("OTHER") union CTRelationship("KNOWS") shouldBe CTRelationship("KNOWS", "OTHER")

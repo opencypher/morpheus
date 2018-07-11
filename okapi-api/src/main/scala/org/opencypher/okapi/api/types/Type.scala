@@ -26,6 +26,7 @@
  */
 package org.opencypher.okapi.api.types
 
+import org.opencypher.okapi.api.types.CypherType.{CTList, CTVoid}
 import org.opencypher.okapi.trees.AbstractTreeNode
 
 import scala.reflect.ClassTag
@@ -44,11 +45,11 @@ abstract class Type[T <: Type[T] : ClassTag] extends AbstractTreeNode[T] {
 
   protected def newNothing: T
 
-  protected def union(ors: T*): T = {
-    union(ors.toSet)
+  private[types] def flattenAndUnion(ors: T*): T = {
+    flattenAndUnion(ors.toSet)
   }
 
-  protected def union(ors: Set[T]): T = {
+  private[types] def flattenAndUnion(ors: Set[T]): T = {
     val flattened = UnionType.flatten(ors)
     if (flattened.isEmpty) {
       newNothing
@@ -59,11 +60,11 @@ abstract class Type[T <: Type[T] : ClassTag] extends AbstractTreeNode[T] {
     }
   }
 
-  protected def intersect(ands: T*): T = {
-    intersect(ands.toSet)
+  private[types] def flattenAndIntersect(ands: T*): T = {
+    flattenAndIntersect(ands.toSet)
   }
 
-  protected def intersect(ands: Set[T]): T = {
+  private[types] def flattenAndIntersect(ands: Set[T]): T = {
     val flattened = IntersectionType.flatten(ands)
     if (flattened.isEmpty) {
       newNothing
@@ -73,6 +74,10 @@ abstract class Type[T <: Type[T] : ClassTag] extends AbstractTreeNode[T] {
       newIntersection(flattened)
     }
   }
+
+  def possibleTypes: Set[T] = Set(this)
+
+  def couldBeSubTypeOf(other: T): Boolean = possibleTypes.exists(_.subTypeOf(other))
 
   def subTypeOf(other: T): Boolean = {
     this == other || {
@@ -95,12 +100,12 @@ abstract class Type[T <: Type[T] : ClassTag] extends AbstractTreeNode[T] {
   def union(other: T): T = {
     if (subTypeOf(other)) other
     else if (other.subTypeOf(this)) this
-    else union(this, other)
+    else flattenAndUnion(this, other)
   }
 
   def canIntersect(other: T): Boolean = false
 
-  def &(other: T): T = intersect(other)
+  def &(other: T): T = intersect(other, true)
 
   def intersect(other: T, tryReverseDirection: Boolean = true): T = {
     if (this.subTypeOf(other)) this
@@ -109,10 +114,10 @@ abstract class Type[T <: Type[T] : ClassTag] extends AbstractTreeNode[T] {
       other match {
         case _: AnyType[T] => this
         case _: NothingType[T] => other
-        case i: IntersectionType[T] if i.canIntersect(other) => intersect(i.ands.map(_.intersect(this)))
-        case u: UnionType[T] if u.canIntersect(other) => union(u.ors.map(_.intersect(this)))
+        case i: IntersectionType[T] if i.canIntersect(other) => flattenAndIntersect(i.ands + this)
+        case u: UnionType[T] if u.canIntersect(other) => flattenAndUnion(u.ors.map(_.intersect(this)))
         case _ if tryReverseDirection => other.intersect(this, false)
-        case _ if canIntersect(other) || other.canIntersect(this) => intersect(this, other)
+        case _ if canIntersect(other) || other.canIntersect(this) => flattenAndIntersect(this, other)
         case _ => newNothing
       }
     }
@@ -123,19 +128,42 @@ abstract class Type[T <: Type[T] : ClassTag] extends AbstractTreeNode[T] {
 trait ContainerType[T <: Type[T]] extends Type[T] {
   self: T =>
 
-  def newInstance(et: T): T
-
   def elementType: T
 
-  override def subTypeOf(other: T): Boolean = other match {
-    case c: ContainerType[T] if c.getClass == this.getClass => elementType.subTypeOf(c.elementType)
-    case _ => super.subTypeOf(other)
-  }
+  override def subTypeOf(other: T): Boolean = isContainerSubType(other) || super.subTypeOf(other)
 
   override def intersect(other: T, tryReverseDirection: Boolean = true): T = other match {
-    case c: ContainerType[T] if c.getClass == this.getClass => newInstance(elementType.intersect(c.elementType))
+    case c: ContainerType[T] =>
+      val maybeLeftWithRight = if (canIntersect(other)) intersectContainer(other) else None
+      maybeLeftWithRight.getOrElse {
+        val maybeRightWithLeft = if (other.canIntersect(this)) c.intersectContainer(this) else None
+        maybeRightWithLeft.getOrElse(super.intersect(other, tryReverseDirection = false))
+      }
     case _ => super.intersect(other, tryReverseDirection)
   }
+
+  protected def isContainerSubType(other: T): Boolean = other match {
+    case c: ContainerType[T] if c.getClass.isAssignableFrom(getClass) => elementType.subTypeOf(c.elementType)
+    case _ => false
+  }
+
+  protected def intersectContainer(other: T): Option[T] = other match {
+    case c: ContainerType[T] =>
+      if (isContainerSubType(other)) {
+        Some(copyWithNewElementType(elementType.intersect(c.elementType)))
+      } else if (c.isContainerSubType(this)) {
+        Some(c.copyWithNewElementType(elementType.intersect(c.elementType)))
+      } else {
+         if (getClass == other.getClass) {
+           Some(copyWithNewElementType(newNothing))
+         } else {
+           None
+         }
+      }
+    case _ => None
+  }
+
+  protected def copyWithNewElementType(newElementType: T): T
 
 }
 
@@ -172,6 +200,8 @@ trait UnionType[T <: Type[T]] extends Type[T] {
 
   override def canIntersect(other: T): Boolean = ors.forall(or => or.canIntersect(other) || other.canIntersect(or))
 
+  override def possibleTypes: Set[T] = ors
+
   override def subTypeOf(other: T): Boolean = other match {
     case u: UnionType[T] => ors.forall(or => u.ors.exists(or.subTypeOf))
     case i: IntersectionType[T] => ors.forall(or => i.ands.forall(or.subTypeOf))
@@ -203,9 +233,9 @@ trait IntersectionType[T <: Type[T]] extends Type[T] {
   override def canIntersect(other: T): Boolean = ands.forall(and => and.canIntersect(other) || other.canIntersect(and))
 
   override def subTypeOf(other: T): Boolean = other match {
-    case u: UnionType[T] => u.ors.exists(or => ands.forall(_.subTypeOf(or)))
-    case i: IntersectionType[T] => ands.subsetOf(i.ands)
-    case _ if ands.exists(and => other.subTypeOf(and) && and.subTypeOf(other)) => true
+    case u: UnionType[T] => u.ors.exists(or => ands.forall(_.superTypeOf(or)))
+    case i: IntersectionType[T] => ands.forall(and => i.ands.exists(otherAnd => and.subTypeOf(otherAnd)))
+    case _ if ands.exists(_.subTypeOf(other)) => true
     case _ => super.subTypeOf(other)
   }
 
