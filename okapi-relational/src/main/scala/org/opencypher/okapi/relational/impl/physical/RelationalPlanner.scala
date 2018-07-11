@@ -210,7 +210,7 @@ object RelationalPlanner {
         val joinedData = planJoin(leftResult, distinctRhsData, renameExprs.map(a => a.expr -> a.alias).toSeq, LeftOuterJoin)
         // 5. If at least one rhs join column is not null, the sub-query exists and true is projected to the target expression
         val targetExpr = renameExprs.head.alias
-        relational.AddInto(joinedData, IsNotNull(targetExpr)(CTBoolean), predicateField)
+        relational.AddInto(joinedData, IsNotNull(targetExpr)(CTBoolean), predicateField.targetField)
 
       case logical.OrderBy(sortItems: Seq[SortItem[Expr]], in, _) =>
         relational.OrderBy(process[T](in), sortItems)
