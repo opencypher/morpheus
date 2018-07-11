@@ -92,7 +92,7 @@ object RelationalPlanner {
         val explodeExpr = Explode(list)(item.cypherType)
         relational.Add(process[T](in), explodeExpr as item)
 
-      case op@logical.NodeScan(v, in, _) => relational.NodeScan(process[T](in), v)
+      case logical.NodeScan(v, in, _) => relational.NodeScan(process[T](in), v)
 
       case logical.Aggregate(aggregations, group, in, _) => relational.Aggregate(process[T](in), group, aggregations)
 
@@ -261,7 +261,7 @@ object RelationalPlanner {
       rhs
     }
 
-    planJoin(lhs, conflictFreeRhs, joinExprs, joinType)
+    relational.Join(lhs, conflictFreeRhs, joinExprs, joinType)
   }
 
   private def planStart[T <: FlatRelationalTable[T]](graph: LogicalGraph)(
