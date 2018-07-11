@@ -29,7 +29,7 @@ package org.opencypher.okapi.relational.impl.physical
 import org.opencypher.okapi.api.types.CTBoolean
 import org.opencypher.okapi.ir.api.expr._
 import org.opencypher.okapi.logical.impl.LogicalOperator
-import org.opencypher.okapi.relational.api.physical.RelationalPlannerContext
+import org.opencypher.okapi.relational.api.physical.{RelationalPlannerContext, RelationalRuntimeContext}
 import org.opencypher.okapi.relational.api.table.FlatRelationalTable
 import org.opencypher.okapi.relational.impl.exception.RecordHeaderException
 import org.opencypher.okapi.relational.impl.operators.RelationalOperator
@@ -66,6 +66,8 @@ trait VarLengthExpandPlanner[T <: FlatRelationalTable[T]] {
   def plan: RelationalOperator[T]
 
   implicit val context: RelationalPlannerContext[T]
+
+  implicit val runtimeContext: RelationalRuntimeContext[T]
 
   val physicalSourceOp: RelationalOperator[T] = process(sourceOp)
   val physicalEdgeScanOp: RelationalOperator[T] = relEdgeScanOp
@@ -276,7 +278,8 @@ class DirectedVarLengthExpandPlanner[T <: FlatRelationalTable[T]](
   override val targetOp: LogicalOperator,
   override val isExpandInto: Boolean
 )(
-  override implicit val context: RelationalPlannerContext[T]
+  override implicit val context: RelationalPlannerContext[T],
+  override implicit val runtimeContext: RelationalRuntimeContext[T]
 ) extends VarLengthExpandPlanner[T] {
 
   override def plan: RelationalOperator[T] = {
@@ -308,7 +311,8 @@ class UndirectedVarLengthExpandPlanner[T <: FlatRelationalTable[T]](
   override val targetOp: LogicalOperator,
   override val isExpandInto: Boolean
 )(
-  override implicit val context: RelationalPlannerContext[T]
+  override implicit val context: RelationalPlannerContext[T],
+  override implicit val runtimeContext: RelationalRuntimeContext[T]
 ) extends VarLengthExpandPlanner[T] {
 
   override def plan: RelationalOperator[T] = {

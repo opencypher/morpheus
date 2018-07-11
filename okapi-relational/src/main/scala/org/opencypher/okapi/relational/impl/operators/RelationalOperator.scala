@@ -133,7 +133,7 @@ final case class Cache[T <: FlatRelationalTable[T]](in: RelationalOperator[T]) e
 
   override lazy val _table: T = context.cache.getOrElse(in, {
     in.table.cache
-    context.cache(in) = in.table
+    context.cache += (in -> in.table)
     in.table
   })
 

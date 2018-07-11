@@ -40,7 +40,7 @@ class UnwindBehaviour extends CAPSTestSuite with DefaultGraphInit {
 
     val result = caps.cypher(query, Map("param" -> CypherList(1, 2, 3)))
 
-    result.getRecords.toMapsWithCollectedEntities should equal(
+    result.records.toMapsWithCollectedEntities should equal(
       Bag(
         CypherMap("item" -> 1),
         CypherMap("item" -> 2),
@@ -53,7 +53,7 @@ class UnwindBehaviour extends CAPSTestSuite with DefaultGraphInit {
 
     val result = caps.cypher(query)
 
-    result.getRecords.toMapsWithCollectedEntities should be(
+    result.records.toMapsWithCollectedEntities should be(
       Bag(
         CypherMap("item" -> 1),
         CypherMap("item" -> 2),
@@ -68,7 +68,7 @@ class UnwindBehaviour extends CAPSTestSuite with DefaultGraphInit {
 
     val result = graph.cypher(query, Map("param" -> CypherList(1, 2, 3)))
 
-    result.getRecords.toMapsWithCollectedEntities.map(_.toString) should equal(
+    result.records.toMapsWithCollectedEntities.map(_.toString) should equal(
       Bag(
         CypherMap("a" -> CAPSNode(0L, Set("A"), CypherMap.empty), "item" -> 1),
         CypherMap("a" -> CAPSNode(0L, Set("A"), CypherMap.empty), "item" -> 2),
@@ -86,7 +86,7 @@ class UnwindBehaviour extends CAPSTestSuite with DefaultGraphInit {
 
     val result = graph.cypher(query, Map("param" -> CypherList(1, 2, 3)))
 
-    result.getRecords.toMapsWithCollectedEntities should equal(
+    result.records.toMapsWithCollectedEntities should equal(
       Bag(
         CypherMap("item" -> 1),
         CypherMap("item" -> 15),
@@ -101,7 +101,7 @@ class UnwindBehaviour extends CAPSTestSuite with DefaultGraphInit {
 
     val result = graph.cypher(query, Map("param" -> CypherList(1, 2, 3)))
 
-    result.getRecords.toMapsWithCollectedEntities should equal(
+    result.records.toMapsWithCollectedEntities should equal(
       Bag(
         CypherMap("item" -> 1),
         CypherMap("item" -> 2),
@@ -117,7 +117,7 @@ class UnwindBehaviour extends CAPSTestSuite with DefaultGraphInit {
 
     val result = graph.cypher(query, Map("param" -> CypherList(1, 2, 3)))
 
-    result.getRecords.toMapsWithCollectedEntities should equal(
+    result.records.toMapsWithCollectedEntities should equal(
       Bag(
         CypherMap("item" -> 1),
         CypherMap("item" -> 2),
@@ -137,7 +137,7 @@ class UnwindBehaviour extends CAPSTestSuite with DefaultGraphInit {
 
     val result = graph.cypher(query, Map("param" -> CypherList(1, 2, 3)))
 
-    result.getRecords.toMapsWithCollectedEntities should equal(
+    result.records.toMapsWithCollectedEntities should equal(
       Bag(
         CypherMap("a" -> CAPSNode(0L, Set("A"), CypherMap.empty), "item" -> 3),
         CypherMap("a" -> CAPSNode(1L, Set("B"), CypherMap("item" -> "1")), "item" -> 3),

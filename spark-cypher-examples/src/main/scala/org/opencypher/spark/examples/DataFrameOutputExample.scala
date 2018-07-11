@@ -49,7 +49,7 @@ object DataFrameOutputExample extends ConsoleApp {
        |RETURN a.name, b.name, r.since""".stripMargin)
 
   // 4) Extract DataFrame representing the query result
-  val df: DataFrame = results.getRecords.asDataFrame
+  val df: DataFrame = results.records.asDataFrame
 
   // 5) Select specific return items from the query result
   // TODO: Solve this on CypherResult instead
@@ -74,7 +74,7 @@ object DataFrameOutputUsingAliasExample extends App {
        |RETURN a.name AS person1, b.name AS person2, r.since AS friendsSince""".stripMargin)
 
   // 4) Extract DataFrame representing the query result
-  val df: DataFrame = results.getRecords.asDataFrame
+  val df: DataFrame = results.records.asDataFrame
 
   // 5) Select aliased return items from the query result
   val projection: DataFrame = df

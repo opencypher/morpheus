@@ -119,11 +119,11 @@ object CustomDataFrameInputExample extends ConsoleApp {
   //    This operation may be very expensive as it materializes results locally.
   // 6a) type safe version, discards values with wrong type
   // tag::collect-results-typesafe[]
-  val safeNames: Set[String] = result.getRecords.collect.flatMap(_ ("n.name").as[String]).toSet
+  val safeNames: Set[String] = result.records.collect.flatMap(_ ("n.name").as[String]).toSet
   // end::collect-results-typesafe[]
   // 6b) unsafe version, throws an exception when value cannot be cast
   // tag::collect-results-nontypesafe[]
-  val unsafeNames: Set[String] = result.getRecords.collect.map(_ ("n.name").cast[String]).toSet
+  val unsafeNames: Set[String] = result.records.collect.map(_ ("n.name").cast[String]).toSet
   // end::collect-results-nontypesafe[]
 
   println(safeNames)

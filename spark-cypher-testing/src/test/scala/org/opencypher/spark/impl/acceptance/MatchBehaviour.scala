@@ -53,7 +53,7 @@ class MatchBehaviour extends CAPSTestSuite with DefaultGraphInit {
         """.stripMargin)
 
       // Then
-      result.getRecords.toMaps should equal(Bag(CypherMap("a.firstName" -> "Alice")
+      result.records.toMaps should equal(Bag(CypherMap("a.firstName" -> "Alice")
       ))
     }
 
@@ -69,7 +69,7 @@ class MatchBehaviour extends CAPSTestSuite with DefaultGraphInit {
         """.stripMargin)
 
       // Then
-      result.getRecords.toMaps shouldBe empty
+      result.records.toMaps shouldBe empty
     }
   }
 
@@ -93,7 +93,7 @@ class MatchBehaviour extends CAPSTestSuite with DefaultGraphInit {
         """.stripMargin)
 
       // Then
-      result.getRecords.toMaps should equal(
+      result.records.toMaps should equal(
         Bag(
           CypherMap(
             "p1.name" -> "Alice",
@@ -123,7 +123,7 @@ class MatchBehaviour extends CAPSTestSuite with DefaultGraphInit {
         """.stripMargin)
 
       // Then
-      result.getRecords.toMaps should equal(
+      result.records.toMaps should equal(
         Bag(
           CypherMap(
             "p1.name" -> "Bob",
@@ -161,7 +161,7 @@ class MatchBehaviour extends CAPSTestSuite with DefaultGraphInit {
         """.stripMargin)
 
       // Then
-      result.getRecords.toMaps should equal(
+      result.records.toMaps should equal(
         Bag(
           CypherMap("one" -> "Alice", "two" -> "Alice"),
           CypherMap("one" -> "Alice", "two" -> "Bob"),
@@ -188,7 +188,7 @@ class MatchBehaviour extends CAPSTestSuite with DefaultGraphInit {
         """.stripMargin)
 
       // Then
-      result.getRecords.toMaps should equal(
+      result.records.toMaps should equal(
         Bag(
           CypherMap("one" -> "Alice", "two" -> "Alice"),
           CypherMap("one" -> "Bob", "two" -> "Bob")
@@ -207,7 +207,7 @@ class MatchBehaviour extends CAPSTestSuite with DefaultGraphInit {
           |RETURN a.val, c.val
         """.stripMargin
 
-      graph.cypher(query).getRecords.collect.toBag should equal(Bag(
+      graph.cypher(query).records.collect.toBag should equal(Bag(
         CypherMap("a.val" -> 0, "c.val" -> 2)
       ))
     }
@@ -229,7 +229,7 @@ class MatchBehaviour extends CAPSTestSuite with DefaultGraphInit {
 
       val result = given.cypher("MATCH (a:A)--(other) RETURN a.prop, other.prop")
 
-      result.getRecords.collect.toBag should equal(Bag(
+      result.records.collect.toBag should equal(Bag(
         CypherMap("a.prop" -> "isA", "other.prop" -> "fromA"),
         CypherMap("a.prop" -> "isA", "other.prop" -> "toA")
       ))
@@ -251,7 +251,7 @@ class MatchBehaviour extends CAPSTestSuite with DefaultGraphInit {
 
       val result = given.cypher("MATCH (a:A)--()--(other) RETURN a.prop, other.prop")
 
-      result.getRecords.collect.toBag should equal(Bag(
+      result.records.collect.toBag should equal(Bag(
         CypherMap("a.prop" -> "a", "other.prop" -> "c"),
         CypherMap("a.prop" -> "a", "other.prop" -> "b"),
         CypherMap("a.prop" -> "a", "other.prop" -> "d")
@@ -276,7 +276,7 @@ class MatchBehaviour extends CAPSTestSuite with DefaultGraphInit {
           |RETURN a.prop, b.prop
         """.stripMargin)
 
-      result.getRecords.collect.toBag should equal(Bag(
+      result.records.collect.toBag should equal(Bag(
         CypherMap("a.prop" -> "a", "b.prop" -> "b"),
         CypherMap("a.prop" -> "a", "b.prop" -> "b")
       ))
@@ -297,7 +297,7 @@ class MatchBehaviour extends CAPSTestSuite with DefaultGraphInit {
 
       val result = given.cypher("MATCH (a:A)--(a)<--(other) RETURN a.prop, other.prop")
 
-      result.getRecords.collect.toBag should equal(Bag(
+      result.records.collect.toBag should equal(Bag(
         CypherMap("a.prop" -> "a", "other.prop" -> "a"),
         CypherMap("a.prop" -> "a", "other.prop" -> "a"),
         CypherMap("a.prop" -> "a", "other.prop" -> "b"),
@@ -317,7 +317,7 @@ class MatchBehaviour extends CAPSTestSuite with DefaultGraphInit {
 
       val result = given.cypher("MATCH (a:A)--(a) RETURN a.prop")
 
-      result.getRecords.collect.toBag should equal(Bag(
+      result.records.collect.toBag should equal(Bag(
         CypherMap("a.prop" -> "isA")
       ))
     }
@@ -335,7 +335,7 @@ class MatchBehaviour extends CAPSTestSuite with DefaultGraphInit {
 
       val result = given.cypher("MATCH (a:A)-[*2..2]-(other) RETURN a.prop, other.prop")
 
-      result.getRecords.collect.toBag should equal(Bag(
+      result.records.collect.toBag should equal(Bag(
         CypherMap("a.prop" -> "a", "other.prop" -> "c")
       ))
     }

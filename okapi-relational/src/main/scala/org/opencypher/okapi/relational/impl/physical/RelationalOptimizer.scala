@@ -33,12 +33,12 @@ import org.opencypher.okapi.trees.TopDown
 object RelationalOptimizer {
 
   def process[T <: FlatRelationalTable[T]](input: RelationalOperator[T]): RelationalOperator[T] = {
-    InsertCachingOperators()(input)
+    InsertCachingOperators(input)
   }
 
-  case class InsertCachingOperators[T <: FlatRelationalTable[T]]() extends (RelationalOperator[T] => RelationalOperator[T]) {
+  object InsertCachingOperators {
 
-    def apply(input: RelationalOperator[T]): RelationalOperator[T] = {
+    def apply[T <: FlatRelationalTable[T]](input: RelationalOperator[T]): RelationalOperator[T] = {
       val replacements = calculateReplacementMap(input).filterKeys {
         case _: Start[T] => false
         case _ => true
@@ -54,7 +54,7 @@ object RelationalOptimizer {
       }.rewrite(input)
     }
 
-    private def calculateReplacementMap(input: RelationalOperator[T]): Map[RelationalOperator[T], RelationalOperator[T]] = {
+    private def calculateReplacementMap[T <: FlatRelationalTable[T]](input: RelationalOperator[T]): Map[RelationalOperator[T], RelationalOperator[T]] = {
       val opCounts = identifyDuplicates(input)
       val opsByHeight = opCounts.keys.toSeq.sortWith((a, b) => a.height > b.height)
       val (opsToCache, _) = opsByHeight.foldLeft(Set.empty[RelationalOperator[T]] -> opCounts) { (agg, currentOp) =>
@@ -76,7 +76,7 @@ object RelationalOptimizer {
       opsToCache.map(op => op -> Cache[T](op)).toMap
     }
 
-    private def identifyDuplicates(input: RelationalOperator[T]): Map[RelationalOperator[T], Int] = {
+    private def identifyDuplicates[T <: FlatRelationalTable[T]](input: RelationalOperator[T]): Map[RelationalOperator[T], Int] = {
       input
         .foldLeft(Map.empty[RelationalOperator[T], Int].withDefaultValue(0)) {
           case (agg, op) => agg.updated(op, agg(op) + 1)

@@ -27,28 +27,32 @@
 package org.opencypher.spark.impl
 
 import org.apache.spark.sql.catalyst.encoders.ExpressionEncoder
-import org.opencypher.okapi.api.graph.CypherResult
+import org.opencypher.okapi.api.graph.CypherQueryPlans
 import org.opencypher.okapi.impl.util.PrintOptions
+import org.opencypher.okapi.logical.impl.LogicalOperator
+import org.opencypher.okapi.relational.api.graph.RelationalCypherGraph
+import org.opencypher.okapi.relational.api.physical.{QueryPlans, RelationalCypherResult}
+import org.opencypher.okapi.relational.impl.operators.RelationalOperator
 import org.opencypher.spark.impl.CAPSConverters._
-import org.opencypher.spark.impl.physical.CAPSQueryPlans
+import org.opencypher.spark.impl.table.SparkFlatRelationalTable.DataFrameTable
 
 import scala.collection.JavaConverters._
 import scala.reflect.runtime.universe.TypeTag
 
-trait CAPSResult extends CypherResult {
+case class CAPSResult(logical: Option[LogicalOperator], relational: Option[RelationalOperator[DataFrameTable]]) extends RelationalCypherResult[DataFrameTable] {
 
   type Graph = CAPSGraph
 
-  override def records: Option[CAPSRecords]
+  override def getRecords: Option[CAPSRecords] = relational.map(op => CAPSRecords(op.header, op.table, op.returnItems.map(_.map(_.withoutType))))
 
-  override def getRecords: CAPSRecords = records.get
+  override def records: CAPSRecords = getRecords.get
 
-  override def graph: Option[Graph]
+  override def getGraph: Option[RelationalCypherGraph[DataFrameTable]] = relational.map(_.graph)
 
-  override def getGraph: Graph = graph.get
+  override def graph: RelationalCypherGraph[DataFrameTable] = getGraph.get
 
   def as[E <: Product : TypeTag]: Iterator[E] = {
-    records match {
+    getRecords match {
       case Some(r) =>
         implicit val encoder = ExpressionEncoder[E]
         r.asCaps.df.as[E].toLocalIterator().asScala
@@ -58,22 +62,21 @@ trait CAPSResult extends CypherResult {
   }
 
   override def show(implicit options: PrintOptions): Unit =
-    records match {
+    getRecords match {
       case Some(r) => r.show
       case None => options.stream.print("No results")
     }
 
-  override def plans: CAPSQueryPlans
+  override def plans: CypherQueryPlans = QueryPlans(logical, relational)
 
-  override def toString = this.getClass.getSimpleName
+  override def toString: String = this.getClass.getSimpleName
 }
 
 object CAPSResult {
-  def empty(queryPlans: CAPSQueryPlans = CAPSQueryPlans.empty): CAPSResult = new CAPSResult {
-    override def records: Option[CAPSRecords] = None
 
-    override def graph = None
+  val empty: CAPSResult =
+    CAPSResult(None, None)
 
-    override def plans: CAPSQueryPlans = queryPlans
-  }
+  def apply(logical: LogicalOperator, relational: RelationalOperator[DataFrameTable]): CAPSResult =
+    CAPSResult(Some(logical), Some(relational))
 }

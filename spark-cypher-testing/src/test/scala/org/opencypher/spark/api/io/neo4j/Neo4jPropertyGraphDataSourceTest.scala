@@ -49,7 +49,7 @@ class Neo4jPropertyGraphDataSourceTest
     val dataSource = CypherGraphSources.neo4j(neo4jConfig)
 
     val graph = dataSource.graph(dataSource.entireGraphName).asCaps
-    graph.cypher("MATCH (n) RETURN n.languages").getRecords.iterator.toBag should equal(Bag(
+    graph.cypher("MATCH (n) RETURN n.languages").records.iterator.toBag should equal(Bag(
       CypherMap("n.languages" -> Seq("German", "English", "Klingon")),
       CypherMap("n.languages" -> Seq()),
       CypherMap("n.languages" -> CypherNull),
@@ -74,10 +74,10 @@ class Neo4jPropertyGraphDataSourceTest
     caps.registerSource(testNamespace, dataSource)
 
     val nodes: CypherResult = caps.cypher(s"FROM GRAPH $testNamespace.$testGraphName MATCH (n) RETURN n")
-    nodes.getRecords.collect.toBag should equal(teamDataGraphNodes)
+    nodes.records.collect.toBag should equal(teamDataGraphNodes)
 
     val edges = caps.cypher(s"FROM GRAPH $testNamespace.$testGraphName MATCH ()-[r]->() RETURN r")
-    edges.getRecords.collect.toBag should equal(teamDataGraphRels)
+    edges.records.collect.toBag should equal(teamDataGraphRels)
   }
 
   it("should omit properties with unsupported types if corresponding flag is set") {

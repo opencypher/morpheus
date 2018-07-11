@@ -76,9 +76,9 @@ object RecommendationExample extends ConsoleApp {
       """.stripMargin
 
   // Find persons that are close to each other in the US social network
-  val usFriends = caps.cypher(cityFriendsQuery(s"usSocialNetwork.$defaultEntireGraphName")).getGraph
+  val usFriends = caps.cypher(cityFriendsQuery(s"usSocialNetwork.$defaultEntireGraphName")).graph
   // Find persons that are close to each other in the EU social network
-  val euFriends = caps.cypher(cityFriendsQuery(s"euSocialNetwork.$defaultEntireGraphName")).getGraph
+  val euFriends = caps.cypher(cityFriendsQuery(s"euSocialNetwork.$defaultEntireGraphName")).graph
 
   // Union the US and EU graphs into a single graph 'allFriends' and store it in the session
   caps.catalog.store("allFriends", usFriends.unionAll(euFriends))
@@ -94,7 +94,7 @@ object RecommendationExample extends ConsoleApp {
        |  CLONE c, p
        |  NEW (c)-[:IS]->(p)
        |RETURN GRAPH
-      """.stripMargin).getGraph
+      """.stripMargin).graph
 
   // Compute recommendations for 'target' based on their interests and what persons close to the
   // 'target' have already bought and given a helpful and positive rating
@@ -106,7 +106,7 @@ object RecommendationExample extends ConsoleApp {
         |WITH * ORDER BY product.rank
         |RETURN DISTINCT product.title AS product, target.name AS name
         |LIMIT 3
-      """.stripMargin).getRecords
+      """.stripMargin).records
 
   // Print the results
   recommendationTable.show

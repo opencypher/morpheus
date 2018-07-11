@@ -85,7 +85,7 @@ object RelationalPlanner {
             relational.FromGraph(process[T](in), g)
 
           case construct: LogicalPatternGraph =>
-            planConstructGraph(Some(in), construct)(plannerContext)
+            planConstructGraph(Some(in), construct)//(plannerContext, runtimeContext)
         }
 
       case logical.Unwind(list, item, in, _) =>
@@ -175,13 +175,13 @@ object RelationalPlanner {
             source, list, edgeScan, target,
             lower, upper,
             sourceOp, edgeScanOp, targetOp,
-            isExpandInto)(this, plannerContext)
+            isExpandInto)
 
           case Undirected => new UndirectedVarLengthExpandPlanner[T](
             source, list, edgeScan, target,
             lower, upper,
             sourceOp, edgeScanOp, targetOp,
-            isExpandInto)(this, plannerContext)
+            isExpandInto)
         }
 
         planner.plan
@@ -226,7 +226,7 @@ object RelationalPlanner {
   }
 
 //    private def planConstructGraph[T <: FlatRelationalTable[T]](in: Option[LogicalOperator], construct: LogicalPatternGraph)
-//      (implicit context: RelationalPlannerContext[T]): RelationalOperator[T] = {
+//      (implicit plannerContext: RelationalPlannerContext[T]): RelationalOperator[T] = {
 //      val onGraphPlan = {
 //        construct.onGraphs match {
 //          case Nil => relational.Start() // Empty start
@@ -240,7 +240,7 @@ object RelationalPlanner {
 //      val inputTablePlan = in.map(process).getOrElse(relational.Start())
 //
 //      val constructGraphPlan = relational.ConstructGraph(inputTablePlan, onGraphPlan, construct)
-//      context.constructedGraphPlans.update(construct.name, constructGraphPlan)
+//      plannerContext.constructedGraphPlans.update(construct.name, constructGraphPlan)
 //      constructGraphPlan
 //      ???
 //    }
@@ -264,22 +264,23 @@ object RelationalPlanner {
     planJoin(lhs, conflictFreeRhs, joinExprs, joinType)
   }
 
-  private def planStart[T <: FlatRelationalTable[T]](graph: LogicalGraph)(implicit context: RelationalPlannerContext[T]): RelationalOperator[T] = {
+  private def planStart[T <: FlatRelationalTable[T]](graph: LogicalGraph)(
+    implicit plannerContext: RelationalPlannerContext[T], runtimeContext: RelationalRuntimeContext[T]): RelationalOperator[T] = {
     graph match {
       case g: LogicalCatalogGraph =>
-        relational.Start(g.qualifiedGraphName, Some(context.inputRecords))
+        relational.Start(g.qualifiedGraphName, Some(plannerContext.inputRecords))(runtimeContext)
       case p: LogicalPatternGraph =>
-        context.constructedGraphPlans.get(p.name) match {
+        plannerContext.constructedGraphPlans.get(p.name) match {
           case Some(plan) => plan // the graph was already constructed
-          // TODO: investigate why the implicit context is not found in scope
-          case None => ??? //planConstructGraph(context.session.emptyGraphQgn, p)(context, planner) // plan starts with a construct graph, thus we have to plan it
+          // TODO: investigate why the implicit plannerContext is not found in scope
+          case None => ??? //planConstructGraph(plannerContext.session.emptyGraphQgn, p)(plannerContext, planner) // plan starts with a construct graph, thus we have to plan it
         }
     }
   }
 
   // TODO: process operator outside of def
   private def planOptional[T <: FlatRelationalTable[T]](lhs: LogicalOperator, rhs: LogicalOperator)
-    (implicit context: RelationalPlannerContext[T]): RelationalOperator[T] = {
+    (implicit plannerContext: RelationalPlannerContext[T], runtimeContext: RelationalRuntimeContext[T]): RelationalOperator[T] = {
     val lhsOp = process[T](lhs)
     val rhsOp = process[T](rhs)
 

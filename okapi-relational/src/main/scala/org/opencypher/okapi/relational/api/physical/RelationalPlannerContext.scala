@@ -28,51 +28,24 @@ package org.opencypher.okapi.relational.api.physical
 
 import org.opencypher.okapi.api.graph.{CypherSession, QualifiedGraphName}
 import org.opencypher.okapi.api.value.CypherValue.CypherMap
-import org.opencypher.okapi.ir.impl.QueryCatalog
+import org.opencypher.okapi.ir.impl.CatalogWithQuerySchemas
 import org.opencypher.okapi.relational.api.table.{FlatRelationalTable, RelationalCypherRecords}
 import org.opencypher.okapi.relational.impl.operators.RelationalOperator
 
-object RelationalPlannerContext {
-  def from[T <: FlatRelationalTable[T]](
-    session: CypherSession,
-    catalog: QueryCatalog,
-    inputRecords: RelationalCypherRecords[T],
-    parameters: CypherMap
-  ): RelationalPlannerContext[T] = RelationalPlannerContext(session, catalog, collection.mutable.Map.empty, inputRecords, parameters)
-}
-
+// TODO: document
 /**
-  * Represents a back-end specific context which is used by the [[org.opencypher.okapi.relational.impl.physical.RelationalPlanner]].
+  *
+  * @param session      Refers to the session in which that query is executed.
+  * @param constructedGraphPlans
+  * @param inputRecords Initial records for physical planning.
+  * @param catalogWithQuerySchemas Stores session graphs and constructed graph schemas
+  * @param parameters   Query parameters
+  * @tparam T
   */
 case class RelationalPlannerContext[T <: FlatRelationalTable[T]](
-  /**
-    * Refers to the session in which that query is executed.
-    *
-    * @return back-end specific cypher session
-    */
   session: CypherSession,
-
-  /**
-    * Lookup function that resolves QGNs to property graphs.
-    *
-    * @return lookup function
-    */
-  catalog: QueryCatalog,
-
-  // TODO: Improve design
-  constructedGraphPlans: collection.mutable.Map[QualifiedGraphName, RelationalOperator[T]] = collection.mutable.Map.empty,
-
-  /**
-    * Initial records for physical planning.
-    *
-    * @return
-    */
   inputRecords: RelationalCypherRecords[T],
-
-  /**
-    * Query parameters
-    *
-    * @return query parameters
-    */
-  parameters: CypherMap
+  parameters: CypherMap = CypherMap.empty,
+  catalogWithQuerySchemas: CatalogWithQuerySchemas,
+  var constructedGraphPlans: Map[QualifiedGraphName, RelationalOperator[T]] = Map.empty
 )

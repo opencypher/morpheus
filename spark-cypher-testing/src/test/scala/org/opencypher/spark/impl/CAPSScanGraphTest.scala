@@ -195,7 +195,7 @@ class CAPSScanGraphTest extends CAPSGraphTest {
 
     val graph = CAPSScanGraphFactory(CreateGraphFactory(fixture))
 
-    graph.cypher("MATCH (n) RETURN n").getRecords.size should equal(3)
+    graph.cypher("MATCH (n) RETURN n").records.size should equal(3)
   }
 
   it("Align node scans when individual tables have the same node id and properties") {
@@ -219,7 +219,7 @@ class CAPSScanGraphTest extends CAPSGraphTest {
 
     val graph = CAPSGraph.create(aTable, bTable, comboTable)
 
-    graph.cypher("MATCH (n) RETURN n").getRecords.size should equal(3)
+    graph.cypher("MATCH (n) RETURN n").records.size should equal(3)
   }
 
   it("Construct graph from single node and single relationship scan") {

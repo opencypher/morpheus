@@ -54,7 +54,7 @@ object UpdateExample extends ConsoleApp {
        |RETURN p""".stripMargin)
 
   // 4) Extract Dataset representing the query result
-  val ds = results.getRecords.asDataset
+  val ds = results.records.asDataset
 
   // 5) Add a new label and property to the nodes
   val adults: Dataset[CAPSNode] = ds.map { record: CypherMap =>

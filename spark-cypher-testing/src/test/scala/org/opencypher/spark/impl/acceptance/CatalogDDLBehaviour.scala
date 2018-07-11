@@ -53,8 +53,8 @@ class CatalogDDLBehaviour extends CAPSTestSuite with DefaultGraphInit {
       val sessionSource = caps.catalog.source(caps.catalog.sessionNamespace)
       sessionSource.hasGraph(GraphName("bar")) shouldBe true
       sessionSource.graph(GraphName("bar")) shouldEqual inputGraph
-      result.graph shouldBe None
-      result.records shouldBe None
+      result.getGraph shouldBe None
+      result.getRecords shouldBe None
     }
   }
 
@@ -70,8 +70,8 @@ class CatalogDDLBehaviour extends CAPSTestSuite with DefaultGraphInit {
       )
 
         caps.catalog.source(caps.catalog.sessionNamespace).hasGraph(GraphName("foo")) shouldBe false
-        result.graph shouldBe None
-        result.records shouldBe None
+        result.getGraph shouldBe None
+        result.getRecords shouldBe None
     }
   }
 }

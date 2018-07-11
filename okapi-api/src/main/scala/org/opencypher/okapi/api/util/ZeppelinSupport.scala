@@ -50,9 +50,9 @@ object ZeppelinSupport {
       * If the result contains a tabular result, they are visualized as a table (see [[ZeppelinSupport.ZeppelinRecords#printTable]]).
       */
     def visualize(): Unit = {
-      result.graph match {
+      result.getGraph match {
         case Some(g) => g.printGraph()
-        case None => result.records.get.printTable()
+        case None => result.getRecords.get.printTable()
       }
     }
   }

@@ -27,7 +27,7 @@
 package org.opencypher.okapi.relational.impl.physical
 
 import org.opencypher.okapi.logical.impl.{LogicalOperator, LogicalPatternGraph}
-import org.opencypher.okapi.relational.api.physical.RelationalPlannerContext
+import org.opencypher.okapi.relational.api.physical.{RelationalPlannerContext, RelationalRuntimeContext}
 import org.opencypher.okapi.relational.api.table.FlatRelationalTable
 import org.opencypher.okapi.relational.impl.operators.RelationalOperator
 import org.opencypher.okapi.relational.impl.{operators => relational}
@@ -35,11 +35,11 @@ import org.opencypher.okapi.relational.impl.{operators => relational}
 object ConstructGraphPlanner {
 
   def planConstructGraph[T <: FlatRelationalTable[T]](in: Option[LogicalOperator], construct: LogicalPatternGraph)
-    (implicit context: RelationalPlannerContext[T]): RelationalOperator[T] = {
+    (implicit plannerContext: RelationalPlannerContext[T], runtimeContext: RelationalRuntimeContext[T]): RelationalOperator[T] = {
 
     val onGraphPlan: RelationalOperator[T] = {
       construct.onGraphs match {
-        case Nil => relational.Start[T](context.session.emptyGraphQgn) // Empty start
+        case Nil => relational.Start[T](plannerContext.session.emptyGraphQgn) // Empty start
         //TODO: Optimize case where no union is necessary
         //case h :: Nil => operatorProducer.planStart(Some(h)) // Just one graph, no union required
         case several =>
@@ -47,10 +47,10 @@ object ConstructGraphPlanner {
           relational.GraphUnionAll[T](onGraphPlans, construct.name)
       }
     }
-    val inputTablePlan = in.map(RelationalPlanner.process).getOrElse(relational.Start[T](context.session.emptyGraphQgn))
+    val inputTablePlan = in.map(RelationalPlanner.process(_)(plannerContext, runtimeContext)).getOrElse(relational.Start[T](plannerContext.session.emptyGraphQgn))
 
     val constructGraphPlan = relational.ConstructGraph(inputTablePlan, onGraphPlan, construct)
-    context.constructedGraphPlans.update(construct.name, constructGraphPlan)
+    plannerContext.constructedGraphPlans += (construct.name -> constructGraphPlan)
     constructGraphPlan
   }
 }

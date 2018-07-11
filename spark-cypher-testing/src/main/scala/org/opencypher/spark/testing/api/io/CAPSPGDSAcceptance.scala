@@ -49,7 +49,7 @@ trait CAPSPGDSAcceptance extends PGDSAcceptance[CAPSSession] {
       case Failure(_: UnsupportedOperationException) =>
       case Failure(t) => throw t
       case Success(_) =>
-        val graph = cypherSession.cypher(s"FROM GRAPH $ns.g3 RETURN GRAPH").getGraph.asCaps
+        val graph = cypherSession.cypher(s"FROM GRAPH $ns.g3 RETURN GRAPH").graph.asCaps
 
         withClue("tags should be restored correctly") {
           graph.tags should equal(Set(0, 1))
@@ -63,7 +63,7 @@ trait CAPSPGDSAcceptance extends PGDSAcceptance[CAPSSession] {
     cypherSession.cypher("CREATE GRAPH g1 { CONSTRUCT NEW ()-[:FOO]->() RETURN GRAPH }")
     cypherSession.cypher("CREATE GRAPH g2 { CONSTRUCT NEW () RETURN GRAPH }")
 
-    val graphToStore = cypherSession.cypher("CONSTRUCT ON g1, g2 RETURN GRAPH").getGraph.asCaps
+    val graphToStore = cypherSession.cypher("CONSTRUCT ON g1, g2 RETURN GRAPH").graph.asCaps
 
     val name = GraphName("g3")
 

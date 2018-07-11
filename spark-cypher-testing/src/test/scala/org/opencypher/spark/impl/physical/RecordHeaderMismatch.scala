@@ -66,10 +66,10 @@ class RecordHeaderMismatch extends CAPSTestSuite {
       override def unpersist(blocking: Boolean): CAPSGraph = this
     }
     intercept[SchemaException] {
-      buggyGraph.cypher("MATCH (n) RETURN n").getRecords
+      buggyGraph.cypher("MATCH (n) RETURN n").records
     }
     intercept[SchemaException] {
-      buggyGraph.cypher("MATCH ()-[r]->() RETURN r").getRecords
+      buggyGraph.cypher("MATCH ()-[r]->() RETURN r").records
     }
   }
 

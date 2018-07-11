@@ -44,7 +44,7 @@ class CAPSUnionGraphTest extends CAPSTestSuite
   def testGraph2 = initGraph("CREATE (:Person {name: 'Phil'})")
 
   it("supports UNION ALL") {
-    testGraph1.unionAll(testGraph2).cypher("""MATCH (n) RETURN DISTINCT id(n)""").getRecords.size should equal(2)
+    testGraph1.unionAll(testGraph2).cypher("""MATCH (n) RETURN DISTINCT id(n)""").records.size should equal(2)
   }
 
   test("Node scan from single node CAPSRecords") {

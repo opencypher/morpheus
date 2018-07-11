@@ -124,7 +124,7 @@ class RelationalOptimizerTest extends CAPSTestSuite with GraphConstructionFixtur
       """.stripMargin)
 
     // Then
-    val cacheOps = result.asCaps.plans.physicalPlan.get.collect { case c: Cache => c }
+    val cacheOps = result.asCaps.plans.relationalPlan.get.collect { case c: Cache => c }
     cacheOps.size shouldBe 2
   }
 
@@ -156,7 +156,7 @@ class RelationalOptimizerTest extends CAPSTestSuite with GraphConstructionFixtur
     )
 
     // Then
-    val cacheOps = result.asCaps.plans.physicalPlan.get.collect { case c: Cache => c }
+    val cacheOps = result.asCaps.plans.relationalPlan.get.collect { case c: Cache => c }
     cacheOps.size shouldBe 348
   }
 
@@ -182,7 +182,7 @@ class RelationalOptimizerTest extends CAPSTestSuite with GraphConstructionFixtur
       """.stripMargin)
 
     // Then
-    val cacheOps = result.asCaps.plans.physicalPlan.get.collect { case c: Cache => c }
+    val cacheOps = result.asCaps.plans.relationalPlan.get.collect { case c: Cache => c }
     cacheOps.size shouldBe 2
   }
 }

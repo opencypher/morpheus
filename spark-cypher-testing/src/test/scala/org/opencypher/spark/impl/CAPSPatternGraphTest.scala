@@ -60,7 +60,7 @@ class CAPSPatternGraphTest extends CAPSGraphTest with RecordsVerificationFixture
         |RETURN GRAPH
       """.stripMargin)
 
-    person.getGraph.cypher("MATCH (n) RETURN n.name").getRecords.collect.toSet should equal(
+    person.graph.cypher("MATCH (n) RETURN n.name").records.collect.toSet should equal(
       Set(
         CypherMap("n.name" -> "Mats")
       ))
@@ -77,7 +77,7 @@ class CAPSPatternGraphTest extends CAPSGraphTest with RecordsVerificationFixture
         |RETURN GRAPH
       """.stripMargin)
 
-    person.getGraph.cypher("MATCH (n) RETURN n.name").getRecords.collect.toSet should equal(
+    person.graph.cypher("MATCH (n) RETURN n.name").records.collect.toSet should equal(
       Set(
         CypherMap("n.name" -> "Mats"),
         CypherMap("n.name" -> "Stefan"),
@@ -98,9 +98,9 @@ class CAPSPatternGraphTest extends CAPSGraphTest with RecordsVerificationFixture
       """.stripMargin)
 
     person
-      .getGraph
+      .graph
       .cypher("MATCH ()-[:SWEDISH_KNOWS]->(n) RETURN n.name")
-      .getRecords
+      .records
       .collect
       .toSet should equal(
       Set(
@@ -121,9 +121,9 @@ class CAPSPatternGraphTest extends CAPSGraphTest with RecordsVerificationFixture
       """.stripMargin)
 
     person
-      .getGraph
+      .graph
       .cypher("MATCH ()-[:SWEDISH_KNOWS]->(n) RETURN n.name")
-      .getRecords
+      .records
       .collect
       .toSet should equal(
       Set(
@@ -145,9 +145,9 @@ class CAPSPatternGraphTest extends CAPSGraphTest with RecordsVerificationFixture
       """.stripMargin)
 
     person
-      .getGraph
+      .graph
       .cypher("MATCH (b)-[:KNOWS_A]->(n) WITH COUNT(n) as cnt RETURN cnt")
-      .getRecords
+      .records
       .collect
       .toSet should equal(
       Set(
@@ -166,9 +166,9 @@ class CAPSPatternGraphTest extends CAPSGraphTest with RecordsVerificationFixture
       """.stripMargin)
 
     person
-      .getGraph
+      .graph
       .cypher("MATCH (b)-[:KNOWS_A]->(n) WITH COUNT(n) as cnt RETURN cnt")
-      .getRecords
+      .records
       .collect
       .toSet should equal(
       Set(
@@ -217,9 +217,9 @@ class CAPSPatternGraphTest extends CAPSGraphTest with RecordsVerificationFixture
         |RETURN GRAPH
       """.stripMargin)
 
-    val graph = person.getGraph
+    val graph = person.graph
 
-    graph.cypher("MATCH (n:Swede) RETURN labels(n)").getRecords.collect.toSet should equal(
+    graph.cypher("MATCH (n:Swede) RETURN labels(n)").records.collect.toSet should equal(
       Set(
         CypherMap("labels(n)" -> List("Swede")),
         CypherMap("labels(n)" -> List("Swede")),
@@ -237,9 +237,9 @@ class CAPSPatternGraphTest extends CAPSGraphTest with RecordsVerificationFixture
         |RETURN GRAPH
       """.stripMargin)
 
-    val graph = person.getGraph
+    val graph = person.graph
 
-    graph.cypher("MATCH (n:Swede) RETURN labels(n)").getRecords.collect.toSet should equal(
+    graph.cypher("MATCH (n:Swede) RETURN labels(n)").records.collect.toSet should equal(
       Set(
         CypherMap("labels(n)" -> List("Swede")),
         CypherMap("labels(n)" -> List("Swede")),
@@ -386,7 +386,7 @@ class CAPSPatternGraphTest extends CAPSGraphTest with RecordsVerificationFixture
   it("Supports .cypher node scans") {
     val patternGraph = initPersonReadsBookGraph
 
-    patternGraph.cypher("MATCH (p:Person {name: 'Mats'}) RETURN p.luckyNumber").getRecords.collect.toBag should equal(
+    patternGraph.cypher("MATCH (p:Person {name: 'Mats'}) RETURN p.luckyNumber").records.collect.toBag should equal(
       Bag(CypherMap("p.luckyNumber" -> 23)))
   }
 
@@ -411,7 +411,7 @@ class CAPSPatternGraphTest extends CAPSGraphTest with RecordsVerificationFixture
         |RETURN GRAPH
       """.stripMargin)
 
-    when.getGraph.relationships("f", CTRelationship("FOO")).size should equal(1)
+    when.graph.relationships("f", CTRelationship("FOO")).size should equal(1)
   }
 
   it("implictly clones when creating a single relationship between unique merged node pair") {
@@ -434,7 +434,7 @@ class CAPSPatternGraphTest extends CAPSGraphTest with RecordsVerificationFixture
         |RETURN GRAPH
       """.stripMargin)
 
-    when.getGraph.relationships("f", CTRelationship("FOO")).size should equal(1)
+    when.graph.relationships("f", CTRelationship("FOO")).size should equal(1)
   }
 
   ignore("should create a relationship for each copy of a node pair") {
@@ -457,7 +457,7 @@ class CAPSPatternGraphTest extends CAPSGraphTest with RecordsVerificationFixture
         |RETURN GRAPH
       """.stripMargin)
 
-    when.getGraph.relationships("f", CTRelationship("FOO")).size should equal(3)
+    when.graph.relationships("f", CTRelationship("FOO")).size should equal(3)
   }
 
   // TODO: Needs COPY OF to work again
@@ -481,7 +481,7 @@ class CAPSPatternGraphTest extends CAPSGraphTest with RecordsVerificationFixture
         |RETURN GRAPH
       """.stripMargin)
 
-    when.getGraph.nodes("n", CTNode("Person")).size should equal(4)
+    when.graph.nodes("n", CTNode("Person")).size should equal(4)
   }
 
   private def initPersonReadsBookGraph: CAPSGraph = {

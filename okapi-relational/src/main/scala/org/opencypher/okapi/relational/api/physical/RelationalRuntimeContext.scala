@@ -33,53 +33,32 @@ import org.opencypher.okapi.relational.api.graph.RelationalCypherGraph
 import org.opencypher.okapi.relational.api.table.FlatRelationalTable
 import org.opencypher.okapi.relational.impl.operators.RelationalOperator
 
-import scala.collection.mutable
-
-object RelationalRuntimeContext {
-
-  def from[T <: FlatRelationalTable[T]](
-    sessionCatalog: QualifiedGraphName => Option[RelationalCypherGraph[T]],
-    parameters: CypherMap
-  )(implicit session: CypherSession): RelationalRuntimeContext[T] =
-    RelationalRuntimeContext(sessionCatalog, mutable.Map.empty, mutable.Map.empty, parameters)(session)
-}
-
+// TODO: comment
 /**
-  * Represents a back-end specific runtime context that is being used by [[RelationalOperator]] implementations.
   *
+  * @param sessionCatalog Contains user-defined graphs used within the session
+  * @param parameters Query parameters
+  * @param constructedGraphCatalog Contains graphs that are created during query execution
+  * @param cache Operator cache
+  * @param cypherSession Cypher session
+  * @tparam T
   */
 case class RelationalRuntimeContext[T <: FlatRelationalTable[T]](
-  /**
-    * Contains user-defined graphs used within the session
-    */
   sessionCatalog: QualifiedGraphName => Option[RelationalCypherGraph[T]],
-
-  /**
-    * Contains graphs that are created during query execution
-    */
-  queryCatalog: mutable.Map[QualifiedGraphName, RelationalCypherGraph[T]],
-
-  /**
-    * Operator cache
-    */
-  var cache: mutable.Map[RelationalOperator[T], T],
-
-  /**
-    * Query parameters
-    *
-    * @return query parameters
-    */
-  parameters: CypherMap
-
-)(implicit session: CypherSession) {
+  parameters: CypherMap = CypherMap.empty,
+  var constructedGraphCatalog: Map[QualifiedGraphName, RelationalCypherGraph[T]] = Map.empty[QualifiedGraphName, RelationalCypherGraph[T]],
+  var cache: Map[RelationalOperator[T], T] = Map.empty[RelationalOperator[T], T]
+)(implicit cypherSession: CypherSession) {
   /**
     * Returns the graph referenced by the given QualifiedGraphName.
     *
     * @return back-end specific property graph
     */
-  def resolveGraph(qgn: QualifiedGraphName): RelationalCypherGraph[T] = queryCatalog.get(qgn) match {
+  def resolveGraph(qgn: QualifiedGraphName): RelationalCypherGraph[T] = constructedGraphCatalog.get(qgn) match {
     case None => sessionCatalog(qgn).getOrElse(throw IllegalArgumentException(s"a graph at $qgn"))
     case Some(g) => g
   }
+
+  def session: CypherSession = cypherSession
 }
 

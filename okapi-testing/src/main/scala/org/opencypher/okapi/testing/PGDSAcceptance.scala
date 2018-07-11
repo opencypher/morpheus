@@ -121,7 +121,7 @@ trait PGDSAcceptance[Session <: CypherSession] extends BeforeAndAfterEach {
   it("supports queries through the API") {
     val g = cypherSession.catalog.graph(QualifiedGraphName(ns, gn))
 
-    g.cypher("MATCH (a:A) RETURN a.name").getRecords.iterator.toBag should equal(Bag(
+    g.cypher("MATCH (a:A) RETURN a.name").records.iterator.toBag should equal(Bag(
       CypherMap("a.name" -> "A"),
       CypherMap("a.name" -> "COMBO1"),
       CypherMap("a.name" -> "COMBO2"),
@@ -130,7 +130,7 @@ trait PGDSAcceptance[Session <: CypherSession] extends BeforeAndAfterEach {
   }
 
   it("supports queries through Cypher") {
-    cypherSession.cypher(s"FROM GRAPH $ns.$gn MATCH (b:B) RETURN b.type, b.size").getRecords.iterator.toBag should equal(Bag(
+    cypherSession.cypher(s"FROM GRAPH $ns.$gn MATCH (b:B) RETURN b.type, b.size").records.iterator.toBag should equal(Bag(
       CypherMap("b.type" -> "B1", "b.size" -> CypherNull),
       CypherMap("b.type" -> "B2", "b.size" -> 5),
       CypherMap("b.type" -> "AB1", "b.size" -> 2),
@@ -139,7 +139,7 @@ trait PGDSAcceptance[Session <: CypherSession] extends BeforeAndAfterEach {
   }
 
   it("supports scans over multiple labels") {
-    cypherSession.cypher(s"FROM GRAPH $ns.$gn MATCH (n) RETURN n.name, n.size").getRecords.iterator.toBag should equal(Bag(
+    cypherSession.cypher(s"FROM GRAPH $ns.$gn MATCH (n) RETURN n.name, n.size").records.iterator.toBag should equal(Bag(
       CypherMap("n.name" -> "A", "n.size" -> CypherNull),
       CypherMap("n.name" -> "C", "n.size" -> CypherNull),
       CypherMap("n.name" -> "AC", "n.size" -> CypherNull),
@@ -151,7 +151,7 @@ trait PGDSAcceptance[Session <: CypherSession] extends BeforeAndAfterEach {
   }
 
   it("supports multi-hop paths") {
-    cypherSession.cypher(s"FROM GRAPH $ns.$gn MATCH (a)-[r1]->(b)-[r2]->(c) RETURN r1.since, r2.since, type(r2)").getRecords.iterator.toBag should equal(Bag(
+    cypherSession.cypher(s"FROM GRAPH $ns.$gn MATCH (a)-[r1]->(b)-[r2]->(c) RETURN r1.since, r2.since, type(r2)").records.iterator.toBag should equal(Bag(
       CypherMap("r1.since" -> 2004, "r2.since" -> 2005, "type(r2)" -> "R"),
       CypherMap("r1.since" -> 2005, "r2.since" -> 2006, "type(r2)" -> "S")
     ))
@@ -186,7 +186,7 @@ trait PGDSAcceptance[Session <: CypherSession] extends BeforeAndAfterEach {
         withClue("`hasGraph` needs to return `true` after graph creation") {
           cypherSession.catalog.source(ns).hasGraph(GraphName(s"${gn}3")) shouldBe true
         }
-        val result = cypherSession.cypher(s"FROM GRAPH $ns.${gn}3 MATCH (c:C) RETURN c.name").getRecords.iterator.toBag
+        val result = cypherSession.cypher(s"FROM GRAPH $ns.${gn}3 MATCH (c:C) RETURN c.name").records.iterator.toBag
         result should equal(Bag(
           CypherMap("c.name" -> "C"),
           CypherMap("c.name" -> "AC"),
@@ -210,7 +210,7 @@ trait PGDSAcceptance[Session <: CypherSession] extends BeforeAndAfterEach {
         withClue("`hasGraph` needs to return `true` after graph creation") {
           cypherSession.catalog.source(ns).hasGraph(GraphName(s"${gn}4")) shouldBe true
         }
-        val result = cypherSession.cypher(s"FROM GRAPH $ns.${gn}4 MATCH (c:Āſ)-[:Āſ]-() RETURN c.Āſ").getRecords.iterator.toBag
+        val result = cypherSession.cypher(s"FROM GRAPH $ns.${gn}4 MATCH (c:Āſ)-[:Āſ]-() RETURN c.Āſ").records.iterator.toBag
         result should equal(Bag(
           CypherMap("c.Āſ" -> "Āſ")
         ))
@@ -232,7 +232,7 @@ trait PGDSAcceptance[Session <: CypherSession] extends BeforeAndAfterEach {
         withClue("`hasGraph` needs to return `true` after graph creation") {
           cypherSession.catalog.source(ns).hasGraph(GraphName(s"${gn}5")) shouldBe true
         }
-        val result = cypherSession.cypher(s"FROM GRAPH $ns.${gn}5 MATCH (c) RETURN c.id").getRecords.iterator.toBag
+        val result = cypherSession.cypher(s"FROM GRAPH $ns.${gn}5 MATCH (c) RETURN c.id").records.iterator.toBag
         result should equal(Bag(
           CypherMap("c.id" -> 100)
         ))
@@ -278,7 +278,7 @@ trait PGDSAcceptance[Session <: CypherSession] extends BeforeAndAfterEach {
          |  ON $ns.$gn
          |  NEW (:A {name: "A"})
          |  RETURN GRAPH
-        """.stripMargin).getGraph
+        """.stripMargin).graph
     firstConstructedGraph.nodes("n").size shouldBe 8
     val maybeStored = Try(cypherSession.catalog.source(ns).store(firstConstructedGraphName, firstConstructedGraph))
     maybeStored match {
@@ -293,7 +293,7 @@ trait PGDSAcceptance[Session <: CypherSession] extends BeforeAndAfterEach {
              |  ON $ns.$firstConstructedGraphName
              |  NEW (:A:B {name: "COMBO", size: 2})
              |  RETURN GRAPH
-        """.stripMargin).getGraph
+        """.stripMargin).graph
         secondConstructedGraph.nodes("n").size shouldBe 9
         cypherSession.catalog.source(ns).store(secondConstructedGraphName, secondConstructedGraph)
         val retrievedSecondConstructedGraph = cypherSession.catalog.source(ns).graph(secondConstructedGraphName)

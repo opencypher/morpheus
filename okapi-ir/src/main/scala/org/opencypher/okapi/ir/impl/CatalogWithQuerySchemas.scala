@@ -30,7 +30,13 @@ import org.opencypher.okapi.api.graph.{Namespace, PropertyGraph, QualifiedGraphN
 import org.opencypher.okapi.api.io.PropertyGraphDataSource
 import org.opencypher.okapi.api.schema.Schema
 
-case class QueryCatalog(dataSourceMapping: Map[Namespace, PropertyGraphDataSource], registeredSchemas: Map[QualifiedGraphName, Schema]) {
+/**
+  * Represents a catalog storing the session graphs and schemas of constructed graphs.
+  *
+  * @param dataSourceMapping
+  * @param registeredSchemas
+  */
+case class CatalogWithQuerySchemas(dataSourceMapping: Map[Namespace, PropertyGraphDataSource], registeredSchemas: Map[QualifiedGraphName, Schema]) {
   def schema(qgn: QualifiedGraphName): Schema = {
     registeredSchemas.getOrElse(qgn, schemaFromDataSource(qgn))
   }
@@ -47,12 +53,12 @@ case class QueryCatalog(dataSourceMapping: Map[Namespace, PropertyGraphDataSourc
     schema
   }
 
-  def withSchema(qgn: QualifiedGraphName, schema: Schema): QueryCatalog = {
+  def withSchema(qgn: QualifiedGraphName, schema: Schema): CatalogWithQuerySchemas = {
     copy(registeredSchemas = registeredSchemas.updated(qgn, schema))
   }
 }
 
-object QueryCatalog {
-  def apply(dataSourceMapping:  Map[Namespace, PropertyGraphDataSource]): QueryCatalog =
-    QueryCatalog(dataSourceMapping, Map.empty)
+object CatalogWithQuerySchemas {
+  def apply(dataSourceMapping:  Map[Namespace, PropertyGraphDataSource]): CatalogWithQuerySchemas =
+    CatalogWithQuerySchemas(dataSourceMapping, Map.empty)
 }

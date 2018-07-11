@@ -24,21 +24,15 @@
  * described as "implementation extensions to Cypher" or as "proposed changes to
  * Cypher that are not yet approved by the openCypher community".
  */
-package org.opencypher.spark.impl.physical
+package org.opencypher.okapi.relational.impl.exception
 
-import org.opencypher.okapi.api.graph.QualifiedGraphName
-import org.opencypher.okapi.relational.api.physical.PhysicalResult
-import org.opencypher.spark.impl.table.SparkFlatRelationalTable._
-import org.opencypher.spark.impl.{CAPSGraph, CAPSRecords}
+import org.opencypher.okapi.impl.exception.InternalException
+import org.opencypher.okapi.ir.api.expr.Var
 
-case class CAPSPhysicalResult(
-  records: CAPSRecords,
-  workingGraph: CAPSGraph,
-  workingGraphName: QualifiedGraphName,
-  tagStrategy: Map[QualifiedGraphName, Map[Int, Int]] = Map.empty
-) extends PhysicalResult[DataFrameTable, CAPSRecords, CAPSGraph] {
+abstract class RelationalException(msg: String) extends InternalException(msg)
 
-  override def mapRecordsWithDetails(f: CAPSRecords => CAPSRecords): CAPSPhysicalResult =
-    copy(records = f(records))
+final case class RecordHeaderException(msg: String) extends RelationalException(msg)
 
-}
+final case class DuplicateSourceColumnException(columnName: String, entity: Var)
+    extends RelationalException(
+          s"The source column '$columnName' is used more than once to describe the mapping of $entity")

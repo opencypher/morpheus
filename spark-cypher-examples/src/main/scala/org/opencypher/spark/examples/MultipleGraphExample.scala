@@ -62,7 +62,7 @@ object MultipleGraphExample extends ConsoleApp {
        |  NEW (p)-[:IS]->(c)
        |RETURN GRAPH
     """.stripMargin
-  ).getGraph
+  ).graph
 
   // 6) Query for product recommendations
   val recommendations = recommendationGraph.cypher(

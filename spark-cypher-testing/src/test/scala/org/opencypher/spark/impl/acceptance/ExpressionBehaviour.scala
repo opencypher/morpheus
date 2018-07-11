@@ -59,7 +59,7 @@ class ExpressionBehaviour extends CAPSTestSuite with DefaultGraphInit {
         """.stripMargin)
 
       // Then
-      result.getRecords.toMaps should equal(Bag(
+      result.records.toMaps should equal(Bag(
         CypherMap("n.val" -> "foo", "result" -> 1),
         CypherMap("n.val" -> "bar", "result" -> 2),
         CypherMap("n.val" -> "baz", "result" -> 3))
@@ -89,7 +89,7 @@ class ExpressionBehaviour extends CAPSTestSuite with DefaultGraphInit {
         """.stripMargin)
 
       // Then
-      result.getRecords.toMaps should equal(Bag(
+      result.records.toMaps should equal(Bag(
         CypherMap("n.val" -> "foo", "result" -> 1),
         CypherMap("n.val" -> "bar", "result" -> 2),
         CypherMap("n.val" -> "baz", "result" -> 3))
@@ -114,7 +114,7 @@ class ExpressionBehaviour extends CAPSTestSuite with DefaultGraphInit {
       )
 
       // Then
-      result.getRecords.toMaps shouldBe empty
+      result.records.toMaps shouldBe empty
     }
 
     it("handles unknown properties") {
@@ -132,7 +132,7 @@ class ExpressionBehaviour extends CAPSTestSuite with DefaultGraphInit {
         """.stripMargin)
 
       // Then
-      result.getRecords.toMaps should equal(Bag(CypherMap("a.age" -> null, "a.firstName" -> "Alice")))
+      result.records.toMaps should equal(Bag(CypherMap("a.age" -> null, "a.firstName" -> "Alice")))
     }
 
     it("equality between properties") {
@@ -151,7 +151,7 @@ class ExpressionBehaviour extends CAPSTestSuite with DefaultGraphInit {
       val result = given.cypher("MATCH (a:A)-->(b:B) RETURN a.val = b.p AS eq")
 
       // Then
-      result.getRecords.toMaps should equal(Bag(
+      result.records.toMaps should equal(Bag(
         CypherMap("eq" -> false),
         CypherMap("eq" -> false),
         CypherMap("eq" -> true),
@@ -172,7 +172,7 @@ class ExpressionBehaviour extends CAPSTestSuite with DefaultGraphInit {
     val result = given.cypher("MATCH (n)-->(m) RETURN n.val < m.val")
 
     // Then
-    result.getRecords.toMaps should equal(Bag(
+    result.records.toMaps should equal(Bag(
       CypherMap("n.val < m.val" -> true),
       CypherMap("n.val < m.val" -> false),
       CypherMap("n.val < m.val" -> false),
@@ -188,7 +188,7 @@ class ExpressionBehaviour extends CAPSTestSuite with DefaultGraphInit {
     val result = given.cypher("MATCH (n)-->(m) RETURN n.val <= m.val")
 
     // Then
-    result.getRecords.toMaps should equal(Bag(
+    result.records.toMaps should equal(Bag(
       CypherMap("n.val <= m.val" -> true),
       CypherMap("n.val <= m.val" -> true),
       CypherMap("n.val <= m.val" -> false),
@@ -204,7 +204,7 @@ class ExpressionBehaviour extends CAPSTestSuite with DefaultGraphInit {
     val result = given.cypher("MATCH (n)-->(m) RETURN n.val > m.val AS gt")
 
     // Then
-    result.getRecords.toMaps should equal(Bag(
+    result.records.toMaps should equal(Bag(
       CypherMap("gt" -> false),
       CypherMap("gt" -> false),
       CypherMap("gt" -> true),
@@ -220,7 +220,7 @@ class ExpressionBehaviour extends CAPSTestSuite with DefaultGraphInit {
     val result = given.cypher("MATCH (n)-->(m) RETURN n.val >= m.val")
 
     // Then
-    result.getRecords.toMaps should equal(Bag(
+    result.records.toMaps should equal(Bag(
       CypherMap("n.val >= m.val" -> false),
       CypherMap("n.val >= m.val" -> true),
       CypherMap("n.val >= m.val" -> true),
@@ -236,7 +236,7 @@ class ExpressionBehaviour extends CAPSTestSuite with DefaultGraphInit {
     val result = given.cypher("MATCH (n)-->(m) RETURN m.other + m.val + n.val AS res")
 
     // Then
-    result.getRecords.toMaps should equal(Bag(
+    result.records.toMaps should equal(Bag(
       CypherMap("res" -> 12),
       CypherMap("res" -> null)
     ))
@@ -250,7 +250,7 @@ class ExpressionBehaviour extends CAPSTestSuite with DefaultGraphInit {
     val result = given.cypher("MATCH (n)-->(m) RETURN m.val - n.val - m.other AS res")
 
     // Then
-    result.getRecords.toMaps should equal(Bag(
+    result.records.toMaps should equal(Bag(
       CypherMap("res" -> -2),
       CypherMap("res" -> null)
     ))
@@ -264,7 +264,7 @@ class ExpressionBehaviour extends CAPSTestSuite with DefaultGraphInit {
     val result = given.cypher("MATCH (n:Node)-->(m:Node) RETURN m.val - n.val")
 
     // Then
-    result.getRecords.toMaps should equal(Bag(
+    result.records.toMaps should equal(Bag(
       CypherMap("m.val - n.val" -> 1)
     ))
   }
@@ -277,7 +277,7 @@ class ExpressionBehaviour extends CAPSTestSuite with DefaultGraphInit {
     val result = given.cypher("MATCH (n:Node)-->(m:Node) RETURN n.val * m.val")
 
     // Then
-    result.getRecords.toMaps should equal(Bag(
+    result.records.toMaps should equal(Bag(
       CypherMap("n.val * m.val" -> 18),
       CypherMap("n.val * m.val" -> 6)
     ))
@@ -292,7 +292,7 @@ class ExpressionBehaviour extends CAPSTestSuite with DefaultGraphInit {
     val result = given.cypher("MATCH (n:Node)-->(m:Node) RETURN n.val * m.val")
 
     // Then
-    result.getRecords.toMaps should equal(Bag(
+    result.records.toMaps should equal(Bag(
       CypherMap("n.val * m.val" -> 11.25)
     ))
 
@@ -306,7 +306,7 @@ class ExpressionBehaviour extends CAPSTestSuite with DefaultGraphInit {
     val result = given.cypher("MATCH (n:Node)-->(m:Node) RETURN n.val * m.val2")
 
     // Then
-    result.getRecords.toMaps should equal(Bag(
+    result.records.toMaps should equal(Bag(
       CypherMap("n.val * m.val2" -> 22.5)
     ))
 
@@ -320,7 +320,7 @@ class ExpressionBehaviour extends CAPSTestSuite with DefaultGraphInit {
     val result = given.cypher("MATCH (n:Node)-->(m:Node) RETURN n.val / m.val")
 
     // Then
-    result.getRecords.toMaps should equal(Bag(
+    result.records.toMaps should equal(Bag(
       CypherMap("n.val / m.val" -> 3),
       CypherMap("n.val / m.val" -> 1)
     ))
@@ -335,7 +335,7 @@ class ExpressionBehaviour extends CAPSTestSuite with DefaultGraphInit {
     val result = given.cypher("MATCH (n:Node)-->(m:Node) RETURN n.val / m.val2")
 
     // Then
-    result.getRecords.toMaps should equal(Bag(
+    result.records.toMaps should equal(Bag(
       CypherMap("n.val / m.val2" -> 2.0),
       CypherMap("n.val / m.val2" -> null)
     ))
@@ -355,7 +355,7 @@ class ExpressionBehaviour extends CAPSTestSuite with DefaultGraphInit {
     val result = given.cypher("MATCH (n:Node)-->(m:Node) RETURN m.val = n.val AS res")
 
     // Then
-    result.getRecords.toMaps should equal(Bag(
+    result.records.toMaps should equal(Bag(
       CypherMap("res" -> false),
       CypherMap("res" -> true),
       CypherMap("res" -> null)
@@ -370,7 +370,7 @@ class ExpressionBehaviour extends CAPSTestSuite with DefaultGraphInit {
     val result = given.cypher("MATCH (p:Person) RETURN p.name")
 
     // Then
-    result.getRecords.toMaps should equal(Bag(
+    result.records.toMaps should equal(Bag(
       CypherMap("p.name" -> "Mats"),
       CypherMap("p.name" -> "Martin")
     ))
@@ -384,7 +384,7 @@ class ExpressionBehaviour extends CAPSTestSuite with DefaultGraphInit {
     val result = given.cypher("MATCH (a:Person)-[r:KNOWS]->(b:Person) RETURN r.since")
 
     // Then
-    result.getRecords.toMaps should equal(Bag(
+    result.records.toMaps should equal(Bag(
       CypherMap("r.since" -> 2017)
     ))
   }
@@ -403,7 +403,7 @@ class ExpressionBehaviour extends CAPSTestSuite with DefaultGraphInit {
       val result = given.cypher("MATCH (a)-->(b) WITH a, b, EXISTS((a)-->()-->(b)) as con RETURN a.id, b.id, con")
 
       // Then
-      result.getRecords.toMaps should equal(Bag(
+      result.records.toMaps should equal(Bag(
         CypherMap("a.id" -> 1L, "b.id" -> 3L, "con" -> true),
         CypherMap("a.id" -> 1L, "b.id" -> 2L, "con" -> false),
         CypherMap("a.id" -> 2L, "b.id" -> 3L, "con" -> false),
@@ -423,7 +423,7 @@ class ExpressionBehaviour extends CAPSTestSuite with DefaultGraphInit {
           |RETURN a.id, b.id, con""".stripMargin)
 
       // Then
-      result.getRecords.toMaps should equal(Bag(
+      result.records.toMaps should equal(Bag(
         CypherMap("a.id" -> 1L, "b.id" -> 2L, "con" -> false),
         CypherMap("a.id" -> 1L, "b.id" -> 3L, "con" -> true),
         CypherMap("a.id" -> 2L, "b.id" -> 3L, "con" -> false)
@@ -446,7 +446,7 @@ class ExpressionBehaviour extends CAPSTestSuite with DefaultGraphInit {
           |RETURN a.id, con""".stripMargin)
 
       // Then
-      result.getRecords.toMaps should equal(Bag(
+      result.records.toMaps should equal(Bag(
         CypherMap("a.id" -> 1L, "con" -> true),
         CypherMap("a.id" -> 2L, "con" -> false),
         CypherMap("a.id" -> 3L, "con" -> false),
@@ -471,7 +471,7 @@ class ExpressionBehaviour extends CAPSTestSuite with DefaultGraphInit {
           |RETURN a.id, b.id, con""".stripMargin)
 
       // Then
-      result.getRecords.toMaps should equal(Bag(
+      result.records.toMaps should equal(Bag(
         CypherMap("a.id" -> 1L, "b.id" -> 2L, "con" -> true),
         CypherMap("a.id" -> 3L, "b.id" -> 4L, "con" -> false)
       ))
@@ -493,7 +493,7 @@ class ExpressionBehaviour extends CAPSTestSuite with DefaultGraphInit {
           |RETURN a.id, con""".stripMargin)
 
       // Then
-      result.getRecords.toMaps should equal(Bag(
+      result.records.toMaps should equal(Bag(
         CypherMap("a.id" -> 1L, "con" -> true),
         CypherMap("a.id" -> 2L, "con" -> false)
       ))
@@ -515,7 +515,7 @@ class ExpressionBehaviour extends CAPSTestSuite with DefaultGraphInit {
           |RETURN a.id, b.id, con""".stripMargin)
 
       // Then
-      result.getRecords.toMaps should equal(Bag(
+      result.records.toMaps should equal(Bag(
         CypherMap("a.id" -> 1L, "b.id" -> 2L, "con" -> true),
         CypherMap("a.id" -> 3L, "b.id" -> 4L, "con" -> false)
       ))
@@ -533,7 +533,7 @@ class ExpressionBehaviour extends CAPSTestSuite with DefaultGraphInit {
           |RETURN a.id, b.id, con""".stripMargin)
 
       // Then
-      result.getRecords.toMaps should equal(Bag(
+      result.records.toMaps should equal(Bag(
         CypherMap("a.id" -> 1L, "b.id" -> 1L, "con" -> true),
         CypherMap("a.id" -> 1L, "b.id" -> 2L, "con" -> false),
         CypherMap("a.id" -> 2L, "b.id" -> 1L, "con" -> true),
@@ -555,7 +555,7 @@ class ExpressionBehaviour extends CAPSTestSuite with DefaultGraphInit {
           |WITH a, EXISTS((a)-->({val: a.val + 2})) AS other RETURN a.id, other""".stripMargin)
 
       // Then
-      result.getRecords.toMaps should equal(Bag(
+      result.records.toMaps should equal(Bag(
         CypherMap("a.id" -> 1L, "other" -> true),
         CypherMap("a.id" -> 2L, "other" -> false),
         CypherMap("a.id" -> 3L, "other" -> false)
@@ -572,7 +572,7 @@ class ExpressionBehaviour extends CAPSTestSuite with DefaultGraphInit {
           |WITH [$a, $b] as strings
           |RETURN strings""".stripMargin, Map("a" -> CypherValue("bar"), "b" -> CypherValue("foo")))
 
-      result.getRecords.toMaps should equal(Bag(
+      result.records.toMaps should equal(Bag(
         CypherMap("strings" -> Seq("bar", "foo"))
       ))
     }
@@ -585,7 +585,7 @@ class ExpressionBehaviour extends CAPSTestSuite with DefaultGraphInit {
           |WITH ["bar", "foo"] as strings
           |RETURN strings""".stripMargin)
 
-      result.getRecords.toMaps should equal(Bag(
+      result.records.toMaps should equal(Bag(
         CypherMap("strings" -> Seq("bar", "foo"))
       ))
     }
@@ -599,7 +599,7 @@ class ExpressionBehaviour extends CAPSTestSuite with DefaultGraphInit {
           |WITH [n.val*10, n.val*100] as vals
           |RETURN vals""".stripMargin)
 
-      result.getRecords.toMaps should equal(Bag(
+      result.records.toMaps should equal(Bag(
         CypherMap("vals" -> Seq(10, 100)),
         CypherMap("vals" -> Seq(20, 200))
       ))
@@ -620,7 +620,7 @@ class ExpressionBehaviour extends CAPSTestSuite with DefaultGraphInit {
           | RETURN n.v1
         """.stripMargin('|')
 
-      graph.cypher(query).getRecords.toMaps should equal(Bag(
+      graph.cypher(query).records.toMaps should equal(Bag(
         CypherMap("n.v1" -> true)
       ))
     }
