@@ -92,7 +92,7 @@ class CypherTypesTest extends FunSpec with Matchers {
     CTNode("Person", "Employee").legacyName
 
     Seq[(CypherType, (String, String))](
-      CTNoLabelNode -> ("NODE()" -> "NODE()?"),
+      CTNoLabel -> ("NODE()" -> "NODE()?"),
       CTString -> ("STRING" -> "STRING?"),
       CTBoolean -> ("BOOLEAN" -> "BOOLEAN?"),
       CTNumber -> ("NUMBER" -> "NUMBER?"),

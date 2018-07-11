@@ -36,7 +36,7 @@ object LegacyNames {
       ct match {
         case CTVoid => "VOID"
         case CTNull => "NULL"
-        case _ if ct.subTypeOf(CTNoLabelNode.nullable) =>
+        case _ if ct.subTypeOf(CTNoLabel.nullable) =>
           s"NODE()$nullableSuffix"
         case CTNode(labels) =>
           if (labels.isEmpty) {
@@ -104,7 +104,7 @@ object LegacyNames {
       case node if node.startsWith("NODE") =>
         extractLabels(node, "NODE", ":") match {
           case None => Some(CTAnyNode)
-          case Some(ls) if ls.isEmpty => Some(CTNoLabelNode)
+          case Some(ls) if ls.isEmpty => Some(CTNoLabel)
           case Some(ls) => Some(CTNode(ls))
         }
 

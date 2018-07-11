@@ -122,7 +122,7 @@ object CypherType {
     def apply(labels: Set[String]): CypherType = {
       val ls = labels.toList
       ls match {
-        case Nil => CTNoLabelNode
+        case Nil => CTNoLabel
         case h :: Nil => CTLabel(h)
         case h :: t => t.foldLeft(CTLabel(h): CypherType) { case (ct, l) =>
           ct.intersect(CTLabel(l))
@@ -131,7 +131,7 @@ object CypherType {
     }
 
     def unapply(v: CypherType): Option[Set[String]] = v match {
-      case CTNoLabelNode => throw UnsupportedOperationException("Not possible to retrieve labels from NoLabelNode")
+      case CTNoLabel => throw UnsupportedOperationException("Not possible to retrieve labels from NoLabelNode")
       case CTAnyNode => Some(Set.empty)
       case CTLabel(l) => Some(Set(l))
       case CTUnion(ors) =>
@@ -146,12 +146,12 @@ object CypherType {
 
   }
 
-  case object CTNoLabelNode extends CTNode
+  case object CTNoLabel extends CTNode
 
   sealed trait CTNode extends CTEntity {
 
     override def canIntersect(other: CypherType): Boolean = other match {
-      case CTNoLabelNode => false
+      case CTNoLabel => false
       case _: CTLabel => true
       case _ => super.canIntersect(other)
     }
