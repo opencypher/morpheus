@@ -85,7 +85,7 @@ case class CAPSRecords(
   override val logicalColumns: Option[Seq[String]] = None
 )
   extends RelationalCypherRecords[DataFrameTable] with RecordBehaviour {
-  override type R = CAPSRecords
+  override type Records = CAPSRecords
 
   def df: DataFrame = table.df
 

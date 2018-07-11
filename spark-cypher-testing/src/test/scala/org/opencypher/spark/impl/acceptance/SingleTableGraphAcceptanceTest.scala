@@ -28,7 +28,7 @@ package org.opencypher.spark.impl.acceptance
 
 import org.scalatest.Suites
 
-class CAPSPatternGraphAcceptanceTest extends Suites(
+class SingleTableGraphAcceptanceTest extends Suites(
   Aggregation_PatternGraph,
   BoundedVarExpand_PatternGraph,
   ExpandInto_PatternGraph,

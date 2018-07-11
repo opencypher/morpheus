@@ -28,9 +28,10 @@ package org.opencypher.spark.testing.support.creation.caps
 
 import org.opencypher.okapi.api.types.{CTNode, CTRelationship}
 import org.opencypher.okapi.ir.api.expr.Var
+import org.opencypher.okapi.relational.impl.graph.SingleTableGraph
 import org.opencypher.okapi.testing.propertygraph.InMemoryTestGraph
 import org.opencypher.spark.api.CAPSSession
-import org.opencypher.spark.impl.{CAPSGraph, CAPSPatternGraph, CAPSRecords}
+import org.opencypher.spark.impl.{CAPSGraph, CAPSRecords}
 
 object CAPSPatternGraphFactory extends CAPSTestGraphFactory {
 
@@ -46,7 +47,7 @@ object CAPSPatternGraphFactory extends CAPSTestGraphFactory {
 
     val baseTable = CAPSRecords(nodes.header ++ rels.header, baseTableData)
 
-    CAPSPatternGraph(baseTable, scanGraph.schema, Set(0))
+    SingleTableGraph(baseTable, scanGraph.schema, Set(0))
   }
 
   override def name: String = "CAPSPatternGraphFactory"

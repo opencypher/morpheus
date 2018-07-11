@@ -3,13 +3,15 @@ package org.opencypher.okapi.relational.impl.operators
 import org.opencypher.okapi.api.graph.{CypherSession, QualifiedGraphName}
 import org.opencypher.okapi.api.types._
 import org.opencypher.okapi.api.value.CypherValue.CypherInteger
-import org.opencypher.okapi.impl.exception.{IllegalArgumentException, SchemaException}
+import org.opencypher.okapi.impl.exception.{IllegalArgumentException, SchemaException, UnsupportedOperationException}
 import org.opencypher.okapi.ir.api.block.{Asc, Desc, SortItem}
+import org.opencypher.okapi.ir.api.expr.Expr._
 import org.opencypher.okapi.ir.api.expr._
 import org.opencypher.okapi.logical.impl._
 import org.opencypher.okapi.relational.api.graph.RelationalCypherGraph
 import org.opencypher.okapi.relational.api.physical.RelationalRuntimeContext
 import org.opencypher.okapi.relational.api.schema.RelationalSchema._
+import org.opencypher.okapi.relational.api.table.ExtractEntities.SelectExpressions
 import org.opencypher.okapi.relational.api.table.{FlatRelationalTable, RelationalCypherRecords}
 import org.opencypher.okapi.relational.impl.physical._
 import org.opencypher.okapi.relational.impl.table.RecordHeader
@@ -294,6 +296,80 @@ final case class Select[T <: FlatRelationalTable[T]](
   override lazy val returnItems: Option[Seq[Var]] = Some(expressions.flatMap(_.owner).collect { case e: Var => e }.distinct)
 }
 
+final case class ExtractEntities[T <: FlatRelationalTable[T]](
+  in: RelationalOperator[T],
+  override val header: RecordHeader,
+  extractionVars: Set[Var]
+) extends RelationalOperator[T] {
+
+  require(header.vars.size == 1)
+  require(extractionVars.subsetOf(in.header.vars))
+
+  val targetVar: Var = header.entityVars.head
+
+  def selectExpressionsForVar(extractionVar: Var): SelectExpressions = {
+
+    val extractionVarHeader = in.header.select(extractionVar)
+
+    val entityLabels = extractionVar.cypherType match {
+      case CTNode(labels, _) => labels
+      case CTRelationship(types, _) => types
+      case _ => throw IllegalArgumentException("CTNode or CTRelationship", extractionVar.cypherType)
+    }
+
+    val partiallyAlignedExtractionHeader = extractionVarHeader
+      .withAlias(extractionVar as targetVar)
+      .select(targetVar)
+
+    val missingExpressions = (header.expressions -- partiallyAlignedExtractionHeader.expressions).toSeq
+    val overlapExpressions = (header.expressions -- missingExpressions).toSeq
+
+    // Map existing expression in input table to corresponding target header column
+    val selectExistingColumns = overlapExpressions.map(e => e.withOwner(extractionVar) -> header.column(e))
+
+    // Map literal default values for missing expressions to corresponding target header column
+    val selectMissingColumns = missingExpressions.map { expr =>
+      val columnName = header.column(expr)
+      val selectExpr: Expr = expr match {
+        case HasLabel(_, label) =>
+          if (entityLabels.contains(label.name)) {
+            TrueLit
+          } else {
+            FalseLit
+          }
+        case HasType(_, relType) =>
+          if (entityLabels.contains(relType.name)) {
+            TrueLit
+          } else {
+            FalseLit
+          }
+        case _ =>
+          if (!expr.cypherType.isNullable) {
+            throw UnsupportedOperationException(
+              s"Cannot align scan on $targetVar by adding a NULL column, because the type for '$expr' is non-nullable"
+            )
+          }
+          NullLit(expr.cypherType)
+      }
+
+      selectExpr -> columnName
+    }
+
+    (selectExistingColumns ++ selectMissingColumns).sortBy(_._1)
+  }
+
+  override def _table: T = {
+    val groups = extractionVars.toSeq.map(selectExpressionsForVar)
+
+    val inHeaderWithMissingExprs = groups.foldLeft(in.header) {
+      case (currentHeader, (expr, _)) => currentHeader.withExpr(expr)
+    }
+
+    table.extractEntities(groups)(inHeaderWithMissingExprs, context.parameters)
+  }
+}
+
+
 final case class Distinct[T <: FlatRelationalTable[T]](
   in: RelationalOperator[T],
   fields: Set[Var]
@@ -455,7 +531,8 @@ final case class TabularUnionAll[T <: FlatRelationalTable[T]](
 final case class ConstructGraph[T <: FlatRelationalTable[T]](
   lhs: RelationalOperator[T],
   rhs: RelationalOperator[T],
-  construct: LogicalPatternGraph) extends RelationalOperator[T] {
+  construct: LogicalPatternGraph
+) extends RelationalOperator[T] {
 
 }
 
@@ -463,7 +540,8 @@ final case class ConstructGraph[T <: FlatRelationalTable[T]](
 
 final case class GraphUnionAll[T <: FlatRelationalTable[T]](
   inputs: List[RelationalOperator[T]],
-  qgn: QualifiedGraphName) extends RelationalOperator[T] {
+  qgn: QualifiedGraphName
+) extends RelationalOperator[T] {
   //  require(inputs.nonEmpty, "GraphUnionAll requires at least one input")
   //
   //  override lazy val tagStrategy = {

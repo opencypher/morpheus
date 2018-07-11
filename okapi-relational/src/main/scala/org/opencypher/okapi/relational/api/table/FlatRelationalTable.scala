@@ -26,12 +26,20 @@
  */
 package org.opencypher.okapi.relational.api.table
 
+import com.sun.rowset.internal.Row
 import org.opencypher.okapi.api.table.CypherTable
 import org.opencypher.okapi.api.types.{CTNull, CypherType}
 import org.opencypher.okapi.api.value.CypherValue.CypherMap
 import org.opencypher.okapi.ir.api.expr.{Aggregator, Expr, Var}
+import org.opencypher.okapi.relational.api.table.ExtractEntities.SelectExpressionGroups
 import org.opencypher.okapi.relational.impl.physical.{JoinType, Order}
 import org.opencypher.okapi.relational.impl.table.RecordHeader
+
+object ExtractEntities {
+  type ExprToColumn = (Expr, String)
+  type SelectExpressions = Seq[ExprToColumn]
+  type SelectExpressionGroups = Seq[SelectExpressions]
+}
 
 // TODO: rename to Table
 trait FlatRelationalTable[T <: FlatRelationalTable[T]] extends CypherTable {
@@ -45,6 +53,9 @@ trait FlatRelationalTable[T <: FlatRelationalTable[T]] extends CypherTable {
   def cache: T = this
 
   def select(cols: String*): T
+
+  // Convenience for multiple selects + align and union
+  def extractEntities(selectGroups: SelectExpressionGroups)(implicit header: RecordHeader, parameters: CypherMap): T
 
   def filter(expr: Expr)(implicit header: RecordHeader, parameters: CypherMap): T
 
@@ -76,6 +87,10 @@ trait FlatRelationalTable[T <: FlatRelationalTable[T]] extends CypherTable {
 
   def join(other: T, joinType: JoinType, joinCols: (String, String)*): T
 
+  def flatMap(func: Row => Seq[Row]): T
+
   // TODO: introduce function expression for retagging and use withColumn and backend-specific expression resolver
   def retagColumn(replacements: Map[Int, Int], column: String): T
+
+  def show(rows: Int = 20): Unit
 }

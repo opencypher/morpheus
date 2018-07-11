@@ -44,7 +44,7 @@ import org.opencypher.spark.testing.support.creation.caps.{CAPSPatternGraphFacto
 
 import scala.collection.JavaConverters._
 
-class CAPSPatternGraphTest extends CAPSGraphTest with RecordsVerificationFixture {
+class SingleTableGraphTest extends CAPSGraphTest with RecordsVerificationFixture {
 
   import CAPSGraphTestData._
 

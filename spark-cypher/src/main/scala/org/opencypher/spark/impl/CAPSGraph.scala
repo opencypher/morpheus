@@ -34,6 +34,7 @@ import org.opencypher.okapi.api.types.{CTNode, CTRelationship}
 import org.opencypher.okapi.ir.api.PropertyKey
 import org.opencypher.okapi.ir.api.expr._
 import org.opencypher.okapi.relational.api.graph.RelationalCypherGraph
+import org.opencypher.okapi.relational.impl.graph.SingleTableGraph
 import org.opencypher.okapi.relational.impl.table.RecordHeader
 import org.opencypher.spark.api.CAPSSession
 import org.opencypher.spark.api.io.{CAPSEntityTable, CAPSNodeTable}
@@ -43,6 +44,8 @@ import org.opencypher.spark.schema.CAPSSchema
 import org.opencypher.spark.schema.CAPSSchema._
 
 trait CAPSGraph extends RelationalCypherGraph[DataFrameTable] with GraphOperations with Serializable {
+
+  override type Graph <: CAPSGraph
 
   implicit def session: CAPSSession
 
@@ -56,15 +59,15 @@ trait CAPSGraph extends RelationalCypherGraph[DataFrameTable] with GraphOperatio
 
   override def schema: CAPSSchema
 
-  def cache(): CAPSGraph
+  def cache(): Graph
 
-  def persist(): CAPSGraph
+  def persist(): Graph
 
-  def persist(storageLevel: StorageLevel): CAPSGraph
+  def persist(storageLevel: StorageLevel): Graph
 
-  def unpersist(): CAPSGraph
+  def unpersist(): Graph
 
-  def unpersist(blocking: Boolean): CAPSGraph
+  def unpersist(blocking: Boolean): Graph
 
   def nodesWithExactLabels(name: String, labels: Set[String]): CAPSRecords = {
     val nodeType = CTNode(labels)
@@ -136,7 +139,7 @@ object CAPSGraph {
 
   def create(records: CypherRecords, schema: CAPSSchema, tags: Set[Int] = Set(0))(implicit caps: CAPSSession): CAPSGraph = {
     val capsRecords = records.asCaps
-    CAPSPatternGraph(capsRecords, schema, tags)
+    SingleTableGraph(capsRecords, schema, tags)
   }
 
   sealed case class EmptyGraph(implicit val caps: CAPSSession) extends CAPSGraph {

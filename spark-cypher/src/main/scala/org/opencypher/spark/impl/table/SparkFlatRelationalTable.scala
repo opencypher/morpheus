@@ -245,6 +245,8 @@ object SparkFlatRelationalTable {
 
     override def cache(): DataFrameTable = df.cache()
 
+    override def show(rows: Int): Unit = df.show(rows)
+
     def persist(): DataFrameTable = df.persist()
 
     def persist(newLevel: StorageLevel): DataFrameTable = df.persist(newLevel)

@@ -6,7 +6,11 @@ import org.opencypher.okapi.relational.api.table.{FlatRelationalTable, Relationa
 
 trait RelationalCypherGraph[T <: FlatRelationalTable[T]] extends PropertyGraph {
 
+  type Graph <: RelationalCypherGraph[T]
+
   def tags: Set[Int]
+
+  def cache(): Graph
 
   override def nodes(name: String, nodeCypherType: CTNode = CTNode): RelationalCypherRecords[T]
 

@@ -24,83 +24,67 @@
  * described as "implementation extensions to Cypher" or as "proposed changes to
  * Cypher that are not yet approved by the openCypher community".
  */
-package org.opencypher.spark.impl
+package org.opencypher.okapi.relational.impl.graph
 
-import org.apache.spark.storage.StorageLevel
+import org.opencypher.okapi.api.graph.CypherSession
+import org.opencypher.okapi.api.schema.Schema
 import org.opencypher.okapi.api.types.{CTNode, CTRelationship}
 import org.opencypher.okapi.ir.api.expr._
+import org.opencypher.okapi.relational.api.graph.RelationalCypherGraph
 import org.opencypher.okapi.relational.api.schema.RelationalSchema._
+import org.opencypher.okapi.relational.api.table.{FlatRelationalTable, RelationalCypherRecords}
 import org.opencypher.okapi.relational.impl.table.RecordHeader
-import org.opencypher.spark.api.CAPSSession
-import org.opencypher.spark.impl.convert.SparkConversions._
-import org.opencypher.spark.schema.CAPSSchema
 
 /**
-  * A pattern graph represents the result of CONSTRUCT clause. It contains all entities from the outer scope that the
-  * clause constructs. The initial schema of that graph is the union of all graph schemata the CONSTRUCT clause refers
+  * A single table graph represents the result of CONSTRUCT clause. It contains all entities from the outer scope that 
+  * the clause constructs. The initial schema of that graph is the union of all graph schemata the CONSTRUCT clause refers
   * to, including their corresponding graph tags. Note, that the initial schema does not include the graph tag used for
   * the constructed entities.
   */
-case class CAPSPatternGraph(
-  private[spark] val baseTable: CAPSRecords,
-  override val schema: CAPSSchema,
+case class SingleTableGraph[T <: FlatRelationalTable[T]](
+  private[spark] val baseTable: RelationalCypherRecords[T],
+  override val schema: Schema,
   override val tags: Set[Int]
-)(implicit val session: CAPSSession)
-    extends CAPSGraph {
+)(implicit val session: CypherSession)
+  extends RelationalCypherGraph[T] {
+
+  override type Graph = SingleTableGraph[T]
 
   private val header = baseTable.header
 
-  def show(): Unit = baseTable.df.show()
+  def show(): Unit = baseTable.show
 
-  override def cache(): CAPSPatternGraph = map(_.cache())
+  override def cache(): SingleTableGraph[T] = map(_.cache())
 
-  override def persist(): CAPSPatternGraph = map(_.persist())
+  private def map(f: RelationalCypherRecords[T] => RelationalCypherRecords[T]) =
+    SingleTableGraph(f(baseTable), schema, tags)
 
-  override def persist(storageLevel: StorageLevel): CAPSPatternGraph = map(_.persist(storageLevel))
-
-  override def unpersist(): CAPSPatternGraph = map(_.unpersist())
-
-  override def unpersist(blocking: Boolean): CAPSPatternGraph = map(_.unpersist(blocking))
-
-  private def map(f: CAPSRecords => CAPSRecords) =
-    CAPSPatternGraph(f(baseTable), schema, tags)
-
-  override def nodes(name: String, nodeCypherType: CTNode): CAPSRecords = {
+  override def nodes(name: String, nodeCypherType: CTNode): RelationalCypherRecords[T] = {
     val targetNode = Var(name)(nodeCypherType)
     val nodeSchema = schema.forNode(nodeCypherType.labels)
     val targetNodeHeader = nodeSchema.headerForNode(targetNode)
+
     val extractionNodes: Set[Var] = header.nodesForType(nodeCypherType)
 
-    extractRecordsFor(targetNode, targetNodeHeader, extractionNodes)
+
+
+    ???
   }
 
-  override def relationships(name: String, relCypherType: CTRelationship): CAPSRecords = {
+  override def relationships(name: String, relCypherType: CTRelationship): RelationalCypherRecords[T] = {
     val targetRel = Var(name)(relCypherType)
     val relSchema = schema.forRelationship(relCypherType)
     val targetRelHeader = relSchema.headerForRelationship(targetRel)
     val extractionRels: Set[Var] = header.relationshipsForType(relCypherType)
 
-    extractRecordsFor(targetRel, targetRelHeader, extractionRels)
+    ???
   }
 
-  private def extractRecordsFor(targetVar: Var, targetHeader: RecordHeader, extractionVars: Set[Var]): CAPSRecords = {
-    val extractionExpressions = extractionVars.map(candidate => candidate -> header.ownedBy(candidate)).toMap
-
-    val relColumnsLookupTables = extractionExpressions.map {
-      case (relVar, expressionsForRel) =>
-        relVar -> createScanToBaseTableLookup(targetHeader, targetVar, expressionsForRel)
-    }
-
-    val extractedDf = baseTable
-      .df
-      .flatMap(RowExpansion(targetHeader, targetVar, extractionExpressions, relColumnsLookupTables))(targetHeader.rowEncoder)
-
-    val distinctData = extractedDf.dropDuplicates(targetHeader.column(targetVar))
-
-    CAPSRecords(targetHeader, distinctData)
-  }
-
-  private def createScanToBaseTableLookup(targetHeader: RecordHeader, scanTableVar: Var, baseTableExpressions: Set[Expr]): Map[String, String] = {
+  private def createScanToBaseTableLookup(
+    targetHeader: RecordHeader,
+    scanTableVar: Var,
+    baseTableExpressions: Set[Expr]
+  ): Map[String, String] = {
     baseTableExpressions.flatMap { baseTableExpression =>
       val scanTableExpression = baseTableExpression.withOwner(scanTableVar)
 

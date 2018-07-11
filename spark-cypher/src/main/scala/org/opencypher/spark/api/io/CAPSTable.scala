@@ -55,7 +55,7 @@ case class CAPSNodeTable(
   override val table: DataFrameTable
 ) extends NodeTable(mapping, table) with CAPSEntityTable {
 
-  override type R = CAPSNodeTable
+  override type Records = CAPSNodeTable
 
   override def from(
     header: RecordHeader,
@@ -133,7 +133,7 @@ case class CAPSRelationshipTable(
   override val table: DataFrameTable
 ) extends RelationshipTable(mapping, table) with CAPSEntityTable {
 
-  override type R = CAPSRelationshipTable
+  override type Records = CAPSRelationshipTable
 
   override def from(
     header: RecordHeader,
