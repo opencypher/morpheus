@@ -26,7 +26,6 @@
  */
 package org.opencypher.okapi.api.types
 
-import org.opencypher.okapi.api.types.CypherType.{CTList, CTVoid}
 import org.opencypher.okapi.trees.AbstractTreeNode
 
 import scala.reflect.ClassTag
@@ -105,18 +104,16 @@ abstract class Type[T <: Type[T] : ClassTag] extends AbstractTreeNode[T] {
 
   def canIntersect(other: T): Boolean = false
 
-  def &(other: T): T = intersect(other, true)
+  def &(other: T): T = intersect(other)
 
   def intersect(other: T, tryReverseDirection: Boolean = true): T = {
-    if (this.subTypeOf(other)) this
+    if (subTypeOf(other)) this
     else if (other.subTypeOf(this)) other
     else {
       other match {
-        case _: AnyType[T] => this
-        case _: NothingType[T] => other
         case i: IntersectionType[T] if i.canIntersect(other) => flattenAndIntersect(i.ands + this)
         case u: UnionType[T] if u.canIntersect(other) => flattenAndUnion(u.ors.map(_.intersect(this)))
-        case _ if tryReverseDirection => other.intersect(this, false)
+        case _ if tryReverseDirection => other.intersect(this, tryReverseDirection = false)
         case _ if canIntersect(other) || other.canIntersect(this) => flattenAndIntersect(this, other)
         case _ => newNothing
       }
@@ -233,8 +230,8 @@ trait IntersectionType[T <: Type[T]] extends Type[T] {
   override def canIntersect(other: T): Boolean = ands.forall(and => and.canIntersect(other) || other.canIntersect(and))
 
   override def subTypeOf(other: T): Boolean = other match {
-    case u: UnionType[T] => u.ors.exists(or => ands.forall(_.superTypeOf(or)))
-    case i: IntersectionType[T] => ands.forall(and => i.ands.exists(otherAnd => and.subTypeOf(otherAnd)))
+    case u: UnionType[T] => u.ors.exists(or => ands.forall(_ superTypeOf or))
+    case i: IntersectionType[T] => i.ands.forall(otherAnd => ands.exists(_ subTypeOf otherAnd))
     case _ if ands.exists(_.subTypeOf(other)) => true
     case _ => super.subTypeOf(other)
   }
