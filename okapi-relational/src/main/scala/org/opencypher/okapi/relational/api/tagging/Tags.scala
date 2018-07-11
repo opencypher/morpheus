@@ -24,9 +24,8 @@
  * described as "implementation extensions to Cypher" or as "proposed changes to
  * Cypher that are not yet approved by the openCypher community".
  */
-package org.opencypher.spark.api
+package org.opencypher.okapi.relational.api.tagging
 
-import org.apache.spark.sql.{Column, functions}
 import org.opencypher.okapi.impl.exception.IllegalStateException
 
 object Tags {
@@ -49,8 +48,6 @@ object Tags {
   val tagMask: Long = -1L << idBits
 
   val invertedTagMask: Long = ~tagMask
-
-  val invertedTagMaskLit: Column = functions.lit(invertedTagMask)
 
   /**
     * Returns a free tag given a set of used tags.

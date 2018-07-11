@@ -225,26 +225,6 @@ object RelationalPlanner {
     }
   }
 
-//    private def planConstructGraph[T <: FlatRelationalTable[T]](in: Option[LogicalOperator], construct: LogicalPatternGraph)
-//      (implicit plannerContext: RelationalPlannerContext[T]): RelationalOperator[T] = {
-//      val onGraphPlan = {
-//        construct.onGraphs match {
-//          case Nil => relational.Start() // Empty start
-//          //TODO: Optimize case where no union is necessary
-//          //case h :: Nil => relational.Start(Some(h)) // Just one graph, no union required
-//          case several =>
-//            val onGraphPlans = several.map(qgn => relational.Start(Some(qgn)))
-//            relational.GraphUnionAll(onGraphPlans, construct.name)
-//        }
-//      }
-//      val inputTablePlan = in.map(process).getOrElse(relational.Start())
-//
-//      val constructGraphPlan = relational.ConstructGraph(inputTablePlan, onGraphPlan, construct)
-//      plannerContext.constructedGraphPlans.update(construct.name, constructGraphPlan)
-//      constructGraphPlan
-//      ???
-//    }
-  
   def planJoin[T <: FlatRelationalTable[T]](lhs: RelationalOperator[T], rhs: RelationalOperator[T], joinExprs: Seq[(Expr, Expr)], joinType: JoinType): RelationalOperator[T] = {
     
     val joinHeader = lhs.header join rhs.header

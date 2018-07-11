@@ -27,7 +27,7 @@
 package org.opencypher.spark.api
 
 import org.opencypher.okapi.impl.exception.IllegalStateException
-import org.opencypher.spark.api.Tags._
+import org.opencypher.okapi.relational.api.tagging.Tags._
 import org.scalatest.{FunSpec, Matchers}
 
 class TagsTest extends FunSpec with Matchers {

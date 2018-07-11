@@ -26,10 +26,19 @@
  */
 package org.opencypher.okapi.relational.impl.physical
 
-import org.opencypher.okapi.logical.impl.{LogicalOperator, LogicalPatternGraph}
+import org.opencypher.okapi.api.graph.QualifiedGraphName
+import org.opencypher.okapi.api.types.{CTBoolean, CTInteger}
+import org.opencypher.okapi.ir.api.expr._
+import org.opencypher.okapi.ir.api.set.SetPropertyItem
+import org.opencypher.okapi.ir.api.{PropertyKey, RelType}
+import org.opencypher.okapi.logical.impl._
+import org.opencypher.okapi.relational.api.graph.RelationalCypherGraph
 import org.opencypher.okapi.relational.api.physical.{RelationalPlannerContext, RelationalRuntimeContext}
 import org.opencypher.okapi.relational.api.table.FlatRelationalTable
+import org.opencypher.okapi.relational.api.tagging.TagSupport.computeRetaggings
+import org.opencypher.okapi.relational.api.tagging.Tags
 import org.opencypher.okapi.relational.impl.operators.RelationalOperator
+import org.opencypher.okapi.relational.impl.table.RecordHeader
 import org.opencypher.okapi.relational.impl.{operators => relational}
 
 object ConstructGraphPlanner {
@@ -52,5 +61,281 @@ object ConstructGraphPlanner {
     val constructGraphPlan = relational.ConstructGraph(inputTablePlan, onGraphPlan, construct)
     plannerContext.constructedGraphPlans += (construct.name -> constructGraphPlan)
     constructGraphPlan
+  }
+}
+
+final case class ConstructGraph[T <: FlatRelationalTable[T]](
+  lhs: RelationalOperator[T],
+  rhs: RelationalOperator[T],
+  construct: LogicalPatternGraph
+) extends RelationalOperator[T] {
+
+  override lazy val header: RecordHeader = RecordHeader.empty
+
+  override lazy val _table: T = lhs.table.unit
+
+  override def toString: String = {
+    val entities = construct.clones.keySet ++ construct.newEntities.map(_.v)
+    s"ConstructGraph(on=[${construct.onGraphs.mkString(", ")}], entities=[${entities.mkString(", ")}])"
+  }
+
+  private def pickFreeTag(tagStrategy: Map[QualifiedGraphName, Map[Int, Int]]): Int = {
+    val usedTags = tagStrategy.values.flatMap(_.values).toSet
+    Tags.pickFreeTag(usedTags)
+  }
+
+  private def identityRetaggings(g: RelationalCypherGraph[T]): (RelationalCypherGraph[T], Map[Int, Int]) = {
+    g -> g.tags.zip(g.tags).toMap
+  }
+
+  override lazy val (graph, graphName, tagStrategy): (RelationalCypherGraph[T], QualifiedGraphName, TagStrategy) = {
+
+    val onGraph = rhs.graph
+
+    val unionTagStrategy: Map[QualifiedGraphName, Map[Int, Int]] = rhs.tagStrategy
+
+    val LogicalPatternGraph(schema, clonedVarsToInputVars, newEntities, sets, _, name) = construct
+
+    val matchGraphs: Set[QualifiedGraphName] = clonedVarsToInputVars.values.map(_.cypherType.graph.get).toSet
+    val allGraphs = unionTagStrategy.keySet ++ matchGraphs
+    val tagsForGraph: Map[QualifiedGraphName, Set[Int]] = allGraphs.map(qgn => qgn -> resolveTags(qgn)).toMap
+
+    val constructTagStrategy = computeRetaggings(tagsForGraph, unionTagStrategy)
+
+    // Apply aliases in CLONE to input table in order to create the base table, on which CONSTRUCT happens
+    val aliasClones = clonedVarsToInputVars
+      .filter { case (alias, original) => alias != original }
+      .map(_.swap)
+
+    val aliasOp: RelationalOperator[T] = relational.Alias(lhs, aliasClones.map { case (expr, alias) => expr as alias }.toSeq)
+
+    val retagBaseTableOp = clonedVarsToInputVars.foldLeft(aliasOp) {
+      case (op, (alias, original)) => RetagVariable(op, alias, constructTagStrategy(original.cypherType.graph.get))
+    }
+
+    // Construct NEW entities
+    val (newEntityTags, constructedEntitiesOp) = {
+      if (newEntities.isEmpty) {
+        Set.empty[Int] -> retagBaseTableOp
+      } else {
+        val newEntityTag = pickFreeTag(constructTagStrategy)
+        val entitiesOp = createEntities(retagBaseTableOp, newEntities, newEntityTag)
+
+        val entityTableWithProperties = sets.foldLeft(entitiesOp) {
+          case (currentOp, SetPropertyItem(propertyKey, v, valueExpr)) =>
+            val propertyExpression = Property(v, PropertyKey(propertyKey))(valueExpr.cypherType)
+            ConstructProperty(currentOp, v, propertyExpression, valueExpr)
+        }
+        Set(newEntityTag) -> entityTableWithProperties
+      }
+    }
+
+    // Remove all vars that were part the original pattern graph DF, except variables that were CLONEd without an alias
+    val allInputVars = aliasOp.header.vars
+    val originalVarsToKeep = clonedVarsToInputVars.keySet -- aliasClones.keySet
+    val varsToRemoveFromTable = allInputVars -- originalVarsToKeep
+
+    val patternGraphTable = relational.Drop(constructedEntitiesOp, varsToRemoveFromTable)
+
+    val tagsUsed = constructTagStrategy.foldLeft(newEntityTags) {
+      case (tags, (qgn, remapping)) =>
+        val remappedTags = tagsForGraph(qgn).map(remapping)
+        tags ++ remappedTags
+    }
+
+    val patternGraph = PatternGraph.create(patternGraphTable, schema, tagsUsed)
+
+    val constructedCombinedWithOn = onGraph match {
+      case _: EmptyGraph => CAPSUnionGraph(Map(identityRetaggings(patternGraph)))
+      case _ => CAPSUnionGraph(Map(identityRetaggings(onGraph), identityRetaggings(patternGraph)))
+    }
+
+    context.queryCatalog.update(construct.name, constructedCombinedWithOn)
+
+    (constructedCombinedWithOn, name, constructTagStrategy)
+  }
+
+  private def createEntities(
+    inOp: RelationalOperator[T],
+    toCreate: Set[ConstructedEntity],
+    newEntityTag: Int
+  ): RelationalOperator[T] = {
+
+    // Construct nodes before relationships, as relationships might depend on nodes
+    val nodes: Set[ConstructedNode] = toCreate.collect {
+      case c: ConstructedNode if !inOp.header.vars.contains(c.v) => c
+    }
+    val rels: Set[ConstructedRelationship] = toCreate.collect {
+      case r: ConstructedRelationship if !inOp.header.vars.contains(r.v) => r
+    }
+
+    val (_, nodesToCreate) = nodes.foldLeft(0 -> Map.empty[Expr, Column]) {
+      case ((nextColumnPartitionId, constructedNodes), nextNodeToConstruct) =>
+        (nextColumnPartitionId + 1) -> (constructedNodes ++ constructNode(inOp, newEntityTag, nextColumnPartitionId, nodes.size, nextNodeToConstruct))
+    }
+
+    val createdNodesOp = AddEntitiesToRecords(inOp, nodesToCreate)
+
+    val (_, relsToCreate) = rels.foldLeft(0 -> Map.empty[Expr, Column]) {
+      case ((nextColumnPartitionId, constructedRels), nextRelToConstruct) =>
+        (nextColumnPartitionId + 1) -> (constructedRels ++ constructRel(createdNodesOp, newEntityTag, nextColumnPartitionId, rels.size, nextRelToConstruct))
+    }
+
+    AddEntitiesToRecords(createdNodesOp, relsToCreate)
+  }
+
+  private def constructNode(
+    inOp: RelationalOperator[T],
+    newEntityTag: Int,
+    columnIdPartition: Int,
+    numberOfColumnPartitions: Int,
+    node: ConstructedNode
+  ): Map[Expr, Column] = {
+
+    val idTuple = node.v -> generateId(columnIdPartition, numberOfColumnPartitions).setTag(newEntityTag)
+
+    val copiedLabelTuples = node.baseEntity match {
+      case Some(origNode) => copyExpressions(inOp, node.v)(_.labelsFor(origNode))
+      case None => Map.empty
+    }
+
+    val newLabelTuples = node.labels.map {
+      label => HasLabel(node.v, label)(CTBoolean) -> functions.lit(true)
+    }.toMap
+
+    val propertyTuples = node.baseEntity match {
+      case Some(origNode) => copyExpressions(inOp, node.v)(_.propertiesFor(origNode))
+      case None => Map.empty
+    }
+
+    newLabelTuples ++
+      copiedLabelTuples ++
+      propertyTuples +
+      idTuple
+  }
+
+  /**
+    *org.apache.spark.sql.functions$#monotonically_increasing_id()
+    *
+    * @param columnIdPartition column partition within DF partition
+    */
+  // TODO: improve documentation and add specific tests
+  private def generateId(columnIdPartition: Int, numberOfColumnPartitions: Int): Column = {
+    val columnPartitionBits = math.log(numberOfColumnPartitions).floor.toInt + 1
+    val totalIdSpaceBits = 33
+    val columnIdShift = totalIdSpaceBits - columnPartitionBits
+
+    // id needs to be generated
+    // Limits the system to 500 mn partitions
+    // The first half of the id space is protected
+    val columnPartitionOffset = columnIdPartition.toLong << columnIdShift
+    monotonically_increasing_id() + functions.lit(columnPartitionOffset)
+  }
+
+  private def constructRel(
+    inOp: RelationalOperator[T],
+    newEntityTag: Int,
+    columnIdPartition: Int,
+    numberOfColumnPartitions: Int,
+    toConstruct: ConstructedRelationship
+  ): Map[Expr, Column] = {
+    val ConstructedRelationship(rel, source, target, typOpt, baseRelOpt) = toConstruct
+    val header = inOp.header
+    val inData = inOp.table.df
+
+    // id needs to be generated
+    val idTuple = rel -> generateId(columnIdPartition, numberOfColumnPartitions).setTag(newEntityTag)
+
+    // source and target are present: just copy
+    val sourceTuple = {
+      val dfColumn = inData.col(header.column(source))
+      StartNode(rel)(CTInteger) -> dfColumn
+    }
+    val targetTuple = {
+      val dfColumn = inData.col(header.column(target))
+      EndNode(rel)(CTInteger) -> dfColumn
+    }
+
+    val typeTuple: Map[Expr, Column] = {
+      typOpt match {
+        // type is set
+        case Some(t) =>
+          Map(HasType(rel, RelType(t))(CTBoolean) -> functions.lit(true))
+        case None =>
+          // When no type is present, it needs to be a copy of a base relationship
+          copyExpressions(inOp, rel)(_.typesFor(baseRelOpt.get))
+      }
+    }
+
+    val propertyTuples: Map[Expr, Column] = baseRelOpt match {
+      case Some(baseRel) =>
+        copyExpressions(inOp, rel)(_.propertiesFor(baseRel))
+      case None => Map.empty
+    }
+
+    propertyTuples ++ typeTuple + idTuple + sourceTuple + targetTuple
+  }
+
+  private def copyExpressions[T <: Expr](inOp: RelationalOperator[T], targetVar: Var)
+    (extractor: RecordHeader => Set[T]): Map[Expr, Column] = {
+    val origExprs = extractor(inOp.header)
+    val copyExprs = origExprs.map(_.withOwner(targetVar))
+    val dfColumns = origExprs.map(inOp.header.column).map(inOp.table.df.col)
+    copyExprs.zip(dfColumns).toMap
+  }
+}
+case class RetagVariable[T <: FlatRelationalTable[T]](in: RelationalOperator[T], v: Var, replacements: Map[Int, Int]) extends RelationalOperator[T] {
+
+  override lazy val _table: T = {
+    val columnsToUpdate = header.idColumns(v)
+    // TODO: implement efficiently for multiple columns
+    columnsToUpdate.foldLeft(in.table.df) { case (currentDf, columnName) =>
+      currentDf.safeReplaceTags(columnName, replacements)
+    }
+  }
+}
+
+final case class AddEntitiesToRecords[T <: FlatRelationalTable[T]](
+  in: RelationalOperator[T],
+  columnsToAdd: Map[Expr, Column]
+) extends RelationalOperator[T] {
+
+  override lazy val header: RecordHeader = in.header.withExprs(columnsToAdd.keySet)
+
+  override lazy val _table: T = {
+    val dfWithColumns = columnsToAdd.foldLeft(in.table.df) {
+      case (acc, (expr, col)) => acc.safeAddColumn(header.column(expr), col)
+    }
+    dfWithColumns.setNullability(columnsToAdd.keys.map(e => header.column(e) -> e.cypherType).toMap)
+  }
+
+}
+
+final case class ConstructProperty[T <: FlatRelationalTable[T]](in: RelationalOperator[T], v: Var, propertyExpr: Property, valueExpr: Expr)
+  (implicit context: RelationalRuntimeContext[T]) extends RelationalOperator[T] {
+
+  private lazy val existingPropertyExpressionsForKey = in.header.propertiesFor(v).collect({
+    case p@Property(_, PropertyKey(name)) if name == propertyExpr.key.name => p
+  })
+
+  override lazy val header: RecordHeader = {
+    val inHeader = in.header
+
+    val headerWithExistingRemoved = inHeader -- existingPropertyExpressionsForKey
+    headerWithExistingRemoved.withExpr(propertyExpr)
+  }
+
+  override lazy val _table: T = {
+    val inHeader = in.header
+    val inTable = in.table
+
+    val propertyValueColumn: Column = valueExpr.asSparkSQLExpr(inHeader, inTable.df, context.parameters)
+
+
+    val dataWithExistingRemoved = existingPropertyExpressionsForKey.foldLeft(inTable.df) {
+      case (acc, toRemove) => acc.safeDropColumn(inHeader.column(toRemove))
+    }
+
+    dataWithExistingRemoved.safeAddColumn(header.column(propertyExpr), propertyValueColumn)
   }
 }

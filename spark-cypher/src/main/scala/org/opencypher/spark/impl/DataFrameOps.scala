@@ -39,7 +39,7 @@ import org.opencypher.okapi.impl.util.Measurement.printTiming
 import org.opencypher.okapi.ir.api.expr.{Expr, Param}
 import org.opencypher.okapi.relational.api.physical.RelationalRuntimeContext
 import org.opencypher.okapi.relational.impl.table.RecordHeader
-import org.opencypher.spark.api.Tags._
+import org.opencypher.okapi.relational.api.tagging.Tags._
 import org.opencypher.spark.impl.convert.SparkConversions._
 import org.opencypher.spark.impl.table.SparkFlatRelationalTable.DataFrameTable
 
@@ -85,7 +85,7 @@ object DataFrameOps {
     def setTag(tag: Int): Column = {
       val tagLit = lit(tag.toLong << idBits)
       val newId = col
-        .bitwiseAND(invertedTagMaskLit)
+        .bitwiseAND(functions.lit(invertedTagMask))
         .bitwiseOR(tagLit)
       newId
     }
