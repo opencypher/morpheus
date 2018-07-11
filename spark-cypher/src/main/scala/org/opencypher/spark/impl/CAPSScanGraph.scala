@@ -29,6 +29,7 @@ package org.opencypher.spark.impl
 import org.apache.spark.sql.functions
 import org.apache.spark.storage.StorageLevel
 import org.opencypher.okapi.api.schema._
+import org.opencypher.okapi.api.types.CypherType
 import org.opencypher.okapi.api.types.CypherType._
 import org.opencypher.okapi.ir.api.expr._
 import org.opencypher.okapi.relational.api.schema.RelationalSchema._
@@ -65,13 +66,13 @@ class CAPSScanGraph(val scans: Seq[CAPSEntityTable], val schema: CAPSSchema, val
 
   override def unpersist(blocking: Boolean): CAPSScanGraph = forEach(_.table.unpersist(blocking))
 
-  override def nodes(name: String, nodeCypherType: CTNode): CAPSRecords =
+  override def nodes(name: String, nodeCypherType: CypherType): CAPSRecords =
     nodesInternal(name, nodeCypherType, byExactType = false)
 
   override def nodesWithExactLabels(name: String, labels: Set[String]): CAPSRecords =
     nodesInternal(name, CTNode(labels), byExactType = true)
 
-  private def nodesInternal(name: String, nodeCypherType: CTNode, byExactType: Boolean): CAPSRecords = {
+  private def nodesInternal(name: String, nodeCypherType: CypherType, byExactType: Boolean): CAPSRecords = {
     val node = Var(name)(nodeCypherType)
     val selectedTables = if (byExactType) {
       nodeTables.filter(_.entityType == nodeCypherType)
@@ -84,7 +85,7 @@ class CAPSScanGraph(val scans: Seq[CAPSEntityTable], val schema: CAPSSchema, val
     alignRecords(selectedTables.map(_.records), node, targetNodeHeader).getOrElse(CAPSRecords.empty(targetNodeHeader))
   }
 
-  override def relationships(name: String, relCypherType: CTRelationship): CAPSRecords = {
+  override def relationships(name: String, relCypherType: CypherType): CAPSRecords = {
     val rel = Var(name)(relCypherType)
     val scanTypes = relCypherType.relTypes
     val selectedScans = relTables.filter(relTable => scanTypes.isEmpty || scanTypes.exists(relTable.entityType.relTypes.contains))

@@ -26,10 +26,7 @@
  */
 package org.opencypher.okapi.api.schema
 
-import org.opencypher.okapi.api.types.CypherType
 import org.opencypher.okapi.api.types.CypherType._
-import org.opencypher.okapi.api.types._
-import org.opencypher.okapi.api.types._
 import org.scalatest.{FunSpec, Matchers}
 
 class SchemaTest extends FunSpec with Matchers {
@@ -284,7 +281,7 @@ class SchemaTest extends FunSpec with Matchers {
       .withNodePropertyKeys(Set.empty[String], Map("a" -> CTString))
 
     schema.nodeKeyType(Set("A"), "a") should equal(Some(CTInteger))
-    schema.nodeKeyType(Set.empty[String], "a") should equal(Some(CTUnion(CTInteger, CTString)))
+    schema.nodeKeyType(Set.empty[String], "a") should equal(Some(CTInteger.union(CTString)))
     schema.nodeKeyType(Set.empty[String], "b") should equal(Some(CTString.nullable))
     schema.nodeKeyType(Set("B"), "b") should equal(None)
     schema.nodeKeyType(Set("A"), "x") should equal(None)
@@ -303,7 +300,7 @@ class SchemaTest extends FunSpec with Matchers {
     schema.relationshipKeyType(Set("A"), "a") should equal(Some(CTInteger))
     schema.relationshipKeyType(Set("A", "B"), "a") should equal(Some(CTNumber))
     schema.relationshipKeyType(Set("A", "B"), "b") should equal(Some(CTString.nullable))
-    schema.relationshipKeyType(Set("A", "B", "C"), "c") should equal(Some(CTUnion(CTFloat, CTString, CTNull)))
+    schema.relationshipKeyType(Set("A", "B", "C"), "c") should equal(Some(CTFloat.union(CTString).union(CTNull)))
     schema.relationshipKeyType(Set("A"), "e") should equal(None)
 
     schema.relationshipKeyType(Set.empty, "a") should equal(Some(CTNumber.nullable))
@@ -321,8 +318,10 @@ class SchemaTest extends FunSpec with Matchers {
         "b" -> CTNumber.nullable,
         "c" -> CTString,
         "d" -> CTString.nullable,
-        "e" -> CTUnion(CTString, CTInteger, CTNull),
-        "f" -> CTUnion(CTString, CTInteger, CTBoolean)))
+        "e" -> CTString.union(CTInteger).union(CTNull),
+        "f" -> CTString.union(CTInteger).union(CTBoolean)
+      )
+    )
   }
 
   it("get keys for") {
@@ -333,7 +332,7 @@ class SchemaTest extends FunSpec with Matchers {
 
     schema.keysFor("A") should equal(Map("b" -> CTInteger, "c" -> CTString, "e" -> CTString, "f" -> CTInteger))
     schema.keysFor("B") should equal(Map("b" -> CTFloat, "c" -> CTString, "e" -> CTInteger))
-    schema.keysFor("A", "B") should equal(Map("b" -> CTNumber, "c" -> CTString, "e" -> CTUnion(CTString, CTInteger), "f" -> CTInteger.nullable))
+    schema.keysFor("A", "B") should equal(Map("b" -> CTNumber, "c" -> CTString, "e" -> CTString.union(CTInteger), "f" -> CTInteger.nullable))
   }
 
   it("get keys for label combinations") {
@@ -344,7 +343,7 @@ class SchemaTest extends FunSpec with Matchers {
 
     schema.keysFor(Set(Set("A"))) should equal(Map("b" -> CTInteger, "c" -> CTString, "e" -> CTString, "f" -> CTInteger))
     schema.keysFor(Set(Set("B"))) should equal(Map("b" -> CTFloat, "c" -> CTString, "e" -> CTInteger))
-    schema.keysFor(Set(Set("A"), Set("B"))) should equal(Map("b" -> CTNumber, "c" -> CTString, "e" -> CTUnion(CTString, CTInteger), "f" -> CTInteger.nullable))
+    schema.keysFor(Set(Set("A"), Set("B"))) should equal(Map("b" -> CTNumber, "c" -> CTString, "e" -> CTString.union(CTInteger), "f" -> CTInteger.nullable))
     schema.keysFor(Set(Set("A", "B"))) should equal(Map.empty)
     schema.keysFor(Set(Set.empty[String])) should equal(Map("a" -> CTString, "c" -> CTString, "d" -> CTString.nullable, "f" -> CTString))
   }

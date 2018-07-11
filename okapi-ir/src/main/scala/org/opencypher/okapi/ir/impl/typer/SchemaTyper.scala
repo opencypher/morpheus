@@ -114,7 +114,7 @@ object SchemaTyper {
       val values: Seq[Expression] = items.map(_._2)
       for {
         mapValueTypes <- values.toList.traverse(process[R])
-        mapType <- recordAndUpdate(expr -> CTMap(mapValueTypes.foldLeft(CTVoid)(_ union _)))
+        mapType <- recordAndUpdate(expr -> CTMap(mapValueTypes.foldLeft(CTVoid: CypherType)(_ union _)))
       } yield mapType
 
     case _: ExistsPattern =>
@@ -322,7 +322,7 @@ object SchemaTyper {
 
           // TODO: Test all cases
           case (CTList(eltTyp), CTInteger) =>
-            updateTyping(expr -> eltTyp.setNullable((indexTyp union eltTyp).isNullable))
+            updateTyping(expr -> (if ((indexTyp union eltTyp).isNullable) eltTyp.nullable else eltTyp.material))
 
           case (l, CTInteger) if l.subTypeOf(CTAnyList) =>
             updateTyping(expr -> l.maybeElementType.get)
@@ -507,7 +507,7 @@ object SchemaTyper {
           }
       }) match {
         case Some(CTVoid) => wrong[R, TyperError](UnsupportedExpr(expr)) >> pure(Set(Seq(left, right) -> CTVoid))
-        case Some(t) => pure(Set(Seq(left, right) -> t.setNullable((left union right).isNullable)))
+        case Some(t) => pure(Set(Seq(left, right) -> (if ((left union right).isNullable) t.nullable else t.material)))
         case None => pure(Set.empty)
       }
     }

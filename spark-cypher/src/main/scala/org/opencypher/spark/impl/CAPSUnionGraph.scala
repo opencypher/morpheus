@@ -28,6 +28,7 @@ package org.opencypher.spark.impl
 
 import org.apache.spark.storage.StorageLevel
 import org.opencypher.okapi.api.schema.Schema
+import org.opencypher.okapi.api.types.CypherType
 import org.opencypher.okapi.api.types.CypherType.{CTNode, CTRelationship}
 import org.opencypher.okapi.ir.api.expr.Var
 import org.opencypher.okapi.relational.api.schema.RelationalSchema._
@@ -69,7 +70,7 @@ final case class CAPSUnionGraph(graphsToReplacements: Map[CAPSGraph, Map[Int, In
   private def map(f: CAPSGraph => CAPSGraph): CAPSUnionGraph =
     CAPSUnionGraph(graphsToReplacements.keys.map(f).zip(graphsToReplacements.keys).toMap.mapValues(graphsToReplacements))
 
-  override def nodes(name: String, nodeCypherType: CTNode): CAPSRecords = {
+  override def nodes(name: String, nodeCypherType: CypherType): CAPSRecords = {
     val node = Var(name)(nodeCypherType)
     val targetHeader = schema.headerForNode(node)
     val nodeScans = graphsToReplacements.keys
@@ -92,7 +93,7 @@ final case class CAPSUnionGraph(graphsToReplacements: Map[CAPSGraph, Map[Int, In
       .getOrElse(CAPSRecords.empty(targetHeader))
   }
 
-  override def relationships(name: String, relCypherType: CTRelationship): CAPSRecords = {
+  override def relationships(name: String, relCypherType: CypherType): CAPSRecords = {
     val rel = Var(name)(relCypherType)
     val targetHeader = schema.headerForRelationship(rel)
     val relScans = graphsToReplacements.keys

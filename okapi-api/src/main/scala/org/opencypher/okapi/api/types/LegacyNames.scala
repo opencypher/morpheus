@@ -32,41 +32,30 @@ object LegacyNames {
 
   implicit class TypeWithLegacyName(val ct: CypherType) extends AnyVal {
     def legacyName: String = {
+      val nullableSuffix = if (ct.isNullable) "?" else ""
       ct match {
-        case CTLabel(l) => s"NODE(:$l)"
-        case CTRelType(rt) => s"RELATIONSHIP(:$rt)"
-        case CTList(elementType) => s"LIST OF ${elementType.legacyName}"
-        case i: CTIntersection =>
-          import i._
-          if (subTypeOf(CTAnyNode)) {
-            s"NODE(${labels.mkString(":", ":", "")})"
+        case CTVoid => "VOID"
+        case CTNull => "NULL"
+        case _ if ct.subTypeOf(CTNoLabelNode.nullable) =>
+          s"NODE()$nullableSuffix"
+        case CTNode(labels) =>
+          if (labels.isEmpty) {
+            s"NODE$nullableSuffix"
           } else {
-            // Non-legacy type
-            name
+            s"NODE(${labels.mkString(":", ":", "")})$nullableSuffix"
           }
+        case CTRelationship(relTypes) =>
+          if (relTypes.isEmpty) {
+            s"RELATIONSHIP$nullableSuffix"
+          } else {
+            s"RELATIONSHIP(${relTypes.mkString(":", "|", "")})$nullableSuffix"
+          }
+        case CTList(elementType) => s"LIST OF ${elementType.legacyName}"
+        case _ if ct.subTypeOf(CTAnyMap.nullable) => s"MAP$nullableSuffix"
         case u: CTUnion =>
           import u._
-          val nullableSuffix = if (isNullable) "?" else ""
-          if (u == CTVoid) {
-            "VOID"
-          } else if (u == CTNumber || u == CTNumber.nullable) {
+          if (u == CTNumber || u == CTNumber.nullable) {
             s"NUMBER$nullableSuffix"
-          } else if (u == CTNoLabelNode) {
-            "NODE()"
-          } else if (u == CTNoLabelNode.nullable) {
-            s"NODE()?"
-          } else if (subTypeOf(CTAnyNode.nullable)) {
-            if (labels.isEmpty) {
-              s"NODE$nullableSuffix"
-            } else {
-              s"NODE(${labels.mkString(":", ":", "")})$nullableSuffix"
-            }
-          } else if (subTypeOf(CTAnyRelationship.nullable)) {
-            if (relTypes.isEmpty) {
-              s"RELATIONSHIP$nullableSuffix"
-            } else {
-              s"RELATIONSHIP(${relTypes.mkString(":", "|", "")})$nullableSuffix"
-            }
           } else if (subTypeOf(CTAnyList.nullable)) {
             val elementType = ors.collect { case CTList(et) => et }.head
             s"LIST$nullableSuffix OF ${elementType.legacyName}"
@@ -91,11 +80,11 @@ object LegacyNames {
     * @see {{{org.opencypher.okapi.api.types.CypherType#name}}}
     */
   def fromLegacyName(name: String): Option[CypherType] = {
-    def extractLabels(s: String, typ: String, sep: String): Set[String] = {
+    def extractLabels(s: String, typ: String, sep: String): Option[Set[String]] = {
       val regex = s"""$typ\\(:(.+)\\).?""".r
       s match {
-        case regex(l) => l.split(sep).toSet
-        case _ => Set.empty[String]
+        case regex(l) => Some(l.split(sep).toSet)
+        case _ => None
       }
     }
 
@@ -113,10 +102,18 @@ object LegacyNames {
       case "?" | "??" => Some(CTAny)
 
       case node if node.startsWith("NODE") =>
-        Some(CTNode(extractLabels(node, "NODE", ":")))
+        extractLabels(node, "NODE", ":") match {
+          case None => Some(CTAnyNode)
+          case Some(ls) if ls.isEmpty => Some(CTNoLabelNode)
+          case Some(ls) => Some(CTNode(ls))
+        }
 
       case rel if rel.startsWith("RELATIONSHIP") =>
-        Some(CTRelationship(extractLabels(rel, "RELATIONSHIP", """\|""")))
+        extractLabels(rel, "RELATIONSHIP", """\|""") match {
+          case None => Some(CTAnyRelationship)
+          case Some(rts) if rts.isEmpty => None
+          case Some(rts) => Some(CTRelationship(rts))
+        }
 
       case list if list.startsWith("LIST") =>
         fromLegacyName(list.replaceFirst("""LIST\?? OF """, ""))

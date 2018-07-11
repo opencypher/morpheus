@@ -26,6 +26,7 @@
  */
 package org.opencypher.okapi.relational.impl.table
 
+import org.opencypher.okapi.api.types.CypherType
 import org.opencypher.okapi.api.types.CypherType.{CTAnyNode, CTAnyRelationship, CTNode, CTRelationship}
 import org.opencypher.okapi.impl.exception.IllegalArgumentException
 import org.opencypher.okapi.impl.util.TablePrinter
@@ -189,7 +190,7 @@ case class RecordHeader(exprToColumn: Map[Expr, String]) {
     }
   }
 
-  def nodesForType[T >: NodeVar <: Var](nodeType: CTNode): Set[T] = {
+  def nodesForType[T >: NodeVar <: Var](nodeType: CypherType): Set[T] = {
     // and semantics
     val requiredLabels = nodeType.labels
 
@@ -203,7 +204,7 @@ case class RecordHeader(exprToColumn: Map[Expr, String]) {
     }
   }
 
-  def relationshipsForType[T >: RelationshipVar <: Var](relType: CTRelationship): Set[T] = {
+  def relationshipsForType[T >: RelationshipVar <: Var](relType: CypherType): Set[T] = {
     // or semantics
     val possibleTypes = relType.relTypes
 

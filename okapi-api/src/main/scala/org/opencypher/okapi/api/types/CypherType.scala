@@ -28,36 +28,14 @@ package org.opencypher.okapi.api.types
 
 import cats.Monoid
 import org.opencypher.okapi.api.graph.QualifiedGraphName
-import org.opencypher.okapi.api.types.CypherType.{CTVoid, _}
+import org.opencypher.okapi.api.types.CypherType.{CTIntersection, CTNode, CTNull, CTRelationship, CTUnion, CTVoid}
 import org.opencypher.okapi.api.value.CypherValue._
+import org.opencypher.okapi.impl.exception.UnsupportedOperationException
 import upickle.default._
 
 import scala.language.postfixOps
 
-// TODO: Turn expensive computations into lazy vals
 object CypherType {
-
-  // TODO: Use new type names
-  implicit def rw: ReadWriter[CypherType] = {
-    import LegacyNames._
-    readwriter[String].bimap[CypherType](_.legacyName, s => fromLegacyName(s).get)
-  }
-
-  implicit val joinMonoid: Monoid[CypherType] = new Monoid[CypherType] {
-    override def empty: CypherType = CTVoid
-
-    override def combine(x: CypherType, y: CypherType): CypherType = x union y
-  }
-
-  val CTNumber: CTUnion = CTUnion(Set(CTInteger, CTFloat))
-
-  val CTNoLabelNode: CTNode = CTUnion(Set(CTIntersection()))
-
-  val CTVoid: CypherType = CTUnion(Set.empty[CypherType])
-
-  val CTAnyList: CypherType = CTList().nullable
-
-  val CTAnyMap: CypherType = CTMap()
 
   implicit class TypeCypherValue(cv: CypherValue) {
     def cypherType: CypherType = {
@@ -75,6 +53,50 @@ object CypherType {
     }
   }
 
+  val CTNumber: CypherType = CTInteger.union(CTFloat)
+
+  val CTAnyList: CypherType = CTList()
+
+  val CTAnyMap: CypherType = CTMap()
+
+  case object CTAny extends CypherType with AnyType[CypherType] {
+    override def nullable: CypherType = this
+  }
+
+  case object CTVoid extends CypherType with NothingType[CypherType] {
+    override def nullable: CypherType = CTNull
+  }
+
+  case class CTUnion(ors: Set[CypherType]) extends CypherType with UnionType[CypherType] {
+
+    override def isNullable: Boolean = ors.exists(_.subTypeOf(CTNull))
+
+    override def material: CypherType = {
+      if (isNullable) union(ors - CTNull) else this
+    }
+
+  }
+
+  object CTUnion {
+
+    def apply(ors: CypherType*): CTUnion = {
+      CTUnion(ors.toSet)
+    }
+
+  }
+
+  case class CTIntersection(ands: Set[CypherType]) extends CypherType with IntersectionType[CypherType] {
+    override def isNullable: Boolean = ands.forall(_.subTypeOf(CTNull))
+  }
+
+  object CTIntersection {
+
+    def apply(ands: CypherType*): CTIntersection = {
+      CTIntersection(ands.toSet)
+    }
+
+  }
+
   case object CTBoolean extends CypherType
 
   case object CTString extends CypherType
@@ -84,59 +106,64 @@ object CypherType {
   case object CTFloat extends CypherType
 
   case object CTNull extends CypherType {
-
     override def material: CypherType = CTVoid
-
   }
 
   case object CTPath extends CypherType
-
-  case object CTAny extends CypherType with CTNode {
-
-    override def intersect(other: CTNode): CTNode = other
-
-    override def labels: Set[String] = Set.empty
-  }
 
   trait CTEntity extends CypherType
 
   object CTNode {
 
-    def apply(labels: String*): CTNode = {
+    def apply(labels: String*): CypherType = {
+      CTNode(labels.toSet)
+    }
+
+    def apply(labels: Set[String]): CypherType = {
       val ls = labels.toList
       ls match {
-        case Nil => CTAnyNode
+        case Nil => CTNoLabelNode
         case h :: Nil => CTLabel(h)
-        case h :: t => t.foldLeft(CTLabel(h): CTNode) { case (ct, l) =>
+        case h :: t => t.foldLeft(CTLabel(h): CypherType) { case (ct, l) =>
           ct.intersect(CTLabel(l))
         }
       }
     }
 
-    def apply(labels: Set[String]): CTNode = {
-      CTNode(labels.toSeq: _*)
-    }
-
     def unapply(v: CypherType): Option[Set[String]] = v match {
-      case n: CTNode if n.subTypeOf(CTAnyNode) => Some(n.labels)
+      case CTNoLabelNode => throw UnsupportedOperationException("Not possible to retrieve labels from NoLabelNode")
+      case CTAnyNode => Some(Set.empty)
+      case CTLabel(l) => Some(Set(l))
+      case CTUnion(ors) =>
+        if (ors.contains(CTAnyNode)) Some(Set.empty)
+        else ors.collectFirst { case CTNode(ls) => ls }
+      case CTIntersection(ands) =>
+        val labels = ands.collect { case CTNode(ls) => ls }.flatten
+        if (labels.isEmpty) None
+        else Some(labels)
       case _ => None
     }
 
   }
 
+  case object CTNoLabelNode extends CTNode
+
   sealed trait CTNode extends CTEntity {
 
-    def intersect(other: CTNode): CTNode
-
-    def labels: Set[String]
+    override def canIntersect(other: CypherType): Boolean = other match {
+      case CTNoLabelNode => false
+      case _: CTLabel => true
+      case _ => super.canIntersect(other)
+    }
 
   }
 
   case object CTAnyNode extends CTNode {
 
-    override def intersect(other: CTNode): CTNode = other
-
-    override def labels: Set[String] = Set.empty
+    override def intersect(other: CypherType): CypherType = other match {
+      case n: CTNode => n
+      case _ => super.intersect(other)
+    }
 
   }
 
@@ -149,16 +176,6 @@ object CypherType {
       }
     }
 
-    override def intersect(other: CTNode): CTNode = {
-      other match {
-        case CTAny => this
-        case CTAnyNode => this
-        case n: CTLabel => CTIntersection(this, n)
-        case CTUnion(ors) => CTUnion(ors.map(_.intersect(this)))
-        case CTIntersection(ands) => CTIntersection((ands + this).toSeq: _*)
-      }
-    }
-
     override def labels: Set[String] = Set(label)
 
     override def name: String = s"LABEL($label)"
@@ -167,22 +184,34 @@ object CypherType {
 
   object CTRelationship {
 
-    def apply(relTypes: String*): CTRelationship = {
+    def apply(relTypes: String*): CypherType = {
+      CTRelationship(relTypes.toSet)
+    }
+
+    def apply(relTypes: Set[String]): CypherType = {
       if (relTypes.isEmpty) {
         CTAnyRelationship
       } else {
-        relTypes.tail.map(e => CTRelType(e)).foldLeft(CTRelType(relTypes.head): CTRelationship) { case (t, n) =>
+        relTypes.tail.map(e => CTRelType(e)).foldLeft(CTRelType(relTypes.head): CypherType) { case (t, n) =>
           t.union(n)
         }
       }
     }
 
-    def apply(labels: Set[String]): CTRelationship = {
-      CTRelationship(labels.toSeq: _*)
-    }
-
     def unapply(v: CypherType): Option[Set[String]] = v match {
-      case n: CTRelationship if n.subTypeOf(CTAnyRelationship) => Some(n.relTypes)
+      case CTRelType(r) => Some(Set(r))
+      case CTAnyRelationship => Some(Set.empty)
+      case CTUnion(ors) =>
+        if (ors.contains(CTAnyRelationship)) {
+          Some(Set.empty)
+        } else {
+          val relTypes = ors.collect { case CTRelType(r) => r }
+          if (relTypes.isEmpty) {
+            None
+          } else {
+            Some(relTypes)
+          }
+        }
       case _ => None
     }
 
@@ -197,30 +226,11 @@ object CypherType {
       }
     }
 
-    def union(other: CTRelationship): CTRelationship = {
-      other match {
-        case CTAnyRelationship => CTAnyRelationship
-        case _ =>
-          val rs = (relTypes ++ other.relTypes).map(CTRelType).toList
-          rs match {
-            case Nil => CTAnyRelationship
-            case r :: Nil => r
-            case _ => CTUnion(rs.toSet)
-          }
-      }
-    }
-
     def relTypes: Set[String]
 
   }
 
-  case object CTAnyRelationship extends CTRelationship {
-
-    override def relTypes: Set[String] = Set.empty
-
-    override def union(other: CTRelationship): CTRelationship = this
-
-  }
+  case object CTAnyRelationship extends CTRelationship
 
   case class CTRelType(relType: String) extends CTRelationship {
 
@@ -230,288 +240,85 @@ object CypherType {
 
   }
 
-  case class CTMap(elementType: CypherType = CTAny) extends CypherType with Container {
+  case class CTMap(elementType: CypherType = CTAny) extends CypherType with ContainerType[CypherType] {
 
-    override def subTypeOf(other: CypherType): Boolean = {
-      other match {
-        case CTMap(otherElementType) => elementType.subTypeOf(otherElementType)
-        case _ => super.subTypeOf(other)
-      }
+    override def newInstance(et: CypherType): CypherType = CTMap(et)
+
+    override def canIntersect(other: CypherType): Boolean = other match {
+      case CTMap(_) => true
+      case _ => super.canIntersect(other)
     }
 
-    override def intersect(other: CypherType): CypherType = {
-      other match {
-        case CTMap(otherElementType) => CTMap(elementType.intersect(otherElementType))
-        case _ => super.intersect(other)
-      }
-    }
-
-    override def maybeElementType: Option[CypherType] = {
-      Some(elementType)
-    }
+    override def name: String = s"MAP(${elementType.name})"
 
   }
 
-  sealed trait Container {
+  case class CTList(elementType: CypherType = CTAny) extends CypherType with ContainerType[CypherType] {
 
-    def elementType: CypherType
+    override def newInstance(et: CypherType): CypherType = CTList(et)
+
+    override def canIntersect(other: CypherType): Boolean = other match {
+      case CTList(_) => true
+      case _ => super.canIntersect(other)
+    }
+
+    override def name: String = s"LIST(${elementType.name})"
 
   }
 
-  case class CTList(elementType: CypherType = CTAny) extends CypherType with Container {
+  // TODO: Use new type names for schema version 2, use legacy type names for schema version 1
+  implicit def rw: ReadWriter[CypherType] = {
 
-    override def subTypeOf(other: CypherType): Boolean = {
-      other match {
-        case CTList(otherElementType) => elementType.subTypeOf(otherElementType)
-        case _ => super.subTypeOf(other)
-      }
-    }
+    import LegacyNames._
 
-    override def intersect(other: CypherType): CypherType = {
-      other match {
-        case CTList(otherElementType) => CTList(elementType.intersect(otherElementType))
-        case _ => super.intersect(other)
-      }
-    }
-
-    override def maybeElementType: Option[CypherType] = {
-      Some(elementType)
-    }
-
-    override def name: String = {
-      s"LIST(${elementType.name})"
-    }
-
+    readwriter[String].bimap[CypherType](_.legacyName, s => fromLegacyName(s).get)
   }
 
-  object CTIntersection {
+  implicit val joinMonoid: Monoid[CypherType] = new Monoid[CypherType] {
+    override def empty: CypherType = CTVoid
 
-    def apply(ands: CTNode*): CTNode = {
-      if (ands.size == 1) {
-        ands.head
-      } else {
-        CTIntersection(ands.toSet)
-      }
-    }
-
-  }
-
-  case class CTIntersection(ands: Set[CTNode]) extends CypherType with CTNode {
-
-    override def subTypeOf(other: CypherType): Boolean = {
-      this == other || {
-        other match {
-          case CTUnion(otherOrs) => otherOrs.exists(this.subTypeOf)
-          case CTIntersection(otherAnds) => ands.subsetOf(otherAnds)
-          case _ => ands.exists(_.subTypeOf(other))
-        }
-      }
-    }
-
-    override def intersect(other: CTNode): CTNode = {
-      if (other.subTypeOf(this)) {
-        other
-      } else if (this.subTypeOf(other)) {
-        this
-      } else {
-        CTIntersection((ands + other).toSeq: _*)
-      }
-    }
-
-    override def union(other: CypherType): CypherType = {
-      other match {
-        case CTIntersection(otherAnds) => CTIntersection(ands.intersect(otherAnds).toSeq: _*)
-        case _ => super.union(other)
-      }
-    }
-
-    override def name: String = {
-      if (ands.isEmpty) {
-        "NO-LABEL"
-      } else {
-        val inner = ands.map(_.name).toSeq.sorted.mkString("&")
-        if (ands.size > 1) {
-          s"($inner)"
-        } else {
-          inner
-        }
-      }
-    }
-
-    override def toString: String = s"CTIntersection(${ands.mkString(", ")})"
-
-    override def labels: Set[String] = ands.flatMap(_.labels)
-
-    override def maybeElementType: Option[CypherType] = {
-      val elementTypes = ands.map(_.maybeElementType)
-      if (elementTypes.forall(_.nonEmpty)) {
-        Some(elementTypes.flatten.foldLeft(CTAny: CypherType)(_ intersect _))
-      } else {
-        None
-      }
-    }
-
-  }
-
-  object CTUnion {
-
-    def apply(ors: CypherType*): CypherType = {
-      if (ors.size == 1) {
-        ors.head
-      } else {
-        val flattenedOrs: Set[CypherType] = ors.toSet.flatMap { o: CypherType =>
-          o match {
-            case CTUnion(innerOrs) => innerOrs
-            case other => Set(other)
-          }
-        }
-        CTUnion(flattenedOrs)
-      }
-    }
-
-  }
-
-  case class CTUnion(ors: Set[CypherType]) extends CypherType with CTRelationship with CTNode {
-    require(ors.forall(!_.isInstanceOf[CTUnion]), s"Nested unions are not allowed: ${ors.mkString(", ")}")
-
-    override def subTypeOf(other: CypherType): Boolean = {
-      this == other || {
-        other match {
-          case CTUnion(otherOrs) => ors.forall(or => otherOrs.exists(or.subTypeOf))
-          case _ => ors.forall(_.subTypeOf(other))
-        }
-      }
-    }
-
-    override def material: CypherType = {
-      if (!isNullable) {
-        this
-      } else {
-        val m = ors - CTNull
-        if (m.size == 1) {
-          m.head
-        } else {
-          CTUnion(m)
-        }
-      }
-    }
-
-    override def nullable: CypherType = {
-      if (isNullable) {
-        this
-      } else {
-        CTUnion((ors + CTNull).toSeq: _*)
-      }
-    }
-
-    override def name: String = {
-      if (ors.isEmpty) {
-        "VOID"
-      } else if (isNullable) {
-        if (ors.size > 2) {
-          s"(${material.name})?"
-        } else {
-          s"${material.name}?"
-        }
-      } else {
-        ors.map(_.name).toSeq.sorted.mkString("|")
-      }
-    }
-
-    override def toString: String = s"CTUnion(${ors.mkString(", ")})"
-
-    override def relTypes: Set[String] = {
-      if (ors.contains(CTAnyRelationship)) Set.empty
-      else ors.collect { case r: CTRelationship => r.relTypes }.flatten
-    }
-
-    override def maybeElementType: Option[CypherType] = {
-      val elementTypes = ors.map(_.maybeElementType)
-      if (elementTypes.exists(_.nonEmpty)) {
-        Some(elementTypes.flatten.foldLeft(CTVoid)(_ union _))
-      } else {
-        None
-      }
-    }
-
-    override def intersect(other: CTNode): CTNode = {
-      if (other.subTypeOf(this)) {
-        other
-      } else if (this.subTypeOf(other)) {
-        other
-      } else {
-        CTUnion(ors.map(_.intersect(other)))
-      }
-    }
-
-    override def labels: Set[String] = {
-      if (ors.contains(CTAnyNode)) Set.empty
-      else ors.collect { case n: CTNode => n.labels }.reduce(_ ++ _)
-    }
-
+    override def combine(x: CypherType, y: CypherType): CypherType = x union y
   }
 
 }
 
-trait CypherType {
+abstract class CypherType extends Type[CypherType] {
 
+  // TODO: Remove
   def graph: Option[QualifiedGraphName] = None
 
+  // TODO: Remove
   def withGraph(qgn: QualifiedGraphName): CypherType = this
 
+  def labels: Set[String] = this match {
+    case CTNode(labels) => labels
+    case _ => throw UnsupportedOperationException("Accessing labels of something that is not a node.")
+  }
+
+  def relTypes: Set[String] = this match {
+    case CTRelationship(relTypes) => relTypes
+    case _ => throw UnsupportedOperationException("Accessing relationship types of something that is not a relationship.")
+  }
+
+  def maybeElementType: Option[CypherType] = this match {
+    case c: ContainerType[CypherType] => Some(c.elementType)
+    case CTUnion(ors) => ors.collectFirst { case c: ContainerType[CypherType] => c.elementType }
+    case _ => None
+  }
+
   def material: CypherType = this
-
-  def union(other: CypherType): CypherType = {
-    if (other.subTypeOf(this)) {
-      this
-    } else if (this.subTypeOf(other)) {
-      other
-    } else {
-      CTUnion(this, other)
-    }
-  }
-
-  // In general, intersect is only supported when one type is a sub-type of the other.
-  def intersect(other: CypherType): CypherType = {
-    if (this.subTypeOf(other)) {
-      this
-    } else if (other.subTypeOf(this)) {
-      other
-    } else {
-      CTVoid
-    }
-  }
-
-  def subTypeOf(other: CypherType): Boolean = this == other || {
-    other match {
-      case CTAny => true
-      case u: CTUnion => u.ors.exists(this.subTypeOf)
-      case i: CTIntersection => i.ands.nonEmpty && i.ands.forall(this.subTypeOf)
-      case _ => false
-    }
-  }
-
-  def superTypeOf(other: CypherType): Boolean = this == other || other.subTypeOf(this)
-
-  def setNullable(b: Boolean): CypherType = {
-    if (b) nullable else material
-  }
-
-  def isNullable: Boolean = {
-    CTNull.subTypeOf(this)
-  }
 
   def nullable: CypherType = {
     if (isNullable) {
       this
     } else {
-      CTUnion(this, CTNull)
+      union(this, CTNull)
     }
   }
 
-  def maybeElementType: Option[CypherType] = None
+  def isNullable: Boolean = false
 
-  def name: String = {
+  override def name: String = {
     val basicName = getClass.getSimpleName.filterNot(_ == '$').drop(2).toUpperCase
     if (basicName.length > 3 && basicName.startsWith("ANY")) {
       basicName.drop(3)
@@ -520,6 +327,10 @@ trait CypherType {
     }
   }
 
-  def pretty: String = s"[$name]"
+  override protected def newUnion(ors: Set[CypherType]): CypherType = CTUnion(ors)
+
+  override protected def newIntersection(ands: Set[CypherType]): CypherType = CTIntersection(ands)
+
+  override protected def newNothing: CypherType = CTVoid
 
 }

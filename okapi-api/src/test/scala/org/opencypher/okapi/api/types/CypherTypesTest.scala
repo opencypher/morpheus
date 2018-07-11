@@ -173,8 +173,6 @@ class CypherTypesTest extends FunSpec with Matchers {
     CTNode("Person", "Employee").nullable.superTypeOf(CTNode("Employee").nullable) shouldBe false
     CTNode("Person").nullable.superTypeOf(CTNode("Foo").nullable) shouldBe false
     CTNode("Foo").nullable.superTypeOf(CTNull) shouldBe true
-
-    println(CTNode("Person", "Employee").nullable)
   }
 
   it("conversion between VOID and NULL") {
@@ -236,8 +234,6 @@ class CypherTypesTest extends FunSpec with Matchers {
     CTBoolean.nullable superTypeOf CTAny shouldBe false
     // TODO: Disagree
     //    CTAny superTypeOf CTBoolean.nullable shouldBe false
-
-    CTAnyNode.nullable.isInstanceOf[CTNode] should be(true)
   }
 
   it("union") {
@@ -281,6 +277,12 @@ class CypherTypesTest extends FunSpec with Matchers {
     CTNode("Other") union CTNode("Person") shouldBe CTUnion(CTNode("Other"), CTNode("Person"))
     CTNode("Person") union CTNode("Person") shouldBe CTNode("Person")
 
+//    val n0 = CTLabel("L1").intersect(CTLabel("L2"))
+//    val lx = CTLabel("Lx")
+//    val n1 = n0.intersect(lx)
+//    val n2 = CTNode("L1", "L2", "Ly")
+//    val u = n1.union(n2)
+
     CTNode("L1", "L2", "Lx") union CTNode("L1", "L2", "Ly") shouldBe CTNode("L1", "L2")
 
     CTAnyRelationship union CTRelationship("KNOWS") shouldBe CTAnyRelationship
@@ -304,7 +306,6 @@ class CypherTypesTest extends FunSpec with Matchers {
 
     CTList(CTInteger) intersect CTList(CTFloat) shouldBe CTList(CTVoid)
     CTList(CTInteger) intersect CTAnyNode shouldBe CTVoid
-    // TODO: Disagree
     CTList(CTAny) intersect CTList(CTNumber) shouldBe CTList(CTNumber)
 
     CTVoid intersect CTInteger shouldBe CTVoid

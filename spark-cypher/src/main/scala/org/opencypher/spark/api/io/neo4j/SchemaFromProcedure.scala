@@ -33,6 +33,7 @@ import org.opencypher.okapi.api.schema.Schema
 import org.opencypher.okapi.api.types.CypherType
 import org.opencypher.okapi.impl.exception.UnsupportedOperationException
 import org.opencypher.spark.impl.io.neo4j.Neo4jHelpers._
+import org.opencypher.okapi.api.types.LegacyNames._
 
 import scala.collection.JavaConverters._
 import scala.util.{Failure, Success, Try}
@@ -95,7 +96,7 @@ object SchemaFromProcedure {
                 Seq((typ, labels, None, None))
               case property =>
                 val typeString = row.get("cypherType").asString()
-                val cypherType = CypherType.fromLegacyName(typeString)
+                val cypherType = fromLegacyName(typeString)
                 Seq((typ, labels, Some(property), cypherType))
             }
           }

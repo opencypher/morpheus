@@ -28,6 +28,7 @@ package org.opencypher.spark.impl.physical
 
 import org.apache.spark.storage.StorageLevel
 import org.opencypher.okapi.api.schema.Schema
+import org.opencypher.okapi.api.types.CypherType
 import org.opencypher.okapi.api.types.CypherType.{CTNode, CTRelationship, CTString}
 import org.opencypher.okapi.impl.exception.SchemaException
 import org.opencypher.spark.api.CAPSSession
@@ -47,13 +48,13 @@ class RecordHeaderMismatch extends CAPSTestSuite {
         .asCaps
 
       // Always return empty records, which does not match what the schema promises
-      override def nodes(name: String, nodeCypherType: CTNode): CAPSRecords = CAPSRecords.empty()(caps)
+      override def nodes(name: String, nodeCypherType: CypherType): CAPSRecords = CAPSRecords.empty()(caps)
 
       override implicit def session: CAPSSession = caps
 
       override def tags: Set[Int] = Set(0)
 
-      override def relationships(name: String, relCypherType: CTRelationship): CAPSRecords = CAPSRecords.empty()(caps)
+      override def relationships(name: String, relCypherType: CypherType): CAPSRecords = CAPSRecords.empty()(caps)
 
       override def cache(): CAPSGraph = this
 

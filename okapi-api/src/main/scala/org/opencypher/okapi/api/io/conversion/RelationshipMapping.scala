@@ -167,7 +167,7 @@ final case class RelationshipMapping private[okapi](
   // on construction
   validate()
 
-  def cypherType: CTRelationship = {
+  def cypherType: CypherType = {
     val possibleRelTypes = relTypeOrSourceRelTypeKey match {
       case Left(relType) => Set(relType)
       case Right((_, possibleRelValues)) => possibleRelValues
