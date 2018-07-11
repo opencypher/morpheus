@@ -53,7 +53,7 @@ object CypherType {
     }
   }
 
-  val CTNumber: CypherType = CTInteger.union(CTFloat)
+  val CTNumber: CypherType = CTInteger union CTFloat
 
   val CTAnyList: CypherType = CTList()
 
@@ -125,7 +125,7 @@ object CypherType {
         case Nil => CTNoLabel
         case h :: Nil => CTLabel(h)
         case h :: t => t.foldLeft(CTLabel(h): CypherType) { case (ct, l) =>
-          ct.intersect(CTLabel(l))
+          ct intersect CTLabel(l)
         }
       }
     }
@@ -193,7 +193,7 @@ object CypherType {
         CTAnyRelationship
       } else {
         relTypes.tail.map(e => CTRelType(e)).foldLeft(CTRelType(relTypes.head): CypherType) { case (t, n) =>
-          t.union(n)
+          t union n
         }
       }
     }
