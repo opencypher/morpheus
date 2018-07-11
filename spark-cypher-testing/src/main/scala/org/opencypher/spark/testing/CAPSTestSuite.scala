@@ -26,8 +26,11 @@
  */
 package org.opencypher.spark.testing
 
+import org.opencypher.okapi.api.graph.QualifiedGraphName
+import org.opencypher.okapi.relational.api.physical.RelationalRuntimeContext
 import org.opencypher.okapi.testing.BaseTestSuite
-import org.opencypher.spark.impl.physical.CAPSRuntimeContext
+import org.opencypher.spark.impl.CAPSGraph
+import org.opencypher.spark.impl.table.SparkFlatRelationalTable.DataFrameTable
 import org.opencypher.spark.testing.fixture.{CAPSSessionFixture, SparkSessionFixture}
 import org.opencypher.spark.testing.support.{GraphMatchingTestSupport, RecordMatchingTestSupport}
 
@@ -38,6 +41,8 @@ abstract class CAPSTestSuite
     with GraphMatchingTestSupport
     with RecordMatchingTestSupport {
 
-  implicit val context: CAPSRuntimeContext = CAPSRuntimeContext.empty
+  def catalog(qgn: QualifiedGraphName): Option[CAPSGraph] = None
+
+  implicit val context: RelationalRuntimeContext[DataFrameTable] = RelationalRuntimeContext(catalog)
 
 }

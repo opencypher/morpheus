@@ -195,7 +195,7 @@ class MatchBehaviour extends CAPSTestSuite with DefaultGraphInit {
         ))
 
       // TODO: Move to plan based testing
-      result.plans.asCaps.logical should include("ValueJoin")
+      result.plans.logical should include("ValueJoin")
     }
 
     it("can evaluate cross Product between multiple match clauses") {

@@ -46,6 +46,7 @@ import org.opencypher.okapi.logical.api.configuration.LogicalConfiguration.Print
 import org.opencypher.okapi.logical.impl._
 import org.opencypher.okapi.relational.api.configuration.CoraConfiguration.{PrintOptimizedRelationalPlan, PrintQueryExecutionStages, PrintRelationalPlan}
 import org.opencypher.okapi.relational.api.physical.{RelationalCypherResult, RelationalPlannerContext, RelationalRuntimeContext}
+import org.opencypher.okapi.relational.api.table.{FlatRelationalTable, RelationalCypherRecords}
 import org.opencypher.okapi.relational.impl.physical.{RelationalOptimizer, RelationalPlanner}
 import org.opencypher.spark.api.CAPSSession
 import org.opencypher.spark.impl.CAPSConverters._
@@ -77,8 +78,9 @@ sealed class CAPSSessionImpl(val sparkSession: SparkSession)
   ): CypherResult = {
     val ambientGraphNew = mountAmbientGraph(graph)
 
-    val drivingTable = maybeDrivingTable.getOrElse(CAPSRecords.unit())
-    val inputFields = drivingTable.asCaps.header.vars
+    val drivingTable = maybeDrivingTable.getOrElse(CAPSRecords.unit()).asCaps
+
+    val inputFields = drivingTable.header.vars
 
     val (stmt, extractedLiterals, semState) = time("AST construction")(parser.process(query, inputFields)(CypherParser.defaultContext))
 
@@ -136,7 +138,7 @@ sealed class CAPSSessionImpl(val sparkSession: SparkSession)
     cypherQuery: CypherQuery[Expr],
     allParameters: CypherMap,
     inputFields: Set[Var],
-    drivingTable: CypherRecords
+    drivingTable: RelationalCypherRecords[DataFrameTable]
   ) = {
     val logicalPlan = planLogical(cypherQuery, graph, inputFields)
     planRelational(drivingTable, allParameters, logicalPlan)
@@ -163,14 +165,14 @@ sealed class CAPSSessionImpl(val sparkSession: SparkSession)
   }
 
   private def planRelational(
-    records: CypherRecords,
+    records: RelationalCypherRecords[DataFrameTable],
     parameters: CypherMap,
     logicalPlan: LogicalOperator,
     catalogWithQuerySchemas: CatalogWithQuerySchemas = CatalogWithQuerySchemas(catalog.listSources)
   ): RelationalCypherResult[DataFrameTable] = {
 
     logStageProgress("Relational planning ... ", newLine = false)
-    val relationalPlannerContext = RelationalPlannerContext(self, records.asCaps, parameters, catalogWithQuerySchemas)
+    val relationalPlannerContext = RelationalPlannerContext[DataFrameTable](self, records, parameters, catalogWithQuerySchemas)
     val graphAt = (qgn: QualifiedGraphName) => Some(catalog.graph(qgn).asCaps)
     val relationalRuntimeContext = RelationalRuntimeContext(graphAt, parameters)
 

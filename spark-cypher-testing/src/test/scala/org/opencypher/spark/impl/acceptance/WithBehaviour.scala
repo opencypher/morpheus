@@ -237,7 +237,7 @@ class WithBehaviour extends CAPSTestSuite with DefaultGraphInit {
     val result = given.cypher("MATCH (a) WITH a.val as val SKIP 2 RETURN val").asCaps
 
     // Then
-    result.getRecords.df.count() should equal(1)
+    result.records.df.count() should equal(1)
   }
 
   test("order by with skip") {
@@ -271,7 +271,7 @@ class WithBehaviour extends CAPSTestSuite with DefaultGraphInit {
     val result = given.cypher("MATCH (a) WITH a.val as val LIMIT 1 RETURN val").asCaps
 
     // Then
-    result.getRecords.df.count() should equal(1)
+    result.records.df.count() should equal(1)
   }
 
   test("order by with limit") {

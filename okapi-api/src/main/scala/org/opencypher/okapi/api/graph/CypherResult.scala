@@ -36,7 +36,7 @@ import org.opencypher.okapi.api.table.{CypherPrintable, CypherRecords}
 // TODO: make graph and records non-optional
 trait CypherResult extends CypherPrintable {
 
-  type Graph = PropertyGraph
+  type Graph <: PropertyGraph
 
   /**
     * Retrieves the graph if one is returned by the query.

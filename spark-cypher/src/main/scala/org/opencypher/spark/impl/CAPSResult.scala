@@ -41,15 +41,15 @@ import scala.reflect.runtime.universe.TypeTag
 
 case class CAPSResult(logical: Option[LogicalOperator], relational: Option[RelationalOperator[DataFrameTable]]) extends RelationalCypherResult[DataFrameTable] {
 
-  type Graph = CAPSGraph
+  override type Graph = CAPSGraph
 
   override def getRecords: Option[CAPSRecords] = relational.map(op => CAPSRecords(op.header, op.table, op.returnItems.map(_.map(_.withoutType))))
 
   override def records: CAPSRecords = getRecords.get
 
-  override def getGraph: Option[RelationalCypherGraph[DataFrameTable]] = relational.map(_.graph)
+  override def getGraph: Option[CAPSGraph] = relational.map(_.graph.asCaps)
 
-  override def graph: RelationalCypherGraph[DataFrameTable] = getGraph.get
+  override def graph: CAPSGraph = getGraph.get.asCaps
 
   def as[E <: Product : TypeTag]: Iterator[E] = {
     getRecords match {

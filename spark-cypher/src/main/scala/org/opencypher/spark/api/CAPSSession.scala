@@ -87,8 +87,6 @@ trait CAPSSession extends CypherSession {
     CAPSGraph.create(tags, None, nodeTable, entityTables: _*)(this)
   }
 
-  private[opencypher] val emptyGraphQgn = QualifiedGraphName(catalog.sessionNamespace, GraphName("emptyGraph"))
-
   // Store empty graph in catalog, so operators that start with an empty graph can refer to its QGN
   catalog.store(emptyGraphQgn, CAPSGraph.empty(this))
 }

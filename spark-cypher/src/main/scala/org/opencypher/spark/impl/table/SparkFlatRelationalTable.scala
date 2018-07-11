@@ -243,7 +243,7 @@ object SparkFlatRelationalTable {
       df.safeReplaceTags(column, replacements)
     }
 
-    def cache(): DataFrameTable = df.cache()
+    override def cache(): DataFrameTable = df.cache()
 
     def persist(): DataFrameTable = df.persist()
 

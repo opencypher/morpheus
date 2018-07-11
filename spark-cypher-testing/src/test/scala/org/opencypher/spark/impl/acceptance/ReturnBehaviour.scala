@@ -89,7 +89,7 @@ class ReturnBehaviour extends CAPSTestSuite with DefaultGraphInit {
 
       val result = given.cypher("RETURN 1").asCaps
 
-      result.getRecords shouldMatch CypherMap("1" -> 1)
+      result.records shouldMatch CypherMap("1" -> 1)
     }
 
     it("can run single return query with several columns") {
@@ -97,7 +97,7 @@ class ReturnBehaviour extends CAPSTestSuite with DefaultGraphInit {
 
       val result = given.cypher("RETURN 1 AS foo, '' AS str").asCaps
 
-      result.getRecords shouldMatch CypherMap("foo" -> 1, "str" -> "")
+      result.records shouldMatch CypherMap("foo" -> 1, "str" -> "")
     }
 
     it("returns full node") {
@@ -238,7 +238,7 @@ class ReturnBehaviour extends CAPSTestSuite with DefaultGraphInit {
       val result = given.cypher("MATCH (a) RETURN a.val as val SKIP 2").asCaps
 
       // Then
-      result.getRecords.df.count() should equal(1)
+      result.records.df.count() should equal(1)
     }
 
     it("can order with skip") {
@@ -272,7 +272,7 @@ class ReturnBehaviour extends CAPSTestSuite with DefaultGraphInit {
       val result = given.cypher("MATCH (a) RETURN a.val as val LIMIT 1").asCaps
 
       // Then
-      result.getRecords.df.count() should equal(1)
+      result.records.df.count() should equal(1)
     }
 
     it("can evaluate limit with parameter value") {

@@ -122,7 +122,7 @@ class MultipleGraphBehaviour extends CAPSTestSuite with ScanGraphInit {
     val result = testGraph1.cypher(query)
     result.records.toMaps shouldBe empty
 
-    result.asCaps.getGraph shouldMatch testGraph1
+    result.asCaps.graph shouldMatch testGraph1
   }
 
   it("should switch to another graph and then return it") {
@@ -133,7 +133,7 @@ class MultipleGraphBehaviour extends CAPSTestSuite with ScanGraphInit {
 
     val result = testGraph1.cypher(query)
     result.records.toMaps shouldBe empty
-    result.asCaps.getGraph shouldMatch testGraph2
+    result.asCaps.graph shouldMatch testGraph2
   }
 
   it("can select a source graph to match data from") {

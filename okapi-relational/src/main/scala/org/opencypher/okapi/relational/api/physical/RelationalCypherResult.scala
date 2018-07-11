@@ -6,5 +6,6 @@ import org.opencypher.okapi.relational.api.table.FlatRelationalTable
 
 trait RelationalCypherResult[T <: FlatRelationalTable[T]] extends CypherResult {
 
-  override type Graph = RelationalCypherGraph[T]
+  override type Graph <: RelationalCypherGraph[T]
+
 }

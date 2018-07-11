@@ -35,7 +35,6 @@ import org.opencypher.okapi.ir.api.expr.{Expr, Subtract, Var}
 import org.opencypher.okapi.relational.impl.table.RecordHeader
 import org.opencypher.okapi.testing.BaseTestSuite
 import org.opencypher.spark.impl.SparkSQLExprMapper._
-import org.opencypher.spark.impl.physical.CAPSRuntimeContext
 import org.opencypher.spark.testing.fixture.SparkSessionFixture
 
 import scala.language.implicitConversions

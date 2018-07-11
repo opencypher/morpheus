@@ -47,5 +47,5 @@ case class RelationalPlannerContext[T <: FlatRelationalTable[T]](
   inputRecords: RelationalCypherRecords[T],
   parameters: CypherMap = CypherMap.empty,
   catalogWithQuerySchemas: CatalogWithQuerySchemas,
-  var constructedGraphPlans: Map[QualifiedGraphName, RelationalOperator[T]] = Map.empty
+  var constructedGraphPlans: Map[QualifiedGraphName, RelationalOperator[T]] = Map.empty[QualifiedGraphName, RelationalOperator[T]]
 )
