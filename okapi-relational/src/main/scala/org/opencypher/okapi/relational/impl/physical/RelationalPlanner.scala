@@ -245,7 +245,7 @@ object RelationalPlanner {
 //      ???
 //    }
   
-  private def planJoin[T <: FlatRelationalTable[T]](lhs: RelationalOperator[T], rhs: RelationalOperator[T], joinExprs: Seq[(Expr, Expr)], joinType: JoinType): RelationalOperator[T] = {
+  def planJoin[T <: FlatRelationalTable[T]](lhs: RelationalOperator[T], rhs: RelationalOperator[T], joinExprs: Seq[(Expr, Expr)], joinType: JoinType): RelationalOperator[T] = {
     
     val joinHeader = lhs.header join rhs.header
     val leftColumns = lhs.header.columns

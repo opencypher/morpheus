@@ -33,7 +33,7 @@ import org.opencypher.okapi.relational.api.physical.{RelationalPlannerContext, R
 import org.opencypher.okapi.relational.api.table.FlatRelationalTable
 import org.opencypher.okapi.relational.impl.exception.RecordHeaderException
 import org.opencypher.okapi.relational.impl.operators.RelationalOperator
-import org.opencypher.okapi.relational.impl.physical.RelationalPlanner.process
+import org.opencypher.okapi.relational.impl.physical.RelationalPlanner.{planJoin, process}
 import org.opencypher.okapi.relational.impl.table.RecordHeader
 import org.opencypher.okapi.relational.impl.{operators => relational}
 
@@ -122,7 +122,7 @@ trait VarLengthExpandPlanner[T <: FlatRelationalTable[T]] {
       case Inbound => startEdgeScanOp.header.endNodeFor(startEdgeScan)
     }
 
-    val startOp = relational.Join(
+    val startOp = planJoin(
       physicalSourceOp, startEdgeScanOp,
       Seq(source -> edgeJoinExpr),
       InnerJoin
@@ -144,7 +144,7 @@ trait VarLengthExpandPlanner[T <: FlatRelationalTable[T]] {
 
     val edgeScanOpWithAlias = relational.Alias(physicalEdgeScanOp, Seq(edgeScan as nextEdge))
 
-    val aliasedCacheHeader = edgeScanOpWithAlias.header.select( nextEdge)
+    val aliasedCacheHeader = edgeScanOpWithAlias.header.select(nextEdge)
     val selectExprs = aliasedCacheHeader.expressionsFor(nextEdge)
     val aliasedEdgeScanOp = relational.Select(edgeScanOpWithAlias, selectExprs.toList)
 
@@ -155,7 +155,7 @@ trait VarLengthExpandPlanner[T <: FlatRelationalTable[T]] {
       case (Inbound, Inbound) => iterationTable.header.startNodeFor(edgeVars.last) -> aliasedCacheHeader.startNodeFor(nextEdge)
     }
 
-    val expandedOp = relational.Join(iterationTable, aliasedEdgeScanOp, Seq(joinExpr), InnerJoin)
+    val expandedOp = planJoin(iterationTable, aliasedEdgeScanOp, Seq(joinExpr), InnerJoin)
 
     relational.Filter(expandedOp, isomorphismFilter(nextEdge, edgeVars.toSet)) -> nextEdge
   }
@@ -260,7 +260,7 @@ trait VarLengthExpandPlanner[T <: FlatRelationalTable[T]] {
       val filterExpr = Equals(target, expr)(CTBoolean)
       relational.Filter(path, filterExpr)
     } else {
-      relational.Join(path, physicalTargetOp, Seq(expr -> target), InnerJoin)
+      planJoin(path, physicalTargetOp, Seq(expr -> target), InnerJoin)
     }
   }
 }
