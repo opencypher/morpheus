@@ -145,10 +145,10 @@ abstract class TreeNode[T <: TreeNode[T]: ClassTag] extends Product with Travers
               recTreeToString(top, prefix.dropRight(4), remainingStack)
           }
         case last :: Nil =>
-          lines += s"$prefix╙──${last.toString}"
+          lines += s"$prefix╙──${last.nodeDescriptor}"
           recTreeToString(last.children.toList, s"$prefix    ", Nil :: stack)
         case next :: siblings =>
-          lines += s"$prefix╟──${next.toString}"
+          lines += s"$prefix╟──${next.nodeDescriptor}"
           recTreeToString(next.children.toList, s"$prefix║   ", siblings :: stack)
       }
     }
@@ -188,5 +188,5 @@ abstract class TreeNode[T <: TreeNode[T]: ClassTag] extends Product with Travers
     }
   }
 
-  override def toString = s"${getClass.getSimpleName}${if (argString.isEmpty) "" else s"($argString)"}"
+  def nodeDescriptor = s"${getClass.getSimpleName.filter(_ != '$')}${if (argString.isEmpty) "" else s"($argString)"}"
 }

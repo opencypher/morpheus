@@ -26,12 +26,14 @@
  */
 package org.opencypher.okapi.api.types
 
+import org.opencypher.okapi.trees.AbstractTreeNode
+
 import scala.reflect.ClassTag
 
 /**
   * Abstract class instead of trait in order to support `ClassTag`
   */
-abstract class Type[T <: Type[T]: ClassTag] {
+abstract class Type[T <: Type[T] : ClassTag] extends AbstractTreeNode[T] {
   self: T =>
 
   def name: String
@@ -88,6 +90,8 @@ abstract class Type[T <: Type[T]: ClassTag] {
     this == other || other.subTypeOf(this)
   }
 
+  def |(other: T): T = union(other)
+
   def union(other: T): T = {
     if (subTypeOf(other)) other
     else if (other.subTypeOf(this)) this
@@ -96,8 +100,10 @@ abstract class Type[T <: Type[T]: ClassTag] {
 
   def canIntersect(other: T): Boolean = false
 
-  def intersect(other: T): T = {
-    if (subTypeOf(other)) this
+  def &(other: T): T = intersect(other)
+
+  def intersect(other: T, tryReverseDirection: Boolean = true): T = {
+    if (this.subTypeOf(other)) this
     else if (other.subTypeOf(this)) other
     else {
       other match {
@@ -105,6 +111,7 @@ abstract class Type[T <: Type[T]: ClassTag] {
         case _: NothingType[T] => other
         case i: IntersectionType[T] if i.canIntersect(other) => intersect(i.ands.map(_.intersect(this)))
         case u: UnionType[T] if u.canIntersect(other) => union(u.ors.map(_.intersect(this)))
+        case _ if tryReverseDirection => other.intersect(this, false)
         case _ if canIntersect(other) || other.canIntersect(this) => intersect(this, other)
         case _ => newNothing
       }
@@ -125,9 +132,9 @@ trait ContainerType[T <: Type[T]] extends Type[T] {
     case _ => super.subTypeOf(other)
   }
 
-  override def intersect(other: T): T = other match {
+  override def intersect(other: T, tryReverseDirection: Boolean = true): T = other match {
     case c: ContainerType[T] if c.getClass == this.getClass => newInstance(elementType.intersect(c.elementType))
-    case _ => super.intersect(other)
+    case _ => super.intersect(other, tryReverseDirection)
   }
 
 }
@@ -141,7 +148,7 @@ trait AnyType[T <: Type[T]] extends Type[T] {
 
   override def canIntersect(other: T): Boolean = true
 
-  override def intersect(other: T): T = other
+  override def intersect(other: T, tryReverseDirection: Boolean = true): T = other
 
 }
 
@@ -154,7 +161,7 @@ trait NothingType[T <: Type[T]] extends Type[T] {
 
   override def canIntersect(other: T): Boolean = true
 
-  override def intersect(other: T): T = this
+  override def intersect(other: T, tryReverseDirection: Boolean = true): T = this
 
 }
 
@@ -194,13 +201,6 @@ trait IntersectionType[T <: Type[T]] extends Type[T] {
   def ands: Set[T]
 
   override def canIntersect(other: T): Boolean = ands.forall(and => and.canIntersect(other) || other.canIntersect(and))
-
-  override def union(other: T): T = {
-    other match {
-      case i: IntersectionType[T] => intersect(ands.intersect(i.ands))
-      case _ => super.union(other)
-    }
-  }
 
   override def subTypeOf(other: T): Boolean = other match {
     case u: UnionType[T] => u.ors.exists(or => ands.forall(_.subTypeOf(or)))

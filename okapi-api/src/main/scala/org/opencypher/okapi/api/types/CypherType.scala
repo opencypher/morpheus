@@ -69,6 +69,10 @@ object CypherType {
 
   case class CTUnion(ors: Set[CypherType]) extends CypherType with UnionType[CypherType] {
 
+    override val children: Array[CypherType] = ors.toArray
+
+    override def withNewChildren(newChildren: Array[CypherType]): CypherType = CTUnion(newChildren.toSet)
+
     override def isNullable: Boolean = ors.exists(_.subTypeOf(CTNull))
 
     override def material: CypherType = {
@@ -87,6 +91,10 @@ object CypherType {
 
   case class CTIntersection(ands: Set[CypherType]) extends CypherType with IntersectionType[CypherType] {
     override def isNullable: Boolean = ands.forall(_.subTypeOf(CTNull))
+
+    override val children: Array[CypherType] = ands.toArray
+
+    override def withNewChildren(newChildren: Array[CypherType]): CypherType = CTIntersection(newChildren.toSet)
   }
 
   object CTIntersection {
@@ -152,6 +160,7 @@ object CypherType {
 
     override def canIntersect(other: CypherType): Boolean = other match {
       case CTNoLabel => false
+      case _: CTProperty => true
       case _: CTLabel => true
       case _ => super.canIntersect(other)
     }
@@ -160,9 +169,9 @@ object CypherType {
 
   case object CTAnyNode extends CTNode {
 
-    override def intersect(other: CypherType): CypherType = other match {
+    override def intersect(other: CypherType, tryReverseDirection: Boolean = true): CypherType = other match {
       case n: CTNode => n
-      case _ => super.intersect(other)
+      case _ => super.intersect(other, tryReverseDirection)
     }
 
   }
@@ -238,6 +247,21 @@ object CypherType {
 
     override def name: String = s"RELTYPE($relType)"
 
+  }
+
+  case class CTProperty(key: String, elementType: CypherType = CTAny) extends CypherType with ContainerType[CypherType] {
+
+    override def newInstance(et: CypherType): CypherType = CTProperty(key, elementType)
+
+    override def canIntersect(other: CypherType): Boolean = other match {
+      case CTNoLabel => true
+      case CTAnyNode => true
+      case _: CTProperty => true
+      case _: CTLabel => true
+      case _ => super.canIntersect(other)
+    }
+
+    override def name: String = s"PROPERTY($key)"
   }
 
   case class CTMap(elementType: CypherType = CTAny) extends CypherType with ContainerType[CypherType] {
@@ -326,6 +350,8 @@ abstract class CypherType extends Type[CypherType] {
       basicName
     }
   }
+
+  override def toString: String = name
 
   override protected def newUnion(ors: Set[CypherType]): CypherType = CTUnion(ors)
 

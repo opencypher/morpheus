@@ -49,7 +49,7 @@ import scala.reflect.ClassTag
 abstract class AbstractTreeNode[T <: AbstractTreeNode[T]: ClassTag] extends TreeNode[T] {
   self: T =>
 
-  final override val children: Array[T] = {
+  override val children: Array[T] = {
     val constructorParamLength = productArity
     val childrenCount = {
       var count = 0
@@ -118,7 +118,7 @@ abstract class AbstractTreeNode[T <: AbstractTreeNode[T]: ClassTag] extends Tree
     childrenArray
   }
 
-  @inline override final def withNewChildren(newChildren: Array[T]): T = {
+  @inline override def withNewChildren(newChildren: Array[T]): T = {
     if (sameAsCurrentChildren(newChildren)) {
       self
     } else {

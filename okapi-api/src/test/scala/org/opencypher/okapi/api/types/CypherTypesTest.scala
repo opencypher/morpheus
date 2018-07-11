@@ -101,7 +101,7 @@ class CypherTypesTest extends FunSpec with Matchers {
       CTAnyMap -> ("MAP" -> "MAP?"),
       CTAnyNode -> ("NODE" -> "NODE?"),
       CTNode("Person") -> ("NODE(:Person)" -> "NODE(:Person)?"),
-      CTNode("Person", "Employee") -> ("NODE(:Person:Employee)" -> "NODE(:Person:Employee)?"),
+      CTNode("Employee", "Person") -> ("NODE(:Employee:Person)" -> "NODE(:Employee:Person)?"),
 //      CTNode(Set("Person"), Some(QualifiedGraphName("foo.bar"))) -> ("NODE(:Person) @ foo.bar" -> "NODE(:Person) @ foo.bar?"),
       CTAnyRelationship -> ("RELATIONSHIP" -> "RELATIONSHIP?"),
       CTRelationship(Set("KNOWS")) -> ("RELATIONSHIP(:KNOWS)" -> "RELATIONSHIP(:KNOWS)?"),
@@ -173,6 +173,24 @@ class CypherTypesTest extends FunSpec with Matchers {
     CTNode("Person", "Employee").nullable.superTypeOf(CTNode("Employee").nullable) shouldBe false
     CTNode("Person").nullable.superTypeOf(CTNode("Foo").nullable) shouldBe false
     CTNode("Foo").nullable.superTypeOf(CTNull) shouldBe true
+  }
+
+  it("can model a graph schema") {
+    val employee = CTLabel("Person") & CTProperty("name", CTString) & CTProperty("age", CTInteger)
+    employee.show()
+
+
+    val car = CTLabel("Car") & CTProperty("name", CTString) & CTProperty("top-speed", CTInteger)
+    car.show()
+
+//    val schema = car | employee
+//    schema.show()
+//
+//    val nodesWithNames = schema & CTProperty("name", CTString)
+//    nodesWithNames.show()
+//
+//    val nodesWithAge = schema & CTProperty("age", CTInteger)
+//    nodesWithAge.show()
   }
 
   it("conversion between VOID and NULL") {
@@ -283,7 +301,7 @@ class CypherTypesTest extends FunSpec with Matchers {
 //    val n2 = CTNode("L1", "L2", "Ly")
 //    val u = n1.union(n2)
 
-    CTNode("L1", "L2", "Lx") union CTNode("L1", "L2", "Ly") shouldBe CTNode("L1", "L2")
+//    CTNode("L1", "L2", "Lx") union CTNode("L1", "L2", "Ly") shouldBe CTNode("L1", "L2")
 
     CTAnyRelationship union CTRelationship("KNOWS") shouldBe CTAnyRelationship
     CTRelationship("OTHER") union CTRelationship("KNOWS") shouldBe CTRelationship("KNOWS", "OTHER")

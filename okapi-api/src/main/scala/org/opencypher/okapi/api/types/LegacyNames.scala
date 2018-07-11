@@ -42,13 +42,13 @@ object LegacyNames {
           if (labels.isEmpty) {
             s"NODE$nullableSuffix"
           } else {
-            s"NODE(${labels.mkString(":", ":", "")})$nullableSuffix"
+            s"NODE(${labels.toSeq.sorted.mkString(":", ":", "")})$nullableSuffix"
           }
         case CTRelationship(relTypes) =>
           if (relTypes.isEmpty) {
             s"RELATIONSHIP$nullableSuffix"
           } else {
-            s"RELATIONSHIP(${relTypes.mkString(":", "|", "")})$nullableSuffix"
+            s"RELATIONSHIP(${relTypes.toSeq.sorted.mkString(":", "|", "")})$nullableSuffix"
           }
         case CTList(elementType) => s"LIST OF ${elementType.legacyName}"
         case _ if ct.subTypeOf(CTAnyMap.nullable) => s"MAP$nullableSuffix"
