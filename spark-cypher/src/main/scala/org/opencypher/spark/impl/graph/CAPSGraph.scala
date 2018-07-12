@@ -41,30 +41,6 @@ import org.opencypher.spark.impl.CAPSRecords
 import org.opencypher.spark.schema.CAPSSchema
 import org.opencypher.spark.schema.CAPSSchema._
 
-//trait CAPSGraph extends RelationalCypherGraph[DataFrameTable] {
-//
-//  override type Graph <: CAPSGraph
-//
-//  implicit def session: CAPSSession
-//
-//  override def nodes(name: String, nodeCypherType: CTNode = CTNode): CAPSRecords
-//
-//  override def relationships(name: String, relCypherType: CTRelationship = CTRelationship): CAPSRecords
-//
-//  override def schema: CAPSSchema
-//
-//  def cache(): Graph
-//
-//  def persist(): Graph
-//
-//  def persist(storageLevel: StorageLevel): Graph
-//
-//  def unpersist(): Graph
-//
-//  def unpersist(blocking: Boolean): Graph
-//
-//}
-
 object CAPSGraph {
 
   type CAPSGraph = RelationalCypherGraph[DataFrameTable]
@@ -92,16 +68,16 @@ object CAPSGraph {
 
   sealed case class EmptyGraph(implicit val caps: CAPSSession) extends RelationalCypherGraph[DataFrameTable] {
 
-    override type Graph = CAPSGraph
+    override type Session = CAPSSession
 
     override type Records = CAPSRecords
 
     override val schema: CAPSSchema = CAPSSchema.empty
 
-    override def nodes(name: String, cypherType: CTNode): CAPSRecords =
+    override def nodes(name: String, cypherType: CTNode, exactLabelMatch: Boolean = false): CAPSRecords =
       caps.records.empty(RecordHeader.from(Var(name)(cypherType)))
 
-    override def relationships(name: String, cypherType: CTRelationship): RelationalCypherRecords[DataFrameTable] =
+    override def relationships(name: String, cypherType: CTRelationship): CAPSRecords =
       caps.records.empty(RecordHeader.from(Var(name)(cypherType)))
 
     override def session: CAPSSession = caps

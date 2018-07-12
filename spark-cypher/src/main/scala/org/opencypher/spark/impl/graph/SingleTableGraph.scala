@@ -26,15 +26,22 @@
  */
 package org.opencypher.spark.impl.graph
 
+import org.apache.spark.sql.DataFrame
 import org.opencypher.okapi.api.graph.PropertyGraph
 import org.opencypher.okapi.api.schema.Schema
 import org.opencypher.okapi.api.types.{CTNode, CTRelationship}
+import org.opencypher.okapi.ir.api.PropertyKey
 import org.opencypher.okapi.ir.api.expr._
 import org.opencypher.okapi.relational.api.graph.{RelationalCypherGraph, RelationalCypherSession}
 import org.opencypher.okapi.relational.api.physical.RelationalRuntimeContext
 import org.opencypher.okapi.relational.api.schema.RelationalSchema._
 import org.opencypher.okapi.relational.api.table.{FlatRelationalTable, RelationalCypherRecords}
 import org.opencypher.okapi.relational.impl.operators.{ExtractEntities, Start}
+import org.opencypher.okapi.relational.impl.table.RecordHeader
+import org.opencypher.spark.api.CAPSSession
+import org.opencypher.spark.impl.CAPSRecords
+import org.opencypher.spark.impl.graph.CAPSGraph.CAPSGraph
+import org.opencypher.spark.impl.table.SparkFlatRelationalTable.DataFrameTable
 
 /**
   * A single table graph represents the result of CONSTRUCT clause. It contains all entities from the outer scope that 
@@ -42,35 +49,39 @@ import org.opencypher.okapi.relational.impl.operators.{ExtractEntities, Start}
   * to, including their corresponding graph tags. Note, that the initial schema does not include the graph tag used for
   * the constructed entities.
   */
-case class SingleTableGraph[T <: FlatRelationalTable[T]](
-  baseTable: RelationalCypherRecords[T],
+case class SingleTableGraph(
+  baseTable: CAPSRecords,
   override val schema: Schema,
   override val tags: Set[Int]
-)(implicit val session: RelationalCypherSession[T], context: RelationalRuntimeContext[T])
-  extends RelationalCypherGraph[T] {
+)(implicit val session: CAPSSession, context: RelationalRuntimeContext[DataFrameTable])
+  extends RelationalCypherGraph[DataFrameTable] {
 
-  override type Graph = SingleTableGraph[T]
+  override type Session = CAPSSession
+
+  override type Records = CAPSRecords
 
   private val header = baseTable.header
 
   def show(): Unit = baseTable.show
 
-  override def cache(): SingleTableGraph[T] = map(_.cache())
+  override def cache(): SingleTableGraph = map(_.cache())
 
-  private def map(f: RelationalCypherRecords[T] => RelationalCypherRecords[T]) =
+  private def map(f: CAPSRecords => CAPSRecords) =
     SingleTableGraph(f(baseTable), schema, tags)
 
-  override def nodes(name: String, nodeCypherType: CTNode): RelationalCypherRecords[T] = {
+  override def nodes(name: String, nodeCypherType: CTNode, exactLabelMatch: Boolean = false): CAPSRecords = {
     val targetNode = Var(name)(nodeCypherType)
     val nodeSchema = schema.forNode(nodeCypherType.labels)
     val targetNodeHeader = nodeSchema.headerForNode(targetNode)
     val extractionNodes: Set[Var] = header.nodesForType(nodeCypherType)
     val extractionOp = ExtractEntities(Start(baseTable), targetNodeHeader, extractionNodes)
 
+    // TODO: Filter & Select for exact match
+
     session.records.from(extractionOp.header, extractionOp.table)
   }
 
-  override def relationships(name: String, relCypherType: CTRelationship): RelationalCypherRecords[T] = {
+  override def relationships(name: String, relCypherType: CTRelationship): CAPSRecords = {
     val targetRel = Var(name)(relCypherType)
     val relSchema = schema.forRelationship(relCypherType)
     val targetRelHeader = relSchema.headerForRelationship(targetRel)
@@ -80,51 +91,46 @@ case class SingleTableGraph[T <: FlatRelationalTable[T]](
     session.records.from(extractionOp.header, extractionOp.table)
   }
 
-  // TODO: move UnionGraph to relational
-  override def unionAll(others: PropertyGraph*): PropertyGraph = ???
+  def nodesWithExactLabels(name: String, labels: Set[String]): CAPSRecords = {
+    val nodeType = CTNode(labels)
+    val nodeVar = Var(name)(nodeType)
+    val records = nodes(name, nodeType)
 
-  //  def nodesWithExactLabels(name: String, labels: Set[String]): RelationalCypherRecords[T] = {
-  //    val nodeType = CTNode(labels)
-  //    val nodeVar = Var(name)(nodeType)
-  //    val records = nodes(name, nodeType)
-  //
-  //    val header = records.header
-  //
-  //    // compute slot contents to keep
-  //    val labelExprs = header.labelsFor(nodeVar)
-  //
-  //    // need to iterate the slots to maintain the correct order
-  //    val propertyExprs = schema.nodeKeys(labels).flatMap {
-  //      case (key, cypherType) => Property(nodeVar, PropertyKey(key))(cypherType)
-  //    }.toSet
-  //    val headerPropertyExprs = header.propertiesFor(nodeVar).filter(propertyExprs.contains)
-  //
-  //    val keepExprs: Seq[Expr] = Seq(nodeVar) ++ labelExprs ++ headerPropertyExprs
-  //
-  //    val keepColumns = keepExprs.map(header.column)
-  //
-  //    // we only keep rows where all "other" labels are false
-  //    val predicate = labelExprs
-  //      .filterNot(l => labels.contains(l.label.name))
-  //
-  //      .map(header.column)
-  //      .map(records.df.col(_) === false)
-  //      .reduceOption(_ && _)
-  //
-  //    // filter rows and select only necessary columns
-  //    val updatedData = predicate match {
-  //
-  //      case Some(filter) =>
-  //        records.df
-  //          .filter(filter)
-  //          .select(keepColumns.head, keepColumns.tail: _*)
-  //
-  //      case None =>
-  //        records.df.select(keepColumns.head, keepColumns.tail: _*)
-  //    }
-  //
-  //    val updatedHeader = RecordHeader.from(keepExprs)
-  //
-  //    CAPSRecords(updatedHeader, updatedData)
-  //  }
+    val header = records.header
+
+    val labelExprs = header.labelsFor(nodeVar)
+
+    val propertyExprs = schema.nodeKeys(labels).flatMap {
+      case (key, cypherType) => Property(nodeVar, PropertyKey(key))(cypherType)
+    }.toSet
+    val headerPropertyExprs = header.propertiesFor(nodeVar).filter(propertyExprs.contains)
+
+    val keepExprs: Seq[Expr] = Seq(nodeVar) ++ labelExprs ++ headerPropertyExprs
+
+    val keepColumns = keepExprs.map(header.column)
+
+    // we only keep rows where all "other" labels are false
+    val predicate = labelExprs
+      .filterNot(l => labels.contains(l.label.name))
+      .map(header.column)
+      .map(records.df.col(_) === false)
+      .reduceOption(_ && _)
+
+    // filter rows and select only necessary columns
+    val updatedData = predicate match {
+
+      case Some(filter) =>
+        records.df
+          .filter(filter)
+          .select(keepColumns.head, keepColumns.tail: _*)
+
+      case None =>
+        records.df.select(keepColumns.head, keepColumns.tail: _*)
+    }
+
+    val updatedHeader = RecordHeader.from(keepExprs)
+
+    CAPSRecords(updatedHeader, updatedData)
+  }
+
 }
