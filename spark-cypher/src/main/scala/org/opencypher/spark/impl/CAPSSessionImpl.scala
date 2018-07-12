@@ -45,14 +45,16 @@ import org.opencypher.okapi.ir.impl.{CatalogWithQuerySchemas, IRBuilder, IRBuild
 import org.opencypher.okapi.logical.api.configuration.LogicalConfiguration.PrintLogicalPlan
 import org.opencypher.okapi.logical.impl._
 import org.opencypher.okapi.relational.api.configuration.CoraConfiguration.{PrintOptimizedRelationalPlan, PrintQueryExecutionStages, PrintRelationalPlan}
-import org.opencypher.okapi.relational.api.physical.{RelationalCypherResult, RelationalPlannerContext, RelationalRuntimeContext}
-import org.opencypher.okapi.relational.api.table.{RelationalCypherRecords, RelationalCypherRecordsFactory}
+import org.opencypher.okapi.relational.api.physical.RelationalPlannerContext
+import org.opencypher.okapi.relational.api.table.RelationalCypherRecords
 import org.opencypher.okapi.relational.impl.physical.{RelationalOptimizer, RelationalPlanner}
 import org.opencypher.spark.api.CAPSSession
 import org.opencypher.spark.impl.CAPSConverters._
 import org.opencypher.spark.impl.table.SparkFlatRelationalTable.DataFrameTable
 
 sealed class CAPSSessionImpl(val sparkSession: SparkSession) extends CAPSSession with Serializable {
+
+  override type Result = CAPSResult
 
   private implicit def caps: CAPSSession = this
 
@@ -61,11 +63,9 @@ sealed class CAPSSessionImpl(val sparkSession: SparkSession) extends CAPSSession
   private val logicalOptimizer = LogicalOptimizer
   private val parser = CypherParser
 
-  override val records: RelationalCypherRecordsFactory[DataFrameTable] = CAPSRecordsFactory()
-
   private val maxSessionGraphId: AtomicLong = new AtomicLong(0)
 
-  override def cypher(query: String, parameters: CypherMap, drivingTable: Option[CypherRecords]): CypherResult =
+  override def cypher(query: String, parameters: CypherMap, drivingTable: Option[CypherRecords]): Result =
     cypherOnGraph(CAPSGraph.empty, query, parameters, drivingTable)
 
   override def cypherOnGraph(
@@ -73,7 +73,7 @@ sealed class CAPSSessionImpl(val sparkSession: SparkSession) extends CAPSSession
     query: String,
     queryParameters: CypherMap,
     maybeDrivingTable: Option[CypherRecords]
-  ): CypherResult = {
+  ): Result = {
     val ambientGraphNew = mountAmbientGraph(graph)
 
     val drivingTable = maybeDrivingTable.getOrElse(records.unit()).asCaps
@@ -137,7 +137,7 @@ sealed class CAPSSessionImpl(val sparkSession: SparkSession) extends CAPSSession
     allParameters: CypherMap,
     inputFields: Set[Var],
     drivingTable: RelationalCypherRecords[DataFrameTable]
-  ) = {
+  ): Result = {
     val logicalPlan = planLogical(cypherQuery, graph, inputFields)
     planRelational(drivingTable, allParameters, logicalPlan)
   }
@@ -167,11 +167,11 @@ sealed class CAPSSessionImpl(val sparkSession: SparkSession) extends CAPSSession
     parameters: CypherMap,
     logicalPlan: LogicalOperator,
     catalogWithQuerySchemas: CatalogWithQuerySchemas = CatalogWithQuerySchemas(catalog.listSources)
-  ): RelationalCypherResult[DataFrameTable] = {
+  ): Result = {
 
     logStageProgress("Relational planning ... ", newLine = false)
     val relationalPlannerContext = RelationalPlannerContext[DataFrameTable](this, records, parameters, catalogWithQuerySchemas)
-    val graphAt = (qgn: QualifiedGraphName) => Some(catalog.graph(qgn).asCaps)
+    val graphAt = (qgn: QualifiedGraphName) => Some(catalog.graph(qgn))
     val relationalRuntimeContext = RelationalRuntimeContext(graphAt, parameters)
 
     val relationalPlan = time("Relational planning")(RelationalPlanner.process(logicalPlan)(relationalPlannerContext, relationalRuntimeContext))

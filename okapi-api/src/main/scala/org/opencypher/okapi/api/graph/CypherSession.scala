@@ -37,6 +37,8 @@ import org.opencypher.okapi.api.value.CypherValue._
   */
 trait CypherSession {
 
+  type Result <: CypherResult
+
   /**
     * Executes a Cypher query in this session on the current ambient graph.
     *
@@ -45,7 +47,7 @@ trait CypherSession {
     * @param drivingTable seed data that can be accessed from within the query
     * @return result of the query
     */
-  def cypher(query: String, parameters: CypherMap = CypherMap.empty, drivingTable: Option[CypherRecords] = None): CypherResult
+  def cypher(query: String, parameters: CypherMap = CypherMap.empty, drivingTable: Option[CypherRecords] = None): Result
 
   /**
     * Interface through which the user may (de-)register property graph datasources as well as read, write and delete property graphs.

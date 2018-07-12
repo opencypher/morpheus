@@ -27,13 +27,14 @@
 package org.opencypher.spark.impl
 
 import org.apache.spark.storage.StorageLevel
-import org.opencypher.okapi.api.graph.{GraphOperations, PropertyGraph}
+import org.opencypher.okapi.api.graph.PropertyGraph
 import org.opencypher.okapi.api.schema._
 import org.opencypher.okapi.api.table.CypherRecords
 import org.opencypher.okapi.api.types.{CTNode, CTRelationship}
 import org.opencypher.okapi.ir.api.PropertyKey
 import org.opencypher.okapi.ir.api.expr._
-import org.opencypher.okapi.relational.api.graph.{RelationalCypherGraph, SingleTableGraph}
+import org.opencypher.okapi.relational.api.graph.{RelationalCypherGraph, SingleTableGraph, UnionGraph}
+import org.opencypher.okapi.relational.api.table.RelationalCypherRecords
 import org.opencypher.okapi.relational.impl.table.RecordHeader
 import org.opencypher.spark.api.CAPSSession
 import org.opencypher.spark.api.io.{CAPSEntityTable, CAPSNodeTable}
@@ -42,83 +43,33 @@ import org.opencypher.spark.impl.table.SparkFlatRelationalTable.DataFrameTable
 import org.opencypher.spark.schema.CAPSSchema
 import org.opencypher.spark.schema.CAPSSchema._
 
-trait CAPSGraph extends RelationalCypherGraph[DataFrameTable] with GraphOperations with Serializable {
-
-  override type Graph <: CAPSGraph
-
-  implicit def session: CAPSSession
-
-  override def nodes(name: String, nodeCypherType: CTNode = CTNode): CAPSRecords
-
-  override def relationships(name: String, relCypherType: CTRelationship = CTRelationship): CAPSRecords
-
-  override def unionAll(others: PropertyGraph*): CAPSGraph = {
-    RelationalUnionGraph(this :: others.map(_.asCaps).toList: _*)
-  }
-
-  override def schema: CAPSSchema
-
-  def cache(): Graph
-
-  def persist(): Graph
-
-  def persist(storageLevel: StorageLevel): Graph
-
-  def unpersist(): Graph
-
-  def unpersist(blocking: Boolean): Graph
-
-  def nodesWithExactLabels(name: String, labels: Set[String]): CAPSRecords = {
-    val nodeType = CTNode(labels)
-    val nodeVar = Var(name)(nodeType)
-    val records = nodes(name, nodeType)
-
-    val header = records.header
-
-    // compute slot contents to keep
-    val labelExprs = header.labelsFor(nodeVar)
-
-    // need to iterate the slots to maintain the correct order
-    val propertyExprs = schema.nodeKeys(labels).flatMap {
-      case (key, cypherType) => Property(nodeVar, PropertyKey(key))(cypherType)
-    }.toSet
-    val headerPropertyExprs = header.propertiesFor(nodeVar).filter(propertyExprs.contains)
-
-    val keepExprs: Seq[Expr] = Seq(nodeVar) ++ labelExprs ++ headerPropertyExprs
-
-    val keepColumns = keepExprs.map(header.column)
-
-    // we only keep rows where all "other" labels are false
-    val predicate = labelExprs
-      .filterNot(l => labels.contains(l.label.name))
-      .map(header.column)
-      .map(records.df.col(_) === false)
-      .reduceOption(_ && _)
-
-    // filter rows and select only necessary columns
-    val updatedData = predicate match {
-
-      case Some(filter) =>
-        records.df
-          .filter(filter)
-          .select(keepColumns.head, keepColumns.tail: _*)
-
-      case None =>
-        records.df.select(keepColumns.head, keepColumns.tail: _*)
-    }
-
-    val updatedHeader = RecordHeader.from(keepExprs)
-
-    CAPSRecords(updatedHeader, updatedData)
-  }
-
-  protected def alignRecords(records: Seq[CAPSRecords], targetVar: Var, targetHeader: RecordHeader): Option[CAPSRecords] = {
-    records.map(_.alignWith(targetVar, targetHeader)).reduceOption(_ unionAll _)
-  }
-
-}
+//trait CAPSGraph extends RelationalCypherGraph[DataFrameTable] {
+//
+//  override type Graph <: CAPSGraph
+//
+//  implicit def session: CAPSSession
+//
+//  override def nodes(name: String, nodeCypherType: CTNode = CTNode): CAPSRecords
+//
+//  override def relationships(name: String, relCypherType: CTRelationship = CTRelationship): CAPSRecords
+//
+//  override def schema: CAPSSchema
+//
+//  def cache(): Graph
+//
+//  def persist(): Graph
+//
+//  def persist(storageLevel: StorageLevel): Graph
+//
+//  def unpersist(): Graph
+//
+//  def unpersist(blocking: Boolean): Graph
+//
+//}
 
 object CAPSGraph {
+
+  type CAPSGraph = RelationalCypherGraph[DataFrameTable]
 
   def empty(implicit caps: CAPSSession): CAPSGraph = EmptyGraph()
 
@@ -141,27 +92,24 @@ object CAPSGraph {
     SingleTableGraph(capsRecords, schema, tags)
   }
 
-  sealed case class EmptyGraph(implicit val caps: CAPSSession) extends CAPSGraph {
+  sealed case class EmptyGraph(implicit val caps: CAPSSession) extends RelationalCypherGraph[DataFrameTable] {
+
+    override type Graph = CAPSGraph
+
+    override type Records = CAPSRecords
 
     override val schema: CAPSSchema = CAPSSchema.empty
 
     override def nodes(name: String, cypherType: CTNode): CAPSRecords =
-      CAPSRecords.empty(RecordHeader.from(Var(name)(cypherType)))
+      caps.records.empty(RecordHeader.from(Var(name)(cypherType)))
 
-    override def relationships(name: String, cypherType: CTRelationship): CAPSRecords =
-      CAPSRecords.empty(RecordHeader.from(Var(name)(cypherType)))
+    override def relationships(name: String, cypherType: CTRelationship): RelationalCypherRecords[DataFrameTable] =
+      caps.records.empty(RecordHeader.from(Var(name)(cypherType)))
 
     override def session: CAPSSession = caps
 
     override def cache(): CAPSGraph = this
 
-    override def persist(): CAPSGraph = this
-
-    override def persist(storageLevel: StorageLevel): CAPSGraph = this
-
-    override def unpersist(): CAPSGraph = this
-
-    override def unpersist(blocking: Boolean): CAPSGraph = this
 
     override def tags: Set[Int] = Set.empty
   }

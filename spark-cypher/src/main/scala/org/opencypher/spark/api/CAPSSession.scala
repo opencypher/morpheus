@@ -36,9 +36,10 @@ import org.opencypher.okapi.api.value.CypherValue.CypherMap
 import org.opencypher.okapi.impl.exception.UnsupportedOperationException
 import org.opencypher.okapi.impl.graph.CypherCatalog
 import org.opencypher.okapi.relational.api.graph.RelationalCypherSession
+import org.opencypher.okapi.relational.api.table.RelationalCypherRecordsFactory
 import org.opencypher.spark.api.io._
 import org.opencypher.spark.impl.table.SparkFlatRelationalTable.DataFrameTable
-import org.opencypher.spark.impl.{CAPSGraph, CAPSRecords, CAPSSessionImpl}
+import org.opencypher.spark.impl.{CAPSGraph, CAPSRecords, CAPSRecordsFactory, CAPSSessionImpl}
 
 import scala.reflect.runtime.universe._
 
@@ -49,6 +50,8 @@ trait CAPSSession extends RelationalCypherSession[DataFrameTable] {
   def sql(query: String): CypherRecords
 
   def sparkSession: SparkSession
+
+  override val records: CAPSRecordsFactory = CAPSRecordsFactory()
 
   /**
     * Reads a graph from sequences of nodes and relationships.

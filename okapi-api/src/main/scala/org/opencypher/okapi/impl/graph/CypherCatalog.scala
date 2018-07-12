@@ -39,7 +39,7 @@ import org.opencypher.okapi.impl.io.SessionGraphDataSource
   * By default this catalog mounts a single [[org.opencypher.okapi.impl.io.SessionGraphDataSource]] under the namespace
   * [[org.opencypher.okapi.impl.graph.CypherCatalog#sessionNamespace]]. This PGDS is used to store session local graphs.
   */
-class CypherCatalog extends PropertyGraphCatalog{
+class CypherCatalog extends PropertyGraphCatalog {
 
   /**
     * The [[org.opencypher.okapi.api.graph.Namespace]] used to store graphs within this session.
