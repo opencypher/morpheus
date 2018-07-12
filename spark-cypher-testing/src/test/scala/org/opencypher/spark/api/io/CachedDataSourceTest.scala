@@ -30,7 +30,7 @@ import org.apache.spark.storage.StorageLevel
 import org.opencypher.okapi.api.graph.{GraphName, Namespace, PropertyGraph}
 import org.opencypher.spark.api.io.util.CachedDataSource._
 import org.opencypher.spark.impl.CAPSConverters._
-import org.opencypher.spark.impl.CAPSScanGraph
+import org.opencypher.spark.impl.graph.CAPSScanGraph
 import org.opencypher.spark.testing.CAPSTestSuite
 import org.opencypher.spark.testing.fixture.GraphConstructionFixture
 import org.scalatest.BeforeAndAfterEach

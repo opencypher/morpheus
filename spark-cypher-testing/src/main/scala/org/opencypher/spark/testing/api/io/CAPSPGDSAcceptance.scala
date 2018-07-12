@@ -32,9 +32,9 @@ import org.opencypher.spark.api.CAPSSession
 import org.opencypher.spark.api.CAPSSession._
 import org.opencypher.spark.api.value.{CAPSNode, CAPSRelationship}
 import org.opencypher.spark.impl.CAPSConverters._
-import org.opencypher.spark.impl.CAPSGraph
 import org.opencypher.spark.impl.DataFrameOps._
 import org.opencypher.spark.impl.encoders._
+import org.opencypher.spark.impl.graph.CAPSGraph
 
 import scala.util.{Failure, Success, Try}
 

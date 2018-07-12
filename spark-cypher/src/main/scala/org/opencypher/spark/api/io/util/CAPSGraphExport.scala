@@ -33,8 +33,8 @@ import org.opencypher.okapi.api.types.{CTNode, CTRelationship}
 import org.opencypher.okapi.ir.api.expr.{Property, Var}
 import org.opencypher.okapi.impl.util.StringEncodingUtilities._
 import org.opencypher.spark.api.io.{GraphEntity, Relationship}
-import org.opencypher.spark.impl.CAPSGraph
 import org.opencypher.spark.impl.convert.SparkConversions._
+import org.opencypher.spark.impl.graph.CAPSGraph
 
 // TODO: Add documentation that describes the canonical table format
 object CAPSGraphExport {

@@ -29,7 +29,7 @@ package org.opencypher.spark.testing
 import org.opencypher.okapi.api.graph.QualifiedGraphName
 import org.opencypher.okapi.relational.api.physical.RelationalRuntimeContext
 import org.opencypher.okapi.testing.BaseTestSuite
-import org.opencypher.spark.impl.CAPSGraph
+import org.opencypher.spark.impl.graph.CAPSGraph
 import org.opencypher.spark.impl.table.SparkFlatRelationalTable.DataFrameTable
 import org.opencypher.spark.testing.fixture.{CAPSSessionFixture, SparkSessionFixture}
 import org.opencypher.spark.testing.support.{GraphMatchingTestSupport, RecordMatchingTestSupport}

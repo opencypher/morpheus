@@ -30,6 +30,7 @@ import org.apache.spark.sql.Row
 import org.opencypher.okapi.testing.Bag
 import org.opencypher.spark.impl
 import org.opencypher.spark.impl.DataFrameOps._
+import org.opencypher.spark.impl.graph.CAPSGraph
 import org.opencypher.spark.testing.CAPSTestSuite
 import org.opencypher.spark.testing.fixture.{GraphConstructionFixture, RecordsVerificationFixture, TeamDataFixture}
 

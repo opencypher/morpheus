@@ -37,9 +37,9 @@ import org.opencypher.spark.api.io.GraphEntity.sourceIdKey
 import org.opencypher.spark.api.io.Relationship.{sourceEndNodeKey, sourceStartNodeKey}
 import org.opencypher.spark.api.io.edgelist.EdgeListDataSource._
 import org.opencypher.spark.api.io.{CAPSNodeTable, CAPSRelationshipTable, GraphEntity, Relationship}
-import org.opencypher.spark.impl.CAPSGraph
 import org.opencypher.spark.schema.CAPSSchema
 import org.opencypher.spark.impl.DataFrameOps._
+import org.opencypher.spark.impl.graph.CAPSGraph
 
 object EdgeListDataSource {
 

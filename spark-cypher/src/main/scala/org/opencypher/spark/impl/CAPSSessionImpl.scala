@@ -50,6 +50,7 @@ import org.opencypher.okapi.relational.api.table.RelationalCypherRecords
 import org.opencypher.okapi.relational.impl.physical.{RelationalOptimizer, RelationalPlanner}
 import org.opencypher.spark.api.CAPSSession
 import org.opencypher.spark.impl.CAPSConverters._
+import org.opencypher.spark.impl.graph.CAPSGraph
 import org.opencypher.spark.impl.table.SparkFlatRelationalTable.DataFrameTable
 
 sealed class CAPSSessionImpl(val sparkSession: SparkSession) extends CAPSSession with Serializable {

@@ -38,8 +38,8 @@ import org.opencypher.spark.api.CAPSSession
 import org.opencypher.spark.api.io.metadata.CAPSGraphMetaData
 import org.opencypher.spark.api.io.util.CAPSGraphExport._
 import org.opencypher.spark.impl.CAPSConverters._
-import org.opencypher.spark.impl.CAPSGraph
 import org.opencypher.spark.impl.DataFrameOps._
+import org.opencypher.spark.impl.graph.CAPSGraph
 import org.opencypher.spark.impl.io.CAPSPropertyGraphDataSource
 import org.opencypher.spark.schema.CAPSSchema
 

@@ -24,22 +24,20 @@
  * described as "implementation extensions to Cypher" or as "proposed changes to
  * Cypher that are not yet approved by the openCypher community".
  */
-package org.opencypher.spark.impl
+package org.opencypher.spark.impl.graph
 
-import org.apache.spark.storage.StorageLevel
-import org.opencypher.okapi.api.graph.PropertyGraph
 import org.opencypher.okapi.api.schema._
 import org.opencypher.okapi.api.table.CypherRecords
 import org.opencypher.okapi.api.types.{CTNode, CTRelationship}
-import org.opencypher.okapi.ir.api.PropertyKey
 import org.opencypher.okapi.ir.api.expr._
-import org.opencypher.okapi.relational.api.graph.{RelationalCypherGraph, SingleTableGraph, UnionGraph}
+import org.opencypher.okapi.relational.api.graph.RelationalCypherGraph
 import org.opencypher.okapi.relational.api.table.RelationalCypherRecords
 import org.opencypher.okapi.relational.impl.table.RecordHeader
 import org.opencypher.spark.api.CAPSSession
 import org.opencypher.spark.api.io.{CAPSEntityTable, CAPSNodeTable}
 import org.opencypher.spark.impl.CAPSConverters._
 import org.opencypher.spark.impl.table.SparkFlatRelationalTable.DataFrameTable
+import org.opencypher.spark.impl.CAPSRecords
 import org.opencypher.spark.schema.CAPSSchema
 import org.opencypher.spark.schema.CAPSSchema._
 

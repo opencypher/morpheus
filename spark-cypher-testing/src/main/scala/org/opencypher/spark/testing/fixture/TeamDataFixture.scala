@@ -37,7 +37,8 @@ import org.opencypher.spark.api.value.{CAPSNode, CAPSRelationship}
 import org.opencypher.okapi.testing.Bag
 import org.opencypher.okapi.testing.Bag._
 import org.opencypher.spark.api.io.{CAPSNodeTable, CAPSRelationshipTable}
-import org.opencypher.spark.impl.{CAPSGraph, CAPSResult}
+import org.opencypher.spark.impl.CAPSResult
+import org.opencypher.spark.impl.graph.CAPSGraph
 
 import scala.collection.mutable
 

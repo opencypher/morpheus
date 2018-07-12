@@ -24,12 +24,13 @@
  * described as "implementation extensions to Cypher" or as "proposed changes to
  * Cypher that are not yet approved by the openCypher community".
  */
-package org.opencypher.okapi.relational.api.graph
+package org.opencypher.spark.impl.graph
 
 import org.opencypher.okapi.api.graph.PropertyGraph
 import org.opencypher.okapi.api.schema.Schema
 import org.opencypher.okapi.api.types.{CTNode, CTRelationship}
 import org.opencypher.okapi.ir.api.expr._
+import org.opencypher.okapi.relational.api.graph.{RelationalCypherGraph, RelationalCypherSession}
 import org.opencypher.okapi.relational.api.physical.RelationalRuntimeContext
 import org.opencypher.okapi.relational.api.schema.RelationalSchema._
 import org.opencypher.okapi.relational.api.table.{FlatRelationalTable, RelationalCypherRecords}
@@ -81,4 +82,49 @@ case class SingleTableGraph[T <: FlatRelationalTable[T]](
 
   // TODO: move UnionGraph to relational
   override def unionAll(others: PropertyGraph*): PropertyGraph = ???
+
+  //  def nodesWithExactLabels(name: String, labels: Set[String]): RelationalCypherRecords[T] = {
+  //    val nodeType = CTNode(labels)
+  //    val nodeVar = Var(name)(nodeType)
+  //    val records = nodes(name, nodeType)
+  //
+  //    val header = records.header
+  //
+  //    // compute slot contents to keep
+  //    val labelExprs = header.labelsFor(nodeVar)
+  //
+  //    // need to iterate the slots to maintain the correct order
+  //    val propertyExprs = schema.nodeKeys(labels).flatMap {
+  //      case (key, cypherType) => Property(nodeVar, PropertyKey(key))(cypherType)
+  //    }.toSet
+  //    val headerPropertyExprs = header.propertiesFor(nodeVar).filter(propertyExprs.contains)
+  //
+  //    val keepExprs: Seq[Expr] = Seq(nodeVar) ++ labelExprs ++ headerPropertyExprs
+  //
+  //    val keepColumns = keepExprs.map(header.column)
+  //
+  //    // we only keep rows where all "other" labels are false
+  //    val predicate = labelExprs
+  //      .filterNot(l => labels.contains(l.label.name))
+  //
+  //      .map(header.column)
+  //      .map(records.df.col(_) === false)
+  //      .reduceOption(_ && _)
+  //
+  //    // filter rows and select only necessary columns
+  //    val updatedData = predicate match {
+  //
+  //      case Some(filter) =>
+  //        records.df
+  //          .filter(filter)
+  //          .select(keepColumns.head, keepColumns.tail: _*)
+  //
+  //      case None =>
+  //        records.df.select(keepColumns.head, keepColumns.tail: _*)
+  //    }
+  //
+  //    val updatedHeader = RecordHeader.from(keepExprs)
+  //
+  //    CAPSRecords(updatedHeader, updatedData)
+  //  }
 }

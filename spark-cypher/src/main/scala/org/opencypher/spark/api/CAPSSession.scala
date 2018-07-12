@@ -38,8 +38,9 @@ import org.opencypher.okapi.impl.graph.CypherCatalog
 import org.opencypher.okapi.relational.api.graph.RelationalCypherSession
 import org.opencypher.okapi.relational.api.table.RelationalCypherRecordsFactory
 import org.opencypher.spark.api.io._
+import org.opencypher.spark.impl.graph.CAPSGraph
 import org.opencypher.spark.impl.table.SparkFlatRelationalTable.DataFrameTable
-import org.opencypher.spark.impl.{CAPSGraph, CAPSRecords, CAPSRecordsFactory, CAPSSessionImpl}
+import org.opencypher.spark.impl.{CAPSRecords, CAPSRecordsFactory, CAPSSessionImpl}
 
 import scala.reflect.runtime.universe._
 

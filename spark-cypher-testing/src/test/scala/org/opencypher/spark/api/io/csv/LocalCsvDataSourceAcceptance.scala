@@ -30,7 +30,7 @@ import java.nio.file.Paths
 
 import org.opencypher.spark.api.{FSGraphSources, GraphSources}
 import org.opencypher.spark.api.io.fs.local.LocalDataSourceAcceptance
-import org.opencypher.spark.impl.CAPSGraph
+import org.opencypher.spark.impl.graph.CAPSGraph
 import org.opencypher.spark.impl.io.CAPSPropertyGraphDataSource
 
 class LocalCsvDataSourceAcceptance extends LocalDataSourceAcceptance {

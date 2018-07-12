@@ -27,7 +27,7 @@
 package org.opencypher.spark.impl.acceptance
 
 import org.opencypher.spark.api.CAPSSession
-import org.opencypher.spark.impl.CAPSGraph
+import org.opencypher.spark.impl.graph.CAPSGraph
 import org.opencypher.spark.testing.support.creation.caps.{CAPSPatternGraphFactory, CAPSScanGraphFactory}
 
 trait GraphInit {

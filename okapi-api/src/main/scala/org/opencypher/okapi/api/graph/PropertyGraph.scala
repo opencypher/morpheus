@@ -78,6 +78,18 @@ trait PropertyGraph {
   def relationships(name: String, relCypherType: CTRelationship = CTRelationship): CypherRecords
 
   /**
+    * Constructs the union of this graph and the argument graphs. Note that the argument graphs have to
+    * be managed by the same session as this graph.
+    *
+    * This operation does not merge any nodes or relationships, but simply creates a new graph consisting
+    * of all nodes and relationships of the argument graphs.
+    *
+    * @param others argument graphs with which to union
+    * @return union of this and the argument graph
+    */
+  def unionAll(others: PropertyGraph*): PropertyGraph
+
+  /**
     * Executes a Cypher query in the session that manages this graph, using this graph as the input graph.
     *
     * @param query      Cypher query to execute

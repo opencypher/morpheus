@@ -33,7 +33,7 @@ import org.opencypher.okapi.relational.api.physical.RelationalRuntimeContext
 import org.opencypher.okapi.relational.impl.operators.{Cache, RelationalOperator}
 import org.opencypher.okapi.relational.impl.table.RecordHeader
 import org.opencypher.spark.impl.table.SparkFlatRelationalTable.DataFrameTable
-import org.opencypher.spark.impl.{CAPSGraph, CAPSRecords, CAPSResult}
+import org.opencypher.spark.impl.{CAPSRecords, CAPSResult}
 import org.opencypher.spark.testing.CAPSTestSuite
 
 //TODO: Rewrite or delete when refactoring is complete

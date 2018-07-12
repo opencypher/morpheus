@@ -32,6 +32,7 @@ import org.opencypher.okapi.api.types._
 import org.opencypher.okapi.testing.Bag
 import org.opencypher.spark.api.io.{CAPSNodeTable, CAPSRelationshipTable}
 import org.opencypher.spark.impl.DataFrameOps._
+import org.opencypher.spark.impl.graph.CAPSGraph
 import org.opencypher.spark.testing.CAPSTestSuite
 import org.opencypher.spark.testing.fixture.{GraphConstructionFixture, RecordsVerificationFixture, TeamDataFixture}
 

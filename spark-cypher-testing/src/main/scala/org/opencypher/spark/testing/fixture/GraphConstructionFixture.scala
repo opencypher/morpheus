@@ -29,7 +29,7 @@ package org.opencypher.spark.testing.fixture
 import org.opencypher.okapi.testing.BaseTestSuite
 import org.opencypher.okapi.testing.propertygraph.CreateGraphFactory
 import org.opencypher.spark.impl.CAPSConverters._
-import org.opencypher.spark.impl.CAPSGraph
+import org.opencypher.spark.impl.graph.CAPSGraph
 import org.opencypher.spark.testing.support.creation.caps.{CAPSScanGraphFactory, CAPSTestGraphFactory}
 
 trait GraphConstructionFixture {

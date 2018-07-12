@@ -32,7 +32,7 @@ import org.opencypher.okapi.ir.api.expr._
 import org.opencypher.okapi.ir.api.set.SetPropertyItem
 import org.opencypher.okapi.ir.api.{PropertyKey, RelType}
 import org.opencypher.okapi.logical.impl._
-import org.opencypher.okapi.relational.api.graph.{RelationalCypherGraph, SingleTableGraph}
+import org.opencypher.okapi.relational.api.graph.RelationalCypherGraph
 import org.opencypher.okapi.relational.api.physical.{RelationalPlannerContext, RelationalRuntimeContext}
 import org.opencypher.okapi.relational.api.table.FlatRelationalTable
 import org.opencypher.okapi.relational.api.tagging.TagSupport.computeRetaggings
@@ -145,16 +145,15 @@ final case class ConstructGraph[T <: FlatRelationalTable[T]](
 
     val patternGraphRecords = session.records.from(patternGraphTableOp.header, patternGraphTableOp.table)
 
-    val patternGraph = SingleTableGraph(patternGraphRecords, schema, tagsUsed)
+    val patternGraph = session.graphs.singleTableGraph(patternGraphRecords, schema, tagsUsed)
 
-    val constructedCombinedWithOn = if (onGraph == session.emptyGraph) {
-      CAPSUnionGraph(Map(identityRetaggings(patternGraph)))
+    val constructedCombinedWithOn = if (onGraph == session.graphs.emptyGraph) {
+      session.graphs.unionGraph(Map(identityRetaggings(patternGraph)))
     } else {
-      CAPSUnionGraph(Map(identityRetaggings(onGraph), identityRetaggings(patternGraph)))
+      session.graphs.unionGraph(Map(identityRetaggings(onGraph), identityRetaggings(patternGraph)))
     }
 
-
-    context.queryCatalog.update(construct.name, constructedCombinedWithOn)
+    context.constructedGraphCatalog += (construct.name -> constructedCombinedWithOn)
 
     (constructedCombinedWithOn, name, constructTagStrategy)
   }

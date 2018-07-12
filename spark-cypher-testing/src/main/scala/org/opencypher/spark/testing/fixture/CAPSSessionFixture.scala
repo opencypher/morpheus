@@ -28,7 +28,7 @@ package org.opencypher.spark.testing.fixture
 
 import org.opencypher.okapi.testing.{BaseTestFixture, BaseTestSuite}
 import org.opencypher.spark.api.CAPSSession
-import org.opencypher.spark.impl.CAPSGraph
+import org.opencypher.spark.impl.graph.CAPSGraph
 
 trait CAPSSessionFixture extends BaseTestFixture {
   self: SparkSessionFixture with BaseTestSuite =>

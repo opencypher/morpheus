@@ -27,7 +27,7 @@
 package org.opencypher.spark.api.util
 
 import org.opencypher.okapi.api.util.ZeppelinSupport._
-import org.opencypher.spark.impl.CAPSGraph
+import org.opencypher.spark.impl.graph.CAPSGraph
 import org.opencypher.spark.testing.CAPSTestSuite
 import org.opencypher.spark.testing.fixture.TeamDataFixture
 

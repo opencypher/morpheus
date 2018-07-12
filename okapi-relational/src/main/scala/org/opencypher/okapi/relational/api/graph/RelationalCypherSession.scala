@@ -9,6 +9,6 @@ trait RelationalCypherSession[T <: FlatRelationalTable[T]] extends CypherSession
 
   def records: RelationalCypherRecordsFactory[T]
 
-  val emptyGraph: Graph
+  def graphs: RelationalCypherGraphFactory[T]
 
 }

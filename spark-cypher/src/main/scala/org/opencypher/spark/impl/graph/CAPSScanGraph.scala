@@ -24,27 +24,35 @@
  * described as "implementation extensions to Cypher" or as "proposed changes to
  * Cypher that are not yet approved by the openCypher community".
  */
-package org.opencypher.spark.impl
+package org.opencypher.spark.impl.graph
 
 import org.apache.spark.sql.functions
 import org.apache.spark.storage.StorageLevel
+import org.opencypher.okapi.api.graph.PropertyGraph
 import org.opencypher.okapi.api.schema._
 import org.opencypher.okapi.api.types.{CTNode, CTRelationship}
 import org.opencypher.okapi.ir.api.expr._
+import org.opencypher.okapi.relational.api.graph.RelationalCypherGraph
 import org.opencypher.okapi.relational.api.schema.RelationalSchema._
+import org.opencypher.okapi.relational.impl.operators.{Distinct, ExtractEntities, Start, TabularUnionAll}
 import org.opencypher.spark.api.CAPSSession
 import org.opencypher.spark.api.io.{CAPSEntityTable, CAPSNodeTable, CAPSRelationshipTable}
+import org.opencypher.spark.impl.CAPSRecords
+import org.opencypher.spark.impl.graph.CAPSGraph.CAPSGraph
+import org.opencypher.spark.impl.table.SparkFlatRelationalTable.DataFrameTable
 import org.opencypher.spark.schema.CAPSSchema
 
 class CAPSScanGraph(val scans: Seq[CAPSEntityTable], val schema: CAPSSchema, val tags: Set[Int])
   (implicit val session: CAPSSession)
-  extends CAPSGraph {
+  extends RelationalCypherGraph[DataFrameTable] {
 
   // TODO: Normalize (remove redundant columns for implied Schema information, clear aliases?)
 
   self: CAPSGraph =>
 
-  override override type Graph = CAPSGraph
+  override type Graph = CAPSGraph
+
+  override type Records = CAPSRecords
 
   override def toString = s"CAPSScanGraph(${scans.map(_.entityType).mkString(", ")})"
 
@@ -54,28 +62,15 @@ class CAPSScanGraph(val scans: Seq[CAPSEntityTable], val schema: CAPSSchema, val
 
   override def cache(): CAPSScanGraph = forEach(_.table.cache())
 
-  override def persist(): CAPSScanGraph = forEach(_.table.persist())
-
   private def forEach(f: CAPSEntityTable => Unit): CAPSScanGraph = {
     scans.foreach(f)
     this
   }
 
-  override def persist(storageLevel: StorageLevel): CAPSScanGraph = forEach(_.table.persist(storageLevel))
-
-  override def unpersist(): CAPSScanGraph = forEach(_.table.unpersist())
-
-  override def unpersist(blocking: Boolean): CAPSScanGraph = forEach(_.table.unpersist(blocking))
-
-  override def nodes(name: String, nodeCypherType: CTNode): CAPSRecords =
-    nodesInternal(name, nodeCypherType, byExactType = false)
-
-  override def nodesWithExactLabels(name: String, labels: Set[String]): CAPSRecords =
-    nodesInternal(name, CTNode(labels), byExactType = true)
-
-  private def nodesInternal(name: String, nodeCypherType: CTNode, byExactType: Boolean): CAPSRecords = {
+  // TODO: Use just one method for all entity scans
+  override def nodes(name: String, nodeCypherType: CTNode, exactLabelMatch: Boolean = false): CAPSRecords = {
     val node = Var(name)(nodeCypherType)
-    val selectedTables = if (byExactType) {
+    val selectedTables: Seq[CAPSNodeTable] = if (exactLabelMatch) {
       nodeTables.filter(_.entityType == nodeCypherType)
     } else {
       nodeTables.filter(_.entityType.subTypeOf(nodeCypherType).isTrue)
@@ -83,9 +78,16 @@ class CAPSScanGraph(val scans: Seq[CAPSEntityTable], val schema: CAPSSchema, val
     val schema = selectedTables.map(_.schema).foldLeft(Schema.empty)(_ ++ _)
     val targetNodeHeader = schema.headerForNode(node)
 
-    alignRecords(selectedTables.map(_.records), node, targetNodeHeader).getOrElse(CAPSRecords.empty(targetNodeHeader))
+    val nodeTablesAsStartOps = selectedTables.map(table => ExtractEntities(Start(table), targetNodeHeader, Set(node)))
+    if (nodeTablesAsStartOps.isEmpty) {
+      session.records.empty(targetNodeHeader)
+    } else {
+      val unionAllOp = nodeTablesAsStartOps.reduce(TabularUnionAll(_, _))
+      session.records.from(unionAllOp.header, unionAllOp.table)
+    }
   }
 
+  // TODO: Use just one method for all entity scans
   override def relationships(name: String, relCypherType: CTRelationship): CAPSRecords = {
     val rel = Var(name)(relCypherType)
     val scanTypes = relCypherType.types
@@ -113,10 +115,17 @@ class CAPSScanGraph(val scans: Seq[CAPSEntityTable], val schema: CAPSSchema, val
             val relTypeFilter = other
               .map(typeExpr => records.df.col(scanHeader.column(typeExpr)) === functions.lit(true))
               .reduce(_ || _)
-            CAPSRecords(scanHeader, records.df.filter(relTypeFilter))
+            session.records.from(scanHeader, records.df.filter(relTypeFilter))
         }
       }
 
-    alignRecords(filteredRecords, rel, targetRelHeader).getOrElse(CAPSRecords.empty(targetRelHeader))
+    val nodeTablesAsStartOps = filteredRecords.map(table => ExtractEntities(Start(table), targetRelHeader, Set(rel)))
+    if (nodeTablesAsStartOps.isEmpty) {
+      session.records.empty(targetRelHeader)
+    } else {
+      val unionAllOp = nodeTablesAsStartOps.reduce(TabularUnionAll(_, _))
+      session.records.from(unionAllOp.header, unionAllOp.table)
+    }
   }
+
 }

@@ -28,10 +28,10 @@ package org.opencypher.spark.testing.support.creation.caps
 
 import org.opencypher.okapi.api.types.{CTNode, CTRelationship}
 import org.opencypher.okapi.ir.api.expr.Var
-import org.opencypher.okapi.relational.api.graph.SingleTableGraph
 import org.opencypher.okapi.testing.propertygraph.InMemoryTestGraph
 import org.opencypher.spark.api.CAPSSession
-import org.opencypher.spark.impl.{CAPSGraph, CAPSRecords}
+import org.opencypher.spark.impl.graph.SingleTableGraph
+import org.opencypher.spark.impl.CAPSRecords
 
 object CAPSPatternGraphFactory extends CAPSTestGraphFactory {
 

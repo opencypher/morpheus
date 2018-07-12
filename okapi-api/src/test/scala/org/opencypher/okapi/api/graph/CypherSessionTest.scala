@@ -84,7 +84,7 @@ class CypherSessionTest extends FunSpec with MockitoSugar with Matchers {
   private def createSession: CypherSession = new CypherSession {
     override val catalog: PropertyGraphCatalog = new CypherCatalog()
 
-    override def cypher(query: String, parameters: CypherMap, drivingTable: Option[CypherRecords]): CypherResult = ???
+    override def cypher(query: String, parameters: CypherMap, drivingTable: Option[CypherRecords]): Result = ???
 
     override private[graph] def cypherOnGraph(graph: PropertyGraph, query: String, parameters: CypherMap, drivingTable: Option[CypherRecords]) = ???
   }

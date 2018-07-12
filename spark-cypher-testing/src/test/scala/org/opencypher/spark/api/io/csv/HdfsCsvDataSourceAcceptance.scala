@@ -28,7 +28,7 @@ package org.opencypher.spark.api.io.csv
 
 import org.opencypher.spark.api.GraphSources
 import org.opencypher.spark.api.io.fs.hdfs.HdfsDataSourceAcceptance
-import org.opencypher.spark.impl.CAPSGraph
+import org.opencypher.spark.impl.graph.CAPSGraph
 import org.opencypher.spark.impl.io.CAPSPropertyGraphDataSource
 
 class HdfsCsvDataSourceAcceptance extends HdfsDataSourceAcceptance {
