@@ -24,6 +24,7 @@
  * described as "implementation extensions to Cypher" or as "proposed changes to
  * Cypher that are not yet approved by the openCypher community".
  */
+// tag::full-example[]
 package org.opencypher.spark.examples
 
 import org.apache.spark.sql.Dataset
@@ -63,3 +64,4 @@ object UpdateExample extends ConsoleApp {
   // 6) Print updated nodes
   println(adults.toLocalIterator.asScala.toList.mkString("\n"))
 }
+// end::full-example[]

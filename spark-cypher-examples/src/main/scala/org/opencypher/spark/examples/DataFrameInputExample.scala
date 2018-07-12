@@ -24,6 +24,7 @@
  * described as "implementation extensions to Cypher" or as "proposed changes to
  * Cypher that are not yet approved by the openCypher community".
  */
+// tag::full-example[]
 package org.opencypher.spark.examples
 
 import org.apache.spark.sql.types._
@@ -97,3 +98,4 @@ object SocialNetworkDataFrames {
     session.createDataFrame(rels, relSchema)
   }
 }
+// end::full-example[]

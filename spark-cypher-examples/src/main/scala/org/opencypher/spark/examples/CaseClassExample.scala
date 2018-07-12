@@ -24,6 +24,7 @@
  * described as "implementation extensions to Cypher" or as "proposed changes to
  * Cypher that are not yet approved by the openCypher community".
  */
+// tag::full-example[]
 package org.opencypher.spark.examples
 
 import org.opencypher.spark.api.CAPSSession
@@ -70,3 +71,4 @@ object SocialNetworkData {
   val persons = List(alice, bob, carol)
   val friendships = List(Friend(0, alice.id, bob.id, "23/01/1987"), Friend(1, bob.id, carol.id, "12/12/2009"))
 }
+// end::full-example[]

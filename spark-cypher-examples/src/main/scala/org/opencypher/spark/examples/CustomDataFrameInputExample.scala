@@ -24,6 +24,7 @@
  * described as "implementation extensions to Cypher" or as "proposed changes to
  * Cypher that are not yet approved by the openCypher community".
  */
+// tag::full-example[]
 package org.opencypher.spark.examples
 
 import org.apache.spark.sql.types._
@@ -42,10 +43,13 @@ import scala.collection.JavaConverters._
 object CustomDataFrameInputExample extends ConsoleApp {
 
   // 1) Create CAPS session and retrieve Spark session
+  // tag::create-session[]
   implicit val session: CAPSSession = CAPSSession.local()
   val spark = session.sparkSession
+  // end::create-session[]
 
   // 2) Generate some DataFrames that we'd like to interpret as a property graph.
+  // tag::prepare-dataframes[]
   val nodesDF: DataFrame = {
     val nodes = List(
       Row(0L, "Alice", 42L),
@@ -73,11 +77,13 @@ object CustomDataFrameInputExample extends ConsoleApp {
     )
     spark.createDataFrame(rels, relSchema)
   }
+  // end::prepare-dataframes[]
 
   // 3) Generate node- and relationship tables that wrap the DataFrames and describe their contained data.
   //    Node and relationship mappings are used to explicitly define which DataFrame column stores which specific entity
   //    component (identifiers, properties, optional labels, relationship types).
 
+  // tag::create-node-relationship-tables[]
   val personNodeMapping = NodeMapping
     .withSourceIdKey("NODE_ID")
     .withImpliedLabel("Person")
@@ -93,19 +99,28 @@ object CustomDataFrameInputExample extends ConsoleApp {
 
   val personTable = CAPSNodeTable.fromMapping(personNodeMapping, nodesDF)
   val friendsTable = CAPSRelationshipTable.fromMapping(friendOfMapping, relsDF)
+  // end::create-node-relationship-tables[]
 
   // 4) Create property graph from graph scans
+  // tag::create-graph[]
   val graph = session.readFrom(personTable, friendsTable)
+  // end::create-graph[]
 
   // 5) Execute Cypher query and print results
+  // tag::run-query[]
   val result = graph.cypher("MATCH (n:Person) RETURN n.name")
+  // end::run-query[]
 
   // 6) Collect results into string by selecting a specific column.
   //    This operation may be very expensive as it materializes results locally.
   // 6a) type safe version, discards values with wrong type
+  // tag::collect-results-typesafe[]
   val safeNames: Set[String] = result.getRecords.collect.flatMap(_ ("n.name").as[String]).toSet
+  // end::collect-results-typesafe[]
   // 6b) unsafe version, throws an exception when value cannot be cast
+  // tag::collect-results-nontypesafe[]
   val unsafeNames: Set[String] = result.getRecords.collect.map(_ ("n.name").cast[String]).toSet
+  // end::collect-results-nontypesafe[]
 
   println(safeNames)
 
@@ -137,3 +152,4 @@ object CustomDataFrameInputExample extends ConsoleApp {
     spark.createDataFrame(rels, relSchema)
   }
 }
+// end::full-example[]

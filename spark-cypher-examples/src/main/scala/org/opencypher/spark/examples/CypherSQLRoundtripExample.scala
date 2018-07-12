@@ -24,6 +24,7 @@
  * described as "implementation extensions to Cypher" or as "proposed changes to
  * Cypher that are not yet approved by the openCypher community".
  */
+// tag::full-example[]
 package org.opencypher.spark.examples
 
 import org.opencypher.okapi.api.graph.Namespace
@@ -72,3 +73,4 @@ object CypherSQLRoundtripExample extends ConsoleApp {
   // 8) Print the results
   result2.show
 }
+// end::full-example[]
