@@ -33,7 +33,7 @@ import org.opencypher.spark.impl.DataFrameOps._
 import org.opencypher.spark.testing.CAPSTestSuite
 import org.opencypher.spark.testing.fixture.{GraphConstructionFixture, RecordsVerificationFixture, TeamDataFixture}
 
-class CAPSUnionGraphTest extends CAPSTestSuite
+class unionGraphTest extends CAPSTestSuite
   with GraphConstructionFixture
   with RecordsVerificationFixture
   with TeamDataFixture {
@@ -51,7 +51,7 @@ class CAPSUnionGraphTest extends CAPSTestSuite
     val inputGraph = initGraph(`:Person`)
     val inputNodes = inputGraph.nodes("n")
 
-    val patternGraph = CAPSUnionGraph(CAPSGraph.create(inputNodes, inputGraph.schema))
+    val patternGraph = RelationalUnionGraph(CAPSGraph.create(inputNodes, inputGraph.schema))
     val nodes = patternGraph.nodes("n")
 
     val cols = Seq(
@@ -72,7 +72,7 @@ class CAPSUnionGraphTest extends CAPSTestSuite
   }
 
   test("Node scan from multiple single node CAPSRecords") {
-    val unionGraph = impl.CAPSUnionGraph(initGraph(`:Person`), initGraph(`:Book`))
+    val unionGraph = impl.RelationalUnionGraph(initGraph(`:Person`), initGraph(`:Book`))
     val nodes = unionGraph.nodes("n")
     val cols = Seq(
       n,
@@ -102,7 +102,7 @@ class CAPSUnionGraphTest extends CAPSTestSuite
     val scanGraph1 = CAPSGraph.create(personTable)
     val scanGraph2 = CAPSGraph.create(personTable)
 
-    val unionGraph = CAPSUnionGraph(scanGraph1, scanGraph2)
+    val unionGraph = RelationalUnionGraph(scanGraph1, scanGraph2)
     val nodes = unionGraph.nodes("n")
 
     val cols = Seq(
@@ -133,9 +133,9 @@ class CAPSUnionGraphTest extends CAPSTestSuite
   }
 
   private def initPersonReadsBookGraph: CAPSGraph = {
-    impl.CAPSUnionGraph(
+    impl.RelationalUnionGraph(
       initGraph(`:READS`),
-      impl.CAPSUnionGraph(initGraph(`:Book`),
-        impl.CAPSUnionGraph(initGraph(`:Person`))))
+      impl.RelationalUnionGraph(initGraph(`:Book`),
+        impl.RelationalUnionGraph(initGraph(`:Person`))))
   }
 }

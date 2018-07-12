@@ -26,7 +26,6 @@
  */
 package org.opencypher.okapi.relational.api.table
 
-import com.sun.rowset.internal.Row
 import org.opencypher.okapi.api.table.CypherTable
 import org.opencypher.okapi.api.types.{CTNull, CypherType}
 import org.opencypher.okapi.api.value.CypherValue.CypherMap
@@ -86,8 +85,6 @@ trait FlatRelationalTable[T <: FlatRelationalTable[T]] extends CypherTable {
   def withFalseColumn(col: String): T
 
   def join(other: T, joinType: JoinType, joinCols: (String, String)*): T
-
-  def flatMap(func: Row => Seq[Row]): T
 
   // TODO: introduce function expression for retagging and use withColumn and backend-specific expression resolver
   def retagColumn(replacements: Map[Int, Int], column: String): T

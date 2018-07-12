@@ -24,16 +24,16 @@
  * described as "implementation extensions to Cypher" or as "proposed changes to
  * Cypher that are not yet approved by the openCypher community".
  */
-package org.opencypher.okapi.relational.impl.graph
+package org.opencypher.okapi.relational.api.graph
 
-import org.opencypher.okapi.api.graph.CypherSession
+import org.opencypher.okapi.api.graph.PropertyGraph
 import org.opencypher.okapi.api.schema.Schema
 import org.opencypher.okapi.api.types.{CTNode, CTRelationship}
 import org.opencypher.okapi.ir.api.expr._
-import org.opencypher.okapi.relational.api.graph.RelationalCypherGraph
+import org.opencypher.okapi.relational.api.physical.RelationalRuntimeContext
 import org.opencypher.okapi.relational.api.schema.RelationalSchema._
 import org.opencypher.okapi.relational.api.table.{FlatRelationalTable, RelationalCypherRecords}
-import org.opencypher.okapi.relational.impl.table.RecordHeader
+import org.opencypher.okapi.relational.impl.operators.{ExtractEntities, Start}
 
 /**
   * A single table graph represents the result of CONSTRUCT clause. It contains all entities from the outer scope that 
@@ -42,10 +42,10 @@ import org.opencypher.okapi.relational.impl.table.RecordHeader
   * the constructed entities.
   */
 case class SingleTableGraph[T <: FlatRelationalTable[T]](
-  private[spark] val baseTable: RelationalCypherRecords[T],
+  baseTable: RelationalCypherRecords[T],
   override val schema: Schema,
   override val tags: Set[Int]
-)(implicit val session: CypherSession)
+)(implicit val session: RelationalCypherSession[T], context: RelationalRuntimeContext[T])
   extends RelationalCypherGraph[T] {
 
   override type Graph = SingleTableGraph[T]
@@ -63,12 +63,10 @@ case class SingleTableGraph[T <: FlatRelationalTable[T]](
     val targetNode = Var(name)(nodeCypherType)
     val nodeSchema = schema.forNode(nodeCypherType.labels)
     val targetNodeHeader = nodeSchema.headerForNode(targetNode)
-
     val extractionNodes: Set[Var] = header.nodesForType(nodeCypherType)
+    val extractionOp = ExtractEntities(Start(baseTable), targetNodeHeader, extractionNodes)
 
-
-
-    ???
+    session.records.from(extractionOp.header, extractionOp.table)
   }
 
   override def relationships(name: String, relCypherType: CTRelationship): RelationalCypherRecords[T] = {
@@ -76,23 +74,11 @@ case class SingleTableGraph[T <: FlatRelationalTable[T]](
     val relSchema = schema.forRelationship(relCypherType)
     val targetRelHeader = relSchema.headerForRelationship(targetRel)
     val extractionRels: Set[Var] = header.relationshipsForType(relCypherType)
+    val extractionOp = ExtractEntities(Start(baseTable), targetRelHeader, extractionRels)
 
-    ???
+    session.records.from(extractionOp.header, extractionOp.table)
   }
 
-  private def createScanToBaseTableLookup(
-    targetHeader: RecordHeader,
-    scanTableVar: Var,
-    baseTableExpressions: Set[Expr]
-  ): Map[String, String] = {
-    baseTableExpressions.flatMap { baseTableExpression =>
-      val scanTableExpression = baseTableExpression.withOwner(scanTableVar)
-
-      if (targetHeader.contains(scanTableExpression)) {
-        Some(targetHeader.column(scanTableExpression) -> header.column(baseTableExpression))
-      } else {
-        None
-      }
-    }.toMap
-  }
+  // TODO: move UnionGraph to relational
+  override def unionAll(others: PropertyGraph*): PropertyGraph = ???
 }

@@ -24,27 +24,29 @@
  * described as "implementation extensions to Cypher" or as "proposed changes to
  * Cypher that are not yet approved by the openCypher community".
  */
-package org.opencypher.spark.impl
+package org.opencypher.okapi.relational.api.graph
 
-import org.apache.spark.storage.StorageLevel
 import org.opencypher.okapi.api.schema.Schema
 import org.opencypher.okapi.api.types.{CTNode, CTRelationship}
 import org.opencypher.okapi.ir.api.expr.Var
+import org.opencypher.okapi.relational.api.physical.RelationalRuntimeContext
 import org.opencypher.okapi.relational.api.schema.RelationalSchema._
-import org.opencypher.spark.api.CAPSSession
+import org.opencypher.okapi.relational.api.table.{FlatRelationalTable, RelationalCypherRecords}
 import org.opencypher.okapi.relational.api.tagging.TagSupport.computeRetaggings
-import org.opencypher.spark.schema.CAPSSchema
-import org.opencypher.spark.schema.CAPSSchema._
+import org.opencypher.okapi.relational.impl.operators.{Distinct, ExtractEntities, Start}
 
-object CAPSUnionGraph {
-  def apply(graphs: CAPSGraph*)(implicit session: CAPSSession): CAPSUnionGraph = {
-    CAPSUnionGraph(computeRetaggings(graphs.map(g => g -> g.tags).toMap))
+object UnionGraph {
+  def apply[T <: FlatRelationalTable[T]](
+    graphs: RelationalCypherGraph[T]*
+  )(implicit session: RelationalCypherSession[T]): UnionGraph[T] = {
+    UnionGraph(computeRetaggings(graphs.map(g => g -> g.tags).toMap))
   }
 }
 
 // TODO: This should be a planned tree of physical operators instead of a graph
-final case class CAPSUnionGraph(graphsToReplacements: Map[CAPSGraph, Map[Int, Int]])
-  (implicit val session: CAPSSession) extends CAPSGraph {
+final case class UnionGraph[T <: FlatRelationalTable[T]](
+  graphsToReplacements: Map[RelationalCypherGraph[T], Map[Int, Int]]
+)(implicit val session: RelationalCypherSession[T], context: RelationalRuntimeContext[T]) extends RelationalCypherGraph[T] {
 
   require(graphsToReplacements.nonEmpty, "Union requires at least one graph")
 
@@ -52,27 +54,14 @@ final case class CAPSUnionGraph(graphsToReplacements: Map[CAPSGraph, Map[Int, In
 
   override def toString = s"CAPSUnionGraph(graphs=[${graphsToReplacements.mkString(",")}])"
 
-  override lazy val schema: CAPSSchema = {
-    graphsToReplacements.keys.map(g => g.schema).foldLeft(Schema.empty)(_ ++ _).asCaps
+  override lazy val schema: Schema = {
+    graphsToReplacements.keys.map(g => g.schema).foldLeft(Schema.empty)(_ ++ _)
   }
 
-  override def cache(): CAPSUnionGraph = map(_.cache())
-
-  override def persist(): CAPSUnionGraph = map(_.persist())
-
-  override def persist(storageLevel: StorageLevel): CAPSUnionGraph = map(_.persist(storageLevel))
-
-  override def unpersist(): CAPSUnionGraph = map(_.unpersist())
-
-  override def unpersist(blocking: Boolean): CAPSUnionGraph = map(_.unpersist(blocking))
-
-  private def map(f: CAPSGraph => CAPSGraph): CAPSUnionGraph =
-    CAPSUnionGraph(graphsToReplacements.keys.map(f).zip(graphsToReplacements.keys).toMap.mapValues(graphsToReplacements))
-
-  override def nodes(name: String, nodeCypherType: CTNode): CAPSRecords = {
+  override def nodes(name: String, nodeCypherType: CTNode): RelationalCypherRecords[T] = {
     val node = Var(name)(nodeCypherType)
     val targetHeader = schema.headerForNode(node)
-    val nodeScans = graphsToReplacements.keys
+    val nodeOps = graphsToReplacements.keys
       .filter(nodeCypherType.labels.isEmpty || _.schema.labels.intersect(nodeCypherType.labels).nonEmpty)
       .map {
         graph =>
@@ -83,13 +72,19 @@ final case class CAPSUnionGraph(graphsToReplacements: Map[CAPSGraph, Map[Int, In
             case (currentTable, idColumn) =>
               currentTable.retagColumn(replacements, idColumn)
           }
-
-          nodeScan.from(nodeScan.header, retaggedTable)
+          ExtractEntities(Start(session.records.from(nodeScan.header, retaggedTable)), targetHeader, Set(node))
       }
 
-    alignRecords(nodeScans.toSeq, node, targetHeader)
-      .map(_.distinct(node))
-      .getOrElse(CAPSRecords.empty(targetHeader))
+    val nodeTables = nodeOps.map(_.table)
+    val unionAllTable: T = if (nodeTables.isEmpty) {
+      session.records.empty(targetHeader)
+    } else {
+      nodeTables.reduce(_ unionAll _)
+    }
+
+    val distinctOp = Distinct(Start.from(targetHeader, unionAllTable), Set(node))
+
+    session.records.from(distinctOp.header, distinctOp.table)
   }
 
   override def relationships(name: String, relCypherType: CTRelationship): CAPSRecords = {

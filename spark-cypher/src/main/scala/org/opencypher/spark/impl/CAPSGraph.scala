@@ -33,8 +33,7 @@ import org.opencypher.okapi.api.table.CypherRecords
 import org.opencypher.okapi.api.types.{CTNode, CTRelationship}
 import org.opencypher.okapi.ir.api.PropertyKey
 import org.opencypher.okapi.ir.api.expr._
-import org.opencypher.okapi.relational.api.graph.RelationalCypherGraph
-import org.opencypher.okapi.relational.impl.graph.SingleTableGraph
+import org.opencypher.okapi.relational.api.graph.{RelationalCypherGraph, SingleTableGraph}
 import org.opencypher.okapi.relational.impl.table.RecordHeader
 import org.opencypher.spark.api.CAPSSession
 import org.opencypher.spark.api.io.{CAPSEntityTable, CAPSNodeTable}
@@ -54,7 +53,7 @@ trait CAPSGraph extends RelationalCypherGraph[DataFrameTable] with GraphOperatio
   override def relationships(name: String, relCypherType: CTRelationship = CTRelationship): CAPSRecords
 
   override def unionAll(others: PropertyGraph*): CAPSGraph = {
-    CAPSUnionGraph(this :: others.map(_.asCaps).toList: _*)
+    RelationalUnionGraph(this :: others.map(_.asCaps).toList: _*)
   }
 
   override def schema: CAPSSchema

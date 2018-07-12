@@ -32,7 +32,7 @@ import org.opencypher.okapi.ir.api.expr._
 import org.opencypher.okapi.ir.api.set.SetPropertyItem
 import org.opencypher.okapi.ir.api.{PropertyKey, RelType}
 import org.opencypher.okapi.logical.impl._
-import org.opencypher.okapi.relational.api.graph.RelationalCypherGraph
+import org.opencypher.okapi.relational.api.graph.{RelationalCypherGraph, SingleTableGraph}
 import org.opencypher.okapi.relational.api.physical.{RelationalPlannerContext, RelationalRuntimeContext}
 import org.opencypher.okapi.relational.api.table.FlatRelationalTable
 import org.opencypher.okapi.relational.api.tagging.TagSupport.computeRetaggings
@@ -135,7 +135,7 @@ final case class ConstructGraph[T <: FlatRelationalTable[T]](
     val originalVarsToKeep = clonedVarsToInputVars.keySet -- aliasClones.keySet
     val varsToRemoveFromTable = allInputVars -- originalVarsToKeep
 
-    val patternGraphTable = relational.Drop(constructedEntitiesOp, varsToRemoveFromTable)
+    val patternGraphTableOp = relational.Drop(constructedEntitiesOp, varsToRemoveFromTable)
 
     val tagsUsed = constructTagStrategy.foldLeft(newEntityTags) {
       case (tags, (qgn, remapping)) =>
@@ -143,12 +143,16 @@ final case class ConstructGraph[T <: FlatRelationalTable[T]](
         tags ++ remappedTags
     }
 
-    val patternGraph = PatternGraph.create(patternGraphTable, schema, tagsUsed)
+    val patternGraphRecords = session.records.from(patternGraphTableOp.header, patternGraphTableOp.table)
 
-    val constructedCombinedWithOn = onGraph match {
-      case _: EmptyGraph => CAPSUnionGraph(Map(identityRetaggings(patternGraph)))
-      case _ => CAPSUnionGraph(Map(identityRetaggings(onGraph), identityRetaggings(patternGraph)))
+    val patternGraph = SingleTableGraph(patternGraphRecords, schema, tagsUsed)
+
+    val constructedCombinedWithOn = if (onGraph == session.emptyGraph) {
+      CAPSUnionGraph(Map(identityRetaggings(patternGraph)))
+    } else {
+      CAPSUnionGraph(Map(identityRetaggings(onGraph), identityRetaggings(patternGraph)))
     }
+
 
     context.queryCatalog.update(construct.name, constructedCombinedWithOn)
 

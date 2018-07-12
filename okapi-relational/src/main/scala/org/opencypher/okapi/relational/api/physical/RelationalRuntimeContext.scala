@@ -29,7 +29,7 @@ package org.opencypher.okapi.relational.api.physical
 import org.opencypher.okapi.api.graph.{CypherSession, QualifiedGraphName}
 import org.opencypher.okapi.api.value.CypherValue.CypherMap
 import org.opencypher.okapi.impl.exception.IllegalArgumentException
-import org.opencypher.okapi.relational.api.graph.RelationalCypherGraph
+import org.opencypher.okapi.relational.api.graph.{RelationalCypherGraph, RelationalCypherSession}
 import org.opencypher.okapi.relational.api.table.FlatRelationalTable
 import org.opencypher.okapi.relational.impl.operators.RelationalOperator
 
@@ -40,7 +40,6 @@ import org.opencypher.okapi.relational.impl.operators.RelationalOperator
   * @param parameters Query parameters
   * @param constructedGraphCatalog Contains graphs that are created during query execution
   * @param cache Operator cache
-  * @param cypherSession Cypher session
   * @tparam T
   */
 case class RelationalRuntimeContext[T <: FlatRelationalTable[T]](
@@ -48,7 +47,7 @@ case class RelationalRuntimeContext[T <: FlatRelationalTable[T]](
   parameters: CypherMap = CypherMap.empty,
   var constructedGraphCatalog: Map[QualifiedGraphName, RelationalCypherGraph[T]] = Map.empty[QualifiedGraphName, RelationalCypherGraph[T]],
   var cache: Map[RelationalOperator[T], T] = Map.empty[RelationalOperator[T], T]
-)(implicit cypherSession: CypherSession) {
+)(implicit val session: RelationalCypherSession[T]) {
   /**
     * Returns the graph referenced by the given QualifiedGraphName.
     *
@@ -58,7 +57,5 @@ case class RelationalRuntimeContext[T <: FlatRelationalTable[T]](
     case None => sessionCatalog(qgn).getOrElse(throw IllegalArgumentException(s"a graph at $qgn"))
     case Some(g) => g
   }
-
-  def session: CypherSession = cypherSession
 }
 

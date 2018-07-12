@@ -8,7 +8,7 @@ import org.opencypher.okapi.ir.api.block.{Asc, Desc, SortItem}
 import org.opencypher.okapi.ir.api.expr.Expr._
 import org.opencypher.okapi.ir.api.expr._
 import org.opencypher.okapi.logical.impl._
-import org.opencypher.okapi.relational.api.graph.RelationalCypherGraph
+import org.opencypher.okapi.relational.api.graph.{RelationalCypherGraph, RelationalCypherSession}
 import org.opencypher.okapi.relational.api.physical.RelationalRuntimeContext
 import org.opencypher.okapi.relational.api.schema.RelationalSchema._
 import org.opencypher.okapi.relational.api.table.ExtractEntities.SelectExpressions
@@ -29,7 +29,7 @@ abstract class RelationalOperator[T <: FlatRelationalTable[T]] extends AbstractT
 
   implicit def context: RelationalRuntimeContext[T] = children.head.context
 
-  implicit def session: CypherSession = context.session
+  implicit def session: RelationalCypherSession[T] = context.session
 
   def graph: RelationalCypherGraph[T] = children.head.graph
 
@@ -103,6 +103,17 @@ abstract class RelationalOperator[T <: FlatRelationalTable[T]] extends AbstractT
 }
 
 // Leaf
+
+object Start {
+
+  def from[T <: FlatRelationalTable[T]](header: RecordHeader, table: T)(implicit context: RelationalRuntimeContext[T]): Start[T] = {
+    Start(context.session.emptyGraphQgn, Some(context.session.records.from(header, table)))
+  }
+
+  def apply[T <: FlatRelationalTable[T]](records: RelationalCypherRecords[T])(implicit context: RelationalRuntimeContext[T]): Start[T] = {
+    Start(context.session.emptyGraphQgn, Some(records))
+  }
+}
 
 final case class Start[T <: FlatRelationalTable[T]](
   qgn: QualifiedGraphName,
@@ -361,8 +372,10 @@ final case class ExtractEntities[T <: FlatRelationalTable[T]](
   override def _table: T = {
     val groups = extractionVars.toSeq.map(selectExpressionsForVar)
 
-    val inHeaderWithMissingExprs = groups.foldLeft(in.header) {
-      case (currentHeader, (expr, _)) => currentHeader.withExpr(expr)
+    val allExpressions = groups.flatten.flatMap { case (expr, _) => expr }
+
+    val inHeaderWithMissingExprs = allExpressions.foldLeft(in.header) {
+      case (currentHeader, expr) => currentHeader.withExpr(expr)
     }
 
     table.extractEntities(groups)(inHeaderWithMissingExprs, context.parameters)

@@ -35,12 +35,14 @@ import org.opencypher.okapi.api.table.CypherRecords
 import org.opencypher.okapi.api.value.CypherValue.CypherMap
 import org.opencypher.okapi.impl.exception.UnsupportedOperationException
 import org.opencypher.okapi.impl.graph.CypherCatalog
+import org.opencypher.okapi.relational.api.graph.RelationalCypherSession
 import org.opencypher.spark.api.io._
+import org.opencypher.spark.impl.table.SparkFlatRelationalTable.DataFrameTable
 import org.opencypher.spark.impl.{CAPSGraph, CAPSRecords, CAPSSessionImpl}
 
 import scala.reflect.runtime.universe._
 
-trait CAPSSession extends CypherSession {
+trait CAPSSession extends RelationalCypherSession[DataFrameTable] {
 
   override lazy val catalog: CypherCatalog = new CypherCatalog
 
@@ -59,7 +61,8 @@ trait CAPSSession extends CypherSession {
     */
   def readFrom[N <: Node : TypeTag, R <: Relationship : TypeTag](
     nodes: Seq[N],
-    relationships: Seq[R] = Seq.empty): PropertyGraph = {
+    relationships: Seq[R] = Seq.empty
+  ): PropertyGraph = {
     implicit val session: CAPSSession = this
     CAPSGraph.create(CAPSNodeTable(nodes), CAPSRelationshipTable(relationships))
   }
@@ -72,7 +75,7 @@ trait CAPSSession extends CypherSession {
     * @return property graph
     */
   def readFrom(nodeTable: CAPSNodeTable, entityTables: CAPSEntityTable*): PropertyGraph = {
-    CAPSGraph.create(nodeTable, entityTables:_ *)(this)
+    CAPSGraph.create(nodeTable, entityTables: _ *)(this)
   }
 
   /**

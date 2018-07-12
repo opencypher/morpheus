@@ -36,6 +36,7 @@ import org.opencypher.okapi.api.value.CypherValue
 import org.opencypher.okapi.api.value.CypherValue.{CypherMap, CypherValue}
 import org.opencypher.okapi.impl.exception.NotImplementedException
 import org.opencypher.okapi.ir.api.expr.{Expr, _}
+import org.opencypher.okapi.relational.api.table.ExtractEntities.SelectExpressionGroups
 import org.opencypher.okapi.relational.api.table.FlatRelationalTable
 import org.opencypher.okapi.relational.impl.physical._
 import org.opencypher.okapi.relational.impl.table.RecordHeader
@@ -81,6 +82,19 @@ object SparkFlatRelationalTable {
       } else {
         // TODO: this is used in Construct, check why this is necessary
         df.select()
+      }
+    }
+
+    override def extractEntities(selectGroups: SelectExpressionGroups)(
+      implicit header: RecordHeader,
+      parameters: CypherMap): DataFrameTable = {
+      val missingColumns = selectGroups.flatMap { group => group.filter { case (_, column) => !df.columns.contains(column)}}
+      val tableWithMissingColumns = missingColumns.foldLeft(this) { case (currentDf, (expr, column)) => currentDf.withColumn(column, expr)}
+
+      tableWithMissingColumns.df.flatMap { row =>
+        selectGroups.map { selectGroup =>
+          Row.fromSeq(selectGroup.map { case (_, column) => row.getAs(column) })
+        }
       }
     }
 
