@@ -24,6 +24,7 @@
  * described as "implementation extensions to Cypher" or as "proposed changes to
  * Cypher that are not yet approved by the openCypher community".
  */
+// tag::full-example[]
 package org.opencypher.spark.examples
 
 import org.opencypher.spark.api.CAPSSession
@@ -42,3 +43,4 @@ object DataSourceExample extends ConsoleApp {
 
   result.show
 }
+// end::full-example[]

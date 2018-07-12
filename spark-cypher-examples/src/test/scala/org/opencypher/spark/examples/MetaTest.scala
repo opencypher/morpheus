@@ -82,6 +82,7 @@ class MetaTest extends BaseTestSuite {
   case class ScalaSourceCode(lines: Vector[String]) {
     def canonical: Vector[String] = lines
       .dropWhile(line => !line.startsWith("import")) // Drop license and everything else before the first import
+      .filterNot(_.contains("// tag::")).filterNot(_.contains("// end::")) // Filter documentation tags
       .filterNot(_ == "") // Filter empty lines
 
     override def toString = lines.mkString("\n")
