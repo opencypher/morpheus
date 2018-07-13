@@ -172,7 +172,7 @@ case class Neo4jPropertyGraphDataSource(
   override protected def deleteGraph(graphName: GraphName): Unit = {
     graphName.metaLabel match {
       case Some(metaLabel) =>
-        config.execute { session =>
+        config.withSession { session =>
           session.run(
             s"""|MATCH (n:$metaLabel)
                 |DETACH DELETE n
@@ -203,7 +203,7 @@ case class Neo4jPropertyGraphDataSource(
         .foreachPartition(NodeWriterConfig(config, metaLabel).writeNodes _)
     }
 
-    config.execute { session =>
+    config.withSession { session =>
       session.run(s"CREATE CONSTRAINT ON (n:$metaLabel) ASSERT n.$metaPropertyKey IS UNIQUE").consume()
     }
 
@@ -258,7 +258,7 @@ case class Neo4jPropertyGraphDataSource(
 case class NodeWriterConfig(config: Neo4jConfig, graphNameLabel: String) {
 
   def writeNodes(nodes: Iterator[CAPSNode]): Unit = {
-    config.execute { session =>
+    config.withSession { session =>
       nodes.foreach { node =>
         val labels = node.labels
         val id = node.id
@@ -280,7 +280,7 @@ case class NodeWriterConfig(config: Neo4jConfig, graphNameLabel: String) {
   }
 
   def writeRels(rels: Iterator[CAPSRelationship]): Unit = {
-    config.execute { session =>
+    config.withSession { session =>
       rels.foreach { relationship =>
         val id = relationship.id
         val startId = relationship.startId

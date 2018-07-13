@@ -40,14 +40,15 @@ object Neo4jHelpers {
 
   implicit class RichConfig(val config: Neo4jConfig) extends AnyVal {
 
-    def execute[T](f: Session => T): T = {
+    def withSession[T](f: Session => T): T = {
       val driver = config.driver()
       val session = driver.session()
       try {
         f(session)
       } finally {
-        session.close()
-        driver.close()
+        session.closeAsync().thenRunAsync(new Runnable {
+          override def run(): Unit = driver.closeAsync()
+        })
       }
     }
 
@@ -59,7 +60,7 @@ object Neo4jHelpers {
       * @return list of result rows with each row represented as a map
       */
     def cypher(query: String): List[Map[String, CypherValue]] = {
-      execute { session =>
+      withSession { session =>
         session.run(query).list().asScala.map(_.asMap().asScala.mapValues(CypherValue(_)).toMap).toList
       }
     }
