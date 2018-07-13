@@ -172,11 +172,12 @@ case class Neo4jPropertyGraphDataSource(
   override protected def deleteGraph(graphName: GraphName): Unit = {
     graphName.metaLabel match {
       case Some(metaLabel) =>
-        config.cypher(
-          s"""|MATCH (n:$metaLabel)
-              |DETACH DELETE n
-        """.stripMargin)
-
+        config.execute { session =>
+          session.run(
+            s"""|MATCH (n:$metaLabel)
+                |DETACH DELETE n
+        """.stripMargin).consume()
+        }
       case None => throw UnsupportedOperationException("Deleting the entire Neo4j graph is not supported")
     }
   }
