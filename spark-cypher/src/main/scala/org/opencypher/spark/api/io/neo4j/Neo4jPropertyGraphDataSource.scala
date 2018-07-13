@@ -200,7 +200,7 @@ case class Neo4jPropertyGraphDataSource(
         .toCypherMaps
         .coalesce(executorCount)
         .map(map => map("n").cast[CAPSNode])
-        .foreachPartition(writeNodes(config, metaLabel))
+        .foreachPartition(NodeWriterConfig(config, metaLabel).writeNodes _)
     }
 
     config.execute { session =>
@@ -213,7 +213,7 @@ case class Neo4jPropertyGraphDataSource(
         .toCypherMaps
         .coalesce(executorCount)
         .map(map => map("r").cast[CAPSRelationship])
-        .foreachPartition(writeRels(config, metaLabel))
+        .foreachPartition(NodeWriterConfig(config, metaLabel).writeRels _)
     }
 
     graphNameCache += graphName
@@ -255,8 +255,9 @@ case class Neo4jPropertyGraphDataSource(
   override protected def writeRelationshipTable(graphName: GraphName, relKey: String, table: DataFrame): Unit = ()
 }
 
-case class writeNodes(config: Neo4jConfig, graphNameLabel: String) extends (Iterator[CAPSNode] => Unit) {
-  override def apply(nodes: Iterator[CAPSNode]): Unit = {
+case class NodeWriterConfig(config: Neo4jConfig, graphNameLabel: String) {
+
+  def writeNodes(nodes: Iterator[CAPSNode]): Unit = {
     config.execute { session =>
       nodes.foreach { node =>
         val labels = node.labels
@@ -277,10 +278,8 @@ case class writeNodes(config: Neo4jConfig, graphNameLabel: String) extends (Iter
       }
     }
   }
-}
 
-case class writeRels(config: Neo4jConfig, graphNameLabel: String) extends (Iterator[CAPSRelationship] => Unit) {
-  override def apply(rels: Iterator[CAPSRelationship]): Unit = {
+  def writeRels(rels: Iterator[CAPSRelationship]): Unit = {
     config.execute { session =>
       rels.foreach { relationship =>
         val id = relationship.id
@@ -301,4 +300,5 @@ case class writeRels(config: Neo4jConfig, graphNameLabel: String) extends (Itera
       }
     }
   }
+
 }
