@@ -42,7 +42,7 @@ object Neo4jHelpers {
 
     def execute[T](f: Session => T): T = {
       val driver = config.driver()
-      val session = driver.session
+      val session = driver.session()
       try {
         f(session)
       } finally {
