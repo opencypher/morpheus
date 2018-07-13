@@ -31,6 +31,7 @@ import org.opencypher.okapi.api.schema.Schema
 import org.opencypher.okapi.api.types.{CTBoolean, CTFloat, CTInteger, CTString}
 import org.opencypher.spark.api.io.GraphEntity.sourceIdKey
 import org.opencypher.spark.api.io.Relationship.{sourceEndNodeKey, sourceStartNodeKey}
+import org.opencypher.spark.api.io.neo4j.Neo4jPropertyGraphDataSource.metaPrefix
 import org.opencypher.spark.testing.CAPSTestSuite
 import org.opencypher.spark.testing.fixture.Neo4jServerFixture
 import org.scalatest.BeforeAndAfterAll
@@ -42,6 +43,7 @@ class Neo4jPropertyGraphDataSourceUnitTest extends CAPSTestSuite with Neo4jServe
   private val schema = Schema.empty
     .withNodePropertyKeys("A")("foo" -> CTInteger, "bar" -> CTString.nullable)
     .withNodePropertyKeys("B")()
+    .withNodePropertyKeys(s"${metaPrefix}C")()
     .withRelationshipPropertyKeys("TYPE")("foo" -> CTFloat.nullable, "f" -> CTBoolean)
     .withRelationshipPropertyKeys("TYPE2")()
 

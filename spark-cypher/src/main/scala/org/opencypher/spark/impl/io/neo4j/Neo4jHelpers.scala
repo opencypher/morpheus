@@ -33,20 +33,36 @@ import org.opencypher.spark.api.io.neo4j.Neo4jConfig
 
 import scala.collection.JavaConverters._
 
+/**
+  * Inefficient convenience methods.
+  */
 object Neo4jHelpers {
+
   implicit class RichConfig(val config: Neo4jConfig) extends AnyVal {
 
     def execute[T](f: Session => T): T = {
-      val session = config.driver().session
-      val t = f(session)
-      session.close()
-      t
+      val driver = config.driver()
+      val session = driver.session()
+      try {
+        f(session)
+      } finally {
+        session.close()
+        driver.close()
+      }
     }
 
+    /**
+      * Creates a new driver and session just for one Cypher query and returns the result as a list of maps
+      * that represent rows. Convenient and inefficient.
+      *
+      * @param query Cypher query to execute
+      * @return list of result rows with each row represented as a map
+      */
     def cypher(query: String): List[Map[String, CypherValue]] = {
       execute { session =>
         session.run(query).list().asScala.map(_.asMap().asScala.mapValues(CypherValue(_)).toMap).toList
       }
     }
   }
+
 }
