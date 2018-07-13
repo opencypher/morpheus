@@ -24,6 +24,7 @@
  * described as "implementation extensions to Cypher" or as "proposed changes to
  * Cypher that are not yet approved by the openCypher community".
  */
+// tag::full-example[]
 package org.opencypher.spark.examples
 
 import org.neo4j.harness.ServerControls
@@ -168,3 +169,4 @@ object RecommendationExample extends ConsoleApp {
     """
 
 }
+// end::full-example[]

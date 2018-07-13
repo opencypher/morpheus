@@ -24,6 +24,7 @@
  * described as "implementation extensions to Cypher" or as "proposed changes to
  * Cypher that are not yet approved by the openCypher community".
  */
+// tag::full-example[]
 package org.opencypher.spark.examples
 
 import org.opencypher.okapi.api.graph.{Namespace, QualifiedGraphName}
@@ -97,3 +98,4 @@ object Neo4jWorkflowExample extends ConsoleApp {
         |CREATE (a)-[:FRIEND_OF { since: '23/01/1987' }]->(b)
         |CREATE (b)-[:FRIEND_OF { since: '12/12/2009' }]->(c)""".stripMargin
 }
+// end::full-example[]
