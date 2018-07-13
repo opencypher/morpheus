@@ -201,7 +201,7 @@ class CypherTypesTest extends FunSpec with Matchers {
     val employee = CTLabel("Person") & CTProperty("name", CTString) & CTProperty("age", CTInteger)
     val car = CTLabel("Car") & CTProperty("name", CTString) & CTProperty("top-speed", CTInteger)
     val schema = car | employee
-    schema.show()
+//    schema.show()
 
     println(schema.possibleTypes.filter(_.subTypeOf(CTProperty("age", CTNumber))))
     println(schema.possibleTypes.filter(_.subTypeOf(CTProperty("age", CTFloat))))

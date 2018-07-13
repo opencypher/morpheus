@@ -33,7 +33,7 @@ import scala.reflect.ClassTag
 /**
   * Abstract class instead of trait in order to support `ClassTag`
   */
-abstract class Type[T <: Type[T] : ClassTag] extends AbstractTreeNode[T] {
+abstract class Type[T <: Type[T] : ClassTag] { //extends AbstractTreeNode[T]
   self: T =>
 
   def name: String
@@ -43,36 +43,6 @@ abstract class Type[T <: Type[T] : ClassTag] extends AbstractTreeNode[T] {
   protected def newIntersection(ands: Set[T]): T
 
   protected def newNothing: T
-
-  private[types] def flattenAndUnion(ors: T*): T = {
-    flattenAndUnion(ors.toSet)
-  }
-
-  private[types] def flattenAndUnion(ors: Set[T]): T = {
-    val flattened = UnionType.flatten(ors)
-    if (flattened.isEmpty) {
-      newNothing
-    } else if (flattened.size == 1) {
-      flattened.head
-    } else {
-      newUnion(flattened)
-    }
-  }
-
-  private[types] def flattenAndIntersect(ands: T*): T = {
-    flattenAndIntersect(ands.toSet)
-  }
-
-  private[types] def flattenAndIntersect(ands: Set[T]): T = {
-    val flattened = IntersectionType.flatten(ands)
-    if (flattened.isEmpty) {
-      newNothing
-    } else if (flattened.size == 1) {
-      flattened.head
-    } else {
-      newIntersection(flattened)
-    }
-  }
 
   def possibleTypes: Set[T] = Set(this)
 
@@ -84,7 +54,7 @@ abstract class Type[T <: Type[T] : ClassTag] extends AbstractTreeNode[T] {
         case _: AnyType[T] => true
         case _: NothingType[T] => this.isInstanceOf[NothingType[T]]
         case u: UnionType[T] => u.ors.exists(this.subTypeOf)
-        case i: IntersectionType[T] => i.ands.forall(this.subTypeOf)
+        case i: IntersectionType[T] if canIntersect(other) || i.canIntersect(this) => i.ands.forall(this.subTypeOf)
         case _ => false
       }
     }
@@ -99,7 +69,7 @@ abstract class Type[T <: Type[T] : ClassTag] extends AbstractTreeNode[T] {
   def union(other: T): T = {
     if (subTypeOf(other)) other
     else if (other.subTypeOf(this)) this
-    else flattenAndUnion(this, other)
+    else newUnion(Set(this, other))
   }
 
   def canIntersect(other: T): Boolean = false
@@ -111,10 +81,12 @@ abstract class Type[T <: Type[T] : ClassTag] extends AbstractTreeNode[T] {
     else if (other.subTypeOf(this)) other
     else {
       other match {
-        case i: IntersectionType[T] if i.canIntersect(other) => flattenAndIntersect(i.ands + this)
-        case u: UnionType[T] if u.canIntersect(other) => flattenAndUnion(u.ors.map(_.intersect(this)))
+        case i: IntersectionType[T] if i.canIntersect(other) =>  newIntersection(i.ands + this)
+        case u: UnionType[T] if u.canIntersect(other) => u.ors.foldLeft(this)(_ intersect _)
         case _ if tryReverseDirection => other.intersect(this, tryReverseDirection = false)
-        case _ if canIntersect(other) || other.canIntersect(this) => flattenAndIntersect(this, other)
+        case _ if canIntersect(other) || other.canIntersect(this) =>
+          println(s"newIntersection(${this.name},${other.name})")
+          newIntersection(Set(this, other))
         case _ => newNothing
       }
     }
@@ -147,20 +119,20 @@ trait ContainerType[T <: Type[T]] extends Type[T] {
   protected def intersectContainer(other: T): Option[T] = other match {
     case c: ContainerType[T] =>
       if (isContainerSubType(other)) {
-        Some(copyWithNewElementType(elementType.intersect(c.elementType)))
+        Some(newInstance(elementType.intersect(c.elementType)))
       } else if (c.isContainerSubType(this)) {
-        Some(c.copyWithNewElementType(elementType.intersect(c.elementType)))
+        Some(c.newInstance(elementType.intersect(c.elementType)))
       } else {
-         if (getClass == other.getClass) {
-           Some(copyWithNewElementType(newNothing))
-         } else {
-           None
-         }
+        if (getClass == other.getClass) {
+          Some(newInstance(newNothing))
+        } else {
+          None
+        }
       }
     case _ => None
   }
 
-  protected def copyWithNewElementType(newElementType: T): T
+  protected def newInstance(newElementType: T): T
 
 }
 
@@ -199,6 +171,8 @@ trait UnionType[T <: Type[T]] extends Type[T] {
 
   override def possibleTypes: Set[T] = ors
 
+  override def union(other: T): T = newInstance(ors + other)
+
   override def subTypeOf(other: T): Boolean = other match {
     case u: UnionType[T] => ors.forall(or => u.ors.exists(or.subTypeOf))
     case i: IntersectionType[T] => ors.forall(or => i.ands.forall(or.subTypeOf))
@@ -209,16 +183,7 @@ trait UnionType[T <: Type[T]] extends Type[T] {
 
   override def toString: String = s"${getClass.getSimpleName}(${ors.map(_.toString).toSeq.sorted.mkString(", ")})"
 
-}
-
-object UnionType {
-
-  def flatten[T <: Type[T]](ors: Set[T]): Set[T] = {
-    ors.flatMap {
-      case u: UnionType[T] => u.ors
-      case other => Set(other)
-    }
-  }
+  protected def newInstance(ors: Set[T]): T
 
 }
 
@@ -239,16 +204,5 @@ trait IntersectionType[T <: Type[T]] extends Type[T] {
   override def name: String = ands.map(_.name).toSeq.sorted.mkString("[", "&", "]")
 
   override def toString: String = s"${getClass.getSimpleName}(${ands.map(_.toString).toSeq.sorted.mkString(", ")})"
-
-}
-
-object IntersectionType {
-
-  def flatten[T <: Type[T]](ands: Set[T]): Set[T] = {
-    ands.flatMap {
-      case i: IntersectionType[T] => i.ands
-      case other => Set(other)
-    }
-  }
 
 }

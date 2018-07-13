@@ -69,14 +69,14 @@ object CypherType {
 
   case class CTUnion(ors: Set[CypherType]) extends CypherType with UnionType[CypherType] {
 
-    override val children: Array[CypherType] = ors.toArray
-
-    override def withNewChildren(newChildren: Array[CypherType]): CypherType = CTUnion(newChildren.toSet)
+//    override val children: Array[CypherType] = ors.toArray
+//
+//    override def withNewChildren(newChildren: Array[CypherType]): CypherType = CTUnion(newChildren.toSet)
 
     override def isNullable: Boolean = ors.exists(_.subTypeOf(CTNull))
 
     override def material: CypherType = {
-      if (isNullable) flattenAndUnion(ors - CTNull) else this
+      if (isNullable) newUnion(ors - CTNull) else this
     }
 
   }
@@ -92,9 +92,10 @@ object CypherType {
   case class CTIntersection(ands: Set[CypherType]) extends CypherType with IntersectionType[CypherType] {
     override def isNullable: Boolean = ands.forall(_.subTypeOf(CTNull))
 
-    override val children: Array[CypherType] = ands.toArray
+//    override val children: Array[CypherType] = ands.toArray
+//
+//    override def withNewChildren(newChildren: Array[CypherType]): CypherType = CTIntersection(newChildren.toSet)
 
-    override def withNewChildren(newChildren: Array[CypherType]): CypherType = CTIntersection(newChildren.toSet)
   }
 
   object CTIntersection {
@@ -272,7 +273,7 @@ object CypherType {
 
     override def name: String = s"PROPERTY($key)"
 
-    override protected def copyWithNewElementType(newElementType: CypherType): CypherType = copy(elementType = newElementType)
+    override protected def newInstance(newElementType: CypherType): CypherType = copy(elementType = newElementType)
 
   }
 
@@ -285,7 +286,7 @@ object CypherType {
 
     override def name: String = s"MAP(${elementType.name})"
 
-    override protected  def copyWithNewElementType(newElementType: CypherType): CypherType = copy(elementType = newElementType)
+    override protected  def newInstance(newElementType: CypherType): CypherType = copy(elementType = newElementType)
 
   }
 
@@ -298,7 +299,7 @@ object CypherType {
 
     override def name: String = s"LIST(${elementType.name})"
 
-    override protected def copyWithNewElementType(newElementType: CypherType): CypherType = copy(elementType = newElementType)
+    override protected def newInstance(newElementType: CypherType): CypherType = copy(elementType = newElementType)
 
   }
 
@@ -348,7 +349,7 @@ abstract class CypherType extends Type[CypherType] {
     if (isNullable) {
       this
     } else {
-      flattenAndUnion(this, CTNull)
+      this union CTNull
     }
   }
 
