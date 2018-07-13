@@ -95,6 +95,13 @@ class SchemaTyperTest extends BaseTestSuite with Neo4jAstTestSupport with Mockit
     assertExpr.from("toString(d)") shouldHaveInferredType CTString
   }
 
+  test("typing toBoolean()") {
+    implicit val context: TypeTracker = typeTracker("true" -> CTBoolean, "false" -> CTBoolean)
+
+    assertExpr.from("toBoolean(true)") shouldHaveInferredType CTBoolean
+    assertExpr.from("toBoolean(false)") shouldHaveInferredType CTBoolean
+  }
+
   test("typing property of node without label") {
     implicit val context = typeTracker("a" -> CTNode)
 

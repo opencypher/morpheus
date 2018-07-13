@@ -366,6 +366,60 @@ class FunctionsBehaviour extends CAPSTestSuite with DefaultGraphInit {
     }
   }
 
+  describe("toBoolean") {
+    it("toBoolean() on valid literal string") {
+      val given = initGraph("CREATE ({id: 'true'}), ({id: 'false'})")
+
+      val result = given.cypher("MATCH (n) RETURN toBoolean(n.id) AS nId")
+
+      result.getRecords.toMaps should equal(
+        Bag(
+          CypherMap("nId" -> true),
+          CypherMap("nId" -> false)
+        )
+      )
+    }
+
+    it("toBoolean() on booleans") {
+      val given = initGraph("CREATE ({id: true}), ({id: false})")
+
+      val result = given.cypher("MATCH (n) RETURN toBoolean(n.id) AS nId")
+
+      result.getRecords.toMaps should equal(
+        Bag(
+          CypherMap("nId" -> true),
+          CypherMap("nId" -> false)
+        )
+      )
+    }
+
+    it("toBoolean() on invalid strings") {
+      val given = initGraph("CREATE ({id: 'tr ue'}), ({id: 'fa lse'})")
+
+      val result = given.cypher("MATCH (n) RETURN toBoolean(n.id) AS nId")
+
+      result.getRecords.toMaps should equal(
+        Bag(
+          CypherMap("nId" -> null),
+          CypherMap("nId" -> null)
+        )
+      )
+    }
+
+    it("toBoolean() on missing property") {
+      val given = initGraph("CREATE ({id: 'true'}), ()")
+
+      val result = given.cypher("MATCH (n) RETURN toBoolean(n.id) AS nId")
+
+      result.getRecords.toMaps should equal(
+        Bag(
+          CypherMap("nId" -> true),
+          CypherMap("nId" -> null)
+        )
+      )
+    }
+  }
+
   describe("coalesce") {
     it("can evaluate coalesce") {
       val given = initGraph("CREATE ({valA: 1}), ({valB: 2}), ({valC: 3}), ()")
