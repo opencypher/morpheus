@@ -7,7 +7,7 @@
   <parent>
     <groupId>org.opencypher</groupId>
     <artifactId>okapi</artifactId>
-    <version>0.1.6</version>
+    <version>1.0.0-SNAPSHOT</version>
   </parent>
 
   <artifactId>okapi-logical</artifactId>

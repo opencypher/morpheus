@@ -6,7 +6,7 @@
 
   <groupId>org.opencypher</groupId>
   <artifactId>okapi</artifactId>
-  <version>0.1.6</version>
+  <version>1.0.0-SNAPSHOT</version>
 
   <name>Okapi - openCypher query compilation API and pipeline</name>
   <packaging>pom</packaging>
