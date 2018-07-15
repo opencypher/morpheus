@@ -26,7 +26,7 @@
  */
 package org.opencypher.spark.examples
 
-import java.io.ByteArrayOutputStream
+import java.io.{ByteArrayOutputStream, PrintStream}
 
 import org.scalatest.{BeforeAndAfterAll, FunSpec, Matchers}
 
@@ -36,7 +36,8 @@ abstract class ExampleTest extends FunSpec with Matchers with BeforeAndAfterAll 
 
   protected def validate(app: => Unit, expectedOut: String): Unit = {
     val outCapture = new ByteArrayOutputStream()
-    Console.withOut(outCapture)(app)
+    val printer = new PrintStream(outCapture, true, "UTF-8")
+    Console.withOut(printer)(app)
     outCapture.toString("UTF-8") shouldEqual expectedOut
   }
 
