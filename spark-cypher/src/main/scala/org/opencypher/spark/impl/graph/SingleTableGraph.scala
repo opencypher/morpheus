@@ -26,21 +26,15 @@
  */
 package org.opencypher.spark.impl.graph
 
-import org.apache.spark.sql.DataFrame
-import org.opencypher.okapi.api.graph.PropertyGraph
 import org.opencypher.okapi.api.schema.Schema
 import org.opencypher.okapi.api.types.{CTNode, CTRelationship}
-import org.opencypher.okapi.ir.api.PropertyKey
 import org.opencypher.okapi.ir.api.expr._
-import org.opencypher.okapi.relational.api.graph.{RelationalCypherGraph, RelationalCypherSession}
+import org.opencypher.okapi.relational.api.graph.RelationalCypherGraph
 import org.opencypher.okapi.relational.api.physical.RelationalRuntimeContext
 import org.opencypher.okapi.relational.api.schema.RelationalSchema._
-import org.opencypher.okapi.relational.api.table.{FlatRelationalTable, RelationalCypherRecords}
 import org.opencypher.okapi.relational.impl.operators.{ExtractEntities, Start}
-import org.opencypher.okapi.relational.impl.table.RecordHeader
 import org.opencypher.spark.api.CAPSSession
 import org.opencypher.spark.impl.CAPSRecords
-import org.opencypher.spark.impl.graph.CAPSGraph.CAPSGraph
 import org.opencypher.spark.impl.table.SparkFlatRelationalTable.DataFrameTable
 
 /**
@@ -70,15 +64,17 @@ case class SingleTableGraph(
     SingleTableGraph(f(baseTable), schema, tags)
 
   override def nodes(name: String, nodeCypherType: CTNode, exactLabelMatch: Boolean = false): CAPSRecords = {
-    val targetNode = Var(name)(nodeCypherType)
-    val nodeSchema = schema.forNode(nodeCypherType.labels)
-    val targetNodeHeader = nodeSchema.headerForNode(targetNode)
-    val extractionNodes: Set[Var] = header.nodesForType(nodeCypherType)
-    val extractionOp = ExtractEntities(Start(baseTable), targetNodeHeader, extractionNodes)
+    if (exactLabelMatch) {
+      ToRefactor.nodesWithExactLabels(this, name, nodeCypherType.labels)
+    } else {
+      val targetNode = Var(name)(nodeCypherType)
+      val nodeSchema = schema.forNode(nodeCypherType.labels)
+      val targetNodeHeader = nodeSchema.headerForNode(targetNode)
+      val extractionNodes: Set[Var] = header.nodesForType(nodeCypherType)
+      val extractionOp = ExtractEntities(Start(baseTable), targetNodeHeader, extractionNodes)
 
-    // TODO: Filter & Select for exact match
-
-    session.records.from(extractionOp.header, extractionOp.table)
+      session.records.from(extractionOp.header, extractionOp.table)
+    }
   }
 
   override def relationships(name: String, relCypherType: CTRelationship): CAPSRecords = {
@@ -91,46 +87,6 @@ case class SingleTableGraph(
     session.records.from(extractionOp.header, extractionOp.table)
   }
 
-  def nodesWithExactLabels(name: String, labels: Set[String]): CAPSRecords = {
-    val nodeType = CTNode(labels)
-    val nodeVar = Var(name)(nodeType)
-    val records = nodes(name, nodeType)
 
-    val header = records.header
-
-    val labelExprs = header.labelsFor(nodeVar)
-
-    val propertyExprs = schema.nodeKeys(labels).flatMap {
-      case (key, cypherType) => Property(nodeVar, PropertyKey(key))(cypherType)
-    }.toSet
-    val headerPropertyExprs = header.propertiesFor(nodeVar).filter(propertyExprs.contains)
-
-    val keepExprs: Seq[Expr] = Seq(nodeVar) ++ labelExprs ++ headerPropertyExprs
-
-    val keepColumns = keepExprs.map(header.column)
-
-    // we only keep rows where all "other" labels are false
-    val predicate = labelExprs
-      .filterNot(l => labels.contains(l.label.name))
-      .map(header.column)
-      .map(records.df.col(_) === false)
-      .reduceOption(_ && _)
-
-    // filter rows and select only necessary columns
-    val updatedData = predicate match {
-
-      case Some(filter) =>
-        records.df
-          .filter(filter)
-          .select(keepColumns.head, keepColumns.tail: _*)
-
-      case None =>
-        records.df.select(keepColumns.head, keepColumns.tail: _*)
-    }
-
-    val updatedHeader = RecordHeader.from(keepExprs)
-
-    CAPSRecords(updatedHeader, updatedData)
-  }
 
 }

@@ -27,18 +27,15 @@
 package org.opencypher.spark.impl.graph
 
 import org.apache.spark.sql.functions
-import org.apache.spark.storage.StorageLevel
-import org.opencypher.okapi.api.graph.PropertyGraph
 import org.opencypher.okapi.api.schema._
 import org.opencypher.okapi.api.types.{CTNode, CTRelationship}
 import org.opencypher.okapi.ir.api.expr._
 import org.opencypher.okapi.relational.api.graph.RelationalCypherGraph
 import org.opencypher.okapi.relational.api.schema.RelationalSchema._
-import org.opencypher.okapi.relational.impl.operators.{Distinct, ExtractEntities, Start, TabularUnionAll}
+import org.opencypher.okapi.relational.impl.operators.{ExtractEntities, Start, TabularUnionAll}
 import org.opencypher.spark.api.CAPSSession
 import org.opencypher.spark.api.io.{CAPSEntityTable, CAPSNodeTable, CAPSRelationshipTable}
 import org.opencypher.spark.impl.CAPSRecords
-import org.opencypher.spark.impl.graph.CAPSGraph.CAPSGraph
 import org.opencypher.spark.impl.table.SparkFlatRelationalTable.DataFrameTable
 import org.opencypher.spark.schema.CAPSSchema
 
@@ -46,15 +43,9 @@ class CAPSScanGraph(val scans: Seq[CAPSEntityTable], val schema: CAPSSchema, val
   (implicit val session: CAPSSession)
   extends RelationalCypherGraph[DataFrameTable] {
 
-  // TODO: Normalize (remove redundant columns for implied Schema information, clear aliases?)
-
-  self: CAPSGraph =>
-
-  override type Graph = CAPSGraph
-
   override type Records = CAPSRecords
 
-  override def toString = s"CAPSScanGraph(${scans.map(_.entityType).mkString(", ")})"
+  override type Session = CAPSSession
 
   private lazy val nodeTables = scans.collect { case it: CAPSNodeTable => it }
 
@@ -128,4 +119,5 @@ class CAPSScanGraph(val scans: Seq[CAPSEntityTable], val schema: CAPSSchema, val
     }
   }
 
+  override def toString = s"CAPSScanGraph(${scans.map(_.entityType).mkString(", ")})"
 }

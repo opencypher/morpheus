@@ -29,31 +29,33 @@ package org.opencypher.spark.impl.graph
 import org.opencypher.okapi.api.schema.Schema
 import org.opencypher.okapi.api.types.{CTNode, CTRelationship}
 import org.opencypher.okapi.ir.api.expr.Var
-import org.opencypher.okapi.relational.api.graph.{RelationalCypherGraph, RelationalCypherSession}
+import org.opencypher.okapi.relational.api.graph.RelationalCypherGraph
 import org.opencypher.okapi.relational.api.physical.RelationalRuntimeContext
 import org.opencypher.okapi.relational.api.schema.RelationalSchema._
-import org.opencypher.okapi.relational.api.table.{FlatRelationalTable, RelationalCypherRecords}
 import org.opencypher.okapi.relational.api.tagging.TagSupport.computeRetaggings
 import org.opencypher.okapi.relational.impl.operators.{Distinct, ExtractEntities, Start, TabularUnionAll}
+import org.opencypher.spark.api.CAPSSession
+import org.opencypher.spark.impl.CAPSRecords
+import org.opencypher.spark.impl.table.SparkFlatRelationalTable.DataFrameTable
 
 object UnionGraph {
-  def apply[T <: FlatRelationalTable[T]](graphs: RelationalCypherGraph[T]*)(
-    implicit session: RelationalCypherSession[T]
-  ): UnionGraph[T] = {
+  def apply(graphs: RelationalCypherGraph[DataFrameTable]*)(implicit session: CAPSSession): UnionGraph = {
     UnionGraph(computeRetaggings(graphs.map(g => g -> g.tags).toMap))
   }
 }
 
 // TODO: This should be a planned tree of physical operators instead of a graph
-final case class UnionGraph[T <: FlatRelationalTable[T]](
-  graphsToReplacements: Map[RelationalCypherGraph[T], Map[Int, Int]]
+final case class UnionGraph(
+  graphsToReplacements: Map[RelationalCypherGraph[DataFrameTable], Map[Int, Int]]
 )
   (
-    implicit val session: RelationalCypherSession[T],
-    context: RelationalRuntimeContext[T]
-  ) extends RelationalCypherGraph[T] {
+    implicit override val session: CAPSSession,
+    context: RelationalRuntimeContext[DataFrameTable]
+  ) extends RelationalCypherGraph[DataFrameTable] {
 
-  override type Graph = UnionGraph[T]
+  override type Records = CAPSRecords
+
+  override type Session = CAPSSession
 
   require(graphsToReplacements.nonEmpty, "Union requires at least one graph")
 
@@ -63,29 +65,33 @@ final case class UnionGraph[T <: FlatRelationalTable[T]](
     graphsToReplacements.keys.map(g => g.schema).foldLeft(Schema.empty)(_ ++ _)
   }
 
-  override def nodes(name: String, nodeCypherType: CTNode): RelationalCypherRecords[T] = {
-    val node = Var(name)(nodeCypherType)
-    val targetHeader = schema.headerForNode(node)
-    val nodeOps = graphsToReplacements.keys
-      .filter(nodeCypherType.labels.isEmpty || _.schema.labels.intersect(nodeCypherType.labels).nonEmpty)
-      .map {
-        graph =>
-          val nodeScan = graph.nodes(name, nodeCypherType)
-          val replacements = graphsToReplacements(graph)
+  override def nodes(name: String, nodeCypherType: CTNode, exactLabelMatch: Boolean): CAPSRecords = {
+    if (exactLabelMatch) {
+      ToRefactor.nodesWithExactLabels(this, name, nodeCypherType.labels)
+    } else {
+      val node = Var(name)(nodeCypherType)
+      val targetHeader = schema.headerForNode(node)
+      val nodeOps = graphsToReplacements.keys
+        .filter(nodeCypherType.labels.isEmpty || _.schema.labels.intersect(nodeCypherType.labels).nonEmpty)
+        .map {
+          graph =>
+            val nodeScan = graph.nodes(name, nodeCypherType)
+            val replacements = graphsToReplacements(graph)
 
-          val retaggedTable = nodeScan.header.idColumns(node).foldLeft(nodeScan.table) {
-            case (currentTable, idColumn) =>
-              currentTable.retagColumn(replacements, idColumn)
-          }
-          ExtractEntities(Start(session.records.from(nodeScan.header, retaggedTable)), targetHeader, Set(node))
-      }
+            val retaggedTable = nodeScan.header.idColumns(node).foldLeft(nodeScan.table) {
+              case (currentTable, idColumn) =>
+                currentTable.retagColumn(replacements, idColumn)
+            }
+            ExtractEntities(Start(session.records.from(nodeScan.header, retaggedTable)), targetHeader, Set(node))
+        }
 
-    val distinctOp = Distinct(nodeOps.reduce(TabularUnionAll(_, _)), Set(node))
+      val distinctOp = Distinct(nodeOps.reduce(TabularUnionAll(_, _)), Set(node))
 
-    session.records.from(distinctOp.header, distinctOp.table)
+      session.records.from(distinctOp.header, distinctOp.table)
+    }
   }
 
-  override def relationships(name: String, relCypherType: CTRelationship): RelationalCypherRecords[T] = {
+  override def relationships(name: String, relCypherType: CTRelationship): CAPSRecords = {
     val rel = Var(name)(relCypherType)
     val targetHeader = schema.headerForRelationship(rel)
     val relOps = graphsToReplacements.keys
@@ -106,55 +112,10 @@ final case class UnionGraph[T <: FlatRelationalTable[T]](
     session.records.from(distinctOp.header, distinctOp.table)
   }
 
-  override def cache(): UnionGraph[T] = {
+  override def cache(): UnionGraph = {
     graphsToReplacements.keys.foreach(_.cache())
     this
   }
 
   override def toString = s"CAPSUnionGraph(graphs=[${graphsToReplacements.mkString(",")}])"
-
-  //  def nodesWithExactLabels(name: String, labels: Set[String]): RelationalCypherRecords[T] = {
-  //    val nodeType = CTNode(labels)
-  //    val nodeVar = Var(name)(nodeType)
-  //    val records = nodes(name, nodeType)
-  //
-  //    val header = records.header
-  //
-  //    // compute slot contents to keep
-  //    val labelExprs = header.labelsFor(nodeVar)
-  //
-  //    // need to iterate the slots to maintain the correct order
-  //    val propertyExprs = schema.nodeKeys(labels).flatMap {
-  //      case (key, cypherType) => Property(nodeVar, PropertyKey(key))(cypherType)
-  //    }.toSet
-  //    val headerPropertyExprs = header.propertiesFor(nodeVar).filter(propertyExprs.contains)
-  //
-  //    val keepExprs: Seq[Expr] = Seq(nodeVar) ++ labelExprs ++ headerPropertyExprs
-  //
-  //    val keepColumns = keepExprs.map(header.column)
-  //
-  //    // we only keep rows where all "other" labels are false
-  //    val predicate = labelExprs
-  //      .filterNot(l => labels.contains(l.label.name))
-  //
-  //      .map(header.column)
-  //      .map(records.df.col(_) === false)
-  //      .reduceOption(_ && _)
-  //
-  //    // filter rows and select only necessary columns
-  //    val updatedData = predicate match {
-  //
-  //      case Some(filter) =>
-  //        records.df
-  //          .filter(filter)
-  //          .select(keepColumns.head, keepColumns.tail: _*)
-  //
-  //      case None =>
-  //        records.df.select(keepColumns.head, keepColumns.tail: _*)
-  //    }
-  //
-  //    val updatedHeader = RecordHeader.from(keepExprs)
-  //
-  //    CAPSRecords(updatedHeader, updatedData)
-  //  }
 }

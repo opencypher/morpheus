@@ -28,64 +28,52 @@ package org.opencypher.spark.impl.graph
 
 import org.opencypher.okapi.api.schema._
 import org.opencypher.okapi.api.table.CypherRecords
-import org.opencypher.okapi.api.types.{CTNode, CTRelationship}
-import org.opencypher.okapi.ir.api.expr._
-import org.opencypher.okapi.relational.api.graph.RelationalCypherGraph
-import org.opencypher.okapi.relational.api.table.RelationalCypherRecords
-import org.opencypher.okapi.relational.impl.table.RecordHeader
+import org.opencypher.okapi.relational.api.graph.{RelationalCypherGraph, RelationalCypherGraphFactory}
 import org.opencypher.spark.api.CAPSSession
 import org.opencypher.spark.api.io.{CAPSEntityTable, CAPSNodeTable}
 import org.opencypher.spark.impl.CAPSConverters._
-import org.opencypher.spark.impl.table.SparkFlatRelationalTable.DataFrameTable
 import org.opencypher.spark.impl.CAPSRecords
+import org.opencypher.spark.impl.table.SparkFlatRelationalTable.DataFrameTable
 import org.opencypher.spark.schema.CAPSSchema
 import org.opencypher.spark.schema.CAPSSchema._
 
-object CAPSGraph {
+case class CAPSGraphFactory(implicit caps: CAPSSession) extends RelationalCypherGraphFactory[DataFrameTable] {
 
-  type CAPSGraph = RelationalCypherGraph[DataFrameTable]
+  override type Graph = RelationalCypherGraph[DataFrameTable]
 
-  def empty(implicit caps: CAPSSession): CAPSGraph = EmptyGraph()
+  override type Records = CAPSRecords
 
-  def create(nodeTable: CAPSNodeTable, entityTables: CAPSEntityTable*)(implicit caps: CAPSSession): CAPSGraph = {
+  override def singleTableGraph(
+    records: CAPSRecords,
+    schema: Schema,
+    tagsUsed: Set[Int]
+  ): Graph = SingleTableGraph(records, schema, tagsUsed)
+
+
+  override def unionGraph(graphsToReplacements: Map[RelationalCypherGraph[DataFrameTable], Map[Int, Int]]): Graph = {
+    UnionGraph(graphsToReplacements)
+  }
+
+  override val emptyGraph: Graph = {
+    EmptyGraph()
+  }
+
+  def create(nodeTable: CAPSNodeTable, entityTables: CAPSEntityTable*): Graph = {
     create(Set(0), None, nodeTable, entityTables: _*)
   }
 
-  def create(maybeSchema: Option[CAPSSchema], nodeTable: CAPSNodeTable, entityTables: CAPSEntityTable*)(implicit caps: CAPSSession): CAPSGraph = {
+  def create(maybeSchema: Option[CAPSSchema], nodeTable: CAPSNodeTable, entityTables: CAPSEntityTable*): Graph = {
     create(Set(0), maybeSchema, nodeTable, entityTables: _*)
   }
 
-  def create(tags: Set[Int], maybeSchema: Option[CAPSSchema], nodeTable: CAPSNodeTable, entityTables: CAPSEntityTable*)(implicit caps: CAPSSession): CAPSGraph = {
+  def create(tags: Set[Int], maybeSchema: Option[CAPSSchema], nodeTable: CAPSNodeTable, entityTables: CAPSEntityTable*): Graph = {
     val allTables = nodeTable +: entityTables
     val schema = maybeSchema.getOrElse(allTables.map(_.schema).reduce[Schema](_ ++ _).asCaps)
     new CAPSScanGraph(allTables, schema, tags)
   }
 
-  def create(records: CypherRecords, schema: CAPSSchema, tags: Set[Int] = Set(0))(implicit caps: CAPSSession): CAPSGraph = {
+  def create(records: CypherRecords, schema: CAPSSchema, tags: Set[Int] = Set(0)): Graph = {
     val capsRecords = records.asCaps
     SingleTableGraph(capsRecords, schema, tags)
   }
-
-  sealed case class EmptyGraph(implicit val caps: CAPSSession) extends RelationalCypherGraph[DataFrameTable] {
-
-    override type Session = CAPSSession
-
-    override type Records = CAPSRecords
-
-    override val schema: CAPSSchema = CAPSSchema.empty
-
-    override def nodes(name: String, cypherType: CTNode, exactLabelMatch: Boolean = false): CAPSRecords =
-      caps.records.empty(RecordHeader.from(Var(name)(cypherType)))
-
-    override def relationships(name: String, cypherType: CTRelationship): CAPSRecords =
-      caps.records.empty(RecordHeader.from(Var(name)(cypherType)))
-
-    override def session: CAPSSession = caps
-
-    override def cache(): CAPSGraph = this
-
-
-    override def tags: Set[Int] = Set.empty
-  }
-
 }

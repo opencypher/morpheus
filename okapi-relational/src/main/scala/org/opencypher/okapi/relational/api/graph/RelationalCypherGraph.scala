@@ -11,7 +11,9 @@ trait RelationalCypherGraphFactory[T <: FlatRelationalTable[T]] {
 
   type Graph <: RelationalCypherGraph[T]
 
-  def singleTableGraph(records: RelationalCypherRecords[T], schema: Schema, tagsUsed: Set[Int]): Graph
+  type Records <: RelationalCypherGraphFactory[T]
+
+  def singleTableGraph(records: Records, schema: Schema, tagsUsed: Set[Int]): Graph
 
   def unionGraph(graphsToReplacements: Map[RelationalCypherGraph[T], Map[Int, Int]]): Graph
 
