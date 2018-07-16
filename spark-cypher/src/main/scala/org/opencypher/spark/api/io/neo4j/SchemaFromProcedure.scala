@@ -62,7 +62,7 @@ object SchemaFromProcedure {
 
   private[neo4j] def schemaFromProcedure(config: Neo4jConfig, omitImportFailures: Boolean): Option[Schema] = {
     Try {
-      val rows = config.execute { session =>
+      val rows = config.withSession { session =>
         val result = session.run("CALL " + schemaProcedureName)
 
         result.list().asScala.flatMap { row =>
