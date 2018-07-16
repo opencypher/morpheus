@@ -26,7 +26,9 @@
  */
 package org.opencypher.okapi.relational.api.tagging
 
+import org.opencypher.okapi.api.types.{CTBoolean, CTInteger}
 import org.opencypher.okapi.impl.exception.IllegalStateException
+import org.opencypher.okapi.ir.api.expr._
 
 object Tags {
 
@@ -36,7 +38,9 @@ object Tags {
   // Number of Bits used to store entity identifier
   val idBits: Int = 54
 
-  val tagBits = totalBits - idBits
+  val idBitsLit: IntegerLit = IntegerLit(idBits)(CTInteger)
+
+  val tagBits: Int = totalBits - idBits
 
   // 1023 with 10 tag bits
   val maxTag: Int = (1 << tagBits) - 1
@@ -48,6 +52,8 @@ object Tags {
   val tagMask: Long = -1L << idBits
 
   val invertedTagMask: Long = ~tagMask
+
+  val invertedTagMaskLit: IntegerLit = IntegerLit(invertedTagMask)(CTInteger)
 
   /**
     * Returns a free tag given a set of used tags.
@@ -70,4 +76,41 @@ object Tags {
     }
   }
 
+  implicit class LongTagging(val l: Long) extends AnyVal {
+
+    def setTag(tag: Int): Long = {
+      (l & invertedTagMask) | (tag.toLong << idBits)
+    }
+
+    def getTag: Int = {
+      // TODO: Verify that the tag actually fits into an Int or by requiring and checking a minimum size of 32 bits for idBits when reading it from config
+      ((l & tagMask) >>> idBits).toInt
+    }
+
+    def replaceTag(from: Int, to: Int): Long = {
+      if (l.getTag == from) l.setTag(to) else l
+    }
+
+  }
+
+
+  implicit class ExprTagging(val expr: Expr) extends AnyVal {
+
+    def replaceTag(from: Int, to: Int): Expr = {
+      CaseExpr(
+        IndexedSeq(Equals(getTag, IntegerLit(from.toLong)(CTInteger))(CTBoolean) -> setTag(to)),
+        default = Some(expr))(CTInteger)
+    }
+
+    def setTag(tag: Int): Expr = {
+      val tagLit = IntegerLit(tag)(CTInteger)
+      val shifted = ShiftLeft(expr, tagLit)(CTInteger)
+      val bwAnd = BitwiseAnd(expr, invertedTagMaskLit)(CTInteger)
+      BitwiseOr(bwAnd, shifted)(CTInteger)
+    }
+
+    def getTag: Expr = {
+      ShiftRightUnsigned(expr, idBitsLit)(CTInteger)
+    }
+  }
 }

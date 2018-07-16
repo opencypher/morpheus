@@ -37,6 +37,7 @@ import org.opencypher.okapi.relational.api.physical.{RelationalPlannerContext, R
 import org.opencypher.okapi.relational.api.table.FlatRelationalTable
 import org.opencypher.okapi.relational.api.tagging.TagSupport.computeRetaggings
 import org.opencypher.okapi.relational.api.tagging.Tags
+import org.opencypher.okapi.relational.api.tagging.Tags._
 import org.opencypher.okapi.relational.impl.operators.RelationalOperator
 import org.opencypher.okapi.relational.impl.table.RecordHeader
 import org.opencypher.okapi.relational.impl.{operators => relational}
@@ -172,14 +173,14 @@ final case class ConstructGraph[T <: FlatRelationalTable[T]](
       case r: ConstructedRelationship if !inOp.header.vars.contains(r.v) => r
     }
 
-    val (_, nodesToCreate) = nodes.foldLeft(0 -> Map.empty[Expr, Column]) {
+    val (_, nodesToCreate) = nodes.foldLeft(0 -> Map.empty[Expr, Expr]) {
       case ((nextColumnPartitionId, constructedNodes), nextNodeToConstruct) =>
         (nextColumnPartitionId + 1) -> (constructedNodes ++ constructNode(inOp, newEntityTag, nextColumnPartitionId, nodes.size, nextNodeToConstruct))
     }
 
     val createdNodesOp = AddEntitiesToRecords(inOp, nodesToCreate)
 
-    val (_, relsToCreate) = rels.foldLeft(0 -> Map.empty[Expr, Column]) {
+    val (_, relsToCreate) = rels.foldLeft(0 -> Map.empty[Expr, Expr]) {
       case ((nextColumnPartitionId, constructedRels), nextRelToConstruct) =>
         (nextColumnPartitionId + 1) -> (constructedRels ++ constructRel(createdNodesOp, newEntityTag, nextColumnPartitionId, rels.size, nextRelToConstruct))
     }
@@ -193,7 +194,7 @@ final case class ConstructGraph[T <: FlatRelationalTable[T]](
     columnIdPartition: Int,
     numberOfColumnPartitions: Int,
     node: ConstructedNode
-  ): Map[Expr, Column] = {
+  ): Map[Expr, Expr] = {
 
     val idTuple = node.v -> generateId(columnIdPartition, numberOfColumnPartitions).setTag(newEntityTag)
 
@@ -203,7 +204,7 @@ final case class ConstructGraph[T <: FlatRelationalTable[T]](
     }
 
     val newLabelTuples = node.labels.map {
-      label => HasLabel(node.v, label)(CTBoolean) -> functions.lit(true)
+      label => HasLabel(node.v, label)(CTBoolean) -> TrueLit
     }.toMap
 
     val propertyTuples = node.baseEntity match {
@@ -223,7 +224,7 @@ final case class ConstructGraph[T <: FlatRelationalTable[T]](
     * @param columnIdPartition column partition within DF partition
     */
   // TODO: improve documentation and add specific tests
-  private def generateId(columnIdPartition: Int, numberOfColumnPartitions: Int): Column = {
+  private def generateId(columnIdPartition: Int, numberOfColumnPartitions: Int): Expr = {
     val columnPartitionBits = math.log(numberOfColumnPartitions).floor.toInt + 1
     val totalIdSpaceBits = 33
     val columnIdShift = totalIdSpaceBits - columnPartitionBits
@@ -232,7 +233,10 @@ final case class ConstructGraph[T <: FlatRelationalTable[T]](
     // Limits the system to 500 mn partitions
     // The first half of the id space is protected
     val columnPartitionOffset = columnIdPartition.toLong << columnIdShift
-    monotonically_increasing_id() + functions.lit(columnPartitionOffset)
+
+    Add(MonotonicallyIncreasingId(), IntegerLit(columnPartitionOffset)(CTInteger))(CTInteger)
+    // TODO: remove line
+//    monotonically_increasing_id() + functions.lit(columnPartitionOffset)
   }
 
   private def constructRel(
@@ -241,7 +245,7 @@ final case class ConstructGraph[T <: FlatRelationalTable[T]](
     columnIdPartition: Int,
     numberOfColumnPartitions: Int,
     toConstruct: ConstructedRelationship
-  ): Map[Expr, Column] = {
+  ): Map[Expr, Expr] = {
     val ConstructedRelationship(rel, source, target, typOpt, baseRelOpt) = toConstruct
     val header = inOp.header
     val inData = inOp.table.df
@@ -270,7 +274,7 @@ final case class ConstructGraph[T <: FlatRelationalTable[T]](
       }
     }
 
-    val propertyTuples: Map[Expr, Column] = baseRelOpt match {
+    val propertyTuples: Map[Expr, Expr] = baseRelOpt match {
       case Some(baseRel) =>
         copyExpressions(inOp, rel)(_.propertiesFor(baseRel))
       case None => Map.empty
@@ -300,7 +304,7 @@ case class RetagVariable[T <: FlatRelationalTable[T]](in: RelationalOperator[T],
 
 final case class AddEntitiesToRecords[T <: FlatRelationalTable[T]](
   in: RelationalOperator[T],
-  columnsToAdd: Map[Expr, Column]
+  columnsToAdd: Map[Expr, Expr]
 ) extends RelationalOperator[T] {
 
   override lazy val header: RecordHeader = in.header.withExprs(columnsToAdd.keySet)

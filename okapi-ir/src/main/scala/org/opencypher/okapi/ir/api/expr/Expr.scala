@@ -388,6 +388,10 @@ sealed trait FunctionExpr extends Expr {
   override final def withoutType = s"$name(${exprs.map(_.withoutType).mkString(", ")})"
 }
 
+final case class MonotonicallyIncreasingId(cypherType: CypherType = CTInteger) extends FunctionExpr {
+  override def exprs: IndexedSeq[Expr] = IndexedSeq.empty
+}
+
 sealed trait UnaryFunctionExpr extends FunctionExpr {
   def expr: Expr
 
@@ -421,6 +425,28 @@ final case class ToBoolean(expr: Expr)(val cypherType: CypherType = CTWildcard) 
 final case class Coalesce(exprs: IndexedSeq[Expr])(val cypherType: CypherType = CTWildcard) extends FunctionExpr
 
 final case class Explode(expr: Expr)(val cypherType: CypherType = CTWildcard) extends UnaryFunctionExpr
+
+// Bit operators
+
+final case class ShiftLeft(value: Expr, shiftBits: IntegerLit)(val cypherType: CypherType = CTWildcard) extends BinaryExpr {
+  override def lhs: Expr = value
+  override def rhs: Expr = shiftBits
+  override def op: String = "<<"
+}
+
+final case class ShiftRightUnsigned(value: Expr, shiftBits: IntegerLit)(val cypherType: CypherType = CTWildcard) extends BinaryExpr {
+  override def lhs: Expr = value
+  override def rhs: Expr = shiftBits
+  override def op: String = ">>>"
+}
+
+final case class BitwiseAnd(lhs: Expr, rhs: Expr)(val cypherType: CypherType = CTWildcard) extends BinaryExpr {
+  override def op: String = "&"
+}
+
+final case class BitwiseOr(lhs: Expr, rhs: Expr)(val cypherType: CypherType = CTWildcard) extends BinaryExpr {
+  override def op: String = "|"
+}
 
 // Aggregators
 sealed trait Aggregator extends Expr {

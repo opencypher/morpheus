@@ -146,6 +146,7 @@ object SparkSQLExprMapper {
         case div@Divide(lhs, rhs) => (lhs.asSparkSQLExpr / rhs.asSparkSQLExpr).cast(div.cypherType.getSparkType)
 
         // Functions
+        case _: MonotonicallyIncreasingId => functions.monotonically_increasing_id()
         case Exists(e) => e.asSparkSQLExpr.isNotNull
         case Id(e) => e.asSparkSQLExpr
         case Labels(e) =>

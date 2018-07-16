@@ -36,7 +36,7 @@ import org.opencypher.okapi.api.value.CypherValue
 import org.opencypher.okapi.api.value.CypherValue.CypherValue
 import org.opencypher.okapi.impl.exception.IllegalArgumentException
 import org.opencypher.okapi.impl.util.Measurement.printTiming
-import org.opencypher.okapi.ir.api.expr.{Expr, Param}
+import org.opencypher.okapi.ir.api.expr._
 import org.opencypher.okapi.relational.api.physical.RelationalRuntimeContext
 import org.opencypher.okapi.relational.impl.table.RecordHeader
 import org.opencypher.okapi.relational.api.tagging.Tags._
@@ -47,7 +47,8 @@ object DataFrameOps {
 
   implicit class CypherRow(r: Row) {
 
-    def getCypherValue(expr: Expr, header: RecordHeader)(implicit context: RelationalRuntimeContext[DataFrameTable]): CypherValue = {
+    def getCypherValue(expr: Expr, header: RecordHeader)
+      (implicit context: RelationalRuntimeContext[DataFrameTable]): CypherValue = {
       expr match {
         case Param(name) => context.parameters(name)
         case _ =>
@@ -57,40 +58,6 @@ object DataFrameOps {
           }
       }
     }
-  }
-
-  implicit class LongTagging(val l: Long) extends AnyVal {
-
-    def setTag(tag: Int): Long = {
-      (l & invertedTagMask) | (tag.toLong << idBits)
-    }
-
-    def getTag: Int = {
-      // TODO: Verify that the tag actually fits into an Int or by requiring and checking a minimum size of 32 bits for idBits when reading it from config
-      ((l & tagMask) >>> idBits).toInt
-    }
-
-    def replaceTag(from: Int, to: Int): Long = {
-      if (l.getTag == from) l.setTag(to) else l
-    }
-
-  }
-
-  implicit class ColumnTagging(val col: Column) extends AnyVal {
-
-    def replaceTag(from: Int, to: Int): Column = functions
-      .when(getTag === lit(from.toLong), setTag(to))
-      .otherwise(col)
-
-    def setTag(tag: Int): Column = {
-      val tagLit = lit(tag.toLong << idBits)
-      val newId = col
-        .bitwiseAND(functions.lit(invertedTagMask))
-        .bitwiseOR(tagLit)
-      newId
-    }
-
-    def getTag: Column = shiftRightUnsigned(col, idBits)
   }
 
 
