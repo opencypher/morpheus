@@ -38,6 +38,12 @@ import org.opencypher.spark.impl.convert.SparkConversions._
 
 object SparkSQLExprMapper {
 
+  private val NULL_LIT: Column = functions.lit(null)
+
+  private val TRUE_LIT: Column = functions.lit(true)
+
+  private val FALSE_LIT: Column = functions.lit(false)
+
   implicit class RichExpression(expr: Expr) {
 
     def verify(implicit header: RecordHeader): Unit = {
@@ -91,7 +97,7 @@ object SparkSQLExprMapper {
           if (df.columns.contains(colName)) {
             df.col(colName)
           } else {
-            functions.lit(null)
+            NULL_LIT
           }
 
         case AliasExpr(innerExpr, _) =>
@@ -102,7 +108,7 @@ object SparkSQLExprMapper {
           functions.array(exprs.map(_.asSparkSQLExpr): _*)
 
         case NullLit(ct) =>
-          functions.lit(null).cast(ct.toSparkType.get)
+          NULL_LIT.cast(ct.toSparkType.get)
 
         case l: Lit[_] => functions.lit(l.v)
 
@@ -120,14 +126,14 @@ object SparkSQLExprMapper {
           }
 
         case Ands(exprs) =>
-          exprs.map(_.asSparkSQLExpr).foldLeft(functions.lit(true))(_ && _)
+          exprs.map(_.asSparkSQLExpr).foldLeft(TRUE_LIT)(_ && _)
 
         case Ors(exprs) =>
-          exprs.map(_.asSparkSQLExpr).foldLeft(functions.lit(false))(_ || _)
+          exprs.map(_.asSparkSQLExpr).foldLeft(FALSE_LIT)(_ || _)
 
         case In(lhs, rhs) =>
           if (rhs.cypherType == CTNull || lhs.cypherType == CTNull) {
-            functions.lit(null).cast(BooleanType)
+            NULL_LIT.cast(BooleanType)
           } else {
             val element = lhs.asSparkSQLExpr
             val array = rhs.asSparkSQLExpr

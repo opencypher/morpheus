@@ -41,6 +41,7 @@ object ExtractEntities {
 }
 
 // TODO: rename to Table
+// TODO: document
 trait FlatRelationalTable[T <: FlatRelationalTable[T]] extends CypherTable {
 
   this: T =>
@@ -54,6 +55,7 @@ trait FlatRelationalTable[T <: FlatRelationalTable[T]] extends CypherTable {
   def select(cols: String*): T
 
   // Convenience for multiple selects + align and union
+  // TODO: provide default implementation
   def extractEntities(selectGroups: SelectExpressionGroups)(implicit header: RecordHeader, parameters: CypherMap): T
 
   def filter(expr: Expr)(implicit header: RecordHeader, parameters: CypherMap): T
@@ -74,20 +76,12 @@ trait FlatRelationalTable[T <: FlatRelationalTable[T]] extends CypherTable {
 
   def group(by: Set[Var], aggregations: Set[(Aggregator, (String, CypherType))])(implicit header: RecordHeader, parameters: CypherMap): T
 
+  // TODO: document that this replaces the column if it already exists
   def withColumn(column: String, expr: Expr)(implicit header: RecordHeader, parameters: CypherMap): T
 
   def withColumnRenamed(oldColumn: String, newColumn: String): T
 
-  def withNullColumn(col: String, cypherType: CypherType = CTNull): T
-
-  def withTrueColumn(col: String): T
-
-  def withFalseColumn(col: String): T
-
   def join(other: T, joinType: JoinType, joinCols: (String, String)*): T
-
-  // TODO: introduce function expression for retagging and use withColumn and backend-specific expression resolver
-  def retagColumn(column: String, replacements: Map[Int, Int]): T
 
   def show(rows: Int = 20): Unit
 }

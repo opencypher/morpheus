@@ -32,7 +32,6 @@ import org.opencypher.okapi.api.schema.Schema
 import org.opencypher.okapi.api.types.{DefiniteCypherType, _}
 import org.opencypher.okapi.impl.util.StringEncodingUtilities._
 import org.opencypher.okapi.relational.api.io.EntityTable
-import org.opencypher.okapi.relational.impl.table.RecordHeader
 import org.opencypher.spark.api.CAPSSession
 import org.opencypher.spark.impl.DataFrameOps._
 import org.opencypher.spark.impl.table.SparkFlatRelationalTable.DataFrameTable
@@ -47,7 +46,7 @@ trait CAPSEntityTable extends EntityTable[DataFrameTable] {
   // TODO: create CTEntity type
   private[spark] def entityType: CypherType with DefiniteCypherType
 
-  private[spark] def records(implicit caps: CAPSSession): CAPSRecords = CAPSRecords.create(this)
+  private[spark] def records(implicit caps: CAPSSession): CAPSRecords = caps.records.fromEntityTable(entityTable = this)
 }
 
 case class CAPSNodeTable(
@@ -57,13 +56,12 @@ case class CAPSNodeTable(
 
   override type Records = CAPSNodeTable
 
-  override def from(
-    header: RecordHeader,
-    table: DataFrameTable,
-    columnNames: Option[Seq[String]] = None
-  ): CAPSNodeTable = CAPSNodeTable(mapping, table)
-
   override private[spark] def entityType = mapping.cypherType
+
+  override def cache(): CAPSNodeTable = {
+    table.df.cache()
+    this
+  }
 }
 
 object CAPSNodeTable {
@@ -135,13 +133,12 @@ case class CAPSRelationshipTable(
 
   override type Records = CAPSRelationshipTable
 
-  override def from(
-    header: RecordHeader,
-    table: DataFrameTable,
-    columnNames: Option[Seq[String]] = None
-  ): CAPSRelationshipTable = CAPSRelationshipTable(mapping, table)
-
   override private[spark] def entityType = mapping.cypherType
+
+  override def cache(): CAPSRelationshipTable = {
+    table.df.cache()
+    this
+  }
 }
 
 object CAPSRelationshipTable {

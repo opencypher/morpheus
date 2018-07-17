@@ -27,9 +27,8 @@
 package org.opencypher.spark.impl
 
 import org.apache.spark.sql.execution.SparkPlan
-import org.apache.spark.sql.functions._
 import org.apache.spark.sql.types._
-import org.apache.spark.sql.{Column, DataFrame, Row, functions}
+import org.apache.spark.sql.{Column, DataFrame, Row}
 import org.apache.spark.storage.StorageLevel.MEMORY_ONLY
 import org.opencypher.okapi.api.types._
 import org.opencypher.okapi.api.value.CypherValue
@@ -39,7 +38,6 @@ import org.opencypher.okapi.impl.util.Measurement.printTiming
 import org.opencypher.okapi.ir.api.expr._
 import org.opencypher.okapi.relational.api.physical.RelationalRuntimeContext
 import org.opencypher.okapi.relational.impl.table.RecordHeader
-import org.opencypher.okapi.relational.api.tagging.Tags._
 import org.opencypher.spark.impl.convert.SparkConversions._
 import org.opencypher.spark.impl.table.SparkFlatRelationalTable.DataFrameTable
 
@@ -123,20 +121,6 @@ object DataFrameOps {
       } else {
         df.sparkSession.createDataFrame(df.rdd, newSchema)
       }
-    }
-
-    def safeReplaceTags(columnName: String, replacements: Map[Int, Int]): DataFrame = {
-      val dataType = structFieldForColumn(columnName).dataType
-      require(dataType == LongType, s"Cannot remap long values in Column with type $dataType")
-      val col = df.col(columnName)
-
-      val updatedCol = replacements
-        .filterNot { case (from, to) => from == to }
-        .foldLeft(col) {
-          case (current, (from, to)) => current.replaceTag(from, to)
-        }
-
-      safeReplaceColumn(columnName, updatedCol)
     }
 
     def safeAddColumn(name: String, col: Column): DataFrame = {

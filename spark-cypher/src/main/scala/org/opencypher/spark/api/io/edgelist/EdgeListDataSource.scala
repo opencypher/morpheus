@@ -36,10 +36,9 @@ import org.opencypher.spark.api.CAPSSession
 import org.opencypher.spark.api.io.GraphEntity.sourceIdKey
 import org.opencypher.spark.api.io.Relationship.{sourceEndNodeKey, sourceStartNodeKey}
 import org.opencypher.spark.api.io.edgelist.EdgeListDataSource._
-import org.opencypher.spark.api.io.{CAPSNodeTable, CAPSRelationshipTable, GraphEntity, Relationship}
-import org.opencypher.spark.schema.CAPSSchema
+import org.opencypher.spark.api.io.{CAPSNodeTable, CAPSRelationshipTable}
 import org.opencypher.spark.impl.DataFrameOps._
-import org.opencypher.spark.impl.graph.CAPSGraph
+import org.opencypher.spark.schema.CAPSSchema
 
 object EdgeListDataSource {
 
@@ -67,15 +66,15 @@ object EdgeListDataSource {
   *
   * @param path    path to the edge list file
   * @param options Spark Csv reader options
-  * @param session CAPS session
+  * @param caps    CAPS session
   */
-case class EdgeListDataSource(path: String, options: Map[String, String] = Map.empty)(implicit session: CAPSSession)
+case class EdgeListDataSource(path: String, options: Map[String, String] = Map.empty)(implicit caps: CAPSSession)
   extends PropertyGraphDataSource {
 
   override def hasGraph(name: GraphName): Boolean = name == GRAPH_NAME
 
   override def graph(name: GraphName): PropertyGraph = {
-    val reader = options.foldLeft(session.sparkSession.read) {
+    val reader = options.foldLeft(caps.sparkSession.read) {
       case (current, (key, value)) => current.option(key, value)
     }
 
@@ -94,7 +93,7 @@ case class EdgeListDataSource(path: String, options: Map[String, String] = Map.e
       .distinct()
       .setNonNullable(sourceIdKey)
 
-    CAPSGraph.create(CAPSNodeTable(Set(NODE_LABEL), rawNodes), CAPSRelationshipTable(REL_TYPE, rawRels))
+    caps.graphs.create(CAPSNodeTable(Set(NODE_LABEL), rawNodes), CAPSRelationshipTable(REL_TYPE, rawRels))
   }
 
   override def schema(name: GraphName): Option[Schema] = Some(SCHEMA)

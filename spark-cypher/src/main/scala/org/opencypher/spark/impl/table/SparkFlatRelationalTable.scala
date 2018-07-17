@@ -48,12 +48,6 @@ import scala.collection.JavaConverters._
 
 object SparkFlatRelationalTable {
 
-  private val NULL_LIT: Column = functions.lit(null)
-
-  private val TRUE_LIT: Column = functions.lit(true)
-
-  private val FALSE_LIT: Column = functions.lit(false)
-
   implicit class DataFrameTable(val df: DataFrame) extends FlatRelationalTable[DataFrameTable] {
 
     override def empty(initialHeader: RecordHeader = RecordHeader.empty): DataFrameTable = {
@@ -87,15 +81,16 @@ object SparkFlatRelationalTable {
 
     override def extractEntities(selectGroups: SelectExpressionGroups)(
       implicit header: RecordHeader,
-      parameters: CypherMap): DataFrameTable = {
-      val missingColumns = selectGroups.flatMap { group => group.filter { case (_, column) => !df.columns.contains(column)}}
-      val tableWithMissingColumns = missingColumns.foldLeft(this) { case (currentDf, (expr, column)) => currentDf.withColumn(column, expr)}
+      parameters: CypherMap
+    ): DataFrameTable = {
+      val missingColumns = selectGroups.flatMap { group => group.filter { case (_, column) => !df.columns.contains(column) } }
+      val tableWithMissingColumns = missingColumns.foldLeft(this) { case (currentDf, (expr, column)) => currentDf.withColumn(column, expr) }
 
       tableWithMissingColumns.df.flatMap { row =>
         selectGroups.map { selectGroup =>
           Row.fromSeq(selectGroup.map { case (_, column) => row.getAs(column) })
         }
-      }
+      }(header.rowEncoder)
     }
 
     override def filter(expr: Expr)(implicit header: RecordHeader, parameters: CypherMap): DataFrameTable = {
@@ -249,19 +244,6 @@ object SparkFlatRelationalTable {
 
     override def withColumnRenamed(oldColumn: String, newColumn: String): DataFrameTable =
       df.safeRenameColumn(oldColumn, newColumn)
-
-    override def withNullColumn(col: String, cypherType: CypherType = CTNull): DataFrameTable = {
-      assert(cypherType.isNullable)
-      df.withColumn(col, NULL_LIT.cast(cypherType.getSparkType))
-    }
-
-    override def withTrueColumn(col: String): DataFrameTable = df.withColumn(col, TRUE_LIT)
-
-    override def withFalseColumn(col: String): DataFrameTable = df.withColumn(col, FALSE_LIT)
-
-    override def retagColumn(column: String, replacements: Map[Int, Int]): DataFrameTable = {
-      df.safeReplaceTags(column, replacements)
-    }
 
     override def cache(): DataFrameTable = df.cache()
 

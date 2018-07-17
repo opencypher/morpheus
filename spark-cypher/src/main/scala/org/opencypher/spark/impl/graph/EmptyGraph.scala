@@ -27,5 +27,7 @@ sealed case class EmptyGraph(implicit val caps: CAPSSession) extends RelationalC
 
   override def cache(): EmptyGraph = this
 
+  override def tables: Seq[DataFrameTable] = Seq.empty
+
   override def tags: Set[Int] = Set.empty
 }

@@ -5,16 +5,18 @@ import org.opencypher.okapi.ir.api.PropertyKey
 import org.opencypher.okapi.ir.api.expr.{Expr, Property, Var}
 import org.opencypher.okapi.relational.api.graph.RelationalCypherGraph
 import org.opencypher.okapi.relational.impl.table.RecordHeader
+import org.opencypher.spark.api.CAPSSession
 import org.opencypher.spark.impl.CAPSRecords
 import org.opencypher.spark.impl.table.SparkFlatRelationalTable.DataFrameTable
 
 object ToRefactor {
 
   // TODO: move this to okapi-relational and plan as operators
-  def nodesWithExactLabels(graph: RelationalCypherGraph[DataFrameTable], name: String, labels: Set[String]): CAPSRecords = {
+  def nodesWithExactLabels(graph: RelationalCypherGraph[DataFrameTable], name: String, labels: Set[String])
+    (implicit caps: CAPSSession): CAPSRecords = {
     val nodeType = CTNode(labels)
     val nodeVar = Var(name)(nodeType)
-    val records = graph.nodes(name, nodeType, exactLabelMatch = false)
+    val records = graph.nodes(name, nodeType)
 
     val header = records.header
 
@@ -50,7 +52,7 @@ object ToRefactor {
 
     val updatedHeader = RecordHeader.from(keepExprs)
 
-    CAPSRecords(updatedHeader, updatedData)
+    caps.records.from(updatedHeader, updatedData)
   }
 
 }

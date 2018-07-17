@@ -31,8 +31,9 @@ import org.opencypher.okapi.api.schema._
 import org.opencypher.okapi.api.types.{CTNode, CTRelationship}
 import org.opencypher.okapi.ir.api.expr._
 import org.opencypher.okapi.relational.api.graph.RelationalCypherGraph
+import org.opencypher.okapi.relational.api.physical.RelationalRuntimeContext
 import org.opencypher.okapi.relational.api.schema.RelationalSchema._
-import org.opencypher.okapi.relational.impl.operators.{ExtractEntities, Start, TabularUnionAll}
+import org.opencypher.okapi.relational.impl.operators.{ExtractEntities, RelationalOperator, Start, TabularUnionAll}
 import org.opencypher.spark.api.CAPSSession
 import org.opencypher.spark.api.io.{CAPSEntityTable, CAPSNodeTable, CAPSRelationshipTable}
 import org.opencypher.spark.impl.CAPSRecords
@@ -51,12 +52,10 @@ class CAPSScanGraph(val scans: Seq[CAPSEntityTable], val schema: CAPSSchema, val
 
   private lazy val relTables = scans.collect { case it: CAPSRelationshipTable => it }
 
-  override def cache(): CAPSScanGraph = forEach(_.table.cache())
+  // TODO: ScanGraph should be an operator that gets a set of tables as input
+  private implicit def runtimeContext: RelationalRuntimeContext[DataFrameTable] = session.basicRuntimeContext()
 
-  private def forEach(f: CAPSEntityTable => Unit): CAPSScanGraph = {
-    scans.foreach(f)
-    this
-  }
+  override def tables: Seq[DataFrameTable] = scans.map(_.table)
 
   // TODO: Use just one method for all entity scans
   override def nodes(name: String, nodeCypherType: CTNode, exactLabelMatch: Boolean = false): CAPSRecords = {
@@ -69,7 +68,7 @@ class CAPSScanGraph(val scans: Seq[CAPSEntityTable], val schema: CAPSSchema, val
     val schema = selectedTables.map(_.schema).foldLeft(Schema.empty)(_ ++ _)
     val targetNodeHeader = schema.headerForNode(node)
 
-    val nodeTablesAsStartOps = selectedTables.map(table => ExtractEntities(Start(table), targetNodeHeader, Set(node)))
+    val nodeTablesAsStartOps: Seq[RelationalOperator[DataFrameTable]] = selectedTables.map(table => ExtractEntities(Start(table), targetNodeHeader, Set(node)))
     if (nodeTablesAsStartOps.isEmpty) {
       session.records.empty(targetNodeHeader)
     } else {
@@ -110,7 +109,8 @@ class CAPSScanGraph(val scans: Seq[CAPSEntityTable], val schema: CAPSSchema, val
         }
       }
 
-    val nodeTablesAsStartOps = filteredRecords.map(table => ExtractEntities(Start(table), targetRelHeader, Set(rel)))
+    val nodeTablesAsStartOps: Seq[RelationalOperator[DataFrameTable]] = filteredRecords.map(table => ExtractEntities(Start(table), targetRelHeader, Set(rel)))
+
     if (nodeTablesAsStartOps.isEmpty) {
       session.records.empty(targetRelHeader)
     } else {

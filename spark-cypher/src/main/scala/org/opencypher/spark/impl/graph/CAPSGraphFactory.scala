@@ -29,10 +29,11 @@ package org.opencypher.spark.impl.graph
 import org.opencypher.okapi.api.schema._
 import org.opencypher.okapi.api.table.CypherRecords
 import org.opencypher.okapi.relational.api.graph.{RelationalCypherGraph, RelationalCypherGraphFactory}
+import org.opencypher.okapi.relational.api.physical.RelationalRuntimeContext
+import org.opencypher.okapi.relational.api.table.RelationalCypherRecords
 import org.opencypher.spark.api.CAPSSession
 import org.opencypher.spark.api.io.{CAPSEntityTable, CAPSNodeTable}
 import org.opencypher.spark.impl.CAPSConverters._
-import org.opencypher.spark.impl.CAPSRecords
 import org.opencypher.spark.impl.table.SparkFlatRelationalTable.DataFrameTable
 import org.opencypher.spark.schema.CAPSSchema
 import org.opencypher.spark.schema.CAPSSchema._
@@ -41,21 +42,18 @@ case class CAPSGraphFactory(implicit caps: CAPSSession) extends RelationalCypher
 
   override type Graph = RelationalCypherGraph[DataFrameTable]
 
-  override type Records = CAPSRecords
+  override val empty: Graph = EmptyGraph()
 
   override def singleTableGraph(
-    records: CAPSRecords,
+    records: RelationalCypherRecords[DataFrameTable],
     schema: Schema,
     tagsUsed: Set[Int]
-  ): Graph = SingleTableGraph(records, schema, tagsUsed)
+  )(implicit context: RelationalRuntimeContext[DataFrameTable]): Graph = SingleTableGraph(records, schema, tagsUsed)
 
 
-  override def unionGraph(graphsToReplacements: Map[RelationalCypherGraph[DataFrameTable], Map[Int, Int]]): Graph = {
+  override def unionGraph(graphsToReplacements: Map[RelationalCypherGraph[DataFrameTable], Map[Int, Int]])
+    (implicit context: RelationalRuntimeContext[DataFrameTable]): Graph = {
     UnionGraph(graphsToReplacements)
-  }
-
-  override val emptyGraph: Graph = {
-    EmptyGraph()
   }
 
   def create(nodeTable: CAPSNodeTable, entityTables: CAPSEntityTable*): Graph = {
@@ -66,13 +64,20 @@ case class CAPSGraphFactory(implicit caps: CAPSSession) extends RelationalCypher
     create(Set(0), maybeSchema, nodeTable, entityTables: _*)
   }
 
-  def create(tags: Set[Int], maybeSchema: Option[CAPSSchema], nodeTable: CAPSNodeTable, entityTables: CAPSEntityTable*): Graph = {
+  def create(
+    tags: Set[Int],
+    maybeSchema: Option[CAPSSchema],
+    nodeTable: CAPSNodeTable,
+    entityTables: CAPSEntityTable*
+  ): Graph = {
+    implicit val runtimeContext: RelationalRuntimeContext[DataFrameTable] = caps.basicRuntimeContext()
     val allTables = nodeTable +: entityTables
     val schema = maybeSchema.getOrElse(allTables.map(_.schema).reduce[Schema](_ ++ _).asCaps)
     new CAPSScanGraph(allTables, schema, tags)
   }
 
   def create(records: CypherRecords, schema: CAPSSchema, tags: Set[Int] = Set(0)): Graph = {
+    implicit val runtimeContext: RelationalRuntimeContext[DataFrameTable] = caps.basicRuntimeContext()
     val capsRecords = records.asCaps
     SingleTableGraph(capsRecords, schema, tags)
   }

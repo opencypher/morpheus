@@ -35,10 +35,11 @@ import org.opencypher.okapi.api.table.CypherRecords
 import org.opencypher.okapi.api.value.CypherValue.CypherMap
 import org.opencypher.okapi.impl.exception.UnsupportedOperationException
 import org.opencypher.okapi.impl.graph.CypherCatalog
-import org.opencypher.okapi.relational.api.graph.RelationalCypherSession
-import org.opencypher.okapi.relational.api.table.RelationalCypherRecordsFactory
+import org.opencypher.okapi.relational.api.graph.{RelationalCypherGraph, RelationalCypherSession}
+import org.opencypher.okapi.relational.api.physical.RelationalRuntimeContext
 import org.opencypher.spark.api.io._
-import org.opencypher.spark.impl.graph.CAPSGraph
+import org.opencypher.spark.impl.CAPSConverters._
+import org.opencypher.spark.impl.graph.CAPSGraphFactory
 import org.opencypher.spark.impl.table.SparkFlatRelationalTable.DataFrameTable
 import org.opencypher.spark.impl.{CAPSRecords, CAPSRecordsFactory, CAPSSessionImpl}
 
@@ -46,13 +47,29 @@ import scala.reflect.runtime.universe._
 
 trait CAPSSession extends RelationalCypherSession[DataFrameTable] {
 
+  protected implicit val caps: CAPSSession = this
+
   override lazy val catalog: CypherCatalog = new CypherCatalog
 
   def sql(query: String): CypherRecords
 
   def sparkSession: SparkSession
 
+  private def graphAt(qgn: QualifiedGraphName): Option[RelationalCypherGraph[DataFrameTable]] = {
+    if (catalog.graphNames.contains(qgn)) {
+      Some(catalog.graph(qgn).asCaps)
+    }
+    else {
+      None
+    }
+  }
+
+  private[spark] def basicRuntimeContext(parameters: CypherMap = CypherMap.empty): RelationalRuntimeContext[DataFrameTable] =
+    RelationalRuntimeContext(graphAt, parameters)
+
   override val records: CAPSRecordsFactory = CAPSRecordsFactory()
+
+  override val graphs: CAPSGraphFactory = CAPSGraphFactory()
 
   /**
     * Reads a graph from sequences of nodes and relationships.
@@ -67,8 +84,7 @@ trait CAPSSession extends RelationalCypherSession[DataFrameTable] {
     nodes: Seq[N],
     relationships: Seq[R] = Seq.empty
   ): PropertyGraph = {
-    implicit val session: CAPSSession = this
-    CAPSGraph.create(CAPSNodeTable(nodes), CAPSRelationshipTable(relationships))
+    graphs.create(CAPSNodeTable(nodes), CAPSRelationshipTable(relationships))
   }
 
   /**
@@ -79,7 +95,7 @@ trait CAPSSession extends RelationalCypherSession[DataFrameTable] {
     * @return property graph
     */
   def readFrom(nodeTable: CAPSNodeTable, entityTables: CAPSEntityTable*): PropertyGraph = {
-    CAPSGraph.create(nodeTable, entityTables: _ *)(this)
+    graphs.create(nodeTable, entityTables: _ *)
   }
 
   /**
@@ -91,11 +107,11 @@ trait CAPSSession extends RelationalCypherSession[DataFrameTable] {
     * @return property graph
     */
   def readFrom(tags: Set[Int], nodeTable: CAPSNodeTable, entityTables: CAPSEntityTable*): PropertyGraph = {
-    CAPSGraph.create(tags, None, nodeTable, entityTables: _*)(this)
+    graphs.create(tags, None, nodeTable, entityTables: _*)
   }
 
   // Store empty graph in catalog, so operators that start with an empty graph can refer to its QGN
-  catalog.store(emptyGraphQgn, CAPSGraph.empty(this))
+  catalog.store(emptyGraphQgn, graphs.empty)
 }
 
 object CAPSSession extends Serializable {

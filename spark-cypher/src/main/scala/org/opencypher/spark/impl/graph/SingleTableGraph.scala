@@ -32,6 +32,7 @@ import org.opencypher.okapi.ir.api.expr._
 import org.opencypher.okapi.relational.api.graph.RelationalCypherGraph
 import org.opencypher.okapi.relational.api.physical.RelationalRuntimeContext
 import org.opencypher.okapi.relational.api.schema.RelationalSchema._
+import org.opencypher.okapi.relational.api.table.RelationalCypherRecords
 import org.opencypher.okapi.relational.impl.operators.{ExtractEntities, Start}
 import org.opencypher.spark.api.CAPSSession
 import org.opencypher.spark.impl.CAPSRecords
@@ -44,7 +45,7 @@ import org.opencypher.spark.impl.table.SparkFlatRelationalTable.DataFrameTable
   * the constructed entities.
   */
 case class SingleTableGraph(
-  baseTable: CAPSRecords,
+  baseTable: RelationalCypherRecords[DataFrameTable],
   override val schema: Schema,
   override val tags: Set[Int]
 )(implicit val session: CAPSSession, context: RelationalRuntimeContext[DataFrameTable])
@@ -58,10 +59,7 @@ case class SingleTableGraph(
 
   def show(): Unit = baseTable.show
 
-  override def cache(): SingleTableGraph = map(_.cache())
-
-  private def map(f: CAPSRecords => CAPSRecords) =
-    SingleTableGraph(f(baseTable), schema, tags)
+  override def tables: Seq[DataFrameTable] = Seq(baseTable.table)
 
   override def nodes(name: String, nodeCypherType: CTNode, exactLabelMatch: Boolean = false): CAPSRecords = {
     if (exactLabelMatch) {
@@ -86,7 +84,4 @@ case class SingleTableGraph(
 
     session.records.from(extractionOp.header, extractionOp.table)
   }
-
-
-
 }

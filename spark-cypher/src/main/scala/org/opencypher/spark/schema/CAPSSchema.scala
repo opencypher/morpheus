@@ -47,6 +47,7 @@ object CAPSSchema {
       schema match {
         case s: CAPSSchema => s
         case s: Schema =>
+          // TODO: inline and simplify
           val combosByLabel = s.foldAndProduce(Map.empty[String, Set[Set[String]]])(
             (set, combos, _) => set + combos,
             (combos, _) => Set(combos))

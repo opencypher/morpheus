@@ -93,13 +93,21 @@ object Tags {
 
   }
 
-
   implicit class ExprTagging(val expr: Expr) extends AnyVal {
 
+    private def caseFor(from: Int, to: Int): (Equals, Expr) =
+      Equals(getTag, IntegerLit(from.toLong)(CTInteger))(CTBoolean) -> setTag(to)
+
+
+    def replaceTags(replacements: Map[Int, Int]): Expr = {
+      val cases = replacements.foldLeft(IndexedSeq.empty[(Equals, Expr)]) {
+        case (currentSeq, (from, to)) => currentSeq :+ caseFor(from, to)
+      }
+      CaseExpr(cases, default = Some(expr))(CTInteger)
+    }
+
     def replaceTag(from: Int, to: Int): Expr = {
-      CaseExpr(
-        IndexedSeq(Equals(getTag, IntegerLit(from.toLong)(CTInteger))(CTBoolean) -> setTag(to)),
-        default = Some(expr))(CTInteger)
+      CaseExpr(IndexedSeq(caseFor(from, to)), default = Some(expr))(CTInteger)
     }
 
     def setTag(tag: Int): Expr = {

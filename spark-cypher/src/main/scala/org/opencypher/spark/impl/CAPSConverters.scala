@@ -26,10 +26,12 @@
  */
 package org.opencypher.spark.impl
 
-import org.opencypher.okapi.api.graph.{CypherQueryPlans, CypherResult, CypherSession, PropertyGraph}
+import org.opencypher.okapi.api.graph.{CypherSession, PropertyGraph}
 import org.opencypher.okapi.api.table.CypherRecords
 import org.opencypher.okapi.impl.exception.UnsupportedOperationException
+import org.opencypher.okapi.relational.api.graph.RelationalCypherGraph
 import org.opencypher.spark.api.CAPSSession
+import org.opencypher.spark.impl.table.SparkFlatRelationalTable.DataFrameTable
 
 object CAPSConverters {
 
@@ -41,16 +43,11 @@ object CAPSConverters {
   }
 
   implicit class RichPropertyGraph(val graph: PropertyGraph) extends AnyVal {
-    def asCaps: CAPSGraph = graph match {
-      case caps: CAPSGraph => caps
+    def asCaps: RelationalCypherGraph[DataFrameTable] = graph.asInstanceOf[RelationalCypherGraph[_]] match {
+      // We know what we did... the alternatives were worse.
+      case caps: RelationalCypherGraph[_] if caps.tables.forall(_.isInstanceOf[DataFrameTable]) =>
+        caps.asInstanceOf[RelationalCypherGraph[DataFrameTable]]
       case _ => throw UnsupportedOperationException(s"can only handle CAPS graphs, got $graph")
-    }
-  }
-
-  implicit class RichCypherResult(val result: CypherResult) extends AnyVal {
-    def asCaps: CAPSResult = result match {
-      case caps: CAPSResult => caps
-      case _ => throw UnsupportedOperationException(s"can only handle CAPS result, got $result")
     }
   }
 

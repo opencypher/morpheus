@@ -32,32 +32,25 @@ import org.opencypher.okapi.ir.api.expr.Var
 import org.opencypher.okapi.relational.api.graph.RelationalCypherGraph
 import org.opencypher.okapi.relational.api.physical.RelationalRuntimeContext
 import org.opencypher.okapi.relational.api.schema.RelationalSchema._
-import org.opencypher.okapi.relational.api.tagging.TagSupport.computeRetaggings
-import org.opencypher.okapi.relational.impl.operators.{Distinct, ExtractEntities, Start, TabularUnionAll}
+import org.opencypher.okapi.relational.impl.operators._
+import org.opencypher.okapi.relational.impl.physical.RetagVariable
 import org.opencypher.spark.api.CAPSSession
 import org.opencypher.spark.impl.CAPSRecords
 import org.opencypher.spark.impl.table.SparkFlatRelationalTable.DataFrameTable
 
-object UnionGraph {
-  def apply(graphs: RelationalCypherGraph[DataFrameTable]*)(implicit session: CAPSSession): UnionGraph = {
-    UnionGraph(computeRetaggings(graphs.map(g => g -> g.tags).toMap))
-  }
-}
-
 // TODO: This should be a planned tree of physical operators instead of a graph
-final case class UnionGraph(
-  graphsToReplacements: Map[RelationalCypherGraph[DataFrameTable], Map[Int, Int]]
-)
-  (
-    implicit override val session: CAPSSession,
-    context: RelationalRuntimeContext[DataFrameTable]
-  ) extends RelationalCypherGraph[DataFrameTable] {
+final case class UnionGraph(graphsToReplacements: Map[RelationalCypherGraph[DataFrameTable], Map[Int, Int]])(
+  implicit override val session: CAPSSession,
+  context: RelationalRuntimeContext[DataFrameTable]
+) extends RelationalCypherGraph[DataFrameTable] {
 
   override type Records = CAPSRecords
 
   override type Session = CAPSSession
 
   require(graphsToReplacements.nonEmpty, "Union requires at least one graph")
+
+  override def tables: Seq[DataFrameTable] = graphsToReplacements.keys.flatMap(_.tables).toSeq
 
   override lazy val tags: Set[Int] = graphsToReplacements.values.flatMap(_.values).toSet
 
@@ -71,18 +64,14 @@ final case class UnionGraph(
     } else {
       val node = Var(name)(nodeCypherType)
       val targetHeader = schema.headerForNode(node)
-      val nodeOps = graphsToReplacements.keys
+      val nodeOps: Iterable[RelationalOperator[DataFrameTable]] = graphsToReplacements.keys
         .filter(nodeCypherType.labels.isEmpty || _.schema.labels.intersect(nodeCypherType.labels).nonEmpty)
         .map {
           graph =>
             val nodeScan = graph.nodes(name, nodeCypherType)
-            val replacements = graphsToReplacements(graph)
-
-            val retaggedTable = nodeScan.header.idColumns(node).foldLeft(nodeScan.table) {
-              case (currentTable, idColumn) =>
-                currentTable.retagColumn(replacements, idColumn)
-            }
-            ExtractEntities(Start(session.records.from(nodeScan.header, retaggedTable)), targetHeader, Set(node))
+            val startOp = Start(session.records.from(nodeScan.header, nodeScan.table))
+            val retagOp = RetagVariable(startOp, node, graphsToReplacements(graph))
+            ExtractEntities(retagOp, targetHeader, Set(node))
         }
 
       val distinctOp = Distinct(nodeOps.reduce(TabularUnionAll(_, _)), Set(node))
@@ -94,27 +83,18 @@ final case class UnionGraph(
   override def relationships(name: String, relCypherType: CTRelationship): CAPSRecords = {
     val rel = Var(name)(relCypherType)
     val targetHeader = schema.headerForRelationship(rel)
-    val relOps = graphsToReplacements.keys
+    val relOps: Iterable[RelationalOperator[DataFrameTable]] = graphsToReplacements.keys
       .filter(relCypherType.types.isEmpty || _.schema.relationshipTypes.intersect(relCypherType.types).nonEmpty)
       .map { graph =>
         val relScan = graph.relationships(name, relCypherType)
-        val replacements = graphsToReplacements(graph)
-
-        val retaggedTable = relScan.header.idColumns(rel).foldLeft(relScan.table) {
-          case (currentTable, idColumn) =>
-            currentTable.retagColumn(replacements, idColumn)
-        }
-        ExtractEntities(Start(session.records.from(relScan.header, retaggedTable)), targetHeader, Set(rel))
+        val startOp = Start(session.records.from(relScan.header, relScan.table))
+        val retagOp = RetagVariable(startOp, rel, graphsToReplacements(graph))
+        ExtractEntities(retagOp, targetHeader, Set(rel))
       }
 
     val distinctOp = Distinct(relOps.reduce(TabularUnionAll(_, _)), Set(rel))
 
     session.records.from(distinctOp.header, distinctOp.table)
-  }
-
-  override def cache(): UnionGraph = {
-    graphsToReplacements.keys.foreach(_.cache())
-    this
   }
 
   override def toString = s"CAPSUnionGraph(graphs=[${graphsToReplacements.mkString(",")}])"

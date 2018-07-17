@@ -58,4 +58,3 @@ case class RelationalRuntimeContext[T <: FlatRelationalTable[T]](
     case Some(g) => g
   }
 }
-
