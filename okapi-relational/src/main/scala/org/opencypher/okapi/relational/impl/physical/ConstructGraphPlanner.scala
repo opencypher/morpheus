@@ -34,7 +34,7 @@ import org.opencypher.okapi.ir.api.{PropertyKey, RelType}
 import org.opencypher.okapi.logical.impl._
 import org.opencypher.okapi.relational.api.graph.RelationalCypherGraph
 import org.opencypher.okapi.relational.api.physical.{RelationalPlannerContext, RelationalRuntimeContext}
-import org.opencypher.okapi.relational.api.table.FlatRelationalTable
+import org.opencypher.okapi.relational.api.table.{FlatRelationalTable, RelationalCypherRecordsFactory}
 import org.opencypher.okapi.relational.api.tagging.TagSupport.computeRetaggings
 import org.opencypher.okapi.relational.api.tagging.Tags
 import org.opencypher.okapi.relational.api.tagging.Tags._
@@ -248,26 +248,26 @@ final case class ConstructGraph[T <: FlatRelationalTable[T]](
   ): Map[Expr, Expr] = {
     val ConstructedRelationship(rel, source, target, typOpt, baseRelOpt) = toConstruct
     val header = inOp.header
-    val inData = inOp.table.df
+    val inTable = inOp.table
 
     // id needs to be generated
     val idTuple = rel -> generateId(columnIdPartition, numberOfColumnPartitions).setTag(newEntityTag)
 
     // source and target are present: just copy
     val sourceTuple = {
-      val dfColumn = inData.col(header.column(source))
-      StartNode(rel)(CTInteger) -> dfColumn
+//      val dfColumn = inTable.col(header.column(source))
+      StartNode(rel)(CTInteger) -> StartNode(rel)(CTInteger)
     }
     val targetTuple = {
-      val dfColumn = inData.col(header.column(target))
-      EndNode(rel)(CTInteger) -> dfColumn
+//      val dfColumn = inTable.col(header.column(target))
+      EndNode(rel)(CTInteger) -> EndNode(rel)(CTInteger)
     }
 
-    val typeTuple: Map[Expr, Column] = {
+    val typeTuple: Map[Expr, Expr] = {
       typOpt match {
         // type is set
         case Some(t) =>
-          Map(HasType(rel, RelType(t))(CTBoolean) -> functions.lit(true))
+          Map(HasType(rel, RelType(t))(CTBoolean) -> TrueLit)
         case None =>
           // When no type is present, it needs to be a copy of a base relationship
           copyExpressions(inOp, rel)(_.typesFor(baseRelOpt.get))
@@ -283,47 +283,46 @@ final case class ConstructGraph[T <: FlatRelationalTable[T]](
     propertyTuples ++ typeTuple + idTuple + sourceTuple + targetTuple
   }
 
-  private def copyExpressions[T <: Expr](inOp: RelationalOperator[T], targetVar: Var)
-    (extractor: RecordHeader => Set[T]): Map[Expr, Column] = {
+  private def copyExpressions[E <: Expr](inOp: RelationalOperator[T], targetVar: Var)
+    (extractor: RecordHeader => Set[E]): Map[Expr, Expr] = {
     val origExprs = extractor(inOp.header)
     val copyExprs = origExprs.map(_.withOwner(targetVar))
-    val dfColumns = origExprs.map(inOp.header.column).map(inOp.table.df.col)
-    copyExprs.zip(dfColumns).toMap
+//    val dfColumns = origExprs.map(inOp.header.column).map(inOp.table.df.col)
+    copyExprs.zip(origExprs).toMap
   }
 }
+
 case class RetagVariable[T <: FlatRelationalTable[T]](in: RelationalOperator[T], v: Var, replacements: Map[Int, Int]) extends RelationalOperator[T] {
 
   override lazy val _table: T = {
     val columnsToUpdate = header.idColumns(v)
     // TODO: implement efficiently for multiple columns
-    columnsToUpdate.foldLeft(in.table.df) { case (currentDf, columnName) =>
-      currentDf.safeReplaceTags(columnName, replacements)
+    columnsToUpdate.foldLeft(in.table) { case (currentTable, columnName) =>
+      currentTable.retagColumn(columnName, replacements)
     }
   }
 }
 
 final case class AddEntitiesToRecords[T <: FlatRelationalTable[T]](
   in: RelationalOperator[T],
-  columnsToAdd: Map[Expr, Expr]
+  exprsToAdd: Map[Expr, Expr]
 ) extends RelationalOperator[T] {
 
-  override lazy val header: RecordHeader = in.header.withExprs(columnsToAdd.keySet)
+  override lazy val header: RecordHeader = in.header.withExprs(exprsToAdd.keySet)
 
   override lazy val _table: T = {
-    val dfWithColumns = columnsToAdd.foldLeft(in.table.df) {
-      case (acc, (expr, col)) => acc.safeAddColumn(header.column(expr), col)
+    exprsToAdd.foldLeft(in.table) {
+      case (acc, (toAdd, value)) => acc.withColumn(header.column(toAdd), value)
     }
-    dfWithColumns.setNullability(columnsToAdd.keys.map(e => header.column(e) -> e.cypherType).toMap)
   }
-
 }
 
 final case class ConstructProperty[T <: FlatRelationalTable[T]](in: RelationalOperator[T], v: Var, propertyExpr: Property, valueExpr: Expr)
   (implicit context: RelationalRuntimeContext[T]) extends RelationalOperator[T] {
 
-  private lazy val existingPropertyExpressionsForKey = in.header.propertiesFor(v).collect({
+  private lazy val existingPropertyExpressionsForKey = in.header.propertiesFor(v).collect {
     case p@Property(_, PropertyKey(name)) if name == propertyExpr.key.name => p
-  })
+  }
 
   override lazy val header: RecordHeader = {
     val inHeader = in.header
@@ -336,13 +335,8 @@ final case class ConstructProperty[T <: FlatRelationalTable[T]](in: RelationalOp
     val inHeader = in.header
     val inTable = in.table
 
-    val propertyValueColumn: Column = valueExpr.asSparkSQLExpr(inHeader, inTable.df, context.parameters)
 
-
-    val dataWithExistingRemoved = existingPropertyExpressionsForKey.foldLeft(inTable.df) {
-      case (acc, toRemove) => acc.safeDropColumn(inHeader.column(toRemove))
-    }
-
-    dataWithExistingRemoved.safeAddColumn(header.column(propertyExpr), propertyValueColumn)
+    val dataWithExistingRemoved = inTable.drop(existingPropertyExpressionsForKey.map(inHeader.column).toSeq: _*)
+    dataWithExistingRemoved.withColumn(header.column(propertyExpr), valueExpr, valueExpr.cypherType.isNullable)
   }
 }

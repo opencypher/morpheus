@@ -60,6 +60,7 @@ case class RecordHeader(exprToColumn: Map[Expr, String]) {
 
   def isEmpty: Boolean = exprToColumn.isEmpty
 
+  // TODO: should we verify that if the expr exists, that it has the same type and nullability
   def contains(expr: Expr): Boolean = expr match {
     case AliasExpr(_, alias) => contains(alias)
     case _ => exprToColumn.contains(expr)

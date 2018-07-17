@@ -104,7 +104,13 @@ object SparkFlatRelationalTable {
 
     override def withColumn(column: String, expr: Expr)
       (implicit header: RecordHeader, parameters: CypherMap): DataFrameTable = {
-      df.withColumn(column, expr.asSparkSQLExpr(header, df, parameters))
+      val withColumn = df.withColumn(column, expr.asSparkSQLExpr(header, df, parameters))
+
+      if (expr.cypherType.isNullable) {
+        withColumn
+      } else {
+        withColumn.setNonNullable(column)
+      }
     }
 
     override def drop(cols: String*): DataFrameTable = {
@@ -253,7 +259,7 @@ object SparkFlatRelationalTable {
 
     override def withFalseColumn(col: String): DataFrameTable = df.withColumn(col, FALSE_LIT)
 
-    override def retagColumn(replacements: Map[Int, Int], column: String): DataFrameTable = {
+    override def retagColumn(column: String, replacements: Map[Int, Int]): DataFrameTable = {
       df.safeReplaceTags(column, replacements)
     }
 

@@ -223,6 +223,7 @@ final case class Add[T <: FlatRelationalTable[T]](in: RelationalOperator[T], exp
   }
 
   override lazy val _table: T = {
+    // TODO check for equal nullability setting
     if (in.header.contains(expr)) {
       in.table
     } else {

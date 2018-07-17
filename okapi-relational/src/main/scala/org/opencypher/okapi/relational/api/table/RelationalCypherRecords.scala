@@ -27,7 +27,6 @@
 package org.opencypher.okapi.relational.api.table
 
 import org.opencypher.okapi.api.table.CypherRecords
-import org.opencypher.okapi.relational.api.graph.RelationalCypherGraph
 import org.opencypher.okapi.relational.api.io.EntityTable
 import org.opencypher.okapi.relational.impl.table.RecordHeader
 
