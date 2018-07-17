@@ -29,7 +29,6 @@ package org.opencypher.spark.examples
 class UpdateExampleTest extends ExampleTest {
   it("should produce the correct output") {
     validate(UpdateExample.main(Array.empty),
-      s"""|CAPSNode(1, Set(Person, Adult), Map(name -> Bob, age -> 20, canVote -> true))
-          |""".stripMargin)
+      getClass.getResource("/example_outputs/UpdateExample.out").toURI)
   }
 }
