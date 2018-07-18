@@ -28,16 +28,9 @@ package org.opencypher.spark.examples
 
 class CypherSQLRoundtripExampleTest extends ExampleTest {
   it("should produce the correct output") {
-    validate(CypherSQLRoundtripExample.main(Array.empty),
-      s"""|╔═════════╤═════╤═════════════════╗
-          |║ c.name  │ age │ p.title         ║
-          |╠═════════╪═════╪═════════════════╣
-          |║ 'Carol' │ 15  │ 'Jurassic Park' ║
-          |║ 'Alice' │ 10  │ '1984'          ║
-          |║ 'Carol' │ 15  │ 'Shakira'       ║
-          |║ 'Alice' │ 10  │ 'Terminator 2'  ║
-          |╚═════════╧═════╧═════════════════╝
-          |(4 rows)
-          |""".stripMargin)
+    validate(
+      CypherSQLRoundtripExample.main(Array.empty),
+      getClass.getResource("/example_outputs/CypherSQLRoundtripExample.out").toURI
+    )
   }
 }

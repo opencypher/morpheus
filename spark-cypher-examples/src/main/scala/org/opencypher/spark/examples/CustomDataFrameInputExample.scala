@@ -28,7 +28,7 @@
 package org.opencypher.spark.examples
 
 import org.apache.spark.sql.types._
-import org.apache.spark.sql.{DataFrame, Row}
+import org.apache.spark.sql.{DataFrame, Row, SparkSession}
 import org.opencypher.okapi.api.io.conversion.{NodeMapping, RelationshipMapping}
 import org.opencypher.spark.api.CAPSSession
 import org.opencypher.spark.api.io.{CAPSNodeTable, CAPSRelationshipTable}
@@ -44,8 +44,12 @@ object CustomDataFrameInputExample extends ConsoleApp {
 
   // 1) Create CAPS session and retrieve Spark session
   // tag::create-session[]
-  implicit val session: CAPSSession = CAPSSession.local()
-  val spark = session.sparkSession
+  val spark: SparkSession = SparkSession
+    .builder()
+    .master("local[*]")
+    .getOrCreate()
+
+  implicit val session: CAPSSession = CAPSSession.create(spark)
   // end::create-session[]
 
   // 2) Generate some DataFrames that we'd like to interpret as a property graph.

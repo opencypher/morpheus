@@ -30,15 +30,6 @@ class MultipleGraphExampleTest extends ExampleTest {
 
   it("should produce the correct output") {
     validate(MultipleGraphExample.main(Array.empty),
-      s"""|╔═════════════════╤═══════╗
-          |║ recommendation  │ for   ║
-          |╠═════════════════╪═══════╣
-          |║ '1984'          │ 'Bob' ║
-          |║ 'Jurassic Park' │ 'Bob' ║
-          |║ 'Shakira'       │ 'Bob' ║
-          |║ 'Terminator 2'  │ 'Bob' ║
-          |╚═════════════════╧═══════╝
-          |(4 rows)
-          |""".stripMargin)
+      getClass.getResource("/example_outputs/MultipleGraphExample.out").toURI)
   }
 }

@@ -28,8 +28,9 @@ package org.opencypher.spark.examples
 
 class CustomDataFrameInputExampleTest extends ExampleTest {
     it("should produce the correct output") {
-      validate(CustomDataFrameInputExample.main(Array.empty),
-        s"""|Set(Alice, Bob, Eve)
-            |""".stripMargin)
+      validate(
+        CustomDataFrameInputExample.main(Array.empty),
+        getClass.getResource("/example_outputs/CustomDataFrameInputExample.out").toURI
+      )
     }
 }
