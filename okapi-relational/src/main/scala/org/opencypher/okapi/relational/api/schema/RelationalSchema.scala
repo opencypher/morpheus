@@ -37,6 +37,14 @@ object RelationalSchema {
 
   implicit class SchemaOps(val schema: Schema) {
 
+    def headerForEntity(entity: Var): RecordHeader = {
+      entity.cypherType match {
+        case _: CTNode => schema.headerForNode(entity)
+        case _: CTRelationship => schema.headerForRelationship(entity)
+        case other => throw IllegalArgumentException("Entity", other)
+      }
+    }
+
     def headerForNode(node: Var): RecordHeader = {
       val labels: Set[String] = node.cypherType match {
         case CTNode(l, _) => l

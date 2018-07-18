@@ -2,11 +2,12 @@ package org.opencypher.okapi.relational.api.graph
 
 import org.opencypher.okapi.api.graph.{PropertyGraph, QualifiedGraphName}
 import org.opencypher.okapi.api.schema.Schema
-import org.opencypher.okapi.api.types.{CTNode, CTRelationship}
+import org.opencypher.okapi.api.types.{CTNode, CTRelationship, CypherType}
 import org.opencypher.okapi.impl.exception.UnsupportedOperationException
 import org.opencypher.okapi.relational.api.physical.RelationalRuntimeContext
 import org.opencypher.okapi.relational.api.table.{FlatRelationalTable, RelationalCypherRecords}
 import org.opencypher.okapi.relational.api.tagging.TagSupport._
+import org.opencypher.okapi.relational.impl.operators.RelationalOperator
 
 trait RelationalCypherGraphFactory[T <: FlatRelationalTable[T]] {
 
@@ -42,6 +43,8 @@ trait RelationalCypherGraph[T <: FlatRelationalTable[T]] extends PropertyGraph {
   }
 
   def tables: Seq[T]
+
+  private[opencypher] def scanOperator(entityType: CypherType, exactLabelMatch: Boolean): RelationalOperator[T]
 
   override def nodes(name: String, nodeCypherType: CTNode = CTNode, exactLabelMatch: Boolean = false): Records
 

@@ -27,22 +27,19 @@
 package org.opencypher.spark.impl.graph
 
 import org.apache.spark.sql.functions
-import org.opencypher.okapi.api.schema._
-import org.opencypher.okapi.api.types.{CTBoolean, CTNode, CTRelationship}
+import org.opencypher.okapi.api.types.{CTNode, CTRelationship, CypherType}
 import org.opencypher.okapi.impl.exception.IllegalArgumentException
-import org.opencypher.okapi.ir.api.Label
 import org.opencypher.okapi.ir.api.expr._
 import org.opencypher.okapi.relational.api.graph.RelationalCypherGraph
 import org.opencypher.okapi.relational.api.physical.RelationalRuntimeContext
 import org.opencypher.okapi.relational.api.schema.RelationalSchema._
-import org.opencypher.okapi.relational.impl.operators
+import org.opencypher.okapi.relational.impl.operators.RelationalOperator._
 import org.opencypher.okapi.relational.impl.operators._
 import org.opencypher.spark.api.CAPSSession
 import org.opencypher.spark.api.io.{CAPSEntityTable, CAPSNodeTable, CAPSRelationshipTable}
 import org.opencypher.spark.impl.CAPSRecords
 import org.opencypher.spark.impl.table.SparkFlatRelationalTable.DataFrameTable
 import org.opencypher.spark.schema.CAPSSchema
-import RelationalOperator._
 
 class CAPSScanGraph(val scans: Seq[CAPSEntityTable], val schema: CAPSSchema, val tags: Set[Int])
   (implicit val session: CAPSSession)
@@ -61,74 +58,63 @@ class CAPSScanGraph(val scans: Seq[CAPSEntityTable], val schema: CAPSSchema, val
 
   override def tables: Seq[DataFrameTable] = scans.map(_.table)
 
-  // TODO: Use just one method for all entity scans
-  override def nodes(name: String, nodeCypherType: CTNode, exactLabelMatch: Boolean = false): CAPSRecords = {
-    val node = Var(name)(nodeCypherType)
-    val selectedTables: Seq[CAPSNodeTable] = if (exactLabelMatch) {
-      nodeTables.filter(_.entityType == nodeCypherType)
-    } else {
-      nodeTables.filter(_.entityType.subTypeOf(nodeCypherType).isTrue)
+  // TODO: Express `exactLabelMatch` with type
+  private[opencypher] override def scanOperator(entityType: CypherType, exactLabelMatch: Boolean): RelationalOperator[DataFrameTable] = {
+    val entity = Var("")(entityType)
+    val selectedScans = scansForType(entityType, exactLabelMatch)
+    val targetEntityHeader = schema.headerForEntity(entity)
+    val entityWithCorrectLabels = targetEntityHeader.nodeEntities.head
+    val alignedEntityTableOps = selectedScans.map { scan =>
+      scan.alignWith(entityWithCorrectLabels, targetEntityHeader)
     }
-    val schema = selectedTables.map(_.schema).foldLeft(Schema.empty)(_ ++ _)
-    val targetNodeHeader = schema.headerForNode(node)
-    val nodeWithCorrectLabels = targetNodeHeader.nodeEntities.head
+    alignedEntityTableOps.reduce(TabularUnionAll(_, _))
+  }
 
-    val alignedNodeTableOps = selectedTables.map { table =>
-      Start(table).alignWith(nodeWithCorrectLabels, targetNodeHeader)
-    }
+  // TODO: Express `exactLabelMatch` with type
+  private def scansForType(ct: CypherType, exactLabelMatch: Boolean): Seq[RelationalOperator[DataFrameTable]] = {
+    ct match {
+      case _: CTNode =>
+        val scans = if (exactLabelMatch) {
+          nodeTables.filter(_.entityType == ct)
+        } else {
+          nodeTables.filter(_.entityType.subTypeOf(ct).isTrue)
+        }
+        scans.map(scan => Start(scan.records))
+      case CTRelationship(scanTypes, _) =>
+        val scans = relTables.filter(relTable => scanTypes.isEmpty || scanTypes.exists(relTable.entityType.types.contains))
+        // Filter rows that are relevant for the requested relationship type
+        scans.map { scan =>
+          val scanHeader = scan.header
+          val typeExprs = scanHeader
+            .typesFor(Var("")(ct))
+            .filter(relType => scanTypes.contains(relType.relType.name))
+            .toSeq
 
-    if (alignedNodeTableOps.isEmpty) {
-      session.records.empty(targetNodeHeader)
-    } else {
-      val unionAllOp = alignedNodeTableOps.reduce(TabularUnionAll(_, _))
-      session.records.from(unionAllOp.header, unionAllOp.table)
+          typeExprs match {
+            case Nil => Start(scan.records) // no explicit type column
+            case other => // multiple type columns
+              val relTypeFilter = other
+                .map(typeExpr => scan.table.df.col(scanHeader.column(typeExpr)) === functions.lit(true))
+                .reduce(_ || _)
+              Start(session.records.from(scanHeader, scan.table.df.filter(relTypeFilter)))
+          }
+        }
+      case other => throw IllegalArgumentException(s"Scan on $other")
     }
   }
 
-  // TODO: Use just one method for all entity scans
+  override def nodes(name: String, nodeCypherType: CTNode, exactLabelMatch: Boolean = false): CAPSRecords = {
+    val scan = scanOperator(nodeCypherType, exactLabelMatch)
+    val namedScan = scan.assignScanName(name)
+    session.records.from(namedScan.header, namedScan.table)
+  }
+
   override def relationships(name: String, relCypherType: CTRelationship): CAPSRecords = {
-    val rel = Var(name)(relCypherType)
-    val scanTypes = relCypherType.types
-    val selectedScans = relTables.filter(relTable => scanTypes.isEmpty || scanTypes.exists(relTable.entityType.types.contains))
-    val schema = selectedScans.map(_.schema).foldLeft(Schema.empty)(_ ++ _)
-    val targetRelHeader = schema.headerForRelationship(rel)
-    val relWithCorrectRelTypes = targetRelHeader.relationshipEntities.head
-
-    val scanRecords = selectedScans.map(_.records)
-
-    // Filter rows that are relevant for the requested relationship type
-    val filteredRecords = scanRecords
-      .map { records =>
-        val scanHeader = records.header
-        val typeExprs = scanHeader
-          .typesFor(Var("")(relCypherType))
-          .filter(relType => relCypherType.types.contains(relType.relType.name))
-          .toSeq
-
-        typeExprs match {
-          // no explicit type column
-          case Nil =>
-            records
-          // multiple type columns
-          case other =>
-            val relTypeFilter = other
-              .map(typeExpr => records.df.col(scanHeader.column(typeExpr)) === functions.lit(true))
-              .reduce(_ || _)
-            session.records.from(scanHeader, records.df.filter(relTypeFilter))
-        }
-      }
-
-    val alignedRelTableOps = filteredRecords.map { table =>
-      Start(table).alignWith(relWithCorrectRelTypes, targetRelHeader)
-    }
-
-    if (alignedRelTableOps.isEmpty) {
-      session.records.empty(targetRelHeader)
-    } else {
-      val unionAllOp = alignedRelTableOps.reduce(TabularUnionAll(_, _))
-      session.records.from(unionAllOp.header, unionAllOp.table)
-    }
+    val scan = scanOperator(relCypherType, exactLabelMatch = false)
+    val namedScan = scan.assignScanName(name)
+    session.records.from(namedScan.header, namedScan.table)
   }
 
   override def toString = s"CAPSScanGraph(${scans.map(_.entityType).mkString(", ")})"
+
 }

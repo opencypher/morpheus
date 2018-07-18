@@ -317,6 +317,15 @@ object RelationalOperator {
 
   implicit class RelationalOperatorOps[T <: FlatRelationalTable[T]](val op: RelationalOperator[T]) extends AnyVal {
 
+    // Only works with single entity tables
+    def assignScanName(name: String): RelationalOperator[T] = {
+      val entities = op.header.entityVars
+      require(entities.size == 1, s"Only works with single entity tables, has entities ${entities.mkString(", ")}")
+      val scanVar = entities.head
+      val namedScanVar = Var(name)(scanVar.cypherType)
+      Drop(Alias(op, Seq(scanVar as namedScanVar)), Set(scanVar))
+    }
+
     // TODO: entity needs to contain all labels/relTypes: all case needs to be explicitly expanded with the schema
     def alignWith(entity: Var, targetHeader: RecordHeader): RelationalOperator[T] = {
       require(op.header.entityVars.size == 1,
@@ -371,7 +380,7 @@ object RelationalOperator {
 
       import Expr._
       assert(targetHeader.expressions == withProperties.header.expressions,
-      s"Expected header expressions:\n\t${targetHeader.expressions.toSeq.sorted.mkString(", ")},\ngot\n\t${withProperties.header.expressions.toSeq.sorted.mkString(", ")}")
+        s"Expected header expressions:\n\t${targetHeader.expressions.toSeq.sorted.mkString(", ")},\ngot\n\t${withProperties.header.expressions.toSeq.sorted.mkString(", ")}")
       withProperties
     }
 
