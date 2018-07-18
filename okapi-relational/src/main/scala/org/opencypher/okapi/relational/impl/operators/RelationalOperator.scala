@@ -315,7 +315,7 @@ final case class ExtractEntities[T <: FlatRelationalTable[T]](
 ) extends RelationalOperator[T] {
 
   require(header.vars.size == 1)
-  require(extractionVars.subsetOf(in.header.vars))
+  require(extractionVars.subsetOf(in.header.vars), s"$extractionVars needs to be a subset of ${in.header.vars}")
 
   val targetVar: Var = header.entityVars.head
 
@@ -379,7 +379,7 @@ final case class ExtractEntities[T <: FlatRelationalTable[T]](
       case (currentHeader, expr) => currentHeader.withExpr(expr)
     }
 
-    table.extractEntities(groups)(inHeaderWithMissingExprs, context.parameters)
+    in.table.extractEntities(groups)(inHeaderWithMissingExprs, context.parameters)
   }
 }
 
