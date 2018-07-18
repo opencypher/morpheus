@@ -27,13 +27,13 @@
 package org.opencypher.spark.impl.graph
 
 import org.opencypher.okapi.api.schema.Schema
-import org.opencypher.okapi.api.types.{CTNode, CTRelationship}
+import org.opencypher.okapi.api.types.{CTNode, CTRelationship, CypherType}
 import org.opencypher.okapi.ir.api.expr._
 import org.opencypher.okapi.relational.api.graph.RelationalCypherGraph
 import org.opencypher.okapi.relational.api.physical.RelationalRuntimeContext
 import org.opencypher.okapi.relational.api.schema.RelationalSchema._
 import org.opencypher.okapi.relational.api.table.RelationalCypherRecords
-import org.opencypher.okapi.relational.impl.operators.{ExtractEntities, Start}
+import org.opencypher.okapi.relational.impl.operators.{ExtractEntities, RelationalOperator, Start, TabularUnionAll}
 import org.opencypher.spark.api.CAPSSession
 import org.opencypher.spark.impl.CAPSRecords
 import org.opencypher.spark.impl.table.SparkFlatRelationalTable.DataFrameTable
@@ -61,27 +61,14 @@ case class SingleTableGraph(
 
   override def tables: Seq[DataFrameTable] = Seq(baseTable.table)
 
-  override def nodes(name: String, nodeCypherType: CTNode, exactLabelMatch: Boolean = false): CAPSRecords = {
-    if (exactLabelMatch) {
-      ToRefactor.nodesWithExactLabels(this, name, nodeCypherType.labels)
-    } else {
-      val targetNode = Var(name)(nodeCypherType)
-      val nodeSchema = schema.forNode(nodeCypherType.labels)
-      val targetNodeHeader = nodeSchema.headerForNode(targetNode)
-      val extractionNodes: Set[Var] = header.nodesForType(nodeCypherType)
-      val extractionOp = ExtractEntities(Start(baseTable), targetNodeHeader, extractionNodes)
-
-      session.records.from(extractionOp.header, extractionOp.table)
-    }
+  override private[opencypher] def scanOperator(
+    entityType: CypherType,
+    exactLabelMatch: Boolean
+  ): RelationalOperator[DataFrameTable] = {
+    val entity = Var("")(entityType)
+    val targetEntityHeader = schema.headerForEntity(entity)
+    val extractionVars: Set[Var] = header.entitiesForType(entityType)
+    ExtractEntities(Start(baseTable), targetEntityHeader, extractionVars)
   }
 
-  override def relationships(name: String, relCypherType: CTRelationship): CAPSRecords = {
-    val targetRel = Var(name)(relCypherType)
-    val relSchema = schema.forRelationship(relCypherType)
-    val targetRelHeader = relSchema.headerForRelationship(targetRel)
-    val extractionRels: Set[Var] = header.relationshipsForType(relCypherType)
-    val extractionOp = ExtractEntities(Start(baseTable), targetRelHeader, extractionRels)
-
-    session.records.from(extractionOp.header, extractionOp.table)
-  }
 }

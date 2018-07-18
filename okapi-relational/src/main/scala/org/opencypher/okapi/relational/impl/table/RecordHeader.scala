@@ -26,7 +26,7 @@
  */
 package org.opencypher.okapi.relational.impl.table
 
-import org.opencypher.okapi.api.types.{CTNode, CTRelationship}
+import org.opencypher.okapi.api.types.{CTNode, CTRelationship, CypherType}
 import org.opencypher.okapi.impl.exception.IllegalArgumentException
 import org.opencypher.okapi.impl.util.TablePrinter
 import org.opencypher.okapi.ir.api.RelType
@@ -187,6 +187,14 @@ case class RecordHeader(exprToColumn: Map[Expr, String]) {
   def relationshipEntities: Set[Var] = {
     exprToColumn.keySet.collect {
       case v: Var if v.cypherType.subTypeOf(CTRelationship).isTrue => v
+    }
+  }
+
+  def entitiesForType(ct: CypherType): Set[Var] = {
+    ct match {
+      case n: CTNode => entitiesForType(n)
+      case r: CTRelationship => entitiesForType(r)
+      case other => throw IllegalArgumentException("Entity", other)
     }
   }
 

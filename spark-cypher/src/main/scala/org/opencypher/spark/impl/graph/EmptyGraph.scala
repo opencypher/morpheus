@@ -1,9 +1,8 @@
 package org.opencypher.spark.impl.graph
 
-import org.opencypher.okapi.api.types.{CTNode, CTRelationship}
-import org.opencypher.okapi.ir.api.expr.Var
+import org.opencypher.okapi.api.types.CypherType
 import org.opencypher.okapi.relational.api.graph.RelationalCypherGraph
-import org.opencypher.okapi.relational.impl.table.RecordHeader
+import org.opencypher.okapi.relational.impl.operators.{RelationalOperator, Start}
 import org.opencypher.spark.api.CAPSSession
 import org.opencypher.spark.impl.CAPSRecords
 import org.opencypher.spark.impl.table.SparkFlatRelationalTable.DataFrameTable
@@ -17,12 +16,6 @@ sealed case class EmptyGraph(implicit val caps: CAPSSession) extends RelationalC
 
   override val schema: CAPSSchema = CAPSSchema.empty
 
-  override def nodes(name: String, cypherType: CTNode, exactLabelMatch: Boolean = false): CAPSRecords =
-    caps.records.empty(RecordHeader.from(Var(name)(cypherType)))
-
-  override def relationships(name: String, cypherType: CTRelationship): CAPSRecords =
-    caps.records.empty(RecordHeader.from(Var(name)(cypherType)))
-
   override def session: CAPSSession = caps
 
   override def cache(): EmptyGraph = this
@@ -30,4 +23,11 @@ sealed case class EmptyGraph(implicit val caps: CAPSSession) extends RelationalC
   override def tables: Seq[DataFrameTable] = Seq.empty
 
   override def tags: Set[Int] = Set.empty
+
+  override private[opencypher] def scanOperator(
+    entityType: CypherType,
+    exactLabelMatch: Boolean
+  ): RelationalOperator[DataFrameTable] = {
+    Start(caps.records.empty())(session.basicRuntimeContext())
+  }
 }
