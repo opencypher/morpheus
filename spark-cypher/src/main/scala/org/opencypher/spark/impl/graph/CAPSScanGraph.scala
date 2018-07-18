@@ -28,17 +28,21 @@ package org.opencypher.spark.impl.graph
 
 import org.apache.spark.sql.functions
 import org.opencypher.okapi.api.schema._
-import org.opencypher.okapi.api.types.{CTNode, CTRelationship}
+import org.opencypher.okapi.api.types.{CTBoolean, CTNode, CTRelationship}
+import org.opencypher.okapi.impl.exception.IllegalArgumentException
+import org.opencypher.okapi.ir.api.Label
 import org.opencypher.okapi.ir.api.expr._
 import org.opencypher.okapi.relational.api.graph.RelationalCypherGraph
 import org.opencypher.okapi.relational.api.physical.RelationalRuntimeContext
 import org.opencypher.okapi.relational.api.schema.RelationalSchema._
-import org.opencypher.okapi.relational.impl.operators.{ExtractEntities, RelationalOperator, Start, TabularUnionAll}
+import org.opencypher.okapi.relational.impl.operators
+import org.opencypher.okapi.relational.impl.operators._
 import org.opencypher.spark.api.CAPSSession
 import org.opencypher.spark.api.io.{CAPSEntityTable, CAPSNodeTable, CAPSRelationshipTable}
 import org.opencypher.spark.impl.CAPSRecords
 import org.opencypher.spark.impl.table.SparkFlatRelationalTable.DataFrameTable
 import org.opencypher.spark.schema.CAPSSchema
+import RelationalOperator._
 
 class CAPSScanGraph(val scans: Seq[CAPSEntityTable], val schema: CAPSSchema, val tags: Set[Int])
   (implicit val session: CAPSSession)
@@ -67,12 +71,16 @@ class CAPSScanGraph(val scans: Seq[CAPSEntityTable], val schema: CAPSSchema, val
     }
     val schema = selectedTables.map(_.schema).foldLeft(Schema.empty)(_ ++ _)
     val targetNodeHeader = schema.headerForNode(node)
+    val nodeWithCorrectLabels = targetNodeHeader.nodeEntities.head
 
-    val nodeTablesAsStartOps: Seq[RelationalOperator[DataFrameTable]] = selectedTables.map(table => ExtractEntities(Start(table), targetNodeHeader, Set(node)))
-    if (nodeTablesAsStartOps.isEmpty) {
+    val alignedNodeTableOps = selectedTables.map { table =>
+      Start(table).alignWith(nodeWithCorrectLabels, targetNodeHeader)
+    }
+
+    if (alignedNodeTableOps.isEmpty) {
       session.records.empty(targetNodeHeader)
     } else {
-      val unionAllOp = nodeTablesAsStartOps.reduce(TabularUnionAll(_, _))
+      val unionAllOp = alignedNodeTableOps.reduce(TabularUnionAll(_, _))
       session.records.from(unionAllOp.header, unionAllOp.table)
     }
   }
@@ -84,6 +92,7 @@ class CAPSScanGraph(val scans: Seq[CAPSEntityTable], val schema: CAPSSchema, val
     val selectedScans = relTables.filter(relTable => scanTypes.isEmpty || scanTypes.exists(relTable.entityType.types.contains))
     val schema = selectedScans.map(_.schema).foldLeft(Schema.empty)(_ ++ _)
     val targetRelHeader = schema.headerForRelationship(rel)
+    val relWithCorrectRelTypes = targetRelHeader.relationshipEntities.head
 
     val scanRecords = selectedScans.map(_.records)
 
@@ -109,12 +118,14 @@ class CAPSScanGraph(val scans: Seq[CAPSEntityTable], val schema: CAPSSchema, val
         }
       }
 
-    val nodeTablesAsStartOps: Seq[RelationalOperator[DataFrameTable]] = filteredRecords.map(table => ExtractEntities(Start(table), targetRelHeader, Set(rel)))
+    val alignedRelTableOps = filteredRecords.map { table =>
+      Start(table).alignWith(relWithCorrectRelTypes, targetRelHeader)
+    }
 
-    if (nodeTablesAsStartOps.isEmpty) {
+    if (alignedRelTableOps.isEmpty) {
       session.records.empty(targetRelHeader)
     } else {
-      val unionAllOp = nodeTablesAsStartOps.reduce(TabularUnionAll(_, _))
+      val unionAllOp = alignedRelTableOps.reduce(TabularUnionAll(_, _))
       session.records.from(unionAllOp.header, unionAllOp.table)
     }
   }

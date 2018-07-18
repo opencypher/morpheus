@@ -4,15 +4,17 @@ import org.opencypher.okapi.api.graph.{CypherSession, QualifiedGraphName}
 import org.opencypher.okapi.api.types._
 import org.opencypher.okapi.api.value.CypherValue.CypherInteger
 import org.opencypher.okapi.impl.exception.{IllegalArgumentException, SchemaException, UnsupportedOperationException}
+import org.opencypher.okapi.ir.api.{Label, RelType}
 import org.opencypher.okapi.ir.api.block.{Asc, Desc, SortItem}
 import org.opencypher.okapi.ir.api.expr.Expr._
 import org.opencypher.okapi.ir.api.expr._
-import org.opencypher.okapi.logical.impl._
+import org.opencypher.okapi.logical.impl.{LogicalCatalogGraph, LogicalPatternGraph}
 import org.opencypher.okapi.relational.api.graph.{RelationalCypherGraph, RelationalCypherSession}
 import org.opencypher.okapi.relational.api.physical.RelationalRuntimeContext
 import org.opencypher.okapi.relational.api.schema.RelationalSchema._
 import org.opencypher.okapi.relational.api.table.ExtractEntities.SelectExpressions
 import org.opencypher.okapi.relational.api.table.{FlatRelationalTable, RelationalCypherRecords}
+import org.opencypher.okapi.relational.impl.operators
 import org.opencypher.okapi.relational.impl.physical._
 import org.opencypher.okapi.relational.impl.table.RecordHeader
 import org.opencypher.okapi.trees.AbstractTreeNode
@@ -66,8 +68,10 @@ abstract class RelationalOperator[T <: FlatRelationalTable[T]] extends AbstractT
       val missingTableColumns = headerColumnNames -- dataColumnNames
       if (missingTableColumns.nonEmpty) {
         throw IllegalArgumentException(
-          s"${getClass.getSimpleName}: data with columns ${header.columns.toSeq.sorted.mkString("\n[", ", ", "]\n")}",
-          s"data with columns ${dataColumnNames.toSeq.sorted.mkString("\n[", ", ", "]\n")}"
+          s"${getClass.getSimpleName}: table with columns ${header.columns.toSeq.sorted.mkString("\n[", ", ", "]\n")}",
+          s"""|table with columns ${dataColumnNames.toSeq.sorted.mkString("\n[", ", ", "]\n")}
+              |column(s) ${missingTableColumns.mkString(", ")} are missing in the table
+           """.stripMargin
         )
       }
       // TODO: uncomment and fix expectations
@@ -308,30 +312,91 @@ final case class Select[T <: FlatRelationalTable[T]](
   override lazy val returnItems: Option[Seq[Var]] = Some(expressions.flatMap(_.owner).collect { case e: Var => e }.distinct)
 }
 
+object RelationalOperator {
+
+  implicit class RelationalOperatorOps[T <: FlatRelationalTable[T]](val op: RelationalOperator[T]) extends AnyVal {
+
+    // TODO: entity needs to contain all labels/relTypes: all case needs to be explicitly expanded with the schema
+    def alignWith(entity: Var, targetHeader: RecordHeader): RelationalOperator[T] = {
+      require(op.header.entityVars.size == 1,
+        s"Align with only works on single entity tables, found ${op.header.entityVars}")
+
+      val entityVar = op.header.entityVars.head
+
+      // Rename variable
+      val aliasOp = Alias(op, Seq(entityVar as entity))
+
+      // Fill in missing true label columns
+      val trueLabels = entityVar.cypherType match {
+        case CTNode(labels, _) => labels
+        case _ => Set.empty
+      }
+      val withTrueLabels = trueLabels.foldLeft(aliasOp: RelationalOperator[T]) {
+        case (currentOp, label) => operators.AddInto(currentOp, TrueLit, HasLabel(entity, Label(label))(CTBoolean))
+      }
+
+      // Fill in missing false label columns
+      val falseLabels = entity.cypherType match {
+        case CTNode(labels, _) => labels -- trueLabels
+        case _ => Set.empty
+      }
+      val withFalseLabels = falseLabels.foldLeft(withTrueLabels: RelationalOperator[T]) {
+        case (currentOp, label) => operators.AddInto(currentOp, FalseLit, HasLabel(entity, Label(label))(CTBoolean))
+      }
+
+      // Fill in missing true relType columns
+      val trueRelTypes = entityVar.cypherType match {
+        case CTRelationship(relTypes, _) => relTypes
+        case _ => Set.empty
+      }
+      val withTrueRelTypes = trueRelTypes.foldLeft(withFalseLabels: RelationalOperator[T]) {
+        case (currentOp, relType) => operators.AddInto(currentOp, TrueLit, HasType(entity, RelType(relType))(CTBoolean))
+      }
+
+      // Fill in missing false relType columns
+      val falseRelTypes = entity.cypherType match {
+        case CTRelationship(relTypes, _) => relTypes -- trueRelTypes
+        case _ => Set.empty
+      }
+      val withFalseRelTypes = falseRelTypes.foldLeft(withTrueRelTypes: RelationalOperator[T]) {
+        case (currentOp, relType) => operators.AddInto(currentOp, FalseLit, HasType(entity, RelType(relType))(CTBoolean))
+      }
+
+      // Fill in missing properties
+      val missingProperties = targetHeader.propertiesFor(entity) -- withFalseRelTypes.header.propertiesFor(entity)
+      val withProperties = missingProperties.foldLeft(withFalseLabels: RelationalOperator[T]) {
+        case (currentOp, propertyExpr) => operators.AddInto(currentOp, NullLit(propertyExpr.cypherType), propertyExpr)
+      }
+
+      val relevantSelected: RelationalOperator[T] = Select(withProperties, targetHeader.expressions.toList)
+
+      assert(targetHeader.expressions == relevantSelected.header.expressions)
+      relevantSelected
+    }
+
+  }
+
+}
+
 final case class ExtractEntities[T <: FlatRelationalTable[T]](
   in: RelationalOperator[T],
   override val header: RecordHeader,
   extractionVars: Set[Var]
 ) extends RelationalOperator[T] {
 
-  require(header.vars.size == 1)
-  require(extractionVars.subsetOf(in.header.vars), s"$extractionVars needs to be a subset of ${in.header.vars}")
-
-  val targetVar: Var = header.entityVars.head
+  val varInInputHeader: Var = in.header.entityVars.head
 
   def selectExpressionsForVar(extractionVar: Var): SelectExpressions = {
 
-    val extractionVarHeader = in.header.select(extractionVar)
-
-    val entityLabels = extractionVar.cypherType match {
+    val entityLabels = varInInputHeader.cypherType match {
       case CTNode(labels, _) => labels
       case CTRelationship(types, _) => types
       case _ => throw IllegalArgumentException("CTNode or CTRelationship", extractionVar.cypherType)
     }
 
-    val partiallyAlignedExtractionHeader = extractionVarHeader
-      .withAlias(extractionVar as targetVar)
-      .select(targetVar)
+    val partiallyAlignedExtractionHeader = in.header
+      .withAlias(varInInputHeader as extractionVar)
+      .select(extractionVar)
 
     val missingExpressions = (header.expressions -- partiallyAlignedExtractionHeader.expressions).toSeq
     val overlapExpressions = (header.expressions -- missingExpressions).toSeq
@@ -340,7 +405,7 @@ final case class ExtractEntities[T <: FlatRelationalTable[T]](
     val selectExistingColumns = overlapExpressions.map(e => e.withOwner(extractionVar) -> header.column(e))
 
     // Map literal default values for missing expressions to corresponding target header column
-    val selectMissingColumns = missingExpressions.map { expr =>
+    val selectMissingColumns: Seq[(Expr, String)] = missingExpressions.map { expr =>
       val columnName = header.column(expr)
       val selectExpr: Expr = expr match {
         case HasLabel(_, label) =>
@@ -358,7 +423,7 @@ final case class ExtractEntities[T <: FlatRelationalTable[T]](
         case _ =>
           if (!expr.cypherType.isNullable) {
             throw UnsupportedOperationException(
-              s"Cannot align scan on $targetVar by adding a NULL column, because the type for '$expr' is non-nullable"
+              s"Cannot align scan on $varInInputHeader by adding a NULL column, because the type for '$expr' is non-nullable"
             )
           }
           NullLit(expr.cypherType)
@@ -372,17 +437,9 @@ final case class ExtractEntities[T <: FlatRelationalTable[T]](
 
   override def _table: T = {
     val groups = extractionVars.toSeq.map(selectExpressionsForVar)
-
-    val allExpressions = groups.flatten.flatMap { case (expr, _) => expr }
-
-    val inHeaderWithMissingExprs = allExpressions.foldLeft(in.header) {
-      case (currentHeader, expr) => currentHeader.withExpr(expr)
-    }
-
-    in.table.extractEntities(groups)(inHeaderWithMissingExprs, context.parameters)
+    in.table.extractEntities(groups)(header, context.parameters)
   }
 }
-
 
 final case class Distinct[T <: FlatRelationalTable[T]](
   in: RelationalOperator[T],

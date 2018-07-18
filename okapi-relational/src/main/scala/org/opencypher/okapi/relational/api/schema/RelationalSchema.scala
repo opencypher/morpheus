@@ -63,7 +63,11 @@ object RelationalSchema {
         case (k, t) => Property(node, PropertyKey(k))(t)
       }
 
-      RecordHeader.from(labelExpressions ++ propertyExpressions + node)
+      val maybeGraph = node.cypherType match {
+        case CTNode(_, g) => g
+        case _ => None
+      }
+      RecordHeader.from(labelExpressions ++ propertyExpressions + Var(node.name)(CTNode(labelCombos.flatten, maybeGraph)))
     }
 
     def headerForRelationship(rel: Var): RecordHeader = {
@@ -98,7 +102,11 @@ object RelationalSchema {
       val hasTypeExprs = relTypes.map(relType => HasType(rel, RelType(relType))(CTBoolean))
       val endNodeExpr = EndNode(rel)(CTNode)
 
-      val relationshipExpressions = hasTypeExprs ++ propertyExpressions + rel + startNodeExpr + endNodeExpr
+      val maybeGraph = rel.cypherType match {
+        case CTRelationship(_, g) => g
+        case _ => None
+      }
+      val relationshipExpressions = hasTypeExprs ++ propertyExpressions + Var(rel.name)(CTRelationship(relTypes, maybeGraph)) + startNodeExpr + endNodeExpr
 
       RecordHeader.from(relationshipExpressions)
     }
