@@ -6,7 +6,6 @@ import org.opencypher.okapi.api.types.{CTNode, CTRelationship, CypherType}
 import org.opencypher.okapi.impl.exception.UnsupportedOperationException
 import org.opencypher.okapi.relational.api.physical.RelationalRuntimeContext
 import org.opencypher.okapi.relational.api.table.{FlatRelationalTable, RelationalCypherRecords}
-import org.opencypher.okapi.relational.api.tagging.TagSupport._
 import org.opencypher.okapi.relational.impl.operators.RelationalOperator
 
 trait RelationalCypherGraphFactory[T <: FlatRelationalTable[T]] {
@@ -46,9 +45,17 @@ trait RelationalCypherGraph[T <: FlatRelationalTable[T]] extends PropertyGraph {
 
   private[opencypher] def scanOperator(entityType: CypherType, exactLabelMatch: Boolean): RelationalOperator[T]
 
-  override def nodes(name: String, nodeCypherType: CTNode = CTNode, exactLabelMatch: Boolean = false): Records
+  override def nodes(name: String, nodeCypherType: CTNode, exactLabelMatch: Boolean = false): RelationalCypherRecords[T] = {
+    val scan = scanOperator(nodeCypherType, exactLabelMatch)
+    val namedScan = scan.assignScanName(name)
+    session.records.from(namedScan.header, namedScan.table)
+  }
 
-  override def relationships(name: String, relCypherType: CTRelationship = CTRelationship): Records
+  override def relationships(name: String, relCypherType: CTRelationship): RelationalCypherRecords[T] = {
+    val scan = scanOperator(relCypherType, exactLabelMatch = false)
+    val namedScan = scan.assignScanName(name)
+    session.records.from(namedScan.header, namedScan.table)
+  }
 
   def unionAll(others: PropertyGraph*): RelationalCypherGraph[T] = {
     val graphs = others.map {
