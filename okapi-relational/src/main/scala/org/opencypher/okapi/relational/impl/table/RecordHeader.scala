@@ -227,14 +227,40 @@ case class RecordHeader(exprToColumn: Map[Expr, String]) {
   def select[T <: Expr](exprs: T*): RecordHeader = select(exprs.toSet)
 
   def select[T <: Expr](exprs: Set[T]): RecordHeader = {
+    val aliasExprs = exprs.collect { case a: AliasExpr => a }
+    val headerWithAliases = withAlias(aliasExprs.toSeq: _*)
     val selectExpressions = exprs.flatMap { e: Expr =>
       e match {
-        case v: Var => ownedBy(v) + v
+        case v: Var => expressionsFor(v)
+        case AliasExpr(expr, alias) =>
+          expr match {
+            case v: Var => expressionsFor(v).map(_.withOwner(alias))
+            case other => other.withOwner(alias)
+          }
         case nonVar => Set(nonVar)
       }
     }
-    val selectMappings = exprToColumn.filterKeys(selectExpressions.contains)
+    val selectMappings = headerWithAliases.exprToColumn.filterKeys(selectExpressions.contains)
     RecordHeader(selectMappings)
+  }
+
+  private def withReplacement(expr: AliasExpr): RecordHeader = {
+    val to = expr.expr
+    val alias = expr.alias
+    to match {
+      // Entity case
+      case entityExpr: Var if exprToColumn.contains(to) =>
+        val withEntityExpr = addExprToColumn(alias, exprToColumn(to))
+        ownedBy(entityExpr).filterNot(_ == entityExpr).foldLeft(withEntityExpr) {
+          case (current, nextExpr) => current.addExprToColumn(nextExpr.withOwner(alias), exprToColumn(nextExpr))
+        }
+
+      // Non-entity case
+      case e if exprToColumn.contains(e) => addExprToColumn(alias, exprToColumn(e))
+
+      // No expression to alias
+      case other => throw IllegalArgumentException(s"An expression in $this", s"Unknown expression $other")
+    }
   }
 
   def withColumnsRenamed[T <: Expr](renamings: Map[T, String]): RecordHeader = {

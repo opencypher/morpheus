@@ -337,6 +337,11 @@ class RecordHeaderTest extends BaseTestSuite {
     (nHeader ++ mHeader).select(Set(m)) should equal(mHeader)
   }
 
+  it("returns the alias without the original when selecting an alias") {
+    nHeader.select(Set(n as m)) should equal(nHeader.withAlias(n as m) -- nHeader.expressions)
+  }
+
+
   it("returns selected entity and alias vars and their corresponding columns") {
     val s = Var("nPropFoo_Alias")(nPropFoo.cypherType)
     val aliasHeader = nHeader
