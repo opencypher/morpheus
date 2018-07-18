@@ -27,7 +27,7 @@
 package org.opencypher.spark.impl.graph
 
 import org.opencypher.okapi.api.schema.Schema
-import org.opencypher.okapi.api.types.{CTNode, CTRelationship}
+import org.opencypher.okapi.api.types.{CTNode, CTRelationship, CypherType}
 import org.opencypher.okapi.ir.api.expr.Var
 import org.opencypher.okapi.relational.api.graph.RelationalCypherGraph
 import org.opencypher.okapi.relational.api.physical.RelationalRuntimeContext
@@ -58,46 +58,24 @@ final case class UnionGraph(graphsToReplacements: Map[RelationalCypherGraph[Data
     graphsToReplacements.keys.map(g => g.schema).foldLeft(Schema.empty)(_ ++ _)
   }
 
-  override def nodes(name: String, nodeCypherType: CTNode, exactLabelMatch: Boolean): CAPSRecords = {
-    if (exactLabelMatch) {
-      ToRefactor.nodesWithExactLabels(this, name, nodeCypherType.labels)
-    } else {
-      val node = Var(name)(nodeCypherType)
-      val targetHeader = schema.headerForNode(node)
-      val nodeWithCorrectTypes = targetHeader.nodeEntities.head
-      val nodeOps: Iterable[RelationalOperator[DataFrameTable]] = graphsToReplacements.keys
-        .filter(nodeCypherType.labels.isEmpty || _.schema.labels.intersect(nodeCypherType.labels).nonEmpty)
-        .map {
-          graph =>
-            val nodeScan = graph.nodes(name, nodeCypherType)
-            val startOp = Start(session.records.from(nodeScan.header, nodeScan.table))
-            val retagOp = RetagVariable(startOp, nodeWithCorrectTypes, graphsToReplacements(graph))
-            retagOp.alignWith(nodeWithCorrectTypes, targetHeader)
-        }
-
-      val distinctOp = Distinct(nodeOps.reduce(TabularUnionAll(_, _)), Set(node))
-
-      session.records.from(distinctOp.header, distinctOp.table)
-    }
-  }
-
-  override def relationships(name: String, relCypherType: CTRelationship): CAPSRecords = {
-    val rel = Var(name)(relCypherType)
-    val targetHeader = schema.headerForRelationship(rel)
-    val relWithCorrectTypes = targetHeader.relationshipEntities.head
-    val relOps: Iterable[RelationalOperator[DataFrameTable]] = graphsToReplacements.keys
-      .filter(relCypherType.types.isEmpty || _.schema.relationshipTypes.intersect(relCypherType.types).nonEmpty)
-      .map { graph =>
-        val relScan = graph.relationships(name, relCypherType)
-        val startOp = Start(session.records.from(relScan.header, relScan.table))
-        val retagOp = RetagVariable(startOp, relWithCorrectTypes, graphsToReplacements(graph))
-        retagOp.alignWith(relWithCorrectTypes, targetHeader)
-      }
-
-    val distinctOp = Distinct(relOps.reduce(TabularUnionAll(_, _)), Set(rel))
-
-    session.records.from(distinctOp.header, distinctOp.table)
-  }
-
   override def toString = s"CAPSUnionGraph(graphs=[${graphsToReplacements.mkString(",")}])"
+
+  override private[opencypher] def scanOperator(
+    entityType: CypherType,
+    exactLabelMatch: Boolean
+  ): RelationalOperator[DataFrameTable] = {
+    val entity = Var("")(entityType)
+    val targetEntityHeader = schema.headerForEntity(entity)
+    val entityWithCorrectType = targetEntityHeader.nodeEntities.head
+    val selectedScans = graphsToReplacements.keys
+      .map { graph =>
+        val scan = graph.scanOperator(entityType, exactLabelMatch)
+        val retag = RetagVariable(scan, entityWithCorrectType, graphsToReplacements(graph))
+        retag.alignWith(entityWithCorrectType, targetEntityHeader)
+      }
+    val alignedEntityTableOps = selectedScans.map { scan =>
+      scan.alignWith(entityWithCorrectType, targetEntityHeader)
+    }
+    Distinct(alignedEntityTableOps.reduce(TabularUnionAll(_, _)), Set(entity))
+  }
 }

@@ -63,9 +63,9 @@ class CAPSScanGraph(val scans: Seq[CAPSEntityTable], val schema: CAPSSchema, val
     val entity = Var("")(entityType)
     val selectedScans = scansForType(entityType, exactLabelMatch)
     val targetEntityHeader = schema.headerForEntity(entity)
-    val entityWithCorrectLabels = targetEntityHeader.nodeEntities.head
+    val entityWithCorrectType = targetEntityHeader.nodeEntities.head
     val alignedEntityTableOps = selectedScans.map { scan =>
-      scan.alignWith(entityWithCorrectLabels, targetEntityHeader)
+      scan.alignWith(entityWithCorrectType, targetEntityHeader)
     }
     alignedEntityTableOps.reduce(TabularUnionAll(_, _))
   }

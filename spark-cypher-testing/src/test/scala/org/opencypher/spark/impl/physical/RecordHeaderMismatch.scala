@@ -26,11 +26,11 @@
  */
 package org.opencypher.spark.impl.physical
 
-import org.apache.spark.storage.StorageLevel
 import org.opencypher.okapi.api.schema.Schema
-import org.opencypher.okapi.api.types.{CTNode, CTRelationship, CTString}
+import org.opencypher.okapi.api.types.{CTString, CypherType}
 import org.opencypher.okapi.impl.exception.SchemaException
 import org.opencypher.okapi.relational.api.graph.RelationalCypherGraph
+import org.opencypher.okapi.relational.impl.operators.{RelationalOperator, Start}
 import org.opencypher.spark.api.CAPSSession
 import org.opencypher.spark.impl.CAPSRecords
 import org.opencypher.spark.impl.table.SparkFlatRelationalTable.DataFrameTable
@@ -52,18 +52,21 @@ class RecordHeaderMismatch extends CAPSTestSuite {
         .withRelationshipPropertyKeys("R")("name" -> CTString)
         .asCaps
 
-      // Always return empty records, which does not match what the schema promises
-      override def nodes(name: String, nodeCypherType: CTNode, exactLabelMatch: Boolean): CAPSRecords = caps.records.empty()
-
       override implicit def session: CAPSSession = caps
 
       override def tags: Set[Int] = Set(0)
 
-      override def relationships(name: String, relCypherType: CTRelationship): CAPSRecords = caps.records.empty()
-
       override def cache(): RelationalCypherGraph[DataFrameTable] = this
 
       override def tables: Seq[DataFrameTable] = Seq.empty
+
+      // Always return empty records, which does not match what the schema promises
+      override private[opencypher] def scanOperator(
+        entityType: CypherType,
+        exactLabelMatch: Boolean
+      ): RelationalOperator[DataFrameTable] = {
+        Start(caps.records.empty())
+      }
     }
 
     intercept[SchemaException] {
