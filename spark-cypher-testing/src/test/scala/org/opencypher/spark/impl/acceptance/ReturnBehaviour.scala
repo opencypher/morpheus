@@ -87,17 +87,17 @@ class ReturnBehaviour extends CAPSTestSuite with DefaultGraphInit {
     it("can run a single return query") {
       val given = initGraph("CREATE ()")
 
-      val result = given.cypher("RETURN 1").asCaps
+      val result = given.cypher("RETURN 1")
 
-      result.records shouldMatch CypherMap("1" -> 1)
+      result.records.asCaps shouldMatch CypherMap("1" -> 1)
     }
 
     it("can run single return query with several columns") {
       val given = initGraph("CREATE (), ()")
 
-      val result = given.cypher("RETURN 1 AS foo, '' AS str").asCaps
+      val result = given.cypher("RETURN 1 AS foo, '' AS str")
 
-      result.records shouldMatch CypherMap("foo" -> 1, "str" -> "")
+      result.records.asCaps shouldMatch CypherMap("foo" -> 1, "str" -> "")
     }
 
     it("returns full node") {
@@ -235,10 +235,10 @@ class ReturnBehaviour extends CAPSTestSuite with DefaultGraphInit {
     it("can skip") {
       val given = initGraph("""CREATE (:Node {val: 4}),(:Node {val: 3}),(:Node  {val: 42})""")
 
-      val result = given.cypher("MATCH (a) RETURN a.val as val SKIP 2").asCaps
+      val result = given.cypher("MATCH (a) RETURN a.val as val SKIP 2")
 
       // Then
-      result.records.df.count() should equal(1)
+      result.records.asCaps.table.df.count() should equal(1)
     }
 
     it("can order with skip") {
@@ -269,10 +269,10 @@ class ReturnBehaviour extends CAPSTestSuite with DefaultGraphInit {
     it("can evaluate limit") {
       val given = initGraph("""CREATE (:Node {val: 4}),(:Node {val: 3}),(:Node  {val: 42})""")
 
-      val result = given.cypher("MATCH (a) RETURN a.val as val LIMIT 1").asCaps
+      val result = given.cypher("MATCH (a) RETURN a.val as val LIMIT 1")
 
       // Then
-      result.records.df.count() should equal(1)
+      result.records.asCaps.df.count() should equal(1)
     }
 
     it("can evaluate limit with parameter value") {

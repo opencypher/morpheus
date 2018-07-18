@@ -15,6 +15,10 @@ trait RelationalCypherGraphFactory[T <: FlatRelationalTable[T]] {
   def singleTableGraph(records: RelationalCypherRecords[T], schema: Schema, tagsUsed: Set[Int])
     (implicit context: RelationalRuntimeContext[T]): Graph
 
+  def unionGraph(graphs: RelationalCypherGraph[T]*)(implicit context: RelationalRuntimeContext[T]): Graph = {
+    unionGraph(graphs: _*)
+  }
+
   def unionGraph(graphsToReplacements: Map[RelationalCypherGraph[T], Map[Int, Int]])
     (implicit context: RelationalRuntimeContext[T]): Graph
 
@@ -55,6 +59,6 @@ trait RelationalCypherGraph[T <: FlatRelationalTable[T]] extends PropertyGraph {
     })
 
     val context = RelationalRuntimeContext(graphAt)(session)
-    session.graphs.unionGraph(computeRetaggings(graphs.map(g => g -> g.tags).toMap))(context)
+    session.graphs.unionGraph(graphs: _*)(context)
   }
 }

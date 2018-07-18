@@ -30,6 +30,7 @@ import org.opencypher.okapi.api.graph.{CypherSession, PropertyGraph}
 import org.opencypher.okapi.api.table.CypherRecords
 import org.opencypher.okapi.impl.exception.UnsupportedOperationException
 import org.opencypher.okapi.relational.api.graph.RelationalCypherGraph
+import org.opencypher.okapi.relational.api.table.RelationalCypherRecords
 import org.opencypher.spark.api.CAPSSession
 import org.opencypher.spark.impl.table.SparkFlatRelationalTable.DataFrameTable
 
@@ -52,7 +53,10 @@ object CAPSConverters {
   }
 
   implicit class RichCypherRecords(val records: CypherRecords) extends AnyVal {
-    def asCaps: CAPSRecords = records match {
+    def asCaps(implicit caps: CAPSSession): CAPSRecords = records match {
+      // AGAIN! We still know what we do... the alternatives were worse.
+      case relational: RelationalCypherRecords[_] if relational.table.isInstanceOf[DataFrameTable] =>
+        caps.records.from(relational.header, relational.table.asInstanceOf[DataFrameTable])
       case caps: CAPSRecords => caps
       case _ => throw UnsupportedOperationException(s"can only handle CAPS records, got $records")
     }

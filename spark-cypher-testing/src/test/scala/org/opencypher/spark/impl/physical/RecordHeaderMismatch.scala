@@ -30,8 +30,10 @@ import org.apache.spark.storage.StorageLevel
 import org.opencypher.okapi.api.schema.Schema
 import org.opencypher.okapi.api.types.{CTNode, CTRelationship, CTString}
 import org.opencypher.okapi.impl.exception.SchemaException
+import org.opencypher.okapi.relational.api.graph.RelationalCypherGraph
 import org.opencypher.spark.api.CAPSSession
 import org.opencypher.spark.impl.CAPSRecords
+import org.opencypher.spark.impl.table.SparkFlatRelationalTable.DataFrameTable
 import org.opencypher.spark.schema.CAPSSchema
 import org.opencypher.spark.schema.CAPSSchema._
 import org.opencypher.spark.testing.CAPSTestSuite
@@ -39,7 +41,11 @@ import org.opencypher.spark.testing.CAPSTestSuite
 class RecordHeaderMismatch extends CAPSTestSuite {
 
   it("throws a schema exception when the physical record header does not match the one computed based on the schema") {
-    val buggyGraph = new CAPSGraph {
+    val buggyGraph = new RelationalCypherGraph[DataFrameTable] {
+
+      override type Session = CAPSSession
+
+      override type Records = CAPSRecords
 
       override def schema: CAPSSchema = Schema.empty
         .withNodePropertyKeys("A")("name" -> CTString)
@@ -47,24 +53,19 @@ class RecordHeaderMismatch extends CAPSTestSuite {
         .asCaps
 
       // Always return empty records, which does not match what the schema promises
-      override def nodes(name: String, nodeCypherType: CTNode): CAPSRecords = CAPSRecords.empty()(caps)
+      override def nodes(name: String, nodeCypherType: CTNode, exactLabelMatch: Boolean): CAPSRecords = caps.records.empty()
 
       override implicit def session: CAPSSession = caps
 
       override def tags: Set[Int] = Set(0)
 
-      override def relationships(name: String, relCypherType: CTRelationship): CAPSRecords = CAPSRecords.empty()(caps)
+      override def relationships(name: String, relCypherType: CTRelationship): CAPSRecords = caps.records.empty()
 
-      override def cache(): CAPSGraph = this
+      override def cache(): RelationalCypherGraph[DataFrameTable] = this
 
-      override def persist(): CAPSGraph = this
-
-      override def persist(storageLevel: StorageLevel): CAPSGraph = this
-
-      override def unpersist(): CAPSGraph = this
-
-      override def unpersist(blocking: Boolean): CAPSGraph = this
+      override def tables: Seq[DataFrameTable] = Seq.empty
     }
+
     intercept[SchemaException] {
       buggyGraph.cypher("MATCH (n) RETURN n").records
     }

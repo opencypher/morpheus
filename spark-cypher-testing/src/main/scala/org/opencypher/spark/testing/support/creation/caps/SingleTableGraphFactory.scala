@@ -28,14 +28,15 @@ package org.opencypher.spark.testing.support.creation.caps
 
 import org.opencypher.okapi.api.types.{CTNode, CTRelationship}
 import org.opencypher.okapi.ir.api.expr.Var
+import org.opencypher.okapi.relational.api.graph.RelationalCypherGraph
 import org.opencypher.okapi.testing.propertygraph.InMemoryTestGraph
 import org.opencypher.spark.api.CAPSSession
-import org.opencypher.spark.impl.graph.SingleTableGraph
 import org.opencypher.spark.impl.CAPSRecords
+import org.opencypher.spark.impl.table.SparkFlatRelationalTable.DataFrameTable
 
-object CAPSPatternGraphFactory extends CAPSTestGraphFactory {
+object SingleTableGraphFactory extends CAPSTestGraphFactory {
 
-  override def apply(propertyGraph: InMemoryTestGraph)(implicit caps: CAPSSession): CAPSGraph = {
+  override def apply(propertyGraph: InMemoryTestGraph)(implicit caps: CAPSSession): RelationalCypherGraph[DataFrameTable] = {
     val scanGraph = CAPSScanGraphFactory(propertyGraph)
     val nodes = scanGraph.nodes("n")
     val rels = scanGraph.relationships("r")
@@ -47,7 +48,7 @@ object CAPSPatternGraphFactory extends CAPSTestGraphFactory {
 
     val baseTable = CAPSRecords(nodes.header ++ rels.header, baseTableData)
 
-    SingleTableGraph(baseTable, scanGraph.schema, Set(0))
+    caps.graphs.singleTableGraph(baseTable, scanGraph.schema, Set(0))(caps.basicRuntimeContext())
   }
 
   override def name: String = "CAPSPatternGraphFactory"

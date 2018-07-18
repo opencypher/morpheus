@@ -40,7 +40,6 @@ import org.opencypher.okapi.relational.impl.table.RecordHeader
 import org.opencypher.spark.api.io._
 import org.opencypher.spark.impl.DataFrameOps._
 import org.opencypher.spark.impl.convert.SparkConversions
-import org.opencypher.spark.impl.graph.CAPSGraph
 import org.opencypher.spark.schema.CAPSSchema._
 import org.opencypher.spark.testing.CAPSTestSuite
 
@@ -210,7 +209,7 @@ class EntityTableTest extends CAPSTestSuite {
 
     val nodeTable = CAPSNodeTable.fromMapping(nodeMapping, df)
 
-    val graph = CAPSGraph.create(nodeTable)
+    val graph = caps.graphs.create(nodeTable)
     graph.nodes("n").collect.toSet {
       CypherMap("n" -> "1")
     }

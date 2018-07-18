@@ -29,11 +29,11 @@ package org.opencypher.spark.impl.acceptance
 import org.opencypher.okapi.api.schema.{PropertyKeys, Schema}
 import org.opencypher.okapi.api.types.{CTInteger, CTString}
 import org.opencypher.okapi.api.value.CypherValue.CypherMap
+import org.opencypher.okapi.relational.api.tagging.Tags._
 import org.opencypher.okapi.testing.Bag
 import org.opencypher.okapi.testing.Bag._
 import org.opencypher.spark.api.value.{CAPSNode, CAPSRelationship}
 import org.opencypher.spark.impl.CAPSConverters._
-import org.opencypher.spark.impl.DataFrameOps._
 import org.opencypher.spark.schema.CAPSSchema._
 import org.opencypher.spark.testing.CAPSTestSuite
 import org.scalatest.DoNotDiscover
@@ -122,7 +122,7 @@ class MultipleGraphBehaviour extends CAPSTestSuite with ScanGraphInit {
     val result = testGraph1.cypher(query)
     result.records.toMaps shouldBe empty
 
-    result.asCaps.graph shouldMatch testGraph1
+    result.graph.asCaps shouldMatch testGraph1
   }
 
   it("should switch to another graph and then return it") {
@@ -133,7 +133,7 @@ class MultipleGraphBehaviour extends CAPSTestSuite with ScanGraphInit {
 
     val result = testGraph1.cypher(query)
     result.records.toMaps shouldBe empty
-    result.asCaps.graph shouldMatch testGraph2
+    result.graph.asCaps shouldMatch testGraph2
   }
 
   it("can select a source graph to match data from") {

@@ -50,7 +50,6 @@ case class CAPSGraphFactory(implicit caps: CAPSSession) extends RelationalCypher
     tagsUsed: Set[Int]
   )(implicit context: RelationalRuntimeContext[DataFrameTable]): Graph = SingleTableGraph(records, schema, tagsUsed)
 
-
   override def unionGraph(graphsToReplacements: Map[RelationalCypherGraph[DataFrameTable], Map[Int, Int]])
     (implicit context: RelationalRuntimeContext[DataFrameTable]): Graph = {
     UnionGraph(graphsToReplacements)

@@ -29,10 +29,11 @@ package org.opencypher.spark.api.io.fs.hdfs
 import org.apache.hadoop.fs.Path
 import org.opencypher.okapi.api.graph.GraphName
 import org.opencypher.okapi.api.io.PropertyGraphDataSource
+import org.opencypher.okapi.relational.api.graph.RelationalCypherGraph
 import org.opencypher.okapi.testing.propertygraph.InMemoryTestGraph
 import org.opencypher.spark.api.CAPSSession
-import org.opencypher.spark.impl.graph.CAPSGraph
 import org.opencypher.spark.impl.io.CAPSPropertyGraphDataSource
+import org.opencypher.spark.impl.table.SparkFlatRelationalTable.DataFrameTable
 import org.opencypher.spark.testing.CAPSTestSuite
 import org.opencypher.spark.testing.api.io.CAPSPGDSAcceptance
 import org.opencypher.spark.testing.fixture.MiniDFSClusterFixture
@@ -42,7 +43,7 @@ import scala.collection.JavaConverters._
 
 abstract class HdfsDataSourceAcceptance extends CAPSTestSuite with CAPSPGDSAcceptance with MiniDFSClusterFixture {
 
-  protected def createDs(graph: CAPSGraph): CAPSPropertyGraphDataSource
+  protected def createDs(graph: RelationalCypherGraph[DataFrameTable]): CAPSPropertyGraphDataSource
 
   override def initSession(): CAPSSession = caps
 

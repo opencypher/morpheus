@@ -28,8 +28,7 @@ package org.opencypher.spark.api.io.neo4j
 
 import org.opencypher.okapi.api.graph.{CypherResult, GraphName, Namespace}
 import org.opencypher.okapi.api.value.CypherValue.{CypherMap, CypherNull}
-import org.opencypher.okapi.impl.exception.IllegalArgumentException
-import org.opencypher.okapi.impl.exception.UnsupportedOperationException
+import org.opencypher.okapi.impl.exception.{IllegalArgumentException, UnsupportedOperationException}
 import org.opencypher.okapi.testing.Bag
 import org.opencypher.okapi.testing.Bag._
 import org.opencypher.spark.api.CypherGraphSources
@@ -62,8 +61,8 @@ class Neo4jPropertyGraphDataSourceTest
     val dataSource = CypherGraphSources.neo4j(neo4jConfig)
 
     val graph = dataSource.graph(dataSource.entireGraphName).asCaps
-    graph.nodes("n").toCypherMaps.collect.toBag should equal(teamDataGraphNodes)
-    graph.relationships("r").toCypherMaps.collect.toBag should equal(teamDataGraphRels)
+    graph.nodes("n").asCaps.toCypherMaps.collect.toBag should equal(teamDataGraphNodes)
+    graph.relationships("r").asCaps.toCypherMaps.collect.toBag should equal(teamDataGraphRels)
   }
 
   it("should load a graph from Neo4j via catalog") {
@@ -85,7 +84,7 @@ class Neo4jPropertyGraphDataSourceTest
 
     val dataSource = CypherGraphSources.neo4j(neo4jConfig, omitImportFailures = true)
     val graph = dataSource.graph(GraphName("test")).asCaps
-    val nodes = graph.nodes("n").toCypherMaps.collect.toList
+    val nodes = graph.nodes("n").asCaps.toCypherMaps.collect.toList
     nodes.size shouldBe 1
     nodes.head.value match {
       case n: CAPSNode => n should equal(CAPSNode(n.id, Set("Unsupported"), CypherMap("bar" -> 42L)))
@@ -99,9 +98,8 @@ class Neo4jPropertyGraphDataSourceTest
 
       val dataSource = CypherGraphSources.neo4j(neo4jConfig)
       val graph = dataSource.graph(GraphName("test")).asCaps
-      graph.nodes("n").toCypherMaps.collect.toList
+      graph.nodes("n").asCaps.toCypherMaps.collect.toList
     }
   }
-
 
 }

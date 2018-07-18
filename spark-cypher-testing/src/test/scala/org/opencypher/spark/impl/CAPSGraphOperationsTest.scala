@@ -31,18 +31,18 @@ import org.opencypher.okapi.api.types._
 import org.opencypher.okapi.ir.api.expr._
 import org.opencypher.okapi.testing.Bag
 import org.opencypher.spark.impl.DataFrameOps._
-import org.opencypher.spark.impl.graph.CAPSGraph
 import org.opencypher.spark.testing.CAPSTestSuite
 import org.opencypher.spark.testing.fixture.{RecordsVerificationFixture, TeamDataFixture}
+import org.opencypher.okapi.relational.api.tagging.Tags._
 
 class CAPSGraphOperationsTest extends CAPSTestSuite with TeamDataFixture with RecordsVerificationFixture {
 
   test("union") {
-    val graph1 = CAPSGraph.create(personTable, knowsTable)
-    val graph2 = CAPSGraph.create(programmerTable, bookTable, readsTable)
+    val graph1 = caps.graphs.create(personTable, knowsTable)
+    val graph2 = caps.graphs.create(programmerTable, bookTable, readsTable)
 
     val result = graph1 unionAll graph2
-    val nodeRecords: CAPSRecords = result.nodes("n")
+    val nodeRecords = result.nodes("n")
     val n = Var("n")(CTNode)
 
     val nExprs = Seq(

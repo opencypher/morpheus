@@ -27,14 +27,13 @@
 package org.opencypher.spark.api.util
 
 import org.opencypher.okapi.api.util.ZeppelinSupport._
-import org.opencypher.spark.impl.graph.CAPSGraph
 import org.opencypher.spark.testing.CAPSTestSuite
 import org.opencypher.spark.testing.fixture.TeamDataFixture
 
 class ZeppelinSupportTest extends CAPSTestSuite with TeamDataFixture {
 
   it("supports Zeppelin network representation") {
-    val graph = CAPSGraph.create(personTable, bookTable, readsTable, knowsTable, influencesTable)
+    val graph = caps.graphs.create(personTable, bookTable, readsTable, knowsTable, influencesTable)
     val asJson = graph.toZeppelinJson
     val expected = ujson.read(
       s"""

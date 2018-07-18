@@ -27,14 +27,16 @@
 package org.opencypher.spark.impl
 
 import org.apache.spark.sql.Row
+import org.opencypher.okapi.relational.api.graph.RelationalCypherGraph
+import org.opencypher.okapi.relational.api.tagging.TagSupport._
+import org.opencypher.okapi.relational.api.tagging.Tags._
 import org.opencypher.okapi.testing.Bag
 import org.opencypher.spark.impl
-import org.opencypher.spark.impl.DataFrameOps._
-import org.opencypher.spark.impl.graph.CAPSGraph
+import org.opencypher.spark.impl.table.SparkFlatRelationalTable.DataFrameTable
 import org.opencypher.spark.testing.CAPSTestSuite
 import org.opencypher.spark.testing.fixture.{GraphConstructionFixture, RecordsVerificationFixture, TeamDataFixture}
 
-class unionGraphTest extends CAPSTestSuite
+class UnionGraphTest extends CAPSTestSuite
   with GraphConstructionFixture
   with RecordsVerificationFixture
   with TeamDataFixture {
@@ -52,8 +54,8 @@ class unionGraphTest extends CAPSTestSuite
     val inputGraph = initGraph(`:Person`)
     val inputNodes = inputGraph.nodes("n")
 
-    val patternGraph = RelationalUnionGraph(CAPSGraph.create(inputNodes, inputGraph.schema))
-    val nodes = patternGraph.nodes("n")
+    val singleTableGraph = caps.graphs.singleTableGraph(inputNodes, inputGraph.schema, Set(0))
+    val nodes = singleTableGraph.nodes("n")
 
     val cols = Seq(
       n,
@@ -73,7 +75,7 @@ class unionGraphTest extends CAPSTestSuite
   }
 
   test("Node scan from multiple single node CAPSRecords") {
-    val unionGraph = impl.RelationalUnionGraph(initGraph(`:Person`), initGraph(`:Book`))
+    val unionGraph = caps.graphs.unionGraph(Seq(initGraph(`:Person`), initGraph(`:Book`)): _*)
     val nodes = unionGraph.nodes("n")
     val cols = Seq(
       n,
@@ -100,10 +102,10 @@ class unionGraphTest extends CAPSTestSuite
   }
 
   test("Returns only distinct results") {
-    val scanGraph1 = CAPSGraph.create(personTable)
-    val scanGraph2 = CAPSGraph.create(personTable)
+    val scanGraph1 = caps.graphs.create(personTable)
+    val scanGraph2 = caps.graphs.create(personTable)
 
-    val unionGraph = RelationalUnionGraph(scanGraph1, scanGraph2)
+    val unionGraph = caps.graphs.unionGraph(scanGraph1, scanGraph2)
     val nodes = unionGraph.nodes("n")
 
     val cols = Seq(
@@ -128,15 +130,13 @@ class unionGraphTest extends CAPSTestSuite
   }
 
   it("assigns non-conflicting tags to graphs") {
-    val scanGraph1 = CAPSGraph.create(personTable)
-    val scanGraph2 = CAPSGraph.create(personTable)
+    val scanGraph1 = caps.graphs.create(personTable)
+    val scanGraph2 = caps.graphs.create(personTable)
 
   }
 
-  private def initPersonReadsBookGraph: CAPSGraph = {
-    impl.RelationalUnionGraph(
-      initGraph(`:READS`),
-      impl.RelationalUnionGraph(initGraph(`:Book`),
-        impl.RelationalUnionGraph(initGraph(`:Person`))))
+  private def initPersonReadsBookGraph: RelationalCypherGraph[DataFrameTable] = {
+    caps.graphs.unionGraph(
+      initGraph(`:READS`), caps.graphs.unionGraph(initGraph(`:Book`), caps.graphs.unionGraph(initGraph(`:Person`))))
   }
 }

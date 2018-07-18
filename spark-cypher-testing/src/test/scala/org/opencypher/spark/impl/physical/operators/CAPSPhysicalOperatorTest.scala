@@ -33,7 +33,6 @@ import org.opencypher.okapi.relational.api.physical.RelationalRuntimeContext
 import org.opencypher.okapi.relational.impl.operators.{Cache, RelationalOperator}
 import org.opencypher.okapi.relational.impl.table.RecordHeader
 import org.opencypher.spark.impl.table.SparkFlatRelationalTable.DataFrameTable
-import org.opencypher.spark.impl.{CAPSRecords, CAPSResult}
 import org.opencypher.spark.testing.CAPSTestSuite
 
 //TODO: Rewrite or delete when refactoring is complete
@@ -53,7 +52,7 @@ import org.opencypher.spark.testing.CAPSTestSuite
 //  }
 //
 //  test("cache operator with single input") {
-//    val expectedResult = CAPSResult(CAPSRecords.wrap(testDf), CAPSGraph.empty, QualifiedGraphName("foo"))
+//    val expectedResult = CAPSResult(caps.records.wrap(testDf), RelationalCypherGraph[DataFrameTable].empty, QualifiedGraphName("foo"))
 //
 //    val toCache = DummyOp(expectedResult)
 //
@@ -66,7 +65,7 @@ import org.opencypher.spark.testing.CAPSTestSuite
 //  }
 //
 //  test("cache operator with cache reuse") {
-//    val expectedResult = CAPSPhysicalResult(CAPSRecords.wrap(testDf), CAPSGraph.empty, QualifiedGraphName("foo"))
+//    val expectedResult = CAPSPhysicalResult(caps.records.wrap(testDf), RelationalCypherGraph[DataFrameTable].empty, QualifiedGraphName("foo"))
 //
 //    val toCache0 = DummyOp(expectedResult)
 //    val toCache1 = DummyOp(expectedResult)

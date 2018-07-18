@@ -45,7 +45,7 @@ object CAPSScanGraphFactory extends CAPSTestGraphFactory {
 
   val tableEntityIdKey = s"___$sourceIdKey"
 
-  override def apply(propertyGraph: InMemoryTestGraph)(implicit caps: CAPSSession): CAPSGraph = {
+  override def apply(propertyGraph: InMemoryTestGraph)(implicit caps: CAPSSession): CAPSScanGraph = {
     val schema = computeSchema(propertyGraph).asCaps
 
     val nodeScans = schema.labelCombinations.combos.map { labels =>

@@ -36,7 +36,7 @@ import org.opencypher.spark.testing.CAPSTestSuite
 import org.opencypher.spark.testing.fixture.GraphConstructionFixture
 
 class RelationalOptimizerTest extends CAPSTestSuite with GraphConstructionFixture {
-  val emptyRecords = CAPSRecords.empty(RecordHeader.empty)
+  val emptyRecords = caps.records.empty()
 
 
   //TODO: Re-enable once caching optimizer is back

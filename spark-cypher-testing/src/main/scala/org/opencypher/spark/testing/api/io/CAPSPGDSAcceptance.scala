@@ -27,14 +27,15 @@
 package org.opencypher.spark.testing.api.io
 
 import org.opencypher.okapi.api.graph.GraphName
+import org.opencypher.okapi.relational.api.graph.RelationalCypherGraph
 import org.opencypher.okapi.testing.{BaseTestSuite, PGDSAcceptance}
 import org.opencypher.spark.api.CAPSSession
 import org.opencypher.spark.api.CAPSSession._
 import org.opencypher.spark.api.value.{CAPSNode, CAPSRelationship}
 import org.opencypher.spark.impl.CAPSConverters._
-import org.opencypher.spark.impl.DataFrameOps._
+import org.opencypher.okapi.relational.api.tagging.Tags._
 import org.opencypher.spark.impl.encoders._
-import org.opencypher.spark.impl.graph.CAPSGraph
+import org.opencypher.spark.impl.table.SparkFlatRelationalTable.DataFrameTable
 
 import scala.util.{Failure, Success, Try}
 
@@ -82,7 +83,7 @@ trait CAPSPGDSAcceptance extends PGDSAcceptance[CAPSSession] {
     }
   }
 
-  private def verify(graph: CAPSGraph, expectedNodeSize: Int, expectedRelSize: Int): Unit = {
+  private def verify(graph: RelationalCypherGraph[DataFrameTable], expectedNodeSize: Int, expectedRelSize: Int): Unit = {
     val nodes = graph.nodes("n").asDataset.map(row => row("n").cast[CAPSNode]).collect()
     val rels = graph.relationships("r").asDataset.map(row => row("r").cast[CAPSRelationship]).collect()
 

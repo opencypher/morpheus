@@ -32,16 +32,17 @@ import org.opencypher.okapi.api.types._
 import org.opencypher.okapi.api.value.CypherValue._
 import org.opencypher.okapi.ir.api.expr._
 import org.opencypher.okapi.ir.api.{Label, PropertyKey}
+import org.opencypher.okapi.relational.api.graph.RelationalCypherGraph
 import org.opencypher.okapi.relational.impl.physical.InnerJoin
 import org.opencypher.okapi.relational.impl.table._
 import org.opencypher.okapi.testing.Bag
 import org.opencypher.okapi.testing.Bag._
 import org.opencypher.spark.api.value.CAPSNode
 import org.opencypher.spark.impl.convert.SparkConversions._
-import org.opencypher.spark.impl.graph.CAPSGraph
+import org.opencypher.spark.impl.table.SparkFlatRelationalTable.DataFrameTable
 import org.opencypher.spark.schema.CAPSSchema._
 import org.opencypher.spark.testing.fixture.RecordsVerificationFixture
-import org.opencypher.spark.testing.support.creation.caps.{CAPSPatternGraphFactory, CAPSTestGraphFactory}
+import org.opencypher.spark.testing.support.creation.caps.{CAPSTestGraphFactory, SingleTableGraphFactory}
 
 import scala.collection.JavaConverters._
 
@@ -49,7 +50,7 @@ class SingleTableGraphTest extends CAPSGraphTest with RecordsVerificationFixture
 
   import CAPSGraphTestData._
 
-  override def capsGraphFactory: CAPSTestGraphFactory = CAPSPatternGraphFactory
+  override def capsGraphFactory: CAPSTestGraphFactory = SingleTableGraphFactory
 
   it("projects a pattern graph") {
     val inputGraph = initGraph(`:Person`)
@@ -181,30 +182,30 @@ class SingleTableGraphTest extends CAPSGraphTest with RecordsVerificationFixture
     val inputGraph = initGraph(`:KNOWS` + `:READS`)
     val inputRels = inputGraph.relationships("r")
 
-    val patternGraph = CAPSGraph.create(inputRels, inputGraph.schema.asCaps)
-    val outputRels = patternGraph.relationships("r", CTRelationship("KNOWS"))
+    val singleTableGraph = caps.graphs.create(inputRels, inputGraph.schema.asCaps)
+    val outputRels = singleTableGraph.relationships("r", CTRelationship("KNOWS"))
 
-    outputRels.df.count() shouldBe 6
+    outputRels.table.df.count() shouldBe 6
   }
 
   it("relationship scan for disjunction of types") {
     val inputGraph = initGraph(`:KNOWS` + `:READS` + `:INFLUENCES`)
     val inputRels = inputGraph.relationships("r")
 
-    val patternGraph = CAPSGraph.create(inputRels, inputGraph.schema.asCaps)
-    val outputRels = patternGraph.relationships("r", CTRelationship("KNOWS", "INFLUENCES"))
+    val singleTableGraph = caps.graphs.create(inputRels, inputGraph.schema.asCaps)
+    val outputRels = singleTableGraph.relationships("r", CTRelationship("KNOWS", "INFLUENCES"))
 
-    outputRels.df.count() shouldBe 7
+    outputRels.table.df.count() shouldBe 7
   }
 
   it("relationship scan for all types") {
     val inputGraph = initGraph(`:KNOWS` + `:READS`)
     val inputRels = inputGraph.relationships("r")
 
-    val patternGraph = CAPSGraph.create(inputRels, inputGraph.schema)
-    val outputRels = patternGraph.relationships("r", CTRelationship)
+    val singleTableGraph = caps.graphs.singleTableGraph(inputRels, inputGraph.schema, Set(0))
+    val outputRels = singleTableGraph.relationships("r", CTRelationship)
 
-    outputRels.df.count() shouldBe 10
+    outputRels.table.df.count() shouldBe 10
   }
 
   it("projects a pattern graph with a created node that has labels") {
@@ -255,8 +256,8 @@ class SingleTableGraphTest extends CAPSGraphTest with RecordsVerificationFixture
     val inputGraph = initGraph(`:Person`)
     val inputNodes = inputGraph.nodes("n")
 
-    val patternGraph = CAPSGraph.create(inputNodes, inputGraph.schema)
-    val outputNodes = patternGraph.nodes("n")
+    val singleTableGraph = caps.graphs.singleTableGraph(inputNodes, inputGraph.schema, Set(0))
+    val outputNodes = singleTableGraph.nodes("n")
 
     val cols = Seq(
       n,
@@ -279,8 +280,8 @@ class SingleTableGraphTest extends CAPSGraphTest with RecordsVerificationFixture
     val inputGraph = initGraph(`:Person` + `:Book`)
     val inputNodes = inputGraph.nodes("n")
 
-    val patternGraph = CAPSGraph.create(inputNodes, inputGraph.schema)
-    val outputNodes = patternGraph.nodes("n")
+    val singleTableGraph = caps.graphs.singleTableGraph(inputNodes, inputGraph.schema, Set(0))
+    val outputNodes = singleTableGraph.nodes("n")
 
     val col = Seq(
       n,
@@ -307,8 +308,8 @@ class SingleTableGraphTest extends CAPSGraphTest with RecordsVerificationFixture
   }
 
   it("Node scan from multiple connected nodes") {
-    val patternGraph = initPersonReadsBookGraph
-    val nodes = patternGraph.nodes("n")
+    val singleTableGraph = initPersonReadsBookGraph
+    val nodes = singleTableGraph.nodes("n")
     val cols = Seq(
       n,
       nHasLabelBook,
@@ -334,8 +335,8 @@ class SingleTableGraphTest extends CAPSGraphTest with RecordsVerificationFixture
   }
 
   it("Specific node scan from multiple connected nodes") {
-    val patternGraph = initPersonReadsBookGraph
-    val nodes = patternGraph.nodes("n", CTNode("Person"))
+    val singleTableGraph = initPersonReadsBookGraph
+    val nodes = singleTableGraph.nodes("n", CTNode("Person"))
     val cols = Seq(
       n,
       nHasLabelPerson,
@@ -356,8 +357,8 @@ class SingleTableGraphTest extends CAPSGraphTest with RecordsVerificationFixture
     val inputGraph = initGraph(`:Person` + `:Book`)
     val inputNodes = inputGraph.nodes("n")
 
-    val patternGraph = CAPSGraph.create(inputNodes, inputGraph.schema)
-    val nodes = patternGraph.nodes("n", CTNode("Person"))
+    val singleTableGraph = caps.graphs.singleTableGraph(inputNodes, inputGraph.schema, Set(0))
+    val nodes = singleTableGraph.nodes("n", CTNode("Person"))
 
     val cols = Seq(
       n,
@@ -379,15 +380,15 @@ class SingleTableGraphTest extends CAPSGraphTest with RecordsVerificationFixture
     val inputGraph = initGraph(`:Book`)
     val inputNodes = inputGraph.nodes("n")
 
-    val patternGraph = CAPSGraph.create(inputNodes, inputGraph.schema)
+    val singleTableGraph = caps.graphs.singleTableGraph(inputNodes, inputGraph.schema, Set(0))
 
-    patternGraph.nodes("n", CTNode("Person")).df.collect().toSet shouldBe empty
+    singleTableGraph.nodes("n", CTNode("Person")).table.df.collect().toSet shouldBe empty
   }
 
   it("Supports .cypher node scans") {
-    val patternGraph = initPersonReadsBookGraph
+    val singleTableGraph = initPersonReadsBookGraph
 
-    patternGraph.cypher("MATCH (p:Person {name: 'Mats'}) RETURN p.luckyNumber").records.collect.toBag should equal(
+    singleTableGraph.cypher("MATCH (p:Person {name: 'Mats'}) RETURN p.luckyNumber").records.collect.toBag should equal(
       Bag(CypherMap("p.luckyNumber" -> 23)))
   }
 
@@ -485,17 +486,21 @@ class SingleTableGraphTest extends CAPSGraphTest with RecordsVerificationFixture
     when.graph.nodes("n", CTNode("Person")).size should equal(4)
   }
 
-  private def initPersonReadsBookGraph: CAPSGraph = {
+  private def initPersonReadsBookGraph: RelationalCypherGraph[DataFrameTable] = {
     val inputGraph = initGraph(`:Person` + `:Book` + `:READS`)
 
     val persons = inputGraph.nodes("p", CTNode("Person"))
     val reads = inputGraph.relationships("r", CTRelationship("READS"))
     val books = inputGraph.nodes("b", CTNode("Book"))
 
-    val personReadsBook = persons
-      .join(reads, InnerJoin, Var("p")(CTNode) -> rStart)
-      .join(books, InnerJoin, rEnd -> Var("b")(CTNode))
+    val personReadsBookHeader = persons.header.join(reads.header).join(books.header)
 
-    CAPSGraph.create(personReadsBook, inputGraph.schema)
+    val personReadsBook = persons.table
+      .join(reads.table, InnerJoin, persons.header.column(Var("p")(CTNode)) -> reads.header.column(rStart))
+      .join(books.table, InnerJoin, reads.header.column(rEnd) -> books.header.column(Var("b")(CTNode)))
+
+    val personReadsBookCapsRecords = caps.records.from(personReadsBookHeader, personReadsBook)
+
+    caps.graphs.singleTableGraph(personReadsBookCapsRecords, inputGraph.schema, Set(0))
   }
 }

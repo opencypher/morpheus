@@ -26,12 +26,13 @@
  */
 package org.opencypher.spark.impl.acceptance
 
+import org.opencypher.okapi.relational.api.graph.RelationalCypherGraph
 import org.opencypher.spark.api.CAPSSession
-import org.opencypher.spark.impl.graph.CAPSGraph
-import org.opencypher.spark.testing.support.creation.caps.{CAPSPatternGraphFactory, CAPSScanGraphFactory}
+import org.opencypher.spark.impl.table.SparkFlatRelationalTable.DataFrameTable
+import org.opencypher.spark.testing.support.creation.caps.{CAPSScanGraphFactory, SingleTableGraphFactory}
 
 trait GraphInit {
-  def initGraph(createQuery: String)(implicit caps: CAPSSession): CAPSGraph
+  def initGraph(createQuery: String)(implicit caps: CAPSSession): RelationalCypherGraph[DataFrameTable]
 }
 
 trait DefaultGraphInit extends ScanGraphInit
@@ -47,6 +48,6 @@ trait ScanGraphInit extends GraphInit {
   */
 trait PatternGraphInit extends GraphInit {
   override def initGraph(createQuery: String)(implicit caps: CAPSSession) = {
-    CAPSPatternGraphFactory.initGraph(createQuery)
+    SingleTableGraphFactory.initGraph(createQuery)
   }
 }

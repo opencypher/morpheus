@@ -28,14 +28,15 @@ package org.opencypher.spark.api.io.csv
 
 import java.nio.file.Paths
 
-import org.opencypher.spark.api.{FSGraphSources, GraphSources}
+import org.opencypher.okapi.relational.api.graph.RelationalCypherGraph
+import org.opencypher.spark.api.GraphSources
 import org.opencypher.spark.api.io.fs.local.LocalDataSourceAcceptance
-import org.opencypher.spark.impl.graph.CAPSGraph
 import org.opencypher.spark.impl.io.CAPSPropertyGraphDataSource
+import org.opencypher.spark.impl.table.SparkFlatRelationalTable.DataFrameTable
 
 class LocalCsvDataSourceAcceptance extends LocalDataSourceAcceptance {
 
-  override protected def createDs(graph: CAPSGraph): CAPSPropertyGraphDataSource = {
+  override protected def createDs(graph: RelationalCypherGraph[DataFrameTable]): CAPSPropertyGraphDataSource = {
     GraphSources.fs("file://" + Paths.get(tempDir.getRoot.getAbsolutePath)).csv
   }
 

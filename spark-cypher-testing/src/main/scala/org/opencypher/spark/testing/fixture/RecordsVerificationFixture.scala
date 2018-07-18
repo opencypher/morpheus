@@ -28,16 +28,17 @@ package org.opencypher.spark.testing.fixture
 
 import org.apache.spark.sql.Row
 import org.opencypher.okapi.ir.api.expr.Expr
+import org.opencypher.okapi.relational.api.table.RelationalCypherRecords
 import org.opencypher.okapi.testing.Bag._
-import org.opencypher.spark.impl.CAPSRecords
+import org.opencypher.spark.impl.table.SparkFlatRelationalTable.DataFrameTable
 import org.opencypher.spark.testing.CAPSTestSuite
 
 trait RecordsVerificationFixture {
 
   self: CAPSTestSuite  =>
 
-  protected def verify(records: CAPSRecords, expectedExprs: Seq[Expr], expectedData: Bag[Row]): Unit = {
-    val df = records.df
+  protected def verify(records: RelationalCypherRecords[DataFrameTable], expectedExprs: Seq[Expr], expectedData: Bag[Row]): Unit = {
+    val df = records.table.df
     val header = records.header
     val expectedColumns = expectedExprs.map(header.column)
     df.columns.length should equal(expectedColumns.size)

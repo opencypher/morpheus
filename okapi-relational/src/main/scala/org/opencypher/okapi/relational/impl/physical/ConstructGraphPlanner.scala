@@ -88,10 +88,6 @@ final case class ConstructGraph[T <: FlatRelationalTable[T]](
     Tags.pickFreeTag(usedTags)
   }
 
-  private def identityRetaggings(g: RelationalCypherGraph[T]): (RelationalCypherGraph[T], Map[Int, Int]) = {
-    g -> g.tags.zip(g.tags).toMap
-  }
-
   override lazy val (graph, graphName, tagStrategy): (RelationalCypherGraph[T], QualifiedGraphName, TagStrategy) = {
 
     val onGraph = rhs.graph
@@ -152,9 +148,9 @@ final case class ConstructGraph[T <: FlatRelationalTable[T]](
     val patternGraph = session.graphs.singleTableGraph(patternGraphRecords, schema, tagsUsed)
 
     val constructedCombinedWithOn = if (onGraph == session.graphs.empty) {
-      session.graphs.unionGraph(Map(identityRetaggings(patternGraph)))
+      session.graphs.unionGraph(patternGraph)
     } else {
-      session.graphs.unionGraph(Map(identityRetaggings(onGraph), identityRetaggings(patternGraph)))
+      session.graphs.unionGraph(Seq(onGraph, patternGraph): _*)
     }
 
     context.constructedGraphCatalog += (construct.name -> constructedCombinedWithOn)

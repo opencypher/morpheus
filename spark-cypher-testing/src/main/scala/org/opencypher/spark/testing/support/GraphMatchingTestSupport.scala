@@ -26,8 +26,10 @@
  */
 package org.opencypher.spark.testing.support
 
+import org.opencypher.okapi.relational.api.graph.RelationalCypherGraph
+import org.opencypher.okapi.relational.api.table.RelationalCypherRecords
 import org.opencypher.okapi.testing.BaseTestSuite
-import org.opencypher.spark.impl.CAPSRecords
+import org.opencypher.spark.impl.table.SparkFlatRelationalTable.DataFrameTable
 import org.opencypher.spark.testing.fixture.{CAPSSessionFixture, SparkSessionFixture}
 import org.scalatest.Assertion
 
@@ -37,16 +39,16 @@ trait GraphMatchingTestSupport {
 
   self: BaseTestSuite with SparkSessionFixture with CAPSSessionFixture =>
 
-  private def getEntityIds(records: CAPSRecords): Set[Long] = {
+  private def getEntityIds(records: RelationalCypherRecords[DataFrameTable]): Set[Long] = {
     val entityVar = records.header.vars.toSeq match {
       case Seq(v) => v
       case other => throw new UnsupportedOperationException(s"Expected records with 1 entity, got $other")
     }
 
-    records.df.select(records.header.column(entityVar)).collect().map(_.getLong(0)).toSet
+    records.table.df.select(records.header.column(entityVar)).collect().map(_.getLong(0)).toSet
   }
 
-  private def verify(actual: CAPSGraph, expected: CAPSGraph): Assertion = {
+  private def verify(actual: RelationalCypherGraph[DataFrameTable], expected: RelationalCypherGraph[DataFrameTable]): Assertion = {
     val expectedNodeIds = getEntityIds(expected.nodes("n"))
     val expectedRelIds = getEntityIds(expected.relationships("r"))
 
@@ -57,8 +59,8 @@ trait GraphMatchingTestSupport {
     expectedRelIds should equal(actualRelIds)
   }
 
-  implicit class GraphsMatcher(graphs: Map[String, CAPSGraph]) {
-    def shouldMatch(expectedGraphs: CAPSGraph*): Unit = {
+  implicit class GraphsMatcher(graphs: Map[String, RelationalCypherGraph[DataFrameTable]]) {
+    def shouldMatch(expectedGraphs: RelationalCypherGraph[DataFrameTable]*): Unit = {
       withClue("expected and actual must have same size") {
         graphs.size should equal(expectedGraphs.size)
       }
@@ -69,7 +71,7 @@ trait GraphMatchingTestSupport {
     }
   }
 
-  implicit class GraphMatcher(graph: CAPSGraph) {
-    def shouldMatch(expectedGraph: CAPSGraph): Unit = verify(graph, expectedGraph)
+  implicit class GraphMatcher(graph: RelationalCypherGraph[DataFrameTable]) {
+    def shouldMatch(expectedGraph: RelationalCypherGraph[DataFrameTable]): Unit = verify(graph, expectedGraph)
   }
 }
