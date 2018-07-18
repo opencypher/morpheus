@@ -1,13 +1,13 @@
 package org.opencypher.okapi.relational.impl.operators
 
-import org.opencypher.okapi.api.graph.{CypherSession, QualifiedGraphName}
+import org.opencypher.okapi.api.graph.QualifiedGraphName
 import org.opencypher.okapi.api.types._
 import org.opencypher.okapi.api.value.CypherValue.CypherInteger
 import org.opencypher.okapi.impl.exception.{IllegalArgumentException, SchemaException, UnsupportedOperationException}
-import org.opencypher.okapi.ir.api.{Label, RelType}
 import org.opencypher.okapi.ir.api.block.{Asc, Desc, SortItem}
 import org.opencypher.okapi.ir.api.expr.Expr._
 import org.opencypher.okapi.ir.api.expr._
+import org.opencypher.okapi.ir.api.{Label, RelType}
 import org.opencypher.okapi.logical.impl.{LogicalCatalogGraph, LogicalPatternGraph}
 import org.opencypher.okapi.relational.api.graph.{RelationalCypherGraph, RelationalCypherSession}
 import org.opencypher.okapi.relational.api.physical.RelationalRuntimeContext
@@ -299,14 +299,15 @@ final case class Select[T <: FlatRelationalTable[T]](
   expressions: List[Expr]
 ) extends RelationalOperator[T] {
 
-  override lazy val header: RecordHeader = {
-    val aliasExprs = expressions.collect { case a: AliasExpr => a }
-    val headerWithAliases = in.header.withAlias(aliasExprs: _*)
-    headerWithAliases.select(expressions: _*)
-  }
+  override lazy val header: RecordHeader = in.header.select(expressions: _*)
 
   override lazy val _table: T = {
-    in.table.select(expressions.map(header.column).distinct: _*)
+    import Expr._
+    val selectExpressions = expressions.map {
+      case AliasExpr(_, alias) => alias
+      case other => other
+    }.flatMap(expr => header.expressionsFor(expr).toSeq.sorted)
+    in.table.select(selectExpressions.map(header.column).distinct: _*)
   }
 
   override lazy val returnItems: Option[Seq[Var]] = Some(expressions.flatMap(_.owner).collect { case e: Var => e }.distinct)
@@ -323,15 +324,15 @@ object RelationalOperator {
 
       val entityVar = op.header.entityVars.head
 
-      // Rename variable
-      val aliasOp = Alias(op, Seq(entityVar as entity))
+      // Rename variable and select only relevant expressions
+      val relevantSelected = Select(op, List(entityVar as entity))
 
       // Fill in missing true label columns
       val trueLabels = entityVar.cypherType match {
         case CTNode(labels, _) => labels
         case _ => Set.empty
       }
-      val withTrueLabels = trueLabels.foldLeft(aliasOp: RelationalOperator[T]) {
+      val withTrueLabels = trueLabels.foldLeft(relevantSelected: RelationalOperator[T]) {
         case (currentOp, label) => operators.AddInto(currentOp, TrueLit, HasLabel(entity, Label(label))(CTBoolean))
       }
 
@@ -368,10 +369,10 @@ object RelationalOperator {
         case (currentOp, propertyExpr) => operators.AddInto(currentOp, NullLit(propertyExpr.cypherType), propertyExpr)
       }
 
-      val relevantSelected: RelationalOperator[T] = Select(withProperties, targetHeader.expressions.toList)
-
-      assert(targetHeader.expressions == relevantSelected.header.expressions)
-      relevantSelected
+      import Expr._
+      assert(targetHeader.expressions == withProperties.header.expressions,
+      s"Expected header expressions:\n\t${targetHeader.expressions.toSeq.sorted.mkString(", ")},\ngot\n\t${withProperties.header.expressions.toSeq.sorted.mkString(", ")}")
+      withProperties
     }
 
   }

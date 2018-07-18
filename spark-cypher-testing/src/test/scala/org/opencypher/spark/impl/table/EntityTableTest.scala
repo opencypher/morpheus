@@ -38,6 +38,7 @@ import org.opencypher.okapi.ir.api.expr._
 import org.opencypher.okapi.ir.api.{Label, PropertyKey, RelType}
 import org.opencypher.okapi.relational.impl.table.RecordHeader
 import org.opencypher.spark.api.io._
+import org.opencypher.spark.api.value.CAPSNode
 import org.opencypher.spark.impl.DataFrameOps._
 import org.opencypher.spark.impl.convert.SparkConversions
 import org.opencypher.spark.schema.CAPSSchema._
@@ -205,14 +206,14 @@ class EntityTableTest extends CAPSTestSuite {
   }
 
   it("NodeTable can handle shuffled columns due to cast") {
-    val df = sparkSession.createDataFrame(Seq((1, true, 10.toShort, 23.1f))).toDF("ID", "IS_C", "FOO", "BAR")
+    val df = sparkSession.createDataFrame(Seq((1L, true, 10.toShort, 23.1f))).toDF("ID", "IS_C", "FOO", "BAR")
 
     val nodeTable = CAPSNodeTable.fromMapping(nodeMapping, df)
 
     val graph = caps.graphs.create(nodeTable)
-    graph.nodes("n").collect.toSet {
-      CypherMap("n" -> "1")
-    }
+    graph.nodes("n").collect.toSet should equal(Set(
+      CypherMap("n" -> CAPSNode(1, Set("A", "B"), CypherMap("bar" -> 23.1f, "foo" -> 10)))
+    ))
   }
 
   it("NodeTable should not accept wrong source id key type (should be compatible to LongType)") {

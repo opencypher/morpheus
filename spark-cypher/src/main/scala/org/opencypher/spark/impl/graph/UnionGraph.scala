@@ -64,14 +64,15 @@ final case class UnionGraph(graphsToReplacements: Map[RelationalCypherGraph[Data
     } else {
       val node = Var(name)(nodeCypherType)
       val targetHeader = schema.headerForNode(node)
+      val nodeWithCorrectTypes = targetHeader.nodeEntities.head
       val nodeOps: Iterable[RelationalOperator[DataFrameTable]] = graphsToReplacements.keys
         .filter(nodeCypherType.labels.isEmpty || _.schema.labels.intersect(nodeCypherType.labels).nonEmpty)
         .map {
           graph =>
             val nodeScan = graph.nodes(name, nodeCypherType)
             val startOp = Start(session.records.from(nodeScan.header, nodeScan.table))
-            val retagOp = RetagVariable(startOp, node, graphsToReplacements(graph))
-            ExtractEntities(retagOp, targetHeader, Set(node))
+            val retagOp = RetagVariable(startOp, nodeWithCorrectTypes, graphsToReplacements(graph))
+            retagOp.alignWith(nodeWithCorrectTypes, targetHeader)
         }
 
       val distinctOp = Distinct(nodeOps.reduce(TabularUnionAll(_, _)), Set(node))
@@ -83,13 +84,14 @@ final case class UnionGraph(graphsToReplacements: Map[RelationalCypherGraph[Data
   override def relationships(name: String, relCypherType: CTRelationship): CAPSRecords = {
     val rel = Var(name)(relCypherType)
     val targetHeader = schema.headerForRelationship(rel)
+    val relWithCorrectTypes = targetHeader.relationshipEntities.head
     val relOps: Iterable[RelationalOperator[DataFrameTable]] = graphsToReplacements.keys
       .filter(relCypherType.types.isEmpty || _.schema.relationshipTypes.intersect(relCypherType.types).nonEmpty)
       .map { graph =>
         val relScan = graph.relationships(name, relCypherType)
         val startOp = Start(session.records.from(relScan.header, relScan.table))
-        val retagOp = RetagVariable(startOp, rel, graphsToReplacements(graph))
-        ExtractEntities(retagOp, targetHeader, Set(rel))
+        val retagOp = RetagVariable(startOp, relWithCorrectTypes, graphsToReplacements(graph))
+        retagOp.alignWith(relWithCorrectTypes, targetHeader)
       }
 
     val distinctOp = Distinct(relOps.reduce(TabularUnionAll(_, _)), Set(rel))
