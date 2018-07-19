@@ -7,14 +7,11 @@ import org.opencypher.okapi.impl.exception.{IllegalArgumentException, SchemaExce
 import org.opencypher.okapi.ir.api.block.{Asc, Desc, SortItem}
 import org.opencypher.okapi.ir.api.expr.Expr._
 import org.opencypher.okapi.ir.api.expr._
-import org.opencypher.okapi.ir.api.{Label, RelType}
 import org.opencypher.okapi.logical.impl.{LogicalCatalogGraph, LogicalPatternGraph}
 import org.opencypher.okapi.relational.api.graph.{RelationalCypherGraph, RelationalCypherSession}
 import org.opencypher.okapi.relational.api.physical.RelationalRuntimeContext
-import org.opencypher.okapi.relational.api.schema.RelationalSchema._
 import org.opencypher.okapi.relational.api.table.ExtractEntities.SelectExpressions
 import org.opencypher.okapi.relational.api.table.{FlatRelationalTable, RelationalCypherRecords}
-import org.opencypher.okapi.relational.impl.operators
 import org.opencypher.okapi.relational.impl.physical._
 import org.opencypher.okapi.relational.impl.table.RecordHeader
 import org.opencypher.okapi.trees.AbstractTreeNode

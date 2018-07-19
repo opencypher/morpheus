@@ -332,7 +332,7 @@ object RelationalPlanner {
 
       // Drop expressions that are not in the target header
       val dropExpressions = renamedEntity.header.expressions -- targetHeader.expressions
-      val withDroppedExpressions = relational.Drop(renamedEntity, dropExpressions)
+      val withDroppedExpressions = if (dropExpressions.nonEmpty) relational.Drop(renamedEntity, dropExpressions) else renamedEntity
 
       // Fill in missing true label columns
       val trueLabels = inputVar.cypherType match {

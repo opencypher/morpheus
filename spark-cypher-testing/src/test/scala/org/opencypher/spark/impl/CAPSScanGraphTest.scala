@@ -43,7 +43,7 @@ class CAPSScanGraphTest extends CAPSGraphTest {
   override def capsGraphFactory: CAPSTestGraphFactory = CAPSScanGraphFactory
 
   it("executes union") {
-    val graph1 =caps.graphs.create(personTable, knowsTable)
+    val graph1 = caps.graphs.create(personTable, knowsTable)
     val graph2 = caps.graphs.create(programmerTable, bookTable, readsTable)
 
     val result = graph1 unionAll graph2

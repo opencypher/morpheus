@@ -60,7 +60,7 @@ trait RelationalCypherGraph[T <: FlatRelationalTable[T]] extends PropertyGraph {
   }
 
   def unionAll(others: PropertyGraph*): RelationalCypherGraph[T] = {
-    val graphs = others.map {
+    val graphs = (this +: others).map {
       case g: RelationalCypherGraph[T] => g
       case _ => throw UnsupportedOperationException("Union all only works on relational graphs")
     }
