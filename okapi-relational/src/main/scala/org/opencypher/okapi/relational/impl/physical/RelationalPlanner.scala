@@ -405,5 +405,19 @@ object RelationalPlanner {
         case other => throw UnsupportedOperationException(s"Operation requires single entity table, found ${other.mkString("[", ", ", "]")}")
       }
     }
+
+    def filterRelTypes(targetType: CTRelationship): RelationalOperator[T] = {
+      val singleEntity = op.singleEntity
+
+      if (singleEntity.cypherType.subTypeOf(targetType).isTrue) {
+        op
+      } else {
+        val relTypes = op.header
+          .typesFor(singleEntity)
+          .filter(hasType => targetType.types.contains(hasType.relType.name))
+        val filterExpr = Ors(relTypes.map(Equals(_, TrueLit)(CTBoolean)).toSeq: _*)
+        relational.Filter(op, filterExpr)
+      }
+    }
   }
 }

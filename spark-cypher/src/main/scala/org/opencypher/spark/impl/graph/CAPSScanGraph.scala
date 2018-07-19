@@ -26,7 +26,7 @@
  */
 package org.opencypher.spark.impl.graph
 
-import org.opencypher.okapi.api.types.{CTBoolean, CTNode, CTRelationship, CypherType}
+import org.opencypher.okapi.api.types.{CTNode, CTRelationship, CypherType}
 import org.opencypher.okapi.impl.exception.IllegalArgumentException
 import org.opencypher.okapi.ir.api.expr._
 import org.opencypher.okapi.relational.api.graph.RelationalCypherGraph
@@ -89,26 +89,16 @@ class CAPSScanGraph(val scans: Seq[CAPSEntityTable], val schema: CAPSSchema, val
           nodeTables.filter(_.entityType.subTypeOf(ct).isTrue)
         }
         scans.map(scan => Start(scan.records))
-      case CTRelationship(scanTypes, _) =>
-        val scans = relTables.filter(relTable => relTable.entityType.couldBeSameTypeAs(ct))
-
-        scans
-          .map { scan =>
-            if (scan.entityType.subTypeOf(ct).isTrue) {
-              Start(scan.records)
-            } else {
-              val startOp = Start(scan.records)
-              val relTypes = scan.header
-                .typesFor(startOp.singleEntity)
-                .filter(hasType => scanTypes.contains(hasType.relType.name))
-              val filterExpr = Ors(relTypes.map(Equals(_, TrueLit)(CTBoolean)).toSeq: _*)
-              Filter(startOp, filterExpr)
-            }
-          }
+      case r: CTRelationship =>
+        relTables
+          .filter(relTable => relTable.entityType.couldBeSameTypeAs(ct))
+          .map(scan => Start(scan.records).filterRelTypes(r))
 
       case other => throw IllegalArgumentException(s"Scan on $other")
     }
   }
+
+
 
   override def nodes(name: String, nodeCypherType: CTNode, exactLabelMatch: Boolean = false): CAPSRecords = {
     val scan = scanOperator(nodeCypherType, exactLabelMatch)
