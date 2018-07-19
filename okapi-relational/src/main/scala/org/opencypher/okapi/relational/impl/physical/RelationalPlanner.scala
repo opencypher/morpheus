@@ -36,7 +36,7 @@ import org.opencypher.okapi.logical.impl._
 import org.opencypher.okapi.logical.{impl => logical}
 import org.opencypher.okapi.relational.api.physical.{RelationalPlannerContext, RelationalRuntimeContext}
 import org.opencypher.okapi.relational.api.table.FlatRelationalTable
-import org.opencypher.okapi.relational.impl.operators.{Start, _}
+import org.opencypher.okapi.relational.impl.operators._
 import org.opencypher.okapi.relational.impl.physical.ConstructGraphPlanner._
 import org.opencypher.okapi.relational.impl.table.RecordHeader
 import org.opencypher.okapi.relational.impl.{operators => relational}
@@ -319,58 +319,59 @@ object RelationalPlanner {
     }
 
     // TODO: entity needs to contain all labels/relTypes: all case needs to be explicitly expanded with the schema
-    def alignExpressions(entity: Var, targetHeader: RecordHeader): RelationalOperator[T] = {
+    def alignExpressions(targetVar: Var, targetHeader: RecordHeader): RelationalOperator[T] = {
 
-      val entityVar = Var(op.singleEntity.name)(entity.cypherType)
+      val inputVar = op.singleEntity
 
-      // Labels that do not need to be added
-      val optionalLabels = op.header.labelsFor(entityVar).map(_.label.name)
+      // Labels/RelTypes that do not need to be added
+      val existingLabels = op.header.labelsFor(inputVar).map(_.label.name)
+      val existingRelTypes = op.header.typesFor(inputVar).map(_.relType.name)
 
       // Rename variable and select columns owned by entityVar
-      val renamedEntity = relational.Select(op, List(entityVar as entity))
+      val renamedEntity = relational.Select(op, List(inputVar as targetVar))
 
       // Drop expressions that are not in the target header
       val dropExpressions = renamedEntity.header.expressions -- targetHeader.expressions
       val withDroppedExpressions = relational.Drop(renamedEntity, dropExpressions)
 
       // Fill in missing true label columns
-      val trueLabels = entityVar.cypherType match {
-        case CTNode(labels, _) => labels -- optionalLabels
+      val trueLabels = inputVar.cypherType match {
+        case CTNode(labels, _) => labels -- existingLabels
         case _ => Set.empty
       }
       val withTrueLabels = trueLabels.foldLeft(withDroppedExpressions: RelationalOperator[T]) {
-        case (currentOp, label) => relational.AddInto(currentOp, TrueLit, HasLabel(entity, Label(label))(CTBoolean))
+        case (currentOp, label) => relational.AddInto(currentOp, TrueLit, HasLabel(targetVar, Label(label))(CTBoolean))
       }
 
       // Fill in missing false label columns
-      val falseLabels = entity.cypherType match {
-        case CTNode(labels, _) => labels -- trueLabels -- optionalLabels
+      val falseLabels = targetVar.cypherType match {
+        case CTNode(labels, _) => labels -- trueLabels -- existingLabels
         case _ => Set.empty
       }
       val withFalseLabels = falseLabels.foldLeft(withTrueLabels: RelationalOperator[T]) {
-        case (currentOp, label) => relational.AddInto(currentOp, FalseLit, HasLabel(entity, Label(label))(CTBoolean))
+        case (currentOp, label) => relational.AddInto(currentOp, FalseLit, HasLabel(targetVar, Label(label))(CTBoolean))
       }
 
       // Fill in missing true relType columns
-      val trueRelTypes = entityVar.cypherType match {
-        case CTRelationship(relTypes, _) => relTypes
+      val trueRelTypes = inputVar.cypherType match {
+        case CTRelationship(relTypes, _) => relTypes -- existingRelTypes
         case _ => Set.empty
       }
       val withTrueRelTypes = trueRelTypes.foldLeft(withFalseLabels: RelationalOperator[T]) {
-        case (currentOp, relType) => relational.AddInto(currentOp, TrueLit, HasType(entity, RelType(relType))(CTBoolean))
+        case (currentOp, relType) => relational.AddInto(currentOp, TrueLit, HasType(targetVar, RelType(relType))(CTBoolean))
       }
 
       // Fill in missing false relType columns
-      val falseRelTypes = entity.cypherType match {
-        case CTRelationship(relTypes, _) => relTypes -- trueRelTypes
+      val falseRelTypes = targetVar.cypherType match {
+        case CTRelationship(relTypes, _) => relTypes -- trueRelTypes -- existingRelTypes
         case _ => Set.empty
       }
       val withFalseRelTypes = falseRelTypes.foldLeft(withTrueRelTypes: RelationalOperator[T]) {
-        case (currentOp, relType) => relational.AddInto(currentOp, FalseLit, HasType(entity, RelType(relType))(CTBoolean))
+        case (currentOp, relType) => relational.AddInto(currentOp, FalseLit, HasType(targetVar, RelType(relType))(CTBoolean))
       }
 
       // Fill in missing properties
-      val missingProperties = targetHeader.propertiesFor(entity) -- withFalseRelTypes.header.propertiesFor(entity)
+      val missingProperties = targetHeader.propertiesFor(targetVar) -- withFalseRelTypes.header.propertiesFor(targetVar)
       val withProperties = missingProperties.foldLeft(withFalseRelTypes: RelationalOperator[T]) {
         case (currentOp, propertyExpr) => relational.AddInto(currentOp, NullLit(propertyExpr.cypherType), propertyExpr)
       }
