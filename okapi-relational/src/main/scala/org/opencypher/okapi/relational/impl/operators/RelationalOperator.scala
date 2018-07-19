@@ -158,7 +158,7 @@ final case class Cache[T <: FlatRelationalTable[T]](in: RelationalOperator[T]) e
 
 }
 
-final case class NodeScan[T <: FlatRelationalTable[T]](
+final case class Scan[T <: FlatRelationalTable[T]](
   in: RelationalOperator[T],
   v: Var
 ) extends RelationalOperator[T] {
@@ -183,28 +183,28 @@ final case class NodeScan[T <: FlatRelationalTable[T]](
   }
 }
 
-final case class RelationshipScan[T <: FlatRelationalTable[T]](
-  in: RelationalOperator[T],
-  v: Var
-) extends RelationalOperator[T] {
-
-  override lazy val header: RecordHeader = in.graph.schema.headerForRelationship(v)
-
-  // TODO: replace with RelationshipVar
-  override lazy val _table: T = {
-    val relTable = in.graph.relationships(v.name, v.cypherType.asInstanceOf[CTRelationship]).table
-
-    if (header.columns != relTable.physicalColumns.toSet) {
-      throw SchemaException(
-        s"""
-           |Graph schema does not match actual records returned for scan $v:
-           |  - Computed columns based on graph schema: ${header.columns.toSeq.sorted.mkString(", ")}
-           |  - Actual columns in scan table: ${relTable.physicalColumns.sorted.mkString(", ")}
-        """.stripMargin)
-    }
-    relTable
-  }
-}
+//final case class RelationshipScan[T <: FlatRelationalTable[T]](
+//  in: RelationalOperator[T],
+//  v: Var
+//) extends RelationalOperator[T] {
+//
+//  override lazy val header: RecordHeader = in.graph.schema.headerForRelationship(v)
+//
+//  // TODO: replace with RelationshipVar
+//  override lazy val _table: T = {
+//    val relTable = in.graph.relationships(v.name, v.cypherType.asInstanceOf[CTRelationship]).table
+//
+//    if (header.columns != relTable.physicalColumns.toSet) {
+//      throw SchemaException(
+//        s"""
+//           |Graph schema does not match actual records returned for scan $v:
+//           |  - Computed columns based on graph schema: ${header.columns.toSeq.sorted.mkString(", ")}
+//           |  - Actual columns in scan table: ${relTable.physicalColumns.sorted.mkString(", ")}
+//        """.stripMargin)
+//    }
+//    relTable
+//  }
+//}
 
 final case class Alias[T <: FlatRelationalTable[T]](
   in: RelationalOperator[T],
@@ -315,100 +315,6 @@ final case class Select[T <: FlatRelationalTable[T]](
   }
 
   override lazy val returnItems: Option[Seq[Var]] = Some(expressions.flatMap(_.owner).collect { case e: Var => e }.distinct)
-}
-
-object RelationalOperator {
-
-  implicit class RelationalOperatorOps[T <: FlatRelationalTable[T]](val op: RelationalOperator[T]) extends AnyVal {
-
-    // Only works with single entity tables
-    def assignScanName(name: String): RelationalOperator[T] = {
-      val entities = op.header.entityVars
-      require(entities.size == 1, s"Only works with single entity tables, has entities ${entities.mkString(", ")}")
-      val scanVar = entities.head
-      val namedScanVar = Var(name)(scanVar.cypherType)
-      Drop(Alias(op, Seq(scanVar as namedScanVar)), Set(scanVar))
-    }
-
-    // TODO: entity needs to contain all labels/relTypes: all case needs to be explicitly expanded with the schema
-    def alignExpressions(entity: Var, targetHeader: RecordHeader): RelationalOperator[T] = {
-      require(op.header.entityVars.size == 1,
-        s"Align with only works on single entity tables, found ${op.header.entityVars}")
-
-      val entityVar = op.header.entityVars.head
-
-      // Labels that do not need to be added
-      val optionalLabels = op.header.labelsFor(entityVar).map(_.label.name)
-
-      // Rename variable and select only relevant expressions
-      val relevantSelected = Select(op, List(entityVar as entity))
-
-      // Fill in missing true label columns
-      val trueLabels = entityVar.cypherType match {
-        case CTNode(labels, _) => labels -- optionalLabels
-        case _ => Set.empty
-      }
-      val withTrueLabels = trueLabels.foldLeft(relevantSelected: RelationalOperator[T]) {
-        case (currentOp, label) => operators.AddInto(currentOp, TrueLit, HasLabel(entity, Label(label))(CTBoolean))
-      }
-
-      // Fill in missing false label columns
-      val falseLabels = entity.cypherType match {
-        case CTNode(labels, _) => labels -- trueLabels -- optionalLabels
-        case _ => Set.empty
-      }
-      val withFalseLabels = falseLabels.foldLeft(withTrueLabels: RelationalOperator[T]) {
-        case (currentOp, label) => operators.AddInto(currentOp, FalseLit, HasLabel(entity, Label(label))(CTBoolean))
-      }
-
-      // Fill in missing true relType columns
-      val trueRelTypes = entityVar.cypherType match {
-        case CTRelationship(relTypes, _) => relTypes
-        case _ => Set.empty
-      }
-      val withTrueRelTypes = trueRelTypes.foldLeft(withFalseLabels: RelationalOperator[T]) {
-        case (currentOp, relType) => operators.AddInto(currentOp, TrueLit, HasType(entity, RelType(relType))(CTBoolean))
-      }
-
-      // Fill in missing false relType columns
-      val falseRelTypes = entity.cypherType match {
-        case CTRelationship(relTypes, _) => relTypes -- trueRelTypes
-        case _ => Set.empty
-      }
-      val withFalseRelTypes = falseRelTypes.foldLeft(withTrueRelTypes: RelationalOperator[T]) {
-        case (currentOp, relType) => operators.AddInto(currentOp, FalseLit, HasType(entity, RelType(relType))(CTBoolean))
-      }
-
-      // Fill in missing properties
-      val missingProperties = targetHeader.propertiesFor(entity) -- withFalseRelTypes.header.propertiesFor(entity)
-      val withProperties = missingProperties.foldLeft(withFalseLabels: RelationalOperator[T]) {
-        case (currentOp, propertyExpr) => operators.AddInto(currentOp, NullLit(propertyExpr.cypherType), propertyExpr)
-      }
-
-      import Expr._
-      assert(targetHeader.expressions == withProperties.header.expressions,
-        s"Expected header expressions:\n\t${targetHeader.expressions.toSeq.sorted.mkString(", ")},\ngot\n\t${withProperties.header.expressions.toSeq.sorted.mkString(", ")}")
-      withProperties
-    }
-
-    def alignColumnNames(targetHeader: RecordHeader): RelationalOperator[T] = {
-      require(op.header.expressions == targetHeader.expressions,
-        s"""|Column alignment only possible for same expressions.
-            |current: ${op.header}
-            |target: $targetHeader""".stripMargin)
-
-      if (op.header.columns == targetHeader.columns) {
-        op
-      } else {
-        val columnRenamings = targetHeader.expressions.foldLeft(Map.empty[Expr, String]) {
-          case (currentMap, expr) if op.header.column(expr) == targetHeader.column(expr) => currentMap
-          case (currentMap, expr) => currentMap + (expr -> targetHeader.column(expr))
-        }
-        RenameColumns(op, columnRenamings)
-      }
-    }
-  }
-
 }
 
 final case class ExtractEntities[T <: FlatRelationalTable[T]](

@@ -27,16 +27,18 @@
 package org.opencypher.okapi.relational.impl.physical
 
 import org.opencypher.okapi.api.graph.CypherSession
-import org.opencypher.okapi.api.types.{CTBoolean, CTNode}
+import org.opencypher.okapi.api.types.{CTBoolean, CTNode, CTRelationship}
 import org.opencypher.okapi.impl.exception.NotImplementedException
+import org.opencypher.okapi.ir.api.{Label, RelType}
 import org.opencypher.okapi.ir.api.block.SortItem
 import org.opencypher.okapi.ir.api.expr._
 import org.opencypher.okapi.logical.impl._
 import org.opencypher.okapi.logical.{impl => logical}
 import org.opencypher.okapi.relational.api.physical.{RelationalPlannerContext, RelationalRuntimeContext}
 import org.opencypher.okapi.relational.api.table.FlatRelationalTable
-import org.opencypher.okapi.relational.impl.operators.{RelationalOperator, RenameColumns}
+import org.opencypher.okapi.relational.impl.operators._
 import org.opencypher.okapi.relational.impl.physical.ConstructGraphPlanner._
+import org.opencypher.okapi.relational.impl.table.RecordHeader
 import org.opencypher.okapi.relational.impl.{operators => relational}
 
 object RelationalPlanner {
@@ -92,7 +94,7 @@ object RelationalPlanner {
         val explodeExpr = Explode(list)(item.cypherType)
         relational.Add(process[T](in), explodeExpr as item)
 
-      case logical.NodeScan(v, in, _) => relational.NodeScan(process[T](in), v)
+      case logical.NodeScan(v, in, _) => relational.Scan(process[T](in), v)
 
       case logical.Aggregate(aggregations, group, in, _) => relational.Aggregate(process[T](in), group, aggregations)
 
@@ -124,7 +126,7 @@ object RelationalPlanner {
             plannerContext.constructedGraphPlans(c.name)
         }
 
-        val second = relational.RelationshipScan(startFrom, rel)
+        val second = relational.Scan(startFrom, rel)
         val startNode = StartNode(rel)(CTNode)
         val endNode = EndNode(rel)(CTNode)
 
@@ -148,7 +150,7 @@ object RelationalPlanner {
 
       case logical.ExpandInto(source, rel, target, direction, sourceOp, _) =>
         val in = process[T](sourceOp)
-        val relationships = relational.RelationshipScan(in, rel)
+        val relationships = relational.Scan(in, rel)
 
         val startNode = StartNode(rel)()
         val endNode = EndNode(rel)()
@@ -166,7 +168,7 @@ object RelationalPlanner {
       case logical.BoundedVarLengthExpand(source, list, target, edgeScanType, direction, lower, upper, sourceOp, targetOp, _) =>
 
         val edgeScan = Var(list.name)(edgeScanType)
-        val edgeScanOp = relational.RelationshipScan(planStart(input.graph), edgeScan)
+        val edgeScanOp = relational.Scan(planStart(input.graph), edgeScan)
 
         val isExpandInto = sourceOp == targetOp
 
@@ -291,5 +293,99 @@ object RelationalPlanner {
 
     // 5. Select the resulting header expressions
     relational.Select(joined, joined.header.expressions.toList)
+  }
+
+  implicit class RelationalOperatorOps[T <: FlatRelationalTable[T]](val op: RelationalOperator[T]) extends AnyVal {
+
+    // Only works with single entity tables
+    def assignScanName(name: String): RelationalOperator[T] = {
+      val entities = op.header.entityVars
+      require(entities.size == 1, s"Only works with single entity tables, has entities ${entities.mkString(", ")}")
+      val scanVar = entities.head
+      val namedScanVar = Var(name)(scanVar.cypherType)
+      Drop(Alias(op, Seq(scanVar as namedScanVar)), Set(scanVar))
+    }
+
+    def alignWith(entity: Var, targetHeader: RecordHeader): RelationalOperator[T] = {
+      op.alignExpressions(entity, targetHeader).alignColumnNames(targetHeader)
+    }
+
+    // TODO: entity needs to contain all labels/relTypes: all case needs to be explicitly expanded with the schema
+    def alignExpressions(entity: Var, targetHeader: RecordHeader): RelationalOperator[T] = {
+      require(op.header.entityVars.size == 1,
+        s"Align with only works on single entity tables, found ${op.header.entityVars}")
+
+      val entityVar = op.header.entityVars.head
+
+      // Labels that do not need to be added
+      val optionalLabels = op.header.labelsFor(entityVar).map(_.label.name)
+
+      // Rename variable and select only relevant expressions
+      val relevantSelected = relational.Select(op, List(entityVar as entity))
+
+      // Fill in missing true label columns
+      val trueLabels = entityVar.cypherType match {
+        case CTNode(labels, _) => labels -- optionalLabels
+        case _ => Set.empty
+      }
+      val withTrueLabels = trueLabels.foldLeft(relevantSelected: RelationalOperator[T]) {
+        case (currentOp, label) => relational.AddInto(currentOp, TrueLit, HasLabel(entity, Label(label))(CTBoolean))
+      }
+
+      // Fill in missing false label columns
+      val falseLabels = entity.cypherType match {
+        case CTNode(labels, _) => labels -- trueLabels -- optionalLabels
+        case _ => Set.empty
+      }
+      val withFalseLabels = falseLabels.foldLeft(withTrueLabels: RelationalOperator[T]) {
+        case (currentOp, label) => relational.AddInto(currentOp, FalseLit, HasLabel(entity, Label(label))(CTBoolean))
+      }
+
+      // Fill in missing true relType columns
+      val trueRelTypes = entityVar.cypherType match {
+        case CTRelationship(relTypes, _) => relTypes
+        case _ => Set.empty
+      }
+      val withTrueRelTypes = trueRelTypes.foldLeft(withFalseLabels: RelationalOperator[T]) {
+        case (currentOp, relType) => relational.AddInto(currentOp, TrueLit, HasType(entity, RelType(relType))(CTBoolean))
+      }
+
+      // Fill in missing false relType columns
+      val falseRelTypes = entity.cypherType match {
+        case CTRelationship(relTypes, _) => relTypes -- trueRelTypes
+        case _ => Set.empty
+      }
+      val withFalseRelTypes = falseRelTypes.foldLeft(withTrueRelTypes: RelationalOperator[T]) {
+        case (currentOp, relType) => relational.AddInto(currentOp, FalseLit, HasType(entity, RelType(relType))(CTBoolean))
+      }
+
+      // Fill in missing properties
+      val missingProperties = targetHeader.propertiesFor(entity) -- withFalseRelTypes.header.propertiesFor(entity)
+      val withProperties = missingProperties.foldLeft(withFalseLabels: RelationalOperator[T]) {
+        case (currentOp, propertyExpr) => relational.AddInto(currentOp, NullLit(propertyExpr.cypherType), propertyExpr)
+      }
+
+      import Expr._
+      assert(targetHeader.expressions == withProperties.header.expressions,
+        s"Expected header expressions:\n\t${targetHeader.expressions.toSeq.sorted.mkString(", ")},\ngot\n\t${withProperties.header.expressions.toSeq.sorted.mkString(", ")}")
+      withProperties
+    }
+
+    def alignColumnNames(targetHeader: RecordHeader): RelationalOperator[T] = {
+      require(op.header.expressions == targetHeader.expressions,
+        s"""|Column alignment only possible for same expressions.
+            |current: ${op.header}
+            |target: $targetHeader""".stripMargin)
+
+      if (op.header.columns == targetHeader.columns) {
+        op
+      } else {
+        val columnRenamings = targetHeader.expressions.foldLeft(Map.empty[Expr, String]) {
+          case (currentMap, expr) if op.header.column(expr) == targetHeader.column(expr) => currentMap
+          case (currentMap, expr) => currentMap + (expr -> targetHeader.column(expr))
+        }
+        RenameColumns(op, columnRenamings)
+      }
+    }
   }
 }

@@ -33,8 +33,8 @@ import org.opencypher.okapi.ir.api.expr._
 import org.opencypher.okapi.relational.api.graph.RelationalCypherGraph
 import org.opencypher.okapi.relational.api.physical.RelationalRuntimeContext
 import org.opencypher.okapi.relational.api.schema.RelationalSchema._
-import org.opencypher.okapi.relational.impl.operators.RelationalOperator._
 import org.opencypher.okapi.relational.impl.operators._
+import org.opencypher.okapi.relational.impl.physical.RelationalPlanner._
 import org.opencypher.spark.api.CAPSSession
 import org.opencypher.spark.api.io.{CAPSEntityTable, CAPSNodeTable, CAPSRelationshipTable}
 import org.opencypher.spark.impl.CAPSRecords
@@ -65,11 +65,14 @@ class CAPSScanGraph(val scans: Seq[CAPSEntityTable], val schema: CAPSSchema, val
     val targetEntityHeader = schema.headerForEntity(entity, exactLabelMatch)
     val entityWithCorrectType = targetEntityHeader.nodeEntities.head
     val alignedEntityTableOps = selectedScans.map { scan =>
-      scan
-        .alignExpressions(entityWithCorrectType, targetEntityHeader)
-        .alignColumnNames(targetEntityHeader)
+      scan.alignWith(entityWithCorrectType, targetEntityHeader)
     }
-    val res = alignedEntityTableOps.reduce(TabularUnionAll(_, _))
+
+    val res = alignedEntityTableOps.toList match {
+      case Nil => Start(session.records.empty(targetEntityHeader))
+      case singleOp :: Nil => singleOp
+      case multipleOps => multipleOps.reduce(TabularUnionAll(_, _))
+    }
     res.show()
     res
   }

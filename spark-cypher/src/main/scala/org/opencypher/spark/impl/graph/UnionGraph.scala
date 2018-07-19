@@ -27,12 +27,13 @@
 package org.opencypher.spark.impl.graph
 
 import org.opencypher.okapi.api.schema.Schema
-import org.opencypher.okapi.api.types.{CTNode, CTRelationship, CypherType}
+import org.opencypher.okapi.api.types.CypherType
 import org.opencypher.okapi.ir.api.expr.Var
 import org.opencypher.okapi.relational.api.graph.RelationalCypherGraph
 import org.opencypher.okapi.relational.api.physical.RelationalRuntimeContext
 import org.opencypher.okapi.relational.api.schema.RelationalSchema._
 import org.opencypher.okapi.relational.impl.operators._
+import org.opencypher.okapi.relational.impl.physical.RelationalPlanner._
 import org.opencypher.okapi.relational.impl.physical.RetagVariable
 import org.opencypher.spark.api.CAPSSession
 import org.opencypher.spark.impl.CAPSRecords
@@ -71,9 +72,7 @@ final case class UnionGraph(graphsToReplacements: Map[RelationalCypherGraph[Data
       .map { graph =>
         val scanOp = graph.scanOperator(entityType, exactLabelMatch)
         val retagOp = RetagVariable(scanOp, entityWithCorrectType, graphsToReplacements(graph))
-        retagOp
-          .alignExpressions(entityWithCorrectType, targetEntityHeader)
-          .alignColumnNames(targetEntityHeader)
+        retagOp.alignWith(entityWithCorrectType, targetEntityHeader)
 
       }
     Distinct(alignedScans.reduce(TabularUnionAll(_, _)), Set(entity))
