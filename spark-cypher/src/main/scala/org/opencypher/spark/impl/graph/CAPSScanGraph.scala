@@ -26,8 +26,7 @@
  */
 package org.opencypher.spark.impl.graph
 
-import org.apache.spark.sql.functions
-import org.opencypher.okapi.api.types.{CTNode, CTRelationship, CypherType}
+import org.opencypher.okapi.api.types.{CTBoolean, CTNode, CTRelationship, CypherType}
 import org.opencypher.okapi.impl.exception.IllegalArgumentException
 import org.opencypher.okapi.ir.api.expr._
 import org.opencypher.okapi.relational.api.graph.RelationalCypherGraph
@@ -59,11 +58,14 @@ class CAPSScanGraph(val scans: Seq[CAPSEntityTable], val schema: CAPSSchema, val
   override def tables: Seq[DataFrameTable] = scans.map(_.table)
 
   // TODO: Express `exactLabelMatch` with type
-  private[opencypher] override def scanOperator(entityType: CypherType, exactLabelMatch: Boolean): RelationalOperator[DataFrameTable] = {
+  private[opencypher] override def scanOperator(
+    entityType: CypherType,
+    exactLabelMatch: Boolean
+  ): RelationalOperator[DataFrameTable] = {
     val entity = Var("")(entityType)
     val selectedScans = scansForType(entityType, exactLabelMatch)
     val targetEntityHeader = schema.headerForEntity(entity, exactLabelMatch)
-    val entityWithCorrectType = targetEntityHeader.nodeEntities.head
+    val entityWithCorrectType = targetEntityHeader.entityVars.head
     val alignedEntityTableOps = selectedScans.map { scan =>
       scan.alignWith(entityWithCorrectType, targetEntityHeader)
     }
@@ -88,24 +90,22 @@ class CAPSScanGraph(val scans: Seq[CAPSEntityTable], val schema: CAPSSchema, val
         }
         scans.map(scan => Start(scan.records))
       case CTRelationship(scanTypes, _) =>
-        val scans = relTables.filter(relTable => scanTypes.isEmpty || scanTypes.exists(relTable.entityType.types.contains))
-        // Filter rows that are relevant for the requested relationship type
-        scans.map { scan =>
-          val scanHeader = scan.header
-          val typeExprs = scanHeader
-            .typesFor(Var("")(ct))
-            .filter(relType => scanTypes.contains(relType.relType.name))
-            .toSeq
+        val scans = relTables.filter(relTable => relTable.entityType.couldBeSameTypeAs(ct))
 
-          typeExprs match {
-            case Nil => Start(scan.records) // no explicit type column
-            case other => // multiple type columns
-              val relTypeFilter = other
-                .map(typeExpr => scan.table.df.col(scanHeader.column(typeExpr)) === functions.lit(true))
-                .reduce(_ || _)
-              Start(session.records.from(scanHeader, scan.table.df.filter(relTypeFilter)))
+        scans
+          .map { scan =>
+            if (scan.entityType.subTypeOf(ct).isTrue) {
+              Start(scan.records)
+            } else {
+              val startOp = Start(scan.records)
+              val relTypes = scan.header
+                .typesFor(startOp.singleEntity)
+                .filter(hasType => scanTypes.contains(hasType.relType.name))
+              val filterExpr = Ors(relTypes.map(Equals(_, TrueLit)(CTBoolean)).toSeq: _*)
+              Filter(startOp, filterExpr)
+            }
           }
-        }
+
       case other => throw IllegalArgumentException(s"Scan on $other")
     }
   }
@@ -122,6 +122,8 @@ class CAPSScanGraph(val scans: Seq[CAPSEntityTable], val schema: CAPSSchema, val
     session.records.from(namedScan.header, namedScan.table)
   }
 
-  override def toString = s"CAPSScanGraph(${scans.map(_.entityType).mkString(", ")})"
+  override def toString = s"CAPSScanGraph(${
+    scans.map(_.entityType).mkString(", ")
+  })"
 
 }

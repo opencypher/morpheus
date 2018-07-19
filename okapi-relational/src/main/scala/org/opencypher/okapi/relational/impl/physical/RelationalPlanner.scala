@@ -28,15 +28,15 @@ package org.opencypher.okapi.relational.impl.physical
 
 import org.opencypher.okapi.api.graph.CypherSession
 import org.opencypher.okapi.api.types.{CTBoolean, CTNode, CTRelationship}
-import org.opencypher.okapi.impl.exception.NotImplementedException
-import org.opencypher.okapi.ir.api.{Label, RelType}
+import org.opencypher.okapi.impl.exception.{NotImplementedException, UnsupportedOperationException}
 import org.opencypher.okapi.ir.api.block.SortItem
 import org.opencypher.okapi.ir.api.expr._
+import org.opencypher.okapi.ir.api.{Label, RelType}
 import org.opencypher.okapi.logical.impl._
 import org.opencypher.okapi.logical.{impl => logical}
 import org.opencypher.okapi.relational.api.physical.{RelationalPlannerContext, RelationalRuntimeContext}
 import org.opencypher.okapi.relational.api.table.FlatRelationalTable
-import org.opencypher.okapi.relational.impl.operators._
+import org.opencypher.okapi.relational.impl.operators.{Start, _}
 import org.opencypher.okapi.relational.impl.physical.ConstructGraphPlanner._
 import org.opencypher.okapi.relational.impl.table.RecordHeader
 import org.opencypher.okapi.relational.impl.{operators => relational}
@@ -47,7 +47,8 @@ object RelationalPlanner {
   def process[T <: FlatRelationalTable[T]](input: LogicalOperator)(
     // TODO: unify contexts?
     implicit plannerContext: RelationalPlannerContext[T],
-    runtimeContext: RelationalRuntimeContext[T]): RelationalOperator[T] = {
+    runtimeContext: RelationalRuntimeContext[T]
+  ): RelationalOperator[T] = {
 
     implicit val caps: CypherSession = plannerContext.session
 
@@ -87,7 +88,7 @@ object RelationalPlanner {
             relational.FromGraph(process[T](in), g)
 
           case construct: LogicalPatternGraph =>
-            planConstructGraph(Some(in), construct)//(plannerContext, runtimeContext)
+            planConstructGraph(Some(in), construct) //(plannerContext, runtimeContext)
         }
 
       case logical.Unwind(list, item, in, _) =>
@@ -227,18 +228,23 @@ object RelationalPlanner {
     }
   }
 
-  def planJoin[T <: FlatRelationalTable[T]](lhs: RelationalOperator[T], rhs: RelationalOperator[T], joinExprs: Seq[(Expr, Expr)], joinType: JoinType): RelationalOperator[T] = {
-    
+  def planJoin[T <: FlatRelationalTable[T]](
+    lhs: RelationalOperator[T],
+    rhs: RelationalOperator[T],
+    joinExprs: Seq[(Expr, Expr)],
+    joinType: JoinType
+  ): RelationalOperator[T] = {
+
     val joinHeader = lhs.header join rhs.header
     val leftColumns = lhs.header.columns
     val rightColumns = rhs.header.columns
-    
+
     val conflictFreeRhs = if (leftColumns ++ rightColumns != joinHeader.columns) {
       // TODO: use RelationalOperator.alignColumnNames planner instead
       val renameColumns = rhs.header.expressions
         .filter(expr => rhs.header.column(expr) != joinHeader.column(expr))
         .map { expr => expr -> joinHeader.column(expr) }.toSeq
-      
+
       RenameColumns(rhs, renameColumns.toMap)
     } else {
       rhs
@@ -248,7 +254,8 @@ object RelationalPlanner {
   }
 
   private def planStart[T <: FlatRelationalTable[T]](graph: LogicalGraph)(
-    implicit plannerContext: RelationalPlannerContext[T], runtimeContext: RelationalRuntimeContext[T]): RelationalOperator[T] = {
+    implicit plannerContext: RelationalPlannerContext[T], runtimeContext: RelationalRuntimeContext[T]
+  ): RelationalOperator[T] = {
     graph match {
       case g: LogicalCatalogGraph =>
         relational.Start(g.qualifiedGraphName, Some(plannerContext.inputRecords))(runtimeContext)
@@ -263,7 +270,10 @@ object RelationalPlanner {
 
   // TODO: process operator outside of def
   private def planOptional[T <: FlatRelationalTable[T]](lhs: LogicalOperator, rhs: LogicalOperator)
-    (implicit plannerContext: RelationalPlannerContext[T], runtimeContext: RelationalRuntimeContext[T]): RelationalOperator[T] = {
+    (
+      implicit plannerContext: RelationalPlannerContext[T],
+      runtimeContext: RelationalRuntimeContext[T]
+    ): RelationalOperator[T] = {
     val lhsOp = process[T](lhs)
     val rhsOp = process[T](rhs)
 
@@ -299,9 +309,7 @@ object RelationalPlanner {
 
     // Only works with single entity tables
     def assignScanName(name: String): RelationalOperator[T] = {
-      val entities = op.header.entityVars
-      require(entities.size == 1, s"Only works with single entity tables, has entities ${entities.mkString(", ")}")
-      val scanVar = entities.head
+      val scanVar = op.singleEntity
       val namedScanVar = Var(name)(scanVar.cypherType)
       Drop(Alias(op, Seq(scanVar as namedScanVar)), Set(scanVar))
     }
@@ -312,23 +320,25 @@ object RelationalPlanner {
 
     // TODO: entity needs to contain all labels/relTypes: all case needs to be explicitly expanded with the schema
     def alignExpressions(entity: Var, targetHeader: RecordHeader): RelationalOperator[T] = {
-      require(op.header.entityVars.size == 1,
-        s"Align with only works on single entity tables, found ${op.header.entityVars}")
 
-      val entityVar = op.header.entityVars.head
+      val entityVar = Var(op.singleEntity.name)(entity.cypherType)
 
       // Labels that do not need to be added
       val optionalLabels = op.header.labelsFor(entityVar).map(_.label.name)
 
-      // Rename variable and select only relevant expressions
-      val relevantSelected = relational.Select(op, List(entityVar as entity))
+      // Rename variable and select columns owned by entityVar
+      val renamedEntity = relational.Select(op, List(entityVar as entity))
+
+      // Drop expressions that are not in the target header
+      val dropExpressions = renamedEntity.header.expressions -- targetHeader.expressions
+      val withDroppedExpressions = relational.Drop(renamedEntity, dropExpressions)
 
       // Fill in missing true label columns
       val trueLabels = entityVar.cypherType match {
         case CTNode(labels, _) => labels -- optionalLabels
         case _ => Set.empty
       }
-      val withTrueLabels = trueLabels.foldLeft(relevantSelected: RelationalOperator[T]) {
+      val withTrueLabels = trueLabels.foldLeft(withDroppedExpressions: RelationalOperator[T]) {
         case (currentOp, label) => relational.AddInto(currentOp, TrueLit, HasLabel(entity, Label(label))(CTBoolean))
       }
 
@@ -361,7 +371,7 @@ object RelationalPlanner {
 
       // Fill in missing properties
       val missingProperties = targetHeader.propertiesFor(entity) -- withFalseRelTypes.header.propertiesFor(entity)
-      val withProperties = missingProperties.foldLeft(withFalseLabels: RelationalOperator[T]) {
+      val withProperties = missingProperties.foldLeft(withFalseRelTypes: RelationalOperator[T]) {
         case (currentOp, propertyExpr) => relational.AddInto(currentOp, NullLit(propertyExpr.cypherType), propertyExpr)
       }
 
@@ -385,6 +395,14 @@ object RelationalPlanner {
           case (currentMap, expr) => currentMap + (expr -> targetHeader.column(expr))
         }
         RenameColumns(op, columnRenamings)
+      }
+    }
+
+    def singleEntity: Var = {
+      op.header.entityVars.toList match {
+        case entity :: Nil => entity
+        case Nil => throw UnsupportedOperationException(s"Operation requires single entity table, input contains no entities")
+        case other => throw UnsupportedOperationException(s"Operation requires single entity table, found ${other.mkString("[", ", ", "]")}")
       }
     }
   }

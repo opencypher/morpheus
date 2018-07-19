@@ -26,7 +26,7 @@
  */
 package org.opencypher.spark.api.io
 
-import org.apache.spark.sql._
+import org.apache.spark.sql.{DataFrame, _}
 import org.opencypher.okapi.api.io.conversion.{EntityMapping, NodeMapping, RelationshipMapping}
 import org.opencypher.okapi.api.schema.Schema
 import org.opencypher.okapi.api.types.{DefiniteCypherType, _}

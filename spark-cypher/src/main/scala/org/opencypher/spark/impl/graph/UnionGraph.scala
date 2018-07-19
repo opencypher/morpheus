@@ -67,7 +67,7 @@ final case class UnionGraph(graphsToReplacements: Map[RelationalCypherGraph[Data
   ): RelationalOperator[DataFrameTable] = {
     val entity = Var("")(entityType)
     val targetEntityHeader = schema.headerForEntity(entity)
-    val entityWithCorrectType = targetEntityHeader.nodeEntities.head
+    val entityWithCorrectType = targetEntityHeader.entityVars.head
     val alignedScans = graphsToReplacements.keys
       .map { graph =>
         val scanOp = graph.scanOperator(entityType, exactLabelMatch)

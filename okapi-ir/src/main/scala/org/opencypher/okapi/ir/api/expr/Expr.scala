@@ -96,7 +96,7 @@ object Var {
   def unapply(arg: Var): Option[String] = Some(arg.name)
 }
 
-final case class ListSegment(index: Int, listVar: Var)(val cypherType: CypherType= CTWildcard) extends Var {
+final case class ListSegment(index: Int, listVar: Var)(val cypherType: CypherType = CTWildcard) extends Var {
   override type This = ListSegment
 
   override def owner(): Option[Var] = Some(listVar)
@@ -212,9 +212,14 @@ object FlattenOps {
 }
 
 object Ands {
-  def apply[E <: Expr](exprs: E*): Ands = Ands(exprs.flattenExprs[Ands])
 
-  def apply[E <: Expr](exprs: Set[E]): Ands = Ands(exprs.flattenExprs[Ands])
+  def apply[E <: Expr](exprs: E*): Expr = exprs.flattenExprs[Ands] match {
+    case Nil => TrueLit
+    case one :: Nil => one
+    case other => Ands(other)
+  }
+
+  def apply[E <: Expr](exprs: Set[E]): Expr = apply(exprs.toSeq: _*)
 }
 
 final case class Ands(_exprs: List[Expr]) extends Expr {
@@ -228,9 +233,14 @@ final case class Ands(_exprs: List[Expr]) extends Expr {
 }
 
 object Ors {
-  def apply(exprs: Expr*): Ors = Ors(exprs.flattenExprs[Ors])
 
-  def apply(exprs: Set[Expr]): Ors = Ors(exprs.flattenExprs[Ors])
+  def apply(exprs: Expr*): Expr = exprs.flattenExprs[Ors] match {
+    case Nil => TrueLit
+    case one :: Nil => one
+    case other => Ors(other)
+  }
+
+  def apply(exprs: Set[Expr]): Expr = apply(exprs.toSeq: _*)
 }
 
 final case class Ors(_exprs: List[Expr]) extends Expr {
@@ -430,13 +440,15 @@ final case class Explode(expr: Expr)(val cypherType: CypherType = CTWildcard) ex
 
 // Bit operators
 
-final case class ShiftLeft(value: Expr, shiftBits: IntegerLit)(val cypherType: CypherType = CTWildcard) extends BinaryExpr {
+final case class ShiftLeft(value: Expr, shiftBits: IntegerLit)
+  (val cypherType: CypherType = CTWildcard) extends BinaryExpr {
   override def lhs: Expr = value
   override def rhs: Expr = shiftBits
   override def op: String = "<<"
 }
 
-final case class ShiftRightUnsigned(value: Expr, shiftBits: IntegerLit)(val cypherType: CypherType = CTWildcard) extends BinaryExpr {
+final case class ShiftRightUnsigned(value: Expr, shiftBits: IntegerLit)
+  (val cypherType: CypherType = CTWildcard) extends BinaryExpr {
   override def lhs: Expr = value
   override def rhs: Expr = shiftBits
   override def op: String = ">>>"

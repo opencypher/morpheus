@@ -36,7 +36,7 @@ class AndsTest extends BaseTestSuite {
     val x = Var("x")()
     val args: Set[Expr] = Set(Ands(TrueLit), HasLabel(x, Label("X"))(), Ands(Ands(Ands(FalseLit))))
 
-    Ands(args).exprs should equalWithTracing(Set(TrueLit, HasLabel(x, Label("X"))(), FalseLit))
+    Ands(args) should equalWithTracing(Ands(Set(TrueLit, HasLabel(x, Label("X"))(), FalseLit)))
   }
 
 }

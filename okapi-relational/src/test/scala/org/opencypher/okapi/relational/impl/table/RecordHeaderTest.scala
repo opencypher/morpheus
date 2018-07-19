@@ -40,6 +40,7 @@ class RecordHeaderTest extends BaseTestSuite {
   val m: Var = Var("m")(CTNode("A", "B"))
   val o: Var = Var("o")(CTNode)
   val r: Var = Var("r")(CTRelationship)
+  val s: Var = Var("s")(CTNode("A"))
   val nodeList: Var = Var("l")(CTList(CTNode))
   val nodeListSegment: ListSegment = ListSegment(0, nodeList)(CTNode("A", "B"))
   val relList: Var = Var("l")(CTList(CTRelationship))
@@ -340,7 +341,6 @@ class RecordHeaderTest extends BaseTestSuite {
   it("returns the alias without the original when selecting an alias") {
     nHeader.select(Set(n as m)) should equal(nHeader.withAlias(n as m) -- nHeader.expressions)
   }
-
 
   it("returns selected entity and alias vars and their corresponding columns") {
     val s = Var("nPropFoo_Alias")(nPropFoo.cypherType)
