@@ -56,11 +56,19 @@ class SparkSQLExprMapperTest extends BaseTestSuite with SparkSessionFixture {
     )
   }
 
-  it("correctly converts retagging expressions") {
+  it("correctly converts replaceTag expressions") {
     IntegerLit(0)(CTInteger)
       .replaceTag(0, 1)
       .getTag
       .eval should equal(1)
+  }
+
+  it("correctly converts replaceTags expression") {
+    IntegerLit(0)(CTInteger)
+      .setTag(1)
+      .replaceTags(Map(0 -> 1, 1 -> 2))
+      .getTag
+      .eval should equal(2)
   }
 
   private def convert(expr: Expr, header: RecordHeader = header): Column = {
