@@ -110,11 +110,13 @@ abstract class RelationalOperator[T <: FlatRelationalTable[T]] extends AbstractT
 
 object Start {
 
-  def from[T <: FlatRelationalTable[T]](header: RecordHeader, table: T)(implicit context: RelationalRuntimeContext[T]): Start[T] = {
+  def from[T <: FlatRelationalTable[T]](header: RecordHeader, table: T)
+    (implicit context: RelationalRuntimeContext[T]): Start[T] = {
     Start(context.session.emptyGraphQgn, Some(context.session.records.from(header, table)))
   }
 
-  def apply[T <: FlatRelationalTable[T]](records: RelationalCypherRecords[T])(implicit context: RelationalRuntimeContext[T]): Start[T] = {
+  def apply[T <: FlatRelationalTable[T]](records: RelationalCypherRecords[T])
+    (implicit context: RelationalRuntimeContext[T]): Start[T] = {
     Start(context.session.emptyGraphQgn, Some(records))
   }
 }
@@ -161,11 +163,13 @@ final case class NodeScan[T <: FlatRelationalTable[T]](
   v: Var
 ) extends RelationalOperator[T] {
 
-  override lazy val header: RecordHeader = in.graph.schema.headerForNode(v)
+  private lazy val scanOp = graph.scanOperator(v.cypherType, exactLabelMatch = false)
+
+  override lazy val header: RecordHeader = scanOp.header
 
   // TODO: replace with NodeVar
   override lazy val _table: T = {
-    val nodeTable = in.graph.nodes(v.name, v.cypherType.asInstanceOf[CTNode]).table
+    val nodeTable = scanOp.table
 
     if (header.columns != nodeTable.physicalColumns.toSet) {
       throw SchemaException(
@@ -327,18 +331,21 @@ object RelationalOperator {
     }
 
     // TODO: entity needs to contain all labels/relTypes: all case needs to be explicitly expanded with the schema
-    def alignWith(entity: Var, targetHeader: RecordHeader): RelationalOperator[T] = {
+    def alignExpressions(entity: Var, targetHeader: RecordHeader): RelationalOperator[T] = {
       require(op.header.entityVars.size == 1,
         s"Align with only works on single entity tables, found ${op.header.entityVars}")
 
       val entityVar = op.header.entityVars.head
+
+      // Labels that do not need to be added
+      val optionalLabels = op.header.labelsFor(entityVar).map(_.label.name)
 
       // Rename variable and select only relevant expressions
       val relevantSelected = Select(op, List(entityVar as entity))
 
       // Fill in missing true label columns
       val trueLabels = entityVar.cypherType match {
-        case CTNode(labels, _) => labels
+        case CTNode(labels, _) => labels -- optionalLabels
         case _ => Set.empty
       }
       val withTrueLabels = trueLabels.foldLeft(relevantSelected: RelationalOperator[T]) {
@@ -347,7 +354,7 @@ object RelationalOperator {
 
       // Fill in missing false label columns
       val falseLabels = entity.cypherType match {
-        case CTNode(labels, _) => labels -- trueLabels
+        case CTNode(labels, _) => labels -- trueLabels -- optionalLabels
         case _ => Set.empty
       }
       val withFalseLabels = falseLabels.foldLeft(withTrueLabels: RelationalOperator[T]) {
@@ -384,6 +391,22 @@ object RelationalOperator {
       withProperties
     }
 
+    def alignColumnNames(targetHeader: RecordHeader): RelationalOperator[T] = {
+      require(op.header.expressions == targetHeader.expressions,
+        s"""|Column alignment only possible for same expressions.
+            |current: ${op.header}
+            |target: $targetHeader""".stripMargin)
+
+      if (op.header.columns == targetHeader.columns) {
+        op
+      } else {
+        val columnRenamings = targetHeader.expressions.foldLeft(Map.empty[Expr, String]) {
+          case (currentMap, expr) if op.header.column(expr) == targetHeader.column(expr) => currentMap
+          case (currentMap, expr) => currentMap + (expr -> targetHeader.column(expr))
+        }
+        RenameColumns(op, columnRenamings)
+      }
+    }
   }
 
 }
@@ -595,6 +618,7 @@ final case class TabularUnionAll[T <: FlatRelationalTable[T]](
     if (leftColumns.size != rightColumns.size) {
       throw IllegalArgumentException("same number of columns", s"left: $leftColumns right: $rightColumns")
     }
+
     if (leftColumns.toSet != rightColumns.toSet) {
       throw IllegalArgumentException("same column names", s"left: $leftColumns right: $rightColumns")
     }

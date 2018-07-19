@@ -67,15 +67,15 @@ final case class UnionGraph(graphsToReplacements: Map[RelationalCypherGraph[Data
     val entity = Var("")(entityType)
     val targetEntityHeader = schema.headerForEntity(entity)
     val entityWithCorrectType = targetEntityHeader.nodeEntities.head
-    val selectedScans = graphsToReplacements.keys
+    val alignedScans = graphsToReplacements.keys
       .map { graph =>
-        val scan = graph.scanOperator(entityType, exactLabelMatch)
-        val retag = RetagVariable(scan, entityWithCorrectType, graphsToReplacements(graph))
-        retag.alignWith(entityWithCorrectType, targetEntityHeader)
+        val scanOp = graph.scanOperator(entityType, exactLabelMatch)
+        val retagOp = RetagVariable(scanOp, entityWithCorrectType, graphsToReplacements(graph))
+        retagOp
+          .alignExpressions(entityWithCorrectType, targetEntityHeader)
+          .alignColumnNames(targetEntityHeader)
+
       }
-    val alignedEntityTableOps = selectedScans.map { scan =>
-      scan.alignWith(entityWithCorrectType, targetEntityHeader)
-    }
-    Distinct(alignedEntityTableOps.reduce(TabularUnionAll(_, _)), Set(entity))
+    Distinct(alignedScans.reduce(TabularUnionAll(_, _)), Set(entity))
   }
 }

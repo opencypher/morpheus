@@ -82,6 +82,8 @@ final case class Param(name: String)(val cypherType: CypherType = CTWildcard) ex
 
 trait Var extends Expr {
   def name: String
+
+  override def withoutType: String = s"`$name`"
 }
 
 object Var {

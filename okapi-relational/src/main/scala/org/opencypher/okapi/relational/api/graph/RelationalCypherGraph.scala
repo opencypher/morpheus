@@ -7,6 +7,7 @@ import org.opencypher.okapi.impl.exception.UnsupportedOperationException
 import org.opencypher.okapi.relational.api.physical.RelationalRuntimeContext
 import org.opencypher.okapi.relational.api.table.{FlatRelationalTable, RelationalCypherRecords}
 import org.opencypher.okapi.relational.impl.operators.RelationalOperator
+import org.opencypher.okapi.relational.api.tagging.TagSupport._
 
 trait RelationalCypherGraphFactory[T <: FlatRelationalTable[T]] {
 
@@ -16,7 +17,7 @@ trait RelationalCypherGraphFactory[T <: FlatRelationalTable[T]] {
     (implicit context: RelationalRuntimeContext[T]): Graph
 
   def unionGraph(graphs: RelationalCypherGraph[T]*)(implicit context: RelationalRuntimeContext[T]): Graph = {
-    unionGraph(graphs: _*)
+    unionGraph(computeRetaggings(graphs.map(g => g -> g.tags).toMap))
   }
 
   def unionGraph(graphsToReplacements: Map[RelationalCypherGraph[T], Map[Int, Int]])

@@ -232,6 +232,7 @@ object RelationalPlanner {
     val rightColumns = rhs.header.columns
     
     val conflictFreeRhs = if (leftColumns ++ rightColumns != joinHeader.columns) {
+      // TODO: use RelationalOperator.alignColumnNames planner instead
       val renameColumns = rhs.header.expressions
         .filter(expr => rhs.header.column(expr) != joinHeader.column(expr))
         .map { expr => expr -> joinHeader.column(expr) }.toSeq
