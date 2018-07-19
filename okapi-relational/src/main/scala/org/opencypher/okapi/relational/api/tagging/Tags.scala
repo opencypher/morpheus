@@ -112,7 +112,7 @@ object Tags {
 
     def setTag(tag: Int): Expr = {
       val tagLit = IntegerLit(tag)(CTInteger)
-      val shifted = ShiftLeft(expr, tagLit)(CTInteger)
+      val shifted = ShiftLeft(tagLit, idBitsLit)(CTInteger)
       val bwAnd = BitwiseAnd(expr, invertedTagMaskLit)(CTInteger)
       BitwiseOr(bwAnd, shifted)(CTInteger)
     }

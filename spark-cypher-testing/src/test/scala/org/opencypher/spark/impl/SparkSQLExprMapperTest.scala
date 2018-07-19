@@ -28,12 +28,16 @@ package org.opencypher.spark.impl
 
 import java.util.Collections
 
+import org.apache.spark.sql._
+import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.sql.types.{IntegerType, StructField, StructType}
-import org.apache.spark.sql.{Column, DataFrame, Row}
+import org.opencypher.okapi.api.types.CTInteger
 import org.opencypher.okapi.api.value.CypherValue.CypherMap
-import org.opencypher.okapi.ir.api.expr.{Expr, Subtract, Var}
+import org.opencypher.okapi.ir.api.expr.{Expr, IntegerLit, Subtract, Var}
+import org.opencypher.okapi.relational.api.tagging.Tags._
 import org.opencypher.okapi.relational.impl.table.RecordHeader
 import org.opencypher.okapi.testing.BaseTestSuite
+import org.opencypher.spark.impl.ExprEval._
 import org.opencypher.spark.impl.SparkSQLExprMapper._
 import org.opencypher.spark.testing.fixture.SparkSessionFixture
 
@@ -45,11 +49,18 @@ class SparkSQLExprMapperTest extends BaseTestSuite with SparkSessionFixture {
   val vB = Var("b")()
   val header: RecordHeader = RecordHeader.from(vA, vB)
 
-  test("can map subtract") {
+  it("can map subtract") {
     val expr = Subtract(Var("a")(), Var("b")())()
     convert(expr, header.withExpr(expr).withAlias(expr as Var("foo")())) should equal(
-    df.col(header.column(vA)) - df.col(header.column(vB))
+      df.col(header.column(vA)) - df.col(header.column(vB))
     )
+  }
+
+  it("correctly converts retagging expressions") {
+    IntegerLit(0)(CTInteger)
+      .replaceTag(0, 1)
+      .getTag
+      .eval should equal(1)
   }
 
   private def convert(expr: Expr, header: RecordHeader = header): Column = {
@@ -60,4 +71,18 @@ class SparkSQLExprMapperTest extends BaseTestSuite with SparkSessionFixture {
     StructType(Seq(StructField(header.column(vA), IntegerType), StructField(header.column(vB), IntegerType))))
 
   implicit def extractRecordHeaderFromResult[T](tuple: (RecordHeader, T)): RecordHeader = tuple._1
+}
+
+object ExprEval {
+
+  implicit class ExprOps(val expr: Expr) extends AnyVal {
+
+    def eval(implicit spark: SparkSession): Any = {
+      val df = spark.createDataFrame(
+        Collections.emptyList[Row](),
+        StructType(Seq.empty))
+
+      expr.asSparkSQLExpr(RecordHeader.empty, df, CypherMap.empty).expr.eval(InternalRow.empty)
+    }
+  }
 }
