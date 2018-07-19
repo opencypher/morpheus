@@ -442,6 +442,7 @@ final case class Explode(expr: Expr)(val cypherType: CypherType = CTWildcard) ex
 
 final case class ShiftLeft(value: Expr, shiftBits: IntegerLit)
   (val cypherType: CypherType = CTWildcard) extends BinaryExpr {
+  require(shiftBits.v < 64)
   override def lhs: Expr = value
   override def rhs: Expr = shiftBits
   override def op: String = "<<"
@@ -449,6 +450,7 @@ final case class ShiftLeft(value: Expr, shiftBits: IntegerLit)
 
 final case class ShiftRightUnsigned(value: Expr, shiftBits: IntegerLit)
   (val cypherType: CypherType = CTWildcard) extends BinaryExpr {
+  require(shiftBits.v < 64)
   override def lhs: Expr = value
   override def rhs: Expr = shiftBits
   override def op: String = ">>>"

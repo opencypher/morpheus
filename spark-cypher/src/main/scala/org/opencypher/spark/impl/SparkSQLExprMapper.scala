@@ -205,6 +205,20 @@ object SparkSQLExprMapper {
           case other => throw IllegalArgumentException("CTList", other)
         }
 
+        // Bit operations
+
+        case BitwiseAnd(lhs, rhs) =>
+          lhs.asSparkSQLExpr.bitwiseAND(rhs.asSparkSQLExpr)
+
+        case BitwiseOr(lhs, rhs) =>
+          lhs.asSparkSQLExpr.bitwiseOR(rhs.asSparkSQLExpr)
+
+        case ShiftLeft(value, IntegerLit(shiftBits)) =>
+          functions.shiftLeft(value.asSparkSQLExpr, shiftBits.toInt)
+
+        case ShiftRightUnsigned(value, IntegerLit(shiftBits)) =>
+          functions.shiftRightUnsigned(value.asSparkSQLExpr, shiftBits.toInt)
+
         // Pattern Predicate
         case ep: ExistsPatternExpr => ep.targetField.asSparkSQLExpr
 
