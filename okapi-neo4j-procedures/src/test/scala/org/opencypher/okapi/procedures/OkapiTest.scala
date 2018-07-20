@@ -73,6 +73,31 @@ class OkapiTest extends FunSuite with BeforeAndAfter with Matchers {
     })
   }
 
+test("Make sure that input order does not affect schema") {
+    db.execute("""
+                 |CREATE (b1:B { type: 'B1' })
+                 |CREATE (b2:B { type: 'B2', size: 5 })
+               """.stripMargin).close()
+
+    testResult(db, "CALL org.opencypher.okapi.procedures.schema", (result) => {
+      val expected = Set(
+        Map(
+          "type" -> "Node",
+          "nodeLabelsOrRelType" -> Seq("B").asJava,
+          "property" -> "type",
+          "cypherTypes" -> Seq("STRING").asJava
+        ),
+        Map(
+          "type" -> "Node",
+          "nodeLabelsOrRelType" -> Seq("B").asJava,
+          "property" -> "size",
+          "cypherTypes" -> Seq("INTEGER","NULL").asJava
+        )
+      )
+      result.toSet should equal(expected)
+    })
+  }
+
   test("Okapi schema for single and multiple labels") {
     db.execute("CREATE (:A {val1: 'String'})" + "CREATE (:B {val2: 2})" + "CREATE (:A:B {val1: 'String', val2: 2})").close()
     testResult(db, "CALL org.opencypher.okapi.procedures.schema", (result) => {

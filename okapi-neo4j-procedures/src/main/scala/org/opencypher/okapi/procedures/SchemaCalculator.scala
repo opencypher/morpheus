@@ -155,10 +155,13 @@ class LabelPropertyKeyMap {
     new mutable.HashMap().withDefault(_ => new mutable.HashMap().withDefault(_ => mutable.Set()))
 
   def add(labels: Set[Int], propertyMap: Map[Int, String]): LabelPropertyKeyMap = {
+    val isNewLabel = data.contains(labels)
     val labelData = data.getOrElseUpdate(labels, data.default(labels))
 
-    val nullProperties = labelData.keySet -- propertyMap.keySet
-    nullProperties.foreach(labelData(_).add(CTNull.name))
+    if(isNewLabel) {
+      val nullProperties = (labelData.keySet ++ propertyMap.keySet) -- (labelData.keySet intersect propertyMap.keySet)
+      nullProperties.foreach(property => labelData.getOrElseUpdate(property, labelData.default(property)).add(CTNull.name))
+    }
 
     propertyMap.foreach {
       case (property, typ) => labelData.getOrElseUpdate(property, labelData.default(property)).add(typ)
@@ -173,8 +176,8 @@ class LabelPropertyKeyMap {
       val lData = data(labels)
       val rData = other.data(labels)
 
-      val nullProperties = lData.keySet ++ rData.keySet -- (lData.keySet intersect rData.keySet)
-      nullProperties.foreach(lData(_).add(CTNull.name))
+      val nullProperties = (lData.keySet ++ rData.keySet) -- (lData.keySet intersect rData.keySet)
+      nullProperties.foreach(property => lData.getOrElseUpdate(property, lData.default(property)).add(CTNull.name))
 
       rData.foreach {
         case (property, types) => lData.getOrElseUpdate(property, lData.default(property)) ++= types
