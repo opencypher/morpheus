@@ -34,7 +34,6 @@ import org.neo4j.test.TestGraphDatabaseFactory
 import org.scalatest.{BeforeAndAfter, FunSuite, Matchers}
 
 import scala.collection.JavaConverters._
-import scala.collection.convert.Wrappers
 import scala.collection.mutable
 
 class OkapiTest extends FunSuite with BeforeAndAfter with Matchers {
@@ -61,15 +60,13 @@ class OkapiTest extends FunSuite with BeforeAndAfter with Matchers {
           "type" -> "Node",
           "nodeLabelsOrRelType" -> Seq("A").asJava,
           "property" -> "val1",
-          "cypherType" -> "STRING",
-          "warnings" -> Seq.empty.asJava
+          "cypherTypes" -> Seq("STRING").asJava
         ),
         Map(
           "type" -> "Node",
           "nodeLabelsOrRelType" -> Seq("A").asJava,
           "property" -> "val2",
-          "cypherType" -> "NUMBER",
-          "warnings" -> Seq.empty.asJava
+          "cypherTypes" -> Seq("INTEGER", "FLOAT").asJava
         )
       )
       result.toSet should equal(expected)
@@ -84,29 +81,25 @@ class OkapiTest extends FunSuite with BeforeAndAfter with Matchers {
           "type" -> "Node",
           "nodeLabelsOrRelType" -> Seq("A").asJava,
           "property" -> "val1",
-          "cypherType" -> "STRING",
-          "warnings" -> Seq.empty.asJava
+          "cypherTypes" -> Seq("STRING").asJava
         ),
         Map(
           "type" -> "Node",
           "nodeLabelsOrRelType" -> Seq("B").asJava,
           "property" -> "val2",
-          "cypherType" -> "INTEGER",
-          "warnings" -> Seq.empty.asJava
+          "cypherTypes" -> Seq("INTEGER").asJava
         ),
         Map(
           "type" -> "Node",
           "nodeLabelsOrRelType" -> Seq("A", "B").asJava,
           "property" -> "val1",
-          "cypherType" -> "STRING",
-          "warnings" -> Seq.empty.asJava
+          "cypherTypes" -> Seq("STRING").asJava
         ),
         Map(
           "type" -> "Node",
           "nodeLabelsOrRelType" -> Seq("A", "B").asJava,
           "property" -> "val2",
-          "cypherType" -> "INTEGER",
-          "warnings" -> Seq.empty.asJava
+          "cypherTypes" -> Seq("INTEGER").asJava
         )
       )
       result.toSet should equal(expected)
@@ -121,8 +114,7 @@ class OkapiTest extends FunSuite with BeforeAndAfter with Matchers {
           "type" -> "Node",
           "nodeLabelsOrRelType" -> Seq.empty.asJava,
           "property" -> "val1",
-          "cypherType" -> "STRING",
-          "warnings" -> Seq.empty.asJava
+          "cypherTypes" -> Seq("STRING").asJava
         )
       )
       result.toSet should equal(expected)
@@ -137,8 +129,7 @@ class OkapiTest extends FunSuite with BeforeAndAfter with Matchers {
           "type" -> "Node",
           "nodeLabelsOrRelType" -> Seq("A").asJava,
           "property" -> "",
-          "cypherType" -> "",
-          "warnings" -> Seq.empty.asJava
+          "cypherTypes" -> Seq.empty[String].asJava
         )
       )
       result.toSet should equal(expected)
@@ -153,8 +144,7 @@ class OkapiTest extends FunSuite with BeforeAndAfter with Matchers {
           "type" -> "Node",
           "nodeLabelsOrRelType" -> Seq("A").asJava,
           "property" -> "val",
-          "cypherType" -> "INTEGER?",
-          "warnings" -> Seq.empty.asJava
+          "cypherTypes" -> Seq("INTEGER", "NULL").asJava
         )
       )
       result.toSet should equal(expected)
@@ -169,24 +159,21 @@ class OkapiTest extends FunSuite with BeforeAndAfter with Matchers {
           "type" -> "Node",
           "nodeLabelsOrRelType" -> Seq("A").asJava,
           "property" -> "",
-          "cypherType" -> "",
-          "warnings" -> Seq.empty.asJava
+          "cypherTypes" -> Seq.empty[String].asJava
         ),
 
         Map(
           "type" -> "Relationship",
           "nodeLabelsOrRelType" -> Seq("REL").asJava,
           "property" -> "val1",
-          "cypherType" -> "STRING",
-          "warnings" -> Seq.empty.asJava
+          "cypherTypes" -> Seq("STRING").asJava
         ),
 
         Map(
           "type" -> "Relationship",
           "nodeLabelsOrRelType" -> Seq("REL").asJava,
           "property" -> "val2",
-          "cypherType" -> "ANY",
-          "warnings" -> Seq.empty.asJava
+          "cypherTypes" -> Seq("BOOLEAN", "FLOAT").asJava
         )
       )
       result.toSet should equal(expected)
@@ -201,16 +188,14 @@ class OkapiTest extends FunSuite with BeforeAndAfter with Matchers {
           "type" -> "Node",
           "nodeLabelsOrRelType" -> Seq("A").asJava,
           "property" -> "",
-          "cypherType" -> "",
-          "warnings" -> Seq.empty.asJava
+          "cypherTypes" -> Seq.empty[String].asJava
         ),
 
         Map(
           "type" -> "Relationship",
           "nodeLabelsOrRelType" -> Seq("REL").asJava,
           "property" -> "",
-          "cypherType" -> "",
-          "warnings" -> Seq.empty.asJava
+          "cypherTypes" -> Seq.empty[String].asJava
         )
       )
       result.toSet should equal(expected)
@@ -225,24 +210,15 @@ class OkapiTest extends FunSuite with BeforeAndAfter with Matchers {
           "type" -> "Node",
           "nodeLabelsOrRelType" -> Seq("A").asJava,
           "property" -> "bar",
-          "cypherType" -> "INTEGER?",
-          "warnings" -> Seq.empty.asJava
+          "cypherTypes" -> Seq("INTEGER", "NULL").asJava
         ),
         Map(
           "type" -> "Relationship",
           "nodeLabelsOrRelType" -> Seq("REL").asJava,
           "property" -> "",
-          "cypherType" -> "",
-          "warnings" -> Seq.empty.asJava
+          "cypherTypes" -> Seq("OffsetTime", "NULL").asJava
         )
       )
-      val (meta, normal) = result.toSet.partition { map => map("type") == "Meta" }
-      normal should equal(expected)
-
-      meta.size should equal(1)
-      val warnings = meta.head("warnings").asInstanceOf[Wrappers.SeqWrapper[String]].asScala
-      warnings.length should equal(1)
-      warnings.head should include("unsupported type OffsetTime")
     })
   }
 

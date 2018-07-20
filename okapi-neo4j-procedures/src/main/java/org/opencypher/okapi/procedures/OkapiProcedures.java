@@ -28,6 +28,7 @@ package org.opencypher.okapi.procedures;
 
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.kernel.api.KernelTransaction;
+import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.logging.Log;
 import org.neo4j.procedure.Context;
 import org.neo4j.procedure.Description;
@@ -46,11 +47,14 @@ public class OkapiProcedures
     public GraphDatabaseService db;
 
     @Context
+    public GraphDatabaseAPI api;
+
+    @Context
     public KernelTransaction tx;
 
     @Procedure(value = "org.opencypher.okapi.procedures.schema", mode = Mode.SCHEMA)
-    @Description("CALL org.opencypher.okapi.procedures.schema yields type, nodeLabelsOrRelType, property and cypherType - Returns schema information of this graph in Okapi format.")
+    @Description("CALL org.opencypher.okapi.procedures.schema yields type, nodeLabelsOrRelType, property and cypherTypes - Returns schema information of this graph in Okapi format.")
     public Stream<OkapiSchemaInfo> schema() {
-        return new SchemaCalculator( db, tx, log ).constructOkapiSchemaInfo();
+        return new SchemaCalculator( db, api, tx, log ).constructOkapiSchemaInfo();
     }
 }
