@@ -30,7 +30,6 @@ import java.util
 import java.util.concurrent._
 import java.util.stream.Stream
 
-import org.neo4j.graphdb.GraphDatabaseService
 import org.neo4j.internal.kernel.api._
 import org.neo4j.kernel.api.KernelTransaction
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge
@@ -41,12 +40,18 @@ import org.opencypher.okapi.api.types.CTNull
 import org.opencypher.okapi.api.types.CypherType._
 import org.opencypher.okapi.api.value.CypherValue
 
+import scala.collection.JavaConversions._
 import scala.collection.JavaConverters._
 import scala.collection.mutable
 import scala.concurrent.duration.Duration
 import scala.concurrent.{Await, ExecutionContext, Future}
 
-class SchemaCalculator(db: GraphDatabaseService, api: GraphDatabaseAPI, tx: KernelTransaction, log: Log) {
+class SchemaCalculator(api: GraphDatabaseAPI, tx: KernelTransaction, log: Log) {
+  val threads: Int = Runtime.getRuntime.availableProcessors
+  implicit val executionContext: ExecutionContext = ExecutionContext.fromExecutorService(Executors.newFixedThreadPool(threads))
+
+  val ctx: ThreadToStatementContextBridge =  api.getDependencyResolver.resolveDependency(classOf[ThreadToStatementContextBridge])
+
   /**
     * Computes the schema of the Neo4j graph as used by Okapi
     *
@@ -71,7 +76,7 @@ class SchemaCalculator(db: GraphDatabaseService, api: GraphDatabaseAPI, tx: Kern
 
     val relStream = getOkapiSchemaInfo(Relationship, relationshipsSchema)
 
-    (nodeStream ++ relStream).asJavaCollection.stream()
+    Stream.concat(nodeStream, relStream)
   }
 
   /**
@@ -79,9 +84,6 @@ class SchemaCalculator(db: GraphDatabaseService, api: GraphDatabaseAPI, tx: Kern
     * combining them. Uses batching to parallelize the computation
     */
   private def computerEntitySchema[T <: WrappedCursor](typ: EntityType): Seq[Future[LabelPropertyKeyMap]] = {
-    val threads = Runtime.getRuntime.availableProcessors
-    implicit val executionContext: ExecutionContext = ExecutionContext.fromExecutorService(Executors.newFixedThreadPool(threads))
-
     val maxId = getHighestIdInUseForStore(typ)
     val batchSize = 100000
     val batches = (maxId / batchSize.toFloat).ceil.toInt
@@ -91,8 +93,8 @@ class SchemaCalculator(db: GraphDatabaseService, api: GraphDatabaseAPI, tx: Kern
         val upper = batch * batchSize - 1
         val lower = upper - batchSize
         val extractor = typ match  {
-          case Node => NodeExtractor(db, api)
-          case Relationship => RelExtractor(db, api)
+          case Node => NodeExtractor(api, ctx)
+          case Relationship => RelExtractor(api, ctx)
         }
         extractor(lower, upper)
     }}
@@ -104,21 +106,25 @@ class SchemaCalculator(db: GraphDatabaseService, api: GraphDatabaseAPI, tx: Kern
   private def getOkapiSchemaInfo(
     typ: EntityType,
     map: LabelPropertyKeyMap
-  ): Seq[OkapiSchemaInfo] = {
-    map.data.flatMap {
-      case (labelPointers, propertyMap) =>
-        val labels = labelPointers.map(getLabelName(typ, _))
+  ): Stream[OkapiSchemaInfo] = map.data.asScala.flatMap {
+    case (labelPointers, propertyMap) =>
+      val labels = labelPointers.map(getLabelName(typ, _))
 
-        if (propertyMap.isEmpty) {
-          Seq(new OkapiSchemaInfo(typ.name, labels.toSeq.asJava, "", new util.ArrayList(0)))
-        } else {
-          propertyMap.map {
-            case (propertyId, cypherTypes) =>
-              new OkapiSchemaInfo(typ.name, labels.toSeq.asJava, getPropertyName(propertyId), cypherTypes.toSeq.asJava)
-          }
+      if (propertyMap.isEmpty) {
+        Seq(new OkapiSchemaInfo(typ.name, labels.toSeq.asJava, "", new util.ArrayList(0)))
+      } else {
+        propertyMap.asScala.map {
+          case (propertyId, cypherTypes) =>
+            new OkapiSchemaInfo(
+              typ.name,
+              labels.toSeq.asJava,
+              getPropertyName(propertyId),
+              cypherTypes.toList.asJava
+            )
         }
-    }.toSeq
-  }
+      }
+  }.asJavaCollection.stream()
+
 
   private def getLabelName(typ: EntityType, id: Int): String = typ match {
     case Node => tx.token().nodeLabelName(id)
@@ -151,40 +157,62 @@ case object Relationship extends EntityType {
 }
 
 class LabelPropertyKeyMap {
-  val data: mutable.Map[Set[Int], mutable.Map[Int, mutable.Set[String]]] =
-    new mutable.HashMap().withDefault(_ => new mutable.HashMap().withDefault(_ => mutable.Set()))
+  val data: java.util.Map[Set[Int], java.util.Map[Int, mutable.Set[String]]] = new java.util.HashMap()
 
-  def add(labels: Set[Int], propertyMap: Map[Int, String]): LabelPropertyKeyMap = {
-    val isNewLabel = data.contains(labels)
-    val labelData = data.getOrElseUpdate(labels, data.default(labels))
+  def add(labels: Set[Int], propertyMap: java.util.Map[Int, String]): LabelPropertyKeyMap = {
+    val isNewLabel = data.containsKey(labels)
+    data.putIfAbsent(labels, new java.util.HashMap())
+    val labelData = data.get(labels)
 
-    if(isNewLabel) {
-      val nullProperties = (labelData.keySet ++ propertyMap.keySet) -- (labelData.keySet intersect propertyMap.keySet)
-      nullProperties.foreach(property => labelData.getOrElseUpdate(property, labelData.default(property)).add(CTNull.name))
-    }
+    if(isNewLabel) { setNullValues(labelData, labelData.keySet(), propertyMap.keySet()) }
 
-    propertyMap.foreach {
-      case (property, typ) => labelData.getOrElseUpdate(property, labelData.default(property)).add(typ)
+    propertyMap.keySet().foreach { property =>
+      labelData.putIfAbsent(property, mutable.Set.empty)
+      labelData.get(property).add(propertyMap.get(property))
     }
 
     this
   }
 
   def ++(other: LabelPropertyKeyMap): LabelPropertyKeyMap = {
-    val overlap = data.keySet intersect other.data.keySet
-    overlap.foreach { labels =>
-      val lData = data(labels)
-      val rData = other.data(labels)
+    other.data.keySet.foreach { labels =>
+      if(data.containsKey(labels)) {
+        val lData = data.get(labels)
+        val rData = other.data.get(labels)
 
-      val nullProperties = (lData.keySet ++ rData.keySet) -- (lData.keySet intersect rData.keySet)
-      nullProperties.foreach(property => lData.getOrElseUpdate(property, lData.default(property)).add(CTNull.name))
+        setNullValues(lData, lData.keySet(), rData.keySet())
 
-      rData.foreach {
-        case (property, types) => lData.getOrElseUpdate(property, lData.default(property)) ++= types
+        rData.foreach {
+          case (property, types) =>
+            lData.putIfAbsent(property, mutable.Set.empty)
+            lData.get(property) ++= types
+        }
+      } else {
+        data.put(labels, other.data.get(labels))
       }
     }
-    (other.data.keySet -- overlap).foreach(x => data.update(x, other.data(x)))
     this
+  }
+
+  private def setNullValues(
+    targetPropertyMap: java.util.Map[Int, mutable.Set[String]],
+    lhsProperties: java.util.Set[Int],
+    rhsProperties: java.util.Set[Int]
+  ): Unit = {
+
+    rhsProperties.foreach { property =>
+      if(!lhsProperties.contains(property)) {
+        targetPropertyMap.putIfAbsent(property, mutable.Set.empty)
+        targetPropertyMap.get(property).add(CTNull.name)
+      }
+    }
+
+    lhsProperties.foreach { property =>
+      if(!rhsProperties.contains(property)) {
+        targetPropertyMap.putIfAbsent(property, mutable.Set.empty)
+        targetPropertyMap.get(property).add(CTNull.name)
+      }
+    }
   }
 }
 
@@ -211,11 +239,10 @@ trait Extractor[T <: WrappedCursor] {
   def labelPropertyMap: LabelPropertyKeyMap
   def reuseMap: util.HashMap[Int, String]
 
-  def db: GraphDatabaseService
   def api: GraphDatabaseAPI
+  def ctx: ThreadToStatementContextBridge
 
   def apply(lower: Long, upper: Long): LabelPropertyKeyMap = withTransaction {
-    val ctx = api.getDependencyResolver.resolveDependency(classOf[ThreadToStatementContextBridge])
     val kTx = ctx.getKernelTransactionBoundToThisThread(true)
     val cursors = kTx.cursors
     val read = kTx.dataRead
@@ -243,13 +270,13 @@ trait Extractor[T <: WrappedCursor] {
     * @return
     */
   private def withTransaction[A](function: => A): A = {
-    val tx = db.beginTx()
+    val tx = api.beginTx()
     val res = function
     tx.success()
     res
   }
 
-  protected def extractPropertyTypes(propertyCursor: PropertyCursor): mutable.Map[Int, String] = {
+  protected def extractPropertyTypes(propertyCursor: PropertyCursor): util.Map[Int, String] = {
     reuseMap.clear()
     while(propertyCursor.next()) {
       val value = propertyCursor.propertyValue().asObject()
@@ -262,13 +289,13 @@ trait Extractor[T <: WrappedCursor] {
       reuseMap.put(propertyCursor.propertyKey(), typ)
       //map.put(propertyCursor.propertyKey(), propertyCursor.propertyType().name())
     }
-    reuseMap.asScala
+    reuseMap
   }
 }
 
 case class NodeExtractor (
-  override val db: GraphDatabaseService,
-  override val api: GraphDatabaseAPI
+  override val api: GraphDatabaseAPI,
+  override val ctx: ThreadToStatementContextBridge
 ) extends Extractor[WrappedNodeCursor] {
 
   override val labelPropertyMap: LabelPropertyKeyMap = new LabelPropertyKeyMap
@@ -281,7 +308,7 @@ case class NodeExtractor (
       nodeCursor.properties(propertyCursor)
       val labels = nodeCursor.labels().all()
       val propertyTypes = extractPropertyTypes(propertyCursor)
-      labelPropertyMap.add(labels.map(_.toInt).toSet, propertyTypes.toMap)
+      labelPropertyMap.add(labels.map(_.toInt).toSet, propertyTypes)
     }
   }
 
@@ -289,8 +316,8 @@ case class NodeExtractor (
 }
 
 case class RelExtractor(
-  override val db: GraphDatabaseService,
-  override val api: GraphDatabaseAPI
+  override val api: GraphDatabaseAPI,
+  override val ctx: ThreadToStatementContextBridge
 ) extends Extractor[WrappedRelationshipCursor] {
 
   override val labelPropertyMap: LabelPropertyKeyMap = new LabelPropertyKeyMap
@@ -304,7 +331,7 @@ case class RelExtractor(
       relCursor.properties(propertyCursor)
       val relType = relCursor.`type`()
       val propertyTypes = extractPropertyTypes(propertyCursor)
-      labelPropertyMap.add(Set(relType), propertyTypes.toMap)
+      labelPropertyMap.add(Set(relType), propertyTypes)
     }
   }
 
