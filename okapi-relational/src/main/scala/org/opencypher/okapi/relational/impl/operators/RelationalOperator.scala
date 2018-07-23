@@ -157,26 +157,26 @@ final case class Cache[T <: FlatRelationalTable[T]](in: RelationalOperator[T]) e
 
 final case class Scan[T <: FlatRelationalTable[T]](
   in: RelationalOperator[T],
-  v: Var
+  scanType: CypherType
 ) extends RelationalOperator[T] {
 
-  private lazy val scanOp = graph.scanOperator(v.cypherType, exactLabelMatch = false)
+  private lazy val scanOp = graph.scanOperator(scanType, exactLabelMatch = false)
 
   override lazy val header: RecordHeader = scanOp.header
 
   // TODO: replace with NodeVar
   override lazy val _table: T = {
-    val nodeTable = scanOp.table
+    val scanTable = scanOp.table
 
-    if (header.columns != nodeTable.physicalColumns.toSet) {
+    if (header.columns != scanTable.physicalColumns.toSet) {
       throw SchemaException(
         s"""
-           |Graph schema does not match actual records returned for scan $v:
+           |Graph schema does not match actual records returned for scan for type $scanType:
            |  - Computed columns based on graph schema: ${header.columns.toSeq.sorted.mkString(", ")}
-           |  - Actual columns in scan table: ${nodeTable.physicalColumns.sorted.mkString(", ")}
+           |  - Actual columns in scan table: ${scanTable.physicalColumns.sorted.mkString(", ")}
         """.stripMargin)
     }
-    nodeTable
+    scanTable
   }
 }
 
@@ -320,19 +320,21 @@ final case class ExtractEntities[T <: FlatRelationalTable[T]](
   extractionVars: Set[Var]
 ) extends RelationalOperator[T] {
 
-  val varInInputHeader: Var = in.header.entityVars.head
+  private def targetHeader: RecordHeader = header
+
+  val targetVar: Var = targetHeader.entityVars.head
 
   def selectExpressionsForVar(extractionVar: Var): SelectExpressions = {
 
-    val entityLabels = varInInputHeader.cypherType match {
+    val entityLabels = extractionVar.cypherType match {
       case CTNode(labels, _) => labels
       case CTRelationship(types, _) => types
       case _ => throw IllegalArgumentException("CTNode or CTRelationship", extractionVar.cypherType)
     }
 
     val partiallyAlignedExtractionHeader = in.header
-      .withAlias(varInInputHeader as extractionVar)
-      .select(extractionVar)
+      .withAlias(extractionVar as targetVar)
+      .select(targetVar)
 
     val missingExpressions = (header.expressions -- partiallyAlignedExtractionHeader.expressions).toSeq
     val overlapExpressions = (header.expressions -- missingExpressions).toSeq
@@ -357,11 +359,11 @@ final case class ExtractEntities[T <: FlatRelationalTable[T]](
             FalseLit
           }
         case _ =>
-          if (!expr.cypherType.isNullable) {
-            throw UnsupportedOperationException(
-              s"Cannot align scan on $varInInputHeader by adding a NULL column, because the type for '$expr' is non-nullable"
-            )
-          }
+//          if (!expr.cypherType.isNullable) {
+//            throw UnsupportedOperationException(
+//              s"Cannot align scan on $varInInputHeader by adding a NULL column, because the type for '$expr' is non-nullable"
+//            )
+//          }
           NullLit(expr.cypherType)
       }
 
@@ -373,7 +375,7 @@ final case class ExtractEntities[T <: FlatRelationalTable[T]](
 
   override def _table: T = {
     val groups = extractionVars.toSeq.map(selectExpressionsForVar)
-    in.table.extractEntities(groups)(header, context.parameters)
+    in.table.extractEntities(groups, in.header, targetHeader)(context.parameters)
   }
 }
 

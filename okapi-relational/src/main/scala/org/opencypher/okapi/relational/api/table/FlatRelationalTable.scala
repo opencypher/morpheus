@@ -56,7 +56,7 @@ trait FlatRelationalTable[T <: FlatRelationalTable[T]] extends CypherTable {
 
   // Convenience for multiple selects + align and union
   // TODO: provide default implementation
-  def extractEntities(selectGroups: SelectExpressionGroups)(implicit header: RecordHeader, parameters: CypherMap): T
+  def extractEntities(selectGroups: SelectExpressionGroups, baseTableHeader: RecordHeader, targetHeader: RecordHeader)(implicit parameters: CypherMap): T
 
   def filter(expr: Expr)(implicit header: RecordHeader, parameters: CypherMap): T
 

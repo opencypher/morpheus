@@ -79,18 +79,24 @@ object SparkFlatRelationalTable {
       }
     }
 
-    override def extractEntities(selectGroups: SelectExpressionGroups)(
-      implicit header: RecordHeader,
-      parameters: CypherMap
-    ): DataFrameTable = {
-      val missingColumns = selectGroups.flatMap { group => group.filter { case (_, column) => !df.columns.contains(column) } }
-      val tableWithMissingColumns = missingColumns.foldLeft(this) { case (currentDf, (expr, column)) => currentDf.withColumn(column, expr) }
+    override def extractEntities(
+      selectGroups: SelectExpressionGroups,
+      baseTableHeader: RecordHeader,
+      targetHeader: RecordHeader
+    )(implicit parameters: CypherMap): DataFrameTable = {
+      val missingColumns = selectGroups.flatMap { group => group.filter {
+        case (_, targetColumnName) => !df.columns.contains(targetColumnName) }
+      }
+      val tableWithMissingColumns = missingColumns.foldLeft(this) {
+        case (currentDf, (expr, targetColumnName)) => currentDf.withColumn(targetColumnName, expr)(baseTableHeader, parameters)
+      }
 
+      // TODO: move columnName to index mapping outside of row loop (e.g. using tableWithMissingColumns.df.schema)
       tableWithMissingColumns.df.flatMap { row =>
         selectGroups.map { selectGroup =>
-          Row.fromSeq(selectGroup.map { case (_, column) => row.getAs(column) })
+          Row.fromSeq(selectGroup.map { case (_, column) => row.get(row.fieldIndex(column)) })
         }
-      }(header.rowEncoder)
+      }(targetHeader.rowEncoder)
     }
 
     override def filter(expr: Expr)(implicit header: RecordHeader, parameters: CypherMap): DataFrameTable = {
