@@ -143,8 +143,8 @@ object RelationalPlanner {
             val filterExpression = Not(Equals(startNode, endNode)(CTBoolean))(CTBoolean)
             val relsWithoutLoops = relational.Filter(second, filterExpression)
 
-            val tempIncoming = planJoin(third, relsWithoutLoops, Seq(target -> startNode), InnerJoin)
-            val incoming = planJoin(tempIncoming, first, Seq(endNode -> source), InnerJoin)
+            val tempIncoming = planJoin(first, relsWithoutLoops, Seq(source -> endNode), InnerJoin)
+            val incoming = planJoin(tempIncoming, third, Seq(startNode -> target), InnerJoin)
 
             relational.TabularUnionAll(outgoing, incoming)
         }

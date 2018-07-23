@@ -70,13 +70,11 @@ class CAPSScanGraph(val scans: Seq[CAPSEntityTable], val schema: CAPSSchema, val
       scan.alignWith(entityWithCorrectType, targetEntityHeader)
     }
 
-    val res = alignedEntityTableOps.toList match {
+    alignedEntityTableOps.toList match {
       case Nil => Start(session.records.empty(targetEntityHeader))
       case singleOp :: Nil => singleOp
       case multipleOps => multipleOps.reduce(TabularUnionAll(_, _))
     }
-    res.show()
-    res
   }
 
   // TODO: Express `exactLabelMatch` with type
