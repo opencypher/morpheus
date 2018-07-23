@@ -100,9 +100,9 @@ abstract class AbstractTreeNode[T <: AbstractTreeNode[T]: ClassTag] extends Tree
                   } catch {
                     case c: ClassCastException =>
                       throw InvalidConstructorArgument(
-                        s"""Expected a list that contains either no children or only children
-                           |but found a mixed list that contains a child as the head element,
-                           |but also one with a non-child type: ${c.getMessage}.
+                        s"""Expected a list that contains either no children or only children,
+                           |but found a mixed list that contains a child as the head element and
+                           |also an element with a non-child type: ${c.getMessage}.
                            |""".stripMargin
                       )
                   }
