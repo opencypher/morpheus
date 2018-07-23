@@ -212,7 +212,7 @@ class EntityTableTest extends CAPSTestSuite {
 
     val graph = caps.graphs.create(nodeTable)
     graph.nodes("n").collect.toSet should equal(Set(
-      CypherMap("n" -> CAPSNode(1, Set("A", "B"), CypherMap("bar" -> 23.1f, "foo" -> 10)))
+      CypherMap("n" -> CAPSNode(1, Set("A", "B", "C"), CypherMap("bar" -> 23.1f, "foo" -> 10)))
     ))
   }
 
