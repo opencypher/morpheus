@@ -35,6 +35,7 @@ import org.opencypher.okapi.testing.Bag
 import org.opencypher.okapi.testing.Bag._
 import org.opencypher.spark.api.GraphSources
 import org.opencypher.spark.api.io.neo4j.Neo4jPropertyGraphDataSource
+import org.opencypher.spark.api.value.{CAPSNode, CAPSRelationship}
 import org.opencypher.spark.impl.CAPSConverters._
 import org.opencypher.spark.impl.table.SparkFlatRelationalTable.DataFrameTable
 import org.opencypher.spark.testing.CAPSTestSuite
@@ -87,10 +88,9 @@ class CAPSRecordsAcceptanceTest extends CAPSTestSuite with Neo4jServerFixture wi
     val result = graph.cypher(query)
 
     // Then
-    result.records.asCaps.df.collect().toBag should equal(
-      Bag(
-        Row(1937L, "Vanessa Redgrave", 2L, true, true, true, 21L, 2L, 20L, "Guenevere")
-      ))
+    result.records.asCaps.toCypherMaps.collect().toBag should equal(Bag(CypherMap(
+        "a" -> CAPSNode(2, Set("Actor", "Person"), CypherMap("birthyear" -> 1937, "name" -> "Vanessa Redgrave")),
+        "r" -> CAPSRelationship(21, 2, 20, "ACTED_IN", CypherMap("charactername" -> "Guenevere")))))
   }
 
   it("filter nodes on property") {
@@ -140,8 +140,7 @@ class CAPSRecordsAcceptanceTest extends CAPSTestSuite with Neo4jServerFixture wi
     // When
     val records = graph.cypher(query).records
 
-    records.asCaps.df.collect().toBag should equal(
-      Bag(
+    records.asCaps.df.collect().toBag should equal(Bag(
         Row("Natasha Richardson", "London", "The Parent Trap"),
         Row("Dennis Quaid", "Houston", "The Parent Trap"),
         Row("Lindsay Lohan", "New York", "The Parent Trap"),
