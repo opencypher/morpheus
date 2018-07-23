@@ -239,8 +239,8 @@ object SchemaTyper {
       expr.arguments match {
         case Seq(first) =>
           for {
-            _ <- process[R](first)
-            existsType <- recordAndUpdate(expr -> CTString)
+            inner <- process[R](first)
+            existsType <- recordAndUpdate(expr -> CTString.asNullableAs(inner))
           } yield existsType
         case seq =>
           error(WrongNumberOfArguments(expr, 1, seq.size))
