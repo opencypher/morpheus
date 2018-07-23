@@ -27,6 +27,8 @@
 package org.opencypher.okapi.trees
 
 import org.scalatest.{FunSpec, FunSuite, Matchers}
+import org.scalatest.matchers.{MatchResult, Matcher}
+import org.scalatest.{FlatSpec, Matchers}
 
 class TreeNodeTest extends FunSpec with Matchers {
 
@@ -60,8 +62,8 @@ class TreeNodeTest extends FunSpec with Matchers {
     addList2.eval should equal(6)
     val addList3 =
       AddList(List(1), Number(0), 2, List(Number(2)), List[Object]("a", "b"))
-        .withNewChildren(Array(1, 2, 3, 4, 5, 6, 7).map(Number(_)))
-    addList3 should equal(AddList(List(1), Number(1), 2, List(2, 3, 4, 5, 6, 7).map(Number(_)), List[Object]("a", "b")))
+        .withNewChildren(Array(1, 2, 3, 4, 5, 6, 7).map(Number))
+    addList3 should equal(AddList(List(1), Number(1), 2, List(2, 3, 4, 5, 6, 7).map(Number), List[Object]("a", "b")))
     addList3.eval should equal(28)
   }
 
@@ -85,12 +87,11 @@ class TreeNodeTest extends FunSpec with Matchers {
     // - if any children are contained in a list at all, then all list elements need to be children
     intercept[InvalidConstructorArgument] {
       case class Unsupported(elems: List[Object]) extends AbstractTreeNode[Unsupported]
-      val fail = Unsupported(List(Unsupported(List.empty), "2"))
-    }.getMessage should equal(
-      s"""Expected a list that contains either no children or only children
-         |but found a mixed list that contains a child as the head element,
-         |but also one with a non-child type: java.lang.String cannot be cast to ${classOf[AbstractTreeNode[_]].getName}.
-         |""".stripMargin)
+      Unsupported(List(Unsupported(List.empty), "2"))
+    }.getMessage should include(
+      s"""Expected a list that contains either no children or only children,
+         |but found a mixed list that contains a child as the head element and
+         |also an element with a non-child type""".stripMargin)
 
     // - there can be at most one list of children
     intercept[IllegalArgumentException] {
