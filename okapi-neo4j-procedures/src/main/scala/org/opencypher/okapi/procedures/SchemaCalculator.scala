@@ -57,8 +57,8 @@ class SchemaCalculator(api: GraphDatabaseAPI, tx: KernelTransaction, log: Log) {
     */
   def constructOkapiSchemaInfo(): Stream[OkapiSchemaInfo] = {
 
-    val nodeSchemaFutures = computerEntitySchema(Node)
-    val relationshipSchemaFutures = computerEntitySchema(Relationship)
+    val nodeSchemaFutures = computeEntitySchema(Node)
+    val relationshipSchemaFutures = computeEntitySchema(Relationship)
 
     val nodesSchema = nodeSchemaFutures
       .map(Await.ready(_, Duration.apply(20, TimeUnit.SECONDS)))
@@ -79,9 +79,9 @@ class SchemaCalculator(api: GraphDatabaseAPI, tx: KernelTransaction, log: Log) {
 
   /**
     * Computes the entity schema for the given entities by computing the schema for each individual entity and then
-    * combining them. Uses batching to parallelize the computation
+    * combining them. Uses batching to parallel the computation
     */
-  private def computerEntitySchema[T <: WrappedCursor](typ: EntityType): Seq[Future[LabelPropertyKeyMap]] = {
+  private def computeEntitySchema[T <: WrappedCursor](typ: EntityType): Seq[Future[LabelPropertyKeyMap]] = {
     val maxId = getHighestIdInUseForStore(typ)
     val batchSize = 100000
     val batches = (maxId / batchSize.toFloat).ceil.toInt
@@ -188,12 +188,10 @@ class LabelPropertyKeyMap {
         case None => value.getClass.getSimpleName
       }
 
-//      val typ = propertyCursor.propertyType().toString
-
       val existingTypes = labelData.putIfAbsent(property, mutable.Set.empty)
       val knownTypes = labelData.get(property)
 
-      // we have seens this label combination before but not the property, so make the property nullable
+      // we have seen this label combination before but not the property, so make the property nullable
       if(isExistingLabel && existingTypes == null) {
         knownTypes.add(CTNull.name)
       }
@@ -214,38 +212,29 @@ class LabelPropertyKeyMap {
         val lData = data.get(labels)
         val rData = other.data.get(labels)
 
-        setNullValues(lData, rData.keySet())
+        val remainingProperties = new util.HashSet(lData.keySet())
 
-        rData.foreach {
-          case (property, types) =>
-            lData.putIfAbsent(property, mutable.Set.empty)
-            lData.get(property) ++= types
+        for(property <- rData.keySet()) {
+          remainingProperties.remove(property)
+
+          val existingTypes = lData.putIfAbsent(property, mutable.Set.empty)
+          val knownTypes = lData.get(property)
+
+          // we have seen this label combination before but not the property, so make the property nullable
+          if(existingTypes == null) {
+            knownTypes.add(CTNull.name)
+          }
+
+          knownTypes.addAll(rData.get(property))
         }
+
+        remainingProperties.foreach(lData.get(_).add(CTNull.toString))
+
       } else {
         data.put(labels, other.data.get(labels))
       }
     }
     this
-  }
-
-  private def setNullValues(
-    targetPropertyMap: java.util.Map[Int, mutable.Set[String]],
-    rhsProperties: java.util.Set[Int]
-  ): Unit = {
-
-    rhsProperties.foreach { property =>
-      if(!targetPropertyMap.contains(property)) {
-        targetPropertyMap.putIfAbsent(property, mutable.Set.empty)
-        targetPropertyMap.get(property).add(CTNull.name)
-      }
-    }
-
-    targetPropertyMap.keySet().foreach { property =>
-      if(!rhsProperties.contains(property)) {
-        targetPropertyMap.putIfAbsent(property, mutable.Set.empty)
-        targetPropertyMap.get(property).add(CTNull.name)
-      }
-    }
   }
 }
 
