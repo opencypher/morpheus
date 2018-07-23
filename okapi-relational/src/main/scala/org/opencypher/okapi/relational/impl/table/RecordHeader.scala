@@ -192,8 +192,8 @@ case class RecordHeader(exprToColumn: Map[Expr, String]) {
 
   def entitiesForType(ct: CypherType): Set[Var] = {
     ct match {
-      case n: CTNode => entitiesForType(n)
-      case r: CTRelationship => entitiesForType(r)
+      case n: CTNode => nodesForType(n)
+      case r: CTRelationship => relationshipsForType(r)
       case other => throw IllegalArgumentException("Entity", other)
     }
   }
