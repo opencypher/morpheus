@@ -95,7 +95,7 @@ object RelationalPlanner {
         val explodeExpr = Explode(list)(item.cypherType)
         relational.Add(process[T](in), explodeExpr as item)
 
-      case logical.NodeScan(v, in, _) => relational.Scan(process[T](in), v)
+      case logical.NodeScan(v, in, _) => relational.Scan(process[T](in), v).assignScanName(v.name)
 
       case logical.Aggregate(aggregations, group, in, _) => relational.Aggregate(process[T](in), group, aggregations)
 
@@ -127,7 +127,7 @@ object RelationalPlanner {
             plannerContext.constructedGraphPlans(c.name)
         }
 
-        val second = relational.Scan(startFrom, rel)
+        val second = relational.Scan(startFrom, rel).assignScanName(rel.name)
         val startNode = StartNode(rel)(CTNode)
         val endNode = EndNode(rel)(CTNode)
 
@@ -151,7 +151,7 @@ object RelationalPlanner {
 
       case logical.ExpandInto(source, rel, target, direction, sourceOp, _) =>
         val in = process[T](sourceOp)
-        val relationships = relational.Scan(in, rel)
+        val relationships = relational.Scan(in, rel).assignScanName(rel.name)
 
         val startNode = StartNode(rel)()
         val endNode = EndNode(rel)()
@@ -169,7 +169,7 @@ object RelationalPlanner {
       case logical.BoundedVarLengthExpand(source, list, target, edgeScanType, direction, lower, upper, sourceOp, targetOp, _) =>
 
         val edgeScan = Var(list.name)(edgeScanType)
-        val edgeScanOp = relational.Scan(planStart(input.graph), edgeScan)
+        val edgeScanOp = relational.Scan(planStart(input.graph), edgeScan).assignScanName(edgeScan.name)
 
         val isExpandInto = sourceOp == targetOp
 
