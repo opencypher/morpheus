@@ -228,10 +228,8 @@ sealed case class CTNode(
 
   self =>
 
-  private def graphToString = graph.map(n => s" @ $n").getOrElse("")
-
   final override def name: String =
-    if (labels.isEmpty) s"NODE$graphToString" else s"NODE(${labels.mkString(":", ":", "")})$graphToString"
+    if (labels.isEmpty) s"NODE" else s"NODE(${labels.mkString(":", ":", "")})"
 
   final override def nullable: CTNodeOrNull = CTNodeOrNull(labels, graph)
 
@@ -291,10 +289,8 @@ sealed case class CTRelationship(
 
   self =>
 
-  private def graphToString = graph.map(n => s" @ $n").getOrElse("")
-
   final override def name: String =
-    if (types.isEmpty) s"RELATIONSHIP$graphToString" else s"RELATIONSHIP(${types.map(t => s"$t").mkString(":", "|", "")})$graphToString"
+    if (types.isEmpty) s"RELATIONSHIP" else s"RELATIONSHIP(${types.map(t => s"$t").mkString(":", "|", "")})"
 
   final override def nullable: CTRelationshipOrNull =
     CTRelationshipOrNull(types, graph)

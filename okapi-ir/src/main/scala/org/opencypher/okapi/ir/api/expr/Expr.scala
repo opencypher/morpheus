@@ -234,13 +234,13 @@ final case class Ands(_exprs: List[Expr]) extends Expr {
 
 object Ors {
 
-  def apply(exprs: Expr*): Expr = exprs.flattenExprs[Ors] match {
+  def apply[E <: Expr](exprs: E*): Expr = exprs.flattenExprs[Ors] match {
     case Nil => TrueLit
     case one :: Nil => one
     case other => Ors(other)
   }
 
-  def apply(exprs: Set[Expr]): Expr = apply(exprs.toSeq: _*)
+  def apply[E <: Expr](exprs: Set[E]): Expr = apply(exprs.toSeq: _*)
 }
 
 final case class Ors(_exprs: List[Expr]) extends Expr {

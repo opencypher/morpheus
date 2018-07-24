@@ -71,14 +71,14 @@ abstract class RelationalOperator[T <: FlatRelationalTable[T]] extends AbstractT
            """.stripMargin
         )
       }
-      // TODO: uncomment and fix expectations
-      //      val missingHeaderColumns = dataColumnNames -- headerColumnNames
-      //      if (missingHeaderColumns.nonEmpty) {
-      //        throw IllegalArgumentException(
-      //          s"data with columns ${header.columns.toSeq.sorted.mkString("\n[", ", ", "]\n")}",
-      //          s"data with columns ${dataColumnNames.toSeq.sorted.mkString("\n[", ", ", "]\n")}"
-      //        )
-      //      }
+
+      val missingHeaderColumns = dataColumnNames -- headerColumnNames
+      if (missingHeaderColumns.nonEmpty) {
+        throw IllegalArgumentException(
+          s"data with columns ${header.columns.toSeq.sorted.mkString("\n[", ", ", "]\n")}",
+          s"data with columns ${dataColumnNames.toSeq.sorted.mkString("\n[", ", ", "]\n")}"
+        )
+      }
 
       // Verify column types
       header.expressions.foreach { expr =>

@@ -112,6 +112,7 @@ object SparkFlatRelationalTable {
       df.where(expr.asSparkSQLExpr(header, df, parameters))
     }
 
+    // TODO: correctly set cypher type on call site instead of boolean flag
     override def withColumn(column: String, expr: Expr, preserveNullability: Boolean = true)
       (implicit header: RecordHeader, parameters: CypherMap): DataFrameTable = {
       val withColumn = df.withColumn(column, expr.asSparkSQLExpr(header, df, parameters))
