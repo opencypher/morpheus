@@ -36,7 +36,6 @@ import org.opencypher.okapi.api.value.CypherValue
 import org.opencypher.okapi.api.value.CypherValue.{CypherMap, CypherValue}
 import org.opencypher.okapi.impl.exception.NotImplementedException
 import org.opencypher.okapi.ir.api.expr.{Expr, _}
-import org.opencypher.okapi.relational.api.table.ExtractEntities.SelectExpressionGroups
 import org.opencypher.okapi.relational.api.table.FlatRelationalTable
 import org.opencypher.okapi.relational.impl.physical._
 import org.opencypher.okapi.relational.impl.table.RecordHeader
@@ -79,34 +78,34 @@ object SparkFlatRelationalTable {
       }
     }
 
-    override def extractEntities(
-      selectGroups: SelectExpressionGroups,
-      baseTableHeader: RecordHeader,
-      targetHeader: RecordHeader
-    )(implicit parameters: CypherMap): DataFrameTable = {
-      val missingColumns = selectGroups.flatMap { group =>
-        group.filter {
-          case (_, targetColumnName) => !df.columns.contains(targetColumnName)
-        }
-      }
-      val tableWithMissingColumns = missingColumns.foldLeft(this) {
-        case (currentDf, (expr, targetColumnName)) =>
-          currentDf.withColumn(targetColumnName, expr, preserveNullability = false)(baseTableHeader, parameters)
-      }
-
-      val idColumn = targetHeader.column(targetHeader.entityVars.head)
-      val encoder = targetHeader.rowEncoder
-      val idIndex = encoder.schema.fieldIndex(idColumn)
-      val orderedSelectGroups = selectGroups.map { selectGroup => selectGroup.sortBy(_._2) }
-
-      val entityTable = tableWithMissingColumns.df.flatMap { row =>
-        orderedSelectGroups.map { selectGroup =>
-          Row.fromSeq(selectGroup.map { case (_, column) => row.get(row.fieldIndex(column))})
-        }.filterNot(_.isNullAt(idIndex))
-      }(encoder)
-
-      entityTable.setNullability(targetHeader.exprToColumn.map { case (expr, column) => column -> expr.cypherType })
-    }
+//    override def extractEntities(
+//      selectGroups: SelectExpressionGroups,
+//      baseTableHeader: RecordHeader,
+//      targetHeader: RecordHeader
+//    )(implicit parameters: CypherMap): DataFrameTable = {
+//      val missingColumns = selectGroups.flatMap { group =>
+//        group.filter {
+//          case (_, targetColumnName) => !df.columns.contains(targetColumnName)
+//        }
+//      }
+//      val tableWithMissingColumns = missingColumns.foldLeft(this) {
+//        case (currentDf, (expr, targetColumnName)) =>
+//          currentDf.withColumn(targetColumnName, expr, preserveNullability = false)(baseTableHeader, parameters)
+//      }
+//
+//      val idColumn = targetHeader.column(targetHeader.entityVars.head)
+//      val encoder = targetHeader.rowEncoder
+//      val idIndex = encoder.schema.fieldIndex(idColumn)
+//      val orderedSelectGroups = selectGroups.map { selectGroup => selectGroup.sortBy(_._2) }
+//
+//      val entityTable = tableWithMissingColumns.df.flatMap { row =>
+//        orderedSelectGroups.map { selectGroup =>
+//          Row.fromSeq(selectGroup.map { case (_, column) => row.get(row.fieldIndex(column))})
+//        }.filterNot(_.isNullAt(idIndex))
+//      }(encoder)
+//
+//      entityTable.setNullability(targetHeader.exprToColumn.map { case (expr, column) => column -> expr.cypherType })
+//    }
 
     override def filter(expr: Expr)(implicit header: RecordHeader, parameters: CypherMap): DataFrameTable = {
       df.where(expr.asSparkSQLExpr(header, df, parameters))

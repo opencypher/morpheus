@@ -30,15 +30,8 @@ import org.opencypher.okapi.api.table.CypherTable
 import org.opencypher.okapi.api.types.{CTNull, CypherType}
 import org.opencypher.okapi.api.value.CypherValue.CypherMap
 import org.opencypher.okapi.ir.api.expr.{Aggregator, Expr, Var}
-import org.opencypher.okapi.relational.api.table.ExtractEntities.SelectExpressionGroups
 import org.opencypher.okapi.relational.impl.physical.{JoinType, Order}
 import org.opencypher.okapi.relational.impl.table.RecordHeader
-
-object ExtractEntities {
-  type ExprToColumn = (Expr, String)
-  type SelectExpressions = Seq[ExprToColumn]
-  type SelectExpressionGroups = Seq[SelectExpressions]
-}
 
 // TODO: rename to Table
 // TODO: document
@@ -54,9 +47,16 @@ trait FlatRelationalTable[T <: FlatRelationalTable[T]] extends CypherTable {
 
   def select(cols: String*): T
 
-  // Convenience for multiple selects + align and union
-  // TODO: provide default implementation
-  def extractEntities(selectGroups: SelectExpressionGroups, baseTableHeader: RecordHeader, targetHeader: RecordHeader)(implicit parameters: CypherMap): T
+//  // Convenience for multiple selects + align and union
+//  // TODO: provide default implementation
+//  def extractEntities(selectExprGroups: Set[Seq[Expr]], baseTableHeader: RecordHeader, targetHeader: RecordHeader)(implicit parameters: CypherMap): T = {
+//    selectExprGroups.map { selectExprs =>
+//      val selectedColumns = select(selectExprs.map(baseTableHeader.column): _*)
+//      selectedColumns
+//
+//    }
+//
+//  }
 
   def filter(expr: Expr)(implicit header: RecordHeader, parameters: CypherMap): T
 

@@ -27,16 +27,19 @@
 package org.opencypher.spark.impl.graph
 
 import org.opencypher.okapi.api.schema.Schema
-import org.opencypher.okapi.api.types.CypherType
+import org.opencypher.okapi.api.types._
+import org.opencypher.okapi.impl.exception.IllegalArgumentException
 import org.opencypher.okapi.ir.api.expr._
 import org.opencypher.okapi.relational.api.graph.RelationalCypherGraph
 import org.opencypher.okapi.relational.api.physical.RelationalRuntimeContext
 import org.opencypher.okapi.relational.api.schema.RelationalSchema._
 import org.opencypher.okapi.relational.api.table.RelationalCypherRecords
-import org.opencypher.okapi.relational.impl.operators.{Distinct, ExtractEntities, RelationalOperator, Start}
+import org.opencypher.okapi.relational.impl.operators._
+import org.opencypher.okapi.relational.impl.table.RecordHeader
 import org.opencypher.spark.api.CAPSSession
 import org.opencypher.spark.impl.CAPSRecords
 import org.opencypher.spark.impl.table.SparkFlatRelationalTable.DataFrameTable
+import org.opencypher.okapi.relational.impl.physical.RelationalPlanner._
 
 /**
   * A single table graph represents the result of CONSTRUCT clause. It contains all entities from the outer scope that 
@@ -65,10 +68,25 @@ case class SingleTableGraph(
     entityType: CypherType,
     exactLabelMatch: Boolean
   ): RelationalOperator[DataFrameTable] = {
+    val baseTableOp = Start(baseTable)
     val entity = Var("")(entityType)
     val targetEntityHeader = schema.headerForEntity(entity)
     val extractionVars: Set[Var] = header.entitiesForType(entityType)
-    Distinct(ExtractEntities(Start(baseTable), targetEntityHeader, extractionVars), Set(entity))
+    val extractedScans = extractionVars.map { extractionVar =>
+      val selected = Select(baseTableOp, List(extractionVar))
+      val idExprs = header.idExpressions(extractionVar)
+      val predicate = Ands(idExprs.map(idColumn => Not(Equals(idColumn, NullLit(CTInteger))(CTBoolean))(CTBoolean)))
+      val filtered = Filter(selected, predicate)
+      Distinct(filtered, Set(extractionVar))
+    }
+
+    val alignedScans = extractedScans.map(_.alignWith(entity, targetEntityHeader)).toList
+
+    alignedScans match {
+      case Nil => Start(session.records.empty(targetEntityHeader))
+      case singleOp :: Nil => singleOp
+      case multipleOps => multipleOps.reduce(TabularUnionAll(_, _))
+    }
   }
 
 }
