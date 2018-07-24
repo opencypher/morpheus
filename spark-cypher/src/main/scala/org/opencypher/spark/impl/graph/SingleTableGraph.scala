@@ -33,7 +33,7 @@ import org.opencypher.okapi.relational.api.graph.RelationalCypherGraph
 import org.opencypher.okapi.relational.api.physical.RelationalRuntimeContext
 import org.opencypher.okapi.relational.api.schema.RelationalSchema._
 import org.opencypher.okapi.relational.api.table.RelationalCypherRecords
-import org.opencypher.okapi.relational.impl.operators.{ExtractEntities, RelationalOperator, Start}
+import org.opencypher.okapi.relational.impl.operators.{Distinct, ExtractEntities, RelationalOperator, Start}
 import org.opencypher.spark.api.CAPSSession
 import org.opencypher.spark.impl.CAPSRecords
 import org.opencypher.spark.impl.table.SparkFlatRelationalTable.DataFrameTable
@@ -68,7 +68,7 @@ case class SingleTableGraph(
     val entity = Var("")(entityType)
     val targetEntityHeader = schema.headerForEntity(entity)
     val extractionVars: Set[Var] = header.entitiesForType(entityType)
-    ExtractEntities(Start(baseTable), targetEntityHeader, extractionVars)
+    Distinct(ExtractEntities(Start(baseTable), targetEntityHeader, extractionVars), Set(entity))
   }
 
 }
