@@ -69,19 +69,20 @@ case class SingleTableGraph(
     exactLabelMatch: Boolean
   ): RelationalOperator[DataFrameTable] = {
     val baseTableOp = Start(baseTable)
-    val entity = Var("")(entityType)
-    val targetEntityHeader = schema.headerForEntity(entity)
+    val targetEntityHeader = schema.headerForEntity(Var("")(entityType), exactLabelMatch)
+    val entityWithCorrectType = targetEntityHeader.entityVars.head
+
     val extractionVars: Set[Var] = header.entitiesForType(entityType, exactLabelMatch)
     val extractedScans = extractionVars.map { extractionVar =>
 
       val labelOrTypePredicate = entityType match {
-        case n: CTNode =>
-          val labelExprs: Set[Expr] = n.labels.map(label => HasLabel(extractionVar, Label(label))(CTBoolean))
+        case CTNode(labels, _) =>
+          val labelExprs: Set[Expr] = labels.map(label => HasLabel(extractionVar, Label(label))(CTBoolean))
           val physicalExprs = labelExprs intersect header.expressionsFor(extractionVar)
           Ands(physicalExprs.map(expr => Equals(expr, TrueLit)(CTBoolean)))
 
-        case r: CTRelationship =>
-          val relTypeExprs: Set[Expr] = r.types.map(relType => HasType(extractionVar, RelType(relType))(CTBoolean))
+        case CTRelationship(relTypes, _) =>
+          val relTypeExprs: Set[Expr] = relTypes.map(relType => HasType(extractionVar, RelType(relType))(CTBoolean))
           val physicalExprs = relTypeExprs intersect header.expressionsFor(extractionVar)
           Ors(physicalExprs.map(expr => Equals(expr, TrueLit)(CTBoolean)))
 
@@ -96,7 +97,7 @@ case class SingleTableGraph(
       Distinct(filtered, Set(extractionVar))
     }
 
-    val alignedScans = extractedScans.map(_.alignWith(entity, targetEntityHeader)).toList
+    val alignedScans = extractedScans.map(_.alignWith(entityWithCorrectType, targetEntityHeader)).toList
 
     alignedScans match {
       case Nil => Start(session.records.empty(targetEntityHeader))
