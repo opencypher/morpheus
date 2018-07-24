@@ -77,7 +77,7 @@ trait FlatRelationalTable[T <: FlatRelationalTable[T]] extends CypherTable {
   def group(by: Set[Var], aggregations: Set[(Aggregator, (String, CypherType))])(implicit header: RecordHeader, parameters: CypherMap): T
 
   // TODO: document that this replaces the column if it already exists
-  def withColumn(column: String, expr: Expr)(implicit header: RecordHeader, parameters: CypherMap): T
+  def withColumn(column: String, expr: Expr, preserveNullability: Boolean = true)(implicit header: RecordHeader, parameters: CypherMap): T
 
   def withColumnRenamed(oldColumn: String, newColumn: String): T
 
