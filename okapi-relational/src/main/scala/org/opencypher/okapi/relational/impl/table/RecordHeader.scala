@@ -190,7 +190,7 @@ case class RecordHeader(exprToColumn: Map[Expr, String]) {
     }
   }
 
-  def entitiesForType(ct: CypherType): Set[Var] = {
+  def entitiesForType(ct: CypherType, exactMatch: Boolean = false): Set[Var] = {
     ct match {
       case n: CTNode => nodesForType(n)
       case r: CTRelationship => relationshipsForType(r)
@@ -198,7 +198,7 @@ case class RecordHeader(exprToColumn: Map[Expr, String]) {
     }
   }
 
-  def nodesForType[T >: NodeVar <: Var](nodeType: CTNode): Set[T] = {
+  def nodesForType[T >: NodeVar <: Var](nodeType: CTNode, exactMatch: Boolean = false): Set[T] = {
     // and semantics
     val requiredLabels = nodeType.labels
 
@@ -208,7 +208,11 @@ case class RecordHeader(exprToColumn: Map[Expr, String]) {
         case CTNode(labels, _) => labels
         case _ => Set.empty[String]
       }
-      requiredLabels.subsetOf(physicalLabels ++ logicalLabels)
+      if (exactMatch) {
+        requiredLabels == (physicalLabels ++ logicalLabels)
+      } else {
+        requiredLabels.subsetOf(physicalLabels ++ logicalLabels)
+      }
     }
   }
 

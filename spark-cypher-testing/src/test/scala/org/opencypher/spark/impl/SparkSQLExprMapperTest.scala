@@ -33,7 +33,7 @@ import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.sql.types.{IntegerType, StructField, StructType}
 import org.opencypher.okapi.api.types.CTInteger
 import org.opencypher.okapi.api.value.CypherValue.CypherMap
-import org.opencypher.okapi.ir.api.expr.{Expr, IntegerLit, Subtract, Var}
+import org.opencypher.okapi.ir.api.expr._
 import org.opencypher.okapi.relational.api.tagging.Tags._
 import org.opencypher.okapi.relational.impl.table.RecordHeader
 import org.opencypher.okapi.testing.BaseTestSuite
@@ -56,14 +56,14 @@ class SparkSQLExprMapperTest extends BaseTestSuite with SparkSessionFixture {
     )
   }
 
-  it("correctly converts replaceTag expressions") {
+  it("converts replaceTag expressions") {
     IntegerLit(0)(CTInteger)
       .replaceTag(0, 1)
       .getTag
       .eval should equal(1)
   }
 
-  it("correctly converts replaceTags expression") {
+  it("converts replaceTags expression") {
     IntegerLit(0)(CTInteger)
       .setTag(1)
       .replaceTags(Map(0 -> 1, 1 -> 2))

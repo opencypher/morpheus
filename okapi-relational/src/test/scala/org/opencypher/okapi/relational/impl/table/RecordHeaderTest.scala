@@ -324,6 +324,12 @@ class RecordHeaderTest extends BaseTestSuite {
     nHeader.nodesForType(CTNode("C")) should equalWithTracing(Set.empty)
   }
 
+  it("returns all node var that match a given node type exactly") {
+    nHeader.nodesForType(CTNode("A", "B"), exactMatch = true) should equalWithTracing(Set(n))
+    nHeader.nodesForType(CTNode("A"), exactMatch = true) should equalWithTracing(Set.empty)
+    nHeader.nodesForType(CTNode("B"), exactMatch = true) should equalWithTracing(Set.empty)
+  }
+
   it("returns all rel vars for a given rel type") {
     rHeader.relationshipsForType(CTRelationship("R")) should equalWithTracing(Set(r))
     rHeader.relationshipsForType(CTRelationship("R", "S")) should equalWithTracing(Set(r))
