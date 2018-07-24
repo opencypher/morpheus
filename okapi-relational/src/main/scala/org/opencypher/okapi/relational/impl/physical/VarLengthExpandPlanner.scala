@@ -182,7 +182,7 @@ trait VarLengthExpandPlanner[T <: FlatRelationalTable[T]] {
         case (acc, expr) =>
 
           // TODO: RelationalOperator[T]his is a planning performance killer, we need to squash these steps into a single table operation
-          val lit = NullLit(expr.cypherType)
+          val lit = NullLit(expr.cypherType.nullable)
 
           val withExpr = relational.AddInto(acc, lit, expr)
 
