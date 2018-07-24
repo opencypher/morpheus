@@ -28,6 +28,8 @@ package org.opencypher.spark.impl.graph
 
 import org.opencypher.okapi.api.schema.Schema
 import org.opencypher.okapi.api.types._
+import org.opencypher.okapi.impl.exception.IllegalArgumentException
+import org.opencypher.okapi.ir.api.{Label, RelType}
 import org.opencypher.okapi.ir.api.expr._
 import org.opencypher.okapi.relational.api.graph.RelationalCypherGraph
 import org.opencypher.okapi.relational.api.physical.RelationalRuntimeContext
@@ -71,10 +73,26 @@ case class SingleTableGraph(
     val targetEntityHeader = schema.headerForEntity(entity)
     val extractionVars: Set[Var] = header.entitiesForType(entityType, exactLabelMatch)
     val extractedScans = extractionVars.map { extractionVar =>
+
+      val labelOrTypePredicate = entityType match {
+        case n: CTNode =>
+          val labelExprs: Set[Expr] = n.labels.map(label => HasLabel(extractionVar, Label(label))(CTBoolean))
+          val physicalExprs = labelExprs intersect header.expressionsFor(extractionVar)
+          Ands(physicalExprs.map(expr => Equals(expr, TrueLit)(CTBoolean)))
+
+        case r: CTRelationship =>
+          val relTypeExprs: Set[Expr] = r.types.map(relType => HasType(extractionVar, RelType(relType))(CTBoolean))
+          val physicalExprs = relTypeExprs intersect header.expressionsFor(extractionVar)
+          Ors(physicalExprs.map(expr => Equals(expr, TrueLit)(CTBoolean)))
+
+        case other => throw IllegalArgumentException("CTNode or CTRelationship", other)
+      }
+
       val selected = Select(baseTableOp, List(extractionVar))
-      val idExprs = header.idExpressions(extractionVar)
-      val predicate = Ands(idExprs.map(idExpr => IsNotNull(idExpr)(CTBoolean)))
-      val filtered = Filter(selected, predicate)
+      val idExprs = header.idExpressions(extractionVar).toSeq
+
+      val validEntityPredicate = Ands(idExprs.map(idExpr => IsNotNull(idExpr)(CTBoolean)) :+ labelOrTypePredicate: _*)
+      val filtered = Filter(selected, validEntityPredicate)
       Distinct(filtered, Set(extractionVar))
     }
 
