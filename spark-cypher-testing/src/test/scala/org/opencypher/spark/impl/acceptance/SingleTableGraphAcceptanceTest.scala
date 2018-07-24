@@ -29,19 +29,19 @@ package org.opencypher.spark.impl.acceptance
 import org.scalatest.Suites
 
 class SingleTableGraphAcceptanceTest extends Suites(
-  Aggregation_PatternGraph,
-  BoundedVarExpand_PatternGraph,
-  ExpandInto_PatternGraph,
-  Expression_PatternGraph,
-  Functions_PatternGraph,
-  Match_PatternGraph,
-  MultipleGraph_PatternGraph,
-  OptionalMatch_PatternGraph,
-  Predicate_PatternGraph,
-  Return_PatternGraph,
-  With_PatternGraph,
-  Unwind_PatternGraph,
-  CatalogDDL_PatternGraph
+  Aggregation_SingleTableGraph,
+  BoundedVarExpand_SingleTableGraph,
+  ExpandInto_SingleTableGraph,
+  Expression_SingleTableGraph,
+  Functions_SingleTableGraph,
+  Match_SingleTableGraph,
+  MultipleGraph_SingleTableGraph,
+  OptionalMatch_SingleTableGraph,
+  Predicate_SingleTableGraph,
+  Return_SingleTableGraph,
+  With_SingleTableGraph,
+  Unwind_SingleTableGraph,
+  CatalogDDL_SingleTableGraph
 )
 
 /**
@@ -49,29 +49,29 @@ class SingleTableGraphAcceptanceTest extends Suites(
   *
   * This is verbose, but I found no way to instantiate dynamic traits at compile time without resorting to macros.
   */
-object Aggregation_PatternGraph extends AggregationBehaviour with PatternGraphInit
+object Aggregation_SingleTableGraph extends AggregationBehaviour with SingleTableGraphInit
 
-object BoundedVarExpand_PatternGraph extends BoundedVarExpandBehaviour with PatternGraphInit
+object BoundedVarExpand_SingleTableGraph extends BoundedVarExpandBehaviour with SingleTableGraphInit
 
-object ExpandInto_PatternGraph extends ExpandIntoBehaviour with PatternGraphInit
+object ExpandInto_SingleTableGraph extends ExpandIntoBehaviour with SingleTableGraphInit
 
-object Expression_PatternGraph extends ExpressionBehaviour with PatternGraphInit
+object Expression_SingleTableGraph extends ExpressionBehaviour with SingleTableGraphInit
 
-object Functions_PatternGraph extends FunctionsBehaviour with PatternGraphInit
+object Functions_SingleTableGraph extends FunctionsBehaviour with SingleTableGraphInit
 
-object Match_PatternGraph extends MatchBehaviour with PatternGraphInit
+object Match_SingleTableGraph extends MatchBehaviour with SingleTableGraphInit
 
-object MultipleGraph_PatternGraph extends MultipleGraphBehaviour with PatternGraphInit
+object MultipleGraph_SingleTableGraph extends MultipleGraphBehaviour with SingleTableGraphInit
 
-object OptionalMatch_PatternGraph extends OptionalMatchBehaviour with PatternGraphInit
+object OptionalMatch_SingleTableGraph extends OptionalMatchBehaviour with SingleTableGraphInit
 
-object Predicate_PatternGraph extends PredicateBehaviour with PatternGraphInit
+object Predicate_SingleTableGraph extends PredicateBehaviour with SingleTableGraphInit
 
-object Return_PatternGraph extends ReturnBehaviour with PatternGraphInit
+object Return_SingleTableGraph extends ReturnBehaviour with SingleTableGraphInit
 
-object With_PatternGraph extends WithBehaviour with PatternGraphInit
+object With_SingleTableGraph extends WithBehaviour with SingleTableGraphInit
 
-object Unwind_PatternGraph extends UnwindBehaviour with PatternGraphInit
+object Unwind_SingleTableGraph extends UnwindBehaviour with SingleTableGraphInit
 
-object CatalogDDL_PatternGraph extends CatalogDDLBehaviour with PatternGraphInit
+object CatalogDDL_SingleTableGraph extends CatalogDDLBehaviour with SingleTableGraphInit
 

@@ -46,7 +46,7 @@ trait ScanGraphInit extends GraphInit {
 /**
   * Extend & override to ensure Scala knows this implements the same method as `DefaultGraphInit.initGraph`
   */
-trait PatternGraphInit extends GraphInit {
+trait SingleTableGraphInit extends GraphInit {
   override def initGraph(createQuery: String)(implicit caps: CAPSSession) = {
     SingleTableGraphFactory.initGraph(createQuery)
   }
