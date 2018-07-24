@@ -163,7 +163,7 @@ object SchemaTyper {
       for {
         lhsType <- process[R](lhs)
         rhsType <- process[R](rhs)
-        result <- recordTypes(lhs -> lhsType, rhs -> rhsType) >> recordAndUpdate(expr -> CTBoolean)
+        result <- recordTypes(lhs -> lhsType, rhs -> rhsType) >> recordAndUpdate(expr -> CTBoolean.asNullableAs(lhsType join rhsType))
       } yield result
 
     case cmp: InequalityExpression =>

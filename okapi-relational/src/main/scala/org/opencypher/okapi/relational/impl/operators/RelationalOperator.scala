@@ -3,7 +3,7 @@ package org.opencypher.okapi.relational.impl.operators
 import org.opencypher.okapi.api.graph.QualifiedGraphName
 import org.opencypher.okapi.api.types._
 import org.opencypher.okapi.api.value.CypherValue.CypherInteger
-import org.opencypher.okapi.impl.exception.{IllegalArgumentException, SchemaException, UnsupportedOperationException}
+import org.opencypher.okapi.impl.exception.{IllegalArgumentException, SchemaException}
 import org.opencypher.okapi.ir.api.block.{Asc, Desc, SortItem}
 import org.opencypher.okapi.ir.api.expr.Expr._
 import org.opencypher.okapi.ir.api.expr._
