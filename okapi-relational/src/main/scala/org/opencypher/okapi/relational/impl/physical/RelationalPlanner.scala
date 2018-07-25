@@ -28,7 +28,7 @@ package org.opencypher.okapi.relational.impl.physical
 
 import org.opencypher.okapi.api.graph.CypherSession
 import org.opencypher.okapi.api.types.{CTBoolean, CTNode, CTRelationship}
-import org.opencypher.okapi.impl.exception.{NotImplementedException, UnsupportedOperationException}
+import org.opencypher.okapi.impl.exception.{NotImplementedException, SchemaException, UnsupportedOperationException}
 import org.opencypher.okapi.ir.api.block.SortItem
 import org.opencypher.okapi.ir.api.expr._
 import org.opencypher.okapi.ir.api.{Label, RelType}
@@ -390,8 +390,8 @@ object RelationalPlanner {
     def singleEntity: Var = {
       op.header.entityVars.toList match {
         case entity :: Nil => entity
-        case Nil => throw UnsupportedOperationException(s"Operation requires single entity table, input contains no entities")
-        case other => throw UnsupportedOperationException(s"Operation requires single entity table, found ${other.mkString("[", ", ", "]")}")
+        case Nil => throw SchemaException(s"Operation requires single entity table, input contains no entities")
+        case other => throw SchemaException(s"Operation requires single entity table, found ${other.mkString("[", ", ", "]")}")
       }
     }
 
