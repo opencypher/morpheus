@@ -33,7 +33,7 @@ import org.opencypher.okapi.api.value.CypherValue.{CypherList, CypherMap}
 import org.opencypher.okapi.impl.exception.{IllegalArgumentException, IllegalStateException, NotImplementedException}
 import org.opencypher.okapi.ir.api.expr._
 import org.opencypher.okapi.relational.impl.table.RecordHeader
-import org.opencypher.spark.impl.CAPSFunctions.{array_contains, get_node_labels, get_property_keys, get_rel_type}
+import org.opencypher.spark.impl.CAPSFunctions.{array_contains, get_node_labels, get_property_keys, get_rel_type, _}
 import org.opencypher.spark.impl.convert.SparkConversions._
 
 object SparkSQLExprMapper {
@@ -217,6 +217,15 @@ object SparkSQLExprMapper {
             case (tmpCol, whenCol) => whenCol.otherwise(tmpCol)
           }
           caseColumn
+
+        case ContainerIndex(container, index) =>
+          val indexCol = index.asSparkSQLExpr
+          val containerCol = container.asSparkSQLExpr
+
+          container.cypherType.material match {
+            case _: CTList => containerCol.get(indexCol)
+            case other => throw NotImplementedException(s"Support for accessing $other by index is not supported")
+          }
 
         case _ =>
           throw NotImplementedException(s"No support for converting Cypher expression $expr to a Spark SQL expression")

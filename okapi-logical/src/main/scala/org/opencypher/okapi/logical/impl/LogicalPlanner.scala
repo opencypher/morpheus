@@ -221,6 +221,11 @@ class LogicalPlanner(producer: LogicalOperatorProducer)
         val plannedInner = inner.foldLeft(acc)((op, expr) => planInnerExpr(expr, op))
         producer.projectField(a, f, plannedInner)
 
+      case (acc, (f, containerIndex@ ContainerIndex(container, idx))) =>
+        val withContainer = planInnerExpr(container, acc)
+        val withIndex = planInnerExpr(idx, withContainer)
+        producer.projectField(containerIndex, f, withIndex)
+
       case (_, (_, x)) =>
         throw NotImplementedException(s"Support for projection of $x not yet implemented. Tree:\n${x.pretty}")
     }
@@ -330,6 +335,11 @@ class LogicalPlanner(producer: LogicalOperatorProducer)
       case ands@Ands(inner) =>
         val plannedInner = inner.foldLeft(in)((op, expr) => planInnerExpr(expr, op))
         producer.projectExpr(ands, plannedInner)
+
+      case containerIndex@ ContainerIndex(container, idx) =>
+        val withContainer = planInnerExpr(container, in)
+        val withIndex = planInnerExpr(idx, withContainer)
+        producer.projectExpr(containerIndex, withIndex)
 
       case x =>
         throw NotImplementedException(s"Support for projection of inner expression $x not yet implemented. Tree:\n${x.pretty}")

@@ -26,12 +26,19 @@
  */
 package org.opencypher.spark.impl
 
+import org.apache.spark.sql.catalyst.analysis.UnresolvedExtractValue
 import org.apache.spark.sql.catalyst.expressions.ArrayContains
 import org.apache.spark.sql.expressions.UserDefinedFunction
 import org.apache.spark.sql.types.{ArrayType, StringType}
 import org.apache.spark.sql.{Column, functions}
 
 object CAPSFunctions {
+
+  implicit class RichColumn(column: Column) {
+    def get(idx: Column): Column = {
+      new Column(UnresolvedExtractValue(column.expr, idx.expr))
+    }
+  }
 
   /**
     * Alternative version of `array_contains` that takes a column as the value.

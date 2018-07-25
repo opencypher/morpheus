@@ -58,6 +58,8 @@ final class ExpressionConverter(implicit context: IRBuilderContext) {
       FalseLit
     case ast.ListLiteral(exprs) =>
       ListLit(exprs.map(convert).toIndexedSeq)(typings(e))
+    case ast.ContainerIndex(container, index) =>
+      ContainerIndex(convert(container), convert(index))(typings(e))
 
     case ast.Property(m, ast.PropertyKeyName(name)) => Property(convert(m), PropertyKey(name))(typings(e))
 
