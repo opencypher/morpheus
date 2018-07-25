@@ -248,8 +248,7 @@ object RelationalPlanner {
       case p: LogicalPatternGraph =>
         plannerContext.constructedGraphPlans.get(p.name) match {
           case Some(plan) => plan // the graph was already constructed
-          // TODO: investigate why the implicit plannerContext is not found in scope
-          case None => ??? //planConstructGraph(plannerContext.session.emptyGraphQgn, p)(plannerContext, planner) // plan starts with a construct graph, thus we have to plan it
+          case None => planConstructGraph(None, p)
         }
     }
   }

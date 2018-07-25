@@ -62,7 +62,7 @@ object ConstructGraphPlanner {
     }
     val inputTablePlan = in.map(RelationalPlanner.process(_)(plannerContext, runtimeContext)).getOrElse(relational.Start[T](plannerContext.session.emptyGraphQgn))
 
-    val constructGraphPlan = relational.ConstructGraph(inputTablePlan, onGraphPlan, construct)
+    val constructGraphPlan = ConstructGraph(inputTablePlan, onGraphPlan, construct)
     plannerContext.constructedGraphPlans += (construct.name -> constructGraphPlan)
     constructGraphPlan
   }
@@ -76,7 +76,7 @@ final case class ConstructGraph[T <: FlatRelationalTable[T]](
 
   override lazy val header: RecordHeader = RecordHeader.empty
 
-  override lazy val _table: T = lhs.table.unit
+  override lazy val _table: T = session.records.unit().table
 
   override def toString: String = {
     val entities = construct.clones.keySet ++ construct.newEntities.map(_.v)
@@ -107,7 +107,11 @@ final case class ConstructGraph[T <: FlatRelationalTable[T]](
       .filter { case (alias, original) => alias != original }
       .map(_.swap)
 
-    val aliasOp: RelationalOperator[T] = relational.Alias(lhs, aliasClones.map { case (expr, alias) => expr as alias }.toSeq)
+    val aliasOp: RelationalOperator[T] = if (aliasClones.isEmpty) {
+      lhs
+    } else {
+      relational.Alias(lhs, aliasClones.map { case (expr, alias) => expr as alias }.toSeq)
+    }
 
     val retagBaseTableOp = clonedVarsToInputVars.foldLeft(aliasOp) {
       case (op, (alias, original)) => RetagVariable(op, alias, constructTagStrategy(original.cypherType.graph.get))
@@ -135,7 +139,11 @@ final case class ConstructGraph[T <: FlatRelationalTable[T]](
     val originalVarsToKeep = clonedVarsToInputVars.keySet -- aliasClones.keySet
     val varsToRemoveFromTable = allInputVars -- originalVarsToKeep
 
-    val patternGraphTableOp = relational.Drop(constructedEntitiesOp, varsToRemoveFromTable)
+    val patternGraphTableOp = if (varsToRemoveFromTable.isEmpty) {
+      constructedEntitiesOp
+    } else {
+      relational.Drop(constructedEntitiesOp, varsToRemoveFromTable)
+    }
 
     val tagsUsed = constructTagStrategy.foldLeft(newEntityTags) {
       case (tags, (qgn, remapping)) =>
@@ -246,8 +254,8 @@ final case class ConstructGraph[T <: FlatRelationalTable[T]](
     toConstruct: ConstructedRelationship
   ): Map[Expr, Expr] = {
     val ConstructedRelationship(rel, source, target, typOpt, baseRelOpt) = toConstruct
-    val header = inOp.header
-    val inTable = inOp.table
+//    val header = inOp.header
+//    val inTable = inOp.table
 
     // id needs to be generated
     val idTuple = rel -> generateId(columnIdPartition, numberOfColumnPartitions).setTag(newEntityTag)
@@ -255,11 +263,11 @@ final case class ConstructGraph[T <: FlatRelationalTable[T]](
     // source and target are present: just copy
     val sourceTuple = {
       //      val dfColumn = inTable.col(header.column(source))
-      StartNode(rel)(CTInteger) -> StartNode(rel)(CTInteger)
+      StartNode(rel)(CTInteger) -> source
     }
     val targetTuple = {
       //      val dfColumn = inTable.col(header.column(target))
-      EndNode(rel)(CTInteger) -> EndNode(rel)(CTInteger)
+      EndNode(rel)(CTInteger) -> target
     }
 
     val typeTuple: Map[Expr, Expr] = {
@@ -317,7 +325,7 @@ final case class AddEntitiesToRecords[T <: FlatRelationalTable[T]](
 
   override lazy val _table: T = {
     exprsToAdd.foldLeft(in.table) {
-      case (acc, (toAdd, value)) => acc.withColumn(header.column(toAdd), value)(in.header, context.parameters)
+      case (acc, (toAdd, value)) => acc.withColumn(header.column(toAdd), value)(header, context.parameters)
     }
   }
 }
