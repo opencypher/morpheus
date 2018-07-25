@@ -9,7 +9,7 @@ import org.opencypher.okapi.ir.api.expr._
 import org.opencypher.okapi.logical.impl.{LogicalCatalogGraph, LogicalPatternGraph}
 import org.opencypher.okapi.relational.api.graph.{RelationalCypherGraph, RelationalCypherSession}
 import org.opencypher.okapi.relational.api.physical.RelationalRuntimeContext
-import org.opencypher.okapi.relational.api.table.{FlatRelationalTable, RelationalCypherRecords}
+import org.opencypher.okapi.relational.api.table.{FlatRelationalTable, RelationalCypherRecords, RelationalCypherRecordsFactory}
 import org.opencypher.okapi.relational.impl.physical._
 import org.opencypher.okapi.relational.impl.table.RecordHeader
 import org.opencypher.okapi.trees.AbstractTreeNode
@@ -118,13 +118,14 @@ object Start {
 
 final case class Start[T <: FlatRelationalTable[T]](
   qgn: QualifiedGraphName,
-  recordsOpt: Option[RelationalCypherRecords[T]] = None
+  maybeRecords: Option[RelationalCypherRecords[T]] = None
 )(implicit override val context: RelationalRuntimeContext[T]) extends RelationalOperator[T] {
 
-  override lazy val header: RecordHeader = recordsOpt.map(_.header).getOrElse(RecordHeader.empty)
+  override lazy val header: RecordHeader = maybeRecords.map(_.header).getOrElse(RecordHeader.empty)
 
-  //  override lazy val _table: T = recordsOpt.map(_.table).getOrElse(CAPSRecords.unit().table)
-  override lazy val _table: T = recordsOpt.map(_.table).getOrElse(table.unit)
+  override lazy val _table: T = maybeRecords.map(_.table).getOrElse {
+    session.records.unit().table
+  }
 
   override lazy val graph: RelationalCypherGraph[T] = resolve(qgn)
 
@@ -134,7 +135,7 @@ final case class Start[T <: FlatRelationalTable[T]](
 
   override def toString: String = {
     val graphArg = qgn.toString
-    val recordsArg = recordsOpt.map(_.toString)
+    val recordsArg = maybeRecords.map(_.toString)
     val allArgs = List(recordsArg, graphArg).mkString(", ")
     s"Start($allArgs)"
   }
@@ -292,7 +293,7 @@ final case class ReturnGraph[T <: FlatRelationalTable[T]](in: RelationalOperator
 
   override lazy val header: RecordHeader = RecordHeader.empty
 
-  override lazy val _table: T = in.table.empty()
+  override lazy val _table: T = session.records.empty().table
 }
 
 final case class Select[T <: FlatRelationalTable[T]](
@@ -466,7 +467,7 @@ final case class EmptyRecords[T <: FlatRelationalTable[T]](
 
   override lazy val header: RecordHeader = RecordHeader.from(fields)
 
-  override lazy val _table: T = in.table.empty(header)
+  override lazy val _table: T = session.records.empty(header).table
 }
 
 final case class FromGraph[T <: FlatRelationalTable[T]](
@@ -538,14 +539,6 @@ final case class TabularUnionAll[T <: FlatRelationalTable[T]](
 
     lhsTable.unionAll(orderedRhsTable)
   }
-}
-
-final case class ConstructGraph[T <: FlatRelationalTable[T]](
-  lhs: RelationalOperator[T],
-  rhs: RelationalOperator[T],
-  construct: LogicalPatternGraph
-) extends RelationalOperator[T] {
-
 }
 
 // N-ary

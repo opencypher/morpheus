@@ -49,15 +49,7 @@ object SparkFlatRelationalTable {
 
   implicit class DataFrameTable(val df: DataFrame) extends FlatRelationalTable[DataFrameTable] {
 
-    override def empty(initialHeader: RecordHeader = RecordHeader.empty): DataFrameTable = {
-      df.sparkSession.createDataFrame(Collections.emptyList[Row](), initialHeader.toStructType)
-    }
-
     private case class EmptyRow()
-
-    override def unit: DataFrameTable = {
-      df.sparkSession.createDataFrame(Seq(EmptyRow()))
-    }
 
     override def physicalColumns: Seq[String] = df.columns
 
