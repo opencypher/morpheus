@@ -36,15 +36,17 @@ import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge
 import org.neo4j.kernel.impl.storageengine.impl.recordstorage.RecordStorageEngine
 import org.neo4j.kernel.internal.GraphDatabaseAPI
 import org.neo4j.logging.Log
-import org.opencypher.okapi.api.types.CTNull
+import org.neo4j.values.storable.ValueGroup
 import org.opencypher.okapi.api.types.CypherType._
+import org.opencypher.okapi.api.types._
 import org.opencypher.okapi.api.value.CypherValue
+import org.opencypher.okapi.procedures.LabelPropertyKeyMap._
 
 import scala.collection.JavaConversions._
 import scala.collection.JavaConverters._
-import scala.collection.mutable
 import scala.concurrent.duration.Duration
 import scala.concurrent.{Await, ExecutionContext, Future}
+import scala.util.{Success, Try}
 
 class SchemaCalculator(api: GraphDatabaseAPI, tx: KernelTransaction, log: Log) {
   val threads: Int = Runtime.getRuntime.availableProcessors
@@ -87,15 +89,17 @@ class SchemaCalculator(api: GraphDatabaseAPI, tx: KernelTransaction, log: Log) {
     val batches = (maxId / batchSize.toFloat).ceil.toInt
 
     (1 to batches)
-      .map { batch => Future {
-        val upper = batch * batchSize - 1
-        val lower = upper - batchSize
-        val extractor = typ match  {
-          case Node => NodeExtractor(api, ctx)
-          case Relationship => RelExtractor(api, ctx)
+      .map { batch =>
+        Future {
+          val upper = batch * batchSize - 1
+          val lower = upper - batchSize
+          val extractor = typ match {
+            case Node => NodeExtractor(api, ctx)
+            case Relationship => RelExtractor(api, ctx)
+          }
+          extractor(lower, upper)
         }
-        extractor(lower, upper)
-    }}
+      }
   }
 
   /**
@@ -106,7 +110,7 @@ class SchemaCalculator(api: GraphDatabaseAPI, tx: KernelTransaction, log: Log) {
     map: LabelPropertyKeyMap
   ): Stream[OkapiSchemaInfo] = map.data.asScala.flatMap {
     case (labelPointers, propertyMap) =>
-      val labels = labelPointers.map(getLabelName(typ, _))
+      val labels = labelPointers.map(l => getLabelName(typ, l.toInt))
 
       if (propertyMap.isEmpty) {
         Seq(new OkapiSchemaInfo(typ.name, labels.toSeq.asJava, "", new util.ArrayList(0)))
@@ -159,21 +163,29 @@ case object Relationship extends EntityType {
   override val name: String = "Relationship"
 }
 
+
+object LabelPropertyKeyMap {
+  val ctNullString: String = CTNull.name
+}
+
 /**
   * Stores the gatheredd information about label, property, type combinations.
   * @note This implementation is mutable and does inplace updates
   */
 class LabelPropertyKeyMap {
-  val data: java.util.Map[Set[Int], java.util.Map[Int, mutable.Set[String]]] = new java.util.HashMap()
+  val data: java.util.Map[Set[Long], java.util.Map[Int, Array[String]]] = new java.util.HashMap()
 
   /**
     * Given a label combination and a property cursor, this computes the new schema that results from including this
     * new information
     */
-  def add(labels: Set[Int], propertyCursor: PropertyCursor): LabelPropertyKeyMap = {
-    val isExistingLabel = data.containsKey(labels)
-    data.putIfAbsent(labels, new java.util.HashMap())
-    val labelData = data.get(labels)
+  final def add(labels: Set[Long], propertyCursor: PropertyCursor): LabelPropertyKeyMap = {
+    var labelData = data.get(labels)
+    val isExistingLabel = labelData != null
+    if(!isExistingLabel) {
+      labelData = new java.util.HashMap()
+      data.put(labels, labelData )
+    }
 
     val remainingProperties = new util.HashSet(labelData.keySet())
 
@@ -181,30 +193,56 @@ class LabelPropertyKeyMap {
       val property = propertyCursor.propertyKey()
       remainingProperties.remove(property)
 
-      val value = propertyCursor.propertyValue().asObject()
+      val typ = getCypherType(propertyCursor)
 
-      val typ = CypherValue.get(value).map(_.cypherType) match {
-        case Some(cypherType) => cypherType.name
-        case None => value.getClass.getSimpleName
+      var knownTypes = labelData.get(property)
+      val existingTypes = knownTypes != null
+      if (knownTypes == null) {
+        knownTypes = Array()
+        labelData.put(property, knownTypes)
       }
-
-      val existingTypes = labelData.putIfAbsent(property, mutable.Set.empty)
-      val knownTypes = labelData.get(property)
 
       // we have seen this label combination before but not the property, so make the property nullable
-      if(isExistingLabel && existingTypes == null) {
-        knownTypes.add(CTNull.name)
+      if(isExistingLabel && !existingTypes && !knownTypes.contains(ctNullString)) {
+        knownTypes = knownTypes :+  ctNullString
+        labelData.put(property, knownTypes)
       }
 
-      knownTypes.add(typ)
+      if(!knownTypes.contains(typ)){
+        knownTypes = knownTypes :+ typ
+        labelData.put(property, knownTypes)
+      }
     }
 
     // if remaining properties is not empty, then we have not seen these properties for the current element,
     // thus we have to make it nullable.
-    remainingProperties.foreach(labelData.get(_).add(CTNull.toString))
+    remainingProperties.foreach { property =>
+      val knownTypes = labelData.get(property)
+      if(!knownTypes.contains(ctNullString)) {
+        labelData.put(property, knownTypes :+ ctNullString)
+      }
+    }
+
     this
   }
 
+  def getCypherType(cursor: PropertyCursor): String = {
+    Try(cursor.propertyType()) match {
+      case Success(typ) => typ match {
+        case ValueGroup.UNKNOWN => CTVoid.name
+        case ValueGroup.TEXT_ARRAY => CTList(CTString.nullable).name
+        case ValueGroup.BOOLEAN_ARRAY => CTList(CTBoolean.nullable).name
+        case ValueGroup.TEXT => CTString.name
+        case ValueGroup.BOOLEAN => CTBoolean.name
+        case ValueGroup.NO_VALUE => ctNullString
+        case ValueGroup.NUMBER | ValueGroup.NUMBER_ARRAY =>
+          CypherValue.get(cursor.propertyValue().asObject()).map(_.cypherType.name).get
+        case other => other.toString
+      }
+
+      case _ => cursor.propertyValue().asObject().getClass.getSimpleName
+    }
+  }
 
   def ++(other: LabelPropertyKeyMap): LabelPropertyKeyMap = {
     other.data.keySet.foreach { labels =>
@@ -217,18 +255,25 @@ class LabelPropertyKeyMap {
         for(property <- rData.keySet()) {
           remainingProperties.remove(property)
 
-          val existingTypes = lData.putIfAbsent(property, mutable.Set.empty)
-          val knownTypes = lData.get(property)
+          val existingTypes = lData.putIfAbsent(property, Array())
+          var knownTypes = lData.get(property)
 
           // we have seen this label combination before but not the property, so make the property nullable
-          if(existingTypes == null) {
-            knownTypes.add(CTNull.name)
+          if(existingTypes == null && !knownTypes.contains(ctNullString)) {
+            knownTypes = knownTypes :+ ctNullString
+            lData.put(property, knownTypes)
           }
 
-          knownTypes.addAll(rData.get(property))
+          val toAdd = rData.get(property).filterNot(knownTypes.contains)
+          lData.put(property, knownTypes ++ toAdd)
         }
 
-        remainingProperties.foreach(lData.get(_).add(CTNull.toString))
+        remainingProperties.foreach { property =>
+          val knownTypes = lData.get(property)
+          if(!knownTypes.contains(ctNullString)) {
+            lData.put(property, knownTypes :+ ctNullString)
+          }
+        }
 
       } else {
         data.put(labels, other.data.get(labels))
@@ -271,6 +316,7 @@ trait Extractor[T <: WrappedCursor] {
     val wrappedCursor = getCursor(cursors)
     val propertyCursor = cursors.allocatePropertyCursor()
 
+
     (lower to upper).foreach(iterate(_, wrappedCursor, propertyCursor, read))
 
     propertyCursor.close()
@@ -305,13 +351,13 @@ case class NodeExtractor (
 
   override val labelPropertyMap: LabelPropertyKeyMap = new LabelPropertyKeyMap
 
-  override def iterate(i: Long, wrappedCursor: WrappedNodeCursor, propertyCursor: PropertyCursor, read: Read): Unit = {
+  final override def iterate(i: Long, wrappedCursor: WrappedNodeCursor, propertyCursor: PropertyCursor, read: Read): Unit = {
     val nodeCursor = wrappedCursor.cursor
     read.singleNode(i, nodeCursor)
     if(nodeCursor.next()) {
       nodeCursor.properties(propertyCursor)
       val labels = nodeCursor.labels().all()
-      labelPropertyMap.add(labels.map(_.toInt).toSet, propertyCursor)
+      labelPropertyMap.add(labels.toSet, propertyCursor)
     }
   }
 
@@ -325,7 +371,7 @@ case class RelExtractor(
 
   override val labelPropertyMap: LabelPropertyKeyMap = new LabelPropertyKeyMap
 
-  override def iterate(i: Long, wrappedCursor: WrappedRelationshipCursor, propertyCursor: PropertyCursor, read: Read): Unit = {
+  final override def iterate(i: Long, wrappedCursor: WrappedRelationshipCursor, propertyCursor: PropertyCursor, read: Read): Unit = {
     val relCursor = wrappedCursor.cursor
 
     read.singleRelationship(i, relCursor)

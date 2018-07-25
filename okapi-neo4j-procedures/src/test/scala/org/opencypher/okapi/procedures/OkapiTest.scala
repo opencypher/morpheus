@@ -73,7 +73,7 @@ class OkapiTest extends FunSuite with BeforeAndAfter with Matchers {
     })
   }
 
-test("Make sure that input order does not affect schema") {
+  test("Make sure that input order does not affect schema") {
     db.execute("""
                  |CREATE (b1:B { type: 'B1' })
                  |CREATE (b2:B { type: 'B2', size: 5 })
@@ -91,7 +91,7 @@ test("Make sure that input order does not affect schema") {
           "type" -> "Node",
           "nodeLabelsOrRelType" -> Seq("B").asJava,
           "property" -> "size",
-          "cypherTypes" -> Seq("INTEGER","NULL").asJava
+          "cypherTypes" -> Seq("NULL", "INTEGER").asJava
         )
       )
       result.toSet should equal(expected)
