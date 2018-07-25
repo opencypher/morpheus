@@ -246,18 +246,6 @@ object SchemaTyper {
           error(WrongNumberOfArguments(expr, 1, seq.size))
       }
 
-    // TODO: Remove as soon as FunctionInvocationTyper is capable of supporting all Neo4j front end types
-    case expr: FunctionInvocation if expr.function == ToBoolean =>
-      expr.arguments match {
-        case Seq(first) =>
-          for {
-            _ <- process[R](first)
-            existsType <- recordAndUpdate(expr -> CTBoolean)
-          } yield existsType
-        case seq =>
-          error(WrongNumberOfArguments(expr, 1, seq.size))
-      }
-
     case expr: FunctionInvocation if expr.function == Collect =>
       for {
         argExprs <- pure(expr.arguments)
@@ -487,6 +475,13 @@ object SchemaTyper {
             Set(
               Seq(CTInteger) -> CTInteger,
               Seq(CTFloat) -> CTFloat
+            ))
+
+        case ToBoolean =>
+          pure[R, Set[(Seq[CypherType], CypherType)]](
+            Set(
+              Seq(CTString) -> CTBoolean,
+              Seq(CTBoolean) -> CTBoolean
             ))
 
         case _ =>
