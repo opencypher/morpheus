@@ -266,15 +266,17 @@ final case class Drop[E <: Expr, T <: FlatRelationalTable[T]](
 
 final case class RenameColumns[T <: FlatRelationalTable[T]](
   in: RelationalOperator[T],
-  renameExprs: Map[Expr, String]
+  columnRenamings: Map[String, String]
 ) extends RelationalOperator[T] {
 
-  override lazy val header: RecordHeader = renameExprs.foldLeft(in.header) {
-    case (currentHeader, (expr, newColumn)) => currentHeader.withColumnRenamed(expr, newColumn)
+  private val actualRenamings: Map[String, String] = columnRenamings.filterNot { case (oldName, newName) => oldName == newName }
+
+  override lazy val header: RecordHeader = actualRenamings.foldLeft(in.header) {
+    case (currentHeader, (oldColumnName, newColumnName)) => currentHeader.withColumnRenamed(oldColumnName, newColumnName)
   }
 
-  override lazy val _table: T = renameExprs.foldLeft(in.table) {
-    case (currentTable, (expr, newColumn)) => currentTable.withColumnRenamed(in.header.column(expr), newColumn)
+  override lazy val _table: T = actualRenamings.foldLeft(in.table) {
+    case (currentTable, (oldColumnName, newColumnName)) => currentTable.withColumnRenamed(oldColumnName, newColumnName)
   }
 }
 
@@ -486,6 +488,8 @@ final case class Join[T <: FlatRelationalTable[T]](
   joinExprs: Seq[(Expr, Expr)] = Seq.empty,
   joinType: JoinType
 ) extends RelationalOperator[T] {
+
+  require((lhs.header.columns intersect rhs.header.columns).isEmpty, "Join cannot join tables with column name collisions")
 
   override lazy val header: RecordHeader = lhs.header join rhs.header
 

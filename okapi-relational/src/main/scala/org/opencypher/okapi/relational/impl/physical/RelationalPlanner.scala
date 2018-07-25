@@ -234,22 +234,8 @@ object RelationalPlanner {
     joinExprs: Seq[(Expr, Expr)],
     joinType: JoinType
   ): RelationalOperator[T] = {
-
     val joinHeader = lhs.header join rhs.header
-    val leftColumns = lhs.header.columns
-    val rightColumns = rhs.header.columns
-
-    val conflictFreeRhs = if (leftColumns ++ rightColumns != joinHeader.columns) {
-      // TODO: use RelationalOperator.alignColumnNames planner instead
-      val renameColumns = rhs.header.expressions
-        .filter(expr => rhs.header.column(expr) != joinHeader.column(expr))
-        .map { expr => expr -> joinHeader.column(expr) }.toSeq
-
-      RenameColumns(rhs, renameColumns.toMap)
-    } else {
-      rhs
-    }
-
+    val conflictFreeRhs = rhs.alignColumnNames(joinHeader)
     relational.Join(lhs, conflictFreeRhs, joinExprs, joinType)
   }
 
@@ -383,17 +369,19 @@ object RelationalPlanner {
     }
 
     def alignColumnNames(targetHeader: RecordHeader): RelationalOperator[T] = {
-      require(op.header.expressions == targetHeader.expressions,
-        s"""|Column alignment only possible for same expressions.
-            |current: ${op.header}
-            |target: $targetHeader""".stripMargin)
+      val exprsNotInTarget = op.header.expressions -- targetHeader.expressions
+      require(exprsNotInTarget.isEmpty,
+        s"""|Column alignment requires for all header expressions to be present in the target header:
+            |Current: ${op.header}
+            |Target: $targetHeader
+            |Missing expressions: ${exprsNotInTarget.mkString(", ")}
+        """.stripMargin)
 
-      if (op.header.columns == targetHeader.columns) {
+      if (op.header.expressions.forall(expr => op.header.column(expr) == targetHeader.column(expr))) {
         op
       } else {
-        val columnRenamings = targetHeader.expressions.foldLeft(Map.empty[Expr, String]) {
-          case (currentMap, expr) if op.header.column(expr) == targetHeader.column(expr) => currentMap
-          case (currentMap, expr) => currentMap + (expr -> targetHeader.column(expr))
+        val columnRenamings = op.header.expressions.foldLeft(Map.empty[String, String]) {
+          case (currentMap, expr) => currentMap + (op.header.column(expr) -> targetHeader.column(expr))
         }
         RenameColumns(op, columnRenamings)
       }
@@ -421,4 +409,5 @@ object RelationalPlanner {
       }
     }
   }
+
 }

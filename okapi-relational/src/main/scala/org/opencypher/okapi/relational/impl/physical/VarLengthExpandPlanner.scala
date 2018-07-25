@@ -36,6 +36,7 @@ import org.opencypher.okapi.relational.impl.operators.RelationalOperator
 import org.opencypher.okapi.relational.impl.physical.RelationalPlanner.{planJoin, process}
 import org.opencypher.okapi.relational.impl.table.RecordHeader
 import org.opencypher.okapi.relational.impl.{operators => relational}
+import RelationalPlanner._
 
 trait ExpandDirection
 case object Outbound extends ExpandDirection
@@ -180,19 +181,14 @@ trait VarLengthExpandPlanner[T <: FlatRelationalTable[T]] {
       val nullExpressions = targetHeader.expressions -- exp.header.expressions
       nullExpressions.foldLeft(exp) {
         case (acc, expr) =>
-
           // TODO: RelationalOperator[T]his is a planning performance killer, we need to squash these steps into a single table operation
           val lit = NullLit(expr.cypherType.nullable)
-
           val withExpr = relational.AddInto(acc, lit, expr)
-
           val withoutLit = relational.Drop(withExpr, Set(lit))
-
           if (withoutLit.header.column(expr) == targetHeader.column(expr)) {
             withoutLit
           } else {
-            val withRenamed = relational.RenameColumns(withoutLit, Map(expr -> targetHeader.column(expr)))
-            withRenamed
+            relational.RenameColumns(withoutLit, Map(withoutLit.header.column(expr) -> targetHeader.column(expr)))
           }
       }
     }
