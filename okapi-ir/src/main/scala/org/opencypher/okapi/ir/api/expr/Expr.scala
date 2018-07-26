@@ -495,6 +495,10 @@ object ListLit {
 
 final case class ListLit(v: IndexedSeq[Expr])(val cypherType: CypherType = CTList(CTVoid)) extends Lit[IndexedSeq[Expr]]
 
+final case class ContainerIndex(container: Expr, index: Expr)(val cypherType: CypherType = CTWildcard) extends Expr {
+  override def withoutType: String = s"${container.withoutType}[${index.withoutType}]"
+}
+
 final case class IntegerLit(v: Long)(val cypherType: CypherType = CTInteger) extends Lit[Long]
 
 final case class StringLit(v: String)(val cypherType: CypherType = CTString) extends Lit[String]

@@ -26,12 +26,25 @@
  */
 package org.opencypher.spark.impl
 
+import org.apache.spark.sql.catalyst.analysis.UnresolvedExtractValue
 import org.apache.spark.sql.catalyst.expressions.ArrayContains
 import org.apache.spark.sql.expressions.UserDefinedFunction
 import org.apache.spark.sql.types.{ArrayType, StringType}
 import org.apache.spark.sql.{Column, functions}
 
 object CAPSFunctions {
+
+  implicit class RichColumn(column: Column) {
+
+    /**
+      * This is a copy of {{{org.apache.spark.sql.Column#getItem}}}. The original method only allows fixed
+      * values (Int, or String) as index although the underlying implementation seem capable of processing arbitrary
+      * expressions. This method exposes these features
+      */
+    def get(idx: Column): Column = {
+      new Column(UnresolvedExtractValue(column.expr, idx.expr))
+    }
+  }
 
   /**
     * Alternative version of `array_contains` that takes a column as the value.

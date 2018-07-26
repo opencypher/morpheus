@@ -307,7 +307,7 @@ object SchemaTyper {
             typeOf[R](exprs(pos))
           }.getOrElse(pure[R, CypherType](CTVoid))
         }
-        result <- updateTyping(indexing -> eltType)
+        result <- recordAndUpdate(indexing -> eltType)
       } yield result
 
     case indexing @ ContainerIndex(list, index) =>
@@ -318,13 +318,13 @@ object SchemaTyper {
 
           // TODO: Test all cases
           case (CTList(eltTyp), CTInteger) =>
-            updateTyping(expr -> eltTyp.asNullableAs(indexTyp join eltTyp))
+            recordAndUpdate(expr -> eltTyp.asNullableAs(indexTyp join eltTyp))
 
           case (CTListOrNull(eltTyp), CTInteger) =>
-            updateTyping(expr -> eltTyp.nullable)
+            recordAndUpdate(expr -> eltTyp.nullable)
 
           case (typ, CTString) if typ.subTypeOf(CTMap).maybeTrue =>
-            updateTyping(expr -> CTWildcard.nullable)
+            recordAndUpdate(expr -> CTWildcard.nullable)
 
           case _ =>
             error(InvalidContainerAccess(indexing))

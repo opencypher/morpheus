@@ -27,7 +27,7 @@
 package org.opencypher.spark.impl.acceptance
 
 import org.opencypher.okapi.api.value.CypherValue
-import org.opencypher.okapi.api.value.CypherValue._
+import org.opencypher.okapi.api.value.CypherValue.CypherMap
 import org.opencypher.okapi.testing.Bag
 import org.opencypher.spark.testing.CAPSTestSuite
 import org.scalatest.DoNotDiscover
@@ -622,6 +622,65 @@ class ExpressionBehaviour extends CAPSTestSuite with DefaultGraphInit {
 
       graph.cypher(query).getRecords.toMaps should equal(Bag(
         CypherMap("n.v1" -> true)
+      ))
+    }
+  }
+
+  describe("ContainerIndex") {
+    it("Can extract the nth element from a list with literal index") {
+      val graph = initGraph(
+        """
+          |CREATE ({v1: [1, 2, 3]})
+        """.stripMargin)
+
+      val query =
+        """
+          | MATCH (n)
+          | RETURN n.v1[1] as val
+        """.stripMargin('|')
+
+      graph.cypher(query).getRecords.toMaps should equal(Bag(
+        CypherMap("val" -> 2)
+      ))
+    }
+
+    it("Can extract the nth element from a list with expression index") {
+      val graph = initGraph(
+        """
+          |CREATE ({v1: [1, 2, 3]})
+        """.stripMargin)
+
+      val query =
+        """
+          | MATCH (n)
+          | UNWIND [0,1,2] as i
+          | RETURN n.v1[i] as val
+        """.stripMargin('|')
+
+      graph.cypher(query).getRecords.toMaps should equal(Bag(
+        CypherMap("val" -> 1),
+        CypherMap("val" -> 2),
+        CypherMap("val" -> 3)
+      ))
+    }
+
+    it("returns null when the index is out of bounds") {
+      val graph = initGraph(
+        """
+          |CREATE ({v1: [1, 2, 3]})
+        """.stripMargin)
+
+      val query =
+        """
+          | MATCH (n)
+          | UNWIND [3,4,5] as i
+          | RETURN n.v1[i] as val
+        """.stripMargin('|')
+
+      graph.cypher(query).getRecords.toMaps should equal(Bag(
+        CypherMap("val" -> null),
+        CypherMap("val" -> null),
+        CypherMap("val" -> null)
       ))
     }
   }
