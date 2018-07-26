@@ -476,13 +476,6 @@ object SchemaTyper {
               Seq(CTFloat) -> CTFloat
             ))
 
-        case ToBoolean =>
-          pure[R, Set[(Seq[CypherType], CypherType)]](
-            Set(
-              Seq(CTString) -> CTBoolean,
-              Seq(CTBoolean) -> CTBoolean
-            ))
-
         case _ =>
           wrong[R, TyperError](UnsupportedExpr(expr)) >> pure(Set.empty)
       }
