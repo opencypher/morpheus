@@ -189,6 +189,8 @@ object SparkSQLExprMapper {
 
         case ToString(e) => e.asSparkSQLExpr.cast(StringType)
 
+        case ToBoolean(e) => e.asSparkSQLExpr.cast(BooleanType)
+
         case Explode(list) => list.cypherType match {
           case CTList(_) | CTListOrNull(_) => functions.explode(list.asSparkSQLExpr)
           case other => throw IllegalArgumentException("CTList", other)

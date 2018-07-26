@@ -414,6 +414,8 @@ final case class ToFloat(expr: Expr)(val cypherType: CypherType = CTWildcard) ex
 
 final case class ToString(expr: Expr)(val cypherType: CypherType = CTWildcard) extends UnaryFunctionExpr
 
+final case class ToBoolean(expr: Expr)(val cypherType: CypherType = CTWildcard) extends UnaryFunctionExpr
+
 final case class Coalesce(exprs: IndexedSeq[Expr])(val cypherType: CypherType = CTWildcard) extends FunctionExpr
 
 final case class Explode(expr: Expr)(val cypherType: CypherType = CTWildcard) extends UnaryFunctionExpr

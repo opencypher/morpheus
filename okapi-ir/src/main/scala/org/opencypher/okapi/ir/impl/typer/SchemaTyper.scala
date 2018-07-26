@@ -38,7 +38,7 @@ import org.opencypher.okapi.api.types.CypherType.joinMonoid
 import org.opencypher.okapi.api.types._
 import org.opencypher.okapi.ir.impl.parse.rewriter.ExistsPattern
 import org.opencypher.v9_1.expressions._
-import org.opencypher.v9_1.expressions.functions.{Coalesce, Collect, Exists, Max, Min, ToString}
+import org.opencypher.v9_1.expressions.functions.{Coalesce, Collect, Exists, Max, Min, ToString, ToBoolean}
 
 import scala.util.Try
 
@@ -234,6 +234,7 @@ object SchemaTyper {
           error(WrongNumberOfArguments(expr, 1, seq.size))
       }
 
+    // TODO: Remove as soon as FunctionInvocationTyper is capable of supporting all Neo4j front end types
     case expr: FunctionInvocation if expr.function == ToString =>
       expr.arguments match {
         case Seq(first) =>
@@ -474,6 +475,13 @@ object SchemaTyper {
             Set(
               Seq(CTInteger) -> CTInteger,
               Seq(CTFloat) -> CTFloat
+            ))
+
+        case ToBoolean =>
+          pure[R, Set[(Seq[CypherType], CypherType)]](
+            Set(
+              Seq(CTString) -> CTBoolean,
+              Seq(CTBoolean) -> CTBoolean
             ))
 
         case _ =>
