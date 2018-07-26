@@ -63,6 +63,7 @@ object ConstructGraphPlanner {
     val inputTablePlan = in.map(RelationalPlanner.process(_)(plannerContext, runtimeContext)).getOrElse(relational.Start[T](plannerContext.session.emptyGraphQgn))
 
     val constructGraphPlan = ConstructGraph(inputTablePlan, onGraphPlan, construct)
+
     plannerContext.constructedGraphPlans += (construct.name -> constructGraphPlan)
     constructGraphPlan
   }
@@ -86,6 +87,10 @@ final case class ConstructGraph[T <: FlatRelationalTable[T]](
   private def pickFreeTag(tagStrategy: Map[QualifiedGraphName, Map[Int, Int]]): Int = {
     val usedTags = tagStrategy.values.flatMap(_.values).toSet
     Tags.pickFreeTag(usedTags)
+  }
+
+  private def identityRetaggings(g: RelationalCypherGraph[T]): (RelationalCypherGraph[T], Map[Int, Int]) = {
+    g -> g.tags.zip(g.tags).toMap
   }
 
   override lazy val (graph, graphName, tagStrategy): (RelationalCypherGraph[T], QualifiedGraphName, TagStrategy) = {
@@ -158,7 +163,7 @@ final case class ConstructGraph[T <: FlatRelationalTable[T]](
     val constructedCombinedWithOn = if (onGraph == session.graphs.empty) {
       session.graphs.unionGraph(patternGraph)
     } else {
-      session.graphs.unionGraph(Seq(onGraph, patternGraph): _*)
+      session.graphs.unionGraph(Map(identityRetaggings(onGraph), identityRetaggings(patternGraph)))
     }
 
     context.constructedGraphCatalog += (construct.name -> constructedCombinedWithOn)

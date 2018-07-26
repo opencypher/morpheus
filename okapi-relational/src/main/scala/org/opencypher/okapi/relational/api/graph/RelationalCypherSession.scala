@@ -7,8 +7,8 @@ trait RelationalCypherSession[T <: FlatRelationalTable[T]] extends CypherSession
 
   type Graph <: RelationalCypherGraph[T]
 
-  def records: RelationalCypherRecordsFactory[T]
+  private[opencypher] def records: RelationalCypherRecordsFactory[T]
 
-  def graphs: RelationalCypherGraphFactory[T]
+  private[opencypher] def graphs: RelationalCypherGraphFactory[T]
 
 }

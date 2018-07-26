@@ -7,7 +7,7 @@ import org.opencypher.okapi.impl.exception.{IllegalArgumentException, SchemaExce
 import org.opencypher.okapi.ir.api.block.{Asc, Desc, SortItem}
 import org.opencypher.okapi.ir.api.expr._
 import org.opencypher.okapi.logical.impl.{LogicalCatalogGraph, LogicalPatternGraph}
-import org.opencypher.okapi.relational.api.graph.{RelationalCypherGraph, RelationalCypherSession}
+import org.opencypher.okapi.relational.api.graph.{RelationalCypherGraph, RelationalCypherGraphFactory, RelationalCypherSession}
 import org.opencypher.okapi.relational.api.physical.RelationalRuntimeContext
 import org.opencypher.okapi.relational.api.table.{FlatRelationalTable, RelationalCypherRecords, RelationalCypherRecordsFactory}
 import org.opencypher.okapi.relational.impl.physical._
@@ -542,23 +542,26 @@ final case class TabularUnionAll[T <: FlatRelationalTable[T]](
 }
 
 // N-ary
-
+//
 final case class GraphUnionAll[T <: FlatRelationalTable[T]](
   inputs: List[RelationalOperator[T]],
   qgn: QualifiedGraphName
 ) extends RelationalOperator[T] {
-  //  require(inputs.nonEmpty, "GraphUnionAll requires at least one input")
-  //
-  //  override lazy val tagStrategy = {
-  //    computeRetaggings(inputs.map(r => r.graphName -> r.graph.tags).toMap)
-  //  }
-  //
-  //  override lazy val graphName = qgn
-  //
-  //  override lazy val graph = {
-  //    val graphWithTagStrategy = inputs.map(i => i.graph -> tagStrategy(i.graphName)).toMap
-  //    CAPSUnionGraph(graphWithTagStrategy)
-  //  }
-  //
-  //}
+  require(inputs.nonEmpty, "GraphUnionAll requires at least one input")
+
+  override lazy val header: RecordHeader = RecordHeader.empty
+
+  override lazy val _table: T = session.records.empty().table
+
+  import org.opencypher.okapi.relational.api.tagging.TagSupport._
+
+  override lazy val tagStrategy: Map[QualifiedGraphName, Map[Int, Int]] = computeRetaggings(inputs.map(r => r.graphName -> r.graph.tags).toMap)
+
+  override lazy val graphName: QualifiedGraphName = qgn
+
+  override lazy val graph: RelationalCypherGraph[T] = {
+    val graphWithTagStrategy = inputs.map(i => i.graph -> tagStrategy(i.graphName)).toMap
+    session.graphs.unionGraph(graphWithTagStrategy)
+  }
+
 }

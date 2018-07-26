@@ -26,9 +26,10 @@
  */
 package org.opencypher.okapi.relational.api.physical
 
-import org.opencypher.okapi.api.graph.{CypherSession, QualifiedGraphName}
+import org.opencypher.okapi.api.graph.QualifiedGraphName
 import org.opencypher.okapi.api.value.CypherValue.CypherMap
 import org.opencypher.okapi.ir.impl.CatalogWithQuerySchemas
+import org.opencypher.okapi.relational.api.graph.RelationalCypherSession
 import org.opencypher.okapi.relational.api.table.{FlatRelationalTable, RelationalCypherRecords}
 import org.opencypher.okapi.relational.impl.operators.RelationalOperator
 
@@ -43,7 +44,7 @@ import org.opencypher.okapi.relational.impl.operators.RelationalOperator
   * @tparam T
   */
 case class RelationalPlannerContext[T <: FlatRelationalTable[T]](
-  session: CypherSession,
+  session: RelationalCypherSession[T],
   inputRecords: RelationalCypherRecords[T],
   parameters: CypherMap = CypherMap.empty,
   catalogWithQuerySchemas: CatalogWithQuerySchemas,
