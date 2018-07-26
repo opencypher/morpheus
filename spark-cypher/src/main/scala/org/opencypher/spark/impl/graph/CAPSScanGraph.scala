@@ -62,12 +62,11 @@ class CAPSScanGraph(val scans: Seq[CAPSEntityTable], val schema: CAPSSchema, val
     entityType: CypherType,
     exactLabelMatch: Boolean
   ): RelationalOperator[DataFrameTable] = {
-    val entity = Var("")(entityType)
+    val targetEntity = Var("")(entityType)
     val selectedScans = scansForType(entityType, exactLabelMatch)
-    val targetEntityHeader = schema.headerForEntity(entity, exactLabelMatch)
-    val entityWithCorrectType = targetEntityHeader.entityVars.head
+    val targetEntityHeader = schema.headerForEntity(targetEntity, exactLabelMatch)
     val alignedEntityTableOps = selectedScans.map { scan =>
-      scan.alignWith(entityWithCorrectType, targetEntityHeader)
+      scan.alignWith(targetEntity, targetEntityHeader)
     }
 
     alignedEntityTableOps.toList match {

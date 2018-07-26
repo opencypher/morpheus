@@ -403,5 +403,7 @@ case class RecordHeader(exprToColumn: Map[Expr, String]) {
     TablePrinter.toTable(header, Seq(row))(formatCell)
   }
 
+  def show(): Unit = println(pretty)
+
 }
 

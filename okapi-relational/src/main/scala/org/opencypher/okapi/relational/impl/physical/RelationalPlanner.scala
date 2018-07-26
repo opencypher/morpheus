@@ -28,7 +28,7 @@ package org.opencypher.okapi.relational.impl.physical
 
 import org.opencypher.okapi.api.graph.CypherSession
 import org.opencypher.okapi.api.types.{CTBoolean, CTNode, CTRelationship}
-import org.opencypher.okapi.impl.exception.{NotImplementedException, SchemaException, UnsupportedOperationException}
+import org.opencypher.okapi.impl.exception.{NotImplementedException, SchemaException}
 import org.opencypher.okapi.ir.api.block.SortItem
 import org.opencypher.okapi.ir.api.expr._
 import org.opencypher.okapi.ir.api.{Label, RelType}
@@ -330,7 +330,7 @@ object RelationalPlanner {
 
       // Fill in missing false label columns
       val falseLabels = targetVar.cypherType match {
-        case CTNode(labels, _) => labels -- trueLabels -- existingLabels
+        case _: CTNode => targetHeader.labelsFor(targetVar).map(_.label.name) -- trueLabels -- existingLabels
         case _ => Set.empty
       }
       val withFalseLabels = falseLabels.foldLeft(withTrueLabels: RelationalOperator[T]) {
@@ -348,7 +348,7 @@ object RelationalPlanner {
 
       // Fill in missing false relType columns
       val falseRelTypes = targetVar.cypherType match {
-        case CTRelationship(relTypes, _) => relTypes -- trueRelTypes -- existingRelTypes
+        case _: CTRelationship => targetHeader.typesFor(targetVar).map(_.relType.name) -- trueRelTypes -- existingRelTypes
         case _ => Set.empty
       }
       val withFalseRelTypes = falseRelTypes.foldLeft(withTrueRelTypes: RelationalOperator[T]) {

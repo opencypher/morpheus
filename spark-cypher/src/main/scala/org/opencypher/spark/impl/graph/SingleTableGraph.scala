@@ -29,8 +29,8 @@ package org.opencypher.spark.impl.graph
 import org.opencypher.okapi.api.schema.Schema
 import org.opencypher.okapi.api.types._
 import org.opencypher.okapi.impl.exception.IllegalArgumentException
-import org.opencypher.okapi.ir.api.{Label, RelType}
 import org.opencypher.okapi.ir.api.expr._
+import org.opencypher.okapi.ir.api.{Label, RelType}
 import org.opencypher.okapi.relational.api.graph.RelationalCypherGraph
 import org.opencypher.okapi.relational.api.physical.RelationalRuntimeContext
 import org.opencypher.okapi.relational.api.schema.RelationalSchema._
@@ -69,8 +69,8 @@ case class SingleTableGraph(
     exactLabelMatch: Boolean
   ): RelationalOperator[DataFrameTable] = {
     val baseTableOp = Start(baseTable)
+    val targetEntity = Var("")(entityType)
     val targetEntityHeader = schema.headerForEntity(Var("")(entityType), exactLabelMatch)
-    val entityWithCorrectType = targetEntityHeader.entityVars.head
 
     val extractionVars: Set[Var] = header.entitiesForType(entityType, exactLabelMatch)
     val extractedScans = extractionVars.map { extractionVar =>
@@ -97,7 +97,7 @@ case class SingleTableGraph(
       Distinct(filtered, Set(extractionVar))
     }
 
-    val alignedScans = extractedScans.map(_.alignWith(entityWithCorrectType, targetEntityHeader)).toList
+    val alignedScans = extractedScans.map(_.alignWith(targetEntity, targetEntityHeader)).toList
 
     alignedScans match {
       case Nil => Start(session.records.empty(targetEntityHeader))
