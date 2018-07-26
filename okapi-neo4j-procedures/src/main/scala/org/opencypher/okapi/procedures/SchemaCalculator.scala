@@ -237,10 +237,14 @@ class LabelPropertyKeyMap {
         case ValueGroup.NO_VALUE => ctNullString
         case ValueGroup.NUMBER | ValueGroup.NUMBER_ARRAY =>
           CypherValue.get(cursor.propertyValue().asObject()).map(_.cypherType.name).get
-        case other => other.toString
+        case other =>
+          other.toString
       }
 
-      case _ => cursor.propertyValue().asObject().getClass.getSimpleName
+      case _ =>
+        CypherValue.get(cursor.propertyValue().asObject()).map(_.cypherType.name).getOrElse(
+          cursor.propertyValue().asObject().getClass.getSimpleName
+        )
     }
   }
 
