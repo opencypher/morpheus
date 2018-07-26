@@ -247,8 +247,6 @@ final case class ConstructGraph[T <: FlatRelationalTable[T]](
     val columnPartitionOffset = columnIdPartition.toLong << columnIdShift
 
     Add(MonotonicallyIncreasingId(), IntegerLit(columnPartitionOffset)(CTInteger))(CTInteger)
-    // TODO: remove line
-    //    monotonically_increasing_id() + functions.lit(columnPartitionOffset)
   }
 
   private def constructRel(
