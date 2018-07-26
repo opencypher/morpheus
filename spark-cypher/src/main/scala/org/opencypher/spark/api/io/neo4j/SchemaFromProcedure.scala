@@ -30,7 +30,7 @@ import org.apache.log4j.LogManager
 import org.neo4j.driver.v1.Value
 import org.neo4j.driver.v1.util.Function
 import org.opencypher.okapi.api.schema.Schema
-import org.opencypher.okapi.api.types.CypherType
+import org.opencypher.okapi.api.types.{CTVoid, CypherType}
 import org.opencypher.okapi.impl.exception.UnsupportedOperationException
 import org.opencypher.spark.impl.io.neo4j.Neo4jHelpers._
 
@@ -66,38 +66,31 @@ object SchemaFromProcedure {
         val result = session.run("CALL " + schemaProcedureName)
 
         result.list().asScala.flatMap { row =>
-          if (row.get("type").asString() == "Meta") {
+          val extractString = new Function[Value, String] {
+            override def apply(v1: Value): String = v1.asString()
+          }
 
-            val hasWarnings = !row.get("warnings").isEmpty
+          val typ = row.get("type").asString()
+          val labels = row.get("nodeLabelsOrRelType").asList(extractString).asScala.toList
 
-            if (hasWarnings && !omitImportFailures) {
-              val firstWarning = row.get("warnings").asList(new Function[Value, String] {
-                override def apply(warning: Value): String = warning.toString
-              }).get(0)
+          row.get("property").asString() match {
+            case "" => // this label/type has no properties
+              Seq((typ, labels, None, None))
+            case property =>
+              val typeStrings = row.get("cypherTypes").asList(extractString).asScala.toList
+              val cypherType: CypherType = typeStrings
+                .flatMap { s => CypherType.fromName(s) match {
+                  case v@ Some(_) => v
+                  case None if omitImportFailures  =>
+                    log.warn(s"At least one $typ with labels ${labels.mkString(",")} has unsupported property type $s for property $property")
+                    None
+                  case None => throw UnsupportedOperationException(
+                    s"At least one $typ with labels ${labels.mkString(",")} has unsupported property type $s for property $property"
+                  )
+                }}
+                .foldLeft(CTVoid: CypherType)(_ join _)
 
-              throw UnsupportedOperationException(
-                s"$firstWarning To omit unsupported properties during import set flag `GraphSources.cypher.neo4j(omitImportFailures = true)`")
-            }
-            if (hasWarnings) {
-              row.get("warnings").asList(new Function[Value, Unit] {
-                override def apply(warning: Value): Unit = log.warn(s"$warning This property is omitted on this entity.")
-              })
-            }
-            Seq.empty
-          } else {
-            val typ = row.get("type").asString()
-            val labels = row.get("nodeLabelsOrRelType").asList(new Function[Value, String] {
-              override def apply(v1: Value): String = v1.asString()
-            }).asScala.toList
-
-            row.get("property").asString() match {
-              case "" => // this label/type has no properties
-                Seq((typ, labels, None, None))
-              case property =>
-                val typeString = row.get("cypherType").asString()
-                val cypherType = CypherType.fromName(typeString)
-                Seq((typ, labels, Some(property), cypherType))
-            }
+              Seq((typ, labels, Some(property), Some(cypherType)))
           }
         }
       }

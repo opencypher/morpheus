@@ -43,25 +43,19 @@ public class OkapiSchemaInfo
      */
     public final String property;
     /**
-     * The CypherType of the given property on the given label combination / relationship type
+     * The possible CypherTypes of the given property on the given label combination / relationship type
      */
-    public final String cypherType;
-    /**
-     * List of warnings created during schema creation.
-     */
-    public final List<String> warnings;
+    public final List<String> cypherTypes;
 
     public OkapiSchemaInfo(
             String type,
             List<String> nodeLabelsOrRelType,
             String property,
-            String cypherType,
-            List<String> warnings )
+            List<String> cypherTypes )
     {
         this.type = type;
         this.nodeLabelsOrRelType = nodeLabelsOrRelType;
         this.property = property;
-        this.cypherType = cypherType;
-        this.warnings = warnings;
+        this.cypherTypes = cypherTypes;
     }
 }
