@@ -66,6 +66,8 @@ case class Neo4jPropertyGraphDataSource(
 )(implicit session: CAPSSession)
   extends AbstractPropertyGraphDataSource {
 
+  graphNameCache += entireGraphName
+
   private implicit class RichGraphName(graphName: GraphName) {
     def metaLabel: Option[String] = graphName match {
       case `entireGraphName` => None
@@ -95,11 +97,6 @@ case class Neo4jPropertyGraphDataSource(
   }
 
   override def tableStorageFormat: String = "neo4j"
-
-  override def hasGraph(graphName: GraphName): Boolean = graphName match {
-    case `defaultEntireGraphName` => true
-    case _ => super.hasGraph(graphName)
-  }
 
   override protected def listGraphNames: List[String] = {
     val labelResult = config.cypher(
