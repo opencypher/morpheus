@@ -659,9 +659,11 @@ class MultipleGraphBehaviour extends CAPSTestSuite with ScanGraphInit {
 
     result.schema should equal((testGraph1.schema ++ testGraph2.schema).withRelationshipPropertyKeys("KNOWS")())
     result.nodes("n").toMaps should equal(testGraph1.unionAll(testGraph2).nodes("n").toMaps)
-    result.relationships("r").toMapsWithCollectedEntities should equal(Bag(
-      CypherMap("r" -> CAPSRelationship(36028797018963968L, 0L, 18014398509481984L, "KNOWS")))
-    )
+    val resultRelationship = result.relationships("r").toMapsWithCollectedEntities.head._1("r").asInstanceOf[CAPSRelationship]
+    resultRelationship.id.getTag should equal(2)
+    resultRelationship.startId should equal(0)
+    resultRelationship.endId.getTag should equal(1)
+    resultRelationship.relType should equal("KNOWS")
   }
 
   it("constructs a new node") {
