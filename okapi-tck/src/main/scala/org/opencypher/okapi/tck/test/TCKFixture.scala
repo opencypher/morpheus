@@ -98,6 +98,8 @@ case class TCKGraph[C <: CypherSession](testGraphFactory: CypherTestGraphFactory
             e match {
               case t: TypingException => this ->
                 ExecutionFailed(TCKErrorTypes.TYPE_ERROR, phase, TCKErrorDetails.INVALID_ARGUMENT_VALUE)
+              case ex: NotImplementedException => throw new RuntimeException(s"Unsupported feature in $query", ex)
+              case _ => throw new RuntimeException(s"Unknown engine failure for query: $query", e)
             }
         }
     }
@@ -177,7 +179,7 @@ case class ScenariosFor(blacklist: Set[String])  {
       : _*
   )
 
-  def get(name: String): Seq[Scenario] = scenarios.filter(s => s.name == name)
+  def get(name: String): Seq[Scenario] = scenarios.enumerateScenarioOutlines.filter(s => s.name == name)
 }
 
 object ScenariosFor {
