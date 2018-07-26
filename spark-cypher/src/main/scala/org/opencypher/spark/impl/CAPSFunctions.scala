@@ -42,7 +42,6 @@ object CAPSFunctions {
       * expressions. This method exposes these features
       */
     def get(idx: Column): Column = {
-      idx.getItem()
       new Column(UnresolvedExtractValue(column.expr, idx.expr))
     }
   }

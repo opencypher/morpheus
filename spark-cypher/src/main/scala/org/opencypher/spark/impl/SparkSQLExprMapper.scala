@@ -224,7 +224,7 @@ object SparkSQLExprMapper {
 
           container.cypherType.material match {
             case _: CTList => containerCol.get(indexCol)
-            case other => throw NotImplementedException(s"Support for accessing $other by index is not supported")
+            case other => throw NotImplementedException(s"Accessing $other by index is not supported")
           }
 
         case _ =>
