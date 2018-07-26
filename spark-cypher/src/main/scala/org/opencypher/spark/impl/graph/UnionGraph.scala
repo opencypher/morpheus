@@ -66,13 +66,14 @@ final case class UnionGraph(graphsToReplacements: Map[RelationalCypherGraph[Data
     exactLabelMatch: Boolean
   ): RelationalOperator[DataFrameTable] = {
     val targetEntity = Var("")(entityType)
-    val targetEntityHeader = schema.headerForEntity(targetEntity)
+    val targetEntityHeader = schema.headerForEntity(targetEntity, exactLabelMatch)
     val alignedScans = graphsToReplacements.keys
       .map { graph =>
         val scanOp = graph.scanOperator(entityType, exactLabelMatch)
         val retagOp = RetagVariable(scanOp, targetEntity, graphsToReplacements(graph))
         retagOp.alignWith(targetEntity, targetEntityHeader)
       }
+    // TODO: find out if a graph returns empty records and skip union operation
     Distinct(alignedScans.reduce(TabularUnionAll(_, _)), Set(targetEntity))
   }
 }
