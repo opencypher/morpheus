@@ -307,6 +307,8 @@ object RelationalPlanner {
     def alignExpressions(targetVar: Var, targetHeader: RecordHeader): RelationalOperator[T] = {
 
       val inputVar = op.singleEntity
+      val targetHeaderLabels = targetHeader.labelsFor(targetVar).map(_.label.name)
+      val targetHeaderTypes = targetHeader.typesFor(targetVar).map(_.relType.name)
 
       // Labels/RelTypes that do not need to be added
       val existingLabels = op.header.labelsFor(inputVar).map(_.label.name)
@@ -321,7 +323,7 @@ object RelationalPlanner {
 
       // Fill in missing true label columns
       val trueLabels = inputVar.cypherType match {
-        case CTNode(labels, _) => labels -- existingLabels
+        case CTNode(labels, _) => (targetHeaderLabels intersect labels) -- existingLabels
         case _ => Set.empty
       }
       val withTrueLabels = trueLabels.foldLeft(withDroppedExpressions: RelationalOperator[T]) {
@@ -330,7 +332,7 @@ object RelationalPlanner {
 
       // Fill in missing false label columns
       val falseLabels = targetVar.cypherType match {
-        case _: CTNode => targetHeader.labelsFor(targetVar).map(_.label.name) -- trueLabels -- existingLabels
+        case _: CTNode => targetHeaderLabels -- trueLabels -- existingLabels
         case _ => Set.empty
       }
       val withFalseLabels = falseLabels.foldLeft(withTrueLabels: RelationalOperator[T]) {
@@ -339,7 +341,7 @@ object RelationalPlanner {
 
       // Fill in missing true relType columns
       val trueRelTypes = inputVar.cypherType match {
-        case CTRelationship(relTypes, _) => relTypes -- existingRelTypes
+        case CTRelationship(relTypes, _) => (targetHeaderTypes intersect relTypes) -- existingRelTypes
         case _ => Set.empty
       }
       val withTrueRelTypes = trueRelTypes.foldLeft(withFalseLabels: RelationalOperator[T]) {
@@ -348,7 +350,7 @@ object RelationalPlanner {
 
       // Fill in missing false relType columns
       val falseRelTypes = targetVar.cypherType match {
-        case _: CTRelationship => targetHeader.typesFor(targetVar).map(_.relType.name) -- trueRelTypes -- existingRelTypes
+        case _: CTRelationship => targetHeaderTypes -- trueRelTypes -- existingRelTypes
         case _ => Set.empty
       }
       val withFalseRelTypes = falseRelTypes.foldLeft(withTrueRelTypes: RelationalOperator[T]) {
