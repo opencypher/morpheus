@@ -64,7 +64,7 @@ object RelationalPlanner {
           .flatMap(inOp.header.ownedBy)
           .distinct
 
-        relational.Select(process[T](in), selectExpressions)
+        relational.Select(inOp, selectExpressions)
 
       case logical.Project(projectExpr, in, _) =>
         val inOp = process[T](in)

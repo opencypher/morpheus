@@ -39,7 +39,7 @@ trait FlatRelationalTable[T <: FlatRelationalTable[T]] extends CypherTable {
 
   this: T =>
 
-  def cache: T = this
+  def cache(): T = this
 
   def select(cols: String*): T
 

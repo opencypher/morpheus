@@ -6,10 +6,10 @@ import org.opencypher.okapi.api.value.CypherValue.CypherInteger
 import org.opencypher.okapi.impl.exception.{IllegalArgumentException, SchemaException}
 import org.opencypher.okapi.ir.api.block.{Asc, Desc, SortItem}
 import org.opencypher.okapi.ir.api.expr._
-import org.opencypher.okapi.logical.impl.{LogicalCatalogGraph, LogicalPatternGraph}
-import org.opencypher.okapi.relational.api.graph.{RelationalCypherGraph, RelationalCypherGraphFactory, RelationalCypherSession}
+import org.opencypher.okapi.logical.impl.LogicalCatalogGraph
+import org.opencypher.okapi.relational.api.graph.{RelationalCypherGraph, RelationalCypherSession}
 import org.opencypher.okapi.relational.api.physical.RelationalRuntimeContext
-import org.opencypher.okapi.relational.api.table.{FlatRelationalTable, RelationalCypherRecords, RelationalCypherRecordsFactory}
+import org.opencypher.okapi.relational.api.table.{FlatRelationalTable, RelationalCypherRecords}
 import org.opencypher.okapi.relational.impl.physical._
 import org.opencypher.okapi.relational.impl.table.RecordHeader
 import org.opencypher.okapi.trees.AbstractTreeNode
@@ -144,14 +144,12 @@ final case class Start[T <: FlatRelationalTable[T]](
 
 // Unary
 
+/**
+  * Cache is a marker operator that indicates that its child operator is used multiple times within the query.
+  */
 final case class Cache[T <: FlatRelationalTable[T]](in: RelationalOperator[T]) extends RelationalOperator[T] {
 
-  override lazy val _table: T = context.cache.getOrElse(in, {
-    in.table.cache
-    context.cache += (in -> in.table)
-    in.table
-  })
-
+  override lazy val _table: T = in._table.cache()
 }
 
 final case class Scan[T <: FlatRelationalTable[T]](
@@ -178,29 +176,6 @@ final case class Scan[T <: FlatRelationalTable[T]](
     scanTable
   }
 }
-
-//final case class RelationshipScan[T <: FlatRelationalTable[T]](
-//  in: RelationalOperator[T],
-//  v: Var
-//) extends RelationalOperator[T] {
-//
-//  override lazy val header: RecordHeader = in.graph.schema.headerForRelationship(v)
-//
-//  // TODO: replace with RelationshipVar
-//  override lazy val _table: T = {
-//    val relTable = in.graph.relationships(v.name, v.cypherType.asInstanceOf[CTRelationship]).table
-//
-//    if (header.columns != relTable.physicalColumns.toSet) {
-//      throw SchemaException(
-//        s"""
-//           |Graph schema does not match actual records returned for scan $v:
-//           |  - Computed columns based on graph schema: ${header.columns.toSeq.sorted.mkString(", ")}
-//           |  - Actual columns in scan table: ${relTable.physicalColumns.sorted.mkString(", ")}
-//        """.stripMargin)
-//    }
-//    relTable
-//  }
-//}
 
 final case class Alias[T <: FlatRelationalTable[T]](
   in: RelationalOperator[T],
@@ -314,71 +289,6 @@ final case class Select[T <: FlatRelationalTable[T]](
 
   override lazy val returnItems: Option[Seq[Var]] = Some(expressions.flatMap(_.owner).collect { case e: Var => e }.distinct)
 }
-
-//final case class ExtractEntities[T <: FlatRelationalTable[T]](
-//  in: RelationalOperator[T],
-//  override val header: RecordHeader,
-//  extractionVars: Set[Var]
-//) extends RelationalOperator[T] {
-//
-//  private def targetHeader: RecordHeader = header
-//
-//  val targetVar: Var = targetHeader.entityVars.head
-//
-//  def selectExpressionsForVar(extractionVar: Var): SelectExpressions = {
-//
-//    val entityLabels = extractionVar.cypherType match {
-//      case CTNode(labels, _) => labels
-//      case CTRelationship(types, _) => types
-//      case _ => throw IllegalArgumentException("CTNode or CTRelationship", extractionVar.cypherType)
-//    }
-//
-//    val partiallyAlignedExtractionHeader = in.header
-//      .withAlias(extractionVar as targetVar)
-//      .select(targetVar)
-//
-//    val missingExpressions = (header.expressions -- partiallyAlignedExtractionHeader.expressions).toSeq
-//    val overlapExpressions = (header.expressions -- missingExpressions).toSeq
-//
-//    // Map existing expression in input table to corresponding target header column
-//    val selectExistingColumns = overlapExpressions.map(e => e.withOwner(extractionVar) -> header.column(e))
-//
-//    // Map literal default values for missing expressions to corresponding target header column
-//    val selectMissingColumns: Seq[(Expr, String)] = missingExpressions.map { expr =>
-//      val columnName = header.column(expr)
-//      val selectExpr: Expr = expr match {
-//        case HasLabel(_, label) =>
-//          if (entityLabels.contains(label.name)) {
-//            TrueLit
-//          } else {
-//            FalseLit
-//          }
-//        case HasType(_, relType) =>
-//          if (entityLabels.contains(relType.name)) {
-//            TrueLit
-//          } else {
-//            FalseLit
-//          }
-//        case _ =>
-////          if (!expr.cypherType.isNullable) {
-////            throw UnsupportedOperationException(
-////              s"Cannot align scan on $varInInputHeader by adding a NULL column, because the type for '$expr' is non-nullable"
-////            )
-////          }
-//          NullLit(expr.cypherType)
-//      }
-//
-//      selectExpr -> columnName
-//    }
-//
-//    (selectExistingColumns ++ selectMissingColumns).sortBy(_._1)
-//  }
-//
-//  override def _table: T = {
-//    val groups = extractionVars.toSeq.map(selectExpressionsForVar)
-//    in.table.extractEntities(groups, in.header, targetHeader)(context.parameters)
-//  }
-//}
 
 final case class Distinct[T <: FlatRelationalTable[T]](
   in: RelationalOperator[T],

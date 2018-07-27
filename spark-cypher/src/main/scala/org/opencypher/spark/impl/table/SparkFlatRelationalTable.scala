@@ -252,7 +252,10 @@ object SparkFlatRelationalTable {
     override def withColumnRenamed(oldColumn: String, newColumn: String): DataFrameTable =
       df.safeRenameColumn(oldColumn, newColumn)
 
-    override def cache(): DataFrameTable = df.cache()
+    override def cache(): DataFrameTable = {
+      df.cache()
+      this
+    }
 
     override def show(rows: Int): Unit = df.show(rows)
 

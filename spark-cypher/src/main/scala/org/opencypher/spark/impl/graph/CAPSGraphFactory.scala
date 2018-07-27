@@ -75,6 +75,7 @@ case class CAPSGraphFactory(implicit caps: CAPSSession) extends RelationalCypher
     new CAPSScanGraph(allTables, schema, tags)
   }
 
+  // TODO: only used in tests, move there
   def create(records: CypherRecords, schema: CAPSSchema, tags: Set[Int] = Set(0)): Graph = {
     implicit val runtimeContext: RelationalRuntimeContext[DataFrameTable] = caps.basicRuntimeContext()
     val capsRecords = records.asCaps
