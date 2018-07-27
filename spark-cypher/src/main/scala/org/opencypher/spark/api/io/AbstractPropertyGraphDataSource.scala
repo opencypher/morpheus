@@ -86,9 +86,9 @@ abstract class AbstractPropertyGraphDataSource(implicit val caps: CAPSSession) e
   override def hasGraph(graphName: GraphName): Boolean = graphNameCache.contains(graphName)
 
   override def delete(graphName: GraphName): Unit = {
+    deleteGraph(graphName)
     schemaCache -= graphName
     graphNameCache -= graphName
-    deleteGraph(graphName)
   }
 
   override def graph(name: GraphName): PropertyGraph = {
