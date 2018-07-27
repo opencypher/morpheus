@@ -26,11 +26,13 @@
  */
 package org.opencypher.spark.api.io
 
+import java.util.concurrent.Executors
+
 import org.apache.spark.sql.DataFrame
 import org.apache.spark.sql.types.StructType
 import org.opencypher.okapi.api.graph.{GraphName, PropertyGraph}
 import org.opencypher.okapi.api.types.CTInteger
-import org.opencypher.okapi.impl.exception.{GraphAlreadyExistsException, GraphNotFoundException}
+import org.opencypher.okapi.impl.exception.GraphNotFoundException
 import org.opencypher.okapi.impl.util.StringEncodingUtilities._
 import org.opencypher.spark.api.CAPSSession
 import org.opencypher.spark.api.io.metadata.CAPSGraphMetaData
@@ -40,6 +42,11 @@ import org.opencypher.spark.impl.CAPSGraph
 import org.opencypher.spark.impl.DataFrameOps._
 import org.opencypher.spark.impl.io.CAPSPropertyGraphDataSource
 import org.opencypher.spark.schema.CAPSSchema
+
+import scala.concurrent.duration.Duration
+import scala.concurrent.{Await, ExecutionContext, ExecutionContextExecutorService, Future}
+import scala.util.{Failure, Success}
+
 /**
   * Abstract data source implementation that takes care of caching graph names and schemas.
   *
@@ -126,6 +133,11 @@ abstract class AbstractPropertyGraphDataSource(implicit val session: CAPSSession
   override def store(graphName: GraphName, graph: PropertyGraph): Unit = {
     checkStorable(graphName)
 
+    val poolSize = session.sparkSession.conf.getOption("spark.executor.instances").map(_.toInt).getOrElse(2)
+
+    implicit val executionContext: ExecutionContextExecutorService =
+      ExecutionContext.fromExecutorService(Executors.newFixedThreadPool(poolSize))
+
     val capsGraph = graph.asCaps
     val schema = capsGraph.schema
     schemaCache += graphName -> schema
@@ -133,13 +145,29 @@ abstract class AbstractPropertyGraphDataSource(implicit val session: CAPSSession
     writeCAPSGraphMetaData(graphName, CAPSGraphMetaData(tableStorageFormat, capsGraph.tags))
     writeSchema(graphName, schema)
 
-    schema.labelCombinations.combos.foreach { combo =>
-      writeNodeTable(graphName, combo, capsGraph.canonicalNodeTable(combo))
+    val nodeWrites = schema.labelCombinations.combos.map { combo =>
+      Future {
+        writeNodeTable(graphName, combo, capsGraph.canonicalNodeTable(combo))
+      }
     }
 
-    schema.relationshipTypes.foreach { relType =>
-      writeRelationshipTable(graphName, relType, capsGraph.canonicalRelationshipTable(relType))
+    val relWrites = schema.relationshipTypes.map { relType =>
+      Future {
+        writeRelationshipTable(graphName, relType, capsGraph.canonicalRelationshipTable(relType))
+      }
     }
+
+    waitForWriteCompletion(nodeWrites)
+    waitForWriteCompletion(relWrites)
   }
 
+  private def waitForWriteCompletion(writeFutures: Set[Future[Unit]])(implicit ec: ExecutionContext) = {
+    writeFutures.foreach { writeFuture =>
+      Await.ready(writeFuture, Duration.Inf)
+      writeFuture.onComplete {
+        case Success(_) =>
+        case Failure(e) => throw e
+      }
+    }
+  }
 }
