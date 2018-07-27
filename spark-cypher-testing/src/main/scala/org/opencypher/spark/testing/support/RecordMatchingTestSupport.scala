@@ -44,7 +44,7 @@ trait RecordMatchingTestSupport {
   self: CAPSTestSuite =>
 
   implicit class RecordMatcher(records: CAPSRecords) {
-    
+
     def shouldMatch(expected: CypherMap*): Assertion = {
       records.collect.toBag should equal(Bag(expected: _*))
     }
@@ -78,4 +78,5 @@ trait RecordMatchingTestSupport {
     def toMapsWithCollectedEntities: Bag[CypherMap] =
       Bag(capsRecords.toCypherMaps.collect(): _*)
   }
+
 }

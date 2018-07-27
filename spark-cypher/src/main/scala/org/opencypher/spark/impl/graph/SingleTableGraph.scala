@@ -42,7 +42,7 @@ import org.opencypher.spark.impl.CAPSRecords
 import org.opencypher.spark.impl.table.SparkFlatRelationalTable.DataFrameTable
 
 /**
-  * A single table graph represents the result of CONSTRUCT clause. It contains all entities from the outer scope that 
+  * A single table graph represents the result of CONSTRUCT clause. It contains all entities from the outer scope that
   * the clause constructs. The initial schema of that graph is the union of all graph schemata the CONSTRUCT clause refers
   * to, including their corresponding graph tags. Note, that the initial schema does not include the graph tag used for
   * the constructed entities.
