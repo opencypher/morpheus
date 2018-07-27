@@ -92,8 +92,8 @@ trait PGDSAcceptance[Session <: CypherSession] extends BeforeAndAfterEach {
 
   it("supports `graphNames`") {
     val graphNames = cypherSession.catalog.source(ns).graphNames
-    graphNames.size shouldBe 1
-    graphNames.head shouldBe gn
+    graphNames.size should be > 0
+    graphNames should contain(gn)
   }
 
   it("supports schema") {
