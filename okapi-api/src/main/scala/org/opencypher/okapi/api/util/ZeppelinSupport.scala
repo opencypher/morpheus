@@ -52,7 +52,7 @@ object ZeppelinSupport {
     def visualize(): Unit = {
       result.getGraph match {
         case Some(g) => g.printGraph()
-        case None => result.getRecords.get.printTable()
+        case None => result.records.printTable()
       }
     }
   }

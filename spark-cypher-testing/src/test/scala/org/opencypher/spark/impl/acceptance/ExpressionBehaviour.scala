@@ -639,7 +639,7 @@ class ExpressionBehaviour extends CAPSTestSuite with DefaultGraphInit {
           | RETURN n.v1[1] as val
         """.stripMargin('|')
 
-      graph.cypher(query).getRecords.toMaps should equal(Bag(
+      graph.cypher(query).records.toMaps should equal(Bag(
         CypherMap("val" -> 2)
       ))
     }
@@ -657,7 +657,7 @@ class ExpressionBehaviour extends CAPSTestSuite with DefaultGraphInit {
           | RETURN n.v1[i] as val
         """.stripMargin('|')
 
-      graph.cypher(query).getRecords.toMaps should equal(Bag(
+      graph.cypher(query).records.toMaps should equal(Bag(
         CypherMap("val" -> 1),
         CypherMap("val" -> 2),
         CypherMap("val" -> 3)
@@ -677,7 +677,7 @@ class ExpressionBehaviour extends CAPSTestSuite with DefaultGraphInit {
           | RETURN n.v1[i] as val
         """.stripMargin('|')
 
-      graph.cypher(query).getRecords.toMaps should equal(Bag(
+      graph.cypher(query).records.toMaps should equal(Bag(
         CypherMap("val" -> null),
         CypherMap("val" -> null),
         CypherMap("val" -> null)
