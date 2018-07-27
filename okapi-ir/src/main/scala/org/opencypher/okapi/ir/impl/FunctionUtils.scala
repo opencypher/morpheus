@@ -52,6 +52,7 @@ object FunctionUtils {
         case functions.StartNode => StartNodeFunction(expr.head)(cypherType)
         case functions.EndNode   => EndNodeFunction(expr.head)(cypherType)
         case functions.ToFloat   => ToFloat(expr.head)(cypherType)
+        case functions.ToInteger => ToInteger(expr.head)(cypherType)
         case functions.Collect   => Collect(expr.head, distinct)(cypherType)
         case functions.Coalesce  => Coalesce(expr)(cypherType)
         case functions.ToString  => ToString(expr.head)(cypherType)

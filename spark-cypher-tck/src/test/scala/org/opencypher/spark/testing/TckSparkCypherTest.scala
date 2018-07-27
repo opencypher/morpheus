@@ -87,6 +87,7 @@ class TckSparkCypherTest extends CAPSTestSuite {
       .foreach(scenario => scenario(TCKGraph(defaultFactory, CAPSGraph.empty)).execute())
   }
 
+  // Runs a single scenario
   ignore("run Single Scenario") {
     scenarios.get("A simple pattern with one bound endpoint")
       .foreach(scenario => scenario(TCKGraph(defaultFactory, CAPSGraph.empty)).execute())

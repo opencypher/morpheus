@@ -449,4 +449,59 @@ class FunctionsBehaviour extends CAPSTestSuite with DefaultGraphInit {
     }
 
   }
+
+  describe("toInteger") {
+    it("toInteger() on a graph") {
+      val given = initGraph("CREATE (:Person {age: '42'})")
+
+      val result = given.cypher(
+        """
+          |MATCH (n)
+          |RETURN toInteger(n.age) AS age
+        """.stripMargin)
+
+      result.getRecords.toMaps should equal(
+        Bag(
+          CypherMap("age" -> 42)
+        )
+      )
+    }
+
+    it("toInteger() on float") {
+      val given = initGraph("CREATE (:Person {weight: '82.9'})")
+
+      val result = given.cypher("MATCH (n) RETURN toInteger(n.weight) AS nWeight")
+
+      result.getRecords.toMaps should equal(
+        Bag(
+          CypherMap("nWeight" -> 82)
+        )
+      )
+    }
+
+    it("toInteger() on invalid strings") {
+      val given = initGraph("CREATE ({id: 'tr ue'}), ({id: ''})")
+
+      val result = given.cypher("MATCH (n) RETURN toInteger(n.id) AS nId")
+
+      result.getRecords.toMaps should equal(
+        Bag(
+          CypherMap("nId" -> null),
+          CypherMap("nId" -> null)
+        )
+      )
+    }
+
+    it("toInteger() on valid string") {
+      val given = initGraph("CREATE ({id: '17'})")
+
+      val result = given.cypher("MATCH (n) RETURN toInteger(n.id) AS nId")
+
+      result.getRecords.toMaps should equal(
+        Bag(
+          CypherMap("nId" -> 17)
+        )
+      )
+    }
+  }
 }
