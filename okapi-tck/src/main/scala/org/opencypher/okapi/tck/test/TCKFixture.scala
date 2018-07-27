@@ -78,7 +78,8 @@ object TCKFixture {
   }
 }
 
-case class TCKGraph[C <: CypherSession](testGraphFactory: CypherTestGraphFactory[C], graph: PropertyGraph)(implicit OKAPI: C) extends Graph {
+case class TCKGraph[C <: CypherSession](testGraphFactory: CypherTestGraphFactory[C], graph: PropertyGraph)
+  (implicit OKAPI: C) extends Graph {
 
   override def execute(query: String, params: Map[String, TCKCypherValue], queryType: QueryType): (Graph, Result) = {
     queryType match {
@@ -98,6 +99,8 @@ case class TCKGraph[C <: CypherSession](testGraphFactory: CypherTestGraphFactory
             e match {
               case t: TypingException => this ->
                 ExecutionFailed(TCKErrorTypes.TYPE_ERROR, phase, TCKErrorDetails.INVALID_ARGUMENT_VALUE)
+              case ex: NotImplementedException => throw new RuntimeException(s"Unsupported feature in $query", ex)
+              case _ => throw new RuntimeException(s"Unknown engine failure for query: $query", e)
             }
         }
     }
@@ -159,7 +162,7 @@ case class TCKGraph[C <: CypherSession](testGraphFactory: CypherTestGraphFactory
   }
 }
 
-case class ScenariosFor(blacklist: Set[String])  {
+case class ScenariosFor(blacklist: Set[String]) {
 
   def whiteList = Table(
     "scenario",
@@ -182,7 +185,7 @@ case class ScenariosFor(blacklist: Set[String])  {
 
 object ScenariosFor {
 
-  def apply(backlistFile: String) : ScenariosFor = {
+  def apply(backlistFile: String): ScenariosFor = {
     val blacklistIter = Source.fromFile(backlistFile).getLines().toSeq
     val blacklistSet = blacklistIter.toSet
 
