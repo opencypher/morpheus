@@ -121,7 +121,7 @@ object SparkSQLExprMapper {
           val col = e.asSparkSQLExpr
           e.cypherType match {
             case CTString => functions.length(col).cast(LongType)
-            case _: CTList => functions.size(col).cast(LongType)
+            case _: CTList | _: CTListOrNull => functions.size(col).cast(LongType)
             case other => throw NotImplementedException(s"size() on values of type $other")
           }
 
