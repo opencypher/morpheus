@@ -150,6 +150,7 @@ final case class Start[T <: FlatRelationalTable[T]](
 final case class Cache[T <: FlatRelationalTable[T]](in: RelationalOperator[T]) extends RelationalOperator[T] {
 
   override lazy val _table: T = in._table.cache()
+
 }
 
 final case class Scan[T <: FlatRelationalTable[T]](

@@ -205,8 +205,8 @@ object RelationalPlanner {
         val renameExprs = joinExprs.map(e => e as Var(s"${e.name}${System.nanoTime}")(e.cypherType))
         val rightWithAliases = relational.Alias(rightResult, renameExprs.toSeq)
         // 2. Drop Join expressions and their children in rhs
-        val epxrsToRemove = joinExprs.flatMap(v => rightHeader.ownedBy(v))
-        val reducedRhsData = relational.Drop(rightWithAliases, epxrsToRemove)
+        val exprsToRemove = joinExprs.flatMap(v => rightHeader.ownedBy(v))
+        val reducedRhsData = relational.Drop(rightWithAliases, exprsToRemove)
         // 3. Compute distinct rows in rhs
         val distinctRhsData = relational.Distinct(reducedRhsData, renameExprs.map(_.alias))
         // 4. Join lhs and prepared rhs using a left outer join

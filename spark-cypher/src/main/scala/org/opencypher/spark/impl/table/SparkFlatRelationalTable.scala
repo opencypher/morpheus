@@ -253,7 +253,9 @@ object SparkFlatRelationalTable {
       df.safeRenameColumn(oldColumn, newColumn)
 
     override def cache(): DataFrameTable = {
-      df.cache()
+      // There seems to be a bug that only appears when using `df.cache`, `SingleTableGraph` and `ExistsSubQuery` together.
+      // Suspected Spark bug, need to investigate Jira issues for Spark related to `persist`. Maybe fixed in Spark 2.3.1?
+      df.persist(StorageLevel.NONE)
       this
     }
 
