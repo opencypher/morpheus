@@ -30,11 +30,29 @@ import org.opencypher.okapi.api.value.CypherValue._
 import org.opencypher.okapi.testing.Bag
 import org.opencypher.okapi.testing.Bag._
 import org.opencypher.spark.impl.CAPSConverters._
+import org.opencypher.spark.impl.physical.operators.Cache
 import org.opencypher.spark.testing.CAPSTestSuite
 import org.scalatest.DoNotDiscover
 
 @DoNotDiscover
 class MatchBehaviour extends CAPSTestSuite with DefaultGraphInit {
+
+  describe("scan caching") {
+
+    it("caches a reused scan") {
+      val g = initGraph("""CREATE (p:Person {firstName: "Alice", lastName: "Foo"})""")
+      val result = g.cypher(
+        """
+          |MATCH (n: Person)
+          |MATCH (m: Person)
+          |WHERE n.name = m.name
+          |RETURN n.name
+        """.stripMargin)
+
+      result.asCaps.plans.physicalPlan.get.collectFirst { case c: Cache => c } should not be empty
+    }
+
+  }
 
   describe("match single node") {
 
