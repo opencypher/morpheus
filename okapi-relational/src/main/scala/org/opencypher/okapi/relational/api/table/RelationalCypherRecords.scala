@@ -40,7 +40,7 @@ trait RelationalCypherRecordsFactory[T <: FlatRelationalTable[T]] {
 
   def fromEntityTable(entityTable: EntityTable[T]): Records
 
-  def from(header: RecordHeader, table: T, displayNames: Option[Seq[String]] = None): Records
+  def from(header: RecordHeader, table: T, returnItems: Option[Seq[String]] = None): Records
 }
 
 trait RelationalCypherRecords[T <: FlatRelationalTable[T]] extends CypherRecords {

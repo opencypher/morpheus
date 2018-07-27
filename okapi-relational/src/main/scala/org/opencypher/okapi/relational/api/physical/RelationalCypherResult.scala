@@ -16,7 +16,9 @@ case class RelationalCypherResult[T <: FlatRelationalTable[T]](
 
   override def getGraph: Option[Graph] = maybeRelational.map(_.graph)
 
-  override def getRecords: Option[RelationalCypherRecords[T]] = maybeRelational.map(op => session.records.from(op.header, op.table))
+  override def getRecords: Option[RelationalCypherRecords[T]] = {
+    maybeRelational.map(op => session.records.from(op.header, op.table, op.returnItems.map(_.map(_.name))))
+  }
 
   override def records: RelationalCypherRecords[T] = getRecords.get
 
