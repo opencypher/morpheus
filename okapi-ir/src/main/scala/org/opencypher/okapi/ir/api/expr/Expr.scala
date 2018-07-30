@@ -50,11 +50,11 @@ object Expr {
 
       case v: SimpleVar => v.copy()(ct)
       case n: NodeVar => ct.material match {
-        case nodeType: CTNode => n.copy()(nodeType)
+        case _: CTNode => n.copy()(ct)
         case other => throw IllegalArgumentException("CTNode type", other)
       }
       case n: RelationshipVar => ct.material match {
-        case relType: CTRelationship => n.copy()(relType)
+        case _: CTRelationship => n.copy()(ct)
         case other => throw IllegalArgumentException("CTRelationship type", other)
       }
       case sn: StartNode => sn.copy()(ct)
@@ -190,9 +190,11 @@ sealed trait Var extends Expr {
 }
 
 object Var {
-  def apply(name: String)(cypherType: CypherType = CTWildcard): Var = cypherType.material match {
+  def apply(name: String)(cypherType: CypherType = CTWildcard): Var = cypherType match {
     case n: CTNode => NodeVar(name)(n)
+    case n: CTNodeOrNull => NodeVar(name)(n)
     case r: CTRelationship => RelationshipVar(name)(r)
+    case r: CTRelationshipOrNull => RelationshipVar(name)(r)
     case _ => SimpleVar(name)(cypherType)
   }
 
@@ -213,7 +215,7 @@ final case class ListSegment(index: Int, listVar: Var)(val cypherType: CypherTyp
 
 sealed trait ReturnItem extends Var
 
-final case class NodeVar(name: String)(val cypherType: CTNode = CTNode) extends ReturnItem {
+final case class NodeVar(name: String)(val cypherType: CypherType = CTNode) extends ReturnItem {
 
   override type This = NodeVar
 
@@ -230,7 +232,7 @@ final case class NodeVar(name: String)(val cypherType: CTNode = CTNode) extends 
   override def withoutType: String = s"$name"
 }
 
-final case class RelationshipVar(name: String)(val cypherType: CTRelationship = CTRelationship) extends ReturnItem {
+final case class RelationshipVar(name: String)(val cypherType: CypherType = CTRelationship) extends ReturnItem {
 
   override type This = RelationshipVar
 
@@ -260,7 +262,7 @@ final case class StartNode(rel: Expr)(val cypherType: CypherType = CTWildcard) e
 
   type This = StartNode
 
-  override def toString = s"source($rel)"
+  override def toString = s"source($rel) :: $cypherType"
 
   override def owner: Option[Var] = rel match {
     case v: Var => Some(v)
@@ -276,7 +278,7 @@ final case class EndNode(rel: Expr)(val cypherType: CypherType = CTWildcard) ext
 
   type This = EndNode
 
-  override def toString = s"target($rel)"
+  override def toString = s"target($rel) :: $cypherType"
 
   override def owner(): Option[Var] = rel match {
     case v: Var => Some(v)

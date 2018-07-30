@@ -203,9 +203,8 @@ trait VarLengthExpandPlanner[T <: FlatRelationalTable[T]] {
     * @param rel        new edge
     * @param candidates candidate edges
     */
-  protected def isomorphismFilter(rel: Var, candidates: Set[Var]): Ands = Ands(
-    candidates.map(e => Not(Equals(e, rel)(CTBoolean))(CTBoolean)).toList
-  )
+  protected def isomorphismFilter(rel: Var, candidates: Set[Var]): Expr =
+    Ands(candidates.map(e => Not(Equals(e, rel)(CTBoolean))(CTBoolean)).toSeq: _*)
 
   /**
     * Copies the content of a variable into another variable
