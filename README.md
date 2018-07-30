@@ -19,12 +19,16 @@ integration with GraphX. To learn more about this, please see our [examples](htt
 <!--- **Data Analysts**: -->
 <!--  This example shows how to aggregate detailed sales data within a graph — in effect, performing a ‘roll-up’ — in order to obtain a high-level summarized view of the data, stored and returned in another graph, as well as returning an even higher-level view as an executive report. The summarized graph may be used to draw further high-level reports, but may also be used to undertake ‘drill-down’ actions by probing into the graph to extract more detailed information.-->
 
-## Current status: Beta
+## Current status: Pre-release
 
-The project is currently in a beta stage, which means that the code and the functionality is changing, but the APIs are stabilising.
-We invite you to try it and welcome any feedback.
+The functionality and APIs are stabilizing but surface changes (e.g. to the Cypher syntax and semantics for multiple graph processing and graph projections/construction) are still likely to occur. 
+We invite you to try out the project, and we welcome feedback and contributions 
 
-The first 1.0 release for the project is targeted for September 2018. 
+A 1.0 release of the project with a stable feature set and API/language surface is targeted for Q4 of 2018. 
+
+We expect continuing development of the project after 1.0. 
+If you are interested in contributing to the project we would love to hear from you; email us at `opencypher@neo4j.org` or just raise a PR. 
+Please note that this is an openCypher project and contributions can only be accepted if you’ve agreed to the  [openCypher Contributors Agreement (oCCA)](CONTRIBUTING.adoc).
 
 ## CAPS Features
 
