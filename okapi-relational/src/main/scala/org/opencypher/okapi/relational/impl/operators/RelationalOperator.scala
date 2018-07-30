@@ -460,12 +460,19 @@ final case class TabularUnionAll[T <: FlatRelationalTable[T]](
     val leftColumns = lhsTable.physicalColumns
     val rightColumns = rhsTable.physicalColumns
 
+    val sortedLeftColumns = leftColumns.sorted.mkString(", ")
+    val sortedRightColumns = rightColumns.sorted.mkString(", ")
+
     if (leftColumns.size != rightColumns.size) {
-      throw IllegalArgumentException("same number of columns", s"left: $leftColumns right: $rightColumns")
+      throw IllegalArgumentException("same number of columns", s"left:  $sortedLeftColumns\n\tright: $sortedRightColumns")
     }
 
+    if (lhs.header != rhs.header) {
+      lhs.header.show()
+      rhs.header.show()
+    }
     if (leftColumns.toSet != rightColumns.toSet) {
-      throw IllegalArgumentException("same column names", s"left: $leftColumns right: $rightColumns")
+      throw IllegalArgumentException("same column names", s"left:  $sortedLeftColumns\n\tright: $sortedRightColumns")
     }
 
     val orderedRhsTable = if (leftColumns != rightColumns) {

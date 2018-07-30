@@ -336,11 +336,9 @@ case class RecordHeader(exprToColumn: Map[Expr, String]) {
     to match {
       // Entity case
       case entityExpr: Var if exprToColumn.contains(to) =>
-        val existingExpr = exprToColumn.keys.find(_ == to).get
-        val aliasWithUpdatedType = alias.withCypherType(existingExpr.cypherType).asInstanceOf[Var]
-        val withEntityExpr = addExprToColumn(aliasWithUpdatedType, exprToColumn(to))
+        val withEntityExpr = addExprToColumn(alias, exprToColumn(to))
         ownedBy(entityExpr).filterNot(_ == entityExpr).foldLeft(withEntityExpr) {
-          case (current, nextExpr) => current.addExprToColumn(nextExpr.withOwner(aliasWithUpdatedType), exprToColumn(nextExpr))
+          case (current, nextExpr) => current.addExprToColumn(nextExpr.withOwner(alias), exprToColumn(nextExpr))
         }
 
       // Non-entity case

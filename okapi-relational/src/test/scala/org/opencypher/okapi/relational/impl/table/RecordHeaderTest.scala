@@ -213,14 +213,6 @@ class RecordHeaderTest extends BaseTestSuite {
     aliasHeader.ownedBy(m) should equalWithTracing(mExprs + prop2.withOwner(m))
   }
 
-  it("sets the correct cypher type for alias expressions") {
-    val n = Var("n")(CTNode.nullable)
-    val m = Var("m")(CTNode)
-    val header = RecordHeader.empty.withExpr(n)
-    val updatedHeader = header.withAlias(Var("n")(CTNode) as m)
-    updatedHeader.nodeVars.forall(_.cypherType.isNullable) should equal(true)
-  }
-
   it("finds all id expressions") {
     nHeader.idExpressions should equalWithTracing(Set(n))
 

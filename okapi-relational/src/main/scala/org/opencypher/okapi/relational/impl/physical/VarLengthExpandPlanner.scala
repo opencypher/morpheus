@@ -33,10 +33,9 @@ import org.opencypher.okapi.relational.api.physical.{RelationalPlannerContext, R
 import org.opencypher.okapi.relational.api.table.FlatRelationalTable
 import org.opencypher.okapi.relational.impl.exception.RecordHeaderException
 import org.opencypher.okapi.relational.impl.operators.RelationalOperator
-import org.opencypher.okapi.relational.impl.physical.RelationalPlanner.{planJoin, process}
+import org.opencypher.okapi.relational.impl.physical.RelationalPlanner.{planJoin, process, _}
 import org.opencypher.okapi.relational.impl.table.RecordHeader
 import org.opencypher.okapi.relational.impl.{operators => relational}
-import RelationalPlanner._
 
 trait ExpandDirection
 case object Outbound extends ExpandDirection
@@ -194,7 +193,9 @@ trait VarLengthExpandPlanner[T <: FlatRelationalTable[T]] {
     }
 
     // union expands of different lengths
-    alignedOps.reduce((agg, next) => relational.TabularUnionAll(agg, next))
+    alignedOps
+      .map(op => relational.Select(op, targetHeader.expressions.toList).alignColumnNames(targetHeader))
+      .reduce((agg: RelationalOperator[T], next: RelationalOperator[T]) => relational.TabularUnionAll(agg, next))
   }
 
   /**
