@@ -61,6 +61,7 @@ object Neo4jPropertyGraphDataSource {
 
 case class Neo4jPropertyGraphDataSource(
   config: Neo4jConfig,
+  maybeSchema: Option[Schema] = None,
   omitImportFailures: Boolean = false,
   entireGraphName: GraphName = defaultEntireGraphName
 )(implicit session: CAPSSession)
@@ -118,26 +119,23 @@ case class Neo4jPropertyGraphDataSource(
   }
 
   override protected def readSchema(graphName: GraphName): CAPSSchema = {
-    val graphSchema = SchemaFromProcedure(config, omitImportFailures) match {
-      case None =>
-        // TODO: add link to procedure installation
-        throw UnsupportedOperationException("Neo4j PGDS requires okapi-neo4j-procedures to be installed in Neo4j")
-
-      case Some(schema) => schema
+    maybeSchema.map(_.asCaps).getOrElse {
+      val graphSchema = SchemaFromProcedure(config, omitImportFailures) match {
+        case None =>
+          throw UnsupportedOperationException("Neo4j PGDS requires okapi-neo4j-procedures to be installed in Neo4j: https://github.com/opencypher/cypher-for-apache-spark/wiki/Neo4j-Schema-Procedure")
+        case Some(schema) => schema
+      }
+      val filteredSchema = graphName.metaLabel match {
+        case None =>
+          graphSchema
+        case Some(metaLabel) =>
+          val containsMetaLabel = graphSchema.labelPropertyMap.filterForLabels(metaLabel)
+          val cleanLabelPropertyMap = containsMetaLabel.withoutMetaLabel(metaLabel).withoutMetaProperty
+          val cleanRelTypePropertyMap = graphSchema.relTypePropertyMap.withoutMetaProperty
+          SchemaImpl(cleanLabelPropertyMap, cleanRelTypePropertyMap)
+      }
+      filteredSchema.asCaps
     }
-    val filteredSchema = graphName.metaLabel match {
-      case None =>
-        graphSchema
-
-      case Some(metaLabel) =>
-        val containsMetaLabel = graphSchema.labelPropertyMap.filterForLabels(metaLabel)
-        val cleanLabelPropertyMap = containsMetaLabel.withoutMetaLabel(metaLabel).withoutMetaProperty
-        val cleanRelTypePropertyMap = graphSchema.relTypePropertyMap.withoutMetaProperty
-
-        SchemaImpl(cleanLabelPropertyMap, cleanRelTypePropertyMap)
-    }
-
-    filteredSchema.asCaps
   }
 
   override protected def readCAPSGraphMetaData(graphName: GraphName): CAPSGraphMetaData = CAPSGraphMetaData(tableStorageFormat)

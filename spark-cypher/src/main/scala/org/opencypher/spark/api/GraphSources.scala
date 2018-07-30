@@ -26,6 +26,7 @@
  */
 package org.opencypher.spark.api
 
+import org.opencypher.okapi.api.schema.Schema
 import org.opencypher.spark.api.io.fs.{CAPSFileSystem, FSGraphSource}
 import org.opencypher.spark.api.io.neo4j.{Neo4jConfig, Neo4jPropertyGraphDataSource}
 
@@ -62,12 +63,13 @@ object CypherGraphSources {
     * Creates a Neo4j Property Graph Data Source
     *
     * @param config             Neo4j connection configuration
+    * @param maybeSchema        Optional Neo4j schema to avoid computation on Neo4j server
     * @param omitImportFailures If set to true, import failures do not throw runtime exceptions but omit the unsupported
     *                           properties instead and log warnings
     * @param session            CAPS session
     * @return Neo4j Property Graph Data Source
     */
-  def neo4j(config: Neo4jConfig, omitImportFailures: Boolean = false)
+  def neo4j(config: Neo4jConfig, maybeSchema: Option[Schema] = None, omitImportFailures: Boolean = false)
     (implicit session: CAPSSession): Neo4jPropertyGraphDataSource =
-    Neo4jPropertyGraphDataSource(config, omitImportFailures = omitImportFailures)
+    Neo4jPropertyGraphDataSource(config, maybeSchema = maybeSchema, omitImportFailures = omitImportFailures)
 }
