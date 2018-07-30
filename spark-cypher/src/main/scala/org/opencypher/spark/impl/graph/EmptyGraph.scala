@@ -27,8 +27,10 @@
 package org.opencypher.spark.impl.graph
 
 import org.opencypher.okapi.api.types.CypherType
+import org.opencypher.okapi.ir.api.expr.Var
 import org.opencypher.okapi.relational.api.graph.RelationalCypherGraph
 import org.opencypher.okapi.relational.impl.operators.{RelationalOperator, Start}
+import org.opencypher.okapi.relational.impl.table.RecordHeader
 import org.opencypher.spark.api.CAPSSession
 import org.opencypher.spark.impl.CAPSRecords
 import org.opencypher.spark.impl.table.SparkFlatRelationalTable.DataFrameTable
@@ -54,6 +56,7 @@ sealed case class EmptyGraph(implicit val caps: CAPSSession) extends RelationalC
     entityType: CypherType,
     exactLabelMatch: Boolean
   ): RelationalOperator[DataFrameTable] = {
-    Start(caps.records.empty())(session.basicRuntimeContext())
+    val scanHeader = RecordHeader.empty.withExpr(Var("")(entityType))
+    Start(caps.records.empty(scanHeader))(session.basicRuntimeContext())
   }
 }
