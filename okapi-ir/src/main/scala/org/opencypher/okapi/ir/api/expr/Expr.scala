@@ -39,109 +39,6 @@ object Expr {
 
   implicit def alphabeticalOrdering[A <: Expr]: Ordering[Expr] =
     Ordering.by(e => (e.toString, e.toString))
-
-  implicit class ExprOps(e: Expr) {
-
-    // TODO: be more strict about allowed cypher types wherever possible
-    def withCypherType(ct: CypherType): Expr = e match {
-      case AliasExpr(expr, alias) => AliasExpr(expr.withCypherType(ct), alias)
-      case p: Param => p.copy()(ct)
-      case l: ListSegment => l.copy()(ct)
-
-      case v: SimpleVar => v.copy()(ct)
-      case n: NodeVar => ct.material match {
-        case _: CTNode => n.copy()(ct)
-        case other => throw IllegalArgumentException("CTNode type", other)
-      }
-      case n: RelationshipVar => ct.material match {
-        case _: CTRelationship => n.copy()(ct)
-        case other => throw IllegalArgumentException("CTRelationship type", other)
-      }
-      case sn: StartNode => sn.copy()(ct)
-      case en: EndNode => en.copy()(ct)
-      case ands: Ands => ct.material match {
-        case CTBoolean => ands.copy()(ct)
-        case other => throw IllegalArgumentException("CTBoolean type", other)
-      }
-      case ors: Ors => ct.material match {
-        case CTBoolean => ors.copy()(ct)
-        case other => throw IllegalArgumentException("CTBoolean type", other)
-      }
-
-      // arithmetic expressions
-      case add: Add => add.copy()(ct)
-      case subtract: Subtract => subtract.copy()(ct)
-      case multiply: Multiply => multiply.copy()(ct)
-      case divide: Divide => divide.copy()(ct)
-
-      case bwAnd: BitwiseAnd => bwAnd.copy()(ct)
-      case bwOr: BitwiseOr => bwOr.copy()(ct)
-      case shiftLeft: ShiftLeft => shiftLeft.copy()(ct)
-      case shiftRightUnsigned: ShiftRightUnsigned => shiftRightUnsigned.copy()(ct)
-      case monotonicallyIncreasingId: MonotonicallyIncreasingId => monotonicallyIncreasingId.copy(ct)
-
-      // predicate expressions
-      case not: Not => not.copy()(ct)
-      case hasLabel: HasLabel => hasLabel.copy()(ct)
-      case hasType: HasType => hasType.copy()(ct)
-      case isNull: IsNull => isNull.copy()(ct)
-      case isNotNull: IsNotNull => isNotNull.copy()(ct)
-      // binary expressions
-      case equals: Equals => equals.copy()(ct)
-      case lessThan: LessThan => lessThan.copy()(ct)
-      case lessThanOrEqual: LessThanOrEqual => lessThanOrEqual.copy()(ct)
-      case greaterThan: GreaterThan => greaterThan.copy()(ct)
-      case greaterThanOrEqual: GreaterThanOrEqual => greaterThanOrEqual.copy()(ct)
-      case in: In => in.copy()(ct)
-
-      case property: Property => property.copy()(ct)
-      case mapExpr: MapExpression => mapExpr.copy()(ct)
-
-      // function expressions
-      case id: Id => id.copy()(ct)
-      case labels: Labels => labels.copy()(ct)
-      case relType: Type => relType.copy()(ct)
-      case exists: Exists => exists.copy()(ct)
-      case size: Size => size.copy()(ct)
-      case keys: Keys => keys.copy()(ct)
-      case startNodeFn: StartNodeFunction => startNodeFn.copy()(ct)
-      case endNodeFn: EndNodeFunction => endNodeFn.copy()(ct)
-      case toFloat: ToFloat => toFloat.copy()(ct)
-      case toInteger: ToInteger => toInteger.copy()(ct)
-      case toString: ToString => toString.copy()(ct)
-      case toBoolean: ToBoolean => toBoolean.copy()(ct)
-      case coalesce: Coalesce => coalesce.copy()(ct)
-      case explode: Explode => explode.copy()(ct)
-
-
-      // aggregator functions
-      case avg: Avg => avg.copy()(ct)
-      case countStar: CountStar => countStar.copy(ct)
-      case count: Count => count.copy()(ct)
-      case max: Max => max.copy()(ct)
-      case min: Min => min.copy()(ct)
-      case sum: Sum => sum.copy()(ct)
-      case collect: Collect => collect.copy()(ct)
-
-      // lit expressions
-      case listList: ListLit => listList.copy()(ct)
-      case integerLit: IntegerLit => integerLit.copy()(ct)
-      case stringLit: StringLit => stringLit.copy()(ct)
-      case TrueLit => ct match {
-        case CTBoolean => TrueLit
-        case other => throw IllegalArgumentException("CTBoolean type", other)
-      }
-      case FalseLit => ct match {
-        case CTBoolean => FalseLit
-        case other => throw IllegalArgumentException("CTBoolean type", other)
-      }
-      case nullLit: NullLit => if (ct.isNullable) nullLit.copy(ct) else throw IllegalArgumentException("Nullable type", ct)
-
-      case containerIndex: ContainerIndex => containerIndex.copy()(ct)
-      case existsPatternExpr: ExistsPatternExpr => existsPatternExpr.copy()(ct)
-      case caseExpr: CaseExpr => caseExpr.copy()(ct)
-    }
-  }
 }
 
 /**
@@ -154,6 +51,8 @@ sealed abstract class Expr extends AbstractTreeNode[Expr] {
   type This >: this.type <: Expr
 
   def cypherType: CypherType
+
+  def withCypherType(ct: CypherType): This
 
   def withoutType: String
 
@@ -177,10 +76,14 @@ final case class AliasExpr(expr: Expr, alias: Var) extends Expr {
   override def cypherType: CypherType = expr.cypherType
 
   override def withoutType: String = s"$expr AS $alias"
+
+  override def withCypherType(ct: CypherType): This = copy(expr.withCypherType(ct), alias)
 }
 
 final case class Param(name: String)(val cypherType: CypherType = CTWildcard) extends Expr {
   override def withoutType: String = s"$$$name"
+
+  override def withCypherType(ct: CypherType): Param = copy()(ct)
 }
 
 sealed trait Var extends Expr {
@@ -211,6 +114,8 @@ final case class ListSegment(index: Int, listVar: Var)(val cypherType: CypherTyp
   override def withoutType: String = s"${listVar.withoutType}($index)"
 
   override def name: String = s"${listVar.name}($index)"
+
+  override def withCypherType(ct: CypherType): ListSegment = copy()(ct)
 }
 
 sealed trait ReturnItem extends Var
@@ -230,6 +135,11 @@ final case class NodeVar(name: String)(val cypherType: CypherType = CTNode) exte
   }
 
   override def withoutType: String = s"$name"
+
+  override def withCypherType(ct: CypherType): NodeVar = ct.material match {
+    case _: CTNode => copy()(ct)
+    case other => throw IllegalArgumentException("CTNode type", other)
+  }
 }
 
 final case class RelationshipVar(name: String)(val cypherType: CypherType = CTRelationship) extends ReturnItem {
@@ -246,6 +156,11 @@ final case class RelationshipVar(name: String)(val cypherType: CypherType = CTRe
     }
   }
   override def withoutType: String = s"$name"
+
+  override def withCypherType(ct: CypherType): RelationshipVar = ct.material match {
+    case _: CTRelationship => copy()(ct)
+    case other => throw IllegalArgumentException("CTRelationship type", other)
+  }
 }
 
 final case class SimpleVar(name: String)(val cypherType: CypherType) extends ReturnItem {
@@ -255,7 +170,10 @@ final case class SimpleVar(name: String)(val cypherType: CypherType) extends Ret
   override def owner: Option[Var] = Some(this)
 
   override def withOwner(expr: Var): SimpleVar = SimpleVar(expr.name)(expr.cypherType)
+
   override def withoutType: String = s"$name"
+
+  override def withCypherType(ct: CypherType): SimpleVar = copy()(ct)
 }
 
 final case class StartNode(rel: Expr)(val cypherType: CypherType = CTWildcard) extends Expr {
@@ -272,6 +190,8 @@ final case class StartNode(rel: Expr)(val cypherType: CypherType = CTWildcard) e
   override def withOwner(v: Var): StartNode = StartNode(v)(cypherType)
 
   override def withoutType: String = s"source(${rel.withoutType})"
+
+  override def withCypherType(ct: CypherType): StartNode = copy()(ct)
 }
 
 final case class EndNode(rel: Expr)(val cypherType: CypherType = CTWildcard) extends Expr {
@@ -288,6 +208,8 @@ final case class EndNode(rel: Expr)(val cypherType: CypherType = CTWildcard) ext
   override def withOwner(v: Var): EndNode = EndNode(v)(cypherType)
 
   override def withoutType: String = s"target(${rel.withoutType})"
+
+  override def withCypherType(ct: CypherType): EndNode = copy()(ct)
 }
 
 object FlattenOps {
@@ -333,6 +255,11 @@ final case class Ands(_exprs: List[Expr])(val cypherType: CypherType = CTBoolean
   def exprs = _exprs.toSet
 
   override def withoutType = s"ANDS(${_exprs.map(_.withoutType).mkString(", ")})"
+
+  override def withCypherType(ct: CypherType): Ands = ct.material match {
+    case CTBoolean => copy()(ct)
+    case other => throw IllegalArgumentException("CTBoolean type", other)
+  }
 }
 
 object Ors {
@@ -352,6 +279,11 @@ final case class Ors(_exprs: List[Expr])(val cypherType: CypherType = CTBoolean)
   def exprs = _exprs.toSet
 
   override def withoutType = s"ORS(${_exprs.map(_.withoutType).mkString(", ")})"
+
+  override def withCypherType(ct: CypherType): Ors = ct.material match {
+    case CTBoolean => copy()(ct)
+    case other => throw IllegalArgumentException("CTBoolean type", other)
+  }
 }
 
 sealed trait PredicateExpression extends Expr {
@@ -362,6 +294,8 @@ final case class Not(expr: Expr)(val cypherType: CypherType = CTWildcard) extend
   def inner = expr
 
   override def withoutType = s"NOT ${expr.withoutType}"
+
+  override def withCypherType(ct: CypherType): This = copy()(ct)
 }
 
 final case class HasLabel(node: Expr, label: Label)
@@ -379,6 +313,8 @@ final case class HasLabel(node: Expr, label: Label)
   override def withOwner(v: Var): HasLabel = HasLabel(v, label)(cypherType)
 
   override def withoutType: String = s"${node.withoutType}:${label.name}"
+
+  override def withCypherType(ct: CypherType): HasLabel = copy()(ct)
 }
 
 final case class HasType(rel: Expr, relType: RelType)
@@ -396,18 +332,24 @@ final case class HasType(rel: Expr, relType: RelType)
   override def withOwner(v: Var): HasType = HasType(v, relType)(cypherType)
 
   override def withoutType: String = s"type(${rel.withoutType}) = '${relType.name}'"
+
+  override def withCypherType(ct: CypherType): HasType = copy()(ct)
 }
 
 final case class IsNull(expr: Expr)(val cypherType: CypherType = CTWildcard) extends PredicateExpression {
   def inner = expr
 
   override def withoutType: String = s"type(${expr.withoutType}) IS NULL"
+
+  override def withCypherType(ct: CypherType): IsNull = copy()(ct)
 }
 
 final case class IsNotNull(expr: Expr)(val cypherType: CypherType = CTWildcard) extends PredicateExpression {
   def inner = expr
 
   override def withoutType: String = s"type(${expr.withoutType}) IS NOT NULL"
+
+  override def withCypherType(ct: CypherType): IsNotNull = copy()(ct)
 }
 
 // Binary expressions
@@ -426,26 +368,32 @@ sealed trait BinaryExpr extends Expr {
 
 final case class Equals(lhs: Expr, rhs: Expr)(val cypherType: CypherType = CTWildcard) extends BinaryExpr {
   override val op = "="
+  override def withCypherType(ct: CypherType): Equals = copy()(ct)
 }
 
 final case class LessThan(lhs: Expr, rhs: Expr)(val cypherType: CypherType = CTWildcard) extends BinaryExpr {
   override val op = "<"
+  override def withCypherType(ct: CypherType): LessThan = copy()(ct)
 }
 
 final case class LessThanOrEqual(lhs: Expr, rhs: Expr)(val cypherType: CypherType = CTWildcard) extends BinaryExpr {
   override val op = "<="
+  override def withCypherType(ct: CypherType): LessThanOrEqual = copy()(ct)
 }
 
 final case class GreaterThan(lhs: Expr, rhs: Expr)(val cypherType: CypherType = CTWildcard) extends BinaryExpr {
   override val op = ">"
+  override def withCypherType(ct: CypherType): GreaterThan = copy()(ct)
 }
 
 final case class GreaterThanOrEqual(lhs: Expr, rhs: Expr)(val cypherType: CypherType = CTWildcard) extends BinaryExpr {
   override val op = ">="
+  override def withCypherType(ct: CypherType): GreaterThanOrEqual = copy()(ct)
 }
 
 final case class In(lhs: Expr, rhs: Expr)(val cypherType: CypherType = CTWildcard) extends BinaryExpr {
   override val op = "IN"
+  override def withCypherType(ct: CypherType): In = copy()(ct)
 }
 
 final case class Property(entity: Expr, key: PropertyKey)(val cypherType: CypherType = CTWildcard) extends Expr {
@@ -460,10 +408,13 @@ final case class Property(entity: Expr, key: PropertyKey)(val cypherType: Cypher
   override def withOwner(v: Var): Property = Property(v, key)(cypherType)
 
   override def withoutType: String = s"${entity.withoutType}.${key.name}"
+
+  override def withCypherType(ct: CypherType): Property = copy()(ct)
 }
 
 final case class MapExpression(items: Map[String, Expr])(val cypherType: CypherType = CTWildcard) extends Expr {
   override def withoutType: String = s"{${items.mapValues(_.withoutType)}}"
+  override def withCypherType(ct: CypherType): MapExpression = copy()(ct)
 }
 
 // Arithmetic expressions
@@ -476,18 +427,22 @@ sealed trait ArithmeticExpr extends BinaryExpr {
 
 final case class Add(lhs: Expr, rhs: Expr)(val cypherType: CypherType = CTWildcard) extends ArithmeticExpr {
   override val op = "+"
+  override def withCypherType(ct: CypherType): Add = copy()(ct)
 }
 
 final case class Subtract(lhs: Expr, rhs: Expr)(val cypherType: CypherType = CTWildcard) extends ArithmeticExpr {
   override val op = "-"
+  override def withCypherType(ct: CypherType): Subtract = copy()(ct)
 }
 
 final case class Multiply(lhs: Expr, rhs: Expr)(val cypherType: CypherType = CTWildcard) extends ArithmeticExpr {
   override val op = "*"
+  override def withCypherType(ct: CypherType): Multiply = copy()(ct)
 }
 
 final case class Divide(lhs: Expr, rhs: Expr)(val cypherType: CypherType = CTWildcard) extends ArithmeticExpr {
   override val op = "/"
+  override def withCypherType(ct: CypherType): Divide = copy()(ct)
 }
 
 // Functions
@@ -503,6 +458,7 @@ sealed trait FunctionExpr extends Expr {
 
 final case class MonotonicallyIncreasingId(cypherType: CypherType = CTInteger) extends FunctionExpr {
   override def exprs: IndexedSeq[Expr] = IndexedSeq.empty
+  override def withCypherType(ct: CypherType): MonotonicallyIncreasingId = copy(ct)
 }
 
 sealed trait UnaryFunctionExpr extends FunctionExpr {
@@ -511,33 +467,61 @@ sealed trait UnaryFunctionExpr extends FunctionExpr {
   def exprs: IndexedSeq[Expr] = IndexedSeq(expr)
 }
 
-final case class Id(expr: Expr)(val cypherType: CypherType = CTWildcard) extends UnaryFunctionExpr
+final case class Id(expr: Expr)(val cypherType: CypherType = CTWildcard) extends UnaryFunctionExpr {
+  override def withCypherType(ct: CypherType): Id = copy()(ct)
+}
 
-final case class Labels(expr: Expr)(val cypherType: CypherType = CTWildcard) extends UnaryFunctionExpr
+final case class Labels(expr: Expr)(val cypherType: CypherType = CTWildcard) extends UnaryFunctionExpr {
+  override def withCypherType(ct: CypherType): Labels = copy()(ct)
+}
 
-final case class Type(expr: Expr)(val cypherType: CypherType = CTWildcard) extends UnaryFunctionExpr
+final case class Type(expr: Expr)(val cypherType: CypherType = CTWildcard) extends UnaryFunctionExpr {
+  override def withCypherType(ct: CypherType): Type = copy()(ct)
+}
 
-final case class Exists(expr: Expr)(val cypherType: CypherType = CTWildcard) extends UnaryFunctionExpr
+final case class Exists(expr: Expr)(val cypherType: CypherType = CTWildcard) extends UnaryFunctionExpr {
+  override def withCypherType(ct: CypherType): Exists = copy()(ct)
+}
 
-final case class Size(expr: Expr)(val cypherType: CypherType = CTWildcard) extends UnaryFunctionExpr
+final case class Size(expr: Expr)(val cypherType: CypherType = CTWildcard) extends UnaryFunctionExpr {
+  override def withCypherType(ct: CypherType): Size = copy()(ct)
+}
 
-final case class Keys(expr: Expr)(val cypherType: CypherType = CTWildcard) extends UnaryFunctionExpr
+final case class Keys(expr: Expr)(val cypherType: CypherType = CTWildcard) extends UnaryFunctionExpr {
+  override def withCypherType(ct: CypherType): Keys = copy()(ct)
+}
 
-final case class StartNodeFunction(expr: Expr)(val cypherType: CypherType = CTWildcard) extends UnaryFunctionExpr
+final case class StartNodeFunction(expr: Expr)(val cypherType: CypherType = CTWildcard) extends UnaryFunctionExpr {
+  override def withCypherType(ct: CypherType): StartNodeFunction = copy()(ct)
+}
 
-final case class EndNodeFunction(expr: Expr)(val cypherType: CypherType = CTWildcard) extends UnaryFunctionExpr
+final case class EndNodeFunction(expr: Expr)(val cypherType: CypherType = CTWildcard) extends UnaryFunctionExpr {
+  override def withCypherType(ct: CypherType): EndNodeFunction = copy()(ct)
+}
 
-final case class ToFloat(expr: Expr)(val cypherType: CypherType = CTWildcard) extends UnaryFunctionExpr
+final case class ToFloat(expr: Expr)(val cypherType: CypherType = CTWildcard) extends UnaryFunctionExpr {
+  override def withCypherType(ct: CypherType): ToFloat = copy()(ct)
+}
 
-final case class ToInteger(expr: Expr)(val cypherType: CypherType = CTWildcard) extends UnaryFunctionExpr
+final case class ToInteger(expr: Expr)(val cypherType: CypherType = CTWildcard) extends UnaryFunctionExpr {
+  override def withCypherType(ct: CypherType): ToInteger = copy()(ct)
+}
 
-final case class ToString(expr: Expr)(val cypherType: CypherType = CTWildcard) extends UnaryFunctionExpr
+final case class ToString(expr: Expr)(val cypherType: CypherType = CTWildcard) extends UnaryFunctionExpr {
+  override def withCypherType(ct: CypherType): ToString = copy()(ct)
+}
 
-final case class ToBoolean(expr: Expr)(val cypherType: CypherType = CTWildcard) extends UnaryFunctionExpr
+final case class ToBoolean(expr: Expr)(val cypherType: CypherType = CTWildcard) extends UnaryFunctionExpr {
+  override def withCypherType(ct: CypherType): ToBoolean = copy()(ct)
+}
 
-final case class Coalesce(exprs: IndexedSeq[Expr])(val cypherType: CypherType = CTWildcard) extends FunctionExpr
+final case class Coalesce(exprs: IndexedSeq[Expr])(val cypherType: CypherType = CTWildcard) extends FunctionExpr {
+  override def withCypherType(ct: CypherType): Coalesce = copy()(ct)
+}
 
-final case class Explode(expr: Expr)(val cypherType: CypherType = CTWildcard) extends UnaryFunctionExpr
+final case class Explode(expr: Expr)(val cypherType: CypherType = CTWildcard) extends UnaryFunctionExpr {
+  override def withCypherType(ct: CypherType): Explode = copy()(ct)
+}
 
 // Bit operators
 
@@ -547,6 +531,7 @@ final case class ShiftLeft(value: Expr, shiftBits: IntegerLit)
   override def lhs: Expr = value
   override def rhs: Expr = shiftBits
   override def op: String = "<<"
+  override def withCypherType(ct: CypherType): ShiftLeft = copy()(ct)
 }
 
 final case class ShiftRightUnsigned(value: Expr, shiftBits: IntegerLit)
@@ -555,14 +540,17 @@ final case class ShiftRightUnsigned(value: Expr, shiftBits: IntegerLit)
   override def lhs: Expr = value
   override def rhs: Expr = shiftBits
   override def op: String = ">>>"
+  override def withCypherType(ct: CypherType): ShiftRightUnsigned = copy()(ct)
 }
 
 final case class BitwiseAnd(lhs: Expr, rhs: Expr)(val cypherType: CypherType = CTWildcard) extends BinaryExpr {
   override def op: String = "&"
+  override def withCypherType(ct: CypherType): BitwiseAnd = copy()(ct)
 }
 
 final case class BitwiseOr(lhs: Expr, rhs: Expr)(val cypherType: CypherType = CTWildcard) extends BinaryExpr {
   override def op: String = "|"
+  override def withCypherType(ct: CypherType): BitwiseOr = copy()(ct)
 }
 
 // Aggregators
@@ -576,6 +564,8 @@ final case class Avg(expr: Expr)(val cypherType: CypherType = CTWildcard) extend
   override def toString = s"avg($expr)"
 
   override def withoutType: String = s"avg(${expr.withoutType})"
+
+  override def withCypherType(ct: CypherType): Avg = copy()(ct)
 }
 
 final case class CountStar(cypherType: CypherType = CTWildcard) extends Aggregator {
@@ -584,6 +574,8 @@ final case class CountStar(cypherType: CypherType = CTWildcard) extends Aggregat
   override def toString = "count(*)"
 
   override def withoutType: String = toString
+
+  override def withCypherType(ct: CypherType): CountStar = copy()(ct)
 }
 
 final case class Count(expr: Expr, distinct: Boolean)(val cypherType: CypherType = CTWildcard) extends Aggregator {
@@ -592,6 +584,8 @@ final case class Count(expr: Expr, distinct: Boolean)(val cypherType: CypherType
   override def toString = s"count($expr)"
 
   override def withoutType: String = s"count(${expr.withoutType})"
+
+  override def withCypherType(ct: CypherType): Count = copy()(ct)
 }
 
 final case class Max(expr: Expr)(val cypherType: CypherType = CTWildcard) extends Aggregator {
@@ -600,6 +594,8 @@ final case class Max(expr: Expr)(val cypherType: CypherType = CTWildcard) extend
   override def toString = s"max($expr)"
 
   override def withoutType: String = s"max(${expr.withoutType})"
+
+  override def withCypherType(ct: CypherType): Max = copy()(ct)
 }
 
 final case class Min(expr: Expr)(val cypherType: CypherType = CTWildcard) extends Aggregator {
@@ -608,6 +604,8 @@ final case class Min(expr: Expr)(val cypherType: CypherType = CTWildcard) extend
   override def toString = s"min($expr)"
 
   override def withoutType: String = s"min(${expr.withoutType})"
+
+  override def withCypherType(ct: CypherType): Min = copy()(ct)
 }
 
 final case class Sum(expr: Expr)(val cypherType: CypherType = CTWildcard) extends Aggregator {
@@ -616,6 +614,8 @@ final case class Sum(expr: Expr)(val cypherType: CypherType = CTWildcard) extend
   override def toString = s"sum($expr)"
 
   override def withoutType: String = s"sum(${expr.withoutType})"
+
+  override def withCypherType(ct: CypherType): Sum = copy()(ct)
 }
 
 final case class Collect(expr: Expr, distinct: Boolean)(val cypherType: CypherType = CTWildcard) extends Aggregator {
@@ -624,6 +624,8 @@ final case class Collect(expr: Expr, distinct: Boolean)(val cypherType: CypherTy
   override def toString = s"collect($expr)"
 
   override def withoutType: String = s"collect(${expr.withoutType})"
+
+  override def withCypherType(ct: CypherType): Collect = copy()(ct)
 }
 
 // Literal expressions
@@ -638,24 +640,45 @@ object ListLit {
   def apply(exprs: Expr*): ListLit = new ListLit(exprs.toIndexedSeq)()
 }
 
-final case class ListLit(v: IndexedSeq[Expr])(val cypherType: CypherType = CTList(CTVoid)) extends Lit[IndexedSeq[Expr]]
+final case class ListLit(v: IndexedSeq[Expr])
+  (val cypherType: CypherType = CTList(CTVoid)) extends Lit[IndexedSeq[Expr]] {
+  override def withCypherType(ct: CypherType): ListLit = copy()(ct)
+}
 
 final case class ContainerIndex(container: Expr, index: Expr)(val cypherType: CypherType = CTWildcard) extends Expr {
   override def withoutType: String = s"${container.withoutType}[${index.withoutType}]"
+  override def withCypherType(ct: CypherType): ContainerIndex = copy()(ct)
 }
 
-final case class IntegerLit(v: Long)(val cypherType: CypherType = CTInteger) extends Lit[Long]
+final case class IntegerLit(v: Long)(val cypherType: CypherType = CTInteger) extends Lit[Long] {
+  override def withCypherType(ct: CypherType): IntegerLit = copy()(ct)
+}
 
-final case class StringLit(v: String)(val cypherType: CypherType = CTString) extends Lit[String]
+final case class StringLit(v: String)(val cypherType: CypherType = CTString) extends Lit[String] {
+  override def withCypherType(ct: CypherType): StringLit = copy()(ct)
+}
 
 sealed abstract class BoolLit(val v: Boolean)(val cypherType: CypherType = CTBoolean) extends Lit[Boolean]
 
-case object TrueLit extends BoolLit(true)()
+case object TrueLit extends BoolLit(true)() {
+  override def withCypherType(ct: CypherType): TrueLit.This = ct match {
+    case CTBoolean => TrueLit
+    case other => throw IllegalArgumentException("CTBoolean type", other)
+  }
+}
 
-case object FalseLit extends BoolLit(false)()
+case object FalseLit extends BoolLit(false)() {
+
+  override def withCypherType(ct: CypherType): FalseLit.This = ct match {
+    case CTBoolean => FalseLit
+    case other => throw IllegalArgumentException("CTBoolean type", other)
+  }
+}
 
 case class NullLit(cypherType: CypherType = CTNull) extends Lit[Null] {
   override def v: Null = null
+  override def withCypherType(ct: CypherType): NullLit =
+    if (ct.isNullable) copy(ct) else throw IllegalArgumentException("Nullable type", ct)
 }
 
 // Pattern Predicate Expression
@@ -665,6 +688,8 @@ final case class ExistsPatternExpr(targetField: Var, ir: CypherQuery[Expr])(val 
   override def toString = s"$withoutType($cypherType)"
 
   override def withoutType = s"Exists(${ir.info.singleLine}, $targetField)"
+
+  override def withCypherType(ct: CypherType): ExistsPatternExpr = copy()(ct)
 }
 
 final case class CaseExpr(alternatives: IndexedSeq[(Expr, Expr)], default: Option[Expr])
@@ -678,4 +703,6 @@ final case class CaseExpr(alternatives: IndexedSeq[(Expr, Expr)], default: Optio
       .mkString("[", ", ", "]")
     s"CaseExpr($alternativesString, $default)"
   }
+
+  override def withCypherType(ct: CypherType): CaseExpr = copy()(ct)
 }
