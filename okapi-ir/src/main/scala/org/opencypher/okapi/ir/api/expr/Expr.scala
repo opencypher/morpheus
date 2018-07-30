@@ -39,6 +39,109 @@ object Expr {
 
   implicit def alphabeticalOrdering[A <: Expr]: Ordering[Expr] =
     Ordering.by(e => (e.toString, e.toString))
+
+  implicit class ExprOps(e: Expr) {
+
+    // TODO: be more strict about allowed cypher types wherever possible
+    def withCypherType(ct: CypherType): Expr = e match {
+      case AliasExpr(expr, alias) => AliasExpr(expr.withCypherType(ct), alias)
+      case p: Param => p.copy()(ct)
+      case l: ListSegment => l.copy()(ct)
+
+      case v: SimpleVar => v.copy()(ct)
+      case n: NodeVar => ct.material match {
+        case nodeType: CTNode => n.copy()(nodeType)
+        case other => throw IllegalArgumentException("CTNode type", other)
+      }
+      case n: RelationshipVar => ct.material match {
+        case relType: CTRelationship => n.copy()(relType)
+        case other => throw IllegalArgumentException("CTRelationship type", other)
+      }
+      case sn: StartNode => sn.copy()(ct)
+      case en: EndNode => en.copy()(ct)
+      case ands: Ands => ct.material match {
+        case CTBoolean => ands.copy()(ct)
+        case other => throw IllegalArgumentException("CTBoolean type", other)
+      }
+      case ors: Ors => ct.material match {
+        case CTBoolean => ors.copy()(ct)
+        case other => throw IllegalArgumentException("CTBoolean type", other)
+      }
+
+      // arithmetic expressions
+      case add: Add => add.copy()(ct)
+      case subtract: Subtract => subtract.copy()(ct)
+      case multiply: Multiply => multiply.copy()(ct)
+      case divide: Divide => divide.copy()(ct)
+
+      case bwAnd: BitwiseAnd => bwAnd.copy()(ct)
+      case bwOr: BitwiseOr => bwOr.copy()(ct)
+      case shiftLeft: ShiftLeft => shiftLeft.copy()(ct)
+      case shiftRightUnsigned: ShiftRightUnsigned => shiftRightUnsigned.copy()(ct)
+      case monotonicallyIncreasingId: MonotonicallyIncreasingId => monotonicallyIncreasingId.copy(ct)
+
+      // predicate expressions
+      case not: Not => not.copy()(ct)
+      case hasLabel: HasLabel => hasLabel.copy()(ct)
+      case hasType: HasType => hasType.copy()(ct)
+      case isNull: IsNull => isNull.copy()(ct)
+      case isNotNull: IsNotNull => isNotNull.copy()(ct)
+      // binary expressions
+      case equals: Equals => equals.copy()(ct)
+      case lessThan: LessThan => lessThan.copy()(ct)
+      case lessThanOrEqual: LessThanOrEqual => lessThanOrEqual.copy()(ct)
+      case greaterThan: GreaterThan => greaterThan.copy()(ct)
+      case greaterThanOrEqual: GreaterThanOrEqual => greaterThanOrEqual.copy()(ct)
+      case in: In => in.copy()(ct)
+
+      case property: Property => property.copy()(ct)
+      case mapExpr: MapExpression => mapExpr.copy()(ct)
+
+      // function expressions
+      case id: Id => id.copy()(ct)
+      case labels: Labels => labels.copy()(ct)
+      case relType: Type => relType.copy()(ct)
+      case exists: Exists => exists.copy()(ct)
+      case size: Size => size.copy()(ct)
+      case keys: Keys => keys.copy()(ct)
+      case startNodeFn: StartNodeFunction => startNodeFn.copy()(ct)
+      case endNodeFn: EndNodeFunction => endNodeFn.copy()(ct)
+      case toFloat: ToFloat => toFloat.copy()(ct)
+      case toInteger: ToInteger => toInteger.copy()(ct)
+      case toString: ToString => toString.copy()(ct)
+      case toBoolean: ToBoolean => toBoolean.copy()(ct)
+      case coalesce: Coalesce => coalesce.copy()(ct)
+      case explode: Explode => explode.copy()(ct)
+
+
+      // aggregator functions
+      case avg: Avg => avg.copy()(ct)
+      case countStar: CountStar => countStar.copy(ct)
+      case count: Count => count.copy()(ct)
+      case max: Max => max.copy()(ct)
+      case min: Min => min.copy()(ct)
+      case sum: Sum => sum.copy()(ct)
+      case collect: Collect => collect.copy()(ct)
+
+      // lit expressions
+      case listList: ListLit => listList.copy()(ct)
+      case integerLit: IntegerLit => integerLit.copy()(ct)
+      case stringLit: StringLit => stringLit.copy()(ct)
+      case TrueLit => ct match {
+        case CTBoolean => TrueLit
+        case other => throw IllegalArgumentException("CTBoolean type", other)
+      }
+      case FalseLit => ct match {
+        case CTBoolean => FalseLit
+        case other => throw IllegalArgumentException("CTBoolean type", other)
+      }
+      case nullLit: NullLit => if (ct.isNullable) nullLit.copy(ct) else throw IllegalArgumentException("Nullable type", ct)
+
+      case containerIndex: ContainerIndex => containerIndex.copy()(ct)
+      case existsPatternExpr: ExistsPatternExpr => existsPatternExpr.copy()(ct)
+      case caseExpr: CaseExpr => caseExpr.copy()(ct)
+    }
+  }
 }
 
 /**
@@ -80,7 +183,7 @@ final case class Param(name: String)(val cypherType: CypherType = CTWildcard) ex
   override def withoutType: String = s"$$$name"
 }
 
-trait Var extends Expr {
+sealed trait Var extends Expr {
   def name: String
 
   override def withoutType: String = s"`$name`"
@@ -108,7 +211,7 @@ final case class ListSegment(index: Int, listVar: Var)(val cypherType: CypherTyp
   override def name: String = s"${listVar.name}($index)"
 }
 
-trait ReturnItem extends Var
+sealed trait ReturnItem extends Var
 
 final case class NodeVar(name: String)(val cypherType: CTNode = CTNode) extends ReturnItem {
 
@@ -216,18 +319,16 @@ object Ands {
   def apply[E <: Expr](exprs: E*): Expr = exprs.flattenExprs[Ands] match {
     case Nil => TrueLit
     case one :: Nil => one
-    case other => Ands(other)
+    case other => Ands(other)(CTBoolean)
   }
 
   def apply[E <: Expr](exprs: Set[E]): Expr = apply(exprs.toSeq: _*)
 }
 
-final case class Ands(_exprs: List[Expr]) extends Expr {
+final case class Ands(_exprs: List[Expr])(val cypherType: CypherType = CTBoolean) extends Expr {
   require(_exprs.forall(!_.isInstanceOf[Ands]), "Ands need to be flattened")
 
   def exprs = _exprs.toSet
-
-  def cypherType: CypherType = CTBoolean
 
   override def withoutType = s"ANDS(${_exprs.map(_.withoutType).mkString(", ")})"
 }
@@ -237,18 +338,16 @@ object Ors {
   def apply[E <: Expr](exprs: E*): Expr = exprs.flattenExprs[Ors] match {
     case Nil => TrueLit
     case one :: Nil => one
-    case other => Ors(other)
+    case other => Ors(other)(CTBoolean)
   }
 
   def apply[E <: Expr](exprs: Set[E]): Expr = apply(exprs.toSeq: _*)
 }
 
-final case class Ors(_exprs: List[Expr]) extends Expr {
+final case class Ors(_exprs: List[Expr])(val cypherType: CypherType = CTBoolean) extends Expr {
   require(_exprs.forall(!_.isInstanceOf[Ors]), "Ors need to be flattened")
 
   def exprs = _exprs.toSet
-
-  def cypherType: CypherType = CTBoolean
 
   override def withoutType = s"ORS(${_exprs.map(_.withoutType).mkString(", ")})"
 }
