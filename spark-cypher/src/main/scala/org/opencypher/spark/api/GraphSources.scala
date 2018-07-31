@@ -26,9 +26,13 @@
  */
 package org.opencypher.spark.api
 
+import java.nio.file.Paths
+
 import org.opencypher.okapi.api.schema.Schema
 import org.opencypher.spark.api.io.fs.{CAPSFileSystem, FSGraphSource}
 import org.opencypher.spark.api.io.neo4j.{Neo4jConfig, Neo4jPropertyGraphDataSource}
+
+import scala.io.Source
 
 object GraphSources {
   def fs(
@@ -72,4 +76,11 @@ object CypherGraphSources {
   def neo4j(config: Neo4jConfig, maybeSchema: Option[Schema] = None, omitImportFailures: Boolean = false)
     (implicit session: CAPSSession): Neo4jPropertyGraphDataSource =
     Neo4jPropertyGraphDataSource(config, maybeSchema = maybeSchema, omitImportFailures = omitImportFailures)
+
+  def neo4j(config: Neo4jConfig, schemaFile: String, omitImportFailures: Boolean)
+    (implicit session: CAPSSession): Neo4jPropertyGraphDataSource = {
+    val schemaString = Source.fromFile(Paths.get(schemaFile).toUri).getLines().mkString("\n")
+
+    Neo4jPropertyGraphDataSource(config, maybeSchema = Some(Schema.fromJson(schemaString)), omitImportFailures = omitImportFailures)
+  }
 }
