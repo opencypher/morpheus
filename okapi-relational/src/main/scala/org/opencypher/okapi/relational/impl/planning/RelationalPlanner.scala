@@ -35,7 +35,7 @@ import org.opencypher.okapi.ir.api.{Label, RelType}
 import org.opencypher.okapi.logical.impl._
 import org.opencypher.okapi.logical.{impl => logical}
 import org.opencypher.okapi.relational.api.planning.{RelationalPlannerContext, RelationalRuntimeContext}
-import org.opencypher.okapi.relational.api.table.FlatRelationalTable
+import org.opencypher.okapi.relational.api.table.Table
 import org.opencypher.okapi.relational.impl.operators._
 import org.opencypher.okapi.relational.impl.planning.ConstructGraphPlanner._
 import org.opencypher.okapi.relational.impl.table.RecordHeader
@@ -44,7 +44,7 @@ import org.opencypher.okapi.relational.impl.{operators => relational}
 object RelationalPlanner {
 
   // TODO: rename to 'plan'
-  def process[T <: FlatRelationalTable[T]](input: LogicalOperator)(
+  def process[T <: Table[T]](input: LogicalOperator)(
     // TODO: unify contexts?
     implicit plannerContext: RelationalPlannerContext[T],
     runtimeContext: RelationalRuntimeContext[T]
@@ -228,7 +228,7 @@ object RelationalPlanner {
     }
   }
 
-  def planJoin[T <: FlatRelationalTable[T]](
+  def planJoin[T <: Table[T]](
     lhs: RelationalOperator[T],
     rhs: RelationalOperator[T],
     joinExprs: Seq[(Expr, Expr)],
@@ -239,7 +239,7 @@ object RelationalPlanner {
     relational.Join(lhs, conflictFreeRhs, joinExprs, joinType)
   }
 
-  private def planStart[T <: FlatRelationalTable[T]](graph: LogicalGraph)(
+  private def planStart[T <: Table[T]](graph: LogicalGraph)(
     implicit plannerContext: RelationalPlannerContext[T], runtimeContext: RelationalRuntimeContext[T]
   ): RelationalOperator[T] = {
     graph match {
@@ -254,7 +254,7 @@ object RelationalPlanner {
   }
 
   // TODO: process operator outside of def
-  private def planOptional[T <: FlatRelationalTable[T]](lhs: LogicalOperator, rhs: LogicalOperator)
+  private def planOptional[T <: Table[T]](lhs: LogicalOperator, rhs: LogicalOperator)
     (
       implicit plannerContext: RelationalPlannerContext[T],
       runtimeContext: RelationalRuntimeContext[T]
@@ -290,7 +290,7 @@ object RelationalPlanner {
     relational.Select(joined, joined.header.expressions.toList)
   }
 
-  implicit class RelationalOperatorOps[T <: FlatRelationalTable[T]](val op: RelationalOperator[T]) extends AnyVal {
+  implicit class RelationalOperatorOps[T <: Table[T]](val op: RelationalOperator[T]) extends AnyVal {
 
     // Only works with single entity tables
     def assignScanName(name: String): RelationalOperator[T] = {

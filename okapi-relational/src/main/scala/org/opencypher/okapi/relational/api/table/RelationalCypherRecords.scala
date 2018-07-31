@@ -30,7 +30,7 @@ import org.opencypher.okapi.api.table.CypherRecords
 import org.opencypher.okapi.relational.api.io.EntityTable
 import org.opencypher.okapi.relational.impl.table.RecordHeader
 
-trait RelationalCypherRecordsFactory[T <: FlatRelationalTable[T]] {
+trait RelationalCypherRecordsFactory[T <: Table[T]] {
 
   type Records <: RelationalCypherRecords[T]
 
@@ -43,7 +43,7 @@ trait RelationalCypherRecordsFactory[T <: FlatRelationalTable[T]] {
   def from(header: RecordHeader, table: T, returnItems: Option[Seq[String]] = None): Records
 }
 
-trait RelationalCypherRecords[T <: FlatRelationalTable[T]] extends CypherRecords {
+trait RelationalCypherRecords[T <: Table[T]] extends CypherRecords {
 
   type Records <: RelationalCypherRecords[T]
 

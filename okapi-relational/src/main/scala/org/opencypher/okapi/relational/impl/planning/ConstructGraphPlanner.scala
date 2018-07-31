@@ -34,7 +34,7 @@ import org.opencypher.okapi.ir.api.{PropertyKey, RelType}
 import org.opencypher.okapi.logical.impl._
 import org.opencypher.okapi.relational.api.graph.RelationalCypherGraph
 import org.opencypher.okapi.relational.api.planning.{RelationalPlannerContext, RelationalRuntimeContext}
-import org.opencypher.okapi.relational.api.table.FlatRelationalTable
+import org.opencypher.okapi.relational.api.table.Table
 import org.opencypher.okapi.relational.api.tagging.TagSupport.computeRetaggings
 import org.opencypher.okapi.relational.api.tagging.Tags
 import org.opencypher.okapi.relational.api.tagging.Tags._
@@ -44,7 +44,7 @@ import org.opencypher.okapi.relational.impl.{operators => relational}
 
 object ConstructGraphPlanner {
 
-  def planConstructGraph[T <: FlatRelationalTable[T]](in: Option[LogicalOperator], construct: LogicalPatternGraph)
+  def planConstructGraph[T <: Table[T]](in: Option[LogicalOperator], construct: LogicalPatternGraph)
     (
       implicit plannerContext: RelationalPlannerContext[T],
       runtimeContext: RelationalRuntimeContext[T]
@@ -69,7 +69,7 @@ object ConstructGraphPlanner {
   }
 }
 
-final case class ConstructGraph[T <: FlatRelationalTable[T]](
+final case class ConstructGraph[T <: Table[T]](
   lhs: RelationalOperator[T],
   rhs: RelationalOperator[T],
   construct: LogicalPatternGraph
@@ -302,7 +302,7 @@ final case class ConstructGraph[T <: FlatRelationalTable[T]](
   }
 }
 
-case class RetagVariable[T <: FlatRelationalTable[T]](
+case class RetagVariable[T <: Table[T]](
   in: RelationalOperator[T],
   v: Var,
   replacements: Map[Int, Int]
@@ -319,7 +319,7 @@ case class RetagVariable[T <: FlatRelationalTable[T]](
   }
 }
 
-final case class AddEntitiesToRecords[T <: FlatRelationalTable[T]](
+final case class AddEntitiesToRecords[T <: Table[T]](
   in: RelationalOperator[T],
   exprsToAdd: Map[Expr, Expr]
 ) extends RelationalOperator[T] {
@@ -333,7 +333,7 @@ final case class AddEntitiesToRecords[T <: FlatRelationalTable[T]](
   }
 }
 
-final case class ConstructProperty[T <: FlatRelationalTable[T]](
+final case class ConstructProperty[T <: Table[T]](
   in: RelationalOperator[T],
   v: Var,
   propertyExpr: Property,

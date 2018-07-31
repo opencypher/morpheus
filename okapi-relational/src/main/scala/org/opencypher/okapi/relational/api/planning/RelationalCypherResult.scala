@@ -30,10 +30,10 @@ import org.opencypher.okapi.api.graph.{CypherQueryPlans, CypherResult}
 import org.opencypher.okapi.impl.util.PrintOptions
 import org.opencypher.okapi.logical.impl.LogicalOperator
 import org.opencypher.okapi.relational.api.graph.{RelationalCypherGraph, RelationalCypherSession}
-import org.opencypher.okapi.relational.api.table.{FlatRelationalTable, RelationalCypherRecords}
+import org.opencypher.okapi.relational.api.table.{Table, RelationalCypherRecords}
 import org.opencypher.okapi.relational.impl.operators.RelationalOperator
 
-case class RelationalCypherResult[T <: FlatRelationalTable[T]](
+case class RelationalCypherResult[T <: Table[T]](
   maybeLogical: Option[LogicalOperator],
   maybeRelational: Option[RelationalOperator[T]]
 )(implicit session: RelationalCypherSession[T]) extends CypherResult {
@@ -58,10 +58,10 @@ case class RelationalCypherResult[T <: FlatRelationalTable[T]](
 
 object RelationalCypherResult {
 
-  def empty[T <: FlatRelationalTable[T]](implicit session: RelationalCypherSession[T]): RelationalCypherResult[T] =
+  def empty[T <: Table[T]](implicit session: RelationalCypherSession[T]): RelationalCypherResult[T] =
     RelationalCypherResult(None, None)
 
-  def apply[T <: FlatRelationalTable[T]](
+  def apply[T <: Table[T]](
     logical: LogicalOperator,
     relational: RelationalOperator[T]
   )(implicit session: RelationalCypherSession[T]): RelationalCypherResult[T] =

@@ -27,9 +27,9 @@
 package org.opencypher.okapi.relational.api.graph
 
 import org.opencypher.okapi.api.graph.CypherSession
-import org.opencypher.okapi.relational.api.table.{FlatRelationalTable, RelationalCypherRecordsFactory}
+import org.opencypher.okapi.relational.api.table.{Table, RelationalCypherRecordsFactory}
 
-trait RelationalCypherSession[T <: FlatRelationalTable[T]] extends CypherSession {
+trait RelationalCypherSession[T <: Table[T]] extends CypherSession {
 
   type Graph <: RelationalCypherGraph[T]
 

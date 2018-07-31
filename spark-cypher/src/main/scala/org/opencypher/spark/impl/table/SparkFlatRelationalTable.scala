@@ -34,7 +34,7 @@ import org.opencypher.okapi.api.value.CypherValue
 import org.opencypher.okapi.api.value.CypherValue.{CypherMap, CypherValue}
 import org.opencypher.okapi.impl.exception.NotImplementedException
 import org.opencypher.okapi.ir.api.expr.{Expr, _}
-import org.opencypher.okapi.relational.api.table.FlatRelationalTable
+import org.opencypher.okapi.relational.api.table.Table
 import org.opencypher.okapi.relational.impl.planning._
 import org.opencypher.okapi.relational.impl.table.RecordHeader
 import org.opencypher.spark.impl.DataFrameOps._
@@ -45,7 +45,7 @@ import scala.collection.JavaConverters._
 
 object SparkFlatRelationalTable {
 
-  implicit class DataFrameTable(val df: DataFrame) extends FlatRelationalTable[DataFrameTable] {
+  implicit class DataFrameTable(val df: DataFrame) extends Table[DataFrameTable] {
 
     private case class EmptyRow()
 

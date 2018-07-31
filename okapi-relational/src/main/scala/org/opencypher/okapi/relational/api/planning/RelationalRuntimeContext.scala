@@ -30,7 +30,7 @@ import org.opencypher.okapi.api.graph.QualifiedGraphName
 import org.opencypher.okapi.api.value.CypherValue.CypherMap
 import org.opencypher.okapi.impl.exception.IllegalArgumentException
 import org.opencypher.okapi.relational.api.graph.{RelationalCypherGraph, RelationalCypherSession}
-import org.opencypher.okapi.relational.api.table.FlatRelationalTable
+import org.opencypher.okapi.relational.api.table.Table
 
 // TODO: comment
 /**
@@ -40,7 +40,7 @@ import org.opencypher.okapi.relational.api.table.FlatRelationalTable
   * @param constructedGraphCatalog Contains graphs that are created during query execution
   * @tparam T
   */
-case class RelationalRuntimeContext[T <: FlatRelationalTable[T]](
+case class RelationalRuntimeContext[T <: Table[T]](
   sessionCatalog: QualifiedGraphName => Option[RelationalCypherGraph[T]],
   parameters: CypherMap = CypherMap.empty,
   var constructedGraphCatalog: Map[QualifiedGraphName, RelationalCypherGraph[T]] = Map.empty[QualifiedGraphName, RelationalCypherGraph[T]]

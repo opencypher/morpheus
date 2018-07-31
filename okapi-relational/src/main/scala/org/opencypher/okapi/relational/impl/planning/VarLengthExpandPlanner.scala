@@ -30,7 +30,7 @@ import org.opencypher.okapi.api.types.CTBoolean
 import org.opencypher.okapi.ir.api.expr._
 import org.opencypher.okapi.logical.impl.LogicalOperator
 import org.opencypher.okapi.relational.api.planning.{RelationalPlannerContext, RelationalRuntimeContext}
-import org.opencypher.okapi.relational.api.table.FlatRelationalTable
+import org.opencypher.okapi.relational.api.table.Table
 import org.opencypher.okapi.relational.impl.exception.RecordHeaderException
 import org.opencypher.okapi.relational.impl.operators.RelationalOperator
 import org.opencypher.okapi.relational.impl.planning.RelationalPlanner.{planJoin, process, _}
@@ -41,7 +41,7 @@ trait ExpandDirection
 case object Outbound extends ExpandDirection
 case object Inbound extends ExpandDirection
 
-trait VarLengthExpandPlanner[T <: FlatRelationalTable[T]] {
+trait VarLengthExpandPlanner[T <: Table[T]] {
 
   def source: Var
 
@@ -262,7 +262,7 @@ trait VarLengthExpandPlanner[T <: FlatRelationalTable[T]] {
 }
 
 // TODO: use object instead
-class DirectedVarLengthExpandPlanner[T <: FlatRelationalTable[T]](
+class DirectedVarLengthExpandPlanner[T <: Table[T]](
   override val source: Var,
   override val list: Var,
   override val edgeScan: Var,
@@ -295,7 +295,7 @@ class DirectedVarLengthExpandPlanner[T <: FlatRelationalTable[T]](
 }
 
 // TODO: use object instead
-class UndirectedVarLengthExpandPlanner[T <: FlatRelationalTable[T]](
+class UndirectedVarLengthExpandPlanner[T <: Table[T]](
   override val source: Var,
   override val list: Var,
   override val edgeScan: Var,

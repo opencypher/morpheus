@@ -30,7 +30,7 @@ import org.opencypher.okapi.api.graph.QualifiedGraphName
 import org.opencypher.okapi.api.value.CypherValue.CypherMap
 import org.opencypher.okapi.ir.impl.CatalogWithQuerySchemas
 import org.opencypher.okapi.relational.api.graph.RelationalCypherSession
-import org.opencypher.okapi.relational.api.table.{FlatRelationalTable, RelationalCypherRecords}
+import org.opencypher.okapi.relational.api.table.{Table, RelationalCypherRecords}
 import org.opencypher.okapi.relational.impl.operators.RelationalOperator
 
 // TODO: document
@@ -43,7 +43,7 @@ import org.opencypher.okapi.relational.impl.operators.RelationalOperator
   * @param parameters   Query parameters
   * @tparam T
   */
-case class RelationalPlannerContext[T <: FlatRelationalTable[T]](
+case class RelationalPlannerContext[T <: Table[T]](
   session: RelationalCypherSession[T],
   inputRecords: RelationalCypherRecords[T],
   parameters: CypherMap = CypherMap.empty,

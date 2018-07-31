@@ -33,26 +33,14 @@ import org.opencypher.okapi.ir.api.expr.{Aggregator, Expr, Var}
 import org.opencypher.okapi.relational.impl.planning.{JoinType, Order}
 import org.opencypher.okapi.relational.impl.table.RecordHeader
 
-// TODO: rename to Table
 // TODO: document
-trait FlatRelationalTable[T <: FlatRelationalTable[T]] extends CypherTable {
+trait Table[T <: Table[T]] extends CypherTable {
 
   this: T =>
 
   def cache(): T = this
 
   def select(cols: String*): T
-
-//  // Convenience for multiple selects + align and union
-//  // TODO: provide default implementation
-//  def extractEntities(selectExprGroups: Set[Seq[Expr]], baseTableHeader: RecordHeader, targetHeader: RecordHeader)(implicit parameters: CypherMap): T = {
-//    selectExprGroups.map { selectExprs =>
-//      val selectedColumns = select(selectExprs.map(baseTableHeader.column): _*)
-//      selectedColumns
-//
-//    }
-//
-//  }
 
   def filter(expr: Expr)(implicit header: RecordHeader, parameters: CypherMap): T
 
