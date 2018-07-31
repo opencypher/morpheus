@@ -462,10 +462,6 @@ final case class TabularUnionAll[T <: Table[T]](
       throw IllegalArgumentException("same number of columns", s"left:  $sortedLeftColumns\n\tright: $sortedRightColumns")
     }
 
-    if (lhs.header != rhs.header) {
-      lhs.header.show()
-      rhs.header.show()
-    }
     if (leftColumns.toSet != rightColumns.toSet) {
       throw IllegalArgumentException("same column names", s"left:  $sortedLeftColumns\n\tright: $sortedRightColumns")
     }
@@ -481,7 +477,7 @@ final case class TabularUnionAll[T <: Table[T]](
 }
 
 // N-ary
-//
+
 final case class GraphUnionAll[T <: Table[T]](
   inputs: List[RelationalOperator[T]],
   qgn: QualifiedGraphName
