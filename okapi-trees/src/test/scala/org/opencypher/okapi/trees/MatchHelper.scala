@@ -24,7 +24,7 @@
  * described as "implementation extensions to Cypher" or as "proposed changes to
  * Cypher that are not yet approved by the openCypher community".
  */
-package org.opencypher.okapi.testing
+package org.opencypher.okapi.trees
 
 import org.scalatest.matchers.{MatchResult, Matcher}
 
@@ -34,12 +34,9 @@ object MatchHelper {
 
   val success = MatchResult(true, "", "")
 
-  // Returns a successful or the first failed match if there is one.
+  // Returns `success` or the first failed match if there is one.
   def combine(m: MatchResult*): MatchResult = {
-    m.foldLeft(success) {
-      case (aggr, next) =>
-        if (aggr.matches) next else aggr
-    }
+    m.foldLeft(success) { case (aggr, next) => if (aggr.matches) next else aggr }
   }
 
   def addTrace(m: MatchResult, traceInfo: String): MatchResult = {

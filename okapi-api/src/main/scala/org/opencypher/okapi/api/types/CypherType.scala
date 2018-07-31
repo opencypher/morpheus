@@ -69,9 +69,9 @@ object CypherType {
 
   case class CTUnion(ors: Set[CypherType]) extends CypherType with UnionType[CypherType] {
 
-//    override val children: Array[CypherType] = ors.toArray
-//
-//    override def withNewChildren(newChildren: Array[CypherType]): CypherType = CTUnion(newChildren.toSet)
+    override val children: Array[CypherType] = ors.toArray
+
+    override def withNewChildren(newChildren: Array[CypherType]): CypherType = CTUnion(newChildren.toSet)
 
     override def isNullable: Boolean = ors.exists(_.subTypeOf(CTNull))
 
@@ -79,6 +79,7 @@ object CypherType {
       if (isNullable) newUnion(ors - CTNull) else this
     }
 
+    override protected def newInstance(ors: Set[CypherType]): CypherType = CTUnion(ors)
   }
 
   object CTUnion {
@@ -92,9 +93,9 @@ object CypherType {
   case class CTIntersection(ands: Set[CypherType]) extends CypherType with IntersectionType[CypherType] {
     override def isNullable: Boolean = ands.forall(_.subTypeOf(CTNull))
 
-//    override val children: Array[CypherType] = ands.toArray
-//
-//    override def withNewChildren(newChildren: Array[CypherType]): CypherType = CTIntersection(newChildren.toSet)
+    override val children: Array[CypherType] = ands.toArray
+
+    override def withNewChildren(newChildren: Array[CypherType]): CypherType = CTIntersection(newChildren.toSet)
 
   }
 
@@ -321,10 +322,8 @@ object CypherType {
 
 abstract class CypherType extends Type[CypherType] {
 
-  // TODO: Remove
   def graph: Option[QualifiedGraphName] = None
 
-  // TODO: Remove
   def withGraph(qgn: QualifiedGraphName): CypherType = this
 
   def labels: Set[String] = this match {

@@ -37,8 +37,9 @@ import org.opencypher.okapi.ir.api.expr._
 import org.opencypher.okapi.ir.api.pattern.{CyclicRelationship, DirectedRelationship, Pattern}
 import org.opencypher.okapi.ir.impl.util.VarConverters._
 import org.opencypher.okapi.logical.impl._
-import org.opencypher.okapi.testing.{BaseTestSuite, MatchHelper}
+import org.opencypher.okapi.testing.BaseTestSuite
 import org.opencypher.okapi.testing.MatchHelper._
+import org.opencypher.okapi.trees.MatchHelper
 import org.scalatest.matchers._
 
 import scala.language.implicitConversions

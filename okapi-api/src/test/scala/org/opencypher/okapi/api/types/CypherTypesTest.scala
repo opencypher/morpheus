@@ -28,6 +28,7 @@ package org.opencypher.okapi.api.types
 
 import org.opencypher.okapi.api.types.CypherType._
 import org.opencypher.okapi.api.types.LegacyNames._
+import org.opencypher.okapi.trees.MatchHelper._
 import org.scalatest.{FunSpec, Matchers}
 
 import scala.language.postfixOps
@@ -64,28 +65,28 @@ class CypherTypesTest extends FunSpec with Matchers {
     materialTypes ++ nullableTypes
 
   //  it("couldBe") {
-  //    CTAny couldBeSameTypeAs CTNode shouldBe true
-  //    CTNode couldBeSameTypeAs CTAny shouldBe true
-  //    CTInteger couldBeSameTypeAs CTNumber shouldBe true
-  //    CTNumber couldBeSameTypeAs CTInteger shouldBe true
-  //    CTFloat couldBeSameTypeAs CTInteger shouldBe false
-  //    CTBoolean couldBeSameTypeAs CTInteger shouldBe false
+  //    CTAny couldBeSameTypeAs CTNode should equalWithTracing( true
+  //    CTNode couldBeSameTypeAs CTAny should equalWithTracing( true
+  //    CTInteger couldBeSameTypeAs CTNumber should equalWithTracing( true
+  //    CTNumber couldBeSameTypeAs CTInteger should equalWithTracing( true
+  //    CTFloat couldBeSameTypeAs CTInteger should equalWithTracing( false
+  //    CTBoolean couldBeSameTypeAs CTInteger should equalWithTracing( false
   //
-  //    CTNode couldBeSameTypeAs CTMap shouldBe true
-  //    CTRelationship couldBeSameTypeAs CTNode shouldBe false
-  //    CTRelationship couldBeSameTypeAs CTMap shouldBe true
+  //    CTNode couldBeSameTypeAs CTMap should equalWithTracing( true
+  //    CTRelationship couldBeSameTypeAs CTNode should equalWithTracing( false
+  //    CTRelationship couldBeSameTypeAs CTMap should equalWithTracing( true
   //
-  //    CTList(CTInteger) couldBeSameTypeAs CTList(CTFloat) shouldBe false
-  //    CTList(CTInteger) couldBeSameTypeAs CTList(CTAny) shouldBe true
-  //    CTList(CTAny) couldBeSameTypeAs CTList(CTInteger) shouldBe true
+  //    CTList(CTInteger) couldBeSameTypeAs CTList(CTFloat) should equalWithTracing( false
+  //    CTList(CTInteger) couldBeSameTypeAs CTList(CTAny) should equalWithTracing( true
+  //    CTList(CTAny) couldBeSameTypeAs CTList(CTInteger) should equalWithTracing( true
   //  }
 
   it("union with list of void") {
     val voidList = CTList(CTVoid)
     val otherList = CTList(CTString).nullable
 
-    voidList union otherList should equal(otherList)
-    otherList union voidList should equal(otherList)
+    voidList union otherList should equalWithTracing(otherList)
+    otherList union voidList should equalWithTracing(otherList)
   }
 
   it("type names") {
@@ -113,66 +114,66 @@ class CypherTypesTest extends FunSpec with Matchers {
       //      CTWildcard -> ("?" -> "??")
     ).foreach {
       case (t, (materialName, nullableName)) =>
-        t.isNullable shouldBe false
-        t.legacyName shouldBe materialName
-        t.nullable.legacyName shouldBe nullableName
+        t.isNullable should equalWithTracing(false)
+        t.legacyName should equalWithTracing(materialName)
+        t.nullable.legacyName should equalWithTracing(nullableName)
     }
 
-    CTAny.legacyName shouldBe "ANY"
-    CTAny.nullable.legacyName shouldBe "ANY"
-    CTVoid.legacyName shouldBe "VOID"
-    CTNull.legacyName shouldBe "NULL"
-    CTNull.nullable.legacyName shouldBe "NULL"
+    CTAny.legacyName should equalWithTracing("ANY")
+    CTAny.nullable.legacyName should equalWithTracing("ANY")
+    CTVoid.legacyName should equalWithTracing("VOID")
+    CTNull.legacyName should equalWithTracing("NULL")
+    CTNull.nullable.legacyName should equalWithTracing("NULL")
   }
 
   it("can parse CypherType names into CypherTypes") {
     allTypes.foreach { t =>
-      fromLegacyName(t.legacyName).get should equal(t)
+      fromLegacyName(t.legacyName).get should equalWithTracing(t)
     }
   }
 
   it("RELATIONSHIP type") {
-    CTAnyRelationship.superTypeOf(CTAnyRelationship) shouldBe true
-    CTAnyRelationship.superTypeOf(CTRelationship("KNOWS")) shouldBe true
-    CTRelationship("KNOWS").superTypeOf(CTAnyRelationship) shouldBe false
-    CTAnyRelationship.subTypeOf(CTRelationship("KNOWS")) shouldBe false
-    CTRelationship("KNOWS").superTypeOf(CTRelationship("KNOWS")) shouldBe true
-    CTRelationship("KNOWS").superTypeOf(CTRelationship("KNOWS", "LOVES")) shouldBe false
-    CTRelationship("KNOWS", "LOVES").superTypeOf(CTRelationship("LOVES")) shouldBe true
-    CTRelationship("KNOWS").superTypeOf(CTRelationship("NOSE")) shouldBe false
+    CTAnyRelationship.superTypeOf(CTAnyRelationship) should equalWithTracing(true)
+    CTAnyRelationship.superTypeOf(CTRelationship("KNOWS")) should equalWithTracing(true)
+    CTRelationship("KNOWS").superTypeOf(CTAnyRelationship) should equalWithTracing(false)
+    CTAnyRelationship.subTypeOf(CTRelationship("KNOWS")) should equalWithTracing(false)
+    CTRelationship("KNOWS").superTypeOf(CTRelationship("KNOWS")) should equalWithTracing(true)
+    CTRelationship("KNOWS").superTypeOf(CTRelationship("KNOWS", "LOVES")) should equalWithTracing(false)
+    CTRelationship("KNOWS", "LOVES").superTypeOf(CTRelationship("LOVES")) should equalWithTracing(true)
+    CTRelationship("KNOWS").superTypeOf(CTRelationship("NOSE")) should equalWithTracing(false)
   }
 
   it("RELATIONSHIP? type") {
-    CTAnyRelationship.nullable.superTypeOf(CTAnyRelationship.nullable) shouldBe true
-    CTAnyRelationship.nullable.superTypeOf(CTRelationship("KNOWS").nullable) shouldBe true
-    CTRelationship("KNOWS").nullable.superTypeOf(CTRelationship("KNOWS").nullable) shouldBe true
-    CTRelationship("KNOWS").nullable.superTypeOf(CTRelationship("KNOWS", "LOVES").nullable) shouldBe false
-    CTRelationship("KNOWS", "LOVES").nullable.superTypeOf(CTRelationship("LOVES").nullable) shouldBe true
-    CTRelationship("KNOWS").nullable.superTypeOf(CTRelationship("NOSE").nullable) shouldBe false
-    CTRelationship("FOO").nullable.superTypeOf(CTNull) shouldBe true
+    CTAnyRelationship.nullable.superTypeOf(CTAnyRelationship.nullable) should equalWithTracing(true)
+    CTAnyRelationship.nullable.superTypeOf(CTRelationship("KNOWS").nullable) should equalWithTracing(true)
+    CTRelationship("KNOWS").nullable.superTypeOf(CTRelationship("KNOWS").nullable) should equalWithTracing(true)
+    CTRelationship("KNOWS").nullable.superTypeOf(CTRelationship("KNOWS", "LOVES").nullable) should equalWithTracing(false)
+    CTRelationship("KNOWS", "LOVES").nullable.superTypeOf(CTRelationship("LOVES").nullable) should equalWithTracing(true)
+    CTRelationship("KNOWS").nullable.superTypeOf(CTRelationship("NOSE").nullable) should equalWithTracing(false)
+    CTRelationship("FOO").nullable.superTypeOf(CTNull) should equalWithTracing(true)
   }
 
   it("NODE type") {
-    CTAnyNode.superTypeOf(CTAnyNode) shouldBe true
-    CTAnyNode.superTypeOf(CTNode("Person")) shouldBe true
-    CTNode("Person").superTypeOf(CTAnyNode) shouldBe false
-    CTAnyNode.subTypeOf(CTNode("Person")) shouldBe false
-    CTNode("Person").superTypeOf(CTNode("Person")) shouldBe true
-    CTNode("Person").superTypeOf(CTNode("Person", "Employee")) shouldBe true
-    CTNode("Person", "Employee").superTypeOf(CTNode("Employee")) shouldBe false
-    CTNode("Person").superTypeOf(CTNode("Foo")) shouldBe false
-    CTNode("Person").superTypeOf(CTAnyNode) shouldBe false
+    CTAnyNode.superTypeOf(CTAnyNode) should equalWithTracing(true)
+    CTAnyNode.superTypeOf(CTNode("Person")) should equalWithTracing(true)
+    CTNode("Person").superTypeOf(CTAnyNode) should equalWithTracing(false)
+    CTAnyNode.subTypeOf(CTNode("Person")) should equalWithTracing(false)
+    CTNode("Person").superTypeOf(CTNode("Person")) should equalWithTracing(true)
+    CTNode("Person").superTypeOf(CTNode("Person", "Employee")) should equalWithTracing(true)
+    CTNode("Person", "Employee").superTypeOf(CTNode("Employee")) should equalWithTracing(false)
+    CTNode("Person").superTypeOf(CTNode("Foo")) should equalWithTracing(false)
+    CTNode("Person").superTypeOf(CTAnyNode) should equalWithTracing(false)
   }
 
   it("NODE? type") {
-    CTAnyNode.nullable.superTypeOf(CTAnyNode.nullable) shouldBe true
-    CTAnyNode.nullable.superTypeOf(CTNode("Person")) shouldBe true
-    CTNode("Person").nullable.superTypeOf(CTNode("Person").nullable) shouldBe true
+    CTAnyNode.nullable.superTypeOf(CTAnyNode.nullable) should equalWithTracing(true)
+    CTAnyNode.nullable.superTypeOf(CTNode("Person")) should equalWithTracing(true)
+    CTNode("Person").nullable.superTypeOf(CTNode("Person").nullable) should equalWithTracing(true)
     CTNode("Person").union(CTNode("Employee"))
-    CTNode("Person").nullable.superTypeOf(CTNode("Person", "Employee").nullable) shouldBe true
-    CTNode("Person", "Employee").nullable.superTypeOf(CTNode("Employee").nullable) shouldBe false
-    CTNode("Person").nullable.superTypeOf(CTNode("Foo").nullable) shouldBe false
-    CTNode("Foo").nullable.superTypeOf(CTNull) shouldBe true
+    CTNode("Person").nullable.superTypeOf(CTNode("Person", "Employee").nullable) should equalWithTracing(true)
+    CTNode("Person", "Employee").nullable.superTypeOf(CTNode("Employee").nullable) should equalWithTracing(false)
+    CTNode("Person").nullable.superTypeOf(CTNode("Foo").nullable) should equalWithTracing(false)
+    CTNode("Foo").nullable.superTypeOf(CTNull) should equalWithTracing(true)
   }
 
   it("can model a graph schema") {
@@ -201,32 +202,32 @@ class CypherTypesTest extends FunSpec with Matchers {
     val employee = CTLabel("Person") & CTProperty("name", CTString) & CTProperty("age", CTInteger)
     val car = CTLabel("Car") & CTProperty("name", CTString) & CTProperty("top-speed", CTInteger)
     val schema = car | employee
-//    schema.show()
+    //    schema.show()
 
     println(schema.possibleTypes.filter(_.subTypeOf(CTProperty("age", CTNumber))))
     println(schema.possibleTypes.filter(_.subTypeOf(CTProperty("age", CTFloat))))
     println(schema.couldBeSubTypeOf(CTLabel("Person") & CTProperty("name", CTAny)))
     println(schema.couldBeSubTypeOf(CTLabel("Person") & CTProperty("name", CTInteger)))
 
-//    println(car.subTypeOf(schema))
-//
-//    println(employee.subTypeOf(schema))
-//
-//    val moreAccepting = CTLabel("Person") & CTProperty("name", CTAny)
-//
-//    println(employee.subTypeOf(moreAccepting))
-//
-//    println(moreAccepting.subTypeOf(employee))
-//
-//    println(schema.couldBeSubTypeOf(moreAccepting))
-//
-//    println(schema.possibleTypes.mkString("\n"))
-//
-//    val typesSatisfyingMoreAccepting = schema.possibleTypes.filter(_.subTypeOf(moreAccepting))
-//
-//    println(typesSatisfyingMoreAccepting.map(_.pretty).mkString("\n"))
-//
-//    println(schema.possibleTypes.filter(_.subTypeOf(CTProperty("name"))))
+    //    println(car.subTypeOf(schema))
+    //
+    //    println(employee.subTypeOf(schema))
+    //
+    //    val moreAccepting = CTLabel("Person") & CTProperty("name", CTAny)
+    //
+    //    println(employee.subTypeOf(moreAccepting))
+    //
+    //    println(moreAccepting.subTypeOf(employee))
+    //
+    //    println(schema.couldBeSubTypeOf(moreAccepting))
+    //
+    //    println(schema.possibleTypes.mkString("\n"))
+    //
+    //    val typesSatisfyingMoreAccepting = schema.possibleTypes.filter(_.subTypeOf(moreAccepting))
+    //
+    //    println(typesSatisfyingMoreAccepting.map(_.pretty).mkString("\n"))
+    //
+    //    println(schema.possibleTypes.filter(_.subTypeOf(CTProperty("name"))))
 
     //    val nodesWithNames = schema & CTProperty("name", CTString)
     //    nodesWithNames.show()
@@ -236,8 +237,8 @@ class CypherTypesTest extends FunSpec with Matchers {
   }
 
   it("conversion between VOID and NULL") {
-    CTVoid.nullable shouldBe CTNull
-    CTNull.material shouldBe CTVoid
+    CTVoid.nullable should equalWithTracing(CTNull)
+    CTNull.material should equalWithTracing(CTVoid)
   }
 
   it("all nullable types contain their material types") {
@@ -260,82 +261,82 @@ class CypherTypesTest extends FunSpec with Matchers {
   }
 
   it("basic type inheritance") {
-    CTNumber superTypeOf CTInteger shouldBe true
-    CTNumber superTypeOf CTFloat shouldBe true
-    CTAnyMap superTypeOf CTAnyMap shouldBe true
-    //    CTMap superTypeOf CTNode shouldBe true
-    //    CTMap superTypeOf CTRelationship shouldBe true
+    CTNumber superTypeOf CTInteger should equalWithTracing(true)
+    CTNumber superTypeOf CTFloat should equalWithTracing(true)
+    CTAnyMap superTypeOf CTAnyMap should equalWithTracing(true)
+    //    CTMap superTypeOf CTNode should equalWithTracing( true
+    //    CTMap superTypeOf CTRelationship should equalWithTracing( true
 
-    CTAny superTypeOf CTInteger shouldBe true
-    CTAny superTypeOf CTFloat shouldBe true
-    CTAny superTypeOf CTNumber shouldBe true
-    CTAny superTypeOf CTBoolean shouldBe true
-    CTAny superTypeOf CTAnyMap shouldBe true
-    CTAny superTypeOf CTAnyNode shouldBe true
-    CTAny superTypeOf CTAnyRelationship shouldBe true
-    CTAny superTypeOf CTPath shouldBe true
-    CTAny superTypeOf CTList(CTAny) shouldBe true
-    CTAny superTypeOf CTVoid shouldBe true
+    CTAny superTypeOf CTInteger should equalWithTracing(true)
+    CTAny superTypeOf CTFloat should equalWithTracing(true)
+    CTAny superTypeOf CTNumber should equalWithTracing(true)
+    CTAny superTypeOf CTBoolean should equalWithTracing(true)
+    CTAny superTypeOf CTAnyMap should equalWithTracing(true)
+    CTAny superTypeOf CTAnyNode should equalWithTracing(true)
+    CTAny superTypeOf CTAnyRelationship should equalWithTracing(true)
+    CTAny superTypeOf CTPath should equalWithTracing(true)
+    CTAny superTypeOf CTList(CTAny) should equalWithTracing(true)
+    CTAny superTypeOf CTVoid should equalWithTracing(true)
 
-    CTList(CTNumber) superTypeOf CTList(CTInteger) shouldBe true
+    CTList(CTNumber) superTypeOf CTList(CTInteger) should equalWithTracing(true)
 
-    CTVoid subTypeOf CTInteger shouldBe true
-    CTVoid subTypeOf CTFloat shouldBe true
-    CTVoid subTypeOf CTNumber shouldBe true
-    CTVoid subTypeOf CTBoolean shouldBe true
-    CTVoid subTypeOf CTAnyMap shouldBe true
-    CTVoid subTypeOf CTAnyNode shouldBe true
-    CTVoid subTypeOf CTAnyRelationship shouldBe true
-    CTVoid subTypeOf CTPath shouldBe true
-    CTVoid subTypeOf CTList(CTAny) shouldBe true
-    CTVoid subTypeOf CTVoid shouldBe true
-    CTVoid subTypeOf CTList(CTInteger) shouldBe true
+    CTVoid subTypeOf CTInteger should equalWithTracing(true)
+    CTVoid subTypeOf CTFloat should equalWithTracing(true)
+    CTVoid subTypeOf CTNumber should equalWithTracing(true)
+    CTVoid subTypeOf CTBoolean should equalWithTracing(true)
+    CTVoid subTypeOf CTAnyMap should equalWithTracing(true)
+    CTVoid subTypeOf CTAnyNode should equalWithTracing(true)
+    CTVoid subTypeOf CTAnyRelationship should equalWithTracing(true)
+    CTVoid subTypeOf CTPath should equalWithTracing(true)
+    CTVoid subTypeOf CTList(CTAny) should equalWithTracing(true)
+    CTVoid subTypeOf CTVoid should equalWithTracing(true)
+    CTVoid subTypeOf CTList(CTInteger) should equalWithTracing(true)
 
-    CTBoolean.nullable superTypeOf CTAny shouldBe false
+    CTBoolean.nullable superTypeOf CTAny should equalWithTracing(false)
     // TODO: Disagree
-    //    CTAny superTypeOf CTBoolean.nullable shouldBe false
+    //    CTAny superTypeOf CTBoolean.nullable should equalWithTracing( false
   }
 
   it("union") {
-    CTInteger union CTFloat shouldBe CTNumber
-    CTFloat union CTInteger shouldBe CTNumber
-    CTNumber union CTFloat shouldBe CTNumber
-    CTNumber union CTInteger shouldBe CTNumber
-    CTNumber union CTString shouldBe CTUnion(CTFloat, CTInteger, CTString)
+    CTInteger union CTFloat should equalWithTracing(CTNumber)
+    CTFloat union CTInteger should equalWithTracing(CTNumber)
+    CTNumber union CTFloat should equalWithTracing(CTNumber)
+    CTNumber union CTInteger should equalWithTracing(CTNumber)
+    CTNumber union CTString should equalWithTracing(CTUnion(CTFloat, CTInteger, CTString))
 
-    //    CTNode union CTRelationship shouldBe CTMap
-    //    CTNode union CTMap shouldBe CTMap
-    CTString union CTBoolean shouldBe CTUnion(CTString, CTBoolean)
-    CTAny union CTInteger shouldBe CTAny
+    //    CTNode union CTRelationship should equalWithTracing( CTMap
+    //    CTNode union CTMap should equalWithTracing( CTMap
+    CTString union CTBoolean should equalWithTracing(CTUnion(CTString, CTBoolean))
+    CTAny union CTInteger should equalWithTracing(CTAny)
 
-    CTList(CTInteger union CTFloat) shouldBe CTList(CTNumber)
-    CTList(CTInteger) union CTList(CTFloat) shouldBe CTUnion(CTList(CTInteger), CTList(CTFloat))
-    CTList(CTInteger) union CTAnyNode shouldBe CTUnion(CTAnyNode, CTList(CTInteger))
+    CTList(CTInteger union CTFloat) should equalWithTracing(CTList(CTNumber))
+    CTList(CTInteger) union CTList(CTFloat) should equalWithTracing(CTUnion(CTList(CTInteger), CTList(CTFloat)))
+    CTList(CTInteger) union CTAnyNode should equalWithTracing(CTUnion(CTAnyNode, CTList(CTInteger)))
 
-    //    CTAny union CTWildcard shouldBe CTAny
-    CTAny union CTVoid shouldBe CTAny
-    //    CTWildcard union CTAny shouldBe CTAny
-    CTVoid union CTAny shouldBe CTAny
+    //    CTAny union CTWildcard should equalWithTracing( CTAny
+    CTAny union CTVoid should equalWithTracing(CTAny)
+    //    CTWildcard union CTAny should equalWithTracing( CTAny
+    CTVoid union CTAny should equalWithTracing(CTAny)
 
-    CTNode("Car") union CTAnyNode shouldBe CTAnyNode
-    CTAnyNode union CTNode("Person") shouldBe CTAnyNode
+    CTNode("Car") union CTAnyNode should equalWithTracing(CTAnyNode)
+    CTAnyNode union CTNode("Person") should equalWithTracing(CTAnyNode)
   }
 
   it("union with nullables") {
-    CTInteger union CTFloat.nullable shouldBe CTNumber.nullable
-    CTFloat.nullable union CTInteger.nullable shouldBe CTNumber.nullable
-    CTNumber.nullable union CTString shouldBe CTUnion(CTFloat, CTInteger, CTString, CTNull)
+    CTInteger union CTFloat.nullable should equalWithTracing(CTNumber.nullable)
+    CTFloat.nullable union CTInteger.nullable should equalWithTracing(CTNumber.nullable)
+    CTNumber.nullable union CTString should equalWithTracing(CTUnion(CTFloat, CTInteger, CTString, CTNull))
 
-    //    CTNode union CTAnyRelationship.nullable shouldBe CTMap.nullable
-    //    CTAnyNode.nullable union CTMap shouldBe CTMap.nullable
-    CTString.nullable union CTBoolean.nullable shouldBe CTUnion(CTBoolean, CTString, CTNull)
-    CTAny union CTInteger.nullable shouldBe CTAny.nullable
+    //    CTNode union CTAnyRelationship.nullable should equalWithTracing( CTMap.nullable
+    //    CTAnyNode.nullable union CTMap should equalWithTracing( CTMap.nullable
+    CTString.nullable union CTBoolean.nullable should equalWithTracing(CTUnion(CTBoolean, CTString, CTNull))
+    CTAny union CTInteger.nullable should equalWithTracing(CTAny.nullable)
   }
 
   it("union with labels and types") {
-    CTAnyNode union CTNode("Person") shouldBe CTAnyNode
-    CTNode("Other") union CTNode("Person") shouldBe CTUnion(CTNode("Other"), CTNode("Person"))
-    CTNode("Person") union CTNode("Person") shouldBe CTNode("Person")
+    CTAnyNode union CTNode("Person") should equalWithTracing(CTAnyNode)
+    CTNode("Other") union CTNode("Person") should equalWithTracing(CTUnion(CTNode("Other"), CTNode("Person")))
+    CTNode("Person") union CTNode("Person") should equalWithTracing(CTNode("Person"))
 
     //    val n0 = CTLabel("L1").intersect(CTLabel("L2"))
     //    val lx = CTLabel("Lx")
@@ -343,53 +344,53 @@ class CypherTypesTest extends FunSpec with Matchers {
     //    val n2 = CTNode("L1", "L2", "Ly")
     //    val u = n1.union(n2)
 
-    //    CTNode("L1", "L2", "Lx") union CTNode("L1", "L2", "Ly") shouldBe CTNode("L1", "L2")
+    //    CTNode("L1", "L2", "Lx") union CTNode("L1", "L2", "Ly") should equalWithTracing( CTNode("L1", "L2")
 
-    CTAnyRelationship union CTRelationship("KNOWS") shouldBe CTAnyRelationship
-    CTRelationship("OTHER") union CTRelationship("KNOWS") shouldBe CTRelationship("KNOWS", "OTHER")
-    CTRelationship("KNOWS") union CTRelationship("KNOWS") shouldBe CTRelationship("KNOWS")
-    CTRelationship("T1", "T2", "Tx") union CTRelationship("T1", "T2", "Ty") shouldBe CTRelationship(
+    CTAnyRelationship union CTRelationship("KNOWS") should equalWithTracing(CTAnyRelationship)
+    CTRelationship("OTHER") union CTRelationship("KNOWS") should equalWithTracing(CTRelationship("KNOWS", "OTHER"))
+    CTRelationship("KNOWS") union CTRelationship("KNOWS") should equalWithTracing(CTRelationship("KNOWS"))
+    CTRelationship("T1", "T2", "Tx") union CTRelationship("T1", "T2", "Ty") should equalWithTracing(CTRelationship(
       "T1",
       "T2",
       "Tx",
-      "Ty")
+      "Ty"))
 
-    //    CTNode("Person") union CTRelationship("KNOWS") shouldBe CTMap
-    //    CTNode("Person") union CTRelationship shouldBe CTMap
-    //    CTRelationship("KNOWS") union CTNode("Person") shouldBe CTMap
-    //    CTRelationship("KNOWS") union CTNode shouldBe CTMap
+    //    CTNode("Person") union CTRelationship("KNOWS") should equalWithTracing( CTMap
+    //    CTNode("Person") union CTRelationship should equalWithTracing( CTMap
+    //    CTRelationship("KNOWS") union CTNode("Person") should equalWithTracing( CTMap
+    //    CTRelationship("KNOWS") union CTNode should equalWithTracing( CTMap
   }
 
   it("intersect") {
-    CTInteger intersect CTNumber shouldBe CTInteger
-    CTAny intersect CTNumber shouldBe CTNumber
+    CTInteger intersect CTNumber should equalWithTracing(CTInteger)
+    CTAny intersect CTNumber should equalWithTracing(CTNumber)
 
-    CTList(CTInteger) intersect CTList(CTFloat) shouldBe CTList(CTVoid)
-    CTList(CTInteger) intersect CTAnyNode shouldBe CTVoid
-    CTList(CTAny) intersect CTList(CTNumber) shouldBe CTList(CTNumber)
+    CTList(CTInteger) intersect CTList(CTFloat) should equalWithTracing(CTList(CTVoid))
+    CTList(CTInteger) intersect CTAnyNode should equalWithTracing(CTVoid)
+    CTList(CTAny) intersect CTList(CTNumber) should equalWithTracing(CTList(CTNumber))
 
-    CTVoid intersect CTInteger shouldBe CTVoid
-    CTVoid intersect CTAny shouldBe CTVoid
-    CTVoid intersect CTAny shouldBe CTVoid
+    CTVoid intersect CTInteger should equalWithTracing(CTVoid)
+    CTVoid intersect CTAny should equalWithTracing(CTVoid)
+    CTVoid intersect CTAny should equalWithTracing(CTVoid)
 
-    CTInteger intersect CTVoid shouldBe CTVoid
-    CTAny intersect CTVoid shouldBe CTVoid
+    CTInteger intersect CTVoid should equalWithTracing(CTVoid)
+    CTAny intersect CTVoid should equalWithTracing(CTVoid)
 
-    CTAnyNode intersect CTNode("Person") shouldBe CTNode("Person")
+    CTAnyNode intersect CTNode("Person") should equalWithTracing(CTNode("Person"))
   }
 
   it("intersect with labels and types") {
-    //    CTMap intersect CTNode shouldBe CTNode
-    //    CTMap intersect CTNode("Person") shouldBe CTNode("Person")
-    //    CTMap intersect CTRelationship("KNOWS") shouldBe CTRelationship("KNOWS")
+    //    CTMap intersect CTNode should equalWithTracing( CTNode
+    //    CTMap intersect CTNode("Person") should equalWithTracing( CTNode("Person")
+    //    CTMap intersect CTRelationship("KNOWS") should equalWithTracing( CTRelationship("KNOWS")
 
-    CTNode("Person") intersect CTAnyNode shouldBe CTNode("Person")
-    CTNode("Person") intersect CTNode("Foo") shouldBe CTNode("Person", "Foo")
-    CTNode("Person", "Foo") intersect CTNode("Foo") shouldBe CTNode("Person", "Foo")
+    CTNode("Person") intersect CTAnyNode should equalWithTracing(CTNode("Person"))
+    CTNode("Person") intersect CTNode("Foo") should equalWithTracing(CTNode("Person", "Foo"))
+    CTNode("Person", "Foo") intersect CTNode("Foo") should equalWithTracing(CTNode("Person", "Foo"))
 
-    CTRelationship("KNOWS") intersect CTAnyRelationship shouldBe CTRelationship("KNOWS")
-    CTRelationship("KNOWS") intersect CTRelationship("LOVES") shouldBe CTVoid
-    CTRelationship("KNOWS", "LOVES") intersect CTRelationship("LOVES") shouldBe CTRelationship("LOVES")
+    CTRelationship("KNOWS") intersect CTAnyRelationship should equalWithTracing(CTRelationship("KNOWS"))
+    CTRelationship("KNOWS") intersect CTRelationship("LOVES") should equalWithTracing(CTVoid)
+    CTRelationship("KNOWS", "LOVES") intersect CTRelationship("LOVES") should equalWithTracing(CTRelationship("LOVES"))
   }
 
   //  it("type equality between different types") {
@@ -404,30 +405,30 @@ class CypherTypesTest extends FunSpec with Matchers {
   //
   //        result match {
   //          case true =>
-  //            (t1 subTypeOf t2).maybetrue shouldBe true
-  //            (t2 subTypeOf t1).maybetrue shouldBe true
-  //            (t1 superTypeOf t2).maybetrue shouldBe true
-  //            (t2 superTypeOf t1).maybetrue shouldBe true
+  //            (t1 subTypeOf t2).maybetrue should equalWithTracing( true
+  //            (t2 subTypeOf t1).maybetrue should equalWithTracing( true
+  //            (t1 superTypeOf t2).maybetrue should equalWithTracing( true
+  //            (t2 superTypeOf t1).maybetrue should equalWithTracing( true
   //
   //          case false =>
   //            if (t1 subTypeOf t2 istrue)
-  //              (t2 subTypeOf t1).maybefalse shouldBe true
+  //              (t2 subTypeOf t1).maybefalse should equalWithTracing( true
   //
   //            if (t2 subTypeOf t1 istrue)
-  //              (t1 subTypeOf t2).maybefalse shouldBe true
+  //              (t1 subTypeOf t2).maybefalse should equalWithTracing( true
   //
   //            if (t1 superTypeOf t2 istrue)
-  //              (t2 superTypeOf t1).maybefalse shouldBe true
+  //              (t2 superTypeOf t1).maybefalse should equalWithTracing( true
   //
   //            if (t2 superTypeOf t1 istrue)
-  //              (t1 superTypeOf t2).maybefalse shouldBe true
+  //              (t1 superTypeOf t2).maybefalse should equalWithTracing( true
   //
   //          case Maybe =>
   //            (
   //              (t1.isWildcard || t2.isWildcard) ||
   //                (t1.isNullable && !t2.isNullable) ||
   //                (!t1.isNullable && t2.isNullable)
-  //            ) shouldBe true
+  //            ) should equalWithTracing( true
   //        }
   //      }
   //    }
@@ -436,8 +437,8 @@ class CypherTypesTest extends FunSpec with Matchers {
   it("antisymmetry of subtyping") {
     allTypes.foreach { t1 =>
       allTypes.foreach { t2 =>
-        if (t1 subTypeOf t2) (t2 subTypeOf t1) shouldBe (t2 == t1)
-        if (t1 superTypeOf t2) (t2 superTypeOf t1) shouldBe (t2 == t1)
+        if (t1 subTypeOf t2) (t2 subTypeOf t1) should equalWithTracing((t2 == t1))
+        if (t1 superTypeOf t2) (t2 superTypeOf t1) should equalWithTracing((t2 == t1))
       }
     }
   }
@@ -451,78 +452,78 @@ class CypherTypesTest extends FunSpec with Matchers {
   //  }
   //
   //  it("computing definite types (type erasure)") {
-  //    CTWildcard.wildcardErasedSuperType sameTypeAs CTAny shouldBe true
-  //    CTWildcard.nullable.wildcardErasedSuperType sameTypeAs CTAny.nullable shouldBe true
-  //    CTList(CTWildcard).wildcardErasedSuperType sameTypeAs CTList(CTAny) shouldBe true
-  //    CTList(CTWildcard.nullable).wildcardErasedSuperType sameTypeAs CTList(CTAny.nullable) shouldBe true
-  //    CTList(CTBoolean).wildcardErasedSuperType sameTypeAs CTList(CTBoolean) shouldBe true
-  //    CTList(CTBoolean).nullable.wildcardErasedSuperType sameTypeAs CTList(CTBoolean).nullable shouldBe true
+  //    CTWildcard.wildcardErasedSuperType sameTypeAs CTAny should equalWithTracing( true
+  //    CTWildcard.nullable.wildcardErasedSuperType sameTypeAs CTAny.nullable should equalWithTracing( true
+  //    CTList(CTWildcard).wildcardErasedSuperType sameTypeAs CTList(CTAny) should equalWithTracing( true
+  //    CTList(CTWildcard.nullable).wildcardErasedSuperType sameTypeAs CTList(CTAny.nullable) should equalWithTracing( true
+  //    CTList(CTBoolean).wildcardErasedSuperType sameTypeAs CTList(CTBoolean) should equalWithTracing( true
+  //    CTList(CTBoolean).nullable.wildcardErasedSuperType sameTypeAs CTList(CTBoolean).nullable should equalWithTracing( true
   //
-  //    CTWildcard.wildcardErasedSubType sameTypeAs CTVoid shouldBe true
-  //    CTWildcard.nullable.wildcardErasedSubType sameTypeAs CTNull shouldBe true
-  //    CTList(CTWildcard).wildcardErasedSubType sameTypeAs CTList(CTVoid) shouldBe true
-  //    CTList(CTWildcard.nullable).wildcardErasedSubType sameTypeAs CTList(CTNull) shouldBe true
-  //    CTList(CTBoolean).wildcardErasedSubType sameTypeAs CTList(CTBoolean) shouldBe true
-  //    CTList(CTBoolean).nullable.wildcardErasedSubType sameTypeAs CTList(CTBoolean).nullable shouldBe true
+  //    CTWildcard.wildcardErasedSubType sameTypeAs CTVoid should equalWithTracing( true
+  //    CTWildcard.nullable.wildcardErasedSubType sameTypeAs CTNull should equalWithTracing( true
+  //    CTList(CTWildcard).wildcardErasedSubType sameTypeAs CTList(CTVoid) should equalWithTracing( true
+  //    CTList(CTWildcard.nullable).wildcardErasedSubType sameTypeAs CTList(CTNull) should equalWithTracing( true
+  //    CTList(CTBoolean).wildcardErasedSubType sameTypeAs CTList(CTBoolean) should equalWithTracing( true
+  //    CTList(CTBoolean).nullable.wildcardErasedSubType sameTypeAs CTList(CTBoolean).nullable should equalWithTracing( true
   //  }
   //
   //  it("handling wildcard types") {
-  //    (CTAny superTypeOf CTWildcard) shouldBe true
-  //    (CTWildcard superTypeOf CTVoid) shouldBe true
-  //    (CTWildcard superTypeOf CTAny) shouldBe Maybe
-  //    (CTVoid superTypeOf CTWildcard) shouldBe Maybe
+  //    (CTAny superTypeOf CTWildcard) should equalWithTracing( true
+  //    (CTWildcard superTypeOf CTVoid) should equalWithTracing( true
+  //    (CTWildcard superTypeOf CTAny) should equalWithTracing( Maybe
+  //    (CTVoid superTypeOf CTWildcard) should equalWithTracing( Maybe
   //
-  //    (CTAny subTypeOf CTWildcard) shouldBe Maybe
-  //    (CTWildcard subTypeOf CTVoid) shouldBe Maybe
-  //    (CTWildcard subTypeOf CTAny) shouldBe true
-  //    (CTVoid subTypeOf CTWildcard) shouldBe true
-  //
-  //    materialTypes.foreach { t =>
-  //      (t union CTWildcard).wildcardErasedSuperType shouldBe CTAny
-  //    }
-  //    materialTypes.foreach { t =>
-  //      (t intersect CTWildcard).wildcardErasedSubType shouldBe CTVoid
-  //    }
+  //    (CTAny subTypeOf CTWildcard) should equalWithTracing( Maybe
+  //    (CTWildcard subTypeOf CTVoid) should equalWithTracing( Maybe
+  //    (CTWildcard subTypeOf CTAny) should equalWithTracing( true
+  //    (CTVoid subTypeOf CTWildcard) should equalWithTracing( true
   //
   //    materialTypes.foreach { t =>
-  //      (t union CTWildcard.nullable).wildcardErasedSuperType shouldBe CTAny.nullable
+  //      (t union CTWildcard).wildcardErasedSuperType should equalWithTracing( CTAny
   //    }
   //    materialTypes.foreach { t =>
-  //      (t intersect CTWildcard.nullable).wildcardErasedSubType shouldBe CTVoid
+  //      (t intersect CTWildcard).wildcardErasedSubType should equalWithTracing( CTVoid
+  //    }
+  //
+  //    materialTypes.foreach { t =>
+  //      (t union CTWildcard.nullable).wildcardErasedSuperType should equalWithTracing( CTAny.nullable
+  //    }
+  //    materialTypes.foreach { t =>
+  //      (t intersect CTWildcard.nullable).wildcardErasedSubType should equalWithTracing( CTVoid
   //    }
   //
   //    nullableTypes.foreach { t =>
-  //      (t union CTWildcard.nullable).wildcardErasedSuperType shouldBe CTAny.nullable
+  //      (t union CTWildcard.nullable).wildcardErasedSuperType should equalWithTracing( CTAny.nullable
   //    }
   //    nullableTypes.foreach { t =>
-  //      (t intersect CTWildcard.nullable).wildcardErasedSubType shouldBe CTNull
+  //      (t intersect CTWildcard.nullable).wildcardErasedSubType should equalWithTracing( CTNull
   //    }
   //
   //    nullableTypes.foreach { t =>
-  //      (t union CTWildcard).wildcardErasedSuperType shouldBe CTAny.nullable
+  //      (t union CTWildcard).wildcardErasedSuperType should equalWithTracing( CTAny.nullable
   //    }
   //    nullableTypes.foreach { t =>
-  //      (t intersect CTWildcard).wildcardErasedSubType shouldBe CTVoid
+  //      (t intersect CTWildcard).wildcardErasedSubType should equalWithTracing( CTVoid
   //    }
   //  }
   //
   //  it("contains wildcard") {
-  //    CTNode.containsWildcard shouldBe false
-  //    CTWildcard.containsWildcard shouldBe true
-  //    CTWildcard.nullable.containsWildcard shouldBe true
-  //    CTList(CTAny).containsWildcard shouldBe false
-  //    CTList(CTList(CTWildcard)).containsWildcard shouldBe true
-  //    CTList(CTList(CTWildcard.nullable)).containsWildcard shouldBe true
+  //    CTNode.containsWildcard should equalWithTracing( false
+  //    CTWildcard.containsWildcard should equalWithTracing( true
+  //    CTWildcard.nullable.containsWildcard should equalWithTracing( true
+  //    CTList(CTAny).containsWildcard should equalWithTracing( false
+  //    CTList(CTList(CTWildcard)).containsWildcard should equalWithTracing( true
+  //    CTList(CTList(CTWildcard.nullable)).containsWildcard should equalWithTracing( true
   //  }
   //
   //  it("contains nullable") {
-  //    CTNode.containsNullable shouldBe false
-  //    CTNode.nullable.containsNullable shouldBe true
-  //    CTWildcard.containsNullable shouldBe false
-  //    CTWildcard.nullable.containsNullable shouldBe true
-  //    CTList(CTAny).containsNullable shouldBe false
-  //    CTList(CTList(CTWildcard)).containsNullable shouldBe false
-  //    CTList(CTList(CTWildcard.nullable)).containsNullable shouldBe true
+  //    CTNode.containsNullable should equalWithTracing( false
+  //    CTNode.nullable.containsNullable should equalWithTracing( true
+  //    CTWildcard.containsNullable should equalWithTracing( false
+  //    CTWildcard.nullable.containsNullable should equalWithTracing( true
+  //    CTList(CTAny).containsNullable should equalWithTracing( false
+  //    CTList(CTList(CTWildcard)).containsNullable should equalWithTracing( false
+  //    CTList(CTList(CTWildcard.nullable)).containsNullable should equalWithTracing( true
   //  }
   //
   //  it("is inhabited") {
@@ -537,19 +538,19 @@ class CypherTypesTest extends FunSpec with Matchers {
   //  it("as nullable as") {
   //    materialTypes.foreach { t =>
   //      materialTypes.foreach { m =>
-  //        m.asNullableAs(t) should equal(m)
+  //        m.asNullableAs(t) should equalWithTracing(m)
   //      }
   //      nullableTypes.foreach { n =>
-  //        n.asNullableAs(t) should equal(n.material)
+  //        n.asNullableAs(t) should equalWithTracing(n.material)
   //      }
   //    }
   //
   //    nullableTypes.foreach { t =>
   //      materialTypes.foreach { m =>
-  //        m.asNullableAs(t) should equal(m.nullable)
+  //        m.asNullableAs(t) should equalWithTracing(m.nullable)
   //      }
   //      nullableTypes.foreach { n =>
-  //        n.asNullableAs(t) should equal(n)
+  //        n.asNullableAs(t) should equalWithTracing(n)
   //      }
   //    }
   //  }

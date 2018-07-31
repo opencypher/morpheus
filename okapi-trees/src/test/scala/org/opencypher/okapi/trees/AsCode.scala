@@ -24,9 +24,7 @@
  * described as "implementation extensions to Cypher" or as "proposed changes to
  * Cypher that are not yet approved by the openCypher community".
  */
-package org.opencypher.okapi.testing
-
-import org.opencypher.okapi.api.types.CypherType
+package org.opencypher.okapi.trees
 
 /**
   * Returns a string that can be pasted as an object definition for standard case classes,
@@ -53,17 +51,17 @@ object AsCode {
     if (specialMappings.isDefinedAt(a)) specialMappings(a)
     else {
       a match {
-        case null         => "null"
-        case s: String    => s""""$s""""
-        case p: Product   => productAsCode(p)
-        case t: Seq[_]    => traversableAsCode(t)
-        case t: Set[_]    => traversableAsCode(t)
+        case null => "null"
+        case s: String => s""""$s""""
+        case p: Product => productAsCode(p)
+        case t: Seq[_] => traversableAsCode(t)
+        case t: Set[_] => traversableAsCode(t)
         case t: Map[_, _] => traversableAsCode(t)
-        case b: Boolean   => b.toString
-        case i: Int       => i.toString
-        case l: Long      => l.toString
-        case f: Float     => f.toString
-        case d: Double    => d.toString
+        case b: Boolean => b.toString
+        case i: Int => i.toString
+        case l: Long => l.toString
+        case f: Float => f.toString
+        case d: Double => d.toString
         // Other objects are represented with their class name in lower case
         case other => s"${other.getClass.getSimpleName.toLowerCase}"
       }
@@ -71,7 +69,7 @@ object AsCode {
   }
 
   private def traversableAsCode(t: Traversable[_])(
-      implicit specialMappings: PartialFunction[Any, String] = Map.empty): String = {
+    implicit specialMappings: PartialFunction[Any, String] = Map.empty): String = {
     if (specialMappings.isDefinedAt(t)) specialMappings(t)
     else {
       val elementString = t.map(anyAsCode(_)).mkString(", ")
@@ -94,12 +92,7 @@ object AsCode {
     if (specialMappings.isDefinedAt(p)) specialMappings(p)
     else {
       if (p.productIterator.isEmpty) {
-        if (p.isInstanceOf[CypherType]) { // Special case for cypher type
-          val name = p.getClass.getSimpleName
-          if (name.endsWith("$")) name.dropRight(1) else name
-        } else {
-          p.toString
-        }
+        p.toString
       } else {
         s"${p.getClass.getSimpleName}(${p.productIterator.map(anyAsCode(_)(specialMappings)).mkString(", ")})"
       }

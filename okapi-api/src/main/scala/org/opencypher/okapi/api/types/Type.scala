@@ -33,7 +33,7 @@ import scala.reflect.ClassTag
 /**
   * Abstract class instead of trait in order to support `ClassTag`
   */
-abstract class Type[T <: Type[T] : ClassTag] { //extends AbstractTreeNode[T]
+abstract class Type[T <: Type[T] : ClassTag] extends AbstractTreeNode[T] {
   self: T =>
 
   def name: String
@@ -111,9 +111,13 @@ trait ContainerType[T <: Type[T]] extends Type[T] {
     case _ => super.intersect(other, tryReverseDirection)
   }
 
-  protected def isContainerSubType(other: T): Boolean = other match {
-    case c: ContainerType[T] if c.getClass.isAssignableFrom(getClass) => elementType.subTypeOf(c.elementType)
-    case _ => false
+  protected def isContainerSubType(other: T): Boolean = {
+    val ownClass = getClass
+    other match {
+      case c: ContainerType[T] if c.getClass.isAssignableFrom(ownClass) && elementType.subTypeOf(c.elementType) => true
+      case u: UnionType[T] if u.ors.exists(or => this.isContainerSubType(or)) => true
+      case _ => false
+    }
   }
 
   protected def intersectContainer(other: T): Option[T] = other match {
