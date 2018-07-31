@@ -36,7 +36,7 @@ import org.opencypher.okapi.api.value.CypherValue.CypherMap
 import org.opencypher.okapi.impl.exception.UnsupportedOperationException
 import org.opencypher.okapi.impl.graph.CypherCatalog
 import org.opencypher.okapi.relational.api.graph.{RelationalCypherGraph, RelationalCypherSession}
-import org.opencypher.okapi.relational.api.physical.RelationalRuntimeContext
+import org.opencypher.okapi.relational.api.planning.RelationalRuntimeContext
 import org.opencypher.spark.api.io._
 import org.opencypher.spark.impl.CAPSConverters._
 import org.opencypher.spark.impl.graph.CAPSGraphFactory

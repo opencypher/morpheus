@@ -45,9 +45,9 @@ import org.opencypher.okapi.ir.impl.{CatalogWithQuerySchemas, IRBuilder, IRBuild
 import org.opencypher.okapi.logical.api.configuration.LogicalConfiguration.PrintLogicalPlan
 import org.opencypher.okapi.logical.impl._
 import org.opencypher.okapi.relational.api.configuration.CoraConfiguration.{PrintOptimizedRelationalPlan, PrintQueryExecutionStages, PrintRelationalPlan}
-import org.opencypher.okapi.relational.api.physical.{RelationalCypherResult, RelationalPlannerContext}
+import org.opencypher.okapi.relational.api.planning.{RelationalCypherResult, RelationalPlannerContext}
 import org.opencypher.okapi.relational.api.table.RelationalCypherRecords
-import org.opencypher.okapi.relational.impl.physical.{RelationalOptimizer, RelationalPlanner}
+import org.opencypher.okapi.relational.impl.planning.{RelationalOptimizer, RelationalPlanner}
 import org.opencypher.spark.api.CAPSSession
 import org.opencypher.spark.impl.CAPSConverters._
 import org.opencypher.spark.impl.table.SparkFlatRelationalTable.DataFrameTable

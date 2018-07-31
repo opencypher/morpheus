@@ -24,23 +24,34 @@
  * described as "implementation extensions to Cypher" or as "proposed changes to
  * Cypher that are not yet approved by the openCypher community".
  */
-package org.opencypher.okapi.relational.api.physical
+package org.opencypher.okapi.relational.api.planning
 
-import org.opencypher.okapi.api.graph.CypherQueryPlans
-import org.opencypher.okapi.logical.impl.LogicalOperator
+import org.opencypher.okapi.api.graph.QualifiedGraphName
+import org.opencypher.okapi.api.value.CypherValue.CypherMap
+import org.opencypher.okapi.impl.exception.IllegalArgumentException
+import org.opencypher.okapi.relational.api.graph.{RelationalCypherGraph, RelationalCypherSession}
 import org.opencypher.okapi.relational.api.table.FlatRelationalTable
-import org.opencypher.okapi.relational.impl.operators.RelationalOperator
-import org.opencypher.okapi.trees.TreeNode
 
-case class QueryPlans[T <: FlatRelationalTable[T]](
-  logicalPlan: Option[TreeNode[LogicalOperator]],
-  relationalPlan: Option[TreeNode[RelationalOperator[T]]]) extends CypherQueryPlans {
-
-  override def logical: String = logicalPlan.map(_.pretty).getOrElse("")
-
-  override def relational: String = relationalPlan.map(_.pretty).getOrElse("")
-}
-
-object QueryPlans {
-  def empty: CypherQueryPlans = QueryPlans(None, None)
+// TODO: comment
+/**
+  *
+  * @param sessionCatalog Contains user-defined graphs used within the session
+  * @param parameters Query parameters
+  * @param constructedGraphCatalog Contains graphs that are created during query execution
+  * @tparam T
+  */
+case class RelationalRuntimeContext[T <: FlatRelationalTable[T]](
+  sessionCatalog: QualifiedGraphName => Option[RelationalCypherGraph[T]],
+  parameters: CypherMap = CypherMap.empty,
+  var constructedGraphCatalog: Map[QualifiedGraphName, RelationalCypherGraph[T]] = Map.empty[QualifiedGraphName, RelationalCypherGraph[T]]
+)(implicit val session: RelationalCypherSession[T]) {
+  /**
+    * Returns the graph referenced by the given QualifiedGraphName.
+    *
+    * @return back-end specific property graph
+    */
+  def resolveGraph(qgn: QualifiedGraphName): RelationalCypherGraph[T] = constructedGraphCatalog.get(qgn) match {
+    case None => sessionCatalog(qgn).getOrElse(throw IllegalArgumentException(s"a graph at $qgn"))
+    case Some(g) => g
+  }
 }

@@ -28,7 +28,7 @@ package org.opencypher.spark.testing
 
 import org.opencypher.okapi.api.graph.QualifiedGraphName
 import org.opencypher.okapi.relational.api.graph.RelationalCypherGraph
-import org.opencypher.okapi.relational.api.physical.RelationalRuntimeContext
+import org.opencypher.okapi.relational.api.planning.RelationalRuntimeContext
 import org.opencypher.okapi.testing.BaseTestSuite
 import org.opencypher.spark.impl.table.SparkFlatRelationalTable.DataFrameTable
 import org.opencypher.spark.testing.fixture.{CAPSSessionFixture, SparkSessionFixture}

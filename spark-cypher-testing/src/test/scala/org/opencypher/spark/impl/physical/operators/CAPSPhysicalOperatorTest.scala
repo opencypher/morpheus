@@ -29,7 +29,7 @@ package org.opencypher.spark.impl.physical.operators
 import org.apache.spark.sql.DataFrame
 import org.apache.spark.storage.StorageLevel
 import org.opencypher.okapi.api.graph.QualifiedGraphName
-import org.opencypher.okapi.relational.api.physical.RelationalRuntimeContext
+import org.opencypher.okapi.relational.api.planning.RelationalRuntimeContext
 import org.opencypher.okapi.relational.impl.operators.{Cache, RelationalOperator}
 import org.opencypher.okapi.relational.impl.table.RecordHeader
 import org.opencypher.spark.impl.table.SparkFlatRelationalTable.DataFrameTable

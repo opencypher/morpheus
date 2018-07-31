@@ -24,7 +24,7 @@
  * described as "implementation extensions to Cypher" or as "proposed changes to
  * Cypher that are not yet approved by the openCypher community".
  */
-package org.opencypher.okapi.relational.api.physical
+package org.opencypher.okapi.relational.api.planning
 
 import org.opencypher.okapi.api.graph.{CypherQueryPlans, CypherResult}
 import org.opencypher.okapi.impl.util.PrintOptions

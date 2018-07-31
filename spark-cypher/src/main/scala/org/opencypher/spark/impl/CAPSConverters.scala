@@ -30,7 +30,7 @@ import org.opencypher.okapi.api.graph.{CypherResult, CypherSession, PropertyGrap
 import org.opencypher.okapi.api.table.CypherRecords
 import org.opencypher.okapi.impl.exception.UnsupportedOperationException
 import org.opencypher.okapi.relational.api.graph.RelationalCypherGraph
-import org.opencypher.okapi.relational.api.physical.RelationalCypherResult
+import org.opencypher.okapi.relational.api.planning.RelationalCypherResult
 import org.opencypher.okapi.relational.api.table.RelationalCypherRecords
 import org.opencypher.spark.api.CAPSSession
 import org.opencypher.spark.impl.table.SparkFlatRelationalTable.DataFrameTable

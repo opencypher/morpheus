@@ -30,11 +30,11 @@ import org.opencypher.okapi.api.graph.{PropertyGraph, QualifiedGraphName}
 import org.opencypher.okapi.api.schema.Schema
 import org.opencypher.okapi.api.types.{CTNode, CTRelationship, CypherType}
 import org.opencypher.okapi.impl.exception.UnsupportedOperationException
-import org.opencypher.okapi.relational.api.physical.RelationalRuntimeContext
+import org.opencypher.okapi.relational.api.planning.RelationalRuntimeContext
 import org.opencypher.okapi.relational.api.table.{FlatRelationalTable, RelationalCypherRecords}
 import org.opencypher.okapi.relational.api.tagging.TagSupport._
 import org.opencypher.okapi.relational.impl.operators.RelationalOperator
-import org.opencypher.okapi.relational.impl.physical.RelationalPlanner._
+import org.opencypher.okapi.relational.impl.planning.RelationalPlanner._
 
 trait RelationalCypherGraphFactory[T <: FlatRelationalTable[T]] {
 

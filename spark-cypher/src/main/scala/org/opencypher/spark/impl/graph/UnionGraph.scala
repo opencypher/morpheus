@@ -30,11 +30,11 @@ import org.opencypher.okapi.api.schema.Schema
 import org.opencypher.okapi.api.types.CypherType
 import org.opencypher.okapi.ir.api.expr.Var
 import org.opencypher.okapi.relational.api.graph.RelationalCypherGraph
-import org.opencypher.okapi.relational.api.physical.RelationalRuntimeContext
+import org.opencypher.okapi.relational.api.planning.RelationalRuntimeContext
 import org.opencypher.okapi.relational.api.schema.RelationalSchema._
 import org.opencypher.okapi.relational.impl.operators._
-import org.opencypher.okapi.relational.impl.physical.RelationalPlanner._
-import org.opencypher.okapi.relational.impl.physical.RetagVariable
+import org.opencypher.okapi.relational.impl.planning.RelationalPlanner._
+import org.opencypher.okapi.relational.impl.planning.RetagVariable
 import org.opencypher.spark.api.CAPSSession
 import org.opencypher.spark.impl.CAPSRecords
 import org.opencypher.spark.impl.table.SparkFlatRelationalTable.DataFrameTable

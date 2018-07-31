@@ -24,29 +24,23 @@
  * described as "implementation extensions to Cypher" or as "proposed changes to
  * Cypher that are not yet approved by the openCypher community".
  */
-package org.opencypher.okapi.relational.api.physical
+package org.opencypher.okapi.relational.api.planning
 
-import org.opencypher.okapi.api.graph.QualifiedGraphName
-import org.opencypher.okapi.api.value.CypherValue.CypherMap
-import org.opencypher.okapi.ir.impl.CatalogWithQuerySchemas
-import org.opencypher.okapi.relational.api.graph.RelationalCypherSession
-import org.opencypher.okapi.relational.api.table.{FlatRelationalTable, RelationalCypherRecords}
+import org.opencypher.okapi.api.graph.CypherQueryPlans
+import org.opencypher.okapi.logical.impl.LogicalOperator
+import org.opencypher.okapi.relational.api.table.FlatRelationalTable
 import org.opencypher.okapi.relational.impl.operators.RelationalOperator
+import org.opencypher.okapi.trees.TreeNode
 
-// TODO: document
-/**
-  *
-  * @param session      Refers to the session in which that query is executed.
-  * @param constructedGraphPlans
-  * @param inputRecords Initial records for physical planning.
-  * @param catalogWithQuerySchemas Stores session graphs and constructed graph schemas
-  * @param parameters   Query parameters
-  * @tparam T
-  */
-case class RelationalPlannerContext[T <: FlatRelationalTable[T]](
-  session: RelationalCypherSession[T],
-  inputRecords: RelationalCypherRecords[T],
-  parameters: CypherMap = CypherMap.empty,
-  catalogWithQuerySchemas: CatalogWithQuerySchemas,
-  var constructedGraphPlans: Map[QualifiedGraphName, RelationalOperator[T]] = Map.empty[QualifiedGraphName, RelationalOperator[T]]
-)
+case class QueryPlans[T <: FlatRelationalTable[T]](
+  logicalPlan: Option[TreeNode[LogicalOperator]],
+  relationalPlan: Option[TreeNode[RelationalOperator[T]]]) extends CypherQueryPlans {
+
+  override def logical: String = logicalPlan.map(_.pretty).getOrElse("")
+
+  override def relational: String = relationalPlan.map(_.pretty).getOrElse("")
+}
+
+object QueryPlans {
+  def empty: CypherQueryPlans = QueryPlans(None, None)
+}
