@@ -60,6 +60,8 @@ trait LogicalGraph {
   override def toString = s"${getClass.getSimpleName}($args)"
 
   protected def args: String
+
+
 }
 
 final case class LogicalCatalogGraph(qualifiedGraphName: QualifiedGraphName, schema: Schema) extends LogicalGraph {

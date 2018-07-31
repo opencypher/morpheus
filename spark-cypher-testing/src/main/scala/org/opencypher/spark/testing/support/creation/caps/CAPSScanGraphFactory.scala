@@ -36,7 +36,7 @@ import org.opencypher.spark.api.io.GraphEntity.sourceIdKey
 import org.opencypher.spark.api.io.Relationship.{sourceEndNodeKey, sourceStartNodeKey}
 import org.opencypher.spark.api.io.{CAPSNodeTable, CAPSRelationshipTable}
 import org.opencypher.spark.impl.convert.SparkConversions._
-import org.opencypher.spark.impl.{CAPSGraph, CAPSScanGraph}
+import org.opencypher.spark.impl.graph.CAPSScanGraph
 import org.opencypher.spark.schema.CAPSSchema._
 
 import scala.collection.JavaConverters._
@@ -45,7 +45,7 @@ object CAPSScanGraphFactory extends CAPSTestGraphFactory {
 
   val tableEntityIdKey = s"___$sourceIdKey"
 
-  override def apply(propertyGraph: InMemoryTestGraph)(implicit caps: CAPSSession): CAPSGraph = {
+  override def apply(propertyGraph: InMemoryTestGraph)(implicit caps: CAPSSession): CAPSScanGraph = {
     val schema = computeSchema(propertyGraph).asCaps
 
     val nodeScans = schema.labelCombinations.combos.map { labels =>

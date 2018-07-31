@@ -100,6 +100,7 @@ final case class SchemaImpl(
   private def graphContainsNodeWithoutLabel: Boolean = labelPropertyMap.map.keySet.contains(Set.empty)
 
   override lazy val impliedLabels: ImpliedLabels = {
+    // TODO: inline and simplify
     val implications = self.foldAndProduce(Map.empty[String, Set[String]])(_ intersect _ - _, _ - _)
 
     ImpliedLabels(implications)

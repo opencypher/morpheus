@@ -27,7 +27,6 @@
 package org.opencypher.spark.impl.acceptance
 
 import org.opencypher.okapi.api.value.CypherValue.CypherMap
-import org.opencypher.okapi.relational.api.configuration.CoraConfiguration.{PrintFlatPlan, PrintPhysicalPlan}
 import org.opencypher.okapi.testing.Bag
 import org.opencypher.spark.testing.CAPSTestSuite
 import org.scalatest.DoNotDiscover
@@ -62,7 +61,7 @@ class ExpandIntoBehaviour extends CAPSTestSuite with DefaultGraphInit {
       """.stripMargin)
 
     // Then
-    result.getRecords.toMaps should equal(Bag(
+    result.records.toMaps should equal(Bag(
       CypherMap(
         "p1.name" -> "Alice",
         "p2.name" -> "Bob",
@@ -100,7 +99,7 @@ class ExpandIntoBehaviour extends CAPSTestSuite with DefaultGraphInit {
       """.stripMargin)
 
     // Then
-    result.getRecords.toMaps should equal(Bag(
+    result.records.toMaps should equal(Bag(
       CypherMap(
         "p1.name" -> "Alice",
         "p2.name" -> "Bob",
@@ -137,7 +136,7 @@ class ExpandIntoBehaviour extends CAPSTestSuite with DefaultGraphInit {
     )
 
     // Then
-    result.getRecords.toMaps should equal(Bag(
+    result.records.toMaps should equal(Bag(
       CypherMap(
         "p1.name" -> "Alice",
         "p2.name" -> "Bob",

@@ -33,7 +33,10 @@ import org.opencypher.okapi.api.table.{CypherPrintable, CypherRecords}
   *
   * The result of a Cypher query consists of a table of records and a set of named graphs.
   */
+// TODO: make graph and records non-optional
 trait CypherResult extends CypherPrintable {
+
+  type Graph <: PropertyGraph
 
   /**
     * Retrieves the graph if one is returned by the query.
@@ -41,14 +44,14 @@ trait CypherResult extends CypherPrintable {
     *
     * @return a graph if the query returned one, `None` otherwise
     */
-  def graph: Option[PropertyGraph]
+  def getGraph: Option[Graph]
 
   /**
     * Retrieves the graph if one is returned by the query, otherwise an exception is thrown.
     *
     * @return graph as returned by the query.
     */
-  def getGraph: PropertyGraph = graph.get
+  def graph: Graph = getGraph.get
 
   /**
     * The table of records if one was returned by the query.
@@ -56,14 +59,14 @@ trait CypherResult extends CypherPrintable {
     *
     * @return a table of records, `None` otherwise.
     */
-  def records: Option[CypherRecords]
+  def getRecords: Option[CypherRecords]
 
   /**
     * The table of records if one was returned by the query, otherwise an exception is thrown.
     *
     * @return a table of records.
     */
-  def getRecords: CypherRecords = records.get
+  def records: CypherRecords = getRecords.get
 
   /**
     * API for printable plans. This is used for explaining the execution plan of a Cypher query.
@@ -75,5 +78,5 @@ trait CypherResult extends CypherPrintable {
 trait CypherQueryPlans {
   def logical: String
 
-  def physical: String
+  def relational: String
 }

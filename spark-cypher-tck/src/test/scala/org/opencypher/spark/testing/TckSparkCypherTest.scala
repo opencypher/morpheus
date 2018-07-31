@@ -30,7 +30,7 @@ import java.io.File
 
 import org.opencypher.okapi.tck.test.Tags.{BlackList, WhiteList}
 import org.opencypher.okapi.tck.test.{ScenariosFor, TCKGraph}
-import org.opencypher.spark.impl.CAPSGraph
+import org.opencypher.spark.impl.graph.CAPSGraph
 import org.opencypher.spark.testing.support.creation.caps.{CAPSScanGraphFactory, CAPSTestGraphFactory}
 import org.opencypher.tools.tck.api.CypherTCK
 import org.scalatest.Tag
@@ -58,7 +58,7 @@ class TckSparkCypherTest extends CAPSTestSuite {
     forAll(scenarios.whiteList) { scenario =>
       if (!additional_blacklist.contains(scenario.toString)) {
         test(s"[${factory.name}, ${WhiteList.name}] $scenario", WhiteList, TckCapsTag, Tag(factory.name)) {
-          scenario(TCKGraph(factory, CAPSGraph.empty)).execute()
+          scenario(TCKGraph(factory, caps.graphs.empty)).execute()
         }
       }
     }
@@ -67,7 +67,7 @@ class TckSparkCypherTest extends CAPSTestSuite {
   // black list tests are run on default factory
   forAll(scenarios.blackList) { scenario =>
     test(s"[${defaultFactory.name}, ${BlackList.name}] $scenario", BlackList, TckCapsTag) {
-      val tckGraph = TCKGraph(defaultFactory, CAPSGraph.empty)
+      val tckGraph = TCKGraph(defaultFactory, caps.graphs.empty)
 
       Try(scenario(tckGraph).execute()) match {
         case Success(_) =>
@@ -84,11 +84,11 @@ class TckSparkCypherTest extends CAPSTestSuite {
     CypherTCK
       .parseFilesystemFeature(file)
       .scenarios
-      .foreach(scenario => scenario(TCKGraph(defaultFactory, CAPSGraph.empty)).execute())
+      .foreach(scenario => scenario(TCKGraph(defaultFactory, caps.graphs.empty)).execute())
   }
 
   ignore("run Single Scenario") {
     scenarios.get("A simple pattern with one bound endpoint")
-      .foreach(scenario => scenario(TCKGraph(defaultFactory, CAPSGraph.empty)).execute())
+      .foreach(scenario => scenario(TCKGraph(defaultFactory, caps.graphs.empty)).execute())
   }
 }

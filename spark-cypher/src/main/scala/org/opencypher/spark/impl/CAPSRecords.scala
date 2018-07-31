@@ -34,33 +34,47 @@ import org.opencypher.okapi.api.types._
 import org.opencypher.okapi.api.value.CypherValue.{CypherMap, CypherValue}
 import org.opencypher.okapi.impl.table._
 import org.opencypher.okapi.impl.util.PrintOptions
-import org.opencypher.okapi.relational.api.table.RelationalCypherRecords
+import org.opencypher.okapi.relational.api.io.EntityTable
+import org.opencypher.okapi.relational.api.table.{RelationalCypherRecords, RelationalCypherRecordsFactory}
 import org.opencypher.okapi.relational.impl.table._
 import org.opencypher.spark.api.CAPSSession
-import org.opencypher.spark.api.io.CAPSEntityTable
 import org.opencypher.spark.impl.DataFrameOps._
 import org.opencypher.spark.impl.convert.SparkConversions._
 import org.opencypher.spark.impl.convert.rowToCypherMap
-import org.opencypher.spark.impl.table.SparkFlatRelationalTable._
+import org.opencypher.spark.impl.table.SparkTable._
 
 import scala.collection.JavaConverters._
 
-object CAPSRecords {
+case class CAPSRecordsFactory(implicit caps: CAPSSession) extends RelationalCypherRecordsFactory[DataFrameTable] {
 
-  def empty(initialHeader: RecordHeader = RecordHeader.empty)(implicit caps: CAPSSession): CAPSRecords = {
+  override type Records = CAPSRecords
+
+  override def unit(): CAPSRecords = {
+    val initialDataFrame = caps.sparkSession.createDataFrame(Seq(EmptyRow()))
+    CAPSRecords(RecordHeader.empty, initialDataFrame)
+  }
+
+  override def empty(initialHeader: RecordHeader = RecordHeader.empty): CAPSRecords = {
     val initialSparkStructType = initialHeader.toStructType
     val initialDataFrame = caps.sparkSession.createDataFrame(Collections.emptyList[Row](), initialSparkStructType)
     CAPSRecords(initialHeader, initialDataFrame)
   }
 
-  def unit()(implicit caps: CAPSSession): CAPSRecords = {
-    val initialDataFrame = caps.sparkSession.createDataFrame(Seq(EmptyRow()))
-    CAPSRecords(RecordHeader.empty, initialDataFrame)
-  }
-
-  def create(entityTable: CAPSEntityTable)(implicit caps: CAPSSession): CAPSRecords = {
+  override def fromEntityTable(entityTable: EntityTable[DataFrameTable]): CAPSRecords = {
     val withCypherCompatibleTypes = entityTable.table.df.withCypherCompatibleTypes
     CAPSRecords(entityTable.header, withCypherCompatibleTypes)
+  }
+
+  override def from(
+    header: RecordHeader,
+    table: DataFrameTable,
+    maybeDisplayNames: Option[Seq[String]]
+  ): CAPSRecords = {
+    val displayNames = maybeDisplayNames match {
+      case s@Some(_) => s
+      case None => Some(header.vars.map(_.withoutType).toSeq)
+    }
+    CAPSRecords(header, table, displayNames)
   }
 
   /**
@@ -76,27 +90,19 @@ object CAPSRecords {
   }
 
   private case class EmptyRow()
-
 }
+
 
 case class CAPSRecords(
   header: RecordHeader,
   table: DataFrameTable,
   override val logicalColumns: Option[Seq[String]] = None
-)
-  extends RelationalCypherRecords[DataFrameTable] with RecordBehaviour {
-  override type R = CAPSRecords
+)(implicit session: CAPSSession) extends RelationalCypherRecords[DataFrameTable] with RecordBehaviour {
+  override type Records = CAPSRecords
 
   def df: DataFrame = table.df
 
-  override def from(header: RecordHeader, table: DataFrameTable, logicalColumns: Option[Seq[String]]): CAPSRecords = {
-    copy(header, table, logicalColumns match {
-      case s@Some(_) => s
-      case None => Some(header.vars.map(_.withoutType).toSeq)
-    })
-  }
-
-  def cache(): CAPSRecords = {
+  override def cache(): CAPSRecords = {
     df.cache()
     this
   }

@@ -42,7 +42,7 @@ import org.opencypher.okapi.api.value.CypherValue.CypherMap
   *
   * @see [[https://github.com/opencypher/openCypher/blob/master/docs/property-graph-model.adoc openCypher Property Graph Model]]
   */
-trait PropertyGraph extends GraphOperations {
+trait PropertyGraph {
 
   /**
     * The schema that describes this graph.
@@ -61,11 +61,12 @@ trait PropertyGraph extends GraphOperations {
   /**
     * Returns all nodes in this graph with the given [[org.opencypher.okapi.api.types.CTNode]] type.
     *
-    * @param name           field name for the returned nodes
-    * @param nodeCypherType node type used for selection
+    * @param name            field name for the returned nodes
+    * @param nodeCypherType  node type used for selection
+    * @param exactLabelMatch return only nodes that have exactly the given labels
     * @return table of nodes of the specified type
     */
-  def nodes(name: String, nodeCypherType: CTNode = CTNode): CypherRecords
+  def nodes(name: String, nodeCypherType: CTNode = CTNode, exactLabelMatch: Boolean = false): CypherRecords
 
   /**
     * Returns all relationships in this graph with the given [[org.opencypher.okapi.api.types.CTRelationship]] type.
@@ -77,12 +78,27 @@ trait PropertyGraph extends GraphOperations {
   def relationships(name: String, relCypherType: CTRelationship = CTRelationship): CypherRecords
 
   /**
+    * Constructs the union of this graph and the argument graphs. Note that the argument graphs have to
+    * be managed by the same session as this graph.
+    *
+    * This operation does not merge any nodes or relationships, but simply creates a new graph consisting
+    * of all nodes and relationships of the argument graphs.
+    *
+    * @param others argument graphs with which to union
+    * @return union of this and the argument graph
+    */
+  def unionAll(others: PropertyGraph*): PropertyGraph
+
+  /**
     * Executes a Cypher query in the session that manages this graph, using this graph as the input graph.
     *
     * @param query      Cypher query to execute
     * @param parameters parameters used by the Cypher query
     * @return result of the query.
     */
-  def cypher(query: String, parameters: CypherMap = CypherMap.empty, drivingTable: Option[CypherRecords] = None): CypherResult =
-    session.cypherOnGraph(this, query, parameters, drivingTable)
+  def cypher(
+    query: String,
+    parameters: CypherMap = CypherMap.empty,
+    drivingTable: Option[CypherRecords] = None
+  ): CypherResult = session.cypherOnGraph(this, query, parameters, drivingTable)
 }

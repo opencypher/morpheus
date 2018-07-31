@@ -32,7 +32,6 @@ import org.opencypher.okapi.api.types.CTString
 import org.opencypher.okapi.testing.propertygraph.CreateGraphFactory
 import org.opencypher.spark.api.io.{CAPSNodeTable, CAPSRelationshipTable}
 import org.opencypher.spark.impl.CAPSConverters._
-import org.opencypher.spark.impl.CAPSGraph
 import org.opencypher.spark.schema.CAPSSchema._
 import org.opencypher.spark.testing.CAPSTestSuite
 import org.opencypher.spark.testing.support.GraphMatchingTestSupport
@@ -96,12 +95,12 @@ abstract class CAPSTestGraphFactoryTest extends CAPSTestSuite with GraphMatching
 
   test("testAsScanGraph") {
     val propertyGraph = CreateGraphFactory(createQuery)
-    factory(propertyGraph).asCaps shouldMatch CAPSGraph.create(personTable, languageTable, knowsScan)
+    factory(propertyGraph).asCaps shouldMatch caps.graphs.create(personTable, languageTable, knowsScan)
   }
 }
 
-class CAPSPatternGraphFactoryTest extends CAPSTestGraphFactoryTest {
-  override def factory: CAPSTestGraphFactory = CAPSPatternGraphFactory
+class SingleTableGraphFactoryTest extends CAPSTestGraphFactoryTest {
+  override def factory: CAPSTestGraphFactory = SingleTableGraphFactory
 }
 
 class CAPSScanGraphFactoryTest extends CAPSTestGraphFactoryTest {

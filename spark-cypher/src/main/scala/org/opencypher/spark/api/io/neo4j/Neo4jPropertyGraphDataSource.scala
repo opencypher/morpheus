@@ -31,7 +31,7 @@ import org.apache.spark.sql.types.StructType
 import org.opencypher.okapi.api.graph.{GraphName, PropertyGraph}
 import org.opencypher.okapi.api.schema.PropertyKeys.PropertyKeys
 import org.opencypher.okapi.api.schema.{LabelPropertyMap, RelTypePropertyMap, Schema}
-import org.opencypher.okapi.api.types.CTRelationship
+import org.opencypher.okapi.api.types.{CTNode, CTRelationship}
 import org.opencypher.okapi.api.value.CypherValue.CypherList
 import org.opencypher.okapi.impl.exception.UnsupportedOperationException
 import org.opencypher.okapi.impl.schema.SchemaImpl
@@ -66,6 +66,8 @@ case class Neo4jPropertyGraphDataSource(
 )(implicit session: CAPSSession)
   extends AbstractPropertyGraphDataSource {
 
+  graphNameCache += entireGraphName
+
   private implicit class RichGraphName(graphName: GraphName) {
     def metaLabel: Option[String] = graphName match {
       case `entireGraphName` => None
@@ -95,11 +97,6 @@ case class Neo4jPropertyGraphDataSource(
   }
 
   override def tableStorageFormat: String = "neo4j"
-
-  override def hasGraph(graphName: GraphName): Boolean = graphName match {
-    case `defaultEntireGraphName` => true
-    case _ => super.hasGraph(graphName)
-  }
 
   override protected def listGraphNames: List[String] = {
     val labelResult = config.cypher(
@@ -195,7 +192,7 @@ case class Neo4jPropertyGraphDataSource(
     }
 
     graph.schema.labelCombinations.combos.foreach { combo =>
-      graph.asCaps.nodesWithExactLabels("n", combo)
+      graph.nodes("n", CTNode(combo), exactLabelMatch = true)
         .asCaps
         .toCypherMaps
         .coalesce(executorCount)

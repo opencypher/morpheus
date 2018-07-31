@@ -42,7 +42,7 @@ class AggregationBehaviour extends CAPSTestSuite with DefaultGraphInit {
 
       val result = graph.cypher("MATCH (n) WITH AVG(n.val) AS res RETURN res")
 
-      result.getRecords.collect.toBag should equal(Bag(
+      result.records.collect.toBag should equal(Bag(
         CypherMap("res" -> 4)
       ))
     }
@@ -52,7 +52,7 @@ class AggregationBehaviour extends CAPSTestSuite with DefaultGraphInit {
 
       val result = graph.cypher("MATCH (n) RETURN AVG(n.val) AS res")
 
-      result.getRecords.collect.toBag should equal(Bag(
+      result.records.collect.toBag should equal(Bag(
         CypherMap("res" -> 4)
       ))
     }
@@ -62,7 +62,7 @@ class AggregationBehaviour extends CAPSTestSuite with DefaultGraphInit {
 
       val result = graph.cypher("MATCH (n) RETURN AVG(n.val)")
 
-      result.getRecords.toMaps should equal(Bag(
+      result.records.toMaps should equal(Bag(
         CypherMap("AVG(n.val)" -> 4)
       ))
     }
@@ -72,7 +72,7 @@ class AggregationBehaviour extends CAPSTestSuite with DefaultGraphInit {
 
       val result = graph.cypher("MATCH (n) WITH AVG(n.val) AS res RETURN res")
 
-      result.getRecords.toMaps should equal(Bag(
+      result.records.toMaps should equal(Bag(
         CypherMap("res" -> 3.5)
       ))
     }
@@ -82,7 +82,7 @@ class AggregationBehaviour extends CAPSTestSuite with DefaultGraphInit {
 
       val result = graph.cypher("MATCH (n) RETURN AVG(n.val) AS res")
 
-      result.getRecords.toMaps should equal(Bag(
+      result.records.toMaps should equal(Bag(
         CypherMap("res" -> 3.5)
       ))
     }
@@ -92,7 +92,7 @@ class AggregationBehaviour extends CAPSTestSuite with DefaultGraphInit {
 
       val result = graph.cypher("MATCH (n) WITH AVG(n.val) AS res RETURN res")
 
-      result.getRecords.toMaps should equal(Bag(
+      result.records.toMaps should equal(Bag(
         CypherMap("res" -> 32.5)
       ))
     }
@@ -102,7 +102,7 @@ class AggregationBehaviour extends CAPSTestSuite with DefaultGraphInit {
 
       val result = graph.cypher("MATCH (n) RETURN AVG(n.val) AS res")
 
-      result.getRecords.toMaps should equal(Bag(
+      result.records.toMaps should equal(Bag(
         CypherMap("res" -> 32.5)
       ))
     }
@@ -112,7 +112,7 @@ class AggregationBehaviour extends CAPSTestSuite with DefaultGraphInit {
 
       val result = graph.cypher("MATCH (n) WITH AVG(n.val) AS res RETURN res")
 
-      result.getRecords.toMaps should equal(Bag(
+      result.records.toMaps should equal(Bag(
         CypherMap("res" -> null)
       ))
     }
@@ -122,7 +122,7 @@ class AggregationBehaviour extends CAPSTestSuite with DefaultGraphInit {
 
       val result = graph.cypher("MATCH (n) RETURN AVG(n.val) AS res")
 
-      result.getRecords.toMaps should equal(Bag(
+      result.records.toMaps should equal(Bag(
         CypherMap("res" -> null)
       ))
     }
@@ -135,7 +135,7 @@ class AggregationBehaviour extends CAPSTestSuite with DefaultGraphInit {
 
       val result = graph.cypher("MATCH (n) WITH count(*) AS nbrRows RETURN nbrRows")
 
-      result.getRecords.toMaps should equal(Bag(
+      result.records.toMaps should equal(Bag(
         CypherMap("nbrRows" -> 6)
       ))
     }
@@ -145,7 +145,7 @@ class AggregationBehaviour extends CAPSTestSuite with DefaultGraphInit {
 
       val result = graph.cypher("MATCH (n) RETURN count(*) AS nbrRows")
 
-      result.getRecords.toMaps should equal(Bag(
+      result.records.toMaps should equal(Bag(
         CypherMap("nbrRows" -> 6)
       ))
     }
@@ -155,7 +155,7 @@ class AggregationBehaviour extends CAPSTestSuite with DefaultGraphInit {
 
       val result = graph.cypher("MATCH (n) RETURN count(n) AS nbrRows")
 
-      result.getRecords.toMaps should equal(Bag(
+      result.records.toMaps should equal(Bag(
         CypherMap("nbrRows" -> 6)
       ))
     }
@@ -165,7 +165,7 @@ class AggregationBehaviour extends CAPSTestSuite with DefaultGraphInit {
 
       val result = graph.cypher("MATCH (n) RETURN count(n)")
 
-      result.getRecords.toMaps should equal(Bag(
+      result.records.toMaps should equal(Bag(
         CypherMap("count(n)" -> 6)
       ))
     }
@@ -175,7 +175,7 @@ class AggregationBehaviour extends CAPSTestSuite with DefaultGraphInit {
 
       val result = graph.cypher("MATCH (n) RETURN count(*)")
 
-      result.getRecords.toMaps should equal(Bag(
+      result.records.toMaps should equal(Bag(
         CypherMap("count(*)" -> 6)
       ))
     }
@@ -185,7 +185,7 @@ class AggregationBehaviour extends CAPSTestSuite with DefaultGraphInit {
 
       val result = graph.cypher("MATCH (n) WITH count(n.name) AS nonNullNames RETURN nonNullNames")
 
-      result.getRecords.toMaps should equal(Bag(
+      result.records.toMaps should equal(Bag(
         CypherMap("nonNullNames" -> 3)
       ))
     }
@@ -195,7 +195,7 @@ class AggregationBehaviour extends CAPSTestSuite with DefaultGraphInit {
 
       val result = graph.cypher("MATCH (n) WITH count(n) AS nodes RETURN nodes")
 
-      result.getRecords.toMaps should equal(Bag(
+      result.records.toMaps should equal(Bag(
         CypherMap("nodes" -> 6)
       ))
     }
@@ -205,7 +205,7 @@ class AggregationBehaviour extends CAPSTestSuite with DefaultGraphInit {
 
       val result = graph.cypher("MATCH (n)-->(b:B) WITH count(b) AS nodes RETURN nodes")
 
-      result.getRecords.toMaps should equal(Bag(
+      result.records.toMaps should equal(Bag(
         CypherMap("nodes" -> 2)
       ))
     }
@@ -215,7 +215,7 @@ class AggregationBehaviour extends CAPSTestSuite with DefaultGraphInit {
 
       val result = graph.cypher("MATCH (n) RETURN n.name as name, count(*) AS amount")
 
-      result.getRecords.toMaps should equal(Bag(
+      result.records.toMaps should equal(Bag(
         CypherMap("name" -> "foo", "amount" -> 2),
         CypherMap("name" -> null, "amount" -> 3),
         CypherMap("name" -> "baz", "amount" -> 1)
@@ -227,7 +227,7 @@ class AggregationBehaviour extends CAPSTestSuite with DefaultGraphInit {
 
       val result = graph.cypher("MATCH (n) WITH n.name as name, count(*) AS amount RETURN name, amount")
 
-      result.getRecords.toMaps should equal(Bag(
+      result.records.toMaps should equal(Bag(
         CypherMap("name" -> "foo", "amount" -> 2),
         CypherMap("name" -> null, "amount" -> 3),
         CypherMap("name" -> "baz", "amount" -> 1)
@@ -240,7 +240,7 @@ class AggregationBehaviour extends CAPSTestSuite with DefaultGraphInit {
       val result = graph
         .cypher("MATCH (n) WITH n.name AS name, n.age AS age, count(*) AS amount RETURN name, age, amount")
 
-      result.getRecords.toMaps should equal(Bag(
+      result.records.toMaps should equal(Bag(
         CypherMap("name" -> "foo", "age" -> 23, "amount" -> 1),
         CypherMap("name" -> "foo", "age" -> 42, "amount" -> 2),
         CypherMap("name" -> "baz", "age" -> 23, "amount" -> 1),
@@ -264,7 +264,7 @@ class AggregationBehaviour extends CAPSTestSuite with DefaultGraphInit {
           |       count(distinct b.val) as val
         """.stripMargin)
 
-      result.getRecords.toMaps should equal(Bag(
+      result.records.toMaps should equal(Bag(
         CypherMap("a.id" -> 1, "val" -> 1)
       ))
     }
@@ -277,7 +277,7 @@ class AggregationBehaviour extends CAPSTestSuite with DefaultGraphInit {
 
       val result = graph.cypher("MATCH (n) WITH MIN(n.val) AS res RETURN res")
 
-      result.getRecords.toMaps should equal(Bag(
+      result.records.toMaps should equal(Bag(
         CypherMap("res" -> 23L)
       ))
     }
@@ -287,7 +287,7 @@ class AggregationBehaviour extends CAPSTestSuite with DefaultGraphInit {
 
       val result = graph.cypher("MATCH (n) RETURN MIN(n.val) AS res")
 
-      result.getRecords.toMaps should equal(Bag(
+      result.records.toMaps should equal(Bag(
         CypherMap("res" -> 23L)
       ))
     }
@@ -297,7 +297,7 @@ class AggregationBehaviour extends CAPSTestSuite with DefaultGraphInit {
 
       val result = graph.cypher("MATCH (n) WITH MIN(n.val) AS res RETURN res")
 
-      result.getRecords.toMaps should equal(Bag(
+      result.records.toMaps should equal(Bag(
         CypherMap("res" -> 23L)
       ))
     }
@@ -307,7 +307,7 @@ class AggregationBehaviour extends CAPSTestSuite with DefaultGraphInit {
 
       val result = graph.cypher("MATCH (n) RETURN MIN(n.val) AS res")
 
-      result.getRecords.toMaps should equal(Bag(
+      result.records.toMaps should equal(Bag(
         CypherMap("res" -> 23L)
       ))
     }
@@ -317,7 +317,7 @@ class AggregationBehaviour extends CAPSTestSuite with DefaultGraphInit {
 
       val result = graph.cypher("MATCH (n) RETURN MIN(n.val)")
 
-      result.getRecords.toMaps should equal(Bag(
+      result.records.toMaps should equal(Bag(
         CypherMap("MIN(n.val)" -> 23L)
       ))
     }
@@ -327,7 +327,7 @@ class AggregationBehaviour extends CAPSTestSuite with DefaultGraphInit {
 
       val result = graph.cypher("MATCH (n) WITH MIN(n.val) AS res RETURN res")
 
-      result.getRecords.toMaps should equal(Bag(
+      result.records.toMaps should equal(Bag(
         CypherMap("res" -> null)
       ))
     }
@@ -337,7 +337,7 @@ class AggregationBehaviour extends CAPSTestSuite with DefaultGraphInit {
 
       val result = graph.cypher("MATCH (n) RETURN MIN(n.val) AS res")
 
-      result.getRecords.toMaps should equal(Bag(
+      result.records.toMaps should equal(Bag(
         CypherMap("res" -> null)
       ))
     }
@@ -350,7 +350,7 @@ class AggregationBehaviour extends CAPSTestSuite with DefaultGraphInit {
 
       val result = graph.cypher("MATCH (n) WITH MAX(n.val) AS res RETURN res")
 
-      result.getRecords.toMaps should equal(Bag(
+      result.records.toMaps should equal(Bag(
         CypherMap("res" -> 84L)
       ))
     }
@@ -360,7 +360,7 @@ class AggregationBehaviour extends CAPSTestSuite with DefaultGraphInit {
 
       val result = graph.cypher("MATCH (n) RETURN MAX(n.val) AS res")
 
-      result.getRecords.toMaps should equal(Bag(
+      result.records.toMaps should equal(Bag(
         CypherMap("res" -> 84L)
       ))
     }
@@ -370,7 +370,7 @@ class AggregationBehaviour extends CAPSTestSuite with DefaultGraphInit {
 
       val result = graph.cypher("MATCH (n) WITH MAX(n.val) AS res RETURN res")
 
-      result.getRecords.toMaps should equal(Bag(
+      result.records.toMaps should equal(Bag(
         CypherMap("res" -> 42L)
       ))
     }
@@ -380,7 +380,7 @@ class AggregationBehaviour extends CAPSTestSuite with DefaultGraphInit {
 
       val result = graph.cypher("MATCH (n) RETURN MAX(n.val) AS res")
 
-      result.getRecords.toMaps should equal(Bag(
+      result.records.toMaps should equal(Bag(
         CypherMap("res" -> 42L)
       ))
     }
@@ -390,7 +390,7 @@ class AggregationBehaviour extends CAPSTestSuite with DefaultGraphInit {
 
       val result = graph.cypher("MATCH (n) RETURN MAX(n.val)")
 
-      result.getRecords.toMaps should equal(Bag(
+      result.records.toMaps should equal(Bag(
         CypherMap("MAX(n.val)" -> 42L)
       ))
     }
@@ -400,7 +400,7 @@ class AggregationBehaviour extends CAPSTestSuite with DefaultGraphInit {
 
       val result = graph.cypher("MATCH (n) WITH MAX(n.val) AS res RETURN res")
 
-      result.getRecords.toMaps should equal(Bag(
+      result.records.toMaps should equal(Bag(
         CypherMap("res" -> null)
       ))
     }
@@ -410,7 +410,7 @@ class AggregationBehaviour extends CAPSTestSuite with DefaultGraphInit {
 
       val result = graph.cypher("MATCH (n) RETURN MAX(n.val) AS res")
 
-      result.getRecords.toMaps should equal(Bag(
+      result.records.toMaps should equal(Bag(
         CypherMap("res" -> null)
       ))
     }
@@ -424,7 +424,7 @@ class AggregationBehaviour extends CAPSTestSuite with DefaultGraphInit {
 
       val result = graph.cypher("MATCH (n) WITH SUM(n.val) AS res RETURN res")
 
-      result.getRecords.toMaps should equal(Bag(
+      result.records.toMaps should equal(Bag(
         CypherMap("res" -> 12)
       ))
     }
@@ -434,7 +434,7 @@ class AggregationBehaviour extends CAPSTestSuite with DefaultGraphInit {
 
       val result = graph.cypher("MATCH (n) RETURN SUM(n.val) AS res")
 
-      result.getRecords.toMaps should equal(Bag(
+      result.records.toMaps should equal(Bag(
         CypherMap("res" -> 12)
       ))
     }
@@ -444,7 +444,7 @@ class AggregationBehaviour extends CAPSTestSuite with DefaultGraphInit {
 
       val result = graph.cypher("MATCH (n) WITH SUM(n.val) AS res RETURN res")
 
-      result.getRecords.toMaps should equal(Bag(
+      result.records.toMaps should equal(Bag(
         CypherMap("res" -> 10.5)
       ))
     }
@@ -454,7 +454,7 @@ class AggregationBehaviour extends CAPSTestSuite with DefaultGraphInit {
 
       val result = graph.cypher("MATCH (n) RETURN SUM(n.val) AS res")
 
-      result.getRecords.toMaps should equal(Bag(
+      result.records.toMaps should equal(Bag(
         CypherMap("res" -> 10.5)
       ))
     }
@@ -464,7 +464,7 @@ class AggregationBehaviour extends CAPSTestSuite with DefaultGraphInit {
 
       val result = graph.cypher("MATCH (n) RETURN SUM(n.val)")
 
-      result.getRecords.toMaps should equal(Bag(
+      result.records.toMaps should equal(Bag(
         CypherMap("SUM(n.val)" -> 10.5)
       ))
     }
@@ -474,7 +474,7 @@ class AggregationBehaviour extends CAPSTestSuite with DefaultGraphInit {
 
       val result = graph.cypher("MATCH (n) WITH SUM(n.val) AS res RETURN res")
 
-      result.getRecords.toMaps should equal(Bag(
+      result.records.toMaps should equal(Bag(
         CypherMap("res" -> 65.0)
       ))
     }
@@ -484,7 +484,7 @@ class AggregationBehaviour extends CAPSTestSuite with DefaultGraphInit {
 
       val result = graph.cypher("MATCH (n) RETURN SUM(n.val) AS res")
 
-      result.getRecords.toMaps should equal(Bag(
+      result.records.toMaps should equal(Bag(
         CypherMap("res" -> 65.0)
       ))
     }
@@ -494,7 +494,7 @@ class AggregationBehaviour extends CAPSTestSuite with DefaultGraphInit {
 
       val result = graph.cypher("MATCH (n) WITH SUM(n.val) AS res RETURN res")
 
-      result.getRecords.toMaps should equal(Bag(
+      result.records.toMaps should equal(Bag(
         CypherMap("res" -> null)
       ))
     }
@@ -504,7 +504,7 @@ class AggregationBehaviour extends CAPSTestSuite with DefaultGraphInit {
 
       val result = graph.cypher("MATCH (n) RETURN SUM(n.val) AS res")
 
-      result.getRecords.toMaps should equal(Bag(
+      result.records.toMaps should equal(Bag(
         CypherMap("res" -> null)
       ))
     }
@@ -517,7 +517,7 @@ class AggregationBehaviour extends CAPSTestSuite with DefaultGraphInit {
 
       val result = graph.cypher("MATCH (n) WITH COLLECT(n.val) AS res RETURN res")
 
-      result.getRecords.toMaps should equal(Bag(
+      result.records.toMaps should equal(Bag(
         CypherMap("res" -> Seq(2, 4, 6))
       ))
     }
@@ -527,7 +527,7 @@ class AggregationBehaviour extends CAPSTestSuite with DefaultGraphInit {
 
       val result = graph.cypher("MATCH (n) RETURN COLLECT(n.val) AS res")
 
-      result.getRecords.toMaps should equal(Bag(
+      result.records.toMaps should equal(Bag(
         CypherMap("res" -> Seq(2, 4, 6))
       ))
     }
@@ -538,7 +538,7 @@ class AggregationBehaviour extends CAPSTestSuite with DefaultGraphInit {
 
       val result = graph.cypher("MATCH (n) WITH COLLECT(n.val) AS res RETURN res")
 
-      result.getRecords.toMaps should equal(Bag(
+      result.records.toMaps should equal(Bag(
         CypherMap("res" -> Seq(23.0, 42.0))
       ))
     }
@@ -548,7 +548,7 @@ class AggregationBehaviour extends CAPSTestSuite with DefaultGraphInit {
 
       val result = graph.cypher("MATCH (n) RETURN COLLECT(n.val) AS res")
 
-      result.getRecords.toMaps should equal(Bag(
+      result.records.toMaps should equal(Bag(
         CypherMap("res" -> Seq(23.0, 42.0))
       ))
     }
@@ -559,7 +559,7 @@ class AggregationBehaviour extends CAPSTestSuite with DefaultGraphInit {
 
       val result = graph.cypher("MATCH (n) WITH Collect(n.val) AS res RETURN res")
 
-      result.getRecords.toMaps should equal(Bag(
+      result.records.toMaps should equal(Bag(
         CypherMap("res" -> Seq.empty)
       ))
     }
@@ -569,7 +569,7 @@ class AggregationBehaviour extends CAPSTestSuite with DefaultGraphInit {
 
       val result = graph.cypher("MATCH (n) RETURN COLLECT(n.val) AS res")
 
-      result.getRecords.toMaps should equal(Bag(
+      result.records.toMaps should equal(Bag(
         CypherMap("res" -> Seq.empty)
       ))
     }
@@ -590,7 +590,7 @@ class AggregationBehaviour extends CAPSTestSuite with DefaultGraphInit {
           |       collect(distinct b.val) as val
         """.stripMargin)
 
-      result.getRecords.toMaps should equal(Bag(
+      result.records.toMaps should equal(Bag(
         CypherMap("a.id" -> 1, "val" -> CypherList("foo"))
       ))
     }
@@ -628,7 +628,7 @@ class AggregationBehaviour extends CAPSTestSuite with DefaultGraphInit {
           | COLLECT(n.val) AS col
           |RETURN avg, cnt, min, max, sum, col""".stripMargin)
 
-      result.getRecords.toMaps should equal(Bag(
+      result.records.toMaps should equal(Bag(
         CypherMap("avg" -> 49, "cnt" -> 3, "min" -> 23L, "max" -> 84L, "sum" -> 149, "col" -> Seq(23, 42, 84))
       ))
     }
@@ -646,7 +646,7 @@ class AggregationBehaviour extends CAPSTestSuite with DefaultGraphInit {
           | SUM(n.val) AS sum,
           | COLLECT(n.val) AS col""".stripMargin)
 
-      result.getRecords.toMaps should equal(Bag(
+      result.records.toMaps should equal(Bag(
         CypherMap("avg" -> 49, "cnt" -> 3, "min" -> 23L, "max" -> 84L, "sum" -> 149, "col" -> Seq(23, 42, 84))
       ))
     }
@@ -665,7 +665,7 @@ class AggregationBehaviour extends CAPSTestSuite with DefaultGraphInit {
           | SUM(n.val) AS sum,
           | COLLECT(n.val) as col""".stripMargin)
 
-      result.getRecords.toMaps should equal(Bag(
+      result.records.toMaps should equal(Bag(
         CypherMap(
           "key" -> "a", "avg" -> 32, "cnt" -> 2, "min" -> 23L, "max" -> 42L, "sum" -> 65, "col" -> Seq(23, 42)),
         CypherMap("key" -> "b", "avg" -> 84, "cnt" -> 1, "min" -> 84, "max" -> 84, "sum" -> 84, "col" -> Seq(84))
@@ -687,7 +687,7 @@ class AggregationBehaviour extends CAPSTestSuite with DefaultGraphInit {
           | COLLECT(n.val) as col
           |RETURN key, avg, cnt, min, max, sum, col""".stripMargin)
 
-      result.getRecords.toMaps should equal(Bag(
+      result.records.toMaps should equal(Bag(
         CypherMap(
           "key" -> "a", "avg" -> 32, "cnt" -> 2, "min" -> 23L, "max" -> 42L, "sum" -> 65, "col" -> Seq(23, 42)),
         CypherMap("key" -> "b", "avg" -> 84, "cnt" -> 1, "min" -> 84, "max" -> 84, "sum" -> 84, "col" -> Seq(84))

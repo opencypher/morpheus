@@ -66,7 +66,7 @@ object Neo4jWorkflowExample extends ConsoleApp {
        |  NEW (p)-[:IS]->(c)
        |RETURN GRAPH
     """.stripMargin
-  ).graph.get
+  ).getGraph.get
 
   // Query for product recommendations
   val recommendations = recommendationGraph.cypher(
@@ -76,7 +76,7 @@ object Neo4jWorkflowExample extends ConsoleApp {
        |RETURN person.name AS for, collect(DISTINCT product.title) AS recommendations""".stripMargin)
 
   // Use Cypher queries to write the product recommendations back to Neo4j
-  recommendations.getRecords.collect.foreach { recommendation =>
+  recommendations.records.collect.foreach { recommendation =>
     neo4j.execute(
       s"""|MATCH (p:Person {name: ${recommendation.get("for").get.toCypherString}})
           |SET p.should_buy = ${recommendation.get("recommendations").get.toCypherString}""".stripMargin)

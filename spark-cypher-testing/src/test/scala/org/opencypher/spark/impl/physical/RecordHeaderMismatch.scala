@@ -26,12 +26,14 @@
  */
 package org.opencypher.spark.impl.physical
 
-import org.apache.spark.storage.StorageLevel
 import org.opencypher.okapi.api.schema.Schema
-import org.opencypher.okapi.api.types.{CTNode, CTRelationship, CTString}
+import org.opencypher.okapi.api.types.{CTString, CypherType}
 import org.opencypher.okapi.impl.exception.SchemaException
+import org.opencypher.okapi.relational.api.graph.RelationalCypherGraph
+import org.opencypher.okapi.relational.impl.operators.{RelationalOperator, Start}
 import org.opencypher.spark.api.CAPSSession
-import org.opencypher.spark.impl.{CAPSGraph, CAPSRecords}
+import org.opencypher.spark.impl.CAPSRecords
+import org.opencypher.spark.impl.table.SparkTable.DataFrameTable
 import org.opencypher.spark.schema.CAPSSchema
 import org.opencypher.spark.schema.CAPSSchema._
 import org.opencypher.spark.testing.CAPSTestSuite
@@ -39,37 +41,39 @@ import org.opencypher.spark.testing.CAPSTestSuite
 class RecordHeaderMismatch extends CAPSTestSuite {
 
   it("throws a schema exception when the physical record header does not match the one computed based on the schema") {
-    val buggyGraph = new CAPSGraph {
+    val buggyGraph = new RelationalCypherGraph[DataFrameTable] {
+
+      override type Session = CAPSSession
+
+      override type Records = CAPSRecords
 
       override def schema: CAPSSchema = Schema.empty
         .withNodePropertyKeys("A")("name" -> CTString)
         .withRelationshipPropertyKeys("R")("name" -> CTString)
         .asCaps
 
-      // Always return empty records, which does not match what the schema promises
-      override def nodes(name: String, nodeCypherType: CTNode): CAPSRecords = CAPSRecords.empty()(caps)
-
       override implicit def session: CAPSSession = caps
 
       override def tags: Set[Int] = Set(0)
 
-      override def relationships(name: String, relCypherType: CTRelationship): CAPSRecords = CAPSRecords.empty()(caps)
+      override def cache(): RelationalCypherGraph[DataFrameTable] = this
 
-      override def cache(): CAPSGraph = this
+      override def tables: Seq[DataFrameTable] = Seq.empty
 
-      override def persist(): CAPSGraph = this
+      // Always return empty records, which does not match what the schema promises
+      override private[opencypher] def scanOperator(
+        entityType: CypherType,
+        exactLabelMatch: Boolean
+      ): RelationalOperator[DataFrameTable] = {
+        Start(caps.records.empty())
+      }
+    }
 
-      override def persist(storageLevel: StorageLevel): CAPSGraph = this
-
-      override def unpersist(): CAPSGraph = this
-
-      override def unpersist(blocking: Boolean): CAPSGraph = this
+    intercept[SchemaException] {
+      buggyGraph.cypher("MATCH (n) RETURN n").records
     }
     intercept[SchemaException] {
-      buggyGraph.cypher("MATCH (n) RETURN n").getRecords
-    }
-    intercept[SchemaException] {
-      buggyGraph.cypher("MATCH ()-[r]->() RETURN r").getRecords
+      buggyGraph.cypher("MATCH ()-[r]->() RETURN r").records
     }
   }
 

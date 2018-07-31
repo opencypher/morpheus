@@ -27,14 +27,15 @@
 package org.opencypher.spark.testing.api.io
 
 import org.opencypher.okapi.api.graph.GraphName
+import org.opencypher.okapi.relational.api.graph.RelationalCypherGraph
 import org.opencypher.okapi.testing.{BaseTestSuite, PGDSAcceptance}
 import org.opencypher.spark.api.CAPSSession
 import org.opencypher.spark.api.CAPSSession._
 import org.opencypher.spark.api.value.{CAPSNode, CAPSRelationship}
 import org.opencypher.spark.impl.CAPSConverters._
-import org.opencypher.spark.impl.CAPSGraph
-import org.opencypher.spark.impl.DataFrameOps._
+import org.opencypher.okapi.relational.api.tagging.Tags._
 import org.opencypher.spark.impl.encoders._
+import org.opencypher.spark.impl.table.SparkTable.DataFrameTable
 
 import scala.util.{Failure, Success, Try}
 
@@ -49,7 +50,7 @@ trait CAPSPGDSAcceptance extends PGDSAcceptance[CAPSSession] {
       case Failure(_: UnsupportedOperationException) =>
       case Failure(t) => throw t
       case Success(_) =>
-        val graph = cypherSession.cypher(s"FROM GRAPH $ns.g3 RETURN GRAPH").getGraph.asCaps
+        val graph = cypherSession.cypher(s"FROM GRAPH $ns.g3 RETURN GRAPH").graph.asCaps
 
         withClue("tags should be restored correctly") {
           graph.tags should equal(Set(0, 1))
@@ -63,7 +64,7 @@ trait CAPSPGDSAcceptance extends PGDSAcceptance[CAPSSession] {
     cypherSession.cypher("CREATE GRAPH g1 { CONSTRUCT NEW ()-[:FOO]->() RETURN GRAPH }")
     cypherSession.cypher("CREATE GRAPH g2 { CONSTRUCT NEW () RETURN GRAPH }")
 
-    val graphToStore = cypherSession.cypher("CONSTRUCT ON g1, g2 RETURN GRAPH").getGraph.asCaps
+    val graphToStore = cypherSession.cypher("CONSTRUCT ON g1, g2 RETURN GRAPH").graph.asCaps
 
     val name = GraphName("g3")
 
@@ -82,7 +83,7 @@ trait CAPSPGDSAcceptance extends PGDSAcceptance[CAPSSession] {
     }
   }
 
-  private def verify(graph: CAPSGraph, expectedNodeSize: Int, expectedRelSize: Int): Unit = {
+  private def verify(graph: RelationalCypherGraph[DataFrameTable], expectedNodeSize: Int, expectedRelSize: Int): Unit = {
     val nodes = graph.nodes("n").asDataset.map(row => row("n").cast[CAPSNode]).collect()
     val rels = graph.relationships("r").asDataset.map(row => row("r").cast[CAPSRelationship]).collect()
 

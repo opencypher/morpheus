@@ -50,14 +50,14 @@ case class CachedDataSource(
 
   override def graph(name: GraphName): PropertyGraph = cache.getOrElse(name, {
     val g = dataSource.graph(name)
-    g.asCaps.persist(storageLevel)
+    g.asCaps.tables.foreach(_.persist(storageLevel))
     cache.put(name, g)
     g
   })
 
   override def delete(name: GraphName): Unit = cache.get(name) match {
     case Some(g) =>
-      g.asCaps.unpersist()
+      g.asCaps.tables.foreach(_.unpersist())
       cache.remove(name)
       dataSource.delete(name)
 

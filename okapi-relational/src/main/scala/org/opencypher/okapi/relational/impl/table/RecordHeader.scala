@@ -26,7 +26,7 @@
  */
 package org.opencypher.okapi.relational.impl.table
 
-import org.opencypher.okapi.api.types.{CTNode, CTRelationship}
+import org.opencypher.okapi.api.types.{CTNode, CTRelationship, CypherType}
 import org.opencypher.okapi.impl.exception.IllegalArgumentException
 import org.opencypher.okapi.impl.util.TablePrinter
 import org.opencypher.okapi.ir.api.RelType
@@ -60,6 +60,7 @@ case class RecordHeader(exprToColumn: Map[Expr, String]) {
 
   def isEmpty: Boolean = exprToColumn.isEmpty
 
+  // TODO: should we verify that if the expr exists, that it has the same type and nullability
   def contains(expr: Expr): Boolean = expr match {
     case AliasExpr(_, alias) => contains(alias)
     case _ => exprToColumn.contains(expr)
@@ -189,7 +190,15 @@ case class RecordHeader(exprToColumn: Map[Expr, String]) {
     }
   }
 
-  def nodesForType[T >: NodeVar <: Var](nodeType: CTNode): Set[T] = {
+  def entitiesForType(ct: CypherType, exactMatch: Boolean = false): Set[Var] = {
+    ct match {
+      case n: CTNode => nodesForType(n, exactMatch)
+      case r: CTRelationship => relationshipsForType(r)
+      case other => throw IllegalArgumentException("Entity", other)
+    }
+  }
+
+  def nodesForType[T >: NodeVar <: Var](nodeType: CTNode, exactMatch: Boolean = false): Set[T] = {
     // and semantics
     val requiredLabels = nodeType.labels
 
@@ -199,7 +208,11 @@ case class RecordHeader(exprToColumn: Map[Expr, String]) {
         case CTNode(labels, _) => labels
         case _ => Set.empty[String]
       }
-      requiredLabels.subsetOf(physicalLabels ++ logicalLabels)
+      if (exactMatch) {
+        requiredLabels == (physicalLabels ++ logicalLabels)
+      } else {
+        requiredLabels.subsetOf(physicalLabels ++ logicalLabels)
+      }
     }
   }
 
@@ -226,14 +239,40 @@ case class RecordHeader(exprToColumn: Map[Expr, String]) {
   def select[T <: Expr](exprs: T*): RecordHeader = select(exprs.toSet)
 
   def select[T <: Expr](exprs: Set[T]): RecordHeader = {
+    val aliasExprs = exprs.collect { case a: AliasExpr => a }
+    val headerWithAliases = withAlias(aliasExprs.toSeq: _*)
     val selectExpressions = exprs.flatMap { e: Expr =>
       e match {
-        case v: Var => ownedBy(v) + v
+        case v: Var => expressionsFor(v)
+        case AliasExpr(expr, alias) =>
+          expr match {
+            case v: Var => expressionsFor(v).map(_.withOwner(alias))
+            case other => other.withOwner(alias)
+          }
         case nonVar => Set(nonVar)
       }
     }
-    val selectMappings = exprToColumn.filterKeys(selectExpressions.contains)
+    val selectMappings = headerWithAliases.exprToColumn.filterKeys(selectExpressions.contains)
     RecordHeader(selectMappings)
+  }
+
+  private def withReplacement(expr: AliasExpr): RecordHeader = {
+    val to = expr.expr
+    val alias = expr.alias
+    to match {
+      // Entity case
+      case entityExpr: Var if exprToColumn.contains(to) =>
+        val withEntityExpr = addExprToColumn(alias, exprToColumn(to))
+        ownedBy(entityExpr).filterNot(_ == entityExpr).foldLeft(withEntityExpr) {
+          case (current, nextExpr) => current.addExprToColumn(nextExpr.withOwner(alias), exprToColumn(nextExpr))
+        }
+
+      // Non-entity case
+      case e if exprToColumn.contains(e) => addExprToColumn(alias, exprToColumn(e))
+
+      // No expression to alias
+      case other => throw IllegalArgumentException(s"An expression in $this", s"Unknown expression $other")
+    }
   }
 
   def withColumnsRenamed[T <: Expr](renamings: Map[T, String]): RecordHeader = {
@@ -363,6 +402,8 @@ case class RecordHeader(exprToColumn: Map[Expr, String]) {
       .unzip
     TablePrinter.toTable(header, Seq(row))(formatCell)
   }
+
+  def show(): Unit = println(pretty)
 
 }
 

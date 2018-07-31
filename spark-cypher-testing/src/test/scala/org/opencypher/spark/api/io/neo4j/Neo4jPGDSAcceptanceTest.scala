@@ -42,7 +42,7 @@ class Neo4jPGDSAcceptanceTest extends CAPSTestSuite with Neo4jServerFixture with
   override def create(graphName: GraphName, testGraph: InMemoryTestGraph, createStatements: String): PropertyGraphDataSource = {
     val graph = CAPSScanGraphFactory(testGraph)
     val ds = CypherGraphSources.neo4j(neo4jConfig)
-    ds.graphNames.foreach(ds.delete)
+    (ds.graphNames - ds.entireGraphName).foreach(ds.delete)
     ds.store(graphName, graph)
     ds
   }

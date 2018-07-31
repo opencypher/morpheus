@@ -334,7 +334,7 @@ class SchemaTyperTest extends BaseTestSuite with Neo4jAstTestSupport with Mockit
     assertExpr.from("[1, 1.0, null]") shouldHaveInferredType CTList(CTNumber.nullable)
   }
 
-  test("typing of list indexing") {
+  it("typing of list indexing") {
     assertExpr.from("[1, 2][15]") shouldHaveInferredType CTVoid
     assertExpr.from("[3.14, -1, 5000][15]") shouldHaveInferredType CTVoid
     assertExpr.from("[[], 1, true][15]") shouldHaveInferredType CTVoid
@@ -343,8 +343,8 @@ class SchemaTyperTest extends BaseTestSuite with Neo4jAstTestSupport with Mockit
 
     implicit val context = TypeTracker.empty.updated(Parameter("param", symbols.CTAny)(pos), CTInteger)
 
-    assertExpr.from("[3.14, -1, 5000][$param]")(TypeTracker.empty.withParameters(Map("param" -> CTInteger))) shouldHaveInferredType CTNumber
-    assertExpr.from("[[], 1, true][$param]")(TypeTracker.empty.withParameters(Map("param" -> CTInteger))) shouldHaveInferredType CTAny
+    assertExpr.from("[3.14, -1, 5000][$param]")(TypeTracker.empty.withParameters(Map("param" -> CTInteger))) shouldHaveInferredType CTNumber.nullable
+    assertExpr.from("[[], 1, true][$param]")(TypeTracker.empty.withParameters(Map("param" -> CTInteger))) shouldHaveInferredType CTAny.nullable
   }
 
   test("infer type of node property lookup") {
@@ -367,7 +367,7 @@ class SchemaTyperTest extends BaseTestSuite with Neo4jAstTestSupport with Mockit
 
   test("typing of functions") {
     assertExpr.from("timestamp()") shouldHaveInferredType CTInteger
-    assertExpr.from("toInteger(1.0)") shouldHaveInferredType CTInteger
+    assertExpr.from("toInteger(1.0)") shouldHaveInferredType CTInteger.nullable
     assertExpr.from("size([0, true, []])") shouldHaveInferredType CTInteger
 
     assertExpr.from("percentileDisc(1, 3.14)") shouldHaveInferredType CTInteger

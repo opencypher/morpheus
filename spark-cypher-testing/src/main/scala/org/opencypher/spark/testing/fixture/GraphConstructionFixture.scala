@@ -26,10 +26,11 @@
  */
 package org.opencypher.spark.testing.fixture
 
+import org.opencypher.okapi.relational.api.graph.RelationalCypherGraph
 import org.opencypher.okapi.testing.BaseTestSuite
 import org.opencypher.okapi.testing.propertygraph.CreateGraphFactory
 import org.opencypher.spark.impl.CAPSConverters._
-import org.opencypher.spark.impl.CAPSGraph
+import org.opencypher.spark.impl.table.SparkTable.DataFrameTable
 import org.opencypher.spark.testing.support.creation.caps.{CAPSScanGraphFactory, CAPSTestGraphFactory}
 
 trait GraphConstructionFixture {
@@ -37,6 +38,7 @@ trait GraphConstructionFixture {
 
   def capsGraphFactory: CAPSTestGraphFactory = CAPSScanGraphFactory
 
-  val initGraph: String => CAPSGraph =
-    (createQuery) => CAPSScanGraphFactory(CreateGraphFactory(createQuery)).asCaps
+  val initGraph: String => RelationalCypherGraph[DataFrameTable] =
+    createQuery => CAPSScanGraphFactory(CreateGraphFactory(createQuery)).asCaps
+
 }

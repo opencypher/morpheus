@@ -30,11 +30,12 @@ import org.apache.spark.sql.{Row, functions}
 import org.opencypher.okapi.api.io.conversion.{NodeMapping, RelationshipMapping}
 import org.opencypher.okapi.api.types.{CTNode, CTRelationship}
 import org.opencypher.okapi.api.value.CypherValue.CypherMap
+import org.opencypher.okapi.relational.api.tagging.Tags._
 import org.opencypher.okapi.testing.Bag
 import org.opencypher.okapi.testing.propertygraph.CreateGraphFactory
 import org.opencypher.spark.api.io.{CAPSNodeTable, CAPSRelationshipTable}
 import org.opencypher.spark.api.value.CAPSRelationship
-import org.opencypher.spark.impl.DataFrameOps._
+import org.opencypher.spark.impl.CAPSConverters._
 import org.opencypher.spark.testing.support.creation.caps.{CAPSScanGraphFactory, CAPSTestGraphFactory}
 
 class CAPSScanGraphTest extends CAPSGraphTest {
@@ -42,8 +43,8 @@ class CAPSScanGraphTest extends CAPSGraphTest {
   override def capsGraphFactory: CAPSTestGraphFactory = CAPSScanGraphFactory
 
   it("executes union") {
-    val graph1 = CAPSGraph.create(personTable, knowsTable)
-    val graph2 = CAPSGraph.create(programmerTable, bookTable, readsTable)
+    val graph1 = caps.graphs.create(personTable, knowsTable)
+    val graph2 = caps.graphs.create(programmerTable, bookTable, readsTable)
 
     val result = graph1 unionAll graph2
 
@@ -125,9 +126,9 @@ class CAPSScanGraphTest extends CAPSGraphTest {
       ).toDF("SRC", "ID", "DST"))
 
 
-    val graph = CAPSGraph.create(nodes, rs)
+    val graph = caps.graphs.create(nodes, rs)
 
-    val results = graph.relationships("r").toCypherMaps
+    val results = graph.relationships("r").asCaps.toCypherMaps
 
     results.collect().toSet should equal(
       Set(
@@ -137,7 +138,7 @@ class CAPSScanGraphTest extends CAPSGraphTest {
   }
 
   it("Construct graph from single node scan") {
-    val graph = CAPSGraph.create(personTable)
+    val graph = caps.graphs.create(personTable)
     val nodes = graph.nodes("n")
     val cols = Seq(
       n,
@@ -156,7 +157,7 @@ class CAPSScanGraphTest extends CAPSGraphTest {
   }
 
   it("Construct graph from multiple node scans") {
-    val graph = CAPSGraph.create(personTable, bookTable)
+    val graph = caps.graphs.create(personTable, bookTable)
     val nodes = graph.nodes("n")
     val cols = Seq(
       n,
@@ -195,7 +196,7 @@ class CAPSScanGraphTest extends CAPSGraphTest {
 
     val graph = CAPSScanGraphFactory(CreateGraphFactory(fixture))
 
-    graph.cypher("MATCH (n) RETURN n").getRecords.size should equal(3)
+    graph.cypher("MATCH (n) RETURN n").records.size should equal(3)
   }
 
   it("Align node scans when individual tables have the same node id and properties") {
@@ -217,13 +218,13 @@ class CAPSScanGraphTest extends CAPSGraphTest {
     val comboMapping = NodeMapping.create("_node_id").withPropertyKey("name").withPropertyKey("size").withImpliedLabels("A", "B")
     val comboTable = CAPSNodeTable.fromMapping(comboMapping, comboDf)
 
-    val graph = CAPSGraph.create(aTable, bTable, comboTable)
+    val graph = caps.graphs.create(aTable, bTable, comboTable)
 
-    graph.cypher("MATCH (n) RETURN n").getRecords.size should equal(3)
+    graph.cypher("MATCH (n) RETURN n").records.size should equal(3)
   }
 
   it("Construct graph from single node and single relationship scan") {
-    val graph = CAPSGraph.create(personTable, knowsTable)
+    val graph = caps.graphs.create(personTable, knowsTable)
     val rels = graph.relationships("r")
 
     val cols = Seq(
@@ -246,7 +247,7 @@ class CAPSScanGraphTest extends CAPSGraphTest {
   }
 
   it("Extract all node scans") {
-    val graph = CAPSGraph.create(personTable, bookTable)
+    val graph = caps.graphs.create(personTable, bookTable)
     val nodes = graph.nodes("n", CTNode())
     val cols = Seq(
       n,
@@ -273,7 +274,7 @@ class CAPSScanGraphTest extends CAPSGraphTest {
   }
 
   it("Extract node scan subset") {
-    val graph = CAPSGraph.create(personTable, bookTable)
+    val graph = caps.graphs.create(personTable, bookTable)
     val nodes = graph.nodes("n", CTNode("Person"))
     val cols = Seq(
       n,
@@ -292,7 +293,7 @@ class CAPSScanGraphTest extends CAPSGraphTest {
   }
 
   it("Extract all relationship scans") {
-    val graph = CAPSGraph.create(personTable, bookTable, knowsTable, readsTable)
+    val graph = caps.graphs.create(personTable, bookTable, knowsTable, readsTable)
     val rels = graph.relationships("r")
     val cols = Seq(
       rStart,
@@ -320,7 +321,7 @@ class CAPSScanGraphTest extends CAPSGraphTest {
   }
 
   it("Extract relationship scan subset") {
-    val graph = CAPSGraph.create(personTable, bookTable, knowsTable, readsTable)
+    val graph = caps.graphs.create(personTable, bookTable, knowsTable, readsTable)
     val rels = graph.relationships("r", CTRelationship("KNOWS"))
     val cols = Seq(
       rStart,
@@ -342,7 +343,7 @@ class CAPSScanGraphTest extends CAPSGraphTest {
   }
 
   it("Extract relationship scan strict subset") {
-    val graph = CAPSGraph.create(personTable, bookTable, knowsTable, readsTable, influencesTable)
+    val graph = caps.graphs.create(personTable, bookTable, knowsTable, readsTable, influencesTable)
     val rels = graph.relationships("r", CTRelationship("KNOWS", "INFLUENCES"))
     val cols = Seq(
       rStart,
@@ -368,7 +369,7 @@ class CAPSScanGraphTest extends CAPSGraphTest {
   }
 
   it("Extract from scans with overlapping labels") {
-    val graph = CAPSGraph.create(personTable, programmerTable)
+    val graph = caps.graphs.create(personTable, programmerTable)
     val nodes = graph.nodes("n", CTNode("Person"))
     val cols = Seq(
       n,
@@ -394,7 +395,7 @@ class CAPSScanGraphTest extends CAPSGraphTest {
   }
 
   it("Extract from scans with implied label but missing keys") {
-    val graph = CAPSGraph.create(personTable, brogrammerTable)
+    val graph = caps.graphs.create(personTable, brogrammerTable)
     val nodes = graph.nodes("n", CTNode("Person"))
     val cols = Seq(
       n,

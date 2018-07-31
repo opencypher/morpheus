@@ -26,7 +26,9 @@
  */
 package org.opencypher.spark.impl.acceptance
 
+import org.opencypher.okapi.api.graph.CypherResult
 import org.opencypher.okapi.api.value.CypherValue._
+import org.opencypher.okapi.relational.impl.operators.Cache
 import org.opencypher.okapi.testing.Bag
 import org.opencypher.okapi.testing.Bag._
 import org.opencypher.spark.impl.CAPSConverters._
@@ -35,6 +37,23 @@ import org.scalatest.DoNotDiscover
 
 @DoNotDiscover
 class MatchBehaviour extends CAPSTestSuite with DefaultGraphInit {
+
+  describe("scan caching") {
+
+    it("caches a reused scan") {
+      val g = initGraph("""CREATE (p:Person {firstName: "Alice", lastName: "Foo"})""")
+      val result: CypherResult = g.cypher(
+        """
+          |MATCH (n: Person)
+          |MATCH (m: Person)
+          |WHERE n.name = m.name
+          |RETURN n.name
+        """.stripMargin)
+
+      result.asCaps.plans.relationalPlan.get.collectFirst { case c: Cache[_] => c } should not be empty
+    }
+
+  }
 
   describe("match single node") {
 
@@ -53,7 +72,7 @@ class MatchBehaviour extends CAPSTestSuite with DefaultGraphInit {
         """.stripMargin)
 
       // Then
-      result.getRecords.toMaps should equal(Bag(CypherMap("a.firstName" -> "Alice")
+      result.records.toMaps should equal(Bag(CypherMap("a.firstName" -> "Alice")
       ))
     }
 
@@ -69,7 +88,7 @@ class MatchBehaviour extends CAPSTestSuite with DefaultGraphInit {
         """.stripMargin)
 
       // Then
-      result.getRecords.toMaps shouldBe empty
+      result.records.toMaps shouldBe empty
     }
   }
 
@@ -93,7 +112,7 @@ class MatchBehaviour extends CAPSTestSuite with DefaultGraphInit {
         """.stripMargin)
 
       // Then
-      result.getRecords.toMaps should equal(
+      result.records.toMaps should equal(
         Bag(
           CypherMap(
             "p1.name" -> "Alice",
@@ -123,7 +142,7 @@ class MatchBehaviour extends CAPSTestSuite with DefaultGraphInit {
         """.stripMargin)
 
       // Then
-      result.getRecords.toMaps should equal(
+      result.records.toMaps should equal(
         Bag(
           CypherMap(
             "p1.name" -> "Bob",
@@ -161,7 +180,7 @@ class MatchBehaviour extends CAPSTestSuite with DefaultGraphInit {
         """.stripMargin)
 
       // Then
-      result.getRecords.toMaps should equal(
+      result.records.toMaps should equal(
         Bag(
           CypherMap("one" -> "Alice", "two" -> "Alice"),
           CypherMap("one" -> "Alice", "two" -> "Bob"),
@@ -188,14 +207,14 @@ class MatchBehaviour extends CAPSTestSuite with DefaultGraphInit {
         """.stripMargin)
 
       // Then
-      result.getRecords.toMaps should equal(
+      result.records.toMaps should equal(
         Bag(
           CypherMap("one" -> "Alice", "two" -> "Alice"),
           CypherMap("one" -> "Bob", "two" -> "Bob")
         ))
 
       // TODO: Move to plan based testing
-      result.plans.asCaps.logical should include("ValueJoin")
+      result.plans.logical should include("ValueJoin")
     }
 
     it("can evaluate cross Product between multiple match clauses") {
@@ -207,7 +226,7 @@ class MatchBehaviour extends CAPSTestSuite with DefaultGraphInit {
           |RETURN a.val, c.val
         """.stripMargin
 
-      graph.cypher(query).getRecords.collect.toBag should equal(Bag(
+      graph.cypher(query).records.collect.toBag should equal(Bag(
         CypherMap("a.val" -> 0, "c.val" -> 2)
       ))
     }
@@ -229,7 +248,7 @@ class MatchBehaviour extends CAPSTestSuite with DefaultGraphInit {
 
       val result = given.cypher("MATCH (a:A)--(other) RETURN a.prop, other.prop")
 
-      result.getRecords.collect.toBag should equal(Bag(
+      result.records.collect.toBag should equal(Bag(
         CypherMap("a.prop" -> "isA", "other.prop" -> "fromA"),
         CypherMap("a.prop" -> "isA", "other.prop" -> "toA")
       ))
@@ -251,7 +270,7 @@ class MatchBehaviour extends CAPSTestSuite with DefaultGraphInit {
 
       val result = given.cypher("MATCH (a:A)--()--(other) RETURN a.prop, other.prop")
 
-      result.getRecords.collect.toBag should equal(Bag(
+      result.records.collect.toBag should equal(Bag(
         CypherMap("a.prop" -> "a", "other.prop" -> "c"),
         CypherMap("a.prop" -> "a", "other.prop" -> "b"),
         CypherMap("a.prop" -> "a", "other.prop" -> "d")
@@ -276,7 +295,7 @@ class MatchBehaviour extends CAPSTestSuite with DefaultGraphInit {
           |RETURN a.prop, b.prop
         """.stripMargin)
 
-      result.getRecords.collect.toBag should equal(Bag(
+      result.records.collect.toBag should equal(Bag(
         CypherMap("a.prop" -> "a", "b.prop" -> "b"),
         CypherMap("a.prop" -> "a", "b.prop" -> "b")
       ))
@@ -297,7 +316,7 @@ class MatchBehaviour extends CAPSTestSuite with DefaultGraphInit {
 
       val result = given.cypher("MATCH (a:A)--(a)<--(other) RETURN a.prop, other.prop")
 
-      result.getRecords.collect.toBag should equal(Bag(
+      result.records.collect.toBag should equal(Bag(
         CypherMap("a.prop" -> "a", "other.prop" -> "a"),
         CypherMap("a.prop" -> "a", "other.prop" -> "a"),
         CypherMap("a.prop" -> "a", "other.prop" -> "b"),
@@ -317,7 +336,7 @@ class MatchBehaviour extends CAPSTestSuite with DefaultGraphInit {
 
       val result = given.cypher("MATCH (a:A)--(a) RETURN a.prop")
 
-      result.getRecords.collect.toBag should equal(Bag(
+      result.records.collect.toBag should equal(Bag(
         CypherMap("a.prop" -> "isA")
       ))
     }
@@ -335,7 +354,7 @@ class MatchBehaviour extends CAPSTestSuite with DefaultGraphInit {
 
       val result = given.cypher("MATCH (a:A)-[*2..2]-(other) RETURN a.prop, other.prop")
 
-      result.getRecords.collect.toBag should equal(Bag(
+      result.records.collect.toBag should equal(Bag(
         CypherMap("a.prop" -> "a", "other.prop" -> "c")
       ))
     }

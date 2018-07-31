@@ -26,14 +26,15 @@
  */
 package org.opencypher.spark.api.io.csv
 
+import org.opencypher.okapi.relational.api.graph.RelationalCypherGraph
 import org.opencypher.spark.api.GraphSources
 import org.opencypher.spark.api.io.fs.hdfs.HdfsDataSourceAcceptance
-import org.opencypher.spark.impl.CAPSGraph
 import org.opencypher.spark.impl.io.CAPSPropertyGraphDataSource
+import org.opencypher.spark.impl.table.SparkTable.DataFrameTable
 
 class HdfsCsvDataSourceAcceptance extends HdfsDataSourceAcceptance {
 
-  override protected def createDs(graph: CAPSGraph): CAPSPropertyGraphDataSource = {
+  override protected def createDs(graph: RelationalCypherGraph[DataFrameTable]): CAPSPropertyGraphDataSource = {
     GraphSources.fs("hdfs:///").csv
   }
 

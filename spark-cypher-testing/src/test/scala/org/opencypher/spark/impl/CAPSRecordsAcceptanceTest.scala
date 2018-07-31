@@ -30,11 +30,14 @@ import org.apache.spark.sql.Row
 import org.opencypher.okapi.api.table.CypherRecords
 import org.opencypher.okapi.api.value.CypherValue.CypherMap
 import org.opencypher.okapi.impl.exception.IllegalArgumentException
+import org.opencypher.okapi.relational.api.graph.RelationalCypherGraph
 import org.opencypher.okapi.testing.Bag
 import org.opencypher.okapi.testing.Bag._
 import org.opencypher.spark.api.GraphSources
 import org.opencypher.spark.api.io.neo4j.Neo4jPropertyGraphDataSource
+import org.opencypher.spark.api.value.{CAPSNode, CAPSRelationship}
 import org.opencypher.spark.impl.CAPSConverters._
+import org.opencypher.spark.impl.table.SparkTable.DataFrameTable
 import org.opencypher.spark.testing.CAPSTestSuite
 import org.opencypher.spark.testing.fixture.{Neo4jServerFixture, OpenCypherDataFixture}
 
@@ -42,7 +45,7 @@ import scala.language.reflectiveCalls
 
 class CAPSRecordsAcceptanceTest extends CAPSTestSuite with Neo4jServerFixture with OpenCypherDataFixture {
 
-  private lazy val graph: CAPSGraph =
+  private lazy val graph: RelationalCypherGraph[DataFrameTable] =
     GraphSources.cypher.neo4j(neo4jConfig).graph(Neo4jPropertyGraphDataSource.defaultEntireGraphName).asCaps
 
   it("convert to CypherMaps") {
@@ -50,7 +53,7 @@ class CAPSRecordsAcceptanceTest extends CAPSTestSuite with Neo4jServerFixture wi
     val result = graph.cypher("MATCH (a:Person) WHERE a.birthyear < 1930 RETURN a, a.name")
 
     // Then
-    val strings = result.getRecords.collect.map(_.toCypherString).toSet
+    val strings = result.records.collect.map(_.toCypherString).toSet
 
     // We do string comparisons here because CypherNode.equals() does not check labels/properties
     strings should equal(
@@ -66,7 +69,7 @@ class CAPSRecordsAcceptanceTest extends CAPSTestSuite with Neo4jServerFixture wi
     val result = graph.cypher("MATCH (a:Person) RETURN a.name")
 
     // Then
-    result.getRecords shouldHaveSize 15 // andContain "Rachel Kempson"
+    result.records shouldHaveSize 15 // andContain "Rachel Kempson"
   }
 
   it("expand and project") {
@@ -74,7 +77,7 @@ class CAPSRecordsAcceptanceTest extends CAPSTestSuite with Neo4jServerFixture wi
     val result = graph.cypher("MATCH (a:Actor)-[r]->(m:Film) RETURN a.birthyear, m.title")
 
     // Then
-    result.getRecords shouldHaveSize 8 // andContain 1952 -> "Batman Begins"
+    result.records shouldHaveSize 8 // andContain 1952 -> "Batman Begins"
   }
 
   it("filter rels on property") {
@@ -85,10 +88,9 @@ class CAPSRecordsAcceptanceTest extends CAPSTestSuite with Neo4jServerFixture wi
     val result = graph.cypher(query)
 
     // Then
-    result.getRecords.asCaps.df.collect().toBag should equal(
-      Bag(
-        Row(1937L, "Vanessa Redgrave", 2L, true, true, true, 21L, 2L, 20L, "Guenevere")
-      ))
+    result.records.asCaps.toCypherMaps.collect().toBag should equal(Bag(CypherMap(
+        "a" -> CAPSNode(2, Set("Actor", "Person"), CypherMap("birthyear" -> 1937, "name" -> "Vanessa Redgrave")),
+        "r" -> CAPSRelationship(21, 2, 20, "ACTED_IN", CypherMap("charactername" -> "Guenevere")))))
   }
 
   it("filter nodes on property") {
@@ -96,7 +98,7 @@ class CAPSRecordsAcceptanceTest extends CAPSTestSuite with Neo4jServerFixture wi
     val result = graph.cypher("MATCH (p:Person) WHERE p.birthyear = 1970 RETURN p.name")
 
     // Then
-    result.getRecords shouldHaveSize 3 // andContain "Christopher Nolan"
+    result.records shouldHaveSize 3 // andContain "Christopher Nolan"
   }
 
   it("expand and project, three properties") {
@@ -112,7 +114,7 @@ class CAPSRecordsAcceptanceTest extends CAPSTestSuite with Neo4jServerFixture wi
       "The Parent Trap",
       1963
     )
-    result.getRecords shouldHaveSize 8 // andContain tuple
+    result.records shouldHaveSize 8 // andContain tuple
   }
 
   // Removed the data node that enabled this test
@@ -122,13 +124,13 @@ class CAPSRecordsAcceptanceTest extends CAPSTestSuite with Neo4jServerFixture wi
     val movieResult = graph.cypher("MATCH (m:Movie) RETURN m.title")
 
     // Then
-    movieResult.getRecords shouldHaveSize 1 // andContain 444
+    movieResult.records shouldHaveSize 1 // andContain 444
 
     // When
     val filmResult = graph.cypher("MATCH (f:Film) RETURN f.title")
 
     // Then
-    filmResult.getRecords shouldHaveSize 5 // andContain "Camelot"
+    filmResult.records shouldHaveSize 5 // andContain "Camelot"
   }
 
   it("multiple hops of expand with different reltypes") {
@@ -136,10 +138,9 @@ class CAPSRecordsAcceptanceTest extends CAPSTestSuite with Neo4jServerFixture wi
     val query = "MATCH (c:City)<-[:BORN_IN]-(a:Actor)-[r:ACTED_IN]->(f:Film) RETURN a.name, c.name, f.title"
 
     // When
-    val records = graph.cypher(query).getRecords
+    val records = graph.cypher(query).records
 
-    records.asCaps.df.collect().toBag should equal(
-      Bag(
+    records.asCaps.df.collect().toBag should equal(Bag(
         Row("Natasha Richardson", "London", "The Parent Trap"),
         Row("Dennis Quaid", "Houston", "The Parent Trap"),
         Row("Lindsay Lohan", "New York", "The Parent Trap"),
@@ -160,7 +161,7 @@ class CAPSRecordsAcceptanceTest extends CAPSTestSuite with Neo4jServerFixture wi
       "Brendan Madden",
       "Tom Sawyer Software",
       "#tsperspectives 7.6 is 15% faster with #neo4j Bolt support. https://t.co/1xPxB9slrB @TSawyerSoftware #graphviz")
-    result.getRecords shouldHaveSize 79 // andContain tuple
+    result.records shouldHaveSize 79 // andContain tuple
   }
 
   implicit class OtherRichRecords(records: CypherRecords) {

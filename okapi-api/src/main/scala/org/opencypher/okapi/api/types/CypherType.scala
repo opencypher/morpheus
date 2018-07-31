@@ -54,23 +54,24 @@ object CypherType {
     }
 
     val graphRegex = """\@ (.+)\\??\$""".r
+
     def extractGraph(s: String): Option[QualifiedGraphName] = s match {
       case graphRegex(g) => Some(QualifiedGraphName(g))
       case _ => None
     }
 
     val noneNullType = name match {
-      case "STRING"  | "STRING?"  => Some(CTString)
+      case "STRING" | "STRING?" => Some(CTString)
       case "INTEGER" | "INTEGER?" => Some(CTInteger)
-      case "FLOAT"   | "FLOAT?"   => Some(CTFloat)
-      case "NUMBER"  | "NUMBER?"  => Some(CTNumber)
+      case "FLOAT" | "FLOAT?" => Some(CTFloat)
+      case "NUMBER" | "NUMBER?" => Some(CTNumber)
       case "BOOLEAN" | "BOOLEAN?" => Some(CTBoolean)
-      case "ANY"     | "ANY?"     => Some(CTAny)
-      case "VOID"    | "VOID?"    => Some(CTVoid)
-      case "NULL"    | "NULL?"    => Some(CTNull)
-      case "MAP"     | "MAP?"     => Some(CTMap)
-      case "PATH"    | "PATH?"    => Some(CTPath)
-      case "?"       | "??"       => Some(CTWildcard)
+      case "ANY" | "ANY?" => Some(CTAny)
+      case "VOID" | "VOID?" => Some(CTVoid)
+      case "NULL" | "NULL?" => Some(CTNull)
+      case "MAP" | "MAP?" => Some(CTMap)
+      case "PATH" | "PATH?" => Some(CTPath)
+      case "?" | "??" => Some(CTWildcard)
 
       case node if node.startsWith("NODE") =>
         Some(CTNode(extractLabels(node, "NODE", ":"), extractGraph(node)))
@@ -80,13 +81,13 @@ object CypherType {
 
       case list if list.startsWith("LIST") =>
         CypherType
-          .fromName(list.replaceFirst("""LIST\?? OF """,""))
+          .fromName(list.replaceFirst("""LIST\?? OF """, ""))
           .map(CTList)
 
       case _ => None
     }
 
-    noneNullType.map(ct => if(name == ct.name) ct else ct.nullable)
+    noneNullType.map(ct => if (name == ct.name) ct else ct.nullable)
   }
 
   implicit class TypeCypherValue(cv: CypherValue) {
@@ -294,7 +295,9 @@ sealed case class CTRelationship(
   private def graphToString = graph.map(n => s" @ $n").getOrElse("")
 
   final override def name: String =
-    if (types.isEmpty) s"RELATIONSHIP$graphToString" else s"RELATIONSHIP(${types.map(t => s"$t").mkString(":", "|", "")})$graphToString"
+    if (types.isEmpty) s"RELATIONSHIP$graphToString" else s"RELATIONSHIP(${
+      types.map(t => s"$t").mkString(":", "|", "")
+    })$graphToString"
 
   final override def nullable: CTRelationshipOrNull =
     CTRelationshipOrNull(types, graph)
@@ -339,7 +342,7 @@ sealed case class CTRelationship(
 
 object CTRelationshipOrNull extends CTRelationshipOrNull(Set.empty, None) with Serializable {
   def apply(types: String*): CTRelationshipOrNull =
-   CTRelationshipOrNull(types.toSet)
+    CTRelationshipOrNull(types.toSet)
 
   def apply(types: Set[String]): CTRelationshipOrNull =
     CTRelationshipOrNull(types, None)

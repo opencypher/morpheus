@@ -44,7 +44,7 @@ class ReturnBehaviour extends CAPSTestSuite with DefaultGraphInit {
 
       val result = g.cypher("MATCH (a:A) WITH a, a.name AS foo RETURN a")
 
-      result.getRecords.collect.toBag should equal(Bag(
+      result.records.collect.toBag should equal(Bag(
         CypherMap("a" -> CAPSNode(0L, Set("A"), CypherMap("name" -> "me"))),
         CypherMap("a" -> CAPSNode(1L, Set("A"), CypherMap.empty))
       ))
@@ -55,7 +55,7 @@ class ReturnBehaviour extends CAPSTestSuite with DefaultGraphInit {
 
       val result = g.cypher("MATCH (a:A) WITH a, a AS foo RETURN a")
 
-      result.getRecords.collect.toBag should equal(Bag(
+      result.records.collect.toBag should equal(Bag(
         CypherMap("a" -> CAPSNode(0L, Set("A"), CypherMap("name" -> "me"))),
         CypherMap("a" -> CAPSNode(1L, Set("A"), CypherMap.empty))
       ))
@@ -68,7 +68,7 @@ class ReturnBehaviour extends CAPSTestSuite with DefaultGraphInit {
       // perhaps copy all child expressions in RecordHeader
       val result = g.cypher("MATCH (a:A) WITH a, a AS foo RETURN foo AS b")
 
-      result.getRecords.collect.toBag should equal(Bag(
+      result.records.collect.toBag should equal(Bag(
         CypherMap("b" -> CAPSNode(0L, Set("A"), CypherMap("name" -> "me"))),
         CypherMap("b" -> CAPSNode(1L, Set("A"), CypherMap.empty))
       ))
@@ -79,7 +79,7 @@ class ReturnBehaviour extends CAPSTestSuite with DefaultGraphInit {
 
       val result = g.cypher("MATCH (a:A), (b) RETURN a")
 
-      result.getRecords.collect.toBag should equal(Bag(
+      result.records.collect.toBag should equal(Bag(
         CypherMap("a" -> CAPSNode(0L, Set("A"), CypherMap.empty))
       ))
     }
@@ -87,17 +87,17 @@ class ReturnBehaviour extends CAPSTestSuite with DefaultGraphInit {
     it("can run a single return query") {
       val given = initGraph("CREATE ()")
 
-      val result = given.cypher("RETURN 1").asCaps
+      val result = given.cypher("RETURN 1")
 
-      result.getRecords shouldMatch CypherMap("1" -> 1)
+      result.records.asCaps shouldMatch CypherMap("1" -> 1)
     }
 
     it("can run single return query with several columns") {
       val given = initGraph("CREATE (), ()")
 
-      val result = given.cypher("RETURN 1 AS foo, '' AS str").asCaps
+      val result = given.cypher("RETURN 1 AS foo, '' AS str")
 
-      result.getRecords shouldMatch CypherMap("foo" -> 1, "str" -> "")
+      result.records.asCaps shouldMatch CypherMap("foo" -> 1, "str" -> "")
     }
 
     it("returns full node") {
@@ -105,7 +105,7 @@ class ReturnBehaviour extends CAPSTestSuite with DefaultGraphInit {
 
       val result = given.cypher("MATCH (n) RETURN n")
 
-      result.getRecords.toMaps should equal(Bag(
+      result.records.toMaps should equal(Bag(
         CypherMap("n" -> 0, "n.foo" -> "bar"),
         CypherMap("n" -> 1, "n.foo" -> null))
       )
@@ -116,7 +116,7 @@ class ReturnBehaviour extends CAPSTestSuite with DefaultGraphInit {
 
       val result = given.cypher("MATCH ()-[r]->() RETURN r")
 
-      result.getRecords.collect.toBag should equal(Bag(
+      result.records.collect.toBag should equal(Bag(
         CypherMap("r" -> CAPSRelationship(2, 0, 1, "Rel", CypherMap("foo" -> "bar"))),
         CypherMap("r" -> CAPSRelationship(4, 1, 3, "Rel"))
       ))
@@ -127,7 +127,7 @@ class ReturnBehaviour extends CAPSTestSuite with DefaultGraphInit {
 
       val result = given.cypher("MATCH ()-[r]->() RETURN r.foo")
 
-      result.getRecords.toMaps should equal(Bag(
+      result.records.toMaps should equal(Bag(
         CypherMap("r.foo" -> "bar"),
         CypherMap("r.foo" -> null)
       ))
@@ -145,7 +145,7 @@ class ReturnBehaviour extends CAPSTestSuite with DefaultGraphInit {
         """.stripMargin
 
 
-      graph.cypher(query).getRecords.collect.toBag should equal(Bag(
+      graph.cypher(query).records.collect.toBag should equal(Bag(
         CypherMap("a.val" -> 0)
       ))
     }
@@ -164,7 +164,7 @@ class ReturnBehaviour extends CAPSTestSuite with DefaultGraphInit {
 
       val result = given.cypher("MATCH (n) RETURN DISTINCT n.name AS name")
 
-      result.getRecords.toMaps should equal(Bag(
+      result.records.toMaps should equal(Bag(
         CypherMap("name" -> "bar"),
         CypherMap("name" -> "foo"),
         CypherMap("name" -> "baz")
@@ -182,7 +182,7 @@ class ReturnBehaviour extends CAPSTestSuite with DefaultGraphInit {
 
       val result = given.cypher("MATCH (n) RETURN DISTINCT n.p1 as p1, n.p2 as p2")
 
-      result.getRecords.toMaps should equal(Bag(
+      result.records.toMaps should equal(Bag(
         CypherMap("p2" -> "a", "p1" -> "a"),
         CypherMap("p2" -> "a", "p1" -> "b"),
         CypherMap("p2" -> "b", "p1" -> "a"),
@@ -198,7 +198,7 @@ class ReturnBehaviour extends CAPSTestSuite with DefaultGraphInit {
       val result = given.cypher("MATCH (a) RETURN a.val AS val ORDER BY val")
 
       // Then
-      result.getRecords.toMaps should equal(Bag(
+      result.records.toMaps should equal(Bag(
         CypherMap("val" -> 3L),
         CypherMap("val" -> 4L),
         CypherMap("val" -> 42L)
@@ -211,7 +211,7 @@ class ReturnBehaviour extends CAPSTestSuite with DefaultGraphInit {
       val result = given.cypher("MATCH (a) RETURN a.val as val ORDER BY val ASC")
 
       // Then
-      result.getRecords.toMaps should equal(Bag(
+      result.records.toMaps should equal(Bag(
         CypherMap("val" -> 3L),
         CypherMap("val" -> 4L),
         CypherMap("val" -> 42L)
@@ -224,7 +224,7 @@ class ReturnBehaviour extends CAPSTestSuite with DefaultGraphInit {
       val result = given.cypher("MATCH (a) RETURN a.val as val ORDER BY val DESC")
 
       // Then
-      result.getRecords.toMaps should equal(Bag(
+      result.records.toMaps should equal(Bag(
         CypherMap("val" -> 42L),
         CypherMap("val" -> 4L),
         CypherMap("val" -> 3L)
@@ -235,10 +235,10 @@ class ReturnBehaviour extends CAPSTestSuite with DefaultGraphInit {
     it("can skip") {
       val given = initGraph("""CREATE (:Node {val: 4}),(:Node {val: 3}),(:Node  {val: 42})""")
 
-      val result = given.cypher("MATCH (a) RETURN a.val as val SKIP 2").asCaps
+      val result = given.cypher("MATCH (a) RETURN a.val as val SKIP 2")
 
       // Then
-      result.getRecords.df.count() should equal(1)
+      result.records.asCaps.table.df.count() should equal(1)
     }
 
     it("can order with skip") {
@@ -247,7 +247,7 @@ class ReturnBehaviour extends CAPSTestSuite with DefaultGraphInit {
       val result = given.cypher("MATCH (a) RETURN a.val as val ORDER BY val SKIP 1")
 
       // Then
-      result.getRecords.toMaps should equal(Bag(
+      result.records.toMaps should equal(Bag(
         CypherMap("val" -> 4L),
         CypherMap("val" -> 42L)
       ))
@@ -259,7 +259,7 @@ class ReturnBehaviour extends CAPSTestSuite with DefaultGraphInit {
       val result = given.cypher("MATCH (a) RETURN a.val as val ORDER BY val SKIP 1 + 1")
 
       // Then
-      result.getRecords.toMaps should equal(Bag(
+      result.records.toMaps should equal(Bag(
         CypherMap("val" -> 42L)
       ))
     }
@@ -269,10 +269,10 @@ class ReturnBehaviour extends CAPSTestSuite with DefaultGraphInit {
     it("can evaluate limit") {
       val given = initGraph("""CREATE (:Node {val: 4}),(:Node {val: 3}),(:Node  {val: 42})""")
 
-      val result = given.cypher("MATCH (a) RETURN a.val as val LIMIT 1").asCaps
+      val result = given.cypher("MATCH (a) RETURN a.val as val LIMIT 1")
 
       // Then
-      result.getRecords.df.count() should equal(1)
+      result.records.asCaps.df.count() should equal(1)
     }
 
     it("can evaluate limit with parameter value") {
@@ -285,7 +285,7 @@ class ReturnBehaviour extends CAPSTestSuite with DefaultGraphInit {
           |LIMIT $limit
           |RETURN a""".stripMargin, Map("limit" -> CypherValue(1)))
 
-      res.getRecords.size
+      res.records.size
     }
 
 
@@ -295,7 +295,7 @@ class ReturnBehaviour extends CAPSTestSuite with DefaultGraphInit {
       val result = given.cypher("MATCH (a) RETURN a.val as val ORDER BY val LIMIT 1")
 
       // Then
-      result.getRecords.toMaps should equal(Bag(
+      result.records.toMaps should equal(Bag(
         CypherMap("val" -> 3L)
       ))
     }
@@ -306,7 +306,7 @@ class ReturnBehaviour extends CAPSTestSuite with DefaultGraphInit {
       val result = given.cypher("MATCH (a) RETURN a.val as val ORDER BY val LIMIT 1 + 1")
 
       // Then
-      result.getRecords.toMaps should equal(Bag(
+      result.records.toMaps should equal(Bag(
         CypherMap("val" -> 3L),
         CypherMap("val" -> 4L)
       ))
@@ -318,7 +318,7 @@ class ReturnBehaviour extends CAPSTestSuite with DefaultGraphInit {
       val result = given.cypher("MATCH (a) RETURN a.val as val ORDER BY val SKIP 1 LIMIT 1")
 
       // Then
-      result.getRecords.toMaps should equal(Bag(
+      result.records.toMaps should equal(Bag(
         CypherMap("val" -> 4L)
       ))
     }

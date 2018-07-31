@@ -57,7 +57,7 @@ class QualifiedGraphNameAcceptance extends CAPSTestSuite with DefaultGraphInit {
            |MATCH (n)
            |RETURN COUNT(n) as cnt
         """.stripMargin
-      ).getRecords.iterator.toBag should equal(Bag(
+      ).records.iterator.toBag should equal(Bag(
         CypherMap("cnt" -> 2)
       ))
     }
@@ -87,7 +87,7 @@ class QualifiedGraphNameAcceptance extends CAPSTestSuite with DefaultGraphInit {
            |MATCH (n)
            |RETURN COUNT(n) as cnt
         """.stripMargin
-      ).getRecords.iterator.toBag should equal(Bag(
+      ).records.iterator.toBag should equal(Bag(
         CypherMap("cnt" -> 2)
       ))
     }
@@ -101,7 +101,7 @@ class QualifiedGraphNameAcceptance extends CAPSTestSuite with DefaultGraphInit {
            |MATCH (n)
            |RETURN COUNT(n) as cnt
         """.stripMargin
-      ).getRecords.iterator.toBag should equal(Bag(
+      ).records.iterator.toBag should equal(Bag(
         CypherMap("cnt" -> 2)
       ))
     }
@@ -131,7 +131,7 @@ class QualifiedGraphNameAcceptance extends CAPSTestSuite with DefaultGraphInit {
            |MATCH (n)
            |RETURN COUNT(n) as cnt
         """.stripMargin
-      ).getRecords.iterator.toBag should equal(Bag(
+      ).records.iterator.toBag should equal(Bag(
         CypherMap("cnt" -> 2)
       ))
     }

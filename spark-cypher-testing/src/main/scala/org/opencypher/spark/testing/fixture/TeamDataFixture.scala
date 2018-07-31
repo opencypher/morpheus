@@ -37,7 +37,6 @@ import org.opencypher.spark.api.value.{CAPSNode, CAPSRelationship}
 import org.opencypher.okapi.testing.Bag
 import org.opencypher.okapi.testing.Bag._
 import org.opencypher.spark.api.io.{CAPSNodeTable, CAPSRelationshipTable}
-import org.opencypher.spark.impl.{CAPSGraph, CAPSResult}
 
 import scala.collection.mutable
 
@@ -125,7 +124,7 @@ trait TeamDataFixture extends TestDataFixture {
   // TODO: figure out why the column order is different for the calls in this and the next method
   /**
     * Returns the rels for the test graph in /resources/csv/sn as expected by a
-    * [[CAPSGraph#relationships]] call.
+    * [[org.opencypher.okapi.relational.api.graph.RelationalCypherGraph[DataFrameTable]#relationships]] call.
     *
     * @return expected rels
     */
@@ -137,7 +136,7 @@ trait TeamDataFixture extends TestDataFixture {
 
   /**
     * Returns the rels for the test graph in /resources/csv/sn as expected by a
-    * [[CAPSResult#records]] call.
+    * [[[org.opencypher.okapi.relational.api.graph.RelationalCypherGraph[DataFrameTable]#records]] call.
     *
     * @return expected rels
     */

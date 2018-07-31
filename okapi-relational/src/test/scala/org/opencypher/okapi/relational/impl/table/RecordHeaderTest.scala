@@ -40,6 +40,7 @@ class RecordHeaderTest extends BaseTestSuite {
   val m: Var = Var("m")(CTNode("A", "B"))
   val o: Var = Var("o")(CTNode)
   val r: Var = Var("r")(CTRelationship)
+  val s: Var = Var("s")(CTNode("A"))
   val nodeList: Var = Var("l")(CTList(CTNode))
   val nodeListSegment: ListSegment = ListSegment(0, nodeList)(CTNode("A", "B"))
   val relList: Var = Var("l")(CTList(CTRelationship))
@@ -323,6 +324,12 @@ class RecordHeaderTest extends BaseTestSuite {
     nHeader.nodesForType(CTNode("C")) should equalWithTracing(Set.empty)
   }
 
+  it("returns all node var that match a given node type exactly") {
+    nHeader.nodesForType(CTNode("A", "B"), exactMatch = true) should equalWithTracing(Set(n))
+    nHeader.nodesForType(CTNode("A"), exactMatch = true) should equalWithTracing(Set.empty)
+    nHeader.nodesForType(CTNode("B"), exactMatch = true) should equalWithTracing(Set.empty)
+  }
+
   it("returns all rel vars for a given rel type") {
     rHeader.relationshipsForType(CTRelationship("R")) should equalWithTracing(Set(r))
     rHeader.relationshipsForType(CTRelationship("R", "S")) should equalWithTracing(Set(r))
@@ -335,6 +342,10 @@ class RecordHeaderTest extends BaseTestSuite {
     nHeader.select(Set(m)) should equal(RecordHeader.empty)
     (nHeader ++ mHeader).select(Set(n)) should equal(nHeader)
     (nHeader ++ mHeader).select(Set(m)) should equal(mHeader)
+  }
+
+  it("returns the alias without the original when selecting an alias") {
+    nHeader.select(Set(n as m)) should equal(nHeader.withAlias(n as m) -- nHeader.expressions)
   }
 
   it("returns selected entity and alias vars and their corresponding columns") {

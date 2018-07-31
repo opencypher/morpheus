@@ -44,6 +44,7 @@ trait RecordMatchingTestSupport {
   self: CAPSTestSuite =>
 
   implicit class RecordMatcher(records: CAPSRecords) {
+
     def shouldMatch(expected: CypherMap*): Assertion = {
       records.collect.toBag should equal(Bag(expected: _*))
     }
@@ -56,18 +57,6 @@ trait RecordMatchingTestSupport {
       actualData should equal(expectedData)
     }
 
-    def shouldMatchOpaquely(expectedRecords: CAPSRecords): Assertion = {
-      RecordMatcher(projected(records)) shouldMatch projected(expectedRecords)
-    }
-
-    private def projected(records: CAPSRecords): CAPSRecords = {
-      val aliases = records.header.expressions.map {
-        case v: Var => v
-        case e => e as Var(e.withoutType)(e.cypherType)
-      }.toSeq
-
-      records.select(aliases.head, aliases.tail: _*)
-    }
   }
 
   implicit class RichRecords(records: CypherRecords) {
@@ -89,4 +78,5 @@ trait RecordMatchingTestSupport {
     def toMapsWithCollectedEntities: Bag[CypherMap] =
       Bag(capsRecords.toCypherMaps.collect(): _*)
   }
+
 }

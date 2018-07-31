@@ -38,7 +38,7 @@ import org.opencypher.okapi.api.types.CypherType.joinMonoid
 import org.opencypher.okapi.api.types._
 import org.opencypher.okapi.ir.impl.parse.rewriter.ExistsPattern
 import org.opencypher.v9_1.expressions._
-import org.opencypher.v9_1.expressions.functions.{Coalesce, Collect, Exists, Max, Min, ToString, ToBoolean}
+import org.opencypher.v9_1.expressions.functions.{Coalesce, Collect, Exists, Max, Min, ToBoolean, ToInteger, ToString}
 
 import scala.util.Try
 
@@ -163,7 +163,7 @@ object SchemaTyper {
       for {
         lhsType <- process[R](lhs)
         rhsType <- process[R](rhs)
-        result <- recordTypes(lhs -> lhsType, rhs -> rhsType) >> recordAndUpdate(expr -> CTBoolean)
+        result <- recordTypes(lhs -> lhsType, rhs -> rhsType) >> recordAndUpdate(expr -> CTBoolean.asNullableAs(lhsType join rhsType))
       } yield result
 
     case cmp: InequalityExpression =>
@@ -239,8 +239,8 @@ object SchemaTyper {
       expr.arguments match {
         case Seq(first) =>
           for {
-            _ <- process[R](first)
-            existsType <- recordAndUpdate(expr -> CTString)
+            inner <- process[R](first)
+            existsType <- recordAndUpdate(expr -> CTString.asNullableAs(inner))
           } yield existsType
         case seq =>
           error(WrongNumberOfArguments(expr, 1, seq.size))
@@ -299,8 +299,8 @@ object SchemaTyper {
     case indexing @ ContainerIndex(list @ ListLiteral(exprs), index: SignedDecimalIntegerLiteral)
         if Try(parseInt(index.stringVal)).nonEmpty =>
       for {
-        listType <- process[R](list)
-        indexType <- process[R](index)
+        _ <- process[R](list)
+        _ <- process[R](index)
         eltType <- {
           Try(parseInt(index.stringVal)).map { rawPos =>
             val pos = if (rawPos < 0) exprs.size + rawPos else rawPos
@@ -318,7 +318,7 @@ object SchemaTyper {
 
           // TODO: Test all cases
           case (CTList(eltTyp), CTInteger) =>
-            recordAndUpdate(expr -> eltTyp.asNullableAs(indexTyp join eltTyp))
+            recordAndUpdate(expr -> eltTyp.nullable)
 
           case (CTListOrNull(eltTyp), CTInteger) =>
             recordAndUpdate(expr -> eltTyp.nullable)
@@ -458,6 +458,9 @@ object SchemaTyper {
         args: Seq[(Expression, CypherType)]): Eff[R, Set[(Seq[CypherType], CypherType)]]
   }
 
+  // TODO: Front end signatures do not track nullability. We should have a clean solution instead of an exception list
+  private val canReturnNull: Set[functions.Function] = Set(ToInteger, ToString)
+
   private case object FunctionInvocationTyper extends SignatureBasedInvocationTyper[FunctionInvocation] {
     override protected def generateSignaturesFor[R: _hasSchema: _keepsErrors: _hasTracker: _logsTypes](
         expr: FunctionInvocation,
@@ -466,7 +469,8 @@ object SchemaTyper {
         case f: TypeSignatures =>
           pure(f.signatures.map { sig =>
             val sigInputTypes = sig.argumentTypes.map(fromFrontendType).map(_.nullable)
-            val sigOutputType = fromFrontendType(sig.outputType)
+            val typeFromFrontend = fromFrontendType(sig.outputType)
+            val sigOutputType = if (canReturnNull.contains(f)) typeFromFrontend.nullable else typeFromFrontend
             sigInputTypes -> sigOutputType
           }.toSet)
 
@@ -480,7 +484,7 @@ object SchemaTyper {
         case ToBoolean =>
           pure[R, Set[(Seq[CypherType], CypherType)]](
             Set(
-              Seq(CTString) -> CTBoolean,
+              Seq(CTString) -> CTBoolean.nullable,
               Seq(CTBoolean) -> CTBoolean
             ))
 

@@ -38,10 +38,10 @@ import org.opencypher.spark.api.CAPSSession
 import org.opencypher.spark.api.io.metadata.CAPSGraphMetaData
 import org.opencypher.spark.api.io.util.CAPSGraphExport._
 import org.opencypher.spark.impl.CAPSConverters._
-import org.opencypher.spark.impl.CAPSGraph
 import org.opencypher.spark.impl.DataFrameOps._
 import org.opencypher.spark.impl.io.CAPSPropertyGraphDataSource
 import org.opencypher.spark.schema.CAPSSchema
+import org.opencypher.spark.schema.CAPSSchema._
 
 import scala.concurrent.duration.Duration
 import scala.concurrent.{Await, ExecutionContext, ExecutionContextExecutorService, Future}
@@ -53,7 +53,7 @@ import scala.util.{Failure, Success}
   * It automatically creates initializes a ScanGraphs an only requires the implementor to provider simpler methods for
   * reading/writing files and tables.
   */
-abstract class AbstractPropertyGraphDataSource(implicit val session: CAPSSession) extends CAPSPropertyGraphDataSource {
+abstract class AbstractPropertyGraphDataSource(implicit val caps: CAPSSession) extends CAPSPropertyGraphDataSource {
 
   def tableStorageFormat: String
 
@@ -86,24 +86,24 @@ abstract class AbstractPropertyGraphDataSource(implicit val session: CAPSSession
   override def hasGraph(graphName: GraphName): Boolean = graphNameCache.contains(graphName)
 
   override def delete(graphName: GraphName): Unit = {
+    deleteGraph(graphName)
     schemaCache -= graphName
     graphNameCache -= graphName
-    deleteGraph(graphName)
   }
 
-  override def graph(graphName: GraphName): PropertyGraph = {
-    if (!hasGraph(graphName)) {
-      throw GraphNotFoundException(s"Graph with name '$graphName'")
+  override def graph(name: GraphName): PropertyGraph = {
+    if (!hasGraph(name)) {
+      throw GraphNotFoundException(s"Graph with name '$name'")
     } else {
-      val capsSchema: CAPSSchema = schema(graphName).get
-      val capsMetaData: CAPSGraphMetaData = readCAPSGraphMetaData(graphName)
+      val capsSchema: CAPSSchema = schema(name).get
+      val capsMetaData: CAPSGraphMetaData = readCAPSGraphMetaData(name)
       val nodeTables = capsSchema.allLabelCombinations.map { combo =>
         val propertyColsWithCypherType = capsSchema.keysFor(Set(combo)).map {
           case (key, cypherType) => key.toPropertyColumnName -> cypherType
         }
 
         val columnsWithCypherType = propertyColsWithCypherType + (GraphEntity.sourceIdKey -> CTInteger)
-        val df = readNodeTable(graphName, combo, capsSchema.canonicalNodeStructType(combo))
+        val df = readNodeTable(name, combo, capsSchema.canonicalNodeStructType(combo))
         CAPSNodeTable(combo, df.setNullability(columnsWithCypherType))
       }
 
@@ -113,10 +113,10 @@ abstract class AbstractPropertyGraphDataSource(implicit val session: CAPSSession
         }
 
         val columnsWithCypherType = propertyColsWithCypherType ++ Relationship.nonPropertyAttributes.map(_ -> CTInteger)
-        val df = readRelationshipTable(graphName, relType, capsSchema.canonicalRelStructType(relType))
+        val df = readRelationshipTable(name, relType, capsSchema.canonicalRelStructType(relType))
         CAPSRelationshipTable(relType, df.setNullability(columnsWithCypherType))
       }
-      CAPSGraph.create(capsMetaData.tags, Some(capsSchema), nodeTables.head, (nodeTables.tail ++ relTables).toSeq: _*)
+      caps.graphs.create(capsMetaData.tags, Some(capsSchema), nodeTables.head, (nodeTables.tail ++ relTables).toSeq: _*)
     }
   }
 
@@ -130,30 +130,32 @@ abstract class AbstractPropertyGraphDataSource(implicit val session: CAPSSession
     }
   }
 
+
   override def store(graphName: GraphName, graph: PropertyGraph): Unit = {
     checkStorable(graphName)
 
-    val poolSize = session.sparkSession.conf.getOption("spark.executor.instances").map(_.toInt).getOrElse(2)
+    val poolSize = caps.sparkSession.conf.getOption("spark.executor.instances").map(_.toInt).getOrElse(2)
 
     implicit val executionContext: ExecutionContextExecutorService =
       ExecutionContext.fromExecutorService(Executors.newFixedThreadPool(poolSize))
 
-    val capsGraph = graph.asCaps
-    val schema = capsGraph.schema
+    val relationalGraph = graph.asCaps
+
+    val schema = relationalGraph.schema.asCaps
     schemaCache += graphName -> schema
     graphNameCache += graphName
-    writeCAPSGraphMetaData(graphName, CAPSGraphMetaData(tableStorageFormat, capsGraph.tags))
+    writeCAPSGraphMetaData(graphName, CAPSGraphMetaData(tableStorageFormat, relationalGraph.tags))
     writeSchema(graphName, schema)
 
     val nodeWrites = schema.labelCombinations.combos.map { combo =>
       Future {
-        writeNodeTable(graphName, combo, capsGraph.canonicalNodeTable(combo))
+        writeNodeTable(graphName, combo, relationalGraph.canonicalNodeTable(combo))
       }
     }
 
     val relWrites = schema.relationshipTypes.map { relType =>
       Future {
-        writeRelationshipTable(graphName, relType, capsGraph.canonicalRelationshipTable(relType))
+        writeRelationshipTable(graphName, relType, relationalGraph.canonicalRelationshipTable(relType))
       }
     }
 

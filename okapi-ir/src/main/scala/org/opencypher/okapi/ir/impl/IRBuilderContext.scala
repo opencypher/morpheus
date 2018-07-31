@@ -50,7 +50,7 @@ final case class IRBuilderContext(
   workingGraph: IRGraph, // initially the ambient graph, but gets changed by `FROM GRAPH`/`CONSTRUCT`
   blockRegistry: BlockRegistry[Expr] = BlockRegistry.empty[Expr],
   semanticState: SemanticState,
-  queryCatalog: QueryCatalog, // copy of Session catalog plus constructed graph schemas
+  queryCatalog: CatalogWithQuerySchemas, // copy of Session catalog plus constructed graph schemas
   knownTypes: Map[ast.Expression, CypherType] = Map.empty) {
   self =>
 
@@ -112,7 +112,7 @@ object IRBuilderContext {
     val registry = BlockRegistry.empty[Expr]
     val block = SourceBlock[Expr](workingGraph)
     val updatedRegistry = registry.register(block)
-    val queryCatalog = QueryCatalog(sessionCatalog)
+    val queryCatalog = CatalogWithQuerySchemas(sessionCatalog)
 
     val context = IRBuilderContext(
       qgnGenerator,

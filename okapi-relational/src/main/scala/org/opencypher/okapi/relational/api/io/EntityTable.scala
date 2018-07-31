@@ -34,13 +34,13 @@ import org.opencypher.okapi.impl.util.StringEncodingUtilities._
 import org.opencypher.okapi.ir.api.expr._
 import org.opencypher.okapi.ir.api.{Label, PropertyKey, RelType}
 import org.opencypher.okapi.relational.api.io.RelationalEntityMapping._
-import org.opencypher.okapi.relational.api.table.{FlatRelationalTable, RelationalCypherRecords}
+import org.opencypher.okapi.relational.api.table.{Table, RelationalCypherRecords}
 import org.opencypher.okapi.relational.impl.table.RecordHeader
 
 /**
   * An entity table describes how to map an input data frame to a Cypher entity (i.e. nodes or relationships).
   */
-trait EntityTable[T <: FlatRelationalTable[T]] extends RelationalCypherRecords[T] {
+trait EntityTable[T <: Table[T]] extends RelationalCypherRecords[T] {
 
   verify()
 

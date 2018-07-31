@@ -55,23 +55,23 @@ class CAPSSessionImplTest extends CAPSTestSuite with TeamDataFixture with GraphC
     val r3 = caps.cypher("FROM GRAPH working.b MATCH (n) RETURN n")
     val r4 = caps.cypher("FROM GRAPH foo.bar.baz.a MATCH (n) RETURN n")
 
-    r1.getRecords.collect.toBag should equal(Bag(
+    r1.records.collect.toBag should equal(Bag(
       CypherMap("n" -> CAPSNode(0L, Set("A")))
     ))
-    r2.getRecords.collect.toBag should equal(Bag(
+    r2.records.collect.toBag should equal(Bag(
       CypherMap("n" -> CAPSNode(0L, Set("B")))
     ))
-    r3.getRecords.collect.toBag should equal(Bag(
+    r3.records.collect.toBag should equal(Bag(
       CypherMap("n" -> CAPSNode(0L, Set("B")))
     ))
-    r4.getRecords.collect.toBag should equal(Bag(
+    r4.records.collect.toBag should equal(Bag(
       CypherMap("n" -> CAPSNode(0L, Set("C")))
     ))
   }
 
   it("can execute sql on registered tables") {
-    CAPSRecords.wrap(personDF).df.createOrReplaceTempView("people")
-    CAPSRecords.wrap(knowsDF).df.createOrReplaceTempView("knows")
+    caps.records.wrap(personDF).df.createOrReplaceTempView("people")
+    caps.records.wrap(knowsDF).df.createOrReplaceTempView("knows")
 
     val sqlResult = caps.sql(
       """
