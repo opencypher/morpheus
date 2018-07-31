@@ -326,11 +326,6 @@ final case class Distinct[T <: Table[T]](
 
 }
 
-final case class SimpleDistinct[T <: Table[T]](in: RelationalOperator[T]) extends RelationalOperator[T] {
-
-  override lazy val _table: T = in.table.distinct
-}
-
 final case class Aggregate[T <: Table[T]](
   in: RelationalOperator[T],
   group: Set[Var],
