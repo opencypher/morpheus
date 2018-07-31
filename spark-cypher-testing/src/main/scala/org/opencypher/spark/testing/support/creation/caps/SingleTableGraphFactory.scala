@@ -32,7 +32,7 @@ import org.opencypher.okapi.relational.api.graph.RelationalCypherGraph
 import org.opencypher.okapi.testing.propertygraph.InMemoryTestGraph
 import org.opencypher.spark.api.CAPSSession
 import org.opencypher.spark.impl.CAPSRecords
-import org.opencypher.spark.impl.table.SparkFlatRelationalTable.DataFrameTable
+import org.opencypher.spark.impl.table.SparkTable.DataFrameTable
 
 object SingleTableGraphFactory extends CAPSTestGraphFactory {
 

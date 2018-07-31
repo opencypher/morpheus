@@ -30,7 +30,7 @@ import org.opencypher.okapi.relational.api.graph.RelationalCypherGraph
 import org.opencypher.okapi.testing.BaseTestSuite
 import org.opencypher.okapi.testing.propertygraph.CreateGraphFactory
 import org.opencypher.spark.impl.CAPSConverters._
-import org.opencypher.spark.impl.table.SparkFlatRelationalTable.DataFrameTable
+import org.opencypher.spark.impl.table.SparkTable.DataFrameTable
 import org.opencypher.spark.testing.support.creation.caps.{CAPSScanGraphFactory, CAPSTestGraphFactory}
 
 trait GraphConstructionFixture {

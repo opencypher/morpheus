@@ -30,7 +30,7 @@ import org.apache.spark.sql.Row
 import org.opencypher.okapi.ir.api.expr.Expr
 import org.opencypher.okapi.relational.api.table.RelationalCypherRecords
 import org.opencypher.okapi.testing.Bag._
-import org.opencypher.spark.impl.table.SparkFlatRelationalTable.DataFrameTable
+import org.opencypher.spark.impl.table.SparkTable.DataFrameTable
 import org.opencypher.spark.testing.CAPSTestSuite
 
 trait RecordsVerificationFixture {

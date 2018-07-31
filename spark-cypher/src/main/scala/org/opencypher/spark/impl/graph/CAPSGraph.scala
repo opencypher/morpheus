@@ -29,7 +29,7 @@ package org.opencypher.spark.impl.graph
 import org.apache.spark.sql.DataFrame
 import org.apache.spark.storage.StorageLevel
 import org.opencypher.okapi.relational.api.graph.RelationalCypherGraph
-import org.opencypher.spark.impl.table.SparkFlatRelationalTable.DataFrameTable
+import org.opencypher.spark.impl.table.SparkTable.DataFrameTable
 
 object CAPSGraph {
 

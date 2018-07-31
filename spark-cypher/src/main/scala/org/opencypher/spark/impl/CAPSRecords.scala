@@ -41,7 +41,7 @@ import org.opencypher.spark.api.CAPSSession
 import org.opencypher.spark.impl.DataFrameOps._
 import org.opencypher.spark.impl.convert.SparkConversions._
 import org.opencypher.spark.impl.convert.rowToCypherMap
-import org.opencypher.spark.impl.table.SparkFlatRelationalTable._
+import org.opencypher.spark.impl.table.SparkTable._
 
 import scala.collection.JavaConverters._
 

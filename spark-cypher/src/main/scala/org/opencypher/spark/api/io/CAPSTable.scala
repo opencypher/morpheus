@@ -34,7 +34,7 @@ import org.opencypher.okapi.impl.util.StringEncodingUtilities._
 import org.opencypher.okapi.relational.api.io.EntityTable
 import org.opencypher.spark.api.CAPSSession
 import org.opencypher.spark.impl.DataFrameOps._
-import org.opencypher.spark.impl.table.SparkFlatRelationalTable.DataFrameTable
+import org.opencypher.spark.impl.table.SparkTable.DataFrameTable
 import org.opencypher.spark.impl.util.Annotation
 import org.opencypher.spark.impl.{CAPSRecords, RecordBehaviour}
 import org.opencypher.spark.schema.CAPSSchema

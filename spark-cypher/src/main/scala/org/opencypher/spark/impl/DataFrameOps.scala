@@ -39,7 +39,7 @@ import org.opencypher.okapi.ir.api.expr._
 import org.opencypher.okapi.relational.api.planning.RelationalRuntimeContext
 import org.opencypher.okapi.relational.impl.table.RecordHeader
 import org.opencypher.spark.impl.convert.SparkConversions._
-import org.opencypher.spark.impl.table.SparkFlatRelationalTable.DataFrameTable
+import org.opencypher.spark.impl.table.SparkTable.DataFrameTable
 
 object DataFrameOps {
 

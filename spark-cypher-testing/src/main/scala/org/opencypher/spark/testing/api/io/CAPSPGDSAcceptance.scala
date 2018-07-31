@@ -35,7 +35,7 @@ import org.opencypher.spark.api.value.{CAPSNode, CAPSRelationship}
 import org.opencypher.spark.impl.CAPSConverters._
 import org.opencypher.okapi.relational.api.tagging.Tags._
 import org.opencypher.spark.impl.encoders._
-import org.opencypher.spark.impl.table.SparkFlatRelationalTable.DataFrameTable
+import org.opencypher.spark.impl.table.SparkTable.DataFrameTable
 
 import scala.util.{Failure, Success, Try}
 

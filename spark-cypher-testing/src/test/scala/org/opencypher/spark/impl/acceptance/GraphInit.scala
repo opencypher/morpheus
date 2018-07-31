@@ -28,7 +28,7 @@ package org.opencypher.spark.impl.acceptance
 
 import org.opencypher.okapi.relational.api.graph.RelationalCypherGraph
 import org.opencypher.spark.api.CAPSSession
-import org.opencypher.spark.impl.table.SparkFlatRelationalTable.DataFrameTable
+import org.opencypher.spark.impl.table.SparkTable.DataFrameTable
 import org.opencypher.spark.testing.support.creation.caps.{CAPSScanGraphFactory, SingleTableGraphFactory}
 
 trait GraphInit {

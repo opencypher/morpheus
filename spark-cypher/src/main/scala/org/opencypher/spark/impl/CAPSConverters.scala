@@ -33,7 +33,7 @@ import org.opencypher.okapi.relational.api.graph.RelationalCypherGraph
 import org.opencypher.okapi.relational.api.planning.RelationalCypherResult
 import org.opencypher.okapi.relational.api.table.RelationalCypherRecords
 import org.opencypher.spark.api.CAPSSession
-import org.opencypher.spark.impl.table.SparkFlatRelationalTable.DataFrameTable
+import org.opencypher.spark.impl.table.SparkTable.DataFrameTable
 
 object CAPSConverters {
 

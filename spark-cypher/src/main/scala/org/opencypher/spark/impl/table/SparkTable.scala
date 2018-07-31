@@ -43,7 +43,7 @@ import org.opencypher.spark.impl.convert.SparkConversions._
 
 import scala.collection.JavaConverters._
 
-object SparkFlatRelationalTable {
+object SparkTable {
 
   implicit class DataFrameTable(val df: DataFrame) extends Table[DataFrameTable] {
 

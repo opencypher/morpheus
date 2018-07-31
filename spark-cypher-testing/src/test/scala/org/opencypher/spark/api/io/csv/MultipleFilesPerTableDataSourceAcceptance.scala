@@ -30,7 +30,7 @@ import org.opencypher.okapi.relational.api.graph.RelationalCypherGraph
 import org.opencypher.spark.api.io.fs.FSGraphSource
 import org.opencypher.spark.api.io.fs.hdfs.HdfsDataSourceAcceptance
 import org.opencypher.spark.impl.io.CAPSPropertyGraphDataSource
-import org.opencypher.spark.impl.table.SparkFlatRelationalTable.DataFrameTable
+import org.opencypher.spark.impl.table.SparkTable.DataFrameTable
 
 class MultipleFilesPerTableDataSourceAcceptance extends HdfsDataSourceAcceptance {
 

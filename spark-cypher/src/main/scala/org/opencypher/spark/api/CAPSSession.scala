@@ -40,7 +40,7 @@ import org.opencypher.okapi.relational.api.planning.RelationalRuntimeContext
 import org.opencypher.spark.api.io._
 import org.opencypher.spark.impl.CAPSConverters._
 import org.opencypher.spark.impl.graph.CAPSGraphFactory
-import org.opencypher.spark.impl.table.SparkFlatRelationalTable.DataFrameTable
+import org.opencypher.spark.impl.table.SparkTable.DataFrameTable
 import org.opencypher.spark.impl.{CAPSRecords, CAPSRecordsFactory, CAPSSessionImpl}
 
 import scala.reflect.runtime.universe._

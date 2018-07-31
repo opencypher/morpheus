@@ -35,7 +35,7 @@ import org.opencypher.okapi.ir.api.expr.{Property, Var}
 import org.opencypher.okapi.relational.api.graph.RelationalCypherGraph
 import org.opencypher.spark.api.io.{GraphEntity, Relationship}
 import org.opencypher.spark.impl.convert.SparkConversions._
-import org.opencypher.spark.impl.table.SparkFlatRelationalTable.DataFrameTable
+import org.opencypher.spark.impl.table.SparkTable.DataFrameTable
 
 // TODO: Add documentation that describes the canonical table format
 object CAPSGraphExport {
