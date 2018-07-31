@@ -35,6 +35,7 @@ import org.opencypher.okapi.impl.exception.{GraphAlreadyExistsException, GraphNo
 import org.opencypher.okapi.testing.Bag._
 import org.opencypher.okapi.testing.propertygraph.{CreateGraphFactory, InMemoryTestGraph}
 import org.scalatest.BeforeAndAfterEach
+import org.opencypher.okapi.impl.exception.UnsupportedOperationException
 
 import scala.util.{Failure, Success, Try}
 
@@ -312,23 +313,4 @@ trait PGDSAcceptance[Session <: CypherSession] extends BeforeAndAfterEach {
     }
   }
 
-}
-
-case class SingleGraphDataSource(graphName: GraphName, graph: PropertyGraph) extends PropertyGraphDataSource {
-
-  override def hasGraph(name: GraphName): Boolean = {
-    name == graphName
-  }
-
-  override def graph(name: GraphName): PropertyGraph = {
-    if (name == graphName) graph else throw GraphNotFoundException(s"Graph $name not found")
-  }
-
-  override def schema(name: GraphName): Option[Schema] = ???
-
-  override def store(name: GraphName, graph: PropertyGraph): Unit = ???
-
-  override def delete(name: GraphName): Unit = ???
-
-  override def graphNames: Set[GraphName] = ???
 }

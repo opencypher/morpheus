@@ -30,7 +30,7 @@ import java.nio.file.Paths
 
 import org.opencypher.okapi.api.schema.Schema
 import org.opencypher.spark.api.io.fs.{CAPSFileSystem, FSGraphSource}
-import org.opencypher.spark.api.io.neo4j.{Neo4jConfig, Neo4jPropertyGraphDataSource}
+import org.opencypher.spark.api.io.neo4j.{Neo4jConfig, Neo4jPropertyGraphDataSource, Neo4jViewPropertyGraphDataSource}
 
 import scala.io.Source
 
@@ -83,4 +83,12 @@ object CypherGraphSources {
 
     Neo4jPropertyGraphDataSource(config, maybeSchema = Some(Schema.fromJson(schemaString)), omitImportFailures = omitImportFailures)
   }
+
+  def neo4jView(
+    viewQuery: String, config: Neo4jConfig, maybeSchema: Option[Schema] = None, omitImportFailures: Boolean = false)
+    (implicit session: CAPSSession): Neo4jViewPropertyGraphDataSource = {
+
+    Neo4jViewPropertyGraphDataSource(viewQuery, config, maybeSchema, omitImportFailures)
+  }
+
 }
