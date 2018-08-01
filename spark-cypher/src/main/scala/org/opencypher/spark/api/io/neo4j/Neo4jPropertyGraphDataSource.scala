@@ -54,22 +54,15 @@ import org.opencypher.spark.schema.CAPSSchema._
 import scala.concurrent.{ExecutionContext, ExecutionContextExecutorService, Future}
 
 object Neo4jPropertyGraphDataSource {
-
   val defaultEntireGraphName = GraphName("graph")
-
-  val metaPrefix: String = "___"
-
-  val metaPropertyKey: String = s"${metaPrefix}morpheusID"
-
 }
 
 case class Neo4jPropertyGraphDataSource(
-  config: Neo4jConfig,
+  override val config: Neo4jConfig,
   maybeSchema: Option[Schema] = None,
-  omitImportFailures: Boolean = false,
+  override val omitIncompatibleProperties: Boolean = false,
   entireGraphName: GraphName = defaultEntireGraphName
-)(implicit session: CAPSSession)
-  extends AbstractPropertyGraphDataSource {
+)(override implicit val session: CAPSSession) extends AbstractNeo4jDataSource {
 
   graphNameCache += entireGraphName
 
@@ -101,7 +94,10 @@ case class Neo4jPropertyGraphDataSource(
       RelTypePropertyMap(map.map.mapValues(_.withoutMetaProperty))
   }
 
-  override def tableStorageFormat: String = "neo4j"
+  override def hasGraph(graphName: GraphName): Boolean = graphName match {
+    case `defaultEntireGraphName` => true
+    case _ => super.hasGraph(graphName)
+  }
 
   override protected def listGraphNames: List[String] = {
     val labelResult = config.cypher(
@@ -120,13 +116,8 @@ case class Neo4jPropertyGraphDataSource(
   }
 
   override protected def readSchema(graphName: GraphName): CAPSSchema = {
-    val graphSchema = maybeSchema.getOrElse {
-      SchemaFromProcedure(config, omitImportFailures) match {
-        case None =>
-          throw UnsupportedOperationException("Neo4j PGDS requires okapi-neo4j-procedures to be installed in Neo4j: https://github.com/opencypher/cypher-for-apache-spark/wiki/Neo4j-Schema-Procedure")
-        case Some(schema) => schema
-      }
-    }
+    val graphSchema = maybeSchema.getOrElse(super.readSchema(graphSchema))
+
     val filteredSchema = graphName.metaLabel match {
       case None =>
         graphSchema
@@ -139,15 +130,13 @@ case class Neo4jPropertyGraphDataSource(
     filteredSchema.asCaps
   }
 
-  override protected def readCAPSGraphMetaData(graphName: GraphName): CAPSGraphMetaData = CAPSGraphMetaData(tableStorageFormat)
-
   override protected def readNodeTable(
     graphName: GraphName,
     labels: Set[String],
     sparkSchema: StructType
   ): DataFrame = {
     val graphSchema = schema(graphName).get
-    val flatQuery = flatNodeQuery(graphName, labels, graphSchema)
+    val flatQuery = EntityReader.flatExactLabelQuery(labels, graphSchema, graphName.metaLabel)
 
     val neo4jConnection = Neo4j(config, session.sparkSession)
     val rdd = neo4jConnection.cypher(flatQuery).loadRowRdd
@@ -161,7 +150,7 @@ case class Neo4jPropertyGraphDataSource(
     sparkSchema: StructType
   ): DataFrame = {
     val graphSchema = schema(graphName).get
-    val flatQuery = flatRelQuery(graphName, relKey, graphSchema)
+    val flatQuery = EntityReader.flatRelTypeQuery(relKey, graphSchema, graphName.metaLabel)
 
     val neo4jConnection = Neo4j(config, session.sparkSession)
     val rdd = neo4jConnection.cypher(flatQuery).loadRowRdd
@@ -187,117 +176,58 @@ case class Neo4jPropertyGraphDataSource(
     checkStorable(graphName)
 
     val executorCount = session.sparkSession.sparkContext.statusTracker.getExecutorInfos.length
+    implicit val executionContext: ExecutionContextExecutorService =
+      ExecutionContext.fromExecutorService(Executors.newFixedThreadPool(executorCount))
 
     val metaLabel = graphName.metaLabel match {
       case Some(meta) => meta
       case None => throw UnsupportedOperationException("Writing to the global Neo4j graph is not supported")
     }
 
-    graph.schema.labelCombinations.combos.foreach { combo =>
-      graph.nodes("n", CTNode(combo), exactLabelMatch = true)
-        .asCaps
-        .toCypherMaps
-        .coalesce(executorCount)
-        .map(map => map("n").cast[CAPSNode])
-        .foreachPartition(NodeWriterConfig(config, metaLabel).writeNodes _)
-    }
-
     config.withSession { session =>
       session.run(s"CREATE CONSTRAINT ON (n:$metaLabel) ASSERT n.$metaPropertyKey IS UNIQUE").consume()
     }
 
-    graph.schema.relationshipTypes.foreach { relType =>
-      graph.relationships("r", CTRelationship(relType))
-        .asCaps
-        .toCypherMaps
-        .coalesce(executorCount)
-        .map(map => map("r").cast[CAPSRelationship])
-        .foreachPartition(NodeWriterConfig(config, metaLabel).writeRels _)
-    }
+    val nodeFutures = NodeWriter(graph, metaLabel, config)
+    waitForWriteCompletion(nodeFutures)
+
+    val relFutures = RelWriter(graph, metaLabel, config)
+    waitForWriteCompletion(relFutures)
 
     graphNameCache += graphName
   }
 
-  private[neo4j] def flatNodeQuery(graphName: GraphName, labels: Set[String], schema: Schema): String = {
-    val nodeVar = "n"
-    val props = schema.nodeKeys(labels).keys.toList.sorted match {
-      case Nil => ""
-      case nonempty => nonempty.mkString(s", $nodeVar.", s", $nodeVar.", "")
-    }
-    val labelCount = labels.size + graphName.metaLabel.size
-    s"""|MATCH ($nodeVar:${(labels ++ graphName.metaLabel).mkString(":")})
-        |WHERE LENGTH(LABELS($nodeVar)) = $labelCount
-        |RETURN id($nodeVar) AS $sourceIdKey$props""".stripMargin
-  }
-
-  private[neo4j] def flatRelQuery(graphName: GraphName, relType: String, schema: Schema): String = {
-    val metaLabelPredicate = graphName.metaLabel.map(":" + _).getOrElse("")
-
-    val relVar = "r"
-    val props = schema.relationshipKeys(relType).keys.toList.sorted match {
-      case Nil => ""
-      case nonempty => nonempty.mkString(s", $relVar.", s", $relVar.", "")
-    }
-    s"""|MATCH (s$metaLabelPredicate)-[$relVar:$relType]->(e$metaLabelPredicate)
-        |RETURN id($relVar) AS $sourceIdKey, id(s) AS $sourceStartNodeKey, id(e) AS $sourceEndNodeKey$props""".stripMargin
-  }
-
-  // Not used by that PGDS
-  // TODO: rename AbstractPGDS to RelationalPGDS and have an abstract version for non-relational
-
-  override protected def writeSchema(graphName: GraphName, schema: CAPSSchema): Unit = ()
-
-  override protected def writeCAPSGraphMetaData(graphName: GraphName, capsGraphMetaData: CAPSGraphMetaData): Unit = ()
-
+  // No need to implement these as we overwrite {{{org.opencypher.spark.api.io.neo4j.Neo4jPropertyGraphDataSource.store}}}
   override protected def writeNodeTable(graphName: GraphName, labels: Set[String], table: DataFrame): Unit = ()
-
   override protected def writeRelationshipTable(graphName: GraphName, relKey: String, table: DataFrame): Unit = ()
 }
 
-case class NodeWriterConfig(config: Neo4jConfig, graphNameLabel: String) {
-
-  def writeNodes(nodes: Iterator[CAPSNode]): Unit = {
-    config.withSession { session =>
-      nodes.foreach { node =>
-        val labels = node.labels
-        val id = node.id
-
-        val nodeLabels = if (labels.isEmpty) ""
-        else labels.mkString(":`", "`:`", "`")
-
-        val props = if (node.properties.isEmpty) ""
-        else node.properties.toCypherString
-
-        val createQ =
-          s"""
-             |CREATE (n:$graphNameLabel$nodeLabels $props)
-             |SET n.$metaPropertyKey = $id
-         """.stripMargin
-        session.run(createQ).consume()
+case object NodeWriter {
+  def apply(graph: PropertyGraph, metaLabel: String, config: Neo4jConfig)
+    (implicit executionContext: ExecutionContextExecutorService): Set[Future[Unit]] = {
+    graph.schema.labelCombinations.combos.map { combo =>
+      Future {
+        graph.asCaps.nodes("n", CTNode(combo), exactLabelMatch = true)
+          .asCaps
+          .toCypherMaps
+          .map(map => map("n").cast[CAPSNode])
+          .foreachPartition(i => EntityWriter.writeNodes(i, config, Some(metaLabel)))
       }
     }
   }
+}
 
-  def writeRels(rels: Iterator[CAPSRelationship]): Unit = {
-    config.withSession { session =>
-      rels.foreach { relationship =>
-        val id = relationship.id
-        val startId = relationship.startId
-        val endId = relationship.endId
-
-        val props = if (relationship.properties.isEmpty) ""
-        else relationship.properties.toCypherString
-
-        val createQ =
-          s"""
-             |MATCH (a:$graphNameLabel), (b:$graphNameLabel)
-             |WHERE a.$metaPropertyKey = $startId AND b.$metaPropertyKey = $endId
-             |CREATE (a)-[r:${relationship.relType} $props]->(b)
-             |SET r.$metaPropertyKey = $id
-         """.stripMargin
-        session.run(createQ).consume()
+case object RelWriter {
+  def apply(graph: PropertyGraph, metaLabel: String, config: Neo4jConfig)
+    (implicit executionContext: ExecutionContextExecutorService): Set[Future[Unit]] = {
+    graph.schema.relationshipTypes.map { relType =>
+      Future {
+        graph.relationships("r", CTRelationship(relType))
+          .asCaps
+          .toCypherMaps
+          .map(map => map("r").cast[CAPSRelationship])
+          .foreachPartition(i => EntityWriter.writeRelationships(i, config, Some(metaLabel)))
       }
     }
   }
-
 }

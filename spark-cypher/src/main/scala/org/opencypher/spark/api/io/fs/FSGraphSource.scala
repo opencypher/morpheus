@@ -51,7 +51,7 @@ class FSGraphSource(
   val tableStorageFormat: String,
   val customFileSystem: Option[CAPSFileSystem] = None,
   val filesPerTable: Option[Int] = None
-)(implicit session: CAPSSession)
+)(override implicit val session: CAPSSession)
   extends AbstractPropertyGraphDataSource with JsonSerialization {
 
   protected val directoryStructure = DefaultGraphDirectoryStructure(rootPath)
