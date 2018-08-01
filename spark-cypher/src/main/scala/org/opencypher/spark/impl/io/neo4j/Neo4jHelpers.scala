@@ -47,11 +47,9 @@ object Neo4jHelpers {
         f(session)
       } finally {
         //TODO: Reuse a driver instance or figure out how to close it asynchronously without using too many file handles
-//        session.closeAsync().thenRunAsync(new Runnable {
-//          override def run(): Unit = driver.closeAsync()
-//        })
-        session.close()
-        driver.close()
+        session.closeAsync().thenRunAsync(new Runnable {
+          override def run(): Unit = driver.closeAsync()
+        })
       }
     }
 
