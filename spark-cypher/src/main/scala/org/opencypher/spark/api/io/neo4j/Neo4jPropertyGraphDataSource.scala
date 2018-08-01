@@ -28,6 +28,7 @@ package org.opencypher.spark.api.io.neo4j
 
 import java.util.concurrent.Executors
 
+import org.apache.logging.log4j.scala.Logging
 import org.apache.spark.sql.DataFrame
 import org.apache.spark.sql.types.StructType
 import org.opencypher.okapi.api.graph.{GraphName, PropertyGraph}
@@ -50,14 +51,15 @@ import org.opencypher.spark.impl.io.neo4j.external.Neo4j
 import org.opencypher.spark.schema.CAPSSchema
 import org.opencypher.spark.schema.CAPSSchema._
 
-import scala.concurrent.{ExecutionContext, ExecutionContextExecutorService, Future}
+import scala.concurrent.duration._
+import scala.concurrent.{Await, ExecutionContext, ExecutionContextExecutorService, Future}
 
 case class Neo4jPropertyGraphDataSource(
   override val config: Neo4jConfig,
   maybeSchema: Option[Schema] = None,
   override val omitIncompatibleProperties: Boolean = false,
   entireGraphName: GraphName = defaultEntireGraphName
-)(override implicit val session: CAPSSession) extends AbstractNeo4jDataSource {
+)(override implicit val session: CAPSSession) extends AbstractNeo4jDataSource with Logging {
 
   graphNameCache += entireGraphName
 
@@ -174,6 +176,8 @@ case class Neo4jPropertyGraphDataSource(
     implicit val executionContext: ExecutionContextExecutorService =
       ExecutionContext.fromExecutorService(Executors.newFixedThreadPool(executorCount))
 
+    logger.debug(s"Using $executorCount Threads")
+
     val metaLabel = graphName.metaLabel match {
       case Some(meta) => meta
       case None => throw UnsupportedOperationException("Writing to the global Neo4j graph is not supported")
@@ -183,11 +187,11 @@ case class Neo4jPropertyGraphDataSource(
       session.run(s"CREATE CONSTRAINT ON (n:$metaLabel) ASSERT n.$metaPropertyKey IS UNIQUE").consume()
     }
 
-    val nodeFutures = NodeWriter(graph, metaLabel, config)
-    waitForWriteCompletion(nodeFutures)
-
-    val relFutures = RelWriter(graph, metaLabel, config)
-    waitForWriteCompletion(relFutures)
+    val writesCompleted = for {
+      _ <- Future.sequence(NodeWriter(graph, metaLabel, config))
+      _ <- Future.sequence(RelWriter(graph, metaLabel, config))
+    } yield Future{ }
+    Await.result(writesCompleted, Duration.Inf)
 
     graphNameCache += graphName
   }
@@ -199,30 +203,26 @@ case class Neo4jPropertyGraphDataSource(
 
 case object NodeWriter {
   def apply(graph: PropertyGraph, metaLabel: String, config: Neo4jConfig)
-    (implicit executionContext: ExecutionContextExecutorService): Set[Future[Unit]] = {
+    (implicit executionContext: ExecutionContextExecutorService): Seq[Future[Unit]] = {
     graph.schema.labelCombinations.combos.map { combo =>
-      Future {
         graph.asCaps.nodes("n", CTNode(combo), exactLabelMatch = true)
           .asCaps
           .toCypherMaps
           .map(map => map("n").cast[CAPSNode])
-          .foreachPartition(i => EntityWriter.writeNodes(i, config, Some(metaLabel)))
-      }
+          .rdd.foreachPartitionAsync(i => EntityWriter.writeNodes(i, config, Some(metaLabel)))
     }
-  }
+  }.toSeq
 }
 
 case object RelWriter {
   def apply(graph: PropertyGraph, metaLabel: String, config: Neo4jConfig)
-    (implicit executionContext: ExecutionContextExecutorService): Set[Future[Unit]] = {
+    (implicit executionContext: ExecutionContextExecutorService): Seq[Future[Unit]] = {
     graph.schema.relationshipTypes.map { relType =>
-      Future {
-        graph.relationships("r", CTRelationship(relType))
-          .asCaps
-          .toCypherMaps
-          .map(map => map("r").cast[CAPSRelationship])
-          .foreachPartition(i => EntityWriter.writeRelationships(i, config, Some(metaLabel)))
-      }
-    }
+      graph.relationships("r", CTRelationship(relType))
+        .asCaps
+        .toCypherMaps
+        .map(map => map("r").cast[CAPSRelationship])
+        .rdd.foreachPartitionAsync(i => EntityWriter.writeRelationships(i, config, Some(metaLabel)))
+    }.toSeq
   }
 }
