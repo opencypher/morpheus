@@ -38,6 +38,9 @@ import scala.collection.JavaConverters._
   */
 object Neo4jHelpers {
 
+  /**
+    * This module defines constants that are used for interactions with the Neo4j database
+    */
   object Neo4jDefaults {
     val defaultEntireGraphName = GraphName("graph")
 

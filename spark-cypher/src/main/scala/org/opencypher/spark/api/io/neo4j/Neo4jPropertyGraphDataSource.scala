@@ -43,7 +43,6 @@ import org.opencypher.okapi.neo4j.io.Neo4jHelpers.Neo4jDefaults._
 import org.opencypher.okapi.neo4j.io.Neo4jHelpers._
 import org.opencypher.okapi.neo4j.io.{EntityReader, EntityWriter, Neo4jConfig}
 import org.opencypher.spark.api.CAPSSession
-import org.opencypher.spark.api.io.neo4j.Neo4jPropertyGraphDataSource.defaultEntireGraphName
 import org.opencypher.spark.api.value.{CAPSNode, CAPSRelationship}
 import org.opencypher.spark.impl.CAPSConverters._
 import org.opencypher.spark.impl.encoders._
@@ -52,10 +51,6 @@ import org.opencypher.spark.schema.CAPSSchema
 import org.opencypher.spark.schema.CAPSSchema._
 
 import scala.concurrent.{ExecutionContext, ExecutionContextExecutorService, Future}
-
-object Neo4jPropertyGraphDataSource {
-  val defaultEntireGraphName = GraphName("graph")
-}
 
 case class Neo4jPropertyGraphDataSource(
   override val config: Neo4jConfig,
