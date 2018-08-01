@@ -3,62 +3,39 @@
          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
   <modelVersion>4.0.0</modelVersion>
-
   <parent>
     <groupId>org.opencypher</groupId>
     <artifactId>okapi</artifactId>
-    <version>0.1.7-SNAPSHOT</version>
+    <version>1.0.0-SNAPSHOT</version>
   </parent>
-
-  <artifactId>spark-cypher</artifactId>
-
-  <name>Cypher for Apache Spark - CAPS</name>
-
+  <artifactId>okapi-neo4j-io</artifactId>
+  <name>Okapi - Neo4j IO</name>
   <properties>
     <project.rootdir>${project.parent.basedir}</project.rootdir>
   </properties>
-
   <dependencies>
     <dependency>
       <groupId>org.opencypher</groupId>
-      <artifactId>okapi-relational</artifactId>
+      <artifactId>okapi-api</artifactId>
       <version>${project.parent.version}</version>
     </dependency>
-
     <dependency>
       <groupId>org.opencypher</groupId>
-      <artifactId>okapi-neo4j-io</artifactId>
+      <artifactId>okapi-api</artifactId>
+      <version>${project.parent.version}</version>
+      <type>test-jar</type>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.opencypher</groupId>
+      <artifactId>okapi-testing</artifactId>
       <version>${project.parent.version}</version>
     </dependency>
-
-    <!-- Spark -->
-    <dependency>
-      <groupId>org.apache.spark</groupId>
-      <artifactId>spark-core_${project.scala.binary.version}</artifactId>
-      <version>${dep.spark.version}</version>
-      <scope>${dep.spark.scope}</scope>
-    </dependency>
-
-    <dependency>
-      <groupId>org.apache.spark</groupId>
-      <artifactId>spark-sql_${project.scala.binary.version}</artifactId>
-      <version>${dep.spark.version}</version>
-      <scope>${dep.spark.scope}</scope>
-    </dependency>
-
-    <dependency>
-      <groupId>org.apache.spark</groupId>
-      <artifactId>spark-catalyst_${project.scala.binary.version}</artifactId>
-      <version>${dep.spark.version}</version>
-      <scope>${dep.spark.scope}</scope>
-    </dependency>
-
     <!-- Neo4j -->
     <dependency>
       <groupId>org.neo4j.driver</groupId>
       <artifactId>neo4j-java-driver</artifactId>
       <version>${dep.neo4j.driver.version}</version>
     </dependency>
-
   </dependencies>
 </project>

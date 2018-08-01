@@ -24,12 +24,12 @@
  * described as "implementation extensions to Cypher" or as "proposed changes to
  * Cypher that are not yet approved by the openCypher community".
  */
-package org.opencypher.spark.impl.io.neo4j
+package org.opencypher.okapi.neo4j.io
 
 import org.neo4j.driver.v1.Session
+import org.opencypher.okapi.api.graph.GraphName
 import org.opencypher.okapi.api.value.CypherValue
 import org.opencypher.okapi.api.value.CypherValue.CypherValue
-import org.opencypher.spark.api.io.neo4j.Neo4jConfig
 
 import scala.collection.JavaConverters._
 
@@ -37,6 +37,22 @@ import scala.collection.JavaConverters._
   * Inefficient convenience methods.
   */
 object Neo4jHelpers {
+
+  object Neo4jDefaults {
+    val defaultEntireGraphName = GraphName("graph")
+
+    val metaPrefix: String = "___"
+
+    val metaPropertyKey: String = s"${metaPrefix}morpheusID"
+
+    val idPropertyKey: String = "___morpheusID"
+
+    val startIdPropertyKey: String = "___morpheusSTART_ID"
+
+    val endIdPropertyKey: String = "___morpheusEND_ID"
+
+    val entityVarName = "e"
+  }
 
   implicit class RichConfig(val config: Neo4jConfig) extends AnyVal {
 

@@ -29,13 +29,14 @@ package org.opencypher.spark.api.io.neo4j
 import org.opencypher.okapi.api.graph.{CypherResult, GraphName, Namespace}
 import org.opencypher.okapi.api.value.CypherValue.{CypherMap, CypherNull}
 import org.opencypher.okapi.impl.exception.{IllegalArgumentException, UnsupportedOperationException}
+import org.opencypher.okapi.neo4j.io.Neo4jHelpers.Neo4jDefaults._
+import org.opencypher.okapi.neo4j.io.Neo4jHelpers._
+import org.opencypher.okapi.impl.exception.{IllegalArgumentException, UnsupportedOperationException}
 import org.opencypher.okapi.testing.Bag
 import org.opencypher.okapi.testing.Bag._
 import org.opencypher.spark.api.CypherGraphSources
-import org.opencypher.spark.api.io.neo4j.Neo4jPropertyGraphDataSource.metaPrefix
 import org.opencypher.spark.api.value.CAPSNode
 import org.opencypher.spark.impl.CAPSConverters._
-import org.opencypher.spark.impl.io.neo4j.Neo4jHelpers._
 import org.opencypher.spark.testing.CAPSTestSuite
 import org.opencypher.spark.testing.fixture.{Neo4jServerFixture, TeamDataFixture}
 
@@ -82,7 +83,7 @@ class Neo4jPropertyGraphDataSourceTest
   it("should omit properties with unsupported types if corresponding flag is set") {
     neo4jConfig.cypher(s"""CREATE (n:Unsupported:${metaPrefix}test { foo: time(), bar: 42 })""")
 
-    val dataSource = CypherGraphSources.neo4j(neo4jConfig, omitImportFailures = true)
+    val dataSource = CypherGraphSources.neo4j(neo4jConfig, omitIncompatibleProperties = true)
     val graph = dataSource.graph(GraphName("test")).asCaps
     val nodes = graph.nodes("n").asCaps.toCypherMaps.collect.toList
     nodes.size shouldBe 1
@@ -101,5 +102,4 @@ class Neo4jPropertyGraphDataSourceTest
       graph.nodes("n").asCaps.toCypherMaps.collect.toList
     }
   }
-
 }

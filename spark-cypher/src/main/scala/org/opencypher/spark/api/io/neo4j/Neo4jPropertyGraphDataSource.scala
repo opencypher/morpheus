@@ -26,28 +26,32 @@
  */
 package org.opencypher.spark.api.io.neo4j
 
+import java.util.concurrent.Executors
+
 import org.apache.spark.sql.DataFrame
 import org.apache.spark.sql.types.StructType
 import org.opencypher.okapi.api.graph.{GraphName, PropertyGraph}
 import org.opencypher.okapi.api.schema.PropertyKeys.PropertyKeys
+import org.opencypher.okapi.api.schema.{LabelPropertyMap, RelTypePropertyMap}
+import org.opencypher.okapi.api.types.CTRelationship
 import org.opencypher.okapi.api.schema.{LabelPropertyMap, RelTypePropertyMap, Schema}
 import org.opencypher.okapi.api.types.{CTNode, CTRelationship}
 import org.opencypher.okapi.api.value.CypherValue.CypherList
 import org.opencypher.okapi.impl.exception.UnsupportedOperationException
 import org.opencypher.okapi.impl.schema.SchemaImpl
+import org.opencypher.okapi.neo4j.io.Neo4jHelpers.Neo4jDefaults._
+import org.opencypher.okapi.neo4j.io.Neo4jHelpers._
+import org.opencypher.okapi.neo4j.io.{EntityReader, EntityWriter, Neo4jConfig}
 import org.opencypher.spark.api.CAPSSession
-import org.opencypher.spark.api.io.AbstractPropertyGraphDataSource
-import org.opencypher.spark.api.io.GraphEntity.sourceIdKey
-import org.opencypher.spark.api.io.Relationship.{sourceEndNodeKey, sourceStartNodeKey}
-import org.opencypher.spark.api.io.metadata.CAPSGraphMetaData
-import org.opencypher.spark.api.io.neo4j.Neo4jPropertyGraphDataSource.{defaultEntireGraphName, metaPrefix, metaPropertyKey}
+import org.opencypher.spark.api.io.neo4j.Neo4jPropertyGraphDataSource.defaultEntireGraphName
 import org.opencypher.spark.api.value.{CAPSNode, CAPSRelationship}
 import org.opencypher.spark.impl.CAPSConverters._
 import org.opencypher.spark.impl.encoders._
-import org.opencypher.spark.impl.io.neo4j.Neo4jHelpers._
 import org.opencypher.spark.impl.io.neo4j.external.Neo4j
 import org.opencypher.spark.schema.CAPSSchema
 import org.opencypher.spark.schema.CAPSSchema._
+
+import scala.concurrent.{ExecutionContext, ExecutionContextExecutorService, Future}
 
 object Neo4jPropertyGraphDataSource {
 

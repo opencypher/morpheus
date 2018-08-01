@@ -29,7 +29,7 @@ package org.opencypher.spark.impl.io.neo4j.external
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.Row
 import org.apache.spark.{Partition, SparkContext, TaskContext}
-import org.opencypher.spark.api.io.neo4j.Neo4jConfig
+import org.opencypher.okapi.neo4j.io.Neo4jConfig
 
 private class Neo4jRDD(
     sc: SparkContext,

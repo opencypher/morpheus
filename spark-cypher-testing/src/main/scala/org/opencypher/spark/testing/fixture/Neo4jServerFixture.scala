@@ -27,8 +27,8 @@
 package org.opencypher.spark.testing.fixture
 
 import org.neo4j.harness.{ServerControls, TestServerBuilders}
+import org.opencypher.okapi.neo4j.io.Neo4jConfig
 import org.opencypher.okapi.testing.{BaseTestFixture, BaseTestSuite}
-import org.opencypher.spark.api.io.neo4j.Neo4jConfig
 import org.opencypher.spark.testing.api.neo4j.Neo4jHarnessUtils._
 
 trait Neo4jServerFixture extends BaseTestFixture {

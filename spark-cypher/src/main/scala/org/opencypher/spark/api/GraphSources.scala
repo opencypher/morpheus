@@ -26,10 +26,11 @@
  */
 package org.opencypher.spark.api
 
+import org.opencypher.okapi.neo4j.io.Neo4jConfig
 import java.nio.file.Paths
-
 import org.opencypher.okapi.api.schema.Schema
 import org.opencypher.spark.api.io.fs.{CAPSFileSystem, FSGraphSource}
+import org.opencypher.spark.api.io.neo4j.Neo4jPropertyGraphDataSource
 import org.opencypher.spark.api.io.neo4j.{Neo4jBulkCSVDataSink, Neo4jConfig, Neo4jPropertyGraphDataSource}
 
 import scala.io.Source
@@ -82,20 +83,20 @@ object CypherGraphSources {
     *
     * @param config             Neo4j connection configuration
     * @param maybeSchema        Optional Neo4j schema to avoid computation on Neo4j server
-    * @param omitImportFailures If set to true, import failures do not throw runtime exceptions but omit the unsupported
+    * @param omitIncompatibleProperties If set to true, import failures do not throw runtime exceptions but omit the unsupported
     *                           properties instead and log warnings
     * @param session            CAPS session
     * @return Neo4j Property Graph Data Source
     */
-  def neo4j(config: Neo4jConfig, maybeSchema: Option[Schema] = None, omitImportFailures: Boolean = false)
+  def neo4j(config: Neo4jConfig, maybeSchema: Option[Schema] = None, omitIncompatibleProperties: Boolean = false)
     (implicit session: CAPSSession): Neo4jPropertyGraphDataSource =
-    Neo4jPropertyGraphDataSource(config, maybeSchema = maybeSchema, omitImportFailures = omitImportFailures)
+    Neo4jPropertyGraphDataSource(config, maybeSchema = maybeSchema, omitIncompatibleProperties = omitIncompatibleProperties)
 
   // TODO: document
-  def neo4j(config: Neo4jConfig, schemaFile: String, omitImportFailures: Boolean)
+  def neo4j(config: Neo4jConfig, schemaFile: String, omitIncompatibleProperties: Boolean = false)
     (implicit session: CAPSSession): Neo4jPropertyGraphDataSource = {
     val schemaString = Source.fromFile(Paths.get(schemaFile).toUri).getLines().mkString("\n")
 
-    Neo4jPropertyGraphDataSource(config, maybeSchema = Some(Schema.fromJson(schemaString)), omitImportFailures = omitImportFailures)
+    Neo4jPropertyGraphDataSource(config, maybeSchema = Some(Schema.fromJson(schemaString)), omitIncompatibleProperties = omitIncompatibleProperties)
   }
 }

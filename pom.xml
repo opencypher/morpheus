@@ -367,6 +367,7 @@
       <!-- No license listing for this profile -->
       <modules>
         <module>okapi-api</module>
+        <module>okapi-neo4j-io</module>
         <module>okapi-ir</module>
         <module>okapi-neo4j-procedures</module>
         <module>okapi-logical</module>
@@ -508,6 +509,23 @@
       <version>${project.scala.version}</version>
     </dependency>
 
+    <dependency>
+      <groupId>org.apache.logging.log4j</groupId>
+      <artifactId>log4j-api</artifactId>
+      <version>2.11.0</version>
+    </dependency>
+
+    <dependency>
+      <groupId>org.apache.logging.log4j</groupId>
+      <artifactId>log4j-core</artifactId>
+      <version>2.11.0</version>
+    </dependency>
+
+    <dependency>
+      <groupId>org.apache.logging.log4j</groupId>
+      <artifactId>log4j-api-scala_2.11</artifactId>
+      <version>11.0</version>
+    </dependency>
 
     <dependency>
       <groupId>org.scalatest</groupId>

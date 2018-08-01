@@ -30,8 +30,8 @@ import org.neo4j.graphdb.Result
 import org.neo4j.harness.{ServerControls, TestServerBuilders}
 import org.neo4j.kernel.impl.proc.Procedures
 import org.neo4j.kernel.internal.GraphDatabaseAPI
+import org.opencypher.okapi.neo4j.io.Neo4jConfig
 import org.opencypher.okapi.procedures.OkapiProcedures
-import org.opencypher.spark.api.io.neo4j.Neo4jConfig
 
 object Neo4jHarnessUtils {
 
