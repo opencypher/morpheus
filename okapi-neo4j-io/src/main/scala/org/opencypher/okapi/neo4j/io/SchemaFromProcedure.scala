@@ -24,10 +24,10 @@ object SchemaFromProcedure extends Logging {
       case Success(true) =>
         schemaFromProcedure(config, omitImportFailures)
       case Success(false) =>
-        System.err.println("Neo4j schema procedure not activated. Consider activating the procedure `" + schemaProcedureName + "`.")
+        logger.warn("Neo4j schema procedure not activated. Consider activating the procedure `" + schemaProcedureName + "`.")
         None
       case Failure(error) =>
-        System.err.println(s"Retrieving the procedure list from the Neo4j database failed: $error")
+        logger.error(s"Retrieving the procedure list from the Neo4j database failed: $error")
         None
     }
   }
@@ -83,8 +83,7 @@ object SchemaFromProcedure extends Logging {
     } match {
       case Success(schema) => Some(schema)
       case Failure(error) =>
-        System.err.println(s"Could not load schema from Neo4j: ${error.getMessage}")
-        error.printStackTrace()
+        logger.error(s"Could not load schema from Neo4j: ${error.getMessage}")
         None
     }
   }
