@@ -58,6 +58,54 @@ object EntityWriter extends Logging {
     }
   }
 
+  def writeNodesList(
+    nodes: Iterator[EntityRow],
+    propertyMapping: Array[String],
+    config: Neo4jConfig,
+    labels: Set[String],
+    batchSize: Int = 1000
+  ): Unit = {
+    val labelString = labels.mkString(":")
+
+    val reuseMap = new java.util.HashMap[String, Value]
+    val reuseParameters = new MapValue(reuseMap)
+
+    val setStatements = propertyMapping
+      .zipWithIndex
+      .filterNot(_._1 == null)
+      .map{ case (key, i) => s"SET n.$key = row[$i]" }
+      .mkString("\n")
+
+    val createQ =
+      s"""
+         |UNWIND {batch} as row
+         |CREATE (n:$labelString)
+         |$setStatements
+         """.stripMargin
+
+    val reuseStatement = new Statement(createQ, reuseParameters)
+
+    config.withSession { session =>
+      val batches = nodes.grouped(batchSize)
+      while (batches.hasNext) {
+        val batch = batches.next()
+        val list = new Array[ListValue](batch.size)
+
+        var i = 0
+        batch.foreach { row =>
+          list(i) = row.asListValue
+          i += 1
+        }
+
+        reuseMap.put("batch", new ListValue(list: _*))
+
+        reuseStatement.withUpdatedParameters(reuseParameters)
+
+        session.run(reuseStatement).consume()
+      }
+    }
+  }
+
   def writeRelationships(
     relationships: Iterator[EntityRow],
     startNodeIndex: Int,
@@ -96,6 +144,6 @@ object EntityWriter extends Logging {
 
 trait EntityRow {
   def getValue(i: Int): AnyRef
-
   def size: Int
+  def asListValue: ListValue
 }
