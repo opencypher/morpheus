@@ -84,7 +84,7 @@ object Neo4jRecommendationExample extends ConsoleApp {
   session.cypher(
     """|FROM GRAPH socialNetwork.recommendations
        |MATCH (person:Person)-[:SHOULD_BUY]->(product:Product)
-       |RETURN person.name AS person, COLLECT(DISTINCT product.title) AS shouldBuy
+       |RETURN person.name AS person, collect(DISTINCT product.title) AS shouldBuy
     """.stripMargin).show
 
   // Shutdown Neo4j test instance
@@ -97,5 +97,4 @@ object Neo4jRecommendationExample extends ConsoleApp {
         |CREATE (a)-[:FRIEND_OF { since: '23/01/1987' }]->(b)
         |CREATE (b)-[:FRIEND_OF { since: '12/12/2009' }]->(c)""".stripMargin
 }
-
 // end::full-example[]
