@@ -3,16 +3,15 @@ package org.opencypher.okapi.neo4j.io
 import java.util
 
 import org.apache.logging.log4j.scala.Logging
-import org.opencypher.okapi.api.value.CypherValue
-import org.opencypher.okapi.api.value.CypherValue.CypherRelationship
 import org.opencypher.okapi.neo4j.io.Neo4jHelpers.Neo4jDefaults._
 import org.opencypher.okapi.neo4j.io.Neo4jHelpers._
+import org.opencypher.okapi.neo4j.io.RelationshipMap._
 
 object EntityWriter extends Logging {
 
   def writeNodes(
-    nodes: Iterator[Properties],
-    mapping: Array[String],
+    nodes: Iterator[EntityRow],
+    propertyMapping: Map[String, Int],
     config: Neo4jConfig,
     labels: Set[String],
     batchSize: Int = 1000
@@ -23,7 +22,7 @@ object EntityWriter extends Logging {
       nodes.grouped(batchSize).foreach { batch =>
 
         val list = new Array[PropertyMap](batch.size)
-        batch.indices.foreach(i => list(i) = new PropertyMap(batch(i), mapping))
+        batch.indices.foreach(i => list(i) = new PropertyMap(batch(i), propertyMapping))
 
         val params = new java.util.HashMap[String, AnyRef]()
         params.put("batch", list)
@@ -40,130 +39,97 @@ object EntityWriter extends Logging {
     }
   }
 
-//  def writeRelationships(
-//    rels: Iterator[Properties],
-//    mapping: Array[String],
-//    config: Neo4jConfig,
-//    labels: Set[String],
-//    batchSize: Int = 1000
-//  ): Unit = {
-//
-//    config.withSession { session =>
-//
-//      val values = rels.map(rel => Map(
-//        "from" -> rel.startId,
-//        "to" -> rel.endId,
-//        "properties" -> rel.properties.unwrap.updated(metaPropertyKey, rel.id))).toList.asJava
-//
-//      val params = Map("batch" -> values).asJava
-//
-//      val createQ =
-//        s"""
-//           |UNWIND {batch} as row
-//           |MATCH (from {$metaPropertyKey : row.from})
-//           |MATCH (to {$metaPropertyKey : row.to})
-//           |CREATE (from)-[rel:${relType.get}]->(to)
-//           |SET rel += row.properties
-//         """.stripMargin
-//
-//      session.run(createQ, params).consume()
-//    }
-//  }
-
-  def writeRelationships[Rel <: CypherRelationship[_]](
-    relIterator: Iterator[Rel],
+  def writeRelationships(
+    relationships: Iterator[EntityRow],
+    startNodeIndex: Int,
+    endNodeIndex: Int,
+    propertyMapping: Map[String, Int],
     config: Neo4jConfig,
-    metaLabel: Option[String] = None
+    relType: String,
+    batchSize: Int = 1000
   ): Unit = {
 
-    val queryStringBuilder = new StringBuilder()
-
-    val graphLabelString = metaLabel.mkString(":", "", "")
-    val matchString = s"MATCH (a$graphLabelString), (b$graphLabelString)"
-    val seperatorString = "\nWITH 1 as __sep__\n"
-
     config.withSession { session =>
+      relationships.grouped(batchSize).foreach { batch =>
 
-      relIterator.grouped(1000).foreach { rels =>
-        queryStringBuilder.clear()
-
-        rels.foreach { rel =>
-          val properties = rel.properties.updated(metaPropertyKey, CypherValue(rel.id))
-          val propertyString = properties.toCypherString
-
-          queryStringBuilder ++=
-            matchString ++=
-            "\nWHERE a." ++= metaPropertyKey ++= "=" ++= rel.startId.toString ++= " AND b." ++= metaPropertyKey ++= "=" ++= rel.endId.toString ++=
-            "\nCREATE (a)-[r:" ++= rel.relType ++= " " ++= propertyString ++= "]->(b)" ++=
-            seperatorString
+        val list = new Array[RelationshipMap](batch.size)
+        batch.indices.foreach { i =>
+          list(i) = new RelationshipMap(startNodeIndex, endNodeIndex, new PropertyMap(batch(i), propertyMapping))
         }
 
-        // remove the last separator
-        val stringLength = queryStringBuilder.size
-        val queryString = queryStringBuilder.substring(0, stringLength - seperatorString.length)
+        val params = new java.util.HashMap[String, AnyRef]()
+        params.put("batch", list)
 
-        logger.debug(s"Executing query on Neo4j: ${queryString.replaceAll("\n", " ")}")
-        session.run(queryString).consume()
+        val createQ =
+          s"""
+             |UNWIND {batch} as row
+             |MATCH (from {$metaPropertyKey : row.$START_NODE_KEY})
+             |MATCH (to {$metaPropertyKey : row.$END_NODE_KEY})
+             |CREATE (from)-[rel:$relType]->(to)
+             |SET rel += row.$PROPERTIES_KEY
+         """.stripMargin
+
+        session.run(createQ, params).consume()
       }
     }
   }
 }
 
-
-trait Properties {
-  def getProperty(i: Int): AnyRef
-  def numberOfProperties: Int
+trait EntityRow {
+  def getValue(i: Int): AnyRef
+  def size: Int
 }
 
-class PropertyMap(properties: Properties, mapping: Array[String]) extends java.util.Map[String, AnyRef] {
-  assert(properties.numberOfProperties == mapping.length)
+class PropertyMap(val properties: EntityRow, val mapping: Map[String, Int]) extends java.util.Map[String, AnyRef] {
 
-  override def size(): Int = mapping.length
+  override def size(): Int = mapping.size
   override def isEmpty: Boolean = mapping.isEmpty
-  override def containsKey(o: scala.Any): Boolean = mapping.contains(o)
-
-  override def containsValue(o: scala.Any): Boolean = {
-    var i = 0
-    while(i < properties.numberOfProperties) {
-      if(properties.getProperty(i) == o) return true
-      i += 1
-    }
-    false
-  }
-
-  override def get(o: scala.Any): AnyRef = o match {
-    case s: String => properties.getProperty(mapping.indexOf(s))
-    case _ => null
-  }
-
-  override def keySet(): util.Set[String] = {
-    val list = new java.util.HashSet[String](mapping.length)
-    mapping.foreach(list.add)
-    list
-  }
-
-  override def values(): util.Collection[AnyRef] = {
-    val list = new java.util.ArrayList[AnyRef](mapping.length)
-    mapping.indices.foreach(x => list.add(properties.getProperty(x)))
-    list
-  }
-
   override def entrySet(): util.Set[java.util.Map.Entry[String, AnyRef]] = {
-    val set = new java.util.HashSet[java.util.Map.Entry[String, AnyRef]](mapping.length)
-    mapping.indices.foreach {i =>
-      set.add(new util.AbstractMap.SimpleEntry[String, AnyRef](mapping(i), properties.getProperty(i)))
+    val set = new java.util.HashSet[java.util.Map.Entry[String, AnyRef]](mapping.size)
+    mapping.foreach {
+      case (key, i) => set.add(new util.AbstractMap.SimpleEntry[String, AnyRef](key, properties.getValue(i)))
     }
     set
   }
+
+  override def containsKey(o: scala.Any): Boolean = throw new UnsupportedOperationException("Not Implemented")
+  override def containsValue(o: scala.Any): Boolean = throw new UnsupportedOperationException("Not Implemented")
+  override def get(o: scala.Any): AnyRef = throw new UnsupportedOperationException("Not Implemented")
+  override def keySet(): util.Set[String] = throw new UnsupportedOperationException("Not Implemented")
+  override def values(): util.Collection[AnyRef] = throw new UnsupportedOperationException("Not Implemented")
 
   override def put(k: String, v: AnyRef): AnyRef = throw new UnsupportedOperationException("Immutable")
   override def remove(o: scala.Any): AnyRef = throw new UnsupportedOperationException("Immutable")
   override def putAll(map: util.Map[_ <: String, _ <: AnyRef]): Unit = throw new UnsupportedOperationException("Immutable")
   override def clear(): Unit = throw new UnsupportedOperationException("Immutable")
+}
 
-  override def toString: String = {
-    mapping.indices.map { i =>
-      s"${mapping(i)}: ${properties.getProperty(i)}"
-    }.mkString("{",", ","}")
+object RelationshipMap {
+  val START_NODE_KEY = "from"
+  val END_NODE_KEY = "to"
+  val PROPERTIES_KEY = "properties"
+}
+
+class RelationshipMap(startNodeIndex: Int, endNodeIndex: Int, propertyMap: PropertyMap) extends java.util.Map[String, AnyRef] {
+  override def size(): Int = 3
+  override def isEmpty: Boolean = false
+  override def entrySet(): util.Set[java.util.Map.Entry[String, AnyRef]] = {
+    val properties = propertyMap.properties
+    val set = new java.util.HashSet[java.util.Map.Entry[String, AnyRef]](3)
+    set.add(new util.AbstractMap.SimpleEntry[String, AnyRef](START_NODE_KEY, properties.getValue(startNodeIndex)))
+    set.add(new util.AbstractMap.SimpleEntry[String, AnyRef](END_NODE_KEY, properties.getValue(endNodeIndex)))
+    set.add(new util.AbstractMap.SimpleEntry[String, AnyRef](PROPERTIES_KEY, propertyMap))
+    set
   }
+
+  override def containsKey(o: scala.Any): Boolean = throw new UnsupportedOperationException("Not Implemented")
+  override def containsValue(o: scala.Any): Boolean = throw new UnsupportedOperationException("Not Implemented")
+  override def get(o: scala.Any): AnyRef = throw new UnsupportedOperationException("Not Implemented")
+  override def keySet(): util.Set[String] = throw new UnsupportedOperationException("Not Implemented")
+  override def values(): util.Collection[AnyRef] = throw new UnsupportedOperationException("Not Implemented")
+
+  override def put(k: String, v: AnyRef): AnyRef = throw new UnsupportedOperationException("Immutable")
+  override def remove(o: scala.Any): AnyRef = throw new UnsupportedOperationException("Immutable")
+  override def putAll(map: util.Map[_ <: String, _ <: AnyRef]): Unit = throw new UnsupportedOperationException("Immutable")
+  override def clear(): Unit = throw new UnsupportedOperationException("Immutable")
 }
