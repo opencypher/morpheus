@@ -63,6 +63,7 @@ object ViewExample extends ConsoleApp {
       |WHERE p.category = 'DVD'
       |OPTIONAL MATCH (p)<-[b:BOUGHT]-(c:Customer)
       |CONSTRUCT
+      |  CLONE p
       |  NEW (p)<-[b]-(c)
       |RETURN GRAPH
     """.stripMargin)
