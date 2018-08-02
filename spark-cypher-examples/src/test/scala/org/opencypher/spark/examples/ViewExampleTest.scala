@@ -26,10 +26,10 @@
  */
 package org.opencypher.spark.examples
 
-class Neo4jViewExampleTest extends ExampleTest {
+class ViewExampleTest extends ExampleTest {
 
   it("should produce the correct output") {
-    validate(Neo4jViewExample.main(Array.empty),
-      getClass.getResource("/example_outputs/Neo4jViewExample.out").toURI)
+    validate(ViewExample.main(Array.empty),
+      getClass.getResource("/example_outputs/ViewExample.out").toURI)
   }
 }
