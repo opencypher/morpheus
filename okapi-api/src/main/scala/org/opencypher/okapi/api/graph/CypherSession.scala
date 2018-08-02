@@ -79,7 +79,7 @@ trait CypherSession {
     *
     * In this case the qualified graph name of the view of that graph is `view.foo.bar`.
     *
-    * A view query is a query that uses Cypher 10 to construct a graph. This is an example for a view query that returns
+    * A view query is a query that uses Cypher 10 to construct a graph. This is an example of a view query that returns
     * the entire underlying graph without any changes:
     * {{{
     *   MATCH (n)
