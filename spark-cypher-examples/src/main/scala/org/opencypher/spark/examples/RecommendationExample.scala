@@ -63,14 +63,13 @@ object RecommendationExample extends ConsoleApp {
   /**
     * Returns a query that creates a graph containing persons that live in the same city and
     * know each other via 1 to 2 hops. The created graph contains a CLOSE_TO relationship between
-    * each such pair of persons and is stored in the session catalog using the given graph name.
+    * each such pair of persons and is built on top of `fromGraph`.
     */
   def cityFriendsQuery(fromGraph: String): String =
     s"""FROM GRAPH $fromGraph
        |MATCH (a:Person)-[:LIVES_IN]->(city:City)<-[:LIVES_IN]-(b:Person),
        |      (a)-[:KNOWS*1..2]->(b)
-       |CONSTRUCT
-       |  ON $fromGraph
+       |CONSTRUCT ON $fromGraph
        |  NEW (a)-[:CLOSE_TO]->(b)
        |RETURN GRAPH
       """.stripMargin
@@ -81,7 +80,7 @@ object RecommendationExample extends ConsoleApp {
   val euFriends = caps.cypher(cityFriendsQuery(s"euSocialNetwork.$defaultEntireGraphName")).graph
 
   // Union the US and EU graphs into a single graph 'allFriends' and store it in the session
-  caps.catalog.store("allFriends", usFriends.unionAll(euFriends))
+  caps.catalog.store("allFriends", usFriends unionAll euFriends)
 
   // Connect the social network with the products network using equal person and customer emails
   val connectedCustomers = caps.cypher(
