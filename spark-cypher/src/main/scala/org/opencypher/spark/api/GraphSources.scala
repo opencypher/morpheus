@@ -64,7 +64,7 @@ object GraphSources {
     */
   def view(viewQuery: String, customGraphNameMappings: Map[GraphName, QualifiedGraphName] = Map.empty)
     (implicit session: CAPSSession): ViewPropertyGraphDataSource = {
-    ViewPropertyGraphDataSource(viewQuery)
+    ViewPropertyGraphDataSource(viewQuery, customGraphNameMappings)
   }
 
   def fs(
