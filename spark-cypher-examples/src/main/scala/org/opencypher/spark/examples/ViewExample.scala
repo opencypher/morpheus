@@ -29,7 +29,7 @@ package org.opencypher.spark.examples
 
 import org.opencypher.okapi.api.graph.Namespace
 import org.opencypher.spark.api.{CAPSSession, GraphSources}
-import org.opencypher.spark.testing.api.neo4j.Neo4jHarnessUtils.{startNeo4j, _}
+import org.opencypher.spark.testing.api.neo4j.Neo4jHarnessUtils._
 import org.opencypher.spark.util.ConsoleApp
 
 /**
@@ -57,7 +57,7 @@ object ViewExample extends ConsoleApp {
     """.stripMargin)
 
   // Create a view that contains only DVDs and customers who bought them
-  val viewPGDS = GraphSources.cypher.view(
+  session.registerView(Namespace("DVD_view"),
     """
       |MATCH (p:Product)
       |WHERE p.category = 'DVD'
@@ -67,9 +67,7 @@ object ViewExample extends ConsoleApp {
       |RETURN GRAPH
     """.stripMargin)
 
-  session.registerSource(Namespace("DVD_view"), viewPGDS)
-
-    // Return all nodes in the `neo.products` graph when viewed via the DVD view
+  // Return all nodes in the `neo.products` graph when viewed via the DVD view
   session.cypher(
     """
       |FROM GRAPH DVD_view.neo.products

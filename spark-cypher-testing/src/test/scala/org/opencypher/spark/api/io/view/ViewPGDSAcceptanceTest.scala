@@ -30,7 +30,7 @@ import org.opencypher.okapi.api.graph.{GraphName, QualifiedGraphName}
 import org.opencypher.okapi.api.io.PropertyGraphDataSource
 import org.opencypher.okapi.testing.PGDSAcceptance
 import org.opencypher.okapi.testing.propertygraph.InMemoryTestGraph
-import org.opencypher.spark.api.CAPSSession
+import org.opencypher.spark.api.{CAPSSession, GraphSources}
 import org.opencypher.spark.impl.graph.CAPSScanGraph
 import org.opencypher.spark.testing.CAPSTestSuite
 import org.opencypher.spark.testing.support.creation.caps.CAPSScanGraphFactory
@@ -49,7 +49,7 @@ class ViewPGDSAcceptanceTest extends CAPSTestSuite with PGDSAcceptance[CAPSSessi
   ): PropertyGraphDataSource = {
     val graph: CAPSScanGraph = CAPSScanGraphFactory(testGraph)
     sessionDs.store(GraphName("test"), graph)
-    val viewDs = ViewPropertyGraphDataSource(
+    val viewDs = GraphSources.view(
       """
         |MATCH (n)
         |MATCH (s)-[r]->(t)
