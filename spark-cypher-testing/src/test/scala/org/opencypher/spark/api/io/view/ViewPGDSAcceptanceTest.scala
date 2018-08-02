@@ -24,38 +24,43 @@
  * described as "implementation extensions to Cypher" or as "proposed changes to
  * Cypher that are not yet approved by the openCypher community".
  */
-package org.opencypher.spark.api.io.neo4j
+package org.opencypher.spark.api.io.view
 
-import org.opencypher.okapi.api.graph.GraphName
+import org.opencypher.okapi.api.graph.{GraphName, QualifiedGraphName}
 import org.opencypher.okapi.api.io.PropertyGraphDataSource
 import org.opencypher.okapi.testing.PGDSAcceptance
 import org.opencypher.okapi.testing.propertygraph.InMemoryTestGraph
-import org.opencypher.spark.api.{CAPSSession, CypherGraphSources}
+import org.opencypher.spark.api.CAPSSession
+import org.opencypher.spark.impl.graph.CAPSScanGraph
 import org.opencypher.spark.testing.CAPSTestSuite
-import org.opencypher.spark.testing.fixture.Neo4jServerFixture
 import org.opencypher.spark.testing.support.creation.caps.CAPSScanGraphFactory
 
-class Neo4jViewPGDSAcceptanceTest  extends CAPSTestSuite with Neo4jServerFixture with PGDSAcceptance[CAPSSession] {
+class ViewPGDSAcceptanceTest extends CAPSTestSuite with PGDSAcceptance[CAPSSession] {
 
   override def initSession(): CAPSSession = caps
 
-  override def create(graphName: GraphName, testGraph: InMemoryTestGraph, createStatements: String): PropertyGraphDataSource = {
-    val graph = CAPSScanGraphFactory(testGraph)
-    val ds = CypherGraphSources.neo4j(neo4jConfig)
-    (ds.graphNames - ds.entireGraphName).foreach(ds.delete)
-    ds.store(graphName, graph)
-    val viewDs = CypherGraphSources.neo4jView(
+  private val sessionNameSpace = caps.catalog.sessionNamespace
+  private val sessionDs = caps.catalog.source(sessionNameSpace)
+
+  override def create(
+    graphName: GraphName,
+    testGraph: InMemoryTestGraph,
+    createStatements: String
+  ): PropertyGraphDataSource = {
+    val graph: CAPSScanGraph = CAPSScanGraphFactory(testGraph)
+    sessionDs.store(GraphName("test"), graph)
+    val viewDs = ViewPropertyGraphDataSource(
       """
         |MATCH (n)
         |MATCH (s)-[r]->(t)
         |CONSTRUCT
-        |  CLONE n, s, t, r
+        |  CLONE n
         |  NEW (s)-[r]->(t)
         |RETURN GRAPH
-      """.stripMargin, neo4jConfig)
+      """.stripMargin,
+      Map(GraphName("test") -> QualifiedGraphName(s"$sessionNameSpace.test"))
+    )
     viewDs
   }
-
-  override def dataFixture: String = ""
 
 }

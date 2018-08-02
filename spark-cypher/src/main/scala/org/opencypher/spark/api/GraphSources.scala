@@ -28,9 +28,11 @@ package org.opencypher.spark.api
 
 import java.nio.file.Paths
 
+import org.opencypher.okapi.api.graph.{GraphName, QualifiedGraphName}
 import org.opencypher.okapi.api.schema.Schema
 import org.opencypher.spark.api.io.fs.{CAPSFileSystem, FSGraphSource}
-import org.opencypher.spark.api.io.neo4j.{Neo4jConfig, Neo4jPropertyGraphDataSource, Neo4jViewPropertyGraphDataSource}
+import org.opencypher.spark.api.io.neo4j.{Neo4jConfig, Neo4jPropertyGraphDataSource}
+import org.opencypher.spark.api.io.view.ViewPropertyGraphDataSource
 
 import scala.io.Source
 
@@ -84,11 +86,33 @@ object CypherGraphSources {
     Neo4jPropertyGraphDataSource(config, maybeSchema = Some(Schema.fromJson(schemaString)), omitImportFailures = omitImportFailures)
   }
 
-  def neo4jView(
-    viewQuery: String, config: Neo4jConfig, maybeSchema: Option[Schema] = None, omitImportFailures: Boolean = false)
-    (implicit session: CAPSSession): Neo4jViewPropertyGraphDataSource = {
-
-    Neo4jViewPropertyGraphDataSource(viewQuery, config, maybeSchema, omitImportFailures)
+  /**
+    * Creates a data source that can construct a view defined by a query over any other graph stored in the catalog.
+    *
+    * Example:
+    *  - given a graph with qualified graph name `foo.bar`
+    *  - given a view with namespace `view` and no custom mapping for `foo.bar`
+    *
+    * In this case the qualified graph name of the view of that graph is `view.foo.bar`.
+    *
+    * A view query is a query that uses Cypher 10 to construct a graph. This is an example for a view query that returns
+    * the entire underlying graph without any changes:
+    * {{{
+    *   MATCH (n)
+    *   MATCH (s)-[r]->(t)
+    *   CONSTRUCT
+    *     CLONE n
+    *     NEW (s)-[r]->(t)
+    *   RETURN GRAPH
+    * }}}
+    *
+    * @param viewQuery               query that constructs the view
+    * @param customGraphNameMappings allows to customise the mapping of graph names to QGNs of underlying graphs
+    * @return view property graph data source
+    */
+  def view(viewQuery: String, customGraphNameMappings: Map[GraphName, QualifiedGraphName] = Map.empty)
+    (implicit session: CAPSSession): ViewPropertyGraphDataSource = {
+    ViewPropertyGraphDataSource(viewQuery)
   }
 
 }
