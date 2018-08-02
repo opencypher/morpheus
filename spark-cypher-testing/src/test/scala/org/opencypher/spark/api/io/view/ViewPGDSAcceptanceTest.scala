@@ -48,7 +48,7 @@ class ViewPGDSAcceptanceTest extends CAPSTestSuite with PGDSAcceptance[CAPSSessi
     createStatements: String
   ): PropertyGraphDataSource = {
     val graph: CAPSScanGraph = CAPSScanGraphFactory(testGraph)
-    sessionDs.store(GraphName("test"), graph)
+    sessionDs.store(graphName, graph)
     val viewDs = GraphSources.view(
       """
         |MATCH (n)
@@ -58,7 +58,7 @@ class ViewPGDSAcceptanceTest extends CAPSTestSuite with PGDSAcceptance[CAPSSessi
         |  NEW (s)-[r]->(t)
         |RETURN GRAPH
       """.stripMargin,
-      Map(GraphName("test") -> QualifiedGraphName(s"$sessionNameSpace.test"))
+      Map(graphName -> QualifiedGraphName(s"$sessionNameSpace.test"))
     )
     viewDs
   }
