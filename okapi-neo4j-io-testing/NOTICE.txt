@@ -28,23 +28,84 @@ Third-party licenses
 --------------------
 
 Apache Software License, Version 2.0
+  Apache Commons Codec
+  Apache Commons Compress
+  Apache Commons Configuration
+  Apache Commons IO
+  Apache Commons Lang
+  Apache Commons Logging
+  Apache Commons Text
+  Apache HttpClient
+  Apache HttpCore
   Apache Log4j API
   Apache Log4j Core
+  Caffeine cache
+  Commons Lang
+  ConcurrentLinkedHashMap
+  Data Mapper for Jackson
+  Jackson
+  Java Servlet API
+  JAX-RS provider for JSON content type
+  Jetty :: Http Utility
+  Jetty :: IO Utility
+  Jetty :: Security
+  Jetty :: Server Core
+  Jetty :: Servlet Handling
+  Jetty :: Utilities
+  Jetty :: Webapp Application Support
+  Jetty :: XML utilities
+  jPowerShell
+  jProcesses
+  Lucene codecs
+  Lucene Common Analyzers
+  Lucene Core
+  Lucene Memory
+  Lucene QueryParsers
+  Netty/All-in-One
+  Objenesis
+  Okapi - Neo4j IO
   Okapi - openCypher API
+  Okapi Test Utilities
   Okapi Trees - Tree rewriting framework for Okapi
+  opencsv
+  openCypher AST for the Cypher Query Language
+  openCypher Expressions
+  openCypher Front End
+  openCypher Parser
+  openCypher Rewriting
+  openCypher Utils
+  parboiled-core
+  parboiled-scala
   Scala 2.11 wrapper for Log4j API
+  scalactic
+  scalatest
+  WMI4Java
 
 BSD License
+  ASM Analysis
+  ASM Core
+  ASM Tree
+  ASM Util
+  JLine
   Scala Compiler
   Scala Library
   scala-parser-combinators
   scala-xml
+
+Bouncy Castle License
+  Bouncy Castle JSSE provider and TLS/DTLS API
+  Bouncy Castle PKIX, CMS, EAC, TSP, PKCS, OCSP, CMP, and CRMF APIs
+  Bouncy Castle Provider
 
 MIT-license
   Cats core
   Cats kernel
   Cats macros
   machinist
+  Mockito
   ujson_2.11
   upickle_2.11
+
+Mozilla Public License, Version 2.0
+  Mozilla Rhino
 
