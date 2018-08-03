@@ -33,6 +33,8 @@ import scala.reflect.runtime.{currentMirror, universe}
 import scala.reflect.runtime.universe._
 import scala.util.hashing.MurmurHash3
 
+import scala.language.existentials
+
 /**
   * This is the basic tree node class. Usually it makes more sense to use `AbstractTreeNode`, which uses reflection
   * to generate the `children` and `withNewChildren` field/method. Our benchmarks show that manually implementing
@@ -160,7 +162,7 @@ abstract class TreeNode[T <: TreeNode[T] : ClassTag] extends Product with Traver
     * Arguments that should be printed. The default implementation excludes children.
     */
   def args: Iterator[Any] = {
-    val ownClass = currentMirror.runtimeClass(currentMirror.reflect(this).symbol.asClass)
+    val treeNodeParentClass = currentMirror.runtimeClass(currentMirror.reflect(this).symbol.asClass).getSuperclass
     currentMirror.reflect(this)
       .symbol
       .typeSignature
@@ -176,7 +178,7 @@ abstract class TreeNode[T <: TreeNode[T] : ClassTag] extends Product with Traver
           currentMirror.runtimeClass(termSymbol.symbol.typeSignature.typeArgs.head.typeSymbol.asClass)
         }
 
-        def containsChildren: Boolean = innerClassOfParam.isAssignableFrom(ownClass)
+        def containsChildren: Boolean = treeNodeParentClass.isAssignableFrom(innerClassOfParam)
 
         value match {
           case c: T if containsChild(c) => false
