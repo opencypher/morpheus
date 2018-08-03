@@ -31,14 +31,35 @@ import cats.data.NonEmptyList
 import scala.annotation.tailrec
 import scala.reflect.ClassTag
 
+/**
+  * Common trait of all classes that represent tree operations for off-stack rewrites.
+  */
 sealed trait TreeOperation[T <: TreeNode[T], O]
 
-case class RewriteChildren[I <: TreeNode[I], O](node: I, rewrittenChildren: List[O] = List.empty[O]) extends TreeOperation[I, O]
+/**
+  * Represents a child-rewrite operation during off-stack transformations.
+  */
+case class RewriteChildren[I <: TreeNode[I], O](
+  node: I,
+  rewrittenChildren: List[O] = List.empty[O]
+) extends TreeOperation[I, O]
 
-case class RewriteNode[I <: TreeNode[I], O](node: I, rewrittenChildren: List[O] = List.empty[O]) extends TreeOperation[I, O]
+/**
+  * Represents a node-rewrite operation during off-stack transformations.
+  */
+case class RewriteNode[I <: TreeNode[I], O](
+  node: I,
+  rewrittenChildren: List[O] = List.empty[O]
+) extends TreeOperation[I, O]
 
+/**
+  * Represents a finished rewrite during off-stack transformations.
+  */
 case class Done[I <: TreeNode[I], O](rewrittenChildren: List[O]) extends TreeOperation[I, O]
 
+/**
+  * This is the base-class for stack-safe tree transformations.
+  */
 trait TransformerStackSafe[I <: TreeNode[I], O] extends TreeTransformer[I, O] {
 
   type NonEmptyStack = NonEmptyList[TreeOperation[I, O]]
@@ -101,6 +122,9 @@ trait TransformerStackSafe[I <: TreeNode[I], O] extends TreeTransformer[I, O] {
 
 }
 
+/**
+  * Common parent of [[BottomUpStackSafe]] and [[TopDownStackSafe]]
+  */
 trait SameTypeTransformerStackSafe[T <: TreeNode[T]] extends TransformerStackSafe[T, T] {
 
   protected val partial: PartialFunction[T, T]
@@ -109,6 +133,11 @@ trait SameTypeTransformerStackSafe[T <: TreeNode[T]] extends TransformerStackSaf
 
 }
 
+/**
+  * Applies the given partial function starting from the leafs of this tree.
+  *
+  * @note This is a stack-safe version of [[BottomUp]].
+  */
 case class BottomUpStackSafe[T <: TreeNode[T] : ClassTag](
   partial: PartialFunction[T, T]
 ) extends SameTypeTransformerStackSafe[T] {
@@ -130,6 +159,12 @@ case class BottomUpStackSafe[T <: TreeNode[T] : ClassTag](
   }
 }
 
+/**
+  * Applies the given partial function starting from the root of this tree.
+  *
+  * @note Note the applied rule cannot insert new parent nodes.
+  * @note This is a stack-safe version of [[TopDown]].
+  */
 case class TopDownStackSafe[T <: TreeNode[T] : ClassTag](
   partial: PartialFunction[T, T]
 ) extends SameTypeTransformerStackSafe[T] {
@@ -154,6 +189,11 @@ case class TopDownStackSafe[T <: TreeNode[T] : ClassTag](
 
 }
 
+/**
+  * Applies the given transformation starting from the leaves of this tree.
+  *
+  * @note This is a stack-safe version of [[Transform]].
+  */
 case class TransformStackSafe[I <: TreeNode[I] : ClassTag, O](
   transform: (I, List[O]) => O
 ) extends TransformerStackSafe[I, O] {
@@ -163,7 +203,7 @@ case class TransformStackSafe[I <: TreeNode[I] : ClassTag, O](
       stack.push(Done(transform(node, List.empty[O]) :: rewrittenChildren))
     } else {
       node.children.foldLeft(stack.push(RewriteNode(node, rewrittenChildren))) { case (currentStack, child) =>
-          currentStack.push(RewriteChildren(child))
+        currentStack.push(RewriteChildren(child))
       }
     }
   }

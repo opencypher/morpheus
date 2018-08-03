@@ -90,7 +90,7 @@ case class TopDown[T <: TreeNode[T] : ClassTag](rule: PartialFunction[T, T]) ext
 }
 
 /**
-  * Applies the given transformation starting from the leafs of this tree.
+  * Applies the given transformation starting from the leaves of this tree.
   */
 case class Transform[I <: TreeNode[I] : ClassTag, O](
   transform: (I, List[O]) => O
