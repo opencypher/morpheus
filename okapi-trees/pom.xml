@@ -20,6 +20,12 @@
 
   <dependencies>
 
+    <dependency>
+      <groupId>org.typelevel</groupId>
+      <artifactId>cats-core_${project.scala.binary.version}</artifactId>
+      <version>${dep.cats.version}</version>
+    </dependency>
+
   </dependencies>
 
 </project>
