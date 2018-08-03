@@ -103,13 +103,13 @@ case class Transform[I <: TreeNode[I] : ClassTag, O](
       transform(tree, List.empty[O])
     } else {
       val transformedChildren = {
-        val tmpChildren = new Array[O](childrenLength)
+        var tmpChildren = List.empty[O]
         var i = 0
         while (i < childrenLength) {
-          tmpChildren(i) = rewrite(children(i))
+          tmpChildren ::= rewrite(children(i))
           i += 1
         }
-        tmpChildren.toList
+        tmpChildren.reverse
       }
       transform(tree, transformedChildren)
     }
