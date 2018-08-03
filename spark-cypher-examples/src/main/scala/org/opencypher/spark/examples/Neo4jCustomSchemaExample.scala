@@ -28,8 +28,9 @@
 package org.opencypher.spark.examples
 
 import org.opencypher.okapi.api.graph.Namespace
+import org.opencypher.okapi.neo4j.io.testing.Neo4jHarnessUtils._
 import org.opencypher.spark.api.{CAPSSession, GraphSources}
-import org.opencypher.spark.testing.api.neo4j.Neo4jHarnessUtils._
+import org.opencypher.spark.testing.support.creation.CAPSNeo4jHarnessUtils._
 import org.opencypher.spark.util.ConsoleApp
 
 /**
@@ -42,7 +43,7 @@ object Neo4jCustomSchemaExample extends ConsoleApp {
   implicit val session: CAPSSession = CAPSSession.local()
 
   // Start a Neo4j instance and populate it with social network data
-  val neo4j = startNeo4j(personNetwork)
+  val neo4j = startNeo4j(personNetwork).withSchemaProcedure
 
   // Initialise schema from serialised file
   // This bypasses the automatic schema computation
@@ -50,7 +51,7 @@ object Neo4jCustomSchemaExample extends ConsoleApp {
   val schemaPath = getClass.getResource("/schema.json").getPath
 
   // Register Property Graph Data Sources (PGDS) with input schema file
-  session.registerSource(Namespace("socialNetwork"), GraphSources.cypher.neo4j(neo4j.dataSourceConfig, schemaPath, omitImportFailures = false))
+  session.registerSource(Namespace("socialNetwork"), GraphSources.cypher.neo4j(neo4j.dataSourceConfig, schemaPath, false))
 
   // run queries!
   session.cypher(

@@ -35,11 +35,8 @@ import org.neo4j.driver.internal.value.ListValue
 import org.neo4j.driver.v1.{Value, Values}
 import org.opencypher.okapi.api.graph.{GraphName, PropertyGraph}
 import org.opencypher.okapi.api.schema.PropertyKeys.PropertyKeys
-import org.opencypher.okapi.api.schema.{LabelPropertyMap, RelTypePropertyMap}
-import org.opencypher.okapi.api.types.CTRelationship
 import org.opencypher.okapi.api.schema.{LabelPropertyMap, RelTypePropertyMap, Schema}
 import org.opencypher.okapi.api.types.{CTNode, CTRelationship}
-import org.opencypher.okapi.api.types.CTRelationship
 import org.opencypher.okapi.api.value.CypherValue.CypherList
 import org.opencypher.okapi.impl.exception.UnsupportedOperationException
 import org.opencypher.okapi.impl.schema.SchemaImpl
@@ -62,7 +59,7 @@ case class Neo4jPropertyGraphDataSource(
   maybeSchema: Option[Schema] = None,
   override val omitIncompatibleProperties: Boolean = false,
   entireGraphName: GraphName = defaultEntireGraphName
-)(override implicit val session: CAPSSession) extends AbstractNeo4jDataSource with Logging {
+)(implicit val caps: CAPSSession) extends AbstractNeo4jDataSource with Logging {
 
   graphNameCache += entireGraphName
 
@@ -116,7 +113,7 @@ case class Neo4jPropertyGraphDataSource(
   }
 
   override protected def readSchema(graphName: GraphName): CAPSSchema = {
-    val graphSchema = maybeSchema.getOrElse(super.readSchema(graphSchema))
+    val graphSchema = maybeSchema.getOrElse(super.readSchema(graphName))
 
     val filteredSchema = graphName.metaLabel match {
       case None =>
@@ -138,10 +135,10 @@ case class Neo4jPropertyGraphDataSource(
     val graphSchema = schema(graphName).get
     val flatQuery = EntityReader.flatExactLabelQuery(labels, graphSchema, graphName.metaLabel)
 
-    val neo4jConnection = Neo4j(config, session.sparkSession)
+    val neo4jConnection = Neo4j(config, caps.sparkSession)
     val rdd = neo4jConnection.cypher(flatQuery).loadRowRdd
 
-    session.sparkSession.createDataFrame(rdd, sparkSchema)
+    caps.sparkSession.createDataFrame(rdd, sparkSchema)
   }
 
   override protected def readRelationshipTable(
@@ -152,9 +149,9 @@ case class Neo4jPropertyGraphDataSource(
     val graphSchema = schema(graphName).get
     val flatQuery = EntityReader.flatRelTypeQuery(relKey, graphSchema, graphName.metaLabel)
 
-    val neo4jConnection = Neo4j(config, session.sparkSession)
+    val neo4jConnection = Neo4j(config, caps.sparkSession)
     val rdd = neo4jConnection.cypher(flatQuery).loadRowRdd
-    session.sparkSession.createDataFrame(rdd, sparkSchema)
+    caps.sparkSession.createDataFrame(rdd, sparkSchema)
   }
 
   override protected def deleteGraph(graphName: GraphName): Unit = {
@@ -175,7 +172,7 @@ case class Neo4jPropertyGraphDataSource(
   override def store(graphName: GraphName, graph: PropertyGraph): Unit = {
     checkStorable(graphName)
 
-    val executorCount = session.sparkSession.sparkContext.statusTracker.getExecutorInfos.length
+    val executorCount = caps.sparkSession.sparkContext.statusTracker.getExecutorInfos.length
     implicit val executionContext: ExecutionContextExecutorService =
       ExecutionContext.fromExecutorService(Executors.newFixedThreadPool(executorCount))
 
@@ -205,9 +202,10 @@ case class Neo4jPropertyGraphDataSource(
 }
 
 case object Writers {
-  def writeNodes(graph: PropertyGraph, metaLabel: String, config: Neo4jConfig): Set[Future[Unit]] = {
+  def writeNodes(graph: PropertyGraph, metaLabel: String, config: Neo4jConfig)
+    (implicit caps: CAPSSession): Set[Future[Unit]] = {
     val result: Set[Future[Unit]] = graph.schema.labelCombinations.combos.map { combo =>
-      val nodeScan = graph.asCaps.nodes("n", CTNode(combo), exactLabelMatch = true)
+      val nodeScan = graph.nodes("n", CTNode(combo), exactLabelMatch = true).asCaps
       val mapping = computeMapping(nodeScan)
       nodeScan
         .df
@@ -217,9 +215,10 @@ case object Writers {
     result
   }
 
-  def writeRelationships(graph: PropertyGraph, metaLabel: String, config: Neo4jConfig): Set[Future[Unit]] = {
+  def writeRelationships(graph: PropertyGraph, metaLabel: String, config: Neo4jConfig)
+    (implicit caps: CAPSSession): Set[Future[Unit]] = {
     graph.schema.relationshipTypes.map { relType =>
-      val relScan = graph.asCaps.relationships("r", CTRelationship(relType))
+      val relScan = graph.relationships("r", CTRelationship(relType)).asCaps
       val mapping = computeMapping(relScan)
 
       val header = relScan.header

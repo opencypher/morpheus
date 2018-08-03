@@ -26,9 +26,10 @@
  */
 package org.opencypher.spark.api
 
-import org.opencypher.okapi.neo4j.io.Neo4jConfig
 import java.nio.file.Paths
+
 import org.opencypher.okapi.api.schema.Schema
+import org.opencypher.okapi.neo4j.io.Neo4jConfig
 import org.opencypher.spark.api.io.fs.{CAPSFileSystem, FSGraphSource}
 import org.opencypher.spark.api.io.neo4j.Neo4jPropertyGraphDataSource
 import org.opencypher.spark.api.io.neo4j.{Neo4jBulkCSVDataSink, Neo4jConfig, Neo4jPropertyGraphDataSource}
@@ -93,7 +94,7 @@ object CypherGraphSources {
     Neo4jPropertyGraphDataSource(config, maybeSchema = maybeSchema, omitIncompatibleProperties = omitIncompatibleProperties)
 
   // TODO: document
-  def neo4j(config: Neo4jConfig, schemaFile: String, omitIncompatibleProperties: Boolean = false)
+  def neo4j(config: Neo4jConfig, schemaFile: String, omitIncompatibleProperties: Boolean )
     (implicit session: CAPSSession): Neo4jPropertyGraphDataSource = {
     val schemaString = Source.fromFile(Paths.get(schemaFile).toUri).getLines().mkString("\n")
 

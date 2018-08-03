@@ -55,7 +55,7 @@ import scala.util.{Failure, Success}
   */
 abstract class AbstractPropertyGraphDataSource extends CAPSPropertyGraphDataSource {
 
-  implicit val session: CAPSSession
+  implicit val caps: CAPSSession
 
   def tableStorageFormat: String
 
@@ -136,7 +136,7 @@ abstract class AbstractPropertyGraphDataSource extends CAPSPropertyGraphDataSour
   override def store(graphName: GraphName, graph: PropertyGraph): Unit = {
     checkStorable(graphName)
 
-    val poolSize = session.sparkSession.sparkContext.statusTracker.getExecutorInfos.length
+    val poolSize = caps.sparkSession.sparkContext.statusTracker.getExecutorInfos.length
 
     implicit val executionContext: ExecutionContextExecutorService =
       ExecutionContext.fromExecutorService(Executors.newFixedThreadPool(poolSize))
