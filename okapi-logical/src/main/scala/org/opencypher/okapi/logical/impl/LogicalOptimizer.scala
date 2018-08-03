@@ -27,15 +27,15 @@
 package org.opencypher.okapi.logical.impl
 
 import org.opencypher.okapi.api.types.{CTBoolean, CTNode}
-import org.opencypher.okapi.ir.api.Label
-import org.opencypher.okapi.ir.api.expr.{HasLabel, Var}
+import org.opencypher.okapi.ir.api.expr.{Equals, HasLabel, Property, Var}
 import org.opencypher.okapi.ir.api.util.DirectCompilationStage
-import org.opencypher.okapi.trees.BottomUp
+import org.opencypher.okapi.ir.api.{IRField, Label}
+import org.opencypher.okapi.trees.{BottomUp, TopDown}
 
 object LogicalOptimizer extends DirectCompilationStage[LogicalOperator, LogicalOperator, LogicalPlannerContext] {
 
   override def process(input: LogicalOperator)(implicit context: LogicalPlannerContext): LogicalOperator = {
-    val optimizationRules = Seq(pushLabelsIntoScans(labelsForVariables(input)), discardScansForNonexistentLabels)
+    val optimizationRules = Seq(pushLabelsIntoScans(labelsForVariables(input)), discardScansForNonexistentLabels, replaceCartesianWithValueJoin)
     optimizationRules.foldLeft(input) {
       // TODO: Evaluate if multiple rewriters could be fused
       case (tree: LogicalOperator, optimizationRule) => BottomUp[LogicalOperator](optimizationRule).transform(tree)
@@ -51,6 +51,21 @@ object LogicalOptimizer extends DirectCompilationStage[LogicalOperator, LogicalO
         }
     }
   }
+
+  def replaceCartesianWithValueJoin: PartialFunction[LogicalOperator, LogicalOperator] = {
+    case Filter(e@Equals(leftProp: Property, rightProp: Property), in, _) =>
+
+      // TODO: extend tree rewriting to be able to stop after first rewrite
+      val newChild = BottomUp[LogicalOperator] {
+        case CartesianProduct(lhs, rhs, solved)
+          if solved.solves(IRField(leftProp.entity.withoutType)(leftProp.cypherType)) &&
+            solved.solves(IRField(rightProp.entity.withoutType)(rightProp.cypherType)) =>
+          ValueJoin(lhs, rhs, Set(e), solved)
+      }.rewrite(in)
+
+      newChild
+  }
+
 
   def pushLabelsIntoScans(labelMap: Map[Var, Set[String]]): PartialFunction[LogicalOperator, LogicalOperator] = {
     case ns@NodeScan(v@Var(name), in, solved) =>
