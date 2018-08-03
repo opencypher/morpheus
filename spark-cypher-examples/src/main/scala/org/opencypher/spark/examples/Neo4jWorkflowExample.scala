@@ -31,6 +31,7 @@ import org.opencypher.okapi.api.graph.{Namespace, QualifiedGraphName}
 import org.opencypher.okapi.neo4j.io.Neo4jHelpers.Neo4jDefaults._
 import org.opencypher.okapi.neo4j.io.testing.Neo4jHarnessUtils._
 import org.opencypher.spark.api.{CAPSSession, GraphSources}
+import org.opencypher.spark.testing.support.creation.CAPSNeo4jHarnessUtils._
 import org.opencypher.spark.util.ConsoleApp
 
 /**
@@ -43,7 +44,7 @@ object Neo4jWorkflowExample extends ConsoleApp {
   implicit val session: CAPSSession = CAPSSession.local()
 
   // Start a Neo4j instance and populate it with social network data
-  val neo4j = startNeo4j(personNetwork)
+  val neo4j = startNeo4j(personNetwork).withSchemaProcedure
 
   // Register Property Graph Data Sources (PGDS)
   session.registerSource(Namespace("socialNetwork"), GraphSources.cypher.neo4j(neo4j.dataSourceConfig))

@@ -32,6 +32,7 @@ import org.opencypher.okapi.api.graph.Namespace
 import org.opencypher.okapi.neo4j.io.Neo4jHelpers.Neo4jDefaults._
 import org.opencypher.okapi.neo4j.io.testing.Neo4jHarnessUtils._
 import org.opencypher.spark.api.{CAPSSession, GraphSources}
+import org.opencypher.spark.testing.support.creation.CAPSNeo4jHarnessUtils._
 import org.opencypher.spark.util.ConsoleApp
 
 /**
@@ -45,8 +46,8 @@ object RecommendationExample extends ConsoleApp {
   implicit val caps: CAPSSession = CAPSSession.local()
 
   // Start two Neo4j instances and populate them with social network data
-  implicit val neo4jServerUS: ServerControls = startNeo4j(socialNetworkUS)
-  implicit val neo4jServerEU: ServerControls = startNeo4j(socialNetworkEU)
+  implicit val neo4jServerUS: ServerControls = startNeo4j(socialNetworkUS).withSchemaProcedure
+  implicit val neo4jServerEU: ServerControls = startNeo4j(socialNetworkEU).withSchemaProcedure
 
   // Register Property Graph Data Sources (PGDS)
 
