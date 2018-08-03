@@ -35,6 +35,14 @@ import org.scalatest.DoNotDiscover
 @DoNotDiscover
 class PredicateBehaviour extends CAPSTestSuite with DefaultGraphInit {
 
+  it("can evaluate predicates on non-existing properties") {
+    val given = initGraph("CREATE ()")
+
+    val result = given.cypher("MATCH (n) WHERE n.name = 'foo' RETURN n.id")
+
+    result.records.toMaps should equal(Bag())
+  }
+
   it("exists()") {
     val given = initGraph("CREATE ({id: 1}), ({id: 2}), ({other: 'foo'}), ()")
 

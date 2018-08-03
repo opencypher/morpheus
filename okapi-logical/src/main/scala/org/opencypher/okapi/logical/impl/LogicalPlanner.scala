@@ -306,8 +306,7 @@ class LogicalPlanner(producer: LogicalOperatorProducer)
 
       case _: Var => in
 
-      case p: Property =>
-        producer.projectExpr(p, in)
+      case p: Property => in
 
       case be: BinaryExpr =>
         val project1 = planInnerExpr(be.lhs, in)

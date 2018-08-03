@@ -89,6 +89,8 @@ object SparkSQLExprMapper {
         case Param(name) =>
           functions.lit(parameters(name).unwrap)
 
+        case _: Property if !header.contains(expr) => NULL_LIT
+
         // direct column lookup
         case _: Var | _: Param | _: Property | _: HasLabel | _: HasType | _: StartNode | _: EndNode =>
           verify
