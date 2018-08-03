@@ -40,18 +40,22 @@ object EntityWriter extends Logging {
     rowMapping: Array[String],
     config: Neo4jConfig,
     relType: String,
+    nodeLabel: Option[String],
     batchSize: Int = 1000
   )(rowToListValue: T => ListValue): Unit = {
     val setStatements = rowMapping
       .zipWithIndex
       .filterNot(_._1 == null)
-      .map{ case (key, i) => s"SET n.$key = row[$i]" }
+      .map{ case (key, i) => s"SET rel.$key = row[$i]" }
       .mkString("\n")
+
+    val nodeLabelString = nodeLabel.map(l => s":$l").getOrElse("")
 
     val createQ =
       s"""
-         |MATCH (from {$metaPropertyKey : row[$startNodeIndex]})
-         |MATCH (to {$metaPropertyKey : row[$endNodeIndex]})
+         |UNWIND $$batch as row
+         |MATCH (from$nodeLabelString {$metaPropertyKey : row[$startNodeIndex]})
+         |MATCH (to$nodeLabelString {$metaPropertyKey : row[$endNodeIndex]})
          |CREATE (from)-[rel:$relType]->(to)
          |$setStatements
          """.stripMargin

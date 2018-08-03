@@ -42,11 +42,8 @@ import org.opencypher.okapi.impl.exception.UnsupportedOperationException
 import org.opencypher.okapi.impl.schema.SchemaImpl
 import org.opencypher.okapi.neo4j.io.Neo4jHelpers.Neo4jDefaults._
 import org.opencypher.okapi.neo4j.io.Neo4jHelpers._
-import org.opencypher.okapi.neo4j.io.{EntityReader, EntityWriter, Neo4jConfig}
+import org.opencypher.okapi.neo4j.io.{EntityReader, Neo4jConfig}
 import org.opencypher.spark.api.CAPSSession
-import org.opencypher.spark.api.value.{CAPSNode, CAPSRelationship}
-import org.opencypher.spark.impl.CAPSConverters._
-import org.opencypher.spark.impl.encoders._
 import org.opencypher.spark.impl.io.neo4j.external.Neo4j
 import org.opencypher.spark.schema.CAPSSchema
 import org.opencypher.spark.schema.CAPSSchema._
@@ -204,25 +201,28 @@ case class Neo4jPropertyGraphDataSource(
 case object NodeWriter {
   def apply(graph: PropertyGraph, metaLabel: String, config: Neo4jConfig)
     (implicit executionContext: ExecutionContextExecutorService): Seq[Future[Unit]] = {
-    graph.schema.labelCombinations.combos.map { combo =>
-        graph.asCaps.nodes("n", CTNode(combo), exactLabelMatch = true)
-          .asCaps
-          .toCypherMaps
-          .map(map => map("n").cast[CAPSNode])
-          .rdd.foreachPartitionAsync(i => EntityWriter.writeNodes(i, config, Some(metaLabel)))
-    }
-  }.toSeq
+    //    graph.schema.labelCombinations.combos.map { combo =>
+    //        graph.asCaps.nodes("n", CTNode(combo), exactLabelMatch = true)
+    //          .asCaps
+    //          .toCypherMaps
+    //          .map(map => map("n").cast[CAPSNode])
+    //          .rdd.foreachPartitionAsync(i => EntityWriter.writeNodes(i, config, Some(metaLabel)))
+    //    }
+    //  }.toSeq
+    ???
+  }
 }
 
 case object RelWriter {
   def apply(graph: PropertyGraph, metaLabel: String, config: Neo4jConfig)
     (implicit executionContext: ExecutionContextExecutorService): Seq[Future[Unit]] = {
-    graph.schema.relationshipTypes.map { relType =>
-      graph.relationships("r", CTRelationship(relType))
-        .asCaps
-        .toCypherMaps
-        .map(map => map("r").cast[CAPSRelationship])
-        .rdd.foreachPartitionAsync(i => EntityWriter.writeRelationships(i, config, Some(metaLabel)))
-    }.toSeq
+//    graph.schema.relationshipTypes.map { relType =>
+//      graph.relationships("r", CTRelationship(relType))
+//        .asCaps
+//        .toCypherMaps
+//        .map(map => map("r").cast[CAPSRelationship])
+//        .rdd.foreachPartitionAsync(i => EntityWriter.writeRelationships(i, config, Some(metaLabel)))
+//    }.toSeq
+    ???
   }
 }
