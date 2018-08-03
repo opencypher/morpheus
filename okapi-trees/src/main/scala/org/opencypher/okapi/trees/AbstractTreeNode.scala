@@ -27,6 +27,7 @@
 package org.opencypher.okapi.trees
 
 import scala.reflect.ClassTag
+import reflect.runtime.universe._
 
 /**
   * Class that implements the `children` and `withNewChildren` methods using reflection when implementing
@@ -45,11 +46,13 @@ import scala.reflect.ClassTag
   *   - There can be at most one list of children and there can be no normal child constructor parameters
   *     that appear after the list of children. This allows to call `withNewChildren` with a different number of
   *     children than the original node had and vary the length of the list to accommodate.
+  *
+  * Options and empty lists are supported with custom `children`/`withNewChildren` implementations.
   */
-abstract class AbstractTreeNode[T <: AbstractTreeNode[T]: ClassTag] extends TreeNode[T] {
+abstract class AbstractTreeNode[T <: AbstractTreeNode[T]: ClassTag : TypeTag] extends TreeNode[T] {
   self: T =>
 
-  final override val children: Array[T] = {
+  override val children: Array[T] = {
     val constructorParamLength = productArity
     val childrenCount = {
       var count = 0
@@ -100,9 +103,9 @@ abstract class AbstractTreeNode[T <: AbstractTreeNode[T]: ClassTag] extends Tree
                   } catch {
                     case c: ClassCastException =>
                       throw InvalidConstructorArgument(
-                        s"""Expected a list that contains either no children or only children,
-                           |but found a mixed list that contains a child as the head element and
-                           |also an element with a non-child type: ${c.getMessage}.
+                        s"""Expected a list that contains either no children or only children
+                           |but found a mixed list that contains a child as the head element,
+                           |but also one with a non-child type: ${c.getMessage}.
                            |""".stripMargin
                       )
                   }
@@ -118,7 +121,7 @@ abstract class AbstractTreeNode[T <: AbstractTreeNode[T]: ClassTag] extends Tree
     childrenArray
   }
 
-  @inline override final def withNewChildren(newChildren: Array[T]): T = {
+  @inline override def withNewChildren(newChildren: Array[T]): T = {
     if (sameAsCurrentChildren(newChildren)) {
       self
     } else {
