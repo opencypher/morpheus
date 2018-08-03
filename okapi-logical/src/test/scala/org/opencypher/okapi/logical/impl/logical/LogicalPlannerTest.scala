@@ -53,20 +53,6 @@ class LogicalPlannerTest extends BaseTestSuite with IrConstruction {
 
   val emptySqm = SolvedQueryModel.empty
 
-  //  // Helper to create nicer expected results with `asCode`
-  implicit val specialMappings = Map[Any, String](
-    Schema.empty -> "Schema.empty",
-    CTNode -> "CTNode",
-    CTRelationship -> "CTRelationship",
-    emptySqm -> "emptySqm",
-    nodeA -> "nodeA",
-    relR -> "relR",
-    nodeB -> "nodeB",
-    (nodeA: IRField) -> "nodeA",
-    (relR: IRField) -> "relR",
-    (nodeB: IRField) -> "nodeB"
-  )
-
   it("converts load graph block") {
     val result = plan(irFor(leafBlock))
     val expected = Select(List.empty, leafPlan, emptySqm)
