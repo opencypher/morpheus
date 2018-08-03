@@ -29,7 +29,7 @@ package org.opencypher.okapi.trees
 import scala.annotation.tailrec
 import scala.collection.mutable.ArrayBuffer
 import scala.reflect.ClassTag
-import scala.reflect.runtime.currentMirror
+import scala.reflect.runtime.{currentMirror, universe}
 import scala.reflect.runtime.universe._
 import scala.util.hashing.MurmurHash3
 
@@ -42,7 +42,7 @@ import scala.util.hashing.MurmurHash3
   * This class uses array operations instead of Scala collections, both for improved performance as well as to save
   * stack frames during recursion, which allows it to operate on trees that are several thousand nodes high.
   */
-abstract class TreeNode[T <: TreeNode[T] : ClassTag : TypeTag] extends Product with Traversable[T] {
+abstract class TreeNode[T <: TreeNode[T] : ClassTag] extends Product with Traversable[T] {
   self: T =>
 
   def rewrite(f: PartialFunction[T, T]): T = {
@@ -160,18 +160,37 @@ abstract class TreeNode[T <: TreeNode[T] : ClassTag : TypeTag] extends Product w
     * Arguments that should be printed. The default implementation excludes children.
     */
   def args: Iterator[Any] = {
-    def generalCase(arg: Any) = Some(arg.toString)
-    productIterator.flatMap {
-      case c: T if containsChild(c)     => None // Don't print children
-      case i: Iterable[_] if i.nonEmpty =>
-        // Need explicit pattern match for T, as `isInstanceOf` in `if` results in a warning.
-        i.head match {
-          case _: T => None // Don't print children
-          case _    => generalCase(i)
+    val ownClass = currentMirror.runtimeClass(currentMirror.reflect(this).symbol.asClass)
+    currentMirror.reflect(this)
+      .symbol
+      .typeSignature
+      .members
+      .collect { case a: TermSymbol => a }
+      .filter(_.isCaseAccessor)
+      .filterNot(_.isMethod)
+      .toList
+      .map(currentMirror.reflect(this).reflectField)
+      .map(termSymbol => termSymbol -> termSymbol.get)
+      .filter { case (termSymbol, value) =>
+        def innerClassOfParam: Class[_] = {
+          currentMirror.runtimeClass(termSymbol.symbol.typeSignature.typeArgs.head.typeSymbol.asClass)
         }
-      case other => generalCase(other)
-    }
+
+        def containsChildren: Boolean = innerClassOfParam.isAssignableFrom(ownClass)
+
+        value match {
+          case c: T if containsChild(c) => false
+          case _: Option[_] if containsChildren => false
+          case _: Iterable[_] if containsChildren => false
+          case _: Array[_] if containsChildren => false
+          case _ => true
+        }
+      }
+      .map { case (termSymbol, value) => s"${termSymbol.symbol.name.toString.trim}=$value" }
+      .reverseIterator
   }
 
-  override def toString = s"${getClass.getSimpleName}${if (argString.isEmpty) "" else s"($argString)"}"
+  override def toString = s"${getClass.getSimpleName}${
+    if (args.isEmpty) "" else s"(${args.mkString(", ")})"
+  }"
 }

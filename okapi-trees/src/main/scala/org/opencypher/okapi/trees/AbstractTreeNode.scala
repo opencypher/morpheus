@@ -49,7 +49,7 @@ import reflect.runtime.universe._
   *
   * Options and empty lists are supported with custom `children`/`withNewChildren` implementations.
   */
-abstract class AbstractTreeNode[T <: AbstractTreeNode[T]: ClassTag : TypeTag] extends TreeNode[T] {
+abstract class AbstractTreeNode[T <: AbstractTreeNode[T]: ClassTag] extends TreeNode[T] {
   self: T =>
 
   override val children: Array[T] = {

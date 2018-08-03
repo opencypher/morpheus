@@ -26,9 +26,7 @@
  */
 package org.opencypher.okapi.trees
 
-import org.scalatest.{FunSpec, FunSuite, Matchers}
-import org.scalatest.matchers.{MatchResult, Matcher}
-import org.scalatest.{FlatSpec, Matchers}
+import org.scalatest.{FunSpec, Matchers}
 
 class TreeNodeTest extends FunSpec with Matchers {
 
@@ -62,8 +60,8 @@ class TreeNodeTest extends FunSpec with Matchers {
     addList2.eval should equal(6)
     val addList3 =
       AddList(List(1), Number(0), 2, List(Number(2)), List[Object]("a", "b"))
-        .withNewChildren(Array(1, 2, 3, 4, 5, 6, 7).map(Number))
-    addList3 should equal(AddList(List(1), Number(1), 2, List(2, 3, 4, 5, 6, 7).map(Number), List[Object]("a", "b")))
+        .withNewChildren(Array(1, 2, 3, 4, 5, 6, 7).map(Number(_)))
+    addList3 should equal(AddList(List(1), Number(1), 2, List(2, 3, 4, 5, 6, 7).map(Number(_)), List[Object]("a", "b")))
     addList3.eval should equal(28)
   }
 
@@ -86,26 +84,20 @@ class TreeNodeTest extends FunSpec with Matchers {
 
     // - if any children are contained in a list at all, then all list elements need to be children
     intercept[InvalidConstructorArgument] {
-      case class Unsupported(elems: List[Object]) extends AbstractTreeNode[Unsupported]
-      Unsupported(List(Unsupported(List.empty), "2"))
-    }.getMessage should include(
-      s"""Expected a list that contains either no children or only children,
-         |but found a mixed list that contains a child as the head element and
-         |also an element with a non-child type""".stripMargin)
+      val fail = Unsupported(List(Unsupported(List.empty), "2"))
+    }.getMessage should equal(
+      s"""Expected a list that contains either no children or only children
+         |but found a mixed list that contains a child as the head element,
+         |but also one with a non-child type: java.lang.String cannot be cast to ${classOf[AbstractTreeNode[_]].getName}.
+         |""".stripMargin)
 
     // - there can be at most one list of children
     intercept[IllegalArgumentException] {
-      abstract class UnsupportedTree extends AbstractTreeNode[UnsupportedTree]
-      case object UnsupportedLeaf extends UnsupportedTree
-      case class UnsupportedNode(elems1: List[UnsupportedTree], elems2: List[UnsupportedTree]) extends UnsupportedTree
       UnsupportedNode(List(UnsupportedLeaf), List(UnsupportedLeaf))
     }.getMessage should equal("requirement failed: there can be at most one list of children in the constructor.")
 
     // - there can be no normal child constructor parameters after the list of children
     intercept[IllegalArgumentException] {
-      abstract class UnsupportedTree2 extends AbstractTreeNode[UnsupportedTree2]
-      case object UnsupportedLeaf2 extends UnsupportedTree2
-      case class UnsupportedNode2(elems: List[UnsupportedTree2], elem: UnsupportedTree2) extends UnsupportedTree2
       UnsupportedNode2(List(UnsupportedLeaf2), UnsupportedLeaf2)
     }.getMessage should equal(
       "requirement failed: there can be no normal child constructor parameters " +
@@ -156,13 +148,48 @@ class TreeNodeTest extends FunSpec with Matchers {
     noOpTree.height should equal(2000)
   }
 
+  it("stack safe rewrite") {
+    val addNoops: PartialFunction[CalcExpr, CalcExpr] = {
+      case Add(n1: Number, n2: Number) => Add(NoOp(n1), NoOp(n2))
+      case Add(n1: Number, n2) => Add(NoOp(n1), n2)
+      case Add(n1, n2: Number) => Add(n1, NoOp(n2))
+    }
+
+    val expected = Add(NoOp(Number(5)), Add(NoOp(Number(4)), NoOp(Number(3))))
+
+    val up = BottomUpStackSafe[CalcExpr](addNoops).rewrite(calculation)
+    up should equal(expected)
+  }
+
+  it("support arbitrarily high high trees with stack safe rewrites") {
+    val height = 50000
+    val highTree = (1 to height).foldLeft(Number(1): CalcExpr) {
+      case (t, n) => Add(t, Number(n))
+    }
+    val simplified = BottomUpStackSafe[CalcExpr] {
+      case Add(Number(n1), Number(n2)) => Number(n1 + n2)
+    }.rewrite(highTree)
+
+    val addNoOpsBeforeLeftAdd: PartialFunction[CalcExpr, CalcExpr] = {
+      case Add(a: Add, b) => Add(NoOp(a), b)
+    }
+    val noOpTree = TopDownStackSafe[CalcExpr] {
+      addNoOpsBeforeLeftAdd
+    }.rewrite(highTree)
+    noOpTree.height should equal(2 * height)
+  }
+
   it("arg string") {
-    Number(12).argString should equal("12")
+    Number(12).argString should equal("v=12")
     Add(Number(1), Number(2)).argString should equal("")
   }
 
+  it("option and list arg string") {
+    Dummy(None, List.empty, None, List.empty).argString should equal("print1=None, print2=List()")
+  }
+
   it("to string") {
-    Number(12).toString should equal("Number(12)")
+    Number(12).toString should equal("Number(v=12)")
     Add(Number(1), Number(2)).toString should equal("Add")
   }
 
@@ -171,19 +198,37 @@ class TreeNodeTest extends FunSpec with Matchers {
     t.pretty should equal(
       """|╙──Add
          |    ╟──Add
-         |    ║   ╟──Number(4)
-         |    ║   ╙──Number(3)
+         |    ║   ╟──Number(v=4)
+         |    ║   ╙──Number(v=3)
          |    ╙──Add
-         |        ╟──Number(4)
-         |        ╙──Number(3)""".stripMargin)
+         |        ╟──Number(v=4)
+         |        ╙──Number(v=3)""".stripMargin)
   }
 
   it("copy with the same children returns the same instance") {
     calculation.withNewChildren(Array(calculation.left, calculation.right)) should be theSameInstanceAs calculation
   }
 
+  case class Unsupported(elems: List[Object]) extends AbstractTreeNode[Unsupported]
+
+  abstract class UnsupportedTree extends AbstractTreeNode[UnsupportedTree]
+
+  case object UnsupportedLeaf extends UnsupportedTree
+
+  case class UnsupportedNode(elems1: List[UnsupportedTree], elems2: List[UnsupportedTree]) extends UnsupportedTree
+
+  abstract class UnsupportedTree2 extends AbstractTreeNode[UnsupportedTree2]
+
+  case object UnsupportedLeaf2 extends UnsupportedTree2
+
+  case class UnsupportedNode2(elems: List[UnsupportedTree2], elem: UnsupportedTree2) extends UnsupportedTree2
+
   abstract class CalcExpr extends AbstractTreeNode[CalcExpr] {
     def eval: Int
+  }
+
+  case class Dummy(print1: Option[String], print2: List[String], dontPrint1: Option[CalcExpr], dontPrint2: List[CalcExpr]) extends CalcExpr {
+    def eval = 0
   }
 
   case class AddList(dummy1: List[Int], first: CalcExpr, dummy2: Int, remaining: List[CalcExpr], dummy3: List[Object])
