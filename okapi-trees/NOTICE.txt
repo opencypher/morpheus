@@ -33,3 +33,9 @@ BSD License
   scala-parser-combinators
   scala-xml
 
+MIT-license
+  Cats core
+  Cats kernel
+  Cats macros
+  machinist
+
