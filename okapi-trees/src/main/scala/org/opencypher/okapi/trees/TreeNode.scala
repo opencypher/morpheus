@@ -162,7 +162,6 @@ abstract class TreeNode[T <: TreeNode[T] : ClassTag] extends Product with Traver
     * Arguments that should be printed. The default implementation excludes children.
     */
   def args: Iterator[Any] = {
-    val treeNodeParentClass = currentMirror.runtimeClass(currentMirror.reflect(this).symbol.asClass).getSuperclass
     currentMirror.reflect(this)
       .symbol
       .typeSignature
@@ -173,18 +172,36 @@ abstract class TreeNode[T <: TreeNode[T] : ClassTag] extends Product with Traver
       .toList
       .map(currentMirror.reflect(this).reflectField)
       .map(termSymbol => termSymbol -> termSymbol.get)
-      .filter { case (termSymbol, value) =>
-        def innerClassOfParam: Class[_] = {
-          currentMirror.runtimeClass(termSymbol.symbol.typeSignature.typeArgs.head.typeSymbol.asClass)
-        }
-
-        def containsChildren: Boolean = treeNodeParentClass.isAssignableFrom(innerClassOfParam)
-
+      .filter { case (_, value) =>
         value match {
           case c: T if containsChild(c) => false
-          case _: Option[_] if containsChildren => false
-          case _: Iterable[_] if containsChildren => false
-          case _: Array[_] if containsChildren => false
+          case o: Option[_] =>
+            if (o.isEmpty) {
+              false
+            } else {
+              o.get match {
+                case _: T => false
+                case _ => true
+              }
+            }
+          case i: Iterable[_] =>
+            if (i.isEmpty) {
+              false
+            } else {
+              i.exists {
+                case _: T => false
+                case _ => true
+              }
+            }
+          case a: Array[_] =>
+            if (a.isEmpty) {
+              false
+            } else {
+              a.exists {
+                case _: T => false
+                case _ => true
+              }
+            }
           case _ => true
         }
       }
