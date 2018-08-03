@@ -34,11 +34,11 @@ import org.opencypher.okapi.testing.Bag._
 import org.opencypher.spark.api.CypherGraphSources
 import org.opencypher.spark.impl.acceptance.DefaultGraphInit
 import org.opencypher.spark.testing.CAPSTestSuite
-import org.opencypher.spark.testing.fixture.Neo4jServerFixture
+import org.opencypher.spark.testing.fixture.CAPSNeo4jServerFixture
 
 class Neo4jPropertyGraphDataSourceWriteTest
   extends CAPSTestSuite
-    with Neo4jServerFixture
+    with CAPSNeo4jServerFixture
     with DefaultGraphInit{
 
   it("can write a graph to Neo4j") {

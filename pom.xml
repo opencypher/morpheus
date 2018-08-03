@@ -367,14 +367,15 @@
       <!-- No license listing for this profile -->
       <modules>
         <module>okapi-api</module>
+        <module>okapi-testing</module>
         <module>okapi-neo4j-io</module>
+        <module>okapi-neo4j-io-testing</module>
         <module>okapi-ir</module>
         <module>okapi-neo4j-procedures</module>
         <module>okapi-logical</module>
         <module>okapi-relational</module>
         <module>okapi-tck</module>
         <module>okapi-trees</module>
-        <module>okapi-testing</module>
         <module>spark-cypher</module>
         <module>spark-cypher-examples</module>
         <module>spark-cypher-tck</module>
@@ -425,11 +426,13 @@
       <modules>
         <module>licensecheck-config</module>
         <module>okapi-api</module>
+        <module>okapi-testing</module>
+        <module>okapi-neo4j-io</module>
+        <module>okapi-neo4j-io-testing</module>
         <module>okapi-ir</module>
         <module>okapi-neo4j-procedures</module>
         <module>okapi-logical</module>
         <module>okapi-relational</module>
-        <module>okapi-testing</module>
         <module>okapi-tck</module>
         <module>okapi-trees</module>
         <module>spark-cypher</module>

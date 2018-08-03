@@ -40,11 +40,11 @@ import org.opencypher.spark.api.value.{CAPSNode, CAPSRelationship}
 import org.opencypher.spark.impl.CAPSConverters._
 import org.opencypher.spark.impl.table.SparkTable.DataFrameTable
 import org.opencypher.spark.testing.CAPSTestSuite
-import org.opencypher.spark.testing.fixture.{Neo4jServerFixture, OpenCypherDataFixture}
+import org.opencypher.spark.testing.fixture.{CAPSNeo4jServerFixture, OpenCypherDataFixture}
 
 import scala.language.reflectiveCalls
 
-class CAPSRecordsAcceptanceTest extends CAPSTestSuite with Neo4jServerFixture with OpenCypherDataFixture {
+class CAPSRecordsAcceptanceTest extends CAPSTestSuite with CAPSNeo4jServerFixture with OpenCypherDataFixture {
 
   private lazy val graph: RelationalCypherGraph[DataFrameTable] =
     GraphSources.cypher.neo4j(neo4jConfig).graph(Neo4jDefaults.defaultEntireGraphName).asCaps

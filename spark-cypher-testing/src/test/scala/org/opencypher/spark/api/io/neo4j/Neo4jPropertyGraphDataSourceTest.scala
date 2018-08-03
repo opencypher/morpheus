@@ -38,11 +38,11 @@ import org.opencypher.spark.api.CypherGraphSources
 import org.opencypher.spark.api.value.CAPSNode
 import org.opencypher.spark.impl.CAPSConverters._
 import org.opencypher.spark.testing.CAPSTestSuite
-import org.opencypher.spark.testing.fixture.{Neo4jServerFixture, TeamDataFixture}
+import org.opencypher.spark.testing.fixture.{CAPSNeo4jServerFixture, TeamDataFixture}
 
 class Neo4jPropertyGraphDataSourceTest
   extends CAPSTestSuite
-    with Neo4jServerFixture
+    with CAPSNeo4jServerFixture
     with TeamDataFixture {
 
   it("can read lists from Neo4j") {

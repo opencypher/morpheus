@@ -8,29 +8,41 @@
     <artifactId>okapi</artifactId>
     <version>1.0.0-SNAPSHOT</version>
   </parent>
-  <artifactId>okapi-neo4j-io</artifactId>
-  <name>Okapi - Neo4j IO</name>
+  <artifactId>okapi-neo4j-io-testing</artifactId>
+  <name>Okapi - Neo4j IO test utils</name>
   <properties>
     <project.rootdir>${project.parent.basedir}</project.rootdir>
   </properties>
+
   <dependencies>
     <dependency>
       <groupId>org.opencypher</groupId>
-      <artifactId>okapi-api</artifactId>
+      <artifactId>okapi-neo4j-io</artifactId>
       <version>${project.parent.version}</version>
     </dependency>
     <dependency>
       <groupId>org.opencypher</groupId>
-      <artifactId>okapi-api</artifactId>
+      <artifactId>okapi-testing</artifactId>
       <version>${project.parent.version}</version>
-      <type>test-jar</type>
-      <scope>test</scope>
     </dependency>
+
     <!-- Neo4j -->
     <dependency>
-      <groupId>org.neo4j.driver</groupId>
-      <artifactId>neo4j-java-driver</artifactId>
-      <version>${dep.neo4j.driver.version}</version>
+      <groupId>org.neo4j.test</groupId>
+      <artifactId>neo4j-harness</artifactId>
+      <version>${dep.neo4j.version}</version>
+    </dependency>
+
+    <dependency>
+      <groupId>org.scalatest</groupId>
+      <artifactId>scalatest_${project.scala.binary.version}</artifactId>
+      <version>${dep.scalatest.version}</version>
+      <exclusions>
+        <exclusion>
+          <groupId>org.scala-lang</groupId>
+          <artifactId>scala-library</artifactId>
+        </exclusion>
+      </exclusions>
     </dependency>
   </dependencies>
 </project>
