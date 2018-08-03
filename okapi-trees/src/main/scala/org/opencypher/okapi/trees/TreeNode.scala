@@ -29,6 +29,8 @@ package org.opencypher.okapi.trees
 import scala.annotation.tailrec
 import scala.collection.mutable.ArrayBuffer
 import scala.reflect.ClassTag
+import scala.reflect.runtime.currentMirror
+import scala.reflect.runtime.universe._
 import scala.util.hashing.MurmurHash3
 
 /**
@@ -40,8 +42,35 @@ import scala.util.hashing.MurmurHash3
   * This class uses array operations instead of Scala collections, both for improved performance as well as to save
   * stack frames during recursion, which allows it to operate on trees that are several thousand nodes high.
   */
-abstract class TreeNode[T <: TreeNode[T]: ClassTag] extends Product with Traversable[T] {
+abstract class TreeNode[T <: TreeNode[T] : ClassTag : TypeTag] extends Product with Traversable[T] {
   self: T =>
+
+  def rewrite(f: PartialFunction[T, T]): T = {
+    try {
+      BottomUp(f).rewrite(self)
+    } catch {
+      case _: StackOverflowError =>
+        BottomUpStackSafe(f).rewrite(self)
+    }
+  }
+
+  def rewriteTopDown(f: PartialFunction[T, T]): T = {
+    try {
+      TopDown(f).rewrite(self)
+    } catch {
+      case _: StackOverflowError =>
+        TopDownStackSafe(f).rewrite(self)
+    }
+  }
+
+  def transform[O](f: (T, List[O]) => O): O = {
+    try {
+      Transform(f).rewrite(self)
+    } catch {
+      case _: StackOverflowError =>
+        TransformStackSafe(f).rewrite(self)
+    }
+  }
 
   def withNewChildren(newChildren: Array[T]): T
 
@@ -51,54 +80,17 @@ abstract class TreeNode[T <: TreeNode[T]: ClassTag] extends Product with Travers
 
   def arity: Int = children.length
 
-  def isLeaf: Boolean = height == 1
+  def isLeaf: Boolean = children.isEmpty
 
-  def height: Int = {
-    val childrenLength = children.length
-    var i = 0
-    var result = 0
-    while (i < childrenLength) {
-      result = math.max(result, children(i).height)
-      i += 1
-    }
-    result + 1
+  def height: Int = transform[Int] { case (_, childHeights) => (0 :: childHeights).max + 1 }
+
+  override def size: Int = transform[Int] { case (_, childSizes) => childSizes.sum + 1 }
+
+  def map[O <: TreeNode[O] : ClassTag](f: T => O): O = transform[O] { case (node, transformedChildren) =>
+    f(node).withNewChildren(transformedChildren.toArray)
   }
 
-  override def size: Int = {
-    val childrenLength = children.length
-    var i = 0
-    var result = 1
-    while (i < childrenLength) {
-      result += children(i).size
-      i += 1
-    }
-    result
-  }
-
-  def map[O <: TreeNode[O]: ClassTag](f: T => O): O = {
-    val childrenLength = children.length
-    if (childrenLength == 0) {
-      f(self)
-    } else {
-      val mappedChildren = new Array[O](childrenLength)
-      var i = 0
-      while (i < childrenLength) {
-        mappedChildren(i) = f(children(i))
-        i += 1
-      }
-      f(self).withNewChildren(mappedChildren)
-    }
-  }
-
-  override def foreach[O](f: T => O): Unit = {
-    f(this)
-    val childrenLength = children.length
-    var i = 0
-    while (i < childrenLength) {
-      children(i).foreach(f)
-      i += 1
-    }
-  }
+  override def foreach[O](f: T => O): Unit = transform[O] { case (node, _) => f(node) }
 
   /**
     * Checks if the parameter tree is contained within this tree. A tree always contains itself.
@@ -106,15 +98,8 @@ abstract class TreeNode[T <: TreeNode[T]: ClassTag] extends Product with Travers
     * @param other other tree
     * @return true, iff `other` is contained in that tree
     */
-  def containsTree(other: T): Boolean = {
-    if (self == other) {
-      true
-    } else {
-      val childrenLength = children.length
-      var i = 0
-      while (i < childrenLength && !children(i).containsTree(other)) i += 1
-      i != childrenLength
-    }
+  def containsTree(other: T): Boolean = transform[Boolean] { case (node, childrenContain) =>
+    (node == other) || childrenContain.contains(true)
   }
 
   /**
