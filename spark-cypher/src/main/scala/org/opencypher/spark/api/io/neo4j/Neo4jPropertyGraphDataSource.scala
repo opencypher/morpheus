@@ -29,21 +29,27 @@ package org.opencypher.spark.api.io.neo4j
 import java.util.concurrent.Executors
 
 import org.apache.logging.log4j.scala.Logging
-import org.apache.spark.sql.DataFrame
 import org.apache.spark.sql.types.StructType
+import org.apache.spark.sql.{DataFrame, Row}
+import org.neo4j.driver.internal.value.ListValue
+import org.neo4j.driver.v1.{Value, Values}
 import org.opencypher.okapi.api.graph.{GraphName, PropertyGraph}
 import org.opencypher.okapi.api.schema.PropertyKeys.PropertyKeys
 import org.opencypher.okapi.api.schema.{LabelPropertyMap, RelTypePropertyMap}
 import org.opencypher.okapi.api.types.CTRelationship
 import org.opencypher.okapi.api.schema.{LabelPropertyMap, RelTypePropertyMap, Schema}
 import org.opencypher.okapi.api.types.{CTNode, CTRelationship}
+import org.opencypher.okapi.api.types.CTRelationship
 import org.opencypher.okapi.api.value.CypherValue.CypherList
 import org.opencypher.okapi.impl.exception.UnsupportedOperationException
 import org.opencypher.okapi.impl.schema.SchemaImpl
+import org.opencypher.okapi.ir.api.expr.{EndNode, Property, StartNode}
 import org.opencypher.okapi.neo4j.io.Neo4jHelpers.Neo4jDefaults._
 import org.opencypher.okapi.neo4j.io.Neo4jHelpers._
-import org.opencypher.okapi.neo4j.io.{EntityReader, Neo4jConfig}
+import org.opencypher.okapi.neo4j.io.{EntityReader, EntityWriter, Neo4jConfig}
 import org.opencypher.spark.api.CAPSSession
+import org.opencypher.spark.impl.CAPSConverters._
+import org.opencypher.spark.impl.CAPSRecords
 import org.opencypher.spark.impl.io.neo4j.external.Neo4j
 import org.opencypher.spark.schema.CAPSSchema
 import org.opencypher.spark.schema.CAPSSchema._
@@ -185,9 +191,9 @@ case class Neo4jPropertyGraphDataSource(
     }
 
     val writesCompleted = for {
-      _ <- Future.sequence(NodeWriter(graph, metaLabel, config))
-      _ <- Future.sequence(RelWriter(graph, metaLabel, config))
-    } yield Future{ }
+      _ <- Future.sequence(Writers.writeNodes(graph, metaLabel, config))
+      _ <- Future.sequence(Writers.writeRelationships(graph, metaLabel, config))
+    } yield Future {}
     Await.result(writesCompleted, Duration.Inf)
 
     graphNameCache += graphName
@@ -198,31 +204,78 @@ case class Neo4jPropertyGraphDataSource(
   override protected def writeRelationshipTable(graphName: GraphName, relKey: String, table: DataFrame): Unit = ()
 }
 
-case object NodeWriter {
-  def apply(graph: PropertyGraph, metaLabel: String, config: Neo4jConfig)
-    (implicit executionContext: ExecutionContextExecutorService): Seq[Future[Unit]] = {
-    //    graph.schema.labelCombinations.combos.map { combo =>
-    //        graph.asCaps.nodes("n", CTNode(combo), exactLabelMatch = true)
-    //          .asCaps
-    //          .toCypherMaps
-    //          .map(map => map("n").cast[CAPSNode])
-    //          .rdd.foreachPartitionAsync(i => EntityWriter.writeNodes(i, config, Some(metaLabel)))
-    //    }
-    //  }.toSeq
-    ???
+case object Writers {
+  def writeNodes(graph: PropertyGraph, metaLabel: String, config: Neo4jConfig): Set[Future[Unit]] = {
+    val result: Set[Future[Unit]] = graph.schema.labelCombinations.combos.map { combo =>
+      val nodeScan = graph.asCaps.nodes("n", CTNode(combo), exactLabelMatch = true)
+      val mapping = computeMapping(nodeScan)
+      nodeScan
+        .df
+        .rdd
+        .foreachPartitionAsync(i => EntityWriter.writeNodes(i, mapping, config, combo + metaLabel)(rowToListValue))
+    }
+    result
   }
-}
 
-case object RelWriter {
-  def apply(graph: PropertyGraph, metaLabel: String, config: Neo4jConfig)
-    (implicit executionContext: ExecutionContextExecutorService): Seq[Future[Unit]] = {
-//    graph.schema.relationshipTypes.map { relType =>
-//      graph.relationships("r", CTRelationship(relType))
-//        .asCaps
-//        .toCypherMaps
-//        .map(map => map("r").cast[CAPSRelationship])
-//        .rdd.foreachPartitionAsync(i => EntityWriter.writeRelationships(i, config, Some(metaLabel)))
-//    }.toSeq
-    ???
+  def writeRelationships(graph: PropertyGraph, metaLabel: String, config: Neo4jConfig): Set[Future[Unit]] = {
+    graph.schema.relationshipTypes.map { relType =>
+      val relScan = graph.asCaps.relationships("r", CTRelationship(relType))
+      val mapping = computeMapping(relScan)
+
+      val header = relScan.header
+      val relVar = header.entityVars.head
+      val startExpr = header.expressionsFor(relVar).collect { case s: StartNode => s }.head
+      val endExpr = header.expressionsFor(relVar).collect { case e: EndNode => e }.head
+      val startColumn = relScan.header.column(startExpr)
+      val endColumn = relScan.header.column(endExpr)
+      val startIndex = relScan.df.columns.indexOf(startColumn)
+      val endIndex = relScan.df.columns.indexOf(endColumn)
+
+      relScan
+        .df
+        .rdd
+        .foreachPartitionAsync(i =>
+          EntityWriter.writeRelationships(
+            i,
+            startIndex,
+            endIndex,
+            mapping,
+            config,
+            relType,
+            Some(metaLabel)
+          )(rowToListValue)
+        )
+    }
+  }
+
+  private def rowToListValue(row: Row): ListValue = {
+    val array = new Array[Value](row.size)
+    var i = 0
+    while (i < row.size) {
+      array(i) = Values.value(row.get(i))
+      i += 1
+    }
+    new ListValue(array: _*)
+  }
+
+  private def computeMapping(nodeScan: CAPSRecords): Array[String] = {
+    val header = nodeScan.header
+    val nodeVar = header.entityVars.head
+    val properties: Set[Property] = header.expressionsFor(nodeVar).collect {
+      case p: Property => p
+    }
+
+    val columns = nodeScan.df.columns
+    val mapping = Array.fill[String](columns.length)(null)
+
+    val idIndex = columns.indexOf(header.column(nodeVar))
+    mapping(idIndex) = metaPropertyKey
+
+    properties.foreach { property =>
+      val index = columns.indexOf(header.column(property))
+      mapping(index) = property.key.name
+    }
+
+    mapping
   }
 }
