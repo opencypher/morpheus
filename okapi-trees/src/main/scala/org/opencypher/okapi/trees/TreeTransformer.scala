@@ -33,10 +33,19 @@ abstract class TreeTransformer[I <: TreeNode[I] : ClassTag, O] {
   def rewrite(tree: I): O
 }
 
+abstract class TreeTransformerWithContext[I <: TreeNode[I] : ClassTag, O, C] {
+  def rewrite(tree: I, context: C): (O, C)
+}
+
 abstract class TreeRewriter[T <: TreeNode[T] : ClassTag] extends TreeTransformer[T, T]
 
+abstract class TreeRewriterWithContext[T <: TreeNode[T] : ClassTag, C] extends TreeTransformerWithContext[T, T, C] {
+  def rewrite(tree: T, context: C): (T, C)
+}
+
+
 /**
-  * Applies the given partial function starting from the leafs of this tree.
+  * Applies the given partial function starting from the leaves of this tree.
   */
 case class BottomUp[T <: TreeNode[T] : ClassTag](rule: PartialFunction[T, T]) extends TreeRewriter[T] {
 
@@ -59,6 +68,36 @@ case class BottomUp[T <: TreeNode[T] : ClassTag](rule: PartialFunction[T, T]) ex
     if (rule.isDefinedAt(afterChildren)) rule(afterChildren) else afterChildren
   }
 
+}
+
+/**
+  * Applies the given partial function starting from the leaves of this tree. An additional context is being recursively
+  * passed from the leftmost child to its siblings and eventually to its parent.
+  */
+case class BottomUpWithContext[T <: TreeNode[T] : ClassTag, C](rule: PartialFunction[(T, C), (T, C)]) extends TreeRewriterWithContext[T, C] {
+
+  def rewrite(tree: T, context: C): (T, C) = {
+    val childrenLength = tree.children.length
+    var updatedContext = context
+    val afterChildren = if (childrenLength == 0) {
+      tree
+    } else {
+      val updatedChildren = new Array[T](childrenLength)
+      var i = 0
+      while (i < childrenLength) {
+        val pair = rewrite(tree.children(i), updatedContext)
+        updatedChildren(i) = pair._1
+        updatedContext = pair._2
+        i += 1
+      }
+      tree.withNewChildren(updatedChildren)
+    }
+    if (rule.isDefinedAt(afterChildren -> updatedContext)) {
+      rule(afterChildren -> updatedContext)
+    } else {
+      afterChildren -> updatedContext
+    }
+  }
 }
 
 /**

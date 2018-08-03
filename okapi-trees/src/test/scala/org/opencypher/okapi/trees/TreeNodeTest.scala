@@ -127,6 +127,17 @@ class TreeNodeTest extends FunSpec with Matchers {
     up should equal(expected)
   }
 
+  it("rewrites with context") {
+    val sumOnce: PartialFunction[(CalcExpr, Boolean), (CalcExpr, Boolean)] = {
+      case (Add(n1: Number, n2: Number), false) => Number(n1.v + n2.v) -> true
+    }
+
+    val expected = Add(Number(5), Number(7)) -> true
+
+    val up = BottomUpWithContext(sumOnce).rewrite(calculation, false)
+    up should equal(expected)
+  }
+
   it("support relatively high trees without stack overflow") {
     val highTree = (1 to 1000).foldLeft(Number(1): CalcExpr) {
       case (t, n) => Add(t, Number(n))
