@@ -26,8 +26,8 @@
  */
 package org.opencypher.spark.api.io.neo4j
 
-import org.apache.spark.sql.DataFrame
 import org.apache.spark.sql.types._
+import org.apache.spark.sql.{DataFrame, functions}
 import org.opencypher.okapi.api.graph.{GraphName, PropertyGraph}
 import org.opencypher.okapi.impl.exception.{IllegalArgumentException, UnsupportedOperationException}
 import org.opencypher.okapi.impl.util.StringEncodingUtilities._
@@ -52,6 +52,7 @@ object Neo4jBulkCSVDataSink {
       |  ${1}bin/neo4j-admin import \
       |  --database=%s \
       |  --delimiter="," \
+      |  ----array-delimiter="%s" \
       |  --id-type=INTEGER \
       |%s \
       |%s
@@ -67,13 +68,15 @@ object Neo4jBulkCSVDataSink {
         case LongType => "int"
         case BooleanType => "boolean"
         case DoubleType => "double"
+        case ArrayType(inner, _) => s"${inner.toNeo4jBulkImportType}[]"
+        case NullType => "string"
         case other => throw IllegalArgumentException("supported Neo4j bulk import type", other)
       }
     }
   }
 }
 
-class Neo4jBulkCSVDataSink(override val rootPath: String)(implicit session: CAPSSession)
+class Neo4jBulkCSVDataSink(override val rootPath: String, arrayDelimiter: String = "|")(implicit session: CAPSSession)
   extends FSGraphSource(rootPath, "csv", filesPerTable = Some(1)) {
 
   override protected def writeSchema(
@@ -90,6 +93,7 @@ class Neo4jBulkCSVDataSink(override val rootPath: String)(implicit session: CAPS
     val importScript = String.format(
       SCRIPT_TEMPLATE,
       graphName.value,
+      arrayDelimiter,
       nodeArguments.mkString("  ", " \\\n  ", ""),
       relArguments.mkString("  ", " \\\n  ", ""))
 
@@ -120,14 +124,9 @@ class Neo4jBulkCSVDataSink(override val rootPath: String)(implicit session: CAPS
     labels: Set[String],
     table: DataFrame
   ): Unit = {
+    super.writeNodeTable(graphName, labels, stringifyArrayColumns(table))
 
-    val neoSchema = table.schema.fields.map {
-      case field if field.name == GraphEntity.sourceIdKey => s"${labels.map(_.toLowerCase).mkString("_")}:ID"
-      case field if field.name.isPropertyColumnName => s"${field.name.toProperty}:${field.dataType.toNeo4jBulkImportType}"
-    }.mkString(",")
-
-    super.writeNodeTable(graphName, labels, table)
-    fileSystem.writeFile(schemaFileForNodes(graphName, labels), neoSchema)
+    writeHeaderFile(schemaFileForNodes(graphName, labels), table.schema.fields)
   }
 
   override protected def writeRelationshipTable(
@@ -135,21 +134,36 @@ class Neo4jBulkCSVDataSink(override val rootPath: String)(implicit session: CAPS
     relKey: String,
     table: DataFrame
   ): Unit = {
-
     val tableWithoutId = table.drop(table.schema.fieldNames.find(_ == GraphEntity.sourceIdKey).get)
 
-    val neoSchema = tableWithoutId.schema.fields.map {
+    super.writeRelationshipTable(graphName, relKey, stringifyArrayColumns(tableWithoutId))
+
+    writeHeaderFile(schemaFileForRelationships(graphName, relKey), tableWithoutId.schema.fields)
+  }
+
+  private def stringifyArrayColumns(table: DataFrame): DataFrame = {
+    val arrayColumns = table.schema.fields.collect {
+      case StructField(name, _: ArrayType, _, _) => name
+    }
+
+    arrayColumns.foldLeft(table) {
+      case (acc, arrayColumn) => acc.withColumn(arrayColumn, functions.concat_ws(arrayDelimiter, acc.col(arrayColumn)))
+    }.select(table.columns.head, table.columns.tail:_*)
+  }
+
+  private def writeHeaderFile(path: String, fields: Array[StructField]): Unit = {
+    val neoSchema = fields.map {
+      //TODO: use Neo4jDefaults here
+      case field if field.name == GraphEntity.sourceIdKey => s"___capsID:ID"
       case field if field.name == Relationship.sourceStartNodeKey => ":START_ID"
       case field if field.name == Relationship.sourceEndNodeKey => ":END_ID"
       case field if field.name.isPropertyColumnName => s"${field.name.toProperty}:${field.dataType.toNeo4jBulkImportType}"
     }.mkString(",")
 
-    super.writeRelationshipTable(graphName, relKey, tableWithoutId)
-    fileSystem.writeFile(schemaFileForRelationships(graphName, relKey), neoSchema)
+    fileSystem.writeFile(path, neoSchema)
   }
 
   override def hasGraph(graphName: GraphName): Boolean = false
-
   override def graphNames: Set[GraphName] = throw UnsupportedOperationException("Write-only PGDS")
   override def delete(graphName: GraphName): Unit = throw UnsupportedOperationException("Write-only PGDS")
   override def graph(name: GraphName): PropertyGraph = throw UnsupportedOperationException("Write-only PGDS")
