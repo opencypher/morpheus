@@ -30,6 +30,7 @@ We expect continuing development of the project after 1.0.
 If you are interested in contributing to the project we would love to hear from you; email us at `opencypher@neo4j.org` or just raise a PR. 
 Please note that this is an openCypher project and contributions can only be accepted if you’ve agreed to the  [openCypher Contributors Agreement (oCCA)](CONTRIBUTING.adoc).
 
+
 ## CAPS Features
 
 CAPS is built on top of the Spark DataFrame API and uses features such as the Catalyst optimizer.
