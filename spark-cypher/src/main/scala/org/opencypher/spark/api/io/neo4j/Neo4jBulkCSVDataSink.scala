@@ -103,17 +103,17 @@ class Neo4jBulkCSVDataSink(override val rootPath: String)(implicit session: CAPS
   def dataFileForNodes(
     graphName: GraphName,
     labels: Set[String]
-  ): String = directoryStructure.pathToNodeTable(graphName, labels).replaceFirst(SCHEME_REGEX, "") / "par*.csv"
+  ): String = directoryStructure.pathToNodeTable(graphName, labels).replaceFirst(SCHEME_REGEX, "") / "part(.*)\\.csv"
 
   def schemaFileForRelationships(
     graphName: GraphName,
     relType: String
-  ): String = directoryStructure.pathToRelationshipTable(graphName, relType).replaceFirst(SCHEME_REGEX, "") / "pars.csv"
+  ): String = directoryStructure.pathToRelationshipTable(graphName, relType).replaceFirst(SCHEME_REGEX, "") / "schema.csv"
 
   def dataFileForRelationships(
     graphName: GraphName,
     relType: String
-  ): String = directoryStructure.pathToRelationshipTable(graphName, relType).replaceFirst(SCHEME_REGEX, "") / "par*.csv"
+  ): String = directoryStructure.pathToRelationshipTable(graphName, relType).replaceFirst(SCHEME_REGEX, "") / "part(.*)\\.csv"
 
   override protected def writeNodeTable(
     graphName: GraphName,
