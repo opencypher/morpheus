@@ -51,7 +51,7 @@ object RelationalOptimizer {
         case parent if (parent.childrenAsSet intersect nodesToReplace).nonEmpty =>
           val newChildren = parent.children.map(c => replacements.getOrElse(c, c))
           parent.withNewChildren(newChildren)
-      }.rewrite(input)
+      }.transform(input)
     }
 
     private def calculateReplacementMap[T <: Table[T]](input: RelationalOperator[T]): Map[RelationalOperator[T], RelationalOperator[T]] = {
@@ -72,7 +72,6 @@ object RelationalOptimizer {
             }
         }
       }
-      // TODO: filter by opCount and always point at first op in group (avoids mutable map)
       opsToCache.map(op => op -> Cache[T](op)).toMap
     }
 

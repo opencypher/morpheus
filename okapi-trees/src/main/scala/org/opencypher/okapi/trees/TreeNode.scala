@@ -29,7 +29,11 @@ package org.opencypher.okapi.trees
 import scala.annotation.tailrec
 import scala.collection.mutable.ArrayBuffer
 import scala.reflect.ClassTag
+import scala.reflect.runtime.{currentMirror, universe}
+import scala.reflect.runtime.universe._
 import scala.util.hashing.MurmurHash3
+
+import scala.language.existentials
 
 /**
   * This is the basic tree node class. Usually it makes more sense to use `AbstractTreeNode`, which uses reflection
@@ -40,8 +44,35 @@ import scala.util.hashing.MurmurHash3
   * This class uses array operations instead of Scala collections, both for improved performance as well as to save
   * stack frames during recursion, which allows it to operate on trees that are several thousand nodes high.
   */
-abstract class TreeNode[T <: TreeNode[T]: ClassTag] extends Product with Traversable[T] {
+abstract class TreeNode[T <: TreeNode[T] : ClassTag] extends Product with Traversable[T] {
   self: T =>
+
+  def rewrite(f: PartialFunction[T, T]): T = {
+    try {
+      BottomUp(f).transform(self)
+    } catch {
+      case _: StackOverflowError =>
+        BottomUpStackSafe(f).transform(self)
+    }
+  }
+
+  def rewriteTopDown(f: PartialFunction[T, T]): T = {
+    try {
+      TopDown(f).transform(self)
+    } catch {
+      case _: StackOverflowError =>
+        TopDownStackSafe(f).transform(self)
+    }
+  }
+
+  def transform[O](f: (T, List[O]) => O): O = {
+    try {
+      Transform(f).transform(self)
+    } catch {
+      case _: StackOverflowError =>
+        TransformStackSafe(f).transform(self)
+    }
+  }
 
   def withNewChildren(newChildren: Array[T]): T
 
@@ -51,54 +82,17 @@ abstract class TreeNode[T <: TreeNode[T]: ClassTag] extends Product with Travers
 
   def arity: Int = children.length
 
-  def isLeaf: Boolean = height == 1
+  def isLeaf: Boolean = children.isEmpty
 
-  def height: Int = {
-    val childrenLength = children.length
-    var i = 0
-    var result = 0
-    while (i < childrenLength) {
-      result = math.max(result, children(i).height)
-      i += 1
-    }
-    result + 1
+  def height: Int = transform[Int] { case (_, childHeights) => (0 :: childHeights).max + 1 }
+
+  override def size: Int = transform[Int] { case (_, childSizes) => childSizes.sum + 1 }
+
+  def map[O <: TreeNode[O] : ClassTag](f: T => O): O = transform[O] { case (node, transformedChildren) =>
+    f(node).withNewChildren(transformedChildren.toArray)
   }
 
-  override def size: Int = {
-    val childrenLength = children.length
-    var i = 0
-    var result = 1
-    while (i < childrenLength) {
-      result += children(i).size
-      i += 1
-    }
-    result
-  }
-
-  def map[O <: TreeNode[O]: ClassTag](f: T => O): O = {
-    val childrenLength = children.length
-    if (childrenLength == 0) {
-      f(self)
-    } else {
-      val mappedChildren = new Array[O](childrenLength)
-      var i = 0
-      while (i < childrenLength) {
-        mappedChildren(i) = f(children(i))
-        i += 1
-      }
-      f(self).withNewChildren(mappedChildren)
-    }
-  }
-
-  override def foreach[O](f: T => O): Unit = {
-    f(this)
-    val childrenLength = children.length
-    var i = 0
-    while (i < childrenLength) {
-      children(i).foreach(f)
-      i += 1
-    }
-  }
+  override def foreach[O](f: T => O): Unit = transform[O] { case (node, _) => f(node) }
 
   /**
     * Checks if the parameter tree is contained within this tree. A tree always contains itself.
@@ -106,15 +100,8 @@ abstract class TreeNode[T <: TreeNode[T]: ClassTag] extends Product with Travers
     * @param other other tree
     * @return true, iff `other` is contained in that tree
     */
-  def containsTree(other: T): Boolean = {
-    if (self == other) {
-      true
-    } else {
-      val childrenLength = children.length
-      var i = 0
-      while (i < childrenLength && !children(i).containsTree(other)) i += 1
-      i != childrenLength
-    }
+  def containsTree(other: T): Boolean = transform[Boolean] { case (node, childrenContain) =>
+    (node == other) || childrenContain.contains(true)
   }
 
   /**
@@ -175,18 +162,54 @@ abstract class TreeNode[T <: TreeNode[T]: ClassTag] extends Product with Travers
     * Arguments that should be printed. The default implementation excludes children.
     */
   def args: Iterator[Any] = {
-    def generalCase(arg: Any) = Some(arg.toString)
-    productIterator.flatMap {
-      case c: T if containsChild(c)     => None // Don't print children
-      case i: Iterable[_] if i.nonEmpty =>
-        // Need explicit pattern match for T, as `isInstanceOf` in `if` results in a warning.
-        i.head match {
-          case _: T => None // Don't print children
-          case _    => generalCase(i)
+    currentMirror.reflect(this)
+      .symbol
+      .typeSignature
+      .members
+      .collect { case a: TermSymbol => a }
+      .filter(_.isCaseAccessor)
+      .filterNot(_.isMethod)
+      .toList
+      .map(currentMirror.reflect(this).reflectField)
+      .map(termSymbol => termSymbol -> termSymbol.get)
+      .filter { case (_, value) =>
+        value match {
+          case c: T if containsChild(c) => false
+          case o: Option[_] =>
+            if (o.isEmpty) {
+              false
+            } else {
+              o.get match {
+                case _: T => false
+                case _ => true
+              }
+            }
+          case i: Iterable[_] =>
+            if (i.isEmpty) {
+              false
+            } else {
+              i.exists {
+                case _: T => false
+                case _ => true
+              }
+            }
+          case a: Array[_] =>
+            if (a.isEmpty) {
+              false
+            } else {
+              a.exists {
+                case _: T => false
+                case _ => true
+              }
+            }
+          case _ => true
         }
-      case other => generalCase(other)
-    }
+      }
+      .map { case (termSymbol, value) => s"${termSymbol.symbol.name.toString.trim}=$value" }
+      .reverseIterator
   }
 
-  override def toString = s"${getClass.getSimpleName}${if (argString.isEmpty) "" else s"($argString)"}"
+  override def toString = s"${getClass.getSimpleName}${
+    if (args.isEmpty) "" else s"(${args.mkString(", ")})"
+  }"
 }
