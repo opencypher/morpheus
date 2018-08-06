@@ -52,7 +52,7 @@ object Neo4jBulkCSVDataSink {
       |  ${1}bin/neo4j-admin import \
       |  --database=%s \
       |  --delimiter="," \
-      |  ----array-delimiter="%s" \
+      |  --array-delimiter="%s" \
       |  --id-type=INTEGER \
       |%s \
       |%s
