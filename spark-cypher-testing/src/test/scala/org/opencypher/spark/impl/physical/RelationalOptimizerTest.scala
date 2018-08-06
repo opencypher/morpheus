@@ -26,20 +26,41 @@
  */
 package org.opencypher.spark.impl.physical
 
-import org.opencypher.okapi.api.types.CTNode
-import org.opencypher.okapi.ir.api.expr.Var
-import org.opencypher.okapi.relational.impl.operators._
-import org.opencypher.okapi.relational.impl.table.RecordHeader
-import org.opencypher.spark.impl.CAPSConverters._
-import org.opencypher.spark.impl.CAPSRecords
+import org.opencypher.okapi.api.types.{CTBoolean, CTNode, CTString}
+import org.opencypher.okapi.ir.api.expr.{Equals, Var}
+import org.opencypher.okapi.ir.api.{IRField, PropertyKey, expr}
+import org.opencypher.okapi.logical.impl.{LogicalCatalogGraph, LogicalOperator, LogicalOptimizer, SolvedQueryModel}
+import org.opencypher.okapi.logical.{impl => logical}
+import org.opencypher.okapi.trees.BottomUp
 import org.opencypher.spark.testing.CAPSTestSuite
 import org.opencypher.spark.testing.fixture.GraphConstructionFixture
 
 class RelationalOptimizerTest extends CAPSTestSuite with GraphConstructionFixture {
-  val emptyRecords = caps.records.empty()
 
+  it("should replace cross with value join if filter is present") {
+    val startA = logical.Start(LogicalCatalogGraph(testQualifiedGraphName, testGraphSchema), SolvedQueryModel.empty)
+    val startB = logical.Start(LogicalCatalogGraph(testQualifiedGraphName, testGraphSchema), SolvedQueryModel.empty)
+    val varA = Var("a")(CTNode)
+    val propA = expr.Property(varA, PropertyKey("name"))(CTString)
+    val varB = Var("b")(CTNode)
+    val propB = expr.Property(varB, PropertyKey("name"))(CTString)
+    val equals = Equals(propA, propB)(CTBoolean)
+    val irFieldA = IRField(varA.name)(varA.cypherType)
+    val irFieldB = IRField(varB.name)(varB.cypherType)
 
-  //TODO: Re-enable once caching optimizer is back
+    val scanA = logical.NodeScan(varA, startA, SolvedQueryModel(Set(irFieldA)))
+    val scanB = logical.NodeScan(varB, startB, SolvedQueryModel(Set(irFieldB)))
+    val cartesian = logical.CartesianProduct(scanA, scanB, SolvedQueryModel(Set(irFieldA, irFieldB)))
+    val filter = logical.Filter(equals, cartesian, SolvedQueryModel(Set(irFieldA, irFieldB)))
+
+    val optimizedPlan = BottomUp[LogicalOperator](LogicalOptimizer.replaceCartesianWithValueJoin).transform(filter)
+
+    val valueJoin = logical.ValueJoin(scanA, scanB, Set(equals), SolvedQueryModel(Set(irFieldA, irFieldB)))
+
+    optimizedPlan should equal(valueJoin)
+  }
+
+////  TODO: Re-enable once caching optimizer is back
 //  def start(qgn: QualifiedGraphName, records: CAPSRecords)(implicit caps: CAPSSession): Start = {
 //    Start(qgn, Some(records))
 //  }
