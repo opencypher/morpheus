@@ -153,9 +153,9 @@ case class BottomUpStackSafe[T <: TreeNode[T] : ClassTag](
   }
 
   @inline final override def rewriteNode(node: T, rewrittenChildren: List[T], stack: Stack): NonEmptyStack = {
-    val (currentRewrittenChildren, nextRewrittenChildren) = rewrittenChildren.splitAt(node.children.length)
-    val nodeWithUpdatedChildren = rule(node.withNewChildren(currentRewrittenChildren.toArray))
-    stack.push(Done(nodeWithUpdatedChildren :: nextRewrittenChildren))
+    val (currentRewrittenChildren, rewrittenForAncestors) = rewrittenChildren.splitAt(node.children.length)
+    val rewrittenNode = rule(node.withNewChildren(currentRewrittenChildren.toArray))
+    stack.push(Done(rewrittenNode :: rewrittenForAncestors))
   }
 }
 
@@ -182,9 +182,9 @@ case class TopDownStackSafe[T <: TreeNode[T] : ClassTag](
   }
 
   @inline final override def rewriteNode(node: T, rewrittenChildren: List[T], stack: Stack): NonEmptyStack = {
-    val (currentRewrittenChildren, nextRewrittenChildren) = rewrittenChildren.splitAt(node.children.length)
-    val nodeWithUpdatedChildren = node.withNewChildren(currentRewrittenChildren.toArray)
-    stack.push(Done(nodeWithUpdatedChildren :: nextRewrittenChildren))
+    val (currentRewrittenChildren, rewrittenForAncestors) = rewrittenChildren.splitAt(node.children.length)
+    val rewrittenNode = node.withNewChildren(currentRewrittenChildren.toArray)
+    stack.push(Done(rewrittenNode :: rewrittenForAncestors))
   }
 
 }
