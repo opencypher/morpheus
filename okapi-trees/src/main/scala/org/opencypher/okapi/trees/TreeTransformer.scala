@@ -30,17 +30,17 @@ import scala.reflect.ClassTag
 
 
 abstract class TreeTransformer[I <: TreeNode[I] : ClassTag, O] {
-  def rewrite(tree: I): O
+  def transform(tree: I): O
 }
 
 abstract class TreeTransformerWithContext[I <: TreeNode[I] : ClassTag, O, C] {
-  def rewrite(tree: I, context: C): (O, C)
+  def transform(tree: I, context: C): (O, C)
 }
 
 abstract class TreeRewriter[T <: TreeNode[T] : ClassTag] extends TreeTransformer[T, T]
 
 abstract class TreeRewriterWithContext[T <: TreeNode[T] : ClassTag, C] extends TreeTransformerWithContext[T, T, C] {
-  def rewrite(tree: T, context: C): (T, C)
+  def transform(tree: T, context: C): (T, C)
 }
 
 
@@ -49,7 +49,7 @@ abstract class TreeRewriterWithContext[T <: TreeNode[T] : ClassTag, C] extends T
   */
 case class BottomUp[T <: TreeNode[T] : ClassTag](rule: PartialFunction[T, T]) extends TreeRewriter[T] {
 
-  def rewrite(tree: T): T = {
+  def transform(tree: T): T = {
     val childrenLength = tree.children.length
     val afterChildren = if (childrenLength == 0) {
       tree
@@ -58,7 +58,7 @@ case class BottomUp[T <: TreeNode[T] : ClassTag](rule: PartialFunction[T, T]) ex
         val childrenCopy = new Array[T](childrenLength)
         var i = 0
         while (i < childrenLength) {
-          childrenCopy(i) = rewrite(tree.children(i))
+          childrenCopy(i) = transform(tree.children(i))
           i += 1
         }
         childrenCopy
@@ -76,7 +76,7 @@ case class BottomUp[T <: TreeNode[T] : ClassTag](rule: PartialFunction[T, T]) ex
   */
 case class BottomUpWithContext[T <: TreeNode[T] : ClassTag, C](rule: PartialFunction[(T, C), (T, C)]) extends TreeRewriterWithContext[T, C] {
 
-  def rewrite(tree: T, context: C): (T, C) = {
+  def transform(tree: T, context: C): (T, C) = {
     val childrenLength = tree.children.length
     var updatedContext = context
     val afterChildren = if (childrenLength == 0) {
@@ -85,7 +85,7 @@ case class BottomUpWithContext[T <: TreeNode[T] : ClassTag, C](rule: PartialFunc
       val updatedChildren = new Array[T](childrenLength)
       var i = 0
       while (i < childrenLength) {
-        val pair = rewrite(tree.children(i), updatedContext)
+        val pair = transform(tree.children(i), updatedContext)
         updatedChildren(i) = pair._1
         updatedContext = pair._2
         i += 1
@@ -107,7 +107,7 @@ case class BottomUpWithContext[T <: TreeNode[T] : ClassTag, C](rule: PartialFunc
   */
 case class TopDown[T <: TreeNode[T] : ClassTag](rule: PartialFunction[T, T]) extends TreeRewriter[T] {
 
-  def rewrite(tree: T): T = {
+  def transform(tree: T): T = {
     val afterSelf = if (rule.isDefinedAt(tree)) rule(tree) else tree
     val childrenLength = afterSelf.children.length
     if (childrenLength == 0) {
@@ -117,7 +117,7 @@ case class TopDown[T <: TreeNode[T] : ClassTag](rule: PartialFunction[T, T]) ext
         val childrenCopy = new Array[T](childrenLength)
         var i = 0
         while (i < childrenLength) {
-          childrenCopy(i) = rewrite(afterSelf.children(i))
+          childrenCopy(i) = transform(afterSelf.children(i))
           i += 1
         }
         childrenCopy
@@ -135,7 +135,7 @@ case class Transform[I <: TreeNode[I] : ClassTag, O](
   transform: (I, List[O]) => O
 ) extends TreeTransformer[I, O] {
 
-  def rewrite(tree: I): O = {
+  def transform(tree: I): O = {
     val children = tree.children
     val childrenLength = children.length
     if (childrenLength == 0) {
@@ -145,7 +145,7 @@ case class Transform[I <: TreeNode[I] : ClassTag, O](
         var tmpChildren = List.empty[O]
         var i = 0
         while (i < childrenLength) {
-          tmpChildren ::= rewrite(children(i))
+          tmpChildren ::= transform(children(i))
           i += 1
         }
         tmpChildren.reverse

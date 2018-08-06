@@ -51,7 +51,7 @@ object RelationalOptimizer {
         case parent if (parent.childrenAsSet intersect nodesToReplace).nonEmpty =>
           val newChildren = parent.children.map(c => replacements.getOrElse(c, c))
           parent.withNewChildren(newChildren)
-      }.rewrite(input)
+      }.transform(input)
     }
 
     private def calculateReplacementMap[T <: Table[T]](input: RelationalOperator[T]): Map[RelationalOperator[T], RelationalOperator[T]] = {

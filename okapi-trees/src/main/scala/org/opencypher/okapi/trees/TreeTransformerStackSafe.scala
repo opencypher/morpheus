@@ -32,30 +32,30 @@ import scala.annotation.tailrec
 import scala.reflect.ClassTag
 
 /**
-  * Common trait of all classes that represent tree operations for off-stack rewrites.
+  * Common trait of all classes that represent tree operations for off-stack transformations.
   */
 sealed trait TreeOperation[T <: TreeNode[T], O]
 
 /**
-  * Represents a child-rewrite operation during off-stack transformations.
+  * Represents a child transformation operation during off-stack transformations.
   */
-case class RewriteChildren[I <: TreeNode[I], O](
+case class TransformChildren[I <: TreeNode[I], O](
   node: I,
-  rewrittenChildren: List[O] = List.empty[O]
+  transformedChildren: List[O] = List.empty[O]
 ) extends TreeOperation[I, O]
 
 /**
-  * Represents a node-rewrite operation during off-stack transformations.
+  * Represents a node transformation operation during off-stack transformations.
   */
-case class RewriteNode[I <: TreeNode[I], O](
+case class TransformNode[I <: TreeNode[I], O](
   node: I,
-  rewrittenChildren: List[O] = List.empty[O]
+  transformedChildren: List[O] = List.empty[O]
 ) extends TreeOperation[I, O]
 
 /**
-  * Represents a finished rewrite during off-stack transformations.
+  * Represents a finished transformation during off-stack transformations.
   */
-case class Done[I <: TreeNode[I], O](rewrittenChildren: List[O]) extends TreeOperation[I, O]
+case class Done[I <: TreeNode[I], O](transformedChildren: List[O]) extends TreeOperation[I, O]
 
 /**
   * This is the base-class for stack-safe tree transformations.
@@ -87,38 +87,38 @@ trait TransformerStackSafe[I <: TreeNode[I], O] extends TreeTransformer[I, O] {
   /**
     * Called on each node when going down the tree.
     */
-  def rewriteChildren(
+  def transformChildren(
     node: I,
-    rewrittenChildren: List[O],
+    transformedChildren: List[O],
     stack: Stack
   ): NonEmptyStack
 
   /**
     * Called on each node when going up the tree.
     */
-  def rewriteNode(
+  def transformNode(
     node: I,
-    rewrittenChildren: List[O],
+    transformedChildren: List[O],
     stack: Stack
   ): NonEmptyStack
 
   @tailrec
   protected final def run(stack: NonEmptyList[TreeOperation[I, O]]): O = stack match {
-    case NonEmptyList(RewriteChildren(node, rewrittenChildren), tail) => run(rewriteChildren(node, rewrittenChildren, tail))
-    case NonEmptyList(RewriteNode(node, rewrittenChildren), tail) => run(rewriteNode(node, rewrittenChildren, tail))
-    case NonEmptyList(Done(rewritten), tail) =>
+    case NonEmptyList(TransformChildren(node, transformedChildren), tail) => run(transformChildren(node, transformedChildren, tail))
+    case NonEmptyList(TransformNode(node, transformedChildren), tail) => run(transformNode(node, transformedChildren, tail))
+    case NonEmptyList(Done(transformed), tail) =>
       tail match {
-        case Nil => rewritten match {
+        case Nil => transformed match {
           case result :: Nil => result
-          case invalid => throw new IllegalStateException(s"Invalid rewrite produced $invalid instead of a single final value.")
+          case invalid => throw new IllegalStateException(s"Invalid transformation produced $invalid instead of a single final value.")
         }
-        case Done(nextNodes) :: nextTail => run(nextTail.push(Done(rewritten ::: nextNodes)))
-        case RewriteChildren(nextNode, rewrittenChildren) :: nextTail => run(nextTail.push(RewriteChildren(nextNode, rewritten ::: rewrittenChildren)))
-        case RewriteNode(nextNode, rewrittenChildren) :: nextTail => run(nextTail.push(RewriteNode(nextNode, rewritten ::: rewrittenChildren)))
+        case Done(nextNodes) :: nextTail => run(nextTail.push(Done(transformed ::: nextNodes)))
+        case TransformChildren(nextNode, transformedChildren) :: nextTail => run(nextTail.push(TransformChildren(nextNode, transformed ::: transformedChildren)))
+        case TransformNode(nextNode, transformedChildren) :: nextTail => run(nextTail.push(TransformNode(nextNode, transformed ::: transformedChildren)))
       }
   }
 
-  @inline final override def rewrite(tree: I): O = run(Stack(RewriteChildren(tree)))
+  @inline final override def transform(tree: I): O = run(Stack(TransformChildren(tree)))
 
 }
 
@@ -142,17 +142,17 @@ case class BottomUpStackSafe[T <: TreeNode[T] : ClassTag](
   partial: PartialFunction[T, T]
 ) extends SameTypeTransformerStackSafe[T] {
 
-  @inline final override def rewriteChildren(node: T, rewrittenChildren: List[T], stack: Stack): NonEmptyStack = {
+  @inline final override def transformChildren(node: T, rewrittenChildren: List[T], stack: Stack): NonEmptyStack = {
     if (node.children.isEmpty) {
       stack.push(Done(rule(node) :: rewrittenChildren))
     } else {
-      node.children.foldLeft(stack.push(RewriteNode(node, rewrittenChildren))) { case (currentStack, child) =>
-        currentStack.push(RewriteChildren(child))
+      node.children.foldLeft(stack.push(TransformNode(node, rewrittenChildren))) { case (currentStack, child) =>
+        currentStack.push(TransformChildren(child))
       }
     }
   }
 
-  @inline final override def rewriteNode(node: T, rewrittenChildren: List[T], stack: Stack): NonEmptyStack = {
+  @inline final override def transformNode(node: T, rewrittenChildren: List[T], stack: Stack): NonEmptyStack = {
     val (currentRewrittenChildren, rewrittenForAncestors) = rewrittenChildren.splitAt(node.children.length)
     val rewrittenNode = rule(node.withNewChildren(currentRewrittenChildren.toArray))
     stack.push(Done(rewrittenNode :: rewrittenForAncestors))
@@ -169,19 +169,19 @@ case class TopDownStackSafe[T <: TreeNode[T] : ClassTag](
   partial: PartialFunction[T, T]
 ) extends SameTypeTransformerStackSafe[T] {
 
-  @inline final override def rewriteChildren(node: T, rewrittenChildren: List[T], stack: Stack): NonEmptyStack = {
+  @inline final override def transformChildren(node: T, rewrittenChildren: List[T], stack: Stack): NonEmptyStack = {
     val updatedNode = rule(node)
     if (updatedNode.children.isEmpty) {
       stack.push(Done(updatedNode :: rewrittenChildren))
     } else {
-      updatedNode.children.foldLeft(stack.push(RewriteNode(updatedNode, rewrittenChildren))) {
+      updatedNode.children.foldLeft(stack.push(TransformNode(updatedNode, rewrittenChildren))) {
         case (currentStack, child) =>
-          currentStack.push(RewriteChildren(child))
+          currentStack.push(TransformChildren(child))
       }
     }
   }
 
-  @inline final override def rewriteNode(node: T, rewrittenChildren: List[T], stack: Stack): NonEmptyStack = {
+  @inline final override def transformNode(node: T, rewrittenChildren: List[T], stack: Stack): NonEmptyStack = {
     val (currentRewrittenChildren, rewrittenForAncestors) = rewrittenChildren.splitAt(node.children.length)
     val rewrittenNode = node.withNewChildren(currentRewrittenChildren.toArray)
     stack.push(Done(rewrittenNode :: rewrittenForAncestors))
@@ -198,20 +198,20 @@ case class TransformStackSafe[I <: TreeNode[I] : ClassTag, O](
   transform: (I, List[O]) => O
 ) extends TransformerStackSafe[I, O] {
 
-  @inline final override def rewriteChildren(node: I, rewrittenChildren: List[O], stack: Stack): NonEmptyStack = {
+  @inline final override def transformChildren(node: I, transformedChildren: List[O], stack: Stack): NonEmptyStack = {
     if (node.children.isEmpty) {
-      stack.push(Done(transform(node, List.empty[O]) :: rewrittenChildren))
+      stack.push(Done(transform(node, List.empty[O]) :: transformedChildren))
     } else {
-      node.children.foldLeft(stack.push(RewriteNode(node, rewrittenChildren))) { case (currentStack, child) =>
-        currentStack.push(RewriteChildren(child))
+      node.children.foldLeft(stack.push(TransformNode(node, transformedChildren))) { case (currentStack, child) =>
+        currentStack.push(TransformChildren(child))
       }
     }
   }
 
-  @inline final override def rewriteNode(node: I, rewrittenChildren: List[O], stack: Stack): NonEmptyStack = {
-    val (currentRewrittenChildren, nextRewrittenChildren) = rewrittenChildren.splitAt(node.children.length)
-    val transformedNode = transform(node, currentRewrittenChildren)
-    stack.push(Done(transformedNode :: nextRewrittenChildren))
+  @inline final override def transformNode(node: I, transformedChildren: List[O], stack: Stack): NonEmptyStack = {
+    val (transformedChildrenForCurrentNode, transformedChildrenForAncestors) = transformedChildren.splitAt(node.children.length)
+    val transformedNode = transform(node, transformedChildrenForCurrentNode)
+    stack.push(Done(transformedNode :: transformedChildrenForAncestors))
   }
 
 }

@@ -49,28 +49,28 @@ abstract class TreeNode[T <: TreeNode[T] : ClassTag] extends Product with Traver
 
   def rewrite(f: PartialFunction[T, T]): T = {
     try {
-      BottomUp(f).rewrite(self)
+      BottomUp(f).transform(self)
     } catch {
       case _: StackOverflowError =>
-        BottomUpStackSafe(f).rewrite(self)
+        BottomUpStackSafe(f).transform(self)
     }
   }
 
   def rewriteTopDown(f: PartialFunction[T, T]): T = {
     try {
-      TopDown(f).rewrite(self)
+      TopDown(f).transform(self)
     } catch {
       case _: StackOverflowError =>
-        TopDownStackSafe(f).rewrite(self)
+        TopDownStackSafe(f).transform(self)
     }
   }
 
   def transform[O](f: (T, List[O]) => O): O = {
     try {
-      Transform(f).rewrite(self)
+      Transform(f).transform(self)
     } catch {
       case _: StackOverflowError =>
-        TransformStackSafe(f).rewrite(self)
+        TransformStackSafe(f).transform(self)
     }
   }
 

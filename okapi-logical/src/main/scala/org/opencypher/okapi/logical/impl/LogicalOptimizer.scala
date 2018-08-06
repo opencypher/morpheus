@@ -38,7 +38,7 @@ object LogicalOptimizer extends DirectCompilationStage[LogicalOperator, LogicalO
     val optimizationRules = Seq(pushLabelsIntoScans(labelsForVariables(input)), discardScansForNonexistentLabels)
     optimizationRules.foldLeft(input) {
       // TODO: Evaluate if multiple rewriters could be fused
-      case (tree: LogicalOperator, optimizationRule) => BottomUp[LogicalOperator](optimizationRule).rewrite(tree)
+      case (tree: LogicalOperator, optimizationRule) => BottomUp[LogicalOperator](optimizationRule).transform(tree)
     }
   }
 

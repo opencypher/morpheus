@@ -112,10 +112,10 @@ class TreeNodeTest extends FunSpec with Matchers {
     }
 
     val expected = Add(NoOp(Number(5)), Add(NoOp(Number(4)), NoOp(Number(3))))
-    val down = TopDown[CalcExpr](addNoops).rewrite(calculation)
+    val down = TopDown[CalcExpr](addNoops).transform(calculation)
     down should equal(expected)
 
-    val up = BottomUp[CalcExpr](addNoops).rewrite(calculation)
+    val up = BottomUp[CalcExpr](addNoops).transform(calculation)
     up should equal(expected)
   }
 
@@ -126,7 +126,7 @@ class TreeNodeTest extends FunSpec with Matchers {
 
     val expected = Add(Number(5), Number(7)) -> true
 
-    val up = BottomUpWithContext(sumOnce).rewrite(calculation, false)
+    val up = BottomUpWithContext(sumOnce).transform(calculation, false)
     up should equal(expected)
   }
 
@@ -136,7 +136,7 @@ class TreeNodeTest extends FunSpec with Matchers {
     }
     val simplified = BottomUp[CalcExpr] {
       case Add(Number(n1), Number(n2)) => Number(n1 + n2)
-    }.rewrite(highTree)
+    }.transform(highTree)
     simplified should equal(Number(500501))
 
     val addNoOpsBeforeLeftAdd: PartialFunction[CalcExpr, CalcExpr] = {
@@ -144,7 +144,7 @@ class TreeNodeTest extends FunSpec with Matchers {
     }
     val noOpTree = TopDown[CalcExpr] {
       addNoOpsBeforeLeftAdd
-    }.rewrite(highTree)
+    }.transform(highTree)
     noOpTree.height should equal(2000)
   }
 
@@ -157,7 +157,7 @@ class TreeNodeTest extends FunSpec with Matchers {
 
     val expected = Add(NoOp(Number(5)), Add(NoOp(Number(4)), NoOp(Number(3))))
 
-    val up = BottomUpStackSafe[CalcExpr](addNoops).rewrite(calculation)
+    val up = BottomUpStackSafe[CalcExpr](addNoops).transform(calculation)
     up should equal(expected)
   }
 
@@ -168,14 +168,14 @@ class TreeNodeTest extends FunSpec with Matchers {
     }
     val simplified = BottomUpStackSafe[CalcExpr] {
       case Add(Number(n1), Number(n2)) => Number(n1 + n2)
-    }.rewrite(highTree)
+    }.transform(highTree)
 
     val addNoOpsBeforeLeftAdd: PartialFunction[CalcExpr, CalcExpr] = {
       case Add(a: Add, b) => Add(NoOp(a), b)
     }
     val noOpTree = TopDownStackSafe[CalcExpr] {
       addNoOpsBeforeLeftAdd
-    }.rewrite(highTree)
+    }.transform(highTree)
     noOpTree.height should equal(2 * height)
   }
 
