@@ -65,7 +65,8 @@ class Neo4jBulkCSVDataSinkTest extends CAPSTestSuite with TeamDataFixture with D
                      |  --nodes:Person:German "$root/teamdata/nodes/German_Person/schema.csv,$root/teamdata/nodes/German_Person/part(.*)\\.csv" \\
                      |  --nodes:Person:Swede "$root/teamdata/nodes/Person_Swede/schema.csv,$root/teamdata/nodes/Person_Swede/part(.*)\\.csv" \\
                      |  --relationships:KNOWS "$root/teamdata/relationships/KNOWS/schema.csv,$root/teamdata/relationships/KNOWS/part(.*)\\.csv"
-                     |fi""".stripMargin
+                     |fi
+                     |""".stripMargin
 
     Source.fromFile(scriptFilePath).mkString should equal(expected)
   }
