@@ -26,17 +26,18 @@
  */
 package org.opencypher.okapi.relational.impl.planning
 
-import org.opencypher.okapi.api.graph.CypherSession
-import org.opencypher.okapi.api.types.{CTBoolean, CTNode, CTRelationship}
+import org.opencypher.okapi.api.graph.QualifiedGraphName
+import org.opencypher.okapi.api.types.{CTBoolean, CTNode, CTRelationship, CypherType}
 import org.opencypher.okapi.impl.exception.{NotImplementedException, SchemaException}
 import org.opencypher.okapi.ir.api.block.SortItem
 import org.opencypher.okapi.ir.api.expr._
 import org.opencypher.okapi.ir.api.{Label, RelType}
 import org.opencypher.okapi.logical.impl._
 import org.opencypher.okapi.logical.{impl => logical}
+import org.opencypher.okapi.relational.api.graph.{RelationalCypherGraph, RelationalCypherSession}
 import org.opencypher.okapi.relational.api.planning.{RelationalPlannerContext, RelationalRuntimeContext}
 import org.opencypher.okapi.relational.api.table.Table
-import org.opencypher.okapi.relational.impl.operators._
+import org.opencypher.okapi.relational.impl.operators.RelationalOperator
 import org.opencypher.okapi.relational.impl.planning.ConstructGraphPlanner._
 import org.opencypher.okapi.relational.impl.table.RecordHeader
 import org.opencypher.okapi.relational.impl.{operators => relational}
@@ -50,7 +51,7 @@ object RelationalPlanner {
     runtimeContext: RelationalRuntimeContext[T]
   ): RelationalOperator[T] = {
 
-    implicit val caps: CypherSession = plannerContext.session
+    implicit val caps: RelationalCypherSession[T] = plannerContext.session
 
     input match {
       case logical.CartesianProduct(lhs, rhs, _) =>
@@ -95,7 +96,7 @@ object RelationalPlanner {
         val explodeExpr = Explode(list)(item.cypherType)
         relational.Add(process[T](in), explodeExpr as item)
 
-      case logical.NodeScan(v, in, _) => relational.Scan(process[T](in), v.cypherType).assignScanName(v.name)
+      case logical.NodeScan(v, in, _) => planScan(process[T](in), in.graph, v.cypherType, v.name)
 
       case logical.Aggregate(aggregations, group, in, _) => relational.Aggregate(process[T](in), group, aggregations)
 
@@ -119,15 +120,16 @@ object RelationalPlanner {
         val first = process[T](sourceOp)
         val third = process[T](targetOp)
 
+        // TODO: Should be handled by `planScan`
         val startFrom = sourceOp.graph match {
           case e: LogicalCatalogGraph =>
             relational.Start(e.qualifiedGraphName)
 
           case c: LogicalPatternGraph =>
-            plannerContext.constructedGraphPlans(c.name)
+            plannerContext.constructedGraphPlans(c.qualifiedGraphName)
         }
 
-        val second = relational.Scan(startFrom, rel.cypherType).assignScanName(rel.name)
+        val second = planScan(startFrom, sourceOp.graph, rel.cypherType, rel.name)
         val startNode = StartNode(rel)(CTNode)
         val endNode = EndNode(rel)(CTNode)
 
@@ -151,7 +153,7 @@ object RelationalPlanner {
 
       case logical.ExpandInto(source, rel, target, direction, sourceOp, _) =>
         val in = process[T](sourceOp)
-        val relationships = relational.Scan(in, rel.cypherType).assignScanName(rel.name)
+        val relationships = planScan(in, sourceOp.graph, rel.cypherType, rel.name)
 
         val startNode = StartNode(rel)()
         val endNode = EndNode(rel)()
@@ -169,7 +171,8 @@ object RelationalPlanner {
       case logical.BoundedVarLengthExpand(source, list, target, edgeScanType, direction, lower, upper, sourceOp, targetOp, _) =>
 
         val edgeScan = Var(list.name)(edgeScanType)
-        val edgeScanOp = relational.Scan(planStart(input.graph), edgeScan.cypherType).assignScanName(edgeScan.name)
+        // TODO: Remove dummy start op
+        val edgeScanOp = planScan(relational.Start(caps.emptyGraphQgn), input.graph, edgeScan.cypherType, edgeScan.name)
 
         val isExpandInto = sourceOp == targetOp
 
@@ -222,10 +225,32 @@ object RelationalPlanner {
 
       case logical.Limit(expr, in, _) => relational.Limit(process[T](in), expr)
 
-      case logical.ReturnGraph(in, _) => relational.ReturnGraph(process[T](in))
+      case r@logical.ReturnGraph(in, _) => relational.ReturnGraph(process[T](in), r.graph.schema, r.graph.qualifiedGraphName)
 
       case other => throw NotImplementedException(s"Physical planning of operator $other")
     }
+  }
+
+  def planScan[T <: Table[T]](
+    in: RelationalOperator[T],
+    graph: LogicalGraph,
+    cypherType: CypherType,
+    name: String
+  )(implicit runtimeContext: RelationalRuntimeContext[T]): RelationalOperator[T] = {
+    graph match {
+      //      case l: LogicalPatternGraph => planPatternGraphScan
+      case LogicalCatalogGraph(qgn, _) => planCatalogGraphScan(qgn, cypherType, name)
+    }
+  }
+
+  def planCatalogGraphScan[T <: Table[T]](
+    qgn: QualifiedGraphName,
+    cypherType: CypherType,
+    name: String
+  )(implicit runtimeContext: RelationalRuntimeContext[T]): RelationalOperator[T] = {
+    val graph = runtimeContext.sessionCatalog(qgn).get
+    val scanOp = graph.asInstanceOf[RelationalCypherGraph[T]].scanOperator(cypherType)
+    scanOp.assignScanName(name)
   }
 
   def planJoin[T <: Table[T]](
@@ -246,7 +271,7 @@ object RelationalPlanner {
       case g: LogicalCatalogGraph =>
         relational.Start(g.qualifiedGraphName, Some(plannerContext.inputRecords))(runtimeContext)
       case p: LogicalPatternGraph =>
-        plannerContext.constructedGraphPlans.get(p.name) match {
+        plannerContext.constructedGraphPlans.get(p.qualifiedGraphName) match {
           case Some(plan) => plan // the graph was already constructed
           case None => planConstructGraph(None, p)
         }
@@ -296,7 +321,7 @@ object RelationalPlanner {
     def assignScanName(name: String): RelationalOperator[T] = {
       val scanVar = op.singleEntity
       val namedScanVar = Var(name)(scanVar.cypherType)
-      Drop(Alias(op, Seq(scanVar as namedScanVar)), Set(scanVar))
+      relational.Drop(relational.Alias(op, Seq(scanVar as namedScanVar)), Set(scanVar))
     }
 
     def alignWith(entity: Var, targetHeader: RecordHeader): RelationalOperator[T] = {
@@ -384,7 +409,7 @@ object RelationalPlanner {
         val columnRenamings = op.header.expressions.foldLeft(Map.empty[String, String]) {
           case (currentMap, expr) => currentMap + (op.header.column(expr) -> targetHeader.column(expr))
         }
-        RenameColumns(op, columnRenamings)
+        relational.RenameColumns(op, columnRenamings)
       }
     }
 

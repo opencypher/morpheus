@@ -57,18 +57,19 @@ object ConstructGraphPlanner {
         //case h :: Nil => operatorProducer.planStart(Some(h)) // Just one graph, no union required
         case several =>
           val onGraphPlans = several.map(qgn => relational.Start[T](qgn))
-          relational.GraphUnionAll[T](onGraphPlans, construct.name)
+          relational.GraphUnionAll[T](onGraphPlans, construct.qualifiedGraphName)
       }
     }
     val inputTablePlan = in.map(RelationalPlanner.process(_)(plannerContext, runtimeContext)).getOrElse(relational.Start[T](plannerContext.session.emptyGraphQgn))
 
     val constructGraphPlan = ConstructGraph(inputTablePlan, onGraphPlan, construct)
 
-    plannerContext.constructedGraphPlans += (construct.name -> constructGraphPlan)
+    plannerContext.constructedGraphPlans += (construct.qualifiedGraphName -> constructGraphPlan)
     constructGraphPlan
   }
 }
 
+  // TODO: Convert to planner
 final case class ConstructGraph[T <: Table[T]](
   lhs: RelationalOperator[T],
   rhs: RelationalOperator[T],
@@ -93,83 +94,83 @@ final case class ConstructGraph[T <: Table[T]](
     g -> g.tags.zip(g.tags).toMap
   }
 
-  override lazy val (graph, graphName, tagStrategy): (RelationalCypherGraph[T], QualifiedGraphName, TagStrategy) = {
-
-    val onGraph = rhs.graph
-
-    val unionTagStrategy: Map[QualifiedGraphName, Map[Int, Int]] = rhs.tagStrategy
-
-    val LogicalPatternGraph(schema, clonedVarsToInputVars, newEntities, sets, _, name) = construct
-
-    val matchGraphs: Set[QualifiedGraphName] = clonedVarsToInputVars.values.map(_.cypherType.graph.get).toSet
-    val allGraphs = unionTagStrategy.keySet ++ matchGraphs
-    val tagsForGraph: Map[QualifiedGraphName, Set[Int]] = allGraphs.map(qgn => qgn -> resolveTags(qgn)).toMap
-
-    val constructTagStrategy = computeRetaggings(tagsForGraph, unionTagStrategy)
-
-    // Apply aliases in CLONE to input table in order to create the base table, on which CONSTRUCT happens
-    val aliasClones = clonedVarsToInputVars
-      .filter { case (alias, original) => alias != original }
-      .map(_.swap)
-
-    val aliasOp: RelationalOperator[T] = if (aliasClones.isEmpty) {
-      lhs
-    } else {
-      relational.Alias(lhs, aliasClones.map { case (expr, alias) => expr as alias }.toSeq)
-    }
-
-    val retagBaseTableOp = clonedVarsToInputVars.foldLeft(aliasOp) {
-      case (op, (alias, original)) => RetagVariable(op, alias, constructTagStrategy(original.cypherType.graph.get))
-    }
-
-    // Construct NEW entities
-    val (newEntityTags, constructedEntitiesOp) = {
-      if (newEntities.isEmpty) {
-        Set.empty[Int] -> retagBaseTableOp
-      } else {
-        val newEntityTag = pickFreeTag(constructTagStrategy)
-        val entitiesOp = createEntities(retagBaseTableOp, newEntities, newEntityTag)
-
-        val entityTableWithProperties = sets.foldLeft(entitiesOp) {
-          case (currentOp, SetPropertyItem(propertyKey, v, valueExpr)) =>
-            val propertyExpression = Property(v, PropertyKey(propertyKey))(valueExpr.cypherType)
-            ConstructProperty(currentOp, v, propertyExpression, valueExpr)
-        }
-        Set(newEntityTag) -> entityTableWithProperties
-      }
-    }
-
-    // Remove all vars that were part the original pattern graph DF, except variables that were CLONEd without an alias
-    val allInputVars = aliasOp.header.vars
-    val originalVarsToKeep = clonedVarsToInputVars.keySet -- aliasClones.keySet
-    val varsToRemoveFromTable = allInputVars -- originalVarsToKeep
-
-    val patternGraphTableOp = if (varsToRemoveFromTable.isEmpty) {
-      constructedEntitiesOp
-    } else {
-      relational.Drop(constructedEntitiesOp, varsToRemoveFromTable)
-    }
-
-    val tagsUsed = constructTagStrategy.foldLeft(newEntityTags) {
-      case (tags, (qgn, remapping)) =>
-        val remappedTags = tagsForGraph(qgn).map(remapping)
-        tags ++ remappedTags
-    }
-
-    val patternGraphRecords = session.records.from(patternGraphTableOp.header, patternGraphTableOp.table)
-
-    val patternGraph = session.graphs.singleTableGraph(patternGraphRecords, schema, tagsUsed)
-
-    val constructedCombinedWithOn = if (onGraph == session.graphs.empty) {
-      session.graphs.unionGraph(patternGraph)
-    } else {
-      session.graphs.unionGraph(Map(identityRetaggings(onGraph), identityRetaggings(patternGraph)))
-    }
-
-    context.constructedGraphCatalog += (construct.name -> constructedCombinedWithOn)
-
-    (constructedCombinedWithOn, name, constructTagStrategy)
-  }
+//  override lazy val (graph, graphName, tagStrategy): (RelationalCypherGraph[T], QualifiedGraphName, TagStrategy) =
+//  {
+//    val onGraph = rhs.graph
+//
+//    val unionTagStrategy: Map[QualifiedGraphName, Map[Int, Int]] = rhs.tagStrategy
+//
+//    val LogicalPatternGraph(schema, clonedVarsToInputVars, newEntities, sets, _, name) = construct
+//
+//    val matchGraphs: Set[QualifiedGraphName] = clonedVarsToInputVars.values.map(_.cypherType.graph.get).toSet
+//    val allGraphs = unionTagStrategy.keySet ++ matchGraphs
+//    val tagsForGraph: Map[QualifiedGraphName, Set[Int]] = allGraphs.map(qgn => qgn -> resolveTags(qgn)).toMap
+//
+//    val constructTagStrategy = computeRetaggings(tagsForGraph, unionTagStrategy)
+//
+//    // Apply aliases in CLONE to input table in order to create the base table, on which CONSTRUCT happens
+//    val aliasClones = clonedVarsToInputVars
+//      .filter { case (alias, original) => alias != original }
+//      .map(_.swap)
+//
+//    val aliasOp: RelationalOperator[T] = if (aliasClones.isEmpty) {
+//      lhs
+//    } else {
+//      relational.Alias(lhs, aliasClones.map { case (expr, alias) => expr as alias }.toSeq)
+//    }
+//
+//    val retagBaseTableOp = clonedVarsToInputVars.foldLeft(aliasOp) {
+//      case (op, (alias, original)) => RetagVariable(op, alias, constructTagStrategy(original.cypherType.graph.get))
+//    }
+//
+//    // Construct NEW entities
+//    val (newEntityTags, constructedEntitiesOp) = {
+//      if (newEntities.isEmpty) {
+//        Set.empty[Int] -> retagBaseTableOp
+//      } else {
+//        val newEntityTag = pickFreeTag(constructTagStrategy)
+//        val entitiesOp = createEntities(retagBaseTableOp, newEntities, newEntityTag)
+//
+//        val entityTableWithProperties = sets.foldLeft(entitiesOp) {
+//          case (currentOp, SetPropertyItem(propertyKey, v, valueExpr)) =>
+//            val propertyExpression = Property(v, PropertyKey(propertyKey))(valueExpr.cypherType)
+//            ConstructProperty(currentOp, v, propertyExpression, valueExpr)
+//        }
+//        Set(newEntityTag) -> entityTableWithProperties
+//      }
+//    }
+//
+//    // Remove all vars that were part the original pattern graph DF, except variables that were CLONEd without an alias
+//    val allInputVars = aliasOp.header.vars
+//    val originalVarsToKeep = clonedVarsToInputVars.keySet -- aliasClones.keySet
+//    val varsToRemoveFromTable = allInputVars -- originalVarsToKeep
+//
+//    val patternGraphTableOp = if (varsToRemoveFromTable.isEmpty) {
+//      constructedEntitiesOp
+//    } else {
+//      relational.Drop(constructedEntitiesOp, varsToRemoveFromTable)
+//    }
+//
+//    val tagsUsed = constructTagStrategy.foldLeft(newEntityTags) {
+//      case (tags, (qgn, remapping)) =>
+//        val remappedTags = tagsForGraph(qgn).map(remapping)
+//        tags ++ remappedTags
+//    }
+//
+//    val patternGraphRecords = session.records.from(patternGraphTableOp.header, patternGraphTableOp.table)
+//
+//    val patternGraph = session.graphs.singleTableGraph(patternGraphRecords, schema, tagsUsed)
+//
+//    val constructedCombinedWithOn = if (onGraph == session.graphs.empty) {
+//      session.graphs.unionGraph(patternGraph)
+//    } else {
+//      session.graphs.unionGraph(Map(identityRetaggings(onGraph), identityRetaggings(patternGraph)))
+//    }
+//
+//    context.constructedGraphCatalog += (construct.name -> constructedCombinedWithOn)
+//
+//    (constructedCombinedWithOn, name, constructTagStrategy)
+//  }
 
   private def createEntities(
     inOp: RelationalOperator[T],

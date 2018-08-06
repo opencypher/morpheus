@@ -27,6 +27,7 @@
 package org.opencypher.okapi.relational.impl.operators
 
 import org.opencypher.okapi.api.graph.QualifiedGraphName
+import org.opencypher.okapi.api.schema.Schema
 import org.opencypher.okapi.api.types._
 import org.opencypher.okapi.api.value.CypherValue.CypherInteger
 import org.opencypher.okapi.impl.exception.{IllegalArgumentException, SchemaException}
@@ -35,7 +36,7 @@ import org.opencypher.okapi.ir.api.expr._
 import org.opencypher.okapi.logical.impl.LogicalCatalogGraph
 import org.opencypher.okapi.relational.api.graph.{RelationalCypherGraph, RelationalCypherSession}
 import org.opencypher.okapi.relational.api.planning.RelationalRuntimeContext
-import org.opencypher.okapi.relational.api.table.{Table, RelationalCypherRecords}
+import org.opencypher.okapi.relational.api.table.{RelationalCypherRecords, Table}
 import org.opencypher.okapi.relational.impl.planning._
 import org.opencypher.okapi.relational.impl.table.RecordHeader
 import org.opencypher.okapi.trees.AbstractTreeNode
@@ -46,6 +47,8 @@ abstract class RelationalOperator[T <: Table[T]] extends AbstractTreeNode[Relati
 
   def tagStrategy: TagStrategy = Map.empty
 
+  def maybeQgn: Option[QualifiedGraphName] = children.head.maybeQgn
+
   def header: RecordHeader = children.head.header
 
   def _table: T = children.head.table
@@ -53,10 +56,6 @@ abstract class RelationalOperator[T <: Table[T]] extends AbstractTreeNode[Relati
   implicit def context: RelationalRuntimeContext[T] = children.head.context
 
   implicit def session: RelationalCypherSession[T] = context.session
-
-  def graph: RelationalCypherGraph[T] = children.head.graph
-
-  def graphName: QualifiedGraphName = children.head.graphName
 
   def returnItems: Option[Seq[Var]] = children.head.returnItems
 
@@ -153,10 +152,6 @@ final case class Start[T <: Table[T]](
     session.records.unit().table
   }
 
-  override lazy val graph: RelationalCypherGraph[T] = resolve(qgn)
-
-  override lazy val graphName: QualifiedGraphName = qgn
-
   override lazy val returnItems: Option[Seq[Var]] = None
 
   override def toString: String = {
@@ -177,31 +172,6 @@ final case class Cache[T <: Table[T]](in: RelationalOperator[T]) extends Relatio
 
   override lazy val _table: T = in._table.cache()
 
-}
-
-final case class Scan[T <: Table[T]](
-  in: RelationalOperator[T],
-  scanType: CypherType
-) extends RelationalOperator[T] {
-
-  private lazy val scanOp = graph.scanOperator(scanType, exactLabelMatch = false)
-
-  override lazy val header: RecordHeader = scanOp.header
-
-  // TODO: replace with NodeVar
-  override lazy val _table: T = {
-    val scanTable = scanOp.table
-
-    if (header.columns != scanTable.physicalColumns.toSet) {
-      throw SchemaException(
-        s"""
-           |Graph schema does not match actual records returned for scan for type $scanType:
-           |  - Computed columns based on graph schema: ${header.columns.toSeq.sorted.mkString(", ")}
-           |  - Actual columns in scan table: ${scanTable.physicalColumns.sorted.mkString(", ")}
-        """.stripMargin)
-    }
-    scanTable
-  }
 }
 
 final case class Alias[T <: Table[T]](
@@ -291,7 +261,9 @@ final case class Filter[T <: Table[T]](
   override lazy val _table: T = in.table.filter(expr)(header, context.parameters)
 }
 
-final case class ReturnGraph[T <: Table[T]](in: RelationalOperator[T]) extends RelationalOperator[T] {
+final case class ReturnGraph[T <: Table[T]](in: RelationalOperator[T], schema: Schema, qgn: QualifiedGraphName) extends RelationalOperator[T] {
+
+  override val maybeQgn: Option[QualifiedGraphName] = Some(qgn)
 
   override lazy val header: RecordHeader = RecordHeader.empty
 
@@ -402,14 +374,15 @@ final case class EmptyRecords[T <: Table[T]](
   override lazy val _table: T = session.records.empty(header).table
 }
 
+// TODO: Replace with planner
 final case class FromGraph[T <: Table[T]](
   in: RelationalOperator[T],
   logicalGraph: LogicalCatalogGraph
 ) extends RelationalOperator[T] {
 
-  override def graph: RelationalCypherGraph[T] = resolve(logicalGraph.qualifiedGraphName)
-
-  override def graphName: QualifiedGraphName = logicalGraph.qualifiedGraphName
+//  override def graph: RelationalCypherGraph[T] = resolve(logicalGraph.qualifiedGraphName)
+//
+//  override def graphName: QualifiedGraphName = logicalGraph.qualifiedGraphName
 
 }
 
@@ -478,6 +451,7 @@ final case class TabularUnionAll[T <: Table[T]](
 
 // N-ary
 
+// TODO: Replace with planner
 final case class GraphUnionAll[T <: Table[T]](
   inputs: List[RelationalOperator[T]],
   qgn: QualifiedGraphName
@@ -490,13 +464,13 @@ final case class GraphUnionAll[T <: Table[T]](
 
   import org.opencypher.okapi.relational.api.tagging.TagSupport._
 
-  override lazy val tagStrategy: Map[QualifiedGraphName, Map[Int, Int]] = computeRetaggings(inputs.map(r => r.graphName -> r.graph.tags).toMap)
+//  override lazy val tagStrategy: Map[QualifiedGraphName, Map[Int, Int]] = computeRetaggings(inputs.map(r => r.graphName -> r.graph.tags).toMap)
 
-  override lazy val graphName: QualifiedGraphName = qgn
-
-  override lazy val graph: RelationalCypherGraph[T] = {
-    val graphWithTagStrategy = inputs.map(i => i.graph -> tagStrategy(i.graphName)).toMap
-    session.graphs.unionGraph(graphWithTagStrategy)
-  }
+//  override lazy val graphName: QualifiedGraphName = qgn
+//
+//  override lazy val graph: RelationalCypherGraph[T] = ???{
+//    val graphWithTagStrategy = inputs.map(i => i.graph -> tagStrategy(i.graphName)).toMap
+//    session.graphs.unionGraph(graphWithTagStrategy)
+//  }
 
 }

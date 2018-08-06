@@ -41,7 +41,7 @@ class MatchBehaviour extends CAPSTestSuite with DefaultGraphInit {
   describe("scan caching") {
 
     it("caches a reused scan") {
-      val g = initGraph("""CREATE (p:Person {firstName: "Alice", lastName: "Foo"})""")
+      val g = initGraph("""CREATE (p:Person {name: "Alice"})""")
       val result: CypherResult = g.cypher(
         """
           |MATCH (n: Person)

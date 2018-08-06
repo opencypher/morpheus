@@ -57,10 +57,11 @@ trait EmptyFields extends LogicalOperator {
 trait LogicalGraph {
   def schema: Schema
 
+  def qualifiedGraphName: QualifiedGraphName
+
   override def toString = s"${getClass.getSimpleName}($args)"
 
   protected def args: String
-
 
 }
 
@@ -74,7 +75,7 @@ final case class LogicalPatternGraph(
   newEntities: Set[ConstructedEntity],
   sets: List[SetPropertyItem[Expr]],
   onGraphs: List[QualifiedGraphName],
-  name: QualifiedGraphName
+  qualifiedGraphName: QualifiedGraphName
 ) extends LogicalGraph {
 
   override protected def args: String = {
