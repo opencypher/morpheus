@@ -72,7 +72,6 @@ object RelationalOptimizer {
             }
         }
       }
-      // TODO: filter by opCount and always point at first op in group (avoids mutable map)
       opsToCache.map(op => op -> Cache[T](op)).toMap
     }
 
