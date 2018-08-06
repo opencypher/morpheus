@@ -40,9 +40,9 @@ import org.opencypher.spark.schema.CAPSSchema
 
 object Neo4jBulkCSVDataSink {
 
-  private val SCRIPT_NAME = "import.sh"
+  val SCRIPT_NAME = "import.sh"
 
-  private val SCRIPT_TEMPLATE: String =
+  val SCRIPT_TEMPLATE: String =
     """
       |#!/bin/sh
       |if [ $# -ne 1 ]
@@ -77,7 +77,7 @@ object Neo4jBulkCSVDataSink {
 }
 
 class Neo4jBulkCSVDataSink(override val rootPath: String, arrayDelimiter: String = "|")(implicit session: CAPSSession)
-  extends FSGraphSource(rootPath, "csv", filesPerTable = Some(1)) {
+  extends FSGraphSource(rootPath, "csv") {
 
   override protected def writeSchema(
     graphName: GraphName,
