@@ -60,7 +60,6 @@ object ConstructGraphPlanner {
     }
     val inputTablePlan = in.map(RelationalPlanner.process(_)(plannerContext, context)).getOrElse(relational.Start[T](plannerContext.session.emptyGraphQgn))
 
-    //    val (graph, tagStrategy: Map[QualifiedGraphName, Map[Int, Int]]) = oldOpCode(inputTablePlan, onGraphPlan, construct)
     val onGraph = onGraphPlan.graph
 
     val unionTagStrategy: Map[QualifiedGraphName, Map[Int, Int]] = onGraphPlan.tagStrategy
