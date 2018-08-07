@@ -31,7 +31,7 @@ import org.opencypher.okapi.api.types.{CTBoolean, CTNode, CTRelationship}
 import org.opencypher.okapi.impl.exception.{NotImplementedException, SchemaException}
 import org.opencypher.okapi.ir.api.block.SortItem
 import org.opencypher.okapi.ir.api.expr._
-import org.opencypher.okapi.ir.api.{Label, RelType}
+import org.opencypher.okapi.ir.api.{Label, PropertyKey, RelType}
 import org.opencypher.okapi.logical.impl._
 import org.opencypher.okapi.logical.{impl => logical}
 import org.opencypher.okapi.relational.api.planning.{RelationalPlannerContext, RelationalRuntimeContext}
@@ -296,7 +296,18 @@ object RelationalPlanner {
     def retagVariable(v: Var, replacements: Map[Int, Int]): RelationalOperator[T] = {
         op.header.idExpressions(v).foldLeft(op) {
         case (currentOp, exprToRetag) =>
-          AddInto(currentOp, exprToRetag.replaceTags(replacements), exprToRetag)
+          currentOp.add(exprToRetag.replaceTags(replacements), Some(exprToRetag))
+      }
+    }
+
+    def drop(exprs: Expr*): RelationalOperator[T] = {
+      relational.Drop(op, exprs.toSet)
+    }
+
+    def add(expr: Expr, maybeInto: Option[Expr] = None): RelationalOperator[T] = {
+      maybeInto match {
+        case None => relational.Add(op, expr)
+        case Some(into) => relational.AddInto(op, expr, into)
       }
     }
 

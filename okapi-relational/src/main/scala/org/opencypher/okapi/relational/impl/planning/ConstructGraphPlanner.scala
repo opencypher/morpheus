@@ -99,7 +99,7 @@ object ConstructGraphPlanner {
         val entityTableWithProperties = sets.foldLeft(entitiesOp) {
           case (currentOp, SetPropertyItem(propertyKey, v, valueExpr)) =>
             val propertyExpression = Property(v, PropertyKey(propertyKey))(valueExpr.cypherType)
-            relational.ConstructProperty(currentOp, v, propertyExpression, valueExpr)
+            currentOp.add(valueExpr, Some(propertyExpression))
         }
         Set(newEntityTag) -> entityTableWithProperties
       }
@@ -166,14 +166,18 @@ object ConstructGraphPlanner {
         (nextColumnPartitionId + 1) -> (constructedNodes ++ planConstructNode(inOp, newEntityTag, nextColumnPartitionId, nodes.size, nextNodeToConstruct))
     }
 
-    val createdNodesOp = relational.AddEntitiesToRecords(inOp, nodesToCreate)
+    val createdNodesOp = nodesToCreate.foldLeft(inOp) { case (currentOp, (into, value)) =>
+      currentOp.add(value, Some(into))
+    }
 
     val (_, relsToCreate) = rels.foldLeft(0 -> Map.empty[Expr, Expr]) {
       case ((nextColumnPartitionId, constructedRels), nextRelToConstruct) =>
         (nextColumnPartitionId + 1) -> (constructedRels ++ planConstructRelationship(createdNodesOp, newEntityTag, nextColumnPartitionId, rels.size, nextRelToConstruct))
     }
 
-    relational.AddEntitiesToRecords(createdNodesOp, relsToCreate)
+    relsToCreate.foldLeft(createdNodesOp) { case (currentOp, (into, value)) =>
+      currentOp.add(value, Some(into))
+    }
   }
 
   def planConstructNode[T <: Table[T]](

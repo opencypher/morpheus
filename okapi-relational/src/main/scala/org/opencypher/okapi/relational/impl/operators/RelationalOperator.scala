@@ -415,45 +415,6 @@ final case class FromGraph[T <: Table[T]](
 
 }
 
-final case class AddEntitiesToRecords[T <: Table[T]](
-  in: RelationalOperator[T],
-  exprsToAdd: Map[Expr, Expr]
-) extends RelationalOperator[T] {
-
-  override lazy val header: RecordHeader = in.header.withExprs(exprsToAdd.keySet)
-
-  override lazy val _table: T = {
-    exprsToAdd.foldLeft(in.table) {
-      case (acc, (toAdd, value)) => acc.withColumn(header.column(toAdd), value)(header, context.parameters)
-    }
-  }
-}
-
-final case class ConstructProperty[T <: Table[T]](
-  in: RelationalOperator[T],
-  v: Var,
-  propertyExpr: Property,
-  valueExpr: Expr
-)
-  (implicit context: RelationalRuntimeContext[T]) extends RelationalOperator[T] {
-
-  private lazy val existingPropertyExpressionsForKey = in.header.propertiesFor(v).collect {
-    case p@Property(_, PropertyKey(name)) if name == propertyExpr.key.name => p
-  }
-
-  override lazy val header: RecordHeader = {
-    val headerWithExistingRemoved = in.header -- existingPropertyExpressionsForKey
-    headerWithExistingRemoved.withExpr(propertyExpr)
-  }
-
-  override lazy val _table: T = {
-    in.table
-      .drop(existingPropertyExpressionsForKey.map(in.header.column).toSeq: _*)
-      .withColumn(header.column(propertyExpr), valueExpr)(in.header, context.parameters)
-  }
-}
-
-
 // Binary
 
 final case class Join[T <: Table[T]](
