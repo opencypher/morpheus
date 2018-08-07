@@ -53,15 +53,17 @@ object LogicalOptimizer extends DirectCompilationStage[LogicalOperator, LogicalO
   }
 
   def replaceCartesianWithValueJoin: PartialFunction[LogicalOperator, LogicalOperator] = {
-    case filter@Filter(e@Equals(leftProp: Property, rightProp: Property), in, _) =>
+    case filter@Filter(e@Equals(leftProp@Property(leftEntity: Var, _), rightProp@Property(rightEntity: Var, _)), in, _) =>
 
+      val leftField = IRField(leftEntity.name)(leftEntity.cypherType)
+      val rightField = IRField(rightEntity.name)(rightEntity.cypherType)
       val (newChild, rewritten) = BottomUpWithContext[LogicalOperator, Boolean] {
-        case (CartesianProduct(lhs, rhs, solved), false)
-          if solved.solves(IRField(leftProp.entity.withoutType)(leftProp.cypherType)) &&
-            solved.solves(IRField(rightProp.entity.withoutType)(rightProp.cypherType)) =>
-          val leftProject = Project(leftProp -> None, lhs, lhs.solved)
-          val rightProject = Project(rightProp -> None, rhs, rhs.solved)
-          ValueJoin(leftProject, rightProject, Set(e), solved.withPredicate(e)) -> true
+        case (CartesianProduct(lhs, rhs, solved), false) if solved.solves(leftField) && solved.solves(rightField) =>
+          val (leftExpr, rightExpr) = if (lhs.solved.solves(leftField)) leftProp -> rightProp else rightProp -> leftProp
+          val joinExpr = Equals(leftExpr, rightExpr)(CTBoolean)
+          val leftProject = Project(leftExpr -> None, lhs, lhs.solved)
+          val rightProject = Project(rightExpr -> None, rhs, rhs.solved)
+          ValueJoin(leftProject, rightProject, Set(joinExpr), solved.withPredicate(joinExpr)) -> true
       }.transform(in, context = false)
 
       if (rewritten) newChild else filter
@@ -69,7 +71,7 @@ object LogicalOptimizer extends DirectCompilationStage[LogicalOperator, LogicalO
 
 
   def pushLabelsIntoScans(labelMap: Map[Var, Set[String]]): PartialFunction[LogicalOperator, LogicalOperator] = {
-    case ns@NodeScan(v@Var(name), in, solved) =>
+    case ns@NodeScan(v@Var(name), in, _) =>
       val updatedLabels = labelMap(v)
       val updatedVar = Var(name)(CTNode(ns.labels ++ updatedLabels, v.cypherType.graph))
       val updatedSolved = in.solved.withPredicates(updatedLabels.map(l => HasLabel(v, Label(l))(CTBoolean)).toSeq: _*)

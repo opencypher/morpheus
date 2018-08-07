@@ -134,30 +134,60 @@ class LogicalOptimizerTest extends BaseTestSuite with IrConstruction {
     optimizedLogicalPlan should equalWithTracing(expected)
   }
 
-  it("should replace cross with value join if filter is present") {
-    val startA = Start(LogicalCatalogGraph(testQualifiedGraphName, testGraphSchema), SolvedQueryModel.empty)
-    val startB = Start(LogicalCatalogGraph(testQualifiedGraphName, testGraphSchema), SolvedQueryModel.empty)
-    val varA = Var("a")(CTNode)
-    val propA = expr.Property(varA, PropertyKey("name"))(CTString)
-    val varB = Var("b")(CTNode)
-    val propB = expr.Property(varB, PropertyKey("name"))(CTString)
-    val equals = Equals(propA, propB)(CTBoolean)
-    val irFieldA = IRField(varA.name)(varA.cypherType)
-    val irFieldB = IRField(varB.name)(varB.cypherType)
+  describe("replace cartesian with ValueJoin") {
 
-    val scanA = NodeScan(varA, startA, SolvedQueryModel(Set(irFieldA)))
-    val scanB = NodeScan(varB, startB, SolvedQueryModel(Set(irFieldB)))
-    val cartesian = CartesianProduct(scanA, scanB, SolvedQueryModel(Set(irFieldA, irFieldB)))
-    val filter = Filter(equals, cartesian, SolvedQueryModel(Set(irFieldA, irFieldB)))
+    it("should replace cross with value join if filter is present") {
+      val startA = Start(LogicalCatalogGraph(testQualifiedGraphName, testGraphSchema), SolvedQueryModel.empty)
+      val startB = Start(LogicalCatalogGraph(testQualifiedGraphName, testGraphSchema), SolvedQueryModel.empty)
+      val varA = Var("a")(CTNode)
+      val propA = expr.Property(varA, PropertyKey("name"))(CTString)
+      val varB = Var("b")(CTNode)
+      val propB = expr.Property(varB, PropertyKey("name"))(CTString)
+      val equals = Equals(propA, propB)(CTBoolean)
+      val irFieldA = IRField(varA.name)(varA.cypherType)
+      val irFieldB = IRField(varB.name)(varB.cypherType)
 
-    val optimizedPlan = BottomUp[LogicalOperator](LogicalOptimizer.replaceCartesianWithValueJoin).transform(filter)
+      val scanA = NodeScan(varA, startA, SolvedQueryModel(Set(irFieldA)))
+      val scanB = NodeScan(varB, startB, SolvedQueryModel(Set(irFieldB)))
+      val cartesian = CartesianProduct(scanA, scanB, SolvedQueryModel(Set(irFieldA, irFieldB)))
+      val filter = Filter(equals, cartesian, SolvedQueryModel(Set(irFieldA, irFieldB)))
 
-    val projectA = Project(propA -> None, scanA, scanA.solved)
-    val projectB = Project(propB -> None, scanB, scanB.solved)
-    val solved = SolvedQueryModel(Set(irFieldA, irFieldB)).withPredicate(equals)
-    val valueJoin = ValueJoin(projectA, projectB, Set(equals), solved)
+      val optimizedPlan = BottomUp[LogicalOperator](LogicalOptimizer.replaceCartesianWithValueJoin).transform(filter)
 
-    optimizedPlan should equalWithTracing(valueJoin)
+      val projectA = Project(propA -> None, scanA, scanA.solved)
+      val projectB = Project(propB -> None, scanB, scanB.solved)
+      val solved = SolvedQueryModel(Set(irFieldA, irFieldB)).withPredicate(equals)
+      val valueJoin = ValueJoin(projectA, projectB, Set(equals), solved)
+
+      optimizedPlan should equalWithTracing(valueJoin)
+    }
+
+    it("should replace cross with value join if filter with flipped predicate is present") {
+      val startA = Start(LogicalCatalogGraph(testQualifiedGraphName, testGraphSchema), SolvedQueryModel.empty)
+      val startB = Start(LogicalCatalogGraph(testQualifiedGraphName, testGraphSchema), SolvedQueryModel.empty)
+      val varA = Var("a")(CTNode)
+      val propA = expr.Property(varA, PropertyKey("name"))(CTString)
+      val varB = Var("b")(CTNode)
+      val propB = expr.Property(varB, PropertyKey("name"))(CTString)
+      val equals = Equals(propB, propA)(CTBoolean)
+      val irFieldA = IRField(varA.name)(varA.cypherType)
+      val irFieldB = IRField(varB.name)(varB.cypherType)
+
+      val scanA = NodeScan(varA, startA, SolvedQueryModel(Set(irFieldA)))
+      val scanB = NodeScan(varB, startB, SolvedQueryModel(Set(irFieldB)))
+      val cartesian = CartesianProduct(scanA, scanB, SolvedQueryModel(Set(irFieldA, irFieldB)))
+      val filter = Filter(equals, cartesian, SolvedQueryModel(Set(irFieldA, irFieldB)))
+
+      val optimizedPlan = BottomUp[LogicalOperator](LogicalOptimizer.replaceCartesianWithValueJoin).transform(filter)
+
+      val flippedEquals = Equals(propA, propB)(CTBoolean)
+      val projectA = Project(propA -> None, scanA, scanA.solved)
+      val projectB = Project(propB -> None, scanB, scanB.solved)
+      val solved = SolvedQueryModel(Set(irFieldA, irFieldB)).withPredicate(flippedEquals)
+      val valueJoin = ValueJoin(projectA, projectB, Set(flippedEquals), solved)
+
+      optimizedPlan should equalWithTracing(valueJoin)
+    }
   }
 
   private def logicalPlan(query: String, schema: Schema): LogicalOperator = {
