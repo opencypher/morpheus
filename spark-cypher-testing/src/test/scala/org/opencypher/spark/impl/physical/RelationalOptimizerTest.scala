@@ -26,11 +26,8 @@
  */
 package org.opencypher.spark.impl.physical
 
-import org.opencypher.spark.testing.CAPSTestSuite
-import org.opencypher.spark.testing.fixture.GraphConstructionFixture
-
-class RelationalOptimizerTest extends CAPSTestSuite with GraphConstructionFixture {
-
+//class RelationalOptimizerTest extends CAPSTestSuite with GraphConstructionFixture {
+//
 ////  TODO: Re-enable once caching optimizer is back
 //  def start(qgn: QualifiedGraphName, records: CAPSRecords)(implicit caps: CAPSSession): Start = {
 //    Start(qgn, Some(records))
@@ -176,4 +173,4 @@ class RelationalOptimizerTest extends CAPSTestSuite with GraphConstructionFixtur
 //    val cacheOps = result.asCaps.plans.relationalPlan.get.collect { case c: Cache => c }
 //    cacheOps.size shouldBe 2
 //  }
-}
+//}
