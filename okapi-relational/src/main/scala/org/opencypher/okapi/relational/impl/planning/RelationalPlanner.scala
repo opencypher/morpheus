@@ -86,16 +86,18 @@ object RelationalPlanner {
         graph match {
           case g: LogicalCatalogGraph =>
             relational.FromGraph(process[T](in), g)
-
           case construct: LogicalPatternGraph =>
-            planConstructGraph(Some(in), construct) //(plannerContext, runtimeContext)
+            val c = planConstructGraph(Some(in), construct) //(plannerContext, runtimeContext)
+            c
         }
 
       case logical.Unwind(list, item, in, _) =>
         val explodeExpr = Explode(list)(item.cypherType)
         relational.Add(process[T](in), explodeExpr as item)
 
-      case logical.NodeScan(v, in, _) => relational.Scan(process[T](in), v.cypherType).assignScanName(v.name)
+      case logical.NodeScan(v, in, _) => {
+        planScan(Some(in), in.graph, v)
+      }
 
       case logical.Aggregate(aggregations, group, in, _) => relational.Aggregate(process[T](in), group, aggregations)
 
@@ -119,15 +121,7 @@ object RelationalPlanner {
         val first = process[T](sourceOp)
         val third = process[T](targetOp)
 
-        val startFrom = sourceOp.graph match {
-          case e: LogicalCatalogGraph =>
-            relational.Start(e.qualifiedGraphName)
-
-          case c: LogicalPatternGraph =>
-            plannerContext.constructedGraphPlans(c.name)
-        }
-
-        val second = relational.Scan(startFrom, rel.cypherType).assignScanName(rel.name)
+        val second = planScan(None, sourceOp.graph, rel)
         val startNode = StartNode(rel)(CTNode)
         val endNode = EndNode(rel)(CTNode)
 
@@ -151,7 +145,7 @@ object RelationalPlanner {
 
       case logical.ExpandInto(source, rel, target, direction, sourceOp, _) =>
         val in = process[T](sourceOp)
-        val relationships = relational.Scan(in, rel.cypherType).assignScanName(rel.name)
+        val relationships = planScan(None, sourceOp.graph, rel)
 
         val startNode = StartNode(rel)()
         val endNode = EndNode(rel)()
@@ -169,7 +163,7 @@ object RelationalPlanner {
       case logical.BoundedVarLengthExpand(source, list, target, edgeScanType, direction, lower, upper, sourceOp, targetOp, _) =>
 
         val edgeScan = Var(list.name)(edgeScanType)
-        val edgeScanOp = relational.Scan(planStart(input.graph), edgeScan.cypherType).assignScanName(edgeScan.name)
+        val edgeScanOp = planScan(None, input.graph, edgeScan)
 
         val isExpandInto = sourceOp == targetOp
 
@@ -228,6 +222,25 @@ object RelationalPlanner {
     }
   }
 
+  def planScan[T <: Table[T]](
+    in: Option[LogicalOperator],
+    logicalGraph: LogicalGraph,
+    entityVar: Var
+  )(implicit runtimeContext: RelationalRuntimeContext[T], plannerContext: RelationalPlannerContext[T]): RelationalOperator[T] = {
+    val graph = logicalGraph match {
+      case g: LogicalCatalogGraph =>
+        runtimeContext.resolveGraph(logicalGraph.qualifiedGraphName)
+      case p: LogicalPatternGraph =>
+        runtimeContext.constructedGraphCatalog.get(p.qualifiedGraphName) match {
+          case Some(g) => g // the graph was already constructed
+          case None => planConstructGraph(in, p).graph
+        }
+    }
+
+    val scanOp = graph.scanOperator(entityVar.cypherType)
+    scanOp.assignScanName(entityVar.name)
+  }
+
   def planJoin[T <: Table[T]](
     lhs: RelationalOperator[T],
     rhs: RelationalOperator[T],
@@ -242,15 +255,7 @@ object RelationalPlanner {
   private def planStart[T <: Table[T]](graph: LogicalGraph)(
     implicit plannerContext: RelationalPlannerContext[T], runtimeContext: RelationalRuntimeContext[T]
   ): RelationalOperator[T] = {
-    graph match {
-      case g: LogicalCatalogGraph =>
-        relational.Start(g.qualifiedGraphName, Some(plannerContext.inputRecords))(runtimeContext)
-      case p: LogicalPatternGraph =>
-        plannerContext.constructedGraphPlans.get(p.name) match {
-          case Some(plan) => plan // the graph was already constructed
-          case None => planConstructGraph(None, p)
-        }
-    }
+    relational.Start(graph.qualifiedGraphName, None)
   }
 
   // TODO: process operator outside of def

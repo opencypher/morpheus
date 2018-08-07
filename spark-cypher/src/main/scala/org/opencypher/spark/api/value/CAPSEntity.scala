@@ -38,7 +38,8 @@ import org.opencypher.okapi.api.value.CypherValue._
 case class CAPSNode(
   override val id: Long,
   override val labels: Set[String] = Set.empty,
-  override val properties: CypherMap = CypherMap.empty) extends CypherNode[Long] {
+  override val properties: CypherMap = CypherMap.empty
+) extends CypherNode[Long] {
 
   override type I = CAPSNode
 
@@ -52,8 +53,8 @@ case class CAPSNode(
   * Representation of a Cypher relationship in the CAPS implementation. A relationship contains an id of type [[Long]], ids of its adjacent nodes, a relationship type and a map of properties.
   *
   * @param id         the id of the relationship, unique within the containing graph.
-  * @param startId     the id of the source node.
-  * @param endId     the id of the target node.
+  * @param startId    the id of the source node.
+  * @param endId      the id of the target node.
   * @param relType    the relationship type.
   * @param properties the properties of the node.
   */
@@ -62,11 +63,18 @@ case class CAPSRelationship(
   override val startId: Long,
   override val endId: Long,
   override val relType: String,
-  override val properties: CypherMap = CypherMap.empty) extends CypherRelationship[Long] {
+  override val properties: CypherMap = CypherMap.empty
+) extends CypherRelationship[Long] {
 
   override type I = CAPSRelationship
 
-  override def copy(id: Long = id, source: Long = startId, target: Long = endId, relType: String = relType, properties: CypherMap = properties): CAPSRelationship = {
+  override def copy(
+    id: Long = id,
+    source: Long = startId,
+    target: Long = endId,
+    relType: String = relType,
+    properties: CypherMap = properties
+  ): CAPSRelationship = {
     CAPSRelationship(id, source, target, relType, properties).asInstanceOf[this.type]
   }
 

@@ -29,13 +29,13 @@ package org.opencypher.okapi.relational.impl.operators
 import org.opencypher.okapi.api.graph.QualifiedGraphName
 import org.opencypher.okapi.api.types._
 import org.opencypher.okapi.api.value.CypherValue.CypherInteger
-import org.opencypher.okapi.impl.exception.{IllegalArgumentException, SchemaException}
+import org.opencypher.okapi.impl.exception.IllegalArgumentException
 import org.opencypher.okapi.ir.api.block.{Asc, Desc, SortItem}
 import org.opencypher.okapi.ir.api.expr._
 import org.opencypher.okapi.logical.impl.LogicalCatalogGraph
 import org.opencypher.okapi.relational.api.graph.{RelationalCypherGraph, RelationalCypherSession}
 import org.opencypher.okapi.relational.api.planning.RelationalRuntimeContext
-import org.opencypher.okapi.relational.api.table.{Table, RelationalCypherRecords}
+import org.opencypher.okapi.relational.api.table.{RelationalCypherRecords, Table}
 import org.opencypher.okapi.relational.impl.planning._
 import org.opencypher.okapi.relational.impl.table.RecordHeader
 import org.opencypher.okapi.trees.AbstractTreeNode
@@ -179,30 +179,30 @@ final case class Cache[T <: Table[T]](in: RelationalOperator[T]) extends Relatio
 
 }
 
-final case class Scan[T <: Table[T]](
-  in: RelationalOperator[T],
-  scanType: CypherType
-) extends RelationalOperator[T] {
-
-  private lazy val scanOp = graph.scanOperator(scanType, exactLabelMatch = false)
-
-  override lazy val header: RecordHeader = scanOp.header
-
-  // TODO: replace with NodeVar
-  override lazy val _table: T = {
-    val scanTable = scanOp.table
-
-    if (header.columns != scanTable.physicalColumns.toSet) {
-      throw SchemaException(
-        s"""
-           |Graph schema does not match actual records returned for scan for type $scanType:
-           |  - Computed columns based on graph schema: ${header.columns.toSeq.sorted.mkString(", ")}
-           |  - Actual columns in scan table: ${scanTable.physicalColumns.sorted.mkString(", ")}
-        """.stripMargin)
-    }
-    scanTable
-  }
-}
+//final case class Scan[T <: Table[T]](
+//  in: RelationalOperator[T],
+//  scanType: CypherType
+//) extends RelationalOperator[T] {
+//
+//  private lazy val scanOp = graph.scanOperator(scanType, exactLabelMatch = false)
+//
+//  override lazy val header: RecordHeader = scanOp.header
+//
+//  // TODO: replace with NodeVar
+//  override lazy val _table: T = {
+//    val scanTable = scanOp.table
+//
+//    if (header.columns != scanTable.physicalColumns.toSet) {
+//      throw SchemaException(
+//        s"""
+//           |Graph schema does not match actual records returned for scan for type $scanType:
+//           |  - Computed columns based on graph schema: ${header.columns.toSeq.sorted.mkString(", ")}
+//           |  - Actual columns in scan table: ${scanTable.physicalColumns.sorted.mkString(", ")}
+//        """.stripMargin)
+//    }
+//    scanTable
+//  }
+//}
 
 final case class Alias[T <: Table[T]](
   in: RelationalOperator[T],
