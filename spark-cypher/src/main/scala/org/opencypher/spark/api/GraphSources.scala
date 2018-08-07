@@ -30,7 +30,7 @@ import java.nio.file.Paths
 
 import org.opencypher.okapi.api.schema.Schema
 import org.opencypher.spark.api.io.fs.{CAPSFileSystem, FSGraphSource}
-import org.opencypher.spark.api.io.neo4j.{Neo4jConfig, Neo4jPropertyGraphDataSource}
+import org.opencypher.spark.api.io.neo4j.{Neo4jBulkCSVDataSink, Neo4jConfig, Neo4jPropertyGraphDataSource}
 
 import scala.io.Source
 
@@ -60,6 +60,20 @@ object FSGraphSources {
     def csv(implicit session: CAPSSession): FSGraphSource =
       new FSGraphSource(rootPath, "csv", customFileSystem, filesPerTable)
   }
+
+  /**
+    * Creates a data sink that is capable of writing a property graph into the Neo4j bulk import CSV format
+    * (see [[https://neo4j.com/docs/operations-manual/current/tools/import/]]). The data sink generates a shell script
+    * within the graph output folder that simplifies the import process.
+    *
+    * @param rootPath       Directory where the graph is being stored in
+    * @param arrayDelimiter delimiter for array properties
+    * @param session        CAPS session
+    * @return Neo4j Bulk CSV data sink
+    */
+  def neo4jBulk(rootPath: String, arrayDelimiter: String = "|")(implicit session: CAPSSession): Neo4jBulkCSVDataSink = {
+    Neo4jBulkCSVDataSink(rootPath, arrayDelimiter)
+  }
 }
 
 object CypherGraphSources {
@@ -77,6 +91,7 @@ object CypherGraphSources {
     (implicit session: CAPSSession): Neo4jPropertyGraphDataSource =
     Neo4jPropertyGraphDataSource(config, maybeSchema = maybeSchema, omitImportFailures = omitImportFailures)
 
+  // TODO: document
   def neo4j(config: Neo4jConfig, schemaFile: String, omitImportFailures: Boolean)
     (implicit session: CAPSSession): Neo4jPropertyGraphDataSource = {
     val schemaString = Source.fromFile(Paths.get(schemaFile).toUri).getLines().mkString("\n")
