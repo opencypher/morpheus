@@ -31,7 +31,7 @@ import org.opencypher.okapi.api.table.CypherRecords
 import org.opencypher.okapi.relational.api.graph.{RelationalCypherGraph, RelationalCypherGraphFactory}
 import org.opencypher.okapi.relational.api.planning.RelationalRuntimeContext
 import org.opencypher.okapi.relational.api.table.RelationalCypherRecords
-import org.opencypher.okapi.relational.impl.graph.{ScanGraph, SingleTableGraph, UnionGraph}
+import org.opencypher.okapi.relational.impl.graph.{EmptyGraph, ScanGraph, SingleTableGraph, UnionGraph}
 import org.opencypher.spark.api.CAPSSession
 import org.opencypher.spark.api.io.{CAPSEntityTable, CAPSNodeTable}
 import org.opencypher.spark.impl.CAPSConverters._

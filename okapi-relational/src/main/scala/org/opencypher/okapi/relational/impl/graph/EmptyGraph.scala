@@ -24,39 +24,36 @@
  * described as "implementation extensions to Cypher" or as "proposed changes to
  * Cypher that are not yet approved by the openCypher community".
  */
-package org.opencypher.spark.impl.graph
+package org.opencypher.okapi.relational.impl.graph
 
+import org.opencypher.okapi.api.schema.Schema
 import org.opencypher.okapi.api.types.CypherType
 import org.opencypher.okapi.ir.api.expr.Var
-import org.opencypher.okapi.relational.api.graph.RelationalCypherGraph
+import org.opencypher.okapi.relational.api.graph.{RelationalCypherGraph, RelationalCypherSession}
+import org.opencypher.okapi.relational.api.table.{RelationalCypherRecords, Table}
 import org.opencypher.okapi.relational.impl.operators.{RelationalOperator, Start}
 import org.opencypher.okapi.relational.impl.table.RecordHeader
-import org.opencypher.spark.api.CAPSSession
-import org.opencypher.spark.impl.CAPSRecords
-import org.opencypher.spark.impl.table.SparkTable.DataFrameTable
-import org.opencypher.spark.schema.CAPSSchema
 
-sealed case class EmptyGraph(implicit val caps: CAPSSession) extends RelationalCypherGraph[DataFrameTable] {
+sealed case class EmptyGraph[T <: Table[T]](implicit val session: RelationalCypherSession[T]) extends RelationalCypherGraph[T] {
 
-  override type Session = CAPSSession
+  override type Session = RelationalCypherSession[T]
 
-  override type Records = CAPSRecords
+  override type Records = RelationalCypherRecords[T]
 
-  override val schema: CAPSSchema = CAPSSchema.empty
+  override val schema: Schema = Schema.empty
 
-  override def session: CAPSSession = caps
+  override def cache(): EmptyGraph[T] = this
 
-  override def cache(): EmptyGraph = this
-
-  override def tables: Seq[DataFrameTable] = Seq.empty
+  override def tables: Seq[T] = Seq.empty
 
   override def tags: Set[Int] = Set.empty
 
   override private[opencypher] def scanOperator(
     entityType: CypherType,
     exactLabelMatch: Boolean
-  ): RelationalOperator[DataFrameTable] = {
+  ): RelationalOperator[T] = {
     val scanHeader = RecordHeader.empty.withExpr(Var("")(entityType))
-    Start(caps.records.empty(scanHeader))(session.basicRuntimeContext())
+    val records = session.records.empty(scanHeader)
+    Start(records)(session.basicRuntimeContext())
   }
 }
