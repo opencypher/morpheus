@@ -31,8 +31,7 @@ import java.nio.file.Paths
 import org.opencypher.okapi.api.schema.Schema
 import org.opencypher.okapi.neo4j.io.Neo4jConfig
 import org.opencypher.spark.api.io.fs.{CAPSFileSystem, FSGraphSource}
-import org.opencypher.spark.api.io.neo4j.Neo4jPropertyGraphDataSource
-import org.opencypher.spark.api.io.neo4j.{Neo4jBulkCSVDataSink, Neo4jConfig, Neo4jPropertyGraphDataSource}
+import org.opencypher.spark.api.io.neo4j.{Neo4jBulkCSVDataSink, Neo4jPropertyGraphDataSource}
 
 import scala.io.Source
 
