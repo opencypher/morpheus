@@ -30,10 +30,7 @@ Third-party licenses
 Apache Software License, Version 2.0
   Apache Avro
   Apache Commons Codec
-  Apache Commons Configuration
-  Apache Commons IO
   Apache Commons Lang
-  Apache Commons Logging
   Apache Commons Math
   Apache Commons Text
   Apache Directory API ASN.1 API
@@ -46,21 +43,29 @@ Apache Software License, Version 2.0
   Apache HttpClient
   Apache HttpCore
   Apache Log4j
+  Apache Log4j API
+  Apache Log4j Core
   ApacheDS I18n
   ApacheDS Protocol Kerberos Codec
   Caffeine cache
+  Commons BeanUtils Core
   Commons CLI
   Commons Collections
   Commons Compress
+  Commons Configuration
   Commons Daemon
+  Commons IO
   Commons Lang
+  Commons Logging
   Commons Net
+  commons-beanutils
   ConcurrentLinkedHashMap
   Curator Client
   Curator Framework
   Curator Recipes
   Cypher for Apache Spark - CAPS
   Data Mapper for Jackson
+  Digester
   FindBugs-jsr305
   Google Guice - Core Library
   Google Guice - Extensions - Servlet
@@ -112,6 +117,8 @@ Apache Software License, Version 2.0
   MX4J
   Netty
   Netty/All-in-One
+  Okapi - Neo4j IO
+  Okapi - Neo4j IO test utils
   Okapi - Neo4j procedures
   Okapi - openCypher API
   Okapi IR - Declarative representation of Cypher queries
@@ -128,6 +135,7 @@ Apache Software License, Version 2.0
   openCypher Utils
   parboiled-core
   parboiled-scala
+  Scala 2.11 wrapper for Log4j API
   scalactic
   scalatest
   servlet-api

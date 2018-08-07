@@ -24,21 +24,14 @@
  * described as "implementation extensions to Cypher" or as "proposed changes to
  * Cypher that are not yet approved by the openCypher community".
  */
-package org.opencypher.spark.api.io.neo4j
+package org.opencypher.okapi.neo4j.io
 
-import org.opencypher.okapi.api.graph.GraphName
 import org.opencypher.okapi.api.schema.Schema
 import org.opencypher.okapi.api.types.{CTBoolean, CTFloat, CTInteger, CTString}
-import org.opencypher.spark.api.io.GraphEntity.sourceIdKey
-import org.opencypher.spark.api.io.Relationship.{sourceEndNodeKey, sourceStartNodeKey}
-import org.opencypher.spark.api.io.neo4j.Neo4jPropertyGraphDataSource.metaPrefix
-import org.opencypher.spark.testing.CAPSTestSuite
-import org.opencypher.spark.testing.fixture.Neo4jServerFixture
-import org.scalatest.BeforeAndAfterAll
+import org.opencypher.okapi.neo4j.io.Neo4jHelpers.Neo4jDefaults._
+import org.opencypher.okapi.testing.BaseTestSuite
 
-class Neo4jPropertyGraphDataSourceUnitTest extends CAPSTestSuite with Neo4jServerFixture with BeforeAndAfterAll {
-
-  override def dataFixture: String = ""
+class EntityReaderTest extends BaseTestSuite {
 
   private val schema = Schema.empty
     .withNodePropertyKeys("A")("foo" -> CTInteger, "bar" -> CTString.nullable)
@@ -50,36 +43,32 @@ class Neo4jPropertyGraphDataSourceUnitTest extends CAPSTestSuite with Neo4jServe
   private val entireGraph = "allOfIt"
 
   it("constructs flat node queries from schema") {
-    Neo4jPropertyGraphDataSource(neo4jConfig, entireGraphName = GraphName(entireGraph))
-      .flatNodeQuery(GraphName(entireGraph), Set("A"), schema) should equal(
-      s"""|MATCH (n:A)
-          |WHERE LENGTH(LABELS(n)) = 1
-          |RETURN id(n) AS $sourceIdKey, n.bar, n.foo""".stripMargin
+    EntityReader.flatExactLabelQuery(Set("A"), schema) should equal(
+      s"""|MATCH ($entityVarName:A)
+          |WHERE length(labels($entityVarName)) = 1
+          |RETURN id($entityVarName) AS $idPropertyKey, $entityVarName.bar, $entityVarName.foo""".stripMargin
     )
   }
 
   it("constructs flat node queries from schema without properties") {
-    Neo4jPropertyGraphDataSource(neo4jConfig, entireGraphName = GraphName(entireGraph))
-      .flatNodeQuery(GraphName(entireGraph), Set("B"), schema) should equal(
-      s"""|MATCH (n:B)
-          |WHERE LENGTH(LABELS(n)) = 1
-          |RETURN id(n) AS $sourceIdKey""".stripMargin
+    EntityReader.flatExactLabelQuery(Set("B"), schema) should equal(
+      s"""|MATCH ($entityVarName:B)
+          |WHERE length(labels($entityVarName)) = 1
+          |RETURN id($entityVarName) AS $idPropertyKey""".stripMargin
     )
   }
 
   it("constructs flat relationship queries from schema") {
-    Neo4jPropertyGraphDataSource(neo4jConfig, entireGraphName = GraphName(entireGraph))
-      .flatRelQuery(GraphName(entireGraph), "TYPE", schema) should equal(
-      s"""|MATCH (s)-[r:TYPE]->(e)
-          |RETURN id(r) AS $sourceIdKey, id(s) AS $sourceStartNodeKey, id(e) AS $sourceEndNodeKey, r.f, r.foo""".stripMargin
+    EntityReader.flatRelTypeQuery("TYPE", schema) should equal(
+      s"""|MATCH (s)-[$entityVarName:TYPE]->(t)
+          |RETURN id($entityVarName) AS $idPropertyKey, id(s) AS $startIdPropertyKey, id(t) AS $endIdPropertyKey, $entityVarName.f, $entityVarName.foo""".stripMargin
     )
   }
 
   it("constructs flat relationship queries from schema with no properties") {
-    Neo4jPropertyGraphDataSource(neo4jConfig, entireGraphName = GraphName(entireGraph))
-      .flatRelQuery(GraphName(entireGraph), "TYPE2", schema) should equal(
-      s"""|MATCH (s)-[r:TYPE2]->(e)
-          |RETURN id(r) AS $sourceIdKey, id(s) AS $sourceStartNodeKey, id(e) AS $sourceEndNodeKey""".stripMargin
+    EntityReader.flatRelTypeQuery("TYPE2", schema) should equal(
+      s"""|MATCH (s)-[$entityVarName:TYPE2]->(t)
+          |RETURN id($entityVarName) AS $idPropertyKey, id(s) AS $startIdPropertyKey, id(t) AS $endIdPropertyKey""".stripMargin
     )
   }
 

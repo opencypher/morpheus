@@ -24,14 +24,13 @@
  * described as "implementation extensions to Cypher" or as "proposed changes to
  * Cypher that are not yet approved by the openCypher community".
  */
-package org.opencypher.spark.testing.api.neo4j
+package org.opencypher.okapi.neo4j.io.testing
 
 import org.neo4j.graphdb.Result
 import org.neo4j.harness.{ServerControls, TestServerBuilders}
 import org.neo4j.kernel.impl.proc.Procedures
 import org.neo4j.kernel.internal.GraphDatabaseAPI
-import org.opencypher.okapi.procedures.OkapiProcedures
-import org.opencypher.spark.api.io.neo4j.Neo4jConfig
+import org.opencypher.okapi.neo4j.io.Neo4jConfig
 
 object Neo4jHarnessUtils {
 
@@ -53,9 +52,6 @@ object Neo4jHarnessUtils {
 
     def execute(cypher: String): Result =
       neo4j.graph().execute(cypher)
-
-    def withSchemaProcedure: ServerControls =
-      withProcedure(classOf[OkapiProcedures])
 
     def withProcedure(procedures: Class[_]*): ServerControls = {
       val proceduresService = neo4j.graph()
@@ -79,7 +75,5 @@ object Neo4jHarnessUtils {
       .withFixture("CALL dbms.security.createUser('anonymous', 'password', false)")
       .withFixture(dataFixture)
       .newServer()
-      .withSchemaProcedure
   }
-
 }

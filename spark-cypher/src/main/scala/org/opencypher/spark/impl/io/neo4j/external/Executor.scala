@@ -32,9 +32,9 @@ import org.apache.spark.sql.{Row, types}
 import org.neo4j.driver.internal.types.InternalTypeSystem
 import org.neo4j.driver.internal.value.ListValue
 import org.neo4j.driver.v1.types.{Type, TypeSystem}
-import org.neo4j.driver.v1.{Driver, Session, StatementResult, Value}
-import org.opencypher.spark.api.io.neo4j.Neo4jConfig
-import org.opencypher.spark.impl.io.neo4j.Neo4jHelpers._
+import org.neo4j.driver.v1.{StatementResult, Value}
+import org.opencypher.okapi.neo4j.io.Neo4jConfig
+import org.opencypher.okapi.neo4j.io.Neo4jHelpers._
 
 import scala.collection.JavaConverters._
 

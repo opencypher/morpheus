@@ -24,22 +24,20 @@
  * described as "implementation extensions to Cypher" or as "proposed changes to
  * Cypher that are not yet approved by the openCypher community".
  */
-package org.opencypher.spark.api.io.neo4j
+package org.opencypher.okapi.neo4j.io
 
-import org.apache.log4j.LogManager
+import org.apache.logging.log4j.scala.Logging
 import org.neo4j.driver.v1.Value
 import org.neo4j.driver.v1.util.Function
 import org.opencypher.okapi.api.schema.Schema
 import org.opencypher.okapi.api.types.{CTVoid, CypherType}
 import org.opencypher.okapi.impl.exception.UnsupportedOperationException
-import org.opencypher.spark.impl.io.neo4j.Neo4jHelpers._
+import org.opencypher.okapi.neo4j.io.Neo4jHelpers._
 
 import scala.collection.JavaConverters._
 import scala.util.{Failure, Success, Try}
 
-object SchemaFromProcedure {
-
-  private val log = LogManager.getLogger(getClass)
+object SchemaFromProcedure extends Logging {
 
   val schemaProcedureName = "org.opencypher.okapi.procedures.schema"
 
@@ -52,10 +50,10 @@ object SchemaFromProcedure {
       case Success(true) =>
         schemaFromProcedure(config, omitImportFailures)
       case Success(false) =>
-        System.err.println("Neo4j schema procedure not activated. Consider activating the procedure `" + schemaProcedureName + "`.")
+        logger.warn("Neo4j schema procedure not activated. Consider activating the procedure `" + schemaProcedureName + "`.")
         None
       case Failure(error) =>
-        System.err.println(s"Retrieving the procedure list from the Neo4j database failed: $error")
+        logger.error(s"Retrieving the procedure list from the Neo4j database failed: $error")
         None
     }
   }
@@ -82,7 +80,7 @@ object SchemaFromProcedure {
                 .flatMap { s => CypherType.fromName(s) match {
                   case v@ Some(_) => v
                   case None if omitImportFailures  =>
-                    log.warn(s"At least one $typ with labels ${labels.mkString(",")} has unsupported property type $s for property $property")
+                    logger.warn(s"At least one $typ with labels ${labels.mkString(",")} has unsupported property type $s for property $property")
                     None
                   case None => throw UnsupportedOperationException(
                     s"At least one $typ with labels ${labels.mkString(",")} has unsupported property type $s for property $property"
@@ -111,8 +109,7 @@ object SchemaFromProcedure {
     } match {
       case Success(schema) => Some(schema)
       case Failure(error) =>
-        System.err.println(s"Could not load schema from Neo4j: ${error.getMessage}")
-        error.printStackTrace()
+        logger.error(s"Could not load schema from Neo4j: ${error.getMessage}")
         None
     }
   }

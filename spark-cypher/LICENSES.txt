@@ -5,6 +5,9 @@ libraries. For an overview of the licenses see the NOTICE.txt file.
 ------------------------------------------------------------------------------
 Apache Software License, Version 2.0
   Apache Commons Lang
+  Apache Log4j API
+  Apache Log4j Core
+  Okapi - Neo4j IO
   Okapi - openCypher API
   Okapi IR - Declarative representation of Cypher queries
   Okapi Logical - Logical representation of Cypher queries
@@ -18,6 +21,7 @@ Apache Software License, Version 2.0
   openCypher Utils
   parboiled-core
   parboiled-scala
+  Scala 2.11 wrapper for Log4j API
 ------------------------------------------------------------------------------
 
                                  Apache License

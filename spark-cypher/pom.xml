@@ -25,6 +25,12 @@
       <version>${project.parent.version}</version>
     </dependency>
 
+    <dependency>
+      <groupId>org.opencypher</groupId>
+      <artifactId>okapi-neo4j-io</artifactId>
+      <version>${project.parent.version}</version>
+    </dependency>
+
     <!-- Spark -->
     <dependency>
       <groupId>org.apache.spark</groupId>

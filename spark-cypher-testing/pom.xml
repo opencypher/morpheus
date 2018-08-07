@@ -38,11 +38,10 @@
       <version>${project.parent.version}</version>
     </dependency>
 
-    <!-- Neo4j -->
     <dependency>
-      <groupId>org.neo4j.test</groupId>
-      <artifactId>neo4j-harness</artifactId>
-      <version>${dep.neo4j.version}</version>
+      <groupId>org.opencypher</groupId>
+      <artifactId>okapi-neo4j-io-testing</artifactId>
+      <version>${project.parent.version}</version>
     </dependency>
 
     <!-- Spark -->

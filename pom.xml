@@ -73,6 +73,8 @@
     <dep.spark.version>2.2.1</dep.spark.version>
     <dep.spark.scope>compile</dep.spark.scope>
     <dep.upickle.version>0.6.6</dep.upickle.version>
+    <dep.log4j.core.version>2.11.0</dep.log4j.core.version>
+    <dep.log4j.scala.api.version>11.0</dep.log4j.scala.api.version>
 
     <!-- Test scope dependencies -->
     <dep.bouncycastle.version>1.59</dep.bouncycastle.version>
@@ -367,13 +369,15 @@
       <!-- No license listing for this profile -->
       <modules>
         <module>okapi-api</module>
+        <module>okapi-testing</module>
+        <module>okapi-neo4j-io</module>
+        <module>okapi-neo4j-io-testing</module>
         <module>okapi-ir</module>
         <module>okapi-neo4j-procedures</module>
         <module>okapi-logical</module>
         <module>okapi-relational</module>
         <module>okapi-tck</module>
         <module>okapi-trees</module>
-        <module>okapi-testing</module>
         <module>spark-cypher</module>
         <module>spark-cypher-examples</module>
         <module>spark-cypher-tck</module>
@@ -424,11 +428,13 @@
       <modules>
         <module>licensecheck-config</module>
         <module>okapi-api</module>
+        <module>okapi-testing</module>
+        <module>okapi-neo4j-io</module>
+        <module>okapi-neo4j-io-testing</module>
         <module>okapi-ir</module>
         <module>okapi-neo4j-procedures</module>
         <module>okapi-logical</module>
         <module>okapi-relational</module>
-        <module>okapi-testing</module>
         <module>okapi-tck</module>
         <module>okapi-trees</module>
         <module>spark-cypher</module>
@@ -508,6 +514,23 @@
       <version>${project.scala.version}</version>
     </dependency>
 
+    <dependency>
+      <groupId>org.apache.logging.log4j</groupId>
+      <artifactId>log4j-api</artifactId>
+      <version>${dep.log4j.core.version}</version>
+    </dependency>
+
+    <dependency>
+      <groupId>org.apache.logging.log4j</groupId>
+      <artifactId>log4j-core</artifactId>
+      <version>${dep.log4j.core.version}</version>
+    </dependency>
+
+    <dependency>
+      <groupId>org.apache.logging.log4j</groupId>
+      <artifactId>log4j-api-scala_2.11</artifactId>
+      <version>${dep.log4j.scala.api.version}</version>
+    </dependency>
 
     <dependency>
       <groupId>org.scalatest</groupId>

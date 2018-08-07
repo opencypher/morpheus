@@ -51,7 +51,7 @@ class FSGraphSource(
   val tableStorageFormat: String,
   val customFileSystem: Option[CAPSFileSystem] = None,
   val filesPerTable: Option[Int] = None
-)(implicit session: CAPSSession)
+)(override implicit val caps: CAPSSession)
   extends AbstractPropertyGraphDataSource with JsonSerialization {
 
   protected val directoryStructure = DefaultGraphDirectoryStructure(rootPath)
@@ -59,7 +59,7 @@ class FSGraphSource(
   import directoryStructure._
 
   protected lazy val fileSystem: CAPSFileSystem = customFileSystem.getOrElse(
-    FileSystem.get(session.sparkSession.sparkContext.hadoopConfiguration))
+    FileSystem.get(caps.sparkSession.sparkContext.hadoopConfiguration))
 
   protected def listDirectories(path: String): List[String] = fileSystem.listDirectories(path)
 
@@ -70,7 +70,7 @@ class FSGraphSource(
   protected def writeFile(path: String, content: String): Unit = fileSystem.writeFile(path, content)
 
   protected def readTable(path: String, schema: StructType): DataFrame = {
-    session.sparkSession.read.format(tableStorageFormat).schema(schema).load(path)
+    caps.sparkSession.read.format(tableStorageFormat).schema(schema).load(path)
   }
 
   protected def writeTable(path: String, table: DataFrame): Unit = {

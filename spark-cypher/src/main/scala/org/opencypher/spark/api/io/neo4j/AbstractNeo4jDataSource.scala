@@ -26,28 +26,33 @@
  */
 package org.opencypher.spark.api.io.neo4j
 
-import java.net.URI
+import org.opencypher.okapi.api.graph.GraphName
+import org.opencypher.okapi.impl.exception.UnsupportedOperationException
+import org.opencypher.okapi.neo4j.io.{Neo4jConfig, SchemaFromProcedure}
+import org.opencypher.spark.api.io.AbstractPropertyGraphDataSource
+import org.opencypher.spark.api.io.metadata.CAPSGraphMetaData
+import org.opencypher.spark.schema.CAPSSchema
+import org.opencypher.spark.schema.CAPSSchema._
 
-import org.neo4j.driver.v1._
+abstract class AbstractNeo4jDataSource extends AbstractPropertyGraphDataSource {
 
-case class Neo4jConfig(
-  uri: URI,
-  user: String = "neo4j",
-  password: Option[String] = None,
-  encrypted: Boolean = true
-) {
+  def config: Neo4jConfig
 
-  def driver(): Driver = password match {
-    case Some(pwd) => GraphDatabase.driver(uri, AuthTokens.basic(user, pwd), boltConfig())
-    case _ => GraphDatabase.driver(uri, boltConfig())
+  def omitIncompatibleProperties = false
+
+  override def tableStorageFormat: String = "neo4j"
+
+  override protected def readSchema(graphName: GraphName): CAPSSchema =
+    SchemaFromProcedure(config, omitIncompatibleProperties) match {
+      case None =>
+        // TODO: add link to procedure installation
+        throw UnsupportedOperationException("Neo4j PGDS requires okapi-neo4j-procedures to be installed in Neo4j")
+
+      case Some(schema) =>
+        schema.asCaps
   }
 
-  private def boltConfig(): Config = {
-    val builder = Config.build
-
-    if (encrypted)
-      builder.withEncryption().toConfig
-    else
-      builder.withoutEncryption().toConfig
-  }
+  override protected def writeSchema(graphName: GraphName, schema: CAPSSchema): Unit = ()
+  override protected def readCAPSGraphMetaData(graphName: GraphName): CAPSGraphMetaData = CAPSGraphMetaData(tableStorageFormat)
+  override protected def writeCAPSGraphMetaData(graphName: GraphName, capsGraphMetaData: CAPSGraphMetaData): Unit = ()
 }

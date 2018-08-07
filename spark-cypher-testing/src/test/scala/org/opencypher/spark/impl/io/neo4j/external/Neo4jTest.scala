@@ -28,11 +28,11 @@ package org.opencypher.spark.impl.io.neo4j.external
 
 import org.junit.Assert.assertEquals
 import org.opencypher.okapi.testing.BaseTestSuite
-import org.opencypher.spark.testing.fixture.{Neo4jServerFixture, SparkSessionFixture}
+import org.opencypher.spark.testing.fixture.{CAPSNeo4jServerFixture, SparkSessionFixture}
 
 class Neo4jTest extends BaseTestSuite
   with SparkSessionFixture
-  with Neo4jServerFixture {
+  with CAPSNeo4jServerFixture {
 
   override def dataFixture: String =
     """

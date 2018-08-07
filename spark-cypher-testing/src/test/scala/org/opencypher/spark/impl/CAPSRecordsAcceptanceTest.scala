@@ -30,6 +30,7 @@ import org.apache.spark.sql.Row
 import org.opencypher.okapi.api.table.CypherRecords
 import org.opencypher.okapi.api.value.CypherValue.CypherMap
 import org.opencypher.okapi.impl.exception.IllegalArgumentException
+import org.opencypher.okapi.neo4j.io.Neo4jHelpers.Neo4jDefaults
 import org.opencypher.okapi.relational.api.graph.RelationalCypherGraph
 import org.opencypher.okapi.testing.Bag
 import org.opencypher.okapi.testing.Bag._
@@ -39,14 +40,14 @@ import org.opencypher.spark.api.value.{CAPSNode, CAPSRelationship}
 import org.opencypher.spark.impl.CAPSConverters._
 import org.opencypher.spark.impl.table.SparkTable.DataFrameTable
 import org.opencypher.spark.testing.CAPSTestSuite
-import org.opencypher.spark.testing.fixture.{Neo4jServerFixture, OpenCypherDataFixture}
+import org.opencypher.spark.testing.fixture.{CAPSNeo4jServerFixture, OpenCypherDataFixture}
 
 import scala.language.reflectiveCalls
 
-class CAPSRecordsAcceptanceTest extends CAPSTestSuite with Neo4jServerFixture with OpenCypherDataFixture {
+class CAPSRecordsAcceptanceTest extends CAPSTestSuite with CAPSNeo4jServerFixture with OpenCypherDataFixture {
 
   private lazy val graph: RelationalCypherGraph[DataFrameTable] =
-    GraphSources.cypher.neo4j(neo4jConfig).graph(Neo4jPropertyGraphDataSource.defaultEntireGraphName).asCaps
+    GraphSources.cypher.neo4j(neo4jConfig).graph(Neo4jDefaults.defaultEntireGraphName).asCaps
 
   it("convert to CypherMaps") {
     // When

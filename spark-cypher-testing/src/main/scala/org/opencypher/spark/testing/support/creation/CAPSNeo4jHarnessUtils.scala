@@ -24,45 +24,14 @@
  * described as "implementation extensions to Cypher" or as "proposed changes to
  * Cypher that are not yet approved by the openCypher community".
  */
-package org.opencypher.spark.testing.fixture
+package org.opencypher.spark.testing.support.creation
 
-import org.neo4j.harness.{ServerControls, TestServerBuilders}
-import org.opencypher.okapi.testing.{BaseTestFixture, BaseTestSuite}
-import org.opencypher.spark.api.io.neo4j.Neo4jConfig
-import org.opencypher.spark.testing.api.neo4j.Neo4jHarnessUtils._
+import org.neo4j.harness.ServerControls
+import org.opencypher.okapi.neo4j.io.testing.Neo4jHarnessUtils._
+import org.opencypher.okapi.procedures.OkapiProcedures
 
-trait Neo4jServerFixture extends BaseTestFixture {
-  self: SparkSessionFixture with BaseTestSuite =>
-
-  var neo4jServer: ServerControls = _
-
-  def neo4jConfig =
-    Neo4jConfig(neo4jServer.boltURI(), user = "anonymous", password = Some("password"), encrypted = false)
-
-  def neo4jHost: String = {
-    val scheme = neo4jServer.boltURI().getScheme
-    val userInfo = s"${neo4jConfig.user}:${neo4jConfig.password.get}@"
-    val host = neo4jServer.boltURI().getAuthority
-    s"$scheme://$userInfo$host"
-  }
-
-  def userFixture: String = "CALL dbms.security.createUser('anonymous', 'password', false)"
-
-  def dataFixture: String
-
-  abstract override def beforeAll(): Unit = {
-    super.beforeAll()
-    neo4jServer = TestServerBuilders
-      .newInProcessBuilder()
-      .withConfig("dbms.security.auth_enabled", "true")
-      .withFixture(userFixture)
-      .withFixture(dataFixture)
-      .newServer()
-      .withSchemaProcedure
-  }
-
-  abstract override def afterAll(): Unit = {
-    neo4jServer.close()
-    super.afterAll()
+object CAPSNeo4jHarnessUtils {
+  implicit class CAPSServerControls(val neo4j: ServerControls) extends AnyVal {
+    def withSchemaProcedure = neo4j.withProcedure(classOf[OkapiProcedures])
   }
 }

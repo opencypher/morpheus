@@ -53,7 +53,9 @@ import scala.util.{Failure, Success}
   * It automatically creates initializes a ScanGraphs an only requires the implementor to provider simpler methods for
   * reading/writing files and tables.
   */
-abstract class AbstractPropertyGraphDataSource(implicit val caps: CAPSSession) extends CAPSPropertyGraphDataSource {
+abstract class AbstractPropertyGraphDataSource extends CAPSPropertyGraphDataSource {
+
+  implicit val caps: CAPSSession
 
   def tableStorageFormat: String
 
@@ -134,7 +136,7 @@ abstract class AbstractPropertyGraphDataSource(implicit val caps: CAPSSession) e
   override def store(graphName: GraphName, graph: PropertyGraph): Unit = {
     checkStorable(graphName)
 
-    val poolSize = caps.sparkSession.conf.getOption("spark.executor.instances").map(_.toInt).getOrElse(2)
+    val poolSize = caps.sparkSession.sparkContext.statusTracker.getExecutorInfos.length
 
     implicit val executionContext: ExecutionContextExecutorService =
       ExecutionContext.fromExecutorService(Executors.newFixedThreadPool(poolSize))
@@ -163,7 +165,7 @@ abstract class AbstractPropertyGraphDataSource(implicit val caps: CAPSSession) e
     waitForWriteCompletion(relWrites)
   }
 
-  private def waitForWriteCompletion(writeFutures: Set[Future[Unit]])(implicit ec: ExecutionContext) = {
+  protected def waitForWriteCompletion(writeFutures: Set[Future[Unit]])(implicit ec: ExecutionContext) = {
     writeFutures.foreach { writeFuture =>
       Await.ready(writeFuture, Duration.Inf)
       writeFuture.onComplete {

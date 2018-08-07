@@ -56,7 +56,7 @@ object TestSparkSession {
 //    setting for debug
 //    conf.set("spark.sql.shuffle.partitions", "1")
 //    conf.set("spark.default.parallelism", "1")
-    // performance
+//    performance
 //    conf.set("spark.sql.inMemoryColumnarStorage.compressed", "false")
 //    conf.set("spark.submit.deployMode", "client")
 

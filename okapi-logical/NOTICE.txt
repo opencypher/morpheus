@@ -29,6 +29,8 @@ Third-party licenses
 
 Apache Software License, Version 2.0
   Apache Commons Lang
+  Apache Log4j API
+  Apache Log4j Core
   Okapi - openCypher API
   Okapi IR - Declarative representation of Cypher queries
   Okapi Trees - Tree rewriting framework for Okapi
@@ -40,6 +42,7 @@ Apache Software License, Version 2.0
   openCypher Utils
   parboiled-core
   parboiled-scala
+  Scala 2.11 wrapper for Log4j API
 
 BSD License
   Scala Compiler
