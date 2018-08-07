@@ -34,7 +34,6 @@ import org.opencypher.spark.api.io.metadata.CAPSGraphMetaData
 import org.opencypher.spark.schema.CAPSSchema
 import org.opencypher.spark.schema.CAPSSchema._
 
-
 abstract class AbstractNeo4jDataSource extends AbstractPropertyGraphDataSource {
 
   def config: Neo4jConfig

@@ -92,7 +92,7 @@ case class Neo4jPropertyGraphDataSource(
   }
 
   override def hasGraph(graphName: GraphName): Boolean = graphName match {
-    case `defaultEntireGraphName` => true
+    case `entireGraphName` => true
     case _ => super.hasGraph(graphName)
   }
 
@@ -184,6 +184,7 @@ case class Neo4jPropertyGraphDataSource(
     }
 
     config.withSession { session =>
+      logger.info(s"Creating database uniqueness constraint on $metaLabel.$metaPropertyKey")
       session.run(s"CREATE CONSTRAINT ON (n:$metaLabel) ASSERT n.$metaPropertyKey IS UNIQUE").consume()
     }
 

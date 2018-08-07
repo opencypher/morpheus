@@ -73,6 +73,8 @@
     <dep.spark.version>2.2.1</dep.spark.version>
     <dep.spark.scope>compile</dep.spark.scope>
     <dep.upickle.version>0.6.6</dep.upickle.version>
+    <dep.log4j.core.version>2.11.0</dep.log4j.core.version>
+    <dep.log4j.scala.api.version>11.0</dep.log4j.scala.api.version>
 
     <!-- Test scope dependencies -->
     <dep.bouncycastle.version>1.59</dep.bouncycastle.version>
@@ -515,19 +517,19 @@
     <dependency>
       <groupId>org.apache.logging.log4j</groupId>
       <artifactId>log4j-api</artifactId>
-      <version>2.11.0</version>
+      <version>${dep.log4j.core.version}</version>
     </dependency>
 
     <dependency>
       <groupId>org.apache.logging.log4j</groupId>
       <artifactId>log4j-core</artifactId>
-      <version>2.11.0</version>
+      <version>${dep.log4j.core.version}</version>
     </dependency>
 
     <dependency>
       <groupId>org.apache.logging.log4j</groupId>
       <artifactId>log4j-api-scala_2.11</artifactId>
-      <version>11.0</version>
+      <version>${dep.log4j.scala.api.version}</version>
     </dependency>
 
     <dependency>

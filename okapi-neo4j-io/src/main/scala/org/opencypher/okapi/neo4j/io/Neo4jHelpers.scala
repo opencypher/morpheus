@@ -48,11 +48,11 @@ object Neo4jHelpers {
 
     val metaPropertyKey: String = s"${metaPrefix}morpheusID"
 
-    val idPropertyKey: String = "___morpheusID"
+    val idPropertyKey: String = s"${metaPrefix}morpheusID"
 
-    val startIdPropertyKey: String = "___morpheusSTART_ID"
+    val startIdPropertyKey: String = s"${metaPrefix}morpheusSTART_ID"
 
-    val endIdPropertyKey: String = "___morpheusEND_ID"
+    val endIdPropertyKey: String = s"${metaPrefix}morpheusEND_ID"
 
     val entityVarName = "e"
   }

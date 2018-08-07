@@ -34,6 +34,8 @@ import org.opencypher.okapi.neo4j.io.Neo4jHelpers._
 
 object EntityWriter extends Logging {
 
+  private val ROW_IDENTIFIER = "row"
+
   def writeNodes[T](
     nodes: Iterator[T],
     rowMapping: Array[String],
@@ -46,12 +48,12 @@ object EntityWriter extends Logging {
     val setStatements = rowMapping
       .zipWithIndex
       .filterNot(_._1 == null)
-      .map{ case (key, i) => s"SET n.$key = row[$i]" }
+      .map{ case (key, i) => s"SET n.$key = $ROW_IDENTIFIER[$i]" }
       .mkString("\n")
 
     val createQ =
       s"""
-         |UNWIND {batch} as row
+         |UNWIND $$batch AS $ROW_IDENTIFIER
          |CREATE (n:$labelString)
          |$setStatements
          """.stripMargin
@@ -72,16 +74,16 @@ object EntityWriter extends Logging {
     val setStatements = rowMapping
       .zipWithIndex
       .filterNot(_._1 == null)
-      .map{ case (key, i) => s"SET rel.$key = row[$i]" }
+      .map{ case (key, i) => s"SET rel.$key = $ROW_IDENTIFIER[$i]" }
       .mkString("\n")
 
     val nodeLabelString = nodeLabel.map(l => s":$l").getOrElse("")
 
     val createQ =
       s"""
-         |UNWIND $$batch as row
-         |MATCH (from$nodeLabelString {$metaPropertyKey : row[$startNodeIndex]})
-         |MATCH (to$nodeLabelString {$metaPropertyKey : row[$endNodeIndex]})
+         |UNWIND $$batch AS $ROW_IDENTIFIER
+         |MATCH (from$nodeLabelString {$metaPropertyKey : $ROW_IDENTIFIER[$startNodeIndex]})
+         |MATCH (to$nodeLabelString {$metaPropertyKey : $ROW_IDENTIFIER[$endNodeIndex]})
          |CREATE (from)-[rel:$relType]->(to)
          |$setStatements
          """.stripMargin

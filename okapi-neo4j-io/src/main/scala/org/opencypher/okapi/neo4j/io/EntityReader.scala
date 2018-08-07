@@ -38,7 +38,7 @@ object EntityReader {
     val labelCount = allLabels.size
 
     s"""|MATCH ($entityVarName:${allLabels.mkString(":")})
-        |WHERE LENGTH(LABELS($entityVarName)) = $labelCount
+        |WHERE length(labels($entityVarName)) = $labelCount
         |RETURN id($entityVarName) AS $idPropertyKey$props""".stripMargin
   }
 
