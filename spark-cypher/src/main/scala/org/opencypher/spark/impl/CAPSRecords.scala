@@ -29,16 +29,12 @@ package org.opencypher.spark.impl
 import java.util.Collections
 
 import org.apache.spark.sql._
-import org.apache.spark.storage.StorageLevel
 import org.opencypher.okapi.api.types._
 import org.opencypher.okapi.api.value.CypherValue.{CypherMap, CypherValue}
-import org.opencypher.okapi.impl.table._
-import org.opencypher.okapi.impl.util.PrintOptions
 import org.opencypher.okapi.relational.api.io.EntityTable
 import org.opencypher.okapi.relational.api.table.{RelationalCypherRecords, RelationalCypherRecordsFactory}
 import org.opencypher.okapi.relational.impl.table._
 import org.opencypher.spark.api.CAPSSession
-import org.opencypher.spark.api.io.CAPSNodeTable
 import org.opencypher.spark.impl.DataFrameOps._
 import org.opencypher.spark.impl.convert.SparkConversions._
 import org.opencypher.spark.impl.convert.rowToCypherMap
@@ -105,26 +101,6 @@ case class CAPSRecords(
 
   override def cache(): CAPSRecords = {
     df.cache()
-    this
-  }
-
-  def persist(): CAPSRecords = {
-    df.persist()
-    this
-  }
-
-  def persist(storageLevel: StorageLevel): CAPSRecords = {
-    df.persist(storageLevel)
-    this
-  }
-
-  def unpersist(): CAPSRecords = {
-    df.unpersist()
-    this
-  }
-
-  def unpersist(blocking: Boolean): CAPSRecords = {
-    df.unpersist(blocking)
     this
   }
 
