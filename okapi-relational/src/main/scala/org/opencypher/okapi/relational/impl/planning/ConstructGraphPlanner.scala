@@ -162,8 +162,8 @@ object ConstructGraphPlanner {
     }
 
     val (_, nodesToCreate) = nodes.foldLeft(0 -> Map.empty[Expr, Expr]) {
-      case ((nextColumnPartitionId, constructedNodes), nextNodeToConstruct) =>
-        (nextColumnPartitionId + 1) -> (constructedNodes ++ planConstructNode(inOp, newEntityTag, nextColumnPartitionId, nodes.size, nextNodeToConstruct))
+      case ((nextColumnPartitionId, nodeProjections), nextNodeToConstruct) =>
+        (nextColumnPartitionId + 1) -> (nodeProjections ++ computeNodeProjections(inOp, newEntityTag, nextColumnPartitionId, nodes.size, nextNodeToConstruct))
     }
 
     val createdNodesOp = nodesToCreate.foldLeft(inOp) { case (currentOp, (into, value)) =>
@@ -171,8 +171,8 @@ object ConstructGraphPlanner {
     }
 
     val (_, relsToCreate) = rels.foldLeft(0 -> Map.empty[Expr, Expr]) {
-      case ((nextColumnPartitionId, constructedRels), nextRelToConstruct) =>
-        (nextColumnPartitionId + 1) -> (constructedRels ++ planConstructRelationship(createdNodesOp, newEntityTag, nextColumnPartitionId, rels.size, nextRelToConstruct))
+      case ((nextColumnPartitionId, relProjections), nextRelToConstruct) =>
+        (nextColumnPartitionId + 1) -> (relProjections ++ computeRelationshipProjections(createdNodesOp, newEntityTag, nextColumnPartitionId, rels.size, nextRelToConstruct))
     }
 
     relsToCreate.foldLeft(createdNodesOp) { case (currentOp, (into, value)) =>
@@ -180,7 +180,7 @@ object ConstructGraphPlanner {
     }
   }
 
-  def planConstructNode[T <: Table[T]](
+  def computeNodeProjections[T <: Table[T]](
     inOp: RelationalOperator[T],
     newEntityTag: Int,
     columnIdPartition: Int,
@@ -210,7 +210,7 @@ object ConstructGraphPlanner {
       idTuple
   }
 
-  def planConstructRelationship[T <: Table[T]](
+  def computeRelationshipProjections[T <: Table[T]](
     inOp: RelationalOperator[T],
     newEntityTag: Int,
     columnIdPartition: Int,
