@@ -38,6 +38,7 @@ import org.opencypher.okapi.relational.api.io.EntityTable
 import org.opencypher.okapi.relational.api.table.{RelationalCypherRecords, RelationalCypherRecordsFactory}
 import org.opencypher.okapi.relational.impl.table._
 import org.opencypher.spark.api.CAPSSession
+import org.opencypher.spark.api.io.CAPSNodeTable
 import org.opencypher.spark.impl.DataFrameOps._
 import org.opencypher.spark.impl.convert.SparkConversions._
 import org.opencypher.spark.impl.convert.rowToCypherMap
@@ -138,9 +139,6 @@ case class CAPSRecords(
 
 trait RecordBehaviour extends RelationalCypherRecords[DataFrameTable] {
 
-  override def show(implicit options: PrintOptions): Unit =
-    RecordsPrinter.print(this)
-
   override lazy val columnType: Map[String, CypherType] = table.df.columnType
 
   override def rows: Iterator[String => CypherValue] = {
@@ -162,7 +160,6 @@ trait RecordBehaviour extends RelationalCypherRecords[DataFrameTable] {
   override def collect: Array[CypherMap] =
     toCypherMaps.collect()
 
-  override def size: Long = table.df.count()
 
   def toCypherMaps: Dataset[CypherMap] = {
     import encoders._
