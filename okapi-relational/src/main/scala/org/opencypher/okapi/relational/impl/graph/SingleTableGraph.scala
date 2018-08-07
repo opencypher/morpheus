@@ -24,22 +24,19 @@
  * described as "implementation extensions to Cypher" or as "proposed changes to
  * Cypher that are not yet approved by the openCypher community".
  */
-package org.opencypher.spark.impl.graph
+package org.opencypher.okapi.relational.impl.graph
 
 import org.opencypher.okapi.api.schema.Schema
-import org.opencypher.okapi.api.types._
+import org.opencypher.okapi.api.types.{CTBoolean, CTNode, CTRelationship, CypherType}
 import org.opencypher.okapi.impl.exception.IllegalArgumentException
 import org.opencypher.okapi.ir.api.expr._
 import org.opencypher.okapi.ir.api.{Label, RelType}
-import org.opencypher.okapi.relational.api.graph.RelationalCypherGraph
+import org.opencypher.okapi.relational.api.graph.{RelationalCypherGraph, RelationalCypherSession}
 import org.opencypher.okapi.relational.api.planning.RelationalRuntimeContext
 import org.opencypher.okapi.relational.api.schema.RelationalSchema._
-import org.opencypher.okapi.relational.api.table.RelationalCypherRecords
+import org.opencypher.okapi.relational.api.table.{RelationalCypherRecords, Table}
 import org.opencypher.okapi.relational.impl.operators._
 import org.opencypher.okapi.relational.impl.planning.RelationalPlanner._
-import org.opencypher.spark.api.CAPSSession
-import org.opencypher.spark.impl.CAPSRecords
-import org.opencypher.spark.impl.table.SparkTable.DataFrameTable
 
 /**
   * A single table graph represents the result of CONSTRUCT clause. It contains all entities from the outer scope that
@@ -47,27 +44,27 @@ import org.opencypher.spark.impl.table.SparkTable.DataFrameTable
   * to, including their corresponding graph tags. Note, that the initial schema does not include the graph tag used for
   * the constructed entities.
   */
-case class SingleTableGraph(
-  baseTable: RelationalCypherRecords[DataFrameTable],
+case class SingleTableGraph[T <: Table[T]](
+  baseTable: RelationalCypherRecords[T],
   override val schema: Schema,
   override val tags: Set[Int]
-)(implicit val session: CAPSSession, context: RelationalRuntimeContext[DataFrameTable])
-  extends RelationalCypherGraph[DataFrameTable] {
+)(implicit val session: RelationalCypherSession[T], context: RelationalRuntimeContext[T])
+  extends RelationalCypherGraph[T] {
 
-  override type Session = CAPSSession
+  override type Session = RelationalCypherSession[T]
 
-  override type Records = CAPSRecords
+  override type Records = RelationalCypherRecords[T]
 
   private val header = baseTable.header
 
   def show(): Unit = baseTable.show
 
-  override def tables: Seq[DataFrameTable] = Seq(baseTable.table)
+  override def tables: Seq[T] = Seq(baseTable.table)
 
   override private[opencypher] def scanOperator(
     entityType: CypherType,
     exactLabelMatch: Boolean
-  ): RelationalOperator[DataFrameTable] = {
+  ): RelationalOperator[T] = {
     val baseTableOp = Start(baseTable)
     val targetEntity = Var("")(entityType)
     val targetEntityHeader = schema.headerForEntity(Var("")(entityType), exactLabelMatch)
