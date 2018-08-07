@@ -76,6 +76,17 @@ object Neo4jBulkCSVDataSink {
   }
 }
 
+/**
+  * This data sink writes a [[PropertyGraph]] into the Neo4j Bulk Import Format
+  * (see [[https://neo4j.com/docs/operations-manual/current/tools/import/]]).
+  *
+  * In addition, it generates an import shell script that is parameterized with the path to the Neo4j installation and
+  * runs the import.
+  *
+  * @param rootPath       Directory where the graph is being stored in
+  * @param arrayDelimiter elimiter for array properties
+  * @param session        CAPS session
+  */
 class Neo4jBulkCSVDataSink(override val rootPath: String, arrayDelimiter: String = "|")(implicit session: CAPSSession)
   extends FSGraphSource(rootPath, "csv") {
 
@@ -104,6 +115,7 @@ class Neo4jBulkCSVDataSink(override val rootPath: String, arrayDelimiter: String
     graphName: GraphName,
     labels: Set[String]
   ): String = directoryStructure.pathToNodeTable(graphName, labels).replaceFirst(SCHEME_REGEX, "") / "schema.csv"
+
   def dataFileForNodes(
     graphName: GraphName,
     labels: Set[String]
@@ -148,7 +160,7 @@ class Neo4jBulkCSVDataSink(override val rootPath: String, arrayDelimiter: String
 
     arrayColumns.foldLeft(table) {
       case (acc, arrayColumn) => acc.withColumn(arrayColumn, functions.concat_ws(arrayDelimiter, acc.col(arrayColumn)))
-    }.select(table.columns.head, table.columns.tail:_*)
+    }.select(table.columns.head, table.columns.tail: _*)
   }
 
   private def writeHeaderFile(path: String, fields: Array[StructField]): Unit = {

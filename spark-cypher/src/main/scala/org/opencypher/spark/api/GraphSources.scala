@@ -67,7 +67,7 @@ object FSGraphSources {
     * within the graph output folder that simplifies the import process.
     *
     * @param rootPath       Directory where the graph is being stored in
-    * @param arrayDelimiter delimiter for array properties
+    * @param arrayDelimiter Delimiter for array properties
     * @param session        CAPS session
     * @return Neo4j Bulk CSV data sink
     */
