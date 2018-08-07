@@ -40,6 +40,7 @@ import org.opencypher.okapi.relational.impl.operators._
 import org.opencypher.okapi.relational.impl.planning.ConstructGraphPlanner._
 import org.opencypher.okapi.relational.impl.table.RecordHeader
 import org.opencypher.okapi.relational.impl.{operators => relational}
+import org.opencypher.okapi.relational.api.tagging.Tags._
 
 object RelationalPlanner {
 
@@ -291,6 +292,13 @@ object RelationalPlanner {
   }
 
   implicit class RelationalOperatorOps[T <: Table[T]](val op: RelationalOperator[T]) extends AnyVal {
+
+    def retagVariable(v: Var, replacements: Map[Int, Int]): RelationalOperator[T] = {
+        op.header.idExpressions(v).foldLeft(op) {
+        case (currentOp, exprToRetag) =>
+          AddInto(currentOp, exprToRetag.replaceTags(replacements), exprToRetag)
+      }
+    }
 
     // Only works with single entity tables
     def assignScanName(name: String): RelationalOperator[T] = {

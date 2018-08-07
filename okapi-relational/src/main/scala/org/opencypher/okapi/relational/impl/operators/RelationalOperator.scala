@@ -415,24 +415,6 @@ final case class FromGraph[T <: Table[T]](
 
 }
 
-case class RetagVariable[T <: Table[T]](
-  in: RelationalOperator[T],
-  v: Var,
-  replacements: Map[Int, Int]
-) extends RelationalOperator[T] {
-
-  override lazy val _table: T = {
-    val expressionsToRetag = header.idExpressions(v)
-
-    // TODO: implement efficiently for multiple columns
-    expressionsToRetag.foldLeft(in.table) {
-      case (currentTable, exprToRetag) =>
-        currentTable.withColumn(header.column(exprToRetag), exprToRetag.replaceTags(replacements))(header, context.parameters)
-    }
-  }
-
-}
-
 final case class AddEntitiesToRecords[T <: Table[T]](
   in: RelationalOperator[T],
   exprsToAdd: Map[Expr, Expr]

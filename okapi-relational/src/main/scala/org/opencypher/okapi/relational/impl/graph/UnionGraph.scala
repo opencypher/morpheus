@@ -68,7 +68,7 @@ final case class UnionGraph[T <: Table[T]](graphsToReplacements: Map[RelationalC
     val alignedScans = graphsToReplacements.keys
       .map { graph =>
         val scanOp = graph.scanOperator(entityType, exactLabelMatch)
-        val retagOp = RetagVariable(scanOp, targetEntity, graphsToReplacements(graph))
+        val retagOp = scanOp.retagVariable(targetEntity, graphsToReplacements(graph))
         retagOp.alignWith(targetEntity, targetEntityHeader)
       }
     // TODO: find out if a graph returns empty records and skip union operation

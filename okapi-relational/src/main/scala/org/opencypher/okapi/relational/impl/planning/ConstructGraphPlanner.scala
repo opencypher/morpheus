@@ -41,6 +41,7 @@ import org.opencypher.okapi.relational.api.tagging.Tags._
 import org.opencypher.okapi.relational.impl.operators.RelationalOperator
 import org.opencypher.okapi.relational.impl.table.RecordHeader
 import org.opencypher.okapi.relational.impl.{operators => relational}
+import RelationalPlanner._
 
 object ConstructGraphPlanner {
 
@@ -84,7 +85,7 @@ object ConstructGraphPlanner {
     }
 
     val retagBaseTableOp = clonedVarsToInputVars.foldLeft(aliasOp) {
-      case (op, (alias, original)) => relational.RetagVariable(op, alias, constructTagStrategy(original.cypherType.graph.get))
+      case (op, (alias, original)) => op.retagVariable(alias, constructTagStrategy(original.cypherType.graph.get))
     }
 
     // Construct NEW entities
