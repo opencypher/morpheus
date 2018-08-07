@@ -17,7 +17,7 @@ These examples are currently present:
 * [`DataSourceExample`](src/main/scala/org/opencypher/spark/examples/DataSourceExample.scala)
 * [`GraphXPageRankExample`](src/main/scala/org/opencypher/spark/examples/GraphXPageRankExample.scala)
 * [`MultipleGraphExample`](src/main/scala/org/opencypher/spark/examples/MultipleGraphExample.scala)
-* [`Neo4jWorkflowExample`](src/main/scala/org/opencypher/spark/examples/Neo4jWorkflowExample.scala)
+* [`Neo4jRecommendationExample`](src/main/scala/org/opencypher/spark/examples/Neo4jRecommendationExample.scala)
 * [`RecommendationExample`](src/main/scala/org/opencypher/spark/examples/RecommendationExample.scala)
 * [`UpdateExample`](src/main/scala/org/opencypher/spark/examples/UpdateExample.scala)
 

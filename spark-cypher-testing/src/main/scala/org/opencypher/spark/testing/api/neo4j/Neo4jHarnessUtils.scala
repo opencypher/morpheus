@@ -72,7 +72,7 @@ object Neo4jHarnessUtils {
     }
   }
 
-  def startNeo4j(dataFixture: String): ServerControls = {
+  def startNeo4j(dataFixture: String = ""): ServerControls = {
     TestServerBuilders
       .newInProcessBuilder()
       .withConfig("dbms.security.auth_enabled", "true")

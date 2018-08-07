@@ -24,12 +24,43 @@
  * described as "implementation extensions to Cypher" or as "proposed changes to
  * Cypher that are not yet approved by the openCypher community".
  */
-package org.opencypher.spark.examples
+package org.opencypher.spark.api.io.view
 
-class Neo4jWorkflowExampleTest extends ExampleTest {
+import org.opencypher.okapi.api.graph.{GraphName, QualifiedGraphName}
+import org.opencypher.okapi.api.io.PropertyGraphDataSource
+import org.opencypher.okapi.testing.PGDSAcceptance
+import org.opencypher.okapi.testing.propertygraph.InMemoryTestGraph
+import org.opencypher.spark.api.{CAPSSession, GraphSources}
+import org.opencypher.spark.impl.graph.CAPSScanGraph
+import org.opencypher.spark.testing.CAPSTestSuite
+import org.opencypher.spark.testing.support.creation.caps.CAPSScanGraphFactory
 
-  it("should produce the correct output") {
-    validate(Neo4jWorkflowExample.main(Array.empty),
-      getClass.getResource("/example_outputs/Neo4jWorkflowExample.out").toURI)
+class ViewPGDSAcceptanceTest extends CAPSTestSuite with PGDSAcceptance[CAPSSession] {
+
+  override def initSession(): CAPSSession = caps
+
+  private val sessionNameSpace = caps.catalog.sessionNamespace
+  private val sessionDs = caps.catalog.source(sessionNameSpace)
+
+  override def create(
+    graphName: GraphName,
+    testGraph: InMemoryTestGraph,
+    createStatements: String
+  ): PropertyGraphDataSource = {
+    val graph: CAPSScanGraph = CAPSScanGraphFactory(testGraph)
+    sessionDs.store(graphName, graph)
+    val viewDs = GraphSources.view(
+      """
+        |MATCH (n)
+        |MATCH (s)-[r]->(t)
+        |CONSTRUCT
+        |  CLONE n
+        |  NEW (s)-[r]->(t)
+        |RETURN GRAPH
+      """.stripMargin,
+      Map(graphName -> QualifiedGraphName(s"$sessionNameSpace.test"))
+    )
+    viewDs
   }
+
 }

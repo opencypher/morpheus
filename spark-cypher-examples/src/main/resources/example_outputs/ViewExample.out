@@ -1,0 +1,12 @@
+╔════════════════════════════════════════════════════════════════════════╗
+║ n                                                                      ║
+╠════════════════════════════════════════════════════════════════════════╣
+║ (:`Customer` {`name`: 'Alice'})                                        ║
+║ (:`Customer` {`name`: 'Mallory'})                                      ║
+║ (:`Customer` {`name`: 'Oscar'})                                        ║
+║ (:`Product` {`category`: 'DVD', `rank`: 820, `title`: 'Die Hard 3'})   ║
+║ (:`Product` {`category`: 'DVD', `rank`: 927, `title`: 'Iron Man'})     ║
+║ (:`Product` {`category`: 'DVD', `rank`: 152, `title`: 'Matrix'})       ║
+║ (:`Product` {`category`: 'DVD', `rank`: 102, `title`: 'Terminator 2'}) ║
+╚════════════════════════════════════════════════════════════════════════╝
+(7 rows)

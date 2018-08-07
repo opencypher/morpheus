@@ -71,6 +71,33 @@ trait CypherSession {
     catalog.register(namespace, dataSource)
 
   /**
+    * Registers a view property graph data source defined by `viewQuery`.
+    *
+    * Example:
+    *  - given a catalog graph with qualified graph name `foo.bar`
+    *  - given a view with namespace `view`
+    *
+    * In this case the qualified graph name of the view of that graph is `view.foo.bar`.
+    *
+    * A view query is a query that uses Cypher 10 to construct a graph. This is an example of a view query that returns
+    * the entire underlying graph without any changes:
+    * {{{
+    *   MATCH (n)
+    *   MATCH (s)-[r]->(t)
+    *   CONSTRUCT
+    *     CLONE n
+    *     NEW (s)-[r]->(t)
+    *   RETURN GRAPH
+    * }}}
+    *
+    * @param namespace namespace where the view data source is registered
+    * @param viewQuery query that constructs the view
+    */
+  def registerView(namespace: Namespace, viewQuery: String): Unit = {
+    registerSource(namespace, ViewPropertyGraphDataSource(viewQuery)(this))
+  }
+
+  /**
     * De-registers a [[org.opencypher.okapi.api.io.PropertyGraphDataSource]] from the sessions catalog by its given [[org.opencypher.okapi.api.graph.Namespace]].
     *
     * @param namespace namespace for lookup
@@ -93,7 +120,8 @@ trait CypherSession {
     graph: PropertyGraph,
     query: String,
     parameters: CypherMap = CypherMap.empty,
-    drivingTable: Option[CypherRecords]): CypherResult
+    drivingTable: Option[CypherRecords]
+  ): CypherResult
 
   private[opencypher] lazy val emptyGraphQgn = QualifiedGraphName(catalog.sessionNamespace, GraphName("emptyGraph"))
 }
