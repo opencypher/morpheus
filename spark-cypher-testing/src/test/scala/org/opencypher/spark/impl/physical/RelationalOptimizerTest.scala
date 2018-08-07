@@ -26,20 +26,9 @@
  */
 package org.opencypher.spark.impl.physical
 
-import org.opencypher.okapi.api.types.CTNode
-import org.opencypher.okapi.ir.api.expr.Var
-import org.opencypher.okapi.relational.impl.operators._
-import org.opencypher.okapi.relational.impl.table.RecordHeader
-import org.opencypher.spark.impl.CAPSConverters._
-import org.opencypher.spark.impl.CAPSRecords
-import org.opencypher.spark.testing.CAPSTestSuite
-import org.opencypher.spark.testing.fixture.GraphConstructionFixture
-
-class RelationalOptimizerTest extends CAPSTestSuite with GraphConstructionFixture {
-  val emptyRecords = caps.records.empty()
-
-
-  //TODO: Re-enable once caching optimizer is back
+//class RelationalOptimizerTest extends CAPSTestSuite with GraphConstructionFixture {
+//
+////  TODO: Re-enable once caching optimizer is back
 //  def start(qgn: QualifiedGraphName, records: CAPSRecords)(implicit caps: CAPSSession): Start = {
 //    Start(qgn, Some(records))
 //  }
@@ -184,4 +173,4 @@ class RelationalOptimizerTest extends CAPSTestSuite with GraphConstructionFixtur
 //    val cacheOps = result.asCaps.plans.relationalPlan.get.collect { case c: Cache => c }
 //    cacheOps.size shouldBe 2
 //  }
-}
+//}
