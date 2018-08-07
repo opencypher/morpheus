@@ -26,31 +26,31 @@
  */
 package org.opencypher.spark.impl.graph
 
+import org.opencypher.okapi.api.schema.Schema
 import org.opencypher.okapi.api.types.{CTNode, CTRelationship, CypherType}
 import org.opencypher.okapi.impl.exception.IllegalArgumentException
 import org.opencypher.okapi.ir.api.expr._
-import org.opencypher.okapi.relational.api.graph.RelationalCypherGraph
+import org.opencypher.okapi.relational.api.graph.{RelationalCypherGraph, RelationalCypherSession}
+import org.opencypher.okapi.relational.api.io.{EntityTable, NodeTable, RelationshipTable}
 import org.opencypher.okapi.relational.api.planning.RelationalRuntimeContext
 import org.opencypher.okapi.relational.api.schema.RelationalSchema._
+import org.opencypher.okapi.relational.api.table.RelationalCypherRecords
 import org.opencypher.okapi.relational.impl.operators._
 import org.opencypher.okapi.relational.impl.planning.RelationalPlanner._
 import org.opencypher.spark.api.CAPSSession
-import org.opencypher.spark.api.io.{CAPSEntityTable, CAPSNodeTable, CAPSRelationshipTable}
-import org.opencypher.spark.impl.CAPSRecords
 import org.opencypher.spark.impl.table.SparkTable.DataFrameTable
-import org.opencypher.spark.schema.CAPSSchema
 
-class CAPSScanGraph(val scans: Seq[CAPSEntityTable], val schema: CAPSSchema, val tags: Set[Int])
+class CAPSScanGraph(val scans: Seq[EntityTable[DataFrameTable]], val schema: Schema, val tags: Set[Int])
   (implicit val session: CAPSSession)
   extends RelationalCypherGraph[DataFrameTable] {
 
-  override type Records = CAPSRecords
+  override type Records = RelationalCypherRecords[DataFrameTable]
 
-  override type Session = CAPSSession
+  override type Session = RelationalCypherSession[DataFrameTable]
 
-  private lazy val nodeTables = scans.collect { case it: CAPSNodeTable => it }
+  private lazy val nodeTables = scans.collect { case it: NodeTable[DataFrameTable] => it }
 
-  private lazy val relTables = scans.collect { case it: CAPSRelationshipTable => it }
+  private lazy val relTables = scans.collect { case it: RelationshipTable[DataFrameTable] => it }
 
   // TODO: ScanGraph should be an operator that gets a set of tables as input
   private implicit def runtimeContext: RelationalRuntimeContext[DataFrameTable] = session.basicRuntimeContext()
@@ -85,11 +85,11 @@ class CAPSScanGraph(val scans: Seq[CAPSEntityTable], val schema: CAPSSchema, val
         } else {
           nodeTables.filter(_.entityType.subTypeOf(ct).isTrue)
         }
-        scans.map(scan => Start(scan.records))
+        scans.map(scanRecords => Start(scanRecords))
       case r: CTRelationship =>
         relTables
           .filter(relTable => relTable.entityType.couldBeSameTypeAs(ct))
-          .map(scan => Start(scan.records).filterRelTypes(r))
+          .map(scanRecords => Start(scanRecords).filterRelTypes(r))
 
       case other => throw IllegalArgumentException(s"Scan on $other")
     }
@@ -97,19 +97,19 @@ class CAPSScanGraph(val scans: Seq[CAPSEntityTable], val schema: CAPSSchema, val
 
 
 
-  override def nodes(name: String, nodeCypherType: CTNode, exactLabelMatch: Boolean = false): CAPSRecords = {
+  override def nodes(name: String, nodeCypherType: CTNode, exactLabelMatch: Boolean = false): Records = {
     val scan = scanOperator(nodeCypherType, exactLabelMatch)
     val namedScan = scan.assignScanName(name)
     session.records.from(namedScan.header, namedScan.table)
   }
 
-  override def relationships(name: String, relCypherType: CTRelationship): CAPSRecords = {
+  override def relationships(name: String, relCypherType: CTRelationship): Records = {
     val scan = scanOperator(relCypherType, exactLabelMatch = false)
     val namedScan = scan.assignScanName(name)
     session.records.from(namedScan.header, namedScan.table)
   }
 
-  override def toString = s"CAPSScanGraph(${
+  override def toString = s"ScanGraph(${
     scans.map(_.entityType).mkString(", ")
   })"
 
