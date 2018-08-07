@@ -131,12 +131,12 @@ class PredicateBehaviour extends CAPSTestSuite with DefaultGraphInit {
   it("equality between properties") {
     // Given
     val given = initGraph(
-      """ CREATE (:A {val: 1})-[:REL]->(:B {p: 2})
-        |CREATE (:A {val: 2})-[:REL]->(:B {p: 1})
-        |CREATE (:A {val: 100})-[:REL]->(:B {p: 100})
-        |CREATE (:A {val: 1})-[:REL]->(:B)
-        |CREATE (:A)-[:REL]->(:B {p: 2})
-        |CREATE (:A)-[:REL]->(:B)
+      """|CREATE (:A {val: 1})-[:REL]->(:B {p: 2})
+         |CREATE (:A {val: 2})-[:REL]->(:B {p: 1})
+         |CREATE (:A {val: 100})-[:REL]->(:B {p: 100})
+         |CREATE (:A {val: 1})-[:REL]->(:B)
+         |CREATE (:A)-[:REL]->(:B {p: 2})
+         |CREATE (:A)-[:REL]->(:B)
       """.stripMargin)
 
     // When

@@ -30,7 +30,7 @@ import org.opencypher.okapi.api.types.{CTBoolean, CTNode}
 import org.opencypher.okapi.ir.api.expr.{Equals, HasLabel, Property, Var}
 import org.opencypher.okapi.ir.api.util.DirectCompilationStage
 import org.opencypher.okapi.ir.api.{IRField, Label}
-import org.opencypher.okapi.trees.{BottomUp, BottomUpWithContext, TopDown}
+import org.opencypher.okapi.trees.{BottomUp, BottomUpWithContext}
 
 object LogicalOptimizer extends DirectCompilationStage[LogicalOperator, LogicalOperator, LogicalPlannerContext] {
 
@@ -53,16 +53,18 @@ object LogicalOptimizer extends DirectCompilationStage[LogicalOperator, LogicalO
   }
 
   def replaceCartesianWithValueJoin: PartialFunction[LogicalOperator, LogicalOperator] = {
-    case Filter(e@Equals(leftProp: Property, rightProp: Property), in, _) =>
+    case filter@Filter(e@Equals(leftProp: Property, rightProp: Property), in, _) =>
 
-      val newChild = BottomUpWithContext[LogicalOperator, Boolean] {
+      val (newChild, rewritten) = BottomUpWithContext[LogicalOperator, Boolean] {
         case (CartesianProduct(lhs, rhs, solved), false)
           if solved.solves(IRField(leftProp.entity.withoutType)(leftProp.cypherType)) &&
             solved.solves(IRField(rightProp.entity.withoutType)(rightProp.cypherType)) =>
-          ValueJoin(lhs, rhs, Set(e), solved) -> true
+          val leftProject = Project(leftProp -> None, lhs, lhs.solved)
+          val rightProject = Project(rightProp -> None, rhs, rhs.solved)
+          ValueJoin(leftProject, rightProject, Set(e), solved.withPredicate(e)) -> true
       }.transform(in, context = false)
 
-      newChild._1
+      if (rewritten) newChild else filter
   }
 
 
