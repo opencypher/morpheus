@@ -182,7 +182,7 @@ trait VarLengthExpandPlanner[T <: Table[T]] {
         case (acc, expr) =>
           // TODO: RelationalOperator[T]his is a planning performance killer, we need to squash these steps into a single table operation
           val lit = NullLit(expr.cypherType.nullable)
-          val withExpr = relational.AddInto(acc, lit, expr)
+          val withExpr = relational.ProjectInto(acc, lit, expr)
           val withoutLit = relational.Drop(withExpr, Set(lit))
           if (withoutLit.header.column(expr) == targetHeader.column(expr)) {
             withoutLit
@@ -235,7 +235,7 @@ trait VarLengthExpandPlanner[T <: Table[T]] {
     }
 
     (childMapping ++ missingMapping).foldLeft(physicalOp) {
-      case (acc, (f, t)) => relational.AddInto(acc, f, t)
+      case (acc, (f, t)) => relational.ProjectInto(acc, f, t)
     }
   }
 

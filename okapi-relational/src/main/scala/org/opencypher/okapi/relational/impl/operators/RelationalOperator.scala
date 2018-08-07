@@ -30,14 +30,12 @@ import org.opencypher.okapi.api.graph.QualifiedGraphName
 import org.opencypher.okapi.api.types.{CTInteger, _}
 import org.opencypher.okapi.api.value.CypherValue.CypherInteger
 import org.opencypher.okapi.impl.exception.{IllegalArgumentException, SchemaException}
-import org.opencypher.okapi.ir.api.PropertyKey
 import org.opencypher.okapi.ir.api.block.{Asc, Desc, SortItem}
 import org.opencypher.okapi.ir.api.expr._
 import org.opencypher.okapi.logical.impl.LogicalCatalogGraph
 import org.opencypher.okapi.relational.api.graph.{RelationalCypherGraph, RelationalCypherSession}
 import org.opencypher.okapi.relational.api.planning.RelationalRuntimeContext
 import org.opencypher.okapi.relational.api.table.{RelationalCypherRecords, Table}
-import org.opencypher.okapi.relational.api.tagging.Tags._
 import org.opencypher.okapi.relational.impl.planning._
 import org.opencypher.okapi.relational.impl.table.RecordHeader
 import org.opencypher.okapi.trees.AbstractTreeNode
@@ -214,7 +212,7 @@ final case class Alias[T <: Table[T]](
   override lazy val header: RecordHeader = in.header.withAlias(aliases: _*)
 }
 
-final case class Add[T <: Table[T]](in: RelationalOperator[T], expr: Expr) extends RelationalOperator[T] {
+final case class Project[T <: Table[T]](in: RelationalOperator[T], expr: Expr) extends RelationalOperator[T] {
 
   override lazy val header: RecordHeader = {
     if (in.header.contains(expr)) {
@@ -240,15 +238,15 @@ final case class Add[T <: Table[T]](in: RelationalOperator[T], expr: Expr) exten
   }
 }
 
-final case class AddInto[T <: Table[T]](
+final case class ProjectInto[T <: Table[T]](
   in: RelationalOperator[T],
-  add: Expr,
+  value: Expr,
   into: Expr
 ) extends RelationalOperator[T] {
 
   override lazy val header: RecordHeader = in.header.withExpr(into)
 
-  override lazy val _table: T = in.table.withColumn(header.column(into), add)(header, context.parameters)
+  override lazy val _table: T = in.table.withColumn(header.column(into), value)(header, context.parameters)
 }
 
 final case class Drop[E <: Expr, T <: Table[T]](

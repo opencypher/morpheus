@@ -74,8 +74,8 @@ object RelationalPlanner {
 
         maybeAlias match {
           case Some(alias) if containsExpr => relational.Alias(inOp, Seq(expr as alias))
-          case Some(alias) => relational.Add(inOp, expr as alias)
-          case None => relational.Add(inOp, expr)
+          case Some(alias) => relational.Project(inOp, expr as alias)
+          case None => relational.Project(inOp, expr)
         }
 
       case logical.EmptyRecords(fields, in, _) =>
@@ -94,7 +94,7 @@ object RelationalPlanner {
 
       case logical.Unwind(list, item, in, _) =>
         val explodeExpr = Explode(list)(item.cypherType)
-        relational.Add(process[T](in), explodeExpr as item)
+        relational.Project(process[T](in), explodeExpr as item)
 
       case logical.NodeScan(v, in, _) => relational.Scan(process[T](in), v.cypherType).assignScanName(v.name)
 
@@ -214,7 +214,7 @@ object RelationalPlanner {
         val joinedData = planJoin(leftResult, distinctRhsData, renameExprs.map(a => a.expr -> a.alias).toSeq, LeftOuterJoin)
         // 5. If at least one rhs join column is not null, the sub-query exists and true is projected to the target expression
         val targetExpr = renameExprs.head.alias
-        relational.AddInto(joinedData, IsNotNull(targetExpr)(CTBoolean), predicateField.targetField)
+        relational.ProjectInto(joinedData, IsNotNull(targetExpr)(CTBoolean), predicateField.targetField)
 
       case logical.OrderBy(sortItems: Seq[SortItem[Expr]], in, _) =>
         relational.OrderBy(process[T](in), sortItems)
@@ -294,9 +294,9 @@ object RelationalPlanner {
   implicit class RelationalOperatorOps[T <: Table[T]](val op: RelationalOperator[T]) extends AnyVal {
 
     def retagVariable(v: Var, replacements: Map[Int, Int]): RelationalOperator[T] = {
-        op.header.idExpressions(v).foldLeft(op) {
+      op.header.idExpressions(v).foldLeft(op) {
         case (currentOp, exprToRetag) =>
-          currentOp.add(exprToRetag.replaceTags(replacements), Some(exprToRetag))
+          currentOp.projectInto(exprToRetag.replaceTags(replacements), exprToRetag)
       }
     }
 
@@ -304,11 +304,12 @@ object RelationalPlanner {
       relational.Drop(op, exprs.toSet)
     }
 
-    def add(expr: Expr, maybeInto: Option[Expr] = None): RelationalOperator[T] = {
-      maybeInto match {
-        case None => relational.Add(op, expr)
-        case Some(into) => relational.AddInto(op, expr, into)
-      }
+    def project(value: Expr): RelationalOperator[T] = {
+      relational.Project(op, value)
+    }
+
+    def projectInto(value: Expr, into: Expr): RelationalOperator[T] = {
+      relational.ProjectInto(op, value, into)
     }
 
     // Only works with single entity tables
@@ -346,7 +347,7 @@ object RelationalPlanner {
         case _ => Set.empty
       }
       val withTrueLabels = trueLabels.foldLeft(withDroppedExpressions: RelationalOperator[T]) {
-        case (currentOp, label) => relational.AddInto(currentOp, TrueLit, HasLabel(targetVar, Label(label))(CTBoolean))
+        case (currentOp, label) => relational.ProjectInto(currentOp, TrueLit, HasLabel(targetVar, Label(label))(CTBoolean))
       }
 
       // Fill in missing false label columns
@@ -355,7 +356,7 @@ object RelationalPlanner {
         case _ => Set.empty
       }
       val withFalseLabels = falseLabels.foldLeft(withTrueLabels: RelationalOperator[T]) {
-        case (currentOp, label) => relational.AddInto(currentOp, FalseLit, HasLabel(targetVar, Label(label))(CTBoolean))
+        case (currentOp, label) => relational.ProjectInto(currentOp, FalseLit, HasLabel(targetVar, Label(label))(CTBoolean))
       }
 
       // Fill in missing true relType columns
@@ -364,7 +365,7 @@ object RelationalPlanner {
         case _ => Set.empty
       }
       val withTrueRelTypes = trueRelTypes.foldLeft(withFalseLabels: RelationalOperator[T]) {
-        case (currentOp, relType) => relational.AddInto(currentOp, TrueLit, HasType(targetVar, RelType(relType))(CTBoolean))
+        case (currentOp, relType) => relational.ProjectInto(currentOp, TrueLit, HasType(targetVar, RelType(relType))(CTBoolean))
       }
 
       // Fill in missing false relType columns
@@ -373,13 +374,13 @@ object RelationalPlanner {
         case _ => Set.empty
       }
       val withFalseRelTypes = falseRelTypes.foldLeft(withTrueRelTypes: RelationalOperator[T]) {
-        case (currentOp, relType) => relational.AddInto(currentOp, FalseLit, HasType(targetVar, RelType(relType))(CTBoolean))
+        case (currentOp, relType) => relational.ProjectInto(currentOp, FalseLit, HasType(targetVar, RelType(relType))(CTBoolean))
       }
 
       // Fill in missing properties
       val missingProperties = targetHeader.propertiesFor(targetVar) -- withFalseRelTypes.header.propertiesFor(targetVar)
       val withProperties = missingProperties.foldLeft(withFalseRelTypes: RelationalOperator[T]) {
-        case (currentOp, propertyExpr) => relational.AddInto(currentOp, NullLit(propertyExpr.cypherType), propertyExpr)
+        case (currentOp, propertyExpr) => relational.ProjectInto(currentOp, NullLit(propertyExpr.cypherType), propertyExpr)
       }
 
       import Expr._
