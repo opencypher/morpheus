@@ -48,8 +48,9 @@ case class SingleTableGraph[T <: Table[T]](
   baseTable: RelationalCypherRecords[T],
   override val schema: Schema,
   override val tags: Set[Int]
-)(implicit val session: RelationalCypherSession[T], context: RelationalRuntimeContext[T])
-  extends RelationalCypherGraph[T] {
+)(implicit context: RelationalRuntimeContext[T]) extends RelationalCypherGraph[T] {
+
+  override implicit val session: RelationalCypherSession[T] = context.session
 
   override type Session = RelationalCypherSession[T]
 
