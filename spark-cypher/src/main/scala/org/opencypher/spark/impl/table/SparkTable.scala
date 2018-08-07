@@ -60,12 +60,7 @@ object SparkTable {
     override def size: Long = df.count()
 
     override def select(cols: String*): DataFrameTable = {
-      if (cols.nonEmpty) {
-        df.select(cols.head, cols.tail: _*)
-      } else {
-        // TODO: this is used in Construct, check why this is necessary
-        df.select()
-      }
+      df.select(cols.map(df.col): _*)
     }
 
     override def filter(expr: Expr)(implicit header: RecordHeader, parameters: CypherMap): DataFrameTable = {
