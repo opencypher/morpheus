@@ -28,10 +28,10 @@ package org.opencypher.spark.api.io
 
 import org.apache.spark.storage.StorageLevel
 import org.opencypher.okapi.api.graph.{Namespace, PropertyGraph}
+import org.opencypher.okapi.relational.api.graph.RelationalCypherGraph
 import org.opencypher.okapi.relational.impl.graph.ScanGraph
 import org.opencypher.spark.api.io.util.CachedDataSource._
 import org.opencypher.spark.impl.CAPSConverters._
-import org.opencypher.spark.impl.graph.CAPSGraph._
 import org.opencypher.spark.impl.table.SparkTable.DataFrameTable
 import org.opencypher.spark.testing.CAPSTestSuite
 import org.opencypher.spark.testing.fixture.GraphConstructionFixture
@@ -49,7 +49,7 @@ class CachedDataSourceTest extends CAPSTestSuite with GraphConstructionFixture w
 
   override protected def afterEach(): Unit = {
     if (testDataSource.hasGraph(testGraphName)) {
-      testDataSource.graph(testGraphName).asCaps.unpersist()
+      unpersist(testDataSource.graph(testGraphName).asCaps)
       testDataSource.delete(testGraphName)
     }
     super.afterEach()
@@ -91,5 +91,9 @@ class CachedDataSourceTest extends CAPSTestSuite with GraphConstructionFixture w
     g.asInstanceOf[ScanGraph[DataFrameTable]].scans
       .map(_.table.df)
       .foreach(_.storageLevel should equal(storageLevel))
+  }
+
+  private def unpersist(graph: RelationalCypherGraph[DataFrameTable]): Unit = {
+    graph.tables.foreach(_.df.unpersist)
   }
 }
