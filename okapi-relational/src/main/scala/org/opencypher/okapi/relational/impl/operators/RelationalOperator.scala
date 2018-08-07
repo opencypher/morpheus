@@ -27,15 +27,17 @@
 package org.opencypher.okapi.relational.impl.operators
 
 import org.opencypher.okapi.api.graph.QualifiedGraphName
-import org.opencypher.okapi.api.types._
+import org.opencypher.okapi.api.types.{CTInteger, _}
 import org.opencypher.okapi.api.value.CypherValue.CypherInteger
 import org.opencypher.okapi.impl.exception.{IllegalArgumentException, SchemaException}
+import org.opencypher.okapi.ir.api.PropertyKey
 import org.opencypher.okapi.ir.api.block.{Asc, Desc, SortItem}
 import org.opencypher.okapi.ir.api.expr._
 import org.opencypher.okapi.logical.impl.LogicalCatalogGraph
 import org.opencypher.okapi.relational.api.graph.{RelationalCypherGraph, RelationalCypherSession}
 import org.opencypher.okapi.relational.api.planning.RelationalRuntimeContext
-import org.opencypher.okapi.relational.api.table.{Table, RelationalCypherRecords}
+import org.opencypher.okapi.relational.api.table.{RelationalCypherRecords, Table}
+import org.opencypher.okapi.relational.api.tagging.Tags._
 import org.opencypher.okapi.relational.impl.planning._
 import org.opencypher.okapi.relational.impl.table.RecordHeader
 import org.opencypher.okapi.trees.AbstractTreeNode
@@ -412,6 +414,63 @@ final case class FromGraph[T <: Table[T]](
   override def graphName: QualifiedGraphName = logicalGraph.qualifiedGraphName
 
 }
+
+case class RetagVariable[T <: Table[T]](
+  in: RelationalOperator[T],
+  v: Var,
+  replacements: Map[Int, Int]
+) extends RelationalOperator[T] {
+
+  override lazy val _table: T = {
+    val expressionsToRetag = header.idExpressions(v)
+
+    // TODO: implement efficiently for multiple columns
+    expressionsToRetag.foldLeft(in.table) {
+      case (currentTable, exprToRetag) =>
+        currentTable.withColumn(header.column(exprToRetag), exprToRetag.replaceTags(replacements))(header, context.parameters)
+    }
+  }
+
+}
+
+final case class AddEntitiesToRecords[T <: Table[T]](
+  in: RelationalOperator[T],
+  exprsToAdd: Map[Expr, Expr]
+) extends RelationalOperator[T] {
+
+  override lazy val header: RecordHeader = in.header.withExprs(exprsToAdd.keySet)
+
+  override lazy val _table: T = {
+    exprsToAdd.foldLeft(in.table) {
+      case (acc, (toAdd, value)) => acc.withColumn(header.column(toAdd), value)(header, context.parameters)
+    }
+  }
+}
+
+final case class ConstructProperty[T <: Table[T]](
+  in: RelationalOperator[T],
+  v: Var,
+  propertyExpr: Property,
+  valueExpr: Expr
+)
+  (implicit context: RelationalRuntimeContext[T]) extends RelationalOperator[T] {
+
+  private lazy val existingPropertyExpressionsForKey = in.header.propertiesFor(v).collect {
+    case p@Property(_, PropertyKey(name)) if name == propertyExpr.key.name => p
+  }
+
+  override lazy val header: RecordHeader = {
+    val headerWithExistingRemoved = in.header -- existingPropertyExpressionsForKey
+    headerWithExistingRemoved.withExpr(propertyExpr)
+  }
+
+  override lazy val _table: T = {
+    in.table
+      .drop(existingPropertyExpressionsForKey.map(in.header.column).toSeq: _*)
+      .withColumn(header.column(propertyExpr), valueExpr)(in.header, context.parameters)
+  }
+}
+
 
 // Binary
 

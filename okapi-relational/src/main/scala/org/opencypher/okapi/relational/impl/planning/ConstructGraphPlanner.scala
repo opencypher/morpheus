@@ -84,7 +84,7 @@ object ConstructGraphPlanner {
     }
 
     val retagBaseTableOp = clonedVarsToInputVars.foldLeft(aliasOp) {
-      case (op, (alias, original)) => RetagVariable(op, alias, constructTagStrategy(original.cypherType.graph.get))
+      case (op, (alias, original)) => relational.RetagVariable(op, alias, constructTagStrategy(original.cypherType.graph.get))
     }
 
     // Construct NEW entities
@@ -98,7 +98,7 @@ object ConstructGraphPlanner {
         val entityTableWithProperties = sets.foldLeft(entitiesOp) {
           case (currentOp, SetPropertyItem(propertyKey, v, valueExpr)) =>
             val propertyExpression = Property(v, PropertyKey(propertyKey))(valueExpr.cypherType)
-            ConstructProperty(currentOp, v, propertyExpression, valueExpr)
+            relational.ConstructProperty(currentOp, v, propertyExpression, valueExpr)
         }
         Set(newEntityTag) -> entityTableWithProperties
       }
@@ -165,14 +165,14 @@ object ConstructGraphPlanner {
         (nextColumnPartitionId + 1) -> (constructedNodes ++ planConstructNode(inOp, newEntityTag, nextColumnPartitionId, nodes.size, nextNodeToConstruct))
     }
 
-    val createdNodesOp = AddEntitiesToRecords(inOp, nodesToCreate)
+    val createdNodesOp = relational.AddEntitiesToRecords(inOp, nodesToCreate)
 
     val (_, relsToCreate) = rels.foldLeft(0 -> Map.empty[Expr, Expr]) {
       case ((nextColumnPartitionId, constructedRels), nextRelToConstruct) =>
         (nextColumnPartitionId + 1) -> (constructedRels ++ planConstructRelationship(createdNodesOp, newEntityTag, nextColumnPartitionId, rels.size, nextRelToConstruct))
     }
 
-    AddEntitiesToRecords(createdNodesOp, relsToCreate)
+    relational.AddEntitiesToRecords(createdNodesOp, relsToCreate)
   }
 
   def planConstructNode[T <: Table[T]](
@@ -203,25 +203,6 @@ object ConstructGraphPlanner {
       copiedLabelTuples ++
       propertyTuples +
       idTuple
-  }
-
-  /**
-    *org.apache.spark.sql.functions$#monotonically_increasing_id()
-    *
-    * @param columnIdPartition column partition within DF partition
-    */
-  // TODO: improve documentation and add specific tests
-  def generateId(columnIdPartition: Int, numberOfColumnPartitions: Int): Expr = {
-    val columnPartitionBits = math.log(numberOfColumnPartitions).floor.toInt + 1
-    val totalIdSpaceBits = 33
-    val columnIdShift = totalIdSpaceBits - columnPartitionBits
-
-    // id needs to be generated
-    // Limits the system to 500 mn partitions
-    // The first half of the id space is protected
-    val columnPartitionOffset = columnIdPartition.toLong << columnIdShift
-
-    Add(MonotonicallyIncreasingId(), IntegerLit(columnPartitionOffset)(CTInteger))(CTInteger)
   }
 
   def planConstructRelationship[T <: Table[T]](
@@ -264,12 +245,32 @@ object ConstructGraphPlanner {
     propertyTuples ++ typeTuple + idTuple + sourceTuple + targetTuple
   }
 
-  private def copyExpressions[E <: Expr, T <: Table[T]](inOp: RelationalOperator[T], targetVar: Var)
+  def copyExpressions[E <: Expr, T <: Table[T]](inOp: RelationalOperator[T], targetVar: Var)
     (extractor: RecordHeader => Set[E]): Map[Expr, Expr] = {
     val origExprs = extractor(inOp.header)
     val copyExprs = origExprs.map(_.withOwner(targetVar))
     copyExprs.zip(origExprs).toMap
   }
+
+  /**
+    *org.apache.spark.sql.functions$#monotonically_increasing_id()
+    *
+    * @param columnIdPartition column partition within DF partition
+    */
+  // TODO: improve documentation and add specific tests
+  def generateId(columnIdPartition: Int, numberOfColumnPartitions: Int): Expr = {
+    val columnPartitionBits = math.log(numberOfColumnPartitions).floor.toInt + 1
+    val totalIdSpaceBits = 33
+    val columnIdShift = totalIdSpaceBits - columnPartitionBits
+
+    // id needs to be generated
+    // Limits the system to 500 mn partitions
+    // The first half of the id space is protected
+    val columnPartitionOffset = columnIdPartition.toLong << columnIdShift
+
+    Add(MonotonicallyIncreasingId(), IntegerLit(columnPartitionOffset)(CTInteger))(CTInteger)
+  }
+
 }
 
 final case class ConstructGraph[T <: Table[T]](
@@ -296,60 +297,4 @@ final case class ConstructGraph[T <: Table[T]](
     s"ConstructGraph(on=[${construct.onGraphs.mkString(", ")}], entities=[${entities.mkString(", ")}])"
   }
 
-}
-
-case class RetagVariable[T <: Table[T]](
-  in: RelationalOperator[T],
-  v: Var,
-  replacements: Map[Int, Int]
-) extends RelationalOperator[T] {
-
-  override lazy val _table: T = {
-    val expressionsToRetag = header.idExpressions(v)
-
-    // TODO: implement efficiently for multiple columns
-    expressionsToRetag.foldLeft(in.table) {
-      case (currentTable, exprToRetag) =>
-        currentTable.withColumn(header.column(exprToRetag), exprToRetag.replaceTags(replacements))(header, context.parameters)
-    }
-  }
-
-}
-
-final case class AddEntitiesToRecords[T <: Table[T]](
-  in: RelationalOperator[T],
-  exprsToAdd: Map[Expr, Expr]
-) extends RelationalOperator[T] {
-
-  override lazy val header: RecordHeader = in.header.withExprs(exprsToAdd.keySet)
-
-  override lazy val _table: T = {
-    exprsToAdd.foldLeft(in.table) {
-      case (acc, (toAdd, value)) => acc.withColumn(header.column(toAdd), value)(header, context.parameters)
-    }
-  }
-}
-
-final case class ConstructProperty[T <: Table[T]](
-  in: RelationalOperator[T],
-  v: Var,
-  propertyExpr: Property,
-  valueExpr: Expr
-)
-  (implicit context: RelationalRuntimeContext[T]) extends RelationalOperator[T] {
-
-  private lazy val existingPropertyExpressionsForKey = in.header.propertiesFor(v).collect {
-    case p@Property(_, PropertyKey(name)) if name == propertyExpr.key.name => p
-  }
-
-  override lazy val header: RecordHeader = {
-    val headerWithExistingRemoved = in.header -- existingPropertyExpressionsForKey
-    headerWithExistingRemoved.withExpr(propertyExpr)
-  }
-
-  override lazy val _table: T = {
-    in.table
-      .drop(existingPropertyExpressionsForKey.map(in.header.column).toSeq: _*)
-      .withColumn(header.column(propertyExpr), valueExpr)(in.header, context.parameters)
-  }
 }
