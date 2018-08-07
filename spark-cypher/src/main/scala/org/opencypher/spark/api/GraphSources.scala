@@ -72,7 +72,7 @@ object FSGraphSources {
     * @return Neo4j Bulk CSV data sink
     */
   def neo4jBulk(rootPath: String, arrayDelimiter: String = "|")(implicit session: CAPSSession): Neo4jBulkCSVDataSink = {
-    Neo4jBulkCSVDataSink(rootPath, arrayDelimiter)
+    new Neo4jBulkCSVDataSink(rootPath, arrayDelimiter)
   }
 }
 
