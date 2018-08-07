@@ -30,13 +30,14 @@ import org.apache.spark.sql.Row
 import org.apache.spark.sql.types.{LongType, StructField, StructType}
 import org.opencypher.okapi.api.io.conversion.{NodeMapping, RelationshipMapping}
 import org.opencypher.okapi.api.schema.PropertyKeys.PropertyKeys
+import org.opencypher.okapi.relational.impl.graph.ScanGraph
 import org.opencypher.okapi.testing.propertygraph.InMemoryTestGraph
 import org.opencypher.spark.api.CAPSSession
 import org.opencypher.spark.api.io.GraphEntity.sourceIdKey
 import org.opencypher.spark.api.io.Relationship.{sourceEndNodeKey, sourceStartNodeKey}
 import org.opencypher.spark.api.io.{CAPSNodeTable, CAPSRelationshipTable}
 import org.opencypher.spark.impl.convert.SparkConversions._
-import org.opencypher.spark.impl.graph.CAPSScanGraph
+import org.opencypher.spark.impl.table.SparkTable.DataFrameTable
 import org.opencypher.spark.schema.CAPSSchema._
 
 import scala.collection.JavaConverters._
@@ -45,7 +46,7 @@ object CAPSScanGraphFactory extends CAPSTestGraphFactory {
 
   val tableEntityIdKey = s"___$sourceIdKey"
 
-  override def apply(propertyGraph: InMemoryTestGraph)(implicit caps: CAPSSession): CAPSScanGraph = {
+  override def apply(propertyGraph: InMemoryTestGraph)(implicit caps: CAPSSession): ScanGraph[DataFrameTable] = {
     val schema = computeSchema(propertyGraph).asCaps
 
     val nodeScans = schema.labelCombinations.combos.map { labels =>
@@ -99,7 +100,7 @@ object CAPSScanGraphFactory extends CAPSTestGraphFactory {
         .withPropertyKeys(propKeys.keys.toSeq: _*), records)
     }
 
-    new CAPSScanGraph(nodeScans.toSeq ++ relScans, schema, Set(0))
+    new ScanGraph(nodeScans.toSeq ++ relScans, schema, Set(0))
   }
 
   override def name: String = "CAPSScanGraphFactory"

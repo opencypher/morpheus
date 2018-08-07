@@ -24,7 +24,7 @@
  * described as "implementation extensions to Cypher" or as "proposed changes to
  * Cypher that are not yet approved by the openCypher community".
  */
-package org.opencypher.spark.impl.graph
+package org.opencypher.okapi.relational.impl.graph
 
 import org.opencypher.okapi.api.schema.Schema
 import org.opencypher.okapi.api.types.{CTNode, CTRelationship, CypherType}
@@ -34,34 +34,32 @@ import org.opencypher.okapi.relational.api.graph.{RelationalCypherGraph, Relatio
 import org.opencypher.okapi.relational.api.io.{EntityTable, NodeTable, RelationshipTable}
 import org.opencypher.okapi.relational.api.planning.RelationalRuntimeContext
 import org.opencypher.okapi.relational.api.schema.RelationalSchema._
-import org.opencypher.okapi.relational.api.table.RelationalCypherRecords
+import org.opencypher.okapi.relational.api.table.{RelationalCypherRecords, Table}
 import org.opencypher.okapi.relational.impl.operators._
 import org.opencypher.okapi.relational.impl.planning.RelationalPlanner._
-import org.opencypher.spark.api.CAPSSession
-import org.opencypher.spark.impl.table.SparkTable.DataFrameTable
 
-class CAPSScanGraph(val scans: Seq[EntityTable[DataFrameTable]], val schema: Schema, val tags: Set[Int])
-  (implicit val session: CAPSSession)
-  extends RelationalCypherGraph[DataFrameTable] {
+class ScanGraph[T <: Table[T]](val scans: Seq[EntityTable[T]], val schema: Schema, val tags: Set[Int])
+  (implicit val session: RelationalCypherSession[T])
+  extends RelationalCypherGraph[T] {
 
-  override type Records = RelationalCypherRecords[DataFrameTable]
+  override type Records = RelationalCypherRecords[T]
 
-  override type Session = RelationalCypherSession[DataFrameTable]
+  override type Session = RelationalCypherSession[T]
 
-  private lazy val nodeTables = scans.collect { case it: NodeTable[DataFrameTable] => it }
+  private lazy val nodeTables = scans.collect { case it: NodeTable[T] => it }
 
-  private lazy val relTables = scans.collect { case it: RelationshipTable[DataFrameTable] => it }
+  private lazy val relTables = scans.collect { case it: RelationshipTable[T] => it }
 
   // TODO: ScanGraph should be an operator that gets a set of tables as input
-  private implicit def runtimeContext: RelationalRuntimeContext[DataFrameTable] = session.basicRuntimeContext()
+  private implicit def runtimeContext: RelationalRuntimeContext[T] = session.basicRuntimeContext()
 
-  override def tables: Seq[DataFrameTable] = scans.map(_.table)
+  override def tables: Seq[T] = scans.map(_.table)
 
   // TODO: Express `exactLabelMatch` with type
   private[opencypher] override def scanOperator(
     entityType: CypherType,
     exactLabelMatch: Boolean
-  ): RelationalOperator[DataFrameTable] = {
+  ): RelationalOperator[T] = {
     val targetEntity = Var("")(entityType)
     val selectedScans = scansForType(entityType, exactLabelMatch)
     val targetEntityHeader = schema.headerForEntity(targetEntity, exactLabelMatch)
@@ -77,7 +75,7 @@ class CAPSScanGraph(val scans: Seq[EntityTable[DataFrameTable]], val schema: Sch
   }
 
   // TODO: Express `exactLabelMatch` with type
-  private def scansForType(ct: CypherType, exactLabelMatch: Boolean): Seq[RelationalOperator[DataFrameTable]] = {
+  private def scansForType(ct: CypherType, exactLabelMatch: Boolean): Seq[RelationalOperator[T]] = {
     ct match {
       case _: CTNode =>
         val scans = if (exactLabelMatch) {

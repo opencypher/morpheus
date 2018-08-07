@@ -31,7 +31,7 @@ import org.opencypher.okapi.api.table.CypherRecords
 import org.opencypher.okapi.relational.api.graph.{RelationalCypherGraph, RelationalCypherGraphFactory}
 import org.opencypher.okapi.relational.api.planning.RelationalRuntimeContext
 import org.opencypher.okapi.relational.api.table.RelationalCypherRecords
-import org.opencypher.okapi.relational.impl.graph.{SingleTableGraph, UnionGraph}
+import org.opencypher.okapi.relational.impl.graph.{ScanGraph, SingleTableGraph, UnionGraph}
 import org.opencypher.spark.api.CAPSSession
 import org.opencypher.spark.api.io.{CAPSEntityTable, CAPSNodeTable}
 import org.opencypher.spark.impl.CAPSConverters._
@@ -73,7 +73,7 @@ case class CAPSGraphFactory(implicit caps: CAPSSession) extends RelationalCypher
     implicit val runtimeContext: RelationalRuntimeContext[DataFrameTable] = caps.basicRuntimeContext()
     val allTables = nodeTable +: entityTables
     val schema = maybeSchema.getOrElse(allTables.map(_.schema).reduce[Schema](_ ++ _).asCaps)
-    new CAPSScanGraph(allTables, schema, tags)
+    new ScanGraph(allTables, schema, tags)
   }
 
   // TODO: only used in tests, move there

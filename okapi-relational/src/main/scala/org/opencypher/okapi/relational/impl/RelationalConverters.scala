@@ -24,25 +24,20 @@
  * described as "implementation extensions to Cypher" or as "proposed changes to
  * Cypher that are not yet approved by the openCypher community".
  */
-package org.opencypher.okapi.relational.api.graph
+package org.opencypher.okapi.relational.impl
 
-import org.opencypher.okapi.api.graph.{CypherSession, QualifiedGraphName}
-import org.opencypher.okapi.api.value.CypherValue.CypherMap
-import org.opencypher.okapi.relational.api.planning.RelationalRuntimeContext
-import org.opencypher.okapi.relational.api.table.{RelationalCypherRecordsFactory, Table}
-import org.opencypher.okapi.relational.impl.RelationalConverters._
+import org.opencypher.okapi.api.graph.PropertyGraph
+import org.opencypher.okapi.impl.exception.UnsupportedOperationException
+import org.opencypher.okapi.relational.api.graph.RelationalCypherGraph
+import org.opencypher.okapi.relational.api.table.Table
 
-trait RelationalCypherSession[T <: Table[T]] extends CypherSession {
+object RelationalConverters {
 
-  type Graph <: RelationalCypherGraph[T]
-
-  private[opencypher] def records: RelationalCypherRecordsFactory[T]
-
-  private[opencypher] def graphs: RelationalCypherGraphFactory[T]
-
-  private[opencypher] def graphAt(qgn: QualifiedGraphName): Option[RelationalCypherGraph[T]] =
-    if (catalog.graphNames.contains(qgn)) Some(catalog.graph(qgn).asRelational) else None
-
-  private[opencypher] def basicRuntimeContext(parameters: CypherMap = CypherMap.empty): RelationalRuntimeContext[T] =
-    RelationalRuntimeContext(graphAt, parameters)(this)
+  implicit class RichPropertyGraph[T <: Table[T]](val graph: PropertyGraph) extends AnyVal {
+    def asRelational: RelationalCypherGraph[T] = graph.asInstanceOf[RelationalCypherGraph[_]] match {
+      // The cast is necessary since okapi-API does not expose the underlying table types
+      case caps: RelationalCypherGraph[T] => caps.asInstanceOf[RelationalCypherGraph[T]]
+      case _ => throw UnsupportedOperationException(s"can only handle relational graphs, got $graph")
+    }
+  }
 }
