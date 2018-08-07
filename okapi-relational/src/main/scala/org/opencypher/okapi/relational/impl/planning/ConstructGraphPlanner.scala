@@ -131,7 +131,7 @@ object ConstructGraphPlanner {
       context.session.graphs.unionGraph(Map(identityRetaggings(onGraph), identityRetaggings(patternGraph)))
     }
 
-    val constructOp = ConstructGraph(graph, name, constructTagStrategy, construct)
+    val constructOp = ConstructGraph(patternGraphTableOp, graph, name, constructTagStrategy, construct)
 
     plannerContext.constructedGraphPlans += (name -> constructOp)
     constructOp
@@ -278,6 +278,9 @@ object ConstructGraphPlanner {
 }
 
 final case class ConstructGraph[T <: Table[T]](
+  // Only here so the plan shows how the single table graph is constructed
+  // This is not optimal, as the union and the on graph parts of the actual construction are missing
+  singleTableGraphConstructPlan: RelationalOperator[T],
   constructedGraph: RelationalCypherGraph[T],
   override val graphName: QualifiedGraphName,
   override val tagStrategy: Map[QualifiedGraphName, Map[Int, Int]],
