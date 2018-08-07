@@ -41,7 +41,6 @@ import org.opencypher.spark.api.io._
 import org.opencypher.spark.api.value.CAPSNode
 import org.opencypher.spark.impl.DataFrameOps._
 import org.opencypher.spark.impl.convert.SparkConversions
-import org.opencypher.spark.schema.CAPSSchema._
 import org.opencypher.spark.testing.CAPSTestSuite
 
 case class Person(id: Long, name: String, age: Int) extends Node
@@ -117,8 +116,7 @@ class EntityTableTest extends CAPSTestSuite {
     nodeTable.schema should equal(
       Schema.empty
         .withNodePropertyKeys("A", "B")("foo" -> CTString.nullable, "bar" -> CTInteger)
-        .withNodePropertyKeys("A", "B", "C")("foo" -> CTString.nullable, "bar" -> CTInteger)
-        .asCaps)
+        .withNodePropertyKeys("A", "B", "C")("foo" -> CTString.nullable, "bar" -> CTInteger))
   }
 
   it("NodeTable should create correct header from given mapping") {
@@ -146,8 +144,7 @@ class EntityTableTest extends CAPSTestSuite {
 
     relationshipTable.schema should equal(
       Schema.empty
-        .withRelationshipPropertyKeys("A")("foo" -> CTString.nullable, "bar" -> CTInteger)
-        .asCaps)
+        .withRelationshipPropertyKeys("A")("foo" -> CTString.nullable, "bar" -> CTInteger))
   }
 
   it("Relationship table should create correct header from given mapping") {
@@ -199,8 +196,7 @@ class EntityTableTest extends CAPSTestSuite {
     nodeTable.schema should equal(
       Schema.empty
         .withNodePropertyKeys("A", "B")("foo" -> CTInteger, "bar" -> CTFloat)
-        .withNodePropertyKeys("A", "B", "C")("foo" -> CTInteger, "bar" -> CTFloat)
-        .asCaps)
+        .withNodePropertyKeys("A", "B", "C")("foo" -> CTInteger, "bar" -> CTFloat))
 
     nodeTable.records.df.collect().toSet should equal(Set(Row(1L, true, (23.1f).toDouble, 10L)))
   }
@@ -276,8 +272,7 @@ class EntityTableTest extends CAPSTestSuite {
         "name" -> CTString.nullable,
         "birthYear" -> CTInteger,
         "isGood" -> CTBoolean,
-        "luckyNumber" -> CTFloat)
-      .asCaps)
+        "luckyNumber" -> CTFloat))
   }
 
   it("NodeTable should infer the correct schema including optional labels") {
@@ -287,8 +282,7 @@ class EntityTableTest extends CAPSTestSuite {
 
     nodeTable.schema should equal(Schema.empty
       .withNodePropertyKeys("Person", "Swede")("name" -> CTString.nullable)
-      .withNodePropertyKeys("Person")("name" -> CTString.nullable)
-      .asCaps)
+      .withNodePropertyKeys("Person")("name" -> CTString.nullable))
   }
 
   it("RelationshipTable should infer the correct schema") {
@@ -302,7 +296,6 @@ class EntityTableTest extends CAPSTestSuite {
         "name" -> CTString.nullable,
         "birthYear" -> CTInteger,
         "isGood" -> CTBoolean,
-        "luckyNumber" -> CTFloat)
-      .asCaps)
+        "luckyNumber" -> CTFloat))
   }
 }
