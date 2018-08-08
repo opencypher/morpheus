@@ -532,7 +532,8 @@ object IRBuilder extends CompilationStage[ast.Statement, CypherStatement[Expr], 
 
       // if there is only one relationship type we need to merge all existing types and update them
       case CTRelationship(newTypes, _) if newTypes.size == 1 =>
-        val possiblePropertyKeys = baseFieldSchema.relTypePropertyMap.map
+        val possiblePropertyKeys = baseFieldSchema
+          .relTypePropertyMap
           .values
           .map(_.keySet)
           .foldLeft(Set.empty[String])(_ ++ _)

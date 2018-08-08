@@ -26,6 +26,7 @@
  */
 package org.opencypher.okapi.impl.schema
 
+import org.opencypher.okapi.api.schema.LabelPropertyMap._
 import org.opencypher.okapi.api.schema.Schema
 
 object SchemaUtils {

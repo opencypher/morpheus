@@ -33,43 +33,44 @@ import org.opencypher.okapi.api.types.CypherType
 import org.opencypher.okapi.api.types.CypherType.joinMonoid
 
 object RelTypePropertyMap {
-  val empty: RelTypePropertyMap = RelTypePropertyMap(Map.empty)
 
-  /**
-    * Sets all cypher types of properties that are not common across all labels to nullable.
-    *
-    * @param map property key map
-    * @return updated property key map
-    */
-  def asNullable(map: RelTypePropertyMap): RelTypePropertyMap = {
-    val overlap = map.map.map(_._2.keySet).reduce(_ intersect _)
+  type RelTypePropertyMap = Map[String, PropertyKeys]
 
-    RelTypePropertyMap(map.map.map { pair =>
-      pair._1 -> pair._2.map(p2 => p2._1 -> (if (overlap.contains(p2._1)) p2._2 else p2._2.nullable))
-    })
+  val empty: RelTypePropertyMap = Map.empty
+
+  implicit class RichRelTypePropertyMap(val map: Map[String, PropertyKeys]) extends AnyVal {
+
+    def register(relType: String, keys: PropertyKeys): RelTypePropertyMap = {
+      val oldKeys = map.getOrElse(relType, Map.empty)
+      map.updated(relType, oldKeys ++ keys)
+    }
+
+    def properties(relKey: String): PropertyKeys = map.getOrElse(relKey, Map.empty)
+
+    def filterForRelTypes(relType: Set[String]): RelTypePropertyMap = map.filterKeys(relType.contains)
+
+    def ++(other: RelTypePropertyMap): RelTypePropertyMap = map |+| other
+
+    // utility signatures
+
+    def register(relType: String)(keys: (String, CypherType)*): RelTypePropertyMap = register(relType, keys.toMap)
+
+    def register(relType: String, keys: => Seq[(String, CypherType)]): RelTypePropertyMap = register(relType, keys.toMap)
+
+    /**
+      * Sets all cypher types of properties that are not common across all labels to nullable.
+      *
+      * @param map property key map
+      * @return updated property key map
+      */
+    def asNullable: RelTypePropertyMap = {
+      val overlap = map.map(_._2.keySet).reduce(_ intersect _)
+
+      map.map { pair =>
+        pair._1 -> pair._2.map(p2 => p2._1 -> (if (overlap.contains(p2._1)) p2._2 else p2._2.nullable))
+      }
+    }
+
   }
-}
 
-final case class RelTypePropertyMap(map: Map[String, PropertyKeys]) {
-
-  def register(relType: String, keys: PropertyKeys): RelTypePropertyMap = {
-    val oldKeys = map.getOrElse(relType, Map.empty)
-    copy(map.updated(relType, oldKeys ++ keys))
-  }
-
-  def properties(relKey: String): PropertyKeys = map.getOrElse(relKey, Map.empty)
-
-  def filterForRelTypes(relType: Set[String]): RelTypePropertyMap = {
-    RelTypePropertyMap(map.filterKeys(relType.contains))
-  }
-
-  def ++(other: RelTypePropertyMap): RelTypePropertyMap = copy(map |+| other.map)
-
-  // utility signatures
-
-  def register(relType: String)(keys: (String, CypherType)*): RelTypePropertyMap =
-    register(relType, keys.toMap)
-
-  def register(relType: String, keys: => Seq[(String, CypherType)]): RelTypePropertyMap =
-    register(relType, keys.toMap)
 }
