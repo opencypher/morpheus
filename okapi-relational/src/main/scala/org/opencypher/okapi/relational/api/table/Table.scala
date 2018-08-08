@@ -33,39 +33,147 @@ import org.opencypher.okapi.ir.api.expr.{Aggregator, Expr, Var}
 import org.opencypher.okapi.relational.impl.planning.{JoinType, Order}
 import org.opencypher.okapi.relational.impl.table.RecordHeader
 
-// TODO: document
+/**
+  * Main abstraction of a relational backend. A table represents a relation in terms of relational algebra and exposes
+  * relational and additional auxiliary operators. Operators need to be implemented by the specific backend
+  * (e.g. spark-cypher).
+  *
+  * @tparam T backend-specific representation of that table (e.g. DataFrame for spark-cypher)
+  */
 trait Table[T <: Table[T]] extends CypherTable {
 
   this: T =>
 
+  /**
+    * If supported by the backend, calling that operator caches the underlying table within the backend runtime.
+    *
+    * @return cached version of that table
+    */
   def cache(): T = this
 
+  /**
+    * Returns a table containing only the given columns. The column order within the table is aligned with the argument.
+    *
+    * @param cols columns to select
+    * @return table containing only requested columns
+    */
   def select(cols: String*): T
 
+  /**
+    * Returns a table containing only rows where the given expression evaluates to true.
+    *
+    * @param expr       filter expression
+    * @param header     table record header
+    * @param parameters query parameters
+    * @return table with filtered rows
+    */
   def filter(expr: Expr)(implicit header: RecordHeader, parameters: CypherMap): T
 
+  /**
+    * Returns a table with the given columns removed.
+    *
+    * @param cols columns to drop
+    * @return table with dropped columns
+    */
   def drop(cols: String*): T
 
-  def unionAll(other: T): T
-
-  def orderBy(sortItems: (String, Order)*): T
-
-  def skip(items: Long): T
-
-  def limit(items: Long): T
-
-  def distinct: T
-
-  def distinct(cols: String*): T
-
-  def group(by: Set[Var], aggregations: Set[(Aggregator, (String, CypherType))])(implicit header: RecordHeader, parameters: CypherMap): T
-
-  // TODO: document that this replaces the column if it already exists
-  def withColumn(column: String, expr: Expr, preserveNullability: Boolean = true)(implicit header: RecordHeader, parameters: CypherMap): T
-
-  def withColumnRenamed(oldColumn: String, newColumn: String): T
-
+  /**
+    * Joins the current table with the given table on the specified join columns using equi-join semantics.
+    *
+    * @param other    table to join
+    * @param joinType join type to perform (e.g. inner, outer, ...)
+    * @param joinCols columns to join the two tables on
+    * @return joined table
+    */
   def join(other: T, joinType: JoinType, joinCols: (String, String)*): T
 
+  /**
+    * Computes the union of the current table and the given table. Requires both tables to have identical column layouts.
+    *
+    * @param other table to union with
+    * @return union table
+    */
+  def unionAll(other: T): T
+
+  /**
+    * Returns a table that is ordered by the given columns.
+    *
+    * @param sortItems a sequence of column names and their order (i.e. ascending / descending)
+    * @return ordered table
+    */
+  def orderBy(sortItems: (String, Order)*): T
+
+  /**
+    * Returns a table without the first n rows of the current table.
+    *
+    * @param n number of rows to skip
+    * @return table with skipped rows
+    */
+  def skip(n: Long): T
+
+  /**
+    * Returns a table containing the first n rows of the current table.
+    *
+    * @param n number of rows to return
+    * @return table with at most n rows
+    */
+  def limit(n: Long): T
+
+  /**
+    * Returns a table where each row is unique.
+    *
+    * @return table with unique rows
+    */
+  def distinct: T
+
+  /**
+    * Convenience operator for select and distinct.
+    *
+    * @param cols columns to select and perform distinct on.
+    * @return table containing the specific columns and distinct rows
+    */
+  def distinct(cols: String*): T = select(cols: _*).distinct
+
+  /**
+    * Groups the rows within the table by the given query variables. Additionally a set of aggregations can be performed
+    * on the grouped table.
+    *
+    * @param by           query variables to group by (e.g. (n)), if empty, the whole row is used as grouping key
+    * @param aggregations set of aggregations functions and the column to store the result in
+    * @param header       table record header
+    * @param parameters   query parameters
+    * @return table grouped by the given keys and results of possible aggregate functions
+    */
+  def group(by: Set[Var], aggregations: Set[(Aggregator, (String, CypherType))])
+    (implicit header: RecordHeader, parameters: CypherMap): T
+
+  /**
+    * Returns a table with an additional expression, which is evaluated and stored in the specified column.
+    *
+    * @note If the column already exists, its contents will be replaced.
+    * @param column              column name to store evaluated expression
+    * @param expr                expression to evaluate
+    * @param preserveNullability define if resulting column type has the same nullability as the given epxression
+    * @param header              table record header
+    * @param parameters          query parameters
+    * @return
+    */
+  def withColumn(column: String, expr: Expr, preserveNullability: Boolean = true)
+    (implicit header: RecordHeader, parameters: CypherMap): T
+
+  /**
+    * Returns a table with a renamed column name.
+    *
+    * @param oldColumn current column name
+    * @param newColumn new column name
+    * @return table with renamed column
+    */
+  def withColumnRenamed(oldColumn: String, newColumn: String): T
+
+  /**
+    * Prints the table to the system console.
+    *
+    * @param rows number of rows to print
+    */
   def show(rows: Int = 20): Unit
 }
