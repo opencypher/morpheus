@@ -32,6 +32,8 @@ import org.opencypher.okapi.impl.util.TablePrinter
 import org.opencypher.okapi.ir.api.RelType
 import org.opencypher.okapi.ir.api.expr._
 
+import scala.annotation.tailrec
+
 object RecordHeader {
 
   def empty: RecordHeader = RecordHeader(Map.empty)
@@ -290,6 +292,19 @@ case class RecordHeader(exprToColumn: Map[Expr, String]) {
     copy(exprToColumn ++ exprs.map(_ -> newColumn))
   }
 
+  private def newConflictFreeColumnName(expr: Expr, usedColumnNames: Set[String] = columns): String = {
+    @tailrec def recConflictFreeColumnName(candidateName: String): String = {
+      if (usedColumnNames.contains(candidateName)) recConflictFreeColumnName(s"_$candidateName")
+      else candidateName
+    }
+
+    val firstColumnNameCandidate = expr.toString
+      .replaceAll("-", "_")
+      .replaceAll(":", "_")
+      .replaceAll("\\.", "_")
+    recConflictFreeColumnName(firstColumnNameCandidate)
+  }
+
   def withExpr(expr: Expr): RecordHeader = {
     expr match {
       case a: AliasExpr => withAlias(a)
@@ -297,10 +312,7 @@ case class RecordHeader(exprToColumn: Map[Expr, String]) {
         case Some(_) => this
 
         case None =>
-          val newColumnName = expr.toString
-            .replaceAll("-", "_")
-            .replaceAll(":", "_")
-            .replaceAll("\\.", "_")
+          val newColumnName = newConflictFreeColumnName(expr)
 
           // Aliases for (possible) owner of expr need to be updated as well
           val exprsToAdd: Set[Expr] = expr.owner match {
@@ -363,10 +375,9 @@ case class RecordHeader(exprToColumn: Map[Expr, String]) {
 
       rename.groupBy(other.column).mapValues(_.toSeq.sorted).foldLeft(withKept) {
         case (acc, (_, exprs)) =>
-          val add = acc.withExpr(exprs.head)
-          val newColumn = add.column(exprs.head)
-          exprs.tail.foldLeft(add) {
-            case (acc2, expr) => acc2.addExprToColumn(expr, newColumn)
+          val newColumnName = newConflictFreeColumnName(exprs.head, this.columns ++ acc.columns)
+          exprs.foldLeft(acc) {
+            case (currentHeader, expr) => currentHeader.addExprToColumn(expr, newColumnName)
           }
       }
     } else other
