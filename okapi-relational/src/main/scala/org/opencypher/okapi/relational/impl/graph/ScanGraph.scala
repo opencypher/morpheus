@@ -30,6 +30,7 @@ import org.opencypher.okapi.api.schema.Schema
 import org.opencypher.okapi.api.types.{CTNode, CTRelationship, CypherType}
 import org.opencypher.okapi.impl.exception.IllegalArgumentException
 import org.opencypher.okapi.ir.api.expr._
+import org.opencypher.okapi.relational.api.configuration.CoraConfiguration.PrintScanPlans
 import org.opencypher.okapi.relational.api.graph.{RelationalCypherGraph, RelationalCypherSession}
 import org.opencypher.okapi.relational.api.io.{EntityTable, NodeTable, RelationshipTable}
 import org.opencypher.okapi.relational.api.planning.RelationalRuntimeContext
@@ -56,7 +57,7 @@ class ScanGraph[T <: Table[T]](val scans: Seq[EntityTable[T]], val schema: Schem
   override def tables: Seq[T] = scans.map(_.table)
 
   // TODO: Express `exactLabelMatch` with type
-  private[opencypher] override def scanOperator(
+  protected override def scanOperatorInternal(
     entityType: CypherType,
     exactLabelMatch: Boolean
   ): RelationalOperator[T] = {

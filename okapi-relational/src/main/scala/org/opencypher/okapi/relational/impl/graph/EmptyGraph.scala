@@ -48,7 +48,7 @@ sealed case class EmptyGraph[T <: Table[T]](implicit val session: RelationalCyph
 
   override def tags: Set[Int] = Set.empty
 
-  override private[opencypher] def scanOperator(
+  protected override def scanOperatorInternal(
     entityType: CypherType,
     exactLabelMatch: Boolean
   ): RelationalOperator[T] = {

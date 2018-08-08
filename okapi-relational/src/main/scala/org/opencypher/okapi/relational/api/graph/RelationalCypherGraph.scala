@@ -30,6 +30,7 @@ import org.opencypher.okapi.api.graph.{PropertyGraph, QualifiedGraphName}
 import org.opencypher.okapi.api.schema.Schema
 import org.opencypher.okapi.api.types.{CTNode, CTRelationship, CypherType}
 import org.opencypher.okapi.impl.exception.UnsupportedOperationException
+import org.opencypher.okapi.relational.api.configuration.CoraConfiguration.PrintScanPlans
 import org.opencypher.okapi.relational.api.planning.RelationalRuntimeContext
 import org.opencypher.okapi.relational.api.table.{RelationalCypherRecords, Table}
 import org.opencypher.okapi.relational.api.tagging.TagSupport._
@@ -67,13 +68,22 @@ trait RelationalCypherGraph[T <: Table[T]] extends PropertyGraph {
   def tags: Set[Int]
 
   def cache(): RelationalCypherGraph[T] = {
-    tables.foreach(_.cache)
+    tables.foreach(_.cache())
     this
   }
 
   def tables: Seq[T]
 
-  private[opencypher] def scanOperator(entityType: CypherType, exactLabelMatch: Boolean): RelationalOperator[T]
+  private[opencypher] def scanOperator(entityType: CypherType, exactLabelMatch: Boolean = false): RelationalOperator[T] = {
+    val scanOp = scanOperatorInternal(entityType, exactLabelMatch)
+    if (PrintScanPlans.isSet) {
+      println(s"Scan on ${getClass.getSimpleName} [entity type = $entityType, exactLabelMatch = $exactLabelMatch]:")
+      scanOp.show()
+    }
+    scanOp
+  }
+
+  protected def scanOperatorInternal(entityType: CypherType, exactLabelMatch: Boolean = false): RelationalOperator[T]
 
   override def nodes(name: String, nodeCypherType: CTNode, exactLabelMatch: Boolean = false): RelationalCypherRecords[T] = {
     val scan = scanOperator(nodeCypherType, exactLabelMatch)
@@ -82,7 +92,7 @@ trait RelationalCypherGraph[T <: Table[T]] extends PropertyGraph {
   }
 
   override def relationships(name: String, relCypherType: CTRelationship): RelationalCypherRecords[T] = {
-    val scan = scanOperator(relCypherType, exactLabelMatch = false)
+    val scan = scanOperator(relCypherType)
     val namedScan = scan.assignScanName(name)
     session.records.from(namedScan.header, namedScan.table)
   }
