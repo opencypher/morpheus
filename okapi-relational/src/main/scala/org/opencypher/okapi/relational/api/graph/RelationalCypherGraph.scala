@@ -67,13 +67,13 @@ trait RelationalCypherGraph[T <: Table[T]] extends PropertyGraph {
   def tags: Set[Int]
 
   def cache(): RelationalCypherGraph[T] = {
-    tables.foreach(_.cache)
+    tables.foreach(_.cache())
     this
   }
 
   def tables: Seq[T]
 
-  private[opencypher] def scanOperator(entityType: CypherType, exactLabelMatch: Boolean): RelationalOperator[T]
+  private[opencypher] def scanOperator(entityType: CypherType, exactLabelMatch: Boolean = false): RelationalOperator[T]
 
   override def nodes(name: String, nodeCypherType: CTNode, exactLabelMatch: Boolean = false): RelationalCypherRecords[T] = {
     val scan = scanOperator(nodeCypherType, exactLabelMatch)
@@ -82,7 +82,7 @@ trait RelationalCypherGraph[T <: Table[T]] extends PropertyGraph {
   }
 
   override def relationships(name: String, relCypherType: CTRelationship): RelationalCypherRecords[T] = {
-    val scan = scanOperator(relCypherType, exactLabelMatch = false)
+    val scan = scanOperator(relCypherType)
     val namedScan = scan.assignScanName(name)
     session.records.from(namedScan.header, namedScan.table)
   }

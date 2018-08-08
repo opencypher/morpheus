@@ -57,15 +57,12 @@ object ConstructGraphPlanner {
         //case h :: Nil => operatorProducer.planStart(Some(h)) // Just one graph, no union required
         case several =>
           val onGraphPlans = several.map(qgn => relational.Start[T](qgn))
-          relational.GraphUnionAll[T](onGraphPlans, construct.name)
+          relational.GraphUnionAll[T](onGraphPlans, construct.qualifiedGraphName)
       }
     }
     val inputTablePlan = in.map(RelationalPlanner.process(_)(plannerContext, runtimeContext)).getOrElse(relational.Start[T](plannerContext.session.emptyGraphQgn))
 
-    val constructGraphPlan = ConstructGraph(inputTablePlan, onGraphPlan, construct)
-
-    plannerContext.constructedGraphPlans += (construct.name -> constructGraphPlan)
-    constructGraphPlan
+    ConstructGraph(inputTablePlan, onGraphPlan, construct)
   }
 }
 
@@ -93,7 +90,7 @@ final case class ConstructGraph[T <: Table[T]](
     g -> g.tags.zip(g.tags).toMap
   }
 
-  override lazy val (graph, graphName, tagStrategy): (RelationalCypherGraph[T], QualifiedGraphName, TagStrategy) = {
+  override val (graph, graphName, tagStrategy): (RelationalCypherGraph[T], QualifiedGraphName, TagStrategy) = {
 
     val onGraph = rhs.graph
 
@@ -166,7 +163,7 @@ final case class ConstructGraph[T <: Table[T]](
       session.graphs.unionGraph(Map(identityRetaggings(onGraph), identityRetaggings(patternGraph)))
     }
 
-    context.constructedGraphCatalog += (construct.name -> constructedCombinedWithOn)
+    context.constructedGraphCatalog += (construct.qualifiedGraphName -> constructedCombinedWithOn)
 
     (constructedCombinedWithOn, name, constructTagStrategy)
   }

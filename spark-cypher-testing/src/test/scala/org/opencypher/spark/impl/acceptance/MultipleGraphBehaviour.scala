@@ -29,6 +29,8 @@ package org.opencypher.spark.impl.acceptance
 import org.opencypher.okapi.api.schema.{PropertyKeys, Schema}
 import org.opencypher.okapi.api.types.{CTInteger, CTString}
 import org.opencypher.okapi.api.value.CypherValue.CypherMap
+import org.opencypher.okapi.logical.api.configuration.LogicalConfiguration.PrintLogicalPlan
+import org.opencypher.okapi.relational.api.configuration.CoraConfiguration.PrintOptimizedRelationalPlan
 import org.opencypher.okapi.relational.api.tagging.Tags._
 import org.opencypher.okapi.testing.Bag
 import org.opencypher.okapi.testing.Bag._
@@ -55,6 +57,8 @@ class MultipleGraphBehaviour extends CAPSTestSuite with ScanGraphInit {
 
   // TODO: MATCH after RETURN is not allowed -> fix in Front-End
   it("creates multiple copies of the same node") {
+    PrintLogicalPlan.set
+    PrintOptimizedRelationalPlan.set
     val g = caps.cypher(
       """
         |CONSTRUCT
@@ -66,12 +70,9 @@ class MultipleGraphBehaviour extends CAPSTestSuite with ScanGraphInit {
         |MATCH (a)
         |CONSTRUCT
         |  NEW (f COPY OF a)-[:FOO]->(g COPY OF a)
-        |RETURN GRAPH
         |MATCH (n)
         |RETURN n
-      """.stripMargin).records
-
-    results.size shouldBe 2
+      """.stripMargin).records.size shouldBe 2
   }
 
   it("can match on constructed graph") {
@@ -79,11 +80,9 @@ class MultipleGraphBehaviour extends CAPSTestSuite with ScanGraphInit {
       """
         |CONSTRUCT
         |  NEW ()
-        |RETURN GRAPH
         |MATCH (a)
         |CONSTRUCT
         |  NEW (f COPY OF a)-[:FOO]->(g COPY OF a)
-        |RETURN GRAPH
         |MATCH (n)
         |RETURN n
       """.stripMargin).records
