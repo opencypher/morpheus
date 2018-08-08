@@ -26,12 +26,12 @@
  */
 package org.opencypher.okapi.relational.api.planning
 
-import org.opencypher.okapi.api.graph.{CypherQueryPlans, CypherResult}
+import org.opencypher.okapi.api.graph.CypherResult
 import org.opencypher.okapi.impl.util.PrintOptions
 import org.opencypher.okapi.logical.impl.LogicalOperator
 import org.opencypher.okapi.relational.api.graph.{RelationalCypherGraph, RelationalCypherSession}
-import org.opencypher.okapi.relational.api.table.{Table, RelationalCypherRecords}
-import org.opencypher.okapi.relational.impl.operators.RelationalOperator
+import org.opencypher.okapi.relational.api.table.{RelationalCypherRecords, Table}
+import org.opencypher.okapi.relational.impl.operators.{RelationalOperator, ReturnGraph}
 
 case class RelationalCypherResult[T <: Table[T]](
   maybeLogical: Option[LogicalOperator],
@@ -40,7 +40,14 @@ case class RelationalCypherResult[T <: Table[T]](
 
   override type Graph = RelationalCypherGraph[T]
 
-  override def getGraph: Option[Graph] = maybeRelational.map(_.graph)
+  override def getGraph: Option[Graph] = {
+    maybeRelational match {
+      case Some(op: ReturnGraph[T]) =>
+        val stgRecords = session.records.from(op.header, op.table)
+        Some(session.graphs.singleTableGraph(stgRecords, op.schema, op.tagStrategy(op.qgn).values.toSet)(op.context))
+      case _ => None
+    }
+  }
 
   override def getRecords: Option[RelationalCypherRecords[T]] = {
     maybeRelational.map(op => session.records.from(op.header, op.table, op.returnItems.map(_.map(_.name))))
