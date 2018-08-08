@@ -257,11 +257,6 @@ object ConstructGraphPlanner {
     copyExprs.zip(origExprs).toMap
   }
 
-  /**
-    *org.apache.spark.sql.functions$#monotonically_increasing_id()
-    *
-    * @param columnIdPartition column partition within DF partition
-    */
   // TODO: improve documentation and add specific tests
   def generateId(columnIdPartition: Int, numberOfColumnPartitions: Int): Expr = {
     val columnPartitionBits = math.log(numberOfColumnPartitions).floor.toInt + 1
