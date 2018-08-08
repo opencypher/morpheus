@@ -117,7 +117,7 @@ object RelationalPlanner {
 
         val startFrom = sourceOp.graph match {
           case e: LogicalCatalogGraph => relational.Start(e.qualifiedGraphName)
-          case c: LogicalPatternGraph => plannerContext.constructedGraphPlans(c.name)
+          case c: LogicalPatternGraph => plannerContext.constructedGraphPlans(c.qualifiedGraphName)
         }
 
         val second = relational.Scan(startFrom, rel.cypherType).assignScanName(rel.name)
@@ -239,7 +239,7 @@ object RelationalPlanner {
       case g: LogicalCatalogGraph =>
         relational.Start(g.qualifiedGraphName, Some(plannerContext.inputRecords))(runtimeContext)
       case p: LogicalPatternGraph =>
-        plannerContext.constructedGraphPlans.get(p.name) match {
+        plannerContext.constructedGraphPlans.get(p.qualifiedGraphName) match {
           case Some(plan) => plan // the graph was already constructed
           case None => planConstructGraph(None, p)
         }

@@ -54,27 +54,29 @@ trait EmptyFields extends LogicalOperator {
   override val fields: Set[Var] = Set.empty
 }
 
-trait LogicalGraph {
+sealed trait LogicalGraph {
   def schema: Schema
 
   override def toString = s"${getClass.getSimpleName}($args)"
 
   protected def args: String
 
+  def qualifiedGraphName: QualifiedGraphName
+
 
 }
 
-final case class LogicalCatalogGraph(qualifiedGraphName: QualifiedGraphName, schema: Schema) extends LogicalGraph {
+case class LogicalCatalogGraph(qualifiedGraphName: QualifiedGraphName, schema: Schema) extends LogicalGraph {
   override protected def args: String = qualifiedGraphName.toString
 }
 
-final case class LogicalPatternGraph(
+case class LogicalPatternGraph(
   schema: Schema,
   clones: Map[Var, Var],
   newEntities: Set[ConstructedEntity],
   sets: List[SetPropertyItem[Expr]],
   onGraphs: List[QualifiedGraphName],
-  name: QualifiedGraphName
+  qualifiedGraphName: QualifiedGraphName
 ) extends LogicalGraph {
 
   override protected def args: String = {

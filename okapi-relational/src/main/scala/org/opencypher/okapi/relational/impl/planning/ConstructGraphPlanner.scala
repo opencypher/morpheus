@@ -55,7 +55,7 @@ object ConstructGraphPlanner {
         //case h :: Nil => operatorProducer.planStart(Some(h)) // Just one graph, no union required
         case several =>
           val onGraphPlans = several.map(qgn => relational.Start[T](qgn))
-          relational.GraphUnionAll[T](onGraphPlans, construct.name)
+          relational.GraphUnionAll[T](onGraphPlans, construct.qualifiedGraphName)
       }
     }
     val inputTablePlan = in.map(RelationalPlanner.process(_)(plannerContext, context)).getOrElse(relational.Start[T](plannerContext.session.emptyGraphQgn))
@@ -134,7 +134,7 @@ object ConstructGraphPlanner {
     val constructOp = ConstructGraph(graph, name, constructTagStrategy, construct)
 
     plannerContext.constructedGraphPlans += (name -> constructOp)
-    context.constructedGraphCatalog += (construct.name -> graph)
+    context.constructedGraphCatalog += (construct.qualifiedGraphName -> graph)
     constructOp
   }
 
