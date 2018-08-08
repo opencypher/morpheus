@@ -134,6 +134,7 @@ object ConstructGraphPlanner {
     val constructOp = ConstructGraph(graph, name, constructTagStrategy, construct)
 
     plannerContext.constructedGraphPlans += (name -> constructOp)
+    context.constructedGraphCatalog += (construct.name -> graph)
     constructOp
   }
 
@@ -290,11 +291,7 @@ final case class ConstructGraph[T <: Table[T]](
 
   override def returnItems: Option[Seq[Var]] = None
 
-  override lazy val graph: RelationalCypherGraph[T] = {
-    // Register constructed graph in context
-    context.constructedGraphCatalog += (construct.name -> constructedGraph)
-    constructedGraph
-  }
+  override lazy val graph: RelationalCypherGraph[T] = constructedGraph
 
   override def toString: String = {
     val entities = construct.clones.keySet ++ construct.newEntities.map(_.v)
