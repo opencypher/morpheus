@@ -35,7 +35,6 @@ import org.opencypher.okapi.relational.api.schema.RelationalSchema._
 import org.opencypher.okapi.relational.api.table.{RelationalCypherRecords, Table}
 import org.opencypher.okapi.relational.impl.operators.{Distinct, RelationalOperator, TabularUnionAll}
 import org.opencypher.okapi.relational.impl.planning.RelationalPlanner._
-import org.opencypher.okapi.relational.impl.planning.RetagVariable
 
 // TODO: This should be a planned tree of physical operators instead of a graph
 final case class UnionGraph[T <: Table[T]](graphsToReplacements: Map[RelationalCypherGraph[T], Map[Int, Int]])
