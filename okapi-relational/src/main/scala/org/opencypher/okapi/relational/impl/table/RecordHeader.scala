@@ -355,7 +355,7 @@ case class RecordHeader(exprToColumn: Map[Expr, String]) {
       throw IllegalArgumentException("two headers with non overlapping expressions", s"overlapping expressions: $expressionOverlap")
     }
 
-    val cleanOther = if (columns.intersect(other.columns).nonEmpty) {
+    val cleanOther = if (this.columns.intersect(other.columns).nonEmpty) {
       val (rename, keep) = other.expressions.partition(e => this.columns.contains(other.column(e)))
       val withKept = keep.foldLeft(RecordHeader.empty) {
         case (acc, next) => acc.addExprToColumn(next, other.column(next))
