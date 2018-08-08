@@ -38,7 +38,7 @@ import org.opencypher.spark.api.value.CAPSRelationship
 import org.opencypher.spark.impl.CAPSConverters._
 import org.opencypher.spark.testing.support.creation.caps.{CAPSScanGraphFactory, CAPSTestGraphFactory}
 
-class CAPSScanGraphTest extends CAPSGraphTest {
+class ScanGraphTest extends CAPSGraphTest {
 
   override def capsGraphFactory: CAPSTestGraphFactory = CAPSScanGraphFactory
 

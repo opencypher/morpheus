@@ -26,8 +26,11 @@
  */
 package org.opencypher.okapi.relational.api.graph
 
-import org.opencypher.okapi.api.graph.CypherSession
-import org.opencypher.okapi.relational.api.table.{Table, RelationalCypherRecordsFactory}
+import org.opencypher.okapi.api.graph.{CypherSession, QualifiedGraphName}
+import org.opencypher.okapi.api.value.CypherValue.CypherMap
+import org.opencypher.okapi.relational.api.planning.RelationalRuntimeContext
+import org.opencypher.okapi.relational.api.table.{RelationalCypherRecordsFactory, Table}
+import org.opencypher.okapi.relational.impl.RelationalConverters._
 
 trait RelationalCypherSession[T <: Table[T]] extends CypherSession {
 
@@ -37,4 +40,9 @@ trait RelationalCypherSession[T <: Table[T]] extends CypherSession {
 
   private[opencypher] def graphs: RelationalCypherGraphFactory[T]
 
+  private[opencypher] def graphAt(qgn: QualifiedGraphName): Option[RelationalCypherGraph[T]] =
+    if (catalog.graphNames.contains(qgn)) Some(catalog.graph(qgn).asRelational) else None
+
+  private[opencypher] def basicRuntimeContext(parameters: CypherMap = CypherMap.empty): RelationalRuntimeContext[T] =
+    RelationalRuntimeContext(graphAt, parameters)(this)
 }

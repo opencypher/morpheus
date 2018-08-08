@@ -27,11 +27,12 @@
 package org.opencypher.spark.testing.support.creation.caps
 
 import org.opencypher.okapi.api.types.{CTNode, CTRelationship}
-import org.opencypher.okapi.ir.api.expr.Var
+import org.opencypher.okapi.ir.api.expr.{Expr, Var}
 import org.opencypher.okapi.relational.api.graph.RelationalCypherGraph
+import org.opencypher.okapi.relational.impl.operators.{Join, Start}
+import org.opencypher.okapi.relational.impl.planning.LeftOuterJoin
 import org.opencypher.okapi.testing.propertygraph.InMemoryTestGraph
 import org.opencypher.spark.api.CAPSSession
-import org.opencypher.spark.impl.CAPSRecords
 import org.opencypher.spark.impl.table.SparkTable.DataFrameTable
 
 object SingleTableGraphFactory extends CAPSTestGraphFactory {
@@ -41,12 +42,13 @@ object SingleTableGraphFactory extends CAPSTestGraphFactory {
     val nodes = scanGraph.nodes("n")
     val rels = scanGraph.relationships("r")
 
-    val lhs = nodes.df.col(nodes.header.column(Var("n")(CTNode)))
-    val rhs = rels.df.col(rels.header.column(rels.header.startNodeFor(Var("r")(CTRelationship))))
+    val nodesStartOp = Start(caps.emptyGraphQgn, Some(nodes))(caps.basicRuntimeContext())
+    val relsStartOp = Start(caps.emptyGraphQgn, Some(rels))(caps.basicRuntimeContext())
 
-    val baseTableData = nodes.df.join(rels.df, lhs === rhs, "left_outer")
+    val joinExpr: (Expr, Expr) = Var("n")(CTNode) -> relsStartOp.header.startNodeFor(Var("r")(CTRelationship))
+    val joinOp = Join(nodesStartOp, relsStartOp, Seq(joinExpr), LeftOuterJoin)
 
-    val baseTable = CAPSRecords(nodes.header ++ rels.header, baseTableData)
+    val baseTable = caps.records.from(joinOp.header, joinOp.table)
 
     caps.graphs.singleTableGraph(baseTable, scanGraph.schema, Set(0))(caps.basicRuntimeContext())
   }

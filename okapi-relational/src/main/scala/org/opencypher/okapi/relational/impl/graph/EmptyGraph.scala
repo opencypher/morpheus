@@ -24,41 +24,36 @@
  * described as "implementation extensions to Cypher" or as "proposed changes to
  * Cypher that are not yet approved by the openCypher community".
  */
-package org.opencypher.spark.impl.graph
+package org.opencypher.okapi.relational.impl.graph
 
-import org.apache.spark.sql.DataFrame
-import org.apache.spark.storage.StorageLevel
-import org.opencypher.okapi.relational.api.graph.RelationalCypherGraph
-import org.opencypher.spark.impl.table.SparkTable.DataFrameTable
+import org.opencypher.okapi.api.schema.Schema
+import org.opencypher.okapi.api.types.CypherType
+import org.opencypher.okapi.ir.api.expr.Var
+import org.opencypher.okapi.relational.api.graph.{RelationalCypherGraph, RelationalCypherSession}
+import org.opencypher.okapi.relational.api.table.{RelationalCypherRecords, Table}
+import org.opencypher.okapi.relational.impl.operators.{RelationalOperator, Start}
+import org.opencypher.okapi.relational.impl.table.RecordHeader
 
-object CAPSGraph {
+sealed case class EmptyGraph[T <: Table[T]](implicit val session: RelationalCypherSession[T]) extends RelationalCypherGraph[T] {
 
-  implicit class PersistenceOps(val graph: RelationalCypherGraph[DataFrameTable]) extends AnyVal {
+  override type Session = RelationalCypherSession[T]
 
-    private def foreachDf(f: DataFrame => Unit): Unit = {
-      graph.tables.foreach(t => f(t.df))
-    }
+  override type Records = RelationalCypherRecords[T]
 
-    def persist(): RelationalCypherGraph[DataFrameTable] = {
-      foreachDf(_.persist())
-      graph
-    }
+  override val schema: Schema = Schema.empty
 
-    def persist(storageLevel: StorageLevel): RelationalCypherGraph[DataFrameTable] = {
-      foreachDf(_.persist(storageLevel))
-      graph
-    }
+  override def cache(): EmptyGraph[T] = this
 
-    def unpersist(): RelationalCypherGraph[DataFrameTable] = {
-      foreachDf(_.unpersist())
-      graph
-    }
+  override def tables: Seq[T] = Seq.empty
 
-    def unpersist(blocking: Boolean): RelationalCypherGraph[DataFrameTable] = {
-      foreachDf(_.unpersist(blocking))
-      graph
-    }
+  override def tags: Set[Int] = Set.empty
 
+  override private[opencypher] def scanOperator(
+    entityType: CypherType,
+    exactLabelMatch: Boolean
+  ): RelationalOperator[T] = {
+    val scanHeader = RecordHeader.empty.withExpr(Var("")(entityType))
+    val records = session.records.empty(scanHeader)
+    Start(records)(session.basicRuntimeContext())
   }
-
 }

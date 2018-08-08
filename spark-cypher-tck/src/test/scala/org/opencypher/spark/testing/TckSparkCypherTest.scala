@@ -30,7 +30,6 @@ import java.io.File
 
 import org.opencypher.okapi.tck.test.Tags.{BlackList, WhiteList}
 import org.opencypher.okapi.tck.test.{ScenariosFor, TCKGraph}
-import org.opencypher.spark.impl.graph.CAPSGraph
 import org.opencypher.spark.testing.support.creation.caps.{CAPSScanGraphFactory, CAPSTestGraphFactory}
 import org.opencypher.tools.tck.api.CypherTCK
 import org.scalatest.Tag

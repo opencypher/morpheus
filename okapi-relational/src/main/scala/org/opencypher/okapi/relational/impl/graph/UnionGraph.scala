@@ -24,34 +24,32 @@
  * described as "implementation extensions to Cypher" or as "proposed changes to
  * Cypher that are not yet approved by the openCypher community".
  */
-package org.opencypher.spark.impl.graph
+package org.opencypher.okapi.relational.impl.graph
 
 import org.opencypher.okapi.api.schema.Schema
 import org.opencypher.okapi.api.types.CypherType
 import org.opencypher.okapi.ir.api.expr.Var
-import org.opencypher.okapi.relational.api.graph.RelationalCypherGraph
+import org.opencypher.okapi.relational.api.graph.{RelationalCypherGraph, RelationalCypherSession}
 import org.opencypher.okapi.relational.api.planning.RelationalRuntimeContext
 import org.opencypher.okapi.relational.api.schema.RelationalSchema._
-import org.opencypher.okapi.relational.impl.operators._
+import org.opencypher.okapi.relational.api.table.{RelationalCypherRecords, Table}
+import org.opencypher.okapi.relational.impl.operators.{Distinct, RelationalOperator, TabularUnionAll}
 import org.opencypher.okapi.relational.impl.planning.RelationalPlanner._
 import org.opencypher.okapi.relational.impl.planning.RetagVariable
-import org.opencypher.spark.api.CAPSSession
-import org.opencypher.spark.impl.CAPSRecords
-import org.opencypher.spark.impl.table.SparkTable.DataFrameTable
 
 // TODO: This should be a planned tree of physical operators instead of a graph
-final case class UnionGraph(graphsToReplacements: Map[RelationalCypherGraph[DataFrameTable], Map[Int, Int]])(
-  implicit override val session: CAPSSession,
-  context: RelationalRuntimeContext[DataFrameTable]
-) extends RelationalCypherGraph[DataFrameTable] {
+final case class UnionGraph[T <: Table[T]](graphsToReplacements: Map[RelationalCypherGraph[T], Map[Int, Int]])
+  (implicit context: RelationalRuntimeContext[T]) extends RelationalCypherGraph[T] {
 
-  override type Records = CAPSRecords
+  override implicit val session: RelationalCypherSession[T] = context.session
 
-  override type Session = CAPSSession
+  override type Records = RelationalCypherRecords[T]
+
+  override type Session = RelationalCypherSession[T]
 
   require(graphsToReplacements.nonEmpty, "Union requires at least one graph")
 
-  override def tables: Seq[DataFrameTable] = graphsToReplacements.keys.flatMap(_.tables).toSeq
+  override def tables: Seq[T] = graphsToReplacements.keys.flatMap(_.tables).toSeq
 
   override lazy val tags: Set[Int] = graphsToReplacements.values.flatMap(_.values).toSet
 
@@ -59,12 +57,12 @@ final case class UnionGraph(graphsToReplacements: Map[RelationalCypherGraph[Data
     graphsToReplacements.keys.map(g => g.schema).foldLeft(Schema.empty)(_ ++ _)
   }
 
-  override def toString = s"CAPSUnionGraph(graphs=[${graphsToReplacements.mkString(",")}])"
+  override def toString = s"UnionGraph(graphs=[${graphsToReplacements.mkString(",")}])"
 
   override private[opencypher] def scanOperator(
     entityType: CypherType,
     exactLabelMatch: Boolean
-  ): RelationalOperator[DataFrameTable] = {
+  ): RelationalOperator[T] = {
     val targetEntity = Var("")(entityType)
     val targetEntityHeader = schema.headerForEntity(targetEntity, exactLabelMatch)
     val alignedScans = graphsToReplacements.keys

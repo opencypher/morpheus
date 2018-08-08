@@ -28,7 +28,7 @@ package org.opencypher.spark.impl.acceptance
 
 import org.scalatest.Suites
 
-class CAPSScanGraphAcceptanceTest extends Suites(
+class ScanGraphAcceptanceTest extends Suites(
   Aggregation_ScanGraph,
   BoundedVarExpand_ScanGraph,
   ExpandInto_ScanGraph,

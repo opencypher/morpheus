@@ -24,39 +24,20 @@
  * described as "implementation extensions to Cypher" or as "proposed changes to
  * Cypher that are not yet approved by the openCypher community".
  */
-package org.opencypher.spark.impl.graph
+package org.opencypher.okapi.relational.impl
 
-import org.opencypher.okapi.api.types.CypherType
-import org.opencypher.okapi.ir.api.expr.Var
+import org.opencypher.okapi.api.graph.PropertyGraph
+import org.opencypher.okapi.impl.exception.UnsupportedOperationException
 import org.opencypher.okapi.relational.api.graph.RelationalCypherGraph
-import org.opencypher.okapi.relational.impl.operators.{RelationalOperator, Start}
-import org.opencypher.okapi.relational.impl.table.RecordHeader
-import org.opencypher.spark.api.CAPSSession
-import org.opencypher.spark.impl.CAPSRecords
-import org.opencypher.spark.impl.table.SparkTable.DataFrameTable
-import org.opencypher.spark.schema.CAPSSchema
+import org.opencypher.okapi.relational.api.table.Table
 
-sealed case class EmptyGraph(implicit val caps: CAPSSession) extends RelationalCypherGraph[DataFrameTable] {
+object RelationalConverters {
 
-  override type Session = CAPSSession
-
-  override type Records = CAPSRecords
-
-  override val schema: CAPSSchema = CAPSSchema.empty
-
-  override def session: CAPSSession = caps
-
-  override def cache(): EmptyGraph = this
-
-  override def tables: Seq[DataFrameTable] = Seq.empty
-
-  override def tags: Set[Int] = Set.empty
-
-  override private[opencypher] def scanOperator(
-    entityType: CypherType,
-    exactLabelMatch: Boolean
-  ): RelationalOperator[DataFrameTable] = {
-    val scanHeader = RecordHeader.empty.withExpr(Var("")(entityType))
-    Start(caps.records.empty(scanHeader))(session.basicRuntimeContext())
+  implicit class RichPropertyGraph[T <: Table[T]](val graph: PropertyGraph) extends AnyVal {
+    def asRelational: RelationalCypherGraph[T] = graph.asInstanceOf[RelationalCypherGraph[_]] match {
+      // The cast is necessary since okapi-API does not expose the underlying table types
+      case caps: RelationalCypherGraph[T] => caps.asInstanceOf[RelationalCypherGraph[T]]
+      case _ => throw UnsupportedOperationException(s"can only handle relational graphs, got $graph")
+    }
   }
 }

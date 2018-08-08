@@ -35,10 +35,8 @@ import org.opencypher.okapi.api.table.CypherRecords
 import org.opencypher.okapi.api.value.CypherValue.CypherMap
 import org.opencypher.okapi.impl.exception.UnsupportedOperationException
 import org.opencypher.okapi.impl.graph.CypherCatalog
-import org.opencypher.okapi.relational.api.graph.{RelationalCypherGraph, RelationalCypherSession}
-import org.opencypher.okapi.relational.api.planning.RelationalRuntimeContext
+import org.opencypher.okapi.relational.api.graph.RelationalCypherSession
 import org.opencypher.spark.api.io._
-import org.opencypher.spark.impl.CAPSConverters._
 import org.opencypher.spark.impl.graph.CAPSGraphFactory
 import org.opencypher.spark.impl.table.SparkTable.DataFrameTable
 import org.opencypher.spark.impl.{CAPSRecords, CAPSRecordsFactory, CAPSSessionImpl}
@@ -54,18 +52,6 @@ trait CAPSSession extends RelationalCypherSession[DataFrameTable] {
   def sql(query: String): CypherRecords
 
   def sparkSession: SparkSession
-
-  private def graphAt(qgn: QualifiedGraphName): Option[RelationalCypherGraph[DataFrameTable]] = {
-    if (catalog.graphNames.contains(qgn)) {
-      Some(catalog.graph(qgn).asCaps)
-    }
-    else {
-      None
-    }
-  }
-
-  private[spark] def basicRuntimeContext(parameters: CypherMap = CypherMap.empty): RelationalRuntimeContext[DataFrameTable] =
-    RelationalRuntimeContext(graphAt, parameters)
 
   override val records: CAPSRecordsFactory = CAPSRecordsFactory()
 

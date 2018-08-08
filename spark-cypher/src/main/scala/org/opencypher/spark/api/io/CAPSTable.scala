@@ -27,24 +27,19 @@
 package org.opencypher.spark.api.io
 
 import org.apache.spark.sql.{DataFrame, _}
-import org.opencypher.okapi.api.io.conversion.{EntityMapping, NodeMapping, RelationshipMapping}
-import org.opencypher.okapi.api.schema.Schema
-import org.opencypher.okapi.api.types.{DefiniteCypherType, _}
+import org.opencypher.okapi.api.io.conversion.{NodeMapping, RelationshipMapping}
+import org.opencypher.okapi.api.types._
 import org.opencypher.okapi.impl.util.StringEncodingUtilities._
-import org.opencypher.okapi.relational.api.io.EntityTable
+import org.opencypher.okapi.relational.api.io.{EntityTable, NodeTable, RelationshipTable}
 import org.opencypher.spark.api.CAPSSession
 import org.opencypher.spark.impl.DataFrameOps._
 import org.opencypher.spark.impl.table.SparkTable.DataFrameTable
 import org.opencypher.spark.impl.util.Annotation
 import org.opencypher.spark.impl.{CAPSRecords, RecordBehaviour}
-import org.opencypher.spark.schema.CAPSSchema
-import org.opencypher.spark.schema.CAPSSchema._
 
 import scala.reflect.runtime.universe._
 
 trait CAPSEntityTable extends EntityTable[DataFrameTable] {
-  // TODO: create CTEntity type
-  private[spark] def entityType: CypherType with DefiniteCypherType
 
   private[spark] def records(implicit caps: CAPSSession): CAPSRecords = caps.records.fromEntityTable(entityTable = this)
 }
@@ -52,11 +47,9 @@ trait CAPSEntityTable extends EntityTable[DataFrameTable] {
 case class CAPSNodeTable(
   override val mapping: NodeMapping,
   override val table: DataFrameTable
-) extends NodeTable(mapping, table) with CAPSEntityTable {
+) extends NodeTable(mapping, table) with CAPSEntityTable with RecordBehaviour {
 
   override type Records = CAPSNodeTable
-
-  override private[spark] def entityType = mapping.cypherType
 
   override def cache(): CAPSNodeTable = {
     table.df.cache()
@@ -129,11 +122,9 @@ object CAPSNodeTable {
 case class CAPSRelationshipTable(
   override val mapping: RelationshipMapping,
   override val table: DataFrameTable
-) extends RelationshipTable(mapping, table) with CAPSEntityTable {
+) extends RelationshipTable(mapping, table) with CAPSEntityTable with RecordBehaviour {
 
   override type Records = CAPSRelationshipTable
-
-  override private[spark] def entityType = mapping.cypherType
 
   override def cache(): CAPSRelationshipTable = {
     table.df.cache()
@@ -222,78 +213,4 @@ object CAPSRelationshipTable {
   }
 }
 
-/**
-  * A node table describes how to map an input data frame to a Cypher node.
-  *
-  * A node table needs to have the canonical column ordering specified by [[EntityMapping#allSourceKeys]].
-  * The easiest way to transform the table to a canonical column ordering is to use one of the constructors on the
-  * companion object.
-  *
-  * Column names prefixed with `property#` are decoded by [[org.opencypher.okapi.impl.util.StringEncodingUtilities]] to
-  * recover the original property name.
-  *
-  * @param mapping mapping from input data description to a Cypher node
-  * @param table   input data frame
-  */
-abstract class NodeTable(mapping: NodeMapping, table: DataFrameTable)
-  extends EntityTable[DataFrameTable] with RecordBehaviour {
 
-  override lazy val schema: CAPSSchema = {
-    val propertyKeys = mapping.propertyMapping.toSeq.map {
-      case (propertyKey, sourceKey) => propertyKey -> table.columnType(sourceKey)
-    }
-
-    mapping.optionalLabelMapping.keys.toSet.subsets
-      .map(_.union(mapping.impliedLabels))
-      .map(combo => Schema.empty.withNodePropertyKeys(combo.toSeq: _*)(propertyKeys: _*))
-      .reduce(_ ++ _)
-      .asCaps
-  }
-
-  override protected def verify(): Unit = {
-    super.verify()
-    mapping.optionalLabelMapping.values.foreach { optionalLabelKey =>
-      table.verifyColumnType(optionalLabelKey, CTBoolean, "optional label")
-    }
-  }
-}
-
-/**
-  * A relationship table describes how to map an input data frame to a Cypher relationship.
-  *
-  * A relationship table needs to have the canonical column ordering specified by [[EntityMapping#allSourceKeys]].
-  * The easiest way to transform the table to a canonical column ordering is to use one of the constructors on the
-  * companion object.
-  *
-  * @param mapping mapping from input data description to a Cypher relationship
-  * @param table   input data frame
-  */
-abstract class RelationshipTable(mapping: RelationshipMapping, table: DataFrameTable)
-  extends EntityTable[DataFrameTable] with RecordBehaviour {
-
-  override lazy val schema: CAPSSchema = {
-    val relTypes = mapping.relTypeOrSourceRelTypeKey match {
-      case Left(name) => Set(name)
-      case Right((_, possibleTypes)) => possibleTypes
-    }
-
-    val propertyKeys = mapping.propertyMapping.toSeq.map {
-      case (propertyKey, sourceKey) => propertyKey -> table.columnType(sourceKey)
-    }
-
-    relTypes.foldLeft(Schema.empty) {
-      case (partialSchema, relType) => partialSchema.withRelationshipPropertyKeys(relType)(propertyKeys: _*)
-    }.asCaps
-  }
-
-  override protected def verify(): Unit = {
-    super.verify()
-    table.verifyColumnType(mapping.sourceStartNodeKey, CTInteger, "start node")
-    table.verifyColumnType(mapping.sourceEndNodeKey, CTInteger, "end node")
-    mapping.relTypeOrSourceRelTypeKey.right.map { case (_, relTypes) =>
-      relTypes.foreach { relType =>
-        table.verifyColumnType(relType.toRelTypeColumnName, CTBoolean, "relationship type")
-      }
-    }
-  }
-}

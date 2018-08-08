@@ -31,27 +31,29 @@ import org.opencypher.okapi.api.schema.Schema
 import org.opencypher.okapi.api.types.{CTNode, CTRelationship, CypherType}
 import org.opencypher.okapi.impl.exception.UnsupportedOperationException
 import org.opencypher.okapi.relational.api.planning.RelationalRuntimeContext
-import org.opencypher.okapi.relational.api.table.{Table, RelationalCypherRecords}
+import org.opencypher.okapi.relational.api.table.{RelationalCypherRecords, Table}
 import org.opencypher.okapi.relational.api.tagging.TagSupport._
+import org.opencypher.okapi.relational.impl.graph.{EmptyGraph, SingleTableGraph, UnionGraph}
 import org.opencypher.okapi.relational.impl.operators.RelationalOperator
 import org.opencypher.okapi.relational.impl.planning.RelationalPlanner._
 
 trait RelationalCypherGraphFactory[T <: Table[T]] {
 
-  type Graph <: RelationalCypherGraph[T]
+  type Graph = RelationalCypherGraph[T]
+
+  implicit val session: RelationalCypherSession[T]
 
   def singleTableGraph(records: RelationalCypherRecords[T], schema: Schema, tagsUsed: Set[Int])
-    (implicit context: RelationalRuntimeContext[T]): Graph
+    (implicit context: RelationalRuntimeContext[T]): Graph = SingleTableGraph(records, schema, tagsUsed)
 
   def unionGraph(graphs: RelationalCypherGraph[T]*)(implicit context: RelationalRuntimeContext[T]): Graph = {
     unionGraph(computeRetaggings(graphs.map(g => g -> g.tags).toMap))
   }
 
   def unionGraph(graphsToReplacements: Map[RelationalCypherGraph[T], Map[Int, Int]])
-    (implicit context: RelationalRuntimeContext[T]): Graph
+    (implicit context: RelationalRuntimeContext[T]): Graph = UnionGraph(graphsToReplacements)
 
-  val empty: Graph
-
+  def empty: Graph = EmptyGraph()
 }
 
 trait RelationalCypherGraph[T <: Table[T]] extends PropertyGraph {

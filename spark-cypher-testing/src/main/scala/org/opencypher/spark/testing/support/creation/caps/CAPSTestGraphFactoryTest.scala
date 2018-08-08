@@ -103,6 +103,6 @@ class SingleTableGraphFactoryTest extends CAPSTestGraphFactoryTest {
   override def factory: CAPSTestGraphFactory = SingleTableGraphFactory
 }
 
-class CAPSScanGraphFactoryTest extends CAPSTestGraphFactoryTest {
+class ScanGraphFactoryTest extends CAPSTestGraphFactoryTest {
   override def factory: CAPSTestGraphFactory = CAPSScanGraphFactory
 }

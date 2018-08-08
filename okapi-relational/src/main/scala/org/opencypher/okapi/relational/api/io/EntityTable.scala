@@ -28,13 +28,13 @@ package org.opencypher.okapi.relational.api.io
 
 import org.opencypher.okapi.api.io.conversion.{EntityMapping, NodeMapping, RelationshipMapping}
 import org.opencypher.okapi.api.schema.Schema
-import org.opencypher.okapi.api.types.{CTBoolean, CTInteger, CTNode, CypherType}
+import org.opencypher.okapi.api.types._
 import org.opencypher.okapi.impl.exception.IllegalArgumentException
 import org.opencypher.okapi.impl.util.StringEncodingUtilities._
 import org.opencypher.okapi.ir.api.expr._
 import org.opencypher.okapi.ir.api.{Label, PropertyKey, RelType}
 import org.opencypher.okapi.relational.api.io.RelationalEntityMapping._
-import org.opencypher.okapi.relational.api.table.{Table, RelationalCypherRecords}
+import org.opencypher.okapi.relational.api.table.{RelationalCypherRecords, Table}
 import org.opencypher.okapi.relational.impl.table.RecordHeader
 
 /**
@@ -47,6 +47,9 @@ trait EntityTable[T <: Table[T]] extends RelationalCypherRecords[T] {
   def schema: Schema
 
   def mapping: EntityMapping
+
+  // TODO: create CTEntity type
+  val entityType: CypherType with DefiniteCypherType = mapping.cypherType
 
   def header: RecordHeader = mapping match {
     case n: NodeMapping => headerFrom(n)
@@ -83,6 +86,81 @@ trait EntityTable[T <: Table[T]] extends RelationalCypherRecords[T] {
       relationshipMapping.properties(relVar, table.columnType)
 
     RecordHeader(exprToColumn)
+  }
+}
+
+/**
+  * A node table describes how to map an input data frame to a Cypher node.
+  *
+  * A node table needs to have the canonical column ordering specified by [[EntityMapping#allSourceKeys]].
+  * The easiest way to transform the table to a canonical column ordering is to use one of the constructors on the
+  * companion object.
+  *
+  * Column names prefixed with `property#` are decoded by [[org.opencypher.okapi.impl.util.StringEncodingUtilities]] to
+  * recover the original property name.
+  *
+  * @param mapping mapping from input data description to a Cypher node
+  * @param table   input data frame
+  */
+abstract class NodeTable[T <: Table[T]](mapping: NodeMapping, table: T)
+  extends EntityTable[T] {
+
+  override lazy val schema: Schema = {
+    val propertyKeys = mapping.propertyMapping.toSeq.map {
+      case (propertyKey, sourceKey) => propertyKey -> table.columnType(sourceKey)
+    }
+
+    mapping.optionalLabelMapping.keys.toSet.subsets
+      .map(_.union(mapping.impliedLabels))
+      .map(combo => Schema.empty.withNodePropertyKeys(combo.toSeq: _*)(propertyKeys: _*))
+      .reduce(_ ++ _)
+  }
+
+  override protected def verify(): Unit = {
+    super.verify()
+    mapping.optionalLabelMapping.values.foreach { optionalLabelKey =>
+      table.verifyColumnType(optionalLabelKey, CTBoolean, "optional label")
+    }
+  }
+}
+
+/**
+  * A relationship table describes how to map an input data frame to a Cypher relationship.
+  *
+  * A relationship table needs to have the canonical column ordering specified by [[EntityMapping#allSourceKeys]].
+  * The easiest way to transform the table to a canonical column ordering is to use one of the constructors on the
+  * companion object.
+  *
+  * @param mapping mapping from input data description to a Cypher relationship
+  * @param table   input data frame
+  */
+abstract class RelationshipTable[T <: Table[T]](mapping: RelationshipMapping, table: T)
+  extends EntityTable[T] {
+
+  override lazy val schema: Schema = {
+    val relTypes = mapping.relTypeOrSourceRelTypeKey match {
+      case Left(name) => Set(name)
+      case Right((_, possibleTypes)) => possibleTypes
+    }
+
+    val propertyKeys = mapping.propertyMapping.toSeq.map {
+      case (propertyKey, sourceKey) => propertyKey -> table.columnType(sourceKey)
+    }
+
+    relTypes.foldLeft(Schema.empty) {
+      case (partialSchema, relType) => partialSchema.withRelationshipPropertyKeys(relType)(propertyKeys: _*)
+    }
+  }
+
+  override protected def verify(): Unit = {
+    super.verify()
+    table.verifyColumnType(mapping.sourceStartNodeKey, CTInteger, "start node")
+    table.verifyColumnType(mapping.sourceEndNodeKey, CTInteger, "end node")
+    mapping.relTypeOrSourceRelTypeKey.right.map { case (_, relTypes) =>
+      relTypes.foreach { relType =>
+        table.verifyColumnType(relType.toRelTypeColumnName, CTBoolean, "relationship type")
+      }
+    }
   }
 }
 

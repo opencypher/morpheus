@@ -32,7 +32,7 @@ import org.apache.spark.storage.StorageLevel
 import org.opencypher.okapi.api.types._
 import org.opencypher.okapi.api.value.CypherValue
 import org.opencypher.okapi.api.value.CypherValue.{CypherMap, CypherValue}
-import org.opencypher.okapi.impl.exception.NotImplementedException
+import org.opencypher.okapi.impl.exception.{IllegalArgumentException, NotImplementedException}
 import org.opencypher.okapi.ir.api.expr.{Expr, _}
 import org.opencypher.okapi.relational.api.table.Table
 import org.opencypher.okapi.relational.impl.planning._
@@ -60,12 +60,7 @@ object SparkTable {
     override def size: Long = df.count()
 
     override def select(cols: String*): DataFrameTable = {
-      if (cols.nonEmpty) {
-        df.select(cols.head, cols.tail: _*)
-      } else {
-        // TODO: this is used in Construct, check why this is necessary
-        df.select()
-      }
+      df.select(cols.map(df.col): _*)
     }
 
     override def filter(expr: Expr)(implicit header: RecordHeader, parameters: CypherMap): DataFrameTable = {
@@ -111,7 +106,7 @@ object SparkTable {
     }
 
     override def limit(items: Long): DataFrameTable = {
-      // TODO: Unsafe `toInt`
+      if (items > Int.MaxValue) throw IllegalArgumentException("an integer", items)
       df.limit(items.toInt)
     }
 

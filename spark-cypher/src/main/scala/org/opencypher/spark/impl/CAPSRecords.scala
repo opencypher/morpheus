@@ -29,11 +29,8 @@ package org.opencypher.spark.impl
 import java.util.Collections
 
 import org.apache.spark.sql._
-import org.apache.spark.storage.StorageLevel
 import org.opencypher.okapi.api.types._
 import org.opencypher.okapi.api.value.CypherValue.{CypherMap, CypherValue}
-import org.opencypher.okapi.impl.table._
-import org.opencypher.okapi.impl.util.PrintOptions
 import org.opencypher.okapi.relational.api.io.EntityTable
 import org.opencypher.okapi.relational.api.table.{RelationalCypherRecords, RelationalCypherRecordsFactory}
 import org.opencypher.okapi.relational.impl.table._
@@ -107,26 +104,6 @@ case class CAPSRecords(
     this
   }
 
-  def persist(): CAPSRecords = {
-    df.persist()
-    this
-  }
-
-  def persist(storageLevel: StorageLevel): CAPSRecords = {
-    df.persist(storageLevel)
-    this
-  }
-
-  def unpersist(): CAPSRecords = {
-    df.unpersist()
-    this
-  }
-
-  def unpersist(blocking: Boolean): CAPSRecords = {
-    df.unpersist(blocking)
-    this
-  }
-
   override def toString: String = {
     if (header.isEmpty) {
       s"CAPSRecords.empty"
@@ -137,9 +114,6 @@ case class CAPSRecords(
 }
 
 trait RecordBehaviour extends RelationalCypherRecords[DataFrameTable] {
-
-  override def show(implicit options: PrintOptions): Unit =
-    RecordsPrinter.print(this)
 
   override lazy val columnType: Map[String, CypherType] = table.df.columnType
 
@@ -162,7 +136,6 @@ trait RecordBehaviour extends RelationalCypherRecords[DataFrameTable] {
   override def collect: Array[CypherMap] =
     toCypherMaps.collect()
 
-  override def size: Long = table.df.count()
 
   def toCypherMaps: Dataset[CypherMap] = {
     import encoders._
