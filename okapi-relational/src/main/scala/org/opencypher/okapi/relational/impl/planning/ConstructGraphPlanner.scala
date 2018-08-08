@@ -41,14 +41,12 @@ import org.opencypher.okapi.relational.api.tagging.Tags._
 import org.opencypher.okapi.relational.impl.operators.RelationalOperator
 import org.opencypher.okapi.relational.impl.table.RecordHeader
 import org.opencypher.okapi.relational.impl.{operators => relational}
+import RelationalPlanner._
 
 object ConstructGraphPlanner {
 
   def planConstructGraph[T <: Table[T]](in: Option[LogicalOperator], construct: LogicalPatternGraph)
-    (
-      implicit plannerContext: RelationalPlannerContext[T],
-      runtimeContext: RelationalRuntimeContext[T]
-    ): RelationalOperator[T] = {
+    (implicit plannerContext: RelationalPlannerContext[T], context: RelationalRuntimeContext[T]): RelationalOperator[T] = {
 
     val onGraphPlan: RelationalOperator[T] = {
       construct.onGraphs match {
@@ -60,50 +58,17 @@ object ConstructGraphPlanner {
           relational.GraphUnionAll[T](onGraphPlans, construct.name)
       }
     }
-    val inputTablePlan = in.map(RelationalPlanner.process(_)(plannerContext, runtimeContext)).getOrElse(relational.Start[T](plannerContext.session.emptyGraphQgn))
+    val inputTablePlan = in.map(RelationalPlanner.process(_)(plannerContext, context)).getOrElse(relational.Start[T](plannerContext.session.emptyGraphQgn))
 
-    val constructGraphPlan = ConstructGraph(inputTablePlan, onGraphPlan, construct)
+    val onGraph = onGraphPlan.graph
 
-    plannerContext.constructedGraphPlans += (construct.name -> constructGraphPlan)
-    constructGraphPlan
-  }
-}
-
-final case class ConstructGraph[T <: Table[T]](
-  lhs: RelationalOperator[T],
-  rhs: RelationalOperator[T],
-  construct: LogicalPatternGraph
-) extends RelationalOperator[T] {
-
-  override lazy val header: RecordHeader = RecordHeader.empty
-
-  override lazy val _table: T = session.records.unit().table
-
-  override def toString: String = {
-    val entities = construct.clones.keySet ++ construct.newEntities.map(_.v)
-    s"ConstructGraph(on=[${construct.onGraphs.mkString(", ")}], entities=[${entities.mkString(", ")}])"
-  }
-
-  private def pickFreeTag(tagStrategy: Map[QualifiedGraphName, Map[Int, Int]]): Int = {
-    val usedTags = tagStrategy.values.flatMap(_.values).toSet
-    Tags.pickFreeTag(usedTags)
-  }
-
-  private def identityRetaggings(g: RelationalCypherGraph[T]): (RelationalCypherGraph[T], Map[Int, Int]) = {
-    g -> g.tags.zip(g.tags).toMap
-  }
-
-  override lazy val (graph, graphName, tagStrategy): (RelationalCypherGraph[T], QualifiedGraphName, TagStrategy) = {
-
-    val onGraph = rhs.graph
-
-    val unionTagStrategy: Map[QualifiedGraphName, Map[Int, Int]] = rhs.tagStrategy
+    val unionTagStrategy: Map[QualifiedGraphName, Map[Int, Int]] = onGraphPlan.tagStrategy
 
     val LogicalPatternGraph(schema, clonedVarsToInputVars, newEntities, sets, _, name) = construct
 
     val matchGraphs: Set[QualifiedGraphName] = clonedVarsToInputVars.values.map(_.cypherType.graph.get).toSet
     val allGraphs = unionTagStrategy.keySet ++ matchGraphs
-    val tagsForGraph: Map[QualifiedGraphName, Set[Int]] = allGraphs.map(qgn => qgn -> resolveTags(qgn)).toMap
+    val tagsForGraph: Map[QualifiedGraphName, Set[Int]] = allGraphs.map(qgn => qgn -> context.resolveGraph(qgn).tags).toMap
 
     val constructTagStrategy = computeRetaggings(tagsForGraph, unionTagStrategy)
 
@@ -113,13 +78,13 @@ final case class ConstructGraph[T <: Table[T]](
       .map(_.swap)
 
     val aliasOp: RelationalOperator[T] = if (aliasClones.isEmpty) {
-      lhs
+      inputTablePlan
     } else {
-      relational.Alias(lhs, aliasClones.map { case (expr, alias) => expr as alias }.toSeq)
+      relational.Alias(inputTablePlan, aliasClones.map { case (expr, alias) => expr as alias }.toSeq)
     }
 
     val retagBaseTableOp = clonedVarsToInputVars.foldLeft(aliasOp) {
-      case (op, (alias, original)) => RetagVariable(op, alias, constructTagStrategy(original.cypherType.graph.get))
+      case (op, (alias, original)) => op.retagVariable(alias, constructTagStrategy(original.cypherType.graph.get))
     }
 
     // Construct NEW entities
@@ -128,12 +93,12 @@ final case class ConstructGraph[T <: Table[T]](
         Set.empty[Int] -> retagBaseTableOp
       } else {
         val newEntityTag = pickFreeTag(constructTagStrategy)
-        val entitiesOp = createEntities(retagBaseTableOp, newEntities, newEntityTag)
+        val entitiesOp = planConstructEntities(retagBaseTableOp, newEntities, newEntityTag)
 
         val entityTableWithProperties = sets.foldLeft(entitiesOp) {
           case (currentOp, SetPropertyItem(propertyKey, v, valueExpr)) =>
             val propertyExpression = Property(v, PropertyKey(propertyKey))(valueExpr.cypherType)
-            ConstructProperty(currentOp, v, propertyExpression, valueExpr)
+            currentOp.addInto(valueExpr, propertyExpression)
         }
         Set(newEntityTag) -> entityTableWithProperties
       }
@@ -156,22 +121,33 @@ final case class ConstructGraph[T <: Table[T]](
         tags ++ remappedTags
     }
 
-    val patternGraphRecords = session.records.from(patternGraphTableOp.header, patternGraphTableOp.table)
+    val patternGraphRecords = context.session.records.from(patternGraphTableOp.header, patternGraphTableOp.table)
 
-    val patternGraph = session.graphs.singleTableGraph(patternGraphRecords, schema, tagsUsed)
+    val patternGraph = context.session.graphs.singleTableGraph(patternGraphRecords, schema, tagsUsed)
 
-    val constructedCombinedWithOn = if (onGraph == session.graphs.empty) {
-      session.graphs.unionGraph(patternGraph)
+    val graph = if (onGraph == context.session.graphs.empty) {
+      context.session.graphs.unionGraph(patternGraph)
     } else {
-      session.graphs.unionGraph(Map(identityRetaggings(onGraph), identityRetaggings(patternGraph)))
+      context.session.graphs.unionGraph(Map(identityRetaggings(onGraph), identityRetaggings(patternGraph)))
     }
 
-    context.constructedGraphCatalog += (construct.name -> constructedCombinedWithOn)
+    val constructOp = ConstructGraph(graph, name, constructTagStrategy, construct)
 
-    (constructedCombinedWithOn, name, constructTagStrategy)
+    plannerContext.constructedGraphPlans += (name -> constructOp)
+    context.constructedGraphCatalog += (construct.name -> graph)
+    constructOp
   }
 
-  private def createEntities(
+  def pickFreeTag(tagStrategy: Map[QualifiedGraphName, Map[Int, Int]]): Int = {
+    val usedTags = tagStrategy.values.flatMap(_.values).toSet
+    Tags.pickFreeTag(usedTags)
+  }
+
+  def identityRetaggings[T <: Table[T]](g: RelationalCypherGraph[T]): (RelationalCypherGraph[T], Map[Int, Int]) = {
+    g -> g.tags.zip(g.tags).toMap
+  }
+
+  def planConstructEntities[T <: Table[T]](
     inOp: RelationalOperator[T],
     toCreate: Set[ConstructedEntity],
     newEntityTag: Int
@@ -186,21 +162,25 @@ final case class ConstructGraph[T <: Table[T]](
     }
 
     val (_, nodesToCreate) = nodes.foldLeft(0 -> Map.empty[Expr, Expr]) {
-      case ((nextColumnPartitionId, constructedNodes), nextNodeToConstruct) =>
-        (nextColumnPartitionId + 1) -> (constructedNodes ++ constructNode(inOp, newEntityTag, nextColumnPartitionId, nodes.size, nextNodeToConstruct))
+      case ((nextColumnPartitionId, nodeProjections), nextNodeToConstruct) =>
+        (nextColumnPartitionId + 1) -> (nodeProjections ++ computeNodeProjections(inOp, newEntityTag, nextColumnPartitionId, nodes.size, nextNodeToConstruct))
     }
 
-    val createdNodesOp = AddEntitiesToRecords(inOp, nodesToCreate)
+    val createdNodesOp = nodesToCreate.foldLeft(inOp) { case (currentOp, (into, value)) =>
+      currentOp.addInto(value, into)
+    }
 
     val (_, relsToCreate) = rels.foldLeft(0 -> Map.empty[Expr, Expr]) {
-      case ((nextColumnPartitionId, constructedRels), nextRelToConstruct) =>
-        (nextColumnPartitionId + 1) -> (constructedRels ++ constructRel(createdNodesOp, newEntityTag, nextColumnPartitionId, rels.size, nextRelToConstruct))
+      case ((nextColumnPartitionId, relProjections), nextRelToConstruct) =>
+        (nextColumnPartitionId + 1) -> (relProjections ++ computeRelationshipProjections(createdNodesOp, newEntityTag, nextColumnPartitionId, rels.size, nextRelToConstruct))
     }
 
-    AddEntitiesToRecords(createdNodesOp, relsToCreate)
+    relsToCreate.foldLeft(createdNodesOp) { case (currentOp, (into, value)) =>
+      currentOp.addInto(value, into)
+    }
   }
 
-  private def constructNode(
+  def computeNodeProjections[T <: Table[T]](
     inOp: RelationalOperator[T],
     newEntityTag: Int,
     columnIdPartition: Int,
@@ -230,26 +210,7 @@ final case class ConstructGraph[T <: Table[T]](
       idTuple
   }
 
-  /**
-    *org.apache.spark.sql.functions$#monotonically_increasing_id()
-    *
-    * @param columnIdPartition column partition within DF partition
-    */
-  // TODO: improve documentation and add specific tests
-  private def generateId(columnIdPartition: Int, numberOfColumnPartitions: Int): Expr = {
-    val columnPartitionBits = math.log(numberOfColumnPartitions).floor.toInt + 1
-    val totalIdSpaceBits = 33
-    val columnIdShift = totalIdSpaceBits - columnPartitionBits
-
-    // id needs to be generated
-    // Limits the system to 500 mn partitions
-    // The first half of the id space is protected
-    val columnPartitionOffset = columnIdPartition.toLong << columnIdShift
-
-    Add(MonotonicallyIncreasingId(), IntegerLit(columnPartitionOffset)(CTInteger))(CTInteger)
-  }
-
-  private def constructRel(
+  def computeRelationshipProjections[T <: Table[T]](
     inOp: RelationalOperator[T],
     newEntityTag: Int,
     columnIdPartition: Int,
@@ -257,19 +218,15 @@ final case class ConstructGraph[T <: Table[T]](
     toConstruct: ConstructedRelationship
   ): Map[Expr, Expr] = {
     val ConstructedRelationship(rel, source, target, typOpt, baseRelOpt) = toConstruct
-//    val header = inOp.header
-//    val inTable = inOp.table
 
     // id needs to be generated
     val idTuple = rel -> generateId(columnIdPartition, numberOfColumnPartitions).setTag(newEntityTag)
 
     // source and target are present: just copy
     val sourceTuple = {
-      //      val dfColumn = inTable.col(header.column(source))
       StartNode(rel)(CTInteger) -> source
     }
     val targetTuple = {
-      //      val dfColumn = inTable.col(header.column(target))
       EndNode(rel)(CTInteger) -> target
     }
 
@@ -293,66 +250,47 @@ final case class ConstructGraph[T <: Table[T]](
     propertyTuples ++ typeTuple + idTuple + sourceTuple + targetTuple
   }
 
-  private def copyExpressions[E <: Expr](inOp: RelationalOperator[T], targetVar: Var)
+  def copyExpressions[E <: Expr, T <: Table[T]](inOp: RelationalOperator[T], targetVar: Var)
     (extractor: RecordHeader => Set[E]): Map[Expr, Expr] = {
     val origExprs = extractor(inOp.header)
     val copyExprs = origExprs.map(_.withOwner(targetVar))
-    //    val dfColumns = origExprs.map(inOp.header.column).map(inOp.table.df.col)
     copyExprs.zip(origExprs).toMap
   }
+
+  // TODO: improve documentation and add specific tests
+  def generateId(columnIdPartition: Int, numberOfColumnPartitions: Int): Expr = {
+    val columnPartitionBits = math.log(numberOfColumnPartitions).floor.toInt + 1
+    val totalIdSpaceBits = 33
+    val columnIdShift = totalIdSpaceBits - columnPartitionBits
+
+    // id needs to be generated
+    // Limits the system to 500 mn partitions
+    // The first half of the id space is protected
+    val columnPartitionOffset = columnIdPartition.toLong << columnIdShift
+
+    Add(MonotonicallyIncreasingId(), IntegerLit(columnPartitionOffset)(CTInteger))(CTInteger)
+  }
+
 }
 
-case class RetagVariable[T <: Table[T]](
-  in: RelationalOperator[T],
-  v: Var,
-  replacements: Map[Int, Int]
-) extends RelationalOperator[T] {
+final case class ConstructGraph[T <: Table[T]](
+  constructedGraph: RelationalCypherGraph[T],
+  override val graphName: QualifiedGraphName,
+  override val tagStrategy: Map[QualifiedGraphName, Map[Int, Int]],
+  construct: LogicalPatternGraph
+)(override implicit val context: RelationalRuntimeContext[T]) extends RelationalOperator[T] {
 
-  override lazy val _table: T = {
-    val expressionsToRetag = header.idExpressions(v)
+  override lazy val header: RecordHeader = RecordHeader.empty
 
-    // TODO: implement efficiently for multiple columns
-    expressionsToRetag.foldLeft(in.table) {
-      case (currentTable, exprToRetag) =>
-        currentTable.withColumn(header.column(exprToRetag), exprToRetag.replaceTags(replacements))(header, context.parameters)
-    }
-  }
-}
+  override lazy val _table: T = session.records.unit().table
 
-final case class AddEntitiesToRecords[T <: Table[T]](
-  in: RelationalOperator[T],
-  exprsToAdd: Map[Expr, Expr]
-) extends RelationalOperator[T] {
+  override def returnItems: Option[Seq[Var]] = None
 
-  override lazy val header: RecordHeader = in.header.withExprs(exprsToAdd.keySet)
+  override lazy val graph: RelationalCypherGraph[T] = constructedGraph
 
-  override lazy val _table: T = {
-    exprsToAdd.foldLeft(in.table) {
-      case (acc, (toAdd, value)) => acc.withColumn(header.column(toAdd), value)(header, context.parameters)
-    }
-  }
-}
-
-final case class ConstructProperty[T <: Table[T]](
-  in: RelationalOperator[T],
-  v: Var,
-  propertyExpr: Property,
-  valueExpr: Expr
-)
-  (implicit context: RelationalRuntimeContext[T]) extends RelationalOperator[T] {
-
-  private lazy val existingPropertyExpressionsForKey = in.header.propertiesFor(v).collect {
-    case p@Property(_, PropertyKey(name)) if name == propertyExpr.key.name => p
+  override def toString: String = {
+    val entities = construct.clones.keySet ++ construct.newEntities.map(_.v)
+    s"ConstructGraph(on=[${construct.onGraphs.mkString(", ")}], entities=[${entities.mkString(", ")}])"
   }
 
-  override lazy val header: RecordHeader = {
-    val headerWithExistingRemoved = in.header -- existingPropertyExpressionsForKey
-    headerWithExistingRemoved.withExpr(propertyExpr)
-  }
-
-  override lazy val _table: T = {
-    in.table
-      .drop(existingPropertyExpressionsForKey.map(in.header.column).toSeq: _*)
-      .withColumn(header.column(propertyExpr), valueExpr)(in.header, context.parameters)
-  }
 }

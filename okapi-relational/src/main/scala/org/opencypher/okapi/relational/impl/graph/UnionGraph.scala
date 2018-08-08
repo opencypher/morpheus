@@ -35,7 +35,6 @@ import org.opencypher.okapi.relational.api.schema.RelationalSchema._
 import org.opencypher.okapi.relational.api.table.{RelationalCypherRecords, Table}
 import org.opencypher.okapi.relational.impl.operators.{Distinct, RelationalOperator, TabularUnionAll}
 import org.opencypher.okapi.relational.impl.planning.RelationalPlanner._
-import org.opencypher.okapi.relational.impl.planning.RetagVariable
 
 // TODO: This should be a planned tree of physical operators instead of a graph
 final case class UnionGraph[T <: Table[T]](graphsToReplacements: Map[RelationalCypherGraph[T], Map[Int, Int]])
@@ -68,7 +67,7 @@ final case class UnionGraph[T <: Table[T]](graphsToReplacements: Map[RelationalC
     val alignedScans = graphsToReplacements.keys
       .map { graph =>
         val scanOp = graph.scanOperator(entityType, exactLabelMatch)
-        val retagOp = RetagVariable(scanOp, targetEntity, graphsToReplacements(graph))
+        val retagOp = scanOp.retagVariable(targetEntity, graphsToReplacements(graph))
         retagOp.alignWith(targetEntity, targetEntityHeader)
       }
     // TODO: find out if a graph returns empty records and skip union operation
