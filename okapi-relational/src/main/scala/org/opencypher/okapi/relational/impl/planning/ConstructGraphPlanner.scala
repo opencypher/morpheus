@@ -98,7 +98,7 @@ object ConstructGraphPlanner {
         val entityTableWithProperties = sets.foldLeft(entitiesOp) {
           case (currentOp, SetPropertyItem(propertyKey, v, valueExpr)) =>
             val propertyExpression = Property(v, PropertyKey(propertyKey))(valueExpr.cypherType)
-            currentOp.projectInto(valueExpr, propertyExpression)
+            currentOp.addInto(valueExpr, propertyExpression)
         }
         Set(newEntityTag) -> entityTableWithProperties
       }
@@ -166,7 +166,7 @@ object ConstructGraphPlanner {
     }
 
     val createdNodesOp = nodesToCreate.foldLeft(inOp) { case (currentOp, (into, value)) =>
-      currentOp.projectInto(value, into)
+      currentOp.addInto(value, into)
     }
 
     val (_, relsToCreate) = rels.foldLeft(0 -> Map.empty[Expr, Expr]) {
@@ -175,7 +175,7 @@ object ConstructGraphPlanner {
     }
 
     relsToCreate.foldLeft(createdNodesOp) { case (currentOp, (into, value)) =>
-      currentOp.projectInto(value, into)
+      currentOp.addInto(value, into)
     }
   }
 

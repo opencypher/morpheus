@@ -212,7 +212,7 @@ final case class Alias[T <: Table[T]](
   override lazy val header: RecordHeader = in.header.withAlias(aliases: _*)
 }
 
-final case class Project[T <: Table[T]](in: RelationalOperator[T], expr: Expr) extends RelationalOperator[T] {
+final case class Add[T <: Table[T]](in: RelationalOperator[T], expr: Expr) extends RelationalOperator[T] {
 
   override lazy val header: RecordHeader = {
     if (in.header.contains(expr)) {
@@ -238,7 +238,7 @@ final case class Project[T <: Table[T]](in: RelationalOperator[T], expr: Expr) e
   }
 }
 
-final case class ProjectInto[T <: Table[T]](
+final case class AddInto[T <: Table[T]](
   in: RelationalOperator[T],
   value: Expr,
   into: Expr
