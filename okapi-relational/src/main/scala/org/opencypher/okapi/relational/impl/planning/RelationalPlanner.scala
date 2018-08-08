@@ -65,7 +65,7 @@ object RelationalPlanner {
           .flatMap(inOp.header.ownedBy)
           .distinct
 
-        relational.Select(inOp, selectExpressions)
+        inOp.select(selectExpressions: _*)
 
       case logical.Project(projectExpr, in, _) =>
         val inOp = process[T](in)
@@ -73,9 +73,9 @@ object RelationalPlanner {
         val containsExpr = inOp.header.contains(expr)
 
         maybeAlias match {
-          case Some(alias) if containsExpr => relational.Alias(inOp, Seq(expr as alias))
-          case Some(alias) => relational.Add(inOp, expr as alias)
-          case None => relational.Add(inOp, expr)
+          case Some(alias) if containsExpr => inOp.alias(expr as alias)
+          case Some(alias) => inOp.add(expr as alias)
+          case None => inOp.add(expr)
         }
 
       case logical.EmptyRecords(fields, in, _) =>
@@ -94,18 +94,13 @@ object RelationalPlanner {
 
       case logical.Unwind(list, item, in, _) =>
         val explodeExpr = Explode(list)(item.cypherType)
-        relational.Add(process[T](in), explodeExpr as item)
+        process[T](in).add(explodeExpr as item)
 
       case logical.NodeScan(v, in, _) => relational.Scan(process[T](in), v.cypherType).assignScanName(v.name)
 
       case logical.Aggregate(aggregations, group, in, _) => relational.Aggregate(process[T](in), group, aggregations)
 
-      case logical.Filter(expr, in, _) => expr match {
-        case TrueLit =>
-          process[T](in) // optimise away filter
-        case _ =>
-          relational.Filter(process[T](in), expr)
-      }
+      case logical.Filter(expr, in, _) => process[T](in).filter(expr)
 
       case logical.ValueJoin(lhs, rhs, predicates, _) =>
         val joinExpressions = predicates.map(p => p.lhs -> p.rhs).toSeq
@@ -121,11 +116,8 @@ object RelationalPlanner {
         val third = process[T](targetOp)
 
         val startFrom = sourceOp.graph match {
-          case e: LogicalCatalogGraph =>
-            relational.Start(e.qualifiedGraphName)
-
-          case c: LogicalPatternGraph =>
-            plannerContext.constructedGraphPlans(c.name)
+          case e: LogicalCatalogGraph => relational.Start(e.qualifiedGraphName)
+          case c: LogicalPatternGraph => plannerContext.constructedGraphPlans(c.name)
         }
 
         val second = relational.Scan(startFrom, rel.cypherType).assignScanName(rel.name)
@@ -142,7 +134,7 @@ object RelationalPlanner {
             val outgoing = planJoin(tempOutgoing, third, Seq(endNode -> target), InnerJoin)
 
             val filterExpression = Not(Equals(startNode, endNode)(CTBoolean))(CTBoolean)
-            val relsWithoutLoops = relational.Filter(second, filterExpression)
+            val relsWithoutLoops = second.filter(filterExpression)
 
             val tempIncoming = planJoin(first, relsWithoutLoops, Seq(source -> endNode), InnerJoin)
             val incoming = planJoin(tempIncoming, third, Seq(startNode -> target), InnerJoin)
@@ -204,17 +196,17 @@ object RelationalPlanner {
         val joinExprs = leftHeader.vars.intersect(rightHeader.vars)
         // 1. Alias join expressions on rhs
         val renameExprs = joinExprs.map(e => e as Var(s"${e.name}${System.nanoTime}")(e.cypherType))
-        val rightWithAliases = relational.Alias(rightResult, renameExprs.toSeq)
+        val rightWithAliases = rightResult.alias(renameExprs)
         // 2. Drop Join expressions and their children in rhs
         val exprsToRemove = joinExprs.flatMap(v => rightHeader.ownedBy(v))
-        val reducedRhsData = relational.Drop(rightWithAliases, exprsToRemove)
+        val reducedRhsData = rightWithAliases.drop(exprsToRemove)
         // 3. Compute distinct rows in rhs
         val distinctRhsData = relational.Distinct(reducedRhsData, renameExprs.map(_.alias))
         // 4. Join lhs and prepared rhs using a left outer join
         val joinedData = planJoin(leftResult, distinctRhsData, renameExprs.map(a => a.expr -> a.alias).toSeq, LeftOuterJoin)
         // 5. If at least one rhs join column is not null, the sub-query exists and true is projected to the target expression
         val targetExpr = renameExprs.head.alias
-        relational.AddInto(joinedData, IsNotNull(targetExpr)(CTBoolean), predicateField.targetField)
+        joinedData.addInto(IsNotNull(targetExpr)(CTBoolean), predicateField.targetField)
 
       case logical.OrderBy(sortItems: Seq[SortItem[Expr]], in, _) =>
         relational.OrderBy(process[T](in), sortItems)
@@ -293,30 +285,44 @@ object RelationalPlanner {
 
   implicit class RelationalOperatorOps[T <: Table[T]](val op: RelationalOperator[T]) extends AnyVal {
 
-    def retagVariable(v: Var, replacements: Map[Int, Int]): RelationalOperator[T] = {
-      op.header.idExpressions(v).foldLeft(op) {
-        case (currentOp, exprToRetag) =>
-          currentOp.addInto(exprToRetag.replaceTags(replacements), exprToRetag)
+    def select(expressions: Expr*): RelationalOperator[T] = relational.Select(op, expressions.toList)
+
+    def filter(expression: Expr): RelationalOperator[T] = {
+      if (expression == TrueLit) {
+        op
+      } else {
+        relational.Filter(op, expression)
       }
     }
 
-    def drop(exprs: Expr*): RelationalOperator[T] = {
-      relational.Drop(op, exprs.toSet)
+    def add(value: Expr): RelationalOperator[T] = relational.Add(op, value)
+
+    def addInto(value: Expr, into: Expr): RelationalOperator[T] = relational.AddInto(op, value, into)
+
+    def drop(expressions: Set[Expr]): RelationalOperator[T] = {
+      if (expressions.nonEmpty) {
+        relational.Drop(op, expressions)
+      } else op
     }
 
-    def add(value: Expr): RelationalOperator[T] = {
-      relational.Add(op, value)
-    }
+    def drop(expressions: Expr*): RelationalOperator[T] = drop(expressions.toSet)
 
-    def addInto(value: Expr, into: Expr): RelationalOperator[T] = {
-      relational.AddInto(op, value, into)
-    }
+    def alias(aliases: AliasExpr*): RelationalOperator[T] = Alias(op, aliases)
+
+    def alias(aliases: Set[AliasExpr]): RelationalOperator[T] = alias(aliases.toSeq: _*)
 
     // Only works with single entity tables
     def assignScanName(name: String): RelationalOperator[T] = {
       val scanVar = op.singleEntity
       val namedScanVar = Var(name)(scanVar.cypherType)
       Drop(Alias(op, Seq(scanVar as namedScanVar)), Set(scanVar))
+    }
+
+    def retagVariable(v: Var, replacements: Map[Int, Int]): RelationalOperator[T] = {
+      op.header.idExpressions(v).foldLeft(op) {
+        case (currentOp, exprToRetag) =>
+          currentOp.addInto(exprToRetag.replaceTags(replacements), exprToRetag)
+      }
     }
 
     def alignWith(entity: Var, targetHeader: RecordHeader): RelationalOperator[T] = {
@@ -335,11 +341,11 @@ object RelationalPlanner {
       val existingRelTypes = op.header.typesFor(inputVar).map(_.relType.name)
 
       // Rename variable and select columns owned by entityVar
-      val renamedEntity = relational.Select(op, List(inputVar as targetVar))
+      val renamedEntity = op.select(inputVar as targetVar)
 
       // Drop expressions that are not in the target header
       val dropExpressions = renamedEntity.header.expressions -- targetHeader.expressions
-      val withDroppedExpressions = if (dropExpressions.nonEmpty) relational.Drop(renamedEntity, dropExpressions) else renamedEntity
+      val withDroppedExpressions = renamedEntity.drop(dropExpressions)
 
       // Fill in missing true label columns
       val trueLabels = inputVar.cypherType match {
@@ -347,7 +353,7 @@ object RelationalPlanner {
         case _ => Set.empty
       }
       val withTrueLabels = trueLabels.foldLeft(withDroppedExpressions: RelationalOperator[T]) {
-        case (currentOp, label) => relational.AddInto(currentOp, TrueLit, HasLabel(targetVar, Label(label))(CTBoolean))
+        case (currentOp, label) => currentOp.addInto(TrueLit, HasLabel(targetVar, Label(label))(CTBoolean))
       }
 
       // Fill in missing false label columns
@@ -356,7 +362,7 @@ object RelationalPlanner {
         case _ => Set.empty
       }
       val withFalseLabels = falseLabels.foldLeft(withTrueLabels: RelationalOperator[T]) {
-        case (currentOp, label) => relational.AddInto(currentOp, FalseLit, HasLabel(targetVar, Label(label))(CTBoolean))
+        case (currentOp, label) => currentOp.addInto(FalseLit, HasLabel(targetVar, Label(label))(CTBoolean))
       }
 
       // Fill in missing true relType columns
@@ -365,7 +371,7 @@ object RelationalPlanner {
         case _ => Set.empty
       }
       val withTrueRelTypes = trueRelTypes.foldLeft(withFalseLabels: RelationalOperator[T]) {
-        case (currentOp, relType) => relational.AddInto(currentOp, TrueLit, HasType(targetVar, RelType(relType))(CTBoolean))
+        case (currentOp, relType) => currentOp.addInto(TrueLit, HasType(targetVar, RelType(relType))(CTBoolean))
       }
 
       // Fill in missing false relType columns
@@ -374,13 +380,13 @@ object RelationalPlanner {
         case _ => Set.empty
       }
       val withFalseRelTypes = falseRelTypes.foldLeft(withTrueRelTypes: RelationalOperator[T]) {
-        case (currentOp, relType) => relational.AddInto(currentOp, FalseLit, HasType(targetVar, RelType(relType))(CTBoolean))
+        case (currentOp, relType) => currentOp.addInto(FalseLit, HasType(targetVar, RelType(relType))(CTBoolean))
       }
 
       // Fill in missing properties
       val missingProperties = targetHeader.propertiesFor(targetVar) -- withFalseRelTypes.header.propertiesFor(targetVar)
       val withProperties = missingProperties.foldLeft(withFalseRelTypes: RelationalOperator[T]) {
-        case (currentOp, propertyExpr) => relational.AddInto(currentOp, NullLit(propertyExpr.cypherType), propertyExpr)
+        case (currentOp, propertyExpr) => currentOp.addInto(NullLit(propertyExpr.cypherType), propertyExpr)
       }
 
       import Expr._
@@ -426,7 +432,7 @@ object RelationalPlanner {
           .typesFor(singleEntity)
           .filter(hasType => targetType.types.contains(hasType.relType.name))
         val filterExpr = Ors(relTypes.map(Equals(_, TrueLit)(CTBoolean)).toSeq: _*)
-        relational.Filter(op, filterExpr)
+        op.filter(filterExpr)
       }
     }
   }
