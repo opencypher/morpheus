@@ -32,7 +32,6 @@ import org.opencypher.okapi.api.schema.RelTypePropertyMap.RelTypePropertyMap
 import org.opencypher.okapi.api.schema.{LabelPropertyMap, RelTypePropertyMap, Schema}
 import org.opencypher.okapi.api.types.{CTRelationship, CypherType}
 import org.opencypher.okapi.impl.exception.{SchemaException, UnsupportedOperationException}
-import org.opencypher.okapi.impl.schema.SchemaUtils._
 import org.opencypher.okapi.impl.schema.{ImpliedLabels, LabelCombinations}
 import org.opencypher.spark.impl.convert.SparkConversions._
 
@@ -49,10 +48,7 @@ object CAPSSchema {
       schema match {
         case s: CAPSSchema => s
         case s: Schema =>
-          // TODO: inline and simplify
-          val combosByLabel = s.foldAndProduce(Map.empty[String, Set[Set[String]]])(
-            (set, combos, _) => set + combos,
-            (combos, _) => Set(combos))
+          val combosByLabel = schema.labels.map(label => label -> s.labelCombinations.combos.filter(_.contains(label)))
 
           combosByLabel.foreach {
             case (_, combos) =>

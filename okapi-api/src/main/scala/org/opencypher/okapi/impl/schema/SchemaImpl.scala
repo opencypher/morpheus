@@ -36,7 +36,6 @@ import org.opencypher.okapi.api.types.CypherType.joinMonoid
 import org.opencypher.okapi.api.types.{CypherType, _}
 import org.opencypher.okapi.impl.exception.SchemaException
 import org.opencypher.okapi.impl.schema.SchemaImpl._
-import org.opencypher.okapi.impl.schema.SchemaUtils._
 import upickle.Js
 import upickle.default._
 
@@ -100,9 +99,14 @@ final case class SchemaImpl(
   private def graphContainsNodeWithoutLabel: Boolean = labelPropertyMap.keySet.contains(Set.empty)
 
   override lazy val impliedLabels: ImpliedLabels = {
-    // TODO: inline and simplify
-    val implications = self.foldAndProduce(Map.empty[String, Set[String]])(_ intersect _ - _, _ - _)
-
+    val implications = self.labelCombinations.combos.foldLeft(Map.empty[String, Set[String]]) {
+      case (currentMap, combo) => combo.foldLeft(currentMap) {
+        case (innerMap, label) => innerMap.get(label) match {
+          case Some(innerCombo) => innerMap.updated(label, (innerCombo intersect combo) - label)
+          case None => innerMap.updated(label, combo - label)
+        }
+      }
+    }
     ImpliedLabels(implications)
   }
 
