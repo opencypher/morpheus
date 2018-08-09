@@ -128,7 +128,7 @@ object ConstructGraphPlanner {
       context.session.graphs.unionGraph(Map(identityRetaggings(onGraph), identityRetaggings(patternGraph)))
     }
 
-    val constructOp = ConstructGraph(inputTablePlan, graph, name, constructTagStrategy, construct)(context)
+    val constructOp = ConstructGraph(inputTablePlan, graph, name, constructTagStrategy, construct, context)
 
     context.constructedGraphCatalog += (construct.qualifiedGraphName -> graph)
     constructOp
