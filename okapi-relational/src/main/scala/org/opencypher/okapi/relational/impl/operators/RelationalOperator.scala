@@ -179,12 +179,17 @@ final case class Cache[T <: Table[T]](in: RelationalOperator[T]) extends Relatio
 
 }
 
+final case class SwitchContext[T <: Table[T]](
+  in: RelationalOperator[T],
+  override val context: RelationalRuntimeContext[T]
+) extends RelationalOperator[T]
+
 final case class Scan[T <: Table[T]](
   in: RelationalOperator[T],
   scanType: CypherType
 ) extends RelationalOperator[T] {
 
-  private lazy val scanOp = graph.scanOperator(scanType, exactLabelMatch = false)
+  private lazy val scanOp = graph.scanOperator(scanType)
 
   override lazy val header: RecordHeader = scanOp.header
 

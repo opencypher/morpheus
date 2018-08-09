@@ -131,7 +131,6 @@ object ConstructGraphPlanner {
 
     val constructOp = ConstructGraph(graph, name, constructTagStrategy, construct)(context)
 
-    context.constructedGraphPlans += (name -> constructOp)
     context.constructedGraphCatalog += (construct.qualifiedGraphName -> graph)
     constructOp
   }

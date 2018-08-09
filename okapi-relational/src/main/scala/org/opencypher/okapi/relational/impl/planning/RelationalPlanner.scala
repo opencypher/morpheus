@@ -45,7 +45,8 @@ import org.opencypher.okapi.relational.impl.{operators => relational}
 object RelationalPlanner {
 
   // TODO: rename to 'plan'
-  def process[T <: Table[T]](input: LogicalOperator)(implicit context: RelationalRuntimeContext[T]): RelationalOperator[T] = {
+  def process[T <: Table[T]](input: LogicalOperator)
+    (implicit context: RelationalRuntimeContext[T]): RelationalOperator[T] = {
 
     implicit val caps: CypherSession = context.session
 
@@ -111,12 +112,7 @@ object RelationalPlanner {
         val first = process[T](sourceOp)
         val third = process[T](targetOp)
 
-        val startFrom = sourceOp.graph match {
-          case e: LogicalCatalogGraph => relational.Start(e.qualifiedGraphName)
-          case c: LogicalPatternGraph => context.constructedGraphPlans(c.qualifiedGraphName)
-        }
-
-        val second = relational.Scan(startFrom, rel.cypherType).assignScanName(rel.name)
+        val second = planScan(None, sourceOp.graph, rel)
         val startNode = StartNode(rel)(CTNode)
         val endNode = EndNode(rel)(CTNode)
 
@@ -217,6 +213,24 @@ object RelationalPlanner {
     }
   }
 
+  def planScan[T <: Table[T]](
+    in: Option[LogicalOperator],
+    logicalGraph: LogicalGraph,
+    entityVar: Var
+  )(implicit context: RelationalRuntimeContext[T]): RelationalOperator[T] = {
+    val graph = logicalGraph match {
+      case g: LogicalCatalogGraph =>
+        context.resolveGraph(logicalGraph.qualifiedGraphName)
+      case p: LogicalPatternGraph =>
+        context.constructedGraphCatalog.get(p.qualifiedGraphName) match {
+          case Some(g) => g // the graph was already constructed
+          case None => planConstructGraph(in, p).graph
+        }
+    }
+    val scanOp = graph.scanOperator(entityVar.cypherType)
+    scanOp.assignScanName(entityVar.name).switchContext(context)
+  }
+
   def planJoin[T <: Table[T]](
     lhs: RelationalOperator[T],
     rhs: RelationalOperator[T],
@@ -228,18 +242,8 @@ object RelationalPlanner {
     relational.Join(lhs, conflictFreeRhs, joinExprs, joinType)
   }
 
-  private def planStart[T <: Table[T]](graph: LogicalGraph)(
-    implicit context: RelationalRuntimeContext[T]
-  ): RelationalOperator[T] = {
-    graph match {
-      case g: LogicalCatalogGraph =>
-        relational.Start(g.qualifiedGraphName, context.inputRecords)(context)
-      case p: LogicalPatternGraph =>
-        context.constructedGraphPlans.get(p.qualifiedGraphName) match {
-          case Some(plan) => plan // the graph was already constructed
-          case None => planConstructGraph(None, p)
-        }
-    }
+  private def planStart[T <: Table[T]](graph: LogicalGraph)(implicit context: RelationalRuntimeContext[T]): RelationalOperator[T] = {
+    relational.Start(graph.qualifiedGraphName, None)
   }
 
   // TODO: process operator outside of def
@@ -309,6 +313,10 @@ object RelationalPlanner {
       val scanVar = op.singleEntity
       val namedScanVar = Var(name)(scanVar.cypherType)
       Drop(Alias(op, Seq(scanVar as namedScanVar)), Set(scanVar))
+    }
+
+    def switchContext(context: RelationalRuntimeContext[T]): RelationalOperator[T] = {
+      SwitchContext(op, context)
     }
 
     def retagVariable(v: Var, replacements: Map[Int, Int]): RelationalOperator[T] = {

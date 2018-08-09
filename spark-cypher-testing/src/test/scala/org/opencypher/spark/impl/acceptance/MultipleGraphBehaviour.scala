@@ -29,6 +29,7 @@ package org.opencypher.spark.impl.acceptance
 import org.opencypher.okapi.api.schema.{PropertyKeys, Schema}
 import org.opencypher.okapi.api.types.{CTInteger, CTString}
 import org.opencypher.okapi.api.value.CypherValue.CypherMap
+import org.opencypher.okapi.relational.api.configuration.CoraConfiguration.PrintRelationalPlan
 import org.opencypher.okapi.relational.api.tagging.Tags._
 import org.opencypher.okapi.testing.Bag
 import org.opencypher.okapi.testing.Bag._
@@ -344,6 +345,7 @@ class MultipleGraphBehaviour extends CAPSTestSuite with ScanGraphInit {
   }
 
   it("should copy a relationship") {
+      PrintRelationalPlan.set()
     val query =
       """|CONSTRUCT
          |  NEW ()-[r:FOO {val : 42}]->()
