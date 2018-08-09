@@ -67,6 +67,6 @@ case class CAPSGraphFactory(implicit val session: CAPSSession) extends Relationa
   def create(records: CypherRecords, schema: CAPSSchema, tags: Set[Int] = Set(0)): Graph = {
     implicit val runtimeContext: RelationalRuntimeContext[DataFrameTable] = session.basicRuntimeContext()
     val capsRecords = records.asCaps
-    SingleTableGraph(Start(capsRecords), schema, tags)
+    new SingleTableGraph(Start(capsRecords), schema, tags)
   }
 }
