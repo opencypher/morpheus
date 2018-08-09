@@ -111,16 +111,18 @@ case class Neo4jPropertyGraphDataSource(
     metaLabelGraphNames
   }
 
-  override protected def readSchema(graphName: GraphName): CAPSSchema = {
-    val graphSchema = maybeSchema.getOrElse(super.readSchema(graphName))
+  private lazy val entireGraphSchema: Schema = {
+    maybeSchema.getOrElse(super.readSchema(entireGraphName))
+  }
 
+  override protected def readSchema(graphName: GraphName): CAPSSchema = {
     val filteredSchema = graphName.metaLabel match {
       case None =>
-        graphSchema
+        entireGraphSchema
       case Some(metaLabel) =>
-        val containsMetaLabel = graphSchema.labelPropertyMap.filterForLabels(metaLabel)
+        val containsMetaLabel = entireGraphSchema.labelPropertyMap.filterForLabels(metaLabel)
         val cleanLabelPropertyMap = containsMetaLabel.withoutMetaLabel(metaLabel).withoutMetaProperty
-        val cleanRelTypePropertyMap = graphSchema.relTypePropertyMap.withoutMetaProperty
+        val cleanRelTypePropertyMap = entireGraphSchema.relTypePropertyMap.withoutMetaProperty
         SchemaImpl(cleanLabelPropertyMap, cleanRelTypePropertyMap)
     }
     filteredSchema.asCaps
@@ -193,6 +195,7 @@ case class Neo4jPropertyGraphDataSource(
     } yield Future {}
     Await.result(writesCompleted, Duration.Inf)
 
+    schemaCache += graphName -> graph.schema.asCaps
     graphNameCache += graphName
   }
 
