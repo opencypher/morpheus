@@ -32,7 +32,7 @@ import org.opencypher.okapi.api.value.CypherValue.CypherInteger
 import org.opencypher.okapi.impl.exception.{IllegalArgumentException, SchemaException}
 import org.opencypher.okapi.ir.api.block.{Asc, Desc, SortItem}
 import org.opencypher.okapi.ir.api.expr._
-import org.opencypher.okapi.logical.impl.LogicalCatalogGraph
+import org.opencypher.okapi.logical.impl.{LogicalCatalogGraph, LogicalPatternGraph}
 import org.opencypher.okapi.relational.api.graph.{RelationalCypherGraph, RelationalCypherSession}
 import org.opencypher.okapi.relational.api.planning.RelationalRuntimeContext
 import org.opencypher.okapi.relational.api.table.{RelationalCypherRecords, Table}
@@ -288,6 +288,8 @@ final case class Filter[T <: Table[T]](
   expr: Expr
 ) extends RelationalOperator[T] {
 
+  require(expr.cypherType.material == CTBoolean)
+
   override lazy val _table: T = in.table.filter(expr)(header, context.parameters)
 }
 
@@ -474,6 +476,28 @@ final case class TabularUnionAll[T <: Table[T]](
 
     lhsTable.unionAll(orderedRhsTable)
   }
+}
+
+final case class ConstructGraph[T <: Table[T]](
+  constructedGraph: RelationalCypherGraph[T],
+  override val graphName: QualifiedGraphName,
+  override val tagStrategy: Map[QualifiedGraphName, Map[Int, Int]],
+  construct: LogicalPatternGraph
+)(override implicit val context: RelationalRuntimeContext[T]) extends RelationalOperator[T] {
+
+  override lazy val header: RecordHeader = RecordHeader.empty
+
+  override lazy val _table: T = session.records.unit().table
+
+  override def returnItems: Option[Seq[Var]] = None
+
+  override lazy val graph: RelationalCypherGraph[T] = constructedGraph
+
+  override def toString: String = {
+    val entities = construct.clones.keySet ++ construct.newEntities.map(_.v)
+    s"ConstructGraph(on=[${construct.onGraphs.mkString(", ")}], entities=[${entities.mkString(", ")}])"
+  }
+
 }
 
 // N-ary

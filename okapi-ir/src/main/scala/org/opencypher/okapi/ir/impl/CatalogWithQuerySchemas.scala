@@ -61,4 +61,6 @@ case class CatalogWithQuerySchemas(dataSourceMapping: Map[Namespace, PropertyGra
 object CatalogWithQuerySchemas {
   def apply(dataSourceMapping:  Map[Namespace, PropertyGraphDataSource]): CatalogWithQuerySchemas =
     CatalogWithQuerySchemas(dataSourceMapping, Map.empty)
+
+  def empty: CatalogWithQuerySchemas = CatalogWithQuerySchemas(Map.empty, Map.empty)
 }

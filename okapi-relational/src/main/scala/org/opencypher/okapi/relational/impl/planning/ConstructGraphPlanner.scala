@@ -33,32 +33,32 @@ import org.opencypher.okapi.ir.api.set.SetPropertyItem
 import org.opencypher.okapi.ir.api.{PropertyKey, RelType}
 import org.opencypher.okapi.logical.impl._
 import org.opencypher.okapi.relational.api.graph.RelationalCypherGraph
-import org.opencypher.okapi.relational.api.planning.{RelationalPlannerContext, RelationalRuntimeContext}
+import org.opencypher.okapi.relational.api.planning.RelationalRuntimeContext
 import org.opencypher.okapi.relational.api.table.Table
 import org.opencypher.okapi.relational.api.tagging.TagSupport.computeRetaggings
 import org.opencypher.okapi.relational.api.tagging.Tags
 import org.opencypher.okapi.relational.api.tagging.Tags._
-import org.opencypher.okapi.relational.impl.operators.RelationalOperator
+import org.opencypher.okapi.relational.impl.operators.{ConstructGraph, RelationalOperator}
+import org.opencypher.okapi.relational.impl.planning.RelationalPlanner._
 import org.opencypher.okapi.relational.impl.table.RecordHeader
 import org.opencypher.okapi.relational.impl.{operators => relational}
-import RelationalPlanner._
 
 object ConstructGraphPlanner {
 
   def planConstructGraph[T <: Table[T]](in: Option[LogicalOperator], construct: LogicalPatternGraph)
-    (implicit plannerContext: RelationalPlannerContext[T], context: RelationalRuntimeContext[T]): RelationalOperator[T] = {
+    (implicit context: RelationalRuntimeContext[T]): RelationalOperator[T] = {
 
     val onGraphPlan: RelationalOperator[T] = {
       construct.onGraphs match {
-        case Nil => relational.Start[T](plannerContext.session.emptyGraphQgn) // Empty start
+        case Nil => relational.Start[T](context.session.emptyGraphQgn) // Empty start
         //TODO: Optimize case where no union is necessary
         //case h :: Nil => operatorProducer.planStart(Some(h)) // Just one graph, no union required
         case several =>
           val onGraphPlans = several.map(qgn => relational.Start[T](qgn))
-          relational.GraphUnionAll[T](onGraphPlans, construct.name)
+          relational.GraphUnionAll[T](onGraphPlans, construct.qualifiedGraphName)
       }
     }
-    val inputTablePlan = in.map(RelationalPlanner.process(_)(plannerContext, context)).getOrElse(relational.Start[T](plannerContext.session.emptyGraphQgn))
+    val inputTablePlan = in.map(RelationalPlanner.process(_)(context)).getOrElse(relational.Start[T](context.session.emptyGraphQgn))
 
     val onGraph = onGraphPlan.graph
 
@@ -131,10 +131,10 @@ object ConstructGraphPlanner {
       context.session.graphs.unionGraph(Map(identityRetaggings(onGraph), identityRetaggings(patternGraph)))
     }
 
-    val constructOp = ConstructGraph(graph, name, constructTagStrategy, construct)
+    val constructOp = ConstructGraph(graph, name, constructTagStrategy, construct)(context)
 
-    plannerContext.constructedGraphPlans += (name -> constructOp)
-    context.constructedGraphCatalog += (construct.name -> graph)
+    context.constructedGraphPlans += (name -> constructOp)
+    context.constructedGraphCatalog += (construct.qualifiedGraphName -> graph)
     constructOp
   }
 
@@ -269,28 +269,6 @@ object ConstructGraphPlanner {
     val columnPartitionOffset = columnIdPartition.toLong << columnIdShift
 
     Add(MonotonicallyIncreasingId(), IntegerLit(columnPartitionOffset)(CTInteger))(CTInteger)
-  }
-
-}
-
-final case class ConstructGraph[T <: Table[T]](
-  constructedGraph: RelationalCypherGraph[T],
-  override val graphName: QualifiedGraphName,
-  override val tagStrategy: Map[QualifiedGraphName, Map[Int, Int]],
-  construct: LogicalPatternGraph
-)(override implicit val context: RelationalRuntimeContext[T]) extends RelationalOperator[T] {
-
-  override lazy val header: RecordHeader = RecordHeader.empty
-
-  override lazy val _table: T = session.records.unit().table
-
-  override def returnItems: Option[Seq[Var]] = None
-
-  override lazy val graph: RelationalCypherGraph[T] = constructedGraph
-
-  override def toString: String = {
-    val entities = construct.clones.keySet ++ construct.newEntities.map(_.v)
-    s"ConstructGraph(on=[${construct.onGraphs.mkString(", ")}], entities=[${entities.mkString(", ")}])"
   }
 
 }

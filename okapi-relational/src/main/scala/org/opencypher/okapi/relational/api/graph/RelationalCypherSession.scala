@@ -44,5 +44,5 @@ trait RelationalCypherSession[T <: Table[T]] extends CypherSession {
     if (catalog.graphNames.contains(qgn)) Some(catalog.graph(qgn).asRelational) else None
 
   private[opencypher] def basicRuntimeContext(parameters: CypherMap = CypherMap.empty): RelationalRuntimeContext[T] =
-    RelationalRuntimeContext(graphAt, parameters)(this)
+    RelationalRuntimeContext(graphAt, parameters = parameters)(this)
 }

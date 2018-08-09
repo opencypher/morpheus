@@ -31,27 +31,23 @@ import org.opencypher.okapi.api.types.{CTBoolean, CTNode, CTRelationship}
 import org.opencypher.okapi.impl.exception.{NotImplementedException, SchemaException}
 import org.opencypher.okapi.ir.api.block.SortItem
 import org.opencypher.okapi.ir.api.expr._
-import org.opencypher.okapi.ir.api.{Label, PropertyKey, RelType}
+import org.opencypher.okapi.ir.api.{Label, RelType}
 import org.opencypher.okapi.logical.impl._
 import org.opencypher.okapi.logical.{impl => logical}
-import org.opencypher.okapi.relational.api.planning.{RelationalPlannerContext, RelationalRuntimeContext}
+import org.opencypher.okapi.relational.api.planning.RelationalRuntimeContext
 import org.opencypher.okapi.relational.api.table.Table
+import org.opencypher.okapi.relational.api.tagging.Tags._
 import org.opencypher.okapi.relational.impl.operators._
 import org.opencypher.okapi.relational.impl.planning.ConstructGraphPlanner._
 import org.opencypher.okapi.relational.impl.table.RecordHeader
 import org.opencypher.okapi.relational.impl.{operators => relational}
-import org.opencypher.okapi.relational.api.tagging.Tags._
 
 object RelationalPlanner {
 
   // TODO: rename to 'plan'
-  def process[T <: Table[T]](input: LogicalOperator)(
-    // TODO: unify contexts?
-    implicit plannerContext: RelationalPlannerContext[T],
-    runtimeContext: RelationalRuntimeContext[T]
-  ): RelationalOperator[T] = {
+  def process[T <: Table[T]](input: LogicalOperator)(implicit context: RelationalRuntimeContext[T]): RelationalOperator[T] = {
 
-    implicit val caps: CypherSession = plannerContext.session
+    implicit val caps: CypherSession = context.session
 
     input match {
       case logical.CartesianProduct(lhs, rhs, _) =>
@@ -89,7 +85,7 @@ object RelationalPlanner {
             relational.FromGraph(process[T](in), g)
 
           case construct: LogicalPatternGraph =>
-            planConstructGraph(Some(in), construct) //(plannerContext, runtimeContext)
+            planConstructGraph(Some(in), construct) //(context, runtimeContext)
         }
 
       case logical.Unwind(list, item, in, _) =>
@@ -117,7 +113,7 @@ object RelationalPlanner {
 
         val startFrom = sourceOp.graph match {
           case e: LogicalCatalogGraph => relational.Start(e.qualifiedGraphName)
-          case c: LogicalPatternGraph => plannerContext.constructedGraphPlans(c.name)
+          case c: LogicalPatternGraph => context.constructedGraphPlans(c.qualifiedGraphName)
         }
 
         val second = relational.Scan(startFrom, rel.cypherType).assignScanName(rel.name)
@@ -233,13 +229,13 @@ object RelationalPlanner {
   }
 
   private def planStart[T <: Table[T]](graph: LogicalGraph)(
-    implicit plannerContext: RelationalPlannerContext[T], runtimeContext: RelationalRuntimeContext[T]
+    implicit context: RelationalRuntimeContext[T]
   ): RelationalOperator[T] = {
     graph match {
       case g: LogicalCatalogGraph =>
-        relational.Start(g.qualifiedGraphName, Some(plannerContext.inputRecords))(runtimeContext)
+        relational.Start(g.qualifiedGraphName, context.inputRecords)(context)
       case p: LogicalPatternGraph =>
-        plannerContext.constructedGraphPlans.get(p.name) match {
+        context.constructedGraphPlans.get(p.qualifiedGraphName) match {
           case Some(plan) => plan // the graph was already constructed
           case None => planConstructGraph(None, p)
         }
@@ -248,10 +244,7 @@ object RelationalPlanner {
 
   // TODO: process operator outside of def
   private def planOptional[T <: Table[T]](lhs: LogicalOperator, rhs: LogicalOperator)
-    (
-      implicit plannerContext: RelationalPlannerContext[T],
-      runtimeContext: RelationalRuntimeContext[T]
-    ): RelationalOperator[T] = {
+    (implicit context: RelationalRuntimeContext[T]): RelationalOperator[T] = {
     val lhsOp = process[T](lhs)
     val rhsOp = process[T](rhs)
 

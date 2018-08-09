@@ -29,8 +29,10 @@ package org.opencypher.okapi.relational.api.planning
 import org.opencypher.okapi.api.graph.QualifiedGraphName
 import org.opencypher.okapi.api.value.CypherValue.CypherMap
 import org.opencypher.okapi.impl.exception.IllegalArgumentException
+import org.opencypher.okapi.ir.impl.CatalogWithQuerySchemas
 import org.opencypher.okapi.relational.api.graph.{RelationalCypherGraph, RelationalCypherSession}
-import org.opencypher.okapi.relational.api.table.Table
+import org.opencypher.okapi.relational.api.table.{RelationalCypherRecords, Table}
+import org.opencypher.okapi.relational.impl.operators.RelationalOperator
 
 // TODO: comment
 /**
@@ -42,8 +44,11 @@ import org.opencypher.okapi.relational.api.table.Table
   */
 case class RelationalRuntimeContext[T <: Table[T]](
   sessionCatalog: QualifiedGraphName => Option[RelationalCypherGraph[T]],
+  inputRecords: Option[RelationalCypherRecords[T]] = None,
   parameters: CypherMap = CypherMap.empty,
-  var constructedGraphCatalog: Map[QualifiedGraphName, RelationalCypherGraph[T]] = Map.empty[QualifiedGraphName, RelationalCypherGraph[T]]
+  catalogWithQuerySchemas: CatalogWithQuerySchemas = CatalogWithQuerySchemas.empty,
+  var constructedGraphCatalog: Map[QualifiedGraphName, RelationalCypherGraph[T]] = Map.empty[QualifiedGraphName, RelationalCypherGraph[T]],
+  var constructedGraphPlans: Map[QualifiedGraphName, RelationalOperator[T]] = Map.empty[QualifiedGraphName, RelationalOperator[T]]
 )(implicit val session: RelationalCypherSession[T]) {
   /**
     * Returns the graph referenced by the given QualifiedGraphName.

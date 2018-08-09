@@ -62,7 +62,7 @@ case class SingleTableGraph[T <: Table[T]](
 
   override def tables: Seq[T] = Seq(baseTable.table)
 
-  override private[opencypher] def scanOperator(
+  protected override def scanOperatorInternal(
     entityType: CypherType,
     exactLabelMatch: Boolean
   ): RelationalOperator[T] = {

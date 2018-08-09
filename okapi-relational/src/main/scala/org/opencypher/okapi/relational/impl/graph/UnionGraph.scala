@@ -58,7 +58,7 @@ final case class UnionGraph[T <: Table[T]](graphsToReplacements: Map[RelationalC
 
   override def toString = s"UnionGraph(graphs=[${graphsToReplacements.mkString(",")}])"
 
-  override private[opencypher] def scanOperator(
+  protected override def scanOperatorInternal(
     entityType: CypherType,
     exactLabelMatch: Boolean
   ): RelationalOperator[T] = {
