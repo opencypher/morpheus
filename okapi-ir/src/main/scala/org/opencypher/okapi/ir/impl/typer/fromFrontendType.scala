@@ -27,21 +27,47 @@
 package org.opencypher.okapi.ir.impl.typer
 
 import org.opencypher.okapi.api.types._
+import org.opencypher.v9_0.expressions.TypeSignature
 import org.opencypher.v9_0.util.{symbols => frontend}
 
-case object fromFrontendType extends (frontend.CypherType => CypherType) {
-  override def apply(in: frontend.CypherType): CypherType = in match {
-    case frontend.CTAny           => CTAny
-    case frontend.CTNumber        => CTNumber
-    case frontend.CTInteger       => CTInteger
-    case frontend.CTFloat         => CTFloat
-    case frontend.CTBoolean       => CTBoolean
-    case frontend.CTString        => CTString
-    case frontend.CTNode          => CTNode
-    case frontend.CTRelationship  => CTRelationship
-    case frontend.CTPath          => CTPath
-    case frontend.CTMap           => CTMap
-    case frontend.ListType(inner) => CTList(fromFrontendType(inner))
-    case x                        => throw new UnsupportedOperationException(s"Can not convert openCypher frontend type $x to an internal type")
+case object fromFrontendType extends (frontend.CypherType => Option[CypherType]) {
+  override def apply(in: frontend.CypherType): Option[CypherType] = in match {
+    case frontend.CTAny           => Some(CTAny)
+    case frontend.CTNumber        => Some(CTNumber)
+    case frontend.CTInteger       => Some(CTInteger)
+    case frontend.CTFloat         => Some(CTFloat)
+    case frontend.CTBoolean       => Some(CTBoolean)
+    case frontend.CTString        => Some(CTString)
+    case frontend.CTNode          => Some(CTNode)
+    case frontend.CTRelationship  => Some(CTRelationship)
+    case frontend.CTPath          => Some(CTPath)
+    case frontend.CTMap           => Some(CTMap)
+    case frontend.ListType(inner) =>
+      fromFrontendType(inner) match {
+        case None => None
+        case Some(t) => Some(CTList(t))
+      }
+    case _                        => None
+  }
+}
+
+
+case class FunctionSignature(input: Seq[CypherType], output: CypherType)
+
+object SignatureConverter {
+
+  implicit class RichTypeSignature(val frontendSig: TypeSignature) extends AnyVal{
+    def convert: Option[FunctionSignature] = {
+      val inTypes = frontendSig.argumentTypes.map(fromFrontendType)
+      val outType = fromFrontendType(frontendSig.outputType)
+      if (inTypes.contains(None) || outType.isEmpty)
+        None
+      else {
+        val sigInputTypes = inTypes.flatten.map(_.nullable)
+        // we don't know exactly if this is nullable from the frontend, but nullable is a safe superset
+        val sigOutputType = outType.get.nullable
+        Some(FunctionSignature(sigInputTypes, sigOutputType))
+      }
+    }
   }
 }

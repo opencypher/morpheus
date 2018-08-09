@@ -37,8 +37,9 @@ import org.opencypher.okapi.api.schema.Schema
 import org.opencypher.okapi.api.types.CypherType.joinMonoid
 import org.opencypher.okapi.api.types._
 import org.opencypher.okapi.ir.impl.parse.rewriter.ExistsPattern
+import org.opencypher.okapi.ir.impl.typer.SignatureConverter._
 import org.opencypher.v9_0.expressions._
-import org.opencypher.v9_0.expressions.functions.{Coalesce, Collect, Exists, Max, Min, ToBoolean, ToInteger, ToString}
+import org.opencypher.v9_0.expressions.functions.{Coalesce, Collect, Exists, Max, Min, ToBoolean, ToString}
 
 import scala.util.Try
 
@@ -443,7 +444,8 @@ object SchemaTyper {
       for {
         signatures <- generateSignaturesFor(expr, args)
         eligible <- pure(signatures.flatMap { sig =>
-          val (sigInputTypes, sigOutputType) = sig
+          val sigInputTypes = sig.input
+          val sigOutputType = sig.output
 
           def compatibleArity = sigInputTypes.size == args.size
           def sigArgTypes = sigInputTypes.zip(args.map(_._2))
@@ -455,37 +457,30 @@ object SchemaTyper {
 
     protected def generateSignaturesFor[R: _hasSchema: _keepsErrors: _hasTracker: _logsTypes](
         expr: T,
-        args: Seq[(Expression, CypherType)]): Eff[R, Set[(Seq[CypherType], CypherType)]]
+        args: Seq[(Expression, CypherType)]): Eff[R, Set[FunctionSignature]]
   }
-
-  // TODO: Front end signatures do not track nullability. We should have a clean solution instead of an exception list
-  private val canReturnNull: Set[functions.Function] = Set(ToInteger, ToString)
 
   private case object FunctionInvocationTyper extends SignatureBasedInvocationTyper[FunctionInvocation] {
     override protected def generateSignaturesFor[R: _hasSchema: _keepsErrors: _hasTracker: _logsTypes](
         expr: FunctionInvocation,
-        args: Seq[(Expression, CypherType)]): Eff[R, Set[(Seq[CypherType], CypherType)]] =
+        args: Seq[(Expression, CypherType)]): Eff[R, Set[FunctionSignature]] =
       expr.function match {
         case f: TypeSignatures =>
-          pure(f.signatures.map { sig =>
-            val sigInputTypes = sig.argumentTypes.map(fromFrontendType).map(_.nullable)
-            val typeFromFrontend = fromFrontendType(sig.outputType)
-            val sigOutputType = if (canReturnNull.contains(f)) typeFromFrontend.nullable else typeFromFrontend
-            sigInputTypes -> sigOutputType
-          }.toSet)
+          val set = f.signatures.flatMap(_.convert).toSet
+          pure(set)
 
         case Min | Max =>
-          pure[R, Set[(Seq[CypherType], CypherType)]](
+          pure[R, Set[FunctionSignature]](
             Set(
-              Seq(CTInteger) -> CTInteger,
-              Seq(CTFloat) -> CTFloat
+              FunctionSignature(Seq(CTInteger), CTInteger),
+              FunctionSignature(Seq(CTFloat), CTFloat)
             ))
 
         case ToBoolean =>
-          pure[R, Set[(Seq[CypherType], CypherType)]](
+          pure[R, Set[FunctionSignature]](
             Set(
-              Seq(CTString) -> CTBoolean.nullable,
-              Seq(CTBoolean) -> CTBoolean
+              FunctionSignature(Seq(CTString), CTBoolean.nullable),
+              FunctionSignature(Seq(CTBoolean), CTBoolean)
             ))
 
         case _ =>
@@ -496,7 +491,7 @@ object SchemaTyper {
   private case object AddTyper extends SignatureBasedInvocationTyper[Add] {
     override protected def generateSignaturesFor[R: _hasSchema: _keepsErrors: _hasTracker: _logsTypes](
         expr: Add,
-        args: Seq[(Expression, CypherType)]): Eff[R, Set[(Seq[CypherType], CypherType)]] = {
+        args: Seq[(Expression, CypherType)]): Eff[R, Set[FunctionSignature]] = {
       val (_, left) = args.head
       val (_, right) = args(1)
       (left.material -> right.material match {
@@ -511,8 +506,8 @@ object SchemaTyper {
             case _        => None
           }
       }) match {
-        case Some(CTVoid) => wrong[R, TyperError](UnsupportedExpr(expr)) >> pure(Set(Seq(left, right) -> CTVoid))
-        case Some(t)      => pure(Set(Seq(left, right) -> t.asNullableAs(left join right)))
+        case Some(CTVoid) => wrong[R, TyperError](UnsupportedExpr(expr)) >> pure(Set(FunctionSignature(Seq(left, right), CTVoid)))
+        case Some(t)      => pure(Set(FunctionSignature(Seq(left, right), t.asNullableAs(left join right))))
         case None         => pure(Set.empty)
       }
     }
