@@ -81,7 +81,6 @@ class MultipleGraphBehaviour extends CAPSTestSuite with ScanGraphInit {
       """
         |CONSTRUCT
         |  NEW ()
-        |RETURN GRAPH
         |MATCH (a)
         |CONSTRUCT
         |  NEW (f COPY OF a)-[:FOO]->(g COPY OF a)
