@@ -45,8 +45,9 @@ abstract class AbstractNeo4jDataSource extends AbstractPropertyGraphDataSource {
   override protected def readSchema(graphName: GraphName): CAPSSchema =
     SchemaFromProcedure(config, omitIncompatibleProperties) match {
       case None =>
-        // TODO: add link to procedure installation
-        throw UnsupportedOperationException("Neo4j PGDS requires okapi-neo4j-procedures to be installed in Neo4j")
+        throw UnsupportedOperationException(
+          "Neo4j PGDS requires okapi-neo4j-procedures to be installed in Neo4j:\n" +
+            "\thttps://github.com/opencypher/cypher-for-apache-spark/wiki/Neo4j-Schema-Procedure")
 
       case Some(schema) =>
         schema.asCaps
