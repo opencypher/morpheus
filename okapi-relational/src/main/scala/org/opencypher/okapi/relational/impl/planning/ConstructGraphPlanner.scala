@@ -38,7 +38,7 @@ import org.opencypher.okapi.relational.api.table.Table
 import org.opencypher.okapi.relational.api.tagging.TagSupport.computeRetaggings
 import org.opencypher.okapi.relational.api.tagging.Tags
 import org.opencypher.okapi.relational.api.tagging.Tags._
-import org.opencypher.okapi.relational.impl.operators.RelationalOperator
+import org.opencypher.okapi.relational.impl.operators.{ConstructGraph, RelationalOperator}
 import org.opencypher.okapi.relational.impl.table.RecordHeader
 import org.opencypher.okapi.relational.impl.{operators => relational}
 import RelationalPlanner._
@@ -131,7 +131,7 @@ object ConstructGraphPlanner {
       context.session.graphs.unionGraph(Map(identityRetaggings(onGraph), identityRetaggings(patternGraph)))
     }
 
-    val constructOp = ConstructGraph(graph, name, constructTagStrategy, construct)
+    val constructOp = ConstructGraph(graph, name, constructTagStrategy, construct)(context)
 
     plannerContext.constructedGraphPlans += (name -> constructOp)
     context.constructedGraphCatalog += (construct.qualifiedGraphName -> graph)
@@ -269,28 +269,6 @@ object ConstructGraphPlanner {
     val columnPartitionOffset = columnIdPartition.toLong << columnIdShift
 
     Add(MonotonicallyIncreasingId(), IntegerLit(columnPartitionOffset)(CTInteger))(CTInteger)
-  }
-
-}
-
-final case class ConstructGraph[T <: Table[T]](
-  constructedGraph: RelationalCypherGraph[T],
-  override val graphName: QualifiedGraphName,
-  override val tagStrategy: Map[QualifiedGraphName, Map[Int, Int]],
-  construct: LogicalPatternGraph
-)(override implicit val context: RelationalRuntimeContext[T]) extends RelationalOperator[T] {
-
-  override lazy val header: RecordHeader = RecordHeader.empty
-
-  override lazy val _table: T = session.records.unit().table
-
-  override def returnItems: Option[Seq[Var]] = None
-
-  override lazy val graph: RelationalCypherGraph[T] = constructedGraph
-
-  override def toString: String = {
-    val entities = construct.clones.keySet ++ construct.newEntities.map(_.v)
-    s"ConstructGraph(on=[${construct.onGraphs.mkString(", ")}], entities=[${entities.mkString(", ")}])"
   }
 
 }
