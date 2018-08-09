@@ -44,8 +44,8 @@ import org.opencypher.okapi.relational.impl.planning.RelationalPlanner._
   * to, including their corresponding graph tags. Note, that the initial schema does not include the graph tag used for
   * the constructed entities.
   */
-case class SingleTableGraph[T <: Table[T]](
-  drivingTableOp: RelationalOperator[T],
+class SingleTableGraph[T <: Table[T]](
+  val drivingTableOp: RelationalOperator[T],
   override val schema: Schema,
   override val tags: Set[Int]
 )(implicit context: RelationalRuntimeContext[T]) extends RelationalCypherGraph[T] {

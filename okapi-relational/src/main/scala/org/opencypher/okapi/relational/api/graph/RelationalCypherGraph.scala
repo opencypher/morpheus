@@ -44,7 +44,7 @@ trait RelationalCypherGraphFactory[T <: Table[T]] {
   implicit val session: RelationalCypherSession[T]
 
   def singleTableGraph(drivingTable: RelationalOperator[T], schema: Schema, tagsUsed: Set[Int])
-    (implicit context: RelationalRuntimeContext[T]): Graph = SingleTableGraph(drivingTable, schema, tagsUsed)
+    (implicit context: RelationalRuntimeContext[T]): Graph = new SingleTableGraph(drivingTable, schema, tagsUsed)
 
   def unionGraph(graphs: RelationalCypherGraph[T]*)(implicit context: RelationalRuntimeContext[T]): Graph = {
     unionGraph(computeRetaggings(graphs.map(g => g -> g.tags).toMap))

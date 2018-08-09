@@ -78,22 +78,21 @@ object RelationalPlanner {
       case logical.EmptyRecords(fields, in, _) =>
         relational.EmptyRecords(process[T](in), fields)
 
-      case logical.Start(graph, _) => planStart(graph)
+      case logical.Start(graph, _) => relational.Start(graph.qualifiedGraphName)
 
       case logical.FromGraph(graph, in, _) =>
-        graph match {
-          case g: LogicalCatalogGraph =>
-            relational.FromGraph(process[T](in), g)
+        val inOp = process[T](in)
 
-          case construct: LogicalPatternGraph =>
-            planConstructGraph(Some(in), construct) //(context, runtimeContext)
+        graph match {
+          case g: LogicalCatalogGraph => relational.FromGraph(process[T](in), g)
+          case construct: LogicalPatternGraph => planConstructGraph(inOp, construct)
         }
 
       case logical.Unwind(list, item, in, _) =>
         val explodeExpr = Explode(list)(item.cypherType)
         process[T](in).add(explodeExpr as item)
 
-      case logical.NodeScan(v, in, _) => relational.Scan(process[T](in), v.cypherType).assignScanName(v.name)
+      case logical.NodeScan(v, in, _) => planScan(Some(in), in.graph, v)
 
       case logical.Aggregate(aggregations, group, in, _) => relational.Aggregate(process[T](in), group, aggregations)
 
@@ -136,7 +135,7 @@ object RelationalPlanner {
 
       case logical.ExpandInto(source, rel, target, direction, sourceOp, _) =>
         val in = process[T](sourceOp)
-        val relationships = relational.Scan(in, rel.cypherType).assignScanName(rel.name)
+        val relationships = planScan(None, sourceOp.graph, rel)
 
         val startNode = StartNode(rel)()
         val endNode = EndNode(rel)()
@@ -154,7 +153,7 @@ object RelationalPlanner {
       case logical.BoundedVarLengthExpand(source, list, target, edgeScanType, direction, lower, upper, sourceOp, targetOp, _) =>
 
         val edgeScan = Var(list.name)(edgeScanType)
-        val edgeScanOp = relational.Scan(planStart(input.graph), edgeScan.cypherType).assignScanName(edgeScan.name)
+        val edgeScanOp = planScan(None, sourceOp.graph, edgeScan)
 
         val isExpandInto = sourceOp == targetOp
 
@@ -218,17 +217,22 @@ object RelationalPlanner {
     logicalGraph: LogicalGraph,
     entityVar: Var
   )(implicit context: RelationalRuntimeContext[T]): RelationalOperator[T] = {
+    val inOp = in match {
+      case Some(logicalOp) => process[T](logicalOp)
+      case _ => relational.Start(logicalGraph.qualifiedGraphName)
+    }
+
     val graph = logicalGraph match {
       case g: LogicalCatalogGraph =>
-        context.resolveGraph(logicalGraph.qualifiedGraphName)
+        inOp.context.resolveGraph(logicalGraph.qualifiedGraphName)
       case p: LogicalPatternGraph =>
-        context.constructedGraphCatalog.get(p.qualifiedGraphName) match {
+        inOp.context.constructedGraphCatalog.get(p.qualifiedGraphName) match {
           case Some(g) => g // the graph was already constructed
-          case None => planConstructGraph(in, p).graph
+          case None => planConstructGraph(inOp, p).graph
         }
     }
     val scanOp = graph.scanOperator(entityVar.cypherType)
-    scanOp.assignScanName(entityVar.name).switchContext(context)
+    scanOp.assignScanName(entityVar.name).switchContext(inOp.context)
   }
 
   def planJoin[T <: Table[T]](
@@ -240,10 +244,6 @@ object RelationalPlanner {
     val joinHeader = lhs.header join rhs.header
     val conflictFreeRhs = rhs.alignColumnNames(joinHeader)
     relational.Join(lhs, conflictFreeRhs, joinExprs, joinType)
-  }
-
-  private def planStart[T <: Table[T]](graph: LogicalGraph)(implicit context: RelationalRuntimeContext[T]): RelationalOperator[T] = {
-    relational.Start(graph.qualifiedGraphName, None)
   }
 
   // TODO: process operator outside of def
