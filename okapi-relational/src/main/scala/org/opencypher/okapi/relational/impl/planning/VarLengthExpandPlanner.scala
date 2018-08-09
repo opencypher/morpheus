@@ -29,7 +29,7 @@ package org.opencypher.okapi.relational.impl.planning
 import org.opencypher.okapi.api.types.CTBoolean
 import org.opencypher.okapi.ir.api.expr._
 import org.opencypher.okapi.logical.impl.LogicalOperator
-import org.opencypher.okapi.relational.api.planning.{RelationalPlannerContext, RelationalRuntimeContext}
+import org.opencypher.okapi.relational.api.planning.RelationalRuntimeContext
 import org.opencypher.okapi.relational.api.table.Table
 import org.opencypher.okapi.relational.impl.exception.RecordHeaderException
 import org.opencypher.okapi.relational.impl.operators.RelationalOperator
@@ -65,9 +65,7 @@ trait VarLengthExpandPlanner[T <: Table[T]] {
 
   def plan: RelationalOperator[T]
 
-  implicit val context: RelationalPlannerContext[T]
-
-  implicit val runtimeContext: RelationalRuntimeContext[T]
+  implicit val context: RelationalRuntimeContext[T]
 
   val physicalSourceOp: RelationalOperator[T] = process(sourceOp)
   val physicalEdgeScanOp: RelationalOperator[T] = relEdgeScanOp
@@ -138,7 +136,12 @@ trait VarLengthExpandPlanner[T <: Table[T]] {
     * @param directions     expansion directions
     * @param edgeVars       edges already traversed
     */
-  def expand(i: Int, iterationTable: RelationalOperator[T], directions: (ExpandDirection, ExpandDirection), edgeVars: Seq[Var]): (RelationalOperator[T], Var) = {
+  def expand(
+    i: Int,
+    iterationTable: RelationalOperator[T],
+    directions: (ExpandDirection, ExpandDirection),
+    edgeVars: Seq[Var]
+  ): (RelationalOperator[T], Var) = {
     val nextEdgeCT = if (i > lower) edgeScan.cypherType.nullable else edgeScan.cypherType
     val nextEdge = ListSegment(i, list)(nextEdgeCT)
 
@@ -149,8 +152,8 @@ trait VarLengthExpandPlanner[T <: Table[T]] {
     val aliasedEdgeScanOp = relational.Select(edgeScanOpWithAlias, selectExprs.toList)
 
     val joinExpr = directions match {
-      case (Outbound,Outbound) => iterationTable.header.endNodeFor(edgeVars.last) -> aliasedCacheHeader.startNodeFor(nextEdge)
-      case (Outbound,Inbound) => iterationTable.header.endNodeFor(edgeVars.last) -> aliasedCacheHeader.endNodeFor(nextEdge)
+      case (Outbound, Outbound) => iterationTable.header.endNodeFor(edgeVars.last) -> aliasedCacheHeader.startNodeFor(nextEdge)
+      case (Outbound, Inbound) => iterationTable.header.endNodeFor(edgeVars.last) -> aliasedCacheHeader.endNodeFor(nextEdge)
       case (Inbound, Outbound) => iterationTable.header.startNodeFor(edgeVars.last) -> aliasedCacheHeader.endNodeFor(nextEdge)
       case (Inbound, Inbound) => iterationTable.header.startNodeFor(edgeVars.last) -> aliasedCacheHeader.startNodeFor(nextEdge)
     }
@@ -210,10 +213,10 @@ trait VarLengthExpandPlanner[T <: Table[T]] {
   /**
     * Copies the content of a variable into another variable
     *
-    * @param from       source variable
-    * @param to         target variable
-    * @param targetHeader     target header
-    * @param physicalOp base operation
+    * @param from         source variable
+    * @param to           target variable
+    * @param targetHeader target header
+    * @param physicalOp   base operation
     */
   protected def copyEntity(
     from: Var,
@@ -273,10 +276,7 @@ class DirectedVarLengthExpandPlanner[T <: Table[T]](
   override val relEdgeScanOp: RelationalOperator[T],
   override val targetOp: LogicalOperator,
   override val isExpandInto: Boolean
-)(
-  override implicit val context: RelationalPlannerContext[T],
-  override implicit val runtimeContext: RelationalRuntimeContext[T]
-) extends VarLengthExpandPlanner[T] {
+)(override implicit val context: RelationalRuntimeContext[T]) extends VarLengthExpandPlanner[T] {
 
   override def plan: RelationalOperator[T] = {
     // Iteratively expand beginning from startOp with cacheOp
@@ -306,10 +306,7 @@ class UndirectedVarLengthExpandPlanner[T <: Table[T]](
   override val relEdgeScanOp: RelationalOperator[T],
   override val targetOp: LogicalOperator,
   override val isExpandInto: Boolean
-)(
-  override implicit val context: RelationalPlannerContext[T],
-  override implicit val runtimeContext: RelationalRuntimeContext[T]
-) extends VarLengthExpandPlanner[T] {
+)(override implicit val context: RelationalRuntimeContext[T]) extends VarLengthExpandPlanner[T] {
 
   override def plan: RelationalOperator[T] = {
 
@@ -324,7 +321,7 @@ class UndirectedVarLengthExpandPlanner[T <: Table[T]](
         val (outOut, nextEdge) = expand(i, last, Outbound -> Outbound, edgeVars)
         val (outIn, _) = expand(i, last, Outbound -> Inbound, edgeVars)
         val (inOut, _) = expand(i, lastRevered, Inbound -> Outbound, edgeVars)
-        val (inIn, _) = expand(i, lastRevered, Inbound ->Inbound, edgeVars)
+        val (inIn, _) = expand(i, lastRevered, Inbound -> Inbound, edgeVars)
         val nextOps = relational.TabularUnionAll(outOut, inOut) -> relational.TabularUnionAll(outIn, inIn)
 
         acc :+ nextOps -> (edgeVars :+ nextEdge)

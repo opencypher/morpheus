@@ -33,24 +33,24 @@ import org.opencypher.okapi.ir.api.set.SetPropertyItem
 import org.opencypher.okapi.ir.api.{PropertyKey, RelType}
 import org.opencypher.okapi.logical.impl._
 import org.opencypher.okapi.relational.api.graph.RelationalCypherGraph
-import org.opencypher.okapi.relational.api.planning.{RelationalPlannerContext, RelationalRuntimeContext}
+import org.opencypher.okapi.relational.api.planning.RelationalRuntimeContext
 import org.opencypher.okapi.relational.api.table.Table
 import org.opencypher.okapi.relational.api.tagging.TagSupport.computeRetaggings
 import org.opencypher.okapi.relational.api.tagging.Tags
 import org.opencypher.okapi.relational.api.tagging.Tags._
 import org.opencypher.okapi.relational.impl.operators.{ConstructGraph, RelationalOperator}
+import org.opencypher.okapi.relational.impl.planning.RelationalPlanner._
 import org.opencypher.okapi.relational.impl.table.RecordHeader
 import org.opencypher.okapi.relational.impl.{operators => relational}
-import RelationalPlanner._
 
 object ConstructGraphPlanner {
 
   def planConstructGraph[T <: Table[T]](in: Option[LogicalOperator], construct: LogicalPatternGraph)
-    (implicit plannerContext: RelationalPlannerContext[T], context: RelationalRuntimeContext[T]): RelationalOperator[T] = {
+    (implicit context: RelationalRuntimeContext[T]): RelationalOperator[T] = {
 
     val onGraphPlan: RelationalOperator[T] = {
       construct.onGraphs match {
-        case Nil => relational.Start[T](plannerContext.session.emptyGraphQgn) // Empty start
+        case Nil => relational.Start[T](context.session.emptyGraphQgn) // Empty start
         //TODO: Optimize case where no union is necessary
         //case h :: Nil => operatorProducer.planStart(Some(h)) // Just one graph, no union required
         case several =>
@@ -58,7 +58,7 @@ object ConstructGraphPlanner {
           relational.GraphUnionAll[T](onGraphPlans, construct.qualifiedGraphName)
       }
     }
-    val inputTablePlan = in.map(RelationalPlanner.process(_)(plannerContext, context)).getOrElse(relational.Start[T](plannerContext.session.emptyGraphQgn))
+    val inputTablePlan = in.map(RelationalPlanner.process(_)(context)).getOrElse(relational.Start[T](context.session.emptyGraphQgn))
 
     val onGraph = onGraphPlan.graph
 
@@ -133,7 +133,7 @@ object ConstructGraphPlanner {
 
     val constructOp = ConstructGraph(graph, name, constructTagStrategy, construct)(context)
 
-    plannerContext.constructedGraphPlans += (name -> constructOp)
+    context.constructedGraphPlans += (name -> constructOp)
     context.constructedGraphCatalog += (construct.qualifiedGraphName -> graph)
     constructOp
   }
