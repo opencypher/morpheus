@@ -26,7 +26,9 @@
  */
 package org.opencypher.okapi.api.schema
 
+import org.opencypher.okapi.api.schema.LabelPropertyMap._
 import org.opencypher.okapi.api.schema.PropertyKeys.PropertyKeys
+import org.opencypher.okapi.api.schema.RelTypePropertyMap._
 import org.opencypher.okapi.api.types.{CTRelationship, CypherType}
 import org.opencypher.okapi.impl.schema.SchemaImpl._
 import org.opencypher.okapi.impl.schema.{ImpliedLabels, LabelCombinations, SchemaImpl}

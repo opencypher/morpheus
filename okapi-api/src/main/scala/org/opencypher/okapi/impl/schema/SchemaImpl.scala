@@ -26,9 +26,14 @@
  */
 package org.opencypher.okapi.impl.schema
 
+import cats.instances.all._
+import cats.syntax.semigroup._
+import org.opencypher.okapi.api.schema.LabelPropertyMap._
 import org.opencypher.okapi.api.schema.PropertyKeys.PropertyKeys
+import org.opencypher.okapi.api.schema.RelTypePropertyMap._
 import org.opencypher.okapi.api.schema.{LabelPropertyMap, PropertyKeys, RelTypePropertyMap, Schema}
-import org.opencypher.okapi.api.types._
+import org.opencypher.okapi.api.types.CypherType.joinMonoid
+import org.opencypher.okapi.api.types.{CypherType, _}
 import org.opencypher.okapi.impl.exception.SchemaException
 import org.opencypher.okapi.impl.schema.SchemaImpl._
 import org.opencypher.okapi.impl.schema.SchemaUtils._
@@ -59,45 +64,40 @@ object SchemaImpl {
   )
 
   implicit def lpmRw: ReadWriter[LabelPropertyMap] = readwriter[Js.Value].bimap[LabelPropertyMap](
-    labelPropertyMap => {
-      val jsonEntries = labelPropertyMap.map.map {
+    labelPropertyMap =>
+      labelPropertyMap.map {
         case (labelCombo, propKeys) => Js.Obj(LABELS -> writeJs(labelCombo), PROPERTIES -> writeJs(propKeys))
-      }
-      jsonEntries
-    },
-    json => {
-      val content = json.arr
-        .map(value => readJs[Set[String]](value.obj(LABELS)) -> readJs[PropertyKeys](value.obj(PROPERTIES)))
-      LabelPropertyMap(content.toMap)
-    }
+      },
+    json =>
+      json.arr.map { value =>
+        readJs[Set[String]](value.obj(LABELS)) -> readJs[PropertyKeys](value.obj(PROPERTIES))
+      }.toMap
   )
 
   implicit def rpmRw: ReadWriter[RelTypePropertyMap] = readwriter[Js.Value].bimap[RelTypePropertyMap](
-    relTypePropertyMap => {
-      val jsonEntries = relTypePropertyMap.map.map {
+    relTypePropertyMap =>
+      relTypePropertyMap.map {
         case (relType, propKeys) => Js.Obj(REL_TYPE -> writeJs(relType), PROPERTIES -> writeJs(propKeys))
-      }
-      jsonEntries
-    },
-    json => {
-      val content = json.arr
-        .map(value => readJs[String](value.obj(REL_TYPE)) -> readJs[PropertyKeys](value.obj(PROPERTIES)))
-      RelTypePropertyMap(content.toMap)
-    }
+      },
+    json =>
+      json.arr.map { value =>
+        readJs[String](value.obj(REL_TYPE)) -> readJs[PropertyKeys](value.obj(PROPERTIES))
+      }.toMap
   )
 }
 
 final case class SchemaImpl(
   labelPropertyMap: LabelPropertyMap,
-  relTypePropertyMap: RelTypePropertyMap) extends Schema {
+  relTypePropertyMap: RelTypePropertyMap
+) extends Schema {
 
   self: Schema =>
 
-  lazy val labels: Set[String] = labelPropertyMap.map.keySet.flatten
+  lazy val labels: Set[String] = labelPropertyMap.keySet.flatten
 
-  lazy val relationshipTypes: Set[String] = relTypePropertyMap.map.keySet
+  lazy val relationshipTypes: Set[String] = relTypePropertyMap.keySet
 
-  private def graphContainsNodeWithoutLabel: Boolean = labelPropertyMap.map.keySet.contains(Set.empty)
+  private def graphContainsNodeWithoutLabel: Boolean = labelPropertyMap.keySet.contains(Set.empty)
 
   override lazy val impliedLabels: ImpliedLabels = {
     // TODO: inline and simplify
@@ -219,8 +219,7 @@ final case class SchemaImpl(
         val keys = computePropertyTypes(labelPropertyMap.properties(next), other.labelPropertyMap.properties(next))
         acc + (next -> keys)
     }
-    val newNodeKeyMap = labelPropertyMap ++ other.labelPropertyMap ++ LabelPropertyMap(nulledOut)
-
+    val newNodeKeyMap = labelPropertyMap |+| other.labelPropertyMap |+| nulledOut
 
     val conflictingRelTypes = relationshipTypes intersect other.relationshipTypes
     val nulledRelProps = conflictingRelTypes.foldLeft(Map.empty[String, PropertyKeys]) {
@@ -228,7 +227,7 @@ final case class SchemaImpl(
         val keys = computePropertyTypes(relTypePropertyMap.properties(next), other.relTypePropertyMap.properties(next))
         acc + (next -> keys)
     }
-    val newRelTypePropertyMap = relTypePropertyMap ++ other.relTypePropertyMap ++ RelTypePropertyMap(nulledRelProps)
+    val newRelTypePropertyMap = relTypePropertyMap |+| other.relTypePropertyMap |+| nulledRelProps
 
     copy(labelPropertyMap = newNodeKeyMap, relTypePropertyMap = newRelTypePropertyMap)
   }
@@ -248,7 +247,7 @@ final case class SchemaImpl(
     }
 
     // take all label properties that might appear on the possible labels
-    val newLabelPropertyMap = LabelPropertyMap(this.labelPropertyMap.map.filterKeys(possibleLabels.contains))
+    val newLabelPropertyMap: LabelPropertyMap = this.labelPropertyMap.filterKeys(possibleLabels.contains)
 
     // add labels that were specified in the constraints but are not present in source schema
     val updatedLabelPropertyMap = possibleLabels.foldLeft(newLabelPropertyMap) {
@@ -269,14 +268,14 @@ final case class SchemaImpl(
     }
 
     val updatedRelTypePropertyMap = this.relTypePropertyMap.filterForRelTypes(givenRelTypes)
-    val updatedMap = givenRelTypes.foldLeft(updatedRelTypePropertyMap.map) {
+    val updatedMap = givenRelTypes.foldLeft(updatedRelTypePropertyMap) {
       case (map, givenRelType) =>
         if (!map.contains(givenRelType)) map.updated(givenRelType, PropertyKeys.empty) else map
     }
 
     SchemaImpl(
       labelPropertyMap = LabelPropertyMap.empty,
-      relTypePropertyMap = RelTypePropertyMap(updatedMap)
+      relTypePropertyMap = updatedMap
     )
   }
 
@@ -333,10 +332,16 @@ final case class SchemaImpl(
   override private[opencypher] def dropPropertiesFor(combo: Set[String]) =
     copy(labelPropertyMap - combo)
 
-  override private[opencypher] def withOverwrittenNodePropertyKeys(nodeLabels: Set[String], propertyKeys: PropertyKeys) =
+  override private[opencypher] def withOverwrittenNodePropertyKeys(
+    nodeLabels: Set[String],
+    propertyKeys: PropertyKeys
+  ) =
     copy(labelPropertyMap = labelPropertyMap.register(nodeLabels, propertyKeys))
 
-  override private[opencypher] def withOverwrittenRelationshipPropertyKeys(relType: String, propertyKeys: PropertyKeys) =
+  override private[opencypher] def withOverwrittenRelationshipPropertyKeys(
+    relType: String,
+    propertyKeys: PropertyKeys
+  ) =
     copy(relTypePropertyMap = relTypePropertyMap.register(relType, propertyKeys))
 
   override def toJson: String = upickle.default.write[Schema](this, indent = 4)

@@ -26,12 +26,16 @@
  */
 package org.opencypher.okapi.api.schema
 
+import cats.instances.all._
+import cats.syntax.semigroup._
+import org.opencypher.okapi.api.schema.LabelPropertyMap._
+import org.opencypher.okapi.api.types.CypherType.joinMonoid
 import org.opencypher.okapi.api.types.{CTAny, CTBoolean, CTInteger, CTString}
 import org.scalatest.{FunSpec, Matchers}
 
 class LabelPropertyMapTest extends FunSpec with Matchers {
 
-  it("++") {
+  it("|+|") {
     val map1 = LabelPropertyMap.empty
       .register("A")("name" -> CTString, "age" -> CTInteger, "gender" -> CTString)
       .register("B")("p" -> CTBoolean)
@@ -40,7 +44,7 @@ class LabelPropertyMapTest extends FunSpec with Matchers {
       .register("A")("name" -> CTString, "gender" -> CTBoolean)
       .register("C")("name" -> CTString)
 
-    map1 ++ map2 should equal(
+    map1 |+| map2 should equal(
       LabelPropertyMap.empty
         .register("A")("name" -> CTString, "age" -> CTInteger, "gender" -> CTAny)
         .register("B")("p" -> CTBoolean)

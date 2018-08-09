@@ -44,82 +44,76 @@ object PropertyKeys {
 
 object LabelPropertyMap {
 
-  val empty: LabelPropertyMap = LabelPropertyMap(Map.empty)
+  type LabelPropertyMap = Map[Set[String], PropertyKeys]
 
-}
-
-/**
-  * Maps (a set of) labels to typed property keys.
-  */
-final case class LabelPropertyMap(map: Map[Set[String], PropertyKeys]) {
+  val empty: LabelPropertyMap = Map.empty
 
   /**
-    * Registers the given property keys to the specified labels.
-    *
-    * @note This will override any previous binding for the label combination.
-    * @param labels     set of labels
-    * @param properties property keys for the given set of labels
-    * @return updated LabelPropertyMap
+    * Maps (a set of) labels to typed property keys.
     */
-  def register(labels: Set[String], properties: PropertyKeys): LabelPropertyMap =
-    copy(map.updated(labels, properties))
+  implicit class RichLabelPropertyMap(val map: LabelPropertyMap) extends AnyVal {
 
-  /**
-    * Returns the property keys that are associated with the given set of labels.
-    *
-    * @param labels set of labels
-    * @return associated property keys
-    */
-  def properties(labels: Set[String]): PropertyKeys =
-    map.getOrElse(labels, PropertyKeys.empty)
+    /**
+      * Registers the given property keys to the specified labels.
+      *
+      * @note This will override any previous binding for the label combination.
+      * @param labels     set of labels
+      * @param properties property keys for the given set of labels
+      * @return updated LabelPropertyMap
+      */
+    def register(labels: Set[String], properties: PropertyKeys): LabelPropertyMap = map.updated(labels, properties)
 
-  /**
-    * Merges this LabelPropertyMap with the given map. Property keys for label sets that exist in both maps are being
-    * merged, diverging types are being joined.
-    *
-    * @param other LabelPropertyMap to merge
-    * @return merged LabelPropertyMap
-    */
-  def ++(other: LabelPropertyMap): LabelPropertyMap = copy(map |+| other.map)
+    /**
+      * Returns the property keys that are associated with the given set of labels.
+      *
+      * @param labels set of labels
+      * @return associated property keys
+      */
+    def properties(labels: Set[String]): PropertyKeys = map.getOrElse(labels, PropertyKeys.empty)
 
-  /**
-    * Returns the label property map with the given label combination `combo` removed.
-    *
-    * @param combo label combination to remove
-    * @return updated label property map
-    */
-  def -(combo: Set[String]): LabelPropertyMap = {
-    copy(map - combo)
+    /**
+      * Merges this LabelPropertyMap with the given map. Property keys for label sets that exist in both maps are being
+      * merged, diverging types are being joined.
+      *
+      * @param other LabelPropertyMap to merge
+      * @return merged LabelPropertyMap
+      */
+    def ++(other: LabelPropertyMap): LabelPropertyMap = map |+| other
+
+    /**
+      * Returns the label property map with the given label combination `combo` removed.
+      *
+      * @param combo label combination to remove
+      * @return updated label property map
+      */
+    def -(combo: Set[String]): LabelPropertyMap = map - combo
+
+    /**
+      * Returns a LabelPropertyMap that contains all label combinations which include one or more of the specified labels.
+      *
+      * @param knownLabels labels for which the properties should be extracted
+      * @return extracted label property map
+      */
+    def filterForLabels(knownLabels: Set[String]): LabelPropertyMap = map.filterKeys(_.exists(knownLabels.contains))
+
+    /**
+      * Returns all registered combinations of labels
+      *
+      * @return all registered label combinations.
+      */
+    def labelCombinations: Set[Set[String]] = map.keySet
+
+    // utility signatures
+
+    def register(labels: String*)(keys: (String, CypherType)*): LabelPropertyMap = register(labels.toSet, keys.toMap)
+
+    def register(label: String, properties: PropertyKeys): LabelPropertyMap = register(Set(label), properties)
+
+    def properties(label: String*): PropertyKeys = properties(Set(label: _*))
+
+    def filterForLabels(labels: String*): LabelPropertyMap = filterForLabels(labels.toSet)
+
   }
 
-  /**
-    * Returns a LabelPropertyMap that contains all label combinations which include one or more of the specified labels.
-    *
-    * @param knownLabels labels for which the properties should be extracted
-    * @return extracted label property map
-    */
-  def filterForLabels(knownLabels: Set[String]): LabelPropertyMap =
-    LabelPropertyMap(map.filterKeys(_.exists(knownLabels.contains)))
-
-  /**
-    * Returns all registered combinations of labels
-    *
-    * @return all registered label combinations.
-    */
-  def labelCombinations: Set[Set[String]] = map.keySet
-
-  // utility signatures
-
-  def register(labels: String*)(keys: (String, CypherType)*): LabelPropertyMap =
-    register(labels.toSet, keys.toMap)
-
-  def register(label: String, properties: PropertyKeys): LabelPropertyMap =
-    register(Set(label), properties)
-
-  def properties(label: String*): PropertyKeys =
-    properties(Set(label: _*))
-
-  def filterForLabels(labels: String*): LabelPropertyMap =
-    filterForLabels(labels.toSet)
 
 }

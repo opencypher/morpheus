@@ -399,4 +399,40 @@ class SchemaTest extends FunSpec with Matchers {
         .withNodePropertyKeys("Foo")("p" -> CTString.nullable)
     )
   }
+
+  it("serializes to/from json") {
+    val schema = Schema.empty
+      .withRelationshipPropertyKeys("FOO")("p" -> CTString)
+      .withNodePropertyKeys("BAR")("q" -> CTInteger)
+
+    val serialized = schema.toJson
+
+    serialized should equal(
+      """|{
+         |    "version": 1,
+         |    "labelPropertyMap": [
+         |        {
+         |            "labels": [
+         |                "BAR"
+         |            ],
+         |            "properties": {
+         |                "q": "INTEGER"
+         |            }
+         |        }
+         |    ],
+         |    "relTypePropertyMap": [
+         |        {
+         |            "relType": "FOO",
+         |            "properties": {
+         |                "p": "STRING"
+         |            }
+         |        }
+         |    ]
+         |}""".stripMargin)
+
+    val deserialized = Schema.fromJson(serialized)
+
+    deserialized should equal(schema)
+  }
+
 }

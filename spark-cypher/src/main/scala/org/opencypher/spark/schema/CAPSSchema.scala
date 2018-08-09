@@ -26,7 +26,9 @@
  */
 package org.opencypher.spark.schema
 
+import org.opencypher.okapi.api.schema.LabelPropertyMap.LabelPropertyMap
 import org.opencypher.okapi.api.schema.PropertyKeys.PropertyKeys
+import org.opencypher.okapi.api.schema.RelTypePropertyMap.RelTypePropertyMap
 import org.opencypher.okapi.api.schema.{LabelPropertyMap, RelTypePropertyMap, Schema}
 import org.opencypher.okapi.api.types.{CTRelationship, CypherType}
 import org.opencypher.okapi.impl.exception.{SchemaException, UnsupportedOperationException}

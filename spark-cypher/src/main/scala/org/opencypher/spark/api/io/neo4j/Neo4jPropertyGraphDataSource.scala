@@ -34,8 +34,10 @@ import org.apache.spark.sql.{DataFrame, Row}
 import org.neo4j.driver.internal.value.ListValue
 import org.neo4j.driver.v1.{Value, Values}
 import org.opencypher.okapi.api.graph.{GraphName, PropertyGraph}
+import org.opencypher.okapi.api.schema.LabelPropertyMap._
 import org.opencypher.okapi.api.schema.PropertyKeys.PropertyKeys
-import org.opencypher.okapi.api.schema.{LabelPropertyMap, RelTypePropertyMap, Schema}
+import org.opencypher.okapi.api.schema.RelTypePropertyMap._
+import org.opencypher.okapi.api.schema.Schema
 import org.opencypher.okapi.api.types.{CTNode, CTRelationship}
 import org.opencypher.okapi.api.value.CypherValue.CypherList
 import org.opencypher.okapi.impl.exception.UnsupportedOperationException
@@ -45,6 +47,7 @@ import org.opencypher.okapi.neo4j.io.Neo4jHelpers.Neo4jDefaults._
 import org.opencypher.okapi.neo4j.io.Neo4jHelpers._
 import org.opencypher.okapi.neo4j.io.{EntityReader, EntityWriter, Neo4jConfig}
 import org.opencypher.spark.api.CAPSSession
+import org.opencypher.spark.api.io.neo4j.MetaLabelSupport._
 import org.opencypher.spark.impl.CAPSConverters._
 import org.opencypher.spark.impl.CAPSRecords
 import org.opencypher.spark.impl.io.neo4j.external.Neo4j
@@ -53,6 +56,23 @@ import org.opencypher.spark.schema.CAPSSchema._
 
 import scala.concurrent.duration._
 import scala.concurrent.{Await, ExecutionContext, ExecutionContextExecutorService, Future}
+
+object MetaLabelSupport {
+
+  implicit class RichPropertyKeys(val keys: PropertyKeys) extends AnyVal {
+    def withoutMetaProperty: PropertyKeys = keys.filterKeys(k => k != metaPropertyKey)
+  }
+
+  implicit class LabelPropertyMapWithMetaSupport(val map: LabelPropertyMap) extends AnyVal {
+    def withoutMetaLabel(metaLabel: String): LabelPropertyMap = map.map { case (k, v) => (k - metaLabel) -> v }
+    def withoutMetaProperty: LabelPropertyMap = map.mapValues(_.withoutMetaProperty)
+  }
+
+  implicit class RelTypePropertyMapWithMetaSupport(val map: RelTypePropertyMap) extends AnyVal  {
+    def withoutMetaProperty: RelTypePropertyMap = map.mapValues(_.withoutMetaProperty)
+  }
+
+}
 
 case class Neo4jPropertyGraphDataSource(
   override val config: Neo4jConfig,
@@ -68,27 +88,6 @@ case class Neo4jPropertyGraphDataSource(
       case `entireGraphName` => None
       case subGraph => Some(metaPrefix + subGraph)
     }
-  }
-
-  private implicit class RichPropertyKeys(keys: PropertyKeys) {
-
-    def withoutMetaProperty: PropertyKeys =
-      keys.filterKeys(k => k != metaPropertyKey)
-  }
-
-  private implicit class RichLabelPropertyMap(map: LabelPropertyMap) {
-
-    def withoutMetaLabel(metaLabel: String): LabelPropertyMap =
-      LabelPropertyMap(map.map.map { case (k, v) => (k - metaLabel) -> v })
-
-    def withoutMetaProperty: LabelPropertyMap =
-      LabelPropertyMap(map.map.mapValues(_.withoutMetaProperty))
-  }
-
-  private implicit class RichRelTypePropertyMap(map: RelTypePropertyMap) {
-
-    def withoutMetaProperty: RelTypePropertyMap =
-      RelTypePropertyMap(map.map.mapValues(_.withoutMetaProperty))
   }
 
   override def hasGraph(graphName: GraphName): Boolean = graphName match {
