@@ -446,6 +446,12 @@ class RecordHeaderTest extends BaseTestSuite {
       nHeader.join(aliased) should equal(nHeader ++ mHeader)
     }
 
+    it("joins without generating conflicting expr names") {
+      val underlineHeader = RecordHeader.empty.withExpr(Var("_")())
+      val dotHeader = RecordHeader.empty.withExpr(Var(".")())
+      underlineHeader.join(dotHeader).columns.size should be(2)
+    }
+
     it("joins record headers with overlapping column names and multiple expressions per column") {
       val aliased = nHeader.withAlias(n as m).withAlias(n as o).select(m, o)
       nHeader.join(aliased) should equal(nHeader ++ mHeader.withAlias(m as o))
