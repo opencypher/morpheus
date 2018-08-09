@@ -73,7 +73,7 @@ trait RelationalCypherGraph[T <: Table[T]] extends PropertyGraph {
 
   def tables: Seq[T]
 
-  protected def scanOperator(entityType: CypherType, exactLabelMatch: Boolean = false): RelationalOperator[T]
+  def scanOperator(entityType: CypherType, exactLabelMatch: Boolean = false): RelationalOperator[T]
 
   override def nodes(name: String, nodeCypherType: CTNode, exactLabelMatch: Boolean = false): RelationalCypherRecords[T] = {
     val scan = scanOperator(nodeCypherType, exactLabelMatch)

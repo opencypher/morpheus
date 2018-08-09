@@ -56,7 +56,7 @@ class ScanGraph[T <: Table[T]](val scans: Seq[EntityTable[T]], val schema: Schem
   override def tables: Seq[T] = scans.map(_.table)
 
   // TODO: Express `exactLabelMatch` with type
-  protected override def scanOperator(
+  override def scanOperator(
     entityType: CypherType,
     exactLabelMatch: Boolean
   ): RelationalOperator[T] = {
