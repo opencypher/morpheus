@@ -121,9 +121,7 @@ object ConstructGraphPlanner {
         tags ++ remappedTags
     }
 
-    val patternGraphRecords = context.session.records.from(patternGraphTableOp.header, patternGraphTableOp.table)
-
-    val patternGraph = context.session.graphs.singleTableGraph(patternGraphRecords, schema, tagsUsed)
+    val patternGraph = context.session.graphs.singleTableGraph(patternGraphTableOp, schema, tagsUsed)
 
     val graph = if (onGraph == context.session.graphs.empty) {
       context.session.graphs.unionGraph(patternGraph)

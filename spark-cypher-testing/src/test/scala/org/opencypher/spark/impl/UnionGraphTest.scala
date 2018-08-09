@@ -28,19 +28,17 @@ package org.opencypher.spark.impl
 
 import org.apache.spark.sql.Row
 import org.opencypher.okapi.relational.api.graph.RelationalCypherGraph
-import org.opencypher.okapi.relational.api.tagging.TagSupport._
 import org.opencypher.okapi.relational.api.tagging.Tags._
 import org.opencypher.okapi.testing.Bag
-import org.opencypher.spark.impl
 import org.opencypher.spark.impl.table.SparkTable.DataFrameTable
-import org.opencypher.spark.testing.CAPSTestSuite
 import org.opencypher.spark.testing.fixture.{GraphConstructionFixture, RecordsVerificationFixture, TeamDataFixture}
 
-class UnionGraphTest extends CAPSTestSuite
+class UnionGraphTest extends CAPSGraphTest
   with GraphConstructionFixture
   with RecordsVerificationFixture
   with TeamDataFixture {
 
+  import CAPSGraphTest._
   import CAPSGraphTestData._
 
   def testGraph1 = initGraph("CREATE (:Person {name: 'Mats'})")
@@ -54,7 +52,7 @@ class UnionGraphTest extends CAPSTestSuite
     val inputGraph = initGraph(`:Person`)
     val inputNodes = inputGraph.nodes("n")
 
-    val singleTableGraph = caps.graphs.singleTableGraph(inputNodes, inputGraph.schema, Set(0))
+    val singleTableGraph = caps.graphs.singleTableGraph(inputNodes.planStart, inputGraph.schema, Set(0))
     val nodes = singleTableGraph.nodes("n")
 
     val cols = Seq(

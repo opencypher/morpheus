@@ -45,7 +45,7 @@ import org.opencypher.okapi.relational.impl.planning.RelationalPlanner._
   * the constructed entities.
   */
 case class SingleTableGraph[T <: Table[T]](
-  baseTable: RelationalCypherRecords[T],
+  drivingTableOp: RelationalOperator[T],
   override val schema: Schema,
   override val tags: Set[Int]
 )(implicit context: RelationalRuntimeContext[T]) extends RelationalCypherGraph[T] {
@@ -56,17 +56,16 @@ case class SingleTableGraph[T <: Table[T]](
 
   override type Records = RelationalCypherRecords[T]
 
-  private val header = baseTable.header
+  private val header = drivingTableOp.header
 
-  def show(): Unit = baseTable.show
+  def show(): Unit = drivingTableOp.show
 
-  override def tables: Seq[T] = Seq(baseTable.table)
+  override def tables: Seq[T] = Seq(drivingTableOp.table)
 
   protected override def scanOperatorInternal(
     entityType: CypherType,
     exactLabelMatch: Boolean
   ): RelationalOperator[T] = {
-    val baseTableOp = Start(baseTable)
     val targetEntity = Var("")(entityType)
     val targetEntityHeader = schema.headerForEntity(Var("")(entityType), exactLabelMatch)
 
@@ -87,7 +86,7 @@ case class SingleTableGraph[T <: Table[T]](
         case other => throw IllegalArgumentException("CTNode or CTRelationship", other)
       }
 
-      val selected = Select(baseTableOp, List(extractionVar))
+      val selected = Select(drivingTableOp, List(extractionVar))
       val idExprs = header.idExpressions(extractionVar).toSeq
 
       val validEntityPredicate = Ands(idExprs.map(idExpr => IsNotNull(idExpr)(CTBoolean)) :+ labelOrTypePredicate: _*)
