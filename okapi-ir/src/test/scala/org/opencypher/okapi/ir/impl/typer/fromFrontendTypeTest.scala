@@ -55,7 +55,7 @@ class fromFrontendTypeTest extends BaseTestSuite {
 
   implicit class RichType(t: frontend.CypherType) {
     def shouldBeConvertedTo(other: CypherType): Assertion = {
-      fromFrontendType(t) should equal(other)
+      fromFrontendType(t) should equal(Some(other))
     }
   }
 }

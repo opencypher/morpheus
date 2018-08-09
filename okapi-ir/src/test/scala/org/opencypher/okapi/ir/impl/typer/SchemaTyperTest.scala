@@ -82,8 +82,8 @@ class SchemaTyperTest extends BaseTestSuite with Neo4jAstTestSupport with Mockit
     implicit val context = typeTracker("a" -> CTNode)
 
     assertExpr.from("count(*)") shouldHaveInferredType CTInteger
-    assertExpr.from("count(a)") shouldHaveInferredType CTInteger
-    assertExpr.from("count(a.name)") shouldHaveInferredType CTInteger
+    assertExpr.from("count(a)") shouldHaveInferredType CTInteger.nullable
+    assertExpr.from("count(a.name)") shouldHaveInferredType CTInteger.nullable
   }
 
   test("typing toString()") {
@@ -362,17 +362,17 @@ class SchemaTyperTest extends BaseTestSuite with Neo4jAstTestSupport with Mockit
   test("typing of id function") {
     implicit val context = typeTracker("n" -> CTNode("Person"))
 
-    assertExpr.from("id(n)") shouldHaveInferredType CTInteger
+    assertExpr.from("id(n)") shouldHaveInferredType CTInteger.nullable
   }
 
-  test("typing of functions") {
-    assertExpr.from("timestamp()") shouldHaveInferredType CTInteger
+  it("types functions") {
+    assertExpr.from("timestamp()") shouldHaveInferredType CTInteger.nullable
     assertExpr.from("toInteger(1.0)") shouldHaveInferredType CTInteger.nullable
-    assertExpr.from("size([0, true, []])") shouldHaveInferredType CTInteger
+    assertExpr.from("size([0, true, []])") shouldHaveInferredType CTInteger.nullable
 
-    assertExpr.from("percentileDisc(1, 3.14)") shouldHaveInferredType CTInteger
-    assertExpr.from("percentileDisc(6.67, 3.14)") shouldHaveInferredType CTFloat
-    assertExpr.from("percentileDisc([1, 3.14][0], 3.14)") shouldHaveInferredType CTInteger
+    assertExpr.from("percentileDisc(1, 3.14)") shouldHaveInferredType CTInteger.nullable
+    assertExpr.from("percentileDisc(6.67, 3.14)") shouldHaveInferredType CTFloat.nullable
+    assertExpr.from("percentileDisc([1, 3.14][0], 3.14)") shouldHaveInferredType CTInteger.nullable
 
     // TODO: Making this work requires union types and changing how nullability works. Sad!
     //
