@@ -31,8 +31,8 @@ import org.opencypher.okapi.api.schema.Schema
 import org.opencypher.okapi.api.types._
 import org.opencypher.okapi.ir.test.support.Neo4jAstTestSupport
 import org.opencypher.okapi.testing.BaseTestSuite
-import org.opencypher.v9_1.expressions.{Expression, Parameter}
-import org.opencypher.v9_1.util.symbols
+import org.opencypher.v9_0.expressions.{Expression, Parameter}
+import org.opencypher.v9_0.util.symbols
 import org.scalatest.mockito.MockitoSugar
 
 import scala.language.reflectiveCalls

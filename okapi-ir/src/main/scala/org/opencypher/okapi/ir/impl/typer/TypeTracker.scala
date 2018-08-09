@@ -26,7 +26,7 @@
  */
 package org.opencypher.okapi.ir.impl.typer
 
-import org.opencypher.v9_1.expressions.Expression
+import org.opencypher.v9_0.expressions.Expression
 import org.opencypher.okapi.api.types.CypherType
 
 import scala.annotation.tailrec

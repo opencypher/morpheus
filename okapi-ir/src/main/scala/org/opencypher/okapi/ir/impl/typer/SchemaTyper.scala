@@ -37,8 +37,8 @@ import org.opencypher.okapi.api.schema.Schema
 import org.opencypher.okapi.api.types.CypherType.joinMonoid
 import org.opencypher.okapi.api.types._
 import org.opencypher.okapi.ir.impl.parse.rewriter.ExistsPattern
-import org.opencypher.v9_1.expressions._
-import org.opencypher.v9_1.expressions.functions.{Coalesce, Collect, Exists, Max, Min, ToBoolean, ToInteger, ToString}
+import org.opencypher.v9_0.expressions._
+import org.opencypher.v9_0.expressions.functions.{Coalesce, Collect, Exists, Max, Min, ToBoolean, ToInteger, ToString}
 
 import scala.util.Try
 

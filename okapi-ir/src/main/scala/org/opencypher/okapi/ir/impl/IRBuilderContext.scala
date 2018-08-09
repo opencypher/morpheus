@@ -39,9 +39,9 @@ import org.opencypher.okapi.ir.api.pattern.Pattern
 import org.opencypher.okapi.ir.api.{IRCatalogGraph, IRField, IRGraph}
 import org.opencypher.okapi.ir.impl.typer.exception.TypingException
 import org.opencypher.okapi.ir.impl.typer.{SchemaTyper, TypeTracker}
-import org.opencypher.v9_1.ast.semantics.SemanticState
-import org.opencypher.v9_1.util.{InputPosition, Ref}
-import org.opencypher.v9_1.{expressions => ast}
+import org.opencypher.v9_0.ast.semantics.SemanticState
+import org.opencypher.v9_0.util.{InputPosition, Ref}
+import org.opencypher.v9_0.{expressions => ast}
 
 final case class IRBuilderContext(
   qgnGenerator: QGNGenerator,

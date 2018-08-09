@@ -31,9 +31,9 @@ import org.opencypher.okapi.impl.exception.NotImplementedException
 import org.opencypher.okapi.ir.api.expr._
 import org.opencypher.okapi.ir.api.{CypherQuery, Label, PropertyKey, RelType}
 import org.opencypher.okapi.ir.impl.FunctionUtils._
-import org.opencypher.v9_1.expressions.functions
-import org.opencypher.v9_1.util.Ref
-import org.opencypher.v9_1.{expressions => ast}
+import org.opencypher.v9_0.expressions.functions
+import org.opencypher.v9_0.util.Ref
+import org.opencypher.v9_0.{expressions => ast}
 
 import scala.language.implicitConversions
 
