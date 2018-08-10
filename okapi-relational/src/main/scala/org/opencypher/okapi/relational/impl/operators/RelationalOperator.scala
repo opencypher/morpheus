@@ -29,7 +29,7 @@ package org.opencypher.okapi.relational.impl.operators
 import org.opencypher.okapi.api.graph.QualifiedGraphName
 import org.opencypher.okapi.api.types.{CTInteger, _}
 import org.opencypher.okapi.api.value.CypherValue.CypherInteger
-import org.opencypher.okapi.impl.exception.{IllegalArgumentException, SchemaException}
+import org.opencypher.okapi.impl.exception.IllegalArgumentException
 import org.opencypher.okapi.ir.api.block.{Asc, Desc, SortItem}
 import org.opencypher.okapi.ir.api.expr._
 import org.opencypher.okapi.logical.impl.{LogicalCatalogGraph, LogicalPatternGraph}
@@ -179,30 +179,11 @@ final case class Cache[T <: Table[T]](in: RelationalOperator[T]) extends Relatio
 
 }
 
-final case class Scan[T <: Table[T]](
+final case class SwitchContext[T <: Table[T]](
   in: RelationalOperator[T],
-  scanType: CypherType
-) extends RelationalOperator[T] {
+  override val context: RelationalRuntimeContext[T]
+) extends RelationalOperator[T]
 
-  private lazy val scanOp = graph.scanOperator(scanType, exactLabelMatch = false)
-
-  override lazy val header: RecordHeader = scanOp.header
-
-  // TODO: replace with NodeVar
-  override lazy val _table: T = {
-    val scanTable = scanOp.table
-
-    if (header.columns != scanTable.physicalColumns.toSet) {
-      throw SchemaException(
-        s"""
-           |Graph schema does not match actual records returned for scan for type $scanType:
-           |  - Computed columns based on graph schema: ${header.columns.toSeq.sorted.mkString(", ")}
-           |  - Actual columns in scan table: ${scanTable.physicalColumns.sorted.mkString(", ")}
-        """.stripMargin)
-    }
-    scanTable
-  }
-}
 
 final case class Alias[T <: Table[T]](
   in: RelationalOperator[T],
@@ -479,11 +460,13 @@ final case class TabularUnionAll[T <: Table[T]](
 }
 
 final case class ConstructGraph[T <: Table[T]](
+  in: RelationalOperator[T],
   constructedGraph: RelationalCypherGraph[T],
   override val graphName: QualifiedGraphName,
   override val tagStrategy: Map[QualifiedGraphName, Map[Int, Int]],
-  construct: LogicalPatternGraph
-)(override implicit val context: RelationalRuntimeContext[T]) extends RelationalOperator[T] {
+  construct: LogicalPatternGraph,
+  override implicit val context: RelationalRuntimeContext[T]
+)() extends RelationalOperator[T] {
 
   override lazy val header: RecordHeader = RecordHeader.empty
 
@@ -497,7 +480,6 @@ final case class ConstructGraph[T <: Table[T]](
     val entities = construct.clones.keySet ++ construct.newEntities.map(_.v)
     s"ConstructGraph(on=[${construct.onGraphs.mkString(", ")}], entities=[${entities.mkString(", ")}])"
   }
-
 }
 
 // N-ary

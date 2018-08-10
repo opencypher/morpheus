@@ -30,7 +30,6 @@ import org.opencypher.okapi.api.graph.{PropertyGraph, QualifiedGraphName}
 import org.opencypher.okapi.api.schema.Schema
 import org.opencypher.okapi.api.types.{CTNode, CTRelationship, CypherType}
 import org.opencypher.okapi.impl.exception.UnsupportedOperationException
-import org.opencypher.okapi.relational.api.configuration.CoraConfiguration.PrintScanPlans
 import org.opencypher.okapi.relational.api.planning.RelationalRuntimeContext
 import org.opencypher.okapi.relational.api.table.{RelationalCypherRecords, Table}
 import org.opencypher.okapi.relational.api.tagging.TagSupport._
@@ -44,8 +43,8 @@ trait RelationalCypherGraphFactory[T <: Table[T]] {
 
   implicit val session: RelationalCypherSession[T]
 
-  def singleTableGraph(records: RelationalCypherRecords[T], schema: Schema, tagsUsed: Set[Int])
-    (implicit context: RelationalRuntimeContext[T]): Graph = SingleTableGraph(records, schema, tagsUsed)
+  def singleTableGraph(drivingTable: RelationalOperator[T], schema: Schema, tagsUsed: Set[Int])
+    (implicit context: RelationalRuntimeContext[T]): Graph = new SingleTableGraph(drivingTable, schema, tagsUsed)
 
   def unionGraph(graphs: RelationalCypherGraph[T]*)(implicit context: RelationalRuntimeContext[T]): Graph = {
     unionGraph(computeRetaggings(graphs.map(g => g -> g.tags).toMap))
@@ -74,16 +73,7 @@ trait RelationalCypherGraph[T <: Table[T]] extends PropertyGraph {
 
   def tables: Seq[T]
 
-  private[opencypher] def scanOperator(entityType: CypherType, exactLabelMatch: Boolean = false): RelationalOperator[T] = {
-    val scanOp = scanOperatorInternal(entityType, exactLabelMatch)
-    if (PrintScanPlans.isSet) {
-      println(s"Scan on ${getClass.getSimpleName} [entity type = $entityType, exactLabelMatch = $exactLabelMatch]:")
-      scanOp.show()
-    }
-    scanOp
-  }
-
-  protected def scanOperatorInternal(entityType: CypherType, exactLabelMatch: Boolean = false): RelationalOperator[T]
+  def scanOperator(entityType: CypherType, exactLabelMatch: Boolean = false): RelationalOperator[T]
 
   override def nodes(name: String, nodeCypherType: CTNode, exactLabelMatch: Boolean = false): RelationalCypherRecords[T] = {
     val scan = scanOperator(nodeCypherType, exactLabelMatch)

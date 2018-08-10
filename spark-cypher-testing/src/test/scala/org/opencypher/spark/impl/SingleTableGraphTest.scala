@@ -27,27 +27,23 @@
 package org.opencypher.spark.impl
 
 import org.apache.spark.sql.Row
-import org.opencypher.okapi.api.schema.Schema
 import org.opencypher.okapi.api.types._
 import org.opencypher.okapi.api.value.CypherValue._
 import org.opencypher.okapi.ir.api.expr._
-import org.opencypher.okapi.ir.api.{Label, PropertyKey}
 import org.opencypher.okapi.relational.api.graph.RelationalCypherGraph
+import org.opencypher.okapi.relational.impl.operators.Join
 import org.opencypher.okapi.relational.impl.planning.InnerJoin
-import org.opencypher.okapi.relational.impl.table._
 import org.opencypher.okapi.testing.Bag
 import org.opencypher.okapi.testing.Bag._
-import org.opencypher.spark.api.value.CAPSNode
-import org.opencypher.spark.impl.convert.SparkConversions._
 import org.opencypher.spark.impl.table.SparkTable.DataFrameTable
 import org.opencypher.spark.schema.CAPSSchema._
 import org.opencypher.spark.testing.fixture.RecordsVerificationFixture
 import org.opencypher.spark.testing.support.creation.caps.{CAPSTestGraphFactory, SingleTableGraphFactory}
 
-import scala.collection.JavaConverters._
 
 class SingleTableGraphTest extends CAPSGraphTest with RecordsVerificationFixture {
 
+  import CAPSGraphTest._
   import CAPSGraphTestData._
 
   override def capsGraphFactory: CAPSTestGraphFactory = SingleTableGraphFactory
@@ -202,7 +198,7 @@ class SingleTableGraphTest extends CAPSGraphTest with RecordsVerificationFixture
     val inputGraph = initGraph(`:KNOWS` + `:READS`)
     val inputRels = inputGraph.relationships("r")
 
-    val singleTableGraph = caps.graphs.singleTableGraph(inputRels, inputGraph.schema, Set(0))
+    val singleTableGraph = caps.graphs.singleTableGraph(inputRels.planStart, inputGraph.schema, Set(0))
     val outputRels = singleTableGraph.relationships("r", CTRelationship)
 
     outputRels.table.df.count() shouldBe 10
@@ -256,7 +252,7 @@ class SingleTableGraphTest extends CAPSGraphTest with RecordsVerificationFixture
     val inputGraph = initGraph(`:Person`)
     val inputNodes = inputGraph.nodes("n")
 
-    val singleTableGraph = caps.graphs.singleTableGraph(inputNodes, inputGraph.schema, Set(0))
+    val singleTableGraph = caps.graphs.singleTableGraph(inputNodes.planStart, inputGraph.schema, Set(0))
     val outputNodes = singleTableGraph.nodes("n")
 
     val cols = Seq(
@@ -280,7 +276,7 @@ class SingleTableGraphTest extends CAPSGraphTest with RecordsVerificationFixture
     val inputGraph = initGraph(`:Person` + `:Book`)
     val inputNodes = inputGraph.nodes("n")
 
-    val singleTableGraph = caps.graphs.singleTableGraph(inputNodes, inputGraph.schema, Set(0))
+    val singleTableGraph = caps.graphs.singleTableGraph(inputNodes.planStart, inputGraph.schema, Set(0))
     val outputNodes = singleTableGraph.nodes("n")
 
     val col = Seq(
@@ -357,7 +353,7 @@ class SingleTableGraphTest extends CAPSGraphTest with RecordsVerificationFixture
     val inputGraph = initGraph(`:Person` + `:Book`)
     val inputNodes = inputGraph.nodes("n")
 
-    val singleTableGraph = caps.graphs.singleTableGraph(inputNodes, inputGraph.schema, Set(0))
+    val singleTableGraph = caps.graphs.singleTableGraph(inputNodes.planStart, inputGraph.schema, Set(0))
     val nodes = singleTableGraph.nodes("n", CTNode("Person"))
 
     val cols = Seq(
@@ -380,7 +376,7 @@ class SingleTableGraphTest extends CAPSGraphTest with RecordsVerificationFixture
     val inputGraph = initGraph(`:Book`)
     val inputNodes = inputGraph.nodes("n")
 
-    val singleTableGraph = caps.graphs.singleTableGraph(inputNodes, inputGraph.schema, Set(0))
+    val singleTableGraph = caps.graphs.singleTableGraph(inputNodes.planStart, inputGraph.schema, Set(0))
 
     singleTableGraph.nodes("n", CTNode("Person")).table.df.collect().toSet shouldBe empty
   }
@@ -489,18 +485,18 @@ class SingleTableGraphTest extends CAPSGraphTest with RecordsVerificationFixture
   private def initPersonReadsBookGraph: RelationalCypherGraph[DataFrameTable] = {
     val inputGraph = initGraph(`:Person` + `:Book` + `:READS`)
 
-    val persons = inputGraph.nodes("p", CTNode("Person"))
-    val reads = inputGraph.relationships("r", CTRelationship("READS"))
-    val books = inputGraph.nodes("b", CTNode("Book"))
+    import org.opencypher.okapi.relational.impl.planning.RelationalPlanner._
 
-    val personReadsBookHeader = persons.header.join(reads.header).join(books.header)
+    val personScan = inputGraph.scanOperator(CTNode("Person")).assignScanName("p")
+    val readsScan = inputGraph.scanOperator(CTRelationship("READS")).assignScanName("r")
+    val booksScan = inputGraph.scanOperator(CTNode("Book")).assignScanName("b")
 
-    val personReadsBook = persons.table
-      .join(reads.table, InnerJoin, persons.header.column(Var("p")(CTNode)) -> reads.header.column(rStart))
-      .join(books.table, InnerJoin, reads.header.column(rEnd) -> books.header.column(Var("b")(CTNode)))
+    val personReadsBook = Join(
+      Join(personScan, readsScan, Seq(Var("p")(CTNode) -> rStart), InnerJoin),
+      booksScan,
+      Seq(rEnd -> Var("b")(CTNode)),
+      InnerJoin)
 
-    val personReadsBookCapsRecords = caps.records.from(personReadsBookHeader, personReadsBook)
-
-    caps.graphs.singleTableGraph(personReadsBookCapsRecords, inputGraph.schema, Set(0))
+    caps.graphs.singleTableGraph(personReadsBook, inputGraph.schema, Set(0))
   }
 }

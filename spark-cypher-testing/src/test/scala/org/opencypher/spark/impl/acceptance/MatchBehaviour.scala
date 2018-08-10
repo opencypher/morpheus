@@ -360,7 +360,7 @@ class MatchBehaviour extends CAPSTestSuite with DefaultGraphInit {
     }
   }
 
-  ignore("Broken start of demo query") {
+  it("Broken start of demo query") {
     // Given
     val given = initGraph(
       """
@@ -372,7 +372,6 @@ class MatchBehaviour extends CAPSTestSuite with DefaultGraphInit {
         |CREATE (b)-[:LIVES_IN]->(c)
       """.stripMargin)
 
-    // Change last b to x: et voila, it works
     val result = given.cypher(
       "MATCH (a:Person)-[:LIVES_IN]->(city:City)<-[:LIVES_IN]-(b:Person), (a)-[:KNOWS*1..2]->(b) RETURN *"
     )

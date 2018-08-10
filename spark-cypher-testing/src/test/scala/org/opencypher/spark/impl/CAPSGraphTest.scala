@@ -29,9 +29,12 @@ package org.opencypher.spark.impl
 import org.apache.spark.sql.Row
 import org.opencypher.okapi.api.io.conversion.RelationshipMapping
 import org.opencypher.okapi.api.types._
+import org.opencypher.okapi.relational.api.table.RelationalCypherRecords
+import org.opencypher.okapi.relational.impl.operators.Start
 import org.opencypher.okapi.testing.Bag
 import org.opencypher.spark.api.io.{CAPSNodeTable, CAPSRelationshipTable}
 import org.opencypher.spark.impl.DataFrameOps._
+import org.opencypher.spark.impl.table.SparkTable.DataFrameTable
 import org.opencypher.spark.testing.CAPSTestSuite
 import org.opencypher.spark.testing.fixture.{GraphConstructionFixture, RecordsVerificationFixture, TeamDataFixture}
 
@@ -39,6 +42,12 @@ abstract class CAPSGraphTest extends CAPSTestSuite
   with GraphConstructionFixture
   with RecordsVerificationFixture
   with TeamDataFixture {
+
+  object CAPSGraphTest {
+    implicit class RecordOps(records: RelationalCypherRecords[DataFrameTable]) {
+      def planStart: Start[DataFrameTable] = Start(records)(caps.basicRuntimeContext())
+    }
+  }
 
   it("should return only nodes with that exact label (single label)") {
     val graph = initGraph(dataFixtureWithoutArrays)

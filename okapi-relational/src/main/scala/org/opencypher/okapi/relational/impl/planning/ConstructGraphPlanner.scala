@@ -45,7 +45,7 @@ import org.opencypher.okapi.relational.impl.{operators => relational}
 
 object ConstructGraphPlanner {
 
-  def planConstructGraph[T <: Table[T]](in: Option[LogicalOperator], construct: LogicalPatternGraph)
+  def planConstructGraph[T <: Table[T]](inputTablePlan: RelationalOperator[T], construct: LogicalPatternGraph)
     (implicit context: RelationalRuntimeContext[T]): RelationalOperator[T] = {
 
     val onGraphPlan: RelationalOperator[T] = {
@@ -58,7 +58,6 @@ object ConstructGraphPlanner {
           relational.GraphUnionAll[T](onGraphPlans, construct.qualifiedGraphName)
       }
     }
-    val inputTablePlan = in.map(RelationalPlanner.process(_)(context)).getOrElse(relational.Start[T](context.session.emptyGraphQgn))
 
     val onGraph = onGraphPlan.graph
 
@@ -121,9 +120,7 @@ object ConstructGraphPlanner {
         tags ++ remappedTags
     }
 
-    val patternGraphRecords = context.session.records.from(patternGraphTableOp.header, patternGraphTableOp.table)
-
-    val patternGraph = context.session.graphs.singleTableGraph(patternGraphRecords, schema, tagsUsed)
+    val patternGraph = context.session.graphs.singleTableGraph(patternGraphTableOp, schema, tagsUsed)
 
     val graph = if (onGraph == context.session.graphs.empty) {
       context.session.graphs.unionGraph(patternGraph)
@@ -131,9 +128,8 @@ object ConstructGraphPlanner {
       context.session.graphs.unionGraph(Map(identityRetaggings(onGraph), identityRetaggings(patternGraph)))
     }
 
-    val constructOp = ConstructGraph(graph, name, constructTagStrategy, construct)(context)
+    val constructOp = ConstructGraph(inputTablePlan, graph, name, constructTagStrategy, construct, context)
 
-    context.constructedGraphPlans += (name -> constructOp)
     context.constructedGraphCatalog += (construct.qualifiedGraphName -> graph)
     constructOp
   }

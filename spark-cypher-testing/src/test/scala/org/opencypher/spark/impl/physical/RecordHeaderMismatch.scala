@@ -61,7 +61,7 @@ class RecordHeaderMismatch extends CAPSTestSuite {
       override def tables: Seq[DataFrameTable] = Seq.empty
 
       // Always return empty records, which does not match what the schema promises
-      protected def scanOperatorInternal(
+      def scanOperator(
         entityType: CypherType,
         exactLabelMatch: Boolean
       ): RelationalOperator[DataFrameTable] = {

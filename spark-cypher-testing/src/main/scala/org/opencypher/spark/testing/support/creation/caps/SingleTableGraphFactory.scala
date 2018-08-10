@@ -48,9 +48,7 @@ object SingleTableGraphFactory extends CAPSTestGraphFactory {
     val joinExpr: (Expr, Expr) = Var("n")(CTNode) -> relsStartOp.header.startNodeFor(Var("r")(CTRelationship))
     val joinOp = Join(nodesStartOp, relsStartOp, Seq(joinExpr), LeftOuterJoin)
 
-    val baseTable = caps.records.from(joinOp.header, joinOp.table)
-
-    caps.graphs.singleTableGraph(baseTable, scanGraph.schema, Set(0))(caps.basicRuntimeContext())
+    caps.graphs.singleTableGraph(joinOp, scanGraph.schema, Set(0))(caps.basicRuntimeContext())
   }
 
   override def name: String = "CAPSPatternGraphFactory"
