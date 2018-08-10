@@ -27,7 +27,7 @@
 package org.opencypher.okapi.logical.impl
 
 import org.opencypher.okapi.api.types.{CTBoolean, CTNode}
-import org.opencypher.okapi.ir.api.expr.{Equals, HasLabel, Property, Var}
+import org.opencypher.okapi.ir.api.expr._
 import org.opencypher.okapi.ir.api.util.DirectCompilationStage
 import org.opencypher.okapi.ir.api.{IRField, Label}
 import org.opencypher.okapi.trees.{BottomUp, BottomUpWithContext}
@@ -53,13 +53,10 @@ object LogicalOptimizer extends DirectCompilationStage[LogicalOperator, LogicalO
   }
 
   def replaceCartesianWithValueJoin: PartialFunction[LogicalOperator, LogicalOperator] = {
-    case filter@Filter(e@Equals(leftProp@Property(leftEntity: Var, _), rightProp@Property(rightEntity: Var, _)), in, _) =>
-
-      val leftField = IRField(leftEntity.name)(leftEntity.cypherType)
-      val rightField = IRField(rightEntity.name)(rightEntity.cypherType)
+    case filter@Filter(e @ CanOptimize(leftField, rightField), in, _) =>
       val (newChild, rewritten) = BottomUpWithContext[LogicalOperator, Boolean] {
         case (CartesianProduct(lhs, rhs, solved), false) if solved.solves(leftField) && solved.solves(rightField) =>
-          val (leftExpr, rightExpr) = if (lhs.solved.solves(leftField)) leftProp -> rightProp else rightProp -> leftProp
+          val (leftExpr, rightExpr) = if (lhs.solved.solves(leftField)) e.lhs -> e.rhs else e.rhs -> e.lhs
           val joinExpr = Equals(leftExpr, rightExpr)(CTBoolean)
           val leftProject = Project(leftExpr -> None, lhs, lhs.solved)
           val rightProject = Project(rightExpr -> None, rhs, rhs.solved)
@@ -69,6 +66,20 @@ object LogicalOptimizer extends DirectCompilationStage[LogicalOperator, LogicalO
       if (rewritten) newChild else filter
   }
 
+  private object CanOptimize {
+    def unapply(e: Equals): Option[(IRField, IRField)] = {
+      for (l <- e.lhs.toField; r <- e.rhs.toField) yield (l, r)
+    }
+  }
+
+  private implicit class RichExpr(val expr: Expr) extends AnyVal {
+    @scala.annotation.tailrec
+    final def toField: Option[IRField] = expr match {
+      case v: Var => Some(IRField(v.name)(v.cypherType))
+      case Property(e: Var, _) => e.toField
+      case _ => None
+    }
+  }
 
   def pushLabelsIntoScans(labelMap: Map[Var, Set[String]]): PartialFunction[LogicalOperator, LogicalOperator] = {
     case ns@NodeScan(v@Var(name), in, _) =>
