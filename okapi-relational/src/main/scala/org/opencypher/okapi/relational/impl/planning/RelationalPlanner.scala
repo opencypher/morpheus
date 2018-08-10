@@ -84,9 +84,8 @@ object RelationalPlanner {
 
       case logical.FromGraph(graph, in, _) =>
         val inOp = process[T](in)
-
         graph match {
-          case g: LogicalCatalogGraph => relational.FromGraph(process[T](in), g)
+          case g: LogicalCatalogGraph => relational.FromGraph(inOp, g)
           case construct: LogicalPatternGraph => planConstructGraph(inOp, construct)
         }
 
@@ -94,7 +93,7 @@ object RelationalPlanner {
         val explodeExpr = Explode(list)(item.cypherType)
         process[T](in).add(explodeExpr as item)
 
-      case logical.NodeScan(v, in, _) => planScan(Some(in), in.graph, v)
+      case logical.NodeScan(v, in, _) => planScan(Some(process[T](in)), in.graph, v)
 
       case logical.Aggregate(aggregations, group, in, _) => relational.Aggregate(process[T](in), group, aggregations)
 
@@ -215,23 +214,20 @@ object RelationalPlanner {
   }
 
   def planScan[T <: Table[T]](
-    in: Option[LogicalOperator],
+    maybeInOp: Option[RelationalOperator[T]],
     logicalGraph: LogicalGraph,
     entityVar: Var
   )(implicit context: RelationalRuntimeContext[T]): RelationalOperator[T] = {
-    val inOp = in match {
-      case Some(logicalOp) => process[T](logicalOp)
+    val inOp = maybeInOp match {
+      case Some(relationalOp) => relationalOp
       case _ => relational.Start(logicalGraph.qualifiedGraphName)
     }
 
     val graph = logicalGraph match {
-      case g: LogicalCatalogGraph =>
+      case _: LogicalCatalogGraph =>
         inOp.context.resolveGraph(logicalGraph.qualifiedGraphName)
       case p: LogicalPatternGraph =>
-        inOp.context.constructedGraphCatalog.get(p.qualifiedGraphName) match {
-          case Some(g) => g // the graph was already constructed
-          case None => planConstructGraph(inOp, p).graph
-        }
+        inOp.context.constructedGraphCatalog.getOrElse(p.qualifiedGraphName, planConstructGraph(inOp, p).graph)
     }
     val scanOp = graph.scanOperator(entityVar.cypherType)
     scanOp.assignScanName(entityVar.name).switchContext(inOp.context)

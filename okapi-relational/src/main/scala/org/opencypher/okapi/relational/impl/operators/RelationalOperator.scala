@@ -465,8 +465,8 @@ final case class ConstructGraph[T <: Table[T]](
   override val graphName: QualifiedGraphName,
   override val tagStrategy: Map[QualifiedGraphName, Map[Int, Int]],
   construct: LogicalPatternGraph,
-  override implicit val context: RelationalRuntimeContext[T]
-)() extends RelationalOperator[T] {
+  override val context: RelationalRuntimeContext[T]
+) extends RelationalOperator[T] {
 
   override lazy val header: RecordHeader = RecordHeader.empty
 
