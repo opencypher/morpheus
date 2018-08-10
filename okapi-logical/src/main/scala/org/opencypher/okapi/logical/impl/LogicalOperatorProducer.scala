@@ -134,11 +134,15 @@ class LogicalOperatorProducer {
     FromGraph(graph, prev, prev.solved)
   }
 
-  def planStart(graph: LogicalGraph, fields: Set[Var]): Start = {
+  def planStart(graph: LogicalGraph): Start = {
+    Start(graph, SolvedQueryModel.empty)
+  }
+
+  def planStartWithDrivingTable(graph: LogicalGraph, fields: Set[Var]): DrivingTable = {
     val irFields = fields.map { v =>
       IRField(v.name)(v.cypherType)
     }
-    Start(graph, SolvedQueryModel(irFields))
+    DrivingTable(graph, fields, SolvedQueryModel(irFields))
   }
 
   def planOrderBy(sortItems: Seq[SortItem[Expr]], prev: LogicalOperator): OrderBy = {

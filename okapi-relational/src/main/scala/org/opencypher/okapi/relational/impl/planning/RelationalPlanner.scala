@@ -78,7 +78,9 @@ object RelationalPlanner {
       case logical.EmptyRecords(fields, in, _) =>
         relational.EmptyRecords(process[T](in), fields)
 
-      case logical.Start(graph, _) => relational.Start(graph.qualifiedGraphName, context.maybeInputRecords)
+      case logical.Start(graph, _) => relational.Start(graph.qualifiedGraphName)
+
+      case logical.DrivingTable(graph, _, _) => relational.Start(graph.qualifiedGraphName, context.maybeInputRecords)
 
       case logical.FromGraph(graph, in, _) =>
         val inOp = process[T](in)

@@ -41,7 +41,8 @@ class SingleTableGraphAcceptanceTest extends Suites(
   Return_SingleTableGraph,
   With_SingleTableGraph,
   Unwind_SingleTableGraph,
-  CatalogDDL_SingleTableGraph
+  CatalogDDL_SingleTableGraph,
+  DrivingTable_SingleTableGraph
 )
 
 /**
@@ -52,6 +53,8 @@ class SingleTableGraphAcceptanceTest extends Suites(
 object Aggregation_SingleTableGraph extends AggregationBehaviour with SingleTableGraphInit
 
 object BoundedVarExpand_SingleTableGraph extends BoundedVarExpandBehaviour with SingleTableGraphInit
+
+object DrivingTable_SingleTableGraph extends DrivingTableBehaviour with SingleTableGraphInit
 
 object ExpandInto_SingleTableGraph extends ExpandIntoBehaviour with SingleTableGraphInit
 

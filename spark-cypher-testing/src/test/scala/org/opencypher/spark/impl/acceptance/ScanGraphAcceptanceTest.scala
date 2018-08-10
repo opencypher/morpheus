@@ -41,7 +41,8 @@ class ScanGraphAcceptanceTest extends Suites(
   Return_ScanGraph,
   With_ScanGraph,
   Unwind_ScanGraph,
-  CatalogDDL_ScanGraph
+  CatalogDDL_ScanGraph,
+  DrivingTable_ScanGraph
 )
 
 /**
@@ -52,6 +53,8 @@ class ScanGraphAcceptanceTest extends Suites(
 object Aggregation_ScanGraph extends AggregationBehaviour with ScanGraphInit
 
 object BoundedVarExpand_ScanGraph extends BoundedVarExpandBehaviour with ScanGraphInit
+
+object DrivingTable_ScanGraph extends DrivingTableBehaviour with ScanGraphInit
 
 object ExpandInto_ScanGraph extends ExpandIntoBehaviour with ScanGraphInit
 

@@ -327,3 +327,5 @@ final case class EmptyRecords(fields: Set[Var], in: LogicalOperator, solved: Sol
   extends StackingLogicalOperator
 
 final case class Start(graph: LogicalGraph, solved: SolvedQueryModel) extends LogicalLeafOperator with EmptyFields
+
+final case class DrivingTable(graph: LogicalGraph, fields: Set[Var], solved: SolvedQueryModel) extends LogicalLeafOperator
