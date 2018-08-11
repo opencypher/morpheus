@@ -26,8 +26,9 @@
  */
 package org.opencypher.okapi.trees
 
+import cats.data.NonEmptyList
+
 import scala.reflect.ClassTag
-import reflect.runtime.universe._
 
 /**
   * Class that implements the `children` and `withNewChildren` methods using reflection when implementing
@@ -39,17 +40,17 @@ import reflect.runtime.universe._
   *
   * This class caches values that are expensive to recompute.
   *
-  * The constructor can also contain a list of children, but there are constraints:
+  * The constructor can also contain a [[NonEmptyList]] of children, but there are constraints:
   *   - A list of children cannot be empty, because the current design relies on testing the type of an element.
   *   - If any children are contained in a list at all, then all list elements need to be children. This allows
-  *     to only check the type of the first element.
+  * to only check the type of the first element.
   *   - There can be at most one list of children and there can be no normal child constructor parameters
-  *     that appear after the list of children. This allows to call `withNewChildren` with a different number of
-  *     children than the original node had and vary the length of the list to accommodate.
+  * that appear after the list of children. This allows to call `withNewChildren` with a different number of
+  * children than the original node had and vary the length of the list to accommodate.
   *
   * Options and empty lists are supported with custom `children`/`withNewChildren` implementations.
   */
-abstract class AbstractTreeNode[T <: AbstractTreeNode[T]: ClassTag] extends TreeNode[T] {
+abstract class AbstractTreeNode[T <: AbstractTreeNode[T] : ClassTag] extends TreeNode[T] {
   self: T =>
 
   override val children: Array[T] = {
@@ -66,7 +67,7 @@ abstract class AbstractTreeNode[T <: AbstractTreeNode[T]: ClassTag] extends Tree
               !usedListOfChildren,
               "there can be no normal child constructor parameters after a list of children.")
             count += 1
-          case l: List[_] if l.nonEmpty =>
+          case l: NonEmptyList[_] =>
             // Need explicit pattern match for T, as `isInstanceOf` in `if` results in a warning.
             l.head match {
               case _: T =>
@@ -91,11 +92,11 @@ abstract class AbstractTreeNode[T <: AbstractTreeNode[T]: ClassTag] extends Tree
           case c: T =>
             childrenArray(ci) = c
             ci += 1
-          case l: List[_] if l.nonEmpty =>
+          case l: NonEmptyList[_] =>
             // Need explicit pattern match for T, as `isInstanceOf` in `if` results in a warning.
             l.head match {
               case _: T =>
-                val j = l.iterator
+                val j = l.toList.iterator
                 while (j.hasNext) {
                   val child = j.next
                   try {
@@ -153,7 +154,7 @@ abstract class AbstractTreeNode[T <: AbstractTreeNode[T]: ClassTag] extends Tree
     childrenAsSet.contains(other)
   }
 
-  @inline final override def map[O <: TreeNode[O]: ClassTag](f: T => O): O = super.map(f)
+  @inline final override def map[O <: TreeNode[O] : ClassTag](f: T => O): O = super.map(f)
 
   @inline final override def foreach[O](f: T => O): Unit = super.foreach(f)
 
@@ -168,23 +169,26 @@ abstract class AbstractTreeNode[T <: AbstractTreeNode[T]: ClassTag] extends Tree
     var childrenIndex = 0
     while (productIndex < parameterArrayLength) {
       val currentProductElement = productElement(productIndex)
+
       def nonChildCase(): Unit = {
         parameterArray(productIndex) = currentProductElement
       }
+
       currentProductElement match {
         case c: T if childrenIndex < childrenLength && c == children(childrenIndex) =>
           parameterArray(productIndex) = newChildren(childrenIndex)
           childrenIndex += 1
-        case l: List[_] if childrenIndex < childrenLength && l.nonEmpty =>
+        case l: NonEmptyList[_] if childrenIndex < childrenLength =>
           // Need explicit pattern match for T, as `isInstanceOf` in `if` results in a warning.
           l.head match {
             case _: T =>
               require(newChildrenLength > childrenIndex, s"a list of children cannot be empty.")
-              parameterArray(productIndex) = newChildren.slice(childrenIndex, newChildrenLength).toList
+              parameterArray(productIndex) = NonEmptyList.fromListUnsafe(
+                newChildren.slice(childrenIndex, newChildrenLength).toList)
               childrenIndex = newChildrenLength
             case _ => nonChildCase()
           }
-        case _ => nonChildCase
+        case _ => nonChildCase()
       }
       productIndex += 1
     }
@@ -246,4 +250,4 @@ object AbstractTreeNode {
 }
 
 case class InvalidConstructorArgument(message: String, originalException: Option[Exception] = None)
-    extends RuntimeException(message, originalException.orNull)
+  extends RuntimeException(message, originalException.orNull)

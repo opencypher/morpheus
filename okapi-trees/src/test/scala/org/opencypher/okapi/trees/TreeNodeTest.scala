@@ -26,6 +26,8 @@
  */
 package org.opencypher.okapi.trees
 
+import cats.data
+import cats.data.NonEmptyList
 import org.scalatest.{FunSpec, Matchers}
 
 class TreeNodeTest extends FunSpec with Matchers {
@@ -54,37 +56,30 @@ class TreeNodeTest extends FunSpec with Matchers {
   }
 
   it("lists of children") {
-    val addList1 = AddList(List(1), Number(1), 2, List(Number(2)), List[Object]("a", "b"))
+    val addList1 = AddList(NonEmptyList.one(1), Number(1), 2, NonEmptyList.one(Number(2)), NonEmptyList.of[Object]("a", "b"))
     addList1.eval should equal(3)
-    val addList2 = AddList(List(1), Number(1), 2, List(Number(2), Number(3)), List[Object]("a", "b"))
+    val addList2 = AddList(NonEmptyList.one(1), Number(1), 2, NonEmptyList.of(Number(2), Number(3)), NonEmptyList.of[Object]("a", "b"))
     addList2.eval should equal(6)
     val addList3 =
-      AddList(List(1), Number(0), 2, List(Number(2)), List[Object]("a", "b"))
-        .withNewChildren(Array(1, 2, 3, 4, 5, 6, 7).map(Number))
-    addList3 should equal(AddList(List(1), Number(1), 2, List(2, 3, 4, 5, 6, 7).map(Number(_)), List[Object]("a", "b")))
+      AddList(NonEmptyList.one(1), Number(0), 2, NonEmptyList.one(Number(2)), NonEmptyList.of[Object]("a", "b"))
+        .withNewChildren(Array(1, 2, 3, 4, 5, 6, 7).map(Number(_)))
+    addList3 should equal(AddList(NonEmptyList.one(1), Number(1), 2, NonEmptyList.of(2, 3, 4, 5, 6, 7).map(Number), NonEmptyList.of[Object]("a", "b")))
     addList3.eval should equal(28)
   }
 
   it("unsupported uses of lists of children") {
     // Test errors when violating list requirements
 
-    // - a list of children cannot be empty
     intercept[IllegalArgumentException] {
-      val fail = AddList(List(1), Number(1), 2, List.empty[Number], List[Object]("a", "b"))
-      fail.children.toSet should equal(Set(Number(1)))
-      fail.withNewChildren(Array(Number(1), Number(2)))
-    }.getMessage should equal(
-      "requirement failed: invalid number of children or used an empty list of children in the original node.")
-
-    intercept[IllegalArgumentException] {
-      val fail = AddList(List(1), Number(1), 2, List(Number(2)), List[Object]("a", "b"))
+      val fail = AddList(NonEmptyList.one(1), Number(1), 2, NonEmptyList.one(Number(2)), NonEmptyList.of[Object]("a", "b"))
       fail.children.toSet should equal(Set(Number(1), Number(2)))
       fail.withNewChildren(Array(Number(1)))
     }.getMessage should equal("requirement failed: a list of children cannot be empty.")
 
     // - if any children are contained in a list at all, then all list elements need to be children
     intercept[InvalidConstructorArgument] {
-      val fail = Unsupported(List(Unsupported(List.empty), "2"))
+      val fail = Unsupported(data.NonEmptyList.of(UnsupportedLeaf, "2"))
+      fail.show()
     }.getMessage should equal(
       s"""Expected a list that contains either no children or only children
          |but found a mixed list that contains a child as the head element,
@@ -93,12 +88,12 @@ class TreeNodeTest extends FunSpec with Matchers {
 
     // - there can be at most one list of children
     intercept[IllegalArgumentException] {
-      UnsupportedNode(List(UnsupportedLeaf), List(UnsupportedLeaf))
+      UnsupportedNode(NonEmptyList.one(UnsupportedLeaf), NonEmptyList.one(UnsupportedLeaf))
     }.getMessage should equal("requirement failed: there can be at most one list of children in the constructor.")
 
     // - there can be no normal child constructor parameters after the list of children
     intercept[IllegalArgumentException] {
-      UnsupportedNode2(List(UnsupportedLeaf2), UnsupportedLeaf2)
+      UnsupportedNode2(NonEmptyList.one(UnsupportedLeaf2), UnsupportedLeaf2)
     }.getMessage should equal(
       "requirement failed: there can be no normal child constructor parameters " +
         "after a list of children.")
@@ -210,19 +205,19 @@ class TreeNodeTest extends FunSpec with Matchers {
     calculation.withNewChildren(Array(calculation.left, calculation.right)) should be theSameInstanceAs calculation
   }
 
-  case class Unsupported(elems: List[Object]) extends AbstractTreeNode[Unsupported]
-
   abstract class UnsupportedTree extends AbstractTreeNode[UnsupportedTree]
+
+  case class Unsupported(elems: NonEmptyList[Object]) extends UnsupportedTree
 
   case object UnsupportedLeaf extends UnsupportedTree
 
-  case class UnsupportedNode(elems1: List[UnsupportedTree], elems2: List[UnsupportedTree]) extends UnsupportedTree
+  case class UnsupportedNode(elems1: NonEmptyList[UnsupportedTree], elems2: NonEmptyList[UnsupportedTree]) extends UnsupportedTree
 
   abstract class UnsupportedTree2 extends AbstractTreeNode[UnsupportedTree2]
 
   case object UnsupportedLeaf2 extends UnsupportedTree2
 
-  case class UnsupportedNode2(elems: List[UnsupportedTree2], elem: UnsupportedTree2) extends UnsupportedTree2
+  case class UnsupportedNode2(elems: NonEmptyList[UnsupportedTree2], elem: UnsupportedTree2) extends UnsupportedTree2
 
   abstract class CalcExpr extends AbstractTreeNode[CalcExpr] {
     def eval: Int
@@ -232,9 +227,9 @@ class TreeNodeTest extends FunSpec with Matchers {
     def eval = 0
   }
 
-  case class AddList(dummy1: List[Int], first: CalcExpr, dummy2: Int, remaining: List[CalcExpr], dummy3: List[Object])
+  case class AddList(dummy1: NonEmptyList[Int], first: CalcExpr, dummy2: Int, remaining: NonEmptyList[CalcExpr], dummy3: NonEmptyList[Object])
     extends CalcExpr {
-    def eval: Int = first.eval + remaining.map(_.eval).sum
+    def eval: Int = first.eval + remaining.map(_.eval).toList.sum
   }
 
   case class Add(left: CalcExpr, right: CalcExpr) extends CalcExpr {

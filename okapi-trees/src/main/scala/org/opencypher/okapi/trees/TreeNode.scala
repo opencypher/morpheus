@@ -26,13 +26,14 @@
  */
 package org.opencypher.okapi.trees
 
+import cats.data.NonEmptyList
+
 import scala.annotation.tailrec
 import scala.collection.mutable.ArrayBuffer
 import scala.reflect.ClassTag
 import scala.reflect.runtime.{currentMirror, universe}
 import scala.reflect.runtime.universe._
 import scala.util.hashing.MurmurHash3
-
 import scala.language.existentials
 
 /**
@@ -192,6 +193,11 @@ abstract class TreeNode[T <: TreeNode[T] : ClassTag] extends Product with Traver
                 case _: T => false
                 case _ => true
               }
+            }
+          case nel: NonEmptyList[_] =>
+            nel.exists {
+              case _: T => false
+              case _ => true
             }
           case a: Array[_] =>
             if (a.isEmpty) {
