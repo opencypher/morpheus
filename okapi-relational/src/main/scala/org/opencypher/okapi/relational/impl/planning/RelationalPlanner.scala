@@ -282,9 +282,7 @@ object RelationalPlanner {
     }
 
     def join(other: RelationalOperator[T], joinExprs: Seq[(Expr, Expr)], joinType: JoinType): RelationalOperator[T] = {
-      val joinHeader = op.header join other.header
-      val conflictFreeRhs = other.alignColumnNames(joinHeader)
-      relational.Join(op, conflictFreeRhs, joinExprs, joinType)
+      relational.Join(op, other.withDisjointColumnNames(op.header), joinExprs, joinType)
     }
 
     def add(value: Expr): RelationalOperator[T] = relational.Add(op, value)
@@ -391,6 +389,37 @@ object RelationalPlanner {
       withProperties
     }
 
+    /**
+      * Returns an operator with renamed columns such that the operators columns do not overlap with the other header's
+      * columns.
+      *
+      * @param otherHeader header from which the column names should be disjoint
+      * @return operator with disjoint column names
+      */
+    def withDisjointColumnNames(otherHeader: RecordHeader): RelationalOperator[T] = {
+      val header = op.header
+      val conflictingExpressions = header.expressions.filter(e => otherHeader.columns.contains(header.column(e)))
+
+      if (conflictingExpressions.isEmpty) {
+        op
+      } else {
+        val renameMapping = conflictingExpressions.foldLeft(Map.empty[String, String]) {
+          case (acc, nextRename) =>
+            val newColumnName = header.newConflictFreeColumnName(nextRename, otherHeader.columns ++ acc.values)
+            acc + (header.column(nextRename) -> newColumnName)
+        }
+        relational.RenameColumns(op, renameMapping)
+      }
+    }
+
+    /**
+      * Ensures that the column names are aligned with the target header.
+      *
+      * @note All expressions in the operator header must be present in the target header.
+      *
+      * @param targetHeader the header with which the column names should be aligned with
+      * @return operator with aligned column names
+      */
     def alignColumnNames(targetHeader: RecordHeader): RelationalOperator[T] = {
       val exprsNotInTarget = op.header.expressions -- targetHeader.expressions
       require(exprsNotInTarget.isEmpty,

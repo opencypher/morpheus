@@ -292,7 +292,7 @@ case class RecordHeader(exprToColumn: Map[Expr, String]) {
     copy(exprToColumn ++ exprs.map(_ -> newColumn))
   }
 
-  private def newConflictFreeColumnName(expr: Expr, usedColumnNames: Set[String] = columns): String = {
+  private[opencypher] def newConflictFreeColumnName(expr: Expr, usedColumnNames: Set[String] = columns): String = {
     @tailrec def recConflictFreeColumnName(candidateName: String): String = {
       if (usedColumnNames.contains(candidateName)) recConflictFreeColumnName(s"_$candidateName")
       else candidateName
