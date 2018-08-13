@@ -600,7 +600,7 @@ class IrBuilderTest extends IrTestSuite {
       val inputSchema = Schema.empty
         .withNodePropertyKeys()()
         .withRelationshipPropertyKeys("A")("category" -> CTString)
-        .withRelationshipPropertyKeys("B")( "ports" -> CTInteger)
+        .withRelationshipPropertyKeys("B")("ports" -> CTInteger)
 
       val query =
         """
@@ -817,21 +817,21 @@ class IrBuilderTest extends IrTestSuite {
                 ))
           }
 
-          val orderByBlock = model.findExactlyOne {
-            case NoWhereBlock(OrderAndSliceBlock(deps, orderBy, None, None, _)) =>
-              val ordered = List(Asc(toVar('age)))
-              orderBy should equal(ordered)
-              deps should equalWithTracing(List(projectBlock1))
-          }
-
           val projectBlock2 = model.findExactlyOne {
-            case NoWhereBlock(ProjectBlock(deps, Fields(map), _, _, _)) if deps.head == orderByBlock =>
-              deps should equalWithTracing(List(orderByBlock))
+            case NoWhereBlock(ProjectBlock(deps, Fields(map), _, _, _)) if deps.head == projectBlock1 =>
+              deps should equalWithTracing(List(projectBlock1))
               map should equal(
                 Map(
                   toField('age) -> toVar('age),
                   toField('name) -> toVar('name)
                 ))
+          }
+
+          val orderByBlock = model.findExactlyOne {
+            case NoWhereBlock(OrderAndSliceBlock(deps, orderBy, None, None, _)) =>
+              val ordered = List(Asc(toVar('age)))
+              orderBy should equal(ordered)
+              deps should equalWithTracing(List(projectBlock2))
           }
 
           val projectBlock3 = model.findExactlyOne {
@@ -855,7 +855,7 @@ class IrBuilderTest extends IrTestSuite {
       }
     }
   }
-
+  
   describe("CreateGraphStatement") {
     it("can parse a CREATE GRAPH statement") {
       val innerQuery = s"FROM GRAPH ${
