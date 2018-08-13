@@ -51,8 +51,9 @@ object ConstructGraphPlanner {
     val onGraphPlan: RelationalOperator[T] = {
       construct.onGraphs match {
         case Nil => relational.Start[T](context.session.emptyGraphQgn) // Empty start
-        //TODO: Optimize case where no union is necessary
-        //case h :: Nil => operatorProducer.planStart(Some(h)) // Just one graph, no union required
+        case one :: Nil =>
+          // Just one graph, no union required
+          relational.Start(one, tagStrategy = computeRetaggings(Map(one -> context.resolveGraph(one).tags)))
         case several =>
           val onGraphPlans = several.map(qgn => relational.Start[T](qgn))
           relational.GraphUnionAll[T](onGraphPlans, construct.qualifiedGraphName)
