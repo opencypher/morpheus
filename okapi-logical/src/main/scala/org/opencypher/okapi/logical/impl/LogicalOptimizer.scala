@@ -35,7 +35,10 @@ import org.opencypher.okapi.trees.{BottomUp, BottomUpWithContext}
 object LogicalOptimizer extends DirectCompilationStage[LogicalOperator, LogicalOperator, LogicalPlannerContext] {
 
   override def process(input: LogicalOperator)(implicit context: LogicalPlannerContext): LogicalOperator = {
-    val optimizationRules = Seq(pushLabelsIntoScans(labelsForVariables(input)), discardScansForNonexistentLabels, replaceCartesianWithValueJoin)
+    val optimizationRules = Seq(
+      pushLabelsIntoScans(labelsForVariables(input)),
+      discardScansForNonexistentLabels,
+      replaceCartesianWithValueJoin)
     optimizationRules.foldLeft(input) {
       // TODO: Evaluate if multiple rewriters could be fused
       case (tree: LogicalOperator, optimizationRule) => BottomUp[LogicalOperator](optimizationRule).transform(tree)

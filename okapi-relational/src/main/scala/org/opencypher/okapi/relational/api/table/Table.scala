@@ -101,7 +101,7 @@ trait Table[T <: Table[T]] extends CypherTable {
     * @param sortItems a sequence of column names and their order (i.e. ascending / descending)
     * @return ordered table
     */
-  def orderBy(sortItems: (String, Order)*): T
+  def orderBy(sortItems: (Expr, Order)*)(implicit header: RecordHeader, parameters: CypherMap): T
 
   /**
     * Returns a table without the first n rows of the current table.

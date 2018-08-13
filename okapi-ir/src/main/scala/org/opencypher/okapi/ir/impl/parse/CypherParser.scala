@@ -69,6 +69,7 @@ trait CypherParser {
       SemanticAnalysis(warn = true, SemanticFeature.Cypher10Support, SemanticFeature.MultipleGraphs, SemanticFeature.WithInitialQuerySignature)
         .adds(BaseContains[SemanticState]) andThen
       AstRewriting(RewriterStepSequencer.newPlain, Forced, getDegreeRewriting = false) andThen
+      isolateAggregation andThen
       SemanticAnalysis(warn = false, SemanticFeature.Cypher10Support, SemanticFeature.MultipleGraphs, SemanticFeature.WithInitialQuerySignature) andThen
       Namespacer andThen
       CNFNormalizer andThen

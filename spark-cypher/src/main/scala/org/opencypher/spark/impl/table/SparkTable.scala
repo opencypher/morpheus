@@ -85,13 +85,15 @@ object SparkTable {
       df.drop(cols: _*)
     }
 
-    override def orderBy(sortItems: (String, Order)*): DataFrameTable = {
-      val sortExpression = sortItems.map {
-        case (column, Ascending) => asc(column)
-        case (column, Descending) => desc(column)
+    override def orderBy(sortItems: (Expr, Order)*)(implicit header: RecordHeader, parameters: CypherMap): DataFrameTable = {
+      val mappedSortItems = sortItems.map { case (expr, order) =>
+        val mappedExpr = expr.asSparkSQLExpr(header, df, parameters)
+        order match {
+          case Ascending => mappedExpr.asc
+          case Descending => mappedExpr.desc
+        }
       }
-
-      df.sort(sortExpression: _*)
+      df.orderBy(mappedSortItems: _*)
     }
 
     override def skip(items: Long): DataFrameTable = {
