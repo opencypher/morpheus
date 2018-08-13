@@ -856,7 +856,7 @@ class IrBuilderTest extends IrTestSuite {
       }
     }
   }
-
+  
   describe("CreateGraphStatement") {
     it("can parse a CREATE GRAPH statement") {
       val innerQuery = s"FROM GRAPH ${
