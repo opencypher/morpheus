@@ -865,7 +865,7 @@ class IrBuilderTest extends IrTestSuite {
 
       val query =
         s"""
-           |CREATE GRAPH session.bar {
+           |CATALOG CREATE GRAPH session.bar {
            | $innerQuery
            |}
         """.stripMargin
@@ -878,9 +878,9 @@ class IrBuilderTest extends IrTestSuite {
     }
   }
 
-  describe("DeleteGraphStatement") {
-    it("can parse a DELETE GRAPH statement") {
-      val query = s"DELETE GRAPH $testQualifiedGraphName"
+  describe("DropGraphStatement") {
+    it("can parse a DROP GRAPH statement") {
+      val query = s"CATALOG DROP GRAPH $testQualifiedGraphName"
 
       val result = query.parseIR[DeleteGraphStatement[Expr]]()
 
