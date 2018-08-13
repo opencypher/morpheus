@@ -95,7 +95,7 @@ class LogicalOptimizerTest extends BaseTestSuite with IrConstruction {
       EmptyRecords(
         Set(Var("a")(CTNode(Set("Animal")))),
         Start(logicalGraph, emptySqm),
-        SolvedQueryModel(Set(), Set(HasLabel(Var("a")(CTNode(Set("Animal"))), Label("Animal"))(CTBoolean)))
+        SolvedQueryModel(Set(IRField("a")(CTNode(Set("Animal")))), Set(HasLabel(Var("a")(CTNode(Set("Animal"))), Label("Animal"))(CTBoolean)))
       ),
       SolvedQueryModel(Set(IRField("a")(CTNode)), Set(HasLabel(Var("a")(CTNode), Label("Animal"))(CTBoolean)))
     )
@@ -119,7 +119,7 @@ class LogicalOptimizerTest extends BaseTestSuite with IrConstruction {
         Set(Var("a")(CTNode(Set("Astronaut", "Animal")))),
         Start(logicalGraph, emptySqm),
         SolvedQueryModel(
-          Set(),
+          Set(IRField("a")(CTNode(Set("Astronaut", "Animal")))),
           Set(
             HasLabel(Var("a")(CTNode(Set("Astronaut", "Animal"))), Label("Astronaut"))(CTBoolean),
             HasLabel(Var("a")(CTNode(Set("Astronaut", "Animal"))), Label("Animal"))(CTBoolean)
