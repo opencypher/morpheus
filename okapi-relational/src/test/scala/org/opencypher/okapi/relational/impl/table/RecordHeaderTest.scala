@@ -27,6 +27,7 @@
 package org.opencypher.okapi.relational.impl.table
 
 import org.opencypher.okapi.api.types._
+import org.opencypher.okapi.impl.exception.IllegalArgumentException
 import org.opencypher.okapi.ir.api.expr._
 import org.opencypher.okapi.ir.api.{Label, PropertyKey, RelType}
 import org.opencypher.okapi.testing.BaseTestSuite
@@ -111,6 +112,11 @@ class RecordHeaderTest extends BaseTestSuite {
 
   it("can add an entity expression") {
     nHeader.ownedBy(n) should equal(nExprs)
+  }
+
+  it("can add entity expressions without column collisions") {
+    val underlineHeader = RecordHeader.empty.withExpr(Var("_")()).withExpr(Var(".")())
+    underlineHeader.columns.size should be(2)
   }
 
   it("can return all expressions for a given expression") {
@@ -443,18 +449,12 @@ class RecordHeaderTest extends BaseTestSuite {
 
     it("joins record headers with overlapping column names") {
       val aliased = nHeader.withAlias(n as m).select(m)
-      nHeader.join(aliased) should equal(nHeader ++ mHeader)
-    }
-
-    it("joins without generating conflicting expr names") {
-      val underlineHeader = RecordHeader.empty.withExpr(Var("_")())
-      val dotHeader = RecordHeader.empty.withExpr(Var(".")())
-      underlineHeader.join(dotHeader).columns.size should be(2)
+      an[IllegalArgumentException] should be thrownBy nHeader.join(aliased)
     }
 
     it("joins record headers with overlapping column names and multiple expressions per column") {
       val aliased = nHeader.withAlias(n as m).withAlias(n as o).select(m, o)
-      nHeader.join(aliased) should equal(nHeader ++ mHeader.withAlias(m as o))
+      an[IllegalArgumentException] should be thrownBy nHeader.join(aliased)
     }
 
     it("raises an error when joining header with overlapping expressions"){
