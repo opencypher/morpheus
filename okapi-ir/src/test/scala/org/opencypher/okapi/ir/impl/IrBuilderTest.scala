@@ -48,7 +48,7 @@ class IrBuilderTest extends IrTestSuite {
       val query =
         """
           |CONSTRUCT
-          |  NEW (a)
+          |  CREATE (a)
           |RETURN GRAPH""".stripMargin
 
       query.asCypherQuery().model.result match {
@@ -64,7 +64,7 @@ class IrBuilderTest extends IrTestSuite {
       val query =
         """
           |CONSTRUCT
-          |  NEW (a:A {name:'Hans'})-[rel:KNOWS {since:2007}]->(a)
+          |  CREATE (a:A {name:'Hans'})-[rel:KNOWS {since:2007}]->(a)
           |RETURN GRAPH""".stripMargin
 
       query.asCypherQuery().model.result match {
@@ -99,7 +99,7 @@ class IrBuilderTest extends IrTestSuite {
       val query =
         """
           |CONSTRUCT
-          |  NEW (a :A)
+          |  CREATE (a :A)
           |RETURN GRAPH""".stripMargin
 
       query.asCypherQuery().model.result match {
@@ -113,8 +113,8 @@ class IrBuilderTest extends IrTestSuite {
       val query =
         """
           |CONSTRUCT
-          |  NEW (a:A)
-          |  NEW (b:B:C)
+          |  CREATE (a:A)
+          |  CREATE (b:B:C)
           |RETURN GRAPH""".stripMargin
 
       query.asCypherQuery().model.result match {
@@ -128,8 +128,8 @@ class IrBuilderTest extends IrTestSuite {
       val query =
         """
           |CONSTRUCT
-          |  NEW (a:A:D)
-          |  NEW (b:B:C)
+          |  CREATE (a:A:D)
+          |  CREATE (b:B:C)
           |RETURN GRAPH""".stripMargin
 
       query.asCypherQuery().model.result match {
@@ -143,7 +143,7 @@ class IrBuilderTest extends IrTestSuite {
       val query =
         """
           |CONSTRUCT
-          |  NEW (a:A:B:C)
+          |  CREATE (a:A:B:C)
           |RETURN GRAPH""".stripMargin
 
       query.asCypherQuery().model.result match {
@@ -157,8 +157,8 @@ class IrBuilderTest extends IrTestSuite {
       val query =
         """
           |CONSTRUCT
-          |  NEW (a:A:B)
-          |  NEW (b:A:C)
+          |  CREATE (a:A:B)
+          |  CREATE (b:A:C)
           |RETURN GRAPH""".stripMargin
 
       query.asCypherQuery().model.result match {
@@ -172,8 +172,8 @@ class IrBuilderTest extends IrTestSuite {
       val query =
         """
           |CONSTRUCT
-          |  NEW (a:A:B)
-          |  NEW (b:B:A)
+          |  CREATE (a:A:B)
+          |  CREATE (b:B:A)
           |RETURN GRAPH""".stripMargin
 
       query.asCypherQuery().model.result match {
@@ -187,7 +187,7 @@ class IrBuilderTest extends IrTestSuite {
       val query =
         """
           |CONSTRUCT
-          |  NEW (a:A {name : 'Mats'})
+          |  CREATE (a:A {name : 'Mats'})
           |RETURN GRAPH""".stripMargin
 
       query.asCypherQuery().model.result match {
@@ -201,7 +201,7 @@ class IrBuilderTest extends IrTestSuite {
       val query =
         """
           |CONSTRUCT
-          |  NEW (a:A:B {name : 'Mats'})
+          |  CREATE (a:A:B {name : 'Mats'})
           |RETURN GRAPH""".stripMargin
 
       query.asCypherQuery().model.result match {
@@ -215,7 +215,7 @@ class IrBuilderTest extends IrTestSuite {
       val query =
         """
           |CONSTRUCT
-          |  NEW ()-[r:R {level : 'high'}]->()
+          |  CREATE ()-[r:R {level : 'high'}]->()
           |RETURN GRAPH""".stripMargin
 
       query.asCypherQuery().model.result match {
@@ -229,7 +229,7 @@ class IrBuilderTest extends IrTestSuite {
       val query =
         """
           |CONSTRUCT
-          |  NEW (a:A {category : 'computer', ports : 4})
+          |  CREATE (a:A {category : 'computer', ports : 4})
           |RETURN GRAPH""".stripMargin
 
       query.asCypherQuery().model.result match {
@@ -250,7 +250,7 @@ class IrBuilderTest extends IrTestSuite {
           |FROM GRAPH testNamespace.input
           |MATCH (a: A)
           |CONSTRUCT
-          |  NEW (COPY OF a)
+          |  CREATE (COPY OF a)
           |RETURN GRAPH""".stripMargin
 
       query.asCypherQuery(graphName -> inputSchema).model.result match {
@@ -272,7 +272,7 @@ class IrBuilderTest extends IrTestSuite {
           |FROM GRAPH testNamespace.input
           |MATCH (a)
           |CONSTRUCT
-          |  NEW (COPY OF a)
+          |  CREATE (COPY OF a)
           |RETURN GRAPH""".stripMargin
 
       query.asCypherQuery(graphName -> inputSchema).model.result match {
@@ -293,7 +293,7 @@ class IrBuilderTest extends IrTestSuite {
           |FROM GRAPH testNamespace.input
           |MATCH (a: A)
           |CONSTRUCT
-          |  NEW (b COPY OF a:B)
+          |  CREATE (b COPY OF a:B)
           |RETURN GRAPH""".stripMargin
 
       query.asCypherQuery(graphName -> inputSchema).model.result match {
@@ -316,7 +316,7 @@ class IrBuilderTest extends IrTestSuite {
           |FROM GRAPH testNamespace.input
           |MATCH (a)
           |CONSTRUCT
-          |  NEW (b COPY OF a:C)
+          |  CREATE (b COPY OF a:C)
           |RETURN GRAPH""".stripMargin
 
       query.asCypherQuery(graphName -> inputSchema).model.result match {
@@ -340,7 +340,7 @@ class IrBuilderTest extends IrTestSuite {
           |FROM GRAPH testNamespace.input
           |MATCH (a: A)
           |CONSTRUCT
-          |  NEW (b COPY OF a {memory: "1TB"})
+          |  CREATE (b COPY OF a {memory: "1TB"})
           |RETURN GRAPH""".stripMargin
 
       query.asCypherQuery(graphName -> inputSchema).model.result match {
@@ -362,7 +362,7 @@ class IrBuilderTest extends IrTestSuite {
           |FROM GRAPH testNamespace.input
           |MATCH (a: A)
           |CONSTRUCT
-          |  NEW (b COPY OF a {category: 0})
+          |  CREATE (b COPY OF a {category: 0})
           |RETURN GRAPH""".stripMargin
 
       query.asCypherQuery(graphName -> inputSchema).model.result match {
@@ -385,7 +385,7 @@ class IrBuilderTest extends IrTestSuite {
           |FROM GRAPH testNamespace.input
           |MATCH (a)
           |CONSTRUCT
-          |  NEW (b COPY OF a {category: 0})
+          |  CREATE (b COPY OF a {category: 0})
           |RETURN GRAPH""".stripMargin
 
       query.asCypherQuery(graphName -> inputSchema).model.result match {
@@ -409,7 +409,7 @@ class IrBuilderTest extends IrTestSuite {
           |FROM GRAPH testNamespace.input
           |MATCH ()-[a:A]->()
           |CONSTRUCT
-          |  NEW ()-[COPY OF a]->()
+          |  CREATE ()-[COPY OF a]->()
           |RETURN GRAPH""".stripMargin
 
       query.asCypherQuery(graphName -> inputSchema).model.result match {
@@ -432,7 +432,7 @@ class IrBuilderTest extends IrTestSuite {
           |FROM GRAPH testNamespace.input
           |MATCH ()-[r]->()
           |CONSTRUCT
-          |  NEW ()-[r2 COPY OF r]->()
+          |  CREATE ()-[r2 COPY OF r]->()
           |RETURN GRAPH""".stripMargin
 
       query.asCypherQuery(graphName -> inputSchema).model.result match {
@@ -456,7 +456,7 @@ class IrBuilderTest extends IrTestSuite {
           |FROM GRAPH testNamespace.input
           |MATCH ()-[r:A|B]->()
           |CONSTRUCT
-          |  NEW ()-[r2 COPY OF r]->()
+          |  CREATE ()-[r2 COPY OF r]->()
           |RETURN GRAPH""".stripMargin
 
       query.asCypherQuery(graphName -> inputSchema).model.result match {
@@ -482,7 +482,7 @@ class IrBuilderTest extends IrTestSuite {
           |FROM GRAPH testNamespace.input
           |MATCH ()-[a:A]->()
           |CONSTRUCT
-          |  NEW ()-[b COPY OF a:B]->()
+          |  CREATE ()-[b COPY OF a:B]->()
           |RETURN GRAPH""".stripMargin
 
       query.asCypherQuery(graphName -> inputSchema).model.result match {
@@ -508,7 +508,7 @@ class IrBuilderTest extends IrTestSuite {
           |FROM GRAPH testNamespace.input
           |MATCH ()-[r]->()
           |CONSTRUCT
-          |  NEW ()-[r2 COPY OF r :C]->()
+          |  CREATE ()-[r2 COPY OF r :C]->()
           |RETURN GRAPH""".stripMargin
 
       query.asCypherQuery(graphName -> inputSchema).model.result match {
@@ -533,7 +533,7 @@ class IrBuilderTest extends IrTestSuite {
           |FROM GRAPH testNamespace.input
           |MATCH ()-[a:A]->()
           |CONSTRUCT
-          |  NEW ()-[b COPY OF a {memory: "1TB"}]->()
+          |  CREATE ()-[b COPY OF a {memory: "1TB"}]->()
           |RETURN GRAPH""".stripMargin
 
       query.asCypherQuery(graphName -> inputSchema).model.result match {
@@ -557,7 +557,7 @@ class IrBuilderTest extends IrTestSuite {
           |FROM GRAPH testNamespace.input
           |MATCH ()-[a:A]->()
           |CONSTRUCT
-          |  NEW ()-[b COPY OF a {category: 2}]->()
+          |  CREATE ()-[b COPY OF a {category: 2}]->()
           |RETURN GRAPH""".stripMargin
 
       query.asCypherQuery(graphName -> inputSchema).model.result match {
@@ -582,7 +582,7 @@ class IrBuilderTest extends IrTestSuite {
           |FROM GRAPH testNamespace.input
           |MATCH ()-[a]->()
           |CONSTRUCT
-          |  NEW ()-[b COPY OF a {category: 2}]->()
+          |  CREATE ()-[b COPY OF a {category: 2}]->()
           |RETURN GRAPH""".stripMargin
 
       query.asCypherQuery(graphName -> inputSchema).model.result match {
@@ -608,7 +608,7 @@ class IrBuilderTest extends IrTestSuite {
           |FROM GRAPH testNamespace.input
           |MATCH ()-[r]->()
           |CONSTRUCT
-          |  NEW ()-[r2 COPY OF r :C {memory: "1TB"}]->()
+          |  CREATE ()-[r2 COPY OF r :C {memory: "1TB"}]->()
           |RETURN GRAPH""".stripMargin
 
       query.asCypherQuery(graphName -> inputSchema).model.result match {
@@ -634,7 +634,7 @@ class IrBuilderTest extends IrTestSuite {
           |FROM GRAPH testNamespace.input
           |MATCH ()-[r:A|B]->()
           |CONSTRUCT
-          |  NEW ()-[r2 COPY OF r {memory: "1TB"}]->()
+          |  CREATE ()-[r2 COPY OF r {memory: "1TB"}]->()
           |RETURN GRAPH""".stripMargin
 
       query.asCypherQuery(graphName -> inputSchema).model.result match {
@@ -666,7 +666,7 @@ class IrBuilderTest extends IrTestSuite {
           |MATCH (:FOO)-[r:REL]->()
           |CONSTRUCT
           | CLONE r as newR
-          | NEW (:A)-[newR]->()
+          | CREATE (:A)-[newR]->()
           |RETURN GRAPH
         """.stripMargin
 
@@ -685,8 +685,8 @@ class IrBuilderTest extends IrTestSuite {
         """
           |MATCH (:FOO)-[r:REL]->()
           |CONSTRUCT
-          | CLONE r
-          | NEW (:A)-[r]->()
+          |  CLONE r
+          |  CREATE (:A)-[r]->()
           |RETURN GRAPH
         """.stripMargin
 
@@ -705,7 +705,7 @@ class IrBuilderTest extends IrTestSuite {
         """
           |MATCH (:FOO)-[r:REL]->()
           |CONSTRUCT
-          | NEW (:A)-[r]->()
+          |  CREATE (:A)-[r]->()
           |RETURN GRAPH
         """.stripMargin
 
