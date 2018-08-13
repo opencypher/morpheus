@@ -189,6 +189,10 @@ object SparkTable {
     }
 
     override def unionAll(other: DataFrameTable): DataFrameTable = {
+      if (df.schema != other.df.schema) {
+        throw IllegalArgumentException("Equal DataFrame schemas", s"${df.schema}\n\t${other.df.schema}")
+      }
+
       df.union(other.df)
     }
 
