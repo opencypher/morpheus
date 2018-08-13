@@ -30,6 +30,8 @@ import org.opencypher.okapi.api.schema.{PropertyKeys, Schema}
 import org.opencypher.okapi.api.types.{CTInteger, CTString}
 import org.opencypher.okapi.api.value.CypherValue.CypherMap
 import org.opencypher.okapi.relational.api.tagging.Tags._
+import org.opencypher.okapi.relational.impl.graph.UnionGraph
+import org.opencypher.okapi.relational.impl.operators.SwitchContext
 import org.opencypher.okapi.testing.Bag
 import org.opencypher.okapi.testing.Bag._
 import org.opencypher.spark.api.value.{CAPSNode, CAPSRelationship}
@@ -37,6 +39,8 @@ import org.opencypher.spark.impl.CAPSConverters._
 import org.opencypher.spark.schema.CAPSSchema._
 import org.opencypher.spark.testing.CAPSTestSuite
 import org.scalatest.DoNotDiscover
+
+import scala.language.existentials
 
 @DoNotDiscover
 class MultipleGraphBehaviour extends CAPSTestSuite with ScanGraphInit {
@@ -600,6 +604,28 @@ class MultipleGraphBehaviour extends CAPSTestSuite with ScanGraphInit {
     result.schema.asCaps should equal(testGraph1.schema)
     result.nodes("n").toMaps should equal(testGraph1.nodes("n").toMaps)
     result.relationships("r").toMaps should equal(testGraph1.relationships("r").toMaps)
+  }
+
+  it("CONSTRUCT ON a single graph without GraphUnionAll") {
+    caps.catalog.store("one", testGraph1)
+    val query =
+      """
+        |CONSTRUCT ON one
+        |MATCH (n) RETURN n""".stripMargin
+
+    val result = testGraph2.cypher(query)
+
+    result.asCaps.maybeRelational match {
+      case Some(relPlan) =>
+        val switchOp = relPlan.collectFirst { case op : SwitchContext[_] => op }.get
+        val containsUnionGraph = switchOp.context.constructedGraphCatalog.head._2 match {
+          case g: UnionGraph[_] => g.graphsToReplacements.keys.collectFirst { case op: UnionGraph[_] => op }.isDefined
+          case _ => false
+        }
+        withClue("CONSTRUCT plans union on a single input graph") { containsUnionGraph shouldBe false }
+
+      case None =>
+    }
   }
 
   it("CONSTRUCTS ON two graphs") {

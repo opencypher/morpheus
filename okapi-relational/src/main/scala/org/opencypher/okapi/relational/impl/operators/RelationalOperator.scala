@@ -36,13 +36,23 @@ import org.opencypher.okapi.logical.impl.{LogicalCatalogGraph, LogicalPatternGra
 import org.opencypher.okapi.relational.api.graph.{RelationalCypherGraph, RelationalCypherSession}
 import org.opencypher.okapi.relational.api.planning.RelationalRuntimeContext
 import org.opencypher.okapi.relational.api.table.{RelationalCypherRecords, Table}
+import org.opencypher.okapi.relational.impl.operators.TagStrategy._
 import org.opencypher.okapi.relational.impl.planning._
 import org.opencypher.okapi.relational.impl.table.RecordHeader
 import org.opencypher.okapi.trees.AbstractTreeNode
 
-abstract class RelationalOperator[T <: Table[T]] extends AbstractTreeNode[RelationalOperator[T]] {
+object TagStrategy {
 
   type TagStrategy = Map[QualifiedGraphName, Map[Int, Int]]
+
+  def empty = Map.empty[QualifiedGraphName, Map[Int, Int]]
+
+  def apply(tuple: (QualifiedGraphName, Map[Int, Int])*): Map[QualifiedGraphName, Map[Int, Int]] = {
+    tuple.toMap
+  }
+}
+
+abstract class RelationalOperator[T <: Table[T]] extends AbstractTreeNode[RelationalOperator[T]] {
 
   def tagStrategy: TagStrategy = Map.empty
 
@@ -144,7 +154,8 @@ object Start {
 
 final case class Start[T <: Table[T]](
   qgn: QualifiedGraphName,
-  maybeRecords: Option[RelationalCypherRecords[T]] = None
+  maybeRecords: Option[RelationalCypherRecords[T]] = None,
+  override val tagStrategy: TagStrategy = TagStrategy.empty
 )(implicit override val context: RelationalRuntimeContext[T]) extends RelationalOperator[T] {
 
   override lazy val header: RecordHeader = maybeRecords.map(_.header).getOrElse(RecordHeader.empty)
