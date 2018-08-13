@@ -405,6 +405,7 @@ final case class Join[T <: Table[T]](
   joinType: JoinType
 ) extends RelationalOperator[T] {
 
+  require((lhs.header.expressions intersect rhs.header.expressions).isEmpty, "Join cannot join operators with overlapping expressions")
   require((lhs.header.columns intersect rhs.header.columns).isEmpty, "Join cannot join tables with column name collisions")
 
   override lazy val header: RecordHeader = lhs.header join rhs.header

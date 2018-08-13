@@ -85,7 +85,7 @@ object LogicalOptimizer extends DirectCompilationStage[LogicalOperator, LogicalO
     case ns@NodeScan(v@Var(name), in, _) =>
       val updatedLabels = labelMap(v)
       val updatedVar = Var(name)(CTNode(ns.labels ++ updatedLabels, v.cypherType.graph))
-      val updatedSolved = in.solved.withPredicates(updatedLabels.map(l => HasLabel(v, Label(l))(CTBoolean)).toSeq: _*)
+      val updatedSolved = ns.solved.withPredicates(updatedLabels.map(l => HasLabel(v, Label(l))(CTBoolean)).toSeq: _*)
       NodeScan(updatedVar, in, updatedSolved)
     case Filter(_: HasLabel, in, _) => in
   }

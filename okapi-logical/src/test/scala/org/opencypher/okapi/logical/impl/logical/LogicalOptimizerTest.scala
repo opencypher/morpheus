@@ -75,7 +75,7 @@ class LogicalOptimizerTest extends BaseTestSuite with IrConstruction {
           animalGraph,
           emptySqm
         ),
-        SolvedQueryModel(Set(), Set(HasLabel(Var("a")(CTNode(Set("Animal"))), Label("Animal"))(CTBoolean)))
+        SolvedQueryModel(Set(IRField("a")(CTNode(Set("Animal")))), Set(HasLabel(Var("a")(CTNode(Set("Animal"))), Label("Animal"))(CTBoolean)))
       ),
       SolvedQueryModel(Set(IRField("a")(CTNode)), Set(HasLabel(Var("a")(CTNode), Label("Animal"))(CTBoolean)))
     )
