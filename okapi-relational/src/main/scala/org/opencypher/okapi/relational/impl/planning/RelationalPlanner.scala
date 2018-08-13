@@ -52,7 +52,7 @@ object RelationalPlanner {
 
     input match {
       case logical.CartesianProduct(lhs, rhs, _) =>
-        planJoin(process[T](lhs), process[T](rhs), Seq.empty, CrossJoin)
+        process[T](lhs).join(process[T](rhs), Seq.empty, CrossJoin)
 
       case logical.Select(fields, in, _) =>
 
@@ -100,7 +100,7 @@ object RelationalPlanner {
 
       case logical.ValueJoin(lhs, rhs, predicates, _) =>
         val joinExpressions = predicates.map(p => p.lhs -> p.rhs).toSeq
-        planJoin(process[T](lhs), process[T](rhs), joinExpressions, InnerJoin)
+        process[T](lhs).join(process[T](rhs), joinExpressions, InnerJoin)
 
       case logical.Distinct(fields, in, _) =>
         val entityExprs: Set[Var] = Set(fields.toSeq: _*)
@@ -117,18 +117,18 @@ object RelationalPlanner {
 
         direction match {
           case Directed =>
-            val tempResult = planJoin(first, second, Seq(source -> startNode), InnerJoin)
-            planJoin(tempResult, third, Seq(endNode -> target), InnerJoin)
+            val tempResult = first.join(second, Seq(source -> startNode), InnerJoin)
+            tempResult.join(third, Seq(endNode -> target), InnerJoin)
 
           case Undirected =>
-            val tempOutgoing = planJoin(first, second, Seq(source -> startNode), InnerJoin)
-            val outgoing = planJoin(tempOutgoing, third, Seq(endNode -> target), InnerJoin)
+            val tempOutgoing = first.join(second, Seq(source -> startNode), InnerJoin)
+            val outgoing = tempOutgoing.join(third, Seq(endNode -> target), InnerJoin)
 
             val filterExpression = Not(Equals(startNode, endNode)(CTBoolean))(CTBoolean)
             val relsWithoutLoops = second.filter(filterExpression)
 
-            val tempIncoming = planJoin(first, relsWithoutLoops, Seq(source -> endNode), InnerJoin)
-            val incoming = planJoin(tempIncoming, third, Seq(startNode -> target), InnerJoin)
+            val tempIncoming = first.join(relsWithoutLoops, Seq(source -> endNode), InnerJoin)
+            val incoming = tempIncoming.join(third, Seq(startNode -> target), InnerJoin)
 
             relational.TabularUnionAll(outgoing, incoming)
         }
@@ -142,11 +142,11 @@ object RelationalPlanner {
 
         direction match {
           case Directed =>
-            planJoin(in, relationships, Seq(source -> startNode, target -> endNode), InnerJoin)
+            in.join(relationships, Seq(source -> startNode, target -> endNode), InnerJoin)
 
           case Undirected =>
-            val outgoing = planJoin(in, relationships, Seq(source -> startNode, target -> endNode), InnerJoin)
-            val incoming = planJoin(in, relationships, Seq(target -> startNode, source -> endNode), InnerJoin)
+            val outgoing = in.join(relationships, Seq(source -> startNode, target -> endNode), InnerJoin)
+            val incoming = in.join(relationships, Seq(target -> startNode, source -> endNode), InnerJoin)
             relational.TabularUnionAll(outgoing, incoming)
         }
 
@@ -194,7 +194,7 @@ object RelationalPlanner {
         // 3. Compute distinct rows in rhs
         val distinctRhsData = relational.Distinct(reducedRhsData, renameExprs.map(_.alias))
         // 4. Join lhs and prepared rhs using a left outer join
-        val joinedData = planJoin(leftResult, distinctRhsData, renameExprs.map(a => a.expr -> a.alias).toSeq, LeftOuterJoin)
+        val joinedData = leftResult.join(distinctRhsData, renameExprs.map(a => a.expr -> a.alias).toSeq, LeftOuterJoin)
         // 5. If at least one rhs join column is not null, the sub-query exists and true is projected to the target expression
         val targetExpr = renameExprs.head.alias
         joinedData.addInto(IsNotNull(targetExpr)(CTBoolean), predicateField.targetField)
@@ -235,17 +235,6 @@ object RelationalPlanner {
     scanOp.assignScanName(entityVar.name).switchContext(inOp.context)
   }
 
-  def planJoin[T <: Table[T]](
-    lhs: RelationalOperator[T],
-    rhs: RelationalOperator[T],
-    joinExprs: Seq[(Expr, Expr)],
-    joinType: JoinType
-  ): RelationalOperator[T] = {
-    val joinHeader = lhs.header join rhs.header
-    val conflictFreeRhs = rhs.alignColumnNames(joinHeader)
-    relational.Join(lhs, conflictFreeRhs, joinExprs, joinType)
-  }
-
   // TODO: process operator outside of def
   private def planOptional[T <: Table[T]](lhs: LogicalOperator, rhs: LogicalOperator)
     (implicit context: RelationalRuntimeContext[T]): RelationalOperator[T] = {
@@ -274,7 +263,7 @@ object RelationalPlanner {
     val rhsJoinReady = relational.Drop(rhsWithAlias, joinExprs.collect { case e: Expr => e })
 
     // 4. Left outer join the left side and the processed right side
-    val joined = planJoin(lhsOp, rhsJoinReady, joinExprRenames.map(a => a.expr -> a.alias).toSeq, LeftOuterJoin)
+    val joined = lhsOp.join(rhsJoinReady, joinExprRenames.map(a => a.expr -> a.alias).toSeq, LeftOuterJoin)
 
     // 5. Select the resulting header expressions
     relational.Select(joined, joined.header.expressions.toList)
@@ -290,6 +279,12 @@ object RelationalPlanner {
       } else {
         relational.Filter(op, expression)
       }
+    }
+
+    def join(other: RelationalOperator[T], joinExprs: Seq[(Expr, Expr)], joinType: JoinType): RelationalOperator[T] = {
+      val joinHeader = op.header join other.header
+      val conflictFreeRhs = other.alignColumnNames(joinHeader)
+      relational.Join(op, conflictFreeRhs, joinExprs, joinType)
     }
 
     def add(value: Expr): RelationalOperator[T] = relational.Add(op, value)
