@@ -41,7 +41,7 @@ import org.opencypher.okapi.ir.api._
 import org.opencypher.okapi.ir.api.configuration.IrConfiguration.PrintIr
 import org.opencypher.okapi.ir.api.expr.{Expr, Var}
 import org.opencypher.okapi.ir.impl.parse.CypherParser
-import org.opencypher.okapi.ir.impl.{CatalogWithQuerySchemas, IRBuilder, IRBuilderContext}
+import org.opencypher.okapi.ir.impl.{IRBuilder, IRBuilderContext}
 import org.opencypher.okapi.logical.api.configuration.LogicalConfiguration.PrintLogicalPlan
 import org.opencypher.okapi.logical.impl._
 import org.opencypher.okapi.relational.api.configuration.CoraConfiguration.{PrintOptimizedRelationalPlan, PrintQueryExecutionStages, PrintRelationalPlan}
@@ -165,12 +165,11 @@ sealed class CAPSSessionImpl(val sparkSession: SparkSession) extends CAPSSession
   private def planRelational(
     maybeDrivingTable: Option[RelationalCypherRecords[DataFrameTable]],
     parameters: CypherMap,
-    logicalPlan: LogicalOperator,
-    catalogWithQuerySchemas: CatalogWithQuerySchemas = CatalogWithQuerySchemas(catalog.listSources)
+    logicalPlan: LogicalOperator
   ): Result = {
 
     logStageProgress("Relational planning ... ", newLine = false)
-    implicit val context: RelationalRuntimeContext[DataFrameTable] = RelationalRuntimeContext(graphAt, maybeDrivingTable, parameters, catalogWithQuerySchemas)
+    implicit val context: RelationalRuntimeContext[DataFrameTable] = RelationalRuntimeContext(graphAt, maybeDrivingTable, parameters)
 
     val relationalPlan = time("Relational planning")(RelationalPlanner.process(logicalPlan))
     logStageProgress("Done!")

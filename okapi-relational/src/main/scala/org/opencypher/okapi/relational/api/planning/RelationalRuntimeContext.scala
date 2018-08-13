@@ -29,23 +29,23 @@ package org.opencypher.okapi.relational.api.planning
 import org.opencypher.okapi.api.graph.QualifiedGraphName
 import org.opencypher.okapi.api.value.CypherValue.CypherMap
 import org.opencypher.okapi.impl.exception.IllegalArgumentException
-import org.opencypher.okapi.ir.impl.CatalogWithQuerySchemas
 import org.opencypher.okapi.relational.api.graph.{RelationalCypherGraph, RelationalCypherSession}
 import org.opencypher.okapi.relational.api.table.{RelationalCypherRecords, Table}
 
-// TODO: comment
 /**
+  * Responsible for tracking the context during the execution of a single query.
   *
-  * @param sessionCatalog Contains user-defined graphs used within the session
-  * @param parameters Query parameters
-  * @param constructedGraphCatalog Contains graphs that are created during query execution
-  * @tparam T
+  * @param sessionCatalog          mapping between graph names and graphs registered in the session catalog
+  * @param maybeInputRecords       optional driving table for the query
+  * @param parameters              query parameters (e.g. constants) needed for expression evaluation
+  * @param constructedGraphCatalog mapping between graph names and graphs created during query execution
+  * @param session                 CAPS session
+  * @tparam T Table type
   */
 case class RelationalRuntimeContext[T <: Table[T]](
   sessionCatalog: QualifiedGraphName => Option[RelationalCypherGraph[T]],
-  inputRecords: Option[RelationalCypherRecords[T]] = None,
+  maybeInputRecords: Option[RelationalCypherRecords[T]] = None,
   parameters: CypherMap = CypherMap.empty,
-  catalogWithQuerySchemas: CatalogWithQuerySchemas = CatalogWithQuerySchemas.empty,
   var constructedGraphCatalog: Map[QualifiedGraphName, RelationalCypherGraph[T]] = Map.empty[QualifiedGraphName, RelationalCypherGraph[T]]
 )(implicit val session: RelationalCypherSession[T]) {
   /**
