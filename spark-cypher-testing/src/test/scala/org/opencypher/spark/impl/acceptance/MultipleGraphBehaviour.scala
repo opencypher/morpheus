@@ -915,4 +915,63 @@ class MultipleGraphBehaviour extends CAPSTestSuite with ScanGraphInit {
       fooRow
     ))
   }
+
+  it("should set a node property from a matched node") {
+    val query =
+      """|MATCH (m)
+         |CONSTRUCT
+         |  CREATE (a :A)
+         |  SET a.name = m.name
+         |RETURN GRAPH""".stripMargin
+
+    val result = testGraph1.cypher(query)
+
+    result.records.toMaps shouldBe empty
+    result.graph.schema.labels should equal(Set("A"))
+    result.graph.schema should equal(Schema.empty.withNodePropertyKeys("A")("name" -> CTString))
+    result.graph.cypher("MATCH (a:A) RETURN a.name").records.toMaps should equal(Bag(
+      CypherMap("a.name" -> "Mats")
+    ))
+  }
+
+  it("should set a node property from a literal") {
+    val query =
+      """|CONSTRUCT
+         |  CREATE (a :A)
+         |  SET a.name = 'Donald'
+         |RETURN GRAPH""".stripMargin
+
+    val result = testGraph1.cypher(query)
+
+    result.records.toMaps shouldBe empty
+    result.graph.schema.labels should equal(Set("A"))
+    result.graph.schema should equal(Schema.empty.withNodePropertyKeys("A")("name" -> CTString))
+    result.graph.cypher("MATCH (a:A) RETURN a.name").records.toMaps should equal(Bag(
+      CypherMap("a.name" -> "Donald")
+    ))
+  }
+
+  // TODO: Requires COPY OF to be able to express original intent
+  ignore("should set multiple properties") {
+    val query =
+      """|MATCH (a)
+         |CONSTRUCT
+         |  CLONE a as newA
+         |  CREATE (newA :A:B)
+         |  SET newA.name = 'Donald'
+         |  SET newA.age = 100
+         |RETURN GRAPH""".stripMargin
+
+    val result = testGraph1.cypher(query)
+
+    result.records.toMaps shouldBe empty
+    result.graph.schema.labels should equal(Set("A", "B"))
+    result.graph.schema should equal(
+      Schema.empty
+        .withNodePropertyKeys(Set("A", "B"), PropertyKeys("name" -> CTString, "age" -> CTInteger)))
+    result.graph.cypher("MATCH (a:A:B) RETURN a.name").records.toMaps should equal(Bag(
+      CypherMap("a.name" -> "Donald")
+    ))
+  }
+
 }

@@ -32,7 +32,7 @@ import org.opencypher.okapi.api.types.{CTNode, CTRelationship}
 import org.opencypher.okapi.ir.api.Label
 import org.opencypher.okapi.ir.api.block.SortItem
 import org.opencypher.okapi.ir.api.expr._
-import org.opencypher.okapi.ir.api.set.SetPropertyItem
+import org.opencypher.okapi.ir.api.set.SetItem
 import org.opencypher.okapi.trees.AbstractTreeNode
 
 sealed abstract class LogicalOperator extends AbstractTreeNode[LogicalOperator] {
@@ -74,7 +74,7 @@ case class LogicalPatternGraph(
   schema: Schema,
   clones: Map[Var, Var],
   newEntities: Set[ConstructedEntity],
-  sets: List[SetPropertyItem[Expr]],
+  sets: List[SetItem[Expr]],
   onGraphs: List[QualifiedGraphName],
   qualifiedGraphName: QualifiedGraphName
 ) extends LogicalGraph {
