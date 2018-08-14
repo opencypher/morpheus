@@ -45,12 +45,12 @@ object LogicalOptimizer extends DirectCompilationStage[LogicalOperator, LogicalO
     }
   }
 
-  def labelsForVariables(r: LogicalOperator): Map[Var, Set[String]] = {
-    r.foldLeft(Map.empty[Var, Set[String]].withDefaultValue(Set.empty)) {
-      case (r, n) =>
-        n match {
-          case Filter(HasLabel(v: Var, Label(name)), _, _) => r.updated(v, r(v) + name)
-          case _ => r
+  def labelsForVariables(op: LogicalOperator): Map[Var, Set[String]] = {
+    op.foldLeft(Map.empty[Var, Set[String]].withDefaultValue(Set.empty)) {
+      case (currentLabelMap, nextChildOp) =>
+        nextChildOp match {
+          case Filter(HasLabel(v: Var, Label(name)), _, _) => currentLabelMap.updated(v, currentLabelMap(v) + name)
+          case _ => currentLabelMap
         }
     }
   }
