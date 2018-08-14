@@ -189,8 +189,13 @@ object SparkTable {
     }
 
     override def unionAll(other: DataFrameTable): DataFrameTable = {
-      if (df.schema != other.df.schema) {
-        throw IllegalArgumentException("Equal DataFrame schemas", s"${df.schema}\n\t${other.df.schema}")
+      val thisNameTypeSchema = df.schema.map(f => f.name -> f.dataType)
+      val otherNameTypeSchema = other.df.schema.map(f => f.name -> f.dataType)
+
+      if (thisNameTypeSchema != otherNameTypeSchema) {
+        throw IllegalArgumentException(
+          "Equal DataFrame schemas (differing nullability is OK)",
+          s"${df.schema}\n\t${other.df.schema}")
       }
 
       df.union(other.df)
