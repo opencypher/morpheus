@@ -26,40 +26,55 @@
  */
 package org.opencypher.spark.impl.physical
 
-//class RelationalOptimizerTest extends CAPSTestSuite with GraphConstructionFixture {
-//
+import org.opencypher.okapi.api.graph.QualifiedGraphName
+import org.opencypher.okapi.api.types.CTNode
+import org.opencypher.okapi.ir.api.expr.Var
+import org.opencypher.okapi.logical.impl.LogicalCatalogGraph
+import org.opencypher.okapi.relational.impl.planning.RelationalPlanner._
+import org.opencypher.okapi.relational.impl.planning.{CrossJoin, RelationalOptimizer}
+import org.opencypher.spark.testing.CAPSTestSuite
+import org.opencypher.spark.testing.fixture.GraphConstructionFixture
+
+class RelationalOptimizerTest extends CAPSTestSuite with GraphConstructionFixture {
+
 ////  TODO: Re-enable once caching optimizer is back
 //  def start(qgn: QualifiedGraphName, records: CAPSRecords)(implicit caps: CAPSSession): Start = {
 //    Start(qgn, Some(records))
 //  }
 
-//  test("Test insert Cache operators") {
-//    val plan = Join(
-//      Join(
-//        NodeScan(
-//          Start(testQualifiedGraphName, emptyRecords),
-//          Var("C")(CTNode)
-//        ),
-//        NodeScan(
-//          start(testQualifiedGraphName, emptyRecords),
-//          Var("B")(CTNode)
-//        )
-//      ),
-//      Join(
-//        NodeScan(
-//          start(testQualifiedGraphName, emptyRecords),
-//          Var("C")(CTNode)
-//        ),
-//        NodeScan(
-//          start(testQualifiedGraphName, emptyRecords),
-//          Var("B")(CTNode)
-//        )
-//      )
-//    )
-//
-//    implicit val context = RelationalOptimizerContext()
-//    val rewrittenPlan = new RelationalOptimizer().process(plan)
-//
+  test("Test insert Cache operators") {
+    implicit val context = caps.basicRuntimeContext()
+
+    val g = initGraph(
+      """
+        |CREATE ()
+      """.stripMargin)
+
+    val qgn = QualifiedGraphName("session.test")
+    val logicalGraph = LogicalCatalogGraph(qgn, g.schema)
+    caps.catalog.store(qgn, g)
+
+    val aVar = Var("A")(CTNode)
+    val bVar = Var("B")(CTNode)
+    val cVar = Var("C")(CTNode)
+    val dVar = Var("D")(CTNode)
+
+    val aPlan = planScan(None, logicalGraph, aVar)
+    val bPlan = planScan(None, logicalGraph, bVar)
+
+    val cPlan = planScan(None, logicalGraph, cVar)
+    val dPlan = planScan(None, logicalGraph, dVar)
+
+    val join1 = aPlan.join(bPlan, Seq.empty, CrossJoin)
+    val join2 = cPlan.join(dPlan, Seq.empty, CrossJoin)
+
+    val plan = join1.join(join2, Seq.empty, CrossJoin)
+
+
+    val rewrittenPlan = RelationalOptimizer.process(plan)
+
+    rewrittenPlan.show()
+
 //    rewrittenPlan should equal(
 //      Join(
 //        Cache(
@@ -88,8 +103,8 @@ package org.opencypher.spark.impl.physical
 //        )
 //      )
 //    )
-//  }
-//
+  }
+
 //  it("test caches expand into for triangle") {
 //    // Given
 //    val given = initGraph(
@@ -173,4 +188,4 @@ package org.opencypher.spark.impl.physical
 //    val cacheOps = result.asCaps.plans.relationalPlan.get.collect { case c: Cache => c }
 //    cacheOps.size shouldBe 2
 //  }
-//}
+}
