@@ -31,6 +31,7 @@ import org.opencypher.okapi.testing.Bag
 import org.opencypher.spark.api.value.CAPSRelationship
 import org.opencypher.spark.testing.CAPSTestSuite
 import org.scalatest.DoNotDiscover
+import org.opencypher.spark.impl.CAPSConverters._
 
 @DoNotDiscover
 class BoundedVarExpandBehaviour extends CAPSTestSuite with DefaultGraphInit {
@@ -142,6 +143,9 @@ class BoundedVarExpandBehaviour extends CAPSTestSuite with DefaultGraphInit {
 
     // When
     val result = given.cypher("MATCH (a:Node)-[r:LOVES|KNOWS*..6]->(b:Node) RETURN b.v")
+
+
+    result.asCaps.plans.relationalPlan.get.show()
 
     // Then
     result.records.toMaps should equal(Bag(

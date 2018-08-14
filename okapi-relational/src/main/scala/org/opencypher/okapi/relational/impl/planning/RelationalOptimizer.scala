@@ -57,14 +57,19 @@ object RelationalOptimizer {
     private def calculateReplacementMap[T <: Table[T]](input: RelationalOperator[T]): Map[RelationalOperator[T], RelationalOperator[T]] = {
       val opCounts = identifyDuplicates(input)
       val opsByHeight = opCounts.keys.toSeq.sortWith((a, b) => a.height > b.height)
-      val (opsToCache, _) = opsByHeight.foldLeft(Set.empty[RelationalOperator[T]] -> opCounts) { (agg, currentOp) =>
+      val (opsToCache, countMap) = opsByHeight.foldLeft(Set.empty[RelationalOperator[T]] -> opCounts) { (agg, currentOp) =>
         agg match {
           case (currentOpsToCache, currentCounts) =>
             val currentOpCount = currentCounts(currentOp)
             if (currentOpCount > 1) {
               val updatedOps = currentOpsToCache + currentOp
+              // We're traversing `opsByHeight` from largest to smallest query sub-tree.
+              // We pick the trees with the largest height for caching first, and then reduce the duplicate count
+              // for the sub-trees of the cached tree by the number of times the parent tree appears.
+              // The idea behind this is that if the parent was already cached, there is no need to additionally
+              // cache all its children (unless they're used with a different parent somewhere else).
               val updatedCounts = currentCounts.map {
-                case (op, count) => op -> (if (currentOp.containsTree(op)) count - 1 else count)
+                case (op, count) => op -> (if (currentOp.containsTree(op)) count - currentOpCount else count)
               }
               updatedOps -> updatedCounts
             } else {

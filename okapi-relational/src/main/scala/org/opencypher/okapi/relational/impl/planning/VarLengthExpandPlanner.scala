@@ -155,7 +155,7 @@ trait VarLengthExpandPlanner[T <: Table[T]] {
         case (acc, expr) =>
           // TODO: RelationalOperator[T]his is a planning performance killer, we need to squash these steps into a single table operation
           val lit = NullLit(expr.cypherType.nullable)
-          val withoutLit = acc.addInto(lit, expr).drop(lit)
+          val withoutLit = acc.addInto(lit, expr)
 
           if (withoutLit.header.column(expr) == targetHeader.column(expr)) {
             withoutLit
@@ -163,6 +163,7 @@ trait VarLengthExpandPlanner[T <: Table[T]] {
             relational.RenameColumns(withoutLit, Map(withoutLit.header.column(expr) -> targetHeader.column(expr)))
           }
       }
+
     }
 
     // union expands of different lengths

@@ -127,7 +127,7 @@ class RelationalOptimizerTest extends CAPSTestSuite with GraphConstructionFixtur
   }
 
   // Takes a long time to run with little extra info
-  ignore("test caching expand into after var expand") {
+  test("test caching expand into after var expand") {
     // Given
     val given = initGraph(
       """
@@ -156,11 +156,11 @@ class RelationalOptimizerTest extends CAPSTestSuite with GraphConstructionFixtur
 
     // Then
     val cacheOps = result.asCaps.plans.relationalPlan.get.collect { case c: Cache[DataFrameTable] => c }
-    cacheOps.size shouldBe 515
+    cacheOps.size shouldBe 115
   }
 
   // Adds little extra info
-  ignore("test caching optional match with duplicates") {
+  test("test caching optional match with duplicates") {
     // Given
     val given = initGraph(
       """
@@ -181,10 +181,8 @@ class RelationalOptimizerTest extends CAPSTestSuite with GraphConstructionFixtur
         |RETURN b.name, c.name
       """.stripMargin)
 
-    result.asCaps.plans.relationalPlan.get.show()
-
     // Then
     val cacheOps = result.asCaps.plans.relationalPlan.get.collect { case c: Cache[DataFrameTable] => c }
-    cacheOps.size shouldBe 20
+    cacheOps.size shouldBe 7
   }
 }

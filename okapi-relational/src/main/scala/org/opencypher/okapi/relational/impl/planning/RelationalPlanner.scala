@@ -285,10 +285,13 @@ object RelationalPlanner {
 
     def add(value: Expr): RelationalOperator[T] = relational.Add(op, value)
 
-    def addInto(value: Expr, into: Expr): RelationalOperator[T] = relational.AddInto(op, value, into)
+    def addInto(value: Expr, into: Expr): RelationalOperator[T] = {
+      relational.AddInto(op, value, into)
+    }
 
     def drop(expressions: Set[Expr]): RelationalOperator[T] = {
-      if (expressions.nonEmpty) {
+      val necessaryDrops = expressions.intersect(op.header.expressions)
+      if (necessaryDrops.nonEmpty) {
         relational.Drop(op, expressions)
       } else op
     }
