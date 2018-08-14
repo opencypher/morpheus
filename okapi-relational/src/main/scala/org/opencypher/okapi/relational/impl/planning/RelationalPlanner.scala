@@ -198,7 +198,7 @@ object RelationalPlanner {
         val joinedData = leftResult.join(distinctRhsData, renameExprs.map(a => a.expr -> a.alias).toSeq, LeftOuterJoin)
         // 5. If at least one rhs join column is not null, the sub-query exists and true is projected to the target expression
         val targetExpr = renameExprs.head.alias
-        joinedData.addInto(IsNotNull(targetExpr)(CTBoolean), predicateField.targetField)
+        joinedData.addInto(IsNotNull(targetExpr)(CTBoolean) -> predicateField.targetField)
 
       case logical.OrderBy(sortItems: Seq[SortItem[Expr]], in, _) =>
         relational.OrderBy(process[T](in), sortItems)
@@ -279,14 +279,20 @@ object RelationalPlanner {
       }
     }
 
+    def renameColumns(columnRenamings: Map[String, String]): RelationalOperator[T] = {
+      if (columnRenamings.isEmpty) op else relational.RenameColumns(op, columnRenamings)
+    }
+
     def join(other: RelationalOperator[T], joinExprs: Seq[(Expr, Expr)], joinType: JoinType): RelationalOperator[T] = {
       relational.Join(op, other.withDisjointColumnNames(op.header), joinExprs, joinType)
     }
 
-    def add(value: Expr): RelationalOperator[T] = relational.Add(op, value)
+    def add(values: Expr*): RelationalOperator[T] = {
+      if (values.isEmpty) op else relational.Add(op, values.toList)
+    }
 
-    def addInto(value: Expr, into: Expr): RelationalOperator[T] = {
-      relational.AddInto(op, value, into)
+    def addInto(valueIntos: (Expr, Expr)*): RelationalOperator[T] = {
+      if (valueIntos.isEmpty) op else relational.AddInto(op, valueIntos.toList)
     }
 
     def drop(expressions: Set[Expr]): RelationalOperator[T] = {
@@ -314,10 +320,8 @@ object RelationalPlanner {
     }
 
     def retagVariable(v: Var, replacements: Map[Int, Int]): RelationalOperator[T] = {
-      op.header.idExpressions(v).foldLeft(op) {
-        case (currentOp, exprToRetag) =>
-          currentOp.addInto(exprToRetag.replaceTags(replacements), exprToRetag)
-      }
+      val idRetaggings = op.header.idExpressions(v).map(exprToRetag => exprToRetag.replaceTags(replacements) -> exprToRetag)
+      op.addInto(idRetaggings.toSeq: _*)
     }
 
     def alignWith(entity: Var, targetHeader: RecordHeader): RelationalOperator[T] = {
@@ -347,42 +351,42 @@ object RelationalPlanner {
         case CTNode(labels, _) => (targetHeaderLabels intersect labels) -- existingLabels
         case _ => Set.empty
       }
-      val withTrueLabels = trueLabels.foldLeft(withDroppedExpressions: RelationalOperator[T]) {
-        case (currentOp, label) => currentOp.addInto(TrueLit, HasLabel(targetVar, Label(label))(CTBoolean))
-      }
+      val withTrueLabels = withDroppedExpressions.addInto(
+        trueLabels.map(label => TrueLit -> HasLabel(targetVar, Label(label))(CTBoolean)).toSeq: _*
+      )
 
       // Fill in missing false label columns
       val falseLabels = targetVar.cypherType match {
         case _: CTNode => targetHeaderLabels -- trueLabels -- existingLabels
         case _ => Set.empty
       }
-      val withFalseLabels = falseLabels.foldLeft(withTrueLabels: RelationalOperator[T]) {
-        case (currentOp, label) => currentOp.addInto(FalseLit, HasLabel(targetVar, Label(label))(CTBoolean))
-      }
+      val withFalseLabels = withTrueLabels.addInto(
+        falseLabels.map(label => FalseLit -> HasLabel(targetVar, Label(label))(CTBoolean)).toSeq: _*
+      )
 
       // Fill in missing true relType columns
       val trueRelTypes = inputVar.cypherType match {
         case CTRelationship(relTypes, _) => (targetHeaderTypes intersect relTypes) -- existingRelTypes
         case _ => Set.empty
       }
-      val withTrueRelTypes = trueRelTypes.foldLeft(withFalseLabels: RelationalOperator[T]) {
-        case (currentOp, relType) => currentOp.addInto(TrueLit, HasType(targetVar, RelType(relType))(CTBoolean))
-      }
+      val withTrueRelTypes = withFalseLabels.addInto(
+        trueRelTypes.map(relType => TrueLit -> HasType(targetVar, RelType(relType))(CTBoolean)).toSeq: _*
+      )
 
       // Fill in missing false relType columns
       val falseRelTypes = targetVar.cypherType match {
         case _: CTRelationship => targetHeaderTypes -- trueRelTypes -- existingRelTypes
         case _ => Set.empty
       }
-      val withFalseRelTypes = falseRelTypes.foldLeft(withTrueRelTypes: RelationalOperator[T]) {
-        case (currentOp, relType) => currentOp.addInto(FalseLit, HasType(targetVar, RelType(relType))(CTBoolean))
-      }
+      val withFalseRelTypes = withTrueRelTypes.addInto(
+        falseRelTypes.map(relType => FalseLit -> HasType(targetVar, RelType(relType))(CTBoolean)).toSeq: _*
+      )
 
       // Fill in missing properties
       val missingProperties = targetHeader.propertiesFor(targetVar) -- withFalseRelTypes.header.propertiesFor(targetVar)
-      val withProperties = missingProperties.foldLeft(withFalseRelTypes: RelationalOperator[T]) {
-        case (currentOp, propertyExpr) => currentOp.addInto(NullLit(propertyExpr.cypherType), propertyExpr)
-      }
+      val withProperties = withFalseRelTypes.addInto(
+        missingProperties.map(propertyExpr => NullLit(propertyExpr.cypherType) -> propertyExpr).toSeq: _*
+      )
 
       import Expr._
       assert(targetHeader.expressions == withProperties.header.expressions,
@@ -409,7 +413,7 @@ object RelationalPlanner {
             val newColumnName = header.newConflictFreeColumnName(nextRename, otherHeader.columns ++ acc.values)
             acc + (header.column(nextRename) -> newColumnName)
         }
-        relational.RenameColumns(op, renameMapping)
+        op.renameColumns(renameMapping)
       }
     }
 
@@ -417,7 +421,6 @@ object RelationalPlanner {
       * Ensures that the column names are aligned with the target header.
       *
       * @note All expressions in the operator header must be present in the target header.
-      *
       * @param targetHeader the header with which the column names should be aligned with
       * @return operator with aligned column names
       */
@@ -436,7 +439,7 @@ object RelationalPlanner {
         val columnRenamings = op.header.expressions.foldLeft(Map.empty[String, String]) {
           case (currentMap, expr) => currentMap + (op.header.column(expr) -> targetHeader.column(expr))
         }
-        RenameColumns(op, columnRenamings)
+        op.renameColumns(columnRenamings)
       }
     }
 

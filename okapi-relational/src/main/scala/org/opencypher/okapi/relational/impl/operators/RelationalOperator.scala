@@ -204,41 +204,48 @@ final case class Alias[T <: Table[T]](
   override lazy val header: RecordHeader = in.header.withAlias(aliases: _*)
 }
 
-final case class Add[T <: Table[T]](in: RelationalOperator[T], expr: Expr) extends RelationalOperator[T] {
+final case class Add[T <: Table[T]](in: RelationalOperator[T], exprs: List[Expr]) extends RelationalOperator[T] {
 
   override lazy val header: RecordHeader = {
-    if (in.header.contains(expr)) {
-      expr match {
-        case a: AliasExpr => in.header.withAlias(a)
-        case _ => in.header
-      }
-    } else {
-      expr match {
-        case a: AliasExpr => in.header.withExpr(a.expr).withAlias(a)
-        case _ => in.header.withExpr(expr)
+    exprs.foldLeft(in.header) { case (aggHeader, expr) =>
+      if (aggHeader.contains(expr)) {
+        expr match {
+          case a: AliasExpr => aggHeader.withAlias(a)
+          case _ => aggHeader
+        }
+      } else {
+        expr match {
+          case a: AliasExpr => aggHeader.withExpr(a.expr).withAlias(a)
+          case _ => aggHeader.withExpr(expr)
+        }
       }
     }
   }
 
   override lazy val _table: T = {
     // TODO check for equal nullability setting
-    if (in.header.contains(expr)) {
+    val physicalAdditions = exprs.filterNot(in.header.contains)
+    if (physicalAdditions.isEmpty) {
       in.table
     } else {
-      in.table.withColumn(header.column(expr), expr)(header, context.parameters)
+      in.table.withColumns(physicalAdditions.map(expr => expr -> header.column(expr)): _*)(header, context.parameters)
     }
   }
 }
 
 final case class AddInto[T <: Table[T]](
   in: RelationalOperator[T],
-  value: Expr,
-  into: Expr
+  valueIntoTuples: List[(Expr, Expr)]
 ) extends RelationalOperator[T] {
 
-  override lazy val header: RecordHeader = in.header.withExpr(into)
+  override lazy val header: RecordHeader = {
+    valueIntoTuples.map(_._2).foldLeft(in.header)(_.withExpr(_))
+  }
 
-  override lazy val _table: T = in.table.withColumn(header.column(into), value)(header, context.parameters)
+  override lazy val _table: T = {
+    val valuesToColumnNames = valueIntoTuples.map { case (value, into) => value -> header.column(into) }
+    in.table.withColumns(valuesToColumnNames: _*)(header, context.parameters)
+  }
 }
 
 final case class Drop[E <: Expr, T <: Table[T]](

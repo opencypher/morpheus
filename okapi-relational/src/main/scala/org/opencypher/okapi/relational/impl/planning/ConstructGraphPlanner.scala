@@ -95,12 +95,12 @@ object ConstructGraphPlanner {
         val newEntityTag = pickFreeTag(constructTagStrategy)
         val entitiesOp = planConstructEntities(retagBaseTableOp, newEntities, newEntityTag)
 
-        val entityTableWithProperties = sets.foldLeft(entitiesOp) {
-          case (currentOp, SetPropertyItem(propertyKey, v, valueExpr)) =>
-            val propertyExpression = Property(v, PropertyKey(propertyKey))(valueExpr.cypherType)
-            currentOp.addInto(valueExpr, propertyExpression)
+        // TODO: Cover SetLabelItem as well
+        val propertiesToAdd = sets.collect { case SetPropertyItem(propertyKey, v, valueExpr) =>
+          valueExpr -> Property(v, PropertyKey(propertyKey))(valueExpr.cypherType)
         }
-        Set(newEntityTag) -> entityTableWithProperties
+
+        Set(newEntityTag) -> entitiesOp.addInto(propertiesToAdd: _*)
       }
     }
 
@@ -163,18 +163,14 @@ object ConstructGraphPlanner {
         (nextColumnPartitionId + 1) -> (nodeProjections ++ computeNodeProjections(inOp, newEntityTag, nextColumnPartitionId, nodes.size, nextNodeToConstruct))
     }
 
-    val createdNodesOp = nodesToCreate.foldLeft(inOp) { case (currentOp, (into, value)) =>
-      currentOp.addInto(value, into)
-    }
+    val createdNodesOp = inOp.addInto(nodesToCreate.map { case (into, value) => value -> into }.toSeq: _*)
 
     val (_, relsToCreate) = rels.foldLeft(0 -> Map.empty[Expr, Expr]) {
       case ((nextColumnPartitionId, relProjections), nextRelToConstruct) =>
         (nextColumnPartitionId + 1) -> (relProjections ++ computeRelationshipProjections(createdNodesOp, newEntityTag, nextColumnPartitionId, rels.size, nextRelToConstruct))
     }
 
-    relsToCreate.foldLeft(createdNodesOp) { case (currentOp, (into, value)) =>
-      currentOp.addInto(value, into)
-    }
+    createdNodesOp.addInto(relsToCreate.map { case (into, value) => value -> into }.toSeq: _*)
   }
 
   def computeNodeProjections[T <: Table[T]](

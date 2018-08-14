@@ -148,18 +148,15 @@ trait Table[T <: Table[T]] extends CypherTable {
     (implicit header: RecordHeader, parameters: CypherMap): T
 
   /**
-    * Returns a table with an additional expression, which is evaluated and stored in the specified column.
+    * Returns a table with additional expressions, which are evaluated and stored in the specified columns.
     *
     * @note If the column already exists, its contents will be replaced.
-    * @param column              column name to store evaluated expression
-    * @param expr                expression to evaluate
-    * @param preserveNullability define if resulting column type has the same nullability as the given epxression
+    * @param columns             tuples of expressions to evaluate and corresponding column name
     * @param header              table record header
     * @param parameters          query parameters
     * @return
     */
-  def withColumn(column: String, expr: Expr, preserveNullability: Boolean = true)
-    (implicit header: RecordHeader, parameters: CypherMap): T
+  def withColumns(columns: (Expr, String)*)(implicit header: RecordHeader, parameters: CypherMap): T
 
   /**
     * Returns a table with a renamed column name.
