@@ -27,7 +27,7 @@
 package org.opencypher.okapi.relational.impl.planning
 
 import org.opencypher.okapi.api.graph.QualifiedGraphName
-import org.opencypher.okapi.api.types.{CTBoolean, CTInteger, CTNode, CTRelationship}
+import org.opencypher.okapi.api.types.{CTBoolean, CTInteger, CTNode}
 import org.opencypher.okapi.impl.exception.UnsupportedOperationException
 import org.opencypher.okapi.ir.api.expr._
 import org.opencypher.okapi.ir.api.set.{SetLabelItem, SetPropertyItem}
@@ -52,8 +52,7 @@ object ConstructGraphPlanner {
     val onGraphPlan: RelationalOperator[T] = {
       construct.onGraphs match {
         case Nil => relational.Start[T](context.session.emptyGraphQgn) // Empty start
-        case one :: Nil =>
-          // Just one graph, no union required
+        case one :: Nil => // Just one graph, no union required
           relational.Start(one, tagStrategy = computeRetaggings(Map(one -> context.resolveGraph(one).tags)))
         case several =>
           val onGraphPlans = several.map(qgn => relational.Start[T](qgn))
@@ -65,7 +64,7 @@ object ConstructGraphPlanner {
 
     val unionTagStrategy: Map[QualifiedGraphName, Map[Int, Int]] = onGraphPlan.tagStrategy
 
-    val LogicalPatternGraph(schema, clonedVarsToInputVars, newEntities, sets, _, name) = construct
+    val LogicalPatternGraph(schema, clonedVarsToInputVars, createdEntities, sets, _, name) = construct
 
     val matchGraphs: Set[QualifiedGraphName] = clonedVarsToInputVars.values.map(_.cypherType.graph.get).toSet
     val allGraphs = unionTagStrategy.keySet ++ matchGraphs
@@ -88,188 +87,185 @@ object ConstructGraphPlanner {
       case (op, (alias, original)) => op.retagVariable(alias, constructTagStrategy(original.cypherType.graph.get))
     }
 
-    // Construct NEW entities
-    val (newEntityTags, constructedEntitiesOp) = {
-      if (newEntities.isEmpty) {
+    // Construct CREATEd entities
+    val (createdEntityTags, constructedEntitiesOp) = {
+      if (createdEntities.isEmpty) {
         Set.empty[Int] -> retagBaseTableOp
       } else {
-        val newEntityTag = pickFreeTag(constructTagStrategy)
-        val entitiesOp = planConstructEntities(retagBaseTableOp, newEntities, newEntityTag)
+        val createdEntityTag = pickFreeTag(constructTagStrategy)
+        val entitiesOp = planConstructEntities(retagBaseTableOp, createdEntities, createdEntityTag)
 
-        val propertiesToAdd = sets.map {
+        val setValueForExprTuples = sets.flatMap {
           case SetPropertyItem(propertyKey, v, valueExpr) =>
-            valueExpr -> Property(v, PropertyKey(propertyKey))(valueExpr.cypherType)
+            List(valueExpr -> Property(v, PropertyKey(propertyKey))(valueExpr.cypherType))
           case SetLabelItem(v, labels) =>
-            labels.map { label =>
+            labels.toList.map { label =>
               v.cypherType.material match {
                 case _: CTNode => TrueLit -> expr.HasLabel(v, Label(label))(CTBoolean)
-                case other => throw UnsupportedOperationException(s"Cannot set a label or relType on $other")
+                case other => throw UnsupportedOperationException(s"Cannot set a label on $other")
               }
             }
-
-        Set(newEntityTag) -> entitiesOp.addInto(propertiesToAdd: _*)
         }
+        Set(createdEntityTag) -> entitiesOp.addInto(setValueForExprTuples: _*)
       }
-
-      // Remove all vars that were part the original pattern graph DF, except variables that were CLONEd without an alias
-      val allInputVars = aliasOp.header.vars
-      val originalVarsToKeep = clonedVarsToInputVars.keySet -- aliasClones.keySet
-      val varsToRemoveFromTable = allInputVars -- originalVarsToKeep
-
-      val patternGraphTableOp = if (varsToRemoveFromTable.isEmpty) {
-        constructedEntitiesOp
-      } else {
-        relational.Drop(constructedEntitiesOp, varsToRemoveFromTable)
-      }
-
-      val tagsUsed = constructTagStrategy.foldLeft(newEntityTags) {
-        case (tags, (qgn, remapping)) =>
-          val remappedTags = tagsForGraph(qgn).map(remapping)
-          tags ++ remappedTags
-      }
-
-      val patternGraph = context.session.graphs.singleTableGraph(patternGraphTableOp, schema, tagsUsed)
-
-      val graph = if (onGraph == context.session.graphs.empty) {
-        context.session.graphs.unionGraph(patternGraph)
-      } else {
-        context.session.graphs.unionGraph(Map(identityRetaggings(onGraph), identityRetaggings(patternGraph)))
-      }
-
-      val constructOp = ConstructGraph(inputTablePlan, graph, name, constructTagStrategy, construct, context)
-
-      context.constructedGraphCatalog += (construct.qualifiedGraphName -> graph)
-
-      constructOp
     }
 
-    def pickFreeTag(tagStrategy: Map[QualifiedGraphName, Map[Int, Int]]): Int = {
-      val usedTags = tagStrategy.values.flatMap(_.values).toSet
-      Tags.pickFreeTag(usedTags)
+    // Remove all vars that were part the original pattern graph DF, except variables that were CLONEd without an alias
+    val allInputVars = aliasOp.header.vars
+    val originalVarsToKeep = clonedVarsToInputVars.keySet -- aliasClones.keySet
+    val varsToRemoveFromTable = allInputVars -- originalVarsToKeep
+
+    val patternGraphTableOp = constructedEntitiesOp.drop(varsToRemoveFromTable)
+
+    val tagsUsed = constructTagStrategy.foldLeft(createdEntityTags) {
+      case (tags, (qgn, remapping)) =>
+        val remappedTags = tagsForGraph(qgn).map(remapping)
+        tags ++ remappedTags
     }
 
-    def identityRetaggings[T <: Table[T]](g: RelationalCypherGraph[T]): (RelationalCypherGraph[T], Map[Int, Int]) = {
-      g -> g.tags.zip(g.tags).toMap
+    val patternGraph = context.session.graphs.singleTableGraph(patternGraphTableOp, schema, tagsUsed)
+
+    val graph = if (onGraph == context.session.graphs.empty) {
+      context.session.graphs.unionGraph(patternGraph)
+    } else {
+      context.session.graphs.unionGraph(Map(identityRetaggings(onGraph), identityRetaggings(patternGraph)))
     }
 
-    def planConstructEntities[T <: Table[T]](
-      inOp: RelationalOperator[T],
-      toCreate: Set[ConstructedEntity],
-      newEntityTag: Int
-    ): RelationalOperator[T] = {
+    val constructOp = ConstructGraph(inputTablePlan, graph, name, constructTagStrategy, construct, context)
 
-      // Construct nodes before relationships, as relationships might depend on nodes
-      val nodes: Set[ConstructedNode] = toCreate.collect {
-        case c: ConstructedNode if !inOp.header.vars.contains(c.v) => c
-      }
-      val rels: Set[ConstructedRelationship] = toCreate.collect {
-        case r: ConstructedRelationship if !inOp.header.vars.contains(r.v) => r
-      }
+    context.constructedGraphCatalog += (construct.qualifiedGraphName -> graph)
 
-      val (_, nodesToCreate) = nodes.foldLeft(0 -> Seq.empty[(Expr, Expr)]) {
-        case ((nextColumnPartitionId, nodeProjections), nextNodeToConstruct) =>
-          (nextColumnPartitionId + 1) -> (nodeProjections ++ computeNodeProjections(inOp, newEntityTag, nextColumnPartitionId, nodes.size, nextNodeToConstruct))
-      }
-
-      val createdNodesOp = inOp.addInto(nodesToCreate.map { case (into, value) => value -> into }: _*)
-
-      val (_, relsToCreate) = rels.foldLeft(0 -> Seq.empty[(Expr, Expr)]) {
-        case ((nextColumnPartitionId, relProjections), nextRelToConstruct) =>
-          (nextColumnPartitionId + 1) -> (relProjections ++ computeRelationshipProjections(createdNodesOp, newEntityTag, nextColumnPartitionId, rels.size, nextRelToConstruct))
-      }
-
-      createdNodesOp.addInto(relsToCreate.map { case (into, value) => value -> into }: _*)
-    }
-
-    def computeNodeProjections[T <: Table[T]](
-      inOp: RelationalOperator[T],
-      newEntityTag: Int,
-      columnIdPartition: Int,
-      numberOfColumnPartitions: Int,
-      node: ConstructedNode
-    ): Map[Expr, Expr] = {
-
-      val idTuple = node.v -> generateId(columnIdPartition, numberOfColumnPartitions).setTag(newEntityTag)
-
-      val copiedLabelTuples = node.baseEntity match {
-        case Some(origNode) => copyExpressions(inOp, node.v)(_.labelsFor(origNode))
-        case None => Map.empty
-      }
-
-      val newLabelTuples = node.labels.map {
-        label => HasLabel(node.v, label)(CTBoolean) -> TrueLit
-      }.toMap
-
-      val propertyTuples = node.baseEntity match {
-        case Some(origNode) => copyExpressions(inOp, node.v)(_.propertiesFor(origNode))
-        case None => Map.empty
-      }
-
-      newLabelTuples ++
-        copiedLabelTuples ++
-        propertyTuples +
-        idTuple
-    }
-
-    def computeRelationshipProjections[T <: Table[T]](
-      inOp: RelationalOperator[T],
-      newEntityTag: Int,
-      columnIdPartition: Int,
-      numberOfColumnPartitions: Int,
-      toConstruct: ConstructedRelationship
-    ): Map[Expr, Expr] = {
-      val ConstructedRelationship(rel, source, target, typOpt, baseRelOpt) = toConstruct
-
-      // id needs to be generated
-      val idTuple = rel -> generateId(columnIdPartition, numberOfColumnPartitions).setTag(newEntityTag)
-
-      // source and target are present: just copy
-      val sourceTuple = {
-        StartNode(rel)(CTInteger) -> source
-      }
-      val targetTuple = {
-        EndNode(rel)(CTInteger) -> target
-      }
-
-      val typeTuple: Map[Expr, Expr] = {
-        typOpt match {
-          // type is set
-          case Some(t) =>
-            Map(HasType(rel, RelType(t))(CTBoolean) -> TrueLit)
-          case None =>
-            // When no type is present, it needs to be a copy of a base relationship
-            copyExpressions(inOp, rel)(_.typesFor(baseRelOpt.get))
-        }
-      }
-
-      val propertyTuples: Map[Expr, Expr] = baseRelOpt match {
-        case Some(baseRel) =>
-          copyExpressions(inOp, rel)(_.propertiesFor(baseRel))
-        case None => Map.empty
-      }
-
-      propertyTuples ++ typeTuple + idTuple + sourceTuple + targetTuple
-    }
-
-    def copyExpressions[E <: Expr, T <: Table[T]](inOp: RelationalOperator[T], targetVar: Var)
-      (extractor: RecordHeader => Set[E]): Map[Expr, Expr] = {
-      val origExprs = extractor(inOp.header)
-      val copyExprs = origExprs.map(_.withOwner(targetVar))
-      copyExprs.zip(origExprs).toMap
-    }
-
-    // TODO: improve documentation and add specific tests
-    def generateId(columnIdPartition: Int, numberOfColumnPartitions: Int): Expr = {
-      val columnPartitionBits = math.log(numberOfColumnPartitions).floor.toInt + 1
-      val totalIdSpaceBits = 33
-      val columnIdShift = totalIdSpaceBits - columnPartitionBits
-
-      // id needs to be generated
-      // Limits the system to 500 mn partitions
-      // The first half of the id space is protected
-      val columnPartitionOffset = columnIdPartition.toLong << columnIdShift
-
-      Add(MonotonicallyIncreasingId(), IntegerLit(columnPartitionOffset)(CTInteger))(CTInteger)
-    }
-
+    constructOp
   }
+
+  def pickFreeTag(tagStrategy: Map[QualifiedGraphName, Map[Int, Int]]): Int = {
+    val usedTags = tagStrategy.values.flatMap(_.values).toSet
+    Tags.pickFreeTag(usedTags)
+  }
+
+  def identityRetaggings[T <: Table[T]](g: RelationalCypherGraph[T]): (RelationalCypherGraph[T], Map[Int, Int]) = {
+    g -> g.tags.zip(g.tags).toMap
+  }
+
+  def planConstructEntities[T <: Table[T]](
+    inOp: RelationalOperator[T],
+    toCreate: Set[ConstructedEntity],
+    createdEntityTag: Int
+  ): RelationalOperator[T] = {
+
+    // Construct nodes before relationships, as relationships might depend on nodes
+    val nodes: Set[ConstructedNode] = toCreate.collect {
+      case c: ConstructedNode if !inOp.header.vars.contains(c.v) => c
+    }
+    val rels: Set[ConstructedRelationship] = toCreate.collect {
+      case r: ConstructedRelationship if !inOp.header.vars.contains(r.v) => r
+    }
+
+    val (_, nodesToCreate) = nodes.foldLeft(0 -> Seq.empty[(Expr, Expr)]) {
+      case ((nextColumnPartitionId, nodeProjections), nextNodeToConstruct) =>
+        (nextColumnPartitionId + 1) -> (nodeProjections ++ computeNodeProjections(inOp, createdEntityTag, nextColumnPartitionId, nodes.size, nextNodeToConstruct))
+    }
+
+    val createdNodesOp = inOp.addInto(nodesToCreate.map { case (into, value) => value -> into }: _*)
+
+    val (_, relsToCreate) = rels.foldLeft(0 -> Seq.empty[(Expr, Expr)]) {
+      case ((nextColumnPartitionId, relProjections), nextRelToConstruct) =>
+        (nextColumnPartitionId + 1) ->
+          (relProjections ++ computeRelationshipProjections(createdNodesOp, createdEntityTag, nextColumnPartitionId, rels.size, nextRelToConstruct))
+    }
+
+    createdNodesOp.addInto(relsToCreate.map { case (into, value) => value -> into }: _*)
+  }
+
+  def computeNodeProjections[T <: Table[T]](
+    inOp: RelationalOperator[T],
+    createdEntityTag: Int,
+    columnIdPartition: Int,
+    numberOfColumnPartitions: Int,
+    node: ConstructedNode
+  ): Map[Expr, Expr] = {
+
+    val idTuple = node.v -> generateId(columnIdPartition, numberOfColumnPartitions).setTag(createdEntityTag)
+
+    val copiedLabelTuples = node.baseEntity match {
+      case Some(origNode) => copyExpressions(inOp, node.v)(_.labelsFor(origNode))
+      case None => Map.empty
+    }
+
+    val createdLabelTuples = node.labels.map {
+      label => HasLabel(node.v, label)(CTBoolean) -> TrueLit
+    }.toMap
+
+    val propertyTuples = node.baseEntity match {
+      case Some(origNode) => copyExpressions(inOp, node.v)(_.propertiesFor(origNode))
+      case None => Map.empty
+    }
+
+    createdLabelTuples ++
+      copiedLabelTuples ++
+      propertyTuples +
+      idTuple
+  }
+
+  def computeRelationshipProjections[T <: Table[T]](
+    inOp: RelationalOperator[T],
+    createdEntityTag: Int,
+    columnIdPartition: Int,
+    numberOfColumnPartitions: Int,
+    toConstruct: ConstructedRelationship
+  ): Map[Expr, Expr] = {
+    val ConstructedRelationship(rel, source, target, typOpt, baseRelOpt) = toConstruct
+
+    // id needs to be generated
+    val idTuple = rel -> generateId(columnIdPartition, numberOfColumnPartitions).setTag(createdEntityTag)
+
+    // source and target are present: just copy
+    val sourceTuple = {
+      StartNode(rel)(CTInteger) -> source
+    }
+    val targetTuple = {
+      EndNode(rel)(CTInteger) -> target
+    }
+
+    val typeTuple: Map[Expr, Expr] = {
+      typOpt match {
+        // type is set
+        case Some(t) =>
+          Map(HasType(rel, RelType(t))(CTBoolean) -> TrueLit)
+        case None =>
+          // When no type is present, it needs to be a copy of a base relationship
+          copyExpressions(inOp, rel)(_.typesFor(baseRelOpt.get))
+      }
+    }
+
+    val propertyTuples: Map[Expr, Expr] = baseRelOpt match {
+      case Some(baseRel) =>
+        copyExpressions(inOp, rel)(_.propertiesFor(baseRel))
+      case None => Map.empty
+    }
+
+    propertyTuples ++ typeTuple + idTuple + sourceTuple + targetTuple
+  }
+
+  def copyExpressions[E <: Expr, T <: Table[T]](inOp: RelationalOperator[T], targetVar: Var)
+    (extractor: RecordHeader => Set[E]): Map[Expr, Expr] = {
+    val origExprs = extractor(inOp.header)
+    val copyExprs = origExprs.map(_.withOwner(targetVar))
+    copyExprs.zip(origExprs).toMap
+  }
+
+  // TODO: improve documentation and add specific tests
+  def generateId(columnIdPartition: Int, numberOfColumnPartitions: Int): Expr = {
+    val columnPartitionBits = math.log(numberOfColumnPartitions).floor.toInt + 1
+    val totalIdSpaceBits = 33
+    val columnIdShift = totalIdSpaceBits - columnPartitionBits
+
+    // id needs to be generated
+    // Limits the system to 500 mn partitions
+    // The first half of the id space is protected
+    val columnPartitionOffset = columnIdPartition.toLong << columnIdShift
+
+    Add(MonotonicallyIncreasingId(), IntegerLit(columnPartitionOffset)(CTInteger))(CTInteger)
+  }
+
+}

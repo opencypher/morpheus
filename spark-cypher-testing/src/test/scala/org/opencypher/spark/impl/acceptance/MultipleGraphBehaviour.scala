@@ -688,7 +688,7 @@ class MultipleGraphBehaviour extends CAPSTestSuite with ScanGraphInit {
     resultRelationship.relType should equal("KNOWS")
   }
 
-  it("constructs a new node") {
+  it("constructs a created node") {
     val query =
       """
         |CONSTRUCT

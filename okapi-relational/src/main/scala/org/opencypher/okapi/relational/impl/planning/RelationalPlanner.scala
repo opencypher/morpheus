@@ -297,14 +297,16 @@ object RelationalPlanner {
       if (valueIntos.isEmpty) op else relational.AddInto(op, valueIntos.toList)
     }
 
-    def drop(expressions: Set[Expr]): RelationalOperator[T] = {
-      val necessaryDrops = expressions.intersect(op.header.expressions)
+    def drop[E <: Expr](expressions: Set[E]): RelationalOperator[T] = {
+      val necessaryDrops = expressions.filter(op.header.expressions.contains)
       if (necessaryDrops.nonEmpty) {
-        relational.Drop(op, expressions)
+        relational.Drop(op, necessaryDrops)
       } else op
     }
 
-    def drop(expressions: Expr*): RelationalOperator[T] = drop(expressions.toSet)
+    def drop[E <: Expr](expressions: E*): RelationalOperator[T] = {
+      drop(expressions.toSet)
+    }
 
     def alias(aliases: AliasExpr*): RelationalOperator[T] = Alias(op, aliases)
 
