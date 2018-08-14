@@ -27,10 +27,10 @@
 package org.opencypher.okapi.ir.test.support
 
 import org.opencypher.okapi.testing.BaseTestSuite
-import org.opencypher.v9_1.ast.semantics.SemanticChecker
-import org.opencypher.v9_1.ast.{AstConstructionTestSupport, Statement}
-import org.opencypher.v9_1.parser.CypherParser
-import org.opencypher.v9_1.util.Rewriter
+import org.opencypher.v9_0.ast.semantics.SemanticChecker
+import org.opencypher.v9_0.ast.{AstConstructionTestSupport, Statement}
+import org.opencypher.v9_0.parser.CypherParser
+import org.opencypher.v9_0.util.Rewriter
 
 import scala.language.implicitConversions
 

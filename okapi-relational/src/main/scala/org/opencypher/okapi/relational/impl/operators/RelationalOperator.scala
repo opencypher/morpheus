@@ -340,11 +340,11 @@ final case class OrderBy[T <: Table[T]](
 ) extends RelationalOperator[T] {
 
   override lazy val _table: T = {
-    val tableSortItems: Seq[(String, Order)] = sortItems.map {
-      case Asc(expr) => header.column(expr) -> Ascending
-      case Desc(expr) => header.column(expr) -> Descending
+    val tableSortItems = sortItems.map {
+      case Asc(expr) => expr -> Ascending
+      case Desc(expr) => expr -> Descending
     }
-    in.table.orderBy(tableSortItems: _*)
+    in.table.orderBy(tableSortItems: _*)(header, context.parameters)
   }
 }
 

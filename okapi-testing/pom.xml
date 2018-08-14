@@ -28,7 +28,7 @@
 
     <dependency>
       <groupId>org.opencypher</groupId>
-      <artifactId>front-end-9.1</artifactId>
+      <artifactId>front-end-9.0</artifactId>
       <version>${dep.opencypher.front-end.version}</version>
     </dependency>
 

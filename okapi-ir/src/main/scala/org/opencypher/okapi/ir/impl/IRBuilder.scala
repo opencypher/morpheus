@@ -29,8 +29,8 @@ package org.opencypher.okapi.ir.impl
 import cats.implicits._
 import org.atnos.eff._
 import org.atnos.eff.all._
-import org.opencypher.v9_1.ast
-import org.opencypher.v9_1.{expressions => exp}
+import org.opencypher.v9_0.ast
+import org.opencypher.v9_0.{expressions => exp}
 import org.opencypher.okapi.api.graph.QualifiedGraphName
 import org.opencypher.okapi.api.schema.Schema
 import org.opencypher.okapi.api.types._
@@ -42,7 +42,7 @@ import org.opencypher.okapi.ir.api.pattern.Pattern
 import org.opencypher.okapi.ir.api.util.CompilationStage
 import org.opencypher.okapi.ir.impl.refactor.instances._
 import org.opencypher.okapi.ir.impl.util.VarConverters.RichIrField
-import org.opencypher.v9_1.util.InputPosition
+import org.opencypher.v9_0.util.InputPosition
 
 
 object IRBuilder extends CompilationStage[ast.Statement, CypherStatement[Expr], IRBuilderContext] {
@@ -159,9 +159,10 @@ object IRBuilder extends CompilationStage[ast.Statement, CypherStatement[Expr], 
           }
         } yield refs
 
-      case ast.With(distinct, ast.ReturnItems(_, items), _, _, _, None) =>
+      case ast.With(distinct, ast.ReturnItems(_, items), _, _, _, where) =>
         for {
           fieldExprs <- items.toList.traverse(convertReturnItem[R])
+          given <- convertWhere(where)
           context <- get[R, IRBuilderContext]
           blocks <- {
             val (agg, group) = fieldExprs.partition {
@@ -169,7 +170,7 @@ object IRBuilder extends CompilationStage[ast.Statement, CypherStatement[Expr], 
               case _ => false
             }
 
-            val (projectBlock, updatedRegistry1) = registerProjectBlock(context, group, source = context.workingGraph, distinct = distinct)
+            val (projectBlock, updatedRegistry1) = registerProjectBlock(context, group, given, context.workingGraph, distinct = distinct)
             val after = updatedRegistry1.lastAdded.toList
             val aggregationBlock =
               AggregationBlock[Expr](after, Aggregations(agg.toSet), group.map(_._1).toSet, context.workingGraph)

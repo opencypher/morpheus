@@ -203,9 +203,11 @@ object RelationalPlanner {
       case logical.OrderBy(sortItems: Seq[SortItem[Expr]], in, _) =>
         relational.OrderBy(process[T](in), sortItems)
 
-      case logical.Skip(expr, in, _) => relational.Skip(process[T](in), expr)
+      case logical.Skip(expr, in, _) =>
+        relational.Skip(process[T](in), expr)
 
-      case logical.Limit(expr, in, _) => relational.Limit(process[T](in), expr)
+      case logical.Limit(expr, in, _) =>
+        relational.Limit(process[T](in), expr)
 
       case logical.ReturnGraph(in, _) => relational.ReturnGraph(process[T](in))
 

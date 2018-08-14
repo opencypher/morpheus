@@ -600,7 +600,7 @@ class IrBuilderTest extends IrTestSuite {
       val inputSchema = Schema.empty
         .withNodePropertyKeys()()
         .withRelationshipPropertyKeys("A")("category" -> CTString)
-        .withRelationshipPropertyKeys("B")( "ports" -> CTInteger)
+        .withRelationshipPropertyKeys("B")("ports" -> CTInteger)
 
       val query =
         """

@@ -29,7 +29,7 @@ package org.opencypher.okapi.ir.impl
 import org.opencypher.okapi.api.types.CypherType
 import org.opencypher.okapi.impl.exception.NotImplementedException
 import org.opencypher.okapi.ir.api.expr._
-import org.opencypher.v9_1.expressions.{FunctionInvocation, functions}
+import org.opencypher.v9_0.expressions.{FunctionInvocation, functions}
 
 object FunctionUtils {
 

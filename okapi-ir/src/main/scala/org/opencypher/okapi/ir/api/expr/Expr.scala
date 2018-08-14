@@ -223,7 +223,7 @@ object FlattenOps {
   implicit class RichExpressions(exprs: Traversable[Expr]) {
 
     /**
-      * Flattens child expressions of type [[E]]
+      * Flattens child expressions
       */
     def flattenExprs[E <: Expr : ClassTag]: List[Expr] = {
       @tailrec def flattenRec(es: List[Expr], result: Set[Expr] = Set.empty): Set[Expr] = {

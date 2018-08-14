@@ -38,9 +38,9 @@ import org.opencypher.okapi.ir.api._
 import org.opencypher.okapi.ir.api.expr._
 import org.opencypher.okapi.ir.api.pattern._
 import org.opencypher.okapi.ir.api.util.FreshVariableNamer
-import org.opencypher.v9_1.expressions.SemanticDirection.{BOTH, INCOMING, OUTGOING}
-import org.opencypher.v9_1.expressions.{Expression, LogicalVariable, RelTypeName}
-import org.opencypher.v9_1.{expressions => ast}
+import org.opencypher.v9_0.expressions.SemanticDirection.{BOTH, INCOMING, OUTGOING}
+import org.opencypher.v9_0.expressions.{Expression, LogicalVariable, RelTypeName}
+import org.opencypher.v9_0.{expressions => ast}
 
 import scala.annotation.tailrec
 

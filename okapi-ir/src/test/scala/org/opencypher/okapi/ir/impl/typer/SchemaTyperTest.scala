@@ -31,8 +31,8 @@ import org.opencypher.okapi.api.schema.Schema
 import org.opencypher.okapi.api.types._
 import org.opencypher.okapi.ir.test.support.Neo4jAstTestSupport
 import org.opencypher.okapi.testing.BaseTestSuite
-import org.opencypher.v9_1.expressions.{Expression, Parameter}
-import org.opencypher.v9_1.util.symbols
+import org.opencypher.v9_0.expressions.{Expression, Parameter}
+import org.opencypher.v9_0.util.symbols
 import org.scalatest.mockito.MockitoSugar
 
 import scala.language.reflectiveCalls
@@ -82,8 +82,8 @@ class SchemaTyperTest extends BaseTestSuite with Neo4jAstTestSupport with Mockit
     implicit val context = typeTracker("a" -> CTNode)
 
     assertExpr.from("count(*)") shouldHaveInferredType CTInteger
-    assertExpr.from("count(a)") shouldHaveInferredType CTInteger
-    assertExpr.from("count(a.name)") shouldHaveInferredType CTInteger
+    assertExpr.from("count(a)") shouldHaveInferredType CTInteger.nullable
+    assertExpr.from("count(a.name)") shouldHaveInferredType CTInteger.nullable
   }
 
   test("typing toString()") {
@@ -362,17 +362,17 @@ class SchemaTyperTest extends BaseTestSuite with Neo4jAstTestSupport with Mockit
   test("typing of id function") {
     implicit val context = typeTracker("n" -> CTNode("Person"))
 
-    assertExpr.from("id(n)") shouldHaveInferredType CTInteger
+    assertExpr.from("id(n)") shouldHaveInferredType CTInteger.nullable
   }
 
-  test("typing of functions") {
-    assertExpr.from("timestamp()") shouldHaveInferredType CTInteger
+  it("types functions") {
+    assertExpr.from("timestamp()") shouldHaveInferredType CTInteger.nullable
     assertExpr.from("toInteger(1.0)") shouldHaveInferredType CTInteger.nullable
-    assertExpr.from("size([0, true, []])") shouldHaveInferredType CTInteger
+    assertExpr.from("size([0, true, []])") shouldHaveInferredType CTInteger.nullable
 
-    assertExpr.from("percentileDisc(1, 3.14)") shouldHaveInferredType CTInteger
-    assertExpr.from("percentileDisc(6.67, 3.14)") shouldHaveInferredType CTFloat
-    assertExpr.from("percentileDisc([1, 3.14][0], 3.14)") shouldHaveInferredType CTInteger
+    assertExpr.from("percentileDisc(1, 3.14)") shouldHaveInferredType CTInteger.nullable
+    assertExpr.from("percentileDisc(6.67, 3.14)") shouldHaveInferredType CTFloat.nullable
+    assertExpr.from("percentileDisc([1, 3.14][0], 3.14)") shouldHaveInferredType CTInteger.nullable
 
     // TODO: Making this work requires union types and changing how nullability works. Sad!
     //

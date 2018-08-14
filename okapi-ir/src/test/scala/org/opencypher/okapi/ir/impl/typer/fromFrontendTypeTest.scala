@@ -28,7 +28,7 @@ package org.opencypher.okapi.ir.impl.typer
 
 import org.opencypher.okapi.api.types._
 import org.opencypher.okapi.testing.BaseTestSuite
-import org.opencypher.v9_1.util.{symbols => frontend}
+import org.opencypher.v9_0.util.{symbols => frontend}
 import org.scalatest.Assertion
 
 class fromFrontendTypeTest extends BaseTestSuite {
@@ -55,7 +55,7 @@ class fromFrontendTypeTest extends BaseTestSuite {
 
   implicit class RichType(t: frontend.CypherType) {
     def shouldBeConvertedTo(other: CypherType): Assertion = {
-      fromFrontendType(t) should equal(other)
+      fromFrontendType(t) should equal(Some(other))
     }
   }
 }
