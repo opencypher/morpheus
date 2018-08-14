@@ -97,9 +97,13 @@ class LogicalPlanner(producer: LogicalOperatorProducer)
       case SourceBlock(irGraph: IRCatalogGraph) =>
         val qualifiedGraphName = irGraph.qualifiedGraphName
         val graphSource = context.catalog(irGraph.qualifiedGraphName.namespace)
-        producer.planStart(
-          LogicalCatalogGraph(qualifiedGraphName, graphSource.schema(qualifiedGraphName.graphName).get),
-          context.inputRecordFields)
+        val logicalGraph = LogicalCatalogGraph(qualifiedGraphName, graphSource.schema(qualifiedGraphName.graphName).get)
+
+        if (context.inputRecordFields.isEmpty) {
+          producer.planStart(logicalGraph)
+        } else {
+          producer.planStartWithDrivingTable(logicalGraph, context.inputRecordFields)
+        }
       case x =>
         throw NotImplementedException(s"Support for leaf planning of $x not yet implemented. Tree:\n${x.pretty}")
     }
@@ -398,7 +402,7 @@ class LogicalPlanner(producer: LogicalOperatorProducer)
   private def planStart(graph: IRGraph)(implicit context: LogicalPlannerContext): Start = {
     val logicalGraph: LogicalGraph = resolveGraph(graph, Set.empty)
 
-    producer.planStart(logicalGraph, context.inputRecordFields)
+    producer.planStart(logicalGraph)
   }
 
   private def planFromGraph(graph: LogicalGraph, prev: LogicalOperator)(
@@ -467,7 +471,7 @@ class LogicalPlanner(producer: LogicalOperatorProducer)
 
       val (firstPlan, remaining) = if (solved.isEmpty) { // there is no connection to the previous plan
         val field = nodes.head
-        if (plan.solved.fields.nonEmpty) { // there are already fields in the previous plan, we need to plan a cartesian product
+        if (plan.fields.nonEmpty) { // there are already fields in the previous plan, we need to plan a cartesian product
           producer.planCartesianProduct(plan, nodePlan(planStart(graph), field)) -> nodes.tail
         } else { // there are no previous results, it's safe to plan a node scan
           nodePlan(plan, field) -> nodes.tail

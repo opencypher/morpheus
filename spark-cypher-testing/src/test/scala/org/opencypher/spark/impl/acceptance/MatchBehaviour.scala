@@ -360,7 +360,7 @@ class MatchBehaviour extends CAPSTestSuite with DefaultGraphInit {
     }
   }
 
-  it("Broken start of demo query") {
+  it("can expand into with complex match and var length expand") {
     // Given
     val given = initGraph(
       """
@@ -373,7 +373,11 @@ class MatchBehaviour extends CAPSTestSuite with DefaultGraphInit {
       """.stripMargin)
 
     val result = given.cypher(
-      "MATCH (a:Person)-[:LIVES_IN]->(city:City)<-[:LIVES_IN]-(b:Person), (a)-[:KNOWS*1..2]->(b) RETURN *"
+      "MATCH (a:Person)-[:LIVES_IN]->(c:City)<-[:LIVES_IN]-(b:Person), (a)-[:KNOWS*1..2]->(b) RETURN a.name, b.name, c.name"
     )
+
+    result.records.toMapsWithCollectedEntities should equal(Bag(
+      CypherMap("a.name" -> "Philip", "b.name" -> "Stefan", "c.name" -> "The Pan-European Sprawl")
+    ))
   }
 }
