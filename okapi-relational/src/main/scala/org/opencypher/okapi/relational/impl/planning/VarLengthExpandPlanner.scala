@@ -149,20 +149,15 @@ trait VarLengthExpandPlanner[T <: Table[T]] {
     } else paths
 
     // fill shorter paths with nulls
-    val alignedOps = unalignedOps.map { exp =>
-      val nullExpressions = targetHeader.expressions -- exp.header.expressions
-      nullExpressions.foldLeft(exp) {
-        case (acc, expr) =>
-          // TODO: RelationalOperator[T]his is a planning performance killer, we need to squash these steps into a single table operation
-          val lit = NullLit(expr.cypherType.nullable)
-          val withoutLit = acc.addInto(lit, expr).drop(lit)
+    val alignedOps = unalignedOps.map { expansion =>
+      val nullExpressions = targetHeader.expressions -- expansion.header.expressions
 
-          if (withoutLit.header.column(expr) == targetHeader.column(expr)) {
-            withoutLit
-          } else {
-            relational.RenameColumns(withoutLit, Map(withoutLit.header.column(expr) -> targetHeader.column(expr)))
-          }
-      }
+      val expWithNullLits = expansion.addInto(nullExpressions.map(expr => NullLit(expr.cypherType.nullable) -> expr).toSeq: _*)
+      val exprsToRename = nullExpressions.filterNot(expr =>
+        expWithNullLits.header.column(expr) == targetHeader.column(expr)
+      )
+      val renameTuples = exprsToRename.map(expr => expWithNullLits.header.column(expr) -> targetHeader.column(expr))
+      expWithNullLits.renameColumns(renameTuples.toMap)
     }
 
     // union expands of different lengths
@@ -207,9 +202,7 @@ trait VarLengthExpandPlanner[T <: Table[T]] {
       case other => throw RecordHeaderException(s"$correctTarget can only own HasLabel and Property but found $other")
     }
 
-    (childMapping ++ missingMapping).foldLeft(physicalOp) {
-      case (acc, (f, t)) => acc.addInto(f, t)
-    }
+    physicalOp.addInto((childMapping ++ missingMapping).toSeq: _*)
   }
 
   /**

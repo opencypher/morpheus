@@ -67,18 +67,25 @@ object SparkTable {
       df.where(expr.asSparkSQLExpr(header, df, parameters))
     }
 
-    // TODO: correctly set cypher type on call site instead of boolean flag
-    override def withColumn(column: String, expr: Expr, preserveNullability: Boolean = true)
+    override def withColumns(columns: (Expr, String)*)
       (implicit header: RecordHeader, parameters: CypherMap): DataFrameTable = {
-      val withColumn = df.withColumn(column, expr.asSparkSQLExpr(header, df, parameters))
-
-      withColumn
+      val initialColumnNameToColumn: Map[String, Column] = df.columns.map(c => c -> df.col(c)).toMap
+      val updatedColumns = columns.foldLeft(initialColumnNameToColumn) { case (columnMap, (expr, columnName)) =>
+        val column = expr.asSparkSQLExpr(header, df, parameters).as(columnName)
+        columnMap + (columnName -> column)
+      }
       // TODO: Re-enable this check as soon as types (and their nullability) are correctly inferred in typing phase
-      //      if (preserveNullability && !expr.cypherType.isNullable) {
+      //      if (!expr.cypherType.isNullable) {
       //        withColumn.setNonNullable(column)
       //      } else {
       //        withColumn
       //      }
+      val existingColumnNames = df.columns
+      // Preserve order of existing columns
+      val columnsForSelect = existingColumnNames.map(updatedColumns) ++
+        updatedColumns.filterKeys(!existingColumnNames.contains(_)).values
+
+      df.select(columnsForSelect: _*)
     }
 
     override def drop(cols: String*): DataFrameTable = {
@@ -223,10 +230,7 @@ object SparkTable {
     override def cache(): DataFrameTable = {
       val planToCache = df.queryExecution.analyzed
       if (df.sparkSession.sharedState.cacheManager.lookupCachedData(planToCache).nonEmpty) {
-        // There seems to be a bug that only appears when using `df.cache`, `SingleTableGraph` and `ExistsSubQuery` together.
-        // Suspected Spark bug, need to investigate Jira issues for Spark related to `persist`. Maybe fixed in Spark 2.3.1?
-        // TODO: Set to `MEMORY_ONLY` once the problem is resolved
-        df.sparkSession.sharedState.cacheManager.cacheQuery(df, None, StorageLevel.NONE)
+        df.sparkSession.sharedState.cacheManager.cacheQuery(df, None, StorageLevel.MEMORY_ONLY)
       }
       this
     }

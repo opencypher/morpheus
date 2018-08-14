@@ -232,10 +232,15 @@ object AbstractTreeNode {
   }
 
   @inline private final def reflectCopyMethod(instance: Object): MethodMirror = {
-    val instanceMirror = mirror.reflect(instance)
-    val tpe = instanceMirror.symbol.asType.toType
-    val copyMethodSymbol = tpe.decl(TermName("copy")).asMethod
-    instanceMirror.reflectMethod(copyMethodSymbol)
+    try {
+      val instanceMirror = mirror.reflect(instance)
+      val tpe = instanceMirror.symbol.asType.toType
+      val copyMethodSymbol = tpe.decl(TermName("copy")).asMethod
+      instanceMirror.reflectMethod(copyMethodSymbol)
+    } catch {
+      case e: Exception =>
+        throw new UnsupportedOperationException(s"Could not reflect the copy method of $instance", e)
+    }
   }
 
 }

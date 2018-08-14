@@ -26,151 +26,163 @@
  */
 package org.opencypher.spark.impl.physical
 
-//class RelationalOptimizerTest extends CAPSTestSuite with GraphConstructionFixture {
-//
-////  TODO: Re-enable once caching optimizer is back
-//  def start(qgn: QualifiedGraphName, records: CAPSRecords)(implicit caps: CAPSSession): Start = {
-//    Start(qgn, Some(records))
-//  }
+import org.opencypher.okapi.api.graph.QualifiedGraphName
+import org.opencypher.okapi.api.types.CTNode
+import org.opencypher.okapi.ir.api.expr.Var
+import org.opencypher.okapi.logical.impl.LogicalCatalogGraph
+import org.opencypher.okapi.relational.api.planning.RelationalRuntimeContext
+import org.opencypher.okapi.relational.api.table.Table
+import org.opencypher.okapi.relational.impl.operators.{Cache, Join, RelationalOperator, SwitchContext}
+import org.opencypher.okapi.relational.impl.planning.RelationalPlanner._
+import org.opencypher.okapi.relational.impl.planning.{CrossJoin, RelationalOptimizer}
+import org.opencypher.spark.impl.table.SparkTable.DataFrameTable
+import org.opencypher.spark.testing.CAPSTestSuite
+import org.opencypher.spark.testing.fixture.GraphConstructionFixture
+import org.opencypher.spark.impl.CAPSConverters._
 
-//  test("Test insert Cache operators") {
-//    val plan = Join(
-//      Join(
-//        NodeScan(
-//          Start(testQualifiedGraphName, emptyRecords),
-//          Var("C")(CTNode)
-//        ),
-//        NodeScan(
-//          start(testQualifiedGraphName, emptyRecords),
-//          Var("B")(CTNode)
-//        )
-//      ),
-//      Join(
-//        NodeScan(
-//          start(testQualifiedGraphName, emptyRecords),
-//          Var("C")(CTNode)
-//        ),
-//        NodeScan(
-//          start(testQualifiedGraphName, emptyRecords),
-//          Var("B")(CTNode)
-//        )
-//      )
-//    )
-//
-//    implicit val context = RelationalOptimizerContext()
-//    val rewrittenPlan = new RelationalOptimizer().process(plan)
-//
-//    rewrittenPlan should equal(
-//      Join(
-//        Cache(
-//          Join(
-//            NodeScan(
-//              start(testQualifiedGraphName, emptyRecords),
-//              Var("C")(CTNode)
-//            ),
-//            NodeScan(
-//              start(testQualifiedGraphName, emptyRecords),
-//              Var("B")(CTNode)
-//            )
-//          )
-//        ),
-//        Cache(
-//          Join(
-//            NodeScan(
-//              start(testQualifiedGraphName, emptyRecords),
-//              Var("C")(CTNode)
-//            ),
-//            NodeScan(
-//              start(testQualifiedGraphName, emptyRecords),
-//              Var("B")(CTNode)
-//            )
-//          )
-//        )
-//      )
-//    )
-//  }
-//
-//  it("test caches expand into for triangle") {
-//    // Given
-//    val given = initGraph(
-//      """
-//        |CREATE (p1:Person {name: "Alice"})
-//        |CREATE (p2:Person {name: "Bob"})
-//        |CREATE (p3:Person {name: "Eve"})
-//        |CREATE (p1)-[:KNOWS]->(p2)
-//        |CREATE (p2)-[:KNOWS]->(p3)
-//        |CREATE (p1)-[:KNOWS]->(p3)
-//      """.stripMargin)
-//
-//    // When
-//    val result = given.cypher(
-//      """
-//        |MATCH (p1:Person)-[e1:KNOWS]->(p2:Person),
-//        |(p2)-[e2:KNOWS]->(p3:Person),
-//        |(p1)-[e3:KNOWS]->(p3)
-//        |RETURN p1.name, p2.name, p3.name
-//      """.stripMargin)
-//
-//    // Then
-//    val cacheOps = result.asCaps.plans.relationalPlan.get.collect { case c: Cache => c }
-//    cacheOps.size shouldBe 2
-//  }
-//
-//  it("test caching expand into after var expand") {
-//    // Given
-//    val given = initGraph(
-//      """
-//        |CREATE (p1:Person {name: "Alice"})
-//        |CREATE (p2:Person {name: "Bob"})
-//        |CREATE (comment:Comment)
-//        |CREATE (post1:Post {content: "asdf"})
-//        |CREATE (post2:Post {content: "foobar"})
-//        |CREATE (p1)-[:KNOWS]->(p2)
-//        |CREATE (p2)<-[:HASCREATOR]-(comment)
-//        |CREATE (comment)-[:REPLYOF]->(post1)-[:REPLYOF]->(post2)
-//        |CREATE (post2)-[:HASCREATOR]->(p1)
-//      """.stripMargin)
-//
-//    // When
-//    val result = given.cypher(
-//      """
-//        |MATCH (p1:Person)-[e1:KNOWS]->(p2:Person),
-//        |      (p2)<-[e2:HASCREATOR]-(comment:Comment),
-//        |      (comment)-[e3:REPLYOF*1..10]->(post:Post),
-//        |      (p1)<-[:HASCREATOR]-(post)
-//        |WHERE p1.name = "Alice"
-//        |RETURN p1.name, p2.name, post.content
-//      """.stripMargin
-//    )
-//
-//    // Then
-//    val cacheOps = result.asCaps.plans.relationalPlan.get.collect { case c: Cache => c }
-//    cacheOps.size shouldBe 348
-//  }
-//
-//  test("test caching optional match with duplicates") {
-//    // Given
-//    val given = initGraph(
-//      """
-//        |CREATE (p1:Person {name: "Alice"})
-//        |CREATE (p2:Person {name: "Bob"})
-//        |CREATE (p3:Person {name: "Eve"})
-//        |CREATE (p4:Person {name: "Paul"})
-//        |CREATE (p1)-[:KNOWS]->(p3)
-//        |CREATE (p2)-[:KNOWS]->(p3)
-//        |CREATE (p3)-[:KNOWS]->(p4)
-//      """.stripMargin)
-//
-//    // When
-//    val result = given.cypher(
-//      """
-//        |MATCH (a:Person)-[e1:KNOWS]->(b:Person)
-//        |OPTIONAL MATCH (b)-[e2:KNOWS]->(c:Person)
-//        |RETURN b.name, c.name
-//      """.stripMargin)
-//
-//    // Then
-//    val cacheOps = result.asCaps.plans.relationalPlan.get.collect { case c: Cache => c }
-//    cacheOps.size shouldBe 2
-//  }
-//}
+class RelationalOptimizerTest extends CAPSTestSuite with GraphConstructionFixture {
+
+  implicit class OpContainsCache[T <: Table[T]](op: RelationalOperator[T]) {
+    def containsCache: Boolean = op.exists {
+      case _: Cache[T] => true
+      case _ => false
+    }
+  }
+
+  test("Test insert Cache operators") {
+    implicit val context: RelationalRuntimeContext[DataFrameTable] = caps.basicRuntimeContext()
+
+    val g = initGraph(
+      """
+        |CREATE ()
+      """.stripMargin)
+
+    val qgn = QualifiedGraphName("session.test")
+    val logicalGraph = LogicalCatalogGraph(qgn, g.schema)
+    caps.catalog.store(qgn, g)
+
+    val aVar = Var("A")(CTNode)
+    val bVar = Var("B")(CTNode)
+    val cVar = Var("C")(CTNode)
+    val dVar = Var("D")(CTNode)
+
+    val aPlan = planScan(None, logicalGraph, aVar)
+    val bPlan = planScan(None, logicalGraph, bVar)
+
+    val cPlan = planScan(None, logicalGraph, cVar)
+    val dPlan = planScan(None, logicalGraph, dVar)
+
+    val join1 = aPlan.join(bPlan, Seq.empty, CrossJoin)
+    val join2 = cPlan.join(dPlan, Seq.empty, CrossJoin)
+
+    val plan = join1.join(join2, Seq.empty, CrossJoin)
+
+
+    val rewrittenPlan = RelationalOptimizer.process(plan)
+
+    val eachSideOfAllJoinsContainsCache = rewrittenPlan.transform[Boolean] {
+      case (Join(l, r, _, _), _) => l.containsCache && r.containsCache
+      case (_, childValues) => childValues.contains(true)
+    }
+
+    withClue(s"Each side of each join should contain a Cache operator. Actual tree was:\n${rewrittenPlan.pretty}") {
+      eachSideOfAllJoinsContainsCache should equal(true)
+    }
+  }
+
+  it("caches expand into for triangle") {
+    // Given
+    val given = initGraph(
+      """
+        |CREATE (p1:Person {name: "Alice"})
+        |CREATE (p2:Person {name: "Bob"})
+        |CREATE (p3:Person {name: "Eve"})
+        |CREATE (p1)-[:KNOWS]->(p2)
+        |CREATE (p2)-[:KNOWS]->(p3)
+        |CREATE (p1)-[:KNOWS]->(p3)
+      """.stripMargin)
+
+    // When
+    val result = given.cypher(
+      """
+        |MATCH (p1:Person)-[e1:KNOWS]->(p2:Person),
+        |(p2)-[e2:KNOWS]->(p3:Person),
+        |(p1)-[e3:KNOWS]->(p3)
+        |RETURN p1.name, p2.name, p3.name
+      """.stripMargin)
+
+    val optimizedRelationalPlan = result.asCaps.plans.relationalPlan.get
+
+    val cachedScans = optimizedRelationalPlan.transform[Int] {
+      case (s: SwitchContext[DataFrameTable], _) => if (s.containsCache) 1 else 0
+      case (_, childValues) => childValues.sum
+    }
+
+    // Then
+    withClue(
+      s"""Each scan should contain a Cache operator. Actual tree was:
+             ${optimizedRelationalPlan.pretty}""") {
+      cachedScans shouldBe 6
+    }
+  }
+
+  // Takes a long time to run with little extra info
+  test("test caching expand into after var expand") {
+    // Given
+    val given = initGraph(
+      """
+        |CREATE (p1:Person {name: "Alice"})
+        |CREATE (p2:Person {name: "Bob"})
+        |CREATE (comment:Comment)
+        |CREATE (post1:Post {content: "asdf"})
+        |CREATE (post2:Post {content: "foobar"})
+        |CREATE (p1)-[:KNOWS]->(p2)
+        |CREATE (p2)<-[:HASCREATOR]-(comment)
+        |CREATE (comment)-[:REPLYOF]->(post1)-[:REPLYOF]->(post2)
+        |CREATE (post2)-[:HASCREATOR]->(p1)
+      """.stripMargin)
+
+    // When
+    val result = given.cypher(
+      """
+        |MATCH (p1:Person)-[e1:KNOWS]->(p2:Person),
+        |      (p2)<-[e2:HASCREATOR]-(comment:Comment),
+        |      (comment)-[e3:REPLYOF*1..10]->(post:Post),
+        |      (p1)<-[:HASCREATOR]-(post)
+        |WHERE p1.name = "Alice"
+        |RETURN p1.name, p2.name, post.content
+      """.stripMargin
+    )
+
+    // Then
+    val cacheOps = result.asCaps.plans.relationalPlan.get.collect { case c: Cache[DataFrameTable] => c }
+    cacheOps.size shouldBe 115
+  }
+
+  // Adds little extra info
+  test("test caching optional match with duplicates") {
+    // Given
+    val given = initGraph(
+      """
+        |CREATE (p1:Person {name: "Alice"})
+        |CREATE (p2:Person {name: "Bob"})
+        |CREATE (p3:Person {name: "Eve"})
+        |CREATE (p4:Person {name: "Paul"})
+        |CREATE (p1)-[:KNOWS]->(p3)
+        |CREATE (p2)-[:KNOWS]->(p3)
+        |CREATE (p3)-[:KNOWS]->(p4)
+      """.stripMargin)
+
+    // When
+    val result = given.cypher(
+      """
+        |MATCH (a:Person)-[e1:KNOWS]->(b:Person)
+        |OPTIONAL MATCH (b)-[e2:KNOWS]->(c:Person)
+        |RETURN b.name, c.name
+      """.stripMargin)
+
+    // Then
+    val cacheOps = result.asCaps.plans.relationalPlan.get.collect { case c: Cache[DataFrameTable] => c }
+    cacheOps.size shouldBe 7
+  }
+}

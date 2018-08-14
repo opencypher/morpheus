@@ -95,12 +95,11 @@ object ConstructGraphPlanner {
         val newEntityTag = pickFreeTag(constructTagStrategy)
         val entitiesOp = planConstructEntities(retagBaseTableOp, newEntities, newEntityTag)
 
-        val entityTableWithProperties = sets.foldLeft(entitiesOp) {
-          case (currentOp, SetPropertyItem(propertyKey, v, valueExpr)) =>
-            val propertyExpression = Property(v, PropertyKey(propertyKey))(valueExpr.cypherType)
-            currentOp.addInto(valueExpr, propertyExpression)
+        val propertiesToAdd = sets.collect { case SetPropertyItem(propertyKey, v, valueExpr) =>
+          valueExpr -> Property(v, PropertyKey(propertyKey))(valueExpr.cypherType)
         }
-        Set(newEntityTag) -> entityTableWithProperties
+
+        Set(newEntityTag) -> entitiesOp.addInto(propertiesToAdd: _*)
       }
     }
 
@@ -132,6 +131,7 @@ object ConstructGraphPlanner {
     val constructOp = ConstructGraph(inputTablePlan, graph, name, constructTagStrategy, construct, context)
 
     context.constructedGraphCatalog += (construct.qualifiedGraphName -> graph)
+
     constructOp
   }
 
@@ -158,23 +158,19 @@ object ConstructGraphPlanner {
       case r: ConstructedRelationship if !inOp.header.vars.contains(r.v) => r
     }
 
-    val (_, nodesToCreate) = nodes.foldLeft(0 -> Map.empty[Expr, Expr]) {
+    val (_, nodesToCreate) = nodes.foldLeft(0 -> Seq.empty[(Expr, Expr)]) {
       case ((nextColumnPartitionId, nodeProjections), nextNodeToConstruct) =>
         (nextColumnPartitionId + 1) -> (nodeProjections ++ computeNodeProjections(inOp, newEntityTag, nextColumnPartitionId, nodes.size, nextNodeToConstruct))
     }
 
-    val createdNodesOp = nodesToCreate.foldLeft(inOp) { case (currentOp, (into, value)) =>
-      currentOp.addInto(value, into)
-    }
+    val createdNodesOp = inOp.addInto(nodesToCreate.map { case (into, value) => value -> into }: _*)
 
-    val (_, relsToCreate) = rels.foldLeft(0 -> Map.empty[Expr, Expr]) {
+    val (_, relsToCreate) = rels.foldLeft(0 -> Seq.empty[(Expr, Expr)]) {
       case ((nextColumnPartitionId, relProjections), nextRelToConstruct) =>
         (nextColumnPartitionId + 1) -> (relProjections ++ computeRelationshipProjections(createdNodesOp, newEntityTag, nextColumnPartitionId, rels.size, nextRelToConstruct))
     }
 
-    relsToCreate.foldLeft(createdNodesOp) { case (currentOp, (into, value)) =>
-      currentOp.addInto(value, into)
-    }
+    createdNodesOp.addInto(relsToCreate.map { case (into, value) => value -> into }: _*)
   }
 
   def computeNodeProjections[T <: Table[T]](
