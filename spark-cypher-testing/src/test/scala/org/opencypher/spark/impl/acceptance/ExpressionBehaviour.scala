@@ -684,4 +684,63 @@ class ExpressionBehaviour extends CAPSTestSuite with DefaultGraphInit {
       ))
     }
   }
+
+  describe("string concatenation") {
+    it("can concat two strings from literals") {
+      caps.cypher(
+        """
+          |RETURN "Hello" + "World" as hello
+        """.stripMargin).records.toMaps should equal(Bag(
+        CypherMap("hello" -> "HelloWorld")
+      ))
+    }
+
+    it("can concat two properties") {
+      val g = initGraph(
+        """
+          |CREATE (:A {v: "Hello"})
+          |CREATE (:B {v: "World"})
+        """.stripMargin)
+
+      g.cypher(
+        """
+          |MATCH (a:A), (b:B)
+          |RETURN a.v + b.v AS hello
+        """.stripMargin).records.toMaps should equal(Bag(
+        CypherMap("hello" -> "HelloWorld")
+      ))
+    }
+
+    it("can concat a string and an integer") {
+      val g = initGraph(
+        """
+          |CREATE (:A {v1: "Hello", v2: 42})
+          |CREATE (:B {v1: 42, v2: "Hello"})
+        """.stripMargin)
+
+      g.cypher(
+        """
+          |MATCH (a:A), (b:B)
+          |RETURN a.v1 + b.v1 AS hello, a.v2 + b.v2 as world
+        """.stripMargin).records.toMaps should equal(Bag(
+        CypherMap("hello" -> "Hello42", "world" -> "42Hello")
+      ))
+    }
+
+    it("can concat a string and a float") {
+      val g = initGraph(
+        """
+          |CREATE (:A {v1: "Hello", v2: 42.0})
+          |CREATE (:B {v1: 42.0, v2: "Hello"})
+        """.stripMargin)
+
+      g.cypher(
+        """
+          |MATCH (a:A), (b:B)
+          |RETURN a.v1 + b.v1 AS hello, a.v2 + b.v2 as world
+        """.stripMargin).records.toMaps should equal(Bag(
+        CypherMap("hello" -> "Hello42.0", "world" -> "42.0Hello")
+      ))
+    }
+  }
 }

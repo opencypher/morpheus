@@ -30,7 +30,7 @@ import org.apache.spark.sql.types._
 import org.apache.spark.sql.{Column, DataFrame, functions}
 import org.opencypher.okapi.api.types._
 import org.opencypher.okapi.api.value.CypherValue.{CypherList, CypherMap}
-import org.opencypher.okapi.impl.exception.{IllegalArgumentException, IllegalStateException, NotImplementedException}
+import org.opencypher.okapi.impl.exception.{IllegalArgumentException, IllegalStateException, NotImplementedException, UnsupportedOperationException}
 import org.opencypher.okapi.ir.api.expr._
 import org.opencypher.okapi.relational.impl.table.RecordHeader
 import org.opencypher.spark.impl.CAPSFunctions.{array_contains, get_node_labels, get_property_keys, get_rel_type, _}
@@ -148,7 +148,30 @@ object SparkSQLExprMapper {
         case GreaterThan(lhs, rhs) => compare(gt, lhs, rhs)
 
         // Arithmetics
-        case Add(lhs, rhs) => lhs.asSparkSQLExpr + rhs.asSparkSQLExpr
+        case Add(lhs, rhs) =>
+          val lhsCT = lhs.cypherType
+          val rhsCT = rhs.cypherType
+          lhsCT.material -> rhsCT.material match {
+            case (left: CTList, _) =>
+              throw UnsupportedOperationException("List concatenation is not supported")
+
+            case (_, right: CTList) =>
+              throw UnsupportedOperationException("List concatenation is not supported")
+
+            case (CTString, _) if rhsCT.subTypeOf(CTNumber).maybeTrue =>
+              functions.concat(lhs.asSparkSQLExpr, rhs.asSparkSQLExpr.cast(StringType))
+
+            case (_, CTString) if lhsCT.subTypeOf(CTNumber).maybeTrue =>
+              functions.concat(lhs.asSparkSQLExpr.cast(StringType), rhs.asSparkSQLExpr)
+
+            case (CTString, CTString) =>
+              functions.concat(lhs.asSparkSQLExpr, rhs.asSparkSQLExpr)
+
+            case _ =>
+              lhs.asSparkSQLExpr + rhs.asSparkSQLExpr
+          }
+
+
         case Subtract(lhs, rhs) => lhs.asSparkSQLExpr - rhs.asSparkSQLExpr
         case Multiply(lhs, rhs) => lhs.asSparkSQLExpr * rhs.asSparkSQLExpr
         case div@Divide(lhs, rhs) => (lhs.asSparkSQLExpr / rhs.asSparkSQLExpr).cast(div.cypherType.getSparkType)
