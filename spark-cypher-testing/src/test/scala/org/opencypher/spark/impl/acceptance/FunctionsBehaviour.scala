@@ -550,4 +550,27 @@ class FunctionsBehaviour extends CAPSTestSuite with DefaultGraphInit {
       )
     }
   }
+
+  describe("log10") {
+    it("on float value") {
+
+      val result = caps.cypher("RETURN log10(12.96)")
+
+      result.records.toMaps should equal(
+        Bag(
+          CypherMap("log10(12.96)" -> 1.1126050015345745)
+        )
+      )
+    }
+
+    it("on int value") {
+      val result = caps.cypher("RETURN log10(100)")
+
+      result.records.toMaps should equal(
+        Bag(
+          CypherMap("log10(100)" -> 2.0)
+        )
+      )
+    }
+  }
 }

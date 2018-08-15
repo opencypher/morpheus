@@ -233,8 +233,8 @@ object SparkSQLExprMapper {
         // Mathematical functions
 
         case Sqrt(e) => functions.sqrt(e.asSparkSQLExpr)
-
         case Log(e) => functions.log(e.asSparkSQLExpr)
+        case Log10(e) => functions.log(10.0, e.asSparkSQLExpr)
 
         // Bit operations
 
