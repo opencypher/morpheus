@@ -215,7 +215,7 @@ object IRBuilder extends CompilationStage[ast.Statement, CypherStatement[Expr], 
               agg ++ context.schemaFor(next)
             }
 
-            // Computing single nodes/rels constructed by CREATEA
+            // Computing single nodes/rels constructed by CREATEd
             // TODO: Throw exception if both clone alias and original field name are used in CREATE
             val createPattern = createPatterns.foldLeft(Pattern.empty[Expr])(_ ++ _)
 
