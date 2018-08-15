@@ -671,7 +671,15 @@ final case class BitwiseOr(lhs: Expr, rhs: Expr)(val cypherType: CypherType = CT
   override def withCypherType(ct: CypherType): BitwiseOr = copy()(ct)
 }
 
+// Mathematical functions
+
+final case class Sqrt(expr: Expr)(val cypherType: CypherType = CTWildcard) extends UnaryFunctionExpr {
+  override type This = Sqrt
+  override def withCypherType(ct: CypherType): Sqrt = copy()(ct)
+}
+
 // Aggregators
+
 sealed trait Aggregator extends Expr {
   def inner: Option[Expr]
 }

@@ -230,6 +230,10 @@ object SparkSQLExprMapper {
           case other => throw IllegalArgumentException("CTList", other)
         }
 
+        // Mathematical functions
+
+        case Sqrt(e) => functions.sqrt(e.asSparkSQLExpr)
+
         // Bit operations
 
         case BitwiseAnd(lhs, rhs) =>

@@ -39,7 +39,7 @@ import org.opencypher.okapi.api.types._
 import org.opencypher.okapi.ir.impl.parse.rewriter.ExistsPattern
 import org.opencypher.okapi.ir.impl.typer.SignatureConverter._
 import org.opencypher.v9_0.expressions._
-import org.opencypher.v9_0.expressions.functions.{Coalesce, Collect, Exists, Max, Min, ToBoolean, ToString}
+import org.opencypher.v9_0.expressions.functions.{Coalesce, Collect, Exists, Max, Min, Sqrt, ToBoolean, ToString}
 
 import scala.util.Try
 
@@ -465,9 +465,6 @@ object SchemaTyper {
         expr: FunctionInvocation,
         args: Seq[(Expression, CypherType)]): Eff[R, Set[FunctionSignature]] =
       expr.function match {
-        case f: TypeSignatures =>
-          val set = f.signatures.flatMap(_.convert).toSet
-          pure(set)
 
         case Min | Max =>
           pure[R, Set[FunctionSignature]](
@@ -482,6 +479,18 @@ object SchemaTyper {
               FunctionSignature(Seq(CTString), CTBoolean.nullable),
               FunctionSignature(Seq(CTBoolean), CTBoolean)
             ))
+
+        // TODO: remove as soon as https://github.com/opencypher/front-end/issues/27 is fixed
+        case Sqrt =>
+          pure[R, Set[FunctionSignature]](
+            Set(
+              FunctionSignature(Seq(CTFloat), CTFloat),
+              FunctionSignature(Seq(CTInteger), CTFloat)
+            ))
+
+        case f: TypeSignatures =>
+          val set = f.signatures.flatMap(_.convert).toSet
+          pure(set)
 
         case _ =>
           wrong[R, TyperError](UnsupportedExpr(expr)) >> pure(Set.empty)

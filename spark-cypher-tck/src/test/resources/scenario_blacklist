@@ -170,7 +170,6 @@ Feature "ReturnAcceptance2": Scenario "Do not fail when returning type of delete
 Feature "ReturnAcceptance2": Scenario "Fail when sorting on variable removed by DISTINCT"
 Feature "ReturnAcceptance2": Scenario "Return all variables"
 Feature "ReturnAcceptance2": Scenario "Setting and returning the size of a list property"
-Feature "ReturnAcceptance2": Scenario "`sqrt()` returning float values"
 Feature "ReturnAcceptance2": Scenario "Arithmetic expressions inside aggregation"
 Feature "ReturnAcceptance2": Scenario "Returning a projected map"
 Feature "ReturnAcceptance2": Scenario "Concatenating and returning the size of literal lists"
