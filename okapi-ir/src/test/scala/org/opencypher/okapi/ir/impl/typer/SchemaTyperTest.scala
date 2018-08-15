@@ -110,6 +110,13 @@ class SchemaTyperTest extends BaseTestSuite with Neo4jAstTestSupport with Mockit
     assertExpr.from("sqrt(b)") shouldHaveInferredType CTFloat
   }
 
+  it("can type log()") {
+    implicit val context: TypeTracker = typeTracker("a" -> CTFloat, "b" -> CTInteger)
+
+    assertExpr.from("log(a)") shouldHaveInferredType CTFloat
+    assertExpr.from("log(b)") shouldHaveInferredType CTFloat
+  }
+
   it("typing property of node without label") {
     implicit val context: TypeTracker = typeTracker("a" -> CTNode)
 
