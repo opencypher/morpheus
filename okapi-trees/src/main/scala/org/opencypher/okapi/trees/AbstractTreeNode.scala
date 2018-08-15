@@ -182,7 +182,7 @@ abstract class AbstractTreeNode[T <: AbstractTreeNode[T]: ClassTag] extends Tree
               require(newChildrenLength > childrenIndex, s"a list of children cannot be empty.")
               parameterArray(productIndex) = newChildren.slice(childrenIndex, newChildrenLength).toList
               childrenIndex = newChildrenLength
-            case _ => nonChildCase
+            case _ => nonChildCase()
           }
         case _ => nonChildCase
       }

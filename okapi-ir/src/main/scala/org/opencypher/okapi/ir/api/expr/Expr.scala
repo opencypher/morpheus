@@ -112,7 +112,7 @@ object Var {
 final case class ListSegment(index: Int, listVar: Var)(val cypherType: CypherType = CTWildcard) extends Var {
   override type This = ListSegment
 
-  override def owner(): Option[Var] = Some(listVar)
+  override def owner: Option[Var] = Some(listVar)
 
   override def withOwner(v: Var): ListSegment = copy(listVar = v)(cypherType)
 
@@ -205,7 +205,7 @@ final case class EndNode(rel: Expr)(val cypherType: CypherType = CTWildcard) ext
 
   override def toString = s"target($rel) :: $cypherType"
 
-  override def owner(): Option[Var] = rel match {
+  override def owner: Option[Var] = rel match {
     case v: Var => Some(v)
     case _ => None
   }
@@ -317,7 +317,7 @@ final case class HasLabel(node: Expr, label: Label)
 
   def inner: Expr = node
 
-  override def owner(): Option[Var] = node match {
+  override def owner: Option[Var] = node match {
     case v: Var => Some(v)
     case _ => None
   }
@@ -336,7 +336,7 @@ final case class HasType(rel: Expr, relType: RelType)
 
   def inner: Expr = rel
 
-  override def owner(): Option[Var] = rel match {
+  override def owner: Option[Var] = rel match {
     case v: Var => Some(v)
     case _ => None
   }
@@ -442,7 +442,7 @@ final case class Property(entity: Expr, key: PropertyKey)(val cypherType: Cypher
 
   override type This = Property
 
-  override def owner(): Option[Var] = entity match {
+  override def owner: Option[Var] = entity match {
     case v: Var => Some(v)
     case _ => None
   }

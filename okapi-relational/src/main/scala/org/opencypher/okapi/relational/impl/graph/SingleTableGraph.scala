@@ -58,7 +58,7 @@ class SingleTableGraph[T <: Table[T]](
 
   private val header = drivingTableOp.header
 
-  def show(): Unit = drivingTableOp.show
+  def show(): Unit = drivingTableOp.show()
 
   override def tables: Seq[T] = Seq(drivingTableOp.table)
 

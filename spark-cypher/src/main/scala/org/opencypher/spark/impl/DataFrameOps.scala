@@ -207,7 +207,7 @@ object DataFrameOps {
     /**
       * Prints Spark physical plan.
       */
-    def printPhysicalPlan: Unit = {
+    def printPhysicalPlan(): Unit = {
       println("Spark plan:")
       implicit val sc: SparkContext = df.sparkSession.sparkContext
       val sparkPlan: SparkPlan = df.queryExecution.executedPlan

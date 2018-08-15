@@ -71,7 +71,7 @@ abstract class IrTestSuite extends BaseTestSuite {
   case class DummyBlock[E](override val after: List[Block[E]] = List.empty) extends BasicBlock[DummyBinds[E], E](BlockType("dummy")) {
     override def binds: DummyBinds[E] = DummyBinds[E]()
 
-    override def where(): Set[E] = Set.empty[E]
+    override def where: Set[E] = Set.empty[E]
 
     override val graph: IRCatalogGraph = testGraph
   }

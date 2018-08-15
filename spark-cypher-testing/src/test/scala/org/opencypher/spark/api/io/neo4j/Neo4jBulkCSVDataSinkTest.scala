@@ -38,7 +38,7 @@ import org.opencypher.spark.testing.fixture.TeamDataFixture
 import scala.io.Source
 
 class Neo4jBulkCSVDataSinkTest extends CAPSTestSuite with TeamDataFixture with DefaultGraphInit {
-  protected var tempDir = new TemporaryFolder()
+  protected val tempDir = new TemporaryFolder()
   tempDir.create()
 
   val graph: RelationalCypherGraph[SparkTable.DataFrameTable] = initGraph(dataFixture)

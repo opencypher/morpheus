@@ -60,7 +60,7 @@ class TreeNodeTest extends FunSpec with Matchers {
     addList2.eval should equal(6)
     val addList3 =
       AddList(List(1), Number(0), 2, List(Number(2)), List[Object]("a", "b"))
-        .withNewChildren(Array(1, 2, 3, 4, 5, 6, 7).map(Number(_)))
+        .withNewChildren(Array(1, 2, 3, 4, 5, 6, 7).map(Number))
     addList3 should equal(AddList(List(1), Number(1), 2, List(2, 3, 4, 5, 6, 7).map(Number(_)), List[Object]("a", "b")))
     addList3.eval should equal(28)
   }

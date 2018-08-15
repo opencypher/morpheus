@@ -40,7 +40,7 @@ final case class CypherQuery[E](
 
   override def binds: Binds[E] = model.binds
 
-  override def where(): Set[E] = model.where
+  override def where: Set[E] = model.where
 
   override def graph: IRGraph = model.graph
 }

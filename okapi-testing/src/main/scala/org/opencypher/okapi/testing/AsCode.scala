@@ -74,7 +74,7 @@ object AsCode {
       implicit specialMappings: PartialFunction[Any, String] = Map.empty): String = {
     if (specialMappings.isDefinedAt(t)) specialMappings(t)
     else {
-      val elementString = t.map(anyAsCode(_)).mkString(", ")
+      val elementString = t.map(anyAsCode).mkString(", ")
       val simpleName = t.getClass.getSimpleName
       if (simpleName.endsWith("$")) {
         t.toString

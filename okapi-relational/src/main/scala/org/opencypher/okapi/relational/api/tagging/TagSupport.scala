@@ -34,11 +34,6 @@ object TagSupport {
     *
     * Optionally fixed retaggings can be supplied. In this case these retaggings are applied and for the remaining
     * graphs the required retaggings are computed on top of the fixed retaggings.
-    *
-    * @param graphs
-    * @param fixedRetaggings
-    * @tparam GraphKey
-    * @return
     */
   def computeRetaggings[GraphKey](
     graphs: Map[GraphKey, Set[Int]],
