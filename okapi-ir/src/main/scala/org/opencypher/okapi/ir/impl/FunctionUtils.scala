@@ -61,6 +61,7 @@ object FunctionUtils {
         case functions.Log => Log(expr.head)(cypherType)
         case functions.Log10 => Log10(expr.head)(cypherType)
         case functions.Exp => Exp(expr.head)(cypherType)
+        case functions.E => E()(cypherType)
         case a: functions.Function =>
           throw NotImplementedException(s"Support for converting ${a.name} function not yet implemented")
       }

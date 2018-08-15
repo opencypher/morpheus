@@ -44,6 +44,8 @@ object SparkSQLExprMapper {
 
   private val FALSE_LIT: Column = functions.lit(false)
 
+  private val E: Column = functions.lit(Math.E)
+
   implicit class RichExpression(expr: Expr) {
 
     def verify(implicit header: RecordHeader): Unit = {
@@ -236,6 +238,7 @@ object SparkSQLExprMapper {
         case Log(e) => functions.log(e.asSparkSQLExpr)
         case Log10(e) => functions.log(10.0, e.asSparkSQLExpr)
         case Exp(e) => functions.exp(e.asSparkSQLExpr)
+        case _: E => E
 
         // Bit operations
 

@@ -596,4 +596,17 @@ class FunctionsBehaviour extends CAPSTestSuite with DefaultGraphInit {
       )
     }
   }
+
+  describe("e") {
+    it("returns e") {
+
+      val result = caps.cypher("RETURN e()")
+
+      result.records.toMaps should equal(
+        Bag(
+          CypherMap("e()" -> Math.E)
+        )
+      )
+    }
+  }
 }

@@ -528,6 +528,11 @@ final case class MonotonicallyIncreasingId(cypherType: CypherType = CTInteger) e
   override def withCypherType(ct: CypherType): MonotonicallyIncreasingId = copy(ct)
 }
 
+sealed trait NullaryFunctionExpr extends FunctionExpr {
+
+  def exprs: IndexedSeq[Expr] = IndexedSeq.empty[Expr]
+}
+
 sealed trait UnaryFunctionExpr extends FunctionExpr {
 
   def expr: Expr
@@ -691,6 +696,11 @@ final case class Log10(expr: Expr)(var cypherType: CypherType = CTWildcard) exte
 final case class Exp(expr: Expr)(var cypherType: CypherType = CTWildcard) extends UnaryFunctionExpr {
   override type This = Exp
   override def withCypherType(ct: CypherType): Exp = copy()(ct)
+}
+
+final case class E()(var cypherType: CypherType = CTWildcard) extends NullaryFunctionExpr {
+  override type This = E
+  override def withCypherType(ct: CypherType): E = copy()(ct)
 }
 
 // Aggregators
