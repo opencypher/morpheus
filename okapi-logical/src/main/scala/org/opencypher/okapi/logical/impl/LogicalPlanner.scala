@@ -498,7 +498,13 @@ class LogicalPlanner(producer: LogicalOperatorProducer)
           case _: DirectedVarLengthRelationship => Directed
           case _: UndirectedVarLengthRelationship => Undirected
         }
-        producer.planBoundedVarLengthExpand(c.source, r, c.target, v.edgeType, direction, v.lower, v.upper.get, sourcePlan, targetPlan)
+
+        if(v.upper.getOrElse(Integer.MAX_VALUE) < v.lower) {
+          val solved = sourcePlan.solved ++ targetPlan.solved.withField(r)
+          EmptyRecords(sourcePlan.fields ++ targetPlan.fields, Start(targetPlan.graph, solved), solved)
+        } else {
+          producer.planBoundedVarLengthExpand(c.source, r, c.target, v.edgeType, direction, v.lower, v.upper.get, sourcePlan, targetPlan)
+        }
 
       case _: UndirectedConnection if sourcePlan == targetPlan =>
         producer.planExpandInto(c.source, r, c.target, Undirected, sourcePlan)
