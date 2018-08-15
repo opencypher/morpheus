@@ -698,14 +698,14 @@ class ExpressionBehaviour extends CAPSTestSuite with DefaultGraphInit {
     it("can concat two properties") {
       val g = initGraph(
         """
-          |CREATE (:A {v: "Hello"})
-          |CREATE (:B {v: "World"})
+          |CREATE (:A {a: "Hello"})
+          |CREATE (:B {b: "World"})
         """.stripMargin)
 
       g.cypher(
         """
           |MATCH (a:A), (b:B)
-          |RETURN a.v + b.v AS hello
+          |RETURN a.a + b.b AS hello
         """.stripMargin).records.toMaps should equal(Bag(
         CypherMap("hello" -> "HelloWorld")
       ))
@@ -714,14 +714,14 @@ class ExpressionBehaviour extends CAPSTestSuite with DefaultGraphInit {
     it("can concat a string and an integer") {
       val g = initGraph(
         """
-          |CREATE (:A {v1: "Hello", v2: 42})
-          |CREATE (:B {v1: 42, v2: "Hello"})
+          |CREATE (:A {a1: "Hello", a2: 42})
+          |CREATE (:B {b1: 42, b2: "Hello"})
         """.stripMargin)
 
       g.cypher(
         """
           |MATCH (a:A), (b:B)
-          |RETURN a.v1 + b.v1 AS hello, a.v2 + b.v2 as world
+          |RETURN a.a1 + b.b1 AS hello, a.a2 + b.b2 as world
         """.stripMargin).records.toMaps should equal(Bag(
         CypherMap("hello" -> "Hello42", "world" -> "42Hello")
       ))
@@ -730,14 +730,14 @@ class ExpressionBehaviour extends CAPSTestSuite with DefaultGraphInit {
     it("can concat a string and a float") {
       val g = initGraph(
         """
-          |CREATE (:A {v1: "Hello", v2: 42.0})
-          |CREATE (:B {v1: 42.0, v2: "Hello"})
+          |CREATE (:A {a1: "Hello", a2: 42.0})
+          |CREATE (:B {b1: 42.0, b2: "Hello"})
         """.stripMargin)
 
       g.cypher(
         """
           |MATCH (a:A), (b:B)
-          |RETURN a.v1 + b.v1 AS hello, a.v2 + b.v2 as world
+          |RETURN a.a1 + b.b1 AS hello, a.a2 + b.b2 as world
         """.stripMargin).records.toMaps should equal(Bag(
         CypherMap("hello" -> "Hello42.0", "world" -> "42.0Hello")
       ))
