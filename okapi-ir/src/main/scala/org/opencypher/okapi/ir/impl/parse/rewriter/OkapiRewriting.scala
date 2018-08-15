@@ -27,7 +27,7 @@
 package org.opencypher.okapi.ir.impl.parse.rewriter
 
 import org.opencypher.v9_0.frontend.phases.CompilationPhaseTracer.CompilationPhase.AST_REWRITE
-import org.opencypher.v9_0.frontend.phases.{BaseContext, BaseState, CNFNormalizer, Phase}
+import org.opencypher.v9_0.frontend.phases._
 import org.opencypher.v9_0.rewriting.rewriters.{Forced, literalReplacement}
 import org.opencypher.v9_0.util.{Rewriter, inSequence}
 
@@ -71,5 +71,5 @@ case object OkapiRewriting extends Phase[BaseContext, BaseState, BaseState] {
 
   override val description = "rewrite the AST into a shape that semantic analysis can be performed on"
 
-  override def postConditions = Set.empty
+  override def postConditions: Set[Condition] = Set.empty
 }

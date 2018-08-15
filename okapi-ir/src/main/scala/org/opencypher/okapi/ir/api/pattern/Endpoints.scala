@@ -48,19 +48,19 @@ case object Endpoints {
   }
 
   private case class OneSingleEndpoint(field: IRField) extends IdenticalEndpoints {
-    override def contains(f: IRField) = field == f
+    override def contains(f: IRField): Boolean = field == f
   }
   private case class TwoDifferentEndpoints(source: IRField, target: IRField) extends DifferentEndpoints {
-    override def flip = copy(target, source)
+    override def flip: TwoDifferentEndpoints = copy(target, source)
 
-    override def contains(f: IRField) = f == source || f == target
+    override def contains(f: IRField): Boolean = f == source || f == target
   }
 }
 
 sealed trait IdenticalEndpoints extends Endpoints {
   def field: IRField
 
-  final override def foreach[U](f: (IRField) => U): Unit = f(field)
+  final override def foreach[U](f: IRField => U): Unit = f(field)
 }
 
 sealed trait DifferentEndpoints extends Endpoints {
@@ -69,5 +69,5 @@ sealed trait DifferentEndpoints extends Endpoints {
 
   def flip: DifferentEndpoints
 
-  override def foreach[U](f: (IRField) => U): Unit = { f(source); f(target) }
+  override def foreach[U](f: IRField => U): Unit = { f(source); f(target) }
 }

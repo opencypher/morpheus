@@ -60,7 +60,7 @@ trait RecordMatchingTestSupport {
   }
 
   implicit class RichRecords(records: CypherRecords) {
-    val capsRecords = records.asCaps
+    val capsRecords: CAPSRecords = records.asCaps
 
     // TODO: Remove this and replace usages with toMapsWithCollectedEntities below
     // probably use this name though, and have not collecting be the special case

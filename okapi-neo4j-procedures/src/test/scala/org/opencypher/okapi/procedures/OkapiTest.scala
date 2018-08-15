@@ -54,7 +54,7 @@ class OkapiTest extends FunSuite with BeforeAndAfter with Matchers {
 
   test("Okapi schema for single label") {
     db.execute("CREATE (:A {val1: 'String', val2: 1})" + "CREATE (:A {val1: 'String', val2: 1.2})").close()
-    testResult(db, "CALL org.opencypher.okapi.procedures.schema", (result) => {
+    testResult(db, "CALL org.opencypher.okapi.procedures.schema", result => {
       val expected = Set(
         Map(
           "type" -> "Node",
@@ -79,7 +79,7 @@ class OkapiTest extends FunSuite with BeforeAndAfter with Matchers {
                  |CREATE (b2:B { type: 'B2', size: 5 })
                """.stripMargin).close()
 
-    testResult(db, "CALL org.opencypher.okapi.procedures.schema", (result) => {
+    testResult(db, "CALL org.opencypher.okapi.procedures.schema", result => {
       val expected = Set(
         Map(
           "type" -> "Node",
@@ -100,7 +100,7 @@ class OkapiTest extends FunSuite with BeforeAndAfter with Matchers {
 
   test("Okapi schema for single and multiple labels") {
     db.execute("CREATE (:A {val1: 'String'})" + "CREATE (:B {val2: 2})" + "CREATE (:A:B {val1: 'String', val2: 2})").close()
-    testResult(db, "CALL org.opencypher.okapi.procedures.schema", (result) => {
+    testResult(db, "CALL org.opencypher.okapi.procedures.schema", result => {
       val expected = Set(
         Map(
           "type" -> "Node",
@@ -133,7 +133,7 @@ class OkapiTest extends FunSuite with BeforeAndAfter with Matchers {
 
   test("Okapi schema for label with empty label") {
     db.execute("CREATE ({val1: 'String'})").close()
-    testResult(db, "CALL org.opencypher.okapi.procedures.schema", (result) => {
+    testResult(db, "CALL org.opencypher.okapi.procedures.schema", result => {
       val expected = Set(
         Map(
           "type" -> "Node",
@@ -148,7 +148,7 @@ class OkapiTest extends FunSuite with BeforeAndAfter with Matchers {
 
   test("Okapi schema for label without properties") {
     db.execute("CREATE (:A)").close()
-    testResult(db, "CALL org.opencypher.okapi.procedures.schema", (result) => {
+    testResult(db, "CALL org.opencypher.okapi.procedures.schema", result => {
       val expected = Set(
         Map(
           "type" -> "Node",
@@ -163,7 +163,7 @@ class OkapiTest extends FunSuite with BeforeAndAfter with Matchers {
 
   test("Okapi schema for nullable property") {
     db.execute("CREATE (:A {val: 1}), (:A)").close()
-    testResult(db, "CALL org.opencypher.okapi.procedures.schema", (result) => {
+    testResult(db, "CALL org.opencypher.okapi.procedures.schema", result => {
       val expected = Set(
         Map(
           "type" -> "Node",
@@ -178,7 +178,7 @@ class OkapiTest extends FunSuite with BeforeAndAfter with Matchers {
 
   test("Okapi schema for single relationship") {
     db.execute("CREATE (a:A)" + "CREATE (b:A)" + "CREATE (a)-[:REL {val1: 'String', val2: true}]->(b)" + "CREATE (a)-[:REL {val1: 'String', val2: 2.0}]->(b)").close()
-    testResult(db, "CALL org.opencypher.okapi.procedures.schema", (result) => {
+    testResult(db, "CALL org.opencypher.okapi.procedures.schema", result => {
       val expected = Set(
         Map(
           "type" -> "Node",
@@ -207,7 +207,7 @@ class OkapiTest extends FunSuite with BeforeAndAfter with Matchers {
 
   test("Okapi schema for relationship without properties") {
     db.execute("CREATE (a:A)" + "CREATE (b:A)" + "CREATE (a)-[:REL]->(b)").close()
-    testResult(db, "CALL org.opencypher.okapi.procedures.schema", (result) => {
+    testResult(db, "CALL org.opencypher.okapi.procedures.schema", result => {
       val expected = Set(
         Map(
           "type" -> "Node",
@@ -227,9 +227,10 @@ class OkapiTest extends FunSuite with BeforeAndAfter with Matchers {
     })
   }
 
-  test("Okapi schema with unsupported data types") {
+  // TODO: Finish this test
+  ignore("Okapi schema with unsupported data types") {
     db.execute("CREATE (a:A { foo: time(), bar : 42 })" + "CREATE (b:A)" + "CREATE (a)-[:REL]->(b)").close()
-    testResult(db, "CALL org.opencypher.okapi.procedures.schema", (result) => {
+    testResult(db, "CALL org.opencypher.okapi.procedures.schema", result => {
       val expected = Set(
         Map(
           "type" -> "Node",

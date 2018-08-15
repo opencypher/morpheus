@@ -63,7 +63,7 @@ case class InMemoryTestNode(
 
   type I = InMemoryTestNode
 
-  override def copy(id: Long = id, labels: Set[String] = labels, properties: CypherMap = properties) = {
+  override def copy(id: Long = id, labels: Set[String] = labels, properties: CypherMap = properties): InMemoryTestNode.this.type = {
     InMemoryTestNode(id, labels, properties).asInstanceOf[this.type]
   }
 }
@@ -78,7 +78,7 @@ case class InMemoryTestRelationship(
 
   type I = InMemoryTestRelationship
 
-  override def copy(id: Long = id, source: Long = startId, target: Long = endId, relType: String = relType, properties: CypherMap = properties) = {
+  override def copy(id: Long = id, source: Long = startId, target: Long = endId, relType: String = relType, properties: CypherMap = properties): InMemoryTestRelationship.this.type = {
     InMemoryTestRelationship(id, source, target, relType, properties).asInstanceOf[this.type]
   }
 

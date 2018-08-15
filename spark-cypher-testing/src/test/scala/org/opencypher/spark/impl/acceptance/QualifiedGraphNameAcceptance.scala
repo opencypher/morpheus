@@ -29,15 +29,17 @@ package org.opencypher.spark.impl.acceptance
 import org.opencypher.okapi.api.graph.{GraphName, Namespace}
 import org.opencypher.okapi.api.value.CypherValue.CypherMap
 import org.opencypher.okapi.impl.io.SessionGraphDataSource
+import org.opencypher.okapi.relational.api.graph.RelationalCypherGraph
 import org.opencypher.okapi.testing.Bag
 import org.opencypher.okapi.testing.Bag._
+import org.opencypher.spark.impl.table.SparkTable
 import org.opencypher.spark.testing.CAPSTestSuite
 
 class QualifiedGraphNameAcceptance extends CAPSTestSuite with DefaultGraphInit {
 
-  val defaultGraph = initGraph("CREATE (:A)-[:REL]->(:B)")
+  val defaultGraph: RelationalCypherGraph[SparkTable.DataFrameTable] = initGraph("CREATE (:A)-[:REL]->(:B)")
 
-  def defaultDS = {
+  def defaultDS: SessionGraphDataSource = {
     val ds = new SessionGraphDataSource()
     ds.store(GraphName("foo"), defaultGraph)
     ds.store(GraphName("foo.bar"), defaultGraph)

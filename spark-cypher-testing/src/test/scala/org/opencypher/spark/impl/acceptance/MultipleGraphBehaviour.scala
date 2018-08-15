@@ -29,6 +29,7 @@ package org.opencypher.spark.impl.acceptance
 import org.opencypher.okapi.api.schema.{PropertyKeys, Schema}
 import org.opencypher.okapi.api.types.{CTInteger, CTString}
 import org.opencypher.okapi.api.value.CypherValue.CypherMap
+import org.opencypher.okapi.relational.api.graph.RelationalCypherGraph
 import org.opencypher.okapi.relational.api.tagging.Tags._
 import org.opencypher.okapi.relational.impl.graph.UnionGraph
 import org.opencypher.okapi.relational.impl.operators.SwitchContext
@@ -36,6 +37,7 @@ import org.opencypher.okapi.testing.Bag
 import org.opencypher.okapi.testing.Bag._
 import org.opencypher.spark.api.value.{CAPSNode, CAPSRelationship}
 import org.opencypher.spark.impl.CAPSConverters._
+import org.opencypher.spark.impl.table.SparkTable
 import org.opencypher.spark.schema.CAPSSchema._
 import org.opencypher.spark.testing.CAPSTestSuite
 import org.scalatest.DoNotDiscover
@@ -45,13 +47,13 @@ import scala.language.existentials
 @DoNotDiscover
 class MultipleGraphBehaviour extends CAPSTestSuite with ScanGraphInit {
 
-  def testGraph1 = initGraph("CREATE (:Person {name: 'Mats'})")
+  def testGraph1: RelationalCypherGraph[SparkTable.DataFrameTable] = initGraph("CREATE (:Person {name: 'Mats'})")
 
-  def testGraph2 = initGraph("CREATE (:Person {name: 'Phil'})")
+  def testGraph2: RelationalCypherGraph[SparkTable.DataFrameTable] = initGraph("CREATE (:Person {name: 'Phil'})")
 
-  def testGraph3 = initGraph("CREATE (:Car {type: 'Toyota'})")
+  def testGraph3: RelationalCypherGraph[SparkTable.DataFrameTable] = initGraph("CREATE (:Car {type: 'Toyota'})")
 
-  def testGraphRels = initGraph(
+  def testGraphRels: RelationalCypherGraph[SparkTable.DataFrameTable] = initGraph(
     """|CREATE (mats:Person {name: 'Mats'})
        |CREATE (max:Person {name: 'Max'})
        |CREATE (max)-[:HAS_SIMILAR_NAME]->(mats)
@@ -636,7 +638,7 @@ class MultipleGraphBehaviour extends CAPSTestSuite with ScanGraphInit {
 
     val result = testGraph2.cypher(query).graph
 
-    result.schema should equal((testGraph1.schema ++ testGraph2.schema))
+    result.schema should equal(testGraph1.schema ++ testGraph2.schema)
     result.nodes("n").toMaps should equal(testGraph1.unionAll(testGraph2).nodes("n").toMaps)
     result.relationships("r").toMaps should equal(testGraph1.unionAll(testGraph2).relationships("r").toMaps)
   }

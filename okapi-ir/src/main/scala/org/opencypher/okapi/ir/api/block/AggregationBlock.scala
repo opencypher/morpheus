@@ -39,5 +39,5 @@ final case class AggregationBlock[E](
 }
 
 final case class Aggregations[E](pairs: Set[(IRField, E)]) extends Binds[E] {
-  override def fields = pairs.map(_._1)
+  override def fields: Set[IRField] = pairs.map(_._1)
 }

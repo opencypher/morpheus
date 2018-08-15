@@ -65,7 +65,7 @@ final case class Pattern[E](
     verifyFieldTypes(thisMap, otherMap)
 
     val conflicts = topology.keySet.intersect(other.topology.keySet).filter(k => topology(k) != other.topology(k))
-    if (conflicts.nonEmpty) throw new PatternConversionException(
+    if (conflicts.nonEmpty) throw PatternConversionException(
       s"Expected disjoint patterns but found conflicting connection for ${conflicts.head}:\n" +
         s"${topology(conflicts.head)} and ${other.topology(conflicts.head)}")
     val newTopology = topology ++ other.topology

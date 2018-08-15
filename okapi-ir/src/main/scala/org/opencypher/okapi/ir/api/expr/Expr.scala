@@ -112,7 +112,7 @@ object Var {
 final case class ListSegment(index: Int, listVar: Var)(val cypherType: CypherType = CTWildcard) extends Var {
   override type This = ListSegment
 
-  override def owner(): Option[Var] = Some(listVar)
+  override def owner: Option[Var] = Some(listVar)
 
   override def withOwner(v: Var): ListSegment = copy(listVar = v)(cypherType)
 
@@ -205,7 +205,7 @@ final case class EndNode(rel: Expr)(val cypherType: CypherType = CTWildcard) ext
 
   override def toString = s"target($rel) :: $cypherType"
 
-  override def owner(): Option[Var] = rel match {
+  override def owner: Option[Var] = rel match {
     case v: Var => Some(v)
     case _ => None
   }
@@ -259,7 +259,7 @@ final case class Ands(_exprs: List[Expr])(val cypherType: CypherType = CTBoolean
 
   override type This = Ands
 
-  def exprs = _exprs.toSet
+  def exprs: Set[Expr] = _exprs.toSet
 
   override def withoutType = s"ANDS(${_exprs.map(_.withoutType).mkString(", ")})"
 
@@ -285,7 +285,7 @@ final case class Ors(_exprs: List[Expr])(val cypherType: CypherType = CTBoolean)
 
   override type This = Ors
 
-  def exprs = _exprs.toSet
+  def exprs: Set[Expr] = _exprs.toSet
 
   override def withoutType = s"ORS(${_exprs.map(_.withoutType).mkString(", ")})"
 
@@ -303,7 +303,7 @@ final case class Not(expr: Expr)(val cypherType: CypherType = CTWildcard) extend
 
   override type This = Not
 
-  def inner = expr
+  def inner: Expr = expr
 
   override def withoutType = s"NOT ${expr.withoutType}"
 
@@ -315,9 +315,9 @@ final case class HasLabel(node: Expr, label: Label)
 
   override type This = HasLabel
 
-  def inner = node
+  def inner: Expr = node
 
-  override def owner(): Option[Var] = node match {
+  override def owner: Option[Var] = node match {
     case v: Var => Some(v)
     case _ => None
   }
@@ -334,9 +334,9 @@ final case class HasType(rel: Expr, relType: RelType)
 
   override type This = HasType
 
-  def inner = rel
+  def inner: Expr = rel
 
-  override def owner(): Option[Var] = rel match {
+  override def owner: Option[Var] = rel match {
     case v: Var => Some(v)
     case _ => None
   }
@@ -352,7 +352,7 @@ final case class IsNull(expr: Expr)(val cypherType: CypherType = CTWildcard) ext
 
   override type This = IsNull
 
-  def inner = expr
+  def inner: Expr = expr
 
   override def withoutType: String = s"type(${expr.withoutType}) IS NULL"
 
@@ -363,7 +363,7 @@ final case class IsNotNull(expr: Expr)(val cypherType: CypherType = CTWildcard) 
 
   override type This = IsNotNull
 
-  def inner = expr
+  def inner: Expr = expr
 
   override def withoutType: String = s"type(${expr.withoutType}) IS NOT NULL"
 
@@ -442,7 +442,7 @@ final case class Property(entity: Expr, key: PropertyKey)(val cypherType: Cypher
 
   override type This = Property
 
-  override def owner(): Option[Var] = entity match {
+  override def owner: Option[Var] = entity match {
     case v: Var => Some(v)
     case _ => None
   }

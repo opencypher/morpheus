@@ -45,8 +45,8 @@ import scala.language.implicitConversions
 
 class SparkSQLExprMapperTest extends BaseTestSuite with SparkSessionFixture {
 
-  val vA = Var("a")()
-  val vB = Var("b")()
+  val vA: Var = Var("a")()
+  val vB: Var = Var("b")()
   val header: RecordHeader = RecordHeader.from(vA, vB)
 
   it("can map subtract") {

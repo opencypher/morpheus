@@ -37,7 +37,7 @@ object PropertyKeys {
 
   def empty = Map.empty[String, CypherType]
 
-  def apply(tuple: (String, CypherType)*) = {
+  def apply(tuple: (String, CypherType)*): Map[String, CypherType] = {
     tuple.toMap
   }
 }

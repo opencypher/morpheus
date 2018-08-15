@@ -258,25 +258,6 @@ case class RecordHeader(exprToColumn: Map[Expr, String]) {
     RecordHeader(selectMappings)
   }
 
-  private def withReplacement(expr: AliasExpr): RecordHeader = {
-    val to = expr.expr
-    val alias = expr.alias
-    to match {
-      // Entity case
-      case entityExpr: Var if exprToColumn.contains(to) =>
-        val withEntityExpr = addExprToColumn(alias, exprToColumn(to))
-        ownedBy(entityExpr).filterNot(_ == entityExpr).foldLeft(withEntityExpr) {
-          case (current, nextExpr) => current.addExprToColumn(nextExpr.withOwner(alias), exprToColumn(nextExpr))
-        }
-
-      // Non-entity case
-      case e if exprToColumn.contains(e) => addExprToColumn(alias, exprToColumn(e))
-
-      // No expression to alias
-      case other => throw IllegalArgumentException(s"An expression in $this", s"Unknown expression $other")
-    }
-  }
-
   def withColumnsRenamed[T <: Expr](renamings: Map[T, String]): RecordHeader = {
     renamings.foldLeft(this) {
       case (currentHeader, (expr, newColumn)) => currentHeader.withColumnRenamed(expr, newColumn)

@@ -42,7 +42,7 @@ sealed abstract class LogicalOperator extends AbstractTreeNode[LogicalOperator] 
 
   def graph: LogicalGraph
 
-  override def args = super.args.filter {
+  override def args: Iterator[Any] = super.args.filter {
     case SolvedQueryModel(_, _) => false
     case _ => true
   }

@@ -41,7 +41,7 @@ final case class QueryModel[E](
 
   override def binds: Binds[E] = result.binds
 
-  override def where(): Set[E] = result.where
+  override def where: Set[E] = result.where
 
   override def graph: IRGraph = result.graph
 }

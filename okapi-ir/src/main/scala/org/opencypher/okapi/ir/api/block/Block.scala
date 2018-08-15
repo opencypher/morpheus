@@ -45,7 +45,7 @@ abstract class Block[E] extends AbstractTreeNode[Block[E]] {
 final case class BlockType(name: String)
 
 object Binds {
-  def empty[E] = new Binds[E] {
+  def empty[E]: Binds[E] = new Binds[E] {
     override def fields: Set[IRField] = Set.empty
   }
 }

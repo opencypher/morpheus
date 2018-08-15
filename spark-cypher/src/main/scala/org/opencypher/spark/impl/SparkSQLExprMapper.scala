@@ -55,7 +55,7 @@ object SparkSQLExprMapper {
       *   - Spark SQL returns null when comparing across types (from initial investigation)
       *   - We never have multiple types per column in CAPS (yet)
       */
-    def compare(comparator: Column => (Column => Column), lhs: Expr, rhs: Expr)
+    def compare(comparator: Column => Column => Column, lhs: Expr, rhs: Expr)
       (implicit header: RecordHeader, df: DataFrame, parameters: CypherMap): Column = {
       comparator(lhs.asSparkSQLExpr)(rhs.asSparkSQLExpr)
     }
@@ -152,10 +152,10 @@ object SparkSQLExprMapper {
           val lhsCT = lhs.cypherType
           val rhsCT = rhs.cypherType
           lhsCT.material -> rhsCT.material match {
-            case (left: CTList, _) =>
+            case (_: CTList, _) =>
               throw UnsupportedOperationException("List concatenation is not supported")
 
-            case (_, right: CTList) =>
+            case (_, _: CTList) =>
               throw UnsupportedOperationException("List concatenation is not supported")
 
             case (CTString, _) if rhsCT.subTypeOf(CTNumber).maybeTrue =>

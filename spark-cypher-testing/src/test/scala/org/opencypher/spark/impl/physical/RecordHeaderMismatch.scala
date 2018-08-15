@@ -41,7 +41,11 @@ import org.opencypher.spark.testing.CAPSTestSuite
 class RecordHeaderMismatch extends CAPSTestSuite {
 
   it("throws a schema exception when the physical record header does not match the one computed based on the schema") {
-    val buggyGraph = new RelationalCypherGraph[DataFrameTable] {
+    val buggyGraph: RelationalCypherGraph[DataFrameTable] {
+      type Session = CAPSSession
+
+      type Records = CAPSRecords
+    } = new RelationalCypherGraph[DataFrameTable] {
 
       override type Session = CAPSSession
 

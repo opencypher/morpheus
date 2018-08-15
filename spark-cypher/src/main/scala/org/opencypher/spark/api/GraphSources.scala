@@ -42,7 +42,7 @@ object GraphSources {
     filesPerTable: Option[Int] = Some(1)
   ) = FSGraphSources(rootPath, customFileSystem, filesPerTable)
 
-  def cypher = CypherGraphSources
+  def cypher: CypherGraphSources.type = CypherGraphSources
 }
 
 object FSGraphSources {

@@ -60,7 +60,6 @@ object RelTypePropertyMap {
     /**
       * Sets all cypher types of properties that are not common across all labels to nullable.
       *
-      * @param map property key map
       * @return updated property key map
       */
     def asNullable: RelTypePropertyMap = {

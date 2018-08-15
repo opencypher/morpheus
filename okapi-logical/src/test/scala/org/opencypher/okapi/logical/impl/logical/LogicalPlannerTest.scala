@@ -45,13 +45,13 @@ import scala.language.implicitConversions
 
 class LogicalPlannerTest extends BaseTestSuite with IrConstruction {
 
-  val nodeA = IRField("a")(CTNode)
-  val nodeB = IRField("b")(CTNode)
-  val nodeG = IRField("g")(CTNode)
-  val relR = IRField("r")(CTRelationship)
+  val nodeA: IRField = IRField("a")(CTNode)
+  val nodeB: IRField = IRField("b")(CTNode)
+  val nodeG: IRField = IRField("g")(CTNode)
+  val relR: IRField = IRField("r")(CTRelationship)
 
 
-  val emptySqm = SolvedQueryModel.empty
+  val emptySqm: SolvedQueryModel = SolvedQueryModel.empty
 
   it("converts load graph block") {
     val result = plan(irFor(leafBlock))

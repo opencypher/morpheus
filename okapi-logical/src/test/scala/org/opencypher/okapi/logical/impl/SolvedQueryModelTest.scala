@@ -39,7 +39,7 @@ import org.opencypher.okapi.testing.BaseTestSuite
 
 class SolvedQueryModelTest extends BaseTestSuite with IrConstruction {
 
-  implicit val uri = URI.create("test")
+  implicit val uri: URI = URI.create("test")
 
   test("add fields") {
     val s = SolvedQueryModel.empty.withField('a).withFields('b, 'c)

@@ -58,7 +58,7 @@ object IRBuilder extends CompilationStage[ast.Statement, CypherStatement[Expr], 
     output match {
       case Left(error) => throw IllegalStateException(s"Error during IR construction: $error")
       case Right((None, _)) => throw IllegalStateException(s"Failed to construct IR")
-      case Right(t@(Some(q), ctx)) => q -> ctx
+      case Right((Some(q), ctx)) => q -> ctx
     }
 
   override def extract(output: Out): CypherStatement[Expr] = getTuple(output)._1

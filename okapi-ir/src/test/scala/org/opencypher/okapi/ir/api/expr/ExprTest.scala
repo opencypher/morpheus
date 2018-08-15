@@ -54,13 +54,13 @@ class ExprTest extends FunSuite with Matchers {
   test("different expressions are not equal") {
     val p = Param("a")()
     val v = Var("a")()
-    p should not equal (v)
+    p should not equal v
   }
 
   test("different expressions have different hash codes") {
     val p = Param("a")()
     val v = Var("b")()
-    p.hashCode should not equal (v.hashCode)
+    p.hashCode should not equal v.hashCode
   }
 
   test("alias expression has same type") {

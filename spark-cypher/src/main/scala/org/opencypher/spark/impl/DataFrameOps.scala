@@ -26,6 +26,7 @@
  */
 package org.opencypher.spark.impl
 
+import org.apache.spark.SparkContext
 import org.apache.spark.sql.execution.SparkPlan
 import org.apache.spark.sql.types._
 import org.apache.spark.sql.{Column, DataFrame, Row}
@@ -206,9 +207,9 @@ object DataFrameOps {
     /**
       * Prints Spark physical plan.
       */
-    def printPhysicalPlan: Unit = {
+    def printPhysicalPlan(): Unit = {
       println("Spark plan:")
-      implicit val sc = df.sparkSession.sparkContext
+      implicit val sc: SparkContext = df.sparkSession.sparkContext
       val sparkPlan: SparkPlan = df.queryExecution.executedPlan
       val planString = sparkPlan.treeString(verbose = false).flatMap {
         case '\n' => Seq('\n', '\t')

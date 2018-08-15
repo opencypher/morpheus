@@ -60,7 +60,7 @@ class TreeNodeTest extends FunSpec with Matchers {
     addList2.eval should equal(6)
     val addList3 =
       AddList(List(1), Number(0), 2, List(Number(2)), List[Object]("a", "b"))
-        .withNewChildren(Array(1, 2, 3, 4, 5, 6, 7).map(Number(_)))
+        .withNewChildren(Array(1, 2, 3, 4, 5, 6, 7).map(Number))
     addList3 should equal(AddList(List(1), Number(1), 2, List(2, 3, 4, 5, 6, 7).map(Number(_)), List[Object]("a", "b")))
     addList3.eval should equal(28)
   }
@@ -234,19 +234,19 @@ class TreeNodeTest extends FunSpec with Matchers {
 
   case class AddList(dummy1: List[Int], first: CalcExpr, dummy2: Int, remaining: List[CalcExpr], dummy3: List[Object])
     extends CalcExpr {
-    def eval = first.eval + remaining.map(_.eval).sum
+    def eval: Int = first.eval + remaining.map(_.eval).sum
   }
 
   case class Add(left: CalcExpr, right: CalcExpr) extends CalcExpr {
-    def eval = left.eval + right.eval
+    def eval: Int = left.eval + right.eval
   }
 
   case class Number(v: Int) extends CalcExpr {
-    def eval = v
+    def eval: Int = v
   }
 
   case class NoOp(in: CalcExpr) extends CalcExpr {
-    def eval = in.eval
+    def eval: Int = in.eval
   }
 
 }

@@ -605,7 +605,7 @@ class AggregationBehaviour extends CAPSTestSuite with DefaultGraphInit {
         |CREATE (a)-[:BOUGHT]->(p1)
       """.stripMargin)
 
-    val recommendations = graph.cypher(
+    graph.cypher(
       """|MATCH (person:Person)-[:FRIEND_OF]-(friend:Person),
          |(friend)-[:IS]->(customer:Customer),
          |(customer)-[:BOUGHT]->(product:Product)

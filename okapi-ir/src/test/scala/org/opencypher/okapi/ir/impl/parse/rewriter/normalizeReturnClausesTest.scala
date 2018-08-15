@@ -30,7 +30,7 @@ import org.opencypher.okapi.ir.test.support.RewriterTestSupport
 import org.opencypher.okapi.testing.BaseTestSuite
 
 class normalizeReturnClausesTest extends BaseTestSuite with RewriterTestSupport {
-  override val rewriter = normalizeReturnClauses
+  override val rewriter: normalizeReturnClauses.type = normalizeReturnClauses
 
   test("do not rewrite unaliased return items of variables") {
     assertRewrite(

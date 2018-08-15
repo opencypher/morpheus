@@ -85,7 +85,7 @@ class MetaTest extends BaseTestSuite {
       .filterNot(_.contains("// tag::")).filterNot(_.contains("// end::")) // Filter documentation tags
       .filterNot(_ == "") // Filter empty lines
 
-    override def toString = lines.mkString("\n")
+    override def toString: String = lines.mkString("\n")
   }
 
   /**
