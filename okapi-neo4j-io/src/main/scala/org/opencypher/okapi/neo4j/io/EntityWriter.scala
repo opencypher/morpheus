@@ -28,9 +28,13 @@ package org.opencypher.okapi.neo4j.io
 
 import org.apache.logging.log4j.scala.Logging
 import org.neo4j.driver.internal.value.{ListValue, MapValue}
+import org.neo4j.driver.v1.exceptions.ClientException
 import org.neo4j.driver.v1.{Statement, Value}
+import org.opencypher.okapi.impl.exception.IllegalStateException
 import org.opencypher.okapi.neo4j.io.Neo4jHelpers.Neo4jDefaults._
 import org.opencypher.okapi.neo4j.io.Neo4jHelpers._
+
+import scala.util.{Failure, Success, Try}
 
 object EntityWriter extends Logging {
 
@@ -113,8 +117,25 @@ object EntityWriter extends Logging {
         reuseMap.put("batch", new ListValue(rowParameters: _*))
 
         reuseStatement.withUpdatedParameters(reuseParameters)
+        Try(session.run(reuseStatement).consume()) match {
+          case Success(_) => ()
 
-        session.run(reuseStatement).consume()
+          case Failure(exception: ClientException) if exception.getMessage.contains("already exists") =>
+            val originalMessage = exception.getMessage
+
+            val entityType = if (originalMessage.contains("Node(")) "nodes" else "relationships"
+
+            val duplicateIdRegex = """.+(\d+)$""".r
+            val duplicateId = originalMessage match {
+              case duplicateIdRegex(idString) => idString
+              case _ => "UNKNOWN"
+            }
+
+            val message = s"Could not write the graph to Neo4j. The graph you are attempting to write contains at least two $entityType with morpheus id $duplicateId"
+            throw IllegalStateException(message, Some(exception))
+
+          case Failure(e) => throw e
+        }
       }
     }
   }

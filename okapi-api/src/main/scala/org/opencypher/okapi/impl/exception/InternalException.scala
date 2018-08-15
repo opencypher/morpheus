@@ -31,29 +31,29 @@ package org.opencypher.okapi.impl.exception
   * or to session or property graph interactions that are not covered by the TCK.
   */
 //TODO: Either: 1. Convert to CypherException; 2. Create categories that makes sense in the API module for them; or 3. Move to the internals of the system to which they belong.
-abstract class InternalException(msg: String) extends RuntimeException(msg) with Serializable
+abstract class InternalException(msg: String, cause: Option[Exception] = None) extends RuntimeException(msg, cause.orNull) with Serializable
 
-final case class SchemaException(msg: String) extends InternalException(msg)
+final case class SchemaException(msg: String, cause: Option[Exception] = None) extends InternalException(msg, cause)
 
-final case class CypherValueException(msg: String) extends InternalException(msg)
+final case class CypherValueException(msg: String, cause: Option[Exception] = None) extends InternalException(msg, cause)
 
-final case class NotImplementedException(msg: String) extends InternalException(msg)
+final case class NotImplementedException(msg: String, cause: Option[Exception] = None) extends InternalException(msg, cause)
 
-final case class IllegalStateException(msg: String) extends InternalException(msg)
+final case class IllegalStateException(msg: String, cause: Option[Exception] = None) extends InternalException(msg, cause)
 
-final case class IllegalArgumentException(expected: Any, actual: Any = "none", explanation: String = "")
+final case class IllegalArgumentException(expected: Any, actual: Any = "none", explanation: String = "", cause: Option[Exception] = None)
   extends InternalException(
     s"""
        |${if (explanation.nonEmpty) s"Explanation:\n\t$explanation\n"}
        |Expected:
        |\t$expected
        |Found:
-       |\t$actual""".stripMargin)
+       |\t$actual""".stripMargin, cause)
 
-final case class UnsupportedOperationException(msg: String) extends InternalException(msg)
+final case class UnsupportedOperationException(msg: String, cause: Option[Exception] = None) extends InternalException(msg, cause)
 
-final case class GraphNotFoundException(msg: String) extends InternalException(msg)
+final case class GraphNotFoundException(msg: String, cause: Option[Exception] = None) extends InternalException(msg, cause)
 
-final case class InvalidGraphException(msg: String) extends InternalException(msg)
+final case class InvalidGraphException(msg: String, cause: Option[Exception] = None) extends InternalException(msg, cause)
 
-final case class GraphAlreadyExistsException(msg: String) extends InternalException(msg)
+final case class GraphAlreadyExistsException(msg: String, cause: Option[Exception] = None) extends InternalException(msg, cause)
