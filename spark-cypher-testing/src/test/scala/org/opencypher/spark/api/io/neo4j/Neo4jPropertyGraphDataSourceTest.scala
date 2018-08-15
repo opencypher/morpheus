@@ -26,15 +26,19 @@
  */
 package org.opencypher.spark.api.io.neo4j
 
+import org.apache.spark.SparkException
+import org.apache.spark.sql.Row
+import org.apache.spark.sql.types.{LongType, StructField, StructType}
 import org.opencypher.okapi.api.graph.{CypherResult, GraphName, Namespace}
+import org.opencypher.okapi.api.io.conversion.NodeMapping
 import org.opencypher.okapi.api.value.CypherValue.{CypherMap, CypherNull}
 import org.opencypher.okapi.impl.exception.{IllegalArgumentException, UnsupportedOperationException}
 import org.opencypher.okapi.neo4j.io.Neo4jHelpers.Neo4jDefaults._
 import org.opencypher.okapi.neo4j.io.Neo4jHelpers._
-import org.opencypher.okapi.impl.exception.{IllegalArgumentException, UnsupportedOperationException}
 import org.opencypher.okapi.testing.Bag
 import org.opencypher.okapi.testing.Bag._
 import org.opencypher.spark.api.CypherGraphSources
+import org.opencypher.spark.api.io.CAPSNodeTable
 import org.opencypher.spark.api.value.CAPSNode
 import org.opencypher.spark.impl.CAPSConverters._
 import org.opencypher.spark.testing.CAPSTestSuite
@@ -101,5 +105,25 @@ class Neo4jPropertyGraphDataSourceTest
       val graph = dataSource.graph(GraphName("test")).asCaps
       graph.nodes("n").asCaps.toCypherMaps.collect.toList
     }
+  }
+
+  it("should throw an error when node ids are not unique") {
+    import scala.collection.JavaConverters._
+    val schema = StructType(Seq(StructField("id", LongType, nullable = false)))
+    val node1DF = sparkSession.createDataFrame(List(Row(1L)).asJava, schema)
+    val node2DF = sparkSession.createDataFrame(List(Row(1L)).asJava, schema)
+
+    val nodeMapping = NodeMapping.create("id")
+    val node1Table = CAPSNodeTable(nodeMapping, node1DF)
+    val node2Table = CAPSNodeTable(nodeMapping, node2DF)
+
+    val graph = caps.readFrom(node1Table, node2Table)
+
+    val dataSource = CypherGraphSources.neo4j(neo4jConfig)
+
+    val sparkException = intercept[SparkException] { dataSource.store(GraphName("foo"), graph) }
+    sparkException.getCause.getMessage should equal(
+     "Could not write the graph to Neo4j. The graph you are attempting to write contains at least two nodes with morpheus id 1"
+    )
   }
 }
