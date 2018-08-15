@@ -77,6 +77,9 @@ class CypherTypesTest extends FunSpec with Matchers {
     CTList(CTInteger) couldBeSameTypeAs CTList(CTFloat) shouldBe false
     CTList(CTInteger) couldBeSameTypeAs CTList(CTAny) shouldBe true
     CTList(CTAny) couldBeSameTypeAs CTList(CTInteger) shouldBe true
+
+    CTNull couldBeSameTypeAs CTInteger.nullable shouldBe true
+    CTInteger.nullable couldBeSameTypeAs CTNull shouldBe true
   }
 
   it("joining with list of void") {

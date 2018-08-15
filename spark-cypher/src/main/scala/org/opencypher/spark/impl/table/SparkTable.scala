@@ -192,10 +192,10 @@ object SparkTable {
       val rightTypes = other.df.schema.fields.flatMap(_.toCypherType)
 
       leftTypes.zip(rightTypes).foreach {
-        case (leftType, rightType) if !leftType.couldBeSameTypeAs(rightType) =>
+        case (leftType, rightType) if !leftType.nullable.couldBeSameTypeAs(rightType.nullable) =>
           throw IllegalArgumentException(
             "Equal column data types for union all (differing nullability is OK)",
-            s"Left schema: ${df.schema}\n\tRight schema: ${other.df.schema}")
+            s"Left fields:  ${df.schema.fields.mkString(", ")}\n\tRight fields: ${other.df.schema.fields.mkString(", ")}")
         case _ =>
       }
 
