@@ -97,7 +97,7 @@ case class TCKGraph[C <: CypherSession](testGraphFactory: CypherTestGraphFactory
           case Failure(e) =>
             val phase = TCKErrorPhases.RUNTIME // We have no way to detect errors during compile time yet
             e match {
-              case t: TypingException => this ->
+              case _: TypingException => this ->
                 ExecutionFailed(TCKErrorTypes.TYPE_ERROR, phase, TCKErrorDetails.INVALID_ARGUMENT_VALUE)
               case ex: NotImplementedException => throw new RuntimeException(s"Unsupported feature in $query", ex)
               case _ => throw new RuntimeException(s"Unknown engine failure for query: $query", e)

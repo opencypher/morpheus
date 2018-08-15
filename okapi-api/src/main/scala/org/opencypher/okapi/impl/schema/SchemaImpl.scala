@@ -96,8 +96,6 @@ final case class SchemaImpl(
 
   lazy val relationshipTypes: Set[String] = relTypePropertyMap.keySet
 
-  private def graphContainsNodeWithoutLabel: Boolean = labelPropertyMap.keySet.contains(Set.empty)
-
   override lazy val impliedLabels: ImpliedLabels = {
     val implications = self.labelCombinations.combos.foldLeft(Map.empty[String, Set[String]]) {
       case (currentMap, combo) => combo.foldLeft(currentMap) {

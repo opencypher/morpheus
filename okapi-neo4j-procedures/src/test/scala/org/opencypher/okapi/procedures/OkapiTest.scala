@@ -227,7 +227,8 @@ class OkapiTest extends FunSuite with BeforeAndAfter with Matchers {
     })
   }
 
-  test("Okapi schema with unsupported data types") {
+  // TODO: Finish this test
+  ignore("Okapi schema with unsupported data types") {
     db.execute("CREATE (a:A { foo: time(), bar : 42 })" + "CREATE (b:A)" + "CREATE (a)-[:REL]->(b)").close()
     testResult(db, "CALL org.opencypher.okapi.procedures.schema", result => {
       val expected = Set(

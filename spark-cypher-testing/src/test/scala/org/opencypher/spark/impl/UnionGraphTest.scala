@@ -127,14 +127,4 @@ class UnionGraphTest extends CAPSGraphTest
     verify(nodes, cols, data)
   }
 
-  it("assigns non-conflicting tags to graphs") {
-    val scanGraph1 = caps.graphs.create(personTable)
-    val scanGraph2 = caps.graphs.create(personTable)
-
-  }
-
-  private def initPersonReadsBookGraph: RelationalCypherGraph[DataFrameTable] = {
-    caps.graphs.unionGraph(
-      initGraph(`:READS`), caps.graphs.unionGraph(initGraph(`:Book`), caps.graphs.unionGraph(initGraph(`:Person`))))
-  }
 }

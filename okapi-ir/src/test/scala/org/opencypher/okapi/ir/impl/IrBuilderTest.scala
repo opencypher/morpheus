@@ -722,7 +722,7 @@ class IrBuilderTest extends IrTestSuite {
   describe("parsing CypherQuery") {
     test("match node and return it") {
       "MATCH (a:Person) RETURN a".asCypherQuery().model.ensureThat {
-        (model, globals) =>
+        (model, _) =>
           val loadBlock = model.findExactlyOne {
             case NoWhereBlock(s@SourceBlock(_)) =>
               s.binds.fields shouldBe empty

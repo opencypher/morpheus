@@ -390,7 +390,7 @@ object SchemaTyper {
         // variables for looking up the type of property expressions on these variables.
       hasLabelPreds <- orderedExprs.collect { case h: HasLabels => h }.traverse(process[R])
       otherTypes <- orderedExprs.filter {
-        case h: HasLabels => false
+        case _: HasLabels => false
         case _ => true
       }.traverse(process[R])
       result <- {

@@ -40,8 +40,6 @@ class EntityReaderTest extends BaseTestSuite {
     .withRelationshipPropertyKeys("TYPE")("foo" -> CTFloat.nullable, "f" -> CTBoolean)
     .withRelationshipPropertyKeys("TYPE2")()
 
-  private val entireGraph = "allOfIt"
-
   it("constructs flat node queries from schema") {
     EntityReader.flatExactLabelQuery(Set("A"), schema) should equal(
       s"""|MATCH ($entityVarName:A)

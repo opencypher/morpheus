@@ -110,29 +110,7 @@ class CAPSRecordsAcceptanceTest extends CAPSTestSuite with CAPSNeo4jServerFixtur
     // When
     val result = graph.cypher(query)
 
-    // Then
-    val tuple = (
-      "Natasha Richardson",
-      "The Parent Trap",
-      1963
-    )
     result.records shouldHaveSize 8 // andContain tuple
-  }
-
-  // Removed the data node that enabled this test
-  // TODO: Rewrite this test elsewhere to capture invariant
-  ignore("handle properties with same key and different type between labels") {
-    // When
-    val movieResult = graph.cypher("MATCH (m:Movie) RETURN m.title")
-
-    // Then
-    movieResult.records shouldHaveSize 1 // andContain 444
-
-    // When
-    val filmResult = graph.cypher("MATCH (f:Film) RETURN f.title")
-
-    // Then
-    filmResult.records shouldHaveSize 5 // andContain "Camelot"
   }
 
   it("multiple hops of expand with different reltypes") {
@@ -148,22 +126,6 @@ class CAPSRecordsAcceptanceTest extends CAPSTestSuite with CAPSNeo4jServerFixtur
         Row("Lindsay Lohan", "New York", "The Parent Trap"),
         Row("Vanessa Redgrave", "London", "Camelot")
       ))
-  }
-
-  // TODO: Figure out what invariant this was meant to measure
-  ignore("multiple hops of expand with possible reltype conflict") {
-    // Given
-    val query = "MATCH (u1:User)-[r1:POSTED]->(t:Tweet)-[r2]->(u2:User) RETURN u1.name, u2.name, t.text"
-
-    // When
-    val result = graph.cypher(query)
-
-    // Then
-    val tuple = (
-      "Brendan Madden",
-      "Tom Sawyer Software",
-      "#tsperspectives 7.6 is 15% faster with #neo4j Bolt support. https://t.co/1xPxB9slrB @TSawyerSoftware #graphviz")
-    result.records shouldHaveSize 79 // andContain tuple
   }
 
   implicit class OtherRichRecords(records: CypherRecords) {
@@ -184,18 +146,5 @@ class CAPSRecordsAcceptanceTest extends CAPSTestSuite with CAPSNeo4jServerFixtur
 //      }
     }
 
-    def asProduct(elts: IndexedSeq[Any]): Product = elts.length match {
-      case 0 => throw IllegalArgumentException("non-empty list of elements")
-      case 1 => Tuple1(elts(0))
-      case 2 => Tuple2(elts(0), elts(1))
-      case 3 => Tuple3(elts(0), elts(1), elts(2))
-      case 4 => Tuple4(elts(0), elts(1), elts(2), elts(3))
-      case 5 => Tuple5(elts(0), elts(1), elts(2), elts(3), elts(4))
-      case 6 => Tuple6(elts(0), elts(1), elts(2), elts(3), elts(4), elts(5))
-      case 7 => Tuple7(elts(0), elts(1), elts(2), elts(3), elts(4), elts(5), elts(6))
-      case 8 => Tuple8(elts(0), elts(1), elts(2), elts(3), elts(4), elts(5), elts(6), elts(7))
-      case 9 => Tuple9(elts(0), elts(1), elts(2), elts(3), elts(4), elts(5), elts(6), elts(7), elts(8))
-      case _ => throw new UnsupportedOperationException("Implement support for larger products")
-    }
   }
 }

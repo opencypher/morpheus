@@ -36,9 +36,7 @@ class CAPSValueConversionTest extends CAPSValueTestSuite {
   test("RELATIONSHIP conversion") {
     val originalValues = RELATIONSHIP_valueGroups.flatten
     val scalaValues = originalValues.map(_.unwrap)
-    val newValues = scalaValues.map {
-      case scalaClass => CypherValue(scalaClass)
-    }
+    val newValues = scalaValues.map(scalaClass => CypherValue(scalaClass))
     assert(newValues == originalValues)
     originalValues.foreach { v =>
       assert(v.isNull == (v == CypherNull))

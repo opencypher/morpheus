@@ -57,7 +57,7 @@ object RelationalOptimizer {
     private def calculateReplacementMap[T <: Table[T]](input: RelationalOperator[T]): Map[RelationalOperator[T], RelationalOperator[T]] = {
       val opCounts = identifyDuplicates(input)
       val opsByHeight = opCounts.keys.toSeq.sortWith((a, b) => a.height > b.height)
-      val (opsToCache, countMap) = opsByHeight.foldLeft(Set.empty[RelationalOperator[T]] -> opCounts) { (agg, currentOp) =>
+      val (opsToCache, _) = opsByHeight.foldLeft(Set.empty[RelationalOperator[T]] -> opCounts) { (agg, currentOp) =>
         agg match {
           case (currentOpsToCache, currentCounts) =>
             val currentOpCount = currentCounts(currentOp)
