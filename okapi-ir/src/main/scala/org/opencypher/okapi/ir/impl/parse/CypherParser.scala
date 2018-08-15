@@ -38,8 +38,7 @@ import org.opencypher.v9_0.rewriting.rewriters.Forced
 
 object CypherParser extends CypherParser {
   implicit object defaultContext extends BlankBaseContext {
-    override def errorHandler: (Seq[SemanticErrorDef]) => Unit =
-      (errors) => {
+    override def errorHandler: Seq[SemanticErrorDef] => Unit = errors => {
         // TODO: Remove when frontend supports CLONE clause
         val filteredErrors = errors.filterNot(_.msg.contains("already declared"))
         if (filteredErrors.nonEmpty) {

@@ -46,13 +46,13 @@ class IRFieldTest extends FunSuite with Matchers {
   test("different IRFields are not equal") {
     val a = IRField("a")()
     val b = IRField("b")()
-    a should not equal(b)
+    a should not equal b
   }
 
   test("different IRFields have different hash codes") {
     val a = IRField("a")()
     val b = IRField("b")()
-    a.hashCode should not equal(b.hashCode)
+    a.hashCode should not equal b.hashCode
   }
 
 }

@@ -638,7 +638,7 @@ class MultipleGraphBehaviour extends CAPSTestSuite with ScanGraphInit {
 
     val result = testGraph2.cypher(query).graph
 
-    result.schema should equal((testGraph1.schema ++ testGraph2.schema))
+    result.schema should equal(testGraph1.schema ++ testGraph2.schema)
     result.nodes("n").toMaps should equal(testGraph1.unionAll(testGraph2).nodes("n").toMaps)
     result.relationships("r").toMaps should equal(testGraph1.unionAll(testGraph2).relationships("r").toMaps)
   }

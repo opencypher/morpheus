@@ -55,7 +55,7 @@ object SparkSQLExprMapper {
       *   - Spark SQL returns null when comparing across types (from initial investigation)
       *   - We never have multiple types per column in CAPS (yet)
       */
-    def compare(comparator: Column => (Column => Column), lhs: Expr, rhs: Expr)
+    def compare(comparator: Column => Column => Column, lhs: Expr, rhs: Expr)
       (implicit header: RecordHeader, df: DataFrame, parameters: CypherMap): Column = {
       comparator(lhs.asSparkSQLExpr)(rhs.asSparkSQLExpr)
     }

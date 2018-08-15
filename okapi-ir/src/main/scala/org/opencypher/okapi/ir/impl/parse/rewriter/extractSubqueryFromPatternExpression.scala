@@ -68,10 +68,10 @@ case class extractSubqueryFromPatternExpression(mkException: (String, InputPosit
 
     val joinVariables = relationshipsPattern.element.treeFold(Seq.empty[LogicalVariable]) {
       case NodePattern(Some(v), _, _, _) =>
-        (acc) =>
+        acc =>
           (acc :+ v, None)
       case RelationshipPattern(Some(v), _, _, _, _, _, _) =>
-        (acc) =>
+        acc =>
           (acc :+ v, None)
     }
 

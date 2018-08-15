@@ -54,7 +54,7 @@ case object normalizeCaseExpression extends Rewriter {
     case c: CaseExpression => rewriteCase(c)
   })
 
-  private def rewriteCase: (CaseExpression => CaseExpression) = {
+  private def rewriteCase: CaseExpression => CaseExpression = {
     case expr@CaseExpression(Some(inputExpr), alternatives, default) =>
       val inlineAlternatives = alternatives.map {
         case (predicate, action) => Equals(inputExpr, predicate)(predicate.position) -> action

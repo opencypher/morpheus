@@ -41,7 +41,7 @@ final class ExpressionConverter(implicit context: IRBuilderContext) {
 
   implicit def toRef(e: ast.Expression): Ref[ast.Expression] = Ref(e)
 
-  def convert(e: ast.Expression)(implicit typings: (Ref[ast.Expression]) => CypherType): Expr = e match {
+  def convert(e: ast.Expression)(implicit typings: Ref[ast.Expression] => CypherType): Expr = e match {
     case ast.Variable(name) =>
       Var(name)(typings(e))
     case ast.Parameter(name, _) =>
@@ -69,7 +69,7 @@ final class ExpressionConverter(implicit context: IRBuilderContext) {
     case ast.Ors(exprs) =>
       Ors(exprs.map(convert))
     case ast.HasLabels(node, labels) =>
-      val exprs = labels.map { (l: ast.LabelName) =>
+      val exprs = labels.map { l: ast.LabelName =>
         HasLabel(convert(node), Label(l.name))(typings(e))
       }
       if (exprs.size == 1) exprs.head else Ands(exprs.toSet)

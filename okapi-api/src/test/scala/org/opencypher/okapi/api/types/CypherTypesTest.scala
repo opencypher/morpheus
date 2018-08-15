@@ -322,7 +322,7 @@ class CypherTypesTest extends FunSpec with Matchers {
     allTypes.foreach { t1 =>
       allTypes.foreach { t2 =>
         val result = t1 sameTypeAs t2
-        (result.isDefinite) should be(
+        result.isDefinite should be(
           (!t1.isWildcard && !t2.isWildcard) ||
             (t1.isNullable && !t2.isNullable) ||
             (!t1.isNullable && t2.isNullable)

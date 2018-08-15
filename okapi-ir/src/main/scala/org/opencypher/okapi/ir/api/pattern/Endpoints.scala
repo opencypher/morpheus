@@ -60,7 +60,7 @@ case object Endpoints {
 sealed trait IdenticalEndpoints extends Endpoints {
   def field: IRField
 
-  final override def foreach[U](f: (IRField) => U): Unit = f(field)
+  final override def foreach[U](f: IRField => U): Unit = f(field)
 }
 
 sealed trait DifferentEndpoints extends Endpoints {
@@ -69,5 +69,5 @@ sealed trait DifferentEndpoints extends Endpoints {
 
   def flip: DifferentEndpoints
 
-  override def foreach[U](f: (IRField) => U): Unit = { f(source); f(target) }
+  override def foreach[U](f: IRField => U): Unit = { f(source); f(target) }
 }
