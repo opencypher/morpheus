@@ -27,10 +27,11 @@
 package org.opencypher.okapi.relational.impl.planning
 
 import org.opencypher.okapi.api.graph.QualifiedGraphName
-import org.opencypher.okapi.api.types.{CTBoolean, CTInteger}
+import org.opencypher.okapi.api.types.{CTBoolean, CTInteger, CTNode}
+import org.opencypher.okapi.impl.exception.UnsupportedOperationException
 import org.opencypher.okapi.ir.api.expr._
-import org.opencypher.okapi.ir.api.set.SetPropertyItem
-import org.opencypher.okapi.ir.api.{PropertyKey, RelType}
+import org.opencypher.okapi.ir.api.set.{SetLabelItem, SetPropertyItem}
+import org.opencypher.okapi.ir.api.{Label, PropertyKey, RelType, expr}
 import org.opencypher.okapi.logical.impl._
 import org.opencypher.okapi.relational.api.graph.RelationalCypherGraph
 import org.opencypher.okapi.relational.api.planning.RelationalRuntimeContext
@@ -51,8 +52,7 @@ object ConstructGraphPlanner {
     val onGraphPlan: RelationalOperator[T] = {
       construct.onGraphs match {
         case Nil => relational.Start[T](context.session.emptyGraphQgn) // Empty start
-        case one :: Nil =>
-          // Just one graph, no union required
+        case one :: Nil => // Just one graph, no union required
           relational.Start(one, tagStrategy = computeRetaggings(Map(one -> context.resolveGraph(one).tags)))
         case several =>
           val onGraphPlans = several.map(qgn => relational.Start[T](qgn))
@@ -64,7 +64,7 @@ object ConstructGraphPlanner {
 
     val unionTagStrategy: Map[QualifiedGraphName, Map[Int, Int]] = onGraphPlan.tagStrategy
 
-    val LogicalPatternGraph(schema, clonedVarsToInputVars, newEntities, sets, _, name) = construct
+    val LogicalPatternGraph(schema, clonedVarsToInputVars, createdEntities, sets, _, name) = construct
 
     val matchGraphs: Set[QualifiedGraphName] = clonedVarsToInputVars.values.map(_.cypherType.graph.get).toSet
     val allGraphs = unionTagStrategy.keySet ++ matchGraphs
@@ -87,19 +87,26 @@ object ConstructGraphPlanner {
       case (op, (alias, original)) => op.retagVariable(alias, constructTagStrategy(original.cypherType.graph.get))
     }
 
-    // Construct NEW entities
-    val (newEntityTags, constructedEntitiesOp) = {
-      if (newEntities.isEmpty) {
+    // Construct CREATEd entities
+    val (createdEntityTags, constructedEntitiesOp) = {
+      if (createdEntities.isEmpty) {
         Set.empty[Int] -> retagBaseTableOp
       } else {
-        val newEntityTag = pickFreeTag(constructTagStrategy)
-        val entitiesOp = planConstructEntities(retagBaseTableOp, newEntities, newEntityTag)
+        val createdEntityTag = pickFreeTag(constructTagStrategy)
+        val entitiesOp = planConstructEntities(retagBaseTableOp, createdEntities, createdEntityTag)
 
-        val propertiesToAdd = sets.collect { case SetPropertyItem(propertyKey, v, valueExpr) =>
-          valueExpr -> Property(v, PropertyKey(propertyKey))(valueExpr.cypherType)
+        val setValueForExprTuples = sets.flatMap {
+          case SetPropertyItem(propertyKey, v, valueExpr) =>
+            List(valueExpr -> Property(v, PropertyKey(propertyKey))(valueExpr.cypherType))
+          case SetLabelItem(v, labels) =>
+            labels.toList.map { label =>
+              v.cypherType.material match {
+                case _: CTNode => TrueLit -> expr.HasLabel(v, Label(label))(CTBoolean)
+                case other => throw UnsupportedOperationException(s"Cannot set a label on $other")
+              }
+            }
         }
-
-        Set(newEntityTag) -> entitiesOp.addInto(propertiesToAdd: _*)
+        Set(createdEntityTag) -> entitiesOp.addInto(setValueForExprTuples: _*)
       }
     }
 
@@ -108,13 +115,9 @@ object ConstructGraphPlanner {
     val originalVarsToKeep = clonedVarsToInputVars.keySet -- aliasClones.keySet
     val varsToRemoveFromTable = allInputVars -- originalVarsToKeep
 
-    val patternGraphTableOp = if (varsToRemoveFromTable.isEmpty) {
-      constructedEntitiesOp
-    } else {
-      relational.Drop(constructedEntitiesOp, varsToRemoveFromTable)
-    }
+    val patternGraphTableOp = constructedEntitiesOp.drop(varsToRemoveFromTable)
 
-    val tagsUsed = constructTagStrategy.foldLeft(newEntityTags) {
+    val tagsUsed = constructTagStrategy.foldLeft(createdEntityTags) {
       case (tags, (qgn, remapping)) =>
         val remappedTags = tagsForGraph(qgn).map(remapping)
         tags ++ remappedTags
@@ -147,7 +150,7 @@ object ConstructGraphPlanner {
   def planConstructEntities[T <: Table[T]](
     inOp: RelationalOperator[T],
     toCreate: Set[ConstructedEntity],
-    newEntityTag: Int
+    createdEntityTag: Int
   ): RelationalOperator[T] = {
 
     // Construct nodes before relationships, as relationships might depend on nodes
@@ -160,14 +163,15 @@ object ConstructGraphPlanner {
 
     val (_, nodesToCreate) = nodes.foldLeft(0 -> Seq.empty[(Expr, Expr)]) {
       case ((nextColumnPartitionId, nodeProjections), nextNodeToConstruct) =>
-        (nextColumnPartitionId + 1) -> (nodeProjections ++ computeNodeProjections(inOp, newEntityTag, nextColumnPartitionId, nodes.size, nextNodeToConstruct))
+        (nextColumnPartitionId + 1) -> (nodeProjections ++ computeNodeProjections(inOp, createdEntityTag, nextColumnPartitionId, nodes.size, nextNodeToConstruct))
     }
 
     val createdNodesOp = inOp.addInto(nodesToCreate.map { case (into, value) => value -> into }: _*)
 
     val (_, relsToCreate) = rels.foldLeft(0 -> Seq.empty[(Expr, Expr)]) {
       case ((nextColumnPartitionId, relProjections), nextRelToConstruct) =>
-        (nextColumnPartitionId + 1) -> (relProjections ++ computeRelationshipProjections(createdNodesOp, newEntityTag, nextColumnPartitionId, rels.size, nextRelToConstruct))
+        (nextColumnPartitionId + 1) ->
+          (relProjections ++ computeRelationshipProjections(createdNodesOp, createdEntityTag, nextColumnPartitionId, rels.size, nextRelToConstruct))
     }
 
     createdNodesOp.addInto(relsToCreate.map { case (into, value) => value -> into }: _*)
@@ -175,20 +179,20 @@ object ConstructGraphPlanner {
 
   def computeNodeProjections[T <: Table[T]](
     inOp: RelationalOperator[T],
-    newEntityTag: Int,
+    createdEntityTag: Int,
     columnIdPartition: Int,
     numberOfColumnPartitions: Int,
     node: ConstructedNode
   ): Map[Expr, Expr] = {
 
-    val idTuple = node.v -> generateId(columnIdPartition, numberOfColumnPartitions).setTag(newEntityTag)
+    val idTuple = node.v -> generateId(columnIdPartition, numberOfColumnPartitions).setTag(createdEntityTag)
 
     val copiedLabelTuples = node.baseEntity match {
       case Some(origNode) => copyExpressions(inOp, node.v)(_.labelsFor(origNode))
       case None => Map.empty
     }
 
-    val newLabelTuples = node.labels.map {
+    val createdLabelTuples = node.labels.map {
       label => HasLabel(node.v, label)(CTBoolean) -> TrueLit
     }.toMap
 
@@ -197,7 +201,7 @@ object ConstructGraphPlanner {
       case None => Map.empty
     }
 
-    newLabelTuples ++
+    createdLabelTuples ++
       copiedLabelTuples ++
       propertyTuples +
       idTuple
@@ -205,7 +209,7 @@ object ConstructGraphPlanner {
 
   def computeRelationshipProjections[T <: Table[T]](
     inOp: RelationalOperator[T],
-    newEntityTag: Int,
+    createdEntityTag: Int,
     columnIdPartition: Int,
     numberOfColumnPartitions: Int,
     toConstruct: ConstructedRelationship
@@ -213,7 +217,7 @@ object ConstructGraphPlanner {
     val ConstructedRelationship(rel, source, target, typOpt, baseRelOpt) = toConstruct
 
     // id needs to be generated
-    val idTuple = rel -> generateId(columnIdPartition, numberOfColumnPartitions).setTag(newEntityTag)
+    val idTuple = rel -> generateId(columnIdPartition, numberOfColumnPartitions).setTag(createdEntityTag)
 
     // source and target are present: just copy
     val sourceTuple = {

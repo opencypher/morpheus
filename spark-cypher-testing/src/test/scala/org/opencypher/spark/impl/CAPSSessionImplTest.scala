@@ -27,11 +27,11 @@
 package org.opencypher.spark.impl
 
 import org.opencypher.okapi.api.graph.{Namespace, QualifiedGraphName}
-import org.opencypher.spark.api.value.CAPSNode
 import org.opencypher.okapi.api.value.CypherValue.CypherMap
 import org.opencypher.okapi.impl.io.SessionGraphDataSource
 import org.opencypher.okapi.testing.Bag
 import org.opencypher.okapi.testing.Bag._
+import org.opencypher.spark.api.value.CAPSNode
 import org.opencypher.spark.testing.CAPSTestSuite
 import org.opencypher.spark.testing.fixture.{GraphConstructionFixture, TeamDataFixture}
 
@@ -47,7 +47,7 @@ class CAPSSessionImplTest extends CAPSTestSuite with TeamDataFixture with GraphC
 
     caps.catalog.store(QualifiedGraphName("session.a"), g1)
     caps.catalog.store(QualifiedGraphName("working.a"), g2)
-    caps.cypher("CREATE GRAPH working.b { FROM GRAPH working.a RETURN GRAPH }")
+    caps.cypher("CATALOG CREATE GRAPH working.b { FROM GRAPH working.a RETURN GRAPH }")
     caps.catalog.store(QualifiedGraphName("foo.bar.baz.a"), g3)
 
     val r1 = caps.cypher("FROM GRAPH a MATCH (n) RETURN n")

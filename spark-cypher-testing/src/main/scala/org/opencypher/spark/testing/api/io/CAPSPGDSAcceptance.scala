@@ -28,12 +28,12 @@ package org.opencypher.spark.testing.api.io
 
 import org.opencypher.okapi.api.graph.GraphName
 import org.opencypher.okapi.relational.api.graph.RelationalCypherGraph
+import org.opencypher.okapi.relational.api.tagging.Tags._
 import org.opencypher.okapi.testing.{BaseTestSuite, PGDSAcceptance}
 import org.opencypher.spark.api.CAPSSession
 import org.opencypher.spark.api.CAPSSession._
 import org.opencypher.spark.api.value.{CAPSNode, CAPSRelationship}
 import org.opencypher.spark.impl.CAPSConverters._
-import org.opencypher.okapi.relational.api.tagging.Tags._
 import org.opencypher.spark.impl.encoders._
 import org.opencypher.spark.impl.table.SparkTable.DataFrameTable
 
@@ -43,10 +43,10 @@ trait CAPSPGDSAcceptance extends PGDSAcceptance[CAPSSession] {
   self: BaseTestSuite =>
 
   it("supports storing of graphs with tags, query variant") {
-    cypherSession.cypher("CREATE GRAPH g1 { CONSTRUCT NEW ()-[:FOO]->() RETURN GRAPH }")
-    cypherSession.cypher("CREATE GRAPH g2 { CONSTRUCT NEW () RETURN GRAPH }")
+    cypherSession.cypher("CATALOG CREATE GRAPH g1 { CONSTRUCT CREATE ()-[:FOO]->() RETURN GRAPH }")
+    cypherSession.cypher("CATALOG CREATE GRAPH g2 { CONSTRUCT CREATE () RETURN GRAPH }")
 
-    Try(cypherSession.cypher(s"CREATE GRAPH $ns.g3 { CONSTRUCT ON g1, g2 RETURN GRAPH }")) match {
+    Try(cypherSession.cypher(s"CATALOG CREATE GRAPH $ns.g3 { CONSTRUCT ON g1, g2 RETURN GRAPH }")) match {
       case Failure(_: UnsupportedOperationException) =>
       case Failure(t) => throw t
       case Success(_) =>
@@ -61,8 +61,8 @@ trait CAPSPGDSAcceptance extends PGDSAcceptance[CAPSSession] {
   }
 
   it("supports storing of graphs with tags, API variant") {
-    cypherSession.cypher("CREATE GRAPH g1 { CONSTRUCT NEW ()-[:FOO]->() RETURN GRAPH }")
-    cypherSession.cypher("CREATE GRAPH g2 { CONSTRUCT NEW () RETURN GRAPH }")
+    cypherSession.cypher("CATALOG CREATE GRAPH g1 { CONSTRUCT CREATE ()-[:FOO]->() RETURN GRAPH }")
+    cypherSession.cypher("CATALOG CREATE GRAPH g2 { CONSTRUCT CREATE () RETURN GRAPH }")
 
     val graphToStore = cypherSession.cypher("CONSTRUCT ON g1, g2 RETURN GRAPH").graph.asCaps
 

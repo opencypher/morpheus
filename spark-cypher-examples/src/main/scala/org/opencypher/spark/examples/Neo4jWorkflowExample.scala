@@ -64,7 +64,7 @@ object Neo4jWorkflowExample extends ConsoleApp {
        |WHERE p.name = c.name
        |CONSTRUCT
        |  ON socialNetwork.graph, purchases.products
-       |  NEW (p)-[:IS]->(c)
+       |  CREATE (p)-[:IS]->(c)
        |RETURN GRAPH
     """.stripMargin
   ).getGraph.get

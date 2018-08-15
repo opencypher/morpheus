@@ -356,11 +356,11 @@ class LogicalPlanner(producer: LogicalOperatorProducer)
       // TODO: IRGraph[Expr]
       case p: IRPatternGraph[Expr@unchecked] =>
         import org.opencypher.okapi.ir.impl.util.VarConverters.RichIrField
-        val baseEntities = p.news.baseFields.mapValues(_.toVar)
+        val baseEntities = p.creates.baseFields.mapValues(_.toVar)
 
         val clonePatternEntities = p.clones.keys
 
-        val newPatternEntities = p.news.fields
+        val newPatternEntities = p.creates.fields
 
         val entitiesToCreate = newPatternEntities -- clonePatternEntities
 
@@ -372,15 +372,16 @@ class LogicalPlanner(producer: LogicalOperatorProducer)
           clonedField.toVar -> inputVar
         }
 
-        val newEntities: Set[ConstructedEntity] = entitiesToCreate.map(e => extractConstructedEntities(p.news, e, baseEntities.get(e)))
+        val newEntities: Set[ConstructedEntity] = entitiesToCreate.map(e => extractConstructedEntities(p.creates, e, baseEntities.get(e)))
 
         val setItems = {
-          p.news.properties.flatMap { case (irField, mapExpr) =>
+          val setPropertyItemsFromCreates = p.creates.properties.flatMap { case (irField, mapExpr) =>
             val v = irField.toVar
             mapExpr.items.map { case (propertyKey, expr) =>
               SetPropertyItem(propertyKey, v, expr)
             }
           }
+          setPropertyItemsFromCreates ++ p.sets
         }.toList
 
         LogicalPatternGraph(p.schema, clonedVarToInputVar, newEntities, setItems, p.onGraphs, p.qualifiedGraphName)

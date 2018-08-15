@@ -72,7 +72,7 @@ object RecommendationExample extends ConsoleApp {
        |      (a)-[:KNOWS*1..2]->(b)
        |CONSTRUCT
        |  ON $fromGraph
-       |  NEW (a)-[:CLOSE_TO]->(b)
+       |  CREATE (a)-[:CLOSE_TO]->(b)
        |RETURN GRAPH
       """.stripMargin
 
@@ -93,7 +93,7 @@ object RecommendationExample extends ConsoleApp {
        |WHERE c.name = p.name
        |CONSTRUCT ON purchases.products, allFriends
        |  CLONE c, p
-       |  NEW (c)-[:IS]->(p)
+       |  CREATE (c)-[:IS]->(p)
        |RETURN GRAPH
       """.stripMargin).graph
 

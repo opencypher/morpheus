@@ -30,8 +30,9 @@ import org.opencypher.okapi.api.graph.{GraphName, QualifiedGraphName}
 import org.opencypher.okapi.api.schema.Schema
 import org.opencypher.okapi.api.types._
 import org.opencypher.okapi.impl.io.SessionGraphDataSource
+import org.opencypher.okapi.ir.api.expr.Expr
 import org.opencypher.okapi.ir.api.pattern._
-import org.opencypher.okapi.ir.api.set.SetPropertyItem
+import org.opencypher.okapi.ir.api.set.{SetItem, SetPropertyItem}
 
 object IRField {
   def relTypes(field: IRField): Set[String] = field.cypherType match {
@@ -65,6 +66,7 @@ final case class IRPatternGraph[E](
   qualifiedGraphName: QualifiedGraphName,
   schema: Schema,
   clones: Map[IRField, E],
-  news: Pattern[E],
+  creates: Pattern[E],
+  sets: List[SetItem[Expr]],
   onGraphs: List[QualifiedGraphName]
 ) extends IRGraph

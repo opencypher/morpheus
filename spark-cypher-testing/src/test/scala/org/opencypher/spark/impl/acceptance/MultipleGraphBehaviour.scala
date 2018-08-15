@@ -63,14 +63,14 @@ class MultipleGraphBehaviour extends CAPSTestSuite with ScanGraphInit {
     val g = caps.cypher(
       """
         |CONSTRUCT
-        |  NEW ()
+        |  CREATE ()
         |RETURN GRAPH
       """.stripMargin).graph
     val results = g.cypher(
       """
         |MATCH (a)
         |CONSTRUCT
-        |  NEW (f COPY OF a)-[:FOO]->(g COPY OF a)
+        |  CREATE (f COPY OF a)-[:FOO]->(g COPY OF a)
         |MATCH (n)
         |RETURN n
       """.stripMargin).records
@@ -82,10 +82,10 @@ class MultipleGraphBehaviour extends CAPSTestSuite with ScanGraphInit {
     val results = caps.cypher(
       """
         |CONSTRUCT
-        |  NEW ()
+        |  CREATE ()
         |MATCH (a)
         |CONSTRUCT
-        |  NEW (f COPY OF a)-[:FOO]->(g COPY OF a)
+        |  CREATE (f COPY OF a)-[:FOO]->(g COPY OF a)
         |MATCH (n)
         |RETURN n
       """.stripMargin).records
@@ -179,7 +179,7 @@ class MultipleGraphBehaviour extends CAPSTestSuite with ScanGraphInit {
   it("should construct a graph") {
     val query =
       """|CONSTRUCT
-         |  NEW (:A)-[:KNOWS]->(:B)
+         |  CREATE (:A)-[:KNOWS]->(:B)
          |RETURN GRAPH""".stripMargin
 
     val result = testGraph1.cypher(query)
@@ -191,11 +191,11 @@ class MultipleGraphBehaviour extends CAPSTestSuite with ScanGraphInit {
     result.graph.relationships("r").size should equal(1)
   }
 
-  it("should CONSTRUCT a graph with multiple connected NEW clauses") {
+  it("should CONSTRUCT a graph with multiple connected CREATE clauses") {
     val query =
       """|CONSTRUCT
-         |  NEW (a:A)-[:KNOWS]->(b:B)
-         |  NEW (b)-[:KNOWS]->(c:C)
+         |  CREATE (a:A)-[:KNOWS]->(b:B)
+         |  CREATE (b)-[:KNOWS]->(c:C)
          |RETURN GRAPH""".stripMargin
 
     val result = testGraph1.cypher(query)
@@ -207,11 +207,11 @@ class MultipleGraphBehaviour extends CAPSTestSuite with ScanGraphInit {
     result.graph.relationships("r").size should equal(2)
   }
 
-  it("should CONSTRUCT a graph with multiple unconnected NEW clauses") {
+  it("should CONSTRUCT a graph with multiple unconnected CREATE clauses") {
     val query =
       """|CONSTRUCT
-         |  NEW (a:A)-[:KNOWS]->(b:B)
-         |  NEW (c:C)-[:KNOWS]->(d:D)
+         |  CREATE (a:A)-[:KNOWS]->(b:B)
+         |  CREATE (c:C)-[:KNOWS]->(d:D)
          |RETURN GRAPH""".stripMargin
 
     val result = testGraph1.cypher(query)
@@ -223,11 +223,11 @@ class MultipleGraphBehaviour extends CAPSTestSuite with ScanGraphInit {
     result.graph.relationships("r").size should equal(2)
   }
 
-  it("should CONSTRUCT a graph with multiple unconnected anonymous NEW clauses") {
+  it("should CONSTRUCT a graph with multiple unconnected anonymous CREATE clauses") {
     val query =
       """|CONSTRUCT
-         |  NEW (:A)
-         |  NEW (:B)
+         |  CREATE (:A)
+         |  CREATE (:B)
          |RETURN GRAPH""".stripMargin
 
     val result = testGraph1.cypher(query)
@@ -244,7 +244,7 @@ class MultipleGraphBehaviour extends CAPSTestSuite with ScanGraphInit {
     val query =
       """|MATCH (m)
          |CONSTRUCT
-         |  NEW (a :A { name: m.name})
+         |  CREATE (a :A { name: m.name})
          |RETURN GRAPH""".stripMargin
 
     val result = testGraph1.cypher(query)
@@ -260,7 +260,7 @@ class MultipleGraphBehaviour extends CAPSTestSuite with ScanGraphInit {
   it("should construct a node property from a literal") {
     val query =
       """|CONSTRUCT
-         |  NEW ({name: 'Donald'})
+         |  CREATE ({name: 'Donald'})
          |RETURN GRAPH""".stripMargin
 
     val result = caps.cypher(query)
@@ -275,7 +275,7 @@ class MultipleGraphBehaviour extends CAPSTestSuite with ScanGraphInit {
   it("should construct a node label and a node property from a literal") {
     val query =
       """|CONSTRUCT
-         |  NEW (a :A {name: 'Donald'})
+         |  CREATE (a :A {name: 'Donald'})
          |RETURN GRAPH""".stripMargin
 
     val result = testGraph1.cypher(query)
@@ -291,7 +291,7 @@ class MultipleGraphBehaviour extends CAPSTestSuite with ScanGraphInit {
   it("should construct multiple properties") {
     val query =
       """|CONSTRUCT
-         |  NEW (a:A:B {name:'Donald', age:100})
+         |  CREATE (a:A:B {name:'Donald', age:100})
          |RETURN GRAPH""".stripMargin
 
     val result = testGraph1.cypher(query)
@@ -330,7 +330,7 @@ class MultipleGraphBehaviour extends CAPSTestSuite with ScanGraphInit {
   it("should construct a relationship") {
     val query =
       """|CONSTRUCT
-         |  NEW ()-[r:FOO {val : 42}]->()
+         |  CREATE ()-[r:FOO {val : 42}]->()
          |RETURN GRAPH""".stripMargin
 
     val result = testGraph1.cypher(query)
@@ -348,10 +348,10 @@ class MultipleGraphBehaviour extends CAPSTestSuite with ScanGraphInit {
   it("should copy a relationship") {
     val query =
       """|CONSTRUCT
-         |  NEW ()-[r:FOO {val : 42}]->()
+         |  CREATE ()-[r:FOO {val : 42}]->()
          |MATCH ()-[s]->()
          |CONSTRUCT
-         |  NEW ()-[t COPY OF s {name : 'Donald'}]->()
+         |  CREATE ()-[t COPY OF s {name : 'Donald'}]->()
          |RETURN GRAPH""".stripMargin
 
     val result = testGraph1.cypher(query)
@@ -372,7 +372,7 @@ class MultipleGraphBehaviour extends CAPSTestSuite with ScanGraphInit {
     val query =
       """MATCH ()-[s]->()
         |CONSTRUCT
-        |  NEW ()-[t COPY OF s :BAZ {val2 : 'Donald'}]->()
+        |  CREATE ()-[t COPY OF s :BAZ {val2 : 'Donald'}]->()
         |RETURN GRAPH""".stripMargin
 
     val result = graph.cypher(query)
@@ -388,10 +388,10 @@ class MultipleGraphBehaviour extends CAPSTestSuite with ScanGraphInit {
   it("should copy a node") {
     val query =
       """|CONSTRUCT
-         |  NEW (:Foo {foo: 'bar'})
+         |  CREATE (:Foo {foo: 'bar'})
          |MATCH (a)
          |CONSTRUCT
-         |  NEW (COPY OF a)
+         |  CREATE (COPY OF a)
          |RETURN GRAPH""".stripMargin
 
     val result = testGraph1.cypher(query)
@@ -418,7 +418,7 @@ class MultipleGraphBehaviour extends CAPSTestSuite with ScanGraphInit {
     val query =
       """|MATCH (a)
          |CONSTRUCT
-         |  NEW (COPY OF a)
+         |  CREATE (COPY OF a)
          |RETURN GRAPH""".stripMargin
 
     val result = graph.cypher(query)
@@ -440,7 +440,7 @@ class MultipleGraphBehaviour extends CAPSTestSuite with ScanGraphInit {
     val query =
       """|MATCH (a)
          |CONSTRUCT
-         |  NEW (COPY OF a {val: 2})
+         |  CREATE (COPY OF a {val: 2})
          |RETURN GRAPH""".stripMargin
 
     val result = graph.cypher(query)
@@ -460,7 +460,7 @@ class MultipleGraphBehaviour extends CAPSTestSuite with ScanGraphInit {
     val query =
       """|MATCH (a)
          |CONSTRUCT
-         |  NEW (COPY OF a {val: 'foo'})
+         |  CREATE (COPY OF a {val: 'foo'})
          |RETURN GRAPH""".stripMargin
 
     val result = graph.cypher(query)
@@ -478,7 +478,7 @@ class MultipleGraphBehaviour extends CAPSTestSuite with ScanGraphInit {
         |WHERE n.name = 'Mats' AND m.name = 'Phil'
         |CONSTRUCT
         | CLONE n, m
-        | NEW (n)-[r:KNOWS]->(m)
+        | CREATE (n)-[r:KNOWS]->(m)
         |RETURN GRAPH
       """.stripMargin)
 
@@ -492,7 +492,7 @@ class MultipleGraphBehaviour extends CAPSTestSuite with ScanGraphInit {
         |MATCH (n),(m)
         |WHERE n.name = 'Mats' AND m.name = 'Phil'
         |CONSTRUCT
-        | NEW (n)-[r:KNOWS]->(m)
+        | CREATE (n)-[r:KNOWS]->(m)
         |RETURN GRAPH
       """.stripMargin)
 
@@ -516,7 +516,7 @@ class MultipleGraphBehaviour extends CAPSTestSuite with ScanGraphInit {
         |WITH DISTINCT n, m
         |CONSTRUCT
         | CLONE n, m
-        | NEW (n)-[r:KNOWS]->(m)
+        | CREATE (n)-[r:KNOWS]->(m)
         |RETURN GRAPH
       """.stripMargin)
 
@@ -539,7 +539,7 @@ class MultipleGraphBehaviour extends CAPSTestSuite with ScanGraphInit {
         |MATCH (n)-[:KNOWS]->(m)
         |WITH DISTINCT n, m
         |CONSTRUCT
-        | NEW (n)-[r:KNOWS]->(m)
+        | CREATE (n)-[r:KNOWS]->(m)
         |RETURN GRAPH
       """.stripMargin)
 
@@ -562,7 +562,7 @@ class MultipleGraphBehaviour extends CAPSTestSuite with ScanGraphInit {
         |MATCH (n)-[:KNOWS]->(m)
         |CONSTRUCT
         | CLONE n, m
-        | NEW (n)-[r:KNOWS]->(m)
+        | CREATE (n)-[r:KNOWS]->(m)
         |RETURN GRAPH
       """.stripMargin)
 
@@ -584,7 +584,7 @@ class MultipleGraphBehaviour extends CAPSTestSuite with ScanGraphInit {
       """
         |MATCH (n)-[:KNOWS]->(m)
         |CONSTRUCT
-        | NEW (n)-[r:KNOWS]->(m)
+        | CREATE (n)-[r:KNOWS]->(m)
         |RETURN GRAPH
       """.stripMargin)
 
@@ -653,7 +653,7 @@ class MultipleGraphBehaviour extends CAPSTestSuite with ScanGraphInit {
          |MATCH (p: Person)
          |CONSTRUCT ON one, two
          |  CLONE m, p
-         |  NEW (m)-[:KNOWS]->(p)
+         |  CREATE (m)-[:KNOWS]->(p)
          |RETURN GRAPH""".stripMargin
 
     val result = caps.cypher(query).graph
@@ -676,7 +676,7 @@ class MultipleGraphBehaviour extends CAPSTestSuite with ScanGraphInit {
          |FROM GRAPH two
          |MATCH (p: Person)
          |CONSTRUCT ON one, two
-         |  NEW (m)-[:KNOWS]->(p)
+         |  CREATE (m)-[:KNOWS]->(p)
          |RETURN GRAPH""".stripMargin
 
     val result = caps.cypher(query).graph
@@ -690,11 +690,11 @@ class MultipleGraphBehaviour extends CAPSTestSuite with ScanGraphInit {
     resultRelationship.relType should equal("KNOWS")
   }
 
-  it("constructs a new node") {
+  it("constructs a created node") {
     val query =
       """
         |CONSTRUCT
-        |  NEW (a)
+        |  CREATE (a)
         |RETURN GRAPH
       """.stripMargin
 
@@ -767,7 +767,7 @@ class MultipleGraphBehaviour extends CAPSTestSuite with ScanGraphInit {
          |MATCH (p1 :Person)-[r1]->(p2 :Person)
          |CONSTRUCT ON testGraphRels2
          |  CLONE p1, r1, p2
-         |  NEW (p1)-[ r1]->( p2)
+         |  CREATE (p1)-[ r1]->( p2)
          |RETURN GRAPH""".stripMargin
 
     val result = caps.cypher(query).graph
@@ -806,8 +806,8 @@ class MultipleGraphBehaviour extends CAPSTestSuite with ScanGraphInit {
          |MATCH (p3 :Person)-[r2]->(p4 :Person)
          |CONSTRUCT
          |  CLONE p1, p2, p3, p4, r1, r2
-         |  NEW (p1)-[r1]->(p2)
-         |  NEW (p3)-[r2]->(p4)
+         |  CREATE (p1)-[r1]->(p2)
+         |  CREATE (p3)-[r2]->(p4)
          |RETURN GRAPH""".stripMargin
 
     val result = caps.cypher(query).graph
@@ -829,11 +829,11 @@ class MultipleGraphBehaviour extends CAPSTestSuite with ScanGraphInit {
   it("allows consecutive construction") {
     val query =
       """|CONSTRUCT
-         |  NEW (a:A)-[r:FOO]->(b:B)
+         |  CREATE (a:A)-[r:FOO]->(b:B)
          |MATCH (a)-->(b)
          |CONSTRUCT
          |  CLONE a, b
-         |  NEW (a)-[:KNOWS]->(b)
+         |  CREATE (a)-[:KNOWS]->(b)
          |RETURN GRAPH""".stripMargin
 
     val result = testGraph1.cypher(query)
@@ -854,10 +854,10 @@ class MultipleGraphBehaviour extends CAPSTestSuite with ScanGraphInit {
   it("implictly clones when doing consecutive construction") {
     val query =
       """|CONSTRUCT
-         |  NEW (a:A)-[r:FOO]->(b:B)
+         |  CREATE (a:A)-[r:FOO]->(b:B)
          |MATCH (a)-->(b)
          |CONSTRUCT
-         |  NEW (a)-[:KNOWS]->(b)
+         |  CREATE (a)-[:KNOWS]->(b)
          |RETURN GRAPH""".stripMargin
 
     val result = testGraph1.cypher(query)
@@ -875,14 +875,14 @@ class MultipleGraphBehaviour extends CAPSTestSuite with ScanGraphInit {
   }
 
   it("can construct a copy of a node with matched label") {
-    caps.cypher("CREATE GRAPH foo { CONSTRUCT NEW (:A) RETURN GRAPH }")
+    caps.cypher("CATALOG CREATE GRAPH foo { CONSTRUCT CREATE (:A) RETURN GRAPH }")
 
     val graph = caps.cypher("FROM GRAPH foo RETURN GRAPH").graph
 
     graph.cypher(
       """MATCH (a:A)
         |CONSTRUCT
-        |  NEW (COPY OF a)
+        |  CREATE (COPY OF a)
         |MATCH (n)
         |RETURN labels(n)
       """.stripMargin).records.iterator.toBag should equal(Bag(
@@ -891,14 +891,14 @@ class MultipleGraphBehaviour extends CAPSTestSuite with ScanGraphInit {
   }
 
   it("can construct with an input table expanded by unwind") {
-    caps.cypher("CREATE GRAPH foo { CONSTRUCT NEW (:A) RETURN GRAPH }")
+    caps.cypher("CATALOG CREATE GRAPH foo { CONSTRUCT CREATE (:A) RETURN GRAPH }")
 
     val data = caps.cypher("FROM GRAPH foo RETURN GRAPH").graph.cypher(
       """MATCH (a:A)
         |UNWIND [1, 2, 3] AS i
         |CONSTRUCT
-        |  NEW (f COPY OF a)-[:FOO]->(g COPY OF a)
-        |  NEW (:B {name: 'foo'})
+        |  CREATE (f COPY OF a)-[:FOO]->(g COPY OF a)
+        |  CREATE (:B {name: 'foo'})
         |MATCH (n)
         |RETURN n.name
       """.stripMargin).records
@@ -917,4 +917,78 @@ class MultipleGraphBehaviour extends CAPSTestSuite with ScanGraphInit {
       fooRow
     ))
   }
+
+  it("should set a node property from a matched node") {
+    val query =
+      """|MATCH (m)
+         |CONSTRUCT
+         |  CREATE (a :A)
+         |  SET a.name = m.name
+         |RETURN GRAPH""".stripMargin
+
+    val result = testGraph1.cypher(query)
+
+    result.records.toMaps shouldBe empty
+    result.graph.schema.labels should equal(Set("A"))
+    result.graph.schema should equal(Schema.empty.withNodePropertyKeys("A")("name" -> CTString))
+    result.graph.cypher("MATCH (a:A) RETURN a.name").records.toMaps should equal(Bag(
+      CypherMap("a.name" -> "Mats")
+    ))
+  }
+
+  it("should set a node property from a literal") {
+    val query =
+      """|CONSTRUCT
+         |  CREATE (a :A)
+         |  SET a.name = 'Donald'
+         |RETURN GRAPH""".stripMargin
+
+    val result = testGraph1.cypher(query)
+
+    result.records.toMaps shouldBe empty
+    result.graph.schema.labels should equal(Set("A"))
+    result.graph.schema should equal(Schema.empty.withNodePropertyKeys("A")("name" -> CTString))
+    result.graph.cypher("MATCH (a:A) RETURN a.name").records.toMaps should equal(Bag(
+      CypherMap("a.name" -> "Donald")
+    ))
+  }
+
+  it("should set a node label") {
+    val query =
+      """|CONSTRUCT
+         |  CREATE (a)
+         |  SET a: FOO
+         |MATCH (n)
+         |RETURN n""".stripMargin
+
+    val result = testGraph1.cypher(query)
+
+    result.records.toMapsWithCollectedEntities shouldBe Bag(
+      CypherMap("n" -> CAPSNode(0, Set("FOO")))
+    )
+  }
+
+  // TODO: Requires COPY OF to be able to express original intent
+  ignore("should set multiple properties") {
+    val query =
+      """|MATCH (a)
+         |CONSTRUCT
+         |  CLONE a as newA
+         |  CREATE (newA :A:B)
+         |  SET newA.name = 'Donald'
+         |  SET newA.age = 100
+         |RETURN GRAPH""".stripMargin
+
+    val result = testGraph1.cypher(query)
+
+    result.records.toMaps shouldBe empty
+    result.graph.schema.labels should equal(Set("A", "B"))
+    result.graph.schema should equal(
+      Schema.empty
+        .withNodePropertyKeys(Set("A", "B"), PropertyKeys("name" -> CTString, "age" -> CTInteger)))
+    result.graph.cypher("MATCH (a:A:B) RETURN a.name").records.toMaps should equal(Bag(
+      CypherMap("a.name" -> "Donald")
+    ))
+  }
+
 }
