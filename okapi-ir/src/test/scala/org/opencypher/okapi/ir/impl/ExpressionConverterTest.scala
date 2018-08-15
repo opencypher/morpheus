@@ -224,7 +224,7 @@ class ExpressionConverterTest extends BaseTestSuite with Neo4jAstTestSupport {
     )
   }
 
-  lazy val testContext = IRBuilderContext.initial(
+  lazy val testContext: IRBuilderContext = IRBuilderContext.initial(
     "",
     CypherMap.empty,
     SemanticState.clean,

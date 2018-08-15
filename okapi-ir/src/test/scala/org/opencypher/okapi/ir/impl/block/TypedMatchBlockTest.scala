@@ -26,6 +26,7 @@
  */
 package org.opencypher.okapi.ir.impl.block
 
+import org.opencypher.okapi.api.graph.QualifiedGraphName
 import org.opencypher.okapi.api.types.{CTNode, CTRelationship}
 import org.opencypher.okapi.api.value.CypherValue._
 import org.opencypher.okapi.ir.api.block.MatchBlock
@@ -35,7 +36,7 @@ import org.opencypher.okapi.ir.impl.refactor.instances._
 
 class TypedMatchBlockTest extends IrTestSuite {
 
-  implicit val graph = Some(testQualifiedGraphName)
+  implicit val graph: Some[QualifiedGraphName] = Some(testQualifiedGraphName)
 
   it("computes detailed types of pattern variables") {
     implicit val (block, globals) = matchBlock("MATCH (n:Person:Foo)-[r:TYPE]->(m) RETURN n")

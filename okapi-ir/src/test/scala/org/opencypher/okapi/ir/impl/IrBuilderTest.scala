@@ -905,7 +905,7 @@ class IrBuilderTest extends IrTestSuite {
 
   implicit class RichModel(model: QueryModel[Expr]) {
 
-    def ensureThat(f: (QueryModel[Expr], CypherMap) => Unit) = f(model, model.parameters)
+    def ensureThat(f: (QueryModel[Expr], CypherMap) => Unit): Unit = f(model, model.parameters)
 
   }
 

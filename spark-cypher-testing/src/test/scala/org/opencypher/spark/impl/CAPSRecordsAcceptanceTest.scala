@@ -41,6 +41,7 @@ import org.opencypher.spark.impl.CAPSConverters._
 import org.opencypher.spark.impl.table.SparkTable.DataFrameTable
 import org.opencypher.spark.testing.CAPSTestSuite
 import org.opencypher.spark.testing.fixture.{CAPSNeo4jServerFixture, OpenCypherDataFixture}
+import org.scalatest.Assertion
 
 import scala.language.reflectiveCalls
 
@@ -166,9 +167,9 @@ class CAPSRecordsAcceptanceTest extends CAPSTestSuite with CAPSNeo4jServerFixtur
   }
 
   implicit class OtherRichRecords(records: CypherRecords) {
-    val capsRecords = records.asCaps
+    val capsRecords: CAPSRecords = records.asCaps
 
-    def shouldHaveSize(size: Int) = {
+    def shouldHaveSize(size: Int): Assertion = {
       val maps: Bag[CypherMap] = capsRecords.toMaps
 
       maps.size shouldBe size

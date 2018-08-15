@@ -41,9 +41,9 @@ import scala.language.implicitConversions
 
 class LogicalOptimizerTest extends BaseTestSuite with IrConstruction {
 
-  val emptySqm = SolvedQueryModel.empty
+  val emptySqm: SolvedQueryModel = SolvedQueryModel.empty
   val logicalGraph = LogicalCatalogGraph(testQualifiedGraphName, Schema.empty)
-  val schema = Schema.empty
+  val schema: Schema = Schema.empty
 
   //  //Helper to create nicer expected results with `asCode`
   //  import org.opencypher.caps.impl.common.AsCode._

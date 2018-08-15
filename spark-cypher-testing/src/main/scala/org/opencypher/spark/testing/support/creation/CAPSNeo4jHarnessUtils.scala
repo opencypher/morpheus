@@ -32,6 +32,6 @@ import org.opencypher.okapi.procedures.OkapiProcedures
 
 object CAPSNeo4jHarnessUtils {
   implicit class CAPSServerControls(val neo4j: ServerControls) extends AnyVal {
-    def withSchemaProcedure = neo4j.withProcedure(classOf[OkapiProcedures])
+    def withSchemaProcedure: ServerControls = neo4j.withProcedure(classOf[OkapiProcedures])
   }
 }

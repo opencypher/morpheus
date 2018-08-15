@@ -48,12 +48,12 @@ case object Endpoints {
   }
 
   private case class OneSingleEndpoint(field: IRField) extends IdenticalEndpoints {
-    override def contains(f: IRField) = field == f
+    override def contains(f: IRField): Boolean = field == f
   }
   private case class TwoDifferentEndpoints(source: IRField, target: IRField) extends DifferentEndpoints {
-    override def flip = copy(target, source)
+    override def flip: TwoDifferentEndpoints = copy(target, source)
 
-    override def contains(f: IRField) = f == source || f == target
+    override def contains(f: IRField): Boolean = f == source || f == target
   }
 }
 

@@ -86,12 +86,12 @@ sealed trait CyclicConnection extends Connection {
 }
 
 case object SingleRelationship {
-  val seed = "SimpleConnection".hashCode
+  val seed: Int = "SimpleConnection".hashCode
 }
 
 sealed trait SingleRelationship extends Connection {
   override type SELF[XO, XE] <: SingleRelationship { type O = XO; type E = XE }
-  final protected override def seed = SingleRelationship.seed
+  final protected override def seed: Int = SingleRelationship.seed
 }
 
 final case class DirectedRelationship(endpoints: DifferentEndpoints)
@@ -147,12 +147,12 @@ final case class CyclicRelationship(endpoints: IdenticalEndpoints) extends Singl
 }
 
 object VarLengthRelationship {
-  val seed = "VarLengthRelationship".hashCode
+  val seed: Int = "VarLengthRelationship".hashCode
 }
 
 sealed trait VarLengthRelationship extends Connection {
   override type SELF[XO, XE] <: VarLengthRelationship { type O = XO; type E = XE }
-  final protected override def seed = VarLengthRelationship.seed
+  final protected override def seed: Int = VarLengthRelationship.seed
 
   def lower: Int
   def upper: Option[Int]

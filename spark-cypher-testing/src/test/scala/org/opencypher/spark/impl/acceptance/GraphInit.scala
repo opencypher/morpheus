@@ -38,7 +38,7 @@ trait GraphInit {
 trait DefaultGraphInit extends ScanGraphInit
 
 trait ScanGraphInit extends GraphInit {
-  def initGraph(createQuery: String)(implicit caps: CAPSSession) = {
+  def initGraph(createQuery: String)(implicit caps: CAPSSession): RelationalCypherGraph[DataFrameTable] = {
     CAPSScanGraphFactory.initGraph(createQuery)
   }
 }
@@ -47,7 +47,7 @@ trait ScanGraphInit extends GraphInit {
   * Extend & override to ensure Scala knows this implements the same method as `DefaultGraphInit.initGraph`
   */
 trait SingleTableGraphInit extends GraphInit {
-  override def initGraph(createQuery: String)(implicit caps: CAPSSession) = {
+  override def initGraph(createQuery: String)(implicit caps: CAPSSession): RelationalCypherGraph[DataFrameTable] = {
     SingleTableGraphFactory.initGraph(createQuery)
   }
 }

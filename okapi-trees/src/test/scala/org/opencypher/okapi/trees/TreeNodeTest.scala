@@ -234,19 +234,19 @@ class TreeNodeTest extends FunSpec with Matchers {
 
   case class AddList(dummy1: List[Int], first: CalcExpr, dummy2: Int, remaining: List[CalcExpr], dummy3: List[Object])
     extends CalcExpr {
-    def eval = first.eval + remaining.map(_.eval).sum
+    def eval: Int = first.eval + remaining.map(_.eval).sum
   }
 
   case class Add(left: CalcExpr, right: CalcExpr) extends CalcExpr {
-    def eval = left.eval + right.eval
+    def eval: Int = left.eval + right.eval
   }
 
   case class Number(v: Int) extends CalcExpr {
-    def eval = v
+    def eval: Int = v
   }
 
   case class NoOp(in: CalcExpr) extends CalcExpr {
-    def eval = in.eval
+    def eval: Int = in.eval
   }
 
 }

@@ -60,7 +60,7 @@ trait Neo4jAstTestSupport extends AstConstructionTestSupport {
 object Neo4jAstTestSupport {
 
   object CypherParserWithoutSemanticChecking extends CypherParser {
-    override val pipeLine =
+    override val pipeLine: Transformer[BaseContext, BaseState, BaseState] =
       Parsing.adds(BaseContains[Statement]) andThen
         SyntaxDeprecationWarnings andThen
         PreparatoryRewriting andThen

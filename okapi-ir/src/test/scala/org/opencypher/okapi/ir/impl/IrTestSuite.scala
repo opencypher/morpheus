@@ -73,7 +73,7 @@ abstract class IrTestSuite extends BaseTestSuite {
 
     override def where(): Set[E] = Set.empty[E]
 
-    override val graph = testGraph
+    override val graph: IRCatalogGraph = testGraph
   }
 
   case class DummyBinds[E](fields: Set[IRField] = Set.empty) extends Binds[E]

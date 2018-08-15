@@ -165,7 +165,7 @@ abstract class AbstractPropertyGraphDataSource extends CAPSPropertyGraphDataSour
     waitForWriteCompletion(relWrites)
   }
 
-  protected def waitForWriteCompletion(writeFutures: Set[Future[Unit]])(implicit ec: ExecutionContext) = {
+  protected def waitForWriteCompletion(writeFutures: Set[Future[Unit]])(implicit ec: ExecutionContext): Unit = {
     writeFutures.foreach { writeFuture =>
       Await.ready(writeFuture, Duration.Inf)
       writeFuture.onComplete {

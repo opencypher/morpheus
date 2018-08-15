@@ -28,7 +28,7 @@ package org.opencypher.spark.impl
 
 object CAPSGraphTestData {
 
-  val `:Person` =
+  val `:Person`: String =
     """
       |CREATE (p1:Person:Swedish {name: "Mats", luckyNumber: 23})
       |CREATE (p2:Person {name: "Martin", luckyNumber: 42})
@@ -37,7 +37,7 @@ object CAPSGraphTestData {
     """.stripMargin
 
   // required to test conflicting input data
-  val `:Brogrammer` =
+  val `:Brogrammer`: String =
     """
       |CREATE (pb1:Person:Brogrammer {language: "Node"})
       |CREATE (pb2:Person:Brogrammer {language: "Coffeescript"})
@@ -45,7 +45,7 @@ object CAPSGraphTestData {
       |CREATE (pb4:Person:Brogrammer {language: "TypeScript"})
     """.stripMargin
 
-  val `:Programmer` =
+  val `:Programmer`: String =
     """
       |CREATE (pp1:Person:Programmer {name: "Alice",luckyNumber: 42,language: "C"})
       |CREATE (pp2:Person:Programmer {name: "Bob",luckyNumber: 23,language: "D"})
@@ -53,7 +53,7 @@ object CAPSGraphTestData {
       |CREATE (pp4:Person:Programmer {name: "Carl",luckyNumber: 49,language: "R"})
     """.stripMargin
 
-  val `:Book` =
+  val `:Book`: String =
     """
       |CREATE (b1:Book {title: "1984", year: 1949})
       |CREATE (b2:Book {title: "Cryptonomicon", year: 1999})
@@ -61,7 +61,7 @@ object CAPSGraphTestData {
       |CREATE (b4:Book {title: "The Circle", year: 2013})
     """.stripMargin
 
-  val `:KNOWS` =
+  val `:KNOWS`: String =
     """
       |CREATE (p1)-[:KNOWS {since: 2017}]->(p2)
       |CREATE (p1)-[:KNOWS {since: 2016}]->(p3)
@@ -71,7 +71,7 @@ object CAPSGraphTestData {
       |CREATE (p3)-[:KNOWS {since: 2016}]->(p4)
     """.stripMargin
 
-  val `:READS` =
+  val `:READS`: String =
     """
       |CREATE (p1)-[:READS {recommends :true}]->(b1)
       |CREATE (p2)-[:READS {recommends :true}]->(b4)
@@ -79,7 +79,7 @@ object CAPSGraphTestData {
       |CREATE (p4)-[:READS {recommends :false}]->(b2)
     """.stripMargin
 
-  val `:INFLUENCES` =
+  val `:INFLUENCES`: String =
     """
       |CREATE (b1)-[:INFLUENCES]->(b2)
     """.stripMargin

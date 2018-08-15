@@ -35,7 +35,7 @@ final case class OrderAndSliceBlock[E](
     limit: Option[E],
     graph: IRGraph
 ) extends BasicBlock[OrderedFields[E], E](BlockType("order-and-slice")) {
-  override val binds = OrderedFields[E]()
+  override val binds: OrderedFields[E] = OrderedFields[E]()
   override def where: Set[E] = Set.empty[E]
 }
 

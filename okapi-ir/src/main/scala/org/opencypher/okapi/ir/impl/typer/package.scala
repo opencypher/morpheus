@@ -117,7 +117,7 @@ package object typer {
   def error[R: _keepsErrors](failure: TyperError): Eff[R, CypherType] =
     wrong[R, TyperError](failure) >> pure(CTWildcard)
 
-  implicit val showExpr = new Show[Expression] {
+  implicit val showExpr: Show[Expression] = new Show[Expression] {
     override def show(it: Expression): String = s"$it [${it.position}]"
   }
 }

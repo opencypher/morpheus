@@ -30,7 +30,7 @@ import org.opencypher.okapi.ir.test.support.RewriterTestSupport
 import org.opencypher.okapi.testing.BaseTestSuite
 
 class normalizeCaseExpressionTest extends BaseTestSuite with RewriterTestSupport {
-  override val rewriter = normalizeCaseExpression
+  override val rewriter: normalizeCaseExpression.type = normalizeCaseExpression
 
   it("should rewrite simple CASE statement") {
     assertRewrite(

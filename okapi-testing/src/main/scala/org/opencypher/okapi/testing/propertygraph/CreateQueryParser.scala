@@ -48,7 +48,7 @@ import scala.reflect.ClassTag
 
 object CreateQueryParser {
 
-  val defaultContext = new BaseContext {
+  val defaultContext: BaseContext = new BaseContext {
     override def tracer: CompilationPhaseTracer = CompilationPhaseTracer.NO_TRACING
 
     override def notificationLogger: InternalNotificationLogger = devNullLogger
