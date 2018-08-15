@@ -858,7 +858,7 @@ class IrBuilderTest extends IrTestSuite {
   }
 
   describe("CreateGraphStatement") {
-    it("can parse a CREATE GRAPH statement") {
+    it("can parse a CATALOG CREATE GRAPH statement") {
       val innerQuery = s"FROM GRAPH ${
         testQualifiedGraphName.toString
       } RETURN GRAPH"

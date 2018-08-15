@@ -33,8 +33,8 @@ import org.scalatest.DoNotDiscover
 @DoNotDiscover
 class CatalogDDLBehaviour extends CAPSTestSuite with DefaultGraphInit {
 
-  describe("CREATE GRAPH") {
-    it("supports CREATE GRAPH on the session") {
+  describe("CATALOG CREATE GRAPH") {
+    it("supports CATALOG CREATE GRAPH on the session") {
       val inputGraph = initGraph(
         """
           |CREATE (:A)
@@ -44,7 +44,7 @@ class CatalogDDLBehaviour extends CAPSTestSuite with DefaultGraphInit {
 
       val result = caps.cypher(
         """
-          |CREATE GRAPH bar {
+          |CATALOG CREATE GRAPH bar {
           | From GRAPH foo
           | RETURN GRAPH
           |}
@@ -58,14 +58,14 @@ class CatalogDDLBehaviour extends CAPSTestSuite with DefaultGraphInit {
     }
   }
 
-    describe("DELETE GRAPH") {
-      it("can delete a session graph") {
+    describe("DROP GRAPH") {
+      it("can drop a session graph") {
 
         caps.catalog.store("foo", initGraph("CREATE (:A)"))
 
       val result = caps.cypher(
         """
-          |DELETE GRAPH session.foo
+          |CATALOG DROP GRAPH session.foo
         """.stripMargin
       )
 

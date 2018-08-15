@@ -137,11 +137,11 @@ class QualifiedGraphNameAcceptance extends CAPSTestSuite with DefaultGraphInit {
     }
   }
 
-  describe("CREATE GRAPH") {
+  describe("CATALOG CREATE GRAPH") {
     def assertCreateGraph(namespace: String, graphName: String) = {
       caps.cypher(
         s"""
-           |CREATE GRAPH $namespace.$graphName {
+           |CATALOG CREATE GRAPH $namespace.$graphName {
            | CONSTRUCT ON foo.foo
            | RETURN GRAPH
            |}
@@ -171,7 +171,7 @@ class QualifiedGraphNameAcceptance extends CAPSTestSuite with DefaultGraphInit {
     it("can create a graph with escaped graph name in default source ") {
       caps.cypher(
         s"""
-           |CREATE GRAPH `my best constructed graph` {
+           |CATALOG CREATE GRAPH `my best constructed graph` {
            | CONSTRUCT ON foo.foo
            | RETURN GRAPH
            |}

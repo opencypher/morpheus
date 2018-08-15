@@ -158,7 +158,7 @@ trait PGDSAcceptance[Session <: CypherSession] extends BeforeAndAfterEach {
   }
 
   it("stores a graph") {
-    Try(cypherSession.cypher(s"CREATE GRAPH $ns.${gn}2 { FROM GRAPH $ns.$gn RETURN GRAPH }")) match {
+    Try(cypherSession.cypher(s"CATALOG CREATE GRAPH $ns.${gn}2 { FROM GRAPH $ns.$gn RETURN GRAPH }")) match {
       case Success(_) =>
         withClue("`hasGraph` needs to return `true` after graph creation") {
           cypherSession.catalog.source(ns).hasGraph(GraphName(s"${gn}2")) shouldBe true
@@ -166,7 +166,7 @@ trait PGDSAcceptance[Session <: CypherSession] extends BeforeAndAfterEach {
         cypherSession.catalog.graph(s"$ns.${gn}2").nodes("n").size shouldBe 7
 
         a [GraphAlreadyExistsException] shouldBe thrownBy {
-          cypherSession.cypher(s"CREATE GRAPH $ns.$gn { RETURN GRAPH }")
+          cypherSession.cypher(s"CATALOG CREATE GRAPH $ns.$gn { RETURN GRAPH }")
         }
       case Failure(_: UnsupportedOperationException) =>
       case Failure(t) => throw t
@@ -176,9 +176,9 @@ trait PGDSAcceptance[Session <: CypherSession] extends BeforeAndAfterEach {
   it("stores a constructed graph") {
     Try(cypherSession.cypher(
       s"""
-         |CREATE GRAPH $ns.${gn}3 {
+         |CATALOG CREATE GRAPH $ns.${gn}3 {
          |  CONSTRUCT ON $ns.$gn
-         |    NEW (c:C { name: 'new' })
+         |    CREATE (c:C { name: 'new' })
          |  RETURN GRAPH
          |}
          |""".stripMargin)) match {
@@ -200,9 +200,9 @@ trait PGDSAcceptance[Session <: CypherSession] extends BeforeAndAfterEach {
   it("supports European Latin unicode labels, rel types, property keys, and property values") {
     Try(cypherSession.cypher(
       s"""
-         |CREATE GRAPH $ns.${gn}4 {
+         |CATALOG CREATE GRAPH $ns.${gn}4 {
          |  CONSTRUCT
-         |    NEW (:Āſ { Āſ: 'Āſ' })-[:Āſ]->()
+         |    CREATE (:Āſ { Āſ: 'Āſ' })-[:Āſ]->()
          |  RETURN GRAPH
          |}
          |""".stripMargin)) match {
@@ -222,9 +222,9 @@ trait PGDSAcceptance[Session <: CypherSession] extends BeforeAndAfterEach {
   it("supports using `id` as a property key") {
     Try(cypherSession.cypher(
       s"""
-         |CREATE GRAPH $ns.${gn}5 {
+         |CATALOG CREATE GRAPH $ns.${gn}5 {
          |  CONSTRUCT
-         |    NEW ({ id: 100 })
+         |    CREATE ({ id: 100 })
          |  RETURN GRAPH
          |}
          |""".stripMargin)) match {
@@ -242,8 +242,8 @@ trait PGDSAcceptance[Session <: CypherSession] extends BeforeAndAfterEach {
   }
 
   it("supports storing a union graph") {
-    cypherSession.cypher("CREATE GRAPH g1 { CONSTRUCT NEW () RETURN GRAPH }")
-    cypherSession.cypher("CREATE GRAPH g2 { CONSTRUCT NEW () RETURN GRAPH }")
+    cypherSession.cypher("CATALOG CREATE GRAPH g1 { CONSTRUCT CREATE () RETURN GRAPH }")
+    cypherSession.cypher("CATALOG CREATE GRAPH g2 { CONSTRUCT CREATE () RETURN GRAPH }")
     val unionGraphName = GraphName("union")
 
     val g1 = cypherSession.catalog.graph("g1")
@@ -276,7 +276,7 @@ trait PGDSAcceptance[Session <: CypherSession] extends BeforeAndAfterEach {
       s"""
          |CONSTRUCT
          |  ON $ns.$gn
-         |  NEW (:A {name: "A"})
+         |  CREATE (:A {name: "A"})
          |  RETURN GRAPH
         """.stripMargin).graph
     firstConstructedGraph.nodes("n").size shouldBe 8
@@ -291,7 +291,7 @@ trait PGDSAcceptance[Session <: CypherSession] extends BeforeAndAfterEach {
           s"""
              |CONSTRUCT
              |  ON $ns.$firstConstructedGraphName
-             |  NEW (:A:B {name: "COMBO", size: 2})
+             |  CREATE (:A:B {name: "COMBO", size: 2})
              |  RETURN GRAPH
         """.stripMargin).graph
         secondConstructedGraph.nodes("n").size shouldBe 9
@@ -301,8 +301,8 @@ trait PGDSAcceptance[Session <: CypherSession] extends BeforeAndAfterEach {
     }
   }
 
-  it("deletes a graph") {
-    Try(cypherSession.cypher(s"DELETE GRAPH $ns.$gn")) match {
+  it("drops a graph") {
+    Try(cypherSession.cypher(s"CATALOG DROP GRAPH $ns.$gn")) match {
       case Success(_) =>
         withClue("`hasGraph` needs to return `false` after graph deletion") {
           cypherSession.catalog.source(ns).hasGraph(gn) shouldBe false

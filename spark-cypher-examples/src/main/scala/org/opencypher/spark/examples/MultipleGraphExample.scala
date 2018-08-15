@@ -59,7 +59,7 @@ object MultipleGraphExample extends ConsoleApp {
        |MATCH (c:Customer)
        |WHERE p.name = c.name
        |CONSTRUCT ON socialNetwork, purchases.products
-       |  NEW (p)-[:IS]->(c)
+       |  CREATE (p)-[:IS]->(c)
        |RETURN GRAPH
     """.stripMargin
   ).graph

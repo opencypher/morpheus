@@ -29,8 +29,6 @@ package org.opencypher.okapi.ir.impl
 import cats.implicits._
 import org.atnos.eff._
 import org.atnos.eff.all._
-import org.opencypher.v9_0.ast
-import org.opencypher.v9_0.{expressions => exp}
 import org.opencypher.okapi.api.graph.QualifiedGraphName
 import org.opencypher.okapi.api.schema.Schema
 import org.opencypher.okapi.api.types._
@@ -44,6 +42,7 @@ import org.opencypher.okapi.ir.api.util.CompilationStage
 import org.opencypher.okapi.ir.impl.refactor.instances._
 import org.opencypher.okapi.ir.impl.util.VarConverters.RichIrField
 import org.opencypher.v9_0.util.InputPosition
+import org.opencypher.v9_0.{ast, expressions => exp}
 
 
 object IRBuilder extends CompilationStage[ast.Statement, CypherStatement[Expr], IRBuilderContext] {
@@ -78,7 +77,7 @@ object IRBuilder extends CompilationStage[ast.Statement, CypherStatement[Expr], 
           result <- {
             val schema = innerQuery.get.model.result match {
               case GraphResultBlock(_, irGraph) => context.schemaFor(irGraph.qualifiedGraphName)
-              case _ => throw IllegalArgumentException("The query in CREATE GRAPH must return a graph")
+              case _ => throw IllegalArgumentException("The query in CATALOG CREATE GRAPH must return a graph")
             }
             val irQgn = QualifiedGraphName(qgn.parts)
             val statement = Some(CreateGraphStatement[Expr](QueryInfo(context.queryString), IRCatalogGraph(irQgn, schema), innerQuery.get))
@@ -216,8 +215,8 @@ object IRBuilder extends CompilationStage[ast.Statement, CypherStatement[Expr], 
               agg ++ context.schemaFor(next)
             }
 
-            // Computing single nodes/rels constructed by NEW (CREATE)
-            // TODO: Throw exception if both clone alias and original field name are used in NEW
+            // Computing single nodes/rels constructed by CREATEA
+            // TODO: Throw exception if both clone alias and original field name are used in CREATE
             val createPattern = createPatterns.foldLeft(Pattern.empty[Expr])(_ ++ _)
 
             // Single nodes/rels constructed by CLONE (MERGE)
@@ -241,7 +240,7 @@ object IRBuilder extends CompilationStage[ast.Statement, CypherStatement[Expr], 
             cloneItemMap.keys.foreach { cloneFieldAlias =>
               cloneFieldAlias.cypherType match {
                 case _: CTRelationship if !createPattern.fields.contains(cloneFieldAlias) =>
-                  throw UnsupportedOperationException(s"Can only clone relationship ${cloneFieldAlias.name} if it is also part of a NEW pattern")
+                  throw UnsupportedOperationException(s"Can only clone relationship ${cloneFieldAlias.name} if it is also part of a CREATE pattern")
                 case _ => ()
               }
             }
