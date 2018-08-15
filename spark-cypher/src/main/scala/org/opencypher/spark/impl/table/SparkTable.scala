@@ -27,7 +27,7 @@
 package org.opencypher.spark.impl.table
 
 import org.apache.spark.sql._
-import org.apache.spark.sql.functions._
+import org.apache.spark.sql.types.{NullType, StructField}
 import org.apache.spark.storage.StorageLevel
 import org.opencypher.okapi.api.types._
 import org.opencypher.okapi.api.value.CypherValue
@@ -189,13 +189,19 @@ object SparkTable {
     }
 
     override def unionAll(other: DataFrameTable): DataFrameTable = {
-      val thisNameTypeSchema = df.schema.map(f => f.name -> f.dataType)
-      val otherNameTypeSchema = other.df.schema.map(f => f.name -> f.dataType)
-
-      if (thisNameTypeSchema != otherNameTypeSchema) {
-        throw IllegalArgumentException(
-          "Equal DataFrame schemas (differing nullability is OK)",
-          s"${df.schema}\n\t${other.df.schema}")
+      df.schema.fields.zip(other.df.schema.fields).foreach {
+        case (StructField(leftName, leftType, _, _), StructField(rightName, rightType, _, _)) => {
+          if (leftName != rightName) {
+            throw IllegalArgumentException(
+              "Equal column names for union all",
+              s"Left column: $leftName and right column: $rightName")
+          }
+          if (leftType != NullType && rightType != NullType && leftType != rightType) {
+            throw IllegalArgumentException(
+              "Equal column data types for union all (differing nullability is OK)",
+              s"Left column: $leftName with type $leftType and right column: $rightName with type $rightType")
+          }
+        }
       }
 
       df.union(other.df)
