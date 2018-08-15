@@ -190,7 +190,7 @@ object SparkTable {
 
     override def unionAll(other: DataFrameTable): DataFrameTable = {
       df.schema.fields.zip(other.df.schema.fields).foreach {
-        case (StructField(leftName, leftType, _, _), StructField(rightName, rightType, _, _)) => {
+        case (StructField(leftName, leftType, _, _), StructField(rightName, rightType, _, _)) =>
           if (leftName != rightName) {
             throw IllegalArgumentException(
               "Equal column names for union all",
@@ -201,7 +201,6 @@ object SparkTable {
               "Equal column data types for union all (differing nullability is OK)",
               s"Left column: $leftName with type $leftType and right column: $rightName with type $rightType")
           }
-        }
       }
 
       df.union(other.df)
