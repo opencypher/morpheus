@@ -703,6 +703,13 @@ final case class E()(var cypherType: CypherType = CTWildcard) extends NullaryFun
   override def withCypherType(ct: CypherType): E = copy()(ct)
 }
 
+// Numeric functions
+
+final case class Abs(expr: Expr)(var cypherType: CypherType = CTWildcard) extends UnaryFunctionExpr {
+  override type This = Abs
+  override def withCypherType(ct: CypherType): Abs = copy()(ct)
+}
+
 // Aggregators
 
 sealed trait Aggregator extends Expr {

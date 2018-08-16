@@ -39,7 +39,7 @@ import org.opencypher.okapi.api.types._
 import org.opencypher.okapi.ir.impl.parse.rewriter.ExistsPattern
 import org.opencypher.okapi.ir.impl.typer.SignatureConverter._
 import org.opencypher.v9_0.expressions._
-import org.opencypher.v9_0.expressions.functions.{Coalesce, Collect, Exists, Exp, Log, Log10, Max, Min, Sqrt, ToBoolean, ToString}
+import org.opencypher.v9_0.expressions.functions.{Abs, Coalesce, Collect, Exists, Exp, Log, Log10, Max, Min, Sqrt, ToBoolean, ToString}
 
 import scala.util.Try
 
@@ -481,7 +481,7 @@ object SchemaTyper {
             ))
 
         // TODO: remove as soon as https://github.com/opencypher/front-end/issues/27 is fixed
-        case Sqrt | Log | Log10 | Exp =>
+        case Sqrt | Log | Log10 | Exp | Abs =>
           pure[R, Set[FunctionSignature]](
             Set(
               FunctionSignature(Seq(CTNull), CTNull),

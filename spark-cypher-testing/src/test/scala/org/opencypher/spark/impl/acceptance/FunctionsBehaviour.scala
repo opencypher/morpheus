@@ -653,4 +653,41 @@ class FunctionsBehaviour extends CAPSTestSuite with DefaultGraphInit {
       }
     }
   }
+
+    describe("numeric functions") {
+
+      describe("abs()") {
+
+        it("on float value") {
+
+          val result = caps.cypher("RETURN abs(-12.96) AS res")
+
+          result.records.toMaps should equal(
+            Bag(
+              CypherMap("res" -> 12.96)
+            )
+          )
+        }
+
+        it("on int value") {
+          val result = caps.cypher("RETURN abs(-23) AS res")
+
+          result.records.toMaps should equal(
+            Bag(
+              CypherMap("res" -> 23)
+            )
+          )
+        }
+
+        it("on null value") {
+          val result = caps.cypher("RETURN abs(null) AS res")
+
+          result.records.toMaps should equal(
+            Bag(
+              CypherMap("res" -> null)
+            )
+          )
+        }
+      }
+    }
 }
