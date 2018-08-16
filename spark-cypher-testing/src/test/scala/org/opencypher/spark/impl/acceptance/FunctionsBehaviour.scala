@@ -802,5 +802,40 @@ class FunctionsBehaviour extends CAPSTestSuite with DefaultGraphInit {
           )
         }
       }
+
+      describe("sign()") {
+
+        it("on float value") {
+
+          val result = caps.cypher("RETURN sign(-1.1) AS res")
+
+          result.records.toMaps should equal(
+            Bag(
+              CypherMap("res" -> -1)
+            )
+          )
+        }
+
+        it("on int value") {
+          val result = caps.cypher("RETURN sign(1) AS res")
+
+          result.records.toMaps should equal(
+            Bag(
+              CypherMap("res" -> 1)
+            )
+          )
+        }
+
+        it("on null value") {
+          val result = caps.cypher("RETURN sign(null) AS res")
+
+          result.records.toMaps should equal(
+            Bag(
+              CypherMap("res" -> null)
+            )
+          )
+        }
+      }
+
     }
 }

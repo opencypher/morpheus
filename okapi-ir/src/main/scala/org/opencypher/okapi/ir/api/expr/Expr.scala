@@ -730,6 +730,11 @@ final case class Round(expr: Expr)(var cypherType: CypherType = CTWildcard) exte
   override def withCypherType(ct: CypherType): Round = copy()(ct)
 }
 
+final case class Sign(expr: Expr)(var cypherType: CypherType = CTWildcard) extends UnaryFunctionExpr {
+  override type This = Sign
+  override def withCypherType(ct: CypherType): Sign = copy()(ct)
+}
+
 // Aggregators
 
 sealed trait Aggregator extends Expr {

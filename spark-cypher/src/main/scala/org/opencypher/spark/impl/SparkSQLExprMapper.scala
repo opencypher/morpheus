@@ -245,6 +245,7 @@ object SparkSQLExprMapper {
         case Floor(e) => functions.floor(e.asSparkSQLExpr).cast(DoubleType)
         case _: Rand => functions.rand()
         case Round(e) => functions.round(e.asSparkSQLExpr).cast(DoubleType)
+        case Sign(e) => functions.signum(e.asSparkSQLExpr).cast(IntegerType)
 
         // Bit operations
 
