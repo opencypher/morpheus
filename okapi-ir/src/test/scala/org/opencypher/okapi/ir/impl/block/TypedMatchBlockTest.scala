@@ -30,7 +30,6 @@ import org.opencypher.okapi.api.graph.QualifiedGraphName
 import org.opencypher.okapi.api.types.{CTNode, CTRelationship}
 import org.opencypher.okapi.api.value.CypherValue._
 import org.opencypher.okapi.ir.api.block.MatchBlock
-import org.opencypher.okapi.ir.api.expr.Expr
 import org.opencypher.okapi.ir.impl.IrTestSuite
 import org.opencypher.okapi.ir.impl.refactor.instances._
 
@@ -70,13 +69,13 @@ class TypedMatchBlockTest extends IrTestSuite {
       ))
   }
 
-  private def matchBlock(singleMatchQuery: String): (MatchBlock[Expr], CypherMap) = {
+  private def matchBlock(singleMatchQuery: String): (MatchBlock, CypherMap) = {
     val model = singleMatchQuery.asCypherQuery().model
     val projectBlock = model.result.after.head
     val matchBlock = projectBlock.after.head
 
     matchBlock match {
-      case block: MatchBlock[Expr] =>
+      case block: MatchBlock =>
         block -> model.parameters
 
       case x => throw new MatchError(s"Supposed to be a match block, was: $x")

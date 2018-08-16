@@ -27,19 +27,20 @@
 package org.opencypher.okapi.ir.api.block
 
 import org.opencypher.okapi.ir.api._
+import org.opencypher.okapi.ir.api.expr.Expr
 
-final case class ProjectBlock[E](
-    after: List[Block[E]],
-    binds: Fields[E] = Fields[E](),
-    where: Set[E] = Set.empty[E],
+final case class ProjectBlock(
+    after: List[Block],
+    binds: Fields = Fields(),
+    where: Set[Expr] = Set.empty[Expr],
     graph: IRGraph,
     distinct: Boolean = false
-) extends BasicBlock[Fields[E], E](BlockType("project"))
+) extends BasicBlock[Fields](BlockType("project"))
 
-final case class Fields[E](items: Map[IRField, E] = Map.empty[IRField, E]) extends Binds[E] {
+final case class Fields(items: Map[IRField, Expr] = Map.empty[IRField, Expr]) extends Binds {
   override def fields: Set[IRField] = items.keySet
 }
 
 case object ProjectedFieldsOf {
-  def apply[E](entries: (IRField, E)*) = Fields(entries.toMap)
+  def apply(entries: (IRField, Expr)*) = Fields(entries.toMap)
 }

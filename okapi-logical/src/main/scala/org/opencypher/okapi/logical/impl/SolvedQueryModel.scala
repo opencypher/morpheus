@@ -36,7 +36,7 @@ import org.opencypher.okapi.ir.impl.util.VarConverters.toVar
 
 case class SolvedQueryModel(
   fields: Set[IRField],
-  predicates: Set[Expr] = Set.empty[Expr]
+  predicates: Set[Expr] = Set.empty
 ) {
 
   // extension
@@ -49,9 +49,9 @@ case class SolvedQueryModel(
     copy(fields ++ other.fields, predicates ++ other.predicates)
 
   // containment
-  def contains(blocks: Block[Expr]*): Boolean = contains(blocks.toSet)
-  def contains(blocks: Set[Block[Expr]]): Boolean = blocks.forall(contains)
-  def contains(block: Block[Expr]): Boolean = {
+  def contains(blocks: Block*): Boolean = contains(blocks.toSet)
+  def contains(blocks: Set[Block]): Boolean = blocks.forall(contains)
+  def contains(block: Block): Boolean = {
     val bindsFields = block.binds.fields subsetOf fields
     val preds = block.where subsetOf predicates
 
@@ -59,7 +59,7 @@ case class SolvedQueryModel(
   }
 
   def solves(f: IRField): Boolean = fields(f)
-  def solves(p: Pattern[Expr]): Boolean = p.fields.subsetOf(fields)
+  def solves(p: Pattern): Boolean = p.fields.subsetOf(fields)
 
   def solveRelationship(r: IRField): SolvedQueryModel = {
     r.cypherType match {

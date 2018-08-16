@@ -27,12 +27,13 @@
 package org.opencypher.okapi.ir.api.block
 
 import org.opencypher.okapi.ir.api.IRGraph
+import org.opencypher.okapi.ir.api.expr.Expr
 import org.opencypher.okapi.ir.api.pattern.Pattern
 
-final case class MatchBlock[E](
-    after: List[Block[E]],
-    binds: Pattern[E],
-    where: Set[E] = Set.empty[E],
+final case class MatchBlock(
+    after: List[Block],
+    binds: Pattern,
+    where: Set[Expr] = Set.empty[Expr],
     optional: Boolean,
     graph: IRGraph
-) extends BasicBlock[Pattern[E], E](BlockType("match"))
+) extends BasicBlock[Pattern](BlockType("match"))

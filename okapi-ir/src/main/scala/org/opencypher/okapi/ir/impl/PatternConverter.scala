@@ -46,22 +46,22 @@ import scala.annotation.tailrec
 
 final class PatternConverter()(implicit val irBuilderContext: IRBuilderContext) {
 
-  type Result[A] = State[Pattern[Expr], A]
+  type Result[A] = State[Pattern, A]
 
   def convert(
     p: ast.Pattern,
     knownTypes: Map[ast.Expression, CypherType],
     qualifiedGraphName: QualifiedGraphName,
-    pattern: Pattern[Expr] = Pattern.empty
-  ): Pattern[Expr] =
+    pattern: Pattern = Pattern.empty
+  ): Pattern =
     convertPattern(p, knownTypes, qualifiedGraphName).runS(pattern).value
 
   def convertRelsPattern(
     p: ast.RelationshipsPattern,
     knownTypes: Map[ast.Expression, CypherType],
     qualifiedGraphName: QualifiedGraphName,
-    pattern: Pattern[Expr] = Pattern.empty
-  ): Pattern[Expr] =
+    pattern: Pattern = Pattern.empty
+  ): Pattern =
     convertElement(p.element, knownTypes, qualifiedGraphName).runS(pattern).value
 
   private def convertPattern(
@@ -109,7 +109,7 @@ final class PatternConverter()(implicit val irBuilderContext: IRBuilderContext) 
 
         for {
           entity <- pure(IRField(nodeVar.name)(nodeVar.cypherType))
-          _ <- modify[Pattern[Expr]](_.withEntity(entity, extractProperties(propertiesOpt)).withBaseField(entity, baseNodeField))
+          _ <- modify[Pattern](_.withEntity(entity, extractProperties(propertiesOpt)).withBaseField(entity, baseNodeField))
         } yield entity
 
       case rc@ast.RelationshipChain(left, ast.RelationshipPattern(eOpt, types, rangeOpt, propertiesOpt, dir, _, baseRelVar), right) =>
@@ -123,7 +123,7 @@ final class PatternConverter()(implicit val irBuilderContext: IRBuilderContext) 
           source <- convertElement(left, knownTypes, qualifiedGraphName)
           target <- convertElement(right, knownTypes, qualifiedGraphName)
           rel <- pure(IRField(relVar.name)(if (rangeOpt.isDefined) CTList(relVar.cypherType) else relVar.cypherType))
-          _ <- modify[Pattern[Expr]] { given =>
+          _ <- modify[Pattern] { given =>
             val registered = given
               .withEntity(rel)
               .withBaseField(rel, baseRelField)

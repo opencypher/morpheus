@@ -29,15 +29,15 @@ package org.opencypher.okapi.ir.impl
 import org.opencypher.okapi.ir.api.block.Block
 
 object BlockRegistry {
-  def empty[E]: BlockRegistry[E] = BlockRegistry[E](List.empty)
+  def empty: BlockRegistry = BlockRegistry(List.empty)
 }
 
 // TODO: Inline in IRBuilderContext
-case class BlockRegistry[E](reg: List[Block[E]]) {
+case class BlockRegistry(reg: List[Block]) {
 
-  def register(blockDef: Block[E]): BlockRegistry[E] = {
+  def register(blockDef: Block): BlockRegistry = {
     copy(reg = reg :+ blockDef)
   }
 
-  def lastAdded: Option[Block[E]] = reg.lastOption
+  def lastAdded: Option[Block] = reg.lastOption
 }

@@ -45,12 +45,12 @@ trait ExprBlockInstances {
     }
   }
 
-  implicit def typedMatchBlock: TypedBlock[MatchBlock[Expr]] =
-    new TypedBlock[MatchBlock[Expr]] {
+  implicit def typedMatchBlock: TypedBlock[MatchBlock] =
+    new TypedBlock[MatchBlock] {
 
       override type BlockExpr = Expr
 
-      override def outputs(block: MatchBlock[Expr]): Set[IRField] = {
+      override def outputs(block: MatchBlock): Set[IRField] = {
         val opaqueTypedFields = block.binds.fields
         val predicates = block.where
 

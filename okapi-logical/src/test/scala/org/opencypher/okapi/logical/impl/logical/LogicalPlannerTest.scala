@@ -61,7 +61,7 @@ class LogicalPlannerTest extends BaseTestSuite with IrConstruction {
 
   it("converts match block") {
     val pattern = Pattern
-      .empty[Expr]
+      .empty
       .withEntity(nodeA)
       .withEntity(nodeB)
       .withEntity(relR)
@@ -81,7 +81,7 @@ class LogicalPlannerTest extends BaseTestSuite with IrConstruction {
 
   it("converts cyclic match block") {
     val pattern = Pattern
-      .empty[Expr]
+      .empty
       .withEntity(nodeA)
       .withEntity(relR)
       .withConnection(relR, CyclicRelationship(nodeA))
@@ -96,7 +96,7 @@ class LogicalPlannerTest extends BaseTestSuite with IrConstruction {
   }
 
   it("converts project block") {
-    val fields = Fields[Expr](Map(toField('a) -> Property('n, PropertyKey("prop"))(CTFloat)))
+    val fields = Fields(Map(toField('a) -> Property('n, PropertyKey("prop"))(CTFloat)))
     val block = project(fields)
 
     val result = plan(irFor(block))
@@ -282,18 +282,18 @@ class LogicalPlannerTest extends BaseTestSuite with IrConstruction {
 
   private val planner = new LogicalPlanner(new LogicalOperatorProducer)
 
-  private def plan(ir: CypherStatement[Expr], schema: Schema = Schema.empty): LogicalOperator =
+  private def plan(ir: CypherStatement, schema: Schema = Schema.empty): LogicalOperator =
     plan(ir, schema, testGraphName -> schema)
 
   private def plan(
-    ir: CypherStatement[Expr],
+    ir: CypherStatement,
     ambientSchema: Schema,
     graphWithSchema: (GraphName, Schema)*
   ): LogicalOperator = {
     val withAmbientGraph = graphWithSchema :+ (testGraphName -> ambientSchema)
 
     ir match {
-      case cq: CypherQuery[Expr] =>
+      case cq: CypherQuery =>
         planner.process(cq)(LogicalPlannerContext(ambientSchema, Set.empty, Map(testNamespace -> graphSource(withAmbientGraph: _*))))
       case _ => throw new IllegalArgumentException("Query is not a CypherQuery")
     }

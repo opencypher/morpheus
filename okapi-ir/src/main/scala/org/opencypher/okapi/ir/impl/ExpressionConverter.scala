@@ -123,7 +123,7 @@ final class ExpressionConverter(implicit context: IRBuilderContext) {
     // Exists (rewritten Pattern Expressions)
     case org.opencypher.okapi.ir.impl.parse.rewriter.ExistsPattern(subquery, trueVar) =>
       val innerModel = IRBuilder(subquery)(context) match {
-        case cq: CypherQuery[Expr] => cq
+        case cq: CypherQuery => cq
         case _ => throw new IllegalArgumentException("ExistsPattern only accepts SingleQuery")
       }
       ExistsPatternExpr(

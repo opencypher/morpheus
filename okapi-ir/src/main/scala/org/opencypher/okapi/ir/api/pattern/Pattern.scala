@@ -35,17 +35,17 @@ import org.opencypher.okapi.ir.impl.exception.PatternConversionException
 import scala.annotation.tailrec
 
 case object Pattern {
-  def empty[E]: Pattern[E] = Pattern[E](fields = Set.empty, topology = Map.empty)
+  def empty[E]: Pattern = Pattern(fields = Set.empty, topology = Map.empty)
 
-  def node[E](node: IRField): Pattern[E] = Pattern[E](fields = Set(node), topology = Map.empty)
+  def node[E](node: IRField): Pattern = Pattern(fields = Set(node), topology = Map.empty)
 }
 
-final case class Pattern[E](
+final case class Pattern(
   fields: Set[IRField],
   topology: Map[IRField, Connection],
   properties: Map[IRField, MapExpression] = Map.empty,
   baseFields: Map[IRField, IRField]= Map.empty
-) extends Binds[E] {
+) extends Binds {
 
   lazy val nodes: Set[IRField] = getEntity(CTNode)
   lazy val rels: Set[IRField] = getEntity(CTRelationship)
@@ -58,7 +58,7 @@ final case class Pattern[E](
     *
     * @return A pattern that contains all entities and connections of their input
     */
-  def ++(other: Pattern[E]): Pattern[E] = {
+  def ++(other: Pattern): Pattern = {
     val thisMap = fields.map(f => f.name -> f.cypherType).toMap
     val otherMap = other.fields.map(f => f.name -> f.cypherType).toMap
 
@@ -95,8 +95,8 @@ final case class Pattern[E](
 
   def isEmpty: Boolean = this == Pattern.empty
 
-  def withConnection(key: IRField, connection: Connection, propertiesOpt: Option[MapExpression] = None): Pattern[E] = {
-    val withProperties: Pattern[E] = propertiesOpt match {
+  def withConnection(key: IRField, connection: Connection, propertiesOpt: Option[MapExpression] = None): Pattern = {
+    val withProperties: Pattern = propertiesOpt match {
       case Some(props) => copy(properties = properties.updated(key, props))
       case None => this
     }
@@ -104,8 +104,8 @@ final case class Pattern[E](
     if (topology.get(key).contains(connection)) withProperties else withProperties.copy(topology = topology.updated(key, connection))
   }
 
-  def withEntity(field: IRField, propertiesOpt: Option[MapExpression] = None): Pattern[E] = {
-    val withProperties: Pattern[E] = propertiesOpt match {
+  def withEntity(field: IRField, propertiesOpt: Option[MapExpression] = None): Pattern = {
+    val withProperties: Pattern = propertiesOpt match {
       case Some(props) => copy(properties = properties.updated(field, props))
       case None => this
     }
@@ -113,14 +113,14 @@ final case class Pattern[E](
     if (fields(field)) withProperties else withProperties.copy(fields = fields + field)
   }
 
-  def withBaseField(field: IRField, baseOpt: Option[IRField]): Pattern[E] = baseOpt match {
+  def withBaseField(field: IRField, baseOpt: Option[IRField]): Pattern = baseOpt match {
     case Some(base) if fields.contains(field) => copy(baseFields = baseFields.updated(field, base))
     case _ => this
   }
 
-  def components: Set[Pattern[E]] = {
+  def components: Set[Pattern] = {
     val _fields = fields.foldLeft(Map.empty[IRField, Int]) { case (m, f) => m.updated(f, m.size) }
-    val components = nodes.foldLeft(Map.empty[Int, Pattern[E]]) {
+    val components = nodes.foldLeft(Map.empty[Int, Pattern]) {
       case (m, f) => m.updated(_fields(f), Pattern.node(f))
     }
     computeComponents(topology.toSeq, components, _fields.size, _fields)
@@ -129,10 +129,10 @@ final case class Pattern[E](
   @tailrec
   private def computeComponents(
     input: Seq[(IRField, Connection)],
-    components: Map[Int, Pattern[E]],
+    components: Map[Int, Pattern],
     count: Int,
     fieldToComponentIndex: Map[IRField, Int]
-  ): Set[Pattern[E]] = input match {
+  ): Set[Pattern] = input match {
     case Seq((field, connection), tail@_*) =>
       val endpoints = connection.endpoints.toSet
       val links = endpoints.flatMap(fieldToComponentIndex.get)
@@ -140,7 +140,7 @@ final case class Pattern[E](
       if (links.isEmpty) {
         // Connection forms a new connected component on its own
         val newCount = count + 1
-        val newPattern = Pattern[E](
+        val newPattern = Pattern(
           fields = fields intersect endpoints,
           topology = Map(field -> connection)
         ).withEntity(field)

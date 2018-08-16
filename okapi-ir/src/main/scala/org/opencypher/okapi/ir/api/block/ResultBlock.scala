@@ -27,41 +27,42 @@
 package org.opencypher.okapi.ir.api.block
 
 import org.opencypher.okapi.ir.api._
+import org.opencypher.okapi.ir.api.expr.Expr
 
-sealed trait ResultBlock[E] extends Block[E] {
-  override val where: Set[E] = Set.empty
+sealed trait ResultBlock extends Block {
+  override val where: Set[Expr] = Set.empty
 }
 
-final case class TableResultBlock[E](
-  after: List[Block[E]],
-  binds: OrderedFields[E],
+final case class TableResultBlock(
+  after: List[Block],
+  binds: OrderedFields,
   graph: IRGraph
-) extends ResultBlock[E] {
+) extends ResultBlock {
 
-  def select(fields: Set[IRField]): TableResultBlock[E] =
+  def select(fields: Set[IRField]): TableResultBlock =
     copy(binds = binds.select(fields))
 }
 
 object TableResultBlock {
-  def empty[E](graph: IRGraph) =
-    TableResultBlock(List.empty, OrderedFields[E](), graph)
+  def empty(graph: IRGraph) =
+    TableResultBlock(List.empty, OrderedFields(), graph)
 }
 
-final case class OrderedFields[E](orderedFields: List[IRField] = List.empty) extends Binds[E] {
+final case class OrderedFields(orderedFields: List[IRField] = List.empty) extends Binds {
   override def fields: Set[IRField] = orderedFields.toSet
 
-  def select(fields: Set[IRField]): OrderedFields[E] = copy(orderedFields = orderedFields.filter(fields.contains))
+  def select(fields: Set[IRField]): OrderedFields = copy(orderedFields = orderedFields.filter(fields.contains))
 }
 
 object OrderedFields {
-  def fieldsFrom[E](fields: IRField*): OrderedFields[E] = OrderedFields[E](fields.toList)
+  def fieldsFrom[E](fields: IRField*): OrderedFields = OrderedFields(fields.toList)
 
-  def unapplySeq(arg: OrderedFields[_]): Option[Seq[IRField]] = Some(arg.orderedFields)
+  def unapplySeq(arg: OrderedFields): Option[Seq[IRField]] = Some(arg.orderedFields)
 }
 
-final case class GraphResultBlock[E](
-  after: List[Block[E]],
+final case class GraphResultBlock(
+  after: List[Block],
   graph: IRGraph
-) extends ResultBlock[E] {
-  override val binds: Binds[E] = Binds.empty
+) extends ResultBlock {
+  override val binds: Binds = Binds.empty
 }

@@ -870,7 +870,7 @@ class IrBuilderTest extends IrTestSuite {
            |}
         """.stripMargin
 
-      val result = query.parseIR[CreateGraphStatement[Expr]]()
+      val result = query.parseIR[CreateGraphStatement]()
 
       result.innerQuery.model should equalWithTracing(innerQuery.asCypherQuery().model)
       result.graph.qualifiedGraphName should equal(QualifiedGraphName(Namespace("session"), GraphName("bar")))
@@ -882,7 +882,7 @@ class IrBuilderTest extends IrTestSuite {
     it("can parse a DROP GRAPH statement") {
       val query = s"CATALOG DROP GRAPH $testQualifiedGraphName"
 
-      val result = query.parseIR[DeleteGraphStatement[Expr]]()
+      val result = query.parseIR[DeleteGraphStatement]()
 
       result.graph.qualifiedGraphName should equal(testQualifiedGraphName)
       result.graph.schema should equal(testGraphSchema)
@@ -1078,9 +1078,9 @@ class IrBuilderTest extends IrTestSuite {
     }
   }
 
-  implicit class RichBlock(b: Block[Expr]) {
+  implicit class RichBlock(b: Block) {
 
-    def findExactlyOne(f: PartialFunction[Block[Expr], Unit]): Block[Expr] = {
+    def findExactlyOne(f: PartialFunction[Block, Unit]): Block = {
       val results = b.collect {
         case block if f.isDefinedAt(block) =>
           f(block)
@@ -1093,9 +1093,9 @@ class IrBuilderTest extends IrTestSuite {
     }
   }
 
-  implicit class RichModel(model: QueryModel[Expr]) {
+  implicit class RichModel(model: QueryModel) {
 
-    def ensureThat(f: (QueryModel[Expr], CypherMap) => Unit): Unit = f(model, model.parameters)
+    def ensureThat(f: (QueryModel, CypherMap) => Unit): Unit = f(model, model.parameters)
 
   }
 

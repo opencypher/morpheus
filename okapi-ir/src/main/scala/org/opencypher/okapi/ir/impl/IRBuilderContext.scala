@@ -48,7 +48,7 @@ final case class IRBuilderContext(
   queryString: String,
   parameters: CypherMap,
   workingGraph: IRGraph, // initially the ambient graph, but gets changed by `FROM GRAPH`/`CONSTRUCT`
-  blockRegistry: BlockRegistry[Expr] = BlockRegistry.empty[Expr],
+  blockRegistry: BlockRegistry = BlockRegistry.empty,
   semanticState: SemanticState,
   queryCatalog: CatalogWithQuerySchemas, // copy of Session catalog plus constructed graph schemas
   knownTypes: Map[ast.Expression, CypherType] = Map.empty) {
@@ -57,7 +57,7 @@ final case class IRBuilderContext(
   private lazy val exprConverter = new ExpressionConverter()(self)
   private lazy val patternConverter = new PatternConverter()(self)
 
-  def convertPattern(p: ast.Pattern, qgn: Option[QualifiedGraphName] = None): Pattern[Expr] = {
+  def convertPattern(p: ast.Pattern, qgn: Option[QualifiedGraphName] = None): Pattern = {
     patternConverter.convert(p, knownTypes, qgn.getOrElse(workingGraph.qualifiedGraphName))
   }
 
@@ -82,7 +82,7 @@ final case class IRBuilderContext(
 
   def schemaFor(qgn: QualifiedGraphName): Schema = queryCatalog.schema(qgn)
 
-  def withBlocks(reg: BlockRegistry[Expr]): IRBuilderContext = copy(blockRegistry = reg)
+  def withBlocks(reg: BlockRegistry): IRBuilderContext = copy(blockRegistry = reg)
 
   def withFields(fields: Set[IRField]): IRBuilderContext = {
     val withFieldTypes = fields.foldLeft(knownTypes) {
@@ -109,8 +109,8 @@ object IRBuilderContext {
     sessionCatalog: Map[Namespace, PropertyGraphDataSource],
     fieldsFromDrivingTable: Set[Var] = Set.empty
   ): IRBuilderContext = {
-    val registry = BlockRegistry.empty[Expr]
-    val block = SourceBlock[Expr](workingGraph)
+    val registry = BlockRegistry.empty
+    val block = SourceBlock(workingGraph)
     val updatedRegistry = registry.register(block)
     val queryCatalog = CatalogWithQuerySchemas(sessionCatalog)
 
