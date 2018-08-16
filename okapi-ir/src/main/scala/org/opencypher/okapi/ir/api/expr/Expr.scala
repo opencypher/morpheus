@@ -528,6 +528,11 @@ final case class MonotonicallyIncreasingId(cypherType: CypherType = CTInteger) e
   override def withCypherType(ct: CypherType): MonotonicallyIncreasingId = copy(ct)
 }
 
+sealed trait NullaryFunctionExpr extends FunctionExpr {
+
+  def exprs: IndexedSeq[Expr] = IndexedSeq.empty[Expr]
+}
+
 sealed trait UnaryFunctionExpr extends FunctionExpr {
 
   def expr: Expr
@@ -671,7 +676,35 @@ final case class BitwiseOr(lhs: Expr, rhs: Expr)(val cypherType: CypherType = CT
   override def withCypherType(ct: CypherType): BitwiseOr = copy()(ct)
 }
 
+// Mathematical functions
+
+final case class Sqrt(expr: Expr)(val cypherType: CypherType = CTWildcard) extends UnaryFunctionExpr {
+  override type This = Sqrt
+  override def withCypherType(ct: CypherType): Sqrt = copy()(ct)
+}
+
+final case class Log(expr: Expr)(var cypherType: CypherType = CTWildcard) extends UnaryFunctionExpr {
+  override type This = Log
+  override def withCypherType(ct: CypherType): Log = copy()(ct)
+}
+
+final case class Log10(expr: Expr)(var cypherType: CypherType = CTWildcard) extends UnaryFunctionExpr {
+  override type This = Log10
+  override def withCypherType(ct: CypherType): Log10 = copy()(ct)
+}
+
+final case class Exp(expr: Expr)(var cypherType: CypherType = CTWildcard) extends UnaryFunctionExpr {
+  override type This = Exp
+  override def withCypherType(ct: CypherType): Exp = copy()(ct)
+}
+
+final case class E()(var cypherType: CypherType = CTWildcard) extends NullaryFunctionExpr {
+  override type This = E
+  override def withCypherType(ct: CypherType): E = copy()(ct)
+}
+
 // Aggregators
+
 sealed trait Aggregator extends Expr {
   def inner: Option[Expr]
 }

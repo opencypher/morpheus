@@ -67,7 +67,7 @@ class SchemaTyperTest extends BaseTestSuite with Neo4jAstTestSupport with Mockit
       WrongNumberOfArguments("coalesce()", 1, 0)
   }
 
-  test("typing exists()") {
+  it("typing exists()") {
     implicit val context: TypeTracker = typeTracker("n" -> CTNode)
 
     assertExpr.from("exists(n.prop)") shouldHaveInferredType CTBoolean
@@ -79,7 +79,7 @@ class SchemaTyperTest extends BaseTestSuite with Neo4jAstTestSupport with Mockit
       WrongNumberOfArguments("exists(n.prop, n.prop)", 1, 2)
   }
 
-  test("typing count()") {
+  it("typing count()") {
     implicit val context: TypeTracker = typeTracker("a" -> CTNode)
 
     assertExpr.from("count(*)") shouldHaveInferredType CTInteger
@@ -87,7 +87,7 @@ class SchemaTyperTest extends BaseTestSuite with Neo4jAstTestSupport with Mockit
     assertExpr.from("count(a.name)") shouldHaveInferredType CTInteger.nullable
   }
 
-  test("typing toString()") {
+  it("typing toString()") {
     implicit val context: TypeTracker = typeTracker("a" -> CTInteger, "b" -> CTBoolean, "c" -> CTFloat, "d" -> CTString)
 
     assertExpr.from("toString(a)") shouldHaveInferredType CTString
@@ -96,21 +96,35 @@ class SchemaTyperTest extends BaseTestSuite with Neo4jAstTestSupport with Mockit
     assertExpr.from("toString(d)") shouldHaveInferredType CTString
   }
 
-  test("typing toBoolean()") {
+  it("typing toBoolean()") {
     implicit val context: TypeTracker = typeTracker("true" -> CTBoolean, "false" -> CTBoolean)
 
     assertExpr.from("toBoolean(true)") shouldHaveInferredType CTBoolean
     assertExpr.from("toBoolean(false)") shouldHaveInferredType CTBoolean
   }
 
-  test("typing property of node without label") {
+  it("can type sqrt()") {
+    implicit val context: TypeTracker = typeTracker("a" -> CTFloat, "b" -> CTInteger)
+
+    assertExpr.from("sqrt(a)") shouldHaveInferredType CTFloat
+    assertExpr.from("sqrt(b)") shouldHaveInferredType CTFloat
+  }
+
+  it("can type log()") {
+    implicit val context: TypeTracker = typeTracker("a" -> CTFloat, "b" -> CTInteger)
+
+    assertExpr.from("log(a)") shouldHaveInferredType CTFloat
+    assertExpr.from("log(b)") shouldHaveInferredType CTFloat
+  }
+
+  it("typing property of node without label") {
     implicit val context: TypeTracker = typeTracker("a" -> CTNode)
 
     assertExpr.from("a.name") shouldHaveInferredType CTAny
     assertExpr.from("a.age") shouldHaveInferredType CTNumber
   }
 
-  test("typing add") {
+  it("typing add") {
     implicit val context: TypeTracker =
       typeTracker("a" -> CTInteger, "b" -> CTFloat, "c" -> CTNumber, "d" -> CTAny.nullable, "e" -> CTBoolean)
 
@@ -132,7 +146,7 @@ class SchemaTyperTest extends BaseTestSuite with Neo4jAstTestSupport with Mockit
       NoSuitableSignatureForExpr("e + e", Seq(CTBoolean, CTBoolean))
   }
 
-  test("typing add for string and list concatenation") {
+  it("typing add for string and list concatenation") {
     assertExpr.from("'foo' + 'bar'") shouldHaveInferredType CTString
     assertExpr.from("[] + [1, 2, 3]") shouldHaveInferredType CTList(CTInteger)
     assertExpr.from("[true] + [1, 2, 3]") shouldHaveInferredType CTList(CTAny)
@@ -148,7 +162,7 @@ class SchemaTyperTest extends BaseTestSuite with Neo4jAstTestSupport with Mockit
       UnsupportedExpr(parseExpr("['foo'] + null"))
   }
 
-  test("typing subtract") {
+  it("typing subtract") {
     implicit val context: TypeTracker =
       typeTracker("a" -> CTInteger, "b" -> CTFloat, "c" -> CTNumber, "d" -> CTAny.nullable, "e" -> CTString)
 
@@ -166,7 +180,7 @@ class SchemaTyperTest extends BaseTestSuite with Neo4jAstTestSupport with Mockit
       InvalidType("e", Seq(CTInteger, CTFloat, CTNumber), CTString)
   }
 
-  test("typing multiply") {
+  it("typing multiply") {
     implicit val context: TypeTracker =
       typeTracker("a" -> CTInteger, "b" -> CTFloat, "c" -> CTNumber, "d" -> CTAny.nullable, "e" -> CTString)
 
@@ -184,7 +198,7 @@ class SchemaTyperTest extends BaseTestSuite with Neo4jAstTestSupport with Mockit
       InvalidType("e", Seq(CTInteger, CTFloat, CTNumber), CTString)
   }
 
-  test("typing divide") {
+  it("typing divide") {
     implicit val context: TypeTracker =
       typeTracker("a" -> CTInteger, "b" -> CTFloat, "c" -> CTNumber, "d" -> CTAny.nullable, "e" -> CTString)
 
@@ -202,7 +216,7 @@ class SchemaTyperTest extends BaseTestSuite with Neo4jAstTestSupport with Mockit
       InvalidType("e", Seq(CTInteger, CTFloat, CTNumber), CTString)
   }
 
-  test("typing label predicates") {
+  it("typing label predicates") {
     implicit val context: TypeTracker = typeTracker("n" -> CTNode())
 
     assertExpr.from("n:Person") shouldHaveInferredType CTBoolean
@@ -234,7 +248,7 @@ class SchemaTyperTest extends BaseTestSuite with Neo4jAstTestSupport with Mockit
     assertExpr.from("n.name = x AND n:Person") shouldMake prop("n", "name") haveType CTString
   }
 
-  test("should detail entity type from predicate") {
+  it("should detail entity type from predicate") {
     implicit val context: TypeTracker = typeTracker("n" -> CTNode)
 
     assertExpr.from("n:Person") shouldMake varFor("n") haveType CTNode("Person")
@@ -243,14 +257,14 @@ class SchemaTyperTest extends BaseTestSuite with Neo4jAstTestSupport with Mockit
     assertExpr.from("n:Person OR n:Dog") shouldMake varFor("n") haveType CTNode // not enough information for us to act
   }
 
-  test("typing equality") {
+  it("typing equality") {
     implicit val context: TypeTracker = typeTracker("n" -> CTInteger)
 
     assertExpr.from("n = 1") shouldHaveInferredType CTBoolean
     assertExpr.from("n <> 1") shouldHaveInferredType CTBoolean
   }
 
-  test("typing less than") {
+  it("typing less than") {
     implicit val context: TypeTracker = typeTracker("n" -> CTInteger, "m" -> CTFloat, "o" -> CTString)
 
     assertExpr.from("n < n") shouldHaveInferredType CTBoolean.nullable
@@ -259,7 +273,7 @@ class SchemaTyperTest extends BaseTestSuite with Neo4jAstTestSupport with Mockit
     assertExpr.from("o < n") shouldHaveInferredType CTBoolean.nullable
   }
 
-  test("typing less than or equal") {
+  it("typing less than or equal") {
     implicit val context: TypeTracker = typeTracker("n" -> CTInteger, "m" -> CTInteger.nullable, "o" -> CTString)
 
     assertExpr.from("n <= n") shouldHaveInferredType CTBoolean.nullable
@@ -268,7 +282,7 @@ class SchemaTyperTest extends BaseTestSuite with Neo4jAstTestSupport with Mockit
     assertExpr.from("o <= n") shouldHaveInferredType CTBoolean.nullable
   }
 
-  test("typing greater than") {
+  it("typing greater than") {
     implicit val context: TypeTracker = typeTracker("n" -> CTInteger, "m" -> CTInteger, "o" -> CTString)
 
     assertExpr.from("n > m") shouldHaveInferredType CTBoolean.nullable
@@ -276,7 +290,7 @@ class SchemaTyperTest extends BaseTestSuite with Neo4jAstTestSupport with Mockit
     assertExpr.from("o > n") shouldHaveInferredType CTBoolean.nullable
   }
 
-  test("typing greater than or equal") {
+  it("typing greater than or equal") {
     implicit val context: TypeTracker = typeTracker("n" -> CTInteger, "m" -> CTInteger, "o" -> CTString)
 
     assertExpr.from("n >= m") shouldHaveInferredType CTBoolean.nullable
@@ -284,7 +298,7 @@ class SchemaTyperTest extends BaseTestSuite with Neo4jAstTestSupport with Mockit
     assertExpr.from("o >= n") shouldHaveInferredType CTBoolean.nullable
   }
 
-  test("typing property equality and IN") {
+  it("typing property equality and IN") {
     implicit val context: TypeTracker = typeTracker("n" -> CTNode("Person"))
 
     assertExpr.from("n.name = 'foo'") shouldHaveInferredType CTBoolean
@@ -293,30 +307,30 @@ class SchemaTyperTest extends BaseTestSuite with Neo4jAstTestSupport with Mockit
       InvalidType(parseExpr("'foo'"), CTList(CTWildcard), CTString)
   }
 
-  test("typing of unsupported expressions") {
+  it("typing of unsupported expressions") {
     val expr = mock[Expression]
     assertExpr(expr) shouldFailToInferTypeWithErrors UnsupportedExpr(expr)
   }
 
-  test("typing of variables") {
+  it("typing of variables") {
     implicit val tracker: TypeTracker = typeTracker("n" -> CTNode("Person"))
 
     assertExpr.from("n") shouldHaveInferredType CTNode("Person")
   }
 
-  test("typing of parameters (1)") {
+  it("typing of parameters (1)") {
     implicit val tracker: TypeTracker = TypeTracker.empty.withParameters(Map("param" -> CTNode("Person")))
 
     assertExpr.from("$param") shouldHaveInferredType CTNode("Person")
   }
 
-  test("typing of parameters (2)") {
+  it("typing of parameters (2)") {
     implicit val tracker: TypeTracker = TypeTracker.empty.withParameters(Map("param" -> CTAny))
 
     assertExpr.from("$param") shouldHaveInferredType CTAny
   }
 
-  test("typing of basic literals") {
+  it("typing of basic literals") {
     assertExpr.from("1") shouldHaveInferredType CTInteger
     assertExpr.from("-3") shouldHaveInferredType CTInteger
     assertExpr.from("true") shouldHaveInferredType CTBoolean
@@ -327,7 +341,7 @@ class SchemaTyperTest extends BaseTestSuite with Neo4jAstTestSupport with Mockit
     assertExpr.from("'-3.14'") shouldHaveInferredType CTString
   }
 
-  test("typing of list literals") {
+  it("typing of list literals") {
     assertExpr.from("[]") shouldHaveInferredType CTList(CTVoid)
     assertExpr.from("[1, 2]") shouldHaveInferredType CTList(CTInteger)
     assertExpr.from("[1, 1.0]") shouldHaveInferredType CTList(CTNumber)
@@ -346,19 +360,19 @@ class SchemaTyperTest extends BaseTestSuite with Neo4jAstTestSupport with Mockit
     assertExpr.from("[[], 1, true][$param]")(TypeTracker.empty.withParameters(Map("param" -> CTInteger))) shouldHaveInferredType CTAny.nullable
   }
 
-  test("infer type of node property lookup") {
+  it("infer type of node property lookup") {
     implicit val context: TypeTracker = typeTracker("n" -> CTNode("Person"))
 
     assertExpr.from("n.name") shouldHaveInferredType CTString
   }
 
-  test("infer type of relationship property lookup") {
+  it("infer type of relationship property lookup") {
     implicit val context: TypeTracker = typeTracker("r" -> CTRelationship("KNOWS"))
 
     assertExpr.from("r.relative") shouldHaveInferredType CTBoolean
   }
 
-  test("typing of id function") {
+  it("typing of id function") {
     implicit val context: TypeTracker = typeTracker("n" -> CTNode("Person"))
 
     assertExpr.from("id(n)") shouldHaveInferredType CTInteger.nullable

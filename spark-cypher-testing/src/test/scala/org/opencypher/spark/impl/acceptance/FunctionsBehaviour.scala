@@ -504,4 +504,109 @@ class FunctionsBehaviour extends CAPSTestSuite with DefaultGraphInit {
       )
     }
   }
+
+  describe("sqrt") {
+    it("on float value") {
+
+      val result = caps.cypher("RETURN sqrt(12.96)")
+
+      result.records.toMaps should equal(
+        Bag(
+          CypherMap("sqrt(12.96)" -> 3.6)
+        )
+      )
+    }
+
+    it("on int value") {
+      val result = caps.cypher("RETURN sqrt(9)")
+
+      result.records.toMaps should equal(
+        Bag(
+          CypherMap("sqrt(9)" -> 3.0)
+        )
+      )
+    }
+  }
+
+  describe("log") {
+    it("on float value") {
+
+      val result = caps.cypher("RETURN log(12.96)")
+
+      result.records.toMaps should equal(
+        Bag(
+          CypherMap("log(12.96)" -> 2.561867690924129)
+        )
+      )
+    }
+
+    it("on int value") {
+      val result = caps.cypher("RETURN log(9)")
+
+      result.records.toMaps should equal(
+        Bag(
+          CypherMap("log(9)" -> 2.1972245773362196)
+        )
+      )
+    }
+  }
+
+  describe("log10") {
+    it("on float value") {
+
+      val result = caps.cypher("RETURN log10(12.96)")
+
+      result.records.toMaps should equal(
+        Bag(
+          CypherMap("log10(12.96)" -> 1.1126050015345745)
+        )
+      )
+    }
+
+    it("on int value") {
+      val result = caps.cypher("RETURN log10(100)")
+
+      result.records.toMaps should equal(
+        Bag(
+          CypherMap("log10(100)" -> 2.0)
+        )
+      )
+    }
+  }
+
+  describe("exp") {
+    it("on float value") {
+
+      val result = caps.cypher("RETURN exp(1.337)")
+
+      result.records.toMaps should equal(
+        Bag(
+          CypherMap("exp(1.337)" -> 3.8076035433731965)
+        )
+      )
+    }
+
+    it("on int value") {
+      val result = caps.cypher("RETURN exp(2)")
+
+      result.records.toMaps should equal(
+        Bag(
+          CypherMap("exp(2)" -> 7.38905609893065)
+        )
+      )
+    }
+  }
+
+  describe("e") {
+    it("returns e") {
+
+      val result = caps.cypher("RETURN e()")
+
+      result.records.toMaps should equal(
+        Bag(
+          CypherMap("e()" -> Math.E)
+        )
+      )
+    }
+  }
 }
