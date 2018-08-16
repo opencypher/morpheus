@@ -715,6 +715,11 @@ final case class Ceil(expr: Expr)(var cypherType: CypherType = CTWildcard) exten
   override def withCypherType(ct: CypherType): Ceil = copy()(ct)
 }
 
+final case class Floor(expr: Expr)(var cypherType: CypherType = CTWildcard) extends UnaryFunctionExpr {
+  override type This = Floor
+  override def withCypherType(ct: CypherType): Floor = copy()(ct)
+}
+
 // Aggregators
 
 sealed trait Aggregator extends Expr {

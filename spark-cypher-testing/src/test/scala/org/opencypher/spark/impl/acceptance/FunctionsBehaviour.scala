@@ -724,5 +724,39 @@ class FunctionsBehaviour extends CAPSTestSuite with DefaultGraphInit {
         }
       }
 
+      describe("floor()") {
+
+        it("on float value") {
+
+          val result = caps.cypher("RETURN floor(1.9) AS res")
+
+          result.records.toMaps should equal(
+            Bag(
+              CypherMap("res" -> 1.0)
+            )
+          )
+        }
+
+        it("on int value") {
+          val result = caps.cypher("RETURN floor(1) AS res")
+
+          result.records.toMaps should equal(
+            Bag(
+              CypherMap("res" -> 1.0)
+            )
+          )
+        }
+
+        it("on null value") {
+          val result = caps.cypher("RETURN floor(null) AS res")
+
+          result.records.toMaps should equal(
+            Bag(
+              CypherMap("res" -> null)
+            )
+          )
+        }
+      }
+
     }
 }
