@@ -689,5 +689,40 @@ class FunctionsBehaviour extends CAPSTestSuite with DefaultGraphInit {
           )
         }
       }
+
+      describe("ceil()") {
+
+        it("on float value") {
+
+          val result = caps.cypher("RETURN ceil(0.1) AS res")
+
+          result.records.toMaps should equal(
+            Bag(
+              CypherMap("res" -> 1.0)
+            )
+          )
+        }
+
+        it("on int value") {
+          val result = caps.cypher("RETURN ceil(1) AS res")
+
+          result.records.toMaps should equal(
+            Bag(
+              CypherMap("res" -> 1.0)
+            )
+          )
+        }
+
+        it("on null value") {
+          val result = caps.cypher("RETURN ceil(null) AS res")
+
+          result.records.toMaps should equal(
+            Bag(
+              CypherMap("res" -> null)
+            )
+          )
+        }
+      }
+
     }
 }

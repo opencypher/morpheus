@@ -142,6 +142,14 @@ class SchemaTyperTest extends BaseTestSuite with Neo4jAstTestSupport with Mockit
       implicit val context: TypeTracker = typeTracker("a" -> CTFloat, "b" -> CTInteger, "c" -> CTNull)
 
       assertExpr.from("abs(a)") shouldHaveInferredType CTFloat
+      assertExpr.from("abs(b)") shouldHaveInferredType CTInteger
+      assertExpr.from("abs(c)") shouldHaveInferredType CTNull
+    }
+
+    it("can type ceil()") {
+      implicit val context: TypeTracker = typeTracker("a" -> CTFloat, "b" -> CTInteger, "c" -> CTNull)
+
+      assertExpr.from("abs(a)") shouldHaveInferredType CTFloat
       assertExpr.from("abs(b)") shouldHaveInferredType CTFloat
       assertExpr.from("abs(c)") shouldHaveInferredType CTNull
     }

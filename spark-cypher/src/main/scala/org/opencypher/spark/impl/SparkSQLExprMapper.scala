@@ -241,6 +241,7 @@ object SparkSQLExprMapper {
         case Log10(e) => functions.log(10.0, e.asSparkSQLExpr)
         case Exp(e) => functions.exp(e.asSparkSQLExpr)
         case Abs(e) => functions.abs(e.asSparkSQLExpr)
+        case Ceil(e) => functions.ceil(e.asSparkSQLExpr).cast(DoubleType)
 
         // Bit operations
 
