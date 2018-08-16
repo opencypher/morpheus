@@ -103,18 +103,38 @@ class SchemaTyperTest extends BaseTestSuite with Neo4jAstTestSupport with Mockit
     assertExpr.from("toBoolean(false)") shouldHaveInferredType CTBoolean
   }
 
-  it("can type sqrt()") {
-    implicit val context: TypeTracker = typeTracker("a" -> CTFloat, "b" -> CTInteger)
+  describe("logarithmic functions") {
+    it("can type sqrt()") {
+      implicit val context: TypeTracker = typeTracker("a" -> CTFloat, "b" -> CTInteger, "c" -> CTNull)
 
-    assertExpr.from("sqrt(a)") shouldHaveInferredType CTFloat
-    assertExpr.from("sqrt(b)") shouldHaveInferredType CTFloat
-  }
+      assertExpr.from("sqrt(a)") shouldHaveInferredType CTFloat
+      assertExpr.from("sqrt(b)") shouldHaveInferredType CTFloat
+      assertExpr.from("sqrt(c)") shouldHaveInferredType CTNull
+    }
 
-  it("can type log()") {
-    implicit val context: TypeTracker = typeTracker("a" -> CTFloat, "b" -> CTInteger)
+    it("can type log()") {
+      implicit val context: TypeTracker = typeTracker("a" -> CTFloat, "b" -> CTInteger, "c" -> CTNull)
 
-    assertExpr.from("log(a)") shouldHaveInferredType CTFloat
-    assertExpr.from("log(b)") shouldHaveInferredType CTFloat
+      assertExpr.from("log(a)") shouldHaveInferredType CTFloat
+      assertExpr.from("log(b)") shouldHaveInferredType CTFloat
+      assertExpr.from("log(c)") shouldHaveInferredType CTNull
+    }
+
+    it("can type log10()") {
+      implicit val context: TypeTracker = typeTracker("a" -> CTFloat, "b" -> CTInteger, "c" -> CTNull)
+
+      assertExpr.from("log10(a)") shouldHaveInferredType CTFloat
+      assertExpr.from("log10(b)") shouldHaveInferredType CTFloat
+      assertExpr.from("log10(c)") shouldHaveInferredType CTNull
+    }
+
+    it("can type exp()") {
+      implicit val context: TypeTracker = typeTracker("a" -> CTFloat, "b" -> CTInteger, "c" -> CTNull)
+
+      assertExpr.from("exp(a)") shouldHaveInferredType CTFloat
+      assertExpr.from("exp(b)") shouldHaveInferredType CTFloat
+      assertExpr.from("exp(c)") shouldHaveInferredType CTNull
+    }
   }
 
   it("typing property of node without label") {

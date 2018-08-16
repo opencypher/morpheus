@@ -484,6 +484,7 @@ object SchemaTyper {
         case Sqrt | Log | Log10 | Exp =>
           pure[R, Set[FunctionSignature]](
             Set(
+              FunctionSignature(Seq(CTNull), CTNull),
               FunctionSignature(Seq(CTFloat), CTFloat),
               FunctionSignature(Seq(CTInteger), CTFloat)
             ))
