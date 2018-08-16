@@ -703,6 +703,38 @@ final case class E()(var cypherType: CypherType = CTWildcard) extends NullaryFun
   override def withCypherType(ct: CypherType): E = copy()(ct)
 }
 
+// Numeric functions
+
+final case class Abs(expr: Expr)(var cypherType: CypherType = CTWildcard) extends UnaryFunctionExpr {
+  override type This = Abs
+  override def withCypherType(ct: CypherType): Abs = copy()(ct)
+}
+
+final case class Ceil(expr: Expr)(var cypherType: CypherType = CTWildcard) extends UnaryFunctionExpr {
+  override type This = Ceil
+  override def withCypherType(ct: CypherType): Ceil = copy()(ct)
+}
+
+final case class Floor(expr: Expr)(var cypherType: CypherType = CTWildcard) extends UnaryFunctionExpr {
+  override type This = Floor
+  override def withCypherType(ct: CypherType): Floor = copy()(ct)
+}
+
+final case class Rand()(var cypherType: CypherType = CTWildcard) extends NullaryFunctionExpr {
+  override type This = Rand
+  override def withCypherType(ct: CypherType): Rand = copy()(ct)
+}
+
+final case class Round(expr: Expr)(var cypherType: CypherType = CTWildcard) extends UnaryFunctionExpr {
+  override type This = Round
+  override def withCypherType(ct: CypherType): Round = copy()(ct)
+}
+
+final case class Sign(expr: Expr)(var cypherType: CypherType = CTWildcard) extends UnaryFunctionExpr {
+  override type This = Sign
+  override def withCypherType(ct: CypherType): Sign = copy()(ct)
+}
+
 // Aggregators
 
 sealed trait Aggregator extends Expr {

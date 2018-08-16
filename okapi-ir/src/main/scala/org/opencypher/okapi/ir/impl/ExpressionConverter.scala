@@ -137,6 +137,8 @@ final class ExpressionConverter(implicit context: IRBuilderContext) {
       }.toMap
       MapExpression(convertedItems)(typings(e))
 
+    case ast.Null() => NullLit(typings(e))
+
     case _ =>
       throw NotImplementedException(s"Not yet able to convert expression: $e")
   }

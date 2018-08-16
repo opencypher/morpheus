@@ -57,11 +57,20 @@ object FunctionUtils {
         case functions.Coalesce => Coalesce(expr)(cypherType)
         case functions.ToString => ToString(expr.head)(cypherType)
         case functions.ToBoolean => ToBoolean(expr.head)(cypherType)
+        // Logarithmic functions
         case functions.Sqrt => Sqrt(expr.head)(cypherType)
         case functions.Log => Log(expr.head)(cypherType)
         case functions.Log10 => Log10(expr.head)(cypherType)
         case functions.Exp => Exp(expr.head)(cypherType)
         case functions.E => E()(cypherType)
+        // Numeric functions
+        case functions.Abs => Abs(expr.head)(cypherType)
+        case functions.Ceil => Ceil(expr.head)(cypherType)
+        case functions.Floor => Floor(expr.head)(cypherType)
+        case functions.Rand => Rand()(cypherType)
+        case functions.Round => Round(expr.head)(cypherType)
+        case functions.Sign => Sign(expr.head)(cypherType)
+
         case a: functions.Function =>
           throw NotImplementedException(s"Support for converting ${a.name} function not yet implemented")
       }

@@ -39,7 +39,7 @@ import org.opencypher.okapi.api.types._
 import org.opencypher.okapi.ir.impl.parse.rewriter.ExistsPattern
 import org.opencypher.okapi.ir.impl.typer.SignatureConverter._
 import org.opencypher.v9_0.expressions._
-import org.opencypher.v9_0.expressions.functions.{Coalesce, Collect, Exists, Exp, Log, Log10, Max, Min, Sqrt, ToBoolean, ToString}
+import org.opencypher.v9_0.expressions.functions.{Abs, Ceil, Coalesce, Collect, Exists, Exp, Floor, Log, Log10, Max, Min, Round, Sign, Sqrt, ToBoolean, ToString}
 
 import scala.util.Try
 
@@ -481,11 +481,28 @@ object SchemaTyper {
             ))
 
         // TODO: remove as soon as https://github.com/opencypher/front-end/issues/27 is fixed
-        case Sqrt | Log | Log10 | Exp =>
+        case Sqrt | Log | Log10 | Exp | Ceil | Floor | Round =>
           pure[R, Set[FunctionSignature]](
             Set(
+              FunctionSignature(Seq(CTNull), CTNull),
               FunctionSignature(Seq(CTFloat), CTFloat),
               FunctionSignature(Seq(CTInteger), CTFloat)
+            ))
+
+        case Abs =>
+          pure[R, Set[FunctionSignature]](
+            Set(
+              FunctionSignature(Seq(CTNull), CTNull),
+              FunctionSignature(Seq(CTFloat), CTFloat),
+              FunctionSignature(Seq(CTInteger), CTInteger)
+            ))
+
+        case Sign =>
+          pure[R, Set[FunctionSignature]](
+            Set(
+              FunctionSignature(Seq(CTNull), CTNull),
+              FunctionSignature(Seq(CTFloat), CTInteger),
+              FunctionSignature(Seq(CTInteger), CTInteger)
             ))
 
         case f: TypeSignatures =>
