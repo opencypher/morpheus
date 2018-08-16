@@ -31,12 +31,14 @@ import org.opencypher.okapi.impl.exception.UnsupportedOperationException
 import org.opencypher.okapi.relational.api.graph.RelationalCypherGraph
 import org.opencypher.okapi.relational.api.table.Table
 
+import scala.reflect.runtime.universe.TypeTag
+
 object RelationalConverters {
 
-  implicit class RichPropertyGraph[T <: Table[T]](val graph: PropertyGraph) extends AnyVal {
-    def asRelational: RelationalCypherGraph[T] = graph.asInstanceOf[RelationalCypherGraph[_]] match {
+  implicit class RichPropertyGraph(val graph: PropertyGraph) extends AnyVal {
+    def asRelational[T <: Table[T] : TypeTag]: RelationalCypherGraph[T] = graph.asInstanceOf[RelationalCypherGraph[_]] match {
       // The cast is necessary since okapi-API does not expose the underlying table types
-      case caps: RelationalCypherGraph[T] => caps.asInstanceOf[RelationalCypherGraph[T]]
+      case caps: RelationalCypherGraph[_] => caps.asInstanceOf[RelationalCypherGraph[T]]
       case _ => throw UnsupportedOperationException(s"can only handle relational graphs, got $graph")
     }
   }

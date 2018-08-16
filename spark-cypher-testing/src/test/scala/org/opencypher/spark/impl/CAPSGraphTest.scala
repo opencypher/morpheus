@@ -29,6 +29,7 @@ package org.opencypher.spark.impl
 import org.apache.spark.sql.Row
 import org.opencypher.okapi.api.io.conversion.RelationshipMapping
 import org.opencypher.okapi.api.types._
+import org.opencypher.okapi.relational.api.planning.RelationalRuntimeContext
 import org.opencypher.okapi.relational.api.table.RelationalCypherRecords
 import org.opencypher.okapi.relational.impl.operators.Start
 import org.opencypher.okapi.testing.Bag
@@ -38,6 +39,8 @@ import org.opencypher.spark.impl.table.SparkTable.DataFrameTable
 import org.opencypher.spark.testing.CAPSTestSuite
 import org.opencypher.spark.testing.fixture.{GraphConstructionFixture, RecordsVerificationFixture, TeamDataFixture}
 
+import scala.reflect.runtime.universe
+
 abstract class CAPSGraphTest extends CAPSTestSuite
   with GraphConstructionFixture
   with RecordsVerificationFixture
@@ -45,7 +48,11 @@ abstract class CAPSGraphTest extends CAPSTestSuite
 
   object CAPSGraphTest {
     implicit class RecordOps(records: RelationalCypherRecords[DataFrameTable]) {
-      def planStart: Start[DataFrameTable] = Start(records)(caps.basicRuntimeContext())
+      def planStart: Start[DataFrameTable] = {
+        implicit val tableTypeTag: universe.TypeTag[DataFrameTable] = caps.tableTypeTag
+        implicit val context: RelationalRuntimeContext[DataFrameTable] = caps.basicRuntimeContext()
+        Start(records)
+      }
     }
   }
 

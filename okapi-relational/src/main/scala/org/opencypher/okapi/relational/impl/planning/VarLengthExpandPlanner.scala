@@ -37,11 +37,13 @@ import org.opencypher.okapi.relational.impl.planning.RelationalPlanner.{process,
 import org.opencypher.okapi.relational.impl.table.RecordHeader
 import org.opencypher.okapi.relational.impl.{operators => relational}
 
+import scala.reflect.runtime.universe.TypeTag
+
 trait ExpandDirection
 case object Outbound extends ExpandDirection
 case object Inbound extends ExpandDirection
 
-trait VarLengthExpandPlanner[T <: Table[T]] {
+abstract class VarLengthExpandPlanner[T <: Table[T] : TypeTag] {
 
   def source: Var
 
@@ -112,7 +114,9 @@ trait VarLengthExpandPlanner[T <: Table[T]] {
     val nextEdgeCT = if (i > lower) edgeScan.cypherType.nullable else edgeScan.cypherType
     val nextEdge = ListSegment(i, list)(nextEdgeCT)
 
-    val aliasedEdgeScanOp = physicalEdgeScanOp.alias(edgeScan as nextEdge).select(nextEdge)
+    val aliasedEdgeScanOp = physicalEdgeScanOp.
+      alias(edgeScan as nextEdge)
+      .select(nextEdge)
 
     val iterationTableHeader = iterationTable.header
     val nextEdgeScanHeader = aliasedEdgeScanOp.header
@@ -227,7 +231,7 @@ trait VarLengthExpandPlanner[T <: Table[T]] {
 }
 
 // TODO: use object instead
-class DirectedVarLengthExpandPlanner[T <: Table[T]](
+class DirectedVarLengthExpandPlanner[T <: Table[T] : TypeTag](
   override val source: Var,
   override val list: Var,
   override val edgeScan: Var,
@@ -254,10 +258,11 @@ class DirectedVarLengthExpandPlanner[T <: Table[T]](
 
     finalize(withTargetOps)
   }
+
 }
 
 // TODO: use object instead
-class UndirectedVarLengthExpandPlanner[T <: Table[T]](
+class UndirectedVarLengthExpandPlanner[T <: Table[T] : TypeTag](
   override val source: Var,
   override val list: Var,
   override val edgeScan: Var,
@@ -301,4 +306,5 @@ class UndirectedVarLengthExpandPlanner[T <: Table[T]](
 
     finalize(withTargetOps)
   }
+
 }

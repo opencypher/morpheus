@@ -30,11 +30,14 @@ import org.opencypher.okapi.api.schema.Schema
 import org.opencypher.okapi.api.types._
 import org.opencypher.okapi.impl.exception.IllegalArgumentException
 import org.opencypher.okapi.relational.api.graph.{RelationalCypherGraph, RelationalCypherSession}
+import org.opencypher.okapi.relational.api.planning.RelationalRuntimeContext
 import org.opencypher.okapi.relational.api.table.{RelationalCypherRecords, Table}
 import org.opencypher.okapi.relational.impl.operators.{RelationalOperator, Start}
 import org.opencypher.okapi.relational.impl.table.RecordHeader
 
-sealed case class EmptyGraph[T <: Table[T]](implicit val session: RelationalCypherSession[T]) extends RelationalCypherGraph[T] {
+import scala.reflect.runtime.universe.TypeTag
+
+sealed case class EmptyGraph[T <: Table[T] : TypeTag](implicit val session: RelationalCypherSession[T]) extends RelationalCypherGraph[T] {
 
   override type Session = RelationalCypherSession[T]
 
@@ -52,12 +55,13 @@ sealed case class EmptyGraph[T <: Table[T]](implicit val session: RelationalCyph
     entityType: CypherType,
     exactLabelMatch: Boolean
   ): RelationalOperator[T] = {
+    implicit val context: RelationalRuntimeContext[T] = session.basicRuntimeContext()
     val scanHeader = entityType match {
       case rel: CTRelationship => RecordHeader.from(rel)
       case node: CTNode => RecordHeader.from(node)
       case other => throw IllegalArgumentException("EntityType to be either CTNode or CTRelationship", other)
     }
     val records = session.records.empty(scanHeader)
-    Start(records)(session.basicRuntimeContext())
+    Start(records)
   }
 }

@@ -38,7 +38,9 @@ import org.opencypher.okapi.relational.api.table.{RelationalCypherRecords, Table
 import org.opencypher.okapi.relational.impl.operators._
 import org.opencypher.okapi.relational.impl.planning.RelationalPlanner._
 
-class ScanGraph[T <: Table[T]](val scans: Seq[EntityTable[T]], val schema: Schema, val tags: Set[Int])
+import scala.reflect.runtime.universe.TypeTag
+
+class ScanGraph[T <: Table[T] : TypeTag](val scans: Seq[EntityTable[T]], val schema: Schema, val tags: Set[Int])
   (implicit val session: RelationalCypherSession[T])
   extends RelationalCypherGraph[T] {
 

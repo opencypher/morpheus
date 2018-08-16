@@ -39,7 +39,7 @@ import org.opencypher.okapi.impl.io.SessionGraphDataSource
 import org.opencypher.okapi.impl.util.Measurement.printTiming
 import org.opencypher.okapi.ir.api._
 import org.opencypher.okapi.ir.api.configuration.IrConfiguration.PrintIr
-import org.opencypher.okapi.ir.api.expr.{Expr, Var}
+import org.opencypher.okapi.ir.api.expr.Var
 import org.opencypher.okapi.ir.impl.parse.CypherParser
 import org.opencypher.okapi.ir.impl.{IRBuilder, IRBuilderContext}
 import org.opencypher.okapi.logical.api.configuration.LogicalConfiguration.PrintLogicalPlan
@@ -52,7 +52,7 @@ import org.opencypher.spark.api.CAPSSession
 import org.opencypher.spark.impl.CAPSConverters._
 import org.opencypher.spark.impl.table.SparkTable.DataFrameTable
 
-sealed class CAPSSessionImpl(val sparkSession: SparkSession) extends CAPSSession with Serializable {
+sealed class CAPSSessionImpl(val sparkSession: SparkSession) extends CAPSSession {
 
   override type Result = RelationalCypherResult[DataFrameTable]
 
@@ -100,7 +100,7 @@ sealed class CAPSSessionImpl(val sparkSession: SparkSession) extends CAPSSession
     }
 
     ir match {
-      case cq: CypherQuery[Expr] =>
+      case cq: CypherQuery =>
         planCypherQuery(graph, cq, allParameters, inputFields, maybeCapsRecords)
 
       case CreateGraphStatement(_, targetGraph, innerQueryIr) =>
@@ -133,7 +133,7 @@ sealed class CAPSSessionImpl(val sparkSession: SparkSession) extends CAPSSession
 
   private def planCypherQuery(
     graph: PropertyGraph,
-    cypherQuery: CypherQuery[Expr],
+    cypherQuery: CypherQuery,
     allParameters: CypherMap,
     inputFields: Set[Var],
     maybeDrivingTable: Option[RelationalCypherRecords[DataFrameTable]]
@@ -142,7 +142,7 @@ sealed class CAPSSessionImpl(val sparkSession: SparkSession) extends CAPSSession
     planRelational(maybeDrivingTable, allParameters, logicalPlan)
   }
 
-  private def planLogical(ir: CypherQuery[Expr], graph: PropertyGraph, inputFields: Set[Var]) = {
+  private def planLogical(ir: CypherQuery, graph: PropertyGraph, inputFields: Set[Var]) = {
     logStageProgress("Logical planning ...", newLine = false)
     val logicalPlannerContext = LogicalPlannerContext(graph.schema, inputFields, catalog.listSources)
     val logicalPlan = time("Logical planning")(logicalPlanner(ir)(logicalPlannerContext))
@@ -206,4 +206,5 @@ sealed class CAPSSessionImpl(val sparkSession: SparkSession) extends CAPSSession
   }
 
   override def toString: String = s"${this.getClass.getSimpleName}"
+
 }

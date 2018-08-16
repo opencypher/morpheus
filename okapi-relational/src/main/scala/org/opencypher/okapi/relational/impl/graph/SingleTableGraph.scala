@@ -38,13 +38,15 @@ import org.opencypher.okapi.relational.api.table.{RelationalCypherRecords, Table
 import org.opencypher.okapi.relational.impl.operators._
 import org.opencypher.okapi.relational.impl.planning.RelationalPlanner._
 
+import scala.reflect.runtime.universe.TypeTag
+
 /**
   * A single table graph represents the result of CONSTRUCT clause. It contains all entities from the outer scope that
   * the clause constructs. The initial schema of that graph is the union of all graph schemata the CONSTRUCT clause refers
   * to, including their corresponding graph tags. Note, that the initial schema does not include the graph tag used for
   * the constructed entities.
   */
-class SingleTableGraph[T <: Table[T]](
+class SingleTableGraph[T <: Table[T] : TypeTag](
   val drivingTableOp: RelationalOperator[T],
   override val schema: Schema,
   override val tags: Set[Int]
