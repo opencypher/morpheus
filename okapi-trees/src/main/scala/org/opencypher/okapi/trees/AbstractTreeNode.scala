@@ -29,115 +29,70 @@ package org.opencypher.okapi.trees
 import cats.data.NonEmptyList
 
 import scala.reflect.ClassTag
+import scala.reflect.runtime.currentMirror
+import scala.reflect.runtime.universe.{Type, TypeTag, typeOf, typeTag}
 
 /**
   * Class that implements the `children` and `withNewChildren` methods using reflection when implementing
   * `TreeNode` with a case class or case object.
   *
-  * Requirements: All child nodes need to be individual constructor parameters and their order
-  * in children is their order in the constructor. Every constructor parameter of type `T` is
-  * assumed to be a child node.
-  *
   * This class caches values that are expensive to recompute.
   *
-  * The constructor can also contain a [[NonEmptyList]] of children, but there are constraints:
-  *   - A list of children cannot be empty, because the current design relies on testing the type of an element.
-  *   - If any children are contained in a list at all, then all list elements need to be children. This allows
-  * to only check the type of the first element.
-  *   - There can be at most one list of children and there can be no normal child constructor parameters
-  * that appear after the list of children. This allows to call `withNewChildren` with a different number of
-  * children than the original node had and vary the length of the list to accommodate.
+  * The constructor can also contain [[NonEmptyList]]s, [[List]]s, and [[Option]]s that contain children.
+  * This works as long as there is an unambiguous way to serialize those children to the `children` array,
+  * as well as an unambiguous way to assign the children in `withNewChildren` to the different constructor parameters.
   *
-  * Options and empty lists are supported with custom `children`/`withNewChildren` implementations.
+  * It is possible to override the defaults and use custom `children`/`withNewChildren` implementations.
   */
-abstract class AbstractTreeNode[T <: AbstractTreeNode[T] : ClassTag] extends TreeNode[T] {
+abstract class AbstractTreeNode[T <: AbstractTreeNode[T] : TypeTag] extends TreeNode[T] {
   self: T =>
 
+  override protected def tt: TypeTag[T] = implicitly[TypeTag[T]]
+
+  override implicit protected def ct: ClassTag[T] = ClassTag[T](typeTag[T].mirror.runtimeClass(typeTag[T].tpe))
+
   override val children: Array[T] = {
-    val constructorParamLength = productArity
-    val childrenCount = {
-      var count = 0
-      var usedListOfChildren = false
-      var i = 0
-      while (i < constructorParamLength) {
-        val pi = productElement(i)
-        pi match {
-          case _: T =>
-            require(
-              !usedListOfChildren,
-              "there can be no normal child constructor parameters after a list of children.")
-            count += 1
-          case l: NonEmptyList[_] =>
-            // Need explicit pattern match for T, as `isInstanceOf` in `if` results in a warning.
-            l.head match {
-              case _: T =>
-                require(!usedListOfChildren, "there can be at most one list of children in the constructor.")
-                usedListOfChildren = true
-                count += l.length
-              case _ =>
-            }
-          case _ =>
-        }
-        i += 1
-      }
-      count
-    }
-    val childrenArray = new Array[T](childrenCount)
-    if (childrenCount > 0) {
-      var i = 0
-      var ci = 0
-      while (i < constructorParamLength) {
-        val pi = productElement(i)
-        pi match {
-          case c: T =>
-            childrenArray(ci) = c
-            ci += 1
-          case l: NonEmptyList[_] =>
-            // Need explicit pattern match for T, as `isInstanceOf` in `if` results in a warning.
-            l.head match {
-              case _: T =>
-                val j = l.toList.iterator
-                while (j.hasNext) {
-                  val child = j.next
-                  try {
-                    childrenArray(ci) = child.asInstanceOf[T]
-                  } catch {
-                    case c: ClassCastException =>
-                      throw InvalidConstructorArgument(
-                        s"""Expected a list that contains either no children or only children
-                           |but found a mixed list that contains a child as the head element,
-                           |but also one with a non-child type: ${c.getMessage}.
-                           |""".stripMargin
-                      )
-                  }
-                  ci += 1
-                }
-              case _ =>
-            }
-          case _ =>
-        }
-        i += 1
+    if (productIterator.isEmpty) {
+      Array.empty[T]
+    } else {
+      val copyMethod = AbstractTreeNode.copyMethod(self)
+      lazy val treeType = typeOf[T].erasure
+      lazy val paramTypes: Seq[Type] = copyMethod.symbol.paramLists.head.map(_.typeSignature).toIndexedSeq
+      productIterator.toArray.zipWithIndex.flatMap {
+        case (t: T, _) => Some(t)
+        case (o: Option[_], i) if paramTypes(i).typeArgs.head <:< treeType => o.asInstanceOf[Option[T]]
+        case (l: List[_], i) if paramTypes(i).typeArgs.head <:< treeType => l.asInstanceOf[List[T]]
+        case (nel: NonEmptyList[_], i) if paramTypes(i).typeArgs.head <:< treeType => nel.toList.asInstanceOf[List[T]]
+        case _ => Nil
       }
     }
-    childrenArray
   }
 
   @inline override def withNewChildren(newChildren: Array[T]): T = {
     if (sameAsCurrentChildren(newChildren)) {
       self
     } else {
-      val updatedConstructorParams = updateConstructorParams(newChildren)
       val copyMethod = AbstractTreeNode.copyMethod(self)
+      val copyMethodParamTypes = copyMethod.symbol.paramLists.flatten.zipWithIndex
+      val valueAndTypeTuples = copyMethodParamTypes.map { case (param, index) =>
+        val value = if (index < productArity) {
+          // Access product element to retrieve the value
+          productElement(index)
+        } else {
+          tt // Workaround to get implicit tag without reflection
+        }
+        value -> param.typeSignature
+      }
+      val updatedConstructorParams = updateConstructorParams(newChildren, valueAndTypeTuples)
       try {
         copyMethod(updatedConstructorParams: _*).asInstanceOf[T]
       } catch {
-        case e: Exception =>
-          throw InvalidConstructorArgument(
-            s"""Expected valid constructor arguments for $productPrefix
-               |but found ${updatedConstructorParams.mkString(", ")}.
-               |""".stripMargin,
-            Some(e)
-          )
+        case e: Exception => throw InvalidConstructorArgument(
+          s"""|Expected valid constructor arguments for $productPrefix
+              |Old children: ${children.mkString(", ")}
+              |New children: ${newChildren.mkString(", ")}
+              |Current product: ${productIterator.mkString(", ")}
+              |Constructor arguments updated with new children: ${updatedConstructorParams.mkString(", ")}.""".stripMargin, Some(e))
       }
     }
   }
@@ -160,42 +115,37 @@ abstract class AbstractTreeNode[T <: AbstractTreeNode[T] : ClassTag] extends Tre
 
   @inline final override def containsTree(other: T): Boolean = super.containsTree(other)
 
-  @inline private final def updateConstructorParams(newChildren: Array[T]): Array[Any] = {
-    val parameterArrayLength = productArity
-    val childrenLength = children.length
-    val newChildrenLength = newChildren.length
-    val parameterArray = new Array[Any](parameterArrayLength)
-    var productIndex = 0
-    var childrenIndex = 0
-    while (productIndex < parameterArrayLength) {
-      val currentProductElement = productElement(productIndex)
-
-      def nonChildCase(): Unit = {
-        parameterArray(productIndex) = currentProductElement
-      }
-
-      currentProductElement match {
-        case c: T if childrenIndex < childrenLength && c == children(childrenIndex) =>
-          parameterArray(productIndex) = newChildren(childrenIndex)
-          childrenIndex += 1
-        case l: NonEmptyList[_] if childrenIndex < childrenLength =>
-          // Need explicit pattern match for T, as `isInstanceOf` in `if` results in a warning.
-          l.head match {
-            case _: T =>
-              require(newChildrenLength > childrenIndex, s"a list of children cannot be empty.")
-              parameterArray(productIndex) = NonEmptyList.fromListUnsafe(
-                newChildren.slice(childrenIndex, newChildrenLength).toList)
-              childrenIndex = newChildrenLength
-            case _ => nonChildCase()
-          }
-        case _ => nonChildCase()
-      }
-      productIndex += 1
+  @inline private final def updateConstructorParams(
+    newChildren: Array[T],
+    currentValuesAndTypes: List[(Any, Type)]
+  ): Array[Any] = {
+    // Returns true iff `instance` could be an element of List/NonEmptyList/Option container type `tpe`
+    def couldBeElementOf(instance: Any, tpe: Type): Boolean = {
+      currentMirror.reflect(instance).symbol.toType <:< tpe.typeArgs.head
     }
-    require(
-      childrenIndex == newChildrenLength,
-      "invalid number of children or used an empty list of children in the original node.")
-    parameterArray
+
+    val (unassignedChildren, constructorParams) = currentValuesAndTypes.foldLeft(newChildren.toList -> Vector.empty[Any]) {
+      case ((remainingChildren, currentConstructorParams), nextValueAndType) =>
+        nextValueAndType match {
+          case (_: T, _) =>
+            remainingChildren.tail -> (currentConstructorParams :+ remainingChildren.head)
+          case (_: Option[_], tpe) if tpe.typeArgs.head <:< typeOf[T] =>
+            val option: Option[T] = remainingChildren.headOption.filter { c => couldBeElementOf(c, tpe) }
+            remainingChildren.drop(option.size) -> (currentConstructorParams :+ option)
+          case (_: List[_], tpe) if tpe.typeArgs.head <:< typeOf[T] =>
+            val childrenList: List[T] = remainingChildren.takeWhile { c => couldBeElementOf(c, tpe) }
+            remainingChildren.drop(childrenList.size) -> (currentConstructorParams :+ childrenList)
+          case (_: NonEmptyList[_], tpe) if tpe.typeArgs.head <:< typeOf[T] =>
+            val childrenList = NonEmptyList.fromListUnsafe(remainingChildren.takeWhile { c => couldBeElementOf(c, tpe) })
+            remainingChildren.drop(childrenList.size) -> (currentConstructorParams :+ childrenList)
+          case (value, _) =>
+            remainingChildren -> (currentConstructorParams :+ value)
+        }
+    }
+
+    assert(unassignedChildren.isEmpty,
+      s"Could not assign nodes [${unassignedChildren.mkString(", ")}] to parameters of ${getClass.getSimpleName}")
+    constructorParams.toArray
   }
 
   @inline private final def sameAsCurrentChildren(newChildren: Array[T]): Boolean = {
@@ -242,8 +192,8 @@ object AbstractTreeNode {
       val copyMethodSymbol = tpe.decl(TermName("copy")).asMethod
       instanceMirror.reflectMethod(copyMethodSymbol)
     } catch {
-      case e: Exception =>
-        throw new UnsupportedOperationException(s"Could not reflect the copy method of $instance", e)
+      case e: Exception => throw new UnsupportedOperationException(
+        s"Could not reflect the copy method of ${instance.toString.filterNot(_ == '$')}", e)
     }
   }
 

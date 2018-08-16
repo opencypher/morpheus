@@ -31,10 +31,9 @@ import cats.data.NonEmptyList
 import scala.annotation.tailrec
 import scala.collection.mutable.ArrayBuffer
 import scala.reflect.ClassTag
-import scala.reflect.runtime.{currentMirror, universe}
+import scala.reflect.runtime.currentMirror
 import scala.reflect.runtime.universe._
 import scala.util.hashing.MurmurHash3
-import scala.language.existentials
 
 /**
   * This is the basic tree node class. Usually it makes more sense to use `AbstractTreeNode`, which uses reflection
@@ -45,8 +44,15 @@ import scala.language.existentials
   * This class uses array operations instead of Scala collections, both for improved performance as well as to save
   * stack frames during recursion, which allows it to operate on trees that are several thousand nodes high.
   */
-abstract class TreeNode[T <: TreeNode[T] : ClassTag] extends Product with Traversable[T] {
+abstract class TreeNode[T <: TreeNode[T]] extends Product with Traversable[T] {
   self: T =>
+
+  implicit protected def tt: TypeTag[T]
+
+  // Needed for pattern matching type `T`
+  implicit protected def ct: ClassTag[T] = {
+    ClassTag[T](typeTag[T].mirror.runtimeClass(typeTag[T].tpe))
+  }
 
   def rewrite(f: PartialFunction[T, T]): T = {
     try {
@@ -163,6 +169,7 @@ abstract class TreeNode[T <: TreeNode[T] : ClassTag] extends Product with Traver
     * Arguments that should be printed. The default implementation excludes children.
     */
   def args: Iterator[Any] = {
+    lazy val treeType = typeOf[T].erasure
     currentMirror.reflect(this)
       .symbol
       .typeSignature
@@ -172,42 +179,15 @@ abstract class TreeNode[T <: TreeNode[T] : ClassTag] extends Product with Traver
       .filterNot(_.isMethod)
       .toList
       .map(currentMirror.reflect(this).reflectField)
-      .map(termSymbol => termSymbol -> termSymbol.get)
-      .filter { case (_, value) =>
+      .map(fieldMirror => fieldMirror -> fieldMirror.get)
+      .filter { case (fieldMirror, value) =>
+        def containsChildren: Boolean = fieldMirror.symbol.typeSignature.typeArgs.head <:< treeType
         value match {
           case c: T if containsChild(c) => false
-          case o: Option[_] =>
-            if (o.isEmpty) {
-              false
-            } else {
-              o.get match {
-                case _: T => false
-                case _ => true
-              }
-            }
-          case i: Iterable[_] =>
-            if (i.isEmpty) {
-              false
-            } else {
-              i.exists {
-                case _: T => false
-                case _ => true
-              }
-            }
-          case nel: NonEmptyList[_] =>
-            nel.exists {
-              case _: T => false
-              case _ => true
-            }
-          case a: Array[_] =>
-            if (a.isEmpty) {
-              false
-            } else {
-              a.exists {
-                case _: T => false
-                case _ => true
-              }
-            }
+          case _: Option[_] if containsChildren => false
+          case _: NonEmptyList[_] if containsChildren => false
+          case _: Iterable[_] if containsChildren => false
+          case _: Array[_] if containsChildren => false
           case _ => true
         }
       }
