@@ -467,6 +467,37 @@ class SchemaTyperTest extends BaseTestSuite with Neo4jAstTestSupport with Mockit
     // assertExpr.from("percentileDisc([1, 3.14][$param], 3.14)") shouldHaveInferredType CTInteger
   }
 
+  it("types the range function") {
+    implicit val context: TypeTracker = typeTracker("from" -> CTInteger, "to" -> CTInteger, "step" -> CTInteger)
+    assertExpr.from("range(from, to, step)") shouldHaveInferredType CTList(CTInteger).nullable
+  }
+
+  it("types the range function with nullable") {
+    implicit val context: TypeTracker = typeTracker("from" -> CTInteger.nullable, "to" -> CTInteger)
+    assertExpr.from("range(from, to)") shouldHaveInferredType CTList(CTInteger).nullable
+  }
+
+  it("types STARTS WITH, CONTAINS, ENDS WITH") {
+    implicit val context: TypeTracker = typeTracker("string" -> CTString, "r" -> CTString)
+    assertExpr.from("string STARTS WITH r") shouldHaveInferredType CTBoolean.nullable
+    assertExpr.from("string ENDS WITH r") shouldHaveInferredType CTBoolean.nullable
+    assertExpr.from("string CONTAINS r") shouldHaveInferredType CTBoolean.nullable
+  }
+
+  it("types STARTS WITH, CONTAINS, ENDS WITH with null test") {
+    implicit val context: TypeTracker = typeTracker("string" -> CTString, "r" -> CTNull)
+    assertExpr.from("string STARTS WITH r") shouldHaveInferredType CTBoolean.nullable
+    assertExpr.from("string ENDS WITH r") shouldHaveInferredType CTBoolean.nullable
+    assertExpr.from("string CONTAINS r") shouldHaveInferredType CTBoolean.nullable
+  }
+
+  it("types STARTS WITH, CONTAINS, ENDS WITH with null string") {
+    implicit val context: TypeTracker = typeTracker("string" -> CTNull, "r" -> CTString)
+    assertExpr.from("string STARTS WITH r") shouldHaveInferredType CTBoolean.nullable
+    assertExpr.from("string ENDS WITH r") shouldHaveInferredType CTBoolean.nullable
+    assertExpr.from("string CONTAINS r") shouldHaveInferredType CTBoolean.nullable
+  }
+
   private def typeTracker(typings: (String, CypherType)*): TypeTracker =
     TypeTracker(List(typings.map { case (v, t) => varFor(v) -> t }.toMap))
 
