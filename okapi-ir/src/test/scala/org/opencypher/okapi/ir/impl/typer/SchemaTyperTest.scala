@@ -135,6 +135,12 @@ class SchemaTyperTest extends BaseTestSuite with Neo4jAstTestSupport with Mockit
       assertExpr.from("exp(b)") shouldHaveInferredType CTFloat
       assertExpr.from("exp(c)") shouldHaveInferredType CTNull
     }
+
+    it("can type e()") {
+      implicit val context: TypeTracker = typeTracker()
+
+      assertExpr.from("e()") shouldHaveInferredType CTFloat.nullable
+    }
   }
 
   describe("numeric functions") {
@@ -160,6 +166,12 @@ class SchemaTyperTest extends BaseTestSuite with Neo4jAstTestSupport with Mockit
       assertExpr.from("floor(a)") shouldHaveInferredType CTFloat
       assertExpr.from("floor(b)") shouldHaveInferredType CTFloat
       assertExpr.from("floor(c)") shouldHaveInferredType CTNull
+    }
+
+    it("can type rand()") {
+      implicit val context: TypeTracker = typeTracker()
+
+      assertExpr.from("rand()") shouldHaveInferredType CTFloat.nullable
     }
   }
 

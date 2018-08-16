@@ -67,6 +67,7 @@ object FunctionUtils {
         case functions.Abs => Abs(expr.head)(cypherType)
         case functions.Ceil => Ceil(expr.head)(cypherType)
         case functions.Floor => Floor(expr.head)(cypherType)
+        case functions.Rand => Rand()(cypherType)
 
         case a: functions.Function =>
           throw NotImplementedException(s"Support for converting ${a.name} function not yet implemented")

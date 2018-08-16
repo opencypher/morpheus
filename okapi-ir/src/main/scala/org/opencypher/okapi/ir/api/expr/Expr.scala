@@ -720,6 +720,11 @@ final case class Floor(expr: Expr)(var cypherType: CypherType = CTWildcard) exte
   override def withCypherType(ct: CypherType): Floor = copy()(ct)
 }
 
+final case class Rand()(var cypherType: CypherType = CTWildcard) extends NullaryFunctionExpr {
+  override type This = Rand
+  override def withCypherType(ct: CypherType): Rand = copy()(ct)
+}
+
 // Aggregators
 
 sealed trait Aggregator extends Expr {

@@ -758,5 +758,15 @@ class FunctionsBehaviour extends CAPSTestSuite with DefaultGraphInit {
         }
       }
 
+      describe("rand()") {
+        it("returns rand") {
+
+          val result = caps.cypher("RETURN rand() AS res")
+
+          val res = result.records.toMaps.head._1("res").cast[Double]
+          res >= 0.0 shouldBe true
+          res < 1.0 shouldBe true
+        }
+      }
     }
 }
