@@ -31,44 +31,55 @@ import org.opencypher.okapi.api.table.CypherRecords
 import org.opencypher.okapi.impl.exception.UnsupportedOperationException
 import org.opencypher.okapi.relational.api.graph.RelationalCypherGraph
 import org.opencypher.okapi.relational.api.planning.RelationalCypherResult
-import org.opencypher.okapi.relational.api.table.RelationalCypherRecords
 import org.opencypher.spark.api.CAPSSession
 import org.opencypher.spark.impl.table.SparkTable.DataFrameTable
 
+import scala.util.{Failure, Success, Try}
+
 object CAPSConverters {
+
+  private def unsupported(expected: String, got: Any): Nothing =
+    throw UnsupportedOperationException(s"Can only handle $expected, got $got")
 
   implicit class RichSession(val session: CypherSession) extends AnyVal {
     def asCaps: CAPSSession = session match {
       case caps: CAPSSession => caps
-      case _ => throw UnsupportedOperationException(s"can only handle CAPS sessions, got $session")
+      case other => unsupported("CAPS session", other)
     }
   }
 
   implicit class RichPropertyGraph(val graph: PropertyGraph) extends AnyVal {
+
+
     def asCaps: RelationalCypherGraph[DataFrameTable] = graph.asInstanceOf[RelationalCypherGraph[_]] match {
-      // We know what we did... the alternatives were worse.
-      case caps: RelationalCypherGraph[_] if caps.tables.forall(_.isInstanceOf[DataFrameTable]) =>
-        caps.asInstanceOf[RelationalCypherGraph[DataFrameTable]]
-      case _ => throw UnsupportedOperationException(s"can only handle CAPS graphs, got $graph")
+      case caps: RelationalCypherGraph[_] =>
+        Try {
+          caps.asInstanceOf[RelationalCypherGraph[DataFrameTable]]
+        } match {
+          case Success(value) => value
+          case Failure(_) => unsupported("CAPS graphs", caps)
+        }
+      case other => unsupported("CAPS graphs", other)
     }
   }
 
   implicit class RichCypherRecords(val records: CypherRecords) extends AnyVal {
     def asCaps(implicit caps: CAPSSession): CAPSRecords = records match {
-      // AGAIN! We still know what we do... the alternatives were worse.
-      case relational: RelationalCypherRecords[_] if relational.table.isInstanceOf[DataFrameTable] =>
-        caps.records.from(relational.header, relational.table.asInstanceOf[DataFrameTable])
       case caps: CAPSRecords => caps
-      case _ => throw UnsupportedOperationException(s"can only handle CAPS records, got $records")
+      case other => unsupported("CAPS records", other)
     }
   }
 
   implicit class RichCypherResult(val records: CypherResult) extends AnyVal {
     def asCaps(implicit caps: CAPSSession): RelationalCypherResult[DataFrameTable] = records match {
-      case relational: RelationalCypherResult[_]
-        if relational.getRecords.isEmpty || relational.records.table.isInstanceOf[DataFrameTable] =>
-        relational.asInstanceOf[RelationalCypherResult[DataFrameTable]]
-      case _ => throw UnsupportedOperationException(s"can only handle CAPS results, got $records")
+      case relational: RelationalCypherResult[_] =>
+        Try {
+          relational.asInstanceOf[RelationalCypherResult[DataFrameTable]]
+        } match {
+          case Success(value) => value
+          case Failure(_) => unsupported("CAPS results", caps)
+        }
+      case other => unsupported("CAPS results", other)
     }
   }
 

@@ -27,7 +27,6 @@
 package org.opencypher.spark.impl.table
 
 import org.apache.spark.sql._
-import org.apache.spark.sql.functions._
 import org.apache.spark.storage.StorageLevel
 import org.opencypher.okapi.api.types._
 import org.opencypher.okapi.api.value.CypherValue
@@ -189,6 +188,17 @@ object SparkTable {
     }
 
     override def unionAll(other: DataFrameTable): DataFrameTable = {
+      val leftTypes = df.schema.fields.flatMap(_.toCypherType)
+      val rightTypes = other.df.schema.fields.flatMap(_.toCypherType)
+
+      leftTypes.zip(rightTypes).foreach {
+        case (leftType, rightType) if !leftType.nullable.couldBeSameTypeAs(rightType.nullable) =>
+          throw IllegalArgumentException(
+            "Equal column data types for union all (differing nullability is OK)",
+            s"Left fields:  ${df.schema.fields.mkString(", ")}\n\tRight fields: ${other.df.schema.fields.mkString(", ")}")
+        case _ =>
+      }
+
       df.union(other.df)
     }
 

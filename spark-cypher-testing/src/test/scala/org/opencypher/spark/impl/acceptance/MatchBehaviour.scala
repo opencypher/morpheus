@@ -28,6 +28,7 @@ package org.opencypher.spark.impl.acceptance
 
 import org.opencypher.okapi.api.graph.CypherResult
 import org.opencypher.okapi.api.value.CypherValue._
+import org.opencypher.okapi.impl.exception.IllegalArgumentException
 import org.opencypher.okapi.relational.impl.operators.Cache
 import org.opencypher.okapi.testing.Bag
 import org.opencypher.okapi.testing.Bag._
@@ -357,6 +358,60 @@ class MatchBehaviour extends CAPSTestSuite with DefaultGraphInit {
       result.records.collect.toBag should equal(Bag(
         CypherMap("a.prop" -> "a", "other.prop" -> "c")
       ))
+    }
+  }
+
+  describe("type conflicts on expressions") {
+    it("reports error on integer-string property schema conflict") {
+      val g = initGraph("CREATE (:A {f: 1}), (:B {f: 'hi'})")
+
+      an[IllegalArgumentException] shouldBe thrownBy {
+        g.cypher("MATCH (n) RETURN n.f AS foo").show
+      }
+    }
+
+    it("reports error on float-string property schema conflict") {
+      val g = initGraph("CREATE (:A {f: 1.2}), (:B {f: 'hi'})")
+
+      an[IllegalArgumentException] shouldBe thrownBy {
+        g.cypher("MATCH (n) RETURN n.f").show
+      }
+    }
+
+    it("reports error on boolean-string property schema conflict") {
+      val g = initGraph("CREATE (:A {f: true}), (:B {f: 'hi'})")
+
+      an[IllegalArgumentException] shouldBe thrownBy {
+        g.cypher("MATCH (n) RETURN n.f").show
+      }
+    }
+
+    it("reports error on boolean-integer property schema conflict") {
+      val g = initGraph("CREATE (:A {f: true}), (:B {f: 1})")
+
+      an[IllegalArgumentException] shouldBe thrownBy {
+        g.cypher("MATCH (n) RETURN n.f").show
+      }
+    }
+
+    it("reports error on boolean-integer-string property schema conflict") {
+      val g = initGraph("CREATE (:A {f: true}), (:B {f: 1}), (:C {f: 'hi'})")
+
+      an[IllegalArgumentException] shouldBe thrownBy {
+        g.cypher("MATCH (n) RETURN n.f").show
+      }
+    }
+
+    it("reports error on mismatched scans on constructed graph") {
+      an[IllegalArgumentException] shouldBe thrownBy {
+        caps.cypher(
+          """
+            |CONSTRUCT
+            |  NEW (:A {p: 1})
+            |  NEW (:B {p: 'hi'})
+            |MATCH (n)
+            |RETURN count(*)""".stripMargin).show
+      }
     }
   }
 

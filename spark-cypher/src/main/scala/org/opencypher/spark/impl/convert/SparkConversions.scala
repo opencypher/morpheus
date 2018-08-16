@@ -129,6 +129,7 @@ object SparkConversions {
     def toCypherType(nullable: Boolean = false): Option[CypherType] = {
       val result = dt match {
         case StringType => Some(CTString)
+        case IntegerType => Some(CTInteger)
         case LongType => Some(CTInteger)
         case BooleanType => Some(CTBoolean)
         case BinaryType => Some(CTAny)
