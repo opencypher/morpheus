@@ -26,7 +26,7 @@
  */
 package org.opencypher.spark.impl.acceptance
 
-import org.opencypher.okapi.api.value.CypherValue._
+import org.opencypher.okapi.api.value.CypherValue.{CypherMap, _}
 import org.opencypher.okapi.testing.Bag
 import org.opencypher.spark.api.value.CAPSNode
 import org.opencypher.spark.testing.CAPSTestSuite
@@ -123,6 +123,21 @@ class UnwindBehaviour extends CAPSTestSuite with DefaultGraphInit {
         CypherMap("item" -> 2),
         CypherMap("item" -> -4)
       ))
+  }
+
+  it("unwind from null expression") {
+    val graph = initGraph("CREATE (:A)")
+
+    val query =
+      """
+        |MATCH (a:A)
+        |WITH a.v AS list, a
+        |UNWIND list AS item
+        |RETURN a, item""".stripMargin
+
+    val result = graph.cypher(query)
+
+    result.records.toMapsWithCollectedEntities should be(empty)
   }
 
   it("unwinds in an involved query") {

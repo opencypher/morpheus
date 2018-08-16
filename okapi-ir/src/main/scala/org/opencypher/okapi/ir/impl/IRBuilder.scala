@@ -450,6 +450,8 @@ object IRBuilder extends CompilationStage[ast.Statement, CypherStatement[Expr], 
           pure[R, CypherType](inner)
         case CTAny =>
           pure[R, CypherType](CTAny)
+        case CTVoid =>
+          pure[R, CypherType](CTNull)
         case x =>
           error(IRBuilderError(s"unwind expression was not a list: $x"))(CTWildcard: CypherType)
       }

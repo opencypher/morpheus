@@ -229,6 +229,7 @@ object SparkSQLExprMapper {
 
         case Explode(list) => list.cypherType match {
           case CTList(_) | CTListOrNull(_) => functions.explode(list.asSparkSQLExpr)
+          case CTNull => functions.explode(functions.lit(null).cast(ArrayType(NullType)))
           case other => throw IllegalArgumentException("CTList", other)
         }
 
