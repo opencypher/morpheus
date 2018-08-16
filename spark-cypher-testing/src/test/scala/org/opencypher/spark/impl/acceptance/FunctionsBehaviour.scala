@@ -893,21 +893,5 @@ class FunctionsBehaviour extends CAPSTestSuite with DefaultGraphInit {
         CypherMap("x" -> List(1, 4))
       ))
     }
-
-    it("can compute a range with varying step values") {
-      val g = initGraph(
-        """
-          |CREATE (:A {step: 2})
-          |CREATE (:A {step: 3})
-        """.stripMargin)
-
-      g.cypher(
-        """
-          |MATCH (n)
-          |RETURN range(1, 4, n.step) as x""".stripMargin).records.toMaps should equal(Bag(
-        CypherMap("x" -> List(1, 3)),
-        CypherMap("x" -> List(1, 4))
-      ))
-    }
   }
 }
