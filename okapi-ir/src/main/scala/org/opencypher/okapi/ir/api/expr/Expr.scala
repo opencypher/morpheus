@@ -725,6 +725,11 @@ final case class Rand()(var cypherType: CypherType = CTWildcard) extends Nullary
   override def withCypherType(ct: CypherType): Rand = copy()(ct)
 }
 
+final case class Round(expr: Expr)(var cypherType: CypherType = CTWildcard) extends UnaryFunctionExpr {
+  override type This = Round
+  override def withCypherType(ct: CypherType): Round = copy()(ct)
+}
+
 // Aggregators
 
 sealed trait Aggregator extends Expr {

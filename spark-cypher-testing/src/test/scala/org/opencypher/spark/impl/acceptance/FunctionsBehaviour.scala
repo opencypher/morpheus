@@ -768,5 +768,39 @@ class FunctionsBehaviour extends CAPSTestSuite with DefaultGraphInit {
           res < 1.0 shouldBe true
         }
       }
+
+      describe("round()") {
+
+        it("on float value") {
+
+          val result = caps.cypher("RETURN round(1.9) AS res")
+
+          result.records.toMaps should equal(
+            Bag(
+              CypherMap("res" -> 2.0)
+            )
+          )
+        }
+
+        it("on int value") {
+          val result = caps.cypher("RETURN round(1) AS res")
+
+          result.records.toMaps should equal(
+            Bag(
+              CypherMap("res" -> 1.0)
+            )
+          )
+        }
+
+        it("on null value") {
+          val result = caps.cypher("RETURN round(null) AS res")
+
+          result.records.toMaps should equal(
+            Bag(
+              CypherMap("res" -> null)
+            )
+          )
+        }
+      }
     }
 }
