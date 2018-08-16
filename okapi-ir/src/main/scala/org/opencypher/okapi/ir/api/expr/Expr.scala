@@ -638,6 +638,17 @@ final case class Explode(expr: Expr)(val cypherType: CypherType = CTWildcard) ex
   override def withCypherType(ct: CypherType): Explode = copy()(ct)
 }
 
+// NAry Function expressions
+
+final case class Range(from: Expr, to: Expr, o: Option[Expr]) extends FunctionExpr {
+
+  override def exprs: IndexedSeq[Expr] = IndexedSeq(from, to)
+  override def cypherType: CypherType = CTList(CTInteger)
+  override type This = Range
+
+  override def withCypherType(ct: CypherType): Range = this
+}
+
 // Bit operators
 
 final case class ShiftLeft(value: Expr, shiftBits: IntegerLit)
