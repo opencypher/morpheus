@@ -35,6 +35,7 @@ import org.opencypher.tools.tck.api.CypherTCK
 import org.scalatest.Tag
 import org.scalatest.prop.TableDrivenPropertyChecks._
 
+import scala.io.Source
 import scala.util.{Failure, Success, Try}
 
 class TckSparkCypherTest extends CAPSTestSuite {
@@ -49,8 +50,10 @@ class TckSparkCypherTest extends CAPSTestSuite {
 
   private val defaultFactory: CAPSTestGraphFactory = CAPSScanGraphFactory
 
-  private val blacklistFile = getClass.getResource("/scenario_blacklist").getFile
-  private val scenarios = ScenariosFor(blacklistFile)
+  private val failingBlacklist = getClass.getResource("/failing_blacklist").getFile
+  private val wontFixBlacklistFile = getClass.getResource("/wont_fix_blacklist").getFile
+  private val failureReportingBlacklistFile = getClass.getResource("/failure_reporting_blacklist").getFile
+  private val scenarios = ScenariosFor(failingBlacklist, wontFixBlacklistFile, failureReportingBlacklistFile)
 
   // white list tests are run on all factories
   forAll(factories) { (factory, additional_blacklist) =>
@@ -75,6 +78,30 @@ class TckSparkCypherTest extends CAPSTestSuite {
           ()
       }
     }
+  }
+
+  it("computes the TCK coverage") {
+    val failingScenarios = Source.fromFile(failingBlacklist).getLines().size
+    val failureReportingScenarios = Source.fromFile(failureReportingBlacklistFile).getLines().size
+
+    val allScenarios = scenarios.blacklist.size + scenarios.whiteList.size.toFloat
+    val readOnlyScenarios = scenarios.whiteList.size + failingScenarios + failureReportingScenarios.toFloat
+    val smallReadOnlyScenarios = scenarios.whiteList.size + failingScenarios.toFloat
+
+    val overallCoverage = scenarios.whiteList.size / allScenarios
+    val readOnlyCoverage = scenarios.whiteList.size / readOnlyScenarios
+    val smallReadOnlyCoverage = scenarios.whiteList.size / smallReadOnlyScenarios
+
+    val report = s"""
+      |TCK Coverage
+      |------------
+      |
+      | Complete: ${overallCoverage * 100}%
+      | Read Only: ${readOnlyCoverage * 100}%
+      | Read Only (without Failure case Scenarios): ${smallReadOnlyCoverage * 100}%
+    """.stripMargin
+
+    println(report)
   }
 
   ignore("run Custom Scenario") {
