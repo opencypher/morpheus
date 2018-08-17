@@ -159,7 +159,7 @@ object IRBuilder extends CompilationStage[ast.Statement, CypherStatement[Expr], 
           }
         } yield refs
 
-      case ast.With(distinct, ast.ReturnItems(_, items), _, _, _, None) =>
+      case ast.With(_, ast.ReturnItems(_, items), _, _, _, None) =>
         for {
           fieldExprs <- items.toList.traverse(convertReturnItem[R])
           context <- get[R, IRBuilderContext]
@@ -169,10 +169,9 @@ object IRBuilder extends CompilationStage[ast.Statement, CypherStatement[Expr], 
               case _ => false
             }
 
-            val (projectBlock, updatedRegistry1) = registerProjectBlock(context, group, source = context.workingGraph, distinct = distinct)
+            val (projectBlock, updatedRegistry1) = registerProjectBlock(context, group, source = context.workingGraph, distinct = false)
             val after = updatedRegistry1.lastAdded.toList
-            val aggregationBlock =
-              AggregationBlock[Expr](after, Aggregations(agg.toSet), group.map(_._1).toSet, context.workingGraph)
+            val aggregationBlock = AggregationBlock[Expr](after, Aggregations(agg.toSet), group.map(_._1).toSet, context.workingGraph)
             val updatedRegistry2 = updatedRegistry1.register(aggregationBlock)
 
             put[R, IRBuilderContext](context.copy(blockRegistry = updatedRegistry2)) >> pure[R, List[Block[Expr]]](List(projectBlock, aggregationBlock))
