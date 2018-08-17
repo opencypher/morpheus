@@ -464,4 +464,33 @@ class RecordHeaderTest extends BaseTestSuite {
     }
   }
 
+  describe("from") {
+    it("can build a RecordHeader from a Relationship type") {
+      val relType = CTRelationship("FOO", "BAR")
+
+      val v = RelationshipVar("")(relType)
+
+      val expected = RecordHeader.empty
+        .withExpr(v)
+        .withExpr(StartNode(v)(CTInteger))
+        .withExpr(EndNode(v)(CTInteger))
+        .withExpr(HasType(v, RelType("FOO"))(CTBoolean))
+        .withExpr(HasType(v, RelType("BAR"))(CTBoolean))
+
+      RecordHeader.from(relType) should equal(expected)
+    }
+
+    it("can build a RecordHeader from a node type") {
+      val nodeType = CTNode("FOO", "BAR")
+
+      val v = NodeVar("")(nodeType)
+
+      val expected = RecordHeader.empty
+        .withExpr(v)
+        .withExpr(HasLabel(v, Label("FOO"))(CTBoolean))
+        .withExpr(HasLabel(v, Label("BAR"))(CTBoolean))
+
+      RecordHeader.from(nodeType) should equal(expected)
+    }
+  }
 }

@@ -26,11 +26,11 @@
  */
 package org.opencypher.okapi.relational.impl.table
 
-import org.opencypher.okapi.api.types.{CTNode, CTRelationship, CypherType}
+import org.opencypher.okapi.api.types._
 import org.opencypher.okapi.impl.exception.IllegalArgumentException
 import org.opencypher.okapi.impl.util.TablePrinter
-import org.opencypher.okapi.ir.api.RelType
 import org.opencypher.okapi.ir.api.expr._
+import org.opencypher.okapi.ir.api.{Label, RelType}
 
 import scala.annotation.tailrec
 
@@ -44,6 +44,24 @@ object RecordHeader {
 
   def from[T <: Expr](exprs: Seq[T]): RecordHeader = from(exprs.head, exprs.tail: _*)
 
+  def from(relType: CTRelationship): RecordHeader = {
+    val v = RelationshipVar("")(relType)
+
+    from(
+      v,
+      Seq(StartNode(v)(CTInteger), EndNode(v)(CTInteger))
+      ++ relType.types.map(t => HasType(v, RelType(t))(CTBoolean)): _*
+    )
+  }
+
+  def from(nodeType: CTNode): RecordHeader = {
+    val v = NodeVar("")(nodeType)
+
+    from(
+      v,
+      nodeType.labels.map(l => HasLabel(v, Label(l))(CTBoolean)).toSeq: _*
+    )
+  }
 }
 
 case class RecordHeader(exprToColumn: Map[Expr, String]) {

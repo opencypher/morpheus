@@ -499,7 +499,7 @@ class LogicalPlanner(producer: LogicalOperatorProducer)
           case _: UndirectedVarLengthRelationship => Undirected
         }
 
-        if(v.upper.getOrElse(Integer.MAX_VALUE) < v.lower) {
+        if (v.upper.getOrElse(Integer.MAX_VALUE) < v.lower) {
           val solved = sourcePlan.solved ++ targetPlan.solved.withField(r)
           EmptyRecords(sourcePlan.fields ++ targetPlan.fields, Start(targetPlan.graph, solved), solved)
         } else {
