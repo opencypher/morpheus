@@ -264,7 +264,6 @@ Feature "Comparability": Scenario "Comparing across types yields null, except nu
 Feature "ColumnNameAcceptance": Scenario "Keeping used expression 2"
 Feature "ColumnNameAcceptance": Scenario "Keeping used expression 3"
 Feature "ColumnNameAcceptance": Scenario "Keeping used expression 4"
-Feature "AggregationAcceptance": Scenario "Aggregates inside normal functions"
 Feature "AggregationAcceptance": Scenario "Handle aggregates inside non-aggregate expressions"
 Feature "AggregationAcceptance": Scenario "Handle aggregation on functions"
 Feature "AggregationAcceptance": Scenario "Aggregate on list values"

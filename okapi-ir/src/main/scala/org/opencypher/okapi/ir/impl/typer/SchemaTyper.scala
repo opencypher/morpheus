@@ -255,7 +255,7 @@ object SchemaTyper {
         argTypes <- argExprs.toList.traverse(process[R])
         computedType <- argTypes.reduceLeftOption(_ join _) match {
           case Some(innerType) =>
-            pure[R, CypherType](CTList(innerType.nullable).nullable)
+            pure[R, CypherType](CTList(innerType).nullable)
           case None =>
             error(NoSuitableSignatureForExpr(expr, argTypes))
         }
