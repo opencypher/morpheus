@@ -420,33 +420,13 @@ class LogicalPlanner(producer: LogicalOperatorProducer)
       val filteredPlan = planFilter(patternPlan, where)
       filteredPlan
     } else {
-      // TODO: Find a way to feed the same input into all arms of the cartesian product without recomputing it
-      val bases = plan +: components.map(_ => Start(plan.graph, SolvedQueryModel.empty)).tail
-      val plans = bases.zip(components).map {
+      components.foldLeft(plan) {
         case (base, component) =>
           val componentPlan = planComponentPattern(base, component, graph)
           val predicates = where.filter(_.canEvaluate(componentPlan.fields)).filterNot(componentPlan.solved.predicates)
           val filteredPlan = planFilter(componentPlan, predicates)
           filteredPlan
       }
-      val result = plans.reduceOption { (lhs, rhs) =>
-        val fieldsInScope = lhs.fields ++ rhs.fields
-        val solvedPredicates = lhs.solved.predicates ++ rhs.solved.predicates
-        val predicates = where.filter(_.canEvaluate(fieldsInScope)).filterNot(solvedPredicates)
-        val joinPredicates = predicates.collect { case e: Equals => e }
-        if (joinPredicates.isEmpty) {
-          val combinedPlan = producer.planCartesianProduct(lhs, rhs)
-          val filteredPlan = planFilter(combinedPlan, predicates)
-          filteredPlan
-        } else {
-          val (leftIn, rightIn) = joinPredicates.foldLeft((lhs, rhs)) {
-            case ((l, r), predicate) => producer.projectExpr(predicate.lhs, l) -> producer.projectExpr(predicate.rhs, r)
-          }
-          producer.planValueJoin(leftIn, rightIn, joinPredicates)
-        }
-      }
-      // TODO: use type system to avoid empty pattern
-      result.getOrElse(throw InvalidPatternException("Cannot plan an empty match pattern"))
     }
   }
 
@@ -518,7 +498,13 @@ class LogicalPlanner(producer: LogicalOperatorProducer)
           case _: DirectedVarLengthRelationship => Directed
           case _: UndirectedVarLengthRelationship => Undirected
         }
-        producer.planBoundedVarLengthExpand(c.source, r, c.target, v.edgeType, direction, v.lower, v.upper.get, sourcePlan, targetPlan)
+
+        if (v.upper.getOrElse(Integer.MAX_VALUE) < v.lower) {
+          val solved = sourcePlan.solved ++ targetPlan.solved.withField(r)
+          EmptyRecords(sourcePlan.fields ++ targetPlan.fields, Start(targetPlan.graph, solved), solved)
+        } else {
+          producer.planBoundedVarLengthExpand(c.source, r, c.target, v.edgeType, direction, v.lower, v.upper.get, sourcePlan, targetPlan)
+        }
 
       case _: UndirectedConnection if sourcePlan == targetPlan =>
         producer.planExpandInto(c.source, r, c.target, Undirected, sourcePlan)

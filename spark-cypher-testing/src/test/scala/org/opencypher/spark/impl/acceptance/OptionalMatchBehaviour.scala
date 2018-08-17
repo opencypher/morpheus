@@ -335,4 +335,23 @@ class OptionalMatchBehaviour extends CAPSTestSuite with DefaultGraphInit {
       CypherMap("b" -> CypherNull, "c" -> CypherNull)
     ))
   }
+
+  it("can start with an optional match") {
+    val g = initGraph("""
+      |CREATE (p1:Person {name: "Alice"})
+      |CREATE (p2:Person {name: "Bob"})
+    """.stripMargin)
+
+    // When
+    val result = g.cypher(
+      """
+        |OPTIONAL MATCH (a:Foo)
+        |WITH a
+        |MATCH (b:Person)
+        |RETURN *
+      """.stripMargin)
+
+    // Then
+    result.records.toMaps should equal(Bag())
+  }
 }

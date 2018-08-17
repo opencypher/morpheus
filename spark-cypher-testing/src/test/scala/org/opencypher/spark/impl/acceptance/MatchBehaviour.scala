@@ -407,8 +407,8 @@ class MatchBehaviour extends CAPSTestSuite with DefaultGraphInit {
         caps.cypher(
           """
             |CONSTRUCT
-            |  NEW (:A {p: 1})
-            |  NEW (:B {p: 'hi'})
+            |  CREATE (:A {p: 1})
+            |  CREATE (:B {p: 'hi'})
             |MATCH (n)
             |RETURN count(*)""".stripMargin).show
       }

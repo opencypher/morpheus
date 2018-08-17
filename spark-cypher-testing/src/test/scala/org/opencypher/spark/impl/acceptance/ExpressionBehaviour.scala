@@ -743,4 +743,124 @@ class ExpressionBehaviour extends CAPSTestSuite with DefaultGraphInit {
       ))
     }
   }
+
+  describe("STARTS WITH") {
+    it("returns true for matching strings"){
+      caps.cypher(
+        """
+          |RETURN "foobar" STARTS WITH "foo" as x
+        """.stripMargin
+      ).records.toMaps should equal(Bag(
+        CypherMap("x" -> true)
+      ))
+    }
+
+    it("returns false for not matching strings"){
+      caps.cypher(
+        """
+          |RETURN "foobar" STARTS WITH "bar" as x
+        """.stripMargin
+      ).records.toMaps should equal(Bag(
+        CypherMap("x" -> false)
+      ))
+    }
+
+    it("can handle nulls") {
+      val g = initGraph(
+        """
+          |CREATE ({s: "foobar", r: null})
+          |CREATE ({s: null, r: "foo"})
+        """.stripMargin)
+
+      g.cypher(
+        """
+          |MATCH (n)
+          |RETURN n.s STARTS WITh n.r as x
+        """.stripMargin
+      ).records.toMaps should equal(Bag(
+        CypherMap("x" -> null),
+        CypherMap("x" -> null)
+      ))
+    }
+  }
+
+  describe("ENDS WITH") {
+    it("returns true for matching strings"){
+      caps.cypher(
+        """
+          |RETURN "foobar" ENDS WITH "bar" as x
+        """.stripMargin
+      ).records.toMaps should equal(Bag(
+        CypherMap("x" -> true)
+      ))
+    }
+
+    it("returns false for not matching strings"){
+      caps.cypher(
+        """
+          |RETURN "foobar" ENDS WITH "foo" as x
+        """.stripMargin
+      ).records.toMaps should equal(Bag(
+        CypherMap("x" -> false)
+      ))
+    }
+
+    it("can handle nulls") {
+      val g = initGraph(
+        """
+          |CREATE ({s: "foobar", r: null})
+          |CREATE ({s: null, r: "bar"})
+        """.stripMargin)
+
+      g.cypher(
+        """
+          |MATCH (n)
+          |RETURN n.s STARTS WITh n.r as x
+        """.stripMargin
+      ).records.toMaps should equal(Bag(
+        CypherMap("x" -> null),
+        CypherMap("x" -> null)
+      ))
+    }
+  }
+
+  describe("CONTAINS") {
+    it("returns true for matching strings"){
+      caps.cypher(
+        """
+          |RETURN "foobarbaz" CONTAINS "baz" as x
+        """.stripMargin
+      ).records.toMaps should equal(Bag(
+        CypherMap("x" -> true)
+      ))
+    }
+
+    it("returns false for not matching strings"){
+      caps.cypher(
+        """
+          |RETURN "foobarbaz" CONTAINS "abc" as x
+        """.stripMargin
+      ).records.toMaps should equal(Bag(
+        CypherMap("x" -> false)
+      ))
+    }
+
+    it("can handle nulls") {
+      val g = initGraph(
+        """
+          |CREATE ({s: "foobar", r: null})
+          |CREATE ({s: null, r: "bar"})
+        """.stripMargin)
+
+      g.cypher(
+        """
+          |MATCH (n)
+          |RETURN n.s STARTS WITh n.r as x
+        """.stripMargin
+      ).records.toMaps should equal(Bag(
+        CypherMap("x" -> null),
+        CypherMap("x" -> null)
+      ))
+    }
+  }
 }

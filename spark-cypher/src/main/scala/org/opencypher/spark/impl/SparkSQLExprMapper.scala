@@ -149,6 +149,13 @@ object SparkSQLExprMapper {
         case GreaterThanOrEqual(lhs, rhs) => compare(gteq, lhs, rhs)
         case GreaterThan(lhs, rhs) => compare(gt, lhs, rhs)
 
+        case StartsWith(lhs, rhs) =>
+          lhs.asSparkSQLExpr.startsWith(rhs.asSparkSQLExpr)
+        case EndsWith(lhs, rhs) =>
+          lhs.asSparkSQLExpr.endsWith(rhs.asSparkSQLExpr)
+        case Contains(lhs, rhs) =>
+          lhs.asSparkSQLExpr.contains(rhs.asSparkSQLExpr)
+
         // Arithmetics
         case Add(lhs, rhs) =>
           val lhsCT = lhs.cypherType
@@ -229,8 +236,13 @@ object SparkSQLExprMapper {
 
         case Explode(list) => list.cypherType match {
           case CTList(_) | CTListOrNull(_) => functions.explode(list.asSparkSQLExpr)
+          case CTNull => functions.explode(functions.lit(null).cast(ArrayType(NullType)))
           case other => throw IllegalArgumentException("CTList", other)
         }
+
+        case Range(from, to, stepOption) =>
+          val stepCol = stepOption.map(_.asSparkSQLExpr).getOrElse(functions.lit(1))
+          rangeUdf(from.asSparkSQLExpr, to.asSparkSQLExpr, stepCol)
 
         // Mathematical functions
 

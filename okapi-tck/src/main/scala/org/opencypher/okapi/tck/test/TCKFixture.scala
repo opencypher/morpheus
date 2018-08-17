@@ -185,8 +185,8 @@ case class ScenariosFor(blacklist: Set[String]) {
 
 object ScenariosFor {
 
-  def apply(backlistFile: String): ScenariosFor = {
-    val blacklistIter = Source.fromFile(backlistFile).getLines().toSeq
+  def apply(blacklistFiles: String*): ScenariosFor = {
+    val blacklistIter = blacklistFiles.flatMap(Source.fromFile(_).getLines())
     val blacklistSet = blacklistIter.toSet
 
     lazy val errorMessage =

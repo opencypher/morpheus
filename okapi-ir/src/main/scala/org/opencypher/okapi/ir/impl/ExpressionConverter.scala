@@ -97,6 +97,12 @@ final class ExpressionConverter(implicit context: IRBuilderContext) {
       IsNull(convert(expr))(typings(e))
     case ast.IsNotNull(expr) =>
       IsNotNull(convert(expr))(typings(e))
+    case ast.StartsWith(lhs, rhs) =>
+      StartsWith(convert(lhs), convert(rhs))
+    case ast.EndsWith(lhs, rhs) =>
+      EndsWith(convert(lhs), convert(rhs))
+    case ast.Contains(lhs, rhs) =>
+      Contains(convert(lhs), convert(rhs))
 
     // Arithmetics
     case ast.Add(lhs, rhs) =>

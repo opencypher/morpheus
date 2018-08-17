@@ -241,32 +241,36 @@ object RelationalPlanner {
     val lhsOp = process[T](lhs)
     val rhsOp = process[T](rhs)
 
-    val lhsHeader = lhsOp.header
-    val rhsHeader = rhsOp.header
+    if(lhs.fields.isEmpty) {
+      rhsOp
+    } else {
+      val lhsHeader = lhsOp.header
+      val rhsHeader = rhsOp.header
 
-    def generateUniqueName = s"tmp${System.nanoTime}"
+      def generateUniqueName = s"tmp${System.nanoTime}"
 
-    // 1. Compute expressions between left and right side
-    val commonExpressions = lhsHeader.expressions.intersect(rhsHeader.expressions)
-    val joinExprs = commonExpressions.collect { case v: Var => v }
-    val otherExpressions = commonExpressions -- joinExprs
+      // 1. Compute expressions between left and right side
+      val commonExpressions = lhsHeader.expressions.intersect(rhsHeader.expressions)
+      val joinExprs = commonExpressions.collect { case v: Var => v }
+      val otherExpressions = commonExpressions -- joinExprs
 
-    // 2. Remove siblings of the join expressions and other common fields
-    val expressionsToRemove = joinExprs
-      .flatMap(v => rhsHeader.ownedBy(v) - v)
-      .union(otherExpressions)
-    val rhsWithDropped = relational.Drop(rhsOp, expressionsToRemove)
+      // 2. Remove siblings of the join expressions and other common fields
+      val expressionsToRemove = joinExprs
+        .flatMap(v => rhsHeader.ownedBy(v) - v)
+        .union(otherExpressions)
+      val rhsWithDropped = relational.Drop(rhsOp, expressionsToRemove)
 
-    // 3. Rename the join expressions on the right hand side, in order to make them distinguishable after the join
-    val joinExprRenames = joinExprs.map(e => e as Var(generateUniqueName)(e.cypherType))
-    val rhsWithAlias = relational.Alias(rhsWithDropped, joinExprRenames.toSeq)
-    val rhsJoinReady = relational.Drop(rhsWithAlias, joinExprs.collect { case e: Expr => e })
+      // 3. Rename the join expressions on the right hand side, in order to make them distinguishable after the join
+      val joinExprRenames = joinExprs.map(e => e as Var(generateUniqueName)(e.cypherType))
+      val rhsWithAlias = relational.Alias(rhsWithDropped, joinExprRenames.toSeq)
+      val rhsJoinReady = relational.Drop(rhsWithAlias, joinExprs.collect { case e: Expr => e })
 
-    // 4. Left outer join the left side and the processed right side
-    val joined = lhsOp.join(rhsJoinReady, joinExprRenames.map(a => a.expr -> a.alias).toSeq, LeftOuterJoin)
+      // 4. Left outer join the left side and the processed right side
+      val joined = lhsOp.join(rhsJoinReady, joinExprRenames.map(a => a.expr -> a.alias).toSeq, LeftOuterJoin)
 
-    // 5. Select the resulting header expressions
-    relational.Select(joined, joined.header.expressions.toList)
+      // 5. Select the resulting header expressions
+      relational.Select(joined, joined.header.expressions.toList)
+    }
   }
 
   implicit class RelationalOperatorOps[T <: Table[T]](val op: RelationalOperator[T]) extends AnyVal {

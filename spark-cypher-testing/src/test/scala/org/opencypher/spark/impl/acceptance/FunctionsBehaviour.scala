@@ -838,4 +838,60 @@ class FunctionsBehaviour extends CAPSTestSuite with DefaultGraphInit {
       }
 
     }
+
+  describe("range") {
+    it("can compute a range from literals") {
+      caps.cypher(
+        """UNWIND range(1, 3) AS x
+          |RETURN x""".stripMargin).records.toMaps should equal(Bag(
+        CypherMap("x" -> 1),
+        CypherMap("x" -> 2),
+        CypherMap("x" -> 3)
+      ))
+    }
+
+    it("can compute a range from literals with custom steps") {
+      caps.cypher(
+        """UNWIND range(1, 7, 3) AS x
+          |RETURN x""".stripMargin).records.toMaps should equal(Bag(
+        CypherMap("x" -> 1),
+        CypherMap("x" -> 4),
+        CypherMap("x" -> 7)
+      ))
+    }
+
+    it("can compute a range from column values") {
+      val g = initGraph(
+        """
+          |CREATE (:A {from: 1, to: 2})
+          |CREATE (:A {from: 1, to: 3})
+          |CREATE (:A {from: 1, to: 4})
+        """.stripMargin)
+
+      g.cypher(
+        """
+          |MATCH (n)
+          |RETURN range(n.from, n.to) as x""".stripMargin).records.toMaps should equal(Bag(
+        CypherMap("x" -> List(1, 2)),
+        CypherMap("x" -> List(1, 2, 3)),
+        CypherMap("x" -> List(1, 2, 3, 4))
+      ))
+    }
+
+    it("can compute a range with varying step values") {
+      val g = initGraph(
+        """
+          |CREATE (:A {step: 2})
+          |CREATE (:A {step: 3})
+        """.stripMargin)
+
+      g.cypher(
+        """
+          |MATCH (n)
+          |RETURN range(1, 4, n.step) as x""".stripMargin).records.toMaps should equal(Bag(
+        CypherMap("x" -> List(1, 3)),
+        CypherMap("x" -> List(1, 4))
+      ))
+    }
+  }
 }
