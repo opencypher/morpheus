@@ -7,7 +7,7 @@
   <parent>
     <groupId>org.opencypher</groupId>
     <artifactId>okapi</artifactId>
-    <version>0.1.7</version>
+    <version>0.1.8-SNAPSHOT</version>
   </parent>
 
   <artifactId>spark-cypher</artifactId>
