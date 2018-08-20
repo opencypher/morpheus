@@ -62,14 +62,14 @@ object Neo4jWriteBenchmark extends App {
     }
 
     Measurement.time {
-      EntityWriter.writeNodes(
+      EntityWriter.createNodes(
         inputNodes.toIterator,
         Array(metaPropertyKey, "val1", "val2", "val3"),
         config,
         Set("Foo", "Bar", "Baz")
       )(rowToListValue)
 
-      EntityWriter.writeRelationships(
+      EntityWriter.createRelationships(
         inputRels.toIterator,
         1,
         2,

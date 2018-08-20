@@ -40,7 +40,76 @@ object EntityWriter extends Logging {
 
   private val ROW_IDENTIFIER = "row"
 
-  def writeNodes[T](
+  // TODO: Share more code with `createNodes`
+  def mergeNodes[T](
+    nodes: Iterator[T],
+    rowMapping: Array[String],
+    config: Neo4jConfig,
+    labels: Set[String],
+    nodeKeys: Set[String],
+    batchSize: Int = 1000
+  )(rowToListValue: T => ListValue): Unit = {
+    val labelString = labels.mkString(":")
+
+    val nodeKeyProperties = nodeKeys.map { nodeKey =>
+      val keyIndex = rowMapping.indexOf(nodeKey)
+      val parameterMapLookup = s"$ROW_IDENTIFIER[$keyIndex]"
+      s"`$nodeKey`: $parameterMapLookup"
+    }.mkString(", ")
+
+    val setStatements = rowMapping
+      .zipWithIndex
+      .filterNot { case (propertyKey, _) => propertyKey == null || nodeKeys.contains(propertyKey) }
+      .map{ case (key, i) => s"SET n.$key = $ROW_IDENTIFIER[$i]" }
+      .mkString("\n")
+
+    val createQ =
+      s"""
+         |UNWIND $$batch AS $ROW_IDENTIFIER
+         |MERGE (n:$labelString { $nodeKeyProperties })
+         |$setStatements
+         """.stripMargin
+
+    writeEntities(nodes, rowMapping, createQ, config, batchSize)(rowToListValue)
+  }
+
+  // TODO: Share more code with `createRelationships`
+  def mergeRelationships[T](
+    relationships: Iterator[T],
+    startNodeIndex: Int,
+    endNodeIndex: Int,
+    rowMapping: Array[String],
+    config: Neo4jConfig,
+    relType: String,
+    relKeys: Set[String],
+    batchSize: Int = 1000
+  )(rowToListValue: T => ListValue): Unit = {
+
+    val relKeyProperties = relKeys.map { relKey =>
+      val keyIndex = rowMapping.indexOf(relKey)
+      val parameterMapLookup = s"$ROW_IDENTIFIER[$keyIndex]"
+      s"`$relKey`: $parameterMapLookup"
+    }.mkString(", ")
+
+    val setStatements = rowMapping
+      .zipWithIndex
+      .filterNot { case (propertyKey, _) => propertyKey == null || relKeys.contains(propertyKey) }
+      .map{ case (key, i) => s"SET rel.$key = $ROW_IDENTIFIER[$i]" }
+      .mkString("\n")
+
+    val createQ =
+      s"""
+         |UNWIND $$batch AS $ROW_IDENTIFIER
+         |MATCH (from {$metaPropertyKey : $ROW_IDENTIFIER[$startNodeIndex]})
+         |MATCH (to {$metaPropertyKey : $ROW_IDENTIFIER[$endNodeIndex]})
+         |MERGE (from)-[rel:$relType { $relKeyProperties }]->(to)
+         |$setStatements
+         """.stripMargin
+
+    writeEntities(relationships, rowMapping, createQ, config, batchSize)(rowToListValue)
+  }
+
+  def createNodes[T](
     nodes: Iterator[T],
     rowMapping: Array[String],
     config: Neo4jConfig,
@@ -65,7 +134,7 @@ object EntityWriter extends Logging {
     writeEntities(nodes, rowMapping, createQ, config, batchSize)(rowToListValue)
   }
 
-  def writeRelationships[T](
+  def createRelationships[T](
     relationships: Iterator[T],
     startNodeIndex: Int,
     endNodeIndex: Int,

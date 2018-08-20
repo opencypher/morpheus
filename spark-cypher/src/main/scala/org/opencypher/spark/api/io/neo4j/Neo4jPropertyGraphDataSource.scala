@@ -205,7 +205,7 @@ case object Writers {
       nodeScan
         .df
         .rdd
-        .foreachPartitionAsync(i => EntityWriter.writeNodes(i, mapping, config, combo + metaLabel)(rowToListValue))
+        .foreachPartitionAsync(i => EntityWriter.createNodes(i, mapping, config, combo + metaLabel)(rowToListValue))
     }
     result
   }
@@ -229,7 +229,7 @@ case object Writers {
         .df
         .rdd
         .foreachPartitionAsync(i =>
-          EntityWriter.writeRelationships(
+          EntityWriter.createRelationships(
             i,
             startIndex,
             endIndex,
