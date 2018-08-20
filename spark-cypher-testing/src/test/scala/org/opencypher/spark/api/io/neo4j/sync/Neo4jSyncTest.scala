@@ -51,6 +51,8 @@ class Neo4jSyncTest extends CAPSTestSuite with CAPSNeo4jServerFixture with Defau
         |CREATE (s)-[r:R {id: 1}]->(e)
       """.stripMargin)
 
+    Neo4jSync.createIndexes(neo4jConfig, entityKeys)
+
     // Write an initial graph to Neo4j
     Neo4jSync.merge(initialGraph, neo4jConfig, entityKeys)
     val readGraph = Neo4jPropertyGraphDataSource(neo4jConfig, entireGraphName = entireGraphName)

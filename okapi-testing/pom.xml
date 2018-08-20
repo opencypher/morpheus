@@ -34,7 +34,7 @@
 
     <dependency>
       <groupId>org.neo4j.test</groupId>
-      <artifactId>neo4j-harness</artifactId>
+      <artifactId>neo4j-harness-enterprise</artifactId>
       <version>${dep.neo4j.version}</version>
     </dependency>
 

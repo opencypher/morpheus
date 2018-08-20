@@ -52,6 +52,27 @@ case class EntityKeys(
 
 object Neo4jSync extends Logging {
 
+  def createIndexes(config: Neo4jConfig, entityKeys: EntityKeys): Unit = {
+    config.withSession { session =>
+      val nodeKeyConstraints = entityKeys.nodeKeys.map {
+        case (labelCombo, keys) =>
+          val labelString = labelCombo.map(l => s"`$l`").mkString(":",":","")
+          val propertyString = keys.map(k => s"n.`$k`").mkString("(",", ",")")
+
+          s"CREATE CONSTRAINT ON (n$labelString) ASSERT $propertyString IS NODE KEY"
+      }
+
+      logger.info(s"Creating node key constraints $nodeKeyConstraints")
+      session.run(nodeKeyConstraints.mkString("\n")).consume()
+
+
+      val idIndexes = entityKeys.nodeKeys.keySet.flatten.map(label => s"CREATE INDEX ON :$label($metaPropertyKey)")
+      logger.info(s"Creating indexes for morpheus id $idIndexes")
+      session.run(idIndexes.mkString("\n")).consume()
+    }
+
+  }
+
   def merge(graph: PropertyGraph, config: Neo4jConfig, entityKeys: EntityKeys)
     (implicit caps: CAPSSession): Unit = {
     val executorCount = caps.sparkSession.sparkContext.statusTracker.getExecutorInfos.length
