@@ -1,0 +1,90 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+
+  <parent>
+    <groupId>org.opencypher</groupId>
+    <artifactId>okapi</artifactId>
+    <version>0.1.8-SNAPSHOT</version>
+  </parent>
+
+  <artifactId>okapi-parser</artifactId>
+
+  <name>Cypher for Apache Spark - Parser</name>
+
+  <properties>
+    <project.rootdir>${project.parent.basedir}</project.rootdir>
+  </properties>
+
+  <build>
+    <plugins>
+      <plugin>
+        <groupId>org.antlr</groupId>
+        <artifactId>antlr4-maven-plugin</artifactId>
+        <version>${dep.antlr4.version}</version>
+        <configuration>
+          <listener>false</listener>
+          <visitor>true</visitor>
+        </configuration>
+        <executions>
+          <execution>
+            <id>antlr-generate</id>
+            <phase>generate-sources</phase>
+            <goals>
+              <goal>antlr4</goal>
+            </goals>
+          </execution>
+        </executions>
+      </plugin>
+    </plugins>
+  </build>
+
+  <dependencies>
+
+    <!--Okapi Module-->
+    <dependency>
+      <groupId>org.opencypher</groupId>
+      <artifactId>okapi-trees</artifactId>
+      <version>${project.parent.version}</version>
+    </dependency>
+
+    <dependency>
+      <groupId>org.opencypher</groupId>
+      <artifactId>okapi-api</artifactId>
+      <version>${project.parent.version}</version>
+    </dependency>
+
+
+    <dependency>
+      <groupId>org.antlr</groupId>
+      <artifactId>antlr4-runtime</artifactId>
+      <version>${dep.antlr4.version}</version>
+    </dependency>
+
+    <dependency>
+      <groupId>org.opencypher</groupId>
+      <artifactId>grammar</artifactId>
+      <version>1.0.0-M10</version>
+    </dependency>
+
+    <!-- Workaround for https://youtrack.jetbrains.com/issue/SCL-13184 -->
+    <dependency>
+      <groupId>org.opencypher</groupId>
+      <artifactId>okapi-trees</artifactId>
+      <version>${project.parent.version}</version>
+      <type>test-jar</type>
+      <scope>test</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>org.opencypher</groupId>
+      <artifactId>okapi-tck</artifactId>
+      <version>${project.parent.version}</version>
+      <scope>test</scope>
+    </dependency>
+
+  </dependencies>
+
+</project>
