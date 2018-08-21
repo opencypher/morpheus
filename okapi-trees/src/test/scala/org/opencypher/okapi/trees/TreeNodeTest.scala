@@ -264,7 +264,45 @@ class TreeNodeTest extends FunSpec with Matchers {
     ))
   }
 
+  it("fails with an understandable error message when running out of children to assign") {
+    val instance = ListBeforeFixed(List.empty, SimpleA())
+
+    instance.children.toList should equal(List(
+      SimpleA()
+    ))
+
+    intercept[IllegalArgumentException] {
+      instance.withNewChildren(Array(
+        SimpleA(), SimpleA()
+      ))
+    }.getMessage should equal(
+      """|When updating with new children: Did not have a child left to assign to the child that was previously SimpleA
+         |Inferred constructor parameters so far: ListBeforeFixed(List(SimpleA, SimpleA), ...)""".stripMargin)
+  }
+
+  it("fails with an understandable error message when there are children left over after assignment to constructor arguments") {
+    val instance = SimpleList(List(SimpleA()))
+
+    instance.children.toList should equal(List(
+      SimpleA()
+    ))
+
+    intercept[IllegalArgumentException] {
+      instance.withNewChildren(Array(
+        SimpleA(), SimpleB()
+      ))
+    }.getMessage should equal(
+      """|Could not assign children [SimpleB] to parameters of SimpleList
+         |Inferred constructor parameters: SimpleList(List(SimpleA))""".stripMargin)
+  }
+
   abstract class ComplexExample extends AbstractTreeNode[ComplexExample]
+
+  // All a's get assigned to the list
+  case class ListBeforeFixed(as: List[SimpleA], a: SimpleA) extends ComplexExample
+
+  // All a's get assigned to the list
+  case class SimpleList(as: List[SimpleA]) extends ComplexExample
 
   case class SimpleA() extends ComplexExample
 
