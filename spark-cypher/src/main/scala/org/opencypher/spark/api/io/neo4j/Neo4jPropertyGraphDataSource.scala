@@ -205,7 +205,9 @@ case object Writers {
       nodeScan
         .df
         .rdd
-        .foreachPartitionAsync(i => EntityWriter.createNodes(i, mapping, config, combo + metaLabel)(rowToListValue))
+        .foreachPartitionAsync{ i =>
+          if (i.nonEmpty) EntityWriter.createNodes(i, mapping, config, combo + metaLabel)(rowToListValue)
+        }
     }
     result
   }
@@ -228,17 +230,19 @@ case object Writers {
       relScan
         .df
         .rdd
-        .foreachPartitionAsync(i =>
-          EntityWriter.createRelationships(
-            i,
-            startIndex,
-            endIndex,
-            mapping,
-            config,
-            relType,
-            Some(metaLabel)
-          )(rowToListValue)
-        )
+        .foreachPartitionAsync { i =>
+          if (i.nonEmpty) {
+            EntityWriter.createRelationships(
+              i,
+              startIndex,
+              endIndex,
+              mapping,
+              config,
+              relType,
+              Some(metaLabel)
+            )(rowToListValue)
+          }
+        }
     }
   }
 

@@ -119,6 +119,8 @@ object Neo4jSync extends Logging {
       }
     } yield Future {}
     Await.result(writesCompleted, Duration.Inf)
+
+    logger.debug(s"Merge successful")
   }
 }
 
@@ -131,7 +133,9 @@ case object MergeWriters {
       nodeScan
         .df
         .rdd
-        .foreachPartitionAsync(i => EntityWriter.mergeNodes(i, mapping, config, combo, nodeKeys(combo))(rowToListValue))
+        .foreachPartitionAsync{ i =>
+          if (i.nonEmpty) EntityWriter.mergeNodes(i, mapping, config, combo, nodeKeys(combo))(rowToListValue)
+        }
     }
     result
   }
@@ -154,17 +158,19 @@ case object MergeWriters {
       relScan
         .df
         .rdd
-        .foreachPartitionAsync(i =>
-          EntityWriter.mergeRelationships(
-            i,
-            startIndex,
-            endIndex,
-            mapping,
-            config,
-            relType,
-            relKeys(relType)
-          )(rowToListValue)
-        )
+        .foreachPartitionAsync { i =>
+          if (i.nonEmpty) {
+            EntityWriter.mergeRelationships(
+              i,
+              startIndex,
+              endIndex,
+              mapping,
+              config,
+              relType,
+              relKeys(relType)
+            )(rowToListValue)
+          }
+        }
     }
   }
 
