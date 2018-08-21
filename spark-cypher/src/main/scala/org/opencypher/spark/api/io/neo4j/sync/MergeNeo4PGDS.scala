@@ -45,13 +45,31 @@ import org.opencypher.spark.impl.CAPSRecords
 import scala.concurrent.duration._
 import scala.concurrent.{Await, ExecutionContext, ExecutionContextExecutorService, Future}
 
+/**
+  * Describes sets of properties that uniquely identify nodes/ relationships with a given
+  * label combination/ relationship type.
+  *
+  * @param nodeKeys maps a label combination to a set of property keys, which uniquely identify a node
+  * @param relKeys maps a relationship type to a set of property keys, which uniquely identify a relationship
+  */
 case class EntityKeys(
   nodeKeys: Map[Set[String], Set[String]],
   relKeys: Map[String, Set[String]]
 )
 
+/**
+  *  Utility class that allows to merge a graph into an existing Neo4j database.
+  */
 object Neo4jSync extends Logging {
 
+  /**
+    * Creates node indexes in the specified Neo4j database to speed up the Neo4j merge feature.
+    *
+    * @note This feature requires the Neo4j Enterprise Edition.
+    *
+    * @param config access config for the Neo4j database on which the indexes are created
+    * @param entityKeys node and relationship entity keys that are used to create indexes
+    */
   def createIndexes(config: Neo4jConfig, entityKeys: EntityKeys): Unit = {
     config.withSession { session =>
       val nodeKeyConstraints = entityKeys.nodeKeys.map {
@@ -70,9 +88,19 @@ object Neo4jSync extends Logging {
       logger.info(s"Creating indexes for morpheus id $idIndexes")
       session.run(idIndexes.mkString("\n")).consume()
     }
-
   }
 
+  /**
+    * Merges the given graph into an existing Neo4j database.
+    * Existing properties in the Neo4j graph are overwritten, missing ones are added.
+    * Nodes and relationships are identified by using their entity keys. Therefore an entity key must be specified for
+    * every label combination / relationship type present in the merge graph.
+    *
+    * @param graph graph that is merged into the existing Neo4j database
+    * @param config access config for the Neo4j database into which the graph is merged
+    * @param entityKeys node and relationship keys which identify same entities in the two graphs
+    * @param caps CAPS session
+    */
   def merge(graph: PropertyGraph, config: Neo4jConfig, entityKeys: EntityKeys)
     (implicit caps: CAPSSession): Unit = {
     val executorCount = caps.sparkSession.sparkContext.statusTracker.getExecutorInfos.length
@@ -80,12 +108,6 @@ object Neo4jSync extends Logging {
       ExecutionContext.fromExecutorService(Executors.newFixedThreadPool(executorCount))
 
     logger.debug(s"Using $executorCount Threads")
-
-    // TODO: Create constraints if they don't exist already
-    //    config.withSession { session =>
-    //      logger.info(s"Creating database uniqueness constraint on entity keys")
-    //      session.run(s"CREATE CONSTRAINT ON (n:$metaLabel) ASSERT n.$metaPropertyKey IS UNIQUE").consume()
-    //    }
 
     val writesCompleted = for {
       _ <- Future.sequence(MergeWriters.writeNodes(graph, config, entityKeys.nodeKeys))
