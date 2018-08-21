@@ -27,11 +27,12 @@
 package org.opencypher.okapi.ir.api.block
 
 import org.opencypher.okapi.ir.api.IRGraph
+import org.opencypher.okapi.ir.api.expr.Expr
 
-case class SourceBlock[E](
+case class SourceBlock(
     graph: IRGraph
-) extends BasicBlock[Binds[E], E](BlockType("source")) {
-  override def where: Set[E] = Set.empty[E]
-  override val after: List[Block[E]] = List.empty
-  override val binds: Binds[E] = Binds.empty
+) extends BasicBlock[Binds](BlockType("source")) {
+  override def where: Set[Expr] = Set.empty[Expr]
+  override val after: List[Block] = List.empty
+  override val binds: Binds = Binds.empty
 }

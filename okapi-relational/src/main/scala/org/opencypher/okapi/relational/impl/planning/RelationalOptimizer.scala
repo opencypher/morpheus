@@ -30,15 +30,17 @@ import org.opencypher.okapi.relational.api.table.Table
 import org.opencypher.okapi.relational.impl.operators.{Cache, RelationalOperator, Start}
 import org.opencypher.okapi.trees.TopDown
 
+import scala.reflect.runtime.universe.TypeTag
+
 object RelationalOptimizer {
 
-  def process[T <: Table[T]](input: RelationalOperator[T]): RelationalOperator[T] = {
+  def process[T <: Table[T] : TypeTag](input: RelationalOperator[T]): RelationalOperator[T] = {
     InsertCachingOperators(input)
   }
 
   object InsertCachingOperators {
 
-    def apply[T <: Table[T]](input: RelationalOperator[T]): RelationalOperator[T] = {
+    def apply[T <: Table[T] : TypeTag](input: RelationalOperator[T]): RelationalOperator[T] = {
       val replacements = calculateReplacementMap(input).filterKeys {
         case _: Start[T] => false
         case _ => true
@@ -54,7 +56,7 @@ object RelationalOptimizer {
       }.transform(input)
     }
 
-    private def calculateReplacementMap[T <: Table[T]](input: RelationalOperator[T]): Map[RelationalOperator[T], RelationalOperator[T]] = {
+    private def calculateReplacementMap[T <: Table[T] : TypeTag](input: RelationalOperator[T]): Map[RelationalOperator[T], RelationalOperator[T]] = {
       val opCounts = identifyDuplicates(input)
       val opsByHeight = opCounts.keys.toSeq.sortWith((a, b) => a.height > b.height)
       val (opsToCache, _) = opsByHeight.foldLeft(Set.empty[RelationalOperator[T]] -> opCounts) { (agg, currentOp) =>

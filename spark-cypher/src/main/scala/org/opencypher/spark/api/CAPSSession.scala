@@ -43,7 +43,7 @@ import org.opencypher.spark.impl.{CAPSRecords, CAPSRecordsFactory, CAPSSessionIm
 
 import scala.reflect.runtime.universe._
 
-trait CAPSSession extends RelationalCypherSession[DataFrameTable] {
+abstract class CAPSSession extends RelationalCypherSession[DataFrameTable] {
 
   protected implicit val caps: CAPSSession = this
 

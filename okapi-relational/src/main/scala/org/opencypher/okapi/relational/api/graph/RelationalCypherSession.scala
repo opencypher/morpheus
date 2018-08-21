@@ -32,9 +32,13 @@ import org.opencypher.okapi.relational.api.planning.RelationalRuntimeContext
 import org.opencypher.okapi.relational.api.table.{RelationalCypherRecordsFactory, Table}
 import org.opencypher.okapi.relational.impl.RelationalConverters._
 
-trait RelationalCypherSession[T <: Table[T]] extends CypherSession {
+import scala.reflect.runtime.universe.TypeTag
+
+abstract class RelationalCypherSession[T <: Table[T] : TypeTag] extends CypherSession {
 
   type Graph <: RelationalCypherGraph[T]
+
+  private[opencypher] val tableTypeTag: TypeTag[T] = implicitly[TypeTag[T]]
 
   private[opencypher] def records: RelationalCypherRecordsFactory[T]
 

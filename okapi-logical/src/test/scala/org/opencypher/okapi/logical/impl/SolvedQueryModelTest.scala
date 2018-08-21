@@ -57,7 +57,7 @@ class SolvedQueryModelTest extends BaseTestSuite with IrConstruction {
   test("contains several blocks") {
     val block1 = matchBlock(Pattern.empty.withEntity('a -> CTNode))
     val block2 = matchBlock(Pattern.empty.withEntity('b -> CTNode))
-    val binds: Fields[Expr] = Fields(Map(toField('c) -> Equals('a, 'b)(CTBoolean)))
+    val binds: Fields = Fields(Map(toField('c) -> Equals('a, 'b)(CTBoolean)))
     val block3 = project(binds)
     val block4 = project(ProjectedFieldsOf(toField('d) -> Equals('c, 'b)(CTBoolean)))
 
@@ -71,7 +71,7 @@ class SolvedQueryModelTest extends BaseTestSuite with IrConstruction {
 
   test("solves") {
     val s = SolvedQueryModel.empty.withField('a).withFields('b, 'c)
-    val p = Pattern.empty[Expr].withEntity('a -> CTNode).withEntity('b -> CTNode).withEntity('c -> CTNode)
+    val p = Pattern.empty.withEntity('a -> CTNode).withEntity('b -> CTNode).withEntity('c -> CTNode)
 
     s.solves(toField('a)) shouldBe true
     s.solves(toField('b)) shouldBe true

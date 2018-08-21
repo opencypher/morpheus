@@ -27,21 +27,18 @@
 package org.opencypher.okapi.ir.api
 
 import org.opencypher.okapi.api.value.CypherValue._
-import org.opencypher.okapi.impl.exception.IllegalStateException
 import org.opencypher.okapi.ir.api.block._
+import org.opencypher.okapi.ir.api.expr.Expr
 
-import scala.annotation.tailrec
-import scala.collection.generic.CanBuildFrom
-
-final case class QueryModel[E](
-  result: ResultBlock[E],
+final case class QueryModel(
+  result: ResultBlock,
   parameters: CypherMap
-) extends Block[E] {
-  override def after: List[Block[E]] = result.after
+) extends Block {
+  override def after: List[Block] = result.after
 
-  override def binds: Binds[E] = result.binds
+  override def binds: Binds = result.binds
 
-  override def where: Set[E] = result.where
+  override def where: Set[Expr] = result.where
 
   override def graph: IRGraph = result.graph
 }

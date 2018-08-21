@@ -74,7 +74,7 @@ case class LogicalPatternGraph(
   schema: Schema,
   clones: Map[Var, Var],
   newEntities: Set[ConstructedEntity],
-  sets: List[SetItem[Expr]],
+  sets: List[SetItem],
   onGraphs: List[QualifiedGraphName],
   qualifiedGraphName: QualifiedGraphName
 ) extends LogicalGraph {
@@ -268,7 +268,7 @@ final case class Select(
 final case class ReturnGraph(in: LogicalOperator, solved: SolvedQueryModel)
   extends StackingLogicalOperator with EmptyFields
 
-final case class OrderBy(sortItems: Seq[SortItem[Expr]], in: LogicalOperator, solved: SolvedQueryModel)
+final case class OrderBy(sortItems: Seq[SortItem], in: LogicalOperator, solved: SolvedQueryModel)
   extends StackingLogicalOperator {
 
   override val fields: Set[Var] = in.fields

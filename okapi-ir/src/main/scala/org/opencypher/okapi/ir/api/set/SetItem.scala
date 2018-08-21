@@ -26,12 +26,12 @@
  */
 package org.opencypher.okapi.ir.api.set
 
-import org.opencypher.okapi.ir.api.expr.Var
+import org.opencypher.okapi.ir.api.expr.{Expr, Var}
 
-sealed trait SetItem[E] {
+sealed trait SetItem {
   def variable: Var
 }
 
-case class SetLabelItem[E](variable: Var, labels: Set[String]) extends SetItem[E]
+case class SetLabelItem(variable: Var, labels: Set[String]) extends SetItem
 
-case class SetPropertyItem[E](propertyKey: String, variable: Var, setValue: E) extends SetItem[E]
+case class SetPropertyItem(propertyKey: String, variable: Var, setValue: Expr) extends SetItem

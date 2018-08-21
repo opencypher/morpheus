@@ -26,18 +26,19 @@
  */
 package org.opencypher.okapi.ir.api.block
 
+import org.opencypher.okapi.ir.api.expr.Expr
 import org.opencypher.okapi.ir.api.{IRField, IRGraph}
 import org.opencypher.okapi.trees.AbstractTreeNode
 
-abstract class Block[E] extends AbstractTreeNode[Block[E]] {
-  def dependencies: Set[Block[E]] = children.flatMap(_.toSet).toSet
+abstract class Block extends AbstractTreeNode[Block] {
+  def dependencies: Set[Block] = children.flatMap(_.toSet).toSet
 
   def blockType: BlockType = BlockType(this.getClass.getSimpleName)
 
-  def after: List[Block[E]]
+  def after: List[Block]
 
-  def binds: Binds[E]
-  def where: Set[E]
+  def binds: Binds
+  def where: Set[Expr]
 
   def graph: IRGraph
 }
@@ -45,20 +46,20 @@ abstract class Block[E] extends AbstractTreeNode[Block[E]] {
 final case class BlockType(name: String)
 
 object Binds {
-  def empty[E]: Binds[E] = new Binds[E] {
+  def empty: Binds = new Binds {
     override def fields: Set[IRField] = Set.empty
   }
 }
 
-trait Binds[E] {
+trait Binds {
   def fields: Set[IRField]
 }
 
 object BlockWhere {
-  def unapply[E](block: Block[E]): Option[Set[E]] = Some(block.where)
+  def unapply(block: Block): Option[Set[Expr]] = Some(block.where)
 }
 
 object NoWhereBlock {
-  def unapply[E](block: Block[E]): Option[Block[E]] =
+  def unapply(block: Block): Option[Block] =
     if (block.where.isEmpty) Some(block) else None
 }

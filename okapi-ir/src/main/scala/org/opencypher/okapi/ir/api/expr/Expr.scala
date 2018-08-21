@@ -939,7 +939,7 @@ case class NullLit(cypherType: CypherType = CTNull) extends Lit[Null] {
 
 // Pattern Predicate Expression
 
-final case class ExistsPatternExpr(targetField: Var, ir: CypherQuery[Expr])(val cypherType: CypherType = CTBoolean)
+final case class ExistsPatternExpr(targetField: Var, ir: CypherQuery)(val cypherType: CypherType = CTBoolean)
   extends Expr {
 
   override type This = ExistsPatternExpr

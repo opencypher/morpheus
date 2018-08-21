@@ -26,6 +26,7 @@
  */
 package org.opencypher.okapi.relational.impl.planning
 
+import cats.data.NonEmptyList
 import org.opencypher.okapi.api.graph.QualifiedGraphName
 import org.opencypher.okapi.api.types.{CTBoolean, CTInteger, CTNode}
 import org.opencypher.okapi.impl.exception.UnsupportedOperationException
@@ -40,13 +41,15 @@ import org.opencypher.okapi.relational.api.tagging.TagSupport.computeRetaggings
 import org.opencypher.okapi.relational.api.tagging.Tags
 import org.opencypher.okapi.relational.api.tagging.Tags._
 import org.opencypher.okapi.relational.impl.operators.{ConstructGraph, RelationalOperator}
-import org.opencypher.okapi.relational.impl.planning.RelationalPlanner._
+import org.opencypher.okapi.relational.impl.planning.RelationalPlanner.RelationalOperatorOps
 import org.opencypher.okapi.relational.impl.table.RecordHeader
 import org.opencypher.okapi.relational.impl.{operators => relational}
 
+import scala.reflect.runtime.universe.TypeTag
+
 object ConstructGraphPlanner {
 
-  def planConstructGraph[T <: Table[T]](inputTablePlan: RelationalOperator[T], construct: LogicalPatternGraph)
+  def planConstructGraph[T <: Table[T] : TypeTag](inputTablePlan: RelationalOperator[T], construct: LogicalPatternGraph)
     (implicit context: RelationalRuntimeContext[T]): RelationalOperator[T] = {
 
     val onGraphPlan: RelationalOperator[T] = {
@@ -55,7 +58,7 @@ object ConstructGraphPlanner {
         case one :: Nil => // Just one graph, no union required
           relational.Start(one, tagStrategy = computeRetaggings(Map(one -> context.resolveGraph(one).tags)))
         case several =>
-          val onGraphPlans = several.map(qgn => relational.Start[T](qgn))
+          val onGraphPlans = NonEmptyList.fromListUnsafe(several).map(qgn => relational.Start[T](qgn))
           relational.GraphUnionAll[T](onGraphPlans, construct.qualifiedGraphName)
       }
     }
@@ -115,7 +118,7 @@ object ConstructGraphPlanner {
     val originalVarsToKeep = clonedVarsToInputVars.keySet -- aliasClones.keySet
     val varsToRemoveFromTable = allInputVars -- originalVarsToKeep
 
-    val patternGraphTableOp = constructedEntitiesOp.drop(varsToRemoveFromTable)
+    val patternGraphTableOp = constructedEntitiesOp.dropExprSet(varsToRemoveFromTable)
 
     val tagsUsed = constructTagStrategy.foldLeft(createdEntityTags) {
       case (tags, (qgn, remapping)) =>
@@ -147,7 +150,7 @@ object ConstructGraphPlanner {
     g -> g.tags.zip(g.tags).toMap
   }
 
-  def planConstructEntities[T <: Table[T]](
+  def planConstructEntities[T <: Table[T] : TypeTag](
     inOp: RelationalOperator[T],
     toCreate: Set[ConstructedEntity],
     createdEntityTag: Int

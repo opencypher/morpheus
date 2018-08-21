@@ -26,6 +26,6 @@
  */
 package org.opencypher.okapi.ir.api.block
 
-abstract class BasicBlock[B <: Binds[E], E](override val blockType: BlockType) extends Block[E] {
+abstract class BasicBlock[B <: Binds](override val blockType: BlockType) extends Block {
   override def binds: B
 }

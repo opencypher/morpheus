@@ -27,45 +27,46 @@
 package org.opencypher.okapi.ir.api
 
 import org.opencypher.okapi.ir.api.block.{Binds, Block}
+import org.opencypher.okapi.ir.api.expr.Expr
 
-sealed trait CypherStatement[E] extends Block[E] {
+sealed trait CypherStatement extends Block {
   def info: QueryInfo
 }
 
-final case class CypherQuery[E](
+final case class CypherQuery(
     info: QueryInfo,
-    model: QueryModel[E]
-) extends CypherStatement[E] {
-  override def after: List[Block[E]] = model.after
+    model: QueryModel
+) extends CypherStatement {
+  override def after: List[Block] = model.after
 
-  override def binds: Binds[E] = model.binds
+  override def binds: Binds = model.binds
 
-  override def where: Set[E] = model.where
+  override def where: Set[Expr] = model.where
 
   override def graph: IRGraph = model.graph
 }
 
-final case class CreateGraphStatement[E](
+final case class CreateGraphStatement(
     info: QueryInfo,
     graph: IRGraph,
-    innerQuery: CypherQuery[E]
-) extends CypherStatement[E] {
+    innerQuery: CypherQuery
+) extends CypherStatement {
 
-  override val after: List[Block[E]] = List(innerQuery)
+  override val after: List[Block] = List(innerQuery)
 
-  override def binds: Binds[E] = Binds.empty
+  override def binds: Binds = Binds.empty
 
-  override def where: Set[E] = Set.empty
+  override def where: Set[Expr] = Set.empty
 }
 
-final case class DeleteGraphStatement[E](
+final case class DeleteGraphStatement(
   info: QueryInfo,
   graph: IRGraph
-) extends CypherStatement[E] {
+) extends CypherStatement {
 
-  override val after: List[Block[E]] = List.empty
+  override val after: List[Block] = List.empty
 
-  override def binds: Binds[E] = Binds.empty
+  override def binds: Binds = Binds.empty
 
-  override def where: Set[E] = Set.empty
+  override def where: Set[Expr] = Set.empty
 }

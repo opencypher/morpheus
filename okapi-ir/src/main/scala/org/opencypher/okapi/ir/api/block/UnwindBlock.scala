@@ -26,16 +26,17 @@
  */
 package org.opencypher.okapi.ir.api.block
 
+import org.opencypher.okapi.ir.api.expr.Expr
 import org.opencypher.okapi.ir.api.{IRField, IRGraph}
 
-final case class UnwindBlock[E](
-    after: List[Block[E]],
-    binds: UnwoundList[E],
+final case class UnwindBlock(
+    after: List[Block],
+    binds: UnwoundList,
     graph: IRGraph
-) extends BasicBlock[UnwoundList[E], E](BlockType("unwind")) {
-  override def where: Set[E] = Set.empty[E] // never filters
+) extends BasicBlock[UnwoundList](BlockType("unwind")) {
+  override def where: Set[Expr] = Set.empty[Expr] // never filters
 }
 
-final case class UnwoundList[E](list: E, variable: IRField) extends Binds[E] {
+final case class UnwoundList(list: Expr, variable: IRField) extends Binds {
   override def fields: Set[IRField] = Set(variable)
 }

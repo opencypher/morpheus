@@ -33,7 +33,6 @@ import org.atnos.eff.syntax.all._
 import org.opencypher.okapi.api.schema.Schema
 import org.opencypher.okapi.api.types.{CTNode, CTRelationship, CypherType}
 import org.opencypher.okapi.impl.exception.IllegalArgumentException
-import org.opencypher.okapi.ir.api.expr.Expr
 
 package object impl {
 
@@ -55,7 +54,7 @@ package object impl {
   }
 
   def error[R: _mayFail : _hasContext, A](err: IRBuilderError)(v: A): Eff[R, A] =
-    left[R, IRBuilderError, BlockRegistry[Expr]](err) >> pure(v)
+    left[R, IRBuilderError, BlockRegistry](err) >> pure(v)
 
   implicit final class RichSchema(schema: Schema) {
 

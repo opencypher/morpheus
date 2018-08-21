@@ -27,21 +27,22 @@
 package org.opencypher.okapi.ir.api.block
 
 import org.opencypher.okapi.ir.api.IRGraph
+import org.opencypher.okapi.ir.api.expr.Expr
 
-final case class OrderAndSliceBlock[E](
-    after: List[Block[E]],
-    orderBy: Seq[SortItem[E]],
-    skip: Option[E],
-    limit: Option[E],
+final case class OrderAndSliceBlock(
+    after: List[Block],
+    orderBy: Seq[SortItem],
+    skip: Option[Expr],
+    limit: Option[Expr],
     graph: IRGraph
-) extends BasicBlock[OrderedFields[E], E](BlockType("order-and-slice")) {
-  override val binds: OrderedFields[E] = OrderedFields[E]()
-  override def where: Set[E] = Set.empty[E]
+) extends BasicBlock[OrderedFields](BlockType("order-and-slice")) {
+  override val binds: OrderedFields = OrderedFields()
+  override def where: Set[Expr] = Set.empty[Expr]
 }
 
-sealed trait SortItem[E] {
-  def expr: E
+sealed trait SortItem {
+  def expr: Expr
 }
 
-final case class Asc[E](expr: E) extends SortItem[E]
-final case class Desc[E](expr: E) extends SortItem[E]
+final case class Asc(expr: Expr) extends SortItem
+final case class Desc(expr: Expr) extends SortItem

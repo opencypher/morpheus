@@ -42,10 +42,12 @@ import org.opencypher.okapi.relational.impl.planning.ConstructGraphPlanner._
 import org.opencypher.okapi.relational.impl.table.RecordHeader
 import org.opencypher.okapi.relational.impl.{operators => relational}
 
+import scala.reflect.runtime.universe.TypeTag
+
 object RelationalPlanner {
 
   // TODO: rename to 'plan'
-  def process[T <: Table[T]](input: LogicalOperator)
+  def process[T <: Table[T] : TypeTag](input: LogicalOperator)
     (implicit context: RelationalRuntimeContext[T]): RelationalOperator[T] = {
 
     implicit val caps: CypherSession = context.session
@@ -191,7 +193,7 @@ object RelationalPlanner {
         val rightWithAliases = rightResult.alias(renameExprs)
         // 2. Drop Join expressions and their children in rhs
         val exprsToRemove = joinExprs.flatMap(v => rightHeader.ownedBy(v))
-        val reducedRhsData = rightWithAliases.drop(exprsToRemove)
+        val reducedRhsData = rightWithAliases.dropExprSet(exprsToRemove)
         // 3. Compute distinct rows in rhs
         val distinctRhsData = relational.Distinct(reducedRhsData, renameExprs.map(_.alias))
         // 4. Join lhs and prepared rhs using a left outer join
@@ -200,7 +202,7 @@ object RelationalPlanner {
         val targetExpr = renameExprs.head.alias
         joinedData.addInto(IsNotNull(targetExpr)(CTBoolean) -> predicateField.targetField)
 
-      case logical.OrderBy(sortItems: Seq[SortItem[Expr]], in, _) =>
+      case logical.OrderBy(sortItems: Seq[SortItem], in, _) =>
         relational.OrderBy(process[T](in), sortItems)
 
       case logical.Skip(expr, in, _) =>
@@ -215,7 +217,7 @@ object RelationalPlanner {
     }
   }
 
-  def planScan[T <: Table[T]](
+  def planScan[T <: Table[T] : TypeTag](
     maybeInOp: Option[RelationalOperator[T]],
     logicalGraph: LogicalGraph,
     entityVar: Var
@@ -236,7 +238,7 @@ object RelationalPlanner {
   }
 
   // TODO: process operator outside of def
-  private def planOptional[T <: Table[T]](lhs: LogicalOperator, rhs: LogicalOperator)
+  private def planOptional[T <: Table[T] : TypeTag](lhs: LogicalOperator, rhs: LogicalOperator)
     (implicit context: RelationalRuntimeContext[T]): RelationalOperator[T] = {
     val lhsOp = process[T](lhs)
     val rhsOp = process[T](rhs)
@@ -273,7 +275,7 @@ object RelationalPlanner {
     }
   }
 
-  implicit class RelationalOperatorOps[T <: Table[T]](val op: RelationalOperator[T]) extends AnyVal {
+  implicit class RelationalOperatorOps[T <: Table[T] : TypeTag](op: RelationalOperator[T]) {
 
     def select(expressions: Expr*): RelationalOperator[T] = relational.Select(op, expressions.toList)
 
@@ -301,7 +303,7 @@ object RelationalPlanner {
       if (valueIntos.isEmpty) op else relational.AddInto(op, valueIntos.toList)
     }
 
-    def drop[E <: Expr](expressions: Set[E]): RelationalOperator[T] = {
+    def dropExprSet[E <: Expr](expressions: Set[E]): RelationalOperator[T] = {
       val necessaryDrops = expressions.filter(op.header.expressions.contains)
       if (necessaryDrops.nonEmpty) {
         relational.Drop(op, necessaryDrops)
@@ -309,7 +311,7 @@ object RelationalPlanner {
     }
 
     def drop[E <: Expr](expressions: E*): RelationalOperator[T] = {
-      drop(expressions.toSet)
+      dropExprSet(expressions.toSet)
     }
 
     def alias(aliases: AliasExpr*): RelationalOperator[T] = Alias(op, aliases)
@@ -352,7 +354,7 @@ object RelationalPlanner {
 
       // Drop expressions that are not in the target header
       val dropExpressions = renamedEntity.header.expressions -- targetHeader.expressions
-      val withDroppedExpressions = renamedEntity.drop(dropExpressions)
+      val withDroppedExpressions = renamedEntity.dropExprSet(dropExpressions)
 
       // Fill in missing true label columns
       val trueLabels = inputVar.cypherType match {

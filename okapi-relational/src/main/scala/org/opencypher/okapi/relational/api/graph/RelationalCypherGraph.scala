@@ -37,11 +37,15 @@ import org.opencypher.okapi.relational.impl.graph.{EmptyGraph, SingleTableGraph,
 import org.opencypher.okapi.relational.impl.operators.RelationalOperator
 import org.opencypher.okapi.relational.impl.planning.RelationalPlanner._
 
+import scala.reflect.runtime.universe.TypeTag
+
 trait RelationalCypherGraphFactory[T <: Table[T]] {
 
   type Graph = RelationalCypherGraph[T]
 
   implicit val session: RelationalCypherSession[T]
+
+  private[opencypher] implicit def tableTypeTag: TypeTag[T] = session.tableTypeTag
 
   def singleTableGraph(drivingTable: RelationalOperator[T], schema: Schema, tagsUsed: Set[Int])
     (implicit context: RelationalRuntimeContext[T]): Graph = new SingleTableGraph(drivingTable, schema, tagsUsed)
@@ -63,6 +67,8 @@ trait RelationalCypherGraph[T <: Table[T]] extends PropertyGraph {
   type Session <: RelationalCypherSession[T]
 
   override def session: Session
+
+  private[opencypher] implicit def tableTypeTag: TypeTag[T] = session.tableTypeTag
 
   def tags: Set[Int]
 

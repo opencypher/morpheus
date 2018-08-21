@@ -26,18 +26,19 @@
  */
 package org.opencypher.okapi.ir.api.block
 
+import org.opencypher.okapi.ir.api.expr.Expr
 import org.opencypher.okapi.ir.api.{IRField, IRGraph}
 
-final case class AggregationBlock[E](
-    after: List[Block[E]],
-    binds: Aggregations[E],
+final case class AggregationBlock(
+    after: List[Block],
+    binds: Aggregations,
     group: Set[IRField],
     graph: IRGraph
-) extends BasicBlock[Aggregations[E], E](BlockType("aggregation")) {
+) extends BasicBlock[Aggregations](BlockType("aggregation")) {
 
-  override val where: Set[E] = Set.empty[E] // no filtering in aggregation blocks
+  override val where: Set[Expr] = Set.empty[Expr] // no filtering in aggregation blocks
 }
 
-final case class Aggregations[E](pairs: Set[(IRField, E)]) extends Binds[E] {
+final case class Aggregations(pairs: Set[(IRField, Expr)]) extends Binds {
   override def fields: Set[IRField] = pairs.map(_._1)
 }

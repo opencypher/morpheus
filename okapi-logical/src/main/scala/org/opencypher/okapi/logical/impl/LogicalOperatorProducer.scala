@@ -104,7 +104,7 @@ class LogicalOperatorProducer {
     ExistsSubQuery(expr, matchPlan, patternPlan, matchPlan.solved)
   }
 
-  def aggregate(aggregations: Aggregations[Expr], group: Set[IRField], prev: LogicalOperator): Aggregate = {
+  def aggregate(aggregations: Aggregations, group: Set[IRField], prev: LogicalOperator): Aggregate = {
     val transformed: Set[(Var, Aggregator)] = aggregations.pairs.collect { case (field, aggregator: Aggregator) => toVar(field) -> aggregator }
 
     Aggregate(transformed, group.map(toVar), prev, prev.solved.withFields(aggregations.fields.toSeq: _*))
@@ -145,7 +145,7 @@ class LogicalOperatorProducer {
     DrivingTable(graph, fields, SolvedQueryModel(irFields))
   }
 
-  def planOrderBy(sortItems: Seq[SortItem[Expr]], prev: LogicalOperator): OrderBy = {
+  def planOrderBy(sortItems: Seq[SortItem], prev: LogicalOperator): OrderBy = {
     OrderBy(sortItems, prev, prev.solved)
   }
 

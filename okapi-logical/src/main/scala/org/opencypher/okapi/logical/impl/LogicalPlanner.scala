@@ -41,15 +41,15 @@ import org.opencypher.okapi.logical.impl.exception.{InvalidCypherTypeException, 
 import scala.annotation.tailrec
 
 class LogicalPlanner(producer: LogicalOperatorProducer)
-  extends DirectCompilationStage[CypherQuery[Expr], LogicalOperator, LogicalPlannerContext] {
+  extends DirectCompilationStage[CypherQuery, LogicalOperator, LogicalPlannerContext] {
 
-  override def process(ir: CypherQuery[Expr])(implicit context: LogicalPlannerContext): LogicalOperator = {
+  override def process(ir: CypherQuery)(implicit context: LogicalPlannerContext): LogicalOperator = {
     val model = ir.model
 
     planModel(model.result, model)
   }
 
-  def planModel(block: ResultBlock[Expr], model: QueryModel[Expr])(
+  def planModel(block: ResultBlock, model: QueryModel)(
     implicit context: LogicalPlannerContext): LogicalOperator = {
     val first = block.after.head // there should only be one, right?
 
@@ -57,15 +57,15 @@ class LogicalPlanner(producer: LogicalOperatorProducer)
 
     // always plan a select at the top
     block match {
-      case t: TableResultBlock[_] =>
+      case t: TableResultBlock =>
         val fields = t.binds.orderedFields.map(f => Var(f.name)(f.cypherType))
         producer.planSelect(fields, plan)
-      case g: GraphResultBlock[_] =>
+      case g: GraphResultBlock =>
         producer.planReturnGraph(producer.planFromGraph(resolveGraph(g.graph, plan.fields), plan))
     }
   }
 
-  final def planBlock(block: Block[Expr], model: QueryModel[Expr], plan: Option[LogicalOperator])(
+  final def planBlock(block: Block, model: QueryModel, plan: Option[LogicalOperator])(
     implicit context: LogicalPlannerContext): LogicalOperator = {
     if (block.after.isEmpty) {
       // this is a leaf block, just plan it
@@ -92,7 +92,7 @@ class LogicalPlanner(producer: LogicalOperatorProducer)
     }
   }
 
-  def planLeaf(block: Block[Expr], model: QueryModel[Expr])(implicit context: LogicalPlannerContext): LogicalOperator = {
+  def planLeaf(block: Block, model: QueryModel)(implicit context: LogicalPlannerContext): LogicalOperator = {
     block match {
       case SourceBlock(irGraph: IRCatalogGraph) =>
         val qualifiedGraphName = irGraph.qualifiedGraphName
@@ -109,7 +109,7 @@ class LogicalPlanner(producer: LogicalOperatorProducer)
     }
   }
 
-  def planNonLeaf(block: Block[Expr], model: QueryModel[Expr], plan: LogicalOperator)(
+  def planNonLeaf(block: Block, model: QueryModel, plan: LogicalOperator)(
     implicit context: LogicalPlannerContext): LogicalOperator = {
     block match {
       case MatchBlock(_, pattern, where, optional, graph) =>
@@ -353,8 +353,8 @@ class LogicalPlanner(producer: LogicalOperatorProducer)
     implicit context: LogicalPlannerContext): LogicalGraph = {
 
     graph match {
-      // TODO: IRGraph[Expr]
-      case p: IRPatternGraph[Expr@unchecked] =>
+      // TODO: IRGraph
+      case p: IRPatternGraph =>
         import org.opencypher.okapi.ir.impl.util.VarConverters.RichIrField
         val baseEntities = p.creates.baseFields.mapValues(_.toVar)
 
@@ -390,7 +390,7 @@ class LogicalPlanner(producer: LogicalOperatorProducer)
     }
   }
 
-  private def extractConstructedEntities(pattern: Pattern[Expr], e: IRField, baseField: Option[Var]) = e.cypherType match {
+  private def extractConstructedEntities(pattern: Pattern, e: IRField, baseField: Option[Var]) = e.cypherType match {
     case CTRelationship(relTypes, _) if relTypes.size <= 1 =>
       val connection = pattern.topology(e)
       ConstructedRelationship(e, connection.source, connection.target, relTypes.headOption, baseField)
@@ -412,7 +412,7 @@ class LogicalPlanner(producer: LogicalOperatorProducer)
     producer.planFromGraph(graph, prev)
   }
 
-  private def planMatchPattern(plan: LogicalOperator, pattern: Pattern[Expr], where: Set[Expr], graph: IRGraph)(
+  private def planMatchPattern(plan: LogicalOperator, pattern: Pattern, where: Set[Expr], graph: IRGraph)(
     implicit context: LogicalPlannerContext) = {
     val components = pattern.components.toSeq
     if (components.size == 1) {
@@ -430,7 +430,7 @@ class LogicalPlanner(producer: LogicalOperatorProducer)
     }
   }
 
-  private def planComponentPattern(plan: LogicalOperator, pattern: Pattern[Expr], graph: IRGraph)(
+  private def planComponentPattern(plan: LogicalOperator, pattern: Pattern, graph: IRGraph)(
     implicit context: LogicalPlannerContext): LogicalOperator = {
 
     // find all unsolved nodes from the pattern
@@ -473,7 +473,7 @@ class LogicalPlanner(producer: LogicalOperatorProducer)
   @tailrec
   private def planExpansions(
     disconnectedPlans: Set[LogicalOperator],
-    pattern: Pattern[Expr],
+    pattern: Pattern,
     producer: LogicalOperatorProducer): LogicalOperator = {
     val allSolved = disconnectedPlans.map(_.solved).reduce(_ ++ _)
 
