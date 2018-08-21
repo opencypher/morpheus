@@ -39,8 +39,16 @@ import scala.reflect.runtime.universe.{Type, TypeTag, typeOf, typeTag}
   * This class caches values that are expensive to recompute.
   *
   * The constructor can also contain [[NonEmptyList]]s, [[List]]s, and [[Option]]s that contain children.
-  * This works as long as there is an unambiguous way to serialize those children to the `children` array,
-  * as well as an unambiguous way to assign the children in `withNewChildren` to the different constructor parameters.
+  * This works as long as there the assignment of children in `withNewChildren` to the different constructor
+  * parameters can be inferred.
+  *
+  * Inferred assignment of new children is done as follows:
+  *   - Traverse the constructor arguments from left to right
+  *   - Always try to assign the next child in `newChildren` to a constructor parameter that is a child
+  *   - For constructor parameters that are an `Option` of a child: Assign some next child in `newChildren`
+  * if the child type matches the element type of the Option, assign None otherwise.
+  *   - For constructor parameters that are a `List` of children: Assign children from `newChildren` to the list
+  * until the type of a child does not match the element type of the list.
   *
   * It is possible to override the defaults and use custom `children`/`withNewChildren` implementations.
   */
@@ -127,8 +135,13 @@ abstract class AbstractTreeNode[T <: AbstractTreeNode[T] : TypeTag] extends Tree
     val (unassignedChildren, constructorParams) = currentValuesAndTypes.foldLeft(newChildren.toList -> Vector.empty[Any]) {
       case ((remainingChildren, currentConstructorParams), nextValueAndType) =>
         nextValueAndType match {
-          case (_: T, _) =>
-            remainingChildren.tail -> (currentConstructorParams :+ remainingChildren.head)
+          case (c: T, tpe) =>
+            remainingChildren match {
+              case Nil => throw new IllegalArgumentException(
+                s"""|When updating with new children: Did not have a child left to assign to the child that was previously $c
+                    |Inferred constructor parameters so far: ${getClass.getSimpleName}(${currentConstructorParams.mkString(", ")}, ...)""".stripMargin)
+              case h :: t => t -> (currentConstructorParams :+ h)
+            }
           case (_: Option[_], tpe) if tpe.typeArgs.head <:< typeOf[T] =>
             val option: Option[T] = remainingChildren.headOption.filter { c => couldBeElementOf(c, tpe) }
             remainingChildren.drop(option.size) -> (currentConstructorParams :+ option)
@@ -143,8 +156,12 @@ abstract class AbstractTreeNode[T <: AbstractTreeNode[T] : TypeTag] extends Tree
         }
     }
 
-    assert(unassignedChildren.isEmpty,
-      s"Could not assign nodes [${unassignedChildren.mkString(", ")}] to parameters of ${getClass.getSimpleName}")
+    if (unassignedChildren.nonEmpty) {
+      throw new IllegalArgumentException(
+        s"""|Could not assign children [${unassignedChildren.mkString(", ")}] to parameters of ${getClass.getSimpleName}
+            |Inferred constructor parameters: ${getClass.getSimpleName}(${constructorParams.mkString(", ")})""".stripMargin)
+    }
+
     constructorParams.toArray
   }
 
