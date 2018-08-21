@@ -45,6 +45,15 @@ Apache Software License, Version 2.0
   Apache Log4j
   Apache Log4j API
   Apache Log4j Core
+  Apache Shiro :: Cache
+  Apache Shiro :: Configuration :: Core
+  Apache Shiro :: Configuration :: OGDL
+  Apache Shiro :: Core
+  Apache Shiro :: Cryptography :: Ciphers
+  Apache Shiro :: Cryptography :: Core
+  Apache Shiro :: Cryptography :: Hashing
+  Apache Shiro :: Event
+  Apache Shiro :: Lang
   ApacheDS I18n
   ApacheDS Protocol Kerberos Codec
   Caffeine cache
@@ -69,6 +78,7 @@ Apache Software License, Version 2.0
   FindBugs-jsr305
   Google Guice - Core Library
   Google Guice - Extensions - Servlet
+  Graphite Integration for Metrics
   Gson
   Guava: Google Core Libraries for Java
   hadoop-mapreduce-client-app
@@ -86,6 +96,7 @@ Apache Software License, Version 2.0
   hadoop-yarn-server-resourcemanager
   hadoop-yarn-server-tests
   hadoop-yarn-server-web-proxy
+  hazelcast-all
   htrace-core
   HttpClient
   Jackson
@@ -114,6 +125,8 @@ Apache Software License, Version 2.0
   Lucene Core
   Lucene Memory
   Lucene QueryParsers
+  LZ4 and xxHash
+  Metrics Core
   MX4J
   Netty
   Netty/All-in-One
@@ -135,6 +148,10 @@ Apache Software License, Version 2.0
   openCypher Utils
   parboiled-core
   parboiled-scala
+  Prometheus Java Simpleclient
+  Prometheus Java Simpleclient Common
+  Prometheus Java Simpleclient Dropwizard
+  Prometheus Java Simpleclient Httpserver
   Scala 2.11 wrapper for Log4j API
   scalactic
   scalatest
@@ -175,12 +192,15 @@ MIT-license
   core
   machinist
   Mockito
+  scallop
   SLF4J API Module
   SLF4J LOG4J-12 Binding
+  SLF4J NOP Binding
   ujson_2.11
   upickle_2.11
 
 Mozilla Public License, Version 2.0
+  kiama
   Mozilla Rhino
 
 Public-domain
