@@ -37,7 +37,7 @@ import org.opencypher.okapi.ir.impl.typer.exception.TypingException
 import org.opencypher.okapi.tck.test.TCKFixture._
 import org.opencypher.okapi.tck.test.support.creation.neo4j.Neo4JGraphFactory
 import org.opencypher.okapi.testing.propertygraph.CypherTestGraphFactory
-import org.opencypher.tools.tck.api.{ExecutionFailed, _}
+import org.opencypher.tools.tck.api._
 import org.opencypher.tools.tck.constants.{TCKErrorDetails, TCKErrorPhases, TCKErrorTypes}
 import org.opencypher.tools.tck.values.{CypherValue => TCKCypherValue, _}
 import org.scalatest.Tag
