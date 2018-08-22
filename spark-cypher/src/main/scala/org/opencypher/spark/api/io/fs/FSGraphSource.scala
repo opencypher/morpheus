@@ -32,7 +32,7 @@ import org.apache.spark.sql.types.StructType
 import org.opencypher.okapi.api.graph.GraphName
 import org.opencypher.spark.api.CAPSSession
 import org.opencypher.spark.api.io.AbstractPropertyGraphDataSource
-import org.opencypher.spark.api.io.fs.DefaultFileSystem._
+import org.opencypher.spark.api.io.fs.HadoopFSHelpers._
 import org.opencypher.spark.api.io.json.JsonSerialization
 
 /**
@@ -49,7 +49,6 @@ import org.opencypher.spark.api.io.json.JsonSerialization
 class FSGraphSource(
   val rootPath: String,
   val tableStorageFormat: String,
-  val customFileSystem: Option[CAPSFileSystem] = None,
   val filesPerTable: Option[Int] = None
 )(override implicit val caps: CAPSSession)
   extends AbstractPropertyGraphDataSource with JsonSerialization {
@@ -58,8 +57,7 @@ class FSGraphSource(
 
   import directoryStructure._
 
-  protected lazy val fileSystem: CAPSFileSystem = customFileSystem.getOrElse(
-    FileSystem.get(caps.sparkSession.sparkContext.hadoopConfiguration))
+  protected lazy val fileSystem: FileSystem = FileSystem.get(caps.sparkSession.sparkContext.hadoopConfiguration)
 
   protected def listDirectories(path: String): List[String] = fileSystem.listDirectories(path)
 
