@@ -26,6 +26,8 @@
  */
 package org.opencypher.spark.api.io.fs
 
+import java.net.URI
+
 import org.apache.hadoop.fs.FileSystem
 import org.apache.spark.sql.DataFrame
 import org.apache.spark.sql.types.StructType
@@ -57,7 +59,9 @@ class FSGraphSource(
 
   import directoryStructure._
 
-  protected lazy val fileSystem: FileSystem = FileSystem.get(caps.sparkSession.sparkContext.hadoopConfiguration)
+  protected lazy val fileSystem: FileSystem = {
+    FileSystem.get(new URI(rootPath), caps.sparkSession.sparkContext.hadoopConfiguration)
+  }
 
   protected def listDirectories(path: String): List[String] = fileSystem.listDirectories(path)
 
@@ -87,7 +91,11 @@ class FSGraphSource(
     deleteDirectory(pathToGraphDirectory(graphName))
   }
 
-  override protected def readNodeTable(graphName: GraphName, labels: Set[String], sparkSchema: StructType): DataFrame = {
+  override protected def readNodeTable(
+    graphName: GraphName,
+    labels: Set[String],
+    sparkSchema: StructType
+  ): DataFrame = {
     readTable(pathToNodeTable(graphName, labels), sparkSchema)
   }
 
@@ -95,7 +103,11 @@ class FSGraphSource(
     writeTable(pathToNodeTable(graphName, labels), table)
   }
 
-  override protected def readRelationshipTable(graphName: GraphName, relKey: String, sparkSchema: StructType): DataFrame = {
+  override protected def readRelationshipTable(
+    graphName: GraphName,
+    relKey: String,
+    sparkSchema: StructType
+  ): DataFrame = {
     readTable(pathToRelationshipTable(graphName, relKey), sparkSchema)
   }
 
