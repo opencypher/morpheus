@@ -52,7 +52,7 @@ import org.opencypher.spark.api.CAPSSession
 import org.opencypher.spark.impl.CAPSConverters._
 import org.opencypher.spark.impl.table.SparkTable.DataFrameTable
 
-sealed class CAPSSessionImpl(val sparkSession: SparkSession) extends CAPSSession {
+sealed class CAPSSessionImpl(val sparkSession: SparkSession) extends CAPSSession with Serializable {
 
   override type Result = RelationalCypherResult[DataFrameTable]
 
