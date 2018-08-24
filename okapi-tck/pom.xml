@@ -16,7 +16,7 @@
 
   <properties>
     <project.rootdir>${project.parent.basedir}</project.rootdir>
-    <dep.tck.version>1.0.0-M08</dep.tck.version>
+    <dep.tck.version>1.0.0-M11</dep.tck.version>
     <dep.apiguardian-api.version>1.0.0</dep.apiguardian-api.version>
   </properties>
 
@@ -26,6 +26,13 @@
       <artifactId>tck</artifactId>
       <version>${dep.tck.version}</version>
     </dependency>
+
+    <dependency>
+      <groupId>org.opencypher</groupId>
+      <artifactId>tck-api</artifactId>
+      <version>${dep.tck.version}</version>
+    </dependency>
+
 
     <dependency>
       <groupId>org.scalatest</groupId>

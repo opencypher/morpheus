@@ -51,9 +51,10 @@ class TckSparkCypherTest extends CAPSTestSuite {
   private val defaultFactory: CAPSTestGraphFactory = CAPSScanGraphFactory
 
   private val failingBlacklist = getClass.getResource("/failing_blacklist").getFile
+  private val temporalBlacklist = getClass.getResource("/temporal_blacklist").getFile
   private val wontFixBlacklistFile = getClass.getResource("/wont_fix_blacklist").getFile
   private val failureReportingBlacklistFile = getClass.getResource("/failure_reporting_blacklist").getFile
-  private val scenarios = ScenariosFor(failingBlacklist, wontFixBlacklistFile, failureReportingBlacklistFile)
+  private val scenarios = ScenariosFor(failingBlacklist, temporalBlacklist, wontFixBlacklistFile, failureReportingBlacklistFile)
 
   // white list tests are run on all factories
   forAll(factories) { (factory, additional_blacklist) =>
@@ -82,10 +83,11 @@ class TckSparkCypherTest extends CAPSTestSuite {
 
   it("computes the TCK coverage") {
     val failingScenarios = Source.fromFile(failingBlacklist).getLines().size
+    val failingTemporalScenarios = Source.fromFile(temporalBlacklist).getLines().size
     val failureReportingScenarios = Source.fromFile(failureReportingBlacklistFile).getLines().size
 
     val allScenarios = scenarios.blacklist.size + scenarios.whiteList.size.toFloat
-    val readOnlyScenarios = scenarios.whiteList.size + failingScenarios + failureReportingScenarios.toFloat
+    val readOnlyScenarios = scenarios.whiteList.size + failingScenarios + failureReportingScenarios.toFloat + failingTemporalScenarios
     val smallReadOnlyScenarios = scenarios.whiteList.size + failingScenarios.toFloat
 
     val overallCoverage = scenarios.whiteList.size / allScenarios
@@ -98,7 +100,7 @@ class TckSparkCypherTest extends CAPSTestSuite {
       |
       | Complete: ${overallCoverage * 100}%
       | Read Only: ${readOnlyCoverage * 100}%
-      | Read Only (without Failure case Scenarios): ${smallReadOnlyCoverage * 100}%
+      | Read Only (without Failure case Scenarios and temporal): ${smallReadOnlyCoverage * 100}%
     """.stripMargin
 
     println(report)
