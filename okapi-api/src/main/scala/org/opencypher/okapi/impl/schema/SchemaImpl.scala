@@ -31,19 +31,20 @@ import cats.syntax.semigroup._
 import org.opencypher.okapi.api.schema.LabelPropertyMap._
 import org.opencypher.okapi.api.schema.PropertyKeys.PropertyKeys
 import org.opencypher.okapi.api.schema.RelTypePropertyMap._
-import org.opencypher.okapi.api.schema.{LabelPropertyMap => _, RelTypePropertyMap => _, _}
+import org.opencypher.okapi.api.schema.{LabelPropertyMap, RelTypePropertyMap, _}
 import org.opencypher.okapi.api.types.CypherType.joinMonoid
 import org.opencypher.okapi.api.types.{CypherType, _}
 import org.opencypher.okapi.impl.exception.SchemaException
 import org.opencypher.okapi.impl.schema.SchemaImpl._
 import upickle.Js
-import upickle.default._
+import upickle.default.{macroRW, _}
 
 object SchemaImpl {
 
   val VERSION = "version"
   val LABEL_PROPERTY_MAP = "labelPropertyMap"
   val REL_TYPE_PROPERTY_MAP = "relTypePropertyMap"
+  val SCHEMA_PATTERNS = "schemaPatterns"
 
   val LABELS = "labels"
   val REL_TYPE = "relType"
@@ -54,11 +55,13 @@ object SchemaImpl {
     schema => Js.Obj(
       VERSION -> Js.Num(1),
       LABEL_PROPERTY_MAP -> writeJs(schema.labelPropertyMap),
-      REL_TYPE_PROPERTY_MAP -> writeJs(schema.relTypePropertyMap)),
+      REL_TYPE_PROPERTY_MAP -> writeJs(schema.relTypePropertyMap),
+      SCHEMA_PATTERNS -> writeJs(schema.explicitSchemaPatterns)),
     json => {
       val labelPropertyMap = readJs[LabelPropertyMap](json.obj(LABEL_PROPERTY_MAP))
       val relTypePropertyMap = readJs[RelTypePropertyMap](json.obj(REL_TYPE_PROPERTY_MAP))
-      SchemaImpl(labelPropertyMap, relTypePropertyMap)
+      val explicitSchemaPatterns = readJs[Set[SchemaPattern]](json.obj(SCHEMA_PATTERNS))
+      SchemaImpl(labelPropertyMap, relTypePropertyMap, explicitSchemaPatterns)
     }
   )
 
@@ -83,6 +86,8 @@ object SchemaImpl {
         readJs[String](value.obj(REL_TYPE)) -> readJs[PropertyKeys](value.obj(PROPERTIES))
       }.toMap
   )
+
+  implicit def spRW: ReadWriter[SchemaPattern] = macroRW
 }
 
 final case class SchemaImpl(

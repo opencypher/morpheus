@@ -429,6 +429,7 @@ class SchemaTest extends FunSpec with Matchers {
     val schema = Schema.empty
       .withRelationshipPropertyKeys("FOO")("p" -> CTString)
       .withNodePropertyKeys("BAR")("q" -> CTInteger)
+      .withSchemaPatterns(SchemaPattern(Set("BAR"), "FOO", Set("BAR")))
 
     val serialized = schema.toJson
 
@@ -451,6 +452,17 @@ class SchemaTest extends FunSpec with Matchers {
          |            "properties": {
          |                "p": "STRING"
          |            }
+         |        }
+         |    ],
+         |    "schemaPatterns": [
+         |        {
+         |            "sourceLabels": [
+         |                "BAR"
+         |            ],
+         |            "relType": "FOO",
+         |            "targetLabels": [
+         |                "BAR"
+         |            ]
          |        }
          |    ]
          |}""".stripMargin)
