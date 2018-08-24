@@ -31,27 +31,9 @@ import java.io.{BufferedReader, BufferedWriter, InputStreamReader, OutputStreamW
 import org.apache.hadoop.fs.{FileSystem, Path}
 import org.opencypher.spark.api.io.util.FileSystemUtils.using
 
-trait CAPSFileSystem {
+object HadoopFSHelpers {
 
-  /**
-    * List the directories inside of the given path, create the `path` directory if it does not exist yet.
-    */
-  def listDirectories(path: String): List[String]
-
-  def deleteDirectory(path: String): Unit
-
-  def readFile(path: String): String
-
-  /**
-    * Write the file content to `path`, create the parent directory if it does not exist yet.
-    */
-  def writeFile(path: String, content: String): Unit
-
-}
-
-object DefaultFileSystem {
-
-  implicit class HadoopFileSystemAdapter(fileSystem: FileSystem) extends CAPSFileSystem {
+  implicit class RichHadoopFileSystem(fileSystem: FileSystem) {
 
     protected def createDirectoryIfNotExists(path: Path): Unit = {
       if (!fileSystem.exists(path)) {

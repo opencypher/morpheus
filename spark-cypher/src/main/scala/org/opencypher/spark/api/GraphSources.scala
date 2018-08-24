@@ -30,7 +30,7 @@ import java.nio.file.Paths
 
 import org.opencypher.okapi.api.schema.Schema
 import org.opencypher.okapi.neo4j.io.Neo4jConfig
-import org.opencypher.spark.api.io.fs.{CAPSFileSystem, FSGraphSource}
+import org.opencypher.spark.api.io.fs.FSGraphSource
 import org.opencypher.spark.api.io.neo4j.{Neo4jBulkCSVDataSink, Neo4jPropertyGraphDataSource}
 
 import scala.io.Source
@@ -38,9 +38,8 @@ import scala.io.Source
 object GraphSources {
   def fs(
     rootPath: String,
-    customFileSystem: Option[CAPSFileSystem] = None,
     filesPerTable: Option[Int] = Some(1)
-  ) = FSGraphSources(rootPath, customFileSystem, filesPerTable)
+  ) = FSGraphSources(rootPath, filesPerTable)
 
   def cypher: CypherGraphSources.type = CypherGraphSources
 }
@@ -48,18 +47,16 @@ object GraphSources {
 object FSGraphSources {
   def apply(
     rootPath: String,
-    customFileSystem: Option[CAPSFileSystem] = None,
     filesPerTable: Option[Int] = Some(1)
-  ): FSGraphSourceFactory = FSGraphSourceFactory(rootPath, customFileSystem, filesPerTable)
+  ): FSGraphSourceFactory = FSGraphSourceFactory(rootPath, filesPerTable)
 
   case class FSGraphSourceFactory(
     rootPath: String,
-    customFileSystem: Option[CAPSFileSystem] = None,
     filesPerTable: Option[Int] = Some(1)
   ) {
 
     def csv(implicit session: CAPSSession): FSGraphSource =
-      new FSGraphSource(rootPath, "csv", customFileSystem, filesPerTable)
+      new FSGraphSource(rootPath, "csv", filesPerTable)
   }
 
   /**

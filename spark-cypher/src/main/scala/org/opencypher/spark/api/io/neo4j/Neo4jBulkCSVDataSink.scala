@@ -34,6 +34,7 @@ import org.opencypher.okapi.impl.util.StringEncodingUtilities._
 import org.opencypher.spark.api.CAPSSession
 import org.opencypher.spark.api.io.fs.DefaultGraphDirectoryStructure._
 import org.opencypher.spark.api.io.fs.FSGraphSource
+import org.opencypher.spark.api.io.fs.HadoopFSHelpers._
 import org.opencypher.spark.api.io.neo4j.Neo4jBulkCSVDataSink._
 import org.opencypher.spark.api.io.{GraphEntity, Relationship}
 import org.opencypher.spark.schema.CAPSSchema
