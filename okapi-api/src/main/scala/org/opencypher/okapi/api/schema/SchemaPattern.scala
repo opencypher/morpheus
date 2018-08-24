@@ -8,78 +8,27 @@ object SchemaPattern{
   ): SchemaPattern = new SchemaPattern(Set(sourceLabel), relType, Set(targetLabel))
 }
 
+/**
+  * Describes a (node)-[relationship]->(node) triple in a graph as part of the graph's schema.
+  * A pattern only applies to nodes with the exact label combination defined by `source/targetLabels`
+  * and relationships with the specified relationship type.
+  *
+  * @example Given a graph that only contains the following patterns
+  *                        {{{(:A)-[r1:REL]->(:C),}}}
+  *                        {{{(:B)-[r2:REL]->(:C),}}}
+  *                        {{{(:A:B)-[r3:REL]->(:C)}}}
+  *
+  *          then the schema pattern `SchemaPattern(Set("A"), "REL", Set("C"))` would only apply to `r1`
+  *          and the schema pattern `SchemaPattern(Set("A", "B"), "REL", Set("C"))` would only apply to `r3`
+  *
+  * @param sourceLabels label combination for source nodes
+  * @param relType relationship type
+  * @param targetLabels label combination for target nodes
+  */
 case class SchemaPattern(sourceLabels: Set[String], relType: String, targetLabels: Set[String]) {
-
+  override def toString: String = {
+    val sourceLabelString = if(sourceLabels.isEmpty) "" else sourceLabels.mkString(":", ":", "")
+    val targetLabelString = if(targetLabels.isEmpty) "" else targetLabels.mkString(":", ":", "")
+    s"($sourceLabelString)-[:$relType]->($targetLabelString)"
+  }
 }
-
-//trait Cardinality
-//case object Any extends Cardinality
-//case object AtLeastOne extends Cardinality
-//case object ExactlyOne extends Cardinality
-//case class Between(from: Int, to: Int) extends Cardinality
-//
-//case class RelationshipConstraint(
-//  startNodeLabelCombo: Set[String],
-//  endNodeLabelCombo: Set[String],
-//  startNodeCardinality: Cardinality,
-//  endNodeCardinality: Cardinality
-//) {
-//
-//  def hasOverlap(other: RelationshipConstraint): Boolean = {
-//    startNodeLabelCombo.subsetOf(other.startNodeLabelCombo) || other.startNodeLabelCombo.subsetOf(startNodeLabelCombo)
-//    endNodeLabelCombo.subsetOf(other.endNodeLabelCombo) || other.endNodeLabelCombo.subsetOf(endNodeLabelCombo)
-//  }
-//
-//
-//  def isSubTypeOf(other: RelationshipConstraint): Boolean = {
-//    val startContained = startNodeLabelCombo.forall(other.startNodeLabelCombo.contains)
-//    val endContained = endNodeLabelCombo.forall(other.endNodeLabelCombo.contains)
-//
-//    (startContained, endContained match {
-//      case (true, true) =>
-//    })
-//  }
-//}
-//
-//object RelationshipConstraints {
-//  type RelationshipConstraints = Map[String, Set[RelationshipConstraint]]
-//
-//  implicit class RichRelationshipConstraint(map: RelationshipConstraints) {
-//
-//    def register(relType: String, constraint: RelationshipConstraint): RelationshipConstraints = {
-//      val existing = map.getOrElse(relType, Set.empty)
-//
-//      // TODO what to do when there are cardinality conflicts?
-//      map.updated(relType, existing + constraint)
-//    }
-//
-//    def ++(other: RelationshipConstraints): RelationshipConstraints = {
-//      val conflicts = map.keySet intersect other.keySet
-//
-//      conflicts.map { relType =>
-//        val lhs = map(relType)
-//        val rhs = map(relType)
-//
-//        lhs.
-//      }
-//    }
-//  }
-//}
-
-
-// (A, B), (A), (B), (C), (D), (D, E)
-//
-
-// Closed World
-// (A, B) -[:REL]-> (C) ++ (A, C) -[:REL]-> (D) => no conflict (A, B) -[:REL]-> (C), (A, C) -[:REL]-> (D)
-// (A, B) -[:REL]-> (C) ++ (A, B) -[:REL]-> (D) => no conflict (A, B) -[:REL]-> (C|D) or (A, B) -[:REL]-> (C), (A, B) -[:REL]-> (D)
-
-// Open World
-// (A) -> (C)
-// ()-[:REL]->(:B)
-
-
-// possibleLabels(Option(N), Option(E), Option(N)): Set[Constraint]
-// MATCH (:B)<-[:REL]-() =>
-
-

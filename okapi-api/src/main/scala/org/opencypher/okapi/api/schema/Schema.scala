@@ -74,7 +74,18 @@ trait Schema {
     */
   def relTypePropertyMap: RelTypePropertyMap
 
-
+  /**
+    * Returns all schema patterns known to this schema.
+    * A schema pattern is a constraint over a (node)-[relationship]->(node) pattern which describes possible label and
+    * relationship type combinations for the source node, the relationship and the target node in the pattern.
+    *
+    * If no explicit schema patterns are defined, this function will return schema patterns for all possible combinations
+    * between the known label combinations and relationship types. Otherwise only explicit schema patterns will be returned.
+    *
+    * @see {{{org.opencypher.okapi.api.schema.SchemaPattern}}} for more information
+    *
+    * @return schema pattern combinations encoded in this schema
+    */
   def schemaPatterns: Set[SchemaPattern]
 
   /**
@@ -181,6 +192,21 @@ trait Schema {
     */
   def relationshipKeys(typ: String): PropertyKeys
 
+  /**
+    * This function returns all schema patterns that are applicable with regards to the specified known labels and
+    * relationship types. The given labels and relationship types are interpreted similar to how a Cypher MATCH clause
+    * would interpret them. That is, the label sets are interpreted as a conjunction of label predicates, i.e. labels
+    * the node must have. The relationship types are interpreted as a disjunction, i.e. the relationship must have
+    * one of the given types.
+    *
+    * All the schema patterns that match the given descriptions will be retrieved. In particular, if all the inputs are
+    * empty sets, all the schema patterns will be retrieved.
+    *
+    * @param knownSourceLabels labels required for the source node (AND semantics)
+    * @param knownRelTypes relationship types possible for the relationship (OR semantics)
+    * @param knownTargetLabels labels required for the target node (AND semantics)
+    * @return schema patterns that fulfill the predicates
+    */
   def schemaPatternsFor(knownSourceLabels: Set[String], knownRelTypes: Set[String], knownTargetLabels: Set[String]): Set[SchemaPattern]
 
   /**
@@ -243,6 +269,16 @@ trait Schema {
   def withRelationshipPropertyKeys(typ: String)(keys: (String, CypherType)*): Schema =
     withRelationshipPropertyKeys(typ, keys.toMap)
 
+  /**
+    * Adds the given schema patterns to the explicitly defined schema patterns.
+    *
+    * @note If at least one explicit schema pattern has been defined, only explicit schema patterns will be considered
+    *       part of this schema.
+    * @see {{{org.opencypher.okapi.api.schema.Schema#schemaPatterns}}}
+    *
+    * @param patterns the patterns to add
+    * @return schema with added explicit schema patterns
+    */
   def withSchemaPatterns(patterns: SchemaPattern*): Schema
 
   /**

@@ -366,6 +366,14 @@ final case class SchemaImpl(
         builder.append(s"no relationship types$EOL")
       }
 
+      if (explicitSchemaPatterns.nonEmpty) {
+        builder.append(s"Explicit schema patterns {$EOL")
+        explicitSchemaPatterns.foreach( p =>
+          builder.append(s"\t$p$EOL")
+        )
+        builder.append(s"}$EOL")
+      }
+
       builder.toString
     }
 
