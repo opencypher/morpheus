@@ -33,45 +33,64 @@ abstract class CypherAst extends AbstractTreeNode[CypherAst]
 
 case class Cypher(statement: Statement) extends CypherAst
 
-trait Query extends CypherAst with Statement
+sealed trait Query extends CypherAst with Statement
 
-case class Union(all: Boolean, left: Query, right: Query) extends Query
+sealed trait RegularQuery extends Query
 
-case class ReadOnlyEnd(readPart: ReadPart, returnClause: Return) extends Query
+case class SingleQuery(
+  clauses: NonEmptyList[Clause]
+) extends RegularQuery
 
-case class ReadUpdateEnd(
-  readingClauses: NonEmptyList[ReadingClause],
-  updatingClauses: NonEmptyList[UpdatingClause],
-  maybeReturn: Option[Return]
-) extends Query
+case class Union(all: Boolean, left: RegularQuery, right: SingleQuery) extends RegularQuery
 
-case class UpdatingEnd(
-  updatingStartClause: UpdatingStartClause,
-  updatingClauses: List[UpdatingClause],
-  maybeReturn: Option[Return]
-) extends Query
+//case class SinglePartQuery
+//sealed trait SinglePartQuery extends SingleQuery
 
-case class MultiPartQuery(
-  readPartOrUpdatingPart: ReadPartOrUpdatingClause,
-  withClause: With,
-  readUpdateWithParts: List[ReadUpdateWithPart],
-  singlePartQuery: Query
-) extends Query
+//case class ReadOnlyEnd(
+//  readingClauses: List[ReadingClause],
+//  returnClause: Return
+//) extends SinglePartQuery
+//
+//case class ReadUpdateEnd(
+//  readingClauses: NonEmptyList[ReadingClause],
+//  updatingClauses: NonEmptyList[UpdatingClause],
+//  maybeReturn: Option[Return]
+//) extends SinglePartQuery
+//
+//case class UpdatingEnd(
+//  updatingStartClause: UpdatingStartClause,
+//  updatingClauses: List[UpdatingClause],
+//  maybeReturn: Option[Return]
+//) extends SinglePartQuery
+//
+//sealed trait MultiPartQuery extends SingleQuery
 
-trait ReadPartOrUpdatingClause
+//case class ReadThenMultiPartQuery(
+//  readClauses: List[ReadingClause],
+//  withClause: With,
+//  readUpdateWiths: List[ReadUpdateWith],
+//  singlePartQuery: SinglePartQuery
+//) extends MultiPartQuery
+//
+//case class UpdatingThenMultiPartQuery(
+//  updatingStartClause: UpdatingStartClause,
+//  updatingClauses: List[UpdatingClause],
+//  withClause: With,
+//  readUpdateWiths: List[ReadUpdateWith],
+//  singlePartQuery: SinglePartQuery
+//) extends MultiPartQuery
+//
+//case class ReadUpdateWith(
+//  readingClauses: List[ReadingClause],
+//  updatingClauses: List[UpdatingClause],
+//  withPart: With
+//)
 
-case class UpdatingStart(
-  updatingStartClause: UpdatingStartClause,
-  updatingPart: UpdatingPart
-) extends ReadPartOrUpdatingClause
+sealed trait ProcedureInvocation
 
-case class ReadUpdateWithPart(readPart: ReadPart, updatingPart: UpdatingPart, withPart: With)
+case class StandaloneCall(procedureInvocation: ProcedureInvocation, yieldItems: List[YieldItem]) extends Query
 
-trait ProcedureInvocation
-
-case class StandaloneCall(procedureInvocation: ProcedureInvocation, maybeYieldItems: Option[YieldItems]) extends Query
-
-trait Expression extends CypherAst with ReturnItem
+sealed trait Expression extends ReturnItem
 
 case class OrExpression(expressions: NonEmptyList[Expression]) extends Expression
 
@@ -97,7 +116,7 @@ case class DivideExpression(left: Expression, right: Expression) extends Express
 
 case class ModuloExpression(left: Expression, right: Expression) extends Expression
 
-case class PowerOfExpression(expressions: NonEmptyList[Expression]) extends Expression
+case class PowerOfExpression(base: Expression, exponent: Expression) extends Expression
 
 case class UnarySubtractExpression(expression: Expression) extends Expression
 
@@ -106,9 +125,9 @@ case class StringListNullOperatorExpression(
   operatorExpressions: NonEmptyList[OperatorExpression]
 ) extends Expression
 
-trait OperatorExpression extends Expression
+sealed trait OperatorExpression extends Expression
 
-trait StringOperatorExpression extends OperatorExpression {
+sealed trait StringOperatorExpression extends OperatorExpression {
   def propertyOrLabelsExpression: PropertyOrLabelsExpression
 }
 
@@ -117,7 +136,7 @@ case class StartsWith(propertyOrLabelsExpression: PropertyOrLabelsExpression) ex
 case class EndsWith(propertyOrLabelsExpression: PropertyOrLabelsExpression) extends StringOperatorExpression
 case class Contains(propertyOrLabelsExpression: PropertyOrLabelsExpression) extends StringOperatorExpression
 
-trait ListOperatorExpression extends OperatorExpression
+sealed trait ListOperatorExpression extends OperatorExpression
 
 case class SingleElementListOperatorExpression(expression: Expression) extends ListOperatorExpression
 
@@ -129,13 +148,13 @@ case class ToRangeListOperatorExpression(to: Expression) extends ListOperatorExp
 
 case class FromToRangeListOperatorExpression(from: Expression, to: Expression) extends ListOperatorExpression
 
-trait NullOperatorExpression extends OperatorExpression
+sealed trait NullOperatorExpression extends OperatorExpression
 
 case object IsNull extends NullOperatorExpression
 
 case object IsNotNull extends NullOperatorExpression
 
-trait Properties extends CypherAst
+sealed trait Properties extends CypherAst
 
 case class Alias(expr: Expression, as: Variable) extends ReturnItem
 
@@ -148,9 +167,9 @@ case class RelationshipDetail(
   maybeProperties: Option[Properties]
 ) extends CypherAst
 
-trait Atom extends Expression
+sealed trait Atom extends Expression
 
-case class Return(distinct: Boolean, returnBody: ReturnBody) extends CypherAst
+case class Return(distinct: Boolean, returnBody: ReturnBody) extends Clause
 
 case class CaseAlternatives(whenExpr: Expression, thenExpr: Expression) extends CypherAst
 
@@ -166,7 +185,7 @@ case class RightToLeft(relationshipDetail: Option[RelationshipDetail]) extends R
 
 case class Undirected(relationshipDetail: Option[RelationshipDetail]) extends RelationshipPattern
 
-case class With(distinct: Boolean, returnBody: ReturnBody, maybeWhere: Option[Where]) extends CypherAst
+case class With(distinct: Boolean, returnBody: ReturnBody, maybeWhere: Option[Where]) extends Clause
 
 case class PatternElement(nodePattern: NodePattern, patternElementChain: List[PatternElementChain]) extends CypherAst
 
@@ -177,7 +196,7 @@ case class PropertyExpression(
 
 case class RelationshipTypes(relTypeNames: NonEmptyList[RelTypeName]) extends CypherAst
 
-trait Parameter extends CypherAst with Properties with Atom
+sealed trait Parameter extends CypherAst with Properties with Atom
 
 case class Pattern(patternParts: NonEmptyList[PatternPart]) extends CypherAst
 
@@ -203,7 +222,7 @@ case class SymbolicName(value: String) extends CypherAst with Parameter with Fun
 
 case class SortItem(expression: Expression, maybeSortOrder: Option[SortOrder]) extends CypherAst
 
-trait SortOrder
+sealed trait SortOrder
 
 case object Ascending extends SortOrder
 
@@ -213,21 +232,31 @@ case class Limit(expression: Expression) extends CypherAst
 
 case class ParenthesizedExpression(expression: Expression) extends CypherAst with Atom
 
+object ReturnItems {
+  val empty = ReturnItems(star = false, List.empty)
+}
+
 case class ReturnItems(star: Boolean, returnItems: List[ReturnItem]) extends CypherAst
 
 case class Remove(removeItems: NonEmptyList[RemoveItem]) extends CypherAst with UpdatingClause
 
-trait Literal extends CypherAst with Atom
+sealed trait Literal extends Atom
 
-trait FunctionName extends CypherAst
+sealed trait FunctionName extends CypherAst
 
-trait PropertyLookup extends CypherAst {
+sealed trait PropertyLookup extends CypherAst {
   def propertyKeyName: String
 }
 
 case class NodeLabels(nodeLabels: NonEmptyList[NodeLabel]) extends CypherAst
 
-trait NumberLiteral extends CypherAst with Literal
+case class BooleanLiteral(value: Boolean) extends Literal
+
+sealed trait NumberLiteral extends Literal
+
+case class IntegerLiteral(value: Long) extends NumberLiteral
+
+case class DoubleLiteral(value: Double) extends NumberLiteral
 
 case class FilterExpression(idInColl: IdInColl, maybeWhere: Option[Where]) extends CypherAst with Atom
 
@@ -239,13 +268,13 @@ case class PatternComprehension(
   relationshipsPattern: RelationshipsPattern,
   expression: Expression,
   maybeWhereExpression: Option[Expression]
-)
+) extends Atom
 
-trait UpdatingStartClause extends CypherAst
+sealed trait UpdatingStartClause extends Clause
 
 case class YieldItem(maybeProcedureResultField: Option[ProcedureResultField], variable: Variable) extends CypherAst
 
-trait SetItem extends CypherAst
+sealed trait SetItem extends CypherAst
 
 case class SetProperty(expression: PropertyExpression, value: Expression) extends SetItem
 
@@ -257,25 +286,27 @@ case class SetLabels(variable: Variable, nodeLabels: NodeLabels) extends SetItem
 
 case class ProcedureName(namespace: Namespace, symbolicName: SymbolicName) extends CypherAst
 
-trait RemoveItem extends CypherAst
+sealed trait RemoveItem extends CypherAst
 
-trait MergeAction extends CypherAst
+sealed trait MergeAction extends CypherAst
 
 case class ImplicitProcedureInvocation(procedureName: ProcedureName) extends CypherAst with ProcedureInvocation
 
 case class Where(expression: Expression) extends CypherAst
 
-trait ReturnItem extends CypherAst
+sealed trait ReturnItem extends CypherAst
 
-case class Delete(expressions: NonEmptyList[Expression]) extends CypherAst with UpdatingClause
+case class Delete(detach: Boolean, expressions: NonEmptyList[Expression]) extends CypherAst with UpdatingClause
 
-trait RangeLiteral extends CypherAst {
+sealed trait RangeLiteral extends CypherAst {
 
   def maybeFrom: Option[IntegerLiteral] = None
 
   def maybeTo: Option[IntegerLiteral] = None
 
 }
+
+case object UnboundedRange extends RangeLiteral
 
 case class FromToRange(from: IntegerLiteral, to: IntegerLiteral) extends RangeLiteral {
 
@@ -304,17 +335,13 @@ case class RelationshipsPattern(
 
 case class PatternPart(element: PatternElement, maybeVariable: Option[Variable]) extends CypherAst
 
-case class IntegerLiteral(value: Long) extends CypherAst with NumberLiteral
+sealed trait Statement extends CypherAst
 
-trait Statement extends CypherAst
+sealed trait Clause extends CypherAst
 
-case class ReadPart(readingClauses: List[ReadingClause]) extends CypherAst with ReadPartOrUpdatingClause
-
-trait ReadingClause extends CypherAst
+sealed trait ReadingClause extends Clause
 
 case class ProcedureResultField(symbolicName: SymbolicName) extends CypherAst
-
-trait DoubleLiteral extends CypherAst with NumberLiteral
 
 case class RelTypeName(relTypeName: String) extends CypherAst
 
@@ -326,16 +353,18 @@ case class MapLiteral(properties: List[(PropertyKeyName, Expression)]) extends C
 
 case class InQueryCall(
   explicitProcedureInvocation: ExplicitProcedureInvocation,
-  maybeYieldItems: Option[YieldItems]
+  yieldItems: List[YieldItem]
 ) extends CypherAst with ReadingClause
-
-trait YieldItems extends CypherAst
 
 case class FunctionInvocation(
   functionName: FunctionName,
   distinct: Boolean,
   expressions: NonEmptyList[Expression]
 ) extends CypherAst with Atom
+
+object ReturnBody {
+  val empty = ReturnBody(ReturnItems.empty, None, None, None)
+}
 
 case class ReturnBody(
   returnItems: ReturnItems,
@@ -365,9 +394,7 @@ case class ExplicitProcedureInvocation(
 
 case class Create(pattern: Pattern) extends CypherAst with UpdatingStartClause with UpdatingClause
 
-trait UpdatingClause extends CypherAst
-
-case class UpdatingPart(updatingClauses: List[UpdatingClause]) extends CypherAst
+sealed trait UpdatingClause extends Clause
 
 case class Skip(expression: Expression) extends CypherAst
 
