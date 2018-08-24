@@ -74,6 +74,15 @@ trait Schema {
     */
   def relTypePropertyMap: RelTypePropertyMap
 
+
+  def schemaPatterns: Set[SchemaPattern]
+
+  /**
+    * Retrieves the user defined schema patterns
+    * @return user defines schema patterns
+    */
+  def explicitSchemaPatterns: Set[SchemaPattern]
+
   /**
     * Implied labels for each existing label.
     */
@@ -172,6 +181,8 @@ trait Schema {
     */
   def relationshipKeys(typ: String): PropertyKeys
 
+  def schemaPatternsFor(knownSourceLabels: Set[String], knownRelTypes: Set[String], knownTargetLabels: Set[String]): Set[SchemaPattern]
+
   /**
     * Adds information about a label and its associated properties to the schema.
     * The arguments provided to this method are interpreted as describing a whole piece of information,
@@ -231,6 +242,8 @@ trait Schema {
     */
   def withRelationshipPropertyKeys(typ: String)(keys: (String, CypherType)*): Schema =
     withRelationshipPropertyKeys(typ, keys.toMap)
+
+  def withSchemaPatterns(patterns: SchemaPattern*): Schema
 
   /**
     * Returns the union of the input schemas.
