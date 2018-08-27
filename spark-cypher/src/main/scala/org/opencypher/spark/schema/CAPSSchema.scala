@@ -140,4 +140,8 @@ case class CAPSSchema private[schema](schema: Schema) extends Schema {
   override def withOverwrittenRelationshipPropertyKeys(relType: String, propertyKeys: PropertyKeys): Schema = schema.withOverwrittenRelationshipPropertyKeys(relType, propertyKeys)
 
   override def toJson: String = schema.toJson
+
+  override def explicitSchemaPatterns: Set[SchemaPattern] = schema.explicitSchemaPatterns
+
+  override def schemaPatternsFor(knownSourceLabels: Set[String], knownRelTypes: Set[String], knownTargetLabels: Set[String]): Set[SchemaPattern] = schema.schemaPatternsFor(knownSourceLabels, knownRelTypes, knownTargetLabels)
 }
