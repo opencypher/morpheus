@@ -29,11 +29,14 @@ package org.opencypher.parser
 import cats.data.NonEmptyList
 import org.opencypher.okapi.trees.AbstractTreeNode
 
-abstract class CypherAst extends AbstractTreeNode[CypherAst]
+abstract class CypherAst extends AbstractTreeNode[CypherAst] {
+  // TODO: Remove once fixed.
+  require(!productIterator.contains(null), s"${getClass.getSimpleName}(${productIterator.mkString(", ")})")
+}
 
 case class Cypher(statement: Statement) extends CypherAst
 
-sealed trait Query extends CypherAst with Statement
+sealed trait Query extends Statement
 
 sealed trait RegularQuery extends Query
 
@@ -196,7 +199,9 @@ case class PropertyExpression(
 
 case class RelationshipTypes(relTypeNames: NonEmptyList[RelTypeName]) extends CypherAst
 
-sealed trait Parameter extends CypherAst with Properties with Atom
+sealed trait Parameter extends Properties with Atom
+
+case class IndexParameter(index: Long) extends Parameter
 
 case class Pattern(patternParts: NonEmptyList[PatternPart]) extends CypherAst
 
@@ -244,11 +249,17 @@ sealed trait Literal extends Atom
 
 sealed trait FunctionName extends CypherAst
 
+case object Exists extends FunctionName
+
 sealed trait PropertyLookup extends CypherAst {
   def propertyKeyName: String
 }
 
 case class NodeLabels(nodeLabels: NonEmptyList[NodeLabel]) extends CypherAst
+
+case class StringLiteral(value: String) extends Literal
+
+case object NullLiteral extends Literal
 
 case class BooleanLiteral(value: Boolean) extends Literal
 
@@ -287,6 +298,8 @@ case class SetLabels(variable: Variable, nodeLabels: NodeLabels) extends SetItem
 case class ProcedureName(namespace: Namespace, symbolicName: SymbolicName) extends CypherAst
 
 sealed trait RemoveItem extends CypherAst
+
+case class RemoveNodeVariable(variable: Variable, nodeLabels: NonEmptyList[NodeLabel]) extends RemoveItem
 
 sealed trait MergeAction extends CypherAst
 
@@ -331,7 +344,7 @@ case class ToRange(to: IntegerLiteral) extends RangeLiteral {
 case class RelationshipsPattern(
   nodePattern: NodePattern,
   patternElementChains: NonEmptyList[PatternElementChain]
-) extends CypherAst with Atom
+) extends Atom
 
 case class PatternPart(element: PatternElement, maybeVariable: Option[Variable]) extends CypherAst
 
@@ -347,9 +360,9 @@ case class RelTypeName(relTypeName: String) extends CypherAst
 
 case class Namespace(symbolicNames: List[SymbolicName]) extends CypherAst
 
-case class ListLiteral(listLiterals: List[Expression]) extends CypherAst with Literal
+case class ListLiteral(listLiterals: List[Expression]) extends Literal
 
-case class MapLiteral(properties: List[(PropertyKeyName, Expression)]) extends CypherAst with Properties with Literal
+case class MapLiteral(properties: List[(PropertyKeyName, Expression)]) extends Properties with Literal
 
 case class InQueryCall(
   explicitProcedureInvocation: ExplicitProcedureInvocation,
@@ -359,7 +372,7 @@ case class InQueryCall(
 case class FunctionInvocation(
   functionName: FunctionName,
   distinct: Boolean,
-  expressions: NonEmptyList[Expression]
+  expressions: List[Expression]
 ) extends CypherAst with Atom
 
 object ReturnBody {
@@ -409,3 +422,17 @@ case class Merge(
 ) extends CypherAst with UpdatingStartClause with UpdatingClause
 
 case class PropertyKeyName(propertyKeyName: String) extends CypherAst with PropertyLookup
+
+case object CountStar extends Atom
+
+case class Filter(filterExpression: FilterExpression) extends Atom
+
+case class Extract(filterExpression: FilterExpression, maybeExpression: Option[Expression]) extends Atom
+
+case class FilterAll(filterExpression: FilterExpression) extends Atom
+
+case class FilterAny(filterExpression: FilterExpression) extends Atom
+
+case class FilterNone(filterExpression: FilterExpression) extends Atom
+
+case class FilterSingle(filterExpression: FilterExpression) extends Atom

@@ -63,7 +63,7 @@ case object AntlrAstTransformer extends CypherBaseVisitor[CypherAst] {
   implicit class RichJavaList[E](val list: java.util.List[E]) extends AnyVal {
 
     def map[T](f: E => T): List[T] = {
-      list.asScala.toList.map(f(_))
+      Option(list).map(_.asScala.toList.map(f(_))).getOrElse(List.empty[T])
     }
 
     def fold[T](initial: T)(f: (T, E) => T): T = {
@@ -109,6 +109,10 @@ case object AntlrAstTransformer extends CypherBaseVisitor[CypherAst] {
       result = child.accept(this).asInstanceOf[P]
       i += 1
     }
+    if (result == null) {
+      println(either.getText)
+      assert(result != null)
+    }
     result
   }
 
@@ -117,7 +121,7 @@ case object AntlrAstTransformer extends CypherBaseVisitor[CypherAst] {
   }
 
   override def visitOC_Statement(ctx: CypherParser.OC_StatementContext): Statement = {
-    visitAlternatives[Statement](ctx)
+    visitOC_Query(ctx.oC_Query)
   }
 
   override def visitOC_Query(ctx: CypherParser.OC_QueryContext): Query = {
@@ -187,9 +191,7 @@ case object AntlrAstTransformer extends CypherBaseVisitor[CypherAst] {
     def visitChildClauses(ctx: ParserRuleContext): List[Clause] = {
       ctx.children.asScala.collect {
         case childContext: ParserRuleContext => childContext
-      }
-        .toList
-        .flatMap(visitOC_Clauses)
+      }.toList.flatMap(visitOC_Clauses)
     }
 
     val clauses = visitChildClauses(ctx)
@@ -332,8 +334,8 @@ case object AntlrAstTransformer extends CypherBaseVisitor[CypherAst] {
 
   override def visitOC_ComparisonExpression(ctx: CypherParser.OC_ComparisonExpressionContext): Expression = {
     val expression = visitOC_AddOrSubtractExpression(ctx.oC_AddOrSubtractExpression)
-    val comparisonExpressions = ctx.oC_PartialComparisonExpression.asScala.toList
-    comparisonExpressions.foldLeft(expression) { case (left, partialComparisonExpr) =>
+    val partialComparisonExpressions = ctx.oC_PartialComparisonExpression.asScala.toList
+    partialComparisonExpressions.foldLeft(expression) { case (left, partialComparisonExpr) =>
       val op = partialComparisonExpr.children.terminalsLike("<=<>>=").head
       val right = visitOC_AddOrSubtractExpression(partialComparisonExpr.oC_AddOrSubtractExpression)
       op match {
@@ -422,13 +424,36 @@ case object AntlrAstTransformer extends CypherBaseVisitor[CypherAst] {
   }
 
   override def visitOC_Atom(ctx: CypherParser.OC_AtomContext): Atom = {
-    // TODO: implement missing alternatives
-    visitAlternatives[Atom](ctx)
+    if (ctx.COUNT) {
+      CountStar
+    } else if (ctx.FILTER) {
+      Filter(visitOC_FilterExpression(ctx.oC_FilterExpression))
+    } else if (ctx.EXTRACT) {
+      Extract(
+        visitOC_FilterExpression(ctx.oC_FilterExpression),
+        Option(ctx.oC_Expression).map(visitOC_Expression)
+      )
+    } else if (ctx.ALL) {
+      FilterAll(visitOC_FilterExpression(ctx.oC_FilterExpression))
+    } else if (ctx.ANY) {
+      FilterAny(visitOC_FilterExpression(ctx.oC_FilterExpression))
+    } else if (ctx.NONE) {
+      FilterNone(visitOC_FilterExpression(ctx.oC_FilterExpression))
+    } else if (ctx.SINGLE) {
+      FilterSingle(visitOC_FilterExpression(ctx.oC_FilterExpression))
+    } else {
+      visitAlternatives[Atom](ctx)
+    }
   }
 
   override def visitOC_Literal(ctx: CypherParser.OC_LiteralContext): Literal = {
-    // TODO: implement missing alternatives
-    visitAlternatives[Literal](ctx)
+    if (ctx.NULL) {
+      NullLiteral
+    } else if (ctx.StringLiteral) {
+      parser.StringLiteral(ctx.StringLiteral.getText)
+    } else {
+      visitAlternatives[Literal](ctx)
+    }
   }
 
   override def visitOC_NumberLiteral(ctx: CypherParser.OC_NumberLiteralContext): NumberLiteral = {
@@ -437,7 +462,14 @@ case object AntlrAstTransformer extends CypherBaseVisitor[CypherAst] {
   }
 
   override def visitOC_IntegerLiteral(ctx: CypherParser.OC_IntegerLiteralContext): IntegerLiteral = {
-    IntegerLiteral(ctx.getText.toLong)
+    val value = if (ctx.DecimalInteger) {
+      java.lang.Long.parseLong(ctx.getText)
+    } else if (ctx.HexInteger) {
+      java.lang.Long.parseLong(ctx.getText.drop(2), 16)
+    } else {
+      java.lang.Long.parseLong(ctx.getText, 8)
+    }
+    IntegerLiteral(value)
   }
 
   override def visitChildren(node: RuleNode): CypherAst = {
@@ -608,10 +640,15 @@ case object AntlrAstTransformer extends CypherBaseVisitor[CypherAst] {
   }
 
   override def visitOC_FunctionInvocation(ctx: CypherParser.OC_FunctionInvocationContext): FunctionInvocation = {
+    val functionName = if (ctx.oC_FunctionName.EXISTS) {
+      Exists
+    } else {
+      visitOC_SymbolicName(ctx.oC_FunctionName.oC_SymbolicName)
+    }
     FunctionInvocation(
-      visitAlternatives[FunctionName](ctx.oC_FunctionName),
+      functionName,
       ctx.DISTINCT,
-      ctx.oC_Expression.toNonEmpty(ctx).map(visitOC_Expression)
+      ctx.oC_Expression.map(visitOC_Expression)
     )
   }
 
@@ -638,7 +675,8 @@ case object AntlrAstTransformer extends CypherBaseVisitor[CypherAst] {
   }
 
   override def visitOC_InQueryCall(ctx: CypherParser.OC_InQueryCallContext): InQueryCall = {
-    val yieldItems = Option(ctx.oC_YieldItems.oC_YieldItem.asScala.toList)
+    val yieldItems = Option(ctx.oC_YieldItems)
+      .map(_.oC_YieldItem.asScala.toList)
       .getOrElse(List.empty[OC_YieldItemContext])
       .map(visitOC_YieldItem)
     InQueryCall(visitOC_ExplicitProcedureInvocation(ctx.oC_ExplicitProcedureInvocation), yieldItems)
@@ -654,6 +692,10 @@ case object AntlrAstTransformer extends CypherBaseVisitor[CypherAst] {
 
   override def visitOC_ExplicitProcedureInvocation(ctx: CypherParser.OC_ExplicitProcedureInvocationContext): ExplicitProcedureInvocation = {
     ExplicitProcedureInvocation(visitOC_ProcedureName(ctx.oC_ProcedureName), ctx.oC_Expression.map(visitOC_Expression))
+  }
+
+  override def visitOC_ImplicitProcedureInvocation(ctx: CypherParser.OC_ImplicitProcedureInvocationContext): ImplicitProcedureInvocation = {
+    ImplicitProcedureInvocation(visitOC_ProcedureName(ctx.oC_ProcedureName))
   }
 
   override def visitOC_ProcedureName(ctx: CypherParser.OC_ProcedureNameContext): ProcedureName = {
@@ -701,7 +743,12 @@ case object AntlrAstTransformer extends CypherBaseVisitor[CypherAst] {
   }
 
   override def visitOC_RemoveItem(ctx: CypherParser.OC_RemoveItemContext): RemoveItem = {
-    visitAlternatives[RemoveItem](ctx)
+    if (ctx.oC_Variable) {
+      val nodeLabels = ctx.oC_NodeLabels.oC_NodeLabel.toNonEmpty(ctx).map(visitOC_NodeLabel)
+      RemoveNodeVariable(visitOC_Variable(ctx.oC_Variable), nodeLabels)
+    } else {
+      visitOC_PropertyExpression(ctx.oC_PropertyExpression)
+    }
   }
 
   override def visitOC_ParenthesizedExpression(ctx: CypherParser.OC_ParenthesizedExpressionContext): ParenthesizedExpression = {
@@ -716,14 +763,46 @@ case object AntlrAstTransformer extends CypherBaseVisitor[CypherAst] {
     DoubleLiteral(ctx.getText.toDouble)
   }
 
+  override def visitOC_Parameter(ctx: CypherParser.OC_ParameterContext): Parameter = {
+    if (ctx.oC_SymbolicName) {
+      visitOC_SymbolicName(ctx.oC_SymbolicName)
+    } else {
+      IndexParameter(ctx.DecimalInteger.getText.toLong)
+    }
+  }
+
+  override def visitOC_StandaloneCall(ctx: CypherParser.OC_StandaloneCallContext): StandaloneCall = {
+    val procedureInvocation = Option(ctx.oC_ExplicitProcedureInvocation)
+      .map(visitOC_ExplicitProcedureInvocation)
+      .getOrElse(visitOC_ImplicitProcedureInvocation(ctx.oC_ImplicitProcedureInvocation))
+    val yieldItems = Option(ctx.oC_YieldItems)
+      .map(_.oC_YieldItem)
+      .map(_.map(visitOC_YieldItem))
+      .getOrElse(List.empty[YieldItem])
+    StandaloneCall(procedureInvocation, yieldItems)
+  }
+
+  override def visitOC_ListComprehension(ctx: CypherParser.OC_ListComprehensionContext): ListComprehension = {
+    ListComprehension(
+      visitOC_FilterExpression(ctx.oC_FilterExpression),
+      Option(ctx.oC_Expression).map(visitOC_Expression)
+    )
+  }
+
+  override def visitOC_FilterExpression(ctx: CypherParser.OC_FilterExpressionContext): FilterExpression = {
+    FilterExpression(visitOC_IdInColl(ctx.oC_IdInColl), Option(ctx.oC_Where).map(visitOC_Where))
+  }
+
+  override def visitOC_IdInColl(ctx: CypherParser.OC_IdInCollContext): IdInColl = {
+    IdInColl(visitOC_Variable(ctx.oC_Variable), visitOC_Expression(ctx.oC_Expression))
+  }
+
+
   //  override def visitOC_HexInteger(ctx: CypherParser.OC_HexIntegerContext): String = {
   //    HexInteger("ctx.getText", (visitOC_HexDigit(ctx.oC_HexDigit)).rep(min = 1))
   //  }
   //  override def visitOC_CaseAlternatives(ctx: CypherParser.OC_CaseAlternativesContext): CaseAlternatives = {
   //    CaseAlternatives(ctx.getText, (visitOC_SP(ctx.oC_SP)).?, visitOC_Expression(ctx.oC_Expression), (visitOC_SP(ctx.oC_SP)).?, ctx.getText, (visitOC_SP(ctx.oC_SP)).?, visitOC_Expression(ctx.oC_Expression))
-  //  }
-  //  override def visitOC_Parameter(ctx: CypherParser.OC_ParameterContext): Parameter = {
-  //    visitChildren(ctx).asInstanceOf[Parameter]
   //  }
   //  override def visitOC_EscapedSymbolicName(ctx: CypherParser.OC_EscapedSymbolicNameContext): String = {
   //    EscapedSymbolicName((ctx.getText, (ctx.getText).rep, ctx.getText).rep(min = 1))
@@ -740,9 +819,6 @@ case object AntlrAstTransformer extends CypherBaseVisitor[CypherAst] {
   //  override def visitOC_DecimalInteger(ctx: CypherParser.OC_DecimalIntegerContext): String = {
   //    DecimalInteger(((ctx.getText) | (visitOC_ZeroDigit(ctx.oC_ZeroDigit)) | (visitOC_NonZeroDigit(ctx.oC_NonZeroDigit), (visitOC_Digit(ctx.oC_Digit)).rep)))
   //  }
-  //  override def visitOC_StringLiteral(ctx: CypherParser.OC_StringLiteralContext): String = {
-  //    StringLiteral(((ctx.getText) | (ctx.getText, (((ctx.getText) | (visitOC_EscapedChar(ctx.oC_EscapedChar)))).rep, ctx.getText) | (ctx.getText, (((ctx.getText) | (visitOC_EscapedChar(ctx.oC_EscapedChar)))).rep, ctx.getText)))
-  //  }
   //  override def visitOC_FunctionName(ctx: CypherParser.OC_FunctionNameContext): FunctionName = {
   //    visitChildren(ctx).asInstanceOf[FunctionName]
   //  }
@@ -751,9 +827,6 @@ case object AntlrAstTransformer extends CypherBaseVisitor[CypherAst] {
   //  }
   //  override def visitOC_NonZeroDigit(ctx: CypherParser.OC_NonZeroDigitContext): String = {
   //    NonZeroDigit(((ctx.getText) | (visitOC_NonZeroOctDigit(ctx.oC_NonZeroOctDigit))))
-  //  }
-  //  override def visitOC_FilterExpression(ctx: CypherParser.OC_FilterExpressionContext): FilterExpression = {
-  //    FilterExpression(visitOC_IdInColl(ctx.oC_IdInColl), ((visitOC_SP(ctx.oC_SP)).?, visitOC_Where(ctx.oC_Where)).?)
   //  }
   //  override def visitOC_UpdatingStartClause(ctx: CypherParser.OC_UpdatingStartClauseContext): UpdatingStartClause = {
   //    visitChildren(ctx).asInstanceOf[UpdatingStartClause]
@@ -769,9 +842,6 @@ case object AntlrAstTransformer extends CypherBaseVisitor[CypherAst] {
   //  }
   //  override def visitOC_ReadUpdateEnd(ctx: CypherParser.OC_ReadUpdateEndContext): ReadUpdateEnd = {
   //    ReadUpdateEnd(visitOC_ReadingClause(ctx.oC_ReadingClause), ((visitOC_SP(ctx.oC_SP)).?, visitOC_ReadingClause(ctx.oC_ReadingClause)).rep, ((visitOC_SP(ctx.oC_SP)).?, visitOC_UpdatingClause(ctx.oC_UpdatingClause)).rep(min = 1), ((visitOC_SP(ctx.oC_SP)).?, visitOC_Return(ctx.oC_Return)).?)
-  //  }
-  //  override def visitOC_ImplicitProcedureInvocation(ctx: CypherParser.OC_ImplicitProcedureInvocationContext): ImplicitProcedureInvocation = {
-  //    ImplicitProcedureInvocation(visitOC_ProcedureName(ctx.oC_ProcedureName))
   //  }
   //  override def visitOC_RegularDecimalReal(ctx: CypherParser.OC_RegularDecimalRealContext): String = {
   //    RegularDecimalReal((visitOC_Digit(ctx.oC_Digit)).rep, ctx.getText, (visitOC_Digit(ctx.oC_Digit)).rep(min = 1))
@@ -815,14 +885,8 @@ case object AntlrAstTransformer extends CypherBaseVisitor[CypherAst] {
   //  override def visitOC_HexLetter(ctx: CypherParser.OC_HexLetterContext): String = {
   //    HexLetter(ctx.getText)
   //  }
-  //  override def visitOC_IdInColl(ctx: CypherParser.OC_IdInCollContext): IdInColl = {
-  //    IdInColl(visitOC_Variable(ctx.oC_Variable), visitOC_SP(ctx.oC_SP), ctx.getText, visitOC_SP(ctx.oC_SP), visitOC_Expression(ctx.oC_Expression))
-  //  }
   //  override def visitOC_whitespace(ctx: CypherParser.OC_whitespaceContext): Unit = {
   //    whitespace(((ctx.getText) | (visitOC_Comment(ctx.oC_Comment))))
-  //  }
-  //  override def visitOC_StandaloneCall(ctx: CypherParser.OC_StandaloneCallContext): StandaloneCall = {
-  //    StandaloneCall(ctx.getText, visitOC_SP(ctx.oC_SP), ((ctx.getText) | (visitOC_ExplicitProcedureInvocation(ctx.oC_ExplicitProcedureInvocation)) | (visitOC_ImplicitProcedureInvocation(ctx.oC_ImplicitProcedureInvocation))), (visitOC_SP(ctx.oC_SP), ctx.getText, visitOC_SP(ctx.oC_SP), visitOC_YieldItems(ctx.oC_YieldItems)).?)
   //  }
   //  override def visitOC_CaseExpression(ctx: CypherParser.OC_CaseExpressionContext): CaseExpression = {
   //    CaseExpression(((ctx.getText) | (ctx.getText, ((visitOC_SP(ctx.oC_SP)).?, visitOC_CaseAlternatives(ctx.oC_CaseAlternatives)).rep(min = 1)) | (ctx.getText, (visitOC_SP(ctx.oC_SP)).?, visitOC_Expression(ctx.oC_Expression), ((visitOC_SP(ctx.oC_SP)).?, visitOC_CaseAlternatives(ctx.oC_CaseAlternatives)).rep(min = 1))), ((visitOC_SP(ctx.oC_SP)).?, ctx.getText, (visitOC_SP(ctx.oC_SP)).?, visitOC_Expression(ctx.oC_Expression)).?, (visitOC_SP(ctx.oC_SP)).?, ctx.getText)
@@ -841,9 +905,6 @@ case object AntlrAstTransformer extends CypherBaseVisitor[CypherAst] {
   //  }
   //  override def visitOC_UpdatingPart(ctx: CypherParser.OC_UpdatingPartContext): UpdatingPart = {
   //    UpdatingPart((visitOC_UpdatingClause(ctx.oC_UpdatingClause), (visitOC_SP(ctx.oC_SP)).?).rep)
-  //  }
-  //  override def visitOC_ListComprehension(ctx: CypherParser.OC_ListComprehensionContext): ListComprehension = {
-  //    ListComprehension(ctx.getText, (visitOC_SP(ctx.oC_SP)).?, visitOC_FilterExpression(ctx.oC_FilterExpression), ((visitOC_SP(ctx.oC_SP)).?, ctx.getText, (visitOC_SP(ctx.oC_SP)).?, visitOC_Expression(ctx.oC_Expression)).?, (visitOC_SP(ctx.oC_SP)).?, ctx.getText)
   //  }
 
 
