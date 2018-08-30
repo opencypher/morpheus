@@ -54,7 +54,7 @@ import scala.concurrent.{Await, ExecutionContext, ExecutionContextExecutorServic
   */
 case class EntityKeys(
   nodeKeys: Map[Set[String], Set[String]],
-  relKeys: Map[String, Set[String]]
+  relKeys: Map[String, Set[String]] = Map.empty
 )
 
 /**
