@@ -167,7 +167,7 @@ case object MergeWriters {
               mapping,
               config,
               relType,
-              relKeys(relType)
+              relKeys.getOrElse(relType, Set.empty)
             )(rowToListValue)
           }
         }
