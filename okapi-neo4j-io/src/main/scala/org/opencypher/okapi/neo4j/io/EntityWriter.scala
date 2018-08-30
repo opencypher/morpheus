@@ -29,7 +29,7 @@ package org.opencypher.okapi.neo4j.io
 import org.apache.logging.log4j.scala.Logging
 import org.neo4j.driver.internal.value.MapValue
 import org.neo4j.driver.v1.exceptions.ClientException
-import org.neo4j.driver.v1.{Statement, Value, Values}
+import org.neo4j.driver.v1.{Statement, Transaction, TransactionWork, Value, Values}
 import org.opencypher.okapi.impl.exception.IllegalStateException
 import org.opencypher.okapi.neo4j.io.Neo4jHelpers.Neo4jDefaults._
 import org.opencypher.okapi.neo4j.io.Neo4jHelpers._
@@ -60,7 +60,7 @@ object EntityWriter extends Logging {
     val setStatements = rowMapping
       .zipWithIndex
       .filterNot { case (propertyKey, _) => propertyKey == null || nodeKeys.contains(propertyKey) }
-      .map{ case (key, i) => s"SET n.$key = $ROW_IDENTIFIER[$i]" }
+      .map { case (key, i) => s"SET n.$key = $ROW_IDENTIFIER[$i]" }
       .mkString("\n")
 
     val createQ =
@@ -94,7 +94,7 @@ object EntityWriter extends Logging {
     val setStatements = rowMapping
       .zipWithIndex
       .filterNot { case (propertyKey, _) => propertyKey == null || relKeys.contains(propertyKey) }
-      .map{ case (key, i) => s"SET rel.$key = $ROW_IDENTIFIER[$i]" }
+      .map { case (key, i) => s"SET rel.$key = $ROW_IDENTIFIER[$i]" }
       .mkString("\n")
 
     val createQ =
@@ -121,7 +121,7 @@ object EntityWriter extends Logging {
     val setStatements = rowMapping
       .zipWithIndex
       .filterNot(_._1 == null)
-      .map{ case (key, i) => s"SET n.$key = $ROW_IDENTIFIER[$i]" }
+      .map { case (key, i) => s"SET n.$key = $ROW_IDENTIFIER[$i]" }
       .mkString("\n")
 
     val createQ =
@@ -147,7 +147,7 @@ object EntityWriter extends Logging {
     val setStatements = rowMapping
       .zipWithIndex
       .filterNot(_._1 == null)
-      .map{ case (key, i) => s"SET rel.$key = $ROW_IDENTIFIER[$i]" }
+      .map { case (key, i) => s"SET rel.$key = $ROW_IDENTIFIER[$i]" }
       .mkString("\n")
 
     val nodeLabelString = nodeLabel.map(l => s":$l").getOrElse("")
@@ -186,7 +186,15 @@ object EntityWriter extends Logging {
         reuseMap.put("batch", Values.value(rowParameters: _*))
 
         reuseStatement.withUpdatedParameters(reuseParameters)
-        Try(session.run(reuseStatement).consume()) match {
+        Try {
+          session.writeTransaction {
+            new TransactionWork[Unit] {
+              override def execute(transaction: Transaction): Unit = {
+                transaction.run(reuseStatement).consume()
+              }
+            }
+          }
+        } match {
           case Success(_) => ()
 
           case Failure(exception: ClientException) if exception.getMessage.contains("already exists") =>

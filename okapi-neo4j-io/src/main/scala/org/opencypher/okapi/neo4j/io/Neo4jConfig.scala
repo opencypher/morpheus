@@ -27,6 +27,7 @@
 package org.opencypher.okapi.neo4j.io
 
 import java.net.URI
+import java.util.concurrent.TimeUnit
 
 import org.neo4j.driver.v1.{AuthTokens, Config, Driver, GraphDatabase}
 
@@ -43,7 +44,7 @@ case class Neo4jConfig(
   }
 
   private def boltConfig(): Config = {
-    val builder = Config.build
+    val builder = Config.build.withMaxTransactionRetryTime(5, TimeUnit.MINUTES)
 
     if (encrypted)
       builder.withEncryption().toConfig
