@@ -82,7 +82,7 @@ object EntityWriter extends Logging {
     config: Neo4jConfig,
     relType: String,
     relKeys: Set[String],
-    batchSize: Int = 1000
+    batchSize: Int = 10
   )(rowToListValue: T => ListValue): Unit = {
 
     val relKeyProperties = relKeys.map { relKey =>

@@ -44,7 +44,7 @@ case class Neo4jConfig(
   }
 
   private def boltConfig(): Config = {
-    val builder = Config.build.withMaxTransactionRetryTime(5, TimeUnit.MINUTES)
+    val builder = Config.build.withMaxTransactionRetryTime(1, TimeUnit.MINUTES)
 
     if (encrypted)
       builder.withEncryption().toConfig
