@@ -92,6 +92,8 @@ object CypherException {
     override def toString: String = s"${getClass.getSimpleName} $message"
   }
 
+  case class ParsingError(message: String) extends ErrorDetails
+
   case class InvalidElementAccess(message: String) extends ErrorDetails
 
   case class MapElementAccessByNonString(message: String) extends ErrorDetails
@@ -134,8 +136,6 @@ object CypherException {
 
   case class InvalidArgumentExpression(message: String) extends ErrorDetails
 
-  case class InvalidUnicodeCharacter(message: String) extends ErrorDetails
-
   case class NonConstantExpression(message: String) extends ErrorDetails
 
   case class NoSingleRelationshipType(message: String) extends ErrorDetails
@@ -145,8 +145,6 @@ object CypherException {
   case class UnknownFunction(message: String) extends ErrorDetails
 
   case class InvalidNumberLiteral(message: String) extends ErrorDetails
-
-  case class InvalidUnicodeLiteral(message: String) extends ErrorDetails
 
   case class MergeReadOwnWrites(message: String) extends ErrorDetails
 
