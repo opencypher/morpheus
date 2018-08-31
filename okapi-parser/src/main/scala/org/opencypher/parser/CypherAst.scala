@@ -29,10 +29,7 @@ package org.opencypher.parser
 import cats.data.NonEmptyList
 import org.opencypher.okapi.trees.AbstractTreeNode
 
-abstract class CypherAst extends AbstractTreeNode[CypherAst] {
-  // TODO: Remove once fixed.
-  require(!productIterator.contains(null), s"${getClass.getSimpleName}(${productIterator.mkString(", ")})")
-}
+abstract class CypherAst extends AbstractTreeNode[CypherAst]
 
 case class Cypher(statement: Statement) extends CypherAst
 
@@ -45,49 +42,6 @@ case class SingleQuery(
 ) extends RegularQuery
 
 case class Union(all: Boolean, left: RegularQuery, right: SingleQuery) extends RegularQuery
-
-//case class SinglePartQuery
-//sealed trait SinglePartQuery extends SingleQuery
-
-//case class ReadOnlyEnd(
-//  readingClauses: List[ReadingClause],
-//  returnClause: Return
-//) extends SinglePartQuery
-//
-//case class ReadUpdateEnd(
-//  readingClauses: NonEmptyList[ReadingClause],
-//  updatingClauses: NonEmptyList[UpdatingClause],
-//  maybeReturn: Option[Return]
-//) extends SinglePartQuery
-//
-//case class UpdatingEnd(
-//  updatingStartClause: UpdatingStartClause,
-//  updatingClauses: List[UpdatingClause],
-//  maybeReturn: Option[Return]
-//) extends SinglePartQuery
-//
-//sealed trait MultiPartQuery extends SingleQuery
-
-//case class ReadThenMultiPartQuery(
-//  readClauses: List[ReadingClause],
-//  withClause: With,
-//  readUpdateWiths: List[ReadUpdateWith],
-//  singlePartQuery: SinglePartQuery
-//) extends MultiPartQuery
-//
-//case class UpdatingThenMultiPartQuery(
-//  updatingStartClause: UpdatingStartClause,
-//  updatingClauses: List[UpdatingClause],
-//  withClause: With,
-//  readUpdateWiths: List[ReadUpdateWith],
-//  singlePartQuery: SinglePartQuery
-//) extends MultiPartQuery
-//
-//case class ReadUpdateWith(
-//  readingClauses: List[ReadingClause],
-//  updatingClauses: List[UpdatingClause],
-//  withPart: With
-//)
 
 sealed trait ProcedureInvocation
 
