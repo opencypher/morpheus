@@ -60,12 +60,6 @@ class TckParserTest extends FunSpec with Matchers with MockitoSugar {
                     e match {
                       case c: CypherException =>
                         isParserError = true
-                        // Special case for errors that are hard to generate with ANTLR
-//                        val detail = if (c.detail.getClass.getSimpleName == "ParsingError") {
-//                          "InvalidUnicodeLiteral"
-//                        } else {
-//                          c.detail.getClass.getSimpleName
-//                        }
                         println(c.detail)
                         resultFromError(
                           ExecutionFailed(c.errorType.toString, c.phase.toString, c.detail.getClass.getSimpleName)

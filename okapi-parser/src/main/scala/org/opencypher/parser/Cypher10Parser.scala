@@ -27,12 +27,16 @@
 package org.opencypher.parser
 
 import org.antlr.v4.runtime._
+import org.antlr.v4.runtime.tree.{ParseTree, TerminalNode, TerminalNodeImpl}
 import org.opencypher.okapi.api.exception.CypherException
 import org.opencypher.okapi.api.exception.CypherException.ErrorPhase.CompileTime
 import org.opencypher.okapi.api.exception.CypherException.ErrorType.SyntaxError
 import org.opencypher.okapi.api.exception.CypherException._
 import org.opencypher.okapi.api.value.CypherValue._
+
+import scala.annotation.tailrec
 import scala.collection.JavaConverters._
+import scala.util.Try
 
 object Cypher10Parser {
 
@@ -52,7 +56,11 @@ object Cypher10Parser {
 
 }
 
-case class AntlrException(override val errorType: ErrorType, override val phase: ErrorPhase, override val detail: ErrorDetails)
+case class AntlrException(
+  override val errorType: ErrorType,
+  override val phase: ErrorPhase,
+  override val detail: ErrorDetails
+)
   extends CypherException(errorType, phase, detail)
 
 case class AntlrErrorListerner(string: String) extends BaseErrorListener {
@@ -68,19 +76,68 @@ case class AntlrErrorListerner(string: String) extends BaseErrorListener {
     val line = string.split("\\r?\\n")
     val offendingLine = line(lineNumber - 1)
     val ruleNames = recognizer.getRuleNames
-    val ruleName = ruleNames(e.getCtx.getRuleIndex)
-
     val vocabulary = recognizer.getVocabulary
-    val expectedTokens =  e.getExpectedTokens.toList.asScala.map(i => vocabulary.getDisplayName(i))
+    val maybeContext = Option(e)
+      .flatMap(ex => Option(ex.getCtx))
+    val maybeRuleName = maybeContext
+      .flatMap(c => Option(c.getRuleIndex))
+      .map(ruleNames)
+    val maybeFailingRuleString = maybeRuleName
+      .map(rn => s"\nFailing rule: $rn")
+    val maybeExpectedTokens = Try(e.getExpectedTokens).toOption
+      .map(_.toList.asScala.map(i => vocabulary.getDisplayName(i)))
+    val maybeExpectedTokensString = maybeExpectedTokens
+      .map(ts => s"Expected tokens: ${ts.mkString(", ")}")
+    val maybeAntlrExceptionString = Option(e)
+      .map(ae => s"AntlrException: $ae")
+    val maybeOffendingSymbol = Option(offendingSymbol)
+    val maybeOffendingSymbolString = maybeOffendingSymbol.map(s => s"Offending symbol: $s")
+
     val msg =
       s"""|on line $lineNumber, character $charPositionInLine:
           |\t$offendingLine
           |\t${"~" * charPositionInLine}^${"~" * (offendingLine.length - charPositionInLine)}
-          |
-          |Failing rule: $ruleName
-          |Expected tokens: ${expectedTokens.mkString(", ")}
-          |AntlrException: $e""".stripMargin
-    throw AntlrException(SyntaxError, CompileTime, ParsingError(msg))
+          |${
+        Seq(
+          maybeOffendingSymbolString,
+          maybeFailingRuleString,
+          maybeExpectedTokensString,
+          maybeAntlrExceptionString
+        ).flatten.mkString("\n")
+      }""".stripMargin
+
+    @tailrec
+    def recLastChild(tree: ParseTree): ParseTree = {
+      if (tree.getChildCount == 0) {
+        tree
+      } else {
+        recLastChild(tree.getChild(tree.getChildCount - 1))
+      }
+    }
+
+    val maybeLastChild: Option[ParseTree] = maybeContext match {
+      case Some(c) => Some(recLastChild(c))
+      case None =>
+        recognizer match {
+          case c: CypherParser => Some(recLastChild(c.getContext))
+          case _: CypherLexer => Option.empty[ParseTree]
+        }
+    }
+
+    val maybeLastSuccessName = maybeLastChild.map {
+      case t: TerminalNode => vocabulary.getDisplayName(t.getSymbol.getType)
+      case p => p.getClass.getSimpleName
+    }
+
+    val detail = if (maybeRuleName.contains("oC_RelationshipPattern")) {
+      InvalidRelationshipPattern(msg)
+    } else if (maybeLastSuccessName.contains("HexInteger")) {
+      InvalidNumberLiteral(msg)
+    } else {
+      ParsingError(msg)
+    }
+
+    throw AntlrException(SyntaxError, CompileTime, detail)
   }
 
 }
