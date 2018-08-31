@@ -36,6 +36,7 @@ import org.opencypher.okapi.api.types.CypherType.joinMonoid
 import org.opencypher.okapi.api.types.{CypherType, _}
 import org.opencypher.okapi.impl.exception.SchemaException
 import org.opencypher.okapi.impl.schema.SchemaImpl._
+import ujson.Js.Obj
 import upickle.Js
 import upickle.default.{macroRW, _}
 
@@ -60,7 +61,11 @@ object SchemaImpl {
     json => {
       val labelPropertyMap = readJs[LabelPropertyMap](json.obj(LABEL_PROPERTY_MAP))
       val relTypePropertyMap = readJs[RelTypePropertyMap](json.obj(REL_TYPE_PROPERTY_MAP))
-      val explicitSchemaPatterns = readJs[Set[SchemaPattern]](json.obj(SCHEMA_PATTERNS))
+      val explicitSchemaPatterns = json.value match {
+        case Obj(v) if v.keySet.contains(SCHEMA_PATTERNS) => readJs[Set[SchemaPattern]](json.obj(SCHEMA_PATTERNS))
+        case _ => Set.empty[SchemaPattern]
+      }
+
       SchemaImpl(labelPropertyMap, relTypePropertyMap, explicitSchemaPatterns)
     }
   )
