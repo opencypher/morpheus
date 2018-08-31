@@ -143,96 +143,17 @@ case object AntlrAstTransformer extends CypherBaseVisitor[CypherAst] {
     }
   }
 
+  override def visitOC_Clause(ctx: OC_ClauseContext): Clause = {
+    visitAlternatives[Clause](ctx)
+  }
+
   override def visitOC_SingleQuery(ctx: CypherParser.OC_SingleQueryContext): SingleQuery = {
-    // Flatten SingleQuery structure into list of clauses
-    def visitOC_Clauses(ctx: ParserRuleContext): List[Clause] = {
-      ctx match {
-        case c: CypherParser.OC_SinglePartQueryContext =>
-          visitChildClauses(c)
-
-        case c: CypherParser.OC_MultiPartQueryContext =>
-          visitChildClauses(c)
-
-        case c: CypherParser.OC_ReadOnlyEndContext =>
-          visitChildClauses(c)
-
-        case c: CypherParser.OC_UpdatingEndContext =>
-          visitChildClauses(c)
-
-        case c: CypherParser.OC_ReadUpdateEndContext =>
-          visitChildClauses(c)
-
-        case c: CypherParser.OC_ReadPartContext =>
-          c.oC_ReadingClause.map(visitOC_ReadingClause)
-
-        case c: CypherParser.OC_UpdatingPartContext =>
-          c.oC_UpdatingClause.map(visitOC_UpdatingClause)
-
-        case c: CypherParser.OC_WithContext =>
-          List(visitOC_With(c))
-
-        case c: CypherParser.OC_ReturnContext =>
-          List(visitOC_Return(c))
-
-        case c: CypherParser.OC_ReadingClauseContext =>
-          List(visitAlternatives[ReadingClause](c))
-
-        case c: CypherParser.OC_UpdatingClauseContext =>
-          List(visitAlternatives[UpdatingClause](c))
-
-        case c: CypherParser.OC_UpdatingStartClauseContext =>
-          List(visitAlternatives[UpdatingStartClause](c))
-
-        case ni =>
-          throw new UnsupportedOperationException(s"${CypherParser.ruleNames(ni.getRuleIndex)}")
-      }
-    }
-
-    def visitChildClauses(ctx: ParserRuleContext): List[Clause] = {
-      ctx.children.asScala.collect {
-        case childContext: ParserRuleContext => childContext
-      }.toList.flatMap(visitOC_Clauses)
-    }
-
-    val clauses = visitChildClauses(ctx)
+    val clauses = ctx.oC_Clause.map(visitOC_Clause)
     SingleQuery(NonEmptyList.fromListUnsafe(clauses))
   }
 
   override def visitOC_Delete(ctx: CypherParser.OC_DeleteContext): Delete = {
     Delete(ctx.DETACH, ctx.oC_Expression.toNonEmpty(ctx).map(visitOC_Expression))
-  }
-
-  //  override def visitOC_SinglePartQuery(ctx: CypherParser.OC_SinglePartQueryContext): SinglePartQuery = {
-  //    visitAlternatives[SinglePartQuery](ctx)
-  //  }
-
-  //  override def visitOC_MultiPartQuery(ctx: CypherParser.OC_MultiPartQueryContext): MultiPartQuery = {
-  //    println(ctx.children.asScala)
-  //
-  ////    val singlePartQuery = visitOC_SinglePartQuery(ctx.oC_SinglePartQuery)
-  ////    ctx.children(0) match {
-  ////      case readPart: OC_ReadPartContext =>
-  ////        ctx.
-  ////        val readingClauses = readPart.oC_ReadingClause.map(visitOC_ReadingClause)
-  ////
-  ////      case updating: OC_UpdatingStartClauseContext =>
-  ////
-  ////    }
-  //    //MultiPartQuery
-  //    ???
-  //  }
-
-  //  override def visitOC_ReadOnlyEnd(ctx: CypherParser.OC_ReadOnlyEndContext): ReadOnlyEnd = {
-  //    val readingClauses = ctx.oC_ReadPart.oC_ReadingClause.map(visitOC_ReadingClause)
-  //    ReadOnlyEnd(readingClauses, visitOC_Return(ctx.oC_Return))
-  //  }
-
-  override def visitOC_ReadingClause(ctx: CypherParser.OC_ReadingClauseContext): ReadingClause = {
-    visitAlternatives(ctx).asInstanceOf[ReadingClause]
-  }
-
-  override def visitOC_UpdatingClause(ctx: CypherParser.OC_UpdatingClauseContext): UpdatingClause = {
-    visitAlternatives(ctx).asInstanceOf[UpdatingClause]
   }
 
   override def visitOC_Return(ctx: CypherParser.OC_ReturnContext): Return = {

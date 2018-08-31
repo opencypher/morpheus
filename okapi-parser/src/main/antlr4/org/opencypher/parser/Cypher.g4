@@ -35,42 +35,25 @@ UNION : ( 'U' | 'u' ) ( 'N' | 'n' ) ( 'I' | 'i' ) ( 'O' | 'o' ) ( 'N' | 'n' )  ;
 
 ALL : ( 'A' | 'a' ) ( 'L' | 'l' ) ( 'L' | 'l' )  ;
 
-oC_SingleQuery : oC_SinglePartQuery
-               | oC_MultiPartQuery
-               ;
+oC_SingleQuery : ( oC_Clause SP? )+ ;
 
-oC_SinglePartQuery : oC_ReadOnlyEnd
-                   | oC_ReadUpdateEnd
-                   | oC_UpdatingEnd
-                   ;
+oC_Clause : oC_Merge
+          | oC_Delete
+          | oC_Set
+          | oC_Create
+          | oC_Remove
+          | oC_With
+          | oC_Match
+          | oC_Unwind
+          | oC_InQueryCall
+          | oC_Return
+          ;
 
-oC_ReadOnlyEnd : oC_ReadPart oC_Return ;
+oC_With : WITH ( SP? DISTINCT )? SP oC_ReturnBody ( SP? oC_Where )? ;
 
-oC_ReadUpdateEnd : oC_ReadingClause ( SP? oC_ReadingClause )* ( SP? oC_UpdatingClause )+ ( SP? oC_Return )? ;
+WITH : ( 'W' | 'w' ) ( 'I' | 'i' ) ( 'T' | 't' ) ( 'H' | 'h' )  ;
 
-oC_UpdatingEnd : oC_UpdatingStartClause ( SP? oC_UpdatingClause )* ( SP? oC_Return )? ;
-
-oC_MultiPartQuery : ( oC_ReadPart | ( oC_UpdatingStartClause SP? oC_UpdatingPart ) ) oC_With SP? ( oC_ReadPart oC_UpdatingPart oC_With SP? )* oC_SinglePartQuery ;
-
-oC_ReadPart : ( oC_ReadingClause SP? )* ;
-
-oC_UpdatingPart : ( oC_UpdatingClause SP? )* ;
-
-oC_UpdatingStartClause : oC_Create
-                       | oC_Merge
-                       ;
-
-oC_UpdatingClause : oC_Create
-                  | oC_Merge
-                  | oC_Delete
-                  | oC_Set
-                  | oC_Remove
-                  ;
-
-oC_ReadingClause : oC_Match
-                 | oC_Unwind
-                 | oC_InQueryCall
-                 ;
+DISTINCT : ( 'D' | 'd' ) ( 'I' | 'i' ) ( 'S' | 's' ) ( 'T' | 't' ) ( 'I' | 'i' ) ( 'N' | 'n' ) ( 'C' | 'c' ) ( 'T' | 't' )  ;
 
 oC_Match : ( OPTIONAL SP )? MATCH SP? oC_Pattern ( SP? oC_Where )? ;
 
@@ -135,12 +118,6 @@ oC_YieldItems : ( oC_YieldItem ( SP? ',' SP? oC_YieldItem )* )
               ;
 
 oC_YieldItem : ( oC_ProcedureResultField SP AS SP )? oC_Variable ;
-
-oC_With : WITH ( SP? DISTINCT )? SP oC_ReturnBody ( SP? oC_Where )? ;
-
-WITH : ( 'W' | 'w' ) ( 'I' | 'i' ) ( 'T' | 't' ) ( 'H' | 'h' )  ;
-
-DISTINCT : ( 'D' | 'd' ) ( 'I' | 'i' ) ( 'S' | 's' ) ( 'T' | 't' ) ( 'I' | 'i' ) ( 'N' | 'n' ) ( 'C' | 'c' ) ( 'T' | 't' )  ;
 
 oC_Return : RETURN ( SP? DISTINCT )? SP oC_ReturnBody ;
 
