@@ -453,7 +453,6 @@ class SchemaTyperTest extends BaseTestSuite with Neo4jAstTestSupport with Mockit
   }
 
   it("types functions") {
-    assertExpr.from("timestamp()") shouldHaveInferredType CTInteger.nullable
     assertExpr.from("toInteger(1.0)") shouldHaveInferredType CTInteger.nullable
     assertExpr.from("size([0, true, []])") shouldHaveInferredType CTInteger.nullable
 
