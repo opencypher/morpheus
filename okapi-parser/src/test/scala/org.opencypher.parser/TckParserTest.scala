@@ -26,6 +26,7 @@
  */
 package org.opencypher.parser
 
+import org.opencypher.okapi.api.exception.CypherException
 import org.opencypher.okapi.tck.test.ScenariosFor
 import org.opencypher.okapi.tck.test.Tags.WhiteList
 import org.opencypher.tools.tck.api._
@@ -34,7 +35,7 @@ import org.scalatest.mockito.MockitoSugar
 import org.scalatest.prop.TableDrivenPropertyChecks._
 import org.scalatest.{FunSpec, Matchers, Tag}
 
-import scala.util.{Failure, Try}
+import scala.util.{Failure, Success, Try}
 
 class TckParserTest extends FunSpec with Matchers with MockitoSugar {
 
@@ -45,19 +46,32 @@ class TckParserTest extends FunSpec with Matchers with MockitoSugar {
   forAll(scenarios.whiteList) { scenario =>
     it(s"[${WhiteList.name}] $scenario", WhiteList, TckParserTag) {
       import scenario.ScenarioFailedException
+      var isParserError = false
       Try {
         scenario(new Graph {
           override def cypher(query: String, params: Map[String, TckValue], meta: QueryType): Result = {
             meta match {
               case InitQuery | SideEffectQuery => CypherValueRecords(List.empty, List.empty)
               case ExecQuery =>
-                Cypher10Parser.parse(query)
-                CypherValueRecords(List.empty, List.empty)
+                Try(Cypher10Parser.parse(query)) match {
+                  case Success(_) =>
+                    CypherValueRecords(List.empty, List.empty)
+                  case Failure(e) =>
+                    e match {
+                      case c: CypherException =>
+                        isParserError = true
+                        resultFromError(
+                          ExecutionFailed(c.errorType.toString, c.phase.toString, c.detail.getClass.getSimpleName)
+                        )
+                      case other => throw other
+                    }
+                }
             }
           }
         }).execute()
       } match {
-        case Failure(ScenarioFailedException(msg)) =>
+        case Failure(f@ScenarioFailedException(_)) if isParserError => throw f
+        case Failure(f@ScenarioFailedException(_)) =>
         case Failure(other) => throw other
         case _ =>
       }

@@ -33,7 +33,8 @@ import org.opencypher.okapi.api.exception.CypherException.{ErrorDetails, ErrorPh
   */
 // TODO: Make sure all Cypher-related exceptions we throw are instances of this
 // TODO: Make sure all other exceptions are instances of another trait in this package
-abstract class CypherException(errorType: ErrorType, phase: ErrorPhase, detail: ErrorDetails) extends RuntimeException(s"$errorType during $phase. Details: $detail") with Serializable
+abstract class CypherException(val errorType: ErrorType, val phase: ErrorPhase, val detail: ErrorDetails)
+  extends RuntimeException(s"$errorType during $phase. Details: $detail") with Serializable
 
 object CypherException {
 
@@ -76,98 +77,99 @@ object CypherException {
     */
   object ErrorPhase {
 
-    case object Runtime extends ErrorPhase
+    case object Runtime extends ErrorPhase {
+      override def toString: String = "runtime"
+    }
 
-    case object CompileTime extends ErrorPhase
-
-  }
-
-  sealed trait ErrorDetails
-
-  /**
-    * Possible error details as specified by the TCK.
-    */
-  object ErrorDetails {
-
-    case object InvalidElementAccess extends ErrorDetails
-
-    case object MapElementAccessByNonString extends ErrorDetails
-
-    case object ListElementAccessByNonInteger extends ErrorDetails
-
-    case object NestedAggregation extends ErrorDetails
-
-    case object NegativeIntegerArgument extends ErrorDetails
-
-    case object DeleteConnectedNode extends ErrorDetails
-
-    case object RequiresDirectedRelationship extends ErrorDetails
-
-    case object InvalidRelationshipPattern extends ErrorDetails
-
-    case object VariableAlreadyBound extends ErrorDetails
-
-    case object InvalidArgumentType extends ErrorDetails
-
-    case object InvalidArgumentValue extends ErrorDetails
-
-    case object NumberOutOfRange extends ErrorDetails
-
-    case object UndefinedVariable extends ErrorDetails
-
-    case object VariableTypeConflict extends ErrorDetails
-
-    case object RelationshipUniquenessViolation extends ErrorDetails
-
-    case object CreatingVarLength extends ErrorDetails
-
-    case object InvalidParameterUse extends ErrorDetails
-
-    case object InvalidClauseComposition extends ErrorDetails
-
-    case object FloatingPointOverflow extends ErrorDetails
-
-    case object PropertyAccessOnNonMap extends ErrorDetails
-
-    case object InvalidArgumentExpression extends ErrorDetails
-
-    case object InvalidUnicodeCharacter extends ErrorDetails
-
-    case object NonConstantExpression extends ErrorDetails
-
-    case object NoSingleRelationshipType extends ErrorDetails
-
-    case object InvalidAggregation extends ErrorDetails
-
-    case object UnknownFunction extends ErrorDetails
-
-    case object InvalidNumberLiteral extends ErrorDetails
-
-    case object InvalidUnicodeLiteral extends ErrorDetails
-
-    case object MergeReadOwnWrites extends ErrorDetails
-
-    case object NoExpressionAlias extends ErrorDetails
-
-    case object DifferentColumnsInUnion extends ErrorDetails
-
-    case object InvalidDelete extends ErrorDetails
-
-    case object InvalidPropertyType extends ErrorDetails
-
-    case object ColumnNameConflict extends ErrorDetails
-
-    case object NoVariablesInScope extends ErrorDetails
-
-    case object DeletedEntityAccess extends ErrorDetails
-
-    case object InvalidArgumentPassingMode extends ErrorDetails
-
-    case object InvalidNumberOfArguments extends ErrorDetails
-
-    case object MissingParameter extends ErrorDetails
-
-    case object ProcedureNotFound extends ErrorDetails
+    case object CompileTime extends ErrorPhase {
+      override def toString: String = "compile time"
+    }
 
   }
+
+  sealed trait ErrorDetails {
+    def message: String
+    override def toString: String = s"${getClass.getSimpleName} $message"
+  }
+
+  case class InvalidElementAccess(message: String) extends ErrorDetails
+
+  case class MapElementAccessByNonString(message: String) extends ErrorDetails
+
+  case class ListElementAccessByNonInteger(message: String) extends ErrorDetails
+
+  case class NestedAggregation(message: String) extends ErrorDetails
+
+  case class NegativeIntegerArgument(message: String) extends ErrorDetails
+
+  case class DeleteConnectedNode(message: String) extends ErrorDetails
+
+  case class RequiresDirectedRelationship(message: String) extends ErrorDetails
+
+  case class InvalidRelationshipPattern(message: String) extends ErrorDetails
+
+  case class VariableAlreadyBound(message: String) extends ErrorDetails
+
+  case class InvalidArgumentType(message: String) extends ErrorDetails
+
+  case class InvalidArgumentValue(message: String) extends ErrorDetails
+
+  case class NumberOutOfRange(message: String) extends ErrorDetails
+
+  case class UndefinedVariable(message: String) extends ErrorDetails
+
+  case class VariableTypeConflict(message: String) extends ErrorDetails
+
+  case class RelationshipUniquenessViolation(message: String) extends ErrorDetails
+
+  case class CreatingVarLength(message: String) extends ErrorDetails
+
+  case class InvalidParameterUse(message: String) extends ErrorDetails
+
+  case class InvalidClauseComposition(message: String) extends ErrorDetails
+
+  case class FloatingPointOverflow(message: String) extends ErrorDetails
+
+  case class PropertyAccessOnNonMap(message: String) extends ErrorDetails
+
+  case class InvalidArgumentExpression(message: String) extends ErrorDetails
+
+  case class InvalidUnicodeCharacter(message: String) extends ErrorDetails
+
+  case class NonConstantExpression(message: String) extends ErrorDetails
+
+  case class NoSingleRelationshipType(message: String) extends ErrorDetails
+
+  case class InvalidAggregation(message: String) extends ErrorDetails
+
+  case class UnknownFunction(message: String) extends ErrorDetails
+
+  case class InvalidNumberLiteral(message: String) extends ErrorDetails
+
+  case class InvalidUnicodeLiteral(message: String) extends ErrorDetails
+
+  case class MergeReadOwnWrites(message: String) extends ErrorDetails
+
+  case class NoExpressionAlias(message: String) extends ErrorDetails
+
+  case class DifferentColumnsInUnion(message: String) extends ErrorDetails
+
+  case class InvalidDelete(message: String) extends ErrorDetails
+
+  case class InvalidPropertyType(message: String) extends ErrorDetails
+
+  case class ColumnNameConflict(message: String) extends ErrorDetails
+
+  case class NoVariablesInScope(message: String) extends ErrorDetails
+
+  case class DeletedEntityAccess(message: String) extends ErrorDetails
+
+  case class InvalidArgumentPassingMode(message: String) extends ErrorDetails
+
+  case class InvalidNumberOfArguments(message: String) extends ErrorDetails
+
+  case class MissingParameter(message: String) extends ErrorDetails
+
+  case class ProcedureNotFound(message: String) extends ErrorDetails
+
 }
