@@ -32,6 +32,7 @@ import org.opencypher.okapi.api.exception.CypherException.ErrorPhase.CompileTime
 import org.opencypher.okapi.api.exception.CypherException.ErrorType.SyntaxError
 import org.opencypher.okapi.api.exception.CypherException._
 import org.opencypher.okapi.api.value.CypherValue._
+import scala.collection.JavaConverters._
 
 object Cypher10Parser {
 
@@ -39,9 +40,11 @@ object Cypher10Parser {
     val input = CharStreams.fromString(query)
     val lexer = new CypherLexer(input)
     lexer.removeErrorListeners()
-    lexer.addErrorListener(LexerErrorListerner(query))
+    lexer.addErrorListener(AntlrErrorListerner(query))
     val tokens = new CommonTokenStream(lexer)
     val parser = new CypherParser(tokens)
+    parser.removeErrorListeners()
+    parser.addErrorListener(AntlrErrorListerner(query))
     val tree = parser.oC_Cypher
     val ast = AntlrAstTransformer.visit(tree)
     ast
@@ -49,10 +52,10 @@ object Cypher10Parser {
 
 }
 
-case class LexerException(override val errorType: ErrorType, override val phase: ErrorPhase, override val detail: ErrorDetails)
+case class AntlrException(override val errorType: ErrorType, override val phase: ErrorPhase, override val detail: ErrorDetails)
   extends CypherException(errorType, phase, detail)
 
-case class LexerErrorListerner(string: String) extends BaseErrorListener {
+case class AntlrErrorListerner(string: String) extends BaseErrorListener {
 
   override def syntaxError(
     recognizer: Recognizer[_, _],
@@ -64,11 +67,20 @@ case class LexerErrorListerner(string: String) extends BaseErrorListener {
   ): Unit = {
     val line = string.split("\\r?\\n")
     val offendingLine = line(lineNumber - 1)
+    val ruleNames = recognizer.getRuleNames
+    val ruleName = ruleNames(e.getCtx.getRuleIndex)
+
+    val vocabulary = recognizer.getVocabulary
+    val expectedTokens =  e.getExpectedTokens.toList.asScala.map(i => vocabulary.getDisplayName(i))
     val msg =
       s"""|on line $lineNumber, character $charPositionInLine:
           |\t$offendingLine
-          |\t${"~" * charPositionInLine}^${"~" * (offendingLine.length - charPositionInLine)}""".stripMargin
-    throw LexerException(SyntaxError, CompileTime, ParsingError(msg))
+          |\t${"~" * charPositionInLine}^${"~" * (offendingLine.length - charPositionInLine)}
+          |
+          |Failing rule: $ruleName
+          |Expected tokens: ${expectedTokens.mkString(", ")}
+          |AntlrException: $e""".stripMargin
+    throw AntlrException(SyntaxError, CompileTime, ParsingError(msg))
   }
 
 }
