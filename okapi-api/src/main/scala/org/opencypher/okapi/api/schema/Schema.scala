@@ -30,6 +30,7 @@ import org.opencypher.okapi.api.schema.LabelPropertyMap._
 import org.opencypher.okapi.api.schema.PropertyKeys.PropertyKeys
 import org.opencypher.okapi.api.schema.RelTypePropertyMap._
 import org.opencypher.okapi.api.types.{CTRelationship, CypherType}
+import org.opencypher.okapi.impl.annotations.experimental
 import org.opencypher.okapi.impl.schema.SchemaImpl._
 import org.opencypher.okapi.impl.schema.{ImpliedLabels, LabelCombinations, SchemaImpl}
 
@@ -86,12 +87,14 @@ trait Schema {
     *
     * @return schema pattern combinations encoded in this schema
     */
+  @experimental
   def schemaPatterns: Set[SchemaPattern]
 
   /**
     * Retrieves the user defined schema patterns
     * @return user defines schema patterns
     */
+  @experimental
   def explicitSchemaPatterns: Set[SchemaPattern]
 
   /**
@@ -207,6 +210,7 @@ trait Schema {
     * @param knownTargetLabels labels required for the target node (AND semantics)
     * @return schema patterns that fulfill the predicates
     */
+  @experimental
   def schemaPatternsFor(knownSourceLabels: Set[String], knownRelTypes: Set[String], knownTargetLabels: Set[String]): Set[SchemaPattern]
 
   /**
@@ -279,6 +283,7 @@ trait Schema {
     * @param patterns the patterns to add
     * @return schema with added explicit schema patterns
     */
+  @experimental
   def withSchemaPatterns(patterns: SchemaPattern*): Schema
 
   /**

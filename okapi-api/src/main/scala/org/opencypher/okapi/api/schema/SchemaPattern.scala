@@ -31,7 +31,7 @@ object SchemaPattern{
     sourceLabel: String,
     relType: String,
     targetLabel: String
-  ): SchemaPattern = new SchemaPattern(Set(sourceLabel), relType, Set(targetLabel))
+  ): SchemaPattern = SchemaPattern(Set(sourceLabel), relType, Set(targetLabel))
 }
 
 /**
