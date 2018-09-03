@@ -27,6 +27,7 @@
 package org.opencypher.okapi.api.schema
 
 import org.opencypher.okapi.api.types._
+import org.opencypher.okapi.impl.exception.SchemaException
 import org.scalatest.{FunSpec, Matchers}
 
 class SchemaTest extends FunSpec with Matchers {
@@ -400,10 +401,35 @@ class SchemaTest extends FunSpec with Matchers {
     )
   }
 
+  it("concatenates explicit schema patterns") {
+    val schema1 = Schema.empty
+      .withNodePropertyKeys("Foo")()
+      .withRelationshipPropertyKeys("REL")()
+      .withSchemaPatterns(SchemaPattern("Foo", "REL", "Foo"))
+
+    val schema2 = Schema.empty
+      .withNodePropertyKeys("Bar")()
+      .withRelationshipPropertyKeys("REL")()
+      .withSchemaPatterns(SchemaPattern("Bar", "REL", "Bar"))
+
+    val schemaSum = schema1 ++ schema2
+
+    schemaSum should equal(
+      Schema.empty
+        .withNodePropertyKeys("Foo")()
+        .withRelationshipPropertyKeys("REL")()
+        .withNodePropertyKeys("Bar")()
+        .withRelationshipPropertyKeys("REL")()
+        .withSchemaPatterns(SchemaPattern("Foo", "REL", "Foo"))
+        .withSchemaPatterns(SchemaPattern("Bar", "REL", "Bar"))
+    )
+  }
+
   it("serializes to/from json") {
     val schema = Schema.empty
       .withRelationshipPropertyKeys("FOO")("p" -> CTString)
       .withNodePropertyKeys("BAR")("q" -> CTInteger)
+      .withSchemaPatterns(SchemaPattern(Set("BAR"), "FOO", Set("BAR")))
 
     val serialized = schema.toJson
 
@@ -427,12 +453,194 @@ class SchemaTest extends FunSpec with Matchers {
          |                "p": "STRING"
          |            }
          |        }
+         |    ],
+         |    "schemaPatterns": [
+         |        {
+         |            "sourceLabels": [
+         |                "BAR"
+         |            ],
+         |            "relType": "FOO",
+         |            "targetLabels": [
+         |                "BAR"
+         |            ]
+         |        }
          |    ]
          |}""".stripMargin)
 
     val deserialized = Schema.fromJson(serialized)
 
     deserialized should equal(schema)
+  }
+
+  describe("pattern schemas") {
+    it("is empty if the schema is empty") {
+      val schema = Schema.empty
+      schema.schemaPatterns shouldBe empty
+    }
+
+    it("is empty if there are no relationships") {
+      val schema = Schema.empty.withNodePropertyKeys("A")()
+      schema.schemaPatterns shouldBe empty
+    }
+
+    it("is empty if there are no nodes") {
+      val schema = Schema.empty.withRelationshipPropertyKeys("A")()
+      schema.schemaPatterns shouldBe empty
+    }
+
+    it("gives all the inferred patterns") {
+      val schema = Schema.empty
+        .withNodePropertyKeys("A")()
+        .withNodePropertyKeys("B")()
+        .withRelationshipPropertyKeys("REL")()
+
+      schema.schemaPatterns should equal(Set(
+        SchemaPattern(Set("A"), "REL", Set("A")),
+        SchemaPattern(Set("A"), "REL", Set("B")),
+        SchemaPattern(Set("B"), "REL", Set("A")),
+        SchemaPattern(Set("B"), "REL", Set("B"))
+      ))
+    }
+
+    it("returns the explicit patterns if any were given") {
+      val schema = Schema.empty
+        .withNodePropertyKeys("A")()
+        .withNodePropertyKeys("B")()
+        .withRelationshipPropertyKeys("REL")()
+        .withSchemaPatterns(SchemaPattern("A", "REL", "B"))
+
+      schema.schemaPatterns should equal(Set(
+        SchemaPattern("A", "REL", "B")
+      ))
+    }
+
+    it("throws a SchemaException when adding a schema pattern into an empty schema") {
+      a[SchemaException] should be thrownBy {
+        Schema.empty.withSchemaPatterns(SchemaPattern("A", "REL", "B"))
+      }
+    }
+
+    it("throws a SchemaException when adding a schema pattern for unknown start node labels") {
+      a[SchemaException] should be thrownBy {
+        Schema.empty
+          .withNodePropertyKeys("A")()
+          .withRelationshipPropertyKeys("REL")()
+          .withSchemaPatterns(SchemaPattern("A", "REL", "B"))
+      }
+    }
+
+    it("throws a SchemaException when adding a schema pattern for unknown end node labels") {
+      a[SchemaException] should be thrownBy {
+        Schema.empty
+          .withNodePropertyKeys("B")()
+          .withRelationshipPropertyKeys("REL")()
+          .withSchemaPatterns(SchemaPattern("A", "REL", "B"))
+      }
+    }
+
+    it("throws a SchemaException when adding a schema pattern for unknown rel type") {
+      a[SchemaException] should be thrownBy {
+        Schema.empty
+          .withNodePropertyKeys("A")()
+          .withNodePropertyKeys("B")()
+          .withSchemaPatterns(SchemaPattern("A", "REL", "B"))
+      }
+    }
+  }
+
+  describe("schemaPatternsFor") {
+    val aRel1B = SchemaPattern("A", "REL1", "B")
+    val aRel2CD = SchemaPattern(Set("A"), "REL2", Set("C", "D"))
+    val bRel2CD = SchemaPattern(Set("B"), "REL2", Set("C", "D"))
+    val CDRel1A = SchemaPattern(Set("C", "D"), "REL1", Set("A"))
+    val emptyRel1Empty = SchemaPattern(Set.empty[String], "REL1", Set.empty[String])
+
+    val schema = Schema.empty
+      .withNodePropertyKeys("A")()
+      .withNodePropertyKeys("B")()
+      .withNodePropertyKeys("C", "D")()
+      .withNodePropertyKeys()()
+      .withRelationshipPropertyKeys("REL1")()
+      .withRelationshipPropertyKeys("REL2")()
+      .withSchemaPatterns(aRel1B)
+      .withSchemaPatterns(aRel2CD)
+      .withSchemaPatterns(bRel2CD)
+      .withSchemaPatterns(CDRel1A)
+      .withSchemaPatterns(emptyRel1Empty)
+
+    it("works when nothing is known") {
+      schema.schemaPatternsFor(Set.empty, Set.empty, Set.empty) should equal(Set(
+        aRel1B,
+        aRel2CD,
+        bRel2CD,
+        CDRel1A,
+        emptyRel1Empty
+      ))
+    }
+
+    it("works when only the source node label is known") {
+      schema.schemaPatternsFor(Set.empty, Set.empty, Set.empty) should equal(Set(
+        aRel1B,
+        aRel2CD,
+        bRel2CD,
+        CDRel1A,
+        emptyRel1Empty
+      ))
+
+      schema.schemaPatternsFor(Set("A"), Set.empty, Set.empty) should equal(Set(
+        aRel1B,
+        aRel2CD
+      ))
+
+      schema.schemaPatternsFor(Set("C"), Set.empty, Set.empty) should equal(Set(
+        CDRel1A
+      ))
+    }
+
+    it("works when only the target node label is known") {
+      schema.schemaPatternsFor(Set.empty, Set.empty, Set("A")) should equal(Set(
+        CDRel1A
+      ))
+
+      schema.schemaPatternsFor(Set.empty, Set.empty, Set("C")) should equal(Set(
+        aRel2CD,
+        bRel2CD
+      ))
+    }
+
+    it("works when only the rel type is known") {
+      schema.schemaPatternsFor(Set.empty, Set("REL1"), Set.empty) should equal(Set(
+        aRel1B,
+        CDRel1A,
+        emptyRel1Empty
+      ))
+
+      schema.schemaPatternsFor(Set.empty, Set("REL1", "REL2"), Set.empty) should equal(Set(
+        aRel1B,
+        aRel2CD,
+        bRel2CD,
+        CDRel1A,
+        emptyRel1Empty
+      ))
+    }
+
+    it("works when every thing is known") {
+      schema.schemaPatternsFor(Set("A"), Set("REL1"), Set("B")) should equal(Set(
+        aRel1B
+      ))
+
+      schema.schemaPatternsFor(Set("A"), Set("REL2"), Set("C")) should equal(Set(
+        aRel2CD
+      ))
+
+      schema.schemaPatternsFor(Set("A"), Set("REL1"), Set("C")) shouldBe empty
+    }
+
+    it("works for no existing labels/types") {
+      schema.schemaPatternsFor(Set("A", "B"), Set.empty, Set.empty) shouldBe empty
+      schema.schemaPatternsFor(Set.empty, Set.empty, Set("A", "B")) shouldBe empty
+      schema.schemaPatternsFor(Set.empty, Set("REL3"), Set.empty) shouldBe empty
+    }
   }
 
 }

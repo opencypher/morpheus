@@ -29,7 +29,7 @@ package org.opencypher.spark.schema
 import org.opencypher.okapi.api.schema.LabelPropertyMap.LabelPropertyMap
 import org.opencypher.okapi.api.schema.PropertyKeys.PropertyKeys
 import org.opencypher.okapi.api.schema.RelTypePropertyMap.RelTypePropertyMap
-import org.opencypher.okapi.api.schema.{LabelPropertyMap, RelTypePropertyMap, Schema}
+import org.opencypher.okapi.api.schema.{Schema, SchemaPattern}
 import org.opencypher.okapi.api.types.{CTRelationship, CypherType}
 import org.opencypher.okapi.impl.exception.{SchemaException, UnsupportedOperationException}
 import org.opencypher.okapi.impl.schema.{ImpliedLabels, LabelCombinations}
@@ -93,6 +93,10 @@ case class CAPSSchema private[schema](schema: Schema) extends Schema {
 
   override def relTypePropertyMap: RelTypePropertyMap = schema.relTypePropertyMap
 
+  override def schemaPatterns: Set[SchemaPattern] = schema.schemaPatterns
+
+  override def withSchemaPatterns(patterns: SchemaPattern*): Schema = schema.withSchemaPatterns(patterns: _*)
+
   override def impliedLabels: ImpliedLabels = schema.impliedLabels
 
   override def labelCombinations: LabelCombinations = schema.labelCombinations
@@ -136,4 +140,8 @@ case class CAPSSchema private[schema](schema: Schema) extends Schema {
   override def withOverwrittenRelationshipPropertyKeys(relType: String, propertyKeys: PropertyKeys): Schema = schema.withOverwrittenRelationshipPropertyKeys(relType, propertyKeys)
 
   override def toJson: String = schema.toJson
+
+  override def explicitSchemaPatterns: Set[SchemaPattern] = schema.explicitSchemaPatterns
+
+  override def schemaPatternsFor(knownSourceLabels: Set[String], knownRelTypes: Set[String], knownTargetLabels: Set[String]): Set[SchemaPattern] = schema.schemaPatternsFor(knownSourceLabels, knownRelTypes, knownTargetLabels)
 }
