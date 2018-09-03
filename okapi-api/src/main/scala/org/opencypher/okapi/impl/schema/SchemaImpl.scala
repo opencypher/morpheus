@@ -61,8 +61,8 @@ object SchemaImpl {
     json => {
       val labelPropertyMap = readJs[LabelPropertyMap](json.obj(LABEL_PROPERTY_MAP))
       val relTypePropertyMap = readJs[RelTypePropertyMap](json.obj(REL_TYPE_PROPERTY_MAP))
-      val explicitSchemaPatterns = json.value match {
-        case Obj(v) if v.keySet.contains(SCHEMA_PATTERNS) => readJs[Set[SchemaPattern]](json.obj(SCHEMA_PATTERNS))
+      val explicitSchemaPatterns = json match {
+        case Obj(m) if m.keySet.contains(SCHEMA_PATTERNS) => readJs[Set[SchemaPattern]](json.obj(SCHEMA_PATTERNS))
         case _ => Set.empty[SchemaPattern]
       }
 
