@@ -57,6 +57,8 @@ import scala.concurrent.{Await, Future}
 
 object MetaLabelSupport {
 
+  def metaLabelForSubGraph(graphName: GraphName): String = s"$metaPrefix$graphName"
+
   implicit class RichPropertyKeys(val keys: PropertyKeys) extends AnyVal {
     def withoutMetaProperty: PropertyKeys = keys.filterKeys(k => k != metaPropertyKey)
   }
@@ -84,7 +86,7 @@ case class Neo4jPropertyGraphDataSource(
   private implicit class RichGraphName(graphName: GraphName) {
     def metaLabel: Option[String] = graphName match {
       case `entireGraphName` => None
-      case subGraph => Some(metaPrefix + subGraph)
+      case subGraph => Some(metaLabelForSubGraph(subGraph))
     }
   }
 

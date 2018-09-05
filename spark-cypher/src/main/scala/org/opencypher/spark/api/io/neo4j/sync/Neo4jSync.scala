@@ -32,13 +32,14 @@ import org.apache.logging.log4j.scala.Logging
 import org.apache.spark.sql.Row
 import org.neo4j.driver.internal.value.ListValue
 import org.neo4j.driver.v1.{Value, Values}
-import org.opencypher.okapi.api.graph.PropertyGraph
+import org.opencypher.okapi.api.graph.{GraphName, PropertyGraph}
 import org.opencypher.okapi.api.types.{CTNode, CTRelationship}
 import org.opencypher.okapi.ir.api.expr.{EndNode, Property, StartNode}
 import org.opencypher.okapi.neo4j.io.Neo4jHelpers.Neo4jDefaults._
 import org.opencypher.okapi.neo4j.io.Neo4jHelpers._
 import org.opencypher.okapi.neo4j.io.{EntityWriter, Neo4jConfig}
 import org.opencypher.spark.api.CAPSSession
+import org.opencypher.spark.api.io.neo4j.MetaLabelSupport.metaLabelForSubGraph
 import org.opencypher.spark.impl.CAPSConverters._
 import org.opencypher.spark.impl.CAPSRecords
 
@@ -63,6 +64,20 @@ case class EntityKeys(
 object Neo4jSync extends Logging {
 
   /**
+    * Creates node indexes for the sub-graph specified by `graphName` in the specified Neo4j database.
+    * This speeds up the Neo4j merge feature.
+    *
+    * @note This feature requires the Neo4j Enterprise Edition.
+    *
+    * @param graphName which sub-graph to create the indexes for
+    * @param config access config for the Neo4j database on which the indexes are created
+    * @param entityKeys node and relationship entity keys that are used to create indexes
+    */
+  def createIndexes(graphName: GraphName, config: Neo4jConfig, entityKeys: EntityKeys): Unit = {
+    createIndexes(None, config, entityKeys)
+  }
+
+  /**
     * Creates node indexes in the specified Neo4j database to speed up the Neo4j merge feature.
     *
     * @note This feature requires the Neo4j Enterprise Edition.
@@ -71,23 +86,57 @@ object Neo4jSync extends Logging {
     * @param entityKeys node and relationship entity keys that are used to create indexes
     */
   def createIndexes(config: Neo4jConfig, entityKeys: EntityKeys): Unit = {
+    createIndexes(None, config, entityKeys)
+  }
+
+  private[opencypher] def createIndexes(
+    maybeGraphName: Option[GraphName],
+    config: Neo4jConfig,
+    entityKeys: EntityKeys): Unit = {
+    val maybeMetaLabel = maybeGraphName.map(gn => metaLabelForSubGraph(gn))
     config.withSession { session =>
       val nodeKeyConstraints = entityKeys.nodeKeys.map {
         case (labelCombo, keys) =>
-          val labelString = labelCombo.map(l => s"`$l`").mkString(":",":","")
+          val comboWithMetaLabel = labelCombo ++ maybeMetaLabel
+          val labelString = comboWithMetaLabel.map(l => s"`$l`").mkString(":",":","")
           val propertyString = keys.map(k => s"n.`$k`").mkString("(",", ",")")
 
           s"CREATE CONSTRAINT ON (n$labelString) ASSERT $propertyString IS NODE KEY"
       }
 
-      logger.info(s"Creating node key constraints $nodeKeyConstraints")
+      logger.info(s"Creating node key constraints ${nodeKeyConstraints.mkString(", ")}")
       session.run(nodeKeyConstraints.mkString("\n")).consume()
 
+      val idIndexes = maybeMetaLabel match {
+        case None =>
+          val commands = entityKeys.nodeKeys.keySet.flatten.map(label => s"CREATE INDEX ON :$label($metaPropertyKey)")
+          logger.info(s"Creating indexes for node entity keys:${commands.mkString("\n\t- ", "\n\t- ", "")}")
+          commands
+        case Some(ml) =>
+          val command = s"CREATE INDEX ON :$ml($metaPropertyKey)"
+          logger.info(s"Creating sub-graph index for meta label:\n\t- $command")
+          Set(command)
+      }
 
-      val idIndexes = entityKeys.nodeKeys.keySet.flatten.map(label => s"CREATE INDEX ON :$label($metaPropertyKey)")
-      logger.info(s"Creating indexes for morpheus id $idIndexes")
       session.run(idIndexes.mkString("\n")).consume()
     }
+  }
+
+  /**
+    * Merges the given `graph` into the sub-graph specified by `graphName` within an existing Neo4j database.
+    * Existing properties in the Neo4j graph are overwritten, missing ones are added.
+    * Nodes and relationships are identified by using their entity keys. Therefore an entity key must be specified for
+    * every label combination / relationship type present in the merge graph.
+    *
+    * @param graphName which sub-graph to sync the delta to
+    * @param graph graph that is merged into the existing Neo4j database
+    * @param config access config for the Neo4j database into which the graph is merged
+    * @param entityKeys node and relationship keys which identify same entities in the two graphs
+    * @param caps CAPS session
+    */
+  def merge(graphName: GraphName, graph: PropertyGraph, config: Neo4jConfig, entityKeys: EntityKeys)
+    (implicit caps: CAPSSession): Unit = {
+    merge(Some(graphName), graph, config, entityKeys)
   }
 
   /**
@@ -103,18 +152,29 @@ object Neo4jSync extends Logging {
     */
   def merge(graph: PropertyGraph, config: Neo4jConfig, entityKeys: EntityKeys)
     (implicit caps: CAPSSession): Unit = {
+    merge(None, graph, config, entityKeys)
+  }
+
+  private[opencypher] def merge(
+    maybeGraphName: Option[GraphName],
+    graph: PropertyGraph,
+    config: Neo4jConfig,
+    entityKeys: EntityKeys
+  )(implicit caps: CAPSSession): Unit = {
     val executorCount = caps.sparkSession.sparkContext.statusTracker.getExecutorInfos.length
     implicit val executionContext: ExecutionContextExecutorService =
       ExecutionContext.fromExecutorService(Executors.newFixedThreadPool(executorCount))
 
     logger.debug(s"Using $executorCount Threads")
 
+    val maybeMetaLabel = maybeGraphName.map(gn => metaLabelForSubGraph(gn))
+
     val writesCompleted = for {
-      _ <- Future.sequence(MergeWriters.writeNodes(graph, config, entityKeys.nodeKeys))
-      _ <- Future.sequence(MergeWriters.writeRelationships(graph, config, entityKeys.relKeys))
+      _ <- Future.sequence(MergeWriters.writeNodes(maybeMetaLabel, graph, config, entityKeys.nodeKeys))
+      _ <- Future.sequence(MergeWriters.writeRelationships(maybeMetaLabel, graph, config, entityKeys.relKeys))
       _ <- Future {
         config.withSession { session =>
-          session.run(s"MATCH (n) REMOVE n.$metaPropertyKey")
+          session.run(s"MATCH (n${maybeMetaLabel.getOrElse("")}) REMOVE n.$metaPropertyKey")
         }
       }
     } yield Future {}
@@ -125,22 +185,23 @@ object Neo4jSync extends Logging {
 }
 
 case object MergeWriters {
-  def writeNodes(graph: PropertyGraph, config: Neo4jConfig, nodeKeys: Map[Set[String], Set[String]])
+  def writeNodes(maybeMetaLabel: Option[String], graph: PropertyGraph, config: Neo4jConfig, nodeKeys: Map[Set[String], Set[String]])
     (implicit caps: CAPSSession): Set[Future[Unit]] = {
     val result: Set[Future[Unit]] = graph.schema.labelCombinations.combos.map { combo =>
+      val comboWithMetaLabel = combo ++ maybeMetaLabel
       val nodeScan = graph.nodes("n", CTNode(combo), exactLabelMatch = true).asCaps
       val mapping = computeMapping(nodeScan, includeId = true)
       nodeScan
         .df
         .rdd
-        .foreachPartitionAsync{ i =>
-          if (i.nonEmpty) EntityWriter.mergeNodes(i, mapping, config, combo, nodeKeys(combo))(rowToListValue)
+        .foreachPartitionAsync { i =>
+          if (i.nonEmpty) EntityWriter.mergeNodes(i, mapping, config, comboWithMetaLabel, nodeKeys(combo))(rowToListValue)
         }
     }
     result
   }
 
-  def writeRelationships(graph: PropertyGraph, config: Neo4jConfig, relKeys: Map[String, Set[String]])
+  def writeRelationships(maybeMetaLabel: Option[String], graph: PropertyGraph, config: Neo4jConfig, relKeys: Map[String, Set[String]])
     (implicit caps: CAPSSession): Set[Future[Unit]] = {
     graph.schema.relationshipTypes.map { relType =>
       val relScan = graph.relationships("r", CTRelationship(relType)).asCaps
@@ -162,6 +223,7 @@ case object MergeWriters {
           if (i.nonEmpty) {
             EntityWriter.mergeRelationships(
               i,
+              maybeMetaLabel,
               startIndex,
               endIndex,
               mapping,

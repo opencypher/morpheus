@@ -76,6 +76,7 @@ object EntityWriter extends Logging {
   // TODO: Share more code with `createRelationships`
   def mergeRelationships[T](
     relationships: Iterator[T],
+    maybeMetaLabel: Option[String],
     startNodeIndex: Int,
     endNodeIndex: Int,
     rowMapping: Array[String],
@@ -97,11 +98,13 @@ object EntityWriter extends Logging {
       .map { case (key, i) => s"SET rel.$key = $ROW_IDENTIFIER[$i]" }
       .mkString("\n")
 
+    val labelString = maybeMetaLabel.map(ml => s":$ml").getOrElse("")
+
     val createQ =
       s"""
          |UNWIND $$batch AS $ROW_IDENTIFIER
-         |MATCH (from {$metaPropertyKey : $ROW_IDENTIFIER[$startNodeIndex]})
-         |MATCH (to {$metaPropertyKey : $ROW_IDENTIFIER[$endNodeIndex]})
+         |MATCH (from$labelString {$metaPropertyKey : $ROW_IDENTIFIER[$startNodeIndex]})
+         |MATCH (to$labelString {$metaPropertyKey : $ROW_IDENTIFIER[$endNodeIndex]})
          |MERGE (from)-[rel:$relType { $relKeyProperties }]->(to)
          |$setStatements
          """.stripMargin
@@ -208,7 +211,7 @@ object EntityWriter extends Logging {
               case _ => "UNKNOWN"
             }
 
-            val message = s"Could not write the graph to Neo4j. The graph you are attempting to write contains at least two $entityType with morpheus id $duplicateId"
+            val message = s"Could not write the graph to Neo4j. The graph you are attempting to write contains at least two $entityType with Morpheus id $duplicateId"
             throw IllegalStateException(message, Some(exception))
 
           case Failure(e) => throw e
