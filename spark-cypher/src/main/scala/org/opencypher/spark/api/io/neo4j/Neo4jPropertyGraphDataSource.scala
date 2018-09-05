@@ -26,8 +26,6 @@
  */
 package org.opencypher.spark.api.io.neo4j
 
-import java.util.concurrent.Executors
-
 import org.apache.logging.log4j.scala.Logging
 import org.apache.spark.sql.types.StructType
 import org.apache.spark.sql.{DataFrame, Row}
@@ -54,8 +52,9 @@ import org.opencypher.spark.impl.io.neo4j.external.Neo4j
 import org.opencypher.spark.schema.CAPSSchema
 import org.opencypher.spark.schema.CAPSSchema._
 
+import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.duration._
-import scala.concurrent.{Await, ExecutionContext, ExecutionContextExecutorService, Future}
+import scala.concurrent.{Await, Future}
 
 object MetaLabelSupport {
 
@@ -172,12 +171,6 @@ case class Neo4jPropertyGraphDataSource(
 
   override def store(graphName: GraphName, graph: PropertyGraph): Unit = {
     checkStorable(graphName)
-
-    val executorCount = caps.sparkSession.sparkContext.statusTracker.getExecutorInfos.length
-    implicit val executionContext: ExecutionContextExecutorService =
-      ExecutionContext.fromExecutorService(Executors.newFixedThreadPool(executorCount))
-
-    logger.debug(s"Using $executorCount Threads")
 
     val metaLabel = graphName.metaLabel match {
       case Some(meta) => meta

@@ -163,6 +163,8 @@ abstract class AbstractPropertyGraphDataSource extends CAPSPropertyGraphDataSour
 
     waitForWriteCompletion(nodeWrites)
     waitForWriteCompletion(relWrites)
+
+    executionContext.shutdown()
   }
 
   protected def waitForWriteCompletion(writeFutures: Set[Future[Unit]])(implicit ec: ExecutionContext): Unit = {
