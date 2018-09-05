@@ -29,7 +29,6 @@ package org.opencypher.spark.api.io.neo4j
 import org.apache.logging.log4j.scala.Logging
 import org.apache.spark.sql.types.StructType
 import org.apache.spark.sql.{DataFrame, Row}
-import org.neo4j.driver.internal.value.ListValue
 import org.neo4j.driver.v1.{Value, Values}
 import org.opencypher.okapi.api.graph.{GraphName, PropertyGraph}
 import org.opencypher.okapi.api.schema.LabelPropertyMap._
@@ -243,14 +242,14 @@ case object Writers {
     }
   }
 
-  private def rowToListValue(row: Row): ListValue = {
+  private def rowToListValue(row: Row): Value = {
     val array = new Array[Value](row.size)
     var i = 0
     while (i < row.size) {
       array(i) = Values.value(row.get(i))
       i += 1
     }
-    new ListValue(array: _*)
+    Values.value(array: _*)
   }
 
   private def computeMapping(nodeScan: CAPSRecords): Array[String] = {

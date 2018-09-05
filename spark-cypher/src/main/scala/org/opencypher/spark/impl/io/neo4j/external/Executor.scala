@@ -30,13 +30,13 @@ import org.apache.spark.sql.catalyst.expressions.GenericRowWithSchema
 import org.apache.spark.sql.types._
 import org.apache.spark.sql.{Row, types}
 import org.neo4j.driver.internal.types.InternalTypeSystem
-import org.neo4j.driver.internal.value.ListValue
 import org.neo4j.driver.v1.types.{Type, TypeSystem}
 import org.neo4j.driver.v1.{StatementResult, Value}
 import org.opencypher.okapi.neo4j.io.Neo4jConfig
 import org.opencypher.okapi.neo4j.io.Neo4jHelpers._
 
 import scala.collection.JavaConverters._
+import scala.util.Try
 
 private object Executor {
 
@@ -94,10 +94,9 @@ private object Executor {
     }
   }
 
-  private def convertLists(v: Value): AnyRef = v match {
-    case list: ListValue =>
-      list.asList().toArray
-    case other => other.asObject()
+  private def convertLists(v: Value): AnyRef = Try(v.asList()).toOption match {
+    case Some(list) => list.toArray
+    case None => v.asObject()
   }
 }
 

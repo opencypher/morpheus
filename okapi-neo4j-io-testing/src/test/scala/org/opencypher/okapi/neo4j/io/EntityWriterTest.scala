@@ -26,7 +26,6 @@
  */
 package org.opencypher.okapi.neo4j.io
 
-import org.neo4j.driver.internal.value.ListValue
 import org.neo4j.driver.v1.Values
 import org.opencypher.okapi.api.value.CypherValue.CypherMap
 import org.opencypher.okapi.neo4j.io.Neo4jHelpers.Neo4jDefaults.metaPropertyKey
@@ -85,7 +84,7 @@ class EntityWriterTest extends BaseTestSuite with Neo4jServerFixture with Before
 
   override def dataFixture: String = ""
 
-  private def rowToListValue(data: Array[AnyRef]) = new ListValue(data.map(Values.value): _*)
+  private def rowToListValue(data: Array[AnyRef]) = Values.value(data.map(Values.value): _*)
 
   private val numberOfNodes = 10
   val inputNodes: immutable.IndexedSeq[Array[AnyRef]] = (1 to numberOfNodes).map { i =>

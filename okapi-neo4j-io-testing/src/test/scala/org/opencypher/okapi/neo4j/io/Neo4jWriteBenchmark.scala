@@ -28,7 +28,6 @@ package org.opencypher.okapi.neo4j.io
 
 import java.net.URI
 
-import org.neo4j.driver.internal.value.ListValue
 import org.neo4j.driver.v1.Values
 import org.opencypher.okapi.impl.util.Measurement
 import org.opencypher.okapi.neo4j.io.Neo4jHelpers.Neo4jDefaults.metaPropertyKey
@@ -42,7 +41,7 @@ object Neo4jWriteBenchmark extends App {
     Some("passwd")
   )
 
-  def rowToListValue(data: Array[AnyRef]) = new ListValue(data.map(Values.value): _*)
+  def rowToListValue(data: Array[AnyRef]) = Values.value(data.map(Values.value): _*)
 
   private val numberOfNodes = 10000
   val inputNodes = (1 to numberOfNodes).map { i =>

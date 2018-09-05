@@ -27,7 +27,6 @@
 package org.opencypher.okapi.neo4j.io
 
 import org.apache.logging.log4j.scala.Logging
-import org.neo4j.driver.internal.value.ListValue
 import org.neo4j.driver.v1.exceptions.ClientException
 import org.neo4j.driver.v1.{Statement, Value, Values}
 import org.opencypher.okapi.impl.exception.IllegalStateException
@@ -46,7 +45,7 @@ object EntityWriter extends Logging {
     config: Neo4jConfig,
     labels: Set[String],
     batchSize: Int = 1000
-  )(rowToListValue: T => ListValue): Unit = {
+  )(rowToListValue: T => Value): Unit = {
     val labelString = labels.mkString(":")
 
     val setStatements = rowMapping
@@ -74,7 +73,7 @@ object EntityWriter extends Logging {
     relType: String,
     nodeLabel: Option[String],
     batchSize: Int = 1000
-  )(rowToListValue: T => ListValue): Unit = {
+  )(rowToListValue: T => Value): Unit = {
     val setStatements = rowMapping
       .zipWithIndex
       .filterNot(_._1 == null)
@@ -101,7 +100,7 @@ object EntityWriter extends Logging {
     query: String,
     config: Neo4jConfig,
     batchSize: Int = 1000
-  )(rowToListValue: T => ListValue): Unit = {
+  )(rowToListValue: T => Value): Unit = {
     val reuseMap = new java.util.HashMap[String, Value]
     val reuseParameters = Values.value(reuseMap)
     val reuseStatement = new Statement(query, reuseParameters)
@@ -110,7 +109,7 @@ object EntityWriter extends Logging {
       val batches = entities.grouped(batchSize)
       while (batches.hasNext) {
         val batch = batches.next()
-        val rowParameters = new Array[ListValue](batch.size)
+        val rowParameters = new Array[Value](batch.size)
 
         batch.zipWithIndex.foreach { case (row, i) => rowParameters(i) = rowToListValue(row) }
 
