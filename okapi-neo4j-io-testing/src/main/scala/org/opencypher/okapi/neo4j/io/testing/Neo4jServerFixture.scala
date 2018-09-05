@@ -45,17 +45,12 @@ trait Neo4jServerFixture extends BaseTestFixture {
     s"$scheme://$userInfo$host"
   }
 
-  // TODO: delete if this works without
-  def userFixture: String = "CALL dbms.security.createUser('anonymous', 'password', false)"
-
   def dataFixture: String
 
   abstract override def beforeAll(): Unit = {
     super.beforeAll()
     neo4jServer = EnterpriseTestServerBuilders
       .newInProcessBuilder()
-      //.withConfig("dbms.security.auth_enabled", "true")
-      //.withFixture(userFixture)
       .withFixture(dataFixture)
       .newServer()
   }

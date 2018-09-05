@@ -126,7 +126,8 @@ object Neo4jSync extends Logging {
     * Merges the given `graph` into the sub-graph specified by `graphName` within an existing Neo4j database.
     * Existing properties in the Neo4j graph are overwritten, missing ones are added.
     * Nodes and relationships are identified by using their entity keys. Therefore an entity key must be specified for
-    * every label combination / relationship type present in the merge graph.
+    * every label combination present in the merge graph. Relationship keys are optional, if none are provided,
+    * then there can be at most one relationship with a given type between two nodes.
     *
     * @param graphName which sub-graph to sync the delta to
     * @param graph graph that is merged into the existing Neo4j database
@@ -143,7 +144,8 @@ object Neo4jSync extends Logging {
     * Merges the given graph into an existing Neo4j database.
     * Existing properties in the Neo4j graph are overwritten, missing ones are added.
     * Nodes and relationships are identified by using their entity keys. Therefore an entity key must be specified for
-    * every label combination / relationship type present in the merge graph.
+    * every label combination present in the merge graph. Relationship keys are optional, if none are provided,
+    * then there can be at most one relationship with a given type between two nodes.
     *
     * @param graph graph that is merged into the existing Neo4j database
     * @param config access config for the Neo4j database into which the graph is merged
