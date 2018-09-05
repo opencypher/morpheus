@@ -44,14 +44,12 @@ import org.opencypher.okapi.procedures.LabelPropertyKeyMap._
 
 import scala.collection.JavaConversions._
 import scala.collection.JavaConverters._
+import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.duration.Duration
-import scala.concurrent.{Await, ExecutionContext, Future}
+import scala.concurrent.{Await, Future}
 import scala.util.{Success, Try}
 
 class SchemaCalculator(api: GraphDatabaseAPI, tx: KernelTransaction, log: Log) {
-  val threads: Int = Runtime.getRuntime.availableProcessors
-  implicit val executionContext: ExecutionContext = ExecutionContext.fromExecutorService(Executors.newFixedThreadPool(threads))
-
   val ctx: ThreadToStatementContextBridge =  api.getDependencyResolver.resolveDependency(classOf[ThreadToStatementContextBridge])
 
   /**

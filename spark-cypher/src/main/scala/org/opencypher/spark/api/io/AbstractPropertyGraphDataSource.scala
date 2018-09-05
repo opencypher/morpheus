@@ -141,28 +141,32 @@ abstract class AbstractPropertyGraphDataSource extends CAPSPropertyGraphDataSour
     implicit val executionContext: ExecutionContextExecutorService =
       ExecutionContext.fromExecutorService(Executors.newFixedThreadPool(poolSize))
 
-    val relationalGraph = graph.asCaps
+    try {
+      val relationalGraph = graph.asCaps
 
-    val schema = relationalGraph.schema.asCaps
-    schemaCache += graphName -> schema
-    graphNameCache += graphName
-    writeCAPSGraphMetaData(graphName, CAPSGraphMetaData(tableStorageFormat, relationalGraph.tags))
-    writeSchema(graphName, schema)
+      val schema = relationalGraph.schema.asCaps
+      schemaCache += graphName -> schema
+      graphNameCache += graphName
+      writeCAPSGraphMetaData(graphName, CAPSGraphMetaData(tableStorageFormat, relationalGraph.tags))
+      writeSchema(graphName, schema)
 
-    val nodeWrites = schema.labelCombinations.combos.map { combo =>
-      Future {
-        writeNodeTable(graphName, combo, relationalGraph.canonicalNodeTable(combo))
+      val nodeWrites = schema.labelCombinations.combos.map { combo =>
+        Future {
+          writeNodeTable(graphName, combo, relationalGraph.canonicalNodeTable(combo))
+        }
       }
-    }
 
-    val relWrites = schema.relationshipTypes.map { relType =>
-      Future {
-        writeRelationshipTable(graphName, relType, relationalGraph.canonicalRelationshipTable(relType))
+      val relWrites = schema.relationshipTypes.map { relType =>
+        Future {
+          writeRelationshipTable(graphName, relType, relationalGraph.canonicalRelationshipTable(relType))
+        }
       }
-    }
 
-    waitForWriteCompletion(nodeWrites)
-    waitForWriteCompletion(relWrites)
+      waitForWriteCompletion(nodeWrites)
+      waitForWriteCompletion(relWrites)
+    } finally {
+      executionContext.shutdown()
+    }
   }
 
   protected def waitForWriteCompletion(writeFutures: Set[Future[Unit]])(implicit ec: ExecutionContext): Unit = {
