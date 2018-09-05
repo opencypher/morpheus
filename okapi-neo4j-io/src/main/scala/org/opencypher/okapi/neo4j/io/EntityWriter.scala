@@ -27,6 +27,7 @@
 package org.opencypher.okapi.neo4j.io
 
 import org.apache.logging.log4j.scala.Logging
+import org.neo4j.driver.internal.value.MapValue
 import org.neo4j.driver.v1.exceptions.ClientException
 import org.neo4j.driver.v1.{Statement, Value, Values}
 import org.opencypher.okapi.impl.exception.IllegalStateException
@@ -102,7 +103,7 @@ object EntityWriter extends Logging {
     batchSize: Int = 1000
   )(rowToListValue: T => Value): Unit = {
     val reuseMap = new java.util.HashMap[String, Value]
-    val reuseParameters = Values.value(reuseMap)
+    val reuseParameters = new MapValue(reuseMap)
     val reuseStatement = new Statement(query, reuseParameters)
 
     config.withSession { session =>
