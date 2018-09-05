@@ -27,9 +27,9 @@
 package org.opencypher.okapi.neo4j.io
 
 import org.apache.logging.log4j.scala.Logging
-import org.neo4j.driver.internal.value.{ListValue, MapValue}
+import org.neo4j.driver.internal.value.ListValue
 import org.neo4j.driver.v1.exceptions.ClientException
-import org.neo4j.driver.v1.{Statement, Value}
+import org.neo4j.driver.v1.{Statement, Value, Values}
 import org.opencypher.okapi.impl.exception.IllegalStateException
 import org.opencypher.okapi.neo4j.io.Neo4jHelpers.Neo4jDefaults._
 import org.opencypher.okapi.neo4j.io.Neo4jHelpers._
@@ -103,7 +103,7 @@ object EntityWriter extends Logging {
     batchSize: Int = 1000
   )(rowToListValue: T => ListValue): Unit = {
     val reuseMap = new java.util.HashMap[String, Value]
-    val reuseParameters = new MapValue(reuseMap)
+    val reuseParameters = Values.value(reuseMap)
     val reuseStatement = new Statement(query, reuseParameters)
 
     config.withSession { session =>
@@ -114,7 +114,7 @@ object EntityWriter extends Logging {
 
         batch.zipWithIndex.foreach { case (row, i) => rowParameters(i) = rowToListValue(row) }
 
-        reuseMap.put("batch", new ListValue(rowParameters: _*))
+        reuseMap.put("batch", Values.value(rowParameters: _*))
 
         reuseStatement.withUpdatedParameters(reuseParameters)
         Try(session.run(reuseStatement).consume()) match {
