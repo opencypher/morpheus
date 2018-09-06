@@ -50,6 +50,7 @@
     <project.scala.version>${project.scala.binary.version}.12</project.scala.version>
     <project.rootdir>${project.basedir}</project.rootdir>
     <project.artifact.classifier>standalone</project.artifact.classifier>
+    <java9.exports></java9.exports>
 
     <!-- Used plugins -->
     <plugin.exec-maven.version>1.4.0</plugin.exec-maven.version>
@@ -480,6 +481,9 @@
                         <exclude>META-INF/*.SF</exclude>
                         <exclude>META-INF/*.DSA</exclude>
                         <exclude>META-INF/*.RSA</exclude>
+                        <!--Exclude Java 9 modules-->
+                        <exclude>**/module-info.class</exclude>
+                        <exclude>META-INF/versions/9/**/*</exclude>
                       </excludes>
                     </filter>
 
