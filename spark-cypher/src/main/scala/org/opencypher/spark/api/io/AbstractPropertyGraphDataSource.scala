@@ -118,7 +118,11 @@ abstract class AbstractPropertyGraphDataSource extends CAPSPropertyGraphDataSour
         val df = readRelationshipTable(name, relType, capsSchema.canonicalRelStructType(relType))
         CAPSRelationshipTable(relType, df.setNullability(columnsWithCypherType))
       }
-      caps.graphs.create(capsMetaData.tags, Some(capsSchema), nodeTables.head, (nodeTables.tail ++ relTables).toSeq: _*)
+      if (nodeTables.isEmpty) {
+        caps.graphs.empty
+      } else {
+        caps.graphs.create(capsMetaData.tags, Some(capsSchema), nodeTables.head, (nodeTables.tail ++ relTables).toSeq: _*)
+      }
     }
   }
 
