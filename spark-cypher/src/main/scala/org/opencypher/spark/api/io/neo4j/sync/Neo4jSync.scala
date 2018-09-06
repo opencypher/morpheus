@@ -50,7 +50,7 @@ import scala.concurrent.{Await, Future}
   * label combination/relationship type.
   *
   * @param nodeKeys maps a label combination to a set of property keys, which uniquely identify a node
-  * @param relKeys maps a relationship type to a set of property keys, which uniquely identify a relationship
+  * @param relKeys  maps a relationship type to a set of property keys, which uniquely identify a relationship
   */
 case class EntityKeys(
   nodeKeys: Map[Set[String], Set[String]],
@@ -58,7 +58,7 @@ case class EntityKeys(
 )
 
 /**
-  *  Utility class that allows to merge a graph into an existing Neo4j database.
+  * Utility class that allows to merge a graph into an existing Neo4j database.
   */
 object Neo4jSync extends Logging {
 
@@ -67,9 +67,8 @@ object Neo4jSync extends Logging {
     * This speeds up the Neo4j merge feature.
     *
     * @note This feature requires the Neo4j Enterprise Edition.
-    *
-    * @param graphName which sub-graph to create the indexes for
-    * @param config access config for the Neo4j database on which the indexes are created
+    * @param graphName  which sub-graph to create the indexes for
+    * @param config     access config for the Neo4j database on which the indexes are created
     * @param entityKeys node and relationship entity keys that are used to create indexes
     */
   def createIndexes(graphName: GraphName, config: Neo4jConfig, entityKeys: EntityKeys): Unit = {
@@ -80,8 +79,7 @@ object Neo4jSync extends Logging {
     * Creates node indexes in the specified Neo4j database to speed up the Neo4j merge feature.
     *
     * @note This feature requires the Neo4j Enterprise Edition.
-    *
-    * @param config access config for the Neo4j database on which the indexes are created
+    * @param config     access config for the Neo4j database on which the indexes are created
     * @param entityKeys node and relationship entity keys that are used to create indexes
     */
   def createIndexes(config: Neo4jConfig, entityKeys: EntityKeys): Unit = {
@@ -91,14 +89,15 @@ object Neo4jSync extends Logging {
   private[opencypher] def createIndexes(
     maybeGraphName: Option[GraphName],
     config: Neo4jConfig,
-    entityKeys: EntityKeys): Unit = {
+    entityKeys: EntityKeys
+  ): Unit = {
     val maybeMetaLabel = maybeGraphName.map(gn => metaLabelForSubGraph(gn))
     config.withSession { session =>
       entityKeys.nodeKeys.foreach {
         case (labelCombo, keys) =>
           val comboWithMetaLabel = labelCombo ++ maybeMetaLabel
           val labelString = comboWithMetaLabel.cypherLabelPredicate
-          val propertyString = keys.map(k => s"n.`$k`").mkString("(",", ",")")
+          val propertyString = keys.map(k => s"n.`$k`").mkString("(", ", ", ")")
 
           val query = s"CREATE CONSTRAINT ON (n$labelString) ASSERT $propertyString IS NODE KEY"
           logger.info(s"Creating node key constraints: $query")
@@ -126,11 +125,11 @@ object Neo4jSync extends Logging {
     * every label combination present in the merge graph. Relationship keys are optional, if none are provided,
     * then there can be at most one relationship with a given type between two nodes.
     *
-    * @param graphName which sub-graph in the Neo4j graph to sync the delta to
-    * @param graph graph that is merged into the existing Neo4j database
-    * @param config access config for the Neo4j database into which the graph is merged
+    * @param graphName  which sub-graph in the Neo4j graph to sync the delta to
+    * @param graph      graph that is merged into the existing Neo4j database
+    * @param config     access config for the Neo4j database into which the graph is merged
     * @param entityKeys node and relationship keys which identify same entities in the two graphs
-    * @param caps CAPS session
+    * @param caps       CAPS session
     */
   def merge(graphName: GraphName, graph: PropertyGraph, config: Neo4jConfig, entityKeys: EntityKeys)
     (implicit caps: CAPSSession): Unit = {
@@ -144,10 +143,10 @@ object Neo4jSync extends Logging {
     * every label combination present in the merge graph. Relationship keys are optional, if none are provided,
     * then there can be at most one relationship with a given type between two nodes.
     *
-    * @param graph graph that is merged into the existing Neo4j database
-    * @param config access config for the Neo4j database into which the graph is merged
+    * @param graph      graph that is merged into the existing Neo4j database
+    * @param config     access config for the Neo4j database into which the graph is merged
     * @param entityKeys node and relationship keys which identify same entities in the two graphs
-    * @param caps CAPS session
+    * @param caps       CAPS session
     */
   def merge(graph: PropertyGraph, config: Neo4jConfig, entityKeys: EntityKeys)
     (implicit caps: CAPSSession): Unit = {
@@ -161,13 +160,14 @@ object Neo4jSync extends Logging {
     entityKeys: EntityKeys
   )(implicit caps: CAPSSession): Unit = {
     val maybeMetaLabel = maybeGraphName.map(gn => metaLabelForSubGraph(gn))
+    val maybeMetaLabelString = maybeMetaLabel.toSet[String].cypherLabelPredicate
 
     val writesCompleted = for {
       _ <- Future.sequence(MergeWriters.writeNodes(maybeMetaLabel, graph, config, entityKeys.nodeKeys))
       _ <- Future.sequence(MergeWriters.writeRelationships(maybeMetaLabel, graph, config, entityKeys.relKeys))
       _ <- Future {
         config.withSession { session =>
-          session.run(s"MATCH (n${maybeMetaLabel.getOrElse("")}) REMOVE n.$metaPropertyKey").consume()
+          session.run(s"MATCH (n$maybeMetaLabelString) REMOVE n.$metaPropertyKey").consume()
         }
       }
     } yield Future {}
@@ -178,7 +178,12 @@ object Neo4jSync extends Logging {
 }
 
 case object MergeWriters {
-  def writeNodes(maybeMetaLabel: Option[String], graph: PropertyGraph, config: Neo4jConfig, nodeKeys: Map[Set[String], Set[String]])
+  def writeNodes(
+    maybeMetaLabel: Option[String],
+    graph: PropertyGraph,
+    config: Neo4jConfig,
+    nodeKeys: Map[Set[String], Set[String]]
+  )
     (implicit caps: CAPSSession): Set[Future[Unit]] = {
     val result: Set[Future[Unit]] = graph.schema.labelCombinations.combos.map { combo =>
       val comboWithMetaLabel = combo ++ maybeMetaLabel
@@ -194,7 +199,12 @@ case object MergeWriters {
     result
   }
 
-  def writeRelationships(maybeMetaLabel: Option[String], graph: PropertyGraph, config: Neo4jConfig, relKeys: Map[String, Set[String]])
+  def writeRelationships(
+    maybeMetaLabel: Option[String],
+    graph: PropertyGraph,
+    config: Neo4jConfig,
+    relKeys: Map[String, Set[String]]
+  )
     (implicit caps: CAPSSession): Set[Future[Unit]] = {
     graph.schema.relationshipTypes.map { relType =>
       val relScan = graph.relationships("r", CTRelationship(relType)).asCaps
