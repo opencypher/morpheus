@@ -29,7 +29,7 @@ package org.opencypher.okapi.neo4j.io
 import org.apache.logging.log4j.scala.Logging
 import org.neo4j.driver.internal.value.MapValue
 import org.neo4j.driver.v1.exceptions.ClientException
-import org.neo4j.driver.v1.{Statement, Transaction, TransactionWork, Value, Values}
+import org.neo4j.driver.v1._
 import org.opencypher.okapi.impl.exception.IllegalStateException
 import org.opencypher.okapi.neo4j.io.Neo4jHelpers.Neo4jDefaults._
 import org.opencypher.okapi.neo4j.io.Neo4jHelpers._
@@ -48,7 +48,7 @@ object EntityWriter extends Logging {
     labels: Set[String],
     nodeKeys: Set[String],
     batchSize: Int = 1000
-  )(rowToListValue: T => ListValue): Unit = {
+  )(rowToListValue: T => Value): Unit = {
     val labelString = labels.mkString(":")
 
     val nodeKeyProperties = nodeKeys.map { nodeKey =>
@@ -84,7 +84,7 @@ object EntityWriter extends Logging {
     relType: String,
     relKeys: Set[String],
     batchSize: Int = 10
-  )(rowToListValue: T => ListValue): Unit = {
+  )(rowToListValue: T => Value): Unit = {
 
     val relKeyProperties = relKeys.map { relKey =>
       val keyIndex = rowMapping.indexOf(relKey)
