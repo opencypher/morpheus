@@ -101,10 +101,10 @@ Apache Software License, Version 2.0
   WMI4Java
 
 BSD License
-  ASM Analysis
-  ASM Core
-  ASM Tree
-  ASM Util
+  asm
+  asm-analysis
+  asm-tree
+  asm-util
   JLine
   Scala Compiler
   Scala Library

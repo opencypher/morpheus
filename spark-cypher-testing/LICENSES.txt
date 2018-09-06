@@ -347,10 +347,11 @@ Apache Software License, Version 2.0
 
 ------------------------------------------------------------------------------
 BSD License
-  ASM Analysis
+  asm
   ASM Core
-  ASM Tree
-  ASM Util
+  asm-analysis
+  asm-tree
+  asm-util
   JLine
   JSch
   leveldbjni-all

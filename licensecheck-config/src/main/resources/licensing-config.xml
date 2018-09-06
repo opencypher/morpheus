@@ -79,28 +79,28 @@
     </artifact>
 
     <!--Jetty dual license-->
-    <artifact id="org.eclipse.jetty:jetty-http:jar:9.4.8.v20171121">
+    <artifact id="org.eclipse.jetty:jetty-http:jar:9.4.11.v20180605">
       <license>Apache Software License, Version 2.0</license>
     </artifact>
-    <artifact id="org.eclipse.jetty:jetty-io:jar:9.4.8.v20171121">
+    <artifact id="org.eclipse.jetty:jetty-io:jar:9.4.11.v20180605">
       <license>Apache Software License, Version 2.0</license>
     </artifact>
-    <artifact id="org.eclipse.jetty:jetty-security:jar:9.4.8.v20171121">
+    <artifact id="org.eclipse.jetty:jetty-security:jar:9.4.11.v20180605">
       <license>Apache Software License, Version 2.0</license>
     </artifact>
-    <artifact id="org.eclipse.jetty:jetty-server:jar:9.4.8.v20171121">
+    <artifact id="org.eclipse.jetty:jetty-server:jar:9.4.11.v20180605">
       <license>Apache Software License, Version 2.0</license>
     </artifact>
-    <artifact id="org.eclipse.jetty:jetty-servlet:jar:9.4.8.v20171121">
+    <artifact id="org.eclipse.jetty:jetty-servlet:jar:9.4.11.v20180605">
       <license>Apache Software License, Version 2.0</license>
     </artifact>
-    <artifact id="org.eclipse.jetty:jetty-util:jar:9.4.8.v20171121">
+    <artifact id="org.eclipse.jetty:jetty-util:jar:9.4.11.v20180605">
       <license>Apache Software License, Version 2.0</license>
     </artifact>
-    <artifact id="org.eclipse.jetty:jetty-webapp:jar:9.4.8.v20171121">
+    <artifact id="org.eclipse.jetty:jetty-webapp:jar:9.4.11.v20180605">
       <license>Apache Software License, Version 2.0</license>
     </artifact>
-    <artifact id="org.eclipse.jetty:jetty-xml:jar:9.4.8.v20171121">
+    <artifact id="org.eclipse.jetty:jetty-xml:jar:9.4.11.v20180605">
       <license>Apache Software License, Version 2.0</license>
     </artifact>
 
