@@ -55,7 +55,6 @@ class Neo4jSyncTest extends CAPSTestSuite with CAPSNeo4jServerFixture with Defau
         case c => s"DROP $c"
       }.mkString("\n")
 
-      println(constraintString)
       session.run(constraintString).consume()
     }
     super.afterEach()
@@ -78,13 +77,13 @@ class Neo4jSyncTest extends CAPSTestSuite with CAPSNeo4jServerFixture with Defau
     Neo4jSync.merge(initialGraph, neo4jConfig, entityKeys)
     val readGraph = Neo4jPropertyGraphDataSource(neo4jConfig, entireGraphName = entireGraphName)
       .graph(entireGraphName)
-    val q =
+    val findAllRelsQuery =
       """
         |MATCH ()-[r]->()
         |RETURN r.id
       """.stripMargin
 
-    val records = readGraph.cypher(q).records.toMaps
+    val records = readGraph.cypher(findAllRelsQuery).records.toMaps
     records should equal(Bag(
       CypherMap("r.id" -> 1)
     ))
@@ -94,7 +93,7 @@ class Neo4jSyncTest extends CAPSTestSuite with CAPSNeo4jServerFixture with Defau
     val graphAfterSameSync = Neo4jPropertyGraphDataSource(neo4jConfig, entireGraphName = entireGraphName)
       .graph(entireGraphName)
 
-    val recordsAfterSameSync = graphAfterSameSync.cypher(q).records.toMaps
+    val recordsAfterSameSync = graphAfterSameSync.cypher(findAllRelsQuery).records.toMaps
     recordsAfterSameSync should equal(Bag(
       CypherMap("r.id" -> 1)
     ))
@@ -141,13 +140,13 @@ class Neo4jSyncTest extends CAPSTestSuite with CAPSNeo4jServerFixture with Defau
 
     val readGraph = Neo4jPropertyGraphDataSource(neo4jConfig)
       .graph(subGraphName)
-    val q =
+    val findAllRelsQuery =
       """
         |MATCH ()-[r]->()
         |RETURN r.id
       """.stripMargin
 
-    val records = readGraph.cypher(q).records.toMaps
+    val records = readGraph.cypher(findAllRelsQuery).records.toMaps
     records should equal(Bag(
       CypherMap("r.id" -> 1)
     ))
@@ -157,7 +156,7 @@ class Neo4jSyncTest extends CAPSTestSuite with CAPSNeo4jServerFixture with Defau
     val graphAfterSameSync = Neo4jPropertyGraphDataSource(neo4jConfig)
       .graph(subGraphName)
 
-    val recordsAfterSameSync = graphAfterSameSync.cypher(q).records.toMaps
+    val recordsAfterSameSync = graphAfterSameSync.cypher(findAllRelsQuery).records.toMaps
     recordsAfterSameSync should equal(Bag(
       CypherMap("r.id" -> 1)
     ))

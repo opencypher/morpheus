@@ -48,15 +48,19 @@ object Neo4jHelpers {
 
     val metaPrefix: String = "___"
 
-    val metaPropertyKey: String = s"${metaPrefix}morpheusID"
+    val metaPropertyKey: String = s"${metaPrefix}capsID"
 
-    val idPropertyKey: String = s"${metaPrefix}morpheusID"
+    val idPropertyKey: String = s"${metaPrefix}capsID"
 
-    val startIdPropertyKey: String = s"${metaPrefix}morpheusSTART_ID"
+    val startIdPropertyKey: String = s"${metaPrefix}capsSTART_ID"
 
-    val endIdPropertyKey: String = s"${metaPrefix}morpheusEND_ID"
+    val endIdPropertyKey: String = s"${metaPrefix}capsEND_ID"
 
     val entityVarName = "e"
+  }
+
+  implicit class RichLabelSet(val labels: Set[String]) extends AnyVal {
+    def cypherLabelPredicate:String = if (labels.isEmpty) "" else labels.map(l => s"`$l`").mkString(":",":","")
   }
 
   implicit class RichConfig(val config: Neo4jConfig) extends AnyVal {

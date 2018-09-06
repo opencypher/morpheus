@@ -28,8 +28,8 @@ package org.opencypher.okapi.neo4j.io
 
 import org.apache.logging.log4j.scala.Logging
 import org.neo4j.driver.internal.value.MapValue
-import org.neo4j.driver.v1.exceptions.ClientException
 import org.neo4j.driver.v1._
+import org.neo4j.driver.v1.exceptions.ClientException
 import org.opencypher.okapi.impl.exception.IllegalStateException
 import org.opencypher.okapi.neo4j.io.Neo4jHelpers.Neo4jDefaults._
 import org.opencypher.okapi.neo4j.io.Neo4jHelpers._
@@ -49,7 +49,7 @@ object EntityWriter extends Logging {
     nodeKeys: Set[String],
     batchSize: Int = 1000
   )(rowToListValue: T => Value): Unit = {
-    val labelString = labels.mkString(":")
+    val labelString = labels.cypherLabelPredicate
 
     val nodeKeyProperties = nodeKeys.map { nodeKey =>
       val keyIndex = rowMapping.indexOf(nodeKey)
@@ -66,7 +66,7 @@ object EntityWriter extends Logging {
     val createQ =
       s"""
          |UNWIND $$batch AS $ROW_IDENTIFIER
-         |MERGE (n:$labelString { $nodeKeyProperties })
+         |MERGE (n$labelString { $nodeKeyProperties })
          |$setStatements
          """.stripMargin
 
@@ -98,7 +98,7 @@ object EntityWriter extends Logging {
       .map { case (key, i) => s"SET rel.$key = $ROW_IDENTIFIER[$i]" }
       .mkString("\n")
 
-    val labelString = maybeMetaLabel.map(ml => s":$ml").getOrElse("")
+    val labelString = maybeMetaLabel.toSet[String].cypherLabelPredicate
 
     val createQ =
       s"""
@@ -119,7 +119,7 @@ object EntityWriter extends Logging {
     labels: Set[String],
     batchSize: Int = 1000
   )(rowToListValue: T => Value): Unit = {
-    val labelString = labels.mkString(":")
+    val labelString = labels.cypherLabelPredicate
 
     val setStatements = rowMapping
       .zipWithIndex
@@ -130,7 +130,7 @@ object EntityWriter extends Logging {
     val createQ =
       s"""
          |UNWIND $$batch AS $ROW_IDENTIFIER
-         |CREATE (n:$labelString)
+         |CREATE (n$labelString)
          |$setStatements
          """.stripMargin
 
@@ -153,7 +153,7 @@ object EntityWriter extends Logging {
       .map { case (key, i) => s"SET rel.$key = $ROW_IDENTIFIER[$i]" }
       .mkString("\n")
 
-    val nodeLabelString = nodeLabel.map(l => s":$l").getOrElse("")
+    val nodeLabelString = nodeLabel.toSet[String].cypherLabelPredicate
 
     val createQ =
       s"""
@@ -211,7 +211,7 @@ object EntityWriter extends Logging {
               case _ => "UNKNOWN"
             }
 
-            val message = s"Could not write the graph to Neo4j. The graph you are attempting to write contains at least two $entityType with Morpheus id $duplicateId"
+            val message = s"Could not write the graph to Neo4j. The graph you are attempting to write contains at least two $entityType with CAPS id $duplicateId"
             throw IllegalStateException(message, Some(exception))
 
           case Failure(e) => throw e
