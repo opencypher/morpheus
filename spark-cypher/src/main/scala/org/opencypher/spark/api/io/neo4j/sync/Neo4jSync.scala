@@ -104,7 +104,7 @@ object Neo4jSync extends Logging {
           s"CREATE CONSTRAINT ON (n$labelString) ASSERT $propertyString IS NODE KEY"
       }
 
-      logger.info(s"Creating node key constraints ${nodeKeyConstraints.mkString(", ")}")
+      logger.info(s"Creating node key constraints: ${nodeKeyConstraints.mkString("\n\t- ", "\n\t- ", "")}")
       session.run(nodeKeyConstraints.mkString("\n")).consume()
 
       val idIndexes = maybeMetaLabel match {

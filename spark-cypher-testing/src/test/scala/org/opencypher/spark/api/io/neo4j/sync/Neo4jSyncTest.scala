@@ -28,6 +28,7 @@ package org.opencypher.spark.api.io.neo4j.sync
 
 import org.opencypher.okapi.api.graph.GraphName
 import org.opencypher.okapi.api.value.CypherValue.CypherMap
+import org.opencypher.okapi.neo4j.io.Neo4jHelpers._
 import org.opencypher.okapi.relational.api.graph.RelationalCypherGraph
 import org.opencypher.okapi.testing.Bag
 import org.opencypher.spark.api.io.neo4j.Neo4jPropertyGraphDataSource
@@ -35,7 +36,7 @@ import org.opencypher.spark.impl.acceptance.DefaultGraphInit
 import org.opencypher.spark.impl.table.SparkTable
 import org.opencypher.spark.testing.CAPSTestSuite
 import org.opencypher.spark.testing.fixture.CAPSNeo4jServerFixture
-import org.opencypher.okapi.neo4j.io.Neo4jHelpers._
+
 import scala.collection.JavaConverters._
 
 class Neo4jSyncTest extends CAPSTestSuite with CAPSNeo4jServerFixture with DefaultGraphInit {
@@ -46,9 +47,18 @@ class Neo4jSyncTest extends CAPSTestSuite with CAPSNeo4jServerFixture with Defau
     neo4jConfig.withSession { session =>
       session.run("MATCH (n) DETACH DELETE n").consume()
       val constraints = session.run("CALL db.constraints").list().asScala.map(_.get(0).asString)
-      val constraintString = constraints.map(c => s"DROP $c").mkString("\n")
+      val regexp = """CONSTRAINT ON (.+) ASSERT (.+) IS NODE KEY""".r
+
+      // TODO remove workaround once it's fixed in Neo4j
+      val constraintString = constraints.map {
+        case regexp(labels, keys) => s"DROP CONSTRAINT ON $labels ASSERT ($keys) IS NODE KEY"
+        case c => s"DROP $c"
+      }.mkString("\n")
+
+      println(constraintString)
       session.run(constraintString).consume()
     }
+    super.afterEach()
   }
 
   it("can do basic Neo4j syncing with merges") {
