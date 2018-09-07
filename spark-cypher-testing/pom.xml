@@ -49,7 +49,6 @@
       <groupId>org.apache.spark</groupId>
       <artifactId>spark-core_${project.scala.binary.version}</artifactId>
       <version>${dep.spark.version}</version>
-      <scope>${dep.spark.scope}</scope>
       <exclusions>
         <!-- exclude netty-all as it interferes with neo4j-harness 3.4.1 -->
         <exclusion>
@@ -63,14 +62,12 @@
       <groupId>org.apache.spark</groupId>
       <artifactId>spark-sql_${project.scala.binary.version}</artifactId>
       <version>${dep.spark.version}</version>
-      <scope>${dep.spark.scope}</scope>
     </dependency>
 
     <dependency>
       <groupId>org.apache.spark</groupId>
       <artifactId>spark-catalyst_${project.scala.binary.version}</artifactId>
       <version>${dep.spark.version}</version>
-      <scope>${dep.spark.scope}</scope>
     </dependency>
 
     <!-- Testing -->
