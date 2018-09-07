@@ -43,13 +43,13 @@ class Neo4jSyncTest extends CAPSTestSuite with CAPSNeo4jServerFixture with Defau
 
   override def dataFixture: String = ""
 
-  val entityKeys: EntityKeys = EntityKeys(Map(Set("N") -> Set("id")), Map("R" -> Set("id")))
+  val entityKeys: EntityKeys = EntityKeys(Map("N" -> Set("id")), Map("R" -> Set("id")))
   val entireGraphName: GraphName = GraphName("graph")
 
   val initialGraph: RelationalCypherGraph[SparkTable.DataFrameTable] = initGraph(
     """
       |CREATE (s:N {id: 1, foo: "bar"})
-      |CREATE (e:N {id: 2})
+      |CREATE (e:N:M {id: 2})
       |CREATE (s)-[r:R {id: 1}]->(e)
     """.stripMargin)
 
@@ -61,7 +61,7 @@ class Neo4jSyncTest extends CAPSTestSuite with CAPSNeo4jServerFixture with Defau
 
       // TODO remove workaround once it's fixed in Neo4j
       val constraintString = constraints.map {
-        case regexp(labels, keys) => s"DROP CONSTRAINT ON $labels ASSERT ($keys) IS NODE KEY"
+        case regexp(label, keys) => s"DROP CONSTRAINT ON $label ASSERT ($keys) IS NODE KEY"
         case c => s"DROP $c"
       }.mkString("\n")
       session.run(constraintString).consume()
@@ -70,108 +70,112 @@ class Neo4jSyncTest extends CAPSTestSuite with CAPSNeo4jServerFixture with Defau
     super.afterEach()
   }
 
-  it("can do basic Neo4j syncing with merges") {
-//    Neo4jSync.createIndexes(neo4jConfig, entityKeys)
-    Neo4jSync.merge(initialGraph, neo4jConfig, entityKeys)
+  describe("merging into the entire graph") {
+    it("can do basic Neo4j syncing with merges") {
+      Neo4jSync.createIndexes(neo4jConfig, entityKeys)
+      Neo4jSync.merge(initialGraph, neo4jConfig, entityKeys)
 
-    val readGraph = Neo4jPropertyGraphDataSource(neo4jConfig, entireGraphName = entireGraphName).graph(entireGraphName)
+      val readGraph = Neo4jPropertyGraphDataSource(neo4jConfig, entireGraphName = entireGraphName).graph(entireGraphName)
 
-    readGraph.cypher("MATCH (n) RETURN n.id as id, n.foo as foo, labels(n) as labels").records.toMaps should equal(Bag(
-      CypherMap("id" -> 1, "foo" -> "bar", "labels" -> Seq("N")),
-      CypherMap("id" -> 2, "foo" -> null, "labels" -> Seq("N"))
-    ))
+      readGraph.cypher("MATCH (n) RETURN n.id as id, n.foo as foo, labels(n) as labels").records.toMaps should equal(Bag(
+        CypherMap("id" -> 1, "foo" -> "bar", "labels" -> Seq("N")),
+        CypherMap("id" -> 2, "foo" -> null, "labels" -> Seq("M", "N"))
+      ))
 
-    readGraph.cypher("MATCH (n)-[r]->(m) RETURN n.id as nid, r.id as id, m.id as mid").records.toMaps should equal(Bag(
-      CypherMap("nid" -> 1, "id" -> 1, "mid" -> 2)
-    ))
+      readGraph.cypher("MATCH (n)-[r]->(m) RETURN n.id as nid, r.id as id, m.id as mid").records.toMaps should equal(Bag(
+        CypherMap("nid" -> 1, "id" -> 1, "mid" -> 2)
+      ))
 
-    // Do not change a graph when the same graph is synced as a delta
-    Neo4jSync.merge(initialGraph, neo4jConfig, entityKeys)
-    val graphAfterSameSync = Neo4jPropertyGraphDataSource(neo4jConfig, entireGraphName = entireGraphName)
-      .graph(entireGraphName)
+      // Do not change a graph when the same graph is synced as a delta
+      Neo4jSync.merge(initialGraph, neo4jConfig, entityKeys)
+      val graphAfterSameSync = Neo4jPropertyGraphDataSource(neo4jConfig, entireGraphName = entireGraphName)
+        .graph(entireGraphName)
 
-    graphAfterSameSync.cypher("MATCH (n) RETURN n.id as id, n.foo as foo, labels(n) as labels").records.toMaps should equal(Bag(
-      CypherMap("id" -> 1, "foo" -> "bar", "labels" -> Seq("N")),
-      CypherMap("id" -> 2, "foo" -> null, "labels" -> Seq("N"))
-    ))
+      graphAfterSameSync.cypher("MATCH (n) RETURN n.id as id, n.foo as foo, labels(n) as labels").records.toMaps should equal(Bag(
+        CypherMap("id" -> 1, "foo" -> "bar", "labels" -> Seq("N")),
+        CypherMap("id" -> 2, "foo" -> null, "labels" -> Seq("M", "N"))
+      ))
 
-    graphAfterSameSync.cypher("MATCH (n)-[r]->(m) RETURN n.id as nid, r.id as id, m.id as mid").records.toMaps should equal(Bag(
-      CypherMap("nid" -> 1, "id" -> 1, "mid" -> 2)
-    ))
+      graphAfterSameSync.cypher("MATCH (n)-[r]->(m) RETURN n.id as nid, r.id as id, m.id as mid").records.toMaps should equal(Bag(
+        CypherMap("nid" -> 1, "id" -> 1, "mid" -> 2)
+      ))
 
-    // Sync a delta
-    val delta = initGraph(
-      """
-        |CREATE (s:N {id: 1, foo: "baz", bar: 1})
-        |CREATE (e:N {id: 2})
-        |CREATE (s)-[r:R {id: 1, foo: 1}]->(e)
-        |CREATE (s)-[r:R {id: 2}]->(e)
-      """.stripMargin)
-    Neo4jSync.merge(delta, neo4jConfig, entityKeys)
-    val graphAfterDeltaSync = Neo4jPropertyGraphDataSource(neo4jConfig, entireGraphName = entireGraphName)
-      .graph(entireGraphName)
+      // Sync a delta
+      val delta = initGraph(
+        """
+          |CREATE (s:N {id: 1, foo: "baz", bar: 1})
+          |CREATE (e:N {id: 2})
+          |CREATE (s)-[r:R {id: 1, foo: 1}]->(e)
+          |CREATE (s)-[r:R {id: 2}]->(e)
+        """.stripMargin)
+      Neo4jSync.merge(delta, neo4jConfig, entityKeys)
+      val graphAfterDeltaSync = Neo4jPropertyGraphDataSource(neo4jConfig, entireGraphName = entireGraphName)
+        .graph(entireGraphName)
 
-    graphAfterDeltaSync.cypher("MATCH (n) RETURN n.id as id, n.foo as foo, n.bar as bar, labels(n) as labels").records.toMaps should equal(Bag(
-      CypherMap("id" -> 1, "foo" -> "baz", "bar" -> 1, "labels" -> Seq("N")),
-      CypherMap("id" -> 2, "foo" -> null, "bar" -> null, "labels" -> Seq("N"))
-    ))
+      graphAfterDeltaSync.cypher("MATCH (n) RETURN n.id as id, n.foo as foo, n.bar as bar, labels(n) as labels").records.toMaps should equal(Bag(
+        CypherMap("id" -> 1, "foo" -> "baz", "bar" -> 1, "labels" -> Seq("N")),
+        CypherMap("id" -> 2, "foo" -> null, "bar" -> null, "labels" -> Seq("M", "N"))
+      ))
 
-    graphAfterDeltaSync.cypher("MATCH (n)-[r]->(m) RETURN n.id as nid, r.id as id, r.foo as foo, m.id as mid").records.toMaps should equal(Bag(
-      CypherMap("nid" -> 1, "id" -> 1, "foo" -> 1, "mid" -> 2),
-      CypherMap("nid" -> 1, "id" -> 2, "foo" -> null, "mid" -> 2)
-    ))
+      graphAfterDeltaSync.cypher("MATCH (n)-[r]->(m) RETURN n.id as nid, r.id as id, r.foo as foo, m.id as mid").records.toMaps should equal(Bag(
+        CypherMap("nid" -> 1, "id" -> 1, "foo" -> 1, "mid" -> 2),
+        CypherMap("nid" -> 1, "id" -> 2, "foo" -> null, "mid" -> 2)
+      ))
+    }
   }
 
-  it("can do basic Neo4j sub-graph syncing with merges") {
-    val subGraphName = GraphName("foo")
+  describe("merging into subgraphs") {
+    it("can do basic Neo4j sub-graph syncing with merges") {
+      val subGraphName = GraphName("foo")
 
-//    Neo4jSync.createIndexes(subGraphName, neo4jConfig, entityKeys)
-    Neo4jSync.merge(subGraphName, initialGraph, neo4jConfig, entityKeys)
+      Neo4jSync.createIndexes(subGraphName, neo4jConfig, entityKeys)
+      Neo4jSync.merge(subGraphName, initialGraph, neo4jConfig, entityKeys)
 
-    val readGraph = Neo4jPropertyGraphDataSource(neo4jConfig).graph(subGraphName)
+      val readGraph = Neo4jPropertyGraphDataSource(neo4jConfig).graph(subGraphName)
 
-    readGraph.cypher("MATCH (n) RETURN n.id as id, n.foo as foo, labels(n) as labels").records.toMaps should equal(Bag(
-      CypherMap("id" -> 1, "foo" -> "bar", "labels" -> Seq("N")),
-      CypherMap("id" -> 2, "foo" -> null, "labels" -> Seq("N"))
-    ))
+      readGraph.cypher("MATCH (n) RETURN n.id as id, n.foo as foo, labels(n) as labels").records.toMaps should equal(Bag(
+        CypherMap("id" -> 1, "foo" -> "bar", "labels" -> Seq("N")),
+        CypherMap("id" -> 2, "foo" -> null, "labels" -> Seq("M", "N"))
+      ))
 
-    readGraph.cypher("MATCH (n)-[r]->(m) RETURN n.id as nid, r.id as id, m.id as mid").records.toMaps should equal(Bag(
-      CypherMap("nid" -> 1, "id" -> 1, "mid" -> 2)
-    ))
+      readGraph.cypher("MATCH (n)-[r]->(m) RETURN n.id as nid, r.id as id, m.id as mid").records.toMaps should equal(Bag(
+        CypherMap("nid" -> 1, "id" -> 1, "mid" -> 2)
+      ))
 
-    // Do not change a graph when the same graph is synced as a delta
-    Neo4jSync.merge(initialGraph, neo4jConfig, entityKeys)
-    val graphAfterSameSync = Neo4jPropertyGraphDataSource(neo4jConfig).graph(subGraphName)
+      // Do not change a graph when the same graph is synced as a delta
+      Neo4jSync.merge(initialGraph, neo4jConfig, entityKeys)
+      val graphAfterSameSync = Neo4jPropertyGraphDataSource(neo4jConfig).graph(subGraphName)
 
-    graphAfterSameSync.cypher("MATCH (n) RETURN n.id as id, n.foo as foo, labels(n) as labels").records.toMaps should equal(Bag(
-      CypherMap("id" -> 1, "foo" -> "bar", "labels" -> Seq("N")),
-      CypherMap("id" -> 2, "foo" -> null, "labels" -> Seq("N"))
-    ))
+      graphAfterSameSync.cypher("MATCH (n) RETURN n.id as id, n.foo as foo, labels(n) as labels").records.toMaps should equal(Bag(
+        CypherMap("id" -> 1, "foo" -> "bar", "labels" -> Seq("N")),
+        CypherMap("id" -> 2, "foo" -> null, "labels" -> Seq("M", "N"))
+      ))
 
-    graphAfterSameSync.cypher("MATCH (n)-[r]->(m) RETURN n.id as nid, r.id as id, m.id as mid").records.toMaps should equal(Bag(
-      CypherMap("nid" -> 1, "id" -> 1, "mid" -> 2)
-    ))
+      graphAfterSameSync.cypher("MATCH (n)-[r]->(m) RETURN n.id as nid, r.id as id, m.id as mid").records.toMaps should equal(Bag(
+        CypherMap("nid" -> 1, "id" -> 1, "mid" -> 2)
+      ))
 
-    // Sync a delta
-    val delta = initGraph(
-      """
-        |CREATE (s:N {id: 1, foo: "baz", bar: 1})
-        |CREATE (e:N {id: 2})
-        |CREATE (s)-[r:R {id: 1, foo: 1}]->(e)
-        |CREATE (s)-[r:R {id: 2}]->(e)
-      """.stripMargin)
-    Neo4jSync.merge(subGraphName, delta, neo4jConfig, entityKeys)
-    val graphAfterDeltaSync = Neo4jPropertyGraphDataSource(neo4jConfig).graph(subGraphName)
+      // Sync a delta
+      val delta = initGraph(
+        """
+          |CREATE (s:N {id: 1, foo: "baz", bar: 1})
+          |CREATE (e:N {id: 2})
+          |CREATE (s)-[r:R {id: 1, foo: 1}]->(e)
+          |CREATE (s)-[r:R {id: 2}]->(e)
+        """.stripMargin)
+      Neo4jSync.merge(subGraphName, delta, neo4jConfig, entityKeys)
+      val graphAfterDeltaSync = Neo4jPropertyGraphDataSource(neo4jConfig).graph(subGraphName)
 
-    graphAfterDeltaSync.cypher("MATCH (n) RETURN n.id as id, n.foo as foo, n.bar as bar, labels(n) as labels").records.toMaps should equal(Bag(
-      CypherMap("id" -> 1, "foo" -> "baz", "bar" -> 1, "labels" -> Seq("N")),
-      CypherMap("id" -> 2, "foo" -> null, "bar" -> null, "labels" -> Seq("N"))
-    ))
+      graphAfterDeltaSync.cypher("MATCH (n) RETURN n.id as id, n.foo as foo, n.bar as bar, labels(n) as labels").records.toMaps should equal(Bag(
+        CypherMap("id" -> 1, "foo" -> "baz", "bar" -> 1, "labels" -> Seq("N")),
+        CypherMap("id" -> 2, "foo" -> null, "bar" -> null, "labels" -> Seq("M", "N"))
+      ))
 
-    graphAfterDeltaSync.cypher("MATCH (n)-[r]->(m) RETURN n.id as nid, r.id as id, r.foo as foo, m.id as mid").records.toMaps should equal(Bag(
-      CypherMap("nid" -> 1, "id" -> 1, "foo" -> 1, "mid" -> 2),
-      CypherMap("nid" -> 1, "id" -> 2, "foo" -> null, "mid" -> 2)
-    ))
+      graphAfterDeltaSync.cypher("MATCH (n)-[r]->(m) RETURN n.id as nid, r.id as id, r.foo as foo, m.id as mid").records.toMaps should equal(Bag(
+        CypherMap("nid" -> 1, "id" -> 1, "foo" -> 1, "mid" -> 2),
+        CypherMap("nid" -> 1, "id" -> 2, "foo" -> null, "mid" -> 2)
+      ))
+    }
   }
 
 }

@@ -193,6 +193,7 @@ object EntityWriter extends Logging {
           session.writeTransaction {
             new TransactionWork[Unit] {
               override def execute(transaction: Transaction): Unit = {
+                logger.debug(s"Executing query: $reuseStatement")
                 transaction.run(reuseStatement).consume()
               }
             }

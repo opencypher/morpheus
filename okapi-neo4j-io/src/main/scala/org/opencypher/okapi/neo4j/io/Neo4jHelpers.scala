@@ -59,8 +59,12 @@ object Neo4jHelpers {
     val entityVarName = "e"
   }
 
+  implicit class RichLabelString(val label: String) extends AnyVal {
+    def cypherLabelPredicate: String = s":`$label`"
+  }
+
   implicit class RichLabelSet(val labels: Set[String]) extends AnyVal {
-    def cypherLabelPredicate:String = if (labels.isEmpty) "" else labels.map(l => s"`$l`").mkString(":",":","")
+    def cypherLabelPredicate:String = if (labels.isEmpty) "" else labels.map(_.cypherLabelPredicate).mkString("")
   }
 
   implicit class RichConfig(val config: Neo4jConfig) extends AnyVal {

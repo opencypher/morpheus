@@ -47,13 +47,13 @@ import scala.concurrent.{Await, Future}
 
 /**
   * Describes sets of properties that uniquely identify nodes/relationships with a given
-  * label combination/relationship type.
+  * label/relationship type.
   *
-  * @param nodeKeys maps a label combination to a set of property keys, which uniquely identify a node
+  * @param nodeKeys maps a label to a set of property keys, which uniquely identify a node
   * @param relKeys  maps a relationship type to a set of property keys, which uniquely identify a relationship
   */
 case class EntityKeys(
-  nodeKeys: Map[Set[String], Set[String]],
+  nodeKeys: Map[String, Set[String]],
   relKeys: Map[String, Set[String]] = Map.empty
 )
 
@@ -93,20 +93,19 @@ object Neo4jSync extends Logging {
   ): Unit = {
     val maybeMetaLabel = maybeGraphName.map(gn => metaLabelForSubGraph(gn))
     config.withSession { session =>
-      entityKeys.nodeKeys.foreach {
-        case (labelCombo, keys) =>
-          val comboWithMetaLabel = labelCombo ++ maybeMetaLabel
-          val labelString = comboWithMetaLabel.cypherLabelPredicate
-          val propertyString = keys.map(k => s"n.`$k`").mkString("(", ", ", ")")
-
-          val query = s"CREATE CONSTRAINT ON (n$labelString) ASSERT $propertyString IS NODE KEY"
-          logger.info(s"Creating node key constraints: $query")
-          session.run(query).consume()
+      if (maybeGraphName.isEmpty) {
+        entityKeys.nodeKeys.foreach {
+          case (label, keys) =>
+            val propertyString = keys.map(k => s"n.`$k`").mkString("(", ", ", ")")
+            val query = s"CREATE CONSTRAINT ON (n${label.cypherLabelPredicate}) ASSERT $propertyString IS NODE KEY"
+            logger.info(s"Creating node key constraints: $query")
+            session.run(query).consume()
+        }
       }
 
       val idIndexes = maybeMetaLabel match {
         case None =>
-          val commands = entityKeys.nodeKeys.keySet.flatten.map(label => s"CREATE INDEX ON :$label($metaPropertyKey)")
+          val commands = entityKeys.nodeKeys.keySet.map(label => s"CREATE INDEX ON :$label($metaPropertyKey)")
           logger.info(s"Creating indexes for node entity keys:${commands.mkString("\n\t- ", "\n\t- ", "")}")
           commands
         case Some(ml) =>
@@ -182,18 +181,20 @@ case object MergeWriters {
     maybeMetaLabel: Option[String],
     graph: PropertyGraph,
     config: Neo4jConfig,
-    nodeKeys: Map[Set[String], Set[String]]
+    nodeKeys: Map[String, Set[String]]
   )
     (implicit caps: CAPSSession): Set[Future[Unit]] = {
     val result: Set[Future[Unit]] = graph.schema.labelCombinations.combos.map { combo =>
       val comboWithMetaLabel = combo ++ maybeMetaLabel
       val nodeScan = graph.nodes("n", CTNode(combo), exactLabelMatch = true).asCaps
       val mapping = computeMapping(nodeScan, includeId = true)
+      val keys = combo.flatMap(nodeKeys.getOrElse(_, Set.empty))
+
       nodeScan
         .df
         .rdd
         .foreachPartitionAsync { i =>
-          if (i.nonEmpty) EntityWriter.mergeNodes(i, mapping, config, comboWithMetaLabel, nodeKeys(combo))(rowToListValue)
+          if (i.nonEmpty) EntityWriter.mergeNodes(i, mapping, config, comboWithMetaLabel, keys)(rowToListValue)
         }
     }
     result
