@@ -33,6 +33,7 @@ import org.opencypher.okapi.api.graph.{CypherResult, GraphName, Namespace}
 import org.opencypher.okapi.api.io.conversion.NodeMapping
 import org.opencypher.okapi.api.value.CypherValue.{CypherMap, CypherNull}
 import org.opencypher.okapi.impl.exception.{IllegalArgumentException, UnsupportedOperationException}
+import org.opencypher.okapi.neo4j.io.MetaLabelSupport._
 import org.opencypher.okapi.neo4j.io.Neo4jHelpers.Neo4jDefaults._
 import org.opencypher.okapi.neo4j.io.Neo4jHelpers._
 import org.opencypher.okapi.testing.Bag
@@ -50,9 +51,7 @@ class Neo4jPropertyGraphDataSourceTest
     with TeamDataFixture {
 
   it("can read lists from Neo4j") {
-    val dataSource = CypherGraphSources.neo4j(neo4jConfig)
-
-    val graph = dataSource.graph(dataSource.entireGraphName).asCaps
+    val graph = CypherGraphSources.neo4j(neo4jConfig).graph(entireGraphName).asCaps
     graph.cypher("MATCH (n) RETURN n.languages").records.iterator.toBag should equal(Bag(
       CypherMap("n.languages" -> Seq("German", "English", "Klingon")),
       CypherMap("n.languages" -> Seq()),
@@ -63,24 +62,20 @@ class Neo4jPropertyGraphDataSourceTest
   }
 
   it("should load a graph from Neo4j via DataSource") {
-    val dataSource = CypherGraphSources.neo4j(neo4jConfig)
-
-    val graph = dataSource.graph(dataSource.entireGraphName).asCaps
+    val graph = CypherGraphSources.neo4j(neo4jConfig).graph(entireGraphName).asCaps
     graph.nodes("n").asCaps.toCypherMaps.collect.toBag should equal(teamDataGraphNodes)
     graph.relationships("r").asCaps.toCypherMaps.collect.toBag should equal(teamDataGraphRels)
   }
 
   it("should load a graph from Neo4j via catalog") {
     val testNamespace = Namespace("myNeo4j")
-    val dataSource = CypherGraphSources.neo4j(neo4jConfig)
-    val testGraphName = dataSource.entireGraphName
 
-    caps.registerSource(testNamespace, dataSource)
+    caps.registerSource(testNamespace, CypherGraphSources.neo4j(neo4jConfig))
 
-    val nodes: CypherResult = caps.cypher(s"FROM GRAPH $testNamespace.$testGraphName MATCH (n) RETURN n")
+    val nodes: CypherResult = caps.cypher(s"FROM GRAPH $testNamespace.$entireGraphName MATCH (n) RETURN n")
     nodes.records.collect.toBag should equal(teamDataGraphNodes)
 
-    val edges = caps.cypher(s"FROM GRAPH $testNamespace.$testGraphName MATCH ()-[r]->() RETURN r")
+    val edges = caps.cypher(s"FROM GRAPH $testNamespace.$entireGraphName MATCH ()-[r]->() RETURN r")
     edges.records.collect.toBag should equal(teamDataGraphRels)
   }
 

@@ -29,7 +29,6 @@ package org.opencypher.okapi.neo4j.io
 import java.util.function.BiConsumer
 
 import org.neo4j.driver.v1.Session
-import org.opencypher.okapi.api.graph.GraphName
 import org.opencypher.okapi.api.value.CypherValue
 import org.opencypher.okapi.api.value.CypherValue.CypherValue
 
@@ -44,8 +43,6 @@ object Neo4jHelpers {
     * This module defines constants that are used for interactions with the Neo4j database
     */
   object Neo4jDefaults {
-    val defaultEntireGraphName = GraphName("graph")
-
     val metaPrefix: String = "___"
 
     val metaPropertyKey: String = s"${metaPrefix}capsID"
