@@ -32,6 +32,7 @@ import org.neo4j.driver.internal.value.ListValue
 import org.neo4j.driver.v1.{Value, Values}
 import org.opencypher.okapi.api.graph.{GraphName, PropertyGraph}
 import org.opencypher.okapi.api.types.{CTNode, CTRelationship}
+import org.opencypher.okapi.impl.exception.SchemaException
 import org.opencypher.okapi.ir.api.expr.{EndNode, Property, StartNode}
 import org.opencypher.okapi.neo4j.io.MetaLabelSupport._
 import org.opencypher.okapi.neo4j.io.Neo4jHelpers.Neo4jDefaults._
@@ -197,7 +198,9 @@ case object MergeWriters {
       val comboWithMetaLabel = combo ++ maybeMetaLabel
       val nodeScan = graph.nodes("n", CTNode(combo), exactLabelMatch = true).asCaps
       val mapping = computeMapping(nodeScan, includeId = true)
-      val keys = combo.flatMap(nodeKeys.getOrElse(_, Set.empty))
+      val keys = combo.find(nodeKeys.contains).map(nodeKeys).getOrElse(
+        throw SchemaException(s"Could not find a node key for label combination $combo")
+      )
 
       nodeScan
         .df
