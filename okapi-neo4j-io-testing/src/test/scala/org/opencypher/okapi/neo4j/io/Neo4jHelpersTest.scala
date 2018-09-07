@@ -24,39 +24,25 @@
  * described as "implementation extensions to Cypher" or as "proposed changes to
  * Cypher that are not yet approved by the openCypher community".
  */
-package org.opencypher.okapi.neo4j.io.testing
+package org.opencypher.okapi.neo4j.io
 
-import org.neo4j.harness.{EnterpriseTestServerBuilders, ServerControls}
-import org.opencypher.okapi.neo4j.io.Neo4jConfig
-import org.opencypher.okapi.testing.{BaseTestFixture, BaseTestSuite}
+import org.opencypher.okapi.neo4j.io.Neo4jHelpers._
+import org.opencypher.okapi.testing.BaseTestSuite
 
-trait Neo4jServerFixture extends BaseTestFixture {
-  self: BaseTestSuite =>
+class Neo4jHelpersTest extends BaseTestSuite {
 
-  var neo4jServer: ServerControls = _
+  describe("RichLabelSet") {
+    it("gives empty string for empty set") {
+      Set.empty[String].cypherLabelPredicate should equal("")
+    }
 
-  def neo4jConfig =
-    Neo4jConfig(neo4jServer.boltURI(), user = "anonymous", password = Some("password"), encrypted = false)
+    it("works for one label") {
+      Set("Foo").cypherLabelPredicate should equal(":`Foo`")
+    }
 
-  def neo4jHost: String = {
-    val scheme = neo4jServer.boltURI().getScheme
-    val userInfo = s"${neo4jConfig.user}:${neo4jConfig.password.get}@"
-    val host = neo4jServer.boltURI().getAuthority
-    s"$scheme://$userInfo$host"
+    it("works for multiple label") {
+      Set("Foo", "Bar", "Baz with Space").cypherLabelPredicate should equal(":`Foo`:`Bar`:`Baz with Space`")
+    }
   }
 
-  def dataFixture: String
-
-  abstract override def beforeAll(): Unit = {
-    super.beforeAll()
-    neo4jServer = EnterpriseTestServerBuilders
-      .newInProcessBuilder()
-      .withFixture(dataFixture)
-      .newServer()
-  }
-
-  abstract override def afterAll(): Unit = {
-    neo4jServer.close()
-    super.afterAll()
-  }
 }

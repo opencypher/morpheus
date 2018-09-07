@@ -28,8 +28,8 @@ package org.opencypher.okapi.neo4j.io
 
 import org.apache.logging.log4j.scala.Logging
 import org.neo4j.driver.internal.value.MapValue
+import org.neo4j.driver.v1._
 import org.neo4j.driver.v1.exceptions.ClientException
-import org.neo4j.driver.v1.{Statement, Value, Values}
 import org.opencypher.okapi.impl.exception.IllegalStateException
 import org.opencypher.okapi.neo4j.io.Neo4jHelpers.Neo4jDefaults._
 import org.opencypher.okapi.neo4j.io.Neo4jHelpers._
@@ -40,32 +40,104 @@ object EntityWriter extends Logging {
 
   private val ROW_IDENTIFIER = "row"
 
-  def writeNodes[T](
+  // TODO: Share more code with `createNodes`
+  def mergeNodes[T](
     nodes: Iterator[T],
     rowMapping: Array[String],
     config: Neo4jConfig,
     labels: Set[String],
+    nodeKeys: Set[String],
     batchSize: Int = 1000
   )(rowToListValue: T => Value): Unit = {
-    val labelString = labels.mkString(":")
+    val labelString = labels.cypherLabelPredicate
+
+    val nodeKeyProperties = nodeKeys.map { nodeKey =>
+      val keyIndex = rowMapping.indexOf(nodeKey)
+      val parameterMapLookup = s"$ROW_IDENTIFIER[$keyIndex]"
+      s"`$nodeKey`: $parameterMapLookup"
+    }.mkString(", ")
 
     val setStatements = rowMapping
       .zipWithIndex
-      .filterNot(_._1 == null)
-      .map{ case (key, i) => s"SET n.$key = $ROW_IDENTIFIER[$i]" }
+      .filterNot { case (propertyKey, _) => propertyKey == null || nodeKeys.contains(propertyKey) }
+      .map { case (key, i) => s"SET n.$key = $ROW_IDENTIFIER[$i]" }
       .mkString("\n")
 
     val createQ =
       s"""
          |UNWIND $$batch AS $ROW_IDENTIFIER
-         |CREATE (n:$labelString)
+         |MERGE (n$labelString { $nodeKeyProperties })
          |$setStatements
          """.stripMargin
 
     writeEntities(nodes, rowMapping, createQ, config, batchSize)(rowToListValue)
   }
 
-  def writeRelationships[T](
+  // TODO: Share more code with `createRelationships`
+  def mergeRelationships[T](
+    relationships: Iterator[T],
+    maybeMetaLabel: Option[String],
+    startNodeIndex: Int,
+    endNodeIndex: Int,
+    rowMapping: Array[String],
+    config: Neo4jConfig,
+    relType: String,
+    relKeys: Set[String],
+    batchSize: Int = 10
+  )(rowToListValue: T => Value): Unit = {
+
+    val relKeyProperties = relKeys.map { relKey =>
+      val keyIndex = rowMapping.indexOf(relKey)
+      val parameterMapLookup = s"$ROW_IDENTIFIER[$keyIndex]"
+      s"`$relKey`: $parameterMapLookup"
+    }.mkString(", ")
+
+    val setStatements = rowMapping
+      .zipWithIndex
+      .filterNot { case (propertyKey, _) => propertyKey == null || relKeys.contains(propertyKey) }
+      .map { case (key, i) => s"SET rel.$key = $ROW_IDENTIFIER[$i]" }
+      .mkString("\n")
+
+    val labelString = maybeMetaLabel.toSet[String].cypherLabelPredicate
+
+    val createQ =
+      s"""
+         |UNWIND $$batch AS $ROW_IDENTIFIER
+         |MATCH (from$labelString {$metaPropertyKey : $ROW_IDENTIFIER[$startNodeIndex]})
+         |MATCH (to$labelString {$metaPropertyKey : $ROW_IDENTIFIER[$endNodeIndex]})
+         |MERGE (from)-[rel:$relType { $relKeyProperties }]->(to)
+         |$setStatements
+         """.stripMargin
+
+    writeEntities(relationships, rowMapping, createQ, config, batchSize)(rowToListValue)
+  }
+
+  def createNodes[T](
+    nodes: Iterator[T],
+    rowMapping: Array[String],
+    config: Neo4jConfig,
+    labels: Set[String],
+    batchSize: Int = 1000
+  )(rowToListValue: T => Value): Unit = {
+    val labelString = labels.cypherLabelPredicate
+
+    val setStatements = rowMapping
+      .zipWithIndex
+      .filterNot(_._1 == null)
+      .map { case (key, i) => s"SET n.$key = $ROW_IDENTIFIER[$i]" }
+      .mkString("\n")
+
+    val createQ =
+      s"""
+         |UNWIND $$batch AS $ROW_IDENTIFIER
+         |CREATE (n$labelString)
+         |$setStatements
+         """.stripMargin
+
+    writeEntities(nodes, rowMapping, createQ, config, batchSize)(rowToListValue)
+  }
+
+  def createRelationships[T](
     relationships: Iterator[T],
     startNodeIndex: Int,
     endNodeIndex: Int,
@@ -78,10 +150,10 @@ object EntityWriter extends Logging {
     val setStatements = rowMapping
       .zipWithIndex
       .filterNot(_._1 == null)
-      .map{ case (key, i) => s"SET rel.$key = $ROW_IDENTIFIER[$i]" }
+      .map { case (key, i) => s"SET rel.$key = $ROW_IDENTIFIER[$i]" }
       .mkString("\n")
 
-    val nodeLabelString = nodeLabel.map(l => s":$l").getOrElse("")
+    val nodeLabelString = nodeLabel.toSet[String].cypherLabelPredicate
 
     val createQ =
       s"""
@@ -117,7 +189,16 @@ object EntityWriter extends Logging {
         reuseMap.put("batch", Values.value(rowParameters: _*))
 
         reuseStatement.withUpdatedParameters(reuseParameters)
-        Try(session.run(reuseStatement).consume()) match {
+        Try {
+          session.writeTransaction {
+            new TransactionWork[Unit] {
+              override def execute(transaction: Transaction): Unit = {
+                logger.debug(s"Executing query: $reuseStatement")
+                transaction.run(reuseStatement).consume()
+              }
+            }
+          }
+        } match {
           case Success(_) => ()
 
           case Failure(exception: ClientException) if exception.getMessage.contains("already exists") =>
@@ -131,7 +212,7 @@ object EntityWriter extends Logging {
               case _ => "UNKNOWN"
             }
 
-            val message = s"Could not write the graph to Neo4j. The graph you are attempting to write contains at least two $entityType with morpheus id $duplicateId"
+            val message = s"Could not write the graph to Neo4j. The graph you are attempting to write contains at least two $entityType with CAPS id $duplicateId"
             throw IllegalStateException(message, Some(exception))
 
           case Failure(e) => throw e

@@ -24,39 +24,12 @@
  * described as "implementation extensions to Cypher" or as "proposed changes to
  * Cypher that are not yet approved by the openCypher community".
  */
-package org.opencypher.okapi.neo4j.io.testing
+package org.opencypher.spark.examples
 
-import org.neo4j.harness.{EnterpriseTestServerBuilders, ServerControls}
-import org.opencypher.okapi.neo4j.io.Neo4jConfig
-import org.opencypher.okapi.testing.{BaseTestFixture, BaseTestSuite}
+class Neo4jMergeExampleTest extends ExampleTest {
 
-trait Neo4jServerFixture extends BaseTestFixture {
-  self: BaseTestSuite =>
-
-  var neo4jServer: ServerControls = _
-
-  def neo4jConfig =
-    Neo4jConfig(neo4jServer.boltURI(), user = "anonymous", password = Some("password"), encrypted = false)
-
-  def neo4jHost: String = {
-    val scheme = neo4jServer.boltURI().getScheme
-    val userInfo = s"${neo4jConfig.user}:${neo4jConfig.password.get}@"
-    val host = neo4jServer.boltURI().getAuthority
-    s"$scheme://$userInfo$host"
-  }
-
-  def dataFixture: String
-
-  abstract override def beforeAll(): Unit = {
-    super.beforeAll()
-    neo4jServer = EnterpriseTestServerBuilders
-      .newInProcessBuilder()
-      .withFixture(dataFixture)
-      .newServer()
-  }
-
-  abstract override def afterAll(): Unit = {
-    neo4jServer.close()
-    super.afterAll()
+  it("should produce the correct output") {
+    validate(Neo4jMergeExample.main(Array.empty),
+      getClass.getResource("/example_outputs/Neo4jMergeExample.out").toURI)
   }
 }

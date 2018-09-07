@@ -24,39 +24,35 @@
  * described as "implementation extensions to Cypher" or as "proposed changes to
  * Cypher that are not yet approved by the openCypher community".
  */
-package org.opencypher.okapi.neo4j.io.testing
+package org.opencypher.okapi.neo4j.io
 
-import org.neo4j.harness.{EnterpriseTestServerBuilders, ServerControls}
-import org.opencypher.okapi.neo4j.io.Neo4jConfig
-import org.opencypher.okapi.testing.{BaseTestFixture, BaseTestSuite}
+import org.opencypher.okapi.api.graph.GraphName
+import org.opencypher.okapi.api.schema.LabelPropertyMap.LabelPropertyMap
+import org.opencypher.okapi.api.schema.PropertyKeys.PropertyKeys
+import org.opencypher.okapi.api.schema.RelTypePropertyMap.RelTypePropertyMap
+import org.opencypher.okapi.neo4j.io.Neo4jHelpers.Neo4jDefaults.{metaPrefix, metaPropertyKey}
 
-trait Neo4jServerFixture extends BaseTestFixture {
-  self: BaseTestSuite =>
+object MetaLabelSupport {
 
-  var neo4jServer: ServerControls = _
+  implicit class RichGraphName(val graphName: GraphName) {
+    def metaLabel(entireGraphName: GraphName): Option[String] =
+      if (graphName == entireGraphName) None
+      else Some(metaLabelForSubgraph)
 
-  def neo4jConfig =
-    Neo4jConfig(neo4jServer.boltURI(), user = "anonymous", password = Some("password"), encrypted = false)
-
-  def neo4jHost: String = {
-    val scheme = neo4jServer.boltURI().getScheme
-    val userInfo = s"${neo4jConfig.user}:${neo4jConfig.password.get}@"
-    val host = neo4jServer.boltURI().getAuthority
-    s"$scheme://$userInfo$host"
+    def metaLabelForSubgraph = s"$metaPrefix$graphName"
   }
 
-  def dataFixture: String
-
-  abstract override def beforeAll(): Unit = {
-    super.beforeAll()
-    neo4jServer = EnterpriseTestServerBuilders
-      .newInProcessBuilder()
-      .withFixture(dataFixture)
-      .newServer()
+  implicit class RichPropertyKeys(val keys: PropertyKeys) extends AnyVal {
+    def withoutMetaProperty: PropertyKeys = keys.filterKeys(k => k != metaPropertyKey)
   }
 
-  abstract override def afterAll(): Unit = {
-    neo4jServer.close()
-    super.afterAll()
+  implicit class LabelPropertyMapWithMetaSupport(val map: LabelPropertyMap) extends AnyVal {
+    def withoutMetaLabel(metaLabel: String): LabelPropertyMap = map.map { case (k, v) => (k - metaLabel) -> v }
+    def withoutMetaProperty: LabelPropertyMap = map.mapValues(_.withoutMetaProperty)
   }
+
+  implicit class RelTypePropertyMapWithMetaSupport(val map: RelTypePropertyMap) extends AnyVal  {
+    def withoutMetaProperty: RelTypePropertyMap = map.mapValues(_.withoutMetaProperty)
+  }
+
 }

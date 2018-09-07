@@ -68,7 +68,7 @@
     <dep.cats.version>1.0.1</dep.cats.version>
     <dep.eff.version>5.0.0</dep.eff.version>
     <dep.hadoop.version>2.7.0</dep.hadoop.version>
-    <dep.neo4j.version>3.4.1</dep.neo4j.version>
+    <dep.neo4j.version>3.4.6</dep.neo4j.version>
     <dep.neo4j.driver.version>1.6.1</dep.neo4j.driver.version>
     <dep.opencypher.front-end.version>9.0.7</dep.opencypher.front-end.version>
     <dep.spark.version>2.2.1</dep.spark.version>

@@ -4,7 +4,9 @@ libraries. For an overview of the licenses see the NOTICE.txt file.
 
 ------------------------------------------------------------------------------
 Apache Software License, Version 2.0
+  Apache Commons BeanUtils
   Apache Commons Codec
+  Apache Commons Collections
   Apache Commons Compress
   Apache Commons Configuration
   Apache Commons IO
@@ -15,10 +17,22 @@ Apache Software License, Version 2.0
   Apache HttpCore
   Apache Log4j API
   Apache Log4j Core
+  Apache Shiro :: Cache
+  Apache Shiro :: Configuration :: Core
+  Apache Shiro :: Configuration :: OGDL
+  Apache Shiro :: Core
+  Apache Shiro :: Cryptography :: Ciphers
+  Apache Shiro :: Cryptography :: Core
+  Apache Shiro :: Cryptography :: Hashing
+  Apache Shiro :: Event
+  Apache Shiro :: Lang
   Caffeine cache
   Commons Lang
   ConcurrentLinkedHashMap
   Data Mapper for Jackson
+  FindBugs-jsr305
+  Graphite Integration for Metrics
+  hazelcast-all
   Jackson
   Java Servlet API
   JAX-RS provider for JSON content type
@@ -37,6 +51,9 @@ Apache Software License, Version 2.0
   Lucene Core
   Lucene Memory
   Lucene QueryParsers
+  LZ4 and xxHash
+  Metrics Core
+  Netty
   Netty/All-in-One
   Objenesis
   Okapi - openCypher API
@@ -50,6 +67,10 @@ Apache Software License, Version 2.0
   openCypher Utils
   parboiled-core
   parboiled-scala
+  Prometheus Java Simpleclient
+  Prometheus Java Simpleclient Common
+  Prometheus Java Simpleclient Dropwizard
+  Prometheus Java Simpleclient Httpserver
   Scala 2.11 wrapper for Log4j API
   scalactic
   scalatest
@@ -262,10 +283,10 @@ Apache Software License, Version 2.0
 
 ------------------------------------------------------------------------------
 BSD License
-  ASM Analysis
-  ASM Core
-  ASM Tree
-  ASM Util
+  asm
+  asm-analysis
+  asm-tree
+  asm-util
   JLine
   Scala Compiler
   Scala Library
@@ -343,6 +364,9 @@ MIT-license
   Cats macros
   machinist
   Mockito
+  scallop
+  SLF4J API Module
+  SLF4J NOP Binding
   ujson_2.11
   upickle_2.11
 ------------------------------------------------------------------------------
@@ -373,6 +397,7 @@ THE SOFTWARE.
 
 ------------------------------------------------------------------------------
 Mozilla Public License, Version 2.0
+  kiama
   Mozilla Rhino
 ------------------------------------------------------------------------------
 

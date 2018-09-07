@@ -40,7 +40,7 @@ import scala.collection.immutable
 class EntityWriterTest extends BaseTestSuite with Neo4jServerFixture with BeforeAndAfter {
 
   it("can write nodes") {
-    EntityWriter.writeNodes(
+    EntityWriter.createNodes(
       inputNodes.toIterator,
       Array(metaPropertyKey, "val1", "val2", "val3", null),
       neo4jConfig,
@@ -61,7 +61,7 @@ class EntityWriterTest extends BaseTestSuite with Neo4jServerFixture with Before
   }
 
   it("can write relationships") {
-    EntityWriter.writeRelationships(
+    EntityWriter.createRelationships(
       inputRels.toIterator,
       1,
       2,
