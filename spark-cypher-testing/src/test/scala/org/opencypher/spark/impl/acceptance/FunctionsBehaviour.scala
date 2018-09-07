@@ -27,6 +27,7 @@
 package org.opencypher.spark.impl.acceptance
 
 import org.opencypher.okapi.api.value.CypherValue.CypherMap
+import org.opencypher.okapi.impl.exception.NotImplementedException
 import org.opencypher.okapi.testing.Bag
 import org.opencypher.okapi.testing.Bag._
 import org.opencypher.spark.testing.CAPSTestSuite
@@ -892,6 +893,14 @@ class FunctionsBehaviour extends CAPSTestSuite with DefaultGraphInit {
         CypherMap("x" -> List(1, 3)),
         CypherMap("x" -> List(1, 4))
       ))
+    }
+  }
+
+  describe("negative tests") {
+    it("should give a good error message on unimplemented functions") {
+      the [NotImplementedException] thrownBy {
+        caps.cypher("RETURN tail([1, 2])")
+      } should have message "The expression FunctionInvocation(Namespace(List()),FunctionName(tail),false,Vector(Parameter(  AUTOLIST0,List<Any>))) [line 1, column 8 (offset: 7)] is not supported by the system"
     }
   }
 }

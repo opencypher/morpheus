@@ -31,14 +31,15 @@ import org.opencypher.okapi.api.io.PropertyGraphDataSource
 import org.opencypher.okapi.api.schema.Schema
 import org.opencypher.okapi.api.types.CypherType._
 import org.opencypher.okapi.api.types._
-import org.opencypher.okapi.api.value.CypherValue.{CypherMap, CypherString}
+import org.opencypher.okapi.api.value.CypherValue.CypherMap
+import org.opencypher.okapi.impl.exception.NotImplementedException
 import org.opencypher.okapi.impl.graph.QGNGenerator
 import org.opencypher.okapi.ir.api.block.SourceBlock
 import org.opencypher.okapi.ir.api.expr.{Expr, Var}
 import org.opencypher.okapi.ir.api.pattern.Pattern
 import org.opencypher.okapi.ir.api.{IRCatalogGraph, IRField, IRGraph}
 import org.opencypher.okapi.ir.impl.typer.exception.TypingException
-import org.opencypher.okapi.ir.impl.typer.{SchemaTyper, TypeTracker}
+import org.opencypher.okapi.ir.impl.typer.{SchemaTyper, TypeTracker, UnsupportedExpr}
 import org.opencypher.v9_0.ast.ViewInvocation
 import org.opencypher.v9_0.ast.semantics.SemanticState
 import org.opencypher.v9_0.util.{InputPosition, Ref}
@@ -77,7 +78,12 @@ final case class IRBuilderContext(
         result.recorder.toMap
 
       case Left(errors) =>
-        throw TypingException(s"Type inference errors: ${errors.toList.mkString(", ")}")
+        errors.collect { case u: UnsupportedExpr => u } match {
+          case Nil =>
+            throw TypingException(s"Type inference errors: ${errors.toList.mkString(", ")}")
+          case List(u) =>
+            throw NotImplementedException(u.toString)
+        }
     }
   }
 

@@ -31,7 +31,8 @@ import org.opencypher.okapi.api.schema.Schema
 import org.opencypher.okapi.api.types._
 import org.opencypher.okapi.ir.test.support.Neo4jAstTestSupport
 import org.opencypher.okapi.testing.BaseTestSuite
-import org.opencypher.v9_0.expressions.{Expression, Parameter}
+import org.opencypher.v9_0.expressions.functions.Tail
+import org.opencypher.v9_0.expressions.{Expression, Parameter, Variable}
 import org.opencypher.v9_0.util.symbols
 import org.scalatest.Assertion
 import org.scalatest.mockito.MockitoSugar
@@ -46,6 +47,16 @@ class SchemaTyperTest extends BaseTestSuite with Neo4jAstTestSupport with Mockit
     .withRelationshipPropertyKeys("KNOWS")("since" -> CTInteger, "relative" -> CTBoolean)
 
   val typer = SchemaTyper(schema)
+
+  it("should report good error on unsupported functions") {
+    implicit val context: TypeTracker = typeTracker("a" -> CTList(CTInteger))
+
+    val f = Tail.asInvocation(Variable("a")(pos))(pos)
+
+    assertExpr.from("tail(a)") shouldFailToInferTypeWithErrors(
+      UnsupportedExpr(f), NoSuitableSignatureForExpr(f, Seq(CTList(CTInteger)))
+    )
+  }
 
   it("should type CASE") {
     implicit val context: TypeTracker = typeTracker("a" -> CTInteger, "b" -> CTInteger.nullable, "c" -> CTString)
