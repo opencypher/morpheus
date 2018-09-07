@@ -67,6 +67,13 @@ class Neo4jSyncTest extends CAPSTestSuite with CAPSNeo4jServerFixture with Defau
         case c => s"DROP $c"
       }.foreach(session.run(_).consume())
       session.run("MATCH (n) DETACH DELETE n").consume()
+
+      session
+        .run("CALL db.indexes YIELD description")
+        .list().asScala
+        .map(_.get(0).asString)
+        .map(i => s"DROP $i")
+        .foreach(session.run(_).consume())
     }
     super.afterEach()
   }
@@ -205,7 +212,7 @@ class Neo4jSyncTest extends CAPSTestSuite with CAPSNeo4jServerFixture with Defau
     }
 
     it("creates indexes correctly") {
-      val entityKeys = EntityKeys(
+      val newEntityKeys = EntityKeys(
         Map(
           "N" -> Set("foo", "bar"),
           "M" -> Set("baz")
@@ -216,7 +223,7 @@ class Neo4jSyncTest extends CAPSTestSuite with CAPSNeo4jServerFixture with Defau
       )
 
       val subGraphName = GraphName("myGraph")
-      Neo4jSync.createIndexes(subGraphName, neo4jConfig, entityKeys)
+      Neo4jSync.createIndexes(subGraphName, neo4jConfig, newEntityKeys)
 
       neo4jConfig.cypher("CALL db.constraints YIELD description").toSet shouldBe empty
 
@@ -227,5 +234,4 @@ class Neo4jSyncTest extends CAPSTestSuite with CAPSNeo4jServerFixture with Defau
       ))
     }
   }
-
 }

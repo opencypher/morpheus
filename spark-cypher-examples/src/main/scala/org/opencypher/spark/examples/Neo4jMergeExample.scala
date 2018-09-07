@@ -56,7 +56,7 @@ object Neo4jMergeExample extends ConsoleApp {
 
   // Define the node and relationship keys
   val entityKeys = EntityKeys(
-    Map(Set("Person") -> Set("name")),
+    Map("Person" -> Set("name")),
     Map("FRIEND_OF" -> Set("id"), "MARRIED_TO" -> Set("id"))
   )
 
