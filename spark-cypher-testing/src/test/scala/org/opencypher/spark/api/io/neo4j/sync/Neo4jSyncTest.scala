@@ -27,10 +27,12 @@
 package org.opencypher.spark.api.io.neo4j.sync
 
 import org.opencypher.okapi.api.graph.GraphName
-import org.opencypher.okapi.api.value.CypherValue.CypherMap
+import org.opencypher.okapi.api.value.CypherValue.{CypherMap, CypherString}
+import org.opencypher.okapi.neo4j.io.Neo4jHelpers.Neo4jDefaults._
 import org.opencypher.okapi.neo4j.io.Neo4jHelpers._
 import org.opencypher.okapi.relational.api.graph.RelationalCypherGraph
 import org.opencypher.okapi.testing.Bag
+import org.opencypher.spark.api.io.neo4j.MetaLabelSupport._
 import org.opencypher.spark.api.io.neo4j.Neo4jPropertyGraphDataSource
 import org.opencypher.spark.impl.acceptance.DefaultGraphInit
 import org.opencypher.spark.impl.table.SparkTable
@@ -57,14 +59,13 @@ class Neo4jSyncTest extends CAPSTestSuite with CAPSNeo4jServerFixture with Defau
     neo4jConfig.withSession { session =>
       session.run("MATCH (n) DETACH DELETE n").consume()
       val constraints = session.run("CALL db.constraints").list().asScala.map(_.get(0).asString)
-      val regexp = """CONSTRAINT ON (.+) ASSERT (.+) IS NODE KEY""".r
+      val regexp = """CONSTRAINT ON (.+) ASSERT \(?(.+?)\)? IS NODE KEY""".r
 
       // TODO remove workaround once it's fixed in Neo4j
-      val constraintString = constraints.map {
+      constraints.map {
         case regexp(label, keys) => s"DROP CONSTRAINT ON $label ASSERT ($keys) IS NODE KEY"
         case c => s"DROP $c"
-      }.mkString("\n")
-      session.run(constraintString).consume()
+      }.foreach(session.run(_).consume())
       session.run("MATCH (n) DETACH DELETE n").consume()
     }
     super.afterEach()
@@ -122,6 +123,32 @@ class Neo4jSyncTest extends CAPSTestSuite with CAPSNeo4jServerFixture with Defau
         CypherMap("nid" -> 1, "id" -> 2, "foo" -> null, "mid" -> 2)
       ))
     }
+
+    it("creates indexes correctly") {
+      val entityKeys = EntityKeys(
+        Map(
+          "N" -> Set("foo", "bar"),
+          "M" -> Set("baz")
+        ),
+        Map(
+          "REL" -> Set("a")
+        )
+      )
+
+      Neo4jSync.createIndexes(neo4jConfig, entityKeys)
+
+      neo4jConfig.cypher("CALL db.constraints YIELD description").toSet should equal(Set(
+        Map("description" -> new CypherString("CONSTRAINT ON ( n:N ) ASSERT (n.foo, n.bar) IS NODE KEY")),
+        Map("description" -> new CypherString("CONSTRAINT ON ( m:M ) ASSERT m.baz IS NODE KEY"))
+      ))
+
+      neo4jConfig.cypher("CALL db.indexes YIELD description").toSet should equal(Set(
+        Map("description" -> new CypherString(s"INDEX ON :N($metaPropertyKey)")),
+        Map("description" -> new CypherString(s"INDEX ON :N(foo, bar)")),
+        Map("description" -> new CypherString(s"INDEX ON :M($metaPropertyKey)")),
+        Map("description" -> new CypherString(s"INDEX ON :M(baz)"))
+      ))
+    }
   }
 
   describe("merging into subgraphs") {
@@ -174,6 +201,29 @@ class Neo4jSyncTest extends CAPSTestSuite with CAPSNeo4jServerFixture with Defau
       graphAfterDeltaSync.cypher("MATCH (n)-[r]->(m) RETURN n.id as nid, r.id as id, r.foo as foo, m.id as mid").records.toMaps should equal(Bag(
         CypherMap("nid" -> 1, "id" -> 1, "foo" -> 1, "mid" -> 2),
         CypherMap("nid" -> 1, "id" -> 2, "foo" -> null, "mid" -> 2)
+      ))
+    }
+
+    it("creates indexes correctly") {
+      val entityKeys = EntityKeys(
+        Map(
+          "N" -> Set("foo", "bar"),
+          "M" -> Set("baz")
+        ),
+        Map(
+          "REL" -> Set("a")
+        )
+      )
+
+      val subGraphName = GraphName("myGraph")
+      Neo4jSync.createIndexes(subGraphName, neo4jConfig, entityKeys)
+
+      neo4jConfig.cypher("CALL db.constraints YIELD description").toSet shouldBe empty
+
+      neo4jConfig.cypher("CALL db.indexes YIELD description").toSet should equal(Set(
+        Map("description" -> new CypherString(s"INDEX ON :${metaLabelForSubGraph(subGraphName)}($metaPropertyKey)")),
+        Map("description" -> new CypherString(s"INDEX ON :N(foo, bar)")),
+        Map("description" -> new CypherString(s"INDEX ON :M(baz)"))
       ))
     }
   }

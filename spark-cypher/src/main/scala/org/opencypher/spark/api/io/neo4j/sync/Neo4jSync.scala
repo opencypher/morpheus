@@ -93,27 +93,36 @@ object Neo4jSync extends Logging {
   ): Unit = {
     val maybeMetaLabel = maybeGraphName.map(gn => metaLabelForSubGraph(gn))
     config.withSession { session =>
-      if (maybeGraphName.isEmpty) {
-        entityKeys.nodeKeys.foreach {
-          case (label, keys) =>
-            val propertyString = keys.map(k => s"n.`$k`").mkString("(", ", ", ")")
-            val query = s"CREATE CONSTRAINT ON (n${label.cypherLabelPredicate}) ASSERT $propertyString IS NODE KEY"
-            logger.info(s"Creating node key constraints: $query")
-            session.run(query).consume()
-        }
-      }
-
-      val idIndexes = maybeMetaLabel match {
+      maybeMetaLabel match {
         case None =>
-          val commands = entityKeys.nodeKeys.keySet.map(label => s"CREATE INDEX ON :$label($metaPropertyKey)")
-          logger.info(s"Creating indexes for node entity keys:${commands.mkString("\n\t- ", "\n\t- ", "")}")
-          commands
+          entityKeys.nodeKeys.foreach {
+            case (label, keys) =>
+              val nodeVar = "n"
+              val propertyString = keys.map(k => s"$nodeVar.`$k`").mkString("(", ", ", ")")
+              val query = s"CREATE CONSTRAINT ON ($nodeVar${label.cypherLabelPredicate}) ASSERT $propertyString IS NODE KEY"
+              logger.debug(s"Creating node key constraints: $query")
+              session.run(query).consume
+          }
+
+          entityKeys.nodeKeys.keySet.foreach { label =>
+            val cmd = s"CREATE INDEX ON ${label.cypherLabelPredicate}(`$metaPropertyKey`)"
+            logger.debug(s"Creating index for meta property key: $cmd")
+            session.run(cmd).consume
+          }
+
         case Some(ml) =>
-          val command = s"CREATE INDEX ON :$ml($metaPropertyKey)"
-          logger.info(s"Creating sub-graph index for meta label:\n\t- $command")
-          Set(command)
+          entityKeys.nodeKeys.foreach {
+            case (label, properties) =>
+              val propertyString = properties.map(p => s"`$p`").mkString("(", ", ", ")")
+              val cmd = s"CREATE INDEX ON ${label.cypherLabelPredicate}$propertyString"
+              logger.debug(s"Creating index for node keys: $cmd")
+              session.run(cmd).consume
+          }
+
+          val command = s"CREATE INDEX ON ${ml.cypherLabelPredicate}(`$metaPropertyKey`)"
+          logger.debug(s"Creating sub-graph index for meta label and meta property key: $command")
+          session.run(command).consume
       }
-      idIndexes.foreach(session.run(_).consume())
     }
   }
 
