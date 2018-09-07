@@ -33,11 +33,11 @@ import org.neo4j.driver.v1.{Value, Values}
 import org.opencypher.okapi.api.graph.{GraphName, PropertyGraph}
 import org.opencypher.okapi.api.types.{CTNode, CTRelationship}
 import org.opencypher.okapi.ir.api.expr.{EndNode, Property, StartNode}
+import org.opencypher.okapi.neo4j.io.MetaLabelSupport._
 import org.opencypher.okapi.neo4j.io.Neo4jHelpers.Neo4jDefaults._
 import org.opencypher.okapi.neo4j.io.Neo4jHelpers._
 import org.opencypher.okapi.neo4j.io.{EntityWriter, Neo4jConfig}
 import org.opencypher.spark.api.CAPSSession
-import org.opencypher.spark.api.io.neo4j.MetaLabelSupport.metaLabelForSubGraph
 import org.opencypher.spark.impl.CAPSConverters._
 import org.opencypher.spark.impl.CAPSRecords
 
@@ -91,7 +91,7 @@ object Neo4jSync extends Logging {
     config: Neo4jConfig,
     entityKeys: EntityKeys
   ): Unit = {
-    val maybeMetaLabel = maybeGraphName.map(gn => metaLabelForSubGraph(gn))
+    val maybeMetaLabel = maybeGraphName.map(gn => gn.metaLabelForSubgraph)
     config.withSession { session =>
       maybeMetaLabel match {
         case None =>
@@ -167,7 +167,7 @@ object Neo4jSync extends Logging {
     config: Neo4jConfig,
     entityKeys: EntityKeys
   )(implicit caps: CAPSSession): Unit = {
-    val maybeMetaLabel = maybeGraphName.map(gn => metaLabelForSubGraph(gn))
+    val maybeMetaLabel = maybeGraphName.map(gn => gn.metaLabelForSubgraph)
     val maybeMetaLabelString = maybeMetaLabel.toSet[String].cypherLabelPredicate
 
     val writesCompleted = for {

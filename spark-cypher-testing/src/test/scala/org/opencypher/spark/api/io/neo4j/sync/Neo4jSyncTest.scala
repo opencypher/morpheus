@@ -28,11 +28,11 @@ package org.opencypher.spark.api.io.neo4j.sync
 
 import org.opencypher.okapi.api.graph.GraphName
 import org.opencypher.okapi.api.value.CypherValue.{CypherMap, CypherString}
+import org.opencypher.okapi.neo4j.io.MetaLabelSupport._
 import org.opencypher.okapi.neo4j.io.Neo4jHelpers.Neo4jDefaults._
 import org.opencypher.okapi.neo4j.io.Neo4jHelpers._
 import org.opencypher.okapi.relational.api.graph.RelationalCypherGraph
 import org.opencypher.okapi.testing.Bag
-import org.opencypher.spark.api.io.neo4j.MetaLabelSupport._
 import org.opencypher.spark.api.io.neo4j.Neo4jPropertyGraphDataSource
 import org.opencypher.spark.impl.acceptance.DefaultGraphInit
 import org.opencypher.spark.impl.table.SparkTable
@@ -228,7 +228,7 @@ class Neo4jSyncTest extends CAPSTestSuite with CAPSNeo4jServerFixture with Defau
       neo4jConfig.cypher("CALL db.constraints YIELD description").toSet shouldBe empty
 
       neo4jConfig.cypher("CALL db.indexes YIELD description").toSet should equal(Set(
-        Map("description" -> new CypherString(s"INDEX ON :${metaLabelForSubGraph(subGraphName)}($metaPropertyKey)")),
+        Map("description" -> new CypherString(s"INDEX ON :${subGraphName.metaLabelForSubgraph}($metaPropertyKey)")),
         Map("description" -> new CypherString(s"INDEX ON :N(foo, bar)")),
         Map("description" -> new CypherString(s"INDEX ON :M(baz)"))
       ))

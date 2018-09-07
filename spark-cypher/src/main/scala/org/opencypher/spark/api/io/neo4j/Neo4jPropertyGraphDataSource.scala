@@ -32,19 +32,17 @@ import org.apache.spark.sql.{DataFrame, Row}
 import org.neo4j.driver.v1.{Value, Values}
 import org.opencypher.okapi.api.graph.{GraphName, PropertyGraph}
 import org.opencypher.okapi.api.schema.LabelPropertyMap._
-import org.opencypher.okapi.api.schema.PropertyKeys.PropertyKeys
-import org.opencypher.okapi.api.schema.RelTypePropertyMap._
 import org.opencypher.okapi.api.schema.Schema
 import org.opencypher.okapi.api.types.{CTNode, CTRelationship}
 import org.opencypher.okapi.api.value.CypherValue.CypherList
 import org.opencypher.okapi.impl.exception.UnsupportedOperationException
 import org.opencypher.okapi.impl.schema.SchemaImpl
 import org.opencypher.okapi.ir.api.expr.{EndNode, Property, StartNode}
+import org.opencypher.okapi.neo4j.io.MetaLabelSupport._
 import org.opencypher.okapi.neo4j.io.Neo4jHelpers.Neo4jDefaults._
 import org.opencypher.okapi.neo4j.io.Neo4jHelpers._
 import org.opencypher.okapi.neo4j.io.{EntityReader, EntityWriter, Neo4jConfig}
 import org.opencypher.spark.api.CAPSSession
-import org.opencypher.spark.api.io.neo4j.MetaLabelSupport._
 import org.opencypher.spark.impl.CAPSConverters._
 import org.opencypher.spark.impl.CAPSRecords
 import org.opencypher.spark.impl.io.neo4j.external.Neo4j
@@ -55,25 +53,6 @@ import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.duration._
 import scala.concurrent.{Await, Future}
 
-object MetaLabelSupport {
-
-  def metaLabelForSubGraph(graphName: GraphName): String = s"$metaPrefix$graphName"
-
-  implicit class RichPropertyKeys(val keys: PropertyKeys) extends AnyVal {
-    def withoutMetaProperty: PropertyKeys = keys.filterKeys(k => k != metaPropertyKey)
-  }
-
-  implicit class LabelPropertyMapWithMetaSupport(val map: LabelPropertyMap) extends AnyVal {
-    def withoutMetaLabel(metaLabel: String): LabelPropertyMap = map.map { case (k, v) => (k - metaLabel) -> v }
-    def withoutMetaProperty: LabelPropertyMap = map.mapValues(_.withoutMetaProperty)
-  }
-
-  implicit class RelTypePropertyMapWithMetaSupport(val map: RelTypePropertyMap) extends AnyVal  {
-    def withoutMetaProperty: RelTypePropertyMap = map.mapValues(_.withoutMetaProperty)
-  }
-
-}
-
 case class Neo4jPropertyGraphDataSource(
   override val config: Neo4jConfig,
   maybeSchema: Option[Schema] = None,
@@ -82,13 +61,6 @@ case class Neo4jPropertyGraphDataSource(
 )(implicit val caps: CAPSSession) extends AbstractNeo4jDataSource with Logging {
 
   graphNameCache += entireGraphName
-
-  private implicit class RichGraphName(graphName: GraphName) {
-    def metaLabel: Option[String] = graphName match {
-      case `entireGraphName` => None
-      case subGraph => Some(metaLabelForSubGraph(subGraph))
-    }
-  }
 
   override def hasGraph(graphName: GraphName): Boolean = graphName match {
     case `entireGraphName` => true
@@ -116,7 +88,7 @@ case class Neo4jPropertyGraphDataSource(
   }
 
   override protected def readSchema(graphName: GraphName): CAPSSchema = {
-    val filteredSchema = graphName.metaLabel match {
+    val filteredSchema = graphName.metaLabel(entireGraphName) match {
       case None =>
         entireGraphSchema
       case Some(metaLabel) =>
@@ -134,7 +106,7 @@ case class Neo4jPropertyGraphDataSource(
     sparkSchema: StructType
   ): DataFrame = {
     val graphSchema = schema(graphName).get
-    val flatQuery = EntityReader.flatExactLabelQuery(labels, graphSchema, graphName.metaLabel)
+    val flatQuery = EntityReader.flatExactLabelQuery(labels, graphSchema, graphName.metaLabel(entireGraphName))
 
     val neo4jConnection = Neo4j(config, caps.sparkSession)
     val rdd = neo4jConnection.cypher(flatQuery).loadRowRdd
@@ -148,7 +120,7 @@ case class Neo4jPropertyGraphDataSource(
     sparkSchema: StructType
   ): DataFrame = {
     val graphSchema = schema(graphName).get
-    val flatQuery = EntityReader.flatRelTypeQuery(relKey, graphSchema, graphName.metaLabel)
+    val flatQuery = EntityReader.flatRelTypeQuery(relKey, graphSchema, graphName.metaLabel(entireGraphName))
 
     val neo4jConnection = Neo4j(config, caps.sparkSession)
     val rdd = neo4jConnection.cypher(flatQuery).loadRowRdd
@@ -156,7 +128,7 @@ case class Neo4jPropertyGraphDataSource(
   }
 
   override protected def deleteGraph(graphName: GraphName): Unit = {
-    graphName.metaLabel match {
+    graphName.metaLabel(entireGraphName) match {
       case Some(metaLabel) =>
         config.withSession { session =>
           session.run(
@@ -173,7 +145,7 @@ case class Neo4jPropertyGraphDataSource(
   override def store(graphName: GraphName, graph: PropertyGraph): Unit = {
     checkStorable(graphName)
 
-    val metaLabel = graphName.metaLabel match {
+    val metaLabel = graphName.metaLabel(entireGraphName) match {
       case Some(meta) => meta
       case None => throw UnsupportedOperationException("Writing to the global Neo4j graph is not supported")
     }
