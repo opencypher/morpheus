@@ -57,6 +57,8 @@ class CypherCatalog extends PropertyGraphCatalog {
   private var dataSourceMapping: Map[Namespace, PropertyGraphDataSource] =
     Map(sessionNamespace -> new SessionGraphDataSource)
 
+  private var viewMapping: Map[QualifiedGraphName, ParameterizedView] = Map.empty
+
   override def namespaces: Set[Namespace] = dataSourceMapping.keySet
 
   override def source(namespace: Namespace): PropertyGraphDataSource = dataSourceMapping.getOrElse(namespace,
@@ -64,7 +66,10 @@ class CypherCatalog extends PropertyGraphCatalog {
 
   override def listSources: Map[Namespace, PropertyGraphDataSource] = dataSourceMapping
 
-  override def register(namespace: Namespace, dataSource: PropertyGraphDataSource): Unit = dataSourceMapping.get(namespace) match {
+  override def register(
+    namespace: Namespace,
+    dataSource: PropertyGraphDataSource
+  ): Unit = dataSourceMapping.get(namespace) match {
     case Some(p) => throw IllegalArgumentException(s"There is already a data source registered with namespace '$namespace'", p)
     case None => dataSourceMapping = dataSourceMapping.updated(namespace, dataSource)
   }
@@ -86,6 +91,11 @@ class CypherCatalog extends PropertyGraphCatalog {
   override def store(qualifiedGraphName: QualifiedGraphName, graph: PropertyGraph): Unit =
     source(qualifiedGraphName.namespace).store(qualifiedGraphName.graphName, graph)
 
+  override def store(qualifiedGraphName: QualifiedGraphName, parameters: List[String], viewQuery: String): Unit = {
+
+    viewMapping += (qualifiedGraphName -> ParameterizedView(parameters, viewQuery))
+  }
+
   override def delete(qualifiedGraphName: QualifiedGraphName): Unit =
     source(qualifiedGraphName.namespace).delete(qualifiedGraphName.graphName)
 
@@ -93,3 +103,6 @@ class CypherCatalog extends PropertyGraphCatalog {
     source(qualifiedGraphName.namespace).graph(qualifiedGraphName.graphName)
 
 }
+
+// TODO: Allow for typed parameters
+case class ParameterizedView(parameters: List[String], viewQuery: String)

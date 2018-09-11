@@ -27,7 +27,7 @@
 package org.opencypher.okapi.ir.api
 
 import org.opencypher.okapi.ir.api.block.{Binds, Block}
-import org.opencypher.okapi.ir.api.expr.Expr
+import org.opencypher.okapi.ir.api.expr.{Expr, Param}
 
 sealed trait CypherStatement extends Block {
   def info: QueryInfo
@@ -58,6 +58,23 @@ final case class CreateGraphStatement(
 
   override def where: Set[Expr] = Set.empty
 }
+
+final case class CreateViewStatement(
+  info: QueryInfo,
+  parameters: List[Param],
+  innerQuery: CypherQuery,
+  innerQueryString: String
+) extends CypherStatement {
+
+  override val after: List[Block] = List(innerQuery)
+
+  override def binds: Binds = Binds.empty
+
+  override def where: Set[Expr] = Set.empty
+
+  override def graph: IRGraph = innerQuery.graph
+}
+
 
 final case class DeleteGraphStatement(
   info: QueryInfo,

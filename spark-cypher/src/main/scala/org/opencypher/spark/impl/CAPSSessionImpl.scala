@@ -106,9 +106,11 @@ sealed class CAPSSessionImpl(val sparkSession: SparkSession) extends CAPSSession
       case CreateGraphStatement(_, targetGraph, innerQueryIr) =>
         val innerResult = planCypherQuery(graph, innerQueryIr, allParameters, inputFields, maybeCapsRecords)
         val resultGraph = innerResult.graph
-
         catalog.store(targetGraph.qualifiedGraphName, resultGraph)
+        RelationalCypherResult.empty
 
+      case CreateViewStatement(_, parameters, _, queryString) =>
+        catalog.store(ir.graph.qualifiedGraphName, parameters.map(_.name), queryString)
         RelationalCypherResult.empty
 
       case DeleteGraphStatement(_, targetGraph) =>

@@ -45,7 +45,7 @@ class CatalogDDLBehaviour extends CAPSTestSuite with DefaultGraphInit {
       val result = caps.cypher(
         """
           |CATALOG CREATE GRAPH bar {
-          | From GRAPH foo
+          | FROM GRAPH foo
           | RETURN GRAPH
           |}
         """.stripMargin)
@@ -58,10 +58,35 @@ class CatalogDDLBehaviour extends CAPSTestSuite with DefaultGraphInit {
     }
   }
 
-    describe("DROP GRAPH") {
-      it("can drop a session graph") {
+  describe("CATALOG CREATE VIEW") {
+    it("supports CATALOG CREATE VIEW") {
+      val inputGraph = initGraph(
+        """
+          |CREATE (:A)
+        """.stripMargin)
 
-        caps.catalog.store("foo", initGraph("CREATE (:A)"))
+      caps.catalog.store("foo", inputGraph)
+
+      val result = caps.cypher(
+        """
+          |CATALOG CREATE VIEW bar {
+          | FROM GRAPH foo
+          | RETURN GRAPH
+          |}
+        """.stripMargin)
+
+//      val sessionSource = caps.catalog.source(caps.catalog.sessionNamespace)
+//      sessionSource.hasGraph(GraphName("bar")) shouldBe true
+//      sessionSource.graph(GraphName("bar")) shouldEqual inputGraph
+//      result.getGraph shouldBe None
+//      result.getRecords shouldBe None
+    }
+  }
+
+  describe("DROP GRAPH") {
+    it("can drop a session graph") {
+
+      caps.catalog.store("foo", initGraph("CREATE (:A)"))
 
       val result = caps.cypher(
         """
@@ -69,9 +94,9 @@ class CatalogDDLBehaviour extends CAPSTestSuite with DefaultGraphInit {
         """.stripMargin
       )
 
-        caps.catalog.source(caps.catalog.sessionNamespace).hasGraph(GraphName("foo")) shouldBe false
-        result.getGraph shouldBe None
-        result.getRecords shouldBe None
+      caps.catalog.source(caps.catalog.sessionNamespace).hasGraph(GraphName("foo")) shouldBe false
+      result.getGraph shouldBe None
+      result.getRecords shouldBe None
     }
   }
 }

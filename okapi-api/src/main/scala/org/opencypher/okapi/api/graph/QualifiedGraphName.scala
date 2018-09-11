@@ -77,6 +77,7 @@ object QualifiedGraphName {
 
 }
 
+// TODO: Rename QGN to CatalogName
 /**
   * A qualified graph name is used in a Cypher query to address a specific graph within a namespace.
   *

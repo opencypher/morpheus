@@ -85,6 +85,22 @@ object IRBuilder extends CompilationStage[ast.Statement, CypherStatement, IRBuil
           }
         } yield result
 
+      case ast.CreateView(qgn, params, query, innerQueryString) =>
+        for {
+          innerQuery <- convertQueryPart(query)
+          parameters <- params.toList.traverse(convertExpr[R])
+          context <- get[R, IRBuilderContext]
+          result <- {
+            val statement = Some(CreateViewStatement(
+              QueryInfo(context.queryString),
+              parameters.collect { case p: Param => p },
+              innerQuery.get,
+              innerQueryString
+            ))
+            pure[R, Option[CypherStatement]](statement)
+          }
+        } yield result
+
       case ast.DropGraph(qgn) =>
         for {
           context <- get[R, IRBuilderContext]
@@ -115,7 +131,7 @@ object IRBuilder extends CompilationStage[ast.Statement, CypherStatement, IRBuil
 
     c match {
 
-      case ast.FromGraph(qgn: ast.QualifiedGraphName) =>
+      case ast.GraphLookup(qgn: ast.CatalogName) =>
         for {
           context <- get[R, IRBuilderContext]
           blocks <- {
