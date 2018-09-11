@@ -26,7 +26,8 @@
  */
 package org.opencypher.spark.impl.acceptance
 
-import org.opencypher.okapi.api.graph.GraphName
+import org.opencypher.okapi.api.graph.{GraphName, QualifiedGraphName}
+import org.opencypher.okapi.api.types.CTNode
 import org.opencypher.spark.testing.CAPSTestSuite
 import org.scalatest.DoNotDiscover
 
@@ -67,7 +68,7 @@ class CatalogDDLBehaviour extends CAPSTestSuite with DefaultGraphInit {
 
       caps.catalog.store("foo", inputGraph)
 
-      val result = caps.cypher(
+      caps.cypher(
         """
           |CATALOG CREATE VIEW bar {
           | FROM GRAPH foo
@@ -75,11 +76,48 @@ class CatalogDDLBehaviour extends CAPSTestSuite with DefaultGraphInit {
           |}
         """.stripMargin)
 
-//      val sessionSource = caps.catalog.source(caps.catalog.sessionNamespace)
-//      sessionSource.hasGraph(GraphName("bar")) shouldBe true
-//      sessionSource.graph(GraphName("bar")) shouldEqual inputGraph
-//      result.getGraph shouldBe None
-//      result.getRecords shouldBe None
+      val bar = QualifiedGraphName("bar")
+      caps.catalog.catalogNames should contain(bar)
+      caps.catalog.viewNames should contain(bar)
+      caps.catalog.view(bar) shouldEqual inputGraph
+    }
+
+    ignore("supports CATALOG CREATE VIEW with parameters") {
+      val inputGraphA = initGraph(
+        """
+          |CREATE (:A)
+        """.stripMargin)
+      val inputGraphB = initGraph(
+        """
+          |CREATE (:B)
+          |CREATE (:B)
+        """.stripMargin)
+
+      caps.catalog.store("a", inputGraphA)
+      caps.catalog.store("b", inputGraphB)
+
+      caps.cypher(
+        """
+          |CATALOG CREATE VIEW bar($g1, $g2) {
+          | FROM GRAPH $g1
+          | MATCH (a: A)
+          | FROM GRAPH $g2
+          | MATCH (b: B)
+          | CONSTRUCT
+          |   CREATE (a)
+          |   CREATE (b)
+          | RETURN GRAPH
+          |}
+        """.stripMargin)
+
+      val bar = QualifiedGraphName("bar")
+      caps.catalog.catalogNames should contain(bar)
+      caps.catalog.viewNames should contain(bar)
+
+      val resultGraph = caps.catalog.view(bar, List("a", "b"))
+      resultGraph.nodes("n").size shouldBe 3
+      resultGraph.nodes("a", CTNode("A")).size shouldBe 1
+      resultGraph.nodes("b", CTNode("B")).size shouldBe 2
     }
   }
 

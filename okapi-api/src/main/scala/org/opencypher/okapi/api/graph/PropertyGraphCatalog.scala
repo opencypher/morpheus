@@ -27,6 +27,7 @@
 package org.opencypher.okapi.api.graph
 
 import org.opencypher.okapi.api.io.PropertyGraphDataSource
+import org.opencypher.okapi.api.value.CypherValue.CypherString
 import org.opencypher.okapi.impl.annotations.experimental
 
 /**
@@ -104,6 +105,22 @@ trait PropertyGraphCatalog {
   def graphNames: Set[QualifiedGraphName]
 
   /**
+    * Returns a set of [[org.opencypher.okapi.api.graph.QualifiedGraphName]]s for stored view queries
+    * that can be provided by this catalog.
+    *
+    * @return qualified names of view queries that can be provided
+    */
+  def viewNames: Set[QualifiedGraphName]
+
+  /**
+    * Returns all the qualified graph names known to this catalog. These identify either graphs stored in property
+    * graph data sources or view queries stored directly in the catalog.
+    *
+    * @return qualified names of graphs and view queries
+    */
+  def catalogNames: Set[QualifiedGraphName] = graphNames ++ viewNames
+
+  /**
     * Stores the given [[org.opencypher.okapi.api.graph.PropertyGraph]] using
     * the [[org.opencypher.okapi.api.io.PropertyGraphDataSource]] registered under
     * the [[org.opencypher.okapi.api.graph.Namespace]] of the specified string representation
@@ -166,12 +183,25 @@ trait PropertyGraphCatalog {
     graph(QualifiedGraphName(qualifiedGraphName))
 
   /**
-    * Returns the [[org.opencypher.okapi.api.graph.PropertyGraph]] that is stored under
+    * Returns the [[org.opencypher.okapi.api.graph.PropertyGraph]] that is stored at
     * the given [[org.opencypher.okapi.api.graph.QualifiedGraphName]].
     *
     * @param qualifiedGraphName qualified graph name
     * @return property graph
     */
   def graph(qualifiedGraphName: QualifiedGraphName): PropertyGraph
+
+  /**
+    * Returns the [[org.opencypher.okapi.api.graph.PropertyGraph]] that is created by the view stored at
+    * the given [[org.opencypher.okapi.api.graph.QualifiedGraphName]].
+    *
+    * The view is instantiated with `parameters`.
+    *
+    * @param qualifiedGraphName qualified graph name of the view
+    * @param parameters         graph reference parameters with which the view is instantiated
+    * @return property graph returned by the parameterized view
+    */
+  def view(qualifiedGraphName: QualifiedGraphName, parameters: List[CypherString] = Nil)
+    (implicit session: CypherSession): PropertyGraph
 
 }

@@ -93,8 +93,8 @@ object IRBuilder extends CompilationStage[ast.Statement, CypherStatement, IRBuil
           result <- {
             val statement = Some(CreateViewStatement(
               QueryInfo(context.queryString),
+              QualifiedGraphName(qgn.parts),
               parameters.collect { case p: Param => p },
-              innerQuery.get,
               innerQueryString
             ))
             pure[R, Option[CypherStatement]](statement)

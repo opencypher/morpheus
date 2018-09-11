@@ -26,8 +26,10 @@
  */
 package org.opencypher.okapi.impl.graph
 
-import org.opencypher.okapi.api.graph.{Namespace, PropertyGraph, PropertyGraphCatalog, QualifiedGraphName}
+import org.opencypher.okapi.api.graph._
 import org.opencypher.okapi.api.io.PropertyGraphDataSource
+import org.opencypher.okapi.api.value.CypherValue.CypherString
+import org.opencypher.okapi.impl.annotations.experimental
 import org.opencypher.okapi.impl.exception.{IllegalArgumentException, UnsupportedOperationException}
 import org.opencypher.okapi.impl.io.SessionGraphDataSource
 
@@ -82,17 +84,20 @@ class CypherCatalog extends PropertyGraphCatalog {
     }
   }
 
-  override def graphNames: Set[QualifiedGraphName] =
+  override def graphNames: Set[QualifiedGraphName] = {
     dataSourceMapping.flatMap {
       case (namespace, pgds) =>
         pgds.graphNames.map(n => QualifiedGraphName(namespace, n))
     }.toSet
+  }
+
+  override def viewNames: Set[QualifiedGraphName] = viewMapping.keySet
 
   override def store(qualifiedGraphName: QualifiedGraphName, graph: PropertyGraph): Unit =
     source(qualifiedGraphName.namespace).store(qualifiedGraphName.graphName, graph)
 
   override def store(qualifiedGraphName: QualifiedGraphName, parameters: List[String], viewQuery: String): Unit = {
-
+    // TODO: Add tests and throw exceptions when there are QGN collisions.
     viewMapping += (qualifiedGraphName -> ParameterizedView(parameters, viewQuery))
   }
 
@@ -102,7 +107,15 @@ class CypherCatalog extends PropertyGraphCatalog {
   override def graph(qualifiedGraphName: QualifiedGraphName): PropertyGraph =
     source(qualifiedGraphName.namespace).graph(qualifiedGraphName.graphName)
 
+  // TODO: Error handling
+  override def view(qualifiedGraphName: QualifiedGraphName, parameters: List[CypherString])
+    (implicit session: CypherSession): PropertyGraph = {
+    val view = viewMapping(qualifiedGraphName)
+    session.cypher(view.viewQuery, view.parameterNames.zip(parameters).toMap).graph
+  }
+
 }
 
 // TODO: Allow for typed parameters
-case class ParameterizedView(parameters: List[String], viewQuery: String)
+@experimental
+case class ParameterizedView(parameterNames: List[String], viewQuery: String)

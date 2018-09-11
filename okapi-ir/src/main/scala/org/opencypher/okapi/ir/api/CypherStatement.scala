@@ -26,6 +26,7 @@
  */
 package org.opencypher.okapi.ir.api
 
+import org.opencypher.okapi.api.graph.QualifiedGraphName
 import org.opencypher.okapi.ir.api.block.{Binds, Block}
 import org.opencypher.okapi.ir.api.expr.{Expr, Param}
 
@@ -61,18 +62,19 @@ final case class CreateGraphStatement(
 
 final case class CreateViewStatement(
   info: QueryInfo,
+  qgn: QualifiedGraphName,
   parameters: List[Param],
-  innerQuery: CypherQuery,
   innerQueryString: String
 ) extends CypherStatement {
 
-  override val after: List[Block] = List(innerQuery)
+  override val after: List[Block] = Nil
 
   override def binds: Binds = Binds.empty
 
   override def where: Set[Expr] = Set.empty
 
-  override def graph: IRGraph = innerQuery.graph
+  // TODO: Fix block interface usage
+  override def graph: IRGraph = ???
 }
 
 
