@@ -56,7 +56,7 @@ final case class CreateGraphStatement(
 final case class CreateViewStatement(
   info: QueryInfo,
   qgn: QualifiedGraphName,
-  parameters: List[Param],
+  parameterNames: List[String],
   innerQueryString: String
 ) extends CypherStatement
 

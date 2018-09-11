@@ -32,6 +32,7 @@ import org.atnos.eff.all._
 import org.opencypher.okapi.api.graph.QualifiedGraphName
 import org.opencypher.okapi.api.schema.Schema
 import org.opencypher.okapi.api.types._
+import org.opencypher.okapi.api.value.CypherValue.CypherString
 import org.opencypher.okapi.impl.exception.{IllegalArgumentException, IllegalStateException, UnsupportedOperationException}
 import org.opencypher.okapi.ir.api._
 import org.opencypher.okapi.ir.api.block.{SortItem, _}
@@ -39,13 +40,25 @@ import org.opencypher.okapi.ir.api.expr._
 import org.opencypher.okapi.ir.api.pattern.Pattern
 import org.opencypher.okapi.ir.api.set.{SetItem, SetLabelItem, SetPropertyItem}
 import org.opencypher.okapi.ir.api.util.CompilationStage
+import org.opencypher.okapi.ir.impl.exception.ParsingException
 import org.opencypher.okapi.ir.impl.refactor.instances._
 import org.opencypher.okapi.ir.impl.util.VarConverters.RichIrField
+import org.opencypher.v9_0.parser.Query
 import org.opencypher.v9_0.util.InputPosition
 import org.opencypher.v9_0.{ast, expressions => exp}
+import org.parboiled.scala.parserunners.ReportingParseRunner
 
 
 object IRBuilder extends CompilationStage[ast.Statement, CypherStatement, IRBuilderContext] {
+
+  private val queryParser = new Query {}
+
+  def parseGraphOrView(name: String, value: String): ast.FromGraph = {
+    ReportingParseRunner(queryParser.GraphOrView).run(value).result match {
+      case Some(fromGraph) => fromGraph
+      case None => throw ParsingException(s"Could not parse FROM GRAPH parameter $name with value $value")
+    }
+  }
 
   override type Out = Either[IRBuilderError, (Option[CypherStatement], IRBuilderContext)]
 
@@ -87,13 +100,12 @@ object IRBuilder extends CompilationStage[ast.Statement, CypherStatement, IRBuil
 
       case ast.CreateView(qgn, params, _, innerQueryString) =>
         for {
-          parameters <- params.toList.traverse(convertExpr[R])
           context <- get[R, IRBuilderContext]
           result <- {
             val statement = Some(CreateViewStatement(
               QueryInfo(context.queryString),
               QualifiedGraphName(qgn.parts),
-              parameters.collect { case p: Param => p },
+              params.map(_.name).toList,
               innerQueryString
             ))
             pure[R, Option[CypherStatement]](statement)
@@ -129,6 +141,21 @@ object IRBuilder extends CompilationStage[ast.Statement, CypherStatement, IRBuil
   private def convertClause[R: _mayFail : _hasContext](c: ast.Clause): Eff[R, List[Block]] = {
 
     c match {
+
+      case ast.GraphByParameter(p: exp.Parameter) =>
+        for {
+          context <- get[R, IRBuilderContext]
+          result <- {
+            val maybeParameterValue = context.parameters.get(p.name)
+            val fromGraph = maybeParameterValue match {
+              case Some(CypherString(paramValue)) => parseGraphOrView(p.name, paramValue)
+              case Some(other) => throw ParsingException(
+                s"Parameter ${p.name} needs to be of type ${CTString.toString}, was $other")
+              case None => throw ParsingException(s"No parameter ${p.name} was specified ${p.position}")
+            }
+            convertClause(fromGraph)
+          }
+        } yield result
 
       case ast.GraphLookup(qgn: ast.CatalogName) =>
         for {

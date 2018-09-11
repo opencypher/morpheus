@@ -108,8 +108,8 @@ sealed class CAPSSessionImpl(val sparkSession: SparkSession) extends CAPSSession
         catalog.store(targetGraph.qualifiedGraphName, resultGraph)
         RelationalCypherResult.empty
 
-      case CreateViewStatement(_, qgn, parameters, queryString) =>
-        catalog.store(qgn, parameters.map(_.name), queryString)
+      case CreateViewStatement(_, qgn, parameterNames, queryString) =>
+        catalog.store(qgn, parameterNames, queryString)
         RelationalCypherResult.empty
 
       case DeleteGraphStatement(_, targetGraph) =>
