@@ -94,13 +94,12 @@ sealed class CAPSSessionImpl(val sparkSession: SparkSession) extends CAPSSession
 
     logStageProgress("Done!")
 
-    if (PrintIr.isSet) {
-      println("IR:")
-      println(ir.pretty)
-    }
-
     ir match {
       case cq: CypherQuery =>
+        if (PrintIr.isSet) {
+          println("IR:")
+          println(cq.pretty)
+        }
         planCypherQuery(graph, cq, allParameters, inputFields, maybeCapsRecords)
 
       case CreateGraphStatement(_, targetGraph, innerQueryIr) =>

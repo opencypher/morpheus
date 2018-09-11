@@ -85,9 +85,8 @@ object IRBuilder extends CompilationStage[ast.Statement, CypherStatement, IRBuil
           }
         } yield result
 
-      case ast.CreateView(qgn, params, query, innerQueryString) =>
+      case ast.CreateView(qgn, params, _, innerQueryString) =>
         for {
-          innerQuery <- convertQueryPart(query)
           parameters <- params.toList.traverse(convertExpr[R])
           context <- get[R, IRBuilderContext]
           result <- {

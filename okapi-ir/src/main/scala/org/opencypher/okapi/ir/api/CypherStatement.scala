@@ -30,14 +30,14 @@ import org.opencypher.okapi.api.graph.QualifiedGraphName
 import org.opencypher.okapi.ir.api.block.{Binds, Block}
 import org.opencypher.okapi.ir.api.expr.{Expr, Param}
 
-sealed trait CypherStatement extends Block {
+sealed trait CypherStatement {
   def info: QueryInfo
 }
 
 final case class CypherQuery(
     info: QueryInfo,
     model: QueryModel
-) extends CypherStatement {
+) extends Block with CypherStatement {
   override def after: List[Block] = model.after
 
   override def binds: Binds = model.binds
@@ -51,41 +51,17 @@ final case class CreateGraphStatement(
     info: QueryInfo,
     graph: IRGraph,
     innerQuery: CypherQuery
-) extends CypherStatement {
-
-  override val after: List[Block] = List(innerQuery)
-
-  override def binds: Binds = Binds.empty
-
-  override def where: Set[Expr] = Set.empty
-}
+) extends CypherStatement
 
 final case class CreateViewStatement(
   info: QueryInfo,
   qgn: QualifiedGraphName,
   parameters: List[Param],
   innerQueryString: String
-) extends CypherStatement {
-
-  override val after: List[Block] = Nil
-
-  override def binds: Binds = Binds.empty
-
-  override def where: Set[Expr] = Set.empty
-
-  // TODO: Fix block interface usage
-  override def graph: IRGraph = ???
-}
+) extends CypherStatement
 
 
 final case class DeleteGraphStatement(
   info: QueryInfo,
   graph: IRGraph
-) extends CypherStatement {
-
-  override val after: List[Block] = List.empty
-
-  override def binds: Binds = Binds.empty
-
-  override def where: Set[Expr] = Set.empty
-}
+) extends CypherStatement

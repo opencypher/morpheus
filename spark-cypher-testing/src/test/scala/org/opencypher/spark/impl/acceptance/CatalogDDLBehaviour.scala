@@ -82,7 +82,7 @@ class CatalogDDLBehaviour extends CAPSTestSuite with DefaultGraphInit {
       caps.catalog.view(bar) shouldEqual inputGraph
     }
 
-    ignore("supports CATALOG CREATE VIEW with parameters") {
+    it("supports CATALOG CREATE VIEW with parameters") {
       val inputGraphA = initGraph(
         """
           |CREATE (:A)
