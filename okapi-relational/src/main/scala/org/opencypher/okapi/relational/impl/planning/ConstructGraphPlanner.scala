@@ -136,7 +136,7 @@ object ConstructGraphPlanner {
 
     val constructOp = ConstructGraph(inputTablePlan, graph, name, constructTagStrategy, construct, context)
 
-    context.constructedGraphCatalog += (construct.qualifiedGraphName -> graph)
+    context.queryLocalCatalog += (construct.qualifiedGraphName -> graph)
 
     constructOp
   }

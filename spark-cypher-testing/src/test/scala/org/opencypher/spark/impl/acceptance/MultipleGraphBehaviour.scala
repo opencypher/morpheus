@@ -618,7 +618,7 @@ class MultipleGraphBehaviour extends CAPSTestSuite with ScanGraphInit {
     result.asCaps.maybeRelational match {
       case Some(relPlan) =>
         val switchOp = relPlan.collectFirst { case op : SwitchContext[_] => op }.get
-        val containsUnionGraph = switchOp.context.constructedGraphCatalog.head._2 match {
+        val containsUnionGraph = switchOp.context.queryLocalCatalog.head._2 match {
           case g: UnionGraph[_] => g.graphsToReplacements.keys.collectFirst { case op: UnionGraph[_] => op }.isDefined
           case _ => false
         }

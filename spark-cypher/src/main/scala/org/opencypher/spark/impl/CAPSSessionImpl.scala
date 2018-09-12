@@ -41,16 +41,20 @@ import org.opencypher.okapi.ir.api._
 import org.opencypher.okapi.ir.api.configuration.IrConfiguration.PrintIr
 import org.opencypher.okapi.ir.api.expr.Var
 import org.opencypher.okapi.ir.impl.parse.CypherParser
-import org.opencypher.okapi.ir.impl.{IRBuilder, IRBuilderContext}
+import org.opencypher.okapi.ir.impl.{IRBuilder, IRBuilderContext, QueryLocalCatalog}
 import org.opencypher.okapi.logical.api.configuration.LogicalConfiguration.PrintLogicalPlan
 import org.opencypher.okapi.logical.impl._
 import org.opencypher.okapi.relational.api.configuration.CoraConfiguration.{PrintOptimizedRelationalPlan, PrintQueryExecutionStages, PrintRelationalPlan}
+import org.opencypher.okapi.relational.api.graph.RelationalCypherGraph
 import org.opencypher.okapi.relational.api.planning.{RelationalCypherResult, RelationalRuntimeContext}
 import org.opencypher.okapi.relational.api.table.RelationalCypherRecords
+import org.opencypher.okapi.relational.impl.RelationalConverters.RichPropertyGraph
 import org.opencypher.okapi.relational.impl.planning.{RelationalOptimizer, RelationalPlanner}
 import org.opencypher.spark.api.CAPSSession
 import org.opencypher.spark.impl.CAPSConverters._
 import org.opencypher.spark.impl.table.SparkTable.DataFrameTable
+
+import scala.util.Try
 
 sealed class CAPSSessionImpl(val sparkSession: SparkSession) extends CAPSSession with Serializable {
 
@@ -62,14 +66,19 @@ sealed class CAPSSessionImpl(val sparkSession: SparkSession) extends CAPSSession
 
   private val maxSessionGraphId: AtomicLong = new AtomicLong(0)
 
-  override def cypher(query: String, parameters: CypherMap, drivingTable: Option[CypherRecords]): Result =
-    cypherOnGraph(graphs.empty, query, parameters, drivingTable)
+  override def cypher(
+    query: String,
+    parameters: CypherMap,
+    drivingTable: Option[CypherRecords],
+    queryCatalog: Map[QualifiedGraphName, PropertyGraph]): Result =
+    cypherOnGraph(graphs.empty, query, parameters, drivingTable, queryCatalog)
 
   override def cypherOnGraph(
     graph: PropertyGraph,
     query: String,
     queryParameters: CypherMap,
-    maybeDrivingTable: Option[CypherRecords]
+    maybeDrivingTable: Option[CypherRecords],
+    queryCatalog: Map[QualifiedGraphName, PropertyGraph]
   ): Result = {
     val ambientGraphNew = mountAmbientGraph(graph)
 
@@ -87,7 +96,17 @@ sealed class CAPSSessionImpl(val sparkSession: SparkSession) extends CAPSSession
 
     logStageProgress("IR translation ...", newLine = false)
 
-    val irBuilderContext = IRBuilderContext.initial(query, allParameters, semState, ambientGraphNew, qgnGenerator, catalog.listSources, inputFields)
+    val irBuilderContext = IRBuilderContext.initial(
+      query,
+      allParameters,
+      semState,
+      ambientGraphNew,
+      qgnGenerator,
+      catalog.listSources,
+      catalog.view(_, _),
+      inputFields,
+      queryCatalog
+    )
     val irOut = time("IR translation")(IRBuilder.process(stmt)(irBuilderContext))
 
     val ir = IRBuilder.extract(irOut)
@@ -100,10 +119,11 @@ sealed class CAPSSessionImpl(val sparkSession: SparkSession) extends CAPSSession
           println("IR:")
           println(cq.pretty)
         }
-        planCypherQuery(graph, cq, allParameters, inputFields, maybeCapsRecords)
+        val queryLocalCatalog = IRBuilder.getContext(irOut).queryLocalCatalog
+        planCypherQuery(graph, cq, allParameters, inputFields, maybeCapsRecords, queryLocalCatalog)
 
       case CreateGraphStatement(_, targetGraph, innerQueryIr) =>
-        val innerResult = planCypherQuery(graph, innerQueryIr, allParameters, inputFields, maybeCapsRecords)
+        val innerResult = planCypherQuery(graph, innerQueryIr, allParameters, inputFields, maybeCapsRecords, QueryLocalCatalog.empty)
         val resultGraph = innerResult.graph
         catalog.store(targetGraph.qualifiedGraphName, resultGraph)
         RelationalCypherResult.empty
@@ -137,10 +157,11 @@ sealed class CAPSSessionImpl(val sparkSession: SparkSession) extends CAPSSession
     cypherQuery: CypherQuery,
     allParameters: CypherMap,
     inputFields: Set[Var],
-    maybeDrivingTable: Option[RelationalCypherRecords[DataFrameTable]]
+    maybeDrivingTable: Option[RelationalCypherRecords[DataFrameTable]],
+    queryLocalCatalog: QueryLocalCatalog
   ): Result = {
     val logicalPlan = planLogical(cypherQuery, graph, inputFields)
-    planRelational(maybeDrivingTable, allParameters, logicalPlan)
+    planRelational(maybeDrivingTable, allParameters, logicalPlan, queryLocalCatalog)
   }
 
   private def planLogical(ir: CypherQuery, graph: PropertyGraph, inputFields: Set[Var]) = {
@@ -166,11 +187,15 @@ sealed class CAPSSessionImpl(val sparkSession: SparkSession) extends CAPSSession
   private def planRelational(
     maybeDrivingTable: Option[RelationalCypherRecords[DataFrameTable]],
     parameters: CypherMap,
-    logicalPlan: LogicalOperator
+    logicalPlan: LogicalOperator,
+    queryLocalCatalog: QueryLocalCatalog
   ): Result = {
 
     logStageProgress("Relational planning ... ", newLine = false)
-    implicit val context: RelationalRuntimeContext[DataFrameTable] = RelationalRuntimeContext(graphAt, maybeDrivingTable, parameters)
+    def queryLocalGraphAt(qgn: QualifiedGraphName): Option[RelationalCypherGraph[DataFrameTable]] = {
+      Try(new RichPropertyGraph(queryLocalCatalog.graph(qgn)).asRelational[DataFrameTable]).toOption
+    }
+    implicit val context: RelationalRuntimeContext[DataFrameTable] = RelationalRuntimeContext(queryLocalGraphAt, maybeDrivingTable, parameters)
 
     val relationalPlan = time("Relational planning")(RelationalPlanner.process(logicalPlan))
     logStageProgress("Done!")
@@ -196,7 +221,7 @@ sealed class CAPSSessionImpl(val sparkSession: SparkSession) extends CAPSSession
 
   private[opencypher] val qgnGenerator = new QGNGenerator {
     override def generate: QualifiedGraphName = {
-      QualifiedGraphName(SessionGraphDataSource.Namespace, GraphName(s"tmp#${maxSessionGraphId.incrementAndGet}"))
+      QualifiedGraphName(SessionGraphDataSource.Namespace, GraphName(s"tmp${maxSessionGraphId.incrementAndGet}"))
     }
   }
 
@@ -207,5 +232,7 @@ sealed class CAPSSessionImpl(val sparkSession: SparkSession) extends CAPSSession
   }
 
   override def toString: String = s"${this.getClass.getSimpleName}"
+
+  override def generateQualifiedGraphName: QualifiedGraphName = qgnGenerator.generate
 
 }

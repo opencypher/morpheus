@@ -29,7 +29,7 @@ package org.opencypher.okapi.ir.impl
 import org.opencypher.okapi.api.graph.{GraphName, Namespace, QualifiedGraphName}
 import org.opencypher.okapi.api.schema.Schema
 import org.opencypher.okapi.api.types._
-import org.opencypher.okapi.api.value.CypherValue.CypherMap
+import org.opencypher.okapi.api.value.CypherValue.{CypherMap, CypherString}
 import org.opencypher.okapi.ir.api._
 import org.opencypher.okapi.ir.api.expr._
 import org.opencypher.okapi.ir.impl.util.VarConverters.{toVar, _}
@@ -224,13 +224,17 @@ class ExpressionConverterTest extends BaseTestSuite with Neo4jAstTestSupport {
     )
   }
 
+  def unsupportedViewInstantiation(qgn: QualifiedGraphName, params: List[CypherString]) =
+    throw new Exception("View instantiation is unsupported")
+
   lazy val testContext: IRBuilderContext = IRBuilderContext.initial(
     "",
     CypherMap.empty,
     SemanticState.clean,
     IRCatalogGraph(QualifiedGraphName(Namespace(""), GraphName("")), Schema.empty),
     qgnGenerator,
-    Map.empty
+    Map.empty,
+    unsupportedViewInstantiation
   )
   private def convert(e: ast.Expression): Expr =
     new ExpressionConverter()(testContext).convert(e)(testTypes)

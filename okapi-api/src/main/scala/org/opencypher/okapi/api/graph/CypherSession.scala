@@ -45,9 +45,15 @@ trait CypherSession {
     * @param query        Cypher query to execute
     * @param parameters   parameters used by the Cypher query
     * @param drivingTable seed data that can be accessed from within the query
+    * @param queryCatalog a map of query-local graphs, this allows to evaluate queries that produce graphs recursively
     * @return result of the query
     */
-  def cypher(query: String, parameters: CypherMap = CypherMap.empty, drivingTable: Option[CypherRecords] = None): Result
+  def cypher(
+    query: String,
+    parameters: CypherMap = CypherMap.empty,
+    drivingTable: Option[CypherRecords] = None,
+    queryCatalog: Map[QualifiedGraphName, PropertyGraph] = Map.empty
+  ): Result
 
   /**
     * Interface through which the user may (de-)register property graph datasources as well as read, write and delete property graphs.
@@ -79,6 +85,11 @@ trait CypherSession {
     catalog.deregister(namespace)
 
   /**
+    * @return a new unique qualified graph name
+    */
+  def generateQualifiedGraphName: QualifiedGraphName
+
+  /**
     * Executes a Cypher query in this session, using the argument graph as the ambient graph.
     *
     * The ambient graph is the graph that is used for graph matching and updating,
@@ -93,7 +104,8 @@ trait CypherSession {
     graph: PropertyGraph,
     query: String,
     parameters: CypherMap = CypherMap.empty,
-    drivingTable: Option[CypherRecords]): CypherResult
+    drivingTable: Option[CypherRecords],
+    queryCatalog: Map[QualifiedGraphName, PropertyGraph]): CypherResult
 
   private[opencypher] lazy val emptyGraphQgn = QualifiedGraphName(catalog.sessionNamespace, GraphName("emptyGraph"))
 }

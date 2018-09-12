@@ -26,7 +26,7 @@
  */
 package org.opencypher.okapi.ir.api
 
-import org.opencypher.okapi.api.graph.{GraphName, QualifiedGraphName}
+import org.opencypher.okapi.api.graph.{GraphName, PropertyGraph, QualifiedGraphName}
 import org.opencypher.okapi.api.schema.Schema
 import org.opencypher.okapi.api.types._
 import org.opencypher.okapi.impl.io.SessionGraphDataSource
@@ -61,6 +61,14 @@ object IRCatalogGraph {
 }
 
 final case class IRCatalogGraph(qualifiedGraphName: QualifiedGraphName, schema: Schema) extends IRGraph
+
+final case class IRInstantiatedView(
+  qualifiedGraphName: QualifiedGraphName,
+  graph: PropertyGraph,
+  description: String
+) extends IRGraph {
+  override def schema: Schema = graph.schema
+}
 
 final case class IRPatternGraph(
   qualifiedGraphName: QualifiedGraphName,

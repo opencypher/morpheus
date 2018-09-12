@@ -34,6 +34,8 @@ import org.opencypher.okapi.api.schema.Schema
 import org.opencypher.okapi.api.types._
 import org.opencypher.okapi.api.value.CypherValue.CypherString
 import org.opencypher.okapi.impl.exception.{IllegalArgumentException, IllegalStateException, UnsupportedOperationException}
+import org.opencypher.okapi.impl.graph.FromGraphParser
+import org.opencypher.okapi.impl.graph.FromGraphParser._
 import org.opencypher.okapi.ir.api._
 import org.opencypher.okapi.ir.api.block.{SortItem, _}
 import org.opencypher.okapi.ir.api.expr._
@@ -43,22 +45,11 @@ import org.opencypher.okapi.ir.api.util.CompilationStage
 import org.opencypher.okapi.ir.impl.exception.ParsingException
 import org.opencypher.okapi.ir.impl.refactor.instances._
 import org.opencypher.okapi.ir.impl.util.VarConverters.RichIrField
-import org.opencypher.v9_0.parser.Query
 import org.opencypher.v9_0.util.InputPosition
 import org.opencypher.v9_0.{ast, expressions => exp}
-import org.parboiled.scala.parserunners.ReportingParseRunner
 
 
 object IRBuilder extends CompilationStage[ast.Statement, CypherStatement, IRBuilderContext] {
-
-  private val queryParser = new Query {}
-
-  def parseGraphOrView(name: String, value: String): ast.FromGraph = {
-    ReportingParseRunner(queryParser.GraphOrView).run(value).result match {
-      case Some(fromGraph) => fromGraph
-      case None => throw ParsingException(s"Could not parse FROM GRAPH parameter $name with value $value")
-    }
-  }
 
   override type Out = Either[IRBuilderError, (Option[CypherStatement], IRBuilderContext)]
 
@@ -142,13 +133,25 @@ object IRBuilder extends CompilationStage[ast.Statement, CypherStatement, IRBuil
 
     c match {
 
+      case v@ast.ViewInvocation(catalogName, params) =>
+        for {
+          context <- get[R, IRBuilderContext]
+          blocks <- {
+            val graph = context.instantiateView(QualifiedGraphName(catalogName.parts), params.map(_.toCypherString).toList)
+            val generatedQgn = context.qgnGenerator.generate
+            val irGraph = IRInstantiatedView(generatedQgn, graph, v.toCypherString.value)
+            val updatedContext = context.withWorkingGraph(irGraph).registerGraph(generatedQgn, graph)
+            put[R, IRBuilderContext](updatedContext) >> pure[R, List[Block]](List.empty)
+          }
+        } yield blocks
+
       case ast.GraphByParameter(p: exp.Parameter) =>
         for {
           context <- get[R, IRBuilderContext]
           result <- {
             val maybeParameterValue = context.parameters.get(p.name)
             val fromGraph = maybeParameterValue match {
-              case Some(CypherString(paramValue)) => parseGraphOrView(p.name, paramValue)
+              case Some(CypherString(paramValue)) => FromGraphParser.parse(p.name, paramValue)
               case Some(other) => throw ParsingException(
                 s"Parameter ${p.name} needs to be of type ${CTString.toString}, was $other")
               case None => throw ParsingException(s"No parameter ${p.name} was specified ${p.position}")

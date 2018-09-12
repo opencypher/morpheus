@@ -33,7 +33,7 @@ import org.opencypher.okapi.api.value.CypherValue.CypherInteger
 import org.opencypher.okapi.impl.exception.IllegalArgumentException
 import org.opencypher.okapi.ir.api.block.{Asc, Desc, SortItem}
 import org.opencypher.okapi.ir.api.expr._
-import org.opencypher.okapi.logical.impl.{LogicalCatalogGraph, LogicalPatternGraph}
+import org.opencypher.okapi.logical.impl.{LogicalCatalogGraph, LogicalInstantiatedView, LogicalPatternGraph}
 import org.opencypher.okapi.relational.api.graph.{RelationalCypherGraph, RelationalCypherSession}
 import org.opencypher.okapi.relational.api.planning.RelationalRuntimeContext
 import org.opencypher.okapi.relational.api.table.{RelationalCypherRecords, Table}
@@ -41,6 +41,7 @@ import org.opencypher.okapi.relational.impl.operators.TagStrategy._
 import org.opencypher.okapi.relational.impl.planning._
 import org.opencypher.okapi.relational.impl.table.RecordHeader
 import org.opencypher.okapi.trees.AbstractTreeNode
+import org.opencypher.okapi.relational.impl.RelationalConverters._
 
 import scala.reflect.runtime.universe.TypeTag
 
@@ -412,12 +413,23 @@ final case class EmptyRecords[T <: Table[T] : TypeTag](
   override lazy val _table: T = session.records.empty(header).table
 }
 
-final case class FromGraph[T <: Table[T] : TypeTag](
+final case class FromCatalogGraph[T <: Table[T] : TypeTag](
   in: RelationalOperator[T],
   logicalGraph: LogicalCatalogGraph
 ) extends RelationalOperator[T] {
 
   override def graph: RelationalCypherGraph[T] = resolve(logicalGraph.qualifiedGraphName)
+
+  override def graphName: QualifiedGraphName = logicalGraph.qualifiedGraphName
+
+}
+
+final case class FromView[T <: Table[T] : TypeTag](
+  in: RelationalOperator[T],
+  logicalGraph: LogicalInstantiatedView
+) extends RelationalOperator[T] {
+
+  override def graph: RelationalCypherGraph[T] = logicalGraph.graph.asRelational
 
   override def graphName: QualifiedGraphName = logicalGraph.qualifiedGraphName
 

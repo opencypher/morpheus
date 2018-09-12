@@ -26,12 +26,12 @@
  */
 package org.opencypher.okapi.ir.impl
 
-import org.opencypher.okapi.api.graph.{Namespace, QualifiedGraphName}
+import org.opencypher.okapi.api.graph.{Namespace, PropertyGraph, QualifiedGraphName}
 import org.opencypher.okapi.api.io.PropertyGraphDataSource
 import org.opencypher.okapi.api.schema.Schema
 import org.opencypher.okapi.api.types.CypherType._
 import org.opencypher.okapi.api.types._
-import org.opencypher.okapi.api.value.CypherValue.CypherMap
+import org.opencypher.okapi.api.value.CypherValue.{CypherMap, CypherString}
 import org.opencypher.okapi.impl.graph.QGNGenerator
 import org.opencypher.okapi.ir.api.block.SourceBlock
 import org.opencypher.okapi.ir.api.expr.{Expr, Var}
@@ -50,7 +50,9 @@ final case class IRBuilderContext(
   workingGraph: IRGraph, // initially the ambient graph, but gets changed by `FROM GRAPH`/`CONSTRUCT`
   blockRegistry: BlockRegistry = BlockRegistry.empty,
   semanticState: SemanticState,
-  queryCatalog: CatalogWithQuerySchemas, // copy of Session catalog plus constructed graph schemas
+  queryLocalCatalog: QueryLocalCatalog, // copy of Session catalog plus constructed graph schemas
+  // TODO: Unify instantiateView and queryCatalog into one abstraction that resolves graphs/views
+  instantiateView: (QualifiedGraphName, List[CypherString]) => PropertyGraph, // handles `ViewInvocation`
   knownTypes: Map[ast.Expression, CypherType] = Map.empty) {
   self =>
 
@@ -80,7 +82,7 @@ final case class IRBuilderContext(
 
   private def typer = SchemaTyper(workingGraph.schema)
 
-  def schemaFor(qgn: QualifiedGraphName): Schema = queryCatalog.schema(qgn)
+  def schemaFor(qgn: QualifiedGraphName): Schema = queryLocalCatalog.schema(qgn)
 
   def withBlocks(reg: BlockRegistry): IRBuilderContext = copy(blockRegistry = reg)
 
@@ -95,8 +97,11 @@ final case class IRBuilderContext(
   def withWorkingGraph(graph: IRGraph): IRBuilderContext =
     copy(workingGraph = graph)
 
+  def registerGraph(qgn: QualifiedGraphName, graph: PropertyGraph): IRBuilderContext =
+    copy(queryLocalCatalog = queryLocalCatalog.withGraph(qgn, graph))
+
   def registerSchema(qgn: QualifiedGraphName, schema: Schema): IRBuilderContext =
-    copy(queryCatalog = queryCatalog.withSchema(qgn, schema))
+    copy(queryLocalCatalog = queryLocalCatalog.withSchema(qgn, schema))
 }
 
 object IRBuilderContext {
@@ -107,12 +112,14 @@ object IRBuilderContext {
     workingGraph: IRCatalogGraph,
     qgnGenerator: QGNGenerator,
     sessionCatalog: Map[Namespace, PropertyGraphDataSource],
-    fieldsFromDrivingTable: Set[Var] = Set.empty
+    instantiateView: (QualifiedGraphName, List[CypherString]) => PropertyGraph,
+    fieldsFromDrivingTable: Set[Var] = Set.empty,
+    queryCatalog: Map[QualifiedGraphName, PropertyGraph] = Map.empty
   ): IRBuilderContext = {
     val registry = BlockRegistry.empty
     val block = SourceBlock(workingGraph)
     val updatedRegistry = registry.register(block)
-    val queryCatalog = CatalogWithQuerySchemas(sessionCatalog)
+    val queryLocalCatalog = QueryLocalCatalog(sessionCatalog, queryCatalog)
 
     val context = IRBuilderContext(
       qgnGenerator,
@@ -121,7 +128,8 @@ object IRBuilderContext {
       workingGraph,
       updatedRegistry,
       semState,
-      queryCatalog)
+      queryLocalCatalog,
+      instantiateView)
 
     context.withFields(fieldsFromDrivingTable.map(v => IRField(v.name)(v.cypherType)))
   }

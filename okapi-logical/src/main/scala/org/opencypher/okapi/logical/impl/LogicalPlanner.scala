@@ -386,7 +386,10 @@ class LogicalPlanner(producer: LogicalOperatorProducer)
 
         LogicalPatternGraph(p.schema, clonedVarToInputVar, newEntities, setItems, p.onGraphs, p.qualifiedGraphName)
 
-      case g: IRCatalogGraph => LogicalCatalogGraph(g.qualifiedGraphName, g.schema)
+      case IRCatalogGraph(qgn, schema) => LogicalCatalogGraph(qgn, schema)
+
+      case IRInstantiatedView(qgn, g, description) => LogicalInstantiatedView(qgn, g, description)
+
     }
   }
 

@@ -35,25 +35,25 @@ import org.opencypher.okapi.relational.api.table.{RelationalCypherRecords, Table
 /**
   * Responsible for tracking the context during the execution of a single query.
   *
-  * @param sessionCatalog          mapping between graph names and graphs registered in the session catalog
-  * @param maybeInputRecords       optional driving table for the query
-  * @param parameters              query parameters (e.g. constants) needed for expression evaluation
-  * @param constructedGraphCatalog mapping between graph names and graphs created during query execution
-  * @param session                 CAPS session
+  * @param sessionCatalog    mapping between graph names and graphs registered in the session catalog
+  * @param maybeInputRecords optional driving table for the query
+  * @param parameters        query parameters (e.g. constants) needed for expression evaluation
+  * @param queryLocalCatalog mapping between graph names and graphs created during query execution
+  * @param session           CAPS session
   * @tparam T Table type
   */
 case class RelationalRuntimeContext[T <: Table[T]](
   sessionCatalog: QualifiedGraphName => Option[RelationalCypherGraph[T]],
   maybeInputRecords: Option[RelationalCypherRecords[T]] = None,
   parameters: CypherMap = CypherMap.empty,
-  var constructedGraphCatalog: Map[QualifiedGraphName, RelationalCypherGraph[T]] = Map.empty[QualifiedGraphName, RelationalCypherGraph[T]]
+  var queryLocalCatalog: Map[QualifiedGraphName, RelationalCypherGraph[T]] = Map.empty[QualifiedGraphName, RelationalCypherGraph[T]]
 )(implicit val session: RelationalCypherSession[T]) {
   /**
     * Returns the graph referenced by the given QualifiedGraphName.
     *
     * @return back-end specific property graph
     */
-  def resolveGraph(qgn: QualifiedGraphName): RelationalCypherGraph[T] = constructedGraphCatalog.get(qgn) match {
+  def resolveGraph(qgn: QualifiedGraphName): RelationalCypherGraph[T] = queryLocalCatalog.get(qgn) match {
     case None => sessionCatalog(qgn).getOrElse(throw IllegalArgumentException(s"a graph at $qgn"))
     case Some(g) => g
   }

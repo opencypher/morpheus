@@ -199,9 +199,13 @@ trait PropertyGraphCatalog {
     *
     * @param qualifiedGraphName qualified graph name of the view
     * @param parameters         graph reference parameters with which the view is instantiated
+    * @param queryCatalog       a map of query-local graphs, this allows to evaluate views recursively
     * @return property graph returned by the parameterized view
     */
-  def view(qualifiedGraphName: QualifiedGraphName, parameters: List[CypherString] = Nil)
-    (implicit session: CypherSession): PropertyGraph
+  def view(
+    qualifiedGraphName: QualifiedGraphName,
+    parameters: List[CypherString],
+    queryCatalog: Map[QualifiedGraphName, PropertyGraph]
+  )(implicit session: CypherSession): PropertyGraph
 
 }
