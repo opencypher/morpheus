@@ -39,6 +39,7 @@ import org.opencypher.okapi.ir.api.pattern.Pattern
 import org.opencypher.okapi.ir.api.{IRCatalogGraph, IRField, IRGraph}
 import org.opencypher.okapi.ir.impl.typer.exception.TypingException
 import org.opencypher.okapi.ir.impl.typer.{SchemaTyper, TypeTracker}
+import org.opencypher.v9_0.ast.ViewInvocation
 import org.opencypher.v9_0.ast.semantics.SemanticState
 import org.opencypher.v9_0.util.{InputPosition, Ref}
 import org.opencypher.v9_0.{expressions => ast}
@@ -52,7 +53,7 @@ final case class IRBuilderContext(
   semanticState: SemanticState,
   queryLocalCatalog: QueryLocalCatalog, // copy of Session catalog plus constructed graph schemas
   // TODO: Unify instantiateView and queryCatalog into one abstraction that resolves graphs/views
-  instantiateView: (QualifiedGraphName, List[CypherString]) => PropertyGraph, // handles `ViewInvocation`
+  instantiateView: ViewInvocation => PropertyGraph,
   knownTypes: Map[ast.Expression, CypherType] = Map.empty) {
   self =>
 
@@ -112,7 +113,7 @@ object IRBuilderContext {
     workingGraph: IRCatalogGraph,
     qgnGenerator: QGNGenerator,
     sessionCatalog: Map[Namespace, PropertyGraphDataSource],
-    instantiateView: (QualifiedGraphName, List[CypherString]) => PropertyGraph,
+    instantiateView: ViewInvocation => PropertyGraph,
     fieldsFromDrivingTable: Set[Var] = Set.empty,
     queryCatalog: Map[QualifiedGraphName, PropertyGraph] = Map.empty
   ): IRBuilderContext = {

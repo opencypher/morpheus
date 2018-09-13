@@ -224,9 +224,6 @@ class ExpressionConverterTest extends BaseTestSuite with Neo4jAstTestSupport {
     )
   }
 
-  def unsupportedViewInstantiation(qgn: QualifiedGraphName, params: List[CypherString]) =
-    throw new Exception("View instantiation is unsupported")
-
   lazy val testContext: IRBuilderContext = IRBuilderContext.initial(
     "",
     CypherMap.empty,
@@ -234,7 +231,7 @@ class ExpressionConverterTest extends BaseTestSuite with Neo4jAstTestSupport {
     IRCatalogGraph(QualifiedGraphName(Namespace(""), GraphName("")), Schema.empty),
     qgnGenerator,
     Map.empty,
-    unsupportedViewInstantiation
+    ???
   )
   private def convert(e: ast.Expression): Expr =
     new ExpressionConverter()(testContext).convert(e)(testTypes)

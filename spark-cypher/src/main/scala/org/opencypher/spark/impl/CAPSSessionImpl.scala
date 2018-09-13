@@ -103,13 +103,14 @@ sealed class CAPSSessionImpl(val sparkSession: SparkSession) extends CAPSSession
       ambientGraphNew,
       qgnGenerator,
       catalog.listSources,
-      catalog.view(_, _),
+      catalog.view,
       inputFields,
       queryCatalog
     )
     val irOut = time("IR translation")(IRBuilder.process(stmt)(irBuilderContext))
 
     val ir = IRBuilder.extract(irOut)
+    val queryLocalCatalog = IRBuilder.getContext(irOut).queryLocalCatalog
 
     logStageProgress("Done!")
 
@@ -119,11 +120,10 @@ sealed class CAPSSessionImpl(val sparkSession: SparkSession) extends CAPSSession
           println("IR:")
           println(cq.pretty)
         }
-        val queryLocalCatalog = IRBuilder.getContext(irOut).queryLocalCatalog
         planCypherQuery(graph, cq, allParameters, inputFields, maybeCapsRecords, queryLocalCatalog)
 
       case CreateGraphStatement(_, targetGraph, innerQueryIr) =>
-        val innerResult = planCypherQuery(graph, innerQueryIr, allParameters, inputFields, maybeCapsRecords, QueryLocalCatalog.empty)
+        val innerResult = planCypherQuery(graph, innerQueryIr, allParameters, inputFields, maybeCapsRecords, queryLocalCatalog)
         val resultGraph = innerResult.graph
         catalog.store(targetGraph.qualifiedGraphName, resultGraph)
         RelationalCypherResult.empty
@@ -190,7 +190,6 @@ sealed class CAPSSessionImpl(val sparkSession: SparkSession) extends CAPSSession
     logicalPlan: LogicalOperator,
     queryLocalCatalog: QueryLocalCatalog
   ): Result = {
-
     logStageProgress("Relational planning ... ", newLine = false)
     def queryLocalGraphAt(qgn: QualifiedGraphName): Option[RelationalCypherGraph[DataFrameTable]] = {
       Try(new RichPropertyGraph(queryLocalCatalog.graph(qgn)).asRelational[DataFrameTable]).toOption

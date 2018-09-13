@@ -67,7 +67,9 @@ object QualifiedGraphName {
     * @param qualifiedGraphName string representation of a qualified graph name
     * @return qualified graph name
     */
-  def apply(qualifiedGraphName: String): QualifiedGraphName = apply(qualifiedGraphName.split("\\.").toList)
+  def apply(qualifiedGraphName: String): QualifiedGraphName = apply(splitQgn(qualifiedGraphName))
+
+  private[okapi] def splitQgn(qgn: String): List[String] = qgn.split("\\.").toList
 
   private[okapi] def apply(parts: List[String]): QualifiedGraphName = parts match {
     case Nil => throw IllegalArgumentException("qualified graph name or single graph name")

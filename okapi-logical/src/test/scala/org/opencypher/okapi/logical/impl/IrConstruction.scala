@@ -83,9 +83,6 @@ trait IrConstruction {
     def asCypherQuery(graphsWithSchema: (GraphName, Schema)*)(implicit schema: Schema = Schema.empty): CypherQuery =
       parseIR[CypherQuery](graphsWithSchema: _*)
 
-    def unsupportedViewInstantiation(qgn: QualifiedGraphName, params: List[CypherString]) =
-      throw new Exception("View instantiation is unsupported")
-
     def ir(graphsWithSchema: (GraphName, Schema)*)(implicit schema: Schema = Schema.empty): CypherStatement = {
       val stmt = CypherParser(queryText)(CypherParser.defaultContext)
       val parameters = Map.empty[String, CypherValue]
@@ -97,7 +94,7 @@ trait IrConstruction {
           testGraph()(schema),
           qgnGenerator,
           Map.empty.withDefaultValue(testGraphSource(graphsWithSchema :+ (testGraphName -> schema): _*)),
-          unsupportedViewInstantiation
+          ???
         )
       )
     }
@@ -111,7 +108,7 @@ trait IrConstruction {
           testGraph()(schema),
           qgnGenerator,
           Map.empty.withDefaultValue(testGraphSource(testGraphName -> schema)),
-          unsupportedViewInstantiation
+          ???
         )
       )
     }

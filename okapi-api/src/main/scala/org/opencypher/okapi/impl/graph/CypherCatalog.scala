@@ -31,9 +31,8 @@ import org.opencypher.okapi.api.io.PropertyGraphDataSource
 import org.opencypher.okapi.api.value.CypherValue.CypherString
 import org.opencypher.okapi.impl.annotations.experimental
 import org.opencypher.okapi.impl.exception.{IllegalArgumentException, UnsupportedOperationException}
-import org.opencypher.okapi.impl.graph.FromGraphParser._
 import org.opencypher.okapi.impl.io.SessionGraphDataSource
-import org.opencypher.v9_0.ast.{FromGraph, ViewInvocation}
+import org.opencypher.v9_0.ast.{FromGraph, GraphLookup, ViewInvocation}
 
 /**
   * This is the default implementation of the [[org.opencypher.okapi.api.graph.PropertyGraphCatalog]].
@@ -110,24 +109,19 @@ class CypherCatalog extends PropertyGraphCatalog {
     source(qualifiedGraphName.namespace).graph(qualifiedGraphName.graphName)
 
   // TODO: Error handling
-  override def view(
-    qualifiedGraphName: QualifiedGraphName,
-    parameters: List[CypherString] = Nil
-  )(implicit session: CypherSession): PropertyGraph = {
-    val viewDefinition = viewMapping(qualifiedGraphName)
-    val paramNameValueTuples = viewDefinition.parameterNames.zip(parameters)
-    val parsedParameterTuples = paramNameValueTuples.map { case (name, stringValue) =>
-      name -> FromGraphParser.parse(name, stringValue.value)
-    }
-    val (parameterMap, queryLocalGraphs) = parsedParameterTuples.foldLeft(Map.empty[String, CypherString] -> Map.empty[QualifiedGraphName, PropertyGraph]) {
+  private[opencypher] def view(viewInvocation: ViewInvocation)(implicit session: CypherSession): PropertyGraph = {
+    val qgn = QualifiedGraphName(viewInvocation.graphName.parts)
+    val viewDefinition = viewMapping(qgn)
+    val paramNameValueTuples = viewDefinition.parameterNames.zip(viewInvocation.params)
+    val (parameterMap, queryLocalGraphs) = paramNameValueTuples.foldLeft(Map.empty[String, CypherString] -> Map.empty[QualifiedGraphName, PropertyGraph]) {
       case ((currentParamMap, currentQueryLocalGraphs), (nextName, nextFrom: FromGraph)) =>
       nextFrom match {
-        case ViewInvocation(catalogName, params) => // Recursive view evaluation
-          val graph = view(QualifiedGraphName(catalogName.parts), params.map(_.toCypherString).toList)
+        case v: ViewInvocation => // Recursive view evaluation
+          val graph = view(v)
           val graphQgn = session.generateQualifiedGraphName
           currentParamMap.updated(nextName, CypherString(graphQgn.toString)) -> currentQueryLocalGraphs.updated(graphQgn, graph)
-        case _ => // Simple case, parameter is just passed on
-          currentParamMap.updated(nextName, nextFrom.toCypherString) -> currentQueryLocalGraphs
+        case g: GraphLookup => // Simple case, parameter is just passed on
+          currentParamMap.updated(nextName, CypherString(QualifiedGraphName(g.graphName.parts).toString)) -> currentQueryLocalGraphs
       }
     }
     session.cypher(viewDefinition.viewQuery, parameterMap, queryCatalog = queryLocalGraphs).graph

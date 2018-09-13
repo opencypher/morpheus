@@ -27,8 +27,8 @@
 package org.opencypher.okapi.api.graph
 
 import org.opencypher.okapi.api.io.PropertyGraphDataSource
-import org.opencypher.okapi.api.value.CypherValue.CypherString
 import org.opencypher.okapi.impl.annotations.experimental
+import org.opencypher.v9_0.ast.ViewInvocation
 
 /**
   * The Catalog manages a sessions [[org.opencypher.okapi.api.io.PropertyGraphDataSource]]s.
@@ -192,19 +192,13 @@ trait PropertyGraphCatalog {
   def graph(qualifiedGraphName: QualifiedGraphName): PropertyGraph
 
   /**
-    * Returns the [[org.opencypher.okapi.api.graph.PropertyGraph]] that is created by the view stored at
-    * the given [[org.opencypher.okapi.api.graph.QualifiedGraphName]].
+    * Returns the [[org.opencypher.okapi.api.graph.PropertyGraph]] that is created by the passed [[ViewInvocation]].
     *
     * The view is instantiated with `parameters`.
     *
-    * @param qualifiedGraphName qualified graph name of the view
-    * @param parameters         graph reference parameters with which the view is instantiated
-    * @param queryCatalog       a map of query-local graphs, this allows to evaluate views recursively
+    * @param viewInvocation view invocation to execute
     * @return property graph returned by the parameterized view
     */
-  def view(
-    qualifiedGraphName: QualifiedGraphName,
-    parameters: List[CypherString]
-  )(implicit session: CypherSession): PropertyGraph
+  private[opencypher] def view(viewInvocation: ViewInvocation)(implicit session: CypherSession): PropertyGraph
 
 }

@@ -29,7 +29,6 @@ package org.opencypher.spark.impl.acceptance
 import org.opencypher.okapi.api.graph.{GraphName, QualifiedGraphName}
 import org.opencypher.okapi.api.types.CTNode
 import org.opencypher.okapi.api.value.CypherValue.CypherMap
-import org.opencypher.okapi.relational.api.configuration.CoraConfiguration.PrintOptimizedRelationalPlan
 import org.opencypher.okapi.testing.Bag
 import org.opencypher.spark.testing.CAPSTestSuite
 import org.scalatest.DoNotDiscover
@@ -63,14 +62,7 @@ class CatalogDDLBehaviour extends CAPSTestSuite with DefaultGraphInit {
   }
 
   describe("CATALOG CREATE VIEW") {
-    it("supports CATALOG CREATE VIEW") {
-      val inputGraph = initGraph(
-        """
-          |CREATE (:A)
-        """.stripMargin)
-
-      caps.catalog.store("foo", inputGraph)
-
+    it("supports storing a VIEW") {
       caps.cypher(
         """
           |CATALOG CREATE VIEW bar {
@@ -82,74 +74,6 @@ class CatalogDDLBehaviour extends CAPSTestSuite with DefaultGraphInit {
       val bar = QualifiedGraphName("bar")
       caps.catalog.catalogNames should contain(bar)
       caps.catalog.viewNames should contain(bar)
-      caps.catalog.view(bar) shouldEqual inputGraph
-    }
-
-    it("supports CATALOG CREATE VIEW with parameters") {
-      val inputGraphA = initGraph(
-        """
-          |CREATE (:A)
-        """.stripMargin)
-      val inputGraphB = initGraph(
-        """
-          |CREATE (:B)
-          |CREATE (:B)
-        """.stripMargin)
-
-      caps.catalog.store("a", inputGraphA)
-      caps.catalog.store("b", inputGraphB)
-
-      caps.cypher(
-        """
-          |CATALOG CREATE VIEW bar($g1, $g2) {
-          | FROM GRAPH $g1
-          | MATCH (a: A)
-          | FROM GRAPH $g2
-          | MATCH (b: B)
-          | CONSTRUCT
-          |   CREATE (a)
-          |   CREATE (b)
-          | RETURN GRAPH
-          |}
-        """.stripMargin)
-
-      val bar = QualifiedGraphName("bar")
-      caps.catalog.catalogNames should contain(bar)
-      caps.catalog.viewNames should contain(bar)
-
-      val resultGraph = caps.catalog.view(bar, List("a", "b"))
-      resultGraph.nodes("n").size shouldBe 3
-      resultGraph.nodes("a", CTNode("A")).size shouldBe 1
-      resultGraph.nodes("b", CTNode("B")).size shouldBe 2
-    }
-
-    it("supports simple nested CATALOG CREATE VIEW with parameters") {
-      val inputGraphA = initGraph(
-        """
-          |CREATE (:A {val: 0})
-        """.stripMargin)
-
-      caps.catalog.store("a", inputGraphA)
-
-      caps.cypher(
-        """
-          |CATALOG CREATE VIEW bar($g1) {
-          | FROM GRAPH $g1
-          | MATCH (a: A)
-          | CONSTRUCT
-          |   CREATE (:A { val: a.val + 1 })
-          | RETURN GRAPH
-          |}
-        """.stripMargin)
-
-      val bar = QualifiedGraphName("bar")
-      caps.catalog.catalogNames should contain(bar)
-      caps.catalog.viewNames should contain(bar)
-
-      val resultGraph = caps.catalog.view(bar, List("bar(bar(bar(a)))"))
-      resultGraph.cypher("MATCH (n) RETURN n.val as val").records.toMaps should equal(Bag(CypherMap(
-        "val" -> 4
-      )))
     }
 
     it("supports simple nested CATALOG CREATE VIEW in a query") {
@@ -162,7 +86,7 @@ class CatalogDDLBehaviour extends CAPSTestSuite with DefaultGraphInit {
 
       caps.cypher(
         """
-          |CATALOG CREATE VIEW bar($g1) {
+          |CATALOG CREATE VIEW inc($g1) {
           | FROM GRAPH $g1
           | MATCH (a: A)
           | CONSTRUCT
@@ -171,13 +95,13 @@ class CatalogDDLBehaviour extends CAPSTestSuite with DefaultGraphInit {
           |}
         """.stripMargin)
 
-      val bar = QualifiedGraphName("bar")
-      caps.catalog.catalogNames should contain(bar)
-      caps.catalog.viewNames should contain(bar)
+      val inc = QualifiedGraphName("inc")
+      caps.catalog.catalogNames should contain(inc)
+      caps.catalog.viewNames should contain(inc)
 
       val result = caps.cypher(
         """
-          |FROM GRAPH bar(bar(bar(bar(a))))
+          |FROM GRAPH inc(inc(inc(inc(a))))
           |MATCH (n)
           |RETURN n.val as val
         """.stripMargin)
@@ -187,7 +111,7 @@ class CatalogDDLBehaviour extends CAPSTestSuite with DefaultGraphInit {
       )))
     }
 
-    it("supports complex nested CATALOG CREATE VIEW with parameters") {
+    it("supports CATALOG CREATE VIEW with two parameters") {
       val inputGraphA = initGraph(
         """
           |CREATE (:A)
@@ -219,64 +143,65 @@ class CatalogDDLBehaviour extends CAPSTestSuite with DefaultGraphInit {
       caps.catalog.catalogNames should contain(bar)
       caps.catalog.viewNames should contain(bar)
 
-      val resultGraph = caps.catalog.view(bar, List("bar(a, b)", "b"))
-//      resultGraph.nodes("n").capsRecords.show
-//      resultGraph.nodes("n").size shouldBe 3
-//      resultGraph.nodes("a", CTNode("A")).size shouldBe 1
-//      resultGraph.nodes("b", CTNode("B")).size shouldBe 2
-    }
-
-    it("supports using CATALOG CREATE VIEW in a query") {
-      val inputGraphA = initGraph(
-        """
-          |CREATE (:A)
-        """.stripMargin)
-      val inputGraphB = initGraph(
-        """
-          |CREATE (:B)
-          |CREATE (:B)
-        """.stripMargin)
-
-      caps.catalog.store("a", inputGraphA)
-      caps.catalog.store("b", inputGraphB)
-
-      caps.cypher(
-        """
-          |CATALOG CREATE VIEW bar($g1, $g2) {
-          | FROM GRAPH $g1
-          | MATCH (a: A)
-          | FROM GRAPH $g2
-          | MATCH (b: B)
-          | CONSTRUCT
-          |   CREATE (a)
-          |   CREATE (b)
-          | RETURN GRAPH
-          |}
-        """.stripMargin)
-
-      val bar = QualifiedGraphName("bar")
-      caps.catalog.catalogNames should contain(bar)
-      caps.catalog.viewNames should contain(bar)
-
-      val result = caps.cypher(
+      val resultGraph = caps.cypher(
         """
           |FROM GRAPH bar(a, b)
-          |MATCH (n)
-          |RETURN n
-        """.stripMargin)
+          |RETURN GRAPH
+        """.stripMargin).graph
 
-      result.records.size shouldBe 3
+      resultGraph.nodes("n").size shouldBe 3
+      resultGraph.nodes("a", CTNode("A")).size shouldBe 1
+      resultGraph.nodes("b", CTNode("B")).size shouldBe 2
     }
 
-    it("supports using nested CATALOG CREATE VIEW in a query") {
+    it("supports nested CREATE VIEW with two parameters") {
+      val inputGraphA1 = initGraph(
+        """
+          |CREATE ({val: 1})
+        """.stripMargin)
+      val inputGraphA2 = initGraph(
+        """
+          |CREATE ({val: 1000})
+        """.stripMargin)
+
+      caps.catalog.store("a1", inputGraphA1)
+      caps.catalog.store("a2", inputGraphA2)
+
+      caps.cypher(
+        """
+          |CATALOG CREATE VIEW bar($g1, $g2) {
+          | FROM GRAPH $g1
+          | MATCH (n)
+          | FROM GRAPH $g2
+          | MATCH (m)
+          | CONSTRUCT
+          |   CREATE ({val: n.val + m.val})
+          | RETURN GRAPH
+          |}
+        """.stripMargin)
+
+      val resultGraph = caps.cypher(
+        """
+          |FROM GRAPH bar(bar(a2, a1), bar(a1, a2))
+          |RETURN GRAPH
+        """.stripMargin).graph
+
+      resultGraph.nodes("n").size shouldBe 1
+      resultGraph.cypher("MATCH (n) RETURN n.val").records.toMaps should equal(Bag(
+        CypherMap("n.val" -> 2002)
+      ))
+    }
+
+    ignore("supports nested CREATE VIEW with two parameters and multiple constructed nodes") {
       val inputGraphA = initGraph(
         """
-          |CREATE (:A)
+          |CREATE ({name: 'A1'})
+          |CREATE ({name: 'A2'})
         """.stripMargin)
       val inputGraphB = initGraph(
         """
-          |CREATE (:B)
-          |CREATE (:B)
+          |CREATE ({name: 'B1'})
+          |CREATE ({name: 'B2'})
         """.stripMargin)
 
       caps.catalog.store("a", inputGraphA)
@@ -286,28 +211,62 @@ class CatalogDDLBehaviour extends CAPSTestSuite with DefaultGraphInit {
         """
           |CATALOG CREATE VIEW bar($g1, $g2) {
           | FROM GRAPH $g1
-          | MATCH (a: A)
+          | MATCH (n)
           | FROM GRAPH $g2
-          | MATCH (b: B)
+          | MATCH (m)
           | CONSTRUCT
-          |   CREATE (a)
-          |   CREATE (b)
+          |   CREATE (n)
+          |   CREATE (m)
           | RETURN GRAPH
           |}
         """.stripMargin)
 
-      val bar = QualifiedGraphName("bar")
-      caps.catalog.catalogNames should contain(bar)
-      caps.catalog.viewNames should contain(bar)
-
-      val result = caps.cypher(
+      val resultGraph = caps.cypher(
         """
-          |FROM GRAPH bar(bar(a, b), a)
-          |MATCH (n)
-          |RETURN n
+          |FROM GRAPH bar(bar(b, a), bar(a, b))
+          |RETURN GRAPH
+        """.stripMargin).graph
+
+      resultGraph.nodes("n").size shouldBe 16
+    }
+
+    ignore("supports nested CREATE VIEW with two parameters with cloning") {
+      val inputGraphA = initGraph(
+        """
+          |CREATE ({name: 'A1'})
+          |CREATE ({name: 'A2'})
+        """.stripMargin)
+      val inputGraphB = initGraph(
+        """
+          |CREATE ({name: 'B1'})
+          |CREATE ({name: 'B2'})
         """.stripMargin)
 
-      result.records.size shouldBe 3
+      caps.catalog.store("a", inputGraphA)
+      caps.catalog.store("b", inputGraphB)
+
+      caps.cypher(
+        """
+          |CATALOG CREATE VIEW bar($g1, $g2) {
+          | FROM GRAPH $g1
+          | MATCH (n)
+          | FROM GRAPH $g2
+          | MATCH (m)
+          | CONSTRUCT
+          |   CLONE n
+          |   CLONE m
+          | RETURN GRAPH
+          |}
+        """.stripMargin)
+
+      val resultGraph = caps.cypher(
+        """
+          |FROM GRAPH bar(bar(b, a), bar(a, b))
+          |RETURN GRAPH
+        """.stripMargin).graph
+
+      resultGraph.nodes("n").show
+      resultGraph.nodes("n").size shouldBe 4
     }
 
   }

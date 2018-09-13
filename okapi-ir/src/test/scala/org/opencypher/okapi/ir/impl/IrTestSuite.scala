@@ -42,9 +42,6 @@ import scala.reflect.ClassTag
 
 abstract class IrTestSuite extends BaseTestSuite {
 
-  def unsupportedViewInstantiation(qgn: QualifiedGraphName, params: List[CypherString]) =
-    throw new Exception("View instantiation is unsupported")
-
   def testGraph()(implicit schema: Schema = testGraphSchema) =
     IRCatalogGraph(testQualifiedGraphName, schema)
 
@@ -103,7 +100,7 @@ abstract class IrTestSuite extends BaseTestSuite {
           testGraph()(schema),
           qgnGenerator,
           Map.empty.withDefaultValue(testGraphSource(graphsWithSchema :+ (testGraphName -> schema): _*)),
-          unsupportedViewInstantiation
+          ???
         ))
     }
 
@@ -116,7 +113,7 @@ abstract class IrTestSuite extends BaseTestSuite {
           testGraph()(schema),
           qgnGenerator,
           Map.empty.withDefaultValue(testGraphSource(testGraphName -> schema)),
-          unsupportedViewInstantiation
+          ???
         )
       )
     }
@@ -131,7 +128,7 @@ abstract class IrTestSuite extends BaseTestSuite {
         testGraph()(Schema.empty),
         qgnGenerator,
         Map.empty,
-        unsupportedViewInstantiation
+        ???
       )
   }
 }

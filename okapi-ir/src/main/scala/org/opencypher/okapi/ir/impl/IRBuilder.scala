@@ -34,9 +34,6 @@ import org.opencypher.okapi.api.schema.Schema
 import org.opencypher.okapi.api.types._
 import org.opencypher.okapi.api.value.CypherValue.CypherString
 import org.opencypher.okapi.impl.exception.{IllegalArgumentException, IllegalStateException, UnsupportedOperationException}
-import org.opencypher.okapi.impl.graph.FromGraphParser
-import org.opencypher.okapi.impl.graph.FromGraphParser._
-import org.opencypher.okapi.ir.api
 import org.opencypher.okapi.ir.api._
 import org.opencypher.okapi.ir.api.block.{SortItem, _}
 import org.opencypher.okapi.ir.api.expr._
@@ -134,11 +131,11 @@ object IRBuilder extends CompilationStage[ast.Statement, CypherStatement, IRBuil
 
     c match {
 
-      case v@ast.ViewInvocation(catalogName, params) =>
+      case v: ast.ViewInvocation =>
         for {
           context <- get[R, IRBuilderContext]
           blocks <- {
-            val graph = context.instantiateView(QualifiedGraphName(catalogName.parts), params.map(_.toCypherString).toList)
+            val graph = context.instantiateView(v)
             val generatedQgn = context.qgnGenerator.generate
             val irGraph = IRCatalogGraph(generatedQgn, graph.schema)
             val updatedContext = context.withWorkingGraph(irGraph).registerGraph(generatedQgn, graph)
@@ -152,7 +149,7 @@ object IRBuilder extends CompilationStage[ast.Statement, CypherStatement, IRBuil
           result <- {
             val maybeParameterValue = context.parameters.get(p.name)
             val fromGraph = maybeParameterValue match {
-              case Some(CypherString(paramValue)) => FromGraphParser.parse(p.name, paramValue)
+              case Some(CypherString(paramValue)) => ast.GraphLookup(ast.CatalogName(QualifiedGraphName.splitQgn(paramValue)))(p.position)
               case Some(other) => throw ParsingException(
                 s"Parameter ${p.name} needs to be of type ${CTString.toString}, was $other")
               case None => throw ParsingException(s"No parameter ${p.name} was specified ${p.position}")
