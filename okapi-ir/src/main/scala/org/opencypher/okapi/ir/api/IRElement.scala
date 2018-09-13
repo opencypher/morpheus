@@ -62,14 +62,6 @@ object IRCatalogGraph {
 
 final case class IRCatalogGraph(qualifiedGraphName: QualifiedGraphName, schema: Schema) extends IRGraph
 
-final case class IRInstantiatedView(
-  qualifiedGraphName: QualifiedGraphName,
-  graph: PropertyGraph,
-  description: String
-) extends IRGraph {
-  override def schema: Schema = graph.schema
-}
-
 final case class IRPatternGraph(
   qualifiedGraphName: QualifiedGraphName,
   schema: Schema,

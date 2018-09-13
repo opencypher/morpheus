@@ -29,6 +29,7 @@ package org.opencypher.spark.impl.acceptance
 import org.opencypher.okapi.api.graph.{GraphName, QualifiedGraphName}
 import org.opencypher.okapi.api.types.CTNode
 import org.opencypher.okapi.api.value.CypherValue.CypherMap
+import org.opencypher.okapi.relational.api.configuration.CoraConfiguration.PrintOptimizedRelationalPlan
 import org.opencypher.okapi.testing.Bag
 import org.opencypher.spark.testing.CAPSTestSuite
 import org.scalatest.DoNotDiscover
@@ -186,7 +187,7 @@ class CatalogDDLBehaviour extends CAPSTestSuite with DefaultGraphInit {
       )))
     }
 
-    ignore("supports complex nested CATALOG CREATE VIEW with parameters") {
+    it("supports complex nested CATALOG CREATE VIEW with parameters") {
       val inputGraphA = initGraph(
         """
           |CREATE (:A)
@@ -301,7 +302,7 @@ class CatalogDDLBehaviour extends CAPSTestSuite with DefaultGraphInit {
 
       val result = caps.cypher(
         """
-          |FROM GRAPH bar(bar(a, a), a)
+          |FROM GRAPH bar(bar(a, b), a)
           |MATCH (n)
           |RETURN n
         """.stripMargin)

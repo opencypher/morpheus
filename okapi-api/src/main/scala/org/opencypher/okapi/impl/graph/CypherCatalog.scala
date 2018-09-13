@@ -112,8 +112,7 @@ class CypherCatalog extends PropertyGraphCatalog {
   // TODO: Error handling
   override def view(
     qualifiedGraphName: QualifiedGraphName,
-    parameters: List[CypherString] = Nil,
-    queryCatalog: Map[QualifiedGraphName, PropertyGraph] = Map.empty
+    parameters: List[CypherString] = Nil
   )(implicit session: CypherSession): PropertyGraph = {
     val viewDefinition = viewMapping(qualifiedGraphName)
     val paramNameValueTuples = viewDefinition.parameterNames.zip(parameters)

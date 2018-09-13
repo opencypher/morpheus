@@ -388,8 +388,6 @@ class LogicalPlanner(producer: LogicalOperatorProducer)
 
       case IRCatalogGraph(qgn, schema) => LogicalCatalogGraph(qgn, schema)
 
-      case IRInstantiatedView(qgn, g, description) => LogicalInstantiatedView(qgn, g, description)
-
     }
   }
 

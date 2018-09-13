@@ -65,15 +65,6 @@ sealed trait LogicalGraph {
 
 }
 
-case class LogicalInstantiatedView(
-  qualifiedGraphName: QualifiedGraphName,
-  graph: PropertyGraph,
-  description: String
-) extends LogicalGraph {
-  override protected def args: String = description
-  override def schema: Schema = graph.schema
-}
-
 case class LogicalCatalogGraph(qualifiedGraphName: QualifiedGraphName, schema: Schema) extends LogicalGraph {
   override protected def args: String = qualifiedGraphName.toString
 }

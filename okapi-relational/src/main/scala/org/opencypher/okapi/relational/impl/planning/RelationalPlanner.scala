@@ -89,7 +89,6 @@ object RelationalPlanner {
         val inOp = process[T](in)
         graph match {
           case g: LogicalCatalogGraph => relational.FromCatalogGraph(inOp, g)
-          case v: LogicalInstantiatedView => relational.FromView(inOp, v)
           case construct: LogicalPatternGraph => planConstructGraph(inOp, construct)
         }
 
@@ -234,8 +233,6 @@ object RelationalPlanner {
         inOp.context.resolveGraph(logicalGraph.qualifiedGraphName)
       case p: LogicalPatternGraph =>
         inOp.context.queryLocalCatalog.getOrElse(p.qualifiedGraphName, planConstructGraph(inOp, p).graph)
-      case v: LogicalInstantiatedView =>
-        v.graph.asRelational
     }
     val scanOp = graph.scanOperator(entityVar.cypherType)
     scanOp.assignScanName(entityVar.name).switchContext(inOp.context)

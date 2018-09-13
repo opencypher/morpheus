@@ -36,6 +36,7 @@ import org.opencypher.okapi.api.value.CypherValue.CypherString
 import org.opencypher.okapi.impl.exception.{IllegalArgumentException, IllegalStateException, UnsupportedOperationException}
 import org.opencypher.okapi.impl.graph.FromGraphParser
 import org.opencypher.okapi.impl.graph.FromGraphParser._
+import org.opencypher.okapi.ir.api
 import org.opencypher.okapi.ir.api._
 import org.opencypher.okapi.ir.api.block.{SortItem, _}
 import org.opencypher.okapi.ir.api.expr._
@@ -139,7 +140,7 @@ object IRBuilder extends CompilationStage[ast.Statement, CypherStatement, IRBuil
           blocks <- {
             val graph = context.instantiateView(QualifiedGraphName(catalogName.parts), params.map(_.toCypherString).toList)
             val generatedQgn = context.qgnGenerator.generate
-            val irGraph = IRInstantiatedView(generatedQgn, graph, v.toCypherString.value)
+            val irGraph = IRCatalogGraph(generatedQgn, graph.schema)
             val updatedContext = context.withWorkingGraph(irGraph).registerGraph(generatedQgn, graph)
             put[R, IRBuilderContext](updatedContext) >> pure[R, List[Block]](List.empty)
           }

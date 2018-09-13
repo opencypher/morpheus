@@ -204,8 +204,7 @@ trait PropertyGraphCatalog {
     */
   def view(
     qualifiedGraphName: QualifiedGraphName,
-    parameters: List[CypherString],
-    queryCatalog: Map[QualifiedGraphName, PropertyGraph]
+    parameters: List[CypherString]
   )(implicit session: CypherSession): PropertyGraph
 
 }

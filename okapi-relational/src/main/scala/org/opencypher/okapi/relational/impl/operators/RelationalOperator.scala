@@ -33,7 +33,7 @@ import org.opencypher.okapi.api.value.CypherValue.CypherInteger
 import org.opencypher.okapi.impl.exception.IllegalArgumentException
 import org.opencypher.okapi.ir.api.block.{Asc, Desc, SortItem}
 import org.opencypher.okapi.ir.api.expr._
-import org.opencypher.okapi.logical.impl.{LogicalCatalogGraph, LogicalInstantiatedView, LogicalPatternGraph}
+import org.opencypher.okapi.logical.impl.{LogicalCatalogGraph, LogicalPatternGraph}
 import org.opencypher.okapi.relational.api.graph.{RelationalCypherGraph, RelationalCypherSession}
 import org.opencypher.okapi.relational.api.planning.RelationalRuntimeContext
 import org.opencypher.okapi.relational.api.table.{RelationalCypherRecords, Table}
@@ -419,17 +419,6 @@ final case class FromCatalogGraph[T <: Table[T] : TypeTag](
 ) extends RelationalOperator[T] {
 
   override def graph: RelationalCypherGraph[T] = resolve(logicalGraph.qualifiedGraphName)
-
-  override def graphName: QualifiedGraphName = logicalGraph.qualifiedGraphName
-
-}
-
-final case class FromView[T <: Table[T] : TypeTag](
-  in: RelationalOperator[T],
-  logicalGraph: LogicalInstantiatedView
-) extends RelationalOperator[T] {
-
-  override def graph: RelationalCypherGraph[T] = logicalGraph.graph.asRelational
 
   override def graphName: QualifiedGraphName = logicalGraph.qualifiedGraphName
 
