@@ -101,13 +101,22 @@ object IRBuilder extends CompilationStage[ast.Statement, CypherStatement, IRBuil
           }
         } yield result
 
-      case ast.DropGraph(qgn) =>
+      case ast.DropView(catalogName) =>
         for {
           context <- get[R, IRBuilderContext]
           result <- {
-            val irQgn = QualifiedGraphName(qgn.parts)
-            val schema = context.schemaFor(irQgn)
-            val statement = Some(DeleteGraphStatement(QueryInfo(context.queryString), IRCatalogGraph(irQgn, schema)))
+            val irQgn = QualifiedGraphName(catalogName.parts)
+            val statement = Some(DeleteViewStatement(QueryInfo(context.queryString), irQgn))
+            pure[R, Option[CypherStatement]](statement)
+          }
+        } yield result
+
+      case ast.DropGraph(catalogName) =>
+        for {
+          context <- get[R, IRBuilderContext]
+          result <- {
+            val irQgn = QualifiedGraphName(catalogName.parts)
+            val statement = Some(DeleteGraphStatement(QueryInfo(context.queryString), irQgn))
             pure[R, Option[CypherStatement]](statement)
           }
         } yield result

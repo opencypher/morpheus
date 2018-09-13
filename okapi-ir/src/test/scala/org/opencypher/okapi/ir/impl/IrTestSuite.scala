@@ -100,7 +100,7 @@ abstract class IrTestSuite extends BaseTestSuite {
           testGraph()(schema),
           qgnGenerator,
           Map.empty.withDefaultValue(testGraphSource(graphsWithSchema :+ (testGraphName -> schema): _*)),
-          ???
+          _ => ???
         ))
     }
 
@@ -113,7 +113,7 @@ abstract class IrTestSuite extends BaseTestSuite {
           testGraph()(schema),
           qgnGenerator,
           Map.empty.withDefaultValue(testGraphSource(testGraphName -> schema)),
-          ???
+          _ => ???
         )
       )
     }
@@ -128,7 +128,7 @@ abstract class IrTestSuite extends BaseTestSuite {
         testGraph()(Schema.empty),
         qgnGenerator,
         Map.empty,
-        ???
+        _ => ???
       )
   }
 }

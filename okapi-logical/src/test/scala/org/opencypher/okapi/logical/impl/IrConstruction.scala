@@ -94,7 +94,7 @@ trait IrConstruction {
           testGraph()(schema),
           qgnGenerator,
           Map.empty.withDefaultValue(testGraphSource(graphsWithSchema :+ (testGraphName -> schema): _*)),
-          ???
+          _ => ???
         )
       )
     }
@@ -108,7 +108,7 @@ trait IrConstruction {
           testGraph()(schema),
           qgnGenerator,
           Map.empty.withDefaultValue(testGraphSource(testGraphName -> schema)),
-          ???
+          _ => ???
         )
       )
     }

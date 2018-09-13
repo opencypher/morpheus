@@ -157,12 +157,12 @@ trait PropertyGraphCatalog {
   def store(qualifiedGraphName: QualifiedGraphName, parameters: List[String], viewQuery: String): Unit
 
   /**
-    * Removes the [[org.opencypher.okapi.api.graph.PropertyGraph]] associated with the given qualified graph name.
+    * Removes the [[org.opencypher.okapi.api.graph.PropertyGraph]] with the given qualified graph name.
     *
     * @param qualifiedGraphName name of the graph within the session.
     */
-  def delete(qualifiedGraphName: String): Unit =
-    delete(QualifiedGraphName(qualifiedGraphName))
+  def dropGraph(qualifiedGraphName: String): Unit =
+    dropGraph(QualifiedGraphName(qualifiedGraphName))
 
   /**
     * Removes the [[org.opencypher.okapi.api.graph.PropertyGraph]] with the given qualified name from the data source
@@ -170,7 +170,22 @@ trait PropertyGraphCatalog {
     *
     * @param qualifiedGraphName qualified graph name
     */
-  def delete(qualifiedGraphName: QualifiedGraphName): Unit
+  def dropGraph(qualifiedGraphName: QualifiedGraphName): Unit
+
+  /**
+    * Removes the view with the given qualified graph name from the catalog.
+    *
+    * @param qualifiedGraphName name of the view
+    */
+  def dropView(qualifiedGraphName: String): Unit =
+    dropView(QualifiedGraphName(qualifiedGraphName))
+
+  /**
+    * Removes the view with the given qualified graph name from the catalog.
+    *
+    * @param qualifiedGraphName name of the view
+    */
+  def dropView(qualifiedGraphName: QualifiedGraphName): Unit
 
   /**
     * Returns the [[org.opencypher.okapi.api.graph.PropertyGraph]] that is stored under the given

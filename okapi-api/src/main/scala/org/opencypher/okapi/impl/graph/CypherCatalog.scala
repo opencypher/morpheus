@@ -106,8 +106,10 @@ class CypherCatalog extends PropertyGraphCatalog {
     }
   }
 
-  override def delete(qualifiedGraphName: QualifiedGraphName): Unit =
+  override def dropGraph(qualifiedGraphName: QualifiedGraphName): Unit =
     source(qualifiedGraphName.namespace).delete(qualifiedGraphName.graphName)
+
+  override def dropView(qualifiedGraphName: QualifiedGraphName): Unit = viewMapping -= qualifiedGraphName
 
   override def graph(qualifiedGraphName: QualifiedGraphName): PropertyGraph =
     source(qualifiedGraphName.namespace).graph(qualifiedGraphName.graphName)

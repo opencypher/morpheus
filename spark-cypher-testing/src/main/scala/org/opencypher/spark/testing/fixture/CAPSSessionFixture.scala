@@ -36,7 +36,7 @@ trait CAPSSessionFixture extends BaseTestFixture {
 
   abstract override protected def afterEach(): Unit = {
     // delete all session graphs via their qualified graph name
-    caps.catalog.source(caps.catalog.sessionNamespace).graphNames.map(_.value).foreach(caps.catalog.delete)
+    caps.catalog.source(caps.catalog.sessionNamespace).graphNames.map(_.value).foreach(caps.catalog.dropGraph)
     caps.catalog.store(caps.emptyGraphQgn, caps.graphs.empty)
     super.afterEach()
   }

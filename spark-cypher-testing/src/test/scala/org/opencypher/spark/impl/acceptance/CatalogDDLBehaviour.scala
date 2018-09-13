@@ -399,8 +399,34 @@ class CatalogDDLBehaviour extends CAPSTestSuite with DefaultGraphInit {
   }
 
   describe("DROP GRAPH/VIEW") {
-    //TODO: Add DROP VIEW tests
 
+    it("can drop a view") {
+      caps.cypher(
+        """
+          |CATALOG CREATE VIEW bar {
+          | FROM GRAPH foo
+          | RETURN GRAPH
+          |}
+        """.stripMargin)
+
+      val bar = QualifiedGraphName("bar")
+      caps.catalog.catalogNames should contain(bar)
+      caps.catalog.viewNames should contain(bar)
+
+      caps.cypher(
+        """
+          |CATALOG DROP VIEW bar
+        """.stripMargin
+      )
+
+      caps.catalog.catalogNames should not contain bar
+      caps.catalog.viewNames should not contain bar
+    }
+
+    it("dropping a view is idempotent") {
+      caps.catalog.dropView("foo")
+      caps.cypher("CATALOG DROP VIEW foo")
+    }
 
     it("can drop a session graph") {
 

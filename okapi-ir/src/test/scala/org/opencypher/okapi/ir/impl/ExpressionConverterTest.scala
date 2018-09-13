@@ -231,7 +231,7 @@ class ExpressionConverterTest extends BaseTestSuite with Neo4jAstTestSupport {
     IRCatalogGraph(QualifiedGraphName(Namespace(""), GraphName("")), Schema.empty),
     qgnGenerator,
     Map.empty,
-    ???
+    _ => ???
   )
   private def convert(e: ast.Expression): Expr =
     new ExpressionConverter()(testContext).convert(e)(testTypes)

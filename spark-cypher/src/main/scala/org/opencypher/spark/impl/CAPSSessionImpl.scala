@@ -132,8 +132,12 @@ sealed class CAPSSessionImpl(val sparkSession: SparkSession) extends CAPSSession
         catalog.store(qgn, parameterNames, queryString)
         RelationalCypherResult.empty
 
-      case DeleteGraphStatement(_, targetGraph) =>
-        catalog.delete(targetGraph.qualifiedGraphName)
+      case DeleteGraphStatement(_, qgn) =>
+        catalog.dropGraph(qgn)
+        RelationalCypherResult.empty
+
+      case DeleteViewStatement(_, qgn) =>
+        catalog.dropView(qgn)
         RelationalCypherResult.empty
     }
   }

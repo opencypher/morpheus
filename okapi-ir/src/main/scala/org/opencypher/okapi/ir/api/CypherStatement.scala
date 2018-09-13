@@ -63,5 +63,10 @@ final case class CreateViewStatement(
 
 final case class DeleteGraphStatement(
   info: QueryInfo,
-  graph: IRGraph
+  qgn: QualifiedGraphName
+) extends CypherStatement
+
+final case class DeleteViewStatement(
+  info: QueryInfo,
+  qgn: QualifiedGraphName
 ) extends CypherStatement
