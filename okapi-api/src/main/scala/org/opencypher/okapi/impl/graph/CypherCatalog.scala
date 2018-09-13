@@ -108,21 +108,26 @@ class CypherCatalog extends PropertyGraphCatalog {
   override def graph(qualifiedGraphName: QualifiedGraphName): PropertyGraph =
     source(qualifiedGraphName.namespace).graph(qualifiedGraphName.graphName)
 
-  // TODO: Error handling
   private[opencypher] def view(viewInvocation: ViewInvocation)(implicit session: CypherSession): PropertyGraph = {
     val qgn = QualifiedGraphName(viewInvocation.graphName.parts)
-    val viewDefinition = viewMapping(qgn)
+    val viewDefinition = viewMapping.get(qgn) match {
+      case Some(vd) => vd
+      case None => throw IllegalArgumentException(
+        s"the name of a stored view${if (viewNames.isEmpty) "" else s" [${viewNames.mkString(", ")}]"}",
+        s"unknown view name `$qgn`"
+      )
+    }
     val paramNameValueTuples = viewDefinition.parameterNames.zip(viewInvocation.params)
     val (parameterMap, queryLocalGraphs) = paramNameValueTuples.foldLeft(Map.empty[String, CypherString] -> Map.empty[QualifiedGraphName, PropertyGraph]) {
       case ((currentParamMap, currentQueryLocalGraphs), (nextName, nextFrom: FromGraph)) =>
-      nextFrom match {
-        case v: ViewInvocation => // Recursive view evaluation
-          val graph = view(v)
-          val graphQgn = session.generateQualifiedGraphName
-          currentParamMap.updated(nextName, CypherString(graphQgn.toString)) -> currentQueryLocalGraphs.updated(graphQgn, graph)
-        case g: GraphLookup => // Simple case, parameter is just passed on
-          currentParamMap.updated(nextName, CypherString(QualifiedGraphName(g.graphName.parts).toString)) -> currentQueryLocalGraphs
-      }
+        nextFrom match {
+          case v: ViewInvocation => // Recursive view evaluation
+            val graph = view(v)
+            val graphQgn = session.generateQualifiedGraphName
+            currentParamMap.updated(nextName, CypherString(graphQgn.toString)) -> currentQueryLocalGraphs.updated(graphQgn, graph)
+          case g: GraphLookup => // Simple case, parameter is just passed on
+            currentParamMap.updated(nextName, CypherString(QualifiedGraphName(g.graphName.parts).toString)) -> currentQueryLocalGraphs
+        }
     }
     session.cypher(viewDefinition.viewQuery, parameterMap, queryCatalog = queryLocalGraphs).graph
   }

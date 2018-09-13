@@ -29,6 +29,7 @@ package org.opencypher.spark.impl.acceptance
 import org.opencypher.okapi.api.graph.{GraphName, QualifiedGraphName}
 import org.opencypher.okapi.api.types.CTNode
 import org.opencypher.okapi.api.value.CypherValue.CypherMap
+import org.opencypher.okapi.impl.exception.IllegalArgumentException
 import org.opencypher.okapi.testing.Bag
 import org.opencypher.spark.testing.CAPSTestSuite
 import org.scalatest.DoNotDiscover
@@ -62,6 +63,7 @@ class CatalogDDLBehaviour extends CAPSTestSuite with DefaultGraphInit {
   }
 
   describe("CATALOG CREATE VIEW") {
+
     it("supports storing a VIEW") {
       caps.cypher(
         """
@@ -74,6 +76,17 @@ class CatalogDDLBehaviour extends CAPSTestSuite with DefaultGraphInit {
       val bar = QualifiedGraphName("bar")
       caps.catalog.catalogNames should contain(bar)
       caps.catalog.viewNames should contain(bar)
+    }
+
+    it("throws an illegal argument exception, when no view with the given name is stored") {
+      an[IllegalArgumentException] should be thrownBy {
+        caps.cypher(
+          """
+            |FROM GRAPH someView()
+            |MATCH (n)
+            |RETURN n
+          """.stripMargin)
+      }
     }
 
     it("supports simple nested CATALOG CREATE VIEW in a query") {
