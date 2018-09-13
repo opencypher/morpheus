@@ -30,7 +30,7 @@ import org.opencypher.okapi.api.graph._
 import org.opencypher.okapi.api.io.PropertyGraphDataSource
 import org.opencypher.okapi.api.value.CypherValue.CypherString
 import org.opencypher.okapi.impl.annotations.experimental
-import org.opencypher.okapi.impl.exception.{IllegalArgumentException, UnsupportedOperationException}
+import org.opencypher.okapi.impl.exception.{IllegalArgumentException, UnsupportedOperationException, ViewAlreadyExistsException}
 import org.opencypher.okapi.impl.io.SessionGraphDataSource
 import org.opencypher.v9_0.ast.{FromGraph, GraphLookup, ViewInvocation}
 
@@ -98,8 +98,12 @@ class CypherCatalog extends PropertyGraphCatalog {
     source(qualifiedGraphName.namespace).store(qualifiedGraphName.graphName, graph)
 
   override def store(qualifiedGraphName: QualifiedGraphName, parameters: List[String], viewQuery: String): Unit = {
-    // TODO: Add tests and throw exceptions when there are QGN collisions.
-    viewMapping += (qualifiedGraphName -> ParameterizedView(parameters, viewQuery))
+    val existsAlready = viewMapping.contains(qualifiedGraphName)
+    if (existsAlready) {
+      throw ViewAlreadyExistsException(s"A view with name `$qualifiedGraphName` already exists")
+    } else {
+      viewMapping += (qualifiedGraphName -> ParameterizedView(parameters, viewQuery))
+    }
   }
 
   override def delete(qualifiedGraphName: QualifiedGraphName): Unit =
@@ -134,6 +138,5 @@ class CypherCatalog extends PropertyGraphCatalog {
 
 }
 
-// TODO: Allow for typed parameters
 @experimental
 case class ParameterizedView(parameterNames: List[String], viewQuery: String)

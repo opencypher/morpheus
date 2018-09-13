@@ -29,7 +29,7 @@ package org.opencypher.spark.impl.acceptance
 import org.opencypher.okapi.api.graph.{GraphName, QualifiedGraphName}
 import org.opencypher.okapi.api.types.CTNode
 import org.opencypher.okapi.api.value.CypherValue.CypherMap
-import org.opencypher.okapi.impl.exception.IllegalArgumentException
+import org.opencypher.okapi.impl.exception.{IllegalArgumentException, ViewAlreadyExistsException}
 import org.opencypher.okapi.testing.Bag
 import org.opencypher.spark.testing.CAPSTestSuite
 import org.scalatest.DoNotDiscover
@@ -76,6 +76,83 @@ class CatalogDDLBehaviour extends CAPSTestSuite with DefaultGraphInit {
       val bar = QualifiedGraphName("bar")
       caps.catalog.catalogNames should contain(bar)
       caps.catalog.viewNames should contain(bar)
+    }
+
+    it("throws an error when a view QGN collides with an existing view QGN") {
+      caps.cypher(
+        """
+          |CATALOG CREATE VIEW foo {
+          | FROM GRAPH whatever
+          | RETURN GRAPH
+          |}
+        """.stripMargin)
+
+      an[ViewAlreadyExistsException] should be thrownBy {
+        caps.cypher(
+          """
+            |CATALOG CREATE VIEW foo {
+            | FROM GRAPH whatever
+            | RETURN GRAPH
+            |}
+          """.stripMargin)
+      }
+
+    }
+
+    it("can still resolve a graph when a view with the same name exists") {
+
+      caps.cypher(
+        """
+          |CATALOG CREATE GRAPH foo {
+          | CONSTRUCT
+          |   CREATE ()
+          | RETURN GRAPH
+          |}
+        """.stripMargin)
+
+      caps.cypher(
+        """
+          |CATALOG CREATE VIEW foo {
+          | FROM GRAPH whatever
+          | RETURN GRAPH
+          |}
+        """.stripMargin)
+
+      caps.cypher("FROM GRAPH foo MATCH (n) RETURN n").records.size shouldBe 1
+
+    }
+
+    it("can still resolve a view when a graph with the same name exists") {
+
+      caps.cypher(
+        """
+          |CATALOG CREATE GRAPH bar {
+          | CONSTRUCT
+          |   CREATE ()
+          |   CREATE ()
+          | RETURN GRAPH
+          |}
+        """.stripMargin)
+
+      caps.cypher(
+        """
+          |CATALOG CREATE GRAPH foo {
+          | CONSTRUCT
+          |   CREATE ()
+          | RETURN GRAPH
+          |}
+        """.stripMargin)
+
+      caps.cypher(
+        """
+          |CATALOG CREATE VIEW foo {
+          | FROM bar
+          | RETURN GRAPH
+          |}
+        """.stripMargin)
+
+      caps.cypher("FROM foo() MATCH (n) RETURN n").records.size shouldBe 2
+
     }
 
     it("throws an illegal argument exception, when no view with the given name is stored") {
@@ -205,7 +282,7 @@ class CatalogDDLBehaviour extends CAPSTestSuite with DefaultGraphInit {
       ))
     }
 
-    ignore("supports nested CREATE VIEW with two parameters and multiple constructed nodes") {
+    it("supports nested CREATE VIEW with two parameters and multiple constructed nodes") {
       val inputGraphA = initGraph(
         """
           |CREATE ({name: 'A1'})
@@ -240,10 +317,10 @@ class CatalogDDLBehaviour extends CAPSTestSuite with DefaultGraphInit {
           |RETURN GRAPH
         """.stripMargin).graph
 
-      resultGraph.nodes("n").size shouldBe 16
+      resultGraph.nodes("n").size shouldBe 8
     }
 
-    ignore("supports nested CREATE VIEW with two parameters with cloning") {
+    it("supports nested CREATE VIEW with two parameters with cloning") {
       val inputGraphA = initGraph(
         """
           |CREATE ({name: 'A1'})
@@ -278,13 +355,53 @@ class CatalogDDLBehaviour extends CAPSTestSuite with DefaultGraphInit {
           |RETURN GRAPH
         """.stripMargin).graph
 
-      resultGraph.nodes("n").show
-      resultGraph.nodes("n").size shouldBe 4
+      resultGraph.nodes("n").size shouldBe 8
+    }
+
+    it("supports nested CREATE VIEW with two parameters and empty constructed nodes") {
+      val inputGraphA = initGraph(
+        """
+          |CREATE ({name: 'A1'})
+          |CREATE ({name: 'A2'})
+        """.stripMargin)
+      val inputGraphB = initGraph(
+        """
+          |CREATE ({name: 'B1'})
+          |CREATE ({name: 'B2'})
+        """.stripMargin)
+
+      caps.catalog.store("a", inputGraphA)
+      caps.catalog.store("b", inputGraphB)
+
+      caps.cypher(
+        """
+          |CATALOG CREATE VIEW bar($g1, $g2) {
+          | FROM GRAPH $g1
+          | MATCH (n)
+          | FROM GRAPH $g2
+          | MATCH (m)
+          | CONSTRUCT
+          |   CLONE n
+          |   CREATE (COPY OF m)
+          | RETURN GRAPH
+          |}
+        """.stripMargin)
+
+      val resultGraph = caps.cypher(
+        """
+          |FROM GRAPH bar(bar(b, a), bar(a, b))
+          |RETURN GRAPH
+        """.stripMargin).graph
+
+      resultGraph.nodes("n").size shouldBe 42
     }
 
   }
 
-  describe("DROP GRAPH") {
+  describe("DROP GRAPH/VIEW") {
+    //TODO: Add DROP VIEW tests
+
+
     it("can drop a session graph") {
 
       caps.catalog.store("foo", initGraph("CREATE (:A)"))
