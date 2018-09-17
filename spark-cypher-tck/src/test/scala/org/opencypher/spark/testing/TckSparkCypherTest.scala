@@ -106,7 +106,7 @@ class TckSparkCypherTest extends CAPSTestSuite {
     println(report)
   }
 
-  ignore("run Custom Scenario") {
+  ignore("run custom scenario") {
     val file = new File(getClass.getResource("CustomTest.feature").toURI)
 
     CypherTCK
@@ -115,8 +115,8 @@ class TckSparkCypherTest extends CAPSTestSuite {
       .foreach(scenario => scenario(TCKGraph(defaultFactory, caps.graphs.empty)).execute())
   }
 
-  ignore("run Single Scenario") {
-    scenarios.get("A simple pattern with one bound endpoint")
+  ignore("run single scenario") {
+    scenarios.get("Ordering with aggregation")
       .foreach(scenario => scenario(TCKGraph(defaultFactory, caps.graphs.empty)).execute())
   }
 }

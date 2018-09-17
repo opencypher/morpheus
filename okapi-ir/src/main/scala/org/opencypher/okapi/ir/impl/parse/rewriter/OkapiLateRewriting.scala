@@ -31,7 +31,7 @@ import org.opencypher.v9_0.frontend.phases._
 import org.opencypher.v9_0.rewriting.rewriters.{Forced, literalReplacement}
 import org.opencypher.v9_0.util.{Rewriter, inSequence}
 
-case object OkapiRewriting extends Phase[BaseContext, BaseState, BaseState] {
+case object OkapiLateRewriting extends Phase[BaseContext, BaseState, BaseState] {
 
   override def process(from: BaseState, context: BaseContext): BaseState = {
     val term = from.statement()
