@@ -50,6 +50,8 @@ import scala.concurrent.{Await, Future}
   * Describes sets of properties that uniquely identify nodes/relationships with a given
   * label/relationship type.
   *
+  * If an entity has multiple labels, then it needs to have the entity keys of all its labels.
+  *
   * @param nodeKeys maps a label to a set of property keys, which uniquely identify a node
   * @param relKeys  maps a relationship type to a set of property keys, which uniquely identify a relationship
   */
@@ -77,7 +79,9 @@ object Neo4jSync extends Logging {
   }
 
   /**
-    * Creates node indexes in the specified Neo4j database to speed up the Neo4j merge feature.
+    * Creates node indexes in the specified Neo4j database to speed up the Neo4j merge feature. Index creation assumes
+    * that the node keys are globally unique. If another graph with the same node key and colliding values is stored
+    * in the same Neo4j instance, this will result in errors either during index or entity creation.
     *
     * @note This feature requires the Neo4j Enterprise Edition.
     * @param config     access config for the Neo4j database on which the indexes are created
@@ -128,11 +132,11 @@ object Neo4jSync extends Logging {
   }
 
   /**
-    * Merges the given graph into the sub-graph specified by graphName within an existing Neo4j database.
+    * Merges the given graph into the sub-graph specified by `graphName` within an existing Neo4j database.
     * Properties in the Neo4j graph will be overwritten by values in the merge graph, missing ones are added.
-    * Nodes and relationships are identified by using their entity keys. Therefore an entity key must be specified for
-    * every label combination present in the merge graph. Relationship keys are optional, if none are provided,
-    * then there can be at most one relationship with a given type between two nodes.
+    * Nodes and relationships are identified by their entity keys. Therefore, an entity key must be specified for
+    * every label present in the merge graph. Relationship keys are optional, if none are provided, then there can be at
+    * most one relationship with a given type between two nodes.
     *
     * @param graphName  which sub-graph in the Neo4j graph to sync the delta to
     * @param graph      graph that is merged into the existing Neo4j database
@@ -148,9 +152,9 @@ object Neo4jSync extends Logging {
   /**
     * Merges the given graph into an existing Neo4j database.
     * Properties in the Neo4j graph will be overwritten by values in the merge graph, missing ones are added.
-    * Nodes and relationships are identified by using their entity keys. Therefore an entity key must be specified for
-    * every label combination present in the merge graph. Relationship keys are optional, if none are provided,
-    * then there can be at most one relationship with a given type between two nodes.
+    * Nodes and relationships are identified by their entity keys. Therefore, an entity key must be specified for
+    * every label present in the merge graph. Relationship keys are optional, if none are provided, then there can be at
+    * most one relationship with a given type between two nodes.
     *
     * @param graph      graph that is merged into the existing Neo4j database
     * @param config     access config for the Neo4j database into which the graph is merged

@@ -130,6 +130,54 @@ class Neo4jSyncTest extends CAPSTestSuite with CAPSNeo4jServerFixture with Defau
       ))
     }
 
+    it("syncs when using the same entity key for all labels") {
+      val keys = EntityKeys(Map("N" -> Set("id"), "M" -> Set("id")), Map("R" -> Set("id")))
+      Neo4jSync.createIndexes(neo4jConfig, keys)
+      val graphName = GraphName("graph")
+
+      val graph = initGraph(
+        """
+          |CREATE (s:N {id: 1, foo: "bar"})
+          |CREATE (e:N:M {id: 2 })
+          |CREATE (f:M {id: 3})
+          |CREATE (s)-[r:R {id: 1}]->(e)
+        """.stripMargin)
+
+      Neo4jSync.merge(graph, neo4jConfig, keys)
+
+      val readGraph = Neo4jPropertyGraphDataSource(neo4jConfig, entireGraphName = graphName).graph(graphName)
+
+      readGraph.cypher("MATCH (n) RETURN n.id as id, n.foo as foo, labels(n) as labels").records.toMaps should equal(Bag(
+        CypherMap("id" -> 1, "foo" -> "bar", "labels" -> Seq("N")),
+        CypherMap("id" -> 2, "foo" -> null, "labels" -> Seq("M", "N")),
+        CypherMap("id" -> 3, "foo" -> null, "labels" -> Seq("M"))
+      ))
+    }
+
+    it("syncs when using multiple entity keys with different names") {
+      val keys = EntityKeys(Map("N" -> Set("nId"), "M" -> Set("mId")), Map("R" -> Set("id")))
+      Neo4jSync.createIndexes(neo4jConfig, keys)
+      val graphName = GraphName("graph")
+
+      val graph = initGraph(
+        """
+          |CREATE (s:N {nId: 1, foo: "bar"})
+          |CREATE (e:N:M {nId: 2, mId: 3 })
+          |CREATE (f:M {mId: 2})
+          |CREATE (s)-[r:R {id: 1}]->(e)
+        """.stripMargin)
+
+      Neo4jSync.merge(graph, neo4jConfig, keys)
+
+      val readGraph = Neo4jPropertyGraphDataSource(neo4jConfig, entireGraphName = graphName).graph(graphName)
+
+      readGraph.cypher("MATCH (n) RETURN n.nId as nId, n.mId as mId, n.foo as foo, labels(n) as labels").records.toMaps should equal(Bag(
+        CypherMap("nId" -> 1, "mId" -> null, "foo" -> "bar", "labels" -> Seq("N")),
+        CypherMap("nId" -> 2, "mId" -> 3, "foo" -> null, "labels" -> Seq("M", "N")),
+        CypherMap("nId" -> null, "mId" -> 2, "foo" -> null, "labels" -> Seq("M"))
+      ))
+    }
+
     it("creates indexes correctly") {
       val entityKeys = EntityKeys(
         Map(
@@ -158,7 +206,7 @@ class Neo4jSyncTest extends CAPSTestSuite with CAPSNeo4jServerFixture with Defau
   }
 
   describe("merging into subgraphs") {
-    it("can do basic Neo4j sub-graph syncing with merges") {
+    it("syncs subgraphs") {
       val subGraphName = GraphName("foo")
 
       Neo4jSync.createIndexes(subGraphName, neo4jConfig, entityKeys)
