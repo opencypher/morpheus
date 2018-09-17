@@ -24,7 +24,7 @@
  * described as "implementation extensions to Cypher" or as "proposed changes to
  * Cypher that are not yet approved by the openCypher community".
  */
-package org.opencypher.okapi.ir.impl.parse.rewriter
+package org.opencypher.okapi.ir.impl.parse.rewriter.legacy
 
 import org.opencypher.v9_0.ast._
 import org.opencypher.v9_0.expressions.Expression

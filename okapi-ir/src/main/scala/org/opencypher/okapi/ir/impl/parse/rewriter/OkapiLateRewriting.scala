@@ -26,6 +26,7 @@
  */
 package org.opencypher.okapi.ir.impl.parse.rewriter
 
+import org.opencypher.okapi.ir.impl.parse.rewriter.legacy.projectFreshSortExpressions
 import org.opencypher.v9_0.frontend.phases.CompilationPhaseTracer.CompilationPhase.AST_REWRITE
 import org.opencypher.v9_0.frontend.phases._
 import org.opencypher.v9_0.rewriting.rewriters.{Forced, literalReplacement}

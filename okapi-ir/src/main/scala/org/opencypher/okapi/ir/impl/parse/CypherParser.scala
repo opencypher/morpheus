@@ -28,7 +28,7 @@ package org.opencypher.okapi.ir.impl.parse
 
 import org.opencypher.okapi.ir.api.expr.Var
 import org.opencypher.okapi.ir.impl.exception.ParsingException
-import org.opencypher.okapi.ir.impl.parse.rewriter.{OkapiLateRewriting, legacyNormalizeReturnClauses}
+import org.opencypher.okapi.ir.impl.parse.rewriter.OkapiLateRewriting
 import org.opencypher.okapi.ir.impl.typer.toFrontendType
 import org.opencypher.v9_0.ast._
 import org.opencypher.v9_0.ast.semantics.{SemanticErrorDef, SemanticFeature, SemanticState}
