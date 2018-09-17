@@ -32,7 +32,7 @@ import org.opencypher.okapi.api.value.CypherValue.CypherString
 import org.opencypher.okapi.impl.annotations.experimental
 import org.opencypher.okapi.impl.exception.{IllegalArgumentException, UnsupportedOperationException, ViewAlreadyExistsException}
 import org.opencypher.okapi.impl.io.SessionGraphDataSource
-import org.opencypher.v9_0.ast.{FromGraph, GraphLookup, ViewInvocation}
+import org.opencypher.v9_0.ast.{FromGraph, GraphByParameter, GraphLookup, ViewInvocation}
 
 /**
   * This is the default implementation of the [[org.opencypher.okapi.api.graph.PropertyGraphCatalog]].
@@ -97,12 +97,12 @@ class CypherCatalog extends PropertyGraphCatalog {
   override def store(qualifiedGraphName: QualifiedGraphName, graph: PropertyGraph): Unit =
     source(qualifiedGraphName.namespace).store(qualifiedGraphName.graphName, graph)
 
-  override def store(qualifiedGraphName: QualifiedGraphName, parameters: List[String], viewQuery: String): Unit = {
+  override def store(qualifiedGraphName: QualifiedGraphName, parameterNames: List[String], viewQuery: String): Unit = {
     val existsAlready = viewMapping.contains(qualifiedGraphName)
     if (existsAlready) {
       throw ViewAlreadyExistsException(s"A view with name `$qualifiedGraphName` already exists")
     } else {
-      viewMapping += (qualifiedGraphName -> ParameterizedView(parameters, viewQuery))
+      viewMapping += (qualifiedGraphName -> ParameterizedView(parameterNames, viewQuery))
     }
   }
 
@@ -131,8 +131,12 @@ class CypherCatalog extends PropertyGraphCatalog {
             val graph = view(v)
             val graphQgn = session.generateQualifiedGraphName
             currentParamMap.updated(nextName, CypherString(graphQgn.toString)) -> currentQueryLocalGraphs.updated(graphQgn, graph)
+
           case g: GraphLookup => // Simple case, parameter is just passed on
             currentParamMap.updated(nextName, CypherString(QualifiedGraphName(g.graphName.parts).toString)) -> currentQueryLocalGraphs
+
+          case other =>
+            throw IllegalArgumentException("a graph lookup or a view invocation", other)
         }
     }
     session.cypher(viewDefinition.viewQuery, parameterMap, queryCatalog = queryLocalGraphs).graph
@@ -140,5 +144,4 @@ class CypherCatalog extends PropertyGraphCatalog {
 
 }
 
-@experimental
 case class ParameterizedView(parameterNames: List[String], viewQuery: String)

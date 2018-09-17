@@ -97,4 +97,3 @@ object QualifiedGraphName {
 case class QualifiedGraphName(namespace: Namespace, graphName: GraphName) {
   override def toString: String = s"$namespace.$graphName"
 }
-

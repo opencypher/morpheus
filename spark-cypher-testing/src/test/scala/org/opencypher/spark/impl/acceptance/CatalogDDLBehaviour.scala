@@ -32,6 +32,7 @@ import org.opencypher.okapi.api.value.CypherValue.CypherMap
 import org.opencypher.okapi.impl.exception.{IllegalArgumentException, ViewAlreadyExistsException}
 import org.opencypher.okapi.testing.Bag
 import org.opencypher.spark.testing.CAPSTestSuite
+import org.opencypher.v9_0.util.SyntaxException
 import org.scalatest.DoNotDiscover
 
 @DoNotDiscover
@@ -87,7 +88,7 @@ class CatalogDDLBehaviour extends CAPSTestSuite with DefaultGraphInit {
           |}
         """.stripMargin)
 
-      an[ViewAlreadyExistsException] should be thrownBy {
+      a[ViewAlreadyExistsException] should be thrownBy {
         caps.cypher(
           """
             |CATALOG CREATE VIEW foo {
@@ -199,6 +200,39 @@ class CatalogDDLBehaviour extends CAPSTestSuite with DefaultGraphInit {
       result.records.toMaps should equal(Bag(CypherMap(
         "val" -> 4
       )))
+    }
+
+    it("disallows graph parameters as view invocation parameters") {
+      val inputGraphA = initGraph(
+        """
+          |CREATE (:A {val: 0})
+        """.stripMargin)
+
+      caps.catalog.store("a", inputGraphA)
+
+      caps.cypher(
+        """
+          |CATALOG CREATE VIEW inc($g1) {
+          | FROM GRAPH $g1
+          | MATCH (a: A)
+          | CONSTRUCT
+          |   CREATE (:A { val: a.val + 1 })
+          | RETURN GRAPH
+          |}
+        """.stripMargin)
+
+      val inc = QualifiedGraphName("inc")
+      caps.catalog.catalogNames should contain(inc)
+      caps.catalog.viewNames should contain(inc)
+
+      a[SyntaxException] should be thrownBy {
+        caps.cypher(
+          """
+            |FROM GRAPH inc($param)
+            |MATCH (n)
+            |RETURN n.val as val
+          """.stripMargin, CypherMap("param" -> "a"))
+      }
     }
 
     it("supports CATALOG CREATE VIEW with two parameters") {

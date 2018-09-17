@@ -142,19 +142,16 @@ trait PropertyGraphCatalog {
     */
   def store(qualifiedGraphName: QualifiedGraphName, graph: PropertyGraph): Unit
 
-  // TODO: Rename QGN to CatalogName
-  // TODO: Ensure there are no collisions
   /**
     * Stores the given Cypher query as a view with the given qualified graph name in the catalog.
     * The view may be parameterized with graph references. Graph reference parameters may only be used
     * in FROM clauses in the view definition.
     *
     * @param qualifiedGraphName qualified graph name
-    * @param parameters         list of graph reference parameters used in the view query
+    * @param parameterNames         list of graph reference parameters used in the view query
     * @param viewQuery          query string for the view definition
     */
-  @experimental
-  def store(qualifiedGraphName: QualifiedGraphName, parameters: List[String], viewQuery: String): Unit
+  def store(qualifiedGraphName: QualifiedGraphName, parameterNames: List[String], viewQuery: String): Unit
 
   /**
     * Removes the [[org.opencypher.okapi.api.graph.PropertyGraph]] with the given qualified graph name.
