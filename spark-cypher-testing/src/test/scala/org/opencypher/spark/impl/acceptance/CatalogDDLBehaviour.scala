@@ -33,10 +33,16 @@ import org.opencypher.okapi.impl.exception.{IllegalArgumentException, ViewAlread
 import org.opencypher.okapi.testing.Bag
 import org.opencypher.spark.testing.CAPSTestSuite
 import org.opencypher.v9_0.util.SyntaxException
-import org.scalatest.DoNotDiscover
+import org.scalatest.{BeforeAndAfterAll, DoNotDiscover}
 
 @DoNotDiscover
-class CatalogDDLBehaviour extends CAPSTestSuite with DefaultGraphInit {
+class CatalogDDLBehaviour extends CAPSTestSuite with DefaultGraphInit with BeforeAndAfterAll {
+
+  override def afterEach(): Unit = {
+    super.afterEach()
+    caps.catalog.graphNames.filterNot(_ == caps.emptyGraphQgn).foreach(caps.catalog.dropGraph)
+    caps.catalog.viewNames.foreach(caps.catalog.dropView)
+  }
 
   describe("CATALOG CREATE GRAPH") {
     it("supports CATALOG CREATE GRAPH on the session") {

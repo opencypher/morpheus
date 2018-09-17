@@ -85,6 +85,7 @@ class CypherCatalog extends PropertyGraphCatalog {
     }
   }
 
+  // TODO: Filter empty graph
   override def graphNames: Set[QualifiedGraphName] = {
     dataSourceMapping.flatMap {
       case (namespace, pgds) =>
