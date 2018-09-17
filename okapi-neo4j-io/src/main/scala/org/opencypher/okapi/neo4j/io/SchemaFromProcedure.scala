@@ -39,7 +39,7 @@ import scala.util.{Failure, Success, Try}
 
 object SchemaFromProcedure extends Logging {
 
-  val schemaProcedureName = "org.opencypher.okapi.procedures.schema"
+  val schemaProcedureName = "okapi.schema"
 
   def apply(config: Neo4jConfig, omitImportFailures: Boolean): Option[Schema] = {
     Try {
@@ -58,10 +58,18 @@ object SchemaFromProcedure extends Logging {
     }
   }
 
+  implicit class OkapiTypeNameConverter(val neo4jTypeName: String) extends AnyVal {
+    def toOkapiTypeName: String = neo4jTypeName.toUpperCase match {
+      case "LONG" => "INTEGER"
+      case "STRINGARRAY" => "LIST OF STRING"
+      case other => other
+    }
+  }
+
   private[neo4j] def schemaFromProcedure(config: Neo4jConfig, omitImportFailures: Boolean): Option[Schema] = {
     Try {
       val rows = config.withSession { session =>
-        val result = session.run("CALL " + schemaProcedureName)
+        val result = session.run(s"CALL $schemaProcedureName")
 
         result.list().asScala.flatMap { row =>
           val extractString = new Function[Value, String] {
@@ -77,8 +85,10 @@ object SchemaFromProcedure extends Logging {
             case property =>
               val typeStrings = row.get("cypherTypes").asList(extractString).asScala.toList
               val cypherType: CypherType = typeStrings
-                .flatMap { s => CypherType.fromName(s) match {
-                  case v@ Some(_) => v
+                .flatMap { s => CypherType.fromName(s.toOkapiTypeName) match {
+                  case v@ Some(_) =>
+                    val isNullable = row.get("nullable").asBoolean
+                    if (isNullable) v.map(_.nullable) else v
                   case None if omitImportFailures  =>
                     logger.warn(s"At least one $typ with labels ${labels.mkString(",")} has unsupported property type $s for property $property")
                     None

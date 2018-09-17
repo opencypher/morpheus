@@ -31,17 +31,17 @@ import org.opencypher.okapi.api.value.CypherValue.{CypherMap, CypherString}
 import org.opencypher.okapi.neo4j.io.MetaLabelSupport._
 import org.opencypher.okapi.neo4j.io.Neo4jHelpers.Neo4jDefaults._
 import org.opencypher.okapi.neo4j.io.Neo4jHelpers._
+import org.opencypher.okapi.neo4j.io.testing.Neo4jServerFixture
 import org.opencypher.okapi.relational.api.graph.RelationalCypherGraph
 import org.opencypher.okapi.testing.Bag
 import org.opencypher.spark.api.io.neo4j.Neo4jPropertyGraphDataSource
 import org.opencypher.spark.impl.acceptance.DefaultGraphInit
 import org.opencypher.spark.impl.table.SparkTable
 import org.opencypher.spark.testing.CAPSTestSuite
-import org.opencypher.spark.testing.fixture.CAPSNeo4jServerFixture
 
 import scala.collection.JavaConverters._
 
-class Neo4jSyncTest extends CAPSTestSuite with CAPSNeo4jServerFixture with DefaultGraphInit {
+class Neo4jSyncTest extends CAPSTestSuite with Neo4jServerFixture with DefaultGraphInit {
 
   override def dataFixture: String = ""
 
@@ -204,6 +204,8 @@ class Neo4jSyncTest extends CAPSTestSuite with CAPSNeo4jServerFixture with Defau
         CypherMap("id" -> 1, "foo" -> "baz", "bar" -> 1, "labels" -> Seq("N")),
         CypherMap("id" -> 2, "foo" -> null, "bar" -> null, "labels" -> Seq("M", "N"))
       ))
+
+      println(graphAfterDeltaSync.schema.pretty)
 
       graphAfterDeltaSync.cypher("MATCH (n)-[r]->(m) RETURN n.id as nid, r.id as id, r.foo as foo, m.id as mid").records.toMaps should equal(Bag(
         CypherMap("nid" -> 1, "id" -> 1, "foo" -> 1, "mid" -> 2),
