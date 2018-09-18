@@ -27,10 +27,10 @@
 package org.opencypher.v9_0.frontend.phases
 
 import org.opencypher.okapi.ir.impl.parse.rewriter.legacy
-import org.opencypher.okapi.ir.impl.parse.rewriter.legacy.{normalizeReturnClauses, normalizeWithClauses}
+import org.opencypher.okapi.ir.impl.parse.rewriter.legacy.normalizeWithClauses
+import org.opencypher.v9_0.frontend.phases.CompilationPhaseTracer.CompilationPhase.AST_REWRITE
 import org.opencypher.v9_0.rewriting.rewriters._
 import org.opencypher.v9_0.util.inSequence
-import org.opencypher.v9_0.frontend.phases.CompilationPhaseTracer.CompilationPhase.AST_REWRITE
 
 case object OkapiPreparatoryRewriting extends Phase[BaseContext, BaseState, BaseState] {
 

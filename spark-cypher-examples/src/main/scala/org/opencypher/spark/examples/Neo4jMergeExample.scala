@@ -51,7 +51,7 @@ object Neo4jMergeExample extends ConsoleApp {
        |CREATE (a)-[:FRIEND_OF { id: 0, since: '23/01/1987' }]->(b)
        |CREATE (b)-[:FRIEND_OF { id: 1, since: '12/12/2009' }]->(c)
     """.stripMargin
-  ).withSchemaProcedure
+  )
 
   // Define the node and relationship keys
   val entityKeys = EntityKeys(
