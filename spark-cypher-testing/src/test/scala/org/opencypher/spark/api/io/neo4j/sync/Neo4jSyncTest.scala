@@ -26,6 +26,7 @@
  */
 package org.opencypher.spark.api.io.neo4j.sync
 
+import org.neo4j.harness.EnterpriseTestServerBuilders
 import org.opencypher.okapi.api.graph.GraphName
 import org.opencypher.okapi.api.value.CypherValue.{CypherMap, CypherString}
 import org.opencypher.okapi.neo4j.io.MetaLabelSupport._
@@ -38,8 +39,6 @@ import org.opencypher.spark.api.io.neo4j.Neo4jPropertyGraphDataSource
 import org.opencypher.spark.impl.acceptance.DefaultGraphInit
 import org.opencypher.spark.impl.table.SparkTable
 import org.opencypher.spark.testing.CAPSTestSuite
-
-import scala.collection.JavaConverters._
 
 class Neo4jSyncTest extends CAPSTestSuite with Neo4jServerFixture with DefaultGraphInit {
 
@@ -56,26 +55,31 @@ class Neo4jSyncTest extends CAPSTestSuite with Neo4jServerFixture with DefaultGr
     """.stripMargin)
 
   override def afterEach(): Unit = {
-    neo4jConfig.withSession { session =>
-      session.run("MATCH (n) DETACH DELETE n").consume()
-      val constraints = session.run("CALL db.constraints").list().asScala.map(_.get(0).asString)
-      val regexp = """CONSTRAINT ON (.+) ASSERT \(?(.+?)\)? IS NODE KEY""".r
-
-      // TODO remove workaround once it's fixed in Neo4j
-      constraints.map {
-        case regexp(label, keys) => s"DROP CONSTRAINT ON $label ASSERT ($keys) IS NODE KEY"
-        case c => s"DROP $c"
-      }.foreach(session.run(_).consume())
-      session.run("MATCH (n) DETACH DELETE n").consume()
-
-      session
-        .run("CALL db.indexes YIELD description")
-        .list().asScala
-        .map(_.get(0).asString)
-        .map(i => s"DROP $i")
-        .foreach(session.run(_).consume())
-    }
+    // TODO: Without restarting the server `okapi.schema` can return outdated results: https://github.com/opencypher/cypher-for-apache-spark/issues/651
+    // TODO: Replace with the commented out code once this problem has been addressed
     super.afterEach()
+    neo4jServer.close()
+    neo4jServer = EnterpriseTestServerBuilders
+      .newInProcessBuilder()
+      .withFixture(dataFixture)
+      .newServer()
+    //    neo4jConfig.withSession { session =>
+    //      session.run("MATCH (n) DETACH DELETE n").consume()
+    //      val constraints = session.run("CALL db.constraints").list().asScala.map(_.get(0).asString)
+    //      val regexp = """CONSTRAINT ON (.+) ASSERT \(?(.+?)\)? IS NODE KEY""".r
+    //      constraints.map {
+    //        case regexp(label, keys) => s"DROP CONSTRAINT ON $label ASSERT ($keys) IS NODE KEY"
+    //        case c => s"DROP $c"
+    //      }.foreach(session.run(_).consume())
+    //      session.run("MATCH (n) DETACH DELETE n").consume()
+    //
+    //      session
+    //        .run("CALL db.indexes YIELD description")
+    //        .list().asScala
+    //        .map(_.get(0).asString)
+    //        .map(i => s"DROP $i")
+    //        .foreach(session.run(_).consume())
+    //    }
   }
 
   describe("merging into the entire graph") {
@@ -198,14 +202,13 @@ class Neo4jSyncTest extends CAPSTestSuite with Neo4jServerFixture with DefaultGr
           |CREATE (s)-[r:R {id: 2}]->(e)
         """.stripMargin)
       Neo4jSync.merge(subGraphName, delta, neo4jConfig, entityKeys)
+
       val graphAfterDeltaSync = Neo4jPropertyGraphDataSource(neo4jConfig).graph(subGraphName)
 
       graphAfterDeltaSync.cypher("MATCH (n) RETURN n.id as id, n.foo as foo, n.bar as bar, labels(n) as labels").records.toMaps should equal(Bag(
         CypherMap("id" -> 1, "foo" -> "baz", "bar" -> 1, "labels" -> Seq("N")),
         CypherMap("id" -> 2, "foo" -> null, "bar" -> null, "labels" -> Seq("M", "N"))
       ))
-
-      println(graphAfterDeltaSync.schema.pretty)
 
       graphAfterDeltaSync.cypher("MATCH (n)-[r]->(m) RETURN n.id as nid, r.id as id, r.foo as foo, m.id as mid").records.toMaps should equal(Bag(
         CypherMap("nid" -> 1, "id" -> 1, "foo" -> 1, "mid" -> 2),
