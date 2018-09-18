@@ -28,6 +28,7 @@ package org.opencypher.spark.api.io.neo4j.sync
 
 import org.opencypher.okapi.api.graph.GraphName
 import org.opencypher.okapi.api.value.CypherValue.{CypherMap, CypherString}
+import org.opencypher.okapi.impl.exception.SchemaException
 import org.opencypher.okapi.neo4j.io.MetaLabelSupport._
 import org.opencypher.okapi.neo4j.io.Neo4jHelpers.Neo4jDefaults._
 import org.opencypher.okapi.neo4j.io.Neo4jHelpers._
@@ -232,6 +233,12 @@ class Neo4jSyncTest extends CAPSTestSuite with CAPSNeo4jServerFixture with Defau
         Map("description" -> new CypherString(s"INDEX ON :N(foo, bar)")),
         Map("description" -> new CypherString(s"INDEX ON :M(baz)"))
       ))
+    }
+  }
+
+  describe("error handling") {
+    it("should throw an error if node key is missing") {
+      a[SchemaException] should be thrownBy Neo4jSync.merge(initialGraph, neo4jConfig, EntityKeys(Map.empty))
     }
   }
 }
