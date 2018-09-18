@@ -30,7 +30,6 @@ Apache Software License, Version 2.0
   Commons Lang
   ConcurrentLinkedHashMap
   Data Mapper for Jackson
-  FindBugs-jsr305
   Gherkin Repackaged Dependencies
   Graphite Integration for Metrics
   hazelcast-all
@@ -56,7 +55,6 @@ Apache Software License, Version 2.0
   Metrics Core
   Netty
   Netty/All-in-One
-  Objenesis
   Okapi - openCypher API
   Okapi IR - Declarative representation of Cypher queries
   Okapi Test Utilities

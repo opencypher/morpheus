@@ -108,7 +108,6 @@ Apache Software License, Version 2.0
   Netty/All-in-One
   Okapi - Neo4j IO
   Okapi - Neo4j IO test utils
-  Okapi - Neo4j procedures
   Okapi - openCypher API
   Okapi IR - Declarative representation of Cypher queries
   Okapi Logical - Logical representation of Cypher queries
