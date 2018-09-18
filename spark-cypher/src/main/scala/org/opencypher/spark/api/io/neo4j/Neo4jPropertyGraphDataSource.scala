@@ -56,8 +56,7 @@ import scala.concurrent.{Await, Future}
 case class Neo4jPropertyGraphDataSource(
   override val config: Neo4jConfig,
   maybeSchema: Option[Schema] = None,
-  override val omitIncompatibleProperties: Boolean = false,
-  entireGraphName: GraphName = defaultEntireGraphName
+  override val omitIncompatibleProperties: Boolean = false
 )(implicit val caps: CAPSSession) extends AbstractNeo4jDataSource with Logging {
 
   graphNameCache += entireGraphName
@@ -88,7 +87,7 @@ case class Neo4jPropertyGraphDataSource(
   }
 
   override protected def readSchema(graphName: GraphName): CAPSSchema = {
-    val filteredSchema = graphName.metaLabel(entireGraphName) match {
+    val filteredSchema = graphName.metaLabel match {
       case None =>
         entireGraphSchema
       case Some(metaLabel) =>
@@ -106,7 +105,7 @@ case class Neo4jPropertyGraphDataSource(
     sparkSchema: StructType
   ): DataFrame = {
     val graphSchema = schema(graphName).get
-    val flatQuery = EntityReader.flatExactLabelQuery(labels, graphSchema, graphName.metaLabel(entireGraphName))
+    val flatQuery = EntityReader.flatExactLabelQuery(labels, graphSchema, graphName.metaLabel)
 
     val neo4jConnection = Neo4j(config, caps.sparkSession)
     val rdd = neo4jConnection.cypher(flatQuery).loadRowRdd
@@ -120,7 +119,7 @@ case class Neo4jPropertyGraphDataSource(
     sparkSchema: StructType
   ): DataFrame = {
     val graphSchema = schema(graphName).get
-    val flatQuery = EntityReader.flatRelTypeQuery(relKey, graphSchema, graphName.metaLabel(entireGraphName))
+    val flatQuery = EntityReader.flatRelTypeQuery(relKey, graphSchema, graphName.metaLabel)
 
     val neo4jConnection = Neo4j(config, caps.sparkSession)
     val rdd = neo4jConnection.cypher(flatQuery).loadRowRdd
@@ -128,7 +127,7 @@ case class Neo4jPropertyGraphDataSource(
   }
 
   override protected def deleteGraph(graphName: GraphName): Unit = {
-    graphName.metaLabel(entireGraphName) match {
+    graphName.metaLabel match {
       case Some(metaLabel) =>
         config.withSession { session =>
           session.run(
@@ -145,7 +144,7 @@ case class Neo4jPropertyGraphDataSource(
   override def store(graphName: GraphName, graph: PropertyGraph): Unit = {
     checkStorable(graphName)
 
-    val metaLabel = graphName.metaLabel(entireGraphName) match {
+    val metaLabel = graphName.metaLabel match {
       case Some(meta) => meta
       case None => throw UnsupportedOperationException("Writing to the global Neo4j graph is not supported")
     }

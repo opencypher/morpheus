@@ -29,7 +29,7 @@ package org.opencypher.spark.examples
 
 import org.neo4j.harness.ServerControls
 import org.opencypher.okapi.api.graph.Namespace
-import org.opencypher.okapi.neo4j.io.Neo4jHelpers.Neo4jDefaults._
+import org.opencypher.okapi.neo4j.io.MetaLabelSupport._
 import org.opencypher.okapi.neo4j.io.testing.Neo4jHarnessUtils._
 import org.opencypher.spark.api.{CAPSSession, GraphSources}
 import org.opencypher.spark.testing.support.creation.CAPSNeo4jHarnessUtils._
@@ -77,9 +77,9 @@ object RecommendationExample extends ConsoleApp {
       """.stripMargin
 
   // Find persons that are close to each other in the US social network
-  val usFriends = caps.cypher(cityFriendsQuery(s"usSocialNetwork.$defaultEntireGraphName")).graph
+  val usFriends = caps.cypher(cityFriendsQuery(s"usSocialNetwork.$entireGraphName")).graph
   // Find persons that are close to each other in the EU social network
-  val euFriends = caps.cypher(cityFriendsQuery(s"euSocialNetwork.$defaultEntireGraphName")).graph
+  val euFriends = caps.cypher(cityFriendsQuery(s"euSocialNetwork.$entireGraphName")).graph
 
   // Union the US and EU graphs into a single graph 'allFriends' and store it in the session
   caps.catalog.store("allFriends", usFriends.unionAll(euFriends))

@@ -27,6 +27,7 @@
 package org.opencypher.spark.api.io.neo4j
 
 import org.opencypher.okapi.api.value.CypherValue.CypherMap
+import org.opencypher.okapi.neo4j.io.MetaLabelSupport._
 import org.opencypher.okapi.testing.Bag
 import org.opencypher.spark.testing.CAPSTestSuite
 import org.opencypher.spark.testing.fixture.CAPSNeo4jServerFixture
@@ -36,8 +37,7 @@ class Neo4jPropertyGraphDataSourceEmptyGraphTest extends CAPSTestSuite with CAPS
   override def dataFixture: String = ""
 
   it("can read an empty graph") {
-    val ds = Neo4jPropertyGraphDataSource(neo4jConfig)
-    val graph = ds.graph(ds.entireGraphName)
+    val graph = Neo4jPropertyGraphDataSource(neo4jConfig).graph(entireGraphName)
 
     val result = graph.cypher(
       """
