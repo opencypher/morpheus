@@ -42,15 +42,8 @@ abstract class AbstractNeo4jDataSource extends AbstractPropertyGraphDataSource {
 
   override def tableStorageFormat: String = "neo4j"
 
-  override protected def readSchema(graphName: GraphName): CAPSSchema =
-    SchemaFromProcedure(config, omitIncompatibleProperties) match {
-      case None =>
-        throw UnsupportedOperationException(
-          "Neo4j PGDS requires okapi-neo4j-procedures to be installed in Neo4j:\n" +
-            "\thttps://github.com/opencypher/cypher-for-apache-spark/wiki/Neo4j-Schema-Procedure")
-
-      case Some(schema) =>
-        schema.asCaps
+  override protected def readSchema(graphName: GraphName): CAPSSchema = {
+    SchemaFromProcedure(config, omitIncompatibleProperties).asCaps
   }
 
   override protected def writeSchema(graphName: GraphName, schema: CAPSSchema): Unit = ()
