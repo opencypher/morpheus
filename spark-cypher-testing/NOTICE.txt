@@ -28,8 +28,12 @@ Third-party licenses
 --------------------
 
 Apache Software License, Version 2.0
+  aopalliance version 1.0 repackaged as a module
   Apache Avro
+  Apache Avro IPC
+  Apache Avro Mapred API
   Apache Commons Codec
+  Apache Commons Crypto
   Apache Commons Lang
   Apache Commons Math
   Apache Commons Text
@@ -37,14 +41,22 @@ Apache Software License, Version 2.0
   Apache Directory LDAP API Utilities
   Apache Hadoop Annotations
   Apache Hadoop Auth
+  Apache Hadoop Client
   Apache Hadoop Common
   Apache Hadoop HDFS
   Apache Hadoop Mini-Cluster
   Apache HttpClient
   Apache HttpCore
+  Apache Ivy
   Apache Log4j
   Apache Log4j API
   Apache Log4j Core
+  Apache Parquet Column
+  Apache Parquet Common
+  Apache Parquet Encodings
+  Apache Parquet Format
+  Apache Parquet Hadoop
+  Apache Parquet Jackson
   Apache Shiro :: Cache
   Apache Shiro :: Configuration :: Core
   Apache Shiro :: Configuration :: OGDL
@@ -56,7 +68,10 @@ Apache Software License, Version 2.0
   Apache Shiro :: Lang
   ApacheDS I18n
   ApacheDS Protocol Kerberos Codec
+  Bean Validation API
   Caffeine cache
+  chill
+  chill-java
   Commons BeanUtils Core
   Commons CLI
   Commons Collections
@@ -68,6 +83,7 @@ Apache Software License, Version 2.0
   Commons Logging
   Commons Net
   commons-beanutils
+  Compress-LZF
   ConcurrentLinkedHashMap
   Curator Client
   Curator Framework
@@ -75,6 +91,7 @@ Apache Software License, Version 2.0
   Cypher for Apache Spark - CAPS
   Data Mapper for Jackson
   Digester
+  empty
   FindBugs-jsr305
   Google Guice - Core Library
   Google Guice - Extensions - Servlet
@@ -97,15 +114,34 @@ Apache Software License, Version 2.0
   hadoop-yarn-server-tests
   hadoop-yarn-server-web-proxy
   hazelcast-all
+  HK2 API module
+  HK2 Implementation Utilities
   htrace-core
   HttpClient
   Jackson
+  Jackson Integration for Metrics
+  Jackson-annotations
+  Jackson-core
+  jackson-databind
+  Jackson-module-paranamer
+  jackson-module-scala
   Java Servlet API
   java-xmlbuilder
   JavaBeans(TM) Activation Framework
   JavaMail API (compat)
+  Javassist
+  javax.annotation API
   javax.inject
+  javax.inject:1 as OSGi bundle
+  javax.ws.rs-api
   JAX-RS provider for JSON content type
+  jersey-container-servlet
+  jersey-container-servlet-core
+  jersey-core-client
+  jersey-core-common
+  jersey-core-server
+  jersey-media-jaxb
+  jersey-repackaged-guava
   JetS3t
   Jettison
   Jetty :: Http Utility
@@ -120,6 +156,10 @@ Apache Software License, Version 2.0
   Jetty Utilities
   jPowerShell
   jProcesses
+  json4s-ast
+  json4s-core
+  json4s-jackson
+  JVM Integration for Metrics
   Lucene codecs
   Lucene Common Analyzers
   Lucene Core
@@ -130,6 +170,7 @@ Apache Software License, Version 2.0
   MX4J
   Netty
   Netty/All-in-One
+  Objenesis
   Okapi - Neo4j IO
   Okapi - Neo4j IO test utils
   Okapi - Neo4j procedures
@@ -146,18 +187,33 @@ Apache Software License, Version 2.0
   openCypher Parser
   openCypher Rewriting
   openCypher Utils
+  oro
+  OSGi resource locator bundle - used by various API providers that rely on META-INF/services mechanism to locate providers.
   parboiled-core
   parboiled-scala
   Prometheus Java Simpleclient
   Prometheus Java Simpleclient Common
   Prometheus Java Simpleclient Dropwizard
   Prometheus Java Simpleclient Httpserver
+  RoaringBitmap
   Scala 2.11 wrapper for Log4j API
   scalactic
   scalatest
+  ServiceLocator Default Implementation
   servlet-api
   snappy-java
+  Spark Project Catalyst
+  Spark Project Core
+  Spark Project Launcher
+  Spark Project Networking
+  Spark Project Shuffle Streaming Service
+  Spark Project Sketch
+  Spark Project SQL
+  Spark Project Tags
+  Spark Project Unsafe
   spark-measure
+  stream-lib
+  univocity-parsers
   WMI4Java
   Xerces2 Java Parser
   XML Commons External Components XML APIs
@@ -165,20 +221,27 @@ Apache Software License, Version 2.0
   zookeeper
 
 BSD License
+  ANTLR 4 Runtime
   asm
   ASM Core
   asm-analysis
   asm-tree
   asm-util
+  Commons Compiler
+  Janino
   JLine
   JSch
+  Kryo Shaded
   leveldbjni-all
+  MinLog
   ParaNamer Core
   Protocol Buffer Java API
+  Py4J
   Scala Compiler
   Scala Library
   scala-parser-combinators
   scala-xml
+  Scalap
   xmlenc Library
 
 Bouncy Castle License
@@ -191,8 +254,11 @@ MIT-license
   Cats kernel
   Cats macros
   core
+  JCL 1.1.1 implemented over SLF4J
+  JUL to SLF4J bridge
   machinist
   Mockito
+  pyrolite
   scallop
   SLF4J API Module
   SLF4J LOG4J-12 Binding

@@ -49,7 +49,7 @@
     <project.scala.binary.version>2.11</project.scala.binary.version>
     <project.scala.version>${project.scala.binary.version}.12</project.scala.version>
     <project.rootdir>${project.basedir}</project.rootdir>
-    <project.artifact.classifier>standalone</project.artifact.classifier>
+    <project.artifact.classifier>cluster</project.artifact.classifier>
     <java9.exports></java9.exports>
 
     <!-- Used plugins -->
@@ -72,7 +72,7 @@
     <dep.neo4j.driver.version>1.6.1</dep.neo4j.driver.version>
     <dep.opencypher.front-end.version>9.0.20180914</dep.opencypher.front-end.version>
     <dep.spark.version>2.2.1</dep.spark.version>
-    <dep.spark.scope>compile</dep.spark.scope>
+    <dep.spark.scope>provided</dep.spark.scope>
     <dep.upickle.version>0.6.6</dep.upickle.version>
     <dep.log4j.core.version>2.11.0</dep.log4j.core.version>
     <dep.log4j.scala.api.version>11.0</dep.log4j.scala.api.version>
@@ -87,6 +87,24 @@
     <dep.scalacheck.version>1.13.5</dep.scalacheck.version>
     <dep.spark-measure.version>0.11</dep.spark-measure.version>
   </properties>
+
+  <modules>
+    <module>licensecheck-config</module>
+    <module>okapi-api</module>
+    <module>okapi-testing</module>
+    <module>okapi-neo4j-io</module>
+    <module>okapi-neo4j-io-testing</module>
+    <module>okapi-ir</module>
+    <module>okapi-neo4j-procedures</module>
+    <module>okapi-logical</module>
+    <module>okapi-relational</module>
+    <module>okapi-tck</module>
+    <module>okapi-trees</module>
+    <module>spark-cypher</module>
+    <module>spark-cypher-examples</module>
+    <module>spark-cypher-tck</module>
+    <module>spark-cypher-testing</module>
+  </modules>
 
   <build>
     <resources>
@@ -352,51 +370,27 @@
         </executions>
       </plugin>
 
+      <!-- License header checking -->
+      <plugin>
+        <groupId>com.mycila</groupId>
+        <artifactId>license-maven-plugin</artifactId>
+      </plugin>
+
     </plugins>
 
   </build>
 
   <profiles>
-
     <profile>
-      <activation>
-        <activeByDefault>true</activeByDefault>
-      </activation>
-      <id>testing</id>
-      <properties>
-        <dep.spark.scope>compile</dep.spark.scope>
-      </properties>
-
-      <!-- No license listing for this profile -->
-      <modules>
-        <module>okapi-api</module>
-        <module>okapi-testing</module>
-        <module>okapi-neo4j-io</module>
-        <module>okapi-neo4j-io-testing</module>
-        <module>okapi-ir</module>
-        <module>okapi-neo4j-procedures</module>
-        <module>okapi-logical</module>
-        <module>okapi-relational</module>
-        <module>okapi-tck</module>
-        <module>okapi-trees</module>
-        <module>spark-cypher</module>
-        <module>spark-cypher-examples</module>
-        <module>spark-cypher-tck</module>
-        <module>spark-cypher-testing</module>
-      </modules>
-    </profile>
-
-    <profile>
-      <id>check-licenses</id>
+      <!-- Disable plugin for parent module -->
+      <id>no-license-listing-for-parent-module</id>
       <activation>
         <activeByDefault>false</activeByDefault>
         <file>
           <exists>src/main/scala</exists>
         </file>
-        <property>
-          <name>cluster</name>
-        </property>
       </activation>
+
       <build>
         <plugins>
           <!-- License file checking-->
@@ -404,98 +398,9 @@
             <groupId>org.neo4j.build.plugins</groupId>
             <artifactId>licensing-maven-plugin</artifactId>
           </plugin>
-
-          <!-- License header checking -->
-          <plugin>
-            <groupId>com.mycila</groupId>
-            <artifactId>license-maven-plugin</artifactId>
-          </plugin>
         </plugins>
       </build>
     </profile>
-
-    <profile>
-      <id>cluster-package</id>
-      <properties>
-        <project.artifact.classifier>cluster</project.artifact.classifier>
-        <dep.spark.scope>provided</dep.spark.scope>
-      </properties>
-      <activation>
-        <property>
-          <name>cluster</name>
-        </property>
-      </activation>
-
-      <modules>
-        <module>licensecheck-config</module>
-        <module>okapi-api</module>
-        <module>okapi-testing</module>
-        <module>okapi-neo4j-io</module>
-        <module>okapi-neo4j-io-testing</module>
-        <module>okapi-ir</module>
-        <module>okapi-neo4j-procedures</module>
-        <module>okapi-logical</module>
-        <module>okapi-relational</module>
-        <module>okapi-tck</module>
-        <module>okapi-trees</module>
-        <module>spark-cypher</module>
-        <module>spark-cypher-testing</module>
-      </modules>
-
-      <build>
-        <plugins>
-          <!-- shade plugin -->
-          <plugin>
-            <groupId>org.apache.maven.plugins</groupId>
-            <artifactId>maven-shade-plugin</artifactId>
-            <version>${plugin.maven-shade.version}</version>
-            <executions>
-              <!-- run shade goal on package phase -->
-              <execution>
-                <phase>package</phase>
-                <goals>
-                  <goal>shade</goal>
-                </goals>
-                <configuration>
-                  <shadedArtifactAttached>true</shadedArtifactAttached>
-                  <shadedClassifierName>${project.artifact.classifier}</shadedClassifierName>
-                  <createDependencyReducedPom>true</createDependencyReducedPom>
-                  <artifactSet>
-                    <excludes>
-                      <exclude>junit:junit</exclude>
-                      <exclude>jmock:*</exclude>
-                      <exclude>org.scala-lang:*</exclude>
-                      <exclude>org.scalatest:*</exclude>
-                      <exclude>org.scalacheck:*</exclude>
-                      <exclude>org.apache.maven:lib:tests</exclude>
-                      <exclude>commons-beanutils:*</exclude>
-                      <exclude>aopalliance:*</exclude>
-                      <exclude>javax.inject:*</exclude>
-                    </excludes>
-                  </artifactSet>
-                  <filters>
-
-                    <filter>
-                      <artifact>*:*</artifact>
-                      <excludes>
-                        <exclude>META-INF/*.SF</exclude>
-                        <exclude>META-INF/*.DSA</exclude>
-                        <exclude>META-INF/*.RSA</exclude>
-                        <!--Exclude Java 9 modules-->
-                        <exclude>**/module-info.class</exclude>
-                        <exclude>META-INF/versions/9/**/*</exclude>
-                      </excludes>
-                    </filter>
-
-                  </filters>
-                </configuration>
-              </execution>
-            </executions>
-          </plugin>
-        </plugins>
-      </build>
-    </profile>
-
   </profiles>
 
   <dependencies>
