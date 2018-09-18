@@ -57,3 +57,5 @@ final case class GraphNotFoundException(msg: String, cause: Option[Exception] = 
 final case class InvalidGraphException(msg: String, cause: Option[Exception] = None) extends InternalException(msg, cause)
 
 final case class GraphAlreadyExistsException(msg: String, cause: Option[Exception] = None) extends InternalException(msg, cause)
+
+final case class ViewAlreadyExistsException(msg: String, cause: Option[Exception] = None) extends InternalException(msg, cause)

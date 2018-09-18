@@ -41,6 +41,7 @@ import org.opencypher.okapi.relational.impl.operators._
 import org.opencypher.okapi.relational.impl.planning.ConstructGraphPlanner._
 import org.opencypher.okapi.relational.impl.table.RecordHeader
 import org.opencypher.okapi.relational.impl.{operators => relational}
+import org.opencypher.okapi.relational.impl.RelationalConverters._
 
 import scala.reflect.runtime.universe.TypeTag
 
@@ -87,7 +88,7 @@ object RelationalPlanner {
       case logical.FromGraph(graph, in, _) =>
         val inOp = process[T](in)
         graph match {
-          case g: LogicalCatalogGraph => relational.FromGraph(inOp, g)
+          case g: LogicalCatalogGraph => relational.FromCatalogGraph(inOp, g)
           case construct: LogicalPatternGraph => planConstructGraph(inOp, construct)
         }
 
@@ -231,7 +232,7 @@ object RelationalPlanner {
       case _: LogicalCatalogGraph =>
         inOp.context.resolveGraph(logicalGraph.qualifiedGraphName)
       case p: LogicalPatternGraph =>
-        inOp.context.constructedGraphCatalog.getOrElse(p.qualifiedGraphName, planConstructGraph(inOp, p).graph)
+        inOp.context.queryLocalCatalog.getOrElse(p.qualifiedGraphName, planConstructGraph(inOp, p).graph)
     }
     val scanOp = graph.scanOperator(entityVar.cypherType)
     scanOp.assignScanName(entityVar.name).switchContext(inOp.context)

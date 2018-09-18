@@ -176,6 +176,31 @@ class MultipleGraphBehaviour extends CAPSTestSuite with ScanGraphInit {
       ))
   }
 
+  it("constructs from different graphs with multiple distinct nodes") {
+    val g1 = initGraph(
+      """|CREATE (:A {v: 1})
+         |CREATE (:B {v: 100})""".stripMargin)
+    val g2 = initGraph(
+      """|CREATE (:A {v: 2})
+         |CREATE (:B {v: 200})""".stripMargin)
+    caps.catalog.store("g1", g1)
+    caps.catalog.store("g2", g2)
+
+    val query =
+      """|FROM GRAPH g1
+         |MATCH (n)
+         |FROM GRAPH g2
+         |MATCH (m)
+         |CONSTRUCT
+         |  CREATE (n)
+         |  CREATE (m)
+         |RETURN GRAPH""".stripMargin
+
+    val result = testGraph1.cypher(query)
+
+    result.graph.nodes("n").size shouldBe 4
+  }
+
   it("should construct a graph") {
     val query =
       """|CONSTRUCT
@@ -301,7 +326,7 @@ class MultipleGraphBehaviour extends CAPSTestSuite with ScanGraphInit {
     result.graph.schema should equal(
       Schema.empty
         .withNodePropertyKeys(Set("A", "B"), PropertyKeys("name" -> CTString, "age" -> CTInteger))
-        )
+    )
     result.graph.cypher("MATCH (a:A:B) RETURN a.name").records.iterator.toBag should equal(Bag(
       CypherMap("a.name" -> "Donald")
     ))
@@ -321,7 +346,7 @@ class MultipleGraphBehaviour extends CAPSTestSuite with ScanGraphInit {
     result.graph.schema should equal(
       Schema.empty
         .withNodePropertyKeys(Set("Person"), PropertyKeys("name" -> CTString))
-        )
+    )
     result.graph.cypher("MATCH (a:Person) RETURN a.name").records.iterator.toBag should equal(Bag(
       CypherMap("a.name" -> "Mats")
     ))
@@ -400,7 +425,7 @@ class MultipleGraphBehaviour extends CAPSTestSuite with ScanGraphInit {
     result.graph.schema.labels should equal(Set("Foo"))
     result.graph.schema should equal(Schema.empty
       .withNodePropertyKeys("Foo")("foo" -> CTString)
-      )
+    )
 
     result.graph.cypher("MATCH (a) RETURN a.foo, labels(a) as labels").records.iterator.toBag should equal(Bag(
       CypherMap("a.foo" -> "bar", "labels" -> Seq("Foo"))
@@ -617,12 +642,14 @@ class MultipleGraphBehaviour extends CAPSTestSuite with ScanGraphInit {
 
     result.asCaps.maybeRelational match {
       case Some(relPlan) =>
-        val switchOp = relPlan.collectFirst { case op : SwitchContext[_] => op }.get
-        val containsUnionGraph = switchOp.context.constructedGraphCatalog.head._2 match {
+        val switchOp = relPlan.collectFirst { case op: SwitchContext[_] => op }.get
+        val containsUnionGraph = switchOp.context.queryLocalCatalog.head._2 match {
           case g: UnionGraph[_] => g.graphsToReplacements.keys.collectFirst { case op: UnionGraph[_] => op }.isDefined
           case _ => false
         }
-        withClue("CONSTRUCT plans union on a single input graph") { containsUnionGraph shouldBe false }
+        withClue("CONSTRUCT plans union on a single input graph") {
+          containsUnionGraph shouldBe false
+        }
 
       case None =>
     }
@@ -845,7 +872,7 @@ class MultipleGraphBehaviour extends CAPSTestSuite with ScanGraphInit {
       .withNodePropertyKeys("A")()
       .withNodePropertyKeys("B")()
       .withRelationshipPropertyKeys("KNOWS")()
-      )
+    )
     result.graph.cypher("MATCH ()-[r]->() RETURN type(r)").records.iterator.toBag should equal(Bag(
       CypherMap("type(r)" -> "KNOWS")
     ))

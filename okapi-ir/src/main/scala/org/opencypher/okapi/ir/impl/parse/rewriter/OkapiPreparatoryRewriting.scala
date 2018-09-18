@@ -24,47 +24,26 @@
  * described as "implementation extensions to Cypher" or as "proposed changes to
  * Cypher that are not yet approved by the openCypher community".
  */
-package org.opencypher.okapi.ir.impl.parse.rewriter
+package org.opencypher.v9_0.frontend.phases
 
+import org.opencypher.okapi.ir.impl.parse.rewriter.legacy
+import org.opencypher.okapi.ir.impl.parse.rewriter.legacy.{normalizeReturnClauses, normalizeWithClauses}
+import org.opencypher.v9_0.rewriting.rewriters._
+import org.opencypher.v9_0.util.inSequence
 import org.opencypher.v9_0.frontend.phases.CompilationPhaseTracer.CompilationPhase.AST_REWRITE
-import org.opencypher.v9_0.frontend.phases._
-import org.opencypher.v9_0.rewriting.rewriters.{Forced, literalReplacement}
-import org.opencypher.v9_0.util.{Rewriter, inSequence}
 
-case object OkapiRewriting extends Phase[BaseContext, BaseState, BaseState] {
+case object OkapiPreparatoryRewriting extends Phase[BaseContext, BaseState, BaseState] {
 
   override def process(from: BaseState, context: BaseContext): BaseState = {
-    val term = from.statement()
 
-    val rewrittenStatement = term.endoRewrite(
-      inSequence(
-        projectFreshSortExpressions,
-        normalizeCaseExpression,
-        normalizeReturnClauses,
-        extractSubqueryFromPatternExpression(context.exceptionCreator),
-        CNFNormalizer.instance(context)
-      ))
+    val rewrittenStatement = from.statement().endoRewrite(inSequence(
+      legacy.normalizeReturnClauses(context.exceptionCreator),
+      normalizeWithClauses(context.exceptionCreator),
+      expandCallWhere,
+      replaceAliasedFunctionInvocations,
+      mergeInPredicates))
 
-    // Extract literals of possibly rewritten subqueries
-    // TODO: once this gets into neo4j-frontend, it can be done in literalReplacement
-    val (rewriters, extractedParams) = rewrittenStatement
-      .treeFold(Seq.empty[(Rewriter, Map[String, Any])]) {
-        case ep: ExistsPattern =>
-          acc =>
-            (acc :+ literalReplacement(ep.query, Forced), None)
-      }
-      .unzip
-
-    // rewrite literals
-    val finalStatement = rewriters.foldLeft(rewrittenStatement) {
-      case (acc, rewriter) => acc.endoRewrite(rewriter)
-    }
-    // merge extracted params
-    val extractedParameters = extractedParams.foldLeft(Map.empty[String, Any])(_ ++ _)
-
-    from
-      .withStatement(finalStatement)
-      .withParams(from.extractedParams() ++ extractedParameters)
+    from.withStatement(rewrittenStatement)
   }
 
   override val phase = AST_REWRITE

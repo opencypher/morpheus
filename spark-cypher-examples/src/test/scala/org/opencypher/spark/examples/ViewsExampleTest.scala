@@ -24,20 +24,11 @@
  * described as "implementation extensions to Cypher" or as "proposed changes to
  * Cypher that are not yet approved by the openCypher community".
  */
-package org.opencypher.spark.testing.fixture
+package org.opencypher.spark.examples
 
-import org.opencypher.okapi.testing.{BaseTestFixture, BaseTestSuite}
-import org.opencypher.spark.api.CAPSSession
-
-trait CAPSSessionFixture extends BaseTestFixture {
-  self: SparkSessionFixture with BaseTestSuite =>
-
-  implicit lazy val caps: CAPSSession = CAPSSession.create
-
-  abstract override protected def afterEach(): Unit = {
-    // delete all session graphs via their qualified graph name
-    caps.catalog.source(caps.catalog.sessionNamespace).graphNames.map(_.value).foreach(caps.catalog.dropGraph)
-    caps.catalog.store(caps.emptyGraphQgn, caps.graphs.empty)
-    super.afterEach()
+class ViewsExampleTest extends ExampleTest {
+  it("should produce the correct output") {
+    validate(ViewsExample.main(Array.empty),
+      getClass.getResource("/example_outputs/ViewsExample.out").toURI)
   }
 }

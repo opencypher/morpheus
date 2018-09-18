@@ -63,7 +63,7 @@ object Neo4jAstTestSupport {
     override val pipeLine: Transformer[BaseContext, BaseState, BaseState] =
       Parsing.adds(BaseContains[Statement]) andThen
         SyntaxDeprecationWarnings andThen
-        PreparatoryRewriting andThen
+        OkapiPreparatoryRewriting andThen
         NonThrowingSemanticAnalysis andThen
         AstRewriting(RewriterStepSequencer.newPlain, Never) andThen
         Namespacer andThen

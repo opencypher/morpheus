@@ -26,10 +26,13 @@
  */
 package org.opencypher.okapi.impl.graph
 
-import org.opencypher.okapi.api.graph.{Namespace, PropertyGraph, PropertyGraphCatalog, QualifiedGraphName}
+import org.opencypher.okapi.api.graph._
 import org.opencypher.okapi.api.io.PropertyGraphDataSource
-import org.opencypher.okapi.impl.exception.{IllegalArgumentException, UnsupportedOperationException}
+import org.opencypher.okapi.api.value.CypherValue.CypherString
+import org.opencypher.okapi.impl.annotations.experimental
+import org.opencypher.okapi.impl.exception.{IllegalArgumentException, UnsupportedOperationException, ViewAlreadyExistsException}
 import org.opencypher.okapi.impl.io.SessionGraphDataSource
+import org.opencypher.v9_0.ast.{FromGraph, GraphByParameter, GraphLookup, ViewInvocation}
 
 /**
   * This is the default implementation of the [[org.opencypher.okapi.api.graph.PropertyGraphCatalog]].
@@ -57,6 +60,8 @@ class CypherCatalog extends PropertyGraphCatalog {
   private var dataSourceMapping: Map[Namespace, PropertyGraphDataSource] =
     Map(sessionNamespace -> new SessionGraphDataSource)
 
+  private var viewMapping: Map[QualifiedGraphName, ParameterizedView] = Map.empty
+
   override def namespaces: Set[Namespace] = dataSourceMapping.keySet
 
   override def source(namespace: Namespace): PropertyGraphDataSource = dataSourceMapping.getOrElse(namespace,
@@ -64,7 +69,10 @@ class CypherCatalog extends PropertyGraphCatalog {
 
   override def listSources: Map[Namespace, PropertyGraphDataSource] = dataSourceMapping
 
-  override def register(namespace: Namespace, dataSource: PropertyGraphDataSource): Unit = dataSourceMapping.get(namespace) match {
+  override def register(
+    namespace: Namespace,
+    dataSource: PropertyGraphDataSource
+  ): Unit = dataSourceMapping.get(namespace) match {
     case Some(p) => throw IllegalArgumentException(s"There is already a data source registered with namespace '$namespace'", p)
     case None => dataSourceMapping = dataSourceMapping.updated(namespace, dataSource)
   }
@@ -77,19 +85,64 @@ class CypherCatalog extends PropertyGraphCatalog {
     }
   }
 
-  override def graphNames: Set[QualifiedGraphName] =
+  // TODO: Filter empty graph
+  override def graphNames: Set[QualifiedGraphName] = {
     dataSourceMapping.flatMap {
       case (namespace, pgds) =>
         pgds.graphNames.map(n => QualifiedGraphName(namespace, n))
     }.toSet
+  }
+
+  override def viewNames: Set[QualifiedGraphName] = viewMapping.keySet
 
   override def store(qualifiedGraphName: QualifiedGraphName, graph: PropertyGraph): Unit =
     source(qualifiedGraphName.namespace).store(qualifiedGraphName.graphName, graph)
 
-  override def delete(qualifiedGraphName: QualifiedGraphName): Unit =
+  override def store(qualifiedGraphName: QualifiedGraphName, parameterNames: List[String], viewQuery: String): Unit = {
+    val existsAlready = viewMapping.contains(qualifiedGraphName)
+    if (existsAlready) {
+      throw ViewAlreadyExistsException(s"A view with name `$qualifiedGraphName` already exists")
+    } else {
+      viewMapping += (qualifiedGraphName -> ParameterizedView(parameterNames, viewQuery))
+    }
+  }
+
+  override def dropGraph(qualifiedGraphName: QualifiedGraphName): Unit =
     source(qualifiedGraphName.namespace).delete(qualifiedGraphName.graphName)
+
+  override def dropView(qualifiedGraphName: QualifiedGraphName): Unit = viewMapping -= qualifiedGraphName
 
   override def graph(qualifiedGraphName: QualifiedGraphName): PropertyGraph =
     source(qualifiedGraphName.namespace).graph(qualifiedGraphName.graphName)
 
+  private[opencypher] def view(viewInvocation: ViewInvocation)(implicit session: CypherSession): PropertyGraph = {
+    val qgn = QualifiedGraphName(viewInvocation.graphName.parts)
+    val viewDefinition = viewMapping.get(qgn) match {
+      case Some(vd) => vd
+      case None => throw IllegalArgumentException(
+        s"the name of a stored view${if (viewNames.isEmpty) "" else s" [${viewNames.mkString(", ")}]"}",
+        s"unknown view name `$qgn`"
+      )
+    }
+    val paramNameValueTuples = viewDefinition.parameterNames.zip(viewInvocation.params)
+    val (parameterMap, queryLocalGraphs) = paramNameValueTuples.foldLeft(Map.empty[String, CypherString] -> Map.empty[QualifiedGraphName, PropertyGraph]) {
+      case ((currentParamMap, currentQueryLocalGraphs), (nextName, nextFrom: FromGraph)) =>
+        nextFrom match {
+          case v: ViewInvocation => // Recursive view evaluation
+            val graph = view(v)
+            val graphQgn = session.generateQualifiedGraphName
+            currentParamMap.updated(nextName, CypherString(graphQgn.toString)) -> currentQueryLocalGraphs.updated(graphQgn, graph)
+
+          case g: GraphLookup => // Simple case, parameter is just passed on
+            currentParamMap.updated(nextName, CypherString(QualifiedGraphName(g.graphName.parts).toString)) -> currentQueryLocalGraphs
+
+          case other =>
+            throw IllegalArgumentException("a graph lookup or a view invocation", other)
+        }
+    }
+    session.cypher(viewDefinition.viewQuery, parameterMap, queryCatalog = queryLocalGraphs).graph
+  }
+
 }
+
+case class ParameterizedView(parameterNames: List[String], viewQuery: String)

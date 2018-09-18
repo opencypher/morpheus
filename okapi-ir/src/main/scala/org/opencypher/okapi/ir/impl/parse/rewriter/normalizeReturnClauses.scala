@@ -104,3 +104,4 @@ case object normalizeReturnClauses extends Rewriter {
       query.copy(clauses = clauses.flatMap(clauseRewriter))(query.position)
   })
 }
+

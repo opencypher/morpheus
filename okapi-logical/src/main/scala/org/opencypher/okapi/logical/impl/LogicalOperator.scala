@@ -26,7 +26,7 @@
  */
 package org.opencypher.okapi.logical.impl
 
-import org.opencypher.okapi.api.graph.QualifiedGraphName
+import org.opencypher.okapi.api.graph.{PropertyGraph, QualifiedGraphName}
 import org.opencypher.okapi.api.schema.Schema
 import org.opencypher.okapi.api.types.{CTNode, CTRelationship}
 import org.opencypher.okapi.ir.api.Label
@@ -62,7 +62,6 @@ sealed trait LogicalGraph {
   protected def args: String
 
   def qualifiedGraphName: QualifiedGraphName
-
 
 }
 
@@ -319,7 +318,7 @@ final case class FromGraph(
   // TODO: adopt yield for construct
   override val fields: Set[Var] = graph match {
     case _: LogicalPatternGraph => Set.empty
-    case _: LogicalCatalogGraph => in.fields
+    case _ => in.fields
   }
 }
 

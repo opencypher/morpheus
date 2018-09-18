@@ -31,17 +31,32 @@ import org.opencypher.okapi.api.io.PropertyGraphDataSource
 import org.opencypher.okapi.api.schema.Schema
 
 /**
-  * Represents a catalog storing the session graphs and schemas of constructed graphs.
-  *
-  * @param dataSourceMapping
-  * @param registeredSchemas
+  * Represents a catalog storing the session graphs and schemas of constructed graphs and temporary graphs for
+  * recursive view queries.
   */
-case class CatalogWithQuerySchemas(dataSourceMapping: Map[Namespace, PropertyGraphDataSource], registeredSchemas: Map[QualifiedGraphName, Schema]) {
+case class QueryLocalCatalog(
+  dataSourceMapping: Map[Namespace, PropertyGraphDataSource],
+  registeredGraphs: Map[QualifiedGraphName, PropertyGraph],
+  registeredSchemas: Map[QualifiedGraphName, Schema]
+) {
+
   def schema(qgn: QualifiedGraphName): Schema = {
-    registeredSchemas.getOrElse(qgn, schemaFromDataSource(qgn))
+    registeredSchemas.get(qgn) match {
+      case Some(s) => s
+      case None =>
+        registeredGraphs.get(qgn) match {
+          case Some(g) => g.schema
+          case None => schemaFromDataSource(qgn)
+        }
+    }
   }
 
-  def graph(qgn: QualifiedGraphName): PropertyGraph = dataSourceMapping(qgn.namespace).graph(qgn.graphName)
+  def graph(qgn: QualifiedGraphName): PropertyGraph = {
+    registeredGraphs.get(qgn) match {
+      case Some(g) => g
+      case None => dataSourceMapping(qgn.namespace).graph(qgn.graphName)
+    }
+  }
 
   private def schemaFromDataSource(qgn: QualifiedGraphName): Schema = {
     val dataSource = dataSourceMapping(qgn.namespace)
@@ -53,14 +68,21 @@ case class CatalogWithQuerySchemas(dataSourceMapping: Map[Namespace, PropertyGra
     schema
   }
 
-  def withSchema(qgn: QualifiedGraphName, schema: Schema): CatalogWithQuerySchemas = {
+  def withGraph(qgn: QualifiedGraphName, graph: PropertyGraph): QueryLocalCatalog = {
+    copy(registeredGraphs = registeredGraphs.updated(qgn, graph))
+  }
+
+  def withSchema(qgn: QualifiedGraphName, schema: Schema): QueryLocalCatalog = {
     copy(registeredSchemas = registeredSchemas.updated(qgn, schema))
   }
 }
 
-object CatalogWithQuerySchemas {
-  def apply(dataSourceMapping:  Map[Namespace, PropertyGraphDataSource]): CatalogWithQuerySchemas =
-    CatalogWithQuerySchemas(dataSourceMapping, Map.empty)
+object QueryLocalCatalog {
+  def apply(
+    dataSourceMapping: Map[Namespace, PropertyGraphDataSource],
+    queryCatalog: Map[QualifiedGraphName, PropertyGraph] = Map.empty
+  ): QueryLocalCatalog =
+    QueryLocalCatalog(dataSourceMapping, queryCatalog, Map.empty)
 
-  def empty: CatalogWithQuerySchemas = CatalogWithQuerySchemas(Map.empty, Map.empty)
+  def empty: QueryLocalCatalog = QueryLocalCatalog(Map.empty, Map.empty, Map.empty)
 }

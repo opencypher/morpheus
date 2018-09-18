@@ -26,7 +26,7 @@
  */
 package org.opencypher.okapi.ir.api
 
-import org.opencypher.okapi.api.graph.{GraphName, QualifiedGraphName}
+import org.opencypher.okapi.api.graph.{GraphName, PropertyGraph, QualifiedGraphName}
 import org.opencypher.okapi.api.schema.Schema
 import org.opencypher.okapi.api.types._
 import org.opencypher.okapi.impl.io.SessionGraphDataSource

@@ -41,6 +41,7 @@ import org.opencypher.okapi.relational.impl.operators.TagStrategy._
 import org.opencypher.okapi.relational.impl.planning._
 import org.opencypher.okapi.relational.impl.table.RecordHeader
 import org.opencypher.okapi.trees.AbstractTreeNode
+import org.opencypher.okapi.relational.impl.RelationalConverters._
 
 import scala.reflect.runtime.universe.TypeTag
 
@@ -412,7 +413,7 @@ final case class EmptyRecords[T <: Table[T] : TypeTag](
   override lazy val _table: T = session.records.empty(header).table
 }
 
-final case class FromGraph[T <: Table[T] : TypeTag](
+final case class FromCatalogGraph[T <: Table[T] : TypeTag](
   in: RelationalOperator[T],
   logicalGraph: LogicalCatalogGraph
 ) extends RelationalOperator[T] {

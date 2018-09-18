@@ -27,6 +27,8 @@
 package org.opencypher.okapi.api.graph
 
 import org.opencypher.okapi.api.io.PropertyGraphDataSource
+import org.opencypher.okapi.impl.annotations.experimental
+import org.opencypher.v9_0.ast.ViewInvocation
 
 /**
   * The Catalog manages a sessions [[org.opencypher.okapi.api.io.PropertyGraphDataSource]]s.
@@ -103,6 +105,22 @@ trait PropertyGraphCatalog {
   def graphNames: Set[QualifiedGraphName]
 
   /**
+    * Returns a set of [[org.opencypher.okapi.api.graph.QualifiedGraphName]]s for stored view queries
+    * that can be provided by this catalog.
+    *
+    * @return qualified names of view queries that can be provided
+    */
+  def viewNames: Set[QualifiedGraphName]
+
+  /**
+    * Returns all the qualified graph names known to this catalog. These identify either graphs stored in property
+    * graph data sources or view queries stored directly in the catalog.
+    *
+    * @return qualified names of graphs and view queries
+    */
+  def catalogNames: Set[QualifiedGraphName] = graphNames ++ viewNames
+
+  /**
     * Stores the given [[org.opencypher.okapi.api.graph.PropertyGraph]] using
     * the [[org.opencypher.okapi.api.io.PropertyGraphDataSource]] registered under
     * the [[org.opencypher.okapi.api.graph.Namespace]] of the specified string representation
@@ -125,12 +143,23 @@ trait PropertyGraphCatalog {
   def store(qualifiedGraphName: QualifiedGraphName, graph: PropertyGraph): Unit
 
   /**
-    * Removes the [[org.opencypher.okapi.api.graph.PropertyGraph]] associated with the given qualified graph name.
+    * Stores the given Cypher query as a view with the given qualified graph name in the catalog.
+    * The view may be parameterized with graph references. Graph reference parameters may only be used
+    * in FROM clauses in the view definition.
+    *
+    * @param qualifiedGraphName qualified graph name
+    * @param parameterNames         list of graph reference parameters used in the view query
+    * @param viewQuery          query string for the view definition
+    */
+  def store(qualifiedGraphName: QualifiedGraphName, parameterNames: List[String], viewQuery: String): Unit
+
+  /**
+    * Removes the [[org.opencypher.okapi.api.graph.PropertyGraph]] with the given qualified graph name.
     *
     * @param qualifiedGraphName name of the graph within the session.
     */
-  def delete(qualifiedGraphName: String): Unit =
-    delete(QualifiedGraphName(qualifiedGraphName))
+  def dropGraph(qualifiedGraphName: String): Unit =
+    dropGraph(QualifiedGraphName(qualifiedGraphName))
 
   /**
     * Removes the [[org.opencypher.okapi.api.graph.PropertyGraph]] with the given qualified name from the data source
@@ -138,7 +167,22 @@ trait PropertyGraphCatalog {
     *
     * @param qualifiedGraphName qualified graph name
     */
-  def delete(qualifiedGraphName: QualifiedGraphName): Unit
+  def dropGraph(qualifiedGraphName: QualifiedGraphName): Unit
+
+  /**
+    * Removes the view with the given qualified graph name from the catalog.
+    *
+    * @param qualifiedGraphName name of the view
+    */
+  def dropView(qualifiedGraphName: String): Unit =
+    dropView(QualifiedGraphName(qualifiedGraphName))
+
+  /**
+    * Removes the view with the given qualified graph name from the catalog.
+    *
+    * @param qualifiedGraphName name of the view
+    */
+  def dropView(qualifiedGraphName: QualifiedGraphName): Unit
 
   /**
     * Returns the [[org.opencypher.okapi.api.graph.PropertyGraph]] that is stored under the given
@@ -151,12 +195,22 @@ trait PropertyGraphCatalog {
     graph(QualifiedGraphName(qualifiedGraphName))
 
   /**
-    * Returns the [[org.opencypher.okapi.api.graph.PropertyGraph]] that is stored under
+    * Returns the [[org.opencypher.okapi.api.graph.PropertyGraph]] that is stored at
     * the given [[org.opencypher.okapi.api.graph.QualifiedGraphName]].
     *
     * @param qualifiedGraphName qualified graph name
     * @return property graph
     */
   def graph(qualifiedGraphName: QualifiedGraphName): PropertyGraph
+
+  /**
+    * Returns the [[org.opencypher.okapi.api.graph.PropertyGraph]] that is created by the passed [[ViewInvocation]].
+    *
+    * The view is instantiated with `parameters`.
+    *
+    * @param viewInvocation view invocation to execute
+    * @return property graph returned by the parameterized view
+    */
+  private[opencypher] def view(viewInvocation: ViewInvocation)(implicit session: CypherSession): PropertyGraph
 
 }

@@ -32,6 +32,7 @@ import org.atnos.eff.all._
 import org.opencypher.okapi.api.graph.QualifiedGraphName
 import org.opencypher.okapi.api.schema.Schema
 import org.opencypher.okapi.api.types._
+import org.opencypher.okapi.api.value.CypherValue.CypherString
 import org.opencypher.okapi.impl.exception.{IllegalArgumentException, IllegalStateException, UnsupportedOperationException}
 import org.opencypher.okapi.ir.api._
 import org.opencypher.okapi.ir.api.block.{SortItem, _}
@@ -39,6 +40,7 @@ import org.opencypher.okapi.ir.api.expr._
 import org.opencypher.okapi.ir.api.pattern.Pattern
 import org.opencypher.okapi.ir.api.set.{SetItem, SetLabelItem, SetPropertyItem}
 import org.opencypher.okapi.ir.api.util.CompilationStage
+import org.opencypher.okapi.ir.impl.exception.ParsingException
 import org.opencypher.okapi.ir.impl.refactor.instances._
 import org.opencypher.okapi.ir.impl.util.VarConverters.RichIrField
 import org.opencypher.v9_0.util.InputPosition
@@ -85,13 +87,36 @@ object IRBuilder extends CompilationStage[ast.Statement, CypherStatement, IRBuil
           }
         } yield result
 
-      case ast.DropGraph(qgn) =>
+      case ast.CreateView(qgn, params, _, innerQueryString) =>
         for {
           context <- get[R, IRBuilderContext]
           result <- {
-            val irQgn = QualifiedGraphName(qgn.parts)
-            val schema = context.schemaFor(irQgn)
-            val statement = Some(DeleteGraphStatement(QueryInfo(context.queryString), IRCatalogGraph(irQgn, schema)))
+            val statement = Some(CreateViewStatement(
+              QueryInfo(context.queryString),
+              QualifiedGraphName(qgn.parts),
+              params.map(_.name).toList,
+              innerQueryString
+            ))
+            pure[R, Option[CypherStatement]](statement)
+          }
+        } yield result
+
+      case ast.DropView(catalogName) =>
+        for {
+          context <- get[R, IRBuilderContext]
+          result <- {
+            val irQgn = QualifiedGraphName(catalogName.parts)
+            val statement = Some(DeleteViewStatement(QueryInfo(context.queryString), irQgn))
+            pure[R, Option[CypherStatement]](statement)
+          }
+        } yield result
+
+      case ast.DropGraph(catalogName) =>
+        for {
+          context <- get[R, IRBuilderContext]
+          result <- {
+            val irQgn = QualifiedGraphName(catalogName.parts)
+            val statement = Some(DeleteGraphStatement(QueryInfo(context.queryString), irQgn))
             pure[R, Option[CypherStatement]](statement)
           }
         } yield result
@@ -115,7 +140,34 @@ object IRBuilder extends CompilationStage[ast.Statement, CypherStatement, IRBuil
 
     c match {
 
-      case ast.FromGraph(qgn: ast.QualifiedGraphName) =>
+      case v: ast.ViewInvocation =>
+        for {
+          context <- get[R, IRBuilderContext]
+          blocks <- {
+            val graph = context.instantiateView(v)
+            val generatedQgn = context.qgnGenerator.generate
+            val irGraph = IRCatalogGraph(generatedQgn, graph.schema)
+            val updatedContext = context.withWorkingGraph(irGraph).registerGraph(generatedQgn, graph)
+            put[R, IRBuilderContext](updatedContext) >> pure[R, List[Block]](List.empty)
+          }
+        } yield blocks
+
+      case ast.GraphByParameter(p: exp.Parameter) =>
+        for {
+          context <- get[R, IRBuilderContext]
+          result <- {
+            val maybeParameterValue = context.parameters.get(p.name)
+            val fromGraph = maybeParameterValue match {
+              case Some(CypherString(paramValue)) => ast.GraphLookup(ast.CatalogName(QualifiedGraphName.splitQgn(paramValue)))(p.position)
+              case Some(other) => throw ParsingException(
+                s"Parameter ${p.name} needs to be of type ${CTString.toString}, was $other")
+              case None => throw ParsingException(s"No parameter ${p.name} was specified ${p.position}")
+            }
+            convertClause(fromGraph)
+          }
+        } yield result
+
+      case ast.GraphLookup(qgn: ast.CatalogName) =>
         for {
           context <- get[R, IRBuilderContext]
           blocks <- {

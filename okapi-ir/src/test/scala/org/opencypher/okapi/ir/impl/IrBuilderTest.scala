@@ -878,14 +878,21 @@ class IrBuilderTest extends IrTestSuite {
     }
   }
 
-  describe("DropGraphStatement") {
+  describe("DropGraphStatement/DropViewStatement") {
     it("can parse a DROP GRAPH statement") {
       val query = s"CATALOG DROP GRAPH $testQualifiedGraphName"
 
       val result = query.parseIR[DeleteGraphStatement]()
 
-      result.graph.qualifiedGraphName should equal(testQualifiedGraphName)
-      result.graph.schema should equal(testGraphSchema)
+      result.qgn should equal(testQualifiedGraphName)
+    }
+
+    it("can parse a DROP VIEW statement") {
+      val query = s"CATALOG DROP VIEW $testQualifiedGraphName"
+
+      val result = query.parseIR[DeleteViewStatement]()
+
+      result.qgn should equal(testQualifiedGraphName)
     }
   }
 

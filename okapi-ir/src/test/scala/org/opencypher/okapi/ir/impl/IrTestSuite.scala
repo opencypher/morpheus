@@ -26,7 +26,7 @@
  */
 package org.opencypher.okapi.ir.impl
 
-import org.opencypher.okapi.api.graph.GraphName
+import org.opencypher.okapi.api.graph.{GraphName, QualifiedGraphName}
 import org.opencypher.okapi.api.schema.Schema
 import org.opencypher.okapi.api.value.CypherValue._
 import org.opencypher.okapi.ir.api._
@@ -79,11 +79,12 @@ abstract class IrTestSuite extends BaseTestSuite {
   case class DummyBinds[E](fields: Set[IRField] = Set.empty) extends Binds
 
   implicit class RichString(queryText: String) {
-    def parseIR[T <: CypherStatement : ClassTag](graphsWithSchema: (GraphName, Schema)*)(implicit schema: Schema = Schema.empty): T =
-      ir(graphsWithSchema:_ *) match {
-        case cq : T => cq
+    def parseIR[T <: CypherStatement : ClassTag](graphsWithSchema: (GraphName, Schema)*)
+      (implicit schema: Schema = Schema.empty): T =
+      ir(graphsWithSchema: _ *) match {
+        case cq: T => cq
         case other => throw new IllegalArgumentException(s"Cannot convert $other")
-    }
+      }
 
     def asCypherQuery(graphsWithSchema: (GraphName, Schema)*)(implicit schema: Schema = Schema.empty): CypherQuery =
       parseIR[CypherQuery](graphsWithSchema: _*)
@@ -98,7 +99,8 @@ abstract class IrTestSuite extends BaseTestSuite {
           SemanticState.clean,
           testGraph()(schema),
           qgnGenerator,
-          Map.empty.withDefaultValue(testGraphSource(graphsWithSchema :+ (testGraphName -> schema): _*))
+          Map.empty.withDefaultValue(testGraphSource(graphsWithSchema :+ (testGraphName -> schema): _*)),
+          _ => ???
         ))
     }
 
@@ -110,7 +112,10 @@ abstract class IrTestSuite extends BaseTestSuite {
           SemanticState.clean,
           testGraph()(schema),
           qgnGenerator,
-          Map.empty.withDefaultValue(testGraphSource(testGraphName -> schema))))
+          Map.empty.withDefaultValue(testGraphSource(testGraphName -> schema)),
+          _ => ???
+        )
+      )
     }
   }
 
@@ -122,7 +127,8 @@ abstract class IrTestSuite extends BaseTestSuite {
         SemanticState.clean,
         testGraph()(Schema.empty),
         qgnGenerator,
-        Map.empty
+        Map.empty,
+        _ => ???
       )
   }
 }

@@ -26,9 +26,9 @@
  */
 package org.opencypher.okapi.logical.impl
 
-import org.opencypher.okapi.api.graph.GraphName
+import org.opencypher.okapi.api.graph.{GraphName, QualifiedGraphName}
 import org.opencypher.okapi.api.schema.Schema
-import org.opencypher.okapi.api.value.CypherValue.{CypherMap, CypherValue}
+import org.opencypher.okapi.api.value.CypherValue.{CypherMap, CypherString, CypherValue}
 import org.opencypher.okapi.ir.api._
 import org.opencypher.okapi.ir.api.block._
 import org.opencypher.okapi.ir.api.expr.Expr
@@ -73,9 +73,10 @@ trait IrConstruction {
     MatchBlock(List(leafBlock), pattern, Set.empty, false, testGraph)
 
   implicit class RichString(queryText: String) {
-    def parseIR[T <: CypherStatement : ClassTag](graphsWithSchema: (GraphName, Schema)*)(implicit schema: Schema = Schema.empty): T =
-      ir(graphsWithSchema:_ *) match {
-        case cq : T => cq
+    def parseIR[T <: CypherStatement : ClassTag](graphsWithSchema: (GraphName, Schema)*)
+      (implicit schema: Schema = Schema.empty): T =
+      ir(graphsWithSchema: _ *) match {
+        case cq: T => cq
         case other => throw new IllegalArgumentException(s"Cannot convert $other")
       }
 
@@ -92,8 +93,10 @@ trait IrConstruction {
           SemanticState.clean,
           testGraph()(schema),
           qgnGenerator,
-          Map.empty.withDefaultValue(testGraphSource(graphsWithSchema :+ (testGraphName -> schema): _*))
-        ))
+          Map.empty.withDefaultValue(testGraphSource(graphsWithSchema :+ (testGraphName -> schema): _*)),
+          _ => ???
+        )
+      )
     }
 
     def irWithParams(params: (String, CypherValue)*)(implicit schema: Schema = Schema.empty): CypherStatement = {
@@ -104,7 +107,10 @@ trait IrConstruction {
           SemanticState.clean,
           testGraph()(schema),
           qgnGenerator,
-          Map.empty.withDefaultValue(testGraphSource(testGraphName -> schema))))
+          Map.empty.withDefaultValue(testGraphSource(testGraphName -> schema)),
+          _ => ???
+        )
+      )
     }
   }
 

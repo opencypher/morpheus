@@ -99,6 +99,7 @@ trait PropertyGraph {
   def cypher(
     query: String,
     parameters: CypherMap = CypherMap.empty,
-    drivingTable: Option[CypherRecords] = None
-  ): CypherResult = session.cypherOnGraph(this, query, parameters, drivingTable)
+    drivingTable: Option[CypherRecords] = None,
+    queryCatalog: Map[QualifiedGraphName, PropertyGraph] = Map.empty
+  ): CypherResult = session.cypherOnGraph(this, query, parameters, drivingTable, queryCatalog)
 }
