@@ -30,7 +30,7 @@ import org.apache.logging.log4j.scala.Logging
 import org.neo4j.driver.v1.Value
 import org.neo4j.driver.v1.util.Function
 import org.opencypher.okapi.api.schema.Schema
-import org.opencypher.okapi.api.types.{CTVoid, CypherType}
+import org.opencypher.okapi.api.types._
 import org.opencypher.okapi.impl.exception.UnsupportedOperationException
 import org.opencypher.okapi.neo4j.io.Neo4jHelpers._
 
@@ -53,10 +53,11 @@ object SchemaFromProcedure extends Logging {
   }
 
   implicit class OkapiTypeNameConverter(val neo4jTypeName: String) extends AnyVal {
-    def toOkapiTypeName: String = neo4jTypeName.toUpperCase match {
-      case "LONG" => "INTEGER"
-      case "STRINGARRAY" => "LIST OF STRING"
-      case other => other
+    def toOkapiTypeName: String = neo4jTypeName match {
+      case "Long" => CTInteger.toString
+      case "Double" => CTFloat.toString
+      case "StringArray" => CTList(CTString).toString
+      case other => other.toUpperCase
     }
   }
 
