@@ -63,7 +63,7 @@ case class EntityKeys(
 /**
   * Utility class that allows to merge a graph into an existing Neo4j database.
   */
-object Neo4jSync extends Logging {
+object Neo4jGraphMerge extends Logging {
 
   /**
     * Creates node indexes for the sub-graph specified by `graphName` in the specified Neo4j database.

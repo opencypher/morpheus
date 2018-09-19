@@ -42,7 +42,7 @@ import org.opencypher.spark.testing.fixture.CAPSNeo4jServerFixture
 
 import scala.collection.JavaConverters._
 
-class Neo4jSyncTest extends CAPSTestSuite with CAPSNeo4jServerFixture with DefaultGraphInit {
+class Neo4JGraphMergeTest extends CAPSTestSuite with CAPSNeo4jServerFixture with DefaultGraphInit {
 
   override def dataFixture: String = ""
 
@@ -80,8 +80,8 @@ class Neo4jSyncTest extends CAPSTestSuite with CAPSNeo4jServerFixture with Defau
 
   describe("merging into the entire graph") {
     it("can do basic Neo4j syncing with merges") {
-      Neo4jSync.createIndexes(neo4jConfig, entityKeys)
-      Neo4jSync.merge(initialGraph, neo4jConfig, entityKeys)
+      Neo4jGraphMerge.createIndexes(neo4jConfig, entityKeys)
+      Neo4jGraphMerge.merge(initialGraph, neo4jConfig, entityKeys)
 
       val readGraph = Neo4jPropertyGraphDataSource(neo4jConfig).graph(entireGraphName)
 
@@ -95,9 +95,8 @@ class Neo4jSyncTest extends CAPSTestSuite with CAPSNeo4jServerFixture with Defau
       ))
 
       // Do not change a graph when the same graph is synced as a delta
-      Neo4jSync.merge(initialGraph, neo4jConfig, entityKeys)
-      val graphAfterSameSync = Neo4jPropertyGraphDataSource(neo4jConfig)
-        .graph(entireGraphName)
+      Neo4jGraphMerge.merge(initialGraph, neo4jConfig, entityKeys)
+      val graphAfterSameSync = Neo4jPropertyGraphDataSource(neo4jConfig).graph(entireGraphName)
 
       graphAfterSameSync.cypher("MATCH (n) RETURN n.id as id, n.foo as foo, labels(n) as labels").records.toMaps should equal(Bag(
         CypherMap("id" -> 1, "foo" -> "bar", "labels" -> Seq("N")),
@@ -116,7 +115,7 @@ class Neo4jSyncTest extends CAPSTestSuite with CAPSNeo4jServerFixture with Defau
           |CREATE (s)-[r:R {id: 1, foo: 1}]->(e)
           |CREATE (s)-[r:R {id: 2}]->(e)
         """.stripMargin)
-      Neo4jSync.merge(delta, neo4jConfig, entityKeys)
+      Neo4jGraphMerge.merge(delta, neo4jConfig, entityKeys)
       val graphAfterDeltaSync = Neo4jPropertyGraphDataSource(neo4jConfig).graph(entireGraphName)
 
       graphAfterDeltaSync.cypher("MATCH (n) RETURN n.id as id, n.foo as foo, n.bar as bar, labels(n) as labels").records.toMaps should equal(Bag(
@@ -132,7 +131,7 @@ class Neo4jSyncTest extends CAPSTestSuite with CAPSNeo4jServerFixture with Defau
 
     it("syncs when using the same entity key for all labels") {
       val keys = EntityKeys(Map("N" -> Set("id"), "M" -> Set("id")), Map("R" -> Set("id")))
-      Neo4jSync.createIndexes(neo4jConfig, keys)
+      Neo4jGraphMerge.createIndexes(neo4jConfig, keys)
       val graphName = GraphName("graph")
 
       val graph = initGraph(
@@ -143,7 +142,7 @@ class Neo4jSyncTest extends CAPSTestSuite with CAPSNeo4jServerFixture with Defau
           |CREATE (s)-[r:R {id: 1}]->(e)
         """.stripMargin)
 
-      Neo4jSync.merge(graph, neo4jConfig, keys)
+      Neo4jGraphMerge.merge(graph, neo4jConfig, keys)
 
       val readGraph = Neo4jPropertyGraphDataSource(neo4jConfig, entireGraphName = graphName).graph(graphName)
 
@@ -156,7 +155,7 @@ class Neo4jSyncTest extends CAPSTestSuite with CAPSNeo4jServerFixture with Defau
 
     it("syncs when using multiple entity keys with different names") {
       val keys = EntityKeys(Map("N" -> Set("nId"), "M" -> Set("mId")), Map("R" -> Set("id")))
-      Neo4jSync.createIndexes(neo4jConfig, keys)
+      Neo4jGraphMerge.createIndexes(neo4jConfig, keys)
       val graphName = GraphName("graph")
 
       val graph = initGraph(
@@ -167,7 +166,7 @@ class Neo4jSyncTest extends CAPSTestSuite with CAPSNeo4jServerFixture with Defau
           |CREATE (s)-[r:R {id: 1}]->(e)
         """.stripMargin)
 
-      Neo4jSync.merge(graph, neo4jConfig, keys)
+      Neo4jGraphMerge.merge(graph, neo4jConfig, keys)
 
       val readGraph = Neo4jPropertyGraphDataSource(neo4jConfig, entireGraphName = graphName).graph(graphName)
 
@@ -189,7 +188,7 @@ class Neo4jSyncTest extends CAPSTestSuite with CAPSNeo4jServerFixture with Defau
         )
       )
 
-      Neo4jSync.createIndexes(neo4jConfig, entityKeys)
+      Neo4jGraphMerge.createIndexes(neo4jConfig, entityKeys)
 
       neo4jConfig.cypher("CALL db.constraints YIELD description").toSet should equal(Set(
         Map("description" -> new CypherString("CONSTRAINT ON ( n:N ) ASSERT (n.foo, n.bar) IS NODE KEY")),
@@ -209,8 +208,8 @@ class Neo4jSyncTest extends CAPSTestSuite with CAPSNeo4jServerFixture with Defau
     it("syncs subgraphs") {
       val subGraphName = GraphName("foo")
 
-      Neo4jSync.createIndexes(subGraphName, neo4jConfig, entityKeys)
-      Neo4jSync.merge(subGraphName, initialGraph, neo4jConfig, entityKeys)
+      Neo4jGraphMerge.createIndexes(subGraphName, neo4jConfig, entityKeys)
+      Neo4jGraphMerge.merge(subGraphName, initialGraph, neo4jConfig, entityKeys)
 
       val readGraph = Neo4jPropertyGraphDataSource(neo4jConfig).graph(subGraphName)
 
@@ -224,7 +223,7 @@ class Neo4jSyncTest extends CAPSTestSuite with CAPSNeo4jServerFixture with Defau
       ))
 
       // Do not change a graph when the same graph is synced as a delta
-      Neo4jSync.merge(initialGraph, neo4jConfig, entityKeys)
+      Neo4jGraphMerge.merge(initialGraph, neo4jConfig, entityKeys)
       val graphAfterSameSync = Neo4jPropertyGraphDataSource(neo4jConfig).graph(subGraphName)
 
       graphAfterSameSync.cypher("MATCH (n) RETURN n.id as id, n.foo as foo, labels(n) as labels").records.toMaps should equal(Bag(
@@ -244,7 +243,7 @@ class Neo4jSyncTest extends CAPSTestSuite with CAPSNeo4jServerFixture with Defau
           |CREATE (s)-[r:R {id: 1, foo: 1}]->(e)
           |CREATE (s)-[r:R {id: 2}]->(e)
         """.stripMargin)
-      Neo4jSync.merge(subGraphName, delta, neo4jConfig, entityKeys)
+      Neo4jGraphMerge.merge(subGraphName, delta, neo4jConfig, entityKeys)
       val graphAfterDeltaSync = Neo4jPropertyGraphDataSource(neo4jConfig).graph(subGraphName)
 
       graphAfterDeltaSync.cypher("MATCH (n) RETURN n.id as id, n.foo as foo, n.bar as bar, labels(n) as labels").records.toMaps should equal(Bag(
@@ -270,7 +269,7 @@ class Neo4jSyncTest extends CAPSTestSuite with CAPSNeo4jServerFixture with Defau
       )
 
       val subGraphName = GraphName("myGraph")
-      Neo4jSync.createIndexes(subGraphName, neo4jConfig, newEntityKeys)
+      Neo4jGraphMerge.createIndexes(subGraphName, neo4jConfig, newEntityKeys)
 
       neo4jConfig.cypher("CALL db.constraints YIELD description").toSet shouldBe empty
 
@@ -284,7 +283,7 @@ class Neo4jSyncTest extends CAPSTestSuite with CAPSNeo4jServerFixture with Defau
 
   describe("error handling") {
     it("should throw an error if node key is missing") {
-      a[SchemaException] should be thrownBy Neo4jSync.merge(initialGraph, neo4jConfig, EntityKeys(Map.empty))
+      a[SchemaException] should be thrownBy Neo4jGraphMerge.merge(initialGraph, neo4jConfig, EntityKeys(Map.empty))
     }
   }
 }
