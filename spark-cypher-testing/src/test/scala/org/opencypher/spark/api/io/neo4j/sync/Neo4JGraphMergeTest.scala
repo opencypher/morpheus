@@ -47,7 +47,6 @@ class Neo4JGraphMergeTest extends CAPSTestSuite with CAPSNeo4jServerFixture with
   override def dataFixture: String = ""
 
   val entityKeys: EntityKeys = EntityKeys(Map("Person" -> Set("id")), Map("R" -> Set("id")))
-  val entireGraphName: GraphName = GraphName("graph")
 
   val initialGraph: RelationalCypherGraph[SparkTable.DataFrameTable] = initGraph(
     """
@@ -146,7 +145,7 @@ class Neo4JGraphMergeTest extends CAPSTestSuite with CAPSNeo4jServerFixture with
 
       Neo4jGraphMerge.merge(graph, neo4jConfig, keys)
 
-      val readGraph = Neo4jPropertyGraphDataSource(neo4jConfig, entireGraphName = graphName).graph(graphName)
+      val readGraph = Neo4jPropertyGraphDataSource(neo4jConfig).graph(graphName)
 
       readGraph.cypher("MATCH (n) RETURN n.id as id, n.name as name, labels(n) as labels").records.toMaps should equal(Bag(
         CypherMap("id" -> 1, "name" -> "bar", "labels" -> Seq("Person")),
@@ -170,7 +169,7 @@ class Neo4JGraphMergeTest extends CAPSTestSuite with CAPSNeo4jServerFixture with
 
       Neo4jGraphMerge.merge(graph, neo4jConfig, keys)
 
-      val readGraph = Neo4jPropertyGraphDataSource(neo4jConfig, entireGraphName = graphName).graph(graphName)
+      val readGraph = Neo4jPropertyGraphDataSource(neo4jConfig).graph(graphName)
 
       readGraph.cypher("MATCH (n) RETURN n.nId as nId, n.mId as mId, n.name as name, labels(n) as labels").records.toMaps should equal(Bag(
         CypherMap("nId" -> 1, "mId" -> null, "name" -> "bar", "labels" -> Seq("Person")),
