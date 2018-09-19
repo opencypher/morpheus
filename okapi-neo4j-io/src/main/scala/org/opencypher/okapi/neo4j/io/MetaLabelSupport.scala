@@ -33,7 +33,7 @@ import org.opencypher.okapi.api.schema.RelTypePropertyMap.RelTypePropertyMap
 import org.opencypher.okapi.neo4j.io.Neo4jHelpers.Neo4jDefaults.{metaPrefix, metaPropertyKey}
 
 object MetaLabelSupport {
-  val entireGraphName = GraphName("meta_entire_graph")
+  val entireGraphName = GraphName("graph")
 
   implicit class RichGraphName(val graphName: GraphName) {
     def metaLabel: Option[String] =
