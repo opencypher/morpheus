@@ -79,7 +79,7 @@ class Neo4JGraphMergeTest extends CAPSTestSuite with CAPSNeo4jServerFixture with
   }
 
   describe("merging into the entire graph") {
-    it("can do basic Neo4j syncing with merges") {
+    it("can do basic Neo4j merge") {
       Neo4jGraphMerge.createIndexes(neo4jConfig, entityKeys)
       Neo4jGraphMerge.merge(initialGraph, neo4jConfig, entityKeys)
 
@@ -94,20 +94,21 @@ class Neo4JGraphMergeTest extends CAPSTestSuite with CAPSNeo4jServerFixture with
         CypherMap("nid" -> 1, "id" -> 1, "mid" -> 2)
       ))
 
-      // Do not change a graph when the same graph is synced as a delta
+      // Do not change a graph when the same graph is merged as a delta
       Neo4jGraphMerge.merge(initialGraph, neo4jConfig, entityKeys)
-      val graphAfterSameSync = Neo4jPropertyGraphDataSource(neo4jConfig).graph(entireGraphName)
+      val graphAfterSameMerge = Neo4jPropertyGraphDataSource(neo4jConfig)
+        .graph(entireGraphName)
 
-      graphAfterSameSync.cypher("MATCH (n) RETURN n.id as id, n.foo as foo, labels(n) as labels").records.toMaps should equal(Bag(
+      graphAfterSameMerge.cypher("MATCH (n) RETURN n.id as id, n.foo as foo, labels(n) as labels").records.toMaps should equal(Bag(
         CypherMap("id" -> 1, "foo" -> "bar", "labels" -> Seq("N")),
         CypherMap("id" -> 2, "foo" -> null, "labels" -> Seq("M", "N"))
       ))
 
-      graphAfterSameSync.cypher("MATCH (n)-[r]->(m) RETURN n.id as nid, r.id as id, m.id as mid").records.toMaps should equal(Bag(
+      graphAfterSameMerge.cypher("MATCH (n)-[r]->(m) RETURN n.id as nid, r.id as id, m.id as mid").records.toMaps should equal(Bag(
         CypherMap("nid" -> 1, "id" -> 1, "mid" -> 2)
       ))
 
-      // Sync a delta
+      // merge a delta
       val delta = initGraph(
         """
           |CREATE (s:N {id: 1, foo: "baz", bar: 1})
@@ -116,7 +117,8 @@ class Neo4JGraphMergeTest extends CAPSTestSuite with CAPSNeo4jServerFixture with
           |CREATE (s)-[r:R {id: 2}]->(e)
         """.stripMargin)
       Neo4jGraphMerge.merge(delta, neo4jConfig, entityKeys)
-      val graphAfterDeltaSync = Neo4jPropertyGraphDataSource(neo4jConfig).graph(entireGraphName)
+      val graphAfterDeltaSync = Neo4jPropertyGraphDataSource(neo4jConfig)
+        .graph(entireGraphName)
 
       graphAfterDeltaSync.cypher("MATCH (n) RETURN n.id as id, n.foo as foo, n.bar as bar, labels(n) as labels").records.toMaps should equal(Bag(
         CypherMap("id" -> 1, "foo" -> "baz", "bar" -> 1, "labels" -> Seq("N")),
@@ -129,7 +131,7 @@ class Neo4JGraphMergeTest extends CAPSTestSuite with CAPSNeo4jServerFixture with
       ))
     }
 
-    it("syncs when using the same entity key for all labels") {
+    it("merges when using the same entity key for all labels") {
       val keys = EntityKeys(Map("N" -> Set("id"), "M" -> Set("id")), Map("R" -> Set("id")))
       Neo4jGraphMerge.createIndexes(neo4jConfig, keys)
       val graphName = GraphName("graph")
@@ -153,7 +155,7 @@ class Neo4JGraphMergeTest extends CAPSTestSuite with CAPSNeo4jServerFixture with
       ))
     }
 
-    it("syncs when using multiple entity keys with different names") {
+    it("merges when using multiple entity keys with different names") {
       val keys = EntityKeys(Map("N" -> Set("nId"), "M" -> Set("mId")), Map("R" -> Set("id")))
       Neo4jGraphMerge.createIndexes(neo4jConfig, keys)
       val graphName = GraphName("graph")
@@ -205,7 +207,7 @@ class Neo4JGraphMergeTest extends CAPSTestSuite with CAPSNeo4jServerFixture with
   }
 
   describe("merging into subgraphs") {
-    it("syncs subgraphs") {
+    it("merges subgraphs") {
       val subGraphName = GraphName("foo")
 
       Neo4jGraphMerge.createIndexes(subGraphName, neo4jConfig, entityKeys)

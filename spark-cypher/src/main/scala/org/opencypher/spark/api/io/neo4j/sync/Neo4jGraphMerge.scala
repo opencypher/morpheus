@@ -138,7 +138,7 @@ object Neo4jGraphMerge extends Logging {
     * every label present in the merge graph. Relationship keys are optional, if none are provided, then there can be at
     * most one relationship with a given type between two nodes.
     *
-    * @param graphName  which sub-graph in the Neo4j graph to sync the delta to
+    * @param graphName  which sub-graph in the Neo4j graph to merge the delta to
     * @param graph      graph that is merged into the existing Neo4j database
     * @param config     access config for the Neo4j database into which the graph is merged
     * @param entityKeys node and relationship keys which identify same entities in the two graphs
