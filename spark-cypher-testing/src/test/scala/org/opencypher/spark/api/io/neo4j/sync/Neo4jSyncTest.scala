@@ -47,7 +47,6 @@ class Neo4jSyncTest extends CAPSTestSuite with CAPSNeo4jServerFixture with Defau
   override def dataFixture: String = ""
 
   val entityKeys: EntityKeys = EntityKeys(Map("N" -> Set("id")), Map("R" -> Set("id")))
-  val entireGraphName: GraphName = GraphName("graph")
 
   val initialGraph: RelationalCypherGraph[SparkTable.DataFrameTable] = initGraph(
     """
@@ -84,7 +83,7 @@ class Neo4jSyncTest extends CAPSTestSuite with CAPSNeo4jServerFixture with Defau
       Neo4jSync.createIndexes(neo4jConfig, entityKeys)
       Neo4jSync.merge(initialGraph, neo4jConfig, entityKeys)
 
-      val readGraph = Neo4jPropertyGraphDataSource(neo4jConfig, entireGraphName = entireGraphName).graph(entireGraphName)
+      val readGraph = Neo4jPropertyGraphDataSource(neo4jConfig).graph(entireGraphName)
 
       readGraph.cypher("MATCH (n) RETURN n.id as id, n.foo as foo, labels(n) as labels").records.toMaps should equal(Bag(
         CypherMap("id" -> 1, "foo" -> "bar", "labels" -> Seq("N")),
@@ -97,7 +96,7 @@ class Neo4jSyncTest extends CAPSTestSuite with CAPSNeo4jServerFixture with Defau
 
       // Do not change a graph when the same graph is synced as a delta
       Neo4jSync.merge(initialGraph, neo4jConfig, entityKeys)
-      val graphAfterSameSync = Neo4jPropertyGraphDataSource(neo4jConfig, entireGraphName = entireGraphName)
+      val graphAfterSameSync = Neo4jPropertyGraphDataSource(neo4jConfig)
         .graph(entireGraphName)
 
       graphAfterSameSync.cypher("MATCH (n) RETURN n.id as id, n.foo as foo, labels(n) as labels").records.toMaps should equal(Bag(
@@ -118,8 +117,7 @@ class Neo4jSyncTest extends CAPSTestSuite with CAPSNeo4jServerFixture with Defau
           |CREATE (s)-[r:R {id: 2}]->(e)
         """.stripMargin)
       Neo4jSync.merge(delta, neo4jConfig, entityKeys)
-      val graphAfterDeltaSync = Neo4jPropertyGraphDataSource(neo4jConfig, entireGraphName = entireGraphName)
-        .graph(entireGraphName)
+      val graphAfterDeltaSync = Neo4jPropertyGraphDataSource(neo4jConfig).graph(entireGraphName)
 
       graphAfterDeltaSync.cypher("MATCH (n) RETURN n.id as id, n.foo as foo, n.bar as bar, labels(n) as labels").records.toMaps should equal(Bag(
         CypherMap("id" -> 1, "foo" -> "baz", "bar" -> 1, "labels" -> Seq("N")),

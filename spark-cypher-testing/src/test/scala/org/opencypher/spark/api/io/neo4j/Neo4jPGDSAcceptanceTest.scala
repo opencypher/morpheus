@@ -28,6 +28,7 @@ package org.opencypher.spark.api.io.neo4j
 
 import org.opencypher.okapi.api.graph.GraphName
 import org.opencypher.okapi.api.io.PropertyGraphDataSource
+import org.opencypher.okapi.neo4j.io.MetaLabelSupport._
 import org.opencypher.okapi.testing.PGDSAcceptance
 import org.opencypher.okapi.testing.propertygraph.InMemoryTestGraph
 import org.opencypher.spark.api.{CAPSSession, CypherGraphSources}
@@ -42,7 +43,7 @@ class Neo4jPGDSAcceptanceTest extends CAPSTestSuite with CAPSNeo4jServerFixture 
   override def create(graphName: GraphName, testGraph: InMemoryTestGraph, createStatements: String): PropertyGraphDataSource = {
     val graph = CAPSScanGraphFactory(testGraph)
     val ds = CypherGraphSources.neo4j(neo4jConfig)
-    (ds.graphNames - ds.entireGraphName).foreach(ds.delete)
+    (ds.graphNames - entireGraphName).foreach(ds.delete)
     ds.store(graphName, graph)
     ds
   }
