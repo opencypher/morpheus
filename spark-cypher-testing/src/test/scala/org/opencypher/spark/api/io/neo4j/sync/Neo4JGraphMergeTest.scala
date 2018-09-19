@@ -193,15 +193,15 @@ class Neo4JGraphMergeTest extends CAPSTestSuite with CAPSNeo4jServerFixture with
       Neo4jGraphMerge.createIndexes(neo4jConfig, entityKeys)
 
       neo4jConfig.cypher("CALL db.constraints YIELD description").toSet should equal(Set(
-        CypherMap("description" -> "CONSTRAINT ON ( person:Person ) ASSERT (person.name, person.bar) IS NODE KEY"),
-        CypherMap("description" -> "CONSTRAINT ON ( employee:Employee ) ASSERT employee.baz IS NODE KEY")
+        Map("description" -> new CypherString("CONSTRAINT ON ( person:Person ) ASSERT (person.name, person.bar) IS NODE KEY")),
+          Map("description" -> new CypherString("CONSTRAINT ON ( employee:Employee ) ASSERT employee.baz IS NODE KEY"))
       ))
 
       neo4jConfig.cypher("CALL db.indexes YIELD description").toSet should equal(Set(
-        CypherMap("description" -> s"INDEX ON :Person($metaPropertyKey)"),
-        CypherMap("description" -> s"INDEX ON :Person(foo, bar)"),
-        CypherMap("description" -> s"INDEX ON :Employee($metaPropertyKey)"),
-        CypherMap("description" -> s"INDEX ON :Employee(baz)")
+        Map("description" -> new CypherString(s"INDEX ON :Person($metaPropertyKey)")),
+        Map("description" -> new CypherString(s"INDEX ON :Person(name, bar)")),
+        Map("description" -> new CypherString(s"INDEX ON :Employee($metaPropertyKey)")),
+        Map("description" -> new CypherString(s"INDEX ON :Employee(baz)"))
       ))
     }
   }
