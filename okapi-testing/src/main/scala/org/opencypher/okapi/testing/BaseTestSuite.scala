@@ -65,8 +65,8 @@ abstract class BaseTestSuite extends FunSpec with Matchers with MockitoSugar {
   def test(name: String, tags: Tag*)(testFun: => Any /* Assertion */ )(implicit pos: source.Position): Unit =
     it(name, tags: _*)(testFun)
 
-  private val outCapture = new ByteArrayOutputStream()
-  private val printer = new PrintStream(outCapture, true, "UTF-8")
+  val outCapture = new ByteArrayOutputStream()
+  val printer = new PrintStream(outCapture, true, "UTF-8")
   val capturingPrintOptions: PrintOptions = {
     PrintOptions(printer)
   }
