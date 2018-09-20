@@ -519,6 +519,9 @@ object SchemaTyper {
         case f: TypeSignatures =>
           val set = f.signatures.flatMap(_.convert).toSet
           pure(set)
+
+        case _ =>
+          wrong[R, TyperError](UnsupportedExpr(expr)) >> pure(Set.empty)
       }
 
       case f: OperatorExpression =>
