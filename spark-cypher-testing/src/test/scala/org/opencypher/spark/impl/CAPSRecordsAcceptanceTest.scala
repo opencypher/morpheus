@@ -49,20 +49,28 @@ class CAPSRecordsAcceptanceTest extends CAPSTestSuite with CAPSNeo4jServerFixtur
   private lazy val graph: RelationalCypherGraph[DataFrameTable] =
     GraphSources.cypher.neo4j(neo4jConfig).graph(entireGraphName).asCaps
 
-  it("convert to CypherMaps") {
+  it("convert nodes to CypherMaps") {
     // When
     val result = graph.cypher("MATCH (a:Person) WHERE a.birthyear < 1930 RETURN a, a.name")
 
     // Then
-    val strings = result.records.collect.map(_.toCypherString).toSet
+    result.records.collect should equal(Array(
+      CypherMap("a" -> CAPSNode(0, Set("Actor", "Person"), CypherMap("birthyear" -> 1910, "name" -> "Rachel Kempson")), "a.name" -> "Rachel Kempson"),
+      CypherMap("a" -> CAPSNode(1, Set("Actor", "Person"), CypherMap("birthyear" -> 1908, "name" -> "Michael Redgrave")), "a.name" -> "Michael Redgrave"),
+      CypherMap("a" -> CAPSNode(10, Set("Actor", "Person"), CypherMap("birthyear" -> 1873, "name" -> "Roy Redgrave")), "a.name" -> "Roy Redgrave")
+    ))
+  }
 
-    // We do string comparisons here because CypherNode.equals() does not check labels/properties
-    strings should equal(
-      Set(
-        "{`a`: (:`Actor`:`Person` {`birthyear`: 1910, `name`: 'Rachel Kempson'}), `a.name`: 'Rachel Kempson'}",
-        "{`a`: (:`Actor`:`Person` {`birthyear`: 1908, `name`: 'Michael Redgrave'}), `a.name`: 'Michael Redgrave'}",
-        "{`a`: (:`Actor`:`Person` {`birthyear`: 1873, `name`: 'Roy Redgrave'}), `a.name`: 'Roy Redgrave'}"
-      ))
+  it("convert rels to CypherMaps") {
+    // When
+    val result = graph.cypher("MATCH ()-[r:ACTED_IN]->() WHERE r.charactername ENDS WITH 'e' RETURN r")
+
+    // Then
+    result.records.collect should equal(Array(
+      CypherMap("r" -> CAPSRelationship(23, 6, 18, "ACTED_IN", CypherMap("charactername" -> "Albus Dumbledore"))),
+      CypherMap("r" -> CAPSRelationship(21, 2, 20, "ACTED_IN", CypherMap("charactername" -> "Guenevere"))),
+      CypherMap("r" -> CAPSRelationship(26, 8, 19, "ACTED_IN", CypherMap("charactername" -> "Halle/Annie")))
+    ))
   }
 
   it("label scan and project") {
