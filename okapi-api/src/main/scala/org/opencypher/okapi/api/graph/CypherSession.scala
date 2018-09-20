@@ -108,4 +108,6 @@ trait CypherSession {
     queryCatalog: Map[QualifiedGraphName, PropertyGraph]): Result
 
   private[opencypher] lazy val emptyGraphQgn = QualifiedGraphName(catalog.sessionNamespace, GraphName("emptyGraph"))
+
+  override def toString: String = s"${this.getClass.getSimpleName}"
 }
