@@ -26,14 +26,17 @@
  */
 package org.opencypher.okapi.testing
 
+import java.io.{ByteArrayOutputStream, PrintStream}
+
 import org.mockito.Mockito.when
 import org.opencypher.okapi.api.graph.{GraphName, Namespace, QualifiedGraphName}
 import org.opencypher.okapi.api.io.PropertyGraphDataSource
 import org.opencypher.okapi.api.schema.Schema
 import org.opencypher.okapi.impl.graph.QGNGenerator
+import org.opencypher.okapi.impl.util.PrintOptions
 import org.scalactic.source
 import org.scalatest.mockito.MockitoSugar
-import org.scalatest.{FunSpec, Matchers, Tag}
+import org.scalatest.{Assertion, FunSpec, Matchers, Tag}
 
 import scala.util.Random
 
@@ -61,4 +64,14 @@ abstract class BaseTestSuite extends FunSpec with Matchers with MockitoSugar {
     */
   def test(name: String, tags: Tag*)(testFun: => Any /* Assertion */ )(implicit pos: source.Position): Unit =
     it(name, tags: _*)(testFun)
+
+  private val outCapture = new ByteArrayOutputStream()
+  private val printer = new PrintStream(outCapture, true, "UTF-8")
+  val capturingPrintOptions: PrintOptions = {
+    PrintOptions(printer)
+  }
+
+  def assertPrinted(expectation: String): Assertion = {
+    outCapture.toString("UTF-8") shouldEqual expectation
+  }
 }

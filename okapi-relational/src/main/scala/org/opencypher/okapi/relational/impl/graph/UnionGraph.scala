@@ -30,6 +30,7 @@ import org.opencypher.okapi.api.schema.Schema
 import org.opencypher.okapi.api.types.CypherType
 import org.opencypher.okapi.ir.api.expr.Var
 import org.opencypher.okapi.relational.api.graph.{RelationalCypherGraph, RelationalCypherSession}
+import org.opencypher.okapi.relational.api.io.EntityTable.entityVariableName
 import org.opencypher.okapi.relational.api.planning.RelationalRuntimeContext
 import org.opencypher.okapi.relational.api.schema.RelationalSchema._
 import org.opencypher.okapi.relational.api.table.{RelationalCypherRecords, Table}
@@ -64,7 +65,7 @@ final case class UnionGraph[T <: Table[T] : TypeTag](graphsToReplacements: Map[R
     entityType: CypherType,
     exactLabelMatch: Boolean
   ): RelationalOperator[T] = {
-    val targetEntity = Var("")(entityType)
+    val targetEntity = Var(entityVariableName)(entityType)
     val targetEntityHeader = schema.headerForEntity(targetEntity, exactLabelMatch)
     val alignedScans = graphsToReplacements.keys
       .map { graph =>

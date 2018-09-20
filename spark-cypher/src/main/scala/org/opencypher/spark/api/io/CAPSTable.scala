@@ -30,6 +30,7 @@ import org.apache.spark.sql.{DataFrame, _}
 import org.opencypher.okapi.api.io.conversion.{NodeMapping, RelationshipMapping}
 import org.opencypher.okapi.api.types._
 import org.opencypher.okapi.impl.util.StringEncodingUtilities._
+import org.opencypher.okapi.relational.api.io.EntityTable.entityVariableName
 import org.opencypher.okapi.relational.api.io.{EntityTable, NodeTable, RelationshipTable}
 import org.opencypher.spark.api.CAPSSession
 import org.opencypher.spark.impl.DataFrameOps._
@@ -40,6 +41,8 @@ import org.opencypher.spark.impl.{CAPSRecords, RecordBehaviour}
 import scala.reflect.runtime.universe._
 
 trait CAPSEntityTable extends EntityTable[DataFrameTable] {
+
+  override def logicalColumns: Option[Seq[String]] = Some(Seq(entityVariableName))
 
   private[spark] def records(implicit caps: CAPSSession): CAPSRecords = caps.records.fromEntityTable(entityTable = this)
 }

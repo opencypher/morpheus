@@ -51,8 +51,8 @@ final case class rowToCypherMap(exprToColumn: Seq[(Expr, String)]) extends (Row 
       case _: CTNode =>
         collectNode(row, v)
 
-      case _: CTRelationship =>
-        collectRel(row, v)
+      case ct: CTRelationship =>
+        collectRel(row, v, ct.types)
 
       case CTList(_) if !header.exprToColumn.contains(v) =>
         collectComplexList(row, v)
@@ -85,7 +85,7 @@ final case class rowToCypherMap(exprToColumn: Seq[(Expr, String)]) extends (Row 
     }
   }
 
-  private def collectRel(row: Row, v: Var): CypherValue = {
+  private def collectRel(row: Row, v: Var, types: Set[String]): CypherValue = {
     val idValue = row.getAs[Any](header.column(v))
     idValue match {
       case null => CypherNull
@@ -96,8 +96,8 @@ final case class rowToCypherMap(exprToColumn: Seq[(Expr, String)]) extends (Row 
         val relType = header
           .typesFor(v)
           .map { l => l.relType.name -> row.getAs[Boolean](header.column(l)) }
-          .collect { case (name, true) => name }
-          .head
+          .collectFirst { case (name, true) => name }
+          .getOrElse(types.head)
 
         val properties = header
           .propertiesFor(v)

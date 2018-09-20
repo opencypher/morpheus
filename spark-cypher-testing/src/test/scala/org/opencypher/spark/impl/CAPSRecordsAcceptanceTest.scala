@@ -27,14 +27,17 @@
 package org.opencypher.spark.impl
 
 import org.apache.spark.sql.Row
+import org.opencypher.okapi.api.io.conversion.RelationshipMapping
 import org.opencypher.okapi.api.value.CypherValue.CypherMap
 import org.opencypher.okapi.neo4j.io.MetaLabelSupport._
 import org.opencypher.okapi.relational.api.graph.RelationalCypherGraph
 import org.opencypher.okapi.testing.Bag
 import org.opencypher.okapi.testing.Bag._
 import org.opencypher.spark.api.GraphSources
+import org.opencypher.spark.api.io.CAPSRelationshipTable
 import org.opencypher.spark.api.value.{CAPSNode, CAPSRelationship}
 import org.opencypher.spark.impl.CAPSConverters._
+import org.opencypher.spark.impl.DataFrameOps._
 import org.opencypher.spark.impl.table.SparkTable.DataFrameTable
 import org.opencypher.spark.testing.CAPSTestSuite
 import org.opencypher.spark.testing.fixture.{CAPSNeo4jServerFixture, OpenCypherDataFixture}
@@ -67,6 +70,49 @@ class CAPSRecordsAcceptanceTest extends CAPSTestSuite with CAPSNeo4jServerFixtur
       CypherMap("r" -> CAPSRelationship(23, 6, 18, "ACTED_IN", CypherMap("charactername" -> "Albus Dumbledore"))),
       CypherMap("r" -> CAPSRelationship(21, 2, 20, "ACTED_IN", CypherMap("charactername" -> "Guenevere"))),
       CypherMap("r" -> CAPSRelationship(26, 8, 19, "ACTED_IN", CypherMap("charactername" -> "Halle/Annie")))
+    ))
+  }
+
+  case class ActedIn(rel: Long, start: Long, end: Long)
+
+  it("convert CAPSRelTable to CypherMaps") {
+    val mapping = RelationshipMapping("rel", "start", "end", Left("ACTED_IN"))
+    val table = sparkSession.createDataFrame(Seq(ActedIn(1, 2, 3), ActedIn(2, 3, 4)))
+    val relTable: CAPSRelationshipTable = CAPSRelationshipTable.fromMapping(mapping, table)
+
+    relTable.collect.toBag should equal(Bag(
+      CypherMap("entity" -> CAPSRelationship(1, 2, 3, "ACTED_IN")),
+      CypherMap("entity" -> CAPSRelationship(2, 3, 4, "ACTED_IN"))
+    ))
+  }
+
+  it("CAPSRelTable can show") {
+    val mapping = RelationshipMapping("rel", "start", "end", Left("ACTED_IN"))
+    val table = sparkSession.createDataFrame(Seq(ActedIn(1, 2, 3), ActedIn(2, 3, 4)))
+    val relTable: CAPSRelationshipTable = CAPSRelationshipTable.fromMapping(mapping, table)
+
+    relTable.show(capturingPrintOptions)
+    assertPrinted(expectation =
+      """╔═══════════════╗
+        |║ entity        ║
+        |╠═══════════════╣
+        |║ [:`ACTED_IN`] ║
+        |║ [:`ACTED_IN`] ║
+        |╚═══════════════╝
+        |(2 rows)
+        |""".stripMargin)
+  }
+
+  case class MyRow(rel: Long, start: Long, end: Long, rel_t: String)
+
+  it("convert CAPSRelTable to CypherMaps with dynamic relationship types") {
+    val mapping = RelationshipMapping("rel", "start", "end", Right("rel_t" -> Set("FOO", "BAR")))
+    val table = sparkSession.createDataFrame(Seq(MyRow(1, 2, 3, "FOO"), MyRow(2, 3, 4, "BAR"))).setNonNullable("rel_t")
+    val relTable: CAPSRelationshipTable = CAPSRelationshipTable.fromMapping(mapping, table)
+
+    relTable.collect.toBag should equal(Bag(
+      CypherMap("entity" -> CAPSRelationship(1, 2, 3, "FOO")),
+      CypherMap("entity" -> CAPSRelationship(2, 3, 4, "BAR"))
     ))
   }
 

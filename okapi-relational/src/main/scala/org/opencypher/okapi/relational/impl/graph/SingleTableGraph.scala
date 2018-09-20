@@ -32,6 +32,7 @@ import org.opencypher.okapi.impl.exception.IllegalArgumentException
 import org.opencypher.okapi.ir.api.expr._
 import org.opencypher.okapi.ir.api.{Label, RelType}
 import org.opencypher.okapi.relational.api.graph.{RelationalCypherGraph, RelationalCypherSession}
+import org.opencypher.okapi.relational.api.io.EntityTable.entityVariableName
 import org.opencypher.okapi.relational.api.planning.RelationalRuntimeContext
 import org.opencypher.okapi.relational.api.schema.RelationalSchema._
 import org.opencypher.okapi.relational.api.table.{RelationalCypherRecords, Table}
@@ -68,8 +69,8 @@ class SingleTableGraph[T <: Table[T] : TypeTag](
     entityType: CypherType,
     exactLabelMatch: Boolean
   ): RelationalOperator[T] = {
-    val targetEntity = Var("")(entityType)
-    val targetEntityHeader = schema.headerForEntity(Var("")(entityType), exactLabelMatch)
+    val targetEntity = Var(entityVariableName)(entityType)
+    val targetEntityHeader = schema.headerForEntity(Var(entityVariableName)(entityType), exactLabelMatch)
 
     val extractionVars: Set[Var] = header.entitiesForType(entityType, exactLabelMatch)
     val extractedScans = extractionVars.map { extractionVar =>

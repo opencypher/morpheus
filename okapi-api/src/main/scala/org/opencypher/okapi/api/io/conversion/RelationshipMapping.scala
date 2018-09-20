@@ -150,7 +150,7 @@ object RelationshipMapping {
   *
   * Construct a [[RelationshipMapping]] starting with [[RelationshipMapping#on]].
   *
-  * @param sourceIdKey               key to access the node identifier in the source data
+  * @param sourceIdKey               key to access the relationship identifier in the source data
   * @param sourceStartNodeKey        key to access the start node identifier in the source data
   * @param sourceEndNodeKey          key to access the end node identifier in the source data
   * @param relTypeOrSourceRelTypeKey either a relationship type or a key to access the type in the source data and a set of all possible types

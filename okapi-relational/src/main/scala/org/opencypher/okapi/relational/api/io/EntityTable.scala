@@ -33,6 +33,7 @@ import org.opencypher.okapi.impl.exception.IllegalArgumentException
 import org.opencypher.okapi.impl.util.StringEncodingUtilities._
 import org.opencypher.okapi.ir.api.expr._
 import org.opencypher.okapi.ir.api.{Label, PropertyKey, RelType}
+import org.opencypher.okapi.relational.api.io.EntityTable.entityVariableName
 import org.opencypher.okapi.relational.api.io.RelationalEntityMapping._
 import org.opencypher.okapi.relational.api.table.{RelationalCypherRecords, Table}
 import org.opencypher.okapi.relational.impl.table.RecordHeader
@@ -65,7 +66,7 @@ trait EntityTable[T <: Table[T]] extends RelationalCypherRecords[T] {
   }
 
   protected def headerFrom(nodeMapping: NodeMapping): RecordHeader = {
-    val nodeVar = Var("")(nodeMapping.cypherType)
+    val nodeVar = Var(entityVariableName)(nodeMapping.cypherType)
 
     val exprToColumn = Map[Expr, String](nodeMapping.id(nodeVar)) ++
       nodeMapping.optionalLabels(nodeVar) ++
@@ -76,7 +77,7 @@ trait EntityTable[T <: Table[T]] extends RelationalCypherRecords[T] {
 
   protected def headerFrom(relationshipMapping: RelationshipMapping): RecordHeader = {
     val cypherType = relationshipMapping.cypherType
-    val relVar = Var("")(cypherType)
+    val relVar = Var(entityVariableName)(cypherType)
 
     val exprToColumn = Map[Expr, String](
       relationshipMapping.id(relVar),
@@ -87,6 +88,13 @@ trait EntityTable[T <: Table[T]] extends RelationalCypherRecords[T] {
 
     RecordHeader(exprToColumn)
   }
+}
+
+object EntityTable {
+  /**
+    * Default variable name to use for Scan operators for RelationalCypherGraphs, as well as EntityTable entities.
+    */
+  val entityVariableName = "entity"
 }
 
 /**
