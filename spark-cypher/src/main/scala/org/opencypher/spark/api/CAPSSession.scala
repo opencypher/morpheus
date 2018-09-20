@@ -32,19 +32,12 @@ import org.apache.spark.SparkConf
 import org.apache.spark.sql.{DataFrame, Dataset, SparkSession}
 import org.opencypher.okapi.api.graph._
 import org.opencypher.okapi.api.table.CypherRecords
-import org.opencypher.okapi.api.value.CypherValue
 import org.opencypher.okapi.api.value.CypherValue.CypherMap
 import org.opencypher.okapi.impl.exception.UnsupportedOperationException
 import org.opencypher.okapi.impl.graph.CypherCatalog
-import org.opencypher.okapi.ir.api._
-import org.opencypher.okapi.ir.api.configuration.IrConfiguration.PrintIr
-import org.opencypher.okapi.ir.api.expr.Var
-import org.opencypher.okapi.ir.impl.parse.CypherParser
-import org.opencypher.okapi.ir.impl.{IRBuilder, IRBuilderContext}
 import org.opencypher.okapi.relational.api.graph.RelationalCypherSession
 import org.opencypher.okapi.relational.api.planning.RelationalCypherResult
 import org.opencypher.spark.api.io._
-import org.opencypher.spark.impl.CAPSConverters._
 import org.opencypher.spark.impl.graph.CAPSGraphFactory
 import org.opencypher.spark.impl.table.SparkTable.DataFrameTable
 import org.opencypher.spark.impl.{CAPSRecords, CAPSRecordsFactory}
@@ -53,6 +46,10 @@ import scala.reflect.runtime.universe._
 
 sealed class CAPSSession(val sparkSession: SparkSession) extends RelationalCypherSession[DataFrameTable] with Serializable {
 
+  override type Result = RelationalCypherResult[DataFrameTable]
+
+  override type Records = CAPSRecords
+
   protected implicit val caps: CAPSSession = this
 
   override lazy val catalog: CypherCatalog = new CypherCatalog
@@ -60,6 +57,9 @@ sealed class CAPSSession(val sparkSession: SparkSession) extends RelationalCyphe
   override val records: CAPSRecordsFactory = CAPSRecordsFactory()
 
   override val graphs: CAPSGraphFactory = CAPSGraphFactory()
+
+  // Store empty graph in catalog, so operators that start with an empty graph can refer to its QGN
+  catalog.store(emptyGraphQgn, graphs.empty)
 
   /**
     * Reads a graph from sequences of nodes and relationships.
@@ -98,82 +98,6 @@ sealed class CAPSSession(val sparkSession: SparkSession) extends RelationalCyphe
     */
   def readFrom(tags: Set[Int], nodeTable: CAPSNodeTable, entityTables: CAPSEntityTable*): PropertyGraph = {
     graphs.create(tags, None, nodeTable, entityTables: _*)
-  }
-
-  // Store empty graph in catalog, so operators that start with an empty graph can refer to its QGN
-  catalog.store(emptyGraphQgn, graphs.empty)
-
-  override type Result = RelationalCypherResult[DataFrameTable]
-
-  override type Records = CAPSRecords
-
-  override def cypherOnGraph(
-    graph: PropertyGraph,
-    query: String,
-    queryParameters: CypherMap,
-    maybeDrivingTable: Option[CypherRecords],
-    queryCatalog: Map[QualifiedGraphName, PropertyGraph]
-  ): Result = {
-    val ambientGraphNew = mountAmbientGraph(graph)
-
-    val maybeCapsRecords = maybeDrivingTable.map(_.asCaps)
-
-    val inputFields = maybeCapsRecords match {
-      case Some(inputRecords) => inputRecords.header.vars
-      case None => Set.empty[Var]
-    }
-
-    val (stmt, extractedLiterals, semState) = time("AST construction")(parser.process(query, inputFields)(CypherParser.defaultContext))
-
-    val extractedParameters: CypherMap = extractedLiterals.mapValues(v => CypherValue(v))
-    val allParameters = queryParameters ++ extractedParameters
-
-    logStageProgress("IR translation ...", newLine = false)
-
-    val irBuilderContext = IRBuilderContext.initial(
-      query,
-      allParameters,
-      semState,
-      ambientGraphNew,
-      qgnGenerator,
-      catalog.listSources,
-      catalog.view,
-      inputFields,
-      queryCatalog
-    )
-    val irOut = time("IR translation")(IRBuilder.process(stmt)(irBuilderContext))
-
-    val ir = IRBuilder.extract(irOut)
-    val queryLocalCatalog = IRBuilder.getContext(irOut).queryLocalCatalog
-
-    logStageProgress("Done!")
-
-    ir match {
-      case cq: CypherQuery =>
-        if (PrintIr.isSet) {
-          println("IR:")
-          println(cq.pretty)
-        }
-        planCypherQuery(graph, cq, allParameters, inputFields, maybeCapsRecords, queryLocalCatalog)
-
-      case CreateGraphStatement(_, targetGraph, innerQueryIr) =>
-        val innerResult = planCypherQuery(graph, innerQueryIr, allParameters, inputFields, maybeCapsRecords, queryLocalCatalog)
-        val resultGraph = innerResult.graph
-        catalog.store(targetGraph.qualifiedGraphName, resultGraph)
-        RelationalCypherResult.empty
-
-      case CreateViewStatement(_, qgn, parameterNames, queryString) =>
-        catalog.store(qgn, parameterNames, queryString)
-        RelationalCypherResult.empty
-
-      case DeleteGraphStatement(_, qgn) =>
-        catalog.dropGraph(qgn)
-        RelationalCypherResult.empty
-
-      case DeleteViewStatement(_, qgn) =>
-        catalog.dropView(qgn)
-        RelationalCypherResult.empty
-    }
   }
 
   def sql(query: String): CAPSRecords =

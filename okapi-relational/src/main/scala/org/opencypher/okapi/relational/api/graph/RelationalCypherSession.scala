@@ -31,13 +31,15 @@ import java.util.concurrent.atomic.AtomicLong
 import org.opencypher.okapi.api.configuration.Configuration.PrintTimings
 import org.opencypher.okapi.api.graph.{CypherSession, GraphName, PropertyGraph, QualifiedGraphName}
 import org.opencypher.okapi.api.table.CypherRecords
+import org.opencypher.okapi.api.value.CypherValue
 import org.opencypher.okapi.api.value.CypherValue.CypherMap
 import org.opencypher.okapi.impl.graph.QGNGenerator
 import org.opencypher.okapi.impl.io.SessionGraphDataSource
 import org.opencypher.okapi.impl.util.Measurement.printTiming
 import org.opencypher.okapi.ir.api._
+import org.opencypher.okapi.ir.api.configuration.IrConfiguration.PrintIr
 import org.opencypher.okapi.ir.api.expr.Var
-import org.opencypher.okapi.ir.impl.QueryLocalCatalog
+import org.opencypher.okapi.ir.impl.{IRBuilder, IRBuilderContext, QueryLocalCatalog}
 import org.opencypher.okapi.ir.impl.parse.CypherParser
 import org.opencypher.okapi.logical.api.configuration.LogicalConfiguration.PrintLogicalPlan
 import org.opencypher.okapi.logical.impl._
@@ -104,6 +106,75 @@ abstract class RelationalCypherSession[T <: Table[T] : TypeTag] extends CypherSe
     drivingTable: Option[CypherRecords] = None,
     queryCatalog: Map[QualifiedGraphName, PropertyGraph] = Map.empty
   ): Result = cypherOnGraph(graphs.empty, query, parameters, drivingTable, queryCatalog)
+
+  override private[opencypher] def cypherOnGraph(
+    graph: PropertyGraph,
+    query: String,
+    queryParameters: CypherMap,
+    maybeDrivingTable: Option[CypherRecords],
+    queryCatalog: Map[QualifiedGraphName, PropertyGraph]
+  ): Result = {
+    val ambientGraphNew = mountAmbientGraph(graph)
+
+    val maybeCapsRecords: Option[RelationalCypherRecords[T]] = maybeDrivingTable.map(_.asRelational)
+
+    val inputFields = maybeCapsRecords match {
+      case Some(inputRecords) => inputRecords.header.vars
+      case None => Set.empty[Var]
+    }
+
+    val (stmt, extractedLiterals, semState) = time("AST construction")(parser.process(query, inputFields)(CypherParser.defaultContext))
+
+    val extractedParameters: CypherMap = extractedLiterals.mapValues(v => CypherValue(v))
+    val allParameters = queryParameters ++ extractedParameters
+
+    logStageProgress("IR translation ...", newLine = false)
+
+    val irBuilderContext = IRBuilderContext.initial(
+      query,
+      allParameters,
+      semState,
+      ambientGraphNew,
+      qgnGenerator,
+      catalog.listSources,
+      catalog.view,
+      inputFields,
+      queryCatalog
+    )
+    val irOut = time("IR translation")(IRBuilder.process(stmt)(irBuilderContext))
+
+    val ir = IRBuilder.extract(irOut)
+    val queryLocalCatalog = IRBuilder.getContext(irOut).queryLocalCatalog
+
+    logStageProgress("Done!")
+
+    ir match {
+      case cq: CypherQuery =>
+        if (PrintIr.isSet) {
+          println("IR:")
+          println(cq.pretty)
+        }
+        planCypherQuery(graph, cq, allParameters, inputFields, maybeCapsRecords, queryLocalCatalog)
+
+      case CreateGraphStatement(_, targetGraph, innerQueryIr) =>
+        val innerResult = planCypherQuery(graph, innerQueryIr, allParameters, inputFields, maybeCapsRecords, queryLocalCatalog)
+        val resultGraph = innerResult.graph
+        catalog.store(targetGraph.qualifiedGraphName, resultGraph)
+        RelationalCypherResult.empty
+
+      case CreateViewStatement(_, qgn, parameterNames, queryString) =>
+        catalog.store(qgn, parameterNames, queryString)
+        RelationalCypherResult.empty
+
+      case DeleteGraphStatement(_, qgn) =>
+        catalog.dropGraph(qgn)
+        RelationalCypherResult.empty
+
+      case DeleteViewStatement(_, qgn) =>
+        catalog.dropView(qgn)
+        RelationalCypherResult.empty
+    }
+  }
 
   protected def planCypherQuery(
     graph: PropertyGraph,
