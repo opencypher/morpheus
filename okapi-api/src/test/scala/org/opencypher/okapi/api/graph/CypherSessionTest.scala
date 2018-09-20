@@ -90,7 +90,7 @@ class CypherSessionTest extends FunSpec with MockitoSugar with Matchers {
       drivingTable: Option[CypherRecords],
       queryCatalog: Map[QualifiedGraphName, PropertyGraph]): Result = ???
 
-    override private[graph] def cypherOnGraph(graph: PropertyGraph, query: String, parameters: CypherMap, drivingTable: Option[CypherRecords], queryCatalog: Map[QualifiedGraphName, PropertyGraph]) = ???
+    override private[opencypher] def cypherOnGraph(graph: PropertyGraph, query: String, parameters: CypherMap, drivingTable: Option[CypherRecords], queryCatalog: Map[QualifiedGraphName, PropertyGraph]) = ???
 
     override def generateQualifiedGraphName: QualifiedGraphName = ???
   }

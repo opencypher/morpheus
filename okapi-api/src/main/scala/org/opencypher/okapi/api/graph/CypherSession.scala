@@ -100,12 +100,12 @@ trait CypherSession {
     * @param parameters parameters used by the Cypher query
     * @return result of the query
     */
-  private[graph] def cypherOnGraph(
+  private[opencypher] def cypherOnGraph(
     graph: PropertyGraph,
     query: String,
     parameters: CypherMap = CypherMap.empty,
     drivingTable: Option[CypherRecords],
-    queryCatalog: Map[QualifiedGraphName, PropertyGraph]): CypherResult
+    queryCatalog: Map[QualifiedGraphName, PropertyGraph]): Result
 
   private[opencypher] lazy val emptyGraphQgn = QualifiedGraphName(catalog.sessionNamespace, GraphName("emptyGraph"))
 }

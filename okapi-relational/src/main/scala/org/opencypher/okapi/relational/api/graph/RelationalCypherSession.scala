@@ -26,17 +26,45 @@
  */
 package org.opencypher.okapi.relational.api.graph
 
-import org.opencypher.okapi.api.graph.{CypherSession, QualifiedGraphName}
+import java.util.concurrent.atomic.AtomicLong
+
+import org.opencypher.okapi.api.configuration.Configuration.PrintTimings
+import org.opencypher.okapi.api.graph.{CypherSession, GraphName, PropertyGraph, QualifiedGraphName}
+import org.opencypher.okapi.api.table.CypherRecords
 import org.opencypher.okapi.api.value.CypherValue.CypherMap
-import org.opencypher.okapi.relational.api.planning.RelationalRuntimeContext
-import org.opencypher.okapi.relational.api.table.{RelationalCypherRecordsFactory, Table}
+import org.opencypher.okapi.impl.graph.QGNGenerator
+import org.opencypher.okapi.impl.io.SessionGraphDataSource
+import org.opencypher.okapi.impl.util.Measurement.printTiming
+import org.opencypher.okapi.ir.api._
+import org.opencypher.okapi.ir.api.expr.Var
+import org.opencypher.okapi.ir.impl.QueryLocalCatalog
+import org.opencypher.okapi.ir.impl.parse.CypherParser
+import org.opencypher.okapi.logical.api.configuration.LogicalConfiguration.PrintLogicalPlan
+import org.opencypher.okapi.logical.impl._
+import org.opencypher.okapi.relational.api.configuration.CoraConfiguration.{PrintOptimizedRelationalPlan, PrintQueryExecutionStages, PrintRelationalPlan}
+import org.opencypher.okapi.relational.api.planning.{RelationalCypherResult, RelationalRuntimeContext}
+import org.opencypher.okapi.relational.api.table.{RelationalCypherRecords, RelationalCypherRecordsFactory, Table}
 import org.opencypher.okapi.relational.impl.RelationalConverters._
+import org.opencypher.okapi.relational.impl.planning.{RelationalOptimizer, RelationalPlanner}
 
 import scala.reflect.runtime.universe.TypeTag
+import scala.util.Try
 
 abstract class RelationalCypherSession[T <: Table[T] : TypeTag] extends CypherSession {
 
   type Graph <: RelationalCypherGraph[T]
+
+  type Records <: RelationalCypherRecords[T]
+
+  override type Result = RelationalCypherResult[T]
+
+  implicit val session: RelationalCypherSession[T] = this
+
+  protected val logicalPlanner: LogicalPlanner = new LogicalPlanner(new LogicalOperatorProducer)
+
+  protected val logicalOptimizer: LogicalOptimizer.type = LogicalOptimizer
+
+  protected val parser: CypherParser = CypherParser
 
   private[opencypher] val tableTypeTag: TypeTag[T] = implicitly[TypeTag[T]]
 
@@ -49,4 +77,104 @@ abstract class RelationalCypherSession[T <: Table[T] : TypeTag] extends CypherSe
 
   private[opencypher] def basicRuntimeContext(parameters: CypherMap = CypherMap.empty): RelationalRuntimeContext[T] =
     RelationalRuntimeContext(graphAt, parameters = parameters)(this)
+
+  private[opencypher] def time[R](description: String)(code: => R): R = {
+    if (PrintTimings.isSet) printTiming(description)(code) else code
+  }
+
+  private[opencypher] def mountAmbientGraph(ambient: PropertyGraph): IRCatalogGraph = {
+    val qgn = qgnGenerator.generate
+    catalog.store(qgn, ambient)
+    IRCatalogGraph(qgn, ambient.schema)
+  }
+
+  private val maxSessionGraphId: AtomicLong = new AtomicLong(0)
+
+  private[opencypher] val qgnGenerator = new QGNGenerator {
+    override def generate: QualifiedGraphName = {
+      QualifiedGraphName(SessionGraphDataSource.Namespace, GraphName(s"tmp${maxSessionGraphId.incrementAndGet}"))
+    }
+  }
+
+  override def generateQualifiedGraphName: QualifiedGraphName = qgnGenerator.generate
+
+  override def cypher(
+    query: String,
+    parameters: CypherMap = CypherMap.empty,
+    drivingTable: Option[CypherRecords] = None,
+    queryCatalog: Map[QualifiedGraphName, PropertyGraph] = Map.empty
+  ): Result = cypherOnGraph(graphs.empty, query, parameters, drivingTable, queryCatalog)
+
+  protected def planCypherQuery(
+    graph: PropertyGraph,
+    cypherQuery: CypherQuery,
+    allParameters: CypherMap,
+    inputFields: Set[Var],
+    maybeDrivingTable: Option[RelationalCypherRecords[T]],
+    queryLocalCatalog: QueryLocalCatalog
+  ): Result = {
+    val logicalPlan = planLogical(cypherQuery, graph, inputFields)
+    planRelational(maybeDrivingTable, allParameters, logicalPlan, queryLocalCatalog)
+  }
+
+  protected def planLogical(ir: CypherQuery, graph: PropertyGraph, inputFields: Set[Var]): LogicalOperator = {
+    logStageProgress("Logical planning ...", newLine = false)
+    val logicalPlannerContext = LogicalPlannerContext(graph.schema, inputFields, catalog.listSources)
+    val logicalPlan = time("Logical planning")(logicalPlanner(ir)(logicalPlannerContext))
+    logStageProgress("Done!")
+    if (PrintLogicalPlan.isSet) {
+      println("Logical plan:")
+      println(logicalPlan.pretty)
+    }
+
+    logStageProgress("Logical optimization ...", newLine = false)
+    val optimizedLogicalPlan = time("Logical optimization")(logicalOptimizer(logicalPlan)(logicalPlannerContext))
+    logStageProgress("Done!")
+    if (PrintLogicalPlan.isSet) {
+      println("Optimized logical plan:")
+      optimizedLogicalPlan.show()
+    }
+    optimizedLogicalPlan
+  }
+
+  protected def planRelational(
+    maybeDrivingTable: Option[RelationalCypherRecords[T]],
+    parameters: CypherMap,
+    logicalPlan: LogicalOperator,
+    queryLocalCatalog: QueryLocalCatalog
+  ): Result = {
+    logStageProgress("Relational planning ... ", newLine = false)
+    def queryLocalGraphAt(qgn: QualifiedGraphName): Option[RelationalCypherGraph[T]] = {
+      Try(new RichPropertyGraph(queryLocalCatalog.graph(qgn)).asRelational[T]).toOption
+    }
+    implicit val context: RelationalRuntimeContext[T] = RelationalRuntimeContext(queryLocalGraphAt, maybeDrivingTable, parameters)
+
+    val relationalPlan = time("Relational planning")(RelationalPlanner.process(logicalPlan))
+    logStageProgress("Done!")
+    if (PrintRelationalPlan.isSet) {
+      println("Relational plan:")
+      relationalPlan.show()
+    }
+
+    logStageProgress("Relational optimization ... ", newLine = false)
+    val optimizedRelationalPlan = time("Relational optimization")(RelationalOptimizer.process(relationalPlan))
+    logStageProgress("Done!")
+    if (PrintOptimizedRelationalPlan.isSet) {
+      println("Optimized Relational plan:")
+      optimizedRelationalPlan.show()
+    }
+
+    RelationalCypherResult(logicalPlan, optimizedRelationalPlan)
+  }
+
+  protected def logStageProgress(s: String, newLine: Boolean = true): Unit = {
+    if (PrintQueryExecutionStages.isSet) {
+      if (newLine) {
+        println(s)
+      } else {
+        val padded = s.padTo(30, " ").mkString("")
+        print(padded)
+      }
+    }
+  }
 }
