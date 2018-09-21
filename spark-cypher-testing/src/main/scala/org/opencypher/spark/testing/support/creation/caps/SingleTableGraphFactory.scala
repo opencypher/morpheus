@@ -29,6 +29,7 @@ package org.opencypher.spark.testing.support.creation.caps
 import org.opencypher.okapi.api.types.{CTNode, CTRelationship}
 import org.opencypher.okapi.ir.api.expr.{Expr, Var}
 import org.opencypher.okapi.relational.api.graph.RelationalCypherGraph
+import org.opencypher.okapi.relational.api.io.EntityTable.entityVariableName
 import org.opencypher.okapi.relational.impl.operators.Join
 import org.opencypher.okapi.relational.impl.planning.LeftOuterJoin
 import org.opencypher.okapi.testing.propertygraph.InMemoryTestGraph
@@ -42,7 +43,7 @@ object SingleTableGraphFactory extends CAPSTestGraphFactory {
     val nodesOp = scanGraph.scanOperator(CTNode)
     val relsOp = scanGraph.scanOperator(CTRelationship)
 
-    val joinExpr: (Expr, Expr) = Var("")(CTNode) -> relsOp.header.startNodeFor(Var("")(CTRelationship))
+    val joinExpr: (Expr, Expr) = Var(entityVariableName)(CTNode) -> relsOp.header.startNodeFor(Var(entityVariableName)(CTRelationship))
     val joinOp = Join(nodesOp, relsOp, Seq(joinExpr), LeftOuterJoin)
 
     caps.graphs.singleTableGraph(joinOp, scanGraph.schema, Set(0))(caps.basicRuntimeContext())
