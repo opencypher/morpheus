@@ -73,7 +73,9 @@ final case class rowToCypherMap(exprToColumn: Seq[(Expr, String)]) extends (Row 
           .labelsFor(v)
           .map { l => l.label.name -> row.getAs[Boolean](header.column(l)) }
           .collect { case (name, true) => name }
-          .union(typeLabels)
+
+        // TODO: this is rather hackish in order to allow correctly collecting entity tables independent of a graph
+        val finalLabels = if (labels.isEmpty) typeLabels else labels
 
         val properties = header
           .propertiesFor(v)
@@ -81,7 +83,7 @@ final case class rowToCypherMap(exprToColumn: Seq[(Expr, String)]) extends (Row 
           .collect { case (key, value) if !value.isNull => key -> value }
           .toMap
 
-        CAPSNode(id, labels, properties)
+        CAPSNode(id, finalLabels, properties)
       case invalidID => throw UnsupportedOperationException(s"CAPSNode ID has to be a Long instead of ${invalidID.getClass}")
     }
   }
