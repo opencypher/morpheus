@@ -76,7 +76,8 @@ object ViewsExample extends ConsoleApp {
   val results = session.cypher(
     """|FROM youngFriends(sn)
        |MATCH (p: Person)-[r]->(e)
-       |RETURN p, r, e""".stripMargin)
+       |RETURN p, r, e
+       |ORDER BY p.age""".stripMargin)
 
   results.show
 }
