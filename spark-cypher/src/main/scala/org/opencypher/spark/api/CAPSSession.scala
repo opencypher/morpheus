@@ -34,7 +34,6 @@ import org.opencypher.okapi.api.graph._
 import org.opencypher.okapi.api.table.CypherRecords
 import org.opencypher.okapi.api.value.CypherValue.CypherMap
 import org.opencypher.okapi.impl.exception.UnsupportedOperationException
-import org.opencypher.okapi.impl.graph.CypherCatalog
 import org.opencypher.okapi.relational.api.graph.RelationalCypherSession
 import org.opencypher.okapi.relational.api.planning.RelationalCypherResult
 import org.opencypher.spark.api.io._
@@ -44,6 +43,14 @@ import org.opencypher.spark.impl.{CAPSRecords, CAPSRecordsFactory}
 
 import scala.reflect.runtime.universe._
 
+/**
+  * Spark specific Cypher session implementation.
+  *
+  * This class is the main entry point for working with the CAPS system. It wraps a [[SparkSession]] and allows
+  * running Cypher queries over a set of distributed Spark data frames.
+  *
+  * @param sparkSession The Spark session representing the cluster to execute on
+  */
 sealed class CAPSSession(val sparkSession: SparkSession) extends RelationalCypherSession[DataFrameTable] with Serializable {
 
   override type Result = RelationalCypherResult[DataFrameTable]
@@ -52,14 +59,9 @@ sealed class CAPSSession(val sparkSession: SparkSession) extends RelationalCyphe
 
   protected implicit val caps: CAPSSession = this
 
-  override lazy val catalog: CypherCatalog = new CypherCatalog
-
   override val records: CAPSRecordsFactory = CAPSRecordsFactory()
 
   override val graphs: CAPSGraphFactory = CAPSGraphFactory()
-
-  // Store empty graph in catalog, so operators that start with an empty graph can refer to its QGN
-  catalog.store(emptyGraphQgn, graphs.empty)
 
   /**
     * Reads a graph from sequences of nodes and relationships.

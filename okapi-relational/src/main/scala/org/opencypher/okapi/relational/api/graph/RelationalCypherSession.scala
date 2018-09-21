@@ -26,21 +26,19 @@
  */
 package org.opencypher.okapi.relational.api.graph
 
-import java.util.concurrent.atomic.AtomicLong
-
 import org.opencypher.okapi.api.configuration.Configuration.PrintTimings
 import org.opencypher.okapi.api.graph.{CypherSession, GraphName, PropertyGraph, QualifiedGraphName}
 import org.opencypher.okapi.api.table.CypherRecords
 import org.opencypher.okapi.api.value.CypherValue
 import org.opencypher.okapi.api.value.CypherValue.CypherMap
-import org.opencypher.okapi.impl.graph.QGNGenerator
+import org.opencypher.okapi.impl.graph.CypherCatalog
 import org.opencypher.okapi.impl.io.SessionGraphDataSource
 import org.opencypher.okapi.impl.util.Measurement.printTiming
 import org.opencypher.okapi.ir.api._
 import org.opencypher.okapi.ir.api.configuration.IrConfiguration.PrintIr
 import org.opencypher.okapi.ir.api.expr.Var
-import org.opencypher.okapi.ir.impl.{IRBuilder, IRBuilderContext, QueryLocalCatalog}
 import org.opencypher.okapi.ir.impl.parse.CypherParser
+import org.opencypher.okapi.ir.impl.{IRBuilder, IRBuilderContext, QueryLocalCatalog}
 import org.opencypher.okapi.logical.api.configuration.LogicalConfiguration.PrintLogicalPlan
 import org.opencypher.okapi.logical.impl._
 import org.opencypher.okapi.relational.api.configuration.CoraConfiguration.{PrintOptimizedRelationalPlan, PrintQueryExecutionStages, PrintRelationalPlan}
@@ -52,21 +50,45 @@ import org.opencypher.okapi.relational.impl.planning.{RelationalOptimizer, Relat
 import scala.reflect.runtime.universe.TypeTag
 import scala.util.Try
 
+/**
+  * Base class for relational back ends implementing the OKAPI pipeline.
+  *
+  * The class provides a generic implementation of the necessary steps to execute a Cypher query on a relational back
+  * end including parsing, IR planning, logical planning and relational planning.
+  *
+  * Implementers need to make sure to provide factories for back end specific record and graph implementations.
+  *
+  * @tparam T back end specific [[Table]] implementation
+  */
 abstract class RelationalCypherSession[T <: Table[T] : TypeTag] extends CypherSession {
 
+  /**
+    * Back end specific graph type
+    */
   type Graph <: RelationalCypherGraph[T]
 
+  /**
+    * Back end specific records type
+    */
   type Records <: RelationalCypherRecords[T]
 
   override type Result = RelationalCypherResult[T]
 
-  implicit val session: RelationalCypherSession[T] = this
+  private implicit val session: RelationalCypherSession[T] = this
+
+  /**
+    * Qualified graph name for the empty graph
+    */
+  private[opencypher] lazy val emptyGraphQgn = QualifiedGraphName(SessionGraphDataSource.Namespace, GraphName("emptyGraph"))
+
+  //   Store empty graph in catalog, so operators that start with an empty graph can refer to its QGN
+  override lazy val catalog: CypherCatalog = CypherCatalog(emptyGraphQgn -> graphs.empty)
+
+  protected val parser: CypherParser = CypherParser
 
   protected val logicalPlanner: LogicalPlanner = new LogicalPlanner(new LogicalOperatorProducer)
 
   protected val logicalOptimizer: LogicalOptimizer.type = LogicalOptimizer
-
-  protected val parser: CypherParser = CypherParser
 
   private[opencypher] val tableTypeTag: TypeTag[T] = implicitly[TypeTag[T]]
 
@@ -90,16 +112,6 @@ abstract class RelationalCypherSession[T <: Table[T] : TypeTag] extends CypherSe
     IRCatalogGraph(qgn, ambient.schema)
   }
 
-  private val maxSessionGraphId: AtomicLong = new AtomicLong(0)
-
-  private[opencypher] val qgnGenerator = new QGNGenerator {
-    override def generate: QualifiedGraphName = {
-      QualifiedGraphName(SessionGraphDataSource.Namespace, GraphName(s"tmp${maxSessionGraphId.incrementAndGet}"))
-    }
-  }
-
-  override def generateQualifiedGraphName: QualifiedGraphName = qgnGenerator.generate
-
   override def cypher(
     query: String,
     parameters: CypherMap = CypherMap.empty,
@@ -116,9 +128,9 @@ abstract class RelationalCypherSession[T <: Table[T] : TypeTag] extends CypherSe
   ): Result = {
     val ambientGraphNew = mountAmbientGraph(graph)
 
-    val maybeCapsRecords: Option[RelationalCypherRecords[T]] = maybeDrivingTable.map(_.asRelational)
+    val maybeRelationalRecords: Option[RelationalCypherRecords[T]] = maybeDrivingTable.map(_.asRelational)
 
-    val inputFields = maybeCapsRecords match {
+    val inputFields = maybeRelationalRecords match {
       case Some(inputRecords) => inputRecords.header.vars
       case None => Set.empty[Var]
     }
@@ -154,10 +166,10 @@ abstract class RelationalCypherSession[T <: Table[T] : TypeTag] extends CypherSe
           println("IR:")
           println(cq.pretty)
         }
-        planCypherQuery(graph, cq, allParameters, inputFields, maybeCapsRecords, queryLocalCatalog)
+        planCypherQuery(graph, cq, allParameters, inputFields, maybeRelationalRecords, queryLocalCatalog)
 
       case CreateGraphStatement(_, targetGraph, innerQueryIr) =>
-        val innerResult = planCypherQuery(graph, innerQueryIr, allParameters, inputFields, maybeCapsRecords, queryLocalCatalog)
+        val innerResult = planCypherQuery(graph, innerQueryIr, allParameters, inputFields, maybeRelationalRecords, queryLocalCatalog)
         val resultGraph = innerResult.graph
         catalog.store(targetGraph.qualifiedGraphName, resultGraph)
         RelationalCypherResult.empty
@@ -215,9 +227,11 @@ abstract class RelationalCypherSession[T <: Table[T] : TypeTag] extends CypherSe
     queryLocalCatalog: QueryLocalCatalog
   ): Result = {
     logStageProgress("Relational planning ... ", newLine = false)
+
     def queryLocalGraphAt(qgn: QualifiedGraphName): Option[RelationalCypherGraph[T]] = {
       Try(new RichPropertyGraph(queryLocalCatalog.graph(qgn)).asRelational[T]).toOption
     }
+
     implicit val context: RelationalRuntimeContext[T] = RelationalRuntimeContext(queryLocalGraphAt, maybeDrivingTable, parameters)
 
     val relationalPlan = time("Relational planning")(RelationalPlanner.process(logicalPlan))

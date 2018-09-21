@@ -26,9 +26,13 @@
  */
 package org.opencypher.okapi.api.graph
 
+import java.util.concurrent.atomic.AtomicLong
+
 import org.opencypher.okapi.api.io._
 import org.opencypher.okapi.api.table.CypherRecords
 import org.opencypher.okapi.api.value.CypherValue._
+import org.opencypher.okapi.impl.graph.QGNGenerator
+import org.opencypher.okapi.impl.io.SessionGraphDataSource
 
 /**
   * The Cypher Session is the main API for a Cypher-based application. It manages graphs which can be queried using
@@ -37,6 +41,9 @@ import org.opencypher.okapi.api.value.CypherValue._
   */
 trait CypherSession {
 
+  /**
+    * Back end specific query result type
+    */
   type Result <: CypherResult
 
   /**
@@ -87,7 +94,7 @@ trait CypherSession {
   /**
     * @return a new unique qualified graph name
     */
-  def generateQualifiedGraphName: QualifiedGraphName
+  def generateQualifiedGraphName: QualifiedGraphName = qgnGenerator.generate
 
   /**
     * Executes a Cypher query in this session, using the argument graph as the ambient graph.
@@ -107,7 +114,16 @@ trait CypherSession {
     drivingTable: Option[CypherRecords],
     queryCatalog: Map[QualifiedGraphName, PropertyGraph]): Result
 
-  private[opencypher] lazy val emptyGraphQgn = QualifiedGraphName(catalog.sessionNamespace, GraphName("emptyGraph"))
+  private val maxSessionGraphId: AtomicLong = new AtomicLong(0)
+
+  /**
+    * A generator for qualified graph names
+    */
+  private[opencypher] val qgnGenerator = new QGNGenerator {
+    override def generate: QualifiedGraphName = {
+      QualifiedGraphName(SessionGraphDataSource.Namespace, GraphName(s"tmp${maxSessionGraphId.incrementAndGet}"))
+    }
+  }
 
   override def toString: String = s"${this.getClass.getSimpleName}"
 }
