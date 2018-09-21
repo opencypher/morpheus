@@ -34,6 +34,14 @@ import org.opencypher.okapi.impl.exception.{IllegalArgumentException, Unsupporte
 import org.opencypher.okapi.impl.io.SessionGraphDataSource
 import org.opencypher.v9_0.ast.{FromGraph, GraphByParameter, GraphLookup, ViewInvocation}
 
+object CypherCatalog {
+  def apply(graphs: (QualifiedGraphName, PropertyGraph)*): CypherCatalog = {
+    val catalog = new CypherCatalog
+    graphs.foreach { case (gqn, graph) => catalog.store(gqn, graph) }
+    catalog
+  }
+}
+
 /**
   * This is the default implementation of the [[org.opencypher.okapi.api.graph.PropertyGraphCatalog]].
   * It uses a mutable mapping to store the mapping between
