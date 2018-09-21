@@ -72,6 +72,8 @@ abstract class BaseTestSuite extends FunSpec with Matchers with MockitoSugar {
   }
 
   def assertPrinted(expectation: String): Assertion = {
-    outCapture.toString("UTF-8") shouldEqual expectation
+    val assertion = outCapture.toString("UTF-8") shouldEqual expectation
+    outCapture.reset()
+    assertion
   }
 }

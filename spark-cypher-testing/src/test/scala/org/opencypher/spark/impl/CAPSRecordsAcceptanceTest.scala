@@ -86,7 +86,7 @@ class CAPSRecordsAcceptanceTest extends CAPSTestSuite with CAPSNeo4jServerFixtur
     ))
   }
 
-  it("CAPSNode can show") {
+  it("CAPSNodeTable can show") {
     val mapping = NodeMapping("node", Set("Actor"), propertyMapping = Map("name" -> "name"))
     val table = sparkSession.createDataFrame(Seq(Actor(1, "Keanu"), Actor(2, "Laurence")))
     val nodeTable: CAPSNodeTable = CAPSNodeTable.fromMapping(mapping, table)
