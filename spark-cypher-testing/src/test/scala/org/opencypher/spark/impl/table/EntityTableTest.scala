@@ -36,6 +36,7 @@ import org.opencypher.okapi.impl.exception.IllegalArgumentException
 import org.opencypher.okapi.impl.util.StringEncodingUtilities._
 import org.opencypher.okapi.ir.api.expr._
 import org.opencypher.okapi.ir.api.{Label, PropertyKey, RelType}
+import org.opencypher.okapi.relational.api.io.EntityTable.entityVariableName
 import org.opencypher.okapi.relational.impl.table.RecordHeader
 import org.opencypher.spark.api.io._
 import org.opencypher.spark.api.value.CAPSNode
@@ -124,7 +125,7 @@ class EntityTableTest extends CAPSTestSuite {
 
     val nodeTable = CAPSNodeTable.fromMapping(nodeMapping, df)
 
-    val v = Var("")(CTNode("A", "B"))
+    val v = Var(entityVariableName)(CTNode("A", "B"))
 
     nodeTable.header should equal(RecordHeader(Map(
       v -> "ID",
@@ -154,7 +155,7 @@ class EntityTableTest extends CAPSTestSuite {
 
     val relationshipTable = CAPSRelationshipTable.fromMapping(relMapping, df)
 
-    val v = Var("")(CTRelationship("A"))
+    val v = Var(entityVariableName)(CTRelationship("A"))
 
     relationshipTable.header should equal(RecordHeader(Map(
       v -> "ID",
@@ -173,7 +174,7 @@ class EntityTableTest extends CAPSTestSuite {
 
     val relationshipTable = CAPSRelationshipTable.fromMapping(relMappingWithTypeColumn, df)
 
-    val v = Var("")(CTRelationship("A", "B", "C"))
+    val v = Var(entityVariableName)(CTRelationship("A", "B", "C"))
 
     val createdHeader = relationshipTable.header
     createdHeader should equal(RecordHeader(Map(
