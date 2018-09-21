@@ -31,7 +31,7 @@ import org.opencypher.okapi.api.types.{CTList, CTNode, CTRelationship}
 import org.opencypher.okapi.api.value.CypherValue._
 import org.opencypher.okapi.api.value._
 import org.opencypher.okapi.impl.exception.UnsupportedOperationException
-import org.opencypher.okapi.ir.api.expr.{Expr, ListSegment, Var}
+import org.opencypher.okapi.ir.api.expr._
 import org.opencypher.okapi.relational.impl.table.RecordHeader
 import org.opencypher.spark.api.value.{CAPSNode, CAPSRelationship}
 
@@ -48,8 +48,8 @@ final case class rowToCypherMap(exprToColumn: Seq[(Expr, String)]) extends (Row 
   // TODO: Validate all column types. At the moment null values are cast to the expected type...
   private def constructValue(row: Row, v: Var): CypherValue = {
     v.cypherType.material match {
-      case _: CTNode =>
-        collectNode(row, v)
+      case ct: CTNode =>
+        collectNode(row, v, ct.labels)
 
       case ct: CTRelationship =>
         collectRel(row, v, ct.types)
@@ -63,7 +63,7 @@ final case class rowToCypherMap(exprToColumn: Seq[(Expr, String)]) extends (Row 
     }
   }
 
-  private def collectNode(row: Row, v: Var): CypherValue = {
+  private def collectNode(row: Row, v: Var, typeLabels: Set[String]): CypherValue = {
     val idValue = row.getAs[Any](header.column(v))
     idValue match {
       case null => CypherNull
@@ -73,6 +73,7 @@ final case class rowToCypherMap(exprToColumn: Seq[(Expr, String)]) extends (Row 
           .labelsFor(v)
           .map { l => l.label.name -> row.getAs[Boolean](header.column(l)) }
           .collect { case (name, true) => name }
+          .union(typeLabels)
 
         val properties = header
           .propertiesFor(v)
@@ -85,7 +86,7 @@ final case class rowToCypherMap(exprToColumn: Seq[(Expr, String)]) extends (Row 
     }
   }
 
-  private def collectRel(row: Row, v: Var, types: Set[String]): CypherValue = {
+  private def collectRel(row: Row, v: Var, relTypes: Set[String]): CypherValue = {
     val idValue = row.getAs[Any](header.column(v))
     idValue match {
       case null => CypherNull
@@ -97,7 +98,7 @@ final case class rowToCypherMap(exprToColumn: Seq[(Expr, String)]) extends (Row 
           .typesFor(v)
           .map { l => l.relType.name -> row.getAs[Boolean](header.column(l)) }
           .collectFirst { case (name, true) => name }
-          .getOrElse(types.head)
+          .getOrElse(relTypes.head)
 
         val properties = header
           .propertiesFor(v)

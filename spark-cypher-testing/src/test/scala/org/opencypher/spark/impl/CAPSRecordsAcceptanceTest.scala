@@ -27,14 +27,14 @@
 package org.opencypher.spark.impl
 
 import org.apache.spark.sql.Row
-import org.opencypher.okapi.api.io.conversion.RelationshipMapping
+import org.opencypher.okapi.api.io.conversion.{NodeMapping, RelationshipMapping}
 import org.opencypher.okapi.api.value.CypherValue.CypherMap
 import org.opencypher.okapi.neo4j.io.MetaLabelSupport._
 import org.opencypher.okapi.relational.api.graph.RelationalCypherGraph
 import org.opencypher.okapi.testing.Bag
 import org.opencypher.okapi.testing.Bag._
 import org.opencypher.spark.api.GraphSources
-import org.opencypher.spark.api.io.CAPSRelationshipTable
+import org.opencypher.spark.api.io.{CAPSNodeTable, CAPSRelationshipTable}
 import org.opencypher.spark.api.value.{CAPSNode, CAPSRelationship}
 import org.opencypher.spark.impl.CAPSConverters._
 import org.opencypher.spark.impl.DataFrameOps._
@@ -71,6 +71,36 @@ class CAPSRecordsAcceptanceTest extends CAPSTestSuite with CAPSNeo4jServerFixtur
       CypherMap("r" -> CAPSRelationship(21, 2, 20, "ACTED_IN", CypherMap("charactername" -> "Guenevere"))),
       CypherMap("r" -> CAPSRelationship(26, 8, 19, "ACTED_IN", CypherMap("charactername" -> "Halle/Annie")))
     ))
+  }
+
+  case class Actor(node: Long, name: String)
+
+  it("convert CAPSNodeTable to CypherMaps") {
+    val mapping = NodeMapping("node", Set("Actor"), propertyMapping = Map("name" -> "name"))
+    val table = sparkSession.createDataFrame(Seq(Actor(1, "Keanu"), Actor(2, "Laurence")))
+    val nodeTable: CAPSNodeTable = CAPSNodeTable.fromMapping(mapping, table)
+
+    nodeTable.collect.toBag should equal(Bag(
+      CypherMap("entity" -> CAPSNode(1, Set("Actor"), CypherMap("name" -> "Keanu"))),
+      CypherMap("entity" -> CAPSNode(2, Set("Actor"), CypherMap("name" -> "Laurence")))
+    ))
+  }
+
+  it("CAPSNode can show") {
+    val mapping = NodeMapping("node", Set("Actor"), propertyMapping = Map("name" -> "name"))
+    val table = sparkSession.createDataFrame(Seq(Actor(1, "Keanu"), Actor(2, "Laurence")))
+    val nodeTable: CAPSNodeTable = CAPSNodeTable.fromMapping(mapping, table)
+
+    nodeTable.show(capturingPrintOptions)
+    assertPrinted(expectation =
+      """╔═════════════════════════════════╗
+        |║ entity                          ║
+        |╠═════════════════════════════════╣
+        |║ (:`Actor` {`name`: 'Keanu'})    ║
+        |║ (:`Actor` {`name`: 'Laurence'}) ║
+        |╚═════════════════════════════════╝
+        |(2 rows)
+        |""".stripMargin)
   }
 
   case class ActedIn(rel: Long, start: Long, end: Long)

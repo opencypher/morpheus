@@ -92,7 +92,8 @@ trait EntityTable[T <: Table[T]] extends RelationalCypherRecords[T] {
 
 object EntityTable {
   /**
-    * Default variable name to use for Scan operators for RelationalCypherGraphs, as well as EntityTable entities.
+    * Default variable name to use in [[org.opencypher.okapi.relational.api.graph.RelationalCypherGraph#scanOperator]],
+    * as well as for node/relationship entities stored in [[EntityTable]] instances.
     */
   val entityVariableName = "entity"
 }
