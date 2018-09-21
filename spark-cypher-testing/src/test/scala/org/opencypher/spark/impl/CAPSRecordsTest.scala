@@ -33,6 +33,8 @@ import org.opencypher.okapi.api.value.CypherValue._
 import org.opencypher.okapi.impl.exception.InternalException
 import org.opencypher.okapi.ir.api.expr._
 import org.opencypher.okapi.ir.api.{Label, PropertyKey, RelType}
+import org.opencypher.okapi.relational.api.io.EntityTable.entityVariableName
+import org.opencypher.okapi.relational.api.tagging.Tags._
 import org.opencypher.okapi.relational.impl.table.RecordHeader
 import org.opencypher.okapi.testing.Bag
 import org.opencypher.okapi.testing.Bag._
@@ -42,7 +44,6 @@ import org.opencypher.spark.api.value.CAPSNode
 import org.opencypher.spark.impl.DataFrameOps._
 import org.opencypher.spark.testing.CAPSTestSuite
 import org.opencypher.spark.testing.fixture.{GraphConstructionFixture, TeamDataFixture}
-import org.opencypher.okapi.relational.api.tagging.Tags._
 
 class CAPSRecordsTest extends CAPSTestSuite with GraphConstructionFixture with TeamDataFixture {
 
@@ -170,7 +171,7 @@ class CAPSRecordsTest extends CAPSTestSuite with GraphConstructionFixture with T
 
     val records = caps.records.fromEntityTable(nodeTable)
 
-    val entityVar = Var("")(CTNode("Person"))
+    val entityVar = Var(entityVariableName)(CTNode("Person"))
 
     records.header.expressions should equal(
       Set(
@@ -200,7 +201,7 @@ class CAPSRecordsTest extends CAPSTestSuite with GraphConstructionFixture with T
 
     val records = caps.records.fromEntityTable(relTable)
 
-    val entityVar = Var("")(CTRelationship("NEXT"))
+    val entityVar = Var(entityVariableName)(CTRelationship("NEXT"))
 
     records.header.expressions should equal(
       Set(
@@ -230,7 +231,7 @@ class CAPSRecordsTest extends CAPSTestSuite with GraphConstructionFixture with T
 
     val records = caps.records.fromEntityTable(relTable)
 
-    val entityVar = Var("")(CTRelationship("RED", "BLUE", "GREEN", "YELLOW"))
+    val entityVar = Var(entityVariableName)(CTRelationship("RED", "BLUE", "GREEN", "YELLOW"))
 
     records.header.expressions should equalWithTracing(
       Set(
