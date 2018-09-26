@@ -243,7 +243,7 @@ object SparkSQLExprMapper {
         }
 
         case Range(from, to, maybeStep) =>
-          val stepCol = maybeStep.map(_.asSparkSQLExpr).getOrElse(functions.lit(1))
+          val stepCol = maybeStep.map(_.asSparkSQLExpr).getOrElse(ONE_LIT)
           rangeUdf(from.asSparkSQLExpr, to.asSparkSQLExpr, stepCol)
 
         case Substring(original, start, maybeLength) =>
