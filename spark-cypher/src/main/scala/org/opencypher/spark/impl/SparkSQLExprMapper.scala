@@ -44,6 +44,8 @@ object SparkSQLExprMapper {
 
   private val FALSE_LIT: Column = functions.lit(false)
 
+  private val ONE_LIT: Column = functions.lit(1)
+
   private val E: Column = functions.lit(Math.E)
 
   implicit class RichExpression(expr: Expr) {
@@ -240,9 +242,15 @@ object SparkSQLExprMapper {
           case other => throw IllegalArgumentException("CTList", other)
         }
 
-        case Range(from, to, stepOption) =>
-          val stepCol = stepOption.map(_.asSparkSQLExpr).getOrElse(functions.lit(1))
+        case Range(from, to, maybeStep) =>
+          val stepCol = maybeStep.map(_.asSparkSQLExpr).getOrElse(functions.lit(1))
           rangeUdf(from.asSparkSQLExpr, to.asSparkSQLExpr, stepCol)
+
+        case Substring(original, start, maybeLength) =>
+          val origCol = original.asSparkSQLExpr
+          val startCol = start.asSparkSQLExpr + ONE_LIT
+          val lengthCol = maybeLength.map(_.asSparkSQLExpr).getOrElse(functions.length(origCol) - startCol + ONE_LIT)
+          origCol.substr(startCol, lengthCol)
 
         // Mathematical functions
 

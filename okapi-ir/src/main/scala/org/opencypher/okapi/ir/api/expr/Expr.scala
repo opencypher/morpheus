@@ -670,6 +670,15 @@ final case class Range(from: Expr, to: Expr, o: Option[Expr]) extends FunctionEx
   override def withCypherType(ct: CypherType): Range = this
 }
 
+final case class Substring(original: Expr, start: Expr, length: Option[Expr]) extends FunctionExpr {
+
+  override def exprs: IndexedSeq[Expr] = IndexedSeq(original, start)
+  override def cypherType: CypherType = CTString
+  override type This = Substring
+
+  override def withCypherType(ct: CypherType): Substring = this
+}
+
 // Bit operators
 
 final case class ShiftLeft(value: Expr, shiftBits: IntegerLit)

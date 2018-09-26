@@ -26,7 +26,7 @@
  */
 package org.opencypher.spark.impl.acceptance
 
-import org.opencypher.okapi.api.value.CypherValue.CypherMap
+import org.opencypher.okapi.api.value.CypherValue.{CypherMap, CypherNull}
 import org.opencypher.okapi.impl.exception.NotImplementedException
 import org.opencypher.okapi.testing.Bag
 import org.opencypher.okapi.testing.Bag._
@@ -892,6 +892,79 @@ class FunctionsBehaviour extends CAPSTestSuite with DefaultGraphInit {
           |RETURN range(1, 4, n.step) as x""".stripMargin).records.toMaps should equal(Bag(
         CypherMap("x" -> List(1, 3)),
         CypherMap("x" -> List(1, 4))
+      ))
+    }
+  }
+
+  describe("substring()") {
+
+    it("returns substring from literal") {
+      val g = initGraph("CREATE ()")
+
+      val result = g.cypher("RETURN substring('foobar', 3) AS substring")
+
+      result.records.toMaps should equal(Bag(
+        CypherMap("substring" -> "bar")
+      ))
+    }
+
+    it("returns substring from literal with given length") {
+      val g = initGraph("CREATE ()")
+
+      val result = g.cypher("RETURN substring('foobar', 0, 3) AS substring")
+
+      result.records.toMaps should equal(Bag(
+        CypherMap("substring" -> "foo")
+      ))
+    }
+
+    it("returns substring from literal with exceeding given length") {
+      val g = initGraph("CREATE ()")
+
+      val result = g.cypher("RETURN substring('foobar', 3, 10) AS substring")
+
+      result.records.toMaps should equal(Bag(
+        CypherMap("substring" -> "bar")
+      ))
+    }
+
+    it("returns empty string for length 0") {
+      val g = initGraph("CREATE ()")
+
+      val result = g.cypher("RETURN substring('foobar', 0, 0) AS substring")
+
+      result.records.toMaps should equal(Bag(
+        CypherMap("substring" -> "")
+      ))
+    }
+
+    it("returns empty string for exceeding start") {
+      val g = initGraph("CREATE ()")
+
+      val result = g.cypher("RETURN substring('foobar', 10) AS substring")
+
+      result.records.toMaps should equal(Bag(
+        CypherMap("substring" -> "")
+      ))
+    }
+
+    it("returns null for null") {
+      val g = initGraph("CREATE ()")
+
+      val result = g.cypher("RETURN substring(null, 0, 0) AS substring")
+
+      result.records.toMaps should equal(Bag(
+        CypherMap("substring" -> CypherNull)
+      ))
+    }
+
+    it("throws for negative length") {
+      val g = initGraph("CREATE ()")
+
+      val result = g.cypher("RETURN substring(null, 0, 0) AS substring")
+
+      result.records.toMaps should equal(Bag(
+        CypherMap("substring" -> CypherNull)
       ))
     }
   }

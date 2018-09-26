@@ -58,6 +58,7 @@ object FunctionUtils {
         case functions.ToString => ToString(expr.head)(cypherType)
         case functions.ToBoolean => ToBoolean(expr.head)(cypherType)
         case functions.Range => Range(expr(0), expr(1), expr.lift(2))
+        case functions.Substring => Substring(expr(0), expr(1), expr.lift(2))
 
         // Logarithmic functions
         case functions.Sqrt => Sqrt(expr.head)(cypherType)
