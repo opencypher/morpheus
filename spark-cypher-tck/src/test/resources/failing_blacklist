@@ -65,7 +65,6 @@ Feature "ReturnAcceptance2": Scenario "Setting and returning the size of a list 
 Feature "ReturnAcceptance2": Scenario "Returning a projected map"
 Feature "ReturnAcceptance2": Scenario "Concatenating and returning the size of literal lists"
 Feature "ReturnAcceptance2": Scenario "Returning nested expressions based on list property"
-Feature "ReturnAcceptance2": Scenario "`substring()` with default second argument"
 Feature "ReturnAcceptance2": Scenario "Arithmetic expressions should propagate null values"
 Feature "ReturnAcceptance2": Scenario "Projecting an arithmetic expression with aggregation"
 Feature "ReturnAcceptance2": Scenario "Multiple aliasing and backreferencing"
