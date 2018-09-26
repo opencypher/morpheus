@@ -94,7 +94,7 @@ object ZeppelinSupport {
       s"""${columns.mkString("\t")}
          |${
         r.iterator.map { row =>
-          columns.map(row(_)).mkString("\t")
+          columns.map(row(_).toCypherString).mkString("\t")
         }.mkString("\n")
       }""".stripMargin
     }
@@ -244,22 +244,22 @@ object ZeppelinSupport {
       * }}}
       */
     def toZeppelinJson: Js.Value = {
-      val nodeJson: Js.Value = g.nodes("n").iterator.map { node =>
+      val nodeJsons = g.nodes("n").iterator.map { node =>
         node("n") match {
           case n: CypherNode[_] => n.toZeppelinJson
           case notANode => throw IllegalArgumentException("a node", notANode)
         }
       }
 
-      val relJson: Js.Value = g.relationships("r").iterator.map { rel =>
+      val relJson = g.relationships("r").iterator.map { rel =>
         rel("r") match {
           case r: CypherRelationship[_] => r.toZeppelinJson
           case notARel => throw IllegalArgumentException("a relationship", notARel)
         }
       }
 
-      Map[String, Js.Value](
-        "nodes" -> nodeJson,
+      Js.Obj(
+        "nodes" -> nodeJsons,
         "edges" -> relJson,
         "labels" -> g.schema.labels.toSeq.sorted.map(l => l -> Js.Str(colorForLabel(l))),
         "types" -> g.schema.relationshipTypes.toSeq.sorted.map(Js.Str),
