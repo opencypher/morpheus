@@ -100,6 +100,36 @@ class ExpressionConverterTest extends BaseTestSuite with Neo4jAstTestSupport {
     )
   }
 
+  describe("range") {
+
+    it("can convert range") {
+      convert(parseExpr("range(0, 10, 2)")) should equal(
+        Range(IntegerLit(0)(), IntegerLit(10)(), Some(IntegerLit(2)()))
+      )
+    }
+
+    it("can convert range with missing step size") {
+      convert(parseExpr("range(0, 10)")) should equal(
+        Range(IntegerLit(0)(), IntegerLit(10)(), None)
+      )
+    }
+  }
+
+  describe("substring") {
+
+    it("can convert substring") {
+      convert(parseExpr("substring('foobar', 0, 3)")) should equal(
+        Substring(StringLit("foobar")(), IntegerLit(0)(), Some(IntegerLit(3)()))
+      )
+    }
+
+    it("can convert substring with missing length") {
+      convert(parseExpr("substring('foobar', 0)")) should equal(
+        Substring(StringLit("foobar")(), IntegerLit(0)(), None)
+      )
+    }
+  }
+
   test("can convert less than") {
     convert(parseExpr("a < b")) should equal(
       LessThan(Var("a")(), Var("b")())()
