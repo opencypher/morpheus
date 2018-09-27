@@ -69,25 +69,34 @@ object ZeppelinSupport {
       * will print the following data
       *
       * {{{
-      *   $table
+      *   %table
       *   n.name\tn.age
       *   Alice\t20
       *   Bob\t42
       * }}}
       */
-    // TODO: Soon the physical column names will be useless for a user. Need to use a new tbd logical view.
     def printTable(): Unit = {
-      val columns = r.physicalColumns
-      print(
-        s"""
-           |%table
-           |${columns.mkString("\t")}
-           |${
-          r.iterator.map { row =>
-            columns.map(row(_)).mkString("\t")
-          }.mkString("\n")
-        }""".
-          stripMargin)
+      print(s"""%table
+        |$toZeppelinTable""".stripMargin)
+    }
+
+    /**
+      * Returns a Zeppelin compatible table representation of CypherRecords:
+      *
+      * {{{
+      *   n.name\tn.age
+      *   Alice\t20
+      *   Bob\t42
+      * }}}
+      */
+    def toZeppelinTable: String = {
+      val columns = r.logicalColumns.get
+      s"""${columns.mkString("\t")}
+         |${
+        r.iterator.map { row =>
+          columns.map(row(_)).mkString("\t")
+        }.mkString("\n")
+      }""".stripMargin
     }
 
   }

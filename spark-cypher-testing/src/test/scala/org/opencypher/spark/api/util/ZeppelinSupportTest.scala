@@ -32,6 +32,17 @@ import org.opencypher.spark.testing.fixture.TeamDataFixture
 
 class ZeppelinSupportTest extends CAPSTestSuite with TeamDataFixture {
 
+  it("supports Zeppelin table representation") {
+    val graph = caps.graphs.create(personTable)
+    val result = graph.cypher("MATCH (p:Person) RETURN p.name, p.luckyNumber")
+    val asTable = result.records.toZeppelinTable
+
+    val expected = Array("p.name\tp.luckyNumber", "Mats\t23", "Martin\t42", "Max\t1337", "Stefan\t9")
+      .mkString("\n")
+
+    asTable should equal(expected)
+  }
+
   it("supports Zeppelin network representation") {
     val graph = caps.graphs.create(personTable, bookTable, readsTable, knowsTable, influencesTable)
     val asJson = graph.toZeppelinJson
