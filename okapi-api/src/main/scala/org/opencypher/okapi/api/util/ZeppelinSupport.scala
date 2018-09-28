@@ -32,7 +32,6 @@ import org.opencypher.okapi.api.value.CypherValue.CypherEntity._
 import org.opencypher.okapi.api.value.CypherValue.CypherNode._
 import org.opencypher.okapi.api.value.CypherValue.CypherRelationship._
 import org.opencypher.okapi.api.value.CypherValue.{CypherNode, CypherRelationship}
-import org.opencypher.okapi.impl.exception.IllegalArgumentException
 import upickle.Js
 
 import scala.util.Random
@@ -47,12 +46,14 @@ object ZeppelinSupport {
     /**
       * Visualizes the result in Zeppelin.
       * If the result contains a graph, it is shown as a network (see [[ZeppelinSupport.ZeppelinGraph#printGraph]]).
-      * If the result contains a tabular result, they are visualized as a table (see [[ZeppelinSupport.ZeppelinRecords#printTable]]).
+      * If the result contains a tabular result, they are:
+      *   - visualized as a graph if the result only contains nodes and relationships (see [[ZeppelinSupport.ZeppelinRecords#printGraph]])
+      *   - TODO: visualized as a table if the result contains non entity values (see [[ZeppelinSupport.ZeppelinRecords#printTable]])
       */
     def visualize(): Unit = {
       result.getGraph match {
         case Some(g) => g.printGraph()
-        case None => result.records.printTable()
+        case None => result.records.printTable() // TODO find a way to identify results that could be printed as a graph
       }
     }
   }
@@ -76,8 +77,38 @@ object ZeppelinSupport {
       * }}}
       */
     def printTable(): Unit = {
-      print(s"""%table
-        |$toZeppelinTable""".stripMargin)
+      print(s"""
+        |%table
+        |$toZeppelinTable
+        |""".stripMargin
+      )
+    }
+
+    /**
+      * Prints the records in the Zeppelin `%network` format
+      * {{{
+      *   MATCH (n:Person)-[b:BOUGHT]->(i:Item)
+      *   RETURN n, b, i
+      * }}}
+      *
+      * will print the following data
+      *
+      * {{{
+      * {
+      *   "nodes" : [ LIST_OF_NODES ]   // array of nodes
+      *   "edges" : [ LIST_OF_EDGES ]   // array of relationships
+      *   "labels": [ "Person", "Item"] // each label present in the graph
+      *   "types": [ "BOUGHT"]  // each relationship type present in the graph
+      *   "directed": true              // indicate that the graph has directed relationships
+      * }
+      * }}}
+      */
+    def printGraph(): Unit = {
+      print(
+        s"""
+           |%network
+           |$toZeppelinGraph
+        """.stripMargin)
     }
 
     /**
@@ -99,6 +130,45 @@ object ZeppelinSupport {
       }""".stripMargin
     }
 
+    /**
+      * Returns a Zeppelin compatible Json representation of the result.
+      * Only colums that are nodes or edges are represented.
+      *
+      * {{{
+      * {
+      *   "nodes" : [ LIST_OF_NODES ]   // array of nodes
+      *   "edges" : [ LIST_OF_EDGES ]   // array of relationships
+      *   "labels": [ "Person", "Book"] // each label present in the graph
+      *   "types": [ "KNOWS", "READS"]  // each relationship type present in the graph
+      *   "directed": true              // indicate that the graph has directed relationships
+      * }
+      * }}}
+      */
+    def toZeppelinGraph: String = {
+      val data = r.collect
+
+      val nodeCols = data.headOption.map { row =>
+        row.value.collect {
+          case (key, _: CypherNode[_]) => key
+        }
+      }.getOrElse(Seq.empty).toSet
+
+      val relCols = data.headOption.map { row =>
+        row.value.collect {
+          case (key, _: CypherRelationship[_]) => key
+        }
+      }.getOrElse(Seq.empty).toSet
+
+      val nodes = data.flatMap { row => nodeCols.map(row(_).cast[CypherNode[_]]) }
+      val rels = data.flatMap { row => relCols.map(row(_).cast[CypherRelationship[_]]) }
+
+      val labels = nodes.flatMap(_.labels).toSet
+      val types = rels.map(_.relType).toSet
+
+      ZeppelinGraph.toZeppelinJson(
+        nodes.toIterator, rels.toIterator, labels, types
+      ).render(2)
+    }
   }
 
   val labelJsonKey: String = "label"
@@ -167,6 +237,42 @@ object ZeppelinSupport {
     }
   }
 
+  object ZeppelinGraph {
+    /**
+      * Returns a Zeppelin compatible Json representation of a graph defined by a list of nodes and edges:
+      *
+      * {{{
+      * {
+      *   "nodes" : [ LIST_OF_NODES ]   // array of nodes
+      *   "edges" : [ LIST_OF_EDGES ]   // array of relationships
+      *   "labels": [ "Person", "Book"] // each label present in the graph
+      *   "types": [ "KNOWS", "READS"]  // each relationship type present in the graph
+      *   "directed": true              // indicate that the graph has directed relationships
+      * }
+      * }}}
+      */
+    def toZeppelinJson(nodes: Iterator[CypherNode[_]], rels: Iterator[CypherRelationship[_]], labels: Set[String], types: Set[String]): Js.Value = {
+      val nodeJsons = nodes.map(_.toZeppelinJson)
+      val relJson = rels.map(_.toZeppelinJson)
+
+      Js.Obj(
+        "nodes" -> nodeJsons,
+        "edges" -> relJson,
+        "labels" -> labels.toSeq.sorted.map(l => l -> Js.Str(colorForLabel(l))),
+        "types" -> types.toSeq.sorted.map(Js.Str),
+        "directed" -> Js.True
+      )
+    }
+
+    private def colorForLabel(label: String): String = {
+      val rand = new Random(label.hashCode)
+      val r = rand.nextInt(255)
+      val g = rand.nextInt(255)
+      val b = rand.nextInt(255)
+      s"#${r.toHexString}${g.toHexString}${b.toHexString}"
+    }
+  }
+
   implicit class ZeppelinGraph(g: PropertyGraph) {
 
     /**
@@ -222,11 +328,10 @@ object ZeppelinSupport {
       * }}}
       */
     def printGraph(): Unit = {
-      val graphJson = g.toZeppelinJson
       print(
         s"""
            |%network
-           |${graphJson.render(2)}
+           |${toZeppelinJson.render(2)}
         """.stripMargin)
     }
 
@@ -244,36 +349,13 @@ object ZeppelinSupport {
       * }}}
       */
     def toZeppelinJson: Js.Value = {
-      val nodeJsons = g.nodes("n").iterator.map { node =>
-        node("n") match {
-          case n: CypherNode[_] => n.toZeppelinJson
-          case notANode => throw IllegalArgumentException("a node", notANode)
-        }
-      }
+      val nodes = g.nodes("n").iterator.map(m => m("n").cast[CypherNode[_]])
 
-      val relJson = g.relationships("r").iterator.map { rel =>
-        rel("r") match {
-          case r: CypherRelationship[_] => r.toZeppelinJson
-          case notARel => throw IllegalArgumentException("a relationship", notARel)
-        }
-      }
+      val rels = g.relationships("r").iterator.map(m => m("n").cast[CypherRelationship[_]])
 
-      Js.Obj(
-        "nodes" -> nodeJsons,
-        "edges" -> relJson,
-        "labels" -> g.schema.labels.toSeq.sorted.map(l => l -> Js.Str(colorForLabel(l))),
-        "types" -> g.schema.relationshipTypes.toSeq.sorted.map(Js.Str),
-        "directed" -> Js.True
+      ZeppelinGraph.toZeppelinJson(
+        nodes, rels, g.schema.labels, g.schema.relationshipTypes
       )
     }
-
-    private def colorForLabel(label: String): String = {
-      val rand = new Random(label.hashCode)
-      val r = rand.nextInt(255)
-      val g = rand.nextInt(255)
-      val b = rand.nextInt(255)
-      s"#${r.toHexString}${g.toHexString}${b.toHexString}"
-    }
   }
-
 }
