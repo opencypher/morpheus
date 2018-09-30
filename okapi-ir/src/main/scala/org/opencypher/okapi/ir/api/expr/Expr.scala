@@ -414,6 +414,13 @@ final case class Equals(lhs: Expr, rhs: Expr)(val cypherType: CypherType = CTWil
   override def withCypherType(ct: CypherType): Equals = copy()(ct)
 }
 
+final case class RegexMatch(lhs: Expr, rhs: Expr) extends BinaryExpr {
+  override def op: String = "=~"
+  override type This = RegexMatch
+  override def cypherType: CypherType = if((lhs.cypherType join rhs.cypherType).isNullable) CTBoolean.nullable else CTBoolean
+  override def withCypherType(ct: CypherType): RegexMatch = this
+}
+
 final case class LessThan(lhs: Expr, rhs: Expr)(val cypherType: CypherType = CTWildcard) extends BinaryExpr {
 
   override type This = LessThan

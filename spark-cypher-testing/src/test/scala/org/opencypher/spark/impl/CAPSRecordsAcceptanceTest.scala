@@ -28,6 +28,7 @@ package org.opencypher.spark.impl
 
 import org.apache.spark.sql.Row
 import org.opencypher.okapi.api.table.CypherRecords
+import org.opencypher.okapi.api.value.CypherValue
 import org.opencypher.okapi.api.value.CypherValue.CypherMap
 import org.opencypher.okapi.neo4j.io.MetaLabelSupport._
 import org.opencypher.okapi.relational.api.graph.RelationalCypherGraph
@@ -99,6 +100,36 @@ class CAPSRecordsAcceptanceTest extends CAPSTestSuite with CAPSNeo4jServerFixtur
 
     // Then
     result.records shouldHaveSize 3 // andContain "Christopher Nolan"
+  }
+
+  it("filter rels on property regular expression") {
+    // Given
+    val query = """MATCH (a:Actor)-[r:ACTED_IN]->() WHERE r.charactername =~ '(\\w+\\s*)*Du\\w+' RETURN r.charactername"""
+
+    // When
+    val result = graph.cypher(query)
+
+    // Then
+    val records = result.records.collect
+    records.toBag should equal(Bag(CypherMap("r.charactername" -> "Henri Ducard"),
+      CypherMap("r.charactername" -> "Albus Dumbledore")))
+  }
+
+  it("filter nodes on property regular expression") {
+    // Given
+    val query = """MATCH (p:Person) WHERE p.name =~ '\\w+ Redgrave' RETURN p.name"""
+
+    // When
+    val result = graph.cypher(query)
+
+    // Then
+    val records = result.records.collect
+    records.toBag should equal(Bag(CypherMap("p.name" -> "Michael Redgrave"),
+      CypherMap("p.name" -> "Vanessa Redgrave"),
+      CypherMap("p.name" -> "Corin Redgrave"),
+      CypherMap("p.name" -> "Jemma Redgrave"),
+      CypherMap("p.name" -> "Roy Redgrave")))
+
   }
 
   it("expand and project, three properties") {

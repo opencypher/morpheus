@@ -82,6 +82,11 @@ object SparkSQLExprMapper {
       */
     def asSparkSQLExpr(implicit header: RecordHeader, df: DataFrame, parameters: CypherMap): Column = {
 
+      def rlike(lhs: Expr, name: String): Column = {
+        val regex: String = parameters(name).unwrap.toString
+        lhs.asSparkSQLExpr.rlike(regex)
+      }
+
       expr match {
 
         // context based lookups
@@ -157,6 +162,10 @@ object SparkSQLExprMapper {
           lhs.asSparkSQLExpr.endsWith(rhs.asSparkSQLExpr)
         case Contains(lhs, rhs) =>
           lhs.asSparkSQLExpr.contains(rhs.asSparkSQLExpr)
+
+        case RegexMatch(prop, Param(name)) => rlike(prop, name)
+        case RegexMatch(Param(name), prop) => rlike(prop, name)
+
 
         // Arithmetics
         case Add(lhs, rhs) =>

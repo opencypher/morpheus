@@ -29,13 +29,14 @@ package org.opencypher.okapi.ir.impl
 import org.opencypher.okapi.api.types._
 import org.opencypher.okapi.impl.exception.NotImplementedException
 import org.opencypher.okapi.ir.api.expr._
-import org.opencypher.okapi.ir.api.{CypherQuery, Label, PropertyKey, RelType}
+import org.opencypher.okapi.ir.api._
 import org.opencypher.okapi.ir.impl.FunctionUtils._
-import org.opencypher.v9_0.expressions.functions
+import org.opencypher.v9_0.expressions.{RegexMatch, functions}
 import org.opencypher.v9_0.util.Ref
 import org.opencypher.v9_0.{expressions => ast}
 
 import scala.language.implicitConversions
+import scala.util.parsing.combinator.token.StdTokens
 
 final class ExpressionConverter(implicit context: IRBuilderContext) {
 
@@ -144,6 +145,8 @@ final class ExpressionConverter(implicit context: IRBuilderContext) {
       MapExpression(convertedItems)(typings(e))
 
     case ast.Null() => NullLit(typings(e))
+
+    case RegexMatch(lhs, rhs) => expr.RegexMatch(convert(lhs), convert(rhs))
 
     case _ =>
       throw NotImplementedException(s"Not yet able to convert expression: $e")
