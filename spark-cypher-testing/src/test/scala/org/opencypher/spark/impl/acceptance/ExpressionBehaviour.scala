@@ -31,6 +31,8 @@ import org.opencypher.okapi.api.value.CypherValue.CypherMap
 import org.opencypher.okapi.testing.Bag
 import org.opencypher.spark.testing.CAPSTestSuite
 import org.scalatest.DoNotDiscover
+import org.opencypher.okapi.testing.Bag
+import org.opencypher.okapi.testing.Bag._
 
 @DoNotDiscover
 class ExpressionBehaviour extends CAPSTestSuite with DefaultGraphInit {
@@ -159,6 +161,78 @@ class ExpressionBehaviour extends CAPSTestSuite with DefaultGraphInit {
         CypherMap("eq" -> null),
         CypherMap("eq" -> null)
       ))
+    }
+
+    it("filter rels on property regular expression") {
+      // Given
+      val given = initGraph("""CREATE (rachel:Person:Actor {name: 'Rachel Kempson', birthyear: 1910})
+                              |CREATE (michael:Person:Actor {name: 'Michael Redgrave', birthyear: 1908})
+                              |CREATE (corin:Person:Actor {name: 'Corin Redgrave', birthyear: 1939})
+                              |CREATE (liam:Person:Actor {name: 'Liam Neeson', birthyear: 1952})
+                              |CREATE (richard:Person:Actor {name: 'Richard Harris', birthyear: 1930})
+                              |CREATE (dennis:Person:Actor {name: 'Dennis Quaid', birthyear: 1954})
+                              |CREATE (lindsay:Person:Actor {name: 'Lindsay Lohan', birthyear: 1986})
+                              |CREATE (jemma:Person:Actor {name: 'Jemma Redgrave', birthyear: 1965})
+                              |
+                              |CREATE (mrchips:Film {title: 'Goodbye, Mr. Chips'})
+                              |CREATE (batmanbegins:Film {title: 'Batman Begins'})
+                              |CREATE (harrypotter:Film {title: 'Harry Potter and the Sorcerer\'s Stone'})
+                              |CREATE (parent:Film {title: 'The Parent Trap'})
+                              |CREATE (camelot:Film {title: 'Camelot'})
+                              |
+                              |CREATE (michael)-[:ACTED_IN {charactername: 'The Headmaster'}]->(mrchips),
+                              |       (richard)-[:ACTED_IN {charactername: 'King Arthur'}]->(camelot),
+                              |       (richard)-[:ACTED_IN {charactername: 'Albus Dumbledore'}]->(harrypotter),
+                              |       (dennis)-[:ACTED_IN {charactername: 'Nick Parker'}]->(parent),
+                              |       (lindsay)-[:ACTED_IN {charactername: 'Halle/Annie'}]->(parent),
+                              |       (liam)-[:ACTED_IN {charactername: 'Henri Ducard'}]->(batmanbegins)
+                            """.stripMargin)
+
+      // When
+      val query = """MATCH (a:Actor)-[r:ACTED_IN]->() WHERE r.charactername =~ '(\\w+\\s*)*Du\\w+' RETURN r.charactername"""
+      val result = given.cypher(query)
+
+      // Then
+      val records = result.records.collect
+      records.toBag should equal(Bag(CypherMap("r.charactername" -> "Henri Ducard"),
+        CypherMap("r.charactername" -> "Albus Dumbledore")))
+    }
+
+    it("filter nodes on property regular expression") {
+      // Given
+      val given = initGraph("""CREATE (rachel:Person:Actor {name: 'Rachel Kempson', birthyear: 1910})
+                              |CREATE (michael:Person:Actor {name: 'Michael Redgrave', birthyear: 1908})
+                              |CREATE (corin:Person:Actor {name: 'Corin Redgrave', birthyear: 1939})
+                              |CREATE (liam:Person:Actor {name: 'Liam Neeson', birthyear: 1952})
+                              |CREATE (richard:Person:Actor {name: 'Richard Harris', birthyear: 1930})
+                              |CREATE (dennis:Person:Actor {name: 'Dennis Quaid', birthyear: 1954})
+                              |CREATE (lindsay:Person:Actor {name: 'Lindsay Lohan', birthyear: 1986})
+                              |CREATE (jemma:Person:Actor {name: 'Jemma Redgrave', birthyear: 1965})
+                              |
+                              |CREATE (mrchips:Film {title: 'Goodbye, Mr. Chips'})
+                              |CREATE (batmanbegins:Film {title: 'Batman Begins'})
+                              |CREATE (harrypotter:Film {title: 'Harry Potter and the Sorcerer\'s Stone'})
+                              |CREATE (parent:Film {title: 'The Parent Trap'})
+                              |CREATE (camelot:Film {title: 'Camelot'})
+                              |
+                              |CREATE (michael)-[:ACTED_IN {charactername: 'The Headmaster'}]->(mrchips),
+                              |       (richard)-[:ACTED_IN {charactername: 'King Arthur'}]->(camelot),
+                              |       (richard)-[:ACTED_IN {charactername: 'Albus Dumbledore'}]->(harrypotter),
+                              |       (dennis)-[:ACTED_IN {charactername: 'Nick Parker'}]->(parent),
+                              |       (lindsay)-[:ACTED_IN {charactername: 'Halle/Annie'}]->(parent),
+                              |       (liam)-[:ACTED_IN {charactername: 'Henri Ducard'}]->(batmanbegins)
+                            """.stripMargin)
+
+      // When
+      val query = """MATCH (p:Person) WHERE p.name =~ '\\w+ Redgrave' RETURN p.name"""
+      val result = given.cypher(query)
+
+      // Then
+      val records = result.records.collect
+      records.toBag should equal(Bag(CypherMap("p.name" -> "Michael Redgrave"),
+        CypherMap("p.name" -> "Corin Redgrave"),
+        CypherMap("p.name" -> "Jemma Redgrave")))
+
     }
   }
 
