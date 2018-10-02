@@ -1,0 +1,80 @@
+{
+    "version": 1,
+    "labelPropertyMap": [
+        {
+            "labels": [
+                "AccountHolder"
+            ],
+            "properties": {
+                "accountHolderId": "STRING"
+            }
+        },
+        {
+            "labels": [
+                "Interaction"
+            ],
+            "properties": {
+                "interactionId": "INTEGER",
+                "date": "STRING",
+                "type": "STRING",
+                "outcomeScore": "STRING"
+            }
+        },
+        {
+            "labels": [
+                "Policy"
+            ],
+            "properties": {
+                "policyAccountNumber": "STRING"
+            }
+        },
+        {
+            "labels": [
+                "CustomerRep"
+            ],
+            "properties": {
+                "empNo": "INTEGER",
+                "empName": "STRING"
+            }
+        },
+        {
+            "labels": [
+                "Customer"
+            ],
+            "properties": {
+                "customerIdx": "INTEGER",
+                "customerId": "STRING",
+                "customerName": "STRING"
+            }
+        }
+    ],
+    "relTypePropertyMap": [
+        {
+            "relType": "HAS_CUSTOMER",
+            "properties": {
+                
+            }
+        },
+        {
+            "relType": "HAS_POLICY",
+            "properties": {
+                
+            }
+        },
+        {
+            "relType": "HAS_CUSTOMER_REP",
+            "properties": {
+                
+            }
+        },
+        {
+            "relType": "HAS_ACCOUNT_HOLDER",
+            "properties": {
+                
+            }
+        }
+    ],
+    "schemaPatterns": [
+        
+    ]
+}
