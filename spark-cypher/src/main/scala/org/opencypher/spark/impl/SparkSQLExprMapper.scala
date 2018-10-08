@@ -158,6 +158,12 @@ object SparkSQLExprMapper {
         case Contains(lhs, rhs) =>
           lhs.asSparkSQLExpr.contains(rhs.asSparkSQLExpr)
 
+        case RegexMatch(prop, Param(name)) => {
+          val regex: String = parameters(name).unwrap.toString
+          prop.asSparkSQLExpr.rlike(regex)
+        }
+
+
         // Arithmetics
         case Add(lhs, rhs) =>
           val lhsCT = lhs.cypherType

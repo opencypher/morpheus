@@ -28,6 +28,7 @@ package org.opencypher.spark.impl
 
 import org.apache.spark.sql.Row
 import org.opencypher.okapi.api.table.CypherRecords
+import org.opencypher.okapi.api.value.CypherValue
 import org.opencypher.okapi.api.value.CypherValue.CypherMap
 import org.opencypher.okapi.neo4j.io.MetaLabelSupport._
 import org.opencypher.okapi.relational.api.graph.RelationalCypherGraph
