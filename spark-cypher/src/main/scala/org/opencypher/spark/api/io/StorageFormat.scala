@@ -1,0 +1,59 @@
+/*
+ * Copyright (c) 2016-2018 "Neo4j Sweden, AB" [https://neo4j.com]
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ *
+ * Attribution Notice under the terms of the Apache License 2.0
+ *
+ * This work was created by the collective efforts of the openCypher community.
+ * Without limiting the terms of Section 6, any Derivative Work that is not
+ * approved by the public consensus process of the openCypher Implementers Group
+ * should not be described as “Cypher” (and Cypher® is a registered trademark of
+ * Neo4j Inc.) or as "openCypher". Extensions by implementers or prototypes or
+ * proposals for change that have been documented or implemented should only be
+ * described as "implementation extensions to Cypher" or as "proposed changes to
+ * Cypher that are not yet approved by the openCypher community".
+ */
+package org.opencypher.spark.api.io
+
+import org.opencypher.okapi.impl.exception.IllegalArgumentException
+
+sealed trait StorageFormat {
+  def name: String = getClass.getSimpleName.dropRight(7).toLowerCase
+}
+
+case object CsvFormat extends StorageFormat
+
+case object AvroFormat extends StorageFormat
+
+case object ParquetFormat extends StorageFormat
+
+case object OrcFormat extends StorageFormat
+
+case object JdbcFormat extends StorageFormat
+
+case object HiveFormat extends StorageFormat
+
+object StorageFormat {
+  private val storageFormatMap = Map(
+    AvroFormat.name -> AvroFormat,
+    CsvFormat.name -> CsvFormat,
+    ParquetFormat.name -> ParquetFormat,
+    OrcFormat.name -> OrcFormat,
+    JdbcFormat.name -> JdbcFormat,
+    HiveFormat.name -> HiveFormat
+  )
+
+  def apply(name: String): StorageFormat = storageFormatMap.getOrElse(name,
+      throw IllegalArgumentException(s"A supported storage format (one of ${storageFormatMap.keys.mkString("[", ", ", "]")})", name))
+}

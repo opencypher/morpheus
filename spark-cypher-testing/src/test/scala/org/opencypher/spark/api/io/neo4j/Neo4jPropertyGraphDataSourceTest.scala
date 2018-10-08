@@ -121,4 +121,14 @@ class Neo4jPropertyGraphDataSourceTest
      "Could not write the graph to Neo4j. The graph you are attempting to write contains at least two nodes with CAPS id 1"
     )
   }
+
+  it("foo") {
+    neo4jConfig.cypher(s"""CREATE (:A:${metaPrefix}test)-[:EDGE { foo : 1234}]->(:B:${metaPrefix}test)-[:EDGE { Foo : 1234}]->(:C:${metaPrefix}test)""")
+    neo4jConfig.cypher(s"""MATCH ()-[e:EDGE]->() WHERE e.foo = 1234 DELETE e""")
+
+    val dataSource = CypherGraphSources.neo4j(neo4jConfig)
+    val graph = dataSource.graph(GraphName("test")).asCaps
+
+    graph.relationships("r").show
+  }
 }
