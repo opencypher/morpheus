@@ -41,3 +41,21 @@ class LocalCsvDataSourceAcceptance extends LocalDataSourceAcceptance {
   }
 
 }
+
+class LocalOrcDataSourceAcceptance extends LocalDataSourceAcceptance {
+
+  override protected def createDs(graph: RelationalCypherGraph[DataFrameTable]): CAPSPropertyGraphDataSource = {
+    GraphSources.fs("file://" + Paths.get(tempDir.getRoot.getAbsolutePath)).orc
+  }
+
+}
+
+class LocalParquetDataSourceAcceptance extends LocalDataSourceAcceptance {
+
+  override protected def createDs(graph: RelationalCypherGraph[DataFrameTable]): CAPSPropertyGraphDataSource = {
+    GraphSources.fs("file://" + Paths.get(tempDir.getRoot.getAbsolutePath)).parquet
+  }
+
+}
+
+

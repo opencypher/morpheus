@@ -26,7 +26,6 @@
  */
 package org.opencypher.spark.api.io.csv
 
-import org.apache.hadoop.conf.Configuration
 import org.opencypher.okapi.relational.api.graph.RelationalCypherGraph
 import org.opencypher.spark.api.GraphSources
 import org.opencypher.spark.api.io.fs.hdfs.HdfsDataSourceAcceptance
@@ -35,16 +34,24 @@ import org.opencypher.spark.impl.table.SparkTable.DataFrameTable
 
 class HdfsCsvDataSourceAcceptance extends HdfsDataSourceAcceptance {
 
-  // Set an incompatible default filesystem to ensure that picking the right filesystem based on the protocol works
-  override def clusterConfig: Configuration = {
-    val cfg = super.clusterConfig
-    val incompatibleDefault = s"s3a://bucket/"
-    cfg.set("fs.defaultFS", incompatibleDefault)
-    cfg
-  }
-
   override protected def createDs(graph: RelationalCypherGraph[DataFrameTable]): CAPSPropertyGraphDataSource = {
     GraphSources.fs(hdfsURI.toString).csv
+  }
+
+}
+
+class HdfsOrcDataSourceAcceptance extends HdfsDataSourceAcceptance {
+
+  override protected def createDs(graph: RelationalCypherGraph[DataFrameTable]): CAPSPropertyGraphDataSource = {
+    GraphSources.fs(hdfsURI.toString).orc
+  }
+
+}
+
+class HdfsParquetDataSourceAcceptance extends HdfsDataSourceAcceptance {
+
+  override protected def createDs(graph: RelationalCypherGraph[DataFrameTable]): CAPSPropertyGraphDataSource = {
+    GraphSources.fs(hdfsURI.toString).parquet
   }
 
 }

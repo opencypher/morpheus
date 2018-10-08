@@ -48,17 +48,31 @@ import org.apache.spark.sql.SparkSession
 
 object TestSparkSession {
 
+  import java.nio.file.Files
+
+  private val warehouseDir = Files
+    .createTempDirectory(s"spark-warehouse-${UUID.randomUUID()}")
+    .toUri
+    .toString
+
   lazy val instance: SparkSession = {
     val conf = new SparkConf(true)
 
     conf.set("spark.sql.codegen.wholeStage", "true")
     conf.set("spark.sql.shuffle.partitions", "5")
-//    setting for debug
-//    conf.set("spark.sql.shuffle.partitions", "1")
-//    conf.set("spark.default.parallelism", "1")
-//    performance
-//    conf.set("spark.sql.inMemoryColumnarStorage.compressed", "false")
-//    conf.set("spark.submit.deployMode", "client")
+    //    setting for debug
+    //    conf.set("spark.sql.shuffle.partitions", "1")
+    //    conf.set("spark.default.parallelism", "1")
+    //    performance
+    //    conf.set("spark.sql.inMemoryColumnarStorage.compressed", "false")
+    //    conf.set("spark.submit.deployMode", "client")
+
+    // Required for Hive enabled GraphSource testing
+    conf.set("spark.sql.warehouse.dir", warehouseDir)
+    // We just want to use an in-memory Hive Metastore for unit tests
+    // Note the Derby database is one of the databases that work out of the box.
+    conf.set("javax.jdo.option.ConnectionURL", "jdbc:derby:memory:hms;create=true")
+    conf.set("javax.jdo.option.ConnectionDriverName", "org.apache.derby.jdbc.EmbeddedDriver")
 
     //
     // If this is slow, you might be hitting: http://bugs.java.com/view_bug.do?bug_id=8077102
@@ -68,6 +82,7 @@ object TestSparkSession {
       .config(conf)
       .master("local[*]")
       .appName(s"cypher-for-apache-spark-tests-${UUID.randomUUID()}")
+      .enableHiveSupport()
       .getOrCreate()
 
     session.sparkContext.setLogLevel("WARN")
