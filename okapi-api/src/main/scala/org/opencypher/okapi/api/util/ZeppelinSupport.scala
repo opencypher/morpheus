@@ -350,8 +350,7 @@ object ZeppelinSupport {
       */
     def toZeppelinJson: Js.Value = {
       val nodes = g.nodes("n").iterator.map(m => m("n").cast[CypherNode[_]])
-
-      val rels = g.relationships("r").iterator.map(m => m("n").cast[CypherRelationship[_]])
+      val rels = g.relationships("r").iterator.map(m => m("r").cast[CypherRelationship[_]])
 
       ZeppelinGraph.toZeppelinJson(
         nodes, rels, g.schema.labels, g.schema.relationshipTypes
