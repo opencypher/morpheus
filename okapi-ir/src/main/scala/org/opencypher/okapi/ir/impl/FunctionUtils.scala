@@ -66,6 +66,8 @@ object FunctionUtils {
         case functions.Log10 => Log10(expr.head)(cypherType)
         case functions.Exp => Exp(expr.head)(cypherType)
         case functions.E => E()(cypherType)
+        case functions.Pi => Pi()(cypherType)
+
         // Numeric functions
         case functions.Abs => Abs(expr.head)(cypherType)
         case functions.Ceil => Ceil(expr.head)(cypherType)

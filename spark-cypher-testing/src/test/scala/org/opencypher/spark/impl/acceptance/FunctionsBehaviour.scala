@@ -653,6 +653,19 @@ class FunctionsBehaviour extends CAPSTestSuite with DefaultGraphInit {
         )
       }
     }
+
+    describe("pi()") {
+      it("returns pi") {
+
+        val result = caps.cypher("RETURN pi() AS res")
+
+        result.records.toMaps should equal(
+          Bag(
+            CypherMap("res" -> Math.PI)
+          )
+        )
+      }
+    }
   }
 
     describe("numeric functions") {
