@@ -731,59 +731,59 @@ final case class Sqrt(expr: Expr)(val cypherType: CypherType = CTWildcard) exten
   override def withCypherType(ct: CypherType): Sqrt = copy()(ct)
 }
 
-final case class Log(expr: Expr)(var cypherType: CypherType = CTWildcard) extends UnaryFunctionExpr {
+final case class Log(expr: Expr)(val cypherType: CypherType = CTWildcard) extends UnaryFunctionExpr {
   override type This = Log
   override def withCypherType(ct: CypherType): Log = copy()(ct)
 }
 
-final case class Log10(expr: Expr)(var cypherType: CypherType = CTWildcard) extends UnaryFunctionExpr {
+final case class Log10(expr: Expr)(val cypherType: CypherType = CTWildcard) extends UnaryFunctionExpr {
   override type This = Log10
   override def withCypherType(ct: CypherType): Log10 = copy()(ct)
 }
 
-final case class Exp(expr: Expr)(var cypherType: CypherType = CTWildcard) extends UnaryFunctionExpr {
+final case class Exp(expr: Expr)(val cypherType: CypherType = CTWildcard) extends UnaryFunctionExpr {
   override type This = Exp
   override def withCypherType(ct: CypherType): Exp = copy()(ct)
 }
 
-final case class E()(var cypherType: CypherType = CTWildcard) extends NullaryFunctionExpr {
+final case class E()(val cypherType: CypherType = CTWildcard) extends NullaryFunctionExpr {
   override type This = E
   override def withCypherType(ct: CypherType): E = copy()(ct)
 }
 
-final case class Pi()(var cypherType: CypherType = CTWildcard) extends NullaryFunctionExpr {
+final case class Pi()(val cypherType: CypherType = CTWildcard) extends NullaryFunctionExpr {
   override type This = Pi
   override def withCypherType(ct: CypherType): Pi = copy()(ct)
 }
 
 // Numeric functions
 
-final case class Abs(expr: Expr)(var cypherType: CypherType = CTWildcard) extends UnaryFunctionExpr {
+final case class Abs(expr: Expr)(val cypherType: CypherType = CTWildcard) extends UnaryFunctionExpr {
   override type This = Abs
   override def withCypherType(ct: CypherType): Abs = copy()(ct)
 }
 
-final case class Ceil(expr: Expr)(var cypherType: CypherType = CTWildcard) extends UnaryFunctionExpr {
+final case class Ceil(expr: Expr)(val cypherType: CypherType = CTWildcard) extends UnaryFunctionExpr {
   override type This = Ceil
   override def withCypherType(ct: CypherType): Ceil = copy()(ct)
 }
 
-final case class Floor(expr: Expr)(var cypherType: CypherType = CTWildcard) extends UnaryFunctionExpr {
+final case class Floor(expr: Expr)(val cypherType: CypherType = CTWildcard) extends UnaryFunctionExpr {
   override type This = Floor
   override def withCypherType(ct: CypherType): Floor = copy()(ct)
 }
 
-final case class Rand()(var cypherType: CypherType = CTWildcard) extends NullaryFunctionExpr {
+final case class Rand()(val cypherType: CypherType = CTWildcard) extends NullaryFunctionExpr {
   override type This = Rand
   override def withCypherType(ct: CypherType): Rand = copy()(ct)
 }
 
-final case class Round(expr: Expr)(var cypherType: CypherType = CTWildcard) extends UnaryFunctionExpr {
+final case class Round(expr: Expr)(val cypherType: CypherType = CTWildcard) extends UnaryFunctionExpr {
   override type This = Round
   override def withCypherType(ct: CypherType): Round = copy()(ct)
 }
 
-final case class Sign(expr: Expr)(var cypherType: CypherType = CTWildcard) extends UnaryFunctionExpr {
+final case class Sign(expr: Expr)(val cypherType: CypherType = CTWildcard) extends UnaryFunctionExpr {
   override type This = Sign
   override def withCypherType(ct: CypherType): Sign = copy()(ct)
 }
