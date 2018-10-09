@@ -1,9 +1,34 @@
 package org.opencypher.sql.ddl
 
+import fastparse.core.Parsed.{Failure, Success}
+import org.opencypher.okapi.api.types.CTString
 import org.opencypher.okapi.testing.BaseTestSuite
 import org.scalatest.mockito.MockitoSugar
 
 class DdlSchemaTest extends BaseTestSuite with MockitoSugar {
+
+  describe("property types") {
+    it("parses valid property types") {
+      DdlParser.propertyType.parse("STRING") should matchPattern { case Success(CTString, _) => }
+    }
+
+    it("parses valid nullable property types") {
+      DdlParser.propertyType.parse("STRING?") should matchPattern { case Success(CTString.nullable, _) => }
+    }
+
+    it("fails parsing invalid property types") {
+      DdlParser.propertyType.parse("FOOBAR") should matchPattern { case Failure(_, _, _) => }
+    }
+  }
+
+  it("parses CATALOG statements") {
+    val sqlDDL = "CATALOG CREATE LABEL (A {name: STRING})"
+
+    val ddl = DdlParser.parse(sqlDDL)
+
+    ddl.show()
+  }
+
 
   it("parses correct schema") {
     val sqlDdl =

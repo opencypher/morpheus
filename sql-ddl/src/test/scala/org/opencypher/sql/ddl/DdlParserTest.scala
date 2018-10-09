@@ -28,7 +28,7 @@ package org.opencypher.sql.ddl
 
 object DdlParserTest extends App {
 
-  DdlParser.parse(testDdl)
+  DdlParser.parse(testDdl).show()
 
   def testDdl =
     """|CREATE GRAPH interactions WITH SCHEMA (

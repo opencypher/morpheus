@@ -28,6 +28,8 @@ package org.opencypher.sql.ddl
 
 import fastparse.WhitespaceApi
 import fastparse.core.Parsed.{Failure, Success}
+import org.opencypher.okapi.api.types.CypherType
+import org.opencypher.okapi.impl.exception.IllegalArgumentException
 
 object DdlParser {
 
@@ -47,11 +49,26 @@ object DdlParser {
   val character = P(CharIn('a' to 'z', 'A' to 'Z'))
   val identifier = P(character ~ P(character | digit | "_").repX)
 
+  val cypherType = P(
+    (IgnoreCase("STRING")
+      | IgnoreCase("INTEGER")
+      | IgnoreCase("FLOAT")
+      | IgnoreCase("BOOLEAN")
+    ) ~ "?".?)
+
+  val propertyType: P[CypherType] = P(cypherType.!).map { s =>
+    CypherType.fromName(s) match {
+      case Some(ct) => ct
+      case None => throw IllegalArgumentException("Supported CypherType", s)
+    }
+  }
+
   val property: P[Property] = {
     val propertyName = identifier.!
     val propertyType = identifier.!.map(PropertyType.apply)
     P(propertyName ~ propertyType).map(Property.tupled)
   }
+
 
   object PropertyType {
     def apply(name: String): PropertyType = {

@@ -29,7 +29,7 @@ package org.opencypher.sql.ddl
 import org.opencypher.okapi.trees.AbstractTreeNode
 
 case class Ddl(
-  labelDeclarations: List[LabelDeclaration],
+//  labelDeclarations: List[LabelDeclaration],
   graphDeclarations: List[GraphDeclaration],
   labelsForTablesMapping: LabelsForTablesMapping
 ) extends DdlAst
