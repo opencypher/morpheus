@@ -68,6 +68,7 @@ object TestSparkSession {
       .config(conf)
       .master("local[*]")
       .appName(s"cypher-for-apache-spark-tests-${UUID.randomUUID()}")
+      .enableHiveSupport()
       .getOrCreate()
 
     session.sparkContext.setLogLevel("WARN")
