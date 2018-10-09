@@ -26,23 +26,9 @@
  */
 package org.opencypher.sql.ddl
 
-import fastparse.core.Parsed.{Failure, Success}
-import org.opencypher.sql.ddl.DdlParser.ddl
-
 object DdlParserTest extends App {
 
-  ddl.parse(testDdl) match {
-    case Success(v, _) => v.show()
-    case Failure(p, index, extra) =>
-      val i = extra.input
-      val before = index - math.max(index - 20, 0)
-      val after = math.min(index + 20, i.length) - index
-      println(extra.input.slice(index - before, index + after).replace('\n', ' '))
-      println("~" * before + "^" + "~" * after)
-      println(s"failed parser: $p at index $index")
-      println(s"stack=${extra.traced.stack}")
-      println(extra.traced.trace)
-  }
+  DdlParser.parse(testDdl)
 
   def testDdl =
     """|CREATE GRAPH interactions WITH SCHEMA (

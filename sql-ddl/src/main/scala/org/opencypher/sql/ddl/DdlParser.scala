@@ -27,6 +27,7 @@
 package org.opencypher.sql.ddl
 
 import fastparse.WhitespaceApi
+import fastparse.core.Parsed.{Failure, Success}
 
 object DdlParser {
 
@@ -45,13 +46,6 @@ object DdlParser {
   val digit = P(CharIn('0' to '9'))
   val character = P(CharIn('a' to 'z', 'A' to 'Z'))
   val identifier = P(character ~ P(character | digit | "_").repX)
-
-  //  case class Schema(maybeDatabaseName: Option[String], schemaName: String) extends DdlAst
-  //  val setSchema: Parser[Schema] = {
-  //    val maybeDatabaseName = (identifier.! ~ ".").?
-  //    val schemaName = identifier.!
-  //    P("SET SCHEMA" ~ maybeDatabaseName ~ schemaName ~ ";").map(Schema.tupled)
-  //  }
 
   val property: P[Property] = {
     val propertyName = identifier.!
@@ -138,11 +132,22 @@ object DdlParser {
     ).map(LabelsForTablesMapping.tupled)
   }
 
-  case class Ddl(
-    graphDeclarations: List[GraphDeclaration],
-    labelsForTablesMapping: LabelsForTablesMapping
-  ) extends DdlAst
-
   val ddl = P(graphDeclaration.rep(min = 1).map(_.toList) ~ labelsForTablesMapping).map(Ddl.tupled)
+
+  def parse(ddlString: String): Ddl = {
+    ddl.parse(ddlString) match {
+      case Success(v, _) => v
+      case Failure(p, index, extra) =>
+        val i = extra.input
+        val before = index - math.max(index - 20, 0)
+        val after = math.min(index + 20, i.length) - index
+        println(extra.input.slice(index - before, index + after).replace('\n', ' '))
+        println("~" * before + "^" + "~" * after)
+        println(s"failed parser: $p at index $index")
+        println(s"stack=${extra.traced.stack}")
+        // TODO: Throw a helpful parsing error
+        throw new Exception("TODO")
+    }
+  }
 
 }
