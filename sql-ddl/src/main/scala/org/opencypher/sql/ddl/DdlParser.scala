@@ -57,28 +57,13 @@ object DdlParser {
     ) ~ "?".?)
 
   val propertyType: P[CypherType] = P(cypherType.!).map { s =>
-    CypherType.fromName(s) match {
+    CypherType.fromName(s.toUpperCase) match {
       case Some(ct) => ct
       case None => throw IllegalArgumentException("Supported CypherType", s)
     }
   }
 
-  val property: P[Property] = {
-    val propertyName = identifier.!
-    val propertyType = identifier.!.map(PropertyType.apply)
-    P(propertyName ~ propertyType).map(Property.tupled)
-  }
-
-
-  object PropertyType {
-    def apply(name: String): PropertyType = {
-      name match {
-        case "STRING" => StringType
-        case "INTEGER" => IntegerType
-        case other => throw new UnsupportedOperationException(s"Property type $other")
-      }
-    }
-  }
+  val property: P[Property] = P(identifier.! ~ ":" ~ propertyType).map(Property.tupled)
 
   val labelDeclaration = {
     val labelName = identifier.!

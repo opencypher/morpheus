@@ -26,6 +26,7 @@
  */
 package org.opencypher.sql.ddl
 
+import org.opencypher.okapi.api.types.CypherType
 import org.opencypher.okapi.trees.AbstractTreeNode
 
 case class Ddl(
@@ -42,7 +43,7 @@ case object StringType extends PropertyType
 
 case object IntegerType extends PropertyType
 
-case class Property(key: String, propertyType: PropertyType) extends DdlAst
+case class Property(key: String, propertyType: CypherType) extends DdlAst
 
 case class LabelDeclaration(name: String, properties: List[Property]) extends DdlAst
 

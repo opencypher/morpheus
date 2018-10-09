@@ -1,23 +1,42 @@
 package org.opencypher.sql.ddl
 
 import fastparse.core.Parsed.{Failure, Success}
-import org.opencypher.okapi.api.types.CTString
+import org.opencypher.okapi.api.types.{CTFloat, CTString}
 import org.opencypher.okapi.testing.BaseTestSuite
 import org.scalatest.mockito.MockitoSugar
+import DdlParser._
 
 class DdlSchemaTest extends BaseTestSuite with MockitoSugar {
 
   describe("property types") {
     it("parses valid property types") {
-      DdlParser.propertyType.parse("STRING") should matchPattern { case Success(CTString, _) => }
+      propertyType.parse("STRING") should matchPattern { case Success(CTString, _) => }
+    }
+
+    it("parses valid property types ignoring the case") {
+      propertyType.parse("StRiNg") should matchPattern { case Success(CTString, _) => }
     }
 
     it("parses valid nullable property types") {
-      DdlParser.propertyType.parse("STRING?") should matchPattern { case Success(CTString.nullable, _) => }
+      propertyType.parse("STRING?") should matchPattern { case Success(CTString.nullable, _) => }
     }
 
     it("fails parsing invalid property types") {
-      DdlParser.propertyType.parse("FOOBAR") should matchPattern { case Failure(_, _, _) => }
+      propertyType.parse("FOOBAR") should matchPattern { case Failure(_, _, _) => }
+    }
+  }
+
+  describe("properties") {
+    it("parses valid properties") {
+      property.parse("key : FLOAT") should matchPattern { case Success(Property("key", CTFloat), _) => }
+    }
+
+    it("parses valid nullable properties") {
+      property.parse("key : FLOAT?") should matchPattern { case Success(Property("key", CTFloat.nullable), _) => }
+    }
+
+    it("fails parsing invalid properties") {
+      property.parse("key _ STRING") should matchPattern { case Failure(_, _, _) => }
     }
   }
 
@@ -60,13 +79,13 @@ class DdlSchemaTest extends BaseTestSuite with MockitoSugar {
     ddl.show()
 
 
-//    sqlGraphSource(sqlDdl).schema(GraphName("myGraph")).get should equal(
-//      Schema.empty.withNodePropertyKeys("A")("name" -> CTString)
-//        .withNodePropertyKeys("B")("sequence" -> CTInteger, "nationality" -> CTString.nullable, "age" -> CTInteger.nullable)
-//        .withNodePropertyKeys("A", "B")("name" -> CTString, "sequence" -> CTInteger, "nationality" -> CTString.nullable, "age" -> CTInteger.nullable)
-//        .withRelationshipPropertyKeys("TYPE_1")()
-//        .withRelationshipPropertyKeys("TYPE_2")("prop" -> CTBoolean.nullable)
-//    )
+    //    sqlGraphSource(sqlDdl).schema(GraphName("myGraph")).get should equal(
+    //      Schema.empty.withNodePropertyKeys("A")("name" -> CTString)
+    //        .withNodePropertyKeys("B")("sequence" -> CTInteger, "nationality" -> CTString.nullable, "age" -> CTInteger.nullable)
+    //        .withNodePropertyKeys("A", "B")("name" -> CTString, "sequence" -> CTInteger, "nationality" -> CTString.nullable, "age" -> CTInteger.nullable)
+    //        .withRelationshipPropertyKeys("TYPE_1")()
+    //        .withRelationshipPropertyKeys("TYPE_2")("prop" -> CTBoolean.nullable)
+    //    )
   }
 
   // TODO: Enable and fix once NEN patterns are supported in Schema trait
@@ -108,14 +127,14 @@ class DdlSchemaTest extends BaseTestSuite with MockitoSugar {
         |CREATE GRAPH myGraph WITH SCHEMA mySchema
       """.stripMargin
 
-//    sqlGraphSource(sqlDdl).schema(GraphName("myGraph")).get should equal(
-//      Schema.empty.withNodePropertyKeys("A")("name" -> CTString)
-//        .withNodePropertyKeys("B")("sequence" -> CTInteger, "nationality" -> CTString.nullable, "age" -> CTInteger.nullable)
-//        .withNodePropertyKeys("A", "B")("name" -> CTString, "sequence" -> CTInteger, "nationality" -> CTString.nullable, "age" -> CTInteger.nullable)
-//        .withRelationshipPropertyKeys("TYPE_1")()
-//        .withRelationshipPropertyKeys("TYPE_2")("prop" -> CTInteger.nullable)
-//      // .withConstraint(A, TYPE_1, B) or whatever
-//    )
+    //    sqlGraphSource(sqlDdl).schema(GraphName("myGraph")).get should equal(
+    //      Schema.empty.withNodePropertyKeys("A")("name" -> CTString)
+    //        .withNodePropertyKeys("B")("sequence" -> CTInteger, "nationality" -> CTString.nullable, "age" -> CTInteger.nullable)
+    //        .withNodePropertyKeys("A", "B")("name" -> CTString, "sequence" -> CTInteger, "nationality" -> CTString.nullable, "age" -> CTInteger.nullable)
+    //        .withRelationshipPropertyKeys("TYPE_1")()
+    //        .withRelationshipPropertyKeys("TYPE_2")("prop" -> CTInteger.nullable)
+    //      // .withConstraint(A, TYPE_1, B) or whatever
+    //    )
   }
 
   it("does not accept unknown types") {
@@ -130,16 +149,16 @@ class DdlSchemaTest extends BaseTestSuite with MockitoSugar {
         |CREATE GRAPH myGraph WITH SCHEMA mySchema
       """.stripMargin
 
-//    an[IllegalArgumentException] shouldBe thrownBy {
-//      sqlGraphSource(ddl).schema(GraphName("myGraph")).get
-//    }
+    //    an[IllegalArgumentException] shouldBe thrownBy {
+    //      sqlGraphSource(ddl).schema(GraphName("myGraph")).get
+    //    }
   }
 
-//  private def sqlGraphSource(ddl: String, metaDataFinder: Option[MetaDataFinder] = None): SqlGraphSource = {
-//    val sqlDataSources: Map[QualifiedSqlName, SQLDataSource] = Map(new QualifiedSqlNameImpl("datasource", "schema") -> SQLDataSource("hive", "myname", ""))
-//
-//    implicit val session = mock[CAPSSession]
-//    new SqlGraphSource(ddl, sqlDataSources, metaDataFinder.getOrElse(SourceMetaDataFinder(sqlDataSources)))
-//  }
+  //  private def sqlGraphSource(ddl: String, metaDataFinder: Option[MetaDataFinder] = None): SqlGraphSource = {
+  //    val sqlDataSources: Map[QualifiedSqlName, SQLDataSource] = Map(new QualifiedSqlNameImpl("datasource", "schema") -> SQLDataSource("hive", "myname", ""))
+  //
+  //    implicit val session = mock[CAPSSession]
+  //    new SqlGraphSource(ddl, sqlDataSources, metaDataFinder.getOrElse(SourceMetaDataFinder(sqlDataSources)))
+  //  }
 
 }
