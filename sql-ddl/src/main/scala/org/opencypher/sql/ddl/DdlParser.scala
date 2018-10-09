@@ -65,6 +65,12 @@ object DdlParser {
 
   val property: P[Property] = P(identifier.! ~ ":" ~ propertyType).map(Property.tupled)
 
+  val properties = P("{" ~ property.rep(min = 1, sep = ",").map(_.toList) ~ "}")
+
+  val labelDefinition = P("(" ~ identifier.! ~ properties.?.map(_.getOrElse(List.empty[Property])) ~ ")").map(LabelDeclaration.tupled)
+
+  // =================================================
+
   val labelDeclaration = {
     val labelName = identifier.!
     val properties = "PROPERTIES" ~/ "(" ~/ property.rep(sep = ",").map(_.toList) ~/ ")"
@@ -101,7 +107,7 @@ object DdlParser {
       ~ cardinalityConstraint ~ nodeAlternatives)
     .map(BasicPattern.tupled)
 
-  val labelDeclarations = "LABELS" ~/ labelDeclaration.rep(min = 1, sep = ",").map(_.toList)
+  val labelDeclarations = "LABELS" ~/ labelDefinition.rep(min = 1, sep = ",").map(_.toList)
 
   val graphDeclaration = P("CREATE" ~/ "GRAPH" ~/ identifier.! ~/ "WITH" ~/ "SCHEMA" ~/
     "(" ~/

@@ -38,6 +38,33 @@ class DdlSchemaTest extends BaseTestSuite with MockitoSugar {
     it("fails parsing invalid properties") {
       property.parse("key _ STRING") should matchPattern { case Failure(_, _, _) => }
     }
+
+    it("parses single property in curlies") {
+      properties.parse("{ key : FLOAT }") should matchPattern { case Success(List(Property("key", CTFloat)), _) => }
+    }
+
+    it("parses multiple properties in curlies") {
+      properties.parse("{ key1 : FLOAT, key2 : STRING }") should matchPattern {
+        case Success(List(Property("key1", CTFloat), Property("key2", CTString)), _) => }
+    }
+
+    it("fails parsing empty properties") {
+      properties.parse("{ }") should matchPattern { case Failure(_, _, _) => }
+    }
+  }
+
+  describe("label definitions") {
+    it("parses node labels without properties") {
+      labelDefinition.parse("(A)") should matchPattern {
+        case Success(LabelDeclaration("A", Nil), _) =>
+      }
+    }
+
+    it("parses node labels with properties") {
+      labelDefinition.parse("(A { foo : string? } )") should matchPattern {
+        case Success(LabelDeclaration("A", List(Property("foo", CTString.nullable))), _) =>
+      }
+    }
   }
 
   it("parses CATALOG statements") {

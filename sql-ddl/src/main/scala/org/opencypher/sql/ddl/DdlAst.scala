@@ -47,6 +47,8 @@ case class Property(key: String, propertyType: CypherType) extends DdlAst
 
 case class LabelDeclaration(name: String, properties: List[Property]) extends DdlAst
 
+case class RelTypeDeclaration(name: String, properties: List[Property]) extends DdlAst
+
 sealed abstract class EntityDeclaration extends DdlAst {
   def name: String
 }
