@@ -36,7 +36,7 @@ import org.opencypher.spark.impl.table.SparkTable.DataFrameTable
 class MultipleFilesPerTableDataSourceAcceptance extends HdfsDataSourceAcceptance {
 
   override protected def createDs(graph: RelationalCypherGraph[DataFrameTable]): CAPSPropertyGraphDataSource = {
-    new FSGraphSource("hdfs:///", CsvFormat,  filesPerTable = Some(10))
+    new FSGraphSource(hdfsURI.toString, CsvFormat, filesPerTable = Some(10))
   }
 
 }

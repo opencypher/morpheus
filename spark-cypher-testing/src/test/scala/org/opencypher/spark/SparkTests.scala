@@ -32,12 +32,6 @@ import org.opencypher.spark.testing.CAPSTestSuite
 
 class SparkTests extends CAPSTestSuite {
 
-  it("foo") {
-    val df1 = sparkSession.createDataFrame(Seq(Tuple2(0L, 1L)))
-      .toDF("a", "A")
-    df1.show()
-  }
-
   // Example for: https://issues.apache.org/jira/browse/SPARK-23855
   ignore("should correctly perform a join after a cross") {
     val df1 = sparkSession.createDataFrame(Seq(Tuple1(0L)))
