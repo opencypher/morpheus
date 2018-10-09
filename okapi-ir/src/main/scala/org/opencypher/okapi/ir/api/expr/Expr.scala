@@ -751,6 +751,11 @@ final case class E()(var cypherType: CypherType = CTWildcard) extends NullaryFun
   override def withCypherType(ct: CypherType): E = copy()(ct)
 }
 
+final case class Pi()(var cypherType: CypherType = CTWildcard) extends NullaryFunctionExpr {
+  override type This = Pi
+  override def withCypherType(ct: CypherType): Pi = copy()(ct)
+}
+
 // Numeric functions
 
 final case class Abs(expr: Expr)(var cypherType: CypherType = CTWildcard) extends UnaryFunctionExpr {
