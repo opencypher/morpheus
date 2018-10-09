@@ -62,7 +62,10 @@ final class ExpressionConverter(implicit context: IRBuilderContext) {
     case ast.ContainerIndex(container, index) =>
       ContainerIndex(convert(container), convert(index))(typings(e))
 
-    case ast.Property(m, ast.PropertyKeyName(name)) => Property(convert(m), PropertyKey(name))(typings(e))
+    case ast.Property(m, ast.PropertyKeyName(name)) => m match {
+      case f:ast.FunctionInvocation => convert(f)
+      case expr => Property(convert(expr), PropertyKey(name))(typings(e))
+    }
 
     // Predicates
     case ast.Ands(exprs) =>

@@ -36,6 +36,14 @@ import org.scalatest.DoNotDiscover
 @DoNotDiscover
 class FunctionsBehaviour extends CAPSTestSuite with DefaultGraphInit {
 
+  describe("timestamp") {
+
+    it("timestamp()") {
+      caps.cypher("RETURN timestamp()").show
+    }
+
+  }
+
   describe("exists") {
 
     it("exists()") {

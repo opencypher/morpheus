@@ -36,10 +36,11 @@ import org.atnos.eff.all._
 import org.opencypher.okapi.api.schema.Schema
 import org.opencypher.okapi.api.types.CypherType.joinMonoid
 import org.opencypher.okapi.api.types._
+import org.opencypher.okapi.ir.api.expr.functions.TimeStamp
 import org.opencypher.okapi.ir.impl.parse.rewriter.ExistsPattern
 import org.opencypher.okapi.ir.impl.typer.SignatureConverter._
 import org.opencypher.v9_0.expressions._
-import org.opencypher.v9_0.expressions.functions.{Abs, Ceil, Coalesce, Collect, Exists, Exp, Floor, Log, Log10, Max, Min, Round, Sign, Sqrt, ToBoolean, ToString}
+import org.opencypher.v9_0.expressions.functions.{Abs, Ceil, Coalesce, Collect, Exists, Exp, Floor, Log, Log10, Max, Min, Round, Sign, Sqrt, ToBoolean, ToString, UnresolvedFunction}
 
 import scala.util.Try
 
@@ -281,6 +282,9 @@ object SchemaTyper {
         result <- recordAndUpdate(expr -> computedType)
       } yield result
 
+    case expr: FunctionInvocation if expr.function == UnresolvedFunction =>
+      UnresolvedFunctionSignatureTyper(expr)
+
     case expr: FunctionInvocation =>
       BasicSignatureBasedTyper(expr)
 
@@ -470,6 +474,21 @@ object SchemaTyper {
       expr: T,
       args: Seq[(Expression, CypherType)]
     ): Eff[R, Set[FunctionSignature]]
+  }
+
+  private case object UnresolvedFunctionSignatureTyper extends SignatureBasedInvocationTyper[Expression] {
+    override protected def generateSignaturesFor[R: _hasSchema : _keepsErrors : _hasTracker : _logsTypes](
+      expr: Expression,
+      args: Seq[(Expression, CypherType)]
+    ): Eff[R, Set[FunctionSignature]] = expr match {
+      case f: FunctionInvocation => f.name match {
+        case "datetime" =>
+          val set = TimeStamp.signatures.flatMap(_.convert).toSet
+          pure(set)
+        case _ =>
+          wrong[R, TyperError](UnsupportedExpr(expr)) >> pure(Set.empty)
+      }
+    }
   }
 
   private case object BasicSignatureBasedTyper extends SignatureBasedInvocationTyper[Expression] {

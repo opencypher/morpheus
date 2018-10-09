@@ -76,6 +76,14 @@ object FunctionUtils {
         case functions.Round => Round(expr.head)(cypherType)
         case functions.Sign => Sign(expr.head)(cypherType)
 
+        // Match by name
+        case functions.UnresolvedFunction => functionInvocation.name match {
+          // Time functions
+          case "datetime" => Timestamp()(cypherType)
+
+          case name => throw NotImplementedException(s"Support for converting ${name} function not yet implemented")
+        }
+
         case a: functions.Function =>
           throw NotImplementedException(s"Support for converting ${a.name} function not yet implemented")
       }
