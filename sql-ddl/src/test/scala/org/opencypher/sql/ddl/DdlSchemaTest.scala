@@ -67,6 +67,20 @@ class DdlSchemaTest extends BaseTestSuite with MockitoSugar {
     }
   }
 
+  describe("rel type definitions") {
+    it("parses rel types without properties") {
+      relTypeDefinition.parse("[A]") should matchPattern {
+        case Success(RelTypeDeclaration("A", Nil), _) =>
+      }
+    }
+
+    it("parses rel types with properties") {
+      relTypeDefinition.parse("[A { foo : string? } ]") should matchPattern {
+        case Success(RelTypeDeclaration("A", List(Property("foo", CTString.nullable))), _) =>
+      }
+    }
+  }
+
   it("parses CATALOG statements") {
     val sqlDDL = "CATALOG CREATE LABEL (A {name: STRING})"
 

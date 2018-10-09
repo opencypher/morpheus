@@ -67,7 +67,12 @@ object DdlParser {
 
   val properties = P("{" ~ property.rep(min = 1, sep = ",").map(_.toList) ~ "}")
 
-  val labelDefinition = P("(" ~ identifier.! ~ properties.?.map(_.getOrElse(List.empty[Property])) ~ ")").map(LabelDeclaration.tupled)
+  val entityDefinition = P(identifier.! ~ properties.?.map(_.getOrElse(List.empty[Property])))
+
+  val labelDefinition = P("(" ~ entityDefinition ~ ")").map(LabelDeclaration.tupled)
+
+  val relTypeDefinition = P("[" ~ entityDefinition ~ "]").map(RelTypeDeclaration.tupled)
+
 
   // =================================================
 
