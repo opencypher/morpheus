@@ -31,7 +31,7 @@ import org.opencypher.spark.testing.CAPSTestSuite
 import org.opencypher.spark.testing.fixture.TeamDataFixture
 
 class ZeppelinSupportTest extends CAPSTestSuite with TeamDataFixture {
-
+  // scalastyle:off line.contains.tab
   it("supports Zeppelin table representation") {
     val graph = caps.graphs.create(personTable)
     val result = graph.cypher("MATCH (p:Person) RETURN p.name, p.luckyNumber")
@@ -45,6 +45,7 @@ class ZeppelinSupportTest extends CAPSTestSuite with TeamDataFixture {
 
     asTable should equal(expected)
   }
+  // scalastyle:on line.contains.tab
 
   it("can render a graph from records") {
     val graph = caps.graphs.create(personTable, knowsTable)
