@@ -36,7 +36,7 @@ import org.opencypher.spark.api.io.fs.DefaultGraphDirectoryStructure._
 import org.opencypher.spark.api.io.fs.FSGraphSource
 import org.opencypher.spark.api.io.fs.HadoopFSHelpers._
 import org.opencypher.spark.api.io.neo4j.Neo4jBulkCSVDataSink._
-import org.opencypher.spark.api.io.{GraphEntity, Relationship}
+import org.opencypher.spark.api.io.{CsvFormat, GraphEntity, Relationship}
 import org.opencypher.spark.schema.CAPSSchema
 
 object Neo4jBulkCSVDataSink {
@@ -89,7 +89,7 @@ object Neo4jBulkCSVDataSink {
   * @param session        CAPS session
   */
 class Neo4jBulkCSVDataSink(override val rootPath: String, arrayDelimiter: String = "|")(implicit session: CAPSSession)
-  extends FSGraphSource(rootPath, "csv") {
+  extends FSGraphSource(rootPath, CsvFormat) {
 
   override protected def writeSchema(
     graphName: GraphName,

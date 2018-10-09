@@ -30,9 +30,9 @@ import java.nio.file.Paths
 
 import org.opencypher.okapi.api.schema.Schema
 import org.opencypher.okapi.neo4j.io.Neo4jConfig
-import org.opencypher.spark.api.io.fs.{FSGraphSource, HiveEnabledFSGraphSource, OrcEncodedColumnNames}
+import org.opencypher.spark.api.io.fs.{EscapeAtSymbol, FSGraphSource}
 import org.opencypher.spark.api.io.neo4j.{Neo4jBulkCSVDataSink, Neo4jPropertyGraphDataSource}
-import org.opencypher.spark.api.io.{CsvFormat, OrcFormat, ParquetFormat, StorageFormat}
+import org.opencypher.spark.api.io.{CsvFormat, OrcFormat, ParquetFormat}
 
 import scala.io.Source
 
@@ -56,29 +56,11 @@ object FSGraphSources {
     filesPerTable: Option[Int] = Some(1)
   )(implicit session: CAPSSession) {
 
-    def csv: FSGraphSource = csv()
+    def csv: FSGraphSource = new FSGraphSource(rootPath, CsvFormat, filesPerTable)
 
-    def csv(hiveDatabaseName: Option[String] = None): FSGraphSource =
-      getFileBasedDataSource(hiveDatabaseName, CsvFormat)
+    def parquet: FSGraphSource = new FSGraphSource(rootPath, ParquetFormat, filesPerTable)
 
-    def parquet: FSGraphSource = parquet()
-
-    def parquet(hiveDatabaseName: Option[String] = None): FSGraphSource =
-      getFileBasedDataSource(hiveDatabaseName, ParquetFormat)
-
-    def orc: FSGraphSource = orc()
-
-    def orc(hiveDatabaseName: Option[String] = None): FSGraphSource =
-      getFileBasedDataSource(hiveDatabaseName, OrcFormat)
-
-    private def getFileBasedDataSource(hiveDatabaseName: Option[String], storageFormat: StorageFormat): FSGraphSource =
-      hiveDatabaseName match {
-        case Some(x) => HiveEnabledFSGraphSource(x, rootPath, storageFormat.name, filesPerTable)
-        case None => storageFormat match {
-          case OrcFormat => new FSGraphSource(rootPath, storageFormat.name, filesPerTable) with OrcEncodedColumnNames
-          case _ => new FSGraphSource(rootPath, storageFormat.name, filesPerTable)
-        }
-      }
+    def orc: FSGraphSource = new FSGraphSource(rootPath, OrcFormat, filesPerTable) with EscapeAtSymbol
   }
 
   /**

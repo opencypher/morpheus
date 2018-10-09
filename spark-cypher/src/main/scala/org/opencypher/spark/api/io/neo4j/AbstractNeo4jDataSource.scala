@@ -29,7 +29,7 @@ package org.opencypher.spark.api.io.neo4j
 import org.opencypher.okapi.api.graph.GraphName
 import org.opencypher.okapi.impl.exception.UnsupportedOperationException
 import org.opencypher.okapi.neo4j.io.{Neo4jConfig, SchemaFromProcedure}
-import org.opencypher.spark.api.io.AbstractPropertyGraphDataSource
+import org.opencypher.spark.api.io.{AbstractPropertyGraphDataSource, Neo4jFormat, StorageFormat}
 import org.opencypher.spark.api.io.metadata.CAPSGraphMetaData
 import org.opencypher.spark.schema.CAPSSchema
 import org.opencypher.spark.schema.CAPSSchema._
@@ -40,7 +40,7 @@ abstract class AbstractNeo4jDataSource extends AbstractPropertyGraphDataSource {
 
   def omitIncompatibleProperties = false
 
-  override def tableStorageFormat: String = "neo4j"
+  override def tableStorageFormat: StorageFormat = Neo4jFormat
 
   override protected def readSchema(graphName: GraphName): CAPSSchema =
     SchemaFromProcedure(config, omitIncompatibleProperties) match {
@@ -54,6 +54,6 @@ abstract class AbstractNeo4jDataSource extends AbstractPropertyGraphDataSource {
   }
 
   override protected def writeSchema(graphName: GraphName, schema: CAPSSchema): Unit = ()
-  override protected def readCAPSGraphMetaData(graphName: GraphName): CAPSGraphMetaData = CAPSGraphMetaData(tableStorageFormat)
+  override protected def readCAPSGraphMetaData(graphName: GraphName): CAPSGraphMetaData = CAPSGraphMetaData(tableStorageFormat.name)
   override protected def writeCAPSGraphMetaData(graphName: GraphName, capsGraphMetaData: CAPSGraphMetaData): Unit = ()
 }

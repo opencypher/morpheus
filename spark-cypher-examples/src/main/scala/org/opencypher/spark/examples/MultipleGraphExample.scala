@@ -47,7 +47,7 @@ object MultipleGraphExample extends ConsoleApp {
   // 3) Register a file system graph source to the catalog
   // Note: if files were stored in HDFS, the file path would indicate so by starting with hdfs://
   val csvFolder = getClass.getResource("/csv").getFile
-  session.registerSource(Namespace("purchases"), GraphSources.fs(rootPath = csvFolder).csv())
+  session.registerSource(Namespace("purchases"), GraphSources.fs(rootPath = csvFolder).csv)
   // access the graph from the catalog via its qualified graph name
   val purchaseNetwork = session.catalog.graph("purchases.products")
 

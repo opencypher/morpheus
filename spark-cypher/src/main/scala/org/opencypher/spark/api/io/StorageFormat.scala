@@ -26,9 +26,7 @@
  */
 package org.opencypher.spark.api.io
 
-import org.opencypher.okapi.impl.exception.IllegalArgumentException
-
-sealed trait StorageFormat {
+trait StorageFormat {
   def name: String = getClass.getSimpleName.dropRight(7).toLowerCase
 }
 
@@ -44,16 +42,4 @@ case object JdbcFormat extends StorageFormat
 
 case object HiveFormat extends StorageFormat
 
-object StorageFormat {
-  private val storageFormatMap = Map(
-    AvroFormat.name -> AvroFormat,
-    CsvFormat.name -> CsvFormat,
-    ParquetFormat.name -> ParquetFormat,
-    OrcFormat.name -> OrcFormat,
-    JdbcFormat.name -> JdbcFormat,
-    HiveFormat.name -> HiveFormat
-  )
-
-  def apply(name: String): StorageFormat = storageFormatMap.getOrElse(name,
-      throw IllegalArgumentException(s"A supported storage format (one of ${storageFormatMap.keys.mkString("[", ", ", "]")})", name))
-}
+case object Neo4jFormat extends StorageFormat

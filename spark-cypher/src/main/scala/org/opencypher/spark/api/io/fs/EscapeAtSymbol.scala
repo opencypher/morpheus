@@ -29,7 +29,7 @@ package org.opencypher.spark.api.io.fs
 import org.apache.spark.sql.DataFrame
 import org.apache.spark.sql.types.StructType
 
-trait OrcEncodedColumnNames extends FSGraphSource {
+trait EscapeAtSymbol extends FSGraphSource {
 
   private val unicodeEscaping = "_specialCharacterEscape_"
 

@@ -41,7 +41,6 @@ import scala.util.{Failure, Success, Try}
 trait PGDSAcceptance[Session <: CypherSession] extends BeforeAndAfterEach {
   self: BaseTestSuite =>
 
-  // TODO: add properties with special characters (e.g. @) to test Orc PGDS
   val createStatements: String =
     """
       |CREATE (a:A { name: 'A' })
