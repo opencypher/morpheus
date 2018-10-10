@@ -44,6 +44,8 @@ abstract class LocalDataSourceAcceptance extends CAPSTestSuite with CAPSPGDSAcce
 
   protected var tempDir = new TemporaryFolder()
 
+  protected val schemePrefix = "file://"
+
   override def initSession(): CAPSSession = caps
 
   override protected def beforeEach(): Unit = {

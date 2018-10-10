@@ -24,34 +24,22 @@
  * described as "implementation extensions to Cypher" or as "proposed changes to
  * Cypher that are not yet approved by the openCypher community".
  */
-package org.opencypher.spark.api.io.csv
+package org.opencypher.spark.api.io
 
-import org.opencypher.okapi.relational.api.graph.RelationalCypherGraph
-import org.opencypher.spark.api.GraphSources
-import org.opencypher.spark.api.io.fs.hdfs.HdfsDataSourceAcceptance
-import org.opencypher.spark.impl.io.CAPSPropertyGraphDataSource
-import org.opencypher.spark.impl.table.SparkTable.DataFrameTable
-
-class HdfsCsvDataSourceAcceptance extends HdfsDataSourceAcceptance {
-
-  override protected def createDs(graph: RelationalCypherGraph[DataFrameTable]): CAPSPropertyGraphDataSource = {
-    GraphSources.fs(hdfsURI.toString).csv
-  }
-
+trait StorageFormat {
+  def name: String = getClass.getSimpleName.dropRight(7).toLowerCase
 }
 
-class HdfsOrcDataSourceAcceptance extends HdfsDataSourceAcceptance {
+case object CsvFormat extends StorageFormat
 
-  override protected def createDs(graph: RelationalCypherGraph[DataFrameTable]): CAPSPropertyGraphDataSource = {
-    GraphSources.fs(hdfsURI.toString).orc
-  }
+case object AvroFormat extends StorageFormat
 
-}
+case object ParquetFormat extends StorageFormat
 
-class HdfsParquetDataSourceAcceptance extends HdfsDataSourceAcceptance {
+case object OrcFormat extends StorageFormat
 
-  override protected def createDs(graph: RelationalCypherGraph[DataFrameTable]): CAPSPropertyGraphDataSource = {
-    GraphSources.fs(hdfsURI.toString).parquet
-  }
+case object JdbcFormat extends StorageFormat
 
-}
+case object HiveFormat extends StorageFormat
+
+case object Neo4jFormat extends StorageFormat

@@ -24,34 +24,36 @@
  * described as "implementation extensions to Cypher" or as "proposed changes to
  * Cypher that are not yet approved by the openCypher community".
  */
-package org.opencypher.spark.api.io.csv
+package org.opencypher.spark.api.io.fs
 
-import org.opencypher.okapi.relational.api.graph.RelationalCypherGraph
-import org.opencypher.spark.api.GraphSources
-import org.opencypher.spark.api.io.fs.hdfs.HdfsDataSourceAcceptance
-import org.opencypher.spark.impl.io.CAPSPropertyGraphDataSource
-import org.opencypher.spark.impl.table.SparkTable.DataFrameTable
+import org.apache.spark.sql.DataFrame
+import org.apache.spark.sql.types.StructType
 
-class HdfsCsvDataSourceAcceptance extends HdfsDataSourceAcceptance {
+trait EscapeAtSymbol extends FSGraphSource {
 
-  override protected def createDs(graph: RelationalCypherGraph[DataFrameTable]): CAPSPropertyGraphDataSource = {
-    GraphSources.fs(hdfsURI.toString).csv
+  private val unicodeEscaping = "_specialCharacterEscape_"
+
+  abstract override def writeTable(path: String, table: DataFrame): Unit = {
+    schemaCheck(table.schema)
+    val writeSchema = encodedSchema(table.schema)
+    val tableWithUpdatedColumnNames = table.sparkSession.createDataFrame(table.rdd, writeSchema)
+    super.writeTable(path, tableWithUpdatedColumnNames)
   }
 
-}
-
-class HdfsOrcDataSourceAcceptance extends HdfsDataSourceAcceptance {
-
-  override protected def createDs(graph: RelationalCypherGraph[DataFrameTable]): CAPSPropertyGraphDataSource = {
-    GraphSources.fs(hdfsURI.toString).orc
+  abstract override def readTable(path: String, schema: StructType): DataFrame = {
+    schemaCheck(schema)
+    val readSchema = encodedSchema(schema)
+    val table = super.readTable(path, readSchema)
+    table.sparkSession.createDataFrame(table.rdd, schema)
   }
 
-}
+  private def encodedSchema(schema: StructType) = {
+    StructType(schema.fields.map(f => f.copy(name = s"${f.name.replace("@", unicodeEscaping)}")))
+  }
 
-class HdfsParquetDataSourceAcceptance extends HdfsDataSourceAcceptance {
-
-  override protected def createDs(graph: RelationalCypherGraph[DataFrameTable]): CAPSPropertyGraphDataSource = {
-    GraphSources.fs(hdfsURI.toString).parquet
+  private def schemaCheck(schema: StructType): Unit = {
+    val invalidFields = schema.fields.filter(f => f.name.contains(unicodeEscaping)).map(_.name)
+    if (invalidFields.nonEmpty) sys.error(s"Orc fields: $invalidFields cannot contain special encoding string: '$unicodeEscaping'")
   }
 
 }

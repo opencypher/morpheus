@@ -33,7 +33,7 @@ import org.apache.spark.sql.DataFrame
 import org.apache.spark.sql.types.StructType
 import org.opencypher.okapi.api.graph.GraphName
 import org.opencypher.spark.api.CAPSSession
-import org.opencypher.spark.api.io.AbstractPropertyGraphDataSource
+import org.opencypher.spark.api.io.{AbstractPropertyGraphDataSource, StorageFormat}
 import org.opencypher.spark.api.io.fs.HadoopFSHelpers._
 import org.opencypher.spark.api.io.json.JsonSerialization
 
@@ -50,7 +50,7 @@ import org.opencypher.spark.api.io.json.JsonSerialization
   */
 class FSGraphSource(
   val rootPath: String,
-  val tableStorageFormat: String,
+  val tableStorageFormat: StorageFormat,
   val filesPerTable: Option[Int] = None
 )(override implicit val caps: CAPSSession)
   extends AbstractPropertyGraphDataSource with JsonSerialization {
@@ -72,7 +72,7 @@ class FSGraphSource(
   protected def writeFile(path: String, content: String): Unit = fileSystem.writeFile(path, content)
 
   protected def readTable(path: String, schema: StructType): DataFrame = {
-    caps.sparkSession.read.format(tableStorageFormat).schema(schema).load(path)
+    caps.sparkSession.read.format(tableStorageFormat.name).schema(schema).load(path)
   }
 
   protected def writeTable(path: String, table: DataFrame): Unit = {
@@ -80,7 +80,7 @@ class FSGraphSource(
       case None => table
       case Some(numFiles) => table.coalesce(numFiles)
     }
-    coalescedTable.write.format(tableStorageFormat).save(path)
+    coalescedTable.write.format(tableStorageFormat.name).save(path)
   }
 
   override protected def listGraphNames: List[String] = {

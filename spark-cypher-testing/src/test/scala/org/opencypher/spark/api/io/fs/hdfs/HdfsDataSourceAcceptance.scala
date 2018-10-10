@@ -26,6 +26,7 @@
  */
 package org.opencypher.spark.api.io.fs.hdfs
 
+import org.apache.hadoop.conf.Configuration
 import org.apache.hadoop.fs.Path
 import org.opencypher.okapi.api.graph.GraphName
 import org.opencypher.okapi.api.io.PropertyGraphDataSource
@@ -46,6 +47,14 @@ abstract class HdfsDataSourceAcceptance extends CAPSTestSuite with CAPSPGDSAccep
   protected def createDs(graph: RelationalCypherGraph[DataFrameTable]): CAPSPropertyGraphDataSource
 
   override def initSession(): CAPSSession = caps
+
+  // Set an incompatible default filesystem to ensure that picking the right filesystem based on the protocol works
+  override def clusterConfig: Configuration = {
+    val cfg = super.clusterConfig
+    val incompatibleDefault = s"s3a://bucket/"
+    cfg.set("fs.defaultFS", incompatibleDefault)
+    cfg
+  }
 
   override protected def afterEach(): Unit = {
     val fs = cluster.getFileSystem()

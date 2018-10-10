@@ -53,12 +53,12 @@ object TestSparkSession {
 
     conf.set("spark.sql.codegen.wholeStage", "true")
     conf.set("spark.sql.shuffle.partitions", "5")
-//    setting for debug
-//    conf.set("spark.sql.shuffle.partitions", "1")
-//    conf.set("spark.default.parallelism", "1")
-//    performance
-//    conf.set("spark.sql.inMemoryColumnarStorage.compressed", "false")
-//    conf.set("spark.submit.deployMode", "client")
+    //    setting for debug
+    //    conf.set("spark.sql.shuffle.partitions", "1")
+    //    conf.set("spark.default.parallelism", "1")
+    //    performance
+    //    conf.set("spark.sql.inMemoryColumnarStorage.compressed", "false")
+    //    conf.set("spark.submit.deployMode", "client")
 
     //
     // If this is slow, you might be hitting: http://bugs.java.com/view_bug.do?bug_id=8077102
@@ -68,6 +68,7 @@ object TestSparkSession {
       .config(conf)
       .master("local[*]")
       .appName(s"cypher-for-apache-spark-tests-${UUID.randomUUID()}")
+      .enableHiveSupport()
       .getOrCreate()
 
     session.sparkContext.setLogLevel("WARN")

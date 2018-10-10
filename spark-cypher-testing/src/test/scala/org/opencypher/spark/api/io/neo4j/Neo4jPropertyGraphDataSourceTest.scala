@@ -116,9 +116,12 @@ class Neo4jPropertyGraphDataSourceTest
 
     val dataSource = CypherGraphSources.neo4j(neo4jConfig)
 
-    val sparkException = intercept[SparkException] { dataSource.store(GraphName("foo"), graph) }
+    val sparkException = intercept[SparkException] {
+      dataSource.store(GraphName("foo"), graph)
+    }
     sparkException.getCause.getMessage should equal(
-     "Could not write the graph to Neo4j. The graph you are attempting to write contains at least two nodes with CAPS id 1"
+      "Could not write the graph to Neo4j. The graph you are attempting to write contains at least two nodes with CAPS id 1"
     )
   }
+
 }

@@ -163,6 +163,7 @@ class CAPSRecordsPrinterTest extends CAPSTestSuite with GraphConstructionFixture
   var baos: ByteArrayOutputStream = _
 
   override def beforeEach(): Unit = {
+    super.beforeEach()
     baos = new ByteArrayOutputStream()
   }
 

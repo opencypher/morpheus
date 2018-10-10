@@ -30,8 +30,9 @@ import java.nio.file.Paths
 
 import org.opencypher.okapi.api.schema.Schema
 import org.opencypher.okapi.neo4j.io.Neo4jConfig
-import org.opencypher.spark.api.io.fs.FSGraphSource
+import org.opencypher.spark.api.io.fs.{EscapeAtSymbol, FSGraphSource}
 import org.opencypher.spark.api.io.neo4j.{Neo4jBulkCSVDataSink, Neo4jPropertyGraphDataSource}
+import org.opencypher.spark.api.io.{CsvFormat, OrcFormat, ParquetFormat}
 
 import scala.io.Source
 
@@ -39,7 +40,7 @@ object GraphSources {
   def fs(
     rootPath: String,
     filesPerTable: Option[Int] = Some(1)
-  ) = FSGraphSources(rootPath, filesPerTable)
+  )(implicit session: CAPSSession) = FSGraphSources(rootPath, filesPerTable)
 
   def cypher: CypherGraphSources.type = CypherGraphSources
 }
@@ -48,15 +49,18 @@ object FSGraphSources {
   def apply(
     rootPath: String,
     filesPerTable: Option[Int] = Some(1)
-  ): FSGraphSourceFactory = FSGraphSourceFactory(rootPath, filesPerTable)
+  )(implicit session: CAPSSession): FSGraphSourceFactory = FSGraphSourceFactory(rootPath, filesPerTable)
 
   case class FSGraphSourceFactory(
     rootPath: String,
     filesPerTable: Option[Int] = Some(1)
-  ) {
+  )(implicit session: CAPSSession) {
 
-    def csv(implicit session: CAPSSession): FSGraphSource =
-      new FSGraphSource(rootPath, "csv", filesPerTable)
+    def csv: FSGraphSource = new FSGraphSource(rootPath, CsvFormat, filesPerTable)
+
+    def parquet: FSGraphSource = new FSGraphSource(rootPath, ParquetFormat, filesPerTable)
+
+    def orc: FSGraphSource = new FSGraphSource(rootPath, OrcFormat, filesPerTable) with EscapeAtSymbol
   }
 
   /**
@@ -78,11 +82,11 @@ object CypherGraphSources {
   /**
     * Creates a Neo4j Property Graph Data Source
     *
-    * @param config             Neo4j connection configuration
-    * @param maybeSchema        Optional Neo4j schema to avoid computation on Neo4j server
+    * @param config                     Neo4j connection configuration
+    * @param maybeSchema                Optional Neo4j schema to avoid computation on Neo4j server
     * @param omitIncompatibleProperties If set to true, import failures do not throw runtime exceptions but omit the unsupported
-    *                           properties instead and log warnings
-    * @param session            CAPS session
+    *                                   properties instead and log warnings
+    * @param session                    CAPS session
     * @return Neo4j Property Graph Data Source
     */
   def neo4j(config: Neo4jConfig, maybeSchema: Option[Schema] = None, omitIncompatibleProperties: Boolean = false)
@@ -90,7 +94,7 @@ object CypherGraphSources {
     Neo4jPropertyGraphDataSource(config, maybeSchema = maybeSchema, omitIncompatibleProperties = omitIncompatibleProperties)
 
   // TODO: document
-  def neo4j(config: Neo4jConfig, schemaFile: String, omitIncompatibleProperties: Boolean )
+  def neo4j(config: Neo4jConfig, schemaFile: String, omitIncompatibleProperties: Boolean)
     (implicit session: CAPSSession): Neo4jPropertyGraphDataSource = {
     val schemaString = Source.fromFile(Paths.get(schemaFile).toUri).getLines().mkString("\n")
 

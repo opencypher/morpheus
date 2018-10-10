@@ -37,7 +37,23 @@ import org.opencypher.spark.impl.table.SparkTable.DataFrameTable
 class LocalCsvDataSourceAcceptance extends LocalDataSourceAcceptance {
 
   override protected def createDs(graph: RelationalCypherGraph[DataFrameTable]): CAPSPropertyGraphDataSource = {
-    GraphSources.fs("file://" + Paths.get(tempDir.getRoot.getAbsolutePath)).csv
+    GraphSources.fs(schemePrefix + Paths.get(tempDir.getRoot.getAbsolutePath)).csv
+  }
+
+}
+
+class LocalOrcDataSourceAcceptance extends LocalDataSourceAcceptance {
+
+  override protected def createDs(graph: RelationalCypherGraph[DataFrameTable]): CAPSPropertyGraphDataSource = {
+    GraphSources.fs(schemePrefix + Paths.get(tempDir.getRoot.getAbsolutePath)).orc
+  }
+
+}
+
+class LocalParquetDataSourceAcceptance extends LocalDataSourceAcceptance {
+
+  override protected def createDs(graph: RelationalCypherGraph[DataFrameTable]): CAPSPropertyGraphDataSource = {
+    GraphSources.fs(schemePrefix + Paths.get(tempDir.getRoot.getAbsolutePath)).parquet
   }
 
 }

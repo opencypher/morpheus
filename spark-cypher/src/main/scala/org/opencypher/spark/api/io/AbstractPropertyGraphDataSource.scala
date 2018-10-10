@@ -57,7 +57,7 @@ abstract class AbstractPropertyGraphDataSource extends CAPSPropertyGraphDataSour
 
   implicit val caps: CAPSSession
 
-  def tableStorageFormat: String
+  def tableStorageFormat: StorageFormat
 
   protected var schemaCache: Map[GraphName, CAPSSchema] = Map.empty
 
@@ -151,7 +151,7 @@ abstract class AbstractPropertyGraphDataSource extends CAPSPropertyGraphDataSour
       val schema = relationalGraph.schema.asCaps
       schemaCache += graphName -> schema
       graphNameCache += graphName
-      writeCAPSGraphMetaData(graphName, CAPSGraphMetaData(tableStorageFormat, relationalGraph.tags))
+      writeCAPSGraphMetaData(graphName, CAPSGraphMetaData(tableStorageFormat.name, relationalGraph.tags))
       writeSchema(graphName, schema)
 
       val nodeWrites = schema.labelCombinations.combos.map { combo =>
