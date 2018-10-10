@@ -194,7 +194,7 @@ class DdlSchemaTest extends BaseTestSuite with MockitoSugar {
 
     it("parses a schema with node, rel, and schema pattern definitions") {
 
-      val expectedLocalLabelDefinitions = List.empty[LabelDefinition]
+      val expectedLocalLabelDefinitions = Set.empty[LabelDefinition]
       val expectedNodeDefs = Set(Set("A"), Set("B"), Set("A", "B"))
       val expectedRelDefs = Set("TYPE_1", "TYPE_2")
       val expectedPatternDefinitions = Set(
