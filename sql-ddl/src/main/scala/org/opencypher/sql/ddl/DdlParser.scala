@@ -55,6 +55,7 @@ object DdlParser {
   val graphKeyword = P(IgnoreCase("GRAPH"))
   val schemaKeyword = P(IgnoreCase("SCHEMA"))
   val keyKeyword = P(IgnoreCase("KEY"))
+  val withKeyword = P(IgnoreCase("WITH"))
 
   val cypherType = P(
     (IgnoreCase("STRING")
@@ -110,7 +111,15 @@ object DdlParser {
   [TYPE_1],
   [TYPE_2];
    */
-  val schemaDefinition: P[SchemaDefinition] = P(createKeyword ~ graphKeyword ~ schemaKeyword ~ identifier.! ~ nodeDefinition.rep(sep = ",".?).map(_.toSet) ~ relDefinition.rep(sep = ",".?).map(_.toSet) ~ ";".?).map(SchemaDefinition.tupled)
+  val schemaDefinition: P[SchemaDefinition] = P(createKeyword ~ graphKeyword ~ schemaKeyword ~ identifier.! ~
+    nodeDefinition.rep(sep = ",".?).map(_.toSet) ~
+    relDefinition.rep(sep = ",".?).map(_.toSet) ~ ";".?)
+    .map(SchemaDefinition.tupled)
+
+
+  val graphDefinition: P[GraphDefinition] = P(createKeyword ~ graphKeyword ~ identifier.! ~
+    (withKeyword ~ schemaKeyword ~ identifier.!).?)
+    .map(GraphDefinition.tupled)
 
 //  val relAlternatives = ("[" ~ identifier.!.rep(min = 1, sep = "|") ~ "]").map(_.toSet)
 //  val nodeAlternatives = ("(" ~ identifier.!.rep(min = 1, sep = "|") ~ ")").map(_.toSet)

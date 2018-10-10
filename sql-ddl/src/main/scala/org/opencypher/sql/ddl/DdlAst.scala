@@ -44,9 +44,23 @@ object Ddl {
 
 abstract class DdlAst extends AbstractTreeNode[DdlAst]
 
-case class LabelDeclaration(name: String, properties: Map[String, CypherType], keyDefinition: Option[KeyDefinition] = None) extends DdlAst
+case class LabelDeclaration(
+  name: String,
+  properties: Map[String, CypherType],
+  keyDefinition: Option[KeyDefinition] = None
+) extends DdlAst
 
-case class SchemaDefinition(name: String, nodeDefinitions: Set[NodeDefinition], relDefinitions: Set[RelDefinition]) extends DdlAst
+case class SchemaDefinition(
+  name: String,
+  nodeDefinitions: Set[NodeDefinition],
+  relDefinitions: Set[RelDefinition]
+) extends DdlAst
+
+case class GraphDefinition(
+  name: String,
+  schemaName: Option[String]
+) extends DdlAst
+
 
 //
 //case class CardinalityConstraint(from: Option[Int], to: Option[Int]) {

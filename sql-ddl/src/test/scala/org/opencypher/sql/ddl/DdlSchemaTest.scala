@@ -121,22 +121,37 @@ class DdlSchemaTest extends BaseTestSuite with MockitoSugar {
       val expectedRelDefs = Set("TYPE_1", "TYPE_2")
 
       schemaDefinition.parse(
-        """CREATE GRAPH SCHEMA mySchema
-          |
-          |  --NODES
-          |  (A),
-          |  (B),
-          |  (A, B)
-          |
-          |  --EDGES
-          |  [TYPE_1],
-          |  [TYPE_2];
+        """|CREATE GRAPH SCHEMA mySchema
+           |
+           |  --NODES
+           |  (A),
+           |  (B),
+           |  (A, B)
+           |
+           |  --EDGES
+           |  [TYPE_1],
+           |  [TYPE_2];
         """.stripMargin) should matchPattern {
         case Success(SchemaDefinition("mySchema", `expectedNodeDefs`, `expectedRelDefs`), _) =>
       }
     }
   }
 
+  describe("graph definitions") {
+    it("parses a graph definition") {
+     graphDefinition.parse(
+        "CREATE GRAPH myGraph") should matchPattern {
+        case Success(GraphDefinition("myGraph", None), _) =>
+      }
+    }
+
+    it("parses a graph definition with a schema") {
+      graphDefinition.parse(
+        "CREATE GRAPH myGraph WITH SCHEMA mySchema") should matchPattern {
+        case Success(GraphDefinition("myGraph", Some("mySchema")), _) =>
+      }
+    }
+  }
 
   it("parses correct schema") {
     val sqlDdl =
