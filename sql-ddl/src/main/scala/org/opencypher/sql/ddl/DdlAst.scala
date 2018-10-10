@@ -44,9 +44,15 @@ object Ddl {
 
 abstract class DdlAst extends AbstractTreeNode[DdlAst]
 
-case class LabelDeclaration(
+case class DdlDefinitions(
+  labelDefinitions: List[LabelDefinition] = List.empty,
+  schemaDefinitions: List[SchemaDefinition] = List.empty,
+  graphDefinitions: List[GraphDefinition] = List.empty
+) extends DdlAst
+
+case class LabelDefinition(
   name: String,
-  properties: Map[String, CypherType],
+  properties: Map[String, CypherType] = Map.empty,
   keyDefinition: Option[KeyDefinition] = None
 ) extends DdlAst
 
@@ -60,6 +66,8 @@ case class GraphDefinition(
   name: String,
   schemaName: Option[String]
 ) extends DdlAst
+
+
 
 
 //

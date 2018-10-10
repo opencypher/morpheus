@@ -27,6 +27,7 @@
 package org.opencypher.sql.ddl
 
 import fastparse.WhitespaceApi
+import fastparse.core.Parsed.{Failure, Success}
 import org.opencypher.okapi.api.types.CypherType
 import org.opencypher.okapi.impl.exception.IllegalArgumentException
 import org.opencypher.sql.ddl.Ddl._
@@ -77,19 +78,21 @@ object DdlParser {
   // { foo1: STRING, foo2 : BOOLEAN }
   val properties = P("{" ~ property.rep(min = 1, sep = ",").map(_.toMap) ~ "}")
 
-  // ==== CATALOG ====
+  // ==== Catalog ====
 
   // A { foo1: STRING, foo2 : BOOLEAN }
-  val entityDefinition: P[EntityDefinition] = P(identifier.! ~ properties.?.map(_.getOrElse(Map.empty[String, CypherType])))
+  val labelWithProperties: P[EntityDefinition] = P(identifier.! ~ properties.?.map(_.getOrElse(Map.empty[String, CypherType])))
 
   // LABEL (A { foo1: STRING, foo2 : BOOLEAN }) | LABEL [A { foo1: STRING, foo2 : BOOLEAN }]
-  val labelDefinition: P[(String, Map[String, CypherType])] = P(labelKeyword ~ "(" ~ entityDefinition ~ ")" | "[" ~ entityDefinition ~ "]")
+  val labelWithoutKeys: P[(String, Map[String, CypherType])] = P(labelKeyword ~ (("(" ~ labelWithProperties ~ ")")
+    | ("[" ~ labelWithProperties ~ "]")))
 
   // KEY A (propKey[, propKey]*))
   val keyDefinition: P[KeyDefinition] = P(keyKeyword ~ identifier.! ~ "(" ~ identifier.!.rep(min = 1, sep = ",").map(_.toSet) ~ ")")
 
   // [CATALOG] CREATE LABEL <labelDefinition> [KEY <keyDefinition>]
-  val createLabelStmt: P[LabelDeclaration] = P(catalogKeyword.? ~ createKeyword ~ labelDefinition ~ keyDefinition.?).map(LabelDeclaration.tupled)
+  val labelDefinition: P[LabelDefinition] = P(catalogKeyword.? ~ createKeyword ~ labelWithoutKeys ~ keyDefinition.?)
+    .map(LabelDefinition.tupled)
 
   // ==== Schema ====
 
@@ -116,82 +119,91 @@ object DdlParser {
     relDefinition.rep(sep = ",".?).map(_.toSet) ~ ";".?)
     .map(SchemaDefinition.tupled)
 
+  // ==== Graph ====
 
   val graphDefinition: P[GraphDefinition] = P(createKeyword ~ graphKeyword ~ identifier.! ~
     (withKeyword ~ schemaKeyword ~ identifier.!).?)
     .map(GraphDefinition.tupled)
 
-//  val relAlternatives = ("[" ~ identifier.!.rep(min = 1, sep = "|") ~ "]").map(_.toSet)
-//  val nodeAlternatives = ("(" ~ identifier.!.rep(min = 1, sep = "|") ~ ")").map(_.toSet)
-//  val integer = digit.rep(min = 1).!.map(_.toInt)
-//
-//  val wildcard = "*".!.map(_ => Option.empty[Int])
-//
-//  val intOrWildcard = integer.? | wildcard
-//
-//  val fixed = intOrWildcard.map(p => CardinalityConstraint(p, p))
-//
-//  val Wildcard = CardinalityConstraint(None, None)
-//
-//  val range = (integer.? ~ (".." | ",") ~ intOrWildcard).map(CardinalityConstraint.tupled)
-//
-//  val cardinalityConstraint: P[CardinalityConstraint] = ("<" ~ (fixed | range) ~ ">").?.map(_.getOrElse(Wildcard))
-//
-//  val nodeRelationshipNodePattern = P(
-//    nodeAlternatives ~ cardinalityConstraint ~
-//      "-" ~ relAlternatives ~ "->"
-//      ~ cardinalityConstraint ~ nodeAlternatives)
-//    .map(BasicPattern.tupled)
-//
-//  val labelDeclarations = "LABELS" ~/ labelDefinition.rep(min = 1, sep = ",").map(_.toList)
-//
-//  val graphDeclaration = P("CREATE" ~/ "GRAPH" ~/ identifier.! ~/ "WITH" ~/ "SCHEMA" ~/
-//    "(" ~/
-//    labelDeclarations.rep.map(_.flatten.toList) ~
-//    entityDeclarations ~
-//    nodeRelationshipNodePattern.rep(sep = ",").map(_.toList) ~
-//    ")"
-//  ).map(GraphDeclaration.tupled)
-//
-//  val nodeToTableMapping = P("NODES" ~ nodeDeclaration.map(_.name) ~ "FROM" ~ identifier.!).map(NodeToTableMapping.tupled)
-//
-//  val mapping = "MAPPING" ~ identifier.! ~ "ONTO" ~ identifier.!
-//
-//  val startNodeMapping = P(mapping ~ "FOR" ~ "START" ~ "NODES" ~/ nodeAlternatives).map {
-//    case (from, to, alternatives) => IdMapping(alternatives, from, to)
-//  }
-//
-//  val endNodeMapping = P(mapping ~ "FOR" ~ "END" ~ "NODES" ~/ nodeAlternatives).map {
-//    case (from, to, alternatives) => IdMapping(alternatives, from, to)
-//  }
-//
-//  val relToTableMapping = P("RELATIONSHIPS" ~/ relDeclaration.map(_.name) ~/ "FROM" ~/ identifier.! ~/
-//    startNodeMapping.rep(min = 1).map(_.toList) ~
-//    endNodeMapping.rep(min = 1).map(_.toList)
-//  ).map(RelationshipToTableMapping.tupled).log()
-//
-//  val labelsForTablesMapping = {
-//    P(nodeToTableMapping.rep.map(_.toList) ~
-//      relToTableMapping.rep.map(_.toList)
-//    ).map(LabelsForTablesMapping.tupled)
-//  }
-//
-//  val ddl = P(graphDeclaration.rep(min = 1).map(_.toList) ~ labelsForTablesMapping).map(Ddl.tupled)
-//
-//  def parse(ddlString: String): Ddl = {
-//    ddl.parse(ddlString) match {
-//      case Success(v, _) => v
-//      case Failure(p, index, extra) =>
-//        val i = extra.input
-//        val before = index - math.max(index - 20, 0)
-//        val after = math.min(index + 20, i.length) - index
-//        println(extra.input.slice(index - before, index + after).replace('\n', ' '))
-//        println("~" * before + "^" + "~" * after)
-//        println(s"failed parser: $p at index $index")
-//        println(s"stack=${extra.traced.stack}")
-//        // TODO: Throw a helpful parsing error
-//        throw new Exception("TODO")
-//    }
-//  }
+  // ==== DDL ====
+
+  val ddlDefinitions: P[DdlDefinitions] = P(
+    labelDefinition.rep.map(_.toList) ~
+      schemaDefinition.rep.map(_.toList) ~
+      graphDefinition.rep.map(_.toList) ~ End
+  ).map(DdlDefinitions.tupled)
+
+  def parse(ddlString: String): DdlDefinitions = {
+    ddlDefinitions.parse(ddlString) match {
+      case Success(v, _) => v
+      case Failure(p, index, extra) =>
+        val i = extra.input
+        val before = index - math.max(index - 20, 0)
+        val after = math.min(index + 20, i.length) - index
+        println(extra.input.slice(index - before, index + after).replace('\n', ' '))
+        println("~" * before + "^" + "~" * after)
+        println(s"failed parser: $p at index $index")
+        println(s"stack=${extra.traced.stack}")
+        // TODO: Throw a helpful parsing error
+        throw new Exception("TODO")
+    }
+  }
+
+
+  //  val relAlternatives = ("[" ~ identifier.!.rep(min = 1, sep = "|") ~ "]").map(_.toSet)
+  //  val nodeAlternatives = ("(" ~ identifier.!.rep(min = 1, sep = "|") ~ ")").map(_.toSet)
+  //  val integer = digit.rep(min = 1).!.map(_.toInt)
+  //
+  //  val wildcard = "*".!.map(_ => Option.empty[Int])
+  //
+  //  val intOrWildcard = integer.? | wildcard
+  //
+  //  val fixed = intOrWildcard.map(p => CardinalityConstraint(p, p))
+  //
+  //  val Wildcard = CardinalityConstraint(None, None)
+  //
+  //  val range = (integer.? ~ (".." | ",") ~ intOrWildcard).map(CardinalityConstraint.tupled)
+  //
+  //  val cardinalityConstraint: P[CardinalityConstraint] = ("<" ~ (fixed | range) ~ ">").?.map(_.getOrElse(Wildcard))
+  //
+  //  val nodeRelationshipNodePattern = P(
+  //    nodeAlternatives ~ cardinalityConstraint ~
+  //      "-" ~ relAlternatives ~ "->"
+  //      ~ cardinalityConstraint ~ nodeAlternatives)
+  //    .map(BasicPattern.tupled)
+  //
+  //  val labelDeclarations = "LABELS" ~/ labelDefinition.rep(min = 1, sep = ",").map(_.toList)
+  //
+  //  val graphDeclaration = P("CREATE" ~/ "GRAPH" ~/ identifier.! ~/ "WITH" ~/ "SCHEMA" ~/
+  //    "(" ~/
+  //    labelDeclarations.rep.map(_.flatten.toList) ~
+  //    entityDeclarations ~
+  //    nodeRelationshipNodePattern.rep(sep = ",").map(_.toList) ~
+  //    ")"
+  //  ).map(GraphDeclaration.tupled)
+  //
+  //  val nodeToTableMapping = P("NODES" ~ nodeDeclaration.map(_.name) ~ "FROM" ~ identifier.!).map(NodeToTableMapping.tupled)
+  //
+  //  val mapping = "MAPPING" ~ identifier.! ~ "ONTO" ~ identifier.!
+  //
+  //  val startNodeMapping = P(mapping ~ "FOR" ~ "START" ~ "NODES" ~/ nodeAlternatives).map {
+  //    case (from, to, alternatives) => IdMapping(alternatives, from, to)
+  //  }
+  //
+  //  val endNodeMapping = P(mapping ~ "FOR" ~ "END" ~ "NODES" ~/ nodeAlternatives).map {
+  //    case (from, to, alternatives) => IdMapping(alternatives, from, to)
+  //  }
+  //
+  //  val relToTableMapping = P("RELATIONSHIPS" ~/ relDeclaration.map(_.name) ~/ "FROM" ~/ identifier.! ~/
+  //    startNodeMapping.rep(min = 1).map(_.toList) ~
+  //    endNodeMapping.rep(min = 1).map(_.toList)
+  //  ).map(RelationshipToTableMapping.tupled).log()
+  //
+  //  val labelsForTablesMapping = {
+  //    P(nodeToTableMapping.rep.map(_.toList) ~
+  //      relToTableMapping.rep.map(_.toList)
+  //    ).map(LabelsForTablesMapping.tupled)
+  //  }
+  //
 
 }

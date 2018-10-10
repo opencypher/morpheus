@@ -1,12 +1,11 @@
 package org.opencypher.sql.ddl
 
 import fastparse.core.Parsed.{Failure, Success}
-import org.opencypher.okapi.api.types.{CTFloat, CTString, CypherType}
+import org.opencypher.okapi.api.types._
 import org.opencypher.okapi.testing.BaseTestSuite
+import org.opencypher.sql.ddl
 import org.opencypher.sql.ddl.DdlParser._
 import org.scalatest.mockito.MockitoSugar
-
-import scala.collection.Map
 
 class DdlSchemaTest extends BaseTestSuite with MockitoSugar {
 
@@ -65,14 +64,14 @@ class DdlSchemaTest extends BaseTestSuite with MockitoSugar {
   describe("label definitions") {
     it("parses node labels without properties") {
       val expected = "A" -> emptyMap
-      labelDefinition.parse("LABEL (A)") should matchPattern {
+      labelWithoutKeys.parse("LABEL (A)") should matchPattern {
         case Success(`expected`, _) =>
       }
     }
 
     it("parses node labels with properties") {
       val expected = "A" -> Map("foo" -> CTString.nullable)
-      labelDefinition.parse("LABEL  (A { foo : string? } )") should matchPattern {
+      labelWithoutKeys.parse("LABEL  (A { foo : string? } )") should matchPattern {
         case Success(`expected`, _) =>
       }
     }
@@ -93,28 +92,47 @@ class DdlSchemaTest extends BaseTestSuite with MockitoSugar {
 
   describe("[CATALOG] CREATE LABEL <labelDefinition|relTypeDefinition> [KEY keyDefinition]") {
     it("parses CATALOG CREATE LABEL <labelDefinition>") {
-      createLabelStmt.parse("CATALOG CREATE LABEL (A)") should matchPattern {
-        case Success(LabelDeclaration("A", `emptyMap`, None), _) =>
+      labelDefinition.parse("CATALOG CREATE LABEL (A)") should matchPattern {
+        case Success(LabelDefinition("A", `emptyMap`, None), _) =>
       }
     }
 
     it("parses CREATE LABEL <labelDefinition>") {
-      createLabelStmt.parse("CREATE LABEL (A)") should matchPattern {
-        case Success(LabelDeclaration("A", `emptyMap`, None), _) =>
+      labelDefinition.parse("CREATE LABEL (A)") should matchPattern {
+        case Success(LabelDefinition("A", `emptyMap`, None), _) =>
       }
     }
 
     it("parses CREATE LABEL <labelDefinition> KEY <keyDefinition>") {
       val expectedKeyDefinition = "A_NK" -> Set("foo", "bar")
-      createLabelStmt.parse("CREATE LABEL (A) KEY A_NK (foo, bar)") should matchPattern {
-        case Success(LabelDeclaration("A", `emptyMap`, Some(`expectedKeyDefinition`)), _) =>
+      labelDefinition.parse("CREATE LABEL (A) KEY A_NK (foo, bar)") should matchPattern {
+        case Success(LabelDefinition("A", `emptyMap`, Some(`expectedKeyDefinition`)), _) =>
       }
     }
+
   }
 
   // TODO: tests for node / rel definitions
 
   describe("schema definitions") {
+
+    it("parses multiple label definitions") {
+      parse(
+        """|CATALOG CREATE LABEL (A {name: STRING})
+           |
+           |CATALOG CREATE LABEL (B {sequence: INTEGER, nationality: STRING?, age: INTEGER?})
+           |
+           |CATALOG CREATE LABEL [TYPE_1]
+           |
+           |CATALOG CREATE LABEL [TYPE_2 {prop: BOOLEAN?}]""".stripMargin) shouldEqual
+        DdlDefinitions(List(
+          LabelDefinition("A", Map("name" -> CTString)),
+          LabelDefinition("B", Map("sequence" -> CTInteger, "nationality" -> CTString.nullable, "age" -> CTInteger.nullable)),
+          LabelDefinition("TYPE_1"),
+          LabelDefinition("TYPE_2", Map("prop" -> CTBoolean.nullable))
+        ))
+    }
+
     it("parses a schema with node and rel definitions") {
 
       val expectedNodeDefs = Set(Set("A"), Set("B"), Set("A", "B"))
@@ -139,7 +157,7 @@ class DdlSchemaTest extends BaseTestSuite with MockitoSugar {
 
   describe("graph definitions") {
     it("parses a graph definition") {
-     graphDefinition.parse(
+      graphDefinition.parse(
         "CREATE GRAPH myGraph") should matchPattern {
         case Success(GraphDefinition("myGraph", None), _) =>
       }
@@ -154,42 +172,65 @@ class DdlSchemaTest extends BaseTestSuite with MockitoSugar {
   }
 
   it("parses correct schema") {
-    val sqlDdl =
-      """
-        |CATALOG CREATE LABEL (A {name: STRING})
-        |
-        |CATALOG CREATE LABEL (B {sequence: INTEGER, nationality: STRING?, age: INTEGER?})
-        |
-        |CATALOG CREATE LABEL [TYPE_1]
-        |
-        |CATALOG CREATE LABEL [TYPE_2 {prop: BOOLEAN?}]
-        |
-        |CREATE GRAPH SCHEMA mySchema
-        |
-        |  --NODES
-        |  (A),
-        |  (B),
-        |  (A, B)
-        |
-        |  --EDGES
-        |  [TYPE_1],
-        |  [TYPE_2];
-        |
-        |CREATE GRAPH myGraph WITH SCHEMA mySchema
-      """.stripMargin
+    parse(
+      """|CATALOG CREATE LABEL (A {name: STRING})
+         |
+         |CATALOG CREATE LABEL (B {sequence: INTEGER, nationality: STRING?, age: INTEGER?})
+         |
+         |CATALOG CREATE LABEL [TYPE_1]
+         |
+         |CATALOG CREATE LABEL [TYPE_2 {prop: BOOLEAN?}]
+         |
+         |CREATE GRAPH SCHEMA mySchema
+         |
+         |  --NODES
+         |  (A),
+         |  (B),
+         |  (A, B)
+         |
+         |  --EDGES
+         |  [TYPE_1],
+         |  [TYPE_2];
+         |
+         |CREATE GRAPH myGraph WITH SCHEMA mySchema
+      """.stripMargin) shouldEqual
+      DdlDefinitions(
+        List(
+          LabelDefinition("A", Map("name" -> CTString)),
+          LabelDefinition("B", Map("sequence" -> CTInteger, "nationality" -> CTString.nullable, "age" -> CTInteger.nullable)),
+          LabelDefinition("TYPE_1"),
+          LabelDefinition("TYPE_2", Map("prop" -> CTBoolean.nullable))
+        ),
+        List(
+          SchemaDefinition("mySchema", Set(Set("A"), Set("B"), Set("A", "B")), Set("TYPE_1", "TYPE_2"))
+        ),
+        List(
+          GraphDefinition("myGraph", Some("mySchema"))
+        )
+      )
 
-    //    val ddl = DdlParser.parse(sqlDdl)
-    //
-    //    ddl.show()
-
-
-    //    sqlGraphSource(sqlDdl).schema(GraphName("myGraph")).get should equal(
-    //      Schema.empty.withNodePropertyKeys("A")("name" -> CTString)
-    //        .withNodePropertyKeys("B")("sequence" -> CTInteger, "nationality" -> CTString.nullable, "age" -> CTInteger.nullable)
-    //        .withNodePropertyKeys("A", "B")("name" -> CTString, "sequence" -> CTInteger, "nationality" -> CTString.nullable, "age" -> CTInteger.nullable)
-    //        .withRelationshipPropertyKeys("TYPE_1")()
-    //        .withRelationshipPropertyKeys("TYPE_2")("prop" -> CTBoolean.nullable)
-    //    )
+    parse(
+      """|CATALOG CREATE LABEL (A {name: STRING})
+         |
+         |CATALOG CREATE LABEL (B {sequence: INTEGER, nationality: STRING?, age: INTEGER?})
+         |
+         |CATALOG CREATE LABEL [TYPE_1]
+         |
+         |CATALOG CREATE LABEL [TYPE_2 {prop: BOOLEAN?}]
+         |
+         |CREATE GRAPH SCHEMA mySchema
+         |
+         |  --NODES
+         |  (A),
+         |  (B),
+         |  (A, B)
+         |
+         |  --EDGES
+         |  [TYPE_1],
+         |  [TYPE_2];
+         |
+         |CREATE GRAPH myGraph WITH SCHEMA mySchema
+      """.stripMargin).show()
   }
 
   // TODO: Enable and fix once NEN patterns are supported in Schema trait
