@@ -49,6 +49,10 @@ object DdlParser {
   val character = P(CharIn('a' to 'z', 'A' to 'Z'))
   val identifier = P(character ~ P(character | digit | "_").repX)
 
+  val catalogKeyword = P(IgnoreCase("CATALOG"))
+  val createKeyword = P(IgnoreCase("CREATE"))
+  val labelKeyword = P(IgnoreCase("LABEL"))
+
   val cypherType = P(
     (IgnoreCase("STRING")
       | IgnoreCase("INTEGER")
@@ -63,15 +67,26 @@ object DdlParser {
     }
   }
 
+  // foo : STRING
   val property: P[Property] = P(identifier.! ~ ":" ~ propertyType).map(Property.tupled)
 
+  // { foo1: STRING, foo2 : BOOLEAN }
   val properties = P("{" ~ property.rep(min = 1, sep = ",").map(_.toList) ~ "}")
 
+  // A { foo1: STRING, foo2 : BOOLEAN }
   val entityDefinition = P(identifier.! ~ properties.?.map(_.getOrElse(List.empty[Property])))
 
-  val labelDefinition = P("(" ~ entityDefinition ~ ")").map(LabelDeclaration.tupled)
+  // (A { foo1: STRING, foo2 : BOOLEAN })
+  val labelDefinition: P[LabelDeclaration] = P("(" ~ entityDefinition ~ ")").map(LabelDeclaration.tupled)
 
-  val relTypeDefinition = P("[" ~ entityDefinition ~ "]").map(RelTypeDeclaration.tupled)
+  // [A { foo1: STRING, foo2 : BOOLEAN }]
+  val relTypeDefinition: P[RelTypeDeclaration] = P("[" ~ entityDefinition ~ "]").map(RelTypeDeclaration.tupled)
+
+  // [CATALOG] CREATE LABEL <labelDefinition>
+  val createLabelStmt: P[LabelDeclaration] = P(catalogKeyword.? ~ createKeyword ~ labelKeyword ~ labelDefinition)
+
+  // [CATALOG] CREATE LABEL <relTypeDefinition>
+  val createRelTypeStmt: Parser[RelTypeDeclaration] = P(catalogKeyword.? ~ createKeyword ~ labelKeyword ~ relTypeDefinition)
 
 
   // =================================================

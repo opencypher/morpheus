@@ -81,12 +81,30 @@ class DdlSchemaTest extends BaseTestSuite with MockitoSugar {
     }
   }
 
-  it("parses CATALOG statements") {
-    val sqlDDL = "CATALOG CREATE LABEL (A {name: STRING})"
+  describe("[CATALOG] CREATE LABEL <labelDefinition|relTypeDefinition>") {
+    it("parses CATALOG CREATE LABEL <labelDefinition>") {
+      createLabelStmt.parse("CATALOG CREATE LABEL (A)") should matchPattern {
+        case Success(LabelDeclaration("A", Nil), _) =>
+      }
+    }
 
-    val ddl = DdlParser.parse(sqlDDL)
+    it("parses CREATE LABEL <labelDefinition>") {
+      createLabelStmt.parse("CREATE LABEL (A)") should matchPattern {
+        case Success(LabelDeclaration("A", Nil), _) =>
+      }
+    }
 
-    ddl.show()
+    it("parses CATALOG CREATE LABEL <relTypeDefinition>") {
+      createRelTypeStmt.parse("CATALOG CREATE LABEL [A]") should matchPattern {
+        case Success(RelTypeDeclaration("A", Nil), _) =>
+      }
+    }
+
+    it("parses CREATE LABEL <relTypeDefinition>") {
+      createRelTypeStmt.parse("CREATE LABEL [A]") should matchPattern {
+        case Success(RelTypeDeclaration("A", Nil), _) =>
+      }
+    }
   }
 
 
