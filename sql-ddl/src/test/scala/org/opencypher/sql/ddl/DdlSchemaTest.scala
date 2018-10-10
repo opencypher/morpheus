@@ -53,7 +53,8 @@ class DdlSchemaTest extends BaseTestSuite with MockitoSugar {
     it("parses multiple properties in curlies") {
       val expectedProperties = Map("key1" -> CTFloat, "key2" -> CTString)
       properties.parse("{ key1 : FLOAT, key2 : STRING }") should matchPattern {
-        case Success(`expectedProperties`, _) => }
+        case Success(`expectedProperties`, _) =>
+      }
     }
 
     it("fails parsing empty properties") {
@@ -63,29 +64,50 @@ class DdlSchemaTest extends BaseTestSuite with MockitoSugar {
 
   describe("label definitions") {
     it("parses node labels without properties") {
-      labelDefinition.parse("(A)") should matchPattern {
-        case Success(LabelDeclaration("A", `emptyMap`), _) =>
+      val expected = "A" -> emptyMap
+      labelDefinition.parse("LABEL (A)") should matchPattern {
+        case Success(`expected`, _) =>
       }
     }
 
     it("parses node labels with properties") {
-      val expectedProperties = Map("foo" -> CTString.nullable)
-      labelDefinition.parse("(A { foo : string? } )") should matchPattern {
-        case Success(LabelDeclaration("A", `expectedProperties`), _) =>
+      val expected = "A" -> Map("foo" -> CTString.nullable)
+      labelDefinition.parse("LABEL  (A { foo : string? } )") should matchPattern {
+        case Success(`expected`, _) =>
       }
     }
   }
 
-  describe("[CATALOG] CREATE LABEL <labelDefinition|relTypeDefinition>") {
+  describe("key definitions") {
+    it("parses a key definition") {
+      val expectedDefinition = "A" -> Set("foo", "bar")
+      keyDefinition.parse("KEY A (foo, bar)") should matchPattern {
+        case Success(`expectedDefinition`, _) =>
+      }
+    }
+
+    it("fails parsing empty property lists") {
+      keyDefinition.parse("KEY A ()") should matchPattern { case Failure(_, _, _) => }
+    }
+  }
+
+  describe("[CATALOG] CREATE LABEL <labelDefinition|relTypeDefinition> [KEY keyDefinition]") {
     it("parses CATALOG CREATE LABEL <labelDefinition>") {
       createLabelStmt.parse("CATALOG CREATE LABEL (A)") should matchPattern {
-        case Success(LabelDeclaration("A", `emptyMap`), _) =>
+        case Success(LabelDeclaration("A", `emptyMap`, None), _) =>
       }
     }
 
     it("parses CREATE LABEL <labelDefinition>") {
       createLabelStmt.parse("CREATE LABEL (A)") should matchPattern {
-        case Success(LabelDeclaration("A", `emptyMap`), _) =>
+        case Success(LabelDeclaration("A", `emptyMap`, None), _) =>
+      }
+    }
+
+    it("parses CREATE LABEL <labelDefinition> KEY <keyDefinition>") {
+      val expectedKeyDefinition = "A_NK" -> Set("foo", "bar")
+      createLabelStmt.parse("CREATE LABEL (A) KEY A_NK (foo, bar)") should matchPattern {
+        case Success(LabelDeclaration("A", `emptyMap`, Some(`expectedKeyDefinition`)), _) =>
       }
     }
   }
@@ -116,9 +138,9 @@ class DdlSchemaTest extends BaseTestSuite with MockitoSugar {
         |CREATE GRAPH myGraph WITH SCHEMA mySchema
       """.stripMargin
 
-//    val ddl = DdlParser.parse(sqlDdl)
-//
-//    ddl.show()
+    //    val ddl = DdlParser.parse(sqlDdl)
+    //
+    //    ddl.show()
 
 
     //    sqlGraphSource(sqlDdl).schema(GraphName("myGraph")).get should equal(

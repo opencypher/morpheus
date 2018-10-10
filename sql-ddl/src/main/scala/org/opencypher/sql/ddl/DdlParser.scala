@@ -52,6 +52,7 @@ object DdlParser {
   val catalogKeyword = P(IgnoreCase("CATALOG"))
   val createKeyword = P(IgnoreCase("CREATE"))
   val labelKeyword = P(IgnoreCase("LABEL"))
+  val keyKeyword = P(IgnoreCase("KEY"))
 
   val cypherType = P(
     (IgnoreCase("STRING")
@@ -76,11 +77,14 @@ object DdlParser {
   // A { foo1: STRING, foo2 : BOOLEAN }
   val entityDefinition: P[EntityDefinition] = P(identifier.! ~ properties.?.map(_.getOrElse(Map.empty[String, CypherType])))
 
-  // (A { foo1: STRING, foo2 : BOOLEAN }) | [A { foo1: STRING, foo2 : BOOLEAN }]
-  val labelDefinition: P[LabelDeclaration] = P("(" ~ entityDefinition ~ ")" | "[" ~ entityDefinition ~ "]").map(LabelDeclaration.tupled)
+  // LABEL (A { foo1: STRING, foo2 : BOOLEAN }) | LABEL [A { foo1: STRING, foo2 : BOOLEAN }]
+  val labelDefinition: P[(String, Map[String, CypherType])] = P(labelKeyword ~ "(" ~ entityDefinition ~ ")" | "[" ~ entityDefinition ~ "]")
 
-  // [CATALOG] CREATE LABEL <labelDefinition>
-  val createLabelStmt: P[LabelDeclaration] = P(catalogKeyword.? ~ createKeyword ~ labelKeyword ~ labelDefinition)
+  // KEY A (propKey[, propKey]*))
+  val keyDefinition: P[KeyDefinition] = P(keyKeyword ~ identifier.! ~ "(" ~ identifier.!.rep(min = 1, sep = ",").map(_.toSet) ~ ")")
+
+  // [CATALOG] CREATE LABEL <labelDefinition> [KEY <keyDefinition>]
+  val createLabelStmt: P[LabelDeclaration] = P(catalogKeyword.? ~ createKeyword ~ labelDefinition ~ keyDefinition.?).map(LabelDeclaration.tupled)
 
   // =================================================
 

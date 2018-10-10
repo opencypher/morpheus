@@ -28,11 +28,14 @@ package org.opencypher.sql.ddl
 
 import org.opencypher.okapi.api.types.CypherType
 import org.opencypher.okapi.trees.AbstractTreeNode
+import org.opencypher.sql.ddl.Ddl.KeyDefinition
 
 object Ddl {
   type Property = (String, CypherType)
 
   type EntityDefinition = (String, Map[String, CypherType])
+
+  type KeyDefinition = (String, Set[String])
 }
 
 case class Ddl(
@@ -43,9 +46,7 @@ case class Ddl(
 
 abstract class DdlAst extends AbstractTreeNode[DdlAst]
 
-case class LabelDeclaration(name: String, properties: Map[String, CypherType]) extends DdlAst
-
-case class RelTypeDeclaration(name: String, properties: Map[String, CypherType]) extends DdlAst
+case class LabelDeclaration(name: String, properties: Map[String, CypherType], keyDefinition: Option[KeyDefinition] = None) extends DdlAst
 
 sealed abstract class EntityDeclaration extends DdlAst {
   def name: String
