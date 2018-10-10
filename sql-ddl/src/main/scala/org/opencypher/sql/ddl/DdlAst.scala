@@ -28,7 +28,7 @@ package org.opencypher.sql.ddl
 
 import org.opencypher.okapi.api.types.CypherType
 import org.opencypher.okapi.trees.AbstractTreeNode
-import org.opencypher.sql.ddl.Ddl.KeyDefinition
+import org.opencypher.sql.ddl.Ddl.{KeyDefinition, NodeDefinition, RelDefinition}
 
 object Ddl {
   type Property = (String, CypherType)
@@ -36,72 +36,65 @@ object Ddl {
   type EntityDefinition = (String, Map[String, CypherType])
 
   type KeyDefinition = (String, Set[String])
-}
 
-case class Ddl(
-//  labelDeclarations: List[LabelDeclaration],
-  graphDeclarations: List[GraphDeclaration],
-  labelsForTablesMapping: LabelsForTablesMapping
-) extends DdlAst
+  type NodeDefinition = Set[String]
+
+  type RelDefinition = String
+}
 
 abstract class DdlAst extends AbstractTreeNode[DdlAst]
 
 case class LabelDeclaration(name: String, properties: Map[String, CypherType], keyDefinition: Option[KeyDefinition] = None) extends DdlAst
 
-sealed abstract class EntityDeclaration extends DdlAst {
-  def name: String
-}
+case class SchemaDefinition(name: String, nodeDefinitions: Set[NodeDefinition], relDefinitions: Set[RelDefinition]) extends DdlAst
 
-case class NodeDeclaration(name: String) extends EntityDeclaration
+//
+//case class CardinalityConstraint(from: Option[Int], to: Option[Int]) {
+//  override def toString: String = {
+//    val wildcard = "*"
+//    (from, to) match {
+//      case (None, None) => wildcard
+//      case (Some(f), Some(t)) if f == t => s"$f"
+//      case (maybeFrom, maybeTo) => s"${maybeFrom.getOrElse(wildcard)}..${maybeTo.getOrElse(wildcard)}"
+//    }
+//  }
+//}
 
-case class RelDeclaration(name: String) extends EntityDeclaration
+//case class BasicPattern(
+//  startLabels: Set[String],
+//  fromConstraint: CardinalityConstraint,
+//  relTypes: Set[String],
+//  toConstraint: CardinalityConstraint,
+//  endLabels: Set[String]
+//) extends DdlAst
 
-case class CardinalityConstraint(from: Option[Int], to: Option[Int]) {
-  override def toString: String = {
-    val wildcard = "*"
-    (from, to) match {
-      case (None, None) => wildcard
-      case (Some(f), Some(t)) if f == t => s"$f"
-      case (maybeFrom, maybeTo) => s"${maybeFrom.getOrElse(wildcard)}..${maybeTo.getOrElse(wildcard)}"
-    }
-  }
-}
+//case class GraphDeclaration(
+//  name: String,
+//  labels: List[LabelDeclaration],
+//  entityDeclarations: List[EntityDeclaration] = List.empty,
+//  patterns: List[BasicPattern] = List.empty
+//) extends DdlAst
 
-case class BasicPattern(
-  startLabels: Set[String],
-  fromConstraint: CardinalityConstraint,
-  relTypes: Set[String],
-  toConstraint: CardinalityConstraint,
-  endLabels: Set[String]
-) extends DdlAst
-
-case class GraphDeclaration(
-  name: String,
-  labels: List[LabelDeclaration],
-  entityDeclarations: List[EntityDeclaration] = List.empty,
-  patterns: List[BasicPattern] = List.empty
-) extends DdlAst
-
-case class NodeToTableMapping(
-  labelName: String,
-  tableName: String
-) extends DdlAst
-
-// Simplified version with only column as key per node
-case class IdMapping(
-  nodeLabel: Set[String],
-  nodePropertyName: String,
-  relPropertyName: String
-)
-
-case class RelationshipToTableMapping(
-  relName: String,
-  tableName: String,
-  startNodeIdMappings: List[IdMapping],
-  endNodeIdMappings: List[IdMapping]
-) extends DdlAst
-
-case class LabelsForTablesMapping(
-  nodeMappings: List[NodeToTableMapping],
-  relMappings: List[RelationshipToTableMapping]
-) extends DdlAst
+//case class NodeToTableMapping(
+//  labelName: String,
+//  tableName: String
+//) extends DdlAst
+//
+//// Simplified version with only column as key per node
+//case class IdMapping(
+//  nodeLabel: Set[String],
+//  nodePropertyName: String,
+//  relPropertyName: String
+//)
+//
+//case class RelationshipToTableMapping(
+//  relName: String,
+//  tableName: String,
+//  startNodeIdMappings: List[IdMapping],
+//  endNodeIdMappings: List[IdMapping]
+//) extends DdlAst
+//
+//case class LabelsForTablesMapping(
+//  nodeMappings: List[NodeToTableMapping],
+//  relMappings: List[RelationshipToTableMapping]
+//) extends DdlAst

@@ -26,10 +26,10 @@
  */
 package org.opencypher.sql.ddl
 
-import fastparse.{WhitespaceApi, noApi}
+import fastparse.WhitespaceApi
 import org.opencypher.okapi.api.types.CypherType
 import org.opencypher.okapi.impl.exception.IllegalArgumentException
-import Ddl._
+import org.opencypher.sql.ddl.Ddl._
 
 object DdlParser {
 
@@ -52,6 +52,8 @@ object DdlParser {
   val catalogKeyword = P(IgnoreCase("CATALOG"))
   val createKeyword = P(IgnoreCase("CREATE"))
   val labelKeyword = P(IgnoreCase("LABEL"))
+  val graphKeyword = P(IgnoreCase("GRAPH"))
+  val schemaKeyword = P(IgnoreCase("SCHEMA"))
   val keyKeyword = P(IgnoreCase("KEY"))
 
   val cypherType = P(
@@ -74,6 +76,8 @@ object DdlParser {
   // { foo1: STRING, foo2 : BOOLEAN }
   val properties = P("{" ~ property.rep(min = 1, sep = ",").map(_.toMap) ~ "}")
 
+  // ==== CATALOG ====
+
   // A { foo1: STRING, foo2 : BOOLEAN }
   val entityDefinition: P[EntityDefinition] = P(identifier.! ~ properties.?.map(_.getOrElse(Map.empty[String, CypherType])))
 
@@ -86,24 +90,30 @@ object DdlParser {
   // [CATALOG] CREATE LABEL <labelDefinition> [KEY <keyDefinition>]
   val createLabelStmt: P[LabelDeclaration] = P(catalogKeyword.? ~ createKeyword ~ labelDefinition ~ keyDefinition.?).map(LabelDeclaration.tupled)
 
-  // =================================================
+  // ==== Schema ====
 
-//  val labelDeclaration = {
-//    val labelName = identifier.!
-//    val properties = "PROPERTIES" ~/ "(" ~/ property.rep(sep = ",").map(_.toList) ~/ ")"
-//    P(labelName ~ properties.?.map(_.getOrElse(List.empty))).map(LabelDeclaration.tupled)
-//  }
-//
-//  val nodeDeclaration = ("(" ~ identifier.! ~ ")").map(NodeDeclaration)
-//
-//  val nodeAlternatives = ("(" ~ identifier.!.rep(min = 1, sep = "|") ~ ")").map(_.toSet)
-//
-//  val relDeclaration = ("[" ~ identifier.! ~ "]").map(RelDeclaration)
-//
+  // (LabelA [, LabelB]*)
+  val nodeDefinition: P[NodeDefinition] = P("(" ~ identifier.!.rep(min = 1, sep = ",") ~ ")").map(_.toSet)
+
+  // [RelType]
+  val relDefinition: P[RelDefinition] = P("[" ~ identifier.! ~ "]")
+
+  /*
+  CREATE GRAPH SCHEMA mySchema
+
+  --NODES
+  (A),
+  (B),
+  (A, B)
+
+  --EDGES
+  [TYPE_1],
+  [TYPE_2];
+   */
+  val schemaDefinition: P[SchemaDefinition] = P(createKeyword ~ graphKeyword ~ schemaKeyword ~ identifier.! ~ nodeDefinition.rep(sep = ",".?).map(_.toSet) ~ relDefinition.rep(sep = ",".?).map(_.toSet) ~ ";".?).map(SchemaDefinition.tupled)
+
 //  val relAlternatives = ("[" ~ identifier.!.rep(min = 1, sep = "|") ~ "]").map(_.toSet)
-//
-//  val entityDeclarations = (nodeDeclaration | relDeclaration).rep(sep = ",").map(_.toList)
-//
+//  val nodeAlternatives = ("(" ~ identifier.!.rep(min = 1, sep = "|") ~ ")").map(_.toSet)
 //  val integer = digit.rep(min = 1).!.map(_.toInt)
 //
 //  val wildcard = "*".!.map(_ => Option.empty[Int])
