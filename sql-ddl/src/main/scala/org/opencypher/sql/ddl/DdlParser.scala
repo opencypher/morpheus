@@ -57,6 +57,9 @@ object DdlParser {
   val schemaKeyword = P(IgnoreCase("SCHEMA"))
   val keyKeyword = P(IgnoreCase("KEY"))
   val withKeyword = P(IgnoreCase("WITH"))
+  val fromKeyword = P(IgnoreCase("FROM"))
+  val nodeKeyword = P(IgnoreCase("NODE"))
+  val setsKeyword = P(IgnoreCase("SETS"))
 
   val cypherType = P(
     (IgnoreCase("STRING")
@@ -129,24 +132,38 @@ object DdlParser {
       ~ nodeAlternatives)
     .map(SchemaPatternDefinition.tupled)
 
-  val schemaDefinition: P[SchemaDefinition] = P(createKeyword ~ graphKeyword ~ schemaKeyword ~ identifier.! ~
-    localLabelDefinition.rep(sep = ",".?).map(_.toList) ~
-    nodeDefinition.rep(sep = ",".?).map(_.toSet) ~
-    relDefinition.rep(sep = ",".?).map(_.toSet) ~
-    schemaPatternDefinition.rep(sep = ",".?).map(_.toSet) ~ ";".?)
+  val localSchemaDefinition: P[SchemaDefinition] = P(
+    localLabelDefinition.rep(sep = ",".?).map(_.toSet) ~
+      nodeDefinition.rep(sep = ",".?).map(_.toSet) ~
+      relDefinition.rep(sep = ",".?).map(_.toSet) ~
+      schemaPatternDefinition.rep(sep = ",".?).map(_.toSet) ~ ";".?)
     .map(SchemaDefinition.tupled)
+
+  val globalSchemaDefinition: P[(String, SchemaDefinition)] = P(createKeyword ~ graphKeyword ~ schemaKeyword ~ identifier.! ~
+    localSchemaDefinition)
 
   // ==== Graph ====
 
+  val nodeMappingDefinition: P[NodeMappingDefinition] = P(nodeDefinition ~ fromKeyword ~ identifier.!)
+    .map(NodeMappingDefinition.tupled)
+
+  // TODO: Add validation that either a global schema or a local schema is defined
   val graphDefinition: P[GraphDefinition] = P(createKeyword ~ graphKeyword ~ identifier.! ~
-    (withKeyword ~ schemaKeyword ~ identifier.!).?)
-    .map(GraphDefinition.tupled)
+    withKeyword ~ schemaKeyword ~
+    identifier.!.? ~
+    ("(" ~ localSchemaDefinition ~ ")").?.map(_.getOrElse(SchemaDefinition())) ~
+    nodeKeyword ~ labelKeyword ~ setsKeyword ~ "(" ~ nodeMappingDefinition.rep.map(_.toList) ~ ")"
+  ).map(GraphDefinition.tupled)
+
+  //  val relMappingDefinition: P[RelMappingDefinition] = P(relDefinition ~ fromKeyword ~ identifier.!)
+  //    .map(NodeMappingDefinition.tupled)
+
 
   // ==== DDL ====
 
   val ddlDefinitions: P[DdlDefinitions] = P(
     catalogLabelDefinition.rep.map(_.toList) ~
-      schemaDefinition.rep.map(_.toList) ~
+      globalSchemaDefinition.rep.map(_.toMap) ~
       graphDefinition.rep.map(_.toList) ~ End
   ).map(DdlDefinitions.tupled)
 

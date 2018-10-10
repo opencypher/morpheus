@@ -1,14 +1,18 @@
 package org.opencypher.sql.ddl
 
 import fastparse.core.Parsed.{Failure, Success}
+import org.opencypher.okapi.api.schema.{Schema, SchemaPattern}
 import org.opencypher.okapi.api.types._
 import org.opencypher.okapi.testing.BaseTestSuite
+import org.opencypher.okapi.testing.MatchHelper.equalWithTracing
 import org.opencypher.sql.ddl.DdlParser._
 import org.scalatest.mockito.MockitoSugar
 
 class DdlSchemaTest extends BaseTestSuite with MockitoSugar {
 
   val emptyMap = Map.empty[String, CypherType]
+  val emptyList: List[Nothing] = List.empty[Nothing]
+  val emptySchemaDef: SchemaDefinition = SchemaDefinition()
 
   describe("property types") {
     it("parses valid property types") {
@@ -195,16 +199,16 @@ class DdlSchemaTest extends BaseTestSuite with MockitoSugar {
       val expectedRelDefs = Set("TYPE_1", "TYPE_2")
       val expectedPatternDefinitions = Set(
         SchemaPatternDefinition(
-        Set("A", "B"),
-        CardinalityConstraint(0, None), Set("TYPE_1"), CardinalityConstraint(1, Some(1)),
-        Set("B")),
+          Set("A", "B"),
+          CardinalityConstraint(0, None), Set("TYPE_1"), CardinalityConstraint(1, Some(1)),
+          Set("B")),
         SchemaPatternDefinition(
           Set("A"),
           CardinalityConstraint(0, None), Set("TYPE_1"), CardinalityConstraint(0, None),
           Set("A"))
       )
 
-      schemaDefinition.parse(
+      globalSchemaDefinition.parse(
         """|CREATE GRAPH SCHEMA mySchema
            |
            |  --NODES
@@ -219,7 +223,7 @@ class DdlSchemaTest extends BaseTestSuite with MockitoSugar {
            |  (A | B) <0 .. *> - [TYPE_1] -> <1> (B),
            |  (A) <*> - [TYPE_1] -> (A);
         """.stripMargin) should matchPattern {
-        case Success(SchemaDefinition("mySchema", `expectedLocalLabelDefinitions`, `expectedNodeDefs`, `expectedRelDefs`, `expectedPatternDefinitions`), _) =>
+        case Success(("mySchema", SchemaDefinition(`expectedLocalLabelDefinitions`, `expectedNodeDefs`, `expectedRelDefs`, `expectedPatternDefinitions`)), _) =>
       }
     }
   }
@@ -227,21 +231,21 @@ class DdlSchemaTest extends BaseTestSuite with MockitoSugar {
   describe("graph definitions") {
     it("parses a graph definition") {
       graphDefinition.parse(
-        "CREATE GRAPH myGraph") should matchPattern {
-        case Success(GraphDefinition("myGraph", None), _) =>
+        "CREATE GRAPH myGraph WITH SCHEMA foo NODE LABEL SETS ()") should matchPattern {
+        case Success(GraphDefinition("myGraph", Some("foo"), `emptySchemaDef`, `emptyList`), _) =>
       }
     }
 
     it("parses a graph definition with a schema") {
       graphDefinition.parse(
-        "CREATE GRAPH myGraph WITH SCHEMA mySchema") should matchPattern {
-        case Success(GraphDefinition("myGraph", Some("mySchema")), _) =>
+        "CREATE GRAPH myGraph WITH SCHEMA mySchema NODE LABEL SETS ()") should matchPattern {
+        case Success(GraphDefinition("myGraph", Some("mySchema"), `emptySchemaDef`, `emptyList`), _) =>
       }
     }
   }
 
   it("parses correct schema") {
-    parse(
+    val ddlDefinition = parse(
       """|CATALOG CREATE LABEL (A {name: STRING})
          |
          |CATALOG CREATE LABEL (B {sequence: INTEGER, nationality: STRING?, age: INTEGER?})
@@ -252,73 +256,61 @@ class DdlSchemaTest extends BaseTestSuite with MockitoSugar {
          |
          |CREATE GRAPH SCHEMA mySchema
          |
-         |  LABEL (A)
+         |  LABEL (A { foo : INTEGER } ),
+         |  LABEL (C)
          |
-         |  --NODES
+         |
+         |  -- nodes
          |  (A),
          |  (B),
-         |  (A, B)
+         |  (A, B),
+         |  (C)
          |
-         |  --EDGES
+         |
+         |  -- edges
          |  [TYPE_1],
-         |  [TYPE_2];
+         |  [TYPE_2]
+         |
+         |  -- schema patterns
+         |  (A) <0 .. *> - [TYPE_1] -> <1> (B);
          |
          |CREATE GRAPH myGraph WITH SCHEMA mySchema
-      """.stripMargin) shouldEqual
+         |  NODE LABEL SETS (
+         |    (A) FROM foo
+         |  )
+         |
+      """.stripMargin)
+    ddlDefinition should equalWithTracing(
       DdlDefinitions(
-        List(
+        labelDefinitions = List(
           LabelDefinition("A", Map("name" -> CTString)),
           LabelDefinition("B", Map("sequence" -> CTInteger, "nationality" -> CTString.nullable, "age" -> CTInteger.nullable)),
           LabelDefinition("TYPE_1"),
           LabelDefinition("TYPE_2", Map("prop" -> CTBoolean.nullable))
         ),
-        List(
-          SchemaDefinition("mySchema", List(LabelDefinition("A")), Set(Set("A"), Set("B"), Set("A", "B")), Set("TYPE_1", "TYPE_2"))
-        ),
-        List(
-          GraphDefinition("myGraph", Some("mySchema"))
-        )
+        schemaDefinitions = Map("mySchema" -> SchemaDefinition(
+          localLabelDefinitions = Set(
+            LabelDefinition("A", properties = Map("foo" -> CTInteger)),
+            LabelDefinition("C")),
+          nodeDefinitions = Set(Set("A"), Set("B"), Set("A", "B"), Set("C")),
+          relDefinitions = Set("TYPE_1", "TYPE_2"),
+          schemaPatternDefinitions = Set(SchemaPatternDefinition(Set("A"), CardinalityConstraint(0, None), Set("TYPE_1"), CardinalityConstraint(1, Some(1)), Set("B"))))),
+        graphDefinitions = List(GraphDefinition("myGraph", Some("mySchema"), emptySchemaDef, List(NodeMappingDefinition(Set("A"), "foo"))))
       )
+    )
+
+    ddlDefinition.globalSchemas shouldEqual Map(
+      "mySchema" -> Schema.empty
+          .withNodePropertyKeys("A")("foo" -> CTInteger)
+          .withNodePropertyKeys("B")("sequence" -> CTInteger, "nationality" -> CTString.nullable, "age" -> CTInteger.nullable)
+          .withNodePropertyKeys("A", "B")("foo" -> CTInteger, "sequence" -> CTInteger, "nationality" -> CTString.nullable, "age" -> CTInteger.nullable)
+          .withNodePropertyKeys(Set("C"))
+          .withRelationshipType("TYPE_1")
+          .withRelationshipPropertyKeys("TYPE_2")("prop" -> CTBoolean.nullable)
+          .withSchemaPatterns(SchemaPattern("A", "TYPE_1", "B"))
+    )
   }
 
-  it("parses correct schema with NEN patterns") {
-    val sqlDdl =
-      """
-        |CATALOG CREATE LABEL A
-        |  PROPERTIES (
-        |    name CHAR(10) NOT NULL
-        |  );
-        |
-        |CATALOG CREATE LABEL B
-        |  PROPERTIES (
-        |    sequence INTEGER NOT NULL,
-        |    nationality CHAR(3),
-        |    age INTEGER
-        |  );
-        |
-        |CATALOG CREATE LABEL TYPE_1;
-        |
-        |CATALOG CREATE LABEL TYPE_2
-        |  PROPERTIES (
-        |    prop INTEGER
-        |  );
-        |
-        |CREATE GRAPH SCHEMA mySchema
-        |
-        |  --NODES
-        |  (A),
-        |  (B),
-        |  (A, B)
-        |
-        |  --EDGES
-        |  [TYPE_1],
-        |  [TYPE_2]
-        |
-        |  (A) <0 .. *> - [TYPE_1] -> <1> (B);
-        |
-        |CREATE GRAPH myGraph WITH SCHEMA mySchema
-      """.stripMargin
-  }
 
   it("does not accept unknown types") {
     val ddl =

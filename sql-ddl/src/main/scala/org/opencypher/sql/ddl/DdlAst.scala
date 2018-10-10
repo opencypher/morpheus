@@ -26,6 +26,7 @@
  */
 package org.opencypher.sql.ddl
 
+import org.opencypher.okapi.api.schema.{PropertyKeys, Schema, SchemaPattern}
 import org.opencypher.okapi.api.types.CypherType
 import org.opencypher.okapi.trees.AbstractTreeNode
 import org.opencypher.sql.ddl.Ddl._
@@ -42,9 +43,51 @@ abstract class DdlAst extends AbstractTreeNode[DdlAst]
 
 case class DdlDefinitions(
   labelDefinitions: List[LabelDefinition] = List.empty,
-  schemaDefinitions: List[SchemaDefinition] = List.empty,
+  schemaDefinitions: Map[String, SchemaDefinition] = Map.empty,
   graphDefinitions: List[GraphDefinition] = List.empty
-) extends DdlAst
+) extends DdlAst {
+
+  lazy val globalLabelDefinitions: Map[String, LabelDefinition] = labelDefinitions.map(labelDef => labelDef.name -> labelDef).toMap
+
+  lazy val globalSchemas: Map[String, Schema] = {
+    schemaDefinitions.map { case (name, SchemaDefinition(localLabelDefinitions, nodeDefinitions, relDefinitions, schemaPatternDefinitions)) =>
+      val labelDefinitions = globalLabelDefinitions ++ localLabelDefinitions.map(labelDef => labelDef.name -> labelDef).toMap
+
+      val schemaWithNodes = nodeDefinitions.foldLeft(Schema.empty) {
+        case (currentSchema, labelCombo) =>
+          val comboProperties = labelCombo.foldLeft(PropertyKeys.empty) { case (currProps, label) =>
+            // TODO: throw if properties don't exist
+            currProps ++ labelDefinitions(label).properties
+          }
+          currentSchema.withNodePropertyKeys(labelCombo, comboProperties)
+      }
+
+      val schemaWithRels = relDefinitions.foldLeft(schemaWithNodes) {
+        case (currentSchema, relType) =>
+          // TODO: throw if properties don't exist
+          currentSchema.withRelationshipPropertyKeys(relType, labelDefinitions(relType).properties)
+      }
+
+      val schemaWithPatterns = schemaPatternDefinitions.foldLeft(schemaWithRels) {
+        // TODO: extend OKAPI schema with cardinality constraints
+        case (currentSchema, SchemaPatternDefinition(sourceLabels, _, relTypes, _, targetLabels)) =>
+          relTypes.foldLeft(currentSchema) {
+            case (innerSchema, relType) =>
+              innerSchema.withSchemaPatterns(SchemaPattern(sourceLabels, relType, targetLabels))
+          }
+      }
+      name -> schemaWithPatterns
+    }
+  }
+
+//  val schemas: Map[String, Schema] = {
+//    graphDefinitions.map { graphDef =>
+//      val name = graphDef.name
+//      val globalSchemaDef: Option[SchemaDefinition] = graphDef.schemaName
+//    }
+//  }
+
+}
 
 case class LabelDefinition(
   name: String,
@@ -53,8 +96,7 @@ case class LabelDefinition(
 ) extends DdlAst
 
 case class SchemaDefinition(
-  name: String,
-  localLabelDefinitions: List[LabelDefinition] = List.empty,
+  localLabelDefinitions: Set[LabelDefinition] = Set.empty,
   nodeDefinitions: Set[Set[String]] = Set.empty,
   relDefinitions: Set[String] = Set.empty,
   schemaPatternDefinitions: Set[SchemaPatternDefinition] = Set.empty
@@ -62,46 +104,35 @@ case class SchemaDefinition(
 
 case class GraphDefinition(
   name: String,
-  schemaName: Option[String]
+  schemaName: Option[String] = None,
+  localSchemaDefinition: SchemaDefinition = SchemaDefinition(),
+  nodeMappings: List[NodeMappingDefinition] = List.empty
 ) extends DdlAst
 
 case class CardinalityConstraint(from: Int, to: Option[Int])
 
 case class SchemaPatternDefinition(
   sourceLabels: Set[String],
-  fromConstraint: CardinalityConstraint,
+  sourceCardinality: CardinalityConstraint,
   relTypes: Set[String],
-  toConstraint: CardinalityConstraint,
+  targetCardinality: CardinalityConstraint,
   targetLabels: Set[String]
 ) extends DdlAst
 
-//case class GraphDeclaration(
-//  name: String,
-//  labels: List[LabelDeclaration],
-//  entityDeclarations: List[EntityDeclaration] = List.empty,
-//  patterns: List[BasicPattern] = List.empty
-//) extends DdlAst
+case class NodeMappingDefinition(
+  labelNames: Set[String],
+  viewName: String
+) extends DdlAst
 
-//case class NodeToTableMapping(
-//  labelName: String,
-//  tableName: String
-//) extends DdlAst
-//
-//// Simplified version with only column as key per node
-//case class IdMapping(
-//  nodeLabel: Set[String],
-//  nodePropertyName: String,
-//  relPropertyName: String
-//)
-//
-//case class RelationshipToTableMapping(
-//  relName: String,
-//  tableName: String,
-//  startNodeIdMappings: List[IdMapping],
-//  endNodeIdMappings: List[IdMapping]
-//) extends DdlAst
-//
-//case class LabelsForTablesMapping(
-//  nodeMappings: List[NodeToTableMapping],
-//  relMappings: List[RelationshipToTableMapping]
-//) extends DdlAst
+case class RelMappingDefinition(
+  relName: String,
+  tableName: String,
+  startNodeIdMappings: List[IdMapping],
+  endNodeIdMappings: List[IdMapping]
+) extends DdlAst
+
+case class IdMapping(
+  labelNames: Set[String],
+  nodePropertyNames: List[String],
+  relPropertyNames: List[String]
+)
