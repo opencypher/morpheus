@@ -54,6 +54,7 @@ case class LabelDefinition(
 
 case class SchemaDefinition(
   name: String,
+  localLabelDefinitions: List[LabelDefinition] = List.empty,
   nodeDefinitions: Set[Set[String]] = Set.empty,
   relDefinitions: Set[String] = Set.empty,
   schemaPatternDefinitions: Set[SchemaPatternDefinition] = Set.empty

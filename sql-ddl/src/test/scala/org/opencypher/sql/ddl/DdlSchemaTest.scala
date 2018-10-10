@@ -91,20 +91,20 @@ class DdlSchemaTest extends BaseTestSuite with MockitoSugar {
 
   describe("[CATALOG] CREATE LABEL <labelDefinition|relTypeDefinition> [KEY keyDefinition]") {
     it("parses CATALOG CREATE LABEL <labelDefinition>") {
-      labelDefinition.parse("CATALOG CREATE LABEL (A)") should matchPattern {
+      catalogLabelDefinition.parse("CATALOG CREATE LABEL (A)") should matchPattern {
         case Success(LabelDefinition("A", `emptyMap`, None), _) =>
       }
     }
 
     it("parses CREATE LABEL <labelDefinition>") {
-      labelDefinition.parse("CREATE LABEL (A)") should matchPattern {
+      catalogLabelDefinition.parse("CREATE LABEL (A)") should matchPattern {
         case Success(LabelDefinition("A", `emptyMap`, None), _) =>
       }
     }
 
     it("parses CREATE LABEL <labelDefinition> KEY <keyDefinition>") {
       val expectedKeyDefinition = "A_NK" -> Set("foo", "bar")
-      labelDefinition.parse("CREATE LABEL (A) KEY A_NK (foo, bar)") should matchPattern {
+      catalogLabelDefinition.parse("CREATE LABEL (A) KEY A_NK (foo, bar)") should matchPattern {
         case Success(LabelDefinition("A", `emptyMap`, Some(`expectedKeyDefinition`)), _) =>
       }
     }
@@ -190,6 +190,7 @@ class DdlSchemaTest extends BaseTestSuite with MockitoSugar {
 
     it("parses a schema with node, rel, and schema pattern definitions") {
 
+      val expectedLocalLabelDefinitions = List.empty[LabelDefinition]
       val expectedNodeDefs = Set(Set("A"), Set("B"), Set("A", "B"))
       val expectedRelDefs = Set("TYPE_1", "TYPE_2")
       val expectedPatternDefinitions = Set(
@@ -218,7 +219,7 @@ class DdlSchemaTest extends BaseTestSuite with MockitoSugar {
            |  (A | B) <0 .. *> - [TYPE_1] -> <1> (B),
            |  (A) <*> - [TYPE_1] -> (A);
         """.stripMargin) should matchPattern {
-        case Success(SchemaDefinition("mySchema", `expectedNodeDefs`, `expectedRelDefs`, `expectedPatternDefinitions`), _) =>
+        case Success(SchemaDefinition("mySchema", `expectedLocalLabelDefinitions`, `expectedNodeDefs`, `expectedRelDefs`, `expectedPatternDefinitions`), _) =>
       }
     }
   }
@@ -251,6 +252,8 @@ class DdlSchemaTest extends BaseTestSuite with MockitoSugar {
          |
          |CREATE GRAPH SCHEMA mySchema
          |
+         |  LABEL (A)
+         |
          |  --NODES
          |  (A),
          |  (B),
@@ -270,7 +273,7 @@ class DdlSchemaTest extends BaseTestSuite with MockitoSugar {
           LabelDefinition("TYPE_2", Map("prop" -> CTBoolean.nullable))
         ),
         List(
-          SchemaDefinition("mySchema", Set(Set("A"), Set("B"), Set("A", "B")), Set("TYPE_1", "TYPE_2"))
+          SchemaDefinition("mySchema", List(LabelDefinition("A")), Set(Set("A"), Set("B"), Set("A", "B")), Set("TYPE_1", "TYPE_2"))
         ),
         List(
           GraphDefinition("myGraph", Some("mySchema"))

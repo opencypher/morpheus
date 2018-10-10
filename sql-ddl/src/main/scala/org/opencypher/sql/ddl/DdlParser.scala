@@ -90,9 +90,10 @@ object DdlParser {
   // KEY A (propKey[, propKey]*))
   val keyDefinition: P[KeyDefinition] = P(keyKeyword ~ identifier.! ~ "(" ~ identifier.!.rep(min = 1, sep = ",").map(_.toSet) ~ ")")
 
+  val localLabelDefinition: P[LabelDefinition] = P(labelWithoutKeys ~ keyDefinition.?).map(LabelDefinition.tupled)
+
   // [CATALOG] CREATE LABEL <labelDefinition> [KEY <keyDefinition>]
-  val labelDefinition: P[LabelDefinition] = P(catalogKeyword.? ~ createKeyword ~ labelWithoutKeys ~ keyDefinition.?)
-    .map(LabelDefinition.tupled)
+  val catalogLabelDefinition: P[LabelDefinition] = P(catalogKeyword.? ~ createKeyword ~ localLabelDefinition)
 
   // ==== Schema ====
 
@@ -129,6 +130,7 @@ object DdlParser {
     .map(SchemaPatternDefinition.tupled)
 
   val schemaDefinition: P[SchemaDefinition] = P(createKeyword ~ graphKeyword ~ schemaKeyword ~ identifier.! ~
+    localLabelDefinition.rep(sep = ",".?).map(_.toList) ~
     nodeDefinition.rep(sep = ",".?).map(_.toSet) ~
     relDefinition.rep(sep = ",".?).map(_.toSet) ~
     schemaPatternDefinition.rep(sep = ",".?).map(_.toSet) ~ ";".?)
@@ -143,7 +145,7 @@ object DdlParser {
   // ==== DDL ====
 
   val ddlDefinitions: P[DdlDefinitions] = P(
-    labelDefinition.rep.map(_.toList) ~
+    catalogLabelDefinition.rep.map(_.toList) ~
       schemaDefinition.rep.map(_.toList) ~
       graphDefinition.rep.map(_.toList) ~ End
   ).map(DdlDefinitions.tupled)
