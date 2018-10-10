@@ -26,7 +26,7 @@
  */
 package org.opencypher.sql.ddl
 
-import fastparse.WhitespaceApi
+import fastparse.{WhitespaceApi, core}
 import fastparse.core.Parsed.{Failure, Success}
 import org.opencypher.okapi.api.types.CypherType
 import org.opencypher.okapi.impl.exception.IllegalArgumentException
@@ -97,26 +97,41 @@ object DdlParser {
   // ==== Schema ====
 
   // (LabelA [, LabelB]*)
-  val nodeDefinition: P[NodeDefinition] = P("(" ~ identifier.!.rep(min = 1, sep = ",") ~ ")").map(_.toSet)
+  val nodeDefinition: P[Set[String]] = P("(" ~ identifier.!.rep(min = 1, sep = ",") ~ ")").map(_.toSet)
 
   // [RelType]
-  val relDefinition: P[RelDefinition] = P("[" ~ identifier.! ~ "]")
+  val relDefinition: P[String] = P("[" ~ identifier.! ~ "]")
 
-  /*
-  CREATE GRAPH SCHEMA mySchema
+  val nodeAlternatives: P[Set[String]] = P("(" ~ identifier.!.rep(min = 1, sep = "|") ~ ")").map(_.toSet)
 
-  --NODES
-  (A),
-  (B),
-  (A, B)
+  val relAlternatives: P[Set[String]] = P("[" ~ identifier.!.rep(min = 1, sep = "|") ~ "]").map(_.toSet)
 
-  --EDGES
-  [TYPE_1],
-  [TYPE_2];
-   */
+  val integer: P[Int] = P(digit.rep(min = 1).!.map(_.toInt))
+
+  val wildcard: P[Option[Int]] = P("*").map(_ => Option.empty[Int])
+
+  val intOrWildcard: P[Option[Int]] = P(wildcard | integer.?)
+
+  val fixed: P[CardinalityConstraint] = P(intOrWildcard.map(p => CardinalityConstraint(p.getOrElse(0), p)))
+
+  val Wildcard: CardinalityConstraint = CardinalityConstraint(0, None)
+
+  val range: P[CardinalityConstraint] = P(integer ~ (".." | ",") ~ intOrWildcard).map(CardinalityConstraint.tupled)
+
+  val cardinalityConstraint: P[CardinalityConstraint] = P("<" ~ (range | fixed) ~ ">")
+
+  val schemaPatternDefinition: P[SchemaPatternDefinition] = P(
+    nodeAlternatives ~
+      cardinalityConstraint.?.map(_.getOrElse(Wildcard)) ~
+      "-" ~ relAlternatives ~ "->"
+      ~ cardinalityConstraint.?.map(_.getOrElse(Wildcard))
+      ~ nodeAlternatives)
+    .map(SchemaPatternDefinition.tupled)
+
   val schemaDefinition: P[SchemaDefinition] = P(createKeyword ~ graphKeyword ~ schemaKeyword ~ identifier.! ~
     nodeDefinition.rep(sep = ",".?).map(_.toSet) ~
-    relDefinition.rep(sep = ",".?).map(_.toSet) ~ ";".?)
+    relDefinition.rep(sep = ",".?).map(_.toSet) ~
+    schemaPatternDefinition.rep(sep = ",".?).map(_.toSet) ~ ";".?)
     .map(SchemaDefinition.tupled)
 
   // ==== Graph ====
@@ -149,29 +164,6 @@ object DdlParser {
     }
   }
 
-
-  //  val relAlternatives = ("[" ~ identifier.!.rep(min = 1, sep = "|") ~ "]").map(_.toSet)
-  //  val nodeAlternatives = ("(" ~ identifier.!.rep(min = 1, sep = "|") ~ ")").map(_.toSet)
-  //  val integer = digit.rep(min = 1).!.map(_.toInt)
-  //
-  //  val wildcard = "*".!.map(_ => Option.empty[Int])
-  //
-  //  val intOrWildcard = integer.? | wildcard
-  //
-  //  val fixed = intOrWildcard.map(p => CardinalityConstraint(p, p))
-  //
-  //  val Wildcard = CardinalityConstraint(None, None)
-  //
-  //  val range = (integer.? ~ (".." | ",") ~ intOrWildcard).map(CardinalityConstraint.tupled)
-  //
-  //  val cardinalityConstraint: P[CardinalityConstraint] = ("<" ~ (fixed | range) ~ ">").?.map(_.getOrElse(Wildcard))
-  //
-  //  val nodeRelationshipNodePattern = P(
-  //    nodeAlternatives ~ cardinalityConstraint ~
-  //      "-" ~ relAlternatives ~ "->"
-  //      ~ cardinalityConstraint ~ nodeAlternatives)
-  //    .map(BasicPattern.tupled)
-  //
   //  val labelDeclarations = "LABELS" ~/ labelDefinition.rep(min = 1, sep = ",").map(_.toList)
   //
   //  val graphDeclaration = P("CREATE" ~/ "GRAPH" ~/ identifier.! ~/ "WITH" ~/ "SCHEMA" ~/

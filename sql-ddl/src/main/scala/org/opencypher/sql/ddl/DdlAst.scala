@@ -28,7 +28,7 @@ package org.opencypher.sql.ddl
 
 import org.opencypher.okapi.api.types.CypherType
 import org.opencypher.okapi.trees.AbstractTreeNode
-import org.opencypher.sql.ddl.Ddl.{KeyDefinition, NodeDefinition, RelDefinition}
+import org.opencypher.sql.ddl.Ddl._
 
 object Ddl {
   type Property = (String, CypherType)
@@ -36,10 +36,6 @@ object Ddl {
   type EntityDefinition = (String, Map[String, CypherType])
 
   type KeyDefinition = (String, Set[String])
-
-  type NodeDefinition = Set[String]
-
-  type RelDefinition = String
 }
 
 abstract class DdlAst extends AbstractTreeNode[DdlAst]
@@ -58,8 +54,9 @@ case class LabelDefinition(
 
 case class SchemaDefinition(
   name: String,
-  nodeDefinitions: Set[NodeDefinition],
-  relDefinitions: Set[RelDefinition]
+  nodeDefinitions: Set[Set[String]] = Set.empty,
+  relDefinitions: Set[String] = Set.empty,
+  schemaPatternDefinitions: Set[SchemaPatternDefinition] = Set.empty
 ) extends DdlAst
 
 case class GraphDefinition(
@@ -67,28 +64,15 @@ case class GraphDefinition(
   schemaName: Option[String]
 ) extends DdlAst
 
+case class CardinalityConstraint(from: Int, to: Option[Int])
 
-
-
-//
-//case class CardinalityConstraint(from: Option[Int], to: Option[Int]) {
-//  override def toString: String = {
-//    val wildcard = "*"
-//    (from, to) match {
-//      case (None, None) => wildcard
-//      case (Some(f), Some(t)) if f == t => s"$f"
-//      case (maybeFrom, maybeTo) => s"${maybeFrom.getOrElse(wildcard)}..${maybeTo.getOrElse(wildcard)}"
-//    }
-//  }
-//}
-
-//case class BasicPattern(
-//  startLabels: Set[String],
-//  fromConstraint: CardinalityConstraint,
-//  relTypes: Set[String],
-//  toConstraint: CardinalityConstraint,
-//  endLabels: Set[String]
-//) extends DdlAst
+case class SchemaPatternDefinition(
+  sourceLabels: Set[String],
+  fromConstraint: CardinalityConstraint,
+  relTypes: Set[String],
+  toConstraint: CardinalityConstraint,
+  targetLabels: Set[String]
+) extends DdlAst
 
 //case class GraphDeclaration(
 //  name: String,
