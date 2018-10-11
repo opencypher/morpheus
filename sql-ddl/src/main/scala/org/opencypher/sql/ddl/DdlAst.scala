@@ -47,9 +47,11 @@ object Ddl {
 abstract class DdlAst extends AbstractTreeNode[DdlAst]
 
 case class DdlDefinitions(
-  labelDefinitions: List[LabelDefinition] = List.empty,
+  labelDefinitions: List[LabelDefinition] = Nil,
   schemaDefinitions: Map[String, SchemaDefinition] = Map.empty,
-  graphDefinitions: List[GraphDefinition] = List.empty
+  graphDefinitions: List[GraphDefinition] = Nil,
+  nodeMappings: List[NodeMappingDefinition] = Nil,
+  relationshipLabelSets: List[RelationshipLabelSetDefinition] = Nil
 ) extends DdlAst {
 
   private lazy val globalLabelDefinitions: Map[String, LabelDefinition] = labelDefinitions.map(labelDef => labelDef.name -> labelDef).toMap

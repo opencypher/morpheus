@@ -26,100 +26,129 @@
  */
 package org.opencypher.sql.ddl
 
-import fastparse.{WhitespaceApi, core}
+import fastparse.WhitespaceApi
+import fastparse.core.Frame
 import fastparse.core.Parsed.{Failure, Success}
-import org.opencypher.okapi.api.types.CypherType
-import org.opencypher.okapi.impl.exception.IllegalArgumentException
+import org.opencypher.okapi.api.types._
 import org.opencypher.sql.ddl.Ddl._
+
+case class DdlParsingException(
+  index: Int,
+  locationPointer: String,
+  expected: String,
+  parserStack: List[Frame]
+) extends RuntimeException(
+  s"""|Failed at index $index:
+      |
+      |Expected:\t$expected
+      |
+      |$locationPointer
+      |
+      |${parserStack.mkString("\n")}""".stripMargin) with Serializable
 
 object DdlParser {
 
-  val White = WhitespaceApi.Wrapper {
-    import fastparse.all._
-
-    val newline = P("\n" | "\r\n" | "\r" | "\f")
-    val whitespace = P(" " | "\t" | newline)
-    val comment = P("--" ~ (!newline ~ AnyChar).rep ~ newline)
-    NoTrace((comment | whitespace).rep)
-  }
-
-  import White._
-  import fastparse.noApi._
-
-  val digit = P(CharIn('0' to '9'))
-  val character = P(CharIn('a' to 'z', 'A' to 'Z'))
-  val identifier = P(character ~ P(character | digit | "_").repX)
-
-  def keyword(k: String): P[Unit] = P(IgnoreCase(k))
-
-  val catalogKeyword = keyword("CATALOG")
-  val createKeyword = keyword("CREATE")
-  val labelKeyword = keyword("LABEL")
-  val graphKeyword = keyword("GRAPH")
-  val schemaKeyword = keyword("SCHEMA")
-  val keyKeyword = keyword("KEY")
-  val withKeyword = keyword("WITH")
-  val fromKeyword = keyword("FROM")
-  val nodeKeyword = keyword("NODE")
-  val nodesKeyword = keyword("NODES")
-  val relationshipKeyword = keyword("RELATIONSHIP")
-  val setKeyword = keyword("SET")
-  val setsKeyword = keyword("SETS")
-  val joinKeyword = keyword("JOIN")
-  val onKeyword = keyword("ON")
-  val andKeyword = keyword("AND")
-  val asKeyword = keyword("AS")
-  val startKeyword = keyword("START")
-  val endKeyword = keyword("END")
-
-  val cypherType = P(
-    (IgnoreCase("STRING")
-      | IgnoreCase("INTEGER")
-      | IgnoreCase("FLOAT")
-      | IgnoreCase("BOOLEAN")
-    ) ~ "?".?)
-
-  val propertyType: P[CypherType] = P(cypherType.!).map { s =>
-    CypherType.fromName(s.toUpperCase) match {
-      case Some(ct) => ct
-      case None => throw IllegalArgumentException("Supported CypherType", s)
+  def parse(ddlString: String): DdlDefinitions = {
+    ddlDefinitions.parse(ddlString) match {
+      case Success(v, _) => v
+      case Failure(failedParser, index, extra) =>
+        val before = index - math.max(index - 20, 0)
+        val after = math.min(index + 20, extra.input.length) - index
+        val locationPointer =
+          s"""|\t${extra.input.slice(index - before, index + after).replace('\n', ' ')}
+              |\t${"~" * before + "^" + "~" * after}
+           """.stripMargin
+        throw DdlParsingException(index, locationPointer, extra.traced.expected, extra.traced.stack.toList)
     }
   }
 
+  object ParsersForNoTrace {
+
+    import fastparse.all._
+
+    val newline: P[Unit] = P("\n" | "\r\n" | "\r" | "\f")
+    val whitespace: P[Unit] = P(" " | "\t" | newline)
+    val comment: P[Unit] = P("--" ~ (!newline ~ AnyChar).rep ~ newline)
+    val noTrace: P[Unit] = (comment | whitespace).rep
+  }
+
+  val Whitespace = WhitespaceApi.Wrapper {
+    import fastparse.all._
+    NoTrace(ParsersForNoTrace.noTrace)
+  }
+
+  import Whitespace._
+  import fastparse.noApi._
+
+  val digit: P[Unit] = P(CharIn('0' to '9'))
+  val character: P[Unit] = P(CharIn('a' to 'z', 'A' to 'Z'))
+  val identifier: P[Unit] = P(character ~ P(character | digit | "_").repX)
+
+  def keyword(k: String): P[Unit] = P(IgnoreCase(k))
+
+  val CATALOG: P[Unit] = keyword("CATALOG")
+  val CREATE: P[Unit] = keyword("CREATE")
+  val LABEL: P[Unit] = keyword("LABEL")
+  val GRAPH: P[Unit] = keyword("GRAPH")
+  val SCHEMA: P[Unit] = keyword("SCHEMA")
+  val KEY: P[Unit] = keyword("KEY")
+  val WITH: P[Unit] = keyword("WITH")
+  val FROM: P[Unit] = keyword("FROM")
+  val NODE: P[Unit] = keyword("NODE")
+  val NODES: P[Unit] = keyword("NODES")
+  val RELATIONSHIP: P[Unit] = keyword("RELATIONSHIP")
+  val SET: P[Unit] = keyword("SET")
+  val SETS: P[Unit] = keyword("SETS")
+  val JOIN: P[Unit] = keyword("JOIN")
+  val ON: P[Unit] = keyword("ON")
+  val AND: P[Unit] = keyword("AND")
+  val AS: P[Unit] = keyword("AS")
+  val START: P[Unit] = keyword("START")
+  val END: P[Unit] = keyword("END")
+
+  val propertyType: P[CypherType] = P(
+    (IgnoreCase("STRING").!.map(_ => CTString)
+      | IgnoreCase("INTEGER").!.map(_ => CTInteger)
+      | IgnoreCase("FLOAT").!.map(_ => CTFloat)
+      | IgnoreCase("BOOLEAN").!.map(_ => CTBoolean)
+    ) ~ "?".!.?.map(_.isDefined)).map { case (cypherType, isNullable) =>
+    if (isNullable) cypherType.nullable else cypherType
+  }
+
   // foo : STRING
-  val property: P[Property] = P(identifier.! ~ ":" ~ propertyType)
+  val property: P[Property] = P(identifier.! ~/ ":" ~/ propertyType)
 
   // { foo1: STRING, foo2 : BOOLEAN }
-  val properties = P("{" ~ property.rep(min = 1, sep = ",").map(_.toMap) ~ "}")
+  val properties = P("{" ~/ property.rep(min = 1, sep = ",").map(_.toMap) ~/ "}")
 
   // ==== Catalog ====
 
   // A { foo1: STRING, foo2 : BOOLEAN }
-  val labelWithProperties: P[EntityDefinition] = P(identifier.! ~ properties.?.map(_.getOrElse(Map.empty[String, CypherType])))
+  val labelWithProperties: P[EntityDefinition] = P(identifier.! ~/ properties.?.map(_.getOrElse(Map.empty[String, CypherType])))
 
   // LABEL (A { foo1: STRING, foo2 : BOOLEAN }) | LABEL [A { foo1: STRING, foo2 : BOOLEAN }]
-  val labelWithoutKeys: P[(String, Map[String, CypherType])] = P(labelKeyword ~ (("(" ~ labelWithProperties ~ ")")
-    | ("[" ~ labelWithProperties ~ "]")))
+  val labelWithoutKeys: P[(String, Map[String, CypherType])] = P(LABEL ~/ (("(" ~/ labelWithProperties ~/ ")")
+    | ("[" ~/ labelWithProperties ~/ "]")))
 
   // KEY A (propKey[, propKey]*))
-  val keyDefinition: P[KeyDefinition] = P(keyKeyword ~ identifier.! ~ "(" ~ identifier.!.rep(min = 1, sep = ",").map(_.toSet) ~ ")")
+  val keyDefinition: P[KeyDefinition] = P(KEY ~ identifier.! ~ "(" ~ identifier.!.rep(min = 1, sep = ",").map(_.toSet) ~ ")")
 
   val localLabelDefinition: P[LabelDefinition] = P(labelWithoutKeys ~ keyDefinition.?).map(LabelDefinition.tupled)
 
   // [CATALOG] CREATE LABEL <labelDefinition> [KEY <keyDefinition>]
-  val catalogLabelDefinition: P[LabelDefinition] = P(catalogKeyword.? ~ createKeyword ~ localLabelDefinition)
+  val catalogLabelDefinition: P[LabelDefinition] = P(CATALOG.? ~ CREATE ~ localLabelDefinition)
 
   // ==== Schema ====
 
   // (LabelA [, LabelB]*)
-  val nodeDefinition: P[Set[String]] = P("(" ~ identifier.!.rep(min = 1, sep = ",") ~ ")").map(_.toSet)
+  val nodeDefinition: P[Set[String]] = P("(" ~/ identifier.!.rep(min = 1, sep = ",") ~/ ")").map(_.toSet)
 
   // [RelType]
-  val relDefinition: P[String] = P("[" ~ identifier.! ~ "]")
+  val relDefinition: P[String] = P("[" ~/ identifier.! ~/ "]")
 
-  val nodeAlternatives: P[Set[String]] = P("(" ~ identifier.!.rep(min = 1, sep = "|") ~ ")").map(_.toSet)
+  val nodeAlternatives: P[Set[String]] = P("(" ~/ identifier.!.rep(min = 1, sep = "|") ~/ ")").map(_.toSet)
 
-  val relAlternatives: P[Set[String]] = P("[" ~ identifier.!.rep(min = 1, sep = "|") ~ "]").map(_.toSet)
+  val relAlternatives: P[Set[String]] = P("[" ~/ identifier.!.rep(min = 1, sep = "|") ~/ "]").map(_.toSet)
 
   val integer: P[Int] = P(digit.rep(min = 1).!.map(_.toInt))
 
@@ -131,128 +160,75 @@ object DdlParser {
 
   val Wildcard: CardinalityConstraint = CardinalityConstraint(0, None)
 
-  val range: P[CardinalityConstraint] = P(integer ~ (".." | ",") ~ intOrWildcard).map(CardinalityConstraint.tupled)
+  val range: P[CardinalityConstraint] = P(integer ~ (".." | ",") ~/ intOrWildcard).map(CardinalityConstraint.tupled)
 
-  val cardinalityConstraint: P[CardinalityConstraint] = P("<" ~ (range | fixed) ~ ">")
+  val cardinalityConstraint: P[CardinalityConstraint] = P("<" ~/ (range | fixed) ~/ ">")
 
   val schemaPatternDefinition: P[SchemaPatternDefinition] = P(
     nodeAlternatives ~
-      cardinalityConstraint.?.map(_.getOrElse(Wildcard)) ~
-      "-" ~ relAlternatives ~ "->"
-      ~ cardinalityConstraint.?.map(_.getOrElse(Wildcard))
-      ~ nodeAlternatives)
+      cardinalityConstraint.?.map(_.getOrElse(Wildcard)) ~/
+      "-" ~/ relAlternatives ~/ "->"
+      ~/ cardinalityConstraint.?.map(_.getOrElse(Wildcard))
+      ~/ nodeAlternatives)
     .map(SchemaPatternDefinition.tupled)
 
   val localSchemaDefinition: P[SchemaDefinition] = P(
-    localLabelDefinition.rep(sep = ",".?).map(_.toSet) ~
-      nodeDefinition.rep(sep = ",".?).map(_.toSet) ~
-      relDefinition.rep(sep = ",".?).map(_.toSet) ~
-      schemaPatternDefinition.rep(sep = ",".?).map(_.toSet) ~ ";".?)
+    localLabelDefinition.rep(sep = ",".?).map(_.toSet) ~/
+      nodeDefinition.rep(sep = ",".?).map(_.toSet) ~/
+      relDefinition.rep(sep = ",".?).map(_.toSet) ~/
+      schemaPatternDefinition.rep(sep = ",".?).map(_.toSet) ~/ ";".?)
     .map(SchemaDefinition.tupled)
 
-  val globalSchemaDefinition: P[(String, SchemaDefinition)] = P(createKeyword ~ graphKeyword ~ schemaKeyword ~ identifier.! ~
+  val globalSchemaDefinition: P[(String, SchemaDefinition)] = P(CREATE ~ GRAPH ~ SCHEMA ~/ identifier.! ~/
     localSchemaDefinition)
 
   // ==== Graph ====
 
-  val propertyToColumn: P[(String, String)] = P(identifier.! ~ asKeyword ~ identifier.!).map { case (column, propertyKey) => propertyKey -> column }
-  val propertyMappingDefinition: P[PropertyToColumnMappingDefinition] = P("(" ~/ propertyToColumn.rep(sep = ",").map(_.toMap) ~ ")")
+  val propertyToColumn: P[(String, String)] = P(identifier.! ~/ AS ~/ identifier.!).map { case (column, propertyKey) => propertyKey -> column }
+  val propertyMappingDefinition: P[PropertyToColumnMappingDefinition] = P("(" ~/ propertyToColumn.rep(sep = ",").map(_.toMap) ~/ ")")
 
-  val nodeMappingDefinition: P[NodeMappingDefinition] = P(nodeDefinition ~ fromKeyword ~ identifier.! ~ propertyMappingDefinition.?).map(NodeMappingDefinition.tupled)
-  val nodeMappings: P[List[NodeMappingDefinition]] = P(nodeKeyword ~ labelKeyword ~ setsKeyword ~ "(" ~ nodeMappingDefinition.rep.map(_.toList) ~ ")")
+  val nodeMappingDefinition: P[NodeMappingDefinition] = P(nodeDefinition ~/ FROM ~/ identifier.! ~/ propertyMappingDefinition.?).map(NodeMappingDefinition.tupled)
+  val nodeMappings: P[List[NodeMappingDefinition]] = P(NODE ~/ LABEL ~/ SETS ~/ "(" ~/ nodeMappingDefinition.rep.map(_.toList) ~/ ")")
 
   val columnIdentifier: P[ColumnIdentifier] = P(identifier.!.rep(min = 2, sep = ".").map(_.toList))
-  val joinTuple: P[(ColumnIdentifier, ColumnIdentifier)] = P(columnIdentifier ~ "=" ~ columnIdentifier)
-  val joinOnDefinition: P[JoinOnDefinition] = P(joinKeyword ~ onKeyword ~ joinTuple.rep(min = 1, sep = andKeyword)).map(_.toList).map(JoinOnDefinition)
+  val joinTuple: P[(ColumnIdentifier, ColumnIdentifier)] = P(columnIdentifier ~/ "=" ~/ columnIdentifier)
+  val joinOnDefinition: P[JoinOnDefinition] = P(JOIN ~/ ON ~/ joinTuple.rep(min = 1, sep = AND)).map(_.toList).map(JoinOnDefinition)
 
   val sourceViewDefinition: P[SourceViewDefinition] = P(
-    identifier.! ~ identifier.!
+    identifier.! ~/ identifier.!
   ).map(SourceViewDefinition.tupled)
 
   val labelToViewDefinition: P[LabelToViewDefinition] = P(
-    labelKeyword ~ setKeyword ~ nodeDefinition ~ fromKeyword ~ sourceViewDefinition ~ joinOnDefinition
+    LABEL ~/ SET ~/ nodeDefinition ~/ FROM ~/ sourceViewDefinition ~/ joinOnDefinition
   ).map(LabelToViewDefinition.tupled)
 
   val relationshipMappingDefinition: P[RelationshipMappingDefinition] = P(
-    fromKeyword ~ sourceViewDefinition ~ startKeyword ~ nodesKeyword ~ labelToViewDefinition ~ endKeyword ~ nodesKeyword ~ labelToViewDefinition
+    FROM ~/ sourceViewDefinition ~/ START ~/ NODES ~/ labelToViewDefinition ~/ END ~/ NODES ~/ labelToViewDefinition
   ).map(RelationshipMappingDefinition.tupled)
 
   val relationshipLabelSetDefinition: P[RelationshipLabelSetDefinition] = P(
-    relDefinition ~ relationshipMappingDefinition.rep(min = 1, sep = ",".?).map(_.toList) ~ ",".?
+    relDefinition ~ relationshipMappingDefinition.rep(min = 1, sep = ",".?).map(_.toList) ~/ ",".?
   ).map(RelationshipLabelSetDefinition.tupled)
 
   val relationshipLabelSetDefinitions: P[List[RelationshipLabelSetDefinition]] = P(
-    relationshipKeyword ~/ labelKeyword ~/ setsKeyword ~/ "(" ~/ relationshipLabelSetDefinition.rep(sep = ",".?).map(_.toList) ~/ ")"
+    RELATIONSHIP ~/ LABEL ~/ SETS ~/ "(" ~/ relationshipLabelSetDefinition.rep(sep = ",".?).map(_.toList) ~/ ")"
   )
 
   // TODO: this allows WITH SCHEMA with missing identifier and missing inline schema -> forbid
-  val graphDefinition: P[GraphDefinition] = P(createKeyword ~ graphKeyword ~ identifier.! ~
-    withKeyword ~ schemaKeyword ~
-    identifier.!.? ~
-    ("(" ~ localSchemaDefinition ~ ")").?.map(_.getOrElse(SchemaDefinition())) ~
-    nodeMappings.?.map(_.getOrElse(List.empty[NodeMappingDefinition]))
+  val graphDefinition: P[GraphDefinition] = P(CREATE ~ GRAPH ~ identifier.! ~/ WITH ~/ SCHEMA ~/ identifier.!.? ~/
+    ("(" ~/ localSchemaDefinition ~/ ")").?.map(_.getOrElse(SchemaDefinition())) ~/
+    nodeMappings.?.map(_.getOrElse(Nil))
   ).map(GraphDefinition.tupled)
-
-  //  val relMappingDefinition: P[RelMappingDefinition] = P(relDefinition ~ fromKeyword ~ identifier.!)
-  //    .map(NodeMappingDefinition.tupled)
-
 
   // ==== DDL ====
 
   val ddlDefinitions: P[DdlDefinitions] = P(
-    catalogLabelDefinition.rep.map(_.toList) ~
-      globalSchemaDefinition.rep.map(_.toMap) ~
-      graphDefinition.rep.map(_.toList) ~ End
+    ParsersForNoTrace.noTrace ~ // allow for whitespace/comments at the start
+      catalogLabelDefinition.rep.map(_.toList) ~/
+      globalSchemaDefinition.rep.map(_.toMap) ~/
+      graphDefinition.rep.map(_.toList) ~/
+      nodeMappings.?.map(_.getOrElse(Nil)) ~/
+      relationshipLabelSetDefinitions.?.map(_.getOrElse(Nil)) ~/ End
   ).map(DdlDefinitions.tupled)
-
-  def parse(ddlString: String): DdlDefinitions = {
-    ddlDefinitions.parse(ddlString) match {
-      case Success(v, _) => v
-      case Failure(p, index, extra) =>
-        val i = extra.input
-        val before = index - math.max(index - 20, 0)
-        val after = math.min(index + 20, i.length) - index
-        println(extra.input.slice(index - before, index + after).replace('\n', ' '))
-        println("~" * before + "^" + "~" * after)
-        println(s"failed parser: $p at index $index")
-        println(s"stack=${extra.traced.stack}")
-        // TODO: Throw a helpful parsing error
-        throw new Exception("TODO")
-    }
-  }
-
-  //  val labelDeclarations = "LABELS" ~/ labelDefinition.rep(min = 1, sep = ",").map(_.toList)
-  //
-  //  val graphDeclaration = P("CREATE" ~/ "GRAPH" ~/ identifier.! ~/ "WITH" ~/ "SCHEMA" ~/
-  //    "(" ~/
-  //    labelDeclarations.rep.map(_.flatten.toList) ~
-  //    entityDeclarations ~
-  //    nodeRelationshipNodePattern.rep(sep = ",").map(_.toList) ~
-  //    ")"
-  //  ).map(GraphDeclaration.tupled)
-  //
-  //  val nodeToTableMapping = P("NODES" ~ nodeDeclaration.map(_.name) ~ "FROM" ~ identifier.!).map(NodeToTableMapping.tupled)
-  //
-  //  val mapping = "MAPPING" ~ identifier.! ~ "ONTO" ~ identifier.!
-  //
-  //  val startNodeMapping = P(mapping ~ "FOR" ~ "START" ~ "NODES" ~/ nodeAlternatives).map {
-  //    case (from, to, alternatives) => IdMapping(alternatives, from, to)
-  //  }
-  //
-  //  val endNodeMapping = P(mapping ~ "FOR" ~ "END" ~ "NODES" ~/ nodeAlternatives).map {
-  //    case (from, to, alternatives) => IdMapping(alternatives, from, to)
-  //  }
-  //
-  //  val relToTableMapping = P("RELATIONSHIPS" ~/ relDeclaration.map(_.name) ~/ "FROM" ~/ identifier.! ~/
-  //    startNodeMapping.rep(min = 1).map(_.toList) ~
-  //    endNodeMapping.rep(min = 1).map(_.toList)
-  //  ).map(RelationshipToTableMapping.tupled).log()
-  //
-  //  val labelsForTablesMapping = {
-  //    P(nodeToTableMapping.rep.map(_.toList) ~
-  //      relToTableMapping.rep.map(_.toList)
-  //    ).map(LabelsForTablesMapping.tupled)
-  //  }
-  //
 
 }

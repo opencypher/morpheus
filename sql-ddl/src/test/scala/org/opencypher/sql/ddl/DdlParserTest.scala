@@ -572,19 +572,18 @@ class DdlParserTest extends BaseTestSuite with MockitoSugar with TestNameFixture
     }
   }
 
-  ignore("does not accept unknown types") {
+  it("does not accept unknown types") {
     val ddlString =
-      """
-        |CATALOG CREATE LABEL (A {prop: char, prop2: int})
-        |
-        |CREATE GRAPH SCHEMA mySchema
-        |
-        |  (A);
-        |
-        |CREATE GRAPH myGraph WITH SCHEMA mySchema
-      """.stripMargin
+      """|
+         |CATALOG CREATE LABEL (A {prop: char, prop2: int})
+         |
+         |CREATE GRAPH SCHEMA mySchema
+         |
+         |  (A);
+         |
+         |CREATE GRAPH myGraph WITH SCHEMA mySchema""".stripMargin
 
-    an[IllegalArgumentException] shouldBe thrownBy {
+    an[DdlParsingException] shouldBe thrownBy {
       parse(ddlString)
     }
   }
