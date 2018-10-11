@@ -150,3 +150,10 @@ case class IdMapping(
 )
 
 case class JoinOnDefinition(joinPredicates: List[(ColumnIdentifier, ColumnIdentifier)]) extends DdlAst
+
+case class EntityMappingDefinition(
+  labelSet: Set[String],
+  sourceView: String,
+  sourceViewAlias: String,
+  joinOnDefinition: JoinOnDefinition
+) extends DdlAst

@@ -314,28 +314,23 @@ class DdlSchemaTest extends BaseTestSuite with MockitoSugar with TestNameFixture
       success(nodeMappingDefinition, NodeMappingDefinition(Set("A"), "view", Some(Map("propertyKey1" -> "column1", "propertyKey2" -> "column2"))))
     }
 
-    it("parses single JOIN ON") {
-      joinTuples.parse("JOIN ON view_a.COLUMN_A = view_b.COLUMN_B") should matchPattern {
-        case Success(JoinOnDefinition(List((List("view_a", "COLUMN_A"), List("view_b", "COLUMN_B")))), _) =>
-      }
+    it("parses JOIN ON view_a.COLUMN_A = view_b.COLUMN_B") {
+      success(joinOnDefinition, JoinOnDefinition(List((List("view_a", "COLUMN_A"), List("view_b", "COLUMN_B")))))
     }
 
-    it("parses multiple JOIN ON") {
-      joinTuples.parse(
-        """|JOIN ON view_a.COLUMN_A = view_b.COLUMN_B
-           |AND view_a.COLUMN_C = view_b.COLUMN_D
-        """.stripMargin) should matchPattern {
-        case Success(JoinOnDefinition(List(
+    it("parses JOIN ON view_a.COLUMN_A = view_b.COLUMN_B AND view_a.COLUMN_C = view_b.COLUMN_D") {
+      success(joinOnDefinition, JoinOnDefinition(List(
         (List("view_a", "COLUMN_A"), List("view_b", "COLUMN_B")),
-        (List("view_a", "COLUMN_C"), List("view_b", "COLUMN_D")))), _) =>
-      }
+        (List("view_a", "COLUMN_C"), List("view_b", "COLUMN_D")))))
     }
 
-    it("parses mapping definition") {
-      //      START NODES
-      //        LABEL SET (Resident, Person)
-      //      FROM VIEW_RESIDENT start_nodes
-      //      JOIN ON start_nodes.PERSON_NUMBER = edge.PERSON_NUMBER
+    it("parses LABEL SET (A, B) FROM VIEW foo alias_foo JOIN ON alias_foo.COLUMN_A = edge.COLUMN_A") {
+      success(entityMappingDefinition, EntityMappingDefinition(
+        labelSet = Set("A", "B"),
+        sourceView = "foo",
+        sourceViewAlias = "alias_foo",
+        joinOnDefinition = JoinOnDefinition(List((List("alias_foo", "COLUMN_A"), List("edge", "COLUMN_A")))))
+      )
     }
 
     ignore("parses") {
@@ -416,7 +411,7 @@ class DdlSchemaTest extends BaseTestSuite with MockitoSugar with TestNameFixture
          |    (A) FROM foo
          |  )
          |
-      """.stripMargin)
+  """.stripMargin)
     ddlDefinition should equalWithTracing(
       DdlDefinitions(
         labelDefinitions = List(
