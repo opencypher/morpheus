@@ -50,22 +50,26 @@ object DdlParser {
   val character = P(CharIn('a' to 'z', 'A' to 'Z'))
   val identifier = P(character ~ P(character | digit | "_").repX)
 
-  val catalogKeyword = P(IgnoreCase("CATALOG"))
-  val createKeyword = P(IgnoreCase("CREATE"))
-  val labelKeyword = P(IgnoreCase("LABEL"))
-  val graphKeyword = P(IgnoreCase("GRAPH"))
-  val schemaKeyword = P(IgnoreCase("SCHEMA"))
-  val keyKeyword = P(IgnoreCase("KEY"))
-  val withKeyword = P(IgnoreCase("WITH"))
-  val fromKeyword = P(IgnoreCase("FROM"))
-  val nodeKeyword = P(IgnoreCase("NODE"))
-  val setKeyword = P(IgnoreCase("SET"))
-  val setsKeyword = P(IgnoreCase("SETS"))
-  val joinKeyword = P(IgnoreCase("JOIN"))
-  val onKeyword = P(IgnoreCase("ON"))
-  val andKeyword = P(IgnoreCase("AND"))
-  val asKeyword = P(IgnoreCase("AS"))
-  val viewKeyword = P(IgnoreCase("VIEW"))
+  def keyword(k: String): P[Unit] = P(IgnoreCase(k))
+
+  val catalogKeyword = keyword("CATALOG")
+  val createKeyword = keyword("CREATE")
+  val labelKeyword = keyword("LABEL")
+  val graphKeyword = keyword("GRAPH")
+  val schemaKeyword = keyword("SCHEMA")
+  val keyKeyword = keyword("KEY")
+  val withKeyword = keyword("WITH")
+  val fromKeyword = keyword("FROM")
+  val nodeKeyword = keyword("NODE")
+  val nodesKeyword = keyword("NODES")
+  val setKeyword = keyword("SET")
+  val setsKeyword = keyword("SETS")
+  val joinKeyword = keyword("JOIN")
+  val onKeyword = keyword("ON")
+  val andKeyword = keyword("AND")
+  val asKeyword = keyword("AS")
+  val startKeyword = keyword("START")
+  val endKeyword = keyword("END")
 
   val cypherType = P(
     (IgnoreCase("STRING")
@@ -160,7 +164,11 @@ object DdlParser {
   val joinTuple: P[(ColumnIdentifier, ColumnIdentifier)] = P(columnIdentifier ~ "=" ~ columnIdentifier)
   val joinOnDefinition: P[JoinOnDefinition] = P(joinKeyword ~ onKeyword ~ joinTuple.rep(min = 1, sep = andKeyword)).map(_.toList).map(JoinOnDefinition)
 
-  val entityMappingDefinition: P[EntityMappingDefinition] = P(labelKeyword ~ setKeyword ~ nodeDefinition ~ fromKeyword ~ viewKeyword ~ identifier.! ~ identifier.! ~ joinOnDefinition).map(EntityMappingDefinition.tupled)
+  val sourceViewDefinition: P[SourceViewDefinition] = P(identifier.! ~ identifier.!).map(SourceViewDefinition.tupled)
+
+  val labelToViewDefinition: P[LabelToViewDefinition] = P(labelKeyword ~ setKeyword ~ nodeDefinition ~ fromKeyword ~ sourceViewDefinition ~ joinOnDefinition).map(LabelToViewDefinition.tupled)
+
+  val relationshipMappingDefinition: P[RelationshipMappingDefinition] = P(fromKeyword ~ sourceViewDefinition ~ startKeyword ~ nodesKeyword ~ labelToViewDefinition ~ endKeyword ~ nodesKeyword ~ labelToViewDefinition).map(RelationshipMappingDefinition.tupled)
 
   // TODO: this allows WITH SCHEMA with missing identifier and missing inline schema -> forbid
   val graphDefinition: P[GraphDefinition] = P(createKeyword ~ graphKeyword ~ identifier.! ~

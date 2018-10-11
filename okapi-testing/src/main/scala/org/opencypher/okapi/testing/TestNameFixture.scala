@@ -55,11 +55,11 @@ trait TestNameFixture extends BaseTestSuite {
   private var __testName: Option[String] = None
 
   override protected def runTest(testName: String, args: Args): Status = {
-    val colonIndex = testName.indexOf(separator)
+    val separatorIndex = testName.indexOf(separator)
 
-    val name = colonIndex match {
+    val name = separatorIndex match {
       case -1 => testName
-      case _ => testName.substring(colonIndex + separator.length)
+      case _ => testName.substring(separatorIndex + separator.length).trim.stripMargin
     }
     __testName = Some(name)
     try {

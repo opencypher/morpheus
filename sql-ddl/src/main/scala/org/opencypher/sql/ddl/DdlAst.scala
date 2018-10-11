@@ -136,24 +136,18 @@ case class NodeMappingDefinition(
   maybePropertyMapping: Option[PropertyToColumnMappingDefinition] = None
 ) extends DdlAst
 
-case class RelMappingDefinition(
-  relName: String,
-  tableName: String,
-  startNodeIdMappings: List[IdMapping],
-  endNodeIdMappings: List[IdMapping]
-) extends DdlAst
-
-case class IdMapping(
-  labelNames: Set[String],
-  nodePropertyNames: List[String],
-  relPropertyNames: List[String]
-)
+case class SourceViewDefinition(name: String, alias: String) extends DdlAst
 
 case class JoinOnDefinition(joinPredicates: List[(ColumnIdentifier, ColumnIdentifier)]) extends DdlAst
 
-case class EntityMappingDefinition(
+case class LabelToViewDefinition(
   labelSet: Set[String],
-  sourceView: String,
-  sourceViewAlias: String,
-  joinOnDefinition: JoinOnDefinition
+  sourceView: SourceViewDefinition,
+  joinOn: JoinOnDefinition
+) extends DdlAst
+
+case class RelationshipMappingDefinition(
+  sourceView: SourceViewDefinition,
+  startNodeMappingDefinition: LabelToViewDefinition,
+  endNodeMappingDefinition: LabelToViewDefinition
 ) extends DdlAst

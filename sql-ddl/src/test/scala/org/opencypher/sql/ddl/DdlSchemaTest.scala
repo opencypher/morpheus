@@ -37,10 +37,20 @@ import org.scalatest.mockito.MockitoSugar
 
 class DdlSchemaTest extends BaseTestSuite with MockitoSugar with TestNameFixture {
 
-  override val separator = "parses "
+  override val separator = "parses"
 
-  private def success[T, Elem](parser: fastparse.core.Parser[T, Elem, String], expectation: T): Unit = {
-    parser.parse(testName) should matchPattern {
+  private def success[T, Elem](
+    parser: fastparse.core.Parser[T, Elem, String],
+    input: String,
+    expectation: T
+  ): Unit = success(parser, expectation, input)
+
+  private def success[T, Elem](
+    parser: fastparse.core.Parser[T, Elem, String],
+    expectation: T,
+    input: String = testName
+  ): Unit = {
+    parser.parse(input) should matchPattern {
       case Success(`expectation`, _) =>
     }
   }
@@ -324,13 +334,34 @@ class DdlSchemaTest extends BaseTestSuite with MockitoSugar with TestNameFixture
         (List("view_a", "COLUMN_C"), List("view_b", "COLUMN_D")))))
     }
 
-    it("parses LABEL SET (A, B) FROM VIEW foo alias_foo JOIN ON alias_foo.COLUMN_A = edge.COLUMN_A") {
-      success(entityMappingDefinition, EntityMappingDefinition(
-        labelSet = Set("A", "B"),
-        sourceView = "foo",
-        sourceViewAlias = "alias_foo",
-        joinOnDefinition = JoinOnDefinition(List((List("alias_foo", "COLUMN_A"), List("edge", "COLUMN_A")))))
+    it("parses LABEL SET (A, B) FROM foo alias_foo JOIN ON alias_foo.COLUMN_A = edge.COLUMN_A") {
+      success(labelToViewDefinition, LabelToViewDefinition(
+        Set("A", "B"),
+        SourceViewDefinition("foo", "alias_foo"),
+        JoinOnDefinition(List((List("alias_foo", "COLUMN_A"), List("edge", "COLUMN_A")))))
       )
+    }
+
+    it("parses a complete relationship mapping definition") {
+      val input =
+        """|FROM baz alias_baz
+           |    START NODES
+           |      LABEL SET (A, B) FROM foo alias_foo JOIN ON alias_foo.COLUMN_A = edge.COLUMN_A
+           |    END NODES
+           |      LABEL SET (C) FROM bar alias_bar JOIN ON alias_bar.COLUMN_A = edge.COLUMN_A
+        """.stripMargin
+
+      success(relationshipMappingDefinition, input, RelationshipMappingDefinition(
+        sourceView = SourceViewDefinition("baz", "alias_baz"),
+        startNodeMappingDefinition = LabelToViewDefinition(
+          Set("A", "B"),
+          SourceViewDefinition("foo", "alias_foo"),
+          JoinOnDefinition(List((List("alias_foo", "COLUMN_A"), List("edge", "COLUMN_A"))))),
+        endNodeMappingDefinition = LabelToViewDefinition(
+          Set("C"),
+          SourceViewDefinition("bar", "alias_bar"),
+          JoinOnDefinition(List((List("alias_bar", "COLUMN_A"), List("edge", "COLUMN_A")))))
+      ))
     }
 
     ignore("parses") {
