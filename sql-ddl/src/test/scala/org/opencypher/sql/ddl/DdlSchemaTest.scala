@@ -236,10 +236,30 @@ class DdlSchemaTest extends BaseTestSuite with MockitoSugar {
       }
     }
 
-    it("parses a graph definition with a schema") {
+    it("parses a graph definition with a schema reference") {
       graphDefinition.parse(
         "CREATE GRAPH myGraph WITH SCHEMA mySchema NODE LABEL SETS ()") should matchPattern {
         case Success(GraphDefinition("myGraph", Some("mySchema"), `emptySchemaDef`, `emptyList`), _) =>
+      }
+    }
+
+    it("parses a graph definition with inlined schema") {
+      val expectedSchemaDefinition = SchemaDefinition(
+        localLabelDefinitions = Set(LabelDefinition("A"), LabelDefinition("B")),
+        nodeDefinitions = Set(Set("A", "B")),
+        relDefinitions = Set("B")
+      )
+      graphDefinition.parse(
+        """|CREATE GRAPH myGraph WITH SCHEMA (
+           | LABEL (A),
+           | LABEL (B)
+           |
+           | (A,B)
+           | [B]
+           |)
+           |NODE LABEL SETS ()
+        """.stripMargin) should matchPattern {
+        case Success(GraphDefinition("myGraph", None, `expectedSchemaDefinition`, `emptyList`), _) =>
       }
     }
   }
@@ -301,13 +321,13 @@ class DdlSchemaTest extends BaseTestSuite with MockitoSugar {
 
     ddlDefinition.globalSchemas shouldEqual Map(
       "mySchema" -> Schema.empty
-          .withNodePropertyKeys("A")("foo" -> CTInteger)
-          .withNodePropertyKeys("B")("sequence" -> CTInteger, "nationality" -> CTString.nullable, "age" -> CTInteger.nullable)
-          .withNodePropertyKeys("A", "B")("foo" -> CTInteger, "sequence" -> CTInteger, "nationality" -> CTString.nullable, "age" -> CTInteger.nullable)
-          .withNodePropertyKeys(Set("C"))
-          .withRelationshipType("TYPE_1")
-          .withRelationshipPropertyKeys("TYPE_2")("prop" -> CTBoolean.nullable)
-          .withSchemaPatterns(SchemaPattern("A", "TYPE_1", "B"))
+        .withNodePropertyKeys("A")("foo" -> CTInteger)
+        .withNodePropertyKeys("B")("sequence" -> CTInteger, "nationality" -> CTString.nullable, "age" -> CTInteger.nullable)
+        .withNodePropertyKeys("A", "B")("foo" -> CTInteger, "sequence" -> CTInteger, "nationality" -> CTString.nullable, "age" -> CTInteger.nullable)
+        .withNodePropertyKeys(Set("C"))
+        .withRelationshipType("TYPE_1")
+        .withRelationshipPropertyKeys("TYPE_2")("prop" -> CTBoolean.nullable)
+        .withSchemaPatterns(SchemaPattern("A", "TYPE_1", "B"))
     )
   }
 
