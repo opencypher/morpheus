@@ -3,6 +3,7 @@ package org.opencypher.sql.ddl
 import fastparse.core.Parsed.{Failure, Success}
 import org.opencypher.okapi.api.schema.{Schema, SchemaPattern}
 import org.opencypher.okapi.api.types._
+import org.opencypher.okapi.impl.exception.IllegalArgumentException
 import org.opencypher.okapi.testing.BaseTestSuite
 import org.opencypher.okapi.testing.MatchHelper.equalWithTracing
 import org.opencypher.sql.ddl.DdlParser._
@@ -329,6 +330,46 @@ class DdlSchemaTest extends BaseTestSuite with MockitoSugar {
         .withRelationshipPropertyKeys("TYPE_2")("prop" -> CTBoolean.nullable)
         .withSchemaPatterns(SchemaPattern("A", "TYPE_1", "B"))
     )
+  }
+
+  describe("OKAPI schema conversion") {
+    it("throws if a label is not defined") {
+      val ddlDefinition = parse(
+        """|CATALOG CREATE LABEL (A)
+           |
+           |CREATE GRAPH SCHEMA mySchema
+           |
+           |  LABEL (B)
+           |
+           |  -- (illegal) node definition
+           |  (C)
+           |
+           |CREATE GRAPH myGraph WITH SCHEMA mySchema NODE LABEL SETS ()
+      """.stripMargin)
+
+      an[IllegalArgumentException] shouldBe thrownBy {
+        ddlDefinition.globalSchemas
+      }
+    }
+
+    it("throws if a relationship type is not defined") {
+      val ddlDefinition = parse(
+        """|CATALOG CREATE LABEL (A)
+           |
+           |CREATE GRAPH SCHEMA mySchema
+           |
+           |  LABEL (B)
+           |
+           |  -- (illegal) relationship type definition
+           |  [C]
+           |
+           |CREATE GRAPH myGraph WITH SCHEMA mySchema NODE LABEL SETS ()
+        """.stripMargin)
+
+      an[IllegalArgumentException] shouldBe thrownBy {
+        ddlDefinition.globalSchemas
+      }
+    }
   }
 
 

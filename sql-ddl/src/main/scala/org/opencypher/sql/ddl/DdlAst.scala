@@ -28,6 +28,7 @@ package org.opencypher.sql.ddl
 
 import org.opencypher.okapi.api.schema.{PropertyKeys, Schema, SchemaPattern}
 import org.opencypher.okapi.api.types.CypherType
+import org.opencypher.okapi.impl.exception.IllegalArgumentException
 import org.opencypher.okapi.trees.AbstractTreeNode
 import org.opencypher.sql.ddl.Ddl._
 
@@ -52,20 +53,19 @@ case class DdlDefinitions(
   lazy val globalSchemas: Map[String, Schema] = {
     schemaDefinitions.map { case (name, SchemaDefinition(localLabelDefinitions, nodeDefinitions, relDefinitions, schemaPatternDefinitions)) =>
       val labelDefinitions = globalLabelDefinitions ++ localLabelDefinitions.map(labelDef => labelDef.name -> labelDef).toMap
+      def undefinedLabelException(label: String) = IllegalArgumentException(s"Defined label (one of: ${labelDefinitions.keys.mkString("[", ", ", "]")})", label)
 
       val schemaWithNodes = nodeDefinitions.foldLeft(Schema.empty) {
         case (currentSchema, labelCombo) =>
           val comboProperties = labelCombo.foldLeft(PropertyKeys.empty) { case (currProps, label) =>
-            // TODO: throw if properties don't exist
-            currProps ++ labelDefinitions(label).properties
+            currProps ++ labelDefinitions.getOrElse(label, throw undefinedLabelException(label)).properties
           }
           currentSchema.withNodePropertyKeys(labelCombo, comboProperties)
       }
 
       val schemaWithRels = relDefinitions.foldLeft(schemaWithNodes) {
         case (currentSchema, relType) =>
-          // TODO: throw if properties don't exist
-          currentSchema.withRelationshipPropertyKeys(relType, labelDefinitions(relType).properties)
+          currentSchema.withRelationshipPropertyKeys(relType, labelDefinitions.getOrElse(relType, throw undefinedLabelException(relType)).properties)
       }
 
       val schemaWithPatterns = schemaPatternDefinitions.foldLeft(schemaWithRels) {
@@ -80,12 +80,12 @@ case class DdlDefinitions(
     }
   }
 
-//  val schemas: Map[String, Schema] = {
-//    graphDefinitions.map { graphDef =>
-//      val name = graphDef.name
-//      val globalSchemaDef: Option[SchemaDefinition] = graphDef.schemaName
-//    }
-//  }
+  //  val schemas: Map[String, Schema] = {
+  //    graphDefinitions.map { graphDef =>
+  //      val name = graphDef.name
+  //      val globalSchemaDef: Option[SchemaDefinition] = graphDef.schemaName
+  //    }
+  //  }
 
 }
 
