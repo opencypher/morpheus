@@ -62,6 +62,7 @@ object DdlParser {
   val fromKeyword = keyword("FROM")
   val nodeKeyword = keyword("NODE")
   val nodesKeyword = keyword("NODES")
+  val relationshipKeyword = keyword("RELATIONSHIP")
   val setKeyword = keyword("SET")
   val setsKeyword = keyword("SETS")
   val joinKeyword = keyword("JOIN")
@@ -164,13 +165,25 @@ object DdlParser {
   val joinTuple: P[(ColumnIdentifier, ColumnIdentifier)] = P(columnIdentifier ~ "=" ~ columnIdentifier)
   val joinOnDefinition: P[JoinOnDefinition] = P(joinKeyword ~ onKeyword ~ joinTuple.rep(min = 1, sep = andKeyword)).map(_.toList).map(JoinOnDefinition)
 
-  val sourceViewDefinition: P[SourceViewDefinition] = P(identifier.! ~ identifier.!).map(SourceViewDefinition.tupled)
+  val sourceViewDefinition: P[SourceViewDefinition] = P(
+    identifier.! ~ identifier.!
+  ).map(SourceViewDefinition.tupled)
 
-  val labelToViewDefinition: P[LabelToViewDefinition] = P(labelKeyword ~ setKeyword ~ nodeDefinition ~ fromKeyword ~ sourceViewDefinition ~ joinOnDefinition).map(LabelToViewDefinition.tupled)
+  val labelToViewDefinition: P[LabelToViewDefinition] = P(
+    labelKeyword ~ setKeyword ~ nodeDefinition ~ fromKeyword ~ sourceViewDefinition ~ joinOnDefinition
+  ).map(LabelToViewDefinition.tupled)
 
-  val relationshipMappingDefinition: P[RelationshipMappingDefinition] = P(fromKeyword ~ sourceViewDefinition ~ startKeyword ~ nodesKeyword ~ labelToViewDefinition ~ endKeyword ~ nodesKeyword ~ labelToViewDefinition).map(RelationshipMappingDefinition.tupled)
+  val relationshipMappingDefinition: P[RelationshipMappingDefinition] = P(
+    fromKeyword ~ sourceViewDefinition ~ startKeyword ~ nodesKeyword ~ labelToViewDefinition ~ endKeyword ~ nodesKeyword ~ labelToViewDefinition
+  ).map(RelationshipMappingDefinition.tupled)
 
-  val relationshipLabelSetDefinition: P[RelationshipLabelSetDefinition] = P(relDefinition ~ relationshipMappingDefinition.rep(min = 1, sep = ",".?).map(_.toList) ~ ",".?).map(RelationshipLabelSetDefinition.tupled)
+  val relationshipLabelSetDefinition: P[RelationshipLabelSetDefinition] = P(
+    relDefinition ~ relationshipMappingDefinition.rep(min = 1, sep = ",".?).map(_.toList) ~ ",".?
+  ).map(RelationshipLabelSetDefinition.tupled)
+
+  val relationshipLabelSetDefinitions: P[List[RelationshipLabelSetDefinition]] = P(
+    relationshipKeyword ~/ labelKeyword ~/ setsKeyword ~/ "(" ~/ relationshipLabelSetDefinition.rep(sep = ",".?).map(_.toList) ~/ ")"
+  )
 
   // TODO: this allows WITH SCHEMA with missing identifier and missing inline schema -> forbid
   val graphDefinition: P[GraphDefinition] = P(createKeyword ~ graphKeyword ~ identifier.! ~
