@@ -26,10 +26,8 @@
  */
 package org.opencypher.spark.impl.acceptance
 
-import org.apache.spark.sql.catalyst.plans.JoinType
 import org.opencypher.okapi.api.value.CypherValue.{CypherMap, CypherNull}
 import org.opencypher.okapi.impl.exception.NotImplementedException
-import org.opencypher.okapi.relational.impl.planning.InnerJoin
 import org.opencypher.okapi.testing.Bag
 import org.opencypher.okapi.testing.Bag._
 import org.opencypher.spark.testing.CAPSTestSuite
@@ -44,7 +42,8 @@ class FunctionsBehaviour extends CAPSTestSuite with DefaultGraphInit {
       val t1 = caps.cypher("RETURN timestamp()")
       val t2 = caps.cypher("RETURN timestamp()")
 
-      t1.records.toMaps.keys.map(_.value.head._2.value.asInstanceOf[Long]) should be < t2.records.toMaps.keys.map(_.value.head._2.value.asInstanceOf[Long])
+      t1.records.toMaps.keys.map(_.value.head._2.value.asInstanceOf[Long]) should be <
+        t2.records.toMaps.keys.map(_.value.head._2.value.asInstanceOf[Long])
     }
 
   }

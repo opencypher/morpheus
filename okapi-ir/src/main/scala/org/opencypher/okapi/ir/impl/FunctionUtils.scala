@@ -79,7 +79,7 @@ object FunctionUtils {
         // Match by name
         case functions.UnresolvedFunction => functionInvocation.name match {
           // Time functions
-          case "datetime" => Timestamp()(cypherType)
+          case "timestamp" => Timestamp()(cypherType)
 
           case name => throw NotImplementedException(s"Support for converting ${name} function not yet implemented")
         }

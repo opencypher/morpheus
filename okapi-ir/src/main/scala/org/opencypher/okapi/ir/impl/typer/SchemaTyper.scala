@@ -482,7 +482,7 @@ object SchemaTyper {
       args: Seq[(Expression, CypherType)]
     ): Eff[R, Set[FunctionSignature]] = expr match {
       case f: FunctionInvocation => f.name match {
-        case "datetime" =>
+        case "timestamp" =>
           val set = TimeStamp.signatures.flatMap(_.convert).toSet
           pure(set)
         case _ =>

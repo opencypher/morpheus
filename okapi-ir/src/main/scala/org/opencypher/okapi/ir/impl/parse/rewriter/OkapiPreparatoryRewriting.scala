@@ -26,7 +26,7 @@
  */
 package org.opencypher.v9_0.frontend.phases
 
-import org.opencypher.okapi.ir.impl.parse.rewriter.{legacy, unwrapFunctionInvocationInProperties}
+import org.opencypher.okapi.ir.impl.parse.rewriter.legacy
 import org.opencypher.okapi.ir.impl.parse.rewriter.legacy.{normalizeReturnClauses, normalizeWithClauses}
 import org.opencypher.v9_0.rewriting.rewriters._
 import org.opencypher.v9_0.util.inSequence
@@ -40,8 +40,6 @@ case object OkapiPreparatoryRewriting extends Phase[BaseContext, BaseState, Base
       legacy.normalizeReturnClauses(context.exceptionCreator),
       normalizeWithClauses(context.exceptionCreator),
       expandCallWhere,
-      replaceAliasedFunctionInvocations,
-      unwrapFunctionInvocationInProperties,
       mergeInPredicates))
 
     from.withStatement(rewrittenStatement)
