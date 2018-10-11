@@ -40,6 +40,8 @@ object Ddl {
   type KeyDefinition = (String, Set[String])
 
   type ColumnIdentifier = List[String]
+
+  type PropertyToColumnMappingDefinition = Map[String, String]
 }
 
 abstract class DdlAst extends AbstractTreeNode[DdlAst]
@@ -101,7 +103,7 @@ case class DdlDefinitions(
 case class LabelDefinition(
   name: String,
   properties: Map[String, CypherType] = Map.empty,
-  keyDefinition: Option[KeyDefinition] = None
+  maybeKeyDefinition: Option[KeyDefinition] = None
 ) extends DdlAst
 
 case class SchemaDefinition(
@@ -113,7 +115,7 @@ case class SchemaDefinition(
 
 case class GraphDefinition(
   name: String,
-  schemaName: Option[String] = None,
+  maybeSchemaName: Option[String] = None,
   localSchemaDefinition: SchemaDefinition = SchemaDefinition(),
   nodeMappings: List[NodeMappingDefinition] = List.empty
 ) extends DdlAst
@@ -130,7 +132,8 @@ case class SchemaPatternDefinition(
 
 case class NodeMappingDefinition(
   labelNames: Set[String],
-  viewName: String
+  viewName: String,
+  maybePropertyMapping: Option[PropertyToColumnMappingDefinition] = None
 ) extends DdlAst
 
 case class RelMappingDefinition(

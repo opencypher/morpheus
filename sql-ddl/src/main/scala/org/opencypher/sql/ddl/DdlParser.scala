@@ -26,12 +26,11 @@
  */
 package org.opencypher.sql.ddl
 
-import fastparse.{WhitespaceApi, core, noApi}
+import fastparse.WhitespaceApi
 import fastparse.core.Parsed.{Failure, Success}
 import org.opencypher.okapi.api.types.CypherType
 import org.opencypher.okapi.impl.exception.IllegalArgumentException
 import org.opencypher.sql.ddl.Ddl._
-import Ddl._
 
 object DdlParser {
 
@@ -64,6 +63,7 @@ object DdlParser {
   val joinKeyword = P(IgnoreCase("JOIN"))
   val onKeyword = P(IgnoreCase("ON"))
   val andKeyword = P(IgnoreCase("AND"))
+  val asKeyword = P(IgnoreCase("AS"))
 
   val cypherType = P(
     (IgnoreCase("STRING")
@@ -148,9 +148,10 @@ object DdlParser {
 
   // ==== Graph ====
 
-  val nodeMappingDefinition: P[NodeMappingDefinition] = P(nodeDefinition ~ fromKeyword ~ identifier.!)
-    .map(NodeMappingDefinition.tupled)
+  val propertyToColumn: P[(String, String)] = P(identifier.! ~ asKeyword ~ identifier.!).map { case (column, propertyKey) => propertyKey -> column }
+  val propertyMappingDefinition: P[PropertyToColumnMappingDefinition] = P("(" ~/ propertyToColumn.rep(sep = ",").map(_.toMap) ~ ")")
 
+  val nodeMappingDefinition: P[NodeMappingDefinition] = P(nodeDefinition ~ fromKeyword ~ identifier.! ~ propertyMappingDefinition.?).map(NodeMappingDefinition.tupled)
   val nodeMappings: P[List[NodeMappingDefinition]] = P(nodeKeyword ~ labelKeyword ~ setsKeyword ~ "(" ~ nodeMappingDefinition.rep.map(_.toList) ~ ")")
 
   val columnIdentifier: P[ColumnIdentifier] = P(identifier.!.rep(min = 2, sep = ".").map(_.toList))

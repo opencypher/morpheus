@@ -30,12 +30,26 @@ import fastparse.core.Parsed.{Failure, Success}
 import org.opencypher.okapi.api.schema.{Schema, SchemaPattern}
 import org.opencypher.okapi.api.types._
 import org.opencypher.okapi.impl.exception.IllegalArgumentException
-import org.opencypher.okapi.testing.BaseTestSuite
+import org.opencypher.okapi.testing.{BaseTestSuite, TestNameFixture}
 import org.opencypher.okapi.testing.MatchHelper.equalWithTracing
 import org.opencypher.sql.ddl.DdlParser._
 import org.scalatest.mockito.MockitoSugar
 
-class DdlSchemaTest extends BaseTestSuite with MockitoSugar {
+class DdlSchemaTest extends BaseTestSuite with MockitoSugar with TestNameFixture {
+
+  override val separator = "parses "
+
+  private def success[T, Elem](parser: fastparse.core.Parser[T, Elem, String], expectation: T): Unit = {
+    parser.parse(testName) should matchPattern {
+      case Success(`expectation`, _) =>
+    }
+  }
+
+  private def failure[T, Elem](parser: fastparse.core.Parser[T, Elem, String]): Unit = {
+    parser.parse(testName) should matchPattern {
+      case Failure(_, _, _) =>
+    }
+  }
 
   val emptyMap = Map.empty[String, CypherType]
   val emptyList: List[Nothing] = List.empty[Nothing]
@@ -284,14 +298,21 @@ class DdlSchemaTest extends BaseTestSuite with MockitoSugar {
            | (A,B)
            | [B]
            |)
-           |NODE LABEL SETS ()
         """.stripMargin) should matchPattern {
         case Success(GraphDefinition("myGraph", None, `expectedSchemaDefinition`, `emptyList`), _) =>
       }
     }
   }
 
-  describe("node / relationship label sets") {
+  describe("NODE LABEL SETS | RELATIONSHIP LABEL SETS") {
+
+    it("parses (A) FROM view") {
+      success(nodeMappingDefinition, NodeMappingDefinition(Set("A"), "view"))
+    }
+
+    it("parses (A) FROM view (column1 AS propertyKey1, column2 AS propertyKey2)") {
+      success(nodeMappingDefinition, NodeMappingDefinition(Set("A"), "view", Some(Map("propertyKey1" -> "column1", "propertyKey2" -> "column2"))))
+    }
 
     it("parses single JOIN ON") {
       joinTuples.parse("JOIN ON view_a.COLUMN_A = view_b.COLUMN_B") should matchPattern {
@@ -310,7 +331,14 @@ class DdlSchemaTest extends BaseTestSuite with MockitoSugar {
       }
     }
 
-    it("parses") {
+    it("parses mapping definition") {
+      //      START NODES
+      //        LABEL SET (Resident, Person)
+      //      FROM VIEW_RESIDENT start_nodes
+      //      JOIN ON start_nodes.PERSON_NUMBER = edge.PERSON_NUMBER
+    }
+
+    ignore("parses") {
       val input =
         """|RELATIONSHIP LABEL SETS (
            |
