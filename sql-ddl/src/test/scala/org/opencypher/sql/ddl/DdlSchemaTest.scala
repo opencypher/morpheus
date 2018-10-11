@@ -291,6 +291,68 @@ class DdlSchemaTest extends BaseTestSuite with MockitoSugar {
     }
   }
 
+  describe("node / relationship label sets") {
+
+    it("parses single JOIN ON") {
+      joinTuples.parse("JOIN ON view_a.COLUMN_A = view_b.COLUMN_B") should matchPattern {
+        case Success(JoinOnDefinition(List((List("view_a", "COLUMN_A"), List("view_b", "COLUMN_B")))), _) =>
+      }
+    }
+
+    it("parses multiple JOIN ON") {
+      joinTuples.parse(
+        """|JOIN ON view_a.COLUMN_A = view_b.COLUMN_B
+           |AND view_a.COLUMN_C = view_b.COLUMN_D
+        """.stripMargin) should matchPattern {
+        case Success(JoinOnDefinition(List(
+        (List("view_a", "COLUMN_A"), List("view_b", "COLUMN_B")),
+        (List("view_a", "COLUMN_C"), List("view_b", "COLUMN_D")))), _) =>
+      }
+    }
+
+    it("parses") {
+      val input =
+        """|RELATIONSHIP LABEL SETS (
+           |
+           |        (PRESENT_IN)
+           |            FROM VIEW_RESIDENT_ENUMERATED_IN_TOWN edge
+           |                START NODES
+           |                    LABEL SET (Resident, Person)
+           |                    FROM VIEW_RESIDENT start_nodes
+           |                        JOIN ON start_nodes.PERSON_NUMBER = edge.PERSON_NUMBER
+           |                END NODES
+           |                    LABEL SET (Town)
+           |                    FROM TOWN end_nodes
+           |                        JOIN ON end_nodes.REGION = edge.REGION
+           |                        AND end_nodes.CITY_NAME = edge.CITY_NAME,
+           |            FROM VIEW_VISITOR_ENUMERATED_IN_TOWN edge
+           |                START NODES
+           |                    LABEL SET (Visitor, Person)
+           |                    FROM VIEW_VISITOR start_nodes
+           |                        JOIN ON start_nodes.NATIONALITY = edge.COUNTRYOFORIGIN
+           |                        AND start_nodes.PASSPORT_NUMBER = edge.PASSPORT_NO
+           |                END NODES
+           |                    LABEL SET (Town)
+           |                    FROM TOWN end_nodes
+           |                        JOIN ON end_nodes.REGION = edge.REGION
+           |                        AND end_nodes.CITY_NAME = edge.CITY_NAME,
+           |
+           |        (LICENSED_BY)
+           |            FROM VIEW_LICENSED_DOG edge
+           |                START NODES
+           |                    LABEL SET (LicensedDog)
+           |                    -- edge table is also start table, each row joining to itself
+           |                    FROM VIEW_LICENSED_DOG start_nodes
+           |                        JOIN ON start_nodes.LICENCE_NUMBER = edge.LICENCE_NUMBER
+           |                END NODES
+           |                    LABEL SET (Resident, Person)
+           |                    FROM VIEW_RESIDENT end_nodes
+           |                        JOIN ON end_nodes.PERSON_NUMBER = edge.PERSON_NUMBER
+           |    )
+        """.stripMargin
+    }
+  }
+
   it("parses correct schema") {
     val ddlDefinition = parse(
       """|CATALOG CREATE LABEL (A {name: STRING})

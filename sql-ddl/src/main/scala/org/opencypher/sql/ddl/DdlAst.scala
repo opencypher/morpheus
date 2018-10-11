@@ -38,6 +38,8 @@ object Ddl {
   type EntityDefinition = (String, Map[String, CypherType])
 
   type KeyDefinition = (String, Set[String])
+
+  type ColumnIdentifier = List[String]
 }
 
 abstract class DdlAst extends AbstractTreeNode[DdlAst]
@@ -143,3 +145,5 @@ case class IdMapping(
   nodePropertyNames: List[String],
   relPropertyNames: List[String]
 )
+
+case class JoinOnDefinition(joinPredicates: List[(ColumnIdentifier, ColumnIdentifier)]) extends DdlAst

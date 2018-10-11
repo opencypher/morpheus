@@ -31,6 +31,7 @@ import fastparse.core.Parsed.{Failure, Success}
 import org.opencypher.okapi.api.types.CypherType
 import org.opencypher.okapi.impl.exception.IllegalArgumentException
 import org.opencypher.sql.ddl.Ddl._
+import Ddl._
 
 object DdlParser {
 
@@ -60,6 +61,9 @@ object DdlParser {
   val fromKeyword = P(IgnoreCase("FROM"))
   val nodeKeyword = P(IgnoreCase("NODE"))
   val setsKeyword = P(IgnoreCase("SETS"))
+  val joinKeyword = P(IgnoreCase("JOIN"))
+  val onKeyword = P(IgnoreCase("ON"))
+  val andKeyword = P(IgnoreCase("AND"))
 
   val cypherType = P(
     (IgnoreCase("STRING")
@@ -148,6 +152,10 @@ object DdlParser {
     .map(NodeMappingDefinition.tupled)
 
   val nodeMappings: P[List[NodeMappingDefinition]] = P(nodeKeyword ~ labelKeyword ~ setsKeyword ~ "(" ~ nodeMappingDefinition.rep.map(_.toList) ~ ")")
+
+  val columnIdentifier: P[ColumnIdentifier] = P(identifier.!.rep(min = 2, sep = ".").map(_.toList))
+  val joinTuple: P[(ColumnIdentifier, ColumnIdentifier)] = P(columnIdentifier ~ "=" ~ columnIdentifier)
+  val joinTuples: P[JoinOnDefinition] = P(joinKeyword ~ onKeyword ~ joinTuple.rep(min = 1, sep = andKeyword)).map(_.toList).map(JoinOnDefinition)
 
   // TODO: this allows WITH SCHEMA with missing identifier and missing inline schema -> forbid
   val graphDefinition: P[GraphDefinition] = P(createKeyword ~ graphKeyword ~ identifier.! ~
