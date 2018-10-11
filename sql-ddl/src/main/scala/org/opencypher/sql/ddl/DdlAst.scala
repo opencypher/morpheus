@@ -151,3 +151,8 @@ case class RelationshipMappingDefinition(
   startNodeMappingDefinition: LabelToViewDefinition,
   endNodeMappingDefinition: LabelToViewDefinition
 ) extends DdlAst
+
+case class RelationshipLabelSetDefinition(
+  relType: String,
+  relationshipMappings: List[RelationshipMappingDefinition]
+) extends DdlAst

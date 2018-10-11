@@ -170,6 +170,8 @@ object DdlParser {
 
   val relationshipMappingDefinition: P[RelationshipMappingDefinition] = P(fromKeyword ~ sourceViewDefinition ~ startKeyword ~ nodesKeyword ~ labelToViewDefinition ~ endKeyword ~ nodesKeyword ~ labelToViewDefinition).map(RelationshipMappingDefinition.tupled)
 
+  val relationshipLabelSetDefinition: P[RelationshipLabelSetDefinition] = P(relDefinition ~ relationshipMappingDefinition.rep(min = 1, sep = ",".?).map(_.toList) ~ ",".?).map(RelationshipLabelSetDefinition.tupled)
+
   // TODO: this allows WITH SCHEMA with missing identifier and missing inline schema -> forbid
   val graphDefinition: P[GraphDefinition] = P(createKeyword ~ graphKeyword ~ identifier.! ~
     withKeyword ~ schemaKeyword ~

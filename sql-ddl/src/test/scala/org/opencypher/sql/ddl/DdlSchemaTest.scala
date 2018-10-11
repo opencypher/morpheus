@@ -345,10 +345,10 @@ class DdlSchemaTest extends BaseTestSuite with MockitoSugar with TestNameFixture
     it("parses a complete relationship mapping definition") {
       val input =
         """|FROM baz alias_baz
-           |    START NODES
-           |      LABEL SET (A, B) FROM foo alias_foo JOIN ON alias_foo.COLUMN_A = edge.COLUMN_A
-           |    END NODES
-           |      LABEL SET (C) FROM bar alias_bar JOIN ON alias_bar.COLUMN_A = edge.COLUMN_A
+           |  START NODES
+           |    LABEL SET (A, B) FROM foo alias_foo JOIN ON alias_foo.COLUMN_A = edge.COLUMN_A
+           |  END NODES
+           |    LABEL SET (C) FROM bar alias_bar JOIN ON alias_bar.COLUMN_A = edge.COLUMN_A
         """.stripMargin
 
       success(relationshipMappingDefinition, input, RelationshipMappingDefinition(
@@ -363,6 +363,36 @@ class DdlSchemaTest extends BaseTestSuite with MockitoSugar with TestNameFixture
           JoinOnDefinition(List((List("alias_bar", "COLUMN_A"), List("edge", "COLUMN_A")))))
       ))
     }
+
+    it("parses a relationship label set definition") {
+      val input =
+        """|[TYPE_1]
+           |  FROM baz alias_baz
+           |    START NODES
+           |      LABEL SET (A) FROM foo alias_foo JOIN ON alias_foo.COLUMN_A = edge.COLUMN_A
+           |    END NODES
+           |      LABEL SET (B) FROM bar alias_bar JOIN ON alias_bar.COLUMN_A = edge.COLUMN_A
+           |  FROM baz alias_baz
+           |    START NODES
+           |      LABEL SET (A) FROM foo alias_foo JOIN ON alias_foo.COLUMN_A = edge.COLUMN_A
+           |    END NODES
+           |      LABEL SET (B) FROM bar alias_bar JOIN ON alias_bar.COLUMN_A = edge.COLUMN_A
+        """.stripMargin
+
+      val relMappingDef = RelationshipMappingDefinition(
+        sourceView = SourceViewDefinition("baz", "alias_baz"),
+        startNodeMappingDefinition = LabelToViewDefinition(
+          Set("A"),
+          SourceViewDefinition("foo", "alias_foo"),
+          JoinOnDefinition(List((List("alias_foo", "COLUMN_A"), List("edge", "COLUMN_A"))))),
+        endNodeMappingDefinition = LabelToViewDefinition(
+          Set("B"),
+          SourceViewDefinition("bar", "alias_bar"),
+          JoinOnDefinition(List((List("alias_bar", "COLUMN_A"), List("edge", "COLUMN_A")))))
+      )
+      success(relationshipLabelSetDefinition, input, RelationshipLabelSetDefinition("TYPE_1", List(relMappingDef, relMappingDef)))
+    }
+
 
     ignore("parses") {
       val input =
