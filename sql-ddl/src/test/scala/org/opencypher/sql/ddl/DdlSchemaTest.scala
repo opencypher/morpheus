@@ -1,3 +1,29 @@
+/*
+ * Copyright (c) 2016-2018 "Neo4j Sweden, AB" [https://neo4j.com]
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ *
+ * Attribution Notice under the terms of the Apache License 2.0
+ *
+ * This work was created by the collective efforts of the openCypher community.
+ * Without limiting the terms of Section 6, any Derivative Work that is not
+ * approved by the public consensus process of the openCypher Implementers Group
+ * should not be described as “Cypher” (and Cypher® is a registered trademark of
+ * Neo4j Inc.) or as "openCypher". Extensions by implementers or prototypes or
+ * proposals for change that have been documented or implemented should only be
+ * described as "implementation extensions to Cypher" or as "proposed changes to
+ * Cypher that are not yet approved by the openCypher community".
+ */
 package org.opencypher.sql.ddl
 
 import fastparse.core.Parsed.{Failure, Success}
@@ -232,14 +258,14 @@ class DdlSchemaTest extends BaseTestSuite with MockitoSugar {
   describe("graph definitions") {
     it("parses a graph definition") {
       graphDefinition.parse(
-        "CREATE GRAPH myGraph WITH SCHEMA foo NODE LABEL SETS ()") should matchPattern {
+        "CREATE GRAPH myGraph WITH SCHEMA foo") should matchPattern {
         case Success(GraphDefinition("myGraph", Some("foo"), `emptySchemaDef`, `emptyList`), _) =>
       }
     }
 
     it("parses a graph definition with a schema reference") {
       graphDefinition.parse(
-        "CREATE GRAPH myGraph WITH SCHEMA mySchema NODE LABEL SETS ()") should matchPattern {
+        "CREATE GRAPH myGraph WITH SCHEMA mySchema") should matchPattern {
         case Success(GraphDefinition("myGraph", Some("mySchema"), `emptySchemaDef`, `emptyList`), _) =>
       }
     }
@@ -320,8 +346,8 @@ class DdlSchemaTest extends BaseTestSuite with MockitoSugar {
       )
     )
 
-    ddlDefinition.globalSchemas shouldEqual Map(
-      "mySchema" -> Schema.empty
+    ddlDefinition.graphSchemas shouldEqual Map(
+      "myGraph" -> Schema.empty
         .withNodePropertyKeys("A")("foo" -> CTInteger)
         .withNodePropertyKeys("B")("sequence" -> CTInteger, "nationality" -> CTString.nullable, "age" -> CTInteger.nullable)
         .withNodePropertyKeys("A", "B")("foo" -> CTInteger, "sequence" -> CTInteger, "nationality" -> CTString.nullable, "age" -> CTInteger.nullable)
@@ -333,6 +359,25 @@ class DdlSchemaTest extends BaseTestSuite with MockitoSugar {
   }
 
   describe("OKAPI schema conversion") {
+
+    it("merges global and inlined schema definitions") {
+      val ddlDefinition = parse(
+        """|CREATE GRAPH SCHEMA mySchema
+           |  LABEL (A)
+           |  (A)
+           |CREATE GRAPH myGraph WITH SCHEMA mySchema (
+           |  LABEL (B)
+           |  (B)
+           |)
+        """.stripMargin)
+
+      ddlDefinition.graphSchemas shouldEqual Map(
+        "myGraph" -> Schema.empty
+          .withNodePropertyKeys(Set("A"))
+          .withNodePropertyKeys(Set("B"))
+      )
+    }
+
     it("throws if a label is not defined") {
       val ddlDefinition = parse(
         """|CATALOG CREATE LABEL (A)
@@ -344,11 +389,11 @@ class DdlSchemaTest extends BaseTestSuite with MockitoSugar {
            |  -- (illegal) node definition
            |  (C)
            |
-           |CREATE GRAPH myGraph WITH SCHEMA mySchema NODE LABEL SETS ()
-      """.stripMargin)
+           |CREATE GRAPH myGraph WITH SCHEMA mySchema
+        """.stripMargin)
 
       an[IllegalArgumentException] shouldBe thrownBy {
-        ddlDefinition.globalSchemas
+        ddlDefinition.graphSchemas
       }
     }
 
@@ -363,11 +408,11 @@ class DdlSchemaTest extends BaseTestSuite with MockitoSugar {
            |  -- (illegal) relationship type definition
            |  [C]
            |
-           |CREATE GRAPH myGraph WITH SCHEMA mySchema NODE LABEL SETS ()
+           |CREATE GRAPH myGraph WITH SCHEMA mySchema
         """.stripMargin)
 
       an[IllegalArgumentException] shouldBe thrownBy {
-        ddlDefinition.globalSchemas
+        ddlDefinition.graphSchemas
       }
     }
   }

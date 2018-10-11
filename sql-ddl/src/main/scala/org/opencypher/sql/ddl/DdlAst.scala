@@ -48,44 +48,51 @@ case class DdlDefinitions(
   graphDefinitions: List[GraphDefinition] = List.empty
 ) extends DdlAst {
 
-  lazy val globalLabelDefinitions: Map[String, LabelDefinition] = labelDefinitions.map(labelDef => labelDef.name -> labelDef).toMap
+  private lazy val globalLabelDefinitions: Map[String, LabelDefinition] = labelDefinitions.map(labelDef => labelDef.name -> labelDef).toMap
 
-  lazy val globalSchemas: Map[String, Schema] = {
-    schemaDefinitions.map { case (name, SchemaDefinition(localLabelDefinitions, nodeDefinitions, relDefinitions, schemaPatternDefinitions)) =>
-      val labelDefinitions = globalLabelDefinitions ++ localLabelDefinitions.map(labelDef => labelDef.name -> labelDef).toMap
-      def undefinedLabelException(label: String) = IllegalArgumentException(s"Defined label (one of: ${labelDefinitions.keys.mkString("[", ", ", "]")})", label)
-
-      val schemaWithNodes = nodeDefinitions.foldLeft(Schema.empty) {
-        case (currentSchema, labelCombo) =>
-          val comboProperties = labelCombo.foldLeft(PropertyKeys.empty) { case (currProps, label) =>
-            currProps ++ labelDefinitions.getOrElse(label, throw undefinedLabelException(label)).properties
-          }
-          currentSchema.withNodePropertyKeys(labelCombo, comboProperties)
-      }
-
-      val schemaWithRels = relDefinitions.foldLeft(schemaWithNodes) {
-        case (currentSchema, relType) =>
-          currentSchema.withRelationshipPropertyKeys(relType, labelDefinitions.getOrElse(relType, throw undefinedLabelException(relType)).properties)
-      }
-
-      val schemaWithPatterns = schemaPatternDefinitions.foldLeft(schemaWithRels) {
-        // TODO: extend OKAPI schema with cardinality constraints
-        case (currentSchema, SchemaPatternDefinition(sourceLabels, _, relTypes, _, targetLabels)) =>
-          relTypes.foldLeft(currentSchema) {
-            case (innerSchema, relType) =>
-              innerSchema.withSchemaPatterns(SchemaPattern(sourceLabels, relType, targetLabels))
-          }
-      }
-      name -> schemaWithPatterns
-    }
+  private lazy val globalSchemas: Map[String, Schema] = schemaDefinitions.map {
+    case (name, schemaDefinition: SchemaDefinition) => name -> toSchema(schemaDefinition)
   }
 
-  //  val schemas: Map[String, Schema] = {
-  //    graphDefinitions.map { graphDef =>
-  //      val name = graphDef.name
-  //      val globalSchemaDef: Option[SchemaDefinition] = graphDef.schemaName
-  //    }
-  //  }
+  private def toSchema(schemaDefinition: SchemaDefinition): Schema = {
+    val labelDefinitions = globalLabelDefinitions ++ schemaDefinition.localLabelDefinitions.map(labelDef => labelDef.name -> labelDef).toMap
+
+    def undefinedLabelException(label: String) = IllegalArgumentException(s"Defined label (one of: ${labelDefinitions.keys.mkString("[", ", ", "]")})", label)
+
+    val schemaWithNodes = schemaDefinition.nodeDefinitions.foldLeft(Schema.empty) {
+      case (currentSchema, labelCombo) =>
+        val comboProperties = labelCombo.foldLeft(PropertyKeys.empty) { case (currProps, label) =>
+          currProps ++ labelDefinitions.getOrElse(label, throw undefinedLabelException(label)).properties
+          // TODO: extend OKAPI schema with key definition and process here
+        }
+        currentSchema.withNodePropertyKeys(labelCombo, comboProperties)
+    }
+
+    val schemaWithRels = schemaDefinition.relDefinitions.foldLeft(schemaWithNodes) {
+      case (currentSchema, relType) =>
+        currentSchema.withRelationshipPropertyKeys(relType, labelDefinitions.getOrElse(relType, throw undefinedLabelException(relType)).properties)
+    }
+
+    val schemaWithPatterns = schemaDefinition.schemaPatternDefinitions.foldLeft(schemaWithRels) {
+      // TODO: extend OKAPI schema with cardinality constraints
+      case (currentSchema, SchemaPatternDefinition(sourceLabels, _, relTypes, _, targetLabels)) =>
+        relTypes.foldLeft(currentSchema) {
+          case (innerSchema, relType) =>
+            innerSchema.withSchemaPatterns(SchemaPattern(sourceLabels, relType, targetLabels))
+        }
+    }
+    schemaWithPatterns
+  }
+
+  lazy val graphSchemas: Map[String, Schema] = graphDefinitions.map {
+    case GraphDefinition(name, maybeSchemaName, localSchemaDefinition, _) =>
+      val globalSchema = maybeSchemaName match {
+        case Some(schemaName) => globalSchemas(schemaName)
+        case None => Schema.empty
+      }
+      val localSchema = toSchema(localSchemaDefinition)
+      name -> (globalSchema ++ localSchema)
+  }.toMap
 
 }
 

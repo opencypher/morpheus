@@ -26,7 +26,7 @@
  */
 package org.opencypher.sql.ddl
 
-import fastparse.{WhitespaceApi, core}
+import fastparse.{WhitespaceApi, core, noApi}
 import fastparse.core.Parsed.{Failure, Success}
 import org.opencypher.okapi.api.types.CypherType
 import org.opencypher.okapi.impl.exception.IllegalArgumentException
@@ -147,12 +147,14 @@ object DdlParser {
   val nodeMappingDefinition: P[NodeMappingDefinition] = P(nodeDefinition ~ fromKeyword ~ identifier.!)
     .map(NodeMappingDefinition.tupled)
 
-  // TODO: Add validation that either a global schema or a local schema is defined
+  val nodeMappings: P[List[NodeMappingDefinition]] = P(nodeKeyword ~ labelKeyword ~ setsKeyword ~ "(" ~ nodeMappingDefinition.rep.map(_.toList) ~ ")")
+
+  // TODO: this allows WITH SCHEMA with missing identifier and missing inline schema -> forbid
   val graphDefinition: P[GraphDefinition] = P(createKeyword ~ graphKeyword ~ identifier.! ~
     withKeyword ~ schemaKeyword ~
     identifier.!.? ~
     ("(" ~ localSchemaDefinition ~ ")").?.map(_.getOrElse(SchemaDefinition())) ~
-    nodeKeyword ~ labelKeyword ~ setsKeyword ~ "(" ~ nodeMappingDefinition.rep.map(_.toList) ~ ")"
+    nodeMappings.?.map(_.getOrElse(List.empty[NodeMappingDefinition]))
   ).map(GraphDefinition.tupled)
 
   //  val relMappingDefinition: P[RelMappingDefinition] = P(relDefinition ~ fromKeyword ~ identifier.!)
