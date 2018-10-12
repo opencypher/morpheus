@@ -28,7 +28,7 @@ package org.opencypher.okapi.api.schema
 
 import org.opencypher.okapi.api.schema.PropertyKeys.PropertyKeys
 import org.opencypher.okapi.api.types._
-import org.opencypher.okapi.impl.exception.SchemaException
+import org.opencypher.okapi.impl.exception.{IllegalArgumentException, SchemaException}
 import org.scalatest.{FunSpec, Matchers}
 
 class SchemaTest extends FunSpec with Matchers {
@@ -646,13 +646,26 @@ class SchemaTest extends FunSpec with Matchers {
 
   describe("entity keys") {
     it("adds node keys") {
-      val schema = Schema.empty.withNodeKey("A", Set("foo", "bar"))
+      val schema = Schema.empty
+        .withNodePropertyKeys("A")()
+        .withNodeKey("A", Set("foo", "bar"))
       schema.nodeKeys shouldEqual Map("A" -> Set("foo", "bar"))
     }
 
     it("adds relationship keys") {
-      val schema = Schema.empty.withRelationshipKey("A", Set("foo", "bar"))
+      val schema = Schema.empty
+        .withRelationshipType("A")
+        .withRelationshipKey("A", Set("foo", "bar"))
       schema.relationshipKeys shouldEqual Map("A" -> Set("foo", "bar"))
+    }
+
+    it("fails to add an unknown entity keys") {
+      an[IllegalArgumentException] shouldBe thrownBy {
+        Schema.empty.withNodeKey("A", Set.empty)
+      }
+      an[IllegalArgumentException] shouldBe thrownBy {
+        Schema.empty.withRelationshipKey("A", Set.empty)
+      }
     }
   }
 

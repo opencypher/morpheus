@@ -34,7 +34,7 @@ import org.opencypher.okapi.api.schema.RelTypePropertyMap._
 import org.opencypher.okapi.api.schema.{LabelPropertyMap, RelTypePropertyMap, _}
 import org.opencypher.okapi.api.types.CypherType.joinMonoid
 import org.opencypher.okapi.api.types.{CypherType, _}
-import org.opencypher.okapi.impl.exception.SchemaException
+import org.opencypher.okapi.impl.exception.{IllegalArgumentException, SchemaException}
 import org.opencypher.okapi.impl.schema.SchemaImpl._
 import ujson.Js.Obj
 import upickle.Js
@@ -110,7 +110,9 @@ final case class SchemaImpl(
   lazy val relationshipTypes: Set[String] = relTypePropertyMap.keySet
 
   override lazy val schemaPatterns: Set[SchemaPattern] = {
-    if(explicitSchemaPatterns.nonEmpty) { explicitSchemaPatterns } else {
+    if (explicitSchemaPatterns.nonEmpty) {
+      explicitSchemaPatterns
+    } else {
       for {
         source <- labelCombinations.combos
         relType <- relationshipTypes
@@ -203,11 +205,21 @@ final case class SchemaImpl(
     copy(labelPropertyMap = labelPropertyMap.register(labelCombination, propertyKeys))
   }
 
-  override def withNodeKey(label: String, nodeKey: Set[String]): Schema =
-    copy(nodeKeys = nodeKeys.updated(label, nodeKey))
+  override def withNodeKey(label: String, nodeKey: Set[String]): Schema = {
+    if (labels.contains(label)) {
+      copy(nodeKeys = nodeKeys.updated(label, nodeKey))
+    } else {
+      throw IllegalArgumentException(s"Known node label (one of: ${labels.mkString("[", ", ", "]")})", label)
+    }
+  }
 
-  override def withRelationshipKey(relationshipType: String, relationshipKey: Set[String]): Schema =
-    copy(relationshipKeys = relationshipKeys.updated(relationshipType, relationshipKey))
+  override def withRelationshipKey(relationshipType: String, relationshipKey: Set[String]): Schema = {
+    if (relationshipTypes.contains(relationshipType)) {
+      copy(relationshipKeys = relationshipKeys.updated(relationshipType, relationshipKey))
+    } else {
+      throw IllegalArgumentException(s"Known relationship type (one of: ${relationshipTypes.mkString("[", ", ", "]")})", relationshipType)
+    }
+  }
 
   private def computePropertyTypes(existing: PropertyKeys, input: PropertyKeys): PropertyKeys = {
     // Map over input keys to calculate join of type with existing type
@@ -238,9 +250,9 @@ final case class SchemaImpl(
 
   override def withSchemaPatterns(patterns: SchemaPattern*): Schema = {
     patterns.foreach { p =>
-      if(!labelCombinations.combos.contains(p.sourceLabels)) throw SchemaException(s"Unknown source node label combination: ${p.sourceLabels}")
-      if(!relationshipTypes.contains(p.relType)) throw SchemaException(s"Unknown relationship type: ${p.relType}")
-      if(!labelCombinations.combos.contains(p.targetLabels)) throw SchemaException(s"Unknown target node label combination: ${p.targetLabels}")
+      if (!labelCombinations.combos.contains(p.sourceLabels)) throw SchemaException(s"Unknown source node label combination: ${p.sourceLabels}")
+      if (!relationshipTypes.contains(p.relType)) throw SchemaException(s"Unknown relationship type: ${p.relType}")
+      if (!labelCombinations.combos.contains(p.targetLabels)) throw SchemaException(s"Unknown target node label combination: ${p.targetLabels}")
     }
 
     copy(explicitSchemaPatterns = explicitSchemaPatterns ++ patterns.toSet)
@@ -362,7 +374,7 @@ final case class SchemaImpl(
 
       if (explicitSchemaPatterns.nonEmpty) {
         builder.append(s"Explicit schema patterns {$EOL")
-        explicitSchemaPatterns.foreach( p =>
+        explicitSchemaPatterns.foreach(p =>
           builder.append(s"\t$p$EOL")
         )
         builder.append(s"}$EOL")
