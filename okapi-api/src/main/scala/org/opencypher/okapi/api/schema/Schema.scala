@@ -61,9 +61,21 @@ trait Schema {
   def labels: Set[String]
 
   /**
+    * Returns a mapping from node labels to a set of property keys that together form an entity key for that
+    * label. An entity key uniquely identifies a node with the given label.
+    */
+  def nodeKeys: Map[String, Set[String]]
+
+  /**
     * All relationship types present in this graph.
     */
   def relationshipTypes: Set[String]
+
+  /**
+    * Returns a mapping from relationship types to a set of property keys that together form an entity key for that
+    * relationship type. An entity key uniquely identifies a relationship with the given type.
+    */
+  def relationshipKeys: Map[String, Set[String]]
 
   /**
     * Property keys and their types for node labels.
@@ -272,6 +284,21 @@ trait Schema {
     */
   def withRelationshipPropertyKeys(typ: String)(keys: (String, CypherType)*): Schema =
     withRelationshipPropertyKeys(typ, keys.toMap)
+
+  /**
+    * Adds a node key for node label `label`. A node key uniquely identifies a node with the given label.
+    *
+    * @note The label for which the key is added has to exist in this schema.
+    */
+  def withNodeKey(label: String, nodeKey: Set[String])
+
+  /**
+    * Adds a relationship key for relationship type `relationshipType`. A relationship key uniquely identifies a
+    * relationship with the given label.
+    *
+    * @note The relationship type for which the key is added has to exist in this schema.
+    */
+  def withRelationshipKey(relationshipType: String, relationshipKey: Set[String])
 
   /**
     * Adds the given schema patterns to the explicitly defined schema patterns.
