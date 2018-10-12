@@ -594,12 +594,12 @@ object IRBuilder extends CompilationStage[ast.Statement, CypherStatement, IRBuil
     field.cypherType match {
       case CTNode(newLabels, _) =>
         val oldLabelCombosToNewLabelCombos = if (baseFieldSchema.labels.nonEmpty)
-          baseFieldSchema.allLabelCombinations.map(oldLabels => oldLabels -> (oldLabels ++ newLabels))
+          baseFieldSchema.allCombinations.map(oldLabels => oldLabels -> (oldLabels ++ newLabels))
         else
           Set(Set.empty[String] -> newLabels)
 
         val updatedPropertyKeys = oldLabelCombosToNewLabelCombos.map {
-          case (oldLabelCombo, newLabelCombo) => newLabelCombo -> (baseFieldSchema.nodeKeys(oldLabelCombo) ++ newPropertyKeys)
+          case (oldLabelCombo, newLabelCombo) => newLabelCombo -> (baseFieldSchema.nodePropertyKeys(oldLabelCombo) ++ newPropertyKeys)
         }
 
         updatedPropertyKeys.foldLeft(Schema.empty) {
@@ -615,7 +615,7 @@ object IRBuilder extends CompilationStage[ast.Statement, CypherStatement, IRBuil
           .foldLeft(Set.empty[String])(_ ++ _)
 
         val joinedPropertyKeys = possiblePropertyKeys.map { key =>
-          key -> baseFieldSchema.relationshipKeyType(Set.empty, key).get
+          key -> baseFieldSchema.relationshipPropertyKeyType(Set.empty, key).get
         }.toMap
 
         val updatedPropertyKeys = joinedPropertyKeys ++ newPropertyKeys
@@ -626,7 +626,7 @@ object IRBuilder extends CompilationStage[ast.Statement, CypherStatement, IRBuil
         val actualTypes = if (newTypes.nonEmpty) newTypes else baseFieldSchema.relationshipTypes
 
         actualTypes.foldLeft(Schema.empty) {
-          case (acc, relType) => acc.withRelationshipPropertyKeys(relType, baseFieldSchema.relationshipKeys(relType) ++ newPropertyKeys)
+          case (acc, relType) => acc.withRelationshipPropertyKeys(relType, baseFieldSchema.relationshipPropertyKeys(relType) ++ newPropertyKeys)
         }
 
       case other => throw IllegalArgumentException("CTNode or CTRelationship", other)

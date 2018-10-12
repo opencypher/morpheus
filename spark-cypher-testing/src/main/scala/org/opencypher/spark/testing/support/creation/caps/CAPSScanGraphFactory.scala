@@ -50,7 +50,7 @@ object CAPSScanGraphFactory extends CAPSTestGraphFactory {
     val schema = computeSchema(propertyGraph).asCaps
 
     val nodeScans = schema.labelCombinations.combos.map { labels =>
-      val propKeys = schema.nodeKeys(labels)
+      val propKeys = schema.nodePropertyKeys(labels)
 
       val idStructField = Seq(StructField(tableEntityIdKey, LongType, nullable = false))
       val structType = StructType(idStructField ++ getPropertyStructFields(propKeys))
@@ -74,7 +74,7 @@ object CAPSScanGraphFactory extends CAPSTestGraphFactory {
     }
 
     val relScans = schema.relationshipTypes.map { relType =>
-      val propKeys = schema.relationshipKeys(relType)
+      val propKeys = schema.relationshipPropertyKeys(relType)
 
       val idStructFields = Seq(
         StructField(tableEntityIdKey, LongType, nullable = false),

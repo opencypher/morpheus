@@ -26,6 +26,7 @@
  */
 package org.opencypher.okapi.api.schema
 
+import org.opencypher.okapi.api.schema.PropertyKeys.PropertyKeys
 import org.opencypher.okapi.api.types._
 import org.opencypher.okapi.impl.exception.SchemaException
 import org.scalatest.{FunSpec, Matchers}
@@ -54,16 +55,16 @@ class SchemaTest extends FunSpec with Matchers {
   it("should give correct node property schema") {
     val schema = Schema.empty.withNodePropertyKeys("Person")("name" -> CTString, "age" -> CTInteger)
 
-    schema.nodeKeys("NotPerson") shouldBe empty
-    schema.nodeKeys("Person") should equal(Map("name" -> CTString, "age" -> CTInteger))
+    schema.nodePropertyKeys(Set("NotPerson")) shouldBe empty
+    schema.nodePropertyKeys(Set("Person")) should equal(Map("name" -> CTString, "age" -> CTInteger))
     schema.labels should equal(Set("Person"))
   }
 
   it("should give correct relationship property schema") {
     val schema = Schema.empty.withRelationshipPropertyKeys("KNOWS")("since" -> CTInteger, "relative" -> CTBoolean)
 
-    schema.relationshipKeys("NOT_KNOWS") shouldBe empty
-    schema.relationshipKeys("KNOWS") should equal(Map("since" -> CTInteger, "relative" -> CTBoolean))
+    schema.relationshipPropertyKeys("NOT_KNOWS") shouldBe empty
+    schema.relationshipPropertyKeys("KNOWS") should equal(Map("since" -> CTInteger, "relative" -> CTBoolean))
     schema.relationshipTypes should equal(Set("KNOWS"))
   }
 
@@ -136,8 +137,8 @@ class SchemaTest extends FunSpec with Matchers {
       .withRelationshipPropertyKeys("BAR")("p1" -> CTBoolean)
       .withRelationshipPropertyKeys("BAR")("p2" -> CTFloat)
 
-    schema.nodeKeys("Foo") should equal(Map("name" -> CTString, "age" -> CTInteger.nullable))
-    schema.relationshipKeys("BAR") should equal(Map("p1" -> CTBoolean.nullable, "p2" -> CTFloat.nullable))
+    schema.nodePropertyKeys(Set("Foo")) should equal(Map("name" -> CTString, "age" -> CTInteger.nullable))
+    schema.relationshipPropertyKeys("BAR") should equal(Map("p1" -> CTBoolean.nullable, "p2" -> CTFloat.nullable))
   }
 
   it("combining schemas, separate keys") {
@@ -272,8 +273,8 @@ class SchemaTest extends FunSpec with Matchers {
       .withNodePropertyKeys(Set.empty[String], Map("name" -> CTString))
       .withNodePropertyKeys("A")("name" -> CTInteger)
 
-    schema.nodeKeys() should equal(Map("name" -> CTString))
-    schema.nodeKeys(Set.empty[String]) should equal(Map("name" -> CTString))
+    schema.nodePropertyKeys(Set.empty) should equal(Map("name" -> CTString))
+    schema.nodePropertyKeys(Set.empty[String]) should equal(Map("name" -> CTString))
   }
 
   it("get node key type with all given semantics") {
@@ -281,11 +282,11 @@ class SchemaTest extends FunSpec with Matchers {
       .withNodePropertyKeys(Set("A"), Map("a" -> CTInteger, "b" -> CTString, "c" -> CTFloat, "d" -> CTFloat.nullable))
       .withNodePropertyKeys(Set.empty[String], Map("a" -> CTString))
 
-    schema.nodeKeyType(Set("A"), "a") should equal(Some(CTInteger))
-    schema.nodeKeyType(Set.empty[String], "a") should equal(Some(CTAny))
-    schema.nodeKeyType(Set.empty[String], "b") should equal(Some(CTString.nullable))
-    schema.nodeKeyType(Set("B"), "b") should equal(None)
-    schema.nodeKeyType(Set("A"), "x") should equal(None)
+    schema.nodePropertyKeyType(Set("A"), "a") should equal(Some(CTInteger))
+    schema.nodePropertyKeyType(Set.empty[String], "a") should equal(Some(CTAny))
+    schema.nodePropertyKeyType(Set.empty[String], "b") should equal(Some(CTString.nullable))
+    schema.nodePropertyKeyType(Set("B"), "b") should equal(None)
+    schema.nodePropertyKeyType(Set("A"), "x") should equal(None)
   }
 
   it("get rel key type") {
@@ -298,13 +299,13 @@ class SchemaTest extends FunSpec with Matchers {
       )
       .withRelationshipType("C")
 
-    schema.relationshipKeyType(Set("A"), "a") should equal(Some(CTInteger))
-    schema.relationshipKeyType(Set("A", "B"), "a") should equal(Some(CTNumber))
-    schema.relationshipKeyType(Set("A", "B"), "b") should equal(Some(CTString.nullable))
-    schema.relationshipKeyType(Set("A", "B", "C"), "c") should equal(Some(CTAny.nullable))
-    schema.relationshipKeyType(Set("A"), "e") should equal(None)
+    schema.relationshipPropertyKeyType(Set("A"), "a") should equal(Some(CTInteger))
+    schema.relationshipPropertyKeyType(Set("A", "B"), "a") should equal(Some(CTNumber))
+    schema.relationshipPropertyKeyType(Set("A", "B"), "b") should equal(Some(CTString.nullable))
+    schema.relationshipPropertyKeyType(Set("A", "B", "C"), "c") should equal(Some(CTAny.nullable))
+    schema.relationshipPropertyKeyType(Set("A"), "e") should equal(None)
 
-    schema.relationshipKeyType(Set.empty, "a") should equal(Some(CTNumber.nullable))
+    schema.relationshipPropertyKeyType(Set.empty, "a") should equal(Some(CTNumber.nullable))
   }
 
   it("get all keys") {
@@ -313,7 +314,7 @@ class SchemaTest extends FunSpec with Matchers {
       .withNodePropertyKeys("A")("b" -> CTInteger, "c" -> CTString, "e" -> CTString, "f" -> CTInteger)
       .withNodePropertyKeys("B")("b" -> CTFloat, "c" -> CTString, "e" -> CTInteger, "f" -> CTBoolean)
 
-    schema.allNodeKeys should equal(
+    allNodePropertyKeys(schema) should equal(
       Map(
         "a" -> CTString.nullable,
         "b" -> CTNumber.nullable,
@@ -329,9 +330,9 @@ class SchemaTest extends FunSpec with Matchers {
       .withNodePropertyKeys("A")("b" -> CTInteger, "c" -> CTString, "e" -> CTString, "f" -> CTInteger)
       .withNodePropertyKeys("B")("b" -> CTFloat, "c" -> CTString, "e" -> CTInteger)
 
-    schema.keysFor("A") should equal(Map("b" -> CTInteger, "c" -> CTString, "e" -> CTString, "f" -> CTInteger))
-    schema.keysFor("B") should equal(Map("b" -> CTFloat, "c" -> CTString, "e" -> CTInteger))
-    schema.keysFor("A", "B") should equal(Map("b" -> CTNumber, "c" -> CTString, "e" -> CTAny, "f" -> CTInteger.nullable))
+    schema.nodePropertyKeysForCombinations(Set(Set("A"))) should equal(Map("b" -> CTInteger, "c" -> CTString, "e" -> CTString, "f" -> CTInteger))
+    schema.nodePropertyKeysForCombinations(Set(Set("B"))) should equal(Map("b" -> CTFloat, "c" -> CTString, "e" -> CTInteger))
+    schema.nodePropertyKeysForCombinations(Set(Set("A"), Set("B"))) should equal(Map("b" -> CTNumber, "c" -> CTString, "e" -> CTAny, "f" -> CTInteger.nullable))
   }
 
   it("get keys for label combinations") {
@@ -340,11 +341,11 @@ class SchemaTest extends FunSpec with Matchers {
       .withNodePropertyKeys("A")("b" -> CTInteger, "c" -> CTString, "e" -> CTString, "f" -> CTInteger)
       .withNodePropertyKeys("B")("b" -> CTFloat, "c" -> CTString, "e" -> CTInteger)
 
-    schema.keysFor(Set(Set("A"))) should equal(Map("b" -> CTInteger, "c" -> CTString, "e" -> CTString, "f" -> CTInteger))
-    schema.keysFor(Set(Set("B"))) should equal(Map("b" -> CTFloat, "c" -> CTString, "e" -> CTInteger))
-    schema.keysFor(Set(Set("A"), Set("B"))) should equal(Map("b" -> CTNumber, "c" -> CTString, "e" -> CTAny, "f" -> CTInteger.nullable))
-    schema.keysFor(Set(Set("A", "B"))) should equal(Map.empty)
-    schema.keysFor(Set(Set.empty[String])) should equal(Map("a" -> CTString, "c" -> CTString, "d" -> CTString.nullable, "f" -> CTString))
+    schema.nodePropertyKeysForCombinations(Set(Set("A"))) should equal(Map("b" -> CTInteger, "c" -> CTString, "e" -> CTString, "f" -> CTInteger))
+    schema.nodePropertyKeysForCombinations(Set(Set("B"))) should equal(Map("b" -> CTFloat, "c" -> CTString, "e" -> CTInteger))
+    schema.nodePropertyKeysForCombinations(Set(Set("A"), Set("B"))) should equal(Map("b" -> CTNumber, "c" -> CTString, "e" -> CTAny, "f" -> CTInteger.nullable))
+    schema.nodePropertyKeysForCombinations(Set(Set("A", "B"))) should equal(Map.empty)
+    schema.nodePropertyKeysForCombinations(Set(Set.empty[String])) should equal(Map("a" -> CTString, "c" -> CTString, "d" -> CTString.nullable, "f" -> CTString))
   }
 
   it("isEmpty") {
@@ -641,6 +642,26 @@ class SchemaTest extends FunSpec with Matchers {
       schema.schemaPatternsFor(Set.empty, Set.empty, Set("A", "B")) shouldBe empty
       schema.schemaPatternsFor(Set.empty, Set("REL3"), Set.empty) shouldBe empty
     }
+  }
+
+  private def allNodePropertyKeys(schema: Schema): PropertyKeys = {
+    val keyToTypes = schema.allCombinations
+      .map(schema.nodePropertyKeys)
+      .toSeq
+      .flatten
+      .groupBy(_._1)
+      .map {
+        case (k, v) => k -> v.map(_._2)
+      }
+
+    keyToTypes
+      .mapValues(types => types.foldLeft[CypherType](CTVoid)(_ join _))
+      .map {
+        case (key, tpe) =>
+          if (schema.allCombinations.map(schema.nodePropertyKeys).forall(_.get(key).isDefined))
+            key -> tpe
+          else key -> tpe.nullable
+      }
   }
 
 }

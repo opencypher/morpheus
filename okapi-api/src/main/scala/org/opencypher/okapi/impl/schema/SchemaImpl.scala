@@ -135,41 +135,22 @@ final case class SchemaImpl(
   override def impliedLabels(knownLabels: Set[String]): Set[String] =
     impliedLabels.transitiveImplicationsFor(knownLabels.intersect(labels))
 
-  override def nodeKeys(labels: Set[String]): PropertyKeys = labelPropertyMap.properties(labels)
+  // TODO: consider implied labels here?
+  override def nodePropertyKeys(labels: Set[String]): PropertyKeys = labelPropertyMap.properties(labels)
 
-  override def allNodeKeys: PropertyKeys = {
-    val keyToTypes = allLabelCombinations
-      .map(nodeKeys)
-      .toSeq
-      .flatten
-      .groupBy(_._1)
-      .map {
-        case (k, v) => k -> v.map(_._2)
-      }
-
-    keyToTypes
-      .mapValues(types => types.foldLeft[CypherType](CTVoid)(_ join _))
-      .map {
-        case (key, tpe) =>
-          if (allLabelCombinations.map(nodeKeys).forall(_.get(key).isDefined))
-            key -> tpe
-          else key -> tpe.nullable
-      }
-  }
-
-  override def allLabelCombinations: Set[Set[String]] =
+  override def allCombinations: Set[Set[String]] =
     combinationsFor(Set.empty)
 
   override def combinationsFor(knownLabels: Set[String]): Set[Set[String]] =
     labelCombinations.combinationsFor(knownLabels)
 
-  override def nodeKeyType(labels: Set[String], key: String): Option[CypherType] = {
+  override def nodePropertyKeyType(labels: Set[String], key: String): Option[CypherType] = {
     val combos = combinationsFor(labels)
-    keysFor(combos).get(key)
+    nodePropertyKeysForCombinations(combos).get(key)
   }
 
-  override def keysFor(labelCombinations: Set[Set[String]]): PropertyKeys = {
-    val allKeys = labelCombinations.toSeq.flatMap(nodeKeys)
+  override def nodePropertyKeysForCombinations(labelCombinations: Set[Set[String]]): PropertyKeys = {
+    val allKeys = labelCombinations.toSeq.flatMap(nodePropertyKeys)
     val propertyKeys = allKeys.groupBy(_._1).mapValues { seq =>
       if (seq.size == labelCombinations.size && seq.forall(seq.head == _)) {
         seq.head._2
@@ -183,11 +164,11 @@ final case class SchemaImpl(
     propertyKeys
   }
 
-  override def relationshipKeyType(types: Set[String], key: String): Option[CypherType] = {
+  override def relationshipPropertyKeyType(types: Set[String], key: String): Option[CypherType] = {
     // relationship types have OR semantics: empty set means all types
     val relevantTypes = if (types.isEmpty) relationshipTypes else types
 
-    relevantTypes.map(relationshipKeys).foldLeft(CTVoid: CypherType) {
+    relevantTypes.map(relationshipPropertyKeys).foldLeft(CTVoid: CypherType) {
       case (inferred, next) => inferred.join(next.getOrElse(key, CTNull))
     } match {
       case CTNull => None
@@ -195,7 +176,7 @@ final case class SchemaImpl(
     }
   }
 
-  override def relationshipKeys(typ: String): PropertyKeys = relTypePropertyMap.properties(typ)
+  override def relationshipPropertyKeys(typ: String): PropertyKeys = relTypePropertyMap.properties(typ)
 
   override def schemaPatternsFor(
     knownSourceLabels: Set[String],
@@ -287,7 +268,7 @@ final case class SchemaImpl(
     }
 
     val possibleLabels = if (labelConstraints.isEmpty) {
-      allLabelCombinations
+      allCombinations
     } else {
       // add required labels because they might not be present in the schema already (newly created)
       combinationsFor(requiredLabels) + requiredLabels
@@ -338,7 +319,7 @@ final case class SchemaImpl(
         labelPropertyMap.labelCombinations.foreach { combo =>
           val labelStr = if (combo eq Set.empty) "(no label)" else combo.mkString(":", ":", "")
           builder.append(s"\t$labelStr$EOL")
-          nodeKeys(combo).foreach {
+          nodePropertyKeys(combo).foreach {
             case (key, typ) => builder.append(s"\t\t$key: $typ$EOL")
           }
         }
@@ -362,7 +343,7 @@ final case class SchemaImpl(
         builder.append(s"Rel types {$EOL")
         relationshipTypes.foreach { relType =>
           builder.append(s"\t:$relType$EOL")
-          relationshipKeys(relType).foreach {
+          relationshipPropertyKeys(relType).foreach {
             case (key, typ) => builder.append(s"\t\t$key: $typ$EOL")
           }
         }
