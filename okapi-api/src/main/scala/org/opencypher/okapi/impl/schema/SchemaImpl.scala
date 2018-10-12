@@ -98,7 +98,9 @@ object SchemaImpl {
 final case class SchemaImpl(
   labelPropertyMap: LabelPropertyMap,
   relTypePropertyMap: RelTypePropertyMap,
-  explicitSchemaPatterns: Set[SchemaPattern] = Set.empty
+  explicitSchemaPatterns: Set[SchemaPattern] = Set.empty,
+  override val nodeKeys: Map[String, Set[String]] = Map.empty,
+  override val relationshipKeys: Map[String, Set[String]] = Map.empty
 ) extends Schema {
 
   self: Schema =>
@@ -144,8 +146,8 @@ final case class SchemaImpl(
   override def combinationsFor(knownLabels: Set[String]): Set[Set[String]] =
     labelCombinations.combinationsFor(knownLabels)
 
-  override def nodePropertyKeyType(labels: Set[String], key: String): Option[CypherType] = {
-    val combos = combinationsFor(labels)
+  override def nodePropertyKeyType(knownLabels: Set[String], key: String): Option[CypherType] = {
+    val combos = combinationsFor(knownLabels)
     nodePropertyKeysForCombinations(combos).get(key)
   }
 
@@ -190,16 +192,22 @@ final case class SchemaImpl(
     possibleTargetPatterns
   }
 
-  override def withNodePropertyKeys(nodeLabels: Set[String], keys: PropertyKeys): Schema = {
-    if (nodeLabels.exists(_.isEmpty))
+  override def withNodePropertyKeys(labelCombination: Set[String], keys: PropertyKeys): Schema = {
+    if (labelCombination.exists(_.isEmpty))
       throw SchemaException("Labels must be non-empty")
-    val propertyKeys = if (labelPropertyMap.labelCombinations(nodeLabels)) {
-      computePropertyTypes(labelPropertyMap.properties(nodeLabels), keys)
+    val propertyKeys = if (labelPropertyMap.labelCombinations(labelCombination)) {
+      computePropertyTypes(labelPropertyMap.properties(labelCombination), keys)
     } else {
       keys
     }
-    copy(labelPropertyMap = labelPropertyMap.register(nodeLabels, propertyKeys))
+    copy(labelPropertyMap = labelPropertyMap.register(labelCombination, propertyKeys))
   }
+
+  override def withNodeKey(label: String, nodeKey: Set[String]): Schema =
+    copy(nodeKeys = nodeKeys.updated(label, nodeKey))
+
+  override def withRelationshipKey(relationshipType: String, relationshipKey: Set[String]): Schema =
+    copy(relationshipKeys = relationshipKeys.updated(relationshipType, relationshipKey))
 
   private def computePropertyTypes(existing: PropertyKeys, input: PropertyKeys): PropertyKeys = {
     // Map over input keys to calculate join of type with existing type

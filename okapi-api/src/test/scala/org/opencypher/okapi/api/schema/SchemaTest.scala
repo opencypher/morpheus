@@ -644,6 +644,18 @@ class SchemaTest extends FunSpec with Matchers {
     }
   }
 
+  describe("entity keys") {
+    it("adds node keys") {
+      val schema = Schema.empty.withNodeKey("A", Set("foo", "bar"))
+      schema.nodeKeys shouldEqual Map("A" -> Set("foo", "bar"))
+    }
+
+    it("adds relationship keys") {
+      val schema = Schema.empty.withRelationshipKey("A", Set("foo", "bar"))
+      schema.relationshipKeys shouldEqual Map("A" -> Set("foo", "bar"))
+    }
+  }
+
   private def allNodePropertyKeys(schema: Schema): PropertyKeys = {
     val keyToTypes = schema.allCombinations
       .map(schema.nodePropertyKeys)

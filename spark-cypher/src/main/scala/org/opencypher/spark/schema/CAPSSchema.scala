@@ -87,7 +87,11 @@ case class CAPSSchema private[schema](schema: Schema) extends Schema {
 
   override def labels: Set[String] = schema.labels
 
+  override def nodeKeys: Map[String, Set[String]] = schema.nodeKeys
+
   override def relationshipTypes: Set[String] = schema.relationshipTypes
+
+  override def relationshipKeys: Map[String, Set[String]] = schema.relationshipKeys
 
   override def labelPropertyMap: LabelPropertyMap = schema.labelPropertyMap
 
@@ -142,4 +146,8 @@ case class CAPSSchema private[schema](schema: Schema) extends Schema {
   override def explicitSchemaPatterns: Set[SchemaPattern] = schema.explicitSchemaPatterns
 
   override def schemaPatternsFor(knownSourceLabels: Set[String], knownRelTypes: Set[String], knownTargetLabels: Set[String]): Set[SchemaPattern] = schema.schemaPatternsFor(knownSourceLabels, knownRelTypes, knownTargetLabels)
+
+  override def withNodeKey(label: String, nodeKey: Set[String]): Schema = schema.withNodeKey(label, nodeKey)
+
+  override def withRelationshipKey(relationshipType: String, relationshipKey: Set[String]): Schema = schema.withRelationshipKey(relationshipType, relationshipKey)
 }
