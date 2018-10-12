@@ -265,7 +265,7 @@ final case class SchemaImpl(
         val keys = computePropertyTypes(labelPropertyMap.properties(next), other.labelPropertyMap.properties(next))
         acc + (next -> keys)
     }
-    val newNodeKeyMap = labelPropertyMap |+| other.labelPropertyMap |+| nulledOut
+    val newLabelPropertyMap = labelPropertyMap |+| other.labelPropertyMap |+| nulledOut
 
     val conflictingRelTypes = relationshipTypes intersect other.relationshipTypes
     val nulledRelProps = conflictingRelTypes.foldLeft(Map.empty[String, PropertyKeys]) {
@@ -277,7 +277,16 @@ final case class SchemaImpl(
 
     val newExplicitSchemaPatterns = explicitSchemaPatterns ++ other.explicitSchemaPatterns
 
-    copy(labelPropertyMap = newNodeKeyMap, relTypePropertyMap = newRelTypePropertyMap, explicitSchemaPatterns = newExplicitSchemaPatterns)
+    val newNodeKeys = nodeKeys |+| other.nodeKeys
+    val newRelationshipKeys = relationshipKeys |+| other.relationshipKeys
+
+    copy(
+      labelPropertyMap = newLabelPropertyMap,
+      relTypePropertyMap = newRelTypePropertyMap,
+      explicitSchemaPatterns = newExplicitSchemaPatterns,
+      nodeKeys = newNodeKeys,
+      relationshipKeys = newRelationshipKeys
+    )
   }
 
   def forNode(labelConstraints: Set[String]): Schema = {

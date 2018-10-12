@@ -667,6 +667,14 @@ class SchemaTest extends FunSpec with Matchers {
         Schema.empty.withRelationshipKey("A", Set.empty)
       }
     }
+
+    it("merges overlapping keys during schema merge") {
+      val schema1 = Schema.empty.withNodePropertyKeys("A")().withNodeKey("A", Set("foo"))
+      val schema2 = Schema.empty.withNodePropertyKeys("A")().withNodeKey("A", Set("bar"))
+      val joinedSchema = schema1 ++ schema2
+
+      joinedSchema.nodeKeys shouldEqual Map("A" -> Set("foo", "bar"))
+    }
   }
 
   private def allNodePropertyKeys(schema: Schema): PropertyKeys = {
