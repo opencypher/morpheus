@@ -65,21 +65,44 @@ case class DdlDefinitions(
 
     def undefinedLabelException(label: String) = IllegalArgumentException(s"Defined label (one of: ${labelDefinitions.keys.mkString("[", ", ", "]")})", label)
 
+    // Nodes
+
     val schemaWithNodes = schemaDefinition.nodeDefinitions.foldLeft(Schema.empty) {
       case (currentSchema, labelCombo) =>
         val comboProperties = labelCombo.foldLeft(PropertyKeys.empty) { case (currProps, label) =>
           currProps ++ labelDefinitions.getOrElse(label, throw undefinedLabelException(label)).properties
-          // TODO: extend OKAPI schema with key definition and process here
         }
         currentSchema.withNodePropertyKeys(labelCombo, comboProperties)
     }
 
-    val schemaWithRels = schemaDefinition.relDefinitions.foldLeft(schemaWithNodes) {
+    val usedLabels = schemaDefinition.nodeDefinitions.flatten
+    val schemaWithNodeKeys = usedLabels.foldLeft(schemaWithNodes) {
+      case (currentSchema, label) =>
+        labelDefinitions(label).maybeKeyDefinition match {
+          case Some((_, keys)) => currentSchema.withNodeKey(label, keys)
+          case None => currentSchema
+        }
+    }
+
+    // Relationships
+
+    val schemaWithRels = schemaDefinition.relDefinitions.foldLeft(schemaWithNodeKeys) {
       case (currentSchema, relType) =>
         currentSchema.withRelationshipPropertyKeys(relType, labelDefinitions.getOrElse(relType, throw undefinedLabelException(relType)).properties)
     }
 
-    val schemaWithPatterns = schemaDefinition.schemaPatternDefinitions.foldLeft(schemaWithRels) {
+    val usedRelTypes = schemaDefinition.relDefinitions
+    val schemaWithRelationshipKeys = usedRelTypes.foldLeft(schemaWithRels) {
+      case (currentSchema, relType) =>
+        labelDefinitions(relType).maybeKeyDefinition match {
+          case Some((_, keys)) => currentSchema.withRelationshipKey(relType, keys)
+          case None => currentSchema
+        }
+    }
+
+    // Schema patterns
+
+    val schemaWithPatterns = schemaDefinition.schemaPatternDefinitions.foldLeft(schemaWithRelationshipKeys) {
       // TODO: extend OKAPI schema with cardinality constraints
       case (currentSchema, SchemaPatternDefinition(sourceLabels, _, relTypes, _, targetLabels)) =>
         relTypes.foldLeft(currentSchema) {
