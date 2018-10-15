@@ -27,7 +27,7 @@
 package org.opencypher.sql.ddl
 
 import org.opencypher.okapi.api.schema.{Schema, SchemaPattern}
-import org.opencypher.okapi.api.types.CTString
+import org.opencypher.okapi.api.types.{CTBoolean, CTInteger, CTString}
 import org.opencypher.okapi.testing.BaseTestSuite
 import org.opencypher.sql.ddl.DdlParser._
 
@@ -154,49 +154,44 @@ class DdlAcceptanceTest extends BaseTestSuite {
 
       )
     }
-    //
-    //    it("can combine local and global labels") {
-    //      // Given
-    //      val ddl =
-    //        """
-    //          |CATALOG CREATE LABEL (MyLabel {property: STRING, data: INTEGER?})
-    //          |CATALOG CREATE LABEL (REL_TYPE1 {property: BOOLEAN})
-    //          |CATALOG CREATE LABEL (REL_TYPE2)
-    //          |
-    //          |CREATE GRAPH SCHEMA mySchema
-    //          |  -- local label declarations
-    //          |  LABEL (LocalLabel1 {property: STRING}),
-    //          |  LABEL (LocalLabel2),
-    //          |
-    //          |  -- label set declarations
-    //          |  (LocalLabel1, LocalLabel2),
-    //          |  (LocalLabel1),
-    //          |  (MyLabel),
-    //          |
-    //          |  [REL_TYPE1],
-    //          |  [REL_TYPE2]
-    //          |
-    //          |  -- schema patterns
-    //          |  (MyLabel) <0..*> -[REL_TYPE1]-> <1> (LocalLabel1),
-    //          |  (LocalLabel1, LocalLabel2)-[REL_TYPE2]->(MyLabel)
-    //        """.stripMargin
-    //
-    //      // When
-    //      val manager = process(ddl)
-    //
-    //      // Then
-    //      val graphSchema = manager.getGraphSchemas.get(qgn("mySchema"))
-    //      val myLabel = new LabelSetImpl(list(label("MyLabel", Map("property" -> "STRING", "data" -> "INTEGER?"))))
-    //      val localLabel1 = label("LocalLabel1", Map("property" -> "STRING"))
-    //      val local1 = new LabelSetImpl(list(localLabel1))
-    //      val combo = new LabelSetImpl(list(label("LocalLabel2"), localLabel1))
-    //
-    //      graphSchema.getNodeLabelSets.asScala should equal(Set(local1, combo, myLabel))
-    //      graphSchema.getEdgeTriplets.asScala should equal(Set(
-    //        new EdgeTripletImpl(myLabel, new LabelSetImpl(list(label("REL_TYPE1", Map("property" -> "STRING")))), local1, Cardinality.ANY, Cardinality.EXACTLY_ONE),
-    //        new EdgeTripletImpl(combo, new LabelSetImpl(list(label("REL_TYPE2"))), myLabel)
-    //      ))
-    //    }
+
+    it("can combine local and global labels") {
+      // Given
+      val ddl =
+        """
+          |CATALOG CREATE LABEL (MyLabel {property: STRING, data: INTEGER?})
+          |CATALOG CREATE LABEL (REL_TYPE1 {property: BOOLEAN})
+          |CATALOG CREATE LABEL (REL_TYPE2)
+          |
+          |CREATE GRAPH SCHEMA mySchema
+          |  -- local label declarations
+          |  LABEL (LocalLabel1 {property: STRING}),
+          |  LABEL (LocalLabel2),
+          |
+          |  -- label set declarations
+          |  (LocalLabel1, LocalLabel2),
+          |  (LocalLabel1),
+          |  (MyLabel),
+          |
+          |  [REL_TYPE1],
+          |  [REL_TYPE2]
+          |
+          |  -- schema patterns
+          |  (MyLabel) <0..*> -[REL_TYPE1]-> <1> (LocalLabel1),
+          |  (LocalLabel1, LocalLabel2)-[REL_TYPE2]->(MyLabel)
+        """.stripMargin
+
+      parse(ddl).globalSchemas("mySchema") should equal(
+        Schema.empty
+          .withNodePropertyKeys("MyLabel")("property" -> CTString, "data" -> CTInteger.nullable)
+          .withNodePropertyKeys("LocalLabel1")("property" -> CTString)
+          .withNodePropertyKeys("LocalLabel1", "LocalLabel2")("property" -> CTString)
+          .withRelationshipPropertyKeys("REL_TYPE1")("property" -> CTBoolean)
+          .withRelationshipPropertyKeys("REL_TYPE2")()
+          .withSchemaPatterns(SchemaPattern(Set("MyLabel"), "REL_TYPE1", Set("LocalLabel1")))
+          .withSchemaPatterns(SchemaPattern(Set("LocalLabel1", "LocalLabel2"), "REL_TYPE2", Set("MyLabel")))
+      )
+    }
   }
   //
   //  describe("mapping errors") {

@@ -214,14 +214,14 @@ class DdlParserTest extends BaseTestSuite with MockitoSugar with TestNameFixture
     }
 
     it("parses (A)-[TYPE]->(B)") {
-      success(schemaPatternDefinition, SchemaPatternDefinition(sourceLabels = Set("A"), relTypes = Set("TYPE"), targetLabels = Set("B")))
+      success(schemaPatternDefinition, SchemaPatternDefinition(sourceLabelCombinations = Set(Set("A")), relTypes = Set("TYPE"), targetLabelCombinations = Set(Set("B"))))
     }
 
     it("parses schema pattern definitions") {
       val expected = SchemaPatternDefinition(
-        Set("L1", "L2"),
+        Set(Set("L1"), Set("L2")),
         CardinalityConstraint(0, None), Set("R1", "R2"), CardinalityConstraint(1, Some(1)),
-        Set("L3"))
+        Set(Set("L3")))
       schemaPatternDefinition.parse("(L1 | L2) <0 .. *> - [R1 | R2] -> <1>(L3)") should matchPattern {
         case Success(`expected`, _) =>
       }
@@ -229,10 +229,30 @@ class DdlParserTest extends BaseTestSuite with MockitoSugar with TestNameFixture
 
     it("parses schema pattern definitions with implicit cardinality constraint") {
       val expected = SchemaPatternDefinition(
-        Set("L1", "L2"),
+        Set(Set("L1"), Set("L2")),
         CardinalityConstraint(0, None), Set("R1", "R2"), CardinalityConstraint(1, Some(1)),
-        Set("L3"))
+        Set(Set("L3")))
       schemaPatternDefinition.parse("(L1 | L2) - [R1 | R2] -> <1>(L3)") should matchPattern {
+        case Success(`expected`, _) =>
+      }
+    }
+
+    it("parses schema pattern definitions with a single label combination") {
+      val expected = SchemaPatternDefinition(
+        Set(Set("L1", "L2")),
+        CardinalityConstraint(0, None), Set("R1", "R2"), CardinalityConstraint(1, Some(1)),
+        Set(Set("L3")))
+      schemaPatternDefinition.parse("(L1, L2) - [R1 | R2] -> <1>(L3)") should matchPattern {
+        case Success(`expected`, _) =>
+      }
+    }
+
+    it("parses schema pattern definitions with multiple label combinations") {
+      val expected = SchemaPatternDefinition(
+        Set(Set("L4"), Set("L1", "L2"), Set("L3", "L5")),
+        CardinalityConstraint(0, None), Set("R1", "R2"), CardinalityConstraint(1, Some(1)),
+        Set(Set("L3")))
+      schemaPatternDefinition.parse("(L4 | L1, L2 | L3 & L5) - [R1 | R2] -> <1>(L3)") should matchPattern {
         case Success(`expected`, _) =>
       }
     }
@@ -264,13 +284,13 @@ class DdlParserTest extends BaseTestSuite with MockitoSugar with TestNameFixture
       val expectedRelDefs = Set("TYPE_1", "TYPE_2")
       val expectedPatternDefinitions = Set(
         SchemaPatternDefinition(
-          Set("A", "B"),
+          Set(Set("A"), Set("B")),
           CardinalityConstraint(0, None), Set("TYPE_1"), CardinalityConstraint(1, Some(1)),
-          Set("B")),
+          Set(Set("B"))),
         SchemaPatternDefinition(
-          Set("A"),
+          Set(Set("A")),
           CardinalityConstraint(0, None), Set("TYPE_1"), CardinalityConstraint(0, None),
-          Set("A"))
+          Set(Set("A")))
       )
 
       globalSchemaDefinition.parse(
@@ -295,7 +315,7 @@ class DdlParserTest extends BaseTestSuite with MockitoSugar with TestNameFixture
     it("parses CREATE GRAPH SCHEMA mySchema (A)-[TYPE]->(B)") {
       success(globalSchemaDefinition, ("mySchema",
         SchemaDefinition(schemaPatternDefinitions = Set(
-          SchemaPatternDefinition(sourceLabels = Set("A"), relTypes = Set("TYPE"), targetLabels = Set("B"))
+          SchemaPatternDefinition(sourceLabelCombinations = Set(Set("A")), relTypes = Set("TYPE"), targetLabelCombinations = Set(Set("B")))
         ))))
     }
   }
@@ -517,7 +537,7 @@ class DdlParserTest extends BaseTestSuite with MockitoSugar with TestNameFixture
             LabelDefinition("C")),
           nodeDefinitions = Set(Set("A"), Set("B"), Set("A", "B"), Set("C")),
           relDefinitions = Set("TYPE_1", "TYPE_2"),
-          schemaPatternDefinitions = Set(SchemaPatternDefinition(Set("A"), CardinalityConstraint(0, None), Set("TYPE_1"), CardinalityConstraint(1, Some(1)), Set("B"))))),
+          schemaPatternDefinitions = Set(SchemaPatternDefinition(Set(Set("A")), CardinalityConstraint(0, None), Set("TYPE_1"), CardinalityConstraint(1, Some(1)), Set(Set("B")))))),
         graphDefinitions = List(GraphDefinition("myGraph", Some("mySchema"), emptySchemaDef, List(NodeMappingDefinition(Set("A"), "foo"))))
       )
     )

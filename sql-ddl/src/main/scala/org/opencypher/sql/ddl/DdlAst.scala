@@ -42,6 +42,8 @@ object Ddl {
   type ColumnIdentifier = List[String]
 
   type PropertyToColumnMappingDefinition = Map[String, String]
+
+  type LabelCombination = Set[String]
 }
 
 abstract class DdlAst extends AbstractTreeNode[DdlAst]
@@ -54,9 +56,9 @@ case class DdlDefinitions(
   relationshipLabelSets: List[RelationshipLabelSetDefinition] = Nil
 ) extends DdlAst {
 
-  private lazy val globalLabelDefinitions: Map[String, LabelDefinition] = labelDefinitions.map(labelDef => labelDef.name -> labelDef).toMap
+  private[ddl] lazy val globalLabelDefinitions: Map[String, LabelDefinition] = labelDefinitions.map(labelDef => labelDef.name -> labelDef).toMap
 
-  private lazy val globalSchemas: Map[String, Schema] = schemaDefinitions.map {
+  private[ddl] lazy val globalSchemas: Map[String, Schema] = schemaDefinitions.map {
     case (name, schemaDefinition: SchemaDefinition) => name -> toSchema(schemaDefinition)
   }
 
@@ -66,7 +68,8 @@ case class DdlDefinitions(
     def undefinedLabelException(label: String) = IllegalArgumentException(s"Defined label (one of: ${labelDefinitions.keys.mkString("[", ", ", "]")})", label)
 
     // track all node / rel definitions (e.g. explicit ones and implicit ones from schema pattern definitions)
-    val nodeDefinitionsFromPatterns = schemaDefinition.schemaPatternDefinitions.flatMap(schemaDef => schemaDef.sourceLabels.map(Set(_)) ++ schemaDef.targetLabels.map(Set(_)))
+    val nodeDefinitionsFromPatterns = schemaDefinition.schemaPatternDefinitions.flatMap(schemaDef =>
+      schemaDef.sourceLabelCombinations ++ schemaDef.targetLabelCombinations)
     val relDefinitionsFromPatterns = schemaDefinition.schemaPatternDefinitions.flatMap(_.relTypes)
     // Nodes
 
@@ -105,15 +108,16 @@ case class DdlDefinitions(
 
     // Schema patterns
 
-    val schemaWithPatterns = schemaDefinition.schemaPatternDefinitions.foldLeft(schemaWithRelationshipKeys) {
+    schemaDefinition.schemaPatternDefinitions.foldLeft(schemaWithRelationshipKeys) {
       // TODO: extend OKAPI schema with cardinality constraints
-      case (currentSchema, SchemaPatternDefinition(sourceLabels, _, relTypes, _, targetLabels)) =>
-        relTypes.foldLeft(currentSchema) {
-          case (innerSchema, relType) =>
-            innerSchema.withSchemaPatterns(SchemaPattern(sourceLabels, relType, targetLabels))
-        }
+      case (currentSchema, SchemaPatternDefinition(sourceLabelCombinations, _, relTypes, _, targetLabelCombinations)) =>
+        val expandedPatterns = for {
+          sourceCombination <- sourceLabelCombinations
+          relType <- relTypes
+          targetLabelCombination <- targetLabelCombinations
+        } yield SchemaPattern(sourceCombination, relType, targetLabelCombination)
+        currentSchema.withSchemaPatterns(expandedPatterns.toSeq: _*)
     }
-    schemaWithPatterns
   }
 
   lazy val graphSchemas: Map[String, Schema] = graphDefinitions.map {
@@ -151,11 +155,11 @@ case class GraphDefinition(
 case class CardinalityConstraint(from: Int, to: Option[Int])
 
 case class SchemaPatternDefinition(
-  sourceLabels: Set[String],
+  sourceLabelCombinations: Set[LabelCombination],
   sourceCardinality: CardinalityConstraint = CardinalityConstraint(0, None),
   relTypes: Set[String],
   targetCardinality: CardinalityConstraint = CardinalityConstraint(0, None),
-  targetLabels: Set[String]
+  targetLabelCombinations: Set[LabelCombination]
 ) extends DdlAst
 
 case class NodeMappingDefinition(

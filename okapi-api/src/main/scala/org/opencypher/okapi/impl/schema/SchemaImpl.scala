@@ -187,9 +187,9 @@ final case class SchemaImpl(
     knownRelTypes: Set[String],
     knownTargetLabels: Set[String]
   ): Set[SchemaPattern] = {
-    val possibleSourcePatterns = schemaPatterns.filter(p => knownSourceLabels.subsetOf(p.sourceLabels))
+    val possibleSourcePatterns = schemaPatterns.filter(p => knownSourceLabels.subsetOf(p.sourceLabelCombination))
     val possibleRelTypePatterns = possibleSourcePatterns.filter(p => knownRelTypes.contains(p.relType) || knownRelTypes.isEmpty)
-    val possibleTargetPatterns = possibleRelTypePatterns.filter(p => knownTargetLabels.subsetOf(p.targetLabels))
+    val possibleTargetPatterns = possibleRelTypePatterns.filter(p => knownTargetLabels.subsetOf(p.targetLabelCombination))
 
     possibleTargetPatterns
   }
@@ -250,9 +250,9 @@ final case class SchemaImpl(
 
   override def withSchemaPatterns(patterns: SchemaPattern*): Schema = {
     patterns.foreach { p =>
-      if (!labelCombinations.combos.contains(p.sourceLabels)) throw SchemaException(s"Unknown source node label combination: `${p.sourceLabels}`. Should be one of: ${labelCombinations.combos.mkString("[", ",", "]")}")
+      if (!labelCombinations.combos.contains(p.sourceLabelCombination)) throw SchemaException(s"Unknown source node label combination: `${p.sourceLabelCombination}`. Should be one of: ${labelCombinations.combos.mkString("[", ",", "]")}")
       if (!relationshipTypes.contains(p.relType)) throw SchemaException(s"Unknown relationship type: `${p.relType}`. Should be one of ${relationshipTypes.mkString("[", ",", "]")}")
-      if (!labelCombinations.combos.contains(p.targetLabels)) throw SchemaException(s"Unknown target node label combination: `${p.targetLabels}`. Should be one of: ${labelCombinations.combos.mkString("[", ",", "]")}")
+      if (!labelCombinations.combos.contains(p.targetLabelCombination)) throw SchemaException(s"Unknown target node label combination: `${p.targetLabelCombination}`. Should be one of: ${labelCombinations.combos.mkString("[", ",", "]")}")
     }
 
     copy(explicitSchemaPatterns = explicitSchemaPatterns ++ patterns.toSet)

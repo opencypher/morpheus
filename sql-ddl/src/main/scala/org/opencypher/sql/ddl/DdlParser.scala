@@ -144,16 +144,18 @@ object DdlParser {
 
   // ==== Schema ====
 
-  // (LabelA [, LabelB]*)
-  // negative lookahead (~ !"-") needed in order to disambiguate node definitions and schema pattern definitions
-  val nodeDefinition: P[Set[String]] = P("(" ~ identifier.!.rep(min = 1, sep = ",") ~ ")" ~ !"-").map(_.toSet)
+  val labelCombination: P[LabelCombination] = P(identifier.!.rep(min = 1, sep = "," | "&")).map(_.toSet)
 
-  // [RelType]
-  val relDefinition: P[String] = P("[" ~/ identifier.! ~/ "]")
+  val nodeDefinition: P[LabelCombination] = P("(" ~ labelCombination ~ ")")
 
-  val nodeAlternatives: P[Set[String]] = P("(" ~/ identifier.!.rep(min = 1, sep = "|") ~/ ")").map(_.toSet)
+  val relType: P[String] = P(identifier.!)
 
-  val relAlternatives: P[Set[String]] = P("[" ~/ identifier.!.rep(min = 1, sep = "|") ~/ "]").map(_.toSet)
+  val relDefinition: P[String] = P("[" ~/ relType ~/ "]")
+
+  val nodeAlternatives: P[Set[LabelCombination]] = P("(" ~ labelCombination.rep(min = 1, sep = "|").map(_.toSet) ~ ")")
+
+  // TODO: Fix symmetric to node
+  val relAlternatives: P[Set[String]] = P("[" ~/ relType.rep(min = 1, sep = "|") ~/ "]").map(_.toSet)
 
   val integer: P[Int] = P(digit.rep(min = 1).!.map(_.toInt))
 
@@ -178,9 +180,10 @@ object DdlParser {
     .map(SchemaPatternDefinition.tupled)
 
   val localSchemaDefinition: P[SchemaDefinition] = P(
-    localLabelDefinition.rep(sep = ",".?).map(_.toSet) ~/
-      nodeDefinition.rep(sep = ",".?).map(_.toSet) ~/
-      relDefinition.rep(sep = ",".?).map(_.toSet) ~/
+    localLabelDefinition.rep(sep = ",".?).map(_.toSet) ~/ ",".? ~/
+      // negative lookahead (~ !"-") needed in order to disambiguate node definitions and schema pattern definitions
+      (nodeDefinition ~ !"-").rep(sep = ",".?).map(_.toSet) ~ ",".? ~/
+      relDefinition.rep(sep = ",".?).map(_.toSet) ~/ ",".? ~/
       schemaPatternDefinition.rep(sep = ",".?).map(_.toSet) ~/ ";".?)
     .map(SchemaDefinition.tupled)
 
