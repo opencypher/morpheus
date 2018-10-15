@@ -24,16 +24,16 @@
  * described as "implementation extensions to Cypher" or as "proposed changes to
  * Cypher that are not yet approved by the openCypher community".
  */
-package org.opencypher.okapi.ir.api.functions
+package org.opencypher.okapi.ir.impl.parse.functions
 
 import org.opencypher.v9_0.expressions._
 import org.opencypher.v9_0.expressions.functions.Function
 import org.opencypher.v9_0.util.symbols._
 
-case object TimeStamp extends Function with TypeSignatures {
-  def name = "timestamp"
+case object Timestamp extends Function with TypeSignatures {
+  override val name = "timestamp"
 
   override val signatures = Vector(
-    TypeSignature(argumentTypes = Vector(), outputType = CTMap)
+    TypeSignature(argumentTypes = Vector(), outputType = CTInteger)
   )
 }

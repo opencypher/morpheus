@@ -29,6 +29,7 @@ package org.opencypher.okapi.ir.impl
 import org.opencypher.okapi.api.types.CypherType
 import org.opencypher.okapi.impl.exception.NotImplementedException
 import org.opencypher.okapi.ir.api.expr._
+import org.opencypher.okapi.ir.impl.parse.{functions => f}
 import org.opencypher.v9_0.expressions.{FunctionInvocation, functions}
 
 object FunctionUtils {
@@ -79,7 +80,7 @@ object FunctionUtils {
         // Match by name
         case functions.UnresolvedFunction => functionInvocation.name match {
           // Time functions
-          case "timestamp" => Timestamp()(cypherType)
+          case f.Timestamp.name => Timestamp()(cypherType)
 
           case name => throw NotImplementedException(s"Support for converting ${name} function not yet implemented")
         }

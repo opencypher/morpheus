@@ -36,7 +36,7 @@ import org.atnos.eff.all._
 import org.opencypher.okapi.api.schema.Schema
 import org.opencypher.okapi.api.types.CypherType.joinMonoid
 import org.opencypher.okapi.api.types._
-import org.opencypher.okapi.ir.api.functions.TimeStamp
+import org.opencypher.okapi.ir.impl.parse.functions.Timestamp
 import org.opencypher.okapi.ir.impl.parse.rewriter.ExistsPattern
 import org.opencypher.okapi.ir.impl.typer.SignatureConverter._
 import org.opencypher.v9_0.expressions._
@@ -482,8 +482,8 @@ object SchemaTyper {
       args: Seq[(Expression, CypherType)]
     ): Eff[R, Set[FunctionSignature]] = expr match {
       case f: FunctionInvocation => f.name match {
-        case "timestamp" =>
-          val set = TimeStamp.signatures.flatMap(_.convert).toSet
+        case Timestamp.name =>
+          val set = Timestamp.signatures.flatMap(_.convert).toSet
           pure(set)
         case _ =>
           wrong[R, TyperError](UnsupportedExpr(expr)) >> pure(Set.empty)
