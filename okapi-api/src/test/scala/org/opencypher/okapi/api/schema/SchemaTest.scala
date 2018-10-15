@@ -426,11 +426,48 @@ class SchemaTest extends FunSpec with Matchers {
     )
   }
 
-  it("serializes to/from json") {
+  it("serializes to/from json when patterns and keys are not present") {
+    val schema = Schema.empty
+      .withRelationshipPropertyKeys("FOO")("p" -> CTString)
+      .withNodePropertyKeys("BAR")("q" -> CTInteger)
+
+    val serialized = schema.toJson
+
+    serialized should equal(
+      """|{
+         |    "version": 1,
+         |    "labelPropertyMap": [
+         |        {
+         |            "labels": [
+         |                "BAR"
+         |            ],
+         |            "properties": {
+         |                "q": "INTEGER"
+         |            }
+         |        }
+         |    ],
+         |    "relTypePropertyMap": [
+         |        {
+         |            "relType": "FOO",
+         |            "properties": {
+         |                "p": "STRING"
+         |            }
+         |        }
+         |    ]
+         |}""".stripMargin)
+
+    val deserialized = Schema.fromJson(serialized)
+
+    deserialized should equal(schema)
+  }
+
+  it("serializes to/from json when patterns and keys are present") {
     val schema = Schema.empty
       .withRelationshipPropertyKeys("FOO")("p" -> CTString)
       .withNodePropertyKeys("BAR")("q" -> CTInteger)
       .withSchemaPatterns(SchemaPattern(Set("BAR"), "FOO", Set("BAR")))
+      .withNodeKey("BAR", Set("q"))
+      .withRelationshipKey("FOO", Set("p"))
 
     val serialized = schema.toJson
 
@@ -457,15 +494,25 @@ class SchemaTest extends FunSpec with Matchers {
          |    ],
          |    "schemaPatterns": [
          |        {
-         |            "sourceLabels": [
+         |            "sourceLabelCombination": [
          |                "BAR"
          |            ],
          |            "relType": "FOO",
-         |            "targetLabels": [
+         |            "targetLabelCombination": [
          |                "BAR"
          |            ]
          |        }
-         |    ]
+         |    ],
+         |    "nodeKeys": {
+         |        "BAR": [
+         |            "q"
+         |        ]
+         |    },
+         |    "relKeys": {
+         |        "FOO": [
+         |            "p"
+         |        ]
+         |    }
          |}""".stripMargin)
 
     val deserialized = Schema.fromJson(serialized)

@@ -45,6 +45,8 @@ object SchemaImpl {
   val VERSION = "version"
   val LABEL_PROPERTY_MAP = "labelPropertyMap"
   val REL_TYPE_PROPERTY_MAP = "relTypePropertyMap"
+  val NODE_KEYS = "nodeKeys"
+  val REL_KEYS = "relKeys"
   val SCHEMA_PATTERNS = "schemaPatterns"
 
   val LABELS = "labels"
@@ -53,11 +55,32 @@ object SchemaImpl {
 
 
   implicit def rw: ReadWriter[Schema] = readwriter[Js.Value].bimap[Schema](
-    schema => Js.Obj(
-      VERSION -> Js.Num(1),
-      LABEL_PROPERTY_MAP -> writeJs(schema.labelPropertyMap),
-      REL_TYPE_PROPERTY_MAP -> writeJs(schema.relTypePropertyMap),
-      SCHEMA_PATTERNS -> writeJs(schema.explicitSchemaPatterns)),
+    schema => {
+      val tuples: Seq[(String, Js.Value)] = Seq[(String, Js.Value)](
+        VERSION -> Js.Num(1),
+        LABEL_PROPERTY_MAP -> writeJs(schema.labelPropertyMap),
+        REL_TYPE_PROPERTY_MAP -> writeJs(schema.relTypePropertyMap)) ++ {
+        if (schema.explicitSchemaPatterns.nonEmpty) {
+          Some(SCHEMA_PATTERNS -> writeJs(schema.explicitSchemaPatterns))
+        } else {
+          None
+        }
+      } ++ {
+        if (schema.nodeKeys.nonEmpty) {
+          Some(NODE_KEYS -> writeJs(schema.nodeKeys))
+        } else {
+          None
+        }
+      } ++ {
+        if (schema.relationshipKeys.nonEmpty) {
+          Some(REL_KEYS -> writeJs(schema.relationshipKeys))
+        } else {
+          None
+        }
+      }
+      Js.Obj.from(tuples)
+    }
+    ,
     json => {
       val labelPropertyMap = readJs[LabelPropertyMap](json.obj(LABEL_PROPERTY_MAP))
       val relTypePropertyMap = readJs[RelTypePropertyMap](json.obj(REL_TYPE_PROPERTY_MAP))
@@ -65,8 +88,15 @@ object SchemaImpl {
         case Obj(m) if m.keySet.contains(SCHEMA_PATTERNS) => readJs[Set[SchemaPattern]](json.obj(SCHEMA_PATTERNS))
         case _ => Set.empty[SchemaPattern]
       }
-
-      SchemaImpl(labelPropertyMap, relTypePropertyMap, explicitSchemaPatterns)
+      val nodeKeys = json match {
+        case Obj(m) if m.keySet.contains(NODE_KEYS) => readJs[Map[String, Set[String]]](json.obj(NODE_KEYS))
+        case _ => Map.empty[String, Set[String]]
+      }
+      val relKeys = json match {
+        case Obj(m) if m.keySet.contains(REL_KEYS) => readJs[Map[String, Set[String]]](json.obj(REL_KEYS))
+        case _ => Map.empty[String, Set[String]]
+      }
+      SchemaImpl(labelPropertyMap, relTypePropertyMap, explicitSchemaPatterns, nodeKeys, relKeys)
     }
   )
 
