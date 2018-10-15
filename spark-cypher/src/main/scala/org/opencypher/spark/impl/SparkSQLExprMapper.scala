@@ -250,6 +250,10 @@ object SparkSQLExprMapper {
           case other => throw IllegalArgumentException("CTList", other)
         }
 
+        case Trim(str) => functions.trim(str.asSparkSQLExpr)
+        case LTrim(str) => functions.ltrim(str.asSparkSQLExpr)
+        case RTrim(str) => functions.rtrim(str.asSparkSQLExpr)
+
         case Range(from, to, maybeStep) =>
           val stepCol = maybeStep.map(_.asSparkSQLExpr).getOrElse(ONE_LIT)
           rangeUdf(from.asSparkSQLExpr, to.asSparkSQLExpr, stepCol)

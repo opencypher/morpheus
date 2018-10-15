@@ -60,6 +60,9 @@ object FunctionUtils {
         case functions.ToBoolean => ToBoolean(expr.head)(cypherType)
         case functions.Range => Range(expr(0), expr(1), expr.lift(2))
         case functions.Substring => Substring(expr(0), expr(1), expr.lift(2))
+        case functions.Trim => Trim(expr.head)(cypherType)
+        case functions.LTrim => LTrim(expr.head)(cypherType)
+        case functions.RTrim => RTrim(expr.head)(cypherType)
 
         // Logarithmic functions
         case functions.Sqrt => Sqrt(expr.head)(cypherType)

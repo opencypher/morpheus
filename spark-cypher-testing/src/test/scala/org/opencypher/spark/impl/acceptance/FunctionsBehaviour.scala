@@ -36,6 +36,18 @@ import org.scalatest.DoNotDiscover
 @DoNotDiscover
 class FunctionsBehaviour extends CAPSTestSuite with DefaultGraphInit {
 
+  describe("trim") {
+
+    it("trim") {
+      val result = caps.cypher("RETURN trim(   hello  ) AS trimmed")
+      result.records.toMaps should equal(
+        Bag(
+          CypherMap("trimmed" -> "hello")
+        )
+      )
+    }
+  }
+
   describe("timestamp") {
 
     it("is monotonically increasing") {
