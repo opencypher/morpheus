@@ -26,7 +26,7 @@
  */
 package org.opencypher.sql.ddl
 
-import org.opencypher.okapi.api.schema.Schema
+import org.opencypher.okapi.api.schema.{Schema, SchemaPattern}
 import org.opencypher.okapi.api.types.CTString
 import org.opencypher.okapi.testing.BaseTestSuite
 import org.opencypher.sql.ddl.DdlParser._
@@ -112,41 +112,48 @@ class DdlAcceptanceTest extends BaseTestSuite {
           .withNodeKey("Node", Set("val"))
       )
     }
-    //
-    //
-    //      val manager = process(ddl)
-    //
-    //      val graphSchema = manager.getGraphMappings.get(qgn(gName)).getGraphSchema
-    //
-    //      graphSchema.getNodeLabelSets.iterator.next.iterator.next.getElementKeySet("akey").asScala should equal( List ("val"))
-    //
-    //    }
-    //
-    //    it("can construct schema with single NEN pattern") {
-    //      val gName = "test"
-    //
-    //      val ddl =
-    //        s"""
-    //           |CATALOG CREATE LABEL (Node {val: String})
-    //           |CATALOG CREATE LABEL (REL {name: STRING})
-    //           |
-    //           |CREATE GRAPH SCHEMA foo
-    //           |  (Node)-[REL]->(Node)
-    //           |
-    //           |CREATE GRAPH $gName WITH SCHEMA foo
-    //           |""".stripMargin
-    //
-    //      val manager = process(ddl)
-    //
-    //      val graphSchema = manager.getGraphMappings.get(qgn(gName)).getGraphSchema
-    //
-    //      val nodeLabelCombos = new LabelSetImpl(util.Arrays.asList(new LabelImpl(qgn("Node"), map("val" -> "STRING"), emptyMap())))
-    //      val edgeLabelCombo = new LabelSetImpl(util.Arrays.asList(new LabelImpl(qgn("REL"), map("name" -> "STRING"), emptyMap())))
-    //
-    //      graphSchema.getNodeLabelSets.asScala should equal(Set(nodeLabelCombos))
-    //      graphSchema.getEdgeLabelSets.asScala should equal(Set(edgeLabelCombo))
-    //      graphSchema.getEdgeTriplets.asScala should equal(Set(new EdgeTripletImpl(nodeLabelCombos, edgeLabelCombo, nodeLabelCombos)))
-    //    }
+
+    it("can construct schema with single NEN pattern") {
+      val gName = "test"
+
+      val ddl =
+        s"""|CATALOG CREATE LABEL (Node {val: String})
+            |CATALOG CREATE LABEL (REL {name: STRING})
+            |
+            |CREATE GRAPH SCHEMA foo
+            |  (Node)-[REL]->(Node)
+            |
+            |CREATE GRAPH $gName WITH SCHEMA foo""".stripMargin
+
+      parse(ddl).graphSchemas(gName) should equal(
+        Schema.empty
+          .withNodePropertyKeys("Node")("val" -> CTString)
+          .withRelationshipPropertyKeys("REL")("name" -> CTString)
+          .withSchemaPatterns(SchemaPattern("Node", "REL", "Node"))
+
+      )
+    }
+
+    it("can construct schema with single NEN pattern 2") {
+      val gName = "test"
+
+      val ddl =
+        s"""|CATALOG CREATE LABEL (Node {val: String})
+            |CATALOG CREATE LABEL (REL {name: STRING})
+            |
+            |CREATE GRAPH SCHEMA foo
+            | (Node)-[REL]->(Node)
+            |
+            |CREATE GRAPH $gName WITH SCHEMA foo""".stripMargin
+
+      parse(ddl).graphSchemas(gName) should equal(
+        Schema.empty
+          .withNodePropertyKeys("Node")("val" -> CTString)
+          .withRelationshipPropertyKeys("REL")("name" -> CTString)
+          .withSchemaPatterns(SchemaPattern("Node", "REL", "Node"))
+
+      )
+    }
     //
     //    it("can combine local and global labels") {
     //      // Given

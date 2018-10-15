@@ -80,6 +80,10 @@ object DdlParser {
   import Whitespace._
   import fastparse.noApi._
 
+  implicit class RichParser[T](parser: fastparse.core.Parser[T, Char, String]) {
+    def entireInput: P[T] = parser ~ End
+  }
+
   val digit: P[Unit] = P(CharIn('0' to '9'))
   val character: P[Unit] = P(CharIn('a' to 'z', 'A' to 'Z'))
   val identifier: P[Unit] = P(character ~ P(character | digit | "_").repX)
@@ -141,7 +145,8 @@ object DdlParser {
   // ==== Schema ====
 
   // (LabelA [, LabelB]*)
-  val nodeDefinition: P[Set[String]] = P("(" ~/ identifier.!.rep(min = 1, sep = ",") ~/ ")").map(_.toSet)
+  // negative lookahead (~ !"-") needed in order to disambiguate node definitions and schema pattern definitions
+  val nodeDefinition: P[Set[String]] = P("(" ~ identifier.!.rep(min = 1, sep = ",") ~ ")" ~ !"-").map(_.toSet)
 
   // [RelType]
   val relDefinition: P[String] = P("[" ~/ identifier.! ~/ "]")

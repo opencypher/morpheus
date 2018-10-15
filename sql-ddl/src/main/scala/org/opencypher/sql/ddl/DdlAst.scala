@@ -65,9 +65,12 @@ case class DdlDefinitions(
 
     def undefinedLabelException(label: String) = IllegalArgumentException(s"Defined label (one of: ${labelDefinitions.keys.mkString("[", ", ", "]")})", label)
 
+    // track all node / rel definitions (e.g. explicit ones and implicit ones from schema pattern definitions)
+    val nodeDefinitionsFromPatterns = schemaDefinition.schemaPatternDefinitions.flatMap(schemaDef => schemaDef.sourceLabels.map(Set(_)) ++ schemaDef.targetLabels.map(Set(_)))
+    val relDefinitionsFromPatterns = schemaDefinition.schemaPatternDefinitions.flatMap(_.relTypes)
     // Nodes
 
-    val schemaWithNodes = schemaDefinition.nodeDefinitions.foldLeft(Schema.empty) {
+    val schemaWithNodes = (nodeDefinitionsFromPatterns ++ schemaDefinition.nodeDefinitions).foldLeft(Schema.empty) {
       case (currentSchema, labelCombo) =>
         val comboProperties = labelCombo.foldLeft(PropertyKeys.empty) { case (currProps, label) =>
           currProps ++ labelDefinitions.getOrElse(label, throw undefinedLabelException(label)).properties
@@ -86,7 +89,7 @@ case class DdlDefinitions(
 
     // Relationships
 
-    val schemaWithRels = schemaDefinition.relDefinitions.foldLeft(schemaWithNodeKeys) {
+    val schemaWithRels = (relDefinitionsFromPatterns ++ schemaDefinition.relDefinitions).foldLeft(schemaWithNodeKeys) {
       case (currentSchema, relType) =>
         currentSchema.withRelationshipPropertyKeys(relType, labelDefinitions.getOrElse(relType, throw undefinedLabelException(relType)).properties)
     }
@@ -149,9 +152,9 @@ case class CardinalityConstraint(from: Int, to: Option[Int])
 
 case class SchemaPatternDefinition(
   sourceLabels: Set[String],
-  sourceCardinality: CardinalityConstraint,
+  sourceCardinality: CardinalityConstraint = CardinalityConstraint(0, None),
   relTypes: Set[String],
-  targetCardinality: CardinalityConstraint,
+  targetCardinality: CardinalityConstraint = CardinalityConstraint(0, None),
   targetLabels: Set[String]
 ) extends DdlAst
 

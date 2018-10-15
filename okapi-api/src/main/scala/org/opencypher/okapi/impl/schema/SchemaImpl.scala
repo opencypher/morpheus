@@ -34,7 +34,7 @@ import org.opencypher.okapi.api.schema.RelTypePropertyMap._
 import org.opencypher.okapi.api.schema.{LabelPropertyMap, RelTypePropertyMap, _}
 import org.opencypher.okapi.api.types.CypherType.joinMonoid
 import org.opencypher.okapi.api.types.{CypherType, _}
-import org.opencypher.okapi.impl.exception.{IllegalArgumentException, SchemaException}
+import org.opencypher.okapi.impl.exception.SchemaException
 import org.opencypher.okapi.impl.schema.SchemaImpl._
 import ujson.Js.Obj
 import upickle.Js
@@ -209,7 +209,7 @@ final case class SchemaImpl(
     if (labels.contains(label)) {
       copy(nodeKeys = nodeKeys.updated(label, nodeKey))
     } else {
-      throw IllegalArgumentException(s"Known node label (one of: ${labels.mkString("[", ", ", "]")})", label)
+      throw SchemaException(s"Unknown node label `$label`. Should be one of: ${labels.mkString("[", ", ", "]")}")
     }
   }
 
@@ -217,7 +217,7 @@ final case class SchemaImpl(
     if (relationshipTypes.contains(relationshipType)) {
       copy(relationshipKeys = relationshipKeys.updated(relationshipType, relationshipKey))
     } else {
-      throw IllegalArgumentException(s"Known relationship type (one of: ${relationshipTypes.mkString("[", ", ", "]")})", relationshipType)
+      throw SchemaException(s"Unknown relationship type `$relationshipType`. Should be one of: ${relationshipTypes.mkString("[", ", ", "]")}")
     }
   }
 
@@ -250,9 +250,9 @@ final case class SchemaImpl(
 
   override def withSchemaPatterns(patterns: SchemaPattern*): Schema = {
     patterns.foreach { p =>
-      if (!labelCombinations.combos.contains(p.sourceLabels)) throw SchemaException(s"Unknown source node label combination: ${p.sourceLabels}")
-      if (!relationshipTypes.contains(p.relType)) throw SchemaException(s"Unknown relationship type: ${p.relType}")
-      if (!labelCombinations.combos.contains(p.targetLabels)) throw SchemaException(s"Unknown target node label combination: ${p.targetLabels}")
+      if (!labelCombinations.combos.contains(p.sourceLabels)) throw SchemaException(s"Unknown source node label combination: `${p.sourceLabels}`. Should be one of: ${labelCombinations.combos.mkString("[", ",", "]")}")
+      if (!relationshipTypes.contains(p.relType)) throw SchemaException(s"Unknown relationship type: `${p.relType}`. Should be one of ${relationshipTypes.mkString("[", ",", "]")}")
+      if (!labelCombinations.combos.contains(p.targetLabels)) throw SchemaException(s"Unknown target node label combination: `${p.targetLabels}`. Should be one of: ${labelCombinations.combos.mkString("[", ",", "]")}")
     }
 
     copy(explicitSchemaPatterns = explicitSchemaPatterns ++ patterns.toSet)

@@ -39,18 +39,28 @@ class DdlParserTest extends BaseTestSuite with MockitoSugar with TestNameFixture
 
   override val separator = "parses"
 
-  private def success[T, Elem](
-    parser: fastparse.core.Parser[T, Elem, String],
+  private def success[T](
+    parser: fastparse.core.Parser[T, Char, String],
     input: String,
     expectation: T
   ): Unit = success(parser, expectation, input)
 
-  private def success[T, Elem](
-    parser: fastparse.core.Parser[T, Elem, String],
+  private def success[T](
+    parser: fastparse.core.Parser[T, Char, String],
     expectation: T,
     input: String = testName
   ): Unit = {
-    parser.parse(input) should matchPattern {
+
+    val parsed = parser.entireInput.parse(input)
+
+    parsed match {
+      case Failure(lastParser, _, extra) =>
+        println(lastParser)
+        println(extra.traced.expected)
+      case _ =>
+    }
+
+    parsed should matchPattern {
       case Success(`expectation`, _) =>
     }
   }
@@ -203,6 +213,10 @@ class DdlParserTest extends BaseTestSuite with MockitoSugar with TestNameFixture
       }
     }
 
+    it("parses (A)-[TYPE]->(B)") {
+      success(schemaPatternDefinition, SchemaPatternDefinition(sourceLabels = Set("A"), relTypes = Set("TYPE"), targetLabels = Set("B")))
+    }
+
     it("parses schema pattern definitions") {
       val expected = SchemaPatternDefinition(
         Set("L1", "L2"),
@@ -276,6 +290,13 @@ class DdlParserTest extends BaseTestSuite with MockitoSugar with TestNameFixture
         """.stripMargin) should matchPattern {
         case Success(("mySchema", SchemaDefinition(`expectedLocalLabelDefinitions`, `expectedNodeDefs`, `expectedRelDefs`, `expectedPatternDefinitions`)), _) =>
       }
+    }
+
+    it("parses CREATE GRAPH SCHEMA mySchema (A)-[TYPE]->(B)") {
+      success(globalSchemaDefinition, ("mySchema",
+        SchemaDefinition(schemaPatternDefinitions = Set(
+          SchemaPatternDefinition(sourceLabels = Set("A"), relTypes = Set("TYPE"), targetLabels = Set("B"))
+        ))))
     }
   }
 
@@ -570,21 +591,36 @@ class DdlParserTest extends BaseTestSuite with MockitoSugar with TestNameFixture
         ddlDefinition.graphSchemas
       }
     }
+
+    it("throws if a undefined label is used") {
+      val ddlString =
+        """|CREATE GRAPH SCHEMA mySchema
+           |  (A)-[T]->(A);
+           |
+           |CREATE GRAPH myGraph WITH SCHEMA mySchema""".stripMargin
+
+      an[IllegalArgumentException] shouldBe thrownBy {
+        parse(ddlString).graphSchemas
+      }
+    }
   }
 
-  it("does not accept unknown types") {
-    val ddlString =
-      """|
-         |CATALOG CREATE LABEL (A {prop: char, prop2: int})
-         |
-         |CREATE GRAPH SCHEMA mySchema
-         |
-         |  (A);
-         |
-         |CREATE GRAPH myGraph WITH SCHEMA mySchema""".stripMargin
+  describe("parser error handling") {
 
-    an[DdlParsingException] shouldBe thrownBy {
-      parse(ddlString)
+    it("does not accept unknown types") {
+      val ddlString =
+        """|
+           |CATALOG CREATE LABEL (A {prop: char, prop2: int})
+           |
+           |CREATE GRAPH SCHEMA mySchema
+           |
+           |  (A);
+           |
+           |CREATE GRAPH myGraph WITH SCHEMA mySchema""".stripMargin
+
+      an[DdlParsingException] shouldBe thrownBy {
+        parse(ddlString)
+      }
     }
   }
 
