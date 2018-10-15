@@ -26,7 +26,7 @@
  */
 package org.opencypher.sql.ddl
 
-class DdlIntegrationTests {
+class DdlFullExampleTests {
 
   // TODO: Add all full DDL examples from Morpheus here and verify that they parse
   // TODO: Report any proposed syntax changes to PM sync

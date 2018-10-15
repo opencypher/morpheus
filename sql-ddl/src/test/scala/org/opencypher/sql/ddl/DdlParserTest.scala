@@ -262,19 +262,23 @@ class DdlParserTest extends BaseTestSuite with MockitoSugar with TestNameFixture
 
     it("parses multiple label definitions") {
       parse(
-        """|CATALOG CREATE LABEL (A {name: STRING})
+        """|SET SCHEMA foo.bar
+           |
+           |CATALOG CREATE LABEL (A {name: STRING})
            |
            |CATALOG CREATE LABEL (B {sequence: INTEGER, nationality: STRING?, age: INTEGER?})
            |
            |CATALOG CREATE LABEL [TYPE_1]
            |
            |CATALOG CREATE LABEL [TYPE_2 {prop: BOOLEAN?}]""".stripMargin) shouldEqual
-        DdlDefinitions(List(
-          LabelDefinition("A", Map("name" -> CTString)),
-          LabelDefinition("B", Map("sequence" -> CTInteger, "nationality" -> CTString.nullable, "age" -> CTInteger.nullable)),
-          LabelDefinition("TYPE_1"),
-          LabelDefinition("TYPE_2", Map("prop" -> CTBoolean.nullable))
-        ))
+        DdlDefinitions(
+          List("foo", "bar"),
+          List(
+            LabelDefinition("A", Map("name" -> CTString)),
+            LabelDefinition("B", Map("sequence" -> CTInteger, "nationality" -> CTString.nullable, "age" -> CTInteger.nullable)),
+            LabelDefinition("TYPE_1"),
+            LabelDefinition("TYPE_2", Map("prop" -> CTBoolean.nullable))
+          ))
     }
 
     it("parses a schema with node, rel, and schema pattern definitions") {
@@ -489,7 +493,9 @@ class DdlParserTest extends BaseTestSuite with MockitoSugar with TestNameFixture
 
   it("parses correct schema") {
     val ddlDefinition = parse(
-      """|CATALOG CREATE LABEL (A {name: STRING})
+      """|SET SCHEMA foo.bar;
+         |
+         |CATALOG CREATE LABEL (A {name: STRING})
          |
          |CATALOG CREATE LABEL (B {sequence: INTEGER, nationality: STRING?, age: INTEGER?})
          |
@@ -525,6 +531,7 @@ class DdlParserTest extends BaseTestSuite with MockitoSugar with TestNameFixture
   """.stripMargin)
     ddlDefinition should equalWithTracing(
       DdlDefinitions(
+        setSchema = List("foo", "bar"),
         labelDefinitions = List(
           LabelDefinition("A", Map("name" -> CTString)),
           LabelDefinition("B", Map("sequence" -> CTInteger, "nationality" -> CTString.nullable, "age" -> CTInteger.nullable)),

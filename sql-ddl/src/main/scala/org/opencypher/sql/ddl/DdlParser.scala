@@ -94,7 +94,6 @@ object DdlParser {
   val CREATE: P[Unit] = keyword("CREATE")
   val LABEL: P[Unit] = keyword("LABEL")
   val GRAPH: P[Unit] = keyword("GRAPH")
-  val SCHEMA: P[Unit] = keyword("SCHEMA")
   val KEY: P[Unit] = keyword("KEY")
   val WITH: P[Unit] = keyword("WITH")
   val FROM: P[Unit] = keyword("FROM")
@@ -107,6 +106,7 @@ object DdlParser {
   val ON: P[Unit] = keyword("ON")
   val AND: P[Unit] = keyword("AND")
   val AS: P[Unit] = keyword("AS")
+  val SCHEMA: P[Unit] = keyword("SCHEMA")
   val START: P[Unit] = keyword("START")
   val END: P[Unit] = keyword("END")
 
@@ -230,8 +230,11 @@ object DdlParser {
 
   // ==== DDL ====
 
+  val setSchema: P[List[String]] = P(SET ~/ SCHEMA ~ identifier.!.rep(min = 1, sep = ".").map(_.toList) ~ ";".?)
+
   val ddlDefinitions: P[DdlDefinitions] = P(
     ParsersForNoTrace.noTrace ~ // allow for whitespace/comments at the start
+      setSchema.?.map(_.getOrElse(Nil)) ~/
       catalogLabelDefinition.rep.map(_.toList) ~/
       globalSchemaDefinition.rep.map(_.toMap) ~/
       graphDefinition.rep.map(_.toList) ~/

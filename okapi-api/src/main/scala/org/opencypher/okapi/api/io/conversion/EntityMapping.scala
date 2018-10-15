@@ -30,7 +30,7 @@ import org.opencypher.okapi.api.types.{CypherType, DefiniteCypherType}
 import org.opencypher.okapi.impl.exception.IllegalArgumentException
 
 /**
-  * Represents a map from node property keys to keys in the source data.
+  * Represents a map from node/relationship property keys to keys in the source data.
   */
 trait EntityMapping {
 
