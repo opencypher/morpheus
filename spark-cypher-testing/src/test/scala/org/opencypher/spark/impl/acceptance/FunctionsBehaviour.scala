@@ -38,11 +38,29 @@ class FunctionsBehaviour extends CAPSTestSuite with DefaultGraphInit {
 
   describe("trim") {
 
-    it("trim") {
-      val result = caps.cypher("RETURN trim(   hello  ) AS trimmed")
+    it("trim()") {
+      val result = caps.cypher("RETURN trim('   hello  ') AS trimmed")
       result.records.toMaps should equal(
         Bag(
           CypherMap("trimmed" -> "hello")
+        )
+      )
+    }
+
+    it("ltrim()") {
+      val result = caps.cypher("RETURN ltrim('   hello  ') AS trimmed")
+      result.records.toMaps should equal(
+        Bag(
+          CypherMap("trimmed" -> "hello  ")
+        )
+      )
+    }
+
+    it("rtrim()") {
+      val result = caps.cypher("RETURN rtrim('   hello  ') AS trimmed")
+      result.records.toMaps should equal(
+        Bag(
+          CypherMap("trimmed" -> "   hello")
         )
       )
     }
