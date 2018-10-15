@@ -43,7 +43,7 @@ class DdlAcceptanceTest extends BaseTestSuite {
            |CREATE GRAPH SCHEMA foo
            |  (A)
            |
-           |CREATE GRAPH $gName WITH SCHEMA foo
+           |CREATE GRAPH $gName WITH GRAPH SCHEMA foo
            |""".stripMargin
 
       parse(ddl).graphSchemas(gName) should equal(
@@ -61,7 +61,7 @@ class DdlAcceptanceTest extends BaseTestSuite {
            |CREATE GRAPH SCHEMA foo
            |  [A]
            |
-           |CREATE GRAPH $gName WITH SCHEMA foo
+           |CREATE GRAPH $gName WITH GRAPH SCHEMA foo
            |""".stripMargin
 
       parse(ddl).graphSchemas(gName) should equal(
@@ -81,7 +81,7 @@ class DdlAcceptanceTest extends BaseTestSuite {
            |CREATE GRAPH SCHEMA foo
            |  (Node) [REL]
            |
-           |CREATE GRAPH $gName WITH SCHEMA foo
+           |CREATE GRAPH $gName WITH GRAPH SCHEMA foo
            |""".stripMargin
 
 
@@ -97,13 +97,12 @@ class DdlAcceptanceTest extends BaseTestSuite {
 
       val ddl =
         s"""
-           |CATALOG CREATE LABEL (Node {val: String, another : String})
-           |   KEY akey (val)
+           |CATALOG CREATE LABEL (Node {val: String, another : String} KEY akey (val))
            |
            |CREATE GRAPH SCHEMA foo
            |  (Node)
            |
-           |CREATE GRAPH $gName WITH SCHEMA foo
+           |CREATE GRAPH $gName WITH GRAPH SCHEMA foo
            |""".stripMargin
 
       parse(ddl).graphSchemas(gName) should equal(
@@ -123,7 +122,7 @@ class DdlAcceptanceTest extends BaseTestSuite {
             |CREATE GRAPH SCHEMA foo
             |  (Node)-[REL]->(Node)
             |
-            |CREATE GRAPH $gName WITH SCHEMA foo""".stripMargin
+            |CREATE GRAPH $gName WITH GRAPH SCHEMA foo""".stripMargin
 
       parse(ddl).graphSchemas(gName) should equal(
         Schema.empty
@@ -144,7 +143,7 @@ class DdlAcceptanceTest extends BaseTestSuite {
             |CREATE GRAPH SCHEMA foo
             | (Node)-[REL]->(Node)
             |
-            |CREATE GRAPH $gName WITH SCHEMA foo""".stripMargin
+            |CREATE GRAPH $gName WITH GRAPH SCHEMA foo""".stripMargin
 
       parse(ddl).graphSchemas(gName) should equal(
         Schema.empty
