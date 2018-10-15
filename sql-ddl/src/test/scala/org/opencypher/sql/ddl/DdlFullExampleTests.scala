@@ -26,9 +26,18 @@
  */
 package org.opencypher.sql.ddl
 
-class DdlFullExampleTests {
+import org.opencypher.okapi.testing.BaseTestSuite
+import org.opencypher.sql.ddl.DdlParser.parse
 
-  // TODO: Add all full DDL examples from Morpheus here and verify that they parse
-  // TODO: Report any proposed syntax changes to PM sync
+import scala.io.Source
+
+class DdlFullExampleTests extends BaseTestSuite {
+
+  it("parses the Northwind graph DDL") {
+    val northwindUrl = getClass.getResource("/northwind-graph.ddl")
+    val northwindDdlString = Source.fromURL(northwindUrl).getLines.mkString("\n")
+    val parsed = parse(northwindDdlString)
+    parsed.show()
+  }
 
 }
