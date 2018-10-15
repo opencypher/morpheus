@@ -42,7 +42,7 @@ class FunctionsBehaviour extends CAPSTestSuite with DefaultGraphInit {
       val t1 = caps.cypher("RETURN timestamp()")
       val t2 = caps.cypher("RETURN timestamp()")
 
-      t1.records.toMaps.keys.map(_.value.head._2.value.asInstanceOf[Long]) should be <
+      t1.records.toMaps.keys.map(_.value.head._2.value.asInstanceOf[Long]) should be <=
         t2.records.toMaps.keys.map(_.value.head._2.value.asInstanceOf[Long])
     }
 
