@@ -24,7 +24,7 @@
  * described as "implementation extensions to Cypher" or as "proposed changes to
  * Cypher that are not yet approved by the openCypher community".
  */
-package org.opencypher.okapi.ir.api.expr.functions
+package org.opencypher.okapi.ir.api.functions
 
 import org.opencypher.v9_0.expressions._
 import org.opencypher.v9_0.expressions.functions.Function
