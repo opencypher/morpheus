@@ -193,5 +193,5 @@ class DdlAcceptanceTest extends BaseTestSuite {
       )
     }
   }
-  
+
 }
