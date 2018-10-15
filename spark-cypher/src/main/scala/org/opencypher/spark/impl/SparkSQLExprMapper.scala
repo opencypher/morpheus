@@ -276,6 +276,10 @@ object SparkSQLExprMapper {
         case Round(e) => functions.round(e.asSparkSQLExpr).cast(DoubleType)
         case Sign(e) => functions.signum(e.asSparkSQLExpr).cast(IntegerType)
 
+        // Time functions
+
+        case Timestamp() => functions.current_timestamp().cast(LongType)
+
         // Bit operations
 
         case BitwiseAnd(lhs, rhs) =>

@@ -36,6 +36,18 @@ import org.scalatest.DoNotDiscover
 @DoNotDiscover
 class FunctionsBehaviour extends CAPSTestSuite with DefaultGraphInit {
 
+  describe("timestamp") {
+
+    it("is monotonically increasing") {
+      val t1 = caps.cypher("RETURN timestamp()")
+      val t2 = caps.cypher("RETURN timestamp()")
+
+      t1.records.toMaps.keys.map(_.value.head._2.value.asInstanceOf[Long]) should be <=
+        t2.records.toMaps.keys.map(_.value.head._2.value.asInstanceOf[Long])
+    }
+
+  }
+
   describe("exists") {
 
     it("exists()") {

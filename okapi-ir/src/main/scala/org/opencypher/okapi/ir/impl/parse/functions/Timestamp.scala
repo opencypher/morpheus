@@ -24,30 +24,16 @@
  * described as "implementation extensions to Cypher" or as "proposed changes to
  * Cypher that are not yet approved by the openCypher community".
  */
-package org.opencypher.v9_0.frontend.phases
+package org.opencypher.okapi.ir.impl.parse.functions
 
-import org.opencypher.okapi.ir.impl.parse.rewriter.legacy
-import org.opencypher.okapi.ir.impl.parse.rewriter.legacy.{normalizeReturnClauses, normalizeWithClauses}
-import org.opencypher.v9_0.rewriting.rewriters._
-import org.opencypher.v9_0.util.inSequence
-import org.opencypher.v9_0.frontend.phases.CompilationPhaseTracer.CompilationPhase.AST_REWRITE
+import org.opencypher.v9_0.expressions._
+import org.opencypher.v9_0.expressions.functions.Function
+import org.opencypher.v9_0.util.symbols._
 
-case object OkapiPreparatoryRewriting extends Phase[BaseContext, BaseState, BaseState] {
+case object Timestamp extends Function with TypeSignatures {
+  override val name = "timestamp"
 
-  override def process(from: BaseState, context: BaseContext): BaseState = {
-
-    val rewrittenStatement = from.statement().endoRewrite(inSequence(
-      legacy.normalizeReturnClauses(context.exceptionCreator),
-      normalizeWithClauses(context.exceptionCreator),
-      expandCallWhere,
-      mergeInPredicates))
-
-    from.withStatement(rewrittenStatement)
-  }
-
-  override val phase = AST_REWRITE
-
-  override val description = "rewrite the AST into a shape that semantic analysis can be performed on"
-
-  override def postConditions: Set[Condition] = Set.empty
+  override val signatures = Vector(
+    TypeSignature(argumentTypes = Vector(), outputType = CTInteger)
+  )
 }

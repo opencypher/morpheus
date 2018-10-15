@@ -788,6 +788,13 @@ final case class Sign(expr: Expr)(val cypherType: CypherType = CTWildcard) exten
   override def withCypherType(ct: CypherType): Sign = copy()(ct)
 }
 
+// Time functions
+
+final case class Timestamp()(val cypherType: CypherType = CTWildcard) extends NullaryFunctionExpr {
+  override type This = Timestamp
+  override def withCypherType(ct: CypherType): Timestamp = copy()(ct)
+}
+
 // Aggregators
 
 sealed trait Aggregator extends Expr {
