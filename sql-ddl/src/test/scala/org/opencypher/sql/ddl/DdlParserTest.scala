@@ -126,18 +126,12 @@ class DdlParserTest extends BaseTestSuite with MockitoSugar with TestNameFixture
   }
 
   describe("label definitions") {
-    it("parses node labels without properties") {
-      val expected = "A" -> emptyMap
-      labelWithoutKeys.parse("LABEL (A)") should matchPattern {
-        case Success(`expected`, _) =>
-      }
+    it("parses LABEL (A)") {
+      success(labelDefinition, LabelDefinition("A"))
     }
 
-    it("parses node labels with properties") {
-      val expected = "A" -> Map("foo" -> CTString.nullable)
-      labelWithoutKeys.parse("LABEL  (A { foo : string? } )") should matchPattern {
-        case Success(`expected`, _) =>
-      }
+    it("parses LABEL  (A { foo : string? } )") {
+      success(labelDefinition, LabelDefinition("A", Map("foo" -> CTString.nullable)))
     }
   }
 
@@ -167,11 +161,13 @@ class DdlParserTest extends BaseTestSuite with MockitoSugar with TestNameFixture
       }
     }
 
-    it("parses CREATE LABEL <labelDefinition> KEY <keyDefinition>") {
-      val expectedKeyDefinition = "A_NK" -> Set("foo", "bar")
-      catalogLabelDefinition.parse("CREATE LABEL (A) KEY A_NK (foo, bar)") should matchPattern {
-        case Success(LabelDefinition("A", `emptyMap`, Some(`expectedKeyDefinition`)), _) =>
-      }
+    it("parses CREATE LABEL (A  KEY  A_NK   (foo,   bar))") {
+      success(catalogLabelDefinition, LabelDefinition("A", Map.empty, Some("A_NK" -> Set("foo", "bar"))))
+    }
+
+    it("foo") {
+      val ddl = parse("CATALOG CREATE LABEL (A KEY A_NK (foo, bar))")
+      ddl.show()
     }
 
   }
@@ -327,14 +323,14 @@ class DdlParserTest extends BaseTestSuite with MockitoSugar with TestNameFixture
   describe("graph definitions") {
     it("parses a graph definition") {
       graphDefinition.parse(
-        "CREATE GRAPH myGraph WITH SCHEMA foo") should matchPattern {
+        "CREATE GRAPH myGraph WITH GRAPH SCHEMA foo") should matchPattern {
         case Success(GraphDefinition("myGraph", Some("foo"), `emptySchemaDef`, `emptyList`), _) =>
       }
     }
 
     it("parses a graph definition with a schema reference") {
       graphDefinition.parse(
-        "CREATE GRAPH myGraph WITH SCHEMA mySchema") should matchPattern {
+        "CREATE GRAPH myGraph WITH GRAPH SCHEMA mySchema") should matchPattern {
         case Success(GraphDefinition("myGraph", Some("mySchema"), `emptySchemaDef`, `emptyList`), _) =>
       }
     }
@@ -346,7 +342,7 @@ class DdlParserTest extends BaseTestSuite with MockitoSugar with TestNameFixture
         relDefinitions = Set("B")
       )
       graphDefinition.parse(
-        """|CREATE GRAPH myGraph WITH SCHEMA (
+        """|CREATE GRAPH myGraph WITH GRAPH SCHEMA (
            | LABEL (A),
            | LABEL (B)
            |
@@ -523,7 +519,7 @@ class DdlParserTest extends BaseTestSuite with MockitoSugar with TestNameFixture
          |  -- schema patterns
          |  (A) <0 .. *> - [TYPE_1] -> <1> (B);
          |
-         |CREATE GRAPH myGraph WITH SCHEMA mySchema
+         |CREATE GRAPH myGraph WITH GRAPH SCHEMA mySchema
          |  NODE LABEL SETS (
          |    (A) FROM foo
          |  )
@@ -568,7 +564,7 @@ class DdlParserTest extends BaseTestSuite with MockitoSugar with TestNameFixture
         """|CREATE GRAPH SCHEMA mySchema
            |  LABEL (A)
            |  (A)
-           |CREATE GRAPH myGraph WITH SCHEMA mySchema (
+           |CREATE GRAPH myGraph WITH GRAPH SCHEMA mySchema (
            |  LABEL (B)
            |  (B)
            |)
@@ -592,7 +588,7 @@ class DdlParserTest extends BaseTestSuite with MockitoSugar with TestNameFixture
            |  -- (illegal) node definition
            |  (C)
            |
-           |CREATE GRAPH myGraph WITH SCHEMA mySchema
+           |CREATE GRAPH myGraph WITH GRAPH SCHEMA mySchema
         """.stripMargin)
 
       an[IllegalArgumentException] shouldBe thrownBy {
@@ -611,7 +607,7 @@ class DdlParserTest extends BaseTestSuite with MockitoSugar with TestNameFixture
            |  -- (illegal) relationship type definition
            |  [C]
            |
-           |CREATE GRAPH myGraph WITH SCHEMA mySchema
+           |CREATE GRAPH myGraph WITH GRAPH SCHEMA mySchema
         """.stripMargin)
 
       an[IllegalArgumentException] shouldBe thrownBy {
@@ -624,7 +620,7 @@ class DdlParserTest extends BaseTestSuite with MockitoSugar with TestNameFixture
         """|CREATE GRAPH SCHEMA mySchema
            |  (A)-[T]->(A);
            |
-           |CREATE GRAPH myGraph WITH SCHEMA mySchema""".stripMargin
+           |CREATE GRAPH myGraph WITH GRAPH SCHEMA mySchema""".stripMargin
 
       an[IllegalArgumentException] shouldBe thrownBy {
         parse(ddlString).graphSchemas

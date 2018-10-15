@@ -37,7 +37,14 @@ class DdlFullExampleTests extends BaseTestSuite {
     val northwindUrl = getClass.getResource("/northwind-graph.ddl")
     val northwindDdlString = Source.fromURL(northwindUrl).getLines.mkString("\n")
     val parsed = parse(northwindDdlString)
-    parsed.show()
+//    parsed.show()
+  }
+
+  it("parses the Census graph DDL") {
+    val censusUrl = getClass.getResource("/census-graph.ddl")
+    val censusDdlString = Source.fromURL(censusUrl).getLines.mkString("\n")
+    val parsed = parse(censusDdlString)
+//    parsed.show()
   }
 
 }

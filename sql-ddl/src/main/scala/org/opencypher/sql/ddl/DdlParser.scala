@@ -86,7 +86,7 @@ object DdlParser {
 
   val digit: P[Unit] = P(CharIn('0' to '9'))
   val character: P[Unit] = P(CharIn('a' to 'z', 'A' to 'Z'))
-  val identifier: P[Unit] = P(character ~ P(character | digit | "_").repX)
+  val identifier: P[Unit] = P(character ~~ P(character | digit | "_").repX)
 
   def keyword(k: String): P[Unit] = P(IgnoreCase(k))
 
@@ -123,24 +123,19 @@ object DdlParser {
   val property: P[Property] = P(identifier.! ~/ ":" ~/ propertyType)
 
   // { foo1: STRING, foo2 : BOOLEAN }
-  val properties = P("{" ~/ property.rep(min = 1, sep = ",").map(_.toMap) ~/ "}")
+  val properties: P[Map[String, CypherType]] = P("{" ~/ property.rep(min = 1, sep = ",").map(_.toMap) ~/ "}")
 
   // ==== Catalog ====
 
-  // A { foo1: STRING, foo2 : BOOLEAN }
-  val labelWithProperties: P[EntityDefinition] = P(identifier.! ~/ properties.?.map(_.getOrElse(Map.empty[String, CypherType])))
-
-  // LABEL (A { foo1: STRING, foo2 : BOOLEAN }) | LABEL [A { foo1: STRING, foo2 : BOOLEAN }]
-  val labelWithoutKeys: P[(String, Map[String, CypherType])] = P(LABEL ~/ (("(" ~/ labelWithProperties ~/ ")")
-    | ("[" ~/ labelWithProperties ~/ "]")))
-
   // KEY A (propKey[, propKey]*))
-  val keyDefinition: P[KeyDefinition] = P(KEY ~ identifier.! ~ "(" ~ identifier.!.rep(min = 1, sep = ",").map(_.toSet) ~ ")")
+  val keyDefinition: P[KeyDefinition] = P(KEY ~/ identifier.! ~/ "(" ~/ identifier.!.rep(min = 1, sep = ",").map(_.toSet) ~/ ")")
 
-  val localLabelDefinition: P[LabelDefinition] = P(labelWithoutKeys ~ keyDefinition.?).map(LabelDefinition.tupled)
+  val innerLabelDefinition: P[LabelDefinition] = P(identifier.! ~/ properties.?.map(_.getOrElse(Map.empty[String, CypherType])) ~/ keyDefinition.?).map(LabelDefinition.tupled)
+
+  val labelDefinition: P[LabelDefinition] = P(LABEL ~/ (("(" ~/ innerLabelDefinition ~/ ")") | ("[" ~/ innerLabelDefinition ~/ "]")))
 
   // [CATALOG] CREATE LABEL <labelDefinition> [KEY <keyDefinition>]
-  val catalogLabelDefinition: P[LabelDefinition] = P(CATALOG.? ~ CREATE ~ localLabelDefinition)
+  val catalogLabelDefinition: P[LabelDefinition] = P(CATALOG.? ~ CREATE ~ labelDefinition)
 
   // ==== Schema ====
 
@@ -180,7 +175,7 @@ object DdlParser {
     .map(SchemaPatternDefinition.tupled)
 
   val localSchemaDefinition: P[SchemaDefinition] = P(
-    localLabelDefinition.rep(sep = ",".?).map(_.toSet) ~/ ",".? ~/
+    labelDefinition.rep(sep = ",".?).map(_.toSet) ~/ ",".? ~/
       // negative lookahead (~ !"-") needed in order to disambiguate node definitions and schema pattern definitions
       (nodeDefinition ~ !"-").rep(sep = ",".?).map(_.toSet) ~ ",".? ~/
       relDefinition.rep(sep = ",".?).map(_.toSet) ~/ ",".? ~/
