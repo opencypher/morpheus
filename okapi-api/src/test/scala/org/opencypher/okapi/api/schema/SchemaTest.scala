@@ -701,12 +701,12 @@ class SchemaTest extends FunSpec with Matchers {
 
     it("adds relationship keys") {
       val schema = Schema.empty
-        .withRelationshipType("A")
+        .withRelationshipPropertyKeys("A")("foo" -> CTString, "bar" -> CTString)
         .withRelationshipKey("A", Set("foo", "bar"))
       schema.relationshipKeys shouldEqual Map("A" -> Set("foo", "bar"))
     }
 
-    it("fails to add an unknown entity keys") {
+    it("fails to add unknown entity keys") {
       a[SchemaException] shouldBe thrownBy {
         Schema.empty.withNodeKey("A", Set.empty)
       }
@@ -727,11 +727,52 @@ class SchemaTest extends FunSpec with Matchers {
       joinedSchema.nodeKeys shouldEqual Map("A" -> Set("foo", "bar"))
     }
 
+    it("fails if a node key refers to a non-existing label") {
+      an[SchemaException] shouldBe thrownBy {
+        Schema.empty
+          .withNodePropertyKeys("A")("foo" -> CTString)
+          .withNodeKey("B", Set("foo"))
+      }
+    }
+
     it("fails if a node key refers to a non-existing property key for the label") {
       an[SchemaException] shouldBe thrownBy {
         Schema.empty
           .withNodePropertyKeys("A")("foo" -> CTString)
           .withNodeKey("A", Set("bar"))
+      }
+    }
+
+    it("fails if a node key refers to a nullable property key for the label") {
+      an[SchemaException] shouldBe thrownBy {
+        Schema.empty
+          .withNodePropertyKeys("A")("foo" -> CTString.nullable)
+          .withNodeKey("A", Set("foo"))
+      }
+    }
+
+
+    it("fails if a relationship key refers to a non-existing label") {
+      an[SchemaException] shouldBe thrownBy {
+        Schema.empty
+          .withRelationshipPropertyKeys("A")("foo" -> CTString)
+          .withRelationshipKey("B", Set("foo"))
+      }
+    }
+
+    it("fails if a relationship key refers to a non-existing property key for the label") {
+      an[SchemaException] shouldBe thrownBy {
+        Schema.empty
+          .withRelationshipPropertyKeys("A")("foo" -> CTString)
+          .withRelationshipKey("A", Set("bar"))
+      }
+    }
+
+    it("fails if a relationship key refers to a nullable property key for the label") {
+      an[SchemaException] shouldBe thrownBy {
+        Schema.empty
+          .withRelationshipPropertyKeys("A")("foo" -> CTString.nullable)
+          .withRelationshipKey("A", Set("foo"))
       }
     }
   }
