@@ -136,9 +136,9 @@ trait Schema {
   }
 
   /**
-    * Given a set of labels that a node definitely has, returns its property keys and their types.
+    * Given a label combination, returns its property keys and their types.
     */
-  def nodePropertyKeys(labels: Set[String]): PropertyKeys
+  def nodePropertyKeys(labelCombination: Set[String]): PropertyKeys
 
   /**
     * Returns some property type for a property given the known labels of a node.

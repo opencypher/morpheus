@@ -169,8 +169,7 @@ final case class SchemaImpl(
   override def impliedLabels(knownLabels: Set[String]): Set[String] =
     impliedLabels.transitiveImplicationsFor(knownLabels.intersect(labels))
 
-  // TODO: consider implied labels here?
-  override def nodePropertyKeys(labels: Set[String]): PropertyKeys = labelPropertyMap.properties(labels)
+  override def nodePropertyKeys(labelCombination: Set[String]): PropertyKeys = labelPropertyMap.properties(labelCombination)
 
   override def allCombinations: Set[Set[String]] =
     combinationsFor(Set.empty)
