@@ -27,8 +27,6 @@
 package org.opencypher.spark.impl
 
 import org.apache.spark.sql.Row
-import org.opencypher.okapi.api.table.CypherRecords
-import org.opencypher.okapi.api.value.CypherValue
 import org.opencypher.okapi.api.value.CypherValue.CypherMap
 import org.opencypher.okapi.neo4j.io.MetaLabelSupport._
 import org.opencypher.okapi.relational.api.graph.RelationalCypherGraph
@@ -40,7 +38,6 @@ import org.opencypher.spark.impl.CAPSConverters._
 import org.opencypher.spark.impl.table.SparkTable.DataFrameTable
 import org.opencypher.spark.testing.CAPSTestSuite
 import org.opencypher.spark.testing.fixture.{CAPSNeo4jServerFixture, OpenCypherDataFixture}
-import org.scalatest.Assertion
 
 import scala.language.reflectiveCalls
 
@@ -49,20 +46,28 @@ class CAPSRecordsAcceptanceTest extends CAPSTestSuite with CAPSNeo4jServerFixtur
   private lazy val graph: RelationalCypherGraph[DataFrameTable] =
     GraphSources.cypher.neo4j(neo4jConfig).graph(entireGraphName).asCaps
 
-  it("convert to CypherMaps") {
+  it("convert nodes to CypherMaps") {
     // When
     val result = graph.cypher("MATCH (a:Person) WHERE a.birthyear < 1930 RETURN a, a.name")
 
     // Then
-    val strings = result.records.collect.map(_.toCypherString).toSet
+    result.records.collect should equal(Array(
+      CypherMap("a" -> CAPSNode(0, Set("Actor", "Person"), CypherMap("birthyear" -> 1910, "name" -> "Rachel Kempson")), "a.name" -> "Rachel Kempson"),
+      CypherMap("a" -> CAPSNode(1, Set("Actor", "Person"), CypherMap("birthyear" -> 1908, "name" -> "Michael Redgrave")), "a.name" -> "Michael Redgrave"),
+      CypherMap("a" -> CAPSNode(10, Set("Actor", "Person"), CypherMap("birthyear" -> 1873, "name" -> "Roy Redgrave")), "a.name" -> "Roy Redgrave")
+    ))
+  }
 
-    // We do string comparisons here because CypherNode.equals() does not check labels/properties
-    strings should equal(
-      Set(
-        "{`a`: (:`Actor`:`Person` {`birthyear`: 1910, `name`: 'Rachel Kempson'}), `a.name`: 'Rachel Kempson'}",
-        "{`a`: (:`Actor`:`Person` {`birthyear`: 1908, `name`: 'Michael Redgrave'}), `a.name`: 'Michael Redgrave'}",
-        "{`a`: (:`Actor`:`Person` {`birthyear`: 1873, `name`: 'Roy Redgrave'}), `a.name`: 'Roy Redgrave'}"
-      ))
+  it("convert rels to CypherMaps") {
+    // When
+    val result = graph.cypher("MATCH ()-[r:ACTED_IN]->() WHERE r.charactername ENDS WITH 'e' RETURN r")
+
+    // Then
+    result.records.collect should equal(Array(
+      CypherMap("r" -> CAPSRelationship(23, 6, 18, "ACTED_IN", CypherMap("charactername" -> "Albus Dumbledore"))),
+      CypherMap("r" -> CAPSRelationship(21, 2, 20, "ACTED_IN", CypherMap("charactername" -> "Guenevere"))),
+      CypherMap("r" -> CAPSRelationship(26, 8, 19, "ACTED_IN", CypherMap("charactername" -> "Halle/Annie")))
+    ))
   }
 
   it("label scan and project") {
@@ -70,7 +75,8 @@ class CAPSRecordsAcceptanceTest extends CAPSTestSuite with CAPSNeo4jServerFixtur
     val result = graph.cypher("MATCH (a:Person) RETURN a.name")
 
     // Then
-    result.records shouldHaveSize 15 // andContain "Rachel Kempson"
+    result.records.size shouldBe 15
+    result.records.collect should contain(CypherMap("a.name" -> "Rachel Kempson"))
   }
 
   it("expand and project") {
@@ -78,7 +84,8 @@ class CAPSRecordsAcceptanceTest extends CAPSTestSuite with CAPSNeo4jServerFixtur
     val result = graph.cypher("MATCH (a:Actor)-[r]->(m:Film) RETURN a.birthyear, m.title")
 
     // Then
-    result.records shouldHaveSize 8 // andContain 1952 -> "Batman Begins"
+    result.records.size shouldBe 8
+    result.records.collect should contain(CypherMap("a.birthyear" -> 1952, "m.title" -> "Batman Begins"))
   }
 
   it("filter rels on property") {
@@ -89,9 +96,12 @@ class CAPSRecordsAcceptanceTest extends CAPSTestSuite with CAPSNeo4jServerFixtur
     val result = graph.cypher(query)
 
     // Then
-    result.records.asCaps.toCypherMaps.collect().toBag should equal(Bag(CypherMap(
+    result.records.collect.toBag should equal(Bag(
+      CypherMap(
         "a" -> CAPSNode(2, Set("Actor", "Person"), CypherMap("birthyear" -> 1937, "name" -> "Vanessa Redgrave")),
-        "r" -> CAPSRelationship(21, 2, 20, "ACTED_IN", CypherMap("charactername" -> "Guenevere")))))
+        "r" -> CAPSRelationship(21, 2, 20, "ACTED_IN", CypherMap("charactername" -> "Guenevere"))
+      )
+    ))
   }
 
   it("filter nodes on property") {
@@ -99,7 +109,11 @@ class CAPSRecordsAcceptanceTest extends CAPSTestSuite with CAPSNeo4jServerFixtur
     val result = graph.cypher("MATCH (p:Person) WHERE p.birthyear = 1970 RETURN p.name")
 
     // Then
-    result.records shouldHaveSize 3 // andContain "Christopher Nolan"
+    result.records.collect.toBag should equal(Bag(
+      CypherMap("p.name" -> "Fake Bar"),
+      CypherMap("p.name" -> "Fake Foo"),
+      CypherMap("p.name" -> "Christopher Nolan")
+    ))
   }
 
   it("expand and project, three properties") {
@@ -109,7 +123,9 @@ class CAPSRecordsAcceptanceTest extends CAPSTestSuite with CAPSNeo4jServerFixtur
     // When
     val result = graph.cypher(query)
 
-    result.records shouldHaveSize 8 // andContain tuple
+    // Then
+    result.records.size shouldBe 8
+    result.records.collect should contain(CypherMap("a.name" -> "Natasha Richardson", "f.title" -> "The Parent Trap", "a.birthyear" -> 1963))
   }
 
   it("multiple hops of expand with different reltypes") {
@@ -125,25 +141,5 @@ class CAPSRecordsAcceptanceTest extends CAPSTestSuite with CAPSNeo4jServerFixtur
         Row("Lindsay Lohan", "New York", "The Parent Trap"),
         Row("Vanessa Redgrave", "London", "Camelot")
       ))
-  }
-
-  implicit class OtherRichRecords(records: CypherRecords) {
-    val capsRecords: CAPSRecords = records.asCaps
-
-    def shouldHaveSize(size: Int): Assertion = {
-      val maps: Bag[CypherMap] = capsRecords.toMaps
-
-      maps.size shouldBe size
-
-      // TODO: contain syntax does not work for maps -> https://github.com/scalatest/scalatest/issues/1224
-//      new {
-//        def andContain(contents: Map[String, CypherValue]): Unit = {
-//          maps should contain(contents)
-//        }
-//
-//        def andContain(contents: Any): Unit = andContain(Tuple1(contents))
-//      }
-    }
-
   }
 }
