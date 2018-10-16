@@ -30,9 +30,10 @@ import org.apache.spark.sql.{DataFrame, Row}
 import org.opencypher.okapi.api.io.conversion.{NodeMapping, RelationshipMapping}
 import org.opencypher.okapi.api.types._
 import org.opencypher.okapi.api.value.CypherValue._
-import org.opencypher.okapi.impl.exception.InternalException
+import org.opencypher.okapi.impl.exception.{IllegalArgumentException, InternalException}
 import org.opencypher.okapi.ir.api.expr._
 import org.opencypher.okapi.ir.api.{Label, PropertyKey, RelType}
+import org.opencypher.okapi.relational.api.tagging.Tags._
 import org.opencypher.okapi.relational.impl.table.RecordHeader
 import org.opencypher.okapi.testing.Bag
 import org.opencypher.okapi.testing.Bag._
@@ -42,9 +43,36 @@ import org.opencypher.spark.api.value.CAPSNode
 import org.opencypher.spark.impl.DataFrameOps._
 import org.opencypher.spark.testing.CAPSTestSuite
 import org.opencypher.spark.testing.fixture.{GraphConstructionFixture, TeamDataFixture}
-import org.opencypher.okapi.relational.api.tagging.Tags._
 
 class CAPSRecordsTest extends CAPSTestSuite with GraphConstructionFixture with TeamDataFixture {
+
+  describe("columnFor") {
+    it("can resolve a primitive return item") {
+      caps.cypher("RETURN 1").records.columnsFor("1") should equal(Seq("$  AUTOINT0 __ INTEGER"))
+      caps.cypher("RETURN 1 AS foo").records.columnsFor("foo") should equal(Seq("$  AUTOINT0 __ INTEGER"))
+      caps.cypher("RETURN 1 AS foo, 2 AS bar").records.columnsFor("bar") should equal(Seq("$  AUTOINT1 __ INTEGER"))
+    }
+
+    it("can resolve an entity") {
+      val given = initGraph("CREATE ({val: 'a'})")
+
+      val result = given.cypher("MATCH (n) RETURN n")
+
+      result.records.columnsFor("n") should equal(Seq(s" __ NODE @ ", "_val __ STRING"))
+    }
+
+    it("fails when resolving a non-existing return item") {
+      the [IllegalArgumentException] thrownBy {
+        caps.cypher("RETURN 1 AS foo, 2 AS bar").records.columnsFor("almostFoo")
+      } should have message
+        s"""
+          |()
+          |Expected:
+          |${"\t"}A return item in this table, which contains: [`bar`, `foo`]
+          |Found:
+          |${"\t"}almostFoo""".stripMargin
+    }
+  }
 
   // TODO: Test new RetagVariable operator instead
   ignore("retags a node variable") {

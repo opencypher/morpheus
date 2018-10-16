@@ -53,6 +53,19 @@ trait CypherTable {
   def logicalColumns: Option[Seq[String]] = None
 
   /**
+    * Get the names of the physical columns that hold the values of the given return item.
+    * A return item is given by an identifier or alias of a return clause. For example
+    * in the query 'MATCH (n) RETURN n.foo' the only return item would be 'n.foo'
+    *
+    * It returns a list with a single value if the return item is a primitive. It will return
+    * a list of column names if the return item is an entity, such as a node.
+    *
+    * @param returnItem name of one of the return items represented in this table.
+    * @return a list of names of the physical columns that hold the data for the return item.
+    */
+  def columnsFor(returnItem: String): Seq[String]
+
+  /**
     * CypherType of columns stored in this table.
     */
   def columnType: Map[String, CypherType]

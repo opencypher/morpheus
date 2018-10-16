@@ -28,15 +28,7 @@ package org.opencypher.spark.examples
 
 class DataFrameOutputExampleTest extends ExampleTest {
   it("should produce the correct output") {
-    // TODO: Uncomment after fixing the example
-//    validate(DataFrameOutputExample.main(Array.empty),
-//      s"""|+----------+----------+
-//          ||a_dot_name|b_dot_name|
-//          |+----------+----------+
-//          ||     Alice|       Bob|
-//          ||       Bob|     Carol|
-//          |+----------+----------+
-//          |
-//          |""".stripMargin)
+    validate(DataFrameOutputExample.main(Array.empty),
+      getClass.getResource("/example_outputs/DataFrameOutputExample.out").toURI)
   }
 }
