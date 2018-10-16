@@ -694,7 +694,7 @@ class SchemaTest extends FunSpec with Matchers {
   describe("entity keys") {
     it("adds node keys") {
       val schema = Schema.empty
-        .withNodePropertyKeys("A")()
+        .withNodePropertyKeys("A")("foo" -> CTString, "bar" -> CTString)
         .withNodeKey("A", Set("foo", "bar"))
       schema.nodeKeys shouldEqual Map("A" -> Set("foo", "bar"))
     }
@@ -716,11 +716,23 @@ class SchemaTest extends FunSpec with Matchers {
     }
 
     it("merges overlapping keys during schema merge") {
-      val schema1 = Schema.empty.withNodePropertyKeys("A")().withNodeKey("A", Set("foo"))
-      val schema2 = Schema.empty.withNodePropertyKeys("A")().withNodeKey("A", Set("bar"))
+      val schema1 = Schema.empty
+        .withNodePropertyKeys("A")("foo" -> CTString)
+        .withNodeKey("A", Set("foo"))
+      val schema2 = Schema.empty
+        .withNodePropertyKeys("A")("bar" -> CTString)
+        .withNodeKey("A", Set("bar"))
       val joinedSchema = schema1 ++ schema2
 
       joinedSchema.nodeKeys shouldEqual Map("A" -> Set("foo", "bar"))
+    }
+
+    it("fails if a node key refers to a non-existing property key for the label") {
+      an[SchemaException] shouldBe thrownBy {
+        Schema.empty
+          .withNodePropertyKeys("A")("foo" -> CTString)
+          .withNodeKey("A", Set("bar"))
+      }
     }
   }
 

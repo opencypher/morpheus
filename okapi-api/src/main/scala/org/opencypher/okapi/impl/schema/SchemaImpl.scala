@@ -237,7 +237,16 @@ final case class SchemaImpl(
 
   override def withNodeKey(label: String, nodeKey: Set[String]): Schema = {
     if (labels.contains(label)) {
-      copy(nodeKeys = nodeKeys.updated(label, nodeKey))
+      val propertyKeys = nodePropertyKeysForCombinations(combinationsFor(Set(label))).keySet
+
+      if (nodeKey.subsetOf(propertyKeys)) {
+        copy(nodeKeys = nodeKeys.updated(label, nodeKey))
+      } else {
+        throw SchemaException(
+          s"""|Invalid node key.
+              |Not all combinations that contain `$label` have all the properties for ${nodeKey.mkString("[", ", ", "]")}.
+              |Available keys: ${propertyKeys.mkString("[", ", ", "]")}""".stripMargin)
+      }
     } else {
       throw SchemaException(s"Unknown node label `$label`. Should be one of: ${labels.mkString("[", ", ", "]")}")
     }

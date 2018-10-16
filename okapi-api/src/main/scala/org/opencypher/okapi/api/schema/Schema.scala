@@ -63,7 +63,7 @@ trait Schema {
   def labels: Set[String]
 
   /**
-    * Returns a mapping from node labels to a set of property keys that together form an entity key for that
+    * Returns a mapping from a node label to a set of property keys that together form an entity key for that
     * label. An entity key uniquely identifies a node with the given label.
     */
   @experimental
@@ -75,7 +75,7 @@ trait Schema {
   def relationshipTypes: Set[String]
 
   /**
-    * Returns a mapping from relationship types to a set of property keys that together form an entity key for that
+    * Returns a mapping from a relationship type to a set of property keys that together form an entity key for that
     * relationship type. An entity key uniquely identifies a relationship with the given type.
     */
   @experimental
@@ -225,16 +225,16 @@ trait Schema {
     * calculates the join of the property types, respectively.
     *
     * @param labelCombination the label combination to add to the schema
-    * @param keys             the typed property keys to associate with the labels
+    * @param propertyKeys     the typed property keys to associate with the labels
     * @return a copy of the Schema with the provided new data
     */
-  def withNodePropertyKeys(labelCombination: Set[String], keys: PropertyKeys = PropertyKeys.empty): Schema
+  def withNodePropertyKeys(labelCombination: Set[String], propertyKeys: PropertyKeys = PropertyKeys.empty): Schema
 
   /**
     * @see [[org.opencypher.okapi.api.schema.Schema#withNodePropertyKeys(scala.collection.Seq, scala.collection.Seq)]]
     */
-  def withNodePropertyKeys(labelCombination: String*)(keys: (String, CypherType)*): Schema =
-    withNodePropertyKeys(labelCombination.toSet, keys.toMap)
+  def withNodePropertyKeys(labelCombination: String*)(propertyKeys: (String, CypherType)*): Schema =
+    withNodePropertyKeys(labelCombination.toSet, propertyKeys.toMap)
 
   /**
     * Adds information about a relationship type and its associated properties to the schema.
