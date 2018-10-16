@@ -30,8 +30,8 @@ import fastparse.core.Parsed.{Failure, Success}
 import org.opencypher.okapi.api.schema.{Schema, SchemaPattern}
 import org.opencypher.okapi.api.types._
 import org.opencypher.okapi.impl.exception.IllegalArgumentException
-import org.opencypher.okapi.testing.{BaseTestSuite, TestNameFixture}
 import org.opencypher.okapi.testing.MatchHelper.equalWithTracing
+import org.opencypher.okapi.testing.{BaseTestSuite, TestNameFixture}
 import org.opencypher.sql.ddl.DdlParser._
 import org.scalatest.mockito.MockitoSugar
 
@@ -76,52 +76,46 @@ class DdlParserTest extends BaseTestSuite with MockitoSugar with TestNameFixture
   val emptySchemaDef: SchemaDefinition = SchemaDefinition()
 
   describe("property types") {
-    it("parses valid property types") {
-      propertyType.parse("STRING") should matchPattern { case Success(CTString, _) => }
+    it("parses STRING") {
+      success(propertyType, CTString)
     }
 
-    it("parses valid property types ignoring the case") {
-      propertyType.parse("StRiNg") should matchPattern { case Success(CTString, _) => }
+    it("parses StRiNg") {
+      success(propertyType, "StRiNg", CTString)
     }
 
-    it("parses valid nullable property types") {
-      propertyType.parse("STRING?") should matchPattern { case Success(CTString.nullable, _) => }
+    it("parses STRING?") {
+      success(propertyType, "STRING?", CTString.nullable)
     }
 
-    it("fails parsing invalid property types") {
-      propertyType.parse("FOOBAR") should matchPattern { case Failure(_, _, _) => }
+    it("parses FOOBAR") {
+      failure(propertyType)
     }
   }
 
   describe("properties") {
-    it("parses valid properties") {
-      val expectedProperty = "key" -> CTFloat
-      property.parse("key : FLOAT") should matchPattern { case Success(`expectedProperty`, _) => }
+    it("parses key : FLOAT") {
+      success(property, "key : FLOAT", "key" -> CTFloat)
     }
 
-    it("parses valid nullable properties") {
-      val expectedProperty = "key" -> CTFloat.nullable
-      property.parse("key : FLOAT?") should matchPattern { case Success(`expectedProperty`, _) => }
+    it("parses key : FLOAT?") {
+      success(property, "key : FLOAT?", "key" -> CTFloat.nullable)
     }
 
-    it("fails parsing invalid properties") {
-      property.parse("key _ STRING") should matchPattern { case Failure(_, _, _) => }
+    it("parses key _ STRING") {
+      failure(property)
     }
 
-    it("parses single property in curlies") {
-      val expectedProperties = Map("key" -> CTFloat)
-      properties.parse("{ key : FLOAT }") should matchPattern { case Success(`expectedProperties`, _) => }
+    it("parses { key : FLOAT }") {
+      success(properties, "{ key : FLOAT }", Map("key" -> CTFloat))
     }
 
-    it("parses multiple properties in curlies") {
-      val expectedProperties = Map("key1" -> CTFloat, "key2" -> CTString)
-      properties.parse("{ key1 : FLOAT, key2 : STRING }") should matchPattern {
-        case Success(`expectedProperties`, _) =>
-      }
+    it("parses { key1 : FLOAT, key2 : STRING }") {
+      success(properties, "{ key1 : FLOAT, key2 : STRING }", Map("key1" -> CTFloat, "key2" -> CTString))
     }
 
-    it("fails parsing empty properties") {
-      properties.parse("{ }") should matchPattern { case Failure(_, _, _) => }
+    it("parses { }") {
+      failure(properties)
     }
   }
 
@@ -136,121 +130,89 @@ class DdlParserTest extends BaseTestSuite with MockitoSugar with TestNameFixture
   }
 
   describe("key definitions") {
-    it("parses a key definition") {
-      val expectedDefinition = "A" -> Set("foo", "bar")
-      keyDefinition.parse("KEY A (foo, bar)") should matchPattern {
-        case Success(`expectedDefinition`, _) =>
-      }
+    it("parses KEY A (foo, bar)") {
+      success(keyDefinition, "KEY A (foo, bar)", "A" -> Set("foo", "bar"))
     }
 
-    it("fails parsing empty property lists") {
-      keyDefinition.parse("KEY A ()") should matchPattern { case Failure(_, _, _) => }
+    it("parses KEY A ()") {
+      failure(keyDefinition)
     }
   }
 
-  describe("[CATALOG] CREATE LABEL <labelDefinition|relTypeDefinition> [KEY keyDefinition]") {
-    it("parses CATALOG CREATE LABEL <labelDefinition>") {
-      catalogLabelDefinition.parse("CATALOG CREATE LABEL (A)") should matchPattern {
-        case Success(LabelDefinition("A", `emptyMap`, None), _) =>
-      }
+  describe("catalog label definition") {
+    it("parses CATALOG CREATE LABEL (A)") {
+      success(catalogLabelDefinition, LabelDefinition("A"))
     }
 
-    it("parses CREATE LABEL <labelDefinition>") {
-      catalogLabelDefinition.parse("CREATE LABEL (A)") should matchPattern {
-        case Success(LabelDefinition("A", `emptyMap`, None), _) =>
-      }
+    it("parses CATALOG CREATE LABEL (A { foo : STRING })") {
+      success(catalogLabelDefinition, LabelDefinition("A", Map("foo" -> CTString)))
     }
 
     it("parses CREATE LABEL (A  KEY  A_NK   (foo,   bar))") {
       success(catalogLabelDefinition, LabelDefinition("A", Map.empty, Some("A_NK" -> Set("foo", "bar"))))
     }
 
-    it("foo") {
-      val ddl = parse("CATALOG CREATE LABEL (A KEY A_NK (foo, bar))")
-      ddl.show()
+    it("parses CREATE LABEL (A { foo : STRING } KEY A_NK (foo,   bar))") {
+      success(catalogLabelDefinition, LabelDefinition("A", Map("foo" -> CTString), Some("A_NK" -> Set("foo", "bar"))))
     }
-
   }
 
   describe("schema pattern definitions") {
 
     it("parses <1>") {
-      val expected = CardinalityConstraint(1, Some(1))
-      cardinalityConstraint.parse("<1>") should matchPattern {
-        case Success(`expected`, _) =>
-      }
+      success(cardinalityConstraint, CardinalityConstraint(1, Some(1)))
     }
 
     it("parses <1, *>") {
-      val expected = CardinalityConstraint(1, None)
-      cardinalityConstraint.parse("<1, *>") should matchPattern {
-        case Success(`expected`, _) =>
-      }
+      success(cardinalityConstraint, CardinalityConstraint(1, None))
     }
 
     it("parses <1 .. *>") {
-      val expected = CardinalityConstraint(1, None)
-      cardinalityConstraint.parse("<1 .. *>") should matchPattern {
-        case Success(`expected`, _) =>
-      }
+      success(cardinalityConstraint, CardinalityConstraint(1, None))
     }
 
     it("parses <*>") {
-      val expected = CardinalityConstraint(0, None)
-      cardinalityConstraint.parse("<*>") should matchPattern {
-        case Success(`expected`, _) =>
-      }
+      success(cardinalityConstraint, CardinalityConstraint(0, None))
     }
 
     it("parses <1, 3>") {
-      val expected = CardinalityConstraint(1, Some(3))
-      cardinalityConstraint.parse("<1, 3>") should matchPattern {
-        case Success(`expected`, _) =>
-      }
+      success(cardinalityConstraint, CardinalityConstraint(1, Some(3)))
     }
 
     it("parses (A)-[TYPE]->(B)") {
       success(schemaPatternDefinition, SchemaPatternDefinition(sourceLabelCombinations = Set(Set("A")), relTypes = Set("TYPE"), targetLabelCombinations = Set(Set("B"))))
     }
 
-    it("parses schema pattern definitions") {
-      val expected = SchemaPatternDefinition(
+    it("parses (L1 | L2) <0 .. *> - [R1 | R2] -> <1>(L3)") {
+      success(schemaPatternDefinition, SchemaPatternDefinition(
         Set(Set("L1"), Set("L2")),
         CardinalityConstraint(0, None), Set("R1", "R2"), CardinalityConstraint(1, Some(1)),
         Set(Set("L3")))
-      schemaPatternDefinition.parse("(L1 | L2) <0 .. *> - [R1 | R2] -> <1>(L3)") should matchPattern {
-        case Success(`expected`, _) =>
-      }
+      )
     }
 
-    it("parses schema pattern definitions with implicit cardinality constraint") {
-      val expected = SchemaPatternDefinition(
+    it("parses (L1 | L2) - [R1 | R2] -> <1>(L3)") {
+      success(schemaPatternDefinition, SchemaPatternDefinition(
         Set(Set("L1"), Set("L2")),
         CardinalityConstraint(0, None), Set("R1", "R2"), CardinalityConstraint(1, Some(1)),
         Set(Set("L3")))
-      schemaPatternDefinition.parse("(L1 | L2) - [R1 | R2] -> <1>(L3)") should matchPattern {
-        case Success(`expected`, _) =>
-      }
+      )
     }
 
-    it("parses schema pattern definitions with a single label combination") {
-      val expected = SchemaPatternDefinition(
+    it("parses (L1, L2) - [R1 | R2] -> <1>(L3)") {
+      success(schemaPatternDefinition, SchemaPatternDefinition(
         Set(Set("L1", "L2")),
         CardinalityConstraint(0, None), Set("R1", "R2"), CardinalityConstraint(1, Some(1)),
         Set(Set("L3")))
-      schemaPatternDefinition.parse("(L1, L2) - [R1 | R2] -> <1>(L3)") should matchPattern {
-        case Success(`expected`, _) =>
-      }
+      )
     }
 
-    it("parses schema pattern definitions with multiple label combinations") {
-      val expected = SchemaPatternDefinition(
+    it("parses (L4 | L1, L2 | L3 & L5) - [R1 | R2] -> <1>(L3)") {
+      success(schemaPatternDefinition, SchemaPatternDefinition(
         Set(Set("L4"), Set("L1", "L2"), Set("L3", "L5")),
         CardinalityConstraint(0, None), Set("R1", "R2"), CardinalityConstraint(1, Some(1)),
         Set(Set("L3")))
-      schemaPatternDefinition.parse("(L4 | L1, L2 | L3 & L5) - [R1 | R2] -> <1>(L3)") should matchPattern {
-        case Success(`expected`, _) =>
-      }
+      )
     }
   }
 
