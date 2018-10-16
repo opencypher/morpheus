@@ -24,44 +24,48 @@
  * described as "implementation extensions to Cypher" or as "proposed changes to
  * Cypher that are not yet approved by the openCypher community".
  */
-package org.opencypher.okapi.api.io.conversion
+package org.opencypher.okapi.testing
 
-import org.opencypher.okapi.api.types.{CypherType, DefiniteCypherType}
-import org.opencypher.okapi.impl.exception.IllegalArgumentException
+import org.scalatest.{Args, Status}
 
-/**
-  * Represents a map from node/relationship property keys to keys in the source data.
-  */
-trait EntityMapping {
+trait TestNameFixture extends BaseTestSuite {
 
-  // TODO: CTEntity
-  def cypherType: CypherType with DefiniteCypherType
+  /**
+    * Separator string for splitting test description and test name.
+    *
+    * e.g. separator "runs " and the following test definition:
+    *
+    * {{{
+    * describe("description") {
+    *   it("runs testName") {
+    *     // ..
+    *   }
+    * }
+    * }}}
+    *
+    * returns 'testName'.
+    *
+    *
+    * @return
+    */
+  protected def separator: String
 
-  def sourceIdKey: String
+  final def testName: String = __testName.get
 
-  def propertyMapping: Map[String, String]
+  private var __testName: Option[String] = None
 
-  def idKeys: Seq[String]
+  override protected def runTest(testName: String, args: Args): Status = {
+    val separatorIndex = testName.indexOf(separator)
 
-  def optionalLabelKeys: Seq[String] = Seq.empty
-
-  def relTypeKeys: Seq[String] = Seq.empty
-
-  def allSourceKeys: Seq[String] = idKeys ++ optionalLabelKeys ++ relTypeKeys ++ propertyMapping.values.toSeq.sorted
-
-  protected def preventOverwritingProperty(propertyKey: String): Unit =
-    if (propertyMapping.contains(propertyKey))
-      throw IllegalArgumentException("unique property key definitions",
-        s"given key $propertyKey overwrites existing mapping")
-
-  protected def validate(): Unit = {
-    val sourceKeys = allSourceKeys
-    if (allSourceKeys.size != sourceKeys.toSet.size) {
-      val duplicateColumns = sourceKeys.groupBy(identity).filter { case (_, items) => items.size > 1 }
-      throw IllegalArgumentException(
-        "One-to-one mapping from entity elements to source keys",
-        s"Duplicate columns: $duplicateColumns")
+    val name = separatorIndex match {
+      case -1 => testName
+      case _ => testName.substring(separatorIndex + separator.length).trim.stripMargin
+    }
+    __testName = Some(name)
+    try {
+      super.runTest(testName, args)
+    } finally {
+      __testName = None
     }
   }
-
 }

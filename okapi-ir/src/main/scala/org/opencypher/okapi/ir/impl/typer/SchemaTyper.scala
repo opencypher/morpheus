@@ -89,18 +89,18 @@ object SchemaTyper {
 
           // This means that the node can have any possible label combination, as the user did not specify any constraints
           case n: CTNode if n.labels.isEmpty =>
-            val propType = schema.allLabelCombinations
-              .map(l => schema.nodeKeyType(l, name).getOrElse(CTNull))
+            val propType = schema.allCombinations
+              .map(l => schema.nodePropertyKeyType(l, name).getOrElse(CTNull))
               .foldLeft(CTVoid: CypherType)(_ join _)
             recordType(v -> varTyp) >> recordAndUpdate(expr -> propType)
 
           // User specified label constraints - we can use those for type inference
           case CTNode(labels, _) =>
-            val propType = schema.nodeKeyType(labels, name).getOrElse(CTNull)
+            val propType = schema.nodePropertyKeyType(labels, name).getOrElse(CTNull)
             recordType(v -> varTyp) >> recordAndUpdate(expr -> propType)
 
           case CTRelationship(types, _) =>
-            val propType = schema.relationshipKeyType(types, name).getOrElse(CTNull)
+            val propType = schema.relationshipPropertyKeyType(types, name).getOrElse(CTNull)
             recordType(v -> varTyp) >> recordAndUpdate(expr -> propType)
 
           case CTMap =>

@@ -52,7 +52,7 @@ object CAPSSchema {
 
           combosByLabel.foreach {
             case (_, combos) =>
-              val keysForAllCombosOfLabel = combos.map(combo => combo -> schema.nodeKeys(combo))
+              val keysForAllCombosOfLabel = combos.map(combo => combo -> schema.nodePropertyKeys(combo))
               for {
                 (combo1, keys1) <- keysForAllCombosOfLabel
                 (combo2, keys2) <- keysForAllCombosOfLabel
@@ -87,7 +87,11 @@ case class CAPSSchema private[schema](schema: Schema) extends Schema {
 
   override def labels: Set[String] = schema.labels
 
+  override def nodeKeys: Map[String, Set[String]] = schema.nodeKeys
+
   override def relationshipTypes: Set[String] = schema.relationshipTypes
+
+  override def relationshipKeys: Map[String, Set[String]] = schema.relationshipKeys
 
   override def labelPropertyMap: LabelPropertyMap = schema.labelPropertyMap
 
@@ -103,21 +107,19 @@ case class CAPSSchema private[schema](schema: Schema) extends Schema {
 
   override def impliedLabels(knownLabels: Set[String]): Set[String] = schema.impliedLabels(knownLabels)
 
-  override def nodeKeys(labels: Set[String]): PropertyKeys = schema.nodeKeys(labels)
+  override def nodePropertyKeys(labels: Set[String]): PropertyKeys = schema.nodePropertyKeys(labels)
 
-  override def allNodeKeys: PropertyKeys = schema.allNodeKeys
-
-  override def allLabelCombinations: Set[Set[String]] = schema.allLabelCombinations
+  override def allCombinations: Set[Set[String]] = schema.allCombinations
 
   override def combinationsFor(knownLabels: Set[String]): Set[Set[String]] = schema.combinationsFor(knownLabels)
 
-  override def nodeKeyType(labels: Set[String], key: String): Option[CypherType] = schema.nodeKeyType(labels, key)
+  override def nodePropertyKeyType(labels: Set[String], key: String): Option[CypherType] = schema.nodePropertyKeyType(labels, key)
 
-  override def keysFor(labelCombinations: Set[Set[String]]): PropertyKeys = schema.keysFor(labelCombinations)
+  override def nodePropertyKeysForCombinations(labelCombinations: Set[Set[String]]): PropertyKeys = schema.nodePropertyKeysForCombinations(labelCombinations)
 
-  override def relationshipKeyType(types: Set[String], key: String): Option[CypherType] = schema.relationshipKeyType(types, key)
+  override def relationshipPropertyKeyType(types: Set[String], key: String): Option[CypherType] = schema.relationshipPropertyKeyType(types, key)
 
-  override def relationshipKeys(typ: String): PropertyKeys = schema.relationshipKeys(typ)
+  override def relationshipPropertyKeys(typ: String): PropertyKeys = schema.relationshipPropertyKeys(typ)
 
   override def withNodePropertyKeys(nodeLabels: Set[String], keys: PropertyKeys): Schema = schema.withNodePropertyKeys(nodeLabels, keys)
 
@@ -144,4 +146,8 @@ case class CAPSSchema private[schema](schema: Schema) extends Schema {
   override def explicitSchemaPatterns: Set[SchemaPattern] = schema.explicitSchemaPatterns
 
   override def schemaPatternsFor(knownSourceLabels: Set[String], knownRelTypes: Set[String], knownTargetLabels: Set[String]): Set[SchemaPattern] = schema.schemaPatternsFor(knownSourceLabels, knownRelTypes, knownTargetLabels)
+
+  override def withNodeKey(label: String, nodeKey: Set[String]): Schema = schema.withNodeKey(label, nodeKey)
+
+  override def withRelationshipKey(relationshipType: String, relationshipKey: Set[String]): Schema = schema.withRelationshipKey(relationshipType, relationshipKey)
 }

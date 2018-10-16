@@ -44,7 +44,7 @@ object CAPSGraphExport {
 
     def canonicalNodeStructType(labels: Set[String]): StructType = {
       val id = StructField(GraphEntity.sourceIdKey, LongType, nullable = false)
-      val properties = schema.nodeKeys(labels).toSeq
+      val properties = schema.nodePropertyKeys(labels).toSeq
         .map { case (propertyName, cypherType) => propertyName.toPropertyColumnName -> cypherType }
         .sortBy { case (propertyColumnName, _) => propertyColumnName }
         .map { case (propertyColumnName, cypherType) =>
@@ -57,7 +57,7 @@ object CAPSGraphExport {
       val id = StructField(GraphEntity.sourceIdKey, LongType, nullable = false)
       val sourceId = StructField(Relationship.sourceStartNodeKey, LongType, nullable = false)
       val targetId = StructField(Relationship.sourceEndNodeKey, LongType, nullable = false)
-      val properties = schema.relationshipKeys(relType).toSeq.sortBy(_._1).map { case (propertyName, cypherType) =>
+      val properties = schema.relationshipPropertyKeys(relType).toSeq.sortBy(_._1).map { case (propertyName, cypherType) =>
         StructField(propertyName.toPropertyColumnName, cypherType.getSparkType, cypherType.isNullable)
       }
       StructType(id +: sourceId +: targetId +: properties)

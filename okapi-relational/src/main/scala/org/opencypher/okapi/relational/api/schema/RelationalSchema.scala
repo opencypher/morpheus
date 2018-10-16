@@ -59,7 +59,7 @@ object RelationalSchema {
       } else {
         if (labels.isEmpty) {
           // all nodes scan
-          schema.allLabelCombinations
+          schema.allCombinations
         } else {
           // label scan
           val impliedLabels = schema.impliedLabels.transitiveImplicationsFor(labels)
@@ -71,7 +71,7 @@ object RelationalSchema {
         HasLabel(node, Label(label))(CTBoolean)
       }
 
-      val propertyExpressions = schema.keysFor(labelCombos).map {
+      val propertyExpressions = schema.nodePropertyKeysForCombinations(labelCombos).map {
         case (k, t) => Property(node, PropertyKey(k))(t)
       }
 
@@ -93,7 +93,7 @@ object RelationalSchema {
 
     def headerForRelationship(rel: Var, relTypes: Set[String]): RecordHeader = {
       val relKeyHeaderProperties = relTypes
-        .flatMap(t => schema.relationshipKeys(t))
+        .flatMap(t => schema.relationshipPropertyKeys(t))
         .groupBy { case (propertyKey, _) => propertyKey }
         .mapValues { keysWithType =>
           keysWithType.toSeq.unzip match {

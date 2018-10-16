@@ -33,7 +33,7 @@ import org.opencypher.okapi.neo4j.io.Neo4jHelpers.Neo4jDefaults._
 object EntityReader {
 
   def flatExactLabelQuery(labels: Set[String], schema: Schema, maybeMetaLabel: Option[String] = None): String ={
-    val props = schema.nodeKeys(labels).propertyExtractorString
+    val props = schema.nodePropertyKeys(labels).propertyExtractorString
     val allLabels = labels ++ maybeMetaLabel
     val labelCount = allLabels.size
 
@@ -43,7 +43,7 @@ object EntityReader {
   }
 
   def flatRelTypeQuery(relType: String, schema: Schema, maybeMetaLabel: Option[String] = None): String ={
-    val props = schema.relationshipKeys(relType).propertyExtractorString
+    val props = schema.relationshipPropertyKeys(relType).propertyExtractorString
     val metaLabel = maybeMetaLabel.map(m => s":$m").getOrElse("")
 
     s"""|MATCH (s$metaLabel)-[$entityVarName:$relType]->(t$metaLabel)

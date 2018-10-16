@@ -49,8 +49,10 @@ object Schema {
 }
 
 /**
-  * The schema of a graph describes what labels and relationship types exist in a graph,
-  * including possible combinations of the former.
+  * The schema of a graph describes what labels and relationship types exist in a graph, including possible combinations
+  * of the former. A `label combination` is an exact set of labels on a node. The term `known labels` refers to a subset
+  * of labels that a node might have.
+  *
   * It also keeps track of properties and their types that appear on different labels, label combinations and
   * relationship types.
   */
@@ -61,9 +63,23 @@ trait Schema {
   def labels: Set[String]
 
   /**
+    * Returns a mapping from a node label to a set of property keys that together form an entity key for that
+    * label. An entity key uniquely identifies a node with the given label.
+    */
+  @experimental
+  def nodeKeys: Map[String, Set[String]]
+
+  /**
     * All relationship types present in this graph.
     */
   def relationshipTypes: Set[String]
+
+  /**
+    * Returns a mapping from a relationship type to a set of property keys that together form an entity key for that
+    * relationship type. An entity key uniquely identifies a relationship with the given type.
+    */
+  @experimental
+  def relationshipKeys: Map[String, Set[String]]
 
   /**
     * Property keys and their types for node labels.
@@ -84,7 +100,6 @@ trait Schema {
     * between the known label combinations and relationship types. Otherwise only explicit schema patterns will be returned.
     *
     * @see {{{org.opencypher.okapi.api.schema.SchemaPattern}}} for more information
-    *
     * @return schema pattern combinations encoded in this schema
     */
   @experimental
@@ -92,6 +107,7 @@ trait Schema {
 
   /**
     * Retrieves the user defined schema patterns
+    *
     * @return user defines schema patterns
     */
   @experimental
@@ -120,44 +136,30 @@ trait Schema {
   }
 
   /**
-    * Given a set of labels that a node definitely has, returns its property schema.
+    * Given a label combination, returns its property keys and their types.
+    */
+  def nodePropertyKeys(labelCombination: Set[String]): PropertyKeys
+
+  /**
+    * Returns some property type for a property given the known labels of a node.
+    * Returns none if this property does not appear on nodes with the given label combination.
+    * Types of conflicting property keys are joined.
     *
-    * TODO: consider implied labels here?
+    * @param knownLabels known labels for which the property type is checked
+    * @param key         property key
+    * @return Cypher type of the property on nodes with the given label combination
     */
-  def nodeKeys(labels: Set[String]): PropertyKeys
-
-  /**
-    * Given a set of labels that a node definitely has, returns its property schema.
-    */
-  def nodeKeys(labels: String*): PropertyKeys = {
-    nodeKeys(labels.toSet)
-  }
-
-  /**
-    * Returns the property schema of a node of which the labels are unknown.
-    */
-  def allNodeKeys: PropertyKeys
+  def nodePropertyKeyType(knownLabels: Set[String], key: String): Option[CypherType]
 
   /**
     * Returns all combinations of labels that exist on a node in the graph.
     */
-  def allLabelCombinations: Set[Set[String]]
+  def allCombinations: Set[Set[String]]
 
   /**
     * Given a set of labels that a node definitely has, returns all combinations of labels that the node could possibly have.
     */
   def combinationsFor(knownLabels: Set[String]): Set[Set[String]]
-
-  /**
-    * Returns some property type for a property given the labels of a node.
-    * Returns none if this property does not appear on nodes with the given label combination.
-    * Types of conflicting property keys are joined.
-    *
-    * @param labels label combination for which the property type is checked
-    * @param key    property key
-    * @return Cypher type of the property on nodes with the given label combination
-    */
-  def nodeKeyType(labels: Set[String], key: String): Option[CypherType]
 
   /**
     * Returns property keys for the set of label combinations.
@@ -166,34 +168,24 @@ trait Schema {
     * @param labelCombinations label combinations to consider
     * @return typed property keys, with joined or nullable types for conflicts
     */
-  def keysFor(labelCombinations: Set[Set[String]]): PropertyKeys
+  def nodePropertyKeysForCombinations(labelCombinations: Set[Set[String]]): PropertyKeys
+
 
   /**
-    * Returns the property keys that exist on any of the labels.
-    * Types of conflicting property keys are joined.
-    *
-    * @param labels labels for which to return the property keys
-    * @return property keys for labels
+    * Returns the property schema for a given relationship type
     */
-  def keysFor(labels: String*): PropertyKeys= {
-    keysFor(labels.map(Set(_)).toSet)
-  }
+  def relationshipPropertyKeys(relType: String): PropertyKeys
 
   /**
     * Returns some property type for a property given the possible types of a relationship.
     * Returns none if this property does not appear on relationships with one of the given types.
     * Types of conflicting property keys are joined.
     *
-    * @param types relationship types for which the property type is checked
-    * @param key    property key
+    * @param relTypes relationship types for which the property type is checked
+    * @param key      property key
     * @return Cypher type of the property on relationships with one of the given types
     */
-  def relationshipKeyType(types: Set[String], key: String): Option[CypherType]
-
-  /**
-    * Returns the property schema for a given relationship type
-    */
-  def relationshipKeys(typ: String): PropertyKeys
+  def relationshipPropertyKeyType(relTypes: Set[String], key: String): Option[CypherType]
 
   /**
     * This function returns all schema patterns that are applicable with regards to the specified known labels and
@@ -206,15 +198,19 @@ trait Schema {
     * empty sets, all the schema patterns will be retrieved.
     *
     * @param knownSourceLabels labels required for the source node (AND semantics)
-    * @param knownRelTypes relationship types possible for the relationship (OR semantics)
+    * @param knownRelTypes     relationship types possible for the relationship (OR semantics)
     * @param knownTargetLabels labels required for the target node (AND semantics)
     * @return schema patterns that fulfill the predicates
     */
   @experimental
-  def schemaPatternsFor(knownSourceLabels: Set[String], knownRelTypes: Set[String], knownTargetLabels: Set[String]): Set[SchemaPattern]
+  def schemaPatternsFor(
+    knownSourceLabels: Set[String],
+    knownRelTypes: Set[String],
+    knownTargetLabels: Set[String]
+  ): Set[SchemaPattern]
 
   /**
-    * Adds information about a label and its associated properties to the schema.
+    * Adds information about a label combination and its associated properties to the schema.
     * The arguments provided to this method are interpreted as describing a whole piece of information,
     * meaning that for a specific instance of the label, the given properties were present in their exact
     * given shape. For example, consider
@@ -228,17 +224,17 @@ trait Schema {
     * as the schema understands that it is possible to map `:Foo` to both sets of properties, and it
     * calculates the join of the property types, respectively.
     *
-    * @param nodeLabels the node labels to add to the schema
-    * @param keys       the typed property keys to associate with the labels
+    * @param labelCombination the label combination to add to the schema
+    * @param propertyKeys     the typed property keys to associate with the labels
     * @return a copy of the Schema with the provided new data
     */
-  def withNodePropertyKeys(nodeLabels: Set[String], keys: PropertyKeys = PropertyKeys.empty): Schema
+  def withNodePropertyKeys(labelCombination: Set[String], propertyKeys: PropertyKeys = PropertyKeys.empty): Schema
 
   /**
     * @see [[org.opencypher.okapi.api.schema.Schema#withNodePropertyKeys(scala.collection.Seq, scala.collection.Seq)]]
     */
-  def withNodePropertyKeys(nodeLabels: String*)(keys: (String, CypherType)*): Schema =
-    withNodePropertyKeys(nodeLabels.toSet, keys.toMap)
+  def withNodePropertyKeys(labelCombination: String*)(propertyKeys: (String, CypherType)*): Schema =
+    withNodePropertyKeys(labelCombination.toSet, propertyKeys.toMap)
 
   /**
     * Adds information about a relationship type and its associated properties to the schema.
@@ -274,12 +270,28 @@ trait Schema {
     withRelationshipPropertyKeys(typ, keys.toMap)
 
   /**
+    * Adds a node key for node label `label`. A node key uniquely identifies a node with the given label.
+    *
+    * @note The label for which the key is added has to exist in this schema.
+    */
+  @experimental
+  def withNodeKey(label: String, nodeKey: Set[String]): Schema
+
+  /**
+    * Adds a relationship key for relationship type `relationshipType`. A relationship key uniquely identifies a
+    * relationship with the given label.
+    *
+    * @note The relationship type for which the key is added has to exist in this schema.
+    */
+  @experimental
+  def withRelationshipKey(relationshipType: String, relationshipKey: Set[String]): Schema
+
+  /**
     * Adds the given schema patterns to the explicitly defined schema patterns.
     *
     * @note If at least one explicit schema pattern has been defined, only explicit schema patterns will be considered
     *       part of this schema.
     * @see {{{org.opencypher.okapi.api.schema.Schema#schemaPatterns}}}
-    *
     * @param patterns the patterns to add
     * @return schema with added explicit schema patterns
     */
@@ -294,20 +306,21 @@ trait Schema {
 
   /**
     * Returns this schema with the properties for `combo` removed.
-    * @param combo label combination for which properties are removed
+    *
+    * @param labelCombination label combination for which properties are removed
     * @return updated schema
     */
-  private[opencypher] def dropPropertiesFor(combo: Set[String]): Schema
+  private[opencypher] def dropPropertiesFor(labelCombination: Set[String]): Schema
 
   /**
     * Returns the sub-schema for a node scan under the given constraints.
     * Labels are interpreted as constraints on the resulting Schema.
     * If no labels are specified, this means the resulting node can have any valid label combination.
     *
-    * @param labelConstraints Specifies the labels that the node is guaranteed to have
-    * @return sub-schema for `labelConstraints`
+    * @param knownLabels Specifies the labels that the node is guaranteed to have
+    * @return sub-schema for `knownLabels`
     */
-  private[opencypher] def forNode(labelConstraints: Set[String]): Schema
+  private[opencypher] def forNode(knownLabels: Set[String]): Schema
 
   /**
     * Returns the sub-schema for `relType`
@@ -320,7 +333,10 @@ trait Schema {
   /**
     * Returns the updated schema, but overwrites any existing node property keys for the given labels.
     */
-  private[opencypher] def withOverwrittenNodePropertyKeys(nodeLabels: Set[String], propertyKeys: PropertyKeys): Schema
+  private[opencypher] def withOverwrittenNodePropertyKeys(
+    labelCombination: Set[String],
+    propertyKeys: PropertyKeys
+  ): Schema
 
   /**
     * Returns the updated schema, but overwrites any existing relationship property keys for the given type.

@@ -99,8 +99,8 @@ abstract class AbstractPropertyGraphDataSource extends CAPSPropertyGraphDataSour
     } else {
       val capsSchema: CAPSSchema = schema(name).get
       val capsMetaData: CAPSGraphMetaData = readCAPSGraphMetaData(name)
-      val nodeTables = capsSchema.allLabelCombinations.map { combo =>
-        val propertyColsWithCypherType = capsSchema.keysFor(Set(combo)).map {
+      val nodeTables = capsSchema.allCombinations.map { combo =>
+        val propertyColsWithCypherType = capsSchema.nodePropertyKeysForCombinations(Set(combo)).map {
           case (key, cypherType) => key.toPropertyColumnName -> cypherType
         }
 
@@ -110,7 +110,7 @@ abstract class AbstractPropertyGraphDataSource extends CAPSPropertyGraphDataSour
       }
 
       val relTables = capsSchema.relationshipTypes.map { relType =>
-        val propertyColsWithCypherType = capsSchema.relationshipKeys(relType).map {
+        val propertyColsWithCypherType = capsSchema.relationshipPropertyKeys(relType).map {
           case (key, cypherType) => key.toPropertyColumnName -> cypherType
         }
 

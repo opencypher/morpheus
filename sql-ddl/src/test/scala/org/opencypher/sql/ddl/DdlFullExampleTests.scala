@@ -24,44 +24,27 @@
  * described as "implementation extensions to Cypher" or as "proposed changes to
  * Cypher that are not yet approved by the openCypher community".
  */
-package org.opencypher.okapi.api.io.conversion
+package org.opencypher.sql.ddl
 
-import org.opencypher.okapi.api.types.{CypherType, DefiniteCypherType}
-import org.opencypher.okapi.impl.exception.IllegalArgumentException
+import org.opencypher.okapi.testing.BaseTestSuite
+import org.opencypher.sql.ddl.DdlParser.parse
 
-/**
-  * Represents a map from node/relationship property keys to keys in the source data.
-  */
-trait EntityMapping {
+import scala.io.Source
 
-  // TODO: CTEntity
-  def cypherType: CypherType with DefiniteCypherType
+class DdlFullExampleTests extends BaseTestSuite {
 
-  def sourceIdKey: String
+  it("parses the Northwind graph DDL") {
+    val northwindUrl = getClass.getResource("/northwind-graph.ddl")
+    val northwindDdlString = Source.fromURL(northwindUrl).getLines.mkString("\n")
+    val parsed = parse(northwindDdlString)
+//    parsed.show()
+  }
 
-  def propertyMapping: Map[String, String]
-
-  def idKeys: Seq[String]
-
-  def optionalLabelKeys: Seq[String] = Seq.empty
-
-  def relTypeKeys: Seq[String] = Seq.empty
-
-  def allSourceKeys: Seq[String] = idKeys ++ optionalLabelKeys ++ relTypeKeys ++ propertyMapping.values.toSeq.sorted
-
-  protected def preventOverwritingProperty(propertyKey: String): Unit =
-    if (propertyMapping.contains(propertyKey))
-      throw IllegalArgumentException("unique property key definitions",
-        s"given key $propertyKey overwrites existing mapping")
-
-  protected def validate(): Unit = {
-    val sourceKeys = allSourceKeys
-    if (allSourceKeys.size != sourceKeys.toSet.size) {
-      val duplicateColumns = sourceKeys.groupBy(identity).filter { case (_, items) => items.size > 1 }
-      throw IllegalArgumentException(
-        "One-to-one mapping from entity elements to source keys",
-        s"Duplicate columns: $duplicateColumns")
-    }
+  it("parses the Census graph DDL") {
+    val censusUrl = getClass.getResource("/census-graph.ddl")
+    val censusDdlString = Source.fromURL(censusUrl).getLines.mkString("\n")
+    val parsed = parse(censusDdlString)
+//    parsed.show()
   }
 
 }

@@ -47,14 +47,14 @@ object SchemaPattern{
   *          then the schema pattern `SchemaPattern(Set("A"), "REL", Set("C"))` would only apply to `r1`
   *          and the schema pattern `SchemaPattern(Set("A", "B"), "REL", Set("C"))` would only apply to `r3`
   *
-  * @param sourceLabels label combination for source nodes
+  * @param sourceLabelCombination label combination for source nodes
   * @param relType relationship type
-  * @param targetLabels label combination for target nodes
+  * @param targetLabelCombination label combination for target nodes
   */
-case class SchemaPattern(sourceLabels: Set[String], relType: String, targetLabels: Set[String]) {
+case class SchemaPattern(sourceLabelCombination: Set[String], relType: String, targetLabelCombination: Set[String]) {
   override def toString: String = {
-    val sourceLabelString = if(sourceLabels.isEmpty) "" else sourceLabels.mkString(":", ":", "")
-    val targetLabelString = if(targetLabels.isEmpty) "" else targetLabels.mkString(":", ":", "")
+    val sourceLabelString = if(sourceLabelCombination.isEmpty) "" else sourceLabelCombination.mkString(":", ":", "")
+    val targetLabelString = if(targetLabelCombination.isEmpty) "" else targetLabelCombination.mkString(":", ":", "")
     s"($sourceLabelString)-[:$relType]->($targetLabelString)"
   }
 }

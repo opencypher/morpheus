@@ -70,7 +70,7 @@ package object impl {
       val labelsWithAddition = combo ++ labels
       schema
         .dropPropertiesFor(combo)
-        .withNodePropertyKeys(labelsWithAddition, schema.nodeKeys(combo))
+        .withNodePropertyKeys(labelsWithAddition, schema.nodePropertyKeys(combo))
     }
 
     def addPropertyToEntity(propertyKey: String, propertyType: CypherType, entityType: CypherType): Schema = {
@@ -79,13 +79,13 @@ package object impl {
           val allRelevantLabelCombinations = schema.combinationsFor(labels)
           val property = if (allRelevantLabelCombinations.size == 1) propertyType else propertyType.nullable
           allRelevantLabelCombinations.foldLeft(schema) { case (innerCurrentSchema, combo) =>
-            val updatedPropertyKeys = innerCurrentSchema.keysFor(Set(combo)).updated(propertyKey, property)
+            val updatedPropertyKeys = innerCurrentSchema.nodePropertyKeysForCombinations(Set(combo)).updated(propertyKey, property)
             innerCurrentSchema.withOverwrittenNodePropertyKeys(combo, updatedPropertyKeys)
           }
         case CTRelationship(types, _) =>
           val typesToUpdate = if (types.isEmpty) schema.relationshipTypes else types
           typesToUpdate.foldLeft(schema) { case (innerCurrentSchema, relType) =>
-            val updatedPropertyKeys = innerCurrentSchema.relationshipKeys(relType).updated(propertyKey, propertyType)
+            val updatedPropertyKeys = innerCurrentSchema.relationshipPropertyKeys(relType).updated(propertyKey, propertyType)
             innerCurrentSchema.withOverwrittenRelationshipPropertyKeys(relType, updatedPropertyKeys)
           }
         case other => throw IllegalArgumentException("node or relationship to set a property on", other)
