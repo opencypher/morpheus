@@ -26,20 +26,44 @@
  */
 package org.opencypher.spark.api.io
 
+import org.opencypher.okapi.impl.exception.IllegalArgumentException
+import org.opencypher.okapi.impl.util.JsonUtils.FlatOption._
+import upickle.Js
+
 trait StorageFormat {
-  def name: String = getClass.getSimpleName.dropRight(7).toLowerCase
+  def name: String = getClass.getSimpleName.dropRight("Format$".length).toLowerCase
 }
 
-case object CsvFormat extends StorageFormat
+object StorageFormat {
+
+  val allStorageFormats: Map[String, StorageFormat] = Map(
+    AvroFormat.name -> AvroFormat,
+    CsvFormat.name -> CsvFormat,
+    HiveFormat.name -> HiveFormat,
+    JdbcFormat.name -> JdbcFormat,
+    Neo4jFormat.name -> Neo4jFormat,
+    OrcFormat.name -> OrcFormat,
+    ParquetFormat.name -> ParquetFormat
+  )
+
+  implicit def rw: ReadWriter[StorageFormat] = readwriter[Js.Value].bimap[StorageFormat](
+    storageFormat => storageFormat.name,
+    storageFormatName => allStorageFormats.getOrElse(storageFormatName.str,
+      throw IllegalArgumentException(s"Supported storage format (one of ${allStorageFormats.keys.mkString("[", ", ", "]")})", storageFormatName.str)
+    )
+  )
+}
 
 case object AvroFormat extends StorageFormat
 
-case object ParquetFormat extends StorageFormat
-
-case object OrcFormat extends StorageFormat
-
-case object JdbcFormat extends StorageFormat
+case object CsvFormat extends StorageFormat
 
 case object HiveFormat extends StorageFormat
 
+case object JdbcFormat extends StorageFormat
+
 case object Neo4jFormat extends StorageFormat
+
+case object OrcFormat extends StorageFormat
+
+case object ParquetFormat extends StorageFormat

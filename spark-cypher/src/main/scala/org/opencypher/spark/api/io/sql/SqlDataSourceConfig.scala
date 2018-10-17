@@ -27,10 +27,12 @@
 package org.opencypher.spark.api.io.sql
 
 import org.opencypher.okapi.impl.util.JsonUtils.FlatOption._
+import org.opencypher.spark.api.io.StorageFormat
 
 import scala.util.{Failure, Success, Try}
 
 object SqlDataSourceConfig {
+
   implicit def rw: ReadWriter[SqlDataSourceConfig] = macroRW
 
   def toJson(dataSource: SqlDataSourceConfig): String = write[SqlDataSourceConfig](dataSource, indent = 4)
@@ -58,7 +60,7 @@ object SqlDataSourceConfig {
   * @param jdbcFetchSize  the fetch size to use for transferring data over JDBC
   */
 case class SqlDataSourceConfig(
-  storageFormat: String,
+  storageFormat: StorageFormat,
   dataSourceName: String,
   defaultSchema: Option[String] = None,
   jdbcUri: Option[String] = None,
