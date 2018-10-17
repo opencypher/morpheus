@@ -64,6 +64,23 @@ class FunctionsBehaviour extends CAPSTestSuite with DefaultGraphInit {
         )
       )
     }
+
+    it("trims more complex structures") {
+      val given = initGraph("CREATE ({name: ' foo '})")
+
+      val result = given.cypher(
+        """
+          |MATCH (n)
+          |WITH rtrim(n.name) AS name
+          |RETURN rtrim(ltrim(name + '_bar ')) AS trimmed
+        """.stripMargin)
+
+      result.records.toMaps should equal(
+        Bag(
+          CypherMap("trimmed" -> "foo_bar")
+        )
+      )
+    }
   }
 
   describe("timestamp") {

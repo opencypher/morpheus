@@ -58,6 +58,14 @@ class SchemaTyperTest extends BaseTestSuite with Neo4jAstTestSupport with Mockit
     )
   }
 
+  it("should type trim(), ltrim(), rtrim()") {
+    implicit val context: TypeTracker = typeTracker("n" -> CTString)
+
+    assertExpr.from("trim(n)") shouldHaveInferredType CTString.nullable
+    assertExpr.from("ltrim(n)") shouldHaveInferredType CTString.nullable
+    assertExpr.from("rtrim(n)") shouldHaveInferredType CTString.nullable
+  }
+
   it("should type timestamp()") {
     implicit val context: TypeTracker = typeTracker()
 
