@@ -52,10 +52,15 @@ case class DdlDefinitions(
   setSchema: List[String] = Nil,
   labelDefinitions: List[LabelDefinition] = Nil,
   schemaDefinitions: Map[String, SchemaDefinition] = Map.empty,
+  // TODO: check for conflicting graph names
   graphDefinitions: List[GraphDefinition] = Nil
 ) extends DdlAst {
 
   private[ddl] lazy val globalLabelDefinitions: Map[String, LabelDefinition] = labelDefinitions.map(labelDef => labelDef.name -> labelDef).toMap
+
+  lazy val graphByName: Map[String, GraphDefinition] = graphDefinitions.map { graphDef =>
+    graphDef.name -> graphDef
+  }.toMap
 
   private[ddl] lazy val globalSchemas: Map[String, Schema] = schemaDefinitions.map {
     case (name, schemaDefinition: SchemaDefinition) => name -> toSchema(schemaDefinition)

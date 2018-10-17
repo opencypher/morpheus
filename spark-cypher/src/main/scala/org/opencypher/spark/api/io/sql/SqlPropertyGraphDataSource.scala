@@ -26,65 +26,104 @@
  */
 package org.opencypher.spark.api.io.sql
 
-import org.apache.spark.sql.DataFrame
-import org.apache.spark.sql.types.StructType
+import org.apache.spark.sql.functions
 import org.opencypher.okapi.api.graph.{GraphName, PropertyGraph}
+import org.opencypher.okapi.api.io.conversion.NodeMapping
+import org.opencypher.okapi.api.schema.Schema
 import org.opencypher.okapi.impl.exception.{IllegalArgumentException, UnsupportedOperationException}
 import org.opencypher.spark.api.CAPSSession
-import org.opencypher.spark.api.io.{AbstractPropertyGraphDataSource, JdbcFormat, StorageFormat}
-import org.opencypher.spark.api.io.metadata.CAPSGraphMetaData
-import org.opencypher.spark.schema.CAPSSchema
-import org.opencypher.sql.ddl.DdlDefinitions
+import org.opencypher.spark.api.io.{CAPSNodeTable, HiveFormat, JdbcFormat}
+import org.opencypher.spark.impl.io.CAPSPropertyGraphDataSource
+import org.opencypher.sql.ddl.{DdlDefinitions, NodeMappingDefinition}
+
+case class DDLFormatException(message: String) extends RuntimeException
 
 case class SqlPropertyGraphDataSource(
   ddl: DdlDefinitions,
   sqlDataSources: Map[String, SqlDataSourceConfig]
-)(
-  override implicit val caps: CAPSSession
-) extends AbstractPropertyGraphDataSource {
+)(implicit val caps: CAPSSession) extends CAPSPropertyGraphDataSource {
 
-  override def tableStorageFormat: StorageFormat = JdbcFormat
+  override def hasGraph(graphName: GraphName): Boolean = ddl.graphByName.contains(graphName.value)
 
-  override protected def listGraphNames: List[String] = ddl.graphSchemas.keySet.toList
+  override def graph(graphName: GraphName): PropertyGraph = {
+    val graphSchema = schema(graphName).getOrElse(notFound(s"schema for graph $graphName", ddl.graphSchemas.keySet) )
 
-  override protected def deleteGraph(graphName: GraphName): Unit =
-    unsupported("deleting of source data")
+    val (dataSourceName, databaseName) = ddl.setSchema match {
+      case dsName :: dbName :: Nil => dsName -> dbName
+      case dsName :: Nil => dsName -> sqlDataSources
+        .getOrElse(dsName, notFound(dsName, sqlDataSources.keys))
+        .defaultSchema.getOrElse(notFound(s"database schema for $dsName"))
+      case Nil => throw DDLFormatException("Missing in DDL: `SET SCHEMA <dataSourceName>.<databaseSchemaName>`")
+      case _ => throw DDLFormatException("Illegal DDL format: expected `SET SCHEMA <dataSourceName>.<databaseSchemaName>`")
+    }
 
-  override protected def readSchema(graphName: GraphName): CAPSSchema =
-    CAPSSchema(
-      ddl.graphSchemas.getOrElse(graphName.value, notFound(graphName.value, ddl.graphSchemas.keySet))
-    )
+    val sqlDataSourceConfig = sqlDataSources.getOrElse(dataSourceName, throw SqlDataSourceConfigException(s"No configuration for $dataSourceName"))
 
-  override def store(graphName: GraphName, graph: PropertyGraph): Unit = unsupported("storing a graph")
+    val graphDefinition = ddl.graphByName(graphName.value)
 
-  override protected def writeSchema(graphName: GraphName, schema: CAPSSchema): Unit = ???
+    val nodeMappings: Map[Set[String], NodeMappingDefinition] = graphDefinition.nodeMappings.map(nm => nm.labelNames -> nm).toMap
 
-  override protected def readCAPSGraphMetaData(graphName: GraphName): CAPSGraphMetaData = ???
+    val nodeTables = graphSchema.labelCombinations.combos.map(combo => readNodeTable(combo, nodeMappings(combo), graphSchema, sqlDataSourceConfig)).toSeq
 
-  override protected def writeCAPSGraphMetaData(graphName: GraphName, capsGraphMetaData: CAPSGraphMetaData): Unit = ???
+    caps.graphs.create(nodeTables.head, nodeTables.tail: _*)
+  }
 
-  override protected def readNodeTable(graphName: GraphName, labels: Set[String], sparkSchema: StructType): DataFrame = ???
+  private def readNodeTable(labelCombination: Set[String], nodeMappingDefinition: NodeMappingDefinition, graphSchema: Schema, sqlDataSourceConfig: SqlDataSourceConfig): CAPSNodeTable = {
+    // TODO: getOrElse throw | empty node table
+    val tableName = nodeMappingDefinition.viewName
 
-  override protected def writeNodeTable(graphName: GraphName, labels: Set[String], table: DataFrame): Unit = ???
+    val propertyToColumnMapping = nodeMappingDefinition.maybePropertyMapping match {
+      case Some(propertyToColumnMappingDefinition) => propertyToColumnMappingDefinition
+        // for properties, column name is assumed to be the same as the property name
+      case None => graphSchema.nodePropertyKeys(labelCombination).map { case (key, _) => key -> key }
+    }
 
-  override protected def readRelationshipTable(graphName: GraphName, relKey: String, sparkSchema: StructType): DataFrame = ???
+    val spark = caps.sparkSession
 
-  override protected def writeRelationshipTable(graphName: GraphName, relKey: String, table: DataFrame): Unit = ???
+    val inputTable = sqlDataSourceConfig.storageFormat match {
+      case JdbcFormat =>
+        spark.read
+          .format("jdbc")
+          .option("url", sqlDataSourceConfig.jdbcUri.getOrElse(throw SqlDataSourceConfigException("Missing JDBC URI")))
+          .option("dbtable", tableName)
+          .option("driver", sqlDataSourceConfig.jdbcDriver.getOrElse(throw SqlDataSourceConfigException("Missing JDBC Driver")))
+          .option("fetchSize", sqlDataSourceConfig.jdbcFetchSize)
+          .load()
 
+      case HiveFormat => spark.table(tableName)
+
+      case otherFormat => notFound(otherFormat, Seq(JdbcFormat, HiveFormat))
+    }
+
+    val initialNodeMapping: NodeMapping = NodeMapping.on("id").withImpliedLabels(labelCombination.toSeq: _*)
+    val nodeMapping = propertyToColumnMapping.foldLeft(initialNodeMapping) {
+      case (currentNodeMapping, (propertyKey, columnName)) => currentNodeMapping.withPropertyKey(propertyKey -> columnName)
+    }
+
+    val nodeDf = inputTable.withColumn("id", functions.monotonically_increasing_id())
+
+    CAPSNodeTable.fromMapping(nodeMapping, nodeDf)
+  }
+
+  override def schema(name: GraphName): Option[Schema] = ddl.graphSchemas.get(name.value)
+
+  override def store(name: GraphName, graph: PropertyGraph): Unit = unsupported("storing a graph")
+
+  override def delete(name: GraphName): Unit = unsupported("deleting a graph")
+
+  override def graphNames: Set[GraphName] = ddl.graphByName.keySet.map(GraphName)
 
   private val className = getClass.getSimpleName
 
   private def unsupported(operation: String): Nothing =
     throw UnsupportedOperationException(s"$className does not allow $operation")
 
-  private def notFound(needle: Any, haystack: Traversable[Any]): Nothing =
+  private def notFound(needle: Any, haystack: Traversable[Any] = Traversable.empty): Nothing =
     throw IllegalArgumentException(
-      expected = s"one of ${stringList(haystack)}",
+      expected = if (haystack.nonEmpty) s"one of ${stringList(haystack)}" else "",
       actual = needle
     )
 
   private def stringList(elems: Traversable[Any]): String =
     elems.mkString("[", ",", "]")
-
-
 }

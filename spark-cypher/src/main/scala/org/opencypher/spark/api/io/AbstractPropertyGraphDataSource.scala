@@ -75,9 +75,9 @@ abstract class AbstractPropertyGraphDataSource extends CAPSPropertyGraphDataSour
 
   protected def writeCAPSGraphMetaData(graphName: GraphName, capsGraphMetaData: CAPSGraphMetaData): Unit
 
-  protected def readNodeTable(graphName: GraphName, labels: Set[String], sparkSchema: StructType): DataFrame
+  protected def readNodeTable(graphName: GraphName, labelCombination: Set[String], sparkSchema: StructType): DataFrame
 
-  protected def writeNodeTable(graphName: GraphName, labels: Set[String], table: DataFrame): Unit
+  protected def writeNodeTable(graphName: GraphName, labelCombination: Set[String], table: DataFrame): Unit
 
   protected def readRelationshipTable(graphName: GraphName, relKey: String, sparkSchema: StructType): DataFrame
 
