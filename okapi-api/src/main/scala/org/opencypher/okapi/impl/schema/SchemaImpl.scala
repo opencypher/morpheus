@@ -235,28 +235,66 @@ final case class SchemaImpl(
   }
 
   override def withNodeKey(label: String, nodeKey: Set[String]): Schema = {
-    if (labels.contains(label)) {
-      val propertyKeys = nodePropertyKeysForCombinations(combinationsFor(Set(label))).keySet
-
-      if (nodeKey.subsetOf(propertyKeys)) {
-        copy(nodeKeys = nodeKeys.updated(label, nodeKey))
-      } else {
-        throw SchemaException(
-          s"""|Invalid node key.
-              |Not all combinations that contain `$label` have all the properties for ${nodeKey.mkString("[", ", ", "]")}.
-              |Available keys: ${propertyKeys.mkString("[", ", ", "]")}""".stripMargin)
-      }
-    } else {
-      throw SchemaException(s"Unknown node label `$label`. Should be one of: ${labels.mkString("[", ", ", "]")}")
+    if (!labels.contains(label)) {
+      throw SchemaException(
+        s"""|Invalid node key.
+            |Unknown node label `$label`.
+            |Should be one of: ${labels.mkString("[", ", ", "]")}""".stripMargin)
     }
+
+    val propertyKeys = nodePropertyKeysForCombinations(combinationsFor(Set(label)))
+
+    if (!nodeKey.subsetOf(propertyKeys.keySet)) {
+      throw SchemaException(
+        s"""|Invalid node key.
+            |Not all combinations that contain `$label` have all the properties for ${nodeKey.mkString("[", ", ", "]")}.
+            |Available keys: ${propertyKeys.keySet.mkString("[", ", ", "]")}""".stripMargin)
+    }
+
+    val nullableProperties = propertyKeys.filter {
+      case (key, tpe) => nodeKey.contains(key) && tpe.isNullable
+    }
+
+    if (nullableProperties.nonEmpty) {
+      throw SchemaException(
+        s"""|Invalid node key.
+            |Properties ${nullableProperties.keySet.mkString("[", ", ", "]")} have nullable types.
+            |Nullable properties can not be part of a node key.""".stripMargin)
+    }
+
+    copy(nodeKeys = nodeKeys.updated(label, nodeKey))
+
   }
 
   override def withRelationshipKey(relationshipType: String, relationshipKey: Set[String]): Schema = {
-    if (relationshipTypes.contains(relationshipType)) {
-      copy(relationshipKeys = relationshipKeys.updated(relationshipType, relationshipKey))
-    } else {
-      throw SchemaException(s"Unknown relationship type `$relationshipType`. Should be one of: ${relationshipTypes.mkString("[", ", ", "]")}")
+    if (!relationshipTypes.contains(relationshipType)) {
+      throw SchemaException(
+        s"""|Invalid relationship key.
+            |Unknown relationship type `$relationshipType`.
+            |Should be one of: ${relationshipTypes.mkString("[", ", ", "]")}.""".stripMargin)
     }
+
+    val propertyKeys = relationshipPropertyKeys(relationshipType)
+
+    if (!relationshipKey.subsetOf(propertyKeys.keySet)) {
+      throw SchemaException(
+        s"""|Invalid relationship key.
+            |Relationship type `$relationshipType` does not have all the properties for ${relationshipKey.mkString("[", ", ", "]")}.
+            |Available keys: ${propertyKeys.keySet.mkString("[", ", ", "]")}""".stripMargin)
+    }
+
+    val nullableProperties = propertyKeys.filter {
+      case (key, tpe) => relationshipKey.contains(key) && tpe.isNullable
+    }
+
+    if (nullableProperties.nonEmpty) {
+      throw SchemaException(
+        s"""|Invalid relationship key.
+            |Properties ${nullableProperties.keySet.mkString("[", ", ", "]")} have nullable types.
+            |Nullable properties can not be part of a relationship key.""".stripMargin)
+    }
+
+    copy(relationshipKeys = relationshipKeys.updated(relationshipType, relationshipKey))
   }
 
   private def computePropertyTypes(existing: PropertyKeys, input: PropertyKeys): PropertyKeys = {
