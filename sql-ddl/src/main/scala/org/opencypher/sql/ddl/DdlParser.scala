@@ -182,13 +182,12 @@ object DdlParser {
       schemaPatternDefinition.rep(sep = ",".?).map(_.toSet) ~/ ";".?)
     .map(SchemaDefinition.tupled)
 
-  val globalSchemaDefinition: P[(String, SchemaDefinition)] = P(CREATE ~ GRAPH ~ SCHEMA ~/ identifier.! ~/
-    localSchemaDefinition)
+  val globalSchemaDefinition: P[(String, SchemaDefinition)] = P(CREATE ~ GRAPH ~ SCHEMA ~/ identifier.! ~/ localSchemaDefinition)
 
   // ==== Graph ====
 
   val propertyToColumn: P[(String, String)] = P(identifier.! ~/ AS ~/ identifier.!).map { case (column, propertyKey) => propertyKey -> column }
-  val propertyMappingDefinition: P[PropertyToColumnMappingDefinition] = P("(" ~/ propertyToColumn.rep(sep = ",").map(_.toMap) ~/ ")")
+  val propertyMappingDefinition: P[PropertyToColumnMappingDefinition] = P("(" ~/ propertyToColumn.rep(min = 1, sep = ",").map(_.toMap) ~/ ")")
 
   val nodeMappingDefinition: P[NodeMappingDefinition] = P(nodeDefinition ~/ FROM ~/ identifier.! ~/ propertyMappingDefinition.?).map(NodeMappingDefinition.tupled)
   val nodeMappings: P[List[NodeMappingDefinition]] = P(NODE ~/ LABEL ~/ SETS ~/ "(" ~/ nodeMappingDefinition.rep(sep = ",".?).map(_.toList) ~/ ")")
@@ -197,30 +196,19 @@ object DdlParser {
   val joinTuple: P[(ColumnIdentifier, ColumnIdentifier)] = P(columnIdentifier ~/ "=" ~/ columnIdentifier)
   val joinOnDefinition: P[JoinOnDefinition] = P(JOIN ~/ ON ~/ joinTuple.rep(min = 1, sep = AND)).map(_.toList).map(JoinOnDefinition)
 
-  val sourceViewDefinition: P[SourceViewDefinition] = P(
-    identifier.! ~/ identifier.!
-  ).map(SourceViewDefinition.tupled)
+  val sourceViewDefinition: P[SourceViewDefinition] = P(identifier.! ~/ identifier.!).map(SourceViewDefinition.tupled)
 
-  val labelToViewDefinition: P[LabelToViewDefinition] = P(
-    LABEL ~/ SET ~/ nodeDefinition ~/ FROM ~/ sourceViewDefinition ~/ joinOnDefinition
-  ).map(LabelToViewDefinition.tupled)
+  val labelToViewDefinition: P[LabelToViewDefinition] = P(LABEL ~/ SET ~/ nodeDefinition ~/ FROM ~/ sourceViewDefinition ~/ joinOnDefinition).map(LabelToViewDefinition.tupled)
 
-  val relationshipMappingDefinition: P[RelationshipMappingDefinition] = P(
-    FROM ~/ sourceViewDefinition ~/ START ~/ NODES ~/ labelToViewDefinition ~/ END ~/ NODES ~/ labelToViewDefinition
-  ).map(RelationshipMappingDefinition.tupled)
-
-  val relationshipLabelSetDefinition: P[RelationshipLabelSetDefinition] = P(
-    relDefinition ~ relationshipMappingDefinition.rep(min = 1, sep = ",".?).map(_.toList) ~/ ",".?
-  ).map(RelationshipLabelSetDefinition.tupled)
-
-  val relationshipLabelSetDefinitions: P[List[RelationshipLabelSetDefinition]] = P(
-    RELATIONSHIP ~/ LABEL ~/ SETS ~/ "(" ~/ relationshipLabelSetDefinition.rep(sep = ",".?).map(_.toList) ~/ ")"
-  )
+  val relationshipToViewDefinition: P[RelationshipToViewDefinition] = P(FROM ~/ sourceViewDefinition ~/ START ~/ NODES ~/ labelToViewDefinition ~/ END ~/ NODES ~/ labelToViewDefinition).map(RelationshipToViewDefinition.tupled)
+  val relationshipMappingDefinition: P[RelationshipMappingDefinition] = P(relDefinition ~ relationshipToViewDefinition.rep(min = 1, sep = ",".?).map(_.toList)).map(RelationshipMappingDefinition.tupled)
+  val relationshipMappings: P[List[RelationshipMappingDefinition]] = P(RELATIONSHIP ~/ LABEL ~/ SETS ~/ "(" ~ relationshipMappingDefinition.rep(min = 1, sep = ",".?).map(_.toList) ~/ ")")
 
   // TODO: this allows WITH SCHEMA with missing identifier and missing inline schema -> forbid
   val graphDefinition: P[GraphDefinition] = P(CREATE ~ GRAPH ~ identifier.! ~/ WITH ~/ GRAPH ~/ SCHEMA ~/ identifier.!.? ~/
     ("(" ~/ localSchemaDefinition ~/ ")").?.map(_.getOrElse(SchemaDefinition())) ~/
-    nodeMappings.?.map(_.getOrElse(Nil))
+    nodeMappings.?.map(_.getOrElse(Nil)) ~/
+    relationshipMappings.?.map(_.getOrElse(Nil))
   ).map(GraphDefinition.tupled)
 
   // ==== DDL ====
@@ -232,9 +220,7 @@ object DdlParser {
       setSchema.?.map(_.getOrElse(Nil)) ~/
       catalogLabelDefinition.rep.map(_.toList) ~/
       globalSchemaDefinition.rep.map(_.toMap) ~/
-      graphDefinition.rep.map(_.toList) ~/
-      nodeMappings.?.map(_.getOrElse(Nil)) ~/
-      relationshipLabelSetDefinitions.?.map(_.getOrElse(Nil)) ~/ End
+      graphDefinition.rep.map(_.toList) ~/ End
   ).map(DdlDefinitions.tupled)
 
 }

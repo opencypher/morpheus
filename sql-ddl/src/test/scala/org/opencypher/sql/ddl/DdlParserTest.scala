@@ -55,8 +55,7 @@ class DdlParserTest extends BaseTestSuite with MockitoSugar with TestNameFixture
 
     parsed match {
       case Failure(lastParser, _, extra) =>
-        println(lastParser)
-        println(extra.traced.expected)
+        debug(parser, input)
       case _ =>
     }
 
@@ -70,6 +69,21 @@ class DdlParserTest extends BaseTestSuite with MockitoSugar with TestNameFixture
       case Failure(_, _, _) =>
     }
   }
+
+  def debug[T](parser: fastparse.core.Parser[T, Char, String], input: String): T = {
+    parser.parse(input) match {
+      case Success(v, _) => v
+      case Failure(failedParser, index, extra) =>
+        val before = index - math.max(index - 20, 0)
+        val after = math.min(index + 20, extra.input.length) - index
+        val locationPointer =
+          s"""|\t${extra.input.slice(index - before, index + after).replace('\n', ' ')}
+              |\t${"~" * before + "^" + "~" * after}
+           """.stripMargin
+        throw DdlParsingException(index, locationPointer, extra.traced.expected, extra.traced.stack.toList)
+    }
+  }
+
 
   val emptyMap = Map.empty[String, CypherType]
   val emptyList: List[Nothing] = List.empty[Nothing]
@@ -283,18 +297,12 @@ class DdlParserTest extends BaseTestSuite with MockitoSugar with TestNameFixture
   }
 
   describe("graph definitions") {
-    it("parses a graph definition") {
-      graphDefinition.parse(
-        "CREATE GRAPH myGraph WITH GRAPH SCHEMA foo") should matchPattern {
-        case Success(GraphDefinition("myGraph", Some("foo"), `emptySchemaDef`, `emptyList`), _) =>
-      }
+    it("parses CREATE GRAPH myGraph WITH GRAPH SCHEMA foo") {
+      success(graphDefinition, GraphDefinition("myGraph", Some("foo")))
     }
 
-    it("parses a graph definition with a schema reference") {
-      graphDefinition.parse(
-        "CREATE GRAPH myGraph WITH GRAPH SCHEMA mySchema") should matchPattern {
-        case Success(GraphDefinition("myGraph", Some("mySchema"), `emptySchemaDef`, `emptyList`), _) =>
-      }
+    it("parses CREATE GRAPH myGraph WITH GRAPH SCHEMA mySchema") {
+      success(graphDefinition, GraphDefinition("myGraph", Some("mySchema")))
     }
 
     it("parses a graph definition with inlined schema") {
@@ -312,7 +320,7 @@ class DdlParserTest extends BaseTestSuite with MockitoSugar with TestNameFixture
            | [B]
            |)
         """.stripMargin) should matchPattern {
-        case Success(GraphDefinition("myGraph", None, `expectedSchemaDefinition`, `emptyList`), _) =>
+        case Success(GraphDefinition("myGraph", None, `expectedSchemaDefinition`, `emptyList`, `emptyList`), _) =>
       }
     }
   }
@@ -354,7 +362,7 @@ class DdlParserTest extends BaseTestSuite with MockitoSugar with TestNameFixture
            |    LABEL SET (C) FROM bar alias_bar JOIN ON alias_bar.COLUMN_A = edge.COLUMN_A
         """.stripMargin
 
-      success(relationshipMappingDefinition, input, RelationshipMappingDefinition(
+      success(relationshipToViewDefinition, input, RelationshipToViewDefinition(
         sourceView = SourceViewDefinition("baz", "alias_baz"),
         startNodeMappingDefinition = LabelToViewDefinition(
           Set("A", "B"),
@@ -382,7 +390,7 @@ class DdlParserTest extends BaseTestSuite with MockitoSugar with TestNameFixture
            |      LABEL SET (B) FROM bar alias_bar JOIN ON alias_bar.COLUMN_A = edge.COLUMN_A
         """.stripMargin
 
-      val relMappingDef = RelationshipMappingDefinition(
+      val relMappingDef = RelationshipToViewDefinition(
         sourceView = SourceViewDefinition("baz", "alias_baz"),
         startNodeMappingDefinition = LabelToViewDefinition(
           Set("A"),
@@ -393,9 +401,8 @@ class DdlParserTest extends BaseTestSuite with MockitoSugar with TestNameFixture
           SourceViewDefinition("bar", "alias_bar"),
           JoinOnDefinition(List((List("alias_bar", "COLUMN_A"), List("edge", "COLUMN_A")))))
       )
-      success(relationshipLabelSetDefinition, input, RelationshipLabelSetDefinition("TYPE_1", List(relMappingDef, relMappingDef)))
+      success(relationshipMappingDefinition, input, RelationshipMappingDefinition("TYPE_1", List(relMappingDef, relMappingDef)))
     }
-
 
     it("parses relationship label sets") {
       val input =
@@ -429,7 +436,7 @@ class DdlParserTest extends BaseTestSuite with MockitoSugar with TestNameFixture
            |    )
         """.stripMargin
 
-      val relMappingDef = RelationshipMappingDefinition(
+      val relMappingDef = RelationshipToViewDefinition(
         sourceView = SourceViewDefinition("baz", "alias_baz"),
         startNodeMappingDefinition = LabelToViewDefinition(
           Set("A"),
@@ -441,10 +448,10 @@ class DdlParserTest extends BaseTestSuite with MockitoSugar with TestNameFixture
           JoinOnDefinition(List((List("alias_bar", "COLUMN_A"), List("edge", "COLUMN_A")))))
       )
 
-      success(relationshipLabelSetDefinitions, input,
+      success(relationshipMappings, input,
         List(
-          RelationshipLabelSetDefinition("TYPE_1", List(relMappingDef, relMappingDef)),
-          RelationshipLabelSetDefinition("TYPE_2", List(relMappingDef, relMappingDef))
+          RelationshipMappingDefinition("TYPE_1", List(relMappingDef, relMappingDef)),
+          RelationshipMappingDefinition("TYPE_2", List(relMappingDef, relMappingDef))
         ))
     }
   }
@@ -486,7 +493,17 @@ class DdlParserTest extends BaseTestSuite with MockitoSugar with TestNameFixture
          |    (A) FROM foo
          |  )
          |
-  """.stripMargin)
+         |  RELATIONSHIP LABEL SETS (
+         |
+         |        [TYPE_1]
+         |          FROM baz alias_baz
+         |            START NODES
+         |              LABEL SET (A) FROM foo alias_foo JOIN ON alias_foo.COLUMN_A = edge.COLUMN_A
+         |            END NODES
+         |              LABEL SET (B) FROM bar alias_bar JOIN ON alias_bar.COLUMN_A = edge.COLUMN_A
+         |    )
+      """.stripMargin)
+
     ddlDefinition should equalWithTracing(
       DdlDefinitions(
         setSchema = List("foo", "bar"),
@@ -503,7 +520,22 @@ class DdlParserTest extends BaseTestSuite with MockitoSugar with TestNameFixture
           nodeDefinitions = Set(Set("A"), Set("B"), Set("A", "B"), Set("C")),
           relDefinitions = Set("TYPE_1", "TYPE_2"),
           schemaPatternDefinitions = Set(SchemaPatternDefinition(Set(Set("A")), CardinalityConstraint(0, None), Set("TYPE_1"), CardinalityConstraint(1, Some(1)), Set(Set("B")))))),
-        graphDefinitions = List(GraphDefinition("myGraph", Some("mySchema"), emptySchemaDef, List(NodeMappingDefinition(Set("A"), "foo"))))
+        graphDefinitions = List(GraphDefinition(
+          name = "myGraph",
+          maybeSchemaName = Some("mySchema"),
+          localSchemaDefinition = emptySchemaDef,
+          nodeMappings = List(NodeMappingDefinition(Set("A"), "foo")),
+          relationshipMappings = List(RelationshipMappingDefinition("TYPE_1", List(RelationshipToViewDefinition(
+            sourceView = SourceViewDefinition("baz", "alias_baz"),
+            startNodeMappingDefinition = LabelToViewDefinition(
+              Set("A"),
+              SourceViewDefinition("foo", "alias_foo"),
+              JoinOnDefinition(List((List("alias_foo", "COLUMN_A"), List("edge", "COLUMN_A"))))),
+            endNodeMappingDefinition = LabelToViewDefinition(
+              Set("B"),
+              SourceViewDefinition("bar", "alias_bar"),
+              JoinOnDefinition(List((List("alias_bar", "COLUMN_A"), List("edge", "COLUMN_A")))))
+          ))))))
       )
     )
 

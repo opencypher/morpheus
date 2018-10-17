@@ -52,9 +52,7 @@ case class DdlDefinitions(
   setSchema: List[String] = Nil,
   labelDefinitions: List[LabelDefinition] = Nil,
   schemaDefinitions: Map[String, SchemaDefinition] = Map.empty,
-  graphDefinitions: List[GraphDefinition] = Nil,
-  nodeMappings: List[NodeMappingDefinition] = Nil,
-  relationshipLabelSets: List[RelationshipLabelSetDefinition] = Nil
+  graphDefinitions: List[GraphDefinition] = Nil
 ) extends DdlAst {
 
   private[ddl] lazy val globalLabelDefinitions: Map[String, LabelDefinition] = labelDefinitions.map(labelDef => labelDef.name -> labelDef).toMap
@@ -122,7 +120,7 @@ case class DdlDefinitions(
   }
 
   lazy val graphSchemas: Map[String, Schema] = graphDefinitions.map {
-    case GraphDefinition(name, maybeSchemaName, localSchemaDefinition, _) =>
+    case GraphDefinition(name, maybeSchemaName, localSchemaDefinition, _, _) =>
       val globalSchema = maybeSchemaName match {
         case Some(schemaName) => globalSchemas(schemaName)
         case None => Schema.empty
@@ -150,7 +148,8 @@ case class GraphDefinition(
   name: String,
   maybeSchemaName: Option[String] = None,
   localSchemaDefinition: SchemaDefinition = SchemaDefinition(),
-  nodeMappings: List[NodeMappingDefinition] = List.empty
+  nodeMappings: List[NodeMappingDefinition] = List.empty,
+  relationshipMappings: List[RelationshipMappingDefinition] = List.empty
 ) extends DdlAst
 
 case class CardinalityConstraint(from: Int, to: Option[Int])
@@ -179,13 +178,13 @@ case class LabelToViewDefinition(
   joinOn: JoinOnDefinition
 ) extends DdlAst
 
-case class RelationshipMappingDefinition(
+case class RelationshipToViewDefinition(
   sourceView: SourceViewDefinition,
   startNodeMappingDefinition: LabelToViewDefinition,
   endNodeMappingDefinition: LabelToViewDefinition
 ) extends DdlAst
 
-case class RelationshipLabelSetDefinition(
+case class RelationshipMappingDefinition(
   relType: String,
-  relationshipMappings: List[RelationshipMappingDefinition]
+  relationshipMappings: List[RelationshipToViewDefinition]
 ) extends DdlAst
