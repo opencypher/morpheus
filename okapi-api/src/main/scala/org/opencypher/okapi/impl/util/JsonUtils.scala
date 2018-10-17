@@ -24,31 +24,27 @@
  * described as "implementation extensions to Cypher" or as "proposed changes to
  * Cypher that are not yet approved by the openCypher community".
  */
-package org.opencypher.sql.ddl
+package org.opencypher.okapi.impl.util
 
-import org.opencypher.okapi.testing.BaseTestSuite
-import org.opencypher.sql.ddl.DdlParser.parse
+object JsonUtils {
 
-import scala.io.Source
+  /**
+    * upickle by default represents Options as json arrays of 0 (None case) or 1 (Some case) elements. This overwrites
+    * this behaviour and either skips the key-value pair entirely (None case) or just prints `key : value` (Some case).
+    *
+    * Note that this does not support nesting options.
+    */
+  object FlatOption extends upickle.AttributeTagged {
+    override implicit def OptionWriter[T: Writer]: Writer[Option[T]] =
+      implicitly[Writer[T]].comap[Option[T]] {
+        case None => null.asInstanceOf[T]
+        case Some(x) => x
+      }
 
-class DdlFullExampleTests extends BaseTestSuite {
-
-  it("parses the Northwind graph DDL") {
-    val northwindUrl = getClass.getResource("/northwind-graph.ddl")
-    val northwindDdlString = Source.fromURL(northwindUrl).getLines.mkString("\n")
-    val parsed = parse(northwindDdlString)
-    // TODO: write expectation :)
-//    parsed.show()
+    override implicit def OptionReader[T: Reader]: Reader[Option[T]] =
+      implicitly[Reader[T]].mapNulls{
+        case null => None
+        case x => Some(x)
+      }
   }
-
-  it("parses the Census graph DDL") {
-    val censusUrl = getClass.getResource("/census-graph.ddl")
-    val censusDdlString = Source.fromURL(censusUrl).getLines.mkString("\n")
-    val parsed = parse(censusDdlString)
-    // TODO: write expectation :)
-//    parsed.show()
-  }
-
-  // TODO: write test that covers all possibilities of DDL
-
 }

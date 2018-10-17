@@ -1,0 +1,28 @@
+[
+  {
+    "storageFormat": "jdbc",
+    "dataSourceName": "CENSUS_ORACLE",
+    "schemaName": "CENSUS",
+    "jdbcUri": "jdbc:h2:mem:CENSUS.db;INIT=CREATE SCHEMA IF NOT EXISTS CENSUS;DB_CLOSE_DELAY=30;",
+    "jdbcDriver": "org.h2.Driver",
+    "jdbcFetchSize": 100
+  },
+  {
+    "storageFormat": "jdbc",
+    "dataSourceName": "ORACLE_X2",
+    "schemaName": "X2",
+    "jdbcUri": "jdbc:h2:mem:X2.db;INIT=CREATE SCHEMA IF NOT EXISTS X2;DB_CLOSE_DELAY=30;",
+    "jdbcDriver": "org.h2.Driver",
+    "jdbcFetchSize": 10
+  },
+  {
+    "storageFormat": "hive",
+    "dataSourceName": "HIVE_CENSUS",
+    "schemaName": "CENSUS"
+  },
+  {
+    "storageFormat": "hive",
+    "dataSourceName": "HIVE_X2",
+    "schemaName": "X2"
+  }
+]
