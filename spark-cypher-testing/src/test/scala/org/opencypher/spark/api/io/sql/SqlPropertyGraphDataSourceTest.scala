@@ -15,25 +15,27 @@ class SqlPropertyGraphDataSourceTest extends CAPSTestSuite {
   private val fooViewName = "fooView"
   private val fooGraphName = GraphName("fooGraph")
 
+  private def computePartitionedRowId(rowIndex: Long, partitionStartDelta: Long): Long = {
+    rowIndex + (partitionStartDelta << rowIdSpaceBitsUsedByMonotonicallyIncreasingId)
+  }
+
   it("adds deltas to generated ids") {
     import sparkSession.implicits._
     val df = sparkSession.createDataFrame(Seq(Tuple1("A"), Tuple1("B"), Tuple1("C"))).toDF("alphabet")
     val withIds = df.withColumn("id", partitioned_id_assignment(0))
     val vanillaIds = List(0, 1, 2)
     withIds.select("id").collect().map(row => row.get(0)).toList should equal(vanillaIds)
-
     val idsWithDeltaAdded = df.withColumn("id", partitioned_id_assignment(2))
-    def withDeltaAdded(id: Long, delta: Long, partitionId: Long = 0): Long = id + ((delta + partitionId) << rowIdSpaceBitsUsedByMonotonicallyIncreasingId)
     val resultWithDelta = idsWithDeltaAdded.select("id").collect().map(row => row.get(0))
-    resultWithDelta should equal(vanillaIds.map(withDeltaAdded(_, 2)))
+    resultWithDelta should equal(vanillaIds.map(computePartitionedRowId(_, 2)))
     resultWithDelta should equal(List(0x400000000L, 0x400000001L, 0x400000002L))
 
     val largeDf = sparkSession.sparkContext.parallelize(
       Seq.fill(100){Tuple1("foo")}, 100
     ).toDF("fooCol")
     val largeDfWithIds = largeDf.withColumn("id", partitioned_id_assignment(100))
-    val largeResultWithDelta = largeDfWithIds.select("id").collect().map(row => row.get(0)).map(_.asInstanceOf[Long] >> 33).sorted.toList
-    val expectation = (0L until 100L).map(withDeltaAdded(0, 100L, _)).map(_ >> rowIdSpaceBitsUsedByMonotonicallyIncreasingId).sorted.toList
+    val largeResultWithDelta = largeDfWithIds.select("id").collect().map(row => row.get(0).asInstanceOf[Long]).map(_ >> 33).sorted.toList
+    val expectation = (0L until 100L).map(rowIndex => computePartitionedRowId(rowIndex, 100L + rowIndex)).map(_ >> 33).sorted.toList
     largeResultWithDelta should equal(expectation)
   }
 
@@ -99,14 +101,9 @@ class SqlPropertyGraphDataSourceTest extends CAPSTestSuite {
     val graph = ds.graph(fooGraphName)
 
     graph.nodes("n").toMapsWithCollectedEntities should equal(Bag(
-      CypherMap("n" -> CAPSNode(0, Set("Foo"), CypherMap("foo" -> "Alice"))),
-      CypherMap("n" -> CAPSNode(0, Set("Bar"), CypherMap("bar" -> 0L)))
+      CypherMap("n" -> CAPSNode(computePartitionedRowId(rowIndex = 0, partitionStartDelta = 0), Set("Foo"), CypherMap("foo" -> "Alice"))),
+      CypherMap("n" -> CAPSNode(computePartitionedRowId(rowIndex = 0, partitionStartDelta = 1), Set("Bar"), CypherMap("bar" -> 0L)))
     ))
-
-    val df = sparkSession.createDataFrame(Seq(Tuple1("Alice")))
-      .toDF("foo")
-
-    //df.rdd.getNumPartitions()
   }
 
 }

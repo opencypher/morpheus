@@ -49,7 +49,7 @@ object CAPSFunctions {
 
   val rangeUdf = udf[Array[Int], Int, Int, Int]((from: Int, to: Int, step: Int) => from.to(to, step).toArray)
 
-  val rowIdSpaceBitsUsedByMonotonicallyIncreasingId = 33
+  private[spark] val rowIdSpaceBitsUsedByMonotonicallyIncreasingId = 33
 
   /**
     * Configurable wrapper around `monotonically_increasing_id`

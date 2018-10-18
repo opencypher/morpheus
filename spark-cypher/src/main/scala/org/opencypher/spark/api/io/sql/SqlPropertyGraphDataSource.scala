@@ -26,13 +26,14 @@
  */
 package org.opencypher.spark.api.io.sql
 
-import org.apache.spark.sql.functions
+import org.apache.spark.sql.DataFrame
 import org.opencypher.okapi.api.graph.{GraphName, PropertyGraph}
 import org.opencypher.okapi.api.io.conversion.NodeMapping
 import org.opencypher.okapi.api.schema.Schema
 import org.opencypher.okapi.impl.exception.{IllegalArgumentException, UnsupportedOperationException}
 import org.opencypher.spark.api.CAPSSession
 import org.opencypher.spark.api.io.{CAPSNodeTable, HiveFormat, JdbcFormat}
+import org.opencypher.spark.impl.CAPSFunctions.partitioned_id_assignment
 import org.opencypher.spark.impl.io.CAPSPropertyGraphDataSource
 import org.opencypher.sql.ddl.{DdlDefinitions, NodeMappingDefinition, SetSchemaDefinition}
 
@@ -46,7 +47,7 @@ case class SqlPropertyGraphDataSource(
   override def hasGraph(graphName: GraphName): Boolean = ddl.graphByName.contains(graphName.value)
 
   override def graph(graphName: GraphName): PropertyGraph = {
-    val graphSchema = schema(graphName).getOrElse(notFound(s"schema for graph $graphName", ddl.graphSchemas.keySet) )
+    val graphSchema = schema(graphName).getOrElse(notFound(s"schema for graph $graphName", ddl.graphSchemas.keySet))
 
     val (dataSourceName, databaseName) = ddl.setSchema match {
       case Some(SetSchemaDefinition(dsName, Some(dbName))) => dsName -> dbName
@@ -60,23 +61,52 @@ case class SqlPropertyGraphDataSource(
 
     val graphDefinition = ddl.graphByName(graphName.value)
 
-    val nodeMappings: Map[Set[String], NodeMappingDefinition] = graphDefinition.nodeMappings.map(nm => nm.labelNames -> nm).toMap
+    val comboToNodeMapping: Map[Set[String], NodeMappingDefinition] = graphDefinition.nodeMappings.map(nm => nm.labelNames -> nm).toMap
 
-    val nodeTables = graphSchema.labelCombinations.combos.map(combo => readNodeTable(combo, nodeMappings(combo), graphSchema, sqlDataSourceConfig)).toSeq
+    // TODO: Add ability to map multiple views/DFs to the same combo
+    val nodeDataFramesWithoutIds: Seq[(Set[String], DataFrame)] = graphSchema.labelCombinations.combos.toSeq
+      .map(combo => combo -> readNodeTable(combo, comboToNodeMapping(combo).viewName, sqlDataSourceConfig))
+
+    val dfPartitionCounts = nodeDataFramesWithoutIds.map(_._2.rdd.getNumPartitions)
+    val dfPartitionStartDeltas = dfPartitionCounts.scan(0)(_ + _).dropRight(1) // drop last delta, as we don't need it
+
+    // TODO: Ensure added id does not collide with a property called `id`
+    val nodeDataFramesWithIds: Seq[(Set[String], DataFrame)] = nodeDataFramesWithoutIds.zip(dfPartitionStartDeltas).map {
+      case ((combo, df), partitionStartDelta) =>
+        val dfWithIdColumn = df.withColumn("id", partitioned_id_assignment(partitionStartDelta))
+        combo -> dfWithIdColumn
+    }
+
+    val nodeTables: Seq[CAPSNodeTable] = nodeDataFramesWithIds.map { case (combo, df) =>
+      val nodeMapping = computeNodeMapping(combo, graphSchema, comboToNodeMapping(combo))
+      CAPSNodeTable.fromMapping(nodeMapping, df)
+    }
 
     caps.graphs.create(nodeTables.head, nodeTables.tail: _*)
   }
 
-  private def readNodeTable(labelCombination: Set[String], nodeMappingDefinition: NodeMappingDefinition, graphSchema: Schema, sqlDataSourceConfig: SqlDataSourceConfig): CAPSNodeTable = {
-    // TODO: getOrElse throw | empty node table
-    val tableName = nodeMappingDefinition.viewName
-
+  private def computeNodeMapping(
+    labelCombination: Set[String],
+    graphSchema: Schema,
+    nodeMappingDefinition: NodeMappingDefinition
+  ): NodeMapping = {
     val propertyToColumnMapping = nodeMappingDefinition.maybePropertyMapping match {
       case Some(propertyToColumnMappingDefinition) => propertyToColumnMappingDefinition
-        // for properties, column name is assumed to be the same as the property name
+      // TODO: support unicode characters in properties and ensure there are no collisions with column name `id`
       case None => graphSchema.nodePropertyKeys(labelCombination).map { case (key, _) => key -> key }
     }
+    val initialNodeMapping: NodeMapping = NodeMapping.on("id").withImpliedLabels(labelCombination.toSeq: _*)
+    val nodeMapping = propertyToColumnMapping.foldLeft(initialNodeMapping) {
+      case (currentNodeMapping, (propertyKey, columnName)) => currentNodeMapping.withPropertyKey(propertyKey -> columnName)
+    }
+    nodeMapping
+  }
 
+  private def readNodeTable(
+    labelCombination: Set[String],
+    viewName: String,
+    sqlDataSourceConfig: SqlDataSourceConfig
+  ): DataFrame = {
     val spark = caps.sparkSession
 
     val inputTable = sqlDataSourceConfig.storageFormat match {
@@ -86,23 +116,17 @@ case class SqlPropertyGraphDataSource(
           .option("url", sqlDataSourceConfig.jdbcUri.getOrElse(throw SqlDataSourceConfigException("Missing JDBC URI")))
           .option("driver", sqlDataSourceConfig.jdbcDriver.getOrElse(throw SqlDataSourceConfigException("Missing JDBC Driver")))
           .option("fetchSize", sqlDataSourceConfig.jdbcFetchSize)
-          .option("dbtable", tableName)
+          .option("dbtable", viewName)
           .load()
 
-      case HiveFormat => spark.table(tableName)
+      case HiveFormat => spark.table(viewName)
 
       case otherFormat => notFound(otherFormat, Seq(JdbcFormat, HiveFormat))
     }
 
-    val initialNodeMapping: NodeMapping = NodeMapping.on("id").withImpliedLabels(labelCombination.toSeq: _*)
-    val nodeMapping = propertyToColumnMapping.foldLeft(initialNodeMapping) {
-      case (currentNodeMapping, (propertyKey, columnName)) => currentNodeMapping.withPropertyKey(propertyKey -> columnName)
-    }
-
-    val nodeDf = inputTable.withColumn("id", functions.monotonically_increasing_id())
-
-    CAPSNodeTable.fromMapping(nodeMapping, nodeDf)
+    inputTable
   }
+
 
   override def schema(name: GraphName): Option[Schema] = ddl.graphSchemas.get(name.value)
 
