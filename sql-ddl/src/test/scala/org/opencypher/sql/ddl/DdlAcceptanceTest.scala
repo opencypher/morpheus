@@ -92,6 +92,26 @@ class DdlAcceptanceTest extends BaseTestSuite {
       )
     }
 
+    it("prefers local label over global label") {
+      val gName = "test"
+
+      val ddl =
+        s"""
+           |CATALOG CREATE LABEL (Node {val: String})
+           |
+           |CREATE GRAPH SCHEMA foo
+           |  LABEL (Node { foo : Integer })
+           |  (Node)
+           |
+           |CREATE GRAPH $gName WITH GRAPH SCHEMA foo
+           |""".stripMargin
+
+
+      parse(ddl).graphSchemas(gName) should equal(
+        Schema.empty.withNodePropertyKeys("Node")("foo" -> CTInteger)
+      )
+    }
+
     it("can construct schema with node labels with element key") {
       val gName = "test"
 

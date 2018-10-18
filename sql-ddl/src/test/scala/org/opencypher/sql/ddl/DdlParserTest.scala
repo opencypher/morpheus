@@ -386,7 +386,7 @@ class DdlParserTest extends BaseTestSuite with MockitoSugar with TestNameFixture
 
     it("parses a relationship label set definition") {
       val input =
-        """|[TYPE_1]
+        """|(TYPE_1)
            |  FROM baz alias_baz
            |    START NODES
            |      LABEL SET (A) FROM foo alias_foo JOIN ON alias_foo.COLUMN_A = edge.COLUMN_A
@@ -417,7 +417,7 @@ class DdlParserTest extends BaseTestSuite with MockitoSugar with TestNameFixture
       val input =
         """|RELATIONSHIP LABEL SETS (
            |
-           |        [TYPE_1]
+           |        (TYPE_1)
            |          FROM baz alias_baz
            |            START NODES
            |              LABEL SET (A) FROM foo alias_foo JOIN ON alias_foo.COLUMN_A = edge.COLUMN_A
@@ -429,7 +429,7 @@ class DdlParserTest extends BaseTestSuite with MockitoSugar with TestNameFixture
            |            END NODES
            |              LABEL SET (B) FROM bar alias_bar JOIN ON alias_bar.COLUMN_A = edge.COLUMN_A
            |
-           |        [TYPE_2]
+           |        (TYPE_2)
            |          FROM baz alias_baz
            |            START NODES
            |              LABEL SET (A) FROM foo alias_foo JOIN ON alias_foo.COLUMN_A = edge.COLUMN_A
@@ -504,7 +504,7 @@ class DdlParserTest extends BaseTestSuite with MockitoSugar with TestNameFixture
          |
          |  RELATIONSHIP LABEL SETS (
          |
-         |        [TYPE_1]
+         |        (TYPE_1)
          |          FROM baz alias_baz
          |            START NODES
          |              LABEL SET (A) FROM foo alias_foo JOIN ON alias_foo.COLUMN_A = edge.COLUMN_A
