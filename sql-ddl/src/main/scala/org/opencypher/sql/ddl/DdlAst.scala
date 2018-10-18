@@ -28,7 +28,7 @@ package org.opencypher.sql.ddl
 
 import org.opencypher.okapi.api.schema.{PropertyKeys, Schema, SchemaPattern}
 import org.opencypher.okapi.api.types.CypherType
-import org.opencypher.okapi.impl.exception.IllegalArgumentException
+import org.opencypher.okapi.impl.exception.{IllegalArgumentException, SchemaException}
 import org.opencypher.okapi.trees.AbstractTreeNode
 import org.opencypher.sql.ddl.Ddl._
 
@@ -80,7 +80,16 @@ case class DdlDefinitions(
     val schemaWithNodes = (nodeDefinitionsFromPatterns ++ schemaDefinition.nodeDefinitions).foldLeft(Schema.empty) {
       case (currentSchema, labelCombo) =>
         val comboProperties = labelCombo.foldLeft(PropertyKeys.empty) { case (currProps, label) =>
-          currProps ++ labelDefinitions.getOrElse(label, throw undefinedLabelException(label)).properties
+          val labelProperties = labelDefinitions.getOrElse(label, throw undefinedLabelException(label)).properties
+          currProps.keySet.intersect(labelProperties.keySet).foreach { key =>
+            if (currProps(key) != labelProperties(key)) {
+              throw SchemaException(
+                s"""|Incompatible property types for label combination (${labelCombo.mkString(",")})
+                    |Property key `$key` has conflicting types ${currProps(key)} and ${labelProperties(key)}
+                 """.stripMargin)
+            }
+          }
+          currProps ++ labelProperties
         }
         currentSchema.withNodePropertyKeys(labelCombo, comboProperties)
     }

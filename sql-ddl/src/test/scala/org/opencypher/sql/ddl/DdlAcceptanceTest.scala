@@ -28,6 +28,7 @@ package org.opencypher.sql.ddl
 
 import org.opencypher.okapi.api.schema.{Schema, SchemaPattern}
 import org.opencypher.okapi.api.types.{CTBoolean, CTInteger, CTString}
+import org.opencypher.okapi.impl.exception.SchemaException
 import org.opencypher.okapi.testing.BaseTestSuite
 import org.opencypher.sql.ddl.DdlParser._
 
@@ -210,6 +211,61 @@ class DdlAcceptanceTest extends BaseTestSuite {
           .withSchemaPatterns(SchemaPattern(Set("MyLabel"), "REL_TYPE1", Set("LocalLabel1")))
           .withSchemaPatterns(SchemaPattern(Set("LocalLabel1", "LocalLabel2"), "REL_TYPE2", Set("MyLabel")))
       )
+    }
+
+    it("merges property keys for label combination") {
+      // Given
+      val ddl =
+        """
+          |CATALOG CREATE LABEL (A {foo: STRING})
+          |CATALOG CREATE LABEL (B {bar: STRING})
+          |
+          |CREATE GRAPH SCHEMA mySchema
+          |  (A),
+          |  (A, B)
+        """.stripMargin
+
+      parse(ddl).globalSchemas("mySchema") should equal(
+        Schema.empty
+          .withNodePropertyKeys("A")("foo" -> CTString)
+          .withNodePropertyKeys("A", "B")("foo" -> CTString, "bar" -> CTString)
+      )
+    }
+
+    it("merges identical property keys with same type") {
+      // Given
+      val ddl =
+        """
+          |CATALOG CREATE LABEL (A {foo: STRING})
+          |CATALOG CREATE LABEL (B {foo: STRING})
+          |
+          |CREATE GRAPH SCHEMA mySchema
+          |  (A),
+          |  (A, B)
+        """.stripMargin
+
+      parse(ddl).globalSchemas("mySchema") should equal(
+        Schema.empty
+          .withNodePropertyKeys("A")("foo" -> CTString)
+          .withNodePropertyKeys("A", "B")("foo" -> CTString)
+      )
+    }
+
+    it("throws when merging identical property keys with conflicting types") {
+      // Given
+      val ddl =
+        """
+          |CATALOG CREATE LABEL (A {foo: STRING})
+          |CATALOG CREATE LABEL (B {foo: INTEGER})
+          |
+          |CREATE GRAPH SCHEMA mySchema
+          |  (A),
+          |  (A, B)
+        """.stripMargin
+
+      an[SchemaException] shouldBe thrownBy {
+        parse(ddl).globalSchemas("mySchema")
+      }
     }
   }
 
