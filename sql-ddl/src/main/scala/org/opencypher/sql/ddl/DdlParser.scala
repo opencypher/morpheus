@@ -186,8 +186,8 @@ object DdlParser {
 
   // ==== Graph ====
 
-  val propertyToColumn: P[(String, String)] = P(identifier.! ~/ AS ~/ identifier.!).map { case (column, propertyKey) => propertyKey -> column }
-  val propertyMappingDefinition: P[PropertyToColumnMappingDefinition] = P("(" ~/ propertyToColumn.rep(min = 1, sep = ",").map(_.toMap) ~/ ")")
+  val propertyToColumn: P[(String, String)] = P(identifier.! ~ AS ~/ identifier.!).map { case (column, propertyKey) => propertyKey -> column }
+  val propertyMappingDefinition: P[PropertyToColumnMappingDefinition] = P("(" ~ propertyToColumn.rep(min = 1, sep = ",").map(_.toMap) ~/ ")")
 
   val nodeMappingDefinition: P[NodeMappingDefinition] = P(nodeDefinition ~/ FROM ~/ identifier.! ~/ propertyMappingDefinition.?).map(NodeMappingDefinition.tupled)
   val nodeMappings: P[List[NodeMappingDefinition]] = P(NODE ~/ LABEL ~/ SETS ~/ "(" ~/ nodeMappingDefinition.rep(sep = ",".?).map(_.toList) ~/ ")")

@@ -335,6 +335,15 @@ class DdlParserTest extends BaseTestSuite with MockitoSugar with TestNameFixture
       success(nodeMappingDefinition, NodeMappingDefinition(Set("A"), "view", Some(Map("propertyKey1" -> "column1", "propertyKey2" -> "column2"))))
     }
 
+    it("parses NODE LABEL SETS ( (A) FROM viewA (B) FROM viewB )") {
+      success(nodeMappings, List(NodeMappingDefinition(Set("A"), "viewA"), NodeMappingDefinition(Set("B"), "viewB")))
+    }
+
+    it("parses NODE LABEL SETS ( (A) FROM viewA (column1 AS propertyKey1, column2 AS propertyKey2) (B) FROM viewB (column1 AS propertyKey1, column2 AS propertyKey2) )") {
+      success(nodeMappings, List(NodeMappingDefinition(Set("A"), "viewA", Some(Map("propertyKey1" -> "column1", "propertyKey2" -> "column2"))),
+        NodeMappingDefinition(Set("B"), "viewB", Some(Map("propertyKey1" -> "column1", "propertyKey2" -> "column2")))))
+    }
+
     it("parses JOIN ON view_a.COLUMN_A = view_b.COLUMN_B") {
       success(joinOnDefinition, JoinOnDefinition(List((List("view_a", "COLUMN_A"), List("view_b", "COLUMN_B")))))
     }
