@@ -29,7 +29,7 @@ package org.opencypher.spark.impl
 import org.apache.spark.sql.catalyst.analysis.UnresolvedExtractValue
 import org.apache.spark.sql.catalyst.expressions.ArrayContains
 import org.apache.spark.sql.expressions.UserDefinedFunction
-import org.apache.spark.sql.functions.udf
+import org.apache.spark.sql.functions.{monotonically_increasing_id, udf}
 import org.apache.spark.sql.types.{ArrayType, StringType}
 import org.apache.spark.sql.{Column, functions}
 
@@ -48,6 +48,20 @@ object CAPSFunctions {
   }
 
   val rangeUdf = udf[Array[Int], Int, Int, Int]((from: Int, to: Int, step: Int) => from.to(to, step).toArray)
+
+  val rowIdSpaceBitsUsedByMonotonicallyIncreasingId = 33
+
+  /**
+    * Configurable wrapper around `monotonically_increasing_id`
+    *
+    * @param partitionStartDelta Conceptually this number is added to the `partitionIndex` from which the Spark function
+    *                            `monotonically_increasing_id` starts assigning IDs.
+    */
+  // TODO: Document inherited limitations with regard to the maximum number of rows per data frame
+  // TODO: Document the maximum number of partitions (before entering tag space)
+  def partitioned_id_assignment(
+    partitionStartDelta: Int
+  ): Column = monotonically_increasing_id() + (partitionStartDelta.toLong << rowIdSpaceBitsUsedByMonotonicallyIncreasingId)
 
   /**
     * Alternative version of `array_contains` that takes a column as the value.
