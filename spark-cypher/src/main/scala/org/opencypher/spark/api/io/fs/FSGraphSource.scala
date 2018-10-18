@@ -33,9 +33,12 @@ import org.apache.spark.sql.DataFrame
 import org.apache.spark.sql.types.StructType
 import org.opencypher.okapi.api.graph.GraphName
 import org.opencypher.spark.api.CAPSSession
+import org.opencypher.spark.api.io.fs.DefaultGraphDirectoryStructure.pathSeparator
 import org.opencypher.spark.api.io.{AbstractPropertyGraphDataSource, StorageFormat}
+import org.opencypher.spark.api.io.fs.DefaultGraphDirectoryStructure._
 import org.opencypher.spark.api.io.fs.HadoopFSHelpers._
 import org.opencypher.spark.api.io.json.JsonSerialization
+import org.opencypher.okapi.impl.util.StringEncodingUtilities._
 
 /**
   * Data source implementation that handles the writing of files and tables to a filesystem.
@@ -51,7 +54,8 @@ import org.opencypher.spark.api.io.json.JsonSerialization
 class FSGraphSource(
   val rootPath: String,
   val tableStorageFormat: StorageFormat,
-  val filesPerTable: Option[Int] = None
+  val filesPerTable: Option[Int] = None,
+  val hiveDatabaseName: Option[String] = None
 )(override implicit val caps: CAPSSession)
   extends AbstractPropertyGraphDataSource with JsonSerialization {
 
@@ -101,6 +105,16 @@ class FSGraphSource(
 
   override protected def writeNodeTable(graphName: GraphName, labels: Set[String], table: DataFrame): Unit = {
     writeTable(pathToNodeTable(graphName, labels), table)
+    if(hiveDatabaseName.isDefined) {
+      val pathToNodeTable = directoryStructure.pathToNodeTable(graphName, labels)
+      val tableName = s"${graphName.path.replace('/', '_')}_nodes_${labels.toSeq.sorted.mkString("_")}".encodeSpecialCharacters
+      val hiveTableName = s"${hiveDatabaseName.get}.$tableName"
+      writeHiveTable(pathToNodeTable, hiveTableName, table.schema)
+    }
+  }
+
+  private def writeHiveTable(pathToTable: String, hiveTableName: String, schema: StructType): Unit = {
+    caps.sparkSession.catalog.createTable(hiveTableName, tableStorageFormat.name, schema, Map("path" -> pathToTable))
   }
 
   override protected def readRelationshipTable(
@@ -113,6 +127,12 @@ class FSGraphSource(
 
   override protected def writeRelationshipTable(graphName: GraphName, relKey: String, table: DataFrame): Unit = {
     writeTable(pathToRelationshipTable(graphName, relKey), table)
+    if(hiveDatabaseName.isDefined) {
+      val pathToRelationshipTable = directoryStructure.pathToRelationshipTable(graphName, relKey)
+      val tableName = s"${graphName.path.replace('/', '_')}_relationships_$relKey".encodeSpecialCharacters
+      val hiveTableName = s"${hiveDatabaseName.get}.$tableName"
+      writeHiveTable(pathToRelationshipTable, hiveTableName, table.schema)
+    }
   }
 
   override protected def readJsonSchema(graphName: GraphName): String = {
