@@ -562,24 +562,6 @@ class DdlParserTest extends BaseTestSuite with MockitoSugar with TestNameFixture
 
   describe("OKAPI schema conversion") {
 
-    it("merges global and inlined schema definitions") {
-      val ddlDefinition = parse(
-        """|CREATE GRAPH SCHEMA mySchema
-           |  LABEL (A)
-           |  (A)
-           |CREATE GRAPH myGraph WITH GRAPH SCHEMA mySchema (
-           |  LABEL (B)
-           |  (B)
-           |)
-        """.stripMargin)
-
-      ddlDefinition.graphSchemas shouldEqual Map(
-        "myGraph" -> Schema.empty
-          .withNodePropertyKeys(Set("A"))
-          .withNodePropertyKeys(Set("B"))
-      )
-    }
-
     it("throws if a label is not defined") {
       val ddlDefinition = parse(
         """|CATALOG CREATE LABEL (A)

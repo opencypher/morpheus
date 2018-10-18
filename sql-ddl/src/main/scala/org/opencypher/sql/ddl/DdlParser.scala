@@ -204,12 +204,14 @@ object DdlParser {
   val relationshipMappingDefinition: P[RelationshipMappingDefinition] = P("(" ~ relType ~ ")" ~ relationshipToViewDefinition.rep(min = 1, sep = ",".?).map(_.toList)).map(RelationshipMappingDefinition.tupled)
   val relationshipMappings: P[List[RelationshipMappingDefinition]] = P(RELATIONSHIP ~/ LABEL ~/ SETS ~/ "(" ~ relationshipMappingDefinition.rep(min = 1, sep = ",".?).map(_.toList) ~/ ")")
 
-  // TODO: this allows WITH SCHEMA with missing identifier and missing inline schema -> forbid
-  val graphDefinition: P[GraphDefinition] = P(CREATE ~ GRAPH ~ identifier.! ~/ WITH ~/ GRAPH ~/ SCHEMA ~/ identifier.!.? ~/
-    ("(" ~/ localSchemaDefinition ~/ ")").?.map(_.getOrElse(SchemaDefinition())) ~/
+  val graphDefinition: P[GraphDefinition] = P(CREATE ~ GRAPH ~ identifier.! ~/ WITH ~/ GRAPH ~/ SCHEMA ~/
+    (identifier.! | ("(" ~/ localSchemaDefinition ~/ ")")).map {
+      case s: String => Some(s) -> SchemaDefinition()
+      case schema: SchemaDefinition => None -> schema
+    } ~/
     nodeMappings.?.map(_.getOrElse(Nil)) ~/
     relationshipMappings.?.map(_.getOrElse(Nil))
-  ).map(GraphDefinition.tupled)
+  ).map { case (gName, (schemaId, localSchemaDef), nMappings, rMappings) => GraphDefinition(gName, schemaId, localSchemaDef, nMappings, rMappings)}
 
   // ==== DDL ====
 
