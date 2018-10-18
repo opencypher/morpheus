@@ -44,6 +44,8 @@ import org.opencypher.spark.impl.DataFrameOps._
 import org.opencypher.spark.testing.CAPSTestSuite
 import org.opencypher.spark.testing.fixture.{GraphConstructionFixture, TeamDataFixture}
 
+import scala.util.Try
+
 class CAPSRecordsTest extends CAPSTestSuite with GraphConstructionFixture with TeamDataFixture {
 
   describe("columnFor") {
@@ -55,22 +57,22 @@ class CAPSRecordsTest extends CAPSTestSuite with GraphConstructionFixture with T
 
     it("can resolve an entity") {
       val given = initGraph("CREATE ({val: 'a'})")
+      caps.catalog.store("foo", given)
 
-      val result = given.cypher("MATCH (n) RETURN n")
+      val result = given.cypher("FROM GRAPH foo MATCH (n) RETURN n")
 
-      result.records.columnsFor("n") should equal(Seq(s" __ NODE @ ", "_val __ STRING"))
+      result.records.columnsFor("n") should equal(Seq(s" __ NODE @ session_foo", "_val __ STRING"))
     }
 
     it("fails when resolving a non-existing return item") {
-      the [IllegalArgumentException] thrownBy {
-        caps.cypher("RETURN 1 AS foo, 2 AS bar").records.columnsFor("almostFoo")
-      } should have message
-        s"""
-          |()
-          |Expected:
-          |${"\t"}A return item in this table, which contains: [`bar`, `foo`]
-          |Found:
-          |${"\t"}almostFoo""".stripMargin
+      val expected = "A return item in this table, which contains: [`bar`, `foo`]"
+
+      Try(caps.cypher("RETURN 1 AS foo, 2 AS bar").records.columnsFor("almostFoo")) match {
+        case scala.util.Success(_) => fail()
+        case scala.util.Failure(exception) => {
+          exception.getMessage should (include(expected) and include("almostFoo"))
+        }
+      }
     }
   }
 
