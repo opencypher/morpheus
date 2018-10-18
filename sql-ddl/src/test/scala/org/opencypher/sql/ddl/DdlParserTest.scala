@@ -244,7 +244,7 @@ class DdlParserTest extends BaseTestSuite with MockitoSugar with TestNameFixture
            |
            |CATALOG CREATE LABEL [TYPE_2 {prop: BOOLEAN?}]""".stripMargin) shouldEqual
         DdlDefinitions(
-          List("foo", "bar"),
+          Some(SetSchemaDefinition("foo", Some("bar"))),
           List(
             LabelDefinition("A", Map("name" -> CTString)),
             LabelDefinition("B", Map("sequence" -> CTInteger, "nationality" -> CTString.nullable, "age" -> CTInteger.nullable)),
@@ -506,7 +506,7 @@ class DdlParserTest extends BaseTestSuite with MockitoSugar with TestNameFixture
 
     ddlDefinition should equalWithTracing(
       DdlDefinitions(
-        setSchema = List("foo", "bar"),
+        setSchema = Some(SetSchemaDefinition("foo", Some("bar"))),
         labelDefinitions = List(
           LabelDefinition("A", Map("name" -> CTString)),
           LabelDefinition("B", Map("sequence" -> CTInteger, "nationality" -> CTString.nullable, "age" -> CTInteger.nullable)),

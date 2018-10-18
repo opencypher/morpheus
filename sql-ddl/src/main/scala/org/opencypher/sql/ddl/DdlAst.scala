@@ -49,7 +49,7 @@ object Ddl {
 abstract class DdlAst extends AbstractTreeNode[DdlAst]
 
 case class DdlDefinitions(
-  setSchema: List[String] = Nil,
+  setSchema: Option[SetSchemaDefinition] = None,
   labelDefinitions: List[LabelDefinition] = Nil,
   schemaDefinitions: Map[String, SchemaDefinition] = Map.empty,
   // TODO: check for conflicting graph names
@@ -135,6 +135,11 @@ case class DdlDefinitions(
   }.toMap
 
 }
+
+case class SetSchemaDefinition(
+  databaseConnectionName: String,
+  databaseSchemaName: Option[String] = None
+) extends DdlAst
 
 case class LabelDefinition(
   name: String,

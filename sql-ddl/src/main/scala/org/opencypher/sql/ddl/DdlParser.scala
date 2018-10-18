@@ -213,11 +213,11 @@ object DdlParser {
 
   // ==== DDL ====
 
-  val setSchema: P[List[String]] = P(SET ~/ SCHEMA ~ identifier.!.rep(min = 1, sep = ".").map(_.toList) ~ ";".?)
+  val setSchemaDefinition: P[SetSchemaDefinition] = P(SET ~/ SCHEMA ~ identifier.! ~/ "." ~/ identifier.!.? ~ ";".?).map(SetSchemaDefinition.tupled)
 
   val ddlDefinitions: P[DdlDefinitions] = P(
     ParsersForNoTrace.noTrace ~ // allow for whitespace/comments at the start
-      setSchema.?.map(_.getOrElse(Nil)) ~/
+      setSchemaDefinition.? ~/
       catalogLabelDefinition.rep.map(_.toList) ~/
       globalSchemaDefinition.rep.map(_.toMap) ~/
       graphDefinition.rep.map(_.toList) ~/ End

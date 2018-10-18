@@ -34,7 +34,7 @@ import org.opencypher.okapi.impl.exception.{IllegalArgumentException, Unsupporte
 import org.opencypher.spark.api.CAPSSession
 import org.opencypher.spark.api.io.{CAPSNodeTable, HiveFormat, JdbcFormat}
 import org.opencypher.spark.impl.io.CAPSPropertyGraphDataSource
-import org.opencypher.sql.ddl.{DdlDefinitions, NodeMappingDefinition}
+import org.opencypher.sql.ddl.{DdlDefinitions, NodeMappingDefinition, SetSchemaDefinition}
 
 case class DDLFormatException(message: String) extends RuntimeException
 
@@ -49,12 +49,11 @@ case class SqlPropertyGraphDataSource(
     val graphSchema = schema(graphName).getOrElse(notFound(s"schema for graph $graphName", ddl.graphSchemas.keySet) )
 
     val (dataSourceName, databaseName) = ddl.setSchema match {
-      case dsName :: dbName :: Nil => dsName -> dbName
-      case dsName :: Nil => dsName -> sqlDataSources
+      case Some(SetSchemaDefinition(dsName, Some(dbName))) => dsName -> dbName
+      case Some(SetSchemaDefinition(dsName, None)) => dsName -> sqlDataSources
         .getOrElse(dsName, notFound(dsName, sqlDataSources.keys))
         .defaultSchema.getOrElse(notFound(s"database schema for $dsName"))
-      case Nil => throw DDLFormatException("Missing in DDL: `SET SCHEMA <dataSourceName>.<databaseSchemaName>`")
-      case _ => throw DDLFormatException("Illegal DDL format: expected `SET SCHEMA <dataSourceName>.<databaseSchemaName>`")
+      case _ => throw DDLFormatException("Missing in DDL: `SET SCHEMA <dataSourceName>.<databaseSchemaName>`")
     }
 
     val sqlDataSourceConfig = sqlDataSources.getOrElse(dataSourceName, throw SqlDataSourceConfigException(s"No configuration for $dataSourceName"))
@@ -85,9 +84,9 @@ case class SqlPropertyGraphDataSource(
         spark.read
           .format("jdbc")
           .option("url", sqlDataSourceConfig.jdbcUri.getOrElse(throw SqlDataSourceConfigException("Missing JDBC URI")))
-          .option("dbtable", tableName)
           .option("driver", sqlDataSourceConfig.jdbcDriver.getOrElse(throw SqlDataSourceConfigException("Missing JDBC Driver")))
           .option("fetchSize", sqlDataSourceConfig.jdbcFetchSize)
+          .option("dbtable", tableName)
           .load()
 
       case HiveFormat => spark.table(tableName)
