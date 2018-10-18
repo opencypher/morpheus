@@ -63,7 +63,7 @@ trait CypherTable {
     * @param returnItem name of one of the return items represented in this table.
     * @return a list of names of the physical columns that hold the data for the return item.
     */
-  def columnsFor(returnItem: String): Seq[String]
+  def columnsFor(returnItem: String): Set[String]
 
   /**
     * CypherType of columns stored in this table.

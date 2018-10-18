@@ -255,7 +255,7 @@ object SparkTable {
 
     def unpersist(blocking: Boolean): DataFrameTable = df.unpersist(blocking)
 
-    override def columnsFor(returnItem: String): Seq[String] =
+    override def columnsFor(returnItem: String): Set[String] =
       throw UnsupportedOperationException("A DataFrameTable does not have return items")
   }
 }

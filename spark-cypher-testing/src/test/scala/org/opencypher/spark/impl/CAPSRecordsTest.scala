@@ -48,20 +48,44 @@ import scala.util.Try
 
 class CAPSRecordsTest extends CAPSTestSuite with GraphConstructionFixture with TeamDataFixture {
 
-  describe("columnFor") {
+  describe("columnsFor") {
+
     it("can resolve a primitive return item") {
-      caps.cypher("RETURN 1").records.columnsFor("1") should equal(Seq("$  AUTOINT0 __ INTEGER"))
-      caps.cypher("RETURN 1 AS foo").records.columnsFor("foo") should equal(Seq("$  AUTOINT0 __ INTEGER"))
-      caps.cypher("RETURN 1 AS foo, 2 AS bar").records.columnsFor("bar") should equal(Seq("$  AUTOINT1 __ INTEGER"))
+      caps.cypher("RETURN 1").records.columnsFor("1") should equal(Set("$  AUTOINT0 __ INTEGER"))
+      caps.cypher("RETURN 1 AS foo").records.columnsFor("foo") should equal(Set("$  AUTOINT0 __ INTEGER"))
+      caps.cypher("RETURN 1 AS foo, 2 AS bar").records.columnsFor("bar") should equal(Set("$  AUTOINT1 __ INTEGER"))
     }
 
-    it("can resolve an entity") {
-      val given = initGraph("CREATE ({val: 'a'})")
+    it("can resolve a node") {
+      val given = initGraph("CREATE (:L {val: 'a'})")
       caps.catalog.store("foo", given)
 
       val result = given.cypher("FROM GRAPH foo MATCH (n) RETURN n")
 
-      result.records.columnsFor("n") should equal(Seq(s" __ NODE @ session_foo", "_val __ STRING"))
+      result.records.columnsFor("n") should equal(
+        Set(
+          s" __ NODE @ session_foo",
+          "_val __ STRING",
+          "_L __ BOOLEAN"
+        )
+      )
+    }
+
+    it("can resolve a relationship") {
+      val given = initGraph("CREATE ({val: 'a'})-[:R {prop: 'b'}]->({val: 'c'})")
+      caps.catalog.store("foo", given)
+
+      val result = given.cypher("FROM GRAPH foo MATCH (n)-[r]->(m) RETURN r")
+
+      result.records.columnsFor("r") should equal(
+        Set(
+          "type() = 'R' __ BOOLEAN",
+          " __ RELATIONSHIP @ session_foo",
+          "source( __ RELATIONSHIP @ session_foo) __ NODE",
+          "target( __ RELATIONSHIP @ session_foo) __ NODE",
+          "_prop __ STRING"
+        )
+      )
     }
 
     it("fails when resolving a non-existing return item") {
