@@ -666,6 +666,28 @@ final case class Explode(expr: Expr)(val cypherType: CypherType = CTWildcard) ex
   override def withCypherType(ct: CypherType): Explode = copy()(ct)
 }
 
+final case class Trim(expr: Expr)(val cypherType: CypherType = CTWildcard) extends UnaryFunctionExpr {
+
+  override type This = Trim
+
+  override def withCypherType(ct: CypherType): Trim = copy()(ct)
+}
+
+final case class LTrim(expr: Expr)(val cypherType: CypherType = CTWildcard) extends UnaryFunctionExpr {
+
+  override type This = LTrim
+
+  override def withCypherType(ct: CypherType): LTrim = copy()(ct)
+}
+
+final case class RTrim(expr: Expr)(val cypherType: CypherType = CTWildcard) extends UnaryFunctionExpr {
+
+  override type This = RTrim
+
+  override def withCypherType(ct: CypherType): RTrim = copy()(ct)
+}
+
+
 // NAry Function expressions
 
 final case class Range(from: Expr, to: Expr, o: Option[Expr]) extends FunctionExpr {
