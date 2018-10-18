@@ -58,8 +58,12 @@ object Neo4jCustomSchemaExample extends ConsoleApp {
 
   // If we didn't already have the schema (first time we connect to a Neo4j db, or the db has changed and we need to update)
   // We can write it to file like this:
-  // Get the schema for the graph
-  val jsonString = pgds.schema(MetaLabelSupport.entireGraphName).get.toJson
+
+  // Get the schema for the graph; MetaLabelSupport.entireGraphName refers to the whole Neo4j database
+  val schema = pgds.schema(MetaLabelSupport.entireGraphName).get
+
+  // Convert the schema to a serializable JSON format
+  val jsonString = schema.toJson
   // Get a filesystem to store the file on
   val fileSystem = FileSystem.get(session.sparkSession.sparkContext.hadoopConfiguration)
   // Write the file for future reading
