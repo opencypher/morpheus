@@ -181,10 +181,14 @@ case class SchemaPatternDefinition(
   targetLabelCombinations: Set[LabelCombination]
 ) extends DdlAst
 
-case class NodeMappingDefinition(
-  labelNames: Set[String],
+case class NodeToViewDefinition(
   viewName: String,
   maybePropertyMapping: Option[PropertyToColumnMappingDefinition] = None
+)
+
+case class NodeMappingDefinition(
+  labelNames: Set[String],
+  nodeToViewDefinitions: List[NodeToViewDefinition] = List.empty
 ) extends DdlAst
 
 case class SourceViewDefinition(name: String, alias: String) extends DdlAst

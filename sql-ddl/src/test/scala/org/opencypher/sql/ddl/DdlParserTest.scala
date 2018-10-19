@@ -328,20 +328,33 @@ class DdlParserTest extends BaseTestSuite with MockitoSugar with TestNameFixture
   describe("NODE LABEL SETS | RELATIONSHIP LABEL SETS") {
 
     it("parses (A) FROM view") {
-      success(nodeMappingDefinition, NodeMappingDefinition(Set("A"), "view"))
+      success(nodeMappingDefinition, NodeMappingDefinition(Set("A"), List(NodeToViewDefinition("view"))))
     }
 
     it("parses (A) FROM view (column1 AS propertyKey1, column2 AS propertyKey2)") {
-      success(nodeMappingDefinition, NodeMappingDefinition(Set("A"), "view", Some(Map("propertyKey1" -> "column1", "propertyKey2" -> "column2"))))
+      success(nodeMappingDefinition, NodeMappingDefinition(Set("A"), List(NodeToViewDefinition("view", Some(Map("propertyKey1" -> "column1", "propertyKey2" -> "column2"))))))
+    }
+    it("parses (A) FROM viewA FROM viewB") {
+      success(nodeMappingDefinition, NodeMappingDefinition(Set("A"), List(NodeToViewDefinition("viewA"), NodeToViewDefinition("viewB"))))
     }
 
     it("parses NODE LABEL SETS ( (A) FROM viewA (B) FROM viewB )") {
-      success(nodeMappings, List(NodeMappingDefinition(Set("A"), "viewA"), NodeMappingDefinition(Set("B"), "viewB")))
+      success(nodeMappings, List(NodeMappingDefinition(Set("A"), List(NodeToViewDefinition("viewA"))), NodeMappingDefinition(Set("B"), List(NodeToViewDefinition("viewB")))))
+    }
+
+    it("parses NODE LABEL SETS ( (A) FROM viewA (column1 AS propertyKey1, column2 AS propertyKey2) FROM viewB (column1 AS propertyKey1, column2 AS propertyKey2) )") {
+      success(nodeMappings, List(
+        NodeMappingDefinition(Set("A"), List(
+          NodeToViewDefinition("viewA", Some(Map("propertyKey1" -> "column1", "propertyKey2" -> "column2"))),
+          NodeToViewDefinition("viewB", Some(Map("propertyKey1" -> "column1", "propertyKey2" -> "column2")))))
+      ))
     }
 
     it("parses NODE LABEL SETS ( (A) FROM viewA (column1 AS propertyKey1, column2 AS propertyKey2) (B) FROM viewB (column1 AS propertyKey1, column2 AS propertyKey2) )") {
-      success(nodeMappings, List(NodeMappingDefinition(Set("A"), "viewA", Some(Map("propertyKey1" -> "column1", "propertyKey2" -> "column2"))),
-        NodeMappingDefinition(Set("B"), "viewB", Some(Map("propertyKey1" -> "column1", "propertyKey2" -> "column2")))))
+      success(nodeMappings, List(
+        NodeMappingDefinition(Set("A"), List(NodeToViewDefinition("viewA", Some(Map("propertyKey1" -> "column1", "propertyKey2" -> "column2"))))),
+        NodeMappingDefinition(Set("B"), List(NodeToViewDefinition("viewB", Some(Map("propertyKey1" -> "column1", "propertyKey2" -> "column2")))))
+      ))
     }
 
     it("parses JOIN ON view_a.COLUMN_A = view_b.COLUMN_B") {
@@ -533,7 +546,7 @@ class DdlParserTest extends BaseTestSuite with MockitoSugar with TestNameFixture
           name = "myGraph",
           maybeSchemaName = Some("mySchema"),
           localSchemaDefinition = emptySchemaDef,
-          nodeMappings = List(NodeMappingDefinition(Set("A"), "foo")),
+          nodeMappings = List(NodeMappingDefinition(Set("A"), List(NodeToViewDefinition("foo")))),
           relationshipMappings = List(RelationshipMappingDefinition("TYPE_1", List(RelationshipToViewDefinition(
             sourceView = SourceViewDefinition("baz", "alias_baz"),
             startNodeMappingDefinition = LabelToViewDefinition(
