@@ -39,8 +39,9 @@ import scala.io.Source
 object GraphSources {
   def fs(
     rootPath: String,
+    hiveDatabaseName: Option[String] = None,
     filesPerTable: Option[Int] = Some(1)
-  )(implicit session: CAPSSession) = FSGraphSources(rootPath, filesPerTable)
+  )(implicit session: CAPSSession) = FSGraphSources(rootPath, hiveDatabaseName, filesPerTable)
 
   def cypher: CypherGraphSources.type = CypherGraphSources
 }
@@ -48,20 +49,21 @@ object GraphSources {
 object FSGraphSources {
   def apply(
     rootPath: String,
+    hiveDatabaseName: Option[String] = None,
     filesPerTable: Option[Int] = Some(1)
-  )(implicit session: CAPSSession): FSGraphSourceFactory = FSGraphSourceFactory(rootPath, filesPerTable)
+  )(implicit session: CAPSSession): FSGraphSourceFactory = FSGraphSourceFactory(rootPath, hiveDatabaseName, filesPerTable)
 
   case class FSGraphSourceFactory(
     rootPath: String,
-    filesPerTable: Option[Int] = Some(1),
-    hiveDatabaseName: Option[String] = None
+    hiveDatabaseName: Option[String] = None,
+    filesPerTable: Option[Int] = Some(1)
   )(implicit session: CAPSSession) {
 
-    def csv: FSGraphSource = new FSGraphSource(rootPath, CsvFormat, filesPerTable, hiveDatabaseName)
+    def csv: FSGraphSource = new FSGraphSource(rootPath, CsvFormat, hiveDatabaseName, filesPerTable)
 
-    def parquet: FSGraphSource = new FSGraphSource(rootPath, ParquetFormat, filesPerTable, hiveDatabaseName)
+    def parquet: FSGraphSource = new FSGraphSource(rootPath, ParquetFormat, hiveDatabaseName, filesPerTable)
 
-    def orc: FSGraphSource = new FSGraphSource(rootPath, OrcFormat, filesPerTable, hiveDatabaseName) with EscapeAtSymbol
+    def orc: FSGraphSource = new FSGraphSource(rootPath, OrcFormat, hiveDatabaseName, filesPerTable) with EscapeAtSymbol
   }
 
   /**

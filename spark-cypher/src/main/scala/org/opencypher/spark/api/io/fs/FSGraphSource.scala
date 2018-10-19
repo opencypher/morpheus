@@ -52,8 +52,8 @@ import org.opencypher.spark.api.io.{AbstractPropertyGraphDataSource, StorageForm
 class FSGraphSource(
   val rootPath: String,
   val tableStorageFormat: StorageFormat,
-  val filesPerTable: Option[Int] = None,
-  val hiveDatabaseName: Option[String] = None
+  val hiveDatabaseName: Option[String] = None,
+  val filesPerTable: Option[Int] = None
 )(override implicit val caps: CAPSSession)
   extends AbstractPropertyGraphDataSource with JsonSerialization {
 

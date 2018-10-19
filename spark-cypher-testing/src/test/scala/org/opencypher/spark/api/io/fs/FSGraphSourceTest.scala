@@ -37,7 +37,7 @@ class FSGraphSourceTest extends CAPSTestSuite with DefaultGraphInit {
     it("writes nodes and relationships to hive tables") {
       val given = testGraph
 
-      val fs = new FSGraphSource("file:///" + tempDir.getRoot.getAbsolutePath.replace("\\", "/"), ParquetFormat, None, Some(testDatabaseName))
+      val fs = new FSGraphSource("file:///" + tempDir.getRoot.getAbsolutePath.replace("\\", "/"), ParquetFormat, Some(testDatabaseName), None)
       fs.store(graphName, given)
 
       val nodeResult = caps.sparkSession.sql(s"SELECT * FROM $nodeTableName")
@@ -59,7 +59,7 @@ class FSGraphSourceTest extends CAPSTestSuite with DefaultGraphInit {
     it("deletes the hive database if the graph is deleted") {
       val given = testGraph
 
-      val fs = new FSGraphSource("file:///" + tempDir.getRoot.getAbsolutePath.replace("\\", "/"), ParquetFormat, None, Some(testDatabaseName))
+      val fs = new FSGraphSource("file:///" + tempDir.getRoot.getAbsolutePath.replace("\\", "/"), ParquetFormat, Some(testDatabaseName), None)
       fs.store(graphName, given)
 
       caps.sparkSession.sql(s"SELECT * FROM $nodeTableName").collect().toSet should not be empty
