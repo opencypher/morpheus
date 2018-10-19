@@ -1,28 +1,20 @@
 package org.opencypher.spark.api.io.util
 
-import org.opencypher.okapi.api.graph.GraphName
-import org.opencypher.spark.api.io.fs.DefaultGraphDirectoryStructure._
+import org.opencypher.okapi.api.graph.{GraphEntityType, GraphName}
 import org.opencypher.okapi.impl.util.StringEncodingUtilities._
+import org.opencypher.spark.api.io.fs.DefaultGraphDirectoryStructure._
 
-sealed abstract class HiveTableName(
-  databaseName: String,
-  graphName: GraphName,
-  entityType: String,
-  entityIdentifiers: Set[String]
-) {
+case object HiveTableName {
 
-  def tableName: String = s"${graphName.path.replace('/', '_')}_${entityType}_${entityIdentifiers.toSeq.sorted.mkString("_")}".encodeSpecialCharacters
+  def apply(databaseName: String,
+    graphName: GraphName,
+    entityType: GraphEntityType,
+    entityIdentifiers: Set[String]): String = {
 
-  override def toString: String =
+    val entityString = entityType.name.toLowerCase
+
+    val tableName = s"${graphName.path.replace('/', '_')}_${entityString}_${entityIdentifiers.toSeq.sorted.mkString("_")}".encodeSpecialCharacters
     s"$databaseName.$tableName"
+  }
+
 }
-
-case class HiveNodeTableName(
-  databaseName: String,
-  graphName: GraphName,
-  labels: Set[String]) extends HiveTableName(databaseName, graphName, "nodes", labels)
-
-case class HiveRelationshipTableName(
-  databaseName: String,
-  graphName: GraphName,
-  relType: String) extends HiveTableName(databaseName, graphName, "relationships", Set(relType))

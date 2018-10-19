@@ -53,14 +53,15 @@ object FSGraphSources {
 
   case class FSGraphSourceFactory(
     rootPath: String,
-    filesPerTable: Option[Int] = Some(1)
+    filesPerTable: Option[Int] = Some(1),
+    hiveDatabaseName: Option[String] = None
   )(implicit session: CAPSSession) {
 
-    def csv: FSGraphSource = new FSGraphSource(rootPath, CsvFormat, filesPerTable)
+    def csv: FSGraphSource = new FSGraphSource(rootPath, CsvFormat, filesPerTable, hiveDatabaseName)
 
-    def parquet: FSGraphSource = new FSGraphSource(rootPath, ParquetFormat, filesPerTable)
+    def parquet: FSGraphSource = new FSGraphSource(rootPath, ParquetFormat, filesPerTable, hiveDatabaseName)
 
-    def orc: FSGraphSource = new FSGraphSource(rootPath, OrcFormat, filesPerTable) with EscapeAtSymbol
+    def orc: FSGraphSource = new FSGraphSource(rootPath, OrcFormat, filesPerTable, hiveDatabaseName) with EscapeAtSymbol
   }
 
   /**

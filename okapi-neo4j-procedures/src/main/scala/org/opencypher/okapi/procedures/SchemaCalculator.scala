@@ -37,6 +37,7 @@ import org.neo4j.kernel.impl.storageengine.impl.recordstorage.RecordStorageEngin
 import org.neo4j.kernel.internal.GraphDatabaseAPI
 import org.neo4j.logging.Log
 import org.neo4j.values.storable.ValueGroup
+import org.opencypher.okapi.api.graph.{GraphEntityType, Node, Relationship}
 import org.opencypher.okapi.api.types.CypherType._
 import org.opencypher.okapi.api.types._
 import org.opencypher.okapi.api.value.CypherValue
@@ -81,7 +82,7 @@ class SchemaCalculator(api: GraphDatabaseAPI, tx: KernelTransaction, log: Log) {
     * Computes the entity schema for the given entities by computing the schema for each individual entity and then
     * combining them. Uses batching to parallel the computation
     */
-  private def computeEntitySchema[T <: WrappedCursor](typ: EntityType): Seq[Future[LabelPropertyKeyMap]] = {
+  private def computeEntitySchema[T <: WrappedCursor](typ: GraphEntityType): Seq[Future[LabelPropertyKeyMap]] = {
     val maxId = getHighestIdInUseForStore(typ)
     val batchSize = 100000
     val batches = (maxId / batchSize.toFloat).ceil.toInt
@@ -104,7 +105,7 @@ class SchemaCalculator(api: GraphDatabaseAPI, tx: KernelTransaction, log: Log) {
     * Generates the OkapiSchemaInfo entries for a given label combination / relationship type
     */
   private def getOkapiSchemaInfo(
-    typ: EntityType,
+    typ: GraphEntityType,
     map: LabelPropertyKeyMap
   ): Stream[OkapiSchemaInfo] = map.data.asScala.flatMap {
     case (labelPointers, propertyMap) =>
@@ -128,7 +129,7 @@ class SchemaCalculator(api: GraphDatabaseAPI, tx: KernelTransaction, log: Log) {
   /**
     * Translates integers representing labels into the correct label name
     */
-  private def getLabelName(typ: EntityType, id: Int): String = typ match {
+  private def getLabelName(typ: GraphEntityType, id: Int): String = typ match {
     case Node => tx.token().nodeLabelName(id)
     case Relationship => tx.token().relationshipTypeName(id)
   }
@@ -138,7 +139,7 @@ class SchemaCalculator(api: GraphDatabaseAPI, tx: KernelTransaction, log: Log) {
     */
   private def getPropertyName(id  : Int): String = tx.token().propertyKeyName(id)
 
-  private def getHighestIdInUseForStore(typ: EntityType) = {
+  private def getHighestIdInUseForStore(typ: GraphEntityType) = {
     val neoStores = api.getDependencyResolver.resolveDependency(classOf[RecordStorageEngine]).testAccessNeoStores
     val store = typ match {
       case Node => neoStores.getNodeStore
@@ -148,19 +149,6 @@ class SchemaCalculator(api: GraphDatabaseAPI, tx: KernelTransaction, log: Log) {
     store.getHighId
   }
 }
-
-trait EntityType {
-  def name: String
-}
-
-case object Node extends EntityType {
-  override val name: String = "Node"
-}
-
-case object Relationship extends EntityType {
-  override val name: String = "Relationship"
-}
-
 
 object LabelPropertyKeyMap {
   val ctNullString: String = CTNull.name
