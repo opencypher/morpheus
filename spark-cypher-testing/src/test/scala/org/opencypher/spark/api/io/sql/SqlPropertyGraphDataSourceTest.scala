@@ -4,7 +4,7 @@ import org.opencypher.okapi.api.graph.GraphName
 import org.opencypher.okapi.api.value.CypherValue.CypherMap
 import org.opencypher.okapi.testing.Bag
 import org.opencypher.spark.api.io.HiveFormat
-import org.opencypher.spark.api.value.CAPSNode
+import org.opencypher.spark.api.value.{CAPSNode, CAPSRelationship}
 import org.opencypher.spark.impl.CAPSFunctions.{partitioned_id_assignment, rowIdSpaceBitsUsedByMonotonicallyIncreasingId}
 import org.opencypher.spark.testing.CAPSTestSuite
 import org.opencypher.sql.ddl.DdlParser.parse
@@ -12,7 +12,6 @@ import org.opencypher.sql.ddl.DdlParser.parse
 class SqlPropertyGraphDataSourceTest extends CAPSTestSuite {
 
   private val dataSourceName = "fooDataSource"
-  private val fooViewName = "fooView"
   private val fooGraphName = GraphName("fooGraph")
 
   private def computePartitionedRowId(rowIndex: Long, partitionStartDelta: Long): Long = {
@@ -42,6 +41,8 @@ class SqlPropertyGraphDataSourceTest extends CAPSTestSuite {
   }
 
   it("reads nodes from a table") {
+    val fooView = "foo_view"
+
     val ddlString =
       s"""
          |SET SCHEMA $dataSourceName.fooDatabaseName
@@ -52,11 +53,11 @@ class SqlPropertyGraphDataSourceTest extends CAPSTestSuite {
          |
        |CREATE GRAPH fooGraph WITH GRAPH SCHEMA fooSchema
          |  NODE LABEL SETS (
-         |    (Foo) FROM $fooViewName
+         |    (Foo) FROM $fooView
          |  )
      """.stripMargin
 
-    sparkSession.createDataFrame(Seq(Tuple1("Alice"))).toDF("foo").createOrReplaceTempView(fooViewName)
+    sparkSession.createDataFrame(Seq(Tuple1("Alice"))).toDF("foo").createOrReplaceTempView(fooView)
 
     val ds = SqlPropertyGraphDataSource(parse(ddlString), Map(dataSourceName -> SqlDataSourceConfig(HiveFormat, dataSourceName)))(caps)
 
@@ -65,8 +66,36 @@ class SqlPropertyGraphDataSourceTest extends CAPSTestSuite {
     ))
   }
 
+  it("reads nodes from a table with custom column mapping") {
+    val fooView = "foo_view"
+
+    val ddlString =
+      s"""
+         |SET SCHEMA $dataSourceName.fooDatabaseName
+         |
+         |CREATE GRAPH SCHEMA fooSchema
+         | LABEL (Foo { key1 : INTEGER, key2 : String })
+         | (Foo)
+         |
+         |CREATE GRAPH fooGraph WITH GRAPH SCHEMA fooSchema
+         |  NODE LABEL SETS (
+         |    (Foo) FROM $fooView (col1 AS key2, col2 AS key1)
+         |  )
+     """.stripMargin
+
+    sparkSession.createDataFrame(Seq(Tuple2("Alice", 42L))).toDF("col1", "col2").createOrReplaceTempView(fooView)
+
+    val ds = SqlPropertyGraphDataSource(parse(ddlString), Map(dataSourceName -> SqlDataSourceConfig(HiveFormat, dataSourceName)))(caps)
+
+    ds.graph(fooGraphName).nodes("n").toMapsWithCollectedEntities should equal(Bag(
+      CypherMap("n" -> CAPSNode(0, Set("Foo"), CypherMap("key1" -> 42L, "key2" -> "Alice")))
+    ))
+  }
+
   it("reads nodes from multiple tables") {
-    val barViewName = "barView"
+    val fooView = "foo_view"
+    val barView = "bar_view"
+
     val ddlString =
       s"""
          |SET SCHEMA $dataSourceName.fooDatabaseName
@@ -79,19 +108,71 @@ class SqlPropertyGraphDataSourceTest extends CAPSTestSuite {
          |
          |CREATE GRAPH fooGraph WITH GRAPH SCHEMA fooSchema
          |  NODE LABEL SETS (
-         |    (Foo) FROM $fooViewName
-         |    (Bar) FROM $barViewName
+         |    (Foo) FROM $fooView
+         |    (Bar) FROM $barView
          |  )
      """.stripMargin
 
-    sparkSession.createDataFrame(Seq(Tuple1("Alice"))).toDF("foo").createOrReplaceTempView(fooViewName)
-    sparkSession.createDataFrame(Seq(Tuple1(0L))).toDF("bar").createOrReplaceTempView(barViewName)
+    sparkSession.createDataFrame(Seq(Tuple1("Alice"))).toDF("foo").createOrReplaceTempView(fooView)
+    sparkSession.createDataFrame(Seq(Tuple1(0L))).toDF("bar").createOrReplaceTempView(barView)
 
     val ds = SqlPropertyGraphDataSource(parse(ddlString), Map(dataSourceName -> SqlDataSourceConfig(HiveFormat, dataSourceName)))(caps)
 
     ds.graph(fooGraphName).nodes("n").toMapsWithCollectedEntities should equal(Bag(
       CypherMap("n" -> CAPSNode(computePartitionedRowId(rowIndex = 0, partitionStartDelta = 0), Set("Foo"), CypherMap("foo" -> "Alice"))),
       CypherMap("n" -> CAPSNode(computePartitionedRowId(rowIndex = 0, partitionStartDelta = 1), Set("Bar"), CypherMap("bar" -> 0L)))
+    ))
+  }
+
+  ignore("reads relationships from a table") {
+    val fooView = "foo_view"
+    val barView = "bar_view"
+    val relView = "rel_view"
+
+    val ddlString =
+      s"""
+         |SET SCHEMA $dataSourceName.fooDatabaseName
+         |
+         |CREATE GRAPH SCHEMA fooSchema
+         | LABEL (Foo { foo : STRING })
+         | LABEL (Bar { bar : INTEGER })
+         | LABEL (REL)
+         | (Foo)
+         | (Bar)
+         | [REL]
+         |
+         |CREATE GRAPH fooGraph WITH GRAPH SCHEMA fooSchema
+         |  NODE LABEL SETS (
+         |    (Foo) FROM $fooView
+         |    (Bar) FROM $barView
+         |  )
+         |  RELATIONSHIP LABEL SETS (
+         |    (TYPE_1)
+         |      FROM $relView edge
+         |        START NODES
+         |          LABEL SET (Foo) FROM $fooView alias_foo JOIN ON alias_foo.id = edge.COLUMN_A
+         |        END NODES
+         |          LABEL SET (Bar) FROM $barView alias_bar JOIN ON alias_bar.COLUMN_A = edge.COLUMN_A
+         |  )
+     """.stripMargin
+
+    sparkSession.createDataFrame(Seq(Tuple1("Alice"))).toDF("foo").createOrReplaceTempView(fooView)
+    sparkSession.createDataFrame(Seq(Tuple1(42L))).toDF("bar").createOrReplaceTempView(barView)
+    sparkSession.createDataFrame(Seq(Tuple2("Alice", 42L))).toDF("start", "end").createOrReplaceTempView(relView)
+
+    val ds = SqlPropertyGraphDataSource(parse(ddlString), Map(dataSourceName -> SqlDataSourceConfig(HiveFormat, dataSourceName)))(caps)
+
+    ds.graph(fooGraphName).nodes("n").toMapsWithCollectedEntities should equal(Bag(
+      CypherMap("n" -> CAPSNode(computePartitionedRowId(rowIndex = 0, partitionStartDelta = 0), Set("Foo"), CypherMap("foo" -> "Alice"))),
+      CypherMap("n" -> CAPSNode(computePartitionedRowId(rowIndex = 0, partitionStartDelta = 1), Set("Bar"), CypherMap("bar" -> 42L)))
+    ))
+
+    ds.graph(fooGraphName).relationships("r").toMapsWithCollectedEntities should equal(Bag(
+      CypherMap("r" -> CAPSRelationship(
+        id = computePartitionedRowId(rowIndex = 0, partitionStartDelta = 0),
+        startId = computePartitionedRowId(rowIndex = 0, partitionStartDelta = 0),
+        endId = computePartitionedRowId(rowIndex = 0, partitionStartDelta = 1),
+        relType = "REL"))
     ))
   }
 

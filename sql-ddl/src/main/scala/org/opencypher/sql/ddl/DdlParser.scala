@@ -207,7 +207,7 @@ object DdlParser {
   val graphDefinition: P[GraphDefinition] = P(CREATE ~ GRAPH ~ identifier.! ~/ WITH ~/ GRAPH ~/ SCHEMA ~/
     (identifier.! | ("(" ~/ localSchemaDefinition ~/ ")")).map {
       case s: String => Some(s) -> SchemaDefinition()
-      case schema: SchemaDefinition => None -> schema
+      case schemaDefinition: SchemaDefinition => None -> schemaDefinition
     } ~/
     nodeMappings.?.map(_.getOrElse(Nil)) ~/
     relationshipMappings.?.map(_.getOrElse(Nil))
