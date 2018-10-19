@@ -42,12 +42,12 @@ object CAPSFunctions {
       * values (Int, or String) as index although the underlying implementation seem capable of processing arbitrary
       * expressions. This method exposes these features
       */
-    def get(idx: Column): Column = {
+    def get(idx: Column): Column =
       new Column(UnresolvedExtractValue(column.expr, idx.expr))
-    }
   }
 
-  val rangeUdf = udf[Array[Int], Int, Int, Int]((from: Int, to: Int, step: Int) => from.to(to, step).toArray)
+  val rangeUdf: UserDefinedFunction =
+    udf[Array[Int], Int, Int, Int]((from: Int, to: Int, step: Int) => from.to(to, step).toArray)
 
   private[spark] val rowIdSpaceBitsUsedByMonotonicallyIncreasingId = 33
 
@@ -59,9 +59,8 @@ object CAPSFunctions {
     */
   // TODO: Document inherited limitations with regard to the maximum number of rows per data frame
   // TODO: Document the maximum number of partitions (before entering tag space)
-  def partitioned_id_assignment(
-    partitionStartDelta: Int
-  ): Column = monotonically_increasing_id() + (partitionStartDelta.toLong << rowIdSpaceBitsUsedByMonotonicallyIncreasingId)
+  def partitioned_id_assignment(partitionStartDelta: Int): Column =
+    monotonically_increasing_id() + (partitionStartDelta.toLong << rowIdSpaceBitsUsedByMonotonicallyIncreasingId)
 
   /**
     * Alternative version of `array_contains` that takes a column as the value.
@@ -69,39 +68,34 @@ object CAPSFunctions {
   def array_contains(column: Column, value: Column): Column =
     new Column(ArrayContains(column.expr, value.expr))
 
-  def array_append_long(array: Column, value: Column): Column = {
+  def array_append_long(array: Column, value: Column): Column =
     appendLongUDF(array, value)
-  }
 
-  private val appendLongUDF = functions.udf(appendLong _)
+  private val appendLongUDF =
+    functions.udf(appendLong _)
 
-  private def appendLong(array: Seq[Long], element: Long): Seq[Long] = {
+  private def appendLong(array: Seq[Long], element: Long): Seq[Long] =
     array :+ element
-  }
 
   def get_rel_type(relTypeNames: Seq[String]): UserDefinedFunction = {
     val extractRelTypes = (booleanMask: Seq[Boolean]) => filterWithMask(relTypeNames)(booleanMask)
     functions.udf(extractRelTypes.andThen(_.headOption.orNull), StringType)
   }
 
-  def get_node_labels(labelNames: Seq[String]): UserDefinedFunction = {
+  def get_node_labels(labelNames: Seq[String]): UserDefinedFunction =
     functions.udf(filterWithMask(labelNames) _, ArrayType(StringType, containsNull = false))
-  }
 
-  private def filterWithMask(dataToFilter: Seq[String])(mask: Seq[Boolean]): Seq[String] = {
+  private def filterWithMask(dataToFilter: Seq[String])(mask: Seq[Boolean]): Seq[String] =
     dataToFilter.zip(mask).collect {
       case (label, true) => label
     }
-  }
 
-  def get_property_keys(propertyKeys: Seq[String]): UserDefinedFunction = {
+  def get_property_keys(propertyKeys: Seq[String]): UserDefinedFunction =
     functions.udf(filterNotNull(propertyKeys) _, ArrayType(StringType, containsNull = false))
-  }
 
-  private def filterNotNull(dataToFilter: Seq[String])(values: Seq[Any]): Seq[String] = {
+  private def filterNotNull(dataToFilter: Seq[String])(values: Seq[Any]): Seq[String] =
     dataToFilter.zip(values).collect {
       case (key, value) if value != null => key
     }
-  }
 
 }
