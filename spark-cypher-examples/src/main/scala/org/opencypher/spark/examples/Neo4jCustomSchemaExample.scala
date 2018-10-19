@@ -27,16 +27,18 @@
 // tag::full-example[]
 package org.opencypher.spark.examples
 
+import org.apache.hadoop.fs.FileSystem
 import org.opencypher.okapi.api.graph.Namespace
+import org.opencypher.okapi.neo4j.io.MetaLabelSupport
 import org.opencypher.okapi.neo4j.io.testing.Neo4jHarnessUtils._
 import org.opencypher.spark.api.{CAPSSession, GraphSources}
 import org.opencypher.spark.testing.support.creation.CAPSNeo4jHarnessUtils._
 import org.opencypher.spark.util.ConsoleApp
 
 /**
-  * Demonstrates connecting a graph from a CSV data source with a graph from a Neo4j data source.
+  * Demonstrates how to initialise a Neo4j PGDS with a pre-written schema.
   *
-  * Writes updates back to the Neo4j database with Cypher queries.
+  * Also shows how to get the schema out of the Neo4j PGDS and store it in a filesystem.
   */
 object Neo4jCustomSchemaExample extends ConsoleApp {
   // Create CAPS session
@@ -50,8 +52,23 @@ object Neo4jCustomSchemaExample extends ConsoleApp {
   // Useful when the schema has already been calculated and stored in a file
   val schemaPath = getClass.getResource("/schema.json").getPath
 
-  // Register Property Graph Data Sources (PGDS) with input schema file
-  session.registerSource(Namespace("socialNetwork"), GraphSources.cypher.neo4j(neo4j.dataSourceConfig, schemaPath, false))
+  val neoNamespace = Namespace("socialNetwork")
+  val pgds = GraphSources.cypher.neo4j(neo4j.dataSourceConfig)
+  session.registerSource(neoNamespace, pgds)
+
+  // If we didn't already have the schema (first time we connect to a Neo4j db, or the db has changed and we need to update)
+  // We can write it to file like this:
+
+  // Get the schema for the graph; MetaLabelSupport.entireGraphName refers to the whole Neo4j database
+  val schema = pgds.schema(MetaLabelSupport.entireGraphName).get
+
+  // Convert the schema to a serializable JSON format
+  val jsonString = schema.toJson
+  // Get a filesystem to store the file on
+  val fileSystem = FileSystem.get(session.sparkSession.sparkContext.hadoopConfiguration)
+  // Write the file for future reading
+  // Commented-out; this file already exists in the beginning of this example
+//  fileSystem.writeFile(getClass.getResource("/").getPath + "schema.json", jsonString)
 
   // run queries!
   session.cypher(
