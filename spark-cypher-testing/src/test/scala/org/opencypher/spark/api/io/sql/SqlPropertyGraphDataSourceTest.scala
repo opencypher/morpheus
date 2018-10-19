@@ -31,7 +31,9 @@ class SqlPropertyGraphDataSourceTest extends CAPSTestSuite {
     resultWithDelta should equal(List(0x400000000L, 0x400000001L, 0x400000002L))
 
     val largeDf = sparkSession.sparkContext.parallelize(
-      Seq.fill(100){Tuple1("foo")}, 100
+      Seq.fill(100) {
+        Tuple1("foo")
+      }, 100
     ).toDF("fooCol")
     val largeDfWithIds = largeDf.withColumn("id", partitioned_id_assignment(100))
     val largeResultWithDelta = largeDfWithIds.select("id").collect().map(row => row.get(0).asInstanceOf[Long]).map(_ >> 33).sorted.toList
@@ -53,17 +55,12 @@ class SqlPropertyGraphDataSourceTest extends CAPSTestSuite {
          |    (Foo) FROM $fooViewName
          |  )
      """.stripMargin
-    sparkSession.sql("DROP TABLE IF EXISTS " + fooViewName)
-    sparkSession.createDataFrame(Seq(Tuple1("Alice")))
-      .toDF("foo")
-      .write.saveAsTable(fooViewName)
 
-    val ddl = parse(ddlString)
-    val ds = SqlPropertyGraphDataSource(ddl, Map(dataSourceName -> SqlDataSourceConfig(HiveFormat, dataSourceName)))(caps)
+    sparkSession.createDataFrame(Seq(Tuple1("Alice"))).toDF("foo").createOrReplaceTempView(fooViewName)
 
-    val graph = ds.graph(fooGraphName)
+    val ds = SqlPropertyGraphDataSource(parse(ddlString), Map(dataSourceName -> SqlDataSourceConfig(HiveFormat, dataSourceName)))(caps)
 
-    graph.nodes("n").toMapsWithCollectedEntities should equal(Bag(
+    ds.graph(fooGraphName).nodes("n").toMapsWithCollectedEntities should equal(Bag(
       CypherMap("n" -> CAPSNode(0, Set("Foo"), CypherMap("foo" -> "Alice")))
     ))
   }
@@ -86,21 +83,13 @@ class SqlPropertyGraphDataSourceTest extends CAPSTestSuite {
          |    (Bar) FROM $barViewName
          |  )
      """.stripMargin
-    sparkSession.sql("DROP TABLE IF EXISTS " + fooViewName)
-    sparkSession.sql("DROP TABLE IF EXISTS " + barViewName)
-    sparkSession.createDataFrame(Seq(Tuple1("Alice")))
-      .toDF("foo")
-      .write.saveAsTable(fooViewName)
-    sparkSession.createDataFrame(Seq(Tuple1(0L)))
-      .toDF("bar")
-      .write.saveAsTable(barViewName)
 
-    val ddl = parse(ddlString)
-    val ds = SqlPropertyGraphDataSource(ddl, Map(dataSourceName -> SqlDataSourceConfig(HiveFormat, dataSourceName)))(caps)
+    sparkSession.createDataFrame(Seq(Tuple1("Alice"))).toDF("foo").createOrReplaceTempView(fooViewName)
+    sparkSession.createDataFrame(Seq(Tuple1(0L))).toDF("bar").createOrReplaceTempView(barViewName)
 
-    val graph = ds.graph(fooGraphName)
+    val ds = SqlPropertyGraphDataSource(parse(ddlString), Map(dataSourceName -> SqlDataSourceConfig(HiveFormat, dataSourceName)))(caps)
 
-    graph.nodes("n").toMapsWithCollectedEntities should equal(Bag(
+    ds.graph(fooGraphName).nodes("n").toMapsWithCollectedEntities should equal(Bag(
       CypherMap("n" -> CAPSNode(computePartitionedRowId(rowIndex = 0, partitionStartDelta = 0), Set("Foo"), CypherMap("foo" -> "Alice"))),
       CypherMap("n" -> CAPSNode(computePartitionedRowId(rowIndex = 0, partitionStartDelta = 1), Set("Bar"), CypherMap("bar" -> 0L)))
     ))
