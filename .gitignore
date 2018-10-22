@@ -6,6 +6,8 @@ dependency-reduced-pom.xml
 version.txt
 build/test/
 */build
+*/metastore_db
+derby.log
 
 # IDE cruft
 .settings

@@ -24,23 +24,13 @@
  * described as "implementation extensions to Cypher" or as "proposed changes to
  * Cypher that are not yet approved by the openCypher community".
  */
-package org.opencypher.spark.api.io.util
+package org.opencypher.spark.examples
 
-import org.opencypher.okapi.api.graph.{GraphEntityType, GraphName}
-import org.opencypher.okapi.impl.util.StringEncodingUtilities._
-import org.opencypher.spark.api.io.fs.DefaultGraphDirectoryStructure._
+class HiveSupportExampleTest extends ExampleTest {
 
-case object HiveTableName {
-
-  def apply(databaseName: String,
-    graphName: GraphName,
-    entityType: GraphEntityType,
-    entityIdentifiers: Set[String]): String = {
-
-    val entityString = entityType.name.toLowerCase
-
-    val tableName = s"${graphName.path.replace('/', '_')}_${entityString}_${entityIdentifiers.toSeq.sorted.mkString("_")}".encodeSpecialCharacters
-    s"$databaseName.$tableName"
+  it("should produce the correct output") {
+    validate(HiveSupportExample.main(Array.empty),
+      getClass.getResource("/example_outputs/HiveSupportExample.out").toURI)
   }
 
 }
