@@ -4,17 +4,22 @@ import java.net.URI
 import java.util
 
 import org.apache.logging.log4j.scala.Logging
-import org.apache.spark.sql.Row
+import org.apache.spark.sql.catalyst.InternalRow
+import org.apache.spark.sql.catalyst.util.ArrayData
 import org.apache.spark.sql.sources._
 import org.apache.spark.sql.sources.v2.reader._
-import org.apache.spark.sql.sources.v2.{DataSourceOptions, DataSourceV2, ReadSupportWithSchema}
-import org.apache.spark.sql.types.{StructField, StructType}
+import org.apache.spark.sql.sources.v2.{DataSourceOptions, DataSourceV2, ReadSupport}
+import org.apache.spark.sql.types._
+import org.apache.spark.unsafe.types.UTF8String
+import org.neo4j.driver.v1.{Record, Value}
 import org.opencypher.okapi.api.types.{EntityType, Node, Relationship}
 import org.opencypher.okapi.api.value.CypherValue
 import org.opencypher.okapi.impl.exception._
+import org.opencypher.okapi.impl.util.StringEncodingUtilities._
 import org.opencypher.okapi.neo4j.io.Neo4jConfig
-import org.opencypher.okapi.neo4j.io.Neo4jHelpers.Neo4jDefaults._
 import org.opencypher.okapi.neo4j.io.Neo4jHelpers._
+import org.opencypher.spark.api.io.GraphEntity._
+import org.opencypher.spark.api.io.{Relationship => RelationshipEntity}
 import org.opencypher.spark.impl.io.neo4j.Neo4jSparkDataSource._
 
 import scala.tools.nsc.interpreter.JList
@@ -58,7 +63,10 @@ object Neo4jSparkDataSource {
   * <li>`type` <em>required if entityType is set to `relationship`</em>: only load relationships with the given type.</li>
   * </ul>
   */
-class Neo4jSparkDataSource extends DataSourceV2 with ReadSupportWithSchema {
+class Neo4jSparkDataSource extends DataSourceV2 with ReadSupport {
+
+  override def createReader(options: DataSourceOptions): DataSourceReader =
+    throw UnsupportedOperationException("The read schema needs to be specified")
 
   override def createReader(schema: StructType, options: DataSourceOptions): DataSourceReader = {
     import scala.collection.JavaConverters._
@@ -89,7 +97,7 @@ class Neo4jSparkDataSource extends DataSourceV2 with ReadSupportWithSchema {
 }
 
 class Neo4jDataSourceReader(neo4jConfig: Neo4jConfig, typ: EntityType, labels: Set[String], var requiredSchema: StructType)
-  extends DataSourceReader with SupportsPushDownRequiredColumns with SupportsPushDownFilters with Logging {
+  extends DataSourceReader with SupportsPushDownFilters with SupportsPushDownRequiredColumns with Logging {
 
   var pushedFilters: Array[Filter] = Array.empty
 
@@ -106,19 +114,24 @@ class Neo4jDataSourceReader(neo4jConfig: Neo4jConfig, typ: EntityType, labels: S
     pushedFilters
   }
 
-  override def createDataReaderFactories(): JList[DataReaderFactory[Row]] = {
+  override def planInputPartitions(): JList[InputPartition[InternalRow]] = {
+
+    val labelMatch = labels.map(x =>s":`$x`").mkString("")
+
     val matchClause = typ match {
-      case Node => "MATCH (__e)"
+      case Node => s"MATCH (__e$labelMatch)"
       case Relationship => "MATCH (__s)-[__e]->(__t)"
     }
 
     val projections = requiredSchema.fields.collect {
-      case StructField(`idPropertyKey`, _, _, _) => s"id(__e) as $idPropertyKey"
-      case StructField(`startIdPropertyKey`, _, _, _) => s"id(__s) as $startIdPropertyKey"
-      case StructField(`endIdPropertyKey`, _, _, _) => s"id(__t) as $endIdPropertyKey"
-      case StructField(name, _, _, _) => s"__e.$name as $name"
-    }.mkString(", ")
-    val withClause = s"WITH $projections, __e"
+      case StructField(`sourceIdKey`, _, _, _) => s"id(__e) as $sourceIdKey"
+      case StructField(RelationshipEntity.sourceStartNodeKey, _, _, _) => s"id(__s) as ${RelationshipEntity.sourceStartNodeKey}"
+      case StructField(RelationshipEntity.sourceEndNodeKey, _, _, _) => s"id(__t) as ${RelationshipEntity.sourceEndNodeKey}"
+      case StructField(name, _, _, _) if name.isPropertyColumnName => s"__e.${name.toProperty} as $name"
+      case StructField(other, _, _, _) => sys.error(other)
+    }
+
+    val withClause = s"WITH ${(projections :+ "__e").mkString(", ")}"
 
 
     val labelFilterString =
@@ -126,7 +139,7 @@ class Neo4jDataSourceReader(neo4jConfig: Neo4jConfig, typ: EntityType, labels: S
         ""
       } else {
         typ match {
-          case Node => s"labels(__e) = ${labels.map(l => s""""$l"""").mkString("[", ",", "]")}"
+          case Node => s"length(labels(__e)) = ${labels.size}"
           case Relationship => s"""type(__e) = "${labels.head}""""
         }
       }
@@ -145,10 +158,10 @@ class Neo4jDataSourceReader(neo4jConfig: Neo4jConfig, typ: EntityType, labels: S
 
     val batches = (count / 10000.0).ceil.toInt
 
-    val res = new util.ArrayList[DataReaderFactory[Row]]
+    val res = new util.ArrayList[InputPartition[InternalRow]]
 
-    (0 until batches).map { i=>
-      res.add(Neo4jDataReaderFactory(neo4jConfig, requiredSchema, matchClause, withClause, whereClause, i * 10000))
+    (0 until batches).map { i =>
+      res.add(Neo4jInputPartition(neo4jConfig, requiredSchema, matchClause, withClause, whereClause, i * 10000))
     }
 
     res
@@ -156,16 +169,16 @@ class Neo4jDataSourceReader(neo4jConfig: Neo4jConfig, typ: EntityType, labels: S
 
 }
 
-case class Neo4jDataReaderFactory(
+case class Neo4jInputPartition(
   neo4jConfig: Neo4jConfig,
   requiredSchema: StructType,
   matchClause: String,
   withClause: String,
   whereClause: String,
   start: Long)
-  extends DataReaderFactory[Row] {
+  extends InputPartition[InternalRow] {
 
-  override def createDataReader(): DataReader[Row] = new Neo4jDataReader(
+  override def createPartitionReader(): InputPartitionReader[InternalRow] = new Neo4jInputPartitionReader(
     neo4jConfig,
     requiredSchema,
     matchClause,
@@ -175,25 +188,27 @@ case class Neo4jDataReaderFactory(
   )
 }
 
-class Neo4jDataReader(
+class Neo4jInputPartitionReader(
   neo4jConfig: Neo4jConfig,
   requiredSchema: StructType,
   matchClause: String,
   withClause: String,
   whereClause: String,
   start: Long
-) extends DataReader[Row] with Logging {
+) extends InputPartitionReader[InternalRow] with Logging {
 
   private val driver = neo4jConfig.driver()
   private val session = driver.session()
   private val tx = session.beginTransaction()
 
   private val data = {
-       val query = s"""
+   val returnProperties = if(requiredSchema.isEmpty) "id(__e)" else requiredSchema.map(_.name).mkString(", ")
+
+   val query = s"""
        |$matchClause
        |$withClause
        |$whereClause
-       |RETURN ${requiredSchema.map(_.name).mkString(", ")}
+       |RETURN $returnProperties
        |ORDER BY id(__e)
        |SKIP $start LIMIT 10000
     """.stripMargin
@@ -213,15 +228,33 @@ class Neo4jDataReader(
     }
   }
 
+  var record: Record = _
+
   override def next(): Boolean = {
-    data.hasNext
+    if(data.hasNext) {
+      record = data.next()
+      true
+    } else {
+      false
+    }
   }
 
-  override def get(): Row = {
-    val record = data.next()
-
-    val values = requiredSchema.map(_.name).map { name =>
-      record.get(name).asObject()
+  override def get(): InternalRow = {
+    val values = requiredSchema.map {
+      case StructField(name, typ, _, _) =>
+        val value = record.get(name)
+        if (value.isNull) {
+          null
+        } else typ match {
+          case StringType => value.asString()
+          case IntegerType => value.asInt()
+          case LongType => value.asLong()
+          case FloatType => value.asFloat()
+          case DoubleType => value.asDouble()
+          case BooleanType => value.asBoolean()
+          case ArrayType(_, _) => value.asList().toArray
+          case _ => value.asObject()
+        }
     }
 
     Row.fromSeq(values)

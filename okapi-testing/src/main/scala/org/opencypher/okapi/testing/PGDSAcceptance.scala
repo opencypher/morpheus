@@ -84,7 +84,9 @@ trait PGDSAcceptance[Session <: CypherSession] extends BeforeAndAfterEach {
   }
 
   it("supports `graph`") {
-    cypherSession.catalog.source(ns).graph(gn).nodes("n").size shouldBe 7
+    val nodes = cypherSession.catalog.source(ns).graph(gn).nodes("n")
+
+    nodes.size shouldBe 7
     intercept[GraphNotFoundException] {
       cypherSession.catalog.source(ns).graph(GraphName("foo"))
     }

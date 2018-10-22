@@ -5,7 +5,9 @@ import org.apache.spark.sql.sources._
 import org.apache.spark.sql.types.{StructField, StructType}
 import org.opencypher.okapi.api.types.{CTInteger, CypherType}
 import org.opencypher.okapi.impl.exception._
-import org.opencypher.okapi.neo4j.io.Neo4jHelpers.Neo4jDefaults._
+import org.opencypher.okapi.impl.util.StringEncodingUtilities._
+import org.opencypher.spark.api.io.GraphEntity._
+import org.opencypher.spark.api.io.Relationship
 import org.opencypher.spark.impl.convert.SparkConversions._
 import org.opencypher.spark.impl.io.neo4j.Neo4jSparkDataSource._
 import org.opencypher.spark.testing.CAPSTestSuite
@@ -16,7 +18,7 @@ class Neo4jSparkDataSourceTest extends CAPSTestSuite with CAPSNeo4jServerFixture
 
   describe("reading nodes") {
     it("can read all nodes with specific labels") {
-      val schema = toSchema(dataFixtureSchema.keysFor(Set(Set("Person","Swede"))).toSeq :+ (idPropertyKey -> CTInteger))
+      val schema = toSchema(dataFixtureSchema.keysFor(Set(Set("Person","Swede"))).toSeq, Seq(sourceIdKey -> CTInteger))
 
       val result = caps.sparkSession.read
         .format(dataSourceClass.getName)
@@ -33,7 +35,7 @@ class Neo4jSparkDataSourceTest extends CAPSTestSuite with CAPSNeo4jServerFixture
     }
 
     it("can push down filters for nodes") {
-      val schema = toSchema(dataFixtureSchema.keysFor(Set(Set("Person","German"))).toSeq :+ (idPropertyKey -> CTInteger))
+      val schema = toSchema(dataFixtureSchema.keysFor(Set(Set("Person","German"))).toSeq, Seq(sourceIdKey -> CTInteger))
 
       val df = caps.sparkSession.read
         .format(dataSourceClass.getName)
@@ -44,7 +46,7 @@ class Neo4jSparkDataSourceTest extends CAPSTestSuite with CAPSNeo4jServerFixture
         .schema(schema)
         .load
 
-      val result = df.filter("luckyNumber > 21").filter(df.col("name").startsWith("M"))
+      val result = df.filter(s"${"luckyNumber".toPropertyColumnName} > 21").filter(df.col("name".toPropertyColumnName).startsWith("M"))
 
       result.collect shouldEqual Array(
         Row(null, "Martin", 1337, 2L)
@@ -52,7 +54,7 @@ class Neo4jSparkDataSourceTest extends CAPSTestSuite with CAPSNeo4jServerFixture
     }
 
     it("can prune columns nodes") {
-      val schema = toSchema(dataFixtureSchema.keysFor(Set(Set("Person","German"))).toSeq :+ (idPropertyKey -> CTInteger))
+      val schema = toSchema(dataFixtureSchema.keysFor(Set(Set("Person","German"))).toSeq, Seq(sourceIdKey -> CTInteger))
 
       val df = caps.sparkSession.read
         .format(dataSourceClass.getName)
@@ -63,7 +65,7 @@ class Neo4jSparkDataSourceTest extends CAPSTestSuite with CAPSNeo4jServerFixture
         .schema(schema)
         .load
 
-      val result = df.select("luckyNumber")
+      val result = df.select("luckyNumber".toPropertyColumnName)
 
       result.collect shouldEqual Array(
         Row(42),
@@ -71,17 +73,63 @@ class Neo4jSparkDataSourceTest extends CAPSTestSuite with CAPSNeo4jServerFixture
         Row(8)
       )
     }
+
+    it("can run count queries") {
+      val schema = toSchema(dataFixtureSchema.keysFor(Set(Set("Person","Swede"))).toSeq, Seq(sourceIdKey -> CTInteger))
+
+      val result = caps.sparkSession.read
+        .format(dataSourceClass.getName)
+        .option("boltAddress", neo4jConfig.uri.toString)
+        .option("boltUser", neo4jConfig.user)
+        .option("entityType", "node")
+        .option("labels", "Person,Swede")
+        .schema(schema)
+        .load.count
+
+      result shouldBe 1
+    }
+
+    it("foo") {
+      val swedeSchema = toSchema(dataFixtureSchema.keysFor(Set(Set("Person","Swede"))).toSeq, Seq(sourceIdKey -> CTInteger))
+      val swedes = caps.sparkSession.read
+        .format(dataSourceClass.getName)
+        .option("boltAddress", neo4jConfig.uri.toString)
+        .option("boltUser", neo4jConfig.user)
+        .option("entityType", "node")
+        .option("labels", "Person,Swede")
+        .schema(swedeSchema)
+        .load
+        .select("property_name", "property_luckyNumber", "id")
+
+      val germansSchema = toSchema(dataFixtureSchema.keysFor(Set(Set("Person","German"))).toSeq, Seq(sourceIdKey -> CTInteger))
+      val germans = caps.sparkSession.read
+        .format(dataSourceClass.getName)
+        .option("boltAddress", neo4jConfig.uri.toString)
+        .option("boltUser", neo4jConfig.user)
+        .option("entityType", "node")
+        .option("labels", "Person,German")
+        .schema(germansSchema)
+        .load
+        .select("property_name", "property_luckyNumber", "id")
+
+      println(germans.union(swedes).groupBy().count().queryExecution.analyzed.verboseString)
+      println(germans.union(swedes).groupBy().count().queryExecution.withCachedData.verboseString)
+      println(germans.union(swedes).groupBy().count().queryExecution.optimizedPlan.verboseString)
+      println(germans.union(swedes).groupBy().count().queryExecution.sparkPlan.verboseString)
+      println(germans.union(swedes).groupBy().count().queryExecution.executedPlan.verboseString)
+//      println(germans.union(swedes).count)
+    }
   }
 
   describe("reading relationships") {
     val relSpecificKeys = Seq(
-      idPropertyKey -> CTInteger,
-      startIdPropertyKey -> CTInteger,
-      endIdPropertyKey -> CTInteger
+      sourceIdKey -> CTInteger,
+      Relationship.sourceStartNodeKey -> CTInteger,
+      Relationship.sourceEndNodeKey -> CTInteger
     )
 
     it("can read all relationships with specific type") {
-      val schema = toSchema(dataFixtureSchema.relationshipKeys("KNOWS").toSeq ++ relSpecificKeys )
+      val schema = toSchema(dataFixtureSchema.relationshipKeys("KNOWS").toSeq, relSpecificKeys )
 
       val result = caps.sparkSession.read
         .format(dataSourceClass.getName)
@@ -100,7 +148,7 @@ class Neo4jSparkDataSourceTest extends CAPSTestSuite with CAPSNeo4jServerFixture
     }
 
     it("can push down filters") {
-      val schema = toSchema(dataFixtureSchema.relationshipKeys("KNOWS").toSeq ++ relSpecificKeys )
+      val schema = toSchema(dataFixtureSchema.relationshipKeys("KNOWS").toSeq, relSpecificKeys )
 
       val df = caps.sparkSession.read
         .format(dataSourceClass.getName)
@@ -111,7 +159,7 @@ class Neo4jSparkDataSourceTest extends CAPSTestSuite with CAPSNeo4jServerFixture
         .schema(schema)
         .load
 
-      val result = df.filter(s"$startIdPropertyKey > 0").filter("since = 2016")
+      val result = df.filter(s"${Relationship.sourceStartNodeKey} > 0").filter("since".toPropertyColumnName +" = 2016")
 
       result.collect shouldEqual Array(
         Row(2016, 1,1,2),
@@ -120,7 +168,7 @@ class Neo4jSparkDataSourceTest extends CAPSTestSuite with CAPSNeo4jServerFixture
     }
 
     it("can prune columns") {
-      val schema = toSchema(dataFixtureSchema.relationshipKeys("KNOWS").toSeq ++ relSpecificKeys )
+      val schema = toSchema(dataFixtureSchema.relationshipKeys("KNOWS").toSeq, relSpecificKeys )
 
       val df = caps.sparkSession.read
         .format(dataSourceClass.getName)
@@ -131,7 +179,7 @@ class Neo4jSparkDataSourceTest extends CAPSTestSuite with CAPSNeo4jServerFixture
         .schema(schema)
         .load
 
-      val result = df.select("since")
+      val result = df.select("since".toPropertyColumnName)
 
       result.collect shouldEqual Array(
         Row(2016),
@@ -188,7 +236,7 @@ class Neo4jSparkDataSourceTest extends CAPSTestSuite with CAPSNeo4jServerFixture
 
   describe("required options") {
     it("throws errors on missing options") {
-      val schema = toSchema(Seq(idPropertyKey -> CTInteger))
+      val schema = toSchema(Seq.empty, Seq(sourceIdKey -> CTInteger))
 
       val ds = caps.sparkSession.read.format(dataSourceClass.getName).schema(schema)
 
@@ -215,11 +263,15 @@ class Neo4jSparkDataSourceTest extends CAPSTestSuite with CAPSNeo4jServerFixture
   }
 
 
-  private def toSchema(propertyKeys: Seq[(String, CypherType)]): StructType = {
-    val fields = propertyKeys.map {
-      case (property, ct) => StructField(property, ct.toSparkType.get)
+  private def toSchema(propertyKeys: Seq[(String, CypherType)], other: Seq[(String, CypherType)]): StructType = {
+    val propertyFields = propertyKeys.map {
+      case (property, ct) => StructField(property.toPropertyColumnName, ct.toSparkType.get)
     }
 
-    StructType(fields)
+    val otherFields = other.map {
+      case (field, ct) => StructField(field, ct.toSparkType.get)
+    }
+
+    StructType(propertyFields ++ otherFields)
   }
 }

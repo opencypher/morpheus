@@ -27,25 +27,20 @@
 package org.opencypher.spark.api.io.neo4j
 
 import org.apache.logging.log4j.scala.Logging
+import org.apache.spark.sql.DataFrame
 import org.apache.spark.sql.types.StructType
-import org.apache.spark.sql.{DataFrame, Row}
-import org.neo4j.driver.v1.{Value, Values}
 import org.opencypher.okapi.api.graph.{GraphName, PropertyGraph}
 import org.opencypher.okapi.api.schema.LabelPropertyMap._
 import org.opencypher.okapi.api.schema.Schema
-import org.opencypher.okapi.api.types.{CTNode, CTRelationship}
 import org.opencypher.okapi.api.value.CypherValue.CypherList
 import org.opencypher.okapi.impl.exception.UnsupportedOperationException
 import org.opencypher.okapi.impl.schema.SchemaImpl
-import org.opencypher.okapi.ir.api.expr.{EndNode, Property, StartNode}
 import org.opencypher.okapi.neo4j.io.MetaLabelSupport._
 import org.opencypher.okapi.neo4j.io.Neo4jHelpers.Neo4jDefaults._
 import org.opencypher.okapi.neo4j.io.Neo4jHelpers._
-import org.opencypher.okapi.neo4j.io.{EntityWriter, Neo4jConfig}
+import org.opencypher.okapi.neo4j.io.{EntityReader, Neo4jConfig}
 import org.opencypher.spark.api.CAPSSession
-import org.opencypher.spark.impl.CAPSConverters._
-import org.opencypher.spark.impl.CAPSRecords
-import org.opencypher.spark.impl.io.neo4j.Neo4jSparkDataSource
+import org.opencypher.spark.impl.io.neo4j.external.Neo4j
 import org.opencypher.spark.schema.CAPSSchema
 import org.opencypher.spark.schema.CAPSSchema._
 
@@ -53,20 +48,11 @@ import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.duration._
 import scala.concurrent.{Await, Future}
 
-case class Neo4jPropertyGraphDataSource(
+case class Neo4jPropertyGraphDataSourceOld(
   override val config: Neo4jConfig,
   maybeSchema: Option[Schema] = None,
   override val omitIncompatibleProperties: Boolean = false
 )(implicit val caps: CAPSSession) extends AbstractNeo4jDataSource with Logging {
-
-  private val dataSourceClass = classOf[Neo4jSparkDataSource]
-  private val commonDataSourceOptions = {
-    val options = Map(
-      "boltAddress" -> config.uri.toString,
-      "boltUser" -> config.user
-    )
-    if (config.password.isDefined) options.updated("boltPassword", config.password.get) else options
-  }
 
   graphNameCache += entireGraphName
 
@@ -113,23 +99,13 @@ case class Neo4jPropertyGraphDataSource(
     labels: Set[String],
     sparkSchema: StructType
   ): DataFrame = {
-    val queryLabels = graphName.metaLabel match {
-      case Some(l) => labels + l
-      case None => labels
-    }
+    val graphSchema = schema(graphName).get
+    val flatQuery = EntityReader.flatExactLabelQuery(labels, graphSchema, graphName.metaLabel)
 
-    val options = commonDataSourceOptions
-      .updated("entityType", "node")
-      .updated("labels", queryLabels.mkString(","))
+    val neo4jConnection = Neo4j(config, caps.sparkSession)
+    val rdd = neo4jConnection.cypher(flatQuery).loadRowRdd
 
-    val df = caps.sparkSession
-      .read
-      .format(dataSourceClass.getName)
-      .schema(sparkSchema)
-      .options(options)
-      .load
-
-    df
+    caps.sparkSession.createDataFrame(rdd, sparkSchema)
   }
 
   override protected def readRelationshipTable(
@@ -137,16 +113,12 @@ case class Neo4jPropertyGraphDataSource(
     relKey: String,
     sparkSchema: StructType
   ): DataFrame = {
-    val options = commonDataSourceOptions
-      .updated("entityType", "relationship")
-      .updated("type", relKey)
+    val graphSchema = schema(graphName).get
+    val flatQuery = EntityReader.flatRelTypeQuery(relKey, graphSchema, graphName.metaLabel)
 
-    caps.sparkSession
-      .read
-      .format(dataSourceClass.getName)
-      .schema(sparkSchema)
-      .options(options)
-      .load
+    val neo4jConnection = Neo4j(config, caps.sparkSession)
+    val rdd = neo4jConnection.cypher(flatQuery).loadRowRdd
+    caps.sparkSession.createDataFrame(rdd, sparkSchema)
   }
 
   override protected def deleteGraph(graphName: GraphName): Unit = {
@@ -190,86 +162,4 @@ case class Neo4jPropertyGraphDataSource(
   // No need to implement these as we overwrite {{{org.opencypher.spark.api.io.neo4j.Neo4jPropertyGraphDataSource.store}}}
   override protected def writeNodeTable(graphName: GraphName, labels: Set[String], table: DataFrame): Unit = ()
   override protected def writeRelationshipTable(graphName: GraphName, relKey: String, table: DataFrame): Unit = ()
-}
-
-case object Writers {
-  def writeNodes(graph: PropertyGraph, metaLabel: String, config: Neo4jConfig)
-    (implicit caps: CAPSSession): Set[Future[Unit]] = {
-    val result: Set[Future[Unit]] = graph.schema.labelCombinations.combos.map { combo =>
-      val nodeScan = graph.nodes("n", CTNode(combo), exactLabelMatch = true).asCaps
-      val mapping = computeMapping(nodeScan)
-      nodeScan
-        .df
-        .rdd
-        .foreachPartitionAsync{ i =>
-          if (i.nonEmpty) EntityWriter.createNodes(i, mapping, config, combo + metaLabel)(rowToListValue)
-        }
-    }
-    result
-  }
-
-  def writeRelationships(graph: PropertyGraph, metaLabel: String, config: Neo4jConfig)
-    (implicit caps: CAPSSession): Set[Future[Unit]] = {
-    graph.schema.relationshipTypes.map { relType =>
-      val relScan = graph.relationships("r", CTRelationship(relType)).asCaps
-      val mapping = computeMapping(relScan)
-
-      val header = relScan.header
-      val relVar = header.entityVars.head
-      val startExpr = header.expressionsFor(relVar).collect { case s: StartNode => s }.head
-      val endExpr = header.expressionsFor(relVar).collect { case e: EndNode => e }.head
-      val startColumn = relScan.header.column(startExpr)
-      val endColumn = relScan.header.column(endExpr)
-      val startIndex = relScan.df.columns.indexOf(startColumn)
-      val endIndex = relScan.df.columns.indexOf(endColumn)
-
-      relScan
-        .df
-        .rdd
-        .foreachPartitionAsync { i =>
-          if (i.nonEmpty) {
-            EntityWriter.createRelationships(
-              i,
-              startIndex,
-              endIndex,
-              mapping,
-              config,
-              relType,
-              Some(metaLabel)
-            )(rowToListValue)
-          }
-        }
-    }
-  }
-
-  private def rowToListValue(row: Row): Value = {
-    val array = new Array[Value](row.size)
-    var i = 0
-    while (i < row.size) {
-      array(i) = Values.value(row.get(i))
-      i += 1
-    }
-    Values.value(array: _*)
-  }
-
-  private def computeMapping(nodeScan: CAPSRecords): Array[String] = {
-    val header = nodeScan.header
-    val nodeVar = header.entityVars.head
-    val properties: Set[Property] = header.expressionsFor(nodeVar).collect {
-      case p: Property => p
-    }
-
-    val columns = nodeScan.df.columns
-    val mapping = Array.fill[String](columns.length)(null)
-
-    val idIndex = columns.indexOf(header.column(nodeVar))
-    mapping(idIndex) = metaPropertyKey
-
-    properties.foreach { property =>
-      val index = columns.indexOf(header.column(property))
-      mapping(index) = property.key.name
-    }
-
-    mapping
-  }
 }
