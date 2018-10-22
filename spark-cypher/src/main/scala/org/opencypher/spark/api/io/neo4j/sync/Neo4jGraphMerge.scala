@@ -31,6 +31,7 @@ import org.apache.spark.sql.Row
 import org.neo4j.driver.internal.value.ListValue
 import org.neo4j.driver.v1.{Value, Values}
 import org.opencypher.okapi.api.graph.{GraphName, PropertyGraph}
+import org.opencypher.okapi.api.schema.Schema
 import org.opencypher.okapi.api.types.{CTNode, CTRelationship}
 import org.opencypher.okapi.impl.exception.SchemaException
 import org.opencypher.okapi.ir.api.expr.{EndNode, Property, StartNode}
@@ -176,6 +177,8 @@ object Neo4jGraphMerge extends Logging {
     config: Neo4jConfig,
     entityKeys: EntityKeys
   )(implicit caps: CAPSSession): Unit = {
+    validateEntityKeys(graph.schema, entityKeys)
+
     val maybeMetaLabel = maybeGraphName.map(gn => gn.metaLabelForSubgraph)
     val maybeMetaLabelString = maybeMetaLabel.toSet[String].cypherLabelPredicate
 
@@ -191,6 +194,11 @@ object Neo4jGraphMerge extends Logging {
     Await.result(writesCompleted, Duration.Inf)
 
     logger.debug(s"Merge successful")
+  }
+
+  private def validateEntityKeys(graphSchema: Schema, entityKeys: EntityKeys): Unit = {
+    entityKeys.nodeKeys.foreach { nodeKey => graphSchema.withNodeKey(nodeKey._1, nodeKey._2) }
+    entityKeys.relKeys.foreach { relKey => graphSchema.withRelationshipKey(relKey._1, relKey._2) }
   }
 }
 
