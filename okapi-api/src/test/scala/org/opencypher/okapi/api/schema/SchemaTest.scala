@@ -436,7 +436,7 @@ class SchemaTest extends FunSpec with Matchers {
 
     serialized should equal(
       """|{
-         |    "version": 1,
+         |    "version": "1.0",
          |    "labelPropertyMap": [
          |        {
          |            "labels": [
@@ -474,7 +474,7 @@ class SchemaTest extends FunSpec with Matchers {
 
     serialized should equal(
       """|{
-         |    "version": 1,
+         |    "version": "1.0",
          |    "labelPropertyMap": [
          |        {
          |            "labels": [
