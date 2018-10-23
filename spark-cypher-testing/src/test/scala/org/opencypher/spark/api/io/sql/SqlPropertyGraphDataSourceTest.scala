@@ -144,15 +144,16 @@ class SqlPropertyGraphDataSourceTest extends CAPSTestSuite {
          |CREATE GRAPH fooGraph WITH GRAPH SCHEMA fooSchema
          |  NODE LABEL SETS (
          |    (Foo) FROM $fooView
+         |          FROM otherView
          |    (Bar) FROM $barView
          |  )
          |  RELATIONSHIP LABEL SETS (
-         |    (TYPE_1)
+         |    (REL)
          |      FROM $relView edge
          |        START NODES
-         |          LABEL SET (Foo) FROM $fooView alias_foo JOIN ON alias_foo.id = edge.COLUMN_A
+         |          LABEL SET (Foo) FROM $fooView alias_foo JOIN ON alias_foo.foo = edge.start
          |        END NODES
-         |          LABEL SET (Bar) FROM $barView alias_bar JOIN ON alias_bar.COLUMN_A = edge.COLUMN_A
+         |          LABEL SET (Bar) FROM $barView alias_bar JOIN ON alias_bar.bar = edge.end
          |  )
      """.stripMargin
 
@@ -162,16 +163,19 @@ class SqlPropertyGraphDataSourceTest extends CAPSTestSuite {
 
     val ds = SqlPropertyGraphDataSource(parse(ddlString), Map(dataSourceName -> SqlDataSourceConfig(HiveFormat, dataSourceName)))(caps)
 
+    val nodeId1 = computePartitionedRowId(rowIndex = 0, partitionStartDelta = 0)
+    val nodeId2 = computePartitionedRowId(rowIndex = 0, partitionStartDelta = 1)
+
     ds.graph(fooGraphName).nodes("n").toMapsWithCollectedEntities should equal(Bag(
-      CypherMap("n" -> CAPSNode(computePartitionedRowId(rowIndex = 0, partitionStartDelta = 0), Set("Foo"), CypherMap("foo" -> "Alice"))),
-      CypherMap("n" -> CAPSNode(computePartitionedRowId(rowIndex = 0, partitionStartDelta = 1), Set("Bar"), CypherMap("bar" -> 42L)))
+      CypherMap("n" -> CAPSNode(nodeId1, Set("Foo"), CypherMap("foo" -> "Alice"))),
+      CypherMap("n" -> CAPSNode(nodeId2, Set("Bar"), CypherMap("bar" -> 42L)))
     ))
 
     ds.graph(fooGraphName).relationships("r").toMapsWithCollectedEntities should equal(Bag(
       CypherMap("r" -> CAPSRelationship(
         id = computePartitionedRowId(rowIndex = 0, partitionStartDelta = 0),
-        startId = computePartitionedRowId(rowIndex = 0, partitionStartDelta = 0),
-        endId = computePartitionedRowId(rowIndex = 0, partitionStartDelta = 1),
+        startId = nodeId1,
+        endId = nodeId2,
         relType = "REL"))
     ))
   }

@@ -35,9 +35,16 @@ import org.opencypher.spark.api.CAPSSession
 import org.opencypher.spark.api.io.{CAPSNodeTable, HiveFormat, JdbcFormat}
 import org.opencypher.spark.impl.CAPSFunctions.partitioned_id_assignment
 import org.opencypher.spark.impl.io.CAPSPropertyGraphDataSource
-import org.opencypher.sql.ddl.{DdlDefinitions, NodeMappingDefinition, SetSchemaDefinition}
+import org.opencypher.sql.ddl.{DdlDefinitions, NodeMappingDefinition, NodeToViewDefinition, SetSchemaDefinition}
 
 case class DDLFormatException(message: String) extends RuntimeException
+
+/**
+  * Id of a SQL view assigned to a specific label definition. This is necessary because the same SQL view can be
+  * assigned to multiple label definitions.
+  */
+// TODO: move to IR
+case class AssignedViewIdentifier(labelDefinitions: Set[String], viewName: String)
 
 case class SqlPropertyGraphDataSource(
   ddl: DdlDefinitions,
@@ -61,26 +68,67 @@ case class SqlPropertyGraphDataSource(
 
     val graphDefinition = ddl.graphByName(graphName.value)
 
-    val comboToNodeMapping: Map[Set[String], NodeMappingDefinition] = graphDefinition.nodeMappings.map(nm => nm.labelNames -> nm).toMap
+    // Node tables
 
-    // TODO: Add ability to map multiple views/DFs to the same combo
-    val nodeDataFramesWithoutIds: Seq[(Set[String], DataFrame)] = graphSchema.labelCombinations.combos.toSeq
-      .map(combo => combo -> readNodeTable(combo, comboToNodeMapping(combo).viewName, sqlDataSourceConfig))
+    val nodeDataFramesWithoutIds = for {
+      nodeMapping <- graphDefinition.nodeMappings
+      nodeToViewDefinition <- nodeMapping.nodeToViewDefinitions
+    } yield AssignedViewIdentifier(nodeMapping.labelNames, nodeToViewDefinition.viewName) -> readSqlTable(nodeToViewDefinition.viewName, sqlDataSourceConfig)
 
+    // id assignment preparation
     val dfPartitionCounts = nodeDataFramesWithoutIds.map(_._2.rdd.getNumPartitions)
     val dfPartitionStartDeltas = dfPartitionCounts.scan(0)(_ + _).dropRight(1) // drop last delta, as we don't need it
 
+    // actual id assignment
     // TODO: Ensure added id does not collide with a property called `id`
-    val nodeDataFramesWithIds: Seq[(Set[String], DataFrame)] = nodeDataFramesWithoutIds.zip(dfPartitionStartDeltas).map {
-      case ((combo, df), partitionStartDelta) =>
+    val nodeDataFramesWithIds = nodeDataFramesWithoutIds.zip(dfPartitionStartDeltas).map {
+      case ((instantiatedViewIdentifier, df), partitionStartDelta) =>
         val dfWithIdColumn = df.withColumn("id", partitioned_id_assignment(partitionStartDelta))
-        combo -> dfWithIdColumn
-    }
+        instantiatedViewIdentifier -> dfWithIdColumn
+    }.toMap
 
-    val nodeTables: Seq[CAPSNodeTable] = nodeDataFramesWithIds.map { case (combo, df) =>
-      val nodeMapping = computeNodeMapping(combo, graphSchema, comboToNodeMapping(combo))
-      CAPSNodeTable.fromMapping(nodeMapping, df)
-    }
+
+    // TODO: maps a AssignedViewId to its NodeToViewDefinition --> make available through DDL IR
+    val nodeToViewDefinitions = (for {
+      nodeMapping <- graphDefinition.nodeMappings
+      nodeToViewDefinition <- nodeMapping.nodeToViewDefinitions
+    } yield AssignedViewIdentifier(nodeMapping.labelNames, nodeToViewDefinition.viewName) -> nodeToViewDefinition).toMap
+
+    val nodeTables = nodeDataFramesWithIds.map {
+      case (viewId, df) =>
+        val nodeMapping = computeNodeMapping(viewId.labelDefinitions, graphSchema, nodeToViewDefinitions(viewId))
+        CAPSNodeTable.fromMapping(nodeMapping, df)
+    }.toSeq
+
+    // Relationship tables
+
+//    val relTypeToRelMapping = graphDefinition.relationshipMappings.map(rm => rm.relType -> rm).toMap
+//    val relDataFramesWithoutIds = graphSchema.relationshipTypes.map { relType =>
+//
+//      val relationshipMappingDefinition = relTypeToRelMapping(relType)
+//      val relTypeDfs = relationshipMappingDefinition.relationshipMappings.map { relationshipToViewDefinition =>
+//
+//        val sourceTable = relationshipToViewDefinition.sourceView.name
+//        readSqlTable(sourceTable, sqlDataSourceConfig)
+//
+//      }
+//      // TODO: keep all DFs, align column layout and union
+//      // TODO: compute relationship mapping for each DF
+//      relType -> relTypeDfs.head
+//    }
+
+
+    // RELTYPE { foo }
+    // -> viewA -> start | end  | key1 + (key1 as foo)
+    // -> viewB -> src   | trgt | key2 + (key2 as foo)
+
+
+    // loading of just the rel DF
+    // generate new id for rels
+    // join with DF for start label combo -> add generated start node ids
+    // join with DF for end label combo -> add generated end node ids
+    //
+
 
     caps.graphs.create(nodeTables.head, nodeTables.tail: _*)
   }
@@ -88,9 +136,9 @@ case class SqlPropertyGraphDataSource(
   private def computeNodeMapping(
     labelCombination: Set[String],
     graphSchema: Schema,
-    nodeMappingDefinition: NodeMappingDefinition
+    nodeToViewDefinition: NodeToViewDefinition
   ): NodeMapping = {
-    val propertyToColumnMapping = nodeMappingDefinition.maybePropertyMapping match {
+    val propertyToColumnMapping = nodeToViewDefinition.maybePropertyMapping match {
       case Some(propertyToColumnMappingDefinition) => propertyToColumnMappingDefinition
       // TODO: support unicode characters in properties and ensure there are no collisions with column name `id`
       case None => graphSchema.nodePropertyKeys(labelCombination).map { case (key, _) => key -> key }
@@ -102,8 +150,7 @@ case class SqlPropertyGraphDataSource(
     nodeMapping
   }
 
-  private def readNodeTable(
-    labelCombination: Set[String],
+  private def readSqlTable(
     viewName: String,
     sqlDataSourceConfig: SqlDataSourceConfig
   ): DataFrame = {
@@ -126,7 +173,6 @@ case class SqlPropertyGraphDataSource(
 
     inputTable
   }
-
 
   override def schema(name: GraphName): Option[Schema] = ddl.graphSchemas.get(name.value)
 
