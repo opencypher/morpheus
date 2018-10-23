@@ -1,5 +1,5 @@
 +----------------+----------------+
-|_name __ STRING?|_name __ STRING?|
+|_name __ STRING?|b_name __ STRING?|
 +----------------+----------------+
 |           Alice|           Alice|
 |             Bob|             Bob|
