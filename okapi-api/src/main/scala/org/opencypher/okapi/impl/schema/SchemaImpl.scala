@@ -36,7 +36,8 @@ import org.opencypher.okapi.api.types.CypherType.joinMonoid
 import org.opencypher.okapi.api.types.{CypherType, _}
 import org.opencypher.okapi.impl.exception.SchemaException
 import org.opencypher.okapi.impl.schema.SchemaImpl._
-import ujson.Js.Obj
+import org.opencypher.okapi.impl.util.Version
+import ujson.Js.{Num, Obj, Str}
 import upickle.Js
 import upickle.default.{macroRW, _}
 
@@ -57,7 +58,7 @@ object SchemaImpl {
   implicit def rw: ReadWriter[Schema] = readwriter[Js.Value].bimap[Schema](
     schema => {
       val tuples: Seq[(String, Js.Value)] = Seq[(String, Js.Value)](
-        VERSION -> Js.Num(1),
+        VERSION -> writeJs(Schema.CURRENT_VERSION.toString),
         LABEL_PROPERTY_MAP -> writeJs(schema.labelPropertyMap),
         REL_TYPE_PROPERTY_MAP -> writeJs(schema.relTypePropertyMap)) ++ {
         if (schema.explicitSchemaPatterns.nonEmpty) {
@@ -82,6 +83,14 @@ object SchemaImpl {
     }
     ,
     json => {
+      val versionString: String = json.obj(VERSION) match {
+        case Str(inner) => inner
+        case Num(inner) => inner.toString
+        case other => throw SchemaException(s"Expected Version to be a String or a Number but got $other")
+      }
+      val version = Version(versionString)
+      if(!version.compatibleWith(Schema.CURRENT_VERSION)) throw SchemaException("Incompatible Schema versions")
+
       val labelPropertyMap = readJs[LabelPropertyMap](json.obj(LABEL_PROPERTY_MAP))
       val relTypePropertyMap = readJs[RelTypePropertyMap](json.obj(REL_TYPE_PROPERTY_MAP))
       val explicitSchemaPatterns = json match {
@@ -471,7 +480,7 @@ final case class SchemaImpl(
   override def isEmpty: Boolean = this == Schema.empty
 
   override private[opencypher] def dropPropertiesFor(combo: Set[String]) =
-    copy(labelPropertyMap - combo)
+    copy(labelPropertyMap = labelPropertyMap - combo)
 
   override private[opencypher] def withOverwrittenNodePropertyKeys(
     nodeLabels: Set[String],

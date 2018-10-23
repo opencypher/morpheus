@@ -33,8 +33,11 @@ import org.opencypher.okapi.api.types.{CTRelationship, CypherType}
 import org.opencypher.okapi.impl.annotations.experimental
 import org.opencypher.okapi.impl.schema.SchemaImpl._
 import org.opencypher.okapi.impl.schema.{ImpliedLabels, LabelCombinations, SchemaImpl}
+import org.opencypher.okapi.impl.util.Version
 
 object Schema {
+  val CURRENT_VERSION: Version = Version("1.0")
+
   /**
     * Empty Schema. Start with this to construct a new Schema.
     * Use the `with*` functions to add information.
