@@ -31,11 +31,12 @@ import java.net.URI
 import org.apache.hadoop.fs.FileSystem
 import org.apache.spark.sql.DataFrame
 import org.apache.spark.sql.types.StructType
-import org.opencypher.okapi.api.graph.GraphName
+import org.opencypher.okapi.api.graph.{GraphName, Node, Relationship}
 import org.opencypher.spark.api.CAPSSession
-import org.opencypher.spark.api.io.{AbstractPropertyGraphDataSource, StorageFormat}
 import org.opencypher.spark.api.io.fs.HadoopFSHelpers._
 import org.opencypher.spark.api.io.json.JsonSerialization
+import org.opencypher.spark.api.io.util.HiveTableName
+import org.opencypher.spark.api.io.{AbstractPropertyGraphDataSource, StorageFormat}
 
 /**
   * Data source implementation that handles the writing of files and tables to a filesystem.
@@ -51,6 +52,7 @@ import org.opencypher.spark.api.io.json.JsonSerialization
 class FSGraphSource(
   val rootPath: String,
   val tableStorageFormat: StorageFormat,
+  val hiveDatabaseName: Option[String] = None,
   val filesPerTable: Option[Int] = None
 )(override implicit val caps: CAPSSession)
   extends AbstractPropertyGraphDataSource with JsonSerialization {
@@ -89,6 +91,9 @@ class FSGraphSource(
 
   override protected def deleteGraph(graphName: GraphName): Unit = {
     deleteDirectory(pathToGraphDirectory(graphName))
+    if(hiveDatabaseName.isDefined) {
+      deleteHiveDatabase(graphName)
+    }
   }
 
   override protected def readNodeTable(
@@ -101,6 +106,10 @@ class FSGraphSource(
 
   override protected def writeNodeTable(graphName: GraphName, labels: Set[String], table: DataFrame): Unit = {
     writeTable(pathToNodeTable(graphName, labels), table)
+    if(hiveDatabaseName.isDefined) {
+      val hiveNodeTableName = HiveTableName(hiveDatabaseName.get, graphName, Node, labels)
+      writeHiveTable(pathToNodeTable(graphName, labels), hiveNodeTableName, table.schema)
+    }
   }
 
   override protected def readRelationshipTable(
@@ -113,6 +122,31 @@ class FSGraphSource(
 
   override protected def writeRelationshipTable(graphName: GraphName, relKey: String, table: DataFrame): Unit = {
     writeTable(pathToRelationshipTable(graphName, relKey), table)
+    if(hiveDatabaseName.isDefined) {
+      val hiveRelationshipTableName = HiveTableName(hiveDatabaseName.get, graphName, Relationship, Set(relKey))
+      writeHiveTable(pathToRelationshipTable(graphName, relKey), hiveRelationshipTableName, table.schema)
+    }
+  }
+
+  private def writeHiveTable(pathToTable: String, hiveTableName: String, schema: StructType): Unit = {
+    caps.sparkSession.catalog.createTable(hiveTableName, tableStorageFormat.name, schema, Map("path" -> pathToTable))
+    caps.sparkSession.catalog.refreshTable(hiveTableName)
+  }
+
+  private def deleteHiveDatabase(graphName: GraphName): Unit = {
+    val graphSchema = schema(graphName).get
+    val labelCombinations = graphSchema.labelCombinations.combos
+    val relTypes = graphSchema.relationshipTypes
+
+    labelCombinations.foreach { combo =>
+      val tableName = HiveTableName(hiveDatabaseName.get, graphName, Node, combo)
+      caps.sparkSession.sql(s"DROP TABLE IF EXISTS $tableName")
+    }
+
+    relTypes.foreach { relType =>
+      val tableName = HiveTableName(hiveDatabaseName.get, graphName, Relationship, Set(relType))
+      caps.sparkSession.sql(s"DROP TABLE IF EXISTS $tableName")
+    }
   }
 
   override protected def readJsonSchema(graphName: GraphName): String = {
