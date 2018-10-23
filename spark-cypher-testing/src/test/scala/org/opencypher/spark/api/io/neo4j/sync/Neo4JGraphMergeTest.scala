@@ -41,6 +41,7 @@ import org.opencypher.spark.testing.CAPSTestSuite
 import org.opencypher.spark.testing.fixture.CAPSNeo4jServerFixture
 
 import scala.collection.JavaConverters._
+import scala.util.{Failure, Success, Try}
 
 class Neo4JGraphMergeTest extends CAPSTestSuite with CAPSNeo4jServerFixture with DefaultGraphInit {
 
@@ -176,6 +177,25 @@ class Neo4JGraphMergeTest extends CAPSTestSuite with CAPSNeo4jServerFixture with
         CypherMap("nId" -> 2, "mId" -> 3, "name" -> null, "labels" -> Seq("Employee", "Person")),
         CypherMap("nId" -> null, "mId" -> 2, "name" -> null, "labels" -> Seq("Employee"))
       ))
+    }
+
+    it("checks if entity keys are present in the merge graph") {
+      val keys = EntityKeys(Map("Person" -> Set("name"), "Employee" -> Set("mId")), Map("R" -> Set("id")))
+      Neo4jGraphMerge.createIndexes(neo4jConfig, keys)
+
+      val graph = initGraph(
+        """
+          |CREATE (s:Person {nId: 1, name: "bar"})
+          |CREATE (e:Person:Employee {nId: 2, mId: 3 })
+          |CREATE (f:Employee {mId: 2})
+          |CREATE (s)-[r:R {id: 1}]->(e)
+        """.stripMargin)
+
+      Try(Neo4jGraphMerge.merge(graph, neo4jConfig, keys)) match {
+        case Success(_) => fail
+        case Failure(exception) =>
+          exception.getMessage should include("Properties [name] have nullable types")
+      }
     }
 
     it("creates indexes correctly") {
