@@ -124,59 +124,59 @@ class SqlPropertyGraphDataSourceTest extends CAPSTestSuite {
     ))
   }
 
-  ignore("reads relationships from a table") {
-    val fooView = "foo_view"
-    val barView = "bar_view"
-    val relView = "rel_view"
+  it("reads relationships from a table") {
+    val personView = "person_view"
+    val bookView = "book_view"
+    val readsView = "reads_view"
 
     val ddlString =
       s"""
          |SET SCHEMA $dataSourceName.fooDatabaseName
          |
          |CREATE GRAPH SCHEMA fooSchema
-         | LABEL (Foo { foo : STRING })
-         | LABEL (Bar { bar : INTEGER })
-         | LABEL (REL)
-         | (Foo)
-         | (Bar)
-         | [REL]
+         | LABEL (Person { name   : STRING })
+         | LABEL (Book   { title  : STRING })
+         | LABEL (READS  { rating : FLOAT  })
+         | (Person)
+         | (Book)
+         | [READS]
          |
          |CREATE GRAPH fooGraph WITH GRAPH SCHEMA fooSchema
          |  NODE LABEL SETS (
-         |    (Foo) FROM $fooView
-         |          FROM otherView
-         |    (Bar) FROM $barView
+         |    (Person) FROM $personView ( person_name AS name )
+         |    (Book) FROM $bookView (book_title AS title )
          |  )
          |  RELATIONSHIP LABEL SETS (
-         |    (REL)
-         |      FROM $relView edge
+         |    (READS)
+         |      FROM $readsView edge
          |        START NODES
-         |          LABEL SET (Foo) FROM $fooView alias_foo JOIN ON alias_foo.foo = edge.start
+         |          LABEL SET (Person) FROM $personView alias_person JOIN ON alias_person.person_id = edge.person
          |        END NODES
-         |          LABEL SET (Bar) FROM $barView alias_bar JOIN ON alias_bar.bar = edge.end
+         |          LABEL SET (Book)   FROM $bookView   alias_book   JOIN ON alias_book.book_id = edge.book
          |  )
      """.stripMargin
 
-    sparkSession.createDataFrame(Seq(Tuple1("Alice"))).toDF("foo").createOrReplaceTempView(fooView)
-    sparkSession.createDataFrame(Seq(Tuple1(42L))).toDF("bar").createOrReplaceTempView(barView)
-    sparkSession.createDataFrame(Seq(Tuple2("Alice", 42L))).toDF("start", "end").createOrReplaceTempView(relView)
+    sparkSession.createDataFrame(Seq((0L, "Alice"))).toDF("person_id", "person_name").createOrReplaceTempView(personView)
+    sparkSession.createDataFrame(Seq((1L, "1984"))).toDF("book_id", "book_title").createOrReplaceTempView(bookView)
+    sparkSession.createDataFrame(Seq((0L, 1L, 42.23))).toDF("person", "book", "rating").createOrReplaceTempView(readsView)
 
     val ds = SqlPropertyGraphDataSource(parse(ddlString), Map(dataSourceName -> SqlDataSourceConfig(HiveFormat, dataSourceName)))(caps)
 
-    val nodeId1 = computePartitionedRowId(rowIndex = 0, partitionStartDelta = 0)
-    val nodeId2 = computePartitionedRowId(rowIndex = 0, partitionStartDelta = 1)
+    val personId = computePartitionedRowId(rowIndex = 0, partitionStartDelta = 0)
+    val bookId = computePartitionedRowId(rowIndex = 0, partitionStartDelta = 1)
 
     ds.graph(fooGraphName).nodes("n").toMapsWithCollectedEntities should equal(Bag(
-      CypherMap("n" -> CAPSNode(nodeId1, Set("Foo"), CypherMap("foo" -> "Alice"))),
-      CypherMap("n" -> CAPSNode(nodeId2, Set("Bar"), CypherMap("bar" -> 42L)))
+      CypherMap("n" -> CAPSNode(personId, Set("Person"), CypherMap("name" -> "Alice"))),
+      CypherMap("n" -> CAPSNode(bookId, Set("Book"), CypherMap("title" -> "1984")))
     ))
 
     ds.graph(fooGraphName).relationships("r").toMapsWithCollectedEntities should equal(Bag(
       CypherMap("r" -> CAPSRelationship(
         id = computePartitionedRowId(rowIndex = 0, partitionStartDelta = 0),
-        startId = nodeId1,
-        endId = nodeId2,
-        relType = "REL"))
+        startId = personId,
+        endId = bookId,
+        relType = "READS",
+        properties = CypherMap("rating" -> 42.23)))
     ))
   }
 

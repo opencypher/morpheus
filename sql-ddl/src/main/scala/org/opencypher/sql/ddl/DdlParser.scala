@@ -197,11 +197,11 @@ object DdlParser {
   val joinTuple: P[(ColumnIdentifier, ColumnIdentifier)] = P(columnIdentifier ~/ "=" ~/ columnIdentifier)
   val joinOnDefinition: P[JoinOnDefinition] = P(JOIN ~/ ON ~/ joinTuple.rep(min = 1, sep = AND)).map(_.toList).map(JoinOnDefinition)
 
-  val sourceViewDefinition: P[SourceViewDefinition] = P(identifier.! ~/ identifier.!).map(SourceViewDefinition.tupled)
+  val viewDefinition: P[ViewDefinition] = P(identifier.! ~/ identifier.!).map(ViewDefinition.tupled)
 
-  val labelToViewDefinition: P[LabelToViewDefinition] = P(LABEL ~/ SET ~/ nodeDefinition ~/ FROM ~/ sourceViewDefinition ~/ joinOnDefinition).map(LabelToViewDefinition.tupled)
+  val labelToViewDefinition: P[LabelToViewDefinition] = P(LABEL ~/ SET ~/ nodeDefinition ~/ FROM ~/ viewDefinition ~/ joinOnDefinition).map(LabelToViewDefinition.tupled)
 
-  val relationshipToViewDefinition: P[RelationshipToViewDefinition] = P(FROM ~/ sourceViewDefinition ~/ START ~/ NODES ~/ labelToViewDefinition ~/ END ~/ NODES ~/ labelToViewDefinition).map(RelationshipToViewDefinition.tupled)
+  val relationshipToViewDefinition: P[RelationshipToViewDefinition] = P(FROM ~/ viewDefinition ~/ propertyMappingDefinition.? ~/ START ~/ NODES ~/ labelToViewDefinition ~/ END ~/ NODES ~/ labelToViewDefinition).map(RelationshipToViewDefinition.tupled)
   val relationshipMappingDefinition: P[RelationshipMappingDefinition] = P("(" ~ relType ~ ")" ~ relationshipToViewDefinition.rep(min = 1, sep = ",".?).map(_.toList)).map(RelationshipMappingDefinition.tupled)
   val relationshipMappings: P[List[RelationshipMappingDefinition]] = P(RELATIONSHIP ~/ LABEL ~/ SETS ~/ "(" ~ relationshipMappingDefinition.rep(min = 1, sep = ",".?).map(_.toList) ~/ ")")
 

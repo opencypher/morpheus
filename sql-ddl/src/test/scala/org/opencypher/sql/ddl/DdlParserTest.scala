@@ -370,12 +370,12 @@ class DdlParserTest extends BaseTestSuite with MockitoSugar with TestNameFixture
     it("parses LABEL SET (A, B) FROM foo alias_foo JOIN ON alias_foo.COLUMN_A = edge.COLUMN_A") {
       success(labelToViewDefinition, LabelToViewDefinition(
         Set("A", "B"),
-        SourceViewDefinition("foo", "alias_foo"),
+        ViewDefinition("foo", "alias_foo"),
         JoinOnDefinition(List((List("alias_foo", "COLUMN_A"), List("edge", "COLUMN_A")))))
       )
     }
 
-    it("parses a complete relationship mapping definition") {
+    it("parses a relationship mapping definition") {
       val input =
         """|FROM baz alias_baz
            |  START NODES
@@ -385,14 +385,37 @@ class DdlParserTest extends BaseTestSuite with MockitoSugar with TestNameFixture
         """.stripMargin
 
       success(relationshipToViewDefinition, input, RelationshipToViewDefinition(
-        sourceView = SourceViewDefinition("baz", "alias_baz"),
-        startNodeMappingDefinition = LabelToViewDefinition(
+        viewDefinition = ViewDefinition("baz", "alias_baz"),
+        startNodeToViewDefinition = LabelToViewDefinition(
           Set("A", "B"),
-          SourceViewDefinition("foo", "alias_foo"),
+          ViewDefinition("foo", "alias_foo"),
           JoinOnDefinition(List((List("alias_foo", "COLUMN_A"), List("edge", "COLUMN_A"))))),
-        endNodeMappingDefinition = LabelToViewDefinition(
+        endNodeToViewDefinition = LabelToViewDefinition(
           Set("C"),
-          SourceViewDefinition("bar", "alias_bar"),
+          ViewDefinition("bar", "alias_bar"),
+          JoinOnDefinition(List((List("alias_bar", "COLUMN_A"), List("edge", "COLUMN_A")))))
+      ))
+    }
+
+    it("parses a relationship mapping definition with custom property to column mapping") {
+      val input =
+        """|FROM baz alias_baz ( colA AS foo, colB AS bar )
+           |  START NODES
+           |    LABEL SET (A, B) FROM foo alias_foo JOIN ON alias_foo.COLUMN_A = edge.COLUMN_A
+           |  END NODES
+           |    LABEL SET (C) FROM bar alias_bar JOIN ON alias_bar.COLUMN_A = edge.COLUMN_A
+        """.stripMargin
+
+      success(relationshipToViewDefinition, input, RelationshipToViewDefinition(
+        viewDefinition = ViewDefinition("baz", "alias_baz"),
+        maybePropertyMapping = Some(Map("foo" -> "colA", "bar" -> "colB")),
+        startNodeToViewDefinition = LabelToViewDefinition(
+          Set("A", "B"),
+          ViewDefinition("foo", "alias_foo"),
+          JoinOnDefinition(List((List("alias_foo", "COLUMN_A"), List("edge", "COLUMN_A"))))),
+        endNodeToViewDefinition = LabelToViewDefinition(
+          Set("C"),
+          ViewDefinition("bar", "alias_bar"),
           JoinOnDefinition(List((List("alias_bar", "COLUMN_A"), List("edge", "COLUMN_A")))))
       ))
     }
@@ -400,7 +423,7 @@ class DdlParserTest extends BaseTestSuite with MockitoSugar with TestNameFixture
     it("parses a relationship label set definition") {
       val input =
         """|(TYPE_1)
-           |  FROM baz alias_baz
+           |  FROM baz edge
            |    START NODES
            |      LABEL SET (A) FROM foo alias_foo JOIN ON alias_foo.COLUMN_A = edge.COLUMN_A
            |    END NODES
@@ -413,14 +436,14 @@ class DdlParserTest extends BaseTestSuite with MockitoSugar with TestNameFixture
         """.stripMargin
 
       val relMappingDef = RelationshipToViewDefinition(
-        sourceView = SourceViewDefinition("baz", "alias_baz"),
-        startNodeMappingDefinition = LabelToViewDefinition(
+        viewDefinition = ViewDefinition("baz", "edge"),
+        startNodeToViewDefinition = LabelToViewDefinition(
           Set("A"),
-          SourceViewDefinition("foo", "alias_foo"),
+          ViewDefinition("foo", "alias_foo"),
           JoinOnDefinition(List((List("alias_foo", "COLUMN_A"), List("edge", "COLUMN_A"))))),
-        endNodeMappingDefinition = LabelToViewDefinition(
+        endNodeToViewDefinition = LabelToViewDefinition(
           Set("B"),
-          SourceViewDefinition("bar", "alias_bar"),
+          ViewDefinition("bar", "alias_bar"),
           JoinOnDefinition(List((List("alias_bar", "COLUMN_A"), List("edge", "COLUMN_A")))))
       )
       success(relationshipMappingDefinition, input, RelationshipMappingDefinition("TYPE_1", List(relMappingDef, relMappingDef)))
@@ -459,14 +482,14 @@ class DdlParserTest extends BaseTestSuite with MockitoSugar with TestNameFixture
         """.stripMargin
 
       val relMappingDef = RelationshipToViewDefinition(
-        sourceView = SourceViewDefinition("baz", "alias_baz"),
-        startNodeMappingDefinition = LabelToViewDefinition(
+        viewDefinition = ViewDefinition("baz", "alias_baz"),
+        startNodeToViewDefinition = LabelToViewDefinition(
           Set("A"),
-          SourceViewDefinition("foo", "alias_foo"),
+          ViewDefinition("foo", "alias_foo"),
           JoinOnDefinition(List((List("alias_foo", "COLUMN_A"), List("edge", "COLUMN_A"))))),
-        endNodeMappingDefinition = LabelToViewDefinition(
+        endNodeToViewDefinition = LabelToViewDefinition(
           Set("B"),
-          SourceViewDefinition("bar", "alias_bar"),
+          ViewDefinition("bar", "alias_bar"),
           JoinOnDefinition(List((List("alias_bar", "COLUMN_A"), List("edge", "COLUMN_A")))))
       )
 
@@ -548,14 +571,14 @@ class DdlParserTest extends BaseTestSuite with MockitoSugar with TestNameFixture
           localSchemaDefinition = emptySchemaDef,
           nodeMappings = List(NodeMappingDefinition(Set("A"), List(NodeToViewDefinition("foo")))),
           relationshipMappings = List(RelationshipMappingDefinition("TYPE_1", List(RelationshipToViewDefinition(
-            sourceView = SourceViewDefinition("baz", "alias_baz"),
-            startNodeMappingDefinition = LabelToViewDefinition(
+            viewDefinition = ViewDefinition("baz", "alias_baz"),
+            startNodeToViewDefinition = LabelToViewDefinition(
               Set("A"),
-              SourceViewDefinition("foo", "alias_foo"),
+              ViewDefinition("foo", "alias_foo"),
               JoinOnDefinition(List((List("alias_foo", "COLUMN_A"), List("edge", "COLUMN_A"))))),
-            endNodeMappingDefinition = LabelToViewDefinition(
+            endNodeToViewDefinition = LabelToViewDefinition(
               Set("B"),
-              SourceViewDefinition("bar", "alias_bar"),
+              ViewDefinition("bar", "alias_bar"),
               JoinOnDefinition(List((List("alias_bar", "COLUMN_A"), List("edge", "COLUMN_A")))))
           ))))))
       )

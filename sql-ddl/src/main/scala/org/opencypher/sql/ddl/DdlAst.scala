@@ -181,33 +181,38 @@ case class SchemaPatternDefinition(
   targetLabelCombinations: Set[LabelCombination]
 ) extends DdlAst
 
-case class NodeToViewDefinition(
+trait ElementToViewDefinition {
+  def maybePropertyMapping: Option[PropertyToColumnMappingDefinition]
+}
+
+case class NodeToViewDefinition (
   viewName: String,
-  maybePropertyMapping: Option[PropertyToColumnMappingDefinition] = None
-)
+  override val maybePropertyMapping: Option[PropertyToColumnMappingDefinition] = None
+) extends DdlAst with ElementToViewDefinition
 
 case class NodeMappingDefinition(
   labelNames: Set[String],
   nodeToViewDefinitions: List[NodeToViewDefinition] = List.empty
 ) extends DdlAst
 
-case class SourceViewDefinition(name: String, alias: String) extends DdlAst
+case class ViewDefinition(name: String, alias: String) extends DdlAst
 
 case class JoinOnDefinition(joinPredicates: List[(ColumnIdentifier, ColumnIdentifier)]) extends DdlAst
 
 case class LabelToViewDefinition(
   labelSet: Set[String],
-  sourceView: SourceViewDefinition,
+  viewDefinition: ViewDefinition,
   joinOn: JoinOnDefinition
 ) extends DdlAst
 
 case class RelationshipToViewDefinition(
-  sourceView: SourceViewDefinition,
-  startNodeMappingDefinition: LabelToViewDefinition,
-  endNodeMappingDefinition: LabelToViewDefinition
-) extends DdlAst
+  viewDefinition: ViewDefinition,
+  override val maybePropertyMapping: Option[PropertyToColumnMappingDefinition] = None,
+  startNodeToViewDefinition: LabelToViewDefinition,
+  endNodeToViewDefinition: LabelToViewDefinition
+) extends DdlAst with ElementToViewDefinition
 
 case class RelationshipMappingDefinition(
   relType: String,
-  relationshipMappings: List[RelationshipToViewDefinition]
+  relationshipToViewDefinitions: List[RelationshipToViewDefinition]
 ) extends DdlAst

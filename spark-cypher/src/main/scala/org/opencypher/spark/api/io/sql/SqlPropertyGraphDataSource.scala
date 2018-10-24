@@ -28,14 +28,14 @@ package org.opencypher.spark.api.io.sql
 
 import org.apache.spark.sql.DataFrame
 import org.opencypher.okapi.api.graph.{GraphName, PropertyGraph}
-import org.opencypher.okapi.api.io.conversion.NodeMapping
+import org.opencypher.okapi.api.io.conversion.{NodeMapping, RelationshipMapping}
 import org.opencypher.okapi.api.schema.Schema
 import org.opencypher.okapi.impl.exception.{IllegalArgumentException, UnsupportedOperationException}
 import org.opencypher.spark.api.CAPSSession
-import org.opencypher.spark.api.io.{CAPSNodeTable, HiveFormat, JdbcFormat}
+import org.opencypher.spark.api.io.{CAPSNodeTable, CAPSRelationshipTable, HiveFormat, JdbcFormat}
 import org.opencypher.spark.impl.CAPSFunctions.partitioned_id_assignment
 import org.opencypher.spark.impl.io.CAPSPropertyGraphDataSource
-import org.opencypher.sql.ddl.{DdlDefinitions, NodeMappingDefinition, NodeToViewDefinition, SetSchemaDefinition}
+import org.opencypher.sql.ddl._
 
 case class DDLFormatException(message: String) extends RuntimeException
 
@@ -52,6 +52,11 @@ case class SqlPropertyGraphDataSource(
 )(implicit val caps: CAPSSession) extends CAPSPropertyGraphDataSource {
 
   override def hasGraph(graphName: GraphName): Boolean = ddl.graphByName.contains(graphName.value)
+
+
+  private val idColumn = "id"
+  private val startColumn = "start"
+  private val endColumn = "end"
 
   override def graph(graphName: GraphName): PropertyGraph = {
     val graphSchema = schema(graphName).getOrElse(notFound(s"schema for graph $graphName", ddl.graphSchemas.keySet))
@@ -76,14 +81,14 @@ case class SqlPropertyGraphDataSource(
     } yield AssignedViewIdentifier(nodeMapping.labelNames, nodeToViewDefinition.viewName) -> readSqlTable(nodeToViewDefinition.viewName, sqlDataSourceConfig)
 
     // id assignment preparation
-    val dfPartitionCounts = nodeDataFramesWithoutIds.map(_._2.rdd.getNumPartitions)
-    val dfPartitionStartDeltas = dfPartitionCounts.scan(0)(_ + _).dropRight(1) // drop last delta, as we don't need it
+    val nodeDfPartitionCounts = nodeDataFramesWithoutIds.map(_._2.rdd.getNumPartitions)
+    val nodeDfPartitionStartDeltas = nodeDfPartitionCounts.scan(0)(_ + _).dropRight(1) // drop last delta, as we don't need it
 
     // actual id assignment
     // TODO: Ensure added id does not collide with a property called `id`
-    val nodeDataFramesWithIds = nodeDataFramesWithoutIds.zip(dfPartitionStartDeltas).map {
+    val nodeDataFramesWithIds = nodeDataFramesWithoutIds.zip(nodeDfPartitionStartDeltas).map {
       case ((instantiatedViewIdentifier, df), partitionStartDelta) =>
-        val dfWithIdColumn = df.withColumn("id", partitioned_id_assignment(partitionStartDelta))
+        val dfWithIdColumn = df.withColumn(idColumn, partitioned_id_assignment(partitionStartDelta))
         instantiatedViewIdentifier -> dfWithIdColumn
     }.toMap
 
@@ -102,58 +107,138 @@ case class SqlPropertyGraphDataSource(
 
     // Relationship tables
 
-//    val relTypeToRelMapping = graphDefinition.relationshipMappings.map(rm => rm.relType -> rm).toMap
-//    val relDataFramesWithoutIds = graphSchema.relationshipTypes.map { relType =>
-//
-//      val relationshipMappingDefinition = relTypeToRelMapping(relType)
-//      val relTypeDfs = relationshipMappingDefinition.relationshipMappings.map { relationshipToViewDefinition =>
-//
-//        val sourceTable = relationshipToViewDefinition.sourceView.name
-//        readSqlTable(sourceTable, sqlDataSourceConfig)
-//
-//      }
-//      // TODO: keep all DFs, align column layout and union
-//      // TODO: compute relationship mapping for each DF
-//      relType -> relTypeDfs.head
-//    }
+    val relDataFramesWithoutIds = for {
+      relMapping <- graphDefinition.relationshipMappings
+      relToViewDefinition <- relMapping.relationshipToViewDefinitions
+    } yield AssignedViewIdentifier(Set(relMapping.relType), relToViewDefinition.viewDefinition.name) -> readSqlTable(relToViewDefinition.viewDefinition.name, sqlDataSourceConfig)
 
+    // id assignment preparation
+    val relDfPartitionCounts = nodeDataFramesWithoutIds.map(_._2.rdd.getNumPartitions)
+    val relDfPartitionStartDeltas = relDfPartitionCounts.scan(0)(_ + _).dropRight(1) // drop last delta, as we don't need it
 
-    // RELTYPE { foo }
-    // -> viewA -> start | end  | key1 + (key1 as foo)
-    // -> viewB -> src   | trgt | key2 + (key2 as foo)
+    // actual id assignment
+    // TODO: Ensure added id does not collide with a property called `id`
+    val relDataFramesWithIds = relDataFramesWithoutIds.zip(relDfPartitionStartDeltas).map {
+      case ((instantiatedViewIdentifier, df), partitionStartDelta) =>
+        val dfWithIdColumn = df.withColumn(idColumn, partitioned_id_assignment(partitionStartDelta))
+        instantiatedViewIdentifier -> dfWithIdColumn
+    }.toMap
 
+    val relToViewDefinitions = (for {
+      relMaping <- graphDefinition.relationshipMappings
+      relToViewDefinition <- relMaping.relationshipToViewDefinitions
+    } yield AssignedViewIdentifier(Set(relMaping.relType), relToViewDefinition.viewDefinition.name) -> relToViewDefinition).toMap
 
-    // loading of just the rel DF
-    // generate new id for rels
-    // join with DF for start label combo -> add generated start node ids
-    // join with DF for end label combo -> add generated end node ids
-    //
+    val relDataFramesWithNodeIds = relToViewDefinitions.map {
+      case (relId, relToViewDefinition) =>
 
+        val relDf = relDataFramesWithIds(relId)
+        val startNodeToViewDefinition = relToViewDefinition.startNodeToViewDefinition
+        val endNodeToViewDefinition = relToViewDefinition.endNodeToViewDefinition
 
-    caps.graphs.create(nodeTables.head, nodeTables.tail: _*)
+        val relsWithStartNodeId = addNodeDfToRelDf(relDf, nodeDataFramesWithIds, startNodeToViewDefinition, relToViewDefinition, startColumn)
+        val relsWithEndNodeId = addNodeDfToRelDf(relsWithStartNodeId, nodeDataFramesWithIds, endNodeToViewDefinition, relToViewDefinition, endColumn)
+
+        relId -> relsWithEndNodeId
+    }
+
+    val relationshipTables = relDataFramesWithNodeIds.map {
+      case (viewId, df) =>
+        val relMapping = computeRelMapping(viewId.labelDefinitions.head, graphSchema, relToViewDefinitions(viewId))
+        CAPSRelationshipTable.fromMapping(relMapping, df)
+    }.toSeq
+
+    caps.graphs.create(nodeTables.head, nodeTables.tail ++ relationshipTables: _*)
+  }
+
+  private def addNodeDfToRelDf(
+    relDf: DataFrame,
+    nodeDataFramesWithIds: Map[AssignedViewIdentifier, DataFrame],
+    nodeMapping: LabelToViewDefinition,
+    relToViewDefinition: RelationshipToViewDefinition,
+    newNodeIdColumn: String): DataFrame = {
+
+    val nodeViewName = nodeMapping.viewDefinition.name
+    val nodeViewAlias = nodeMapping.viewDefinition.alias
+    val nodeViewId = AssignedViewIdentifier(nodeMapping.labelSet, nodeViewName)
+
+    val nodeDf = nodeDataFramesWithIds(nodeViewId)
+
+    val relViewAlias = relToViewDefinition.viewDefinition.alias
+
+    val namespacedNodeDf = nodeDf.columns.foldLeft(nodeDf) {
+      case (currentDf, colName) => currentDf.withColumnRenamed(colName, s"${nodeViewAlias}_$colName")
+    }
+
+    val namespacedRelDf = relDf.columns.foldLeft(relDf) {
+      case (currentDf, colName) => currentDf.withColumnRenamed(colName, s"${relViewAlias}_$colName")
+    }
+
+    val joinColumnNames = nodeMapping.joinOn.joinPredicates.map {
+      case (leftCol, rightCol) => leftCol.mkString("_") -> rightCol.mkString("_")
+    }
+
+    val joinPredicate = joinColumnNames
+      .map { case (leftColName, rightColName) => namespacedNodeDf.col(leftColName) -> namespacedRelDf.col(rightColName) }
+      .map { case (leftCol, rightCol) => leftCol === rightCol }
+      .reduce(_ && _)
+
+    val nodeIdColumnName = s"${nodeViewAlias}_$idColumn"
+    val relsWithUpdatedStartNodeId = namespacedNodeDf
+      .select(nodeIdColumnName, joinColumnNames.unzip._1: _*)
+      .withColumnRenamed(nodeIdColumnName, newNodeIdColumn)
+      .join(namespacedRelDf, joinPredicate)
+
+    relsWithUpdatedStartNodeId.columns.foldLeft(relsWithUpdatedStartNodeId) {
+      case (currentDf, columnName) if columnName.startsWith(nodeViewAlias) =>
+        currentDf.drop(columnName)
+      case (currentDf, columnName) if columnName.startsWith(relViewAlias) =>
+        currentDf.withColumnRenamed(columnName, columnName.substring(relViewAlias.length + 1))
+      case (currentDf, _) => currentDf
+
+    }
+
   }
 
   private def computeNodeMapping(
     labelCombination: Set[String],
     graphSchema: Schema,
-    nodeToViewDefinition: NodeToViewDefinition
+    elementToViewDefinition: ElementToViewDefinition
   ): NodeMapping = {
-    val propertyToColumnMapping = nodeToViewDefinition.maybePropertyMapping match {
+    val propertyToColumnMapping = elementToViewDefinition.maybePropertyMapping match {
       case Some(propertyToColumnMappingDefinition) => propertyToColumnMappingDefinition
       // TODO: support unicode characters in properties and ensure there are no collisions with column name `id`
       case None => graphSchema.nodePropertyKeys(labelCombination).map { case (key, _) => key -> key }
     }
-    val initialNodeMapping: NodeMapping = NodeMapping.on("id").withImpliedLabels(labelCombination.toSeq: _*)
+    val initialNodeMapping = NodeMapping.on(idColumn).withImpliedLabels(labelCombination.toSeq: _*)
     val nodeMapping = propertyToColumnMapping.foldLeft(initialNodeMapping) {
       case (currentNodeMapping, (propertyKey, columnName)) => currentNodeMapping.withPropertyKey(propertyKey -> columnName)
     }
     nodeMapping
   }
 
-  private def readSqlTable(
-    viewName: String,
-    sqlDataSourceConfig: SqlDataSourceConfig
-  ): DataFrame = {
+  private def computeRelMapping(
+    relType: String,
+    graphSchema: Schema,
+    elementToViewDefinition: ElementToViewDefinition
+  ): RelationshipMapping = {
+    val propertyToColumnMapping = elementToViewDefinition.maybePropertyMapping match {
+      case Some(propertyToColumnMappingDefinition) => propertyToColumnMappingDefinition
+      // TODO: support unicode characters in properties and ensure there are no collisions with column name `id`
+      case None => graphSchema.relationshipPropertyKeys(relType).map { case (key, _) => key -> key }
+    }
+    val initialRelMapping = RelationshipMapping.on(idColumn)
+      .withSourceStartNodeKey(startColumn)
+      .withSourceEndNodeKey(endColumn)
+      .withRelType(relType)
+
+    val relMapping = propertyToColumnMapping.foldLeft(initialRelMapping) {
+      case (currentRelMapping, (propertyKey, columnName)) => currentRelMapping.withPropertyKey(propertyKey -> columnName)
+    }
+    relMapping
+  }
+
+  private def readSqlTable(viewName: String, sqlDataSourceConfig: SqlDataSourceConfig): DataFrame = {
     val spark = caps.sparkSession
 
     val inputTable = sqlDataSourceConfig.storageFormat match {
