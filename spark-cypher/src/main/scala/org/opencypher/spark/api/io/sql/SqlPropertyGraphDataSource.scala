@@ -36,6 +36,7 @@ import org.opencypher.spark.api.io.{CAPSNodeTable, CAPSRelationshipTable, HiveFo
 import org.opencypher.spark.impl.CAPSFunctions.partitioned_id_assignment
 import org.opencypher.spark.impl.io.CAPSPropertyGraphDataSource
 import org.opencypher.sql.ddl._
+import org.opencypher.spark.impl.DataFrameOps._
 
 case class DDLFormatException(message: String) extends RuntimeException
 
@@ -151,31 +152,28 @@ case class SqlPropertyGraphDataSource(
     caps.graphs.create(nodeTables.head, nodeTables.tail ++ relationshipTables: _*)
   }
 
+
   private def addNodeDfToRelDf(
     relDf: DataFrame,
     nodeDataFramesWithIds: Map[AssignedViewIdentifier, DataFrame],
     nodeMapping: LabelToViewDefinition,
     relToViewDefinition: RelationshipToViewDefinition,
-    newNodeIdColumn: String): DataFrame = {
+    newNodeIdColumn: String
+  ): DataFrame = {
 
     val nodeViewName = nodeMapping.viewDefinition.name
     val nodeViewAlias = nodeMapping.viewDefinition.alias
-    val nodeViewId = AssignedViewIdentifier(nodeMapping.labelSet, nodeViewName)
-
-    val nodeDf = nodeDataFramesWithIds(nodeViewId)
+    val nodeDf = nodeDataFramesWithIds(AssignedViewIdentifier(nodeMapping.labelSet, nodeViewName))
 
     val relViewAlias = relToViewDefinition.viewDefinition.alias
 
-    val namespacedNodeDf = nodeDf.columns.foldLeft(nodeDf) {
-      case (currentDf, colName) => currentDf.withColumnRenamed(colName, s"${nodeViewAlias}_$colName")
-    }
+    val separator = "_"
 
-    val namespacedRelDf = relDf.columns.foldLeft(relDf) {
-      case (currentDf, colName) => currentDf.withColumnRenamed(colName, s"${relViewAlias}_$colName")
-    }
+    val namespacedNodeDf = nodeDf.prefixColumns(nodeViewAlias + separator)
+    val namespacedRelDf = relDf.prefixColumns(relViewAlias + separator)
 
     val joinColumnNames = nodeMapping.joinOn.joinPredicates.map {
-      case (leftCol, rightCol) => leftCol.mkString("_") -> rightCol.mkString("_")
+      case (leftCol, rightCol) => leftCol.mkString(separator) -> rightCol.mkString(separator)
     }
 
     val joinPredicate = joinColumnNames
@@ -183,19 +181,18 @@ case class SqlPropertyGraphDataSource(
       .map { case (leftCol, rightCol) => leftCol === rightCol }
       .reduce(_ && _)
 
-    val nodeIdColumnName = s"${nodeViewAlias}_$idColumn"
+    val nodeIdColumnName = nodeViewAlias + separator + idColumn
     val relsWithUpdatedStartNodeId = namespacedNodeDf
       .select(nodeIdColumnName, joinColumnNames.unzip._1: _*)
       .withColumnRenamed(nodeIdColumnName, newNodeIdColumn)
       .join(namespacedRelDf, joinPredicate)
 
     relsWithUpdatedStartNodeId.columns.foldLeft(relsWithUpdatedStartNodeId) {
-      case (currentDf, columnName) if columnName.startsWith(nodeViewAlias) =>
+      case (currentDf, columnName) if columnName.startsWith(nodeViewAlias + separator) =>
         currentDf.drop(columnName)
-      case (currentDf, columnName) if columnName.startsWith(relViewAlias) =>
-        currentDf.withColumnRenamed(columnName, columnName.substring(relViewAlias.length + 1))
+      case (currentDf, columnName) if columnName.startsWith(relViewAlias + separator) =>
+        currentDf.withColumnRenamed(columnName, columnName.substring(relViewAlias.length + separator.length))
       case (currentDf, _) => currentDf
-
     }
 
   }

@@ -124,6 +124,12 @@ object DataFrameOps {
       }
     }
 
+    def prefixColumns(prefix: String): DataFrame = {
+      df.columns.foldLeft(df) {
+        case (currentDf, column) => currentDf.withColumnRenamed(column, s"$prefix$column")
+      }
+    }
+
     def safeAddColumn(name: String, col: Column): DataFrame = {
       require(!df.columns.contains(name),
         s"Cannot add column `$name`. A column with that name exists already. " +
