@@ -180,4 +180,76 @@ class SqlPropertyGraphDataSourceTest extends CAPSTestSuite {
     ))
   }
 
+  it("reads relationships from multiple table") {
+    val personView = "person_view"
+    val bookView = "book_view"
+    val readsView1 = "reads_view1"
+    val readsView2 = "reads_view2"
+
+    val ddlString =
+      s"""
+         |SET SCHEMA $dataSourceName.fooDatabaseName
+         |
+         |CREATE GRAPH SCHEMA fooSchema
+         | LABEL (Person { name   : STRING })
+         | LABEL (Book   { title  : STRING })
+         | LABEL (READS  { rating : FLOAT  })
+         | (Person)
+         | (Book)
+         | [READS]
+         |
+         |CREATE GRAPH fooGraph WITH GRAPH SCHEMA fooSchema
+         |  NODE LABEL SETS (
+         |    (Person) FROM $personView ( person_name AS name )
+         |    (Book) FROM $bookView (book_title AS title )
+         |  )
+         |  RELATIONSHIP LABEL SETS (
+         |    (READS)
+         |      FROM $readsView1 edge
+         |        START NODES
+         |          LABEL SET (Person) FROM $personView alias_person JOIN ON alias_person.person_id = edge.person
+         |        END NODES
+         |          LABEL SET (Book)   FROM $bookView   alias_book   JOIN ON alias_book.book_id = edge.book
+         |      FROM $readsView2 edge (rates AS rating)
+         |        START NODES
+         |          LABEL SET (Person) FROM $personView alias_person JOIN ON alias_person.person_id = edge.p_id
+         |        END NODES
+         |          LABEL SET (Book)   FROM $bookView   alias_book   JOIN ON alias_book.book_id = edge.b_id
+         |  )
+     """.stripMargin
+
+    sparkSession.createDataFrame(Seq((0L, "Alice"))).toDF("person_id", "person_name").createOrReplaceTempView(personView)
+    sparkSession.createDataFrame(Seq((1L, "1984"), (2L, "Scala with Cats"))).toDF("book_id", "book_title").createOrReplaceTempView(bookView)
+    sparkSession.createDataFrame(Seq((0L, 1L, 42.23))).toDF("person", "book", "rating").createOrReplaceTempView(readsView1)
+    sparkSession.createDataFrame(Seq((0L, 2L, 13.37))).toDF("p_id", "b_id", "rates").createOrReplaceTempView(readsView2)
+
+    val ds = SqlPropertyGraphDataSource(parse(ddlString), Map(dataSourceName -> SqlDataSourceConfig(HiveFormat, dataSourceName)))(caps)
+
+    val personId = computePartitionedRowId(rowIndex = 0, partitionStartDelta = 0)
+    val book1Id = computePartitionedRowId(rowIndex = 0, partitionStartDelta = 1)
+    val book2Id = computePartitionedRowId(rowIndex = 1, partitionStartDelta = 1)
+
+    ds.graph(fooGraphName).nodes("n").toMapsWithCollectedEntities should equal(Bag(
+      CypherMap("n" -> CAPSNode(personId, Set("Person"), CypherMap("name" -> "Alice"))),
+      CypherMap("n" -> CAPSNode(book1Id, Set("Book"), CypherMap("title" -> "1984"))),
+      CypherMap("n" -> CAPSNode(book2Id, Set("Book"), CypherMap("title" -> "Scala with Cats")))
+    ))
+
+    ds.graph(fooGraphName).relationships("r").toMapsWithCollectedEntities should equal(Bag(
+      CypherMap("r" -> CAPSRelationship(
+        id = computePartitionedRowId(rowIndex = 0, partitionStartDelta = 0),
+        startId = personId,
+        endId = book1Id,
+        relType = "READS",
+        properties = CypherMap("rating" -> 42.23))),
+      CypherMap("r" -> CAPSRelationship(
+        id = computePartitionedRowId(rowIndex = 0, partitionStartDelta = 1),
+        startId = personId,
+        endId = book2Id,
+        relType = "READS",
+        properties = CypherMap("rating" -> 13.37)))
+
+    ))
+  }
+
 }
