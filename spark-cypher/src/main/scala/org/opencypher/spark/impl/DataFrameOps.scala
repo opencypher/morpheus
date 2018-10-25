@@ -39,10 +39,29 @@ import org.opencypher.okapi.impl.util.Measurement.printTiming
 import org.opencypher.okapi.ir.api.expr._
 import org.opencypher.okapi.relational.api.planning.RelationalRuntimeContext
 import org.opencypher.okapi.relational.impl.table.RecordHeader
+import org.opencypher.spark.impl.CAPSFunctions.partitioned_id_assignment
 import org.opencypher.spark.impl.convert.SparkConversions._
 import org.opencypher.spark.impl.table.SparkTable.DataFrameTable
 
 object DataFrameOps {
+
+  /**
+    * Takes a sequence of DataFrames and adds long identifiers to all of them. Identifiers are guaranteed to be unique
+    * across all given DataFrames. The DataFrames are returned in the same order as the input.
+    *
+    * @param dataFrames sequence of DataFrames to assign ids to
+    * @param idColumnName column name for the generated id
+    * @return a sequence of DataFrames with unique long identifiers
+    */
+  def addUniqueIds(dataFrames: Seq[DataFrame], idColumnName: String): Seq[DataFrame] = {
+    val dfPartitionCounts = dataFrames.map(_.rdd.getNumPartitions)
+    val dfPartitionStartDeltas = dfPartitionCounts.scan(0)(_ + _).dropRight(1) // drop last delta, as we don't need it
+
+    dataFrames.zip(dfPartitionStartDeltas).map {
+      case (df, partitionStartDelta) =>
+        df.withColumn(idColumnName, partitioned_id_assignment(partitionStartDelta))
+    }
+  }
 
   implicit class CypherRow(r: Row) {
 

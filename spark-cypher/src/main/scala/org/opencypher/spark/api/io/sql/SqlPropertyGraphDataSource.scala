@@ -33,10 +33,9 @@ import org.opencypher.okapi.api.schema.Schema
 import org.opencypher.okapi.impl.exception.{IllegalArgumentException, UnsupportedOperationException}
 import org.opencypher.spark.api.CAPSSession
 import org.opencypher.spark.api.io.{CAPSNodeTable, CAPSRelationshipTable, HiveFormat, JdbcFormat}
-import org.opencypher.spark.impl.CAPSFunctions.partitioned_id_assignment
+import org.opencypher.spark.impl.DataFrameOps._
 import org.opencypher.spark.impl.io.CAPSPropertyGraphDataSource
 import org.opencypher.sql.ddl._
-import org.opencypher.spark.impl.DataFrameOps._
 
 case class DDLFormatException(message: String) extends RuntimeException
 
@@ -53,7 +52,6 @@ case class SqlPropertyGraphDataSource(
 )(implicit val caps: CAPSSession) extends CAPSPropertyGraphDataSource {
 
   override def hasGraph(graphName: GraphName): Boolean = ddl.graphByName.contains(graphName.value)
-
 
   private val idColumn = "id"
   private val startColumn = "start"
@@ -75,24 +73,14 @@ case class SqlPropertyGraphDataSource(
     val graphDefinition = ddl.graphByName(graphName.value)
 
     // Node tables
-
-    val nodeDataFramesWithoutIds = for {
+    val (nodeViewIds, nodeDfs) = (for {
       nodeMapping <- graphDefinition.nodeMappings
       nodeToViewDefinition <- nodeMapping.nodeToViewDefinitions
-    } yield AssignedViewIdentifier(nodeMapping.labelNames, nodeToViewDefinition.viewName) -> readSqlTable(nodeToViewDefinition.viewName, sqlDataSourceConfig)
+    } yield AssignedViewIdentifier(nodeMapping.labelNames, nodeToViewDefinition.viewName) -> readSqlTable(nodeToViewDefinition.viewName, sqlDataSourceConfig)).unzip
 
-    // id assignment preparation
-    val nodeDfPartitionCounts = nodeDataFramesWithoutIds.map(_._2.rdd.getNumPartitions)
-    val nodeDfPartitionStartDeltas = nodeDfPartitionCounts.scan(0)(_ + _).dropRight(1) // drop last delta, as we don't need it
 
-    // actual id assignment
     // TODO: Ensure added id does not collide with a property called `id`
-    val nodeDataFramesWithIds = nodeDataFramesWithoutIds.zip(nodeDfPartitionStartDeltas).map {
-      case ((instantiatedViewIdentifier, df), partitionStartDelta) =>
-        val dfWithIdColumn = df.withColumn(idColumn, partitioned_id_assignment(partitionStartDelta))
-        instantiatedViewIdentifier -> dfWithIdColumn
-    }.toMap
-
+    val nodeDataFramesWithIds = nodeViewIds.zip(addUniqueIds(nodeDfs, idColumn)).toMap
 
     // TODO: maps a AssignedViewId to its NodeToViewDefinition --> make available through DDL IR
     val nodeToViewDefinitions = (for {
@@ -108,22 +96,13 @@ case class SqlPropertyGraphDataSource(
 
     // Relationship tables
 
-    val relDataFramesWithoutIds = for {
+    val (relViewIds, relDfs) = (for {
       relMapping <- graphDefinition.relationshipMappings
       relToViewDefinition <- relMapping.relationshipToViewDefinitions
-    } yield AssignedViewIdentifier(Set(relMapping.relType), relToViewDefinition.viewDefinition.name) -> readSqlTable(relToViewDefinition.viewDefinition.name, sqlDataSourceConfig)
+    } yield AssignedViewIdentifier(Set(relMapping.relType), relToViewDefinition.viewDefinition.name) -> readSqlTable(relToViewDefinition.viewDefinition.name, sqlDataSourceConfig)).unzip
 
-    // id assignment preparation
-    val relDfPartitionCounts = nodeDataFramesWithoutIds.map(_._2.rdd.getNumPartitions)
-    val relDfPartitionStartDeltas = relDfPartitionCounts.scan(0)(_ + _).dropRight(1) // drop last delta, as we don't need it
-
-    // actual id assignment
     // TODO: Ensure added id does not collide with a property called `id`
-    val relDataFramesWithIds = relDataFramesWithoutIds.zip(relDfPartitionStartDeltas).map {
-      case ((instantiatedViewIdentifier, df), partitionStartDelta) =>
-        val dfWithIdColumn = df.withColumn(idColumn, partitioned_id_assignment(partitionStartDelta))
-        instantiatedViewIdentifier -> dfWithIdColumn
-    }.toMap
+    val relDataFramesWithIds = relViewIds.zip(addUniqueIds(relDfs, idColumn)).toMap
 
     val relToViewDefinitions = (for {
       relMaping <- graphDefinition.relationshipMappings
@@ -137,7 +116,9 @@ case class SqlPropertyGraphDataSource(
         val startNodeToViewDefinition = relToViewDefinition.startNodeToViewDefinition
         val endNodeToViewDefinition = relToViewDefinition.endNodeToViewDefinition
 
+        // TODO: Ensure added id does not collide with a property called `start`
         val relsWithStartNodeId = addNodeDfToRelDf(relDf, nodeDataFramesWithIds, startNodeToViewDefinition, relToViewDefinition, startColumn)
+        // TODO: Ensure added id does not collide with a property called `end`
         val relsWithEndNodeId = addNodeDfToRelDf(relsWithStartNodeId, nodeDataFramesWithIds, endNodeToViewDefinition, relToViewDefinition, endColumn)
 
         relId -> relsWithEndNodeId
