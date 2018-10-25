@@ -152,7 +152,7 @@ class SqlPropertyGraphDataSourceTest extends CAPSTestSuite {
          |        START NODES
          |          LABEL SET (Person) FROM $personView alias_person JOIN ON alias_person.person_id = edge.person
          |        END NODES
-         |          LABEL SET (Book)   FROM $bookView   alias_book   JOIN ON alias_book.book_id = edge.book
+         |          LABEL SET (Book)   FROM $bookView   alias_book   JOIN ON edge.book = alias_book.book_id
          |  )
      """.stripMargin
 
@@ -180,7 +180,7 @@ class SqlPropertyGraphDataSourceTest extends CAPSTestSuite {
     ))
   }
 
-  it("reads relationships from multiple table") {
+  it("reads relationships from multiple tables") {
     val personView = "person_view"
     val bookView = "book_view"
     val readsView1 = "reads_view1"
@@ -209,10 +209,10 @@ class SqlPropertyGraphDataSourceTest extends CAPSTestSuite {
          |        START NODES
          |          LABEL SET (Person) FROM $personView alias_person JOIN ON alias_person.person_id = edge.person
          |        END NODES
-         |          LABEL SET (Book)   FROM $bookView   alias_book   JOIN ON alias_book.book_id = edge.book
+         |          LABEL SET (Book)   FROM $bookView   alias_book   JOIN ON edge.book = alias_book.book_id
          |      FROM $readsView2 edge (rates AS rating)
          |        START NODES
-         |          LABEL SET (Person) FROM $personView alias_person JOIN ON alias_person.person_id = edge.p_id
+         |          LABEL SET (Person) FROM $personView alias_person JOIN ON edge.p_id = alias_person.person_id
          |        END NODES
          |          LABEL SET (Book)   FROM $bookView   alias_book   JOIN ON alias_book.book_id = edge.b_id
          |  )

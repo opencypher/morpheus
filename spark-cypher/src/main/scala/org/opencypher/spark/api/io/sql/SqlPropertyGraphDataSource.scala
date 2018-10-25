@@ -154,7 +154,22 @@ case class SqlPropertyGraphDataSource(
     val namespacedRelDf = relDf.prefixColumns(relViewAlias + separator)
 
     val joinColumnNames = nodeMapping.joinOn.joinPredicates.map {
-      case (leftCol, rightCol) => leftCol.mkString(separator) -> rightCol.mkString(separator)
+      case (leftCol, rightCol) =>
+        val leftColFull = leftCol.mkString(separator)
+        val rightColFull = rightCol.mkString(separator)
+        val aliases = Set(leftCol.head, rightCol.head)
+
+        val nodeCol =
+          if (nodeViewAlias == leftCol.head) leftColFull
+          else if (nodeViewAlias == rightCol.head) rightColFull
+          else notFound(nodeViewAlias, aliases)
+
+        val relCol =
+          if (relViewAlias == leftCol.head) leftColFull
+          else if (relViewAlias == rightCol.head) rightColFull
+          else notFound(relViewAlias, aliases)
+
+        nodeCol -> relCol
     }
 
     val joinPredicate = joinColumnNames
