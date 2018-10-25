@@ -47,20 +47,20 @@ case class DDLFormatException(message: String) extends RuntimeException
 case class AssignedViewIdentifier(labelDefinitions: Set[String], viewName: String)
 
 case class SqlPropertyGraphDataSource(
-  ddl: DdlDefinitions,
+  graphDdl: GraphDdl,
   sqlDataSources: Map[String, SqlDataSourceConfig]
 )(implicit val caps: CAPSSession) extends CAPSPropertyGraphDataSource {
 
-  override def hasGraph(graphName: GraphName): Boolean = ddl.graphByName.contains(graphName.value)
+  override def hasGraph(graphName: GraphName): Boolean = graphDdl.graphByName.contains(graphName.value)
 
   private val idColumn = "id"
   private val startColumn = "start"
   private val endColumn = "end"
 
   override def graph(graphName: GraphName): PropertyGraph = {
-    val graphSchema = schema(graphName).getOrElse(notFound(s"schema for graph $graphName", ddl.graphSchemas.keySet))
+    val graphSchema = schema(graphName).getOrElse(notFound(s"schema for graph $graphName", graphDdl.graphSchemas.keySet))
 
-    val (dataSourceName, databaseName) = ddl.setSchema match {
+    val (dataSourceName, databaseName) = graphDdl.ddl.setSchema match {
       case Some(SetSchemaDefinition(dsName, Some(dbName))) => dsName -> dbName
       case Some(SetSchemaDefinition(dsName, None)) => dsName -> sqlDataSources
         .getOrElse(dsName, notFound(dsName, sqlDataSources.keys))
@@ -70,7 +70,7 @@ case class SqlPropertyGraphDataSource(
 
     val sqlDataSourceConfig = sqlDataSources.getOrElse(dataSourceName, throw SqlDataSourceConfigException(s"No configuration for $dataSourceName"))
 
-    val graphDefinition = ddl.graphByName(graphName.value)
+    val graphDefinition = graphDdl.graphByName(graphName.value)
 
     // Node tables
     val (nodeViewIds, nodeDfs) = (for {
@@ -252,13 +252,13 @@ case class SqlPropertyGraphDataSource(
     inputTable
   }
 
-  override def schema(name: GraphName): Option[Schema] = ddl.graphSchemas.get(name.value)
+  override def schema(name: GraphName): Option[Schema] = graphDdl.graphSchemas.get(name.value)
 
   override def store(name: GraphName, graph: PropertyGraph): Unit = unsupported("storing a graph")
 
   override def delete(name: GraphName): Unit = unsupported("deleting a graph")
 
-  override def graphNames: Set[GraphName] = ddl.graphByName.keySet.map(GraphName)
+  override def graphNames: Set[GraphName] = graphDdl.graphByName.keySet.map(GraphName)
 
   private val className = getClass.getSimpleName
 

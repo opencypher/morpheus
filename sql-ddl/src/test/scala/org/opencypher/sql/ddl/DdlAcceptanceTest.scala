@@ -28,8 +28,9 @@ package org.opencypher.sql.ddl
 
 import org.opencypher.okapi.api.schema.{Schema, SchemaPattern}
 import org.opencypher.okapi.api.types.{CTBoolean, CTInteger, CTString}
-import org.opencypher.okapi.impl.exception.SchemaException
+import org.opencypher.okapi.impl.exception.{IllegalArgumentException, SchemaException}
 import org.opencypher.okapi.testing.BaseTestSuite
+import org.opencypher.okapi.testing.MatchHelper.equalWithTracing
 import org.opencypher.sql.ddl.DdlParser._
 
 class DdlAcceptanceTest extends BaseTestSuite {
@@ -41,13 +42,13 @@ class DdlAcceptanceTest extends BaseTestSuite {
       val ddl =
         s"""CATALOG CREATE LABEL (A {name: STRING})
            |
-           |CREATE GRAPH SCHEMA foo
+           |CREATE GRAPH SCHEMA foo`
            |  (A)
            |
            |CREATE GRAPH $gName WITH GRAPH SCHEMA foo
            |""".stripMargin
 
-      parse(ddl).graphSchemas(gName) should equal(
+      GraphDdl(parse(ddl)).graphSchemas(gName) should equal(
         Schema.empty
           .withNodePropertyKeys("A")("name" -> CTString)
       )
@@ -65,7 +66,7 @@ class DdlAcceptanceTest extends BaseTestSuite {
            |CREATE GRAPH $gName WITH GRAPH SCHEMA foo
            |""".stripMargin
 
-      parse(ddl).graphSchemas(gName) should equal(
+      GraphDdl(parse(ddl)).graphSchemas(gName) should equal(
         Schema.empty
           .withRelationshipPropertyKeys("A")("name" -> CTString)
       )
@@ -86,7 +87,7 @@ class DdlAcceptanceTest extends BaseTestSuite {
            |""".stripMargin
 
 
-      parse(ddl).graphSchemas(gName) should equal(
+      GraphDdl(parse(ddl)).graphSchemas(gName) should equal(
         Schema.empty
           .withNodePropertyKeys("Node")("val" -> CTString)
           .withRelationshipPropertyKeys("REL")("name" -> CTString)
@@ -108,7 +109,7 @@ class DdlAcceptanceTest extends BaseTestSuite {
            |""".stripMargin
 
 
-      parse(ddl).graphSchemas(gName) should equal(
+      GraphDdl(parse(ddl)).graphSchemas(gName) should equal(
         Schema.empty.withNodePropertyKeys("Node")("foo" -> CTInteger)
       )
     }
@@ -126,7 +127,7 @@ class DdlAcceptanceTest extends BaseTestSuite {
            |CREATE GRAPH $gName WITH GRAPH SCHEMA foo
            |""".stripMargin
 
-      parse(ddl).graphSchemas(gName) should equal(
+      GraphDdl(parse(ddl)).graphSchemas(gName) should equal(
         Schema.empty
           .withNodePropertyKeys("Node")("val" -> CTString, "another" -> CTString)
           .withNodeKey("Node", Set("val"))
@@ -145,7 +146,7 @@ class DdlAcceptanceTest extends BaseTestSuite {
             |
             |CREATE GRAPH $gName WITH GRAPH SCHEMA foo""".stripMargin
 
-      parse(ddl).graphSchemas(gName) should equal(
+      GraphDdl(parse(ddl)).graphSchemas(gName) should equal(
         Schema.empty
           .withNodePropertyKeys("Node")("val" -> CTString)
           .withRelationshipPropertyKeys("REL")("name" -> CTString)
@@ -166,7 +167,7 @@ class DdlAcceptanceTest extends BaseTestSuite {
             |
             |CREATE GRAPH $gName WITH GRAPH SCHEMA foo""".stripMargin
 
-      parse(ddl).graphSchemas(gName) should equal(
+      GraphDdl(parse(ddl)).graphSchemas(gName) should equal(
         Schema.empty
           .withNodePropertyKeys("Node")("val" -> CTString)
           .withRelationshipPropertyKeys("REL")("name" -> CTString)
@@ -201,7 +202,7 @@ class DdlAcceptanceTest extends BaseTestSuite {
           |  (LocalLabel1, LocalLabel2)-[REL_TYPE2]->(MyLabel)
         """.stripMargin
 
-      parse(ddl).globalSchemas("mySchema") should equal(
+      GraphDdl(parse(ddl)).globalSchemas("mySchema") should equal(
         Schema.empty
           .withNodePropertyKeys("MyLabel")("property" -> CTString, "data" -> CTInteger.nullable)
           .withNodePropertyKeys("LocalLabel1")("property" -> CTString)
@@ -225,7 +226,7 @@ class DdlAcceptanceTest extends BaseTestSuite {
           |  (A, B)
         """.stripMargin
 
-      parse(ddl).globalSchemas("mySchema") should equal(
+      GraphDdl(parse(ddl)).globalSchemas("mySchema") should equal(
         Schema.empty
           .withNodePropertyKeys("A")("foo" -> CTString)
           .withNodePropertyKeys("A", "B")("foo" -> CTString, "bar" -> CTString)
@@ -244,12 +245,110 @@ class DdlAcceptanceTest extends BaseTestSuite {
           |  (A, B)
         """.stripMargin
 
-      parse(ddl).globalSchemas("mySchema") should equal(
+      GraphDdl(parse(ddl)).globalSchemas("mySchema") should equal(
         Schema.empty
           .withNodePropertyKeys("A")("foo" -> CTString)
           .withNodePropertyKeys("A", "B")("foo" -> CTString)
       )
     }
+
+    it("parses correct schema") {
+      val ddlDefinition = parse(
+        """|SET SCHEMA foo.bar;
+           |
+           |CATALOG CREATE LABEL (A {name: STRING})
+           |
+           |CATALOG CREATE LABEL (B {sequence: INTEGER, nationality: STRING?, age: INTEGER?})
+           |
+           |CATALOG CREATE LABEL [TYPE_1]
+           |
+           |CATALOG CREATE LABEL [TYPE_2 {prop: BOOLEAN?}]
+           |
+           |CREATE GRAPH SCHEMA mySchema
+           |
+           |  LABEL (A { foo : INTEGER } ),
+           |  LABEL (C)
+           |
+           |
+           |  -- nodes
+           |  (A),
+           |  (B),
+           |  (A, B),
+           |  (C)
+           |
+           |
+           |  -- edges
+           |  [TYPE_1],
+           |  [TYPE_2]
+           |
+           |  -- schema patterns
+           |  (A) <0 .. *> - [TYPE_1] -> <1> (B);
+           |
+           |CREATE GRAPH myGraph WITH GRAPH SCHEMA mySchema
+           |  NODE LABEL SETS (
+           |    (A) FROM foo
+           |  )
+           |
+           |  RELATIONSHIP LABEL SETS (
+           |
+           |        (TYPE_1)
+           |          FROM baz alias_baz
+           |            START NODES
+           |              LABEL SET (A) FROM foo alias_foo JOIN ON alias_foo.COLUMN_A = edge.COLUMN_A
+           |            END NODES
+           |              LABEL SET (B) FROM bar alias_bar JOIN ON alias_bar.COLUMN_A = edge.COLUMN_A
+           |    )
+        """.stripMargin)
+
+      ddlDefinition should equalWithTracing(
+        DdlDefinition(
+          setSchema = Some(SetSchemaDefinition("foo", Some("bar"))),
+          labelDefinitions = List(
+            LabelDefinition("A", Map("name" -> CTString)),
+            LabelDefinition("B", Map("sequence" -> CTInteger, "nationality" -> CTString.nullable, "age" -> CTInteger.nullable)),
+            LabelDefinition("TYPE_1"),
+            LabelDefinition("TYPE_2", Map("prop" -> CTBoolean.nullable))
+          ),
+          schemaDefinitions = Map("mySchema" -> SchemaDefinition(
+            localLabelDefinitions = Set(
+              LabelDefinition("A", properties = Map("foo" -> CTInteger)),
+              LabelDefinition("C")),
+            nodeDefinitions = Set(Set("A"), Set("B"), Set("A", "B"), Set("C")),
+            relDefinitions = Set("TYPE_1", "TYPE_2"),
+            schemaPatternDefinitions = Set(SchemaPatternDefinition(Set(Set("A")), CardinalityConstraint(0, None), Set("TYPE_1"), CardinalityConstraint(1, Some(1)), Set(Set("B")))))),
+          graphDefinitions = List(GraphDefinition(
+            name = "myGraph",
+            maybeSchemaName = Some("mySchema"),
+            localSchemaDefinition = SchemaDefinition(),
+            nodeMappings = List(NodeMappingDefinition(Set("A"), List(NodeToViewDefinition("foo")))),
+            relationshipMappings = List(RelationshipMappingDefinition("TYPE_1", List(RelationshipToViewDefinition(
+              viewDefinition = ViewDefinition("baz", "alias_baz"),
+              startNodeToViewDefinition = LabelToViewDefinition(
+                Set("A"),
+                ViewDefinition("foo", "alias_foo"),
+                JoinOnDefinition(List((List("alias_foo", "COLUMN_A"), List("edge", "COLUMN_A"))))),
+              endNodeToViewDefinition = LabelToViewDefinition(
+                Set("B"),
+                ViewDefinition("bar", "alias_bar"),
+                JoinOnDefinition(List((List("alias_bar", "COLUMN_A"), List("edge", "COLUMN_A")))))
+            ))))))
+        )
+      )
+
+      GraphDdl(ddlDefinition).graphSchemas shouldEqual Map(
+        "myGraph" -> Schema.empty
+          .withNodePropertyKeys("A")("foo" -> CTInteger)
+          .withNodePropertyKeys("B")("sequence" -> CTInteger, "nationality" -> CTString.nullable, "age" -> CTInteger.nullable)
+          .withNodePropertyKeys("A", "B")("foo" -> CTInteger, "sequence" -> CTInteger, "nationality" -> CTString.nullable, "age" -> CTInteger.nullable)
+          .withNodePropertyKeys(Set("C"))
+          .withRelationshipType("TYPE_1")
+          .withRelationshipPropertyKeys("TYPE_2")("prop" -> CTBoolean.nullable)
+          .withSchemaPatterns(SchemaPattern("A", "TYPE_1", "B"))
+      )
+    }
+  }
+
+  describe("Exception cases") {
 
     it("throws when merging identical property keys with conflicting types") {
       // Given
@@ -264,7 +363,60 @@ class DdlAcceptanceTest extends BaseTestSuite {
         """.stripMargin
 
       an[SchemaException] shouldBe thrownBy {
-        parse(ddl).globalSchemas("mySchema")
+        GraphDdl(parse(ddl)).globalSchemas("mySchema")
+      }
+    }
+
+
+    it("throws if a label is not defined") {
+      val ddlDefinition = parse(
+        """|CATALOG CREATE LABEL (A)
+           |
+           |CREATE GRAPH SCHEMA mySchema
+           |
+           |  LABEL (B)
+           |
+           |  -- (illegal) node definition
+           |  (C)
+           |
+           |CREATE GRAPH myGraph WITH GRAPH SCHEMA mySchema
+        """.stripMargin)
+
+
+
+      an[IllegalArgumentException] shouldBe thrownBy {
+        GraphDdl(ddlDefinition).graphSchemas
+      }
+    }
+
+    it("throws if a relationship type is not defined") {
+      val ddlDefinition = parse(
+        """|CATALOG CREATE LABEL (A)
+           |
+           |CREATE GRAPH SCHEMA mySchema
+           |
+           |  LABEL (B)
+           |
+           |  -- (illegal) relationship type definition
+           |  [C]
+           |
+           |CREATE GRAPH myGraph WITH GRAPH SCHEMA mySchema
+        """.stripMargin)
+
+      an[IllegalArgumentException] shouldBe thrownBy {
+        GraphDdl(ddlDefinition).graphSchemas
+      }
+    }
+
+    it("throws if a undefined label is used") {
+      val ddlString =
+        """|CREATE GRAPH SCHEMA mySchema
+           |  (A)-[T]->(A);
+           |
+           |CREATE GRAPH myGraph WITH GRAPH SCHEMA mySchema""".stripMargin
+
+      an[IllegalArgumentException] shouldBe thrownBy {
+        GraphDdl(parse(ddlString)).graphSchemas
       }
     }
   }

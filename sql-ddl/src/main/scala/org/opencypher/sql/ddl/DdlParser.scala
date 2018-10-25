@@ -48,7 +48,7 @@ case class DdlParsingException(
 
 object DdlParser {
 
-  def parse(ddlString: String): DdlDefinitions = {
+  def parse(ddlString: String): DdlDefinition = {
     ddlDefinitions.parse(ddlString) match {
       case Success(v, _) => v
       case Failure(failedParser, index, extra) =>
@@ -218,12 +218,12 @@ object DdlParser {
 
   val setSchemaDefinition: P[SetSchemaDefinition] = P(SET ~/ SCHEMA ~ identifier.! ~/ "." ~/ identifier.!.? ~ ";".?).map(SetSchemaDefinition.tupled)
 
-  val ddlDefinitions: P[DdlDefinitions] = P(
+  val ddlDefinitions: P[DdlDefinition] = P(
     ParsersForNoTrace.noTrace ~ // allow for whitespace/comments at the start
       setSchemaDefinition.? ~/
       catalogLabelDefinition.rep.map(_.toList) ~/
       globalSchemaDefinition.rep.map(_.toMap) ~/
       graphDefinition.rep.map(_.toList) ~/ End
-  ).map(DdlDefinitions.tupled)
+  ).map(DdlDefinition.tupled)
 
 }
