@@ -33,6 +33,7 @@ import org.opencypher.v9_0.ast._
 import org.opencypher.v9_0.ast.semantics.{SemanticCheckResult, SemanticState}
 import org.opencypher.v9_0.expressions.Expression
 import org.opencypher.v9_0.frontend.phases._
+import org.opencypher.v9_0.rewriting.Deprecations.V2
 import org.opencypher.v9_0.rewriting.RewriterStepSequencer
 import org.opencypher.v9_0.rewriting.rewriters.Never
 import org.opencypher.v9_0.util.{CypherException, InputPosition}
@@ -62,7 +63,7 @@ object Neo4jAstTestSupport {
   object CypherParserWithoutSemanticChecking extends CypherParser {
     override val pipeLine: Transformer[BaseContext, BaseState, BaseState] =
       Parsing.adds(BaseContains[Statement]) andThen
-        SyntaxDeprecationWarnings andThen
+        SyntaxDeprecationWarnings(V2) andThen
         OkapiPreparatoryRewriting andThen
         NonThrowingSemanticAnalysis andThen
         AstRewriting(RewriterStepSequencer.newPlain, Never) andThen
