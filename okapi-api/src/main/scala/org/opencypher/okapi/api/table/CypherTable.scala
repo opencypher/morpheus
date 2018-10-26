@@ -58,7 +58,8 @@ trait CypherTable {
     * in the query 'MATCH (n) RETURN n.foo' the only return item would be 'n.foo'
     *
     * It returns a list with a single value if the return item is a primitive. It will return
-    * a list of column names if the return item is an entity, such as a node.
+    * a list of column names if the return item is an entity, such as a node. The listed columns
+    * hold the members of the entity (ids, label/type, properties) using an internal naming scheme.
     *
     * @param returnItem name of one of the return items represented in this table.
     * @return a list of names of the physical columns that hold the data for the return item.
