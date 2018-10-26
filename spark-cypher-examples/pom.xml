@@ -16,6 +16,7 @@
 
   <properties>
     <project.rootdir>${project.parent.basedir}</project.rootdir>
+    <dep.netty.version>4.1.24.Final</dep.netty.version>
   </properties>
 
   <dependencies>
@@ -23,32 +24,26 @@
       <groupId>org.opencypher</groupId>
       <artifactId>spark-cypher</artifactId>
       <version>${project.parent.version}</version>
-      <exclusions>
-        <!-- exclude netty-all as it interferes with neo4j-harness 3.4.1 -->
-        <exclusion>
-          <groupId>io.netty</groupId>
-          <artifactId>netty-all</artifactId>
-        </exclusion>
-      </exclusions>
     </dependency>
 
     <dependency>
       <groupId>org.apache.spark</groupId>
       <artifactId>spark-graphx_${project.scala.binary.version}</artifactId>
       <version>${dep.spark.version}</version>
-      <exclusions>
-        <!-- exclude netty-all as it interferes with neo4j-harness 3.4.1 -->
-        <exclusion>
-          <groupId>io.netty</groupId>
-          <artifactId>netty-all</artifactId>
-        </exclusion>
-      </exclusions>
     </dependency>
 
     <dependency>
       <groupId>org.neo4j.test</groupId>
       <artifactId>neo4j-harness</artifactId>
       <version>${dep.neo4j.version}</version>
+    </dependency>
+
+    <!-- We set this explicitly to override older version coming from Spark -->
+    <!-- The version here needs to be in synch with the netty version from neo4j-harness -->
+    <dependency>
+      <groupId>io.netty</groupId>
+      <artifactId>netty-all</artifactId>
+      <version>${dep.netty.version}</version>
     </dependency>
 
     <dependency>
@@ -64,7 +59,6 @@
       <plugin>
         <groupId>org.neo4j.build.plugins</groupId>
         <artifactId>licensing-maven-plugin</artifactId>
-
         <executions>
           <execution>
             <id>list-all-licenses</id>
