@@ -39,6 +39,7 @@ import org.opencypher.okapi.impl.exception.{IllegalArgumentException, Unsupporte
 import org.opencypher.v9_0.ast.semantics.{SemanticErrorDef, SemanticState}
 import org.opencypher.v9_0.expressions._
 import org.opencypher.v9_0.frontend.phases._
+import org.opencypher.v9_0.rewriting.Deprecations.V2
 import org.opencypher.v9_0.rewriting.rewriters.Never
 import org.opencypher.v9_0.rewriting.{AstRewritingMonitor, RewriterStepSequencer}
 import org.opencypher.v9_0.util.{ASTNode, CypherException, InputPosition}
@@ -80,8 +81,8 @@ object CreateQueryParser {
 
   protected val pipeLine: Transformer[BaseContext, BaseState, BaseState] =
     Parsing.adds(BaseContains[Statement]) andThen
-      SyntaxDeprecationWarnings andThen
-      PreparatoryRewriting andThen
+      SyntaxDeprecationWarnings(V2) andThen
+      PreparatoryRewriting(V2) andThen
       SemanticAnalysis(warn = true).adds(BaseContains[SemanticState]) andThen
       AstRewriting(RewriterStepSequencer.newPlain, Never, getDegreeRewriting = false) andThen
       SemanticAnalysis(warn = false) andThen

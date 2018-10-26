@@ -33,6 +33,7 @@ import org.opencypher.okapi.ir.impl.typer.toFrontendType
 import org.opencypher.v9_0.ast._
 import org.opencypher.v9_0.ast.semantics.{SemanticErrorDef, SemanticFeature, SemanticState}
 import org.opencypher.v9_0.frontend.phases._
+import org.opencypher.v9_0.rewriting.Deprecations.V2
 import org.opencypher.v9_0.rewriting.RewriterStepSequencer
 import org.opencypher.v9_0.rewriting.rewriters.Forced
 
@@ -64,7 +65,7 @@ trait CypherParser {
 
   protected val pipeLine: Transformer[BaseContext, BaseState, BaseState] =
     Parsing.adds(BaseContains[Statement]) andThen
-      SyntaxDeprecationWarnings andThen
+      SyntaxDeprecationWarnings(V2) andThen
       OkapiPreparatoryRewriting andThen
       SemanticAnalysis(warn = true, SemanticFeature.Cypher10Support, SemanticFeature.MultipleGraphs, SemanticFeature.WithInitialQuerySignature)
         .adds(BaseContains[SemanticState]) andThen
