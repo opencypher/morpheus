@@ -27,6 +27,7 @@
 package org.opencypher.sql.ddl
 
 import org.opencypher.okapi.api.graph.GraphName
+import org.opencypher.okapi.api.io.conversion.{NodeMapping, RelationshipMapping}
 import org.opencypher.okapi.api.schema.{PropertyKeys, Schema, SchemaPattern}
 import org.opencypher.okapi.impl.exception.{IllegalArgumentException, SchemaException}
 import org.opencypher.sql.ddl.GraphDdlAst.ColumnIdentifier
@@ -155,30 +156,32 @@ object GraphDdl {
 
   def toGraph(inlineTypes: Map[String, GraphType], graphTypes: Map[String, GraphType])
     (graph: GraphDefinition): Graph = {
+    val graphType = graph.maybeSchemaName
+      .map(schemaName => graphTypes.getOrFail(schemaName, "Unresolved schema name"))
+      .getOrElse(inlineTypes.getOrFail(graph.name, "Unresolved schema name"))
+
     Graph(
       name = GraphName(graph.name),
-      graphType = graph.maybeSchemaName
-        .map(schemaName => graphTypes.getOrFail(schemaName, "Unresolved schema name"))
-        .getOrElse(inlineTypes.getOrFail(graph.name, "Unresolved schema name")),
-      nodeMappings = graph.nodeMappings.flatMap(toNodeMappings).keyBy(_.key),
-      edgeMappings = graph.relationshipMappings.flatMap(toEdgeMappings).keyBy(_.key)
+      graphType = graphType,
+      nodeToViewMappings = graph.nodeMappings.flatMap(nm => toNodeToViewMappings(nm, graphType)).keyBy(_.key),
+      edgeToViewMappings = graph.relationshipMappings.flatMap(em => toEdgeToViewMappings(em, graphType)).keyBy(_.key)
     )
   }
 
-  def toNodeMappings(nmd: NodeMappingDefinition): Seq[NodeMapping] = {
+  def toNodeToViewMappings(nmd: NodeMappingDefinition, graphType: GraphType): Seq[NodeToViewMapping] = {
     nmd.nodeToViewDefinitions.map { nvd =>
-      NodeMapping(
+      NodeToViewMapping(
         environment = DbEnv(DataSourceConfig()),
         nodeType = nmd.labelNames,
         view = nvd.viewName,
-        properties = nvd.maybePropertyMapping.getOrElse(Map())
+        nodeMapping = toNodeMapping(nmd.labelNames, graphType, nvd.maybePropertyMapping)
       )
     }
   }
 
-  def toEdgeMappings(rmd: RelationshipMappingDefinition): Seq[EdgeMapping] = {
+  def toEdgeToViewMappings(rmd: RelationshipMappingDefinition, graphType: GraphType): Seq[EdgeToViewMapping] = {
     rmd.relationshipToViewDefinitions.map { rvd =>
-      EdgeMapping(
+      EdgeToViewMapping(
         environment = DbEnv(DataSourceConfig()),
         edgeType = Set(rmd.relType),
         view = rvd.viewDefinition.name,
@@ -202,7 +205,7 @@ object GraphDdl {
             edgeAlias = rvd.endNodeToViewDefinition.viewDefinition.alias
           ))
         ),
-        properties = rvd.maybePropertyMapping.getOrElse(Map())
+        relationshipMapping = toRelationshipMapping(rmd.relType, graphType, rvd.maybePropertyMapping)
       )
     }
   }
@@ -220,6 +223,36 @@ object GraphDdl {
         if (!aliases.contains(rightAlias)) notFound("Unresolved alias", rightAlias, aliases)
         failure(s"Unable to resolve aliases: $leftAlias, $rightAlias")
     }
+  }
+
+  def toNodeMapping(labelCombination: Set[String], graphSchema: GraphType, maybePropertyToColumnMapping: Option[Map[String, String]]): NodeMapping = {
+    val propertyToColumnMapping = maybePropertyToColumnMapping match {
+      case Some(mapping) => mapping
+      // TODO: support unicode characters in properties and ensure there are no collisions with column name `id`
+      case None => graphSchema.nodePropertyKeys(labelCombination).map { case (key, _) => key -> key }
+    }
+    val initialNodeMapping = NodeMapping.on("id").withImpliedLabels(labelCombination.toSeq: _*)
+    val nodeMapping = propertyToColumnMapping.foldLeft(initialNodeMapping) {
+      case (currentNodeMapping, (propertyKey, columnName)) => currentNodeMapping.withPropertyKey(propertyKey -> columnName)
+    }
+    nodeMapping
+  }
+
+  private def toRelationshipMapping(relType: String, graphSchema: GraphType, maybePropertyToColumnMapping: Option[Map[String, String]]): RelationshipMapping = {
+    val propertyToColumnMapping = maybePropertyToColumnMapping match {
+      case Some(mapping) => mapping
+      // TODO: support unicode characters in properties and ensure there are no collisions with column name `id`
+      case None => graphSchema.relationshipPropertyKeys(relType).map { case (key, _) => key -> key }
+    }
+    val initialRelMapping = RelationshipMapping.on("id")
+      .withSourceStartNodeKey("start")
+      .withSourceEndNodeKey("end")
+      .withRelType(relType)
+
+    val relMapping = propertyToColumnMapping.foldLeft(initialRelMapping) {
+      case (currentRelMapping, (propertyKey, columnName)) => currentRelMapping.withPropertyKey(propertyKey -> columnName)
+    }
+    relMapping
   }
 
   def notFound(msg: String, needle: Any, haystack: Traversable[Any]) =
@@ -249,29 +282,29 @@ case class GraphDdl(
 case class Graph(
   name: GraphName,
   graphType: GraphType,
-  nodeMappings: Map[NodeViewKey, NodeMapping],
-  edgeMappings: Map[EdgeViewKey, EdgeMapping]
+  nodeToViewMappings: Map[NodeViewKey, NodeToViewMapping],
+  edgeToViewMappings: Map[EdgeViewKey, EdgeToViewMapping]
 )
 
-sealed trait EntityMapping
+sealed trait ElementToViewMapping
 
-case class NodeMapping(
+case class NodeToViewMapping(
   nodeType: NodeType,
   view: ViewId,
-  properties: PropertyMappings,
+  nodeMapping: NodeMapping,
   environment: DbEnv
-) extends EntityMapping {
+) extends ElementToViewMapping {
   def key: NodeViewKey = NodeViewKey(nodeType, view)
 }
 
-case class EdgeMapping(
+case class EdgeToViewMapping(
   edgeType: EdgeType,
   view: ViewId,
   start: EdgeSource,
   end: EdgeSource,
-  properties: PropertyMappings,
+  relationshipMapping: RelationshipMapping,
   environment: DbEnv
-) extends EntityMapping {
+) extends ElementToViewMapping {
   def key: EdgeViewKey = EdgeViewKey(edgeType, view)
 }
 

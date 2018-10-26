@@ -27,6 +27,7 @@
 package org.opencypher.sql.ddl
 
 import org.opencypher.okapi.api.graph.GraphName
+import org.opencypher.okapi.api.io.conversion.{NodeMapping, RelationshipMapping}
 import org.opencypher.okapi.api.schema.Schema
 import org.scalatest.{Matchers, path}
 
@@ -78,15 +79,35 @@ class GraphDdlTest extends path.FunSpec with Matchers {
             .withNodePropertyKeys("Book")("title" -> CTString)
             .withRelationshipPropertyKeys("READS")("rating" -> CTFloat),
           Map(
-            personKey -> NodeMapping(Set("Person"), "personView", Map("name" -> "person_name"), DbEnv(DataSourceConfig())),
-            bookKey -> NodeMapping(Set("Book"), "bookView", Map("title" -> "book_title"), DbEnv(DataSourceConfig()))
+            personKey -> NodeToViewMapping(
+              nodeType = Set("Person"),
+              view = "personView",
+              nodeMapping = NodeMapping
+                .on("id")
+                .withImpliedLabel("Person")
+                .withPropertyKey("name" -> "person_name"),
+              environment = DbEnv(DataSourceConfig())),
+            bookKey -> NodeToViewMapping(
+              nodeType = Set("Book"),
+              view = "bookView",
+              nodeMapping = NodeMapping
+                .on("id")
+                .withImpliedLabel("Book")
+                .withPropertyKey("title" -> "book_title"),
+              environment = DbEnv(DataSourceConfig()))
           ),
           Map(
-            readsKey -> EdgeMapping(Set("READS"), "readsView",
-              EdgeSource(personKey, List(Join("person", "person_id"))),
-              EdgeSource(bookKey, List(Join("book", "book_id"))),
-              Map("rating" -> "value"),
-              DbEnv(DataSourceConfig())
+            readsKey -> EdgeToViewMapping(
+              edgeType = Set("READS"),
+              view = "readsView",
+              start = EdgeSource(personKey, List(Join("person", "person_id"))),
+              end = EdgeSource(bookKey, List(Join("book", "book_id"))),
+              relationshipMapping = RelationshipMapping
+                .on("id")
+                .withSourceStartNodeKey("start")
+                .withSourceEndNodeKey("end").withRelType("READS")
+                .withPropertyKey("rating" -> "value"),
+              environment = DbEnv(DataSourceConfig())
             )
           )
         )
