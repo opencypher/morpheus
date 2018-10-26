@@ -50,7 +50,7 @@ case class GraphDdl(ddl: DdlDefinition) {
       name -> (globalSchema ++ localSchema)
   }.toMap
 
-  private def toSchema(schemaDefinition: SchemaDefinition): Schema = {
+  private[ddl] def toSchema(schemaDefinition: SchemaDefinition): Schema = {
     val labelDefinitions = globalLabelDefinitions ++ schemaDefinition.localLabelDefinitions.map(labelDef => labelDef.name -> labelDef).toMap
 
     def undefinedLabelException(label: String) = IllegalArgumentException(s"Defined label (one of: ${labelDefinitions.keys.mkString("[", ", ", "]")})", label)
