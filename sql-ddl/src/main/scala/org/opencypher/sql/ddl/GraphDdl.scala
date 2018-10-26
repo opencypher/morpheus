@@ -26,31 +26,66 @@
  */
 package org.opencypher.sql.ddl
 
+import org.opencypher.okapi.api.graph.GraphName
 import org.opencypher.okapi.api.schema.{PropertyKeys, Schema, SchemaPattern}
 import org.opencypher.okapi.impl.exception.{IllegalArgumentException, SchemaException}
+import org.opencypher.sql.ddl.GraphDdlAst.ColumnIdentifier
+import org.opencypher.sql.ddl.GraphDdl._
 
-case class GraphDdl(ddl: DdlDefinition) {
+/*
+TODO:
+ validate
+ - name resolution
+   x schema names
+   x alias names
+   - property names in mappings must exist
+   - referenced graph schema must exist
+ - name conflicts
+ - doubly mapped nodes/rels
 
-  private[ddl] lazy val globalLabelDefinitions: Map[String, LabelDefinition] =
-    ddl.labelDefinitions.map(labelDef => labelDef.name -> labelDef).toMap
+ other
+ - construct all property mappings (even if mapping to same name)
 
-  lazy val graphByName: Map[String, GraphDefinition] =
-    ddl.graphDefinitions.map { graphDef => graphDef.name -> graphDef }.toMap
+  */
 
-  private[ddl] lazy val globalSchemas: Map[String, Schema] =
-    ddl.schemaDefinitions.map { case (name, schemaDefinition: SchemaDefinition) => name -> toSchema(schemaDefinition) }
+object GraphDdl {
 
-  lazy val graphSchemas: Map[String, Schema] = ddl.graphDefinitions.map {
-    case GraphDefinition(name, maybeSchemaName, localSchemaDefinition, _, _) =>
-      val globalSchema = maybeSchemaName match {
-        case Some(schemaName) => globalSchemas(schemaName)
-        case None => Schema.empty
-      }
-      val localSchema = toSchema(localSchemaDefinition)
-      name -> (globalSchema ++ localSchema)
-  }.toMap
+  type GraphType = Schema
 
-  private[ddl] def toSchema(schemaDefinition: SchemaDefinition): Schema = {
+  type NodeType = Set[String]
+  type EdgeType = Set[String]
+
+  type ViewId = String
+  type ColumnId = String
+
+  type PropertyMappings = Map[String, String]
+  type LabelKey = (String, Set[String])
+
+  def apply(ddl: String): GraphDdl = GraphDdl(GraphDdlParser.parse(ddl))
+
+  def apply(ddl: DdlDefinition): GraphDdl = {
+
+    val globalLabelDefinitions: Map[String, LabelDefinition] = ddl.labelDefinitions.keyBy(_.name)
+
+    val graphTypes = ddl.schemaDefinitions
+      .mapValues(schemaDefinition => toGraphType(globalLabelDefinitions, schemaDefinition))
+
+    val inlineGraphTypes = ddl.graphDefinitions.keyBy(_.name)
+      .mapValues(_.localSchemaDefinition)
+      .mapValues(schemaDefinition => toGraphType(globalLabelDefinitions, schemaDefinition))
+
+    val graphs = ddl.graphDefinitions
+      .map(toGraph(inlineGraphTypes, graphTypes)).keyBy(_.name)
+
+    GraphDdl(
+      graphs = graphs
+    )
+  }
+
+  private[ddl] def toGraphType(
+    globalLabelDefinitions: Map[String, LabelDefinition],
+    schemaDefinition: SchemaDefinition
+  ): Schema = {
     val labelDefinitions = globalLabelDefinitions ++ schemaDefinition.localLabelDefinitions.map(labelDef => labelDef.name -> labelDef).toMap
 
     def undefinedLabelException(label: String) = IllegalArgumentException(s"Defined label (one of: ${labelDefinitions.keys.mkString("[", ", ", "]")})", label)
@@ -116,4 +151,145 @@ case class GraphDdl(ddl: DdlDefinition) {
         currentSchema.withSchemaPatterns(expandedPatterns.toSeq: _*)
     }
   }
+
+
+  def toGraph(inlineTypes: Map[String, GraphType], graphTypes: Map[String, GraphType])
+    (graph: GraphDefinition): Graph = {
+    Graph(
+      name = GraphName(graph.name),
+      graphType = graph.maybeSchemaName
+        .map(schemaName => graphTypes.getOrFail(schemaName, "Unresolved schema name"))
+        .getOrElse(inlineTypes.getOrFail(graph.name, "Unresolved schema name")),
+      nodeMappings = graph.nodeMappings.flatMap(toNodeMappings).keyBy(_.key),
+      edgeMappings = graph.relationshipMappings.flatMap(toEdgeMappings).keyBy(_.key)
+    )
+  }
+
+  def toNodeMappings(nmd: NodeMappingDefinition): Seq[NodeMapping] = {
+    nmd.nodeToViewDefinitions.map { nvd =>
+      NodeMapping(
+        environment = DbEnv(DataSourceConfig()),
+        nodeType = nmd.labelNames,
+        view = nvd.viewName,
+        properties = nvd.maybePropertyMapping.getOrElse(Map())
+      )
+    }
+  }
+
+  def toEdgeMappings(rmd: RelationshipMappingDefinition): Seq[EdgeMapping] = {
+    rmd.relationshipToViewDefinitions.map { rvd =>
+      EdgeMapping(
+        environment = DbEnv(DataSourceConfig()),
+        edgeType = Set(rmd.relType),
+        view = rvd.viewDefinition.name,
+        start = EdgeSource(
+          nodes = NodeViewKey(
+            nodeType = rvd.startNodeToViewDefinition.labelSet,
+            view = rvd.startNodeToViewDefinition.viewDefinition.name
+          ),
+          joinPredicates = rvd.startNodeToViewDefinition.joinOn.joinPredicates.map(toJoin(
+            nodeAlias = rvd.viewDefinition.alias,
+            edgeAlias = rvd.startNodeToViewDefinition.viewDefinition.alias
+          ))
+        ),
+        end = EdgeSource(
+          nodes = NodeViewKey(
+            nodeType = rvd.endNodeToViewDefinition.labelSet,
+            view = rvd.endNodeToViewDefinition.viewDefinition.name
+          ),
+          joinPredicates = rvd.endNodeToViewDefinition.joinOn.joinPredicates.map(toJoin(
+            nodeAlias = rvd.viewDefinition.alias,
+            edgeAlias = rvd.endNodeToViewDefinition.viewDefinition.alias
+          ))
+        ),
+        properties = rvd.maybePropertyMapping.getOrElse(Map())
+      )
+    }
+  }
+
+  def toJoin(nodeAlias: String, edgeAlias: String)(join: (ColumnIdentifier, ColumnIdentifier)): Join = {
+    val (left, right) = join
+    val (leftAlias, rightAlias) = (left.head, right.head)
+    val (leftColumn, rightColumn) = (left.tail.mkString("."), right.tail.mkString("."))
+    (leftAlias, rightAlias) match {
+      case (`nodeAlias`, `edgeAlias`) => Join(nodeColumn = leftColumn, edgeColumn = rightColumn)
+      case (`edgeAlias`, `nodeAlias`) => Join(nodeColumn = rightColumn, edgeColumn = leftColumn)
+      case _ =>
+        val aliases = Set(nodeAlias, edgeAlias)
+        if (!aliases.contains(leftAlias)) notFound("Unresolved alias", leftAlias, aliases)
+        if (!aliases.contains(rightAlias)) notFound("Unresolved alias", rightAlias, aliases)
+        failure(s"Unable to resolve aliases: $leftAlias, $rightAlias")
+    }
+  }
+
+  def notFound(msg: String, needle: Any, haystack: Traversable[Any]) =
+    throw IllegalArgumentException(
+      expected = if (haystack.nonEmpty) s"one of ${stringList(haystack)}" else "",
+      actual = needle
+    )
+
+  def failure(msg: String): Nothing = ???
+
+  private def stringList(elems: Traversable[Any]): String =
+    elems.mkString("[", ",", "]")
+
+  implicit class ListOps[T](list: List[T]) {
+    def keyBy[K](key: T => K): Map[K, T] = list.map(t => key(t) -> t).toMap
+  }
+
+  implicit class MapOps[K, V](map: Map[K, V]) {
+    def getOrFail(key: K, msg: String): V = map.getOrElse(key, notFound(msg, key, map.keySet))
+  }
 }
+
+case class GraphDdl(
+  graphs: Map[GraphName, Graph]
+)
+
+case class Graph(
+  name: GraphName,
+  graphType: GraphType,
+  nodeMappings: Map[NodeViewKey, NodeMapping],
+  edgeMappings: Map[EdgeViewKey, EdgeMapping]
+)
+
+sealed trait EntityMapping
+
+case class NodeMapping(
+  nodeType: NodeType,
+  view: ViewId,
+  properties: PropertyMappings,
+  environment: DbEnv
+) extends EntityMapping {
+  def key: NodeViewKey = NodeViewKey(nodeType, view)
+}
+
+case class EdgeMapping(
+  edgeType: EdgeType,
+  view: ViewId,
+  start: EdgeSource,
+  end: EdgeSource,
+  properties: PropertyMappings,
+  environment: DbEnv
+) extends EntityMapping {
+  def key: EdgeViewKey = EdgeViewKey(edgeType, view)
+}
+
+case class EdgeSource(
+  nodes: NodeViewKey,
+  joinPredicates: List[Join]
+)
+
+case class Join(
+  nodeColumn: String,
+  edgeColumn: String
+)
+
+case class DbEnv(
+  dataSource: DataSourceConfig
+)
+
+case class DataSourceConfig()
+
+case class NodeViewKey(nodeType: Set[String], view: String)
+case class EdgeViewKey(edgeType: Set[String], view: String)

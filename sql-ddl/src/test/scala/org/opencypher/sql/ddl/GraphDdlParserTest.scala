@@ -29,10 +29,10 @@ package org.opencypher.sql.ddl
 import fastparse.core.Parsed.{Failure, Success}
 import org.opencypher.okapi.api.types._
 import org.opencypher.okapi.testing.{BaseTestSuite, TestNameFixture}
-import org.opencypher.sql.ddl.DdlParser._
+import org.opencypher.sql.ddl.GraphDdlParser._
 import org.scalatest.mockito.MockitoSugar
 
-class DdlParserTest extends BaseTestSuite with MockitoSugar with TestNameFixture {
+class GraphDdlParserTest extends BaseTestSuite with MockitoSugar with TestNameFixture {
 
   override val separator = "parses"
 
@@ -69,7 +69,8 @@ class DdlParserTest extends BaseTestSuite with MockitoSugar with TestNameFixture
 
   def debug[T](parser: fastparse.core.Parser[T, Char, String], input: String): T = {
     parser.parse(input) match {
-      case Success(v, _) => v
+      case Success(v, _) =>
+        v
       case Failure(failedParser, index, extra) =>
         val before = index - math.max(index - 20, 0)
         val after = math.min(index + 20, extra.input.length) - index
@@ -425,7 +426,7 @@ class DdlParserTest extends BaseTestSuite with MockitoSugar with TestNameFixture
            |      LABEL SET (A) FROM foo alias_foo JOIN ON alias_foo.COLUMN_A = edge.COLUMN_A
            |    END NODES
            |      LABEL SET (B) FROM bar alias_bar JOIN ON alias_bar.COLUMN_A = edge.COLUMN_A
-           |  FROM baz alias_baz
+           |  FROM baz edge
            |    START NODES
            |      LABEL SET (A) FROM foo alias_foo JOIN ON alias_foo.COLUMN_A = edge.COLUMN_A
            |    END NODES
@@ -443,6 +444,8 @@ class DdlParserTest extends BaseTestSuite with MockitoSugar with TestNameFixture
           ViewDefinition("bar", "alias_bar"),
           JoinOnDefinition(List((List("alias_bar", "COLUMN_A"), List("edge", "COLUMN_A")))))
       )
+
+      debug(relationshipMappingDefinition, input)
       success(relationshipMappingDefinition, input, RelationshipMappingDefinition("TYPE_1", List(relMappingDef, relMappingDef)))
     }
 

@@ -27,11 +27,11 @@
 package org.opencypher.sql.ddl
 
 import org.opencypher.okapi.testing.BaseTestSuite
-import org.opencypher.sql.ddl.DdlParser.parse
+import org.opencypher.sql.ddl.GraphDdlParser.parse
 
 import scala.io.Source
 
-class DdlFullExampleTests extends BaseTestSuite {
+class GraphDdlAstFullExampleTests extends BaseTestSuite {
 
   it("parses the Northwind graph DDL") {
     val northwindUrl = getClass.getResource("/northwind-graph.ddl")

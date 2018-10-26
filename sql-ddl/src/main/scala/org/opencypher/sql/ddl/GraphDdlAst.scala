@@ -28,9 +28,9 @@ package org.opencypher.sql.ddl
 
 import org.opencypher.okapi.api.types.CypherType
 import org.opencypher.okapi.trees.AbstractTreeNode
-import org.opencypher.sql.ddl.Ddl._
+import org.opencypher.sql.ddl.GraphDdlAst._
 
-object Ddl {
+object GraphDdlAst {
   type Property = (String, CypherType)
 
   type EntityDefinition = (String, Map[String, CypherType])
@@ -44,33 +44,32 @@ object Ddl {
   type LabelCombination = Set[String]
 }
 
-abstract class DdlAst extends AbstractTreeNode[DdlAst]
+abstract class GraphDdlAst extends AbstractTreeNode[GraphDdlAst]
 
 case class DdlDefinition(
   setSchema: Option[SetSchemaDefinition] = None,
   labelDefinitions: List[LabelDefinition] = Nil,
   schemaDefinitions: Map[String, SchemaDefinition] = Map.empty,
-  // TODO: check for conflicting graph names
   graphDefinitions: List[GraphDefinition] = Nil
-) extends DdlAst
+) extends GraphDdlAst
 
 case class SetSchemaDefinition(
   databaseConnectionName: String,
   databaseSchemaName: Option[String] = None
-) extends DdlAst
+) extends GraphDdlAst
 
 case class LabelDefinition(
   name: String,
   properties: Map[String, CypherType] = Map.empty,
   maybeKeyDefinition: Option[KeyDefinition] = None
-) extends DdlAst
+) extends GraphDdlAst
 
 case class SchemaDefinition(
   localLabelDefinitions: Set[LabelDefinition] = Set.empty,
   nodeDefinitions: Set[Set[String]] = Set.empty,
   relDefinitions: Set[String] = Set.empty,
   schemaPatternDefinitions: Set[SchemaPatternDefinition] = Set.empty
-) extends DdlAst
+) extends GraphDdlAst
 
 case class GraphDefinition(
   name: String,
@@ -78,7 +77,7 @@ case class GraphDefinition(
   localSchemaDefinition: SchemaDefinition = SchemaDefinition(),
   nodeMappings: List[NodeMappingDefinition] = List.empty,
   relationshipMappings: List[RelationshipMappingDefinition] = List.empty
-) extends DdlAst
+) extends GraphDdlAst
 
 case class CardinalityConstraint(from: Int, to: Option[Int])
 
@@ -88,7 +87,7 @@ case class SchemaPatternDefinition(
   relTypes: Set[String],
   targetCardinality: CardinalityConstraint = CardinalityConstraint(0, None),
   targetLabelCombinations: Set[LabelCombination]
-) extends DdlAst
+) extends GraphDdlAst
 
 trait ElementToViewDefinition {
   def maybePropertyMapping: Option[PropertyToColumnMappingDefinition]
@@ -97,31 +96,31 @@ trait ElementToViewDefinition {
 case class NodeToViewDefinition (
   viewName: String,
   override val maybePropertyMapping: Option[PropertyToColumnMappingDefinition] = None
-) extends DdlAst with ElementToViewDefinition
+) extends GraphDdlAst with ElementToViewDefinition
 
 case class NodeMappingDefinition(
   labelNames: Set[String],
   nodeToViewDefinitions: List[NodeToViewDefinition] = List.empty
-) extends DdlAst
+) extends GraphDdlAst
 
-case class ViewDefinition(name: String, alias: String) extends DdlAst
+case class ViewDefinition(name: String, alias: String) extends GraphDdlAst
 
-case class JoinOnDefinition(joinPredicates: List[(ColumnIdentifier, ColumnIdentifier)]) extends DdlAst
+case class JoinOnDefinition(joinPredicates: List[(ColumnIdentifier, ColumnIdentifier)]) extends GraphDdlAst
 
 case class LabelToViewDefinition(
   labelSet: Set[String],
   viewDefinition: ViewDefinition,
   joinOn: JoinOnDefinition
-) extends DdlAst
+) extends GraphDdlAst
 
 case class RelationshipToViewDefinition(
   viewDefinition: ViewDefinition,
   override val maybePropertyMapping: Option[PropertyToColumnMappingDefinition] = None,
   startNodeToViewDefinition: LabelToViewDefinition,
   endNodeToViewDefinition: LabelToViewDefinition
-) extends DdlAst with ElementToViewDefinition
+) extends GraphDdlAst with ElementToViewDefinition
 
 case class RelationshipMappingDefinition(
   relType: String,
   relationshipToViewDefinitions: List[RelationshipToViewDefinition]
-) extends DdlAst
+) extends GraphDdlAst

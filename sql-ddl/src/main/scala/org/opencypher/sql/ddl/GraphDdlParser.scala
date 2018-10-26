@@ -30,7 +30,7 @@ import fastparse.WhitespaceApi
 import fastparse.core.Frame
 import fastparse.core.Parsed.{Failure, Success}
 import org.opencypher.okapi.api.types._
-import org.opencypher.sql.ddl.Ddl._
+import org.opencypher.sql.ddl.GraphDdlAst._
 
 case class DdlParsingException(
   index: Int,
@@ -46,7 +46,7 @@ case class DdlParsingException(
       |
       |${parserStack.mkString("\n")}""".stripMargin) with Serializable
 
-object DdlParser {
+object GraphDdlParser {
 
   def parse(ddlString: String): DdlDefinition = {
     ddlDefinitions.parse(ddlString) match {
