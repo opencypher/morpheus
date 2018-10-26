@@ -36,6 +36,13 @@
       <groupId>org.apache.spark</groupId>
       <artifactId>spark-graphx_${project.scala.binary.version}</artifactId>
       <version>${dep.spark.version}</version>
+      <exclusions>
+        <!-- exclude netty-all as it interferes with neo4j-harness 3.4.1 -->
+        <exclusion>
+          <groupId>io.netty</groupId>
+          <artifactId>netty-all</artifactId>
+        </exclusion>
+      </exclusions>
     </dependency>
 
     <dependency>
