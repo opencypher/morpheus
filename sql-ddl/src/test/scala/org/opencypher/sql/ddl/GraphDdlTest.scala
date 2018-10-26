@@ -100,8 +100,8 @@ class GraphDdlTest extends path.FunSpec with Matchers {
             readsKey -> EdgeToViewMapping(
               edgeType = Set("READS"),
               view = "readsView",
-              start = EdgeSource(personKey, List(Join("person", "person_id"))),
-              end = EdgeSource(bookKey, List(Join("book", "book_id"))),
+              startNode = StartNode(personKey, List(Join("person_id", "person"))),
+              endNode = EndNode(bookKey, List(Join("book_id", "book"))),
               relationshipMapping = RelationshipMapping
                 .on("id")
                 .withSourceStartNodeKey("start")

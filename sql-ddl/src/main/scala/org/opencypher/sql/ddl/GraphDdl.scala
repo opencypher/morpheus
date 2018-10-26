@@ -185,24 +185,24 @@ object GraphDdl {
         environment = DbEnv(DataSourceConfig()),
         edgeType = Set(rmd.relType),
         view = rvd.viewDefinition.name,
-        start = EdgeSource(
-          nodes = NodeViewKey(
+        startNode = StartNode(
+          nodeViewKey = NodeViewKey(
             nodeType = rvd.startNodeToViewDefinition.labelSet,
             view = rvd.startNodeToViewDefinition.viewDefinition.name
           ),
           joinPredicates = rvd.startNodeToViewDefinition.joinOn.joinPredicates.map(toJoin(
-            nodeAlias = rvd.viewDefinition.alias,
-            edgeAlias = rvd.startNodeToViewDefinition.viewDefinition.alias
+            nodeAlias = rvd.startNodeToViewDefinition.viewDefinition.alias,
+            edgeAlias = rvd.viewDefinition.alias
           ))
         ),
-        end = EdgeSource(
-          nodes = NodeViewKey(
+        endNode = EndNode(
+          nodeViewKey = NodeViewKey(
             nodeType = rvd.endNodeToViewDefinition.labelSet,
             view = rvd.endNodeToViewDefinition.viewDefinition.name
           ),
           joinPredicates = rvd.endNodeToViewDefinition.joinOn.joinPredicates.map(toJoin(
-            nodeAlias = rvd.viewDefinition.alias,
-            edgeAlias = rvd.endNodeToViewDefinition.viewDefinition.alias
+            nodeAlias = rvd.endNodeToViewDefinition.viewDefinition.alias,
+            edgeAlias = rvd.viewDefinition.alias
           ))
         ),
         relationshipMapping = toRelationshipMapping(rmd.relType, graphType, rvd.maybePropertyMapping)
@@ -300,16 +300,21 @@ case class NodeToViewMapping(
 case class EdgeToViewMapping(
   edgeType: EdgeType,
   view: ViewId,
-  start: EdgeSource,
-  end: EdgeSource,
+  startNode: StartNode,
+  endNode: EndNode,
   relationshipMapping: RelationshipMapping,
   environment: DbEnv
 ) extends ElementToViewMapping {
   def key: EdgeViewKey = EdgeViewKey(edgeType, view)
 }
 
-case class EdgeSource(
-  nodes: NodeViewKey,
+case class StartNode(
+  nodeViewKey: NodeViewKey,
+  joinPredicates: List[Join]
+)
+
+case class EndNode(
+  nodeViewKey: NodeViewKey,
   joinPredicates: List[Join]
 )
 
