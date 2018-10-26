@@ -1,5 +1,5 @@
 [![Build Status](https://travis-ci.org/opencypher/cypher-for-apache-spark.svg?branch=master)](https://travis-ci.org/opencypher/cypher-for-apache-spark)
-[![Maven Central](https://img.shields.io/badge/Maven_Central-0.1.6-blue.svg?label=Maven%20Central)](https://search.maven.org/#artifactdetails%7Corg.opencypher%7Cspark-cypher%7C0.1.6%7Cjar)
+[![Maven Central](https://img.shields.io/badge/Maven_Central-0.2.0-blue.svg?label=Maven%20Central)](https://search.maven.org/#artifactdetails%7Corg.opencypher%7Cspark-cypher%7C0.2.0%7Cjar)
 # CAPS: Cypher for Apache Spark
 
 CAPS extends [Apache Spark™](https://spark.apache.org) with [Cypher](https://neo4j.com/docs/developer-manual/current/cypher/), the industry's most widely used [property graph](https://github.com/opencypher/openCypher/blob/master/docs/property-graph-model.adoc) query language defined and maintained by the [openCypher](http://www.opencypher.org) project.
@@ -70,18 +70,18 @@ Maven:
 <dependency>
   <groupId>org.opencypher</groupId>
   <artifactId>spark-cypher</artifactId>
-  <version>0.1.6</version>
+  <version>0.2.0</version>
 </dependency>
 ```
 
 sbt:
 ```
-libraryDependencies += "org.opencypher" % "spark-cypher" % "0.1.6"
+libraryDependencies += "org.opencypher" % "spark-cypher" % "0.2.0"
 ```
 
 Remember to add `fork in run := true` in your `build.sbt` for scala projects; this is not CAPS
 specific, but a quirk of spark execution that will help 
-[prevent problems](https://stackoverflow.com/questions/44298847/why-do-we-need-to-add-fork-in-run-true-when-running-spark-sbt-application)
+[prevent problems](https://stackoverflow.com/questions/44298847/why-do-we-need-to-add-fork-in-run-true-when-running-spark-sbt-application).
 
 ### Generating API documentation
 
