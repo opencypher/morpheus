@@ -31,6 +31,7 @@ import org.opencypher.okapi.api.graph.{GraphName, PropertyGraph}
 import org.opencypher.okapi.api.io.conversion.{NodeMapping, RelationshipMapping}
 import org.opencypher.okapi.api.schema.Schema
 import org.opencypher.okapi.impl.exception.{IllegalArgumentException, UnsupportedOperationException}
+import org.opencypher.okapi.impl.util.StringEncodingUtilities._
 import org.opencypher.spark.api.CAPSSession
 import org.opencypher.spark.api.io.{CAPSNodeTable, CAPSRelationshipTable, HiveFormat, JdbcFormat}
 import org.opencypher.spark.impl.DataFrameOps._
@@ -63,7 +64,6 @@ case class SqlPropertyGraphDataSource(
 
     // Build CAPS node tables
     val (nodeViewKeys, nodeDfs) = ddlGraph.nodeToViewMappings.mapValues(nvm => readSqlTable(nvm.view, sqlDataSourceConfig)).unzip
-    // TODO: Ensure added id does not collide with a property called `id`
     val nodeDataFramesWithIds = nodeViewKeys.zip(addUniqueIds(nodeDfs.toSeq, idColumn)).toMap
     val nodeTables = nodeDataFramesWithIds.map {
       case (nodeViewKey, nodeDf) =>
@@ -74,7 +74,6 @@ case class SqlPropertyGraphDataSource(
     // Build CAPS relationship tables
 
     val (relViewKeys, relDfs) = ddlGraph.edgeToViewMappings.mapValues(evm => readSqlTable(evm.view, sqlDataSourceConfig)).unzip
-    // TODO: Ensure added id does not collide with a property called `id`
     val relDataFramesWithIds = relViewKeys.zip(addUniqueIds(relDfs.toSeq, idColumn)).toMap
 
     val relationshipTables = ddlGraph.edgeToViewMappings.map {
@@ -108,7 +107,7 @@ case class SqlPropertyGraphDataSource(
     val namespacedEdgeDf = edgeDf.prefixColumns(edgePrefix)
 
     val joinColumnNames = joinColumns.map { join: Join =>
-      (nodePrefix + join.nodeColumn) -> (edgePrefix + join.edgeColumn)
+      (nodePrefix + join.nodeColumn.toPropertyColumnName) -> (edgePrefix + join.edgeColumn.toPropertyColumnName)
     }
 
     val joinPredicate = joinColumnNames
@@ -149,14 +148,14 @@ case class SqlPropertyGraphDataSource(
       case otherFormat => notFound(otherFormat, Seq(JdbcFormat, HiveFormat))
     }
 
-    inputTable
+    inputTable.withPropertyColumns
   }
 
   def toNodeMapping(labelCombination: Set[String], propertyMappings: PropertyMappings): NodeMapping = {
     val initialNodeMapping = NodeMapping.on(idColumn).withImpliedLabels(labelCombination.toSeq: _*)
     propertyMappings.foldLeft(initialNodeMapping) {
       case (currentNodeMapping, (propertyKey, columnName)) =>
-        currentNodeMapping.withPropertyKey(propertyKey -> columnName)
+        currentNodeMapping.withPropertyKey(propertyKey -> columnName.toPropertyColumnName)
     }
   }
 
@@ -167,7 +166,7 @@ case class SqlPropertyGraphDataSource(
       .withRelType(relType)
     propertyMappings.foldLeft(initialRelMapping) {
       case (currentRelMapping, (propertyKey, columnName)) =>
-        currentRelMapping.withPropertyKey(propertyKey -> columnName)
+        currentRelMapping.withPropertyKey(propertyKey -> columnName.toPropertyColumnName)
     }
   }
 

@@ -206,6 +206,63 @@ class SqlPropertyGraphDataSourceTest extends CAPSTestSuite {
     ))
   }
 
+  it("reads relationships from a table with colliding column names") {
+    val nodeView = "node_view"
+    val relsView = "rels_view"
+
+    val ddlString =
+      s"""
+         |SET SCHEMA $dataSourceName.fooDatabaseName
+         |
+         |CREATE GRAPH SCHEMA fooSchema
+         | LABEL (Node { id : INTEGER, start : STRING, end : STRING })
+         | LABEL (REL  { id : INTEGER, start : STRING, end : STRING })
+         | (Node)
+         | [REL]
+         |
+         |CREATE GRAPH fooGraph WITH GRAPH SCHEMA fooSchema
+         |  NODE LABEL SETS (
+         |    (Node) FROM $nodeView
+         |  )
+         |  RELATIONSHIP LABEL SETS (
+         |    (REL)
+         |      FROM $relsView edge
+         |        START NODES
+         |          LABEL SET (Node) FROM $nodeView alias_node JOIN ON alias_node.node_id = edge.source_id
+         |        END NODES
+         |          LABEL SET (Node) FROM $nodeView alias_node JOIN ON alias_node.node_id = edge.target_id
+         |  )
+     """.stripMargin
+
+    sparkSession
+      .createDataFrame(Seq(
+        (0L, 23, "startValue", "endValue"),
+        (1L, 42, "startValue", "endValue")
+      )).toDF("node_id", "id", "start", "end").createOrReplaceTempView(nodeView)
+    sparkSession
+      .createDataFrame(Seq((0L, 1L, 1984, "startValue", "endValue")))
+      .toDF("source_id", "target_id", "id", "start", "end").createOrReplaceTempView(relsView)
+
+    val ds = SqlPropertyGraphDataSource(GraphDdl(ddlString), SqlDataSourceConfig(HiveFormat, dataSourceName))(caps)
+
+    val nodeId1 = computePartitionedRowId(rowIndex = 0, partitionStartDelta = 0)
+    val nodeId2 = computePartitionedRowId(rowIndex = 1, partitionStartDelta = 0)
+
+    ds.graph(fooGraphName).nodes("n").toMapsWithCollectedEntities should equal(Bag(
+      CypherMap("n" -> CAPSNode(nodeId1, Set("Node"), CypherMap("id" -> 23, "start" -> "startValue", "end" -> "endValue"))),
+      CypherMap("n" -> CAPSNode(nodeId2, Set("Node"), CypherMap("id" -> 42, "start" -> "startValue", "end" -> "endValue")))
+    ))
+
+    ds.graph(fooGraphName).relationships("r").toMapsWithCollectedEntities should equal(Bag(
+      CypherMap("r" -> CAPSRelationship(
+        id = computePartitionedRowId(rowIndex = 0, partitionStartDelta = 0),
+        startId = nodeId1,
+        endId = nodeId2,
+        relType = "REL",
+        properties = CypherMap("id" -> 1984, "start" -> "startValue", "end" -> "endValue")))
+    ))
+  }
+
   it("reads relationships from multiple tables") {
     val personView = "person_view"
     val bookView = "book_view"

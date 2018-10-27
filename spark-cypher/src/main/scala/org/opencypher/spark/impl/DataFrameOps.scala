@@ -36,6 +36,7 @@ import org.opencypher.okapi.api.value.CypherValue
 import org.opencypher.okapi.api.value.CypherValue.CypherValue
 import org.opencypher.okapi.impl.exception.IllegalArgumentException
 import org.opencypher.okapi.impl.util.Measurement.printTiming
+import org.opencypher.okapi.impl.util.StringEncodingUtilities._
 import org.opencypher.okapi.ir.api.expr._
 import org.opencypher.okapi.relational.api.planning.RelationalRuntimeContext
 import org.opencypher.okapi.relational.impl.table.RecordHeader
@@ -143,9 +144,22 @@ object DataFrameOps {
       }
     }
 
+    def withPropertyColumns: DataFrame = {
+      df.columns.foldLeft(df) {
+        case (currentDf, column) => currentDf.withColumnRenamed(column, column.toPropertyColumnName)
+      }
+    }
+
     def prefixColumns(prefix: String): DataFrame = {
       df.columns.foldLeft(df) {
         case (currentDf, column) => currentDf.withColumnRenamed(column, s"$prefix$column")
+      }
+    }
+
+    def removePrefix(prefix: String): DataFrame = {
+      df.columns.foldLeft(df) {
+        case (currentDf, column) if column.startsWith(prefix) => currentDf.withColumnRenamed(column, column.substring(prefix.length))
+        case (currentDf, _) => currentDf
       }
     }
 
