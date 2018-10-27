@@ -302,8 +302,8 @@ class GraphDdlAcceptanceTest extends BaseTestSuite {
             LabelDefinition("TYPE_1"),
             LabelDefinition("TYPE_2", Map("prop" -> CTBoolean.nullable))
           ),
-          schemaDefinitions = Map(schemaName -> SchemaDefinition(
-            localLabelDefinitions = Set(
+          schemaDefinitions = List(schemaName -> SchemaDefinition(
+            localLabelDefinitions = List(
               LabelDefinition("A", properties = Map("foo" -> CTInteger)),
               LabelDefinition("C")),
             nodeDefinitions = Set(Set("A"), Set("B"), Set("A", "B"), Set("C")),

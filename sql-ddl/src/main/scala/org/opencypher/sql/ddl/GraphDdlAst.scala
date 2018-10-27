@@ -49,7 +49,7 @@ abstract class GraphDdlAst extends AbstractTreeNode[GraphDdlAst]
 case class DdlDefinition(
   setSchema: Option[SetSchemaDefinition] = None,
   labelDefinitions: List[LabelDefinition] = Nil,
-  schemaDefinitions: Map[String, SchemaDefinition] = Map.empty,
+  schemaDefinitions: List[(String, SchemaDefinition)] = List.empty,
   graphDefinitions: List[GraphDefinition] = Nil
 ) extends GraphDdlAst
 
@@ -65,7 +65,7 @@ case class LabelDefinition(
 ) extends GraphDdlAst
 
 case class SchemaDefinition(
-  localLabelDefinitions: Set[LabelDefinition] = Set.empty,
+  localLabelDefinitions: List[LabelDefinition] = List.empty,
   nodeDefinitions: Set[Set[String]] = Set.empty,
   relDefinitions: Set[String] = Set.empty,
   schemaPatternDefinitions: Set[SchemaPatternDefinition] = Set.empty

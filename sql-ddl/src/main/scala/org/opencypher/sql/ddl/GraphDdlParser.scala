@@ -175,7 +175,7 @@ object GraphDdlParser {
     .map(SchemaPatternDefinition.tupled)
 
   val localSchemaDefinition: P[SchemaDefinition] = P(
-    labelDefinition.rep(sep = ",".?).map(_.toSet) ~/ ",".? ~/
+    labelDefinition.rep(sep = ",".?).map(_.toList) ~/ ",".? ~/
       // negative lookahead (~ !"-") needed in order to disambiguate node definitions and schema pattern definitions
       (nodeDefinition ~ !"-").rep(sep = ",".?).map(_.toSet) ~ ",".? ~/
       relDefinition.rep(sep = ",".?).map(_.toSet) ~/ ",".? ~/
@@ -222,7 +222,7 @@ object GraphDdlParser {
     ParsersForNoTrace.noTrace ~ // allow for whitespace/comments at the start
       setSchemaDefinition.? ~/
       catalogLabelDefinition.rep.map(_.toList) ~/
-      globalSchemaDefinition.rep.map(_.toMap) ~/
+      globalSchemaDefinition.rep.map(_.toList) ~/
       graphDefinition.rep.map(_.toList) ~/ End
   ).map(DdlDefinition.tupled)
 

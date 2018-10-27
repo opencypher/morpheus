@@ -305,7 +305,7 @@ class GraphDdlParserTest extends BaseTestSuite with MockitoSugar with TestNameFi
 
     it("parses a graph definition with inlined schema") {
       val expectedSchemaDefinition = SchemaDefinition(
-        localLabelDefinitions = Set(LabelDefinition("A"), LabelDefinition("B")),
+        localLabelDefinitions = List(LabelDefinition("A"), LabelDefinition("B")),
         nodeDefinitions = Set(Set("A", "B")),
         relDefinitions = Set("B")
       )

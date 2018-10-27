@@ -32,6 +32,8 @@ import org.opencypher.okapi.impl.exception.{IllegalArgumentException, SchemaExce
 import org.opencypher.sql.ddl.GraphDdl._
 import org.opencypher.sql.ddl.GraphDdlAst.{ColumnIdentifier, PropertyToColumnMappingDefinition}
 
+import scala.language.higherKinds
+
 /*
 TODO:
  validate
@@ -41,7 +43,14 @@ TODO:
    x property names in mappings must exist
    - referenced graph schema must exist
  - name conflicts
- - doubly mapped nodes/rels
+   x global labels
+   x graph types
+   x graphs
+   x local labels
+   - node types??
+   - rel types??
+
+ x doubly mapped nodes/rels
 
  other
  - construct all property mappings (even if mapping to same name)
@@ -65,17 +74,25 @@ object GraphDdl {
 
   def apply(ddl: DdlDefinition): GraphDdl = {
 
-    val globalLabelDefinitions: Map[String, LabelDefinition] = ddl.labelDefinitions.keyBy(_.name)
+    val globalLabelDefinitions: Map[String, LabelDefinition] = ddl.labelDefinitions
+      .validateDistinctBy(_.name)(name => s"Duplicate label name $name")
+      .keyBy(_.name)
 
     val graphTypes = ddl.schemaDefinitions
+      .validateDistinctBy(_._1)(name => s"Duplicate graph type name $name")
+      .keyBy(_._1).mapValues(_._2)
       .mapValues(schemaDefinition => toGraphType(globalLabelDefinitions, schemaDefinition))
+      .view.force // mapValues creates a view, but we want validation now
 
-    val inlineGraphTypes = ddl.graphDefinitions.keyBy(_.name)
+    val inlineGraphTypes = ddl.graphDefinitions
+      .keyBy(_.name)
       .mapValues(_.localSchemaDefinition)
       .mapValues(schemaDefinition => toGraphType(globalLabelDefinitions, schemaDefinition))
 
     val graphs = ddl.graphDefinitions
-      .map(toGraph(inlineGraphTypes, graphTypes)).keyBy(_.name)
+      .map(toGraph(inlineGraphTypes, graphTypes))
+      .validateDistinctBy(_.name)(name => s"Duplicate graph name $name")
+      .keyBy(_.name)
 
     GraphDdl(
       graphs = graphs
@@ -86,9 +103,12 @@ object GraphDdl {
     globalLabelDefinitions: Map[String, LabelDefinition],
     schemaDefinition: SchemaDefinition
   ): Schema = {
-    val labelDefinitions = globalLabelDefinitions ++ schemaDefinition.localLabelDefinitions.map(labelDef => labelDef.name -> labelDef).toMap
+    val localLabelDefinitions = schemaDefinition.localLabelDefinitions
+      .validateDistinctBy(_.name)(name => s"Duplicate label name $name")
+      .keyBy(_.name)
+    val labelDefinitions = globalLabelDefinitions ++ localLabelDefinitions
 
-    def undefinedLabelException(label: String) = IllegalArgumentException(s"Defined label (one of: ${labelDefinitions.keys.mkString("[", ", ", "]")})", label)
+    def undefinedLabelException(label: String) = IllegalArgumentException(s"Defined label (one of: ${labelDefinitions.keys.show})", label)
 
     // track all node / rel definitions (e.g. explicit ones and implicit ones from schema pattern definitions)
     val nodeDefinitionsFromPatterns = schemaDefinition.schemaPatternDefinitions.flatMap(schemaDef =>
@@ -162,8 +182,14 @@ object GraphDdl {
     Graph(
       name = GraphName(graph.name),
       graphType = graphType,
-      nodeToViewMappings = graph.nodeMappings.flatMap(nm => toNodeToViewMappings(nm, graphType)).keyBy(_.key),
-      edgeToViewMappings = graph.relationshipMappings.flatMap(em => toEdgeToViewMappings(em, graphType)).keyBy(_.key)
+      nodeToViewMappings = graph.nodeMappings
+        .flatMap(nm => toNodeToViewMappings(nm, graphType))
+        .validateDistinctBy(_.key)(key => s"Duplicate mapping for $key")
+        .keyBy(_.key),
+      edgeToViewMappings = graph.relationshipMappings
+        .flatMap(em => toEdgeToViewMappings(em, graphType))
+        .validateDistinctBy(_.key)(key => s"Duplicate mapping for $key")
+        .keyBy(_.key)
     )
   }
 
@@ -247,7 +273,7 @@ object GraphDdl {
 
   def notFound(msg: String, needle: Any, haystack: Traversable[Any]) =
     throw IllegalArgumentException(
-      expected = if (haystack.nonEmpty) s"one of ${stringList(haystack)}" else "",
+      expected = if (haystack.nonEmpty) s"one of ${haystack.show}" else "",
       actual = needle
     )
 
@@ -259,8 +285,19 @@ object GraphDdl {
   private def stringList(elems: Traversable[Any]): String =
     elems.mkString("[", ",", "]")
 
-  implicit class ListOps[T](list: List[T]) {
-    def keyBy[K](key: T => K): Map[K, T] = list.map(t => key(t) -> t).toMap
+  implicit class TraversableOps[T, C[X] <: Traversable[X]](elems: C[T]) {
+    def show: String = elems.mkString("[", ",", "]")
+
+    def keyBy[K](key: T => K): Map[K, T] =
+      elems.map(t => key(t) -> t).toMap
+
+    def   validateDistinctBy[K](key: T => K)(msg: K => String): C[T] = {
+      elems.groupBy(key).foreach {
+        case (k, vals) if vals.size > 1 => throw SchemaException(msg(k))
+        case _ =>
+      }
+      elems
+    }
   }
 
   implicit class MapOps[K, V](map: Map[K, V]) {
@@ -322,7 +359,12 @@ case class DbEnv(
 
 case class DataSourceConfig()
 
-case class NodeViewKey(nodeType: Set[String], view: String)
-case class EdgeViewKey(edgeType: Set[String], view: String)
+
+case class NodeViewKey(nodeType: Set[String], view: String) {
+  override def toString: String = s"node type: ${nodeType.mkString(", ")}, view: $view"
+}
+case class EdgeViewKey(edgeType: Set[String], view: String) {
+  override def toString: String = s"relationship type: ${edgeType.mkString(", ")}, view: $view"
+}
 
 case class GraphDdlException(msg: String) extends RuntimeException(msg)
