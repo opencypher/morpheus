@@ -26,6 +26,8 @@
  */
 package org.opencypher.okapi.impl.exception
 
+import scala.compat.Platform.EOL
+
 /**
   * Exceptions that are not covered by the TCK. They are related to limitations of a specific Cypher implementation
   * or to session or property graph interactions that are not covered by the TCK.
@@ -44,7 +46,7 @@ final case class IllegalStateException(msg: String, cause: Option[Exception] = N
 final case class IllegalArgumentException(expected: Any, actual: Any = "none", explanation: String = "", cause: Option[Exception] = None)
   extends InternalException(
     s"""
-       |${if (explanation.nonEmpty) s"Explanation:\n\t$explanation\n"}
+       |${if (explanation.nonEmpty) s"Explanation:${EOL}\t$explanation${EOL}" else ""}
        |Expected:
        |\t$expected
        |Found:

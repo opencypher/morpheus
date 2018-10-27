@@ -28,6 +28,7 @@
 package org.opencypher.spark.examples
 
 import org.apache.spark.sql.{DataFrame, functions}
+import org.opencypher.okapi.api.graph.CypherResult
 import org.opencypher.spark.api.CAPSSession
 import org.opencypher.spark.api.CAPSSession._
 import org.opencypher.spark.util.ConsoleApp
@@ -44,7 +45,7 @@ object DataFrameOutputExample extends ConsoleApp {
   val socialNetwork = session.readFrom(SocialNetworkData.persons, SocialNetworkData.friendships)
 
   // 3) Query graph with Cypher
-  val results = socialNetwork.cypher(
+  val results: CypherResult = socialNetwork.cypher(
     """|MATCH (a:Person)-[r:FRIEND_OF]->(b)
        |RETURN a.name, b.name, r.since""".stripMargin)
 
@@ -52,10 +53,10 @@ object DataFrameOutputExample extends ConsoleApp {
   val df: DataFrame = results.records.asDataFrame
 
   // 5) Select specific return items from the query result
-  // TODO: Solve this on CypherResult instead
-//  val projection: DataFrame = df.select(columnFor("a.name"), columnFor("b.name"))
+  val cols = results.records.columnsFor("a.name") ++ results.records.columnsFor("b.name")
+  val projection: DataFrame = df.select(cols.head, cols.tail.toSeq: _*)
 
-//  projection.show()
+  projection.show()
 }
 
 /**

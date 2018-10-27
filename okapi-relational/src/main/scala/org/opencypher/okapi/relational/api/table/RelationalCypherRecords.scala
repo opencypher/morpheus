@@ -27,8 +27,10 @@
 package org.opencypher.okapi.relational.api.table
 
 import org.opencypher.okapi.api.table.CypherRecords
+import org.opencypher.okapi.impl.exception.IllegalArgumentException
 import org.opencypher.okapi.impl.table.RecordsPrinter
 import org.opencypher.okapi.impl.util.PrintOptions
+import org.opencypher.okapi.ir.api.expr.Expr
 import org.opencypher.okapi.relational.api.io.EntityTable
 import org.opencypher.okapi.relational.impl.table.RecordHeader
 
@@ -58,6 +60,19 @@ trait RelationalCypherRecords[T <: Table[T]] extends CypherRecords {
   override def size: Long = table.size
 
   override def physicalColumns: Seq[String] = table.physicalColumns
+
+  override def columnsFor(returnItem: String): Set[String] = {
+    val returnExpressions = header.returnItems.filter(_.name == returnItem)
+
+    if(returnExpressions.isEmpty)
+      throw IllegalArgumentException(s"A return item in this table, which contains: $header", returnItem)
+
+    val withChildExpressions = returnExpressions.foldLeft(Set.empty[Expr]) {
+      case (acc, expr) =>
+        acc ++ header.expressionsFor(expr)
+    }
+    withChildExpressions.map(header.column)
+  }
 
   override def show(implicit options: PrintOptions): Unit =
     RecordsPrinter.print(this)
