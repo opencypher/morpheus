@@ -96,25 +96,27 @@ case class SqlPropertyGraphDataSource(
     val nodePrefix = "node_"
     val edgePrefix = "edge_"
 
+    // to avoid collisions on column names
     val namespacedNodeDf = nodeDf.prefixColumns(nodePrefix)
     val namespacedEdgeDf = edgeDf.prefixColumns(edgePrefix)
 
-    val joinColumnNames = joinColumns.map { join: Join =>
-      (nodePrefix + join.nodeColumn.toPropertyColumnName) -> (edgePrefix + join.edgeColumn.toPropertyColumnName)
-    }
+    val namespacedJoinColumns = joinColumns
+      .map(join => Join(nodePrefix + join.nodeColumn.toPropertyColumnName, edgePrefix + join.edgeColumn.toPropertyColumnName))
 
-    val joinPredicate = joinColumnNames
-      .map { case (leftColName, rightColName) => namespacedNodeDf.col(leftColName) -> namespacedEdgeDf.col(rightColName) }
-      .map { case (leftCol, rightCol) => leftCol === rightCol }
+    val joinPredicate = namespacedJoinColumns
+      .map(join => namespacedNodeDf.col(join.nodeColumn) === namespacedEdgeDf.col(join.edgeColumn))
       .reduce(_ && _)
 
     val nodeIdColumnName = nodePrefix + idColumn
-    val relsWithUpdatedStartNodeId = namespacedNodeDf
-      .select(nodeIdColumnName, joinColumnNames.unzip._1: _*)
+
+    // attach id from nodes as start/end by joining on the given columns
+    val edgeDfWithNodesJoined = namespacedNodeDf
+      .select(nodeIdColumnName, namespacedJoinColumns.map(_.nodeColumn): _*)
       .withColumnRenamed(nodeIdColumnName, newNodeIdColumn)
       .join(namespacedEdgeDf, joinPredicate)
 
-    relsWithUpdatedStartNodeId.columns.foldLeft(relsWithUpdatedStartNodeId) {
+    // drop unneeded node columns (those we joined on) and drop namespace on edge columns
+    edgeDfWithNodesJoined.columns.foldLeft(edgeDfWithNodesJoined) {
       case (currentDf, columnName) if columnName.startsWith(nodePrefix) =>
         currentDf.drop(columnName)
       case (currentDf, columnName) if columnName.startsWith(edgePrefix) =>
