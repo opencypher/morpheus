@@ -411,6 +411,23 @@ class GraphDdlAcceptanceTest extends BaseTestSuite {
         GraphDdl(parse(ddlString)).graphs(graphName).graphType
       }
     }
+
+    it("throws if an unknown property key is mapped to a column") {
+      val ddlString =
+        s"""|CREATE GRAPH SCHEMA $schemaName
+            |  LABEL (A { foo: STRING })
+            |  (A)
+            |
+            |CREATE GRAPH $graphName WITH GRAPH SCHEMA $schemaName
+            | NODE LABEL SETS (
+            |   (A) FROM view_A ( column AS bar )
+            | )
+            |""".stripMargin
+
+      an[GraphDdlException] shouldBe thrownBy {
+        GraphDdl(parse(ddlString)).graphs(graphName).graphType
+      }
+    }
   }
 
 }

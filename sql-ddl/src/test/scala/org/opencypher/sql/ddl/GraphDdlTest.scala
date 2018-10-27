@@ -27,8 +27,8 @@
 package org.opencypher.sql.ddl
 
 import org.opencypher.okapi.api.graph.GraphName
-import org.opencypher.okapi.api.io.conversion.{NodeMapping, RelationshipMapping}
 import org.opencypher.okapi.api.schema.Schema
+import org.opencypher.okapi.api.types.CTInteger
 import org.scalatest.{Matchers, path}
 
 class GraphDdlTest extends path.FunSpec with Matchers {
@@ -41,7 +41,7 @@ class GraphDdlTest extends path.FunSpec with Matchers {
          |SET SCHEMA dataSourceName.fooDatabaseName
          |
          |CREATE GRAPH SCHEMA fooSchema
-         | LABEL (Person { name   : STRING })
+         | LABEL (Person { name   : STRING, age : INTEGER })
          | LABEL (Book   { title  : STRING })
          | LABEL (READS  { rating : FLOAT  })
          | (Person)
@@ -75,25 +75,19 @@ class GraphDdlTest extends path.FunSpec with Matchers {
       Map(
         GraphName("fooGraph") -> Graph(GraphName("fooGraph"),
           Schema.empty
-            .withNodePropertyKeys("Person")("name" -> CTString)
+            .withNodePropertyKeys("Person")("name" -> CTString, "age" -> CTInteger)
             .withNodePropertyKeys("Book")("title" -> CTString)
             .withRelationshipPropertyKeys("READS")("rating" -> CTFloat),
           Map(
             personKey -> NodeToViewMapping(
               nodeType = Set("Person"),
               view = "personView",
-              nodeMapping = NodeMapping
-                .on("id")
-                .withImpliedLabel("Person")
-                .withPropertyKey("name" -> "person_name"),
+              propertyMappings = Map("name" -> "person_name", "age" -> "age"),
               environment = DbEnv(DataSourceConfig())),
             bookKey -> NodeToViewMapping(
               nodeType = Set("Book"),
               view = "bookView",
-              nodeMapping = NodeMapping
-                .on("id")
-                .withImpliedLabel("Book")
-                .withPropertyKey("title" -> "book_title"),
+              propertyMappings = Map("title" -> "book_title"),
               environment = DbEnv(DataSourceConfig()))
           ),
           Map(
@@ -102,11 +96,7 @@ class GraphDdlTest extends path.FunSpec with Matchers {
               view = "readsView",
               startNode = StartNode(personKey, List(Join("person_id", "person"))),
               endNode = EndNode(bookKey, List(Join("book_id", "book"))),
-              relationshipMapping = RelationshipMapping
-                .on("id")
-                .withSourceStartNodeKey("start")
-                .withSourceEndNodeKey("end").withRelType("READS")
-                .withPropertyKey("rating" -> "value"),
+              propertyMappings = Map("rating" -> "value"),
               environment = DbEnv(DataSourceConfig())
             )
           )

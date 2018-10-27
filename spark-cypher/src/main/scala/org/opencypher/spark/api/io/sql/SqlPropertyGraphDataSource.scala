@@ -28,12 +28,14 @@ package org.opencypher.spark.api.io.sql
 
 import org.apache.spark.sql.DataFrame
 import org.opencypher.okapi.api.graph.{GraphName, PropertyGraph}
+import org.opencypher.okapi.api.io.conversion.{NodeMapping, RelationshipMapping}
 import org.opencypher.okapi.api.schema.Schema
 import org.opencypher.okapi.impl.exception.{IllegalArgumentException, UnsupportedOperationException}
 import org.opencypher.spark.api.CAPSSession
 import org.opencypher.spark.api.io.{CAPSNodeTable, CAPSRelationshipTable, HiveFormat, JdbcFormat}
 import org.opencypher.spark.impl.DataFrameOps._
 import org.opencypher.spark.impl.io.CAPSPropertyGraphDataSource
+import org.opencypher.sql.ddl.GraphDdl.PropertyMappings
 import org.opencypher.sql.ddl._
 
 case class DDLFormatException(message: String) extends RuntimeException
@@ -64,7 +66,9 @@ case class SqlPropertyGraphDataSource(
     // TODO: Ensure added id does not collide with a property called `id`
     val nodeDataFramesWithIds = nodeViewKeys.zip(addUniqueIds(nodeDfs.toSeq, idColumn)).toMap
     val nodeTables = nodeDataFramesWithIds.map {
-      case (nodeViewKey, nodeDf) => CAPSNodeTable.fromMapping(ddlGraph.nodeToViewMappings(nodeViewKey).nodeMapping, nodeDf)
+      case (nodeViewKey, nodeDf) =>
+        val nodeMapping = toNodeMapping(nodeViewKey.nodeType, ddlGraph.nodeToViewMappings(nodeViewKey).propertyMappings)
+        CAPSNodeTable.fromMapping(nodeMapping, nodeDf)
     }.toSeq
 
     // Build CAPS relationship tables
@@ -82,7 +86,9 @@ case class SqlPropertyGraphDataSource(
         val relsWithStartNodeId = joinNodeAndEdgeDf(startNodeDf, relDf, edgeToViewMapping.startNode.joinPredicates, startColumn)
         val relsWithEndNodeId = joinNodeAndEdgeDf(endNodeDf, relsWithStartNodeId, edgeToViewMapping.endNode.joinPredicates, endColumn)
 
-        CAPSRelationshipTable.fromMapping(edgeToViewMapping.relationshipMapping, relsWithEndNodeId)
+        val relationshipMapping = toRelationshipMapping(edgeViewKey.edgeType.head, edgeToViewMapping.propertyMappings)
+
+        CAPSRelationshipTable.fromMapping(relationshipMapping, relsWithEndNodeId)
     }
 
     caps.graphs.create(nodeTables.head, nodeTables.tail ++ relationshipTables: _*)
@@ -102,7 +108,7 @@ case class SqlPropertyGraphDataSource(
     val namespacedEdgeDf = edgeDf.prefixColumns(edgePrefix)
 
     val joinColumnNames = joinColumns.map { join: Join =>
-        (nodePrefix + join.nodeColumn) -> (edgePrefix + join.edgeColumn)
+      (nodePrefix + join.nodeColumn) -> (edgePrefix + join.edgeColumn)
     }
 
     val joinPredicate = joinColumnNames
@@ -144,6 +150,25 @@ case class SqlPropertyGraphDataSource(
     }
 
     inputTable
+  }
+
+  def toNodeMapping(labelCombination: Set[String], propertyMappings: PropertyMappings): NodeMapping = {
+    val initialNodeMapping = NodeMapping.on(idColumn).withImpliedLabels(labelCombination.toSeq: _*)
+    propertyMappings.foldLeft(initialNodeMapping) {
+      case (currentNodeMapping, (propertyKey, columnName)) =>
+        currentNodeMapping.withPropertyKey(propertyKey -> columnName)
+    }
+  }
+
+  private def toRelationshipMapping(relType: String, propertyMappings: PropertyMappings): RelationshipMapping = {
+    val initialRelMapping = RelationshipMapping.on(idColumn)
+      .withSourceStartNodeKey(startColumn)
+      .withSourceEndNodeKey(endColumn)
+      .withRelType(relType)
+    propertyMappings.foldLeft(initialRelMapping) {
+      case (currentRelMapping, (propertyKey, columnName)) =>
+        currentRelMapping.withPropertyKey(propertyKey -> columnName)
+    }
   }
 
   override def schema(name: GraphName): Option[Schema] = graphDdl.graphs.get(name).map(_.graphType)

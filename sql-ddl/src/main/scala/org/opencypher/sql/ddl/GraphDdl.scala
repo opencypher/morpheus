@@ -27,11 +27,10 @@
 package org.opencypher.sql.ddl
 
 import org.opencypher.okapi.api.graph.GraphName
-import org.opencypher.okapi.api.io.conversion.{NodeMapping, RelationshipMapping}
 import org.opencypher.okapi.api.schema.{PropertyKeys, Schema, SchemaPattern}
 import org.opencypher.okapi.impl.exception.{IllegalArgumentException, SchemaException}
-import org.opencypher.sql.ddl.GraphDdlAst.ColumnIdentifier
 import org.opencypher.sql.ddl.GraphDdl._
+import org.opencypher.sql.ddl.GraphDdlAst.{ColumnIdentifier, PropertyToColumnMappingDefinition}
 
 /*
 TODO:
@@ -39,7 +38,7 @@ TODO:
  - name resolution
    x schema names
    x alias names
-   - property names in mappings must exist
+   x property names in mappings must exist
    - referenced graph schema must exist
  - name conflicts
  - doubly mapped nodes/rels
@@ -174,7 +173,7 @@ object GraphDdl {
         environment = DbEnv(DataSourceConfig()),
         nodeType = nmd.labelNames,
         view = nvd.viewName,
-        nodeMapping = toNodeMapping(nmd.labelNames, graphType, nvd.maybePropertyMapping)
+        propertyMappings = toPropertyMappings(nmd.labelNames, graphType.nodePropertyKeys(nmd.labelNames).keySet, nvd.maybePropertyMapping)
       )
     }
   }
@@ -205,7 +204,7 @@ object GraphDdl {
             edgeAlias = rvd.viewDefinition.alias
           ))
         ),
-        relationshipMapping = toRelationshipMapping(rmd.relType, graphType, rvd.maybePropertyMapping)
+        propertyMappings = toPropertyMappings(Set(rmd.relType), graphType.relationshipPropertyKeys(rmd.relType).keySet, rvd.maybePropertyMapping)
       )
     }
   }
@@ -225,34 +224,25 @@ object GraphDdl {
     }
   }
 
-  def toNodeMapping(labelCombination: Set[String], graphSchema: GraphType, maybePropertyToColumnMapping: Option[Map[String, String]]): NodeMapping = {
-    val propertyToColumnMapping = maybePropertyToColumnMapping match {
-      case Some(mapping) => mapping
-      // TODO: support unicode characters in properties and ensure there are no collisions with column name `id`
-      case None => graphSchema.nodePropertyKeys(labelCombination).map { case (key, _) => key -> key }
-    }
-    val initialNodeMapping = NodeMapping.on("id").withImpliedLabels(labelCombination.toSeq: _*)
-    val nodeMapping = propertyToColumnMapping.foldLeft(initialNodeMapping) {
-      case (currentNodeMapping, (propertyKey, columnName)) => currentNodeMapping.withPropertyKey(propertyKey -> columnName)
-    }
-    nodeMapping
-  }
+  def toPropertyMappings(
+    labels: Set[String],
+    schemaPropertyKeys: Set[String],
+    maybePropertyMapping: Option[PropertyToColumnMappingDefinition]
+  ): PropertyMappings = {
+    maybePropertyMapping match {
+      case Some(propertyToColumnMappingDefinition) =>
+        propertyToColumnMappingDefinition.keys.foreach { key =>
+          if (!schemaPropertyKeys.contains(key)) {
+            throw GraphDdlException(
+              s"""Mapped property $key does not exist for element type ${elementType(labels)}.
+                 |Expected one of ${stringList(schemaPropertyKeys)}.""".stripMargin)
+          }
+        }
+        val remainingKeys = schemaPropertyKeys -- propertyToColumnMappingDefinition.keys
+        propertyToColumnMappingDefinition ++ remainingKeys.map(key => key -> key)
 
-  private def toRelationshipMapping(relType: String, graphSchema: GraphType, maybePropertyToColumnMapping: Option[Map[String, String]]): RelationshipMapping = {
-    val propertyToColumnMapping = maybePropertyToColumnMapping match {
-      case Some(mapping) => mapping
-      // TODO: support unicode characters in properties and ensure there are no collisions with column name `id`
-      case None => graphSchema.relationshipPropertyKeys(relType).map { case (key, _) => key -> key }
+      case None => schemaPropertyKeys.map(key => key -> key).toMap
     }
-    val initialRelMapping = RelationshipMapping.on("id")
-      .withSourceStartNodeKey("start")
-      .withSourceEndNodeKey("end")
-      .withRelType(relType)
-
-    val relMapping = propertyToColumnMapping.foldLeft(initialRelMapping) {
-      case (currentRelMapping, (propertyKey, columnName)) => currentRelMapping.withPropertyKey(propertyKey -> columnName)
-    }
-    relMapping
   }
 
   def notFound(msg: String, needle: Any, haystack: Traversable[Any]) =
@@ -262,6 +252,9 @@ object GraphDdl {
     )
 
   def failure(msg: String): Nothing = ???
+
+  private def elementType(labels: Traversable[String]): String =
+    labels.mkString("(", ", ", ")")
 
   private def stringList(elems: Traversable[Any]): String =
     elems.mkString("[", ",", "]")
@@ -291,7 +284,7 @@ sealed trait ElementToViewMapping
 case class NodeToViewMapping(
   nodeType: NodeType,
   view: ViewId,
-  nodeMapping: NodeMapping,
+  propertyMappings: PropertyMappings,
   environment: DbEnv
 ) extends ElementToViewMapping {
   def key: NodeViewKey = NodeViewKey(nodeType, view)
@@ -302,7 +295,7 @@ case class EdgeToViewMapping(
   view: ViewId,
   startNode: StartNode,
   endNode: EndNode,
-  relationshipMapping: RelationshipMapping,
+  propertyMappings: PropertyMappings,
   environment: DbEnv
 ) extends ElementToViewMapping {
   def key: EdgeViewKey = EdgeViewKey(edgeType, view)
@@ -331,3 +324,5 @@ case class DataSourceConfig()
 
 case class NodeViewKey(nodeType: Set[String], view: String)
 case class EdgeViewKey(edgeType: Set[String], view: String)
+
+case class GraphDdlException(msg: String) extends RuntimeException(msg)
