@@ -36,12 +36,12 @@ import scala.language.higherKinds
 
 /*
 TODO:
- validate
+ == validate
  - name resolution
    x schema names
    x alias names
    x property names in mappings must exist
-   - referenced graph schema must exist
+   x referenced graph schema must exist
  - name conflicts
    x global labels
    x graph types
@@ -49,11 +49,12 @@ TODO:
    x local labels
    - node types??
    - rel types??
+ - mappings
+   x duplicate node/rel mappings
+   - duplicate property mappings?
 
- x doubly mapped nodes/rels
-
- other
- - construct all property mappings (even if mapping to same name)
+ == other
+ x construct all property mappings (even if mapping to same name)
 
   */
 
@@ -81,13 +82,15 @@ object GraphDdl {
     val graphTypes = ddl.schemaDefinitions
       .validateDistinctBy(_._1, "Duplicate graph type name")
       .keyBy(_._1).mapValues(_._2)
-      .mapValues(schemaDefinition => toGraphType(globalLabelDefinitions, schemaDefinition))
+      .map { case (name, schema) =>
+        name -> Err.contextualize(s"Error in graph type: $name")(toGraphType(globalLabelDefinitions, schema)) }
       .view.force // mapValues creates a view, but we want validation now
 
     val inlineGraphTypes = ddl.graphDefinitions
       .keyBy(_.name)
       .mapValues(_.localSchemaDefinition)
-      .mapValues(schemaDefinition => toGraphType(globalLabelDefinitions, schemaDefinition))
+      .map { case (name, schema) =>
+        name -> Err.contextualize(s"Error in graph type of graph: $name")(toGraphType(globalLabelDefinitions, schema)) }
 
     val graphs = ddl.graphDefinitions
       .map(toGraph(inlineGraphTypes, graphTypes))
@@ -117,19 +120,21 @@ object GraphDdl {
 
     val schemaWithNodes = (nodeDefinitionsFromPatterns ++ schemaDefinition.nodeDefinitions).foldLeft(Schema.empty) {
       case (currentSchema, labelCombo) =>
-        val comboProperties = labelCombo.foldLeft(PropertyKeys.empty) { case (currProps, label) =>
-          val labelProperties = labelDefinitions.getOrFail(label, "Unresolved label").properties
-          currProps.keySet.intersect(labelProperties.keySet).foreach { key =>
-            if (currProps(key) != labelProperties(key)) {
-              Err.incompatibleTypes(
-                s"""|Incompatible property types for label combination (${labelCombo.mkString(",")})
-                    |Property key `$key` has conflicting types ${currProps(key)} and ${labelProperties(key)}
+        Err.contextualize(s"For label combination (${labelCombo.mkString(",")})") {
+          val comboProperties = labelCombo.foldLeft(PropertyKeys.empty) { case (currProps, label) =>
+            val labelProperties = labelDefinitions.getOrFail(label, "Unresolved label").properties
+            currProps.keySet.intersect(labelProperties.keySet).foreach { key =>
+              if (currProps(key) != labelProperties(key)) {
+                Err.incompatibleTypes(
+                  s"""|Incompatible property types for property key: $key
+                      |Conflicting types: ${currProps(key)} and ${labelProperties(key)}
                  """.stripMargin)
+              }
             }
+            currProps ++ labelProperties
           }
-          currProps ++ labelProperties
+          currentSchema.withNodePropertyKeys(labelCombo, comboProperties)
         }
-        currentSchema.withNodePropertyKeys(labelCombo, comboProperties)
     }
 
     val usedLabels = schemaDefinition.nodeDefinitions.flatten
@@ -177,7 +182,7 @@ object GraphDdl {
     graphTypes: Map[String, GraphType]
   )(
     graph: GraphDefinition
-  ): Graph = Err.contextualize(s"Error in graph ${graph.name}") {
+  ): Graph = Err.contextualize(s"Error in graph: ${graph.name}") {
     val graphType = graph.maybeSchemaName
       .map(schemaName => graphTypes.getOrFail(schemaName, "Unresolved schema name"))
       .getOrElse(inlineTypes.getOrFail(graph.name, "Unresolved schema name"))
@@ -271,15 +276,7 @@ object GraphDdl {
 
   def failure(msg: String): Nothing = ???
 
-  private def elementType(labels: Traversable[String]): String =
-    labels.mkString("(", ", ", ")")
-
-  private def stringList(elems: Traversable[Any]): String =
-    elems.mkString("[", ",", "]")
-
   implicit class TraversableOps[T, C[X] <: Traversable[X]](elems: C[T]) {
-    def show: String = elems.mkString("[", ",", "]")
-
     def keyBy[K](key: T => K): Map[K, T] =
       elems.map(t => key(t) -> t).toMap
 
@@ -351,10 +348,10 @@ case class DbEnv(
 
 case class DataSourceConfig()
 
-
 case class NodeViewKey(nodeType: Set[String], view: String) {
   override def toString: String = s"node type: ${nodeType.mkString(", ")}, view: $view"
 }
+
 case class EdgeViewKey(edgeType: Set[String], view: String) {
   override def toString: String = s"relationship type: ${edgeType.mkString(", ")}, view: $view"
 }
