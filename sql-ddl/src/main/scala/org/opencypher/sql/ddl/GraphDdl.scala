@@ -258,20 +258,15 @@ object GraphDdl {
     schemaPropertyKeys: Set[String],
     maybePropertyMapping: Option[PropertyToColumnMappingDefinition]
   ): PropertyMappings = {
-    maybePropertyMapping match {
-      case Some(propertyToColumnMappingDefinition) =>
-        propertyToColumnMappingDefinition.keys.foreach { key =>
-          if (!schemaPropertyKeys.contains(key)) {
-            throw GraphDdlException(
-              s"""Mapped property $key does not exist for element type ${elementType(labels)}.
-                 |Expected one of ${stringList(schemaPropertyKeys)}.""".stripMargin)
-          }
-        }
-        val remainingKeys = schemaPropertyKeys -- propertyToColumnMappingDefinition.keys
-        propertyToColumnMappingDefinition ++ remainingKeys.map(key => key -> key)
+    val mappings = maybePropertyMapping.getOrElse(Map.empty)
+    mappings.keys
+      .filterNot(schemaPropertyKeys)
+      .foreach(p => Err.unresolved("Unresolved property name in mapping", p, schemaPropertyKeys))
 
-      case None => schemaPropertyKeys.map(key => key -> key).toMap
-    }
+    schemaPropertyKeys
+      .keyBy(identity)
+      .mapValues(prop => mappings.getOrElse(prop, prop))
+
   }
 
   def failure(msg: String): Nothing = ???
