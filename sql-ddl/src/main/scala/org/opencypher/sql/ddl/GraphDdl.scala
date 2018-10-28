@@ -120,7 +120,7 @@ object GraphDdl {
 
     val schemaWithNodes = (nodeDefinitionsFromPatterns ++ schemaDefinition.nodeDefinitions).foldLeft(Schema.empty) {
       case (currentSchema, labelCombo) =>
-        Err.contextualize(s"For label combination (${labelCombo.mkString(",")})") {
+        Err.contextualize(s"Error for label combination (${labelCombo.mkString(",")})") {
           val comboProperties = labelCombo.foldLeft(PropertyKeys.empty) { case (currProps, label) =>
             val labelProperties = labelDefinitions.getOrFail(label, "Unresolved label").properties
             currProps.keySet.intersect(labelProperties.keySet).foreach { key =>
@@ -203,43 +203,49 @@ object GraphDdl {
 
   def toNodeToViewMappings(nmd: NodeMappingDefinition, graphType: GraphType): Seq[NodeToViewMapping] = {
     nmd.nodeToViewDefinitions.map { nvd =>
-      NodeToViewMapping(
-        environment = DbEnv(DataSourceConfig()),
-        nodeType = nmd.labelNames,
-        view = nvd.viewName,
-        propertyMappings = toPropertyMappings(nmd.labelNames, graphType.nodePropertyKeys(nmd.labelNames).keySet, nvd.maybePropertyMapping)
-      )
+      val nodeKey = NodeViewKey(nmd.labelNames, nvd.viewName)
+      Err.contextualize(s"Error in node mapping: $nodeKey") {
+        NodeToViewMapping(
+          environment = DbEnv(DataSourceConfig()),
+          nodeType = nodeKey.nodeType,
+          view = nodeKey.view,
+          propertyMappings = toPropertyMappings(nmd.labelNames, graphType.nodePropertyKeys(nmd.labelNames).keySet, nvd.maybePropertyMapping)
+        )
+      }
     }
   }
 
   def toEdgeToViewMappings(rmd: RelationshipMappingDefinition, graphType: GraphType): Seq[EdgeToViewMapping] = {
     rmd.relationshipToViewDefinitions.map { rvd =>
-      EdgeToViewMapping(
-        environment = DbEnv(DataSourceConfig()),
-        edgeType = Set(rmd.relType),
-        view = rvd.viewDefinition.name,
-        startNode = StartNode(
-          nodeViewKey = NodeViewKey(
-            nodeType = rvd.startNodeToViewDefinition.labelSet,
-            view = rvd.startNodeToViewDefinition.viewDefinition.name
+      val edgeKey = EdgeViewKey(Set(rmd.relType), rvd.viewDefinition.name)
+      Err.contextualize(s"Error in relationship mapping: $edgeKey") {
+        EdgeToViewMapping(
+          environment = DbEnv(DataSourceConfig()),
+          edgeType = edgeKey.edgeType,
+          view = edgeKey.view,
+          startNode = StartNode(
+            nodeViewKey = NodeViewKey(
+              nodeType = rvd.startNodeToViewDefinition.labelSet,
+              view = rvd.startNodeToViewDefinition.viewDefinition.name
+            ),
+            joinPredicates = rvd.startNodeToViewDefinition.joinOn.joinPredicates.map(toJoin(
+              nodeAlias = rvd.startNodeToViewDefinition.viewDefinition.alias,
+              edgeAlias = rvd.viewDefinition.alias
+            ))
           ),
-          joinPredicates = rvd.startNodeToViewDefinition.joinOn.joinPredicates.map(toJoin(
-            nodeAlias = rvd.startNodeToViewDefinition.viewDefinition.alias,
-            edgeAlias = rvd.viewDefinition.alias
-          ))
-        ),
-        endNode = EndNode(
-          nodeViewKey = NodeViewKey(
-            nodeType = rvd.endNodeToViewDefinition.labelSet,
-            view = rvd.endNodeToViewDefinition.viewDefinition.name
+          endNode = EndNode(
+            nodeViewKey = NodeViewKey(
+              nodeType = rvd.endNodeToViewDefinition.labelSet,
+              view = rvd.endNodeToViewDefinition.viewDefinition.name
+            ),
+            joinPredicates = rvd.endNodeToViewDefinition.joinOn.joinPredicates.map(toJoin(
+              nodeAlias = rvd.endNodeToViewDefinition.viewDefinition.alias,
+              edgeAlias = rvd.viewDefinition.alias
+            ))
           ),
-          joinPredicates = rvd.endNodeToViewDefinition.joinOn.joinPredicates.map(toJoin(
-            nodeAlias = rvd.endNodeToViewDefinition.viewDefinition.alias,
-            edgeAlias = rvd.viewDefinition.alias
-          ))
-        ),
-        propertyMappings = toPropertyMappings(Set(rmd.relType), graphType.relationshipPropertyKeys(rmd.relType).keySet, rvd.maybePropertyMapping)
-      )
+          propertyMappings = toPropertyMappings(Set(rmd.relType), graphType.relationshipPropertyKeys(rmd.relType).keySet, rvd.maybePropertyMapping)
+        )
+      }
     }
   }
 
@@ -266,7 +272,7 @@ object GraphDdl {
     val mappings = maybePropertyMapping.getOrElse(Map.empty)
     mappings.keys
       .filterNot(schemaPropertyKeys)
-      .foreach(p => Err.unresolved("Unresolved property name in mapping", p, schemaPropertyKeys))
+      .foreach(p => Err.unresolved("Unresolved property name", p, schemaPropertyKeys))
 
     schemaPropertyKeys
       .keyBy(identity)

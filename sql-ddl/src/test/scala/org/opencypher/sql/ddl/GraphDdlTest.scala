@@ -231,4 +231,19 @@ class GraphDdlTest extends FunSpec with Matchers {
     )
   }
 
+  it("fails on unresolved property names") {
+    val e = the [GraphDdlException] thrownBy GraphDdl("""
+      |CREATE GRAPH SCHEMA fooSchema
+      | LABEL (Person { age1: STRING  })
+      | (Person)
+      |CREATE GRAPH fooGraph WITH GRAPH SCHEMA fooSchema
+      |  NODE LABEL SETS (
+      |    (Person) FROM personView ( person_name AS age2 )
+      |  )
+    """.stripMargin)
+    e.getFullMessage should (
+      include("fooGraph") and include("Person") and include("personView") and include("age1")  and include("age2")
+    )
+  }
+
 }
