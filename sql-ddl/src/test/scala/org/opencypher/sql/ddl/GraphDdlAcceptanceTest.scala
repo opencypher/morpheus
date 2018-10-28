@@ -354,7 +354,7 @@ class GraphDdlAcceptanceTest extends BaseTestSuite {
             |CREATE GRAPH $graphName WITH GRAPH SCHEMA $schemaName
             |""".stripMargin
 
-      an[SchemaException] shouldBe thrownBy {
+      an[GraphDdlException] shouldBe thrownBy {
         GraphDdl(ddl).graphs(graphName)
       }
     }
@@ -375,7 +375,7 @@ class GraphDdlAcceptanceTest extends BaseTestSuite {
             |""".stripMargin)
 
 
-      an[IllegalArgumentException] shouldBe thrownBy {
+      an[GraphDdlException] shouldBe thrownBy {
         GraphDdl(ddlDefinition).graphs(graphName).graphType
       }
     }
@@ -394,7 +394,7 @@ class GraphDdlAcceptanceTest extends BaseTestSuite {
             |CREATE GRAPH $graphName WITH GRAPH SCHEMA $schemaName
             |""".stripMargin)
 
-      an[IllegalArgumentException] shouldBe thrownBy {
+      an[GraphDdlException] shouldBe thrownBy {
         GraphDdl(ddlDefinition).graphs(graphName).graphType
       }
     }
@@ -407,7 +407,7 @@ class GraphDdlAcceptanceTest extends BaseTestSuite {
             |CREATE GRAPH $graphName WITH GRAPH SCHEMA $schemaName
             |""".stripMargin
 
-      an[IllegalArgumentException] shouldBe thrownBy {
+      an[GraphDdlException] shouldBe thrownBy {
         GraphDdl(parse(ddlString)).graphs(graphName).graphType
       }
     }

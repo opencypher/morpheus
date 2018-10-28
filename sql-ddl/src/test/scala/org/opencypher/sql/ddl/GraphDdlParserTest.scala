@@ -253,7 +253,7 @@ class GraphDdlParserTest extends BaseTestSuite with MockitoSugar with TestNameFi
 
     it("parses a schema with node, rel, and schema pattern definitions") {
 
-      val expectedLocalLabelDefinitions = Set.empty[LabelDefinition]
+      val expectedLocalLabelDefinitions = List.empty[LabelDefinition]
       val expectedNodeDefs = Set(Set("A"), Set("B"), Set("A", "B"))
       val expectedRelDefs = Set("TYPE_1", "TYPE_2")
       val expectedPatternDefinitions = Set(
@@ -282,8 +282,8 @@ class GraphDdlParserTest extends BaseTestSuite with MockitoSugar with TestNameFi
            |  (A | B) <0 .. *> - [TYPE_1] -> <1> (B),
            |  (A) <*> - [TYPE_1] -> (A);
         """.stripMargin) should matchPattern {
-        case Success(("mySchema", SchemaDefinition(`expectedLocalLabelDefinitions`, `expectedNodeDefs`, `expectedRelDefs`, `expectedPatternDefinitions`)), _) =>
-      }
+          case Success(("mySchema", SchemaDefinition(`expectedLocalLabelDefinitions`, `expectedNodeDefs`, `expectedRelDefs`, `expectedPatternDefinitions`)), _) =>
+        }
     }
 
     it("parses CREATE GRAPH SCHEMA mySchema (A)-[TYPE]->(B)") {
