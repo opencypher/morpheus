@@ -29,7 +29,6 @@ package org.opencypher.sql.ddl
 import org.opencypher.okapi.api.graph.GraphName
 import org.opencypher.okapi.api.schema.Schema
 import org.opencypher.okapi.api.types.CTInteger
-import org.opencypher.okapi.impl.exception.SchemaException
 import org.scalatest.{FunSpec, Matchers}
 
 class GraphDdlTest extends FunSpec with Matchers {
@@ -126,7 +125,7 @@ class GraphDdlTest extends FunSpec with Matchers {
   }
 
   it("fails on duplicate node mappings") {
-    failsOn("""
+    a [DuplicateDefinitionException] should be thrownBy GraphDdl("""
       |CREATE GRAPH SCHEMA fooSchema
       | LABEL (Person)
       | (Person)
@@ -140,7 +139,7 @@ class GraphDdlTest extends FunSpec with Matchers {
   }
 
   it("fails on duplicate relationship mappings") {
-    failsOn("""
+    a [DuplicateDefinitionException] should be thrownBy GraphDdl("""
       |CREATE GRAPH SCHEMA fooSchema
       | LABEL (Person)
       | LABEL (Book)
@@ -167,14 +166,14 @@ class GraphDdlTest extends FunSpec with Matchers {
   }
 
   it("fails on duplicate global labels") {
-    failsOn("""
+    a [DuplicateDefinitionException] should be thrownBy GraphDdl("""
       |CATALOG CREATE LABEL (Person)
       |CATALOG CREATE LABEL (Person)
     """.stripMargin)
   }
 
   it("fails on duplicate local labels") {
-    failsOn("""
+    a [DuplicateDefinitionException] should be thrownBy GraphDdl("""
       |CREATE GRAPH SCHEMA fooSchema
       | LABEL (Person)
       | LABEL (Person)
@@ -182,22 +181,25 @@ class GraphDdlTest extends FunSpec with Matchers {
   }
 
   it("fails on duplicate graph types") {
-    failsOn("""
+    a [DuplicateDefinitionException] should be thrownBy GraphDdl("""
       |CREATE GRAPH SCHEMA fooSchema
       |CREATE GRAPH SCHEMA fooSchema
     """.stripMargin)
   }
 
   it("fails on duplicate graphs") {
-    failsOn("""
+    a [DuplicateDefinitionException] should be thrownBy GraphDdl("""
       |CREATE GRAPH SCHEMA fooSchema
       |CREATE GRAPH fooGraph WITH GRAPH SCHEMA fooSchema
       |CREATE GRAPH fooGraph WITH GRAPH SCHEMA fooSchema
     """.stripMargin)
   }
 
-
-  private def failsOn(ddl: String) =
-    a[SchemaException] should be thrownBy GraphDdl(ddl)
+  it("fails on unresolved graph type") {
+    GraphDdl("""
+      |CREATE GRAPH SCHEMA fooSchema
+      |CREATE GRAPH fooGraph WITH GRAPH SCHEMA barSchema
+    """.stripMargin)
+  }
 
 }
