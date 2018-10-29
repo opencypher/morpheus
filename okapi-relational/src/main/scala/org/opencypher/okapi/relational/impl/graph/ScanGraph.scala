@@ -79,13 +79,20 @@ class ScanGraph[T <: Table[T] : TypeTag](val scans: Seq[EntityTable[T]], val sch
   // TODO: Express `exactLabelMatch` with type
   private def scansForType(ct: CypherType, exactLabelMatch: Boolean): Seq[RelationalOperator[T]] = {
     ct match {
-      case _: CTNode =>
+      case nodeType @ CTNode(labels, _) =>
         val scans = if (exactLabelMatch) {
           nodeTables.filter(_.entityType == ct)
         } else {
           nodeTables.filter(_.entityType.subTypeOf(ct).isTrue)
         }
-        scans.map(scanRecords => Start(scanRecords))
+        val fromTablesWithImpliedLabels = scans.map(scanRecords => Start(scanRecords))
+
+        val fromTablesWithOptionalLabels = nodeTables
+            .filter(_.entityType == CTNode)
+            .filter(labels subsetOf _.mapping.optionalLabelKeys.toSet)
+            .map { table => Start(table).filterNodeLabels(nodeType, exactLabelMatch) }
+
+        fromTablesWithImpliedLabels ++ fromTablesWithOptionalLabels
       case r: CTRelationship =>
         relTables
           .filter(relTable => relTable.entityType.couldBeSameTypeAs(ct))
