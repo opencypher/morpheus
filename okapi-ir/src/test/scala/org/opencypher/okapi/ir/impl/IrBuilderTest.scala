@@ -732,9 +732,9 @@ class IrBuilderTest extends IrTestSuite {
           val matchBlock = model.findExactlyOne {
             case MatchBlock(deps, Pattern(fields, topo, _, _), exprs, _, _) =>
               deps should equalWithTracing(List(loadBlock))
-              fields should equal(Set(toField('a -> CTNode)))
+              fields should equal(Set(toField('a -> CTNode("Person"))))
               topo shouldBe empty
-              exprs should equalWithTracing(Set(HasLabel(toNodeVar('a), Label("Person"))()))
+              exprs should equalWithTracing(Set.empty)
           }
 
           val projectBlock = model.findExactlyOne {
@@ -803,9 +803,9 @@ class IrBuilderTest extends IrTestSuite {
           val matchBlock = model.findExactlyOne {
             case MatchBlock(deps, Pattern(fields, topo, _, _), exprs, _, _) =>
               deps should equalWithTracing(List(loadBlock))
-              fields should equal(Set(toField('a -> CTNode)))
+              fields should equal(Set(toField('a -> CTNode("Person"))))
               topo shouldBe empty
-              exprs should equalWithTracing(Set(HasLabel(toNodeVar('a), Label("Person"))()))
+              exprs should equalWithTracing(Set.empty)
           }
 
           val projectBlock1 = model.findExactlyOne {
