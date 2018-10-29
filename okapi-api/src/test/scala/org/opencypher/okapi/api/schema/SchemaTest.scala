@@ -29,6 +29,7 @@ package org.opencypher.okapi.api.schema
 import org.opencypher.okapi.api.schema.PropertyKeys.PropertyKeys
 import org.opencypher.okapi.api.types._
 import org.opencypher.okapi.impl.exception.SchemaException
+import org.opencypher.okapi.impl.util.Version
 import org.scalatest.{FunSpec, Matchers}
 
 class SchemaTest extends FunSpec with Matchers {
@@ -435,7 +436,7 @@ class SchemaTest extends FunSpec with Matchers {
 
     serialized should equal(
       """|{
-         |    "version": 1,
+         |    "version": "1.0",
          |    "labelPropertyMap": [
          |        {
          |            "labels": [
@@ -473,7 +474,7 @@ class SchemaTest extends FunSpec with Matchers {
 
     serialized should equal(
       """|{
-         |    "version": 1,
+         |    "version": "1.0",
          |    "labelPropertyMap": [
          |        {
          |            "labels": [
@@ -773,6 +774,37 @@ class SchemaTest extends FunSpec with Matchers {
         Schema.empty
           .withRelationshipPropertyKeys("A")("foo" -> CTString.nullable)
           .withRelationshipKey("A", Set("foo"))
+      }
+    }
+  }
+
+  describe("version") {
+    def schemaJson(version: Version): String =
+      s"""|{
+          |    "version": "$version",
+          |    "labelPropertyMap": [],
+          |    "relTypePropertyMap": []
+          |}""".stripMargin
+
+    it("it allows to read compatible schema versions from string") {
+      Seq(
+        Schema.CURRENT_VERSION.major.toString,
+        s"${Schema.CURRENT_VERSION.major}.0",
+        s"${Schema.CURRENT_VERSION.major}.5"
+      ).foreach { v =>
+        Schema.fromJson(schemaJson(Version(v)))
+      }
+    }
+
+    it("raises an error when the version is incompatible") {
+      Seq(
+        (Schema.CURRENT_VERSION.major + 1).toString,
+        s"${Schema.CURRENT_VERSION.major + 1}.0",
+        s"${Schema.CURRENT_VERSION.major - 1}.5"
+      ).foreach { v =>
+        an[SchemaException] shouldBe thrownBy {
+          Schema.fromJson(schemaJson(Version(v)))
+        }
       }
     }
   }
