@@ -294,38 +294,37 @@ class GraphDdlAcceptanceTest extends BaseTestSuite {
             |""".stripMargin)
 
       ddlDefinition should equalWithTracing(
-        DdlDefinition(
-          setSchema = Some(SetSchemaDefinition("foo", Some("bar"))),
-          labelDefinitions = List(
-            LabelDefinition("A", Map("name" -> CTString)),
-            LabelDefinition("B", Map("sequence" -> CTInteger, "nationality" -> CTString.nullable, "age" -> CTInteger.nullable)),
-            LabelDefinition("TYPE_1"),
-            LabelDefinition("TYPE_2", Map("prop" -> CTBoolean.nullable))
-          ),
-          schemaDefinitions = List(schemaName -> SchemaDefinition(
+        DdlDefinition(List(
+          SetSchemaDefinition("foo", "bar"),
+          LabelDefinition("A", Map("name" -> CTString)),
+          LabelDefinition("B", Map("sequence" -> CTInteger, "nationality" -> CTString.nullable, "age" -> CTInteger.nullable)),
+          LabelDefinition("TYPE_1"),
+          LabelDefinition("TYPE_2", Map("prop" -> CTBoolean.nullable)),
+          GlobalSchemaDefinition(schemaName, SchemaDefinition(
             localLabelDefinitions = List(
               LabelDefinition("A", properties = Map("foo" -> CTInteger)),
               LabelDefinition("C")),
             nodeDefinitions = Set(Set("A"), Set("B"), Set("A", "B"), Set("C")),
             relDefinitions = Set("TYPE_1", "TYPE_2"),
-            schemaPatternDefinitions = Set(SchemaPatternDefinition(Set(Set("A")), CardinalityConstraint(0, None), Set("TYPE_1"), CardinalityConstraint(1, Some(1)), Set(Set("B")))))),
-          graphDefinitions = List(GraphDefinition(
+            schemaPatternDefinitions = Set(
+              SchemaPatternDefinition(Set(Set("A")), CardinalityConstraint(0, None), Set("TYPE_1"), CardinalityConstraint(1, Some(1)), Set(Set("B")))))),
+          GraphDefinition(
             name = graphName.value,
             maybeSchemaName = Some(schemaName),
             localSchemaDefinition = SchemaDefinition(),
-            nodeMappings = List(NodeMappingDefinition(Set("A"), List(NodeToViewDefinition("foo")))),
+            nodeMappings = List(NodeMappingDefinition(Set("A"), List(NodeToViewDefinition(List("foo"))))),
             relationshipMappings = List(RelationshipMappingDefinition("TYPE_1", List(RelationshipToViewDefinition(
-              viewDefinition = ViewDefinition("baz", "edge"),
+              viewDefinition = ViewDefinition(List("baz"), "edge"),
               startNodeToViewDefinition = LabelToViewDefinition(
                 Set("A"),
-                ViewDefinition("foo", "alias_foo"),
+                ViewDefinition(List("foo"), "alias_foo"),
                 JoinOnDefinition(List((List("alias_foo", "COLUMN_A"), List("edge", "COLUMN_A"))))),
               endNodeToViewDefinition = LabelToViewDefinition(
                 Set("B"),
-                ViewDefinition("bar", "alias_bar"),
+                ViewDefinition(List("bar"), "alias_bar"),
                 JoinOnDefinition(List((List("alias_bar", "COLUMN_A"), List("edge", "COLUMN_A")))))
-            ))))))
-        )
+          )))))
+        ))
       )
 
       GraphDdl(ddlDefinition).graphs(graphName).graphType shouldEqual Schema.empty

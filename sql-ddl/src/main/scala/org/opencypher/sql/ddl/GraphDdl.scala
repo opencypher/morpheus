@@ -65,35 +65,62 @@ object GraphDdl {
   type NodeType = Set[String]
   type EdgeType = Set[String]
 
-  type ViewId = String
   type ColumnId = String
 
   type PropertyMappings = Map[String, String]
   type LabelKey = (String, Set[String])
 
+  case class GraphDefinitionWithContext(
+    definition: GraphDefinition,
+    maybeSetSchema: Option[SetSchemaDefinition] = None
+  )
+
   def apply(ddl: String): GraphDdl = GraphDdl(GraphDdlParser.parse(ddl))
 
   def apply(ddl: DdlDefinition): GraphDdl = {
 
-    val globalLabelDefinitions: Map[String, LabelDefinition] = ddl.labelDefinitions
+    case class DdlParts(
+      maybeCurrentSetSchema: Option[SetSchemaDefinition] = None,
+      labelDefinitions: List[LabelDefinition] = List.empty,
+      globalSchemaDefinitions: List[GlobalSchemaDefinition] = List.empty,
+      graphDefinitions: List[GraphDefinitionWithContext] = List.empty
+    )
+
+    // split ddl statements into parts and embed any sequence-dependent context (SET SCHEMA)
+    val ddlParts = ddl.statements.foldLeft(DdlParts()) {
+      case (state, ssd: SetSchemaDefinition) =>
+        state.copy(maybeCurrentSetSchema = Some(ssd))
+
+      case (state, ld: LabelDefinition) =>
+        state.copy(labelDefinitions = state.labelDefinitions :+ ld)
+
+      case (state, gsd: GlobalSchemaDefinition) =>
+        state.copy(globalSchemaDefinitions = state.globalSchemaDefinitions :+ gsd)
+
+      case (state, gsd: GraphDefinition) =>
+        state.copy(graphDefinitions = state.graphDefinitions :+ GraphDefinitionWithContext(gsd, state.maybeCurrentSetSchema))
+    }
+
+
+    val globalLabelDefinitions: Map[String, LabelDefinition] = ddlParts.labelDefinitions
       .validateDistinctBy(_.name, "Duplicate label name")
       .keyBy(_.name)
 
-    val graphTypes = ddl.schemaDefinitions
-      .validateDistinctBy(_._1, "Duplicate graph type name")
-      .keyBy(_._1).mapValues(_._2)
+    val graphTypes = ddlParts.globalSchemaDefinitions
+      .validateDistinctBy(_.name, "Duplicate graph type name")
+      .keyBy(_.name).mapValues(_.schemaDefinition)
       .map { case (name, schema) =>
         name -> Err.contextualize(s"Error in graph type: $name")(toGraphType(globalLabelDefinitions, schema)) }
       .view.force // mapValues creates a view, but we want validation now
 
-    val inlineGraphTypes = ddl.graphDefinitions
+    val inlineGraphTypes = ddlParts.graphDefinitions.map(_.definition)
       .keyBy(_.name)
       .mapValues(_.localSchemaDefinition)
       .map { case (name, schema) =>
         name -> Err.contextualize(s"Error in graph type of graph: $name")(toGraphType(globalLabelDefinitions, schema)) }
 
-    val graphs = ddl.graphDefinitions
-      .map(toGraph(inlineGraphTypes, graphTypes))
+    val graphs = ddlParts.graphDefinitions
+      .map(graphDefinition => toGraph(inlineGraphTypes, graphTypes, graphDefinition))
       .validateDistinctBy(_.name, "Duplicate graph name")
       .keyBy(_.name)
 
@@ -121,6 +148,10 @@ object GraphDdl {
     val schemaWithNodes = (nodeDefinitionsFromPatterns ++ schemaDefinition.nodeDefinitions).foldLeft(Schema.empty) {
       case (currentSchema, labelCombo) =>
         Err.contextualize(s"Error for label combination (${labelCombo.mkString(",")})") {
+          labelCombo
+            .flatMap(label => labelDefinitions.getOrFail(label, "Unresolved label").properties)
+            .groupBy { case (key, tpe) => key }.mapValues(_.map { case (key, tpe) => key } )
+
           val comboProperties = labelCombo.foldLeft(PropertyKeys.empty) { case (currProps, label) =>
             val labelProperties = labelDefinitions.getOrFail(label, "Unresolved label").properties
             currProps.keySet.intersect(labelProperties.keySet).foreach { key =>
@@ -179,74 +210,99 @@ object GraphDdl {
 
   def toGraph(
     inlineTypes: Map[String, GraphType],
-    graphTypes: Map[String, GraphType]
-  )(
-    graph: GraphDefinition
-  ): Graph = Err.contextualize(s"Error in graph: ${graph.name}") {
-    val graphType = graph.maybeSchemaName
+    graphTypes: Map[String, GraphType],
+    graph: GraphDefinitionWithContext
+  ): Graph = Err.contextualize(s"Error in graph: ${graph.definition.name}") {
+    val graphType = graph.definition.maybeSchemaName
       .map(schemaName => graphTypes.getOrFail(schemaName, "Unresolved schema name"))
-      .getOrElse(inlineTypes.getOrFail(graph.name, "Unresolved schema name"))
+      .getOrElse(inlineTypes.getOrFail(graph.definition.name, "Unresolved schema name"))
 
     Graph(
-      name = GraphName(graph.name),
+      name = GraphName(graph.definition.name),
       graphType = graphType,
-      nodeToViewMappings = graph.nodeMappings
-        .flatMap(nm => toNodeToViewMappings(nm, graphType))
+      nodeToViewMappings = graph.definition.nodeMappings
+        .flatMap(nm => toNodeToViewMappings(graphType, graph.maybeSetSchema, nm))
         .validateDistinctBy(_.key, "Duplicate mapping")
         .keyBy(_.key),
-      edgeToViewMappings = graph.relationshipMappings
-        .flatMap(em => toEdgeToViewMappings(em, graphType))
+      edgeToViewMappings = graph.definition.relationshipMappings
+        .flatMap(em => toEdgeToViewMappings(graphType, graph.maybeSetSchema, em))
         .validateDistinctBy(_.key, "Duplicate mapping")
         .keyBy(_.key)
     )
   }
 
-  def toNodeToViewMappings(nmd: NodeMappingDefinition, graphType: GraphType): Seq[NodeToViewMapping] = {
+  def toNodeToViewMappings(
+    graphType: GraphType,
+    maybeSetSchema: Option[SetSchemaDefinition],
+    nmd: NodeMappingDefinition
+  ): Seq[NodeToViewMapping] = {
     nmd.nodeToViewDefinitions.map { nvd =>
-      val nodeKey = NodeViewKey(nmd.labelNames, nvd.viewName)
-      Err.contextualize(s"Error in node mapping: $nodeKey") {
-        NodeToViewMapping(
-          environment = DbEnv(DataSourceConfig()),
-          nodeType = nodeKey.nodeType,
-          view = nodeKey.view,
-          propertyMappings = toPropertyMappings(nmd.labelNames, graphType.nodePropertyKeys(nmd.labelNames).keySet, nvd.maybePropertyMapping)
-        )
+      Err.contextualize(s"Error in node mapping for: ${nmd.labelNames.mkString(",")}") {
+        val viewId = toQualifiedViewId(maybeSetSchema, nvd.viewId)
+        val nodeKey = NodeViewKey(nmd.labelNames, viewId)
+        Err.contextualize(s"Error in node mapping for: $nodeKey") {
+          NodeToViewMapping(
+            nodeType = nodeKey.nodeType,
+            view = nodeKey.qualifiedViewId,
+            propertyMappings = toPropertyMappings(nmd.labelNames, graphType.nodePropertyKeys(nmd.labelNames).keySet, nvd.maybePropertyMapping)
+          )
+        }
       }
     }
   }
 
-  def toEdgeToViewMappings(rmd: RelationshipMappingDefinition, graphType: GraphType): Seq[EdgeToViewMapping] = {
+  def toEdgeToViewMappings(
+    graphType: GraphType,
+    maybeSetSchema: Option[SetSchemaDefinition],
+    rmd: RelationshipMappingDefinition
+  ): Seq[EdgeToViewMapping] = {
     rmd.relationshipToViewDefinitions.map { rvd =>
-      val edgeKey = EdgeViewKey(Set(rmd.relType), rvd.viewDefinition.name)
-      Err.contextualize(s"Error in relationship mapping: $edgeKey") {
-        EdgeToViewMapping(
-          environment = DbEnv(DataSourceConfig()),
-          edgeType = edgeKey.edgeType,
-          view = edgeKey.view,
-          startNode = StartNode(
-            nodeViewKey = NodeViewKey(
-              nodeType = rvd.startNodeToViewDefinition.labelSet,
-              view = rvd.startNodeToViewDefinition.viewDefinition.name
+      Err.contextualize(s"Error in relationship mapping for: ${rmd.relType}") {
+        val viewId = toQualifiedViewId(maybeSetSchema, rvd.viewDefinition.viewId)
+        val edgeKey = EdgeViewKey(Set(rmd.relType), viewId)
+        Err.contextualize(s"Error in relationship mapping for: $edgeKey") {
+          EdgeToViewMapping(
+            edgeType = edgeKey.edgeType,
+            view = edgeKey.qualifiedViewId,
+            startNode = StartNode(
+              nodeViewKey = NodeViewKey(
+                nodeType = rvd.startNodeToViewDefinition.labelSet,
+                qualifiedViewId = toQualifiedViewId(maybeSetSchema, rvd.startNodeToViewDefinition.viewDefinition.viewId)
+              ),
+              joinPredicates = rvd.startNodeToViewDefinition.joinOn.joinPredicates.map(toJoin(
+                nodeAlias = rvd.startNodeToViewDefinition.viewDefinition.alias,
+                edgeAlias = rvd.viewDefinition.alias
+              ))
             ),
-            joinPredicates = rvd.startNodeToViewDefinition.joinOn.joinPredicates.map(toJoin(
-              nodeAlias = rvd.startNodeToViewDefinition.viewDefinition.alias,
-              edgeAlias = rvd.viewDefinition.alias
-            ))
-          ),
-          endNode = EndNode(
-            nodeViewKey = NodeViewKey(
-              nodeType = rvd.endNodeToViewDefinition.labelSet,
-              view = rvd.endNodeToViewDefinition.viewDefinition.name
+            endNode = EndNode(
+              nodeViewKey = NodeViewKey(
+                nodeType = rvd.endNodeToViewDefinition.labelSet,
+                qualifiedViewId = toQualifiedViewId(maybeSetSchema, rvd.endNodeToViewDefinition.viewDefinition.viewId)
+              ),
+              joinPredicates = rvd.endNodeToViewDefinition.joinOn.joinPredicates.map(toJoin(
+                nodeAlias = rvd.endNodeToViewDefinition.viewDefinition.alias,
+                edgeAlias = rvd.viewDefinition.alias
+              ))
             ),
-            joinPredicates = rvd.endNodeToViewDefinition.joinOn.joinPredicates.map(toJoin(
-              nodeAlias = rvd.endNodeToViewDefinition.viewDefinition.alias,
-              edgeAlias = rvd.viewDefinition.alias
-            ))
-          ),
-          propertyMappings = toPropertyMappings(Set(rmd.relType), graphType.relationshipPropertyKeys(rmd.relType).keySet, rvd.maybePropertyMapping)
-        )
+            propertyMappings = toPropertyMappings(Set(rmd.relType), graphType.relationshipPropertyKeys(rmd.relType).keySet, rvd.maybePropertyMapping)
+          )
+        }
       }
     }
+  }
+
+  def toQualifiedViewId(
+    maybeSetSchema: Option[SetSchemaDefinition],
+    viewId: List[String]
+  ): QualifiedViewId = (maybeSetSchema, viewId) match {
+    case (None, dataSource :: schema :: view :: Nil) =>
+      QualifiedViewId(dataSource, schema, view)
+    case (Some(SetSchemaDefinition(dataSource, schema)), view :: Nil) =>
+      QualifiedViewId(dataSource, schema, view)
+    case (None, view)    if view.size < 3 =>
+      Err.malformed("Relative view identifier requires a preceeding SET SCHEMA statement", view.mkString("."))
+    case (Some(_), view) if view.size > 1 =>
+      Err.malformed("Relative view identifier must have exactly one segment", view.mkString("."))
   }
 
   def toJoin(nodeAlias: String, edgeAlias: String)(join: (ColumnIdentifier, ColumnIdentifier)): Join = {
@@ -289,7 +345,7 @@ object GraphDdl {
     def validateDistinctBy[K](key: T => K, msg: String): C[T] = {
       elems.groupBy(key).foreach {
         case (k, vals) if vals.size > 1 => Err.duplicate(msg, k)
-        case _ =>
+        case _                          =>
       }
       elems
     }
@@ -311,24 +367,37 @@ case class Graph(
   edgeToViewMappings: Map[EdgeViewKey, EdgeToViewMapping]
 )
 
+object QualifiedViewId {
+  def apply(qualifiedViewId: String): QualifiedViewId = qualifiedViewId.split("\\.").toList match {
+    case dataSource :: schema :: view :: Nil => QualifiedViewId(dataSource, schema, view)
+    case _ => GraphDdlException.malformed("Qualified view id did not match pattern dataSource.schema.view", qualifiedViewId)
+  }
+}
+
+case class QualifiedViewId(
+  dataSource: String,
+  schema: String,
+  view: String
+) {
+  override def toString: String = s"$dataSource.$schema.$view"
+}
+
 sealed trait ElementToViewMapping
 
 case class NodeToViewMapping(
   nodeType: NodeType,
-  view: ViewId,
-  propertyMappings: PropertyMappings,
-  environment: DbEnv
+  view: QualifiedViewId,
+  propertyMappings: PropertyMappings
 ) extends ElementToViewMapping {
   def key: NodeViewKey = NodeViewKey(nodeType, view)
 }
 
 case class EdgeToViewMapping(
   edgeType: EdgeType,
-  view: ViewId,
+  view: QualifiedViewId,
   startNode: StartNode,
   endNode: EndNode,
-  propertyMappings: PropertyMappings,
-  environment: DbEnv
+  propertyMappings: PropertyMappings
 ) extends ElementToViewMapping {
   def key: EdgeViewKey = EdgeViewKey(edgeType, view)
 }
@@ -348,16 +417,10 @@ case class Join(
   edgeColumn: String
 )
 
-case class DbEnv(
-  dataSource: DataSourceConfig
-)
-
-case class DataSourceConfig()
-
-case class NodeViewKey(nodeType: Set[String], view: String) {
-  override def toString: String = s"node type: ${nodeType.mkString(", ")}, view: $view"
+case class NodeViewKey(nodeType: Set[String], qualifiedViewId: QualifiedViewId) {
+  override def toString: String = s"node type: ${nodeType.mkString(", ")}, view: $qualifiedViewId"
 }
 
-case class EdgeViewKey(edgeType: Set[String], view: String) {
-  override def toString: String = s"relationship type: ${edgeType.mkString(", ")}, view: $view"
+case class EdgeViewKey(edgeType: Set[String], qualifiedViewId: QualifiedViewId) {
+  override def toString: String = s"relationship type: ${edgeType.mkString(", ")}, view: $qualifiedViewId"
 }

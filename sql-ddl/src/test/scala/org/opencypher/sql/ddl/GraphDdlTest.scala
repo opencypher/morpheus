@@ -68,11 +68,11 @@ class GraphDdlTest extends FunSpec with Matchers {
 
     val graphDdl = GraphDdl(ddlString)
 
-    val personKey1 = NodeViewKey(Set("Person"), "personView1")
-    val personKey2 = NodeViewKey(Set("Person"), "personView2")
-    val bookKey = NodeViewKey(Set("Book"), "bookView")
-    val readsKey1 = EdgeViewKey(Set("READS"), "readsView1")
-    val readsKey2 = EdgeViewKey(Set("READS"), "readsView2")
+    val personKey1 = NodeViewKey(Set("Person"), QualifiedViewId("dataSourceName.fooDatabaseName.personView1"))
+    val personKey2 = NodeViewKey(Set("Person"), QualifiedViewId("dataSourceName.fooDatabaseName.personView2"))
+    val bookKey    = NodeViewKey(Set("Book"),   QualifiedViewId("dataSourceName.fooDatabaseName.bookView"))
+    val readsKey1  = EdgeViewKey(Set("READS"),  QualifiedViewId("dataSourceName.fooDatabaseName.readsView1"))
+    val readsKey2  = EdgeViewKey(Set("READS"),  QualifiedViewId("dataSourceName.fooDatabaseName.readsView2"))
 
     val expected = GraphDdl(
       Map(
@@ -84,37 +84,30 @@ class GraphDdlTest extends FunSpec with Matchers {
           Map(
             personKey1 -> NodeToViewMapping(
               nodeType = Set("Person"),
-              view = "personView1",
-              propertyMappings = Map("name" -> "person_name1", "age" -> "age"),
-              environment = DbEnv(DataSourceConfig())),
+              view = personKey1.qualifiedViewId,
+              propertyMappings = Map("name" -> "person_name1", "age" -> "age")),
             personKey2 -> NodeToViewMapping(
               nodeType = Set("Person"),
-              view = "personView2",
-              propertyMappings = Map("name" -> "person_name2", "age" -> "age"),
-              environment = DbEnv(DataSourceConfig())),
+              view = personKey2.qualifiedViewId,
+              propertyMappings = Map("name" -> "person_name2", "age" -> "age")),
             bookKey -> NodeToViewMapping(
               nodeType = Set("Book"),
-              view = "bookView",
-              propertyMappings = Map("title" -> "book_title"),
-              environment = DbEnv(DataSourceConfig()))
+              view = bookKey.qualifiedViewId,
+              propertyMappings = Map("title" -> "book_title"))
           ),
           Map(
             readsKey1 -> EdgeToViewMapping(
               edgeType = Set("READS"),
-              view = "readsView1",
+              view = readsKey1.qualifiedViewId,
               startNode = StartNode(personKey1, List(Join("person_id1", "person"))),
               endNode = EndNode(bookKey, List(Join("book_id", "book"))),
-              propertyMappings = Map("rating" -> "value1"),
-              environment = DbEnv(DataSourceConfig())
-            ),
+              propertyMappings = Map("rating" -> "value1")),
             readsKey2 -> EdgeToViewMapping(
               edgeType = Set("READS"),
-              view = "readsView2",
+              view = readsKey2.qualifiedViewId,
               startNode = StartNode(personKey2, List(Join("person_id2", "person"))),
               endNode = EndNode(bookKey, List(Join("book_id", "book"))),
-              propertyMappings = Map("rating" -> "value2"),
-              environment = DbEnv(DataSourceConfig())
-            )
+              propertyMappings = Map("rating" -> "value2"))
           )
         )
       )
@@ -141,6 +134,7 @@ class GraphDdlTest extends FunSpec with Matchers {
 
   it("fails on duplicate relationship mappings") {
     val e = the [GraphDdlException] thrownBy GraphDdl("""
+      |SET SCHEMA a.b
       |CREATE GRAPH SCHEMA fooSchema
       | LABEL (Person)
       | LABEL (Book)
@@ -233,6 +227,7 @@ class GraphDdlTest extends FunSpec with Matchers {
 
   it("fails on unresolved property names") {
     val e = the [GraphDdlException] thrownBy GraphDdl("""
+      |SET SCHEMA a.b
       |CREATE GRAPH SCHEMA fooSchema
       | LABEL (Person { age1: STRING  })
       | (Person)
@@ -243,6 +238,21 @@ class GraphDdlTest extends FunSpec with Matchers {
     """.stripMargin)
     e.getFullMessage should (
       include("fooGraph") and include("Person") and include("personView") and include("age1")  and include("age2")
+    )
+  }
+
+  it("fails on missing set schema statement") {
+    val e = the [GraphDdlException] thrownBy GraphDdl("""
+      |CREATE GRAPH SCHEMA fooSchema
+      | LABEL (Person)
+      | (Person)
+      |CREATE GRAPH fooGraph WITH GRAPH SCHEMA fooSchema
+      |  NODE LABEL SETS (
+      |    (Person) FROM personView
+      |  )
+    """.stripMargin)
+    e.getFullMessage should (
+      include("fooGraph") and include("personView")
     )
   }
 

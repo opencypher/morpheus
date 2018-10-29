@@ -47,22 +47,26 @@ object GraphDdlAst {
 abstract class GraphDdlAst extends AbstractTreeNode[GraphDdlAst]
 
 case class DdlDefinition(
-  setSchema: Option[SetSchemaDefinition] = None,
-  labelDefinitions: List[LabelDefinition] = Nil,
-  schemaDefinitions: List[(String, SchemaDefinition)] = List.empty,
-  graphDefinitions: List[GraphDefinition] = Nil
+  statements: List[DdlStatement]
 ) extends GraphDdlAst
 
+sealed trait DdlStatement
+
 case class SetSchemaDefinition(
-  databaseConnectionName: String,
-  databaseSchemaName: Option[String] = None
-) extends GraphDdlAst
+  dataSource: String,
+  schema: String
+) extends GraphDdlAst with DdlStatement
 
 case class LabelDefinition(
   name: String,
   properties: Map[String, CypherType] = Map.empty,
   maybeKeyDefinition: Option[KeyDefinition] = None
-) extends GraphDdlAst
+) extends GraphDdlAst with DdlStatement
+
+case class GlobalSchemaDefinition(
+  name: String,
+  schemaDefinition: SchemaDefinition
+) extends GraphDdlAst with DdlStatement
 
 case class SchemaDefinition(
   localLabelDefinitions: List[LabelDefinition] = List.empty,
@@ -77,7 +81,7 @@ case class GraphDefinition(
   localSchemaDefinition: SchemaDefinition = SchemaDefinition(),
   nodeMappings: List[NodeMappingDefinition] = List.empty,
   relationshipMappings: List[RelationshipMappingDefinition] = List.empty
-) extends GraphDdlAst
+) extends GraphDdlAst with DdlStatement
 
 case class CardinalityConstraint(from: Int, to: Option[Int])
 
@@ -94,7 +98,7 @@ trait ElementToViewDefinition {
 }
 
 case class NodeToViewDefinition (
-  viewName: String,
+  viewId: List[String],
   override val maybePropertyMapping: Option[PropertyToColumnMappingDefinition] = None
 ) extends GraphDdlAst with ElementToViewDefinition
 
@@ -103,7 +107,10 @@ case class NodeMappingDefinition(
   nodeToViewDefinitions: List[NodeToViewDefinition] = List.empty
 ) extends GraphDdlAst
 
-case class ViewDefinition(name: String, alias: String) extends GraphDdlAst
+case class ViewDefinition(
+  viewId: List[String],
+  alias: String
+) extends GraphDdlAst
 
 case class JoinOnDefinition(joinPredicates: List[(ColumnIdentifier, ColumnIdentifier)]) extends GraphDdlAst
 

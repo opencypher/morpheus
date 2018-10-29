@@ -48,6 +48,9 @@ private[ddl] object GraphDdlException {
 
   def incompatibleTypes(msg: String): Nothing = throw TypeException(msg)
 
+  def malformed(desc: String, identifier: String): Nothing =
+    throw MalformedIdentifier(s"$desc: $identifier")
+
   def contextualize[T](msg: String)(block: => T): T =
     try { block } catch { case e: Exception => throw ContextualizedException(msg, Some(e)) }
 
@@ -63,5 +66,7 @@ case class UnresolvedReferenceException(msg: String, cause: Option[Exception] = 
 case class DuplicateDefinitionException(msg: String, cause: Option[Exception] = None) extends GraphDdlException(msg, cause)
 
 case class TypeException(msg: String, cause: Option[Exception] = None) extends GraphDdlException(msg, cause)
+
+case class MalformedIdentifier(msg: String, cause: Option[Exception] = None) extends GraphDdlException(msg, cause)
 
 case class ContextualizedException(msg: String, cause: Option[Exception] = None) extends GraphDdlException(msg, cause)

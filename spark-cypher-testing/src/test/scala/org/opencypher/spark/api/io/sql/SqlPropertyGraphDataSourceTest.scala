@@ -73,19 +73,19 @@ class SqlPropertyGraphDataSourceTest extends CAPSTestSuite {
       s"""
          |SET SCHEMA $dataSourceName.fooDatabaseName
          |
-       |CREATE GRAPH SCHEMA fooSchema
+         |CREATE GRAPH SCHEMA fooSchema
          | LABEL (Foo { foo : STRING })
          | (Foo)
          |
-       |CREATE GRAPH fooGraph WITH GRAPH SCHEMA fooSchema
+         |CREATE GRAPH fooGraph WITH GRAPH SCHEMA fooSchema
          |  NODE LABEL SETS (
          |    (Foo) FROM $fooView
          |  )
      """.stripMargin
 
-    sparkSession.createDataFrame(Seq(Tuple1("Alice"))).toDF("foo").createOrReplaceTempView(fooView)
+    sparkSession.createDataFrame(Seq(Tuple1("Alice"))).toDF("foo").createOrReplaceTempView("fooDatabaseName.foo_view")
 
-    val ds = SqlPropertyGraphDataSource(GraphDdl(ddlString), SqlDataSourceConfig(HiveFormat, dataSourceName))(caps)
+    val ds = SqlPropertyGraphDataSource(GraphDdl(ddlString), List(SqlDataSourceConfig(HiveFormat, dataSourceName)))(caps)
 
     ds.graph(fooGraphName).nodes("n").toMapsWithCollectedEntities should equal(Bag(
       CypherMap("n" -> CAPSNode(0, Set("Foo"), CypherMap("foo" -> "Alice")))
@@ -109,9 +109,9 @@ class SqlPropertyGraphDataSourceTest extends CAPSTestSuite {
          |  )
      """.stripMargin
 
-    sparkSession.createDataFrame(Seq(Tuple2("Alice", 42L))).toDF("col1", "col2").createOrReplaceTempView(fooView)
+    sparkSession.createDataFrame(Seq(Tuple2("Alice", 42L))).toDF("col1", "col2").createOrReplaceTempView("fooDatabaseName.foo_view")
 
-    val ds = SqlPropertyGraphDataSource(GraphDdl(ddlString), SqlDataSourceConfig(HiveFormat, dataSourceName))(caps)
+    val ds = SqlPropertyGraphDataSource(GraphDdl(ddlString), List(SqlDataSourceConfig(HiveFormat, dataSourceName)))(caps)
 
     ds.graph(fooGraphName).nodes("n").toMapsWithCollectedEntities should equal(Bag(
       CypherMap("n" -> CAPSNode(0, Set("Foo"), CypherMap("key1" -> 42L, "key2" -> "Alice")))
@@ -139,10 +139,10 @@ class SqlPropertyGraphDataSourceTest extends CAPSTestSuite {
          |  )
      """.stripMargin
 
-    sparkSession.createDataFrame(Seq(Tuple1("Alice"))).toDF("foo").createOrReplaceTempView(fooView)
-    sparkSession.createDataFrame(Seq(Tuple1(0L))).toDF("bar").createOrReplaceTempView(barView)
+    sparkSession.createDataFrame(Seq(Tuple1("Alice"))).toDF("foo").createOrReplaceTempView("fooDatabaseName.foo_view")
+    sparkSession.createDataFrame(Seq(Tuple1(0L))).toDF("bar").createOrReplaceTempView("fooDatabaseName.bar_view")
 
-    val ds = SqlPropertyGraphDataSource(GraphDdl(ddlString), SqlDataSourceConfig(HiveFormat, dataSourceName))(caps)
+    val ds = SqlPropertyGraphDataSource(GraphDdl(ddlString), List(SqlDataSourceConfig(HiveFormat, dataSourceName)))(caps)
 
     ds.graph(fooGraphName).nodes("n").toMapsWithCollectedEntities should equal(Bag(
       CypherMap("n" -> CAPSNode(computePartitionedRowId(rowIndex = 0, partitionStartDelta = 0), Set("Foo"), CypherMap("foo" -> "Alice"))),
@@ -182,11 +182,11 @@ class SqlPropertyGraphDataSourceTest extends CAPSTestSuite {
          |  )
      """.stripMargin
 
-    sparkSession.createDataFrame(Seq((0L, "Alice"))).toDF("person_id", "person_name").createOrReplaceTempView(personView)
-    sparkSession.createDataFrame(Seq((1L, "1984"))).toDF("book_id", "book_title").createOrReplaceTempView(bookView)
-    sparkSession.createDataFrame(Seq((0L, 1L, 42.23))).toDF("person", "book", "rating").createOrReplaceTempView(readsView)
+    sparkSession.createDataFrame(Seq((0L, "Alice"))).toDF("person_id", "person_name").createOrReplaceTempView("fooDatabaseName.person_view")
+    sparkSession.createDataFrame(Seq((1L, "1984"))).toDF("book_id", "book_title").createOrReplaceTempView("fooDatabaseName.book_view")
+    sparkSession.createDataFrame(Seq((0L, 1L, 42.23))).toDF("person", "book", "rating").createOrReplaceTempView("fooDatabaseName.reads_view")
 
-    val ds = SqlPropertyGraphDataSource(GraphDdl(ddlString), SqlDataSourceConfig(HiveFormat, dataSourceName))(caps)
+    val ds = SqlPropertyGraphDataSource(GraphDdl(ddlString), List(SqlDataSourceConfig(HiveFormat, dataSourceName)))(caps)
 
     val personId = computePartitionedRowId(rowIndex = 0, partitionStartDelta = 0)
     val bookId = computePartitionedRowId(rowIndex = 0, partitionStartDelta = 1)
@@ -238,12 +238,12 @@ class SqlPropertyGraphDataSourceTest extends CAPSTestSuite {
       .createDataFrame(Seq(
         (0L, 23, "startValue", "endValue"),
         (1L, 42, "startValue", "endValue")
-      )).toDF("node_id", "id", "start", "end").createOrReplaceTempView(nodeView)
+      )).toDF("node_id", "id", "start", "end").createOrReplaceTempView("fooDatabaseName.node_view")
     sparkSession
       .createDataFrame(Seq((0L, 1L, 1984, "startValue", "endValue")))
-      .toDF("source_id", "target_id", "id", "start", "end").createOrReplaceTempView(relsView)
+      .toDF("source_id", "target_id", "id", "start", "end").createOrReplaceTempView("fooDatabaseName.rels_view")
 
-    val ds = SqlPropertyGraphDataSource(GraphDdl(ddlString), SqlDataSourceConfig(HiveFormat, dataSourceName))(caps)
+    val ds = SqlPropertyGraphDataSource(GraphDdl(ddlString), List(SqlDataSourceConfig(HiveFormat, dataSourceName)))(caps)
 
     val nodeId1 = computePartitionedRowId(rowIndex = 0, partitionStartDelta = 0)
     val nodeId2 = computePartitionedRowId(rowIndex = 1, partitionStartDelta = 0)
@@ -301,12 +301,12 @@ class SqlPropertyGraphDataSourceTest extends CAPSTestSuite {
          |  )
      """.stripMargin
 
-    sparkSession.createDataFrame(Seq((0L, "Alice"))).toDF("person_id", "person_name").createOrReplaceTempView(personView)
-    sparkSession.createDataFrame(Seq((1L, "1984"), (2L, "Scala with Cats"))).toDF("book_id", "book_title").createOrReplaceTempView(bookView)
-    sparkSession.createDataFrame(Seq((0L, 1L, 42.23))).toDF("person", "book", "rating").createOrReplaceTempView(readsView1)
-    sparkSession.createDataFrame(Seq((0L, 2L, 13.37))).toDF("p_id", "b_id", "rates").createOrReplaceTempView(readsView2)
+    sparkSession.createDataFrame(Seq((0L, "Alice"))).toDF("person_id", "person_name").createOrReplaceTempView("fooDatabaseName.person_view")
+    sparkSession.createDataFrame(Seq((1L, "1984"), (2L, "Scala with Cats"))).toDF("book_id", "book_title").createOrReplaceTempView("fooDatabaseName.book_view")
+    sparkSession.createDataFrame(Seq((0L, 1L, 42.23))).toDF("person", "book", "rating").createOrReplaceTempView("fooDatabaseName.reads_view1")
+    sparkSession.createDataFrame(Seq((0L, 2L, 13.37))).toDF("p_id", "b_id", "rates").createOrReplaceTempView("fooDatabaseName.reads_view2")
 
-    val ds = SqlPropertyGraphDataSource(GraphDdl(ddlString), SqlDataSourceConfig(HiveFormat, dataSourceName))(caps)
+    val ds = SqlPropertyGraphDataSource(GraphDdl(ddlString), List(SqlDataSourceConfig(HiveFormat, dataSourceName)))(caps)
 
     val personId = computePartitionedRowId(rowIndex = 0, partitionStartDelta = 0)
     val book1Id = computePartitionedRowId(rowIndex = 0, partitionStartDelta = 1)

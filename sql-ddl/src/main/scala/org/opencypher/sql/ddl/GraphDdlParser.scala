@@ -182,14 +182,17 @@ object GraphDdlParser {
       schemaPatternDefinition.rep(sep = ",".?).map(_.toSet) ~/ ";".?)
     .map(SchemaDefinition.tupled)
 
-  val globalSchemaDefinition: P[(String, SchemaDefinition)] = P(CREATE ~ GRAPH ~ SCHEMA ~/ identifier.! ~/ localSchemaDefinition)
+  val globalSchemaDefinition: P[GlobalSchemaDefinition] =
+    P(CREATE ~ GRAPH ~ SCHEMA ~/ identifier.! ~/ localSchemaDefinition).map(GlobalSchemaDefinition.tupled)
 
   // ==== Graph ====
 
   val propertyToColumn: P[(String, String)] = P(identifier.! ~ AS ~/ identifier.!).map { case (column, propertyKey) => propertyKey -> column }
   val propertyMappingDefinition: P[PropertyToColumnMappingDefinition] = P("(" ~ propertyToColumn.rep(min = 1, sep = ",").map(_.toMap) ~/ ")")
 
-  val nodeToViewDefinition: P[NodeToViewDefinition] = P(FROM ~/ identifier.! ~/ propertyMappingDefinition.?).map(NodeToViewDefinition.tupled)
+  val viewId: P[List[String]] = identifier.!.repX(min = 1, max = 3, sep = ".").map(_.toList)
+
+  val nodeToViewDefinition: P[NodeToViewDefinition] = P(FROM ~/ viewId ~/ propertyMappingDefinition.?).map(NodeToViewDefinition.tupled)
   val nodeMappingDefinition: P[NodeMappingDefinition] = P(nodeDefinition ~/ nodeToViewDefinition.rep(min = 1, sep = ",".?).map(_.toList)).map(NodeMappingDefinition.tupled)
   val nodeMappings: P[List[NodeMappingDefinition]] = P(NODE ~/ LABEL ~/ SETS ~/ "(" ~/ nodeMappingDefinition.rep(sep = ",".?).map(_.toList) ~/ ")")
 
@@ -197,7 +200,7 @@ object GraphDdlParser {
   val joinTuple: P[(ColumnIdentifier, ColumnIdentifier)] = P(columnIdentifier ~/ "=" ~/ columnIdentifier)
   val joinOnDefinition: P[JoinOnDefinition] = P(JOIN ~/ ON ~/ joinTuple.rep(min = 1, sep = AND)).map(_.toList).map(JoinOnDefinition)
 
-  val viewDefinition: P[ViewDefinition] = P(identifier.! ~/ identifier.!).map(ViewDefinition.tupled)
+  val viewDefinition: P[ViewDefinition] = P(viewId ~/ identifier.!).map(ViewDefinition.tupled)
 
   val labelToViewDefinition: P[LabelToViewDefinition] = P(LABEL ~/ SET ~/ nodeDefinition ~/ FROM ~/ viewDefinition ~/ joinOnDefinition).map(LabelToViewDefinition.tupled)
 
@@ -216,14 +219,14 @@ object GraphDdlParser {
 
   // ==== DDL ====
 
-  val setSchemaDefinition: P[SetSchemaDefinition] = P(SET ~/ SCHEMA ~ identifier.! ~/ "." ~/ identifier.!.? ~ ";".?).map(SetSchemaDefinition.tupled)
+  val setSchemaDefinition: P[SetSchemaDefinition] = P(SET ~/ SCHEMA ~ identifier.! ~/ "." ~/ identifier.! ~ ";".?).map(SetSchemaDefinition.tupled)
+
+  val ddlStatement: P[DdlStatement] = P(setSchemaDefinition | catalogLabelDefinition | globalSchemaDefinition | graphDefinition)
 
   val ddlDefinitions: P[DdlDefinition] = P(
     ParsersForNoTrace.noTrace ~ // allow for whitespace/comments at the start
-      setSchemaDefinition.? ~/
-      catalogLabelDefinition.rep.map(_.toList) ~/
-      globalSchemaDefinition.rep.map(_.toList) ~/
-      graphDefinition.rep.map(_.toList) ~/ End
-  ).map(DdlDefinition.tupled)
+      ddlStatement.rep.map(_.toList) ~/
+      End
+  ).map(DdlDefinition)
 
 }

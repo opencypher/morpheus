@@ -41,7 +41,7 @@ import org.opencypher.sql.ddl._
 
 case class SqlPropertyGraphDataSource(
   graphDdl: GraphDdl,
-  sqlDataSourceConfig: SqlDataSourceConfig
+  sqlDataSourceConfigs: List[SqlDataSourceConfig]
 )(implicit val caps: CAPSSession) extends CAPSPropertyGraphDataSource {
 
   override def hasGraph(graphName: GraphName): Boolean = graphDdl.graphs.contains(graphName)
@@ -57,7 +57,7 @@ case class SqlPropertyGraphDataSource(
     val ddlGraph = graphDdl.graphs(graphName)
 
     // Build CAPS node tables
-    val (nodeViewKeys, nodeDfs) = ddlGraph.nodeToViewMappings.mapValues(nvm => readSqlTable(nvm.view, sqlDataSourceConfig)).unzip
+    val (nodeViewKeys, nodeDfs) = ddlGraph.nodeToViewMappings.mapValues(nvm => readSqlTable(nvm.view)).unzip
     val nodeDataFramesWithIds = nodeViewKeys.zip(addUniqueIds(nodeDfs.toSeq, idColumn)).toMap
     val nodeTables = nodeDataFramesWithIds.map {
       case (nodeViewKey, nodeDf) =>
@@ -66,7 +66,7 @@ case class SqlPropertyGraphDataSource(
     }.toSeq
 
     // Build CAPS relationship tables
-    val (relViewKeys, relDfs) = ddlGraph.edgeToViewMappings.mapValues(evm => readSqlTable(evm.view, sqlDataSourceConfig)).unzip
+    val (relViewKeys, relDfs) = ddlGraph.edgeToViewMappings.mapValues(evm => readSqlTable(evm.view)).unzip
     val relDataFramesWithIds = relViewKeys.zip(addUniqueIds(relDfs.toSeq, idColumn)).toMap
 
     val relationshipTables = ddlGraph.edgeToViewMappings.map {
@@ -126,8 +126,11 @@ case class SqlPropertyGraphDataSource(
     }
   }
 
-  private def readSqlTable(viewName: String, sqlDataSourceConfig: SqlDataSourceConfig): DataFrame = {
+  private def readSqlTable(qualifiedViewId: QualifiedViewId): DataFrame = {
     val spark = caps.sparkSession
+
+    val sqlDataSourceConfig = sqlDataSourceConfigs.find(_.dataSourceName == qualifiedViewId.dataSource).get
+    val tableName = qualifiedViewId.schema + "." + qualifiedViewId.view
 
     val inputTable = sqlDataSourceConfig.storageFormat match {
       case JdbcFormat =>
@@ -136,10 +139,12 @@ case class SqlPropertyGraphDataSource(
           .option("url", sqlDataSourceConfig.jdbcUri.getOrElse(throw SqlDataSourceConfigException("Missing JDBC URI")))
           .option("driver", sqlDataSourceConfig.jdbcDriver.getOrElse(throw SqlDataSourceConfigException("Missing JDBC Driver")))
           .option("fetchSize", sqlDataSourceConfig.jdbcFetchSize)
-          .option("dbtable", viewName)
+          .option("dbtable", tableName)
           .load()
 
-      case HiveFormat => spark.table(viewName)
+      case HiveFormat =>
+
+        spark.table(tableName)
 
       case otherFormat => notFound(otherFormat, Seq(JdbcFormat, HiveFormat))
     }
