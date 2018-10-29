@@ -34,14 +34,30 @@ import org.opencypher.spark.api.value.{CAPSNode, CAPSRelationship}
 import org.opencypher.spark.impl.CAPSFunctions.{partitioned_id_assignment, rowIdSpaceBitsUsedByMonotonicallyIncreasingId}
 import org.opencypher.spark.testing.CAPSTestSuite
 import org.opencypher.sql.ddl.GraphDdl
+import org.scalatest.BeforeAndAfterEach
 
-class SqlPropertyGraphDataSourceTest extends CAPSTestSuite {
+import scala.util.Random
+
+class SqlPropertyGraphDataSourceTest extends CAPSTestSuite with BeforeAndAfterEach {
 
   private val dataSourceName = "fooDataSource"
+  private val databaseName = "fooDatabase"
   private val fooGraphName = GraphName("fooGraph")
+
+  private def generateTableName: String = s"view_${Random.alphanumeric take 10 mkString ""}"
 
   private def computePartitionedRowId(rowIndex: Long, partitionStartDelta: Long): Long = {
     rowIndex + (partitionStartDelta << rowIdSpaceBitsUsedByMonotonicallyIncreasingId)
+  }
+
+  override protected def beforeEach(): Unit = {
+    super.beforeEach()
+    sparkSession.sql(s"CREATE DATABASE IF NOT EXISTS $databaseName").count()
+  }
+
+  override protected def afterEach(): Unit = {
+    sparkSession.sql(s"DROP DATABASE IF EXISTS $databaseName CASCADE").count()
+    super.afterEach()
   }
 
   it("adds deltas to generated ids") {
@@ -67,11 +83,11 @@ class SqlPropertyGraphDataSourceTest extends CAPSTestSuite {
   }
 
   it("reads nodes from a table") {
-    val fooView = "foo_view"
+    val fooView = generateTableName
 
     val ddlString =
       s"""
-         |SET SCHEMA $dataSourceName.fooDatabaseName
+         |SET SCHEMA $dataSourceName.$databaseName
          |
          |CREATE GRAPH SCHEMA fooSchema
          | LABEL (Foo { foo : STRING })
@@ -83,7 +99,10 @@ class SqlPropertyGraphDataSourceTest extends CAPSTestSuite {
          |  )
      """.stripMargin
 
-    sparkSession.createDataFrame(Seq(Tuple1("Alice"))).toDF("foo").createOrReplaceTempView("fooDatabaseName.foo_view")
+    sparkSession
+      .createDataFrame(Seq(Tuple1("Alice")))
+      .toDF("foo")
+      .write.saveAsTable(s"$databaseName.$fooView")
 
     val ds = SqlPropertyGraphDataSource(GraphDdl(ddlString), List(SqlDataSourceConfig(HiveFormat, dataSourceName)))(caps)
 
@@ -93,11 +112,11 @@ class SqlPropertyGraphDataSourceTest extends CAPSTestSuite {
   }
 
   it("reads nodes from a table with custom column mapping") {
-    val fooView = "foo_view"
+    val fooView = generateTableName
 
     val ddlString =
       s"""
-         |SET SCHEMA $dataSourceName.fooDatabaseName
+         |SET SCHEMA $dataSourceName.$databaseName
          |
          |CREATE GRAPH SCHEMA fooSchema
          | LABEL (Foo { key1 : INTEGER, key2 : String })
@@ -109,7 +128,10 @@ class SqlPropertyGraphDataSourceTest extends CAPSTestSuite {
          |  )
      """.stripMargin
 
-    sparkSession.createDataFrame(Seq(Tuple2("Alice", 42L))).toDF("col1", "col2").createOrReplaceTempView("fooDatabaseName.foo_view")
+    sparkSession
+      .createDataFrame(Seq(Tuple2("Alice", 42L)))
+      .toDF("col1", "col2")
+      .write.saveAsTable(s"$databaseName.$fooView")
 
     val ds = SqlPropertyGraphDataSource(GraphDdl(ddlString), List(SqlDataSourceConfig(HiveFormat, dataSourceName)))(caps)
 
@@ -119,12 +141,12 @@ class SqlPropertyGraphDataSourceTest extends CAPSTestSuite {
   }
 
   it("reads nodes from multiple tables") {
-    val fooView = "foo_view"
-    val barView = "bar_view"
+    val fooView = generateTableName
+    val barView = generateTableName
 
     val ddlString =
       s"""
-         |SET SCHEMA $dataSourceName.fooDatabaseName
+         |SET SCHEMA $dataSourceName.$databaseName
          |
          |CREATE GRAPH SCHEMA fooSchema
          | LABEL (Foo { foo : STRING })
@@ -139,8 +161,14 @@ class SqlPropertyGraphDataSourceTest extends CAPSTestSuite {
          |  )
      """.stripMargin
 
-    sparkSession.createDataFrame(Seq(Tuple1("Alice"))).toDF("foo").createOrReplaceTempView("fooDatabaseName.foo_view")
-    sparkSession.createDataFrame(Seq(Tuple1(0L))).toDF("bar").createOrReplaceTempView("fooDatabaseName.bar_view")
+    sparkSession
+      .createDataFrame(Seq(Tuple1("Alice")))
+      .toDF("foo")
+      .write.saveAsTable(s"$databaseName.$fooView")
+    sparkSession
+      .createDataFrame(Seq(Tuple1(0L)))
+      .toDF("bar")
+      .write.saveAsTable(s"$databaseName.$barView")
 
     val ds = SqlPropertyGraphDataSource(GraphDdl(ddlString), List(SqlDataSourceConfig(HiveFormat, dataSourceName)))(caps)
 
@@ -151,13 +179,13 @@ class SqlPropertyGraphDataSourceTest extends CAPSTestSuite {
   }
 
   it("reads relationships from a table") {
-    val personView = "person_view"
-    val bookView = "book_view"
-    val readsView = "reads_view"
+    val personView = generateTableName
+    val bookView   = generateTableName
+    val readsView  = generateTableName
 
     val ddlString =
       s"""
-         |SET SCHEMA $dataSourceName.fooDatabaseName
+         |SET SCHEMA $dataSourceName.$databaseName
          |
          |CREATE GRAPH SCHEMA fooSchema
          | LABEL (Person { name   : STRING })
@@ -182,9 +210,18 @@ class SqlPropertyGraphDataSourceTest extends CAPSTestSuite {
          |  )
      """.stripMargin
 
-    sparkSession.createDataFrame(Seq((0L, "Alice"))).toDF("person_id", "person_name").createOrReplaceTempView("fooDatabaseName.person_view")
-    sparkSession.createDataFrame(Seq((1L, "1984"))).toDF("book_id", "book_title").createOrReplaceTempView("fooDatabaseName.book_view")
-    sparkSession.createDataFrame(Seq((0L, 1L, 42.23))).toDF("person", "book", "rating").createOrReplaceTempView("fooDatabaseName.reads_view")
+    sparkSession
+      .createDataFrame(Seq((0L, "Alice")))
+      .toDF("person_id", "person_name")
+      .write.saveAsTable(s"$databaseName.$personView")
+    sparkSession
+      .createDataFrame(Seq((1L, "1984")))
+      .toDF("book_id", "book_title")
+      .write.saveAsTable(s"$databaseName.$bookView")
+    sparkSession
+      .createDataFrame(Seq((0L, 1L, 42.23)))
+      .toDF("person", "book", "rating")
+      .write.saveAsTable(s"$databaseName.$readsView")
 
     val ds = SqlPropertyGraphDataSource(GraphDdl(ddlString), List(SqlDataSourceConfig(HiveFormat, dataSourceName)))(caps)
 
@@ -207,12 +244,12 @@ class SqlPropertyGraphDataSourceTest extends CAPSTestSuite {
   }
 
   it("reads relationships from a table with colliding column names") {
-    val nodeView = "node_view"
-    val relsView = "rels_view"
+    val nodeView = generateTableName
+    val relsView = generateTableName
 
     val ddlString =
       s"""
-         |SET SCHEMA $dataSourceName.fooDatabaseName
+         |SET SCHEMA $dataSourceName.$databaseName
          |
          |CREATE GRAPH SCHEMA fooSchema
          | LABEL (Node { id : INTEGER, start : STRING, end : STRING })
@@ -238,15 +275,18 @@ class SqlPropertyGraphDataSourceTest extends CAPSTestSuite {
       .createDataFrame(Seq(
         (0L, 23, "startValue", "endValue"),
         (1L, 42, "startValue", "endValue")
-      )).toDF("node_id", "id", "start", "end").createOrReplaceTempView("fooDatabaseName.node_view")
+      ))
+      .toDF("node_id", "id", "start", "end")
+      .write.saveAsTable(s"$databaseName.$nodeView")
     sparkSession
       .createDataFrame(Seq((0L, 1L, 1984, "startValue", "endValue")))
-      .toDF("source_id", "target_id", "id", "start", "end").createOrReplaceTempView("fooDatabaseName.rels_view")
+      .toDF("source_id", "target_id", "id", "start", "end")
+      .write.saveAsTable(s"$databaseName.$relsView")
 
     val ds = SqlPropertyGraphDataSource(GraphDdl(ddlString), List(SqlDataSourceConfig(HiveFormat, dataSourceName)))(caps)
 
     val nodeId1 = computePartitionedRowId(rowIndex = 0, partitionStartDelta = 0)
-    val nodeId2 = computePartitionedRowId(rowIndex = 1, partitionStartDelta = 0)
+    val nodeId2 = computePartitionedRowId(rowIndex = 0, partitionStartDelta = 1)
 
     ds.graph(fooGraphName).nodes("n").toMapsWithCollectedEntities should equal(Bag(
       CypherMap("n" -> CAPSNode(nodeId1, Set("Node"), CypherMap("id" -> 23, "start" -> "startValue", "end" -> "endValue"))),
@@ -264,14 +304,14 @@ class SqlPropertyGraphDataSourceTest extends CAPSTestSuite {
   }
 
   it("reads relationships from multiple tables") {
-    val personView = "person_view"
-    val bookView = "book_view"
-    val readsView1 = "reads_view1"
-    val readsView2 = "reads_view2"
+    val personView = generateTableName
+    val bookView   = generateTableName
+    val readsView1 = generateTableName
+    val readsView2 = generateTableName
 
     val ddlString =
       s"""
-         |SET SCHEMA $dataSourceName.fooDatabaseName
+         |SET SCHEMA $dataSourceName.$databaseName
          |
          |CREATE GRAPH SCHEMA fooSchema
          | LABEL (Person { name   : STRING })
@@ -301,10 +341,22 @@ class SqlPropertyGraphDataSourceTest extends CAPSTestSuite {
          |  )
      """.stripMargin
 
-    sparkSession.createDataFrame(Seq((0L, "Alice"))).toDF("person_id", "person_name").createOrReplaceTempView("fooDatabaseName.person_view")
-    sparkSession.createDataFrame(Seq((1L, "1984"), (2L, "Scala with Cats"))).toDF("book_id", "book_title").createOrReplaceTempView("fooDatabaseName.book_view")
-    sparkSession.createDataFrame(Seq((0L, 1L, 42.23))).toDF("person", "book", "rating").createOrReplaceTempView("fooDatabaseName.reads_view1")
-    sparkSession.createDataFrame(Seq((0L, 2L, 13.37))).toDF("p_id", "b_id", "rates").createOrReplaceTempView("fooDatabaseName.reads_view2")
+    sparkSession
+      .createDataFrame(Seq((0L, "Alice")))
+      .toDF("person_id", "person_name")
+      .write.saveAsTable(s"$databaseName.$personView")
+    sparkSession
+      .createDataFrame(Seq((1L, "1984"), (2L, "Scala with Cats")))
+      .toDF("book_id", "book_title")
+      .write.saveAsTable(s"$databaseName.$bookView")
+    sparkSession
+      .createDataFrame(Seq((0L, 1L, 42.23)))
+      .toDF("person", "book", "rating")
+      .write.saveAsTable(s"$databaseName.$readsView1")
+    sparkSession
+      .createDataFrame(Seq((0L, 2L, 13.37)))
+      .toDF("p_id", "b_id", "rates")
+      .write.saveAsTable(s"$databaseName.$readsView2")
 
     val ds = SqlPropertyGraphDataSource(GraphDdl(ddlString), List(SqlDataSourceConfig(HiveFormat, dataSourceName)))(caps)
 
