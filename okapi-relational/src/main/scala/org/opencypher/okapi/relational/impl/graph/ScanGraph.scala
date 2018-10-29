@@ -87,10 +87,14 @@ class ScanGraph[T <: Table[T] : TypeTag](val scans: Seq[EntityTable[T]], val sch
         }
         val fromTablesWithImpliedLabels = scans.map(scanRecords => Start(scanRecords))
 
-        val fromTablesWithOptionalLabels = nodeTables
+        val fromTablesWithOptionalLabels = if(labels.isEmpty) {
+          Seq.empty
+        } else {
+          nodeTables
             .filter(_.entityType == CTNode)
             .filter(labels subsetOf _.mapping.optionalLabelKeys.toSet)
             .map { table => Start(table).filterNodeLabels(nodeType, exactLabelMatch) }
+        }
 
         fromTablesWithImpliedLabels ++ fromTablesWithOptionalLabels
       case r: CTRelationship =>

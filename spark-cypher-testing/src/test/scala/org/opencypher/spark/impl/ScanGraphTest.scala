@@ -480,5 +480,14 @@ class ScanGraphTest extends CAPSGraphTest {
         CypherMap("n" -> CAPSNode(2L, Set("Person", "Employee")))
       ))
     }
+
+    it("Supports all node scans") {
+      val graph = caps.readFrom(CAPSNodeTable.fromMapping(mapping, df))
+      graph.nodes("n").toMapsWithCollectedEntities should equal(Bag(
+        CypherMap("n" -> CAPSNode(1L, Set("Person"))),
+        CypherMap("n" -> CAPSNode(2L, Set("Person", "Employee"))),
+        CypherMap("n" -> CAPSNode(3L, Set("Animal")))
+      ))
+    }
   }
 }
