@@ -61,4 +61,57 @@
     </dependency>
 
   </dependencies>
+
+  <build>
+    <plugins>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-shade-plugin</artifactId>
+        <version>${plugin.maven-shade.version}</version>
+        <executions>
+          <!-- run shade goal on package phase -->
+          <execution>
+            <phase>package</phase>
+            <goals>
+              <goal>shade</goal>
+            </goals>
+            <configuration>
+              <shadedArtifactAttached>true</shadedArtifactAttached>
+              <shadedClassifierName>${project.artifact.classifier}</shadedClassifierName>
+              <createDependencyReducedPom>true</createDependencyReducedPom>
+              <artifactSet>
+                <excludes>
+                  <exclude>junit:junit</exclude>
+                  <exclude>jmock:*</exclude>
+                  <exclude>org.scala-lang:*</exclude>
+                  <exclude>org.scalatest:*</exclude>
+                  <exclude>org.scalacheck:*</exclude>
+                  <exclude>org.apache.maven:lib:tests</exclude>
+                  <exclude>commons-beanutils:*</exclude>
+                  <exclude>aopalliance:*</exclude>
+                  <exclude>javax.inject:*</exclude>
+                </excludes>
+              </artifactSet>
+              <filters>
+
+                <filter>
+                  <artifact>*:*</artifact>
+                  <excludes>
+                    <exclude>META-INF/*.SF</exclude>
+                    <exclude>META-INF/*.DSA</exclude>
+                    <exclude>META-INF/*.RSA</exclude>
+                    <!--Exclude Java 9 modules-->
+                    <exclude>**/module-info.class</exclude>
+                    <exclude>META-INF/versions/9/**/*</exclude>
+                  </excludes>
+                </filter>
+
+              </filters>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+    </plugins>
+  </build>
+
 </project>
