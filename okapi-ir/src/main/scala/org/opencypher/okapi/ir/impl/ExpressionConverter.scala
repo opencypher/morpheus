@@ -76,7 +76,6 @@ final class ExpressionConverter(implicit context: IRBuilderContext) {
       if (exprs.size == 1) exprs.head else Ands(exprs.toSet)
     case ast.Not(expr) =>
       Not(convert(expr))(typings(e))
-    // TODO: Does this belong here still?
     case ast.Equals(f: ast.FunctionInvocation, s: ast.StringLiteral) if f.function == functions.Type =>
       HasType(convert(f.args.head), RelType(s.value))(CTBoolean)
     case ast.Equals(lhs, rhs) =>

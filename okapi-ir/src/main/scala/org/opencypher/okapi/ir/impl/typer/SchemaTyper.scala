@@ -323,7 +323,6 @@ object SchemaTyper {
         indexTyp <- process[R](index)
         result <- (listTyp, indexTyp.material) match {
 
-          // TODO: Test all cases
           case (CTList(eltTyp), CTInteger) =>
             recordAndUpdate(expr -> eltTyp.nullable)
 
