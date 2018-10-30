@@ -47,7 +47,7 @@ class SqlPropertyGraphDataSourceTest extends CAPSTestSuite with BeforeAndAfterEa
   private def generateTableName: String = s"view_${Random.alphanumeric take 10 mkString ""}"
 
   private def computePartitionedRowId(rowIndex: Long, partitionStartDelta: Long): Long = {
-    rowIndex + (partitionStartDelta << rowIdSpaceBitsUsedByMonotonicallyIncreasingId)
+     (partitionStartDelta << rowIdSpaceBitsUsedByMonotonicallyIncreasingId) + rowIndex
   }
 
   override protected def beforeEach(): Unit = {
@@ -198,7 +198,7 @@ class SqlPropertyGraphDataSourceTest extends CAPSTestSuite with BeforeAndAfterEa
          |CREATE GRAPH fooGraph WITH GRAPH SCHEMA fooSchema
          |  NODE LABEL SETS (
          |    (Person) FROM $personView ( person_name AS name )
-         |    (Book) FROM $bookView (book_title AS title )
+         |    (Book)   FROM $bookView (book_title AS title )
          |  )
          |  RELATIONSHIP LABEL SETS (
          |    (READS)
@@ -275,7 +275,7 @@ class SqlPropertyGraphDataSourceTest extends CAPSTestSuite with BeforeAndAfterEa
       .createDataFrame(Seq(
         (0L, 23, "startValue", "endValue"),
         (1L, 42, "startValue", "endValue")
-      ))
+      )).repartition(1) // to keep id generation predictable
       .toDF("node_id", "id", "start", "end")
       .write.saveAsTable(s"$databaseName.$nodeView")
     sparkSession
@@ -286,7 +286,7 @@ class SqlPropertyGraphDataSourceTest extends CAPSTestSuite with BeforeAndAfterEa
     val ds = SqlPropertyGraphDataSource(GraphDdl(ddlString), List(SqlDataSourceConfig(HiveFormat, dataSourceName)))(caps)
 
     val nodeId1 = computePartitionedRowId(rowIndex = 0, partitionStartDelta = 0)
-    val nodeId2 = computePartitionedRowId(rowIndex = 0, partitionStartDelta = 1)
+    val nodeId2 = computePartitionedRowId(rowIndex = 1, partitionStartDelta = 0)
 
     ds.graph(fooGraphName).nodes("n").toMapsWithCollectedEntities should equal(Bag(
       CypherMap("n" -> CAPSNode(nodeId1, Set("Node"), CypherMap("id" -> 23, "start" -> "startValue", "end" -> "endValue"))),
@@ -346,7 +346,7 @@ class SqlPropertyGraphDataSourceTest extends CAPSTestSuite with BeforeAndAfterEa
       .toDF("person_id", "person_name")
       .write.saveAsTable(s"$databaseName.$personView")
     sparkSession
-      .createDataFrame(Seq((1L, "1984"), (2L, "Scala with Cats")))
+      .createDataFrame(Seq((1L, "1984"), (2L, "Scala with Cats"))).repartition(1) // to keep id generation predictable
       .toDF("book_id", "book_title")
       .write.saveAsTable(s"$databaseName.$bookView")
     sparkSession
