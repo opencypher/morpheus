@@ -181,7 +181,7 @@ We would love to find out about any [issues](https://github.com/opencypher/cyphe
 
 ## License
 
-The project is licensed under the Apache Software License, Version 2.0, with an extended attribution notice as described in [the license header](license-header.txt).
+The project is licensed under the Apache Software License, Version 2.0, with an extended attribution notice as described in [the license header](licensecheck-config/src/main/resources/NOTICE-header.txt).
 
 ## Copyright
 
