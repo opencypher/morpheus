@@ -51,10 +51,10 @@ trait RelationalCypherGraphFactory[T <: Table[T]] {
     (implicit context: RelationalRuntimeContext[T]): Graph = new SingleTableGraph(drivingTable, schema, tagsUsed)
 
   def unionGraph(graphs: RelationalCypherGraph[T]*)(implicit context: RelationalRuntimeContext[T]): Graph = {
-    unionGraph(computeRetaggings(graphs.map(g => g -> g.tags).toMap))
+    unionGraph(computeRetaggings(graphs.map(g => g -> g.tags)).toList)
   }
 
-  def unionGraph(graphsToReplacements: Map[RelationalCypherGraph[T], Map[Int, Int]])
+  def unionGraph(graphsToReplacements: List[(RelationalCypherGraph[T], Map[Int, Int])])
     (implicit context: RelationalRuntimeContext[T]): Graph = UnionGraph(graphsToReplacements)
 
   def empty: Graph = EmptyGraph()

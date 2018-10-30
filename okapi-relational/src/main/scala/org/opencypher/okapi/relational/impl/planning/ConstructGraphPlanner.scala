@@ -56,7 +56,7 @@ object ConstructGraphPlanner {
       construct.onGraphs match {
         case Nil => relational.Start[T](context.session.emptyGraphQgn) // Empty start
         case one :: Nil => // Just one graph, no union required
-          relational.Start(one, tagStrategy = computeRetaggings(Map(one -> context.resolveGraph(one).tags)))
+          relational.Start(one, tagStrategy = computeRetaggings(List(one -> context.resolveGraph(one).tags)).toMap)
         case several =>
           val onGraphPlans = NonEmptyList.fromListUnsafe(several).map(qgn => relational.Start[T](qgn))
           relational.GraphUnionAll[T](onGraphPlans, construct.qualifiedGraphName)
@@ -73,7 +73,7 @@ object ConstructGraphPlanner {
     val allGraphs = unionTagStrategy.keySet ++ matchGraphs
     val tagsForGraph: Map[QualifiedGraphName, Set[Int]] = allGraphs.map(qgn => qgn -> context.resolveGraph(qgn).tags).toMap
 
-    val constructTagStrategy = computeRetaggings(tagsForGraph, unionTagStrategy)
+    val constructTagStrategy = computeRetaggings(tagsForGraph.toSeq, unionTagStrategy.toSeq).toMap
 
     // Apply aliases in CLONE to input table in order to create the base table, on which CONSTRUCT happens
     val aliasClones = clonedVarsToInputVars
@@ -131,7 +131,7 @@ object ConstructGraphPlanner {
     val graph = if (onGraph == context.session.graphs.empty) {
       context.session.graphs.unionGraph(patternGraph)
     } else {
-      context.session.graphs.unionGraph(Map(identityRetaggings(onGraph), identityRetaggings(patternGraph)))
+      context.session.graphs.unionGraph(List(identityRetaggings(onGraph), identityRetaggings(patternGraph)))
     }
 
     val constructOp = ConstructGraph(inputTablePlan, graph, name, constructTagStrategy, construct, context)

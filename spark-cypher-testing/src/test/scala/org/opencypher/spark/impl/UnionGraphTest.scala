@@ -27,10 +27,8 @@
 package org.opencypher.spark.impl
 
 import org.apache.spark.sql.Row
-import org.opencypher.okapi.relational.api.graph.RelationalCypherGraph
 import org.opencypher.okapi.relational.api.tagging.Tags._
 import org.opencypher.okapi.testing.Bag
-import org.opencypher.spark.impl.table.SparkTable.DataFrameTable
 import org.opencypher.spark.testing.fixture.{GraphConstructionFixture, RecordsVerificationFixture, TeamDataFixture}
 
 class UnionGraphTest extends CAPSGraphTest
@@ -46,6 +44,12 @@ class UnionGraphTest extends CAPSGraphTest
 
   it("supports UNION ALL") {
     testGraph1.unionAll(testGraph2).cypher("""MATCH (n) RETURN DISTINCT id(n)""").records.size should equal(2)
+  }
+
+  it("supports UNION ALL on identical graphs") {
+    val g = initGraph("CREATE ()")
+    val union = g.unionAll(g)
+    union.nodes("n").size shouldBe 2
   }
 
   test("Node scan from single node CAPSRecords") {
