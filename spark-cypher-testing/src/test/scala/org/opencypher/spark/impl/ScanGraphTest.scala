@@ -26,6 +26,7 @@
  */
 package org.opencypher.spark.impl
 
+import org.apache.spark.sql.types.{BooleanType, LongType, StructField, StructType}
 import org.apache.spark.sql.{Row, functions}
 import org.opencypher.okapi.api.io.conversion.{NodeMapping, RelationshipMapping}
 import org.opencypher.okapi.api.types.{CTNode, CTRelationship}
@@ -34,9 +35,11 @@ import org.opencypher.okapi.relational.api.tagging.Tags._
 import org.opencypher.okapi.testing.Bag
 import org.opencypher.okapi.testing.propertygraph.CreateGraphFactory
 import org.opencypher.spark.api.io.{CAPSNodeTable, CAPSRelationshipTable}
-import org.opencypher.spark.api.value.CAPSRelationship
+import org.opencypher.spark.api.value.{CAPSNode, CAPSRelationship}
 import org.opencypher.spark.impl.CAPSConverters._
 import org.opencypher.spark.testing.support.creation.caps.{CAPSScanGraphFactory, CAPSTestGraphFactory}
+
+import scala.collection.JavaConverters._
 
 class ScanGraphTest extends CAPSGraphTest {
 
@@ -418,5 +421,73 @@ class ScanGraphTest extends CAPSGraphTest {
     )
 
     verify(nodes, cols, data)
+  }
+
+  describe("Optional labels") {
+
+    val nodes = Seq(
+      Row(1L, true, false, false),
+      Row(2L, true, true, false),
+      Row(3L, false, false, true)
+    ).toList.asJava
+
+    val schema = StructType(Seq(
+      StructField("id", LongType, false),
+      StructField("Person", BooleanType, false),
+      StructField("Employee", BooleanType, false),
+      StructField("Animal", BooleanType, false)
+    ))
+
+    val df = caps.sparkSession.createDataFrame(nodes, schema)
+
+    val mapping = NodeMapping.on("id")
+      .withOptionalLabel("Person")
+      .withOptionalLabel("Employee")
+      .withOptionalLabel("Animal")
+
+    it("Selects the correct table for optional labels with inexact match") {
+      val graph = caps.readFrom(CAPSNodeTable.fromMapping(mapping, df))
+
+      graph.nodes("n", CTNode("Employee"), false).toMapsWithCollectedEntities should equal(Bag(
+        CypherMap("n" -> CAPSNode(2L, Set("Person", "Employee")))
+      ))
+    }
+
+    it("Selects the correct table for optional labels with exact match") {
+      val graph = caps.readFrom(CAPSNodeTable.fromMapping(mapping, df))
+
+      graph.nodes("n", CTNode("Employee"), true).toMapsWithCollectedEntities shouldBe empty
+    }
+
+    it("Selects the correct tables for implied and optional labels with inexact match") {
+      val graph = caps.readFrom(CAPSNodeTable.fromMapping(mapping, df))
+      graph.nodes("n", CTNode("Person"), false).toMapsWithCollectedEntities should equal(Bag(
+        CypherMap("n" -> CAPSNode(1L, Set("Person"))),
+        CypherMap("n" -> CAPSNode(2L, Set("Person", "Employee")))
+      ))
+    }
+
+    it("Selects the correct tables for implied labels with exact match") {
+      val graph = caps.readFrom(CAPSNodeTable.fromMapping(mapping, df))
+      graph.nodes("n", CTNode("Person"), true).toMapsWithCollectedEntities should equal(Bag(
+        CypherMap("n" -> CAPSNode(1L, Set("Person")))
+      ))
+    }
+
+    it("Selects the correct tables for implied and optional labels with exact match") {
+      val graph = caps.readFrom(CAPSNodeTable.fromMapping(mapping, df))
+      graph.nodes("n", CTNode("Person", "Employee"), true).toMapsWithCollectedEntities should equal(Bag(
+        CypherMap("n" -> CAPSNode(2L, Set("Person", "Employee")))
+      ))
+    }
+
+    it("Supports all node scans") {
+      val graph = caps.readFrom(CAPSNodeTable.fromMapping(mapping, df))
+      graph.nodes("n").toMapsWithCollectedEntities should equal(Bag(
+        CypherMap("n" -> CAPSNode(1L, Set("Person"))),
+        CypherMap("n" -> CAPSNode(2L, Set("Person", "Employee"))),
+        CypherMap("n" -> CAPSNode(3L, Set("Animal")))
+      ))
+    }
   }
 }

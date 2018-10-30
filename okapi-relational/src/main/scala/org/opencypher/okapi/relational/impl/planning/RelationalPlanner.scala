@@ -41,7 +41,6 @@ import org.opencypher.okapi.relational.impl.operators._
 import org.opencypher.okapi.relational.impl.planning.ConstructGraphPlanner._
 import org.opencypher.okapi.relational.impl.table.RecordHeader
 import org.opencypher.okapi.relational.impl.{operators => relational}
-import org.opencypher.okapi.relational.impl.RelationalConverters._
 
 import scala.reflect.runtime.universe.TypeTag
 
@@ -244,7 +243,7 @@ object RelationalPlanner {
     val lhsOp = process[T](lhs)
     val rhsOp = process[T](rhs)
 
-    if(lhs.fields.isEmpty) {
+    if (lhs.fields.isEmpty) {
       rhsOp
     } else {
       val lhsHeader = lhsOp.header
@@ -459,6 +458,34 @@ object RelationalPlanner {
         case entity :: Nil => entity
         case Nil => throw SchemaException(s"Operation requires single entity table, input contains no entities")
         case other => throw SchemaException(s"Operation requires single entity table, found ${other.mkString("[", ", ", "]")}")
+      }
+    }
+
+    def filterNodeLabels(targetType: CTNode, exactLabelMatch: Boolean = false): RelationalOperator[T] = {
+      val entityVar = op.singleEntity
+
+      val labels = targetType.labels
+
+      val labelExpressions: Iterable[HasLabel] = op.header.labelsFor(entityVar)
+
+      val hasColumnForMandatoryLabels = labels.forall { label =>
+        labelExpressions.exists {
+          case HasLabel(_, Label(l)) if l == label => true
+          case _ => false
+        }
+      }
+
+      if (!hasColumnForMandatoryLabels) {
+        implicit val context: RelationalRuntimeContext[T] = op.context
+        relational.Start(op.session.records.empty(op.header))
+      } else {
+        val filterExpressions = labelExpressions.flatMap {
+          case hl@HasLabel(_, label) if labels.contains(label.name) => Some(Equals(hl, TrueLit)(CTBoolean))
+          case other if exactLabelMatch => Some(Equals(other, FalseLit)(CTBoolean))
+          case _ => None
+        }.toSet
+
+        op.filter(Ands(filterExpressions))
       }
     }
 
