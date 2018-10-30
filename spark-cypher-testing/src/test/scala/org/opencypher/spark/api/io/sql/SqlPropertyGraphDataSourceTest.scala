@@ -29,7 +29,7 @@ package org.opencypher.spark.api.io.sql
 import org.opencypher.okapi.api.graph.GraphName
 import org.opencypher.okapi.api.value.CypherValue.CypherMap
 import org.opencypher.okapi.testing.Bag
-import org.opencypher.spark.api.io.HiveFormat
+import org.opencypher.spark.api.io.{HiveFormat, JdbcFormat}
 import org.opencypher.spark.api.value.{CAPSNode, CAPSRelationship}
 import org.opencypher.spark.impl.CAPSFunctions.{partitioned_id_assignment, rowIdSpaceBitsUsedByMonotonicallyIncreasingId}
 import org.opencypher.spark.testing.CAPSTestSuite
@@ -50,13 +50,24 @@ class SqlPropertyGraphDataSourceTest extends CAPSTestSuite with BeforeAndAfterEa
      (partitionStartDelta << rowIdSpaceBitsUsedByMonotonicallyIncreasingId) + rowIndex
   }
 
+  private def createDatabase(name: String) =
+    sparkSession.sql(s"CREATE DATABASE IF NOT EXISTS $name").count()
+
+  private def dropDatabase(name: String) =
+    sparkSession.sql(s"CREATE DATABASE IF NOT EXISTS $name").count()
+
+  private def freshDatabase(name: String) = {
+    dropDatabase(name)
+    createDatabase(name)
+  }
+
   override protected def beforeEach(): Unit = {
     super.beforeEach()
-    sparkSession.sql(s"CREATE DATABASE IF NOT EXISTS $databaseName").count()
+    createDatabase(databaseName)
   }
 
   override protected def afterEach(): Unit = {
-    sparkSession.sql(s"DROP DATABASE IF EXISTS $databaseName CASCADE").count()
+    dropDatabase(databaseName)
     super.afterEach()
   }
 
@@ -387,4 +398,107 @@ class SqlPropertyGraphDataSourceTest extends CAPSTestSuite with BeforeAndAfterEa
     ))
   }
 
+  it("reads nodes from multiple data sources") {
+    val fooView = generateTableName
+    val barView = generateTableName
+
+    val ddlString =
+      s"""
+         |CREATE GRAPH SCHEMA fooSchema
+         | LABEL (Foo { foo : STRING })
+         | LABEL (Bar { bar : INTEGER })
+         | (Foo)
+         | (Bar)
+         |
+         |CREATE GRAPH fooGraph WITH GRAPH SCHEMA fooSchema
+         |  NODE LABEL SETS (
+         |    (Foo) FROM ds1.db1.$fooView
+         |    (Bar) FROM ds2.db2.$barView
+         |  )
+     """.stripMargin
+
+    freshDatabase("db1")
+    freshDatabase("db2")
+    sparkSession
+      .createDataFrame(Seq(Tuple1("Alice")))
+      .toDF("foo")
+      .write.saveAsTable(s"db1.$fooView")
+    sparkSession
+      .createDataFrame(Seq(Tuple1(0L)))
+      .toDF("bar")
+      .write.saveAsTable(s"db2.$barView")
+
+    val configs = List(
+      SqlDataSourceConfig(HiveFormat, "ds1"),
+      SqlDataSourceConfig(HiveFormat, "ds2")
+    )
+    val ds = SqlPropertyGraphDataSource(GraphDdl(ddlString), configs)(caps)
+
+    ds.graph(fooGraphName).nodes("n").toMapsWithCollectedEntities should equal(Bag(
+      CypherMap("n" -> CAPSNode(computePartitionedRowId(rowIndex = 0, partitionStartDelta = 0), Set("Foo"), CypherMap("foo" -> "Alice"))),
+      CypherMap("n" -> CAPSNode(computePartitionedRowId(rowIndex = 0, partitionStartDelta = 1), Set("Bar"), CypherMap("bar" -> 0L)))
+    ))
+  }
+
+  import SqlTestUtils._
+
+  it("reads nodes from hive and h2 data sources") {
+    val fooView = generateTableName
+
+    val ddlString =
+      s"""
+         |CREATE GRAPH SCHEMA fooSchema
+         | LABEL (Foo { foo : STRING })
+         | LABEL (Bar { bar : INTEGER })
+         | (Foo)
+         | (Bar)
+         |
+         |CREATE GRAPH fooGraph WITH GRAPH SCHEMA fooSchema
+         |  NODE LABEL SETS (
+         |    (Foo) FROM ds1.schema1.$fooView
+         |    (Bar) FROM ds2.schema2.barView
+         |  )
+     """.stripMargin
+
+    val configs = List(
+      SqlDataSourceConfig(
+        storageFormat = HiveFormat,
+        dataSourceName = "ds1"
+      ),
+      SqlDataSourceConfig(
+        storageFormat = JdbcFormat,
+        dataSourceName = "ds2",
+        jdbcDriver = Some("org.h2.Driver"),
+        jdbcUri = Some("jdbc:h2:mem:?user=sa&password=1234;DB_CLOSE_DELAY=-1")
+      )
+    )
+
+    // -- Add hive data
+
+    freshDatabase("schema1")
+    sparkSession
+      .createDataFrame(Seq(Tuple1("Alice")))
+      .toDF("foo")
+      .write.saveAsTable(s"schema1.$fooView")
+
+    // -- Add h2 data
+
+    withConnection(configs(1)) { conn =>
+      conn.execute("CREATE SCHEMA schema2;")
+    }
+    sparkSession
+      .createDataFrame(Seq(Tuple1(123L)))
+      .toDF("bar")
+      .saveAsSqlTable(configs(1), "schema2.barView")
+
+    // -- Read graph and validate
+
+    val ds = SqlPropertyGraphDataSource(GraphDdl(ddlString), configs)(caps)
+
+    ds.graph(fooGraphName).nodes("n").toMapsWithCollectedEntities should equal(Bag(
+      CypherMap("n" -> CAPSNode(computePartitionedRowId(rowIndex = 0, partitionStartDelta = 0), Set("Foo"), CypherMap("foo" -> "Alice"))),
+      CypherMap("n" -> CAPSNode(computePartitionedRowId(rowIndex = 0, partitionStartDelta = 1), Set("Bar"), CypherMap("bar" -> 123L)))
+    ))
+
+  }
 }

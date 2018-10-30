@@ -84,6 +84,8 @@
     <dep.scalatest.version>3.0.5</dep.scalatest.version>
     <dep.scalacheck.version>1.13.5</dep.scalacheck.version>
     <dep.spark-measure.version>0.11</dep.spark-measure.version>
+    <dep.h2.version>1.4.196</dep.h2.version>
+
   </properties>
 
   <modules>
