@@ -82,4 +82,31 @@ class pushLabelsIntoScansTest extends BaseTestSuite with RewriterTestSupport {
         |RETURN n
       """.stripMargin)
   }
+
+  test("do not push NOT'ed labels into pattern") {
+    assertRewrite(
+      """MATCH (n)
+        |WHERE NOT n:Foo
+        |RETURN n
+      """.stripMargin,
+      """MATCH (n)
+        |WHERE NOT n:Foo
+        |RETURN n
+      """.stripMargin
+    )
+  }
+
+  test("do not push XOR'ed labels into pattern") {
+    assertRewrite(
+      """MATCH (n)
+        |WHERE n:Foo XOR n:Bar
+        |RETURN n
+      """.stripMargin,
+      """MATCH (n)
+        |WHERE n:Foo XOR n:Bar
+        |RETURN n
+      """.stripMargin
+    )
+  }
+
 }
