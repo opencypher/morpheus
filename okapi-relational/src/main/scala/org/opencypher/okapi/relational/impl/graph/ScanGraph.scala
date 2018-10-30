@@ -79,15 +79,15 @@ class ScanGraph[T <: Table[T] : TypeTag](val scans: Seq[EntityTable[T]], val sch
   // TODO: Express `exactLabelMatch` with type
   private def scansForType(ct: CypherType, exactLabelMatch: Boolean): Seq[RelationalOperator[T]] = {
     ct match {
-      case nodeType @ CTNode(labels, _) =>
+      case nodeType@CTNode(labels, _) =>
         val scans = if (exactLabelMatch) {
           nodeTables.filter(_.entityType == ct)
         } else {
           nodeTables.filter(_.entityType.subTypeOf(ct).isTrue)
         }
-        val fromTablesWithImpliedLabels = scans.map(scanRecords => Start(scanRecords))
+        val startOpsForImpliedLabels = scans.map(scanRecords => Start(scanRecords))
 
-        val fromTablesWithOptionalLabels = if(labels.isEmpty) {
+        val startOpsForOptionalLabels = if (labels.isEmpty) {
           Seq.empty
         } else {
           nodeTables
@@ -96,7 +96,8 @@ class ScanGraph[T <: Table[T] : TypeTag](val scans: Seq[EntityTable[T]], val sch
             .map { table => Start(table).filterNodeLabels(nodeType, exactLabelMatch) }
         }
 
-        fromTablesWithImpliedLabels ++ fromTablesWithOptionalLabels
+        startOpsForImpliedLabels ++ startOpsForOptionalLabels
+
       case r: CTRelationship =>
         relTables
           .filter(relTable => relTable.entityType.couldBeSameTypeAs(ct))
@@ -105,8 +106,6 @@ class ScanGraph[T <: Table[T] : TypeTag](val scans: Seq[EntityTable[T]], val sch
       case other => throw IllegalArgumentException(s"Scan on $other")
     }
   }
-
-
 
   override def nodes(name: String, nodeCypherType: CTNode, exactLabelMatch: Boolean = false): Records = {
     val scan = scanOperator(nodeCypherType, exactLabelMatch)

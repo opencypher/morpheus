@@ -243,7 +243,7 @@ object RelationalPlanner {
     val lhsOp = process[T](lhs)
     val rhsOp = process[T](rhs)
 
-    if(lhs.fields.isEmpty) {
+    if (lhs.fields.isEmpty) {
       rhsOp
     } else {
       val lhsHeader = lhsOp.header
@@ -461,14 +461,12 @@ object RelationalPlanner {
       }
     }
 
-    def filterNodeLabels(targetType: CTNode, exactLabelMatch : Boolean = false): RelationalOperator[T] = {
-      op.singleEntity
+    def filterNodeLabels(targetType: CTNode, exactLabelMatch: Boolean = false): RelationalOperator[T] = {
+      val entityVar = op.singleEntity
+
       val labels = targetType.labels
 
-      val labelExpressions: Iterable[Expr] =
-        op.header.expressions.collect {
-          case hl:HasLabel  => hl
-        }
+      val labelExpressions: Iterable[HasLabel] = op.header.labelsFor(entityVar)
 
       val hasColumnForMandatoryLabels = labels.forall { label =>
         labelExpressions.exists {
@@ -476,20 +474,19 @@ object RelationalPlanner {
           case _ => false
         }
       }
+
       if (!hasColumnForMandatoryLabels) {
         implicit val context: RelationalRuntimeContext[T] = op.context
-        return relational.Start(op.session.records.empty(op.header))
+        relational.Start(op.session.records.empty(op.header))
+      } else {
+        val filterExpressions = labelExpressions.flatMap {
+          case hl@HasLabel(_, label) if labels.contains(label.name) => Some(Equals(hl, TrueLit)(CTBoolean))
+          case other if exactLabelMatch => Some(Equals(other, FalseLit)(CTBoolean))
+          case _ => None
+        }.toSet
+
+        op.filter(Ands(filterExpressions))
       }
-
-      val filterExpressions = labelExpressions.flatMap {
-        case hl@ HasLabel(_, label) if labels.contains(label.name) => Some(Equals(hl, TrueLit)(CTBoolean))
-        case other if exactLabelMatch => Some(Equals(other, FalseLit)(CTBoolean))
-        case _ => None
-      }.toSet
-
-      val labelFilters = Ands(filterExpressions)
-
-      op.filter(labelFilters)
     }
 
     def filterRelTypes(targetType: CTRelationship): RelationalOperator[T] = {
