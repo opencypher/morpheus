@@ -39,7 +39,7 @@ object TagSupport {
     graphs: Seq[(GraphKey, Set[Int])],
     fixedRetaggings: Seq[(GraphKey, Map[Int, Int])] = Seq.empty
   ): Seq[(GraphKey, Map[Int, Int])] = {
-    val graphsToRetag = graphs.filterNot { case (qgn, _) => fixedRetaggings.contains(qgn) }
+    val graphsToRetag = graphs.filterNot { case (qgn, _) => fixedRetaggings.exists(_._1 == qgn) }
     val usedTags = fixedRetaggings.map(_._2).flatMap(_.values).toSet
     val (result, _) = graphsToRetag.foldLeft((fixedRetaggings, usedTags)) {
       case ((graphReplacements, previousTags), (graphId, rightTags)) =>
