@@ -106,9 +106,9 @@ class MetaTest extends BaseTestSuite {
   }
 
   /**
-    * Check by testing if the license-header.txt file can be found. This works even if the root folder has a different name.
+    * Check by testing if the CONTRIBUTING.adoc file can be found. This works even if the root folder has a different name.
     */
-  def isRootFolderPath(path: String): Boolean = Paths.get(path, ".travis.yml").toFile.exists
+  def isRootFolderPath(path: String): Boolean = Paths.get(path, "CONTRIBUTING.adoc").toFile.exists
 
   def extractMarkdownScalaSourceBlocks(lines: Vector[String]): Seq[ScalaSourceCode] = {
     val currentParsingState: (Vector[ScalaSourceCode], Option[Vector[String]]) = (Vector.empty, None)
