@@ -25,37 +25,26 @@
  * Cypher that are not yet approved by the openCypher community".
  */
 package org.opencypher.spark.api.io.sql
-import java.sql.{Connection, DriverManager, ResultSet, Statement}
 
-import org.apache.spark.sql.DataFrame
+import org.apache.spark.sql.{DataFrame, SaveMode}
+import org.opencypher.spark.api.io.HiveFormat
+import org.opencypher.spark.testing.fixture.HiveFixture
 
-object SqlTestUtils {
+class HiveSqlPropertyGraphDataSourceAcceptanceTest extends SqlPropertyGraphDataSourceAcceptanceTest with HiveFixture {
 
-  implicit class ConnOps(conn: Connection) {
-    def run[T](code: Statement => T): T = {
-      val stmt = conn.createStatement()
-      try { code(stmt) } finally { stmt.close() }
-    }
-    def execute(sql: String): Boolean = conn.run(_.execute(sql))
-    def query(sql: String): ResultSet = conn.run(_.executeQuery(sql))
-    def update(sql: String): Int = conn.run(_.executeUpdate(sql))
+  override def beforeAll(): Unit = {
+    super.beforeAll()
+    createHiveDatabase(databaseName)
   }
 
-  def withConnection[T](cfg: SqlDataSourceConfig)(code: Connection => T): T = {
-    Class.forName(cfg.jdbcDriver.get)
-    val conn = DriverManager.getConnection(cfg.jdbcUri.get)
-    try { code(conn) } finally { conn.close() }
+  override def afterAll(): Unit = {
+    dropHiveDatabase(databaseName)
+    super.afterAll()
   }
 
-  implicit class DataframeSqlOps(df: DataFrame) {
-    def saveAsSqlTable(cfg: SqlDataSourceConfig, tableName: String): Unit =
-      df.write
-        .format("jdbc")
-        .option("url", cfg.jdbcUri.getOrElse(throw SqlDataSourceConfigException("Missing JDBC URI")))
-        .option("driver", cfg.jdbcDriver.getOrElse(throw SqlDataSourceConfigException("Missing JDBC Driver")))
-        .option("fetchSize", cfg.jdbcFetchSize)
-        .option("dbtable", tableName)
-        .save()
-  }
+  override def sqlDataSourceConfig: SqlDataSourceConfig =
+    SqlDataSourceConfig(HiveFormat, dataSourceName)
 
+  override def writeTable(df: DataFrame, tableName: String): Unit =
+    df.write.mode(SaveMode.Overwrite).saveAsTable(tableName)
 }

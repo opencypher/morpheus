@@ -24,22 +24,32 @@
  * described as "implementation extensions to Cypher" or as "proposed changes to
  * Cypher that are not yet approved by the openCypher community".
  */
-package org.opencypher.spark.testing.fixture
+package org.opencypher.spark.api.io.sql
 
-import org.opencypher.okapi.testing.BaseTestSuite
+import org.apache.spark.sql.DataFrame
+import org.opencypher.spark.api.io.JdbcFormat
+import org.opencypher.spark.testing.fixture.H2Fixture
 
-trait HiveFixture extends SparkSessionFixture {
+class H2SqlPropertyGraphDataSourceAcceptanceTest extends SqlPropertyGraphDataSourceAcceptanceTest with H2Fixture {
 
-  self: BaseTestSuite =>
-
-  def createHiveDatabase(name: String): Unit =
-    sparkSession.sql(s"CREATE DATABASE IF NOT EXISTS $name").count()
-
-  def dropHiveDatabase(name: String): Unit =
-    sparkSession.sql(s"DROP DATABASE IF EXISTS $name CASCADE").count()
-
-  def freshHiveDatabase(name: String): Unit = {
-    dropHiveDatabase(name)
-    createHiveDatabase(name)
+  override def beforeAll(): Unit = {
+    super.beforeAll()
+    createH2Database(sqlDataSourceConfig, databaseName)
   }
+
+  override def afterAll(): Unit = {
+    dropH2Database(sqlDataSourceConfig, databaseName)
+    super.afterAll()
+  }
+
+  override def sqlDataSourceConfig: SqlDataSourceConfig =
+    SqlDataSourceConfig(
+      storageFormat = JdbcFormat,
+      dataSourceName = dataSourceName,
+      jdbcDriver = Some("org.h2.Driver"),
+      jdbcUri = Some("jdbc:h2:mem:?user=sa&password=1234;DB_CLOSE_DELAY=-1")
+    )
+
+  override def writeTable(df: DataFrame, tableName: String): Unit =
+    df.saveAsSqlTable(sqlDataSourceConfig, tableName)
 }

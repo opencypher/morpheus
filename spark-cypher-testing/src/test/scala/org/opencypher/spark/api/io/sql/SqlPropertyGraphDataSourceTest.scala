@@ -34,10 +34,10 @@ import org.opencypher.spark.api.io.{HiveFormat, JdbcFormat}
 import org.opencypher.spark.api.value.{CAPSNode, CAPSRelationship}
 import org.opencypher.spark.impl.CAPSFunctions.{partitioned_id_assignment, rowIdSpaceBitsUsedByMonotonicallyIncreasingId}
 import org.opencypher.spark.testing.CAPSTestSuite
-import org.opencypher.spark.testing.fixture.HiveFixture
+import org.opencypher.spark.testing.fixture.{H2Fixture, HiveFixture}
 import org.opencypher.sql.ddl.GraphDdl
 
-class SqlPropertyGraphDataSourceTest extends CAPSTestSuite with HiveFixture {
+class SqlPropertyGraphDataSourceTest extends CAPSTestSuite with HiveFixture with H2Fixture {
 
   private val dataSourceName = "fooDataSource"
   private val databaseName = "fooDatabase"
@@ -49,11 +49,11 @@ class SqlPropertyGraphDataSourceTest extends CAPSTestSuite with HiveFixture {
 
   override protected def beforeAll(): Unit = {
     super.beforeAll()
-    createDatabase(databaseName)
+    createHiveDatabase(databaseName)
   }
 
   override protected def afterAll(): Unit = {
-    dropDatabase(databaseName)
+    dropHiveDatabase(databaseName)
     super.afterAll()
   }
 
@@ -101,7 +101,7 @@ class SqlPropertyGraphDataSourceTest extends CAPSTestSuite with HiveFixture {
       .toDF("foo")
       .write.mode(SaveMode.Overwrite).saveAsTable(s"$databaseName.$fooView")
 
-    val ds = SqlPropertyGraphDataSource(GraphDdl(ddlString), List(SqlDataSourceConfig(HiveFormat, dataSourceName)))(caps)
+    val ds = SqlPropertyGraphDataSource(GraphDdl(ddlString), List(SqlDataSourceConfig(HiveFormat, dataSourceName)))
 
     ds.graph(fooGraphName).nodes("n").toMapsWithCollectedEntities should equal(Bag(
       CypherMap("n" -> CAPSNode(0, Set("Foo"), CypherMap("foo" -> "Alice")))
@@ -130,7 +130,7 @@ class SqlPropertyGraphDataSourceTest extends CAPSTestSuite with HiveFixture {
       .toDF("col1", "col2")
       .write.mode(SaveMode.Overwrite).mode(SaveMode.Overwrite).saveAsTable(s"$databaseName.$fooView")
 
-    val ds = SqlPropertyGraphDataSource(GraphDdl(ddlString), List(SqlDataSourceConfig(HiveFormat, dataSourceName)))(caps)
+    val ds = SqlPropertyGraphDataSource(GraphDdl(ddlString), List(SqlDataSourceConfig(HiveFormat, dataSourceName)))
 
     ds.graph(fooGraphName).nodes("n").toMapsWithCollectedEntities should equal(Bag(
       CypherMap("n" -> CAPSNode(0, Set("Foo"), CypherMap("key1" -> 42L, "key2" -> "Alice")))
@@ -167,7 +167,7 @@ class SqlPropertyGraphDataSourceTest extends CAPSTestSuite with HiveFixture {
       .toDF("bar")
       .write.mode(SaveMode.Overwrite).saveAsTable(s"$databaseName.$barView")
 
-    val ds = SqlPropertyGraphDataSource(GraphDdl(ddlString), List(SqlDataSourceConfig(HiveFormat, dataSourceName)))(caps)
+    val ds = SqlPropertyGraphDataSource(GraphDdl(ddlString), List(SqlDataSourceConfig(HiveFormat, dataSourceName)))
 
     ds.graph(fooGraphName).nodes("n").toMapsWithCollectedEntities should equal(Bag(
       CypherMap("n" -> CAPSNode(computePartitionedRowId(rowIndex = 0, partitionStartDelta = 0), Set("Foo"), CypherMap("foo" -> "Alice"))),
@@ -220,7 +220,7 @@ class SqlPropertyGraphDataSourceTest extends CAPSTestSuite with HiveFixture {
       .toDF("person", "book", "rating")
       .write.mode(SaveMode.Overwrite).saveAsTable(s"$databaseName.$readsView")
 
-    val ds = SqlPropertyGraphDataSource(GraphDdl(ddlString), List(SqlDataSourceConfig(HiveFormat, dataSourceName)))(caps)
+    val ds = SqlPropertyGraphDataSource(GraphDdl(ddlString), List(SqlDataSourceConfig(HiveFormat, dataSourceName)))
 
     val personId = computePartitionedRowId(rowIndex = 0, partitionStartDelta = 0)
     val bookId = computePartitionedRowId(rowIndex = 0, partitionStartDelta = 1)
@@ -280,7 +280,7 @@ class SqlPropertyGraphDataSourceTest extends CAPSTestSuite with HiveFixture {
       .toDF("source_id", "target_id", "id", "start", "end")
       .write.mode(SaveMode.Overwrite).saveAsTable(s"$databaseName.$relsView")
 
-    val ds = SqlPropertyGraphDataSource(GraphDdl(ddlString), List(SqlDataSourceConfig(HiveFormat, dataSourceName)))(caps)
+    val ds = SqlPropertyGraphDataSource(GraphDdl(ddlString), List(SqlDataSourceConfig(HiveFormat, dataSourceName)))
 
     val nodeId1 = computePartitionedRowId(rowIndex = 0, partitionStartDelta = 0)
     val nodeId2 = computePartitionedRowId(rowIndex = 1, partitionStartDelta = 0)
@@ -355,7 +355,7 @@ class SqlPropertyGraphDataSourceTest extends CAPSTestSuite with HiveFixture {
       .toDF("p_id", "b_id", "rates")
       .write.mode(SaveMode.Overwrite).saveAsTable(s"$databaseName.$readsView2")
 
-    val ds = SqlPropertyGraphDataSource(GraphDdl(ddlString), List(SqlDataSourceConfig(HiveFormat, dataSourceName)))(caps)
+    val ds = SqlPropertyGraphDataSource(GraphDdl(ddlString), List(SqlDataSourceConfig(HiveFormat, dataSourceName)))
 
     val personId = computePartitionedRowId(rowIndex = 0, partitionStartDelta = 0)
     val book1Id = computePartitionedRowId(rowIndex = 0, partitionStartDelta = 1)
@@ -403,8 +403,8 @@ class SqlPropertyGraphDataSourceTest extends CAPSTestSuite with HiveFixture {
          |  )
      """.stripMargin
 
-    freshDatabase("db1")
-    freshDatabase("db2")
+    freshHiveDatabase("db1")
+    freshHiveDatabase("db2")
     sparkSession
       .createDataFrame(Seq(Tuple1("Alice")))
       .toDF("foo")
@@ -418,15 +418,13 @@ class SqlPropertyGraphDataSourceTest extends CAPSTestSuite with HiveFixture {
       SqlDataSourceConfig(HiveFormat, "ds1"),
       SqlDataSourceConfig(HiveFormat, "ds2")
     )
-    val ds = SqlPropertyGraphDataSource(GraphDdl(ddlString), configs)(caps)
+    val ds = SqlPropertyGraphDataSource(GraphDdl(ddlString), configs)
 
     ds.graph(fooGraphName).nodes("n").toMapsWithCollectedEntities should equal(Bag(
       CypherMap("n" -> CAPSNode(computePartitionedRowId(rowIndex = 0, partitionStartDelta = 0), Set("Foo"), CypherMap("foo" -> "Alice"))),
       CypherMap("n" -> CAPSNode(computePartitionedRowId(rowIndex = 0, partitionStartDelta = 1), Set("Bar"), CypherMap("bar" -> 0L)))
     ))
   }
-
-  import SqlTestUtils._
 
   it("reads nodes from hive and h2 data sources") {
     val fooView = "foo_view"
@@ -446,22 +444,19 @@ class SqlPropertyGraphDataSourceTest extends CAPSTestSuite with HiveFixture {
          |  )
      """.stripMargin
 
-    val configs = List(
-      SqlDataSourceConfig(
-        storageFormat = HiveFormat,
-        dataSourceName = "ds1"
-      ),
-      SqlDataSourceConfig(
-        storageFormat = JdbcFormat,
-        dataSourceName = "ds2",
-        jdbcDriver = Some("org.h2.Driver"),
-        jdbcUri = Some("jdbc:h2:mem:?user=sa&password=1234;DB_CLOSE_DELAY=-1")
-      )
+    val hiveDataSourceConfig = SqlDataSourceConfig(
+      storageFormat = HiveFormat,
+      dataSourceName = "ds1"
     )
-
+    val h2DataSourceConfig = SqlDataSourceConfig(
+      storageFormat = JdbcFormat,
+      dataSourceName = "ds2",
+      jdbcDriver = Some("org.h2.Driver"),
+      jdbcUri = Some("jdbc:h2:mem:?user=sa&password=1234;DB_CLOSE_DELAY=-1")
+    )
     // -- Add hive data
 
-    freshDatabase("schema1")
+    freshHiveDatabase("schema1")
     sparkSession
       .createDataFrame(Seq(Tuple1("Alice")))
       .toDF("foo")
@@ -469,17 +464,15 @@ class SqlPropertyGraphDataSourceTest extends CAPSTestSuite with HiveFixture {
 
     // -- Add h2 data
 
-    withConnection(configs(1)) { conn =>
-      conn.execute("CREATE SCHEMA schema2;")
-    }
+    freshH2Database(h2DataSourceConfig, "schema2")
     sparkSession
       .createDataFrame(Seq(Tuple1(123L)))
       .toDF("bar")
-      .saveAsSqlTable(configs(1), "schema2.barView")
+      .saveAsSqlTable(h2DataSourceConfig, "schema2.barView")
 
     // -- Read graph and validate
 
-    val ds = SqlPropertyGraphDataSource(GraphDdl(ddlString), configs)(caps)
+    val ds = SqlPropertyGraphDataSource(GraphDdl(ddlString), List(hiveDataSourceConfig, h2DataSourceConfig))
 
     ds.graph(fooGraphName).nodes("n").toMapsWithCollectedEntities should equal(Bag(
       CypherMap("n" -> CAPSNode(computePartitionedRowId(rowIndex = 0, partitionStartDelta = 0), Set("Foo"), CypherMap("foo" -> "Alice"))),

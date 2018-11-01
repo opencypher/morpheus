@@ -26,36 +26,32 @@
  */
 package org.opencypher.spark.api.io.sql
 
-import org.apache.spark.sql.SaveMode
+import org.apache.spark.sql.DataFrame
 import org.opencypher.okapi.api.graph.GraphName
 import org.opencypher.okapi.api.io.PropertyGraphDataSource
+import org.opencypher.okapi.impl.util.StringEncodingUtilities._
 import org.opencypher.okapi.testing.propertygraph.InMemoryTestGraph
 import org.opencypher.spark.api.CAPSSession
-import org.opencypher.spark.api.io.HiveFormat
 import org.opencypher.spark.api.io.util.CAPSGraphExport._
 import org.opencypher.spark.impl.DataFrameOps._
 import org.opencypher.spark.testing.CAPSTestSuite
 import org.opencypher.spark.testing.api.io.CAPSPGDSAcceptance
-import org.opencypher.spark.testing.fixture.HiveFixture
 import org.opencypher.spark.testing.support.creation.caps.CAPSScanGraphFactory
 import org.opencypher.sql.ddl.GraphDdl
 
 import scala.io.Source
 
-class SqlPropertyGraphDataSourceAcceptanceTest extends CAPSTestSuite with CAPSPGDSAcceptance with HiveFixture {
+abstract class SqlPropertyGraphDataSourceAcceptanceTest extends CAPSTestSuite with CAPSPGDSAcceptance {
+
+  def sqlDataSourceConfig: SqlDataSourceConfig
+
+  def writeTable(df: DataFrame, tableName: String): Unit
 
   override def initSession(): CAPSSession = caps
-    val databaseName = "SQLPGDS"
 
-  override def beforeAll(): Unit = {
-    super.beforeAll()
-    createDatabase(databaseName)
-  }
+  val dataSourceName = "DS"
 
-  override def afterAll(): Unit = {
-    dropDatabase(databaseName)
-    super.afterAll()
-  }
+  val databaseName = "SQLPGDS"
 
   override def create(
     graphName: GraphName,
@@ -66,30 +62,25 @@ class SqlPropertyGraphDataSourceAcceptanceTest extends CAPSTestSuite with CAPSPG
     val scanGraph = CAPSScanGraphFactory(testGraph)
     val schema = scanGraph.schema
 
-    val dsConfig = SqlDataSourceConfig(
-      storageFormat = HiveFormat,
-      dataSourceName = "DS1"
-    )
-
     val ddlString = Source
-      .fromURI(getClass.getResource(s"/sql/${getClass.getSimpleName}.ddl").toURI)
+      .fromURI(getClass.getResource("/sql/SqlPropertyGraphDataSourceAcceptanceTest.ddl").toURI)
       .getLines()
-      .mkString("\n")
+      .mkString(System.lineSeparator())
 
     val graphDdl = GraphDdl(ddlString)
 
     schema.labelCombinations.combos.foreach { labelCombination =>
-      val nodeDf = scanGraph.canonicalNodeTable(labelCombination).removePrefix("property_")
+      val nodeDf = scanGraph.canonicalNodeTable(labelCombination).removePrefix(propertyPrefix)
       val tableName = databaseName + "." + labelCombination.mkString("_")
-      nodeDf.write.mode(SaveMode.Overwrite).saveAsTable(tableName)
+      writeTable(nodeDf, tableName)
     }
 
     schema.relationshipTypes.foreach { relType =>
-      val relDf = scanGraph.canonicalRelationshipTable(relType).removePrefix("property_")
+      val relDf = scanGraph.canonicalRelationshipTable(relType).removePrefix(propertyPrefix)
       val tableName = databaseName + "." + relType
-      relDf.write.mode(SaveMode.Overwrite).saveAsTable(tableName)
+      writeTable(relDf, tableName)
     }
 
-    SqlPropertyGraphDataSource(graphDdl, List(dsConfig))
+    SqlPropertyGraphDataSource(graphDdl, List(sqlDataSourceConfig))
   }
 }

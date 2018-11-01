@@ -3,7 +3,7 @@
 --
 
 -- Below means <datasourceName.schemaName>
-SET SCHEMA DS1.SQLPGDS;
+SET SCHEMA DS.SQLPGDS;
 
 -- =========================================
 -- SCHEMA
