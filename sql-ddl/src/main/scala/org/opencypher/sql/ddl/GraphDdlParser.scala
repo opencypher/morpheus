@@ -188,6 +188,7 @@ object GraphDdlParser {
   // ==== Graph ====
 
   val propertyToColumn: P[(String, String)] = P(identifier.! ~ AS ~/ identifier.!).map { case (column, propertyKey) => propertyKey -> column }
+  // TODO: avoid toMap to not accidently swallow duplicate property keys
   val propertyMappingDefinition: P[PropertyToColumnMappingDefinition] = P("(" ~ propertyToColumn.rep(min = 1, sep = ",").map(_.toMap) ~/ ")")
 
   val viewId: P[List[String]] = identifier.!.repX(min = 1, max = 3, sep = ".").map(_.toList)
