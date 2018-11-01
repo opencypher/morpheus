@@ -132,35 +132,6 @@ class GraphDdlTest extends FunSpec with Matchers {
     e.getFullMessage should (include("fooGraph") and include("Person") and include("personView"))
   }
 
-  it("fails on duplicate relationship mappings") {
-    val e = the [GraphDdlException] thrownBy GraphDdl("""
-      |SET SCHEMA a.b
-      |CREATE GRAPH SCHEMA fooSchema
-      | LABEL (Person)
-      | LABEL (Book)
-      | LABEL (READS)
-      | (Person)
-      | (Book)
-      | [READS]
-      |
-      |CREATE GRAPH fooGraph WITH GRAPH SCHEMA fooSchema
-      |  NODE LABEL SETS (
-      |    (Person) FROM personView
-      |    (Book)   FROM bookView
-      |  )
-      |  RELATIONSHIP LABEL SETS (
-      |    (READS)
-      |      FROM readsView e
-      |        START NODES LABEL SET (Person) FROM personView p JOIN ON p.p = e.p
-      |        END   NODES LABEL SET (Book)   FROM bookView   b JOIN ON e.b = b.b
-      |      FROM readsView e
-      |        START NODES LABEL SET (Person) FROM personView p JOIN ON p.p = e.p
-      |        END   NODES LABEL SET (Book)   FROM bookView   b JOIN ON e.b = b.b
-      |  )
-    """.stripMargin)
-    e.getFullMessage should (include("fooGraph") and include("READS") and include("readsView"))
-  }
-
   it("fails on duplicate global labels") {
     val e = the [GraphDdlException] thrownBy GraphDdl("""
       |CATALOG CREATE LABEL (Person)
