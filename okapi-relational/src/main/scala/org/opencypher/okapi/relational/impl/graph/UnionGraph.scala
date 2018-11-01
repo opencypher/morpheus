@@ -39,8 +39,10 @@ import org.opencypher.okapi.relational.impl.planning.RelationalPlanner._
 import scala.reflect.runtime.universe.TypeTag
 
 // TODO: This should be a planned tree of physical operators instead of a graph
-final case class UnionGraph[T <: Table[T] : TypeTag](graphsToReplacements: Map[RelationalCypherGraph[T], Map[Int, Int]])
+final case class UnionGraph[T <: Table[T] : TypeTag](graphsToReplacements: Seq[(RelationalCypherGraph[T], Map[Int, Int])])
   (implicit context: RelationalRuntimeContext[T]) extends RelationalCypherGraph[T] {
+
+  private val (graphs, replacements) = graphsToReplacements.unzip
 
   override implicit val session: RelationalCypherSession[T] = context.session
 
@@ -50,12 +52,12 @@ final case class UnionGraph[T <: Table[T] : TypeTag](graphsToReplacements: Map[R
 
   require(graphsToReplacements.nonEmpty, "Union requires at least one graph")
 
-  override def tables: Seq[T] = graphsToReplacements.keys.flatMap(_.tables).toSeq
+  override def tables: Seq[T] = graphs.flatMap(_.tables)
 
-  override lazy val tags: Set[Int] = graphsToReplacements.values.flatMap(_.values).toSet
+  override lazy val tags: Set[Int] = replacements.flatMap(_.values).toSet
 
   override lazy val schema: Schema = {
-    graphsToReplacements.keys.map(g => g.schema).foldLeft(Schema.empty)(_ ++ _)
+    graphs.map(g => g.schema).foldLeft(Schema.empty)(_ ++ _)
   }
 
   override def toString = s"UnionGraph(graphs=[${graphsToReplacements.mkString(",")}])"
@@ -66,11 +68,12 @@ final case class UnionGraph[T <: Table[T] : TypeTag](graphsToReplacements: Map[R
   ): RelationalOperator[T] = {
     val targetEntity = Var("")(entityType)
     val targetEntityHeader = schema.headerForEntity(targetEntity, exactLabelMatch)
-    val alignedScans = graphsToReplacements.keys
-      .map { graph =>
-        val scanOp = graph.scanOperator(entityType, exactLabelMatch)
-        val retagOp = scanOp.retagVariable(targetEntity, graphsToReplacements(graph))
-        retagOp.alignWith(targetEntity, targetEntityHeader)
+    val alignedScans = graphsToReplacements
+      .map {
+        case (graph, replacement) =>
+          val scanOp = graph.scanOperator(entityType, exactLabelMatch)
+          val retagOp = scanOp.retagVariable(targetEntity, replacement)
+          retagOp.alignWith(targetEntity, targetEntityHeader)
       }
     // TODO: find out if a graph returns empty records and skip union operation
     Distinct(alignedScans.reduce(TabularUnionAll(_, _)), Set(targetEntity))

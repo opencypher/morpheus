@@ -524,12 +524,12 @@ final case class GraphUnionAll[T <: Table[T] : TypeTag](
 
   import org.opencypher.okapi.relational.api.tagging.TagSupport._
 
-  override lazy val tagStrategy: Map[QualifiedGraphName, Map[Int, Int]] = computeRetaggings(inputs.toList.map(r => r.graphName -> r.graph.tags).toMap)
+  override lazy val tagStrategy: Map[QualifiedGraphName, Map[Int, Int]] = computeRetaggings(inputs.toList.map(r => r.graphName -> r.graph.tags)).toMap
 
   override lazy val graphName: QualifiedGraphName = qgn
 
   override lazy val graph: RelationalCypherGraph[T] = {
-    val graphWithTagStrategy = inputs.toList.map(i => i.graph -> tagStrategy(i.graphName)).toMap
+    val graphWithTagStrategy = inputs.toList.map(i => i.graph -> tagStrategy(i.graphName))
     session.graphs.unionGraph(graphWithTagStrategy)
   }
 
