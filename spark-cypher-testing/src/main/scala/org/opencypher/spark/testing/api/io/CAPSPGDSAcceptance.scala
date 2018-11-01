@@ -27,6 +27,7 @@
 package org.opencypher.spark.testing.api.io
 
 import org.opencypher.okapi.api.graph.GraphName
+import org.opencypher.okapi.impl.exception.UnsupportedOperationException
 import org.opencypher.okapi.relational.api.graph.RelationalCypherGraph
 import org.opencypher.okapi.relational.api.tagging.Tags._
 import org.opencypher.okapi.testing.{BaseTestSuite, PGDSAcceptance}

@@ -226,8 +226,8 @@ object GraphDdl {
         .keyBy(_.key),
       edgeToViewMappings = graph.definition.relationshipMappings
         .flatMap(em => toEdgeToViewMappings(graphType, graph.maybeSetSchema, em))
-        .validateDistinctBy(_.key, "Duplicate mapping")
-        .keyBy(_.key)
+//        .validateDistinctBy(_.key, "Duplicate mapping")
+//        .keyBy(_.key)
     )
   }
 
@@ -364,7 +364,7 @@ case class Graph(
   name: GraphName,
   graphType: GraphType,
   nodeToViewMappings: Map[NodeViewKey, NodeToViewMapping],
-  edgeToViewMappings: Map[EdgeViewKey, EdgeToViewMapping]
+  edgeToViewMappings: List[EdgeToViewMapping]
 )
 
 object QualifiedViewId {

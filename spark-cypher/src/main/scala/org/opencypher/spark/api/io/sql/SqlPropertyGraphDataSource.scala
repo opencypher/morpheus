@@ -30,7 +30,7 @@ import org.apache.spark.sql.DataFrame
 import org.opencypher.okapi.api.graph.{GraphName, PropertyGraph}
 import org.opencypher.okapi.api.io.conversion.{NodeMapping, RelationshipMapping}
 import org.opencypher.okapi.api.schema.Schema
-import org.opencypher.okapi.impl.exception.{IllegalArgumentException, UnsupportedOperationException}
+import org.opencypher.okapi.impl.exception.{GraphNotFoundException, IllegalArgumentException, UnsupportedOperationException}
 import org.opencypher.okapi.impl.util.StringEncodingUtilities._
 import org.opencypher.spark.api.CAPSSession
 import org.opencypher.spark.api.io.{CAPSNodeTable, CAPSRelationshipTable, HiveFormat, JdbcFormat}
@@ -54,7 +54,7 @@ case class SqlPropertyGraphDataSource(
   private val endColumn = "end"
 
   override def graph(graphName: GraphName): PropertyGraph = {
-    val ddlGraph = graphDdl.graphs(graphName)
+    val ddlGraph = graphDdl.graphs.getOrElse(graphName, throw GraphNotFoundException(s"Graph $graphName not found"))
 
     // Build CAPS node tables
     val (nodeViewKeys, nodeDfs) = ddlGraph.nodeToViewMappings.mapValues(nvm => readSqlTable(nvm.view)).unzip
@@ -66,21 +66,21 @@ case class SqlPropertyGraphDataSource(
     }.toSeq
 
     // Build CAPS relationship tables
-    val (relViewKeys, relDfs) = ddlGraph.edgeToViewMappings.mapValues(evm => readSqlTable(evm.view)).unzip
-    val relDataFramesWithIds = relViewKeys.zip(addUniqueIds(relDfs.toSeq, idColumn)).toMap
+    val (relViewKeys, relDfs) = ddlGraph.edgeToViewMappings.map(evm => evm.key -> readSqlTable(evm.view)).unzip
+    val relDataFramesWithIds = relViewKeys.zip(addUniqueIds(relDfs, idColumn)).toMap
 
-    val relationshipTables = ddlGraph.edgeToViewMappings.map {
-      case (edgeViewKey, edgeToViewMapping) =>
-        val relDf = relDataFramesWithIds(edgeViewKey)
-        val startNodeDf = nodeDataFramesWithIds(edgeToViewMapping.startNode.nodeViewKey)
-        val endNodeDf = nodeDataFramesWithIds(edgeToViewMapping.endNode.nodeViewKey)
+    val relationshipTables = ddlGraph.edgeToViewMappings.map { edgeToViewMapping =>
+      val edgeViewKey = edgeToViewMapping.key
+      val relDf = relDataFramesWithIds(edgeViewKey)
+      val startNodeDf = nodeDataFramesWithIds(edgeToViewMapping.startNode.nodeViewKey)
+      val endNodeDf = nodeDataFramesWithIds(edgeToViewMapping.endNode.nodeViewKey)
 
-        val relsWithStartNodeId = joinNodeAndEdgeDf(startNodeDf, relDf, edgeToViewMapping.startNode.joinPredicates, startColumn)
-        val relsWithEndNodeId = joinNodeAndEdgeDf(endNodeDf, relsWithStartNodeId, edgeToViewMapping.endNode.joinPredicates, endColumn)
+      val relsWithStartNodeId = joinNodeAndEdgeDf(startNodeDf, relDf, edgeToViewMapping.startNode.joinPredicates, startColumn)
+      val relsWithEndNodeId = joinNodeAndEdgeDf(endNodeDf, relsWithStartNodeId, edgeToViewMapping.endNode.joinPredicates, endColumn)
 
-        val relationshipMapping = createRelationshipMapping(edgeViewKey.edgeType.head, edgeToViewMapping.propertyMappings)
+      val relationshipMapping = createRelationshipMapping(edgeViewKey.edgeType.head, edgeToViewMapping.propertyMappings)
 
-        CAPSRelationshipTable.fromMapping(relationshipMapping, relsWithEndNodeId)
+      CAPSRelationshipTable.fromMapping(relationshipMapping, relsWithEndNodeId)
     }
 
     caps.graphs.create(nodeTables.head, nodeTables.tail ++ relationshipTables: _*)

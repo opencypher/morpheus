@@ -95,14 +95,14 @@ class GraphDdlTest extends FunSpec with Matchers {
               view = bookKey.qualifiedViewId,
               propertyMappings = Map("title" -> "book_title"))
           ),
-          Map(
-            readsKey1 -> EdgeToViewMapping(
+          List(
+            EdgeToViewMapping(
               edgeType = Set("READS"),
               view = readsKey1.qualifiedViewId,
               startNode = StartNode(personKey1, List(Join("person_id1", "person"))),
               endNode = EndNode(bookKey, List(Join("book_id", "book"))),
               propertyMappings = Map("rating" -> "value1")),
-            readsKey2 -> EdgeToViewMapping(
+            EdgeToViewMapping(
               edgeType = Set("READS"),
               view = readsKey2.qualifiedViewId,
               startNode = StartNode(personKey2, List(Join("person_id2", "person"))),

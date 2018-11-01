@@ -31,7 +31,7 @@ import org.opencypher.okapi.api.io.PropertyGraphDataSource
 import org.opencypher.okapi.api.schema.Schema
 import org.opencypher.okapi.api.types.{CTBoolean, CTInteger, CTString}
 import org.opencypher.okapi.api.value.CypherValue.{CypherMap, CypherNull}
-import org.opencypher.okapi.impl.exception.{GraphAlreadyExistsException, GraphNotFoundException}
+import org.opencypher.okapi.impl.exception.{GraphAlreadyExistsException, GraphNotFoundException, UnsupportedOperationException}
 import org.opencypher.okapi.testing.Bag._
 import org.opencypher.okapi.testing.propertygraph.{CreateGraphFactory, InMemoryTestGraph}
 import org.scalatest.BeforeAndAfterEach

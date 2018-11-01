@@ -33,12 +33,13 @@ import org.opencypher.spark.api.io.{HiveFormat, JdbcFormat}
 import org.opencypher.spark.api.value.{CAPSNode, CAPSRelationship}
 import org.opencypher.spark.impl.CAPSFunctions.{partitioned_id_assignment, rowIdSpaceBitsUsedByMonotonicallyIncreasingId}
 import org.opencypher.spark.testing.CAPSTestSuite
+import org.opencypher.spark.testing.fixture.HiveFixture
 import org.opencypher.sql.ddl.GraphDdl
 import org.scalatest.BeforeAndAfterEach
 
 import scala.util.Random
 
-class SqlPropertyGraphDataSourceTest extends CAPSTestSuite with BeforeAndAfterEach {
+class SqlPropertyGraphDataSourceTest extends CAPSTestSuite with BeforeAndAfterEach with HiveFixture {
 
   private val dataSourceName = "fooDataSource"
   private val databaseName = "fooDatabase"
@@ -48,17 +49,6 @@ class SqlPropertyGraphDataSourceTest extends CAPSTestSuite with BeforeAndAfterEa
 
   private def computePartitionedRowId(rowIndex: Long, partitionStartDelta: Long): Long = {
      (partitionStartDelta << rowIdSpaceBitsUsedByMonotonicallyIncreasingId) + rowIndex
-  }
-
-  private def createDatabase(name: String) =
-    sparkSession.sql(s"CREATE DATABASE IF NOT EXISTS $name").count()
-
-  private def dropDatabase(name: String) =
-    sparkSession.sql(s"CREATE DATABASE IF NOT EXISTS $name").count()
-
-  private def freshDatabase(name: String) = {
-    dropDatabase(name)
-    createDatabase(name)
   }
 
   override protected def beforeEach(): Unit = {
