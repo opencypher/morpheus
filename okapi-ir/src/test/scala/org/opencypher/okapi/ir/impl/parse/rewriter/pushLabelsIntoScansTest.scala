@@ -85,6 +85,18 @@ class pushLabelsIntoScansTest extends BaseTestSuite with RewriterTestSupport {
       """.stripMargin)
   }
 
+  test("push label predicates from complex where predicate into pattern") {
+    assertRewrite(
+      """MATCH (n)
+        |WHERE n:Bar AND n.age > 25
+        |RETURN n
+      """.stripMargin,
+      """MATCH (n:Bar)
+        |WHERE n.age > 25
+        |RETURN n
+      """.stripMargin)
+  }
+
   test("do not push OR'ed labels into pattern") {
     assertRewrite(
       """MATCH (n)
