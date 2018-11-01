@@ -51,7 +51,7 @@ private[ddl] object GraphDdlException {
   def malformed(desc: String, identifier: String): Nothing =
     throw MalformedIdentifier(s"$desc: $identifier")
 
-  def contextualize[T](msg: String)(block: => T): T =
+  def tryWithContext[T](msg: String)(block: => T): T =
     try { block } catch { case e: Exception => throw ContextualizedException(msg, Some(e)) }
 
   def causeChain(e: Throwable): List[Throwable] = causeChain(e, Set.empty)

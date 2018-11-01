@@ -55,6 +55,9 @@ object DataFrameOps {
     * @return a sequence of DataFrames with unique long identifiers
     */
   def addUniqueIds(dataFrames: Seq[DataFrame], idColumnName: String): Seq[DataFrame] = {
+    // We need to know how many partitions a DF has in order to avoid writing into the id space of another DF.
+    // This is why require a running sum of number of partitions because we add the DF-specific sum to the offset that
+    // Sparks monotonically_increasing_id adds.
     val dfPartitionCounts = dataFrames.map(_.rdd.getNumPartitions)
     val dfPartitionStartDeltas = dfPartitionCounts.scan(0)(_ + _).dropRight(1) // drop last delta, as we don't need it
 

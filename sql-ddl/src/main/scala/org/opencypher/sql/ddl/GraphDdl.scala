@@ -31,6 +31,7 @@ import org.opencypher.okapi.api.schema.{PropertyKeys, Schema, SchemaPattern}
 import org.opencypher.sql.ddl.{GraphDdlException => Err}
 import org.opencypher.sql.ddl.GraphDdl._
 import org.opencypher.sql.ddl.GraphDdlAst.{ColumnIdentifier, PropertyToColumnMappingDefinition}
+import org.opencypher.sql.ddl.GraphDdlException.tryWithContext
 
 import scala.language.higherKinds
 
@@ -110,14 +111,14 @@ object GraphDdl {
       .validateDistinctBy(_.name, "Duplicate graph type name")
       .keyBy(_.name).mapValues(_.schemaDefinition)
       .map { case (name, schema) =>
-        name -> Err.contextualize(s"Error in graph type: $name")(toGraphType(globalLabelDefinitions, schema)) }
+        name -> tryWithContext(s"Error in graph type: $name")(toGraphType(globalLabelDefinitions, schema)) }
       .view.force // mapValues creates a view, but we want validation now
 
     val inlineGraphTypes = ddlParts.graphDefinitions.map(_.definition)
       .keyBy(_.name)
       .mapValues(_.localSchemaDefinition)
       .map { case (name, schema) =>
-        name -> Err.contextualize(s"Error in graph type of graph: $name")(toGraphType(globalLabelDefinitions, schema)) }
+        name -> tryWithContext(s"Error in graph type of graph: $name")(toGraphType(globalLabelDefinitions, schema)) }
 
     val graphs = ddlParts.graphDefinitions
       .map(graphDefinition => toGraph(inlineGraphTypes, graphTypes, graphDefinition))
@@ -147,7 +148,7 @@ object GraphDdl {
 
     val schemaWithNodes = (nodeDefinitionsFromPatterns ++ schemaDefinition.nodeDefinitions).foldLeft(Schema.empty) {
       case (currentSchema, labelCombo) =>
-        Err.contextualize(s"Error for label combination (${labelCombo.mkString(",")})") {
+        tryWithContext(s"Error for label combination (${labelCombo.mkString(",")})") {
           labelCombo
             .flatMap(label => labelDefinitions.getOrFail(label, "Unresolved label").properties)
             .groupBy { case (key, tpe) => key }.mapValues(_.map { case (key, tpe) => key } )
@@ -212,7 +213,7 @@ object GraphDdl {
     inlineTypes: Map[String, GraphType],
     graphTypes: Map[String, GraphType],
     graph: GraphDefinitionWithContext
-  ): Graph = Err.contextualize(s"Error in graph: ${graph.definition.name}") {
+  ): Graph = tryWithContext(s"Error in graph: ${graph.definition.name}") {
     val graphType = graph.definition.maybeSchemaName
       .map(schemaName => graphTypes.getOrFail(schemaName, "Unresolved schema name"))
       .getOrElse(inlineTypes.getOrFail(graph.definition.name, "Unresolved schema name"))
@@ -237,10 +238,10 @@ object GraphDdl {
     nmd: NodeMappingDefinition
   ): Seq[NodeToViewMapping] = {
     nmd.nodeToViewDefinitions.map { nvd =>
-      Err.contextualize(s"Error in node mapping for: ${nmd.labelNames.mkString(",")}") {
+      tryWithContext(s"Error in node mapping for: ${nmd.labelNames.mkString(",")}") {
         val viewId = toQualifiedViewId(maybeSetSchema, nvd.viewId)
         val nodeKey = NodeViewKey(nmd.labelNames, viewId)
-        Err.contextualize(s"Error in node mapping for: $nodeKey") {
+        tryWithContext(s"Error in node mapping for: $nodeKey") {
           NodeToViewMapping(
             nodeType = nodeKey.nodeType,
             view = nodeKey.qualifiedViewId,
@@ -257,10 +258,10 @@ object GraphDdl {
     rmd: RelationshipMappingDefinition
   ): Seq[EdgeToViewMapping] = {
     rmd.relationshipToViewDefinitions.map { rvd =>
-      Err.contextualize(s"Error in relationship mapping for: ${rmd.relType}") {
+      tryWithContext(s"Error in relationship mapping for: ${rmd.relType}") {
         val viewId = toQualifiedViewId(maybeSetSchema, rvd.viewDefinition.viewId)
         val edgeKey = EdgeViewKey(Set(rmd.relType), viewId)
-        Err.contextualize(s"Error in relationship mapping for: $edgeKey") {
+        tryWithContext(s"Error in relationship mapping for: $edgeKey") {
           EdgeToViewMapping(
             edgeType = edgeKey.edgeType,
             view = edgeKey.qualifiedViewId,
