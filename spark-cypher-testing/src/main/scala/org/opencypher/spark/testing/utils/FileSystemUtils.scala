@@ -24,28 +24,17 @@
  * described as "implementation extensions to Cypher" or as "proposed changes to
  * Cypher that are not yet approved by the openCypher community".
  */
-package org.opencypher.spark.testing.fixture
+package org.opencypher.spark.testing.utils
 
-import java.nio.file.{Files, Paths}
+import java.nio.file.{Files, Path}
 
-import org.apache.spark.sql.SparkSession
-import org.opencypher.okapi.testing.{BaseTestFixture, BaseTestSuite}
-import org.opencypher.spark.testing.TestSparkSession
-import org.opencypher.spark.testing.utils.FileSystemUtils._
+import scala.collection.JavaConverters._
 
-trait SparkSessionFixture extends BaseTestFixture {
-  self: BaseTestSuite =>
+object FileSystemUtils {
 
-  implicit lazy val sparkSession: SparkSession = initSparkSession
+  def deleteDirectory(path: Path): Unit = Files.walk(path).iterator().asScala.toList
+    .reverse
+    .map(_.toFile)
+    .foreach(_.delete())
 
-  def initSparkSession: SparkSession = TestSparkSession.instance
-
-  override protected def afterAll(): Unit = {
-    val warehouseDir = sparkSession.conf.get("spark.sql.warehouse.dir")
-    val path = Paths.get(warehouseDir)
-    if (Files.exists(path)) {
-      deleteDirectory(path)
-    }
-    super.afterAll()
-  }
 }
