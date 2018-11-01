@@ -55,6 +55,9 @@ class LogicalPlannerTest extends BaseTestSuite with IrConstruction {
   val varG = Var("g")(CTNode("Group"))
   val varR = Var("r")(CTRelationship)
 
+  val aLabelPredicate = HasLabel(varA, Label("Administrator"))(CTBoolean)
+
+
   val emptySqm: SolvedQueryModel = SolvedQueryModel.empty
 
   it("converts load graph block") {
@@ -73,12 +76,13 @@ class LogicalPlannerTest extends BaseTestSuite with IrConstruction {
 
     val block = matchBlock(pattern)
 
-    val scan1 = NodeScan(irFieldA, leafPlan, emptySqm.withField(irFieldA))
+
+    val scan1 = NodeScan(irFieldA, leafPlan, emptySqm.withField(irFieldA).withPredicate(aLabelPredicate))
     val scan2 = NodeScan(irFieldB, leafPlan, emptySqm.withField(irFieldB))
     val ir = irFor(block)
     val result = plan(ir)
 
-    val expected = Expand(irFieldA, irFieldR, irFieldB, Directed, scan1, scan2, SolvedQueryModel(Set(irFieldA, irFieldB, irFieldR)))
+    val expected = Expand(irFieldA, irFieldR, irFieldB, Directed, scan1, scan2, SolvedQueryModel(Set(irFieldA, irFieldB, irFieldR), Set(aLabelPredicate)))
 
     result should equalWithoutResult(expected)
   }
@@ -93,8 +97,8 @@ class LogicalPlannerTest extends BaseTestSuite with IrConstruction {
     val block = matchBlock(pattern)
     val ir = irFor(block)
 
-    val scan = NodeScan(irFieldA, leafPlan, emptySqm.withField(irFieldA))
-    val expandInto = ExpandInto(irFieldA, irFieldR, irFieldA, Directed, scan, SolvedQueryModel(Set(irFieldA, irFieldR)))
+    val scan = NodeScan(irFieldA, leafPlan, emptySqm.withField(irFieldA).withPredicate(aLabelPredicate))
+    val expandInto = ExpandInto(irFieldA, irFieldR, irFieldA, Directed, scan, SolvedQueryModel(Set(irFieldA, irFieldR), Set(aLabelPredicate)))
 
     plan(ir) should equalWithoutResult(expandInto)
   }
