@@ -53,6 +53,7 @@ object TestSparkSession {
 
     conf.set("spark.sql.codegen.wholeStage", "true")
     conf.set("spark.sql.shuffle.partitions", "5")
+    conf.set("spark.sql.hive.metastore.jars", "maven")
     //    setting for debug
     //    conf.set("spark.sql.shuffle.partitions", "1")
     //    conf.set("spark.default.parallelism", "1")
