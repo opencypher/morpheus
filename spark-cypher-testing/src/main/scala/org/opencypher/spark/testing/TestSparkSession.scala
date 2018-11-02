@@ -85,6 +85,8 @@ object TestSparkSession {
       case null => Array.empty[URL]
       case urlClassLoader: URLClassLoader =>
         println(s"found a URL classloader: $urlClassLoader")
+        val urls = urlClassLoader.getURLs
+        println(s"it had ${urls.length} urls: ${urls.mkString("\n\t")}")
         urlClassLoader.getURLs ++ allJars(urlClassLoader.getParent)
       case other =>
         println(s"found a non-URL classloader: $other")
@@ -101,8 +103,6 @@ object TestSparkSession {
 
     val jars = allJars(classLoader)
 
-    println(classLoader.getClass.getCanonicalName)
-    println(classLoader.getParent)
-    println(jars.mkString("these are the jars: ", "\n", ""))
+    println(jars.mkString("all the jars: \n\t", "\n\t", ""))
   }
 }
