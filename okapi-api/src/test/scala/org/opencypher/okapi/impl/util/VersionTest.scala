@@ -26,10 +26,47 @@
  */
 package org.opencypher.okapi.impl.util
 
+import java.net.{URL, URLClassLoader}
+
 import org.opencypher.okapi.impl.exception.IllegalArgumentException
 import org.scalatest.{FunSpec, Matchers}
 
 class VersionTest extends FunSpec with Matchers {
+
+  private def debugStuff() = {
+    def allJars(classLoader: ClassLoader): Array[URL] = classLoader match {
+      case null => Array.empty[URL]
+      case urlClassLoader: URLClassLoader =>
+        println(s"found a URL classloader: $urlClassLoader")
+        val urls = urlClassLoader.getURLs
+        println(s"it had ${urls.length} urls: ${urls.mkString("\n\t")}")
+        urlClassLoader.getURLs ++ allJars(urlClassLoader.getParent)
+      case other =>
+        println(s"found a non-URL classloader: $other")
+        allJars(other.getParent)
+    }
+
+    val classLoader: ClassLoader = if (Thread.currentThread().getContextClassLoader == null) {
+      println("selecting this class' classloader")
+      getClass.getClassLoader
+    } else {
+      println("selecting context classloader")
+      Thread.currentThread().getContextClassLoader
+    }
+
+    val jars = allJars(classLoader)
+
+    println(jars.mkString("all the jars: \n\t", "\n\t", ""))
+  }
+
+  it("debug prints") {
+
+    println("LOOK FOR ME")
+
+    debugStuff()
+  }
+
+
   describe("parsing") {
     it("parses two valued version numbers") {
       Version("1.0") should equal(Version(1,0))
