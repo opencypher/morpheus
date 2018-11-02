@@ -41,10 +41,12 @@
   */
 package org.opencypher.spark.testing
 
+import java.net.{URL, URLClassLoader}
 import java.util.UUID
 
 import org.apache.spark.SparkConf
 import org.apache.spark.sql.SparkSession
+import org.apache.spark.util.Utils
 
 object TestSparkSession {
 
@@ -53,6 +55,9 @@ object TestSparkSession {
 
     conf.set("spark.sql.codegen.wholeStage", "true")
     conf.set("spark.sql.shuffle.partitions", "5")
+
+    debugStuff()
+
     //    setting for debug
     //    conf.set("spark.sql.shuffle.partitions", "1")
     //    conf.set("spark.default.parallelism", "1")
@@ -73,5 +78,31 @@ object TestSparkSession {
 
     session.sparkContext.setLogLevel("WARN")
     session
+  }
+
+  private def debugStuff() = {
+    def allJars(classLoader: ClassLoader): Array[URL] = classLoader match {
+      case null => Array.empty[URL]
+      case urlClassLoader: URLClassLoader =>
+        println(s"found a URL classloader: $urlClassLoader")
+        urlClassLoader.getURLs ++ allJars(urlClassLoader.getParent)
+      case other =>
+        println(s"found a non-URL classloader: $other")
+        allJars(other.getParent)
+    }
+
+    val classLoader: ClassLoader = if (Thread.currentThread().getContextClassLoader == null) {
+      println("selecting spark classloader")
+      SparkSession.getClass.getClassLoader
+    } else {
+      println("selecting context classloader")
+      Thread.currentThread().getContextClassLoader
+    }
+
+    val jars = allJars(classLoader)
+
+    println(classLoader.getClass.getCanonicalName)
+    println(classLoader.getParent)
+    println(jars.mkString("these are the jars: ", "\n", ""))
   }
 }
