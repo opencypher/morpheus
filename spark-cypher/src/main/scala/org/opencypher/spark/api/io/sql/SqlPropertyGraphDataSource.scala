@@ -29,15 +29,17 @@ package org.opencypher.spark.api.io.sql
 import org.apache.spark.sql.DataFrame
 import org.opencypher.okapi.api.graph.{GraphName, PropertyGraph}
 import org.opencypher.okapi.api.io.conversion.{NodeMapping, RelationshipMapping}
-import org.opencypher.okapi.api.schema.Schema
 import org.opencypher.okapi.impl.exception.{GraphNotFoundException, IllegalArgumentException, UnsupportedOperationException}
 import org.opencypher.okapi.impl.util.StringEncodingUtilities._
 import org.opencypher.spark.api.CAPSSession
+import org.opencypher.spark.api.io.AbstractPropertyGraphDataSource._
 import org.opencypher.spark.api.io.GraphEntity.sourceIdKey
 import org.opencypher.spark.api.io.Relationship.{sourceEndNodeKey, sourceStartNodeKey}
 import org.opencypher.spark.api.io._
 import org.opencypher.spark.impl.DataFrameOps._
 import org.opencypher.spark.impl.io.CAPSPropertyGraphDataSource
+import org.opencypher.spark.schema.CAPSSchema
+import org.opencypher.spark.schema.CAPSSchema._
 import org.opencypher.sql.ddl.GraphDdl.PropertyMappings
 import org.opencypher.sql.ddl._
 
@@ -49,15 +51,18 @@ case class SqlPropertyGraphDataSource(
   override def hasGraph(graphName: GraphName): Boolean = graphDdl.graphs.contains(graphName)
 
   override def graph(graphName: GraphName): PropertyGraph = {
+
     val ddlGraph = graphDdl.graphs.getOrElse(graphName, throw GraphNotFoundException(s"Graph $graphName not found"))
+    val capsSchema = ddlGraph.graphType
 
     // Build CAPS node tables
     val (nodeViewKeys, nodeDfs) = ddlGraph.nodeToViewMappings.mapValues(nvm => readSqlTable(nvm.view)).unzip
     val nodeDataFramesWithIds = nodeViewKeys.zip(addUniqueIds(nodeDfs.toSeq, sourceIdKey)).toMap
     val nodeTables = nodeDataFramesWithIds.map {
       case (nodeViewKey, nodeDf) =>
-        val nodeMapping = createNodeMapping(nodeViewKey.nodeType, ddlGraph.nodeToViewMappings(nodeViewKey).propertyMappings)
-        CAPSNodeTable.fromMapping(nodeMapping, nodeDf)
+        CAPSNodeTable.fromMapping(
+          createNodeMapping(nodeViewKey.nodeType, ddlGraph.nodeToViewMappings(nodeViewKey).propertyMappings),
+          nodeDf.setNullability(nodeColsWithCypherType(capsSchema, nodeViewKey.nodeType)))
     }.toSeq
 
     // Build CAPS relationship tables
@@ -73,9 +78,9 @@ case class SqlPropertyGraphDataSource(
       val relsWithStartNodeId = joinNodeAndEdgeDf(startNodeDf, relDf, edgeToViewMapping.startNode.joinPredicates, sourceStartNodeKey)
       val relsWithEndNodeId = joinNodeAndEdgeDf(endNodeDf, relsWithStartNodeId, edgeToViewMapping.endNode.joinPredicates, sourceEndNodeKey)
 
-      val relationshipMapping = createRelationshipMapping(edgeViewKey.edgeType.head, edgeToViewMapping.propertyMappings)
-
-      CAPSRelationshipTable.fromMapping(relationshipMapping, relsWithEndNodeId)
+      CAPSRelationshipTable.fromMapping(
+        createRelationshipMapping(edgeViewKey.edgeType.head, edgeToViewMapping.propertyMappings),
+        relsWithEndNodeId.setNullability(relColsWithCypherType(capsSchema, edgeViewKey.edgeType.head)))
     }
 
     caps.graphs.create(nodeTables.head, nodeTables.tail ++ relationshipTables: _*)
@@ -166,7 +171,7 @@ case class SqlPropertyGraphDataSource(
     }
   }
 
-  override def schema(name: GraphName): Option[Schema] = graphDdl.graphs.get(name).map(_.graphType)
+  override def schema(name: GraphName): Option[CAPSSchema] = graphDdl.graphs.get(name).map(_.graphType.asCaps)
 
   override def store(name: GraphName, graph: PropertyGraph): Unit = unsupported("storing a graph")
 

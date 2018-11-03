@@ -276,7 +276,7 @@ class SqlPropertyGraphDataSourceTest extends CAPSTestSuite with HiveFixture with
       .toDF("node_id", "id", "start", "end")
       .write.mode(SaveMode.Overwrite).saveAsTable(s"$databaseName.$nodesView")
     sparkSession
-      .createDataFrame(Seq((0L, 1L, 1984, "startValue", "endValue")))
+      .createDataFrame(Seq((0L, 1L, 1984L, "startValue", "endValue")))
       .toDF("source_id", "target_id", "id", "start", "end")
       .write.mode(SaveMode.Overwrite).saveAsTable(s"$databaseName.$relsView")
 
@@ -296,7 +296,7 @@ class SqlPropertyGraphDataSourceTest extends CAPSTestSuite with HiveFixture with
         startId = nodeId1,
         endId = nodeId2,
         relType = "REL",
-        properties = CypherMap("id" -> 1984, "start" -> "startValue", "end" -> "endValue")))
+        properties = CypherMap("id" -> 1984L, "start" -> "startValue", "end" -> "endValue")))
     ))
   }
 
