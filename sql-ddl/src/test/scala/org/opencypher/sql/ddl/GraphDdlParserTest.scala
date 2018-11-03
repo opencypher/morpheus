@@ -87,6 +87,16 @@ class GraphDdlParserTest extends BaseTestSuite with MockitoSugar with TestNameFi
   val emptyList: List[Nothing] = List.empty[Nothing]
   val emptySchemaDef: SchemaDefinition = SchemaDefinition()
 
+  describe("set schema") {
+    it("parses SET SCHEMA foo.bar") {
+      success(setSchemaDefinition, SetSchemaDefinition("foo", "bar"))
+    }
+
+    it("parses SET SCHEMA foo.bar;") {
+      success(setSchemaDefinition, SetSchemaDefinition("foo", "bar"))
+    }
+  }
+
   describe("property types") {
     it("parses STRING") {
       success(propertyType, CTString)

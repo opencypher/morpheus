@@ -270,8 +270,8 @@ class SqlPropertyGraphDataSourceTest extends CAPSTestSuite with HiveFixture with
 
     sparkSession
       .createDataFrame(Seq(
-        (0L, 23, "startValue", "endValue"),
-        (1L, 42, "startValue", "endValue")
+        (0L, 23L, "startValue", "endValue"),
+        (1L, 42L, "startValue", "endValue")
       )).repartition(1) // to keep id generation predictable
       .toDF("node_id", "id", "start", "end")
       .write.mode(SaveMode.Overwrite).saveAsTable(s"$databaseName.$nodesView")
