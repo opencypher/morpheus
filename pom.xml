@@ -356,7 +356,6 @@
         <configuration>
           <reportsDirectory>${project.build.directory}/surefire-reports</reportsDirectory>
           <junitxml>.</junitxml>
-          <forkMode>never</forkMode>
           <filereports>WDF TestSuite.txt</filereports>
           <tagsToExclude>CAPSPatternGraphFactory</tagsToExclude>
           <!-- Enable full exception stack traces -->
