@@ -27,10 +27,11 @@
 package org.opencypher.spark.api.util
 
 import org.opencypher.okapi.api.util.ZeppelinSupport._
+import org.opencypher.spark.impl.acceptance.DefaultGraphInit
 import org.opencypher.spark.testing.CAPSTestSuite
 import org.opencypher.spark.testing.fixture.TeamDataFixture
 
-class ZeppelinSupportTest extends CAPSTestSuite with TeamDataFixture {
+class ZeppelinSupportTest extends CAPSTestSuite with TeamDataFixture  with DefaultGraphInit {
   // scalastyle:off line.contains.tab
   it("supports Zeppelin table representation") {
     val graph = caps.graphs.create(personTable)
@@ -48,201 +49,82 @@ class ZeppelinSupportTest extends CAPSTestSuite with TeamDataFixture {
   // scalastyle:on line.contains.tab
 
   it("can render a graph from records") {
-    val graph = caps.graphs.create(personTable, knowsTable)
+    val graph = initGraph(
+      """
+        |CREATE (a:Person {val1: 1, val2: "foo"})
+        |CREATE (b:Person:Swedish {val1: 2, val2: "bar"})
+        |CREATE (c:Person {val1: 3, val2: "baz"})
+        |CREATE (a)-[:KNOWS {since: 2018}]->(b)
+        |CREATE (a)-[:KNOWS {since: 2018}]->(c)
+        |CREATE (b)-[:KNOWS {since: 2018}]->(c)
+      """.stripMargin)
     val result = graph.cypher("MATCH (p:Person)-[k:KNOWS]->(p2:Person) RETURN p, k, p2")
+
     val asGraph = result.records.toZeppelinGraph
 
     val expected = """{
                      |  "nodes": [
                      |    {
-                     |      "id": "1",
-                     |      "label": "Person",
-                     |      "labels": [
-                     |        "Person",
-                     |        "Swedish"
-                     |      ],
-                     |      "data": {
-                     |        "luckyNumber": "23",
-                     |        "name": "Mats"
-                     |      }
-                     |    },
-                     |    {
-                     |      "id": "4",
-                     |      "label": "Person",
-                     |      "labels": [
-                     |        "Person"
-                     |      ],
-                     |      "data": {
-                     |        "luckyNumber": "9",
-                     |        "name": "Stefan"
-                     |      }
-                     |    },
-                     |    {
-                     |      "id": "1",
-                     |      "label": "Person",
-                     |      "labels": [
-                     |        "Person",
-                     |        "Swedish"
-                     |      ],
-                     |      "data": {
-                     |        "luckyNumber": "23",
-                     |        "name": "Mats"
-                     |      }
-                     |    },
-                     |    {
-                     |      "id": "3",
-                     |      "label": "Person",
-                     |      "labels": [
-                     |        "Person"
-                     |      ],
-                     |      "data": {
-                     |        "luckyNumber": "1337",
-                     |        "name": "Max"
-                     |      }
-                     |    },
-                     |    {
-                     |      "id": "1",
-                     |      "label": "Person",
-                     |      "labels": [
-                     |        "Person",
-                     |        "Swedish"
-                     |      ],
-                     |      "data": {
-                     |        "luckyNumber": "23",
-                     |        "name": "Mats"
-                     |      }
-                     |    },
-                     |    {
                      |      "id": "2",
                      |      "label": "Person",
                      |      "labels": [
                      |        "Person"
                      |      ],
                      |      "data": {
-                     |        "luckyNumber": "42",
-                     |        "name": "Martin"
+                     |        "val1": "3",
+                     |        "val2": "baz"
                      |      }
                      |    },
                      |    {
-                     |      "id": "2",
+                     |      "id": "1",
+                     |      "label": "Swedish",
+                     |      "labels": [
+                     |        "Person",
+                     |        "Swedish"
+                     |      ],
+                     |      "data": {
+                     |        "val1": "2",
+                     |        "val2": "bar"
+                     |      }
+                     |    },
+                     |    {
+                     |      "id": "0",
                      |      "label": "Person",
                      |      "labels": [
                      |        "Person"
                      |      ],
                      |      "data": {
-                     |        "luckyNumber": "42",
-                     |        "name": "Martin"
-                     |      }
-                     |    },
-                     |    {
-                     |      "id": "4",
-                     |      "label": "Person",
-                     |      "labels": [
-                     |        "Person"
-                     |      ],
-                     |      "data": {
-                     |        "luckyNumber": "9",
-                     |        "name": "Stefan"
-                     |      }
-                     |    },
-                     |    {
-                     |      "id": "2",
-                     |      "label": "Person",
-                     |      "labels": [
-                     |        "Person"
-                     |      ],
-                     |      "data": {
-                     |        "luckyNumber": "42",
-                     |        "name": "Martin"
-                     |      }
-                     |    },
-                     |    {
-                     |      "id": "3",
-                     |      "label": "Person",
-                     |      "labels": [
-                     |        "Person"
-                     |      ],
-                     |      "data": {
-                     |        "luckyNumber": "1337",
-                     |        "name": "Max"
-                     |      }
-                     |    },
-                     |    {
-                     |      "id": "3",
-                     |      "label": "Person",
-                     |      "labels": [
-                     |        "Person"
-                     |      ],
-                     |      "data": {
-                     |        "luckyNumber": "1337",
-                     |        "name": "Max"
-                     |      }
-                     |    },
-                     |    {
-                     |      "id": "4",
-                     |      "label": "Person",
-                     |      "labels": [
-                     |        "Person"
-                     |      ],
-                     |      "data": {
-                     |        "luckyNumber": "9",
-                     |        "name": "Stefan"
+                     |        "val1": "1",
+                     |        "val2": "foo"
                      |      }
                      |    }
                      |  ],
                      |  "edges": [
                      |    {
-                     |      "id": "3",
-                     |      "source": "1",
-                     |      "target": "4",
-                     |      "label": "KNOWS",
-                     |      "data": {
-                     |        "since": "2015"
-                     |      }
-                     |    },
-                     |    {
-                     |      "id": "2",
-                     |      "source": "1",
-                     |      "target": "3",
-                     |      "label": "KNOWS",
-                     |      "data": {
-                     |        "since": "2016"
-                     |      }
-                     |    },
-                     |    {
-                     |      "id": "1",
+                     |      "id": "5",
                      |      "source": "1",
                      |      "target": "2",
                      |      "label": "KNOWS",
                      |      "data": {
-                     |        "since": "2017"
-                     |      }
-                     |    },
-                     |    {
-                     |      "id": "5",
-                     |      "source": "2",
-                     |      "target": "4",
-                     |      "label": "KNOWS",
-                     |      "data": {
-                     |        "since": "2013"
+                     |        "since": "2018"
                      |      }
                      |    },
                      |    {
                      |      "id": "4",
-                     |      "source": "2",
-                     |      "target": "3",
+                     |      "source": "0",
+                     |      "target": "2",
                      |      "label": "KNOWS",
                      |      "data": {
-                     |        "since": "2016"
+                     |        "since": "2018"
                      |      }
                      |    },
                      |    {
-                     |      "id": "6",
-                     |      "source": "3",
-                     |      "target": "4",
+                     |      "id": "3",
+                     |      "source": "0",
+                     |      "target": "1",
                      |      "label": "KNOWS",
                      |      "data": {
-                     |        "since": "2016"
+                     |        "since": "2018"
                      |      }
                      |    }
                      |  ],

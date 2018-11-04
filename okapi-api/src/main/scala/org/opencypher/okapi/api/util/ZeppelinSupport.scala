@@ -151,7 +151,7 @@ object ZeppelinSupport {
         row.value.collect {
           case (key, _: CypherNode[_]) => key
         }
-      }.getOrElse(Seq.empty).toSet
+      }.getOrElse(Seq.empty)
 
       val relCols = data.headOption.map { row =>
         row.value.collect {
@@ -159,8 +159,17 @@ object ZeppelinSupport {
         }
       }.getOrElse(Seq.empty).toSet
 
-      val nodes = data.flatMap { row => nodeCols.map(row(_).cast[CypherNode[_]]) }
-      val rels = data.flatMap { row => relCols.map(row(_).cast[CypherRelationship[_]]) }
+      val nodes = data
+        .flatMap { row => nodeCols.map(row(_).cast[CypherNode[_]]) }
+        .groupBy(_.id)
+        .values
+        .map(_.head)
+
+      val rels = data
+        .flatMap { row => relCols.map(row(_).cast[CypherRelationship[_]]) }
+        .groupBy(_.id)
+        .values
+        .map(_.head)
 
       val labels = nodes.flatMap(_.labels).toSet
       val types = rels.map(_.relType).toSet
