@@ -28,7 +28,7 @@ package org.opencypher.spark.api.io.sql
 
 import org.apache.spark.sql.DataFrame
 import org.opencypher.okapi.api.graph.{GraphName, PropertyGraph}
-import org.opencypher.okapi.api.io.conversion.{NodeMapping, RelationshipMapping}
+import org.opencypher.okapi.api.io.conversion.{EntityMapping, NodeMapping, RelationshipMapping}
 import org.opencypher.okapi.impl.exception.{GraphNotFoundException, IllegalArgumentException, UnsupportedOperationException}
 import org.opencypher.okapi.impl.util.StringEncodingUtilities._
 import org.opencypher.spark.api.CAPSSession
@@ -60,11 +60,17 @@ case class SqlPropertyGraphDataSource(
     val nodeDataFramesWithIds = nodeViewKeys.zip(addUniqueIds(nodeDfs.toSeq, sourceIdKey)).toMap
     val nodeTables = nodeDataFramesWithIds.map {
       case (nodeViewKey, nodeDf) =>
-        val columnsWithType = nodeColsWithCypherType(capsSchema, nodeViewKey.nodeType)
-        val validatedDf = nodeDf.validateColumnTypes(columnsWithType)
-        CAPSNodeTable.fromMapping(
-          createNodeMapping(nodeViewKey.nodeType, ddlGraph.nodeToViewMappings(nodeViewKey).propertyMappings),
-          validatedDf.setNullability(columnsWithType))
+        val nodeType = nodeViewKey.nodeType
+        val columnsWithType = nodeColsWithCypherType(capsSchema, nodeType)
+        val inputNodeMapping = createNodeMapping(nodeType, ddlGraph.nodeToViewMappings(nodeViewKey).propertyMappings)
+        val normalizedDf = normalizeDataFrame(nodeDf, inputNodeMapping)
+        val normalizedMapping = normalizeNodeMapping(inputNodeMapping)
+
+        val validatedDf = normalizedDf
+          .validateColumnTypes(columnsWithType)
+          .setNullability(columnsWithType)
+
+        CAPSNodeTable.fromMapping(normalizedMapping, validatedDf)
     }.toSeq
 
     // Build CAPS relationship tables
@@ -73,6 +79,7 @@ case class SqlPropertyGraphDataSource(
 
     val relationshipTables = ddlGraph.edgeToViewMappings.map { edgeToViewMapping =>
       val edgeViewKey = edgeToViewMapping.key
+      val relType = edgeViewKey.edgeType.head
       val relDf = relDataFramesWithIds(edgeViewKey)
       val startNodeDf = nodeDataFramesWithIds(edgeToViewMapping.startNode.nodeViewKey)
       val endNodeDf = nodeDataFramesWithIds(edgeToViewMapping.endNode.nodeViewKey)
@@ -80,11 +87,16 @@ case class SqlPropertyGraphDataSource(
       val relsWithStartNodeId = joinNodeAndEdgeDf(startNodeDf, relDf, edgeToViewMapping.startNode.joinPredicates, sourceStartNodeKey)
       val relsWithEndNodeId = joinNodeAndEdgeDf(endNodeDf, relsWithStartNodeId, edgeToViewMapping.endNode.joinPredicates, sourceEndNodeKey)
 
-      val columnWithType = relColsWithCypherType(capsSchema, edgeViewKey.edgeType.head)
-      val validatedDf = relsWithEndNodeId.validateColumnTypes(columnWithType)
-      CAPSRelationshipTable.fromMapping(
-        createRelationshipMapping(edgeViewKey.edgeType.head, edgeToViewMapping.propertyMappings),
-        validatedDf.setNullability(columnWithType))
+      val columnsWithType = relColsWithCypherType(capsSchema, relType)
+      val inputRelMapping = createRelationshipMapping(relType, edgeToViewMapping.propertyMappings)
+      val normalizedDf = normalizeDataFrame(relsWithEndNodeId, inputRelMapping)
+      val normalizedMapping = normalizeRelationshipMapping(inputRelMapping)
+
+      val validatedDf = normalizedDf
+        .validateColumnTypes(columnsWithType)
+        .setNullability(columnsWithType)
+
+      CAPSRelationshipTable.fromMapping(normalizedMapping, validatedDf)
     }
 
     caps.graphs.create(nodeTables.head, nodeTables.tail ++ relationshipTables: _*)
@@ -156,7 +168,31 @@ case class SqlPropertyGraphDataSource(
     inputTable.withPropertyColumns
   }
 
-  def createNodeMapping(labelCombination: Set[String], propertyMappings: PropertyMappings): NodeMapping = {
+  private def normalizeDataFrame(dataFrame: DataFrame, mapping: EntityMapping): DataFrame = {
+    val dfColumns = dataFrame.schema.fieldNames.map(_.toLowerCase).toSet
+
+    val alignedDf = mapping.propertyMapping.foldLeft(dataFrame) {
+      case (currentDf, (property, column)) if dfColumns.contains(column.toLowerCase) =>
+        currentDf.withColumnRenamed(column, property.toPropertyColumnName)
+      case (_, (_, column)) => throw IllegalArgumentException(
+        expected = s"Column with name $column",
+        actual = dfColumns
+      )
+    }
+
+    val selectColumns = mapping.idKeys ++ mapping.propertyMapping.keys.map(_.toPropertyColumnName).toSeq
+    alignedDf.select(selectColumns.head, selectColumns.tail: _*)
+  }
+
+  private def normalizeNodeMapping(mapping: NodeMapping): NodeMapping = {
+    createNodeMapping(mapping.impliedLabels, mapping.propertyMapping.keys.map(key => key -> key).toMap)
+  }
+
+  private def normalizeRelationshipMapping(mapping: RelationshipMapping): RelationshipMapping = {
+    createRelationshipMapping(mapping.relTypeOrSourceRelTypeKey.left.get, mapping.propertyMapping.keys.map(key => key -> key).toMap)
+  }
+
+  private def createNodeMapping(labelCombination: Set[String], propertyMappings: PropertyMappings): NodeMapping = {
     val initialNodeMapping = NodeMapping.on(sourceIdKey).withImpliedLabels(labelCombination.toSeq: _*)
     propertyMappings.foldLeft(initialNodeMapping) {
       case (currentNodeMapping, (propertyKey, columnName)) =>
@@ -164,7 +200,10 @@ case class SqlPropertyGraphDataSource(
     }
   }
 
-  private def createRelationshipMapping(relType: String, propertyMappings: PropertyMappings): RelationshipMapping = {
+  private def createRelationshipMapping(
+    relType: String,
+    propertyMappings: PropertyMappings
+  ): RelationshipMapping = {
     val initialRelMapping = RelationshipMapping.on(sourceIdKey)
       .withSourceStartNodeKey(sourceStartNodeKey)
       .withSourceEndNodeKey(sourceEndNodeKey)
