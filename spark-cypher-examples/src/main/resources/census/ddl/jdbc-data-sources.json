@@ -1,0 +1,9 @@
+[
+  {
+    "storageFormat": "jdbc",
+    "dataSourceName": "CENSUS",
+    "jdbcUri": "jdbc:h2:mem:CENSUS.db;INIT=CREATE SCHEMA IF NOT EXISTS CENSUS;DB_CLOSE_DELAY=30;",
+    "jdbcDriver": "org.h2.Driver",
+    "jdbcFetchSize": 100
+  }
+]

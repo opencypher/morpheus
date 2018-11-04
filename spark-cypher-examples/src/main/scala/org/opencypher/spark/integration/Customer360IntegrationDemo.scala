@@ -51,7 +51,7 @@ import org.opencypher.spark.util.ConsoleApp
   */
 object Customer360IntegrationDemo extends ConsoleApp {
 
-  implicit val resourceFolder: String = "/csv/customer-interactions"
+  implicit val resourceFolder: String = "/customer-interactions"
 
   implicit val spark: SparkSession = SparkSession
     .builder()
@@ -80,7 +80,7 @@ object Customer360IntegrationDemo extends ConsoleApp {
     .format("csv")
     .option("header", "true")
     .schema(inputSchema)
-    .load(resource("customer-interactions.csv").getFile)
+    .load(resource("csv/customer-interactions.csv").getFile)
 
   importCsv.show()
 
@@ -107,8 +107,8 @@ object Customer360IntegrationDemo extends ConsoleApp {
 
   // Create SQL PropertyGraph DataSource
   val sqlGraphSource = GraphSources
-    .sql(resource("customer-interactions.ddl").getFile)
-    .withSqlDataSourceConfigs(resource("data-sources.json").getFile)
+    .sql(resource("ddl/customer-interactions.ddl").getFile)
+    .withSqlDataSourceConfigs(resource("ddl/data-sources.json").getFile)
 
   session.registerSource(Namespace("c360"), sqlGraphSource)
 

@@ -44,7 +44,7 @@ object CypherSQLRoundtripExample extends ConsoleApp {
 
   // 2) Register a file based data source at the session
   //    It contains a purchase network graph called 'products'
-  val graphDir = getClass.getResource("/csv").getFile
+  val graphDir = getClass.getResource("/fs-graphsource").getFile
   session.registerSource(Namespace("myDataSource"), GraphSources.fs(rootPath = graphDir).csv)
 
   // 3) Load social network data via case class instances
