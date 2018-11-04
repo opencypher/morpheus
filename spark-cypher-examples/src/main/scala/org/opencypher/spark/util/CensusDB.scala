@@ -110,10 +110,10 @@ object CensusDB {
 
     // populate the data
     val baseOptions = Map("url" -> jdbcUrl, "driver" -> driver)
-    populateData(townInput, JdbcFormat, schema, baseOptions ++ Map("dbtable" -> s"$schema.TOWN"))
-    populateData(residentsInput, JdbcFormat, schema, baseOptions ++ Map("dbtable" -> s"$schema.RESIDENTS"))
-    populateData(visitorsInput, JdbcFormat, schema, baseOptions ++ Map("dbtable" -> s"$schema.VISITORS"))
-    populateData(licensedDogsInput, JdbcFormat, schema, baseOptions ++ Map("dbtable" -> s"$schema.LICENSED_DOGS"))
+    populateData(townInput, JdbcFormat, schema, baseOptions ++ Map("dbtable" -> s"$schema.${townInput.table}"))
+    populateData(residentsInput, JdbcFormat, schema, baseOptions ++ Map("dbtable" -> s"$schema.${residentsInput.table}"))
+    populateData(visitorsInput, JdbcFormat, schema, baseOptions ++ Map("dbtable" -> s"$schema.${visitorsInput.table}"))
+    populateData(licensedDogsInput, JdbcFormat, schema, baseOptions ++ Map("dbtable" -> s"$schema.${licensedDogsInput.table}"))
 
     // create the views
     executeDDL(Seq(
@@ -232,6 +232,8 @@ object CensusDB {
       .option("header", "true")
       .schema(input.dfSchema)
       .csv(getClass.getResource(s"${input.csvPath}").getPath)
+
+
 
     val writer = csvFrame
       .write

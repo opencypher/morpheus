@@ -78,13 +78,13 @@
 
     <!-- Test scope dependencies -->
     <dep.bouncycastle.version>1.59</dep.bouncycastle.version>
+    <dep.h2.version>1.4.196</dep.h2.version>
     <dep.junit.version>4.12</dep.junit.version>
     <dep.junit.platform.version>1.0.2</dep.junit.platform.version>
     <dep.mockito.version>1.10.19</dep.mockito.version>
     <dep.scalatest.version>3.0.5</dep.scalatest.version>
     <dep.scalacheck.version>1.13.5</dep.scalacheck.version>
     <dep.spark-measure.version>0.11</dep.spark-measure.version>
-    <dep.h2.version>1.4.196</dep.h2.version>
 
   </properties>
 
