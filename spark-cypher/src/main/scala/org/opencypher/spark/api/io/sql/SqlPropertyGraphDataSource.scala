@@ -60,9 +60,11 @@ case class SqlPropertyGraphDataSource(
     val nodeDataFramesWithIds = nodeViewKeys.zip(addUniqueIds(nodeDfs.toSeq, sourceIdKey)).toMap
     val nodeTables = nodeDataFramesWithIds.map {
       case (nodeViewKey, nodeDf) =>
+        val columnsWithType = nodeColsWithCypherType(capsSchema, nodeViewKey.nodeType)
+        val validatedDf = nodeDf.validateColumnTypes(columnsWithType)
         CAPSNodeTable.fromMapping(
           createNodeMapping(nodeViewKey.nodeType, ddlGraph.nodeToViewMappings(nodeViewKey).propertyMappings),
-          nodeDf.setNullability(nodeColsWithCypherType(capsSchema, nodeViewKey.nodeType)))
+          validatedDf.setNullability(columnsWithType))
     }.toSeq
 
     // Build CAPS relationship tables
@@ -78,9 +80,11 @@ case class SqlPropertyGraphDataSource(
       val relsWithStartNodeId = joinNodeAndEdgeDf(startNodeDf, relDf, edgeToViewMapping.startNode.joinPredicates, sourceStartNodeKey)
       val relsWithEndNodeId = joinNodeAndEdgeDf(endNodeDf, relsWithStartNodeId, edgeToViewMapping.endNode.joinPredicates, sourceEndNodeKey)
 
+      val columnWithType = relColsWithCypherType(capsSchema, edgeViewKey.edgeType.head)
+      val validatedDf = relsWithEndNodeId.validateColumnTypes(columnWithType)
       CAPSRelationshipTable.fromMapping(
         createRelationshipMapping(edgeViewKey.edgeType.head, edgeToViewMapping.propertyMappings),
-        relsWithEndNodeId.setNullability(relColsWithCypherType(capsSchema, edgeViewKey.edgeType.head)))
+        validatedDf.setNullability(columnWithType))
     }
 
     caps.graphs.create(nodeTables.head, nodeTables.tail ++ relationshipTables: _*)
