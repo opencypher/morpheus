@@ -26,7 +26,10 @@
  */
 package org.opencypher.okapi.ir.api.expr
 
+import java.sql.Date
+
 import org.opencypher.okapi.api.types._
+import org.opencypher.okapi.api.value.CypherValue.{CypherDateTime, CypherValue}
 import org.opencypher.okapi.impl.exception.IllegalArgumentException
 import org.opencypher.okapi.ir.api._
 import org.opencypher.okapi.ir.api.expr.FlattenOps._
@@ -1035,6 +1038,13 @@ final case class StringLit(v: String)(val cypherType: CypherType = CTString) ext
   override type This = StringLit
 
   override def withCypherType(ct: CypherType): StringLit = copy()(ct)
+}
+
+final case class DateTimeLit(v: Expr)(val cypherType: CypherType = CTDateTime) extends Lit[Expr] {
+
+  override type This = DateTimeLit
+
+  override def withCypherType(ct: CypherType): DateTimeLit = copy()(ct)
 }
 
 sealed abstract class BoolLit(val v: Boolean)(val cypherType: CypherType = CTBoolean) extends Lit[Boolean] {

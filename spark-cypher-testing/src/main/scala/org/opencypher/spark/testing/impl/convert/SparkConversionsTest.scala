@@ -42,6 +42,8 @@ class SparkConversionsTest extends BaseTestSuite {
     CTBooleanOrNull.toStructField("foo") should equal(StructField("foo", BooleanType, nullable = true))
     CTString.toStructField("foo") should equal(StructField("foo", StringType, nullable = false))
     CTStringOrNull.toStructField("foo") should equal(StructField("foo", StringType, nullable = true))
+    CTDateTime.toStructField("foo") should equal(StructField("foo", DateType, nullable = false))
+    CTDateTimeOrNull.toStructField("foo") should equal(StructField("foo", DateType, nullable = true))
 
     CTNode(Set("A")).toStructField("foo") should equal(StructField("foo", LongType, nullable = false))
     CTNodeOrNull(Set("A")).toStructField("foo") should equal(StructField("foo", LongType, nullable = true))

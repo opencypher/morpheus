@@ -395,6 +395,15 @@ class FunctionsBehaviour extends CAPSTestSuite with DefaultGraphInit {
     }
   }
 
+  describe("datetime") {
+
+    it("datetime") {
+      val result = caps.cypher("RETURN datetime('2012-10-09') AS time")
+      val maps = result.records.toMaps
+      ???
+    }
+  }
+
   describe("trim") {
 
     it("trim()") {

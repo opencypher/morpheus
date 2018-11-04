@@ -322,6 +322,19 @@ object SchemaTyper {
           error(WrongNumberOfArguments(expr, 1, seq.size))
       }
 
+    case expr: FunctionInvocation if expr.name == "datetime" =>
+      expr.arguments match {
+        case Seq(first) =>
+          for {
+            _ <- process[R](first)
+            result <- recordAndUpdate(expr -> CTDateTimeOrNull)
+          } yield result
+      }
+//      for {
+//        argExprs <- pure(expr.arguments)
+//        result <- recordAndUpdate(expr -> CTDateTimeOrNull)
+//      } yield result
+
     case expr: FunctionInvocation if expr.function == UnresolvedFunction =>
       UnresolvedFunctionSignatureTyper(expr)
 
