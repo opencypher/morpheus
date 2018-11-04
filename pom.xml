@@ -239,7 +239,7 @@
         <artifactId>scala-maven-plugin</artifactId>
         <version>${plugin.maven-scala.version}</version>
         <configuration>
-          <recompileMode>incremental</recompileMode>
+          <!--<recompileMode>incremental</recompileMode>-->
           <scalaVersion>${project.scala.version}</scalaVersion>
           <scalaCompatVersion>${project.scala.binary.version}</scalaCompatVersion>
           <encoding>${project.build.encoding}</encoding>
