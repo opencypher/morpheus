@@ -78,9 +78,8 @@
 
     <!-- Test scope dependencies -->
     <dep.bouncycastle.version>1.59</dep.bouncycastle.version>
-    <dep.junit.version>5.0.2</dep.junit.version>
+    <dep.junit.version>4.12</dep.junit.version>
     <dep.junit.platform.version>1.0.2</dep.junit.platform.version>
-    <dep.junit.vintage.version>4.12.2</dep.junit.vintage.version>
     <dep.mockito.version>1.10.19</dep.mockito.version>
     <dep.scalatest.version>3.0.5</dep.scalatest.version>
     <dep.scalacheck.version>1.13.5</dep.scalacheck.version>
