@@ -104,7 +104,7 @@
     <module>spark-cypher-examples</module>
     <module>spark-cypher-tck</module>
     <module>spark-cypher-testing</module>
-    <module>sql-ddl</module>
+    <module>graph-ddl</module>
   </modules>
 
   <build>
