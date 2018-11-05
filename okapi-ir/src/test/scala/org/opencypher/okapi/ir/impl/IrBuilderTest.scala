@@ -685,7 +685,7 @@ class IrBuilderTest extends IrTestSuite {
         """
           |MATCH (:FOO)-[r:REL]->()
           |CONSTRUCT
-          |  CLONE r
+          |  CLONE r AS r
           |  CREATE (:A)-[r]->()
           |RETURN GRAPH
         """.stripMargin
