@@ -26,8 +26,8 @@
  */
 package org.opencypher.spark.impl.util
 
+import org.opencypher.okapi.testing.BaseTestSuite
 import org.opencypher.spark.api.io.{Labels, Node, Relationship, RelationshipType}
-import org.scalatest.{FunSuite, Matchers}
 
 import scala.annotation.StaticAnnotation
 
@@ -50,7 +50,7 @@ case class RelWithAnnotation(id: Long, source: Long, target: Long) extends Relat
 @TestAnnotation("Foo")
 case class TestAnnotation(foo: String) extends StaticAnnotation
 
-class AnnotationTest extends FunSuite with Matchers {
+class AnnotationTest extends BaseTestSuite {
 
   test("read node label annotation") {
     Annotation.labels[NodeWithoutAnnotation] should equal(Set(classOf[NodeWithoutAnnotation].getSimpleName))

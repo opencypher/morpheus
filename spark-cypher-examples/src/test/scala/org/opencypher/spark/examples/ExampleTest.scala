@@ -29,10 +29,13 @@ package org.opencypher.spark.examples
 import java.io.{ByteArrayOutputStream, PrintStream}
 import java.net.URI
 
+import org.junit.runner.RunWith
+import org.scalatest.junit.JUnitRunner
 import org.scalatest.{BeforeAndAfterAll, FunSpec, Matchers}
 
 import scala.io.Source
 
+@RunWith(classOf[JUnitRunner])
 abstract class ExampleTest extends FunSpec with Matchers with BeforeAndAfterAll {
 
   private val oldStdOut = System.out

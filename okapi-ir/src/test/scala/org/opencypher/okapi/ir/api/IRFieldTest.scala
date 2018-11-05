@@ -27,32 +27,33 @@
 package org.opencypher.okapi.ir.api
 
 import org.opencypher.okapi.api.types.{CTNode, CTRelationship}
-import org.scalatest.{FunSuite, Matchers}
+import org.opencypher.okapi.testing.BaseTestSuite
 
-class IRFieldTest extends FunSuite with Matchers {
+class IRFieldTest extends BaseTestSuite {
 
-  test("IRField ignores cypher type in equality") {
-    val a = IRField("a")(CTNode)
-    val b = IRField("a")(CTRelationship)
-    a should equal(b)
+  describe("equality") {
+    it("ignores cypher type in equality") {
+      val a = IRField("a")(CTNode)
+      val b = IRField("a")(CTRelationship)
+      a should equal(b)
+    }
+
+    it("has same hash code for different cypher types") {
+      val n = IRField("a")(CTNode("a"))
+      val r = IRField("a")(CTRelationship("b"))
+      n.hashCode should equal(r.hashCode)
+    }
+
+    it("can be unequal") {
+      val a = IRField("a")()
+      val b = IRField("b")()
+      a should not equal b
+    }
+
+    it("has different hash codes") {
+      val a = IRField("a")()
+      val b = IRField("b")()
+      a.hashCode should not equal b.hashCode
+    }
   }
-
-  test("same IRFields with different cypher types have the same hash code") {
-    val n = IRField("a")(CTNode("a"))
-    val r = IRField("a")(CTRelationship("b"))
-    n.hashCode should equal(r.hashCode)
-  }
-
-  test("different IRFields are not equal") {
-    val a = IRField("a")()
-    val b = IRField("b")()
-    a should not equal b
-  }
-
-  test("different IRFields have different hash codes") {
-    val a = IRField("a")()
-    val b = IRField("b")()
-    a.hashCode should not equal b.hashCode
-  }
-
 }

@@ -28,9 +28,9 @@ package org.opencypher.spark.api
 
 import org.opencypher.okapi.impl.exception.IllegalStateException
 import org.opencypher.okapi.relational.api.tagging.Tags._
-import org.scalatest.{FunSpec, Matchers}
+import org.opencypher.okapi.testing.BaseTestSuite
 
-class TagsTest extends FunSpec with Matchers {
+class TagsTest extends BaseTestSuite {
 
   it("picks a free tag") {
     pickFreeTag(Set.empty) shouldBe 0

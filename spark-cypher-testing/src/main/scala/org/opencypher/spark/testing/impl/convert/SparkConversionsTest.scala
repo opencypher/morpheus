@@ -28,10 +28,10 @@ package org.opencypher.spark.testing.impl.convert
 
 import org.apache.spark.sql.types._
 import org.opencypher.okapi.api.types._
-import org.scalatest.{FunSpec, Matchers}
+import org.opencypher.okapi.testing.BaseTestSuite
 import org.opencypher.spark.impl.convert.SparkConversions._
 
-class SparkConversionsTest extends FunSpec with Matchers {
+class SparkConversionsTest extends BaseTestSuite {
 
   it("should produce the correct StructField for non-nested types") {
     CTInteger.toStructField("foo") should equal(StructField("foo", LongType, nullable = false))

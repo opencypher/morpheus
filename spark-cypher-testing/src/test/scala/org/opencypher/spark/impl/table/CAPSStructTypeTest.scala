@@ -30,10 +30,10 @@ import org.apache.spark.sql.types._
 import org.opencypher.okapi.api.types.{CTInteger, CTList, CTString}
 import org.opencypher.okapi.ir.api.expr.Var
 import org.opencypher.okapi.relational.impl.table.RecordHeader
+import org.opencypher.okapi.testing.BaseTestSuite
 import org.opencypher.spark.impl.convert.SparkConversions._
-import org.scalatest.{FunSpec, Matchers}
 
-class CAPSStructTypeTest extends FunSpec with Matchers {
+class CAPSStructTypeTest extends BaseTestSuite {
 
   it("computes a header from a given struct type") {
     val structType = StructType(Seq(

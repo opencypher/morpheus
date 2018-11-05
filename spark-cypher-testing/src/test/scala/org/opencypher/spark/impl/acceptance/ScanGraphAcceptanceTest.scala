@@ -26,8 +26,11 @@
  */
 package org.opencypher.spark.impl.acceptance
 
+import org.junit.runner.RunWith
 import org.scalatest.Suites
+import org.scalatest.junit.JUnitRunner
 
+@RunWith(classOf[JUnitRunner])
 class ScanGraphAcceptanceTest extends Suites(
   Aggregation_ScanGraph,
   BoundedVarExpand_ScanGraph,
