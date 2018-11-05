@@ -171,7 +171,7 @@ case class SqlPropertyGraphDataSource(
   private def normalizeDataFrame(dataFrame: DataFrame, mapping: EntityMapping): DataFrame = {
     val dfColumns = dataFrame.schema.fieldNames.map(_.toLowerCase).toSet
 
-    val alignedDf = mapping.propertyMapping.foldLeft(dataFrame) {
+    mapping.propertyMapping.foldLeft(dataFrame) {
       case (currentDf, (property, column)) if dfColumns.contains(column.toLowerCase) =>
         currentDf.withColumnRenamed(column, property.toPropertyColumnName)
       case (_, (_, column)) => throw IllegalArgumentException(
@@ -179,9 +179,6 @@ case class SqlPropertyGraphDataSource(
         actual = dfColumns
       )
     }
-
-    val selectColumns = mapping.idKeys ++ mapping.propertyMapping.keys.map(_.toPropertyColumnName).toSeq
-    alignedDf.select(selectColumns.head, selectColumns.tail: _*)
   }
 
   private def normalizeNodeMapping(mapping: NodeMapping): NodeMapping = {
