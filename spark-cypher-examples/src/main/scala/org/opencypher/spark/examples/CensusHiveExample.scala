@@ -35,7 +35,7 @@ import org.opencypher.okapi.api.graph.Namespace
 import org.opencypher.spark.api.{CAPSSession, GraphSources}
 import org.opencypher.spark.util.{CensusDB, ConsoleApp}
 
-object HiveSqlGraphSourceExample extends ConsoleApp {
+object CensusHiveExample extends ConsoleApp {
 
   implicit val resourceFolder: String = "/census"
 

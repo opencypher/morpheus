@@ -26,11 +26,11 @@
  */
 package org.opencypher.spark.examples
 
-class HiveSqlGraphSourceExampleTest extends ExampleTest {
-  it("runs HiveSqlGraphSourceExample") {
+class CensusJdbcExampleTest extends ExampleTest {
+  it("runs JdbcSqlGraphSourceExample") {
     validate(
-      HiveSqlGraphSourceExample.main(Array.empty),
-      getClass.getResource("/example_outputs/HiveSqlGraphSourceExample.out").toURI
+      CensusJdbcExample.main(Array.empty),
+      getClass.getResource("/example_outputs/JdbcSqlGraphSourceExample.out").toURI
     )
   }
 }
