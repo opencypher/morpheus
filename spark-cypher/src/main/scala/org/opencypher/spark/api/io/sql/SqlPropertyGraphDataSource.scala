@@ -147,7 +147,6 @@ case class SqlPropertyGraphDataSource(
 
     val sqlDataSourceConfig = sqlDataSourceConfigs.find(_.dataSourceName == qualifiedViewId.dataSource).get
     val tableName = qualifiedViewId.schema + "." + qualifiedViewId.view
-
     val inputTable = sqlDataSourceConfig.storageFormat match {
       case JdbcFormat =>
         spark.read

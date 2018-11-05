@@ -1,83 +1,59 @@
+/*
+ * Copyright (c) 2016-2018 "Neo4j Sweden, AB" [https://neo4j.com]
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ *
+ * Attribution Notice under the terms of the Apache License 2.0
+ *
+ * This work was created by the collective efforts of the openCypher community.
+ * Without limiting the terms of Section 6, any Derivative Work that is not
+ * approved by the public consensus process of the openCypher Implementers Group
+ * should not be described as “Cypher” (and Cypher® is a registered trademark of
+ * Neo4j Inc.) or as "openCypher". Extensions by implementers or prototypes or
+ * proposals for change that have been documented or implemented should only be
+ * described as "implementation extensions to Cypher" or as "proposed changes to
+ * Cypher that are not yet approved by the openCypher community".
+ */
 package org.opencypher.spark.util
 
-import java.sql.{Connection, DriverManager, ResultSet, ResultSetMetaData}
+import org.opencypher.spark.api.io.sql.SqlDataSourceConfig
+import org.opencypher.spark.testing.utils.H2Utils._
 
-import ImplicitHelpers._
+import scala.io.Source
+import scala.util.Properties
 
 object NorthwindDB {
 
-  val schema: String = "NORTHWIND"
+  def init(sqlDataSourceConfig: SqlDataSourceConfig): Unit = {
 
-  // list of tables
-  val Employees = s"$schema.Employees"
+    withConnection(sqlDataSourceConfig) { connection =>
 
-  val jdbcUrl: String = s"jdbc:h2:mem:$schema.db;INIT=CREATE SCHEMA IF NOT EXISTS $schema;DB_CLOSE_DELAY=30;"
+      connection.setSchema("NORTHWIND")
 
-  def init(): Unit = {
+      // create the SQL db schema
+      connection.execute(readResourceAsString("/northwind/sql/northwind_schema.sql"))
 
-    // load driver
-    Class.forName("org.h2.Driver")
+      // populate tables with data
+      connection.execute(readResourceAsString("/northwind/sql/northwind_data.sql"))
 
-    val connection = DriverManager.getConnection(jdbcUrl)
-    connection.setSchema(schema)
-
-    // create the SQL db schema
-    connection.run(NorthwindHelpers.schemaSql)
-
-    // validate all tables present
-
-    // populate tables with data
-    connection.run(NorthwindHelpers.dataSql)
-
-    // create views that hide problematic columns
-    connection.run(NorthwindHelpers.viewSql)
-
-    // print all table metadata (for debugging)
-    //  println(connection.getMetaData.getTables(null, null, null, Array("TABLE")).toMaps)
+      // create views that hide problematic columns
+      connection.execute(readResourceAsString("/northwind/sql/northwind_views.sql"))
+    }
   }
 
-}
-
-object ImplicitHelpers {
-  implicit class RichConnection(c: Connection) {
-
-    def run(s: String): Boolean = {
-      val statement = c.createStatement()
-      statement.execute(s)
-    }
-
-  }
-
-  implicit class RichResultSet(rs: ResultSet) {
-
-    lazy val metadata: ResultSetMetaData = rs.getMetaData
-
-    lazy val columnNames: Vector[String] = {
-      val columnNames = for {
-        i <- 1 to rs.getMetaData.getColumnCount
-      } yield metadata.getColumnName(i)
-      columnNames.toVector
-    }
-
-    def rows: Iterator[ResultSet] = {
-      new Iterator[ResultSet] {
-        def hasNext: Boolean = rs.next()
-
-        def next(): ResultSet = rs
-      }
-    }
-
-    def toMap: Map[String, AnyRef] = {
-      columnNames
-        .filter(rs.findColumn(_) >= 0)
-        .map { cn =>
-          cn -> rs.getObject(cn)
-        }.toMap
-    }
-
-    def toMaps: Vector[Map[String, AnyRef]] = {
-      rows.map(_.toMap).toVector
-    }
-
-  }
+  private def readResourceAsString(name: String): String =
+    Source.fromFile(getClass.getResource(name).toURI)
+      .getLines()
+      .filterNot(line => line.startsWith("#") || line.startsWith("CREATE INDEX"))
+      .mkString(Properties.lineSeparator)
 }

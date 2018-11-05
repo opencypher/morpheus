@@ -227,15 +227,11 @@ object CensusDB {
     dbSchema: String,
     options: Map[String, String] = Map.empty
   )(implicit sparkSession: SparkSession): Unit = {
-    val csvFrame = sparkSession
+    val writer = sparkSession
       .read
       .option("header", "true")
       .schema(input.dfSchema)
       .csv(getClass.getResource(s"${input.csvPath}").getPath)
-
-
-
-    val writer = csvFrame
       .write
       .format(storageFormat.name)
       .options(options)

@@ -29,6 +29,7 @@ package org.opencypher.spark.api.io.sql
 import org.apache.spark.sql.DataFrame
 import org.opencypher.spark.api.io.JdbcFormat
 import org.opencypher.spark.testing.fixture.H2Fixture
+import org.opencypher.spark.testing.utils.H2Utils._
 
 class H2SqlPropertyGraphDataSourceAcceptanceTest extends SqlPropertyGraphDataSourceAcceptanceTest with H2Fixture {
 

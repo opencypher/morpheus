@@ -44,7 +44,7 @@ class SqlPropertyGraphDataSourceTest extends CAPSTestSuite with HiveFixture with
   private val fooGraphName = GraphName("fooGraph")
 
   private def computePartitionedRowId(rowIndex: Long, partitionStartDelta: Long): Long = {
-     (partitionStartDelta << rowIdSpaceBitsUsedByMonotonicallyIncreasingId) + rowIndex
+    (partitionStartDelta << rowIdSpaceBitsUsedByMonotonicallyIncreasingId) + rowIndex
   }
 
   override protected def beforeAll(): Unit = {
@@ -177,8 +177,8 @@ class SqlPropertyGraphDataSourceTest extends CAPSTestSuite with HiveFixture with
 
   it("reads relationships from a table") {
     val personView = "person_view"
-    val bookView   = "bookView_view"
-    val readsView  = "reads_view"
+    val bookView = "bookView_view"
+    val readsView = "reads_view"
 
     val ddlString =
       s"""
@@ -302,7 +302,7 @@ class SqlPropertyGraphDataSourceTest extends CAPSTestSuite with HiveFixture with
 
   it("reads relationships from multiple tables") {
     val personView = "person_view"
-    val bookView   = "bookView_view"
+    val bookView = "bookView_view"
     val readsView1 = "reads1_view"
     val readsView2 = "reads2_view"
 
@@ -463,6 +463,7 @@ class SqlPropertyGraphDataSourceTest extends CAPSTestSuite with HiveFixture with
       .write.mode(SaveMode.Overwrite).saveAsTable(s"schema1.$fooView")
 
     // -- Add h2 data
+    import org.opencypher.spark.testing.utils.H2Utils._
 
     freshH2Database(h2DataSourceConfig, "schema2")
     sparkSession
