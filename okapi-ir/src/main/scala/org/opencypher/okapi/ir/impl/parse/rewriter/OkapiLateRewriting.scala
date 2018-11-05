@@ -42,6 +42,7 @@ case object OkapiLateRewriting extends Phase[BaseContext, BaseState, BaseState] 
         projectFreshSortExpressions,
         normalizeCaseExpression,
         normalizeReturnClauses,
+        pushLabelsIntoScans,
         extractSubqueryFromPatternExpression(context.exceptionCreator),
         CNFNormalizer.instance(context)
       ))

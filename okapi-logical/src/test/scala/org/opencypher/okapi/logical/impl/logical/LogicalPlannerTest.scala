@@ -37,18 +37,25 @@ import org.opencypher.okapi.ir.api.expr._
 import org.opencypher.okapi.ir.api.pattern.{CyclicRelationship, DirectedRelationship, Pattern}
 import org.opencypher.okapi.ir.impl.util.VarConverters._
 import org.opencypher.okapi.logical.impl._
-import org.opencypher.okapi.testing.{BaseTestSuite, MatchHelper}
 import org.opencypher.okapi.testing.MatchHelper._
+import org.opencypher.okapi.testing.{BaseTestSuite, MatchHelper}
 import org.scalatest.matchers._
 
 import scala.language.implicitConversions
 
 class LogicalPlannerTest extends BaseTestSuite with IrConstruction {
 
-  val nodeA: IRField = IRField("a")(CTNode)
-  val nodeB: IRField = IRField("b")(CTNode)
-  val nodeG: IRField = IRField("g")(CTNode)
-  val relR: IRField = IRField("r")(CTRelationship)
+  val irFieldA: IRField = IRField("a")(CTNode("Administrator"))
+  val irFieldB: IRField = IRField("b")(CTNode)
+  val irFieldG: IRField = IRField("g")(CTNode("Group"))
+  val irFieldR: IRField = IRField("r")(CTRelationship)
+
+  val varA = Var("a")(CTNode("Administrator"))
+  val varB = Var("b")(CTNode)
+  val varG = Var("g")(CTNode("Group"))
+  val varR = Var("r")(CTRelationship)
+
+  val aLabelPredicate = HasLabel(varA, Label("Administrator"))(CTBoolean)
 
 
   val emptySqm: SolvedQueryModel = SolvedQueryModel.empty
@@ -62,19 +69,20 @@ class LogicalPlannerTest extends BaseTestSuite with IrConstruction {
   it("converts match block") {
     val pattern = Pattern
       .empty
-      .withEntity(nodeA)
-      .withEntity(nodeB)
-      .withEntity(relR)
-      .withConnection(relR, DirectedRelationship(nodeA, nodeB))
+      .withEntity(irFieldA)
+      .withEntity(irFieldB)
+      .withEntity(irFieldR)
+      .withConnection(irFieldR, DirectedRelationship(irFieldA, irFieldB))
 
     val block = matchBlock(pattern)
 
-    val scan1 = NodeScan(nodeA, leafPlan, emptySqm.withField(nodeA))
-    val scan2 = NodeScan(nodeB, leafPlan, emptySqm.withField(nodeB))
+
+    val scan1 = NodeScan(irFieldA, leafPlan, emptySqm.withField(irFieldA).withPredicate(aLabelPredicate))
+    val scan2 = NodeScan(irFieldB, leafPlan, emptySqm.withField(irFieldB))
     val ir = irFor(block)
     val result = plan(ir)
 
-    val expected = Expand(nodeA, relR, nodeB, Directed, scan1, scan2, SolvedQueryModel(Set(nodeA, nodeB, relR)))
+    val expected = Expand(irFieldA, irFieldR, irFieldB, Directed, scan1, scan2, SolvedQueryModel(Set(irFieldA, irFieldB, irFieldR), Set(aLabelPredicate)))
 
     result should equalWithoutResult(expected)
   }
@@ -82,15 +90,15 @@ class LogicalPlannerTest extends BaseTestSuite with IrConstruction {
   it("converts cyclic match block") {
     val pattern = Pattern
       .empty
-      .withEntity(nodeA)
-      .withEntity(relR)
-      .withConnection(relR, CyclicRelationship(nodeA))
+      .withEntity(irFieldA)
+      .withEntity(irFieldR)
+      .withConnection(irFieldR, CyclicRelationship(irFieldA))
 
     val block = matchBlock(pattern)
     val ir = irFor(block)
 
-    val scan = NodeScan(nodeA, leafPlan, emptySqm.withField(nodeA))
-    val expandInto = ExpandInto(nodeA, relR, nodeA, Directed, scan, SolvedQueryModel(Set(nodeA, relR)))
+    val scan = NodeScan(irFieldA, leafPlan, emptySqm.withField(irFieldA).withPredicate(aLabelPredicate))
+    val expandInto = ExpandInto(irFieldA, irFieldR, irFieldA, Directed, scan, SolvedQueryModel(Set(irFieldA, irFieldR), Set(aLabelPredicate)))
 
     plan(ir) should equalWithoutResult(expandInto)
   }
@@ -114,60 +122,52 @@ class LogicalPlannerTest extends BaseTestSuite with IrConstruction {
     val result = plan(ir)
 
     val expected = Project(
-      Property(Var("a")(CTNode(Set("Administrator"))), PropertyKey("name"))(CTNull) -> Some(Var("a.name")(CTNull)),
+      Property(varA, PropertyKey("name"))(CTNull) -> Some(Var("a.name")(CTNull)),
       Filter(
-        Equals(Property(Var("g")(CTNode(Set("Group"))), PropertyKey("name"))(CTNull), Param("foo")(CTString))(CTBoolean),
-        Filter(
-          HasLabel(Var("g")(CTNode), Label("Group"))(CTBoolean),
-          Filter(
-            HasLabel(Var("a")(CTNode), Label("Administrator"))(CTBoolean),
-            Expand(
-              Var("a")(CTNode),
-              Var("r")(CTRelationship),
-              Var("g")(CTNode),
-              Directed,
-              NodeScan(
-                Var("a")(CTNode),
-                Start(LogicalCatalogGraph(testQualifiedGraphName, Schema.empty), emptySqm),
-                SolvedQueryModel(Set(nodeA), Set())
-              ),
-              NodeScan(
-                Var("g")(CTNode),
-                Start(LogicalCatalogGraph(testQualifiedGraphName, Schema.empty), emptySqm),
-                SolvedQueryModel(Set(IRField("g")(CTNode)), Set())),
-              SolvedQueryModel(Set(nodeA, IRField("g")(CTNode), relR))
-            ),
-            SolvedQueryModel(
-              Set(nodeA, IRField("g")(CTNode), relR),
-              Set(HasLabel(Var("a")(CTNode), Label("Administrator"))(CTBoolean)))
+        Equals(Property(varG, PropertyKey("name"))(CTNull), Param("foo")(CTString))(CTBoolean),
+        Expand(
+          varA,
+          varR,
+          varG,
+          Directed,
+          NodeScan(
+            varA,
+            Start(LogicalCatalogGraph(testQualifiedGraphName, Schema.empty), emptySqm),
+            SolvedQueryModel(Set(irFieldA), Set(HasLabel(varA, Label("Administrator"))(CTBoolean)))
+          ),
+          NodeScan(
+            varG,
+            Start(LogicalCatalogGraph(testQualifiedGraphName, Schema.empty), emptySqm),
+            SolvedQueryModel(Set(irFieldG), Set(HasLabel(varG, Label("Group"))(CTBoolean)))
           ),
           SolvedQueryModel(
-            Set(nodeA, IRField("g")(CTNode), relR),
+            Set(irFieldA, irFieldG, irFieldR),
             Set(
-              HasLabel(Var("a")(CTNode), Label("Administrator"))(CTBoolean),
-              HasLabel(Var("g")(CTNode), Label("Group"))(CTBoolean))
+              HasLabel(varA, Label("Administrator"))(CTBoolean),
+              HasLabel(varG, Label("Group"))(CTBoolean)
+            )
           )
         ),
         SolvedQueryModel(
-          Set(nodeA, IRField("g")(CTNode), relR),
+          Set(irFieldA, irFieldG, irFieldR),
           Set(
-            HasLabel(Var("a")(CTNode), Label("Administrator"))(CTBoolean),
-            HasLabel(Var("g")(CTNode), Label("Group"))(CTBoolean),
-            Equals(Property(Var("g")(CTNode(Set("Group"))), PropertyKey("name"))(CTNull), Param("foo")(CTString))(
+            HasLabel(varA, Label("Administrator"))(CTBoolean),
+            HasLabel(varG, Label("Group"))(CTBoolean),
+            Equals(Property(varG, PropertyKey("name"))(CTNull), Param("foo")(CTString))(
               CTBoolean)
           )
         )
       ),
       SolvedQueryModel(
-        Set(nodeA, IRField("g")(CTNode), relR, IRField("a.name")(CTNull)),
+        Set(irFieldA, irFieldG, irFieldR, IRField("a.name")(CTNull)),
         Set(
-          HasLabel(Var("a")(CTNode), Label("Administrator"))(CTBoolean),
-          HasLabel(Var("g")(CTNode), Label("Group"))(CTBoolean),
-          Equals(Property(Var("g")(CTNode(Set("Group"))), PropertyKey("name"))(CTNull), Param("foo")(CTString))(
-            CTBoolean)
+          HasLabel(varA, Label("Administrator"))(CTBoolean),
+          HasLabel(varG, Label("Group"))(CTBoolean),
+          Equals(Property(varG, PropertyKey("name"))(CTNull), Param("foo")(CTString))(CTBoolean)
         )
       )
     )
+
     result should equalWithoutResult(expected)
   }
 
@@ -184,67 +184,55 @@ class LogicalPlannerTest extends BaseTestSuite with IrConstruction {
     val expected = Project(
       Property(Var("a")(CTNode(Set("Administrator"))), PropertyKey("name"))(CTFloat) -> Some(Var("a.name")(CTFloat)),
       Filter(
-        Equals(Property(Var("g")(CTNode(Set("Group"))), PropertyKey("name"))(CTString), Param("foo")(CTString))(CTBoolean),
-        Filter(
-          HasLabel(Var("g")(CTNode), Label("Group"))(CTBoolean),
-          Filter(
-            HasLabel(Var("a")(CTNode), Label("Administrator"))(CTBoolean),
-            Expand(
-              Var("a")(CTNode),
-              Var("r")(CTRelationship),
-              Var("g")(CTNode),
-              Directed,
-              NodeScan(
-                Var("a")(CTNode),
-                Start(
-                  LogicalCatalogGraph(
-                    testQualifiedGraphName,
-                    schema
-                  ),
-                  emptySqm
-                ),
-                SolvedQueryModel(Set(nodeA), Set())
+        Equals(Property(varG, PropertyKey("name"))(CTString), Param("foo")(CTString))(CTBoolean),
+        Expand(
+          varA,
+          Var("r")(CTRelationship),
+          varG,
+          Directed,
+          NodeScan(
+            varA,
+            Start(
+              LogicalCatalogGraph(
+                testQualifiedGraphName,
+                schema
               ),
-              NodeScan(
-                Var("g")(CTNode),
-                Start(
-                  LogicalCatalogGraph(
-                    testQualifiedGraphName,
-                    schema
-                  ),
-                  emptySqm
-                ),
-                SolvedQueryModel(Set(IRField("g")(CTNode)), Set())
-              ),
-              SolvedQueryModel(Set(nodeA, IRField("g")(CTNode), relR), Set())
+              emptySqm
             ),
-            SolvedQueryModel(
-              Set(nodeA, IRField("g")(CTNode), relR),
-              Set(HasLabel(Var("a")(CTNode), Label("Administrator"))(CTBoolean)))
+            SolvedQueryModel(Set(irFieldA), Set(HasLabel(varA, Label("Administrator"))(CTBoolean)))
           ),
-          SolvedQueryModel(
-            Set(nodeA, IRField("g")(CTNode), relR),
-            Set(
-              HasLabel(Var("a")(CTNode), Label("Administrator"))(CTBoolean),
-              HasLabel(Var("g")(CTNode), Label("Group"))(CTBoolean))
-          )
+          NodeScan(
+            varG,
+            Start(
+              LogicalCatalogGraph(
+                testQualifiedGraphName,
+                schema
+              ),
+              emptySqm
+            ),
+            SolvedQueryModel(Set(irFieldG), Set(HasLabel(varG, Label("Group"))(CTBoolean)))
+          ),
+          SolvedQueryModel(Set(irFieldA, irFieldG, irFieldR), Set(
+            HasLabel(varA, Label("Administrator"))(CTBoolean),
+            HasLabel(varG, Label("Group"))(CTBoolean)
+          ))
         ),
         SolvedQueryModel(
-          Set(nodeA, IRField("g")(CTNode), relR),
+          Set(irFieldA, irFieldG, irFieldR),
           Set(
-            HasLabel(Var("a")(CTNode), Label("Administrator"))(CTBoolean),
-            HasLabel(Var("g")(CTNode), Label("Group"))(CTBoolean),
-            Equals(Property(Var("g")(CTNode(Set("Group"))), PropertyKey("name"))(CTString), Param("foo")(CTString))(
+            HasLabel(varA, Label("Administrator"))(CTBoolean),
+            HasLabel(varG, Label("Group"))(CTBoolean),
+            Equals(Property(varG, PropertyKey("name"))(CTString), Param("foo")(CTString))(
               CTBoolean)
           )
         )
       ),
       SolvedQueryModel(
-        Set(nodeA, IRField("g")(CTNode), relR, IRField("a.name")(CTFloat)),
+        Set(irFieldA, irFieldG, irFieldR, IRField("a.name")(CTFloat)),
         Set(
-          HasLabel(Var("a")(CTNode), Label("Administrator"))(CTBoolean),
-          HasLabel(Var("g")(CTNode), Label("Group"))(CTBoolean),
-          Equals(Property(Var("g")(CTNode(Set("Group"))), PropertyKey("name"))(CTString), Param("foo")(CTString))(
+          HasLabel(varA, Label("Administrator"))(CTBoolean),
+          HasLabel(varG, Label("Group"))(CTBoolean),
+          Equals(Property(varG, PropertyKey("name"))(CTString), Param("foo")(CTString))(
             CTBoolean)
         )
       )
@@ -260,20 +248,20 @@ class LogicalPlannerTest extends BaseTestSuite with IrConstruction {
     val result = plan(ir)
 
     val expected = Project(
-      Property(Var("a")(CTNode), PropertyKey("prop"))(CTNull) -> Some(Var("a.prop")(CTNull)),
+      Property(varA, PropertyKey("prop"))(CTNull) -> Some(Var("a.prop")(CTNull)),
       Filter(
         Not(Equals(Param("p1")(CTInteger), Param("p2")(CTBoolean))(CTBoolean))(CTBoolean),
         NodeScan(
-          Var("a")(CTNode),
+          varA,
           Start(LogicalCatalogGraph(testQualifiedGraphName, Schema.empty), emptySqm),
-          SolvedQueryModel(Set(nodeA), Set())
+          SolvedQueryModel(Set(irFieldA), Set())
         ),
         SolvedQueryModel(
-          Set(nodeA),
+          Set(irFieldA),
           Set(Not(Equals(Param("p1")(CTInteger), Param("p2")(CTBoolean))(CTBoolean))(CTBoolean)))
       ),
       SolvedQueryModel(
-        Set(nodeA, IRField("a.prop")(CTNull)),
+        Set(irFieldA, IRField("a.prop")(CTNull)),
         Set(Not(Equals(Param("p1")(CTInteger), Param("p2")(CTBoolean))(CTBoolean))(CTBoolean)))
     )
 

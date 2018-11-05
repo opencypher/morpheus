@@ -26,10 +26,10 @@
  */
 package org.opencypher.okapi.logical.impl
 
-import org.opencypher.okapi.api.types.CTRelationship
-import org.opencypher.okapi.ir.api.IRField
+import org.opencypher.okapi.api.types.{CTBoolean, CTNode, CTRelationship}
 import org.opencypher.okapi.ir.api.block.{Aggregations, SortItem}
 import org.opencypher.okapi.ir.api.expr._
+import org.opencypher.okapi.ir.api.{IRField, Label}
 import org.opencypher.okapi.ir.impl.util.VarConverters._
 
 // TODO: Homogenize naming
@@ -82,7 +82,12 @@ class LogicalOperatorProducer {
   }
 
   def planNodeScan(node: IRField, prev: LogicalOperator): NodeScan = {
-    NodeScan(node, prev, prev.solved.withField(node))
+    val solvedWithField = prev.solved.withField(node)
+    val solvedWithPredicates = node.cypherType match {
+      case CTNode(labels, _) => solvedWithField.withPredicates(labels.map(l => HasLabel(node, Label(l))(CTBoolean)).toSeq:_*)
+      case _ => solvedWithField
+    }
+    NodeScan(node, prev, solvedWithPredicates)
   }
 
   def planFilter(expr: Expr, prev: LogicalOperator): Filter = {

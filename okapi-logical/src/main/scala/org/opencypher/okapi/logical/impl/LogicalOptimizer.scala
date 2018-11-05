@@ -26,32 +26,21 @@
  */
 package org.opencypher.okapi.logical.impl
 
-import org.opencypher.okapi.api.types.{CTBoolean, CTNode}
+import org.opencypher.okapi.api.types.CTBoolean
+import org.opencypher.okapi.ir.api.IRField
 import org.opencypher.okapi.ir.api.expr._
 import org.opencypher.okapi.ir.api.util.DirectCompilationStage
-import org.opencypher.okapi.ir.api.{IRField, Label}
 import org.opencypher.okapi.trees.{BottomUp, BottomUpWithContext}
 
 object LogicalOptimizer extends DirectCompilationStage[LogicalOperator, LogicalOperator, LogicalPlannerContext] {
 
   override def process(input: LogicalOperator)(implicit context: LogicalPlannerContext): LogicalOperator = {
     val optimizationRules = Seq(
-      pushLabelsIntoScans(labelsForVariables(input)),
       discardScansForNonexistentLabels,
       replaceCartesianWithValueJoin)
-    optimizationRules.foldLeft(input) {
+      optimizationRules.foldLeft(input) {
       // TODO: Evaluate if multiple rewriters could be fused
       case (tree: LogicalOperator, optimizationRule) => BottomUp[LogicalOperator](optimizationRule).transform(tree)
-    }
-  }
-
-  def labelsForVariables(op: LogicalOperator): Map[Var, Set[String]] = {
-    op.foldLeft(Map.empty[Var, Set[String]].withDefaultValue(Set.empty)) {
-      case (currentLabelMap, nextChildOp) =>
-        nextChildOp match {
-          case Filter(HasLabel(v: Var, Label(name)), _, _) => currentLabelMap.updated(v, currentLabelMap(v) + name)
-          case _ => currentLabelMap
-        }
     }
   }
 
@@ -82,15 +71,6 @@ object LogicalOptimizer extends DirectCompilationStage[LogicalOperator, LogicalO
       case Property(e: Var, _) => e.toField
       case _ => None
     }
-  }
-
-  def pushLabelsIntoScans(labelMap: Map[Var, Set[String]]): PartialFunction[LogicalOperator, LogicalOperator] = {
-    case ns@NodeScan(v@Var(name), in, _) =>
-      val updatedLabels = labelMap(v)
-      val updatedVar = Var(name)(CTNode(ns.labels ++ updatedLabels, v.cypherType.graph))
-      val updatedSolved = ns.solved.withPredicates(updatedLabels.map(l => HasLabel(v, Label(l))(CTBoolean)).toSeq: _*)
-      NodeScan(updatedVar, in, updatedSolved)
-    case Filter(_: HasLabel, in, _) => in
   }
 
   def discardScansForNonexistentLabels: PartialFunction[LogicalOperator, LogicalOperator] = {
