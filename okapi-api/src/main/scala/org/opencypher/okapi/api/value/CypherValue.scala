@@ -336,8 +336,9 @@ object CypherValue {
   }
 
   trait CypherNode[Id] extends CypherEntity[Id] with MaterialCypherValue[CypherNode[Id]] {
-
     override type I <: CypherNode[Id]
+
+    def id: Id
 
     def labels: Set[String]
 
@@ -381,6 +382,8 @@ object CypherValue {
   trait CypherRelationship[Id] extends CypherEntity[Id] with MaterialCypherValue[CypherRelationship[Id]] with Product {
 
     override type I <: CypherRelationship[Id]
+
+    def id: Id
 
     def startId: Id
 
