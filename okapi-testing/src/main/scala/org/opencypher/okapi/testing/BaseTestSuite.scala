@@ -26,17 +26,20 @@
  */
 package org.opencypher.okapi.testing
 
+import org.junit.runner.RunWith
 import org.mockito.Mockito.when
 import org.opencypher.okapi.api.graph.{GraphName, Namespace, QualifiedGraphName}
 import org.opencypher.okapi.api.io.PropertyGraphDataSource
 import org.opencypher.okapi.api.schema.Schema
 import org.opencypher.okapi.impl.graph.QGNGenerator
 import org.scalactic.source
+import org.scalatest.junit.JUnitRunner
 import org.scalatest.mockito.MockitoSugar
 import org.scalatest.{FunSpec, Matchers, Tag}
 
 import scala.util.Random
 
+@RunWith(classOf[JUnitRunner])
 abstract class BaseTestSuite extends FunSpec with Matchers with MockitoSugar {
 
   /* Shared test objects */
