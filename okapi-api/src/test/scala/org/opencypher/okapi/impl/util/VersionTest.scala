@@ -26,10 +26,10 @@
  */
 package org.opencypher.okapi.impl.util
 
+import org.opencypher.okapi.ApiBaseTest
 import org.opencypher.okapi.impl.exception.IllegalArgumentException
-import org.scalatest.{FunSpec, Matchers}
 
-class VersionTest extends FunSpec with Matchers {
+class VersionTest extends ApiBaseTest {
   describe("parsing") {
     it("parses two valued version numbers") {
       Version("1.0") should equal(Version(1,0))

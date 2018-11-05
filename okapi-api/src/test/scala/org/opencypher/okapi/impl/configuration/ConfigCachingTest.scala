@@ -26,9 +26,9 @@
  */
 package org.opencypher.okapi.impl.configuration
 
-import org.scalatest.{FunSpec, FunSuite, Matchers}
+import org.opencypher.okapi.ApiBaseTest
 
-class ConfigCachingTest extends FunSpec with Matchers {
+class ConfigCachingTest extends ApiBaseTest {
 
   object TestConfigWithCaching extends ConfigFlag("test") with ConfigCaching[Boolean]
 

@@ -26,12 +26,13 @@
  */
 package org.opencypher.okapi.api.types
 
+import org.opencypher.okapi.ApiBaseTest
 import org.opencypher.okapi.api.graph.QualifiedGraphName
 import org.scalatest.{FunSpec, Matchers}
 
 import scala.language.postfixOps
 
-class CypherTypesTest extends FunSpec with Matchers {
+class CypherTypesTest extends ApiBaseTest {
 
   val materialTypes: Seq[MaterialCypherType] = Seq(
     CTAny,

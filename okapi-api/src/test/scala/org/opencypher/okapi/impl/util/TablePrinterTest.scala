@@ -26,12 +26,12 @@
  */
 package org.opencypher.okapi.impl.util
 
+import org.opencypher.okapi.ApiBaseTest
 import org.opencypher.okapi.api.value.CypherValue
 import org.opencypher.okapi.api.value.CypherValue.{CypherMap, CypherNode, CypherRelationship, CypherValue}
 import org.opencypher.okapi.impl.util.TablePrinter.toTable
-import org.scalatest.{FunSpec, Matchers}
 
-class TablePrinterTest extends FunSpec with Matchers {
+class TablePrinterTest extends ApiBaseTest {
 
   it("prints empty header and data") {
     val header = Seq.empty

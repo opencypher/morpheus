@@ -26,10 +26,10 @@
  */
 package org.opencypher.okapi.api.value
 
+import org.opencypher.okapi.ApiBaseTest
 import org.opencypher.okapi.api.value.CypherValue.{CypherBoolean, CypherFloat, CypherInteger, CypherList, CypherMap, CypherNode, CypherRelationship, CypherString}
-import org.scalatest.{FunSpec, Matchers}
 
-class CypherValueTest extends FunSpec with Matchers {
+class CypherValueTest extends ApiBaseTest {
   describe("#toCypherString") {
     it("converts literals") {
       val mapping = Map(
