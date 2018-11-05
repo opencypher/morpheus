@@ -54,7 +54,7 @@ class SingleTableGraphTest extends CAPSGraphTest with RecordsVerificationFixture
     val person = inputGraph.cypher(
       """MATCH (a :Swedish)
         |CONSTRUCT
-        |  CLONE a
+        |  CLONE a AS a
         |RETURN GRAPH
       """.stripMargin)
 
@@ -70,7 +70,7 @@ class SingleTableGraphTest extends CAPSGraphTest with RecordsVerificationFixture
     val person = inputGraph.cypher(
       """MATCH (a:Person:Swedish)-[r]->(b)
         |CONSTRUCT
-        |  CLONE a, b, r
+        |  CLONE a AS a, b AS b, r AS r
         |  CREATE (a)-[r]->(b)
         |RETURN GRAPH
       """.stripMargin)
@@ -90,7 +90,7 @@ class SingleTableGraphTest extends CAPSGraphTest with RecordsVerificationFixture
     val person = inputGraph.cypher(
       """MATCH (a:Person:Swedish)-[r]->(b)
         |CONSTRUCT
-        |  CLONE a, b
+        |  CLONE a AS a, b AS b
         |  CREATE (a)-[foo:SWEDISH_KNOWS]->(b)
         |RETURN GRAPH
       """.stripMargin)
@@ -137,7 +137,7 @@ class SingleTableGraphTest extends CAPSGraphTest with RecordsVerificationFixture
     val person = inputGraph.cypher(
       """MATCH (a:Person:Swedish)-[r]->(b)
         |CONSTRUCT
-        |  CLONE a, r, b
+        |  CLONE a AS a, r AS r, b AS b
         |  CREATE (a)-[r]->(b)-[:KNOWS_A]->()
         |RETURN GRAPH
       """.stripMargin)
@@ -210,7 +210,7 @@ class SingleTableGraphTest extends CAPSGraphTest with RecordsVerificationFixture
     val person = inputGraph.cypher(
       """MATCH (a:Person:Swedish)-[r]->(b)
         |CONSTRUCT
-        |  CLONE a, r, b
+        |  CLONE a AS a, r AS r, b AS b
         |  CREATE (a)-[r]->(b)-[bar:KNOWS_A]->(baz:Swede)
         |RETURN GRAPH
       """.stripMargin)
@@ -404,7 +404,7 @@ class SingleTableGraphTest extends CAPSGraphTest with RecordsVerificationFixture
         |MATCH (i:Interest)<-[h:HAS_INTEREST]-(a:Person)-[k:KNOWS]->(b:Person)
         |WITH DISTINCT a, b
         |CONSTRUCT
-        |  CLONE a, b
+        |  CLONE a AS a, b AS b
         |  CREATE (a)-[f:FOO]->(b)
         |RETURN GRAPH
       """.stripMargin)
@@ -450,7 +450,7 @@ class SingleTableGraphTest extends CAPSGraphTest with RecordsVerificationFixture
       """
         |MATCH (i:Interest)<-[h:HAS_INTEREST]-(a:Person)-[k:KNOWS]->(b:Person)
         |CONSTRUCT
-        |  CLONE a, b
+        |  CLONE a AS a, b AS b
         |  CREATE (a)-[:FOO]->(b)
         |RETURN GRAPH
       """.stripMargin)
@@ -474,7 +474,7 @@ class SingleTableGraphTest extends CAPSGraphTest with RecordsVerificationFixture
       """
         |MATCH (i:Interest)<-[h:HAS_INTEREST]-(a:Person)-[k:KNOWS]->(b:Person)
         |CONSTRUCT
-        |  CLONE a
+        |  CLONE a AS a
         |  CREATE (a)
         |RETURN GRAPH
       """.stripMargin)
