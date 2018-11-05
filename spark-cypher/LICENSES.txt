@@ -7,6 +7,7 @@ Apache Software License, Version 2.0
   Apache Commons Lang
   Apache Log4j API
   Apache Log4j Core
+  Graph DDL
   Okapi - Neo4j IO
   Okapi - openCypher API
   Okapi IR - Declarative representation of Cypher queries
@@ -22,7 +23,6 @@ Apache Software License, Version 2.0
   parboiled-core
   parboiled-scala
   Scala 2.11 wrapper for Log4j API
-  SQL DDL
 ------------------------------------------------------------------------------
 
                                  Apache License
