@@ -60,7 +60,6 @@
     <plugin.maven-resources.version>2.7</plugin.maven-resources.version>
     <plugin.maven-scala.version>3.2.1</plugin.maven-scala.version>
     <plugin.maven-scalastyle.version>0.8.0</plugin.maven-scalastyle.version>
-    <plugin.maven-scalatest.version>2.0.0</plugin.maven-scalatest.version>
     <plugin.maven-shade.version>3.1.1</plugin.maven-shade.version>
     <plugin.maven-surefire.version>2.20.1</plugin.maven-surefire.version>
 
@@ -338,38 +337,11 @@
         </configuration>
       </plugin>
 
-      <!-- disable surefire -->
+      <!-- We run tests with surefire -->
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-surefire-plugin</artifactId>
         <version>${plugin.maven-surefire.version}</version>
-        <configuration>
-          <skipTests>true</skipTests>
-        </configuration>
-      </plugin>
-
-      <!-- enable scalatest -->
-      <plugin>
-        <groupId>org.scalatest</groupId>
-        <artifactId>scalatest-maven-plugin</artifactId>
-        <version>${plugin.maven-scalatest.version}</version>
-        <configuration>
-          <reportsDirectory>${project.build.directory}/surefire-reports</reportsDirectory>
-          <junitxml>.</junitxml>
-          <forkMode>never</forkMode>
-          <filereports>WDF TestSuite.txt</filereports>
-          <tagsToExclude>CAPSPatternGraphFactory</tagsToExclude>
-          <!-- Enable full exception stack traces -->
-          <stdout>F</stdout>
-        </configuration>
-        <executions>
-          <execution>
-            <id>test</id>
-            <goals>
-              <goal>test</goal>
-            </goals>
-          </execution>
-        </executions>
       </plugin>
 
       <!-- License header checking -->
