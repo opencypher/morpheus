@@ -36,13 +36,36 @@ import org.opencypher.okapi.api.value.CypherValue
 import org.opencypher.okapi.api.value.CypherValue.CypherValue
 import org.opencypher.okapi.impl.exception.IllegalArgumentException
 import org.opencypher.okapi.impl.util.Measurement.printTiming
+import org.opencypher.okapi.impl.util.StringEncodingUtilities._
 import org.opencypher.okapi.ir.api.expr._
 import org.opencypher.okapi.relational.api.planning.RelationalRuntimeContext
 import org.opencypher.okapi.relational.impl.table.RecordHeader
+import org.opencypher.spark.impl.CAPSFunctions.partitioned_id_assignment
 import org.opencypher.spark.impl.convert.SparkConversions._
 import org.opencypher.spark.impl.table.SparkTable.DataFrameTable
 
 object DataFrameOps {
+
+  /**
+    * Takes a sequence of DataFrames and adds long identifiers to all of them. Identifiers are guaranteed to be unique
+    * across all given DataFrames. The DataFrames are returned in the same order as the input.
+    *
+    * @param dataFrames sequence of DataFrames to assign ids to
+    * @param idColumnName column name for the generated id
+    * @return a sequence of DataFrames with unique long identifiers
+    */
+  def addUniqueIds(dataFrames: Seq[DataFrame], idColumnName: String): Seq[DataFrame] = {
+    // We need to know how many partitions a DF has in order to avoid writing into the id space of another DF.
+    // This is why require a running sum of number of partitions because we add the DF-specific sum to the offset that
+    // Sparks monotonically_increasing_id adds.
+    val dfPartitionCounts = dataFrames.map(_.rdd.getNumPartitions)
+    val dfPartitionStartDeltas = dfPartitionCounts.scan(0)(_ + _).dropRight(1) // drop last delta, as we don't need it
+
+    dataFrames.zip(dfPartitionStartDeltas).map {
+      case (df, partitionStartDelta) =>
+        df.withColumn(idColumnName, partitioned_id_assignment(partitionStartDelta))
+    }
+  }
 
   implicit class CypherRow(r: Row) {
 
@@ -121,6 +144,25 @@ object DataFrameOps {
         df
       } else {
         df.sparkSession.createDataFrame(df.rdd, newSchema)
+      }
+    }
+
+    def withPropertyColumns: DataFrame = {
+      df.columns.foldLeft(df) {
+        case (currentDf, column) => currentDf.withColumnRenamed(column, column.toPropertyColumnName)
+      }
+    }
+
+    def prefixColumns(prefix: String): DataFrame = {
+      df.columns.foldLeft(df) {
+        case (currentDf, column) => currentDf.withColumnRenamed(column, s"$prefix$column")
+      }
+    }
+
+    def removePrefix(prefix: String): DataFrame = {
+      df.columns.foldLeft(df) {
+        case (currentDf, column) if column.startsWith(prefix) => currentDf.withColumnRenamed(column, column.substring(prefix.length))
+        case (currentDf, _) => currentDf
       }
     }
 

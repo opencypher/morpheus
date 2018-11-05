@@ -24,46 +24,31 @@
  * described as "implementation extensions to Cypher" or as "proposed changes to
  * Cypher that are not yet approved by the openCypher community".
  */
-package org.opencypher.spark.api.io
+package org.opencypher.sql.ddl
 
-import org.opencypher.okapi.impl.exception.IllegalArgumentException
-import org.opencypher.okapi.impl.util.JsonUtils.FlatOption._
-import upickle.Js
+import org.opencypher.okapi.testing.BaseTestSuite
+import org.opencypher.sql.ddl.GraphDdlParser.parse
 
-trait StorageFormat {
-  def name: String = getClass.getSimpleName.dropRight("Format$".length).toLowerCase
+import scala.io.Source
+
+class GraphDdlAstFullExampleTests extends BaseTestSuite {
+
+  it("parses the Northwind graph DDL") {
+    val northwindUrl = getClass.getResource("/northwind-graph.ddl")
+    val northwindDdlString = Source.fromURL(northwindUrl).getLines.mkString("\n")
+    val parsed = parse(northwindDdlString)
+    // TODO: write expectation :)
+//    parsed.show()
+  }
+
+  it("parses the Census graph DDL") {
+    val censusUrl = getClass.getResource("/census-graph.ddl")
+    val censusDdlString = Source.fromURL(censusUrl).getLines.mkString("\n")
+    val parsed = parse(censusDdlString)
+    // TODO: write expectation :)
+//    parsed.show()
+  }
+
+  // TODO: write test that covers all possibilities of DDL
+
 }
-
-object StorageFormat {
-
-  val allStorageFormats: Map[String, StorageFormat] = Map(
-    AvroFormat.name -> AvroFormat,
-    CsvFormat.name -> CsvFormat,
-    HiveFormat.name -> HiveFormat,
-    JdbcFormat.name -> JdbcFormat,
-    Neo4jFormat.name -> Neo4jFormat,
-    OrcFormat.name -> OrcFormat,
-    ParquetFormat.name -> ParquetFormat
-  )
-
-  implicit def rw: ReadWriter[StorageFormat] = readwriter[Js.Value].bimap[StorageFormat](
-    storageFormat => storageFormat.name,
-    storageFormatName => allStorageFormats.getOrElse(storageFormatName.str,
-      throw IllegalArgumentException(s"Supported storage format (one of ${allStorageFormats.keys.mkString("[", ", ", "]")})", storageFormatName.str)
-    )
-  )
-}
-
-case object AvroFormat extends StorageFormat
-
-case object CsvFormat extends StorageFormat
-
-case object HiveFormat extends StorageFormat
-
-case object JdbcFormat extends StorageFormat
-
-case object Neo4jFormat extends StorageFormat
-
-case object OrcFormat extends StorageFormat
-
-case object ParquetFormat extends StorageFormat

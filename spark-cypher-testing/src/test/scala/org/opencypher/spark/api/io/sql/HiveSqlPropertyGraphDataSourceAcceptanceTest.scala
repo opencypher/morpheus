@@ -24,46 +24,27 @@
  * described as "implementation extensions to Cypher" or as "proposed changes to
  * Cypher that are not yet approved by the openCypher community".
  */
-package org.opencypher.spark.api.io
+package org.opencypher.spark.api.io.sql
 
-import org.opencypher.okapi.impl.exception.IllegalArgumentException
-import org.opencypher.okapi.impl.util.JsonUtils.FlatOption._
-import upickle.Js
+import org.apache.spark.sql.{DataFrame, SaveMode}
+import org.opencypher.spark.api.io.HiveFormat
+import org.opencypher.spark.testing.fixture.HiveFixture
 
-trait StorageFormat {
-  def name: String = getClass.getSimpleName.dropRight("Format$".length).toLowerCase
+class HiveSqlPropertyGraphDataSourceAcceptanceTest extends SqlPropertyGraphDataSourceAcceptanceTest with HiveFixture {
+
+  override def beforeAll(): Unit = {
+    super.beforeAll()
+    createHiveDatabase(databaseName)
+  }
+
+  override def afterAll(): Unit = {
+    dropHiveDatabase(databaseName)
+    super.afterAll()
+  }
+
+  override def sqlDataSourceConfig: SqlDataSourceConfig =
+    SqlDataSourceConfig(HiveFormat, dataSourceName)
+
+  override def writeTable(df: DataFrame, tableName: String): Unit =
+    df.write.mode(SaveMode.Overwrite).saveAsTable(tableName)
 }
-
-object StorageFormat {
-
-  val allStorageFormats: Map[String, StorageFormat] = Map(
-    AvroFormat.name -> AvroFormat,
-    CsvFormat.name -> CsvFormat,
-    HiveFormat.name -> HiveFormat,
-    JdbcFormat.name -> JdbcFormat,
-    Neo4jFormat.name -> Neo4jFormat,
-    OrcFormat.name -> OrcFormat,
-    ParquetFormat.name -> ParquetFormat
-  )
-
-  implicit def rw: ReadWriter[StorageFormat] = readwriter[Js.Value].bimap[StorageFormat](
-    storageFormat => storageFormat.name,
-    storageFormatName => allStorageFormats.getOrElse(storageFormatName.str,
-      throw IllegalArgumentException(s"Supported storage format (one of ${allStorageFormats.keys.mkString("[", ", ", "]")})", storageFormatName.str)
-    )
-  )
-}
-
-case object AvroFormat extends StorageFormat
-
-case object CsvFormat extends StorageFormat
-
-case object HiveFormat extends StorageFormat
-
-case object JdbcFormat extends StorageFormat
-
-case object Neo4jFormat extends StorageFormat
-
-case object OrcFormat extends StorageFormat
-
-case object ParquetFormat extends StorageFormat

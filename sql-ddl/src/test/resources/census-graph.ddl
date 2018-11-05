@@ -66,7 +66,7 @@ CREATE GRAPH Census_1901 WITH GRAPH SCHEMA Census
 
     RELATIONSHIP LABEL SETS (
 
-        [PRESENT_IN]
+        (PRESENT_IN)
             FROM VIEW_RESIDENT_ENUMERATED_IN_TOWN edge
                 START NODES
                     LABEL SET (Resident, Person)
@@ -100,7 +100,7 @@ CREATE GRAPH Census_1901 WITH GRAPH SCHEMA Census
                         JOIN ON end_nodes.REGION = edge.REGION                        
                         AND end_nodes.CITY_NAME = edge.CITY_NAME,
 
-        [LICENSED_BY]
+        (LICENSED_BY)
             FROM VIEW_LICENSED_DOG edge
                 START NODES
                     LABEL SET (LicensedDog)

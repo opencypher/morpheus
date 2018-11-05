@@ -24,46 +24,27 @@
  * described as "implementation extensions to Cypher" or as "proposed changes to
  * Cypher that are not yet approved by the openCypher community".
  */
-package org.opencypher.spark.api.io
+package org.opencypher.okapi.impl.util
 
-import org.opencypher.okapi.impl.exception.IllegalArgumentException
-import org.opencypher.okapi.impl.util.JsonUtils.FlatOption._
-import upickle.Js
+object JsonUtils {
 
-trait StorageFormat {
-  def name: String = getClass.getSimpleName.dropRight("Format$".length).toLowerCase
+  /**
+    * upickle by default represents Options as json arrays of 0 (None case) or 1 (Some case) elements. This overwrites
+    * this behaviour and either skips the key-value pair entirely (None case) or just prints `key : value` (Some case).
+    *
+    * Note that this does not support nesting options.
+    */
+  object FlatOption extends upickle.AttributeTagged {
+    override implicit def OptionWriter[T: Writer]: Writer[Option[T]] =
+      implicitly[Writer[T]].comap[Option[T]] {
+        case None => null.asInstanceOf[T]
+        case Some(x) => x
+      }
+
+    override implicit def OptionReader[T: Reader]: Reader[Option[T]] =
+      implicitly[Reader[T]].mapNulls{
+        case null => None
+        case x => Some(x)
+      }
+  }
 }
-
-object StorageFormat {
-
-  val allStorageFormats: Map[String, StorageFormat] = Map(
-    AvroFormat.name -> AvroFormat,
-    CsvFormat.name -> CsvFormat,
-    HiveFormat.name -> HiveFormat,
-    JdbcFormat.name -> JdbcFormat,
-    Neo4jFormat.name -> Neo4jFormat,
-    OrcFormat.name -> OrcFormat,
-    ParquetFormat.name -> ParquetFormat
-  )
-
-  implicit def rw: ReadWriter[StorageFormat] = readwriter[Js.Value].bimap[StorageFormat](
-    storageFormat => storageFormat.name,
-    storageFormatName => allStorageFormats.getOrElse(storageFormatName.str,
-      throw IllegalArgumentException(s"Supported storage format (one of ${allStorageFormats.keys.mkString("[", ", ", "]")})", storageFormatName.str)
-    )
-  )
-}
-
-case object AvroFormat extends StorageFormat
-
-case object CsvFormat extends StorageFormat
-
-case object HiveFormat extends StorageFormat
-
-case object JdbcFormat extends StorageFormat
-
-case object Neo4jFormat extends StorageFormat
-
-case object OrcFormat extends StorageFormat
-
-case object ParquetFormat extends StorageFormat

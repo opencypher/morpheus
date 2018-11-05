@@ -9,6 +9,11 @@ build/test/
 metastore_db/
 derby.log
 
+# Hive logs
+derby.log
+metastore_db
+metastore_*
+
 # IDE cruft
 .settings
 caps-core/.project

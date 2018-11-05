@@ -22,6 +22,7 @@ Apache Software License, Version 2.0
   parboiled-core
   parboiled-scala
   Scala 2.11 wrapper for Log4j API
+  SQL DDL
 ------------------------------------------------------------------------------
 
                                  Apache License
@@ -269,7 +270,10 @@ MIT-license
   Cats kernel
   Cats macros
   core
+  fastparse
+  fastparse-utils
   machinist
+  sourcecode
   ujson_2.11
   upickle_2.11
 ------------------------------------------------------------------------------

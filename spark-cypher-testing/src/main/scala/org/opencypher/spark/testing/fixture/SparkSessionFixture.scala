@@ -26,9 +26,12 @@
  */
 package org.opencypher.spark.testing.fixture
 
+import java.nio.file.{Files, Paths}
+
 import org.apache.spark.sql.SparkSession
 import org.opencypher.okapi.testing.{BaseTestFixture, BaseTestSuite}
 import org.opencypher.spark.testing.TestSparkSession
+import org.opencypher.spark.testing.utils.FileSystemUtils._
 
 trait SparkSessionFixture extends BaseTestFixture {
   self: BaseTestSuite =>
@@ -37,4 +40,12 @@ trait SparkSessionFixture extends BaseTestFixture {
 
   def initSparkSession: SparkSession = TestSparkSession.instance
 
+  override protected def afterAll(): Unit = {
+    val warehouseDir = sparkSession.conf.get("spark.sql.warehouse.dir")
+    val path = Paths.get(warehouseDir)
+    if (Files.exists(path)) {
+      deleteDirectory(path)
+    }
+    super.afterAll()
+  }
 }

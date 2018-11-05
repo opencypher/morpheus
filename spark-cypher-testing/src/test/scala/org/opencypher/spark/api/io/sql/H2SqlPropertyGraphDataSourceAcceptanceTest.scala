@@ -24,46 +24,32 @@
  * described as "implementation extensions to Cypher" or as "proposed changes to
  * Cypher that are not yet approved by the openCypher community".
  */
-package org.opencypher.spark.api.io
+package org.opencypher.spark.api.io.sql
 
-import org.opencypher.okapi.impl.exception.IllegalArgumentException
-import org.opencypher.okapi.impl.util.JsonUtils.FlatOption._
-import upickle.Js
+import org.apache.spark.sql.DataFrame
+import org.opencypher.spark.api.io.JdbcFormat
+import org.opencypher.spark.testing.fixture.H2Fixture
 
-trait StorageFormat {
-  def name: String = getClass.getSimpleName.dropRight("Format$".length).toLowerCase
-}
+class H2SqlPropertyGraphDataSourceAcceptanceTest extends SqlPropertyGraphDataSourceAcceptanceTest with H2Fixture {
 
-object StorageFormat {
+  override def beforeAll(): Unit = {
+    super.beforeAll()
+    createH2Database(sqlDataSourceConfig, databaseName)
+  }
 
-  val allStorageFormats: Map[String, StorageFormat] = Map(
-    AvroFormat.name -> AvroFormat,
-    CsvFormat.name -> CsvFormat,
-    HiveFormat.name -> HiveFormat,
-    JdbcFormat.name -> JdbcFormat,
-    Neo4jFormat.name -> Neo4jFormat,
-    OrcFormat.name -> OrcFormat,
-    ParquetFormat.name -> ParquetFormat
-  )
+  override def afterAll(): Unit = {
+    dropH2Database(sqlDataSourceConfig, databaseName)
+    super.afterAll()
+  }
 
-  implicit def rw: ReadWriter[StorageFormat] = readwriter[Js.Value].bimap[StorageFormat](
-    storageFormat => storageFormat.name,
-    storageFormatName => allStorageFormats.getOrElse(storageFormatName.str,
-      throw IllegalArgumentException(s"Supported storage format (one of ${allStorageFormats.keys.mkString("[", ", ", "]")})", storageFormatName.str)
+  override def sqlDataSourceConfig: SqlDataSourceConfig =
+    SqlDataSourceConfig(
+      storageFormat = JdbcFormat,
+      dataSourceName = dataSourceName,
+      jdbcDriver = Some("org.h2.Driver"),
+      jdbcUri = Some("jdbc:h2:mem:?user=sa&password=1234;DB_CLOSE_DELAY=-1")
     )
-  )
+
+  override def writeTable(df: DataFrame, tableName: String): Unit =
+    df.saveAsSqlTable(sqlDataSourceConfig, tableName)
 }
-
-case object AvroFormat extends StorageFormat
-
-case object CsvFormat extends StorageFormat
-
-case object HiveFormat extends StorageFormat
-
-case object JdbcFormat extends StorageFormat
-
-case object Neo4jFormat extends StorageFormat
-
-case object OrcFormat extends StorageFormat
-
-case object ParquetFormat extends StorageFormat

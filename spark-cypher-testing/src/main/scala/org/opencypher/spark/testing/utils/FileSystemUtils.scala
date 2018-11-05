@@ -24,27 +24,17 @@
  * described as "implementation extensions to Cypher" or as "proposed changes to
  * Cypher that are not yet approved by the openCypher community".
  */
-package org.opencypher.sql.ddl
+package org.opencypher.spark.testing.utils
 
-import org.opencypher.okapi.testing.BaseTestSuite
-import org.opencypher.sql.ddl.DdlParser.parse
+import java.nio.file.{Files, Path}
 
-import scala.io.Source
+import scala.collection.JavaConverters._
 
-class DdlFullExampleTests extends BaseTestSuite {
+object FileSystemUtils {
 
-  it("parses the Northwind graph DDL") {
-    val northwindUrl = getClass.getResource("/northwind-graph.ddl")
-    val northwindDdlString = Source.fromURL(northwindUrl).getLines.mkString("\n")
-    val parsed = parse(northwindDdlString)
-//    parsed.show()
-  }
-
-  it("parses the Census graph DDL") {
-    val censusUrl = getClass.getResource("/census-graph.ddl")
-    val censusDdlString = Source.fromURL(censusUrl).getLines.mkString("\n")
-    val parsed = parse(censusDdlString)
-//    parsed.show()
-  }
+  def deleteDirectory(path: Path): Unit = Files.walk(path).iterator().asScala.toList
+    .reverse
+    .map(_.toFile)
+    .foreach(_.delete())
 
 }
