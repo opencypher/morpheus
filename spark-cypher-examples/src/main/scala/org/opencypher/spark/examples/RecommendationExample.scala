@@ -92,7 +92,6 @@ object RecommendationExample extends ConsoleApp {
        |MATCH (c:Customer)
        |WHERE c.name = p.name
        |CONSTRUCT ON purchases.products, allFriends
-       |  CLONE c, p
        |  CREATE (c)-[:IS]->(p)
        |RETURN GRAPH
       """.stripMargin).graph
