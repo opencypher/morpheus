@@ -26,9 +26,9 @@
  */
 package org.opencypher.okapi.api.types
 
-import org.scalatest.{FunSpec, Matchers}
+import org.opencypher.okapi.ApiBaseTest
 
-class TernaryTest extends FunSpec with Matchers {
+class TernaryTest extends ApiBaseTest {
 
   it("Ternary.toString") {
     True.toString shouldBe "definitely true"

@@ -26,16 +26,15 @@
  */
 package org.opencypher.okapi.api.graph
 
+import org.opencypher.okapi.ApiBaseTest
 import org.opencypher.okapi.api.io.PropertyGraphDataSource
 import org.opencypher.okapi.api.table.CypherRecords
 import org.opencypher.okapi.api.value.CypherValue.CypherMap
 import org.opencypher.okapi.impl.exception.IllegalArgumentException
 import org.opencypher.okapi.impl.graph.CypherCatalog
 import org.opencypher.okapi.impl.io.SessionGraphDataSource
-import org.scalatest.mockito.MockitoSugar
-import org.scalatest.{FunSpec, Matchers}
 
-class CypherSessionTest extends FunSpec with MockitoSugar with Matchers {
+class CypherSessionTest extends ApiBaseTest {
 
   it("avoid de-registering the session data source") {
     an[org.opencypher.okapi.impl.exception.UnsupportedOperationException] should be thrownBy

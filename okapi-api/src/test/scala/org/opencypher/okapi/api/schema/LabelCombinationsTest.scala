@@ -26,10 +26,10 @@
  */
 package org.opencypher.okapi.api.schema
 
+import org.opencypher.okapi.ApiBaseTest
 import org.opencypher.okapi.impl.schema.LabelCombinations
-import org.scalatest.{FunSpec, Matchers}
 
-class LabelCombinationsTest extends FunSpec with Matchers {
+class LabelCombinationsTest extends ApiBaseTest {
 
   it("combinationsFor") {
     val in = LabelCombinations(Set(

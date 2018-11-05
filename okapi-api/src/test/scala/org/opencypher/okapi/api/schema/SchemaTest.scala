@@ -26,13 +26,14 @@
  */
 package org.opencypher.okapi.api.schema
 
+import org.opencypher.okapi.ApiBaseTest
 import org.opencypher.okapi.api.schema.PropertyKeys.PropertyKeys
 import org.opencypher.okapi.api.types._
 import org.opencypher.okapi.impl.exception.SchemaException
 import org.opencypher.okapi.impl.util.Version
 import org.scalatest.{FunSpec, Matchers}
 
-class SchemaTest extends FunSpec with Matchers {
+class SchemaTest extends ApiBaseTest {
 
   it("lists of void and others") {
     val s1 = Schema.empty.withNodePropertyKeys("A")("v" -> CTList(CTVoid))

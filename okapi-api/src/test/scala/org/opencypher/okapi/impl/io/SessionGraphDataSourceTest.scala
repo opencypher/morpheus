@@ -27,13 +27,12 @@
 package org.opencypher.okapi.impl.io
 
 import org.mockito.Mockito._
+import org.opencypher.okapi.ApiBaseTest
 import org.opencypher.okapi.api.graph.{GraphName, PropertyGraph}
 import org.opencypher.okapi.api.schema.Schema
 import org.opencypher.okapi.impl.exception.GraphNotFoundException
-import org.scalatest.{FunSpec, Matchers}
-import org.scalatest.mockito.MockitoSugar
 
-class SessionGraphDataSourceTest extends FunSpec with Matchers with MockitoSugar {
+class SessionGraphDataSourceTest extends ApiBaseTest {
 
   it("hasGraph should return true for existing graph") {
     val source = new SessionGraphDataSource

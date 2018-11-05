@@ -29,7 +29,7 @@ package org.opencypher.okapi.testing
 import org.opencypher.okapi.api.value.CypherValue.CypherMap
 import org.scalatest.{FunSpec, Matchers}
 
-class BagTest extends FunSpec with Matchers {
+class BagTest extends BaseTestSuite {
 
   it("considers maps with the same content equal") {
     Bag(

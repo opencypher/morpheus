@@ -653,7 +653,7 @@ class IrBuilderTest extends IrTestSuite {
         """
           |MATCH ()-[r]->()
           |CONSTRUCT
-          | CLONE r
+          | CLONE r AS r
           |RETURN GRAPH
         """.stripMargin
 
@@ -665,7 +665,7 @@ class IrBuilderTest extends IrTestSuite {
         """
           |MATCH (:FOO)-[r:REL]->()
           |CONSTRUCT
-          | CLONE r as newR
+          | CLONE r AS newR
           | CREATE (:A)-[newR]->()
           |RETURN GRAPH
         """.stripMargin
@@ -685,7 +685,7 @@ class IrBuilderTest extends IrTestSuite {
         """
           |MATCH (:FOO)-[r:REL]->()
           |CONSTRUCT
-          |  CLONE r
+          |  CLONE r AS r
           |  CREATE (:A)-[r]->()
           |RETURN GRAPH
         """.stripMargin

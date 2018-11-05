@@ -26,14 +26,13 @@
  */
 package org.opencypher.okapi.impl.graph
 
+import org.opencypher.okapi.ApiBaseTest
 import org.opencypher.okapi.api.graph._
 import org.opencypher.okapi.api.io.PropertyGraphDataSource
 import org.opencypher.okapi.impl.exception.{GraphNotFoundException, IllegalArgumentException}
 import org.opencypher.okapi.impl.io.SessionGraphDataSource
-import org.scalatest.mockito.MockitoSugar
-import org.scalatest.{FunSpec, Matchers}
 
-class CypherCatalogTest extends FunSpec with MockitoSugar with Matchers  {
+class CypherCatalogTest extends ApiBaseTest  {
   it("avoids retrieving a non-registered data source") {
     an[IllegalArgumentException] should be thrownBy new CypherCatalog().source(Namespace("foo"))
   }

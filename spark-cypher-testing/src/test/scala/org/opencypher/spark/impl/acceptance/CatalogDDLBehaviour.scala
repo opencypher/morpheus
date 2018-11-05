@@ -383,8 +383,8 @@ class CatalogDDLBehaviour extends CAPSTestSuite with DefaultGraphInit with Befor
           | FROM GRAPH $g2
           | MATCH (m)
           | CONSTRUCT
-          |   CLONE n
-          |   CLONE m
+          |   CLONE n AS n
+          |   CLONE m AS m
           | RETURN GRAPH
           |}
         """.stripMargin)
@@ -421,7 +421,7 @@ class CatalogDDLBehaviour extends CAPSTestSuite with DefaultGraphInit with Befor
           | FROM GRAPH $g2
           | MATCH (m)
           | CONSTRUCT
-          |   CLONE n
+          |   CLONE n AS n
           |   CREATE (COPY OF m)
           | RETURN GRAPH
           |}

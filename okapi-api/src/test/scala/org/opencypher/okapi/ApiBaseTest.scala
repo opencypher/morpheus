@@ -24,22 +24,12 @@
  * described as "implementation extensions to Cypher" or as "proposed changes to
  * Cypher that are not yet approved by the openCypher community".
  */
-package org.opencypher.okapi.impl.configuration
+package org.opencypher.okapi
 
-import org.opencypher.okapi.ApiBaseTest
+import org.junit.runner.RunWith
+import org.scalatest.junit.JUnitRunner
+import org.scalatest.mockito.MockitoSugar
+import org.scalatest.{FunSpec, Matchers}
 
-class ConfigCachingTest extends ApiBaseTest {
-
-  object TestConfigWithCaching extends ConfigFlag("test") with ConfigCaching[Boolean]
-
-  it("can read a set value") {
-    TestConfigWithCaching.set()
-    TestConfigWithCaching.get shouldBe true
-    TestConfigWithCaching.set("true")
-    TestConfigWithCaching.get shouldBe true
-    a[UnsupportedOperationException] shouldBe thrownBy {
-      TestConfigWithCaching.set("false")
-    }
-  }
-
-}
+@RunWith(classOf[JUnitRunner])
+abstract class ApiBaseTest extends FunSpec with MockitoSugar with Matchers

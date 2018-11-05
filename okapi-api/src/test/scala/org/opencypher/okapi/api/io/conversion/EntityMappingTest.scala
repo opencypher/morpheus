@@ -26,10 +26,10 @@
  */
 package org.opencypher.okapi.api.io.conversion
 
+import org.opencypher.okapi.ApiBaseTest
 import org.opencypher.okapi.impl.exception.IllegalArgumentException
-import org.scalatest.{FunSpec, Matchers}
 
-class EntityMappingTest extends FunSpec with Matchers {
+class EntityMappingTest extends ApiBaseTest {
 
   it("Construct node mapping") {
     val given = NodeMapping.on("id")

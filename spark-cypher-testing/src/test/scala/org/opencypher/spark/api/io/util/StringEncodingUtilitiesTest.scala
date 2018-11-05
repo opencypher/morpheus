@@ -27,10 +27,10 @@
 package org.opencypher.spark.api.io.util
 
 import org.opencypher.okapi.impl.util.StringEncodingUtilities._
+import org.opencypher.okapi.testing.BaseTestSuite
 import org.scalatest.prop.GeneratorDrivenPropertyChecks
-import org.scalatest.{FunSpec, Matchers}
 
-class StringEncodingUtilitiesTest extends FunSpec with GeneratorDrivenPropertyChecks with Matchers {
+class StringEncodingUtilitiesTest extends BaseTestSuite with GeneratorDrivenPropertyChecks {
 
   it("encodes arbitrary strings with only letters, digits, underscores, hashes, and 'at' symbols") {
     forAll { s: String =>

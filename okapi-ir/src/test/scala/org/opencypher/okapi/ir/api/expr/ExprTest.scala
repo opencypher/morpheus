@@ -27,9 +27,9 @@
 package org.opencypher.okapi.ir.api.expr
 
 import org.opencypher.okapi.api.types._
-import org.scalatest.{FunSuite, Matchers}
+import org.opencypher.okapi.testing.BaseTestSuite
 
-class ExprTest extends FunSuite with Matchers {
+class ExprTest extends BaseTestSuite {
 
   test("expressions ignore cypher type in equality") {
     val n = Var("a")(CTInteger)

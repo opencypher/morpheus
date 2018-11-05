@@ -26,10 +26,10 @@
  */
 package org.opencypher.okapi.api.graph
 
+import org.opencypher.okapi.ApiBaseTest
 import org.opencypher.okapi.impl.io.SessionGraphDataSource.{Namespace => SessionNamespace}
-import org.scalatest.{FunSpec, Matchers}
 
-class QualifiedGraphNameTest extends FunSpec with Matchers {
+class QualifiedGraphNameTest extends ApiBaseTest {
 
   it("apply with string representation containing single namespace and single graph name") {
     val string = "testNamespace.testGraphName"

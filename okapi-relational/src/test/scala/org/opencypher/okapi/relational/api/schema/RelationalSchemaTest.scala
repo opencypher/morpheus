@@ -32,9 +32,9 @@ import org.opencypher.okapi.ir.api.expr._
 import org.opencypher.okapi.ir.api.{Label, PropertyKey, RelType}
 import org.opencypher.okapi.relational.api.schema.RelationalSchema._
 import org.opencypher.okapi.relational.impl.table.RecordHeader
-import org.scalatest.{FunSpec, Matchers}
+import org.opencypher.okapi.testing.BaseTestSuite
 
-class RelationalSchemaTest extends FunSpec with Matchers {
+class RelationalSchemaTest extends BaseTestSuite {
 
   it("creates a header for given node") {
     val schema = Schema.empty
