@@ -229,7 +229,10 @@ abstract class RelationalCypherSession[T <: Table[T] : TypeTag] extends CypherSe
     logStageProgress("Relational planning ... ", newLine = false)
 
     def queryLocalGraphAt(qgn: QualifiedGraphName): Option[RelationalCypherGraph[T]] = {
-      Try(new RichPropertyGraph(queryLocalCatalog.graph(qgn)).asRelational[T]).toOption
+      Try(new RichPropertyGraph(queryLocalCatalog.graph(qgn)).asRelational[T]) match {
+        case scala.util.Success(value) => Some(value)
+        case scala.util.Failure(exception) => throw exception
+      }
     }
 
     implicit val context: RelationalRuntimeContext[T] = RelationalRuntimeContext(queryLocalGraphAt, maybeDrivingTable, parameters)
