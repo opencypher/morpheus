@@ -27,11 +27,11 @@
 package org.opencypher.okapi.procedures
 
 import org.junit.runner.RunWith
+import org.neo4j.graphdb.DependencyResolver.SelectionStrategy
 import org.neo4j.graphdb.GraphDatabaseService
 import org.neo4j.graphdb.factory.GraphDatabaseSettings
 import org.neo4j.kernel.impl.proc.Procedures
 import org.neo4j.kernel.internal.GraphDatabaseAPI
-import org.neo4j.test.TestGraphDatabaseFactory
 import org.scalatest.junit.JUnitRunner
 import org.scalatest.{BeforeAndAfter, FunSuite, Matchers}
 
@@ -253,7 +253,7 @@ class OkapiTest extends FunSuite with BeforeAndAfter with Matchers {
 
 
   private def registerProcedure(db: GraphDatabaseService, procedures: Class[_]*): Unit = {
-    val proceduresService = db.asInstanceOf[GraphDatabaseAPI].getDependencyResolver.resolveDependency(classOf[Procedures])
+    val proceduresService = db.asInstanceOf[GraphDatabaseAPI].getDependencyResolver.resolveDependency(classOf[Procedures], SelectionStrategy.ONLY)
     for (procedure <- procedures) {
       proceduresService.registerProcedure(procedure, true)
       proceduresService.registerFunction(procedure, true)

@@ -39,18 +39,23 @@ import scala.util.{Failure, Success, Try}
 
 object SchemaFromProcedure extends Logging {
 
-  val schemaProcedureName = "org.opencypher.okapi.procedures.schema"
+//  val schemaProcedureName = "org.opencypher.okapi.procedures.schema"
+  val nodeSchemaProcedure = "db.schema.nodeTypeProperties"
+  val relSchemaProcedure = "db.schema.relTypeProperties"
 
   def apply(config: Neo4jConfig, omitImportFailures: Boolean): Option[Schema] = {
     Try {
-      config.cypher("CALL dbms.procedures() YIELD name AS name").exists { map =>
-        map("name").value == schemaProcedureName
+      Seq(nodeSchemaProcedure, relSchemaProcedure).forall { proc =>
+        config.cypher("CALL dbms.procedures() YIELD name AS name").exists { map =>
+          map("name").value == proc
+        }
       }
     } match {
       case Success(true) =>
-        schemaFromProcedure(config, omitImportFailures)
+        nodeSchemaFromProcedure(config, omitImportFailures)
+        schemaFromProcedure(config, omitImportFailures, relSchemaProcedure)
       case Success(false) =>
-        logger.warn("Neo4j schema procedure not activated. Consider activating the procedure `" + schemaProcedureName + "`.")
+        logger.warn("Neo4j schema procedure not activated. Consider activating the procedures `" + nodeSchemaProcedure + " and " + relSchemaProcedure + "`.")
         None
       case Failure(error) =>
         logger.error(s"Retrieving the procedure list from the Neo4j database failed: $error")
@@ -58,10 +63,40 @@ object SchemaFromProcedure extends Logging {
     }
   }
 
-  private[neo4j] def schemaFromProcedure(config: Neo4jConfig, omitImportFailures: Boolean): Option[Schema] = {
+  private[neo4j] def nodeSchemaFromProcedure(config: Neo4jConfig, omitImportFailures: Boolean): Option[Schema] = {
     Try {
       val rows = config.withSession { session =>
-        val result = session.run("CALL " + schemaProcedureName)
+        val result = session.run("CALL " + nodeSchemaProcedure)
+
+          result.list().asScala.flatMap { row =>
+            val extractString = new Function[Value, String] {
+              override def apply(v1: Value): String = v1.asString()
+            }
+
+            val typ = row.get("nodeType").asString()
+            val labels = row.get("nodeLabels").asList(extractString).asScala.toList
+
+            val properties = {
+              val propName = row.get("propertyName").asList(extractString).asScala.toList
+              val propTypes = row.get("propertyTypes").asList(extractString).asScala.toList
+
+              val propCypherTypes = propTypes.map { tpe =>
+                tpe
+              }
+              ???
+            }
+            ???
+          }
+        ???
+      }
+    }
+    ???
+  }
+
+  private[neo4j] def schemaFromProcedure(config: Neo4jConfig, omitImportFailures: Boolean, procedure: String): Option[Schema] = {
+    Try {
+      val rows = config.withSession { session =>
+        val result = session.run("CALL " + procedure)
 
         result.list().asScala.flatMap { row =>
           val extractString = new Function[Value, String] {

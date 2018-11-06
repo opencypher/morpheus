@@ -30,6 +30,7 @@ import java.util
 import java.util.concurrent._
 import java.util.stream.Stream
 
+import org.neo4j.graphdb.DependencyResolver.SelectionStrategy
 import org.neo4j.internal.kernel.api._
 import org.neo4j.kernel.api.KernelTransaction
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge
@@ -51,7 +52,7 @@ import scala.concurrent.{Await, Future}
 import scala.util.{Success, Try}
 
 class SchemaCalculator(api: GraphDatabaseAPI, tx: KernelTransaction, log: Log) {
-  val ctx: ThreadToStatementContextBridge =  api.getDependencyResolver.resolveDependency(classOf[ThreadToStatementContextBridge])
+  val ctx: ThreadToStatementContextBridge =  api.getDependencyResolver.resolveDependency(classOf[ThreadToStatementContextBridge], SelectionStrategy.ONLY)
 
   /**
     * Computes the schema of the Neo4j graph as used by Okapi
@@ -140,7 +141,7 @@ class SchemaCalculator(api: GraphDatabaseAPI, tx: KernelTransaction, log: Log) {
   private def getPropertyName(id  : Int): String = tx.token().propertyKeyName(id)
 
   private def getHighestIdInUseForStore(typ: GraphEntityType) = {
-    val neoStores = api.getDependencyResolver.resolveDependency(classOf[RecordStorageEngine]).testAccessNeoStores
+    val neoStores = api.getDependencyResolver.resolveDependency(classOf[RecordStorageEngine], SelectionStrategy.ONLY).testAccessNeoStores
     val store = typ match {
       case Node => neoStores.getNodeStore
       case Relationship =>neoStores.getRelationshipStore
