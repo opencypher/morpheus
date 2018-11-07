@@ -43,14 +43,9 @@ object CensusHiveExample extends ConsoleApp {
   // Create CAPS session
   val settings = hiveExampleSettings
   implicit val session: CAPSSession = CAPSSession.local(settings: _*)
+  implicit val sparkSession: SparkSession = session.sparkSession
   // end::create-session[]
 
-  // tag::prepare-sql-database[]
-  // Create the data in H2 in-memory database
-  implicit val sparkSession: SparkSession = session.sparkSession
-  val schema = "CENSUS"
-  CensusDB.createHiveData(schema)
-  // end::prepare-sql-database[]
 
   // tag::register-sql-source-in-session[]
   // Register a SQL source (for Hive) in the Cypher session
@@ -58,6 +53,11 @@ object CensusHiveExample extends ConsoleApp {
   val sqlGraphSource = GraphSources
       .sql(resource("ddl/census.ddl").getFile)
       .withSqlDataSourceConfigs(resource("ddl/hive-data-sources.json").getFile)
+
+  // tag::prepare-sql-database[]
+  // Create the data in H2 in-memory database
+  CensusDB.createHiveData(sqlGraphSource.sqlDataSourceConfigs.find(_.dataSourceName == "CENSUS").get)
+  // end::prepare-sql-database[]
 
   session.registerSource(Namespace("sql"), sqlGraphSource)
   // end::register-sql-source-in-session[]

@@ -26,11 +26,15 @@
  */
 package org.opencypher.spark.util
 
-import java.sql.DriverManager
-
 import org.apache.spark.sql.SparkSession
 import org.apache.spark.sql.types._
-import org.opencypher.spark.api.io.{JdbcFormat, ParquetFormat, StorageFormat}
+import org.opencypher.okapi.impl.exception.IllegalArgumentException
+import org.opencypher.spark.api.io.sql.{SqlDataSourceConfig, SqlDataSourceConfigException}
+import org.opencypher.spark.api.io.{HiveFormat, JdbcFormat}
+import org.opencypher.spark.testing.utils.H2Utils._
+
+import scala.io.Source
+import scala.util.Properties
 
 object CensusDB {
 
@@ -84,8 +88,7 @@ object CensusDB {
       "LICENCE_NUMBER" -> LongType,
       "NAME" -> StringType,
       "PERSON_NUMBER" -> StringType,
-      "REGION" -> StringType
-    ))
+      "REGION" -> StringType))
   )
 
   def toStructType(columns: Seq[(String, DataType)]): StructType = {
@@ -95,153 +98,67 @@ object CensusDB {
     StructType(structFields.toList)
   }
 
-  def createJdbcData(driver: String, jdbcUrl: String, schema: String)(implicit sparkSession: SparkSession): Unit = {
+  private def readResourceAsString(name: String): String =
+    Source.fromFile(getClass.getResource(name).toURI)
+      .getLines()
+      .filterNot(line => line.startsWith("#") || line.startsWith("CREATE INDEX"))
+      .mkString(Properties.lineSeparator)
 
-    def executeDDL(ddlSeq: Seq[String]): Unit = {
-      val conn = DriverManager.getConnection(jdbcUrl)
-      conn.setSchema(schema)
-      val stmt = conn.createStatement()
-      ddlSeq.foreach(stmt.executeUpdate)
+  val databaseName: String = "CENSUS"
+
+  val createViewsSql: String = readResourceAsString("/census/sql/census_views.sql")
+
+  def createJdbcData(sqlDataSourceConfig: SqlDataSourceConfig)(implicit sparkSession: SparkSession): Unit = {
+
+    // Populate the data
+    populateData(townInput, sqlDataSourceConfig)
+    populateData(residentsInput, sqlDataSourceConfig)
+    populateData(visitorsInput, sqlDataSourceConfig)
+    populateData(licensedDogsInput, sqlDataSourceConfig)
+
+    // Create the views
+    withConnection(sqlDataSourceConfig) { connection =>
+      connection.setSchema(databaseName)
+      connection.execute(createViewsSql)
     }
-
-    // Create schema/database
-    Class.forName(driver)
-    executeDDL(Seq(s"DROP SCHEMA IF EXISTS $schema", s"CREATE SCHEMA IF NOT EXISTS $schema", s"SET SCHEMA $schema"))
-
-    // populate the data
-    val baseOptions = Map("url" -> jdbcUrl, "driver" -> driver)
-    populateData(townInput, JdbcFormat, schema, baseOptions ++ Map("dbtable" -> s"$schema.${townInput.table}"))
-    populateData(residentsInput, JdbcFormat, schema, baseOptions ++ Map("dbtable" -> s"$schema.${residentsInput.table}"))
-    populateData(visitorsInput, JdbcFormat, schema, baseOptions ++ Map("dbtable" -> s"$schema.${visitorsInput.table}"))
-    populateData(licensedDogsInput, JdbcFormat, schema, baseOptions ++ Map("dbtable" -> s"$schema.${licensedDogsInput.table}"))
-
-    // create the views
-    executeDDL(Seq(
-      viewPerson(schema),
-      viewVisitor(schema),
-      viewResident(schema),
-      viewLicensedDog(schema),
-      viewResidentEnumInTown(schema),
-      viewVisitorEnumInTown(schema)))
   }
 
-  def createHiveData(schema: String)(implicit sparkSession: SparkSession): Unit = {
+  def createHiveData(sqlDataSourceConfig: SqlDataSourceConfig)(implicit sparkSession: SparkSession): Unit = {
 
     // Create the database
-    sparkSession.sql(s"CREATE DATABASE $schema").count
+    sparkSession.sql(s"CREATE DATABASE CENSUS").count
 
-    def executeDDL(ddlSeq: Seq[String]): Unit = {
-      ddlSeq.foreach(sparkSession.sql(_).count)
-    }
+    // Populate the data
+    populateData(townInput, sqlDataSourceConfig)
+    populateData(residentsInput, sqlDataSourceConfig)
+    populateData(visitorsInput, sqlDataSourceConfig)
+    populateData(licensedDogsInput, sqlDataSourceConfig)
 
-    populateData(townInput, ParquetFormat, schema)
-    populateData(residentsInput, ParquetFormat, schema)
-    populateData(visitorsInput, ParquetFormat, schema)
-    populateData(licensedDogsInput, ParquetFormat, schema)
-
-    // create the views
-    executeDDL(Seq(
-      viewPerson(schema),
-      viewVisitor(schema),
-      viewResident(schema),
-      viewLicensedDog(schema),
-      viewResidentEnumInTown(schema),
-      viewVisitorEnumInTown(schema)))
+    // Create the views
+    createViewsSql.split(";").foreach(sparkSession.sql)
   }
 
-  private def viewPerson(schema: String): String =
-    s"""
-       |CREATE VIEW $schema.view_person AS
-       |  SELECT
-       |    first_name,
-       |    last_name
-       |  FROM
-       |    $schema.residents
-    """.stripMargin
-
-  private def viewVisitor(schema: String): String =
-    s"""
-       |CREATE VIEW $schema.view_visitor AS
-       |  SELECT
-       |    first_name,
-       |    last_name,
-       |    iso3166 as nationality,
-       |    passport_number,
-       |    date_of_entry,
-       |    entry_sequence as sequence,
-       |    age
-       |  FROM
-       |    $schema.visitors
-    """.stripMargin
-
-  private def viewResident(schema: String): String =
-    s"""
-       |CREATE VIEW $schema.view_resident AS
-       |  SELECT
-       |    first_name,
-       |    last_name,
-       |    person_number
-       |  FROM
-       |    $schema.residents
-    """.stripMargin
-
-  private def viewLicensedDog(schema: String): String =
-    s"""
-       |CREATE VIEW $schema.view_licensed_dog AS
-       |  SELECT
-       |    person_number,
-       |    licence_number,
-       |    licence_date as date_of_licence,
-       |    region,
-       |    city_name
-       |  FROM
-       |    $schema.licensed_dogs
-    """.stripMargin
-
-  private def viewResidentEnumInTown(schema: String): String =
-    s"""
-       |CREATE VIEW $schema.view_resident_enumerated_in_town AS
-       |  SELECT
-       |    PERSON_NUMBER,
-       |    REGION,
-       |    CITY_NAME
-       |  FROM
-       |    $schema.residents
-    """.stripMargin
-
-  private def viewVisitorEnumInTown(schema: String): String =
-    s"""
-       |CREATE VIEW $schema.view_visitor_enumerated_in_town AS
-       |  SELECT
-       |    ISO3166 AS countryOfOrigin,
-       |    PASSPORT_NUMBER AS PASSPORT_NO,
-       |    REGION,
-       |    CITY_NAME
-       |  FROM
-       |    $schema.visitors
-    """.stripMargin
-
-  private def populateData(
-    input: Input,
-    storageFormat: StorageFormat,
-    dbSchema: String,
-    options: Map[String, String] = Map.empty
-  )(implicit sparkSession: SparkSession): Unit = {
+  private def populateData(input: Input, cfg: SqlDataSourceConfig)(implicit sparkSession: SparkSession): Unit = {
     val writer = sparkSession
       .read
       .option("header", "true")
       .schema(input.dfSchema)
       .csv(getClass.getResource(s"${input.csvPath}").getPath)
       .write
-      .format(storageFormat.name)
-      .options(options)
+      .format(cfg.storageFormat.name)
       .mode("ignore")
 
-    if (storageFormat == JdbcFormat) {
-      writer.save
+    if (cfg.storageFormat == JdbcFormat) {
+      writer
+        .option("url", cfg.jdbcUri.getOrElse(throw SqlDataSourceConfigException("Missing JDBC URI")))
+        .option("driver", cfg.jdbcDriver.getOrElse(throw SqlDataSourceConfigException("Missing JDBC Driver")))
+        .option("fetchSize", cfg.jdbcFetchSize)
+        .option("dbtable", s"$databaseName.${input.table}")
+        .save
+    } else if (cfg.storageFormat == HiveFormat){
+      writer.saveAsTable(s"$databaseName.${input.table}")
     } else {
-      writer.saveAsTable(s"$dbSchema.${input.table}")
+      throw IllegalArgumentException(s"${HiveFormat.name} or ${JdbcFormat.name}", cfg.storageFormat.name)
     }
   }
-
 }
