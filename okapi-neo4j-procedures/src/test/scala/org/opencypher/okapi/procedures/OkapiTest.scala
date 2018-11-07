@@ -30,6 +30,7 @@ import org.junit.runner.RunWith
 import org.neo4j.graphdb.DependencyResolver.SelectionStrategy
 import org.neo4j.graphdb.GraphDatabaseService
 import org.neo4j.graphdb.factory.GraphDatabaseSettings
+import org.neo4j.harness.TestServerBuilders
 import org.neo4j.kernel.impl.proc.Procedures
 import org.neo4j.kernel.internal.GraphDatabaseAPI
 import org.scalatest.junit.JUnitRunner
@@ -43,10 +44,11 @@ class OkapiTest extends FunSuite with BeforeAndAfter with Matchers {
   private var db: GraphDatabaseService = _
 
   before {
-    db = new TestGraphDatabaseFactory()
-      .newImpermanentDatabaseBuilder
-      .setConfig(GraphDatabaseSettings.procedure_unrestricted, "*")
-      .newGraphDatabase()
+    db = TestServerBuilders
+      .newInProcessBuilder()
+      .withConfig(GraphDatabaseSettings.procedure_unrestricted, "*")
+      .newServer()
+      .graph()
 
     registerProcedure(db, classOf[OkapiProcedures])
   }
