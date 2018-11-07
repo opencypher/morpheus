@@ -28,6 +28,7 @@ package org.opencypher.spark.impl.acceptance
 
 import org.opencypher.okapi.api.value.CypherValue
 import org.opencypher.okapi.api.value.CypherValue.CypherMap
+import org.opencypher.okapi.ir.api.configuration.IrConfiguration.PrintIr
 import org.opencypher.okapi.testing.Bag
 import org.opencypher.spark.testing.CAPSTestSuite
 import org.scalatest.DoNotDiscover
@@ -757,6 +758,11 @@ class ExpressionBehaviour extends CAPSTestSuite with DefaultGraphInit {
         CypherMap("val" -> null)
       ))
     }
+  }
+
+  it("foo") {
+    PrintIr.set()
+    caps.cypher("RETURN 1 AS one UNION ALL RETURN 2 AS one").show
   }
 
   describe("string concatenation") {

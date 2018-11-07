@@ -160,7 +160,7 @@ abstract class RelationalCypherSession[T <: Table[T] : TypeTag] extends CypherSe
 
     logStageProgress("Done!")
 
-    ir match {
+    def processIR(ir: CypherStatement): RelationalCypherResult[T] = ir match {
       case cq: CypherQuery =>
         if (PrintIr.isSet) {
           println("IR:")
@@ -186,6 +186,8 @@ abstract class RelationalCypherSession[T <: Table[T] : TypeTag] extends CypherSe
         catalog.dropView(qgn)
         RelationalCypherResult.empty
     }
+
+    processIR(ir)
   }
 
   protected def planCypherQuery(

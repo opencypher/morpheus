@@ -26,7 +26,7 @@
  */
 package org.opencypher.okapi.ir.impl
 
-import org.opencypher.okapi.api.graph.{GraphName, QualifiedGraphName}
+import org.opencypher.okapi.api.graph.GraphName
 import org.opencypher.okapi.api.schema.Schema
 import org.opencypher.okapi.api.value.CypherValue._
 import org.opencypher.okapi.ir.api._
@@ -58,14 +58,14 @@ abstract class IrTestSuite extends BaseTestSuite {
   protected def matchBlock(pattern: Pattern): Block =
     MatchBlock(List(leafBlock), pattern, Set.empty, false, testGraph)
 
-  def irFor(root: Block): CypherQuery = {
+  def irFor(root: Block): SingleQuery = {
     val result = TableResultBlock(
       after = List(root),
       binds = OrderedFields(),
       graph = testGraph
     )
     val model = QueryModel(result, CypherMap.empty)
-    CypherQuery(QueryInfo("test"), model)
+    SingleQuery(QueryInfo("test"), model)
   }
 
   case class DummyBlock(override val after: List[Block] = List.empty) extends BasicBlock[DummyBinds[Expr]](BlockType("dummy")) {
@@ -86,8 +86,8 @@ abstract class IrTestSuite extends BaseTestSuite {
         case other => throw new IllegalArgumentException(s"Cannot convert $other")
       }
 
-    def asCypherQuery(graphsWithSchema: (GraphName, Schema)*)(implicit schema: Schema = Schema.empty): CypherQuery =
-      parseIR[CypherQuery](graphsWithSchema: _*)
+    def asCypherQuery(graphsWithSchema: (GraphName, Schema)*)(implicit schema: Schema = Schema.empty): SingleQuery =
+      parseIR[SingleQuery](graphsWithSchema: _*)
 
     def ir(graphsWithSchema: (GraphName, Schema)*)(implicit schema: Schema = Schema.empty): CypherStatement = {
       val stmt = CypherParser(queryText)(CypherParser.defaultContext)

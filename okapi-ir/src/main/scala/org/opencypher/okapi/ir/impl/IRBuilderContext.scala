@@ -109,6 +109,11 @@ final case class IRBuilderContext(
 
   def registerSchema(qgn: QualifiedGraphName, schema: Schema): IRBuilderContext =
     copy(queryLocalCatalog = queryLocalCatalog.withSchema(qgn, schema))
+
+  def resetRegistry: IRBuilderContext = {
+    val sourceBlock = SourceBlock(workingGraph)
+    copy(blockRegistry = BlockRegistry.empty.register(sourceBlock))
+  }
 }
 
 object IRBuilderContext {

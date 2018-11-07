@@ -109,6 +109,9 @@ object RelationalPlanner {
         val entityExprs: Set[Var] = Set(fields.toSeq: _*)
         relational.Distinct(process[T](in), entityExprs)
 
+      case logical.TabularUnionAll(left, right) =>
+        process[T](left).unionAll(process[T](right))
+
       // TODO: This needs to be a ternary operator taking source, rels and target records instead of just source and target and planning rels only at the physical layer
       case logical.Expand(source, rel, target, direction, sourceOp, targetOp, _) =>
         val first = process[T](sourceOp)
@@ -293,6 +296,10 @@ object RelationalPlanner {
 
     def join(other: RelationalOperator[T], joinExprs: Seq[(Expr, Expr)], joinType: JoinType): RelationalOperator[T] = {
       relational.Join(op, other.withDisjointColumnNames(op.header), joinExprs, joinType)
+    }
+
+    def unionAll(other: RelationalOperator[T]): RelationalOperator[T] = {
+      relational.TabularUnionAll(op, other.alignColumnNames(op.header))
     }
 
     def add(values: Expr*): RelationalOperator[T] = {
