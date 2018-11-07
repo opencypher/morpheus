@@ -27,10 +27,10 @@
 package org.opencypher.spark.examples
 
 class CensusJdbcExampleTest extends ExampleTest {
-  it("runs JdbcSqlGraphSourceExample") {
+  it("runs CensusJdbcExample") {
     validate(
       CensusJdbcExample.main(Array.empty),
-      getClass.getResource("/example_outputs/JdbcSqlGraphSourceExample.out").toURI
+      getClass.getResource("/example_outputs/CensusJdbcExample.out").toURI
     )
   }
 }

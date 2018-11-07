@@ -27,10 +27,10 @@
 package org.opencypher.spark.examples
 
 class CensusHiveExampleTest extends ExampleTest {
-  it("runs HiveSqlGraphSourceExample") {
+  it("runs CensusHiveExampleTest") {
     validate(
       CensusHiveExample.main(Array.empty),
-      getClass.getResource("/example_outputs/HiveSqlGraphSourceExample.out").toURI
+      getClass.getResource("/example_outputs/CensusHiveExample.out").toURI
     )
   }
 }
