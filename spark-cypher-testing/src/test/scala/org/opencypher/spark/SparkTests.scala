@@ -26,11 +26,43 @@
  */
 package org.opencypher.spark
 
+import org.apache.spark.sql.{Row, functions}
 import org.apache.spark.sql.execution.SparkPlan
+import org.apache.spark.sql.types._
 import org.opencypher.okapi.impl.util.Measurement
 import org.opencypher.spark.testing.CAPSTestSuite
 
+import scala.collection.JavaConverters._
+
 class SparkTests extends CAPSTestSuite {
+
+  it("foo") {
+
+    val list = List(
+      Row(Array("hey" -> 1)),
+      Row(Array("hey" -> 2, "hello" -> 5)),
+      Row(Array("hey" -> 3, "good" -> 10, "string" -> 3, "string" -> 55))
+    )
+
+    val schema = StructType(Seq(
+      StructField("list", ArrayType(
+        StructType(Seq(
+          StructField("message", StringType),
+          StructField("value", IntegerType)
+        ))
+      ))
+    ))
+
+    val df = sparkSession.createDataFrame(list.asJava, schema)
+
+//    df.select(functions.explode(df.col("list"))).write.csv("file:///tmp/foo.csv")
+
+    df.show
+
+    df.select(functions.posexplode(df.col("list"))).show
+    df.select(functions.explode(df.col("list"))).select("col.message").explain(true)
+    df.select(functions.explode(df.col("list"))).select("col.message").show()
+  }
 
   // Example for: https://issues.apache.org/jira/browse/SPARK-23855
   ignore("should correctly perform a join after a cross") {
