@@ -28,9 +28,8 @@ package org.opencypher.spark.util
 
 import org.apache.spark.sql.SparkSession
 import org.apache.spark.sql.types._
-import org.opencypher.okapi.impl.exception.IllegalArgumentException
+import org.opencypher.spark.api.io.{JdbcFormat, ParquetFormat, StorageFormat}
 import org.opencypher.spark.api.io.sql.{SqlDataSourceConfig, SqlDataSourceConfigException}
-import org.opencypher.spark.api.io.{HiveFormat, JdbcFormat}
 import org.opencypher.spark.testing.utils.H2Utils._
 
 import scala.io.Source
@@ -129,23 +128,24 @@ object CensusDB {
     sparkSession.sql(s"CREATE DATABASE CENSUS").count
 
     // Populate the data
-    populateData(townInput, sqlDataSourceConfig)
-    populateData(residentsInput, sqlDataSourceConfig)
-    populateData(visitorsInput, sqlDataSourceConfig)
-    populateData(licensedDogsInput, sqlDataSourceConfig)
+    populateData(townInput, sqlDataSourceConfig, Some(ParquetFormat))
+    populateData(residentsInput, sqlDataSourceConfig, Some(ParquetFormat))
+    populateData(visitorsInput, sqlDataSourceConfig, Some(ParquetFormat))
+    populateData(licensedDogsInput, sqlDataSourceConfig, Some(ParquetFormat))
 
     // Create the views
     createViewsSql.split(";").foreach(sparkSession.sql)
   }
 
-  private def populateData(input: Input, cfg: SqlDataSourceConfig)(implicit sparkSession: SparkSession): Unit = {
+  private def populateData(input: Input, cfg: SqlDataSourceConfig, format: Option[StorageFormat] = None)
+    (implicit sparkSession: SparkSession): Unit = {
     val writer = sparkSession
       .read
       .option("header", "true")
       .schema(input.dfSchema)
       .csv(getClass.getResource(s"${input.csvPath}").getPath)
       .write
-      .format(cfg.storageFormat.name)
+      .format(format.getOrElse(cfg.storageFormat).name)
       .mode("ignore")
 
     if (cfg.storageFormat == JdbcFormat) {
@@ -155,10 +155,8 @@ object CensusDB {
         .option("fetchSize", cfg.jdbcFetchSize)
         .option("dbtable", s"$databaseName.${input.table}")
         .save
-    } else if (cfg.storageFormat == HiveFormat){
-      writer.saveAsTable(s"$databaseName.${input.table}")
     } else {
-      throw IllegalArgumentException(s"${HiveFormat.name} or ${JdbcFormat.name}", cfg.storageFormat.name)
+      writer.saveAsTable(s"$databaseName.${input.table}")
     }
   }
 }
