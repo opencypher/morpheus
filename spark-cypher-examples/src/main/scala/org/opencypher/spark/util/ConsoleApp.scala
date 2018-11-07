@@ -26,11 +26,17 @@
  */
 package org.opencypher.spark.util
 
+import java.io.File
+import java.net.URL
+
 import org.opencypher.okapi.impl.util.PrintOptions
 
 abstract class ConsoleApp extends App {
 
   // Redirects output to the current Console. This is needed for testing.
   implicit val printOptions: PrintOptions = PrintOptions(Console.out)
+
+  def resource(name: String)(implicit folder: String = ""): URL =
+    getClass.getResource(folder + File.separator + name)
 
 }

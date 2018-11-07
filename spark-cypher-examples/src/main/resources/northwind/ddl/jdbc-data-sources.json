@@ -1,0 +1,9 @@
+[
+  {
+    "storageFormat": "jdbc",
+    "dataSourceName": "H2",
+    "jdbcUri": "jdbc:h2:mem:NORTHWIND.db;INIT=CREATE SCHEMA IF NOT EXISTS NORTHWIND;DB_CLOSE_DELAY=30;",
+    "jdbcDriver":"org.h2.Driver",
+    "jdbcFetchSize": 100
+  }
+]

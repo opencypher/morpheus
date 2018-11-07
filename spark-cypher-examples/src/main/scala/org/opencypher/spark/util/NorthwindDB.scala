@@ -24,26 +24,36 @@
  * described as "implementation extensions to Cypher" or as "proposed changes to
  * Cypher that are not yet approved by the openCypher community".
  */
-package org.opencypher.spark.testing.fixture
+package org.opencypher.spark.util
 
-import org.opencypher.okapi.testing.BaseTestSuite
 import org.opencypher.spark.api.io.sql.SqlDataSourceConfig
 import org.opencypher.spark.testing.utils.H2Utils._
 
+import scala.io.Source
+import scala.util.Properties
 
-trait H2Fixture extends SparkSessionFixture {
-  self: BaseTestSuite =>
+object NorthwindDB {
 
-  def createH2Database(cfg: SqlDataSourceConfig, name: String): Unit = {
-    withConnection(cfg) { conn => conn.execute(s"CREATE SCHEMA IF NOT EXISTS $name")}
+  def init(sqlDataSourceConfig: SqlDataSourceConfig): Unit = {
+
+    withConnection(sqlDataSourceConfig) { connection =>
+
+      connection.setSchema("NORTHWIND")
+
+      // create the SQL db schema
+      connection.execute(readResourceAsString("/northwind/sql/northwind_schema.sql"))
+
+      // populate tables with data
+      connection.execute(readResourceAsString("/northwind/sql/northwind_data.sql"))
+
+      // create views that hide problematic columns
+      connection.execute(readResourceAsString("/northwind/sql/northwind_views.sql"))
+    }
   }
 
-  def dropH2Database(cfg: SqlDataSourceConfig, name: String): Unit = {
-    withConnection(cfg) { conn => conn.execute(s"DROP SCHEMA IF EXISTS $name")}
-  }
-
-  def freshH2Database(cfg: SqlDataSourceConfig, name: String): Unit = {
-    dropH2Database(cfg, name)
-    createH2Database(cfg, name)
-  }
+  private def readResourceAsString(name: String): String =
+    Source.fromFile(getClass.getResource(name).toURI)
+      .getLines()
+      .filterNot(line => line.startsWith("#") || line.startsWith("CREATE INDEX"))
+      .mkString(Properties.lineSeparator)
 }

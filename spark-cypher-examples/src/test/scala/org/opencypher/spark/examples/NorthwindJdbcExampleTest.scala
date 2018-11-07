@@ -24,26 +24,13 @@
  * described as "implementation extensions to Cypher" or as "proposed changes to
  * Cypher that are not yet approved by the openCypher community".
  */
-package org.opencypher.spark.testing.fixture
+package org.opencypher.spark.examples
 
-import org.opencypher.okapi.testing.BaseTestSuite
-import org.opencypher.spark.api.io.sql.SqlDataSourceConfig
-import org.opencypher.spark.testing.utils.H2Utils._
-
-
-trait H2Fixture extends SparkSessionFixture {
-  self: BaseTestSuite =>
-
-  def createH2Database(cfg: SqlDataSourceConfig, name: String): Unit = {
-    withConnection(cfg) { conn => conn.execute(s"CREATE SCHEMA IF NOT EXISTS $name")}
-  }
-
-  def dropH2Database(cfg: SqlDataSourceConfig, name: String): Unit = {
-    withConnection(cfg) { conn => conn.execute(s"DROP SCHEMA IF EXISTS $name")}
-  }
-
-  def freshH2Database(cfg: SqlDataSourceConfig, name: String): Unit = {
-    dropH2Database(cfg, name)
-    createH2Database(cfg, name)
+class NorthwindJdbcExampleTest extends ExampleTest {
+  it("runs JdbcSqlGraphSourceExample") {
+    validate(
+      NorthwindJdbcExample.main(Array.empty),
+      getClass.getResource("/example_outputs/NorthwindJdbcExample.out").toURI
+    )
   }
 }

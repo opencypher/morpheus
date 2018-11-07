@@ -50,7 +50,7 @@ object DataFrameOps {
     * Takes a sequence of DataFrames and adds long identifiers to all of them. Identifiers are guaranteed to be unique
     * across all given DataFrames. The DataFrames are returned in the same order as the input.
     *
-    * @param dataFrames sequence of DataFrames to assign ids to
+    * @param dataFrames   sequence of DataFrames to assign ids to
     * @param idColumnName column name for the generated id
     * @return a sequence of DataFrames with unique long identifiers
     */
@@ -85,6 +85,40 @@ object DataFrameOps {
 
   implicit class RichDataFrame(val df: DataFrame) extends AnyVal {
 
+    def validateColumnTypes(expectedColsWithType: Map[String, CypherType]): DataFrame = {
+      val missingColumns = expectedColsWithType.keySet -- df.schema.fieldNames.toSet
+
+      if (missingColumns.nonEmpty) {
+        throw IllegalArgumentException(
+          expected = expectedColsWithType.keySet,
+          actual = df.schema.fieldNames.toSet,
+          s"""Expected columns are not contained in the DataFrame.
+             |Missing columns: $missingColumns
+           """.stripMargin
+        )
+      }
+
+      val structFields = df.schema.fields.map(field => field.name -> field).toMap
+
+      expectedColsWithType.foreach {
+        case (column, cypherType) =>
+          val structField = structFields(column)
+
+          val structFieldType = structField.toCypherType match {
+            case Some(cType) => cType
+            case None => throw IllegalArgumentException(
+              expected = s"Cypher-compatible DataType for column $column",
+              actual = structField.dataType)
+          }
+
+          if (structFieldType.material.subTypeOf(cypherType.material).isFalse) {
+            throw IllegalArgumentException(
+              expected = s"Sub-type of $cypherType for column: $column",
+              actual = structFieldType)
+          }
+      }
+      df
+    }
 
     /**
       * Returns the corresponding Cypher type for the given column name in the data frame.

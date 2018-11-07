@@ -1,0 +1,170 @@
+╔══════════╗
+║ count(n) ║
+╠══════════╣
+║ 3259     ║
+╚══════════╝
+(1 row)
+Node labels {
+	:Order
+		customerID: STRING?
+		orderID: INTEGER
+		orderDate: STRING?
+		shipAddress: STRING?
+		shipRegion: STRING?
+		freight: INTEGER?
+		shipCity: STRING?
+		shipCountry: STRING?
+		shipName: STRING?
+		employeeID: INTEGER?
+		shippedDate: STRING?
+		requiredDate: STRING?
+		shipPostalCode: STRING?
+		shipVia: INTEGER?
+	:CustomerDemographic
+		customerTypeID: STRING
+		customerDesc: STRING?
+	:OrderDetails
+		quantity: INTEGER
+		orderID: INTEGER
+		productID: INTEGER
+		unitPrice: INTEGER
+		discount: INTEGER
+	:Product
+		categoryID: INTEGER?
+		discontinued: INTEGER
+		unitsOnOrder: INTEGER?
+		quantityPerUnit: STRING?
+		reorderLevel: INTEGER?
+		supplierID: INTEGER?
+		productName: STRING
+		unitsInStock: INTEGER?
+		productID: INTEGER
+		unitPrice: INTEGER?
+	:Employee
+		city: STRING?
+		hireDate: STRING?
+		photoPath: STRING?
+		country: STRING?
+		postalCode: STRING?
+		reportsTo: INTEGER?
+		lastName: STRING
+		firstName: STRING
+		birthDate: STRING?
+		homePhone: STRING?
+		employeeID: INTEGER
+		region: STRING?
+		address: STRING?
+		title: STRING?
+		titleOfCourtesy: STRING?
+		extension: STRING?
+	:Category
+		categoryID: INTEGER
+		categoryName: STRING
+		description: STRING?
+	:Supplier
+		city: STRING?
+		homePage: STRING?
+		country: STRING?
+		postalCode: STRING?
+		contactName: STRING?
+		supplierID: INTEGER
+		fax: STRING?
+		companyName: STRING
+		region: STRING?
+		address: STRING?
+		contactTitle: STRING?
+		phone: STRING?
+	:Territory
+		territoryID: STRING
+		territoryDescription: STRING
+		regionID: INTEGER
+	:Shipper
+		shipperID: INTEGER
+		companyName: STRING
+		phone: STRING?
+	:Customer
+		customerID: STRING
+		city: STRING?
+		country: STRING?
+		postalCode: STRING?
+		contactName: STRING?
+		fax: STRING?
+		companyName: STRING
+		region: STRING?
+		address: STRING?
+		contactTitle: STRING?
+		phone: STRING?
+	:Region
+		regionID: INTEGER
+		regionDescription: STRING
+}
+no label implications
+Rel types {
+	:REPORTS_TO
+	:HAS_CUSTOMER
+	:HAS_ORDER
+	:HAS_EMPLOYEE
+	:HAS_SUPPLIER
+	:HAS_SHIPPER
+	:HAS_PRODUCT
+	:HAS_REGION
+	:HAS_CATEGORY
+	:HAS_TERRITORY
+	:HAS_CUSTOMER_DEMOGRAPHIC
+}
+
+╔══════════╤═════════════╤═════════════╤════════════════════════════╗
+║ customer │ orderedAt   │ handledBy   │ employee                   ║
+╠══════════╪═════════════╪═════════════╪════════════════════════════╣
+║ 'EASTC'  │ '1/1/1997'  │ 'Buchanan'  │ 'Sales Manager'            ║
+║ 'RATTC'  │ '1/1/1997'  │ 'Buchanan'  │ 'Sales Manager'            ║
+║ 'EASTC'  │ '1/1/1997'  │ 'Callahan'  │ 'Inside Sales Coordinator' ║
+║ 'RATTC'  │ '1/1/1997'  │ 'Callahan'  │ 'Inside Sales Coordinator' ║
+║ 'EASTC'  │ '1/1/1997'  │ 'Davolio'   │ 'Sales Representative'     ║
+║ 'RATTC'  │ '1/1/1997'  │ 'Davolio'   │ 'Sales Representative'     ║
+║ 'EASTC'  │ '1/1/1997'  │ 'Leverling' │ 'Sales Representative'     ║
+║ 'RATTC'  │ '1/1/1997'  │ 'Leverling' │ 'Sales Representative'     ║
+║ 'EASTC'  │ '1/1/1997'  │ 'Peacock'   │ 'Sales Representative'     ║
+║ 'RATTC'  │ '1/1/1997'  │ 'Peacock'   │ 'Sales Representative'     ║
+║ 'WELLI'  │ '1/1/1998'  │ 'Dodsworth' │ 'Sales Representative'     ║
+║ 'WELLI'  │ '1/1/1998'  │ 'King'      │ 'Sales Representative'     ║
+║ 'WELLI'  │ '1/1/1998'  │ 'Suyama'    │ 'Sales Representative'     ║
+║ 'BOTTM'  │ '1/10/1997' │ 'Buchanan'  │ 'Sales Manager'            ║
+║ 'BOTTM'  │ '1/10/1997' │ 'Callahan'  │ 'Inside Sales Coordinator' ║
+║ 'BOTTM'  │ '1/10/1997' │ 'Davolio'   │ 'Sales Representative'     ║
+║ 'BOTTM'  │ '1/10/1997' │ 'Dodsworth' │ 'Sales Representative'     ║
+║ 'BOTTM'  │ '1/10/1997' │ 'King'      │ 'Sales Representative'     ║
+║ 'BOTTM'  │ '1/10/1997' │ 'Leverling' │ 'Sales Representative'     ║
+║ 'BOTTM'  │ '1/10/1997' │ 'Peacock'   │ 'Sales Representative'     ║
+║ 'BOTTM'  │ '1/10/1997' │ 'Suyama'    │ 'Sales Representative'     ║
+║ 'BONAP'  │ '1/12/1998' │ 'Buchanan'  │ 'Sales Manager'            ║
+║ 'BONAP'  │ '1/12/1998' │ 'Callahan'  │ 'Inside Sales Coordinator' ║
+║ 'BONAP'  │ '1/12/1998' │ 'Davolio'   │ 'Sales Representative'     ║
+║ 'BLONP'  │ '1/12/1998' │ 'Dodsworth' │ 'Sales Representative'     ║
+║ 'BLONP'  │ '1/12/1998' │ 'King'      │ 'Sales Representative'     ║
+║ 'BONAP'  │ '1/12/1998' │ 'Leverling' │ 'Sales Representative'     ║
+║ 'BONAP'  │ '1/12/1998' │ 'Peacock'   │ 'Sales Representative'     ║
+║ 'BLONP'  │ '1/12/1998' │ 'Suyama'    │ 'Sales Representative'     ║
+║ 'WARTH'  │ '1/13/1997' │ 'Buchanan'  │ 'Sales Manager'            ║
+║ 'WARTH'  │ '1/13/1997' │ 'Callahan'  │ 'Inside Sales Coordinator' ║
+║ 'WARTH'  │ '1/13/1997' │ 'Davolio'   │ 'Sales Representative'     ║
+║ 'WARTH'  │ '1/13/1997' │ 'Leverling' │ 'Sales Representative'     ║
+║ 'WARTH'  │ '1/13/1997' │ 'Peacock'   │ 'Sales Representative'     ║
+║ 'TRADH'  │ '1/13/1998' │ 'Buchanan'  │ 'Sales Manager'            ║
+║ 'TRADH'  │ '1/13/1998' │ 'Callahan'  │ 'Inside Sales Coordinator' ║
+║ 'TRADH'  │ '1/13/1998' │ 'Davolio'   │ 'Sales Representative'     ║
+║ 'ISLAT'  │ '1/13/1998' │ 'Dodsworth' │ 'Sales Representative'     ║
+║ 'RANCH'  │ '1/13/1998' │ 'Dodsworth' │ 'Sales Representative'     ║
+║ 'ISLAT'  │ '1/13/1998' │ 'King'      │ 'Sales Representative'     ║
+║ 'RANCH'  │ '1/13/1998' │ 'King'      │ 'Sales Representative'     ║
+║ 'TRADH'  │ '1/13/1998' │ 'Leverling' │ 'Sales Representative'     ║
+║ 'TRADH'  │ '1/13/1998' │ 'Peacock'   │ 'Sales Representative'     ║
+║ 'ISLAT'  │ '1/13/1998' │ 'Suyama'    │ 'Sales Representative'     ║
+║ 'RANCH'  │ '1/13/1998' │ 'Suyama'    │ 'Sales Representative'     ║
+║ 'LAMAI'  │ '1/14/1997' │ 'Buchanan'  │ 'Sales Manager'            ║
+║ 'LAMAI'  │ '1/14/1997' │ 'Callahan'  │ 'Inside Sales Coordinator' ║
+║ 'LAMAI'  │ '1/14/1997' │ 'Davolio'   │ 'Sales Representative'     ║
+║ 'LAMAI'  │ '1/14/1997' │ 'Leverling' │ 'Sales Representative'     ║
+║ 'LAMAI'  │ '1/14/1997' │ 'Peacock'   │ 'Sales Representative'     ║
+╚══════════╧═════════════╧═════════════╧════════════════════════════╝
+(50 rows)

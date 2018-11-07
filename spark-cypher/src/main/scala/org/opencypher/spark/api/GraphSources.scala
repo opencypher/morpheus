@@ -32,9 +32,12 @@ import org.opencypher.okapi.api.schema.Schema
 import org.opencypher.okapi.neo4j.io.Neo4jConfig
 import org.opencypher.spark.api.io.fs.{EscapeAtSymbol, FSGraphSource}
 import org.opencypher.spark.api.io.neo4j.{Neo4jBulkCSVDataSink, Neo4jPropertyGraphDataSource}
+import org.opencypher.spark.api.io.sql.{SqlDataSourceConfig, SqlPropertyGraphDataSource}
 import org.opencypher.spark.api.io.{CsvFormat, OrcFormat, ParquetFormat}
+import org.opencypher.sql.ddl.GraphDdl
 
 import scala.io.Source
+import scala.util.Properties
 
 object GraphSources {
   def fs(
@@ -44,6 +47,8 @@ object GraphSources {
   )(implicit session: CAPSSession) = FSGraphSources(rootPath, hiveDatabaseName, filesPerTable)
 
   def cypher: CypherGraphSources.type = CypherGraphSources
+
+  def sql(graphDdlPath: String)(implicit session: CAPSSession) = SqlGraphSources(graphDdlPath)
 }
 
 object FSGraphSources {
@@ -103,4 +108,22 @@ object CypherGraphSources {
 
     Neo4jPropertyGraphDataSource(config, maybeSchema = Some(Schema.fromJson(schemaString)), omitIncompatibleProperties = omitIncompatibleProperties)
   }
+}
+
+object SqlGraphSources {
+
+  case class SqlGraphSourceFactory(graphDdl: GraphDdl)(implicit session: CAPSSession) {
+
+    def withSqlDataSourceConfigs(sqlDataSourceConfigsPath: String): SqlPropertyGraphDataSource = {
+      val jsonString = Source.fromFile(sqlDataSourceConfigsPath, "UTF-8").getLines().mkString(Properties.lineSeparator)
+      val sqlDataSourceConfigs = SqlDataSourceConfig.dataSourcesFromString(jsonString).values.toList
+      withSqlDataSourceConfigs(sqlDataSourceConfigs)
+    }
+
+    def withSqlDataSourceConfigs(sqlDataSourceConfigs: List[SqlDataSourceConfig]): SqlPropertyGraphDataSource =
+      SqlPropertyGraphDataSource(graphDdl, sqlDataSourceConfigs)
+  }
+
+  def apply(graphDdlPath: String)(implicit session: CAPSSession): SqlGraphSourceFactory =
+    SqlGraphSourceFactory(GraphDdl(Source.fromFile(graphDdlPath, "UTF-8").getLines().mkString(Properties.lineSeparator)))
 }

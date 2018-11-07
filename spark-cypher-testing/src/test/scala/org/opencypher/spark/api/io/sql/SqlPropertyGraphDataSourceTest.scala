@@ -44,7 +44,7 @@ class SqlPropertyGraphDataSourceTest extends CAPSTestSuite with HiveFixture with
   private val fooGraphName = GraphName("fooGraph")
 
   private def computePartitionedRowId(rowIndex: Long, partitionStartDelta: Long): Long = {
-     (partitionStartDelta << rowIdSpaceBitsUsedByMonotonicallyIncreasingId) + rowIndex
+    (partitionStartDelta << rowIdSpaceBitsUsedByMonotonicallyIncreasingId) + rowIndex
   }
 
   override protected def beforeAll(): Unit = {
@@ -177,8 +177,8 @@ class SqlPropertyGraphDataSourceTest extends CAPSTestSuite with HiveFixture with
 
   it("reads relationships from a table") {
     val personView = "person_view"
-    val bookView   = "bookView_view"
-    val readsView  = "reads_view"
+    val bookView = "bookView_view"
+    val readsView = "reads_view"
 
     val ddlString =
       s"""
@@ -270,13 +270,13 @@ class SqlPropertyGraphDataSourceTest extends CAPSTestSuite with HiveFixture with
 
     sparkSession
       .createDataFrame(Seq(
-        (0L, 23, "startValue", "endValue"),
-        (1L, 42, "startValue", "endValue")
+        (0L, 23L, "startValue", "endValue"),
+        (1L, 42L, "startValue", "endValue")
       )).repartition(1) // to keep id generation predictable
       .toDF("node_id", "id", "start", "end")
       .write.mode(SaveMode.Overwrite).saveAsTable(s"$databaseName.$nodesView")
     sparkSession
-      .createDataFrame(Seq((0L, 1L, 1984, "startValue", "endValue")))
+      .createDataFrame(Seq((0L, 1L, 1984L, "startValue", "endValue")))
       .toDF("source_id", "target_id", "id", "start", "end")
       .write.mode(SaveMode.Overwrite).saveAsTable(s"$databaseName.$relsView")
 
@@ -296,13 +296,13 @@ class SqlPropertyGraphDataSourceTest extends CAPSTestSuite with HiveFixture with
         startId = nodeId1,
         endId = nodeId2,
         relType = "REL",
-        properties = CypherMap("id" -> 1984, "start" -> "startValue", "end" -> "endValue")))
+        properties = CypherMap("id" -> 1984L, "start" -> "startValue", "end" -> "endValue")))
     ))
   }
 
   it("reads relationships from multiple tables") {
     val personView = "person_view"
-    val bookView   = "bookView_view"
+    val bookView = "bookView_view"
     val readsView1 = "reads1_view"
     val readsView2 = "reads2_view"
 
@@ -463,6 +463,7 @@ class SqlPropertyGraphDataSourceTest extends CAPSTestSuite with HiveFixture with
       .write.mode(SaveMode.Overwrite).saveAsTable(s"schema1.$fooView")
 
     // -- Add h2 data
+    import org.opencypher.spark.testing.utils.H2Utils._
 
     freshH2Database(h2DataSourceConfig, "schema2")
     sparkSession

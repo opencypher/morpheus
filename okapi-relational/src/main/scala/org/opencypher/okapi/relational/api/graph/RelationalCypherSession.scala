@@ -48,7 +48,6 @@ import org.opencypher.okapi.relational.impl.RelationalConverters._
 import org.opencypher.okapi.relational.impl.planning.{RelationalOptimizer, RelationalPlanner}
 
 import scala.reflect.runtime.universe.TypeTag
-import scala.util.Try
 
 /**
   * Base class for relational back ends implementing the OKAPI pipeline.
@@ -228,9 +227,8 @@ abstract class RelationalCypherSession[T <: Table[T] : TypeTag] extends CypherSe
   ): Result = {
     logStageProgress("Relational planning ... ", newLine = false)
 
-    def queryLocalGraphAt(qgn: QualifiedGraphName): Option[RelationalCypherGraph[T]] = {
-      Try(new RichPropertyGraph(queryLocalCatalog.graph(qgn)).asRelational[T]).toOption
-    }
+    def queryLocalGraphAt(qgn: QualifiedGraphName): Option[RelationalCypherGraph[T]] =
+      Some(new RichPropertyGraph(queryLocalCatalog.graph(qgn)).asRelational[T])
 
     implicit val context: RelationalRuntimeContext[T] = RelationalRuntimeContext(queryLocalGraphAt, maybeDrivingTable, parameters)
 

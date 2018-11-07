@@ -30,12 +30,13 @@ import org.opencypher.okapi.testing.BaseTestSuite
 import org.opencypher.sql.ddl.GraphDdlParser.parse
 
 import scala.io.Source
+import scala.util.Properties
 
 class GraphDdlAstFullExampleTests extends BaseTestSuite {
 
   it("parses the Northwind graph DDL") {
     val northwindUrl = getClass.getResource("/northwind-graph.ddl")
-    val northwindDdlString = Source.fromURL(northwindUrl).getLines.mkString("\n")
+    val northwindDdlString = Source.fromURL(northwindUrl).getLines.mkString(Properties.lineSeparator)
     val parsed = parse(northwindDdlString)
     // TODO: write expectation :)
 //    parsed.show()
@@ -43,7 +44,7 @@ class GraphDdlAstFullExampleTests extends BaseTestSuite {
 
   it("parses the Census graph DDL") {
     val censusUrl = getClass.getResource("/census-graph.ddl")
-    val censusDdlString = Source.fromURL(censusUrl).getLines.mkString("\n")
+    val censusDdlString = Source.fromURL(censusUrl).getLines.mkString(Properties.lineSeparator)
     val parsed = parse(censusDdlString)
     // TODO: write expectation :)
 //    parsed.show()
