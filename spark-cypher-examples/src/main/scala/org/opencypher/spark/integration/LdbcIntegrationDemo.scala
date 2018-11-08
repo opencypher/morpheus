@@ -75,7 +75,7 @@ object LdbcIntegrationDemo extends ConsoleApp {
       // cast e.g. Timestamp to String
       .withCompatibleTypes
       .write
-      .saveAsTable(s"$database.${csvFile.dropRight("_0_0.csv".length)}")
+      .saveAsTable(s"$database.${csvFile.dropRight("_0_0.csv.gz".length)}")
   }
 
   // Create views that normalize LDBC data where necessary
