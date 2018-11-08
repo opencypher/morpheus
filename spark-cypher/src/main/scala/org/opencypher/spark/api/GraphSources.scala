@@ -34,7 +34,7 @@ import org.opencypher.spark.api.io.fs.{EscapeAtSymbol, FSGraphSource}
 import org.opencypher.spark.api.io.neo4j.{Neo4jBulkCSVDataSink, Neo4jPropertyGraphDataSource}
 import org.opencypher.spark.api.io.sql.{SqlDataSourceConfig, SqlPropertyGraphDataSource}
 import org.opencypher.spark.api.io.{CsvFormat, OrcFormat, ParquetFormat}
-import org.opencypher.sql.ddl.GraphDdl
+import org.opencypher.graphddl.GraphDdl
 
 import scala.io.Source
 import scala.util.Properties

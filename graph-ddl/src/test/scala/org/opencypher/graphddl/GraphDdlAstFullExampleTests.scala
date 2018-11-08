@@ -24,10 +24,10 @@
  * described as "implementation extensions to Cypher" or as "proposed changes to
  * Cypher that are not yet approved by the openCypher community".
  */
-package org.opencypher.sql.ddl
+package org.opencypher.graphddl
 
 import org.opencypher.okapi.testing.BaseTestSuite
-import org.opencypher.sql.ddl.GraphDdlParser.parse
+import org.opencypher.graphddl.GraphDdlParser.parse
 
 import scala.io.Source
 import scala.util.Properties

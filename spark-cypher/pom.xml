@@ -33,7 +33,7 @@
 
     <dependency>
       <groupId>org.opencypher</groupId>
-      <artifactId>sql-ddl</artifactId>
+      <artifactId>graph-ddl</artifactId>
       <version>${project.parent.version}</version>
     </dependency>
 

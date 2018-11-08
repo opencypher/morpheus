@@ -24,12 +24,13 @@
  * described as "implementation extensions to Cypher" or as "proposed changes to
  * Cypher that are not yet approved by the openCypher community".
  */
-package org.opencypher.sql.ddl
+package org.opencypher.graphddl
 
 import fastparse.core.Parsed.{Failure, Success}
 import org.opencypher.okapi.api.types._
 import org.opencypher.okapi.testing.{BaseTestSuite, TestNameFixture}
-import org.opencypher.sql.ddl.GraphDdlParser._
+import org.opencypher.graphddl.GraphDdlParser._
+import org.opencypher.graphddl._
 import org.scalatest.mockito.MockitoSugar
 
 class GraphDdlParserTest extends BaseTestSuite with MockitoSugar with TestNameFixture {

@@ -24,13 +24,13 @@
  * described as "implementation extensions to Cypher" or as "proposed changes to
  * Cypher that are not yet approved by the openCypher community".
  */
-package org.opencypher.sql.ddl
+package org.opencypher.graphddl
 
 import fastparse.WhitespaceApi
 import fastparse.core.Frame
 import fastparse.core.Parsed.{Failure, Success}
+import org.opencypher.graphddl.GraphDdlAst._
 import org.opencypher.okapi.api.types._
-import org.opencypher.sql.ddl.GraphDdlAst._
 
 case class DdlParsingException(
   index: Int,

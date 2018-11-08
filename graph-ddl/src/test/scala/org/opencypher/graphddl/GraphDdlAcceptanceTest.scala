@@ -24,15 +24,15 @@
  * described as "implementation extensions to Cypher" or as "proposed changes to
  * Cypher that are not yet approved by the openCypher community".
  */
-package org.opencypher.sql.ddl
+package org.opencypher.graphddl
 
 import org.opencypher.okapi.api.graph.GraphName
 import org.opencypher.okapi.api.schema.{Schema, SchemaPattern}
 import org.opencypher.okapi.api.types.{CTBoolean, CTInteger, CTString}
-import org.opencypher.okapi.impl.exception.{IllegalArgumentException, SchemaException}
 import org.opencypher.okapi.testing.BaseTestSuite
 import org.opencypher.okapi.testing.MatchHelper.equalWithTracing
-import org.opencypher.sql.ddl.GraphDdlParser._
+import org.opencypher.graphddl.GraphDdlParser._
+import org.opencypher.graphddl._
 
 class GraphDdlAcceptanceTest extends BaseTestSuite {
 
