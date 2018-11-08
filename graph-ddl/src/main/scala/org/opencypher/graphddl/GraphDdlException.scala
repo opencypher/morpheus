@@ -24,14 +24,14 @@
  * described as "implementation extensions to Cypher" or as "proposed changes to
  * Cypher that are not yet approved by the openCypher community".
  */
-package org.opencypher.sql.ddl
+package org.opencypher.graphddl
 
 abstract class GraphDdlException(msg: String, cause: Option[Exception] = None) extends RuntimeException(msg, cause.orNull) with Serializable {
   import GraphDdlException._
   def getFullMessage: String = causeChain(this).map(_.getMessage).mkString("\n")
 }
 
-private[ddl] object GraphDdlException {
+private[graphddl] object GraphDdlException {
 
   def unresolved(desc: String, reference: Any): Nothing = throw UnresolvedReferenceException(
     s"""$desc: $reference"""

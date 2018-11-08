@@ -24,11 +24,11 @@
  * described as "implementation extensions to Cypher" or as "proposed changes to
  * Cypher that are not yet approved by the openCypher community".
  */
-package org.opencypher.sql.ddl
+package org.opencypher.graphddl
 
+import org.opencypher.graphddl.GraphDdlAst._
 import org.opencypher.okapi.api.types.CypherType
 import org.opencypher.okapi.trees.AbstractTreeNode
-import org.opencypher.sql.ddl.GraphDdlAst._
 
 object GraphDdlAst {
   type Property = (String, CypherType)

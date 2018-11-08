@@ -37,7 +37,7 @@ import org.opencypher.spark.impl.DataFrameOps._
 import org.opencypher.spark.testing.CAPSTestSuite
 import org.opencypher.spark.testing.api.io.CAPSPGDSAcceptance
 import org.opencypher.spark.testing.support.creation.caps.CAPSScanGraphFactory
-import org.opencypher.sql.ddl.GraphDdl
+import org.opencypher.graphddl.GraphDdl
 
 import scala.io.Source
 

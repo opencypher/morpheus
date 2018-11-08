@@ -40,8 +40,8 @@ import org.opencypher.spark.impl.DataFrameOps._
 import org.opencypher.spark.impl.io.CAPSPropertyGraphDataSource
 import org.opencypher.spark.schema.CAPSSchema
 import org.opencypher.spark.schema.CAPSSchema._
-import org.opencypher.sql.ddl.GraphDdl.PropertyMappings
-import org.opencypher.sql.ddl._
+import org.opencypher.graphddl.GraphDdl.PropertyMappings
+import org.opencypher.graphddl._
 
 case class SqlPropertyGraphDataSource(
   graphDdl: GraphDdl,

@@ -24,14 +24,14 @@
  * described as "implementation extensions to Cypher" or as "proposed changes to
  * Cypher that are not yet approved by the openCypher community".
  */
-package org.opencypher.sql.ddl
+package org.opencypher.graphddl
 
+import org.opencypher.graphddl.GraphDdl._
+import org.opencypher.graphddl.GraphDdlAst.{ColumnIdentifier, LabelCombination, PropertyToColumnMappingDefinition}
+import org.opencypher.graphddl.GraphDdlException.{malformed, tryWithContext, unresolved}
+import org.opencypher.graphddl.{GraphDdlException => Err}
 import org.opencypher.okapi.api.graph.GraphName
 import org.opencypher.okapi.api.schema.{PropertyKeys, Schema, SchemaPattern}
-import org.opencypher.sql.ddl.GraphDdl._
-import org.opencypher.sql.ddl.GraphDdlAst.{ColumnIdentifier, LabelCombination, PropertyToColumnMappingDefinition}
-import org.opencypher.sql.ddl.GraphDdlException.{malformed, tryWithContext, unresolved}
-import org.opencypher.sql.ddl.{GraphDdlException => Err}
 
 import scala.language.higherKinds
 
@@ -105,7 +105,7 @@ object GraphDdl {
     )
   }
 
-  private[ddl] def toSchema(
+  private[graphddl] def toSchema(
     globalLabelDefinitions: Map[String, LabelDefinition],
     schemaDefinition: SchemaDefinition
   ): Schema = {
