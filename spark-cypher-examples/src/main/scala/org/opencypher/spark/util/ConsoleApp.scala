@@ -39,4 +39,7 @@ abstract class ConsoleApp extends App {
   def resource(name: String)(implicit folder: String = ""): URL =
     getClass.getResource(folder + File.separator + name)
 
+  def resoureExists(name: String)(implicit  folder: String = ""): Boolean =
+    resource(name) != null
+
 }

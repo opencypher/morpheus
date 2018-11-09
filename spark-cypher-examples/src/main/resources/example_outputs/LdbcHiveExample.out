@@ -1,0 +1,25 @@
+╔═════════════════════╤══════════════════╗
+║ n.firstName         │ c.name           ║
+╠═════════════════════╪══════════════════╣
+║ 'A.'                │ 'Berhampur'      ║
+║ 'Abdoulaye Khouma'  │ 'Tambacounda'    ║
+║ 'Abdul Haris'       │ 'Makassar'       ║
+║ 'Abdul Jamil'       │ 'Rahim_Yar_Khan' ║
+║ 'Adje van den Berg' │ 'Heerlen'        ║
+║ 'Adrian'            │ 'Ensenada'       ║
+║ 'Akira'             │ 'Shibuya'        ║
+║ 'Albaye Papa'       │ 'Diourbel'       ║
+║ 'Alec'              │ 'Hsinchu'        ║
+║ 'Alejandro'         │ 'Saltillo'       ║
+║ 'Alejandro'         │ 'Chapingo'       ║
+║ 'Aleksandr'         │ 'Belgorod'       ║
+║ 'Aleksandr'         │ 'Kazan'          ║
+║ 'Alexei'            │ 'Bender'         ║
+║ 'Alexei'            │ 'Barnaul'        ║
+║ 'Alexei'            │ 'Krasnoyarsk'    ║
+║ 'Alfonso'           │ 'Coyoacán'       ║
+║ 'Ali'               │ 'Agadez'         ║
+║ 'Ali'               │ 'Oran'           ║
+║ 'Ali'               │ 'Chief'          ║
+╚═════════════════════╧══════════════════╝
+(20 rows)
