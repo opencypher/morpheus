@@ -28,10 +28,13 @@ package org.opencypher.spark.api.io.sql
 
 import org.apache.spark.sql.DataFrame
 import org.opencypher.spark.api.io.JdbcFormat
+import org.opencypher.spark.api.io.sql.IdGenerationStrategy.{IdGenerationStrategy, _}
 import org.opencypher.spark.testing.fixture.H2Fixture
 import org.opencypher.spark.testing.utils.H2Utils._
 
-class H2SqlPropertyGraphDataSourceAcceptanceTest extends SqlPropertyGraphDataSourceAcceptanceTest with H2Fixture {
+class H2SqlPGDSHashBasedIdAcceptanceTest extends SqlPropertyGraphDataSourceAcceptanceTest with H2Fixture {
+
+  override def idGenerationStrategy: IdGenerationStrategy = HashBasedId
 
   override def beforeAll(): Unit = {
     super.beforeAll()
@@ -53,4 +56,5 @@ class H2SqlPropertyGraphDataSourceAcceptanceTest extends SqlPropertyGraphDataSou
 
   override def writeTable(df: DataFrame, tableName: String): Unit =
     df.saveAsSqlTable(sqlDataSourceConfig, tableName)
+
 }

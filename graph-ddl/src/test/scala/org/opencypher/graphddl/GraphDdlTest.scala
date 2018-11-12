@@ -115,6 +115,25 @@ class GraphDdlTest extends FunSpec with Matchers {
 
     graphDdl shouldEqual expected
 
+  it("extracts join keys for a given node view key in start node position") {
+    val maybeJoinColumns = GraphDdl(ddlString).graphs(GraphName("fooGraph"))
+      .nodeIdColumnsFor(NodeViewKey(Set("Person"), QualifiedViewId("dataSourceName.fooDatabaseName.personView1")))
+
+    maybeJoinColumns shouldEqual Some(List("person_id1"))
+  }
+
+  it("extracts join keys for a given node view key in end node position") {
+    val maybeJoinColumns = GraphDdl(ddlString).graphs(GraphName("fooGraph"))
+      .nodeIdColumnsFor(NodeViewKey(Set("Book"), QualifiedViewId("dataSourceName.fooDatabaseName.bookView")))
+
+    maybeJoinColumns shouldEqual Some(List("book_id"))
+  }
+
+  it("does not extract join keys for an invalid node view key") {
+    val maybeJoinColumns = GraphDdl(ddlString).graphs(GraphName("fooGraph"))
+      .nodeIdColumnsFor(NodeViewKey(Set("A"), QualifiedViewId("dataSourceName.fooDatabaseName.A")))
+
+    maybeJoinColumns shouldEqual None
   }
 
   it("fails on duplicate node mappings") {

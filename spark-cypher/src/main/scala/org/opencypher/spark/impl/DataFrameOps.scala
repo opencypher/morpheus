@@ -29,7 +29,7 @@ package org.opencypher.spark.impl
 import org.apache.spark.SparkContext
 import org.apache.spark.sql.execution.SparkPlan
 import org.apache.spark.sql.types._
-import org.apache.spark.sql.{Column, DataFrame, Row}
+import org.apache.spark.sql.{Column, DataFrame, Row, functions}
 import org.apache.spark.storage.StorageLevel.MEMORY_ONLY
 import org.opencypher.okapi.api.types._
 import org.opencypher.okapi.api.value.CypherValue
@@ -179,6 +179,17 @@ object DataFrameOps {
       } else {
         df.sparkSession.createDataFrame(df.rdd, newSchema)
       }
+    }
+
+    /**
+      * Adds a new column under a given name containing the hash value of the given input columns.
+      *
+      * @param columns input columns for the hash function
+      * @param idColumn column storing the result of the hash function (cast to long)
+      * @return DataFrame with an additional column
+      */
+    def withHashColumn(columns: Seq[Column], idColumn: String): DataFrame = {
+      df.withColumn(idColumn, functions.hash(columns: _*).cast(LongType))
     }
 
     def withPropertyColumns: DataFrame = {

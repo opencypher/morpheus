@@ -405,10 +405,19 @@ case class Join(
   edgeColumn: String
 )
 
-case class NodeViewKey(nodeType: Set[String], qualifiedViewId: QualifiedViewId) {
+trait ElementViewKey {
+  def elementType: Set[String]
+  def qualifiedViewId: QualifiedViewId
+}
+
+case class NodeViewKey(nodeType: Set[String], qualifiedViewId: QualifiedViewId) extends ElementViewKey {
+  override val elementType: Set[String] = nodeType
+
   override def toString: String = s"node type: ${nodeType.mkString(", ")}, view: $qualifiedViewId"
 }
 
-case class EdgeViewKey(edgeType: Set[String], qualifiedViewId: QualifiedViewId) {
+case class EdgeViewKey(edgeType: Set[String], qualifiedViewId: QualifiedViewId) extends ElementViewKey {
+  override val elementType: Set[String] = edgeType
+
   override def toString: String = s"relationship type: ${edgeType.mkString(", ")}, view: $qualifiedViewId"
 }
