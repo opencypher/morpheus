@@ -49,6 +49,7 @@ import org.opencypher.spark.util.{ConsoleApp, LdbcUtil}
 object LdbcHiveExample extends ConsoleApp {
 
   implicit val resourceFolder: String = "/ldbc"
+  val datasource = "warehouse"
   val database = "LDBC"
 
   implicit val session: CAPSSession = CAPSSession.local(CATALOG_IMPLEMENTATION.key -> "hive")
@@ -79,7 +80,7 @@ object LdbcHiveExample extends ConsoleApp {
 
   // generate GraphDdl file if it not exists
   if (!resoureExists("ddl/ldbc.ddl")) {
-    val graphDdlString = LdbcUtil.toGraphDDL("hive", database)
+    val graphDdlString = LdbcUtil.toGraphDDL(datasource, database)
     writeFile(resource("ddl").getFile + "/ldbc.ddl", graphDdlString)
   }
 
@@ -95,7 +96,7 @@ object LdbcHiveExample extends ConsoleApp {
        |FROM GRAPH sql.LDBC
        |MATCH (n:Person)-[:islocatedin]->(c:City)
        |RETURN n.firstName, c.name
-       |ORDER BY n.firstName
+       |ORDER BY n.firstName, c.name
        |LIMIT 20
      """.stripMargin).show
 }

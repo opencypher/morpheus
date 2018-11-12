@@ -1,6 +1,6 @@
 [
   {
     "storageFormat": "hive",
-    "dataSourceName": "hive"
+    "dataSourceName": "warehouse"
   }
 ]
