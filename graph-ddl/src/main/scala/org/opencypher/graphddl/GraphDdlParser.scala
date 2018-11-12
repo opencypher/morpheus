@@ -26,11 +26,11 @@
  */
 package org.opencypher.graphddl
 
-import fastparse.WhitespaceApi
 import fastparse.core.Frame
 import fastparse.core.Parsed.{Failure, Success}
 import org.opencypher.graphddl.GraphDdlAst._
 import org.opencypher.okapi.api.types._
+import org.opencypher.okapi.impl.types.CypherTypeParser
 
 case class DdlParsingException(
   index: Int,
@@ -62,33 +62,9 @@ object GraphDdlParser {
     }
   }
 
-  object ParsersForNoTrace {
-
-    import fastparse.all._
-
-    val newline: P[Unit] = P("\n" | "\r\n" | "\r" | "\f")
-    val whitespace: P[Unit] = P(" " | "\t" | newline)
-    val comment: P[Unit] = P("--" ~ (!newline ~ AnyChar).rep ~ newline)
-    val noTrace: P[Unit] = (comment | whitespace).rep
-  }
-
-  val Whitespace = WhitespaceApi.Wrapper {
-    import fastparse.all._
-    NoTrace(ParsersForNoTrace.noTrace)
-  }
-
-  import Whitespace._
   import fastparse.noApi._
-
-  implicit class RichParser[T](parser: fastparse.core.Parser[T, Char, String]) {
-    def entireInput: P[T] = parser ~ End
-  }
-
-  val digit: P[Unit] = P(CharIn('0' to '9'))
-  val character: P[Unit] = P(CharIn('a' to 'z', 'A' to 'Z'))
-  val identifier: P[Unit] = P(character ~~ P(character | digit | "_").repX)
-
-  def keyword(k: String): P[Unit] = P(IgnoreCase(k))
+  import org.opencypher.okapi.impl.util.ParserUtils.Whitespace._
+  import org.opencypher.okapi.impl.util.ParserUtils._
 
   val CATALOG: P[Unit] = keyword("CATALOG")
   val CREATE: P[Unit] = keyword("CREATE")
@@ -110,17 +86,8 @@ object GraphDdlParser {
   val START: P[Unit] = keyword("START")
   val END: P[Unit] = keyword("END")
 
-  val propertyType: P[CypherType] = P(
-    (IgnoreCase("STRING").!.map(_ => CTString)
-      | IgnoreCase("INTEGER").!.map(_ => CTInteger)
-      | IgnoreCase("FLOAT").!.map(_ => CTFloat)
-      | IgnoreCase("BOOLEAN").!.map(_ => CTBoolean)
-    ) ~ "?".!.?.map(_.isDefined)).map { case (cypherType, isNullable) =>
-    if (isNullable) cypherType.nullable else cypherType
-  }
-
   // foo : STRING
-  val property: P[Property] = P(identifier.! ~/ ":" ~/ propertyType)
+  val property: P[Property] = P(identifier.! ~/ ":" ~/ CypherTypeParser.cypherType)
 
   // { foo1: STRING, foo2 : BOOLEAN }
   val properties: P[Map[String, CypherType]] = P("{" ~/ property.rep(min = 1, sep = ",").map(_.toMap) ~/ "}")
@@ -229,5 +196,4 @@ object GraphDdlParser {
       ddlStatement.rep.map(_.toList) ~/
       End
   ).map(DdlDefinition)
-
 }
