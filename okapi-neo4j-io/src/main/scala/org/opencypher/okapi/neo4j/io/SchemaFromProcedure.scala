@@ -76,21 +76,98 @@ object SchemaFromProcedure extends Logging {
             val typ = row.get("nodeType").asString()
             val labels = row.get("nodeLabels").asList(extractString).asScala.toList
 
-            val properties = {
-              val propName = row.get("propertyName").asList(extractString).asScala.toList
+            row.get("propertyName").asString() match {
+              case "" =>
+                Seq((typ, labels, None, None))
+              case property =>
+
+                val propTypes = row.get("propertyTypes").asList(extractString).asScala.toList
+
+                val nullable = row.get("mandatory").asBoolean()
+
+                val propCypherType = propTypes.flatMap { s =>
+                  CypherType.fromName(s) match {
+                    case Some(ct) =>
+                      if (nullable) Some(ct.nullable)
+                      else Some(ct)
+                    case None if omitImportFailures =>
+                      logger.warn(s"At least one node with labels ${labels.mkString(",")} has unsupported property type $s for property $property")
+                      None
+                    case None => throw UnsupportedOperationException(
+                      s"At least one $typ with labels ${labels.mkString(",")} has unsupported property type $s for property $property"
+                    )
+                  }
+                }.foldLeft(CTVoid: CypherType)(_ join _)
+
+                Seq((typ, labels, Some(property), Some(propCypherType)))
+            }
+          }
+      }
+      rows.groupBy(row => row._1 -> row._2).map {
+        case ((typ, labels), tuples) =>
+          val properties = tuples.collect {
+            case (_, _, p, t) if p.nonEmpty => p.get -> t.get
+          }
+
+          Schema.empty.withNodePropertyKeys(labels: _*)(properties: _*)
+      }.foldLeft(Schema.empty)(_ ++ _)
+    } match {
+      case Success(schema) => Some(schema)
+      case Failure(error) =>
+        logger.error(s"Could not load schema from Neo4j: ${error.getMessage}")
+        None
+    }
+  }
+
+  private[neo4j] def relSchemaFromProcedure(config: Neo4jConfig, omitImportFailures: Boolean): Option[Schema] = {
+    Try {
+      val rows = config.withSession { session =>
+        val result =  session.run("CALL " + relSchemaProcedure)
+
+        result.list().asScala.flatMap { row =>
+          val extractString = new Function[Value, String] {
+            override def apply(v1: Value): String = v1.asString()
+          }
+
+          val typ = row.get("relType").asString()
+
+          row.get("propertyName").asString() match {
+            case "" =>
+              Seq((typ, None, None))
+            case property =>
               val propTypes = row.get("propertyTypes").asList(extractString).asScala.toList
 
-              val propCypherTypes = propTypes.map { tpe =>
-                tpe
-              }
-              ???
-            }
-            ???
+              val nullable = row.get("mandatory").asBoolean()
+
+              val propCypherType = propTypes.flatMap { s => CypherType.fromName(s) match {
+                case Some(ct) =>
+                  if(nullable) Some(ct.nullable)
+                  else Some(ct)
+                case None if omitImportFailures =>
+                  logger.warn(s"At least one relationship with type ${typ} has unsupported property type $s for property $property")
+                  None
+                case None => throw UnsupportedOperationException(
+                  s"At least one relationship with type ${typ} has unsupported property type $s for property $property")
+              }}.foldLeft(CTVoid: CypherType)(_ join _)
+              Seq((typ, Some(property), Some(propCypherType)))
           }
-        ???
+        }
       }
+      rows.groupBy(_._1).map {
+        case (typ, tuples) =>
+          val properties = tuples.collect {
+            case (_, p, t) if p.nonEmpty => p.get -> t.get
+          }
+
+          Schema.empty.withRelationshipPropertyKeys(typ)(properties: _*)
+      }.foldLeft(Schema.empty)(_ ++ _)
+    } match {
+
+      case Success(schema) => Some(schema)
+      case Failure(error) =>
+        logger.error(s"Could not load schema from Neo4j: ${error.getMessage}")
+        None
     }
-    ???
   }
 
   private[neo4j] def schemaFromProcedure(config: Neo4jConfig, omitImportFailures: Boolean, procedure: String): Option[Schema] = {
