@@ -58,7 +58,7 @@ final case class rowToCypherMap(exprToColumn: Seq[(Expr, String)]) extends (Row 
       case CTList(_) if !header.exprToColumn.contains(v) =>
         collectComplexList(row, v)
 
-      case CTMap =>
+      case CTMap(_) =>
         val innerRow = row.getAs[GenericRowWithSchema](header.column(v))
         innerRow.schema.fieldNames.map { field =>
           field -> CypherValue(innerRow.getAs[Any](field))

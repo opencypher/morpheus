@@ -102,6 +102,13 @@ object SparkConversions {
         val elementStructField = elementType.toStructField(column)
         StructField(column, ArrayType(elementStructField.dataType, containsNull = elementStructField.nullable), nullable = true)
 
+      case CTMap(inner) =>
+        val innerFields = inner.map {
+          case (key, valueType) => valueType.toStructField(key)
+        }
+        StructField(column, StructType(innerFields.toSeq))
+      case map: CTMapOrNull => map.material.toStructField(column).copy(nullable = true)
+
       case other => throw IllegalArgumentException("CypherType supported by CAPS", other)
     }
   }

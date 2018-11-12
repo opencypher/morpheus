@@ -27,7 +27,10 @@
 package org.opencypher.okapi.api.types
 
 import cats.Monoid
+import cats.instances.all._
+import cats.syntax.semigroup._
 import org.opencypher.okapi.api.graph.QualifiedGraphName
+import org.opencypher.okapi.api.types.CypherType._
 import org.opencypher.okapi.api.value.CypherValue._
 import upickle.default._
 
@@ -69,7 +72,6 @@ object CypherType {
       case "ANY" | "ANY?" => Some(CTAny)
       case "VOID" | "VOID?" => Some(CTVoid)
       case "NULL" | "NULL?" => Some(CTNull)
-      case "MAP" | "MAP?" => Some(CTMap)
       case "PATH" | "PATH?" => Some(CTPath)
       case "?" | "??" => Some(CTWildcard)
 
@@ -98,7 +100,7 @@ object CypherType {
         case CypherFloat(_) => CTFloat
         case CypherInteger(_) => CTInteger
         case CypherString(_) => CTString
-        case CypherMap(_) => CTMap
+        case CypherMap(inner) => CTMap(inner.mapValues(_.cypherType))
         case CypherNode(_, labels, _) => CTNode(labels)
         case CypherRelationship(_, _, _, relType, _) => CTRelationship(relType)
         case CypherList(l) => CTList(l.map(_.cypherType).foldLeft[CypherType](CTVoid)(_.join(_)))
@@ -189,26 +191,30 @@ case object CTString extends MaterialDefiniteCypherLeafType {
   override def name = "STRING"
 }
 
-case object CTMap extends MaterialDefiniteCypherType with MaterialDefiniteCypherType.DefaultOrNull {
+case class CTMap(innerTypes: Map[String, CypherType]) extends MaterialDefiniteCypherType with MaterialDefiniteCypherType.DefaultOrNull {
+  override def name = {
+    val innerNames = innerTypes.map {
+      case(key, valueType) => s"$key: ${valueType.name}"
+    }.mkString(", ")
 
-  self =>
-
-  override def name = "MAP"
+    s"MAP($innerNames)"
+  }
 
   override def superTypeOf(other: CypherType): Ternary = other match {
-    case CTMap => True
-    case _: CTNode => True
-    case _: CTRelationship => True
+    case CTMap(otherInner) if innerTypes.keySet == otherInner.keySet =>
+      innerTypes.forall { case (key, value) => value.superTypeOf(otherInner(key)).isTrue }
+//    case _: CTNode => True
+//    case _: CTRelationship => True
     case CTWildcard => Maybe
     case CTVoid => True
     case _ => False
   }
 
   override def joinMaterially(other: MaterialCypherType): MaterialCypherType = other match {
-    case CTMap => self
-    case _: CTNode => self
-    case _: CTRelationship => self
-    case CTVoid => self
+    case CTMap(otherInnerTypes: Map[String, CypherType]) => CTMap(innerTypes |+| otherInnerTypes)
+//    case _: CTNode => self
+//    case _: CTRelationship => self
+    case CTVoid => this
     case CTWildcard => CTWildcard
     case _ => CTAny
   }
@@ -244,9 +250,9 @@ sealed case class CTNode(
   }
 
   final override def joinMaterially(other: MaterialCypherType): MaterialCypherType = other match {
-    case CTMap => CTMap
+//    case CTMap => CTMap
     case CTNode(otherLabels, qgnOpt) => CTNode(labels intersect otherLabels, if (graph == qgnOpt) graph else None)
-    case _: CTRelationship => CTMap
+//    case _: CTRelationship => CTMap
     case CTVoid => self
     case CTWildcard => CTWildcard
     case _ => CTAny
@@ -312,13 +318,13 @@ sealed case class CTRelationship(
   }
 
   final override def joinMaterially(other: MaterialCypherType): MaterialCypherType = other match {
-    case CTMap => CTMap
+//    case CTMap => CTMap
     case CTRelationship(otherTypes, qgnOpt) =>
       if (types.isEmpty || otherTypes.isEmpty)
         CTRelationship(Set.empty[String], if (graph == qgnOpt) graph else None)
       else
         CTRelationship(types union otherTypes, if (graph == qgnOpt) graph else None)
-    case _: CTNode => CTMap
+//    case _: CTNode => CTMap
     case CTVoid => self
     case CTWildcard => CTWildcard
     case _ => CTAny
@@ -653,7 +659,7 @@ private[okapi] object MaterialDefiniteCypherType {
       case CTAny => CTAnyOrNull
       case CTNumber => CTNumberOrNull
       case CTFloat => CTFloatOrNull
-      case CTMap => CTMapOrNull
+      case CTMap(inner) => CTMapOrNull(inner)
       case CTPath => CTPathOrNull
     }
   }
@@ -696,10 +702,10 @@ case object CTFloatOrNull extends NullableDefiniteCypherType {
   override def material: CTFloat.type = CTFloat
 }
 
-case object CTMapOrNull extends NullableDefiniteCypherType {
-  override def name: String = CTMap + "?"
+case class CTMapOrNull(innerTypes: Map[String, CypherType]) extends NullableDefiniteCypherType {
+  override def name: String = CTMap(innerTypes) + "?"
 
-  override def material: CTMap.type = CTMap
+  override def material: CTMap = CTMap(innerTypes)
 }
 
 case object CTPathOrNull extends NullableDefiniteCypherType {

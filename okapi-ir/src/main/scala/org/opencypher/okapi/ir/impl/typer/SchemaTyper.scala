@@ -103,8 +103,8 @@ object SchemaTyper {
             val propType = schema.relationshipPropertyKeyType(types, name).getOrElse(CTNull)
             recordType(v -> varTyp) >> recordAndUpdate(expr -> propType)
 
-          case CTMap =>
-            recordType(v -> varTyp) >> recordAndUpdate(expr -> CTWildcard)
+          case CTMap(inner) =>
+            recordType(v -> varTyp) >> recordAndUpdate(expr -> inner(name))
 
           case _ =>
             error(InvalidContainerAccess(expr))
@@ -112,10 +112,11 @@ object SchemaTyper {
       } yield result
 
     case MapExpression(items) =>
+      val keys = items.map(_._1.name)
       val values = items.map(_._2)
       for {
-        _ <- values.toList.traverse(process[R])
-        mapType <- recordAndUpdate(expr -> CTMap)
+        valueTypes <- values.toList.traverse(process[R])
+        mapType <- recordAndUpdate(expr -> CTMap(keys.zip(valueTypes).toMap))
       } yield mapType
 
     case _: ExistsPattern =>
@@ -329,8 +330,11 @@ object SchemaTyper {
           case (CTListOrNull(eltTyp), CTInteger) =>
             recordAndUpdate(expr -> eltTyp.nullable)
 
-          case (typ, CTString) if typ.subTypeOf(CTMap).maybeTrue =>
-            recordAndUpdate(expr -> CTWildcard.nullable)
+          case (_:CTMap | _: CTMapOrNull , CTString) =>
+            index match {
+              case Parameter(name, _) =>
+            }
+            recordAndUpdate(expr -> CTAny.nullable)
 
           case _ =>
             error(InvalidContainerAccess(indexing))

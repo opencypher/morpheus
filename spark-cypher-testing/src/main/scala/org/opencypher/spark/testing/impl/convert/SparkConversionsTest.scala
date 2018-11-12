@@ -70,12 +70,12 @@ class SparkConversionsTest extends BaseTestSuite {
     CTList(CTList(CTInteger.nullable).nullable).nullable.toStructField("foo") should equal(
       StructField("foo", ArrayType(ArrayType(LongType, containsNull = true), containsNull = true), nullable = true)
     )
-  }
 
-  it("should throw for unsupported CypherTypes") {
-    a[org.opencypher.okapi.impl.exception.IllegalArgumentException] shouldBe thrownBy {
-      CTMap.toStructField("foo")
-    }
+    CTMap(Map("foo" -> CTInteger, "bar" -> CTString.nullable)).toStructField("myMap") should equal(
+      StructField("myMap", StructType(Seq(
+        StructField("foo", LongType, nullable = false),
+        StructField("bar", StringType, nullable = true)
+      )))
+    )
   }
-
 }
