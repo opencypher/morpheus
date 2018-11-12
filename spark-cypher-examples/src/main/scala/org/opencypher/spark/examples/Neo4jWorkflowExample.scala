@@ -80,7 +80,9 @@ object Neo4jWorkflowExample extends ConsoleApp {
        |RETURN GRAPH""".stripMargin).graph
 
   // Use the Neo4jGraphMerge utility to write the products and the recommendations back to Neo4j
+
   // Define the node and relationship keys
+  // Note that in this example we assume that names and titles uniquely identify people and products
   val entityKeys = EntityKeys(Map("Person" -> Set("name"), "Product" -> Set("title")))
   // Write the recommendations back to Neo4j
   Neo4jGraphMerge.merge(recommendationGraph, neo4j.dataSourceConfig, entityKeys)
