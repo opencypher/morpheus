@@ -35,6 +35,7 @@ import org.opencypher.spark.api.io.neo4j.{Neo4jBulkCSVDataSink, Neo4jPropertyGra
 import org.opencypher.spark.api.io.sql.{SqlDataSourceConfig, SqlPropertyGraphDataSource}
 import org.opencypher.spark.api.io.{CsvFormat, OrcFormat, ParquetFormat}
 import org.opencypher.graphddl.GraphDdl
+import org.opencypher.spark.api.io.sql.IdGenerationStrategy.IdGenerationStrategy
 
 import scala.io.Source
 import scala.util.Properties
@@ -110,9 +111,16 @@ object CypherGraphSources {
   }
 }
 
+import org.opencypher.spark.api.io.sql.IdGenerationStrategy._
+
 object SqlGraphSources {
 
-  case class SqlGraphSourceFactory(graphDdl: GraphDdl)(implicit session: CAPSSession) {
+  case class SqlGraphSourceFactory(graphDdl: GraphDdl, idGenerationStrategy: IdGenerationStrategy)
+    (implicit session: CAPSSession) {
+
+    def withIdGenerationStrategy(idGenerationStrategy: IdGenerationStrategy): SqlGraphSourceFactory =
+      copy(idGenerationStrategy = idGenerationStrategy)
+
 
     def withSqlDataSourceConfigs(sqlDataSourceConfigsPath: String): SqlPropertyGraphDataSource = {
       val jsonString = Source.fromFile(sqlDataSourceConfigsPath, "UTF-8").getLines().mkString(Properties.lineSeparator)
@@ -121,9 +129,11 @@ object SqlGraphSources {
     }
 
     def withSqlDataSourceConfigs(sqlDataSourceConfigs: List[SqlDataSourceConfig]): SqlPropertyGraphDataSource =
-      SqlPropertyGraphDataSource(graphDdl, sqlDataSourceConfigs)
+      SqlPropertyGraphDataSource(graphDdl, sqlDataSourceConfigs, idGenerationStrategy)
   }
 
   def apply(graphDdlPath: String)(implicit session: CAPSSession): SqlGraphSourceFactory =
-    SqlGraphSourceFactory(GraphDdl(Source.fromFile(graphDdlPath, "UTF-8").getLines().mkString(Properties.lineSeparator)))
+    SqlGraphSourceFactory(
+      graphDdl = GraphDdl(Source.fromFile(graphDdlPath, "UTF-8").getLines().mkString(Properties.lineSeparator)),
+      idGenerationStrategy = MonotonicallyIncreasingId)
 }

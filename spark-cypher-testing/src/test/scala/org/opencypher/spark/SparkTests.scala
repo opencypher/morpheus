@@ -27,10 +27,31 @@
 package org.opencypher.spark
 
 import org.apache.spark.sql.execution.SparkPlan
+import org.apache.spark.sql.functions
 import org.opencypher.okapi.impl.util.Measurement
 import org.opencypher.spark.testing.CAPSTestSuite
 
 class SparkTests extends CAPSTestSuite {
+
+  it("generates hashes") {
+    val df1 = sparkSession.createDataFrame(Seq((0L, 42, 2.3, "1984"))).toDF("a", "b", "c", "d")
+
+    val label = functions.lit("A")
+    val view = functions.lit("view_A")
+
+    val idColumnNames = Seq("a", "c")
+
+    val idColumns = idColumnNames.map(df1.col)
+
+    val hashColumns = Seq.empty :+ view :+ label + idColumns
+
+    val idColumn = functions.hash(hashColumns: _*)
+
+    val df2 = df1.withColumn("id", idColumn)
+
+    df2.show()
+  }
+
 
   // Example for: https://issues.apache.org/jira/browse/SPARK-23855
   ignore("should correctly perform a join after a cross") {
