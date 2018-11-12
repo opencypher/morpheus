@@ -241,13 +241,13 @@ case class SqlPropertyGraphDataSource(
   private def withHashId[T <: ElementViewKey](
     dataFrame: DataFrame,
     elementViewKey: T,
-    idColumns: List[String],
+    idColumnNames: List[String],
     newIdColumn: String
   ): DataFrame = {
-    val viewLit = functions.lit(elementViewKey.qualifiedViewId.view)
-    val nodeTypeLit = functions.lit(elementViewKey.elementType.mkString("_"))
-    val joinColumns = idColumns.map(dataFrame.col)
-    dataFrame.withHashColumn(Seq(viewLit, nodeTypeLit) ++ joinColumns, newIdColumn)
+    val viewLiteral = functions.lit(elementViewKey.qualifiedViewId.view)
+    val nodeTypeLiterals = elementViewKey.elementType.toSeq.sorted.map(functions.lit)
+    val idColumns = idColumnNames.map(dataFrame.col)
+    dataFrame.withHashColumn(Seq(viewLiteral) ++ nodeTypeLiterals ++ idColumns, newIdColumn)
   }
 
   private def withHashId[T <: ElementViewKey](
