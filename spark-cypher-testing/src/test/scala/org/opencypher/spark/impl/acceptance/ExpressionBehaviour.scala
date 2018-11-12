@@ -29,10 +29,9 @@ package org.opencypher.spark.impl.acceptance
 import org.opencypher.okapi.api.value.CypherValue
 import org.opencypher.okapi.api.value.CypherValue.CypherMap
 import org.opencypher.okapi.testing.Bag
+import org.opencypher.okapi.testing.Bag._
 import org.opencypher.spark.testing.CAPSTestSuite
 import org.scalatest.DoNotDiscover
-import org.opencypher.okapi.testing.Bag
-import org.opencypher.okapi.testing.Bag._
 
 @DoNotDiscover
 class ExpressionBehaviour extends CAPSTestSuite with DefaultGraphInit {
@@ -934,6 +933,39 @@ class ExpressionBehaviour extends CAPSTestSuite with DefaultGraphInit {
       ).records.toMaps should equal(Bag(
         CypherMap("x" -> null),
         CypherMap("x" -> null)
+      ))
+    }
+  }
+
+  describe("map support") {
+    it("can construct static maps") {
+      val result = caps.cypher(
+        """
+          |RETURN {
+          | foo: "bar",
+          | baz: 42
+          |} as myMap
+        """.stripMargin)
+
+      result.records.toMapsWithCollectedEntities should equal(Bag(
+        CypherMap("myMap" -> Map("foo" -> "bar", "baz" -> 42))
+      ))
+    }
+
+    it("can construct maps with diverging types") {
+      val result = caps.cypher(
+        """
+          |WITH [
+          | {foo: 42},
+          | {foo: "bar"}
+          |] as myMap
+          |RETURN myMap
+        """.stripMargin)
+
+      result.show
+
+      result.records.toMapsWithCollectedEntities should equal(Bag(
+        CypherMap("myMap" -> Map("foo" -> "bar", "baz" -> 42))
       ))
     }
   }

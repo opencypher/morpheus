@@ -331,6 +331,12 @@ object SparkSQLExprMapper {
             case other => throw NotImplementedException(s"Accessing $other by index is not supported")
           }
 
+        case MapExpression(items) =>
+          val innerColumns = items.map {
+            case (key, innerExpr) => innerExpr.asSparkSQLExpr.as(key)
+          }
+          functions.struct(innerColumns.toSeq :_*)
+
         case _ =>
           throw NotImplementedException(s"No support for converting Cypher expression $expr to a Spark SQL expression")
       }

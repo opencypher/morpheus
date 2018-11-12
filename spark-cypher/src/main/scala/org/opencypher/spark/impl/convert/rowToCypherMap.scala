@@ -27,7 +27,8 @@
 package org.opencypher.spark.impl.convert
 
 import org.apache.spark.sql.Row
-import org.opencypher.okapi.api.types.{CTList, CTNode, CTRelationship}
+import org.apache.spark.sql.catalyst.expressions.GenericRowWithSchema
+import org.opencypher.okapi.api.types.{CTList, CTMap, CTNode, CTRelationship}
 import org.opencypher.okapi.api.value.CypherValue._
 import org.opencypher.okapi.api.value._
 import org.opencypher.okapi.impl.exception.UnsupportedOperationException
@@ -56,6 +57,12 @@ final case class rowToCypherMap(exprToColumn: Seq[(Expr, String)]) extends (Row 
 
       case CTList(_) if !header.exprToColumn.contains(v) =>
         collectComplexList(row, v)
+
+      case CTMap =>
+        val innerRow = row.getAs[GenericRowWithSchema](header.column(v))
+        innerRow.schema.fieldNames.map { field =>
+          field -> CypherValue(innerRow.getAs[Any](field))
+        }.toMap
 
       case _ =>
         val raw = row.getAs[Any](header.column(v))

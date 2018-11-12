@@ -230,6 +230,10 @@ class LogicalPlanner(producer: LogicalOperatorProducer)
         val withIndex = planInnerExpr(idx, withContainer)
         producer.projectField(containerIndex, f, withIndex)
 
+      case (acc, (f, m@MapExpression(items))) =>
+        val projectInner = items.values.foldLeft(acc)((op, expr) => planInnerExpr(expr, op))
+        producer.projectField(m, f, projectInner)
+
       case (_, (_, x)) =>
         throw NotImplementedException(s"Support for projection of $x not yet implemented. Tree:\n${x.pretty}")
     }
