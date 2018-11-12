@@ -32,6 +32,7 @@ import cats.syntax.semigroup._
 import org.opencypher.okapi.api.graph.QualifiedGraphName
 import org.opencypher.okapi.api.types.CypherType._
 import org.opencypher.okapi.api.value.CypherValue._
+import org.opencypher.okapi.impl.types.CypherTypeParser
 import upickle.default._
 
 import scala.language.postfixOps
@@ -48,48 +49,7 @@ object CypherType {
     * @see {{{org.opencypher.okapi.api.types.CypherType#name}}}
     */
   def fromName(name: String): Option[CypherType] = {
-    def extractLabels(s: String, typ: String, sep: String): Set[String] = {
-      val regex = s"""$typ\\(:(.+)\\).?""".r
-      s match {
-        case regex(l) => l.split(sep).toSet
-        case _ => Set.empty[String]
-      }
-    }
-
-    val graphRegex = """\@ (.+)\\??\$""".r
-
-    def extractGraph(s: String): Option[QualifiedGraphName] = s match {
-      case graphRegex(g) => Some(QualifiedGraphName(g))
-      case _ => None
-    }
-
-    val noneNullType = name match {
-      case "STRING" | "STRING?" => Some(CTString)
-      case "INTEGER" | "INTEGER?" => Some(CTInteger)
-      case "FLOAT" | "FLOAT?" => Some(CTFloat)
-      case "NUMBER" | "NUMBER?" => Some(CTNumber)
-      case "BOOLEAN" | "BOOLEAN?" => Some(CTBoolean)
-      case "ANY" | "ANY?" => Some(CTAny)
-      case "VOID" | "VOID?" => Some(CTVoid)
-      case "NULL" | "NULL?" => Some(CTNull)
-      case "PATH" | "PATH?" => Some(CTPath)
-      case "?" | "??" => Some(CTWildcard)
-
-      case node if node.startsWith("NODE") =>
-        Some(CTNode(extractLabels(node, "NODE", ":"), extractGraph(node)))
-
-      case rel if rel.startsWith("RELATIONSHIP") =>
-        Some(CTRelationship(extractLabels(rel, "RELATIONSHIP", """\|"""), extractGraph(rel)))
-
-      case list if list.startsWith("LIST") =>
-        CypherType
-          .fromName(list.replaceFirst("""LIST\?? OF """, ""))
-          .map(CTList)
-
-      case _ => None
-    }
-
-    noneNullType.map(ct => if (name == ct.name) ct else ct.nullable)
+   CypherTypeParser.parse(name)
   }
 
   implicit class TypeCypherValue(cv: CypherValue) {
@@ -302,7 +262,7 @@ sealed case class CTRelationship(
 
   final override def name: String =
     if (types.isEmpty) s"RELATIONSHIP$graphToString" else s"RELATIONSHIP(${
-      types.map(t => s"$t").mkString(":", "|", "")
+      types.map(t => s"$t").mkString(":", "|:", "")
     })$graphToString"
 
   final override def nullable: CTRelationshipOrNull =
@@ -376,7 +336,7 @@ final case class CTList(elementType: CypherType) extends MaterialDefiniteCypherT
 
   override def withGraph(qgn: QualifiedGraphName): CypherType = copy(elementType = elementType.withGraph(qgn))
 
-  override def name = s"LIST OF $elementType"
+  override def name = s"LIST($elementType)"
 
   override def nullable =
     CTListOrNull(elementType)
@@ -412,7 +372,7 @@ final case class CTList(elementType: CypherType) extends MaterialDefiniteCypherT
 }
 
 final case class CTListOrNull(eltType: CypherType) extends NullableDefiniteCypherType {
-  override def name = s"LIST? OF $eltType"
+  override def name = s"LIST($eltType)?"
 
   override def material =
     CTList(eltType)

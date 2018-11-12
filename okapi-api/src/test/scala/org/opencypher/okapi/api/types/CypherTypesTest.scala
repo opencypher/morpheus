@@ -28,6 +28,7 @@ package org.opencypher.okapi.api.types
 
 import org.opencypher.okapi.ApiBaseTest
 import org.opencypher.okapi.api.graph.QualifiedGraphName
+import org.opencypher.okapi.impl.types.CypherTypeParser
 
 import scala.language.postfixOps
 
@@ -120,12 +121,6 @@ class CypherTypesTest extends ApiBaseTest {
 
     CTVoid.toString shouldBe "VOID"
     CTNull.toString shouldBe "NULL"
-  }
-
-  it("can parse CypherType names into CypherTypes"){
-    allTypes.foreach { t =>
-      CypherType.fromName(t.name).get should equal(t)
-    }
   }
 
   it("RELATIONSHIP type") {
@@ -481,6 +476,29 @@ class CypherTypesTest extends ApiBaseTest {
       nullableTypes.foreach { n =>
         n.asNullableAs(t) should equal(n)
       }
+    }
+  }
+
+  describe("fromName") {
+    it("can parse CypherType names into CypherTypes"){
+      allTypes.foreach { t =>
+        CypherTypeParser.parse(t.name) should equal(Some(t))
+      }
+    }
+
+    it("can parse maps with escaped keys") {
+      val input = "MAP(`foo bar_my baz`: STRING)"
+      CypherTypeParser.parse(input) should equal(Some(CTMap(Map("foo bar_my baz" -> CTString))))
+    }
+
+    it("can parse nodes types with escaped labels") {
+      val input = "Node(:`foo bar_my baz`:bar)"
+      CypherTypeParser.parse(input) should equal(Some(CTNode("foo bar_my baz", "bar")))
+    }
+
+    it("can parse relationship types with escaped labels") {
+      val input = "Relationship(:`foo bar_my baz`|:bar)"
+      CypherTypeParser.parse(input) should equal(Some(CTRelationship("foo bar_my baz", "bar")))
     }
   }
 }
