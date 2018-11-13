@@ -184,12 +184,25 @@ object DataFrameOps {
     /**
       * Adds a new column under a given name containing the hash value of the given input columns.
       *
+      * The hash is generated using [[org.apache.spark.sql.catalyst.expressions.Murmur3Hash]] based on the given column
+      * sequence. To decrease collision probability, we:
+      *
+      * 1) generate a first hash for the given column sequence
+      * 2) shift the hash into the upper bits of a 64 bit long
+      * 3) generate a second hash using the reversed input column sequence
+      * 4) store the hash in the lower 32 bits of the final id
+      *
       * @param columns input columns for the hash function
-      * @param idColumn column storing the result of the hash function (cast to long)
-      * @return DataFrame with an additional column
+      * @param idColumn column storing the result of the hash function
+      * @return DataFrame with an additional idColumn
       */
     def withHashColumn(columns: Seq[Column], idColumn: String): DataFrame = {
-      df.withColumn(idColumn, functions.hash(columns: _*).cast(LongType))
+      require(columns.nonEmpty, "Hash function requires a non-empty sequence of columns as input.")
+      val id1 = functions.hash(columns: _*).cast(LongType)
+      val shifted = functions.shiftLeft(id1, Integer.SIZE)
+      val id = shifted + functions.hash(columns.reverse: _*)
+
+      df.withColumn(idColumn, id)
     }
 
     def withPropertyColumns: DataFrame = {
