@@ -363,6 +363,7 @@ case class Graph(
   edgeToViewMappings: List[EdgeToViewMapping]
 ) {
 
+  // TODO: validate (during GraphDdl construction) if the user always uses the same join columns for the node views
   def nodeIdColumnsFor(nodeViewKey: NodeViewKey): Option[List[String]] = edgeToViewMappings.collectFirst {
     case evm: EdgeToViewMapping if evm.startNode.nodeViewKey == nodeViewKey =>
       evm.startNode.joinPredicates.map(_.nodeColumn)

@@ -62,8 +62,8 @@ case class SqlPropertyGraphDataSource(
 
     // Generate node identifiers
     val nodeDataFramesWithIds = idGenerationStrategy match {
-      case HashBasedId => withHashId(nodeDataFrames, ddlGraph, sourceIdKey)
-      case MonotonicallyIncreasingId => withMonotonicallyIncreasingId(nodeDataFrames, sourceIdKey)
+      case HashBasedId => createHashIdForTables(nodeDataFrames, ddlGraph, sourceIdKey)
+      case MonotonicallyIncreasingId => createMonotonicallyIncreasingIdForTables(nodeDataFrames, sourceIdKey)
     }
 
     val nodeTables = nodeDataFramesWithIds.map {
@@ -86,8 +86,8 @@ case class SqlPropertyGraphDataSource(
 
     // Generate relationship identifiers
     val relDataFramesWithIds = idGenerationStrategy match {
-      case HashBasedId => withHashId(relDataFrames, ddlGraph, sourceIdKey)
-      case MonotonicallyIncreasingId => withMonotonicallyIncreasingId(relDataFrames, sourceIdKey)
+      case HashBasedId => createHashIdForTables(relDataFrames, ddlGraph, sourceIdKey)
+      case MonotonicallyIncreasingId => createMonotonicallyIncreasingIdForTables(relDataFrames, sourceIdKey)
     }
 
     val relationshipTables = ddlGraph.edgeToViewMappings.map { edgeToViewMapping =>
@@ -99,8 +99,9 @@ case class SqlPropertyGraphDataSource(
 
       val relsWithStartNodeId = idGenerationStrategy match {
         case HashBasedId =>
+          // generate the start node id using the same hash parameters as for the corresponding node table
           val idColumnNames = edgeToViewMapping.startNode.joinPredicates.map(_.edgeColumn).map(_.toPropertyColumnName)
-          withHashId(relDf, startNodeViewKey, idColumnNames, sourceStartNodeKey)
+          createHashIdForTable(relDf, startNodeViewKey, idColumnNames, sourceStartNodeKey)
         case MonotonicallyIncreasingId =>
           val startNodeDf = nodeDataFramesWithIds(startNodeViewKey)
           joinNodeAndEdgeDf(startNodeDf, relDf, edgeToViewMapping.startNode.joinPredicates, sourceStartNodeKey)
@@ -108,8 +109,9 @@ case class SqlPropertyGraphDataSource(
 
       val relsWithEndNodeId = idGenerationStrategy match {
         case HashBasedId =>
+          // generate the end node id using the same hash parameters as for the corresponding node table
           val idColumnNames = edgeToViewMapping.endNode.joinPredicates.map(_.edgeColumn).map(_.toPropertyColumnName)
-          withHashId(relsWithStartNodeId, endNodeViewKey, idColumnNames, sourceEndNodeKey)
+          createHashIdForTable(relsWithStartNodeId, endNodeViewKey, idColumnNames, sourceEndNodeKey)
         case MonotonicallyIncreasingId =>
           val endNodeDf = nodeDataFramesWithIds(endNodeViewKey)
           joinNodeAndEdgeDf(endNodeDf, relsWithStartNodeId, edgeToViewMapping.endNode.joinPredicates, sourceEndNodeKey)
@@ -238,19 +240,44 @@ case class SqlPropertyGraphDataSource(
     }
   }
 
-  private def withHashId[T <: ElementViewKey](
+  /**
+    * Creates a potentially unique 64-bit identifier for each row in the given input table. The identifier is computed
+    * by hashing the view name, the element type (i.e. its labels) and the values stored in a given set of columns.
+    *
+    * @param dataFrame input table / view
+    * @param elementViewKey node / edge view key used for hashing
+    * @param idColumnNames columns used for hashing
+    * @param newIdColumn name of the new id column
+    * @tparam T node / edge view key
+    * @return input table / view with an additional column that contains potentially unique identifiers
+    */
+  private def createHashIdForTable[T <: ElementViewKey](
     dataFrame: DataFrame,
     elementViewKey: T,
     idColumnNames: List[String],
     newIdColumn: String
   ): DataFrame = {
     val viewLiteral = functions.lit(elementViewKey.qualifiedViewId.view)
-    val nodeTypeLiterals = elementViewKey.elementType.toSeq.sorted.map(functions.lit)
+    val elementTypeLiterals = elementViewKey.elementType.toSeq.sorted.map(functions.lit)
     val idColumns = idColumnNames.map(dataFrame.col)
-    dataFrame.withHashColumn(Seq(viewLiteral) ++ nodeTypeLiterals ++ idColumns, newIdColumn)
+    dataFrame.withHashColumn(Seq(viewLiteral) ++ elementTypeLiterals ++ idColumns, newIdColumn)
   }
 
-  private def withHashId[T <: ElementViewKey](
+  /**
+    * Creates a potentially unique 64-bit identifier for each row in the given input tables. The identifier is computed
+    * by hashing a specific set of columns of the input table. For node tables, we either pick the the join columns from
+    * the relationship mappings (i.e. the columns we join on) or all columns if the node is unconnected.
+    *
+    * In order to reduce the probability of hash collisions, the view name and the element type (i.e. its labels) are
+    * additional input for the hash function.
+    *
+    * @param views input tables
+    * @param ddlGraph DDL graph instance definition
+    * @param newIdColumn name of the new id column
+    * @tparam T node / edge view key
+    * @return input tables with an additional column that contains potentially unique identifiers
+    */
+  private def createHashIdForTables[T <: ElementViewKey](
     views: Map[T, DataFrame],
     ddlGraph: Graph,
     newIdColumn: String
@@ -263,11 +290,20 @@ case class SqlPropertyGraphDataSource(
         }
         case _: EdgeViewKey => dataFrame.columns.toList
       }
-      elementViewKey -> withHashId(dataFrame, elementViewKey, idColumnNames, newIdColumn)
+      elementViewKey -> createHashIdForTable(dataFrame, elementViewKey, idColumnNames, newIdColumn)
     }
   }
 
-  private def withMonotonicallyIncreasingId[T <: ElementViewKey](
+  /**
+    * Creates a unique 64-bit identifier for each row in the given input tables. The identifier is monotonically
+    * increasing across the input tables.
+    *
+    * @param views input tables
+    * @param newIdColumn name of the new id column
+    * @tparam T node / edge view key
+    * @return input tables with an additional column that contains unique identifiers
+    */
+  private def createMonotonicallyIncreasingIdForTables[T <: ElementViewKey](
     views: Map[T, DataFrame],
     newIdColumn: String
   ): Map[T, DataFrame] = {
