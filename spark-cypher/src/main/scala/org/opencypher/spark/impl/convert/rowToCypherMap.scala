@@ -58,14 +58,20 @@ final case class rowToCypherMap(exprToColumn: Seq[(Expr, String)]) extends (Row 
       case CTList(_) if !header.exprToColumn.contains(v) =>
         collectComplexList(row, v)
 
+      case _ => constructFromExpression(row, v)
+    }
+  }
+
+  private def constructFromExpression(row: Row, expr: Expr): CypherValue = {
+    expr.cypherType.material match {
       case CTMap(_) =>
-        val innerRow = row.getAs[GenericRowWithSchema](header.column(v))
+        val innerRow = row.getAs[GenericRowWithSchema](header.column(expr))
         innerRow.schema.fieldNames.map { field =>
           field -> CypherValue(innerRow.getAs[Any](field))
         }.toMap
 
       case _ =>
-        val raw = row.getAs[Any](header.column(v))
+        val raw = row.getAs[Any](header.column(expr))
         CypherValue(raw)
     }
   }
@@ -83,7 +89,7 @@ final case class rowToCypherMap(exprToColumn: Seq[(Expr, String)]) extends (Row 
 
         val properties = header
           .propertiesFor(v)
-          .map { p => p.key.name -> CypherValue(row.getAs[Any](header.column(p))) }
+          .map { p => p.key.name -> constructFromExpression(row, p) }
           .collect { case (key, value) if !value.isNull => key -> value }
           .toMap
 
@@ -108,7 +114,7 @@ final case class rowToCypherMap(exprToColumn: Seq[(Expr, String)]) extends (Row 
 
         val properties = header
           .propertiesFor(v)
-          .map { p => p.key.name -> CypherValue(row.getAs[Any](header.column(p))) }
+          .map { p => p.key.name -> constructFromExpression(row, p) }
           .collect { case (key, value) if !value.isNull => key -> value }
           .toMap
 

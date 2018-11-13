@@ -30,6 +30,7 @@ import org.opencypher.okapi.api.value.CypherValue
 import org.opencypher.okapi.api.value.CypherValue.CypherMap
 import org.opencypher.okapi.testing.Bag
 import org.opencypher.okapi.testing.Bag._
+import org.opencypher.spark.api.value.CAPSNode
 import org.opencypher.spark.testing.CAPSTestSuite
 import org.scalatest.DoNotDiscover
 
@@ -938,19 +939,55 @@ class ExpressionBehaviour extends CAPSTestSuite with DefaultGraphInit {
   }
 
   describe("map support") {
-    it("can construct static maps") {
-      val result = caps.cypher(
-        """
-          |RETURN {
-          | foo: "bar",
-          | baz: 42
-          |} as myMap
-        """.stripMargin)
+    describe("map construction") {
+      it("can construct static maps") {
+        val result = caps.cypher(
+          """
+            |RETURN {
+            | foo: "bar",
+            | baz: 42
+            |} as myMap
+          """.stripMargin)
 
-      result.records.toMapsWithCollectedEntities should equal(Bag(
-        CypherMap("myMap" -> Map("foo" -> "bar", "baz" -> 42))
-      ))
+        result.records.toMapsWithCollectedEntities should equal(Bag(
+          CypherMap("myMap" -> Map("foo" -> "bar", "baz" -> 42))
+        ))
+      }
+
+      it("can construct Maps with expression values") {
+        val result = caps.cypher(
+          """
+            |UNWIND [21, 42] as value
+            |RETURN {foo: value} as myMap
+          """.stripMargin)
+
+        result.records.toMapsWithCollectedEntities should equal(Bag(
+          CypherMap("myMap" -> Map("foo" -> 21)),
+          CypherMap("myMap" -> Map("foo" -> 42))
+        ))
+      }
+
+      it("can construct nodes with map properties") {
+        val g = initGraph(
+          """
+            |CREATE (:A {val: "foo"})
+          """.stripMargin)
+
+        val result = g.cypher(
+          """
+            |MATCH (a:A)
+            |CONSTRUCT
+            | CREATE (b {map: {val: a.val}})
+            |MATCH (n)
+            |RETURN n
+          """.stripMargin).records
+
+        result.toMapsWithCollectedEntities should equal(Bag(
+          CypherMap("n" -> CAPSNode(0, Set.empty, CypherMap("map" -> CypherMap("val" -> "foo"))))
+        ))
+      }
     }
+
 
     describe("index access") {
       it("returns the element with literal key") {
@@ -1031,23 +1068,6 @@ class ExpressionBehaviour extends CAPSTestSuite with DefaultGraphInit {
           CypherMap("value" -> 2)
         ))
       }
-    }
-
-    it("can construct maps with diverging types") {
-      val result = caps.cypher(
-        """
-          |WITH [
-          | {foo: 42},
-          | {foo: "bar"}
-          |] as myMap
-          |RETURN myMap
-        """.stripMargin)
-
-      result.show
-
-      result.records.toMapsWithCollectedEntities should equal(Bag(
-        CypherMap("myMap" -> Map("foo" -> "bar", "baz" -> 42))
-      ))
     }
   }
 }
