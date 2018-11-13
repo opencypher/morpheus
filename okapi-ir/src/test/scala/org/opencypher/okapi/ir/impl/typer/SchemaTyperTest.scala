@@ -29,10 +29,11 @@ package org.opencypher.okapi.ir.impl.typer
 import cats.data.NonEmptyList
 import org.opencypher.okapi.api.schema.Schema
 import org.opencypher.okapi.api.types._
+import org.opencypher.okapi.api.value.CypherValue
 import org.opencypher.okapi.ir.test.support.Neo4jAstTestSupport
 import org.opencypher.okapi.testing.BaseTestSuite
+import org.opencypher.v9_0.expressions._
 import org.opencypher.v9_0.expressions.functions.Tail
-import org.opencypher.v9_0.expressions.{Expression, Parameter, Variable}
 import org.opencypher.v9_0.util.symbols
 import org.scalatest.Assertion
 import org.scalatest.mockito.MockitoSugar
@@ -419,15 +420,9 @@ class SchemaTyperTest extends BaseTestSuite with Neo4jAstTestSupport with Mockit
   }
 
   it("typing of parameters (1)") {
-    implicit val tracker: TypeTracker = TypeTracker.empty.withParameters(Map("param" -> CTNode("Person")))
+    implicit val tracker: TypeTracker = TypeTracker.empty.withParameters(Map("param" -> CypherValue("foobar")))
 
-    assertExpr.from("$param") shouldHaveInferredType CTNode("Person")
-  }
-
-  it("typing of parameters (2)") {
-    implicit val tracker: TypeTracker = TypeTracker.empty.withParameters(Map("param" -> CTAny))
-
-    assertExpr.from("$param") shouldHaveInferredType CTAny
+    assertExpr.from("$param") shouldHaveInferredType CTString
   }
 
   it("typing of basic literals") {
@@ -456,8 +451,29 @@ class SchemaTyperTest extends BaseTestSuite with Neo4jAstTestSupport with Mockit
     assertExpr.from("[3.14, -1, 5000][15]") shouldHaveInferredType CTVoid
     assertExpr.from("[[], 1, true][15]") shouldHaveInferredType CTVoid
     assertExpr.from("[1, 2][1]") shouldHaveInferredType CTInteger
-    assertExpr.from("[3.14, -1, 5000][$param]")(TypeTracker.empty.withParameters(Map("param" -> CTInteger))) shouldHaveInferredType CTNumber.nullable
-    assertExpr.from("[[], 1, true][$param]")(TypeTracker.empty.withParameters(Map("param" -> CTInteger))) shouldHaveInferredType CTAny.nullable
+    assertExpr.from("[3.14, -1, 5000][$param]")(TypeTracker.empty.withParameters(Map("param" -> CypherValue(42L)))) shouldHaveInferredType CTNumber.nullable
+    assertExpr.from("[[], 1, true][$param]")(TypeTracker.empty.withParameters(Map("param" -> CypherValue(21L)))) shouldHaveInferredType CTAny.nullable
+  }
+
+  it("typing of map indexing") {
+    implicit val context: TypeTracker = TypeTracker.empty
+      .updated(Variable("map")(pos), CTMap(Map("foo" -> CTInteger, "bar" -> CTBoolean)))
+      .updated(Variable("stringKey")(pos), CTString)
+      .updated(Variable("intKey")(pos), CTInteger)
+      .withParameters(Map(
+        "stringParam" -> CypherValue("bar"),
+        "intParam" -> CypherValue(42L)
+      ))
+
+    assertExpr.from("""map["foo"]""") shouldHaveInferredType CTInteger
+    assertExpr.from("""map["bar"]""") shouldHaveInferredType CTBoolean
+    assertExpr.from("""map["baz"]""") shouldHaveInferredType CTVoid
+
+    assertExpr.from("""map[stringKey]""") shouldHaveInferredType CTAny
+    assertExpr.from("""map[intKey]""") shouldFailToInferTypeWithErrors InvalidType(Variable("intKey")(pos), CTString, CTInteger)
+
+    assertExpr.from("""map[$stringParam]""") shouldHaveInferredType CTBoolean
+    assertExpr.from("""map[$intParam]""") shouldFailToInferTypeWithErrors InvalidType(Parameter("intParam", symbols.CTAny)(pos), CTString, CTInteger)
   }
 
   it("infer type of node property lookup") {

@@ -26,13 +26,11 @@
  */
 package org.opencypher.okapi.ir.impl.typer
 
-import java.lang.Integer.parseInt
-
 import cats.data._
 import cats.implicits._
 import cats.{Foldable, Monoid}
 import org.atnos.eff._
-import org.atnos.eff.all._
+import org.atnos.eff.all.{get, _}
 import org.opencypher.okapi.api.schema.Schema
 import org.opencypher.okapi.api.types.CypherType.joinMonoid
 import org.opencypher.okapi.api.types._
@@ -41,8 +39,6 @@ import org.opencypher.okapi.ir.impl.parse.rewriter.ExistsPattern
 import org.opencypher.okapi.ir.impl.typer.SignatureConverter._
 import org.opencypher.v9_0.expressions._
 import org.opencypher.v9_0.expressions.functions.{Abs, Ceil, Coalesce, Collect, Exists, Exp, Floor, Log, Log10, Max, Min, Round, Sign, Sqrt, ToBoolean, ToString, UnresolvedFunction}
-
-import scala.util.Try
 
 final case class SchemaTyper(schema: Schema) {
 
@@ -104,7 +100,7 @@ object SchemaTyper {
             recordType(v -> varTyp) >> recordAndUpdate(expr -> propType)
 
           case CTMap(inner) =>
-            recordType(v -> varTyp) >> recordAndUpdate(expr -> inner(name))
+            recordType(v -> varTyp) >> recordAndUpdate(expr -> inner.getOrElse(name, CTVoid))
 
           case _ =>
             error(InvalidContainerAccess(expr))
@@ -304,37 +300,30 @@ object SchemaTyper {
     case div: Divide =>
       processArithmeticExpressions(div)
 
-    case indexing@ContainerIndex(list@ListLiteral(exprs), index: SignedDecimalIntegerLiteral)
-      if Try(parseInt(index.stringVal)).nonEmpty =>
-      for {
-        _ <- process[R](list)
-        _ <- process[R](index)
-        eltType <- {
-          Try(parseInt(index.stringVal)).map { rawPos =>
-            val pos = if (rawPos < 0) exprs.size + rawPos else rawPos
-            typeOf[R](exprs(pos))
-          }.getOrElse(pure[R, CypherType](CTVoid))
-        }
-        result <- recordAndUpdate(indexing -> eltType)
-      } yield result
-
     case indexing@ContainerIndex(list, index) =>
       for {
-        listTyp <- process[R](list)
+        containerType <- process[R](list)
         indexTyp <- process[R](index)
-        result <- (listTyp, indexTyp.material) match {
-
+        tracker <- get[R, TypeTracker]
+        result <- (containerType.material, indexTyp.material) match {
           case (CTList(eltTyp), CTInteger) =>
             recordAndUpdate(expr -> eltTyp.nullable)
 
-          case (CTListOrNull(eltTyp), CTInteger) =>
-            recordAndUpdate(expr -> eltTyp.nullable)
+          case (_: CTList, keyType) =>
+            error(InvalidType(index, CTInteger, keyType))
 
-          case (_:CTMap | _: CTMapOrNull , CTString) =>
-            index match {
+          case (CTMap(innerTypes), CTString) =>
+            val valueType = index match {
               case Parameter(name, _) =>
+                val key = tracker.parameters(name).cast[String]
+                innerTypes.getOrElse(key, CTVoid)
+              case StringLiteral(key) => innerTypes.getOrElse(key, CTVoid)
+              case _ => innerTypes.values.reduce(_ join _)
             }
-            recordAndUpdate(expr -> CTAny.nullable)
+            recordAndUpdate(expr -> (if(containerType.isNullable) valueType.nullable else valueType))
+
+          case (_: CTMap, keyType) =>
+            error(InvalidType(index, CTString, keyType))
 
           case _ =>
             error(InvalidContainerAccess(indexing))

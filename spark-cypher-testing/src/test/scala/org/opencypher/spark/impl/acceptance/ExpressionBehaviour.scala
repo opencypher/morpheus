@@ -952,6 +952,87 @@ class ExpressionBehaviour extends CAPSTestSuite with DefaultGraphInit {
       ))
     }
 
+    describe("index access") {
+      it("returns the element with literal key") {
+        val result = caps.cypher(
+          """
+            |WITH {
+            | foo: "bar",
+            | baz: 42
+            |} as myMap
+            |RETURN myMap["foo"] as foo, myMap["baz"] as baz
+          """.stripMargin)
+
+        result.records.toMapsWithCollectedEntities should equal(Bag(
+          CypherMap("foo" -> "bar", "baz" -> 42)
+        ))
+      }
+
+      it("returns null if the literal key does not exist") {
+        val result = caps.cypher(
+          """
+            |WITH {
+            | foo: "bar",
+            | baz: 42
+            |} as myMap
+            |RETURN myMap["barbaz"] as barbaz
+          """.stripMargin)
+
+        result.records.toMapsWithCollectedEntities should equal(Bag(
+          CypherMap("barbaz" -> null)
+        ))
+      }
+
+      it("returns the element with parameter key") {
+        val result = caps.cypher(
+          """
+            |WITH {
+            | foo: "bar",
+            | baz: 42
+            |} as myMap
+            |RETURN myMap[$fooKey] as foo, myMap[$bazKey] as baz
+          """.stripMargin, CypherMap("fooKey" -> "foo", "bazKey" -> "baz"))
+
+        result.records.toMapsWithCollectedEntities should equal(Bag(
+          CypherMap("foo" -> "bar", "baz" -> 42)
+        ))
+      }
+
+      // TODO: This throws a spark analysis error as it cannot find the column
+      ignore("returns null if the parameter key does not exist") {
+        val result = caps.cypher(
+          """
+            |WITH {
+            | foo: "bar",
+            | baz: 42
+            |} as myMap
+            |RETURN myMap[$barbazKey] as barbaz
+          """.stripMargin, CypherMap("barbazKey" -> "barbaz"))
+
+        result.records.toMapsWithCollectedEntities should equal(Bag(
+          CypherMap("barbaz" -> null)
+        ))
+      }
+
+      // TODO: needs planning outside of SparkSQLExpressionMapper
+      ignore("supports expression keys if all values have compatible types") {
+        val result = caps.cypher(
+          """
+            |WITH {
+            | foo: 1,
+            | bar: 2
+            |} as myMap
+            |UNWIND ["foo", "bar"] as key
+            |RETURN myMap[key] as value
+          """.stripMargin)
+
+        result.records.toMapsWithCollectedEntities should equal(Bag(
+          CypherMap("value" -> 1),
+          CypherMap("value" -> 2)
+        ))
+      }
+    }
+
     it("can construct maps with diverging types") {
       val result = caps.cypher(
         """

@@ -31,6 +31,7 @@ import org.apache.logging.log4j.scala.Logging
 import org.opencypher.okapi.api.types._
 import org.opencypher.okapi.impl.util.ParserUtils._
 
+//noinspection ForwardReference
 object CypherTypeParser extends Logging {
 
   def parse(input: String): Option[CypherType] = {

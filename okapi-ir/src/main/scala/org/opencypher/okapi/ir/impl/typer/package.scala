@@ -80,7 +80,7 @@ package object typer {
   def parameterType[R: _hasTracker: _keepsErrors](it: String): Eff[R, CypherType] =
     for {
       tracker <- get[R, TypeTracker]
-      cypherType <- tracker.getParameter(it) match {
+      cypherType <- tracker.getParameterType(it) match {
         case None    => error(UnTypedParameter(it)) >> pure[R, CypherType](CTWildcard)
         case Some(t) => pure[R, CypherType](t)
       }

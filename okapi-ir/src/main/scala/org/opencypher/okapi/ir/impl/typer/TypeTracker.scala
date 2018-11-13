@@ -27,6 +27,8 @@
 package org.opencypher.okapi.ir.impl.typer
 
 import org.opencypher.okapi.api.types.CypherType
+import org.opencypher.okapi.api.types.CypherType._
+import org.opencypher.okapi.api.value.CypherValue.CypherValue
 import org.opencypher.v9_0.expressions.Expression
 
 import scala.annotation.tailrec
@@ -35,14 +37,14 @@ object TypeTracker {
   val empty = TypeTracker(List.empty)
 }
 
-case class TypeTracker(maps: List[Map[Expression, CypherType]], parameters: Map[String, CypherType] = Map.empty) {
+case class TypeTracker(maps: List[Map[Expression, CypherType]], parameters: Map[String, CypherValue] = Map.empty) {
 
-  def withParameters(newParameters: Map[String, CypherType]): TypeTracker =
+  def withParameters(newParameters: Map[String, CypherValue]): TypeTracker =
     copy(parameters = newParameters)
 
   def get(e: Expression): Option[CypherType] = get(e, maps)
 
-  def getParameter(e: String): Option[CypherType] = parameters.get(e)
+  def getParameterType(e: String): Option[CypherType] = parameters.get(e).map(_.cypherType)
 
   @tailrec
   private def get(e: Expression, maps: List[Map[Expression, CypherType]]): Option[CypherType] = maps.headOption match {
