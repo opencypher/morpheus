@@ -24,27 +24,13 @@
  * described as "implementation extensions to Cypher" or as "proposed changes to
  * Cypher that are not yet approved by the openCypher community".
  */
-package org.opencypher.spark.testing.utils
+package org.opencypher.spark.examples
 
-import java.nio.charset.StandardCharsets
-import java.nio.file.{Files, Path, Paths}
-
-import scala.collection.JavaConverters._
-import scala.io.Source
-import scala.util.Properties
-
-object FileSystemUtils {
-
-  def deleteDirectory(path: Path): Unit = Files.walk(path).iterator().asScala.toList
-    .reverse
-    .map(_.toFile)
-    .foreach(_.delete())
-
-  def readFile(fileName: String): String = Source.fromFile(fileName)
-    .getLines()
-    .mkString(Properties.lineSeparator)
-
-  def writeFile(fileName: String, content: String): Unit  =
-    Files.write(Paths.get(fileName), content.getBytes(StandardCharsets.UTF_8))
-
+class LdbcHiveExampleTest extends ExampleTest {
+  it("runs LdbcHiveExampleTest") {
+    validate(
+      LdbcHiveExample.main(Array.empty),
+      getClass.getResource("/example_outputs/LdbcHiveExample.out").toURI
+    )
+  }
 }
