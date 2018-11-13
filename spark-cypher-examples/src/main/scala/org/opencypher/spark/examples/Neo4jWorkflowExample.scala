@@ -30,6 +30,7 @@ package org.opencypher.spark.examples
 import org.opencypher.okapi.api.graph.{Namespace, QualifiedGraphName}
 import org.opencypher.okapi.neo4j.io.MetaLabelSupport._
 import org.opencypher.okapi.neo4j.io.testing.Neo4jHarnessUtils._
+import org.opencypher.spark.api.io.neo4j.sync.{EntityKeys, Neo4jGraphMerge}
 import org.opencypher.spark.api.{CAPSSession, GraphSources}
 import org.opencypher.spark.testing.support.creation.CAPSNeo4jHarnessUtils._
 import org.opencypher.spark.util.ConsoleApp
@@ -54,9 +55,9 @@ object Neo4jWorkflowExample extends ConsoleApp {
   val socialNetwork = session.catalog.graph("socialNetwork.graph")
   val purchaseNetwork = session.catalog.graph("purchases.products")
 
-  // Build new recommendation graph that connects the social and product graphs and
+  // Build new integrated graph that connects the social and product graphs and
   // create new edges between users and customers with the same name
-  val recommendationGraph = session.cypher(
+  val integratedGraph = session.cypher(
     """|FROM GRAPH socialNetwork.graph
        |MATCH (p:Person)
        |FROM GRAPH purchases.products
@@ -69,25 +70,31 @@ object Neo4jWorkflowExample extends ConsoleApp {
     """.stripMargin
   ).getGraph.get
 
-  // Query for product recommendations
-  val recommendations = recommendationGraph.cypher(
+  // Query for product recommendations and create new edges between users and the product they should buy
+  val recommendationGraph = integratedGraph.cypher(
     """|MATCH (person:Person)-[:FRIEND_OF]-(friend:Person),
-       |(friend)-[:IS]->(customer:Customer),
-       |(customer)-[:BOUGHT]->(product:Product)
-       |RETURN person.name AS for, collect(DISTINCT product.title) AS recommendations""".stripMargin)
+       |      (friend)-[:IS]->(customer:Customer),
+       |      (customer)-[:BOUGHT]->(product:Product)
+       |CONSTRUCT
+       |      CREATE (person)-[:SHOULD_BUY]->(product)
+       |RETURN GRAPH""".stripMargin).graph
 
-  // Use Cypher queries to write the product recommendations back to Neo4j
-  recommendations.records.collect.foreach { recommendation =>
-    neo4j.execute(
-      s"""|MATCH (p:Person {name: ${recommendation.get("for").get.toCypherString}})
-          |SET p.should_buy = ${recommendation.get("recommendations").get.toCypherString}""".stripMargin)
-  }
+  // Use the Neo4jGraphMerge utility to write the products and the recommendations back to Neo4j
+
+  // Define the node and relationship keys
+  // Note that in this example we assume that names and titles uniquely identify people and products
+  val entityKeys = EntityKeys(Map("Person" -> Set("name"), "Product" -> Set("title")))
+  // Write the recommendations back to Neo4j
+  Neo4jGraphMerge.merge(recommendationGraph, neo4j.dataSourceConfig, entityKeys)
 
   // Proof that the write-back to Neo4j worked, retrieve and print updated Neo4j results
   val updatedNeo4jSource = GraphSources.cypher.neo4j(neo4j.dataSourceConfig)
   session.registerSource(Namespace("updated-neo4j"), updatedNeo4jSource)
   val socialNetworkWithRanks = session.catalog.graph(QualifiedGraphName(Namespace("updated-neo4j"), entireGraphName))
-  socialNetworkWithRanks.cypher("MATCH (p) WHERE p.should_buy IS NOT NULL RETURN p.name, p.should_buy").show
+  socialNetworkWithRanks.cypher(
+    """MATCH (person:Person)-[:SHOULD_BUY]->(product:Product)
+      |RETURN person.name AS person, product.title AS should_buy
+      |ORDER BY person, should_buy""".stripMargin).show
 
   // Shutdown Neo4j test instance
   neo4j.stop()
@@ -99,4 +106,5 @@ object Neo4jWorkflowExample extends ConsoleApp {
         |CREATE (a)-[:FRIEND_OF { since: '23/01/1987' }]->(b)
         |CREATE (b)-[:FRIEND_OF { since: '12/12/2009' }]->(c)""".stripMargin
 }
+
 // end::full-example[]
