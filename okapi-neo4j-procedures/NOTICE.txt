@@ -53,7 +53,10 @@ MIT-license
   Cats core
   Cats kernel
   Cats macros
+  fastparse
+  fastparse-utils
   machinist
+  sourcecode
   ujson_2.11
   upickle_2.11
 
