@@ -38,7 +38,7 @@ import org.opencypher.okapi.ir.impl.parse.functions.Timestamp
 import org.opencypher.okapi.ir.impl.parse.rewriter.ExistsPattern
 import org.opencypher.okapi.ir.impl.typer.SignatureConverter._
 import org.opencypher.v9_0.expressions._
-import org.opencypher.v9_0.expressions.functions.{Abs, Ceil, Coalesce, Collect, Exists, Exp, Floor, Log, Log10, Max, Min, Round, Sign, Sqrt, ToBoolean, ToString, UnresolvedFunction}
+import org.opencypher.v9_0.expressions.functions.{Abs, Ceil, Coalesce, Collect, Exists, Exp, Floor, Log, Log10, Max, Min, Properties, Round, Sign, Sqrt, ToBoolean, ToString, UnresolvedFunction}
 
 final case class SchemaTyper(schema: Schema) {
 
@@ -242,6 +242,31 @@ object SchemaTyper {
           for {
             inner <- process[R](first)
             existsType <- recordAndUpdate(expr -> CTString.asNullableAs(inner))
+          } yield existsType
+        case seq =>
+          error(WrongNumberOfArguments(expr, 1, seq.size))
+      }
+
+    case expr: FunctionInvocation if expr.function == Properties =>
+      expr.arguments match {
+        case Seq(first) =>
+          for {
+            inner <- process[R](first)
+            schema <- ask[R, Schema]
+            existsType <- {
+              val mapType = inner.material match {
+                case CTNode(labels, _) =>
+                  val properties = schema.nodePropertyKeysForCombinations(schema.combinationsFor(labels))
+                  CTMap(properties)
+                case CTRelationship(types, _) =>
+                  val properties = schema.relationshipPropertyKeysForTypes(types)
+                  CTMap(properties)
+                case mapType: CTMap => mapType
+                case _ => ???
+              }
+
+              recordAndUpdate(expr -> (if (inner.isNullable) mapType.nullable else mapType))
+            }
           } yield existsType
         case seq =>
           error(WrongNumberOfArguments(expr, 1, seq.size))

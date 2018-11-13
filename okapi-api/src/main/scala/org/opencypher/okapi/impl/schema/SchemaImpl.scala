@@ -218,6 +218,21 @@ final case class SchemaImpl(
     }
   }
 
+  override def relationshipPropertyKeysForTypes(knownTypes: Set[String]): PropertyKeys = {
+    val allKeys = knownTypes.flatMap(relationshipPropertyKeys)
+    val propertyKeys = allKeys.groupBy(_._1).mapValues { seq =>
+      if (seq.size == knownTypes.size && seq.forall(seq.head == _)) {
+        seq.head._2
+      } else if (seq.size < knownTypes.size) {
+        seq.map(_._2).foldLeft(CTNull: CypherType)(_ join _)
+      } else {
+        seq.map(_._2).reduce(_ join _)
+      }
+    }
+
+    propertyKeys.view.force
+  }
+
   override def relationshipPropertyKeys(typ: String): PropertyKeys = relTypePropertyMap.properties(typ)
 
   override def schemaPatternsFor(

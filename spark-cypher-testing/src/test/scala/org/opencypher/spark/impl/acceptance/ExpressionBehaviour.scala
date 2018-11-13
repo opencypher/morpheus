@@ -938,6 +938,69 @@ class ExpressionBehaviour extends CAPSTestSuite with DefaultGraphInit {
     }
   }
 
+  describe("properties") {
+    it("can extract properties from nodes") {
+      val g = initGraph(
+        """
+          |CREATE (:A {val1: "foo", val2: 42})
+          |CREATE (:A {val1: "bar", val2: 21})
+        """.stripMargin)
+
+      val result = g.cypher(
+        """
+          |MATCH (a:A)
+          |RETURN properties(a) as props
+        """.stripMargin).records
+
+      result.toMapsWithCollectedEntities should equal(Bag(
+        CypherMap("props" -> CypherMap("val1" -> "foo", "val2" -> 42)),
+        CypherMap("props" -> CypherMap("val1" -> "bar", "val2" -> 21))
+      ))
+    }
+
+    it("can extract properties from relationships") {
+      val g = initGraph(
+        """
+          |CREATE (a), (b)
+          |CREATE (a)-[:REL {val1: "foo", val2: 42}]->(b)
+          |CREATE (a)-[:REL {val1: "bar", val2: 21}]->(b)
+        """.stripMargin)
+
+      val result = g.cypher(
+        """
+          |MATCH ()-[rel:REL]->()
+          |RETURN properties(rel) as props
+        """.stripMargin).records
+
+      result.toMapsWithCollectedEntities should equal(Bag(
+        CypherMap("props" -> CypherMap("val1" -> "foo", "val2" -> 42)),
+        CypherMap("props" -> CypherMap("val1" -> "bar", "val2" -> 21))
+      ))
+    }
+
+    it("can extract properties from maps") {
+      val g = initGraph(
+        """
+          |CREATE (a), (b)
+          |CREATE (a)-[:REL {val1: "foo", val2: 42}]->(b)
+          |CREATE (a)-[:REL {val1: "bar", val2: 21}]->(b)
+        """.stripMargin)
+
+      val result = g.cypher(
+        """UNWIND [
+          | {val1: "foo", val2: 42},
+          | {val1: "bar", val2: 21}
+          |] as map
+          |RETURN properties(map) as props
+        """.stripMargin).records
+
+      result.toMapsWithCollectedEntities should equal(Bag(
+        CypherMap("props" -> CypherMap("val1" -> "foo", "val2" -> 42)),
+        CypherMap("props" -> CypherMap("val1" -> "bar", "val2" -> 21))
+      ))
+    }
+  }
+
   describe("map support") {
     describe("map construction") {
       it("can construct static maps") {

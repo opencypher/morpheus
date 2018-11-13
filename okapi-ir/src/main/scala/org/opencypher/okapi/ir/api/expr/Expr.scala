@@ -687,6 +687,12 @@ final case class RTrim(expr: Expr)(val cypherType: CypherType = CTWildcard) exte
   override def withCypherType(ct: CypherType): RTrim = copy()(ct)
 }
 
+final case class Properties(expr: Expr)(val cypherType: CypherType = CTWildcard) extends UnaryFunctionExpr {
+
+  override type This = Properties
+
+  override def withCypherType(ct: CypherType): Properties = copy()(ct)
+}
 
 // NAry Function expressions
 

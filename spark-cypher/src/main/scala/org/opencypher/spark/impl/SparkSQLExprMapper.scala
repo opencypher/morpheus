@@ -226,6 +226,18 @@ object SparkSQLExprMapper {
           val valuesColumn = functions.array(propertyColumns: _*)
           get_property_keys(propertyKeys)(valuesColumn)
 
+        case Properties(e) =>
+          e.cypherType.material match {
+            case _: CTNode | _: CTRelationship =>
+              val element = e.owner.get
+              val propertyExprs = header.propertiesFor(element).toSeq.sortBy(_.key.name)
+              val propertyColumns = propertyExprs.map(e => e.asSparkSQLExpr.as(e.key.name))
+              functions.struct(propertyColumns: _*)
+            case _: CTMap => e.asSparkSQLExpr
+            case other =>
+              throw IllegalArgumentException("a node, relationship or map", other, "Invalid input to property function")
+          }
+
         case Type(inner) =>
           inner match {
             case v: Var =>
