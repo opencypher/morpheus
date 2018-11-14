@@ -1048,6 +1048,17 @@ class ExpressionBehaviour extends CAPSTestSuite with DefaultGraphInit {
           CypherMap("map" -> CypherMap("val" -> "foo"))
         ))
       }
+
+      it("can return empty maps") {
+        val result = caps.cypher(
+          """
+            |RETURN {} as myMap
+          """.stripMargin)
+
+        result.records.toMapsWithCollectedEntities should equal(Bag(
+          CypherMap("myMap" -> CypherMap())
+        ))
+      }
     }
 
 

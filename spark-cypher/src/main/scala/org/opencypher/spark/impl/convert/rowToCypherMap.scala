@@ -64,11 +64,19 @@ final case class rowToCypherMap(exprToColumn: Seq[(Expr, String)]) extends (Row 
 
   private def constructFromExpression(row: Row, expr: Expr): CypherValue = {
     expr.cypherType.material match {
-      case CTMap(_) =>
-        val innerRow = row.getAs[GenericRowWithSchema](header.column(expr))
-        innerRow.schema.fieldNames.map { field =>
-          field -> CypherValue(innerRow.getAs[Any](field))
-        }.toMap
+      case CTMap(inner) =>
+        if (inner.isEmpty) {
+          CypherMap()
+        } else {
+          val innerRow = row.getAs[GenericRowWithSchema](header.column(expr))
+          innerRow match {
+            case _: GenericRowWithSchema =>
+              innerRow.schema.fieldNames.map { field =>
+                field -> CypherValue(innerRow.getAs[Any](field))
+              }.toMap
+            case null => null
+          }
+        }
 
       case _ =>
         val raw = row.getAs[Any](header.column(expr))

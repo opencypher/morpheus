@@ -232,7 +232,11 @@ object SparkSQLExprMapper {
               val element = e.owner.get
               val propertyExprs = header.propertiesFor(element).toSeq.sortBy(_.key.name)
               val propertyColumns = propertyExprs.map(e => e.asSparkSQLExpr.as(e.key.name))
-              functions.struct(propertyColumns: _*)
+              if (propertyColumns.isEmpty) {
+                functions.lit(null).cast(new StructType())
+              } else {
+                functions.struct(propertyColumns: _*)
+              }
             case _: CTMap => e.asSparkSQLExpr
             case other =>
               throw IllegalArgumentException("a node, relationship or map", other, "Invalid input to property function")
@@ -356,7 +360,11 @@ object SparkSQLExprMapper {
           val innerColumns = items.map {
             case (key, innerExpr) => innerExpr.asSparkSQLExpr.as(key)
           }
-          functions.struct(innerColumns.toSeq :_*)
+          if (innerColumns.isEmpty) {
+            functions.lit(null).cast(new StructType())
+          } else {
+            functions.struct(innerColumns.toSeq: _*)
+          }
 
         case _ =>
           throw NotImplementedException(s"No support for converting Cypher expression $expr to a Spark SQL expression")
