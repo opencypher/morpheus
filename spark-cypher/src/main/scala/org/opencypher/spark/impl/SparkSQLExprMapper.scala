@@ -239,7 +239,7 @@ object SparkSQLExprMapper {
               }
             case _: CTMap => e.asSparkSQLExpr
             case other =>
-              throw IllegalArgumentException("a node, relationship or map", other, "Invalid input to property function")
+              throw IllegalArgumentException("a node, relationship or map", other, "Invalid input to properties function")
           }
 
         case Type(inner) =>
