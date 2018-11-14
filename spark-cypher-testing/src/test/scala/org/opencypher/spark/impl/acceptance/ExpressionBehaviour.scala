@@ -30,7 +30,6 @@ import org.opencypher.okapi.api.value.CypherValue
 import org.opencypher.okapi.api.value.CypherValue.CypherMap
 import org.opencypher.okapi.testing.Bag
 import org.opencypher.okapi.testing.Bag._
-import org.opencypher.spark.api.value.CAPSNode
 import org.opencypher.spark.testing.CAPSTestSuite
 import org.scalatest.DoNotDiscover
 
@@ -1042,11 +1041,11 @@ class ExpressionBehaviour extends CAPSTestSuite with DefaultGraphInit {
             |CONSTRUCT
             | CREATE (b {map: {val: a.val}})
             |MATCH (n)
-            |RETURN n
+            |RETURN n.map as map
           """.stripMargin).records
 
         result.toMapsWithCollectedEntities should equal(Bag(
-          CypherMap("n" -> CAPSNode(0, Set.empty, CypherMap("map" -> CypherMap("val" -> "foo"))))
+          CypherMap("map" -> CypherMap("val" -> "foo"))
         ))
       }
     }

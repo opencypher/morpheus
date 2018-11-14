@@ -203,7 +203,7 @@ final case class SchemaImpl(
       }
     }
 
-    propertyKeys
+    propertyKeys.view.force
   }
 
   override def relationshipPropertyKeyType(types: Set[String], key: String): Option[CypherType] = {
