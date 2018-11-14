@@ -677,6 +677,20 @@ class ExpressionBehaviour extends CAPSTestSuite with DefaultGraphInit {
         CypherMap("vals" -> Seq(20, 200))
       ))
     }
+
+    it("can build lists that include nulls") {
+      val result = caps.cypher(
+        """
+          |RETURN [
+          | 1,
+          | null
+          |] AS p
+        """.stripMargin)
+
+      result.records.toMaps should equal(Bag(
+        CypherMap("p" -> List(1, null))
+      ))
+    }
   }
 
   describe("ANDs") {

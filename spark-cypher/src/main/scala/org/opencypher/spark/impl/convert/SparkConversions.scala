@@ -66,6 +66,11 @@ object SparkConversions {
           case CTList(CTNull) => Some(ArrayType(NullType, containsNull = true))
           case CTList(elemType) =>
             elemType.toSparkType.map(ArrayType(_, elemType.isNullable))
+          case CTMap(inner) =>
+            val innerFields = inner.map {
+              case (key, valueType) => valueType.toStructField(key)
+            }.toSeq
+            Some(StructType(innerFields))
           case _ =>
             None
         }
@@ -102,11 +107,7 @@ object SparkConversions {
         val elementStructField = elementType.toStructField(column)
         StructField(column, ArrayType(elementStructField.dataType, containsNull = elementStructField.nullable), nullable = true)
 
-      case CTMap(inner) =>
-        val innerFields = inner.map {
-          case (key, valueType) => valueType.toStructField(key)
-        }
-        StructField(column, StructType(innerFields.toSeq))
+      case map: CTMap => StructField(column, map.toSparkType.get)
       case map: CTMapOrNull => map.material.toStructField(column).copy(nullable = true)
 
       case other => throw IllegalArgumentException("CypherType supported by CAPS", other)
