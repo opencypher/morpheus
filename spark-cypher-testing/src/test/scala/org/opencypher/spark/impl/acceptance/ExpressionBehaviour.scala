@@ -943,6 +943,7 @@ class ExpressionBehaviour extends CAPSTestSuite with DefaultGraphInit {
         """
           |CREATE (:A {val1: "foo", val2: 42})
           |CREATE (:A {val1: "bar", val2: 21})
+          |CREATE (:A)
         """.stripMargin)
 
       val result = g.cypher(
@@ -953,7 +954,8 @@ class ExpressionBehaviour extends CAPSTestSuite with DefaultGraphInit {
 
       result.toMapsWithCollectedEntities should equal(Bag(
         CypherMap("props" -> CypherMap("val1" -> "foo", "val2" -> 42)),
-        CypherMap("props" -> CypherMap("val1" -> "bar", "val2" -> 21))
+        CypherMap("props" -> CypherMap("val1" -> "bar", "val2" -> 21)),
+        CypherMap("props" -> CypherMap("val1" -> null, "val2" -> null))
       ))
     }
 
@@ -963,6 +965,7 @@ class ExpressionBehaviour extends CAPSTestSuite with DefaultGraphInit {
           |CREATE (a), (b)
           |CREATE (a)-[:REL {val1: "foo", val2: 42}]->(b)
           |CREATE (a)-[:REL {val1: "bar", val2: 21}]->(b)
+          |CREATE (a)-[:REL]->(b)
         """.stripMargin)
 
       val result = g.cypher(
@@ -973,7 +976,8 @@ class ExpressionBehaviour extends CAPSTestSuite with DefaultGraphInit {
 
       result.toMapsWithCollectedEntities should equal(Bag(
         CypherMap("props" -> CypherMap("val1" -> "foo", "val2" -> 42)),
-        CypherMap("props" -> CypherMap("val1" -> "bar", "val2" -> 21))
+        CypherMap("props" -> CypherMap("val1" -> "bar", "val2" -> 21)),
+        CypherMap("props" -> CypherMap("val1" -> null, "val2" -> null))
       ))
     }
 

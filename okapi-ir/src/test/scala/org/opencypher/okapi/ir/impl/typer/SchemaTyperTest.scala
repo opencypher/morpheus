@@ -469,7 +469,7 @@ class SchemaTyperTest extends BaseTestSuite with Neo4jAstTestSupport with Mockit
     assertExpr.from("""map["bar"]""") shouldHaveInferredType CTBoolean
     assertExpr.from("""map["baz"]""") shouldHaveInferredType CTVoid
 
-    assertExpr.from("""map[stringKey]""") shouldHaveInferredType CTAny
+    assertExpr.from("""map[stringKey]""") shouldHaveInferredType CTAny.nullable
     assertExpr.from("""map[intKey]""") shouldFailToInferTypeWithErrors InvalidType(Variable("intKey")(pos), CTString, CTInteger)
 
     assertExpr.from("""map[$stringParam]""") shouldHaveInferredType CTBoolean

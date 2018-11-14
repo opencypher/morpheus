@@ -345,7 +345,7 @@ object SchemaTyper {
                 val key = tracker.parameters(name).cast[String]
                 innerTypes.getOrElse(key, CTVoid)
               case StringLiteral(key) => innerTypes.getOrElse(key, CTVoid)
-              case _ => innerTypes.values.reduce(_ join _)
+              case _ => innerTypes.values.reduce(_ join _).nullable
             }
             recordAndUpdate(expr -> (if (containerType.isNullable) valueType.nullable else valueType))
 

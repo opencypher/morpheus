@@ -163,8 +163,6 @@ case class CTMap(innerTypes: Map[String, CypherType]) extends MaterialDefiniteCy
   override def superTypeOf(other: CypherType): Ternary = other match {
     case CTMap(otherInner) if innerTypes.keySet == otherInner.keySet =>
       innerTypes.forall { case (key, value) => value.superTypeOf(otherInner(key)).isTrue }
-//    case _: CTNode => True
-//    case _: CTRelationship => True
     case CTWildcard => Maybe
     case CTVoid => True
     case _ => False
@@ -172,8 +170,6 @@ case class CTMap(innerTypes: Map[String, CypherType]) extends MaterialDefiniteCy
 
   override def joinMaterially(other: MaterialCypherType): MaterialCypherType = other match {
     case CTMap(otherInnerTypes: Map[String, CypherType]) => CTMap(innerTypes |+| otherInnerTypes)
-//    case _: CTNode => self
-//    case _: CTRelationship => self
     case CTVoid => this
     case CTWildcard => CTWildcard
     case _ => CTAny
@@ -210,9 +206,7 @@ sealed case class CTNode(
   }
 
   final override def joinMaterially(other: MaterialCypherType): MaterialCypherType = other match {
-//    case CTMap => CTMap
     case CTNode(otherLabels, qgnOpt) => CTNode(labels intersect otherLabels, if (graph == qgnOpt) graph else None)
-//    case _: CTRelationship => CTMap
     case CTVoid => self
     case CTWildcard => CTWildcard
     case _ => CTAny
@@ -278,13 +272,11 @@ sealed case class CTRelationship(
   }
 
   final override def joinMaterially(other: MaterialCypherType): MaterialCypherType = other match {
-//    case CTMap => CTMap
     case CTRelationship(otherTypes, qgnOpt) =>
       if (types.isEmpty || otherTypes.isEmpty)
         CTRelationship(Set.empty[String], if (graph == qgnOpt) graph else None)
       else
         CTRelationship(types union otherTypes, if (graph == qgnOpt) graph else None)
-//    case _: CTNode => CTMap
     case CTVoid => self
     case CTWildcard => CTWildcard
     case _ => CTAny

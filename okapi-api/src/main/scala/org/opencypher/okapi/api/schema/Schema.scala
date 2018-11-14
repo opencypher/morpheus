@@ -193,6 +193,8 @@ trait Schema {
   /**
     * Returns property keys for the set of known relationship types.
     * Types of conflicting property keys are joined.
+    * The parameter `knownTypes` functions as a predicate, i.e. an empty Set means that every relationship type
+    * registered in the schema will be considered.
     *
     * @param knownTypes types that relationship can have
     * @return typed property keys, with joined or nullable types for conflicts

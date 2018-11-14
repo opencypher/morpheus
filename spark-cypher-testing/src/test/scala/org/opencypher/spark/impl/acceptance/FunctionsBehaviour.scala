@@ -293,8 +293,7 @@ class FunctionsBehaviour extends CAPSTestSuite with DefaultGraphInit {
         ))
     }
 
-    // TODO: Enable when "Some error in type inference: Don't know how to type MapExpression" is fixed
-    ignore("keys() works with literal maps") {
+    it("works with literal maps") {
       val given = initGraph("CREATE ()")
 
       val result = given.cypher("MATCH () WITH {person: {name: 'Anne', age: 25}} AS p RETURN keys(p) as k")

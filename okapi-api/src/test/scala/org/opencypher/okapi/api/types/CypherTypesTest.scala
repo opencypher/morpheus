@@ -71,9 +71,7 @@ class CypherTypesTest extends ApiBaseTest {
     CTFloat couldBeSameTypeAs CTInteger shouldBe false
     CTBoolean couldBeSameTypeAs CTInteger shouldBe false
 
-//    CTNode couldBeSameTypeAs CTMap shouldBe true
     CTRelationship couldBeSameTypeAs CTNode shouldBe false
-//    CTRelationship couldBeSameTypeAs CTMap shouldBe true
 
     CTList(CTInteger) couldBeSameTypeAs CTList(CTFloat) shouldBe false
     CTList(CTInteger) couldBeSameTypeAs CTList(CTAny) shouldBe true
@@ -195,8 +193,6 @@ class CypherTypesTest extends ApiBaseTest {
     CTNumber superTypeOf CTFloat shouldBe True
     CTMap(Map("foo" -> CTAny, "bar" -> CTInteger)) superTypeOf CTMap(Map("foo" -> CTString, "bar" -> CTInteger)) shouldBe True
     CTMap(Map("foo" -> CTAny, "bar" -> CTAny)) superTypeOf CTMap(Map("foo" -> CTString, "bar" -> CTInteger)) shouldBe True
-//    CTMap superTypeOf CTNode shouldBe True
-//    CTMap superTypeOf CTRelationship shouldBe True
 
     CTAny superTypeOf CTInteger shouldBe True
     CTAny superTypeOf CTFloat shouldBe True
@@ -234,8 +230,6 @@ class CypherTypesTest extends ApiBaseTest {
     CTNumber join CTInteger shouldBe CTNumber
     CTNumber join CTString shouldBe CTAny
 
-//    CTNode join CTRelationship shouldBe CTMap
-//    CTNode join CTMap shouldBe CTMap
     CTString join CTBoolean shouldBe CTAny
     CTAny join CTInteger shouldBe CTAny
 
@@ -256,8 +250,6 @@ class CypherTypesTest extends ApiBaseTest {
     CTFloat.nullable join CTInteger.nullable shouldBe CTNumber.nullable
     CTNumber.nullable join CTString shouldBe CTAny.nullable
 
-//    CTNode join CTRelationship.nullable shouldBe CTMap.nullable
-//    CTNode.nullable join CTMap shouldBe CTMap.nullable
     CTString.nullable join CTBoolean.nullable shouldBe CTAny.nullable
     CTAny join CTInteger.nullable shouldBe CTAny.nullable
   }
@@ -276,11 +268,6 @@ class CypherTypesTest extends ApiBaseTest {
       "T2",
       "Tx",
       "Ty")
-
-//    CTNode("Person") join CTRelationship("KNOWS") shouldBe CTMap
-//    CTNode("Person") join CTRelationship shouldBe CTMap
-//    CTRelationship("KNOWS") join CTNode("Person") shouldBe CTMap
-//    CTRelationship("KNOWS") join CTNode shouldBe CTMap
   }
 
   it("meet") {
@@ -304,10 +291,6 @@ class CypherTypesTest extends ApiBaseTest {
   }
 
   it("meet with labels and types") {
-//    CTMap meet CTNode shouldBe CTNode
-//    CTMap meet CTNode("Person") shouldBe CTNode("Person")
-//    CTMap meet CTRelationship("KNOWS") shouldBe CTRelationship("KNOWS")
-
     CTNode("Person") meet CTNode shouldBe CTNode("Person")
     CTNode("Person") meet CTNode("Foo") shouldBe CTNode("Person", "Foo")
     CTNode("Person", "Foo") meet CTNode("Foo") shouldBe CTNode("Person", "Foo")
