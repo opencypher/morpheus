@@ -488,7 +488,7 @@ class SchemaTyperTest extends BaseTestSuite with Neo4jAstTestSupport with Mockit
     assertExpr.from("r.relative") shouldHaveInferredType CTBoolean
   }
 
-  it("typing of id function") {
+  it("types of id function") {
     implicit val context: TypeTracker = typeTracker("n" -> CTNode("Person"))
 
     assertExpr.from("id(n)") shouldHaveInferredType CTInteger.nullable
@@ -506,6 +506,22 @@ class SchemaTyperTest extends BaseTestSuite with Neo4jAstTestSupport with Mockit
     //
     // implicit val context = TyperContext.empty :+ Parameter("param", symbols.CTAny)(pos) -> CTInteger
     // assertExpr.from("percentileDisc([1, 3.14][$param], 3.14)") shouldHaveInferredType CTInteger
+  }
+
+  it("types the properties function") {
+    implicit val context: TypeTracker = typeTracker(
+      "person" -> CTNode(Set("Person")),
+      "personFoo" -> CTNode().nullable,
+      "rel" -> CTRelationship(),
+      "knows" -> CTRelationship("KNOWS").nullable,
+      "map" -> CTMap(Map("foo" -> CTString, "bar" -> CTInteger))
+    )
+
+    assertExpr.from("properties(person)") shouldHaveInferredType CTMap(Map("name" -> CTString, "age" -> CTInteger))
+    assertExpr.from("properties(personFoo)") shouldHaveInferredType CTMap(Map("name" -> CTAny, "age" -> CTNumber)).nullable
+    assertExpr.from("properties(rel)") shouldHaveInferredType CTMap(Map("since" -> CTInteger, "relative" -> CTBoolean))
+    assertExpr.from("properties(knows)") shouldHaveInferredType CTMap(Map("since" -> CTInteger, "relative" -> CTBoolean)).nullable
+    assertExpr.from("properties(map)") shouldHaveInferredType CTMap(Map("foo" -> CTString, "bar" -> CTInteger))
   }
 
   it("types the range function") {

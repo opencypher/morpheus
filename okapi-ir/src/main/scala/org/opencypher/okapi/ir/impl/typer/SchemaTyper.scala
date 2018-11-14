@@ -31,6 +31,7 @@ import cats.implicits._
 import cats.{Foldable, Monoid}
 import org.atnos.eff._
 import org.atnos.eff.all.{get, _}
+import org.opencypher.okapi.api.schema.PropertyKeys.PropertyKeys
 import org.opencypher.okapi.api.schema.Schema
 import org.opencypher.okapi.api.types.CypherType.joinMonoid
 import org.opencypher.okapi.api.types._
@@ -253,21 +254,22 @@ object SchemaTyper {
           for {
             inner <- process[R](first)
             schema <- ask[R, Schema]
-            existsType <- {
-              val mapType = inner.material match {
-                case CTNode(labels, _) =>
-                  val properties = schema.nodePropertyKeysForCombinations(schema.combinationsFor(labels))
-                  CTMap(properties)
-                case CTRelationship(types, _) =>
-                  val properties = schema.relationshipPropertyKeysForTypes(types)
-                  CTMap(properties)
-                case mapType: CTMap => mapType
-                case _ => ???
-              }
-
-              recordAndUpdate(expr -> (if (inner.isNullable) mapType.nullable else mapType))
+            properties <- inner.material match {
+              case CTNode(labels, _) =>
+                pure[R, PropertyKeys](schema.nodePropertyKeysForCombinations(schema.combinationsFor(labels)))
+              case CTRelationship(types, _) =>
+                pure[R, PropertyKeys](schema.relationshipPropertyKeysForTypes(types))
+              case CTMap(properties) =>
+                pure[R, PropertyKeys](properties)
+              case _ =>
+                wrong[R, TyperError](InvalidArgument(expr, first)) >> pure[R, PropertyKeys](Map.empty)
             }
-          } yield existsType
+            mapType <- {
+              val mapType = CTMap(properties)
+              val nullableMapType = if (inner.isNullable) mapType.nullable else mapType
+              recordAndUpdate(expr -> nullableMapType)
+            }
+          } yield mapType
         case seq =>
           error(WrongNumberOfArguments(expr, 1, seq.size))
       }
@@ -345,7 +347,7 @@ object SchemaTyper {
               case StringLiteral(key) => innerTypes.getOrElse(key, CTVoid)
               case _ => innerTypes.values.reduce(_ join _)
             }
-            recordAndUpdate(expr -> (if(containerType.isNullable) valueType.nullable else valueType))
+            recordAndUpdate(expr -> (if (containerType.isNullable) valueType.nullable else valueType))
 
           case (_: CTMap, keyType) =>
             error(InvalidType(index, CTString, keyType))
