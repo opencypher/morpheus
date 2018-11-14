@@ -447,10 +447,10 @@ class SchemaTyperTest extends BaseTestSuite with Neo4jAstTestSupport with Mockit
   it("typing of list indexing") {
     implicit val context: TypeTracker = TypeTracker.empty.updated(Parameter("param", symbols.CTAny)(pos), CTInteger)
 
-    assertExpr.from("[1, 2][15]") shouldHaveInferredType CTVoid
-    assertExpr.from("[3.14, -1, 5000][15]") shouldHaveInferredType CTVoid
-    assertExpr.from("[[], 1, true][15]") shouldHaveInferredType CTVoid
-    assertExpr.from("[1, 2][1]") shouldHaveInferredType CTInteger
+    assertExpr.from("[1, 2][15]") shouldHaveInferredType CTInteger.nullable
+    assertExpr.from("[3.14, -1, 5000][15]") shouldHaveInferredType CTNumber.nullable
+    assertExpr.from("[[], 1, true][15]") shouldHaveInferredType CTAny.nullable
+    assertExpr.from("[1, 2][1]") shouldHaveInferredType CTInteger.nullable
     assertExpr.from("[3.14, -1, 5000][$param]")(TypeTracker.empty.withParameters(Map("param" -> CypherValue(42L)))) shouldHaveInferredType CTNumber.nullable
     assertExpr.from("[[], 1, true][$param]")(TypeTracker.empty.withParameters(Map("param" -> CypherValue(21L)))) shouldHaveInferredType CTAny.nullable
   }
@@ -500,7 +500,7 @@ class SchemaTyperTest extends BaseTestSuite with Neo4jAstTestSupport with Mockit
 
     assertExpr.from("percentileDisc(1, 3.14)") shouldHaveInferredType CTInteger.nullable
     assertExpr.from("percentileDisc(6.67, 3.14)") shouldHaveInferredType CTFloat.nullable
-    assertExpr.from("percentileDisc([1, 3.14][0], 3.14)") shouldHaveInferredType CTInteger.nullable
+    assertExpr.from("percentileDisc([1, 3.14][0], 3.14)") shouldHaveInferredType CTNumber.nullable
 
     // TODO: Making this work requires union types and changing how nullability works. Sad!
     //
