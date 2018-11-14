@@ -86,14 +86,16 @@ object GraphDdl {
       .validateDistinctBy(_.name, "Duplicate graph type name")
       .keyBy(_.name).mapValues(_.schemaDefinition)
       .map { case (name, schema) =>
-        name -> tryWithContext(s"Error in graph type: $name")(toSchema(globalLabelDefinitions, schema)) }
+        name -> tryWithContext(s"Error in graph type: $name")(toSchema(globalLabelDefinitions, schema))
+      }
       .view.force // mapValues creates a view, but we want validation now
 
     val inlineGraphTypes = ddlParts.graphDefinitions.map(_.definition)
       .keyBy(_.name)
       .mapValues(_.localSchemaDefinition)
       .map { case (name, schema) =>
-        name -> tryWithContext(s"Error in graph type of graph: $name")(toSchema(globalLabelDefinitions, schema)) }
+        name -> tryWithContext(s"Error in graph type of graph: $name")(toSchema(globalLabelDefinitions, schema))
+      }
 
     val graphs = ddlParts.graphDefinitions
       .map(graphDefinition => toGraph(inlineGraphTypes, graphTypes, graphDefinition))
@@ -133,7 +135,10 @@ object GraphDdl {
     schemaWithSchemaPatterns(schemaDefinition.schemaPatternDefinitions, schemaWithNodes ++ schemaWithRels)
   }
 
-  private def schemaForNodeDefinitions(labelDefinitions: Map[String, LabelDefinition], nodeDefinitions: Set[LabelCombination]): Schema = {
+  private def schemaForNodeDefinitions(
+    labelDefinitions: Map[String, LabelDefinition],
+    nodeDefinitions: Set[LabelCombination]
+  ): Schema = {
     val schemaWithNodes = nodeDefinitions.foldLeft(Schema.empty) {
       case (currentSchema, labelCombo) =>
         tryWithContext(s"Error for label combination (${labelCombo.mkString(",")})") {
@@ -167,7 +172,10 @@ object GraphDdl {
     }
   }
 
-  private def schemaForRelationshipDefinitions(labelDefinitions: Map[String, LabelDefinition], relDefinitions: Set[String]): Schema = {
+  private def schemaForRelationshipDefinitions(
+    labelDefinitions: Map[String, LabelDefinition],
+    relDefinitions: Set[String]
+  ): Schema = {
     val schemaWithRels = relDefinitions.foldLeft(Schema.empty) {
       case (currentSchema, relType) =>
         currentSchema.withRelationshipPropertyKeys(relType, labelDefinitions.getOrFail(relType, "Unresolved label").properties)
@@ -290,7 +298,7 @@ object GraphDdl {
       QualifiedViewId(dataSource, schema, view)
     case (Some(SetSchemaDefinition(dataSource, schema)), view :: Nil) =>
       QualifiedViewId(dataSource, schema, view)
-    case (None, view)    if view.size < 3 =>
+    case (None, view) if view.size < 3 =>
       malformed("Relative view identifier requires a preceeding SET SCHEMA statement", view.mkString("."))
     case (Some(_), view) if view.size > 1 =>
       malformed("Relative view identifier must have exactly one segment", view.mkString("."))
@@ -305,7 +313,7 @@ object GraphDdl {
       case (`edgeAlias`, `nodeAlias`) => Join(nodeColumn = rightColumn, edgeColumn = leftColumn)
       case _ =>
         val aliases = Set(nodeAlias, edgeAlias)
-        if (!aliases.contains(leftAlias))  unresolved("Unresolved alias", leftAlias, aliases)
+        if (!aliases.contains(leftAlias)) unresolved("Unresolved alias", leftAlias, aliases)
         if (!aliases.contains(rightAlias)) unresolved("Unresolved alias", rightAlias, aliases)
         unresolved(s"Unable to resolve aliases", s"$leftAlias, $rightAlias", aliases)
     }
@@ -333,7 +341,7 @@ object GraphDdl {
     def validateDistinctBy[K](key: T => K, msg: String): C[T] = {
       elems.groupBy(key).foreach {
         case (k, vals) if vals.size > 1 => Err.duplicate(msg, k)
-        case _                          =>
+        case _ =>
       }
       elems
     }
@@ -353,7 +361,17 @@ case class Graph(
   graphType: Schema,
   nodeToViewMappings: Map[NodeViewKey, NodeToViewMapping],
   edgeToViewMappings: List[EdgeToViewMapping]
-)
+) {
+
+  // TODO: validate (during GraphDdl construction) if the user always uses the same join columns for the node views
+  def nodeIdColumnsFor(nodeViewKey: NodeViewKey): Option[List[String]] = edgeToViewMappings.collectFirst {
+    case evm: EdgeToViewMapping if evm.startNode.nodeViewKey == nodeViewKey =>
+      evm.startNode.joinPredicates.map(_.nodeColumn)
+
+    case evm: EdgeToViewMapping if evm.endNode.nodeViewKey == nodeViewKey =>
+      evm.endNode.joinPredicates.map(_.nodeColumn)
+  }
+}
 
 object QualifiedViewId {
   def apply(qualifiedViewId: String): QualifiedViewId = qualifiedViewId.split("\\.").toList match {
@@ -405,10 +423,19 @@ case class Join(
   edgeColumn: String
 )
 
-case class NodeViewKey(nodeType: Set[String], qualifiedViewId: QualifiedViewId) {
+trait ElementViewKey {
+  def elementType: Set[String]
+  def qualifiedViewId: QualifiedViewId
+}
+
+case class NodeViewKey(nodeType: Set[String], qualifiedViewId: QualifiedViewId) extends ElementViewKey {
+  override val elementType: Set[String] = nodeType
+
   override def toString: String = s"node type: ${nodeType.mkString(", ")}, view: $qualifiedViewId"
 }
 
-case class EdgeViewKey(edgeType: Set[String], qualifiedViewId: QualifiedViewId) {
+case class EdgeViewKey(edgeType: Set[String], qualifiedViewId: QualifiedViewId) extends ElementViewKey {
+  override val elementType: Set[String] = edgeType
+
   override def toString: String = s"relationship type: ${edgeType.mkString(", ")}, view: $qualifiedViewId"
 }

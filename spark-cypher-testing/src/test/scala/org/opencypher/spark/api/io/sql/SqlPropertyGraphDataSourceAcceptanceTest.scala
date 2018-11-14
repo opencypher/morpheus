@@ -27,23 +27,26 @@
 package org.opencypher.spark.api.io.sql
 
 import org.apache.spark.sql.DataFrame
+import org.opencypher.graphddl.GraphDdl
 import org.opencypher.okapi.api.graph.GraphName
 import org.opencypher.okapi.api.io.PropertyGraphDataSource
 import org.opencypher.okapi.impl.util.StringEncodingUtilities._
 import org.opencypher.okapi.testing.propertygraph.InMemoryTestGraph
 import org.opencypher.spark.api.CAPSSession
+import org.opencypher.spark.api.io.sql.IdGenerationStrategy.IdGenerationStrategy
 import org.opencypher.spark.api.io.util.CAPSGraphExport._
 import org.opencypher.spark.impl.DataFrameOps._
 import org.opencypher.spark.testing.CAPSTestSuite
 import org.opencypher.spark.testing.api.io.CAPSPGDSAcceptance
 import org.opencypher.spark.testing.support.creation.caps.CAPSScanGraphFactory
-import org.opencypher.graphddl.GraphDdl
 
 import scala.io.Source
 
 abstract class SqlPropertyGraphDataSourceAcceptanceTest extends CAPSTestSuite with CAPSPGDSAcceptance {
 
   def sqlDataSourceConfig: SqlDataSourceConfig
+
+  def idGenerationStrategy: IdGenerationStrategy
 
   def writeTable(df: DataFrame, tableName: String): Unit
 

@@ -33,36 +33,36 @@ import org.scalatest.{FunSpec, Matchers}
 
 class GraphDdlTest extends FunSpec with Matchers {
 
-  it("converts to GraphDDL IR") {
-
-    val ddlString =
-      s"""
-         |SET SCHEMA dataSourceName.fooDatabaseName
-         |
+  val ddlString: String =
+    s"""
+       |SET SCHEMA dataSourceName.fooDatabaseName
+       |
          |CREATE GRAPH SCHEMA fooSchema
-         | LABEL (Person { name   : STRING, age : INTEGER })
-         | LABEL (Book   { title  : STRING })
-         | LABEL (READS  { rating : FLOAT  })
-         | (Person)
-         | (Book)
-         | [READS]
-         |
+       | LABEL (Person { name   : STRING, age : INTEGER })
+       | LABEL (Book   { title  : STRING })
+       | LABEL (READS  { rating : FLOAT  })
+       | (Person)
+       | (Book)
+       | [READS]
+       |
          |CREATE GRAPH fooGraph WITH GRAPH SCHEMA fooSchema
-         |  NODE LABEL SETS (
-         |    (Person) FROM personView1 ( person_name1 AS name )
-         |             FROM personView2 ( person_name2 AS name )
-         |    (Book)   FROM bookView    ( book_title AS title )
-         |  )
-         |  RELATIONSHIP LABEL SETS (
-         |    (READS)
-         |      FROM readsView1 e ( value1 AS rating )
-         |        START NODES LABEL SET (Person) FROM personView1 p JOIN ON p.person_id1 = e.person
-         |        END   NODES LABEL SET (Book)   FROM bookView    b JOIN ON e.book       = b.book_id
-         |      FROM readsView2 e ( value2 AS rating )
-         |        START NODES LABEL SET (Person) FROM personView2 p JOIN ON p.person_id2 = e.person
-         |        END   NODES LABEL SET (Book)   FROM bookView    b JOIN ON e.book       = b.book_id
-         |  )
+       |  NODE LABEL SETS (
+       |    (Person) FROM personView1 ( person_name1 AS name )
+       |             FROM personView2 ( person_name2 AS name )
+       |    (Book)   FROM bookView    ( book_title AS title )
+       |  )
+       |  RELATIONSHIP LABEL SETS (
+       |    (READS)
+       |      FROM readsView1 e ( value1 AS rating )
+       |        START NODES LABEL SET (Person) FROM personView1 p JOIN ON p.person_id1 = e.person
+       |        END   NODES LABEL SET (Book)   FROM bookView    b JOIN ON e.book       = b.book_id
+       |      FROM readsView2 e ( value2 AS rating )
+       |        START NODES LABEL SET (Person) FROM personView2 p JOIN ON p.person_id2 = e.person
+       |        END   NODES LABEL SET (Book)   FROM bookView    b JOIN ON e.book       = b.book_id
+       |  )
      """.stripMargin
+
+  it("converts to GraphDDL IR") {
 
     import org.opencypher.okapi.api.types.{CTFloat, CTString}
 
@@ -114,7 +114,27 @@ class GraphDdlTest extends FunSpec with Matchers {
     )
 
     graphDdl shouldEqual expected
+  }
 
+  it("extracts join keys for a given node view key in start node position") {
+    val maybeJoinColumns = GraphDdl(ddlString).graphs(GraphName("fooGraph"))
+      .nodeIdColumnsFor(NodeViewKey(Set("Person"), QualifiedViewId("dataSourceName.fooDatabaseName.personView1")))
+
+    maybeJoinColumns shouldEqual Some(List("person_id1"))
+  }
+
+  it("extracts join keys for a given node view key in end node position") {
+    val maybeJoinColumns = GraphDdl(ddlString).graphs(GraphName("fooGraph"))
+      .nodeIdColumnsFor(NodeViewKey(Set("Book"), QualifiedViewId("dataSourceName.fooDatabaseName.bookView")))
+
+    maybeJoinColumns shouldEqual Some(List("book_id"))
+  }
+
+  it("does not extract join keys for an invalid node view key") {
+    val maybeJoinColumns = GraphDdl(ddlString).graphs(GraphName("fooGraph"))
+      .nodeIdColumnsFor(NodeViewKey(Set("A"), QualifiedViewId("dataSourceName.fooDatabaseName.A")))
+
+    maybeJoinColumns shouldEqual None
   }
 
   it("fails on duplicate node mappings") {

@@ -29,7 +29,7 @@ package org.opencypher.spark.impl
 import org.apache.spark.SparkContext
 import org.apache.spark.sql.execution.SparkPlan
 import org.apache.spark.sql.types._
-import org.apache.spark.sql.{Column, DataFrame, Row}
+import org.apache.spark.sql.{Column, DataFrame, Row, functions}
 import org.apache.spark.storage.StorageLevel.MEMORY_ONLY
 import org.opencypher.okapi.api.types._
 import org.opencypher.okapi.api.value.CypherValue
@@ -179,6 +179,30 @@ object DataFrameOps {
       } else {
         df.sparkSession.createDataFrame(df.rdd, newSchema)
       }
+    }
+
+    /**
+      * Adds a new column under a given name containing the hash value of the given input columns.
+      *
+      * The hash is generated using [[org.apache.spark.sql.catalyst.expressions.Murmur3Hash]] based on the given column
+      * sequence. To decrease collision probability, we:
+      *
+      * 1) generate a first hash for the given column sequence
+      * 2) shift the hash into the upper bits of a 64 bit long
+      * 3) generate a second hash using the reversed input column sequence
+      * 4) store the hash in the lower 32 bits of the final id
+      *
+      * @param columns input columns for the hash function
+      * @param idColumn column storing the result of the hash function
+      * @return DataFrame with an additional idColumn
+      */
+    def withHashColumn(columns: Seq[Column], idColumn: String): DataFrame = {
+      require(columns.nonEmpty, "Hash function requires a non-empty sequence of columns as input.")
+      val id1 = functions.hash(columns: _*).cast(LongType)
+      val shifted = functions.shiftLeft(id1, Integer.SIZE)
+      val id = shifted + functions.hash(columns.reverse: _*)
+
+      df.withColumn(idColumn, id)
     }
 
     def withPropertyColumns: DataFrame = {

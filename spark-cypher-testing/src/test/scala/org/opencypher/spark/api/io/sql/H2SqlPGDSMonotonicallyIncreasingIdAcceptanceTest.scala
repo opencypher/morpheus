@@ -26,25 +26,35 @@
  */
 package org.opencypher.spark.api.io.sql
 
-import org.apache.spark.sql.{DataFrame, SaveMode}
-import org.opencypher.spark.api.io.HiveFormat
-import org.opencypher.spark.testing.fixture.HiveFixture
+import org.apache.spark.sql.DataFrame
+import org.opencypher.spark.api.io.JdbcFormat
+import org.opencypher.spark.api.io.sql.IdGenerationStrategy.{IdGenerationStrategy, _}
+import org.opencypher.spark.testing.fixture.H2Fixture
+import org.opencypher.spark.testing.utils.H2Utils._
 
-class HiveSqlPropertyGraphDataSourceAcceptanceTest extends SqlPropertyGraphDataSourceAcceptanceTest with HiveFixture {
+class H2SqlPGDSMonotonicallyIncreasingIdAcceptanceTest extends SqlPropertyGraphDataSourceAcceptanceTest with H2Fixture {
+
+  override def idGenerationStrategy: IdGenerationStrategy = MonotonicallyIncreasingId
 
   override def beforeAll(): Unit = {
     super.beforeAll()
-    createHiveDatabase(databaseName)
+    createH2Database(sqlDataSourceConfig, databaseName)
   }
 
   override def afterAll(): Unit = {
-    dropHiveDatabase(databaseName)
+    dropH2Database(sqlDataSourceConfig, databaseName)
     super.afterAll()
   }
 
   override def sqlDataSourceConfig: SqlDataSourceConfig =
-    SqlDataSourceConfig(HiveFormat, dataSourceName)
+    SqlDataSourceConfig(
+      storageFormat = JdbcFormat,
+      dataSourceName = dataSourceName,
+      jdbcDriver = Some("org.h2.Driver"),
+      jdbcUri = Some("jdbc:h2:mem:?user=sa&password=1234;DB_CLOSE_DELAY=-1")
+    )
 
   override def writeTable(df: DataFrame, tableName: String): Unit =
-    df.write.mode(SaveMode.Overwrite).saveAsTable(tableName)
+    df.saveAsSqlTable(sqlDataSourceConfig, tableName)
+
 }
