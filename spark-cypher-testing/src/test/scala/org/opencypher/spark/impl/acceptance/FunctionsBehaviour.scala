@@ -293,18 +293,64 @@ class FunctionsBehaviour extends CAPSTestSuite with DefaultGraphInit {
         ))
     }
 
-    // TODO: Enable when "Some error in type inference: Don't know how to type MapExpression" is fixed
-    ignore("keys() works with literal maps") {
-      val given = initGraph("CREATE ()")
-
-      val result = given.cypher("MATCH () WITH {person: {name: 'Anne', age: 25}} AS p RETURN keys(p) as k")
+    it("works with literal maps") {
+      val result = caps.cypher(
+        """
+          |WITH {person: {name: 'Anne', age: 25}} AS p
+          |RETURN keys(p) as k1, keys(p["person"]) as k2
+        """.stripMargin)
 
       result.records.toMaps should equal(
         Bag(
-          CypherMap("k" -> List("age", "name"))
+          CypherMap("k1" -> List("person"), "k2" -> List("name", "age"))
         ))
     }
 
+    it("works with literal maps2") {
+      val result = caps.cypher(
+        """
+          |RETURN keys({name: 'Alice', age: 38, address: {city: 'London', residential: true}}) AS k
+        """.stripMargin)
+
+      result.records.toMaps should equal(
+        Bag(
+          CypherMap("k" -> List("name", "age", "address"))
+        ))
+    }
+
+    it("works with predicate maps") {
+      val result = caps.cypher(
+        """
+          |RETURN keys($map) AS k
+        """.stripMargin, CypherMap("map" -> CypherMap("name" -> "Alice", "age" -> 38, "address" -> CypherMap("city" -> "London", "residential" -> true))))
+
+      result.records.toMaps should equal(
+        Bag(
+          CypherMap("k" -> List("name", "age", "address"))
+        ))
+    }
+
+
+    it("works with null keys in maps") {
+
+      val result = caps.cypher(
+        """
+          |UNWIND [
+          | 1,
+          | null
+          |] AS value
+          |WITH {
+          | key: value
+          |} as map
+          |RETURN keys(map) as k
+        """.stripMargin)
+
+      result.records.toMaps should equal(
+        Bag(
+          CypherMap("k" -> List("key")),
+          CypherMap("k" -> List())
+        ))
+    }
   }
 
   describe("startNode") {

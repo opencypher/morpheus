@@ -203,7 +203,7 @@ final case class SchemaImpl(
       }
     }
 
-    propertyKeys
+    propertyKeys.view.force
   }
 
   override def relationshipPropertyKeyType(types: Set[String], key: String): Option[CypherType] = {
@@ -216,6 +216,23 @@ final case class SchemaImpl(
       case CTNull => None
       case tpe => Some(tpe)
     }
+  }
+
+  override def relationshipPropertyKeysForTypes(knownTypes: Set[String]): PropertyKeys = {
+    val relevantTypes = if (knownTypes.isEmpty) relationshipTypes else knownTypes
+
+    val allKeys = relevantTypes.flatMap(relationshipPropertyKeys)
+    val propertyKeys = allKeys.groupBy(_._1).mapValues { seq =>
+      if (seq.size == relevantTypes.size && seq.forall(seq.head == _)) {
+        seq.head._2
+      } else if (seq.size < relevantTypes.size) {
+        seq.map(_._2).foldLeft(CTNull: CypherType)(_ join _)
+      } else {
+        seq.map(_._2).reduce(_ join _)
+      }
+    }
+
+    propertyKeys.view.force
   }
 
   override def relationshipPropertyKeys(typ: String): PropertyKeys = relTypePropertyMap.properties(typ)

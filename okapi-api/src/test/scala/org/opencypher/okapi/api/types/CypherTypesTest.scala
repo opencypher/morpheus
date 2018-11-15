@@ -28,7 +28,7 @@ package org.opencypher.okapi.api.types
 
 import org.opencypher.okapi.ApiBaseTest
 import org.opencypher.okapi.api.graph.QualifiedGraphName
-import org.scalatest.{FunSpec, Matchers}
+import org.opencypher.okapi.impl.types.CypherTypeParser
 
 import scala.language.postfixOps
 
@@ -41,7 +41,7 @@ class CypherTypesTest extends ApiBaseTest {
     CTInteger,
     CTFloat,
     CTString,
-    CTMap,
+    CTMap(Map("foo" -> CTString, "bar" -> CTInteger)),
     CTNode,
     CTNode("Person"),
     CTNode("Person", "Employee"),
@@ -71,9 +71,7 @@ class CypherTypesTest extends ApiBaseTest {
     CTFloat couldBeSameTypeAs CTInteger shouldBe false
     CTBoolean couldBeSameTypeAs CTInteger shouldBe false
 
-    CTNode couldBeSameTypeAs CTMap shouldBe true
     CTRelationship couldBeSameTypeAs CTNode shouldBe false
-    CTRelationship couldBeSameTypeAs CTMap shouldBe true
 
     CTList(CTInteger) couldBeSameTypeAs CTList(CTFloat) shouldBe false
     CTList(CTInteger) couldBeSameTypeAs CTList(CTAny) shouldBe true
@@ -99,18 +97,18 @@ class CypherTypesTest extends ApiBaseTest {
       CTNumber -> ("NUMBER" -> "NUMBER?"),
       CTInteger -> ("INTEGER" -> "INTEGER?"),
       CTFloat -> ("FLOAT" -> "FLOAT?"),
-      CTMap -> ("MAP" -> "MAP?"),
+      CTMap(Map("foo" -> CTString, "bar" -> CTInteger)) -> ("MAP(foo: STRING, bar: INTEGER)" -> "MAP(foo: STRING, bar: INTEGER)?"),
       CTNode -> ("NODE" -> "NODE?"),
       CTNode("Person") -> ("NODE(:Person)" -> "NODE(:Person)?"),
       CTNode("Person", "Employee") -> ("NODE(:Person:Employee)" -> "NODE(:Person:Employee)?"),
       CTNode(Set("Person"), Some(QualifiedGraphName("foo.bar"))) -> ("NODE(:Person) @ foo.bar" -> "NODE(:Person) @ foo.bar?"),
       CTRelationship -> ("RELATIONSHIP" -> "RELATIONSHIP?"),
       CTRelationship(Set("KNOWS")) -> ("RELATIONSHIP(:KNOWS)" -> "RELATIONSHIP(:KNOWS)?"),
-      CTRelationship(Set("KNOWS", "LOVES")) -> ("RELATIONSHIP(:KNOWS|LOVES)" -> "RELATIONSHIP(:KNOWS|LOVES)?"),
+      CTRelationship(Set("KNOWS", "LOVES")) -> ("RELATIONSHIP(:KNOWS|:LOVES)" -> "RELATIONSHIP(:KNOWS|:LOVES)?"),
       CTRelationship(Set("KNOWS"), Some(QualifiedGraphName("foo.bar"))) -> ("RELATIONSHIP(:KNOWS) @ foo.bar" -> "RELATIONSHIP(:KNOWS) @ foo.bar?"),
       CTPath -> ("PATH" -> "PATH?"),
-      CTList(CTInteger) -> ("LIST OF INTEGER" -> "LIST? OF INTEGER"),
-      CTList(CTInteger.nullable) -> ("LIST OF INTEGER?" -> "LIST? OF INTEGER?"),
+      CTList(CTInteger) -> ("LIST(INTEGER)" -> "LIST(INTEGER)?"),
+      CTList(CTInteger.nullable) -> ("LIST(INTEGER?)" -> "LIST(INTEGER?)?"),
       CTWildcard -> ("?" -> "??")
     ).foreach {
       case (t, (materialName, nullableName)) =>
@@ -121,12 +119,6 @@ class CypherTypesTest extends ApiBaseTest {
 
     CTVoid.toString shouldBe "VOID"
     CTNull.toString shouldBe "NULL"
-  }
-
-  it("can parse CypherType names into CypherTypes"){
-    allTypes.foreach { t =>
-      CypherType.fromName(t.name).get should equal(t)
-    }
   }
 
   it("RELATIONSHIP type") {
@@ -199,15 +191,14 @@ class CypherTypesTest extends ApiBaseTest {
   it("basic type inheritance") {
     CTNumber superTypeOf CTInteger shouldBe True
     CTNumber superTypeOf CTFloat shouldBe True
-    CTMap superTypeOf CTMap shouldBe True
-    CTMap superTypeOf CTNode shouldBe True
-    CTMap superTypeOf CTRelationship shouldBe True
+    CTMap(Map("foo" -> CTAny, "bar" -> CTInteger)) superTypeOf CTMap(Map("foo" -> CTString, "bar" -> CTInteger)) shouldBe True
+    CTMap(Map("foo" -> CTAny, "bar" -> CTAny)) superTypeOf CTMap(Map("foo" -> CTString, "bar" -> CTInteger)) shouldBe True
 
     CTAny superTypeOf CTInteger shouldBe True
     CTAny superTypeOf CTFloat shouldBe True
     CTAny superTypeOf CTNumber shouldBe True
     CTAny superTypeOf CTBoolean shouldBe True
-    CTAny superTypeOf CTMap shouldBe True
+    CTAny superTypeOf CTMap(Map()) shouldBe True
     CTAny superTypeOf CTNode shouldBe True
     CTAny superTypeOf CTRelationship shouldBe True
     CTAny superTypeOf CTPath shouldBe True
@@ -220,7 +211,7 @@ class CypherTypesTest extends ApiBaseTest {
     CTVoid subTypeOf CTFloat shouldBe True
     CTVoid subTypeOf CTNumber shouldBe True
     CTVoid subTypeOf CTBoolean shouldBe True
-    CTVoid subTypeOf CTMap shouldBe True
+    CTVoid subTypeOf CTMap(Map()) shouldBe True
     CTVoid subTypeOf CTNode shouldBe True
     CTVoid subTypeOf CTRelationship shouldBe True
     CTVoid subTypeOf CTPath shouldBe True
@@ -239,8 +230,6 @@ class CypherTypesTest extends ApiBaseTest {
     CTNumber join CTInteger shouldBe CTNumber
     CTNumber join CTString shouldBe CTAny
 
-    CTNode join CTRelationship shouldBe CTMap
-    CTNode join CTMap shouldBe CTMap
     CTString join CTBoolean shouldBe CTAny
     CTAny join CTInteger shouldBe CTAny
 
@@ -261,8 +250,6 @@ class CypherTypesTest extends ApiBaseTest {
     CTFloat.nullable join CTInteger.nullable shouldBe CTNumber.nullable
     CTNumber.nullable join CTString shouldBe CTAny.nullable
 
-    CTNode join CTRelationship.nullable shouldBe CTMap.nullable
-    CTNode.nullable join CTMap shouldBe CTMap.nullable
     CTString.nullable join CTBoolean.nullable shouldBe CTAny.nullable
     CTAny join CTInteger.nullable shouldBe CTAny.nullable
   }
@@ -281,11 +268,6 @@ class CypherTypesTest extends ApiBaseTest {
       "T2",
       "Tx",
       "Ty")
-
-    CTNode("Person") join CTRelationship("KNOWS") shouldBe CTMap
-    CTNode("Person") join CTRelationship shouldBe CTMap
-    CTRelationship("KNOWS") join CTNode("Person") shouldBe CTMap
-    CTRelationship("KNOWS") join CTNode shouldBe CTMap
   }
 
   it("meet") {
@@ -309,10 +291,6 @@ class CypherTypesTest extends ApiBaseTest {
   }
 
   it("meet with labels and types") {
-    CTMap meet CTNode shouldBe CTNode
-    CTMap meet CTNode("Person") shouldBe CTNode("Person")
-    CTMap meet CTRelationship("KNOWS") shouldBe CTRelationship("KNOWS")
-
     CTNode("Person") meet CTNode shouldBe CTNode("Person")
     CTNode("Person") meet CTNode("Foo") shouldBe CTNode("Person", "Foo")
     CTNode("Person", "Foo") meet CTNode("Foo") shouldBe CTNode("Person", "Foo")
@@ -481,6 +459,29 @@ class CypherTypesTest extends ApiBaseTest {
       nullableTypes.foreach { n =>
         n.asNullableAs(t) should equal(n)
       }
+    }
+  }
+
+  describe("fromName") {
+    it("can parse CypherType names into CypherTypes"){
+      allTypes.foreach { t =>
+        CypherTypeParser.parse(t.name) should equal(Some(t))
+      }
+    }
+
+    it("can parse maps with escaped keys") {
+      val input = "MAP(`foo bar_my baz`: STRING)"
+      CypherTypeParser.parse(input) should equal(Some(CTMap(Map("foo bar_my baz" -> CTString))))
+    }
+
+    it("can parse nodes types with escaped labels") {
+      val input = "Node(:`foo bar_my baz`:bar)"
+      CypherTypeParser.parse(input) should equal(Some(CTNode("foo bar_my baz", "bar")))
+    }
+
+    it("can parse relationship types with escaped labels") {
+      val input = "Relationship(:`foo bar_my baz`|:bar)"
+      CypherTypeParser.parse(input) should equal(Some(CTRelationship("foo bar_my baz", "bar")))
     }
   }
 }

@@ -60,8 +60,8 @@ class toFrontendTypeTest extends BaseTestSuite {
     CTList(CTInteger) shouldBeConvertedTo frontend.CTList(frontend.CTInteger)
     CTList(CTInteger).nullable shouldBeConvertedTo frontend.CTList(frontend.CTInteger)
     CTList(CTInteger.nullable) shouldBeConvertedTo frontend.CTList(frontend.CTInteger)
-    CTMap shouldBeConvertedTo frontend.CTMap
-    CTMap.nullable shouldBeConvertedTo frontend.CTMap
+    CTMap(Map.empty) shouldBeConvertedTo frontend.CTMap
+    CTMap(Map.empty).nullable shouldBeConvertedTo frontend.CTMap
   }
 
   implicit class RichType(t: CypherType) {

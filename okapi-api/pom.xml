@@ -47,6 +47,12 @@
       <version>${dep.upickle.version}</version>
     </dependency>
 
+    <dependency>
+      <groupId>com.lihaoyi</groupId>
+      <artifactId>fastparse_${project.scala.binary.version}</artifactId>
+      <version>${dep.fastparse.version}</version>
+    </dependency>
+
     <!--Tests-->
 
     <dependency>

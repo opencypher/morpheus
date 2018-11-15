@@ -24,24 +24,38 @@
  * described as "implementation extensions to Cypher" or as "proposed changes to
  * Cypher that are not yet approved by the openCypher community".
  */
-package org.opencypher.okapi.ir.impl.typer
+package org.opencypher.okapi.impl.util
 
-import org.opencypher.okapi.api.types._
-import org.opencypher.v9_0.util.{symbols => frontend}
+import fastparse.WhitespaceApi
 
-case object toFrontendType extends (CypherType => frontend.CypherType) {
-  override def apply(in: CypherType): frontend.CypherType = in.material match {
-    case CTAny          => frontend.CTAny
-    case CTNumber       => frontend.CTNumber
-    case CTInteger      => frontend.CTInteger
-    case CTFloat        => frontend.CTFloat
-    case CTBoolean      => frontend.CTBoolean
-    case CTString       => frontend.CTString
-    case CTNode         => frontend.CTNode
-    case CTRelationship => frontend.CTRelationship
-    case CTPath         => frontend.CTPath
-    case CTMap(_)       => frontend.CTMap
-    case CTList(inner)  => frontend.ListType(toFrontendType(inner))
-    case x => throw new UnsupportedOperationException(s"Can not convert internal type $x to an openCypher frontend type")
+object ParserUtils {
+  object ParsersForNoTrace {
+
+    import fastparse.all._
+
+    val newline: P[Unit] = P("\n" | "\r\n" | "\r" | "\f")
+    val whitespace: P[Unit] = P(" " | "\t" | newline)
+    val comment: P[Unit] = P("--" ~ (!newline ~ AnyChar).rep ~ newline)
+    val noTrace: P[Unit] = (comment | whitespace).rep
   }
+
+  val Whitespace: WhitespaceApi.Wrapper = WhitespaceApi.Wrapper {
+    import fastparse.all._
+    NoTrace(ParsersForNoTrace.noTrace)
+  }
+
+  import Whitespace._
+  import fastparse.noApi._
+
+  implicit class RichParser[T](parser: fastparse.core.Parser[T, Char, String]) {
+    def entireInput: P[T] = parser ~ End
+  }
+
+  def keyword(k: String): P[Unit] = P(IgnoreCase(k))
+
+  val digit: P[Unit] = P(CharIn('0' to '9'))
+  val character: P[Unit] = P(CharIn('a' to 'z', 'A' to 'Z'))
+  val identifier: P[Unit] = P(character ~~ P(character | digit | "_").repX)
+  val escapedIdentifier: P[String] = P("`" ~ CharsWhile(_ != '`').! ~ "`")
+  val label: P[String] = P(":" ~ (identifier.! | escapedIdentifier))
 }

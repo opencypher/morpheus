@@ -29,10 +29,9 @@ package org.opencypher.spark.impl.acceptance
 import org.opencypher.okapi.api.value.CypherValue
 import org.opencypher.okapi.api.value.CypherValue.CypherMap
 import org.opencypher.okapi.testing.Bag
+import org.opencypher.okapi.testing.Bag._
 import org.opencypher.spark.testing.CAPSTestSuite
 import org.scalatest.DoNotDiscover
-import org.opencypher.okapi.testing.Bag
-import org.opencypher.okapi.testing.Bag._
 
 @DoNotDiscover
 class ExpressionBehaviour extends CAPSTestSuite with DefaultGraphInit {
@@ -678,6 +677,20 @@ class ExpressionBehaviour extends CAPSTestSuite with DefaultGraphInit {
         CypherMap("vals" -> Seq(20, 200))
       ))
     }
+
+    it("can build lists that include nulls") {
+      val result = caps.cypher(
+        """
+          |RETURN [
+          | 1,
+          | null
+          |] AS p
+        """.stripMargin)
+
+      result.records.toMaps should equal(Bag(
+        CypherMap("p" -> List(1, null))
+      ))
+    }
   }
 
   describe("ANDs") {
@@ -935,6 +948,217 @@ class ExpressionBehaviour extends CAPSTestSuite with DefaultGraphInit {
         CypherMap("x" -> null),
         CypherMap("x" -> null)
       ))
+    }
+  }
+
+  describe("properties") {
+    it("can extract properties from nodes") {
+      val g = initGraph(
+        """
+          |CREATE (:A {val1: "foo", val2: 42})
+          |CREATE (:A {val1: "bar", val2: 21})
+          |CREATE (:A)
+        """.stripMargin)
+
+      val result = g.cypher(
+        """
+          |MATCH (a:A)
+          |RETURN properties(a) as props
+        """.stripMargin).records
+
+      result.toMapsWithCollectedEntities should equal(Bag(
+        CypherMap("props" -> CypherMap("val1" -> "foo", "val2" -> 42)),
+        CypherMap("props" -> CypherMap("val1" -> "bar", "val2" -> 21)),
+        CypherMap("props" -> CypherMap("val1" -> null, "val2" -> null))
+      ))
+    }
+
+    it("can extract properties from relationships") {
+      val g = initGraph(
+        """
+          |CREATE (a), (b)
+          |CREATE (a)-[:REL {val1: "foo", val2: 42}]->(b)
+          |CREATE (a)-[:REL {val1: "bar", val2: 21}]->(b)
+          |CREATE (a)-[:REL]->(b)
+        """.stripMargin)
+
+      val result = g.cypher(
+        """
+          |MATCH ()-[rel:REL]->()
+          |RETURN properties(rel) as props
+        """.stripMargin).records
+
+      result.toMapsWithCollectedEntities should equal(Bag(
+        CypherMap("props" -> CypherMap("val1" -> "foo", "val2" -> 42)),
+        CypherMap("props" -> CypherMap("val1" -> "bar", "val2" -> 21)),
+        CypherMap("props" -> CypherMap("val1" -> null, "val2" -> null))
+      ))
+    }
+
+    it("can extract properties from maps") {
+      val g = initGraph(
+        """
+          |CREATE (a), (b)
+          |CREATE (a)-[:REL {val1: "foo", val2: 42}]->(b)
+          |CREATE (a)-[:REL {val1: "bar", val2: 21}]->(b)
+        """.stripMargin)
+
+      val result = g.cypher(
+        """UNWIND [
+          | {val1: "foo", val2: 42},
+          | {val1: "bar", val2: 21}
+          |] as map
+          |RETURN properties(map) as props
+        """.stripMargin).records
+
+      result.toMapsWithCollectedEntities should equal(Bag(
+        CypherMap("props" -> CypherMap("val1" -> "foo", "val2" -> 42)),
+        CypherMap("props" -> CypherMap("val1" -> "bar", "val2" -> 21))
+      ))
+    }
+  }
+
+  describe("map support") {
+    describe("map construction") {
+      it("can construct static maps") {
+        val result = caps.cypher(
+          """
+            |RETURN {
+            | foo: "bar",
+            | baz: 42
+            |} as myMap
+          """.stripMargin)
+
+        result.records.toMapsWithCollectedEntities should equal(Bag(
+          CypherMap("myMap" -> Map("foo" -> "bar", "baz" -> 42))
+        ))
+      }
+
+      it("can construct Maps with expression values") {
+        val result = caps.cypher(
+          """
+            |UNWIND [21, 42] as value
+            |RETURN {foo: value} as myMap
+          """.stripMargin)
+
+        result.records.toMapsWithCollectedEntities should equal(Bag(
+          CypherMap("myMap" -> Map("foo" -> 21)),
+          CypherMap("myMap" -> Map("foo" -> 42))
+        ))
+      }
+
+      it("can construct nodes with map properties") {
+        val g = initGraph(
+          """
+            |CREATE (:A {val: "foo"})
+          """.stripMargin)
+
+        val result = g.cypher(
+          """
+            |MATCH (a:A)
+            |CONSTRUCT
+            | CREATE (b {map: {val: a.val}})
+            |MATCH (n)
+            |RETURN n.map as map
+          """.stripMargin).records
+
+        result.toMapsWithCollectedEntities should equal(Bag(
+          CypherMap("map" -> CypherMap("val" -> "foo"))
+        ))
+      }
+
+      it("can return empty maps") {
+        val result = caps.cypher(
+          """
+            |RETURN {} as myMap
+          """.stripMargin)
+
+        result.records.toMapsWithCollectedEntities should equal(Bag(
+          CypherMap("myMap" -> CypherMap())
+        ))
+      }
+    }
+
+
+    describe("index access") {
+      it("returns the element with literal key") {
+        val result = caps.cypher(
+          """
+            |WITH {
+            | foo: "bar",
+            | baz: 42
+            |} as myMap
+            |RETURN myMap["foo"] as foo, myMap["baz"] as baz
+          """.stripMargin)
+
+        result.records.toMapsWithCollectedEntities should equal(Bag(
+          CypherMap("foo" -> "bar", "baz" -> 42)
+        ))
+      }
+
+      it("returns null if the literal key does not exist") {
+        val result = caps.cypher(
+          """
+            |WITH {
+            | foo: "bar",
+            | baz: 42
+            |} as myMap
+            |RETURN myMap["barbaz"] as barbaz
+          """.stripMargin)
+
+        result.records.toMapsWithCollectedEntities should equal(Bag(
+          CypherMap("barbaz" -> null)
+        ))
+      }
+
+      it("returns the element with parameter key") {
+        val result = caps.cypher(
+          """
+            |WITH {
+            | foo: "bar",
+            | baz: 42
+            |} as myMap
+            |RETURN myMap[$fooKey] as foo, myMap[$bazKey] as baz
+          """.stripMargin, CypherMap("fooKey" -> "foo", "bazKey" -> "baz"))
+
+        result.records.toMapsWithCollectedEntities should equal(Bag(
+          CypherMap("foo" -> "bar", "baz" -> 42)
+        ))
+      }
+
+      // TODO: This throws a spark analysis error as it cannot find the column
+      ignore("returns null if the parameter key does not exist") {
+        val result = caps.cypher(
+          """
+            |WITH {
+            | foo: "bar",
+            | baz: 42
+            |} as myMap
+            |RETURN myMap[$barbazKey] as barbaz
+          """.stripMargin, CypherMap("barbazKey" -> "barbaz"))
+
+        result.records.toMapsWithCollectedEntities should equal(Bag(
+          CypherMap("barbaz" -> null)
+        ))
+      }
+
+      // TODO: needs planning outside of SparkSQLExpressionMapper
+      ignore("supports expression keys if all values have compatible types") {
+        val result = caps.cypher(
+          """
+            |WITH {
+            | foo: 1,
+            | bar: 2
+            |} as myMap
+            |UNWIND ["foo", "bar"] as key
+            |RETURN myMap[key] as value
+          """.stripMargin)
+
+        result.records.toMapsWithCollectedEntities should equal(Bag(
+          CypherMap("value" -> 1),
+          CypherMap("value" -> 2)
+        ))
+      }
     }
   }
 }

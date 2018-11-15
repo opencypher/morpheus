@@ -121,6 +121,8 @@ case class CAPSSchema private[schema](schema: Schema) extends Schema {
 
   override def relationshipPropertyKeys(typ: String): PropertyKeys = schema.relationshipPropertyKeys(typ)
 
+  override def relationshipPropertyKeysForTypes(knownTypes: Set[String]): PropertyKeys = schema.relationshipPropertyKeysForTypes(knownTypes)
+
   override def withNodePropertyKeys(nodeLabels: Set[String], keys: PropertyKeys): Schema = schema.withNodePropertyKeys(nodeLabels, keys)
 
   override def withRelationshipPropertyKeys(typ: String, keys: PropertyKeys): Schema = schema.withRelationshipPropertyKeys(typ, keys)

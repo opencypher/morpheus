@@ -27,10 +27,10 @@
 package org.opencypher.graphddl
 
 import fastparse.core.Parsed.{Failure, Success}
-import org.opencypher.okapi.api.types._
-import org.opencypher.okapi.testing.{BaseTestSuite, TestNameFixture}
 import org.opencypher.graphddl.GraphDdlParser._
-import org.opencypher.graphddl._
+import org.opencypher.okapi.api.types._
+import org.opencypher.okapi.impl.util.ParserUtils._
+import org.opencypher.okapi.testing.{BaseTestSuite, TestNameFixture}
 import org.scalatest.mockito.MockitoSugar
 
 class GraphDdlParserTest extends BaseTestSuite with MockitoSugar with TestNameFixture {
@@ -95,24 +95,6 @@ class GraphDdlParserTest extends BaseTestSuite with MockitoSugar with TestNameFi
 
     it("parses SET SCHEMA foo.bar;") {
       success(setSchemaDefinition, SetSchemaDefinition("foo", "bar"))
-    }
-  }
-
-  describe("property types") {
-    it("parses STRING") {
-      success(propertyType, CTString)
-    }
-
-    it("parses StRiNg") {
-      success(propertyType, "StRiNg", CTString)
-    }
-
-    it("parses STRING?") {
-      success(propertyType, "STRING?", CTString.nullable)
-    }
-
-    it("parses FOOBAR") {
-      failure(propertyType)
     }
   }
 
