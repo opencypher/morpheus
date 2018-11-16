@@ -59,10 +59,17 @@ class SchemaTyperTest extends BaseTestSuite with Neo4jAstTestSupport with Mockit
     )
   }
 
-  it("should type DateTime") {
+  it("should type DateTime from string") {
     implicit val context: TypeTracker = typeTracker("d" -> CTDateTime)
 
-    assertExpr.from("datetime(2010-12-10)") shouldHaveInferredType CTDateTime.nullable
+    assertExpr.from("datetime('2010-12-10')") shouldHaveInferredType CTDateTime.nullable
+    assertExpr.from("datetime('2010-12-10T00:00:00.000')") shouldHaveInferredType CTDateTime.nullable
+  }
+
+  it("should type DateTime from map") {
+    implicit val context: TypeTracker = typeTracker("d" -> CTDateTime)
+
+    assertExpr.from("datetime({year: 2015, month: 12, day: 8})") shouldHaveInferredType CTDateTime.nullable
   }
 
   it("should type trim(), ltrim(), rtrim()") {

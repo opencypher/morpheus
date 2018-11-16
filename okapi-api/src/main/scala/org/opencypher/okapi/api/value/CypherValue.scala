@@ -63,6 +63,7 @@ object CypherValue {
       case jb: java.lang.Boolean => jb.booleanValue
       case jl: java.util.List[_] => seqToCypherList(jl.toArray)
       case dt: java.sql.Date => dt
+      case ts: java.sql.Timestamp => ts
       case a: Array[_] => seqToCypherList(a)
       case s: Seq[_] => seqToCypherList(s)
       case m: Map[_, _] => m.map { case (k, cv) => k.toString -> CypherValue(cv) }
@@ -261,6 +262,10 @@ object CypherValue {
   implicit class CypherFloat(val value: Double) extends AnyVal with CypherNumber[Double]
 
   implicit class CypherDateTime(val value: java.sql.Date) extends AnyVal with MaterialCypherValue[java.sql.Date] {
+    override def unwrap: Any = value
+  }
+
+  implicit class CypherTimestamp(val value: java.sql.Timestamp) extends AnyVal with MaterialCypherValue[java.sql.Timestamp] {
     override def unwrap: Any = value
   }
 

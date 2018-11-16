@@ -101,6 +101,7 @@ object FunctionUtils {
         case functions.UnresolvedFunction => functionInvocation.name match {
           // Time functions
           case f.Timestamp.name => Timestamp()(cypherType)
+          case "datetime" => DateTime(expr.head)(cypherType)
 
           case name => throw NotImplementedException(s"Support for converting ${name} function not yet implemented")
         }

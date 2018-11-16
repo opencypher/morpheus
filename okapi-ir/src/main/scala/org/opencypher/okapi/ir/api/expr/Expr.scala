@@ -1040,11 +1040,11 @@ final case class StringLit(v: String)(val cypherType: CypherType = CTString) ext
   override def withCypherType(ct: CypherType): StringLit = copy()(ct)
 }
 
-final case class DateTimeLit(v: Expr)(val cypherType: CypherType = CTDateTime) extends Lit[Expr] {
+final case class DateTime(expr: Expr)(val cypherType: CypherType = CTDateTime) extends UnaryFunctionExpr {
 
-  override type This = DateTimeLit
+  override type This = DateTime
 
-  override def withCypherType(ct: CypherType): DateTimeLit = copy()(ct)
+  override def withCypherType(ct: CypherType): DateTime = copy()(ct)
 }
 
 sealed abstract class BoolLit(val v: Boolean)(val cypherType: CypherType = CTBoolean) extends Lit[Boolean] {

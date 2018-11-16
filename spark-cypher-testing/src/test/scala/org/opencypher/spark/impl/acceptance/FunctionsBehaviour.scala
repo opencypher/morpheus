@@ -26,10 +26,12 @@
  */
 package org.opencypher.spark.impl.acceptance
 
+import org.apache.spark.sql.functions
 import org.opencypher.okapi.api.value.CypherValue.{CypherMap, CypherNull}
 import org.opencypher.okapi.impl.exception.NotImplementedException
 import org.opencypher.okapi.testing.Bag
 import org.opencypher.okapi.testing.Bag._
+import org.opencypher.spark.impl.CAPSConverters._
 import org.opencypher.spark.testing.CAPSTestSuite
 import org.scalatest.DoNotDiscover
 
@@ -398,7 +400,9 @@ class FunctionsBehaviour extends CAPSTestSuite with DefaultGraphInit {
   describe("datetime") {
 
     it("datetime") {
-      val result = caps.cypher("RETURN datetime('2012-10-09') AS time")
+      val result = caps.cypher("RETURN datetime(\"2015-06-24T12:50:35.556\") AS time")
+      result.show
+//      val diff = result.records.asCaps.table.df.withColumn("diff", functions.date_add(functions.col("$  AUTOSTRING0 __ STRING __ DATETIME"), 15))
       val maps = result.records.toMaps
       ???
     }
