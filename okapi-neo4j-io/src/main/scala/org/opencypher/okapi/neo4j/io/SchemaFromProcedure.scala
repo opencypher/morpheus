@@ -53,7 +53,7 @@ object SchemaFromProcedure extends Logging {
     } match {
       case Success(true) =>
         nodeSchemaFromProcedure(config, omitImportFailures)
-        schemaFromProcedure(config, omitImportFailures, relSchemaProcedure)
+        relSchemaFromProcedure(config, omitImportFailures)
       case Success(false) =>
         logger.warn("Neo4j schema procedure not activated. Consider activating the procedures `" + nodeSchemaProcedure + " and " + relSchemaProcedure + "`.")
         None

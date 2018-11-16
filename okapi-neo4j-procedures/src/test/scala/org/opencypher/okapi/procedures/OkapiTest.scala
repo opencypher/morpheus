@@ -57,6 +57,31 @@ class OkapiTest extends FunSuite with BeforeAndAfter with Matchers {
     db.shutdown()
   }
 
+  test("Neo4j schema for single label") {
+    db.execute("CREATE (:A {val1: 'String', val2: 1})" + "CREATE (:A {val1: 'String', val2: 1.2})").close()
+    testResult(db, "CALL db.schema.nodeTypeProperties", result => {
+      val expected = Set(
+        Map(
+          "nodeType" -> ":`A`",
+          "nodeLabels" -> Seq("A").asJava,
+          "propertyName" -> "val1",
+          "propertyTypes" -> Seq("String").asJava,
+          "mandatory" -> true
+        ),
+        Map(
+          "nodeType" -> ":`A`",
+          "nodeLabels" -> Seq("A").asJava,
+          "propertyName" -> "val2",
+          "propertyTypes" -> Seq("Long", "Double").asJava,
+          "mandatory" -> true
+        )
+      )
+      println(result.toSet)
+      println(expected)
+      result.toSet should equal(expected)
+    })
+  }
+
   test("Okapi schema for single label") {
     db.execute("CREATE (:A {val1: 'String', val2: 1})" + "CREATE (:A {val1: 'String', val2: 1.2})").close()
     testResult(db, "CALL org.opencypher.okapi.procedures.schema", result => {

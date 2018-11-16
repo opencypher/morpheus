@@ -27,6 +27,7 @@
 package org.opencypher.okapi.procedures
 import java.io.File
 
+import org.neo4j.graphdb.DependencyResolver.SelectionStrategy
 import org.neo4j.graphdb.GraphDatabaseService
 import org.neo4j.graphdb.factory.{GraphDatabaseFactory, GraphDatabaseSettings}
 import org.neo4j.kernel.impl.proc.Procedures
@@ -43,7 +44,7 @@ object PerformanceTest extends App{
 
   registerShutdownHook(graphDb)
 
-  val proceduresService = graphDb.asInstanceOf[GraphDatabaseAPI].getDependencyResolver.resolveDependency(classOf[Procedures])
+  val proceduresService = graphDb.asInstanceOf[GraphDatabaseAPI].getDependencyResolver.resolveDependency(classOf[Procedures], SelectionStrategy.ONLY)
   proceduresService.registerProcedure(classOf[OkapiProcedures], true)
 
   println("Neo4j startup complete")
