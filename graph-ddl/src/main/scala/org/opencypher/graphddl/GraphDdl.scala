@@ -294,7 +294,7 @@ object GraphDdl {
     maybeSetSchema: Option[SetSchemaDefinition],
     viewId: List[String]
   ): QualifiedViewId = (maybeSetSchema, viewId) match {
-    case (None, dataSource :: schema :: view :: Nil) =>
+    case (_, dataSource :: schema :: view :: Nil) =>
       QualifiedViewId(dataSource, schema, view)
     case (Some(SetSchemaDefinition(dataSource, schema)), view :: Nil) =>
       QualifiedViewId(dataSource, schema, view)
