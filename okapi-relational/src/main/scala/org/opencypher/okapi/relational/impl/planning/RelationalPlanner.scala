@@ -299,7 +299,21 @@ object RelationalPlanner {
     }
 
     def unionAll(other: RelationalOperator[T]): RelationalOperator[T] = {
-      relational.TabularUnionAll(op, other.alignColumnNames(op.header))
+      val targetHeader = op.header ++ other.header
+
+      val elementVars = targetHeader.entityVars.map(v => v -> v.cypherType).collect {
+        case (v, _: CTNode | _: CTRelationship) => v
+      }
+
+      val opWithAlignedEntities = elementVars.foldLeft(op) {
+        case (acc, elementVar) => acc.alignExpressions(elementVar, targetHeader)
+      }.alignColumnNames(targetHeader)
+
+      val otherWithAlignedEntities = elementVars.foldLeft(other) {
+        case (acc, elementVar) => acc.alignExpressions(elementVar, targetHeader)
+      }.alignColumnNames(targetHeader)
+
+      relational.TabularUnionAll(opWithAlignedEntities, otherWithAlignedEntities)
     }
 
     def add(values: Expr*): RelationalOperator[T] = {

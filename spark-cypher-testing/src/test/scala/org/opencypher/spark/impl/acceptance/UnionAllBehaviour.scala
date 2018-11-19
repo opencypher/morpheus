@@ -28,6 +28,7 @@ package org.opencypher.spark.impl.acceptance
 
 import org.opencypher.okapi.api.value.CypherValue.CypherMap
 import org.opencypher.okapi.testing.Bag
+import org.opencypher.spark.api.value.CAPSNode
 import org.opencypher.spark.testing.CAPSTestSuite
 import org.scalatest.DoNotDiscover
 
@@ -85,6 +86,28 @@ class UnionAllBehaviour extends CAPSTestSuite with DefaultGraphInit {
         CypherMap("i" -> 1),
         CypherMap("i" -> 2),
         CypherMap("i" -> 6)
+      ))
+    }
+
+    it("supports union all with MATCH") {
+      val g = initGraph(
+        """
+          |CREATE (a: A {val: "foo"})
+          |CREATE (b: B {bar: "baz"})
+        """.stripMargin)
+
+      val result = g.cypher(
+        """
+          |MATCH (a:A)
+          |RETURN a AS node
+          |UNION ALL
+          |MATCH (b:B)
+          |RETURN b AS node
+        """.stripMargin).records
+
+      result.toMapsWithCollectedEntities should equal(Bag(
+        CypherMap("node" -> CAPSNode(0, Set("A"), CypherMap("val" -> "foo"))),
+        CypherMap("node" -> CAPSNode(1, Set("B"), CypherMap("bar" -> "baz")))
       ))
     }
   }

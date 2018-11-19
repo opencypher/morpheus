@@ -41,7 +41,6 @@ import org.opencypher.okapi.relational.impl.operators.TagStrategy._
 import org.opencypher.okapi.relational.impl.planning._
 import org.opencypher.okapi.relational.impl.table.RecordHeader
 import org.opencypher.okapi.trees.AbstractTreeNode
-import org.opencypher.okapi.relational.impl.RelationalConverters._
 
 import scala.reflect.runtime.universe.TypeTag
 
@@ -325,7 +324,8 @@ final case class Select[T <: Table[T] : TypeTag](
     in.table.select(selectExpressions.map(header.column).distinct: _*)
   }
 
-  override lazy val returnItems: Option[Seq[Var]] = Some(expressions.flatMap(_.owner).collect { case e: Var => e }.distinct)
+  override lazy val returnItems: Option[Seq[Var]] =
+    Some(header.expressions.toList.flatMap(_.owner).collect { case e: Var => e }.distinct)
 }
 
 final case class Distinct[T <: Table[T] : TypeTag](
