@@ -137,6 +137,29 @@ class GraphDdlTest extends FunSpec with Matchers {
     maybeJoinColumns shouldEqual None
   }
 
+  it("allows SET SCHEMA and fully qualified names") {
+    val ddl = GraphDdl(
+      """SET SCHEMA ds1.db1
+        |
+        |CREATE GRAPH SCHEMA fooSchema
+        |  LABEL (Person)
+        |  LABEL (Account)
+        |  (Person)
+        |  (Account)
+        |
+        |CREATE GRAPH fooGraph WITH GRAPH SCHEMA fooSchema
+        |  NODE LABEL SETS (
+        |    (Person)  FROM personView
+        |    (Account) FROM ds2.db2.accountView
+        |  )
+      """.stripMargin)
+
+    ddl.graphs(GraphName("fooGraph")).nodeToViewMappings.keys shouldEqual Set(
+      NodeViewKey(Set("Person"), QualifiedViewId("ds1", "db1", "personView")),
+      NodeViewKey(Set("Account"), QualifiedViewId("ds2", "db2", "accountView"))
+    )
+  }
+
   it("fails on duplicate node mappings") {
     val e = the [GraphDdlException] thrownBy GraphDdl("""
       |CREATE GRAPH SCHEMA fooSchema
