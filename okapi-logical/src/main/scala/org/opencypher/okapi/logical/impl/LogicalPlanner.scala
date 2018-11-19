@@ -46,7 +46,7 @@ class LogicalPlanner(producer: LogicalOperatorProducer)
   override def process(ir: CypherQuery)(implicit context: LogicalPlannerContext): LogicalOperator = {
     ir match {
       case sq: SingleQuery => planModel(sq.model.result, sq.model)
-      case UnionAllQuery(left, right, _) => TabularUnionAll(process(left), process(right))
+      case UnionAllQuery(left, right) => TabularUnionAll(process(left), process(right))
     }
   }
 

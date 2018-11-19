@@ -65,7 +65,7 @@ abstract class IrTestSuite extends BaseTestSuite {
       graph = testGraph
     )
     val model = QueryModel(result, CypherMap.empty)
-    SingleQuery(QueryInfo("test"), model)
+    SingleQuery(model)
   }
 
   case class DummyBlock(override val after: List[Block] = List.empty) extends BasicBlock[DummyBinds[Expr]](BlockType("dummy")) {

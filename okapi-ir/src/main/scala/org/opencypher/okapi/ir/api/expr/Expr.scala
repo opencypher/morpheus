@@ -989,14 +989,14 @@ case class NullLit(cypherType: CypherType = CTNull) extends Lit[Null] {
 
 // Pattern Predicate Expression
 
-final case class ExistsPatternExpr(targetField: Var, ir: SingleQuery)(val cypherType: CypherType = CTBoolean)
+final case class ExistsPatternExpr(targetField: Var, ir: CypherQuery)(val cypherType: CypherType = CTBoolean)
   extends Expr {
 
   override type This = ExistsPatternExpr
 
   override def toString = s"$withoutType($cypherType)"
 
-  override def withoutType = s"Exists(${ir.info.singleLine}, $targetField)"
+  override def withoutType = s"Exists($targetField)"
 
   override def withCypherType(ct: CypherType): ExistsPatternExpr = copy()(ct)
 }

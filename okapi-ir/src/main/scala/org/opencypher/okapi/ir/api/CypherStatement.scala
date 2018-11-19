@@ -30,15 +30,12 @@ import org.opencypher.okapi.api.graph.QualifiedGraphName
 import org.opencypher.okapi.ir.api.block.{Binds, Block}
 import org.opencypher.okapi.ir.api.expr.Expr
 
-sealed trait CypherStatement {
-  def info: QueryInfo
-}
+sealed trait CypherStatement
 
 sealed trait CypherQuery extends Block with CypherStatement
 
 final case class SingleQuery(
-    info: QueryInfo,
-    model: QueryModel // TODO REMOVE
+    model: QueryModel
 ) extends CypherQuery {
   override def after: List[Block] = model.after
 
@@ -51,8 +48,7 @@ final case class SingleQuery(
 
 final case class UnionAllQuery(
   left: CypherQuery,
-  right: CypherQuery,
-  info: QueryInfo
+  right: CypherQuery
 ) extends CypherQuery {
   override def after: List[Block] = List(left, right)
 
@@ -64,13 +60,11 @@ final case class UnionAllQuery(
 }
 
 final case class CreateGraphStatement(
-    info: QueryInfo,
     graph: IRGraph,
     innerQuery: SingleQuery
 ) extends CypherStatement
 
 final case class CreateViewStatement(
-  info: QueryInfo,
   qgn: QualifiedGraphName,
   parameterNames: List[String],
   innerQueryString: String
@@ -78,12 +72,10 @@ final case class CreateViewStatement(
 
 
 final case class DeleteGraphStatement(
-  info: QueryInfo,
   qgn: QualifiedGraphName
 ) extends CypherStatement
 
 final case class DeleteViewStatement(
-  info: QueryInfo,
   qgn: QualifiedGraphName
 ) extends CypherStatement
 

@@ -64,7 +64,7 @@ trait IrConstruction {
       graph = testGraph
     )
     val model = QueryModel(result, CypherMap.empty)
-    SingleQuery(QueryInfo("test"), model)
+    SingleQuery(model)
   }
 
   protected def leafBlock: SourceBlock = SourceBlock(testGraph)

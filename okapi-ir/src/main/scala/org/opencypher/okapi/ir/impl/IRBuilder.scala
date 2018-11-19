@@ -34,12 +34,12 @@ import org.opencypher.okapi.api.schema.Schema
 import org.opencypher.okapi.api.types._
 import org.opencypher.okapi.api.value.CypherValue.CypherString
 import org.opencypher.okapi.impl.exception.{IllegalArgumentException, IllegalStateException, UnsupportedOperationException}
+import org.opencypher.okapi.ir.api._
 import org.opencypher.okapi.ir.api.block.{SortItem, _}
 import org.opencypher.okapi.ir.api.expr._
 import org.opencypher.okapi.ir.api.pattern.Pattern
 import org.opencypher.okapi.ir.api.set.{SetItem, SetLabelItem, SetPropertyItem}
 import org.opencypher.okapi.ir.api.util.CompilationStage
-import org.opencypher.okapi.ir.api.{QueryInfo, _}
 import org.opencypher.okapi.ir.impl.exception.ParsingException
 import org.opencypher.okapi.ir.impl.refactor.instances._
 import org.opencypher.okapi.ir.impl.util.VarConverters.RichIrField
@@ -83,7 +83,7 @@ object IRBuilder extends CompilationStage[ast.Statement, CypherStatement, IRBuil
               case _ => throw IllegalArgumentException("The query in CATALOG CREATE GRAPH must return a graph")
             }
             val irQgn = QualifiedGraphName(qgn.parts)
-            val statement = Some(CreateGraphStatement(QueryInfo(context.queryString), IRCatalogGraph(irQgn, schema), maybeSingleQuery.get))
+            val statement = Some(CreateGraphStatement(IRCatalogGraph(irQgn, schema), maybeSingleQuery.get))
             pure[R, Option[CypherStatement]](statement)
           }
         } yield result
@@ -93,7 +93,6 @@ object IRBuilder extends CompilationStage[ast.Statement, CypherStatement, IRBuil
           context <- get[R, IRBuilderContext]
           result <- {
             val statement = Some(CreateViewStatement(
-              QueryInfo(context.queryString),
               QualifiedGraphName(qgn.parts),
               params.map(_.name).toList,
               innerQueryString
@@ -107,7 +106,7 @@ object IRBuilder extends CompilationStage[ast.Statement, CypherStatement, IRBuil
           context <- get[R, IRBuilderContext]
           result <- {
             val irQgn = QualifiedGraphName(catalogName.parts)
-            val statement = Some(DeleteViewStatement(QueryInfo(context.queryString), irQgn))
+            val statement = Some(DeleteViewStatement(irQgn))
             pure[R, Option[CypherStatement]](statement)
           }
         } yield result
@@ -117,7 +116,7 @@ object IRBuilder extends CompilationStage[ast.Statement, CypherStatement, IRBuil
           context <- get[R, IRBuilderContext]
           result <- {
             val irQgn = QualifiedGraphName(catalogName.parts)
-            val statement = Some(DeleteGraphStatement(QueryInfo(context.queryString), irQgn))
+            val statement = Some(DeleteGraphStatement(irQgn))
             pure[R, Option[CypherStatement]](statement)
           }
         } yield result
@@ -141,7 +140,7 @@ object IRBuilder extends CompilationStage[ast.Statement, CypherStatement, IRBuil
           first <- convertQueryPart(innerPart)
           second <- convertQueryPart(singleQuery)
         } yield {
-          Some(UnionAllQuery(first.get, second.get, QueryInfo("union q")))
+          Some(UnionAllQuery(first.get, second.get))
         }
 
       case x =>
@@ -577,9 +576,8 @@ object IRBuilder extends CompilationStage[ast.Statement, CypherStatement, IRBuil
     } yield {
       val blocks = context.blockRegistry
       val model = QueryModel(blocks.lastAdded.get.asInstanceOf[ResultBlock], context.parameters)
-      val info = QueryInfo(context.queryString)
 
-      Some(SingleQuery(info, model))
+      Some(SingleQuery(model))
     }
 
   private def convertSortItem[R: _mayFail : _hasContext](item: ast.SortItem): Eff[R, SortItem] = {
