@@ -374,7 +374,17 @@ case class RecordHeader(exprToColumn: Map[Expr, String]) {
     this ++ other
   }
 
-  def ++(other: RecordHeader): RecordHeader = copy(exprToColumn = exprToColumn ++ other.exprToColumn)
+  def ++(other: RecordHeader): RecordHeader = {
+    val joined  = exprToColumn ++ other.exprToColumn
+    val withJoinedCypherTypes: Map[Expr, String] = joined.map {
+      case (key, value) =>
+        val leftCT = exprToColumn.keySet.find(_ == key).map(_.cypherType).getOrElse(CTVoid)
+        val rightCT = other.exprToColumn.keySet.find(_ == key).map(_.cypherType).getOrElse(CTVoid)
+        key.withCypherType(leftCT join rightCT) -> value
+    }
+
+    copy(exprToColumn = withJoinedCypherTypes)
+  }
 
   def --[T <: Expr](expressions: Set[T]): RecordHeader = {
     val expressionToRemove = expressions.flatMap(expressionsFor)
