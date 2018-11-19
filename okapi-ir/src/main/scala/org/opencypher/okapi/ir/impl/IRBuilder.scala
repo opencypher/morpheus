@@ -43,6 +43,7 @@ import org.opencypher.okapi.ir.api.util.CompilationStage
 import org.opencypher.okapi.ir.impl.exception.ParsingException
 import org.opencypher.okapi.ir.impl.refactor.instances._
 import org.opencypher.okapi.ir.impl.util.VarConverters.RichIrField
+import org.opencypher.v9_0.ast.QueryPart
 import org.opencypher.v9_0.util.InputPosition
 import org.opencypher.v9_0.{ast, expressions => exp}
 
@@ -136,15 +137,25 @@ object IRBuilder extends CompilationStage[ast.Statement, CypherStatement, IRBuil
         plannedBlocks >> convertRegistry
 
       case ast.UnionAll(innerPart, singleQuery) =>
-        for {
-          first <- convertQueryPart(innerPart)
-          second <- convertQueryPart(singleQuery)
-        } yield {
-          Some(UnionAllQuery(first.get, second.get))
-        }
+        convertUnion(innerPart, singleQuery, distinct = false)
+
+      case ast.UnionDistinct(innerPart, singleQuery) =>
+        convertUnion(innerPart, singleQuery, distinct = true)
 
       case x =>
         error(IRBuilderError(s"Query not supported: $x"))(None)
+    }
+  }
+
+  def convertUnion[R: _mayFail : _hasContext](
+    innerPart: QueryPart,
+    singleQuery: ast.SingleQuery, distinct: Boolean
+  ): Eff[R, Option[CypherQuery]] = {
+    for {
+      first <- convertQueryPart(innerPart)
+      second <- convertQueryPart(singleQuery)
+    } yield {
+      Some(UnionQuery(first.get, second.get, distinct = distinct))
     }
   }
 

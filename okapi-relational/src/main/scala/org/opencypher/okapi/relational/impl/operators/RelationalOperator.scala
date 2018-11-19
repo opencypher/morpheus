@@ -32,6 +32,7 @@ import org.opencypher.okapi.api.types.{CTInteger, _}
 import org.opencypher.okapi.api.value.CypherValue.CypherInteger
 import org.opencypher.okapi.impl.exception.IllegalArgumentException
 import org.opencypher.okapi.ir.api.block.{Asc, Desc, SortItem}
+import org.opencypher.okapi.ir.api.expr.Expr._
 import org.opencypher.okapi.ir.api.expr._
 import org.opencypher.okapi.logical.impl.{LogicalCatalogGraph, LogicalPatternGraph}
 import org.opencypher.okapi.relational.api.graph.{RelationalCypherGraph, RelationalCypherSession}
@@ -315,17 +316,18 @@ final case class Select[T <: Table[T] : TypeTag](
 
   override lazy val header: RecordHeader = in.header.select(expressions: _*)
 
+  private lazy val returnExpressions = expressions.map {
+    case AliasExpr(_, alias) => alias
+    case other => other
+  }
+
   override lazy val _table: T = {
-    import Expr._
-    val selectExpressions = expressions.map {
-      case AliasExpr(_, alias) => alias
-      case other => other
-    }.flatMap(expr => header.expressionsFor(expr).toSeq.sorted)
+    val selectExpressions = returnExpressions.flatMap(expr => header.expressionsFor(expr).toSeq.sorted)
     in.table.select(selectExpressions.map(header.column).distinct: _*)
   }
 
   override lazy val returnItems: Option[Seq[Var]] =
-    Some(header.expressions.toList.flatMap(_.owner).collect { case e: Var => e }.distinct)
+    Some(returnExpressions.flatMap(_.owner).collect { case e: Var => e }.distinct)
 }
 
 final case class Distinct[T <: Table[T] : TypeTag](

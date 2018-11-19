@@ -299,7 +299,12 @@ object RelationalPlanner {
     }
 
     def unionAll(other: RelationalOperator[T]): RelationalOperator[T] = {
-      val targetHeader = op.header ++ other.header
+      val combinedHeader = op.header union other.header
+
+      // rename all columns to make sure we have no conflicts
+      val targetHeader = combinedHeader.expressions.foldLeft(RecordHeader.empty) {
+        case (acc, expr) => acc.withExpr(expr)
+      }
 
       val elementVars = targetHeader.entityVars.map(v => v -> v.cypherType).collect {
         case (v, _: CTNode | _: CTRelationship) => v
@@ -430,8 +435,11 @@ object RelationalPlanner {
       )
 
       import Expr._
-      assert(targetHeader.expressions == withProperties.header.expressions,
-        s"Expected header expressions:\n\t${targetHeader.expressions.toSeq.sorted.mkString(", ")},\ngot\n\t${withProperties.header.expressions.toSeq.sorted.mkString(", ")}")
+      assert(targetHeader.expressionsFor(targetVar) == withProperties.header.expressionsFor(targetVar),
+        s"""Expected header expressions for $targetVar:
+           |\t${targetHeader.expressionsFor(targetVar).toSeq.sorted.mkString(", ")},
+           |got
+           |\t${withProperties.header.expressionsFor(targetVar).toSeq.sorted.mkString(", ")}""".stripMargin)
       withProperties
     }
 

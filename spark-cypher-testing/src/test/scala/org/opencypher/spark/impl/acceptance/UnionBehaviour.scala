@@ -33,7 +33,7 @@ import org.opencypher.spark.testing.CAPSTestSuite
 import org.scalatest.DoNotDiscover
 
 @DoNotDiscover
-class UnionAllBehaviour extends CAPSTestSuite with DefaultGraphInit {
+class UnionBehaviour extends CAPSTestSuite with DefaultGraphInit {
 
   describe("tabular union all") {
     it("unions simple queries") {
@@ -132,6 +132,134 @@ class UnionAllBehaviour extends CAPSTestSuite with DefaultGraphInit {
       result.toMapsWithCollectedEntities should equal(Bag(
         CypherMap("node" -> CAPSNode(0, Set("A"), CypherMap("val" -> "foo")), "rel" -> CAPSRelationship(2, 0, 1, "REL1", CypherMap("foo" -> 42))),
         CypherMap("node" -> CAPSNode(1, Set("B"), CypherMap("bar" -> "baz")), "rel" -> CAPSRelationship(3, 1, 0, "REL2", CypherMap("bar" -> true)))
+      ))
+    }
+  }
+
+  describe("tabular union") {
+    it("unions simple queries") {
+      val result = caps.cypher(
+        """
+          |RETURN 1 AS one
+          |UNION
+          |RETURN 2 AS one
+        """.stripMargin).records
+
+      result.toMapsWithCollectedEntities should equal(Bag(
+        CypherMap("one" -> 1),
+        CypherMap("one" -> 2)
+      ))
+    }
+
+    it("unions simple queries with duplicates") {
+      val result = caps.cypher(
+        """
+          |RETURN 1 AS one
+          |UNION
+          |RETURN 1 AS one
+        """.stripMargin).records
+
+      result.toMapsWithCollectedEntities should equal(Bag(
+        CypherMap("one" -> 1)
+      ))
+    }
+
+    it("supports stacked union") {
+      val result = caps.cypher(
+        """
+          |RETURN 1 AS one
+          |UNION
+          |RETURN 2 AS one
+          |UNION
+          |RETURN 2 AS one
+          |UNION
+          |RETURN 3 AS one
+        """.stripMargin).records
+
+      result.toMapsWithCollectedEntities should equal(Bag(
+        CypherMap("one" -> 1),
+        CypherMap("one" -> 2),
+        CypherMap("one" -> 3)
+      ))
+    }
+
+    it("supports union with UNWIND") {
+      val result = caps.cypher(
+        """
+          |UNWIND [1, 2] AS i
+          |RETURN i
+          |UNION
+          |UNWIND [1, 2, 6] AS i
+          |RETURN i
+        """.stripMargin).records
+
+      result.toMapsWithCollectedEntities should equal(Bag(
+        CypherMap("i" -> 1),
+        CypherMap("i" -> 2),
+        CypherMap("i" -> 6)
+      ))
+    }
+
+    it("supports union with MATCH on nodes") {
+      val g = initGraph(
+        """
+          |CREATE (a: A {val: "foo"})
+          |CREATE (b: B {bar: "baz"})
+        """.stripMargin)
+
+      val result = g.cypher(
+        """
+          |MATCH (a:A), (b:B)
+          |RETURN a AS node1, b AS node2
+          |UNION
+          |MATCH (b:B), (a:A)
+          |RETURN b AS node1, a AS node2
+        """.stripMargin).records
+
+      result.toMapsWithCollectedEntities should equal(Bag(
+        CypherMap("node1" -> CAPSNode(0, Set("A"), CypherMap("val" -> "foo")), "node2" -> CAPSNode(1, Set("B"), CypherMap("bar" -> "baz"))),
+        CypherMap("node1" -> CAPSNode(1, Set("B"), CypherMap("bar" -> "baz")), "node2" -> CAPSNode(0, Set("A"), CypherMap("val" -> "foo")))
+      ))
+    }
+
+    it("supports union on duplicate nodes") {
+      val g = initGraph(
+        """
+          |CREATE (a: A {val: "foo"})
+        """.stripMargin)
+
+      val result = g.cypher(
+        """
+          |MATCH (a:A)
+          |RETURN a AS node
+          |UNION
+          |MATCH (a:A)
+          |RETURN a AS node
+        """.stripMargin).records
+
+      result.toMapsWithCollectedEntities should equal(Bag(
+        CypherMap("node" -> CAPSNode(0, Set("A"), CypherMap("val" -> "foo")))
+      ))
+    }
+
+    it("supports union on duplicate relationships") {
+      val g = initGraph(
+        """
+          |CREATE (a)
+          |CREATE (a)-[:REL {val: 42}]->(a)
+        """.stripMargin)
+
+      val result = g.cypher(
+        """
+          |MATCH ()-[r]->()
+          |RETURN r AS rel
+          |UNION
+          |MATCH ()-[r]->()
+          |RETURN r AS rel
+        """.stripMargin).records
+
+      result.toMapsWithCollectedEntities should equal(Bag(
+        CypherMap("rel" -> CAPSRelationship(1, 0, 0, "REL", CypherMap("val" -> 42)))
       ))
     }
   }

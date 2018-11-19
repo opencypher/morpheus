@@ -374,6 +374,15 @@ case class RecordHeader(exprToColumn: Map[Expr, String]) {
     this ++ other
   }
 
+  def union(other: RecordHeader): RecordHeader = {
+    val varOverlap = vars ++ other.vars
+    if (varOverlap != vars) {
+      throw IllegalArgumentException("two headers with the same variables", s"$vars and ${other.vars}")
+    }
+
+    this ++ other
+  }
+
   def ++(other: RecordHeader): RecordHeader = {
     val joined  = exprToColumn ++ other.exprToColumn
     val withJoinedCypherTypes: Map[Expr, String] = joined.map {

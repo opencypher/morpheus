@@ -46,9 +46,10 @@ final case class SingleQuery(
   override def graph: IRGraph = model.graph
 }
 
-final case class UnionAllQuery(
+final case class UnionQuery(
   left: CypherQuery,
-  right: CypherQuery
+  right: CypherQuery,
+  distinct: Boolean
 ) extends CypherQuery {
   override def after: List[Block] = List(left, right)
 

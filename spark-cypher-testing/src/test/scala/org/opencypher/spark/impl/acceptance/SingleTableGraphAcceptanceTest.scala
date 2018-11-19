@@ -82,5 +82,5 @@ object Unwind_SingleTableGraph extends UnwindBehaviour with SingleTableGraphInit
 
 object CatalogDDL_SingleTableGraph extends CatalogDDLBehaviour with SingleTableGraphInit
 
-object Union_SingleTableGraph extends UnionAllBehaviour with SingleTableGraphInit
+object Union_SingleTableGraph extends UnionBehaviour with SingleTableGraphInit
 

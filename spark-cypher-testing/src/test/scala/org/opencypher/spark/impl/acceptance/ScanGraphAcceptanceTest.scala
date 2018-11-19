@@ -82,4 +82,4 @@ object Unwind_ScanGraph extends UnwindBehaviour with ScanGraphInit
 
 object CatalogDDL_ScanGraph extends CatalogDDLBehaviour with ScanGraphInit
 
-object Union_ScanGraph extends UnionAllBehaviour with ScanGraphInit
+object Union_ScanGraph extends UnionBehaviour with ScanGraphInit
