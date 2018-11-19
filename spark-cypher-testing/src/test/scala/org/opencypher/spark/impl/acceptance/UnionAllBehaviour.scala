@@ -28,7 +28,7 @@ package org.opencypher.spark.impl.acceptance
 
 import org.opencypher.okapi.api.value.CypherValue.CypherMap
 import org.opencypher.okapi.testing.Bag
-import org.opencypher.spark.api.value.CAPSNode
+import org.opencypher.spark.api.value.{CAPSNode, CAPSRelationship}
 import org.opencypher.spark.testing.CAPSTestSuite
 import org.scalatest.DoNotDiscover
 
@@ -89,7 +89,7 @@ class UnionAllBehaviour extends CAPSTestSuite with DefaultGraphInit {
       ))
     }
 
-    it("supports union all with MATCH") {
+    it("supports union all with MATCH on nodes") {
       val g = initGraph(
         """
           |CREATE (a: A {val: "foo"})
@@ -108,6 +108,30 @@ class UnionAllBehaviour extends CAPSTestSuite with DefaultGraphInit {
       result.toMapsWithCollectedEntities should equal(Bag(
         CypherMap("node" -> CAPSNode(0, Set("A"), CypherMap("val" -> "foo"))),
         CypherMap("node" -> CAPSNode(1, Set("B"), CypherMap("bar" -> "baz")))
+      ))
+    }
+
+    it("supports union all with MATCH on nodes and relationships") {
+      val g = initGraph(
+        """
+          |CREATE (a: A {val: "foo"})
+          |CREATE (b: B {bar: "baz"})
+          |CREATE (a)-[:REL1 {foo: 42}]->(b)
+          |CREATE (b)-[:REL2 {bar: true}]->(a)
+        """.stripMargin)
+
+      val result = g.cypher(
+        """
+          |MATCH (a:A)-[r]->()
+          |RETURN a AS node, r AS rel
+          |UNION ALL
+          |MATCH (b:B)-[r]->()
+          |RETURN b AS node, r AS rel
+        """.stripMargin).records
+
+      result.toMapsWithCollectedEntities should equal(Bag(
+        CypherMap("node" -> CAPSNode(0, Set("A"), CypherMap("val" -> "foo")), "rel" -> CAPSRelationship(2, 0, 1, "REL1", CypherMap("foo" -> 42))),
+        CypherMap("node" -> CAPSNode(1, Set("B"), CypherMap("bar" -> "baz")), "rel" -> CAPSRelationship(3, 1, 0, "REL2", CypherMap("bar" -> true)))
       ))
     }
   }

@@ -306,11 +306,11 @@ object RelationalPlanner {
       }
 
       val opWithAlignedEntities = elementVars.foldLeft(op) {
-        case (acc, elementVar) => acc.alignExpressions(elementVar, targetHeader)
+        case (acc, elementVar) => acc.alignExpressions(elementVar, elementVar, targetHeader)
       }.alignColumnNames(targetHeader)
 
       val otherWithAlignedEntities = elementVars.foldLeft(other) {
-        case (acc, elementVar) => acc.alignExpressions(elementVar, targetHeader)
+        case (acc, elementVar) => acc.alignExpressions(elementVar, elementVar, targetHeader)
       }.alignColumnNames(targetHeader)
 
       relational.TabularUnionAll(opWithAlignedEntities, otherWithAlignedEntities)
@@ -355,14 +355,21 @@ object RelationalPlanner {
       op.addInto(idRetaggings.toSeq: _*)
     }
 
-    def alignWith(entity: Var, targetHeader: RecordHeader): RelationalOperator[T] = {
-      op.alignExpressions(entity, targetHeader).alignColumnNames(targetHeader)
+    def alignWith(inputEntity: Var, targetEntity: Var, targetHeader: RecordHeader): RelationalOperator[T] = {
+      op.alignExpressions(inputEntity, targetEntity, targetHeader).alignColumnNames(targetHeader)
     }
 
     // TODO: entity needs to contain all labels/relTypes: all case needs to be explicitly expanded with the schema
-    def alignExpressions(targetVar: Var, targetHeader: RecordHeader): RelationalOperator[T] = {
+    /**
+      * Aligns a single element within the operator with the given target entity in the target header.
+      *
+      * @param inputVar the variable of the element that should be aligned
+      * @param targetVar the variable of the reference element
+      * @param targetHeader the header describing the desired state
+      * @return operator with aligned element
+      */
+    def alignExpressions(inputVar: Var, targetVar: Var, targetHeader: RecordHeader): RelationalOperator[T] = {
 
-      val inputVar = op.singleEntity
       val targetHeaderLabels = targetHeader.labelsFor(targetVar).map(_.label.name)
       val targetHeaderTypes = targetHeader.typesFor(targetVar).map(_.relType.name)
 
@@ -370,8 +377,11 @@ object RelationalPlanner {
       val existingLabels = op.header.labelsFor(inputVar).map(_.label.name)
       val existingRelTypes = op.header.typesFor(inputVar).map(_.relType.name)
 
+      val otherEntities = op.header -- Set(inputVar)
+      val toRetain = otherEntities.expressions + (inputVar as targetVar)
+
       // Rename variable and select columns owned by entityVar
-      val renamedEntity = op.select(inputVar as targetVar)
+      val renamedEntity = op.select(toRetain.toSeq: _*)
 
       // Drop expressions that are not in the target header
       val dropExpressions = renamedEntity.header.expressions -- targetHeader.expressions

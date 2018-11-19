@@ -73,7 +73,8 @@ final case class UnionGraph[T <: Table[T] : TypeTag](graphsToReplacements: Seq[(
         case (graph, replacement) =>
           val scanOp = graph.scanOperator(entityType, exactLabelMatch)
           val retagOp = scanOp.retagVariable(targetEntity, replacement)
-          retagOp.alignWith(targetEntity, targetEntityHeader)
+          val inputEntity = retagOp.singleEntity
+          retagOp.alignWith(inputEntity, targetEntity, targetEntityHeader)
       }
     // TODO: find out if a graph returns empty records and skip union operation
     Distinct(alignedScans.reduce(TabularUnionAll(_, _)), Set(targetEntity))

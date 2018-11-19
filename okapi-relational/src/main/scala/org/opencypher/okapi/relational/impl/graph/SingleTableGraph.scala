@@ -96,7 +96,10 @@ class SingleTableGraph[T <: Table[T] : TypeTag](
       Distinct(filtered, Set(extractionVar))
     }
 
-    val alignedScans = extractedScans.map(_.alignWith(targetEntity, targetEntityHeader)).toList
+    val alignedScans = extractedScans.map { scan =>
+      val inputEntity = scan.singleEntity
+      scan.alignWith(inputEntity, targetEntity, targetEntityHeader)
+    }.toList
 
     alignedScans match {
       case Nil => Start(session.records.empty(targetEntityHeader))
