@@ -79,29 +79,6 @@ sealed class CAPSSession(val sparkSession: SparkSession) extends RelationalCyphe
     graphs.create(CAPSNodeTable(nodes), CAPSRelationshipTable(relationships))
   }
 
-  /**
-    * Reads a graph from a sequence of entity tables that contains at least one node table.
-    *
-    * @param nodeTable    first parameter to guarantee there is at least one node table
-    * @param entityTables sequence of node and relationship tables defining the graph
-    * @return property graph
-    */
-  def readFrom(nodeTable: CAPSNodeTable, entityTables: CAPSEntityTable*): PropertyGraph = {
-    graphs.create(nodeTable, entityTables: _ *)
-  }
-
-  /**
-    * Reads a graph from a sequence of entity tables that contains at least one node table.
-    *
-    * @param tags         tags that are used by graph entities
-    * @param nodeTable    first parameter to guarantee there is at least one node table
-    * @param entityTables sequence of node and relationship tables defining the graph
-    * @return property graph
-    */
-  def readFrom(tags: Set[Int], nodeTable: CAPSNodeTable, entityTables: CAPSEntityTable*): PropertyGraph = {
-    graphs.create(tags, None, nodeTable, entityTables: _*)
-  }
-
   def sql(query: String): CAPSRecords =
     records.wrap(sparkSession.sql(query))
 }

@@ -26,42 +26,19 @@
  */
 package org.opencypher.spark.impl.graph
 
-import org.opencypher.okapi.api.schema._
 import org.opencypher.okapi.api.table.CypherRecords
 import org.opencypher.okapi.relational.api.graph.{RelationalCypherGraph, RelationalCypherGraphFactory}
 import org.opencypher.okapi.relational.api.planning.RelationalRuntimeContext
-import org.opencypher.okapi.relational.impl.graph.{ScanGraph, SingleTableGraph}
+import org.opencypher.okapi.relational.impl.graph.SingleTableGraph
 import org.opencypher.okapi.relational.impl.operators.Start
 import org.opencypher.spark.api.CAPSSession
-import org.opencypher.spark.api.io.{CAPSEntityTable, CAPSNodeTable}
 import org.opencypher.spark.impl.CAPSConverters._
 import org.opencypher.spark.impl.table.SparkTable.DataFrameTable
 import org.opencypher.spark.schema.CAPSSchema
-import org.opencypher.spark.schema.CAPSSchema._
 
 case class CAPSGraphFactory(implicit val session: CAPSSession) extends RelationalCypherGraphFactory[DataFrameTable] {
 
   override type Graph = RelationalCypherGraph[DataFrameTable]
-
-  def create(nodeTable: CAPSNodeTable, entityTables: CAPSEntityTable*): Graph = {
-    create(Set(0), None, nodeTable, entityTables: _*)
-  }
-
-  def create(maybeSchema: Option[CAPSSchema], nodeTable: CAPSNodeTable, entityTables: CAPSEntityTable*): Graph = {
-    create(Set(0), maybeSchema, nodeTable, entityTables: _*)
-  }
-
-  def create(
-    tags: Set[Int],
-    maybeSchema: Option[CAPSSchema],
-    nodeTable: CAPSNodeTable,
-    entityTables: CAPSEntityTable*
-  ): Graph = {
-    implicit val runtimeContext: RelationalRuntimeContext[DataFrameTable] = session.basicRuntimeContext()
-    val allTables = nodeTable +: entityTables
-    val schema = maybeSchema.getOrElse(allTables.map(_.schema).reduce[Schema](_ ++ _).asCaps)
-    new ScanGraph(allTables, schema, tags)
-  }
 
   // TODO: only used in tests, move there
   def create(records: CypherRecords, schema: CAPSSchema, tags: Set[Int] = Set(0)): Graph = {

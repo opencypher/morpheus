@@ -30,10 +30,11 @@ import org.opencypher.okapi.api.graph.{PropertyGraph, QualifiedGraphName}
 import org.opencypher.okapi.api.schema.Schema
 import org.opencypher.okapi.api.types.{CTNode, CTRelationship, CypherType}
 import org.opencypher.okapi.impl.exception.UnsupportedOperationException
+import org.opencypher.okapi.relational.api.io.{EntityTable, NodeTable}
 import org.opencypher.okapi.relational.api.planning.RelationalRuntimeContext
 import org.opencypher.okapi.relational.api.table.{RelationalCypherRecords, Table}
 import org.opencypher.okapi.relational.api.tagging.TagSupport._
-import org.opencypher.okapi.relational.impl.graph.{EmptyGraph, SingleTableGraph, UnionGraph}
+import org.opencypher.okapi.relational.impl.graph.{EmptyGraph, ScanGraph, SingleTableGraph, UnionGraph}
 import org.opencypher.okapi.relational.impl.operators.RelationalOperator
 import org.opencypher.okapi.relational.impl.planning.RelationalPlanner._
 
@@ -58,6 +59,26 @@ trait RelationalCypherGraphFactory[T <: Table[T]] {
     (implicit context: RelationalRuntimeContext[T]): Graph = UnionGraph(graphsToReplacements)
 
   def empty: Graph = EmptyGraph()
+
+  def create(nodeTable: NodeTable[T], entityTables: EntityTable[T]*): Graph = {
+    create(Set(0), None, nodeTable, entityTables: _*)
+  }
+
+  def create(maybeSchema: Option[Schema], nodeTable: NodeTable[T], entityTables: EntityTable[T]*): Graph = {
+    create(Set(0), maybeSchema, nodeTable, entityTables: _*)
+  }
+
+  def create(
+    tags: Set[Int],
+    maybeSchema: Option[Schema],
+    nodeTable: NodeTable[T],
+    entityTables: EntityTable[T]*
+  ): Graph = {
+    implicit val runtimeContext: RelationalRuntimeContext[T] = session.basicRuntimeContext()
+    val allTables = nodeTable +: entityTables
+    val schema = maybeSchema.getOrElse(allTables.map(_.schema).reduce[Schema](_ ++ _))
+    new ScanGraph(allTables, schema, tags)
+  }
 }
 
 trait RelationalCypherGraph[T <: Table[T]] extends PropertyGraph {
