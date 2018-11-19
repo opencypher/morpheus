@@ -38,14 +38,53 @@ class UnionAllBehaviour extends CAPSTestSuite with DefaultGraphInit {
     it("unions simple queries") {
       val result = caps.cypher(
         """
-          |RETURN 1 as one
+          |RETURN 1 AS one
           |UNION ALL
-          |RETURN 2 as one
+          |RETURN 2 AS one
         """.stripMargin).records
 
       result.toMapsWithCollectedEntities should equal(Bag(
         CypherMap("one" -> 1),
         CypherMap("one" -> 2)
+      ))
+    }
+
+    it("supports stacked union all") {
+      val result = caps.cypher(
+        """
+          |RETURN 1 AS one
+          |UNION ALL
+          |RETURN 2 AS one
+          |UNION ALL
+          |RETURN 2 AS one
+          |UNION ALL
+          |RETURN 3 AS one
+        """.stripMargin).records
+
+      result.toMapsWithCollectedEntities should equal(Bag(
+        CypherMap("one" -> 1),
+        CypherMap("one" -> 2),
+        CypherMap("one" -> 2),
+        CypherMap("one" -> 3)
+      ))
+    }
+
+    it("supports union all with UNWIND") {
+      val result = caps.cypher(
+        """
+          |UNWIND [1, 2] AS i
+          |RETURN i
+          |UNION ALL
+          |UNWIND [1, 2, 6] AS i
+          |RETURN i
+        """.stripMargin).records
+
+      result.toMapsWithCollectedEntities should equal(Bag(
+        CypherMap("i" -> 1),
+        CypherMap("i" -> 2),
+        CypherMap("i" -> 1),
+        CypherMap("i" -> 2),
+        CypherMap("i" -> 6)
       ))
     }
   }
