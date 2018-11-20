@@ -57,4 +57,6 @@ case class Row(values: Array[Any]) extends AnyVal {
   def get(i: Int): Any = values(i)
 
   def getAs[T](i: Int): T = get(i).asInstanceOf[T]
+
+  def ++(other: Row): Row = copy(values = values ++ other.values)
 }

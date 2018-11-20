@@ -33,6 +33,8 @@ case class Schema(columns: Array[ColumnSchema]) {
       currentSchema.withColumn(columnMeta)
   }
 
+  def ++(other: Schema): Schema = copy(columns = columns ++ other.columns)
+
   private def columnNotFound(name: String): Nothing =
     throw IllegalArgumentException(expected = s"existing column (one of: ${columnNames.mkString("[", ", ", "]")})", name)
 }

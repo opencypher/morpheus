@@ -2,10 +2,13 @@ package org.opencypher.memcypher.impl.table
 
 import org.opencypher.okapi.api.types.CypherType
 import org.opencypher.okapi.api.value.CypherValue.{CypherMap, CypherValue}
+import org.opencypher.okapi.impl.exception.UnsupportedOperationException
 import org.opencypher.okapi.ir.api.expr.{Aggregator, Expr, Var}
 import org.opencypher.okapi.relational.api.table.{Table => RelationalTable}
-import org.opencypher.okapi.relational.impl.planning.{JoinType, Order}
+import org.opencypher.okapi.relational.impl.planning._
 import org.opencypher.okapi.relational.impl.table.RecordHeader
+
+import scala.util.hashing.MurmurHash3
 
 object Table {
   def empty: Table = Table(schema = Schema.empty, data = Seq.empty)
@@ -40,7 +43,44 @@ case class Table(schema: Schema, data: Seq[Row]) extends RelationalTable[Table] 
     other: Table,
     joinType: JoinType,
     joinCols: (String, String)*
-  ): Table = ???
+  ): Table = joinType match {
+    case InnerJoin => join(other, false, joinCols: _*)
+    case RightOuterJoin => join(other, true, joinCols: _*)
+    case LeftOuterJoin => other.join(this, true, joinCols.map { case (left, right) => right -> left }: _*)
+    case unsupported => throw UnsupportedOperationException(s"Join type '$unsupported' not supported.")
+  }
+
+  private def join(other: Table, rightOuter: Boolean, joinCols: (String, String)*): Table = {
+
+    def hash(seq: Seq[Any]): Int = MurmurHash3.seqHash(seq)
+
+    val (leftCols, rightCols) = joinCols.unzip
+    val leftIndices = leftCols.map(schema.fieldIndex)
+    val rightIndices = rightCols.map(other.schema.fieldIndex)
+
+    val hashTable = data.map(row => hash(leftIndices.map(row.get)) -> row).groupBy(_._1)
+    val emptyRow = Row(Array.ofDim[Any](schema.columns.length))
+
+    val newData = other.data
+      .filter(rightRow => rightOuter || hashTable.contains(hash(rightIndices.map(rightRow.get))))
+      .flatMap(rightRow => {
+
+        val rightValue = rightIndices.map(rightRow.get)
+        hashTable.get(hash(rightValue)) match {
+
+          case Some(leftValues) => leftValues
+            .map(_._2)
+            .filter(leftRow => leftIndices.map(leftRow.get) == rightValue) // hash collision check
+            .map(leftRow => leftRow ++ rightRow)
+
+          case None if rightOuter => Seq(emptyRow ++ rightRow)
+
+          case None => Seq.empty[Row]
+        }
+      })
+
+    copy(schema = schema ++ other.schema, data = newData)
+  }
 
   override def unionAll(other: Table): Table = ???
 
