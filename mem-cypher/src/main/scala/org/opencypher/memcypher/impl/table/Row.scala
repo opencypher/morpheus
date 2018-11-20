@@ -1,5 +1,6 @@
 package org.opencypher.memcypher.impl.table
 
+import org.opencypher.memcypher.impl.types.CypherValueOps._
 import org.opencypher.okapi.api.value.CypherValue.CypherMap
 import org.opencypher.okapi.impl.exception.UnsupportedOperationException
 import org.opencypher.okapi.ir.api.expr._
@@ -17,7 +18,28 @@ object Row {
         row.get(schema.fieldIndex(header.column(expr)))
 
       case Equals(lhs, rhs) =>
-        evaluate(lhs) == evaluate(rhs)
+        evaluate(lhs).toCypherValue == evaluate(rhs).toCypherValue
+
+      case Not(inner) =>
+        !evaluate(inner).toCypherValue
+
+      case GreaterThan(lhs, rhs) =>
+        evaluate(lhs).toCypherValue > evaluate(rhs).toCypherValue
+
+      case GreaterThanOrEqual(lhs, rhs) =>
+        evaluate(lhs).toCypherValue >= evaluate(rhs).toCypherValue
+
+      case LessThan(lhs, rhs) =>
+        evaluate(lhs).toCypherValue < evaluate(rhs).toCypherValue
+
+      case LessThanOrEqual(lhs, rhs) =>
+        evaluate(lhs).toCypherValue <= evaluate(rhs).toCypherValue
+
+      case Ands(exprs) =>
+        exprs.map(evaluate).map(_.toCypherValue).reduce(_ && _).cast[Boolean]
+
+      case Ors(exprs) =>
+        exprs.map(evaluate).map(_.toCypherValue).reduce(_ || _).cast[Boolean]
 
       case TrueLit => true
 

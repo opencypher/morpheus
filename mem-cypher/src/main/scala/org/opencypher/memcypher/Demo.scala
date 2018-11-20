@@ -12,7 +12,7 @@ object Demo extends App {
 
   val graph = session.readFrom(DemoData.nodes, DemoData.rels)
 
-  graph.cypher("MATCH (n) WHERE n.name = 'Alice' RETURN n").show
+  graph.cypher("MATCH (n) WHERE n.age > 23 OR n.name = 'Alice' RETURN n").show
 
 }
 
@@ -25,8 +25,8 @@ object DemoData {
       .withColumn("name", CTString)
 
     val data = Seq(
-      Row(0L, 23, "Alice"),
-      Row(1L, 42, "Bob")
+      Row(0L, 23L, "Alice"),
+      Row(1L, 42L, "Bob")
     )
 
     val nodeMapping = NodeMapping.on("id")
@@ -44,7 +44,7 @@ object DemoData {
       .withColumn("target", CTInteger)
       .withColumn("since", CTString)
 
-    val data = Seq(Row(0L, 0L, 1L, 1984))
+    val data = Seq(Row(0L, 0L, 1L, 1984L))
 
     val relMapping = RelationshipMapping.on("id")
       .from("source")
