@@ -2,15 +2,22 @@ package org.opencypher.memcypher.impl.table
 
 import org.opencypher.okapi.api.value.CypherValue.CypherMap
 import org.opencypher.okapi.impl.exception.UnsupportedOperationException
-import org.opencypher.okapi.ir.api.expr.{Expr, FalseLit, Param, TrueLit}
+import org.opencypher.okapi.ir.api.expr._
 import org.opencypher.okapi.relational.impl.table.RecordHeader
 
 object Row {
   def apply(values: Any*): Row = Row(values.toArray)
 
   implicit class RichMemRow(row: Row) {
-    def evaluate(expr: Expr)(implicit header: RecordHeader, parameters: CypherMap): Any = expr match {
+    def evaluate(expr: Expr)(implicit header: RecordHeader, schema: Schema, parameters: CypherMap): Any = expr match {
+
       case Param(name) => parameters(name).value
+
+      case _: Var | _: Param | _: Property | _: HasLabel | _: Type | _: StartNode | _: EndNode =>
+        row.get(schema.fieldIndex(header.column(expr)))
+
+      case Equals(lhs, rhs) =>
+        evaluate(lhs) == evaluate(rhs)
 
       case TrueLit => true
 

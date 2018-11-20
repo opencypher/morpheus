@@ -1,7 +1,7 @@
 package org.opencypher.memcypher.impl.table
 
 import org.opencypher.okapi.api.types.CypherType
-import org.opencypher.okapi.api.value.CypherValue
+import org.opencypher.okapi.api.value.CypherValue.{CypherMap, CypherValue}
 import org.opencypher.okapi.ir.api.expr.{Aggregator, Expr, Var}
 import org.opencypher.okapi.relational.api.table.{Table => RelationalTable}
 import org.opencypher.okapi.relational.impl.planning.{JoinType, Order}
@@ -12,6 +12,8 @@ object Table {
 }
 
 case class Table(schema: Schema, data: Seq[Row]) extends RelationalTable[Table] {
+
+  private implicit val implicitSchema: Schema = schema
 
   override def select(cols: String*): Table = {
     val columnsWithIndex = cols.map(col => col -> schema.fieldIndex(col))
@@ -29,8 +31,8 @@ case class Table(schema: Schema, data: Seq[Row]) extends RelationalTable[Table] 
     Table(newSchema, newData)
   }
 
-  override def filter(expr: Expr)
-    (implicit header: RecordHeader, parameters: CypherValue.CypherMap): Table = ???
+  override def filter(expr: Expr)(implicit header: RecordHeader, parameters: CypherMap): Table =
+    copy(data = data.filter(_.evaluate(expr).asInstanceOf[Boolean]))
 
   override def drop(cols: String*): Table = ???
 
@@ -43,7 +45,7 @@ case class Table(schema: Schema, data: Seq[Row]) extends RelationalTable[Table] 
   override def unionAll(other: Table): Table = ???
 
   override def orderBy(sortItems: (Expr, Order)*)
-    (implicit header: RecordHeader, parameters: CypherValue.CypherMap): Table = ???
+    (implicit header: RecordHeader, parameters: CypherMap): Table = ???
 
   override def skip(n: Long): Table = ???
 
@@ -52,10 +54,10 @@ case class Table(schema: Schema, data: Seq[Row]) extends RelationalTable[Table] 
   override def distinct: Table = ???
 
   override def group(by: Set[Var], aggregations: Set[(Aggregator, (String, CypherType))])
-    (implicit header: RecordHeader, parameters: CypherValue.CypherMap): Table = ???
+    (implicit header: RecordHeader, parameters: CypherMap): Table = ???
 
   override def withColumns(columns: (Expr, String)*)
-    (implicit header: RecordHeader, parameters: CypherValue.CypherMap): Table = {
+    (implicit header: RecordHeader, parameters: CypherMap): Table = {
 
     val newSchema = columns.foldLeft(schema) {
       case (currentSchema, (expr, columnName)) => currentSchema.withColumn(columnName, expr.cypherType)
@@ -79,7 +81,7 @@ case class Table(schema: Schema, data: Seq[Row]) extends RelationalTable[Table] 
   override def columnType: Map[String, CypherType] =
     schema.columns.map(column => column.name -> column.dataType).toMap
 
-  override def rows: Iterator[String => CypherValue.CypherValue] = ???
+  override def rows: Iterator[String => CypherValue] = ???
 
   override def size: Long = ???
 }
