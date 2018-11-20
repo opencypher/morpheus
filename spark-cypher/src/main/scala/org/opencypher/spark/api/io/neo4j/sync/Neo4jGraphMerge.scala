@@ -161,10 +161,10 @@ object Neo4jGraphMerge extends Logging {
     nodeKeys: Option[NodeKeys],
     relationshipKeys: Option[RelationshipKeys]
   ): Schema = {
-    val withNodeKeys = nodeKeys.foldLeft(schema) {
+    val withNodeKeys = nodeKeys.getOrElse(Map.empty).foldLeft(schema) {
       case (acc, (label, keys)) => acc.withNodeKey(label, keys)
     }
-    relationshipKeys.foldLeft(withNodeKeys) {
+    relationshipKeys.getOrElse(Map.empty).foldLeft(withNodeKeys) {
       case (acc, (typ, keys)) => acc.withRelationshipKey(typ, keys)
     }
   }
