@@ -51,12 +51,12 @@ CAPS is under rapid development and we are planning to offer support for:
 
 ## Spark Improvement Proposal
 
-Currently CAPS is a third party add-on to the Spark eco system. We, however, believe that property graphs and graph processing
-has the potential to be come a vital part of data analytical processes. We are thus working, in cooperation with 
+Currently CAPS is a third-party add-on to the Spark ecosystem. We, however, believe that property graphs and graph processing
+has the potential to be come a vital part of data analytics. We are thus working, in cooperation with 
 *Databricks*, on making CAPS a core part of Spark. 
 The first step on this road is the specification of a __PropertyGraph API__, similar to __SQL__ and __Dataframes__, along with porting
-the basic features of CAPS to the core Spark project in a so called __Spark Improvement Proposal__ (SPIP).
-We are currently in the first face of this process. The SPIP describing the motivation and goals is published here
+Cypher 9 features of CAPS to the core Spark project in a so called __Spark Project Improvement Proposal__ (SPIP).
+We are currently in the first phase of this process. The SPIP describing the motivation and goals is published here
 [SPARK-25994](https://issues.apache.org/jira/browse/SPARK-25994). 
 Additionally [SPARK-26028](https://issues.apache.org/jira/browse/SPARK-26028) proposes an API design and 
 implementation strategies. 
