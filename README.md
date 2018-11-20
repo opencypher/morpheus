@@ -1,5 +1,5 @@
 [![Build Status](https://travis-ci.org/opencypher/cypher-for-apache-spark.svg?branch=master)](https://travis-ci.org/opencypher/cypher-for-apache-spark)
-[![Maven Central](https://img.shields.io/badge/Maven_Central-0.2.0-blue.svg?label=Maven%20Central)](https://search.maven.org/#artifactdetails%7Corg.opencypher%7Cspark-cypher%7C0.2.0%7Cjar)
+[![Maven Central](https://img.shields.io/badge/Maven_Central-0.2.1-blue.svg?label=Maven%20Central)](https://search.maven.org/#artifactdetails%7Corg.opencypher%7Cspark-cypher%7C0.2.0%7Cjar)
 # CAPS: Cypher for Apache Spark
 
 CAPS extends [Apache Spark™](https://spark.apache.org) with [Cypher](https://neo4j.com/docs/developer-manual/current/cypher/), the industry's most widely used [property graph](https://github.com/opencypher/openCypher/blob/master/docs/property-graph-model.adoc) query language defined and maintained by the [openCypher](http://www.opencypher.org) project.
@@ -49,6 +49,18 @@ CAPS is under rapid development and we are planning to offer support for:
 - integration with Spark SQL
 - injection of custom graph data sources
 
+## Spark Improvement Proposal
+
+Currently CAPS is a third-party add-on to the Spark ecosystem. We, however, believe that property graphs and graph processing
+has the potential to be come a vital part of data analytics. We are thus working, in cooperation with 
+*Databricks*, on making CAPS a core part of Spark. 
+The first step on this road is the specification of a __PropertyGraph API__, similar to __SQL__ and __Dataframes__, along with porting
+Cypher 9 features of CAPS to the core Spark project in a so called __Spark Project Improvement Proposal__ (SPIP).
+We are currently in the first phase of this process. The SPIP describing the motivation and goals is published here
+[SPARK-25994](https://issues.apache.org/jira/browse/SPARK-25994). 
+Additionally [SPARK-26028](https://issues.apache.org/jira/browse/SPARK-26028) proposes an API design and 
+implementation strategies. 
+
 ## Get started with CAPS
 CAPS is currently easiest to use with Scala. Below we explain how you can import a simple graph and run a Cypher query on it.
 
@@ -70,13 +82,13 @@ Maven:
 <dependency>
   <groupId>org.opencypher</groupId>
   <artifactId>spark-cypher</artifactId>
-  <version>0.2.0</version>
+  <version>0.2.1</version>
 </dependency>
 ```
 
 sbt:
 ```
-libraryDependencies += "org.opencypher" % "spark-cypher" % "0.2.0"
+libraryDependencies += "org.opencypher" % "spark-cypher" % "0.2.1"
 ```
 
 Remember to add `fork in run := true` in your `build.sbt` for scala projects; this is not CAPS
