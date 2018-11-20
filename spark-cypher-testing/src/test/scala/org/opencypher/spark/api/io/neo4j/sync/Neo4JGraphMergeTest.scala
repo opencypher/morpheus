@@ -207,7 +207,7 @@ class Neo4JGraphMergeTest extends CAPSTestSuite with CAPSNeo4jServerFixture with
 
     it("creates indexes correctly") {
       val nodeKeys = Map("Person" -> Set("name", "bar"), "Employee" -> Set("baz"))
-      val relKeys = Map("R" -> Set("a"))
+      val relKeys = Map("REL" -> Set("a"))
 
       Neo4jGraphMerge.createIndexes(entireGraphName, neo4jConfig, nodeKeys)
 
@@ -280,7 +280,7 @@ class Neo4JGraphMergeTest extends CAPSTestSuite with CAPSNeo4jServerFixture with
 
     it("creates indexes correctly") {
       val nodeKeys = Map("Person" -> Set("name", "bar"), "Employee" -> Set("baz"))
-      val relKeys = Map("R" -> Set("a"))
+      val relKeys = Map("REL" -> Set("a"))
 
       val subGraphName = GraphName("myGraph")
       Neo4jGraphMerge.createIndexes(subGraphName, neo4jConfig, nodeKeys)
