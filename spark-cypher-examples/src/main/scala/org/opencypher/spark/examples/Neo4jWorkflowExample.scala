@@ -30,7 +30,7 @@ package org.opencypher.spark.examples
 import org.opencypher.okapi.api.graph.{Namespace, QualifiedGraphName}
 import org.opencypher.okapi.neo4j.io.MetaLabelSupport._
 import org.opencypher.okapi.neo4j.io.testing.Neo4jHarnessUtils._
-import org.opencypher.spark.api.io.neo4j.sync.{EntityKeys, Neo4jGraphMerge}
+import org.opencypher.spark.api.io.neo4j.sync.Neo4jGraphMerge
 import org.opencypher.spark.api.{CAPSSession, GraphSources}
 import org.opencypher.spark.testing.support.creation.CAPSNeo4jHarnessUtils._
 import org.opencypher.spark.util.ConsoleApp
@@ -83,9 +83,10 @@ object Neo4jWorkflowExample extends ConsoleApp {
 
   // Define the node and relationship keys
   // Note that in this example we assume that names and titles uniquely identify people and products
-  val entityKeys = EntityKeys(Map("Person" -> Set("name"), "Product" -> Set("title")))
+  val nodeKeys = Map("Person" -> Set("name"), "Product" -> Set("title"))
+
   // Write the recommendations back to Neo4j
-  Neo4jGraphMerge.merge(recommendationGraph, neo4j.dataSourceConfig, entityKeys)
+  Neo4jGraphMerge.merge(entireGraphName, recommendationGraph, neo4j.dataSourceConfig, Some(nodeKeys))
 
   // Proof that the write-back to Neo4j worked, retrieve and print updated Neo4j results
   val updatedNeo4jSource = GraphSources.cypher.neo4j(neo4j.dataSourceConfig)

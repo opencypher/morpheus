@@ -32,8 +32,9 @@ import org.apache.spark.sql.SparkSession
 import org.apache.spark.sql.internal.StaticSQLConf.CATALOG_IMPLEMENTATION
 import org.apache.spark.sql.types.{LongType, StringType, StructField, StructType}
 import org.opencypher.okapi.api.graph.Namespace
+import org.opencypher.okapi.neo4j.io.MetaLabelSupport._
 import org.opencypher.okapi.neo4j.io.Neo4jConfig
-import org.opencypher.spark.api.io.neo4j.sync.{EntityKeys, Neo4jGraphMerge}
+import org.opencypher.spark.api.io.neo4j.sync.Neo4jGraphMerge
 import org.opencypher.spark.api.{CAPSSession, GraphSources}
 import org.opencypher.spark.util.ConsoleApp
 
@@ -126,21 +127,19 @@ object Customer360IntegrationDemo extends ConsoleApp {
 
   val neo4jConfig = Neo4jConfig(new URI("bolt://localhost:7687"), "neo4j", Some("admin"))
 
-  val entityKeys = EntityKeys(
-    Map(
-      "Interaction" -> Set("interactionId"),
-      "Customer" -> Set("customerId"),
-      "CustomerRep" -> Set("empNo"),
-      "AccountHolder" -> Set("accountHolderId"),
-      "Policy" -> Set("policyAccountNumber")
-    )
+  val nodeKeys = Map(
+    "Interaction" -> Set("interactionId"),
+    "Customer" -> Set("customerId"),
+    "CustomerRep" -> Set("empNo"),
+    "AccountHolder" -> Set("accountHolderId"),
+    "Policy" -> Set("policyAccountNumber")
   )
 
   // Speed up merge operation (requires Neo4j Enterprise Edition)
-  Neo4jGraphMerge.createIndexes(neo4jConfig, entityKeys)
+  Neo4jGraphMerge.createIndexes(entireGraphName, neo4jConfig, nodeKeys)
 
   // Merge interaction graph into Neo4j database with "Customer 360" data
-  Neo4jGraphMerge.merge(c360Interactions, neo4jConfig, entityKeys)
+  Neo4jGraphMerge.merge(entireGraphName, c360Interactions, neo4jConfig, Some(nodeKeys))
 
   def createView(fromTable: String, viewName: String, distinct: Boolean, columns: String*): Unit = {
     val distinctString = if (distinct) "DISTINCT" else ""
