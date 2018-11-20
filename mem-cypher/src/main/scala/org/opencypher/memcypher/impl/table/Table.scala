@@ -3,6 +3,7 @@ package org.opencypher.memcypher.impl.table
 import org.opencypher.okapi.api.types.CypherType
 import org.opencypher.okapi.api.value.CypherValue.{CypherMap, CypherValue}
 import org.opencypher.okapi.impl.exception.UnsupportedOperationException
+import org.opencypher.okapi.impl.util.TablePrinter
 import org.opencypher.okapi.ir.api.expr.{Aggregator, Expr, Var}
 import org.opencypher.okapi.relational.api.table.{Table => RelationalTable}
 import org.opencypher.okapi.relational.impl.planning._
@@ -111,7 +112,8 @@ case class Table(schema: Schema, data: Seq[Row]) extends RelationalTable[Table] 
   override def withColumnRenamed(oldColumn: String, newColumn: String): Table =
     Table(schema.withColumnRenamed(oldColumn, newColumn), data)
 
-  override def show(rows: Int): Unit = ???
+  override def show(rows: Int): Unit =
+    println(TablePrinter.toTable(schema.columns.map(_.name), data.take(rows).map(_.values.toSeq)))
 
   override def physicalColumns: Seq[String] =
     schema.columns.map(_.name)
@@ -123,7 +125,7 @@ case class Table(schema: Schema, data: Seq[Row]) extends RelationalTable[Table] 
 
   override def rows: Iterator[String => CypherValue] = ???
 
-  override def size: Long = ???
+  override def size: Long = data.length
 }
 
 
