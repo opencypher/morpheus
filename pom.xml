@@ -105,6 +105,7 @@
     <module>spark-cypher-tck</module>
     <module>spark-cypher-testing</module>
     <module>graph-ddl</module>
+    <module>mem-cypher</module>
   </modules>
 
   <build>
