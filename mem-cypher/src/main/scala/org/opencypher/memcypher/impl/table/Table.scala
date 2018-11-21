@@ -20,7 +20,7 @@ case class Table(schema: Schema, data: Seq[Row]) extends RelationalTable[Table] 
   private implicit val implicitSchema: Schema = schema
 
   override def select(cols: String*): Table = {
-    val columnsWithIndex = cols.map(col => col -> schema.fieldIndex(col))
+    val columnIndices = cols.map(schema.fieldIndex)
 
     val newSchema = schema.select(cols)
     val newLength = cols.length
@@ -28,7 +28,7 @@ case class Table(schema: Schema, data: Seq[Row]) extends RelationalTable[Table] 
     val newData = data.map { row =>
       val newValues = Array.ofDim[Any](newLength)
       for (i <- 0 until newLength) {
-        newValues(i) = row.get(columnsWithIndex(i)._2)
+        newValues(i) = row.get(columnIndices(i))
       }
       Row(newValues)
     }
@@ -83,16 +83,15 @@ case class Table(schema: Schema, data: Seq[Row]) extends RelationalTable[Table] 
     copy(schema = schema ++ other.schema, data = newData)
   }
 
-  override def unionAll(other: Table): Table = ???
+  override def unionAll(other: Table): Table = Table(schema, data = data ++ other.data)
 
-  override def orderBy(sortItems: (Expr, Order)*)
-    (implicit header: RecordHeader, parameters: CypherMap): Table = ???
+  override def orderBy(sortItems: (Expr, Order)*)(implicit header: RecordHeader, parameters: CypherMap): Table = ???
 
-  override def skip(n: Long): Table = ???
+  override def skip(n: Long): Table = copy(data = data.drop(n.toInt))
 
-  override def limit(n: Long): Table = ???
+  override def limit(n: Long): Table = copy(data = data.take(n.toInt))
 
-  override def distinct: Table = ???
+  override def distinct: Table = copy(data = data.distinct)
 
   override def group(by: Set[Var], aggregations: Set[(Aggregator, (String, CypherType))])
     (implicit header: RecordHeader, parameters: CypherMap): Table = ???
@@ -110,7 +109,7 @@ case class Table(schema: Schema, data: Seq[Row]) extends RelationalTable[Table] 
   }
 
   override def withColumnRenamed(oldColumn: String, newColumn: String): Table =
-    Table(schema.withColumnRenamed(oldColumn, newColumn), data)
+    copy(schema = schema.withColumnRenamed(oldColumn, newColumn))
 
   override def show(rows: Int): Unit =
     println(TablePrinter.toTable(schema.columns.map(_.name), data.take(rows).map(_.values.toSeq)))
