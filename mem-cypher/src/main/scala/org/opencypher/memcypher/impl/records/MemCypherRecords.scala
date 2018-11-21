@@ -10,7 +10,7 @@ import org.opencypher.okapi.relational.impl.table.RecordHeader
 case class MemCypherRecords(
   header: RecordHeader,
   table: Table,
-  override val logicalColumns: Option[Seq[String]]
+  override val logicalColumns: Option[Seq[String]] = None
 ) extends RelationalCypherRecords[Table] with MemCypherRecordsBehaviour {
 
   override type Records = MemCypherRecords

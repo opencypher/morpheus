@@ -6,16 +6,21 @@ import org.opencypher.okapi.relational.api.io.EntityTable
 import org.opencypher.okapi.relational.api.table.RelationalCypherRecordsFactory
 import org.opencypher.okapi.relational.impl.table.RecordHeader
 
+import org.opencypher.memcypher.impl.convert.MemCypherConversions._
+
 case class MemCypherRecordsFactory(implicit val session: MemCypherSession)
   extends RelationalCypherRecordsFactory[Table] {
 
   override type Records = MemCypherRecords
 
-  override def unit(): MemCypherRecords = ???
+  override def unit(): MemCypherRecords =
+    MemCypherRecords(RecordHeader.empty, Table.empty)
 
-  override def empty(initialHeader: RecordHeader): MemCypherRecords = ???
+  override def empty(initialHeader: RecordHeader): MemCypherRecords =
+    MemCypherRecords(initialHeader, Table(initialHeader.toSchema, Seq.empty))
 
-  override def fromEntityTable(entityTable: EntityTable[Table]): MemCypherRecords = ???
+  override def fromEntityTable(entityTable: EntityTable[Table]): MemCypherRecords =
+    MemCypherRecords(entityTable.header, entityTable.table)
 
   override def from(
     header: RecordHeader,

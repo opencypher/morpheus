@@ -58,6 +58,7 @@ case object CAPSEntityTableFactory extends RelationalEntityTableFactory[DataFram
 
 trait CAPSEntityTable extends EntityTable[DataFrameTable] {
 
+  // TODO: only used in testing .. remove
   private[spark] def records(implicit caps: CAPSSession): CAPSRecords = caps.records.fromEntityTable(entityTable = this)
 }
 

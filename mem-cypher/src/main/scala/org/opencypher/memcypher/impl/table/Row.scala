@@ -48,6 +48,8 @@ object Row {
 
       case FalseLit => false
 
+      case _: NullLit => null
+
       case other => throw UnsupportedOperationException(s"Evaluating expression $other is not supported.")
     }
   }
