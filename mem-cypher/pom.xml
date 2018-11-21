@@ -23,6 +23,23 @@
       <artifactId>okapi-relational</artifactId>
       <version>${project.parent.version}</version>
     </dependency>
+
+    <!--Testing-->
+
+    <dependency>
+      <groupId>org.opencypher</groupId>
+      <artifactId>okapi-tck</artifactId>
+      <version>${project.parent.version}</version>
+      <scope>test</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>org.opencypher</groupId>
+      <artifactId>spark-cypher-testing</artifactId>
+      <version>${project.parent.version}</version>
+      <scope>test</scope>
+    </dependency>
+
   </dependencies>
 
 

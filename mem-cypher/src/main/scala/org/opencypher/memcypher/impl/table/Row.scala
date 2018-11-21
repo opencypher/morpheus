@@ -7,7 +7,10 @@ import org.opencypher.okapi.ir.api.expr._
 import org.opencypher.okapi.relational.impl.table.RecordHeader
 
 object Row {
+
   def apply(values: Any*): Row = Row(values.toArray)
+
+  def fromSeq(values: Seq[Any]): Row = Row(values.toArray)
 
   implicit class RichMemRow(row: Row) {
     def evaluate(expr: Expr)(implicit header: RecordHeader, schema: Schema, parameters: CypherMap): Any = expr match {
