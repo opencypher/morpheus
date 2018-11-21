@@ -49,6 +49,7 @@ case class Table(schema: Schema, data: Seq[Row]) extends RelationalTable[Table] 
     case InnerJoin => join(other, false, joinCols: _*)
     case RightOuterJoin => join(other, true, joinCols: _*)
     case LeftOuterJoin => other.join(this, true, joinCols.map { case (left, right) => right -> left }: _*)
+    case CrossJoin => cartesian(other)
     case unsupported => throw UnsupportedOperationException(s"Join type '$unsupported' not supported.")
   }
 
@@ -83,6 +84,9 @@ case class Table(schema: Schema, data: Seq[Row]) extends RelationalTable[Table] 
 
     copy(schema = schema ++ other.schema, data = newData)
   }
+
+  private def cartesian(other: Table): Table =
+    Table(schema = schema ++ other.schema, data = for {left <- data; right <- other.data} yield Row(left.values ++ right.values))
 
   override def unionAll(other: Table): Table = Table(schema, data = data ++ other.data)
 
