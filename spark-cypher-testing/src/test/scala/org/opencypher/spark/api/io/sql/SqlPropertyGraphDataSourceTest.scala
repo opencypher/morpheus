@@ -26,7 +26,9 @@
  */
 package org.opencypher.spark.api.io.sql
 
-import org.apache.spark.sql.SaveMode
+import org.apache.spark.sql.types.{IntegerType, LongType, StructField, StructType}
+import org.apache.spark.sql.{Row, SaveMode}
+import org.opencypher.graphddl.GraphDdl
 import org.opencypher.okapi.api.graph.GraphName
 import org.opencypher.okapi.api.value.CypherValue.CypherMap
 import org.opencypher.okapi.testing.Bag
@@ -35,7 +37,8 @@ import org.opencypher.spark.api.value.{CAPSNode, CAPSRelationship}
 import org.opencypher.spark.impl.CAPSFunctions.{partitioned_id_assignment, rowIdSpaceBitsUsedByMonotonicallyIncreasingId}
 import org.opencypher.spark.testing.CAPSTestSuite
 import org.opencypher.spark.testing.fixture.{H2Fixture, HiveFixture}
-import org.opencypher.graphddl.GraphDdl
+
+import scala.collection.JavaConverters._
 
 class SqlPropertyGraphDataSourceTest extends CAPSTestSuite with HiveFixture with H2Fixture {
 
@@ -461,5 +464,40 @@ class SqlPropertyGraphDataSourceTest extends CAPSTestSuite with HiveFixture with
       CypherMap("n" -> CAPSNode(computePartitionedRowId(rowIndex = 0, partitionStartDelta = 1), Set("Bar"), CypherMap("bar" -> 123L)))
     ))
 
+  }
+
+  it("should not auto-cast IntegerType columns to LongType") {
+    val data = List(
+      Row(1, 10L),
+      Row(15, 800L)
+    ).asJava
+    val df = sparkSession.createDataFrame(data, StructType(Seq(StructField("int", IntegerType), StructField("long", LongType))))
+
+    caps.sql("CREATE DATABASE IF NOT EXISTS db")
+    df.write.saveAsTable("db.int_long")
+
+    val ddlString =
+      """
+        |CREATE GRAPH SCHEMA fooSchema
+        | LABEL (Foo {int: INTEGER, long: INTEGER})
+        | (Foo)
+        |
+        |CREATE GRAPH fooGraph WITH GRAPH SCHEMA fooSchema
+        |  NODE LABEL SETS (
+        |    (Foo) FROM ds1.db.int_long
+        |  )
+        """.stripMargin
+
+    val hiveDataSourceConfig = SqlDataSourceConfig(
+      storageFormat = HiveFormat,
+      dataSourceName = "ds1"
+    )
+
+    val pgds = SqlPropertyGraphDataSource(GraphDdl(ddlString), List(hiveDataSourceConfig))
+
+    pgds.graph(GraphName("fooGraph")).cypher("MATCH (n) RETURN n.int, n.long").records.toMapsWithCollectedEntities should equal(Bag(
+      CypherMap("n.int" -> 1, "n.long" -> 10),
+      CypherMap("n.int" -> 15, "n.long" -> 800)
+    ))
   }
 }
