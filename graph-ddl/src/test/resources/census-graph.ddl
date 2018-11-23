@@ -3,53 +3,53 @@ SET SCHEMA CENSUS.CENSUS;
 
 -- =================================================================
 
-CATALOG CREATE LABEL (LicensedDog {
+CATALOG CREATE LABEL LicensedDog ({
   licence_number: STRING?
 } KEY LicensedDog_NK (licence_number))
 
-CATALOG CREATE LABEL (Person {first_name: STRING?, last_name: STRING?})
+CATALOG CREATE LABEL Person ({first_name: STRING?, last_name: STRING?})
 
-CATALOG CREATE LABEL (Visitor {
+CATALOG CREATE LABEL Visitor ({
   date_of_entry: STRING,
   sequence: INTEGER,
   nationality: STRING?,
   age: INTEGER?
 } KEY Visitor_NK (date_of_entry, sequence))
 
-CATALOG CREATE LABEL (Resident {
+CATALOG CREATE LABEL Resident ({
   person_number: STRING
 } KEY Resident_NK (person_number))
 
-CATALOG CREATE LABEL (Town {
+CATALOG CREATE LABEL Town ({
   CITY_NAME: STRING,
   REGION: STRING
 } KEY Town_NK (REGION, CITY_NAME))
 
-CATALOG CREATE LABEL (PRESENT_IN)
+CATALOG CREATE LABEL PRESENT_IN
 
-CATALOG CREATE LABEL (LICENSED_BY {date_of_licence: STRING})
+CATALOG CREATE LABEL LICENSED_BY ({date_of_licence: STRING})
 
 -- =================================================================
 
-CREATE GRAPH SCHEMA Census
+CREATE GRAPH SCHEMA Census (
 
   --NODES
   (Person, Visitor),  -- keyed by node key Visitor_NK
   (Person, Resident), -- keyed by node key Resident_NK
   (Town),
-  (LicensedDog)
+  (LicensedDog),
 
   --EDGES
   [PRESENT_IN],
-  [LICENSED_BY]
+  [LICENSED_BY],
 
    --EDGE LABEL CONSTRAINTS
   (Person | LicensedDog) <0 .. *> - [PRESENT_IN] -> <1>(Town),
   (LicensedDog)- [LICENSED_BY] ->(Resident)
-
+)
 -- =================================================================
 
-CREATE GRAPH Census_1901 WITH GRAPH SCHEMA Census
+CREATE GRAPH Census_1901 WITH GRAPH SCHEMA Census (
     NODE LABEL SETS (
         (Visitor, Person)
              FROM VIEW_VISITOR,
@@ -112,3 +112,4 @@ CREATE GRAPH Census_1901 WITH GRAPH SCHEMA Census
                     FROM VIEW_RESIDENT end_nodes
                         JOIN ON end_nodes.PERSON_NUMBER = edge.PERSON_NUMBER
     )
+)

@@ -107,32 +107,52 @@ object GraphDdl {
     )
   }
 
+  case class SchemaParts(
+    labelDefinitions: List[LabelDefinition] = List.empty,
+    nodeDefinitions: List[NodeDefinition] = List.empty,
+    relDefinitions: List[RelationshipDefinition] = List.empty,
+    patternDefinitions: List[SchemaPatternDefinition] = List.empty
+  )
+
+  private[graphddl] def toSchemaParts(
+    schemaDefinition: SchemaDefinition
+  ) = schemaDefinition.schemaStatements.foldLeft(SchemaParts()) {
+    case (parts, s: LabelDefinition)         => parts.copy(labelDefinitions = parts.labelDefinitions :+ s)
+    case (parts, s: NodeDefinition)          => parts.copy(nodeDefinitions = parts.nodeDefinitions :+ s)
+    case (parts, s: RelationshipDefinition)  => parts.copy(relDefinitions = parts.relDefinitions :+ s)
+    case (parts, s: SchemaPatternDefinition) => parts.copy(patternDefinitions = parts.patternDefinitions :+ s)
+  }
+
+
   private[graphddl] def toSchema(
     globalLabelDefinitions: Map[String, LabelDefinition],
     schemaDefinition: SchemaDefinition
   ): Schema = {
-    val localLabelDefinitions = schemaDefinition.localLabelDefinitions
+
+    val parts = toSchemaParts(schemaDefinition)
+
+    val localLabelDefinitions = parts.labelDefinitions
       .validateDistinctBy(_.name, "Duplicate label name")
       .keyBy(_.name)
     val labelDefinitions: Map[String, LabelDefinition] = globalLabelDefinitions ++ localLabelDefinitions
 
     // Nodes
 
-    val nodeDefinitionsFromPatterns = schemaDefinition.schemaPatternDefinitions.flatMap(schemaDef =>
+    val nodeDefinitionsFromPatterns = parts.patternDefinitions.flatMap(schemaDef =>
       schemaDef.sourceLabelCombinations ++ schemaDef.targetLabelCombinations)
-    val allNodeDefinitions = schemaDefinition.nodeDefinitions ++ nodeDefinitionsFromPatterns
-    val schemaWithNodes = schemaForNodeDefinitions(labelDefinitions, allNodeDefinitions)
+    val allNodeDefinitions = parts.nodeDefinitions.map(_.labelCombination) ++ nodeDefinitionsFromPatterns
+    val schemaWithNodes = schemaForNodeDefinitions(labelDefinitions, allNodeDefinitions.toSet)
 
     // Relationships
 
-    val relDefinitionsFromPatterns = schemaDefinition.schemaPatternDefinitions.flatMap(_.relTypes)
-    val allRelDefinitions = relDefinitionsFromPatterns ++ schemaDefinition.relDefinitions
+    val relDefinitionsFromPatterns = parts.patternDefinitions.flatMap(_.relTypes)
+    val allRelDefinitions = relDefinitionsFromPatterns ++ parts.relDefinitions.map(_.label)
 
-    val schemaWithRels = schemaForRelationshipDefinitions(labelDefinitions, allRelDefinitions)
+    val schemaWithRels = schemaForRelationshipDefinitions(labelDefinitions, allRelDefinitions.toSet)
 
     // Schema patterns
 
-    schemaWithSchemaPatterns(schemaDefinition.schemaPatternDefinitions, schemaWithNodes ++ schemaWithRels)
+    schemaWithSchemaPatterns(parts.patternDefinitions.toSet, schemaWithNodes ++ schemaWithRels)
   }
 
   private def schemaForNodeDefinitions(

@@ -97,9 +97,16 @@ object GraphDdlParser {
   // KEY A (propKey[, propKey]*))
   val keyDefinition: P[KeyDefinition] = P(KEY ~/ identifier.! ~/ "(" ~/ identifier.!.rep(min = 1, sep = ",").map(_.toSet) ~/ ")")
 
-  val innerLabelDefinition: P[LabelDefinition] = P(identifier.! ~/ properties.?.map(_.getOrElse(Map.empty[String, CypherType])) ~/ keyDefinition.?).map(LabelDefinition.tupled)
-
-  val labelDefinition: P[LabelDefinition] = P(LABEL ~/ (("(" ~/ innerLabelDefinition ~/ ")") | ("[" ~/ innerLabelDefinition ~/ "]")))
+  // LABEL labelName (...)
+  val labelDefinition: P[LabelDefinition] = P(LABEL ~/ identifier.! ~/
+    ("(" ~/ properties.? ~/ keyDefinition.? ~/ ")").?
+  ).map {
+    case (id, None) => LabelDefinition(id)
+    case (id, Some((maybeProps, maybeKeys))) => maybeProps match {
+      case None => LabelDefinition(id, maybeKeyDefinition = maybeKeys)
+      case Some(props) => LabelDefinition(id, props, maybeKeys)
+    }
+  }
 
   // [CATALOG] CREATE LABEL <labelDefinition> [KEY <keyDefinition>]
   val catalogLabelDefinition: P[LabelDefinition] = P(CATALOG.? ~ CREATE ~ labelDefinition)
@@ -110,9 +117,13 @@ object GraphDdlParser {
 
   val nodeDefinition: P[LabelCombination] = P("(" ~ labelCombination ~ ")")
 
+  val nodeDefinition2: P[NodeDefinition] = P("(" ~ labelCombination ~ ")").map(NodeDefinition)
+
   val relType: P[String] = P(identifier.!)
 
   val relDefinition: P[String] = P("[" ~/ relType ~/ "]")
+
+  val relDefinition2: P[RelationshipDefinition] = P("[" ~/ relType ~/ "]").map(RelationshipDefinition)
 
   val nodeAlternatives: P[Set[LabelCombination]] = P("(" ~ labelCombination.rep(min = 1, sep = "|").map(_.toSet) ~ ")")
 
@@ -142,12 +153,11 @@ object GraphDdlParser {
     .map(SchemaPatternDefinition.tupled)
 
   val localSchemaDefinition: P[SchemaDefinition] = P(
-    labelDefinition.rep(sep = ",".?).map(_.toList) ~/ ",".? ~/
-      // negative lookahead (~ !"-") needed in order to disambiguate node definitions and schema pattern definitions
-      (nodeDefinition ~ !"-").rep(sep = ",".?).map(_.toSet) ~ ",".? ~/
-      relDefinition.rep(sep = ",".?).map(_.toSet) ~/ ",".? ~/
-      schemaPatternDefinition.rep(sep = ",".?).map(_.toSet) ~/ ";".?)
-    .map(SchemaDefinition.tupled)
+    "(" ~/
+    // negative lookahead (~ !"-") needed in order to disambiguate node definitions and schema pattern definitions
+    (labelDefinition |  (nodeDefinition2 ~ !("-" | "<")) | relDefinition2 | schemaPatternDefinition).rep(sep = ",").map(_.toList) ~/
+    ")"
+  ).map(SchemaDefinition)
 
   val globalSchemaDefinition: P[GlobalSchemaDefinition] =
     P(CREATE ~ GRAPH ~ SCHEMA ~/ identifier.! ~/ localSchemaDefinition).map(GlobalSchemaDefinition.tupled)
@@ -177,13 +187,13 @@ object GraphDdlParser {
   val relationshipMappings: P[List[RelationshipMappingDefinition]] = P(RELATIONSHIP ~/ LABEL ~/ SETS ~/ "(" ~ relationshipMappingDefinition.rep(min = 1, sep = ",".?).map(_.toList) ~/ ")")
 
   val graphDefinition: P[GraphDefinition] = P(CREATE ~ GRAPH ~ identifier.! ~/ WITH ~/ GRAPH ~/ SCHEMA ~/
-    (identifier.! | ("(" ~/ localSchemaDefinition ~/ ")")).map {
+    (identifier.! | localSchemaDefinition).map {
       case s: String => Some(s) -> SchemaDefinition()
       case schemaDefinition: SchemaDefinition => None -> schemaDefinition
-    } ~/
+    } ~/ "(" ~/
     nodeMappings.?.map(_.getOrElse(Nil)) ~/
-    relationshipMappings.?.map(_.getOrElse(Nil))
-  ).map { case (gName, (schemaId, localSchemaDef), nMappings, rMappings) => GraphDefinition(gName, schemaId, localSchemaDef, nMappings, rMappings)}
+    relationshipMappings.?.map(_.getOrElse(Nil)) ~/
+  ")").map { case (gName, (schemaId, localSchemaDef), nMappings, rMappings) => GraphDefinition(gName, schemaId, localSchemaDef, nMappings, rMappings)}
 
   // ==== DDL ====
 

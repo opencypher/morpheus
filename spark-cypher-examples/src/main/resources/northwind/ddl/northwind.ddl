@@ -3,7 +3,7 @@ SET SCHEMA H2.NORTHWIND;
 
 -- Node labels
 
-CATALOG CREATE LABEL (Employee {
+CATALOG CREATE LABEL Employee ({
   employeeID: INTEGER,
   lastName: STRING,
   firstName: STRING,
@@ -22,13 +22,13 @@ CATALOG CREATE LABEL (Employee {
   photoPath: STRING?
 })
 
-CATALOG CREATE LABEL (Territory {
+CATALOG CREATE LABEL Territory ({
   territoryID: STRING,
   territoryDescription: STRING,
   regionID: INTEGER
 })
 
-CATALOG CREATE LABEL (Supplier {
+CATALOG CREATE LABEL Supplier ({
   supplierID: INTEGER,
   companyName: STRING,
   contactName: STRING?,
@@ -43,7 +43,7 @@ CATALOG CREATE LABEL (Supplier {
   homePage: STRING?
 })
 
-CATALOG CREATE LABEL (Customer {
+CATALOG CREATE LABEL Customer ({
   customerID: STRING,
   companyName: STRING,
   contactName: STRING?,
@@ -57,7 +57,7 @@ CATALOG CREATE LABEL (Customer {
   fax: STRING?
 })
 
-CATALOG CREATE LABEL (Product {
+CATALOG CREATE LABEL Product ({
   productID: INTEGER,
   productName: STRING,
   supplierID: INTEGER?,
@@ -70,7 +70,7 @@ CATALOG CREATE LABEL (Product {
   discontinued: INTEGER
 })
 
-CATALOG CREATE LABEL (OrderDetails {
+CATALOG CREATE LABEL OrderDetails ({
   orderID: INTEGER,
   productID: INTEGER,
   unitPrice: INTEGER,
@@ -78,18 +78,18 @@ CATALOG CREATE LABEL (OrderDetails {
   discount: INTEGER
 })
 
-CATALOG CREATE LABEL (Category {
+CATALOG CREATE LABEL Category ({
   categoryID: INTEGER,
   categoryName: STRING,
   description: STRING?
 })
 
-CATALOG CREATE LABEL (Region {
+CATALOG CREATE LABEL Region ({
   regionID: INTEGER,
   regionDescription: STRING
 })
 
-CATALOG CREATE LABEL (Order {
+CATALOG CREATE LABEL Order ({
   orderID: INTEGER,
   customerID: STRING?,
   employeeID: INTEGER?,
@@ -106,34 +106,34 @@ CATALOG CREATE LABEL (Order {
   shipCountry: STRING?
 })
 
-CATALOG CREATE LABEL (Shipper {
+CATALOG CREATE LABEL Shipper ({
   shipperID: INTEGER,
   companyName: STRING,
   phone: STRING?
 })
 
-CATALOG CREATE LABEL (CustomerDemographic {
+CATALOG CREATE LABEL CustomerDemographic ({
   customerTypeID: STRING,
   customerDesc: STRING?
 })
 
 -- Relationship types
 
-CATALOG CREATE LABEL (HAS_SUPPLIER)
-CATALOG CREATE LABEL (HAS_PRODUCT)
-CATALOG CREATE LABEL (HAS_CATEGORY)
-CATALOG CREATE LABEL (HAS_TERRITORY)
-CATALOG CREATE LABEL (HAS_EMPLOYEE)
-CATALOG CREATE LABEL (REPORTS_TO)
-CATALOG CREATE LABEL (HAS_CUSTOMER)
-CATALOG CREATE LABEL (HAS_CUSTOMER_DEMOGRAPHIC)
-CATALOG CREATE LABEL (HAS_ORDER)
-CATALOG CREATE LABEL (HAS_SHIPPER)
-CATALOG CREATE LABEL (HAS_REGION)
+CATALOG CREATE LABEL HAS_SUPPLIER
+CATALOG CREATE LABEL HAS_PRODUCT
+CATALOG CREATE LABEL HAS_CATEGORY
+CATALOG CREATE LABEL HAS_TERRITORY
+CATALOG CREATE LABEL HAS_EMPLOYEE
+CATALOG CREATE LABEL REPORTS_TO
+CATALOG CREATE LABEL HAS_CUSTOMER
+CATALOG CREATE LABEL HAS_CUSTOMER_DEMOGRAPHIC
+CATALOG CREATE LABEL HAS_ORDER
+CATALOG CREATE LABEL HAS_SHIPPER
+CATALOG CREATE LABEL HAS_REGION
 
 -- =================================================================
 
-CREATE GRAPH SCHEMA NORTHWIND_NAIVE
+CREATE GRAPH SCHEMA NORTHWIND_NAIVE (
 
     -- Nodes
     (Employee),
@@ -147,7 +147,7 @@ CREATE GRAPH SCHEMA NORTHWIND_NAIVE
     (Employee),
     (Order),
     (Shipper),
-    (CustomerDemographic)
+    (CustomerDemographic),
 
     -- Relationships
     [HAS_SUPPLIER],
@@ -160,7 +160,7 @@ CREATE GRAPH SCHEMA NORTHWIND_NAIVE
     [HAS_CUSTOMER_DEMOGRAPHIC],
     [HAS_ORDER],
     [HAS_SHIPPER],
-    [HAS_REGION]
+    [HAS_REGION],
 
     -- Relationship type constraints
     (Product)-[HAS_SUPPLIER]->(Supplier),
@@ -177,9 +177,10 @@ CREATE GRAPH SCHEMA NORTHWIND_NAIVE
     (Territory)-[HAS_EMPLOYEE]->(Employee),
     (Customer)-[HAS_CUSTOMER_DEMOGRAPHIC]->(CustomerDemographic),
     (CustomerDemographic)-[HAS_CUSTOMER]->(Customer)
+)
 
 -- =================================================================
-CREATE GRAPH Northwind WITH GRAPH SCHEMA NORTHWIND_NAIVE
+CREATE GRAPH Northwind WITH GRAPH SCHEMA NORTHWIND_NAIVE (
     NODE LABEL SETS (
         (Order)
              FROM VIEW_ORDERS,
@@ -381,3 +382,4 @@ CREATE GRAPH Northwind WITH GRAPH SCHEMA NORTHWIND_NAIVE
                     FROM VIEW_EMPLOYEES end_nodes
                         JOIN ON end_nodes.REPORTSTO = edge.REPORTSTO
     )
+)

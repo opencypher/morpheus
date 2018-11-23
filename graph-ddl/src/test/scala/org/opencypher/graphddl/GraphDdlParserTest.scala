@@ -125,11 +125,11 @@ class GraphDdlParserTest extends BaseTestSuite with MockitoSugar with TestNameFi
   }
 
   describe("label definitions") {
-    it("parses LABEL (A)") {
+    it("parses LABEL A") {
       success(labelDefinition, LabelDefinition("A"))
     }
 
-    it("parses LABEL  (A { foo : string? } )") {
+    it("parses LABEL  A ({ foo : string? } )") {
       success(labelDefinition, LabelDefinition("A", Map("foo" -> CTString.nullable)))
     }
   }
@@ -145,19 +145,19 @@ class GraphDdlParserTest extends BaseTestSuite with MockitoSugar with TestNameFi
   }
 
   describe("catalog label definition") {
-    it("parses CATALOG CREATE LABEL (A)") {
+    it("parses CATALOG CREATE LABEL A") {
       success(catalogLabelDefinition, LabelDefinition("A"))
     }
 
-    it("parses CATALOG CREATE LABEL (A { foo : STRING })") {
+    it("parses CATALOG CREATE LABEL A ({ foo : STRING })") {
       success(catalogLabelDefinition, LabelDefinition("A", Map("foo" -> CTString)))
     }
 
-    it("parses CREATE LABEL (A  KEY  A_NK   (foo,   bar))") {
+    it("parses CREATE LABEL A (KEY  A_NK   (foo,   bar))") {
       success(catalogLabelDefinition, LabelDefinition("A", Map.empty, Some("A_NK" -> Set("foo", "bar"))))
     }
 
-    it("parses CREATE LABEL (A { foo : STRING } KEY A_NK (foo,   bar))") {
+    it("parses CREATE LABEL A ({ foo : STRING } KEY A_NK (foo,   bar))") {
       success(catalogLabelDefinition, LabelDefinition("A", Map("foo" -> CTString), Some("A_NK" -> Set("foo", "bar"))))
     }
   }
@@ -227,89 +227,124 @@ class GraphDdlParserTest extends BaseTestSuite with MockitoSugar with TestNameFi
       parse(
         """|SET SCHEMA foo.bar
            |
-           |CATALOG CREATE LABEL (A {name: STRING})
+           |CATALOG CREATE LABEL A ({name: STRING})
            |
-           |CATALOG CREATE LABEL (B {sequence: INTEGER, nationality: STRING?, age: INTEGER?})
+           |CATALOG CREATE LABEL B ({sequence: INTEGER, nationality: STRING?, age: INTEGER?})
            |
-           |CATALOG CREATE LABEL [TYPE_1]
+           |CATALOG CREATE LABEL TYPE_1
            |
-           |CATALOG CREATE LABEL [TYPE_2 {prop: BOOLEAN?}]""".stripMargin) shouldEqual
+           |CATALOG CREATE LABEL TYPE_2 ({prop: BOOLEAN?})""".stripMargin) shouldEqual
         DdlDefinition(List(
           SetSchemaDefinition("foo", "bar"),
           LabelDefinition("A", Map("name" -> CTString)),
           LabelDefinition("B", Map("sequence" -> CTInteger, "nationality" -> CTString.nullable, "age" -> CTInteger.nullable)),
           LabelDefinition("TYPE_1"),
           LabelDefinition("TYPE_2", Map("prop" -> CTBoolean.nullable))
-          ))
+        ))
     }
 
     it("parses a schema with node, rel, and schema pattern definitions") {
 
       val input =
-        """|CREATE GRAPH SCHEMA mySchema
+        """|CREATE GRAPH SCHEMA mySchema (
            |
            |  --NODES
            |  (A),
            |  (B),
-           |  (A, B)
+           |  (A, B),
            |
            |  --EDGES
            |  [TYPE_1],
-           |  [TYPE_2]
+           |  [TYPE_2],
            |
            |  (A | B) <0 .. *> - [TYPE_1] -> <1> (B),
-           |  (A) <*> - [TYPE_1] -> (A);
+           |  (A) <*> - [TYPE_1] -> (A)
+           |)
         """.stripMargin
       success(globalSchemaDefinition, input, GlobalSchemaDefinition(
         name = "mySchema",
-        schemaDefinition = SchemaDefinition(
-          localLabelDefinitions = List.empty[LabelDefinition],
-          nodeDefinitions = Set(Set("A"), Set("B"), Set("A", "B")),
-          relDefinitions = Set("TYPE_1", "TYPE_2"),
-          schemaPatternDefinitions = Set(
-            SchemaPatternDefinition(
-              Set(Set("A"), Set("B")),
-              CardinalityConstraint(0, None), Set("TYPE_1"), CardinalityConstraint(1, Some(1)),
-              Set(Set("B"))),
-            SchemaPatternDefinition(
-              Set(Set("A")),
-              CardinalityConstraint(0, None), Set("TYPE_1"), CardinalityConstraint(0, None),
-              Set(Set("A")))
+        schemaDefinition = SchemaDefinition(List(
+          NodeDefinition(Set("A")),
+          NodeDefinition(Set("B")),
+          NodeDefinition(Set("A", "B")),
+          RelationshipDefinition("TYPE_1"),
+          RelationshipDefinition("TYPE_2"),
+          SchemaPatternDefinition(
+            Set(Set("A"), Set("B")),
+            CardinalityConstraint(0, None), Set("TYPE_1"), CardinalityConstraint(1, Some(1)),
+            Set(Set("B"))),
+          SchemaPatternDefinition(
+            Set(Set("A")),
+            CardinalityConstraint(0, None), Set("TYPE_1"), CardinalityConstraint(0, None),
+            Set(Set("A")))
       ))))
     }
 
-    it("parses CREATE GRAPH SCHEMA mySchema (A)-[TYPE]->(B)") {
+    it("parses CREATE GRAPH SCHEMA mySchema ( (A)-[TYPE]->(B) )") {
       success(globalSchemaDefinition,
         GlobalSchemaDefinition("mySchema",
-          SchemaDefinition(schemaPatternDefinitions = Set(
+          SchemaDefinition(List(
             SchemaPatternDefinition(sourceLabelCombinations = Set(Set("A")), relTypes = Set("TYPE"), targetLabelCombinations = Set(Set("B")))
+        ))))
+    }
+
+    it("parses a schema with node, rel, and schema pattern definitions in any order") {
+
+      val input =
+        """|CREATE GRAPH SCHEMA mySchema (
+           |  (A | B) <0 .. *> - [TYPE_1] -> <1> (B),
+           |  (A),
+           |  (A, B),
+           |  (A) <*> - [TYPE_1] -> (A),
+           |  [TYPE_1],
+           |  (B),
+           |  [TYPE_2]
+           |)
+        """.stripMargin
+      success(globalSchemaDefinition, input, GlobalSchemaDefinition(
+        name = "mySchema",
+        schemaDefinition = SchemaDefinition(List(
+          SchemaPatternDefinition(
+            Set(Set("A"), Set("B")),
+            CardinalityConstraint(0, None), Set("TYPE_1"), CardinalityConstraint(1, Some(1)),
+            Set(Set("B"))),
+          NodeDefinition(Set("A")),
+          NodeDefinition(Set("A", "B")),
+          SchemaPatternDefinition(
+            Set(Set("A")),
+            CardinalityConstraint(0, None), Set("TYPE_1"), CardinalityConstraint(0, None),
+            Set(Set("A"))),
+          RelationshipDefinition("TYPE_1"),
+          NodeDefinition(Set("B")),
+          RelationshipDefinition("TYPE_2")
         ))))
     }
   }
 
   describe("graph definitions") {
-    it("parses CREATE GRAPH myGraph WITH GRAPH SCHEMA foo") {
+    it("parses CREATE GRAPH myGraph WITH GRAPH SCHEMA foo ()") {
       success(graphDefinition, GraphDefinition("myGraph", Some("foo")))
     }
 
-    it("parses CREATE GRAPH myGraph WITH GRAPH SCHEMA mySchema") {
+    it("parses CREATE GRAPH myGraph WITH GRAPH SCHEMA mySchema ()") {
       success(graphDefinition, GraphDefinition("myGraph", Some("mySchema")))
     }
 
     it("parses a graph definition with inlined schema") {
-      val expectedSchemaDefinition = SchemaDefinition(
-        localLabelDefinitions = List(LabelDefinition("A"), LabelDefinition("B")),
-        nodeDefinitions = Set(Set("A", "B")),
-        relDefinitions = Set("B")
-      )
+      val expectedSchemaDefinition = SchemaDefinition(List(
+        LabelDefinition("A"),
+        LabelDefinition("B"),
+        NodeDefinition(Set("A", "B")),
+        RelationshipDefinition("B")
+      ))
       graphDefinition.parse(
         """|CREATE GRAPH myGraph WITH GRAPH SCHEMA (
-           | LABEL (A),
-           | LABEL (B)
+           | LABEL A,
+           | LABEL B,
            |
-           | (A,B)
+           | (A,B),
            | [B]
-           |)
+           |) ()
         """.stripMargin) should matchPattern {
         case Success(GraphDefinition("myGraph", None, `expectedSchemaDefinition`, `emptyList`, `emptyList`), _) =>
       }
