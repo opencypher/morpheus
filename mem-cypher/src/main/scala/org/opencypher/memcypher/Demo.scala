@@ -12,7 +12,8 @@ object Demo extends App {
 
   val graph = session.readFrom(DemoData.nodes, DemoData.rels)
 
-  graph.cypher("MATCH (n)-->(m) WHERE n.age > 23 OR n.name = 'Alice' RETURN n, labels(n), m").show
+//  graph.cypher("MATCH (n)-->(m) WHERE n.age > 23 OR n.name = 'Alice' RETURN n, labels(n), m").show
+  graph.cypher("MATCH (n) RETURN n ORDER BY n.age ASC, n.name DESC").show
 
 }
 

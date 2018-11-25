@@ -24,11 +24,13 @@ object Row {
         evaluate(inner)
 
       case Labels(inner) =>
-        header.labelsFor(inner.owner.get)
-          .toSeq
-          .map(e => e.label.name -> evaluate(e))
-          .sortBy(_._1)
-          .collect { case (label, isPresent: Boolean) if isPresent => label }
+        inner match {
+          case v: Var =>
+            val labels = header.labelsFor(v).toSeq.map(e => e.label.name -> evaluate(e)).sortBy(_._1)
+            labels.collect { case (label, isPresent: Boolean) if isPresent => label }
+          case _ =>
+            throw NotImplementedException(s"Inner expression $inner of $expr is not yet supported (only variables)")
+        }
 
       case Type(inner) =>
         inner match {

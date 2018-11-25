@@ -1,6 +1,7 @@
 package org.opencypher.memcypher.impl.table
 
 import org.opencypher.okapi.api.types.CypherType
+import org.opencypher.okapi.api.value.CypherValue
 import org.opencypher.okapi.api.value.CypherValue.{CypherMap, CypherValue}
 import org.opencypher.okapi.impl.exception.UnsupportedOperationException
 import org.opencypher.okapi.impl.util.TablePrinter
@@ -90,7 +91,28 @@ case class Table(schema: Schema, data: Seq[Row]) extends RelationalTable[Table] 
 
   override def unionAll(other: Table): Table = Table(schema, data = data ++ other.data)
 
-  override def orderBy(sortItems: (Expr, Order)*)(implicit header: RecordHeader, parameters: CypherMap): Table = ???
+  override def orderBy(sortItems: (Expr, Order)*)(implicit header: RecordHeader, parameters: CypherMap): Table = {
+    import Row._
+    import CypherType._
+    import org.opencypher.memcypher.impl.types.CypherTypeOps._
+
+    object rowOrdering extends Ordering[Row] {
+      override def compare(leftRow: Row, rightRow: Row): Int = {
+        sortItems.map { case (sortExpr, order) =>
+          val leftValue = leftRow.evaluate(sortExpr)
+          val leftCypherType = CypherValue(leftValue).cypherType
+          val rightValue = rightRow.evaluate(sortExpr)
+          val rightCypherType = CypherValue(rightValue).cypherType
+          val valueOrdering = leftCypherType.join(rightCypherType).ordering.asInstanceOf[Ordering[Any]]
+          order match {
+            case Ascending => valueOrdering.compare(leftValue, rightValue)
+            case Descending => valueOrdering.reverse.compare(leftValue, rightValue)
+          }
+        }.collectFirst { case result if result != 0 => result }.getOrElse(0)
+      }
+    }
+    copy(data = data.sorted(rowOrdering))
+  }
 
   override def skip(n: Long): Table = copy(data = data.drop(n.toInt))
 
