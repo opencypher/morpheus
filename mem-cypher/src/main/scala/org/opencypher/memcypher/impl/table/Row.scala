@@ -2,7 +2,7 @@ package org.opencypher.memcypher.impl.table
 
 import org.opencypher.memcypher.impl.types.CypherValueOps._
 import org.opencypher.okapi.api.value.CypherValue.CypherMap
-import org.opencypher.okapi.impl.exception.UnsupportedOperationException
+import org.opencypher.okapi.impl.exception.{NotImplementedException, UnsupportedOperationException}
 import org.opencypher.okapi.ir.api.expr._
 import org.opencypher.okapi.relational.impl.table.RecordHeader
 
@@ -17,8 +17,33 @@ object Row {
 
       case Param(name) => parameters(name).value
 
-      case _: Var | _: Param | _: Property | _: HasLabel | _: Type | _: StartNode | _: EndNode =>
+      case _: Var | _: Param | _: Property | _: HasLabel | _: HasType | _: StartNode | _: EndNode =>
         row.get(schema.fieldIndex(header.column(expr)))
+
+      case AliasExpr(inner, _) =>
+        evaluate(inner)
+
+      case Labels(inner) =>
+        header.labelsFor(inner.owner.get)
+          .toSeq
+          .map(e => e.label.name -> evaluate(e))
+          .sortBy(_._1)
+          .collect { case (label, isPresent: Boolean) if isPresent => label }
+
+      case Type(inner) =>
+        inner match {
+          case v: Var =>
+            val relTypes = header.typesFor(v).toSeq.map(e => e.relType.name -> evaluate(e))
+            relTypes.collectFirst { case (relType, isPresent: Boolean) if isPresent => relType }.orNull
+          case _ =>
+            throw NotImplementedException(s"Inner expression $inner of $expr is not yet supported (only variables)")
+        }
+
+      case IsNull(inner) =>
+        evaluate(inner) == null
+
+      case IsNotNull(inner) =>
+        evaluate(inner) != null
 
       case Equals(lhs, rhs) =>
         evaluate(lhs).toCypherValue == evaluate(rhs).toCypherValue
