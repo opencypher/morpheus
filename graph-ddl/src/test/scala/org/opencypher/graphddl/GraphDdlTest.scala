@@ -49,7 +49,7 @@ class GraphDdlTest extends FunSpec with Matchers {
        |  (Person) FROM personView1 ( person_name1 AS name )
        |           FROM personView2 ( person_name2 AS name ),
        |  (Book)   FROM bookView    ( book_title AS title ),
-       |  
+       |
        |  [READS]
        |    FROM readsView1 e ( value1 AS rating )
        |      START NODES (Person) FROM personView1 p JOIN ON p.person_id1 = e.person
