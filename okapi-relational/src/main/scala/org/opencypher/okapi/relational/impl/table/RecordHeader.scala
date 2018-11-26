@@ -384,7 +384,7 @@ case class RecordHeader(exprToColumn: Map[Expr, String]) {
   }
 
   def ++(other: RecordHeader): RecordHeader = {
-    val joined  = exprToColumn ++ other.exprToColumn
+    val joined = exprToColumn ++ other.exprToColumn
     val withJoinedCypherTypes: Map[Expr, String] = joined.map {
       case (key, value) =>
         val leftCT = exprToColumn.keySet.find(_ == key).map(_.cypherType).getOrElse(CTVoid)
