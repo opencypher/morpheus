@@ -149,6 +149,42 @@ object DataFrameOps {
     }
 
     /**
+      * Cast all integer columns in a DataFrame to long.
+      *
+      * @return a DataFrame with all integer values cast to long
+      */
+    def castToLong: DataFrame = {
+      def convertColumns(field: StructField, col: Column): Column = {
+        val converted = field.dataType match {
+          case StructType(inner) =>
+            val fields = inner.map(i => convertColumns(i, col.getField(i.name)))
+            functions.struct(fields: _*)
+          case ArrayType(IntegerType, nullable) => col.cast(ArrayType(LongType, nullable))
+          case IntegerType => col.cast(LongType)
+          case _ => col
+        }
+        converted.as(field.name)
+      }
+
+      def convertSchema(field: StructField): StructField = {
+        val convertedType = field.dataType match {
+          case StructType(inner) => StructType(inner.map(convertSchema))
+          case ArrayType(IntegerType, nullable) => ArrayType(LongType, nullable)
+          case IntegerType => LongType
+          case other => other
+        }
+
+        StructField(field.name, convertedType, field.nullable)
+      }
+
+      val convertedFields = df.schema.fields.map { field => convertColumns(field, df.col(field.name)) }
+      val convertedSchema = StructType(df.schema.fields.map(convertSchema))
+      val withConvertedFields = df.select(convertedFields: _*)
+
+      df.sqlContext.createDataFrame(withConvertedFields.rdd, convertedSchema)
+    }
+
+    /**
       * Adds a new column under a given name containing the hash value of the given input columns.
       *
       * The hash is generated using [[org.apache.spark.sql.catalyst.expressions.Murmur3Hash]] based on the given column
@@ -159,7 +195,7 @@ object DataFrameOps {
       * 3) generate a second hash using the reversed input column sequence
       * 4) store the hash in the lower 32 bits of the final id
       *
-      * @param columns input columns for the hash function
+      * @param columns  input columns for the hash function
       * @param idColumn column storing the result of the hash function
       * @return DataFrame with an additional idColumn
       */
