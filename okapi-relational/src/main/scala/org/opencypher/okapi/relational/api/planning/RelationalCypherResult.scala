@@ -31,7 +31,7 @@ import org.opencypher.okapi.impl.util.PrintOptions
 import org.opencypher.okapi.logical.impl.LogicalOperator
 import org.opencypher.okapi.relational.api.graph.{RelationalCypherGraph, RelationalCypherSession}
 import org.opencypher.okapi.relational.api.table.{RelationalCypherRecords, Table}
-import org.opencypher.okapi.relational.impl.operators.{RelationalOperator, ReturnGraph, Select}
+import org.opencypher.okapi.relational.impl.operators.{RelationalOperator, ReturnGraph}
 
 case class RelationalCypherResult[T <: Table[T]](
   maybeLogical: Option[LogicalOperator],
@@ -47,8 +47,8 @@ case class RelationalCypherResult[T <: Table[T]](
 
   override def getRecords: Option[RelationalCypherRecords[T]] =
     maybeRelational.flatMap {
-      case s: Select[T] => Some(session.records.from(s.header, s.table, s.returnItems.map(_.map(_.name))))
-      case _ => None
+      case _: ReturnGraph[T] => None
+      case other => Some(session.records.from(other.header, other.table, other.returnItems.map(_.map(_.name))))
     }
 
   override def show(implicit options: PrintOptions): Unit = getRecords match {

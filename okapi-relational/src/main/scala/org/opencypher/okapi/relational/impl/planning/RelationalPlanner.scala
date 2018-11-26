@@ -109,6 +109,9 @@ object RelationalPlanner {
         val entityExprs: Set[Var] = Set(fields.toSeq: _*)
         relational.Distinct(process[T](in), entityExprs)
 
+      case logical.TabularUnionAll(left, right) =>
+        process[T](left).unionAll(process[T](right))
+
       // TODO: This needs to be a ternary operator taking source, rels and target records instead of just source and target and planning rels only at the physical layer
       case logical.Expand(source, rel, target, direction, sourceOp, targetOp, _) =>
         val first = process[T](sourceOp)
@@ -295,6 +298,25 @@ object RelationalPlanner {
       relational.Join(op, other.withDisjointColumnNames(op.header), joinExprs, joinType)
     }
 
+    def unionAll(other: RelationalOperator[T]): RelationalOperator[T] = {
+      val combinedHeader = op.header union other.header
+
+      // rename all columns to make sure we have no conflicts
+      val targetHeader = RecordHeader.empty.withExprs(combinedHeader.expressions)
+
+      val elementVars = targetHeader.nodeVars ++ targetHeader.relationshipVars
+
+      val opWithAlignedEntities = elementVars.foldLeft(op) {
+        case (acc, elementVar) => acc.alignExpressions(elementVar, elementVar, targetHeader)
+      }.alignColumnNames(targetHeader)
+
+      val otherWithAlignedEntities = elementVars.foldLeft(other) {
+        case (acc, elementVar) => acc.alignExpressions(elementVar, elementVar, targetHeader)
+      }.alignColumnNames(targetHeader)
+
+      relational.TabularUnionAll(opWithAlignedEntities, otherWithAlignedEntities)
+    }
+
     def add(values: Expr*): RelationalOperator[T] = {
       if (values.isEmpty) op else relational.Add(op, values.toList)
     }
@@ -334,14 +356,21 @@ object RelationalPlanner {
       op.addInto(idRetaggings.toSeq: _*)
     }
 
-    def alignWith(entity: Var, targetHeader: RecordHeader): RelationalOperator[T] = {
-      op.alignExpressions(entity, targetHeader).alignColumnNames(targetHeader)
+    def alignWith(inputEntity: Var, targetEntity: Var, targetHeader: RecordHeader): RelationalOperator[T] = {
+      op.alignExpressions(inputEntity, targetEntity, targetHeader).alignColumnNames(targetHeader)
     }
 
     // TODO: entity needs to contain all labels/relTypes: all case needs to be explicitly expanded with the schema
-    def alignExpressions(targetVar: Var, targetHeader: RecordHeader): RelationalOperator[T] = {
+    /**
+      * Aligns a single element within the operator with the given target entity in the target header.
+      *
+      * @param inputVar the variable of the element that should be aligned
+      * @param targetVar the variable of the reference element
+      * @param targetHeader the header describing the desired state
+      * @return operator with aligned element
+      */
+    def alignExpressions(inputVar: Var, targetVar: Var, targetHeader: RecordHeader): RelationalOperator[T] = {
 
-      val inputVar = op.singleEntity
       val targetHeaderLabels = targetHeader.labelsFor(targetVar).map(_.label.name)
       val targetHeaderTypes = targetHeader.typesFor(targetVar).map(_.relType.name)
 
@@ -349,8 +378,11 @@ object RelationalPlanner {
       val existingLabels = op.header.labelsFor(inputVar).map(_.label.name)
       val existingRelTypes = op.header.typesFor(inputVar).map(_.relType.name)
 
+      val otherEntities = op.header -- Set(inputVar)
+      val toRetain = otherEntities.expressions + (inputVar as targetVar)
+
       // Rename variable and select columns owned by entityVar
-      val renamedEntity = op.select(inputVar as targetVar)
+      val renamedEntity = op.select(toRetain.toSeq: _*)
 
       // Drop expressions that are not in the target header
       val dropExpressions = renamedEntity.header.expressions -- targetHeader.expressions
@@ -399,8 +431,11 @@ object RelationalPlanner {
       )
 
       import Expr._
-      assert(targetHeader.expressions == withProperties.header.expressions,
-        s"Expected header expressions:\n\t${targetHeader.expressions.toSeq.sorted.mkString(", ")},\ngot\n\t${withProperties.header.expressions.toSeq.sorted.mkString(", ")}")
+      assert(targetHeader.expressionsFor(targetVar) == withProperties.header.expressionsFor(targetVar),
+        s"""Expected header expressions for $targetVar:
+           |\t${targetHeader.expressionsFor(targetVar).toSeq.sorted.mkString(", ")},
+           |got
+           |\t${withProperties.header.expressionsFor(targetVar).toSeq.sorted.mkString(", ")}""".stripMargin)
       withProperties
     }
 

@@ -26,7 +26,7 @@
  */
 package org.opencypher.okapi.logical.impl
 
-import org.opencypher.okapi.api.graph.{PropertyGraph, QualifiedGraphName}
+import org.opencypher.okapi.api.graph.QualifiedGraphName
 import org.opencypher.okapi.api.schema.Schema
 import org.opencypher.okapi.api.types.{CTNode, CTRelationship}
 import org.opencypher.okapi.ir.api.Label
@@ -301,18 +301,26 @@ final case class ExistsSubQuery(
   lhs: LogicalOperator,
   rhs: LogicalOperator,
   solved: SolvedQueryModel
-)
-  extends BinaryLogicalOperator {
+) extends BinaryLogicalOperator {
 
   override val fields: Set[Var] = lhs.fields + expr.targetField
+}
+
+final case class TabularUnionAll(
+  lhs: LogicalOperator,
+  rhs: LogicalOperator
+) extends BinaryLogicalOperator {
+
+  assert(lhs.fields == rhs.fields, "Both inputs of TabularUnionAll must have the same fields")
+  override val fields: Set[Var] = lhs.fields
+  override def solved: SolvedQueryModel = lhs.solved ++ rhs.solved
 }
 
 final case class FromGraph(
   override val graph: LogicalGraph,
   in: LogicalOperator,
   solved: SolvedQueryModel
-)
-  extends StackingLogicalOperator {
+) extends StackingLogicalOperator {
 
   // Pattern graph consumes input table, so no fields are bound afterwards
   // TODO: adopt yield for construct

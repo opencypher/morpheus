@@ -28,16 +28,15 @@ package org.opencypher.okapi.ir.api
 
 import org.opencypher.okapi.api.graph.QualifiedGraphName
 import org.opencypher.okapi.ir.api.block.{Binds, Block}
-import org.opencypher.okapi.ir.api.expr.{Expr, Param}
+import org.opencypher.okapi.ir.api.expr.Expr
 
-sealed trait CypherStatement {
-  def info: QueryInfo
-}
+sealed trait CypherStatement
 
-final case class CypherQuery(
-    info: QueryInfo,
+sealed trait CypherQuery extends Block with CypherStatement
+
+final case class SingleQuery(
     model: QueryModel
-) extends Block with CypherStatement {
+) extends CypherQuery {
   override def after: List[Block] = model.after
 
   override def binds: Binds = model.binds
@@ -47,14 +46,26 @@ final case class CypherQuery(
   override def graph: IRGraph = model.graph
 }
 
+final case class UnionQuery(
+  left: CypherQuery,
+  right: CypherQuery,
+  distinct: Boolean
+) extends CypherQuery {
+  override def after: List[Block] = List(left, right)
+
+  override def binds: Binds = left.binds
+
+  override def where: Set[Expr] = Set.empty
+
+  override def graph: IRGraph = right.graph
+}
+
 final case class CreateGraphStatement(
-    info: QueryInfo,
     graph: IRGraph,
-    innerQuery: CypherQuery
+    innerQuery: SingleQuery
 ) extends CypherStatement
 
 final case class CreateViewStatement(
-  info: QueryInfo,
   qgn: QualifiedGraphName,
   parameterNames: List[String],
   innerQueryString: String
@@ -62,11 +73,11 @@ final case class CreateViewStatement(
 
 
 final case class DeleteGraphStatement(
-  info: QueryInfo,
   qgn: QualifiedGraphName
 ) extends CypherStatement
 
 final case class DeleteViewStatement(
-  info: QueryInfo,
   qgn: QualifiedGraphName
 ) extends CypherStatement
+
+

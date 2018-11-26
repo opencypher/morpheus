@@ -183,7 +183,7 @@ abstract class RelationalCypherSession[T <: Table[T] : TypeTag] extends CypherSe
 
     logStageProgress("Done!")
 
-    ir match {
+    def processIR(ir: CypherStatement): RelationalCypherResult[T] = ir match {
       case cq: CypherQuery =>
         if (PrintIr.isSet) {
           println("IR:")
@@ -191,24 +191,26 @@ abstract class RelationalCypherSession[T <: Table[T] : TypeTag] extends CypherSe
         }
         planCypherQuery(graph, cq, allParameters, inputFields, maybeRelationalRecords, queryLocalCatalog)
 
-      case CreateGraphStatement(_, targetGraph, innerQueryIr) =>
+      case CreateGraphStatement(targetGraph, innerQueryIr) =>
         val innerResult = planCypherQuery(graph, innerQueryIr, allParameters, inputFields, maybeRelationalRecords, queryLocalCatalog)
         val resultGraph = innerResult.graph
         catalog.store(targetGraph.qualifiedGraphName, resultGraph)
         RelationalCypherResult.empty
 
-      case CreateViewStatement(_, qgn, parameterNames, queryString) =>
+      case CreateViewStatement(qgn, parameterNames, queryString) =>
         catalog.store(qgn, parameterNames, queryString)
         RelationalCypherResult.empty
 
-      case DeleteGraphStatement(_, qgn) =>
+      case DeleteGraphStatement(qgn) =>
         catalog.dropGraph(qgn)
         RelationalCypherResult.empty
 
-      case DeleteViewStatement(_, qgn) =>
+      case DeleteViewStatement(qgn) =>
         catalog.dropView(qgn)
         RelationalCypherResult.empty
     }
+
+    processIR(ir)
   }
 
   protected def planCypherQuery(

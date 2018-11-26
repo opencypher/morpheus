@@ -1002,7 +1002,7 @@ final case class ExistsPatternExpr(targetField: Var, ir: CypherQuery)(val cypher
 
   override def toString = s"$withoutType($cypherType)"
 
-  override def withoutType = s"Exists(${ir.info.singleLine}, $targetField)"
+  override def withoutType = s"Exists($targetField)"
 
   override def withCypherType(ct: CypherType): ExistsPatternExpr = copy()(ct)
 }

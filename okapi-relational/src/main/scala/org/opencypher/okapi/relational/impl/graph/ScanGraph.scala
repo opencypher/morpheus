@@ -66,7 +66,8 @@ class ScanGraph[T <: Table[T] : TypeTag](val scans: Seq[EntityTable[T]], val sch
     val selectedScans = scansForType(entityType, exactLabelMatch)
     val targetEntityHeader = schema.headerForEntity(targetEntity, exactLabelMatch)
     val alignedEntityTableOps = selectedScans.map { scan =>
-      scan.alignWith(targetEntity, targetEntityHeader)
+      val inputEntity = scan.singleEntity
+      scan.alignWith(inputEntity, targetEntity, targetEntityHeader)
     }
 
     alignedEntityTableOps.toList match {

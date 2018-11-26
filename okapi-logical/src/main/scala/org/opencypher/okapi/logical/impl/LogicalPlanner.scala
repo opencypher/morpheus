@@ -44,9 +44,12 @@ class LogicalPlanner(producer: LogicalOperatorProducer)
   extends DirectCompilationStage[CypherQuery, LogicalOperator, LogicalPlannerContext] {
 
   override def process(ir: CypherQuery)(implicit context: LogicalPlannerContext): LogicalOperator = {
-    val model = ir.model
-
-    planModel(model.result, model)
+    ir match {
+      case sq: SingleQuery => planModel(sq.model.result, sq.model)
+      case UnionQuery(left, right, distinct) =>
+        val union = TabularUnionAll(process(left), process(right))
+        if (distinct) Distinct(union.fields, union, union.solved) else union
+    }
   }
 
   def planModel(block: ResultBlock, model: QueryModel)(

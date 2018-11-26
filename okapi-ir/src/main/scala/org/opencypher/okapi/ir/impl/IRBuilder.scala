@@ -43,6 +43,7 @@ import org.opencypher.okapi.ir.api.util.CompilationStage
 import org.opencypher.okapi.ir.impl.exception.ParsingException
 import org.opencypher.okapi.ir.impl.refactor.instances._
 import org.opencypher.okapi.ir.impl.util.VarConverters.RichIrField
+import org.opencypher.v9_0.ast.QueryPart
 import org.opencypher.v9_0.util.InputPosition
 import org.opencypher.v9_0.{ast, expressions => exp}
 
@@ -52,7 +53,7 @@ object IRBuilder extends CompilationStage[ast.Statement, CypherStatement, IRBuil
   override type Out = Either[IRBuilderError, (Option[CypherStatement], IRBuilderContext)]
 
   override def process(input: ast.Statement)(implicit context: IRBuilderContext): Out =
-    buildIR[IRBuilderStack[Option[CypherQuery]]](input).run(context)
+    buildIR[IRBuilderStack[Option[SingleQuery]]](input).run(context)
 
   def getContext(output: Out): IRBuilderContext = getTuple(output)._2
 
@@ -77,12 +78,13 @@ object IRBuilder extends CompilationStage[ast.Statement, CypherStatement, IRBuil
           innerQuery <- convertQueryPart(query)
           context <- get[R, IRBuilderContext]
           result <- {
-            val schema = innerQuery.get.model.result match {
+            val maybeSingleQuery = innerQuery.asInstanceOf[Option[SingleQuery]]
+            val schema = maybeSingleQuery.get.model.result match {
               case GraphResultBlock(_, irGraph) => context.schemaFor(irGraph.qualifiedGraphName)
               case _ => throw IllegalArgumentException("The query in CATALOG CREATE GRAPH must return a graph")
             }
             val irQgn = QualifiedGraphName(qgn.parts)
-            val statement = Some(CreateGraphStatement(QueryInfo(context.queryString), IRCatalogGraph(irQgn, schema), innerQuery.get))
+            val statement = Some(CreateGraphStatement(IRCatalogGraph(irQgn, schema), maybeSingleQuery.get))
             pure[R, Option[CypherStatement]](statement)
           }
         } yield result
@@ -92,7 +94,6 @@ object IRBuilder extends CompilationStage[ast.Statement, CypherStatement, IRBuil
           context <- get[R, IRBuilderContext]
           result <- {
             val statement = Some(CreateViewStatement(
-              QueryInfo(context.queryString),
               QualifiedGraphName(qgn.parts),
               params.map(_.name).toList,
               innerQueryString
@@ -106,7 +107,7 @@ object IRBuilder extends CompilationStage[ast.Statement, CypherStatement, IRBuil
           context <- get[R, IRBuilderContext]
           result <- {
             val irQgn = QualifiedGraphName(catalogName.parts)
-            val statement = Some(DeleteViewStatement(QueryInfo(context.queryString), irQgn))
+            val statement = Some(DeleteViewStatement(irQgn))
             pure[R, Option[CypherStatement]](statement)
           }
         } yield result
@@ -116,7 +117,7 @@ object IRBuilder extends CompilationStage[ast.Statement, CypherStatement, IRBuil
           context <- get[R, IRBuilderContext]
           result <- {
             val irQgn = QualifiedGraphName(catalogName.parts)
-            val statement = Some(DeleteGraphStatement(QueryInfo(context.queryString), irQgn))
+            val statement = Some(DeleteGraphStatement(irQgn))
             pure[R, Option[CypherStatement]](statement)
           }
         } yield result
@@ -125,14 +126,36 @@ object IRBuilder extends CompilationStage[ast.Statement, CypherStatement, IRBuil
         error(IRBuilderError(s"Statement not yet supported: $x"))(None)
     }
 
+  // TODO: return CypherQuery instead of Option[CypherQuery]
   private def convertQueryPart[R: _mayFail : _hasContext](part: ast.QueryPart): Eff[R, Option[CypherQuery]] = {
     part match {
       case ast.SingleQuery(clauses) =>
-        val blocks = clauses.toList.traverse(convertClause[R])
-        blocks >> convertRegistry
+        val plannedBlocks = for {
+          context <- get[R, IRBuilderContext]
+          blocks <-  put[R, IRBuilderContext](context.resetRegistry) >> clauses.toList.traverse(convertClause[R])
+        } yield blocks
+        plannedBlocks >> convertRegistry
+
+      case ast.UnionAll(innerPart, singleQuery) =>
+        convertUnion(innerPart, singleQuery, distinct = false)
+
+      case ast.UnionDistinct(innerPart, singleQuery) =>
+        convertUnion(innerPart, singleQuery, distinct = true)
 
       case x =>
         error(IRBuilderError(s"Query not supported: $x"))(None)
+    }
+  }
+
+  def convertUnion[R: _mayFail : _hasContext](
+    innerPart: QueryPart,
+    singleQuery: ast.SingleQuery, distinct: Boolean
+  ): Eff[R, Option[CypherQuery]] = {
+    for {
+      first <- convertQueryPart(innerPart)
+      second <- convertQueryPart(singleQuery)
+    } yield {
+      Some(UnionQuery(first.get, second.get, distinct = distinct))
     }
   }
 
@@ -564,9 +587,8 @@ object IRBuilder extends CompilationStage[ast.Statement, CypherStatement, IRBuil
     } yield {
       val blocks = context.blockRegistry
       val model = QueryModel(blocks.lastAdded.get.asInstanceOf[ResultBlock], context.parameters)
-      val info = QueryInfo(context.queryString)
 
-      Some(CypherQuery(info, model))
+      Some(SingleQuery(model))
     }
 
   private def convertSortItem[R: _mayFail : _hasContext](item: ast.SortItem): Eff[R, SortItem] = {

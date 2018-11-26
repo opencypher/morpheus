@@ -281,7 +281,7 @@ class LogicalPlannerTest extends BaseTestSuite with IrConstruction {
     val withAmbientGraph = graphWithSchema :+ (testGraphName -> ambientSchema)
 
     ir match {
-      case cq: CypherQuery =>
+      case cq: SingleQuery =>
         planner.process(cq)(LogicalPlannerContext(ambientSchema, Set.empty, Map(testNamespace -> graphSource(withAmbientGraph: _*))))
       case _ => throw new IllegalArgumentException("Query is not a CypherQuery")
     }

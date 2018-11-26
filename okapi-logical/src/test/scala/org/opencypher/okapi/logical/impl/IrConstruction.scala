@@ -26,9 +26,9 @@
  */
 package org.opencypher.okapi.logical.impl
 
-import org.opencypher.okapi.api.graph.{GraphName, QualifiedGraphName}
+import org.opencypher.okapi.api.graph.GraphName
 import org.opencypher.okapi.api.schema.Schema
-import org.opencypher.okapi.api.value.CypherValue.{CypherMap, CypherString, CypherValue}
+import org.opencypher.okapi.api.value.CypherValue.{CypherMap, CypherValue}
 import org.opencypher.okapi.ir.api._
 import org.opencypher.okapi.ir.api.block._
 import org.opencypher.okapi.ir.api.expr.Expr
@@ -57,14 +57,14 @@ trait IrConstruction {
   protected def leafPlan: Start =
     Start(LogicalCatalogGraph(testGraph.qualifiedGraphName, testGraph.schema), SolvedQueryModel.empty)
 
-  protected def irFor(root: Block): CypherQuery = {
+  protected def irFor(root: Block): SingleQuery = {
     val result = TableResultBlock(
       after = List(root),
       binds = OrderedFields(),
       graph = testGraph
     )
     val model = QueryModel(result, CypherMap.empty)
-    CypherQuery(QueryInfo("test"), model)
+    SingleQuery(model)
   }
 
   protected def leafBlock: SourceBlock = SourceBlock(testGraph)
@@ -80,8 +80,8 @@ trait IrConstruction {
         case other => throw new IllegalArgumentException(s"Cannot convert $other")
       }
 
-    def asCypherQuery(graphsWithSchema: (GraphName, Schema)*)(implicit schema: Schema = Schema.empty): CypherQuery =
-      parseIR[CypherQuery](graphsWithSchema: _*)
+    def asCypherQuery(graphsWithSchema: (GraphName, Schema)*)(implicit schema: Schema = Schema.empty): SingleQuery =
+      parseIR[SingleQuery](graphsWithSchema: _*)
 
     def ir(graphsWithSchema: (GraphName, Schema)*)(implicit schema: Schema = Schema.empty): CypherStatement = {
       val stmt = CypherParser(queryText)(CypherParser.defaultContext)

@@ -28,15 +28,14 @@ package org.opencypher.okapi.ir.impl
 
 import org.opencypher.okapi.api.types._
 import org.opencypher.okapi.impl.exception.NotImplementedException
-import org.opencypher.okapi.ir.api.expr._
 import org.opencypher.okapi.ir.api._
+import org.opencypher.okapi.ir.api.expr._
 import org.opencypher.okapi.ir.impl.FunctionUtils._
 import org.opencypher.v9_0.expressions.{RegexMatch, functions}
 import org.opencypher.v9_0.util.Ref
 import org.opencypher.v9_0.{expressions => ast}
 
 import scala.language.implicitConversions
-import scala.util.parsing.combinator.token.StdTokens
 
 final class ExpressionConverter(implicit context: IRBuilderContext) {
 
@@ -123,7 +122,7 @@ final class ExpressionConverter(implicit context: IRBuilderContext) {
     // Exists (rewritten Pattern Expressions)
     case org.opencypher.okapi.ir.impl.parse.rewriter.ExistsPattern(subquery, trueVar) =>
       val innerModel = IRBuilder(subquery)(context) match {
-        case cq: CypherQuery => cq
+        case sq: SingleQuery => sq
         case _ => throw new IllegalArgumentException("ExistsPattern only accepts SingleQuery")
       }
       ExistsPatternExpr(
