@@ -82,8 +82,8 @@ object LdbcUtil {
       case _ =>
     }
 
-    val nodeLabelSets = nodeTables.map(nodeTable => s"(${nodeTable.toNodeLabel}) FROM $nodeTable")
-    val edgeLabelSets = edgeTables.map(edgeTable => edgeTable -> edgeTable.split("_").toList).map {
+    val nodeMappings = nodeTables.map(nodeTable => s"(${nodeTable.toNodeLabel}) FROM $nodeTable")
+    val edgeMappings = edgeTables.map(edgeTable => edgeTable -> edgeTable.split("_").toList).map {
       case (edgeTable, startTable :: relType :: endTable :: Nil) =>
 
         val startLabel = startTable.toNodeLabel
@@ -101,10 +101,10 @@ object LdbcUtil {
           s"edge.$endLabel.id = node.id"
         }
 
-        val startNodes = s"LABEL SET ($startLabel) FROM $startTable node JOIN ON $startJoinExpr"
-        val endNodes = s"LABEL SET ($endLabel) FROM $endTable node JOIN ON $endJoinExpr"
+        val startNodes = s"($startLabel) FROM $startTable node JOIN ON $startJoinExpr"
+        val endNodes = s"($endLabel) FROM $endTable node JOIN ON $endJoinExpr"
 
-        s"($relType) FROM $edgeTable edge START NODES $startNodes END NODES $endNodes"
+        s"[$relType] FROM $edgeTable edge START NODES $startNodes END NODES $endNodes"
 
       case _ =>
     }
@@ -126,13 +126,11 @@ object LdbcUtil {
        |    ${edgeConstraints.mkString("," + Properties.lineSeparator + "\t")}
        |)
        |CREATE GRAPH $database WITH GRAPH SCHEMA ${database}_schema (
-       |    NODE LABEL SETS (
-       |        ${nodeLabelSets.mkString("," + Properties.lineSeparator + "\t\t")}
-       |    )
+       |    -- Node mappings
+       |    ${nodeMappings.mkString("", "," + Properties.lineSeparator + "\t", ",")}
        |
-       |    RELATIONSHIP LABEL SETS (
-       |        ${edgeLabelSets.mkString("," + Properties.lineSeparator + "\t\t")}
-       |    )
+       |    -- Edge mappings
+       |    ${edgeMappings.mkString("," + Properties.lineSeparator + "\t")}
        |)
        """.stripMargin
   }
