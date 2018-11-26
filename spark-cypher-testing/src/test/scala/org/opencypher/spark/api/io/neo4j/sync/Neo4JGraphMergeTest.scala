@@ -26,6 +26,9 @@
  */
 package org.opencypher.spark.api.io.neo4j.sync
 
+import org.apache.spark.sql.Row
+import org.apache.spark.sql.types.{LongType, StringType, StructField, StructType}
+import org.opencypher.graphddl.GraphDdl
 import org.opencypher.okapi.api.graph.GraphName
 import org.opencypher.okapi.api.value.CypherValue.{CypherMap, CypherString}
 import org.opencypher.okapi.impl.exception.SchemaException
@@ -34,7 +37,9 @@ import org.opencypher.okapi.neo4j.io.Neo4jHelpers.Neo4jDefaults._
 import org.opencypher.okapi.neo4j.io.Neo4jHelpers._
 import org.opencypher.okapi.relational.api.graph.RelationalCypherGraph
 import org.opencypher.okapi.testing.Bag
+import org.opencypher.spark.api.io.HiveFormat
 import org.opencypher.spark.api.io.neo4j.Neo4jPropertyGraphDataSource
+import org.opencypher.spark.api.io.sql.{SqlDataSourceConfig, SqlPropertyGraphDataSource}
 import org.opencypher.spark.impl.acceptance.DefaultGraphInit
 import org.opencypher.spark.impl.table.SparkTable
 import org.opencypher.spark.testing.CAPSTestSuite
@@ -182,6 +187,45 @@ class Neo4JGraphMergeTest extends CAPSTestSuite with CAPSNeo4jServerFixture with
         CypherMap("nId" -> 1, "mId" -> null, "name" -> "bar", "labels" -> Seq("Person")),
         CypherMap("nId" -> 2, "mId" -> 3, "name" -> null, "labels" -> Seq("Employee", "Person")),
         CypherMap("nId" -> null, "mId" -> 2, "name" -> null, "labels" -> Seq("Employee"))
+      ))
+    }
+
+    it("merges with entity keys set in the schema") {
+      val data = List(
+        Row(1L, "baz")
+      ).asJava
+
+      val df = sparkSession.createDataFrame(data, StructType(Seq(StructField("id", LongType), StructField("name", StringType))))
+      caps.sql("CREATE DATABASE IF NOT EXISTS db")
+      df.write.saveAsTable("db.persons")
+
+      val ddlString =
+        """
+          |CREATE GRAPH SCHEMA personSchema
+          | LABEL (Person {id: INTEGER, name: STRING} KEY pk (id))
+          |
+          |CREATE GRAPH personGraph WITH GRAPH SCHEMA personSchema
+          |  NODE LABEL SETS (
+          |    (Person) FROM ds1.db.persons
+          |  )
+        """.stripMargin
+      val hiveDataSourceConfig = SqlDataSourceConfig(
+        storageFormat = HiveFormat,
+        dataSourceName = "ds1"
+      )
+
+      val pgds = SqlPropertyGraphDataSource(GraphDdl(ddlString), List(hiveDataSourceConfig))
+      val graph = pgds.graph(GraphName("personGraph"))
+
+      Neo4jGraphMerge.createIndexes(entireGraphName, neo4jConfig, graph.schema.nodeKeys)
+      val graphName = GraphName("graph")
+
+      Neo4jGraphMerge.merge(entireGraphName, graph, neo4jConfig)
+
+      val readGraph = Neo4jPropertyGraphDataSource(neo4jConfig).graph(graphName)
+
+      readGraph.cypher("MATCH (n:Person) RETURN n.id as id, n.name as name, labels(n) as labels").records.toMaps should equal(Bag(
+        CypherMap("id" -> 1, "name" -> "baz", "labels" -> Seq("Person"))
       ))
     }
 
