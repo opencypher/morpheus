@@ -304,9 +304,7 @@ object RelationalPlanner {
       // rename all columns to make sure we have no conflicts
       val targetHeader = RecordHeader.empty.withExprs(combinedHeader.expressions)
 
-      val elementVars = targetHeader.entityVars.map(v => v -> v.cypherType).collect {
-        case (v, _: CTNode | _: CTRelationship) => v
-      }
+      val elementVars = targetHeader.nodeVars ++ targetHeader.relationshipVars
 
       val opWithAlignedEntities = elementVars.foldLeft(op) {
         case (acc, elementVar) => acc.alignExpressions(elementVar, elementVar, targetHeader)
