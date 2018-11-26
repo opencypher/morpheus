@@ -115,17 +115,17 @@ object LdbcUtil {
        |
        |${labelDefinitions.mkString(Properties.lineSeparator)}
        |
-       |CREATE GRAPH SCHEMA ${database}_schema
+       |CREATE GRAPH SCHEMA ${database}_schema (
        |    -- Node types
-       |    ${nodeTypeDefinitions.mkString("," + Properties.lineSeparator + "\t")}
+       |    ${nodeTypeDefinitions.mkString("", "," + Properties.lineSeparator + "\t", ",")}
        |
        |    -- Edge types
-       |    ${edgeTypeDefinitions.mkString("," + Properties.lineSeparator + "\t")}
+       |    ${edgeTypeDefinitions.mkString("", "," + Properties.lineSeparator + "\t", ",")}
        |
        |    -- Edge constraints
        |    ${edgeConstraints.mkString("," + Properties.lineSeparator + "\t")}
-       |
-       |CREATE GRAPH $database WITH GRAPH SCHEMA ${database}_schema
+       |)
+       |CREATE GRAPH $database WITH GRAPH SCHEMA ${database}_schema (
        |    NODE LABEL SETS (
        |        ${nodeLabelSets.mkString("," + Properties.lineSeparator + "\t\t")}
        |    )
@@ -133,7 +133,7 @@ object LdbcUtil {
        |    RELATIONSHIP LABEL SETS (
        |        ${edgeLabelSets.mkString("," + Properties.lineSeparator + "\t\t")}
        |    )
-       |
+       |)
        """.stripMargin
   }
 
@@ -156,9 +156,9 @@ object LdbcUtil {
           }
 
         if (properties.nonEmpty) {
-          s"CREATE LABEL ($label { ${properties.mkString(", ")} } )"
+          s"CREATE LABEL $label ( { ${properties.mkString(", ")} } )"
         } else {
-          s"CREATE LABEL ($label)"
+          s"CREATE LABEL $label"
         }
     }
 
