@@ -91,9 +91,7 @@ class SqlPropertyGraphDataSourceTest extends CAPSTestSuite with HiveFixture with
          | (Foo)
          |)
          |CREATE GRAPH fooGraph WITH GRAPH SCHEMA fooSchema (
-         |  NODE LABEL SETS (
-         |    (Foo) FROM $fooView
-         |  )
+         |  (Foo) FROM $fooView
          |)
      """.stripMargin
 
@@ -122,9 +120,7 @@ class SqlPropertyGraphDataSourceTest extends CAPSTestSuite with HiveFixture with
          |)
          |
          |CREATE GRAPH fooGraph WITH GRAPH SCHEMA fooSchema (
-         |  NODE LABEL SETS (
-         |    (Foo) FROM $fooView (col1 AS key2, col2 AS key1)
-         |  )
+         |  (Foo) FROM $fooView (col1 AS key2, col2 AS key1)
          |)
      """.stripMargin
 
@@ -156,10 +152,8 @@ class SqlPropertyGraphDataSourceTest extends CAPSTestSuite with HiveFixture with
          |)
          |
          |CREATE GRAPH fooGraph WITH GRAPH SCHEMA fooSchema (
-         |  NODE LABEL SETS (
-         |    (Foo) FROM $fooView
-         |    (Bar) FROM $barView
-         |  )
+         |  (Foo) FROM $fooView,
+         |  (Bar) FROM $barView
          |)
      """.stripMargin
 
@@ -199,18 +193,12 @@ class SqlPropertyGraphDataSourceTest extends CAPSTestSuite with HiveFixture with
          |)
          |
          |CREATE GRAPH fooGraph WITH GRAPH SCHEMA fooSchema (
-         |  NODE LABEL SETS (
-         |    (Person) FROM $personView ( person_name AS name )
-         |    (Book)   FROM $bookView (book_title AS title )
-         |  )
-         |  RELATIONSHIP LABEL SETS (
-         |    (READS)
-         |      FROM $readsView edge
-         |        START NODES
-         |          LABEL SET (Person) FROM $personView alias_person JOIN ON alias_person.person_id = edge.person
-         |        END NODES
-         |          LABEL SET (Book)   FROM $bookView   alias_book   JOIN ON edge.book = alias_book.book_id
-         |  )
+         |  (Person) FROM $personView ( person_name AS name ),
+         |  (Book)   FROM $bookView (book_title AS title ),
+         |  [READS]
+         |    FROM $readsView edge
+         |      START NODES (Person) FROM $personView alias_person JOIN ON alias_person.person_id = edge.person
+         |      END NODES   (Book)   FROM $bookView   alias_book   JOIN ON edge.book = alias_book.book_id
          |)
      """.stripMargin
 
@@ -262,17 +250,11 @@ class SqlPropertyGraphDataSourceTest extends CAPSTestSuite with HiveFixture with
          | [REL]
          |)
          |CREATE GRAPH fooGraph WITH GRAPH SCHEMA fooSchema (
-         |  NODE LABEL SETS (
-         |    (Node) FROM $nodesView
-         |  )
-         |  RELATIONSHIP LABEL SETS (
-         |    (REL)
-         |      FROM $relsView edge
-         |        START NODES
-         |          LABEL SET (Node) FROM $nodesView alias_node JOIN ON alias_node.node_id = edge.source_id
-         |        END NODES
-         |          LABEL SET (Node) FROM $nodesView alias_node JOIN ON alias_node.node_id = edge.target_id
-         |  )
+         |  (Node) FROM $nodesView,
+         |  [REL]
+         |    FROM $relsView edge
+         |      START NODES (Node) FROM $nodesView alias_node JOIN ON alias_node.node_id = edge.source_id
+         |      END NODES   (Node) FROM $nodesView alias_node JOIN ON alias_node.node_id = edge.target_id
          |)
      """.stripMargin
 
@@ -327,23 +309,15 @@ class SqlPropertyGraphDataSourceTest extends CAPSTestSuite with HiveFixture with
          | [READS]
          |)
          |CREATE GRAPH fooGraph WITH GRAPH SCHEMA fooSchema (
-         |  NODE LABEL SETS (
-         |    (Person) FROM $personView ( person_name AS name )
-         |    (Book) FROM $bookView (book_title AS title )
-         |  )
-         |  RELATIONSHIP LABEL SETS (
-         |    (READS)
-         |      FROM $readsView1 edge
-         |        START NODES
-         |          LABEL SET (Person) FROM $personView alias_person JOIN ON alias_person.person_id = edge.person
-         |        END NODES
-         |          LABEL SET (Book)   FROM $bookView   alias_book   JOIN ON edge.book = alias_book.book_id
-         |      FROM $readsView2 edge (rates AS rating)
-         |        START NODES
-         |          LABEL SET (Person) FROM $personView alias_person JOIN ON edge.p_id = alias_person.person_id
-         |        END NODES
-         |          LABEL SET (Book)   FROM $bookView   alias_book   JOIN ON alias_book.book_id = edge.b_id
-         |  )
+         |  (Person) FROM $personView ( person_name AS name ),
+         |  (Book) FROM $bookView (book_title AS title ),
+         |  [READS]
+         |    FROM $readsView1 edge
+         |      START NODES (Person) FROM $personView alias_person JOIN ON alias_person.person_id = edge.person
+         |      END NODES   (Book)   FROM $bookView   alias_book   JOIN ON edge.book = alias_book.book_id
+         |    FROM $readsView2 edge (rates AS rating)
+         |      START NODES (Person) FROM $personView alias_person JOIN ON edge.p_id = alias_person.person_id
+         |      END NODES   (Book)   FROM $bookView   alias_book   JOIN ON alias_book.book_id = edge.b_id
          |)
      """.stripMargin
 
@@ -406,10 +380,8 @@ class SqlPropertyGraphDataSourceTest extends CAPSTestSuite with HiveFixture with
          | (Bar)
          |)
          |CREATE GRAPH fooGraph WITH GRAPH SCHEMA fooSchema (
-         |  NODE LABEL SETS (
-         |    (Foo) FROM ds1.db1.$fooView
-         |    (Bar) FROM ds2.db2.$barView
-         |  )
+         |  (Foo) FROM ds1.db1.$fooView,
+         |  (Bar) FROM ds2.db2.$barView
          |)
      """.stripMargin
 
@@ -448,10 +420,8 @@ class SqlPropertyGraphDataSourceTest extends CAPSTestSuite with HiveFixture with
          | (Bar)
          |)
          |CREATE GRAPH fooGraph WITH GRAPH SCHEMA fooSchema (
-         |  NODE LABEL SETS (
-         |    (Foo) FROM ds1.schema1.$fooView
-         |    (Bar) FROM ds2.schema2.barView
-         |  )
+         |  (Foo) FROM ds1.schema1.$fooView,
+         |  (Bar) FROM ds2.schema2.barView
          |)
      """.stripMargin
 

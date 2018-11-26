@@ -40,48 +40,36 @@ CREATE GRAPH SCHEMA testSchema (
 -- GRAPH
 CREATE GRAPH test WITH GRAPH SCHEMA testSchema (
 
-  NODE LABEL SETS (
-    (A) FROM A,
-    (B) FROM B,
-    (C) FROM C,
-    (A, B) FROM A_B,
-    (A, C) FROM A_C
-  )
+  (A) FROM A,
+  (B) FROM B,
+  (C) FROM C,
+  (A, B) FROM A_B,
+  (A, C) FROM A_C,
 
-  RELATIONSHIP LABEL SETS (
-    (R)
-      FROM R edge
-        START NODES
-          LABEL SET (A) FROM A node
-          JOIN ON node.id = edge.source
-        END NODES
-          LABEL SET (B) FROM B node
-          JOIN ON node.id = edge.target
+  [R]
+    FROM R edge
+      START NODES (A) FROM A node
+        JOIN ON node.id = edge.source
+      END NODES (B) FROM B node
+        JOIN ON node.id = edge.target
 
-      FROM R edge
-        START NODES
-          LABEL SET (B) FROM B node
-          JOIN ON node.id = edge.source
-        END NODES
-          LABEL SET (A, B) FROM A_B node
-          JOIN ON node.id = edge.target
+    FROM R edge
+      START NODES (B) FROM B node
+        JOIN ON node.id = edge.source
+      END NODES (A, B) FROM A_B node
+        JOIN ON node.id = edge.target,
 
-    (S)
-      FROM S edge
-        START NODES
-          LABEL SET (A, B) FROM A_B node
-          JOIN ON node.id = edge.source
-        END NODES
-          LABEL SET (A, B) FROM A_B node
-          JOIN ON node.id = edge.target
+  [S]
+    FROM S edge
+      START NODES (A, B) FROM A_B node
+        JOIN ON node.id = edge.source
+      END NODES (A, B) FROM A_B node
+        JOIN ON node.id = edge.target,
 
-    (T)
-      FROM T edge
-        START NODES
-          LABEL SET (A, C) FROM A_C node
-          JOIN ON node.id = edge.source
-        END NODES
-          LABEL SET (A, B) FROM A_B node
-          JOIN ON node.id = edge.target
-  )
+  [T]
+    FROM T edge
+      START NODES (A, C) FROM A_C node
+        JOIN ON node.id = edge.source
+      END NODES (A, B) FROM A_B node
+        JOIN ON node.id = edge.target
 )
