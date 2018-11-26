@@ -241,11 +241,13 @@ object GraphDdl {
       graphType = graphType,
 
       // TODO: allow multiple node mappings with same node type and view + remove the validate
-      nodeToViewMappings = graph.definition.nodeMappings
+      nodeToViewMappings = graph.definition.mappings
+        .collect { case nm : NodeMappingDefinition => nm }
         .flatMap(nm => toNodeToViewMappings(graphType, graph.maybeSetSchema, nm))
         .validateDistinctBy(_.key, "Duplicate mapping")
         .keyBy(_.key),
-      edgeToViewMappings = graph.definition.relationshipMappings
+      edgeToViewMappings = graph.definition.mappings
+        .collect { case rm: RelationshipMappingDefinition => rm }
         .flatMap(em => toEdgeToViewMappings(graphType, graph.maybeSetSchema, em))
     )
   }

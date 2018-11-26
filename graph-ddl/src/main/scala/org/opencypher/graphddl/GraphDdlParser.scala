@@ -190,7 +190,7 @@ object GraphDdlParser {
   }
 
   val nodeMappings: P[List[NodeMappingDefinition]] =
-    P(nodeMappingDefinition.rep(sep = ",".?).map(_.toList))
+    P(nodeMappingDefinition.rep(sep = ",").map(_.toList))
 
   val relationshipMappingDefinition: P[RelationshipMappingDefinition] = {
     val columnIdentifier: P[ColumnIdentifier] =
@@ -215,7 +215,7 @@ object GraphDdlParser {
   }
 
   val relationshipMappings: P[List[RelationshipMappingDefinition]] =
-    P(relationshipMappingDefinition.rep(min = 1, sep = ",".?).map(_.toList))
+    P(relationshipMappingDefinition.rep(min = 1, sep = ",").map(_.toList))
 
   val graphDefinition: P[GraphDefinition] = {
     val schemaRefOrDef: P[(Option[String], SchemaDefinition)] =
@@ -224,11 +224,11 @@ object GraphDdlParser {
         case schemaDefinition: SchemaDefinition => None -> schemaDefinition
       }
 
-    val graphBody: P[(List[NodeMappingDefinition], List[RelationshipMappingDefinition])] =
-      P("(" ~/ nodeMappings.?.map(_.getOrElse(Nil)) ~/ relationshipMappings.?.map(_.getOrElse(Nil)) ~/ ")")
+    val mappingDefinitions: P[List[MappingDefinition]] =
+      P("(" ~/ ( nodeMappingDefinition | relationshipMappingDefinition).rep(sep = ",").map(_.toList) ~/ ")")
 
-    P(CREATE ~ GRAPH ~ identifier.! ~/ WITH ~/ GRAPH ~/ SCHEMA ~/ schemaRefOrDef ~/ graphBody)
-      .map { case (gName, (schemaId, localSchemaDef), (nMappings, rMappings)) => GraphDefinition(gName, schemaId, localSchemaDef, nMappings, rMappings) }
+    P(CREATE ~ GRAPH ~ identifier.! ~/ WITH ~/ GRAPH ~/ SCHEMA ~/ schemaRefOrDef ~/ mappingDefinitions)
+      .map { case (gName, (schemaId, localSchemaDef), mappings) => GraphDefinition(gName, schemaId, localSchemaDef, mappings) }
   }
 
   // ==== DDL ====

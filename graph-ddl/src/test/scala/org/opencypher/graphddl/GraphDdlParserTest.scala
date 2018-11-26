@@ -334,7 +334,7 @@ class GraphDdlParserTest extends BaseTestSuite with MockitoSugar with TestNameFi
            | [B]
            |) ()
         """.stripMargin) should matchPattern {
-        case Success(GraphDefinition("myGraph", None, `expectedSchemaDefinition`, `emptyList`, `emptyList`), _) =>
+        case Success(GraphDefinition("myGraph", None, `expectedSchemaDefinition`, `emptyList`), _) =>
       }
     }
   }
@@ -352,7 +352,7 @@ class GraphDdlParserTest extends BaseTestSuite with MockitoSugar with TestNameFi
       success(nodeMappingDefinition, NodeMappingDefinition(NodeDefinition("A"), List(NodeToViewDefinition(List("viewA")), NodeToViewDefinition(List("viewB")))))
     }
 
-    it("parses (A) FROM viewA (B) FROM viewB") {
+    it("parses (A) FROM viewA, (B) FROM viewB") {
       success(nodeMappings, List(NodeMappingDefinition(NodeDefinition("A"), List(NodeToViewDefinition(List("viewA")))), NodeMappingDefinition(NodeDefinition("B"), List(NodeToViewDefinition(List("viewB"))))))
     }
 
@@ -364,7 +364,7 @@ class GraphDdlParserTest extends BaseTestSuite with MockitoSugar with TestNameFi
       ))
     }
 
-    it("parses (A) FROM viewA (column1 AS propertyKey1, column2 AS propertyKey2) (B) FROM viewB (column1 AS propertyKey1, column2 AS propertyKey2)") {
+    it("parses (A) FROM viewA (column1 AS propertyKey1, column2 AS propertyKey2), (B) FROM viewB (column1 AS propertyKey1, column2 AS propertyKey2)") {
       success(nodeMappings, List(
         NodeMappingDefinition(NodeDefinition("A"), List(NodeToViewDefinition(List("viewA"), Some(Map("propertyKey1" -> "column1", "propertyKey2" -> "column2"))))),
         NodeMappingDefinition(NodeDefinition("B"), List(NodeToViewDefinition(List("viewB"), Some(Map("propertyKey1" -> "column1", "propertyKey2" -> "column2")))))
@@ -459,7 +459,7 @@ class GraphDdlParserTest extends BaseTestSuite with MockitoSugar with TestNameFi
            |    END NODES   (B) FROM bar alias_bar JOIN ON alias_bar.COLUMN_A = edge.COLUMN_A
            |  FROM baz alias_baz
            |    START NODES (A) FROM foo alias_foo JOIN ON alias_foo.COLUMN_A = edge.COLUMN_A
-           |    END NODES   (B) FROM bar alias_bar JOIN ON alias_bar.COLUMN_A = edge.COLUMN_A
+           |    END NODES   (B) FROM bar alias_bar JOIN ON alias_bar.COLUMN_A = edge.COLUMN_A,
            |
            |[TYPE_2]
            |  FROM baz alias_baz

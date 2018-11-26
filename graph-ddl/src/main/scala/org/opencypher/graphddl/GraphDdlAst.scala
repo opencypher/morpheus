@@ -79,8 +79,7 @@ case class GraphDefinition(
   name: String,
   maybeSchemaName: Option[String] = None,
   localSchemaDefinition: SchemaDefinition = SchemaDefinition(),
-  nodeMappings: List[NodeMappingDefinition] = List.empty,
-  relationshipMappings: List[RelationshipMappingDefinition] = List.empty
+  mappings: List[MappingDefinition] = List.empty
 ) extends GraphDdlAst with DdlStatement
 
 object NodeDefinition {
@@ -114,10 +113,12 @@ case class NodeToViewDefinition (
   override val maybePropertyMapping: Option[PropertyToColumnMappingDefinition] = None
 ) extends GraphDdlAst with ElementToViewDefinition
 
+trait MappingDefinition
+
 case class NodeMappingDefinition(
   nodeDefinition: NodeDefinition,
   nodeToViewDefinitions: List[NodeToViewDefinition] = List.empty
-) extends GraphDdlAst
+) extends GraphDdlAst with MappingDefinition
 
 case class ViewDefinition(
   viewId: List[String],
@@ -142,4 +143,4 @@ case class RelationshipToViewDefinition(
 case class RelationshipMappingDefinition(
   relDefinition: RelationshipDefinition,
   relationshipToViewDefinitions: List[RelationshipToViewDefinition]
-) extends GraphDdlAst
+) extends GraphDdlAst with MappingDefinition

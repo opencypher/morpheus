@@ -278,7 +278,7 @@ class GraphDdlAcceptanceTest extends BaseTestSuite {
             |)
             |CREATE GRAPH $graphName WITH GRAPH SCHEMA $schemaName (
             |
-            |  (A) FROM foo
+            |  (A) FROM foo,
             |
             |  [TYPE_1] FROM baz edge
             |    START NODES (A) FROM foo alias_foo JOIN ON alias_foo.COLUMN_A = edge.COLUMN_A
@@ -308,17 +308,18 @@ class GraphDdlAcceptanceTest extends BaseTestSuite {
             name = graphName.value,
             maybeSchemaName = Some(schemaName),
             localSchemaDefinition = SchemaDefinition(),
-            nodeMappings = List(NodeMappingDefinition(NodeDefinition("A"), List(NodeToViewDefinition(List("foo"))))),
-            relationshipMappings = List(RelationshipMappingDefinition(RelationshipDefinition("TYPE_1"), List(RelationshipToViewDefinition(
-              viewDefinition = ViewDefinition(List("baz"), "edge"),
-              startNodeToViewDefinition = LabelToViewDefinition(
-                NodeDefinition("A"),
-                ViewDefinition(List("foo"), "alias_foo"),
-                JoinOnDefinition(List((List("alias_foo", "COLUMN_A"), List("edge", "COLUMN_A"))))),
-              endNodeToViewDefinition = LabelToViewDefinition(
-                NodeDefinition("B"),
-                ViewDefinition(List("bar"), "alias_bar"),
-                JoinOnDefinition(List((List("alias_bar", "COLUMN_A"), List("edge", "COLUMN_A")))))
+            mappings = List(
+              NodeMappingDefinition(NodeDefinition("A"), List(NodeToViewDefinition(List("foo")))),
+              RelationshipMappingDefinition(RelationshipDefinition("TYPE_1"), List(RelationshipToViewDefinition(
+                viewDefinition = ViewDefinition(List("baz"), "edge"),
+                startNodeToViewDefinition = LabelToViewDefinition(
+                  NodeDefinition("A"),
+                  ViewDefinition(List("foo"), "alias_foo"),
+                  JoinOnDefinition(List((List("alias_foo", "COLUMN_A"), List("edge", "COLUMN_A"))))),
+                endNodeToViewDefinition = LabelToViewDefinition(
+                  NodeDefinition("B"),
+                  ViewDefinition(List("bar"), "alias_bar"),
+                  JoinOnDefinition(List((List("alias_bar", "COLUMN_A"), List("edge", "COLUMN_A")))))
           )))))
         ))
       )

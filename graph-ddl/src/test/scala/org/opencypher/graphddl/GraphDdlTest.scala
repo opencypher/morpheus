@@ -47,8 +47,8 @@ class GraphDdlTest extends FunSpec with Matchers {
        |)
        |CREATE GRAPH fooGraph WITH GRAPH SCHEMA fooSchema (
        |  (Person) FROM personView1 ( person_name1 AS name )
-       |           FROM personView2 ( person_name2 AS name )
-       |  (Book)   FROM bookView    ( book_title AS title )
+       |           FROM personView2 ( person_name2 AS name ),
+       |  (Book)   FROM bookView    ( book_title AS title ),
        |  
        |  [READS]
        |    FROM readsView1 e ( value1 AS rating )
@@ -146,7 +146,7 @@ class GraphDdlTest extends FunSpec with Matchers {
         |  (Account)
         |)
         |CREATE GRAPH fooGraph WITH GRAPH SCHEMA fooSchema (
-        |  (Person)  FROM personView
+        |  (Person)  FROM personView,
         |  (Account) FROM ds2.db2.accountView
         |)
       """.stripMargin)
