@@ -352,11 +352,11 @@ class GraphDdlParserTest extends BaseTestSuite with MockitoSugar with TestNameFi
       success(nodeMappingDefinition, NodeMappingDefinition(NodeDefinition("A"), List(NodeToViewDefinition(List("viewA")), NodeToViewDefinition(List("viewB")))))
     }
 
-    it("parses NODE LABEL SETS ( (A) FROM viewA (B) FROM viewB )") {
+    it("parses (A) FROM viewA (B) FROM viewB") {
       success(nodeMappings, List(NodeMappingDefinition(NodeDefinition("A"), List(NodeToViewDefinition(List("viewA")))), NodeMappingDefinition(NodeDefinition("B"), List(NodeToViewDefinition(List("viewB"))))))
     }
 
-    it("parses NODE LABEL SETS ( (A) FROM viewA (column1 AS propertyKey1, column2 AS propertyKey2) FROM viewB (column1 AS propertyKey1, column2 AS propertyKey2) )") {
+    it("parses (A) FROM viewA (column1 AS propertyKey1, column2 AS propertyKey2) FROM viewB (column1 AS propertyKey1, column2 AS propertyKey2)") {
       success(nodeMappings, List(
         NodeMappingDefinition(NodeDefinition("A"), List(
           NodeToViewDefinition(List("viewA"), Some(Map("propertyKey1" -> "column1", "propertyKey2" -> "column2"))),
@@ -364,7 +364,7 @@ class GraphDdlParserTest extends BaseTestSuite with MockitoSugar with TestNameFi
       ))
     }
 
-    it("parses NODE LABEL SETS ( (A) FROM viewA (column1 AS propertyKey1, column2 AS propertyKey2) (B) FROM viewB (column1 AS propertyKey1, column2 AS propertyKey2) )") {
+    it("parses (A) FROM viewA (column1 AS propertyKey1, column2 AS propertyKey2) (B) FROM viewB (column1 AS propertyKey1, column2 AS propertyKey2)") {
       success(nodeMappings, List(
         NodeMappingDefinition(NodeDefinition("A"), List(NodeToViewDefinition(List("viewA"), Some(Map("propertyKey1" -> "column1", "propertyKey2" -> "column2"))))),
         NodeMappingDefinition(NodeDefinition("B"), List(NodeToViewDefinition(List("viewB"), Some(Map("propertyKey1" -> "column1", "propertyKey2" -> "column2")))))
@@ -373,18 +373,16 @@ class GraphDdlParserTest extends BaseTestSuite with MockitoSugar with TestNameFi
 
     it("parses a relationship mapping definition") {
       val input =
-        """|(a) FROM baz alias_baz
-           |  START NODES
-           |    LABEL SET (A, B) FROM foo alias_foo
+        """|[a] FROM baz alias_baz
+           |  START NODES (A, B) FROM foo alias_foo
            |      JOIN ON alias_foo.COLUMN_A = edge.COLUMN_A
            |          AND alias_foo.COLUMN_C = edge.COLUMN_D
-           |  END NODES
-           |    LABEL SET (C) FROM bar alias_bar
+           |  END NODES (C) FROM bar alias_bar
            |      JOIN ON alias_bar.COLUMN_A = edge.COLUMN_A
         """.stripMargin
 
       success(relationshipMappingDefinition, input, RelationshipMappingDefinition(
-        relType = "a",
+        relDefinition = RelationshipDefinition("a"),
         relationshipToViewDefinitions = List(RelationshipToViewDefinition(
           viewDefinition = ViewDefinition(List("baz"), "alias_baz"),
           startNodeToViewDefinition = LabelToViewDefinition(
@@ -403,15 +401,13 @@ class GraphDdlParserTest extends BaseTestSuite with MockitoSugar with TestNameFi
 
     it("parses a relationship mapping definition with custom property to column mapping") {
       val input =
-        """|(a) FROM baz alias_baz ( colA AS foo, colB AS bar )
-           |  START NODES
-           |    LABEL SET (A, B) FROM foo alias_foo JOIN ON alias_foo.COLUMN_A = edge.COLUMN_A
-           |  END NODES
-           |    LABEL SET (C) FROM bar alias_bar JOIN ON alias_bar.COLUMN_A = edge.COLUMN_A
+        """|[a] FROM baz alias_baz ( colA AS foo, colB AS bar )
+           |  START NODES (A, B) FROM foo alias_foo JOIN ON alias_foo.COLUMN_A = edge.COLUMN_A
+           |  END NODES   (C)    FROM bar alias_bar JOIN ON alias_bar.COLUMN_A = edge.COLUMN_A
         """.stripMargin
 
       success(relationshipMappingDefinition, input, RelationshipMappingDefinition(
-        relType = "a",
+        relDefinition = RelationshipDefinition("a"),
         relationshipToViewDefinitions = List(RelationshipToViewDefinition(
           viewDefinition = ViewDefinition(List("baz"), "alias_baz"),
           maybePropertyMapping = Some(Map("foo" -> "colA", "bar" -> "colB")),
@@ -428,17 +424,13 @@ class GraphDdlParserTest extends BaseTestSuite with MockitoSugar with TestNameFi
 
     it("parses a relationship label set definition") {
       val input =
-        """|(TYPE_1)
+        """|[TYPE_1]
            |  FROM baz edge
-           |    START NODES
-           |      LABEL SET (A) FROM foo alias_foo JOIN ON alias_foo.COLUMN_A = edge.COLUMN_A
-           |    END NODES
-           |      LABEL SET (B) FROM bar alias_bar JOIN ON alias_bar.COLUMN_A = edge.COLUMN_A
+           |    START NODES (A) FROM foo alias_foo JOIN ON alias_foo.COLUMN_A = edge.COLUMN_A
+           |    END NODES   (B) FROM bar alias_bar JOIN ON alias_bar.COLUMN_A = edge.COLUMN_A
            |  FROM baz edge
-           |    START NODES
-           |      LABEL SET (A) FROM foo alias_foo JOIN ON alias_foo.COLUMN_A = edge.COLUMN_A
-           |    END NODES
-           |      LABEL SET (B) FROM bar alias_bar JOIN ON alias_bar.COLUMN_A = edge.COLUMN_A
+           |    START NODES (A) FROM foo alias_foo JOIN ON alias_foo.COLUMN_A = edge.COLUMN_A
+           |    END NODES   (B) FROM bar alias_bar JOIN ON alias_bar.COLUMN_A = edge.COLUMN_A
         """.stripMargin
 
       val relMappingDef = RelationshipToViewDefinition(
@@ -453,39 +445,29 @@ class GraphDdlParserTest extends BaseTestSuite with MockitoSugar with TestNameFi
           JoinOnDefinition(List((List("alias_bar", "COLUMN_A"), List("edge", "COLUMN_A")))))
       )
 
-      success(relationshipMappingDefinition, input, RelationshipMappingDefinition("TYPE_1", List(relMappingDef, relMappingDef)))
+      success(
+        relationshipMappingDefinition,
+        input,
+        RelationshipMappingDefinition(RelationshipDefinition("TYPE_1"), List(relMappingDef, relMappingDef)))
     }
 
     it("parses relationship label sets") {
       val input =
-        """|RELATIONSHIP LABEL SETS (
+        """|[TYPE_1]
+           |  FROM baz alias_baz
+           |    START NODES (A) FROM foo alias_foo JOIN ON alias_foo.COLUMN_A = edge.COLUMN_A
+           |    END NODES   (B) FROM bar alias_bar JOIN ON alias_bar.COLUMN_A = edge.COLUMN_A
+           |  FROM baz alias_baz
+           |    START NODES (A) FROM foo alias_foo JOIN ON alias_foo.COLUMN_A = edge.COLUMN_A
+           |    END NODES   (B) FROM bar alias_bar JOIN ON alias_bar.COLUMN_A = edge.COLUMN_A
            |
-           |        (TYPE_1)
-           |          FROM baz alias_baz
-           |            START NODES
-           |              LABEL SET (A) FROM foo alias_foo JOIN ON alias_foo.COLUMN_A = edge.COLUMN_A
-           |            END NODES
-           |              LABEL SET (B) FROM bar alias_bar JOIN ON alias_bar.COLUMN_A = edge.COLUMN_A
-           |          FROM baz alias_baz
-           |            START NODES
-           |              LABEL SET (A) FROM foo alias_foo JOIN ON alias_foo.COLUMN_A = edge.COLUMN_A
-           |            END NODES
-           |              LABEL SET (B) FROM bar alias_bar JOIN ON alias_bar.COLUMN_A = edge.COLUMN_A
-           |
-           |        (TYPE_2)
-           |          FROM baz alias_baz
-           |            START NODES
-           |              LABEL SET (A) FROM foo alias_foo JOIN ON alias_foo.COLUMN_A = edge.COLUMN_A
-           |            END NODES
-           |              LABEL SET (B) FROM bar alias_bar JOIN ON alias_bar.COLUMN_A = edge.COLUMN_A
-           |          FROM baz alias_baz
-           |            START NODES
-           |              LABEL SET (A) FROM foo alias_foo JOIN ON alias_foo.COLUMN_A = edge.COLUMN_A
-           |            END NODES
-           |              LABEL SET (B) FROM bar alias_bar JOIN ON alias_bar.COLUMN_A = edge.COLUMN_A
-           |
-           |
-           |    )
+           |[TYPE_2]
+           |  FROM baz alias_baz
+           |    START NODES (A) FROM foo alias_foo JOIN ON alias_foo.COLUMN_A = edge.COLUMN_A
+           |    END NODES   (B) FROM bar alias_bar JOIN ON alias_bar.COLUMN_A = edge.COLUMN_A
+           |  FROM baz alias_baz
+           |    START NODES (A) FROM foo alias_foo JOIN ON alias_foo.COLUMN_A = edge.COLUMN_A
+           |    END NODES   (B) FROM bar alias_bar JOIN ON alias_bar.COLUMN_A = edge.COLUMN_A
         """.stripMargin
 
       val relMappingDef = RelationshipToViewDefinition(
@@ -502,8 +484,8 @@ class GraphDdlParserTest extends BaseTestSuite with MockitoSugar with TestNameFi
 
       success(relationshipMappings, input,
         List(
-          RelationshipMappingDefinition("TYPE_1", List(relMappingDef, relMappingDef)),
-          RelationshipMappingDefinition("TYPE_2", List(relMappingDef, relMappingDef))
+          RelationshipMappingDefinition(RelationshipDefinition("TYPE_1"), List(relMappingDef, relMappingDef)),
+          RelationshipMappingDefinition(RelationshipDefinition("TYPE_2"), List(relMappingDef, relMappingDef))
         ))
     }
   }

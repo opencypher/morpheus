@@ -140,6 +140,6 @@ case class RelationshipToViewDefinition(
 ) extends GraphDdlAst with ElementToViewDefinition
 
 case class RelationshipMappingDefinition(
-  relType: String,
+  relDefinition: RelationshipDefinition,
   relationshipToViewDefinitions: List[RelationshipToViewDefinition]
 ) extends GraphDdlAst

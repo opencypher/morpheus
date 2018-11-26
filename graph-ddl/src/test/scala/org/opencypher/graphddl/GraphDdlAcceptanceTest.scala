@@ -277,19 +277,12 @@ class GraphDdlAcceptanceTest extends BaseTestSuite {
             |  (A) <0 .. *> - [TYPE_1] -> <1> (B)
             |)
             |CREATE GRAPH $graphName WITH GRAPH SCHEMA $schemaName (
-            |  NODE LABEL SETS (
-            |    (A) FROM foo
-            |  )
             |
-            |  RELATIONSHIP LABEL SETS (
+            |  (A) FROM foo
             |
-            |        (TYPE_1)
-            |          FROM baz edge
-            |            START NODES
-            |              LABEL SET (A) FROM foo alias_foo JOIN ON alias_foo.COLUMN_A = edge.COLUMN_A
-            |            END NODES
-            |              LABEL SET (B) FROM bar alias_bar JOIN ON alias_bar.COLUMN_A = edge.COLUMN_A
-            |    )
+            |  [TYPE_1] FROM baz edge
+            |    START NODES (A) FROM foo alias_foo JOIN ON alias_foo.COLUMN_A = edge.COLUMN_A
+            |    END NODES   (B) FROM bar alias_bar JOIN ON alias_bar.COLUMN_A = edge.COLUMN_A
             |)
             |""".stripMargin)
 
@@ -316,7 +309,7 @@ class GraphDdlAcceptanceTest extends BaseTestSuite {
             maybeSchemaName = Some(schemaName),
             localSchemaDefinition = SchemaDefinition(),
             nodeMappings = List(NodeMappingDefinition(NodeDefinition("A"), List(NodeToViewDefinition(List("foo"))))),
-            relationshipMappings = List(RelationshipMappingDefinition("TYPE_1", List(RelationshipToViewDefinition(
+            relationshipMappings = List(RelationshipMappingDefinition(RelationshipDefinition("TYPE_1"), List(RelationshipToViewDefinition(
               viewDefinition = ViewDefinition(List("baz"), "edge"),
               startNodeToViewDefinition = LabelToViewDefinition(
                 NodeDefinition("A"),
@@ -421,9 +414,7 @@ class GraphDdlAcceptanceTest extends BaseTestSuite {
             |  (A)
             |)
             |CREATE GRAPH $graphName WITH GRAPH SCHEMA $schemaName (
-            | NODE LABEL SETS (
-            |   (A) FROM view_A ( column AS bar )
-            | )
+            |  (A) FROM view_A ( column AS bar )
             |)
             |""".stripMargin
 

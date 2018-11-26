@@ -46,20 +46,17 @@ class GraphDdlTest extends FunSpec with Matchers {
        | [READS]
        |)
        |CREATE GRAPH fooGraph WITH GRAPH SCHEMA fooSchema (
-       |  NODE LABEL SETS (
-       |    (Person) FROM personView1 ( person_name1 AS name )
-       |             FROM personView2 ( person_name2 AS name )
-       |    (Book)   FROM bookView    ( book_title AS title )
-       |  )
-       |  RELATIONSHIP LABEL SETS (
-       |    (READS)
-       |      FROM readsView1 e ( value1 AS rating )
-       |        START NODES LABEL SET (Person) FROM personView1 p JOIN ON p.person_id1 = e.person
-       |        END   NODES LABEL SET (Book)   FROM bookView    b JOIN ON e.book       = b.book_id
-       |      FROM readsView2 e ( value2 AS rating )
-       |        START NODES LABEL SET (Person) FROM personView2 p JOIN ON p.person_id2 = e.person
-       |        END   NODES LABEL SET (Book)   FROM bookView    b JOIN ON e.book       = b.book_id
-       |  )
+       |  (Person) FROM personView1 ( person_name1 AS name )
+       |           FROM personView2 ( person_name2 AS name )
+       |  (Book)   FROM bookView    ( book_title AS title )
+       |  
+       |  [READS]
+       |    FROM readsView1 e ( value1 AS rating )
+       |      START NODES (Person) FROM personView1 p JOIN ON p.person_id1 = e.person
+       |      END   NODES (Book)   FROM bookView    b JOIN ON e.book       = b.book_id
+       |    FROM readsView2 e ( value2 AS rating )
+       |      START NODES (Person) FROM personView2 p JOIN ON p.person_id2 = e.person
+       |      END   NODES (Book)   FROM bookView    b JOIN ON e.book       = b.book_id
        |)
      """.stripMargin
 
@@ -149,10 +146,8 @@ class GraphDdlTest extends FunSpec with Matchers {
         |  (Account)
         |)
         |CREATE GRAPH fooGraph WITH GRAPH SCHEMA fooSchema (
-        |  NODE LABEL SETS (
-        |    (Person)  FROM personView
-        |    (Account) FROM ds2.db2.accountView
-        |  )
+        |  (Person)  FROM personView
+        |  (Account) FROM ds2.db2.accountView
         |)
       """.stripMargin)
 
@@ -169,10 +164,8 @@ class GraphDdlTest extends FunSpec with Matchers {
       | (Person)
       |)
       |CREATE GRAPH fooGraph WITH GRAPH SCHEMA fooSchema (
-      |  NODE LABEL SETS (
-      |    (Person) FROM personView
-      |             FROM personView
-      |  )
+      |  (Person) FROM personView
+      |           FROM personView
       |)
     """.stripMargin)
     e.getFullMessage should (include("fooGraph") and include("Person") and include("personView"))
@@ -253,9 +246,7 @@ class GraphDdlTest extends FunSpec with Matchers {
       | (Person)
       |)
       |CREATE GRAPH fooGraph WITH GRAPH SCHEMA fooSchema (
-      |  NODE LABEL SETS (
-      |    (Person) FROM personView ( person_name AS age2 )
-      |  )
+      |  (Person) FROM personView ( person_name AS age2 )
       |)
     """.stripMargin)
     e.getFullMessage should (
@@ -270,9 +261,7 @@ class GraphDdlTest extends FunSpec with Matchers {
       | (Person)
       |)
       |CREATE GRAPH fooGraph WITH GRAPH SCHEMA fooSchema (
-      |  NODE LABEL SETS (
-      |    (Person) FROM personView
-      |  )
+      |  (Person) FROM personView
       |)
     """.stripMargin)
     e.getFullMessage should (

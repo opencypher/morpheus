@@ -190,7 +190,7 @@ object GraphDdlParser {
   }
 
   val nodeMappings: P[List[NodeMappingDefinition]] =
-    P(NODE ~/ LABEL ~/ SETS ~/ "(" ~/ nodeMappingDefinition.rep(sep = ",".?).map(_.toList) ~/ ")")
+    P(nodeMappingDefinition.rep(sep = ",".?).map(_.toList))
 
   val relationshipMappingDefinition: P[RelationshipMappingDefinition] = {
     val columnIdentifier: P[ColumnIdentifier] =
@@ -206,16 +206,16 @@ object GraphDdlParser {
       P(viewId ~/ identifier.!).map(ViewDefinition.tupled)
 
     val labelToViewDefinition: P[LabelToViewDefinition] =
-      P(LABEL ~/ SET ~/ nodeDefinition ~/ FROM ~/ viewDefinition ~/ joinOnDefinition).map(LabelToViewDefinition.tupled)
+      P(nodeDefinition ~/ FROM ~/ viewDefinition ~/ joinOnDefinition).map(LabelToViewDefinition.tupled)
 
     val relationshipToViewDefinition: P[RelationshipToViewDefinition] =
       P(FROM ~/ viewDefinition ~/ propertyMappingDefinition.? ~/ START ~/ NODES ~/ labelToViewDefinition ~/ END ~/ NODES ~/ labelToViewDefinition).map(RelationshipToViewDefinition.tupled)
 
-    P("(" ~ relType ~ ")" ~ relationshipToViewDefinition.rep(min = 1, sep = ",".?).map(_.toList)).map(RelationshipMappingDefinition.tupled)
+    P(relDefinition ~ relationshipToViewDefinition.rep(min = 1, sep = ",".?).map(_.toList)).map(RelationshipMappingDefinition.tupled)
   }
 
   val relationshipMappings: P[List[RelationshipMappingDefinition]] =
-    P(RELATIONSHIP ~/ LABEL ~/ SETS ~/ "(" ~ relationshipMappingDefinition.rep(min = 1, sep = ",".?).map(_.toList) ~/ ")")
+    P(relationshipMappingDefinition.rep(min = 1, sep = ",".?).map(_.toList))
 
   val graphDefinition: P[GraphDefinition] = {
     val schemaRefOrDef: P[(Option[String], SchemaDefinition)] =

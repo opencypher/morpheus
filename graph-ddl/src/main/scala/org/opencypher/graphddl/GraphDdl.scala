@@ -164,7 +164,7 @@ object GraphDdl {
         tryWithContext(s"Error for label combination (${labelCombo.mkString(",")})") {
           labelCombo
             .flatMap(label => labelDefinitions.getOrFail(label, "Unresolved label").properties)
-            .groupBy { case (key, tpe) => key }.mapValues(_.map { case (key, tpe) => key })
+            .groupBy { case (key, _) => key }.mapValues(_.map { case (key, _) => key })
 
           val comboProperties = labelCombo.foldLeft(PropertyKeys.empty) { case (currProps, label) =>
             val labelProperties = labelDefinitions.getOrFail(label, "Unresolved label").properties
@@ -276,9 +276,9 @@ object GraphDdl {
     rmd: RelationshipMappingDefinition
   ): Seq[EdgeToViewMapping] = {
     rmd.relationshipToViewDefinitions.map { rvd =>
-      tryWithContext(s"Error in relationship mapping for: ${rmd.relType}") {
+      tryWithContext(s"Error in relationship mapping for: ${rmd.relDefinition}") {
         val viewId = toQualifiedViewId(maybeSetSchema, rvd.viewDefinition.viewId)
-        val edgeKey = EdgeViewKey(Set(rmd.relType), viewId)
+        val edgeKey = EdgeViewKey(Set(rmd.relDefinition.label), viewId)
         tryWithContext(s"Error in relationship mapping for: $edgeKey") {
           EdgeToViewMapping(
             edgeType = edgeKey.edgeType,
@@ -303,7 +303,7 @@ object GraphDdl {
                 edgeAlias = rvd.viewDefinition.alias
               ))
             ),
-            propertyMappings = toPropertyMappings(Set(rmd.relType), graphType.relationshipPropertyKeys(rmd.relType).keySet, rvd.maybePropertyMapping)
+            propertyMappings = toPropertyMappings(Set(rmd.relDefinition.label), graphType.relationshipPropertyKeys(rmd.relDefinition.label).keySet, rvd.maybePropertyMapping)
           )
         }
       }
