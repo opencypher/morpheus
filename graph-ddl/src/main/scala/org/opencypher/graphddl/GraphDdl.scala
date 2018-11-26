@@ -256,14 +256,14 @@ object GraphDdl {
     nmd: NodeMappingDefinition
   ): Seq[NodeToViewMapping] = {
     nmd.nodeToViewDefinitions.map { nvd =>
-      tryWithContext(s"Error in node mapping for: ${nmd.labelNames.mkString(",")}") {
+      tryWithContext(s"Error in node mapping for: ${nmd.nodeDefinition.labelCombination.mkString(",")}") {
         val viewId = toQualifiedViewId(maybeSetSchema, nvd.viewId)
-        val nodeKey = NodeViewKey(nmd.labelNames, viewId)
+        val nodeKey = NodeViewKey(nmd.nodeDefinition.labelCombination, viewId)
         tryWithContext(s"Error in node mapping for: $nodeKey") {
           NodeToViewMapping(
             nodeType = nodeKey.nodeType,
             view = nodeKey.qualifiedViewId,
-            propertyMappings = toPropertyMappings(nmd.labelNames, graphType.nodePropertyKeys(nmd.labelNames).keySet, nvd.maybePropertyMapping)
+            propertyMappings = toPropertyMappings(nmd.nodeDefinition.labelCombination, graphType.nodePropertyKeys(nmd.nodeDefinition.labelCombination).keySet, nvd.maybePropertyMapping)
           )
         }
       }
@@ -285,7 +285,7 @@ object GraphDdl {
             view = edgeKey.qualifiedViewId,
             startNode = StartNode(
               nodeViewKey = NodeViewKey(
-                nodeType = rvd.startNodeToViewDefinition.labelSet,
+                nodeType = rvd.startNodeToViewDefinition.nodeDefinition.labelCombination,
                 qualifiedViewId = toQualifiedViewId(maybeSetSchema, rvd.startNodeToViewDefinition.viewDefinition.viewId)
               ),
               joinPredicates = rvd.startNodeToViewDefinition.joinOn.joinPredicates.map(toJoin(
@@ -295,7 +295,7 @@ object GraphDdl {
             ),
             endNode = EndNode(
               nodeViewKey = NodeViewKey(
-                nodeType = rvd.endNodeToViewDefinition.labelSet,
+                nodeType = rvd.endNodeToViewDefinition.nodeDefinition.labelCombination,
                 qualifiedViewId = toQualifiedViewId(maybeSetSchema, rvd.endNodeToViewDefinition.viewDefinition.viewId)
               ),
               joinPredicates = rvd.endNodeToViewDefinition.joinOn.joinPredicates.map(toJoin(

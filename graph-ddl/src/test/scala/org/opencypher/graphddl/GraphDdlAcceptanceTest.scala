@@ -26,13 +26,12 @@
  */
 package org.opencypher.graphddl
 
+import org.opencypher.graphddl.GraphDdlParser._
 import org.opencypher.okapi.api.graph.GraphName
 import org.opencypher.okapi.api.schema.{Schema, SchemaPattern}
 import org.opencypher.okapi.api.types.{CTBoolean, CTInteger, CTString}
 import org.opencypher.okapi.testing.BaseTestSuite
 import org.opencypher.okapi.testing.MatchHelper.equalWithTracing
-import org.opencypher.graphddl.GraphDdlParser._
-import org.opencypher.graphddl._
 
 class GraphDdlAcceptanceTest extends BaseTestSuite {
 
@@ -316,15 +315,15 @@ class GraphDdlAcceptanceTest extends BaseTestSuite {
             name = graphName.value,
             maybeSchemaName = Some(schemaName),
             localSchemaDefinition = SchemaDefinition(),
-            nodeMappings = List(NodeMappingDefinition(Set("A"), List(NodeToViewDefinition(List("foo"))))),
+            nodeMappings = List(NodeMappingDefinition(NodeDefinition("A"), List(NodeToViewDefinition(List("foo"))))),
             relationshipMappings = List(RelationshipMappingDefinition("TYPE_1", List(RelationshipToViewDefinition(
               viewDefinition = ViewDefinition(List("baz"), "edge"),
               startNodeToViewDefinition = LabelToViewDefinition(
-                Set("A"),
+                NodeDefinition("A"),
                 ViewDefinition(List("foo"), "alias_foo"),
                 JoinOnDefinition(List((List("alias_foo", "COLUMN_A"), List("edge", "COLUMN_A"))))),
               endNodeToViewDefinition = LabelToViewDefinition(
-                Set("B"),
+                NodeDefinition("B"),
                 ViewDefinition(List("bar"), "alias_bar"),
                 JoinOnDefinition(List((List("alias_bar", "COLUMN_A"), List("edge", "COLUMN_A")))))
           )))))
