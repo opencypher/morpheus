@@ -302,9 +302,7 @@ object RelationalPlanner {
       val combinedHeader = op.header union other.header
 
       // rename all columns to make sure we have no conflicts
-      val targetHeader = combinedHeader.expressions.foldLeft(RecordHeader.empty) {
-        case (acc, expr) => acc.withExpr(expr)
-      }
+      val targetHeader = RecordHeader.empty.withExprs(combinedHeader.expressions)
 
       val elementVars = targetHeader.entityVars.map(v => v -> v.cypherType).collect {
         case (v, _: CTNode | _: CTRelationship) => v
