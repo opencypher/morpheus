@@ -311,12 +311,12 @@ class GraphDdlAcceptanceTest extends BaseTestSuite {
             mappings = List(
               NodeMappingDefinition(NodeTypeDefinition("A"), List(NodeToViewDefinition(List("foo")))),
               RelationshipMappingDefinition(RelationshipTypeDefinition("TYPE_1"), List(RelationshipTypeToViewDefinition(
-                viewDefinition = ViewDefinition(List("baz"), "edge"),
-                startNodeToViewDefinition = NodeTypeToViewDefinition(
+                viewDef = ViewDefinition(List("baz"), "edge"),
+                startNodeTypeToView = NodeTypeToViewDefinition(
                   NodeTypeDefinition("A"),
                   ViewDefinition(List("foo"), "alias_foo"),
                   JoinOnDefinition(List((List("alias_foo", "COLUMN_A"), List("edge", "COLUMN_A"))))),
-                endNodeToViewDefinition = NodeTypeToViewDefinition(
+                endNodeTypeToView = NodeTypeToViewDefinition(
                   NodeTypeDefinition("B"),
                   ViewDefinition(List("bar"), "alias_bar"),
                   JoinOnDefinition(List((List("alias_bar", "COLUMN_A"), List("edge", "COLUMN_A")))))

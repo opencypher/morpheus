@@ -174,7 +174,7 @@ class GraphDdlParserTest extends BaseTestSuite with MockitoSugar with TestNameFi
     }
 
     it("parses (A)-[TYPE]->(B)") {
-      success(patternDefinition, PatternDefinition(sourceNodeTypeDefinitions = Set(Set("A")), relTypes = Set("TYPE"), targetNodeTypeDefinitions = Set(Set("B"))))
+      success(patternDefinition, PatternDefinition(sourceNodeTypes = Set(Set("A")), relTypes = Set("TYPE"), targetNodeTypes = Set(Set("B"))))
     }
 
     it("parses (L1 | L2) <0 .. *> - [R1 | R2] -> <1>(L3)") {
@@ -273,7 +273,7 @@ class GraphDdlParserTest extends BaseTestSuite with MockitoSugar with TestNameFi
       success(graphTypeDefinition,
         GraphTypeDefinition("mySchema",
           GraphTypeBody(List(
-            PatternDefinition(sourceNodeTypeDefinitions = Set(Set("A")), relTypes = Set("TYPE"), targetNodeTypeDefinitions = Set(Set("B")))
+            PatternDefinition(sourceNodeTypes = Set(Set("A")), relTypes = Set("TYPE"), targetNodeTypes = Set(Set("B")))
         ))))
     }
 
@@ -383,16 +383,16 @@ class GraphDdlParserTest extends BaseTestSuite with MockitoSugar with TestNameFi
         """.stripMargin
 
       success(relationshipMappingDefinition, input, RelationshipMappingDefinition(
-        relDefinition = RelationshipTypeDefinition("a"),
-        relationshipToViewDefinitions = List(RelationshipTypeToViewDefinition(
-          viewDefinition = ViewDefinition(List("baz"), "alias_baz"),
-          startNodeToViewDefinition = NodeTypeToViewDefinition(
+        relType = RelationshipTypeDefinition("a"),
+        relTypeToView = List(RelationshipTypeToViewDefinition(
+          viewDef = ViewDefinition(List("baz"), "alias_baz"),
+          startNodeTypeToView = NodeTypeToViewDefinition(
             NodeTypeDefinition("A", "B"),
             ViewDefinition(List("foo"), "alias_foo"),
             JoinOnDefinition(List(
               (List("alias_foo", "COLUMN_A"), List("edge", "COLUMN_A")),
               (List("alias_foo", "COLUMN_C"), List("edge", "COLUMN_D"))))),
-          endNodeToViewDefinition = NodeTypeToViewDefinition(
+          endNodeTypeToView = NodeTypeToViewDefinition(
             NodeTypeDefinition("C"),
             ViewDefinition(List("bar"), "alias_bar"),
             JoinOnDefinition(List(
@@ -408,15 +408,15 @@ class GraphDdlParserTest extends BaseTestSuite with MockitoSugar with TestNameFi
         """.stripMargin
 
       success(relationshipMappingDefinition, input, RelationshipMappingDefinition(
-        relDefinition = RelationshipTypeDefinition("a"),
-        relationshipToViewDefinitions = List(RelationshipTypeToViewDefinition(
-          viewDefinition = ViewDefinition(List("baz"), "alias_baz"),
+        relType = RelationshipTypeDefinition("a"),
+        relTypeToView = List(RelationshipTypeToViewDefinition(
+          viewDef = ViewDefinition(List("baz"), "alias_baz"),
           maybePropertyMapping = Some(Map("foo" -> "colA", "bar" -> "colB")),
-          startNodeToViewDefinition = NodeTypeToViewDefinition(
+          startNodeTypeToView = NodeTypeToViewDefinition(
             NodeTypeDefinition("A", "B"),
             ViewDefinition(List("foo"), "alias_foo"),
             JoinOnDefinition(List((List("alias_foo", "COLUMN_A"), List("edge", "COLUMN_A"))))),
-          endNodeToViewDefinition = NodeTypeToViewDefinition(
+          endNodeTypeToView = NodeTypeToViewDefinition(
             NodeTypeDefinition("C"),
             ViewDefinition(List("bar"), "alias_bar"),
             JoinOnDefinition(List((List("alias_bar", "COLUMN_A"), List("edge", "COLUMN_A")))))
@@ -435,12 +435,12 @@ class GraphDdlParserTest extends BaseTestSuite with MockitoSugar with TestNameFi
         """.stripMargin
 
       val relMappingDef = RelationshipTypeToViewDefinition(
-        viewDefinition = ViewDefinition(List("baz"), "edge"),
-        startNodeToViewDefinition = NodeTypeToViewDefinition(
+        viewDef = ViewDefinition(List("baz"), "edge"),
+        startNodeTypeToView = NodeTypeToViewDefinition(
           NodeTypeDefinition("A"),
           ViewDefinition(List("foo"), "alias_foo"),
           JoinOnDefinition(List((List("alias_foo", "COLUMN_A"), List("edge", "COLUMN_A"))))),
-        endNodeToViewDefinition = NodeTypeToViewDefinition(
+        endNodeTypeToView = NodeTypeToViewDefinition(
           NodeTypeDefinition("B"),
           ViewDefinition(List("bar"), "alias_bar"),
           JoinOnDefinition(List((List("alias_bar", "COLUMN_A"), List("edge", "COLUMN_A")))))
@@ -472,12 +472,12 @@ class GraphDdlParserTest extends BaseTestSuite with MockitoSugar with TestNameFi
         """.stripMargin
 
       val relMappingDef = RelationshipTypeToViewDefinition(
-        viewDefinition = ViewDefinition(List("baz"), "alias_baz"),
-        startNodeToViewDefinition = NodeTypeToViewDefinition(
+        viewDef = ViewDefinition(List("baz"), "alias_baz"),
+        startNodeTypeToView = NodeTypeToViewDefinition(
           NodeTypeDefinition("A"),
           ViewDefinition(List("foo"), "alias_foo"),
           JoinOnDefinition(List((List("alias_foo", "COLUMN_A"), List("edge", "COLUMN_A"))))),
-        endNodeToViewDefinition = NodeTypeToViewDefinition(
+        endNodeTypeToView = NodeTypeToViewDefinition(
           NodeTypeDefinition("B"),
           ViewDefinition(List("bar"), "alias_bar"),
           JoinOnDefinition(List((List("alias_bar", "COLUMN_A"), List("edge", "COLUMN_A")))))

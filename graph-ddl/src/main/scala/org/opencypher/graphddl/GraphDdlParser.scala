@@ -99,7 +99,7 @@ object GraphDdlParser {
     P(identifier.! ~/ ("(" ~/ properties.? ~/ keyDefinition.? ~/ ")").?).map {
       case (id, None)                          => ElementTypeDefinition(id)
       case (id, Some((maybeProps, maybeKeys))) => maybeProps match {
-        case None        => ElementTypeDefinition(id, maybeKeyDefinition = maybeKeys)
+        case None        => ElementTypeDefinition(id, maybeKey = maybeKeys)
         case Some(props) => ElementTypeDefinition(id, props, maybeKeys)
       }
     }

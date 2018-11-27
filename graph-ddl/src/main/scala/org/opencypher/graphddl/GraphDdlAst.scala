@@ -57,7 +57,7 @@ case class SetSchemaDefinition(
 case class ElementTypeDefinition(
   name: String,
   properties: Map[String, CypherType] = Map.empty,
-  maybeKeyDefinition: Option[KeyDefinition] = None
+  maybeKey: Option[KeyDefinition] = None
 ) extends GraphDdlAst with DdlStatement with GraphTypeStatement
 
 case class GraphTypeDefinition(
@@ -91,11 +91,11 @@ case class RelationshipTypeDefinition(
 case class CardinalityConstraint(from: Int, to: Option[Int])
 
 case class PatternDefinition(
-  sourceNodeTypeDefinitions: Set[Set[String]],
+  sourceNodeTypes: Set[Set[String]],
   sourceCardinality: CardinalityConstraint = CardinalityConstraint(0, None),
   relTypes: Set[String],
   targetCardinality: CardinalityConstraint = CardinalityConstraint(0, None),
-  targetNodeTypeDefinitions: Set[Set[String]]
+  targetNodeTypes: Set[Set[String]]
 ) extends GraphDdlAst with GraphTypeStatement
 
 trait ElementToViewDefinition {
@@ -110,8 +110,8 @@ case class NodeToViewDefinition (
 trait MappingDefinition
 
 case class NodeMappingDefinition(
-  nodeDefinition: NodeTypeDefinition,
-  nodeToViewDefinitions: List[NodeToViewDefinition] = List.empty
+  nodeType: NodeTypeDefinition,
+  nodeToView: List[NodeToViewDefinition] = List.empty
 ) extends GraphDdlAst with MappingDefinition
 
 case class ViewDefinition(
@@ -122,19 +122,19 @@ case class ViewDefinition(
 case class JoinOnDefinition(joinPredicates: List[(ColumnIdentifier, ColumnIdentifier)]) extends GraphDdlAst
 
 case class NodeTypeToViewDefinition(
-  nodeDefinition: NodeTypeDefinition,
-  viewDefinition: ViewDefinition,
+  nodeType: NodeTypeDefinition,
+  viewDef: ViewDefinition,
   joinOn: JoinOnDefinition
 ) extends GraphDdlAst
 
 case class RelationshipTypeToViewDefinition(
-  viewDefinition: ViewDefinition,
+  viewDef: ViewDefinition,
   override val maybePropertyMapping: Option[PropertyToColumnMappingDefinition] = None,
-  startNodeToViewDefinition: NodeTypeToViewDefinition,
-  endNodeToViewDefinition: NodeTypeToViewDefinition
+  startNodeTypeToView: NodeTypeToViewDefinition,
+  endNodeTypeToView: NodeTypeToViewDefinition
 ) extends GraphDdlAst with ElementToViewDefinition
 
 case class RelationshipMappingDefinition(
-  relDefinition: RelationshipTypeDefinition,
-  relationshipToViewDefinitions: List[RelationshipTypeToViewDefinition]
+  relType: RelationshipTypeDefinition,
+  relTypeToView: List[RelationshipTypeToViewDefinition]
 ) extends GraphDdlAst with MappingDefinition

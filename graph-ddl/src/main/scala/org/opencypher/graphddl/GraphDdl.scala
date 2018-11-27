@@ -57,31 +57,31 @@ object GraphDdl {
 
     case class DdlParts(
       maybeCurrentSetSchema: Option[SetSchemaDefinition] = None,
-      labelDefinitions: List[ElementTypeDefinition] = List.empty,
-      globalGraphTypeDefinitions: List[GraphTypeDefinition] = List.empty,
+      elementTypeDefinitions: List[ElementTypeDefinition] = List.empty,
+      graphTypeDefinitions: List[GraphTypeDefinition] = List.empty,
       graphDefinitions: List[GraphDefinitionWithContext] = List.empty
     )
 
     // split ddl statements into parts and embed any sequence-dependent context (SET SCHEMA)
     val ddlParts = ddl.statements.foldLeft(DdlParts()) {
-      case (state, ssd: SetSchemaDefinition) =>
-        state.copy(maybeCurrentSetSchema = Some(ssd))
+      case (state, s: SetSchemaDefinition) =>
+        state.copy(maybeCurrentSetSchema = Some(s))
 
-      case (state, ld: ElementTypeDefinition) =>
-        state.copy(labelDefinitions = state.labelDefinitions :+ ld)
+      case (state, s: ElementTypeDefinition) =>
+        state.copy(elementTypeDefinitions = state.elementTypeDefinitions :+ s)
 
-      case (state, gsd: GraphTypeDefinition) =>
-        state.copy(globalGraphTypeDefinitions = state.globalGraphTypeDefinitions :+ gsd)
+      case (state, s: GraphTypeDefinition) =>
+        state.copy(graphTypeDefinitions = state.graphTypeDefinitions :+ s)
 
-      case (state, gsd: GraphDefinition) =>
-        state.copy(graphDefinitions = state.graphDefinitions :+ GraphDefinitionWithContext(gsd, state.maybeCurrentSetSchema))
+      case (state, s: GraphDefinition) =>
+        state.copy(graphDefinitions = state.graphDefinitions :+ GraphDefinitionWithContext(s, state.maybeCurrentSetSchema))
     }
 
-    val globalLabelDefinitions: Map[String, ElementTypeDefinition] = ddlParts.labelDefinitions
+    val globalLabelDefinitions: Map[String, ElementTypeDefinition] = ddlParts.elementTypeDefinitions
       .validateDistinctBy(_.name, "Duplicate label name")
       .keyBy(_.name)
 
-    val graphTypes = ddlParts.globalGraphTypeDefinitions
+    val graphTypes = ddlParts.graphTypeDefinitions
       .validateDistinctBy(_.name, "Duplicate graph type name")
       .keyBy(_.name).mapValues(_.graphTypeBody)
       .map { case (name, graphType) =>
@@ -137,7 +137,7 @@ object GraphDdl {
     // Nodes
 
     val nodeDefinitionsFromPatterns = parts.patternDefinitions.flatMap(pattern =>
-      pattern.sourceNodeTypeDefinitions ++ pattern.targetNodeTypeDefinitions)
+      pattern.sourceNodeTypes ++ pattern.targetNodeTypes)
     val allNodeDefinitions = parts.nodeDefinitions.map(_.elementTypes) ++ nodeDefinitionsFromPatterns
     val schemaWithNodes = schemaForNodeDefinitions(labelDefinitions, allNodeDefinitions.toSet)
 
@@ -154,18 +154,18 @@ object GraphDdl {
   }
 
   private def schemaForNodeDefinitions(
-    labelDefinitions: Map[String, ElementTypeDefinition],
+    elementTypeDefinitions: Map[String, ElementTypeDefinition],
     nodeDefinitions: Set[Set[String]]
   ): Schema = {
     val schemaWithNodes = nodeDefinitions.foldLeft(Schema.empty) {
       case (currentSchema, labelCombo) =>
         tryWithContext(s"Error for label combination (${labelCombo.mkString(",")})") {
           labelCombo
-            .flatMap(label => labelDefinitions.getOrFail(label, "Unresolved label").properties)
+            .flatMap(label => elementTypeDefinitions.getOrFail(label, "Unresolved label").properties)
             .groupBy { case (key, _) => key }.mapValues(_.map { case (key, _) => key })
 
           val comboProperties = labelCombo.foldLeft(PropertyKeys.empty) { case (currProps, label) =>
-            val labelProperties = labelDefinitions.getOrFail(label, "Unresolved label").properties
+            val labelProperties = elementTypeDefinitions.getOrFail(label, "Unresolved label").properties
             currProps.keySet.intersect(labelProperties.keySet).foreach { key =>
               if (currProps(key) != labelProperties(key)) {
                 Err.incompatibleTypes(
@@ -183,7 +183,7 @@ object GraphDdl {
     val usedLabels = nodeDefinitions.flatten
     usedLabels.foldLeft(schemaWithNodes) {
       case (currentSchema, label) =>
-        labelDefinitions(label).maybeKeyDefinition match {
+        elementTypeDefinitions(label).maybeKey match {
           case Some((_, keys)) => currentSchema.withNodeKey(label, keys)
           case None => currentSchema
         }
@@ -191,23 +191,22 @@ object GraphDdl {
   }
 
   private def schemaForRelationshipDefinitions(
-    labelDefinitions: Map[String, ElementTypeDefinition],
+    elementTypeDefinitions: Map[String, ElementTypeDefinition],
     relDefinitions: Set[String]
   ): Schema = {
     val schemaWithRels = relDefinitions.foldLeft(Schema.empty) {
       case (currentSchema, relType) =>
-        currentSchema.withRelationshipPropertyKeys(relType, labelDefinitions.getOrFail(relType, "Unresolved label").properties)
+        currentSchema.withRelationshipPropertyKeys(relType, elementTypeDefinitions.getOrFail(relType, "Unresolved label").properties)
     }
 
     relDefinitions.foldLeft(schemaWithRels) {
       case (currentSchema, relType) =>
-        labelDefinitions(relType).maybeKeyDefinition match {
+        elementTypeDefinitions(relType).maybeKey match {
           case Some((_, keys)) => currentSchema.withRelationshipKey(relType, keys)
           case None => currentSchema
         }
     }
   }
-
 
   private def schemaWithSchemaPatterns(
     patternDefinitions: Set[PatternDefinition],
@@ -255,17 +254,17 @@ object GraphDdl {
     maybeSetSchema: Option[SetSchemaDefinition],
     nmd: NodeMappingDefinition
   ): Seq[NodeToViewMapping] = {
-    nmd.nodeToViewDefinitions.map { nvd =>
-      tryWithContext(s"Error in node mapping for: ${nmd.nodeDefinition.elementTypes.mkString(",")}") {
+    nmd.nodeToView.map { nvd =>
+      tryWithContext(s"Error in node mapping for: ${nmd.nodeType.elementTypes.mkString(",")}") {
         val viewId = toQualifiedViewId(maybeSetSchema, nvd.viewId)
-        val nodeKey = NodeViewKey(nmd.nodeDefinition.elementTypes, viewId)
+        val nodeKey = NodeViewKey(nmd.nodeType.elementTypes, viewId)
         tryWithContext(s"Error in node mapping for: $nodeKey") {
           NodeToViewMapping(
             nodeType = nodeKey.nodeType,
             view = nodeKey.qualifiedViewId,
             propertyMappings = toPropertyMappings(
-              labels = nmd.nodeDefinition.elementTypes,
-              graphTypePropertyKeys = graphType.nodePropertyKeys(nmd.nodeDefinition.elementTypes).keySet,
+              elementTypes = nmd.nodeType.elementTypes,
+              graphTypePropertyKeys = graphType.nodePropertyKeys(nmd.nodeType.elementTypes).keySet,
               maybePropertyMapping = nvd.maybePropertyMapping
             )
           )
@@ -279,37 +278,37 @@ object GraphDdl {
     maybeSetSchema: Option[SetSchemaDefinition],
     rmd: RelationshipMappingDefinition
   ): Seq[EdgeToViewMapping] = {
-    rmd.relationshipToViewDefinitions.map { rvd =>
-      tryWithContext(s"Error in relationship mapping for: ${rmd.relDefinition}") {
-        val viewId = toQualifiedViewId(maybeSetSchema, rvd.viewDefinition.viewId)
-        val edgeKey = EdgeViewKey(Set(rmd.relDefinition.elementType), viewId)
+    rmd.relTypeToView.map { rvd =>
+      tryWithContext(s"Error in relationship mapping for: ${rmd.relType}") {
+        val viewId = toQualifiedViewId(maybeSetSchema, rvd.viewDef.viewId)
+        val edgeKey = EdgeViewKey(Set(rmd.relType.elementType), viewId)
         tryWithContext(s"Error in relationship mapping for: $edgeKey") {
           EdgeToViewMapping(
             edgeType = edgeKey.edgeType,
             view = edgeKey.qualifiedViewId,
             startNode = StartNode(
               nodeViewKey = NodeViewKey(
-                nodeType = rvd.startNodeToViewDefinition.nodeDefinition.elementTypes,
-                qualifiedViewId = toQualifiedViewId(maybeSetSchema, rvd.startNodeToViewDefinition.viewDefinition.viewId)
+                nodeType = rvd.startNodeTypeToView.nodeType.elementTypes,
+                qualifiedViewId = toQualifiedViewId(maybeSetSchema, rvd.startNodeTypeToView.viewDef.viewId)
               ),
-              joinPredicates = rvd.startNodeToViewDefinition.joinOn.joinPredicates.map(toJoin(
-                nodeAlias = rvd.startNodeToViewDefinition.viewDefinition.alias,
-                edgeAlias = rvd.viewDefinition.alias
+              joinPredicates = rvd.startNodeTypeToView.joinOn.joinPredicates.map(toJoin(
+                nodeAlias = rvd.startNodeTypeToView.viewDef.alias,
+                edgeAlias = rvd.viewDef.alias
               ))
             ),
             endNode = EndNode(
               nodeViewKey = NodeViewKey(
-                nodeType = rvd.endNodeToViewDefinition.nodeDefinition.elementTypes,
-                qualifiedViewId = toQualifiedViewId(maybeSetSchema, rvd.endNodeToViewDefinition.viewDefinition.viewId)
+                nodeType = rvd.endNodeTypeToView.nodeType.elementTypes,
+                qualifiedViewId = toQualifiedViewId(maybeSetSchema, rvd.endNodeTypeToView.viewDef.viewId)
               ),
-              joinPredicates = rvd.endNodeToViewDefinition.joinOn.joinPredicates.map(toJoin(
-                nodeAlias = rvd.endNodeToViewDefinition.viewDefinition.alias,
-                edgeAlias = rvd.viewDefinition.alias
+              joinPredicates = rvd.endNodeTypeToView.joinOn.joinPredicates.map(toJoin(
+                nodeAlias = rvd.endNodeTypeToView.viewDef.alias,
+                edgeAlias = rvd.viewDef.alias
               ))
             ),
             propertyMappings = toPropertyMappings(
-              labels = Set(rmd.relDefinition.elementType),
-              graphTypePropertyKeys = graphType.relationshipPropertyKeys(rmd.relDefinition.elementType).keySet,
+              elementTypes = Set(rmd.relType.elementType),
+              graphTypePropertyKeys = graphType.relationshipPropertyKeys(rmd.relType.elementType).keySet,
               maybePropertyMapping = rvd.maybePropertyMapping
             )
           )
@@ -348,7 +347,7 @@ object GraphDdl {
   }
 
   def toPropertyMappings(
-    labels: Set[String],
+    elementTypes: Set[String],
     graphTypePropertyKeys: Set[String],
     maybePropertyMapping: Option[PropertyToColumnMappingDefinition]
   ): PropertyMappings = {
