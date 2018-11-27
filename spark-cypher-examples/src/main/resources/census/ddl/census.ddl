@@ -3,31 +3,31 @@ SET SCHEMA CENSUS.CENSUS;
 
 -- =================================================================
 
-CATALOG CREATE LABEL LicensedDog ({
+CREATE ELEMENT TYPE LicensedDog ({
   licence_number: INTEGER
 } KEY LicensedDog_NK (licence_number))
 
-CATALOG CREATE LABEL Person ({first_name: STRING?, last_name: STRING?})
+CREATE ELEMENT TYPE Person ({first_name: STRING?, last_name: STRING?})
 
-CATALOG CREATE LABEL Visitor ({
+CREATE ELEMENT TYPE Visitor ({
   date_of_entry: STRING,
   sequence: INTEGER,
   nationality: STRING?,
   age: INTEGER?
 } KEY Visitor_NK (date_of_entry, sequence))
 
-CATALOG CREATE LABEL Resident ({
+CREATE ELEMENT TYPE Resident ({
   person_number: STRING
 } KEY Resident_NK (person_number))
 
-CATALOG CREATE LABEL Town ({
+CREATE ELEMENT TYPE Town ({
   CITY_NAME: STRING,
   REGION: STRING
 } KEY Town_NK (REGION, CITY_NAME))
 
-CATALOG CREATE LABEL PRESENT_IN
+CREATE ELEMENT TYPE PRESENT_IN
 
-CATALOG CREATE LABEL LICENSED_BY ({date_of_licence: STRING})
+CREATE ELEMENT TYPE LICENSED_BY ({date_of_licence: STRING})
 
 -- =================================================================
 
@@ -43,7 +43,7 @@ CREATE GRAPH TYPE Census (
   [PRESENT_IN],
   [LICENSED_BY],
 
-   --EDGE LABEL CONSTRAINTS
+   --EDGE CONSTRAINTS
   (Person | LicensedDog) <0 .. *> - [PRESENT_IN] -> <1>(Town),
   (LicensedDog)- [LICENSED_BY] ->(Resident)
 )

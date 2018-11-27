@@ -33,17 +33,11 @@ import org.opencypher.okapi.trees.AbstractTreeNode
 object GraphDdlAst {
   type Property = (String, CypherType)
 
-  type EntityDefinition = (String, Map[String, CypherType])
-
   type KeyDefinition = (String, Set[String])
 
   type ColumnIdentifier = List[String]
 
   type PropertyToColumnMappingDefinition = Map[String, String]
-
-  type LabelCombination = Set[String]
-
-  type RelationshipType = String
 }
 
 abstract class GraphDdlAst extends AbstractTreeNode[GraphDdlAst]
@@ -60,7 +54,7 @@ case class SetSchemaDefinition(
   schema: String
 ) extends GraphDdlAst with DdlStatement
 
-case class LabelDefinition(
+case class ElementTypeDefinition(
   name: String,
   properties: Map[String, CypherType] = Map.empty,
   maybeKeyDefinition: Option[KeyDefinition] = None
@@ -82,26 +76,26 @@ case class GraphDefinition(
   mappings: List[MappingDefinition] = List.empty
 ) extends GraphDdlAst with DdlStatement
 
-object NodeDefinition {
-  def apply(labelCombination: String*): NodeDefinition = NodeDefinition(labelCombination.toSet)
+object NodeTypeDefinition {
+  def apply(elementTypes: String*): NodeTypeDefinition = NodeTypeDefinition(elementTypes.toSet)
 }
 
-case class NodeDefinition(
-  labelCombination: LabelCombination
+case class NodeTypeDefinition(
+  elementTypes: Set[String]
 ) extends GraphDdlAst with GraphTypeStatement
 
-case class RelationshipDefinition(
-  label: RelationshipType
+case class RelationshipTypeDefinition(
+  elementType: String
 ) extends GraphDdlAst with GraphTypeStatement
 
 case class CardinalityConstraint(from: Int, to: Option[Int])
 
 case class PatternDefinition(
-  sourceLabelCombinations: Set[LabelCombination],
+  sourceNodeTypeDefinitions: Set[Set[String]],
   sourceCardinality: CardinalityConstraint = CardinalityConstraint(0, None),
   relTypes: Set[String],
   targetCardinality: CardinalityConstraint = CardinalityConstraint(0, None),
-  targetLabelCombinations: Set[LabelCombination]
+  targetNodeTypeDefinitions: Set[Set[String]]
 ) extends GraphDdlAst with GraphTypeStatement
 
 trait ElementToViewDefinition {
@@ -116,7 +110,7 @@ case class NodeToViewDefinition (
 trait MappingDefinition
 
 case class NodeMappingDefinition(
-  nodeDefinition: NodeDefinition,
+  nodeDefinition: NodeTypeDefinition,
   nodeToViewDefinitions: List[NodeToViewDefinition] = List.empty
 ) extends GraphDdlAst with MappingDefinition
 
@@ -127,20 +121,20 @@ case class ViewDefinition(
 
 case class JoinOnDefinition(joinPredicates: List[(ColumnIdentifier, ColumnIdentifier)]) extends GraphDdlAst
 
-case class LabelToViewDefinition(
-  nodeDefinition: NodeDefinition,
+case class NodeTypeToViewDefinition(
+  nodeDefinition: NodeTypeDefinition,
   viewDefinition: ViewDefinition,
   joinOn: JoinOnDefinition
 ) extends GraphDdlAst
 
-case class RelationshipToViewDefinition(
+case class RelationshipTypeToViewDefinition(
   viewDefinition: ViewDefinition,
   override val maybePropertyMapping: Option[PropertyToColumnMappingDefinition] = None,
-  startNodeToViewDefinition: LabelToViewDefinition,
-  endNodeToViewDefinition: LabelToViewDefinition
+  startNodeToViewDefinition: NodeTypeToViewDefinition,
+  endNodeToViewDefinition: NodeTypeToViewDefinition
 ) extends GraphDdlAst with ElementToViewDefinition
 
 case class RelationshipMappingDefinition(
-  relDefinition: RelationshipDefinition,
-  relationshipToViewDefinitions: List[RelationshipToViewDefinition]
+  relDefinition: RelationshipTypeDefinition,
+  relationshipToViewDefinitions: List[RelationshipTypeToViewDefinition]
 ) extends GraphDdlAst with MappingDefinition

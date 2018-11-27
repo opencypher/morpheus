@@ -41,6 +41,7 @@ class GraphDdlParserTest extends BaseTestSuite with MockitoSugar with TestNameFi
     parser: fastparse.core.Parser[T, Char, String],
     input: String,
     expectation: T
+
   ): Unit = success(parser, expectation, input)
 
   private def success[T](
@@ -99,54 +100,54 @@ class GraphDdlParserTest extends BaseTestSuite with MockitoSugar with TestNameFi
   }
 
   describe("label definitions") {
-    it("parses LABEL A") {
-      success(labelDefinition, LabelDefinition("A"))
+    it("parses A") {
+      success(elementTypeDefinition, ElementTypeDefinition("A"))
     }
 
-    it("parses LABEL  A ({ foo : string? } )") {
-      success(labelDefinition, LabelDefinition("A", Map("foo" -> CTString.nullable)))
+    it("parses  A ({ foo : string? } )") {
+      success(elementTypeDefinition, ElementTypeDefinition("A", Map("foo" -> CTString.nullable)))
     }
 
-    it("parses LABEL  A ({ key : FLOAT })") {
-      success(labelDefinition, LabelDefinition("A", Map("key" -> CTFloat)))
+    it("parses  A ({ key : FLOAT })") {
+      success(elementTypeDefinition, ElementTypeDefinition("A", Map("key" -> CTFloat)))
     }
 
-    it("parses LABEL  A ({ key : FLOAT? })") {
-      success(labelDefinition, LabelDefinition("A", Map("key" -> CTFloat.nullable)))
+    it("parses  A ({ key : FLOAT? })") {
+      success(elementTypeDefinition, ElementTypeDefinition("A", Map("key" -> CTFloat.nullable)))
     }
 
-    it("!parses LABEL  A ({ key _ STRING })") {
-      failure(labelDefinition)
+    it("!parses  A ({ key _ STRING })") {
+      failure(elementTypeDefinition)
     }
 
-    it("parses LABEL  A ({ key1 : FLOAT, key2 : STRING })") {
-      success(labelDefinition, LabelDefinition("A", Map("key1" -> CTFloat, "key2" -> CTString)))
+    it("parses  A ({ key1 : FLOAT, key2 : STRING })") {
+      success(elementTypeDefinition, ElementTypeDefinition("A", Map("key1" -> CTFloat, "key2" -> CTString)))
     }
 
-    it("!parses LABEL  A ({ })") {
-      failure(labelDefinition)
+    it("!parses  A ({ })") {
+      failure(elementTypeDefinition)
     }
   }
 
   describe("catalog label definition") {
-    it("parses CATALOG CREATE LABEL A") {
-      success(catalogLabelDefinition, LabelDefinition("A"))
+    it("parses CREATE ELEMENT TYPE A") {
+      success(globalElementTypeDefinition, ElementTypeDefinition("A"))
     }
 
-    it("parses CATALOG CREATE LABEL A ({ foo : STRING })") {
-      success(catalogLabelDefinition, LabelDefinition("A", Map("foo" -> CTString)))
+    it("parses CREATE ELEMENT TYPE A ({ foo : STRING })") {
+      success(globalElementTypeDefinition, ElementTypeDefinition("A", Map("foo" -> CTString)))
     }
 
-    it("parses CREATE LABEL A (KEY  A_NK   (foo,   bar))") {
-      success(catalogLabelDefinition, LabelDefinition("A", Map.empty, Some("A_NK" -> Set("foo", "bar"))))
+    it("parses CREATE ELEMENT TYPE A (KEY  A_NK   (foo,   bar))") {
+      success(globalElementTypeDefinition, ElementTypeDefinition("A", Map.empty, Some("A_NK" -> Set("foo", "bar"))))
     }
 
-    it("parses CREATE LABEL A ({ foo : STRING } KEY A_NK (foo,   bar))") {
-      success(catalogLabelDefinition, LabelDefinition("A", Map("foo" -> CTString), Some("A_NK" -> Set("foo", "bar"))))
+    it("parses CREATE ELEMENT TYPE A ({ foo : STRING } KEY A_NK (foo,   bar))") {
+      success(globalElementTypeDefinition, ElementTypeDefinition("A", Map("foo" -> CTString), Some("A_NK" -> Set("foo", "bar"))))
     }
 
-    it("!parses CREATE LABEL A ({ foo : STRING } KEY A ())") {
-      failure(catalogLabelDefinition)
+    it("!parses CREATE ELEMENT TYPE A ({ foo : STRING } KEY A ())") {
+      failure(globalElementTypeDefinition)
     }
   }
 
@@ -173,7 +174,7 @@ class GraphDdlParserTest extends BaseTestSuite with MockitoSugar with TestNameFi
     }
 
     it("parses (A)-[TYPE]->(B)") {
-      success(patternDefinition, PatternDefinition(sourceLabelCombinations = Set(Set("A")), relTypes = Set("TYPE"), targetLabelCombinations = Set(Set("B"))))
+      success(patternDefinition, PatternDefinition(sourceNodeTypeDefinitions = Set(Set("A")), relTypes = Set("TYPE"), targetNodeTypeDefinitions = Set(Set("B"))))
     }
 
     it("parses (L1 | L2) <0 .. *> - [R1 | R2] -> <1>(L3)") {
@@ -200,7 +201,7 @@ class GraphDdlParserTest extends BaseTestSuite with MockitoSugar with TestNameFi
       )
     }
 
-    it("parses (L4 | L1, L2 | L3 & L5) - [R1 | R2] -> <1>(L3)") {
+    it("parses (L4 | L1, L2 | L3 , L5) - [R1 | R2] -> <1>(L3)") {
       success(patternDefinition, PatternDefinition(
         Set(Set("L4"), Set("L1", "L2"), Set("L3", "L5")),
         CardinalityConstraint(0, None), Set("R1", "R2"), CardinalityConstraint(1, Some(1)),
@@ -215,19 +216,19 @@ class GraphDdlParserTest extends BaseTestSuite with MockitoSugar with TestNameFi
       parse(
         """|SET SCHEMA foo.bar
            |
-           |CATALOG CREATE LABEL A ({name: STRING})
+           |CREATE ELEMENT TYPE A ({name: STRING})
            |
-           |CATALOG CREATE LABEL B ({sequence: INTEGER, nationality: STRING?, age: INTEGER?})
+           |CREATE ELEMENT TYPE B ({sequence: INTEGER, nationality: STRING?, age: INTEGER?})
            |
-           |CATALOG CREATE LABEL TYPE_1
+           |CREATE ELEMENT TYPE TYPE_1
            |
-           |CATALOG CREATE LABEL TYPE_2 ({prop: BOOLEAN?})""".stripMargin) shouldEqual
+           |CREATE ELEMENT TYPE TYPE_2 ({prop: BOOLEAN?})""".stripMargin) shouldEqual
         DdlDefinition(List(
           SetSchemaDefinition("foo", "bar"),
-          LabelDefinition("A", Map("name" -> CTString)),
-          LabelDefinition("B", Map("sequence" -> CTInteger, "nationality" -> CTString.nullable, "age" -> CTInteger.nullable)),
-          LabelDefinition("TYPE_1"),
-          LabelDefinition("TYPE_2", Map("prop" -> CTBoolean.nullable))
+          ElementTypeDefinition("A", Map("name" -> CTString)),
+          ElementTypeDefinition("B", Map("sequence" -> CTInteger, "nationality" -> CTString.nullable, "age" -> CTInteger.nullable)),
+          ElementTypeDefinition("TYPE_1"),
+          ElementTypeDefinition("TYPE_2", Map("prop" -> CTBoolean.nullable))
         ))
     }
 
@@ -252,11 +253,11 @@ class GraphDdlParserTest extends BaseTestSuite with MockitoSugar with TestNameFi
       success(graphTypeDefinition, input, GraphTypeDefinition(
         name = "mySchema",
         graphTypeBody = GraphTypeBody(List(
-          NodeDefinition(Set("A")),
-          NodeDefinition(Set("B")),
-          NodeDefinition(Set("A", "B")),
-          RelationshipDefinition("TYPE_1"),
-          RelationshipDefinition("TYPE_2"),
+          NodeTypeDefinition(Set("A")),
+          NodeTypeDefinition(Set("B")),
+          NodeTypeDefinition(Set("A", "B")),
+          RelationshipTypeDefinition("TYPE_1"),
+          RelationshipTypeDefinition("TYPE_2"),
           PatternDefinition(
             Set(Set("A"), Set("B")),
             CardinalityConstraint(0, None), Set("TYPE_1"), CardinalityConstraint(1, Some(1)),
@@ -272,7 +273,7 @@ class GraphDdlParserTest extends BaseTestSuite with MockitoSugar with TestNameFi
       success(graphTypeDefinition,
         GraphTypeDefinition("mySchema",
           GraphTypeBody(List(
-            PatternDefinition(sourceLabelCombinations = Set(Set("A")), relTypes = Set("TYPE"), targetLabelCombinations = Set(Set("B")))
+            PatternDefinition(sourceNodeTypeDefinitions = Set(Set("A")), relTypes = Set("TYPE"), targetNodeTypeDefinitions = Set(Set("B")))
         ))))
     }
 
@@ -296,15 +297,15 @@ class GraphDdlParserTest extends BaseTestSuite with MockitoSugar with TestNameFi
             Set(Set("A"), Set("B")),
             CardinalityConstraint(0, None), Set("TYPE_1"), CardinalityConstraint(1, Some(1)),
             Set(Set("B"))),
-          NodeDefinition(Set("A")),
-          NodeDefinition(Set("A", "B")),
+          NodeTypeDefinition(Set("A")),
+          NodeTypeDefinition(Set("A", "B")),
           PatternDefinition(
             Set(Set("A")),
             CardinalityConstraint(0, None), Set("TYPE_1"), CardinalityConstraint(0, None),
             Set(Set("A"))),
-          RelationshipDefinition("TYPE_1"),
-          NodeDefinition(Set("B")),
-          RelationshipDefinition("TYPE_2")
+          RelationshipTypeDefinition("TYPE_1"),
+          NodeTypeDefinition(Set("B")),
+          RelationshipTypeDefinition("TYPE_2")
         ))))
     }
   }
@@ -320,15 +321,15 @@ class GraphDdlParserTest extends BaseTestSuite with MockitoSugar with TestNameFi
 
     it("parses a graph definition with inlined schema") {
       val expectedSchemaDefinition = GraphTypeBody(List(
-        LabelDefinition("A", properties = Map("foo" -> CTString)),
-        LabelDefinition("B"),
-        NodeDefinition(Set("A", "B")),
-        RelationshipDefinition("B")
+        ElementTypeDefinition("A", properties = Map("foo" -> CTString)),
+        ElementTypeDefinition("B"),
+        NodeTypeDefinition(Set("A", "B")),
+        RelationshipTypeDefinition("B")
       ))
       graphDefinition.parse(
         """|CREATE GRAPH myGraph OF (
-           | LABEL A ({ foo : STRING }),
-           | LABEL B,
+           | A ({ foo : STRING }),
+           | B,
            |
            | (A,B),
            | [B]
@@ -339,26 +340,26 @@ class GraphDdlParserTest extends BaseTestSuite with MockitoSugar with TestNameFi
     }
   }
 
-  describe("NODE LABEL SETS | RELATIONSHIP LABEL SETS") {
+  describe("Node mappings and relationship mappings") {
 
     it("parses (A) FROM view") {
-      success(nodeMappingDefinition, NodeMappingDefinition(NodeDefinition("A"), List(NodeToViewDefinition(List("view")))))
+      success(nodeMappingDefinition, NodeMappingDefinition(NodeTypeDefinition("A"), List(NodeToViewDefinition(List("view")))))
     }
 
     it("parses (A) FROM view (column1 AS propertyKey1, column2 AS propertyKey2)") {
-      success(nodeMappingDefinition, NodeMappingDefinition(NodeDefinition("A"), List(NodeToViewDefinition(List("view"), Some(Map("propertyKey1" -> "column1", "propertyKey2" -> "column2"))))))
+      success(nodeMappingDefinition, NodeMappingDefinition(NodeTypeDefinition("A"), List(NodeToViewDefinition(List("view"), Some(Map("propertyKey1" -> "column1", "propertyKey2" -> "column2"))))))
     }
     it("parses (A) FROM viewA FROM viewB") {
-      success(nodeMappingDefinition, NodeMappingDefinition(NodeDefinition("A"), List(NodeToViewDefinition(List("viewA")), NodeToViewDefinition(List("viewB")))))
+      success(nodeMappingDefinition, NodeMappingDefinition(NodeTypeDefinition("A"), List(NodeToViewDefinition(List("viewA")), NodeToViewDefinition(List("viewB")))))
     }
 
     it("parses (A) FROM viewA, (B) FROM viewB") {
-      success(nodeMappings, List(NodeMappingDefinition(NodeDefinition("A"), List(NodeToViewDefinition(List("viewA")))), NodeMappingDefinition(NodeDefinition("B"), List(NodeToViewDefinition(List("viewB"))))))
+      success(nodeMappings, List(NodeMappingDefinition(NodeTypeDefinition("A"), List(NodeToViewDefinition(List("viewA")))), NodeMappingDefinition(NodeTypeDefinition("B"), List(NodeToViewDefinition(List("viewB"))))))
     }
 
     it("parses (A) FROM viewA (column1 AS propertyKey1, column2 AS propertyKey2) FROM viewB (column1 AS propertyKey1, column2 AS propertyKey2)") {
       success(nodeMappings, List(
-        NodeMappingDefinition(NodeDefinition("A"), List(
+        NodeMappingDefinition(NodeTypeDefinition("A"), List(
           NodeToViewDefinition(List("viewA"), Some(Map("propertyKey1" -> "column1", "propertyKey2" -> "column2"))),
           NodeToViewDefinition(List("viewB"), Some(Map("propertyKey1" -> "column1", "propertyKey2" -> "column2")))))
       ))
@@ -366,8 +367,8 @@ class GraphDdlParserTest extends BaseTestSuite with MockitoSugar with TestNameFi
 
     it("parses (A) FROM viewA (column1 AS propertyKey1, column2 AS propertyKey2), (B) FROM viewB (column1 AS propertyKey1, column2 AS propertyKey2)") {
       success(nodeMappings, List(
-        NodeMappingDefinition(NodeDefinition("A"), List(NodeToViewDefinition(List("viewA"), Some(Map("propertyKey1" -> "column1", "propertyKey2" -> "column2"))))),
-        NodeMappingDefinition(NodeDefinition("B"), List(NodeToViewDefinition(List("viewB"), Some(Map("propertyKey1" -> "column1", "propertyKey2" -> "column2")))))
+        NodeMappingDefinition(NodeTypeDefinition("A"), List(NodeToViewDefinition(List("viewA"), Some(Map("propertyKey1" -> "column1", "propertyKey2" -> "column2"))))),
+        NodeMappingDefinition(NodeTypeDefinition("B"), List(NodeToViewDefinition(List("viewB"), Some(Map("propertyKey1" -> "column1", "propertyKey2" -> "column2")))))
       ))
     }
 
@@ -382,17 +383,17 @@ class GraphDdlParserTest extends BaseTestSuite with MockitoSugar with TestNameFi
         """.stripMargin
 
       success(relationshipMappingDefinition, input, RelationshipMappingDefinition(
-        relDefinition = RelationshipDefinition("a"),
-        relationshipToViewDefinitions = List(RelationshipToViewDefinition(
+        relDefinition = RelationshipTypeDefinition("a"),
+        relationshipToViewDefinitions = List(RelationshipTypeToViewDefinition(
           viewDefinition = ViewDefinition(List("baz"), "alias_baz"),
-          startNodeToViewDefinition = LabelToViewDefinition(
-            NodeDefinition("A", "B"),
+          startNodeToViewDefinition = NodeTypeToViewDefinition(
+            NodeTypeDefinition("A", "B"),
             ViewDefinition(List("foo"), "alias_foo"),
             JoinOnDefinition(List(
               (List("alias_foo", "COLUMN_A"), List("edge", "COLUMN_A")),
               (List("alias_foo", "COLUMN_C"), List("edge", "COLUMN_D"))))),
-          endNodeToViewDefinition = LabelToViewDefinition(
-            NodeDefinition("C"),
+          endNodeToViewDefinition = NodeTypeToViewDefinition(
+            NodeTypeDefinition("C"),
             ViewDefinition(List("bar"), "alias_bar"),
             JoinOnDefinition(List(
               (List("alias_bar", "COLUMN_A"), List("edge", "COLUMN_A")))))
@@ -407,16 +408,16 @@ class GraphDdlParserTest extends BaseTestSuite with MockitoSugar with TestNameFi
         """.stripMargin
 
       success(relationshipMappingDefinition, input, RelationshipMappingDefinition(
-        relDefinition = RelationshipDefinition("a"),
-        relationshipToViewDefinitions = List(RelationshipToViewDefinition(
+        relDefinition = RelationshipTypeDefinition("a"),
+        relationshipToViewDefinitions = List(RelationshipTypeToViewDefinition(
           viewDefinition = ViewDefinition(List("baz"), "alias_baz"),
           maybePropertyMapping = Some(Map("foo" -> "colA", "bar" -> "colB")),
-          startNodeToViewDefinition = LabelToViewDefinition(
-            NodeDefinition("A", "B"),
+          startNodeToViewDefinition = NodeTypeToViewDefinition(
+            NodeTypeDefinition("A", "B"),
             ViewDefinition(List("foo"), "alias_foo"),
             JoinOnDefinition(List((List("alias_foo", "COLUMN_A"), List("edge", "COLUMN_A"))))),
-          endNodeToViewDefinition = LabelToViewDefinition(
-            NodeDefinition("C"),
+          endNodeToViewDefinition = NodeTypeToViewDefinition(
+            NodeTypeDefinition("C"),
             ViewDefinition(List("bar"), "alias_bar"),
             JoinOnDefinition(List((List("alias_bar", "COLUMN_A"), List("edge", "COLUMN_A")))))
         ))))
@@ -433,14 +434,14 @@ class GraphDdlParserTest extends BaseTestSuite with MockitoSugar with TestNameFi
            |    END NODES   (B) FROM bar alias_bar JOIN ON alias_bar.COLUMN_A = edge.COLUMN_A
         """.stripMargin
 
-      val relMappingDef = RelationshipToViewDefinition(
+      val relMappingDef = RelationshipTypeToViewDefinition(
         viewDefinition = ViewDefinition(List("baz"), "edge"),
-        startNodeToViewDefinition = LabelToViewDefinition(
-          NodeDefinition("A"),
+        startNodeToViewDefinition = NodeTypeToViewDefinition(
+          NodeTypeDefinition("A"),
           ViewDefinition(List("foo"), "alias_foo"),
           JoinOnDefinition(List((List("alias_foo", "COLUMN_A"), List("edge", "COLUMN_A"))))),
-        endNodeToViewDefinition = LabelToViewDefinition(
-          NodeDefinition("B"),
+        endNodeToViewDefinition = NodeTypeToViewDefinition(
+          NodeTypeDefinition("B"),
           ViewDefinition(List("bar"), "alias_bar"),
           JoinOnDefinition(List((List("alias_bar", "COLUMN_A"), List("edge", "COLUMN_A")))))
       )
@@ -448,7 +449,7 @@ class GraphDdlParserTest extends BaseTestSuite with MockitoSugar with TestNameFi
       success(
         relationshipMappingDefinition,
         input,
-        RelationshipMappingDefinition(RelationshipDefinition("TYPE_1"), List(relMappingDef, relMappingDef)))
+        RelationshipMappingDefinition(RelationshipTypeDefinition("TYPE_1"), List(relMappingDef, relMappingDef)))
     }
 
     it("parses relationship label sets") {
@@ -470,22 +471,22 @@ class GraphDdlParserTest extends BaseTestSuite with MockitoSugar with TestNameFi
            |    END NODES   (B) FROM bar alias_bar JOIN ON alias_bar.COLUMN_A = edge.COLUMN_A
         """.stripMargin
 
-      val relMappingDef = RelationshipToViewDefinition(
+      val relMappingDef = RelationshipTypeToViewDefinition(
         viewDefinition = ViewDefinition(List("baz"), "alias_baz"),
-        startNodeToViewDefinition = LabelToViewDefinition(
-          NodeDefinition("A"),
+        startNodeToViewDefinition = NodeTypeToViewDefinition(
+          NodeTypeDefinition("A"),
           ViewDefinition(List("foo"), "alias_foo"),
           JoinOnDefinition(List((List("alias_foo", "COLUMN_A"), List("edge", "COLUMN_A"))))),
-        endNodeToViewDefinition = LabelToViewDefinition(
-          NodeDefinition("B"),
+        endNodeToViewDefinition = NodeTypeToViewDefinition(
+          NodeTypeDefinition("B"),
           ViewDefinition(List("bar"), "alias_bar"),
           JoinOnDefinition(List((List("alias_bar", "COLUMN_A"), List("edge", "COLUMN_A")))))
       )
 
       success(relationshipMappings, input,
         List(
-          RelationshipMappingDefinition(RelationshipDefinition("TYPE_1"), List(relMappingDef, relMappingDef)),
-          RelationshipMappingDefinition(RelationshipDefinition("TYPE_2"), List(relMappingDef, relMappingDef))
+          RelationshipMappingDefinition(RelationshipTypeDefinition("TYPE_1"), List(relMappingDef, relMappingDef)),
+          RelationshipMappingDefinition(RelationshipTypeDefinition("TYPE_2"), List(relMappingDef, relMappingDef))
         ))
     }
   }
@@ -495,7 +496,7 @@ class GraphDdlParserTest extends BaseTestSuite with MockitoSugar with TestNameFi
     it("does not accept unknown types") {
       val ddlString =
         """|
-           |CATALOG CREATE LABEL (A {prop: char, prop2: int})
+           |CREATE ELEMENT TYPE (A {prop: char, prop2: int})
            |
            |CREATE GRAPH TYPE mySchema
            |

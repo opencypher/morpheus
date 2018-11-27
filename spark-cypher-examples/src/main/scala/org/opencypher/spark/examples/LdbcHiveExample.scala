@@ -78,11 +78,9 @@ object LdbcHiveExample extends ConsoleApp {
   val views = readFile(resource("sql/ldbc_views.sql").getFile).split(";")
   views.foreach(spark.sql)
 
-  // generate GraphDdl file if it not exists
-  if (!resoureExists("ddl/ldbc.ddl")) {
-    val graphDdlString = LdbcUtil.toGraphDDL(datasource, database)
-    writeFile(resource("ddl").getFile + "/ldbc.ddl", graphDdlString)
-  }
+  // generate GraphDdl file
+  val graphDdlString = LdbcUtil.toGraphDDL(datasource, database)
+  writeFile(resource("ddl").getFile + "/ldbc.ddl", graphDdlString)
 
   // create SQL PGDS
   val sqlGraphSource = GraphSources

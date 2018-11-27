@@ -154,9 +154,9 @@ object LdbcUtil {
           }
 
         if (properties.nonEmpty) {
-          s"CREATE LABEL $label ( { ${properties.mkString(", ")} } )"
+          s"CREATE ELEMENT TYPE $label ( { ${properties.mkString(", ")} } )"
         } else {
-          s"CREATE LABEL $label"
+          s"CREATE ELEMENT TYPE $label"
         }
     }
 
