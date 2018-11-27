@@ -1,4 +1,3 @@
-[![Build Status](https://travis-ci.org/opencypher/cypher-for-apache-spark.svg?branch=master)](https://travis-ci.org/opencypher/cypher-for-apache-spark)
 [![Maven Central](https://img.shields.io/badge/Maven_Central-0.2.1-blue.svg?label=Maven%20Central)](https://search.maven.org/#artifactdetails%7Corg.opencypher%7Cspark-cypher%7C0.2.0%7Cjar)
 # CAPS: Cypher for Apache Spark
 
