@@ -3,7 +3,7 @@ SET SCHEMA H2.NORTHWIND;
 
 -- Node labels
 
-CATALOG CREATE LABEL (Employee {
+CATALOG CREATE LABEL Employee ({
   employeeID: INTEGER,
   lastName: STRING,
   firstName: STRING,
@@ -22,13 +22,13 @@ CATALOG CREATE LABEL (Employee {
   photoPath: STRING?
 })
 
-CATALOG CREATE LABEL (Territory {
+CATALOG CREATE LABEL Territory ({
   territoryID: STRING,
   territoryDescription: STRING,
   regionID: INTEGER
 })
 
-CATALOG CREATE LABEL (Supplier {
+CATALOG CREATE LABEL Supplier ({
   supplierID: INTEGER,
   companyName: STRING,
   contactName: STRING?,
@@ -43,7 +43,7 @@ CATALOG CREATE LABEL (Supplier {
   homePage: STRING?
 })
 
-CATALOG CREATE LABEL (Customer {
+CATALOG CREATE LABEL Customer ({
   customerID: INTEGER,
   companyName: STRING,
   contactName: STRING?,
@@ -57,7 +57,7 @@ CATALOG CREATE LABEL (Customer {
   fax: STRING?
 })
 
-CATALOG CREATE LABEL (Product {
+CATALOG CREATE LABEL Product ({
   productID: INTEGER,
   productName: STRING,
   supplierID: INTEGER?,
@@ -70,7 +70,7 @@ CATALOG CREATE LABEL (Product {
   discontinued: INTEGER
 })
 
-CATALOG CREATE LABEL (OrderDetails {
+CATALOG CREATE LABEL OrderDetails ({
   orderID: INTEGER,
   productID: INTEGER,
   unitPrice: INTEGER,
@@ -78,18 +78,18 @@ CATALOG CREATE LABEL (OrderDetails {
   discount: INTEGER
 })
 
-CATALOG CREATE LABEL (Category {
+CATALOG CREATE LABEL Category ({
   categoryID: INTEGER,
   categoryName: STRING,
   description: STRING?
 })
 
-CATALOG CREATE LABEL (Region {
+CATALOG CREATE LABEL Region ({
   regionID: INTEGER,
   regionDescription: STRING
 })
 
-CATALOG CREATE LABEL (Order {
+CATALOG CREATE LABEL Order ({
   orderID: INTEGER,
   customerID: INTEGER?,
   employeeID: INTEGER?,
@@ -106,34 +106,34 @@ CATALOG CREATE LABEL (Order {
   shipCountry: STRING?
 })
 
-CATALOG CREATE LABEL (Shipper {
+CATALOG CREATE LABEL Shipper ({
   shipperID: INTEGER,
   companyName: STRING,
   phone: STRING?
 })
 
-CATALOG CREATE LABEL (CustomerDemographic {
+CATALOG CREATE LABEL CustomerDemographic ({
   customerTypeID: STRING,
   customerDesc: STRING?
 })
 
 -- Relationship types
 
-CATALOG CREATE LABEL (HAS_SUPPLIER)
-CATALOG CREATE LABEL (HAS_PRODUCT)
-CATALOG CREATE LABEL (HAS_CATEGORY)
-CATALOG CREATE LABEL (HAS_TERRITORY)
-CATALOG CREATE LABEL (HAS_EMPLOYEE)
-CATALOG CREATE LABEL (REPORTS_TO)
-CATALOG CREATE LABEL (HAS_CUSTOMER)
-CATALOG CREATE LABEL (HAS_CUSTOMER_DEMOGRAPHIC)
-CATALOG CREATE LABEL (HAS_ORDER)
-CATALOG CREATE LABEL (HAS_SHIPPER)
-CATALOG CREATE LABEL (HAS_REGION)
+CATALOG CREATE LABEL HAS_SUPPLIER
+CATALOG CREATE LABEL HAS_PRODUCT
+CATALOG CREATE LABEL HAS_CATEGORY
+CATALOG CREATE LABEL HAS_TERRITORY
+CATALOG CREATE LABEL HAS_EMPLOYEE
+CATALOG CREATE LABEL REPORTS_TO
+CATALOG CREATE LABEL HAS_CUSTOMER
+CATALOG CREATE LABEL HAS_CUSTOMER_DEMOGRAPHIC
+CATALOG CREATE LABEL HAS_ORDER
+CATALOG CREATE LABEL HAS_SHIPPER
+CATALOG CREATE LABEL HAS_REGION
 
 -- =================================================================
 
-CREATE GRAPH SCHEMA NORTHWIND_NAIVE
+CREATE GRAPH SCHEMA NORTHWIND_NAIVE (
 
     -- Nodes
     (Employee),
@@ -147,7 +147,7 @@ CREATE GRAPH SCHEMA NORTHWIND_NAIVE
     (Employee),
     (Order),
     (Shipper),
-    (CustomerDemographic)
+    (CustomerDemographic),
 
     -- Relationships
     [HAS_SUPPLIER],
@@ -160,7 +160,7 @@ CREATE GRAPH SCHEMA NORTHWIND_NAIVE
     [HAS_CUSTOMER_DEMOGRAPHIC],
     [HAS_ORDER],
     [HAS_SHIPPER],
-    [HAS_REGION]
+    [HAS_REGION],
 
     -- Relationship type constraints
     (Product)-[HAS_SUPPLIER]->(Supplier),
@@ -177,207 +177,168 @@ CREATE GRAPH SCHEMA NORTHWIND_NAIVE
     (Territory)-[HAS_EMPLOYEE]->(Employee),
     (Customer)-[HAS_CUSTOMER_DEMOGRAPHIC]->(CustomerDemographic),
     (CustomerDemographic)-[HAS_CUSTOMER]->(Customer)
-
+)
 -- =================================================================
-CREATE GRAPH Northwind WITH GRAPH SCHEMA NORTHWIND_NAIVE
-    NODE LABEL SETS (
-        (Order)
-             FROM VIEW_ORDERS,
+CREATE GRAPH Northwind WITH GRAPH SCHEMA NORTHWIND_NAIVE (
+  (Order)
+       FROM VIEW_ORDERS,
 
-        (Territory)
-             FROM VIEW_TERRITORIES,
+  (Territory)
+       FROM VIEW_TERRITORIES,
 
-        (Employee)
-             FROM VIEW_EMPLOYEES,
+  (Employee)
+       FROM VIEW_EMPLOYEES,
 
-        (Category)
-             FROM VIEW_CATEGORIES,
+  (Category)
+       FROM VIEW_CATEGORIES,
 
-        (Customer)
-             FROM VIEW_CUSTOMERS,
+  (Customer)
+       FROM VIEW_CUSTOMERS,
 
-        (OrderDetails)
-             FROM VIEW_ORDER_DETAILS,
+  (OrderDetails)
+       FROM VIEW_ORDER_DETAILS,
 
-        (Shipper)
-             FROM VIEW_SHIPPERS,
+  (Shipper)
+       FROM VIEW_SHIPPERS,
 
-        (Product)
-             FROM VIEW_PRODUCTS,
+  (Product)
+       FROM VIEW_PRODUCTS,
 
-        (Region)
-             FROM VIEW_REGION,
+  (Region)
+       FROM VIEW_REGION,
 
-        (CustomerDemographic)
-             FROM VIEW_CUSTOMERDEMOGRAPHICS,
+  (CustomerDemographic)
+       FROM VIEW_CUSTOMERDEMOGRAPHICS,
 
-        (Supplier)
-             FROM VIEW_SUPPLIERS
-    )
+  (Supplier)
+       FROM VIEW_SUPPLIER,
 
-    RELATIONSHIP LABEL SETS (
+  -- (Product)-[HAS_CATEGORY]->(Category)
+  [HAS_CATEGORY]
+      FROM VIEW_PRODUCTS edge
+          START NODES (Product)
+              FROM VIEW_PRODUCTS start_nodes
+                  JOIN ON start_nodes.PRODUCTID = edge.PRODUCTID
+          END NODES (Category)
+              FROM VIEW_CATEGORIES end_nodes
+                  JOIN ON end_nodes.CATEGORYID = edge.CATEGORYID,
 
-    		-- (Product)-[HAS_CATEGORY]->(Category)
-        (HAS_CATEGORY)
-            FROM VIEW_PRODUCTS edge
-                START NODES
-                    LABEL SET (Product)
-                    -- edge table is also start table, each row joining to itself
-                    FROM VIEW_PRODUCTS start_nodes
-                        JOIN ON start_nodes.PRODUCTID = edge.PRODUCTID
-                END NODES
-                    LABEL SET (Category)
-                    FROM VIEW_CATEGORIES end_nodes
-                        JOIN ON end_nodes.CATEGORYID = edge.CATEGORYID,
+  -- (Territory)-[HAS_REGION]->(Region)
+  [HAS_REGION]
+      FROM VIEW_TERRITORIES edge
+          START NODES (Territory)
+              FROM VIEW_TERRITORIES start_nodes
+                  JOIN ON start_nodes.TERRITORYID = edge.TERRITORYID
+          END NODES (Region)
+              FROM VIEW_REGION end_nodes
+                  JOIN ON end_nodes.REGIONID = edge.REGIONID,
 
-    		-- (Territory)-[HAS_REGION]->(Region)
-        (HAS_REGION)
-            FROM VIEW_TERRITORIES edge
-                START NODES
-                    LABEL SET (Territory)
-                    -- edge table is also start table, each row joining to itself
-                    FROM VIEW_TERRITORIES start_nodes
-                        JOIN ON start_nodes.TERRITORYID = edge.TERRITORYID
-                END NODES
-                    LABEL SET (Region)
-                    FROM VIEW_REGION end_nodes
-                        JOIN ON end_nodes.REGIONID = edge.REGIONID,
+  -- (:Employee)-[:HAS_TERRITORY]->(:Territory)
+  [HAS_TERRITORY]
+      FROM VIEW_EMPLOYEETERRITORIES edge
+          START NODES (Employee)
+              FROM VIEW_EMPLOYEES start_nodes
+                  JOIN ON start_nodes.EMPLOYEEID = edge.EMPLOYEEID
+          END NODES (Territory)
+              FROM VIEW_TERRITORIES end_nodes
+                  JOIN ON end_nodes.TERRITORYID = edge.TERRITORYID,
 
-    		-- (:Employee)-[:HAS_TERRITORY]->(:Territory)
-        (HAS_TERRITORY)
-            FROM VIEW_EMPLOYEETERRITORIES edge
-                START NODES
-                    LABEL SET (Employee)
-                    FROM VIEW_EMPLOYEES start_nodes
-                        JOIN ON start_nodes.EMPLOYEEID = edge.EMPLOYEEID
-                END NODES
-                    LABEL SET (Territory)
-                    FROM VIEW_TERRITORIES end_nodes
-                        JOIN ON end_nodes.TERRITORYID = edge.TERRITORYID,
+  [HAS_EMPLOYEE]
+       -- (:Territory)-[:HAS_EMPLOYEE]->(:Employee)
+       FROM VIEW_EMPLOYEETERRITORIES edge
+          START NODES (Territory)
+              FROM VIEW_TERRITORIES start_nodes
+                  JOIN ON start_nodes.TERRITORYID = edge.TERRITORYID
+          END NODES (Employee)
+              FROM VIEW_EMPLOYEES end_nodes
+                  JOIN ON end_nodes.EMPLOYEEID = edge.EMPLOYEEID,
+   -- (:Order)-[:HAS_EMPLOYEE]->(:Employee)
+       FROM VIEW_ORDERS edge
+           START NODES (Order)
+               FROM VIEW_ORDERS start_nodes
+                   JOIN ON start_nodes.ORDERID = edge.ORDERID
+           END NODES (Employee)
+               FROM VIEW_EMPLOYEES end_nodes
+                   JOIN ON end_nodes.EMPLOYEEID = edge.EMPLOYEEID,
 
-        (HAS_EMPLOYEE)
-  			 		-- (:Territory)-[:HAS_EMPLOYEE]->(:Employee)
-             FROM VIEW_EMPLOYEETERRITORIES edge
-                START NODES
-                    LABEL SET (Territory)
-                    FROM VIEW_TERRITORIES start_nodes
-                        JOIN ON start_nodes.TERRITORYID = edge.TERRITORYID
-                END NODES
-                    LABEL SET (Employee)
-                    FROM VIEW_EMPLOYEES end_nodes
-                        JOIN ON end_nodes.EMPLOYEEID = edge.EMPLOYEEID,
-    				-- (:Order)-[:HAS_EMPLOYEE]->(:Employee)
-            FROM VIEW_ORDERS edge
-                START NODES
-                    LABEL SET (Order)
-                    -- edge table is also start table, each row joining to itself
-                    FROM VIEW_ORDERS start_nodes
-                        JOIN ON start_nodes.ORDERID = edge.ORDERID
-                END NODES
-                    LABEL SET (Employee)
-                    FROM VIEW_EMPLOYEES end_nodes
-                        JOIN ON end_nodes.EMPLOYEEID = edge.EMPLOYEEID,
+  -- (Customer)-[HAS_CUSTOMER_DEMOGRAPHIC]->(CustomerDemographic)
+  [HAS_CUSTOMER_DEMOGRAPHIC]
+      FROM CUSTOMERCUSTOMERDEMO edge
+          START NODES (Customer)
+              FROM VIEW_CUSTOMERS start_nodes
+                  JOIN ON start_nodes.CUSTOMERID = edge.CUSTOMERID
+          END NODES (CustomerDemographic)
+              FROM VIEW_CUSTOMERDEMOGRAPHICS end_nodes
+                  JOIN ON end_nodes.CUSTOMERTYPEID = edge.CUSTOMERTYPEID,
 
-    		-- (Customer)-[HAS_CUSTOMER_DEMOGRAPHIC]->(CustomerDemographic)
-        (HAS_CUSTOMER_DEMOGRAPHIC)
-            FROM CUSTOMERCUSTOMERDEMO edge
-                START NODES
-                    LABEL SET (Customer)
-                    FROM VIEW_CUSTOMERS start_nodes
-                        JOIN ON start_nodes.CUSTOMERID = edge.CUSTOMERID
-                END NODES
-                    LABEL SET (CustomerDemographic)
-                    FROM VIEW_CUSTOMERDEMOGRAPHICS end_nodes
-                        JOIN ON end_nodes.CUSTOMERTYPEID = edge.CUSTOMERTYPEID,
+  [HAS_CUSTOMER]
+      -- (Order)-[HAS_CUSTOMER]->(Customer)
+      FROM VIEW_ORDERS edge
+          START NODES (Order)
+              FROM VIEW_ORDERS start_nodes
+                  JOIN ON start_nodes.ORDERID = edge.ORDERID
+          END NODES (Customer)
+              FROM VIEW_CUSTOMERS end_nodes
+                  JOIN ON end_nodes.CUSTOMERID = edge.CUSTOMERID,
 
-        (HAS_CUSTOMER)
-   					-- (Order)-[HAS_CUSTOMER]->(Customer)
-            FROM VIEW_ORDERS edge
-                START NODES
-                    LABEL SET (Order)
-                    -- edge table is also start table, each row joining to itself
-                    FROM VIEW_ORDERS start_nodes
-                        JOIN ON start_nodes.ORDERID = edge.ORDERID
-                END NODES
-                    LABEL SET (Customer)
-                    FROM VIEW_CUSTOMERS end_nodes
-                        JOIN ON end_nodes.CUSTOMERID = edge.CUSTOMERID,
-				    -- (CustomerDemographic)-[HAS_CUSTOMER]->(Customer)
-            FROM CUSTOMERCUSTOMERDEMO edge
-                START NODES
-                    LABEL SET (CustomerDemographic)
-                    FROM VIEW_CUSTOMERDEMOGRAPHICS start_nodes
-                        JOIN ON start_nodes.CUSTOMERTYPEID = edge.CUSTOMERTYPEID
-                END NODES
-                    LABEL SET (Customer)
-                    FROM VIEW_CUSTOMERS end_nodes
-                        JOIN ON end_nodes.CUSTOMERID = edge.CUSTOMERID,
+      -- (CustomerDemographic)-[HAS_CUSTOMER]->(Customer)
+      FROM CUSTOMERCUSTOMERDEMO edge
+          START NODES (CustomerDemographic)
+              FROM VIEW_CUSTOMERDEMOGRAPHICS start_nodes
+                  JOIN ON start_nodes.CUSTOMERTYPEID = edge.CUSTOMERTYPEID
+          END NODES (Customer)
+              FROM VIEW_CUSTOMERS end_nodes
+                  JOIN ON end_nodes.CUSTOMERID = edge.CUSTOMERID,
 
-    		-- (OrderDetails)-[HAS_ORDER]->(Order)
-        (HAS_ORDER)
-            FROM VIEW_ORDER_DETAILS edge
-                START NODES
-                    LABEL SET (OrderDetails)
-                    -- edge table is also start table, each row joining to itself
-                    FROM VIEW_ORDER_DETAILS start_nodes
-                        JOIN ON start_nodes.ORDERID = edge.ORDERID                        
-                        AND start_nodes.PRODUCTID = edge.PRODUCTID
-                END NODES
-                    LABEL SET (Order)
-                    FROM VIEW_ORDERS end_nodes
-                        JOIN ON end_nodes.ORDERID = edge.ORDERID,
+  -- (OrderDetails)-[HAS_ORDER]->(Order)
+  [HAS_ORDER]
+      FROM VIEW_ORDER_DETAILS edge
+          START NODES (OrderDetails)
+              FROM VIEW_ORDER_DETAILS start_nodes
+                  JOIN ON start_nodes.ORDERID = edge.ORDERID
+                  AND start_nodes.PRODUCTID = edge.PRODUCTID
+          END NODES (Order)
+              FROM VIEW_ORDERS end_nodes
+                  JOIN ON end_nodes.ORDERID = edge.ORDERID,
 
-   			 -- (OrderDetails)-[HAS_PRODUCT]->(Product)
-        (HAS_PRODUCT)
-            FROM VIEW_ORDER_DETAILS edge
-                START NODES
-                    LABEL SET (OrderDetails)
-                    -- edge table is also start table, each row joining to itself
-                    FROM VIEW_ORDER_DETAILS start_nodes
-                        JOIN ON start_nodes.ORDERID = edge.ORDERID                        
-                        AND start_nodes.PRODUCTID = edge.PRODUCTID
-                END NODES
-                    LABEL SET (Product)
-                    FROM VIEW_PRODUCTS end_nodes
-                        JOIN ON end_nodes.PRODUCTID = edge.PRODUCTID,
+  -- (OrderDetails)-[HAS_PRODUCT]->(Product)
+  [HAS_PRODUCT]
+      FROM VIEW_ORDER_DETAILS edge
+          START NODES (OrderDetails)
+              FROM VIEW_ORDER_DETAILS start_nodes
+                  JOIN ON start_nodes.ORDERID = edge.ORDERID
+                  AND start_nodes.PRODUCTID = edge.PRODUCTID
+          END NODES (Product)
+              FROM VIEW_PRODUCTS end_nodes
+                  JOIN ON end_nodes.PRODUCTID = edge.PRODUCTID,
 
-    		-- (Order)-[HAS_SHIPPER]->(Shipper)
-        (HAS_SHIPPER)
-            FROM VIEW_ORDERS edge
-                START NODES
-                    LABEL SET (Order)
-                    -- edge table is also start table, each row joining to itself
-                    FROM VIEW_ORDERS start_nodes
-                        JOIN ON start_nodes.ORDERID = edge.ORDERID
-                END NODES
-                    LABEL SET (Shipper)
-                    FROM VIEW_SHIPPERS end_nodes
-                        JOIN ON end_nodes.SHIPPERID = edge.SHIPVIA,
+  -- (Order)-[HAS_SHIPPER]->(Shipper)
+  [HAS_SHIPPER]
+      FROM VIEW_ORDERS edge
+          START NODES (Order)
+              FROM VIEW_ORDERS start_nodes
+                  JOIN ON start_nodes.ORDERID = edge.ORDERID
+          END NODES (Shipper)
+              FROM VIEW_SHIPPERS end_nodes
+                  JOIN ON end_nodes.SHIPPERID = edge.SHIPVIA,
 
-				-- (:Product)-[:HAS_SUPPLIER]->(:Supplier)
-        (HAS_SUPPLIER)
-            FROM VIEW_PRODUCTS edge
-                START NODES
-                    LABEL SET (Product)
-                    -- edge table is also start table, each row joining to itself
-                    FROM VIEW_PRODUCTS start_nodes
-                        JOIN ON start_nodes.PRODUCTID = edge.PRODUCTID
-                END NODES
-                    LABEL SET (Supplier)
-                    FROM VIEW_SUPPLIERS end_nodes
-                        JOIN ON end_nodes.SUPPLIERID = edge.SUPPLIERID,
+  -- (:Product)-[:HAS_SUPPLIER]->(:Supplier)
+  [HAS_SUPPLIER]
+      FROM VIEW_PRODUCTS edge
+          START NODES (Product)
+              FROM VIEW_PRODUCTS start_nodes
+                  JOIN ON start_nodes.PRODUCTID = edge.PRODUCTID
+          END NODES (Supplier)
+              FROM VIEW_SUPPLIERS end_nodes
+                  JOIN ON end_nodes.SUPPLIERID = edge.SUPPLIERID,
 
-		    -- (:Employee)-[:REPORTS_TO]->(:Employee)
-        (REPORTS_TO)
-            FROM VIEW_EMPLOYEES edge
-                START NODES
-                    LABEL SET (Employee)
-                    -- edge table is also start table, each row joining to itself
-                    FROM VIEW_EMPLOYEES start_nodes
-                        JOIN ON start_nodes.EMPLOYEEID = edge.EMPLOYEEID
-                END NODES
-                    LABEL SET (Employee)
-                    -- edge table is also start table, each row joining to itself
-                    FROM VIEW_EMPLOYEES end_nodes
-                        JOIN ON end_nodes.REPORTSTO = edge.REPORTSTO
-    )
+  -- (:Employee)-[:REPORTS_TO]->(:Employee)
+  [REPORTS_TO]
+      FROM VIEW_EMPLOYEES edge
+          START NODES (Employee)
+              FROM VIEW_EMPLOYEES start_nodes
+                  JOIN ON start_nodes.EMPLOYEEID = edge.EMPLOYEEID
+          END NODES (Employee)
+              FROM VIEW_EMPLOYEES end_nodes
+                  JOIN ON end_nodes.REPORTSTO = edge.REPORTSTO
+)

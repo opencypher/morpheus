@@ -2,32 +2,32 @@ SET SCHEMA hive.customers;
 
 CREATE GRAPH interactions WITH GRAPH SCHEMA (
 	-- node labels
-    LABEL ( Policy
-        { policyAccountNumber  : STRING}
-      ),
-    LABEL ( Customer
-        { customerIdx          : INTEGER,
-          customerId           : STRING,
-          customerName         : STRING}
-      ),
-    LABEL ( CustomerRep
-        { empNo                : INTEGER,
-          empName              : STRING}
-      ),
-    LABEL ( Interaction
-        { interactionId        : INTEGER,
-          date                 : STRING,
-          type                 : STRING,
-          outcomeScore         : STRING}
-      ),
-    LABEL ( AccountHolder
-        { accountHolderId      : STRING}
-      ),
+    LABEL Policy ({
+        policyAccountNumber  : STRING
+    }),
+    LABEL Customer ({
+        customerIdx          : INTEGER,
+        customerId           : STRING,
+        customerName         : STRING
+    }),
+    LABEL CustomerRep ({
+        empNo                : INTEGER,
+        empName              : STRING
+    }),
+    LABEL Interaction ({
+        interactionId        : INTEGER,
+        date                 : STRING,
+        type                 : STRING,
+        outcomeScore         : STRING
+      }),
+    LABEL AccountHolder({
+        accountHolderId      : STRING}
+      }),
       -- relationship labels
-    LABEL ( HAS_CUSTOMER_REP ),
-    LABEL ( HAS_ACCOUNT_HOLDER ),
-    LABEL ( HAS_CUSTOMER ),
-    LABEL ( HAS_POLICY ),
+    LABEL HAS_CUSTOMER_REP,
+    LABEL HAS_ACCOUNT_HOLDER,
+    LABEL HAS_CUSTOMER,
+    LABEL HAS_POLICY,
 
     	-- node label sets
     (Policy),
@@ -47,7 +47,7 @@ CREATE GRAPH interactions WITH GRAPH SCHEMA (
     (Interaction)     <0 .. *>    - [HAS_CUSTOMER] ->      <1>        (Customer),
     (Interaction)     <0 .. *>    - [HAS_CUSTOMER_REP] ->  <1>        (CustomerRep),
     (Interaction)     <0 .. *>    - [HAS_ACCOUNT_HOLDER] ->   <1>        (AccountHolder)
-    )
+) (
 
     NODE LABEL SETS (
         (Policy)
@@ -112,3 +112,4 @@ CREATE GRAPH interactions WITH GRAPH SCHEMA (
                     FROM CUSTOMERS end_nodes
                         JOIN ON end_nodes.CUSTOMERID = edge.CUSTOMERID
     )
+)

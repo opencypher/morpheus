@@ -37,29 +37,27 @@ class GraphDdlTest extends FunSpec with Matchers {
     s"""
        |SET SCHEMA dataSourceName.fooDatabaseName
        |
-         |CREATE GRAPH SCHEMA fooSchema
-       | LABEL (Person { name   : STRING, age : INTEGER })
-       | LABEL (Book   { title  : STRING })
-       | LABEL (READS  { rating : FLOAT  })
-       | (Person)
-       | (Book)
+       |CREATE GRAPH SCHEMA fooSchema (
+       | LABEL Person ({ name   : STRING, age : INTEGER }),
+       | LABEL Book   ({ title  : STRING }),
+       | LABEL READS  ({ rating : FLOAT  }),
+       | (Person),
+       | (Book),
        | [READS]
+       |)
+       |CREATE GRAPH fooGraph WITH GRAPH SCHEMA fooSchema (
+       |  (Person) FROM personView1 ( person_name1 AS name )
+       |           FROM personView2 ( person_name2 AS name ),
+       |  (Book)   FROM bookView    ( book_title AS title ),
        |
-         |CREATE GRAPH fooGraph WITH GRAPH SCHEMA fooSchema
-       |  NODE LABEL SETS (
-       |    (Person) FROM personView1 ( person_name1 AS name )
-       |             FROM personView2 ( person_name2 AS name )
-       |    (Book)   FROM bookView    ( book_title AS title )
-       |  )
-       |  RELATIONSHIP LABEL SETS (
-       |    (READS)
-       |      FROM readsView1 e ( value1 AS rating )
-       |        START NODES LABEL SET (Person) FROM personView1 p JOIN ON p.person_id1 = e.person
-       |        END   NODES LABEL SET (Book)   FROM bookView    b JOIN ON e.book       = b.book_id
-       |      FROM readsView2 e ( value2 AS rating )
-       |        START NODES LABEL SET (Person) FROM personView2 p JOIN ON p.person_id2 = e.person
-       |        END   NODES LABEL SET (Book)   FROM bookView    b JOIN ON e.book       = b.book_id
-       |  )
+       |  [READS]
+       |    FROM readsView1 e ( value1 AS rating )
+       |      START NODES (Person) FROM personView1 p JOIN ON p.person_id1 = e.person
+       |      END   NODES (Book)   FROM bookView    b JOIN ON e.book       = b.book_id
+       |    FROM readsView2 e ( value2 AS rating )
+       |      START NODES (Person) FROM personView2 p JOIN ON p.person_id2 = e.person
+       |      END   NODES (Book)   FROM bookView    b JOIN ON e.book       = b.book_id
+       |)
      """.stripMargin
 
   it("converts to GraphDDL IR") {
@@ -141,17 +139,16 @@ class GraphDdlTest extends FunSpec with Matchers {
     val ddl = GraphDdl(
       """SET SCHEMA ds1.db1
         |
-        |CREATE GRAPH SCHEMA fooSchema
-        |  LABEL (Person)
-        |  LABEL (Account)
-        |  (Person)
+        |CREATE GRAPH SCHEMA fooSchema (
+        |  LABEL Person,
+        |  LABEL Account,
+        |  (Person),
         |  (Account)
-        |
-        |CREATE GRAPH fooGraph WITH GRAPH SCHEMA fooSchema
-        |  NODE LABEL SETS (
-        |    (Person)  FROM personView
-        |    (Account) FROM ds2.db2.accountView
-        |  )
+        |)
+        |CREATE GRAPH fooGraph WITH GRAPH SCHEMA fooSchema (
+        |  (Person)  FROM personView,
+        |  (Account) FROM ds2.db2.accountView
+        |)
       """.stripMargin)
 
     ddl.graphs(GraphName("fooGraph")).nodeToViewMappings.keys shouldEqual Set(
@@ -162,77 +159,79 @@ class GraphDdlTest extends FunSpec with Matchers {
 
   it("fails on duplicate node mappings") {
     val e = the [GraphDdlException] thrownBy GraphDdl("""
-      |CREATE GRAPH SCHEMA fooSchema
-      | LABEL (Person)
+      |CREATE GRAPH SCHEMA fooSchema (
+      | LABEL Person,
       | (Person)
-      |
-      |CREATE GRAPH fooGraph WITH GRAPH SCHEMA fooSchema
-      |  NODE LABEL SETS (
-      |    (Person) FROM personView
-      |             FROM personView
-      |  )
+      |)
+      |CREATE GRAPH fooGraph WITH GRAPH SCHEMA fooSchema (
+      |  (Person) FROM personView
+      |           FROM personView
+      |)
     """.stripMargin)
     e.getFullMessage should (include("fooGraph") and include("Person") and include("personView"))
   }
 
   it("fails on duplicate global labels") {
     val e = the [GraphDdlException] thrownBy GraphDdl("""
-      |CATALOG CREATE LABEL (Person)
-      |CATALOG CREATE LABEL (Person)
+      |CATALOG CREATE LABEL Person
+      |CATALOG CREATE LABEL Person
     """.stripMargin)
     e.getFullMessage should include("Person")
   }
 
   it("fails on duplicate local labels") {
     val e = the [GraphDdlException] thrownBy GraphDdl("""
-      |CREATE GRAPH SCHEMA fooSchema
-      | LABEL (Person)
-      | LABEL (Person)
+      |CREATE GRAPH SCHEMA fooSchema (
+      | LABEL Person,
+      | LABEL Person
+      |)
     """.stripMargin)
     e.getFullMessage should (include("fooSchema") and include("Person"))
   }
 
   it("fails on duplicate graph types") {
     val e = the [GraphDdlException] thrownBy GraphDdl("""
-      |CREATE GRAPH SCHEMA fooSchema
-      |CREATE GRAPH SCHEMA fooSchema
+      |CREATE GRAPH SCHEMA fooSchema ()
+      |CREATE GRAPH SCHEMA fooSchema ()
     """.stripMargin)
     e.getFullMessage should include("fooSchema")
   }
 
   it("fails on duplicate graphs") {
     val e = the [GraphDdlException] thrownBy GraphDdl("""
-      |CREATE GRAPH SCHEMA fooSchema
-      |CREATE GRAPH fooGraph WITH GRAPH SCHEMA fooSchema
-      |CREATE GRAPH fooGraph WITH GRAPH SCHEMA fooSchema
+      |CREATE GRAPH SCHEMA fooSchema ()
+      |CREATE GRAPH fooGraph WITH GRAPH SCHEMA fooSchema ()
+      |CREATE GRAPH fooGraph WITH GRAPH SCHEMA fooSchema ()
     """.stripMargin)
     e.getFullMessage should include("fooGraph")
   }
 
   it("fails on unresolved graph type") {
     val e = the [GraphDdlException] thrownBy GraphDdl("""
-      |CREATE GRAPH SCHEMA fooSchema
-      |CREATE GRAPH fooGraph WITH GRAPH SCHEMA barSchema
+      |CREATE GRAPH SCHEMA fooSchema ()
+      |CREATE GRAPH fooGraph WITH GRAPH SCHEMA barSchema ()
     """.stripMargin)
     e.getFullMessage should (include("fooGraph") and include("fooSchema") and include("barSchema"))
   }
 
   it("fails on unresolved labels") {
     val e = the [GraphDdlException] thrownBy GraphDdl("""
-      |CREATE GRAPH SCHEMA fooSchema
-      | LABEL (Person1)
-      | LABEL (Person2)
+      |CREATE GRAPH SCHEMA fooSchema (
+      | LABEL Person1,
+      | LABEL Person2,
       | (Person3, Person4)
+      |)
     """.stripMargin)
     e.getFullMessage should (include("fooSchema") and include("(Person3,Person4)") and include("Person1") and include("Person2"))
   }
 
   it("fails on incompatible property types") {
     val e = the [GraphDdlException] thrownBy GraphDdl("""
-      |CREATE GRAPH SCHEMA fooSchema
-      | LABEL (Person1 { age: STRING  })
-      | LABEL (Person2 { age: INTEGER })
+      |CREATE GRAPH SCHEMA fooSchema (
+      | LABEL Person1 ({ age: STRING  }),
+      | LABEL Person2 ({ age: INTEGER }),
       | (Person1, Person2)
+      |)
     """.stripMargin)
     e.getFullMessage should (
       include("fooSchema") and include("(Person1,Person2)") and include("age") and include("STRING")  and include("INTEGER")
@@ -242,13 +241,13 @@ class GraphDdlTest extends FunSpec with Matchers {
   it("fails on unresolved property names") {
     val e = the [GraphDdlException] thrownBy GraphDdl("""
       |SET SCHEMA a.b
-      |CREATE GRAPH SCHEMA fooSchema
-      | LABEL (Person { age1: STRING  })
+      |CREATE GRAPH SCHEMA fooSchema (
+      | LABEL Person ({ age1: STRING  }),
       | (Person)
-      |CREATE GRAPH fooGraph WITH GRAPH SCHEMA fooSchema
-      |  NODE LABEL SETS (
-      |    (Person) FROM personView ( person_name AS age2 )
-      |  )
+      |)
+      |CREATE GRAPH fooGraph WITH GRAPH SCHEMA fooSchema (
+      |  (Person) FROM personView ( person_name AS age2 )
+      |)
     """.stripMargin)
     e.getFullMessage should (
       include("fooGraph") and include("Person") and include("personView") and include("age1")  and include("age2")
@@ -257,13 +256,13 @@ class GraphDdlTest extends FunSpec with Matchers {
 
   it("fails on missing set schema statement") {
     val e = the [GraphDdlException] thrownBy GraphDdl("""
-      |CREATE GRAPH SCHEMA fooSchema
-      | LABEL (Person)
+      |CREATE GRAPH SCHEMA fooSchema (
+      | LABEL Person,
       | (Person)
-      |CREATE GRAPH fooGraph WITH GRAPH SCHEMA fooSchema
-      |  NODE LABEL SETS (
-      |    (Person) FROM personView
-      |  )
+      |)
+      |CREATE GRAPH fooGraph WITH GRAPH SCHEMA fooSchema (
+      |  (Person) FROM personView
+      |)
     """.stripMargin)
     e.getFullMessage should (
       include("fooGraph") and include("personView")

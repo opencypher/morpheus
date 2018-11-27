@@ -98,67 +98,55 @@ class GraphDdlParserTest extends BaseTestSuite with MockitoSugar with TestNameFi
     }
   }
 
-  describe("properties") {
-    it("parses key : FLOAT") {
-      success(property, "key : FLOAT", "key" -> CTFloat)
-    }
-
-    it("parses key : FLOAT?") {
-      success(property, "key : FLOAT?", "key" -> CTFloat.nullable)
-    }
-
-    it("parses key _ STRING") {
-      failure(property)
-    }
-
-    it("parses { key : FLOAT }") {
-      success(properties, "{ key : FLOAT }", Map("key" -> CTFloat))
-    }
-
-    it("parses { key1 : FLOAT, key2 : STRING }") {
-      success(properties, "{ key1 : FLOAT, key2 : STRING }", Map("key1" -> CTFloat, "key2" -> CTString))
-    }
-
-    it("parses { }") {
-      failure(properties)
-    }
-  }
-
   describe("label definitions") {
-    it("parses LABEL (A)") {
+    it("parses LABEL A") {
       success(labelDefinition, LabelDefinition("A"))
     }
 
-    it("parses LABEL  (A { foo : string? } )") {
+    it("parses LABEL  A ({ foo : string? } )") {
       success(labelDefinition, LabelDefinition("A", Map("foo" -> CTString.nullable)))
     }
-  }
 
-  describe("key definitions") {
-    it("parses KEY A (foo, bar)") {
-      success(keyDefinition, "KEY A (foo, bar)", "A" -> Set("foo", "bar"))
+    it("parses LABEL  A ({ key : FLOAT })") {
+      success(labelDefinition, LabelDefinition("A", Map("key" -> CTFloat)))
     }
 
-    it("parses KEY A ()") {
-      failure(keyDefinition)
+    it("parses LABEL  A ({ key : FLOAT? })") {
+      success(labelDefinition, LabelDefinition("A", Map("key" -> CTFloat.nullable)))
+    }
+
+    it("!parses LABEL  A ({ key _ STRING })") {
+      failure(labelDefinition)
+    }
+
+    it("parses LABEL  A ({ key1 : FLOAT, key2 : STRING })") {
+      success(labelDefinition, LabelDefinition("A", Map("key1" -> CTFloat, "key2" -> CTString)))
+    }
+
+    it("!parses LABEL  A ({ })") {
+      failure(labelDefinition)
     }
   }
 
   describe("catalog label definition") {
-    it("parses CATALOG CREATE LABEL (A)") {
+    it("parses CATALOG CREATE LABEL A") {
       success(catalogLabelDefinition, LabelDefinition("A"))
     }
 
-    it("parses CATALOG CREATE LABEL (A { foo : STRING })") {
+    it("parses CATALOG CREATE LABEL A ({ foo : STRING })") {
       success(catalogLabelDefinition, LabelDefinition("A", Map("foo" -> CTString)))
     }
 
-    it("parses CREATE LABEL (A  KEY  A_NK   (foo,   bar))") {
+    it("parses CREATE LABEL A (KEY  A_NK   (foo,   bar))") {
       success(catalogLabelDefinition, LabelDefinition("A", Map.empty, Some("A_NK" -> Set("foo", "bar"))))
     }
 
-    it("parses CREATE LABEL (A { foo : STRING } KEY A_NK (foo,   bar))") {
+    it("parses CREATE LABEL A ({ foo : STRING } KEY A_NK (foo,   bar))") {
       success(catalogLabelDefinition, LabelDefinition("A", Map("foo" -> CTString), Some("A_NK" -> Set("foo", "bar"))))
+    }
+
+    it("!parses CREATE LABEL A ({ foo : STRING } KEY A ())") {
+      failure(catalogLabelDefinition)
     }
   }
 
@@ -227,91 +215,126 @@ class GraphDdlParserTest extends BaseTestSuite with MockitoSugar with TestNameFi
       parse(
         """|SET SCHEMA foo.bar
            |
-           |CATALOG CREATE LABEL (A {name: STRING})
+           |CATALOG CREATE LABEL A ({name: STRING})
            |
-           |CATALOG CREATE LABEL (B {sequence: INTEGER, nationality: STRING?, age: INTEGER?})
+           |CATALOG CREATE LABEL B ({sequence: INTEGER, nationality: STRING?, age: INTEGER?})
            |
-           |CATALOG CREATE LABEL [TYPE_1]
+           |CATALOG CREATE LABEL TYPE_1
            |
-           |CATALOG CREATE LABEL [TYPE_2 {prop: BOOLEAN?}]""".stripMargin) shouldEqual
+           |CATALOG CREATE LABEL TYPE_2 ({prop: BOOLEAN?})""".stripMargin) shouldEqual
         DdlDefinition(List(
           SetSchemaDefinition("foo", "bar"),
           LabelDefinition("A", Map("name" -> CTString)),
           LabelDefinition("B", Map("sequence" -> CTInteger, "nationality" -> CTString.nullable, "age" -> CTInteger.nullable)),
           LabelDefinition("TYPE_1"),
           LabelDefinition("TYPE_2", Map("prop" -> CTBoolean.nullable))
-          ))
+        ))
     }
 
     it("parses a schema with node, rel, and schema pattern definitions") {
 
       val input =
-        """|CREATE GRAPH SCHEMA mySchema
+        """|CREATE GRAPH SCHEMA mySchema (
            |
            |  --NODES
            |  (A),
            |  (B),
-           |  (A, B)
+           |  (A, B),
            |
            |  --EDGES
            |  [TYPE_1],
-           |  [TYPE_2]
+           |  [TYPE_2],
            |
            |  (A | B) <0 .. *> - [TYPE_1] -> <1> (B),
-           |  (A) <*> - [TYPE_1] -> (A);
+           |  (A) <*> - [TYPE_1] -> (A)
+           |)
         """.stripMargin
       success(globalSchemaDefinition, input, GlobalSchemaDefinition(
         name = "mySchema",
-        schemaDefinition = SchemaDefinition(
-          localLabelDefinitions = List.empty[LabelDefinition],
-          nodeDefinitions = Set(Set("A"), Set("B"), Set("A", "B")),
-          relDefinitions = Set("TYPE_1", "TYPE_2"),
-          schemaPatternDefinitions = Set(
-            SchemaPatternDefinition(
-              Set(Set("A"), Set("B")),
-              CardinalityConstraint(0, None), Set("TYPE_1"), CardinalityConstraint(1, Some(1)),
-              Set(Set("B"))),
-            SchemaPatternDefinition(
-              Set(Set("A")),
-              CardinalityConstraint(0, None), Set("TYPE_1"), CardinalityConstraint(0, None),
-              Set(Set("A")))
+        schemaDefinition = SchemaDefinition(List(
+          NodeDefinition(Set("A")),
+          NodeDefinition(Set("B")),
+          NodeDefinition(Set("A", "B")),
+          RelationshipDefinition("TYPE_1"),
+          RelationshipDefinition("TYPE_2"),
+          SchemaPatternDefinition(
+            Set(Set("A"), Set("B")),
+            CardinalityConstraint(0, None), Set("TYPE_1"), CardinalityConstraint(1, Some(1)),
+            Set(Set("B"))),
+          SchemaPatternDefinition(
+            Set(Set("A")),
+            CardinalityConstraint(0, None), Set("TYPE_1"), CardinalityConstraint(0, None),
+            Set(Set("A")))
       ))))
     }
 
-    it("parses CREATE GRAPH SCHEMA mySchema (A)-[TYPE]->(B)") {
+    it("parses CREATE GRAPH SCHEMA mySchema ( (A)-[TYPE]->(B) )") {
       success(globalSchemaDefinition,
         GlobalSchemaDefinition("mySchema",
-          SchemaDefinition(schemaPatternDefinitions = Set(
+          SchemaDefinition(List(
             SchemaPatternDefinition(sourceLabelCombinations = Set(Set("A")), relTypes = Set("TYPE"), targetLabelCombinations = Set(Set("B")))
+        ))))
+    }
+
+    it("parses a schema with node, rel, and schema pattern definitions in any order") {
+
+      val input =
+        """|CREATE GRAPH SCHEMA mySchema (
+           |  (A | B) <0 .. *> - [TYPE_1] -> <1> (B),
+           |  (A),
+           |  (A, B),
+           |  (A) <*> - [TYPE_1] -> (A),
+           |  [TYPE_1],
+           |  (B),
+           |  [TYPE_2]
+           |)
+        """.stripMargin
+      success(globalSchemaDefinition, input, GlobalSchemaDefinition(
+        name = "mySchema",
+        schemaDefinition = SchemaDefinition(List(
+          SchemaPatternDefinition(
+            Set(Set("A"), Set("B")),
+            CardinalityConstraint(0, None), Set("TYPE_1"), CardinalityConstraint(1, Some(1)),
+            Set(Set("B"))),
+          NodeDefinition(Set("A")),
+          NodeDefinition(Set("A", "B")),
+          SchemaPatternDefinition(
+            Set(Set("A")),
+            CardinalityConstraint(0, None), Set("TYPE_1"), CardinalityConstraint(0, None),
+            Set(Set("A"))),
+          RelationshipDefinition("TYPE_1"),
+          NodeDefinition(Set("B")),
+          RelationshipDefinition("TYPE_2")
         ))))
     }
   }
 
   describe("graph definitions") {
-    it("parses CREATE GRAPH myGraph WITH GRAPH SCHEMA foo") {
+    it("parses CREATE GRAPH myGraph WITH GRAPH SCHEMA foo ()") {
       success(graphDefinition, GraphDefinition("myGraph", Some("foo")))
     }
 
-    it("parses CREATE GRAPH myGraph WITH GRAPH SCHEMA mySchema") {
+    it("parses CREATE GRAPH myGraph WITH GRAPH SCHEMA mySchema ()") {
       success(graphDefinition, GraphDefinition("myGraph", Some("mySchema")))
     }
 
     it("parses a graph definition with inlined schema") {
-      val expectedSchemaDefinition = SchemaDefinition(
-        localLabelDefinitions = List(LabelDefinition("A"), LabelDefinition("B")),
-        nodeDefinitions = Set(Set("A", "B")),
-        relDefinitions = Set("B")
-      )
+      val expectedSchemaDefinition = SchemaDefinition(List(
+        LabelDefinition("A", properties = Map("foo" -> CTString)),
+        LabelDefinition("B"),
+        NodeDefinition(Set("A", "B")),
+        RelationshipDefinition("B")
+      ))
       graphDefinition.parse(
         """|CREATE GRAPH myGraph WITH GRAPH SCHEMA (
-           | LABEL (A),
-           | LABEL (B)
+           | LABEL A ({ foo : STRING }),
+           | LABEL B,
            |
-           | (A,B)
+           | (A,B),
            | [B]
-           |)
+           |) ()
         """.stripMargin) should matchPattern {
-        case Success(GraphDefinition("myGraph", None, `expectedSchemaDefinition`, `emptyList`, `emptyList`), _) =>
+        case Success(GraphDefinition("myGraph", None, `expectedSchemaDefinition`, `emptyList`), _) =>
       }
     }
   }
@@ -319,177 +342,150 @@ class GraphDdlParserTest extends BaseTestSuite with MockitoSugar with TestNameFi
   describe("NODE LABEL SETS | RELATIONSHIP LABEL SETS") {
 
     it("parses (A) FROM view") {
-      success(nodeMappingDefinition, NodeMappingDefinition(Set("A"), List(NodeToViewDefinition(List("view")))))
+      success(nodeMappingDefinition, NodeMappingDefinition(NodeDefinition("A"), List(NodeToViewDefinition(List("view")))))
     }
 
     it("parses (A) FROM view (column1 AS propertyKey1, column2 AS propertyKey2)") {
-      success(nodeMappingDefinition, NodeMappingDefinition(Set("A"), List(NodeToViewDefinition(List("view"), Some(Map("propertyKey1" -> "column1", "propertyKey2" -> "column2"))))))
+      success(nodeMappingDefinition, NodeMappingDefinition(NodeDefinition("A"), List(NodeToViewDefinition(List("view"), Some(Map("propertyKey1" -> "column1", "propertyKey2" -> "column2"))))))
     }
     it("parses (A) FROM viewA FROM viewB") {
-      success(nodeMappingDefinition, NodeMappingDefinition(Set("A"), List(NodeToViewDefinition(List("viewA")), NodeToViewDefinition(List("viewB")))))
+      success(nodeMappingDefinition, NodeMappingDefinition(NodeDefinition("A"), List(NodeToViewDefinition(List("viewA")), NodeToViewDefinition(List("viewB")))))
     }
 
-    it("parses NODE LABEL SETS ( (A) FROM viewA (B) FROM viewB )") {
-      success(nodeMappings, List(NodeMappingDefinition(Set("A"), List(NodeToViewDefinition(List("viewA")))), NodeMappingDefinition(Set("B"), List(NodeToViewDefinition(List("viewB"))))))
+    it("parses (A) FROM viewA, (B) FROM viewB") {
+      success(nodeMappings, List(NodeMappingDefinition(NodeDefinition("A"), List(NodeToViewDefinition(List("viewA")))), NodeMappingDefinition(NodeDefinition("B"), List(NodeToViewDefinition(List("viewB"))))))
     }
 
-    it("parses NODE LABEL SETS ( (A) FROM viewA (column1 AS propertyKey1, column2 AS propertyKey2) FROM viewB (column1 AS propertyKey1, column2 AS propertyKey2) )") {
+    it("parses (A) FROM viewA (column1 AS propertyKey1, column2 AS propertyKey2) FROM viewB (column1 AS propertyKey1, column2 AS propertyKey2)") {
       success(nodeMappings, List(
-        NodeMappingDefinition(Set("A"), List(
+        NodeMappingDefinition(NodeDefinition("A"), List(
           NodeToViewDefinition(List("viewA"), Some(Map("propertyKey1" -> "column1", "propertyKey2" -> "column2"))),
           NodeToViewDefinition(List("viewB"), Some(Map("propertyKey1" -> "column1", "propertyKey2" -> "column2")))))
       ))
     }
 
-    it("parses NODE LABEL SETS ( (A) FROM viewA (column1 AS propertyKey1, column2 AS propertyKey2) (B) FROM viewB (column1 AS propertyKey1, column2 AS propertyKey2) )") {
+    it("parses (A) FROM viewA (column1 AS propertyKey1, column2 AS propertyKey2), (B) FROM viewB (column1 AS propertyKey1, column2 AS propertyKey2)") {
       success(nodeMappings, List(
-        NodeMappingDefinition(Set("A"), List(NodeToViewDefinition(List("viewA"), Some(Map("propertyKey1" -> "column1", "propertyKey2" -> "column2"))))),
-        NodeMappingDefinition(Set("B"), List(NodeToViewDefinition(List("viewB"), Some(Map("propertyKey1" -> "column1", "propertyKey2" -> "column2")))))
+        NodeMappingDefinition(NodeDefinition("A"), List(NodeToViewDefinition(List("viewA"), Some(Map("propertyKey1" -> "column1", "propertyKey2" -> "column2"))))),
+        NodeMappingDefinition(NodeDefinition("B"), List(NodeToViewDefinition(List("viewB"), Some(Map("propertyKey1" -> "column1", "propertyKey2" -> "column2")))))
       ))
-    }
-
-    it("parses JOIN ON view_a.COLUMN_A = view_b.COLUMN_B") {
-      success(joinOnDefinition, JoinOnDefinition(List((List("view_a", "COLUMN_A"), List("view_b", "COLUMN_B")))))
-    }
-
-    it("parses JOIN ON view_a.COLUMN_A = view_b.COLUMN_B AND view_a.COLUMN_C = view_b.COLUMN_D") {
-      success(joinOnDefinition, JoinOnDefinition(List(
-        (List("view_a", "COLUMN_A"), List("view_b", "COLUMN_B")),
-        (List("view_a", "COLUMN_C"), List("view_b", "COLUMN_D")))))
-    }
-
-    it("parses LABEL SET (A, B) FROM foo alias_foo JOIN ON alias_foo.COLUMN_A = edge.COLUMN_A") {
-      success(labelToViewDefinition, LabelToViewDefinition(
-        Set("A", "B"),
-        ViewDefinition(List("foo"), "alias_foo"),
-        JoinOnDefinition(List((List("alias_foo", "COLUMN_A"), List("edge", "COLUMN_A")))))
-      )
     }
 
     it("parses a relationship mapping definition") {
       val input =
-        """|FROM baz alias_baz
-           |  START NODES
-           |    LABEL SET (A, B) FROM foo alias_foo JOIN ON alias_foo.COLUMN_A = edge.COLUMN_A
-           |  END NODES
-           |    LABEL SET (C) FROM bar alias_bar JOIN ON alias_bar.COLUMN_A = edge.COLUMN_A
+        """|[a] FROM baz alias_baz
+           |  START NODES (A, B) FROM foo alias_foo
+           |      JOIN ON alias_foo.COLUMN_A = edge.COLUMN_A
+           |          AND alias_foo.COLUMN_C = edge.COLUMN_D
+           |  END NODES (C) FROM bar alias_bar
+           |      JOIN ON alias_bar.COLUMN_A = edge.COLUMN_A
         """.stripMargin
 
-      success(relationshipToViewDefinition, input, RelationshipToViewDefinition(
-        viewDefinition = ViewDefinition(List("baz"), "alias_baz"),
-        startNodeToViewDefinition = LabelToViewDefinition(
-          Set("A", "B"),
-          ViewDefinition(List("foo"), "alias_foo"),
-          JoinOnDefinition(List((List("alias_foo", "COLUMN_A"), List("edge", "COLUMN_A"))))),
-        endNodeToViewDefinition = LabelToViewDefinition(
-          Set("C"),
-          ViewDefinition(List("bar"), "alias_bar"),
-          JoinOnDefinition(List((List("alias_bar", "COLUMN_A"), List("edge", "COLUMN_A")))))
-      ))
+      success(relationshipMappingDefinition, input, RelationshipMappingDefinition(
+        relDefinition = RelationshipDefinition("a"),
+        relationshipToViewDefinitions = List(RelationshipToViewDefinition(
+          viewDefinition = ViewDefinition(List("baz"), "alias_baz"),
+          startNodeToViewDefinition = LabelToViewDefinition(
+            NodeDefinition("A", "B"),
+            ViewDefinition(List("foo"), "alias_foo"),
+            JoinOnDefinition(List(
+              (List("alias_foo", "COLUMN_A"), List("edge", "COLUMN_A")),
+              (List("alias_foo", "COLUMN_C"), List("edge", "COLUMN_D"))))),
+          endNodeToViewDefinition = LabelToViewDefinition(
+            NodeDefinition("C"),
+            ViewDefinition(List("bar"), "alias_bar"),
+            JoinOnDefinition(List(
+              (List("alias_bar", "COLUMN_A"), List("edge", "COLUMN_A")))))
+      ))))
     }
 
     it("parses a relationship mapping definition with custom property to column mapping") {
       val input =
-        """|FROM baz alias_baz ( colA AS foo, colB AS bar )
-           |  START NODES
-           |    LABEL SET (A, B) FROM foo alias_foo JOIN ON alias_foo.COLUMN_A = edge.COLUMN_A
-           |  END NODES
-           |    LABEL SET (C) FROM bar alias_bar JOIN ON alias_bar.COLUMN_A = edge.COLUMN_A
+        """|[a] FROM baz alias_baz ( colA AS foo, colB AS bar )
+           |  START NODES (A, B) FROM foo alias_foo JOIN ON alias_foo.COLUMN_A = edge.COLUMN_A
+           |  END NODES   (C)    FROM bar alias_bar JOIN ON alias_bar.COLUMN_A = edge.COLUMN_A
         """.stripMargin
 
-      success(relationshipToViewDefinition, input, RelationshipToViewDefinition(
-        viewDefinition = ViewDefinition(List("baz"), "alias_baz"),
-        maybePropertyMapping = Some(Map("foo" -> "colA", "bar" -> "colB")),
-        startNodeToViewDefinition = LabelToViewDefinition(
-          Set("A", "B"),
-          ViewDefinition(List("foo"), "alias_foo"),
-          JoinOnDefinition(List((List("alias_foo", "COLUMN_A"), List("edge", "COLUMN_A"))))),
-        endNodeToViewDefinition = LabelToViewDefinition(
-          Set("C"),
-          ViewDefinition(List("bar"), "alias_bar"),
-          JoinOnDefinition(List((List("alias_bar", "COLUMN_A"), List("edge", "COLUMN_A")))))
-      ))
+      success(relationshipMappingDefinition, input, RelationshipMappingDefinition(
+        relDefinition = RelationshipDefinition("a"),
+        relationshipToViewDefinitions = List(RelationshipToViewDefinition(
+          viewDefinition = ViewDefinition(List("baz"), "alias_baz"),
+          maybePropertyMapping = Some(Map("foo" -> "colA", "bar" -> "colB")),
+          startNodeToViewDefinition = LabelToViewDefinition(
+            NodeDefinition("A", "B"),
+            ViewDefinition(List("foo"), "alias_foo"),
+            JoinOnDefinition(List((List("alias_foo", "COLUMN_A"), List("edge", "COLUMN_A"))))),
+          endNodeToViewDefinition = LabelToViewDefinition(
+            NodeDefinition("C"),
+            ViewDefinition(List("bar"), "alias_bar"),
+            JoinOnDefinition(List((List("alias_bar", "COLUMN_A"), List("edge", "COLUMN_A")))))
+        ))))
     }
 
     it("parses a relationship label set definition") {
       val input =
-        """|(TYPE_1)
+        """|[TYPE_1]
            |  FROM baz edge
-           |    START NODES
-           |      LABEL SET (A) FROM foo alias_foo JOIN ON alias_foo.COLUMN_A = edge.COLUMN_A
-           |    END NODES
-           |      LABEL SET (B) FROM bar alias_bar JOIN ON alias_bar.COLUMN_A = edge.COLUMN_A
+           |    START NODES (A) FROM foo alias_foo JOIN ON alias_foo.COLUMN_A = edge.COLUMN_A
+           |    END NODES   (B) FROM bar alias_bar JOIN ON alias_bar.COLUMN_A = edge.COLUMN_A
            |  FROM baz edge
-           |    START NODES
-           |      LABEL SET (A) FROM foo alias_foo JOIN ON alias_foo.COLUMN_A = edge.COLUMN_A
-           |    END NODES
-           |      LABEL SET (B) FROM bar alias_bar JOIN ON alias_bar.COLUMN_A = edge.COLUMN_A
+           |    START NODES (A) FROM foo alias_foo JOIN ON alias_foo.COLUMN_A = edge.COLUMN_A
+           |    END NODES   (B) FROM bar alias_bar JOIN ON alias_bar.COLUMN_A = edge.COLUMN_A
         """.stripMargin
 
       val relMappingDef = RelationshipToViewDefinition(
         viewDefinition = ViewDefinition(List("baz"), "edge"),
         startNodeToViewDefinition = LabelToViewDefinition(
-          Set("A"),
+          NodeDefinition("A"),
           ViewDefinition(List("foo"), "alias_foo"),
           JoinOnDefinition(List((List("alias_foo", "COLUMN_A"), List("edge", "COLUMN_A"))))),
         endNodeToViewDefinition = LabelToViewDefinition(
-          Set("B"),
+          NodeDefinition("B"),
           ViewDefinition(List("bar"), "alias_bar"),
           JoinOnDefinition(List((List("alias_bar", "COLUMN_A"), List("edge", "COLUMN_A")))))
       )
 
-      debug(relationshipMappingDefinition, input)
-      success(relationshipMappingDefinition, input, RelationshipMappingDefinition("TYPE_1", List(relMappingDef, relMappingDef)))
+      success(
+        relationshipMappingDefinition,
+        input,
+        RelationshipMappingDefinition(RelationshipDefinition("TYPE_1"), List(relMappingDef, relMappingDef)))
     }
 
     it("parses relationship label sets") {
       val input =
-        """|RELATIONSHIP LABEL SETS (
+        """|[TYPE_1]
+           |  FROM baz alias_baz
+           |    START NODES (A) FROM foo alias_foo JOIN ON alias_foo.COLUMN_A = edge.COLUMN_A
+           |    END NODES   (B) FROM bar alias_bar JOIN ON alias_bar.COLUMN_A = edge.COLUMN_A
+           |  FROM baz alias_baz
+           |    START NODES (A) FROM foo alias_foo JOIN ON alias_foo.COLUMN_A = edge.COLUMN_A
+           |    END NODES   (B) FROM bar alias_bar JOIN ON alias_bar.COLUMN_A = edge.COLUMN_A,
            |
-           |        (TYPE_1)
-           |          FROM baz alias_baz
-           |            START NODES
-           |              LABEL SET (A) FROM foo alias_foo JOIN ON alias_foo.COLUMN_A = edge.COLUMN_A
-           |            END NODES
-           |              LABEL SET (B) FROM bar alias_bar JOIN ON alias_bar.COLUMN_A = edge.COLUMN_A
-           |          FROM baz alias_baz
-           |            START NODES
-           |              LABEL SET (A) FROM foo alias_foo JOIN ON alias_foo.COLUMN_A = edge.COLUMN_A
-           |            END NODES
-           |              LABEL SET (B) FROM bar alias_bar JOIN ON alias_bar.COLUMN_A = edge.COLUMN_A
-           |
-           |        (TYPE_2)
-           |          FROM baz alias_baz
-           |            START NODES
-           |              LABEL SET (A) FROM foo alias_foo JOIN ON alias_foo.COLUMN_A = edge.COLUMN_A
-           |            END NODES
-           |              LABEL SET (B) FROM bar alias_bar JOIN ON alias_bar.COLUMN_A = edge.COLUMN_A
-           |          FROM baz alias_baz
-           |            START NODES
-           |              LABEL SET (A) FROM foo alias_foo JOIN ON alias_foo.COLUMN_A = edge.COLUMN_A
-           |            END NODES
-           |              LABEL SET (B) FROM bar alias_bar JOIN ON alias_bar.COLUMN_A = edge.COLUMN_A
-           |
-           |
-           |    )
+           |[TYPE_2]
+           |  FROM baz alias_baz
+           |    START NODES (A) FROM foo alias_foo JOIN ON alias_foo.COLUMN_A = edge.COLUMN_A
+           |    END NODES   (B) FROM bar alias_bar JOIN ON alias_bar.COLUMN_A = edge.COLUMN_A
+           |  FROM baz alias_baz
+           |    START NODES (A) FROM foo alias_foo JOIN ON alias_foo.COLUMN_A = edge.COLUMN_A
+           |    END NODES   (B) FROM bar alias_bar JOIN ON alias_bar.COLUMN_A = edge.COLUMN_A
         """.stripMargin
 
       val relMappingDef = RelationshipToViewDefinition(
         viewDefinition = ViewDefinition(List("baz"), "alias_baz"),
         startNodeToViewDefinition = LabelToViewDefinition(
-          Set("A"),
+          NodeDefinition("A"),
           ViewDefinition(List("foo"), "alias_foo"),
           JoinOnDefinition(List((List("alias_foo", "COLUMN_A"), List("edge", "COLUMN_A"))))),
         endNodeToViewDefinition = LabelToViewDefinition(
-          Set("B"),
+          NodeDefinition("B"),
           ViewDefinition(List("bar"), "alias_bar"),
           JoinOnDefinition(List((List("alias_bar", "COLUMN_A"), List("edge", "COLUMN_A")))))
       )
 
       success(relationshipMappings, input,
         List(
-          RelationshipMappingDefinition("TYPE_1", List(relMappingDef, relMappingDef)),
-          RelationshipMappingDefinition("TYPE_2", List(relMappingDef, relMappingDef))
+          RelationshipMappingDefinition(RelationshipDefinition("TYPE_1"), List(relMappingDef, relMappingDef)),
+          RelationshipMappingDefinition(RelationshipDefinition("TYPE_2"), List(relMappingDef, relMappingDef))
         ))
     }
   }

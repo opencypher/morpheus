@@ -86,14 +86,13 @@ class SqlPropertyGraphDataSourceTest extends CAPSTestSuite with HiveFixture with
       s"""
          |SET SCHEMA $dataSourceName.$databaseName
          |
-         |CREATE GRAPH SCHEMA fooSchema
-         | LABEL (Foo { foo : STRING })
+         |CREATE GRAPH SCHEMA fooSchema (
+         | LABEL Foo ({ foo : STRING }),
          | (Foo)
-         |
-         |CREATE GRAPH fooGraph WITH GRAPH SCHEMA fooSchema
-         |  NODE LABEL SETS (
-         |    (Foo) FROM $fooView
-         |  )
+         |)
+         |CREATE GRAPH fooGraph WITH GRAPH SCHEMA fooSchema (
+         |  (Foo) FROM $fooView
+         |)
      """.stripMargin
 
     sparkSession
@@ -115,14 +114,14 @@ class SqlPropertyGraphDataSourceTest extends CAPSTestSuite with HiveFixture with
       s"""
          |SET SCHEMA $dataSourceName.$databaseName
          |
-         |CREATE GRAPH SCHEMA fooSchema
-         | LABEL (Foo { key1 : INTEGER, key2 : String })
+         |CREATE GRAPH SCHEMA fooSchema (
+         | LABEL Foo ({ key1 : INTEGER, key2 : String }),
          | (Foo)
+         |)
          |
-         |CREATE GRAPH fooGraph WITH GRAPH SCHEMA fooSchema
-         |  NODE LABEL SETS (
-         |    (Foo) FROM $fooView (col1 AS key2, col2 AS key1)
-         |  )
+         |CREATE GRAPH fooGraph WITH GRAPH SCHEMA fooSchema (
+         |  (Foo) FROM $fooView (col1 AS key2, col2 AS key1)
+         |)
      """.stripMargin
 
     sparkSession
@@ -145,17 +144,17 @@ class SqlPropertyGraphDataSourceTest extends CAPSTestSuite with HiveFixture with
       s"""
          |SET SCHEMA $dataSourceName.$databaseName
          |
-         |CREATE GRAPH SCHEMA fooSchema
-         | LABEL (Foo { foo : STRING })
-         | LABEL (Bar { bar : INTEGER })
-         | (Foo)
+         |CREATE GRAPH SCHEMA fooSchema (
+         | LABEL Foo ({ foo : STRING }),
+         | LABEL Bar ({ bar : INTEGER }),
+         | (Foo),
          | (Bar)
+         |)
          |
-         |CREATE GRAPH fooGraph WITH GRAPH SCHEMA fooSchema
-         |  NODE LABEL SETS (
-         |    (Foo) FROM $fooView
-         |    (Bar) FROM $barView
-         |  )
+         |CREATE GRAPH fooGraph WITH GRAPH SCHEMA fooSchema (
+         |  (Foo) FROM $fooView,
+         |  (Bar) FROM $barView
+         |)
      """.stripMargin
 
     sparkSession
@@ -184,27 +183,23 @@ class SqlPropertyGraphDataSourceTest extends CAPSTestSuite with HiveFixture with
       s"""
          |SET SCHEMA $dataSourceName.$databaseName
          |
-         |CREATE GRAPH SCHEMA fooSchema
-         | LABEL (Person { name   : STRING })
-         | LABEL (Book   { title  : STRING })
-         | LABEL (READS  { rating : FLOAT  })
-         | (Person)
-         | (Book)
+         |CREATE GRAPH SCHEMA fooSchema (
+         | LABEL Person ({ name   : STRING }),
+         | LABEL Book   ({ title  : STRING }),
+         | LABEL READS  ({ rating : FLOAT  }),
+         | (Person),
+         | (Book),
          | [READS]
+         |)
          |
-         |CREATE GRAPH fooGraph WITH GRAPH SCHEMA fooSchema
-         |  NODE LABEL SETS (
-         |    (Person) FROM $personView ( person_name AS name )
-         |    (Book)   FROM $bookView (book_title AS title )
-         |  )
-         |  RELATIONSHIP LABEL SETS (
-         |    (READS)
-         |      FROM $readsView edge
-         |        START NODES
-         |          LABEL SET (Person) FROM $personView alias_person JOIN ON alias_person.person_id = edge.person
-         |        END NODES
-         |          LABEL SET (Book)   FROM $bookView   alias_book   JOIN ON edge.book = alias_book.book_id
-         |  )
+         |CREATE GRAPH fooGraph WITH GRAPH SCHEMA fooSchema (
+         |  (Person) FROM $personView ( person_name AS name ),
+         |  (Book)   FROM $bookView (book_title AS title ),
+         |  [READS]
+         |    FROM $readsView edge
+         |      START NODES (Person) FROM $personView alias_person JOIN ON alias_person.person_id = edge.person
+         |      END NODES   (Book)   FROM $bookView   alias_book   JOIN ON edge.book = alias_book.book_id
+         |)
      """.stripMargin
 
     sparkSession
@@ -248,24 +243,19 @@ class SqlPropertyGraphDataSourceTest extends CAPSTestSuite with HiveFixture with
       s"""
          |SET SCHEMA $dataSourceName.$databaseName
          |
-         |CREATE GRAPH SCHEMA fooSchema
-         | LABEL (Node { id : INTEGER, start : STRING, end : STRING })
-         | LABEL (REL  { id : INTEGER, start : STRING, end : STRING })
-         | (Node)
+         |CREATE GRAPH SCHEMA fooSchema (
+         | LABEL Node ({ id : INTEGER, start : STRING, end : STRING }),
+         | LABEL REL  ({ id : INTEGER, start : STRING, end : STRING }),
+         | (Node),
          | [REL]
-         |
-         |CREATE GRAPH fooGraph WITH GRAPH SCHEMA fooSchema
-         |  NODE LABEL SETS (
-         |    (Node) FROM $nodesView
-         |  )
-         |  RELATIONSHIP LABEL SETS (
-         |    (REL)
-         |      FROM $relsView edge
-         |        START NODES
-         |          LABEL SET (Node) FROM $nodesView alias_node JOIN ON alias_node.node_id = edge.source_id
-         |        END NODES
-         |          LABEL SET (Node) FROM $nodesView alias_node JOIN ON alias_node.node_id = edge.target_id
-         |  )
+         |)
+         |CREATE GRAPH fooGraph WITH GRAPH SCHEMA fooSchema (
+         |  (Node) FROM $nodesView,
+         |  [REL]
+         |    FROM $relsView edge
+         |      START NODES (Node) FROM $nodesView alias_node JOIN ON alias_node.node_id = edge.source_id
+         |      END NODES   (Node) FROM $nodesView alias_node JOIN ON alias_node.node_id = edge.target_id
+         |)
      """.stripMargin
 
     sparkSession
@@ -310,32 +300,25 @@ class SqlPropertyGraphDataSourceTest extends CAPSTestSuite with HiveFixture with
       s"""
          |SET SCHEMA $dataSourceName.$databaseName
          |
-         |CREATE GRAPH SCHEMA fooSchema
-         | LABEL (Person { name   : STRING })
-         | LABEL (Book   { title  : STRING })
-         | LABEL (READS  { rating : FLOAT  })
-         | (Person)
-         | (Book)
+         |CREATE GRAPH SCHEMA fooSchema (
+         | LABEL Person ({ name   : STRING }),
+         | LABEL Book   ({ title  : STRING }),
+         | LABEL READS  ({ rating : FLOAT  }),
+         | (Person),
+         | (Book),
          | [READS]
-         |
-         |CREATE GRAPH fooGraph WITH GRAPH SCHEMA fooSchema
-         |  NODE LABEL SETS (
-         |    (Person) FROM $personView ( person_name AS name )
-         |    (Book) FROM $bookView (book_title AS title )
-         |  )
-         |  RELATIONSHIP LABEL SETS (
-         |    (READS)
-         |      FROM $readsView1 edge
-         |        START NODES
-         |          LABEL SET (Person) FROM $personView alias_person JOIN ON alias_person.person_id = edge.person
-         |        END NODES
-         |          LABEL SET (Book)   FROM $bookView   alias_book   JOIN ON edge.book = alias_book.book_id
-         |      FROM $readsView2 edge (rates AS rating)
-         |        START NODES
-         |          LABEL SET (Person) FROM $personView alias_person JOIN ON edge.p_id = alias_person.person_id
-         |        END NODES
-         |          LABEL SET (Book)   FROM $bookView   alias_book   JOIN ON alias_book.book_id = edge.b_id
-         |  )
+         |)
+         |CREATE GRAPH fooGraph WITH GRAPH SCHEMA fooSchema (
+         |  (Person) FROM $personView ( person_name AS name ),
+         |  (Book) FROM $bookView (book_title AS title ),
+         |  [READS]
+         |    FROM $readsView1 edge
+         |      START NODES (Person) FROM $personView alias_person JOIN ON alias_person.person_id = edge.person
+         |      END NODES   (Book)   FROM $bookView   alias_book   JOIN ON edge.book = alias_book.book_id
+         |    FROM $readsView2 edge (rates AS rating)
+         |      START NODES (Person) FROM $personView alias_person JOIN ON edge.p_id = alias_person.person_id
+         |      END NODES   (Book)   FROM $bookView   alias_book   JOIN ON alias_book.book_id = edge.b_id
+         |)
      """.stripMargin
 
     sparkSession
@@ -390,17 +373,16 @@ class SqlPropertyGraphDataSourceTest extends CAPSTestSuite with HiveFixture with
 
     val ddlString =
       s"""
-         |CREATE GRAPH SCHEMA fooSchema
-         | LABEL (Foo { foo : STRING })
-         | LABEL (Bar { bar : INTEGER })
-         | (Foo)
+         |CREATE GRAPH SCHEMA fooSchema (
+         | LABEL Foo ({ foo : STRING }),
+         | LABEL Bar ({ bar : INTEGER }),
+         | (Foo),
          | (Bar)
-         |
-         |CREATE GRAPH fooGraph WITH GRAPH SCHEMA fooSchema
-         |  NODE LABEL SETS (
-         |    (Foo) FROM ds1.db1.$fooView
-         |    (Bar) FROM ds2.db2.$barView
-         |  )
+         |)
+         |CREATE GRAPH fooGraph WITH GRAPH SCHEMA fooSchema (
+         |  (Foo) FROM ds1.db1.$fooView,
+         |  (Bar) FROM ds2.db2.$barView
+         |)
      """.stripMargin
 
     freshHiveDatabase("db1")
@@ -431,17 +413,16 @@ class SqlPropertyGraphDataSourceTest extends CAPSTestSuite with HiveFixture with
 
     val ddlString =
       s"""
-         |CREATE GRAPH SCHEMA fooSchema
-         | LABEL (Foo { foo : STRING })
-         | LABEL (Bar { bar : INTEGER })
-         | (Foo)
+         |CREATE GRAPH SCHEMA fooSchema (
+         | LABEL Foo ({ foo : STRING }),
+         | LABEL Bar ({ bar : INTEGER }),
+         | (Foo),
          | (Bar)
-         |
-         |CREATE GRAPH fooGraph WITH GRAPH SCHEMA fooSchema
-         |  NODE LABEL SETS (
-         |    (Foo) FROM ds1.schema1.$fooView
-         |    (Bar) FROM ds2.schema2.barView
-         |  )
+         |)
+         |CREATE GRAPH fooGraph WITH GRAPH SCHEMA fooSchema (
+         |  (Foo) FROM ds1.schema1.$fooView,
+         |  (Bar) FROM ds2.schema2.barView
+         |)
      """.stripMargin
 
     val hiveDataSourceConfig = SqlDataSourceConfig(

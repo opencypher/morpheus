@@ -42,6 +42,8 @@ object GraphDdlAst {
   type PropertyToColumnMappingDefinition = Map[String, String]
 
   type LabelCombination = Set[String]
+
+  type RelationshipType = String
 }
 
 abstract class GraphDdlAst extends AbstractTreeNode[GraphDdlAst]
@@ -51,6 +53,7 @@ case class DdlDefinition(
 ) extends GraphDdlAst
 
 sealed trait DdlStatement
+sealed trait SchemaStatement
 
 case class SetSchemaDefinition(
   dataSource: String,
@@ -61,7 +64,7 @@ case class LabelDefinition(
   name: String,
   properties: Map[String, CypherType] = Map.empty,
   maybeKeyDefinition: Option[KeyDefinition] = None
-) extends GraphDdlAst with DdlStatement
+) extends GraphDdlAst with DdlStatement with SchemaStatement
 
 case class GlobalSchemaDefinition(
   name: String,
@@ -69,19 +72,27 @@ case class GlobalSchemaDefinition(
 ) extends GraphDdlAst with DdlStatement
 
 case class SchemaDefinition(
-  localLabelDefinitions: List[LabelDefinition] = List.empty,
-  nodeDefinitions: Set[Set[String]] = Set.empty,
-  relDefinitions: Set[String] = Set.empty,
-  schemaPatternDefinitions: Set[SchemaPatternDefinition] = Set.empty
+  schemaStatements: List[SchemaStatement] = List.empty
 ) extends GraphDdlAst
 
 case class GraphDefinition(
   name: String,
   maybeSchemaName: Option[String] = None,
   localSchemaDefinition: SchemaDefinition = SchemaDefinition(),
-  nodeMappings: List[NodeMappingDefinition] = List.empty,
-  relationshipMappings: List[RelationshipMappingDefinition] = List.empty
+  mappings: List[MappingDefinition] = List.empty
 ) extends GraphDdlAst with DdlStatement
+
+object NodeDefinition {
+  def apply(labelCombination: String*): NodeDefinition = NodeDefinition(labelCombination.toSet)
+}
+
+case class NodeDefinition(
+  labelCombination: LabelCombination
+) extends GraphDdlAst with SchemaStatement
+
+case class RelationshipDefinition(
+  label: RelationshipType
+) extends GraphDdlAst with SchemaStatement
 
 case class CardinalityConstraint(from: Int, to: Option[Int])
 
@@ -91,7 +102,7 @@ case class SchemaPatternDefinition(
   relTypes: Set[String],
   targetCardinality: CardinalityConstraint = CardinalityConstraint(0, None),
   targetLabelCombinations: Set[LabelCombination]
-) extends GraphDdlAst
+) extends GraphDdlAst with SchemaStatement
 
 trait ElementToViewDefinition {
   def maybePropertyMapping: Option[PropertyToColumnMappingDefinition]
@@ -102,10 +113,12 @@ case class NodeToViewDefinition (
   override val maybePropertyMapping: Option[PropertyToColumnMappingDefinition] = None
 ) extends GraphDdlAst with ElementToViewDefinition
 
+trait MappingDefinition
+
 case class NodeMappingDefinition(
-  labelNames: Set[String],
+  nodeDefinition: NodeDefinition,
   nodeToViewDefinitions: List[NodeToViewDefinition] = List.empty
-) extends GraphDdlAst
+) extends GraphDdlAst with MappingDefinition
 
 case class ViewDefinition(
   viewId: List[String],
@@ -115,7 +128,7 @@ case class ViewDefinition(
 case class JoinOnDefinition(joinPredicates: List[(ColumnIdentifier, ColumnIdentifier)]) extends GraphDdlAst
 
 case class LabelToViewDefinition(
-  labelSet: Set[String],
+  nodeDefinition: NodeDefinition,
   viewDefinition: ViewDefinition,
   joinOn: JoinOnDefinition
 ) extends GraphDdlAst
@@ -128,6 +141,6 @@ case class RelationshipToViewDefinition(
 ) extends GraphDdlAst with ElementToViewDefinition
 
 case class RelationshipMappingDefinition(
-  relType: String,
+  relDefinition: RelationshipDefinition,
   relationshipToViewDefinitions: List[RelationshipToViewDefinition]
-) extends GraphDdlAst
+) extends GraphDdlAst with MappingDefinition

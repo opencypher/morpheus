@@ -107,32 +107,52 @@ object GraphDdl {
     )
   }
 
+  case class SchemaParts(
+    labelDefinitions: List[LabelDefinition] = List.empty,
+    nodeDefinitions: List[NodeDefinition] = List.empty,
+    relDefinitions: List[RelationshipDefinition] = List.empty,
+    patternDefinitions: List[SchemaPatternDefinition] = List.empty
+  )
+
+  private[graphddl] def toSchemaParts(
+    schemaDefinition: SchemaDefinition
+  ) = schemaDefinition.schemaStatements.foldLeft(SchemaParts()) {
+    case (parts, s: LabelDefinition)         => parts.copy(labelDefinitions = parts.labelDefinitions :+ s)
+    case (parts, s: NodeDefinition)          => parts.copy(nodeDefinitions = parts.nodeDefinitions :+ s)
+    case (parts, s: RelationshipDefinition)  => parts.copy(relDefinitions = parts.relDefinitions :+ s)
+    case (parts, s: SchemaPatternDefinition) => parts.copy(patternDefinitions = parts.patternDefinitions :+ s)
+  }
+
+
   private[graphddl] def toSchema(
     globalLabelDefinitions: Map[String, LabelDefinition],
     schemaDefinition: SchemaDefinition
   ): Schema = {
-    val localLabelDefinitions = schemaDefinition.localLabelDefinitions
+
+    val parts = toSchemaParts(schemaDefinition)
+
+    val localLabelDefinitions = parts.labelDefinitions
       .validateDistinctBy(_.name, "Duplicate label name")
       .keyBy(_.name)
     val labelDefinitions: Map[String, LabelDefinition] = globalLabelDefinitions ++ localLabelDefinitions
 
     // Nodes
 
-    val nodeDefinitionsFromPatterns = schemaDefinition.schemaPatternDefinitions.flatMap(schemaDef =>
+    val nodeDefinitionsFromPatterns = parts.patternDefinitions.flatMap(schemaDef =>
       schemaDef.sourceLabelCombinations ++ schemaDef.targetLabelCombinations)
-    val allNodeDefinitions = schemaDefinition.nodeDefinitions ++ nodeDefinitionsFromPatterns
-    val schemaWithNodes = schemaForNodeDefinitions(labelDefinitions, allNodeDefinitions)
+    val allNodeDefinitions = parts.nodeDefinitions.map(_.labelCombination) ++ nodeDefinitionsFromPatterns
+    val schemaWithNodes = schemaForNodeDefinitions(labelDefinitions, allNodeDefinitions.toSet)
 
     // Relationships
 
-    val relDefinitionsFromPatterns = schemaDefinition.schemaPatternDefinitions.flatMap(_.relTypes)
-    val allRelDefinitions = relDefinitionsFromPatterns ++ schemaDefinition.relDefinitions
+    val relDefinitionsFromPatterns = parts.patternDefinitions.flatMap(_.relTypes)
+    val allRelDefinitions = relDefinitionsFromPatterns ++ parts.relDefinitions.map(_.label)
 
-    val schemaWithRels = schemaForRelationshipDefinitions(labelDefinitions, allRelDefinitions)
+    val schemaWithRels = schemaForRelationshipDefinitions(labelDefinitions, allRelDefinitions.toSet)
 
     // Schema patterns
 
-    schemaWithSchemaPatterns(schemaDefinition.schemaPatternDefinitions, schemaWithNodes ++ schemaWithRels)
+    schemaWithSchemaPatterns(parts.patternDefinitions.toSet, schemaWithNodes ++ schemaWithRels)
   }
 
   private def schemaForNodeDefinitions(
@@ -144,7 +164,7 @@ object GraphDdl {
         tryWithContext(s"Error for label combination (${labelCombo.mkString(",")})") {
           labelCombo
             .flatMap(label => labelDefinitions.getOrFail(label, "Unresolved label").properties)
-            .groupBy { case (key, tpe) => key }.mapValues(_.map { case (key, tpe) => key })
+            .groupBy { case (key, _) => key }.mapValues(_.map { case (key, _) => key })
 
           val comboProperties = labelCombo.foldLeft(PropertyKeys.empty) { case (currProps, label) =>
             val labelProperties = labelDefinitions.getOrFail(label, "Unresolved label").properties
@@ -221,11 +241,13 @@ object GraphDdl {
       graphType = graphType,
 
       // TODO: allow multiple node mappings with same node type and view + remove the validate
-      nodeToViewMappings = graph.definition.nodeMappings
+      nodeToViewMappings = graph.definition.mappings
+        .collect { case nm : NodeMappingDefinition => nm }
         .flatMap(nm => toNodeToViewMappings(graphType, graph.maybeSetSchema, nm))
         .validateDistinctBy(_.key, "Duplicate mapping")
         .keyBy(_.key),
-      edgeToViewMappings = graph.definition.relationshipMappings
+      edgeToViewMappings = graph.definition.mappings
+        .collect { case rm: RelationshipMappingDefinition => rm }
         .flatMap(em => toEdgeToViewMappings(graphType, graph.maybeSetSchema, em))
     )
   }
@@ -236,14 +258,14 @@ object GraphDdl {
     nmd: NodeMappingDefinition
   ): Seq[NodeToViewMapping] = {
     nmd.nodeToViewDefinitions.map { nvd =>
-      tryWithContext(s"Error in node mapping for: ${nmd.labelNames.mkString(",")}") {
+      tryWithContext(s"Error in node mapping for: ${nmd.nodeDefinition.labelCombination.mkString(",")}") {
         val viewId = toQualifiedViewId(maybeSetSchema, nvd.viewId)
-        val nodeKey = NodeViewKey(nmd.labelNames, viewId)
+        val nodeKey = NodeViewKey(nmd.nodeDefinition.labelCombination, viewId)
         tryWithContext(s"Error in node mapping for: $nodeKey") {
           NodeToViewMapping(
             nodeType = nodeKey.nodeType,
             view = nodeKey.qualifiedViewId,
-            propertyMappings = toPropertyMappings(nmd.labelNames, graphType.nodePropertyKeys(nmd.labelNames).keySet, nvd.maybePropertyMapping)
+            propertyMappings = toPropertyMappings(nmd.nodeDefinition.labelCombination, graphType.nodePropertyKeys(nmd.nodeDefinition.labelCombination).keySet, nvd.maybePropertyMapping)
           )
         }
       }
@@ -256,16 +278,16 @@ object GraphDdl {
     rmd: RelationshipMappingDefinition
   ): Seq[EdgeToViewMapping] = {
     rmd.relationshipToViewDefinitions.map { rvd =>
-      tryWithContext(s"Error in relationship mapping for: ${rmd.relType}") {
+      tryWithContext(s"Error in relationship mapping for: ${rmd.relDefinition}") {
         val viewId = toQualifiedViewId(maybeSetSchema, rvd.viewDefinition.viewId)
-        val edgeKey = EdgeViewKey(Set(rmd.relType), viewId)
+        val edgeKey = EdgeViewKey(Set(rmd.relDefinition.label), viewId)
         tryWithContext(s"Error in relationship mapping for: $edgeKey") {
           EdgeToViewMapping(
             edgeType = edgeKey.edgeType,
             view = edgeKey.qualifiedViewId,
             startNode = StartNode(
               nodeViewKey = NodeViewKey(
-                nodeType = rvd.startNodeToViewDefinition.labelSet,
+                nodeType = rvd.startNodeToViewDefinition.nodeDefinition.labelCombination,
                 qualifiedViewId = toQualifiedViewId(maybeSetSchema, rvd.startNodeToViewDefinition.viewDefinition.viewId)
               ),
               joinPredicates = rvd.startNodeToViewDefinition.joinOn.joinPredicates.map(toJoin(
@@ -275,7 +297,7 @@ object GraphDdl {
             ),
             endNode = EndNode(
               nodeViewKey = NodeViewKey(
-                nodeType = rvd.endNodeToViewDefinition.labelSet,
+                nodeType = rvd.endNodeToViewDefinition.nodeDefinition.labelCombination,
                 qualifiedViewId = toQualifiedViewId(maybeSetSchema, rvd.endNodeToViewDefinition.viewDefinition.viewId)
               ),
               joinPredicates = rvd.endNodeToViewDefinition.joinOn.joinPredicates.map(toJoin(
@@ -283,7 +305,7 @@ object GraphDdl {
                 edgeAlias = rvd.viewDefinition.alias
               ))
             ),
-            propertyMappings = toPropertyMappings(Set(rmd.relType), graphType.relationshipPropertyKeys(rmd.relType).keySet, rvd.maybePropertyMapping)
+            propertyMappings = toPropertyMappings(Set(rmd.relDefinition.label), graphType.relationshipPropertyKeys(rmd.relDefinition.label).keySet, rvd.maybePropertyMapping)
           )
         }
       }
