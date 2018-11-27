@@ -37,7 +37,7 @@ class GraphDdlTest extends FunSpec with Matchers {
     s"""
        |SET SCHEMA dataSourceName.fooDatabaseName
        |
-       |CREATE GRAPH SCHEMA fooSchema (
+       |CREATE GRAPH TYPE fooSchema (
        | LABEL Person ({ name   : STRING, age : INTEGER }),
        | LABEL Book   ({ title  : STRING }),
        | LABEL READS  ({ rating : FLOAT  }),
@@ -45,7 +45,7 @@ class GraphDdlTest extends FunSpec with Matchers {
        | (Book),
        | [READS]
        |)
-       |CREATE GRAPH fooGraph WITH GRAPH SCHEMA fooSchema (
+       |CREATE GRAPH fooGraph OF fooSchema (
        |  (Person) FROM personView1 ( person_name1 AS name )
        |           FROM personView2 ( person_name2 AS name ),
        |  (Book)   FROM bookView    ( book_title AS title ),
@@ -139,13 +139,13 @@ class GraphDdlTest extends FunSpec with Matchers {
     val ddl = GraphDdl(
       """SET SCHEMA ds1.db1
         |
-        |CREATE GRAPH SCHEMA fooSchema (
+        |CREATE GRAPH TYPE fooSchema (
         |  LABEL Person,
         |  LABEL Account,
         |  (Person),
         |  (Account)
         |)
-        |CREATE GRAPH fooGraph WITH GRAPH SCHEMA fooSchema (
+        |CREATE GRAPH fooGraph OF fooSchema (
         |  (Person)  FROM personView,
         |  (Account) FROM ds2.db2.accountView
         |)
@@ -159,11 +159,11 @@ class GraphDdlTest extends FunSpec with Matchers {
 
   it("fails on duplicate node mappings") {
     val e = the [GraphDdlException] thrownBy GraphDdl("""
-      |CREATE GRAPH SCHEMA fooSchema (
+      |CREATE GRAPH TYPE fooSchema (
       | LABEL Person,
       | (Person)
       |)
-      |CREATE GRAPH fooGraph WITH GRAPH SCHEMA fooSchema (
+      |CREATE GRAPH fooGraph OF fooSchema (
       |  (Person) FROM personView
       |           FROM personView
       |)
@@ -181,7 +181,7 @@ class GraphDdlTest extends FunSpec with Matchers {
 
   it("fails on duplicate local labels") {
     val e = the [GraphDdlException] thrownBy GraphDdl("""
-      |CREATE GRAPH SCHEMA fooSchema (
+      |CREATE GRAPH TYPE fooSchema (
       | LABEL Person,
       | LABEL Person
       |)
@@ -191,32 +191,32 @@ class GraphDdlTest extends FunSpec with Matchers {
 
   it("fails on duplicate graph types") {
     val e = the [GraphDdlException] thrownBy GraphDdl("""
-      |CREATE GRAPH SCHEMA fooSchema ()
-      |CREATE GRAPH SCHEMA fooSchema ()
+      |CREATE GRAPH TYPE fooSchema ()
+      |CREATE GRAPH TYPE fooSchema ()
     """.stripMargin)
     e.getFullMessage should include("fooSchema")
   }
 
   it("fails on duplicate graphs") {
     val e = the [GraphDdlException] thrownBy GraphDdl("""
-      |CREATE GRAPH SCHEMA fooSchema ()
-      |CREATE GRAPH fooGraph WITH GRAPH SCHEMA fooSchema ()
-      |CREATE GRAPH fooGraph WITH GRAPH SCHEMA fooSchema ()
+      |CREATE GRAPH TYPE fooSchema ()
+      |CREATE GRAPH fooGraph OF fooSchema ()
+      |CREATE GRAPH fooGraph OF fooSchema ()
     """.stripMargin)
     e.getFullMessage should include("fooGraph")
   }
 
   it("fails on unresolved graph type") {
     val e = the [GraphDdlException] thrownBy GraphDdl("""
-      |CREATE GRAPH SCHEMA fooSchema ()
-      |CREATE GRAPH fooGraph WITH GRAPH SCHEMA barSchema ()
+      |CREATE GRAPH TYPE fooSchema ()
+      |CREATE GRAPH fooGraph OF barSchema ()
     """.stripMargin)
     e.getFullMessage should (include("fooGraph") and include("fooSchema") and include("barSchema"))
   }
 
   it("fails on unresolved labels") {
     val e = the [GraphDdlException] thrownBy GraphDdl("""
-      |CREATE GRAPH SCHEMA fooSchema (
+      |CREATE GRAPH TYPE fooSchema (
       | LABEL Person1,
       | LABEL Person2,
       | (Person3, Person4)
@@ -227,7 +227,7 @@ class GraphDdlTest extends FunSpec with Matchers {
 
   it("fails on incompatible property types") {
     val e = the [GraphDdlException] thrownBy GraphDdl("""
-      |CREATE GRAPH SCHEMA fooSchema (
+      |CREATE GRAPH TYPE fooSchema (
       | LABEL Person1 ({ age: STRING  }),
       | LABEL Person2 ({ age: INTEGER }),
       | (Person1, Person2)
@@ -241,11 +241,11 @@ class GraphDdlTest extends FunSpec with Matchers {
   it("fails on unresolved property names") {
     val e = the [GraphDdlException] thrownBy GraphDdl("""
       |SET SCHEMA a.b
-      |CREATE GRAPH SCHEMA fooSchema (
+      |CREATE GRAPH TYPE fooSchema (
       | LABEL Person ({ age1: STRING  }),
       | (Person)
       |)
-      |CREATE GRAPH fooGraph WITH GRAPH SCHEMA fooSchema (
+      |CREATE GRAPH fooGraph OF fooSchema (
       |  (Person) FROM personView ( person_name AS age2 )
       |)
     """.stripMargin)
@@ -256,11 +256,11 @@ class GraphDdlTest extends FunSpec with Matchers {
 
   it("fails on missing set schema statement") {
     val e = the [GraphDdlException] thrownBy GraphDdl("""
-      |CREATE GRAPH SCHEMA fooSchema (
+      |CREATE GRAPH TYPE fooSchema (
       | LABEL Person,
       | (Person)
       |)
-      |CREATE GRAPH fooGraph WITH GRAPH SCHEMA fooSchema (
+      |CREATE GRAPH fooGraph OF fooSchema (
       |  (Person) FROM personView
       |)
     """.stripMargin)

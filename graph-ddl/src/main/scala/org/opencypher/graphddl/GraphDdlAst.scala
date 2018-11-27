@@ -53,7 +53,7 @@ case class DdlDefinition(
 ) extends GraphDdlAst
 
 sealed trait DdlStatement
-sealed trait SchemaStatement
+sealed trait GraphTypeStatement
 
 case class SetSchemaDefinition(
   dataSource: String,
@@ -64,21 +64,21 @@ case class LabelDefinition(
   name: String,
   properties: Map[String, CypherType] = Map.empty,
   maybeKeyDefinition: Option[KeyDefinition] = None
-) extends GraphDdlAst with DdlStatement with SchemaStatement
+) extends GraphDdlAst with DdlStatement with GraphTypeStatement
 
-case class GlobalSchemaDefinition(
+case class GraphTypeDefinition(
   name: String,
-  schemaDefinition: SchemaDefinition
+  graphTypeBody: GraphTypeBody
 ) extends GraphDdlAst with DdlStatement
 
-case class SchemaDefinition(
-  schemaStatements: List[SchemaStatement] = List.empty
+case class GraphTypeBody(
+  statements: List[GraphTypeStatement] = List.empty
 ) extends GraphDdlAst
 
 case class GraphDefinition(
   name: String,
-  maybeSchemaName: Option[String] = None,
-  localSchemaDefinition: SchemaDefinition = SchemaDefinition(),
+  maybeGraphTypeName: Option[String] = None,
+  graphTypeBody: GraphTypeBody = GraphTypeBody(),
   mappings: List[MappingDefinition] = List.empty
 ) extends GraphDdlAst with DdlStatement
 
@@ -88,21 +88,21 @@ object NodeDefinition {
 
 case class NodeDefinition(
   labelCombination: LabelCombination
-) extends GraphDdlAst with SchemaStatement
+) extends GraphDdlAst with GraphTypeStatement
 
 case class RelationshipDefinition(
   label: RelationshipType
-) extends GraphDdlAst with SchemaStatement
+) extends GraphDdlAst with GraphTypeStatement
 
 case class CardinalityConstraint(from: Int, to: Option[Int])
 
-case class SchemaPatternDefinition(
+case class PatternDefinition(
   sourceLabelCombinations: Set[LabelCombination],
   sourceCardinality: CardinalityConstraint = CardinalityConstraint(0, None),
   relTypes: Set[String],
   targetCardinality: CardinalityConstraint = CardinalityConstraint(0, None),
   targetLabelCombinations: Set[LabelCombination]
-) extends GraphDdlAst with SchemaStatement
+) extends GraphDdlAst with GraphTypeStatement
 
 trait ElementToViewDefinition {
   def maybePropertyMapping: Option[PropertyToColumnMappingDefinition]

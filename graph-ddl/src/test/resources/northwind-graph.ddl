@@ -133,7 +133,7 @@ CATALOG CREATE LABEL HAS_REGION
 
 -- =================================================================
 
-CREATE GRAPH SCHEMA NORTHWIND_NAIVE (
+CREATE GRAPH TYPE NORTHWIND_NAIVE (
 
     -- Nodes
     (Employee),
@@ -179,7 +179,7 @@ CREATE GRAPH SCHEMA NORTHWIND_NAIVE (
     (CustomerDemographic)-[HAS_CUSTOMER]->(Customer)
 )
 -- =================================================================
-CREATE GRAPH Northwind WITH GRAPH SCHEMA NORTHWIND_NAIVE (
+CREATE GRAPH Northwind OF NORTHWIND_NAIVE (
   (Order)
        FROM VIEW_ORDERS,
 

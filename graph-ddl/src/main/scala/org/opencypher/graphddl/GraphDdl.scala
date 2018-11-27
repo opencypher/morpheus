@@ -58,7 +58,7 @@ object GraphDdl {
     case class DdlParts(
       maybeCurrentSetSchema: Option[SetSchemaDefinition] = None,
       labelDefinitions: List[LabelDefinition] = List.empty,
-      globalSchemaDefinitions: List[GlobalSchemaDefinition] = List.empty,
+      globalGraphTypeDefinitions: List[GraphTypeDefinition] = List.empty,
       graphDefinitions: List[GraphDefinitionWithContext] = List.empty
     )
 
@@ -70,31 +70,30 @@ object GraphDdl {
       case (state, ld: LabelDefinition) =>
         state.copy(labelDefinitions = state.labelDefinitions :+ ld)
 
-      case (state, gsd: GlobalSchemaDefinition) =>
-        state.copy(globalSchemaDefinitions = state.globalSchemaDefinitions :+ gsd)
+      case (state, gsd: GraphTypeDefinition) =>
+        state.copy(globalGraphTypeDefinitions = state.globalGraphTypeDefinitions :+ gsd)
 
       case (state, gsd: GraphDefinition) =>
         state.copy(graphDefinitions = state.graphDefinitions :+ GraphDefinitionWithContext(gsd, state.maybeCurrentSetSchema))
     }
 
-
     val globalLabelDefinitions: Map[String, LabelDefinition] = ddlParts.labelDefinitions
       .validateDistinctBy(_.name, "Duplicate label name")
       .keyBy(_.name)
 
-    val graphTypes = ddlParts.globalSchemaDefinitions
+    val graphTypes = ddlParts.globalGraphTypeDefinitions
       .validateDistinctBy(_.name, "Duplicate graph type name")
-      .keyBy(_.name).mapValues(_.schemaDefinition)
-      .map { case (name, schema) =>
-        name -> tryWithContext(s"Error in graph type: $name")(toSchema(globalLabelDefinitions, schema))
+      .keyBy(_.name).mapValues(_.graphTypeBody)
+      .map { case (name, graphType) =>
+        name -> tryWithContext(s"Error in graph type: $name")(toOkapiSchema(globalLabelDefinitions, graphType))
       }
       .view.force // mapValues creates a view, but we want validation now
 
     val inlineGraphTypes = ddlParts.graphDefinitions.map(_.definition)
       .keyBy(_.name)
-      .mapValues(_.localSchemaDefinition)
-      .map { case (name, schema) =>
-        name -> tryWithContext(s"Error in graph type of graph: $name")(toSchema(globalLabelDefinitions, schema))
+      .mapValues(_.graphTypeBody)
+      .map { case (name, graphType) =>
+        name -> tryWithContext(s"Error in graph type of graph: $name")(toOkapiSchema(globalLabelDefinitions, graphType))
       }
 
     val graphs = ddlParts.graphDefinitions
@@ -107,29 +106,28 @@ object GraphDdl {
     )
   }
 
-  case class SchemaParts(
+  private[graphddl] case class TypeParts(
     labelDefinitions: List[LabelDefinition] = List.empty,
     nodeDefinitions: List[NodeDefinition] = List.empty,
     relDefinitions: List[RelationshipDefinition] = List.empty,
-    patternDefinitions: List[SchemaPatternDefinition] = List.empty
+    patternDefinitions: List[PatternDefinition] = List.empty
   )
 
-  private[graphddl] def toSchemaParts(
-    schemaDefinition: SchemaDefinition
-  ) = schemaDefinition.schemaStatements.foldLeft(SchemaParts()) {
-    case (parts, s: LabelDefinition)         => parts.copy(labelDefinitions = parts.labelDefinitions :+ s)
-    case (parts, s: NodeDefinition)          => parts.copy(nodeDefinitions = parts.nodeDefinitions :+ s)
-    case (parts, s: RelationshipDefinition)  => parts.copy(relDefinitions = parts.relDefinitions :+ s)
-    case (parts, s: SchemaPatternDefinition) => parts.copy(patternDefinitions = parts.patternDefinitions :+ s)
+  private[graphddl] def toTypeParts(
+    typeDefinition: GraphTypeBody
+  ) = typeDefinition.statements.foldLeft(TypeParts()) {
+    case (parts, s: LabelDefinition)        => parts.copy(labelDefinitions = parts.labelDefinitions :+ s)
+    case (parts, s: NodeDefinition)         => parts.copy(nodeDefinitions = parts.nodeDefinitions :+ s)
+    case (parts, s: RelationshipDefinition) => parts.copy(relDefinitions = parts.relDefinitions :+ s)
+    case (parts, s: PatternDefinition)      => parts.copy(patternDefinitions = parts.patternDefinitions :+ s)
   }
 
-
-  private[graphddl] def toSchema(
+  private[graphddl] def toOkapiSchema(
     globalLabelDefinitions: Map[String, LabelDefinition],
-    schemaDefinition: SchemaDefinition
+    typeDefinition: GraphTypeBody
   ): Schema = {
 
-    val parts = toSchemaParts(schemaDefinition)
+    val parts = toTypeParts(typeDefinition)
 
     val localLabelDefinitions = parts.labelDefinitions
       .validateDistinctBy(_.name, "Duplicate label name")
@@ -138,8 +136,8 @@ object GraphDdl {
 
     // Nodes
 
-    val nodeDefinitionsFromPatterns = parts.patternDefinitions.flatMap(schemaDef =>
-      schemaDef.sourceLabelCombinations ++ schemaDef.targetLabelCombinations)
+    val nodeDefinitionsFromPatterns = parts.patternDefinitions.flatMap(pattern =>
+      pattern.sourceLabelCombinations ++ pattern.targetLabelCombinations)
     val allNodeDefinitions = parts.nodeDefinitions.map(_.labelCombination) ++ nodeDefinitionsFromPatterns
     val schemaWithNodes = schemaForNodeDefinitions(labelDefinitions, allNodeDefinitions.toSet)
 
@@ -212,12 +210,12 @@ object GraphDdl {
 
 
   private def schemaWithSchemaPatterns(
-    schemaPatternDefinitions: Set[SchemaPatternDefinition],
+    patternDefinitions: Set[PatternDefinition],
     schemaWithNodesAndRels: Schema
   ): Schema = {
-    schemaPatternDefinitions.foldLeft(schemaWithNodesAndRels) {
+    patternDefinitions.foldLeft(schemaWithNodesAndRels) {
       // TODO: extend OKAPI schema with cardinality constraints
-      case (currentSchema, SchemaPatternDefinition(sourceLabelCombinations, _, relTypes, _, targetLabelCombinations)) =>
+      case (currentSchema, PatternDefinition(sourceLabelCombinations, _, relTypes, _, targetLabelCombinations)) =>
         val expandedPatterns = for {
           sourceCombination <- sourceLabelCombinations
           relType <- relTypes
@@ -232,9 +230,9 @@ object GraphDdl {
     graphTypes: Map[String, Schema],
     graph: GraphDefinitionWithContext
   ): Graph = tryWithContext(s"Error in graph: ${graph.definition.name}") {
-    val graphType = graph.definition.maybeSchemaName
-      .map(schemaName => graphTypes.getOrFail(schemaName, "Unresolved schema name"))
-      .getOrElse(inlineTypes.getOrFail(graph.definition.name, "Unresolved schema name"))
+    val graphType = graph.definition.maybeGraphTypeName
+      .map(name => graphTypes.getOrFail(name, "Unresolved graph type name"))
+      .getOrElse(inlineTypes.getOrFail(graph.definition.name, "Unresolved graph type name"))
 
     Graph(
       name = GraphName(graph.definition.name),
@@ -265,7 +263,11 @@ object GraphDdl {
           NodeToViewMapping(
             nodeType = nodeKey.nodeType,
             view = nodeKey.qualifiedViewId,
-            propertyMappings = toPropertyMappings(nmd.nodeDefinition.labelCombination, graphType.nodePropertyKeys(nmd.nodeDefinition.labelCombination).keySet, nvd.maybePropertyMapping)
+            propertyMappings = toPropertyMappings(
+              labels = nmd.nodeDefinition.labelCombination,
+              graphTypePropertyKeys = graphType.nodePropertyKeys(nmd.nodeDefinition.labelCombination).keySet,
+              maybePropertyMapping = nvd.maybePropertyMapping
+            )
           )
         }
       }
@@ -305,7 +307,11 @@ object GraphDdl {
                 edgeAlias = rvd.viewDefinition.alias
               ))
             ),
-            propertyMappings = toPropertyMappings(Set(rmd.relDefinition.label), graphType.relationshipPropertyKeys(rmd.relDefinition.label).keySet, rvd.maybePropertyMapping)
+            propertyMappings = toPropertyMappings(
+              labels = Set(rmd.relDefinition.label),
+              graphTypePropertyKeys = graphType.relationshipPropertyKeys(rmd.relDefinition.label).keySet,
+              maybePropertyMapping = rvd.maybePropertyMapping
+            )
           )
         }
       }
@@ -343,15 +349,15 @@ object GraphDdl {
 
   def toPropertyMappings(
     labels: Set[String],
-    schemaPropertyKeys: Set[String],
+    graphTypePropertyKeys: Set[String],
     maybePropertyMapping: Option[PropertyToColumnMappingDefinition]
   ): PropertyMappings = {
     val mappings = maybePropertyMapping.getOrElse(Map.empty)
     mappings.keys
-      .filterNot(schemaPropertyKeys)
-      .foreach(p => unresolved("Unresolved property name", p, schemaPropertyKeys))
+      .filterNot(graphTypePropertyKeys)
+      .foreach(p => unresolved("Unresolved property name", p, graphTypePropertyKeys))
 
-    schemaPropertyKeys
+    graphTypePropertyKeys
       .keyBy(identity)
       .mapValues(prop => mappings.getOrElse(prop, prop))
   }

@@ -115,7 +115,7 @@ object LdbcUtil {
        |
        |${labelDefinitions.mkString(Properties.lineSeparator)}
        |
-       |CREATE GRAPH SCHEMA ${database}_schema (
+       |CREATE GRAPH TYPE ${database}_schema (
        |    -- Node types
        |    ${nodeTypeDefinitions.mkString("", "," + Properties.lineSeparator + "\t", ",")}
        |
@@ -125,7 +125,7 @@ object LdbcUtil {
        |    -- Edge constraints
        |    ${edgeConstraints.mkString("," + Properties.lineSeparator + "\t")}
        |)
-       |CREATE GRAPH $database WITH GRAPH SCHEMA ${database}_schema (
+       |CREATE GRAPH $database OF ${database}_schema (
        |    -- Node mappings
        |    ${nodeMappings.mkString("", "," + Properties.lineSeparator + "\t", ",")}
        |

@@ -66,25 +66,23 @@ object GraphDdlParser {
   import org.opencypher.okapi.impl.util.ParserUtils.Whitespace._
   import org.opencypher.okapi.impl.util.ParserUtils._
 
-  val CATALOG      : P[Unit] = keyword("CATALOG")
-  val CREATE       : P[Unit] = keyword("CREATE")
-  val LABEL        : P[Unit] = keyword("LABEL")
-  val GRAPH        : P[Unit] = keyword("GRAPH")
-  val KEY          : P[Unit] = keyword("KEY")
-  val WITH         : P[Unit] = keyword("WITH")
-  val FROM         : P[Unit] = keyword("FROM")
-  val NODE         : P[Unit] = keyword("NODE")
-  val NODES        : P[Unit] = keyword("NODES")
-  val RELATIONSHIP : P[Unit] = keyword("RELATIONSHIP")
-  val SET          : P[Unit] = keyword("SET")
-  val SETS         : P[Unit] = keyword("SETS")
-  val JOIN         : P[Unit] = keyword("JOIN")
-  val ON           : P[Unit] = keyword("ON")
-  val AND          : P[Unit] = keyword("AND")
-  val AS           : P[Unit] = keyword("AS")
-  val SCHEMA       : P[Unit] = keyword("SCHEMA")
-  val START        : P[Unit] = keyword("START")
-  val END          : P[Unit] = keyword("END")
+  private val CATALOG      : P[Unit] = keyword("CATALOG")
+  private val CREATE       : P[Unit] = keyword("CREATE")
+  private val LABEL        : P[Unit] = keyword("LABEL")
+  private val KEY          : P[Unit] = keyword("KEY")
+  private val GRAPH        : P[Unit] = keyword("GRAPH")
+  private val TYPE         : P[Unit] = keyword("TYPE")
+  private val OF           : P[Unit] = keyword("OF")
+  private val AS           : P[Unit] = keyword("AS")
+  private val FROM         : P[Unit] = keyword("FROM")
+  private val START        : P[Unit] = keyword("START")
+  private val END          : P[Unit] = keyword("END")
+  private val NODES        : P[Unit] = keyword("NODES")
+  private val JOIN         : P[Unit] = keyword("JOIN")
+  private val ON           : P[Unit] = keyword("ON")
+  private val AND          : P[Unit] = keyword("AND")
+  private val SET          : P[Unit] = keyword("SET")
+  private val SCHEMA       : P[Unit] = keyword("SCHEMA")
 
 
   // ==== Catalog ====
@@ -150,7 +148,7 @@ object GraphDdlParser {
     P("<" ~/ (range | fixed) ~/ ">").?.map(_.getOrElse(Wildcard))
   }
 
-  val schemaPatternDefinition: P[SchemaPatternDefinition] = {
+  val patternDefinition: P[PatternDefinition] = {
     val nodeAlternatives: P[Set[LabelCombination]] =
       P("(" ~ labelCombination.rep(min = 1, sep = "|").map(_.toSet) ~ ")")
 
@@ -158,15 +156,15 @@ object GraphDdlParser {
     val relAlternatives: P[Set[String]] =
       P("[" ~/ relType.rep(min = 1, sep = "|") ~/ "]").map(_.toSet)
 
-    P(nodeAlternatives ~ cardinalityConstraint ~/ "-" ~/ relAlternatives ~/ "->" ~/ cardinalityConstraint ~/ nodeAlternatives).map(SchemaPatternDefinition.tupled)
+    P(nodeAlternatives ~ cardinalityConstraint ~/ "-" ~/ relAlternatives ~/ "->" ~/ cardinalityConstraint ~/ nodeAlternatives).map(PatternDefinition.tupled)
   }
 
-  val localSchemaDefinition: P[SchemaDefinition] =
-    // negative lookahead (~ !"-") needed in order to disambiguate node definitions and schema pattern definitions
-    P("(" ~/ (labelDefinition | (nodeDefinition ~ !("-" | "<")) | relDefinition | schemaPatternDefinition).rep(sep = ",").map(_.toList) ~/ ")").map(SchemaDefinition)
+  val graphTypeBody: P[GraphTypeBody] =
+    // negative lookahead (~ !"-") needed in order to disambiguate node definitions and pattern definitions
+    P("(" ~/ (labelDefinition | (nodeDefinition ~ !("-" | "<")) | relDefinition | patternDefinition).rep(sep = ",").map(_.toList) ~/ ")").map(GraphTypeBody)
 
-  val globalSchemaDefinition: P[GlobalSchemaDefinition] =
-    P(CREATE ~ GRAPH ~ SCHEMA ~/ identifier.! ~/ localSchemaDefinition).map(GlobalSchemaDefinition.tupled)
+  val graphTypeDefinition: P[GraphTypeDefinition] =
+    P(CREATE ~ GRAPH ~ TYPE ~/ identifier.! ~/ graphTypeBody).map(GraphTypeDefinition.tupled)
 
 
   // ==== Graph ====
@@ -218,16 +216,16 @@ object GraphDdlParser {
     P(relationshipMappingDefinition.rep(min = 1, sep = ",").map(_.toList))
 
   val graphDefinition: P[GraphDefinition] = {
-    val schemaRefOrDef: P[(Option[String], SchemaDefinition)] =
-      P(identifier.! | localSchemaDefinition).map {
-        case s: String                          => Some(s) -> SchemaDefinition()
-        case schemaDefinition: SchemaDefinition => None -> schemaDefinition
+    val schemaRefOrDef: P[(Option[String], GraphTypeBody)] =
+      P(identifier.! | graphTypeBody).map {
+        case s: String                       => Some(s) -> GraphTypeBody()
+        case schemaDefinition: GraphTypeBody => None -> schemaDefinition
       }
 
     val mappingDefinitions: P[List[MappingDefinition]] =
       P("(" ~/ ( nodeMappingDefinition | relationshipMappingDefinition).rep(sep = ",").map(_.toList) ~/ ")")
 
-    P(CREATE ~ GRAPH ~ identifier.! ~/ WITH ~/ GRAPH ~/ SCHEMA ~/ schemaRefOrDef ~/ mappingDefinitions)
+    P(CREATE ~ GRAPH ~ identifier.! ~/ OF ~/ schemaRefOrDef ~/ mappingDefinitions)
       .map { case (gName, (schemaId, localSchemaDef), mappings) => GraphDefinition(gName, schemaId, localSchemaDef, mappings) }
   }
 
@@ -237,7 +235,7 @@ object GraphDdlParser {
     P(SET ~/ SCHEMA ~ identifier.! ~/ "." ~/ identifier.! ~ ";".?).map(SetSchemaDefinition.tupled)
 
   val ddlStatement: P[DdlStatement] =
-    P(setSchemaDefinition | catalogLabelDefinition | globalSchemaDefinition | graphDefinition)
+    P(setSchemaDefinition | catalogLabelDefinition | graphTypeDefinition | graphDefinition)
 
   val ddlDefinitions: P[DdlDefinition] =
     // allow for whitespace/comments at the start

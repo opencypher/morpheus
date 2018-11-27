@@ -19,7 +19,7 @@ CATALOG CREATE LABEL R ({since: INTEGER, before: BOOLEAN?})
 CATALOG CREATE LABEL S ({since: INTEGER})
 CATALOG CREATE LABEL T
 
-CREATE GRAPH SCHEMA testSchema (
+CREATE GRAPH TYPE testSchema (
   -- Nodes
   (A), (B), (C), (A,B), (A,C),
 
@@ -38,7 +38,7 @@ CREATE GRAPH SCHEMA testSchema (
 -- =========================================
 
 -- GRAPH
-CREATE GRAPH test WITH GRAPH SCHEMA testSchema (
+CREATE GRAPH test OF testSchema (
 
   (A) FROM A,
   (B) FROM B,

@@ -31,7 +31,7 @@ CATALOG CREATE LABEL LICENSED_BY ({date_of_licence: STRING})
 
 -- =================================================================
 
-CREATE GRAPH SCHEMA Census (
+CREATE GRAPH TYPE Census (
 
   --NODES
   (Person, Visitor),  -- keyed by node key Visitor_NK
@@ -49,7 +49,7 @@ CREATE GRAPH SCHEMA Census (
 )
 -- =================================================================
 
-CREATE GRAPH Census_1901 WITH GRAPH SCHEMA Census (
+CREATE GRAPH Census_1901 OF Census (
   (Visitor, Person)
        FROM VIEW_VISITOR,
 

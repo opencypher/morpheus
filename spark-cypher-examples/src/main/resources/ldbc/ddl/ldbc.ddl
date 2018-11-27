@@ -29,7 +29,7 @@ CREATE LABEL replyof
 CREATE LABEL studyat ( { classYear : INTEGER } )
 CREATE LABEL workat ( { workFrom : INTEGER } )
 
-CREATE GRAPH SCHEMA LDBC_schema (
+CREATE GRAPH TYPE LDBC_schema (
     -- Node types
     (Forum),
 	(Continent),
@@ -87,7 +87,7 @@ CREATE GRAPH SCHEMA LDBC_schema (
 	(Person)-[likes]->(Comment),
 	(Person)-[likes]->(Post)
 )
-CREATE GRAPH LDBC WITH GRAPH SCHEMA LDBC_schema (
+CREATE GRAPH LDBC OF LDBC_schema (
     -- Node mappings
     (Post) FROM post,
 	(Tag) FROM tag,

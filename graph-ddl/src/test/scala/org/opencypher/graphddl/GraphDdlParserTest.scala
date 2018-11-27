@@ -86,7 +86,7 @@ class GraphDdlParserTest extends BaseTestSuite with MockitoSugar with TestNameFi
 
   val emptyMap = Map.empty[String, CypherType]
   val emptyList: List[Nothing] = List.empty[Nothing]
-  val emptySchemaDef: SchemaDefinition = SchemaDefinition()
+  val emptySchemaDef: GraphTypeBody = GraphTypeBody()
 
   describe("set schema") {
     it("parses SET SCHEMA foo.bar") {
@@ -173,11 +173,11 @@ class GraphDdlParserTest extends BaseTestSuite with MockitoSugar with TestNameFi
     }
 
     it("parses (A)-[TYPE]->(B)") {
-      success(schemaPatternDefinition, SchemaPatternDefinition(sourceLabelCombinations = Set(Set("A")), relTypes = Set("TYPE"), targetLabelCombinations = Set(Set("B"))))
+      success(patternDefinition, PatternDefinition(sourceLabelCombinations = Set(Set("A")), relTypes = Set("TYPE"), targetLabelCombinations = Set(Set("B"))))
     }
 
     it("parses (L1 | L2) <0 .. *> - [R1 | R2] -> <1>(L3)") {
-      success(schemaPatternDefinition, SchemaPatternDefinition(
+      success(patternDefinition, PatternDefinition(
         Set(Set("L1"), Set("L2")),
         CardinalityConstraint(0, None), Set("R1", "R2"), CardinalityConstraint(1, Some(1)),
         Set(Set("L3")))
@@ -185,7 +185,7 @@ class GraphDdlParserTest extends BaseTestSuite with MockitoSugar with TestNameFi
     }
 
     it("parses (L1 | L2) - [R1 | R2] -> <1>(L3)") {
-      success(schemaPatternDefinition, SchemaPatternDefinition(
+      success(patternDefinition, PatternDefinition(
         Set(Set("L1"), Set("L2")),
         CardinalityConstraint(0, None), Set("R1", "R2"), CardinalityConstraint(1, Some(1)),
         Set(Set("L3")))
@@ -193,7 +193,7 @@ class GraphDdlParserTest extends BaseTestSuite with MockitoSugar with TestNameFi
     }
 
     it("parses (L1, L2) - [R1 | R2] -> <1>(L3)") {
-      success(schemaPatternDefinition, SchemaPatternDefinition(
+      success(patternDefinition, PatternDefinition(
         Set(Set("L1", "L2")),
         CardinalityConstraint(0, None), Set("R1", "R2"), CardinalityConstraint(1, Some(1)),
         Set(Set("L3")))
@@ -201,7 +201,7 @@ class GraphDdlParserTest extends BaseTestSuite with MockitoSugar with TestNameFi
     }
 
     it("parses (L4 | L1, L2 | L3 & L5) - [R1 | R2] -> <1>(L3)") {
-      success(schemaPatternDefinition, SchemaPatternDefinition(
+      success(patternDefinition, PatternDefinition(
         Set(Set("L4"), Set("L1", "L2"), Set("L3", "L5")),
         CardinalityConstraint(0, None), Set("R1", "R2"), CardinalityConstraint(1, Some(1)),
         Set(Set("L3")))
@@ -234,7 +234,7 @@ class GraphDdlParserTest extends BaseTestSuite with MockitoSugar with TestNameFi
     it("parses a schema with node, rel, and schema pattern definitions") {
 
       val input =
-        """|CREATE GRAPH SCHEMA mySchema (
+        """|CREATE GRAPH TYPE mySchema (
            |
            |  --NODES
            |  (A),
@@ -249,37 +249,37 @@ class GraphDdlParserTest extends BaseTestSuite with MockitoSugar with TestNameFi
            |  (A) <*> - [TYPE_1] -> (A)
            |)
         """.stripMargin
-      success(globalSchemaDefinition, input, GlobalSchemaDefinition(
+      success(graphTypeDefinition, input, GraphTypeDefinition(
         name = "mySchema",
-        schemaDefinition = SchemaDefinition(List(
+        graphTypeBody = GraphTypeBody(List(
           NodeDefinition(Set("A")),
           NodeDefinition(Set("B")),
           NodeDefinition(Set("A", "B")),
           RelationshipDefinition("TYPE_1"),
           RelationshipDefinition("TYPE_2"),
-          SchemaPatternDefinition(
+          PatternDefinition(
             Set(Set("A"), Set("B")),
             CardinalityConstraint(0, None), Set("TYPE_1"), CardinalityConstraint(1, Some(1)),
             Set(Set("B"))),
-          SchemaPatternDefinition(
+          PatternDefinition(
             Set(Set("A")),
             CardinalityConstraint(0, None), Set("TYPE_1"), CardinalityConstraint(0, None),
             Set(Set("A")))
       ))))
     }
 
-    it("parses CREATE GRAPH SCHEMA mySchema ( (A)-[TYPE]->(B) )") {
-      success(globalSchemaDefinition,
-        GlobalSchemaDefinition("mySchema",
-          SchemaDefinition(List(
-            SchemaPatternDefinition(sourceLabelCombinations = Set(Set("A")), relTypes = Set("TYPE"), targetLabelCombinations = Set(Set("B")))
+    it("parses CREATE GRAPH TYPE mySchema ( (A)-[TYPE]->(B) )") {
+      success(graphTypeDefinition,
+        GraphTypeDefinition("mySchema",
+          GraphTypeBody(List(
+            PatternDefinition(sourceLabelCombinations = Set(Set("A")), relTypes = Set("TYPE"), targetLabelCombinations = Set(Set("B")))
         ))))
     }
 
     it("parses a schema with node, rel, and schema pattern definitions in any order") {
 
       val input =
-        """|CREATE GRAPH SCHEMA mySchema (
+        """|CREATE GRAPH TYPE mySchema (
            |  (A | B) <0 .. *> - [TYPE_1] -> <1> (B),
            |  (A),
            |  (A, B),
@@ -289,16 +289,16 @@ class GraphDdlParserTest extends BaseTestSuite with MockitoSugar with TestNameFi
            |  [TYPE_2]
            |)
         """.stripMargin
-      success(globalSchemaDefinition, input, GlobalSchemaDefinition(
+      success(graphTypeDefinition, input, GraphTypeDefinition(
         name = "mySchema",
-        schemaDefinition = SchemaDefinition(List(
-          SchemaPatternDefinition(
+        graphTypeBody = GraphTypeBody(List(
+          PatternDefinition(
             Set(Set("A"), Set("B")),
             CardinalityConstraint(0, None), Set("TYPE_1"), CardinalityConstraint(1, Some(1)),
             Set(Set("B"))),
           NodeDefinition(Set("A")),
           NodeDefinition(Set("A", "B")),
-          SchemaPatternDefinition(
+          PatternDefinition(
             Set(Set("A")),
             CardinalityConstraint(0, None), Set("TYPE_1"), CardinalityConstraint(0, None),
             Set(Set("A"))),
@@ -310,23 +310,23 @@ class GraphDdlParserTest extends BaseTestSuite with MockitoSugar with TestNameFi
   }
 
   describe("graph definitions") {
-    it("parses CREATE GRAPH myGraph WITH GRAPH SCHEMA foo ()") {
+    it("parses CREATE GRAPH myGraph OF foo ()") {
       success(graphDefinition, GraphDefinition("myGraph", Some("foo")))
     }
 
-    it("parses CREATE GRAPH myGraph WITH GRAPH SCHEMA mySchema ()") {
+    it("parses CREATE GRAPH myGraph OF mySchema ()") {
       success(graphDefinition, GraphDefinition("myGraph", Some("mySchema")))
     }
 
     it("parses a graph definition with inlined schema") {
-      val expectedSchemaDefinition = SchemaDefinition(List(
+      val expectedSchemaDefinition = GraphTypeBody(List(
         LabelDefinition("A", properties = Map("foo" -> CTString)),
         LabelDefinition("B"),
         NodeDefinition(Set("A", "B")),
         RelationshipDefinition("B")
       ))
       graphDefinition.parse(
-        """|CREATE GRAPH myGraph WITH GRAPH SCHEMA (
+        """|CREATE GRAPH myGraph OF (
            | LABEL A ({ foo : STRING }),
            | LABEL B,
            |
@@ -497,7 +497,7 @@ class GraphDdlParserTest extends BaseTestSuite with MockitoSugar with TestNameFi
         """|
            |CATALOG CREATE LABEL (A {prop: char, prop2: int})
            |
-           |CREATE GRAPH SCHEMA mySchema
+           |CREATE GRAPH TYPE mySchema
            |
            |  (A);
            |
