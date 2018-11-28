@@ -64,6 +64,7 @@ object LdbcUtil {
   def toGraphDDL(datasource: String, database: String)(implicit spark: SparkSession): String = {
     // select all tables (including views)
     val tableNames = spark.sql(s"SHOW TABLES FROM $database").collect()
+      .filterNot(_.getBoolean(2)) //ignore temp tables
       .map(_.getString(1))
       .filterNot(excludeTables.contains)
       .toSet
