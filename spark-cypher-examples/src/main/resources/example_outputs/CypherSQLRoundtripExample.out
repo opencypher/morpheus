@@ -1,9 +1,9 @@
 ╔═════════╤═════╤═════════════════╗
 ║ c.name  │ age │ p.title         ║
 ╠═════════╪═════╪═════════════════╣
-║ 'Carol' │ 15  │ 'Jurassic Park' ║
+║ 'Alice' │ 10  │ 'Terminator 2'  ║
 ║ 'Alice' │ 10  │ '1984'          ║
 ║ 'Carol' │ 15  │ 'Shakira'       ║
-║ 'Alice' │ 10  │ 'Terminator 2'  ║
+║ 'Carol' │ 15  │ 'Jurassic Park' ║
 ╚═════════╧═════╧═════════════════╝
 (4 rows)

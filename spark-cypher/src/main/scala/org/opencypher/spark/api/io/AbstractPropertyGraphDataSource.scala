@@ -36,11 +36,9 @@ import org.opencypher.okapi.api.types.{CTInteger, CypherType}
 import org.opencypher.okapi.impl.exception.GraphNotFoundException
 import org.opencypher.okapi.impl.util.StringEncodingUtilities._
 import org.opencypher.spark.api.CAPSSession
-import org.opencypher.spark.api.io.AbstractPropertyGraphDataSource._
 import org.opencypher.spark.api.io.metadata.CAPSGraphMetaData
 import org.opencypher.spark.api.io.util.CAPSGraphExport._
 import org.opencypher.spark.impl.CAPSConverters._
-import org.opencypher.spark.impl.DataFrameOps._
 import org.opencypher.spark.impl.io.CAPSPropertyGraphDataSource
 import org.opencypher.spark.schema.CAPSSchema
 import org.opencypher.spark.schema.CAPSSchema._
@@ -120,11 +118,11 @@ abstract class AbstractPropertyGraphDataSource extends CAPSPropertyGraphDataSour
       val capsMetaData: CAPSGraphMetaData = readCAPSGraphMetaData(name)
       val nodeTables = capsSchema.allCombinations.map { combo =>
         val df = readNodeTable(name, combo, capsSchema.canonicalNodeStructType(combo))
-        CAPSNodeTable(combo, df.setNullability(nodeColsWithCypherType(capsSchema, combo)))
+        CAPSNodeTable(combo, df)
       }
       val relTables = capsSchema.relationshipTypes.map { relType =>
         val df = readRelationshipTable(name, relType, capsSchema.canonicalRelStructType(relType))
-        CAPSRelationshipTable(relType, df.setNullability(relColsWithCypherType(capsSchema, relType)))
+        CAPSRelationshipTable(relType, df)
       }
       if (nodeTables.isEmpty) {
         caps.graphs.empty

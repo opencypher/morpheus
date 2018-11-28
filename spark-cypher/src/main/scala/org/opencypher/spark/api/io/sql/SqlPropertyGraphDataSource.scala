@@ -76,7 +76,6 @@ case class SqlPropertyGraphDataSource(
 
         val validatedDf = normalizedDf
           .validateColumnTypes(columnsWithType)
-          .setNullability(columnsWithType)
 
         CAPSNodeTable.fromMapping(normalizedMapping, validatedDf)
     }.toSeq
@@ -124,7 +123,6 @@ case class SqlPropertyGraphDataSource(
 
       val validatedDf = normalizedDf
         .validateColumnTypes(columnsWithType)
-        .setNullability(columnsWithType)
 
       CAPSRelationshipTable.fromMapping(normalizedMapping, validatedDf)
     }

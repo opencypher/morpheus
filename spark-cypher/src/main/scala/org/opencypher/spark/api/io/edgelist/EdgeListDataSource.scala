@@ -37,7 +37,6 @@ import org.opencypher.spark.api.io.GraphEntity.sourceIdKey
 import org.opencypher.spark.api.io.Relationship.{sourceEndNodeKey, sourceStartNodeKey}
 import org.opencypher.spark.api.io.edgelist.EdgeListDataSource._
 import org.opencypher.spark.api.io.{CAPSNodeTable, CAPSRelationshipTable}
-import org.opencypher.spark.impl.DataFrameOps._
 import org.opencypher.spark.schema.CAPSSchema
 
 object EdgeListDataSource {
@@ -85,13 +84,11 @@ case class EdgeListDataSource(path: String, options: Map[String, String] = Map.e
       .csv(path)
       .withColumn(sourceIdKey, functions.monotonically_increasing_id())
       .select(sourceIdKey, sourceStartNodeKey, sourceEndNodeKey)
-      .setNonNullable(Set(sourceIdKey, sourceStartNodeKey, sourceEndNodeKey))
 
     val rawNodes = rawRels
       .select(rawRels.col(sourceStartNodeKey).as(sourceIdKey))
       .union(rawRels.select(rawRels.col(sourceEndNodeKey).as(sourceIdKey)))
       .distinct()
-      .setNonNullable(sourceIdKey)
 
     caps.graphs.create(CAPSNodeTable(Set(NODE_LABEL), rawNodes), CAPSRelationshipTable(REL_TYPE, rawRels))
   }

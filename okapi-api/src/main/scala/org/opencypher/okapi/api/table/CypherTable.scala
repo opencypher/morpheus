@@ -98,16 +98,10 @@ object CypherTable {
         s"table with column key $columnKey",
         s"table with columns ${table.physicalColumns.mkString(", ")}"))
 
-      if (!columnType.subTypeOf(expectedType).isTrue) {
-        if (columnType.material == expectedType.material) {
-          throw IllegalArgumentException(
-            s"non-nullable type for $keyDescription column `$columnKey`",
-            "nullable type")
-        } else {
-          throw IllegalArgumentException(
-            s"$keyDescription column `$columnKey` of type $expectedType",
-            s"incompatible column type $columnType")
-        }
+      if (columnType.material.subTypeOf(expectedType.material).isFalse) {
+        throw IllegalArgumentException(
+          s"$keyDescription column `$columnKey` of type $expectedType",
+          s"incompatible column type $columnType")
       }
     }
   }

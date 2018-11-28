@@ -82,7 +82,6 @@ object DataFrameOps {
     }
   }
 
-
   implicit class RichDataFrame(val df: DataFrame) extends AnyVal {
 
     def validateColumnTypes(expectedColsWithType: Map[String, CypherType]): DataFrame = {
@@ -148,37 +147,6 @@ object DataFrameOps {
 
     def mapColumn(name: String)(f: Column => Column): DataFrame = {
       df.withColumn(name, f(df.col(name)))
-    }
-
-    def setNonNullable(columnName: String): DataFrame = {
-      setNonNullable(Set(columnName))
-    }
-
-    def setNonNullable(columnNames: Set[String]): DataFrame = {
-      val newSchema = StructType(df.schema.map {
-        case s@StructField(cn, _, true, _) if columnNames.contains(cn) => s.copy(nullable = false)
-        case other => other
-      })
-      if (newSchema == df.schema) {
-        df
-      } else {
-        df.sparkSession.createDataFrame(df.rdd, newSchema)
-      }
-    }
-
-    def setNullability(mapping: Map[String, CypherType]): DataFrame = {
-      val newSchema = StructType(df.schema.map {
-        case s@StructField(cn, _, _, _) => mapping.get(cn) match {
-          case Some(ct) => ct.toStructField(cn)
-          case None => s
-        }
-        case other => throw IllegalArgumentException(s"No mapping provided for $other")
-      })
-      if (newSchema == df.schema) {
-        df
-      } else {
-        df.sparkSession.createDataFrame(df.rdd, newSchema)
-      }
     }
 
     /**
