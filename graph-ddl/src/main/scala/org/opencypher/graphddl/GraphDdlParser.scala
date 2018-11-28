@@ -88,20 +88,17 @@ object GraphDdlParser {
 
   val elementTypeDefinition: P[ElementTypeDefinition] = {
     val property: P[Property] =
-      P(identifier.! ~/ ":" ~/ CypherTypeParser.cypherType)
+      P(identifier.! ~/ CypherTypeParser.cypherType)
 
     val properties: P[Map[String, CypherType]] =
-      P("{" ~/ property.rep(min = 1, sep = ",").map(_.toMap) ~/ "}")
+      P("(" ~/ property.rep(min = 1, sep = ",").map(_.toMap) ~/ ")")
 
     val keyDefinition: P[KeyDefinition] =
       P(KEY ~/ identifier.! ~/ "(" ~/ identifier.!.rep(min = 1, sep = ",").map(_.toSet) ~/ ")")
 
-    P(identifier.! ~/ ("(" ~/ properties.? ~/ keyDefinition.? ~/ ")").?).map {
-      case (id, None)                          => ElementTypeDefinition(id)
-      case (id, Some((maybeProps, maybeKeys))) => maybeProps match {
-        case None        => ElementTypeDefinition(id, maybeKey = maybeKeys)
-        case Some(props) => ElementTypeDefinition(id, props, maybeKeys)
-      }
+    P(identifier.! ~/ properties.? ~/ keyDefinition.?).map {
+      case (id, None, maybeKey) => ElementTypeDefinition(id, maybeKey = maybeKey)
+      case (id, Some(props), maybeKey) => ElementTypeDefinition(id, props, maybeKey)
     }
   }
 

@@ -104,27 +104,27 @@ class GraphDdlParserTest extends BaseTestSuite with MockitoSugar with TestNameFi
       success(elementTypeDefinition, ElementTypeDefinition("A"))
     }
 
-    it("parses  A ({ foo : string? } )") {
+    it("parses  A ( foo  string? )") {
       success(elementTypeDefinition, ElementTypeDefinition("A", Map("foo" -> CTString.nullable)))
     }
 
-    it("parses  A ({ key : FLOAT })") {
+    it("parses  A ( key FLOAT )") {
       success(elementTypeDefinition, ElementTypeDefinition("A", Map("key" -> CTFloat)))
     }
 
-    it("parses  A ({ key : FLOAT? })") {
+    it("parses  A ( key FLOAT? )") {
       success(elementTypeDefinition, ElementTypeDefinition("A", Map("key" -> CTFloat.nullable)))
     }
 
-    it("!parses  A ({ key _ STRING })") {
+    it("!parses  A ( key _ STRING )") {
       failure(elementTypeDefinition)
     }
 
-    it("parses  A ({ key1 : FLOAT, key2 : STRING })") {
+    it("parses  A ( key1 FLOAT, key2 STRING)") {
       success(elementTypeDefinition, ElementTypeDefinition("A", Map("key1" -> CTFloat, "key2" -> CTString)))
     }
 
-    it("!parses  A ({ })") {
+    it("!parses  A ()") {
       failure(elementTypeDefinition)
     }
   }
@@ -134,19 +134,19 @@ class GraphDdlParserTest extends BaseTestSuite with MockitoSugar with TestNameFi
       success(globalElementTypeDefinition, ElementTypeDefinition("A"))
     }
 
-    it("parses CREATE ELEMENT TYPE A ({ foo : STRING })") {
+    it("parses CREATE ELEMENT TYPE A ( foo STRING ) ") {
       success(globalElementTypeDefinition, ElementTypeDefinition("A", Map("foo" -> CTString)))
     }
 
-    it("parses CREATE ELEMENT TYPE A (KEY  A_NK   (foo,   bar))") {
+    it("parses CREATE ELEMENT TYPE A KEY A_NK   (foo,   bar)") {
       success(globalElementTypeDefinition, ElementTypeDefinition("A", Map.empty, Some("A_NK" -> Set("foo", "bar"))))
     }
 
-    it("parses CREATE ELEMENT TYPE A ({ foo : STRING } KEY A_NK (foo,   bar))") {
+    it("parses CREATE ELEMENT TYPE A ( foo STRING ) KEY A_NK (foo,   bar)") {
       success(globalElementTypeDefinition, ElementTypeDefinition("A", Map("foo" -> CTString), Some("A_NK" -> Set("foo", "bar"))))
     }
 
-    it("!parses CREATE ELEMENT TYPE A ({ foo : STRING } KEY A ())") {
+    it("!parses CREATE ELEMENT TYPE A ( foo STRING ) KEY A ()") {
       failure(globalElementTypeDefinition)
     }
   }
@@ -216,13 +216,14 @@ class GraphDdlParserTest extends BaseTestSuite with MockitoSugar with TestNameFi
       parse(
         """|SET SCHEMA foo.bar
            |
-           |CREATE ELEMENT TYPE A ({name: STRING})
+           |CREATE ELEMENT TYPE A ( name STRING )
+
            |
-           |CREATE ELEMENT TYPE B ({sequence: INTEGER, nationality: STRING?, age: INTEGER?})
+           |CREATE ELEMENT TYPE B ( sequence INTEGER, nationality STRING?, age INTEGER? )
            |
            |CREATE ELEMENT TYPE TYPE_1
            |
-           |CREATE ELEMENT TYPE TYPE_2 ({prop: BOOLEAN?})""".stripMargin) shouldEqual
+           |CREATE ELEMENT TYPE TYPE_2 ( prop BOOLEAN? ) """.stripMargin) shouldEqual
         DdlDefinition(List(
           SetSchemaDefinition("foo", "bar"),
           ElementTypeDefinition("A", Map("name" -> CTString)),
@@ -328,7 +329,7 @@ class GraphDdlParserTest extends BaseTestSuite with MockitoSugar with TestNameFi
       ))
       graphDefinition.parse(
         """|CREATE GRAPH myGraph OF (
-           | A ({ foo : STRING }),
+           | A ( foo STRING ) ,
            | B,
            |
            | (A,B),

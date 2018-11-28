@@ -38,9 +38,9 @@ class GraphDdlTest extends FunSpec with Matchers {
        |SET SCHEMA dataSourceName.fooDatabaseName
        |
        |CREATE GRAPH TYPE fooSchema (
-       | Person ({ name   : STRING, age : INTEGER }),
-       | Book   ({ title  : STRING }),
-       | READS  ({ rating : FLOAT  }),
+       | Person ( name STRING, age INTEGER ),
+       | Book   ( title STRING ) ,
+       | READS  ( rating FLOAT ) ,
        | (Person),
        | (Book),
        | [READS]
@@ -228,8 +228,8 @@ class GraphDdlTest extends FunSpec with Matchers {
   it("fails on incompatible property types") {
     val e = the [GraphDdlException] thrownBy GraphDdl("""
       |CREATE GRAPH TYPE fooSchema (
-      | Person1 ({ age: STRING  }),
-      | Person2 ({ age: INTEGER }),
+      | Person1 ( age STRING ) ,
+      | Person2 ( age INTEGER ) ,
       | (Person1, Person2)
       |)
     """.stripMargin)
@@ -242,7 +242,7 @@ class GraphDdlTest extends FunSpec with Matchers {
     val e = the [GraphDdlException] thrownBy GraphDdl("""
       |SET SCHEMA a.b
       |CREATE GRAPH TYPE fooSchema (
-      | Person ({ age1: STRING  }),
+      | Person ( age1 STRING ) ,
       | (Person)
       |)
       |CREATE GRAPH fooGraph OF fooSchema (

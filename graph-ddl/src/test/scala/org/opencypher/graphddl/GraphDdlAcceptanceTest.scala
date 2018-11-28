@@ -37,12 +37,11 @@ class GraphDdlAcceptanceTest extends BaseTestSuite {
 
   val typeName = "myType"
   val graphName = GraphName("myGraph")
-
   describe("DDL to OKAPI schema") {
     it("can construct schema with node label") {
 
       val ddl =
-        s"""|CREATE ELEMENT TYPE A ({name: STRING})
+        s"""|CREATE ELEMENT TYPE A ( name STRING )
             |
             |CREATE GRAPH TYPE $typeName (
             |  (A)
@@ -59,7 +58,7 @@ class GraphDdlAcceptanceTest extends BaseTestSuite {
     it("can construct schema with edge label") {
 
       val ddl =
-        s"""CREATE ELEMENT TYPE A ({name: STRING})
+        s"""CREATE ELEMENT TYPE A ( name STRING )
            |
            |CREATE GRAPH TYPE $typeName (
            |  [A]
@@ -75,8 +74,8 @@ class GraphDdlAcceptanceTest extends BaseTestSuite {
 
     it("can construct schema with node and edge labels") {
       val ddl =
-        s"""|CREATE ELEMENT TYPE Node ({val: String})
-            |CREATE ELEMENT TYPE REL ({name: STRING})
+        s"""|CREATE ELEMENT TYPE Node ( val String )
+            |CREATE ELEMENT TYPE REL ( name STRING )
             |
             |CREATE GRAPH TYPE $typeName (
             |  (Node), [REL]
@@ -95,10 +94,10 @@ class GraphDdlAcceptanceTest extends BaseTestSuite {
     it("prefers local label over global label") {
 
       val ddl =
-        s"""|CREATE ELEMENT TYPE Node ({val: String})
+        s"""|CREATE ELEMENT TYPE Node ( val String )
             |
             |CREATE GRAPH TYPE $typeName (
-            |  Node ({ foo : Integer }),
+            |  Node ( foo Integer ) ,
             |  (Node)
             |)
             |CREATE GRAPH $graphName OF $typeName ()
@@ -112,7 +111,7 @@ class GraphDdlAcceptanceTest extends BaseTestSuite {
 
     it("can construct schema with node labels with element key") {
       val ddl =
-        s"""|CREATE ELEMENT TYPE Node ({val: String, another : String} KEY akey (val))
+        s"""|CREATE ELEMENT TYPE Node ( val String, another String ) KEY akey (val)
             |
             |CREATE GRAPH TYPE $typeName (
             |  (Node)
@@ -129,8 +128,8 @@ class GraphDdlAcceptanceTest extends BaseTestSuite {
 
     it("can construct schema with single NEN pattern") {
       val ddl =
-        s"""|CREATE ELEMENT TYPE Node ({val: String})
-            |CREATE ELEMENT TYPE REL ({name: STRING})
+        s"""|CREATE ELEMENT TYPE Node ( val String )
+            |CREATE ELEMENT TYPE REL ( name STRING )
             |
             |CREATE GRAPH TYPE $typeName (
             |  (Node)-[REL]->(Node)
@@ -143,14 +142,13 @@ class GraphDdlAcceptanceTest extends BaseTestSuite {
           .withNodePropertyKeys("Node")("val" -> CTString)
           .withRelationshipPropertyKeys("REL")("name" -> CTString)
           .withSchemaPatterns(SchemaPattern("Node", "REL", "Node"))
-
       )
     }
 
     it("can construct schema with single NEN pattern 2") {
       val ddl =
-        s"""|CREATE ELEMENT TYPE Node ({val: String})
-            |CREATE ELEMENT TYPE REL ({name: STRING})
+        s"""|CREATE ELEMENT TYPE Node ( val String )
+            |CREATE ELEMENT TYPE REL ( name STRING )
             |
             |CREATE GRAPH TYPE $typeName (
             | (Node)-[REL]->(Node)
@@ -163,20 +161,19 @@ class GraphDdlAcceptanceTest extends BaseTestSuite {
           .withNodePropertyKeys("Node")("val" -> CTString)
           .withRelationshipPropertyKeys("REL")("name" -> CTString)
           .withSchemaPatterns(SchemaPattern("Node", "REL", "Node"))
-
       )
     }
 
     it("can combine local and global labels") {
       // Given
       val ddl =
-        s"""|CREATE ELEMENT TYPE MyLabel ({property: STRING, data: INTEGER?})
-            |CREATE ELEMENT TYPE REL_TYPE1 ({property: BOOLEAN})
+        s"""|CREATE ELEMENT TYPE MyLabel ( property STRING, data INTEGER? )
+            |CREATE ELEMENT TYPE REL_TYPE1 ( property BOOLEAN )
             |CREATE ELEMENT TYPE REL_TYPE2
             |
             |CREATE GRAPH TYPE $typeName (
             |  -- local label declarations
-            |  LocalLabel1 ({property: STRING}),
+            |  LocalLabel1 ( property STRING ) ,
             |  LocalLabel2,
             |
             |  -- label set declarations
@@ -209,8 +206,8 @@ class GraphDdlAcceptanceTest extends BaseTestSuite {
     it("merges property keys for label combination") {
       // Given
       val ddl =
-        s"""|CREATE ELEMENT TYPE A ({foo: STRING})
-            |CREATE ELEMENT TYPE B ({bar: STRING})
+        s"""|CREATE ELEMENT TYPE A ( foo STRING )
+            |CREATE ELEMENT TYPE B ( bar STRING )
             |
             |CREATE GRAPH TYPE $typeName (
             |  (A),
@@ -229,8 +226,8 @@ class GraphDdlAcceptanceTest extends BaseTestSuite {
     it("merges identical property keys with same type") {
       // Given
       val ddl =
-        s"""|CREATE ELEMENT TYPE A ({foo: STRING})
-            |CREATE ELEMENT TYPE B ({foo: STRING})
+        s"""|CREATE ELEMENT TYPE A ( foo STRING )
+            |CREATE ELEMENT TYPE B ( foo STRING )
             |
             |CREATE GRAPH TYPE $typeName (
             |  (A),
@@ -250,16 +247,16 @@ class GraphDdlAcceptanceTest extends BaseTestSuite {
       val ddlDefinition: DdlDefinition = parse(
         s"""|SET SCHEMA foo.bar;
             |
-            |CREATE ELEMENT TYPE A ({name: STRING})
+            |CREATE ELEMENT TYPE A ( name STRING )
             |
-            |CREATE ELEMENT TYPE B ({sequence: INTEGER, nationality: STRING?, age: INTEGER?})
+            |CREATE ELEMENT TYPE B ( sequence INTEGER, nationality STRING?, age INTEGER? )
             |
             |CREATE ELEMENT TYPE TYPE_1
             |
-            |CREATE ELEMENT TYPE TYPE_2 ({prop: BOOLEAN?})
+            |CREATE ELEMENT TYPE TYPE_2 ( prop BOOLEAN? )
             |
             |CREATE GRAPH TYPE $typeName (
-            |  A ({ foo : INTEGER } ),
+            |  A ( foo INTEGER ) ,
             |  C,
             |
             |  -- nodes
@@ -285,7 +282,6 @@ class GraphDdlAcceptanceTest extends BaseTestSuite {
             |    END NODES   (B) FROM bar alias_bar JOIN ON alias_bar.COLUMN_A = edge.COLUMN_A
             |)
             |""".stripMargin)
-
       ddlDefinition should equalWithTracing(
         DdlDefinition(List(
           SetSchemaDefinition("foo", "bar"),
@@ -323,7 +319,6 @@ class GraphDdlAcceptanceTest extends BaseTestSuite {
           )))))
         ))
       )
-
       GraphDdl(ddlDefinition).graphs(graphName).graphType shouldEqual Schema.empty
         .withNodePropertyKeys("A")("foo" -> CTInteger)
         .withNodePropertyKeys("B")("sequence" -> CTInteger, "nationality" -> CTString.nullable, "age" -> CTInteger.nullable)
@@ -340,8 +335,8 @@ class GraphDdlAcceptanceTest extends BaseTestSuite {
     it("throws when merging identical property keys with conflicting types") {
       // Given
       val ddl =
-        s"""|CREATE ELEMENT TYPE A ({foo: STRING})
-            |CREATE ELEMENT TYPE B ({foo: INTEGER})
+        s"""|CREATE ELEMENT TYPE A ( foo STRING )
+            |CREATE ELEMENT TYPE B ( foo INTEGER )
             |
             |CREATE GRAPH TYPE $typeName (
             |  (A),
@@ -370,7 +365,6 @@ class GraphDdlAcceptanceTest extends BaseTestSuite {
             |CREATE GRAPH $graphName OF $typeName ()
             |""".stripMargin)
 
-
       an[GraphDdlException] shouldBe thrownBy {
         GraphDdl(ddlDefinition).graphs(graphName).graphType
       }
@@ -389,7 +383,6 @@ class GraphDdlAcceptanceTest extends BaseTestSuite {
             |)
             |CREATE GRAPH $graphName OF $typeName ()
             |""".stripMargin)
-
       an[GraphDdlException] shouldBe thrownBy {
         GraphDdl(ddlDefinition).graphs(graphName).graphType
       }
@@ -411,7 +404,7 @@ class GraphDdlAcceptanceTest extends BaseTestSuite {
     it("throws if an unknown property key is mapped to a column") {
       val ddlString =
         s"""|CREATE GRAPH TYPE $typeName (
-            |  A ({ foo: STRING }),
+            |  A ( foo STRING ) ,
             |  (A)
             |)
             |CREATE GRAPH $graphName OF $typeName (

@@ -150,11 +150,11 @@ object LdbcUtil {
           .map { row =>
             val propertyKey = row.getString(0)
             val propertyType = row.getString(1).toCypherType
-            s"$propertyKey : $propertyType"
+            s"$propertyKey $propertyType"
           }
 
         if (properties.nonEmpty) {
-          s"CREATE ELEMENT TYPE $label ( { ${properties.mkString(", ")} } )"
+          s"CREATE ELEMENT TYPE $label ( ${properties.mkString(", ")} )"
         } else {
           s"CREATE ELEMENT TYPE $label"
         }

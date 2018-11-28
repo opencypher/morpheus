@@ -87,7 +87,7 @@ class SqlPropertyGraphDataSourceTest extends CAPSTestSuite with HiveFixture with
          |SET SCHEMA $dataSourceName.$databaseName
          |
          |CREATE GRAPH TYPE fooSchema (
-         | Foo ({ foo : STRING }),
+         | Foo ( foo STRING ) ,
          | (Foo)
          |)
          |CREATE GRAPH fooGraph OF fooSchema (
@@ -115,7 +115,7 @@ class SqlPropertyGraphDataSourceTest extends CAPSTestSuite with HiveFixture with
          |SET SCHEMA $dataSourceName.$databaseName
          |
          |CREATE GRAPH TYPE fooSchema (
-         | Foo ({ key1 : INTEGER, key2 : String }),
+         | Foo ( key1 INTEGER, key2 String ),
          | (Foo)
          |)
          |
@@ -145,8 +145,8 @@ class SqlPropertyGraphDataSourceTest extends CAPSTestSuite with HiveFixture with
          |SET SCHEMA $dataSourceName.$databaseName
          |
          |CREATE GRAPH TYPE fooSchema (
-         | Foo ({ foo : STRING }),
-         | Bar ({ bar : INTEGER }),
+         | Foo ( foo STRING ) ,
+         | Bar ( bar INTEGER ) ,
          | (Foo),
          | (Bar)
          |)
@@ -184,9 +184,9 @@ class SqlPropertyGraphDataSourceTest extends CAPSTestSuite with HiveFixture with
          |SET SCHEMA $dataSourceName.$databaseName
          |
          |CREATE GRAPH TYPE fooSchema (
-         | Person ({ name   : STRING }),
-         | Book   ({ title  : STRING }),
-         | READS  ({ rating : FLOAT  }),
+         | Person ( name STRING ) ,
+         | Book   ( title STRING ) ,
+         | READS  ( rating FLOAT ) ,
          | (Person),
          | (Book),
          | [READS]
@@ -244,8 +244,8 @@ class SqlPropertyGraphDataSourceTest extends CAPSTestSuite with HiveFixture with
          |SET SCHEMA $dataSourceName.$databaseName
          |
          |CREATE GRAPH TYPE fooSchema (
-         | Node ({ id : INTEGER, start : STRING, end : STRING }),
-         | REL  ({ id : INTEGER, start : STRING, end : STRING }),
+         | Node ( id INTEGER, start STRING, end STRING ),
+         | REL  ( id INTEGER, start STRING, end STRING ),
          | (Node),
          | [REL]
          |)
@@ -301,9 +301,9 @@ class SqlPropertyGraphDataSourceTest extends CAPSTestSuite with HiveFixture with
          |SET SCHEMA $dataSourceName.$databaseName
          |
          |CREATE GRAPH TYPE fooSchema (
-         | Person ({ name   : STRING }),
-         | Book   ({ title  : STRING }),
-         | READS  ({ rating : FLOAT  }),
+         | Person ( name STRING ) ,
+         | Book   ( title STRING ) ,
+         | READS  ( rating FLOAT ) ,
          | (Person),
          | (Book),
          | [READS]
@@ -374,8 +374,8 @@ class SqlPropertyGraphDataSourceTest extends CAPSTestSuite with HiveFixture with
     val ddlString =
       s"""
          |CREATE GRAPH TYPE fooSchema (
-         | Foo ({ foo : STRING }),
-         | Bar ({ bar : INTEGER }),
+         | Foo ( foo STRING ) ,
+         | Bar ( bar INTEGER ) ,
          | (Foo),
          | (Bar)
          |)
@@ -414,8 +414,8 @@ class SqlPropertyGraphDataSourceTest extends CAPSTestSuite with HiveFixture with
     val ddlString =
       s"""
          |CREATE GRAPH TYPE fooSchema (
-         | Foo ({ foo : STRING }),
-         | Bar ({ bar : INTEGER }),
+         | Foo ( foo STRING ) ,
+         | Bar ( bar INTEGER ) ,
          | (Foo),
          | (Bar)
          |)

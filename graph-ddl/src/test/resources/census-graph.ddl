@@ -1,33 +1,33 @@
--- format for below is: <dataSourceName>.<schemaName>
+-- format for below is <dataSourceName>.<schemaName>
 SET SCHEMA CENSUS.CENSUS;
 
 -- =================================================================
 
-CREATE ELEMENT TYPE LicensedDog ({
-  licence_number: STRING?
-} KEY LicensedDog_NK (licence_number))
+CREATE ELEMENT TYPE LicensedDog (
+  licence_number STRING?
+) KEY LicensedDog_NK (licence_number)
 
-CREATE ELEMENT TYPE Person ({first_name: STRING?, last_name: STRING?})
+CREATE ELEMENT TYPE Person (first_name STRING?, last_name STRING?)
 
-CREATE ELEMENT TYPE Visitor ({
-  date_of_entry: STRING,
-  sequence: INTEGER,
-  nationality: STRING?,
-  age: INTEGER?
-} KEY Visitor_NK (date_of_entry, sequence))
+CREATE ELEMENT TYPE Visitor (
+  date_of_entry STRING,
+  sequence INTEGER,
+  nationality STRING?,
+  age INTEGER?
+) KEY Visitor_NK (date_of_entry, sequence)
 
-CREATE ELEMENT TYPE Resident ({
-  person_number: STRING
-} KEY Resident_NK (person_number))
+CREATE ELEMENT TYPE Resident (
+  person_number STRING
+) KEY Resident_NK (person_number)
 
-CREATE ELEMENT TYPE Town ({
-  CITY_NAME: STRING,
-  REGION: STRING
-} KEY Town_NK (REGION, CITY_NAME))
+CREATE ELEMENT TYPE Town (
+  CITY_NAME STRING,
+  REGION STRING
+) KEY Town_NK (REGION, CITY_NAME)
 
 CREATE ELEMENT TYPE PRESENT_IN
 
-CREATE ELEMENT TYPE LICENSED_BY ({date_of_licence: STRING})
+CREATE ELEMENT TYPE LICENSED_BY (date_of_licence STRING)
 
 -- =================================================================
 
