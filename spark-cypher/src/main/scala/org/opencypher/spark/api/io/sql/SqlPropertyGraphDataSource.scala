@@ -71,7 +71,7 @@ case class SqlPropertyGraphDataSource(
         val nodeType = nodeViewKey.nodeType
         val columnsWithType = nodeColsWithCypherType(capsSchema, nodeType)
         val inputNodeMapping = createNodeMapping(nodeType, ddlGraph.nodeToViewMappings(nodeViewKey).propertyMappings)
-        val normalizedDf = normalizeDataFrame(nodeDf, inputNodeMapping)
+        val normalizedDf = normalizeDataFrame(nodeDf, inputNodeMapping).castToLong
         val normalizedMapping = normalizeNodeMapping(inputNodeMapping)
 
         normalizedDf.validateColumnTypes(columnsWithType)
@@ -117,7 +117,7 @@ case class SqlPropertyGraphDataSource(
 
       val columnsWithType = relColsWithCypherType(capsSchema, relType)
       val inputRelMapping = createRelationshipMapping(relType, edgeToViewMapping.propertyMappings)
-      val normalizedDf = normalizeDataFrame(relsWithEndNodeId, inputRelMapping)
+      val normalizedDf = normalizeDataFrame(relsWithEndNodeId, inputRelMapping).castToLong
       val normalizedMapping = normalizeRelationshipMapping(inputRelMapping)
 
       normalizedDf.validateColumnTypes(columnsWithType)
