@@ -201,13 +201,15 @@ class Neo4JGraphMergeTest extends CAPSTestSuite with CAPSNeo4jServerFixture with
 
       val ddlString =
         """
-          |CREATE GRAPH SCHEMA personSchema
-          | LABEL (Person {id: INTEGER, name: STRING} KEY pk (id))
+          |CREATE GRAPH TYPE personType (
+          |  Person (id INTEGER, name STRING) KEY pk (id),
           |
-          |CREATE GRAPH personGraph WITH GRAPH SCHEMA personSchema
-          |  NODE LABEL SETS (
-          |    (Person) FROM ds1.db.persons
-          |  )
+          |  (Person)
+          |)
+          |
+          |CREATE GRAPH personGraph OF personType (
+          |  (Person) FROM ds1.db.persons
+          |)
         """.stripMargin
       val hiveDataSourceConfig = SqlDataSourceConfig(
         storageFormat = HiveFormat,
@@ -218,11 +220,10 @@ class Neo4JGraphMergeTest extends CAPSTestSuite with CAPSNeo4jServerFixture with
       val graph = pgds.graph(GraphName("personGraph"))
 
       Neo4jGraphMerge.createIndexes(entireGraphName, neo4jConfig, graph.schema.nodeKeys)
-      val graphName = GraphName("graph")
 
       Neo4jGraphMerge.merge(entireGraphName, graph, neo4jConfig)
 
-      val readGraph = Neo4jPropertyGraphDataSource(neo4jConfig).graph(graphName)
+      val readGraph = Neo4jPropertyGraphDataSource(neo4jConfig).graph(entireGraphName)
 
       readGraph.cypher("MATCH (n:Person) RETURN n.id as id, n.name as name, labels(n) as labels").records.toMaps should equal(Bag(
         CypherMap("id" -> 1, "name" -> "baz", "labels" -> Seq("Person"))
