@@ -84,7 +84,7 @@ object DataFrameOps {
 
   implicit class RichDataFrame(val df: DataFrame) extends AnyVal {
 
-    def validateColumnTypes(expectedColsWithType: Map[String, CypherType]): DataFrame = {
+    def validateColumnTypes(expectedColsWithType: Map[String, CypherType]): Unit = {
       val missingColumns = expectedColsWithType.keySet -- df.schema.fieldNames.toSet
 
       if (missingColumns.nonEmpty) {
@@ -116,7 +116,6 @@ object DataFrameOps {
               actual = structFieldType)
           }
       }
-      df
     }
 
     /**

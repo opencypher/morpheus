@@ -7,7 +7,7 @@
 Node labels {
 	:Order
 		customerID: STRING?
-		orderID: INTEGER?
+		orderID: INTEGER
 		orderDate: STRING?
 		shipAddress: STRING?
 		shipRegion: STRING?
@@ -21,24 +21,24 @@ Node labels {
 		shipPostalCode: STRING?
 		shipVia: INTEGER?
 	:CustomerDemographic
-		customerTypeID: STRING?
+		customerTypeID: STRING
 		customerDesc: STRING?
 	:OrderDetails
-		quantity: INTEGER?
-		orderID: INTEGER?
-		productID: INTEGER?
-		unitPrice: INTEGER?
-		discount: INTEGER?
+		quantity: INTEGER
+		orderID: INTEGER
+		productID: INTEGER
+		unitPrice: INTEGER
+		discount: INTEGER
 	:Product
 		categoryID: INTEGER?
-		discontinued: INTEGER?
+		discontinued: INTEGER
 		unitsOnOrder: INTEGER?
 		quantityPerUnit: STRING?
 		reorderLevel: INTEGER?
 		supplierID: INTEGER?
-		productName: STRING?
+		productName: STRING
 		unitsInStock: INTEGER?
-		productID: INTEGER?
+		productID: INTEGER
 		unitPrice: INTEGER?
 	:Employee
 		city: STRING?
@@ -47,19 +47,19 @@ Node labels {
 		country: STRING?
 		postalCode: STRING?
 		reportsTo: INTEGER?
-		lastName: STRING?
-		firstName: STRING?
+		lastName: STRING
+		firstName: STRING
 		birthDate: STRING?
 		homePhone: STRING?
-		employeeID: INTEGER?
+		employeeID: INTEGER
 		region: STRING?
 		address: STRING?
 		title: STRING?
 		titleOfCourtesy: STRING?
 		extension: STRING?
 	:Category
-		categoryID: INTEGER?
-		categoryName: STRING?
+		categoryID: INTEGER
+		categoryName: STRING
 		description: STRING?
 	:Supplier
 		city: STRING?
@@ -67,36 +67,36 @@ Node labels {
 		country: STRING?
 		postalCode: STRING?
 		contactName: STRING?
-		supplierID: INTEGER?
+		supplierID: INTEGER
 		fax: STRING?
-		companyName: STRING?
+		companyName: STRING
 		region: STRING?
 		address: STRING?
 		contactTitle: STRING?
 		phone: STRING?
 	:Territory
-		territoryID: STRING?
-		territoryDescription: STRING?
-		regionID: INTEGER?
+		territoryID: STRING
+		territoryDescription: STRING
+		regionID: INTEGER
 	:Shipper
-		shipperID: INTEGER?
-		companyName: STRING?
+		shipperID: INTEGER
+		companyName: STRING
 		phone: STRING?
 	:Customer
-		customerID: STRING?
+		customerID: STRING
 		city: STRING?
 		country: STRING?
 		postalCode: STRING?
 		contactName: STRING?
 		fax: STRING?
-		companyName: STRING?
+		companyName: STRING
 		region: STRING?
 		address: STRING?
 		contactTitle: STRING?
 		phone: STRING?
 	:Region
-		regionID: INTEGER?
-		regionDescription: STRING?
+		regionID: INTEGER
+		regionDescription: STRING
 }
 no label implications
 Rel types {
@@ -111,6 +111,21 @@ Rel types {
 	:HAS_CATEGORY
 	:HAS_TERRITORY
 	:HAS_CUSTOMER_DEMOGRAPHIC
+}
+Explicit schema patterns {
+	(:OrderDetails)-[:HAS_ORDER]->(:Order)
+	(:Product)-[:HAS_CATEGORY]->(:Category)
+	(:Employee)-[:HAS_TERRITORY]->(:Territory)
+	(:Employee)-[:REPORTS_TO]->(:Employee)
+	(:Product)-[:HAS_SUPPLIER]->(:Supplier)
+	(:Order)-[:HAS_SHIPPER]->(:Shipper)
+	(:OrderDetails)-[:HAS_PRODUCT]->(:Product)
+	(:CustomerDemographic)-[:HAS_CUSTOMER]->(:Customer)
+	(:Order)-[:HAS_CUSTOMER]->(:Customer)
+	(:Territory)-[:HAS_REGION]->(:Region)
+	(:Order)-[:HAS_EMPLOYEE]->(:Employee)
+	(:Territory)-[:HAS_EMPLOYEE]->(:Employee)
+	(:Customer)-[:HAS_CUSTOMER_DEMOGRAPHIC]->(:CustomerDemographic)
 }
 
 ╔══════════╤═════════════╤═════════════╤════════════════════════════╗
