@@ -73,15 +73,15 @@ object GraphDdl {
 
     val ddlParts = toDdlParts(ddl.statements)
 
-    val globalLabelDefinitions: Map[String, ElementTypeDefinition] = ddlParts.elementTypes
-      .validateDistinctBy(_.name, "Duplicate label name")
+    val elementTypeDefinitions: Map[String, ElementTypeDefinition] = ddlParts.elementTypes
+      .validateDistinctBy(_.name, "Duplicate element type")
       .keyBy(_.name)
 
     val graphTypes = ddlParts.graphTypes
       .validateDistinctBy(_.name, "Duplicate graph type name")
       .keyBy(_.name).mapValues(_.graphTypeBody)
       .map { case (name, graphType) =>
-        name -> tryWithContext(s"Error in graph type: $name")(toOkapiSchema(globalLabelDefinitions, graphType))
+        name -> tryWithContext(s"Error in graph type: $name")(toOkapiSchema(elementTypeDefinitions, graphType))
       }
       .view.force // mapValues creates a view, but we want validation now
 
@@ -89,7 +89,7 @@ object GraphDdl {
       .keyBy(_.name)
       .mapValues(_.graphTypeBody)
       .map { case (name, graphType) =>
-        name -> tryWithContext(s"Error in graph type of graph: $name")(toOkapiSchema(globalLabelDefinitions, graphType))
+        name -> tryWithContext(s"Error in graph type of graph: $name")(toOkapiSchema(elementTypeDefinitions, graphType))
       }
 
     val graphs = ddlParts.graphs
@@ -122,16 +122,16 @@ object GraphDdl {
   }
 
   private[graphddl] def toOkapiSchema(
-    globalLabelDefinitions: Map[String, ElementTypeDefinition],
+    elementTypeDefinitions: Map[String, ElementTypeDefinition],
     typeDefinition: GraphTypeBody
   ): Schema = {
 
     val parts = toTypeParts(typeDefinition.statements)
 
-    val localLabelDefinitions = parts.elementTypes
-      .validateDistinctBy(_.name, "Duplicate label name")
+    val localElementTypes = parts.elementTypes
+      .validateDistinctBy(_.name, "Duplicate element type")
       .keyBy(_.name)
-    val labelDefinitions: Map[String, ElementTypeDefinition] = globalLabelDefinitions ++ localLabelDefinitions
+    val labelDefinitions: Map[String, ElementTypeDefinition] = elementTypeDefinitions ++ localElementTypes
 
     // Nodes
 
@@ -160,11 +160,11 @@ object GraphDdl {
       case (currentSchema, labelCombo) =>
         tryWithContext(s"Error for label combination (${labelCombo.mkString(",")})") {
           labelCombo
-            .flatMap(label => elementTypeDefinitions.getOrFail(label, "Unresolved label").properties)
+            .flatMap(label => elementTypeDefinitions.getOrFail(label, "Unresolved element type").properties)
             .groupBy { case (key, _) => key }.mapValues(_.map { case (key, _) => key })
 
           val comboProperties = labelCombo.foldLeft(PropertyKeys.empty) { case (currProps, label) =>
-            val labelProperties = elementTypeDefinitions.getOrFail(label, "Unresolved label").properties
+            val labelProperties = elementTypeDefinitions.getOrFail(label, "Unresolved element type").properties
             currProps.keySet.intersect(labelProperties.keySet).foreach { key =>
               if (currProps(key) != labelProperties(key)) {
                 Err.incompatibleTypes(
@@ -193,12 +193,14 @@ object GraphDdl {
     elementTypeDefinitions: Map[String, ElementTypeDefinition],
     relDefinitions: Set[String]
   ): Schema = {
-    val schemaWithRels = relDefinitions.foldLeft(Schema.empty) {
+    val schemaWithRelationships = relDefinitions.foldLeft(Schema.empty) {
       case (currentSchema, relType) =>
-        currentSchema.withRelationshipPropertyKeys(relType, elementTypeDefinitions.getOrFail(relType, "Unresolved label").properties)
+        currentSchema.withRelationshipPropertyKeys(
+          typ = relType,
+          keys = elementTypeDefinitions.getOrFail(relType, "Unresolved element type").properties)
     }
 
-    relDefinitions.foldLeft(schemaWithRels) {
+    relDefinitions.foldLeft(schemaWithRelationships) {
       case (currentSchema, relType) =>
         elementTypeDefinitions(relType).maybeKey match {
           case Some((_, keys)) => currentSchema.withRelationshipKey(relType, keys)
@@ -209,9 +211,9 @@ object GraphDdl {
 
   private def schemaWithSchemaPatterns(
     patternDefinitions: Set[PatternDefinition],
-    schemaWithNodesAndRels: Schema
+    schemaWithNodesAndRelationships: Schema
   ): Schema = {
-    patternDefinitions.foldLeft(schemaWithNodesAndRels) {
+    patternDefinitions.foldLeft(schemaWithNodesAndRelationships) {
       // TODO: extend OKAPI schema with cardinality constraints
       case (currentSchema, PatternDefinition(sourceLabelCombinations, _, relTypes, _, targetLabelCombinations)) =>
         val expandedPatterns = for {

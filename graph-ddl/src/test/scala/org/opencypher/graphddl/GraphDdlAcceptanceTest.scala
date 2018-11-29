@@ -97,7 +97,7 @@ class GraphDdlAcceptanceTest extends BaseTestSuite {
         s"""|CREATE ELEMENT TYPE Node ( val String )
             |
             |CREATE GRAPH TYPE $typeName (
-            |  Node ( foo Integer ) ,
+            |  Node ( foo Integer ),
             |  (Node)
             |)
             |CREATE GRAPH $graphName OF $typeName ()
@@ -173,7 +173,7 @@ class GraphDdlAcceptanceTest extends BaseTestSuite {
             |
             |CREATE GRAPH TYPE $typeName (
             |  -- local label declarations
-            |  LocalLabel1 ( property STRING ) ,
+            |  LocalLabel1 ( property STRING ),
             |  LocalLabel2,
             |
             |  -- label set declarations
@@ -256,7 +256,7 @@ class GraphDdlAcceptanceTest extends BaseTestSuite {
             |CREATE ELEMENT TYPE TYPE_2 ( prop BOOLEAN? )
             |
             |CREATE GRAPH TYPE $typeName (
-            |  A ( foo INTEGER ) ,
+            |  A ( foo INTEGER ),
             |  C,
             |
             |  -- nodes
@@ -404,7 +404,7 @@ class GraphDdlAcceptanceTest extends BaseTestSuite {
     it("throws if an unknown property key is mapped to a column") {
       val ddlString =
         s"""|CREATE GRAPH TYPE $typeName (
-            |  A ( foo STRING ) ,
+            |  A ( foo STRING ),
             |  (A)
             |)
             |CREATE GRAPH $graphName OF $typeName (
