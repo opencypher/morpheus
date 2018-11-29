@@ -30,7 +30,7 @@ import org.apache.spark.sql.{DataFrame, Row}
 import org.opencypher.okapi.api.io.conversion.{NodeMapping, RelationshipMapping}
 import org.opencypher.okapi.api.types._
 import org.opencypher.okapi.api.value.CypherValue._
-import org.opencypher.okapi.impl.exception.{IllegalArgumentException, InternalException}
+import org.opencypher.okapi.impl.exception.InternalException
 import org.opencypher.okapi.ir.api.expr._
 import org.opencypher.okapi.ir.api.{Label, PropertyKey, RelType}
 import org.opencypher.okapi.relational.api.tagging.Tags._
@@ -40,7 +40,6 @@ import org.opencypher.okapi.testing.Bag._
 import org.opencypher.okapi.testing.MatchHelper.equalWithTracing
 import org.opencypher.spark.api.io.{CAPSNodeTable, CAPSRelationshipTable}
 import org.opencypher.spark.api.value.CAPSNode
-import org.opencypher.spark.impl.DataFrameOps._
 import org.opencypher.spark.testing.CAPSTestSuite
 import org.opencypher.spark.testing.fixture.{GraphConstructionFixture, TeamDataFixture}
 
@@ -140,7 +139,7 @@ class CAPSRecordsTest extends CAPSTestSuite with GraphConstructionFixture with T
         (11L, 2L, 3L, "BLUE"),
         (12L, 3L, 4L, "GREEN"),
         (13L, 4L, 1L, "YELLOW")
-      )).toDF("ID", "FROM", "TO", "COLOR").setNonNullable("COLOR")
+      )).toDF("ID", "FROM", "TO", "COLOR")
 
     val givenMapping = RelationshipMapping.on("ID")
       .from("FROM")
@@ -273,7 +272,7 @@ class CAPSRecordsTest extends CAPSTestSuite with GraphConstructionFixture with T
             (11L, 2L, 3L, "BLUE"),
             (12L, 3L, 4L, "GREEN"),
             (13L, 4L, 1L, "YELLOW")
-      )).toDF("ID", "FROM", "TO", "COLOR").setNonNullable("COLOR")
+      )).toDF("ID", "FROM", "TO", "COLOR")
 
     val givenMapping = RelationshipMapping.on("ID")
       .from("FROM")

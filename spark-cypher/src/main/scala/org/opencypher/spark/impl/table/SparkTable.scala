@@ -105,7 +105,7 @@ object SparkTable {
     override def skip(items: Long): DataFrameTable = {
       // TODO: Replace with data frame based implementation ASAP
       df.sparkSession.createDataFrame(
-        df.toDF().rdd
+        df.rdd
           .zipWithIndex()
           .filter(pair => pair._2 >= items)
           .map(_._1),

@@ -39,7 +39,6 @@ import org.opencypher.okapi.ir.api.{Label, PropertyKey, RelType}
 import org.opencypher.okapi.relational.impl.table.RecordHeader
 import org.opencypher.spark.api.io._
 import org.opencypher.spark.api.value.CAPSNode
-import org.opencypher.spark.impl.DataFrameOps._
 import org.opencypher.spark.impl.convert.SparkConversions
 import org.opencypher.spark.testing.CAPSTestSuite
 
@@ -169,7 +168,6 @@ class EntityTableTest extends CAPSTestSuite {
     val df = sparkSession
       .createDataFrame(Seq((1L, 2L, 3L, "A", "Mats", 23L)))
       .toDF("ID", "FROM", "TO", "REL_TYPES", "FOO", "BAR")
-      .setNonNullable("REL_TYPES")
 
     val relationshipTable = CAPSRelationshipTable.fromMapping(relMappingWithTypeColumn, df)
 

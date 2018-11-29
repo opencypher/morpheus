@@ -29,8 +29,12 @@ package org.opencypher.spark.api.io.fs
 import org.apache.spark.sql.{AnalysisException, Row}
 import org.junit.rules.TemporaryFolder
 import org.opencypher.okapi.api.graph.{GraphName, Node, Relationship}
+import org.opencypher.okapi.api.value.CypherValue.CypherMap
+import org.opencypher.okapi.testing.Bag
+import org.opencypher.spark.api.GraphSources
 import org.opencypher.spark.api.io.ParquetFormat
 import org.opencypher.spark.api.io.util.HiveTableName
+import org.opencypher.spark.api.value.CAPSNode
 import org.opencypher.spark.impl.acceptance.DefaultGraphInit
 import org.opencypher.spark.testing.CAPSTestSuite
 
@@ -100,6 +104,26 @@ class FSGraphSourceTest extends CAPSTestSuite with DefaultGraphInit {
       }
     }
 
+  }
+
+  describe("ORC") {
+    it("encodes unsupported charaters") {
+      val graphName = GraphName("orcGraph")
+
+      val given = initGraph(
+        """
+          |CREATE (:A {`foo@bar`: 42})
+        """.stripMargin)
+
+      val fs = GraphSources.fs("file:///" + tempDir.getRoot.getAbsolutePath.replace("\\", "/")).orc
+      fs.store(graphName, given)
+
+      val graph = fs.graph(graphName)
+
+      graph.nodes("n").toMapsWithCollectedEntities should equal(Bag(
+        CypherMap("n" -> CAPSNode(0, Set("A"), CypherMap("foo@bar" -> 42)))
+      ))
+    }
   }
 
 }

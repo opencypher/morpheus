@@ -28,27 +28,34 @@ package org.opencypher.spark.api.io.fs
 
 import org.apache.spark.sql.DataFrame
 import org.apache.spark.sql.types.StructType
+import org.opencypher.spark.impl.DataFrameOps._
 
 trait EscapeAtSymbol extends FSGraphSource {
 
   private val unicodeEscaping = "_specialCharacterEscape_"
+  private val atSymbol = "@"
 
   abstract override def writeTable(path: String, table: DataFrame): Unit = {
     schemaCheck(table.schema)
-    val writeSchema = encodedSchema(table.schema)
-    val tableWithUpdatedColumnNames = table.sparkSession.createDataFrame(table.rdd, writeSchema)
-    super.writeTable(path, tableWithUpdatedColumnNames)
+    val writeMapping = encodedColumnNames(table.schema)
+    val newTable = table.safeRenameColumns(writeMapping: _*)
+    super.writeTable(path, newTable)
   }
 
   abstract override def readTable(path: String, schema: StructType): DataFrame = {
-    schemaCheck(schema)
-    val readSchema = encodedSchema(schema)
-    val table = super.readTable(path, readSchema)
-    table.sparkSession.createDataFrame(table.rdd, schema)
+    val readMapping = encodedColumnNames(schema).toMap
+    val readSchema = StructType(schema.fields.map { f =>
+      f.copy(name = readMapping.getOrElse(f.name, f.name))
+    })
+
+    val outMapping = readMapping.map(_.swap).toSeq
+    super.readTable(path, readSchema).safeRenameColumns(outMapping: _*)
   }
 
-  private def encodedSchema(schema: StructType) = {
-    StructType(schema.fields.map(f => f.copy(name = s"${f.name.replace("@", unicodeEscaping)}")))
+  private def encodedColumnNames(schema: StructType): Seq[(String, String)] = {
+    schema.fields
+      .map(f => f.name -> f.name.replaceAll(atSymbol, unicodeEscaping))
+      .filterNot { case (from, to) => from == to}
   }
 
   private def schemaCheck(schema: StructType): Unit = {

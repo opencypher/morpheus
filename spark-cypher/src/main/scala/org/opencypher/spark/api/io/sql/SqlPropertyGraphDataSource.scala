@@ -74,11 +74,9 @@ case class SqlPropertyGraphDataSource(
         val normalizedDf = normalizeDataFrame(nodeDf, inputNodeMapping)
         val normalizedMapping = normalizeNodeMapping(inputNodeMapping)
 
-        val validatedDf = normalizedDf
-          .validateColumnTypes(columnsWithType)
-          .setNullability(columnsWithType)
+        normalizedDf.validateColumnTypes(columnsWithType)
 
-        CAPSNodeTable.fromMapping(normalizedMapping, validatedDf)
+        CAPSNodeTable.fromMapping(normalizedMapping, normalizedDf)
     }.toSeq
 
     // Build CAPS relationship tables
@@ -122,14 +120,12 @@ case class SqlPropertyGraphDataSource(
       val normalizedDf = normalizeDataFrame(relsWithEndNodeId, inputRelMapping)
       val normalizedMapping = normalizeRelationshipMapping(inputRelMapping)
 
-      val validatedDf = normalizedDf
-        .validateColumnTypes(columnsWithType)
-        .setNullability(columnsWithType)
+      normalizedDf.validateColumnTypes(columnsWithType)
 
-      CAPSRelationshipTable.fromMapping(normalizedMapping, validatedDf)
+      CAPSRelationshipTable.fromMapping(normalizedMapping, normalizedDf)
     }
 
-    caps.graphs.create(nodeTables.head, nodeTables.tail ++ relationshipTables: _*)
+    caps.graphs.create(Some(capsSchema), nodeTables.head, nodeTables.tail ++ relationshipTables: _*)
   }
 
   private def joinNodeAndEdgeDf(
@@ -244,10 +240,10 @@ case class SqlPropertyGraphDataSource(
     * Creates a potentially unique 64-bit identifier for each row in the given input table. The identifier is computed
     * by hashing the view name, the element type (i.e. its labels) and the values stored in a given set of columns.
     *
-    * @param dataFrame input table / view
+    * @param dataFrame      input table / view
     * @param elementViewKey node / edge view key used for hashing
-    * @param idColumnNames columns used for hashing
-    * @param newIdColumn name of the new id column
+    * @param idColumnNames  columns used for hashing
+    * @param newIdColumn    name of the new id column
     * @tparam T node / edge view key
     * @return input table / view with an additional column that contains potentially unique identifiers
     */
@@ -271,8 +267,8 @@ case class SqlPropertyGraphDataSource(
     * In order to reduce the probability of hash collisions, the view name and the element type (i.e. its labels) are
     * additional input for the hash function.
     *
-    * @param views input tables
-    * @param ddlGraph DDL graph instance definition
+    * @param views       input tables
+    * @param ddlGraph    DDL graph instance definition
     * @param newIdColumn name of the new id column
     * @tparam T node / edge view key
     * @return input tables with an additional column that contains potentially unique identifiers
@@ -298,7 +294,7 @@ case class SqlPropertyGraphDataSource(
     * Creates a unique 64-bit identifier for each row in the given input tables. The identifier is monotonically
     * increasing across the input tables.
     *
-    * @param views input tables
+    * @param views       input tables
     * @param newIdColumn name of the new id column
     * @tparam T node / edge view key
     * @return input tables with an additional column that contains unique identifiers

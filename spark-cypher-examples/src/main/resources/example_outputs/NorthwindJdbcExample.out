@@ -112,6 +112,21 @@ Rel types {
 	:HAS_TERRITORY
 	:HAS_CUSTOMER_DEMOGRAPHIC
 }
+Explicit schema patterns {
+	(:OrderDetails)-[:HAS_ORDER]->(:Order)
+	(:Product)-[:HAS_CATEGORY]->(:Category)
+	(:Employee)-[:HAS_TERRITORY]->(:Territory)
+	(:Employee)-[:REPORTS_TO]->(:Employee)
+	(:Product)-[:HAS_SUPPLIER]->(:Supplier)
+	(:Order)-[:HAS_SHIPPER]->(:Shipper)
+	(:OrderDetails)-[:HAS_PRODUCT]->(:Product)
+	(:CustomerDemographic)-[:HAS_CUSTOMER]->(:Customer)
+	(:Order)-[:HAS_CUSTOMER]->(:Customer)
+	(:Territory)-[:HAS_REGION]->(:Region)
+	(:Order)-[:HAS_EMPLOYEE]->(:Employee)
+	(:Territory)-[:HAS_EMPLOYEE]->(:Employee)
+	(:Customer)-[:HAS_CUSTOMER_DEMOGRAPHIC]->(:CustomerDemographic)
+}
 
 ╔══════════╤═════════════╤═════════════╤════════════════════════════╗
 ║ customer │ orderedAt   │ handledBy   │ employee                   ║

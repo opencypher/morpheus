@@ -34,7 +34,6 @@ import org.opencypher.okapi.relational.api.table.RelationalCypherRecords
 import org.opencypher.okapi.relational.impl.operators.Start
 import org.opencypher.okapi.testing.Bag
 import org.opencypher.spark.api.io.{CAPSNodeTable, CAPSRelationshipTable}
-import org.opencypher.spark.impl.DataFrameOps._
 import org.opencypher.spark.impl.table.SparkTable.DataFrameTable
 import org.opencypher.spark.testing.CAPSTestSuite
 import org.opencypher.spark.testing.fixture.{GraphConstructionFixture, RecordsVerificationFixture, TeamDataFixture}
@@ -128,7 +127,7 @@ abstract class CAPSGraphTest extends CAPSTestSuite
         (2L, 4L, 3L, "LOVES"),
         (2L, 5L, 4L, "LOVES"),
         (3L, 6L, 4L, "LOVES"))
-    ).toDF("SRC", "ID", "DST", "TYPE").setNonNullable("TYPE")
+    ).toDF("SRC", "ID", "DST", "TYPE")
 
     val relMapping = RelationshipMapping
       .on("ID")
