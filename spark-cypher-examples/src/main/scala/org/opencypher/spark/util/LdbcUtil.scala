@@ -64,6 +64,7 @@ object LdbcUtil {
   def toGraphDDL(datasource: String, database: String)(implicit spark: SparkSession): String = {
     // select all tables (including views)
     val tableNames = spark.sql(s"SHOW TABLES FROM $database").collect()
+      .filterNot(_.getBoolean(2)) //ignore temp tables
       .map(_.getString(1))
       .filterNot(excludeTables.contains)
       .toSet
@@ -115,7 +116,7 @@ object LdbcUtil {
        |
        |${labelDefinitions.mkString(Properties.lineSeparator)}
        |
-       |CREATE GRAPH SCHEMA ${database}_schema (
+       |CREATE GRAPH TYPE ${database}_schema (
        |    -- Node types
        |    ${nodeTypeDefinitions.mkString("", "," + Properties.lineSeparator + "\t", ",")}
        |
@@ -125,7 +126,7 @@ object LdbcUtil {
        |    -- Edge constraints
        |    ${edgeConstraints.mkString("," + Properties.lineSeparator + "\t")}
        |)
-       |CREATE GRAPH $database WITH GRAPH SCHEMA ${database}_schema (
+       |CREATE GRAPH $database OF ${database}_schema (
        |    -- Node mappings
        |    ${nodeMappings.mkString("", "," + Properties.lineSeparator + "\t", ",")}
        |
@@ -150,13 +151,13 @@ object LdbcUtil {
           .map { row =>
             val propertyKey = row.getString(0)
             val propertyType = row.getString(1).toCypherType
-            s"$propertyKey : $propertyType"
+            s"$propertyKey $propertyType"
           }
 
         if (properties.nonEmpty) {
-          s"CREATE LABEL $label ( { ${properties.mkString(", ")} } )"
+          s"CREATE ELEMENT TYPE $label ( ${properties.mkString(", ")} )"
         } else {
-          s"CREATE LABEL $label"
+          s"CREATE ELEMENT TYPE $label"
         }
     }
 

@@ -10,16 +10,16 @@ SET SCHEMA DS.SQLPGDS;
 -- =========================================
 
 -- Node labels
-CATALOG CREATE LABEL A ({name: STRING})
-CATALOG CREATE LABEL B ({type: STRING, size: INTEGER?})
-CATALOG CREATE LABEL C ({name: STRING})
+CREATE ELEMENT TYPE A ( name STRING ) 
+CREATE ELEMENT TYPE B ( type STRING, size INTEGER? )
+CREATE ELEMENT TYPE C ( name STRING ) 
 
 -- Relationship types
-CATALOG CREATE LABEL R ({since: INTEGER, before: BOOLEAN?})
-CATALOG CREATE LABEL S ({since: INTEGER})
-CATALOG CREATE LABEL T
+CREATE ELEMENT TYPE R ( since INTEGER, before BOOLEAN? )
+CREATE ELEMENT TYPE S ( since INTEGER ) 
+CREATE ELEMENT TYPE T
 
-CREATE GRAPH SCHEMA testSchema (
+CREATE GRAPH TYPE testSchema (
   -- Nodes
   (A), (B), (C), (A,B), (A,C),
 
@@ -38,7 +38,7 @@ CREATE GRAPH SCHEMA testSchema (
 -- =========================================
 
 -- GRAPH
-CREATE GRAPH test WITH GRAPH SCHEMA testSchema (
+CREATE GRAPH test OF testSchema (
 
   (A) FROM A,
   (B) FROM B,

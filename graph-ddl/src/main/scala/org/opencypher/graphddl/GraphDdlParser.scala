@@ -66,67 +66,59 @@ object GraphDdlParser {
   import org.opencypher.okapi.impl.util.ParserUtils.Whitespace._
   import org.opencypher.okapi.impl.util.ParserUtils._
 
-  val CATALOG      : P[Unit] = keyword("CATALOG")
-  val CREATE       : P[Unit] = keyword("CREATE")
-  val LABEL        : P[Unit] = keyword("LABEL")
-  val GRAPH        : P[Unit] = keyword("GRAPH")
-  val KEY          : P[Unit] = keyword("KEY")
-  val WITH         : P[Unit] = keyword("WITH")
-  val FROM         : P[Unit] = keyword("FROM")
-  val NODE         : P[Unit] = keyword("NODE")
-  val NODES        : P[Unit] = keyword("NODES")
-  val RELATIONSHIP : P[Unit] = keyword("RELATIONSHIP")
-  val SET          : P[Unit] = keyword("SET")
-  val SETS         : P[Unit] = keyword("SETS")
-  val JOIN         : P[Unit] = keyword("JOIN")
-  val ON           : P[Unit] = keyword("ON")
-  val AND          : P[Unit] = keyword("AND")
-  val AS           : P[Unit] = keyword("AS")
-  val SCHEMA       : P[Unit] = keyword("SCHEMA")
-  val START        : P[Unit] = keyword("START")
-  val END          : P[Unit] = keyword("END")
+  private val CREATE       : P[Unit] = keyword("CREATE")
+  private val ELEMENT      : P[Unit] = keyword("ELEMENT")
+  private val KEY          : P[Unit] = keyword("KEY")
+  private val GRAPH        : P[Unit] = keyword("GRAPH")
+  private val TYPE         : P[Unit] = keyword("TYPE")
+  private val OF           : P[Unit] = keyword("OF")
+  private val AS           : P[Unit] = keyword("AS")
+  private val FROM         : P[Unit] = keyword("FROM")
+  private val START        : P[Unit] = keyword("START")
+  private val END          : P[Unit] = keyword("END")
+  private val NODES        : P[Unit] = keyword("NODES")
+  private val JOIN         : P[Unit] = keyword("JOIN")
+  private val ON           : P[Unit] = keyword("ON")
+  private val AND          : P[Unit] = keyword("AND")
+  private val SET          : P[Unit] = keyword("SET")
+  private val SCHEMA       : P[Unit] = keyword("SCHEMA")
 
 
-  // ==== Catalog ====
+  // ==== Element types ====
 
-  // LABEL id ({ foo: STRING, ... } KEY key (foo, ...))
-  val labelDefinition: P[LabelDefinition] = {
+  val elementTypeDefinition: P[ElementTypeDefinition] = {
     val property: P[Property] =
-      P(identifier.! ~/ ":" ~/ CypherTypeParser.cypherType)
+      P(identifier.! ~/ CypherTypeParser.cypherType)
 
     val properties: P[Map[String, CypherType]] =
-      P("{" ~/ property.rep(min = 1, sep = ",").map(_.toMap) ~/ "}")
+      P("(" ~/ property.rep(min = 1, sep = ",").map(_.toMap) ~/ ")")
 
     val keyDefinition: P[KeyDefinition] =
       P(KEY ~/ identifier.! ~/ "(" ~/ identifier.!.rep(min = 1, sep = ",").map(_.toSet) ~/ ")")
 
-    P(LABEL ~/ identifier.! ~/ ("(" ~/ properties.? ~/ keyDefinition.? ~/ ")").?).map {
-      case (id, None)                          => LabelDefinition(id)
-      case (id, Some((maybeProps, maybeKeys))) => maybeProps match {
-        case None        => LabelDefinition(id, maybeKeyDefinition = maybeKeys)
-        case Some(props) => LabelDefinition(id, props, maybeKeys)
-      }
+    P(identifier.! ~/ properties.? ~/ keyDefinition.?).map {
+      case (id, None, maybeKey) => ElementTypeDefinition(id, maybeKey = maybeKey)
+      case (id, Some(props), maybeKey) => ElementTypeDefinition(id, props, maybeKey)
     }
   }
 
-  // [CATALOG] CREATE LABEL <labelDefinition> [KEY <keyDefinition>]
-  val catalogLabelDefinition: P[LabelDefinition] =
-    P(CATALOG.? ~ CREATE ~ labelDefinition)
+  val globalElementTypeDefinition: P[ElementTypeDefinition] =
+    P(CREATE ~ ELEMENT ~/ TYPE ~/ elementTypeDefinition)
 
 
   // ==== Schema ====
 
-  val labelCombination: P[LabelCombination] =
-    P(identifier.!.rep(min = 1, sep = "," | "&")).map(_.toSet)
-
-  val nodeDefinition: P[NodeDefinition] =
-    P("(" ~ labelCombination ~ ")").map(NodeDefinition(_))
-
-  val relType: P[RelationshipType] =
+  val elementType: P[String] =
     P(identifier.!)
 
-  val relDefinition: P[RelationshipDefinition] =
-    P("[" ~/ relType ~/ "]").map(RelationshipDefinition)
+  val elementTypes: P[Set[String]] =
+    P(elementType.rep(min = 1, sep = ",")).map(_.toSet)
+
+  val nodeTypeDefinition: P[NodeTypeDefinition] =
+    P("(" ~ elementTypes ~ ")").map(NodeTypeDefinition(_))
+
+  val relTypeDefinition: P[RelationshipTypeDefinition] =
+    P("[" ~/ elementType ~/ "]").map(RelationshipTypeDefinition)
 
   val cardinalityConstraint: P[CardinalityConstraint] = {
 
@@ -150,23 +142,23 @@ object GraphDdlParser {
     P("<" ~/ (range | fixed) ~/ ">").?.map(_.getOrElse(Wildcard))
   }
 
-  val schemaPatternDefinition: P[SchemaPatternDefinition] = {
-    val nodeAlternatives: P[Set[LabelCombination]] =
-      P("(" ~ labelCombination.rep(min = 1, sep = "|").map(_.toSet) ~ ")")
+  val patternDefinition: P[PatternDefinition] = {
+    val nodeAlternatives: P[Set[Set[String]]] =
+      P("(" ~ elementTypes.rep(min = 1, sep = "|").map(_.toSet) ~ ")")
 
     // TODO: Fix symmetric to node
     val relAlternatives: P[Set[String]] =
-      P("[" ~/ relType.rep(min = 1, sep = "|") ~/ "]").map(_.toSet)
+      P("[" ~/ elementType.rep(min = 1, sep = "|") ~/ "]").map(_.toSet)
 
-    P(nodeAlternatives ~ cardinalityConstraint ~/ "-" ~/ relAlternatives ~/ "->" ~/ cardinalityConstraint ~/ nodeAlternatives).map(SchemaPatternDefinition.tupled)
+    P(nodeAlternatives ~ cardinalityConstraint ~/ "-" ~/ relAlternatives ~/ "->" ~/ cardinalityConstraint ~/ nodeAlternatives).map(PatternDefinition.tupled)
   }
 
-  val localSchemaDefinition: P[SchemaDefinition] =
-    // negative lookahead (~ !"-") needed in order to disambiguate node definitions and schema pattern definitions
-    P("(" ~/ (labelDefinition | (nodeDefinition ~ !("-" | "<")) | relDefinition | schemaPatternDefinition).rep(sep = ",").map(_.toList) ~/ ")").map(SchemaDefinition)
+  val graphTypeBody: P[GraphTypeBody] =
+    // negative lookahead (~ !"-") needed in order to disambiguate node definitions and pattern definitions
+    P("(" ~/ (elementTypeDefinition | (nodeTypeDefinition ~ !("-" | "<")) | relTypeDefinition | patternDefinition).rep(sep = ",").map(_.toList) ~/ ")").map(GraphTypeBody)
 
-  val globalSchemaDefinition: P[GlobalSchemaDefinition] =
-    P(CREATE ~ GRAPH ~ SCHEMA ~/ identifier.! ~/ localSchemaDefinition).map(GlobalSchemaDefinition.tupled)
+  val graphTypeDefinition: P[GraphTypeDefinition] =
+    P(CREATE ~ GRAPH ~ TYPE ~/ identifier.! ~/ graphTypeBody).map(GraphTypeDefinition.tupled)
 
 
   // ==== Graph ====
@@ -186,7 +178,7 @@ object GraphDdlParser {
     val nodeToViewDefinition: P[NodeToViewDefinition] =
       P(FROM ~/ viewId ~/ propertyMappingDefinition.?).map(NodeToViewDefinition.tupled)
 
-    P(nodeDefinition ~/ nodeToViewDefinition.rep(min = 1, sep = ",".?).map(_.toList)).map(NodeMappingDefinition.tupled)
+    P(nodeTypeDefinition ~/ nodeToViewDefinition.rep(min = 1, sep = ",".?).map(_.toList)).map(NodeMappingDefinition.tupled)
   }
 
   val nodeMappings: P[List[NodeMappingDefinition]] =
@@ -205,29 +197,29 @@ object GraphDdlParser {
     val viewDefinition: P[ViewDefinition] =
       P(viewId ~/ identifier.!).map(ViewDefinition.tupled)
 
-    val labelToViewDefinition: P[LabelToViewDefinition] =
-      P(nodeDefinition ~/ FROM ~/ viewDefinition ~/ joinOnDefinition).map(LabelToViewDefinition.tupled)
+    val nodeTypeToViewDefinition: P[NodeTypeToViewDefinition] =
+      P(nodeTypeDefinition ~/ FROM ~/ viewDefinition ~/ joinOnDefinition).map(NodeTypeToViewDefinition.tupled)
 
-    val relationshipToViewDefinition: P[RelationshipToViewDefinition] =
-      P(FROM ~/ viewDefinition ~/ propertyMappingDefinition.? ~/ START ~/ NODES ~/ labelToViewDefinition ~/ END ~/ NODES ~/ labelToViewDefinition).map(RelationshipToViewDefinition.tupled)
+    val relTypeToViewDefinition: P[RelationshipTypeToViewDefinition] =
+      P(FROM ~/ viewDefinition ~/ propertyMappingDefinition.? ~/ START ~/ NODES ~/ nodeTypeToViewDefinition ~/ END ~/ NODES ~/ nodeTypeToViewDefinition).map(RelationshipTypeToViewDefinition.tupled)
 
-    P(relDefinition ~ relationshipToViewDefinition.rep(min = 1, sep = ",".?).map(_.toList)).map(RelationshipMappingDefinition.tupled)
+    P(relTypeDefinition ~ relTypeToViewDefinition.rep(min = 1, sep = ",".?).map(_.toList)).map(RelationshipMappingDefinition.tupled)
   }
 
   val relationshipMappings: P[List[RelationshipMappingDefinition]] =
     P(relationshipMappingDefinition.rep(min = 1, sep = ",").map(_.toList))
 
   val graphDefinition: P[GraphDefinition] = {
-    val schemaRefOrDef: P[(Option[String], SchemaDefinition)] =
-      P(identifier.! | localSchemaDefinition).map {
-        case s: String                          => Some(s) -> SchemaDefinition()
-        case schemaDefinition: SchemaDefinition => None -> schemaDefinition
+    val schemaRefOrDef: P[(Option[String], GraphTypeBody)] =
+      P(identifier.! | graphTypeBody).map {
+        case s: String                       => Some(s) -> GraphTypeBody()
+        case schemaDefinition: GraphTypeBody => None -> schemaDefinition
       }
 
     val mappingDefinitions: P[List[MappingDefinition]] =
       P("(" ~/ ( nodeMappingDefinition | relationshipMappingDefinition).rep(sep = ",").map(_.toList) ~/ ")")
 
-    P(CREATE ~ GRAPH ~ identifier.! ~/ WITH ~/ GRAPH ~/ SCHEMA ~/ schemaRefOrDef ~/ mappingDefinitions)
+    P(CREATE ~ GRAPH ~ identifier.! ~/ OF ~/ schemaRefOrDef ~/ mappingDefinitions)
       .map { case (gName, (schemaId, localSchemaDef), mappings) => GraphDefinition(gName, schemaId, localSchemaDef, mappings) }
   }
 
@@ -237,7 +229,7 @@ object GraphDdlParser {
     P(SET ~/ SCHEMA ~ identifier.! ~/ "." ~/ identifier.! ~ ";".?).map(SetSchemaDefinition.tupled)
 
   val ddlStatement: P[DdlStatement] =
-    P(setSchemaDefinition | catalogLabelDefinition | globalSchemaDefinition | graphDefinition)
+    P(setSchemaDefinition | globalElementTypeDefinition | graphTypeDefinition | graphDefinition)
 
   val ddlDefinitions: P[DdlDefinition] =
     // allow for whitespace/comments at the start

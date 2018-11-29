@@ -1,6 +1,6 @@
 SET SCHEMA hive.customers;
 
-CREATE GRAPH interactions WITH GRAPH SCHEMA (
+CREATE GRAPH interactions OF (
 	-- node labels
     LABEL Policy ({
         policyAccountNumber  : STRING

@@ -3,137 +3,137 @@ SET SCHEMA H2.NORTHWIND;
 
 -- Node labels
 
-CATALOG CREATE LABEL Employee ({
-  employeeID: INTEGER,
-  lastName: STRING,
-  firstName: STRING,
-  title: STRING?,
-  titleOfCourtesy: STRING?,
-  birthDate: STRING?,
-  hireDate: STRING?,
-  address: STRING?,
-  city: STRING?,
-  region: STRING?,
-  postalCode: STRING?,
-  country: STRING?,
-  homePhone: STRING?,
-  extension: STRING?,
-  reportsTo: INTEGER?,
-  photoPath: STRING?
-})
+CREATE ELEMENT TYPE Employee (
+  employeeID INTEGER,
+  lastName STRING,
+  firstName STRING,
+  title STRING?,
+  titleOfCourtesy STRING?,
+  birthDate STRING?,
+  hireDate STRING?,
+  address STRING?,
+  city STRING?,
+  region STRING?,
+  postalCode STRING?,
+  country STRING?,
+  homePhone STRING?,
+  extension STRING?,
+  reportsTo INTEGER?,
+  photoPath STRING?
+)
 
-CATALOG CREATE LABEL Territory ({
-  territoryID: STRING,
-  territoryDescription: STRING,
-  regionID: INTEGER
-})
+CREATE ELEMENT TYPE Territory (
+  territoryID STRING,
+  territoryDescription STRING,
+  regionID INTEGER
+)
 
-CATALOG CREATE LABEL Supplier ({
-  supplierID: INTEGER,
-  companyName: STRING,
-  contactName: STRING?,
-  contactTitle: STRING?,
-  address: STRING?,
-  city: STRING?,
-  region: STRING?,
-  postalCode: STRING?,
-  country: STRING?,
-  phone: STRING?,
-  fax: STRING?,
-  homePage: STRING?
-})
+CREATE ELEMENT TYPE Supplier (
+  supplierID INTEGER,
+  companyName STRING,
+  contactName STRING?,
+  contactTitle STRING?,
+  address STRING?,
+  city STRING?,
+  region STRING?,
+  postalCode STRING?,
+  country STRING?,
+  phone STRING?,
+  fax STRING?,
+  homePage STRING?
+)
 
-CATALOG CREATE LABEL Customer ({
-  customerID: INTEGER,
-  companyName: STRING,
-  contactName: STRING?,
-  contactTitle: STRING?,
-  address: STRING?,
-  city: STRING?,
-  region: STRING?,
-  postalCode: STRING?,
-  country: STRING?,
-  phone: STRING?,
-  fax: STRING?
-})
+CREATE ELEMENT TYPE Customer (
+  customerID INTEGER,
+  companyName STRING,
+  contactName STRING?,
+  contactTitle STRING?,
+  address STRING?,
+  city STRING?,
+  region STRING?,
+  postalCode STRING?,
+  country STRING?,
+  phone STRING?,
+  fax STRING?
+)
 
-CATALOG CREATE LABEL Product ({
-  productID: INTEGER,
-  productName: STRING,
-  supplierID: INTEGER?,
-  categoryID: INTEGER?,
-  quantityPerUnit: STRING?,
-  unitPrice: INTEGER?,
-  unitsInStock: INTEGER?,
-  unitsOnOrder: INTEGER?,
-  reorderLevel: INTEGER?,
-  discontinued: INTEGER
-})
+CREATE ELEMENT TYPE Product (
+  productID INTEGER,
+  productName STRING,
+  supplierID INTEGER?,
+  categoryID INTEGER?,
+  quantityPerUnit STRING?,
+  unitPrice INTEGER?,
+  unitsInStock INTEGER?,
+  unitsOnOrder INTEGER?,
+  reorderLevel INTEGER?,
+  discontinued INTEGER
+)
 
-CATALOG CREATE LABEL OrderDetails ({
-  orderID: INTEGER,
-  productID: INTEGER,
-  unitPrice: INTEGER,
-  quantity: INTEGER,
-  discount: INTEGER
-})
+CREATE ELEMENT TYPE OrderDetails (
+  orderID INTEGER,
+  productID INTEGER,
+  unitPrice INTEGER,
+  quantity INTEGER,
+  discount INTEGER
+)
 
-CATALOG CREATE LABEL Category ({
-  categoryID: INTEGER,
-  categoryName: STRING,
-  description: STRING?
-})
+CREATE ELEMENT TYPE Category (
+  categoryID INTEGER,
+  categoryName STRING,
+  description STRING?
+)
 
-CATALOG CREATE LABEL Region ({
-  regionID: INTEGER,
-  regionDescription: STRING
-})
+CREATE ELEMENT TYPE Region (
+  regionID INTEGER,
+  regionDescription STRING
+)
 
-CATALOG CREATE LABEL Order ({
-  orderID: INTEGER,
-  customerID: INTEGER?,
-  employeeID: INTEGER?,
-  orderDate: STRING?,
-  requiredDate: STRING?,
-  shippedDate: STRING?,
-  shipVia: INTEGER?,
-  freight: INTEGER?,
-  shipName: STRING?,
-  shipAddress: STRING?,
-  shipCity: STRING?,
-  shipRegion: STRING?,
-  shipPostalCode: STRING?,
-  shipCountry: STRING?
-})
+CREATE ELEMENT TYPE Order (
+  orderID INTEGER,
+  customerID INTEGER?,
+  employeeID INTEGER?,
+  orderDate STRING?,
+  requiredDate STRING?,
+  shippedDate STRING?,
+  shipVia INTEGER?,
+  freight INTEGER?,
+  shipName STRING?,
+  shipAddress STRING?,
+  shipCity STRING?,
+  shipRegion STRING?,
+  shipPostalCode STRING?,
+  shipCountry STRING?
+)
 
-CATALOG CREATE LABEL Shipper ({
-  shipperID: INTEGER,
-  companyName: STRING,
-  phone: STRING?
-})
+CREATE ELEMENT TYPE Shipper (
+  shipperID INTEGER,
+  companyName STRING,
+  phone STRING?
+)
 
-CATALOG CREATE LABEL CustomerDemographic ({
-  customerTypeID: STRING,
-  customerDesc: STRING?
-})
+CREATE ELEMENT TYPE CustomerDemographic (
+  customerTypeID STRING,
+  customerDesc STRING?
+)
 
 -- Relationship types
 
-CATALOG CREATE LABEL HAS_SUPPLIER
-CATALOG CREATE LABEL HAS_PRODUCT
-CATALOG CREATE LABEL HAS_CATEGORY
-CATALOG CREATE LABEL HAS_TERRITORY
-CATALOG CREATE LABEL HAS_EMPLOYEE
-CATALOG CREATE LABEL REPORTS_TO
-CATALOG CREATE LABEL HAS_CUSTOMER
-CATALOG CREATE LABEL HAS_CUSTOMER_DEMOGRAPHIC
-CATALOG CREATE LABEL HAS_ORDER
-CATALOG CREATE LABEL HAS_SHIPPER
-CATALOG CREATE LABEL HAS_REGION
+CREATE ELEMENT TYPE HAS_SUPPLIER
+CREATE ELEMENT TYPE HAS_PRODUCT
+CREATE ELEMENT TYPE HAS_CATEGORY
+CREATE ELEMENT TYPE HAS_TERRITORY
+CREATE ELEMENT TYPE HAS_EMPLOYEE
+CREATE ELEMENT TYPE REPORTS_TO
+CREATE ELEMENT TYPE HAS_CUSTOMER
+CREATE ELEMENT TYPE HAS_CUSTOMER_DEMOGRAPHIC
+CREATE ELEMENT TYPE HAS_ORDER
+CREATE ELEMENT TYPE HAS_SHIPPER
+CREATE ELEMENT TYPE HAS_REGION
 
 -- =================================================================
 
-CREATE GRAPH SCHEMA NORTHWIND_NAIVE (
+CREATE GRAPH TYPE NORTHWIND_NAIVE (
 
     -- Nodes
     (Employee),
@@ -179,7 +179,7 @@ CREATE GRAPH SCHEMA NORTHWIND_NAIVE (
     (CustomerDemographic)-[HAS_CUSTOMER]->(Customer)
 )
 -- =================================================================
-CREATE GRAPH Northwind WITH GRAPH SCHEMA NORTHWIND_NAIVE (
+CREATE GRAPH Northwind OF NORTHWIND_NAIVE (
   (Order)
        FROM VIEW_ORDERS,
 

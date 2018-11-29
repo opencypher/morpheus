@@ -86,11 +86,11 @@ class SqlPropertyGraphDataSourceTest extends CAPSTestSuite with HiveFixture with
       s"""
          |SET SCHEMA $dataSourceName.$databaseName
          |
-         |CREATE GRAPH SCHEMA fooSchema (
-         | LABEL Foo ({ foo : STRING }),
+         |CREATE GRAPH TYPE fooSchema (
+         | Foo ( foo STRING ) ,
          | (Foo)
          |)
-         |CREATE GRAPH fooGraph WITH GRAPH SCHEMA fooSchema (
+         |CREATE GRAPH fooGraph OF fooSchema (
          |  (Foo) FROM $fooView
          |)
      """.stripMargin
@@ -114,12 +114,12 @@ class SqlPropertyGraphDataSourceTest extends CAPSTestSuite with HiveFixture with
       s"""
          |SET SCHEMA $dataSourceName.$databaseName
          |
-         |CREATE GRAPH SCHEMA fooSchema (
-         | LABEL Foo ({ key1 : INTEGER, key2 : String }),
+         |CREATE GRAPH TYPE fooSchema (
+         | Foo ( key1 INTEGER, key2 String ),
          | (Foo)
          |)
          |
-         |CREATE GRAPH fooGraph WITH GRAPH SCHEMA fooSchema (
+         |CREATE GRAPH fooGraph OF fooSchema (
          |  (Foo) FROM $fooView (col1 AS key2, col2 AS key1)
          |)
      """.stripMargin
@@ -144,14 +144,14 @@ class SqlPropertyGraphDataSourceTest extends CAPSTestSuite with HiveFixture with
       s"""
          |SET SCHEMA $dataSourceName.$databaseName
          |
-         |CREATE GRAPH SCHEMA fooSchema (
-         | LABEL Foo ({ foo : STRING }),
-         | LABEL Bar ({ bar : INTEGER }),
+         |CREATE GRAPH TYPE fooSchema (
+         | Foo ( foo STRING ) ,
+         | Bar ( bar INTEGER ) ,
          | (Foo),
          | (Bar)
          |)
          |
-         |CREATE GRAPH fooGraph WITH GRAPH SCHEMA fooSchema (
+         |CREATE GRAPH fooGraph OF fooSchema (
          |  (Foo) FROM $fooView,
          |  (Bar) FROM $barView
          |)
@@ -183,16 +183,16 @@ class SqlPropertyGraphDataSourceTest extends CAPSTestSuite with HiveFixture with
       s"""
          |SET SCHEMA $dataSourceName.$databaseName
          |
-         |CREATE GRAPH SCHEMA fooSchema (
-         | LABEL Person ({ name   : STRING }),
-         | LABEL Book   ({ title  : STRING }),
-         | LABEL READS  ({ rating : FLOAT  }),
+         |CREATE GRAPH TYPE fooSchema (
+         | Person ( name STRING ) ,
+         | Book   ( title STRING ) ,
+         | READS  ( rating FLOAT ) ,
          | (Person),
          | (Book),
          | [READS]
          |)
          |
-         |CREATE GRAPH fooGraph WITH GRAPH SCHEMA fooSchema (
+         |CREATE GRAPH fooGraph OF fooSchema (
          |  (Person) FROM $personView ( person_name AS name ),
          |  (Book)   FROM $bookView (book_title AS title ),
          |  [READS]
@@ -243,13 +243,13 @@ class SqlPropertyGraphDataSourceTest extends CAPSTestSuite with HiveFixture with
       s"""
          |SET SCHEMA $dataSourceName.$databaseName
          |
-         |CREATE GRAPH SCHEMA fooSchema (
-         | LABEL Node ({ id : INTEGER, start : STRING, end : STRING }),
-         | LABEL REL  ({ id : INTEGER, start : STRING, end : STRING }),
+         |CREATE GRAPH TYPE fooSchema (
+         | Node ( id INTEGER, start STRING, end STRING ),
+         | REL  ( id INTEGER, start STRING, end STRING ),
          | (Node),
          | [REL]
          |)
-         |CREATE GRAPH fooGraph WITH GRAPH SCHEMA fooSchema (
+         |CREATE GRAPH fooGraph OF fooSchema (
          |  (Node) FROM $nodesView,
          |  [REL]
          |    FROM $relsView edge
@@ -300,15 +300,15 @@ class SqlPropertyGraphDataSourceTest extends CAPSTestSuite with HiveFixture with
       s"""
          |SET SCHEMA $dataSourceName.$databaseName
          |
-         |CREATE GRAPH SCHEMA fooSchema (
-         | LABEL Person ({ name   : STRING }),
-         | LABEL Book   ({ title  : STRING }),
-         | LABEL READS  ({ rating : FLOAT  }),
+         |CREATE GRAPH TYPE fooSchema (
+         | Person ( name STRING ) ,
+         | Book   ( title STRING ) ,
+         | READS  ( rating FLOAT ) ,
          | (Person),
          | (Book),
          | [READS]
          |)
-         |CREATE GRAPH fooGraph WITH GRAPH SCHEMA fooSchema (
+         |CREATE GRAPH fooGraph OF fooSchema (
          |  (Person) FROM $personView ( person_name AS name ),
          |  (Book) FROM $bookView (book_title AS title ),
          |  [READS]
@@ -373,13 +373,13 @@ class SqlPropertyGraphDataSourceTest extends CAPSTestSuite with HiveFixture with
 
     val ddlString =
       s"""
-         |CREATE GRAPH SCHEMA fooSchema (
-         | LABEL Foo ({ foo : STRING }),
-         | LABEL Bar ({ bar : INTEGER }),
+         |CREATE GRAPH TYPE fooSchema (
+         | Foo ( foo STRING ) ,
+         | Bar ( bar INTEGER ) ,
          | (Foo),
          | (Bar)
          |)
-         |CREATE GRAPH fooGraph WITH GRAPH SCHEMA fooSchema (
+         |CREATE GRAPH fooGraph OF fooSchema (
          |  (Foo) FROM ds1.db1.$fooView,
          |  (Bar) FROM ds2.db2.$barView
          |)
@@ -413,13 +413,13 @@ class SqlPropertyGraphDataSourceTest extends CAPSTestSuite with HiveFixture with
 
     val ddlString =
       s"""
-         |CREATE GRAPH SCHEMA fooSchema (
-         | LABEL Foo ({ foo : STRING }),
-         | LABEL Bar ({ bar : INTEGER }),
+         |CREATE GRAPH TYPE fooSchema (
+         | Foo ( foo STRING ) ,
+         | Bar ( bar INTEGER ) ,
          | (Foo),
          | (Bar)
          |)
-         |CREATE GRAPH fooGraph WITH GRAPH SCHEMA fooSchema (
+         |CREATE GRAPH fooGraph OF fooSchema (
          |  (Foo) FROM ds1.schema1.$fooView,
          |  (Bar) FROM ds2.schema2.barView
          |)
