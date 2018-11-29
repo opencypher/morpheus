@@ -31,7 +31,7 @@ CREATE ELEMENT TYPE LICENSED_BY (date_of_licence STRING)
 
 -- =================================================================
 
-CREATE GRAPH TYPE Census (
+CREATE GRAPH TYPE CensusType (
 
   --NODES
   (Person, Visitor),  -- keyed by node key Visitor_NK
@@ -49,7 +49,7 @@ CREATE GRAPH TYPE Census (
 )
 -- =================================================================
 
-CREATE GRAPH Census_1901 OF Census (
+CREATE GRAPH Census_1901 OF CensusType (
   (Visitor, Person)
        FROM VIEW_VISITOR,
 
