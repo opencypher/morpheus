@@ -55,7 +55,18 @@ object GraphDdl {
     nodeTypes: List[NodeTypeDefinition] = List.empty,
     relTypes: List[RelationshipTypeDefinition] = List.empty,
     patterns: List[PatternDefinition] = List.empty
-  )
+  ) {
+
+    def validateDistinct: TypeParts = {
+      elementTypes.validateDistinctBy(_.name, "Duplicate element types")
+      nodeTypes.validateDistinctBy(_.elementTypes, "Duplicate node types")
+      relTypes.validateDistinctBy(_.elementType, "Duplicate relationship types")
+      this
+    }
+
+    def allStatements: List[GraphTypeStatement] =
+      elementTypes ++ nodeTypes ++ relTypes ++ patterns
+  }
 
   private[graphddl] case class GraphParts(
     graphTypeStatements: List[GraphTypeStatement] = List.empty,
@@ -80,7 +91,12 @@ object GraphDdl {
 
     val graphTypeDefinitions = ddlParts.graphTypes
       .validateDistinctBy(_.name, "Duplicate graph type name")
-      .keyBy(_.name)
+      .map { graphTypeDefinition =>
+        tryWithContext(s"Error in graph type ${graphTypeDefinition.name}") {
+          toTypeParts(graphTypeDefinition.statements).validateDistinct
+        }
+        graphTypeDefinition
+      }.keyBy(_.name)
 
     val graphs = ddlParts.graphs
       .validateDistinctBy(_.definition.name, "Duplicate graph name")
@@ -223,21 +239,30 @@ object GraphDdl {
     graph: GraphDefinitionWithContext): Graph =
 
     tryWithContext(s"Error in graph: ${graph.definition.name}") {
-
       // Merges type definitions from a graph type with the type definitions of a graph instance
       def normalizeGraphDefinition(
         graphDefinition: GraphDefinition,
         graphTypes: Map[String, GraphTypeDefinition]
       ): GraphParts = {
         val maybeGraphType = graphDefinition.maybeGraphTypeName.map(name => graphTypes.getOrFail(name, "Unresolved graph type name"))
+
         val initialGraphParts = toGraphParts(graphDefinition.statements)
+        val typePartsFromGraph = toTypeParts(initialGraphParts.graphTypeStatements).validateDistinct
+        val typePartsFromGraphType = toTypeParts(maybeGraphType.toList.flatMap(_.statements)).validateDistinct
 
-        val typesFromGraphType = maybeGraphType.toList.flatMap(_.statements)
+        // Shadowing
+        val allElementTypeStatements = elementTypeDefinitions ++ typePartsFromGraphType.elementTypes.keyBy(_.name) ++ typePartsFromGraph.elementTypes.keyBy(_.name)
+        val allNodeTypeStatements = typePartsFromGraphType.nodeTypes.keyBy(_.elementTypes) ++ typePartsFromGraph.nodeTypes.keyBy(_.elementTypes) ++ initialGraphParts.nodeMappings.map(_.nodeType).keyBy(_.elementTypes)
+        val allRelTypeStatements = typePartsFromGraphType.relTypes.keyBy(_.elementType) ++ typePartsFromGraph.relTypes.keyBy(_.elementType) ++ initialGraphParts.relMappings.map(_.relType).keyBy(_.elementType)
+        val allPatternStatements = typePartsFromGraph.patterns ++ typePartsFromGraphType.patterns
 
-        val nodeTypesFromMappings = initialGraphParts.nodeMappings.map(_.nodeType)
-        val relTypesFromMappings = initialGraphParts.relMappings.map(_.relType)
+        val allGraphTypeStatements =
+          allElementTypeStatements.values ++
+          allNodeTypeStatements.values ++
+          allRelTypeStatements.values ++
+          allPatternStatements
 
-        initialGraphParts.copy(graphTypeStatements = initialGraphParts.graphTypeStatements ++ nodeTypesFromMappings ++ relTypesFromMappings ++ typesFromGraphType)
+        initialGraphParts.copy(graphTypeStatements = allGraphTypeStatements.toList)
       }
 
       val graphParts = normalizeGraphDefinition(graph.definition, graphTypeDefinitions)

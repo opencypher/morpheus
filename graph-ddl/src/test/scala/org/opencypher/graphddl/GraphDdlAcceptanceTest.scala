@@ -385,6 +385,37 @@ class GraphDdlAcceptanceTest extends BaseTestSuite {
         .withNodePropertyKeys("A", "B")("foo" -> CTInteger)
         .withRelationshipType("TYPE_1")
     }
+
+    it("parses a correct schema from graph type elements and mappings with shadowed element types") {
+      val ddlDefinition: DdlDefinition = parse(
+        s"""|SET SCHEMA a.b;
+            |
+            |CREATE GRAPH TYPE $typeName (
+            |  -- element types
+            |  A ( foo INTEGER ),
+            |  B,
+            |  TYPE_1
+            |)
+            |
+            |CREATE GRAPH $graphName OF $typeName (
+            |  -- element types
+            |  A ( bar STRING ),
+            |  -- node types with mappings
+            |  (A) FROM foo,
+            |  (A, B) FROM bar,
+            |
+            |  -- edge types with mappings
+            |  [TYPE_1] FROM baz edge
+            |    START NODES (A) FROM foo alias_foo JOIN ON alias_foo.COLUMN_A = edge.COLUMN_A
+            |    END NODES   (B) FROM bar alias_bar JOIN ON alias_bar.COLUMN_A = edge.COLUMN_A
+            |)
+            |""".stripMargin
+      )
+      GraphDdl(ddlDefinition).graphs(graphName).graphType shouldEqual Schema.empty
+        .withNodePropertyKeys("A")("bar" -> CTString)
+        .withNodePropertyKeys("A", "B")("bar" -> CTString)
+        .withRelationshipType("TYPE_1")
+    }
   }
 
   describe("Exception cases") {
