@@ -114,8 +114,9 @@ object GraphDdlParser {
   val elementTypes: P[Set[String]] =
     P(elementType.rep(min = 1, sep = ",")).map(_.toSet)
 
+  // negative lookahead (~ !"-") needed in order to disambiguate node definitions and pattern definitions
   val nodeTypeDefinition: P[NodeTypeDefinition] =
-    P("(" ~ elementTypes ~ ")").map(NodeTypeDefinition(_))
+    P("(" ~ elementTypes ~ ")" ~ !("-" | "<")).map(NodeTypeDefinition(_))
 
   val relTypeDefinition: P[RelationshipTypeDefinition] =
     P("[" ~/ elementType ~/ "]").map(RelationshipTypeDefinition)
@@ -153,12 +154,11 @@ object GraphDdlParser {
     P(nodeAlternatives ~ cardinalityConstraint ~/ "-" ~/ relAlternatives ~/ "->" ~/ cardinalityConstraint ~/ nodeAlternatives).map(PatternDefinition.tupled)
   }
 
-  val graphTypeBody: P[GraphTypeBody] =
-    // negative lookahead (~ !"-") needed in order to disambiguate node definitions and pattern definitions
-    P("(" ~/ (elementTypeDefinition | (nodeTypeDefinition ~ !("-" | "<")) | relTypeDefinition | patternDefinition).rep(sep = ",").map(_.toList) ~/ ")").map(GraphTypeBody)
+  val graphTypeStatements: P[List[GraphTypeStatement]] =
+    P("(" ~/ (elementTypeDefinition | nodeTypeDefinition  | relTypeDefinition | patternDefinition).rep(sep = ",").map(_.toList) ~/ ")")
 
   val graphTypeDefinition: P[GraphTypeDefinition] =
-    P(CREATE ~ GRAPH ~ TYPE ~/ identifier.! ~/ graphTypeBody).map(GraphTypeDefinition.tupled)
+    P(CREATE ~ GRAPH ~ TYPE ~/ identifier.! ~/ graphTypeStatements).map(GraphTypeDefinition.tupled)
 
 
   // ==== Graph ====
@@ -178,7 +178,7 @@ object GraphDdlParser {
     val nodeToViewDefinition: P[NodeToViewDefinition] =
       P(FROM ~/ viewId ~/ propertyMappingDefinition.?).map(NodeToViewDefinition.tupled)
 
-    P(nodeTypeDefinition ~/ nodeToViewDefinition.rep(min = 1, sep = ",".?).map(_.toList)).map(NodeMappingDefinition.tupled)
+    P(nodeTypeDefinition ~ nodeToViewDefinition.rep(min = 1, sep = ",".?).map(_.toList)).map(NodeMappingDefinition.tupled)
   }
 
   val nodeMappings: P[List[NodeMappingDefinition]] =
@@ -210,17 +210,12 @@ object GraphDdlParser {
     P(relationshipMappingDefinition.rep(min = 1, sep = ",").map(_.toList))
 
   val graphDefinition: P[GraphDefinition] = {
-    val schemaRefOrDef: P[(Option[String], GraphTypeBody)] =
-      P(identifier.! | graphTypeBody).map {
-        case s: String                       => Some(s) -> GraphTypeBody()
-        case schemaDefinition: GraphTypeBody => None -> schemaDefinition
-      }
 
-    val mappingDefinitions: P[List[MappingDefinition]] =
-      P("(" ~/ ( nodeMappingDefinition | relationshipMappingDefinition).rep(sep = ",").map(_.toList) ~/ ")")
+    val graphStatements: P[List[GraphStatement]] =
+      P("(" ~/ (nodeMappingDefinition | relationshipMappingDefinition | elementTypeDefinition | patternDefinition).rep(sep = ",").map(_.toList) ~/ ")")
 
-    P(CREATE ~ GRAPH ~ identifier.! ~/ OF ~/ schemaRefOrDef ~/ mappingDefinitions)
-      .map { case (gName, (schemaId, localSchemaDef), mappings) => GraphDefinition(gName, schemaId, localSchemaDef, mappings) }
+    P(CREATE ~ GRAPH ~ identifier.! ~/ (OF ~/ identifier.!).? ~/ graphStatements)
+      .map { case (gName, graphTypeRef, statements) => GraphDefinition(gName, graphTypeRef, statements) }
   }
 
   // ==== DDL ====

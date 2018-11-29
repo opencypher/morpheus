@@ -58,6 +58,7 @@ object GraphDdl {
   )
 
   private[graphddl] case class GraphParts(
+    graphTypeStatements: List[GraphTypeStatement] = List.empty,
     nodeMappings: List[NodeMappingDefinition] = List.empty,
     relMappings: List[RelationshipMappingDefinition] = List.empty
   )
@@ -79,17 +80,17 @@ object GraphDdl {
 
     val graphTypes = ddlParts.graphTypes
       .validateDistinctBy(_.name, "Duplicate graph type name")
-      .keyBy(_.name).mapValues(_.graphTypeBody)
-      .map { case (name, graphType) =>
-        name -> tryWithContext(s"Error in graph type: $name")(toOkapiSchema(elementTypeDefinitions, graphType))
+      .keyBy(_.name).mapValues(_.statements)
+      .map { case (name, statements) =>
+        name -> tryWithContext(s"Error in graph type: $name")(toOkapiSchema(elementTypeDefinitions, statements))
       }
       .view.force // mapValues creates a view, but we want validation now
 
     val inlineGraphTypes = ddlParts.graphs.map(_.definition)
       .keyBy(_.name)
-      .mapValues(_.graphTypeBody)
-      .map { case (name, graphType) =>
-        name -> tryWithContext(s"Error in graph type of graph: $name")(toOkapiSchema(elementTypeDefinitions, graphType))
+      .mapValues(graphDefinition => toGraphParts(graphDefinition.statements))
+      .map { case (name, GraphParts(graphTypeStatements, _, _)) =>
+        name -> tryWithContext(s"Error in graph type of graph: $name")(toOkapiSchema(elementTypeDefinitions, graphTypeStatements))
       }
 
     val graphs = ddlParts.graphs
@@ -116,17 +117,18 @@ object GraphDdl {
     case (parts, s: PatternDefinition)          => parts.copy(patterns = parts.patterns :+ s)
   }
 
-  private[graphddl] def toGraphParts(mappings: List[MappingDefinition]) = mappings.foldLeft(GraphParts()) {
+  private[graphddl] def toGraphParts(mappings: List[GraphStatement]) = mappings.foldLeft(GraphParts()) {
+    case (parts, s: GraphTypeStatement)            => parts.copy(graphTypeStatements = parts.graphTypeStatements :+ s)
     case (parts, s: NodeMappingDefinition)         => parts.copy(nodeMappings = parts.nodeMappings :+ s)
     case (parts, s: RelationshipMappingDefinition) => parts.copy(relMappings = parts.relMappings :+ s)
   }
 
   private[graphddl] def toOkapiSchema(
     elementTypeDefinitions: Map[String, ElementTypeDefinition],
-    typeDefinition: GraphTypeBody
+    graphTypeStatements: List[GraphTypeStatement]
   ): Schema = {
 
-    val parts = toTypeParts(typeDefinition.statements)
+    val parts = toTypeParts(graphTypeStatements)
 
     val localElementTypes = parts.elementTypes
       .validateDistinctBy(_.name, "Duplicate element type")
@@ -234,7 +236,7 @@ object GraphDdl {
       .map(name => graphTypes.getOrFail(name, "Unresolved graph type name"))
       .getOrElse(inlineTypes.getOrFail(graph.definition.name, "Unresolved graph type name"))
 
-    val graphParts = toGraphParts(graph.definition.mappings)
+    val graphParts = toGraphParts(graph.definition.statements)
 
     Graph(
       name = GraphName(graph.definition.name),

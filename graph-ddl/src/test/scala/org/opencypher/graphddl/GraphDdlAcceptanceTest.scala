@@ -289,22 +289,23 @@ class GraphDdlAcceptanceTest extends BaseTestSuite {
           ElementTypeDefinition("B", Map("sequence" -> CTInteger, "nationality" -> CTString.nullable, "age" -> CTInteger.nullable)),
           ElementTypeDefinition("TYPE_1"),
           ElementTypeDefinition("TYPE_2", Map("prop" -> CTBoolean.nullable)),
-          GraphTypeDefinition(typeName, GraphTypeBody(List(
-            ElementTypeDefinition("A", properties = Map("foo" -> CTInteger)),
-            ElementTypeDefinition("C"),
-            NodeTypeDefinition(Set("A")),
-            NodeTypeDefinition(Set("B")),
-            NodeTypeDefinition(Set("A", "B")),
-            NodeTypeDefinition(Set("C")),
-            RelationshipTypeDefinition("TYPE_1"),
-            RelationshipTypeDefinition("TYPE_2"),
-            PatternDefinition(Set(Set("A")), CardinalityConstraint(0, None), Set("TYPE_1"), CardinalityConstraint(1, Some(1)), Set(Set("B")))
-          ))),
+          GraphTypeDefinition(
+            name = typeName,
+            statements = List(
+              ElementTypeDefinition("A", properties = Map("foo" -> CTInteger)),
+              ElementTypeDefinition("C"),
+              NodeTypeDefinition(Set("A")),
+              NodeTypeDefinition(Set("B")),
+              NodeTypeDefinition(Set("A", "B")),
+              NodeTypeDefinition(Set("C")),
+              RelationshipTypeDefinition("TYPE_1"),
+              RelationshipTypeDefinition("TYPE_2"),
+              PatternDefinition(Set(Set("A")), CardinalityConstraint(0, None), Set("TYPE_1"), CardinalityConstraint(1, Some(1)), Set(Set("B")))
+            )),
           GraphDefinition(
             name = graphName.value,
             maybeGraphTypeName = Some(typeName),
-            graphTypeBody = GraphTypeBody(),
-            mappings = List(
+            statements = List(
               NodeMappingDefinition(NodeTypeDefinition("A"), List(NodeToViewDefinition(List("foo")))),
               RelationshipMappingDefinition(RelationshipTypeDefinition("TYPE_1"), List(RelationshipTypeToViewDefinition(
                 viewDef = ViewDefinition(List("baz"), "edge"),

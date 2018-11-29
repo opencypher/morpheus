@@ -47,7 +47,8 @@ case class DdlDefinition(
 ) extends GraphDdlAst
 
 sealed trait DdlStatement
-sealed trait GraphTypeStatement
+sealed trait GraphStatement
+sealed trait GraphTypeStatement extends GraphStatement
 
 case class SetSchemaDefinition(
   dataSource: String,
@@ -62,18 +63,13 @@ case class ElementTypeDefinition(
 
 case class GraphTypeDefinition(
   name: String,
-  graphTypeBody: GraphTypeBody
-) extends GraphDdlAst with DdlStatement
-
-case class GraphTypeBody(
   statements: List[GraphTypeStatement] = List.empty
-) extends GraphDdlAst
+) extends GraphDdlAst with DdlStatement
 
 case class GraphDefinition(
   name: String,
   maybeGraphTypeName: Option[String] = None,
-  graphTypeBody: GraphTypeBody = GraphTypeBody(),
-  mappings: List[MappingDefinition] = List.empty
+  statements: List[GraphStatement] = List.empty
 ) extends GraphDdlAst with DdlStatement
 
 object NodeTypeDefinition {
@@ -107,12 +103,10 @@ case class NodeToViewDefinition (
   override val maybePropertyMapping: Option[PropertyToColumnMappingDefinition] = None
 ) extends GraphDdlAst with ElementToViewDefinition
 
-trait MappingDefinition
-
 case class NodeMappingDefinition(
   nodeType: NodeTypeDefinition,
   nodeToView: List[NodeToViewDefinition] = List.empty
-) extends GraphDdlAst with MappingDefinition
+) extends GraphDdlAst with GraphStatement
 
 case class ViewDefinition(
   viewId: List[String],
@@ -137,4 +131,4 @@ case class RelationshipTypeToViewDefinition(
 case class RelationshipMappingDefinition(
   relType: RelationshipTypeDefinition,
   relTypeToView: List[RelationshipTypeToViewDefinition]
-) extends GraphDdlAst with MappingDefinition
+) extends GraphDdlAst with GraphStatement

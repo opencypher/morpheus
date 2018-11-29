@@ -63,8 +63,8 @@ class GraphDdlParserTest extends BaseTestSuite with MockitoSugar with TestNameFi
     }
   }
 
-  private def failure[T, Elem](parser: fastparse.core.Parser[T, Elem, String]): Unit = {
-    parser.parse(testName) should matchPattern {
+  private def failure[T, Elem](parser: fastparse.core.Parser[T, Elem, String], input: String = testName): Unit = {
+    parser.parse(input) should matchPattern {
       case Failure(_, _, _) =>
     }
   }
@@ -84,10 +84,8 @@ class GraphDdlParserTest extends BaseTestSuite with MockitoSugar with TestNameFi
     }
   }
 
-
   val emptyMap = Map.empty[String, CypherType]
   val emptyList: List[Nothing] = List.empty[Nothing]
-  val emptySchemaDef: GraphTypeBody = GraphTypeBody()
 
   describe("set schema") {
     it("parses SET SCHEMA foo.bar") {
@@ -253,7 +251,7 @@ class GraphDdlParserTest extends BaseTestSuite with MockitoSugar with TestNameFi
         """.stripMargin
       success(graphTypeDefinition, input, GraphTypeDefinition(
         name = "mySchema",
-        graphTypeBody = GraphTypeBody(List(
+        statements = List(
           NodeTypeDefinition(Set("A")),
           NodeTypeDefinition(Set("B")),
           NodeTypeDefinition(Set("A", "B")),
@@ -267,15 +265,16 @@ class GraphDdlParserTest extends BaseTestSuite with MockitoSugar with TestNameFi
             Set(Set("A")),
             CardinalityConstraint(0, None), Set("TYPE_1"), CardinalityConstraint(0, None),
             Set(Set("A")))
-      ))))
+        )))
     }
 
     it("parses CREATE GRAPH TYPE mySchema ( (A)-[TYPE]->(B) )") {
       success(graphTypeDefinition,
-        GraphTypeDefinition("mySchema",
-          GraphTypeBody(List(
+        GraphTypeDefinition(
+          name = "mySchema",
+          statements = List(
             PatternDefinition(sourceNodeTypes = Set(Set("A")), relTypes = Set("TYPE"), targetNodeTypes = Set(Set("B")))
-        ))))
+          )))
     }
 
     it("parses a schema with node, rel, and schema pattern definitions in any order") {
@@ -293,7 +292,7 @@ class GraphDdlParserTest extends BaseTestSuite with MockitoSugar with TestNameFi
         """.stripMargin
       success(graphTypeDefinition, input, GraphTypeDefinition(
         name = "mySchema",
-        graphTypeBody = GraphTypeBody(List(
+        statements = List(
           PatternDefinition(
             Set(Set("A"), Set("B")),
             CardinalityConstraint(0, None), Set("TYPE_1"), CardinalityConstraint(1, Some(1)),
@@ -307,7 +306,7 @@ class GraphDdlParserTest extends BaseTestSuite with MockitoSugar with TestNameFi
           RelationshipTypeDefinition("TYPE_1"),
           NodeTypeDefinition(Set("B")),
           RelationshipTypeDefinition("TYPE_2")
-        ))))
+        )))
     }
   }
 
@@ -321,23 +320,95 @@ class GraphDdlParserTest extends BaseTestSuite with MockitoSugar with TestNameFi
     }
 
     it("parses a graph definition with inlined schema") {
-      val expectedSchemaDefinition = GraphTypeBody(List(
+      val expectedGraphStatements = List(
         ElementTypeDefinition("A", properties = Map("foo" -> CTString)),
         ElementTypeDefinition("B"),
-        NodeTypeDefinition(Set("A", "B")),
-        RelationshipTypeDefinition("B")
-      ))
+        NodeMappingDefinition(NodeTypeDefinition("A", "B"), List(NodeToViewDefinition(List("view_a_b")))),
+        RelationshipMappingDefinition(
+          relType = RelationshipTypeDefinition("B"),
+          relTypeToView = List(RelationshipTypeToViewDefinition(
+            viewDef = ViewDefinition(List("baz"), "alias_baz"),
+            startNodeTypeToView = NodeTypeToViewDefinition(
+              NodeTypeDefinition("A", "B"),
+              ViewDefinition(List("foo"), "alias_foo"),
+              JoinOnDefinition(List(
+                (List("alias_foo", "COLUMN_A"), List("edge", "COLUMN_A")),
+                (List("alias_foo", "COLUMN_C"), List("edge", "COLUMN_D"))))),
+            endNodeTypeToView = NodeTypeToViewDefinition(
+              NodeTypeDefinition("C"),
+              ViewDefinition(List("bar"), "alias_bar"),
+              JoinOnDefinition(List(
+                (List("alias_bar", "COLUMN_A"), List("edge", "COLUMN_A")))))
+          )))
+      )
       graphDefinition.parse(
-        """|CREATE GRAPH myGraph OF (
+        """|CREATE GRAPH myGraph (
+           | A ( foo STRING ) ,
+           | B,
+           |
+           | (A,B) FROM view_a_b,
+           | [B] FROM baz alias_baz
+           |  START NODES (A, B) FROM foo alias_foo
+           |      JOIN ON alias_foo.COLUMN_A = edge.COLUMN_A
+           |          AND alias_foo.COLUMN_C = edge.COLUMN_D
+           |  END NODES (C) FROM bar alias_bar
+           |      JOIN ON alias_bar.COLUMN_A = edge.COLUMN_A
+           |)
+        """.stripMargin) should matchPattern {
+        case Success(GraphDefinition("myGraph", None, `expectedGraphStatements`), _) =>
+      }
+    }
+
+    it("parses a graph definition with inlined graph type elements") {
+      success(ddlDefinitions, DdlDefinition(List(
+        GraphDefinition(
+          name = "fooGraph",
+          maybeGraphTypeName = None,
+          statements = List(
+            ElementTypeDefinition("A", properties = Map("foo" -> CTInteger)),
+            ElementTypeDefinition("C"),
+            PatternDefinition(Set(Set("A")), CardinalityConstraint(0, None), Set("TYPE_1"), CardinalityConstraint(1, Some(1)), Set(Set("B"))),
+            NodeMappingDefinition(NodeTypeDefinition("A"), List(NodeToViewDefinition(List("foo")))),
+            NodeMappingDefinition(NodeTypeDefinition("A", "C"), List(NodeToViewDefinition(List("bar")))),
+            RelationshipMappingDefinition(RelationshipTypeDefinition("TYPE_1"), List(RelationshipTypeToViewDefinition(
+              viewDef = ViewDefinition(List("baz"), "edge"),
+              startNodeTypeToView = NodeTypeToViewDefinition(
+                NodeTypeDefinition("A"),
+                ViewDefinition(List("foo"), "alias_foo"),
+                JoinOnDefinition(List((List("alias_foo", "COLUMN_A"), List("edge", "COLUMN_A"))))),
+              endNodeTypeToView = NodeTypeToViewDefinition(
+                NodeTypeDefinition("B"),
+                ViewDefinition(List("bar"), "alias_bar"),
+                JoinOnDefinition(List((List("alias_bar", "COLUMN_A"), List("edge", "COLUMN_A")))))
+            )))))
+      )),
+        s"""|CREATE GRAPH fooGraph (
+            |  A ( foo INTEGER ),
+            |  C,
+            |  -- schema patterns
+            |  (A) <0 .. *> - [TYPE_1] -> <1> (B),
+            |
+            |  (A) FROM foo,
+            |  (A, C) FROM bar,
+            |
+            |  [TYPE_1] FROM baz edge
+            |    START NODES (A) FROM foo alias_foo JOIN ON alias_foo.COLUMN_A = edge.COLUMN_A
+            |    END NODES   (B) FROM bar alias_bar JOIN ON alias_bar.COLUMN_A = edge.COLUMN_A
+            |)
+            |""".stripMargin)
+    }
+
+    it("fails if node / edge type definitions are present") {
+      failure(graphDefinition,
+        """|CREATE GRAPH myGraph (
            | A ( foo STRING ) ,
            | B,
            |
            | (A,B),
            | [B]
-           |) ()
-        """.stripMargin) should matchPattern {
-        case Success(GraphDefinition("myGraph", None, `expectedSchemaDefinition`, `emptyList`), _) =>
-      }
+           |
+           |)
+        """.stripMargin)
     }
   }
 
@@ -398,7 +469,7 @@ class GraphDdlParserTest extends BaseTestSuite with MockitoSugar with TestNameFi
             ViewDefinition(List("bar"), "alias_bar"),
             JoinOnDefinition(List(
               (List("alias_bar", "COLUMN_A"), List("edge", "COLUMN_A")))))
-      ))))
+        ))))
     }
 
     it("parses a relationship mapping definition with custom property to column mapping") {
