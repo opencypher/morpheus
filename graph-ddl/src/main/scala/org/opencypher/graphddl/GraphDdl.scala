@@ -78,24 +78,13 @@ object GraphDdl {
       .validateDistinctBy(_.name, "Duplicate element type")
       .keyBy(_.name)
 
-    val graphTypes = ddlParts.graphTypes
+    val graphTypeDefinitions = ddlParts.graphTypes
       .validateDistinctBy(_.name, "Duplicate graph type name")
-      .keyBy(_.name).mapValues(_.statements)
-      .map { case (name, statements) =>
-        name -> tryWithContext(s"Error in graph type: $name")(toOkapiSchema(elementTypeDefinitions, statements))
-      }
-      .view.force // mapValues creates a view, but we want validation now
-
-    val inlineGraphTypes = ddlParts.graphs.map(_.definition)
       .keyBy(_.name)
-      .mapValues(graphDefinition => toGraphParts(graphDefinition.statements))
-      .map { case (name, GraphParts(graphTypeStatements, _, _)) =>
-        name -> tryWithContext(s"Error in graph type of graph: $name")(toOkapiSchema(elementTypeDefinitions, graphTypeStatements))
-      }
 
     val graphs = ddlParts.graphs
-      .map(graphDefinition => toGraph(inlineGraphTypes, graphTypes, graphDefinition))
-      .validateDistinctBy(_.name, "Duplicate graph name")
+      .validateDistinctBy(_.definition.name, "Duplicate graph name")
+      .map(graphDefinition => toGraph(graphTypeDefinitions, elementTypeDefinitions, graphDefinition))
       .keyBy(_.name)
 
     GraphDdl(
@@ -139,6 +128,7 @@ object GraphDdl {
 
     val nodeDefinitionsFromPatterns = parts.patterns.flatMap(pattern =>
       pattern.sourceNodeTypes ++ pattern.targetNodeTypes)
+
     val allNodeDefinitions = parts.nodeTypes.map(_.elementTypes) ++ nodeDefinitionsFromPatterns
     val schemaWithNodes = schemaForNodeDefinitions(labelDefinitions, allNodeDefinitions.toSet)
 
@@ -227,29 +217,44 @@ object GraphDdl {
     }
   }
 
-  def toGraph(
-    inlineTypes: Map[String, Schema],
-    graphTypes: Map[String, Schema],
-    graph: GraphDefinitionWithContext
-  ): Graph = tryWithContext(s"Error in graph: ${graph.definition.name}") {
-    val graphType = graph.definition.maybeGraphTypeName
-      .map(name => graphTypes.getOrFail(name, "Unresolved graph type name"))
-      .getOrElse(inlineTypes.getOrFail(graph.definition.name, "Unresolved graph type name"))
+  private def toGraph(
+    graphTypeDefinitions: Map[String, GraphTypeDefinition],
+    elementTypeDefinitions: Map[String, ElementTypeDefinition],
+    graph: GraphDefinitionWithContext): Graph =
 
-    val graphParts = toGraphParts(graph.definition.statements)
+    tryWithContext(s"Error in graph: ${graph.definition.name}") {
 
-    Graph(
-      name = GraphName(graph.definition.name),
-      graphType = graphType,
-      // TODO: allow multiple node mappings with same node type and view + remove the validate
-      nodeToViewMappings = graphParts.nodeMappings
-        .flatMap(nm => toNodeToViewMappings(graphType, graph.maybeSetSchema, nm))
-        .validateDistinctBy(_.key, "Duplicate mapping")
-        .keyBy(_.key),
-      edgeToViewMappings = graphParts.relMappings
-        .flatMap(em => toEdgeToViewMappings(graphType, graph.maybeSetSchema, em))
-    )
-  }
+      // Merges type definitions from a graph type with the type definitions of a graph instance
+      def normalizeGraphDefinition(
+        graphDefinition: GraphDefinition,
+        graphTypes: Map[String, GraphTypeDefinition]
+      ): GraphParts = {
+        val maybeGraphType = graphDefinition.maybeGraphTypeName.map(name => graphTypes.getOrFail(name, "Unresolved graph type name"))
+        val initialGraphParts = toGraphParts(graphDefinition.statements)
+
+        val typesFromGraphType = maybeGraphType.toList.flatMap(_.statements)
+
+        val nodeTypesFromMappings = initialGraphParts.nodeMappings.map(_.nodeType)
+        val relTypesFromMappings = initialGraphParts.relMappings.map(_.relType)
+
+        initialGraphParts.copy(graphTypeStatements = initialGraphParts.graphTypeStatements ++ nodeTypesFromMappings ++ relTypesFromMappings ++ typesFromGraphType)
+      }
+
+      val graphParts = normalizeGraphDefinition(graph.definition, graphTypeDefinitions)
+      val okapiSchema = toOkapiSchema(elementTypeDefinitions, graphParts.graphTypeStatements)
+
+      Graph(
+        name = GraphName(graph.definition.name),
+        graphType = okapiSchema,
+        // TODO: allow multiple node mappings with same node type and view + remove the validate
+        nodeToViewMappings = graphParts.nodeMappings
+          .flatMap(nm => toNodeToViewMappings(okapiSchema, graph.maybeSetSchema, nm))
+          .validateDistinctBy(_.key, "Duplicate mapping")
+          .keyBy(_.key),
+        edgeToViewMappings = graphParts.relMappings
+          .flatMap(em => toEdgeToViewMappings(okapiSchema, graph.maybeSetSchema, em))
+      )
+    }
 
   def toNodeToViewMappings(
     graphType: Schema,
