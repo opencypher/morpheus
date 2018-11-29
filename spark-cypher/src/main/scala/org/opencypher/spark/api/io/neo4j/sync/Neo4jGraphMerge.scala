@@ -48,64 +48,43 @@ import scala.concurrent.duration._
 import scala.concurrent.{Await, Future}
 
 /**
-  * Describes sets of properties that uniquely identify nodes/relationships with a given
-  * label/relationship type.
-  *
-  * If a label always appears in conjunction with another label (e.g. :Employee:Person, where being an employee implies
-  * being a person), then it is enough to only provide an entity key for one of the labels (e.g. :Person).
-  *
-  * Relationship keys are optional, if none are provided, then it is implicitly assumed that there is at most one
-  * relationship with a given type between two nodes.
-  *
-  * @param nodeKeys maps a label to a set of property keys, which uniquely identify a node
-  * @param relKeys  maps a relationship type to a set of property keys, which uniquely identify a relationship
-  */
-case class EntityKeys(
-  nodeKeys: Map[String, Set[String]],
-  relKeys: Map[String, Set[String]] = Map.empty
-)
-
-/**
   * Utility class that allows to merge a graph into an existing Neo4j database.
   */
 object Neo4jGraphMerge extends Logging {
+
+  /**
+    * Defines a set of properties which uniquely identify a node with a given label.
+    *
+    * @see [[org.opencypher.okapi.api.schema.Schema#nodeKeys]]
+    */
+  type NodeKeys = Map[String, Set[String]]
+  /**
+    * Defines a set of properties which uniquely identify a relationship with a given type.
+    *
+    * @see [[org.opencypher.okapi.api.schema.Schema#relationshipKeys]]
+    */
+  type RelationshipKeys = Map[String, Set[String]]
 
   /**
     * Creates node indexes for the sub-graph specified by `graphName` in the specified Neo4j database.
     * This speeds up the Neo4j merge feature.
     *
     * @note This feature requires the Neo4j Enterprise Edition.
-    * @param graphName  which sub-graph to create the indexes for
-    * @param config     access config for the Neo4j database on which the indexes are created
-    * @param entityKeys node and relationship entity keys that are used to create indexes
+    * @param graphName which sub-graph to create the indexes for
+    * @param config    access config for the Neo4j database on which the indexes are created
+    * @param nodeKeys  node keys that identify a node uniquely
     */
-  def createIndexes(graphName: GraphName, config: Neo4jConfig, entityKeys: EntityKeys): Unit = {
-    createIndexes(Some(graphName), config, entityKeys)
-  }
-
-  /**
-    * Creates node indexes in the specified Neo4j database to speed up the Neo4j merge feature. Index creation assumes
-    * that the node keys are globally unique. If another graph with the same node key and colliding values is stored
-    * in the same Neo4j instance, this will result in errors either during index or entity creation.
-    *
-    * @note This feature requires the Neo4j Enterprise Edition.
-    * @param config     access config for the Neo4j database on which the indexes are created
-    * @param entityKeys node and relationship entity keys that are used to create indexes
-    */
-  def createIndexes(config: Neo4jConfig, entityKeys: EntityKeys): Unit = {
-    createIndexes(None, config, entityKeys)
-  }
-
-  private[opencypher] def createIndexes(
-    maybeGraphName: Option[GraphName],
+  def createIndexes(
+    graphName: GraphName,
     config: Neo4jConfig,
-    entityKeys: EntityKeys
+    nodeKeys: NodeKeys
   ): Unit = {
-    val maybeMetaLabel = maybeGraphName.map(gn => gn.metaLabelForSubgraph)
+    val maybeMetaLabel = graphName.metaLabel
+
     config.withSession { session =>
       maybeMetaLabel match {
         case None =>
-          entityKeys.nodeKeys.foreach {
+          nodeKeys.foreach {
             case (label, keys) =>
               val nodeVar = "n"
               val propertyString = keys.map(k => s"$nodeVar.`$k`").mkString("(", ", ", ")")
@@ -114,14 +93,14 @@ object Neo4jGraphMerge extends Logging {
               session.run(query).consume
           }
 
-          entityKeys.nodeKeys.keySet.foreach { label =>
+          nodeKeys.keySet.foreach { label =>
             val cmd = s"CREATE INDEX ON ${label.cypherLabelPredicate}(`$metaPropertyKey`)"
             logger.debug(s"Creating index for meta property key: $cmd")
             session.run(cmd).consume
           }
 
         case Some(ml) =>
-          entityKeys.nodeKeys.foreach {
+          nodeKeys.foreach {
             case (label, properties) =>
               val propertyString = properties.map(p => s"`$p`").mkString("(", ", ", ")")
               val cmd = s"CREATE INDEX ON ${label.cypherLabelPredicate}$propertyString"
@@ -140,51 +119,31 @@ object Neo4jGraphMerge extends Logging {
     * Merges the given graph into the sub-graph specified by `graphName` within an existing Neo4j database.
     * Properties in the Neo4j graph will be overwritten by values in the merge graph, missing ones are added.
     *
-    * Nodes and relationships are identified by their entity keys (see [[EntityKeys]] for a detailed description of
-    * which entity keys need to be defined).
+    * Nodes and relationships are identified by their entity keys defined by the graph's schema. They can be overridden
+    * by optional node and relationship keys
     *
-    * @param graphName  which sub-graph in the Neo4j graph to merge the delta to
-    * @param graph      graph that is merged into the existing Neo4j database
-    * @param config     access config for the Neo4j database into which the graph is merged
-    * @param entityKeys node and relationship keys which identify same entities in the two graphs
-    * @param caps       CAPS session
+    * @param graphName        which sub-graph in the Neo4j graph to merge the delta to
+    * @param graph            graph that is merged into the existing Neo4j database
+    * @param config           access config for the Neo4j database into which the graph is merged
+    * @param nodeKeys         additional node keys that override node keys defined by the schema
+    * @param relationshipKeys additional relationship keys that override relationship keys defined by the schema
+    * @param caps             CAPS session
     */
-  def merge(graphName: GraphName, graph: PropertyGraph, config: Neo4jConfig, entityKeys: EntityKeys)
-    (implicit caps: CAPSSession): Unit = {
-    merge(Some(graphName), graph, config, entityKeys)
-  }
-
-  /**
-    * Merges the given graph into an existing Neo4j database.
-    * Properties in the Neo4j graph will be overwritten by values in the merge graph, missing ones are added.
-    *
-    * Nodes and relationships are identified by their entity keys (see [[EntityKeys]] for a detailed description of
-    * which entity keys need to be defined).
-    *
-    * @param graph      graph that is merged into the existing Neo4j database
-    * @param config     access config for the Neo4j database into which the graph is merged
-    * @param entityKeys node and relationship keys which identify same entities in the two graphs
-    * @param caps       CAPS session
-    */
-  def merge(graph: PropertyGraph, config: Neo4jConfig, entityKeys: EntityKeys)
-    (implicit caps: CAPSSession): Unit = {
-    merge(None, graph, config, entityKeys)
-  }
-
-  private[opencypher] def merge(
-    maybeGraphName: Option[GraphName],
+  def merge(
+    graphName: GraphName,
     graph: PropertyGraph,
     config: Neo4jConfig,
-    entityKeys: EntityKeys
+    nodeKeys: Option[NodeKeys] = None,
+    relationshipKeys: Option[RelationshipKeys] = None
   )(implicit caps: CAPSSession): Unit = {
-    validateEntityKeys(graph.schema, entityKeys)
+    val updatedSchema = combineEntityKeys(graph.schema, nodeKeys, relationshipKeys)
 
-    val maybeMetaLabel = maybeGraphName.map(gn => gn.metaLabelForSubgraph)
+    val maybeMetaLabel = graphName.metaLabel
     val maybeMetaLabelString = maybeMetaLabel.toSet[String].cypherLabelPredicate
 
     val writesCompleted = for {
-      _ <- Future.sequence(MergeWriters.writeNodes(maybeMetaLabel, graph, config, entityKeys.nodeKeys))
-      _ <- Future.sequence(MergeWriters.writeRelationships(maybeMetaLabel, graph, config, entityKeys.relKeys))
+      _ <- Future.sequence(MergeWriters.writeNodes(maybeMetaLabel, graph, config, updatedSchema.nodeKeys))
+      _ <- Future.sequence(MergeWriters.writeRelationships(maybeMetaLabel, graph, config, updatedSchema.relationshipKeys))
       _ <- Future {
         config.withSession { session =>
           session.run(s"MATCH (n$maybeMetaLabelString) REMOVE n.$metaPropertyKey").consume()
@@ -196,9 +155,18 @@ object Neo4jGraphMerge extends Logging {
     logger.debug(s"Merge successful")
   }
 
-  private def validateEntityKeys(graphSchema: Schema, entityKeys: EntityKeys): Unit = {
-    entityKeys.nodeKeys.foreach { nodeKey => graphSchema.withNodeKey(nodeKey._1, nodeKey._2) }
-    entityKeys.relKeys.foreach { relKey => graphSchema.withRelationshipKey(relKey._1, relKey._2) }
+
+  private def combineEntityKeys(
+    schema: Schema,
+    nodeKeys: Option[NodeKeys],
+    relationshipKeys: Option[RelationshipKeys]
+  ): Schema = {
+    val withNodeKeys = nodeKeys.getOrElse(Map.empty).foldLeft(schema) {
+      case (acc, (label, keys)) => acc.withNodeKey(label, keys)
+    }
+    relationshipKeys.getOrElse(Map.empty).foldLeft(withNodeKeys) {
+      case (acc, (typ, keys)) => acc.withRelationshipKey(typ, keys)
+    }
   }
 }
 

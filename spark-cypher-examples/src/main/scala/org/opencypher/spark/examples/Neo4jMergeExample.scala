@@ -28,8 +28,9 @@
 package org.opencypher.spark.examples
 
 import org.opencypher.okapi.api.graph.Namespace
+import org.opencypher.okapi.neo4j.io.MetaLabelSupport._
 import org.opencypher.okapi.neo4j.io.testing.Neo4jHarnessUtils._
-import org.opencypher.spark.api.io.neo4j.sync.{EntityKeys, Neo4jGraphMerge}
+import org.opencypher.spark.api.io.neo4j.sync.Neo4jGraphMerge
 import org.opencypher.spark.api.{CAPSSession, GraphSources}
 import org.opencypher.spark.testing.support.creation.CAPSNeo4jHarnessUtils._
 import org.opencypher.spark.util.ConsoleApp
@@ -55,10 +56,8 @@ object Neo4jMergeExample extends ConsoleApp {
   ).withSchemaProcedure
 
   // Define the node and relationship keys
-  val entityKeys = EntityKeys(
-    Map("Person" -> Set("name")),
-    Map("FRIEND_OF" -> Set("id"), "MARRIED_TO" -> Set("id"))
-  )
+  val nodeKeys = Map("Person" -> Set("name"))
+  val relKeys = Map("FRIEND_OF" -> Set("id"), "MARRIED_TO" -> Set("id"))
 
   // Create a merge graph with updated data
   val mergeGraph = session.cypher(
@@ -75,10 +74,10 @@ object Neo4jMergeExample extends ConsoleApp {
     """.stripMargin).graph
 
   // Speed up merge operation. Requires Neo4j Enterprise Edition
-  //  Neo4jGraphMerge.createIndexes(neo4j.dataSourceConfig, entityKeys)
+  // Neo4jGraphMerge.createIndexes(entireGraphName, neo4j.dataSourceConfig, nodeKeys)
 
   // Merge graph into existing Neo4j database
-  Neo4jGraphMerge.merge(mergeGraph, neo4j.dataSourceConfig, entityKeys)
+  Neo4jGraphMerge.merge(entireGraphName, mergeGraph, neo4j.dataSourceConfig, Some(nodeKeys), Some(relKeys))
 
   // Register Property Graph Data Source (PGDS) to read the updated graph from Neo4j
   session.registerSource(Namespace("updatedSocialNetwork"), GraphSources.cypher.neo4j(neo4j.dataSourceConfig))

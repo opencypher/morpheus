@@ -26,6 +26,9 @@
  */
 package org.opencypher.spark.api.io.neo4j.sync
 
+import org.apache.spark.sql.Row
+import org.apache.spark.sql.types.{LongType, StringType, StructField, StructType}
+import org.opencypher.graphddl.GraphDdl
 import org.opencypher.okapi.api.graph.GraphName
 import org.opencypher.okapi.api.value.CypherValue.{CypherMap, CypherString}
 import org.opencypher.okapi.impl.exception.SchemaException
@@ -34,7 +37,9 @@ import org.opencypher.okapi.neo4j.io.Neo4jHelpers.Neo4jDefaults._
 import org.opencypher.okapi.neo4j.io.Neo4jHelpers._
 import org.opencypher.okapi.relational.api.graph.RelationalCypherGraph
 import org.opencypher.okapi.testing.Bag
+import org.opencypher.spark.api.io.HiveFormat
 import org.opencypher.spark.api.io.neo4j.Neo4jPropertyGraphDataSource
+import org.opencypher.spark.api.io.sql.{SqlDataSourceConfig, SqlPropertyGraphDataSource}
 import org.opencypher.spark.impl.acceptance.DefaultGraphInit
 import org.opencypher.spark.impl.table.SparkTable
 import org.opencypher.spark.testing.CAPSTestSuite
@@ -47,7 +52,8 @@ class Neo4JGraphMergeTest extends CAPSTestSuite with CAPSNeo4jServerFixture with
 
   override def dataFixture: String = ""
 
-  val entityKeys: EntityKeys = EntityKeys(Map("Person" -> Set("id")), Map("R" -> Set("id")))
+  val nodeKeys = Map("Person" -> Set("id"))
+  val relKeys = Map("R" -> Set("id"))
 
   val initialGraph: RelationalCypherGraph[SparkTable.DataFrameTable] = initGraph(
     """
@@ -80,8 +86,8 @@ class Neo4JGraphMergeTest extends CAPSTestSuite with CAPSNeo4jServerFixture with
 
   describe("merging into the entire graph") {
     it("can do basic Neo4j merge") {
-      Neo4jGraphMerge.createIndexes(neo4jConfig, entityKeys)
-      Neo4jGraphMerge.merge(initialGraph, neo4jConfig, entityKeys)
+      Neo4jGraphMerge.createIndexes(entireGraphName, neo4jConfig, nodeKeys)
+      Neo4jGraphMerge.merge(entireGraphName, initialGraph, neo4jConfig, Some(nodeKeys), Some(relKeys))
 
       val readGraph = Neo4jPropertyGraphDataSource(neo4jConfig).graph(entireGraphName)
 
@@ -95,7 +101,7 @@ class Neo4JGraphMergeTest extends CAPSTestSuite with CAPSNeo4jServerFixture with
       ))
 
       // Do not change a graph when the same graph is merged as a delta
-      Neo4jGraphMerge.merge(initialGraph, neo4jConfig, entityKeys)
+      Neo4jGraphMerge.merge(entireGraphName, initialGraph, neo4jConfig, Some(nodeKeys), Some(relKeys))
       val graphAfterSameMerge = Neo4jPropertyGraphDataSource(neo4jConfig)
         .graph(entireGraphName)
 
@@ -116,7 +122,8 @@ class Neo4JGraphMergeTest extends CAPSTestSuite with CAPSNeo4jServerFixture with
           |CREATE (s)-[r:R {id: 1, name: 1}]->(e)
           |CREATE (s)-[r:R {id: 2}]->(e)
         """.stripMargin)
-      Neo4jGraphMerge.merge(delta, neo4jConfig, entityKeys)
+
+      Neo4jGraphMerge.merge(entireGraphName, delta, neo4jConfig, Some(nodeKeys), Some(relKeys))
       val graphAfterDeltaSync = Neo4jPropertyGraphDataSource(neo4jConfig)
         .graph(entireGraphName)
 
@@ -132,8 +139,10 @@ class Neo4JGraphMergeTest extends CAPSTestSuite with CAPSNeo4jServerFixture with
     }
 
     it("merges when using the same entity key for all labels") {
-      val keys = EntityKeys(Map("Person" -> Set("id"), "Employee" -> Set("id")), Map("R" -> Set("id")))
-      Neo4jGraphMerge.createIndexes(neo4jConfig, keys)
+      val nodeKeys = Map("Person" -> Set("id"), "Employee" -> Set("id"))
+      val relKeys = Map("R" -> Set("id"))
+
+      Neo4jGraphMerge.createIndexes(entireGraphName, neo4jConfig, nodeKeys)
       val graphName = GraphName("graph")
 
       val graph = initGraph(
@@ -144,7 +153,7 @@ class Neo4JGraphMergeTest extends CAPSTestSuite with CAPSNeo4jServerFixture with
           |CREATE (s)-[r:R {id: 1}]->(e)
         """.stripMargin)
 
-      Neo4jGraphMerge.merge(graph, neo4jConfig, keys)
+      Neo4jGraphMerge.merge(entireGraphName, graph, neo4jConfig, Some(nodeKeys), Some(relKeys))
 
       val readGraph = Neo4jPropertyGraphDataSource(neo4jConfig).graph(graphName)
 
@@ -156,8 +165,10 @@ class Neo4JGraphMergeTest extends CAPSTestSuite with CAPSNeo4jServerFixture with
     }
 
     it("merges when using multiple entity keys with different names") {
-      val keys = EntityKeys(Map("Person" -> Set("nId"), "Employee" -> Set("mId")), Map("R" -> Set("id")))
-      Neo4jGraphMerge.createIndexes(neo4jConfig, keys)
+      val nodeKeys = Map("Person" -> Set("nId"), "Employee" -> Set("mId"))
+      val relKeys = Map("R" -> Set("id"))
+
+      Neo4jGraphMerge.createIndexes(entireGraphName, neo4jConfig, nodeKeys)
       val graphName = GraphName("graph")
 
       val graph = initGraph(
@@ -168,7 +179,7 @@ class Neo4JGraphMergeTest extends CAPSTestSuite with CAPSNeo4jServerFixture with
           |CREATE (s)-[r:R {id: 1}]->(e)
         """.stripMargin)
 
-      Neo4jGraphMerge.merge(graph, neo4jConfig, keys)
+      Neo4jGraphMerge.merge(entireGraphName, graph, neo4jConfig, Some(nodeKeys), Some(relKeys))
 
       val readGraph = Neo4jPropertyGraphDataSource(neo4jConfig).graph(graphName)
 
@@ -179,9 +190,50 @@ class Neo4JGraphMergeTest extends CAPSTestSuite with CAPSNeo4jServerFixture with
       ))
     }
 
+    it("merges with entity keys set in the schema") {
+      val data = List(
+        Row(1L, "baz")
+      ).asJava
+
+      val df = sparkSession.createDataFrame(data, StructType(Seq(StructField("id", LongType), StructField("name", StringType))))
+      caps.sql("CREATE DATABASE IF NOT EXISTS db")
+      df.write.saveAsTable("db.persons")
+
+      val ddlString =
+        """
+          |CREATE GRAPH TYPE personType (
+          |  Person (id INTEGER, name STRING) KEY pk (id),
+          |
+          |  (Person)
+          |)
+          |
+          |CREATE GRAPH personGraph OF personType (
+          |  (Person) FROM ds1.db.persons
+          |)
+        """.stripMargin
+      val hiveDataSourceConfig = SqlDataSourceConfig(
+        storageFormat = HiveFormat,
+        dataSourceName = "ds1"
+      )
+
+      val pgds = SqlPropertyGraphDataSource(GraphDdl(ddlString), List(hiveDataSourceConfig))
+      val graph = pgds.graph(GraphName("personGraph"))
+
+      Neo4jGraphMerge.createIndexes(entireGraphName, neo4jConfig, graph.schema.nodeKeys)
+
+      Neo4jGraphMerge.merge(entireGraphName, graph, neo4jConfig)
+
+      val readGraph = Neo4jPropertyGraphDataSource(neo4jConfig).graph(entireGraphName)
+
+      readGraph.cypher("MATCH (n:Person) RETURN n.id as id, n.name as name, labels(n) as labels").records.toMaps should equal(Bag(
+        CypherMap("id" -> 1, "name" -> "baz", "labels" -> Seq("Person"))
+      ))
+    }
+
     it("checks if entity keys are present in the merge graph") {
-      val keys = EntityKeys(Map("Person" -> Set("name"), "Employee" -> Set("mId")), Map("R" -> Set("id")))
-      Neo4jGraphMerge.createIndexes(neo4jConfig, keys)
+      val nodeKeys = Map("Person" -> Set("name"), "Employee" -> Set("mId"))
+      val relKeys = Map("R" -> Set("id"))
+      Neo4jGraphMerge.createIndexes(entireGraphName, neo4jConfig, nodeKeys)
 
       val graph = initGraph(
         """
@@ -191,7 +243,7 @@ class Neo4JGraphMergeTest extends CAPSTestSuite with CAPSNeo4jServerFixture with
           |CREATE (s)-[r:R {id: 1}]->(e)
         """.stripMargin)
 
-      Try(Neo4jGraphMerge.merge(graph, neo4jConfig, keys)) match {
+      Try(Neo4jGraphMerge.merge(entireGraphName, graph, neo4jConfig, Some(nodeKeys), Some(relKeys))) match {
         case Success(_) => fail
         case Failure(exception) =>
           exception.getMessage should include("Properties [name] have nullable types")
@@ -199,21 +251,14 @@ class Neo4JGraphMergeTest extends CAPSTestSuite with CAPSNeo4jServerFixture with
     }
 
     it("creates indexes correctly") {
-      val entityKeys = EntityKeys(
-        Map(
-          "Person" -> Set("name", "bar"),
-          "Employee" -> Set("baz")
-        ),
-        Map(
-          "REL" -> Set("a")
-        )
-      )
+      val nodeKeys = Map("Person" -> Set("name", "bar"), "Employee" -> Set("baz"))
+      val relKeys = Map("REL" -> Set("a"))
 
-      Neo4jGraphMerge.createIndexes(neo4jConfig, entityKeys)
+      Neo4jGraphMerge.createIndexes(entireGraphName, neo4jConfig, nodeKeys)
 
       neo4jConfig.cypher("CALL db.constraints YIELD description").toSet should equal(Set(
         Map("description" -> new CypherString("CONSTRAINT ON ( person:Person ) ASSERT (person.name, person.bar) IS NODE KEY")),
-          Map("description" -> new CypherString("CONSTRAINT ON ( employee:Employee ) ASSERT employee.baz IS NODE KEY"))
+        Map("description" -> new CypherString("CONSTRAINT ON ( employee:Employee ) ASSERT employee.baz IS NODE KEY"))
       ))
 
       neo4jConfig.cypher("CALL db.indexes YIELD description").toSet should equal(Set(
@@ -229,8 +274,8 @@ class Neo4JGraphMergeTest extends CAPSTestSuite with CAPSNeo4jServerFixture with
     it("merges subgraphs") {
       val subGraphName = GraphName("name")
 
-      Neo4jGraphMerge.createIndexes(subGraphName, neo4jConfig, entityKeys)
-      Neo4jGraphMerge.merge(subGraphName, initialGraph, neo4jConfig, entityKeys)
+      Neo4jGraphMerge.createIndexes(subGraphName, neo4jConfig, nodeKeys)
+      Neo4jGraphMerge.merge(subGraphName, initialGraph, neo4jConfig, Some(nodeKeys), Some(relKeys))
 
       val readGraph = Neo4jPropertyGraphDataSource(neo4jConfig).graph(subGraphName)
 
@@ -244,7 +289,7 @@ class Neo4JGraphMergeTest extends CAPSTestSuite with CAPSNeo4jServerFixture with
       ))
 
       // Do not change a graph when the same graph is synced as a delta
-      Neo4jGraphMerge.merge(initialGraph, neo4jConfig, entityKeys)
+      Neo4jGraphMerge.merge(entireGraphName, initialGraph, neo4jConfig, Some(nodeKeys), Some(relKeys))
       val graphAfterSameSync = Neo4jPropertyGraphDataSource(neo4jConfig).graph(subGraphName)
 
       graphAfterSameSync.cypher("MATCH (n) RETURN n.id as id, n.name as name, labels(n) as labels").records.toMaps should equal(Bag(
@@ -264,7 +309,7 @@ class Neo4JGraphMergeTest extends CAPSTestSuite with CAPSNeo4jServerFixture with
           |CREATE (s)-[r:R {id: 1, name: 1}]->(e)
           |CREATE (s)-[r:R {id: 2}]->(e)
         """.stripMargin)
-      Neo4jGraphMerge.merge(subGraphName, delta, neo4jConfig, entityKeys)
+      Neo4jGraphMerge.merge(subGraphName, delta, neo4jConfig, Some(nodeKeys), Some(relKeys))
       val graphAfterDeltaSync = Neo4jPropertyGraphDataSource(neo4jConfig).graph(subGraphName)
 
       graphAfterDeltaSync.cypher("MATCH (n) RETURN n.id as id, n.name as name, n.bar as bar, labels(n) as labels").records.toMaps should equal(Bag(
@@ -279,18 +324,11 @@ class Neo4JGraphMergeTest extends CAPSTestSuite with CAPSNeo4jServerFixture with
     }
 
     it("creates indexes correctly") {
-      val newEntityKeys = EntityKeys(
-        Map(
-          "Person" -> Set("name", "bar"),
-          "Employee" -> Set("baz")
-        ),
-        Map(
-          "REL" -> Set("a")
-        )
-      )
+      val nodeKeys = Map("Person" -> Set("name", "bar"), "Employee" -> Set("baz"))
+      val relKeys = Map("REL" -> Set("a"))
 
       val subGraphName = GraphName("myGraph")
-      Neo4jGraphMerge.createIndexes(subGraphName, neo4jConfig, newEntityKeys)
+      Neo4jGraphMerge.createIndexes(subGraphName, neo4jConfig, nodeKeys)
 
       neo4jConfig.cypher("CALL db.constraints YIELD description").toSet shouldBe empty
 
@@ -305,12 +343,12 @@ class Neo4JGraphMergeTest extends CAPSTestSuite with CAPSNeo4jServerFixture with
   describe("error handling") {
 
     it("should throw when a node key is missing") {
-      a[SchemaException] should be thrownBy Neo4jGraphMerge.merge(initialGraph, neo4jConfig, EntityKeys(Map.empty))
+      a[SchemaException] should be thrownBy Neo4jGraphMerge.merge(entireGraphName, initialGraph, neo4jConfig)
     }
 
     it("should throw when a missing entity key is not only appearing with an implied label that has an entity key") {
-      val keys = EntityKeys(Map("Person" -> Set("id")))
-      Neo4jGraphMerge.createIndexes(neo4jConfig, keys)
+      val nodeKeys = Map("Person" -> Set("id"))
+      Neo4jGraphMerge.createIndexes(entireGraphName, neo4jConfig, nodeKeys)
       val graph = initGraph(
         """
           |CREATE (s:Person {id: 1, name: "bar"})
@@ -319,7 +357,7 @@ class Neo4JGraphMergeTest extends CAPSTestSuite with CAPSNeo4jServerFixture with
           |CREATE (s)-[r:R {id: 1}]->(e)
         """.stripMargin)
 
-      a[SchemaException] should be thrownBy Neo4jGraphMerge.merge(graph, neo4jConfig, keys)
+      a[SchemaException] should be thrownBy Neo4jGraphMerge.merge(entireGraphName, graph, neo4jConfig, Some(nodeKeys))
     }
 
   }
