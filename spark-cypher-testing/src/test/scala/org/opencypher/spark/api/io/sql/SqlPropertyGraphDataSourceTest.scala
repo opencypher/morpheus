@@ -478,14 +478,14 @@ class SqlPropertyGraphDataSourceTest extends CAPSTestSuite with HiveFixture with
 
     val ddlString =
       """
-        |CREATE GRAPH SCHEMA fooSchema
-        | LABEL (Foo {int: INTEGER, long: INTEGER})
+        |CREATE GRAPH TYPE fooType (
+        | Foo (int INTEGER, long INTEGER),
         | (Foo)
+        |)
         |
-        |CREATE GRAPH fooGraph WITH GRAPH SCHEMA fooSchema
-        |  NODE LABEL SETS (
-        |    (Foo) FROM ds1.db.int_long
-        |  )
+        |CREATE GRAPH fooGraph OF fooType (
+        | (Foo) FROM ds1.db.int_long
+        |)
         """.stripMargin
 
     val hiveDataSourceConfig = SqlDataSourceConfig(
