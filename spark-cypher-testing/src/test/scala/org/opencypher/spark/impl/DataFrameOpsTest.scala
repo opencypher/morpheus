@@ -28,8 +28,8 @@ package org.opencypher.spark.impl
 
 import org.apache.spark.sql.Row
 import org.apache.spark.sql.types._
-import org.opencypher.okapi.api.types.{CTInteger, CTList}
 import org.opencypher.okapi.testing.Bag
+import org.opencypher.okapi.testing.Bag._
 import org.opencypher.spark.impl.DataFrameOps._
 import org.opencypher.spark.testing.CAPSTestSuite
 import org.scalatest.Matchers
@@ -65,11 +65,10 @@ class DataFrameOpsTest extends CAPSTestSuite with Matchers with GeneratorDrivenP
       StructField("e", ArrayType(LongType, containsNull = false), nullable = false),
       StructField("f", StructType(Seq(
         StructField("foo", LongType, true),
-        StructField("bar", LongType, false)
-      )), nullable = true)
+        StructField("bar", LongType, true)
+      )), nullable = false)
     )))
 
-    import Bag._
     updatedDf.collect().toBag should equal(Bag(
       Row(1L, 2L, new ofLong(Array(42L)), new ofLong(Array(42L)), new ofLong(Array(42L)), Row(42L, 42L))
     ))

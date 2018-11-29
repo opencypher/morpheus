@@ -166,22 +166,9 @@ object DataFrameOps {
         converted.as(field.name)
       }
 
-      def convertSchema(field: StructField): StructField = {
-        val convertedType = field.dataType match {
-          case StructType(inner) => StructType(inner.map(convertSchema))
-          case ArrayType(IntegerType, nullable) => ArrayType(LongType, nullable)
-          case IntegerType => LongType
-          case other => other
-        }
-
-        StructField(field.name, convertedType, field.nullable)
-      }
-
       val convertedFields = df.schema.fields.map { field => convertColumns(field, df.col(field.name)) }
-      val convertedSchema = StructType(df.schema.fields.map(convertSchema))
-      val withConvertedFields = df.select(convertedFields: _*)
 
-      df.sqlContext.createDataFrame(withConvertedFields.rdd, convertedSchema)
+      df.select(convertedFields: _*)
     }
 
     /**
