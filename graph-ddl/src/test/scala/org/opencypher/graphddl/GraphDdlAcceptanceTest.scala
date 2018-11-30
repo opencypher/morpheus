@@ -330,7 +330,7 @@ class GraphDdlAcceptanceTest extends BaseTestSuite {
         .withSchemaPatterns(SchemaPattern("A", "TYPE_1", "B"))
     }
 
-    it("parses a correct schema from inlined graph type elements and mappings") {
+    it("creates implicit node/edge types from mappings") {
       val ddlDefinition: DdlDefinition = parse(
         s"""|SET SCHEMA a.b;
             |
@@ -357,7 +357,7 @@ class GraphDdlAcceptanceTest extends BaseTestSuite {
         .withRelationshipType("TYPE_1")
     }
 
-    it("parses a correct schema from graph type elements and mappings") {
+    it("resolves element types from parent graph type") {
       val ddlDefinition: DdlDefinition = parse(
         s"""|SET SCHEMA a.b;
             |
@@ -386,7 +386,7 @@ class GraphDdlAcceptanceTest extends BaseTestSuite {
         .withRelationshipType("TYPE_1")
     }
 
-    it("parses a correct schema from graph type elements and mappings with shadowed element types") {
+    it("resolves shadowed element types") {
       val ddlDefinition: DdlDefinition = parse(
         s"""|SET SCHEMA a.b;
             |
@@ -416,6 +416,28 @@ class GraphDdlAcceptanceTest extends BaseTestSuite {
         .withNodePropertyKeys("A", "B")("bar" -> CTString)
         .withRelationshipType("TYPE_1")
     }
+
+    it("resolves most local element type") {
+      val ddlDefinition: DdlDefinition = parse(
+        s"""|SET SCHEMA a.b;
+            |
+            |CREATE ELEMENT TYPE X (a STRING)
+            |
+            |CREATE GRAPH TYPE foo (
+            |  X (b STRING),
+            |  (X)
+            |)
+            |
+            |CREATE GRAPH $graphName OF foo (
+            |  X (c STRING),
+            |  (X) FROM x -- should be (c STRING)
+            |)
+            |""".stripMargin
+      )
+      GraphDdl(ddlDefinition).graphs(graphName).graphType shouldEqual Schema.empty
+        .withNodePropertyKeys("X")("c" -> CTString)
+    }
+
   }
 
   describe("Exception cases") {
