@@ -89,18 +89,25 @@ object GraphDdl {
       .validateDistinctBy(_.name, "Duplicate element type")
       .keyBy(_.name)
 
-    val graphTypeDefinitions = ddlParts.graphTypes
+    val graphTypes = ddlParts.graphTypes
       .validateDistinctBy(_.name, "Duplicate graph type name")
-      .map { graphTypeDefinition =>
-        tryWithContext(s"Error in graph type ${graphTypeDefinition.name}") {
-          toTypeParts(graphTypeDefinition.statements).validateDistinct
-        }
-        graphTypeDefinition
-      }.keyBy(_.name)
+      .keyBy(_.name)
+      .mapValues { graphType => tryWithContext(s"Error in graph type ${graphType.name}") {
+        // TODO: Create datastructure that represents validated and resolved graph type
+        // trigger validation but discard result
+        toOkapiSchema(elementTypeDefinitions, graphType.statements)
+        toTypeParts(graphType.statements).validateDistinct
+      }}
+      .view.force
 
     val graphs = ddlParts.graphs
       .validateDistinctBy(_.definition.name, "Duplicate graph name")
-      .map(graphDefinition => toGraph(graphTypeDefinitions, elementTypeDefinitions, graphDefinition))
+      .map { graph => tryWithContext(s"Error in graph ${graph.definition.name}") {
+        val graphType = graph.definition.maybeGraphTypeName
+          .map(name => graphTypes.getOrFail(name, "Unresolved graph type"))
+          .getOrElse(TypeParts())
+        toGraph(graphType, elementTypeDefinitions, graph)
+      }}
       .keyBy(_.name)
 
     GraphDdl(
@@ -234,49 +241,40 @@ object GraphDdl {
   }
 
   private def toGraph(
-    graphTypeDefinitions: Map[String, GraphTypeDefinition],
-    elementTypeDefinitions: Map[String, ElementTypeDefinition],
-    graph: GraphDefinitionWithContext): Graph =
-
-    tryWithContext(s"Error in graph: ${graph.definition.name}") {
+    typePartsFromGraphType: TypeParts,
+    globalElementTypes: Map[String, ElementTypeDefinition],
+    graph: GraphDefinitionWithContext): Graph = {
       // Merges type definitions from a graph type with the type definitions of a graph instance
-      def normalizeGraphDefinition(
-        graphDefinition: GraphDefinition,
-        graphTypes: Map[String, GraphTypeDefinition]
-      ): GraphParts = {
-        val maybeGraphType = graphDefinition.maybeGraphTypeName.map(name => graphTypes.getOrFail(name, "Unresolved graph type name"))
-
-        val initialGraphParts = toGraphParts(graphDefinition.statements)
+      val graphParts = {
+        val initialGraphParts = toGraphParts(graph.definition.statements)
         val typePartsFromGraph = toTypeParts(initialGraphParts.graphTypeStatements).validateDistinct
-        val typePartsFromGraphType = toTypeParts(maybeGraphType.toList.flatMap(_.statements)).validateDistinct
 
         // Shadowing
-        val allElementTypeStatements = elementTypeDefinitions ++ typePartsFromGraphType.elementTypes.keyBy(_.name) ++ typePartsFromGraph.elementTypes.keyBy(_.name)
+        val allElementTypeStatements = globalElementTypes ++ typePartsFromGraphType.elementTypes.keyBy(_.name) ++ typePartsFromGraph.elementTypes.keyBy(_.name)
         val allNodeTypeStatements = typePartsFromGraphType.nodeTypes.keyBy(_.elementTypes) ++ typePartsFromGraph.nodeTypes.keyBy(_.elementTypes) ++ initialGraphParts.nodeMappings.map(_.nodeType).keyBy(_.elementTypes)
         val allRelTypeStatements = typePartsFromGraphType.relTypes.keyBy(_.elementType) ++ typePartsFromGraph.relTypes.keyBy(_.elementType) ++ initialGraphParts.relMappings.map(_.relType).keyBy(_.elementType)
         val allPatternStatements = typePartsFromGraph.patterns ++ typePartsFromGraphType.patterns
 
         val allGraphTypeStatements =
           allElementTypeStatements.values ++
-          allNodeTypeStatements.values ++
-          allRelTypeStatements.values ++
-          allPatternStatements
+            allNodeTypeStatements.values ++
+            allRelTypeStatements.values ++
+            allPatternStatements
 
         initialGraphParts.copy(graphTypeStatements = allGraphTypeStatements.toList)
       }
 
-      val graphParts = normalizeGraphDefinition(graph.definition, graphTypeDefinitions)
-      val okapiSchema = toOkapiSchema(elementTypeDefinitions, graphParts.graphTypeStatements)
+      val okapiSchema = toOkapiSchema(globalElementTypes, graphParts.graphTypeStatements)
 
       Graph(
         name = GraphName(graph.definition.name),
         graphType = okapiSchema,
-        // TODO: allow multiple node mappings with same node type and view + remove the validate
         nodeToViewMappings = graphParts.nodeMappings
           .flatMap(nm => toNodeToViewMappings(okapiSchema, graph.maybeSetSchema, nm))
           .validateDistinctBy(_.key, "Duplicate mapping")
           .keyBy(_.key),
         edgeToViewMappings = graphParts.relMappings
+          // TODO: Validate distinct edge mappings
           .flatMap(em => toEdgeToViewMappings(okapiSchema, graph.maybeSetSchema, em))
       )
     }
