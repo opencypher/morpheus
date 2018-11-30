@@ -144,7 +144,6 @@ CREATE GRAPH TYPE NORTHWIND_NAIVE (
     (OrderDetails),
     (Category),
     (Region),
-    (Employee),
     (Order),
     (Shipper),
     (CustomerDemographic),
