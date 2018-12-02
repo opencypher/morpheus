@@ -36,6 +36,28 @@ import org.scalatest.DoNotDiscover
 @DoNotDiscover
 class FunctionsBehaviour extends CAPSTestSuite with DefaultGraphInit {
 
+  describe("toUpper") {
+    it("toUpper()") {
+      val result = caps.cypher("Return toUpper('hello') as upperCased")
+      result.records.toMaps should equal(
+        Bag(
+          CypherMap("upperCased" -> "HELLO")
+        )
+      )
+    }
+  }
+
+  describe("toLower") {
+    it("toLower()") {
+      val result = caps.cypher("Return toLower('HELLO') as lowerCased")
+      result.records.toMaps should equal(
+        Bag(
+          CypherMap("lowerCased" -> "hello")
+        )
+      )
+    }
+  }
+
   describe("trim") {
 
     it("trim()") {
@@ -788,190 +810,190 @@ class FunctionsBehaviour extends CAPSTestSuite with DefaultGraphInit {
     }
   }
 
-    describe("numeric functions") {
+  describe("numeric functions") {
 
-      describe("abs()") {
+    describe("abs()") {
 
-        it("on float value") {
+      it("on float value") {
 
-          val result = caps.cypher("RETURN abs(-12.96) AS res")
+        val result = caps.cypher("RETURN abs(-12.96) AS res")
 
-          result.records.toMaps should equal(
-            Bag(
-              CypherMap("res" -> 12.96)
-            )
+        result.records.toMaps should equal(
+          Bag(
+            CypherMap("res" -> 12.96)
           )
-        }
-
-        it("on int value") {
-          val result = caps.cypher("RETURN abs(-23) AS res")
-
-          result.records.toMaps should equal(
-            Bag(
-              CypherMap("res" -> 23)
-            )
-          )
-        }
-
-        it("on null value") {
-          val result = caps.cypher("RETURN abs(null) AS res")
-
-          result.records.toMaps should equal(
-            Bag(
-              CypherMap("res" -> null)
-            )
-          )
-        }
+        )
       }
 
-      describe("ceil()") {
+      it("on int value") {
+        val result = caps.cypher("RETURN abs(-23) AS res")
 
-        it("on float value") {
-
-          val result = caps.cypher("RETURN ceil(0.1) AS res")
-
-          result.records.toMaps should equal(
-            Bag(
-              CypherMap("res" -> 1.0)
-            )
+        result.records.toMaps should equal(
+          Bag(
+            CypherMap("res" -> 23)
           )
-        }
-
-        it("on int value") {
-          val result = caps.cypher("RETURN ceil(1) AS res")
-
-          result.records.toMaps should equal(
-            Bag(
-              CypherMap("res" -> 1.0)
-            )
-          )
-        }
-
-        it("on null value") {
-          val result = caps.cypher("RETURN ceil(null) AS res")
-
-          result.records.toMaps should equal(
-            Bag(
-              CypherMap("res" -> null)
-            )
-          )
-        }
+        )
       }
 
-      describe("floor()") {
+      it("on null value") {
+        val result = caps.cypher("RETURN abs(null) AS res")
 
-        it("on float value") {
-
-          val result = caps.cypher("RETURN floor(1.9) AS res")
-
-          result.records.toMaps should equal(
-            Bag(
-              CypherMap("res" -> 1.0)
-            )
+        result.records.toMaps should equal(
+          Bag(
+            CypherMap("res" -> null)
           )
-        }
-
-        it("on int value") {
-          val result = caps.cypher("RETURN floor(1) AS res")
-
-          result.records.toMaps should equal(
-            Bag(
-              CypherMap("res" -> 1.0)
-            )
-          )
-        }
-
-        it("on null value") {
-          val result = caps.cypher("RETURN floor(null) AS res")
-
-          result.records.toMaps should equal(
-            Bag(
-              CypherMap("res" -> null)
-            )
-          )
-        }
+        )
       }
-
-      describe("rand()") {
-        it("returns rand") {
-
-          val result = caps.cypher("RETURN rand() AS res")
-
-          val res = result.records.toMaps.head._1("res").cast[Double]
-          res >= 0.0 shouldBe true
-          res < 1.0 shouldBe true
-        }
-      }
-
-      describe("round()") {
-
-        it("on float value") {
-
-          val result = caps.cypher("RETURN round(1.9) AS res")
-
-          result.records.toMaps should equal(
-            Bag(
-              CypherMap("res" -> 2.0)
-            )
-          )
-        }
-
-        it("on int value") {
-          val result = caps.cypher("RETURN round(1) AS res")
-
-          result.records.toMaps should equal(
-            Bag(
-              CypherMap("res" -> 1.0)
-            )
-          )
-        }
-
-        it("on null value") {
-          val result = caps.cypher("RETURN round(null) AS res")
-
-          result.records.toMaps should equal(
-            Bag(
-              CypherMap("res" -> null)
-            )
-          )
-        }
-      }
-
-      describe("sign()") {
-
-        it("on float value") {
-
-          val result = caps.cypher("RETURN sign(-1.1) AS res")
-
-          result.records.toMaps should equal(
-            Bag(
-              CypherMap("res" -> -1)
-            )
-          )
-        }
-
-        it("on int value") {
-          val result = caps.cypher("RETURN sign(1) AS res")
-
-          result.records.toMaps should equal(
-            Bag(
-              CypherMap("res" -> 1)
-            )
-          )
-        }
-
-        it("on null value") {
-          val result = caps.cypher("RETURN sign(null) AS res")
-
-          result.records.toMaps should equal(
-            Bag(
-              CypherMap("res" -> null)
-            )
-          )
-        }
-      }
-
     }
+
+    describe("ceil()") {
+
+      it("on float value") {
+
+        val result = caps.cypher("RETURN ceil(0.1) AS res")
+
+        result.records.toMaps should equal(
+          Bag(
+            CypherMap("res" -> 1.0)
+          )
+        )
+      }
+
+      it("on int value") {
+        val result = caps.cypher("RETURN ceil(1) AS res")
+
+        result.records.toMaps should equal(
+          Bag(
+            CypherMap("res" -> 1.0)
+          )
+        )
+      }
+
+      it("on null value") {
+        val result = caps.cypher("RETURN ceil(null) AS res")
+
+        result.records.toMaps should equal(
+          Bag(
+            CypherMap("res" -> null)
+          )
+        )
+      }
+    }
+
+    describe("floor()") {
+
+      it("on float value") {
+
+        val result = caps.cypher("RETURN floor(1.9) AS res")
+
+        result.records.toMaps should equal(
+          Bag(
+            CypherMap("res" -> 1.0)
+          )
+        )
+      }
+
+      it("on int value") {
+        val result = caps.cypher("RETURN floor(1) AS res")
+
+        result.records.toMaps should equal(
+          Bag(
+            CypherMap("res" -> 1.0)
+          )
+        )
+      }
+
+      it("on null value") {
+        val result = caps.cypher("RETURN floor(null) AS res")
+
+        result.records.toMaps should equal(
+          Bag(
+            CypherMap("res" -> null)
+          )
+        )
+      }
+    }
+
+    describe("rand()") {
+      it("returns rand") {
+
+        val result = caps.cypher("RETURN rand() AS res")
+
+        val res = result.records.toMaps.head._1("res").cast[Double]
+        res >= 0.0 shouldBe true
+        res < 1.0 shouldBe true
+      }
+    }
+
+    describe("round()") {
+
+      it("on float value") {
+
+        val result = caps.cypher("RETURN round(1.9) AS res")
+
+        result.records.toMaps should equal(
+          Bag(
+            CypherMap("res" -> 2.0)
+          )
+        )
+      }
+
+      it("on int value") {
+        val result = caps.cypher("RETURN round(1) AS res")
+
+        result.records.toMaps should equal(
+          Bag(
+            CypherMap("res" -> 1.0)
+          )
+        )
+      }
+
+      it("on null value") {
+        val result = caps.cypher("RETURN round(null) AS res")
+
+        result.records.toMaps should equal(
+          Bag(
+            CypherMap("res" -> null)
+          )
+        )
+      }
+    }
+
+    describe("sign()") {
+
+      it("on float value") {
+
+        val result = caps.cypher("RETURN sign(-1.1) AS res")
+
+        result.records.toMaps should equal(
+          Bag(
+            CypherMap("res" -> -1)
+          )
+        )
+      }
+
+      it("on int value") {
+        val result = caps.cypher("RETURN sign(1) AS res")
+
+        result.records.toMaps should equal(
+          Bag(
+            CypherMap("res" -> 1)
+          )
+        )
+      }
+
+      it("on null value") {
+        val result = caps.cypher("RETURN sign(null) AS res")
+
+        result.records.toMaps should equal(
+          Bag(
+            CypherMap("res" -> null)
+          )
+        )
+      }
+    }
+
+  }
 
   describe("range") {
     it("can compute a range from literals") {
@@ -1104,7 +1126,7 @@ class FunctionsBehaviour extends CAPSTestSuite with DefaultGraphInit {
 
   describe("negative tests") {
     it("should give a good error message on unimplemented functions") {
-      the [NotImplementedException] thrownBy {
+      the[NotImplementedException] thrownBy {
         caps.cypher("RETURN tail([1, 2])")
       } should have message "The expression FunctionInvocation(Namespace(List()),FunctionName(tail),false,Vector(Parameter(  AUTOLIST0,List<Any>))) [line 1, column 8 (offset: 7)] is not supported by the system"
     }
