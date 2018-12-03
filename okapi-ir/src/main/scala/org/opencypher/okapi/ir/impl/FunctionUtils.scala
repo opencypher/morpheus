@@ -63,6 +63,8 @@ object FunctionUtils {
         case functions.Trim => Trim(expr.head)(cypherType)
         case functions.LTrim => LTrim(expr.head)(cypherType)
         case functions.RTrim => RTrim(expr.head)(cypherType)
+        case functions.ToUpper => ToUpper(expr.head) (cypherType)
+        case functions.ToLower => ToLower(expr.head) (cypherType)
         case functions.Properties => Properties(expr.head)(cypherType)
 
         // Logarithmic functions

@@ -373,21 +373,21 @@ final case class IsNotNull(expr: Expr)(val cypherType: CypherType = CTWildcard) 
 final case class StartsWith(lhs: Expr, rhs: Expr) extends BinaryExpr {
   override def op: String = "StartsWith"
   override type This = StartsWith
-  override def cypherType: CypherType = if((lhs.cypherType join rhs.cypherType).isNullable) CTBoolean.nullable else CTBoolean
+  override def cypherType: CypherType = if ((lhs.cypherType join rhs.cypherType).isNullable) CTBoolean.nullable else CTBoolean
   override def withCypherType(ct: CypherType): StartsWith.this.type = this
 }
 
 final case class EndsWith(lhs: Expr, rhs: Expr) extends BinaryExpr {
   override def op: String = "EndsWith"
   override type This = EndsWith
-  override def cypherType: CypherType = if((lhs.cypherType join rhs.cypherType).isNullable) CTBoolean.nullable else CTBoolean
+  override def cypherType: CypherType = if ((lhs.cypherType join rhs.cypherType).isNullable) CTBoolean.nullable else CTBoolean
   override def withCypherType(ct: CypherType): EndsWith = this
 }
 
 final case class Contains(lhs: Expr, rhs: Expr) extends BinaryExpr {
   override def op: String = "Contains"
   override type This = Contains
-  override def cypherType: CypherType = if((lhs.cypherType join rhs.cypherType).isNullable) CTBoolean.nullable else CTBoolean
+  override def cypherType: CypherType = if ((lhs.cypherType join rhs.cypherType).isNullable) CTBoolean.nullable else CTBoolean
   override def withCypherType(ct: CypherType): Contains = this
 }
 
@@ -417,7 +417,7 @@ final case class Equals(lhs: Expr, rhs: Expr)(val cypherType: CypherType = CTWil
 final case class RegexMatch(lhs: Expr, rhs: Expr) extends BinaryExpr {
   override def op: String = "=~"
   override type This = RegexMatch
-  override def cypherType: CypherType = if((lhs.cypherType join rhs.cypherType).isNullable) CTBoolean.nullable else CTBoolean
+  override def cypherType: CypherType = if ((lhs.cypherType join rhs.cypherType).isNullable) CTBoolean.nullable else CTBoolean
   override def withCypherType(ct: CypherType): RegexMatch = this
 }
 
@@ -685,6 +685,20 @@ final case class RTrim(expr: Expr)(val cypherType: CypherType = CTWildcard) exte
   override type This = RTrim
 
   override def withCypherType(ct: CypherType): RTrim = copy()(ct)
+}
+
+final case class ToUpper(expr: Expr)(val cypherType: CypherType = CTWildcard) extends UnaryFunctionExpr {
+
+  override type This = ToUpper
+
+  override def withCypherType(ct: CypherType): ToUpper = copy()(ct)
+}
+
+final case class ToLower(expr: Expr)(val cypherType: CypherType = CTWildcard) extends UnaryFunctionExpr {
+
+  override type This = ToLower
+
+  override def withCypherType(ct: CypherType): ToLower = copy()(ct)
 }
 
 final case class Properties(expr: Expr)(val cypherType: CypherType = CTWildcard) extends UnaryFunctionExpr {

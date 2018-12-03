@@ -289,6 +289,9 @@ object SparkSQLExprMapper {
         case LTrim(str) => functions.ltrim(str.asSparkSQLExpr)
         case RTrim(str) => functions.rtrim(str.asSparkSQLExpr)
 
+        case ToUpper(str) => functions.upper(str.asSparkSQLExpr)
+        case ToLower(str) => functions.lower(str.asSparkSQLExpr)
+
         case Range(from, to, maybeStep) =>
           val stepCol = maybeStep.map(_.asSparkSQLExpr).getOrElse(ONE_LIT)
           rangeUdf(from.asSparkSQLExpr, to.asSparkSQLExpr, stepCol)
