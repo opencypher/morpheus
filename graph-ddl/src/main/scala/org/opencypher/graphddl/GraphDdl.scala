@@ -157,14 +157,14 @@ object GraphDdl {
         .foldLeftOver(allNodeTypes) { case (schema, (labels, properties)) =>
           schema.withNodePropertyKeys(labels, properties)
         }
-        .foldLeftOver(allNodeTypes.keySet.flatten.map(resolveElementType)) {
-          case (schema, eType) => eType.maybeKey.fold(schema)(key => schema.withNodeKey(eType.name, key._2))
+        .foldLeftOver(allNodeTypes.keySet.flatten.map(resolveElementType)) { case (schema, eType) =>
+          eType.maybeKey.fold(schema)(key => schema.withNodeKey(eType.name, key._2))
         }
-        .foldLeftOver(allEdgeTypes) {
-          case (schema, (label, properties)) => schema.withRelationshipPropertyKeys(label, properties)
+        .foldLeftOver(allEdgeTypes) { case (schema, (label, properties)) =>
+          schema.withRelationshipPropertyKeys(label, properties)
         }
-        .foldLeftOver(allEdgeTypes.keySet.map(resolveElementType)) {
-          case (schema, eType) => eType.maybeKey.fold(schema)(key => schema.withNodeKey(eType.name, key._2))
+        .foldLeftOver(allEdgeTypes.keySet.map(resolveElementType)) { case (schema, eType) =>
+          eType.maybeKey.fold(schema)(key => schema.withNodeKey(eType.name, key._2))
         }
         .withSchemaPatterns(allPatterns.toSeq: _*)
     }
