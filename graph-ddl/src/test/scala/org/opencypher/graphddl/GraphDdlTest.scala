@@ -225,6 +225,17 @@ class GraphDdlTest extends FunSpec with Matchers {
     e.getFullMessage should (include("fooSchema") and include("Person3") and include("Person4"))
   }
 
+  it("fails on unresolved labels in mapping") {
+    val e = the [GraphDdlException] thrownBy GraphDdl("""
+      |CREATE GRAPH fooGraph (
+      | Person1,
+      | Person2,
+      | (Person3, Person4) FROM x
+      |)
+    """.stripMargin)
+    e.getFullMessage should (include("fooGraph") and include("Person3") and include("Person4"))
+  }
+
   it("fails on incompatible property types") {
     val e = the [GraphDdlException] thrownBy GraphDdl("""
       |CREATE GRAPH TYPE fooSchema (
@@ -234,7 +245,7 @@ class GraphDdlTest extends FunSpec with Matchers {
       |)
     """.stripMargin)
     e.getFullMessage should (
-      include("fooSchema") and include("Person1") and include("Person2)") and include("age") and include("STRING")  and include("INTEGER")
+      include("fooSchema") and include("Person1") and include("Person2") and include("age") and include("STRING")  and include("INTEGER")
     )
   }
 
