@@ -48,22 +48,40 @@ object GraphDdl {
     graphs: List[GraphDefinitionWithContext] = List.empty
   )
 
+  private[graphddl] object DdlParts {
+    def apply(statements: List[DdlStatement]): DdlParts = {
+      val result = statements.foldLeft(DdlParts()) {
+        case (parts, s: SetSchemaDefinition)   => parts.copy(maybeSetSchema = Some(s))
+        case (parts, s: ElementTypeDefinition) => parts.copy(elementTypes = parts.elementTypes :+ s)
+        case (parts, s: GraphTypeDefinition)   => parts.copy(graphTypes = parts.graphTypes :+ s)
+        case (parts, s: GraphDefinition)       => parts.copy(graphs = parts.graphs :+ GraphDefinitionWithContext(s, parts.maybeSetSchema))
+      }
+      result.elementTypes.validateDistinctBy(_.name, "Duplicate element type")
+      result.graphTypes.validateDistinctBy(_.name, "Duplicate graph type")
+      result.graphs.validateDistinctBy(_.definition.name, "Duplicate graph")
+      result
+    }
+  }
   private[graphddl] case class TypeParts(
     elementTypes: List[ElementTypeDefinition] = List.empty,
     nodeTypes: List[NodeTypeDefinition] = List.empty,
     relTypes: List[RelationshipTypeDefinition] = List.empty,
     patterns: List[PatternDefinition] = List.empty
-  ) {
+  )
 
-    def validateDistinct: TypeParts = {
-      elementTypes.validateDistinctBy(_.name, "Duplicate element type")
-      nodeTypes.validateDistinctBy(_.elementTypes, "Duplicate node type")
-      relTypes.validateDistinctBy(_.elementType, "Duplicate relationship type")
-      this
+  private[graphddl] object TypeParts {
+    def apply(statements: List[GraphTypeStatement]): TypeParts = {
+      val result = statements.foldLeft(TypeParts()) {
+        case (parts, s: ElementTypeDefinition)      => parts.copy(elementTypes = parts.elementTypes :+ s)
+        case (parts, s: NodeTypeDefinition)         => parts.copy(nodeTypes = parts.nodeTypes :+ s)
+        case (parts, s: RelationshipTypeDefinition) => parts.copy(relTypes = parts.relTypes :+ s)
+        case (parts, s: PatternDefinition)          => parts.copy(patterns = parts.patterns :+ s)
+      }
+      result.elementTypes.validateDistinctBy(_.name, "Duplicate element type")
+      result.nodeTypes.validateDistinctBy(_.elementTypes, "Duplicate node type")
+      result.relTypes.validateDistinctBy(_.elementType, "Duplicate relationship type")
+      result
     }
-
-    def allStatements: List[GraphTypeStatement] =
-      elementTypes ++ nodeTypes ++ relTypes ++ patterns
   }
 
   private[graphddl] case class GraphParts(
@@ -72,16 +90,26 @@ object GraphDdl {
     relMappings: List[RelationshipMappingDefinition] = List.empty
   )
 
-  case class GraphDefinitionWithContext(
+  private[graphddl] object GraphParts {
+    def apply(mappings: List[GraphStatement]): GraphParts =
+      mappings.foldLeft(GraphParts()) {
+        case (parts, s: GraphTypeStatement)            => parts.copy(graphTypeStatements = parts.graphTypeStatements :+ s)
+        case (parts, s: NodeMappingDefinition)         => parts.copy(nodeMappings = parts.nodeMappings :+ s)
+        case (parts, s: RelationshipMappingDefinition) => parts.copy(relMappings = parts.relMappings :+ s)
+      }
+  }
+
+  private[graphddl] case class GraphDefinitionWithContext(
     definition: GraphDefinition,
     maybeSetSchema: Option[SetSchemaDefinition] = None
   )
 
-  def apply(ddl: String): GraphDdl = GraphDdl(GraphDdlParser.parse(ddl))
+  def apply(ddl: String): GraphDdl =
+    GraphDdl(GraphDdlParser.parse(ddl))
 
   def apply(ddl: DdlDefinition): GraphDdl = {
 
-    val ddlParts = toDdlParts(ddl.statements)
+    val ddlParts = DdlParts(ddl.statements)
 
     val global = GraphType().push(ddlParts.elementTypes)
 
@@ -108,30 +136,10 @@ object GraphDdl {
     )
   }
   def tryWithGraphType[T](name: String)(block: => T): T =
-    tryWithContext(s"Error in graph type $name")(block)
+    tryWithContext(s"Error in graph type: $name")(block)
 
   def tryWithGraph[T](name: String)(block: => T): T =
-    tryWithContext(s"Error in graph $name")(block)
-
-  private[graphddl] def toDdlParts(statements: List[DdlStatement]) = statements.foldLeft(DdlParts()) {
-    case (parts, s: SetSchemaDefinition)   => parts.copy(maybeSetSchema = Some(s))
-    case (parts, s: ElementTypeDefinition) => parts.copy(elementTypes = parts.elementTypes :+ s)
-    case (parts, s: GraphTypeDefinition)   => parts.copy(graphTypes = parts.graphTypes :+ s)
-    case (parts, s: GraphDefinition)       => parts.copy(graphs = parts.graphs :+ GraphDefinitionWithContext(s, parts.maybeSetSchema))
-  }
-
-  private[graphddl] def toTypeParts(statements: List[GraphTypeStatement]) = statements.foldLeft(TypeParts()) {
-    case (parts, s: ElementTypeDefinition)      => parts.copy(elementTypes = parts.elementTypes :+ s)
-    case (parts, s: NodeTypeDefinition)         => parts.copy(nodeTypes = parts.nodeTypes :+ s)
-    case (parts, s: RelationshipTypeDefinition) => parts.copy(relTypes = parts.relTypes :+ s)
-    case (parts, s: PatternDefinition)          => parts.copy(patterns = parts.patterns :+ s)
-  }
-
-  private[graphddl] def toGraphParts(mappings: List[GraphStatement]) = mappings.foldLeft(GraphParts()) {
-    case (parts, s: GraphTypeStatement)            => parts.copy(graphTypeStatements = parts.graphTypeStatements :+ s)
-    case (parts, s: NodeMappingDefinition)         => parts.copy(nodeMappings = parts.nodeMappings :+ s)
-    case (parts, s: RelationshipMappingDefinition) => parts.copy(relMappings = parts.relMappings :+ s)
-  }
+    tryWithContext(s"Error in graph: $name")(block)
 
   private[graphddl] case class GraphType(
     parent: Option[GraphType] = None,
@@ -171,7 +179,7 @@ object GraphDdl {
 
     /** Validates, resolves and pushes the statements to form a child GraphType */
     def push(statements: List[GraphTypeStatement]): GraphType = {
-      val parts = toTypeParts(statements).validateDistinct
+      val parts = TypeParts(statements)
 
       val local = GraphType(Some(this), parts.elementTypes.keyBy(_.name))
 
@@ -207,10 +215,10 @@ object GraphDdl {
     }
 
     private def tryWithNode[T](labels: Set[String])(block: => T): T =
-      tryWithContext(s"Error in node type (${labels.mkString(",")})")(block)
+      tryWithContext(s"Error in node type: (${labels.mkString(",")})")(block)
 
     private def tryWithRel[T](label: String)(block: => T): T =
-      tryWithContext(s"Error in relationship type [$label]")(block)
+      tryWithContext(s"Error in relationship type: [$label]")(block)
 
     private def mergeProperties(elementTypes: Set[ElementTypeDefinition]): PropertyKeys.PropertyKeys = {
       elementTypes
@@ -231,7 +239,7 @@ object GraphDdl {
     parent: GraphType,
     graph: GraphDefinitionWithContext
   ): Graph = {
-    val parts = toGraphParts(graph.definition.statements)
+    val parts = GraphParts(graph.definition.statements)
     val graphType = parent
       .push(parts.graphTypeStatements)
       .push(parts.nodeMappings.map(_.nodeType) ++ parts.relMappings.map(_.relType))
