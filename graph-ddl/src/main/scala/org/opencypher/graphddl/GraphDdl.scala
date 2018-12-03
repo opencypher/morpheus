@@ -28,14 +28,12 @@ package org.opencypher.graphddl
 
 import org.opencypher.graphddl.GraphDdl._
 import org.opencypher.graphddl.GraphDdlAst.{ColumnIdentifier, PropertyToColumnMappingDefinition}
-import org.opencypher.graphddl.GraphDdlException.{malformed, tryWithContext, unresolved}
-import org.opencypher.graphddl.{GraphDdlException => Err}
+import org.opencypher.graphddl.GraphDdlException._
 import org.opencypher.okapi.api.graph.GraphName
 import org.opencypher.okapi.api.schema.{PropertyKeys, Schema, SchemaPattern}
 
 import scala.language.higherKinds
 
-// TODO: validate that no duplicate node types / rel types are defined (not sure if necessary though)
 object GraphDdl {
 
   type NodeType = Set[String]
@@ -58,9 +56,9 @@ object GraphDdl {
   ) {
 
     def validateDistinct: TypeParts = {
-      elementTypes.validateDistinctBy(_.name, "Duplicate element types")
-      nodeTypes.validateDistinctBy(_.elementTypes, "Duplicate node types")
-      relTypes.validateDistinctBy(_.elementType, "Duplicate relationship types")
+      elementTypes.validateDistinctBy(_.name, "Duplicate element type")
+      nodeTypes.validateDistinctBy(_.elementTypes, "Duplicate node type")
+      relTypes.validateDistinctBy(_.elementType, "Duplicate relationship type")
       this
     }
 
@@ -85,28 +83,23 @@ object GraphDdl {
 
     val ddlParts = toDdlParts(ddl.statements)
 
-    val elementTypeDefinitions: Map[String, ElementTypeDefinition] = ddlParts.elementTypes
-      .validateDistinctBy(_.name, "Duplicate element type")
-      .keyBy(_.name)
+    val global = GraphType().push(ddlParts.elementTypes)
 
     val graphTypes = ddlParts.graphTypes
       .validateDistinctBy(_.name, "Duplicate graph type name")
       .keyBy(_.name)
-      .mapValues { graphType => tryWithContext(s"Error in graph type ${graphType.name}") {
-        // TODO: Create datastructure that represents validated and resolved graph type
-        // trigger validation but discard result
-        toOkapiSchema(elementTypeDefinitions, graphType.statements)
-        toTypeParts(graphType.statements).validateDistinct
+      .mapValues { graphType => tryWithGraphType(graphType.name) {
+        global.push(graphType.statements)
       }}
       .view.force
 
     val graphs = ddlParts.graphs
       .validateDistinctBy(_.definition.name, "Duplicate graph name")
-      .map { graph => tryWithContext(s"Error in graph ${graph.definition.name}") {
+      .map { graph => tryWithGraph(graph.definition.name) {
         val graphType = graph.definition.maybeGraphTypeName
           .map(name => graphTypes.getOrFail(name, "Unresolved graph type"))
-          .getOrElse(TypeParts())
-        toGraph(graphType, elementTypeDefinitions, graph)
+          .getOrElse(global)
+        toGraph(graphType, graph)
       }}
       .keyBy(_.name)
 
@@ -114,6 +107,11 @@ object GraphDdl {
       graphs = graphs
     )
   }
+  def tryWithGraphType[T](name: String)(block: => T): T =
+    tryWithContext(s"Error in graph type $name")(block)
+
+  def tryWithGraph[T](name: String)(block: => T): T =
+    tryWithContext(s"Error in graph $name")(block)
 
   private[graphddl] def toDdlParts(statements: List[DdlStatement]) = statements.foldLeft(DdlParts()) {
     case (parts, s: SetSchemaDefinition)   => parts.copy(maybeSetSchema = Some(s))
@@ -135,151 +133,123 @@ object GraphDdl {
     case (parts, s: RelationshipMappingDefinition) => parts.copy(relMappings = parts.relMappings :+ s)
   }
 
-  private[graphddl] def toOkapiSchema(
-    elementTypeDefinitions: Map[String, ElementTypeDefinition],
-    graphTypeStatements: List[GraphTypeStatement]
-  ): Schema = {
+  private[graphddl] case class GraphType(
+    parent: Option[GraphType] = None,
+    elementTypes: Map[String, ElementTypeDefinition] = Map(),
+    nodeTypes: Map[Set[String], PropertyKeys.PropertyKeys] = Map(),
+    edgeTypes: Map[String, PropertyKeys.PropertyKeys] = Map(),
+    patterns: Set[SchemaPattern] = Set()
+  ) {
+    lazy val allElementTypes: Map[String, ElementTypeDefinition] =
+      parent.map(_.allElementTypes).getOrElse(Map()) ++ elementTypes
 
-    val parts = toTypeParts(graphTypeStatements)
+    lazy val allNodeTypes: Map[Set[String], PropertyKeys.PropertyKeys] =
+      parent.map(_.allNodeTypes).getOrElse(Map()) ++ nodeTypes
 
-    val localElementTypes = parts.elementTypes
-      .validateDistinctBy(_.name, "Duplicate element type")
-      .keyBy(_.name)
-    val labelDefinitions: Map[String, ElementTypeDefinition] = elementTypeDefinitions ++ localElementTypes
+    lazy val allEdgeTypes: Map[String, PropertyKeys.PropertyKeys] =
+      parent.map(_.allEdgeTypes).getOrElse(Map()) ++ edgeTypes
 
-    // Nodes
+    lazy val allPatterns: Set[SchemaPattern] =
+      parent.map(_.allPatterns).getOrElse(Set()) ++ patterns
 
-    val nodeDefinitionsFromPatterns = parts.patterns.flatMap(pattern =>
-      pattern.sourceNodeTypes ++ pattern.targetNodeTypes)
-
-    val allNodeDefinitions = parts.nodeTypes.map(_.elementTypes) ++ nodeDefinitionsFromPatterns
-    val schemaWithNodes = schemaForNodeDefinitions(labelDefinitions, allNodeDefinitions.toSet)
-
-    // Relationships
-
-    val relDefinitionsFromPatterns = parts.patterns.flatMap(_.relTypes)
-    val allRelDefinitions = relDefinitionsFromPatterns ++ parts.relTypes.map(_.elementType)
-
-    val schemaWithRels = schemaForRelationshipDefinitions(labelDefinitions, allRelDefinitions.toSet)
-
-    // Schema patterns
-
-    schemaWithSchemaPatterns(parts.patterns.toSet, schemaWithNodes ++ schemaWithRels)
-  }
-
-  private def schemaForNodeDefinitions(
-    elementTypeDefinitions: Map[String, ElementTypeDefinition],
-    nodeDefinitions: Set[Set[String]]
-  ): Schema = {
-    val schemaWithNodes = nodeDefinitions.foldLeft(Schema.empty) {
-      case (currentSchema, labelCombo) =>
-        tryWithContext(s"Error for label combination (${labelCombo.mkString(",")})") {
-          labelCombo
-            .flatMap(label => elementTypeDefinitions.getOrFail(label, "Unresolved element type").properties)
-            .groupBy { case (key, _) => key }.mapValues(_.map { case (key, _) => key })
-
-          val comboProperties = labelCombo.foldLeft(PropertyKeys.empty) { case (currProps, label) =>
-            val labelProperties = elementTypeDefinitions.getOrFail(label, "Unresolved element type").properties
-            currProps.keySet.intersect(labelProperties.keySet).foreach { key =>
-              if (currProps(key) != labelProperties(key)) {
-                Err.incompatibleTypes(
-                  s"""|Incompatible property types for property key: $key
-                      |Conflicting types: ${currProps(key)} and ${labelProperties(key)}
-                 """.stripMargin)
-              }
-            }
-            currProps ++ labelProperties
-          }
-          currentSchema.withNodePropertyKeys(labelCombo, comboProperties)
+    lazy val asOkapiSchema: Schema = {
+      Schema.empty
+        .foldLeftOver(allNodeTypes) { case (schema, (labels, properties)) =>
+          schema.withNodePropertyKeys(labels, properties)
         }
-    }
-
-    val usedLabels = nodeDefinitions.flatten
-    usedLabels.foldLeft(schemaWithNodes) {
-      case (currentSchema, label) =>
-        elementTypeDefinitions(label).maybeKey match {
-          case Some((_, keys)) => currentSchema.withNodeKey(label, keys)
-          case None => currentSchema
+        .foldLeftOver(allNodeTypes.keySet.flatten.map(resolveElementType)) {
+          case (schema, eType) => eType.maybeKey.fold(schema)(key => schema.withNodeKey(eType.name, key._2))
         }
-    }
-  }
-
-  private def schemaForRelationshipDefinitions(
-    elementTypeDefinitions: Map[String, ElementTypeDefinition],
-    relDefinitions: Set[String]
-  ): Schema = {
-    val schemaWithRelationships = relDefinitions.foldLeft(Schema.empty) {
-      case (currentSchema, relType) =>
-        currentSchema.withRelationshipPropertyKeys(
-          typ = relType,
-          keys = elementTypeDefinitions.getOrFail(relType, "Unresolved element type").properties)
-    }
-
-    relDefinitions.foldLeft(schemaWithRelationships) {
-      case (currentSchema, relType) =>
-        elementTypeDefinitions(relType).maybeKey match {
-          case Some((_, keys)) => currentSchema.withRelationshipKey(relType, keys)
-          case None => currentSchema
+        .foldLeftOver(allEdgeTypes) {
+          case (schema, (label, properties)) => schema.withRelationshipPropertyKeys(label, properties)
         }
+        .foldLeftOver(allEdgeTypes.keySet.map(resolveElementType)) {
+          case (schema, eType) => eType.maybeKey.fold(schema)(key => schema.withNodeKey(eType.name, key._2))
+        }
+        .withSchemaPatterns(allPatterns.toSeq: _*)
     }
-  }
 
-  private def schemaWithSchemaPatterns(
-    patternDefinitions: Set[PatternDefinition],
-    schemaWithNodesAndRelationships: Schema
-  ): Schema = {
-    patternDefinitions.foldLeft(schemaWithNodesAndRelationships) {
-      // TODO: extend OKAPI schema with cardinality constraints
-      case (currentSchema, PatternDefinition(sourceLabelCombinations, _, relTypes, _, targetLabelCombinations)) =>
-        val expandedPatterns = for {
-          sourceCombination <- sourceLabelCombinations
-          relType <- relTypes
-          targetLabelCombination <- targetLabelCombinations
-        } yield SchemaPattern(sourceCombination, relType, targetLabelCombination)
-        currentSchema.withSchemaPatterns(expandedPatterns.toSeq: _*)
-    }
-  }
+    /** Validates, resolves and pushes the statements to form a child GraphType */
+    def push(statements: List[GraphTypeStatement]): GraphType = {
+      val parts = toTypeParts(statements).validateDistinct
 
-  private def toGraph(
-    typePartsFromGraphType: TypeParts,
-    globalElementTypes: Map[String, ElementTypeDefinition],
-    graph: GraphDefinitionWithContext): Graph = {
-      // Merges type definitions from a graph type with the type definitions of a graph instance
-      val graphParts = {
-        val initialGraphParts = toGraphParts(graph.definition.statements)
-        val typePartsFromGraph = toTypeParts(initialGraphParts.graphTypeStatements).validateDistinct
+      val local = GraphType(Some(this), parts.elementTypes.keyBy(_.name))
 
-        // Shadowing
-        val allElementTypeStatements = globalElementTypes ++ typePartsFromGraphType.elementTypes.keyBy(_.name) ++ typePartsFromGraph.elementTypes.keyBy(_.name)
-        val allNodeTypeStatements = typePartsFromGraphType.nodeTypes.keyBy(_.elementTypes) ++ typePartsFromGraph.nodeTypes.keyBy(_.elementTypes) ++ initialGraphParts.nodeMappings.map(_.nodeType).keyBy(_.elementTypes)
-        val allRelTypeStatements = typePartsFromGraphType.relTypes.keyBy(_.elementType) ++ typePartsFromGraph.relTypes.keyBy(_.elementType) ++ initialGraphParts.relMappings.map(_.relType).keyBy(_.elementType)
-        val allPatternStatements = typePartsFromGraph.patterns ++ typePartsFromGraphType.patterns
+      val patterns = for {
+        pattern <- parts.patterns
+        source <- pattern.sourceNodeTypes
+        edge <- pattern.relTypes
+        target <- pattern.targetNodeTypes
+      } yield SchemaPattern(source, edge, target)
 
-        val allGraphTypeStatements =
-          allElementTypeStatements.values ++
-            allNodeTypeStatements.values ++
-            allRelTypeStatements.values ++
-            allPatternStatements
+      val nodeTypes = Set(
+        parts.nodeTypes.map(_.elementTypes),
+        patterns.map(_.sourceLabelCombination),
+        patterns.map(_.targetLabelCombination)
+      ).flatten
 
-        initialGraphParts.copy(graphTypeStatements = allGraphTypeStatements.toList)
-      }
+      val edgeTypes = Set(
+        parts.relTypes.map(_.elementType),
+        patterns.map(_.relType)
+      ).flatten
 
-      val okapiSchema = toOkapiSchema(globalElementTypes, graphParts.graphTypeStatements)
-
-      Graph(
-        name = GraphName(graph.definition.name),
-        graphType = okapiSchema,
-        nodeToViewMappings = graphParts.nodeMappings
-          .flatMap(nm => toNodeToViewMappings(okapiSchema, graph.maybeSetSchema, nm))
-          .validateDistinctBy(_.key, "Duplicate mapping")
-          .keyBy(_.key),
-        edgeToViewMappings = graphParts.relMappings
-          // TODO: Validate distinct edge mappings
-          .flatMap(em => toEdgeToViewMappings(okapiSchema, graph.maybeSetSchema, em))
+      GraphType(
+        Some(this),
+        local.elementTypes,
+        nodeTypes.map(labels => labels -> tryWithNode(labels)(
+          mergeProperties(labels.map(local.resolveElementType))
+        )).toMap,
+        edgeTypes.map(label => label -> tryWithRel(label)(
+          mergeProperties(Set(local.resolveElementType(label)))
+        )).toMap,
+        patterns.toSet
       )
     }
 
-  def toNodeToViewMappings(
+    private def tryWithNode[T](labels: Set[String])(block: => T): T =
+      tryWithContext(s"Error in node type (${labels.mkString(",")})")(block)
+
+    private def tryWithRel[T](label: String)(block: => T): T =
+      tryWithContext(s"Error in relationship type [$label]")(block)
+
+    private def mergeProperties(elementTypes: Set[ElementTypeDefinition]): PropertyKeys.PropertyKeys = {
+      elementTypes
+        .flatMap(_.properties)
+        .foldLeft(PropertyKeys.empty) { case (props, (name, ctype)) =>
+          props.get(name).filter(_ != ctype) match {
+            case Some(t) => incompatibleTypes(name, ctype, t)
+            case None    => props.updated(name, ctype)
+          }
+        }
+    }
+
+    private def resolveElementType(name: String): ElementTypeDefinition =
+      allElementTypes.getOrElse(name, unresolved(s"Unresolved element type", name))
+  }
+
+  private def toGraph(
+    parent: GraphType,
+    graph: GraphDefinitionWithContext
+  ): Graph = {
+    val parts = toGraphParts(graph.definition.statements)
+    val graphType = parent
+      .push(parts.graphTypeStatements)
+      .push(parts.nodeMappings.map(_.nodeType) ++ parts.relMappings.map(_.relType))
+
+    Graph(
+      name = GraphName(graph.definition.name),
+      graphType = graphType.asOkapiSchema,
+      nodeToViewMappings = parts.nodeMappings
+        .flatMap(nm => toNodeToViewMappings(graphType.asOkapiSchema, graph.maybeSetSchema, nm))
+        .validateDistinctBy(_.key, "Duplicate mapping")
+        .keyBy(_.key),
+      edgeToViewMappings = parts.relMappings
+        // TODO: Validate distinct edge mappings
+        .flatMap(em => toEdgeToViewMappings(graphType.asOkapiSchema, graph.maybeSetSchema, em))
+    )
+  }
+
+  private def toNodeToViewMappings(
     graphType: Schema,
     maybeSetSchema: Option[SetSchemaDefinition],
     nmd: NodeMappingDefinition
@@ -303,7 +273,7 @@ object GraphDdl {
     }
   }
 
-  def toEdgeToViewMappings(
+  private def toEdgeToViewMappings(
     graphType: Schema,
     maybeSetSchema: Option[SetSchemaDefinition],
     rmd: RelationshipMappingDefinition
@@ -347,7 +317,7 @@ object GraphDdl {
     }
   }
 
-  def toQualifiedViewId(
+  private def toQualifiedViewId(
     maybeSetSchema: Option[SetSchemaDefinition],
     viewId: List[String]
   ): QualifiedViewId = (maybeSetSchema, viewId) match {
@@ -361,7 +331,7 @@ object GraphDdl {
       malformed("Relative view identifier must have exactly one segment", view.mkString("."))
   }
 
-  def toJoin(nodeAlias: String, edgeAlias: String)(join: (ColumnIdentifier, ColumnIdentifier)): Join = {
+  private def toJoin(nodeAlias: String, edgeAlias: String)(join: (ColumnIdentifier, ColumnIdentifier)): Join = {
     val (left, right) = join
     val (leftAlias, rightAlias) = (left.head, right.head)
     val (leftColumn, rightColumn) = (left.tail.mkString("."), right.tail.mkString("."))
@@ -376,7 +346,7 @@ object GraphDdl {
     }
   }
 
-  def toPropertyMappings(
+  private def toPropertyMappings(
     elementTypes: Set[String],
     graphTypePropertyKeys: Set[String],
     maybePropertyMapping: Option[PropertyToColumnMappingDefinition]
@@ -391,23 +361,32 @@ object GraphDdl {
       .mapValues(prop => mappings.getOrElse(prop, prop))
   }
 
-  implicit class TraversableOps[T, C[X] <: Traversable[X]](elems: C[T]) {
+  // Helper extension methods
+
+  private implicit class TraversableOps[T, C[X] <: Traversable[X]](elems: C[T]) {
     def keyBy[K](key: T => K): Map[K, T] =
       elems.map(t => key(t) -> t).toMap
 
     def validateDistinctBy[K](key: T => K, msg: String): C[T] = {
       elems.groupBy(key).foreach {
-        case (k, vals) if vals.size > 1 => Err.duplicate(msg, k)
-        case _ =>
+        case (k, values) if values.size > 1 => duplicate(msg, k)
+        case _                              =>
       }
       elems
     }
   }
 
-  implicit class MapOps[K, V](map: Map[K, V]) {
+  private implicit class MapOps[K, V](map: Map[K, V]) {
     def getOrFail(key: K, msg: String): V = map.getOrElse(key, unresolved(msg, key, map.keySet))
   }
+
+  private implicit class SchemaOps(schema: Schema) {
+    def foldLeftOver[T](trav: TraversableOnce[T])(op: (Schema, T) => Schema): Schema =
+      trav.foldLeft(schema)(op)
+  }
 }
+
+// Result types
 
 case class GraphDdl(
   graphs: Map[GraphName, Graph]

@@ -222,7 +222,7 @@ class GraphDdlTest extends FunSpec with Matchers {
       | (Person3, Person4)
       |)
     """.stripMargin)
-    e.getFullMessage should (include("fooSchema") and include("(Person3,Person4)") and include("Person1") and include("Person2"))
+    e.getFullMessage should (include("fooSchema") and include("Person3") and include("Person4"))
   }
 
   it("fails on incompatible property types") {
@@ -234,7 +234,7 @@ class GraphDdlTest extends FunSpec with Matchers {
       |)
     """.stripMargin)
     e.getFullMessage should (
-      include("fooSchema") and include("(Person1,Person2)") and include("age") and include("STRING")  and include("INTEGER")
+      include("fooSchema") and include("Person1") and include("Person2)") and include("age") and include("STRING")  and include("INTEGER")
     )
   }
 
