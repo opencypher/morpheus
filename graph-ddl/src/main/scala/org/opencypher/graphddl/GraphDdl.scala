@@ -114,7 +114,6 @@ object GraphDdl {
     val global = GraphType().push(ddlParts.elementTypes)
 
     val graphTypes = ddlParts.graphTypes
-      .validateDistinctBy(_.name, "Duplicate graph type name")
       .keyBy(_.name)
       .mapValues { graphType => tryWithGraphType(graphType.name) {
         global.push(graphType.statements)
@@ -122,7 +121,6 @@ object GraphDdl {
       .view.force
 
     val graphs = ddlParts.graphs
-      .validateDistinctBy(_.definition.name, "Duplicate graph name")
       .map { graph => tryWithGraph(graph.definition.name) {
         val graphType = graph.definition.maybeGraphTypeName
           .map(name => graphTypes.getOrFail(name, "Unresolved graph type"))
