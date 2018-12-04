@@ -31,6 +31,7 @@ import org.opencypher.graphddl.GraphDdlAst.{ColumnIdentifier, PropertyToColumnMa
 import org.opencypher.graphddl.GraphDdlException._
 import org.opencypher.okapi.api.graph.GraphName
 import org.opencypher.okapi.api.schema.{PropertyKeys, Schema, SchemaPattern}
+import org.opencypher.okapi.api.schema.PropertyKeys.PropertyKeys
 
 import scala.language.higherKinds
 
@@ -142,17 +143,17 @@ object GraphDdl {
   private[graphddl] case class GraphType(
     parent: Option[GraphType] = None,
     elementTypes: Map[String, ElementTypeDefinition] = Map(),
-    nodeTypes: Map[Set[String], PropertyKeys.PropertyKeys] = Map(),
-    edgeTypes: Map[String, PropertyKeys.PropertyKeys] = Map(),
+    nodeTypes: Map[Set[String], PropertyKeys] = Map(),
+    edgeTypes: Map[String, PropertyKeys] = Map(),
     patterns: Set[SchemaPattern] = Set()
   ) {
     lazy val allElementTypes: Map[String, ElementTypeDefinition] =
       parent.map(_.allElementTypes).getOrElse(Map()) ++ elementTypes
 
-    lazy val allNodeTypes: Map[Set[String], PropertyKeys.PropertyKeys] =
+    lazy val allNodeTypes: Map[Set[String], PropertyKeys] =
       parent.map(_.allNodeTypes).getOrElse(Map()) ++ nodeTypes
 
-    lazy val allEdgeTypes: Map[String, PropertyKeys.PropertyKeys] =
+    lazy val allEdgeTypes: Map[String, PropertyKeys] =
       parent.map(_.allEdgeTypes).getOrElse(Map()) ++ edgeTypes
 
     lazy val allPatterns: Set[SchemaPattern] =
@@ -188,27 +189,28 @@ object GraphDdl {
         target <- pattern.targetNodeTypes
       } yield SchemaPattern(source, edge, target)
 
-      val nodeTypes = Set(
-        parts.nodeTypes.map(_.elementTypes),
-        patterns.map(_.sourceLabelCombination),
-        patterns.map(_.targetLabelCombination)
-      ).flatten
-
-      val edgeTypes = Set(
-        parts.relTypes.map(_.elementType),
-        patterns.map(_.relType)
-      ).flatten
-
       GraphType(
-        Some(this),
-        local.elementTypes,
-        nodeTypes.map(labels => labels -> tryWithNode(labels)(
+        parent = Some(this),
+
+        elementTypes = local.elementTypes,
+
+        nodeTypes = Set(
+          parts.nodeTypes.map(_.elementTypes),
+          patterns.map(_.sourceLabelCombination),
+          patterns.map(_.targetLabelCombination)
+        ).flatten.map(labels => labels -> tryWithNode(labels)(
           mergeProperties(labels.map(local.resolveElementType))
         )).toMap,
-        edgeTypes.map(label => label -> tryWithRel(label)(
+
+        edgeTypes = Set(
+          parts.relTypes.map(_.elementType),
+          patterns.map(_.relType)
+        ).flatten.map(label => label -> tryWithRel(label)(
           mergeProperties(Set(local.resolveElementType(label)))
         )).toMap,
-        patterns.toSet
+
+        patterns =
+          patterns.toSet
       )
     }
 
@@ -218,7 +220,7 @@ object GraphDdl {
     private def tryWithRel[T](label: String)(block: => T): T =
       tryWithContext(s"Error in relationship type: [$label]")(block)
 
-    private def mergeProperties(elementTypes: Set[ElementTypeDefinition]): PropertyKeys.PropertyKeys = {
+    private def mergeProperties(elementTypes: Set[ElementTypeDefinition]): PropertyKeys = {
       elementTypes
         .flatMap(_.properties)
         .foldLeft(PropertyKeys.empty) { case (props, (name, ctype)) =>
