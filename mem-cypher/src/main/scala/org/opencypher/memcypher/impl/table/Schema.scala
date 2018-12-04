@@ -11,6 +11,8 @@ case class Schema(columns: Array[ColumnSchema]) {
 
   def fieldIndex(name: String): Int = columns.map(_.name).indexOf(name)
 
+  def dataType(name: String): CypherType = columns(fieldIndex(name)).dataType
+
   def withColumn(columnMeta: ColumnSchema): Schema = withColumn(columnMeta.name, columnMeta.dataType)
 
   def withColumn(name: String, dataType: CypherType): Schema = copy(columns = columns :+ ColumnSchema(name, dataType))
