@@ -71,7 +71,7 @@
     <dep.neo4j.version>3.4.10</dep.neo4j.version>
     <dep.neo4j.driver.version>1.7.2</dep.neo4j.driver.version>
     <dep.opencypher.front-end.version>9.0.20181030</dep.opencypher.front-end.version>
-    <dep.spark.version>2.2.1</dep.spark.version>
+    <dep.spark.version>2.2.2</dep.spark.version>
     <dep.upickle.version>0.6.6</dep.upickle.version>
     <dep.log4j.core.version>2.11.0</dep.log4j.core.version>
     <dep.log4j.scala.api.version>11.0</dep.log4j.scala.api.version>
