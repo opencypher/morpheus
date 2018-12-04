@@ -1,6 +1,6 @@
 package org.opencypher.memcypher.impl.table
 
-import org.opencypher.memcypher.impl.types.CypherValueOps._
+import org.opencypher.memcypher.impl.types.CypherTypeOps._
 import org.opencypher.okapi.api.value.CypherValue.CypherMap
 import org.opencypher.okapi.impl.exception.{NotImplementedException, UnsupportedOperationException}
 import org.opencypher.okapi.ir.api.expr._
@@ -48,28 +48,28 @@ object Row {
         evaluate(inner) != null
 
       case Equals(lhs, rhs) =>
-        evaluate(lhs).toCypherValue == evaluate(rhs).toCypherValue
+        lhs.cypherType.equivalence.asInstanceOf[Equiv[Any]].equiv(evaluate(lhs), evaluate(rhs))
 
       case Not(inner) =>
-        !evaluate(inner).toCypherValue
+        !evaluate(inner).asInstanceOf[Boolean]
 
       case GreaterThan(lhs, rhs) =>
-        evaluate(lhs).toCypherValue > evaluate(rhs).toCypherValue
+        lhs.cypherType.ordering.asInstanceOf[Ordering[Any]].gt(evaluate(lhs), evaluate(rhs))
 
       case GreaterThanOrEqual(lhs, rhs) =>
-        evaluate(lhs).toCypherValue >= evaluate(rhs).toCypherValue
+        lhs.cypherType.ordering.asInstanceOf[Ordering[Any]].gteq(evaluate(lhs), evaluate(rhs))
 
       case LessThan(lhs, rhs) =>
-        evaluate(lhs).toCypherValue < evaluate(rhs).toCypherValue
+        lhs.cypherType.ordering.asInstanceOf[Ordering[Any]].lt(evaluate(lhs), evaluate(rhs))
 
       case LessThanOrEqual(lhs, rhs) =>
-        evaluate(lhs).toCypherValue <= evaluate(rhs).toCypherValue
+        lhs.cypherType.ordering.asInstanceOf[Ordering[Any]].lteq(evaluate(lhs), evaluate(rhs))
 
       case Ands(exprs) =>
-        exprs.map(evaluate).map(_.toCypherValue).reduce(_ && _).cast[Boolean]
+        exprs.map(evaluate).map(_.asInstanceOf[Boolean]).reduce(_ && _)
 
       case Ors(exprs) =>
-        exprs.map(evaluate).map(_.toCypherValue).reduce(_ || _).cast[Boolean]
+        exprs.map(evaluate).map(_.asInstanceOf[Boolean]).reduce(_ || _)
 
       case TrueLit => true
 

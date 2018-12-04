@@ -5,20 +5,24 @@ import org.opencypher.okapi.impl.exception.IllegalArgumentException
 
 object CypherTypeOps {
 
-  implicit class OrderingCypherType(ct: CypherType) {
-    def ordering: Ordering[_] = ct match {
-      case CTBoolean => Ordering[Boolean]
-      case CTFloat => Ordering[Float]
-      case CTInteger => Ordering[Long]
-      case CTString => Ordering[String]
+  implicit class ScalaOrdering(ct: CypherType) {
+    def ordering: Ordering[_] = ct.material match {
+      case CTBoolean => Ordering.Boolean
+      case CTFloat => Ordering.Float
+      case CTInteger => Ordering.Long
+      case CTString => Ordering.String
+      case _: CTNode | _: CTRelationship => Ordering.Long
       case _ => throw IllegalArgumentException("Cypher type with ordering support", ct)
     }
+  }
 
-    def equivalence: Equiv[_] = ct match {
+  implicit class ScalaEquivalence(ct: CypherType) {
+    def equivalence: Equiv[_] = ct.material match {
       case CTBoolean => Equiv[Boolean]
       case CTFloat => Equiv[Float]
       case CTInteger => Equiv[Long]
       case CTString => Equiv[String]
+      case _: CTNode | _: CTRelationship => Equiv[Long]
       case _ => throw IllegalArgumentException("Cypher type with equivalence support", ct)
     }
   }
