@@ -114,9 +114,8 @@ object GraphDdlParser {
   val elementTypes: P[Set[String]] =
     P(elementType.rep(min = 1, sep = ",")).map(_.toSet)
 
-  // negative lookahead (~ !"-") needed in order to disambiguate node definitions and pattern definitions
   val nodeTypeDefinition: P[NodeTypeDefinition] =
-    P("(" ~ elementTypes ~ ")" ~ !("-" | "<")).map(NodeTypeDefinition(_))
+    P("(" ~ elementTypes ~ ")").map(NodeTypeDefinition(_))
 
   val relTypeDefinition: P[RelationshipTypeDefinition] =
     P("[" ~/ elementType ~/ "]").map(RelationshipTypeDefinition)
@@ -151,11 +150,12 @@ object GraphDdlParser {
     val relAlternatives: P[Set[String]] =
       P("[" ~/ elementType.rep(min = 1, sep = "|") ~/ "]").map(_.toSet)
 
-    P(nodeAlternatives ~ cardinalityConstraint ~/ "-" ~/ relAlternatives ~/ "->" ~/ cardinalityConstraint ~/ nodeAlternatives).map(PatternDefinition.tupled)
+    P(nodeAlternatives ~ cardinalityConstraint ~ "-" ~/ relAlternatives ~/ "->" ~/ cardinalityConstraint ~/ nodeAlternatives).map(PatternDefinition.tupled)
   }
 
   val graphTypeStatements: P[List[GraphTypeStatement]] =
-    P("(" ~/ (elementTypeDefinition | nodeTypeDefinition  | relTypeDefinition | patternDefinition).rep(sep = ",").map(_.toList) ~/ ")")
+    // Note: Order matters here. patternDefinition must appear before nodeTypeDefinition since they parse the same prefix
+    P("(" ~/ (elementTypeDefinition | patternDefinition | nodeTypeDefinition | relTypeDefinition).rep(sep = ",").map(_.toList) ~/ ")")
 
   val graphTypeDefinition: P[GraphTypeDefinition] =
     P(CREATE ~ GRAPH ~ TYPE ~/ identifier.! ~/ graphTypeStatements).map(GraphTypeDefinition.tupled)
