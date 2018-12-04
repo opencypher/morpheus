@@ -332,7 +332,7 @@ object RelationalPlanner {
       } else op
     }
 
-    def drop[E <: Expr](expressions: E*): RelationalOperator[T] = {
+    def dropExpressions[E <: Expr](expressions: E*): RelationalOperator[T] = {
       dropExprSet(expressions.toSet)
     }
 
