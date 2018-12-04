@@ -81,17 +81,9 @@ case class NodeTypeDefinition(
 ) extends GraphDdlAst with GraphTypeStatement
 
 case class RelationshipTypeDefinition(
-  elementType: String
-) extends GraphDdlAst with GraphTypeStatement
-
-case class CardinalityConstraint(from: Int, to: Option[Int])
-
-case class PatternDefinition(
-  sourceNodeTypes: Set[Set[String]],
-  sourceCardinality: CardinalityConstraint = CardinalityConstraint(0, None),
-  relTypes: Set[String],
-  targetCardinality: CardinalityConstraint = CardinalityConstraint(0, None),
-  targetNodeTypes: Set[Set[String]]
+  sourceNodeType: NodeTypeDefinition,
+  elementType: String,
+  targetNodeType: NodeTypeDefinition
 ) extends GraphDdlAst with GraphTypeStatement
 
 trait ElementToViewDefinition {

@@ -43,14 +43,14 @@ class GraphDdlTest extends FunSpec with Matchers {
        | READS  ( rating FLOAT ) ,
        | (Person),
        | (Book),
-       | [READS]
+       | (Person)-[READS]->(Book)
        |)
        |CREATE GRAPH fooGraph OF fooSchema (
        |  (Person) FROM personView1 ( person_name1 AS name )
        |           FROM personView2 ( person_name2 AS name ),
        |  (Book)   FROM bookView    ( book_title AS title ),
        |
-       |  [READS]
+       |  (Person)-[READS]->(Book)
        |    FROM readsView1 e ( value1 AS rating )
        |      START NODES (Person) FROM personView1 p JOIN ON p.person_id1 = e.person
        |      END   NODES (Book)   FROM bookView    b JOIN ON e.book       = b.book_id
@@ -77,7 +77,8 @@ class GraphDdlTest extends FunSpec with Matchers {
           Schema.empty
             .withNodePropertyKeys("Person")("name" -> CTString, "age" -> CTInteger)
             .withNodePropertyKeys("Book")("title" -> CTString)
-            .withRelationshipPropertyKeys("READS")("rating" -> CTFloat),
+            .withRelationshipPropertyKeys("READS")("rating" -> CTFloat)
+            .withSchemaPatterns(SchemaPattern("Person", "READS", "Book")),
           Map(
             personKey1 -> NodeToViewMapping(
               nodeType = Set("Person"),
@@ -163,7 +164,7 @@ class GraphDdlTest extends FunSpec with Matchers {
         |  A (x STRING), B (y STRING),
         |  (A)-[B]->(A),
         |  (A) FROM a,
-        |  [B] FROM b e
+        |  (A)-[B]->(A) FROM b e
         |    START NODES (A) FROM a n JOIN ON e.id = n.id
         |    END   NODES (A) FROM a n JOIN ON e.id = n.id
         |)
@@ -188,6 +189,122 @@ class GraphDdlTest extends FunSpec with Matchers {
         )
       )
     )
+  }
+
+  it("allows these equivalent graph definitions") {
+    val ddls = List(
+      // most compact form
+      GraphDdl("""SET SCHEMA ds1.db1
+                 |CREATE GRAPH myGraph (
+                 |  A (x STRING), B (y STRING),
+                 |  (A), (A)-[B]->(A),
+                 |  (A) FROM a,
+                 |  (A)-[B]->(A) FROM b e
+                 |    START NODES (A) FROM a n JOIN ON e.id = n.id
+                 |    END   NODES (A) FROM a n JOIN ON e.id = n.id
+                 |)
+               """.stripMargin),
+      // mixed order
+      GraphDdl("""SET SCHEMA ds1.db1
+                 |CREATE GRAPH myGraph (
+                 |  (A)-[B]->(A) FROM b e
+                 |    START NODES (A) FROM a n JOIN ON e.id = n.id
+                 |    END   NODES (A) FROM a n JOIN ON e.id = n.id,
+                 |  A (x STRING), B (y STRING),
+                 |  (A) FROM a
+                 |)
+               """.stripMargin),
+      // explicit edge type definition
+      GraphDdl("""SET SCHEMA ds1.db1
+                 |CREATE GRAPH myGraph (
+                 |  A (x STRING), B (y STRING),
+                 |  (A)-[B]->(A),
+                 |  (A) FROM a,
+                 |  (A)-[B]->(A) FROM b e
+                 |    START NODES (A) FROM a n JOIN ON e.id = n.id
+                 |    END   NODES (A) FROM a n JOIN ON e.id = n.id
+                 |)
+               """.stripMargin),
+      // pure type definitions extracted to graph type
+      GraphDdl("""SET SCHEMA ds1.db1
+                 |CREATE GRAPH TYPE myType (
+                 |  A (x STRING), B (y STRING),
+                 |  (A), (A)-[B]->(A)
+                 |)
+                 |CREATE GRAPH myGraph OF myType (
+                 |  (A) FROM a,
+                 |  (A)-[B]->(A) FROM b e
+                 |    START NODES (A) FROM a n JOIN ON e.id = n.id
+                 |    END   NODES (A) FROM a n JOIN ON e.id = n.id
+                 |)
+               """.stripMargin),
+      // shadowing
+      GraphDdl("""SET SCHEMA ds1.db1
+                 |CREATE GRAPH TYPE myType (
+                 |  A (x STRING), B (foo STRING),
+                 |  (A), (A)-[B]->(A)
+                 |)
+                 |CREATE GRAPH myGraph OF myType (
+                 |  B (y STRING),
+                 |  (A) FROM a,
+                 |  (A)-[B]->(A) FROM b e
+                 |    START NODES (A) FROM a n JOIN ON e.id = n.id
+                 |    END   NODES (A) FROM a n JOIN ON e.id = n.id
+                 |)
+               """.stripMargin),
+      // only label types in graph type
+      GraphDdl("""SET SCHEMA ds1.db1
+                 |CREATE GRAPH TYPE myType (
+                 |  A (x STRING), B (foo STRING)
+                 |)
+                 |CREATE GRAPH myGraph OF myType (
+                 |  B (y STRING),
+                 |  (A) FROM a,
+                 |  (A)-[B]->(A) FROM b e
+                 |    START NODES (A) FROM a n JOIN ON e.id = n.id
+                 |    END   NODES (A) FROM a n JOIN ON e.id = n.id
+                 |)
+               """.stripMargin)
+    )
+
+    ddls(1) shouldEqual ddls.head
+    ddls(2) shouldEqual ddls.head
+    ddls(3) shouldEqual ddls.head
+    ddls(4) shouldEqual ddls.head
+  }
+
+  it("allows these equivalent graph type definitions") {
+    val ddls = List(
+      // most compact form
+      GraphDdl("""
+                 |CREATE GRAPH TYPE myType (
+                 |  A (x STRING), B (y STRING), C (z STRING),
+                 |  (A)-[B]->(C)
+                 |)
+                 |CREATE GRAPH myGraph OF myType ()
+               """.stripMargin),
+      // duplicate node type definitions
+      GraphDdl("""CREATE GRAPH TYPE myType (
+                 |  A (x STRING), B (y STRING), C (z STRING),
+                 |  (A), (A), (C),
+                 |  (A)-[B]->(C)
+                 |)
+                 |CREATE GRAPH myGraph OF myType ()
+               """.stripMargin),
+      // shadowing
+      GraphDdl("""CREATE ELEMENT TYPE A (foo STRING)
+                 |CREATE GRAPH TYPE myType (
+                 |  A (x STRING), B (y STRING), C (z STRING),
+                 |  (A)-[B]->(C)
+                 |)
+                 |CREATE GRAPH myGraph OF myType ()
+               """.stripMargin)
+    )
+
+    println(ddls.head)
+    ddls(1) shouldEqual ddls.head
+    ddls(2) shouldEqual ddls.head
+
   }
 
   it("fails on duplicate node mappings") {

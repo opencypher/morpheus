@@ -118,44 +118,11 @@ object GraphDdlParser {
     P("(" ~ elementTypes ~ ")").map(NodeTypeDefinition(_))
 
   val relTypeDefinition: P[RelationshipTypeDefinition] =
-    P("[" ~/ elementType ~/ "]").map(RelationshipTypeDefinition)
-
-  val cardinalityConstraint: P[CardinalityConstraint] = {
-
-    val Wildcard: CardinalityConstraint = CardinalityConstraint(0, None)
-
-    val integer: P[Int] =
-      P(digit.rep(min = 1).!.map(_.toInt))
-
-    val wildcard: P[Option[Int]] =
-      P("*").map(_ => Option.empty[Int])
-
-    val intOrWildcard: P[Option[Int]] =
-      P(wildcard | integer.?)
-
-    val fixed: P[CardinalityConstraint] =
-      P(intOrWildcard.map(p => CardinalityConstraint(p.getOrElse(0), p)))
-
-    val range: P[CardinalityConstraint] =
-      P(integer ~ (".." | ",") ~/ intOrWildcard).map(CardinalityConstraint.tupled)
-
-    P("<" ~/ (range | fixed) ~/ ">").?.map(_.getOrElse(Wildcard))
-  }
-
-  val patternDefinition: P[PatternDefinition] = {
-    val nodeAlternatives: P[Set[Set[String]]] =
-      P("(" ~ elementTypes.rep(min = 1, sep = "|").map(_.toSet) ~ ")")
-
-    // TODO: Fix symmetric to node
-    val relAlternatives: P[Set[String]] =
-      P("[" ~/ elementType.rep(min = 1, sep = "|") ~/ "]").map(_.toSet)
-
-    P(nodeAlternatives ~ cardinalityConstraint ~ "-" ~/ relAlternatives ~/ "->" ~/ cardinalityConstraint ~/ nodeAlternatives).map(PatternDefinition.tupled)
-  }
+    P(nodeTypeDefinition ~ "-[" ~ elementType ~ "]->" ~ nodeTypeDefinition).map(RelationshipTypeDefinition.tupled)
 
   val graphTypeStatements: P[List[GraphTypeStatement]] =
-    // Note: Order matters here. patternDefinition must appear before nodeTypeDefinition since they parse the same prefix
-    P("(" ~/ (elementTypeDefinition | patternDefinition | nodeTypeDefinition | relTypeDefinition).rep(sep = ",").map(_.toList) ~/ ")")
+    // Note: Order matters here. relTypeDefinition must appear before nodeTypeDefinition since they parse the same prefix
+    P("(" ~/ (elementTypeDefinition | relTypeDefinition | nodeTypeDefinition ).rep(sep = ",").map(_.toList) ~/ ")")
 
   val graphTypeDefinition: P[GraphTypeDefinition] =
     P(CREATE ~ GRAPH ~ TYPE ~/ identifier.! ~/ graphTypeStatements).map(GraphTypeDefinition.tupled)
@@ -212,7 +179,7 @@ object GraphDdlParser {
   val graphDefinition: P[GraphDefinition] = {
 
     val graphStatements: P[List[GraphStatement]] =
-      P("(" ~/ (nodeMappingDefinition | relationshipMappingDefinition | elementTypeDefinition | patternDefinition).rep(sep = ",").map(_.toList) ~/ ")")
+      P("(" ~/ (relationshipMappingDefinition | nodeMappingDefinition | elementTypeDefinition | relTypeDefinition | nodeTypeDefinition ).rep(sep = ",").map(_.toList) ~/ ")")
 
     P(CREATE ~ GRAPH ~ identifier.! ~/ (OF ~/ identifier.!).? ~/ graphStatements)
       .map { case (gName, graphTypeRef, statements) => GraphDefinition(gName, graphTypeRef, statements) }

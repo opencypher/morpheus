@@ -40,12 +40,10 @@ CREATE GRAPH TYPE Census (
   (LicensedDog),
 
   --EDGES
-  [PRESENT_IN],
-  [LICENSED_BY],
-
-   --EDGE CONSTRAINTS
-  (Person | LicensedDog) <0 .. *> - [PRESENT_IN] -> <1>(Town),
-  (LicensedDog)- [LICENSED_BY] ->(Resident)
+  (Person, Visitor)-[PRESENT_IN]->(Town),
+  (Person, Resident)-[PRESENT_IN]->(Town),
+  (LicensedDog)-[PRESENT_IN]->(Town),
+  (LicensedDog)-[LICENSED_BY]->(Resident)
 )
 -- =================================================================
 
@@ -62,17 +60,18 @@ CREATE GRAPH Census_1901 OF Census (
   (Resident, Person)
        FROM VIEW_RESIDENT,
 
-  [PRESENT_IN]
+  (Person, Resident)-[PRESENT_IN]->(Town)
       FROM VIEW_RESIDENT_ENUMERATED_IN_TOWN edge
-          START NODES (Resident, Person)
+          START NODES (Person, Resident)
               FROM VIEW_RESIDENT start_nodes
                   JOIN ON start_nodes.PERSON_NUMBER = edge.PERSON_NUMBER
           END NODES (Town)
               FROM TOWN end_nodes
                   JOIN ON end_nodes.REGION = edge.REGION
                   AND end_nodes.CITY_NAME = edge.CITY_NAME,
+  (Person, Visitor)-[PRESENT_IN]->(Town)
       FROM VIEW_VISITOR_ENUMERATED_IN_TOWN edge
-          START NODES (Visitor, Person)
+          START NODES (Person, Visitor)
               FROM VIEW_VISITOR start_nodes
                   JOIN ON start_nodes.NATIONALITY = edge.COUNTRYOFORIGIN
                   AND start_nodes.PASSPORT_NUMBER = edge.PASSPORT_NO
@@ -80,6 +79,7 @@ CREATE GRAPH Census_1901 OF Census (
               FROM TOWN end_nodes
                   JOIN ON end_nodes.REGION = edge.REGION
                   AND end_nodes.CITY_NAME = edge.CITY_NAME,
+  (LicensedDog)-[PRESENT_IN]->(Town)
       FROM VIEW_LICENSED_DOG edge
           START NODES (LicensedDog)
               FROM VIEW_LICENSED_DOG start_nodes
@@ -89,12 +89,12 @@ CREATE GRAPH Census_1901 OF Census (
                   JOIN ON end_nodes.REGION = edge.REGION
                   AND end_nodes.CITY_NAME = edge.CITY_NAME,
 
-  [LICENSED_BY]
+  (LicensedDog)-[LICENSED_BY]->(Person, Resident)
       FROM VIEW_LICENSED_DOG edge
           START NODES (LicensedDog)
               FROM VIEW_LICENSED_DOG start_nodes
                   JOIN ON start_nodes.LICENCE_NUMBER = edge.LICENCE_NUMBER
-          END NODES (Resident, Person)
+          END NODES (Person, Resident)
               FROM VIEW_RESIDENT end_nodes
                   JOIN ON end_nodes.PERSON_NUMBER = edge.PERSON_NUMBER
 )

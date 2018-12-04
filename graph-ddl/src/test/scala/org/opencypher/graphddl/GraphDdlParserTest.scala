@@ -27,6 +27,7 @@
 package org.opencypher.graphddl
 
 import fastparse.core.Parsed.{Failure, Success}
+import org.opencypher.graphddl
 import org.opencypher.graphddl.GraphDdlParser._
 import org.opencypher.okapi.api.types._
 import org.opencypher.okapi.impl.util.ParserUtils._
@@ -148,65 +149,65 @@ class GraphDdlParserTest extends BaseTestSuite with MockitoSugar with TestNameFi
       failure(globalElementTypeDefinition)
     }
   }
-
-  describe("schema pattern definitions") {
-
-    it("parses <1>") {
-      success(cardinalityConstraint, CardinalityConstraint(1, Some(1)))
-    }
-
-    it("parses <1, *>") {
-      success(cardinalityConstraint, CardinalityConstraint(1, None))
-    }
-
-    it("parses <1 .. *>") {
-      success(cardinalityConstraint, CardinalityConstraint(1, None))
-    }
-
-    it("parses <*>") {
-      success(cardinalityConstraint, CardinalityConstraint(0, None))
-    }
-
-    it("parses <1, 3>") {
-      success(cardinalityConstraint, CardinalityConstraint(1, Some(3)))
-    }
-
-    it("parses (A)-[TYPE]->(B)") {
-      success(patternDefinition, PatternDefinition(sourceNodeTypes = Set(Set("A")), relTypes = Set("TYPE"), targetNodeTypes = Set(Set("B"))))
-    }
-
-    it("parses (L1 | L2) <0 .. *> - [R1 | R2] -> <1>(L3)") {
-      success(patternDefinition, PatternDefinition(
-        Set(Set("L1"), Set("L2")),
-        CardinalityConstraint(0, None), Set("R1", "R2"), CardinalityConstraint(1, Some(1)),
-        Set(Set("L3")))
-      )
-    }
-
-    it("parses (L1 | L2) - [R1 | R2] -> <1>(L3)") {
-      success(patternDefinition, PatternDefinition(
-        Set(Set("L1"), Set("L2")),
-        CardinalityConstraint(0, None), Set("R1", "R2"), CardinalityConstraint(1, Some(1)),
-        Set(Set("L3")))
-      )
-    }
-
-    it("parses (L1, L2) - [R1 | R2] -> <1>(L3)") {
-      success(patternDefinition, PatternDefinition(
-        Set(Set("L1", "L2")),
-        CardinalityConstraint(0, None), Set("R1", "R2"), CardinalityConstraint(1, Some(1)),
-        Set(Set("L3")))
-      )
-    }
-
-    it("parses (L4 | L1, L2 | L3 , L5) - [R1 | R2] -> <1>(L3)") {
-      success(patternDefinition, PatternDefinition(
-        Set(Set("L4"), Set("L1", "L2"), Set("L3", "L5")),
-        CardinalityConstraint(0, None), Set("R1", "R2"), CardinalityConstraint(1, Some(1)),
-        Set(Set("L3")))
-      )
-    }
-  }
+//
+//  describe("schema pattern definitions") {
+//
+//    it("parses <1>") {
+//      success(cardinalityConstraint, CardinalityConstraint(1, Some(1)))
+//    }
+//
+//    it("parses <1, *>") {
+//      success(cardinalityConstraint, CardinalityConstraint(1, None))
+//    }
+//
+//    it("parses <1 .. *>") {
+//      success(cardinalityConstraint, CardinalityConstraint(1, None))
+//    }
+//
+//    it("parses <*>") {
+//      success(cardinalityConstraint, CardinalityConstraint(0, None))
+//    }
+//
+//    it("parses <1, 3>") {
+//      success(cardinalityConstraint, CardinalityConstraint(1, Some(3)))
+//    }
+//
+//    it("parses (A)-[TYPE]->(B)") {
+//      success(patternDefinition, PatternDefinition(sourceNodeTypes = Set(Set("A")), relTypes = Set("TYPE"), targetNodeTypes = Set(Set("B"))))
+//    }
+//
+//    it("parses (L1 | L2) <0 .. *> - [R1 | R2] -> <1>(L3)") {
+//      success(patternDefinition, PatternDefinition(
+//        Set(Set("L1"), Set("L2")),
+//        CardinalityConstraint(0, None), Set("R1", "R2"), CardinalityConstraint(1, Some(1)),
+//        Set(Set("L3")))
+//      )
+//    }
+//
+//    it("parses (L1 | L2) - [R1 | R2] -> <1>(L3)") {
+//      success(patternDefinition, PatternDefinition(
+//        Set(Set("L1"), Set("L2")),
+//        CardinalityConstraint(0, None), Set("R1", "R2"), CardinalityConstraint(1, Some(1)),
+//        Set(Set("L3")))
+//      )
+//    }
+//
+//    it("parses (L1, L2) - [R1 | R2] -> <1>(L3)") {
+//      success(patternDefinition, PatternDefinition(
+//        Set(Set("L1", "L2")),
+//        CardinalityConstraint(0, None), Set("R1", "R2"), CardinalityConstraint(1, Some(1)),
+//        Set(Set("L3")))
+//      )
+//    }
+//
+//    it("parses (L4 | L1, L2 | L3 , L5) - [R1 | R2] -> <1>(L3)") {
+//      success(patternDefinition, PatternDefinition(
+//        Set(Set("L4"), Set("L1", "L2"), Set("L3", "L5")),
+//        CardinalityConstraint(0, None), Set("R1", "R2"), CardinalityConstraint(1, Some(1)),
+//        Set(Set("L3")))
+//      )
+//    }
+//  }
 
   describe("schema definitions") {
 
@@ -231,7 +232,7 @@ class GraphDdlParserTest extends BaseTestSuite with MockitoSugar with TestNameFi
         ))
     }
 
-    it("parses a schema with node, rel, and schema pattern definitions") {
+    it("parses a schema with node type, and rel type definitions") {
 
       val input =
         """|CREATE GRAPH TYPE mySchema (
@@ -242,29 +243,18 @@ class GraphDdlParserTest extends BaseTestSuite with MockitoSugar with TestNameFi
            |  (A, B),
            |
            |  --EDGES
-           |  [TYPE_1],
-           |  [TYPE_2],
-           |
-           |  (A | B) <0 .. *> - [TYPE_1] -> <1> (B),
-           |  (A) <*> - [TYPE_1] -> (A)
+           |  (A)-[TYPE_1]->(B),
+           |  (A, B)-[TYPE_2]->(A)
            |)
         """.stripMargin
       success(graphTypeDefinition, input, GraphTypeDefinition(
         name = "mySchema",
         statements = List(
-          NodeTypeDefinition(Set("A")),
-          NodeTypeDefinition(Set("B")),
-          NodeTypeDefinition(Set("A", "B")),
-          RelationshipTypeDefinition("TYPE_1"),
-          RelationshipTypeDefinition("TYPE_2"),
-          PatternDefinition(
-            Set(Set("A"), Set("B")),
-            CardinalityConstraint(0, None), Set("TYPE_1"), CardinalityConstraint(1, Some(1)),
-            Set(Set("B"))),
-          PatternDefinition(
-            Set(Set("A")),
-            CardinalityConstraint(0, None), Set("TYPE_1"), CardinalityConstraint(0, None),
-            Set(Set("A")))
+          NodeTypeDefinition("A"),
+          NodeTypeDefinition("B"),
+          NodeTypeDefinition("A", "B"),
+          RelationshipTypeDefinition(NodeTypeDefinition("A"), "TYPE_1", NodeTypeDefinition("B")),
+          RelationshipTypeDefinition(NodeTypeDefinition("A", "B"), "TYPE_2", NodeTypeDefinition("A"))
         )))
     }
 
@@ -273,39 +263,31 @@ class GraphDdlParserTest extends BaseTestSuite with MockitoSugar with TestNameFi
         GraphTypeDefinition(
           name = "mySchema",
           statements = List(
-            PatternDefinition(sourceNodeTypes = Set(Set("A")), relTypes = Set("TYPE"), targetNodeTypes = Set(Set("B")))
+            RelationshipTypeDefinition(NodeTypeDefinition("A"), "TYPE", NodeTypeDefinition("B"))
           )))
     }
 
-    it("parses a schema with node, rel, and schema pattern definitions in any order") {
+    it("parses a schema with node and rel definitions in any order") {
 
       val input =
         """|CREATE GRAPH TYPE mySchema (
-           |  (A | B) <0 .. *> - [TYPE_1] -> <1> (B),
+           |  (A, B)-[TYPE_1]->(B),
            |  (A),
            |  (A, B),
-           |  (A) <*> - [TYPE_1] -> (A),
-           |  [TYPE_1],
+           |  (A)-[TYPE_1]->(A),
            |  (B),
-           |  [TYPE_2]
+           |  (B)-[TYPE_2]->(A, B)
            |)
         """.stripMargin
       success(graphTypeDefinition, input, GraphTypeDefinition(
         name = "mySchema",
         statements = List(
-          PatternDefinition(
-            Set(Set("A"), Set("B")),
-            CardinalityConstraint(0, None), Set("TYPE_1"), CardinalityConstraint(1, Some(1)),
-            Set(Set("B"))),
-          NodeTypeDefinition(Set("A")),
-          NodeTypeDefinition(Set("A", "B")),
-          PatternDefinition(
-            Set(Set("A")),
-            CardinalityConstraint(0, None), Set("TYPE_1"), CardinalityConstraint(0, None),
-            Set(Set("A"))),
-          RelationshipTypeDefinition("TYPE_1"),
-          NodeTypeDefinition(Set("B")),
-          RelationshipTypeDefinition("TYPE_2")
+          RelationshipTypeDefinition(NodeTypeDefinition("A", "B"), "TYPE_1", NodeTypeDefinition("B")),
+          NodeTypeDefinition("A"),
+          NodeTypeDefinition("A", "B"),
+          RelationshipTypeDefinition(NodeTypeDefinition("A"), "TYPE_1", NodeTypeDefinition("A")),
+          NodeTypeDefinition("B"),
+          RelationshipTypeDefinition(NodeTypeDefinition("B"), "TYPE_2", NodeTypeDefinition("A", "B"))
         )))
     }
   }
@@ -319,13 +301,15 @@ class GraphDdlParserTest extends BaseTestSuite with MockitoSugar with TestNameFi
       success(graphDefinition, GraphDefinition("myGraph", Some("mySchema")))
     }
 
-    it("parses a graph definition with inlined schema") {
+    it("parses a graph definition with inlined graph type elements") {
       val expectedGraphStatements = List(
         ElementTypeDefinition("A", properties = Map("foo" -> CTString)),
         ElementTypeDefinition("B"),
+        NodeTypeDefinition("A", "B"),
+        RelationshipTypeDefinition(NodeTypeDefinition("A", "B"), "B", NodeTypeDefinition("C")),
         NodeMappingDefinition(NodeTypeDefinition("A", "B"), List(NodeToViewDefinition(List("view_a_b")))),
         RelationshipMappingDefinition(
-          relType = RelationshipTypeDefinition("B"),
+          relType = RelationshipTypeDefinition(NodeTypeDefinition("A", "B"), "B", NodeTypeDefinition("C")),
           relTypeToView = List(RelationshipTypeToViewDefinition(
             viewDef = ViewDefinition(List("baz"), "alias_baz"),
             startNodeTypeToView = NodeTypeToViewDefinition(
@@ -345,9 +329,10 @@ class GraphDdlParserTest extends BaseTestSuite with MockitoSugar with TestNameFi
         """|CREATE GRAPH myGraph (
            | A ( foo STRING ) ,
            | B,
-           |
+           | (A, B),
+           | (A, B)-[B]->(C),
            | (A,B) FROM view_a_b,
-           | [B] FROM baz alias_baz
+           | (A, B)-[B]->(C) FROM baz alias_baz
            |  START NODES (A, B) FROM foo alias_foo
            |      JOIN ON alias_foo.COLUMN_A = edge.COLUMN_A
            |          AND alias_foo.COLUMN_C = edge.COLUMN_D
@@ -357,45 +342,6 @@ class GraphDdlParserTest extends BaseTestSuite with MockitoSugar with TestNameFi
         """.stripMargin) should matchPattern {
         case Success(GraphDefinition("myGraph", None, `expectedGraphStatements`), _) =>
       }
-    }
-
-    it("parses a graph definition with inlined graph type elements") {
-      success(ddlDefinitions, DdlDefinition(List(
-        GraphDefinition(
-          name = "fooGraph",
-          maybeGraphTypeName = None,
-          statements = List(
-            ElementTypeDefinition("A", properties = Map("foo" -> CTInteger)),
-            ElementTypeDefinition("C"),
-            PatternDefinition(Set(Set("A")), CardinalityConstraint(0, None), Set("TYPE_1"), CardinalityConstraint(1, Some(1)), Set(Set("B"))),
-            NodeMappingDefinition(NodeTypeDefinition("A"), List(NodeToViewDefinition(List("foo")))),
-            NodeMappingDefinition(NodeTypeDefinition("A", "C"), List(NodeToViewDefinition(List("bar")))),
-            RelationshipMappingDefinition(RelationshipTypeDefinition("TYPE_1"), List(RelationshipTypeToViewDefinition(
-              viewDef = ViewDefinition(List("baz"), "edge"),
-              startNodeTypeToView = NodeTypeToViewDefinition(
-                NodeTypeDefinition("A"),
-                ViewDefinition(List("foo"), "alias_foo"),
-                JoinOnDefinition(List((List("alias_foo", "COLUMN_A"), List("edge", "COLUMN_A"))))),
-              endNodeTypeToView = NodeTypeToViewDefinition(
-                NodeTypeDefinition("B"),
-                ViewDefinition(List("bar"), "alias_bar"),
-                JoinOnDefinition(List((List("alias_bar", "COLUMN_A"), List("edge", "COLUMN_A")))))
-            )))))
-      )),
-        s"""|CREATE GRAPH fooGraph (
-            |  A ( foo INTEGER ),
-            |  C,
-            |  -- schema patterns
-            |  (A) <0 .. *> - [TYPE_1] -> <1> (B),
-            |
-            |  (A) FROM foo,
-            |  (A, C) FROM bar,
-            |
-            |  [TYPE_1] FROM baz edge
-            |    START NODES (A) FROM foo alias_foo JOIN ON alias_foo.COLUMN_A = edge.COLUMN_A
-            |    END NODES   (B) FROM bar alias_bar JOIN ON alias_bar.COLUMN_A = edge.COLUMN_A
-            |)
-            |""".stripMargin)
     }
 
     it("fails if node / edge type definitions are present") {
@@ -446,7 +392,7 @@ class GraphDdlParserTest extends BaseTestSuite with MockitoSugar with TestNameFi
 
     it("parses a relationship mapping definition") {
       val input =
-        """|[a] FROM baz alias_baz
+        """|(X)-[Y]->(Z) FROM baz alias_baz
            |  START NODES (A, B) FROM foo alias_foo
            |      JOIN ON alias_foo.COLUMN_A = edge.COLUMN_A
            |          AND alias_foo.COLUMN_C = edge.COLUMN_D
@@ -455,7 +401,7 @@ class GraphDdlParserTest extends BaseTestSuite with MockitoSugar with TestNameFi
         """.stripMargin
 
       success(relationshipMappingDefinition, input, RelationshipMappingDefinition(
-        relType = RelationshipTypeDefinition("a"),
+        relType = RelationshipTypeDefinition(NodeTypeDefinition("X"), "Y", NodeTypeDefinition("Z")),
         relTypeToView = List(RelationshipTypeToViewDefinition(
           viewDef = ViewDefinition(List("baz"), "alias_baz"),
           startNodeTypeToView = NodeTypeToViewDefinition(
@@ -474,13 +420,13 @@ class GraphDdlParserTest extends BaseTestSuite with MockitoSugar with TestNameFi
 
     it("parses a relationship mapping definition with custom property to column mapping") {
       val input =
-        """|[a] FROM baz alias_baz ( colA AS foo, colB AS bar )
+        """|(a)-[a]->(a) FROM baz alias_baz ( colA AS foo, colB AS bar )
            |  START NODES (A, B) FROM foo alias_foo JOIN ON alias_foo.COLUMN_A = edge.COLUMN_A
            |  END NODES   (C)    FROM bar alias_bar JOIN ON alias_bar.COLUMN_A = edge.COLUMN_A
         """.stripMargin
 
       success(relationshipMappingDefinition, input, RelationshipMappingDefinition(
-        relType = RelationshipTypeDefinition("a"),
+        relType = RelationshipTypeDefinition(NodeTypeDefinition("a"), "a", NodeTypeDefinition("a")),
         relTypeToView = List(RelationshipTypeToViewDefinition(
           viewDef = ViewDefinition(List("baz"), "alias_baz"),
           maybePropertyMapping = Some(Map("foo" -> "colA", "bar" -> "colB")),
@@ -497,7 +443,7 @@ class GraphDdlParserTest extends BaseTestSuite with MockitoSugar with TestNameFi
 
     it("parses a relationship label set definition") {
       val input =
-        """|[TYPE_1]
+        """|(A)-[TYPE_1]->(B)
            |  FROM baz edge
            |    START NODES (A) FROM foo alias_foo JOIN ON alias_foo.COLUMN_A = edge.COLUMN_A
            |    END NODES   (B) FROM bar alias_bar JOIN ON alias_bar.COLUMN_A = edge.COLUMN_A
@@ -521,12 +467,14 @@ class GraphDdlParserTest extends BaseTestSuite with MockitoSugar with TestNameFi
       success(
         relationshipMappingDefinition,
         input,
-        RelationshipMappingDefinition(RelationshipTypeDefinition("TYPE_1"), List(relMappingDef, relMappingDef)))
+        RelationshipMappingDefinition(
+          RelationshipTypeDefinition(NodeTypeDefinition("A"), "TYPE_1", NodeTypeDefinition("B")),
+          List(relMappingDef, relMappingDef)))
     }
 
     it("parses relationship label sets") {
       val input =
-        """|[TYPE_1]
+        """|(A)-[TYPE_1]->(B)
            |  FROM baz alias_baz
            |    START NODES (A) FROM foo alias_foo JOIN ON alias_foo.COLUMN_A = edge.COLUMN_A
            |    END NODES   (B) FROM bar alias_bar JOIN ON alias_bar.COLUMN_A = edge.COLUMN_A
@@ -534,7 +482,7 @@ class GraphDdlParserTest extends BaseTestSuite with MockitoSugar with TestNameFi
            |    START NODES (A) FROM foo alias_foo JOIN ON alias_foo.COLUMN_A = edge.COLUMN_A
            |    END NODES   (B) FROM bar alias_bar JOIN ON alias_bar.COLUMN_A = edge.COLUMN_A,
            |
-           |[TYPE_2]
+           |(A)-[TYPE_2]->(B)
            |  FROM baz alias_baz
            |    START NODES (A) FROM foo alias_foo JOIN ON alias_foo.COLUMN_A = edge.COLUMN_A
            |    END NODES   (B) FROM bar alias_bar JOIN ON alias_bar.COLUMN_A = edge.COLUMN_A
@@ -557,8 +505,12 @@ class GraphDdlParserTest extends BaseTestSuite with MockitoSugar with TestNameFi
 
       success(relationshipMappings, input,
         List(
-          RelationshipMappingDefinition(RelationshipTypeDefinition("TYPE_1"), List(relMappingDef, relMappingDef)),
-          RelationshipMappingDefinition(RelationshipTypeDefinition("TYPE_2"), List(relMappingDef, relMappingDef))
+          RelationshipMappingDefinition(
+            RelationshipTypeDefinition(NodeTypeDefinition("A"), "TYPE_1", NodeTypeDefinition("B")),
+            List(relMappingDef, relMappingDef)),
+          RelationshipMappingDefinition(
+            RelationshipTypeDefinition(NodeTypeDefinition("A"), "TYPE_2", NodeTypeDefinition("B")),
+            List(relMappingDef, relMappingDef))
         ))
     }
   }

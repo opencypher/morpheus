@@ -66,8 +66,7 @@ object GraphDdl {
   private[graphddl] case class TypeParts(
     elementTypes: List[ElementTypeDefinition] = List.empty,
     nodeTypes: List[NodeTypeDefinition] = List.empty,
-    relTypes: List[RelationshipTypeDefinition] = List.empty,
-    patterns: List[PatternDefinition] = List.empty
+    relTypes: List[RelationshipTypeDefinition] = List.empty
   )
 
   private[graphddl] object TypeParts {
@@ -76,11 +75,9 @@ object GraphDdl {
         case (parts, s: ElementTypeDefinition)      => parts.copy(elementTypes = parts.elementTypes :+ s)
         case (parts, s: NodeTypeDefinition)         => parts.copy(nodeTypes = parts.nodeTypes :+ s)
         case (parts, s: RelationshipTypeDefinition) => parts.copy(relTypes = parts.relTypes :+ s)
-        case (parts, s: PatternDefinition)          => parts.copy(patterns = parts.patterns :+ s)
       }
+      // TODO: Should we also validate node/rel types for distinctness?
       result.elementTypes.validateDistinctBy(_.name, "Duplicate element type")
-      result.nodeTypes.validateDistinctBy(_.elementTypes, "Duplicate node type")
-      result.relTypes.validateDistinctBy(_.elementType, "Duplicate relationship type")
       result
     }
   }
@@ -112,7 +109,7 @@ object GraphDdl {
 
     val ddlParts = DdlParts(ddl.statements)
 
-    val global = GraphType().push(ddlParts.elementTypes)
+    val global = GraphType.empty.push(ddlParts.elementTypes)
 
     val graphTypes = ddlParts.graphTypes
       .keyBy(_.name)
@@ -139,6 +136,10 @@ object GraphDdl {
 
   def tryWithGraph[T](name: String)(block: => T): T =
     tryWithContext(s"Error in graph: $name")(block)
+
+  object GraphType {
+    val empty: GraphType = GraphType()
+  }
 
   private[graphddl] case class GraphType(
     parent: Option[GraphType] = None,
@@ -182,13 +183,6 @@ object GraphDdl {
 
       val local = GraphType(Some(this), parts.elementTypes.keyBy(_.name))
 
-      val patterns = for {
-        pattern <- parts.patterns
-        source <- pattern.sourceNodeTypes
-        edge <- pattern.relTypes
-        target <- pattern.targetNodeTypes
-      } yield SchemaPattern(source, edge, target)
-
       GraphType(
         parent = Some(this),
 
@@ -196,21 +190,23 @@ object GraphDdl {
 
         nodeTypes = Set(
           parts.nodeTypes.map(_.elementTypes),
-          patterns.map(_.sourceLabelCombination),
-          patterns.map(_.targetLabelCombination)
+          parts.relTypes.map(_.sourceNodeType.elementTypes),
+          parts.relTypes.map(_.targetNodeType.elementTypes)
         ).flatten.map(labels => labels -> tryWithNode(labels)(
           mergeProperties(labels.map(local.resolveElementType))
         )).toMap,
 
         edgeTypes = Set(
-          parts.relTypes.map(_.elementType),
-          patterns.map(_.relType)
+          parts.relTypes.map(_.elementType)
         ).flatten.map(label => label -> tryWithRel(label)(
           mergeProperties(Set(local.resolveElementType(label)))
         )).toMap,
 
-        patterns =
-          patterns.toSet
+        patterns = parts.relTypes.map(rt => SchemaPattern(
+          rt.sourceNodeType.elementTypes,
+          rt.elementType,
+          rt.targetNodeType.elementTypes
+        )).toSet
       )
     }
 
