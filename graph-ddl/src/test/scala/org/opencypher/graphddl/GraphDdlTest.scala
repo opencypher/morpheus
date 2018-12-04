@@ -27,8 +27,8 @@
 package org.opencypher.graphddl
 
 import org.opencypher.okapi.api.graph.GraphName
-import org.opencypher.okapi.api.schema.Schema
-import org.opencypher.okapi.api.types.CTInteger
+import org.opencypher.okapi.api.schema.{Schema, SchemaPattern}
+import org.opencypher.okapi.api.types.{CTInteger, CTString, CTFloat}
 import org.scalatest.{FunSpec, Matchers}
 
 class GraphDdlTest extends FunSpec with Matchers {
@@ -62,7 +62,6 @@ class GraphDdlTest extends FunSpec with Matchers {
 
   it("converts to GraphDDL IR") {
 
-    import org.opencypher.okapi.api.types.{CTFloat, CTString}
 
     val graphDdl = GraphDdl(ddlString)
 
@@ -157,6 +156,40 @@ class GraphDdlTest extends FunSpec with Matchers {
     )
   }
 
+  it("allows compact inline graph definition") {
+    val ddl = GraphDdl(
+      """SET SCHEMA ds1.db1
+        |CREATE GRAPH myGraph (
+        |  A (x STRING), B (y STRING),
+        |  (A)-[B]->(A),
+        |  (A) FROM a,
+        |  [B] FROM b e
+        |    START NODES (A) FROM a n JOIN ON e.id = n.id
+        |    END   NODES (A) FROM a n JOIN ON e.id = n.id
+        |)
+      """.stripMargin)
+
+    val A_a = NodeViewKey(Set("A"), QualifiedViewId("ds1", "db1", "a"))
+
+    ddl.graphs(GraphName("myGraph")) shouldEqual Graph(
+      name = GraphName("myGraph"),
+      graphType = Schema.empty
+        .withNodePropertyKeys("A")("x" -> CTString)
+        .withRelationshipPropertyKeys("B")("y" -> CTString)
+        .withSchemaPatterns(SchemaPattern("A", "B", "A")),
+      nodeToViewMappings = Map(
+        A_a -> NodeToViewMapping(Set("A"), QualifiedViewId("ds1", "db1", "a"), Map("x" -> "x"))
+      ),
+      edgeToViewMappings = List(
+        EdgeToViewMapping(Set("B"), QualifiedViewId("ds1", "db1", "b"),
+          StartNode(A_a, List(Join("id", "id"))),
+          EndNode(A_a, List(Join("id", "id"))),
+          Map("y" -> "y")
+        )
+      )
+    )
+  }
+
   it("fails on duplicate node mappings") {
     val e = the [GraphDdlException] thrownBy GraphDdl("""
       |CREATE GRAPH TYPE fooSchema (
@@ -222,7 +255,18 @@ class GraphDdlTest extends FunSpec with Matchers {
       | (Person3, Person4)
       |)
     """.stripMargin)
-    e.getFullMessage should (include("fooSchema") and include("(Person3,Person4)") and include("Person1") and include("Person2"))
+    e.getFullMessage should (include("fooSchema") and include("Person3") and include("Person4"))
+  }
+
+  it("fails on unresolved labels in mapping") {
+    val e = the [GraphDdlException] thrownBy GraphDdl("""
+      |CREATE GRAPH fooGraph (
+      | Person1,
+      | Person2,
+      | (Person3, Person4) FROM x
+      |)
+    """.stripMargin)
+    e.getFullMessage should (include("fooGraph") and include("Person3") and include("Person4"))
   }
 
   it("fails on incompatible property types") {
@@ -234,7 +278,7 @@ class GraphDdlTest extends FunSpec with Matchers {
       |)
     """.stripMargin)
     e.getFullMessage should (
-      include("fooSchema") and include("(Person1,Person2)") and include("age") and include("STRING")  and include("INTEGER")
+      include("fooSchema") and include("Person1") and include("Person2") and include("age") and include("STRING")  and include("INTEGER")
     )
   }
 

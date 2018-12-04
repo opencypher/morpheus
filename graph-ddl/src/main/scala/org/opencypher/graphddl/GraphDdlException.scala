@@ -26,6 +26,8 @@
  */
 package org.opencypher.graphddl
 
+import org.opencypher.okapi.api.types.CypherType
+
 abstract class GraphDdlException(msg: String, cause: Option[Exception] = None) extends RuntimeException(msg, cause.orNull) with Serializable {
   import GraphDdlException._
   def getFullMessage: String = causeChain(this).map(_.getMessage).mkString("\n")
@@ -46,7 +48,13 @@ private[graphddl] object GraphDdlException {
     s"""$desc: $definition"""
   )
 
-  def incompatibleTypes(msg: String): Nothing = throw TypeException(msg)
+  def incompatibleTypes(msg: String): Nothing =
+    throw TypeException(msg)
+
+  def incompatibleTypes(key: String, t1: CypherType, t2: CypherType): Nothing = throw TypeException(
+    s"""|Incompatible property types for property key: $key
+        |Conflicting types: $t1 and $t2""".stripMargin
+  )
 
   def malformed(desc: String, identifier: String): Nothing =
     throw MalformedIdentifier(s"$desc: $identifier")
