@@ -36,7 +36,7 @@ case class Table(schema: Schema, data: Seq[Row]) extends RelationalTable[Table] 
   }
 
   override def filter(expr: Expr)(implicit header: RecordHeader, parameters: CypherMap): Table =
-    copy(data = data.filter(_.evaluate(expr).asInstanceOf[Boolean]))
+    copy(data = data.filter(_.eval[Boolean](expr).getOrElse(false)))
 
   override def drop(dropColumns: String*): Table =
     select(schema.columnNames.filterNot(dropColumns.contains): _*)

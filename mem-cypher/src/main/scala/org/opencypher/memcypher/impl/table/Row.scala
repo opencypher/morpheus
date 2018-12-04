@@ -51,7 +51,7 @@ object Row {
         lhs.cypherType.equivalence.asInstanceOf[Equiv[Any]].equiv(evaluate(lhs), evaluate(rhs))
 
       case Not(inner) =>
-        !evaluate(inner).asInstanceOf[Boolean]
+        !eval[Boolean](inner).getOrElse(false)
 
       case GreaterThan(lhs, rhs) =>
         lhs.cypherType.ordering.asInstanceOf[Ordering[Any]].gt(evaluate(lhs), evaluate(rhs))
@@ -66,10 +66,10 @@ object Row {
         lhs.cypherType.ordering.asInstanceOf[Ordering[Any]].lteq(evaluate(lhs), evaluate(rhs))
 
       case Ands(exprs) =>
-        exprs.map(evaluate).map(_.asInstanceOf[Boolean]).reduce(_ && _)
+        exprs.map(e => eval[Boolean](e).getOrElse(false)).reduce(_ && _)
 
       case Ors(exprs) =>
-        exprs.map(evaluate).map(_.asInstanceOf[Boolean]).reduce(_ || _)
+        exprs.map(e => eval[Boolean](e).getOrElse(false)).reduce(_ || _)
 
       case TrueLit => true
 
@@ -77,7 +77,35 @@ object Row {
 
       case _: NullLit => null
 
+      case Exists(inner) =>
+        evaluate(inner) != null
+
+      case Contains(lhs, rhs) =>
+        (for {
+          leftString <- eval[String](lhs)
+          rightString <- eval[String](rhs)
+        } yield leftString.contains(rightString)).getOrElse(false)
+
+
+      case StartsWith(lhs, rhs) =>
+        (for {
+          leftString <- eval[String](lhs)
+          rightString <- eval[String](rhs)
+        } yield leftString.startsWith(rightString)).getOrElse(false)
+
+      case EndsWith(lhs, rhs) =>
+        (for {
+          leftString <- eval[String](lhs)
+          rightString <- eval[String](rhs)
+        } yield leftString.endsWith(rightString)).getOrElse(false)
+
       case other => throw UnsupportedOperationException(s"Evaluating expression $other is not supported.")
+    }
+
+    def eval[T](expr: Expr)(implicit header: RecordHeader, schema: Schema, parameters: CypherMap): Option[T] = evaluate(expr) match {
+      case null => None
+      case Some(other) => Some(other.asInstanceOf[T])
+      case other => Some(other.asInstanceOf[T])
     }
   }
 }
