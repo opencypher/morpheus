@@ -311,11 +311,12 @@ class GraphDdlTest extends FunSpec with Matchers {
     ddls(1) shouldEqual ddls.head
     ddls(2) shouldEqual ddls.head
     ddls(3) shouldEqual ddls.head
-
   }
 
   it("fails on duplicate node mappings") {
     val e = the [GraphDdlException] thrownBy GraphDdl("""
+      |SET SCHEMA db.schema
+      |
       |CREATE GRAPH TYPE fooSchema (
       | Person,
       | (Person)
@@ -325,7 +326,30 @@ class GraphDdlTest extends FunSpec with Matchers {
       |           FROM personView
       |)
     """.stripMargin)
-    e.getFullMessage should (include("fooGraph") and include("Person") and include("personView"))
+    e.getFullMessage should (include("fooGraph") and include("Person") and include("db.schema.personView"))
+  }
+
+  it("fails on duplicate relationship mappings") {
+    val e = the[GraphDdlException] thrownBy GraphDdl(
+      """
+        |SET SCHEMA db.schema
+        |
+        |CREATE GRAPH TYPE fooSchema (
+        | Person,
+        | KNOWS,
+        | (Person)-[KNOWS]->(Person)
+        |)
+        |CREATE GRAPH fooGraph OF fooSchema (
+        | (Person)-[KNOWS]->(Person)
+        |   FROM pkpView e
+        |     START NODES (Person) FROM a n JOIN ON e.id = n.id
+        |     END   NODES (Person) FROM a n JOIN ON e.id = n.id,
+        |   FROM pkpView e
+        |     START NODES (Person) FROM a n JOIN ON e.id = n.id
+        |     END   NODES (Person) FROM a n JOIN ON e.id = n.id
+        |)
+      """.stripMargin)
+    e.getFullMessage should (include("fooGraph") and include("KNOWS") and include("db.schema.pkpView"))
   }
 
   it("fails on duplicate global labels") {

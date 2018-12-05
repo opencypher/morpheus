@@ -244,11 +244,11 @@ object GraphDdl {
       graphType = graphType.asOkapiSchema,
       nodeToViewMappings = parts.nodeMappings
         .flatMap(nm => toNodeToViewMappings(graphType.asOkapiSchema, graph.maybeSetSchema, nm))
-        .validateDistinctBy(_.key, "Duplicate mapping")
+        .validateDistinctBy(_.key, "Duplicate node mapping")
         .keyBy(_.key),
       edgeToViewMappings = parts.relMappings
-        // TODO: Validate distinct edge mappings
         .flatMap(em => toEdgeToViewMappings(graphType.asOkapiSchema, graph.maybeSetSchema, em))
+        .validateDistinctBy(_.key, "Duplicate relationship mapping")
     )
   }
 
