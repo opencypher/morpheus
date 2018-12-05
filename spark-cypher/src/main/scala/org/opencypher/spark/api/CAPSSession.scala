@@ -63,6 +63,7 @@ sealed class CAPSSession(val sparkSession: SparkSession) extends RelationalCyphe
 
   override val graphs: CAPSGraphFactory = CAPSGraphFactory()
 
+  override val entityTables: CAPSEntityTableFactory.type = CAPSEntityTableFactory
   /**
     * Reads a graph from sequences of nodes and relationships.
     *

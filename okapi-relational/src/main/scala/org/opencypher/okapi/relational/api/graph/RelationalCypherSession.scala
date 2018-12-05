@@ -44,7 +44,7 @@ import org.opencypher.okapi.logical.impl._
 import org.opencypher.okapi.relational.api.configuration.CoraConfiguration.{PrintOptimizedRelationalPlan, PrintQueryExecutionStages, PrintRelationalPlan}
 import org.opencypher.okapi.relational.api.io.{EntityTable, NodeTable}
 import org.opencypher.okapi.relational.api.planning.{RelationalCypherResult, RelationalRuntimeContext}
-import org.opencypher.okapi.relational.api.table.{RelationalCypherRecords, RelationalCypherRecordsFactory, Table}
+import org.opencypher.okapi.relational.api.table.{RelationalCypherRecords, RelationalCypherRecordsFactory, RelationalEntityTableFactory, Table}
 import org.opencypher.okapi.relational.impl.RelationalConverters._
 import org.opencypher.okapi.relational.impl.planning.{RelationalOptimizer, RelationalPlanner}
 
@@ -118,6 +118,8 @@ abstract class RelationalCypherSession[T <: Table[T] : TypeTag] extends CypherSe
   private[opencypher] def records: RelationalCypherRecordsFactory[T]
 
   private[opencypher] def graphs: RelationalCypherGraphFactory[T]
+
+  private[opencypher] def entityTables: RelationalEntityTableFactory[T]
 
   private[opencypher] def graphAt(qgn: QualifiedGraphName): Option[RelationalCypherGraph[T]] =
     if (catalog.graphNames.contains(qgn)) Some(catalog.graph(qgn).asRelational) else None
