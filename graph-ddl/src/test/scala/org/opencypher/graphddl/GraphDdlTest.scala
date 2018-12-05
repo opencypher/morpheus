@@ -283,10 +283,17 @@ class GraphDdlTest extends FunSpec with Matchers {
                  |)
                  |CREATE GRAPH myGraph OF myType ()
                """.stripMargin),
-      // duplicate node type definitions
+      // explicit node type definitions
       GraphDdl("""CREATE GRAPH TYPE myType (
                  |  A (x STRING), B (y STRING), C (z STRING),
-                 |  (A), (A), (C),
+                 |  (A), (C),
+                 |  (A)-[B]->(C)
+                 |)
+                 |CREATE GRAPH myGraph OF myType ()
+               """.stripMargin),
+      // implicit node type definitions
+      GraphDdl("""CREATE GRAPH TYPE myType (
+                 |  A (x STRING), B (y STRING), C (z STRING),
                  |  (A)-[B]->(C)
                  |)
                  |CREATE GRAPH myGraph OF myType ()
@@ -301,9 +308,9 @@ class GraphDdlTest extends FunSpec with Matchers {
                """.stripMargin)
     )
 
-    println(ddls.head)
     ddls(1) shouldEqual ddls.head
     ddls(2) shouldEqual ddls.head
+    ddls(3) shouldEqual ddls.head
 
   }
 

@@ -76,8 +76,9 @@ object GraphDdl {
         case (parts, s: NodeTypeDefinition)         => parts.copy(nodeTypes = parts.nodeTypes :+ s)
         case (parts, s: RelationshipTypeDefinition) => parts.copy(relTypes = parts.relTypes :+ s)
       }
-      // TODO: Should we also validate node/rel types for distinctness?
       result.elementTypes.validateDistinctBy(_.name, "Duplicate element type")
+      result.nodeTypes.validateDistinctBy(_.elementTypes, "Duplicate node type")
+      result.relTypes.validateDistinctBy(_.elementType, "Duplicate relationship type")
       result
     }
   }
@@ -143,22 +144,22 @@ object GraphDdl {
 
   private[graphddl] case class GraphType(
     parent: Option[GraphType] = None,
-    elementTypes: Map[String, ElementTypeDefinition] = Map(),
-    nodeTypes: Map[Set[String], PropertyKeys] = Map(),
-    edgeTypes: Map[String, PropertyKeys] = Map(),
-    patterns: Set[SchemaPattern] = Set()
+    elementTypes: Map[String, ElementTypeDefinition] = Map.empty,
+    nodeTypes: Map[Set[String], PropertyKeys] = Map.empty,
+    edgeTypes: Map[String, PropertyKeys] = Map.empty,
+    patterns: Set[SchemaPattern] = Set.empty
   ) {
     lazy val allElementTypes: Map[String, ElementTypeDefinition] =
-      parent.map(_.allElementTypes).getOrElse(Map()) ++ elementTypes
+      parent.map(_.allElementTypes).getOrElse(Map.empty) ++ elementTypes
 
     lazy val allNodeTypes: Map[Set[String], PropertyKeys] =
-      parent.map(_.allNodeTypes).getOrElse(Map()) ++ nodeTypes
+      parent.map(_.allNodeTypes).getOrElse(Map.empty) ++ nodeTypes
 
     lazy val allEdgeTypes: Map[String, PropertyKeys] =
-      parent.map(_.allEdgeTypes).getOrElse(Map()) ++ edgeTypes
+      parent.map(_.allEdgeTypes).getOrElse(Map.empty) ++ edgeTypes
 
     lazy val allPatterns: Set[SchemaPattern] =
-      parent.map(_.allPatterns).getOrElse(Set()) ++ patterns
+      parent.map(_.allPatterns).getOrElse(Set.empty) ++ patterns
 
     lazy val asOkapiSchema: Schema = {
       Schema.empty
