@@ -70,9 +70,9 @@ object GraphDdl {
   }
 
   private[graphddl] object DdlParts {
-    
+
     val empty: DdlParts = DdlParts()
-    
+
     def apply(statements: List[DdlStatement]): DdlParts = {
       val result = statements.foldLeft(DdlParts.empty) {
         case (parts, s: SetSchemaDefinition)   => parts.copy(maybeSetSchema = Some(s))
@@ -86,7 +86,7 @@ object GraphDdl {
       result
     }
   }
-  
+
   private[graphddl] case class DdlParts(
     maybeSetSchema: Option[SetSchemaDefinition] = None,
     elementTypes: List[ElementTypeDefinition] = List.empty,
@@ -110,7 +110,7 @@ object GraphDdl {
       result
     }
   }
-  
+
   private[graphddl] case class GraphTypeParts(
     elementTypes: List[ElementTypeDefinition] = List.empty,
     nodeTypes: List[NodeTypeDefinition] = List.empty,
@@ -177,7 +177,6 @@ object GraphDdl {
         eType.maybeKey.fold(schema)(key => schema.withNodeKey(eType.name, key._2))
       }
       .withSchemaPatterns(allPatterns.toSeq: _*)
-
 
     /** Validates, resolves and pushes the statements to form a child GraphType */
     def push(statements: List[GraphTypeStatement]): GraphType = {
