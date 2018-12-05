@@ -34,7 +34,7 @@ import org.opencypher.okapi.relational.api.io.{EntityTable, NodeTable}
 import org.opencypher.okapi.relational.api.planning.RelationalRuntimeContext
 import org.opencypher.okapi.relational.api.table.{RelationalCypherRecords, Table}
 import org.opencypher.okapi.relational.api.tagging.TagSupport._
-import org.opencypher.okapi.relational.impl.graph.{EmptyGraph, ScanGraph, SingleTableGraph, UnionGraph}
+import org.opencypher.okapi.relational.impl.graph.{EmptyGraph, ScanGraph, UnionGraph}
 import org.opencypher.okapi.relational.impl.operators.RelationalOperator
 import org.opencypher.okapi.relational.impl.planning.RelationalPlanner._
 
@@ -47,9 +47,6 @@ trait RelationalCypherGraphFactory[T <: Table[T]] {
   implicit val session: RelationalCypherSession[T]
 
   private[opencypher] implicit def tableTypeTag: TypeTag[T] = session.tableTypeTag
-
-  def singleTableGraph(drivingTable: RelationalOperator[T], schema: Schema, tagsUsed: Set[Int])
-    (implicit context: RelationalRuntimeContext[T]): Graph = new SingleTableGraph(drivingTable, schema, tagsUsed)
 
   def unionGraph(graphs: RelationalCypherGraph[T]*)(implicit context: RelationalRuntimeContext[T]): Graph = {
     unionGraph(computeRetaggings(graphs.map(g => g -> g.tags)).toList)

@@ -37,7 +37,6 @@ class UnionGraphTest extends CAPSGraphTest
   with RecordsVerificationFixture
   with TeamDataFixture {
 
-  import CAPSGraphTest._
   import CAPSGraphTestData._
 
   def testGraph1 = initGraph("CREATE (:Person {name: 'Mats'})")
@@ -62,30 +61,6 @@ class UnionGraphTest extends CAPSGraphTest
 
     union.nodes("n").size shouldBe 3
     union.asCaps.tags shouldBe Set(0, 1)
-  }
-
-  test("Node scan from single node CAPSRecords") {
-    val inputGraph = initGraph(`:Person`)
-    val inputNodes = inputGraph.nodes("n")
-
-    val singleTableGraph = caps.graphs.singleTableGraph(inputNodes.planStart, inputGraph.schema, Set(0))
-    val nodes = singleTableGraph.nodes("n")
-
-    val cols = Seq(
-      n,
-      nHasLabelPerson,
-      nHasLabelSwedish,
-      nHasPropertyLuckyNumber,
-      nHasPropertyName
-    )
-    val data = Bag(
-      Row(0L, true, true, 23L, "Mats"),
-      Row(1L, true, false, 42L, "Martin"),
-      Row(2L, true, false, 1337L, "Max"),
-      Row(3L, true, false, 9L, "Stefan")
-    )
-
-    verify(nodes, cols, data)
   }
 
   test("Node scan from multiple single node CAPSRecords") {
