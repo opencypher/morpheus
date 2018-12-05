@@ -32,8 +32,8 @@ import org.opencypher.okapi.ir.api.expr.Var
 import org.opencypher.okapi.relational.api.graph.{RelationalCypherGraph, RelationalCypherSession}
 import org.opencypher.okapi.relational.api.planning.RelationalRuntimeContext
 import org.opencypher.okapi.relational.api.schema.RelationalSchema._
-import org.opencypher.okapi.relational.api.table.Table
-import org.opencypher.okapi.relational.impl.operators.{Distinct, RelationalOperator, Start, TabularUnionAll}
+import org.opencypher.okapi.relational.api.table.{RelationalCypherRecords, Table}
+import org.opencypher.okapi.relational.impl.operators.{RelationalOperator, Start, TabularUnionAll}
 import org.opencypher.okapi.relational.impl.planning.RelationalPlanner._
 
 import scala.reflect.runtime.universe.TypeTag
@@ -90,7 +90,7 @@ final case class UnionGraph[T <: Table[T] : TypeTag](graphsToReplacements: Seq[(
 
     alignedScans match {
       case Nil => Start(session.records.empty(targetEntityHeader))
-      case _ => Distinct(alignedScans.reduce(TabularUnionAll(_, _)), Set(targetEntity))
+      case _ => alignedScans.reduce(TabularUnionAll(_, _))
     }
 
   }
