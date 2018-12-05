@@ -51,7 +51,7 @@ object GraphDdlParser {
   def parse(ddlString: String): DdlDefinition = {
     ddlDefinitions.parse(ddlString) match {
       case Success(v, _) => v
-      case Failure(failedParser, index, extra) =>
+      case Failure(_, index, extra) =>
         val before = index - math.max(index - 20, 0)
         val after = math.min(index + 20, extra.input.length) - index
         val locationPointer =
@@ -118,7 +118,9 @@ object GraphDdlParser {
     P("(" ~ elementTypes ~ ")").map(NodeTypeDefinition(_))
 
   val relTypeDefinition: P[RelationshipTypeDefinition] =
-    P(nodeTypeDefinition ~ "-" ~ "[" ~ elementType ~ "]" ~ "->" ~ nodeTypeDefinition).map(RelationshipTypeDefinition.tupled)
+    P(nodeTypeDefinition ~ "-" ~ "[" ~ elementType ~ "]" ~ "->" ~ nodeTypeDefinition).map {
+      case (startNodeType, eType, endNodeType) => RelationshipTypeDefinition(startNodeType, eType, endNodeType)
+    }
 
   val graphTypeStatements: P[List[GraphTypeStatement]] =
     // Note: Order matters here. relTypeDefinition must appear before nodeTypeDefinition since they parse the same prefix

@@ -297,8 +297,8 @@ class GraphDdlAcceptanceTest extends BaseTestSuite {
               NodeTypeDefinition("B"),
               NodeTypeDefinition("A", "B"),
               NodeTypeDefinition("C"),
-              RelationshipTypeDefinition(NodeTypeDefinition("A"), "TYPE_1", NodeTypeDefinition("B")),
-              RelationshipTypeDefinition(NodeTypeDefinition("A", "B"), "TYPE_2", NodeTypeDefinition("C"))
+              RelationshipTypeDefinition("A", "TYPE_1", "B"),
+              RelationshipTypeDefinition("A", "B")("TYPE_2")("C")
             )),
           GraphDefinition(
             name = graphName.value,
@@ -306,7 +306,7 @@ class GraphDdlAcceptanceTest extends BaseTestSuite {
             statements = List(
               NodeMappingDefinition(NodeTypeDefinition("A"), List(NodeToViewDefinition(List("foo")))),
               RelationshipMappingDefinition(
-                RelationshipTypeDefinition(NodeTypeDefinition("A"), "TYPE_1", NodeTypeDefinition("B")),
+                RelationshipTypeDefinition("A", "TYPE_1", "B"),
                 List(RelationshipTypeToViewDefinition(
                   viewDef = ViewDefinition(List("baz"), "edge"),
                   startNodeTypeToView = NodeTypeToViewDefinition(

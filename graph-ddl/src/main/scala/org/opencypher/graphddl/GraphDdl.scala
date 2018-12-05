@@ -37,9 +37,6 @@ import scala.language.higherKinds
 
 object GraphDdl {
 
-  type NodeType = Set[String]
-  type EdgeType = Set[String]
-
   type PropertyMappings = Map[String, String]
 
   def apply(ddl: String): GraphDdl =
@@ -259,15 +256,16 @@ object GraphDdl {
   ): Seq[NodeToViewMapping] = {
     nmd.nodeToView.map { nvd =>
       tryWithContext(s"Error in node mapping for: ${nmd.nodeType.elementTypes.mkString(",")}") {
-        val viewId = toQualifiedViewId(maybeSetSchema, nvd.viewId)
-        val nodeKey = NodeViewKey(nmd.nodeType.elementTypes, viewId)
+
+        val nodeKey = NodeViewKey(toNodeType(nmd.nodeType), toQualifiedViewId(maybeSetSchema, nvd.viewId))
+
         tryWithContext(s"Error in node mapping for: $nodeKey") {
           NodeToViewMapping(
             nodeType = nodeKey.nodeType,
-            view = nodeKey.qualifiedViewId,
+            view = toQualifiedViewId(maybeSetSchema, nvd.viewId),
             propertyMappings = toPropertyMappings(
-              elementTypes = nmd.nodeType.elementTypes,
-              graphTypePropertyKeys = graphType.nodePropertyKeys(nmd.nodeType.elementTypes).keySet,
+              elementTypes = nodeKey.nodeType.elementTypes,
+              graphTypePropertyKeys = graphType.nodePropertyKeys(nodeKey.nodeType.elementTypes).keySet,
               maybePropertyMapping = nvd.maybePropertyMapping
             )
           )
@@ -283,15 +281,16 @@ object GraphDdl {
   ): Seq[EdgeToViewMapping] = {
     rmd.relTypeToView.map { rvd =>
       tryWithContext(s"Error in relationship mapping for: ${rmd.relType}") {
-        val viewId = toQualifiedViewId(maybeSetSchema, rvd.viewDef.viewId)
-        val edgeKey = EdgeViewKey(Set(rmd.relType.elementType), viewId)
+
+        val edgeKey = EdgeViewKey(toRelType(rmd.relType), toQualifiedViewId(maybeSetSchema, rvd.viewDef.viewId))
+
         tryWithContext(s"Error in relationship mapping for: $edgeKey") {
           EdgeToViewMapping(
-            edgeType = edgeKey.edgeType,
+            relType = edgeKey.relType,
             view = edgeKey.qualifiedViewId,
             startNode = StartNode(
               nodeViewKey = NodeViewKey(
-                nodeType = rvd.startNodeTypeToView.nodeType.elementTypes,
+                nodeType = edgeKey.relType.startNodeType,
                 qualifiedViewId = toQualifiedViewId(maybeSetSchema, rvd.startNodeTypeToView.viewDef.viewId)
               ),
               joinPredicates = rvd.startNodeTypeToView.joinOn.joinPredicates.map(toJoin(
@@ -301,7 +300,7 @@ object GraphDdl {
             ),
             endNode = EndNode(
               nodeViewKey = NodeViewKey(
-                nodeType = rvd.endNodeTypeToView.nodeType.elementTypes,
+                nodeType = edgeKey.relType.endNodeType,
                 qualifiedViewId = toQualifiedViewId(maybeSetSchema, rvd.endNodeTypeToView.viewDef.viewId)
               ),
               joinPredicates = rvd.endNodeTypeToView.joinOn.joinPredicates.map(toJoin(
@@ -348,6 +347,15 @@ object GraphDdl {
         unresolved(s"Unable to resolve aliases", s"$leftAlias, $rightAlias", aliases)
     }
   }
+
+  private def toNodeType(nodeTypeDefinition: NodeTypeDefinition): NodeType =
+    NodeType(nodeTypeDefinition.elementTypes)
+
+  private def toRelType(relTypeDefinition: RelationshipTypeDefinition): RelationshipType =
+    RelationshipType(
+      startNodeType = toNodeType(relTypeDefinition.sourceNodeType),
+      elementType = relTypeDefinition.elementType,
+      endNodeType = toNodeType(relTypeDefinition.targetNodeType))
 
   private def toPropertyMappings(
     elementTypes: Set[String],
@@ -450,13 +458,13 @@ case class NodeToViewMapping(
 }
 
 case class EdgeToViewMapping(
-  edgeType: EdgeType,
+  relType: RelationshipType,
   view: QualifiedViewId,
   startNode: StartNode,
   endNode: EndNode,
   propertyMappings: PropertyMappings
 ) extends ElementToViewMapping {
-  def key: EdgeViewKey = EdgeViewKey(edgeType, view)
+  def key: EdgeViewKey = EdgeViewKey(relType, view)
 }
 
 case class StartNode(
@@ -474,19 +482,37 @@ case class Join(
   edgeColumn: String
 )
 
+object NodeType {
+  def apply(elementTypes: String*): NodeType = NodeType(elementTypes.toSet)
+}
+
+case class NodeType(elementTypes: Set[String]) {
+  override def toString: String = s"(${elementTypes.mkString(", ")})"
+}
+
+object RelationshipType {
+  def apply(startNodeElementType: String, elementType: String, endNodeElementType: String): RelationshipType =
+    RelationshipType(NodeType(startNodeElementType), elementType, NodeType(endNodeElementType))
+}
+
+case class RelationshipType(startNodeType: NodeType, elementType: String, endNodeType: NodeType) {
+  override def toString: String = s"$startNodeType-[$elementType]->$endNodeType"
+
+}
+
 trait ElementViewKey {
   def elementType: Set[String]
   def qualifiedViewId: QualifiedViewId
 }
 
-case class NodeViewKey(nodeType: Set[String], qualifiedViewId: QualifiedViewId) extends ElementViewKey {
-  override val elementType: Set[String] = nodeType
+case class NodeViewKey(nodeType: NodeType, qualifiedViewId: QualifiedViewId) extends ElementViewKey {
+  override val elementType: Set[String] = nodeType.elementTypes
 
-  override def toString: String = s"node type: ${nodeType.mkString(", ")}, view: $qualifiedViewId"
+  override def toString: String = s"node type: $nodeType, view: $qualifiedViewId"
 }
 
-case class EdgeViewKey(edgeType: Set[String], qualifiedViewId: QualifiedViewId) extends ElementViewKey {
-  override val elementType: Set[String] = edgeType
+case class EdgeViewKey(relType: RelationshipType, qualifiedViewId: QualifiedViewId) extends ElementViewKey {
+  override val elementType: Set[String] = Set(relType.elementType)
 
-  override def toString: String = s"relationship type: ${edgeType.mkString(", ")}, view: $qualifiedViewId"
+  override def toString: String = s"relationship type: $relType, view: $qualifiedViewId"
 }

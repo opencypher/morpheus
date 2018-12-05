@@ -80,6 +80,14 @@ case class NodeTypeDefinition(
   elementTypes: Set[String]
 ) extends GraphDdlAst with GraphTypeStatement
 
+object RelationshipTypeDefinition {
+  def apply(startNodeElementType: String, elementType: String, endNodeElementType: String): RelationshipTypeDefinition =
+    RelationshipTypeDefinition(NodeTypeDefinition(startNodeElementType), elementType, NodeTypeDefinition(endNodeElementType))
+
+  def apply(startNodeElementTypes: String*)(elementType: String)(endNodeElementTypes: String*): RelationshipTypeDefinition =
+    RelationshipTypeDefinition(NodeTypeDefinition(startNodeElementTypes.toSet), elementType, NodeTypeDefinition(endNodeElementTypes.toSet))
+}
+
 case class RelationshipTypeDefinition(
   sourceNodeType: NodeTypeDefinition,
   elementType: String,

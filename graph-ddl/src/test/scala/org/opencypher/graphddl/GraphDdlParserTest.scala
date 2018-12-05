@@ -27,7 +27,6 @@
 package org.opencypher.graphddl
 
 import fastparse.core.Parsed.{Failure, Success}
-import org.opencypher.graphddl
 import org.opencypher.graphddl.GraphDdlParser._
 import org.opencypher.okapi.api.types._
 import org.opencypher.okapi.impl.util.ParserUtils._
@@ -253,8 +252,8 @@ class GraphDdlParserTest extends BaseTestSuite with MockitoSugar with TestNameFi
           NodeTypeDefinition("A"),
           NodeTypeDefinition("B"),
           NodeTypeDefinition("A", "B"),
-          RelationshipTypeDefinition(NodeTypeDefinition("A"), "TYPE_1", NodeTypeDefinition("B")),
-          RelationshipTypeDefinition(NodeTypeDefinition("A", "B"), "TYPE_2", NodeTypeDefinition("A"))
+          RelationshipTypeDefinition("A", "TYPE_1", "B"),
+          RelationshipTypeDefinition("A", "B")("TYPE_2")("A")
         )))
     }
 
@@ -263,7 +262,7 @@ class GraphDdlParserTest extends BaseTestSuite with MockitoSugar with TestNameFi
         GraphTypeDefinition(
           name = "mySchema",
           statements = List(
-            RelationshipTypeDefinition(NodeTypeDefinition("A"), "TYPE", NodeTypeDefinition("B"))
+            RelationshipTypeDefinition("A", "TYPE", "B")
           )))
     }
 
@@ -282,12 +281,12 @@ class GraphDdlParserTest extends BaseTestSuite with MockitoSugar with TestNameFi
       success(graphTypeDefinition, input, GraphTypeDefinition(
         name = "mySchema",
         statements = List(
-          RelationshipTypeDefinition(NodeTypeDefinition("A", "B"), "TYPE_1", NodeTypeDefinition("B")),
+          RelationshipTypeDefinition("A", "B")("TYPE_1")("B"),
           NodeTypeDefinition("A"),
           NodeTypeDefinition("A", "B"),
-          RelationshipTypeDefinition(NodeTypeDefinition("A"), "TYPE_1", NodeTypeDefinition("A")),
+          RelationshipTypeDefinition("A", "TYPE_1", "A"),
           NodeTypeDefinition("B"),
-          RelationshipTypeDefinition(NodeTypeDefinition("B"), "TYPE_2", NodeTypeDefinition("A", "B"))
+          RelationshipTypeDefinition("B")("TYPE_2")("A", "B")
         )))
     }
   }
@@ -306,10 +305,10 @@ class GraphDdlParserTest extends BaseTestSuite with MockitoSugar with TestNameFi
         ElementTypeDefinition("A", properties = Map("foo" -> CTString)),
         ElementTypeDefinition("B"),
         NodeTypeDefinition("A", "B"),
-        RelationshipTypeDefinition(NodeTypeDefinition("A", "B"), "B", NodeTypeDefinition("C")),
+        RelationshipTypeDefinition("A", "B")("B")("C"),
         NodeMappingDefinition(NodeTypeDefinition("A", "B"), List(NodeToViewDefinition(List("view_a_b")))),
         RelationshipMappingDefinition(
-          relType = RelationshipTypeDefinition(NodeTypeDefinition("A", "B"), "B", NodeTypeDefinition("C")),
+          relType = RelationshipTypeDefinition("A", "B")("B")("C"),
           relTypeToView = List(RelationshipTypeToViewDefinition(
             viewDef = ViewDefinition(List("baz"), "alias_baz"),
             startNodeTypeToView = NodeTypeToViewDefinition(
@@ -401,7 +400,7 @@ class GraphDdlParserTest extends BaseTestSuite with MockitoSugar with TestNameFi
         """.stripMargin
 
       success(relationshipMappingDefinition, input, RelationshipMappingDefinition(
-        relType = RelationshipTypeDefinition(NodeTypeDefinition("X"), "Y", NodeTypeDefinition("Z")),
+        relType = RelationshipTypeDefinition("X", "Y", "Z"),
         relTypeToView = List(RelationshipTypeToViewDefinition(
           viewDef = ViewDefinition(List("baz"), "alias_baz"),
           startNodeTypeToView = NodeTypeToViewDefinition(
@@ -426,7 +425,7 @@ class GraphDdlParserTest extends BaseTestSuite with MockitoSugar with TestNameFi
         """.stripMargin
 
       success(relationshipMappingDefinition, input, RelationshipMappingDefinition(
-        relType = RelationshipTypeDefinition(NodeTypeDefinition("a"), "a", NodeTypeDefinition("a")),
+        relType = RelationshipTypeDefinition("a", "a", "a"),
         relTypeToView = List(RelationshipTypeToViewDefinition(
           viewDef = ViewDefinition(List("baz"), "alias_baz"),
           maybePropertyMapping = Some(Map("foo" -> "colA", "bar" -> "colB")),
@@ -468,7 +467,7 @@ class GraphDdlParserTest extends BaseTestSuite with MockitoSugar with TestNameFi
         relationshipMappingDefinition,
         input,
         RelationshipMappingDefinition(
-          RelationshipTypeDefinition(NodeTypeDefinition("A"), "TYPE_1", NodeTypeDefinition("B")),
+          RelationshipTypeDefinition("A", "TYPE_1", "B"),
           List(relMappingDef, relMappingDef)))
     }
 
@@ -506,10 +505,10 @@ class GraphDdlParserTest extends BaseTestSuite with MockitoSugar with TestNameFi
       success(relationshipMappings, input,
         List(
           RelationshipMappingDefinition(
-            RelationshipTypeDefinition(NodeTypeDefinition("A"), "TYPE_1", NodeTypeDefinition("B")),
+            RelationshipTypeDefinition("A", "TYPE_1", "B"),
             List(relMappingDef, relMappingDef)),
           RelationshipMappingDefinition(
-            RelationshipTypeDefinition(NodeTypeDefinition("A"), "TYPE_2", NodeTypeDefinition("B")),
+            RelationshipTypeDefinition("A", "TYPE_2", "B"),
             List(relMappingDef, relMappingDef))
         ))
     }
