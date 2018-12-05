@@ -1001,24 +1001,4 @@ class MultipleGraphBehaviour extends CAPSTestSuite with ScanGraphInit {
       CypherMap("a.name" -> "Donald")
     ))
   }
-
-  it("foobar") {
-    val g1 = initGraph(
-      """|CREATE (:A {v: 1})
-         |CREATE (:B {v: 100})""".stripMargin)
-
-    caps.catalog.store("g1", g1)
-
-    val query =
-      """|FROM GRAPH g1
-         |MATCH (n)
-         |CONSTRUCT on g1
-         |  CREATE (n)-[:R]->(:M)
-         |RETURN GRAPH""".stripMargin
-
-    val result = testGraph1.cypher(query)
-
-    result.graph.cypher("""MATCH (n) RETURN n""").show
-  }
-
 }
