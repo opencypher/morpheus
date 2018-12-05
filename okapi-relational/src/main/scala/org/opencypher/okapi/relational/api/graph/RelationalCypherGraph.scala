@@ -61,21 +61,20 @@ trait RelationalCypherGraphFactory[T <: Table[T]] {
   def empty: Graph = EmptyGraph()
 
   def create(nodeTable: NodeTable[T], entityTables: EntityTable[T]*): Graph = {
-    create(Set(0), None, nodeTable, entityTables: _*)
+    create(Set(0), None, nodeTable +: entityTables: _*)
   }
 
   def create(maybeSchema: Option[Schema], nodeTable: NodeTable[T], entityTables: EntityTable[T]*): Graph = {
-    create(Set(0), maybeSchema, nodeTable, entityTables: _*)
+    create(Set(0), maybeSchema, nodeTable +: entityTables: _*)
   }
 
   def create(
     tags: Set[Int],
     maybeSchema: Option[Schema],
-    nodeTable: NodeTable[T],
     entityTables: EntityTable[T]*
   ): Graph = {
     implicit val runtimeContext: RelationalRuntimeContext[T] = session.basicRuntimeContext()
-    val allTables = nodeTable +: entityTables
+    val allTables = entityTables
     val schema = maybeSchema.getOrElse(allTables.map(_.schema).reduce[Schema](_ ++ _))
     new ScanGraph(allTables, schema, tags)
   }

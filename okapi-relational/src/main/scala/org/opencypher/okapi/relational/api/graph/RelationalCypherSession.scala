@@ -96,7 +96,7 @@ abstract class RelationalCypherSession[T <: Table[T] : TypeTag] extends CypherSe
     * @return property graph
     */
   def readFrom(tags: Set[Int], nodeTable: NodeTable[T], entityTables: EntityTable[T]*): PropertyGraph = {
-    graphs.create(tags, None, nodeTable, entityTables: _*)
+    graphs.create(tags, None, nodeTable +: entityTables: _*)
   }
 
   /**
