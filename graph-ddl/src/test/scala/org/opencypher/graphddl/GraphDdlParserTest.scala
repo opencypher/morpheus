@@ -532,6 +532,18 @@ class GraphDdlParserTest extends BaseTestSuite with MockitoSugar with TestNameFi
         parse(ddlString)
       }
     }
+
+    it("gives a nice error message for old syntax") {
+      val ddlString =
+        """CREATE GRAPH TYPE mySchema (
+          |
+          |  (A),
+          |  [FOO]
+          |)
+          |""".stripMargin
+      val ex = the[DdlParsingException] thrownBy parse(ddlString)
+      ex.expected shouldEqual "elementTypeDefinition | relTypeDefinition | nodeTypeDefinition"
+    }
   }
 
 }

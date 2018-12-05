@@ -118,11 +118,11 @@ object GraphDdlParser {
     P("(" ~ elementTypes ~ ")").map(NodeTypeDefinition(_))
 
   val relTypeDefinition: P[RelationshipTypeDefinition] =
-    P(nodeTypeDefinition ~ "-[" ~ elementType ~ "]->" ~ nodeTypeDefinition).map(RelationshipTypeDefinition.tupled)
+    P(nodeTypeDefinition ~ "-" ~ "[" ~ elementType ~ "]" ~ "->" ~ nodeTypeDefinition).map(RelationshipTypeDefinition.tupled)
 
   val graphTypeStatements: P[List[GraphTypeStatement]] =
     // Note: Order matters here. relTypeDefinition must appear before nodeTypeDefinition since they parse the same prefix
-    P("(" ~/ (elementTypeDefinition | relTypeDefinition | nodeTypeDefinition ).rep(sep = ",").map(_.toList) ~/ ")")
+    P("(" ~/ (elementTypeDefinition | relTypeDefinition | nodeTypeDefinition ).rep(sep = "," ~/ Pass).map(_.toList) ~/ ")")
 
   val graphTypeDefinition: P[GraphTypeDefinition] =
     P(CREATE ~ GRAPH ~ TYPE ~/ identifier.! ~/ graphTypeStatements).map(GraphTypeDefinition.tupled)
@@ -179,7 +179,8 @@ object GraphDdlParser {
   val graphDefinition: P[GraphDefinition] = {
 
     val graphStatements: P[List[GraphStatement]] =
-      P("(" ~/ (relationshipMappingDefinition | nodeMappingDefinition | elementTypeDefinition | relTypeDefinition | nodeTypeDefinition ).rep(sep = ",").map(_.toList) ~/ ")")
+      // Note: Order matters here
+      P("(" ~/ (relationshipMappingDefinition | nodeMappingDefinition | elementTypeDefinition | relTypeDefinition | nodeTypeDefinition ).rep(sep = "," ~/ Pass).map(_.toList) ~/ ")")
 
     P(CREATE ~ GRAPH ~ identifier.! ~/ (OF ~/ identifier.!).? ~/ graphStatements)
       .map { case (gName, graphTypeRef, statements) => GraphDefinition(gName, graphTypeRef, statements) }
