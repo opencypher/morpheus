@@ -105,8 +105,8 @@ object GraphDdl {
         case (parts, s: RelationshipTypeDefinition) => parts.copy(relTypes = parts.relTypes :+ s)
       }
       result.elementTypes.validateDistinctBy(_.name, "Duplicate element type")
-      result.nodeTypes.validateDistinctBy(_.elementTypes, "Duplicate node type")
-      result.relTypes.validateDistinctBy(_.elementType, "Duplicate relationship type")
+      result.nodeTypes.validateDistinctBy(identity, "Duplicate node type")
+      result.relTypes.validateDistinctBy(identity, "Duplicate relationship type")
       result
     }
   }
