@@ -24,9 +24,6 @@ CREATE GRAPH TYPE testSchema (
   (A), (B), (C), (A,B), (A,C),
 
   -- Edges
-  [R], [S], [T],
-
-  -- Constraints
   (A) - [R] -> (B),
   (B) - [R] -> (A,B),
   (A,B) - [S] -> (A,B),
@@ -46,27 +43,28 @@ CREATE GRAPH test OF testSchema (
   (A, B) FROM A_B,
   (A, C) FROM A_C,
 
-  [R]
+  (A) - [R] -> (B)
     FROM R edge
       START NODES (A) FROM A node
         JOIN ON node.id = edge.source
       END NODES (B) FROM B node
-        JOIN ON node.id = edge.target
+        JOIN ON node.id = edge.target,
 
+  (B) - [R] -> (A, B)
     FROM R edge
       START NODES (B) FROM B node
         JOIN ON node.id = edge.source
       END NODES (A, B) FROM A_B node
         JOIN ON node.id = edge.target,
 
-  [S]
+  (A, B) - [S] -> (A, B)
     FROM S edge
       START NODES (A, B) FROM A_B node
         JOIN ON node.id = edge.source
       END NODES (A, B) FROM A_B node
         JOIN ON node.id = edge.target,
 
-  [T]
+  (A, C) - [T] -> (A, B)
     FROM T edge
       START NODES (A, C) FROM A_C node
         JOIN ON node.id = edge.source
