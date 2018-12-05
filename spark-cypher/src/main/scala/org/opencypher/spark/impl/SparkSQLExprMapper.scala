@@ -131,7 +131,11 @@ object SparkSQLExprMapper {
           NULL_LIT.cast(ct.toSparkType.get)
 
         case dt@DateTime(expr) =>
-          val e = expr.asSparkSQLExpr
+          import org.opencypher.spark.impl.util.DateTimeUtils._
+          val dateString = expr match {
+            case map@MapExpression(_) => fromMapExpr(map)
+            case _ => ???
+          }
           functions.lit(expr.asSparkSQLExpr).cast(DataTypes.TimestampType)
 
         case l: Lit[_] => functions.lit(l.v)

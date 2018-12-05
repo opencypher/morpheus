@@ -399,12 +399,23 @@ class FunctionsBehaviour extends CAPSTestSuite with DefaultGraphInit {
 
   describe("datetime") {
 
-    it("datetime") {
+    it("returns a valid datetime") {
       val result = caps.cypher("RETURN datetime(\"2015-06-24T12:50:35.556\") AS time")
+//      val result = caps.cypher("RETURN datetime(\"1-01-01\") AS time")
       result.show
 //      val diff = result.records.asCaps.table.df.withColumn("diff", functions.date_add(functions.col("$  AUTOSTRING0 __ STRING __ DATETIME"), 15))
       val maps = result.records.toMaps
       ???
+    }
+
+    it("takes a map as argument") {
+      val result = caps.cypher("RETURN datetime({ year: 2015, month: 11, day: 11 })")
+      result.show
+    }
+
+    it("adds missing informations with default values") {
+      val result = caps.cypher("RETURN datetime({ year: 2015, month: 5 })")
+      result.show
     }
   }
 
