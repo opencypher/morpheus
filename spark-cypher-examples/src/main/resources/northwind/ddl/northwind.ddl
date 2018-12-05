@@ -134,7 +134,6 @@ CREATE ELEMENT TYPE HAS_REGION
 -- =================================================================
 
 CREATE GRAPH TYPE NORTHWIND_NAIVE (
-
     -- Nodes
     (Employee),
     (Territory),
@@ -149,19 +148,6 @@ CREATE GRAPH TYPE NORTHWIND_NAIVE (
     (CustomerDemographic),
 
     -- Relationships
-    [HAS_SUPPLIER],
-    [HAS_PRODUCT],
-    [HAS_CATEGORY],
-    [HAS_TERRITORY],
-    [HAS_EMPLOYEE],
-    [REPORTS_TO],
-    [HAS_CUSTOMER],
-    [HAS_CUSTOMER_DEMOGRAPHIC],
-    [HAS_ORDER],
-    [HAS_SHIPPER],
-    [HAS_REGION],
-
-    -- Relationship type constraints
     (Product)-[HAS_SUPPLIER]->(Supplier),
     (Product)-[HAS_CATEGORY]->(Category),
     (OrderDetails)-[HAS_PRODUCT]->(Product),
@@ -212,8 +198,7 @@ CREATE GRAPH Northwind OF NORTHWIND_NAIVE (
   (Supplier)
        FROM VIEW_SUPPLIERS,
 
-  -- (Product)-[HAS_CATEGORY]->(Category)
-  [HAS_CATEGORY]
+  (Product)-[HAS_CATEGORY]->(Category)
       FROM VIEW_PRODUCTS edge
           START NODES (Product)
               FROM VIEW_PRODUCTS start_nodes
@@ -222,8 +207,7 @@ CREATE GRAPH Northwind OF NORTHWIND_NAIVE (
               FROM VIEW_CATEGORIES end_nodes
                   JOIN ON end_nodes.CATEGORYID = edge.CATEGORYID,
 
-  -- (Territory)-[HAS_REGION]->(Region)
-  [HAS_REGION]
+  (Territory)-[HAS_REGION]->(Region)
       FROM VIEW_TERRITORIES edge
           START NODES (Territory)
               FROM VIEW_TERRITORIES start_nodes
@@ -232,8 +216,7 @@ CREATE GRAPH Northwind OF NORTHWIND_NAIVE (
               FROM VIEW_REGION end_nodes
                   JOIN ON end_nodes.REGIONID = edge.REGIONID,
 
-  -- (:Employee)-[:HAS_TERRITORY]->(:Territory)
-  [HAS_TERRITORY]
+  (Employee)-[HAS_TERRITORY]->(Territory)
       FROM VIEW_EMPLOYEETERRITORIES edge
           START NODES (Employee)
               FROM VIEW_EMPLOYEES start_nodes
@@ -242,8 +225,7 @@ CREATE GRAPH Northwind OF NORTHWIND_NAIVE (
               FROM VIEW_TERRITORIES end_nodes
                   JOIN ON end_nodes.TERRITORYID = edge.TERRITORYID,
 
-  [HAS_EMPLOYEE]
-       -- (:Territory)-[:HAS_EMPLOYEE]->(:Employee)
+  (Territory)-[HAS_EMPLOYEE]->(Employee)
        FROM VIEW_EMPLOYEETERRITORIES edge
           START NODES (Territory)
               FROM VIEW_TERRITORIES start_nodes
@@ -251,7 +233,8 @@ CREATE GRAPH Northwind OF NORTHWIND_NAIVE (
           END NODES (Employee)
               FROM VIEW_EMPLOYEES end_nodes
                   JOIN ON end_nodes.EMPLOYEEID = edge.EMPLOYEEID,
-   -- (:Order)-[:HAS_EMPLOYEE]->(:Employee)
+
+   (Order)-[HAS_EMPLOYEE]->(Employee)
        FROM VIEW_ORDERS edge
            START NODES (Order)
                FROM VIEW_ORDERS start_nodes
@@ -260,8 +243,7 @@ CREATE GRAPH Northwind OF NORTHWIND_NAIVE (
                FROM VIEW_EMPLOYEES end_nodes
                    JOIN ON end_nodes.EMPLOYEEID = edge.EMPLOYEEID,
 
-  -- (Customer)-[HAS_CUSTOMER_DEMOGRAPHIC]->(CustomerDemographic)
-  [HAS_CUSTOMER_DEMOGRAPHIC]
+  (Customer)-[HAS_CUSTOMER_DEMOGRAPHIC]->(CustomerDemographic)
       FROM CUSTOMERCUSTOMERDEMO edge
           START NODES (Customer)
               FROM VIEW_CUSTOMERS start_nodes
@@ -270,8 +252,7 @@ CREATE GRAPH Northwind OF NORTHWIND_NAIVE (
               FROM VIEW_CUSTOMERDEMOGRAPHICS end_nodes
                   JOIN ON end_nodes.CUSTOMERTYPEID = edge.CUSTOMERTYPEID,
 
-  [HAS_CUSTOMER]
-      -- (Order)-[HAS_CUSTOMER]->(Customer)
+  (Order)-[HAS_CUSTOMER]->(Customer)
       FROM VIEW_ORDERS edge
           START NODES (Order)
               FROM VIEW_ORDERS start_nodes
@@ -280,7 +261,7 @@ CREATE GRAPH Northwind OF NORTHWIND_NAIVE (
               FROM VIEW_CUSTOMERS end_nodes
                   JOIN ON end_nodes.CUSTOMERID = edge.CUSTOMERID,
 
-      -- (CustomerDemographic)-[HAS_CUSTOMER]->(Customer)
+  (CustomerDemographic)-[HAS_CUSTOMER]->(Customer)
       FROM CUSTOMERCUSTOMERDEMO edge
           START NODES (CustomerDemographic)
               FROM VIEW_CUSTOMERDEMOGRAPHICS start_nodes
@@ -289,8 +270,7 @@ CREATE GRAPH Northwind OF NORTHWIND_NAIVE (
               FROM VIEW_CUSTOMERS end_nodes
                   JOIN ON end_nodes.CUSTOMERID = edge.CUSTOMERID,
 
-  -- (OrderDetails)-[HAS_ORDER]->(Order)
-  [HAS_ORDER]
+  (OrderDetails)-[HAS_ORDER]->(Order)
       FROM VIEW_ORDER_DETAILS edge
           START NODES (OrderDetails)
               FROM VIEW_ORDER_DETAILS start_nodes
@@ -300,8 +280,7 @@ CREATE GRAPH Northwind OF NORTHWIND_NAIVE (
               FROM VIEW_ORDERS end_nodes
                   JOIN ON end_nodes.ORDERID = edge.ORDERID,
 
-  -- (OrderDetails)-[HAS_PRODUCT]->(Product)
-  [HAS_PRODUCT]
+  (OrderDetails)-[HAS_PRODUCT]->(Product)
       FROM VIEW_ORDER_DETAILS edge
           START NODES (OrderDetails)
               FROM VIEW_ORDER_DETAILS start_nodes
@@ -311,8 +290,7 @@ CREATE GRAPH Northwind OF NORTHWIND_NAIVE (
               FROM VIEW_PRODUCTS end_nodes
                   JOIN ON end_nodes.PRODUCTID = edge.PRODUCTID,
 
-  -- (Order)-[HAS_SHIPPER]->(Shipper)
-  [HAS_SHIPPER]
+  (Order)-[HAS_SHIPPER]->(Shipper)
       FROM VIEW_ORDERS edge
           START NODES (Order)
               FROM VIEW_ORDERS start_nodes
@@ -321,8 +299,7 @@ CREATE GRAPH Northwind OF NORTHWIND_NAIVE (
               FROM VIEW_SHIPPERS end_nodes
                   JOIN ON end_nodes.SHIPPERID = edge.SHIPVIA,
 
-  -- (:Product)-[:HAS_SUPPLIER]->(:Supplier)
-  [HAS_SUPPLIER]
+  (Product)-[HAS_SUPPLIER]->(Supplier)
       FROM VIEW_PRODUCTS edge
           START NODES (Product)
               FROM VIEW_PRODUCTS start_nodes
@@ -331,8 +308,7 @@ CREATE GRAPH Northwind OF NORTHWIND_NAIVE (
               FROM VIEW_SUPPLIERS end_nodes
                   JOIN ON end_nodes.SUPPLIERID = edge.SUPPLIERID,
 
-  -- (:Employee)-[:REPORTS_TO]->(:Employee)
-  [REPORTS_TO]
+  (Employee)-[REPORTS_TO]->(Employee)
       FROM VIEW_EMPLOYEES edge
           START NODES (Employee)
               FROM VIEW_EMPLOYEES start_nodes
