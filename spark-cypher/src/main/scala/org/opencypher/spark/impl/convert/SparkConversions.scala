@@ -166,6 +166,7 @@ object SparkConversions {
       */
     def isCypherCompatible: Boolean = dt match {
       case ArrayType(internalType, _) => internalType.isCypherCompatible
+      case StructType(fields) => fields.forall(_.dataType.isCypherCompatible)
       case other => supportedTypes.contains(other)
     }
 
