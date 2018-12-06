@@ -275,44 +275,11 @@ object ConstructGraphPlanner {
     Add(MonotonicallyIncreasingId(), IntegerLit(columnPartitionOffset)(CTInteger))(CTInteger)
   }
 
-  private def scanOperator[T <: Table[T] : TypeTag] (
-    extractionVar: Var,
-    entityType: CypherType,
-    op: RelationalOperator[T],
-    schema: Schema
-  ): RelationalOperator[T] = {
-    val targetEntity = Var("")(entityType)
-    val targetEntityHeader = schema.headerForEntity(Var("")(entityType), exactLabelMatch = true)
-
-    val labelOrTypePredicate = entityType match {
-      case CTNode(labels, _) =>
-        val labelFilters = op.header.labelsFor(extractionVar).map {
-          case expr @ HasLabel(_, Label(label)) if labels.contains(label) => Equals(expr, TrueLit)(CTBoolean)
-          case expr : HasLabel => Equals(expr, FalseLit)(CTBoolean)
-        }
-
-        Ands(labelFilters)
-
-      case CTRelationship(relTypes, _) =>
-        val relTypeExprs: Set[Expr] = relTypes.map(relType => HasType(extractionVar, RelType(relType))(CTBoolean))
-        val physicalExprs = relTypeExprs intersect op.header.expressionsFor(extractionVar)
-        Ors(physicalExprs.map(expr => Equals(expr, TrueLit)(CTBoolean)))
-
-      case other => throw IllegalArgumentException("CTNode or CTRelationship", other)
-    }
-
-    val selected = op.select(extractionVar)
-    val idExprs = op.header.idExpressions(extractionVar).toSeq
-
-    val validEntityPredicate = Ands(idExprs.map(idExpr => IsNotNull(idExpr)(CTBoolean)) :+ labelOrTypePredicate: _*)
-    val filtered = relational.Filter(selected, validEntityPredicate)
-
-    val inputEntity = filtered.singleEntity
-    val alignedScan = filtered.alignWith(inputEntity, targetEntity, targetEntityHeader)
-
-    alignedScan
-  }
-
+  /**
+    * Given the construction table this method extracts all possible scans over that table
+    * and compiles them to a ScanGraph. Note that cloned entities that are also present in an `ON GRAPH` are not
+    * included in the ScanGraph to avoid duplication. This improves scan performance as fewer DISTINCTs are needed.
+    */
   private def extractScanGraph[T <: Table[T] : TypeTag] (
     logicalPatternGraph: LogicalPatternGraph,
     inputOp: RelationalOperator[T],
@@ -329,13 +296,37 @@ object ConstructGraphPlanner {
       case (variable, list) => variable -> list.flatMap(_._2).toSet
     }
 
-    val scansForCreated = createScans(scansFromCreatedEntities(logicalPatternGraph), setLabelItems, inputOp, schema)
-    val scansForCloned =  createScans(scansFromClonedEntities(logicalPatternGraph), setLabelItems, inputOp, schema, distinct = true)
+    // Compute Scans from constructed and cloned entities
+    val createdEntityScanVars = scanVarsFromCreatedEntities(logicalPatternGraph)
+    val clonedEntityScanVars = scanVarsFromClonedEntities(logicalPatternGraph)
 
-    context.session.graphs.create(tags, Some(schema), scansForCreated ++ scansForCloned: _*)
+    val scansForCreated = createScans(createdEntityScanVars, setLabelItems, inputOp, schema)
+    val scansForCloned =  createScans(clonedEntityScanVars, setLabelItems, inputOp, schema, distinct = true)
+
+    // Compute the ScanGraph Schema
+    val (nodeTypes, relTypes) = (createdEntityScanVars ++ clonedEntityScanVars).map(_._2).partition {
+      case _: CTNode => true
+      case _ => false
+    }
+
+    val scanGraphNodeLabelCombos = nodeTypes.collect { case CTNode(labels, _) => labels }
+    val scanGraphNodeSchema = scanGraphNodeLabelCombos.foldLeft(Schema.empty) {
+      case (acc, labelCombo) => acc.withNodePropertyKeys(labelCombo, schema.nodePropertyKeys(labelCombo))
+    }
+
+    val scanGraphRelTypes = relTypes.collect { case CTRelationship(types, _) => types }.flatten
+    val scanGraphSchema = scanGraphRelTypes.foldLeft(scanGraphNodeSchema) {
+      case (acc, typ) => acc.withRelationshipPropertyKeys(typ, schema.relationshipPropertyKeys(typ))
+    }
+
+    // Construct the scan graph
+    context.session.graphs.create(tags, Some(scanGraphSchema), scansForCreated ++ scansForCloned: _*)
   }
 
-  private def scansFromCreatedEntities[T <: Table[T] : TypeTag](logicalPatternGraph: LogicalPatternGraph)
+  /**
+    * Computes all scan types that can be created from created entities
+    */
+  private def scanVarsFromCreatedEntities[T <: Table[T] : TypeTag](logicalPatternGraph: LogicalPatternGraph)
     (implicit context: RelationalRuntimeContext[T]): Set[(Var, CypherType)] = {
 
     logicalPatternGraph.newEntities.flatMap {
@@ -366,7 +357,10 @@ object ConstructGraphPlanner {
     }
   }
 
-  private def scansFromClonedEntities[T <: Table[T] : TypeTag](logicalPatternGraph: LogicalPatternGraph)
+  /**
+    * Computes all scan types that can be created from cloned entities
+    */
+  private def scanVarsFromClonedEntities[T <: Table[T] : TypeTag](logicalPatternGraph: LogicalPatternGraph)
     (implicit context: RelationalRuntimeContext[T]): Set[(Var, CypherType)] = {
 
     val clonedEntitiesToKeep = logicalPatternGraph.clones.filterNot {
@@ -386,6 +380,9 @@ object ConstructGraphPlanner {
     }.toSet
   }
 
+  /**
+    * Creates the scans for the given scan types
+    */
   private def createScans[T <: Table[T] : TypeTag](
     scanEntities: Set[(Var, CypherType)],
     setLabelItems: Map[Var, Set[String]],
@@ -460,5 +457,43 @@ object ConstructGraphPlanner {
     }
 
     groupedScanEntities.map { case (ct, vars) => scansForType(ct, vars) }.toSeq
+  }
+
+  private def scanOperator[T <: Table[T] : TypeTag] (
+    extractionVar: Var,
+    entityType: CypherType,
+    op: RelationalOperator[T],
+    schema: Schema
+  ): RelationalOperator[T] = {
+    val targetEntity = Var("")(entityType)
+    val targetEntityHeader = schema.headerForEntity(Var("")(entityType), exactLabelMatch = true)
+
+    val labelOrTypePredicate = entityType match {
+      case CTNode(labels, _) =>
+        val labelFilters = op.header.labelsFor(extractionVar).map {
+          case expr @ HasLabel(_, Label(label)) if labels.contains(label) => Equals(expr, TrueLit)(CTBoolean)
+          case expr : HasLabel => Equals(expr, FalseLit)(CTBoolean)
+        }
+
+        Ands(labelFilters)
+
+      case CTRelationship(relTypes, _) =>
+        val relTypeExprs: Set[Expr] = relTypes.map(relType => HasType(extractionVar, RelType(relType))(CTBoolean))
+        val physicalExprs = relTypeExprs intersect op.header.expressionsFor(extractionVar)
+        Ors(physicalExprs.map(expr => Equals(expr, TrueLit)(CTBoolean)))
+
+      case other => throw IllegalArgumentException("CTNode or CTRelationship", other)
+    }
+
+    val selected = op.select(extractionVar)
+    val idExprs = op.header.idExpressions(extractionVar).toSeq
+
+    val validEntityPredicate = Ands(idExprs.map(idExpr => IsNotNull(idExpr)(CTBoolean)) :+ labelOrTypePredicate: _*)
+    val filtered = relational.Filter(selected, validEntityPredicate)
+
+    val inputEntity = filtered.singleEntity
+    val alignedScan = filtered.alignWith(inputEntity, targetEntity, targetEntityHeader)
+
+    alignedScan
   }
 }
