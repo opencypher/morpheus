@@ -304,17 +304,19 @@ object ConstructGraphPlanner {
     val scansForCloned =  createScans(clonedEntityScanVars, setLabelItems, inputOp, schema, distinct = true)
 
     // Compute the ScanGraph Schema
-    val (nodeTypes, relTypes) = (createdEntityScanVars ++ clonedEntityScanVars).map(_._2).partition {
-      case _: CTNode => true
+    val (nodeTypes, relTypes) = (createdEntityScanVars ++ clonedEntityScanVars).partition {
+      case (_, _: CTNode) => true
       case _ => false
     }
 
-    val scanGraphNodeLabelCombos = nodeTypes.collect { case CTNode(labels, _) => labels }
+    val scanGraphNodeLabelCombos = nodeTypes.collect {
+      case (v, CTNode(labels, _)) => labels ++ setLabelItems.getOrElse(v, Set.empty)
+    }
     val scanGraphNodeSchema = scanGraphNodeLabelCombos.foldLeft(Schema.empty) {
       case (acc, labelCombo) => acc.withNodePropertyKeys(labelCombo, schema.nodePropertyKeys(labelCombo))
     }
 
-    val scanGraphRelTypes = relTypes.collect { case CTRelationship(types, _) => types }.flatten
+    val scanGraphRelTypes = relTypes.collect { case (_, CTRelationship(types, _)) => types }.flatten
     val scanGraphSchema = scanGraphRelTypes.foldLeft(scanGraphNodeSchema) {
       case (acc, typ) => acc.withRelationshipPropertyKeys(typ, schema.relationshipPropertyKeys(typ))
     }
