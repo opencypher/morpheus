@@ -92,13 +92,6 @@ class EntityTableTest extends CAPSTestSuite {
       .withPropertyKey("since"))
   }
 
-  it("throws an IllegalArgumentException when a node table does not have the expected column ordering") {
-    val df = sparkSession.createDataFrame(Seq((1L, true, "Mats", 23L))).toDF("ID", "IS_C", "FOO", "BAR")
-    an[IllegalArgumentException] should be thrownBy {
-      CAPSNodeTable(nodeMapping, df)
-    }
-  }
-
   it("throws an IllegalArgumentException when a relationship table does not have the expected column ordering") {
     val df = sparkSession.createDataFrame(Seq((1, 1, 1, true))).toDF("ID", "TARGET", "SOURCE", "TYPE")
     val relMapping = RelationshipMapping.on("ID").from("SOURCE").to("TARGET").withSourceRelTypeKey("TYPE", Set("A"))
