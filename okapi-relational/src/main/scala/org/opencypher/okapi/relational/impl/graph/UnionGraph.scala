@@ -26,8 +26,11 @@
  */
 package org.opencypher.okapi.relational.impl.graph
 
+import org.opencypher.okapi.api.schema.LabelPropertyMap._
+import org.opencypher.okapi.api.schema.RelTypePropertyMap._
 import org.opencypher.okapi.api.schema.Schema
 import org.opencypher.okapi.api.types.{CTNode, CTRelationship, CypherType}
+import org.opencypher.okapi.impl.exception.UnsupportedOperationException
 import org.opencypher.okapi.ir.api.expr.Var
 import org.opencypher.okapi.relational.api.graph.{RelationalCypherGraph, RelationalCypherSession}
 import org.opencypher.okapi.relational.api.planning.RelationalRuntimeContext
@@ -72,9 +75,11 @@ final case class UnionGraph[T <: Table[T] : TypeTag](graphsToReplacements: Seq[(
       .flatMap {
         case (graph, replacement) =>
           val isEmptyScan = entityType match {
-            case CTNode(knownLabels, _) => graph.schema.forNode(knownLabels).isEmpty
-            case r : CTRelationship => graph.schema.forRelationship(r).isEmpty
-            case _ => ???
+            case CTNode(knownLabels, _) =>
+              graph.schema.labelPropertyMap.filterForLabels(knownLabels).isEmpty
+            case CTRelationship(types, _) =>
+              graph.schema.relTypePropertyMap.filterForRelTypes(types).isEmpty
+            case other => throw UnsupportedOperationException(s"Cannot scan on $other")
           }
 
           if (isEmptyScan) {
@@ -89,8 +94,10 @@ final case class UnionGraph[T <: Table[T] : TypeTag](graphsToReplacements: Seq[(
       }
 
     alignedScans match {
-      case Nil => Start(session.records.empty(targetEntityHeader))
-      case _ => alignedScans.reduce(TabularUnionAll(_, _))
+      case Nil =>
+        Start(session.records.empty(targetEntityHeader))
+      case _ =>
+        alignedScans.reduce(TabularUnionAll(_, _))
     }
 
   }
