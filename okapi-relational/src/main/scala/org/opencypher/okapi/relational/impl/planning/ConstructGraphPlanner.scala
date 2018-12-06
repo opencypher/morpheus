@@ -337,7 +337,7 @@ object ConstructGraphPlanner {
 
   private def scansFromCreatedEntities[T <: Table[T] : TypeTag](logicalPatternGraph: LogicalPatternGraph)
     (implicit context: RelationalRuntimeContext[T]): Set[(Var, CypherType)] = {
-    
+
     logicalPatternGraph.newEntities.flatMap {
       case ConstructedNode(v, _, None) => Seq(v -> v.cypherType)
 
@@ -385,7 +385,7 @@ object ConstructGraphPlanner {
       case other => throw UnsupportedOperationException(s"Cannot construct scan from $other")
     }.toSet
   }
-  
+
   private def createScans[T <: Table[T] : TypeTag](
     scanEntities: Set[(Var, CypherType)],
     setLabelItems: Map[Var, Set[String]],
