@@ -197,7 +197,6 @@ class GraphDdlTest extends FunSpec with Matchers {
       GraphDdl("""SET SCHEMA ds1.db1
                  |CREATE GRAPH myGraph (
                  |  A (x STRING), B (y STRING),
-                 |  (A), (A)-[B]->(A),
                  |  (A) FROM a,
                  |  (A)-[B]->(A) FROM b e
                  |    START NODES (A) FROM a n JOIN ON e.id = n.id
@@ -214,11 +213,11 @@ class GraphDdlTest extends FunSpec with Matchers {
                  |  (A) FROM a
                  |)
                """.stripMargin),
-      // explicit edge type definition
+      // explicit node and rel type definition
       GraphDdl("""SET SCHEMA ds1.db1
                  |CREATE GRAPH myGraph (
                  |  A (x STRING), B (y STRING),
-                 |  (A)-[B]->(A),
+                 |  (A), (A)-[B]->(A),
                  |  (A) FROM a,
                  |  (A)-[B]->(A) FROM b e
                  |    START NODES (A) FROM a n JOIN ON e.id = n.id
@@ -271,6 +270,7 @@ class GraphDdlTest extends FunSpec with Matchers {
     ddls(2) shouldEqual ddls.head
     ddls(3) shouldEqual ddls.head
     ddls(4) shouldEqual ddls.head
+    ddls(5) shouldEqual ddls.head
   }
 
   it("allows these equivalent graph type definitions") {
@@ -283,7 +283,7 @@ class GraphDdlTest extends FunSpec with Matchers {
                  |)
                  |CREATE GRAPH myGraph OF myType ()
                """.stripMargin),
-      // explicit node type definitions
+      // explicit node and rel type definitions
       GraphDdl("""CREATE GRAPH TYPE myType (
                  |  A (x STRING), B (y STRING), C (z STRING),
                  |  (A), (C),
