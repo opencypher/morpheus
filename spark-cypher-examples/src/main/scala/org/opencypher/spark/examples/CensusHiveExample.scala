@@ -39,6 +39,8 @@ object CensusHiveExample extends ConsoleApp {
 
   implicit val resourceFolder: String = "/census"
 
+  // tag::create-session[]
+  // Create a Spark and a CAPS session
   implicit val session: CAPSSession = CAPSSession.local(hiveExampleSettings: _*)
   implicit val sparkSession: SparkSession = session.sparkSession
   // end::create-session[]
