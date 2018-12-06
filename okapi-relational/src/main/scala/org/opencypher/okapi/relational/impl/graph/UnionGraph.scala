@@ -75,8 +75,12 @@ final case class UnionGraph[T <: Table[T] : TypeTag](graphsToReplacements: Seq[(
       .flatMap {
         case (graph, replacement) =>
           val isEmptyScan = entityType match {
+            case CTNode(knownLabels, _) if knownLabels.isEmpty =>
+              graph.schema.allCombinations.isEmpty
             case CTNode(knownLabels, _) =>
               graph.schema.labelPropertyMap.filterForLabels(knownLabels).isEmpty
+            case CTRelationship(types, _) if types.isEmpty =>
+              graph.schema.relationshipTypes.isEmpty
             case CTRelationship(types, _) =>
               graph.schema.relTypePropertyMap.filterForRelTypes(types).isEmpty
             case other => throw UnsupportedOperationException(s"Cannot scan on $other")
