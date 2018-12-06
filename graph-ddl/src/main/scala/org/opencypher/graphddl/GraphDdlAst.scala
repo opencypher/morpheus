@@ -80,18 +80,18 @@ case class NodeTypeDefinition(
   elementTypes: Set[String]
 ) extends GraphDdlAst with GraphTypeStatement
 
+object RelationshipTypeDefinition {
+  def apply(startNodeElementType: String, elementType: String, endNodeElementType: String): RelationshipTypeDefinition =
+    RelationshipTypeDefinition(NodeTypeDefinition(startNodeElementType), elementType, NodeTypeDefinition(endNodeElementType))
+
+  def apply(startNodeElementTypes: String*)(elementType: String)(endNodeElementTypes: String*): RelationshipTypeDefinition =
+    RelationshipTypeDefinition(NodeTypeDefinition(startNodeElementTypes.toSet), elementType, NodeTypeDefinition(endNodeElementTypes.toSet))
+}
+
 case class RelationshipTypeDefinition(
-  elementType: String
-) extends GraphDdlAst with GraphTypeStatement
-
-case class CardinalityConstraint(from: Int, to: Option[Int])
-
-case class PatternDefinition(
-  sourceNodeTypes: Set[Set[String]],
-  sourceCardinality: CardinalityConstraint = CardinalityConstraint(0, None),
-  relTypes: Set[String],
-  targetCardinality: CardinalityConstraint = CardinalityConstraint(0, None),
-  targetNodeTypes: Set[Set[String]]
+  sourceNodeType: NodeTypeDefinition,
+  elementType: String,
+  targetNodeType: NodeTypeDefinition
 ) extends GraphDdlAst with GraphTypeStatement
 
 trait ElementToViewDefinition {

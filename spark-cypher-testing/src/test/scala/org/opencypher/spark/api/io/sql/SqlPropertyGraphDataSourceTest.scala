@@ -192,13 +192,13 @@ class SqlPropertyGraphDataSourceTest extends CAPSTestSuite with HiveFixture with
          | READS  ( rating FLOAT ) ,
          | (Person),
          | (Book),
-         | [READS]
+         | (Person)-[READS]->(Book)
          |)
          |
          |CREATE GRAPH fooGraph OF fooSchema (
          |  (Person) FROM $personView ( person_name AS name ),
          |  (Book)   FROM $bookView (book_title AS title ),
-         |  [READS]
+         |  (Person)-[READS]->(Book)
          |    FROM $readsView edge
          |      START NODES (Person) FROM $personView alias_person JOIN ON alias_person.person_id = edge.person
          |      END NODES   (Book)   FROM $bookView   alias_book   JOIN ON edge.book = alias_book.book_id
@@ -250,11 +250,11 @@ class SqlPropertyGraphDataSourceTest extends CAPSTestSuite with HiveFixture with
          | Node ( id INTEGER, start STRING, end STRING ),
          | REL  ( id INTEGER, start STRING, end STRING ),
          | (Node),
-         | [REL]
+         | (Node)-[REL]->(Node)
          |)
          |CREATE GRAPH fooGraph OF fooSchema (
          |  (Node) FROM $nodesView,
-         |  [REL]
+         |  (Node)-[REL]->(Node)
          |    FROM $relsView edge
          |      START NODES (Node) FROM $nodesView alias_node JOIN ON alias_node.node_id = edge.source_id
          |      END NODES   (Node) FROM $nodesView alias_node JOIN ON alias_node.node_id = edge.target_id
@@ -309,12 +309,12 @@ class SqlPropertyGraphDataSourceTest extends CAPSTestSuite with HiveFixture with
          | READS  ( rating FLOAT ) ,
          | (Person),
          | (Book),
-         | [READS]
+         | (Person)-[READS]->(Book)
          |)
          |CREATE GRAPH fooGraph OF fooSchema (
          |  (Person) FROM $personView ( person_name AS name ),
          |  (Book) FROM $bookView (book_title AS title ),
-         |  [READS]
+         |  (Person)-[READS]->(Book)
          |    FROM $readsView1 edge
          |      START NODES (Person) FROM $personView alias_person JOIN ON alias_person.person_id = edge.person
          |      END NODES   (Book)   FROM $bookView   alias_book   JOIN ON edge.book = alias_book.book_id

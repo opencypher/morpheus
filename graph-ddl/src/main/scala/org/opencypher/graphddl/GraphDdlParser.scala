@@ -51,7 +51,7 @@ object GraphDdlParser {
   def parse(ddlString: String): DdlDefinition = {
     ddlDefinitions.parse(ddlString) match {
       case Success(v, _) => v
-      case Failure(failedParser, index, extra) =>
+      case Failure(_, index, extra) =>
         val before = index - math.max(index - 20, 0)
         val after = math.min(index + 20, extra.input.length) - index
         val locationPointer =
@@ -114,48 +114,17 @@ object GraphDdlParser {
   val elementTypes: P[Set[String]] =
     P(elementType.rep(min = 1, sep = ",")).map(_.toSet)
 
-  // negative lookahead (~ !"-") needed in order to disambiguate node definitions and pattern definitions
   val nodeTypeDefinition: P[NodeTypeDefinition] =
-    P("(" ~ elementTypes ~ ")" ~ !("-" | "<")).map(NodeTypeDefinition(_))
+    P("(" ~ elementTypes ~ ")").map(NodeTypeDefinition(_))
 
   val relTypeDefinition: P[RelationshipTypeDefinition] =
-    P("[" ~/ elementType ~/ "]").map(RelationshipTypeDefinition)
-
-  val cardinalityConstraint: P[CardinalityConstraint] = {
-
-    val Wildcard: CardinalityConstraint = CardinalityConstraint(0, None)
-
-    val integer: P[Int] =
-      P(digit.rep(min = 1).!.map(_.toInt))
-
-    val wildcard: P[Option[Int]] =
-      P("*").map(_ => Option.empty[Int])
-
-    val intOrWildcard: P[Option[Int]] =
-      P(wildcard | integer.?)
-
-    val fixed: P[CardinalityConstraint] =
-      P(intOrWildcard.map(p => CardinalityConstraint(p.getOrElse(0), p)))
-
-    val range: P[CardinalityConstraint] =
-      P(integer ~ (".." | ",") ~/ intOrWildcard).map(CardinalityConstraint.tupled)
-
-    P("<" ~/ (range | fixed) ~/ ">").?.map(_.getOrElse(Wildcard))
-  }
-
-  val patternDefinition: P[PatternDefinition] = {
-    val nodeAlternatives: P[Set[Set[String]]] =
-      P("(" ~ elementTypes.rep(min = 1, sep = "|").map(_.toSet) ~ ")")
-
-    // TODO: Fix symmetric to node
-    val relAlternatives: P[Set[String]] =
-      P("[" ~/ elementType.rep(min = 1, sep = "|") ~/ "]").map(_.toSet)
-
-    P(nodeAlternatives ~ cardinalityConstraint ~/ "-" ~/ relAlternatives ~/ "->" ~/ cardinalityConstraint ~/ nodeAlternatives).map(PatternDefinition.tupled)
-  }
+    P(nodeTypeDefinition ~ "-" ~ "[" ~ elementType ~ "]" ~ "->" ~ nodeTypeDefinition).map {
+      case (startNodeType, eType, endNodeType) => RelationshipTypeDefinition(startNodeType, eType, endNodeType)
+    }
 
   val graphTypeStatements: P[List[GraphTypeStatement]] =
-    P("(" ~/ (elementTypeDefinition | nodeTypeDefinition  | relTypeDefinition | patternDefinition).rep(sep = ",").map(_.toList) ~/ ")")
+    // Note: Order matters here. relTypeDefinition must appear before nodeTypeDefinition since they parse the same prefix
+    P("(" ~/ (elementTypeDefinition | relTypeDefinition | nodeTypeDefinition ).rep(sep = "," ~/ Pass).map(_.toList) ~/ ")")
 
   val graphTypeDefinition: P[GraphTypeDefinition] =
     P(CREATE ~ GRAPH ~ TYPE ~/ identifier.! ~/ graphTypeStatements).map(GraphTypeDefinition.tupled)
@@ -212,7 +181,8 @@ object GraphDdlParser {
   val graphDefinition: P[GraphDefinition] = {
 
     val graphStatements: P[List[GraphStatement]] =
-      P("(" ~/ (nodeMappingDefinition | relationshipMappingDefinition | elementTypeDefinition | patternDefinition).rep(sep = ",").map(_.toList) ~/ ")")
+      // Note: Order matters here
+      P("(" ~/ (relationshipMappingDefinition | nodeMappingDefinition | elementTypeDefinition | relTypeDefinition | nodeTypeDefinition ).rep(sep = "," ~/ Pass).map(_.toList) ~/ ")")
 
     P(CREATE ~ GRAPH ~ identifier.! ~/ (OF ~/ identifier.!).? ~/ graphStatements)
       .map { case (gName, graphTypeRef, statements) => GraphDefinition(gName, graphTypeRef, statements) }

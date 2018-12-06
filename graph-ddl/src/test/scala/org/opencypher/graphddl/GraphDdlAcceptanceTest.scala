@@ -61,34 +61,39 @@ class GraphDdlAcceptanceTest extends BaseTestSuite {
         s"""CREATE ELEMENT TYPE A ( name STRING )
            |
            |CREATE GRAPH TYPE $typeName (
-           |  [A]
+           |  (A)-[A]->(A)
            |)
            |CREATE GRAPH $graphName OF $typeName ()
            |""".stripMargin
 
       GraphDdl(ddl).graphs(graphName).graphType should equal(
         Schema.empty
+          .withNodePropertyKeys("A")("name" -> CTString)
           .withRelationshipPropertyKeys("A")("name" -> CTString)
+          .withSchemaPatterns(SchemaPattern("A", "A", "A"))
       )
     }
 
     it("can construct schema with node and edge labels") {
       val ddl =
-        s"""|CREATE ELEMENT TYPE Node ( val String )
+        s"""|CREATE ELEMENT TYPE Node1 ( val String )
+            |CREATE ELEMENT TYPE Node2 ( val String )
             |CREATE ELEMENT TYPE REL ( name STRING )
             |
             |CREATE GRAPH TYPE $typeName (
-            |  (Node), [REL]
+            |  (Node1), (Node1)-[REL]->(Node2)
             |)
             |CREATE GRAPH $graphName OF $typeName ()
             |""".stripMargin
 
 
-      GraphDdl(ddl).graphs(graphName).graphType should equal(
+      GraphDdl(ddl).graphs(graphName).graphType shouldEqual
         Schema.empty
-          .withNodePropertyKeys("Node")("val" -> CTString)
+          .withNodePropertyKeys("Node1")("val" -> CTString)
+          .withNodePropertyKeys("Node2")("val" -> CTString)
           .withRelationshipPropertyKeys("REL")("name" -> CTString)
-      )
+          .withSchemaPatterns(SchemaPattern("Node1", "REL", "Node2"))
+
     }
 
     it("prefers local label over global label") {
@@ -181,11 +186,8 @@ class GraphDdlAcceptanceTest extends BaseTestSuite {
             |  (LocalLabel1),
             |  (MyLabel),
             |
-            |  [REL_TYPE1],
-            |  [REL_TYPE2],
-            |
             |  -- schema patterns
-            |  (MyLabel) <0..*> -[REL_TYPE1]-> <1> (LocalLabel1),
+            |  (MyLabel)-[REL_TYPE1]->(LocalLabel1),
             |  (LocalLabel1, LocalLabel2)-[REL_TYPE2]->(MyLabel)
             |)
             |CREATE GRAPH $graphName OF $typeName ()
@@ -267,17 +269,14 @@ class GraphDdlAcceptanceTest extends BaseTestSuite {
             |
             |
             |  -- edges
-            |  [TYPE_1],
-            |  [TYPE_2],
-            |
-            |  -- schema patterns
-            |  (A) <0 .. *> - [TYPE_1] -> <1> (B)
+            |  (A)-[TYPE_1]->(B),
+            |  (A, B)-[TYPE_2]->(C)
             |)
             |CREATE GRAPH $graphName OF $typeName (
             |
             |  (A) FROM foo,
             |
-            |  [TYPE_1] FROM baz edge
+            |  (A)-[TYPE_1]->(B) FROM baz edge
             |    START NODES (A) FROM foo alias_foo JOIN ON alias_foo.COLUMN_A = edge.COLUMN_A
             |    END NODES   (B) FROM bar alias_bar JOIN ON alias_bar.COLUMN_A = edge.COLUMN_A
             |)
@@ -294,30 +293,31 @@ class GraphDdlAcceptanceTest extends BaseTestSuite {
             statements = List(
               ElementTypeDefinition("A", properties = Map("foo" -> CTInteger)),
               ElementTypeDefinition("C"),
-              NodeTypeDefinition(Set("A")),
-              NodeTypeDefinition(Set("B")),
-              NodeTypeDefinition(Set("A", "B")),
-              NodeTypeDefinition(Set("C")),
-              RelationshipTypeDefinition("TYPE_1"),
-              RelationshipTypeDefinition("TYPE_2"),
-              PatternDefinition(Set(Set("A")), CardinalityConstraint(0, None), Set("TYPE_1"), CardinalityConstraint(1, Some(1)), Set(Set("B")))
+              NodeTypeDefinition("A"),
+              NodeTypeDefinition("B"),
+              NodeTypeDefinition("A", "B"),
+              NodeTypeDefinition("C"),
+              RelationshipTypeDefinition("A", "TYPE_1", "B"),
+              RelationshipTypeDefinition("A", "B")("TYPE_2")("C")
             )),
           GraphDefinition(
             name = graphName.value,
             maybeGraphTypeName = Some(typeName),
             statements = List(
               NodeMappingDefinition(NodeTypeDefinition("A"), List(NodeToViewDefinition(List("foo")))),
-              RelationshipMappingDefinition(RelationshipTypeDefinition("TYPE_1"), List(RelationshipTypeToViewDefinition(
-                viewDef = ViewDefinition(List("baz"), "edge"),
-                startNodeTypeToView = NodeTypeToViewDefinition(
-                  NodeTypeDefinition("A"),
-                  ViewDefinition(List("foo"), "alias_foo"),
-                  JoinOnDefinition(List((List("alias_foo", "COLUMN_A"), List("edge", "COLUMN_A"))))),
-                endNodeTypeToView = NodeTypeToViewDefinition(
-                  NodeTypeDefinition("B"),
-                  ViewDefinition(List("bar"), "alias_bar"),
-                  JoinOnDefinition(List((List("alias_bar", "COLUMN_A"), List("edge", "COLUMN_A")))))
-              )))))
+              RelationshipMappingDefinition(
+                RelationshipTypeDefinition("A", "TYPE_1", "B"),
+                List(RelationshipTypeToViewDefinition(
+                  viewDef = ViewDefinition(List("baz"), "edge"),
+                  startNodeTypeToView = NodeTypeToViewDefinition(
+                    NodeTypeDefinition("A"),
+                    ViewDefinition(List("foo"), "alias_foo"),
+                    JoinOnDefinition(List((List("alias_foo", "COLUMN_A"), List("edge", "COLUMN_A"))))),
+                  endNodeTypeToView = NodeTypeToViewDefinition(
+                    NodeTypeDefinition("B"),
+                    ViewDefinition(List("bar"), "alias_bar"),
+                    JoinOnDefinition(List((List("alias_bar", "COLUMN_A"), List("edge", "COLUMN_A")))))
+          )))))
         ))
       )
       GraphDdl(ddlDefinition).graphs(graphName).graphType shouldEqual Schema.empty
@@ -328,6 +328,7 @@ class GraphDdlAcceptanceTest extends BaseTestSuite {
         .withRelationshipType("TYPE_1")
         .withRelationshipPropertyKeys("TYPE_2")("prop" -> CTBoolean.nullable)
         .withSchemaPatterns(SchemaPattern("A", "TYPE_1", "B"))
+        .withSchemaPatterns(SchemaPattern(Set("A", "B"), "TYPE_2", Set("C")))
     }
 
     it("creates implicit node/edge types from mappings") {
@@ -345,7 +346,7 @@ class GraphDdlAcceptanceTest extends BaseTestSuite {
             |  (A, B) FROM bar,
             |
             |  -- edge types with mappings
-            |  [TYPE_1] FROM baz edge
+            |  (A)-[TYPE_1]->(B) FROM baz edge
             |    START NODES (A) FROM foo alias_foo JOIN ON alias_foo.COLUMN_A = edge.COLUMN_A
             |    END NODES   (B) FROM bar alias_bar JOIN ON alias_bar.COLUMN_A = edge.COLUMN_A
             |)
@@ -353,8 +354,10 @@ class GraphDdlAcceptanceTest extends BaseTestSuite {
       )
       GraphDdl(ddlDefinition).graphs(graphName).graphType shouldEqual Schema.empty
         .withNodePropertyKeys("A")("foo" -> CTInteger)
+        .withNodePropertyKeys("B")()
         .withNodePropertyKeys("A", "B")("foo" -> CTInteger)
         .withRelationshipType("TYPE_1")
+        .withSchemaPatterns(SchemaPattern("A", "TYPE_1", "B"))
     }
 
     it("resolves element types from parent graph type") {
@@ -374,7 +377,7 @@ class GraphDdlAcceptanceTest extends BaseTestSuite {
             |  (A, B) FROM bar,
             |
             |  -- edge types with mappings
-            |  [TYPE_1] FROM baz edge
+            |  (A)-[TYPE_1]->(B) FROM baz edge
             |    START NODES (A) FROM foo alias_foo JOIN ON alias_foo.COLUMN_A = edge.COLUMN_A
             |    END NODES   (B) FROM bar alias_bar JOIN ON alias_bar.COLUMN_A = edge.COLUMN_A
             |)
@@ -382,8 +385,10 @@ class GraphDdlAcceptanceTest extends BaseTestSuite {
       )
       GraphDdl(ddlDefinition).graphs(graphName).graphType shouldEqual Schema.empty
         .withNodePropertyKeys("A")("foo" -> CTInteger)
+        .withNodePropertyKeys("B")()
         .withNodePropertyKeys("A", "B")("foo" -> CTInteger)
         .withRelationshipType("TYPE_1")
+        .withSchemaPatterns(SchemaPattern("A", "TYPE_1", "B"))
     }
 
     it("resolves shadowed element types") {
@@ -405,7 +410,7 @@ class GraphDdlAcceptanceTest extends BaseTestSuite {
             |  (A, B) FROM bar,
             |
             |  -- edge types with mappings
-            |  [TYPE_1] FROM baz edge
+            |  (A)-[TYPE_1]->(B) FROM baz edge
             |    START NODES (A) FROM foo alias_foo JOIN ON alias_foo.COLUMN_A = edge.COLUMN_A
             |    END NODES   (B) FROM bar alias_bar JOIN ON alias_bar.COLUMN_A = edge.COLUMN_A
             |)
@@ -413,8 +418,10 @@ class GraphDdlAcceptanceTest extends BaseTestSuite {
       )
       GraphDdl(ddlDefinition).graphs(graphName).graphType shouldEqual Schema.empty
         .withNodePropertyKeys("A")("bar" -> CTString)
+        .withNodePropertyKeys("B")()
         .withNodePropertyKeys("A", "B")("bar" -> CTString)
         .withRelationshipType("TYPE_1")
+        .withSchemaPatterns(SchemaPattern("A", "TYPE_1", "B"))
     }
 
     it("resolves most local element type") {
@@ -489,7 +496,7 @@ class GraphDdlAcceptanceTest extends BaseTestSuite {
             |  B,
             |
             |  -- (illegal) relationship type definition
-            |  [C]
+            |  (B)-[C]->(B)
             |)
             |CREATE GRAPH $graphName OF $typeName ()
             |""".stripMargin)

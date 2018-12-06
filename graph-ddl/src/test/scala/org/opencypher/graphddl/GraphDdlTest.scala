@@ -43,14 +43,14 @@ class GraphDdlTest extends FunSpec with Matchers {
        | READS  ( rating FLOAT ) ,
        | (Person),
        | (Book),
-       | [READS]
+       | (Person)-[READS]->(Book)
        |)
        |CREATE GRAPH fooGraph OF fooSchema (
        |  (Person) FROM personView1 ( person_name1 AS name )
        |           FROM personView2 ( person_name2 AS name ),
        |  (Book)   FROM bookView    ( book_title AS title ),
        |
-       |  [READS]
+       |  (Person)-[READS]->(Book)
        |    FROM readsView1 e ( value1 AS rating )
        |      START NODES (Person) FROM personView1 p JOIN ON p.person_id1 = e.person
        |      END   NODES (Book)   FROM bookView    b JOIN ON e.book       = b.book_id
@@ -65,11 +65,11 @@ class GraphDdlTest extends FunSpec with Matchers {
 
     val graphDdl = GraphDdl(ddlString)
 
-    val personKey1 = NodeViewKey(Set("Person"), QualifiedViewId("dataSourceName.fooDatabaseName.personView1"))
-    val personKey2 = NodeViewKey(Set("Person"), QualifiedViewId("dataSourceName.fooDatabaseName.personView2"))
-    val bookKey    = NodeViewKey(Set("Book"),   QualifiedViewId("dataSourceName.fooDatabaseName.bookView"))
-    val readsKey1  = EdgeViewKey(Set("READS"),  QualifiedViewId("dataSourceName.fooDatabaseName.readsView1"))
-    val readsKey2  = EdgeViewKey(Set("READS"),  QualifiedViewId("dataSourceName.fooDatabaseName.readsView2"))
+    val personKey1 = NodeViewKey(NodeType("Person"), QualifiedViewId("dataSourceName.fooDatabaseName.personView1"))
+    val personKey2 = NodeViewKey(NodeType("Person"), QualifiedViewId("dataSourceName.fooDatabaseName.personView2"))
+    val bookKey    = NodeViewKey(NodeType("Book"),   QualifiedViewId("dataSourceName.fooDatabaseName.bookView"))
+    val readsKey1  = EdgeViewKey(RelationshipType("Person", "READS", "Book"),  QualifiedViewId("dataSourceName.fooDatabaseName.readsView1"))
+    val readsKey2  = EdgeViewKey(RelationshipType("Person", "READS", "Book"),  QualifiedViewId("dataSourceName.fooDatabaseName.readsView2"))
 
     val expected = GraphDdl(
       Map(
@@ -77,30 +77,31 @@ class GraphDdlTest extends FunSpec with Matchers {
           Schema.empty
             .withNodePropertyKeys("Person")("name" -> CTString, "age" -> CTInteger)
             .withNodePropertyKeys("Book")("title" -> CTString)
-            .withRelationshipPropertyKeys("READS")("rating" -> CTFloat),
+            .withRelationshipPropertyKeys("READS")("rating" -> CTFloat)
+            .withSchemaPatterns(SchemaPattern("Person", "READS", "Book")),
           Map(
             personKey1 -> NodeToViewMapping(
-              nodeType = Set("Person"),
+              nodeType = NodeType("Person"),
               view = personKey1.qualifiedViewId,
               propertyMappings = Map("name" -> "person_name1", "age" -> "age")),
             personKey2 -> NodeToViewMapping(
-              nodeType = Set("Person"),
+              nodeType = NodeType("Person"),
               view = personKey2.qualifiedViewId,
               propertyMappings = Map("name" -> "person_name2", "age" -> "age")),
             bookKey -> NodeToViewMapping(
-              nodeType = Set("Book"),
+              nodeType = NodeType("Book"),
               view = bookKey.qualifiedViewId,
               propertyMappings = Map("title" -> "book_title"))
           ),
           List(
             EdgeToViewMapping(
-              edgeType = Set("READS"),
+              relType = RelationshipType("Person", "READS", "Book"),
               view = readsKey1.qualifiedViewId,
               startNode = StartNode(personKey1, List(Join("person_id1", "person"))),
               endNode = EndNode(bookKey, List(Join("book_id", "book"))),
               propertyMappings = Map("rating" -> "value1")),
             EdgeToViewMapping(
-              edgeType = Set("READS"),
+              relType = RelationshipType("Person", "READS", "Book"),
               view = readsKey2.qualifiedViewId,
               startNode = StartNode(personKey2, List(Join("person_id2", "person"))),
               endNode = EndNode(bookKey, List(Join("book_id", "book"))),
@@ -115,21 +116,21 @@ class GraphDdlTest extends FunSpec with Matchers {
 
   it("extracts join keys for a given node view key in start node position") {
     val maybeJoinColumns = GraphDdl(ddlString).graphs(GraphName("fooGraph"))
-      .nodeIdColumnsFor(NodeViewKey(Set("Person"), QualifiedViewId("dataSourceName.fooDatabaseName.personView1")))
+      .nodeIdColumnsFor(NodeViewKey(NodeType("Person"), QualifiedViewId("dataSourceName.fooDatabaseName.personView1")))
 
     maybeJoinColumns shouldEqual Some(List("person_id1"))
   }
 
   it("extracts join keys for a given node view key in end node position") {
     val maybeJoinColumns = GraphDdl(ddlString).graphs(GraphName("fooGraph"))
-      .nodeIdColumnsFor(NodeViewKey(Set("Book"), QualifiedViewId("dataSourceName.fooDatabaseName.bookView")))
+      .nodeIdColumnsFor(NodeViewKey(NodeType("Book"), QualifiedViewId("dataSourceName.fooDatabaseName.bookView")))
 
     maybeJoinColumns shouldEqual Some(List("book_id"))
   }
 
   it("does not extract join keys for an invalid node view key") {
     val maybeJoinColumns = GraphDdl(ddlString).graphs(GraphName("fooGraph"))
-      .nodeIdColumnsFor(NodeViewKey(Set("A"), QualifiedViewId("dataSourceName.fooDatabaseName.A")))
+      .nodeIdColumnsFor(NodeViewKey(NodeType("A"), QualifiedViewId("dataSourceName.fooDatabaseName.A")))
 
     maybeJoinColumns shouldEqual None
   }
@@ -151,8 +152,8 @@ class GraphDdlTest extends FunSpec with Matchers {
       """.stripMargin)
 
     ddl.graphs(GraphName("fooGraph")).nodeToViewMappings.keys shouldEqual Set(
-      NodeViewKey(Set("Person"), QualifiedViewId("ds1", "db1", "personView")),
-      NodeViewKey(Set("Account"), QualifiedViewId("ds2", "db2", "accountView"))
+      NodeViewKey(NodeType("Person"), QualifiedViewId("ds1", "db1", "personView")),
+      NodeViewKey(NodeType("Account"), QualifiedViewId("ds2", "db2", "accountView"))
     )
   }
 
@@ -163,13 +164,13 @@ class GraphDdlTest extends FunSpec with Matchers {
         |  A (x STRING), B (y STRING),
         |  (A)-[B]->(A),
         |  (A) FROM a,
-        |  [B] FROM b e
+        |  (A)-[B]->(A) FROM b e
         |    START NODES (A) FROM a n JOIN ON e.id = n.id
         |    END   NODES (A) FROM a n JOIN ON e.id = n.id
         |)
       """.stripMargin)
 
-    val A_a = NodeViewKey(Set("A"), QualifiedViewId("ds1", "db1", "a"))
+    val A_a = NodeViewKey(NodeType("A"), QualifiedViewId("ds1", "db1", "a"))
 
     ddl.graphs(GraphName("myGraph")) shouldEqual Graph(
       name = GraphName("myGraph"),
@@ -178,10 +179,10 @@ class GraphDdlTest extends FunSpec with Matchers {
         .withRelationshipPropertyKeys("B")("y" -> CTString)
         .withSchemaPatterns(SchemaPattern("A", "B", "A")),
       nodeToViewMappings = Map(
-        A_a -> NodeToViewMapping(Set("A"), QualifiedViewId("ds1", "db1", "a"), Map("x" -> "x"))
+        A_a -> NodeToViewMapping(NodeType("A"), QualifiedViewId("ds1", "db1", "a"), Map("x" -> "x"))
       ),
       edgeToViewMappings = List(
-        EdgeToViewMapping(Set("B"), QualifiedViewId("ds1", "db1", "b"),
+        EdgeToViewMapping(RelationshipType("A", "B", "A"), QualifiedViewId("ds1", "db1", "b"),
           StartNode(A_a, List(Join("id", "id"))),
           EndNode(A_a, List(Join("id", "id"))),
           Map("y" -> "y")
@@ -190,8 +191,132 @@ class GraphDdlTest extends FunSpec with Matchers {
     )
   }
 
+  it("allows these equivalent graph definitions") {
+    val ddls = List(
+      // most compact form
+      GraphDdl("""SET SCHEMA ds1.db1
+                 |CREATE GRAPH myGraph (
+                 |  A (x STRING), B (y STRING),
+                 |  (A) FROM a,
+                 |  (A)-[B]->(A) FROM b e
+                 |    START NODES (A) FROM a n JOIN ON e.id = n.id
+                 |    END   NODES (A) FROM a n JOIN ON e.id = n.id
+                 |)
+               """.stripMargin),
+      // mixed order
+      GraphDdl("""SET SCHEMA ds1.db1
+                 |CREATE GRAPH myGraph (
+                 |  (A)-[B]->(A) FROM b e
+                 |    START NODES (A) FROM a n JOIN ON e.id = n.id
+                 |    END   NODES (A) FROM a n JOIN ON e.id = n.id,
+                 |  A (x STRING), B (y STRING),
+                 |  (A) FROM a
+                 |)
+               """.stripMargin),
+      // explicit node and rel type definition
+      GraphDdl("""SET SCHEMA ds1.db1
+                 |CREATE GRAPH myGraph (
+                 |  A (x STRING), B (y STRING),
+                 |  (A), (A)-[B]->(A),
+                 |  (A) FROM a,
+                 |  (A)-[B]->(A) FROM b e
+                 |    START NODES (A) FROM a n JOIN ON e.id = n.id
+                 |    END   NODES (A) FROM a n JOIN ON e.id = n.id
+                 |)
+               """.stripMargin),
+      // pure type definitions extracted to graph type
+      GraphDdl("""SET SCHEMA ds1.db1
+                 |CREATE GRAPH TYPE myType (
+                 |  A (x STRING), B (y STRING),
+                 |  (A), (A)-[B]->(A)
+                 |)
+                 |CREATE GRAPH myGraph OF myType (
+                 |  (A) FROM a,
+                 |  (A)-[B]->(A) FROM b e
+                 |    START NODES (A) FROM a n JOIN ON e.id = n.id
+                 |    END   NODES (A) FROM a n JOIN ON e.id = n.id
+                 |)
+               """.stripMargin),
+      // shadowing
+      GraphDdl("""SET SCHEMA ds1.db1
+                 |CREATE GRAPH TYPE myType (
+                 |  A (x STRING), B (foo STRING),
+                 |  (A), (A)-[B]->(A)
+                 |)
+                 |CREATE GRAPH myGraph OF myType (
+                 |  B (y STRING),
+                 |  (A) FROM a,
+                 |  (A)-[B]->(A) FROM b e
+                 |    START NODES (A) FROM a n JOIN ON e.id = n.id
+                 |    END   NODES (A) FROM a n JOIN ON e.id = n.id
+                 |)
+               """.stripMargin),
+      // only label types in graph type
+      GraphDdl("""SET SCHEMA ds1.db1
+                 |CREATE GRAPH TYPE myType (
+                 |  A (x STRING), B (foo STRING)
+                 |)
+                 |CREATE GRAPH myGraph OF myType (
+                 |  B (y STRING),
+                 |  (A) FROM a,
+                 |  (A)-[B]->(A) FROM b e
+                 |    START NODES (A) FROM a n JOIN ON e.id = n.id
+                 |    END   NODES (A) FROM a n JOIN ON e.id = n.id
+                 |)
+               """.stripMargin)
+    )
+
+    ddls(1) shouldEqual ddls.head
+    ddls(2) shouldEqual ddls.head
+    ddls(3) shouldEqual ddls.head
+    ddls(4) shouldEqual ddls.head
+    ddls(5) shouldEqual ddls.head
+  }
+
+  it("allows these equivalent graph type definitions") {
+    val ddls = List(
+      // most compact form
+      GraphDdl("""
+                 |CREATE GRAPH TYPE myType (
+                 |  A (x STRING), B (y STRING), C (z STRING),
+                 |  (A)-[B]->(C)
+                 |)
+                 |CREATE GRAPH myGraph OF myType ()
+               """.stripMargin),
+      // explicit node and rel type definitions
+      GraphDdl("""CREATE GRAPH TYPE myType (
+                 |  A (x STRING), B (y STRING), C (z STRING),
+                 |  (A), (C),
+                 |  (A)-[B]->(C)
+                 |)
+                 |CREATE GRAPH myGraph OF myType ()
+               """.stripMargin),
+      // implicit node type definitions
+      GraphDdl("""CREATE GRAPH TYPE myType (
+                 |  A (x STRING), B (y STRING), C (z STRING),
+                 |  (A)-[B]->(C)
+                 |)
+                 |CREATE GRAPH myGraph OF myType ()
+               """.stripMargin),
+      // shadowing
+      GraphDdl("""CREATE ELEMENT TYPE A (foo STRING)
+                 |CREATE GRAPH TYPE myType (
+                 |  A (x STRING), B (y STRING), C (z STRING),
+                 |  (A)-[B]->(C)
+                 |)
+                 |CREATE GRAPH myGraph OF myType ()
+               """.stripMargin)
+    )
+
+    ddls(1) shouldEqual ddls.head
+    ddls(2) shouldEqual ddls.head
+    ddls(3) shouldEqual ddls.head
+  }
+
   it("fails on duplicate node mappings") {
     val e = the [GraphDdlException] thrownBy GraphDdl("""
+      |SET SCHEMA db.schema
+      |
       |CREATE GRAPH TYPE fooSchema (
       | Person,
       | (Person)
@@ -201,7 +326,30 @@ class GraphDdlTest extends FunSpec with Matchers {
       |           FROM personView
       |)
     """.stripMargin)
-    e.getFullMessage should (include("fooGraph") and include("Person") and include("personView"))
+    e.getFullMessage should (include("fooGraph") and include("(Person)") and include("db.schema.personView"))
+  }
+
+  it("fails on duplicate relationship mappings") {
+    val e = the[GraphDdlException] thrownBy GraphDdl(
+      """
+        |SET SCHEMA db.schema
+        |
+        |CREATE GRAPH TYPE fooSchema (
+        | Person,
+        | KNOWS,
+        | (Person)-[KNOWS]->(Person)
+        |)
+        |CREATE GRAPH fooGraph OF fooSchema (
+        | (Person)-[KNOWS]->(Person)
+        |   FROM pkpView e
+        |     START NODES (Person) FROM a n JOIN ON e.id = n.id
+        |     END   NODES (Person) FROM a n JOIN ON e.id = n.id,
+        |   FROM pkpView e
+        |     START NODES (Person) FROM a n JOIN ON e.id = n.id
+        |     END   NODES (Person) FROM a n JOIN ON e.id = n.id
+        |)
+      """.stripMargin)
+    e.getFullMessage should (include("fooGraph") and include("(Person)-[KNOWS]->(Person)") and include("db.schema.pkpView"))
   }
 
   it("fails on duplicate global labels") {
