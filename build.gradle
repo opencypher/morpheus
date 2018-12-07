@@ -11,6 +11,7 @@ allprojects {
 
 subprojects {
     apply plugin: 'java'
+    apply plugin: 'scala'
 
     repositories {
         mavenLocal()
@@ -20,23 +21,39 @@ subprojects {
     }
 
     dependencies {
-        compile 'org.scala-lang:scala-library:2.11.12'
-        compile 'org.scala-lang:scala-reflect:2.11.12'
-        compile 'org.scala-lang:scala-compiler:2.11.12'
-        compile 'org.apache.logging.log4j:log4j-api:2.11.0'
-        compile 'org.apache.logging.log4j:log4j-core:2.11.0'
-        compile 'org.apache.logging.log4j:log4j-api-scala_2.11:11.0'
-        testCompile 'org.scalatest:scalatest_2.11:3.0.5'
-        testCompile 'org.junit.platform:junit-platform-runner:1.0.2'
-        testCompile 'org.scalacheck:scalacheck_2.11:1.13.5'
+        compile group: 'org.scala-lang', name: 'scala-library', version: scalaVersionFull
+
+        compile group: 'org.apache.logging.log4j', name: 'log4j-api',                     version: '2.11.0'
+        compile group: 'org.apache.logging.log4j', name: 'log4j-core',                    version: '2.11.0'
+        compile group: 'org.apache.logging.log4j', name: "log4j-api-scala_$scalaVersion", version: '11.0'
+
+        testCompile group: 'org.scalatest',      name: "scalatest_$scalaVersion",  version: '3.0.5'
+        testCompile group: 'org.scalacheck',     name: "scalacheck_$scalaVersion", version: '1.13.5'
+        testCompile group: 'org.junit.platform', name: 'junit-platform-runner',    version: '1.0.2'
     }
+
+    tasks.withType(ScalaCompile) {
+        scalaCompileOptions.additionalParameters = [
+            "-target:jvm-1.8",
+            '-unchecked',
+            '-deprecation',
+            '-feature',
+            '-Xfatal-warnings',
+            '-Xfuture',
+            '-Ywarn-adapted-args',
+            '-Yopt-warnings:at-inline-failed',
+            '-Yopt:l:project',
+            '-Ypartial-unification',
+        ]
+    }
+
 
     task packageSources(type: Jar) {
         classifier = 'sources'
         from(sourceSets.main.allSource)
     }
 
-    sourceCompatibility = '1.8'
+    sourceCompatibility = javaVersion
     artifacts.archives(tasks.packageSources)
 
     tasks.withType(JavaCompile) {

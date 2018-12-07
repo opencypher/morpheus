@@ -3,13 +3,15 @@
  */
 
 dependencies {
-    compile 'org.typelevel:cats-core_2.11:1.0.1'
     compile project(':okapi-trees')
-    compile 'org.opencypher:front-end-9.0:9.0.20181030'
-    compile 'com.lihaoyi:upickle_2.11:0.6.6'
-    compile 'com.lihaoyi:fastparse_2.11:1.0.0'
-    testCompile 'org.mockito:mockito-all:1.10.19'
-    testCompile 'junit:junit:4.12'
+
+    compile group: 'org.typelevel',  name: "cats-core_$scalaVersion", version: '1.0.1'
+    compile group: 'org.opencypher', name: 'front-end-9.0',           version: '9.0.20181030'
+    compile group: 'com.lihaoyi',    name: "upickle_$scalaVersion",   version: '0.6.6'
+    compile group: 'com.lihaoyi',    name: "fastparse_$scalaVersion", version: '1.0.0'
+
+    testCompile group: 'org.mockito', name: 'mockito-all', version: '1.10.19'
+    testCompile group: 'junit',       name: 'junit',       version: '4.12'
 }
 
 task packageTests(type: Jar) {

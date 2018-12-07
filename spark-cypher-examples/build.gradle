@@ -4,11 +4,12 @@
 
 dependencies {
     compile project(':spark-cypher')
-    compile 'org.apache.spark:spark-graphx_2.11:2.2.2'
-    compile 'org.neo4j.test:neo4j-harness:3.4.10'
-    compile 'io.netty:netty-all:4.1.24.Final'
     compile project(':spark-cypher-testing')
-    compile 'com.h2database:h2:1.4.196'
+
+    compile group: 'org.apache.spark', name: "spark-graphx_$scalaVersion", version: '2.2.2'
+    compile group: 'org.neo4j.test',   name: 'neo4j-harness',              version: '3.4.10'
+    compile group: 'io.netty',         name: 'netty-all',                  version: '4.1.24.Final'
+    compile group: 'com.h2database',   name: 'h2',                         version: '1.4.196'
 }
 
 task packageTests(type: Jar) {

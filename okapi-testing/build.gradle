@@ -4,11 +4,13 @@
 
 dependencies {
     compile project(':okapi-api')
-    compile 'org.opencypher:front-end-9.0:9.0.20181030'
-    compile 'org.neo4j.test:neo4j-harness-enterprise:3.4.10'
-    compile 'org.bouncycastle:bctls-jdk15on:1.59'
-    compile 'junit:junit:4.12'
-    compile 'org.mockito:mockito-all:1.10.19'
+
+    compile group: 'org.opencypher',   name: 'front-end-9.0',            version: '9.0.20181030'
+    compile group: 'org.neo4j.test',   name: 'neo4j-harness-enterprise', version: '3.4.10'
+    compile group: 'org.bouncycastle', name: 'bctls-jdk15on',            version: '1.59'
+    compile group: 'junit',            name: 'junit',                    version: '4.12'
+    compile group: 'org.mockito',      name: 'mockito-all',              version: '1.10.19'
+    compile group: 'org.scalatest',    name: "scalatest_$scalaVersion",  version: '3.0.5'
 }
 
 task packageTests(type: Jar) {

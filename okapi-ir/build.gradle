@@ -4,12 +4,13 @@
 
 dependencies {
     compile project(':okapi-api')
-    compile 'org.opencypher:front-end-9.0:9.0.20181030'
-    compile 'org.atnos:eff_2.11:5.0.0'
+    compile group: 'org.opencypher', name: 'front-end-9.0',      version: '9.0.20181030'
+    compile group: 'org.atnos',      name: "eff_$scalaVersion",  version: '5.0.0'
+
     testCompile project(':okapi-testing')
-    testCompile 'org.neo4j:neo4j-cypher-util-3.4:3.4.10'
-    testCompile 'org.opencypher:ast-9.0:9.0.20181030'
-    testCompile 'org.opencypher:util-9.0:9.0.20181030'
+    testCompile group: 'org.neo4j',      name: 'neo4j-cypher-util-3.4', version: '3.4.10',       classifier: 'tests'
+    testCompile group: 'org.opencypher', name: 'ast-9.0',               version: '9.0.20181030', classifier: 'tests'
+    testCompile group: 'org.opencypher', name: 'util-9.0',              version: '9.0.20181030', classifier: 'tests'
 }
 
 task packageTests(type: Jar) {

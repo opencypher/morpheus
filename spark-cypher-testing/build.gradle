@@ -7,14 +7,16 @@ dependencies {
     compile project(':okapi-neo4j-procedures')
     compile project(':okapi-testing')
     compile project(':okapi-neo4j-io-testing')
-    compile 'org.apache.spark:spark-core_2.11:2.2.2'
-    compile 'org.apache.spark:spark-sql_2.11:2.2.2'
-    compile 'org.apache.spark:spark-catalyst_2.11:2.2.2'
-    compile 'org.apache.spark:spark-hive_2.11:2.2.2'
-    compile 'org.apache.hadoop:hadoop-minicluster:2.7.0'
-    compile 'ch.cern.sparkmeasure:spark-measure_2.11:0.11'
-    testCompile 'org.neo4j:neo4j-cypher-util-3.4:3.4.10'
-    testCompile 'com.h2database:h2:1.4.196'
+
+    compile group: 'org.apache.spark',     name: "spark-core_$scalaVersion",     version: '2.2.2'
+    compile group: 'org.apache.spark',     name: "spark-sql_$scalaVersion",      version: '2.2.2'
+    compile group: 'org.apache.spark',     name: "spark-catalyst_$scalaVersion", version: '2.2.2'
+    compile group: 'org.apache.spark',     name: "spark-hive_$scalaVersion",     version: '2.2.2'
+    compile group: 'org.apache.hadoop',    name: 'hadoop-minicluster',           version: '2.7.0'
+    compile group: 'ch.cern.sparkmeasure', name: "spark-measure_$scalaVersion",  version: '0.11'
+
+    testCompile group: 'org.neo4j',      name: 'neo4j-cypher-util-3.4', version: '3.4.10'
+    testCompile group: 'com.h2database', name: 'h2',                    version: '1.4.196'
 }
 
 task packageTests(type: Jar) {

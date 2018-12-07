@@ -6,10 +6,12 @@ dependencies {
     compile project(':okapi-relational')
     compile project(':okapi-neo4j-io')
     compile project(':graph-ddl')
-    compile 'org.neo4j.driver:neo4j-java-driver:1.7.2'
-    compileOnly 'org.apache.spark:spark-core_2.11:2.2.2'
-    compileOnly 'org.apache.spark:spark-sql_2.11:2.2.2'
-    compileOnly 'org.apache.spark:spark-catalyst_2.11:2.2.2'
+
+    compile group: 'org.neo4j.driver', name: 'neo4j-java-driver', version: '1.7.2'
+
+    compileOnly group: 'org.apache.spark', name: "spark-core_$scalaVersion",     version: '2.2.2'
+    compileOnly group: 'org.apache.spark', name: "spark-sql_$scalaVersion",      version: '2.2.2'
+    compileOnly group: 'org.apache.spark', name: "spark-catalyst_$scalaVersion", version: '2.2.2'
 }
 
 task packageTests(type: Jar) {

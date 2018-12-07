@@ -4,6 +4,7 @@
 
 dependencies {
     compile project(':okapi-logical')
+
     testCompile project(':okapi-testing')
 }
 
