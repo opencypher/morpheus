@@ -19,3 +19,12 @@ metastore_*
 caps-core/.project
 caps-core/.classpath
 .project
+
+# Gradle
+.gradle
+/build/
+gradle-app.setting
+!gradle-wrapper.jar
+.gradletasknamecache
+# gradle/wrapper/gradle-wrapper.properties
+
