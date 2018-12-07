@@ -27,13 +27,15 @@
 package org.opencypher.okapi.relational.impl.planning
 
 import org.opencypher.okapi.api.graph.CypherSession
+import org.opencypher.okapi.api.io.conversion.{NodeMapping, RelationshipMapping}
 import org.opencypher.okapi.api.types.{CTBoolean, CTNode, CTRelationship}
-import org.opencypher.okapi.impl.exception.{NotImplementedException, SchemaException}
+import org.opencypher.okapi.impl.exception.{NotImplementedException, SchemaException, UnsupportedOperationException}
 import org.opencypher.okapi.ir.api.block.SortItem
 import org.opencypher.okapi.ir.api.expr._
-import org.opencypher.okapi.ir.api.{Label, RelType}
+import org.opencypher.okapi.ir.api.{Label, PropertyKey, RelType}
 import org.opencypher.okapi.logical.impl._
 import org.opencypher.okapi.logical.{impl => logical}
+import org.opencypher.okapi.relational.api.io.EntityTable
 import org.opencypher.okapi.relational.api.planning.RelationalRuntimeContext
 import org.opencypher.okapi.relational.api.table.Table
 import org.opencypher.okapi.relational.api.tagging.Tags._
@@ -535,6 +537,34 @@ object RelationalPlanner {
           .filter(hasType => targetType.types.contains(hasType.relType.name))
         val filterExpr = Ors(relTypes.map(Equals(_, TrueLit)(CTBoolean)).toSeq: _*)
         op.filter(filterExpr)
+      }
+    }
+
+    def entityTable: EntityTable[T] = {
+      val entity = op.singleEntity
+
+      val header = op.header
+      val idCol = header.idColumns(entity).head
+      val properties = header.propertiesFor(entity).map(p => p -> header.column(p))
+
+      entity.cypherType match {
+        case CTNode(labels, _) =>
+          val mapping = NodeMapping.on(idCol).withImpliedLabels(labels.toSeq: _*)
+          val nodeMapping = properties.foldLeft(mapping) {
+            case (acc, (Property(_, PropertyKey(key)), col)) => acc.withPropertyKey(key, col)
+          }
+          op.session.entityTables.nodeTable(nodeMapping, op.table)
+
+        case CTRelationship(typ, _) =>
+          val sourceCol = header.column(header.startNodeFor(entity))
+          val targetCol = header.column(header.endNodeFor(entity))
+          val mapping = RelationshipMapping.on(idCol).from(sourceCol).to(targetCol).withRelType(typ.head)
+          val relMapping = properties.foldLeft(mapping) {
+            case (acc, (Property(_, PropertyKey(key)), col)) => acc.withPropertyKey(key, col)
+          }
+          op.session.entityTables.relationshipTable(relMapping, op.table)
+
+        case other => throw UnsupportedOperationException(s"Cannot create scan for $other")
       }
     }
   }
