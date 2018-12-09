@@ -321,6 +321,7 @@ object SparkSQLExprMapper {
         case Acos(e) => functions.acos(e.asSparkSQLExpr)
         case Asin(e) => functions.asin(e.asSparkSQLExpr)
         case Atan(e) => functions.atan(e.asSparkSQLExpr)
+        case Atan2(e1,e2) => functions.atan2(e1.asSparkSQLExpr, e2.asSparkSQLExpr)
         case Cos(e) => functions.cos(e.asSparkSQLExpr)
         case Cot(e) => Divide(IntegerLit(1)(CTInteger), Tan(e)(CTFloat))(CTFloat).asSparkSQLExpr
         case Degrees(e) => functions.degrees(e.asSparkSQLExpr)

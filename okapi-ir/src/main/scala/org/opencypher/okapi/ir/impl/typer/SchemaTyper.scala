@@ -39,7 +39,7 @@ import org.opencypher.okapi.ir.impl.parse.functions.Timestamp
 import org.opencypher.okapi.ir.impl.parse.rewriter.ExistsPattern
 import org.opencypher.okapi.ir.impl.typer.SignatureConverter._
 import org.opencypher.v9_0.expressions._
-import org.opencypher.v9_0.expressions.functions.{Abs, Acos, Asin, Atan, Ceil, Coalesce, Collect, Cos, Cot, Degrees, Exists, Exp, Floor, Haversin, Keys, Log, Log10, Max, Min, Properties, Radians, Round, Sign, Sin, Sqrt, Tan, ToBoolean, ToString, UnresolvedFunction}
+import org.opencypher.v9_0.expressions.functions.{Abs, Acos, Asin, Atan, Atan2, Ceil, Coalesce, Collect, Cos, Cot, Degrees, Exists, Exp, Floor, Haversin, Keys, Log, Log10, Max, Min, Properties, Radians, Round, Sign, Sin, Sqrt, Tan, ToBoolean, ToString, UnresolvedFunction}
 
 final case class SchemaTyper(schema: Schema) {
 
@@ -571,13 +571,27 @@ object SchemaTyper {
               FunctionSignature(Seq(CTInteger), CTInteger)
             ))
 
-        //todo: could also be unioned in the cases above? (also maybe add tests for this cases?)
+        //todo: could also be unioned with the cases above? (also maybe add tests for these cases?)
         case Acos | Asin | Atan | Cos | Cot | Degrees | Haversin | Radians | Sin | Tan =>
           pure[R, Set[FunctionSignature]](
             Set(
               FunctionSignature(Seq(CTNull), CTNull),
               FunctionSignature(Seq(CTFloat), CTFloat),
               FunctionSignature(Seq(CTInteger), CTFloat)
+            ))
+
+        case Atan2 =>
+          pure[R, Set[FunctionSignature]](
+            Set(
+              FunctionSignature(Seq(CTNull, CTNull), CTNull),
+              FunctionSignature(Seq(CTNull, CTFloat), CTNull),
+              FunctionSignature(Seq(CTFloat, CTNull), CTNull),
+              FunctionSignature(Seq(CTFloat, CTFloat), CTFloat),
+              FunctionSignature(Seq(CTFloat, CTInteger), CTFloat),
+              FunctionSignature(Seq(CTInteger, CTFloat), CTFloat),
+              FunctionSignature(Seq(CTInteger, CTInteger), CTFloat),
+              FunctionSignature(Seq(CTNull, CTInteger), CTNull),
+              FunctionSignature(Seq(CTInteger, CTNull), CTNull)
             ))
 
         case f: TypeSignatures =>

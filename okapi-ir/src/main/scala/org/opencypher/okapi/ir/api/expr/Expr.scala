@@ -847,8 +847,11 @@ final case class Atan(expr: Expr)(val cypherType: CypherType = CTWildcard) exten
   override def withCypherType(ct: CypherType): Atan = copy()(ct)
 }
 
-//Todo: Atan2;  cot and haversine (not supported in spark) but possible via workarounds? (f.i. cot a = 1/(tan a))
-
+final case class Atan2(expr1: Expr, expr2: Expr)(val cypherType: CypherType = CTWildcard) extends FunctionExpr {
+  override type This = Atan2
+  override def withCypherType(ct: CypherType): Atan2 = copy()(ct)
+  override def exprs: IndexedSeq[Expr] = IndexedSeq(expr1,expr2)
+}
 
 final case class Cos(expr: Expr)(val cypherType: CypherType = CTWildcard) extends UnaryFunctionExpr {
   override type This = Cos

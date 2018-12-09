@@ -123,6 +123,53 @@ class FunctionsBehaviour extends CAPSTestSuite with DefaultGraphInit {
     }
   }
 
+  describe("Atan2"){
+    it("on int values") {
+      val result = caps.cypher("Return atan2(1,2) as res")
+      result.records.toMaps should equal(
+        Bag(
+          CypherMap("res" -> 0.4636476090008061)
+        )
+      )
+    }
+
+    it("on float values") {
+      val result = caps.cypher("Return atan2(0.5,0.6) as res")
+      result.records.toMaps should equal(
+        Bag(
+          CypherMap("res" -> 0.6947382761967033)
+        )
+      )
+    }
+
+    it("on two null values") {
+      val result = caps.cypher("Return atan2(null,null) as res")
+      result.records.toMaps should equal(
+        Bag(
+          CypherMap("res" -> null)
+        )
+      )
+    }
+
+    it("on first value being null") {
+      val result = caps.cypher("Return atan2(null,0.5) as res")
+      result.records.toMaps should equal(
+        Bag(
+          CypherMap("res" -> null)
+        )
+      )
+    }
+
+    it("on second value being null") {
+      val result = caps.cypher("Return atan2(0.5, null) as res")
+      result.records.toMaps should equal(
+        Bag(
+          CypherMap("res" -> null)
+        )
+      )
+    }
+  }
+
   describe("Cos"){
     it("on int value") {
       val result = caps.cypher("Return cos(1) as res")
