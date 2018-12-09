@@ -36,6 +36,296 @@ import org.scalatest.DoNotDiscover
 @DoNotDiscover
 class FunctionsBehaviour extends CAPSTestSuite with DefaultGraphInit {
 
+  describe("Acos"){
+    it("on int value") {
+      val result = caps.cypher("Return acos(1) as res")
+      result.records.toMaps should equal(
+        Bag(
+          CypherMap("res" -> 0.0)
+        )
+      )
+    }
+
+    it("on float value") {
+      val result = caps.cypher("Return acos(0.5) as res")
+      result.records.toMaps should equal(
+        Bag(
+          CypherMap("res" -> 1.0471975511965979)
+        )
+      )
+    }
+
+    it("on null value") {
+      val result = caps.cypher("Return acos(null) as res")
+      result.records.toMaps should equal(
+        Bag(
+          CypherMap("res" -> null)
+        )
+      )
+    }
+  }
+
+  describe("Asin"){
+    it("on int value") {
+      val result = caps.cypher("Return asin(1) as res")
+      result.records.toMaps should equal(
+        Bag(
+          CypherMap("res" -> 1.5707963267948966)
+        )
+      )
+    }
+
+    it("on float value") {
+      val result = caps.cypher("Return asin(0.5) as res")
+      result.records.toMaps should equal(
+        Bag(
+          CypherMap("res" -> 0.5235987755982989)
+        )
+      )
+    }
+
+    it("on null value") {
+      val result = caps.cypher("Return asin(null) as res")
+      result.records.toMaps should equal(
+        Bag(
+          CypherMap("res" -> null)
+        )
+      )
+    }
+  }
+
+  describe("Atan"){
+    it("on int value") {
+      val result = caps.cypher("Return atan(1) as res")
+      result.records.toMaps should equal(
+        Bag(
+          CypherMap("res" -> 0.7853981633974483)
+        )
+      )
+    }
+
+    it("on float value") {
+      val result = caps.cypher("Return atan(0.5) as res")
+      result.records.toMaps should equal(
+        Bag(
+          CypherMap("res" -> 0.4636476090008061)
+        )
+      )
+    }
+
+    it("on null value") {
+      val result = caps.cypher("Return atan(null) as res")
+      result.records.toMaps should equal(
+        Bag(
+          CypherMap("res" -> null)
+        )
+      )
+    }
+  }
+
+  describe("Cos"){
+    it("on int value") {
+      val result = caps.cypher("Return cos(1) as res")
+      result.records.toMaps should equal(
+        Bag(
+          CypherMap("res" -> 0.5403023058681398)
+        )
+      )
+    }
+
+    it("on float value") {
+      val result = caps.cypher("Return cos(0.5) as res")
+      result.records.toMaps should equal(
+        Bag(
+          CypherMap("res" -> 0.8775825618903728)
+        )
+      )
+    }
+
+    it("on null value") {
+      val result = caps.cypher("Return cos(null) as res")
+      result.records.toMaps should equal(
+        Bag(
+          CypherMap("res" -> null)
+        )
+      )
+    }
+  }
+
+  describe("Cot"){
+    it("on int value") {
+      val result = caps.cypher("Return cot(1) as res")
+      result.records.toMaps should equal(
+        Bag(
+          CypherMap("res" -> 0.6420926159343306)
+        )
+      )
+    }
+
+    it("on float value") {
+      val result = caps.cypher("Return cot(0.5) as res")
+      result.records.toMaps should equal(
+        Bag(
+          CypherMap("res" -> 1.830487721712452)
+        )
+      )
+    }
+
+    it("on null value") {
+      val result = caps.cypher("Return cot(null) as res")
+      result.records.toMaps should equal(
+        Bag(
+          CypherMap("res" -> null)
+        )
+      )
+    }
+  }
+
+  describe("Degrees"){
+    it("on int value") {
+      val result = caps.cypher("Return degrees(1) as res")
+      result.records.toMaps should equal(
+        Bag(
+          CypherMap("res" -> 57.29577951308232)
+        )
+      )
+    }
+
+    it("on float value") {
+      val result = caps.cypher("Return degrees(3.14159) as res")
+      result.records.toMaps should equal(
+        Bag(
+          CypherMap("res" -> 179.99984796050427)
+        )
+      )
+    }
+
+    it("on null value") {
+      val result = caps.cypher("Return degrees(null) as res")
+      result.records.toMaps should equal(
+        Bag(
+          CypherMap("res" -> null)
+        )
+      )
+    }
+  }
+
+  describe("Haversin"){
+    it("on int value") {
+      val result = caps.cypher("Return haversin(1) as res")
+      result.records.toMaps should equal(
+        Bag(
+          CypherMap("res" -> 0.22984884706593012)
+        )
+      )
+    }
+
+    it("on float value") {
+      val result = caps.cypher("Return haversin(0.5) as res")
+      result.records.toMaps should equal(
+        Bag(
+          CypherMap("res" -> 0.06120871905481362)
+        )
+      )
+    }
+
+    it("on null value") {
+      val result = caps.cypher("Return haversin(null) as res")
+      result.records.toMaps should equal(
+        Bag(
+          CypherMap("res" -> null)
+        )
+      )
+    }
+  }
+
+  describe("Radians"){
+    it("on int value") {
+      val result = caps.cypher("Return radians(180) as res")
+      result.records.toMaps should equal(
+        Bag(
+          CypherMap("res" -> 3.141592653589793)
+        )
+      )
+    }
+
+    it("on float value") {
+      val result = caps.cypher("Return radians(180.0) as res")
+      result.records.toMaps should equal(
+        Bag(
+          CypherMap("res" -> 3.141592653589793)
+        )
+      )
+    }
+
+    it("on null value") {
+      val result = caps.cypher("Return radians(null) as res")
+      result.records.toMaps should equal(
+        Bag(
+          CypherMap("res" -> null)
+        )
+      )
+    }
+  }
+
+  describe("Sin"){
+    it("on int value") {
+      val result = caps.cypher("Return sin(1) as res")
+      result.records.toMaps should equal(
+        Bag(
+          CypherMap("res" -> 0.8414709848078965)
+        )
+      )
+    }
+
+    it("on float value") {
+      val result = caps.cypher("Return sin(0.5) as res")
+      result.records.toMaps should equal(
+        Bag(
+          CypherMap("res" -> 0.479425538604203)
+        )
+      )
+    }
+
+    it("on null value") {
+      val result = caps.cypher("Return sin(null) as res")
+      result.records.toMaps should equal(
+        Bag(
+          CypherMap("res" -> null)
+        )
+      )
+    }
+  }
+
+  describe("tan"){
+    it("on int value") {
+      val result = caps.cypher("Return tan(1) as res")
+      result.records.toMaps should equal(
+        Bag(
+          CypherMap("res" -> 1.5574077246549023)
+        )
+      )
+    }
+
+    it("on float value") {
+      val result = caps.cypher("Return tan(0.5) as res")
+      result.records.toMaps should equal(
+        Bag(
+          CypherMap("res" -> 0.5463024898437905)
+        )
+      )
+    }
+
+    it("on null value") {
+      val result = caps.cypher("Return tan(null) as res")
+      result.records.toMaps should equal(
+        Bag(
+          CypherMap("res" -> null)
+        )
+      )
+    }
+  }
+
   describe("toUpper") {
     it("toUpper()") {
       val result = caps.cypher("Return toUpper('hello') as upperCased")
