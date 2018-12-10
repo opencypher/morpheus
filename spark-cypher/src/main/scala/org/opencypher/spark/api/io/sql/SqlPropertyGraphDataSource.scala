@@ -171,7 +171,13 @@ case class SqlPropertyGraphDataSource(
   private def readSqlTable(qualifiedViewId: QualifiedViewId): DataFrame = {
     val spark = caps.sparkSession
 
-    val sqlDataSourceConfig = sqlDataSourceConfigs.find(_.dataSourceName == qualifiedViewId.dataSource).get
+    val sqlDataSourceConfig = sqlDataSourceConfigs.find(_.dataSourceName == qualifiedViewId.dataSource) match {
+      case None =>
+        val knownDataSources = sqlDataSourceConfigs.map(_.dataSourceName).mkString("'", "';'", "'")
+        throw SqlDataSourceConfigException(s"Data source '${qualifiedViewId.dataSource}' not configured; see data sources configuration. Known data sources: $knownDataSources")
+      case Some(config) =>
+        config
+    }
     val tableName = qualifiedViewId.schema + "." + qualifiedViewId.view
     val inputTable = sqlDataSourceConfig.storageFormat match {
       case JdbcFormat =>
