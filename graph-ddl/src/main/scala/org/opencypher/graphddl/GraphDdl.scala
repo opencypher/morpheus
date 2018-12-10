@@ -30,8 +30,9 @@ import org.opencypher.graphddl.GraphDdl._
 import org.opencypher.graphddl.GraphDdlAst.{ColumnIdentifier, PropertyToColumnMappingDefinition}
 import org.opencypher.graphddl.GraphDdlException._
 import org.opencypher.okapi.api.graph.GraphName
-import org.opencypher.okapi.api.schema.{PropertyKeys, Schema, SchemaPattern}
 import org.opencypher.okapi.api.schema.PropertyKeys.PropertyKeys
+import org.opencypher.okapi.api.schema.{PropertyKeys, Schema, SchemaPattern}
+import org.opencypher.okapi.impl.util.ScalaUtils._
 
 import scala.language.higherKinds
 
@@ -400,11 +401,6 @@ object GraphDdl {
 
   private implicit class MapOps[K, V](map: Map[K, V]) {
     def getOrFail(key: K, msg: String): V = map.getOrElse(key, unresolved(msg, key, map.keySet))
-  }
-
-  private implicit class SchemaOps(schema: Schema) {
-    def foldLeftOver[T](trav: TraversableOnce[T])(op: (Schema, T) => Schema): Schema =
-      trav.foldLeft(schema)(op)
   }
 }
 

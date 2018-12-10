@@ -50,6 +50,7 @@ import org.opencypher.okapi.relational.impl.{operators => relational}
 
 import scala.reflect.runtime.universe.TypeTag
 
+import org.opencypher.okapi.impl.util.ScalaUtils._
 
 object ConstructGraphPlanner {
 
@@ -279,7 +280,7 @@ object ConstructGraphPlanner {
     * and compiles them to a ScanGraph. Note that cloned entities that are also present in an `ON GRAPH` are not
     * included in the ScanGraph to avoid duplication. This improves scan performance as fewer DISTINCTs are needed.
     */
-  private def extractScanGraph[T <: Table[T] : TypeTag] (
+  private def extractScanGraph[T <: Table[T] : TypeTag](
     logicalPatternGraph: LogicalPatternGraph,
     inputOp: RelationalOperator[T],
     tags: Set[Int]
@@ -301,7 +302,7 @@ object ConstructGraphPlanner {
     val clonedEntityScanTypes = scanTypesFromClonedEntities(logicalPatternGraph, setLabelItems)
 
     val scansForCreated = createScans(createdEntityScanTypes, inputOp, schema)
-    val scansForCloned =  createScans(clonedEntityScanTypes, inputOp, schema, distinct = true)
+    val scansForCloned = createScans(clonedEntityScanTypes, inputOp, schema, distinct = true)
 
     val scanGraphSchema: Schema = computeScanGraphSchema(schema, createdEntityScanTypes, clonedEntityScanTypes)
 
@@ -387,10 +388,10 @@ object ConstructGraphPlanner {
       case (v, CTNode(labels, g)) =>
         v -> CTNode(labels, g)
       case other => other
-    }.groupBy{
+    }.groupBy {
       case (_, cypherType) => cypherType
     }.map {
-      case (ct,  list) => ct -> list.map(_._1).toSeq
+      case (ct, list) => ct -> list.map(_._1).toSeq
     }
 
     groupedScanEntities.map { case (ct, vars) => scansForType(ct, vars, inputOp, schema, distinct) }.toSeq
@@ -428,7 +429,10 @@ object ConstructGraphPlanner {
           op.alignWith(op.singleEntity, targetEntity, targetHeader)
         }.foldLeft(head)(_ unionAll _)
 
-      case _ => throw UnsupportedOperationException("This should never happen")
+      case _ => throw IllegalArgumentException(
+        expected = "Non-empty list of scans",
+        actual = "Empty list",
+        explanation = "This should never happen, possible planning bug.")
     }
 
     val distinctScans = if (distinct) relational.Distinct(combinedScans, combinedScans.header.vars) else combinedScans
@@ -436,7 +440,7 @@ object ConstructGraphPlanner {
     distinctScans.entityTable
   }
 
-  private def scanForEntityAndType[T <: Table[T] : TypeTag] (
+  private def scanForEntityAndType[T <: Table[T] : TypeTag](
     extractionVar: Var,
     entityType: CypherType,
     op: RelationalOperator[T],
@@ -448,8 +452,8 @@ object ConstructGraphPlanner {
     val labelOrTypePredicate = entityType match {
       case CTNode(labels, _) =>
         val labelFilters = op.header.labelsFor(extractionVar).map {
-          case expr @ HasLabel(_, Label(label)) if labels.contains(label) => Equals(expr, TrueLit)(CTBoolean)
-          case expr : HasLabel => Equals(expr, FalseLit)(CTBoolean)
+          case expr@HasLabel(_, Label(label)) if labels.contains(label) => Equals(expr, TrueLit)(CTBoolean)
+          case expr: HasLabel => Equals(expr, FalseLit)(CTBoolean)
         }
 
         Ands(labelFilters)
@@ -474,7 +478,7 @@ object ConstructGraphPlanner {
     alignedScan
   }
 
-  private def computeScanGraphSchema[T <: Table[T] : TypeTag](
+  private def computeScanGraphSchema[T <: Table[T]](
     baseSchema: Schema,
     createdEntityScanTypes: Set[(Var, CypherType)],
     clonedEntityScanTypes: Set[(Var, CypherType)]
@@ -487,17 +491,17 @@ object ConstructGraphPlanner {
     val scanGraphNodeLabelCombos = nodeTypes.collect {
       case (_, CTNode(labels, _)) => labels
     }
-    val scanGraphNodeSchema = scanGraphNodeLabelCombos.foldLeft(Schema.empty) {
-      case (acc, labelCombo) => acc.withNodePropertyKeys(labelCombo, baseSchema.nodePropertyKeys(labelCombo))
-    }
 
     val scanGraphRelTypes = relTypes.collect {
       case (_, CTRelationship(types, _)) => types
     }.flatten
-    val scanGraphSchema = scanGraphRelTypes.foldLeft(scanGraphNodeSchema) {
-      case (acc, typ) => acc.withRelationshipPropertyKeys(typ, baseSchema.relationshipPropertyKeys(typ))
-    }
 
-    scanGraphSchema
+    Schema.empty
+      .foldLeftOver(scanGraphNodeLabelCombos) {
+        case (acc, labelCombo) => acc.withNodePropertyKeys(labelCombo, baseSchema.nodePropertyKeys(labelCombo))
+      }
+      .foldLeftOver(scanGraphRelTypes) {
+        case (acc, typ) => acc.withRelationshipPropertyKeys(typ, baseSchema.relationshipPropertyKeys(typ))
+      }
   }
 }
