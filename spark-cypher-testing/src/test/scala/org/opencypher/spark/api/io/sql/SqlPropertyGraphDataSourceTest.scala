@@ -500,4 +500,22 @@ class SqlPropertyGraphDataSourceTest extends CAPSTestSuite with HiveFixture with
       CypherMap("n.int" -> 15, "n.long" -> 800)
     ))
   }
+
+  it("should give good error message on bad SqlDataSource config") {
+    val ddlString =
+      """
+        |CREATE GRAPH g (
+        |  A,
+        |  (A) FROM unknown.schema.a
+        |)
+      """.stripMargin
+
+    val known1 = SqlDataSourceConfig(HiveFormat, "known1")
+    val known2 = SqlDataSourceConfig(HiveFormat, "known2")
+
+    val pgds = SqlPropertyGraphDataSource(GraphDdl(ddlString), List(known1, known2))
+
+    val e = the [SqlDataSourceConfigException] thrownBy pgds.graph(GraphName("g"))
+    e.getMessage should (include("unknown") and include("known1") and include("known2"))
+  }
 }
