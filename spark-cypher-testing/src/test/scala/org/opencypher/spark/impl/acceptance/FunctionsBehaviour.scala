@@ -18,10 +18,10 @@
  * This work was created by the collective efforts of the openCypher community.
  * Without limiting the terms of Section 6, any Derivative Work that is not
  * approved by the public consensus process of the openCypher Implementers Group
- * should not be described AS “Cypher” (and Cypher® is a registered trademark of
- * Neo4j Inc.) or AS "openCypher". Extensions by implementers or prototypes or
+ * should not be described as “Cypher” (and Cypher® is a registered trademark of
+ * Neo4j Inc.) or as "openCypher". Extensions by implementers or prototypes or
  * proposals for change that have been documented or implemented should only be
- * described AS "implementation extensions to Cypher" or AS "proposed changes to
+ * described as "implementation extensions to Cypher" or as "proposed changes to
  * Cypher that are not yet approved by the openCypher community".
  */
 package org.opencypher.spark.impl.acceptance
@@ -568,7 +568,7 @@ class FunctionsBehaviour extends CAPSTestSuite with DefaultGraphInit {
     it("size() on literal list") {
       val given = initGraph("CREATE ()")
 
-      val result = given.cypher("MATCH () RETURN size(['Alice', 'Bob']) AS s")
+      val result = given.cypher("MATCH () RETURN size(['Alice', 'Bob']) As s")
 
       result.records.toMaps should equal(
         Bag(
