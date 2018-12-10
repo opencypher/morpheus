@@ -34,7 +34,7 @@ import org.opencypher.okapi.relational.api.io.{EntityTable, NodeTable}
 import org.opencypher.okapi.relational.api.planning.RelationalRuntimeContext
 import org.opencypher.okapi.relational.api.table.{RelationalCypherRecords, Table}
 import org.opencypher.okapi.relational.api.tagging.TagSupport._
-import org.opencypher.okapi.relational.impl.graph.{EmptyGraph, ScanGraph, SingleTableGraph, UnionGraph}
+import org.opencypher.okapi.relational.impl.graph.{EmptyGraph, ScanGraph, UnionGraph}
 import org.opencypher.okapi.relational.impl.operators.RelationalOperator
 import org.opencypher.okapi.relational.impl.planning.RelationalPlanner._
 
@@ -48,9 +48,6 @@ trait RelationalCypherGraphFactory[T <: Table[T]] {
 
   private[opencypher] implicit def tableTypeTag: TypeTag[T] = session.tableTypeTag
 
-  def singleTableGraph(drivingTable: RelationalOperator[T], schema: Schema, tagsUsed: Set[Int])
-    (implicit context: RelationalRuntimeContext[T]): Graph = new SingleTableGraph(drivingTable, schema, tagsUsed)
-
   def unionGraph(graphs: RelationalCypherGraph[T]*)(implicit context: RelationalRuntimeContext[T]): Graph = {
     unionGraph(computeRetaggings(graphs.map(g => g -> g.tags)).toList)
   }
@@ -61,21 +58,20 @@ trait RelationalCypherGraphFactory[T <: Table[T]] {
   def empty: Graph = EmptyGraph()
 
   def create(nodeTable: NodeTable[T], entityTables: EntityTable[T]*): Graph = {
-    create(Set(0), None, nodeTable, entityTables: _*)
+    create(Set(0), None, nodeTable +: entityTables: _*)
   }
 
   def create(maybeSchema: Option[Schema], nodeTable: NodeTable[T], entityTables: EntityTable[T]*): Graph = {
-    create(Set(0), maybeSchema, nodeTable, entityTables: _*)
+    create(Set(0), maybeSchema, nodeTable +: entityTables: _*)
   }
 
   def create(
     tags: Set[Int],
     maybeSchema: Option[Schema],
-    nodeTable: NodeTable[T],
     entityTables: EntityTable[T]*
   ): Graph = {
     implicit val runtimeContext: RelationalRuntimeContext[T] = session.basicRuntimeContext()
-    val allTables = nodeTable +: entityTables
+    val allTables = entityTables
     val schema = maybeSchema.getOrElse(allTables.map(_.schema).reduce[Schema](_ ++ _))
     new ScanGraph(allTables, schema, tags)
   }

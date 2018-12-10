@@ -58,7 +58,7 @@ trait EntityTable[T <: Table[T]] extends RelationalCypherRecords[T] {
 
   protected def verify(): Unit = {
     mapping.idKeys.foreach(key => table.verifyColumnType(key, CTInteger, "id key"))
-    if (table.physicalColumns != mapping.allSourceKeys) throw IllegalArgumentException(
+    if (table.physicalColumns.toSet != mapping.allSourceKeys.toSet) throw IllegalArgumentException(
       s"Columns: ${mapping.allSourceKeys.mkString(", ")}",
       s"Columns: ${table.physicalColumns.mkString(", ")}",
       s"Use CAPS[Node|Relationship]Table#fromMapping to create a valid EntityTable")

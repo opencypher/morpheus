@@ -425,8 +425,8 @@ class MultipleGraphBehaviour extends CAPSTestSuite with ScanGraphInit {
     val graph = initGraph(
       """
         |CREATE (:A {val: 1})
-        |CREATE (:B {val: 1})
-        |CREATE (:A:C {val: 1})
+        |CREATE (:B {val: 2})
+        |CREATE (:A:C {val: 3})
       """.stripMargin)
 
     val query =
@@ -440,8 +440,8 @@ class MultipleGraphBehaviour extends CAPSTestSuite with ScanGraphInit {
     result.getRecords shouldBe None
     result.graph.cypher("MATCH (a) RETURN a.val, labels(a) as labels").records.iterator.toBag should equal(Bag(
       CypherMap("a.val" -> 1, "labels" -> Seq("A")),
-      CypherMap("a.val" -> 1, "labels" -> Seq("B")),
-      CypherMap("a.val" -> 1, "labels" -> Seq("A", "C"))
+      CypherMap("a.val" -> 2, "labels" -> Seq("B")),
+      CypherMap("a.val" -> 3, "labels" -> Seq("A", "C"))
     ))
   }
 
@@ -519,17 +519,13 @@ class MultipleGraphBehaviour extends CAPSTestSuite with ScanGraphInit {
       """
         |CREATE (p0 {name: 'Mats'})
         |CREATE (p1 {name: 'Phil'})
-        |CREATE (p0)-[:KNOWS]->(p1)
-        |CREATE (p0)-[:KNOWS]->(p1)
-        |CREATE (p1)-[:KNOWS]->(p0)
       """.stripMargin)
 
     val res = inputGraph.cypher(
       """
-        |MATCH (n)-[:KNOWS]->(m)
-        |WITH DISTINCT n, m
+        |MATCH (n),(m)
+        |WHERE n <> m
         |CONSTRUCT
-        | CLONE n AS n, m AS m
         | CREATE (n)-[r:KNOWS]->(m)
         |RETURN GRAPH
       """.stripMargin)
@@ -1005,5 +1001,4 @@ class MultipleGraphBehaviour extends CAPSTestSuite with ScanGraphInit {
       CypherMap("a.name" -> "Donald")
     ))
   }
-
 }

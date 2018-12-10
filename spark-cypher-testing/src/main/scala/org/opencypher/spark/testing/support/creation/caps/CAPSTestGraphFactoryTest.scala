@@ -99,10 +99,6 @@ abstract class CAPSTestGraphFactoryTest extends CAPSTestSuite with GraphMatching
   }
 }
 
-class SingleTableGraphFactoryTest extends CAPSTestGraphFactoryTest {
-  override def factory: CAPSTestGraphFactory = SingleTableGraphFactory
-}
-
 class ScanGraphFactoryTest extends CAPSTestGraphFactoryTest {
   override def factory: CAPSTestGraphFactory = CAPSScanGraphFactory
 }

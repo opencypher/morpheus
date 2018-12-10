@@ -24,29 +24,13 @@
  * described as "implementation extensions to Cypher" or as "proposed changes to
  * Cypher that are not yet approved by the openCypher community".
  */
-package org.opencypher.spark.testing.support.creation.caps
+package org.opencypher.okapi.impl.util
 
-import org.opencypher.okapi.api.types.{CTNode, CTRelationship}
-import org.opencypher.okapi.ir.api.expr.{Expr, Var}
-import org.opencypher.okapi.relational.api.graph.RelationalCypherGraph
-import org.opencypher.okapi.relational.impl.operators.Join
-import org.opencypher.okapi.relational.impl.planning.LeftOuterJoin
-import org.opencypher.okapi.testing.propertygraph.InMemoryTestGraph
-import org.opencypher.spark.api.CAPSSession
-import org.opencypher.spark.impl.table.SparkTable.DataFrameTable
+object ScalaUtils {
 
-object SingleTableGraphFactory extends CAPSTestGraphFactory {
+  implicit class FoldUtils[V](value: V) {
 
-  override def apply(propertyGraph: InMemoryTestGraph)(implicit caps: CAPSSession): RelationalCypherGraph[DataFrameTable] = {
-    val scanGraph = CAPSScanGraphFactory(propertyGraph)
-    val nodesOp = scanGraph.scanOperator(CTNode)
-    val relsOp = scanGraph.scanOperator(CTRelationship)
-
-    val joinExpr: (Expr, Expr) = Var("")(CTNode) -> relsOp.header.startNodeFor(Var("")(CTRelationship))
-    val joinOp = Join(nodesOp, relsOp, Seq(joinExpr), LeftOuterJoin)
-
-    caps.graphs.singleTableGraph(joinOp, scanGraph.schema, Set(0))(caps.basicRuntimeContext())
+    def foldLeftOver[T](trav: TraversableOnce[T])(op: (V, T) => V): V =
+      trav.foldLeft(value)(op)
   }
-
-  override def name: String = "CAPSPatternGraphFactory"
 }

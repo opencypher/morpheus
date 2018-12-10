@@ -31,12 +31,30 @@ import org.opencypher.okapi.api.io.conversion.{NodeMapping, RelationshipMapping}
 import org.opencypher.okapi.api.types._
 import org.opencypher.okapi.impl.util.StringEncodingUtilities._
 import org.opencypher.okapi.relational.api.io.{EntityTable, NodeTable, RelationshipTable}
+import org.opencypher.okapi.relational.api.table.RelationalEntityTableFactory
 import org.opencypher.spark.api.CAPSSession
 import org.opencypher.spark.impl.table.SparkTable.DataFrameTable
 import org.opencypher.spark.impl.util.Annotation
 import org.opencypher.spark.impl.{CAPSRecords, RecordBehaviour}
 
 import scala.reflect.runtime.universe._
+
+case object CAPSEntityTableFactory extends RelationalEntityTableFactory[DataFrameTable] {
+  override def nodeTable(
+    nodeMapping: NodeMapping,
+    table: DataFrameTable
+  ): NodeTable[DataFrameTable] = {
+    CAPSNodeTable(nodeMapping, table)
+  }
+
+  override def relationshipTable(
+    relationshipMapping: RelationshipMapping,
+    table: DataFrameTable
+  ): RelationshipTable[DataFrameTable] = {
+    CAPSRelationshipTable(relationshipMapping, table)
+  }
+}
+
 
 trait CAPSEntityTable extends EntityTable[DataFrameTable] {
 

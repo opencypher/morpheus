@@ -26,13 +26,21 @@
  */
 package org.opencypher.okapi.relational.api.table
 
+import org.opencypher.okapi.api.io.conversion.{NodeMapping, RelationshipMapping}
 import org.opencypher.okapi.api.table.CypherRecords
 import org.opencypher.okapi.impl.exception.IllegalArgumentException
 import org.opencypher.okapi.impl.table.RecordsPrinter
 import org.opencypher.okapi.impl.util.PrintOptions
 import org.opencypher.okapi.ir.api.expr.Expr
-import org.opencypher.okapi.relational.api.io.EntityTable
+import org.opencypher.okapi.relational.api.io.{EntityTable, NodeTable, RelationshipTable}
 import org.opencypher.okapi.relational.impl.table.RecordHeader
+
+trait RelationalEntityTableFactory[T <: Table[T]] {
+
+  def nodeTable(nodeMapping: NodeMapping, table: T): NodeTable[T]
+
+  def relationshipTable(relationshipMapping: RelationshipMapping, table: T): RelationshipTable[T]
+}
 
 trait RelationalCypherRecordsFactory[T <: Table[T]] {
 

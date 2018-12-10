@@ -146,6 +146,13 @@ object SparkConversions {
         case ArrayType(elemType, containsNull) =>
           elemType.toCypherType(containsNull).map(CTList)
         case NullType => Some(CTNull)
+        case StructType(fields) =>
+          val convertedFields = fields.map { field => field.name -> field.dataType.toCypherType(field.nullable) }.toMap
+          val containsNone = convertedFields.exists {
+            case (_, None) => true
+            case _ => false
+          }
+          if (containsNone) None else Some(CTMap(convertedFields.mapValues(_.get)))
         case _ => None
       }
 
@@ -159,6 +166,7 @@ object SparkConversions {
       */
     def isCypherCompatible: Boolean = dt match {
       case ArrayType(internalType, _) => internalType.isCypherCompatible
+      case StructType(fields) => fields.forall(_.dataType.isCypherCompatible)
       case other => supportedTypes.contains(other)
     }
 
