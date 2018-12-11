@@ -86,6 +86,7 @@
     <dep.scalacheck.version>1.13.5</dep.scalacheck.version>
     <dep.spark-measure.version>0.11</dep.spark-measure.version>
 
+    <skipDocs>false</skipDocs>
   </properties>
 
   <modules>
@@ -273,8 +274,17 @@
             <goals>
               <goal>add-source</goal>
               <goal>compile</goal>
+            </goals>
+          </execution>
+          <execution>
+            <id>scala-doc-jar</id>
+            <phase>process-resources</phase>
+            <goals>
               <goal>doc-jar</goal>
             </goals>
+            <configuration>
+              <skip>${skipDocs}</skip>
+            </configuration>
           </execution>
           <execution>
             <id>scala-test-compile</id>
@@ -375,6 +385,20 @@
           </plugin>
         </plugins>
       </build>
+    </profile>
+
+    <profile>
+      <!-- Fast local build -->
+      <id>fast</id>
+      <activation>
+        <activeByDefault>false</activeByDefault>
+      </activation>
+
+      <properties>
+        <skipDocs>true</skipDocs> <!-- Skip scala-doc -->
+        <skipTests>true</skipTests> <!-- Skip tests -->
+        <license.skip>true</license.skip> <!-- Skip license header checks -->
+      </properties>
     </profile>
   </profiles>
 
