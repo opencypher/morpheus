@@ -80,34 +80,33 @@ object LdbcUtil {
 
     val nodeTables = tableNames.filterNot(_.contains("_"))
     val edgeTables = tableNames -- nodeTables
-    val nodeTypes = nodeTables.map(NodeType)
-    val edgeTypes = edgeTables
-      .map(_.split("_"))
-      .map(tokens => EdgeType(NodeType(tokens(0)), tokens(1), NodeType(tokens(2))))
 
     val elementTypes = toElementType(database, nodeTables ++ edgeTables).toSeq.sorted
 
     val nodeMappings = nodeTables.map(nodeTable => s"(${nodeTable.toNodeLabel}) FROM $nodeTable")
-    val edgeMappings = edgeTypes.map {
-      case et@EdgeType(snt@NodeType(startNodeTable), _, ent@NodeType(endNodeTable)) =>
+    val edgeMappings = edgeTables
+      .map(_.split("_"))
+      .map(tokens => EdgeType(NodeType(tokens(0)), tokens(1), NodeType(tokens(2))))
+      .map {
+        case et@EdgeType(snt@NodeType(startNodeTable), _, ent@NodeType(endNodeTable)) =>
 
-        val startJoinExpr = if (startNodeTable == endNodeTable) {
-          s"edge.$startNodeTable.id0 = node.id"
-        } else {
-          s"edge.$startNodeTable.id = node.id"
-        }
+          val startJoinExpr = if (startNodeTable == endNodeTable) {
+            s"edge.$startNodeTable.id0 = node.id"
+          } else {
+            s"edge.$startNodeTable.id = node.id"
+          }
 
-        val endJoinExpr = if (startNodeTable == endNodeTable) {
-          s"edge.$endNodeTable.id1 = node.id"
-        } else {
-          s"edge.$endNodeTable.id = node.id"
-        }
+          val endJoinExpr = if (startNodeTable == endNodeTable) {
+            s"edge.$endNodeTable.id1 = node.id"
+          } else {
+            s"edge.$endNodeTable.id = node.id"
+          }
 
-        val startNodes = s"$snt FROM $startNodeTable node JOIN ON $startJoinExpr"
-        val endNodes = s"$ent FROM $endNodeTable node JOIN ON $endJoinExpr"
+          val startNodes = s"$snt FROM $startNodeTable node JOIN ON $startJoinExpr"
+          val endNodes = s"$ent FROM $endNodeTable node JOIN ON $endJoinExpr"
 
-        et -> s"FROM ${et.edgeTable} edge START NODES $startNodes END NODES $endNodes"
-    }
+          et -> s"FROM ${et.edgeTable} edge START NODES $startNodes END NODES $endNodes"
+      }
       .groupBy(_._1)
       .map { case (relType, mappings) =>
         val fromClauses = mappings.map(_._2)
@@ -121,18 +120,11 @@ object LdbcUtil {
        |
        |${elementTypes.mkString(Properties.lineSeparator)}
        |
-       |CREATE GRAPH TYPE ${database}_schema (
-       |    -- Node types
-       |    ${nodeTypes.mkString("", "," + Properties.lineSeparator + "\t", ",")}
-       |
-       |    -- Edge types
-       |    ${edgeTypes.mkString("," + Properties.lineSeparator + "\t")}
-       |)
-       |CREATE GRAPH $database OF ${database}_schema (
-       |    -- Node mappings
+       |CREATE GRAPH $database (
+       |    -- Node types including mappings
        |    ${nodeMappings.mkString("", "," + Properties.lineSeparator + "\t", ",")}
        |
-       |    -- Edge mappings
+       |    -- Edge types including mappings
        |    ${edgeMappings.mkString("," + Properties.lineSeparator + "\t")}
        |)
        """.stripMargin
