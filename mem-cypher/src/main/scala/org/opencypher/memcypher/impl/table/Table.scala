@@ -1,10 +1,12 @@
 package org.opencypher.memcypher.impl.table
 
-import org.opencypher.okapi.api.types.CypherType
+import org.opencypher.memcypher.impl.types.CypherTypeOps._
+import org.opencypher.okapi.api.types.{CTFloat, CTInteger, CypherType}
 import org.opencypher.okapi.api.value.CypherValue.{CypherMap, CypherValue}
 import org.opencypher.okapi.impl.exception.UnsupportedOperationException
+import org.opencypher.okapi.impl.util.ScalaUtils._
 import org.opencypher.okapi.impl.util.TablePrinter
-import org.opencypher.okapi.ir.api.expr.{Aggregator, Expr, Var}
+import org.opencypher.okapi.ir.api.expr._
 import org.opencypher.okapi.relational.api.table.{Table => RelationalTable}
 import org.opencypher.okapi.relational.impl.planning._
 import org.opencypher.okapi.relational.impl.table.RecordHeader
@@ -122,7 +124,69 @@ case class Table(schema: Schema, data: Seq[Row]) extends RelationalTable[Table] 
   override def distinct: Table = copy(data = data.distinct)
 
   override def group(by: Set[Var], aggregations: Set[(Aggregator, (String, CypherType))])
-    (implicit header: RecordHeader, parameters: CypherMap): Table = ???
+    (implicit header: RecordHeader, parameters: CypherMap): Table = {
+
+    val byExprs = by.toSeq.sorted(Expr.alphabeticalOrdering)
+    val byColumns = byExprs.map(header.column)
+
+    val newSchema = Schema.empty
+      .foldLeftOver(byExprs) {
+        case (currentSchema, byExpr) => currentSchema.withColumn(header.column(byExpr), byExpr.cypherType)
+      }
+      .foldLeftOver(aggregations) {
+        case (currentSchema, (_, (aggColumn, aggType))) => currentSchema.withColumn(aggColumn, aggType)
+      }
+
+    val groupedData = if (by.isEmpty) {
+      Map(Seq.empty -> data)
+    } else {
+      data.groupBy(row => byColumns.map(schema.fieldIndex).map(row.get))
+    }
+
+    val newData = groupedData
+      .mapValues { groupedRows =>
+        aggregations.toSeq.map {
+          case (aggregator, _) => aggregator match {
+            case CountStar(_) =>
+              groupedRows.size
+
+            case Count(expr, distinct) if distinct =>
+              groupedRows.map(_.evaluate(expr)).distinct.size
+
+            case Count(expr, _) =>
+              groupedRows.map(_.evaluate(expr)).size
+
+            case Min(expr) =>
+              groupedRows.map(_.evaluate(expr)).reduce(expr.cypherType.ordering.asInstanceOf[Ordering[Any]].min)
+
+            case Max(expr) =>
+              groupedRows.map(_.evaluate(expr)).reduce(expr.cypherType.ordering.asInstanceOf[Ordering[Any]].max)
+
+            case Avg(expr) =>
+
+              val sumFunc: (Any, Any) => Any = expr.cypherType.material match {
+                case CTInteger => (x, y) => x.asInstanceOf[Long] + y.asInstanceOf[Long]
+                case CTFloat   => (x, y) => x.asInstanceOf[Double] + y.asInstanceOf[Double]
+                case other     => throw UnsupportedOperationException(s"CypherType $other not supported.")
+              }
+
+              val sum = groupedRows.map(_.evaluate(expr)).reduce[Any](sumFunc)
+
+              expr.cypherType.material match {
+                case CTInteger => sum.asInstanceOf[Long] / groupedRows.size.toDouble
+                case CTFloat => sum.asInstanceOf[Double] / groupedRows.size.toDouble
+                case other => throw UnsupportedOperationException(s"CypherType $other not supported.")
+              }
+
+            case other => throw UnsupportedOperationException(s"Aggregator $other not supported")
+          }
+        }
+      }
+      .map { case (groupValues, aggValues) => Row.fromSeq(groupValues ++ aggValues) }
+      .toSeq
+
+    Table(newSchema, newData)
+  }
 
   override def withColumns(columns: (Expr, String)*)
     (implicit header: RecordHeader, parameters: CypherMap): Table = {

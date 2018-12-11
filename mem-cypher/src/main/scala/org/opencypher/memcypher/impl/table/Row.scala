@@ -103,7 +103,7 @@ object Row {
     }
 
     def eval[T](expr: Expr)(implicit header: RecordHeader, schema: Schema, parameters: CypherMap): Option[T] = evaluate(expr) match {
-      case null => None
+      case null | None => None
       case Some(other) => Some(other.asInstanceOf[T])
       case other => Some(other.asInstanceOf[T])
     }
