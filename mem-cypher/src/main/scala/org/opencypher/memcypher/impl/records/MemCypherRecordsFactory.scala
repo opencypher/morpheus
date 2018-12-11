@@ -14,7 +14,7 @@ case class MemCypherRecordsFactory(implicit val session: MemCypherSession)
   override type Records = MemCypherRecords
 
   override def unit(): MemCypherRecords =
-    MemCypherRecords(RecordHeader.empty, Table.empty)
+    MemCypherRecords(RecordHeader.empty, Table.unit)
 
   override def empty(initialHeader: RecordHeader): MemCypherRecords =
     MemCypherRecords(initialHeader, Table(initialHeader.toSchema, Seq.empty))

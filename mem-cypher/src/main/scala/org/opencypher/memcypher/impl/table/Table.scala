@@ -15,6 +15,8 @@ import scala.util.hashing.MurmurHash3
 
 object Table {
   def empty: Table = Table(schema = Schema.empty, data = Seq.empty)
+
+  def unit: Table = Table(schema = Schema.empty, data = Seq(Row()))
 }
 
 case class Table(schema: Schema, data: Seq[Row]) extends RelationalTable[Table] {
@@ -178,6 +180,12 @@ case class Table(schema: Schema, data: Seq[Row]) extends RelationalTable[Table] 
                 case other => throw UnsupportedOperationException(s"CypherType $other not supported.")
               }
 
+            case Collect(expr, distinct) if distinct =>
+              groupedRows.map(_.evaluate(expr)).distinct
+
+            case Collect(expr, _) =>
+              groupedRows.map(_.evaluate(expr))
+
             case other => throw UnsupportedOperationException(s"Aggregator $other not supported")
           }
         }
@@ -194,8 +202,7 @@ case class Table(schema: Schema, data: Seq[Row]) extends RelationalTable[Table] 
     val newSchema = columns.foldLeft(schema) {
       case (currentSchema, (expr, columnName)) => currentSchema.withColumn(columnName, expr.cypherType)
     }
-
-    val newData = data.map(row => Row(row.values ++ columns.map(_._1).map(row.evaluate)))
+    val newData = data.map(row => Row(row.values ++ columns.map { case (expr, _) => row.evaluate(expr) }))
 
     Table(newSchema, newData)
   }

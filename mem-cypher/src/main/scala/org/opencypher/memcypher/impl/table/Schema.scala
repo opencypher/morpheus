@@ -38,7 +38,7 @@ case class Schema(columns: Array[ColumnSchema]) {
 
   def ++(other: Schema): Schema = copy(columns = columns ++ other.columns)
 
-  override def toString: String = TablePrinter.toTable(columns.map(_.name), Seq(columns.map(_.dataType).toSeq))
+  def pretty: String = TablePrinter.toTable(columns.map(_.name), Seq(columns.map(_.dataType).toSeq))
 
   private def columnNotFound(name: String): Nothing =
     throw IllegalArgumentException(expected = s"existing column (one of: ${columnNames.mkString("[", ", ", "]")})", name)
