@@ -42,6 +42,84 @@ import scala.collection.JavaConverters._
 @DoNotDiscover
 class FunctionsBehaviour extends CAPSTestSuite with DefaultGraphInit {
 
+  describe("date") {
+
+    it("date()") {
+      caps.cypher("RETURN date('2010-10-10') AS time").records.toMaps should equal(
+        Bag(
+          CypherMap("time" -> java.sql.Date.valueOf("2010-10-10"))
+        )
+      )
+    }
+
+    it("compares two dates") {
+      caps.cypher("RETURN date(\"2015-10-10\") < date(\"2015-10-12\") AS time").records.toMaps should equal(
+        Bag(
+          CypherMap("time" -> true)
+        )
+      )
+
+      caps.cypher("RETURN date(\"2015-10-10\") > date(\"2015-10-12\") AS time").records.toMaps should equal(
+        Bag(
+          CypherMap("time" -> false)
+        )
+      )
+    }
+  }
+
+  describe("datetime") {
+
+    it("returns a valid datetime") {
+      caps.cypher("RETURN datetime(\"2015-06-24T12:50:35.556\") AS time").records.toMaps should equal(
+        Bag(
+          CypherMap("time" -> java.sql.Timestamp.valueOf("2015-06-24 12:50:35.556"))
+        )
+      )
+
+    }
+
+    it("compares two datetimes" ) {
+      caps.cypher("RETURN datetime(\"2015-10-10T00:00:00\") < datetime(\"2015-10-12T00:00:00\") AS time").records.toMaps should equal(
+        Bag(
+          CypherMap("time" -> true)
+        )
+      )
+
+      caps.cypher("RETURN datetime(\"2015-10-10T00:00:00\") > datetime(\"2015-10-12T00:00:00\") AS time").records.toMaps should equal(
+        Bag(
+          CypherMap("time" -> false)
+        )
+      )
+    }
+
+    it("behaves correctly when created via a dataframe") {
+      val df = caps.sparkSession.createDataFrame(
+        List(Row(0L, java.sql.Date.valueOf("2015-10-10"))).asJava,
+        types.StructType(
+          List(
+            StructField("id", LongType, false),
+            StructField("time", DateType, false)
+          ).asJava
+        )
+      )
+      val nodeMapping = NodeMapping.on("id").withImpliedLabel("A").withPropertyKey("time")
+      val nodeTable = CAPSNodeTable.fromMapping(nodeMapping, df)
+      val graph = caps.readFrom(nodeTable)
+      graph.cypher("MATCH (n) RETURN n.time > datetime('2015-10-11')").show
+
+    }
+
+    it("takes a map as argument") {
+      val result = caps.cypher("RETURN datetime({ year: 2015, month: 11, day: 11 })")
+      result.show
+    }
+
+    it("adds missing informations with default values") {
+      val result = caps.cypher("RETURN datetime({ year: 2015, month: 5 })")
+      result.show
+    }
+  }
+
   describe("Acos"){
     it("on int value") {
       val result = caps.cypher("RETURN acos(1) AS res")
@@ -381,7 +459,7 @@ class FunctionsBehaviour extends CAPSTestSuite with DefaultGraphInit {
 
   describe("toUpper") {
     it("toUpper()") {
-      val result = caps.cypher("RETURN toUpper('hello') AS upperCased")
+      val result = caps.cypher("Return toUpper('hello') as upperCased")
       result.records.toMaps should equal(
         Bag(
           CypherMap("upperCased" -> "HELLO")
@@ -392,65 +470,12 @@ class FunctionsBehaviour extends CAPSTestSuite with DefaultGraphInit {
 
   describe("toLower") {
     it("toLower()") {
-      val result = caps.cypher("RETURN toLower('HELLO') AS lowerCased")
+      val result = caps.cypher("Return toLower('HELLO') as lowerCased")
       result.records.toMaps should equal(
         Bag(
           CypherMap("lowerCased" -> "hello")
         )
       )
-    }
-  }
-
-  describe("datetime") {
-
-    it("returns a valid datetime") {
-      val result = caps.cypher("RETURN datetime(\"2015-06-24T12:50:35.556\") AS time")
-//      val result = caps.cypher("RETURN datetime(\"1-01-01\") AS time")
-      result.show
-//      val diff = result.records.asCaps.table.df.withColumn("diff", functions.date_add(functions.col("$  AUTOSTRING0 __ STRING __ DATETIME"), 15))
-      val maps = result.records.toMaps
-      ???
-    }
-
-    it("compares two datetimes" ) {
-      caps.cypher("RETURN datetime(\"2015-10-10\") < datetime(\"2015-10-12\") AS time").records.toMaps should equal(
-        Bag(
-          CypherMap("time" -> true)
-        )
-      )
-
-      caps.cypher("RETURN datetime(\"2015-10-10\") > datetime(\"2015-10-12\") AS time").records.toMaps should equal(
-        Bag(
-          CypherMap("time" -> false)
-        )
-      )
-    }
-
-    it("behaves correctly when created via a dataframe") {
-      val df = caps.sparkSession.createDataFrame(
-        List(Row(0L, java.sql.Date.valueOf("2015-10-10"))).asJava,
-        types.StructType(
-          List(
-            StructField("id", LongType, false),
-            StructField("time", DateType, false)
-          ).asJava
-        )
-      )
-      val nodeMapping = NodeMapping.on("id").withImpliedLabel("A").withPropertyKey("time")
-      val nodeTable = CAPSNodeTable.fromMapping(nodeMapping, df)
-      val graph = caps.readFrom(nodeTable)
-      graph.cypher("MATCH (n) RETURN n.time > datetime('2015-10-11')").show
-
-    }
-
-    it("takes a map as argument") {
-      val result = caps.cypher("RETURN datetime({ year: 2015, month: 11, day: 11 })")
-      result.show
-    }
-
-    it("adds missing informations with default values") {
-      val result = caps.cypher("RETURN datetime({ year: 2015, month: 5 })")
-      result.show
     }
   }
 
