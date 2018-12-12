@@ -151,10 +151,6 @@ case object CTString extends MaterialDefiniteCypherLeafType {
   override def name = "STRING"
 }
 
-case object CTDateTime extends MaterialDefiniteCypherLeafType {
-  override def name = "DATETIME"
-}
-
 case class CTMap(innerTypes: Map[String, CypherType]) extends MaterialDefiniteCypherType with MaterialDefiniteCypherType.DefaultOrNull {
   override def name = {
     val innerNames = innerTypes.map {
@@ -180,6 +176,28 @@ case class CTMap(innerTypes: Map[String, CypherType]) extends MaterialDefiniteCy
     case _ => CTAny
   }
 }
+
+sealed trait TemporalInstantCypherType extends MaterialDefiniteCypherLeafType
+
+case object CTDateTime extends TemporalInstantCypherType {
+  override def name = "DATETIME"
+}
+
+case object CTDate extends TemporalInstantCypherType {
+  override def name = "DATE"
+}
+
+//case object CTTime extends TemporalInstantCypherType {
+//  override def name = "TIME"
+//}
+//
+//case object CTLocalDateTime extends TemporalInstantCypherType {
+//  override def name = "LOCALDATETIME"
+//}
+//
+//case object CTLocalTime extends TemporalInstantCypherType {
+//  override def name = "LOCALTIME"
+//}
 
 object CTNode extends CTNode(Set.empty, None) with Serializable {
   def apply(labels: String*): CTNode =
@@ -616,8 +634,9 @@ private[okapi] object MaterialDefiniteCypherType {
       case CTAny => CTAnyOrNull
       case CTNumber => CTNumberOrNull
       case CTFloat => CTFloatOrNull
-      case CTDateTime => CTDateTimeOrNull
       case CTMap(inner) => CTMapOrNull(inner)
+      case CTDateTime => CTDateTimeOrNull
+      case CTDate => CTDateOrNull
       case CTPath => CTPathOrNull
     }
   }
@@ -664,6 +683,12 @@ case object CTDateTimeOrNull extends NullableDefiniteCypherType {
   override def name: String = CTDateTime + "?"
 
   override def material: CTDateTime.type  = CTDateTime
+}
+
+case object CTDateOrNull extends NullableDefiniteCypherType {
+  override def name: String = CTDate + "?"
+
+  override def material: CTDate.type = CTDate
 }
 
 case class CTMapOrNull(innerTypes: Map[String, CypherType]) extends NullableDefiniteCypherType {

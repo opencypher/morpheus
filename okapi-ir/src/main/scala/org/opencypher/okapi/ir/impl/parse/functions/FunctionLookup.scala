@@ -35,6 +35,7 @@ case object FunctionLookup {
   def apply(name: String): Vector[TypeSignature] = name match {
     case Timestamp.name => Timestamp.signatures
     case DateTime.name => DateTime.signatures
+    case Date.name => Date.signatures
     case _ => Vector.empty
   }
 
@@ -54,5 +55,14 @@ case object DateTime extends Function with TypeSignatures {
   override val signatures = Vector(
     TypeSignature(argumentTypes = Vector(CTString), outputType = CTDateTime),
     TypeSignature(argumentTypes = Vector(CTMap), outputType = CTDateTime)
+  )
+}
+
+case object Date extends Function with TypeSignatures {
+  override val name = "date"
+
+  override val signatures = Vector(
+    TypeSignature(argumentTypes = Vector(CTString), outputType = CTDate),
+    TypeSignature(argumentTypes = Vector(CTMap), outputType = CTDate)
   )
 }
