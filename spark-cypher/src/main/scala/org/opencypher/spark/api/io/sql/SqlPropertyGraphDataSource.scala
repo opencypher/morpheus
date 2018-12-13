@@ -225,6 +225,12 @@ case class SqlPropertyGraphDataSource(
   private def readFile(viewId: ViewId, dataSourceConfig: SqlDataSourceConfig) = {
     val spark = caps.sparkSession
 
+    val optionsByFormat: Map[StorageFormat, Map[String, String]] = Map(
+      CsvFormat -> Map("header" -> "true", "inferSchema" -> "true"),
+      OrcFormat -> Map.empty,
+      ParquetFormat -> Map.empty
+    )
+
     val viewPath = (viewId.maybeSetSchema, viewId.parts) match {
       case (Some(_), path :: Nil) => Path(path)
       case (None, ds :: path :: Nil) => Path(path)
@@ -242,8 +248,7 @@ case class SqlPropertyGraphDataSource(
 
     spark.read
       .format(dataSourceConfig.storageFormat.name)
-      .option("header", "true")
-      .option("inferSchema", "true")
+      .options(optionsByFormat(dataSourceConfig.storageFormat))
       .load(filePath.toString)
   }
 
