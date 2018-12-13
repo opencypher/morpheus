@@ -318,6 +318,19 @@ object SparkSQLExprMapper {
         case Round(e) => functions.round(e.asSparkSQLExpr).cast(DoubleType)
         case Sign(e) => functions.signum(e.asSparkSQLExpr).cast(IntegerType)
 
+        case Acos(e) => functions.acos(e.asSparkSQLExpr)
+        case Asin(e) => functions.asin(e.asSparkSQLExpr)
+        case Atan(e) => functions.atan(e.asSparkSQLExpr)
+        case Atan2(e1,e2) => functions.atan2(e1.asSparkSQLExpr, e2.asSparkSQLExpr)
+        case Cos(e) => functions.cos(e.asSparkSQLExpr)
+        case Cot(e) => Divide(IntegerLit(1)(CTInteger), Tan(e)(CTFloat))(CTFloat).asSparkSQLExpr
+        case Degrees(e) => functions.degrees(e.asSparkSQLExpr)
+        case Haversin(e) => Divide(Subtract(IntegerLit(1)(CTInteger),Cos(e)(CTFloat))(CTFloat), IntegerLit(2)(CTInteger))(CTFloat).asSparkSQLExpr
+        case Radians(e) => functions.radians(e.asSparkSQLExpr)
+        case Sin(e) => functions.sin(e.asSparkSQLExpr)
+        case Tan(e) => functions.tan(e.asSparkSQLExpr)
+
+
         // Time functions
 
         case Timestamp() => functions.current_timestamp().cast(LongType)

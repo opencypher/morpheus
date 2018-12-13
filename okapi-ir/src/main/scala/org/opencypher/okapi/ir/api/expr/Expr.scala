@@ -830,6 +830,66 @@ final case class Sign(expr: Expr)(val cypherType: CypherType = CTWildcard) exten
   override def withCypherType(ct: CypherType): Sign = copy()(ct)
 }
 
+// Trigonometric functions
+
+final case class Acos(expr: Expr)(val cypherType: CypherType = CTWildcard) extends UnaryFunctionExpr {
+  override type This = Acos
+  override def withCypherType(ct: CypherType): Acos = copy()(ct)
+}
+
+final case class Asin(expr: Expr)(val cypherType: CypherType = CTWildcard) extends UnaryFunctionExpr {
+  override type This = Asin
+  override def withCypherType(ct: CypherType): Asin = copy()(ct)
+}
+
+final case class Atan(expr: Expr)(val cypherType: CypherType = CTWildcard) extends UnaryFunctionExpr {
+  override type This = Atan
+  override def withCypherType(ct: CypherType): Atan = copy()(ct)
+}
+
+final case class Atan2(expr1: Expr, expr2: Expr)(val cypherType: CypherType = CTWildcard) extends FunctionExpr {
+  override type This = Atan2
+  override def withCypherType(ct: CypherType): Atan2 = copy()(ct)
+  override def exprs: IndexedSeq[Expr] = IndexedSeq(expr1,expr2)
+}
+
+final case class Cos(expr: Expr)(val cypherType: CypherType = CTWildcard) extends UnaryFunctionExpr {
+  override type This = Cos
+  override def withCypherType(ct: CypherType): Cos = copy()(ct)
+}
+
+final case class Cot(expr: Expr)(val cypherType: CypherType = CTWildcard) extends UnaryFunctionExpr {
+  override type This = Cot
+  override def withCypherType(ct: CypherType): Cot = copy()(ct)
+}
+
+final case class Degrees(expr: Expr)(val cypherType: CypherType = CTWildcard) extends UnaryFunctionExpr {
+  override type This = Degrees
+  override def withCypherType(ct: CypherType): Degrees = copy()(ct)
+}
+
+final case class Haversin(expr: Expr)(val cypherType: CypherType = CTWildcard) extends UnaryFunctionExpr {
+  override type This = Haversin
+  override def withCypherType(ct: CypherType): Haversin = copy()(ct)
+}
+
+final case class Radians(expr: Expr)(val cypherType: CypherType = CTWildcard) extends UnaryFunctionExpr {
+  override type This = Radians
+  override def withCypherType(ct: CypherType): Radians = copy()(ct)
+}
+
+final case class Sin(expr: Expr)(val cypherType: CypherType = CTWildcard) extends UnaryFunctionExpr {
+  override type This = Sin
+  override def withCypherType(ct: CypherType): Sin = copy()(ct)
+}
+
+final case class Tan(expr: Expr)(val cypherType: CypherType = CTWildcard) extends UnaryFunctionExpr {
+  override type This = Tan
+  override def withCypherType(ct: CypherType): Tan = copy()(ct)
+}
+
+
+
 // Time functions
 
 final case class Timestamp()(val cypherType: CypherType = CTWildcard) extends NullaryFunctionExpr {
