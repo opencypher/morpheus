@@ -32,7 +32,7 @@ import org.opencypher.graphddl.GraphDdl
 import org.opencypher.okapi.api.graph.GraphName
 import org.opencypher.okapi.api.value.CypherValue.CypherMap
 import org.opencypher.okapi.testing.Bag
-import org.opencypher.spark.api.io.{HiveFormat, JdbcFormat}
+import org.opencypher.spark.api.io.{CsvFormat, HiveFormat, JdbcFormat}
 import org.opencypher.spark.api.value.{CAPSNode, CAPSRelationship}
 import org.opencypher.spark.impl.CAPSFunctions.{partitioned_id_assignment, rowIdSpaceBitsUsedByMonotonicallyIncreasingId}
 import org.opencypher.spark.testing.CAPSTestSuite
@@ -517,5 +517,45 @@ class SqlPropertyGraphDataSourceTest extends CAPSTestSuite with HiveFixture with
 
     val e = the [SqlDataSourceConfigException] thrownBy pgds.graph(GraphName("g"))
     e.getMessage should (include("unknown") and include("known1") and include("known2"))
+  }
+
+  it("reads nodes and rels from file-based sources") {
+    val ddlString =
+      s"""
+         |CREATE GRAPH TYPE personSchema (
+         | Person (id INTEGER, name STRING),
+         | KNOWS,
+         | (Person),
+         | (Person)-[KNOWS]->(Person)
+         |)
+         |CREATE GRAPH fooGraph OF personSchema (
+         |  (Person) FROM csv.`Person.csv`,
+         |
+         |  (Person)-[KNOWS]->(Person)
+         |    FROM csv.`KNOWS.csv` edge
+         |      START NODES (Person) FROM csv.`Person.csv` person JOIN ON person.id = edge.p1
+         |      END   NODES (Person) FROM csv.`Person.csv` person JOIN ON edge.p2 = person.id
+         |)
+     """.stripMargin
+
+    val csvDataSourceConfig = SqlDataSourceConfig(
+      storageFormat = CsvFormat,
+      dataSourceName = "csv",
+      basePath = Some(getClass.getResource("/csv").getPath)
+    )
+
+    // -- Read graph and validate
+    val ds = SqlPropertyGraphDataSource(GraphDdl(ddlString), List(csvDataSourceConfig))
+
+    ds.graph(fooGraphName).nodes("n").toMapsWithCollectedEntities should equal(Bag(
+      CypherMap("n" -> CAPSNode(0, Set("Person"), CypherMap("id" -> 1, "name" -> "Alice"))),
+      CypherMap("n" -> CAPSNode(1, Set("Person"), CypherMap("id" -> 2, "name" -> "Bob"))),
+      CypherMap("n" -> CAPSNode(2, Set("Person"), CypherMap("id" -> 3, "name" -> "Eve")))
+    ))
+
+    ds.graph(fooGraphName).relationships("r").toMapsWithCollectedEntities should equal(Bag(
+      CypherMap("r" -> CAPSRelationship(0, 0, 1, "KNOWS")),
+      CypherMap("r" -> CAPSRelationship(1, 1, 2, "KNOWS"))
+    ))
   }
 }
