@@ -187,7 +187,7 @@ case class SqlPropertyGraphDataSource(
         readFile(viewId, sqlDataSourceConfig)
 
 
-      case otherFormat => notFound(otherFormat, Seq(JdbcFormat, HiveFormat))
+      case otherFormat => notFound(otherFormat, Seq(JdbcFormat, HiveFormat, ParquetFormat, CsvFormat, OrcFormat))
     }
 
     inputTable.withPropertyColumns
