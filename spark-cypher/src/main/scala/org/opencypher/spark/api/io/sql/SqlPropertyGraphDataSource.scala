@@ -44,6 +44,8 @@ import org.opencypher.spark.impl.io.CAPSPropertyGraphDataSource
 import org.opencypher.spark.schema.CAPSSchema
 import org.opencypher.spark.schema.CAPSSchema._
 
+import scala.reflect.io.Path
+
 case class SqlPropertyGraphDataSource(
   graphDdl: GraphDdl,
   sqlDataSourceConfigs: List[SqlDataSourceConfig],
@@ -58,7 +60,7 @@ case class SqlPropertyGraphDataSource(
     val capsSchema = ddlGraph.graphType
 
     // Build CAPS node tables
-    val nodeDataFrames = ddlGraph.nodeToViewMappings.mapValues(nvm => readSqlTable(nvm.view))
+    val nodeDataFrames = ddlGraph.nodeToViewMappings.mapValues(nvm => readTable(nvm.view))
 
     // Generate node identifiers
     val nodeDataFramesWithIds = idGenerationStrategy match {
@@ -80,7 +82,7 @@ case class SqlPropertyGraphDataSource(
     }.toSeq
 
     // Build CAPS relationship tables
-    val relDataFrames = ddlGraph.edgeToViewMappings.map(evm => evm.key -> readSqlTable(evm.view)).toMap
+    val relDataFrames = ddlGraph.edgeToViewMappings.map(evm => evm.key -> readTable(evm.view)).toMap
 
     // Generate relationship identifiers
     val relDataFramesWithIds = idGenerationStrategy match {
@@ -168,18 +170,42 @@ case class SqlPropertyGraphDataSource(
     }
   }
 
-  private def readSqlTable(qualifiedViewId: QualifiedViewId): DataFrame = {
-    val spark = caps.sparkSession
-
-    val sqlDataSourceConfig = sqlDataSourceConfigs.find(_.dataSourceName == qualifiedViewId.dataSource) match {
+  private def readTable(viewId: ViewId): DataFrame = {
+    val sqlDataSourceConfig = sqlDataSourceConfigs.find(_.dataSourceName == viewId.dataSource) match {
       case None =>
         val knownDataSources = sqlDataSourceConfigs.map(_.dataSourceName).mkString("'", "';'", "'")
-        throw SqlDataSourceConfigException(s"Data source '${qualifiedViewId.dataSource}' not configured; see data sources configuration. Known data sources: $knownDataSources")
+        throw SqlDataSourceConfigException(s"Data source '${viewId.dataSource}' not configured; see data sources configuration. Known data sources: $knownDataSources")
       case Some(config) =>
         config
     }
-    val tableName = qualifiedViewId.schema + "." + qualifiedViewId.view
+
     val inputTable = sqlDataSourceConfig.storageFormat match {
+      case JdbcFormat | HiveFormat =>
+        readSqlTable(viewId, sqlDataSourceConfig)
+
+      case ParquetFormat | CsvFormat | OrcFormat =>
+        readFile(viewId, sqlDataSourceConfig)
+
+
+      case otherFormat => notFound(otherFormat, Seq(JdbcFormat, HiveFormat))
+    }
+
+    inputTable.withPropertyColumns
+  }
+
+  private def readSqlTable(viewId: ViewId, sqlDataSourceConfig: SqlDataSourceConfig) = {
+    val spark = caps.sparkSession
+
+    val tableName = (viewId.maybeSetSchema, viewId.parts) match {
+      case (_, dataSource :: schema :: view :: Nil) => s"$schema.$view"
+      case (Some(SetSchemaDefinition(dataSource, schema)), view :: Nil) => s"$schema.$view"
+      case (None, view) if view.size < 3 =>
+        malformed("Relative view identifier requires a preceding SET SCHEMA statement", view.mkString("."))
+      case (Some(_), view) if view.size > 1 =>
+        malformed("Relative view identifier must have exactly one segment", view.mkString("."))
+    }
+
+    sqlDataSourceConfig.storageFormat match {
       case JdbcFormat =>
         spark.read
           .format("jdbc")
@@ -190,13 +216,35 @@ case class SqlPropertyGraphDataSource(
           .load()
 
       case HiveFormat =>
-
         spark.table(tableName)
 
       case otherFormat => notFound(otherFormat, Seq(JdbcFormat, HiveFormat))
     }
+  }
 
-    inputTable.withPropertyColumns
+  private def readFile(viewId: ViewId, dataSourceConfig: SqlDataSourceConfig) = {
+    val spark = caps.sparkSession
+
+    val viewPath = (viewId.maybeSetSchema, viewId.parts) match {
+      case (Some(_), path :: Nil) => Path(path)
+      case (None, ds :: path :: Nil) => Path(path)
+      case _ => malformed("File names must be defined with the data source", viewId.parts.mkString("."))
+    }
+
+    val filePath = if (viewPath.isAbsolute) {
+      viewPath
+    } else {
+      dataSourceConfig.basePath match {
+        case Some(rootPath) => Path(rootPath) / viewPath
+        case None => unsupported("Relative view file names require basePath to be set")
+      }
+    }
+
+    spark.read
+      .format(dataSourceConfig.storageFormat.name)
+      .option("header", "true")
+      .option("inferSchema", "true")
+      .load(filePath.toString)
   }
 
   private def normalizeDataFrame(dataFrame: DataFrame, mapping: EntityMapping): DataFrame = {
@@ -259,7 +307,7 @@ case class SqlPropertyGraphDataSource(
     idColumnNames: List[String],
     newIdColumn: String
   ): DataFrame = {
-    val viewLiteral = functions.lit(elementViewKey.qualifiedViewId.view)
+    val viewLiteral = functions.lit(elementViewKey.viewId.parts.mkString("."))
     val elementTypeLiterals = elementViewKey.elementType.toSeq.sorted.map(functions.lit)
     val idColumns = idColumnNames.map(dataFrame.col)
     dataFrame.withHashColumn(Seq(viewLiteral) ++ elementTypeLiterals ++ idColumns, newIdColumn)
@@ -331,6 +379,9 @@ case class SqlPropertyGraphDataSource(
       expected = if (haystack.nonEmpty) s"one of ${stringList(haystack)}" else "",
       actual = needle
     )
+
+  def malformed(desc: String, identifier: String): Nothing =
+    throw MalformedIdentifier(s"$desc: $identifier")
 
   private def stringList(elems: Traversable[Any]): String =
     elems.mkString("[", ",", "]")

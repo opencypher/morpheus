@@ -133,7 +133,7 @@ object GraphDdlParser {
   // ==== Graph ====
 
   val viewId: P[List[String]] =
-    P(identifier.!.repX(min = 1, max = 3, sep = ".")).map(_.toList)
+    P(escapedIdentifier.repX(min = 1, max = 3, sep = ".")).map(_.toList)
 
   // TODO: avoid toMap to not accidentally swallow duplicate property keys
   val propertyMappingDefinition: P[PropertyToColumnMappingDefinition] = {
