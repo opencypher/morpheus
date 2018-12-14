@@ -28,6 +28,7 @@ package org.opencypher.okapi.ir.impl
 
 import cats.Show
 import cats.data._
+import org.atnos.eff.Member._
 import org.atnos.eff._
 import org.atnos.eff.all._
 import org.atnos.eff.syntax.all._

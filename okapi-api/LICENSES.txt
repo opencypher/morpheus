@@ -16,7 +16,7 @@ Apache Software License, Version 2.0
   openCypher Utils
   parboiled-core
   parboiled-scala
-  Scala 2.11 wrapper for Log4j API
+  Scala 2.12 wrapper for Log4j API
 ------------------------------------------------------------------------------
 
                                  Apache License
@@ -227,7 +227,6 @@ Apache Software License, Version 2.0
 BSD License
   Scala Compiler
   Scala Library
-  scala-parser-combinators
   scala-xml
 ------------------------------------------------------------------------------
 
@@ -267,8 +266,8 @@ MIT-license
   fastparse-utils
   machinist
   sourcecode
-  ujson_2.11
-  upickle_2.11
+  ujson_2.12
+  upickle_2.12
 ------------------------------------------------------------------------------
 
 The MIT License

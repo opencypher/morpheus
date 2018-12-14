@@ -129,7 +129,7 @@ trait SameTypeTransformerStackSafe[T <: TreeNode[T]] extends TransformerStackSaf
 
   protected val partial: PartialFunction[T, T]
 
-  @inline final def rule: T => T = partial.orElse(PartialFunction(identity[T]))
+  @inline final def rule: T => T = partial.orElse { case t => t }
 
 }
 

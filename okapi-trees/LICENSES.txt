@@ -6,7 +6,7 @@ libraries. For an overview of the licenses see the NOTICE.txt file.
 Apache Software License, Version 2.0
   Apache Log4j API
   Apache Log4j Core
-  Scala 2.11 wrapper for Log4j API
+  Scala 2.12 wrapper for Log4j API
 ------------------------------------------------------------------------------
 
                                  Apache License
@@ -217,7 +217,6 @@ Apache Software License, Version 2.0
 BSD License
   Scala Compiler
   Scala Library
-  scala-parser-combinators
   scala-xml
 ------------------------------------------------------------------------------
 

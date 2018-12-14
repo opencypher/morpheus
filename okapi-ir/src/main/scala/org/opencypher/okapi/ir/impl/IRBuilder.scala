@@ -132,7 +132,7 @@ object IRBuilder extends CompilationStage[ast.Statement, CypherStatement, IRBuil
       case ast.SingleQuery(clauses) =>
         val plannedBlocks = for {
           context <- get[R, IRBuilderContext]
-          blocks <-  put[R, IRBuilderContext](context.resetRegistry) >> clauses.toList.traverse(convertClause[R])
+          blocks <-  put[R, IRBuilderContext](context.resetRegistry) >> traverseA(clauses.toList)(convertClause[R])
         } yield blocks
         plannedBlocks >> convertRegistry
 
@@ -222,7 +222,7 @@ object IRBuilder extends CompilationStage[ast.Statement, CypherStatement, IRBuil
       case ast.With(distinct, ast.ReturnItems(_, items), orderBy, skip, limit, where)
         if !items.exists(_.expression.containsAggregate) =>
         for {
-          fieldExprs <- items.toList.traverse(convertReturnItem[R])
+          fieldExprs <- traverseA(items.toList)(convertReturnItem[R])
           given <- convertWhere(where)
           context <- get[R, IRBuilderContext]
           refs <- {
@@ -236,7 +236,7 @@ object IRBuilder extends CompilationStage[ast.Statement, CypherStatement, IRBuil
 
       case ast.With(_, ast.ReturnItems(_, items), _, _, _, None) =>
         for {
-          fieldExprs <- items.toList.traverse(convertReturnItem[R])
+          fieldExprs <- traverseA(items.toList)(convertReturnItem[R])
           context <- get[R, IRBuilderContext]
           blocks <- {
             val (agg, group) = fieldExprs.partition {
@@ -273,15 +273,15 @@ object IRBuilder extends CompilationStage[ast.Statement, CypherStatement, IRBuil
 
           qgn = context.qgnGenerator.generate
 
-          explicitCloneItems <- clones.flatMap(_.items).traverse(convertClone[R](_, qgn))
+          explicitCloneItems <- traverseA(clones.flatMap(_.items))(convertClone[R](_, qgn))
 
-          createPatterns <- creates.map {
+          createPatterns <- traverseA(creates.map {
             case ast.CreateInConstruct(p: exp.Pattern) => p
-          }.traverse(convertPattern[R](_, Some(qgn)))
+          })(convertPattern[R](_, Some(qgn)))
 
-          setItems <- sets.flatMap {
+          setItems <- traverseA(sets.flatMap {
             case ast.SetClause(s) => s
-          }.traverse(convertSetItem[R])
+          })(convertSetItem[R])
 
           refs <- {
             val onGraphs: List[QualifiedGraphName] = on.map(graph => QualifiedGraphName(graph.parts))
@@ -373,7 +373,7 @@ object IRBuilder extends CompilationStage[ast.Statement, CypherStatement, IRBuil
 
       case ast.Return(distinct, ast.ReturnItems(_, items), orderBy, skip, limit, _) =>
         for {
-          fieldExprs <- items.toList.traverse(convertReturnItem[R])
+          fieldExprs <- traverseA(items.toList)(convertReturnItem[R])
           context <- get[R, IRBuilderContext]
           blocks1 <- {
             val (projectRef, projectReg) =
@@ -432,8 +432,8 @@ object IRBuilder extends CompilationStage[ast.Statement, CypherStatement, IRBuil
       context <- get[R, IRBuilderContext]
       sortItems <- orderBy match {
         case Some(ast.OrderBy(sortItems)) =>
-          sortItems.toList.traverse(convertSortItem[R])
-        case None => List[ast.SortItem]().traverse(convertSortItem[R])
+          traverseA(sortItems.toList)(convertSortItem[R])
+        case None => traverseA(List[ast.SortItem]())(convertSortItem[R])
       }
       skipExpr <- convertExpr(skip.map(_.expression))
       limitExpr <- convertExpr(limit.map(_.expression))

@@ -46,8 +46,8 @@
     <!-- Project settings -->
     <project.build.encoding>UTF-8</project.build.encoding>
     <project.java.version>1.8</project.java.version>
-    <project.scala.binary.version>2.11</project.scala.binary.version>
-    <project.scala.version>${project.scala.binary.version}.12</project.scala.version>
+    <project.scala.binary.version>2.12</project.scala.binary.version>
+    <project.scala.version>${project.scala.binary.version}.7</project.scala.version>
     <project.rootdir>${project.basedir}</project.rootdir>
     <project.artifact.classifier>cluster</project.artifact.classifier>
     <java9.exports></java9.exports>
@@ -58,7 +58,7 @@
     <plugin.maven-compiler.version>3.5.1</plugin.maven-compiler.version>
     <plugin.maven-jar.version>3.0.2</plugin.maven-jar.version>
     <plugin.maven-resources.version>2.7</plugin.maven-resources.version>
-    <plugin.maven-scala.version>3.2.1</plugin.maven-scala.version>
+    <plugin.maven-scala.version>3.4.4</plugin.maven-scala.version>
     <plugin.maven-scalastyle.version>0.8.0</plugin.maven-scalastyle.version>
     <plugin.maven-shade.version>3.1.1</plugin.maven-shade.version>
     <plugin.maven-surefire.version>2.20.1</plugin.maven-surefire.version>
@@ -70,10 +70,10 @@
     <dep.hadoop.version>2.7.0</dep.hadoop.version>
     <dep.neo4j.version>3.4.10</dep.neo4j.version>
     <dep.neo4j.driver.version>1.7.2</dep.neo4j.driver.version>
-    <dep.opencypher.front-end.version>9.0.20181030</dep.opencypher.front-end.version>
-    <dep.spark.version>2.2.2</dep.spark.version>
+    <dep.opencypher.front-end.version>9.0-SNAPSHOT</dep.opencypher.front-end.version>
+    <dep.spark.version>2.4.0</dep.spark.version>
     <dep.upickle.version>0.6.6</dep.upickle.version>
-    <dep.log4j.core.version>2.11.0</dep.log4j.core.version>
+    <dep.log4j.core.version>2.11.1</dep.log4j.core.version>
     <dep.log4j.scala.api.version>11.0</dep.log4j.scala.api.version>
 
     <!-- Test scope dependencies -->
@@ -256,9 +256,9 @@
             <arg>-Xfuture</arg>
             <!--<arg>-Ytyper-debug</arg>-->
             <arg>-Ywarn-adapted-args</arg>
-            <arg>-Yopt-warnings:at-inline-failed</arg>
-            <arg>-Yopt:l:project</arg>
-            <arg>-Ypartial-unification</arg>
+            <!--<arg>-Yopt-warnings:at-inline-failed</arg>-->
+            <!--<arg>-Yopt:l:project</arg>-->
+            <!--<arg>-Ypartial-unification</arg>-->
           </args>
           <jvmArgs>
             <!-- Workaround for Scala compiler error: https://github.com/freechipsproject/firrtl/issues/66 -->
@@ -436,7 +436,7 @@
 
     <dependency>
       <groupId>org.apache.logging.log4j</groupId>
-      <artifactId>log4j-api-scala_2.11</artifactId>
+      <artifactId>log4j-api-scala_${project.scala.binary.version}</artifactId>
       <version>${dep.log4j.scala.api.version}</version>
     </dependency>
 

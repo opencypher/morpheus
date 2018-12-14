@@ -43,7 +43,6 @@ import org.opencypher.okapi.api.types._
 import org.opencypher.okapi.api.value.CypherValue
 import org.opencypher.okapi.procedures.LabelPropertyKeyMap._
 
-import scala.collection.JavaConversions._
 import scala.collection.JavaConverters._
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.duration.Duration
@@ -202,7 +201,7 @@ class LabelPropertyKeyMap {
 
     // if remaining properties is not empty, then we have not seen these properties for the current element,
     // thus we have to make it nullable.
-    remainingProperties.foreach { property =>
+    remainingProperties.asScala.foreach { property =>
       val knownTypes = labelData.get(property)
       if(!knownTypes.contains(ctNullString)) {
         labelData.put(property, knownTypes :+ ctNullString)
@@ -235,14 +234,14 @@ class LabelPropertyKeyMap {
   }
 
   def ++(other: LabelPropertyKeyMap): LabelPropertyKeyMap = {
-    other.data.keySet.foreach { labels =>
+    other.data.keySet.asScala.foreach { labels =>
       if(data.containsKey(labels)) {
         val lData = data.get(labels)
         val rData = other.data.get(labels)
 
         val remainingProperties = new util.HashSet(lData.keySet())
 
-        for(property <- rData.keySet()) {
+        for(property <- rData.keySet().asScala) {
           remainingProperties.remove(property)
 
           val existingTypes = lData.putIfAbsent(property, Array())
@@ -258,7 +257,7 @@ class LabelPropertyKeyMap {
           lData.put(property, knownTypes ++ toAdd)
         }
 
-        remainingProperties.foreach { property =>
+        remainingProperties.asScala.foreach { property =>
           val knownTypes = lData.get(property)
           if(!knownTypes.contains(ctNullString)) {
             lData.put(property, knownTypes :+ ctNullString)
