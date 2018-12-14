@@ -522,13 +522,10 @@ class SqlPropertyGraphDataSourceTest extends CAPSTestSuite with HiveFixture with
   it("reads nodes and rels from file-based sources") {
     val ddlString =
       s"""
-         |CREATE GRAPH TYPE personSchema (
+         |CREATE GRAPH fooGraph (
          | Person (id INTEGER, name STRING),
          | KNOWS,
-         | (Person),
-         | (Person)-[KNOWS]->(Person)
-         |)
-         |CREATE GRAPH fooGraph OF personSchema (
+         |
          |  (Person) FROM csv.`Person.csv`,
          |
          |  (Person)-[KNOWS]->(Person)
