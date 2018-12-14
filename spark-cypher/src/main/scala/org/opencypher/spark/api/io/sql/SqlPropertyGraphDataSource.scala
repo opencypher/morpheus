@@ -236,7 +236,7 @@ case class SqlPropertyGraphDataSource(
       case _ => malformed("File names must be defined with the data source", viewId.parts.mkString("."))
     }
 
-    val filePath = if (viewPath.isAbsolute) {
+    val filePath = if (viewPath.toURI.isAbsolute) {
       viewPath
     } else {
       dataSourceConfig.basePath match {

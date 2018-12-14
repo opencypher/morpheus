@@ -538,7 +538,44 @@ class SqlPropertyGraphDataSourceTest extends CAPSTestSuite with HiveFixture with
     val csvDataSourceConfig = SqlDataSourceConfig(
       storageFormat = CsvFormat,
       dataSourceName = "csv",
-      basePath = Some(getClass.getResource("/csv").getPath)
+      basePath = Some("file://" + getClass.getResource("/csv").getPath)
+    )
+
+    // -- Read graph and validate
+    val ds = SqlPropertyGraphDataSource(GraphDdl(ddlString), List(csvDataSourceConfig))
+
+    ds.graph(fooGraphName).nodes("n").toMapsWithCollectedEntities should equal(Bag(
+      CypherMap("n" -> CAPSNode(0, Set("Person"), CypherMap("id" -> 1, "name" -> "Alice"))),
+      CypherMap("n" -> CAPSNode(1, Set("Person"), CypherMap("id" -> 2, "name" -> "Bob"))),
+      CypherMap("n" -> CAPSNode(2, Set("Person"), CypherMap("id" -> 3, "name" -> "Eve")))
+    ))
+
+    ds.graph(fooGraphName).relationships("r").toMapsWithCollectedEntities should equal(Bag(
+      CypherMap("r" -> CAPSRelationship(0, 0, 1, "KNOWS")),
+      CypherMap("r" -> CAPSRelationship(1, 1, 2, "KNOWS"))
+    ))
+  }
+
+  it("reads nodes and rels from file-based sources with absolute paths") {
+    val basePath = "file://" + getClass.getResource("/csv").getPath
+    val ddlString =
+      s"""
+         |CREATE GRAPH fooGraph (
+         | Person (id INTEGER, name STRING),
+         | KNOWS,
+         |
+         |  (Person) FROM csv.`$basePath/Person.csv`,
+         |
+         |  (Person)-[KNOWS]->(Person)
+         |    FROM csv.`$basePath/KNOWS.csv` edge
+         |      START NODES (Person) FROM csv.`$basePath/Person.csv` person JOIN ON person.id = edge.p1
+         |      END   NODES (Person) FROM csv.`$basePath/Person.csv` person JOIN ON edge.p2 = person.id
+         |)
+     """.stripMargin
+
+    val csvDataSourceConfig = SqlDataSourceConfig(
+      storageFormat = CsvFormat,
+      dataSourceName = "csv"
     )
 
     // -- Read graph and validate
