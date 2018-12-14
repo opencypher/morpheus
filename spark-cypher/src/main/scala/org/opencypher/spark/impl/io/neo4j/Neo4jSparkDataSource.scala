@@ -127,7 +127,7 @@ class Neo4jDataSourceReader(neo4jConfig: Neo4jConfig, typ: EntityType, labels: S
       case StructField(`sourceIdKey`, _, _, _) => s"id(__e) as $sourceIdKey"
       case StructField(RelationshipEntity.sourceStartNodeKey, _, _, _) => s"id(__s) as ${RelationshipEntity.sourceStartNodeKey}"
       case StructField(RelationshipEntity.sourceEndNodeKey, _, _, _) => s"id(__t) as ${RelationshipEntity.sourceEndNodeKey}"
-      case StructField(name, _, _, _) if name.isPropertyColumnName => s"__e.${name.toProperty} as $name"
+      case StructField(name, _, _, _) if name.isPropertyColumnName => s"__e.`${name.toProperty}` as `$name`"
       case StructField(other, _, _, _) => sys.error(other)
     }
 
@@ -202,7 +202,7 @@ class Neo4jInputPartitionReader(
   private val tx = session.beginTransaction()
 
   private val data = {
-   val returnProperties = if(requiredSchema.isEmpty) "id(__e)" else requiredSchema.map(_.name).mkString(", ")
+   val returnProperties = if(requiredSchema.isEmpty) "id(__e)" else requiredSchema.map(p => s"`${p.name}`").mkString(", ")
 
    val query = s"""
        |$matchClause
