@@ -87,6 +87,12 @@ class GraphDdlParserTest extends BaseTestSuite with MockitoSugar with TestNameFi
   val emptyMap = Map.empty[String, CypherType]
   val emptyList: List[Nothing] = List.empty[Nothing]
 
+  describe("escapedIdentifiers") {
+    it("parses `foo.json`") {
+      success(escapedIdentifier, "foo.json")
+    }
+  }
+
   describe("set schema") {
     it("parses SET SCHEMA foo.bar") {
       success(setSchemaDefinition, SetSchemaDefinition("foo", "bar"))
@@ -380,6 +386,10 @@ class GraphDdlParserTest extends BaseTestSuite with MockitoSugar with TestNameFi
           NodeToViewDefinition(List("viewA"), Some(Map("propertyKey1" -> "column1", "propertyKey2" -> "column2"))),
           NodeToViewDefinition(List("viewB"), Some(Map("propertyKey1" -> "column1", "propertyKey2" -> "column2")))))
       ))
+    }
+
+    it("parses (A) FROM `foo.json`") {
+      success(nodeMappingDefinition, NodeMappingDefinition(NodeTypeDefinition("A"), List(NodeToViewDefinition(List("foo.json")))))
     }
 
     it("parses (A) FROM viewA (column1 AS propertyKey1, column2 AS propertyKey2), (B) FROM viewB (column1 AS propertyKey1, column2 AS propertyKey2)") {

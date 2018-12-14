@@ -257,12 +257,12 @@ object GraphDdl {
     nmd.nodeToView.map { nvd =>
       tryWithContext(s"Error in node mapping for: ${nmd.nodeType.elementTypes.mkString(",")}") {
 
-        val nodeKey = NodeViewKey(toNodeType(nmd.nodeType), toQualifiedViewId(maybeSetSchema, nvd.viewId))
+        val nodeKey = NodeViewKey(toNodeType(nmd.nodeType), toViewId(maybeSetSchema, nvd.viewId))
 
         tryWithContext(s"Error in node mapping for: $nodeKey") {
           NodeToViewMapping(
             nodeType = nodeKey.nodeType,
-            view = toQualifiedViewId(maybeSetSchema, nvd.viewId),
+            view = toViewId(maybeSetSchema, nvd.viewId),
             propertyMappings = toPropertyMappings(
               elementTypes = nodeKey.nodeType.elementTypes,
               graphTypePropertyKeys = graphType.nodePropertyKeys(nodeKey.nodeType.elementTypes).keySet,
@@ -282,16 +282,16 @@ object GraphDdl {
     rmd.relTypeToView.map { rvd =>
       tryWithContext(s"Error in relationship mapping for: ${rmd.relType}") {
 
-        val edgeKey = EdgeViewKey(toRelType(rmd.relType), toQualifiedViewId(maybeSetSchema, rvd.viewDef.viewId))
+        val edgeKey = EdgeViewKey(toRelType(rmd.relType), toViewId(maybeSetSchema, rvd.viewDef.viewId))
 
         tryWithContext(s"Error in relationship mapping for: $edgeKey") {
           EdgeToViewMapping(
             relType = edgeKey.relType,
-            view = edgeKey.qualifiedViewId,
+            view = edgeKey.viewId,
             startNode = StartNode(
               nodeViewKey = NodeViewKey(
                 nodeType = edgeKey.relType.startNodeType,
-                qualifiedViewId = toQualifiedViewId(maybeSetSchema, rvd.startNodeTypeToView.viewDef.viewId)
+                viewId = toViewId(maybeSetSchema, rvd.startNodeTypeToView.viewDef.viewId)
               ),
               joinPredicates = rvd.startNodeTypeToView.joinOn.joinPredicates.map(toJoin(
                 nodeAlias = rvd.startNodeTypeToView.viewDef.alias,
@@ -301,7 +301,7 @@ object GraphDdl {
             endNode = EndNode(
               nodeViewKey = NodeViewKey(
                 nodeType = edgeKey.relType.endNodeType,
-                qualifiedViewId = toQualifiedViewId(maybeSetSchema, rvd.endNodeTypeToView.viewDef.viewId)
+                viewId = toViewId(maybeSetSchema, rvd.endNodeTypeToView.viewDef.viewId)
               ),
               joinPredicates = rvd.endNodeTypeToView.joinOn.joinPredicates.map(toJoin(
                 nodeAlias = rvd.endNodeTypeToView.viewDef.alias,
@@ -319,19 +319,10 @@ object GraphDdl {
     }
   }
 
-  private def toQualifiedViewId(
+  private def toViewId(
     maybeSetSchema: Option[SetSchemaDefinition],
     viewId: List[String]
-  ): QualifiedViewId = (maybeSetSchema, viewId) match {
-    case (_, dataSource :: schema :: view :: Nil) =>
-      QualifiedViewId(dataSource, schema, view)
-    case (Some(SetSchemaDefinition(dataSource, schema)), view :: Nil) =>
-      QualifiedViewId(dataSource, schema, view)
-    case (None, view) if view.size < 3 =>
-      malformed("Relative view identifier requires a preceeding SET SCHEMA statement", view.mkString("."))
-    case (Some(_), view) if view.size > 1 =>
-      malformed("Relative view identifier must have exactly one segment", view.mkString("."))
-  }
+  ): ViewId = ViewId(maybeSetSchema, viewId)
 
   private def toJoin(nodeAlias: String, edgeAlias: String)(join: (ColumnIdentifier, ColumnIdentifier)): Join = {
     val (left, right) = join
@@ -427,26 +418,22 @@ case class Graph(
   }
 }
 
-object QualifiedViewId {
-  def apply(qualifiedViewId: String): QualifiedViewId = qualifiedViewId.split("\\.").toList match {
-    case dataSource :: schema :: view :: Nil => QualifiedViewId(dataSource, schema, view)
-    case _ => malformed("Qualified view id did not match pattern dataSource.schema.view", qualifiedViewId)
+case class ViewId(maybeSetSchema: Option[SetSchemaDefinition], parts: List[String]) {
+  lazy val dataSource: String = {
+    (maybeSetSchema, parts) match {
+      case (_, dataSource :: schema :: view :: Nil) => dataSource
+      case (None, dataSource :: tail) if tail.nonEmpty => dataSource
+      case (Some(setSchema), _) => setSchema.dataSource
+      case _ => malformed("Relative view identifier requires a preceeding SET SCHEMA statement", parts.mkString("."))
+    }
   }
-}
-
-case class QualifiedViewId(
-  dataSource: String,
-  schema: String,
-  view: String
-) {
-  override def toString: String = s"$dataSource.$schema.$view"
 }
 
 sealed trait ElementToViewMapping
 
 case class NodeToViewMapping(
   nodeType: NodeType,
-  view: QualifiedViewId,
+  view: ViewId,
   propertyMappings: PropertyMappings
 ) extends ElementToViewMapping {
   def key: NodeViewKey = NodeViewKey(nodeType, view)
@@ -454,7 +441,7 @@ case class NodeToViewMapping(
 
 case class EdgeToViewMapping(
   relType: RelationshipType,
-  view: QualifiedViewId,
+  view: ViewId,
   startNode: StartNode,
   endNode: EndNode,
   propertyMappings: PropertyMappings
@@ -497,17 +484,17 @@ case class RelationshipType(startNodeType: NodeType, elementType: String, endNod
 
 trait ElementViewKey {
   def elementType: Set[String]
-  def qualifiedViewId: QualifiedViewId
+  def viewId: ViewId
 }
 
-case class NodeViewKey(nodeType: NodeType, qualifiedViewId: QualifiedViewId) extends ElementViewKey {
+case class NodeViewKey(nodeType: NodeType, viewId: ViewId) extends ElementViewKey {
   override val elementType: Set[String] = nodeType.elementTypes
 
-  override def toString: String = s"node type: $nodeType, view: $qualifiedViewId"
+  override def toString: String = s"node type: $nodeType, view: $viewId"
 }
 
-case class EdgeViewKey(relType: RelationshipType, qualifiedViewId: QualifiedViewId) extends ElementViewKey {
+case class EdgeViewKey(relType: RelationshipType, viewId: ViewId) extends ElementViewKey {
   override val elementType: Set[String] = Set(relType.elementType)
 
-  override def toString: String = s"relationship type: $relType, view: $qualifiedViewId"
+  override def toString: String = s"relationship type: $relType, view: $viewId"
 }

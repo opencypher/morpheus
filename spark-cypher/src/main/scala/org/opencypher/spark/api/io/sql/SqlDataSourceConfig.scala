@@ -58,6 +58,7 @@ object SqlDataSourceConfig {
   * @param jdbcUri        the JDBC URI to use when connecting to the JDBC server
   * @param jdbcDriver     classname of the JDBC driver to use for the JDBC connection
   * @param jdbcFetchSize  the fetch size to use for transferring data over JDBC
+  * @param basePath       the root folder used for file based formats
   */
 case class SqlDataSourceConfig(
   storageFormat: StorageFormat,
@@ -65,7 +66,8 @@ case class SqlDataSourceConfig(
   defaultSchema: Option[String] = None,
   jdbcUri: Option[String] = None,
   jdbcDriver: Option[String] = None,
-  jdbcFetchSize: Int = 100
+  jdbcFetchSize: Int = 100,
+  basePath: Option[String] = None
 ) {
   def toJson: String = SqlDataSourceConfig.toJson(this)
 }

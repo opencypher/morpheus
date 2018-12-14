@@ -56,6 +56,6 @@ object ParserUtils {
   val digit: P[Unit] = P(CharIn('0' to '9'))
   val character: P[Unit] = P(CharIn('a' to 'z', 'A' to 'Z'))
   val identifier: P[Unit] = P(character ~~ P(character | digit | "_").repX)
-  val escapedIdentifier: P[String] = P("`" ~ CharsWhile(_ != '`').! ~ "`")
+  val escapedIdentifier: P[String] = identifier.! | P("`" ~ CharsWhile(_ != '`').! ~ "`")
   val label: P[String] = P(":" ~ (identifier.! | escapedIdentifier))
 }
