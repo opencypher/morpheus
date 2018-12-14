@@ -241,22 +241,28 @@ class Neo4jInputPartitionReader(
 
   override def get(): InternalRow = {
     val values = requiredSchema.map {
-      case StructField(name, typ, _, _) =>
-        val value = record.get(name)
-        if (value.isNull) {
-          null
-        } else typ match {
-          case StringType => value.asString()
-          case IntegerType => value.asInt()
-          case LongType => value.asLong()
-          case FloatType => value.asFloat()
-          case DoubleType => value.asDouble()
-          case BooleanType => value.asBoolean()
-          case ArrayType(_, _) => value.asList().toArray
-          case _ => value.asObject()
-        }
+      case StructField(name, typ, _, _) => toSparkValue(record.get(name), typ)
     }
+    InternalRow.fromSeq(values)
+  }
 
-    Row.fromSeq(values)
+  private def toSparkValue(value: Value, sparkType: DataType): Any = {
+    if (value.isNull) {
+      null
+    } else sparkType match {
+      case StringType => UTF8String.fromString(value.asString())
+      case IntegerType => value.asInt()
+      case LongType => value.asLong()
+      case FloatType => value.asFloat()
+      case DoubleType => value.asDouble()
+      case BooleanType => value.asBoolean()
+      case ArrayType(innerType, _) =>
+        val mapFunction: org.neo4j.driver.v1.util.Function[Value, Any] = new org.neo4j.driver.v1.util.Function[Value, Any] {
+          override def apply(t: Value): Any = toSparkValue(t, innerType)
+        }
+        val array = value.asList(mapFunction).toArray
+        ArrayData.toArrayData(array)
+      case _ => value.asObject()
+    }
   }
 }
