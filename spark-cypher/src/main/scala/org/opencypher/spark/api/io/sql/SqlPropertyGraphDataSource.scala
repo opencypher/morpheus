@@ -26,6 +26,8 @@
  */
 package org.opencypher.spark.api.io.sql
 
+import java.net.URI
+
 import org.apache.spark.sql.{DataFrame, functions}
 import org.opencypher.graphddl.GraphDdl.PropertyMappings
 import org.opencypher.graphddl._
@@ -231,16 +233,16 @@ case class SqlPropertyGraphDataSource(
     )
 
     val viewPath = (viewId.maybeSetSchema, viewId.parts) match {
-      case (Some(_), path :: Nil) => Path(path)
-      case (None, ds :: path :: Nil) => Path(path)
+      case (Some(_), path :: Nil) => path
+      case (None, ds :: path :: Nil) => path
       case _ => malformed("File names must be defined with the data source", viewId.parts.mkString("."))
     }
 
-    val filePath = if (viewPath.toURI.isAbsolute) {
+    val filePath = if (new URI(viewPath).isAbsolute) {
       viewPath
     } else {
       dataSourceConfig.basePath match {
-        case Some(rootPath) => Path(rootPath) / viewPath
+        case Some(rootPath) => (Path(rootPath) / Path(viewPath)).toString()
         case None => unsupported("Relative view file names require basePath to be set")
       }
     }
