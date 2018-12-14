@@ -186,7 +186,6 @@ case class SqlPropertyGraphDataSource(
       case ParquetFormat | CsvFormat | OrcFormat =>
         readFile(viewId, sqlDataSourceConfig)
 
-
       case otherFormat => notFound(otherFormat, Seq(JdbcFormat, HiveFormat, ParquetFormat, CsvFormat, OrcFormat))
     }
 
