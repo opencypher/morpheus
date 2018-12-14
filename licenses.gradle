@@ -1,0 +1,133 @@
+def whitelist = [
+        apache2 : [name: "Apache Software License, Version 2.0", url: "http://www.apache.org/licenses/LICENSE-2.0"],
+        bsd2    : [name: "The 2-Clause BSD License", url: "http://opensource.org/licenses/BSD-2-Clause"],
+        bsd3    : [name: "The 3-Clause BSD License", url: "http://opensource.org/licenses/BSD-3-Clause"],
+        mit     : [name: "MIT-license", url: "http://opensource.org/licenses/MIT"],
+        mozilla1: [name: "Mozilla Public License, Version 1.1", url: "http://www.mozilla.org/MPL/MPL-1.1.html"],
+        mozilla2: [name: "Mozilla Public License, Version 2.0", url: "http://www.mozilla.org/en-US/MPL/2.0/"],
+        bouncy  : [name: "Bouncy Castle License", url: "https://www.bouncycastle.org/license.html"],
+        pubDom  : [name: "Public-domain", url: ""],
+        eclipse1: [name: "Eclipse Public License 1.0", url: "http://www.eclipse.org/legal/epl-v10.html"],
+]
+
+
+allprojects {
+    apply plugin: "com.github.hierynomus.license"
+
+    // License header checking and insertion
+    license {
+        header = file("$rootDir/licensecheck-config/src/main/resources/NOTICE-header.txt")
+        // https://github.com/hierynomus/license-gradle-plugin/issues/145
+        // exclude 'test/resources/**'
+        // exclude 'main/resources/**'
+        include '**/*.scala'
+        include '**/*.java'
+    }
+
+
+    // Dependency license report
+    downloadLicenses {
+
+        def lic = whitelist.collectEntries { k, v -> [(k): license(v.name, v.url)] }
+
+        // licenses = [
+        // ]
+
+        aliases = [
+                (lic.apache2) : [
+                        'The Apache Software License, Version 2.0',
+                        'The Apache License, Version 2.0',
+                        'Apache 2',
+                        'Apache v2',
+                        'Apache License, Version 2.0',
+                        'Apache License, Version 2',
+                        'Apache Software License - Version 2.0',
+                        'Apache License 2.0',
+                        'Apache License',
+                        'Apache 2.0',
+                        'Apache-2.0',
+                        'Apache 2.0 License',
+                        'ASL',
+                        'ASL 2.0',
+                        'the Apache License, ASL Version 2.0',
+                        license('', 'http://www.apache.org/licenses/LICENSE-2.0.txt'),
+                ],
+
+                (lic.bsd2)    : [
+                        license('BSD License', 'http://javolution.org/LICENSE.txt'),
+                        license('BSD-style', 'http://www.opensource.org/licenses/bsd-license.php'),
+                ],
+
+                (lic.bsd3)    : [
+                        'The BSD 3-Clause License',
+                        'The 3-Clause BSD License',
+                        'BSD 3-Clause',
+                        'BSD 3 Clause',
+                        'BSD 3-clause',
+                        'New BSD License',
+                        'New BSD license',
+                        'The New BSD License',
+                        license('BSD License', 'http://www.antlr.org/license.html'),
+                        license('BSD licence', 'http://antlr.org/license.html'),
+                        license('The BSD License', 'http://www.antlr.org/license.html'),
+                        license('BSD', 'http://asm.ow2.org/license.html'),
+                        license('BSD', 'http://www.jcraft.com/jsch/LICENSE.txt'),
+                        license('BSD', 'https://github.com/sbt/test-interface/blob/master/LICENSE'),
+                        license('', 'http://asm.ow2.org/license.html'),
+                        license('BSD', 'LICENSE.txt'),
+                ],
+
+                (lic.eclipse1): [
+                        license('Eclipse Public License - Version 1.0', 'http://www.eclipse.org/org/documents/epl-v10.php'),
+                ],
+
+                (lic.mit)     : [
+                        'MIT',
+                        'MIT license',
+                        'MIT License',
+                        'The MIT License'
+                ],
+
+                (lic.mozilla1): [
+                        'MPL 1.1',
+                ],
+
+                (lic.mozilla2): [
+                        'Mozilla Public License, v. 2.0',
+                        license('MPL', 'http://www.mozilla.org/MPL/2.0/index.txt'),
+                ],
+
+                (lic.bouncy)  : [
+                        'Bouncy Castle Licence',
+                ],
+
+                (lic.pubDom)  : [
+                        'Public domain',
+                        'Public Domain',
+                ],
+        ]
+    }
+
+    // Dependency license validation
+    task validateLicenses {
+        group 'license'
+        description 'Checks dependency licenses against a whitelist'
+        dependsOn 'downloadLicenses'
+
+        doLast {
+            def jsonDir = tasks['downloadLicenses'].jsonDestination
+            def jsonFile = file("$jsonDir/license-dependency.json")
+            def json = new groovy.json.JsonSlurper().parseText(jsonFile.text)
+            File errFile = file("$jsonDir/license-errors.txt")
+            errFile.text = ""
+
+            json.licences
+                    .findAll { lic -> !whitelist.values().any { lic.name == it.name } }
+                    .each { lic -> logger.error("The license '$lic.name' is not in the license whitelist. Details: ${lic.toMapString()}") }
+                    .each { lic -> errFile << '\n' << "license('$lic.name', '$lic.url') // $lic.dependencies" }
+                    .each { lic -> throw new GradleException("The license '$lic.name' is not in the license whitelist") }
+        }
+    }
+}
+
+
