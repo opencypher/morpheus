@@ -108,16 +108,6 @@ class FunctionsBehaviour extends CAPSTestSuite with DefaultGraphInit {
       graph.cypher("MATCH (n) RETURN n.time > datetime('2015-10-11')").show
 
     }
-
-    it("takes a map as argument") {
-      val result = caps.cypher("RETURN datetime({ year: 2015, month: 11, day: 11 })")
-      result.show
-    }
-
-    it("adds missing informations with default values") {
-      val result = caps.cypher("RETURN datetime({ year: 2015, month: 5 })")
-      result.show
-    }
   }
 
   describe("Acos"){
