@@ -163,7 +163,6 @@ case class CTMap(innerTypes: Map[String, CypherType]) extends MaterialDefiniteCy
   override def superTypeOf(other: CypherType): Ternary = other match {
     case CTMap(otherInner) if innerTypes.keySet == otherInner.keySet =>
       innerTypes.forall { case (key, value) => value.superTypeOf(otherInner(key)).isTrue }
-    case CTMap(otherInner) if innerTypes.keySet.isEmpty => True
     case CTWildcard => Maybe
     case CTVoid => True
     case _ => False

@@ -35,7 +35,7 @@ import org.opencypher.okapi.api.schema.PropertyKeys.PropertyKeys
 import org.opencypher.okapi.api.schema.Schema
 import org.opencypher.okapi.api.types.CypherType.joinMonoid
 import org.opencypher.okapi.api.types._
-import org.opencypher.okapi.ir.impl.parse.functions.{FunctionLookup, Timestamp}
+import org.opencypher.okapi.ir.impl.parse.functions.{Date, DateTime, FunctionLookup, Timestamp}
 import org.opencypher.okapi.ir.impl.parse.rewriter.ExistsPattern
 import org.opencypher.okapi.ir.impl.typer.SignatureConverter._
 import org.opencypher.v9_0.expressions._
@@ -306,7 +306,6 @@ object SchemaTyper {
         result <- recordAndUpdate(expr -> computedType)
       } yield result
 
-<<<<<<< HEAD
     case expr: FunctionInvocation if expr.function == Keys =>
       expr.arguments match {
         case Seq(first) =>
@@ -323,28 +322,26 @@ object SchemaTyper {
           error(WrongNumberOfArguments(expr, 1, seq.size))
       }
 
-    case expr: FunctionInvocation if expr.name == "datetime" =>
-      expr.arguments match {
-        case Seq(first) =>
-          for {
-            _ <- process[R](first)
-            result <- recordAndUpdate(expr -> CTDateTimeOrNull)
-          } yield result
-      }
-//      for {
-//        argExprs <- pure(expr.arguments)
-//        result <- recordAndUpdate(expr -> CTDateTimeOrNull)
-//      } yield result
-=======
-//    case expr: FunctionInvocation if expr.name == "datetime" =>
-//      expr.arguments match {
-//        case Seq(first) =>
-//          for {
-//            _ <- process[R](first)
-//            result <- recordAndUpdate(expr -> CTDateTimeOrNull)
-//          } yield result
-//      }
->>>>>>> 3c96325d3... Add datetime support as function
+    case expr: FunctionInvocation if Seq(DateTime.name, Date.name).contains(expr.functionName.name) =>
+      for {
+        argExprs <- pure(expr.arguments)
+        argTypes <- argExprs.toList.traverse(process[R])
+        computedType <- {
+          val signatureCandidates = FunctionLookup(expr.functionName.name).flatMap(_.convert).toList
+          val matchingSignatures = signatureCandidates.filter(sig => sig.input match {
+            case Vector(CTMapOrNull(inner)) if inner.isEmpty => argTypes match {
+              case List(CTMap(inner)) => true
+              case other => false
+            }
+            case other => other == argTypes.map(_.nullable)
+          })
+          matchingSignatures.headOption match {
+            case Some(functionSig) => pure[R, CypherType](functionSig.output)
+            case other => error(NoSuitableSignatureForExpr(expr, argTypes))
+          }
+        }
+        result <- recordAndUpdate(expr -> computedType)
+      } yield result
 
     case expr: FunctionInvocation if expr.function == UnresolvedFunction =>
       UnresolvedFunctionSignatureTyper(expr)
