@@ -54,7 +54,8 @@ case object DateTime extends Function with TypeSignatures {
 
   override val signatures = Vector(
     TypeSignature(argumentTypes = Vector(CTString), outputType = CTDateTime),
-    TypeSignature(argumentTypes = Vector(CTMap), outputType = CTDateTime)
+    TypeSignature(argumentTypes = Vector(CTMap), outputType = CTDateTime),
+    TypeSignature(argumentTypes = Vector(), outputType = CTDateTime)
   )
 }
 
@@ -63,6 +64,8 @@ case object Date extends Function with TypeSignatures {
 
   override val signatures = Vector(
     TypeSignature(argumentTypes = Vector(CTString), outputType = CTDate),
-    TypeSignature(argumentTypes = Vector(CTMap), outputType = CTDate)
+    TypeSignature(argumentTypes = Vector(CTMap), outputType = CTDate),
+    TypeSignature(argumentTypes = Vector(), outputType = CTDate)
+
   )
 }

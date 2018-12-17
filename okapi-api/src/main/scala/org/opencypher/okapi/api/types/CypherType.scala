@@ -60,6 +60,8 @@ object CypherType {
         case CypherFloat(_) => CTFloat
         case CypherInteger(_) => CTInteger
         case CypherString(_) => CTString
+        case CypherDateTime(_) => CTDateTime
+        case CypherDate(_) => CTDate
         case CypherMap(inner) => CTMap(inner.mapValues(_.cypherType))
         case CypherNode(_, labels, _) => CTNode(labels)
         case CypherRelationship(_, _, _, relType, _) => CTRelationship(relType)
@@ -185,18 +187,6 @@ case object CTDateTime extends TemporalInstantCypherType {
 case object CTDate extends TemporalInstantCypherType {
   override def name = "DATE"
 }
-
-//case object CTTime extends TemporalInstantCypherType {
-//  override def name = "TIME"
-//}
-//
-//case object CTLocalDateTime extends TemporalInstantCypherType {
-//  override def name = "LOCALDATETIME"
-//}
-//
-//case object CTLocalTime extends TemporalInstantCypherType {
-//  override def name = "LOCALTIME"
-//}
 
 object CTNode extends CTNode(Set.empty, None) with Serializable {
   def apply(labels: String*): CTNode =

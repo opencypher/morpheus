@@ -31,7 +31,6 @@ import org.opencypher.okapi.impl.exception.NotImplementedException
 import org.opencypher.okapi.ir.api._
 import org.opencypher.okapi.ir.api.expr._
 import org.opencypher.okapi.ir.impl.FunctionUtils._
-import org.opencypher.okapi.ir.impl.parse.{functions => irFunctions}
 import org.opencypher.v9_0.expressions.{RegexMatch, functions}
 import org.opencypher.v9_0.util.Ref
 import org.opencypher.v9_0.{expressions => ast}
@@ -113,10 +112,6 @@ final class ExpressionConverter(implicit context: IRBuilderContext) {
       Multiply(convert(lhs), convert(rhs))(typings(e))
     case ast.Divide(lhs, rhs) =>
       Divide(convert(lhs), convert(rhs))(typings(e))
-
-    // Functions
-    case funcInv: ast.FunctionInvocation if funcInv.name == irFunctions.DateTime.name =>
-      DateTime(convert(funcInv.args.head))(CTDateTime)
 
     case funcInv: ast.FunctionInvocation =>
       funcInv.convertFunction(funcInv.args.map(convert), typings(e))

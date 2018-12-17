@@ -26,18 +26,12 @@
  */
 package org.opencypher.spark.impl.acceptance
 
-import org.apache.spark.sql.types.{DateType, LongType, StructField}
-import org.apache.spark.sql.{Row, types}
-import org.opencypher.okapi.api.io.conversion.NodeMapping
 import org.opencypher.okapi.api.value.CypherValue.{CypherMap, CypherNull}
 import org.opencypher.okapi.impl.exception.NotImplementedException
 import org.opencypher.okapi.testing.Bag
 import org.opencypher.okapi.testing.Bag._
-import org.opencypher.spark.api.io.CAPSNodeTable
 import org.opencypher.spark.testing.CAPSTestSuite
 import org.scalatest.DoNotDiscover
-
-import scala.collection.JavaConverters._
 
 @DoNotDiscover
 class FunctionsBehaviour extends CAPSTestSuite with DefaultGraphInit {
@@ -62,6 +56,14 @@ class FunctionsBehaviour extends CAPSTestSuite with DefaultGraphInit {
       caps.cypher("RETURN date(\"2015-10-10\") > date(\"2015-10-12\") AS time").records.toMaps should equal(
         Bag(
           CypherMap("time" -> false)
+        )
+      )
+    }
+
+    it("returns current date if no parameters are given and not null") {
+      caps.cypher("RETURN date() AS time").records.toMaps shouldNot equal(
+        Bag(
+          CypherMap("time" -> null)
         )
       )
     }
@@ -92,21 +94,12 @@ class FunctionsBehaviour extends CAPSTestSuite with DefaultGraphInit {
       )
     }
 
-    it("behaves correctly when created via a dataframe") {
-      val df = caps.sparkSession.createDataFrame(
-        List(Row(0L, java.sql.Date.valueOf("2015-10-10"))).asJava,
-        types.StructType(
-          List(
-            StructField("id", LongType, false),
-            StructField("time", DateType, false)
-          ).asJava
+    it("uses the current date and time if no parameters are given and not null") {
+      caps.cypher("RETURN datetime() AS time").records.toMaps shouldNot equal(
+        Bag(
+          CypherMap("time" -> null)
         )
       )
-      val nodeMapping = NodeMapping.on("id").withImpliedLabel("A").withPropertyKey("time")
-      val nodeTable = CAPSNodeTable.fromMapping(nodeMapping, df)
-      val graph = caps.readFrom(nodeTable)
-      graph.cypher("MATCH (n) RETURN n.time > datetime('2015-10-11')").show
-
     }
   }
 

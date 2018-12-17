@@ -27,7 +27,6 @@
 package org.opencypher.okapi.ir.impl
 
 import org.opencypher.okapi.api.types.CypherType
-import org.opencypher.okapi.api.value.CypherValue.CypherDateTime
 import org.opencypher.okapi.impl.exception.NotImplementedException
 import org.opencypher.okapi.ir.api.expr._
 import org.opencypher.okapi.ir.impl.parse.{functions => f}
@@ -101,8 +100,8 @@ object FunctionUtils {
         case functions.UnresolvedFunction => functionInvocation.name match {
           // Time functions
           case f.Timestamp.name => Timestamp()(cypherType)
-          case f.DateTime.name => DateTime(expr.head)(cypherType)
-          case f.Date.name => Date(expr.head)(cypherType)
+          case f.DateTime.name => DateTime(expr.headOption.getOrElse(NullLit()))(cypherType)
+          case f.Date.name => Date(expr.headOption.getOrElse(NullLit()))(cypherType)
 
           case name => throw NotImplementedException(s"Support for converting ${name} function not yet implemented")
         }
