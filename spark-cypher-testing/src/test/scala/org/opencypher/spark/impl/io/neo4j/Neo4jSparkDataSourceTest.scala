@@ -72,10 +72,13 @@ class Neo4jSparkDataSourceTest extends CAPSTestSuite with CAPSNeo4jServerFixture
         .schema(schema)
         .load
 
-      val result = df.filter(s"${"luckyNumber".toPropertyColumnName} > 21").filter(df.col("name".toPropertyColumnName).startsWith("M"))
+      val result = df
+        .filter(s"${"luckyNumber".toPropertyColumnName} > 21")
+        .filter(df.col("name".toPropertyColumnName).startsWith("M"))
+        .select("id", "name".toPropertyColumnName, "luckyNumber".toPropertyColumnName, "languages".toPropertyColumnName)
 
       result.collect shouldEqual Array(
-        Row(null, "Martin", 1337, 2L)
+        Row(2L, "Martin", 1337, null)
       )
     }
 
@@ -113,37 +116,6 @@ class Neo4jSparkDataSourceTest extends CAPSTestSuite with CAPSNeo4jServerFixture
         .load.count
 
       result shouldBe 1
-    }
-
-    it("foo") {
-      val swedeSchema = toSchema(dataFixtureSchema.nodePropertyKeys(Set("Person","Swede")).toSeq, Seq(sourceIdKey -> CTInteger))
-      val swedes = caps.sparkSession.read
-        .format(dataSourceClass.getName)
-        .option("boltAddress", neo4jConfig.uri.toString)
-        .option("boltUser", neo4jConfig.user)
-        .option("entityType", "node")
-        .option("labels", "Person,Swede")
-        .schema(swedeSchema)
-        .load
-        .select("property_name", "property_luckyNumber", "id")
-
-      val germansSchema = toSchema(dataFixtureSchema.nodePropertyKeys(Set("Person","German")).toSeq, Seq(sourceIdKey -> CTInteger))
-      val germans = caps.sparkSession.read
-        .format(dataSourceClass.getName)
-        .option("boltAddress", neo4jConfig.uri.toString)
-        .option("boltUser", neo4jConfig.user)
-        .option("entityType", "node")
-        .option("labels", "Person,German")
-        .schema(germansSchema)
-        .load
-        .select("property_name", "property_luckyNumber", "id")
-
-      println(germans.union(swedes).groupBy().count().queryExecution.analyzed.verboseString)
-      println(germans.union(swedes).groupBy().count().queryExecution.withCachedData.verboseString)
-      println(germans.union(swedes).groupBy().count().queryExecution.optimizedPlan.verboseString)
-      println(germans.union(swedes).groupBy().count().queryExecution.sparkPlan.verboseString)
-      println(germans.union(swedes).groupBy().count().queryExecution.executedPlan.verboseString)
-//      println(germans.union(swedes).count)
     }
   }
 
