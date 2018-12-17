@@ -100,8 +100,8 @@ object FunctionUtils {
         case functions.UnresolvedFunction => functionInvocation.name match {
           // Time functions
           case f.Timestamp.name => Timestamp()(cypherType)
-          case f.DateTime.name => DateTime(expr.headOption.getOrElse(NullLit()))(cypherType)
-          case f.Date.name => Date(expr.headOption.getOrElse(NullLit()))(cypherType)
+          case f.DateTime.name => DateTime(expr.headOption)(cypherType)
+          case f.Date.name => Date(expr.headOption)(cypherType)
 
           case name => throw NotImplementedException(s"Support for converting ${name} function not yet implemented")
         }
