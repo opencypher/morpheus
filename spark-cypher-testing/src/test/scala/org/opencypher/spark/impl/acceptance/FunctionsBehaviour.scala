@@ -37,7 +37,6 @@ import org.scalatest.DoNotDiscover
 class FunctionsBehaviour extends CAPSTestSuite with DefaultGraphInit {
 
   describe("date") {
-
     it("date()") {
       caps.cypher("RETURN date('2010-10-10') AS time").records.toMaps should equal(
         Bag(
