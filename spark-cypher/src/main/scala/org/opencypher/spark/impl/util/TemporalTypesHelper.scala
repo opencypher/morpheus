@@ -40,7 +40,40 @@ object TemporalTypesHelper {
     }
   }
 
-  private def sanitizeDate(date: String): String = "date"
+  private def sanitizeDate(date: String): String = {
+    assert(!date.contains('Q'), "Quarter representation in temporal types is not supported")
+    assert(!date.contains('W'), "Week representation in temporal types is not supported")
+
+    date.split('-').toList match {
+      case year :: month :: day :: Nil =>
+        s"$year-$month-$day"
+
+      case year :: month :: Nil => month.length match {
+        case 2 => s"$year-$month-01"
+        case 3 => ??? // construct month from days: 202 -> 07-21
+        case other => ???
+      }
+
+      case date :: Nil => date.length match {
+        case 4 => s"$date-01-01"
+        case 6 => {
+          val year = date.substring(0, 4)
+          val month = date.substring(4)
+          s"$year-$month-01"
+        }
+        case 7 => ??? // construct month from days: 202 -> 07-21
+        case 8 => {
+          val year = date.substring(0, 4)
+          val month = date.substring(4, 6)
+          val day = date.substring(6)
+          s"$year-$month-$day"
+        }
+      }
+
+      case Nil => "0001-01-01"
+      case head :: tail => ???
+    }
+  }
 
   private def sanitizeTime(time: String): String = "Ttime"
 
