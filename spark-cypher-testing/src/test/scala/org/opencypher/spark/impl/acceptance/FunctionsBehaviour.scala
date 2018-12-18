@@ -443,7 +443,7 @@ class FunctionsBehaviour extends CAPSTestSuite with DefaultGraphInit {
 
   describe("toUpper") {
     it("toUpper()") {
-      val result = caps.cypher("Return toUpper('hello') as upperCased")
+      val result = caps.cypher("RETURN toUpper('hello') AS upperCased")
       result.records.toMaps should equal(
         Bag(
           CypherMap("upperCased" -> "HELLO")
@@ -454,7 +454,7 @@ class FunctionsBehaviour extends CAPSTestSuite with DefaultGraphInit {
 
   describe("toLower") {
     it("toLower()") {
-      val result = caps.cypher("Return toLower('HELLO') as lowerCased")
+      val result = caps.cypher("RETURN toLower('HELLO') AS lowerCased")
       result.records.toMaps should equal(
         Bag(
           CypherMap("lowerCased" -> "hello")
