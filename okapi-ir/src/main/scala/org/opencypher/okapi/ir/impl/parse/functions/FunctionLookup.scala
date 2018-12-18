@@ -30,10 +30,42 @@ import org.opencypher.v9_0.expressions._
 import org.opencypher.v9_0.expressions.functions.Function
 import org.opencypher.v9_0.util.symbols._
 
+case object FunctionLookup {
+
+  def apply(name: String): Vector[TypeSignature] = name match {
+    case Timestamp.name => Timestamp.signatures
+    case DateTime.name => DateTime.signatures
+    case Date.name => Date.signatures
+    case _ => Vector.empty
+  }
+
+}
+
 case object Timestamp extends Function with TypeSignatures {
   override val name = "timestamp"
 
   override val signatures = Vector(
     TypeSignature(argumentTypes = Vector(), outputType = CTInteger)
+  )
+}
+
+case object DateTime extends Function with TypeSignatures {
+  override val name = "datetime"
+
+  override val signatures = Vector(
+    TypeSignature(argumentTypes = Vector(CTString), outputType = CTDateTime),
+    TypeSignature(argumentTypes = Vector(CTMap), outputType = CTDateTime),
+    TypeSignature(argumentTypes = Vector(), outputType = CTDateTime)
+  )
+}
+
+case object Date extends Function with TypeSignatures {
+  override val name = "date"
+
+  override val signatures = Vector(
+    TypeSignature(argumentTypes = Vector(CTString), outputType = CTDate),
+    TypeSignature(argumentTypes = Vector(CTMap), outputType = CTDate),
+    TypeSignature(argumentTypes = Vector(), outputType = CTDate)
+
   )
 }

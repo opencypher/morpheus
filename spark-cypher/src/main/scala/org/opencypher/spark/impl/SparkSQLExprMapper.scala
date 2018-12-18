@@ -128,6 +128,22 @@ object SparkSQLExprMapper {
         case NullLit(ct) =>
           NULL_LIT.cast(ct.toSparkType.get)
 
+        // TODO: extract argument mapping to helper function/class
+        case DateTime(expr) =>
+          val mappedArgs = expr match {
+            case Some(e) => e.asSparkSQLExpr
+            case None => functions.current_timestamp()
+          }
+          functions.lit(mappedArgs).cast(DataTypes.TimestampType)
+
+        // TODO: see above
+        case Date(expr) =>
+          val mappedArgs = expr match {
+            case Some(e) => e.asSparkSQLExpr
+            case None => functions.current_timestamp()
+          }
+          functions.lit(mappedArgs).cast(DataTypes.DateType)
+
         case l: Lit[_] => functions.lit(l.v)
 
         // predicates

@@ -128,6 +128,22 @@ class GraphDdlParserTest extends BaseTestSuite with MockitoSugar with TestNameFi
       success(elementTypeDefinition, ElementTypeDefinition("A", Map("key1" -> CTFloat, "key2" -> CTString)))
     }
 
+    it("parses A ( key DATE )") {
+      success(elementTypeDefinition, ElementTypeDefinition("A", Map("key" -> CTDate)))
+    }
+
+    it("parses A ( key DATE? )") {
+      success(elementTypeDefinition, ElementTypeDefinition("A", Map("key" -> CTDateOrNull)))
+    }
+
+    it("parses A ( key DATETIME )") {
+      success(elementTypeDefinition, ElementTypeDefinition("A", Map("key" -> CTDateTime)))
+    }
+
+    it("parses A ( key DATETIME? )") {
+      success(elementTypeDefinition, ElementTypeDefinition("A", Map("key" -> CTDateTimeOrNull)))
+    }
+
     it("!parses  A ()") {
       failure(elementTypeDefinition)
     }

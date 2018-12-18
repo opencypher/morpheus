@@ -36,6 +36,74 @@ import org.scalatest.DoNotDiscover
 @DoNotDiscover
 class FunctionsBehaviour extends CAPSTestSuite with DefaultGraphInit {
 
+  describe("date") {
+    it("returns a valid date") {
+      caps.cypher("RETURN date('2010-10-10') AS time").records.toMaps should equal(
+        Bag(
+          CypherMap("time" -> java.sql.Date.valueOf("2010-10-10"))
+        )
+      )
+    }
+
+    it("compares two dates") {
+      caps.cypher("RETURN date(\"2015-10-10\") < date(\"2015-10-12\") AS time").records.toMaps should equal(
+        Bag(
+          CypherMap("time" -> true)
+        )
+      )
+
+      caps.cypher("RETURN date(\"2015-10-10\") > date(\"2015-10-12\") AS time").records.toMaps should equal(
+        Bag(
+          CypherMap("time" -> false)
+        )
+      )
+    }
+
+    it("returns current date if no parameters are given") {
+      val currentDate = new java.sql.Date(System.currentTimeMillis()).toString
+      caps.cypher(s"RETURN date('$currentDate') <= date() AS time").records.toMaps should equal(
+        Bag(
+          CypherMap("time" -> true)
+        )
+      )
+    }
+  }
+
+  describe("datetime") {
+
+    it("returns a valid datetime") {
+      caps.cypher("RETURN datetime(\"2015-06-24T12:50:35.556\") AS time").records.toMaps should equal(
+        Bag(
+          CypherMap("time" -> java.sql.Timestamp.valueOf("2015-06-24 12:50:35.556"))
+        )
+      )
+
+    }
+
+    it("compares two datetimes" ) {
+      caps.cypher("RETURN datetime(\"2015-10-10T00:00:00\") < datetime(\"2015-10-12T00:00:00\") AS time").records.toMaps should equal(
+        Bag(
+          CypherMap("time" -> true)
+        )
+      )
+
+      caps.cypher("RETURN datetime(\"2015-10-10T00:00:00\") > datetime(\"2015-10-12T00:00:00\") AS time").records.toMaps should equal(
+        Bag(
+          CypherMap("time" -> false)
+        )
+      )
+    }
+
+    it("uses the current date and time if no parameters are given") {
+      val currentDateTime = new java.sql.Timestamp(System.currentTimeMillis())
+      caps.cypher(s"RETURN datetime('$currentDateTime') <= datetime() AS time").records.toMaps equals equal(
+        Bag(
+          CypherMap("time" -> true)
+        )
+      )
+    }
+  }
+
   describe("Acos"){
     it("on int value") {
       val result = caps.cypher("RETURN acos(1) AS res")

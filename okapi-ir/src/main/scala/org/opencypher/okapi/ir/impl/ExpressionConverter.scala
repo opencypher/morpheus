@@ -113,7 +113,6 @@ final class ExpressionConverter(implicit context: IRBuilderContext) {
     case ast.Divide(lhs, rhs) =>
       Divide(convert(lhs), convert(rhs))(typings(e))
 
-    // Functions
     case funcInv: ast.FunctionInvocation =>
       funcInv.convertFunction(funcInv.args.map(convert), typings(e))
     case _: ast.CountStar =>

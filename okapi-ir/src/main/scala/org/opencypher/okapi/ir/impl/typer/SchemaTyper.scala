@@ -35,7 +35,7 @@ import org.opencypher.okapi.api.schema.PropertyKeys.PropertyKeys
 import org.opencypher.okapi.api.schema.Schema
 import org.opencypher.okapi.api.types.CypherType.joinMonoid
 import org.opencypher.okapi.api.types._
-import org.opencypher.okapi.ir.impl.parse.functions.Timestamp
+import org.opencypher.okapi.ir.impl.parse.functions.{Date, DateTime, FunctionLookup, Timestamp}
 import org.opencypher.okapi.ir.impl.parse.rewriter.ExistsPattern
 import org.opencypher.okapi.ir.impl.typer.SignatureConverter._
 import org.opencypher.v9_0.expressions._
@@ -499,7 +499,10 @@ object SchemaTyper {
 
           def sigArgTypes = sigInputTypes.zip(args.map(_._2))
 
-          def compatibleTypes = sigArgTypes.forall(((_: CypherType) couldBeSameTypeAs (_: CypherType)).tupled)
+          def compatibleTypes = sigArgTypes.forall {
+            case (_: CTMap | _: CTMapOrNull, _: CTMap) => true
+            case (signatureArg: CypherType, expressionArg: CypherType) => signatureArg couldBeSameTypeAs expressionArg
+          }
 
           if (compatibleArity && compatibleTypes) Some(sigInputTypes -> sigOutputType) else None
         })
@@ -516,12 +519,9 @@ object SchemaTyper {
       expr: Expression,
       args: Seq[(Expression, CypherType)]
     ): Eff[R, Set[FunctionSignature]] = expr match {
-      case f: FunctionInvocation => f.name match {
-        case Timestamp.name =>
-          val set = Timestamp.signatures.flatMap(_.convert).toSet
-          pure(set)
-        case _ =>
-          wrong[R, TyperError](UnsupportedExpr(expr)) >> pure(Set.empty)
+      case f: FunctionInvocation => {
+        val signatures = FunctionLookup(f.name).flatMap(_.convert).toSet
+        pure(signatures)
       }
     }
   }
