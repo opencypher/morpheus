@@ -322,27 +322,6 @@ object SchemaTyper {
           error(WrongNumberOfArguments(expr, 1, seq.size))
       }
 
-    case expr: FunctionInvocation if Seq(DateTime.name, Date.name).contains(expr.functionName.name) =>
-      for {
-        argExprs <- pure(expr.arguments)
-        argTypes <- argExprs.toList.traverse(process[R])
-        computedType <- {
-          val signatureCandidates = FunctionLookup(expr.functionName.name).flatMap(_.convert).toList
-          val matchingSignatures = signatureCandidates.filter(sig => sig.input match {
-            case Vector(CTMapOrNull(inner)) if inner.isEmpty => argTypes match {
-              case List(CTMap(inner)) => true
-              case other => false
-            }
-            case other => other == argTypes.map(_.nullable)
-          })
-          matchingSignatures.headOption match {
-            case Some(functionSig) => pure[R, CypherType](functionSig.output)
-            case other => error(NoSuitableSignatureForExpr(expr, argTypes))
-          }
-        }
-        result <- recordAndUpdate(expr -> computedType)
-      } yield result
-
     case expr: FunctionInvocation if expr.function == UnresolvedFunction =>
       UnresolvedFunctionSignatureTyper(expr)
 
@@ -520,7 +499,10 @@ object SchemaTyper {
 
           def sigArgTypes = sigInputTypes.zip(args.map(_._2))
 
-          def compatibleTypes = sigArgTypes.forall(((_: CypherType) couldBeSameTypeAs (_: CypherType)).tupled)
+          def compatibleTypes = sigArgTypes.forall {
+            case (_: CTMap | _: CTMapOrNull, _: CTMap) => true
+            case (signatureArg: CypherType, expressionArg: CypherType) => signatureArg couldBeSameTypeAs expressionArg
+          }
 
           if (compatibleArity && compatibleTypes) Some(sigInputTypes -> sigOutputType) else None
         })

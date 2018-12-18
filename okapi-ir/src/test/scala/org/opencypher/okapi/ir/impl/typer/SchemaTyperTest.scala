@@ -59,23 +59,33 @@ class SchemaTyperTest extends BaseTestSuite with Neo4jAstTestSupport with Mockit
     )
   }
 
-  it("should type Date from string") {
+  it("should type Date") {
     implicit val context: TypeTracker = typeTracker("d" -> CTDate)
 
+    assertExpr.from("date()") shouldHaveInferredType CTDate.nullable
     assertExpr.from("date('2010-12-10')") shouldHaveInferredType CTDate.nullable
+    assertExpr.from("date({ year: 2018, month: 12, day: 18 })") shouldHaveInferredType CTDate.nullable
   }
 
-  it("should type DateTime from string") {
+  it("should type DateTime") {
     implicit val context: TypeTracker = typeTracker("d" -> CTDateTime)
 
+    assertExpr.from("datetime()") shouldHaveInferredType CTDateTime.nullable
     assertExpr.from("datetime('2010-12-10')") shouldHaveInferredType CTDateTime.nullable
     assertExpr.from("datetime('2010-12-10T00:00:00.000')") shouldHaveInferredType CTDateTime.nullable
-  }
-
-  it("should type DateTime from map") {
-    implicit val context: TypeTracker = typeTracker("d" -> CTDateTime)
-
-    assertExpr.from("datetime({year: 2015, month: 12, day: 8})") shouldHaveInferredType CTDateTime.nullable
+    assertExpr.from("datetime({ year: 2018, month: 12, day: 18 })") shouldHaveInferredType CTDateTime.nullable
+    assertExpr.from(
+      """
+        |datetime({
+        | year: 2018,
+        | month: 12,
+        | day: 18,
+        | hour: 11,
+        | minute: 11,
+        | second: 11,
+        | millisecond: 999,
+        | mircosecond: 999,
+        | nanosecond: 999})""".stripMargin) shouldHaveInferredType CTDateTime.nullable
   }
 
   it("should type trim(), ltrim(), rtrim()") {
