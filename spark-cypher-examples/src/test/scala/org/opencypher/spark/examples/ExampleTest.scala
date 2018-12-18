@@ -30,6 +30,7 @@ import java.io.{ByteArrayOutputStream, PrintStream}
 import java.net.URI
 
 import org.junit.runner.RunWith
+import org.opencypher.okapi.testing.Bag._
 import org.scalatest.junit.JUnitRunner
 import org.scalatest.{BeforeAndAfterAll, FunSpec, Matchers}
 
@@ -46,11 +47,23 @@ abstract class ExampleTest extends FunSpec with Matchers with BeforeAndAfterAll 
     validate(app, Source.fromFile(expectedOut).mkString)
   }
 
+  protected def validateBag(app: => Unit, expectedOut: URI): Unit = {
+    val source = Source.fromFile(expectedOut)
+    val expectedLines = source.getLines()
+    val appLines = capture(app).split(System.lineSeparator())
+    appLines.toBag shouldEqual expectedLines.toBag
+  }
+
   protected def validate(app: => Unit, expectedOut: String): Unit = {
+    capture(app) shouldEqual expectedOut
+  }
+
+  private def capture(app: => Unit): String = {
+    val charset = "UTF-8"
     val outCapture = new ByteArrayOutputStream()
-    val printer = new PrintStream(outCapture, true, "UTF-8")
+    val printer = new PrintStream(outCapture, true, charset)
     Console.withOut(printer)(app)
-    outCapture.toString("UTF-8") shouldEqual expectedOut
+    outCapture.toString(charset)
   }
 
   override protected def afterAll(): Unit = {

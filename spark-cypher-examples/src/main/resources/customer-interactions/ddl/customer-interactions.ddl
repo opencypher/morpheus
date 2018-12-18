@@ -1,115 +1,93 @@
-SET SCHEMA hive.customers;
+SET SCHEMA hive_interactions.customers;
 
-CREATE GRAPH interactions OF (
-	-- node labels
-    LABEL Policy ({
-        policyAccountNumber  : STRING
-    }),
-    LABEL Customer ({
-        customerIdx          : INTEGER,
-        customerId           : STRING,
-        customerName         : STRING
-    }),
-    LABEL CustomerRep ({
-        empNo                : INTEGER,
-        empName              : STRING
-    }),
-    LABEL Interaction ({
-        interactionId        : INTEGER,
-        date                 : STRING,
-        type                 : STRING,
-        outcomeScore         : STRING
-      }),
-    LABEL AccountHolder({
-        accountHolderId      : STRING}
-      }),
-      -- relationship labels
-    LABEL HAS_CUSTOMER_REP,
-    LABEL HAS_ACCOUNT_HOLDER,
-    LABEL HAS_CUSTOMER,
-    LABEL HAS_POLICY,
+CREATE GRAPH TYPE interactions (
+  	-- element types
+    Policy (policyAccountNumber STRING) KEY pk (policyAccountNumber),
+    Customer (customerIdx INTEGER, customerId STRING, customerName STRING) KEY ck (customerIdx),
+    CustomerRep (empNo INTEGER, empName STRING) KEY ek (empNo),
+    Interaction (interactionId INTEGER, date STRING, type STRING, outcomeScore STRING) KEY ik (interactionId),
+    AccountHolder (accountHolderId STRING) KEY ak (accountHolderId),
+    HAS_CUSTOMER_REP,
+    HAS_ACCOUNT_HOLDER,
+    HAS_CUSTOMER,
+    HAS_POLICY,
 
-    	-- node label sets
+    -- node types
     (Policy),
     (Customer),
     (Interaction),
     (CustomerRep),
     (AccountHolder),
 
-    	-- relationship label sets
-    [HAS_CUSTOMER],
-    [HAS_ACCOUNT_HOLDER],
-    [HAS_CUSTOMER_REP],
-    [HAS_POLICY],
+    -- relationship types
+    (Interaction)-[HAS_POLICY]->(Policy),
+    (Interaction)-[HAS_CUSTOMER]->(Customer),
+    (Interaction)-[HAS_CUSTOMER_REP]->(CustomerRep),
+    (Interaction)-[HAS_ACCOUNT_HOLDER]->(AccountHolder)
+)
 
-    	-- relationship triplets
-    (Interaction)     <0 .. *>    - [HAS_POLICY] ->        <1>        (Policy),
-    (Interaction)     <0 .. *>    - [HAS_CUSTOMER] ->      <1>        (Customer),
-    (Interaction)     <0 .. *>    - [HAS_CUSTOMER_REP] ->  <1>        (CustomerRep),
-    (Interaction)     <0 .. *>    - [HAS_ACCOUNT_HOLDER] ->   <1>        (AccountHolder)
-) (
+CREATE GRAPH interactions_seed OF interactions (
 
-    NODE LABEL SETS (
-        (Policy)
-             FROM POLICIES,
+  (Policy) FROM POLICIES_SEED,
+  (Customer) FROM CUSTOMERS_SEED,
+  (Interaction) FROM INTERACTIONS_SEED,
+  (CustomerRep) FROM CUSTOMER_REPS_SEED,
+  (AccountHolder) FROM ACCOUNT_HOLDERS_SEED,
 
-        (Customer)
-             FROM CUSTOMERS,
+  (Interaction)-[HAS_ACCOUNT_HOLDER]->(AccountHolder) FROM HAS_ACCOUNT_HOLDERS_SEED edge
+    START NODES (Interaction) FROM INTERACTIONS_SEED start_nodes
+      JOIN ON start_nodes.INTERACTIONID = edge.INTERACTIONID
+    END NODES (AccountHolder) FROM ACCOUNT_HOLDERS_SEED end_nodes
+      JOIN ON end_nodes.ACCOUNTHOLDERID = edge.ACCOUNTHOLDERID,
 
-        (Interaction)
-             FROM INTERACTIONS,
+  (Interaction)-[HAS_POLICY]->(Policy) FROM HAS_POLICIES_SEED edge
+    START NODES (Interaction) FROM INTERACTIONS_SEED start_nodes
+      JOIN ON start_nodes.INTERACTIONID = edge.INTERACTIONID
+    END NODES (Policy) FROM POLICIES_SEED end_nodes
+      JOIN ON end_nodes.POLICYACCOUNTNUMBER = edge.POLICYACCOUNTNUMBER,
 
-        (CustomerRep)
-             FROM CUSTOMER_REPS,
+  (Interaction)-[HAS_CUSTOMER_REP]->(CustomerRep) FROM HAS_CUSTOMER_REPS_SEED edge
+    START NODES (Interaction) FROM INTERACTIONS_SEED start_nodes
+      JOIN ON start_nodes.INTERACTIONID = edge.INTERACTIONID
+    END NODES (CustomerRep) FROM CUSTOMER_REPS_SEED end_nodes
+      JOIN ON end_nodes.EMPNO = edge.EMPNO,
 
-        (AccountHolder)
-             FROM ACCOUNT_HOLDERS
-    )
+  (Interaction)-[HAS_CUSTOMER]->(Customer) FROM HAS_CUSTOMERS_SEED edge
+    START NODES (Interaction) FROM INTERACTIONS_SEED start_nodes
+      JOIN ON start_nodes.INTERACTIONID = edge.INTERACTIONID
+    END NODES (Customer) FROM CUSTOMERS_SEED end_nodes
+      JOIN ON end_nodes.CUSTOMERIDX = edge.CUSTOMERIDX
+)
 
-    RELATIONSHIP LABEL SETS (
+CREATE GRAPH interactions_delta OF interactions (
 
-        (HAS_ACCOUNT_HOLDER)
-            FROM HAS_ACCOUNT_HOLDERS edge
-                START NODES
-                    LABEL SET (Interaction)
-                    FROM INTERACTIONS start_nodes
-                        JOIN ON start_nodes.INTERACTIONID = edge.INTERACTIONID
-                END NODES
-                    LABEL SET (AccountHolder)
-                    FROM ACCOUNT_HOLDERS end_nodes
-                        JOIN ON end_nodes.ACCOUNTHOLDERID = edge.ACCOUNTHOLDERID,
+  (Policy) FROM POLICIES_DELTA,
+  (Customer) FROM CUSTOMERS_DELTA,
+  (Interaction) FROM INTERACTIONS_DELTA,
+  (CustomerRep) FROM CUSTOMER_REPS_DELTA,
+  (AccountHolder) FROM ACCOUNT_HOLDERS_DELTA,
 
-        (HAS_POLICY)
-            FROM HAS_POLICIES edge
-                START NODES
-                    LABEL SET (Interaction)
-                    FROM INTERACTIONS start_nodes
-                        JOIN ON start_nodes.INTERACTIONID = edge.INTERACTIONID
-                END NODES
-                    LABEL SET (Policy)
-                    FROM POLICIES end_nodes
-                        JOIN ON end_nodes.POLICYACCOUNTNUMBER = edge.POLICYACCOUNTNUMBER,
+  (Interaction)-[HAS_ACCOUNT_HOLDER]->(AccountHolder) FROM HAS_ACCOUNT_HOLDERS_DELTA edge
+    START NODES (Interaction) FROM INTERACTIONS_DELTA start_nodes
+      JOIN ON start_nodes.INTERACTIONID = edge.INTERACTIONID
+    END NODES (AccountHolder) FROM ACCOUNT_HOLDERS_DELTA end_nodes
+      JOIN ON end_nodes.ACCOUNTHOLDERID = edge.ACCOUNTHOLDERID,
 
-        (HAS_CUSTOMER_REP)
-            FROM HAS_CUSTOMER_REPS edge
-                START NODES
-                    LABEL SET (Interaction)
-                    FROM INTERACTIONS start_nodes
-                        JOIN ON start_nodes.INTERACTIONID = edge.INTERACTIONID
-                END NODES
-                    LABEL SET (CustomerRep)
-                    FROM CUSTOMER_REPS end_nodes
-                        JOIN ON end_nodes.EMPNO = edge.EMPNO,
+  (Interaction)-[HAS_POLICY]->(Policy) FROM HAS_POLICIES_DELTA edge
+    START NODES (Interaction) FROM INTERACTIONS_DELTA start_nodes
+      JOIN ON start_nodes.INTERACTIONID = edge.INTERACTIONID
+    END NODES (Policy) FROM POLICIES_DELTA end_nodes
+      JOIN ON end_nodes.POLICYACCOUNTNUMBER = edge.POLICYACCOUNTNUMBER,
 
-        (HAS_CUSTOMER)
-            FROM HAS_CUSTOMERS edge
-                START NODES
-                    LABEL SET (Interaction)
-                    FROM INTERACTIONS start_nodes
-                        JOIN ON start_nodes.INTERACTIONID = edge.INTERACTIONID
-                END NODES
-                    LABEL SET (Customer)
-                    FROM CUSTOMERS end_nodes
-                        JOIN ON end_nodes.CUSTOMERID = edge.CUSTOMERID
-    )
+  (Interaction)-[HAS_CUSTOMER_REP]->(CustomerRep) FROM HAS_CUSTOMER_REPS_DELTA edge
+    START NODES (Interaction) FROM INTERACTIONS_DELTA start_nodes
+      JOIN ON start_nodes.INTERACTIONID = edge.INTERACTIONID
+    END NODES (CustomerRep) FROM CUSTOMER_REPS_DELTA end_nodes
+      JOIN ON end_nodes.EMPNO = edge.EMPNO,
+
+  (Interaction)-[HAS_CUSTOMER]->(Customer) FROM HAS_CUSTOMERS_DELTA edge
+    START NODES (Interaction) FROM INTERACTIONS_DELTA start_nodes
+      JOIN ON start_nodes.INTERACTIONID = edge.INTERACTIONID
+    END NODES (Customer) FROM CUSTOMERS_DELTA end_nodes
+      JOIN ON end_nodes.CUSTOMERIDX = edge.CUSTOMERIDX
 )

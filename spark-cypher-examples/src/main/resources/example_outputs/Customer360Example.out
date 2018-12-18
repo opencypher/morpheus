@@ -1,0 +1,48 @@
+LOG: PGDSs registered
+LOG: Graph merged to Neo4j
+╔════════════════════════════════════════════════════════════════════════════════════════════════════╤═════════════╤═════╗
+║ c                                                                                                  │ type        │ cnt ║
+╠════════════════════════════════════════════════════════════════════════════════════════════════════╪═════════════╪═════╣
+║ (:`Customer` {`customerId`: 'H3IU73XG21N', `customerIdx`: 184, `customerName`: 'Micaela Rodrick'}) │ 'complaint' │ 11  ║
+║ (:`Customer` {`customerId`: 'H3IU73XG21N', `customerIdx`: 183, `customerName`: 'Micaela Rodrick'}) │ 'complaint' │ 11  ║
+║ (:`Customer` {`customerId`: 'H3IU73XG21N', `customerIdx`: 182, `customerName`: 'Micaela Rodrick'}) │ 'complaint' │ 11  ║
+║ (:`Customer` {`customerId`: 'N0VK60AP58P', `customerIdx`: 5, `customerName`: 'Candida Collums'})   │ 'cancel'    │ 10  ║
+║ (:`Customer` {`customerId`: 'O1NC01QZ61Y', `customerIdx`: 8, `customerName`: 'Sade Tappe'})        │ 'cancel'    │ 10  ║
+║ (:`Customer` {`customerId`: 'N0VK60AP58P', `customerIdx`: 4, `customerName`: 'Candida Collums'})   │ 'cancel'    │ 10  ║
+║ (:`Customer` {`customerId`: 'N0VK60AP58P', `customerIdx`: 6, `customerName`: 'Candida Collums'})   │ 'cancel'    │ 10  ║
+║ (:`Customer` {`customerId`: 'O1NC01QZ61Y', `customerIdx`: 10, `customerName`: 'Sade Tappe'})       │ 'cancel'    │ 10  ║
+║ (:`Customer` {`customerId`: 'N0VK60AP58P', `customerIdx`: 7, `customerName`: 'Candida Collums'})   │ 'cancel'    │ 10  ║
+║ (:`Customer` {`customerId`: 'O1NC01QZ61Y', `customerIdx`: 9, `customerName`: 'Sade Tappe'})        │ 'cancel'    │ 10  ║
+╚════════════════════════════════════════════════════════════════════════════════════════════════════╧═════════════╧═════╝
+(10 rows)
+╔═════════════════════════════════════════════════════════════════════╤═════════════╤═════╗
+║ rep                                                                 │ type        │ cnt ║
+╠═════════════════════════════════════════════════════════════════════╪═════════════╪═════╣
+║ (:`CustomerRep` {`empName`: 'Welham, Vitali', `empNo`: 10649})      │ 'complaint' │ 33  ║
+║ (:`CustomerRep` {`empName`: 'Burnard, Ranga', `empNo`: 10954})      │ 'cancel'    │ 32  ║
+║ (:`CustomerRep` {`empName`: 'Petersohn, Vishwani', `empNo`: 10895}) │ 'complaint' │ 32  ║
+║ (:`CustomerRep` {`empName`: 'Thibadeau, Abdulah', `empNo`: 10154})  │ 'complaint' │ 31  ║
+║ (:`CustomerRep` {`empName`: 'Sluis, Xiaoheng', `empNo`: 10775})     │ 'cancel'    │ 30  ║
+║ (:`CustomerRep` {`empName`: 'Welham, Vitali', `empNo`: 10649})      │ 'cancel'    │ 28  ║
+║ (:`CustomerRep` {`empName`: 'Lamba, Babette', `empNo`: 10128})      │ 'cancel'    │ 27  ║
+║ (:`CustomerRep` {`empName`: 'Etalle, Danco', `empNo`: 10865})       │ 'cancel'    │ 27  ║
+║ (:`CustomerRep` {`empName`: 'Lieberherr, Pranav', `empNo`: 10841})  │ 'complaint' │ 25  ║
+║ (:`CustomerRep` {`empName`: 'Nyanchama, Visit', `empNo`: 10903})    │ 'cancel'    │ 25  ║
+╚═════════════════════════════════════════════════════════════════════╧═════════════╧═════╝
+(10 rows)
+LOG: Delta merged
+╔══════════════════════════════════════════════════════════════════╤═════════════╤═════╗
+║ rep                                                              │ type        │ cnt ║
+╠══════════════════════════════════════════════════════════════════╪═════════════╪═════╣
+║ (:`CustomerRep` {`empName`: 'Bahi, Toshimori', `empNo`: 10335})  │ 'cancel'    │ 16  ║
+║ (:`CustomerRep` {`empName`: 'Tramer, Basil', `empNo`: 10049})    │ 'complaint' │ 15  ║
+║ (:`CustomerRep` {`empName`: 'Caine, Morris', `empNo`: 10816})    │ 'cancel'    │ 14  ║
+║ (:`CustomerRep` {`empName`: 'Swick, Yuichiro', `empNo`: 10112})  │ 'cancel'    │ 13  ║
+║ (:`CustomerRep` {`empName`: 'Himler, Jiakeng', `empNo`: 10466})  │ 'cancel'    │ 13  ║
+║ (:`CustomerRep` {`empName`: 'Bahr, Avishai', `empNo`: 10773})    │ 'complaint' │ 13  ║
+║ (:`CustomerRep` {`empName`: 'Valtorta, Kayoko', `empNo`: 10126}) │ 'complaint' │ 12  ║
+║ (:`CustomerRep` {`empName`: 'Redmiles, Bernd', `empNo`: 10721})  │ 'complaint' │ 12  ║
+║ (:`CustomerRep` {`empName`: 'Nyanchama, Visit', `empNo`: 10903}) │ 'complaint' │ 12  ║
+║ (:`CustomerRep` {`empName`: 'Ranai, Heon', `empNo`: 10338})      │ 'cancel'    │ 11  ║
+╚══════════════════════════════════════════════════════════════════╧═════════════╧═════╝
+(10 rows)
