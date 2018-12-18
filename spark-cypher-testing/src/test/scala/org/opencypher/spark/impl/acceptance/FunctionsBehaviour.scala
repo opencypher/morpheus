@@ -59,10 +59,11 @@ class FunctionsBehaviour extends CAPSTestSuite with DefaultGraphInit {
       )
     }
 
-    it("returns current date if no parameters are given and not null") {
-      caps.cypher("RETURN date() AS time").records.toMaps shouldNot equal(
+    it("returns current date if no parameters are given") {
+      val currentDate = new java.sql.Date(System.currentTimeMillis()).toString
+      caps.cypher(s"RETURN date('$currentDate') > date() AS time").records.toMaps should equal(
         Bag(
-          CypherMap("time" -> null)
+          CypherMap("time" -> true)
         )
       )
     }
@@ -93,10 +94,11 @@ class FunctionsBehaviour extends CAPSTestSuite with DefaultGraphInit {
       )
     }
 
-    it("uses the current date and time if no parameters are given and not null") {
-      caps.cypher("RETURN datetime() AS time").records.toMaps shouldNot equal(
+    it("uses the current date and time if no parameters are given") {
+      val currentDateTime = new java.sql.Timestamp(System.currentTimeMillis())
+      caps.cypher(s"RETURN datetime('$currentDateTime') > datetime() AS time").records.toMaps equals equal(
         Bag(
-          CypherMap("time" -> null)
+          CypherMap("time" -> true)
         )
       )
     }
