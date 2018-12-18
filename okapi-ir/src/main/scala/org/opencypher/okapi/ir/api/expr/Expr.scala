@@ -34,6 +34,7 @@ import org.opencypher.okapi.trees.AbstractTreeNode
 
 import scala.annotation.tailrec
 import scala.reflect.ClassTag
+import scala.tools.nsc.interactive.Lexer
 
 object Expr {
 
@@ -1037,26 +1038,25 @@ final case class StringLit(v: String)(val cypherType: CypherType = CTString) ext
   override def withCypherType(ct: CypherType): StringLit = copy()(ct)
 }
 
-final case class DateTime(expr: Option[Expr])(val cypherType: CypherType = CTDateTime) extends FunctionExpr {
-
-  override type This = DateTime
+sealed abstract class TemporalInstant(expr: Option[Expr]) extends FunctionExpr {
 
   override val exprs: IndexedSeq[Expr] = expr match {
     case Some(expr) => IndexedSeq(expr)
     case None => IndexedSeq.empty
   }
+
+}
+
+final case class DateTime(expr: Option[Expr])(val cypherType: CypherType = CTDateTime) extends TemporalInstant(expr) {
+
+  override type This = DateTime
 
   override def withCypherType(ct: CypherType): DateTime = copy()(ct)
 }
 
-final case class Date(expr: Option[Expr])(val cypherType: CypherType = CTDate) extends FunctionExpr {
+final case class Date(expr: Option[Expr])(val cypherType: CypherType = CTDate) extends TemporalInstant(expr) {
 
   override type This = Date
-
-  override val exprs: IndexedSeq[Expr] = expr match {
-    case Some(expr) => IndexedSeq(expr)
-    case None => IndexedSeq.empty
-  }
 
   override def withCypherType(ct: CypherType): Date = copy()(ct)
 }

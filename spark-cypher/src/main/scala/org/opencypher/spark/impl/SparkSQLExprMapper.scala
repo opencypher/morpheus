@@ -130,19 +130,21 @@ object SparkSQLExprMapper {
 
         // TODO: extract argument mapping to helper function/class
         case DateTime(expr) =>
+          import org.opencypher.spark.impl.util.TemporalTypesHelper._
           val mappedArgs = expr match {
-            case Some(e) => e.asSparkSQLExpr
+            case Some(e) => sanitize(e)
             case None => functions.current_timestamp()
           }
-          functions.lit(mappedArgs).cast(DataTypes.TimestampType)
+          mappedArgs.cast(DataTypes.TimestampType)
 
         // TODO: see above
         case Date(expr) =>
+          import org.opencypher.spark.impl.util.TemporalTypesHelper._
           val mappedArgs = expr match {
-            case Some(e) => e.asSparkSQLExpr
+            case Some(e) => sanitize(e)
             case None => functions.current_timestamp()
           }
-          functions.lit(mappedArgs).cast(DataTypes.DateType)
+          mappedArgs.cast(DataTypes.DateType)
 
         case l: Lit[_] => functions.lit(l.v)
 
