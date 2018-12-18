@@ -93,8 +93,8 @@ object CypherTypeParser extends Logging {
     PATH |
     LIST |
     MAP |
-    DATE |
-    DATETIME
+    DATETIME | // needs to be infront of date due to shortest match semantics
+    DATE
   )
 
   val nullableCypherType: P[CypherType] = P(materialCypherType ~ "?").map(ct => ct.nullable)
