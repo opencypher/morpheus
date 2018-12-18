@@ -34,7 +34,6 @@ import org.opencypher.okapi.trees.AbstractTreeNode
 
 import scala.annotation.tailrec
 import scala.reflect.ClassTag
-import scala.tools.nsc.interactive.Lexer
 
 object Expr {
 
