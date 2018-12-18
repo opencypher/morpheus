@@ -40,9 +40,30 @@ class FunctionTests extends CAPSTestSuite with ScanGraphInit{
   describe("date") {
     it("returns a valid date") {
       caps.cypher("RETURN date('2010-10-10') AS time").records.toMaps should equal(
-        Bag(
-          CypherMap("time" -> java.sql.Date.valueOf("2010-10-10"))
-        )
+        Bag(CypherMap("time" -> java.sql.Date.valueOf("2010-10-10")))
+      )
+
+      caps.cypher("RETURN date('2010') AS time").records.toMaps should equal(
+        Bag(CypherMap("time" -> java.sql.Date.valueOf("2010-01-01")))
+      )
+
+      caps.cypher("RETURN date('201012') AS time").records.toMaps should equal(
+        Bag(CypherMap("time" -> java.sql.Date.valueOf("2010-12-01")))
+      )
+
+    }
+
+    it("returns a valid date when constructed from a map") {
+      caps.cypher("RETURN date({ year: 2010, month: 10, day: 10 }) AS time").records.toMaps should equal(
+        Bag(CypherMap("time" -> java.sql.Date.valueOf("2010-10-10")))
+      )
+
+      caps.cypher("RETURN date({ year: 2010, month: 10 }) AS time").records.toMaps should equal(
+        Bag(CypherMap("time" -> java.sql.Date.valueOf("2010-10-01")))
+      )
+
+      caps.cypher("RETURN date({ year: '2010' }) AS time").records.toMaps should equal(
+        Bag(CypherMap("time" -> java.sql.Date.valueOf("2010-01-01")))
       )
     }
 
@@ -73,12 +94,28 @@ class FunctionTests extends CAPSTestSuite with ScanGraphInit{
   describe("datetime") {
 
     it("returns a valid datetime") {
-      caps.cypher("RETURN datetime(\"2015-06-24T12:50:35.556\") AS time").records.toMaps should equal(
+      caps.cypher("RETURN datetime('2015-06-24T12:50:35.556') AS time").records.toMaps should equal(
         Bag(
           CypherMap("time" -> java.sql.Timestamp.valueOf("2015-06-24 12:50:35.556"))
         )
       )
 
+    }
+
+    it("returns a valid datetime when constructed from a map") {
+      caps.cypher(
+        """RETURN datetime({
+          |year: 2015,
+          |month: 10,
+          |day: 12,
+          |hour: 12,
+          |minute: 50,
+          |second: 35,
+          |millisecond: 556}) AS time""".stripMargin).records.toMaps should equal(
+        Bag(
+          CypherMap("time" -> java.sql.Timestamp.valueOf("2015-10-12 12:50:35.556"))
+        )
+      )
     }
 
     it("compares two datetimes" ) {
