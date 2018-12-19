@@ -4,14 +4,20 @@ plugins {
 
 allprojects {
     apply plugin: 'maven'
+    apply plugin: 'java'
+    apply plugin: 'scala'
+    apply plugin: 'maven-publish'
 
     group = 'org.opencypher'
     version = '0.2.3-SNAPSHOT'
+
+    task dependencySearch(type: DependencyInsightReportTask) {
+        description 'Searches all projects for a dependency'
+        group 'help'
+    }
 }
 
 subprojects {
-    apply plugin: 'java'
-    apply plugin: 'scala'
 
     repositories {
         mavenLocal()
