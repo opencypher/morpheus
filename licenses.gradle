@@ -104,7 +104,6 @@ allprojects {
         include '**/*.java'
     }
 
-
     // Dependency license reporting
     downloadLicenses {
 

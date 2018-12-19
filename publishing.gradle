@@ -1,0 +1,41 @@
+subprojects {
+    publishing {
+
+        repositories {
+            maven {
+                name = 'buildDir'
+                url = "file://$rootProject.buildDir/repo"
+            }
+        }
+
+        publications {
+            full(MavenPublication) {
+                from components.java
+
+                artifact sourceJar
+
+                pom {
+                    licenses {
+                        license {
+                            name = 'Apache License, Version 2.0'
+                            url = 'http://www.apache.org/licenses/LICENSE-2.0'
+                        }
+                    }
+                    developers {
+                        developer {
+                            id = 'caps'
+                            name = 'The CAPS team'
+                            email = 'opencypher@neo4j.com'
+                            url = 'https://www.opencypher.org'
+                        }
+                    }
+                    scm {
+                        url = 'https://github.com/opencypher/cypher-for-apache-spark'
+                    }
+                }
+            }
+        }
+
+    }
+
+}

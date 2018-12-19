@@ -37,6 +37,8 @@ subprojects {
     }
 
     tasks.withType(JavaCompile) {
+        sourceCompatibility = javaVersion
+        targetCompatibility = javaVersion
         options.encoding = 'UTF-8'
     }
 
@@ -56,14 +58,10 @@ subprojects {
         ]
     }
 
-    task packageSources(type: Jar) {
+    task sourceJar(type: Jar) {
         classifier = 'sources'
         from(sourceSets.main.allSource)
     }
-
-    sourceCompatibility = javaVersion
-    artifacts.archives(tasks.packageSources)
-
 }
 
 apply from: 'licenses.gradle'
