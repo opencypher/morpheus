@@ -3,6 +3,13 @@ plugins {
     id 'idea'
 }
 
+allprojects {
+
+    group = 'org.opencypher'
+    version = '0.2.3-SNAPSHOT'
+
+}
+
 subprojects {
 
     apply plugin: 'maven'
@@ -10,8 +17,6 @@ subprojects {
     apply plugin: 'scala'
     apply plugin: 'maven-publish'
 
-    group = 'org.opencypher'
-    version = '0.2.3-SNAPSHOT'
 
     task dependencySearch(type: DependencyInsightReportTask) {
         description 'Searches all projects for a dependency'
