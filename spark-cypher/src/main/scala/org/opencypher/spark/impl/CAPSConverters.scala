@@ -64,7 +64,7 @@ object CAPSConverters {
   }
 
   implicit class RichCypherRecords(val records: CypherRecords) extends AnyVal {
-    def asCaps(implicit caps: CAPSSession): CAPSRecords = records match {
+    def asCaps: CAPSRecords = records match {
       case caps: CAPSRecords => caps
       case other => unsupported("CAPS records", other)
     }

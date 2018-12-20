@@ -188,8 +188,7 @@ case object MergeWriters {
     config: Neo4jConfig,
     nodeKeys: Map[String, Set[String]],
     batchSize: Int
-  )
-    (implicit caps: CAPSSession): Set[Future[Unit]] = {
+  ): Set[Future[Unit]] = {
     val result: Set[Future[Unit]] = graph.schema.labelCombinations.combos.map { combo =>
       val comboWithMetaLabel = combo ++ maybeMetaLabel
       val nodeScan = graph.nodes("n", CTNode(combo), exactLabelMatch = true).asCaps
@@ -214,8 +213,7 @@ case object MergeWriters {
     config: Neo4jConfig,
     relKeys: Map[String, Set[String]],
     batchSize: Int
-  )
-    (implicit caps: CAPSSession): Set[Future[Unit]] = {
+  ): Set[Future[Unit]] = {
     graph.schema.relationshipTypes.map { relType =>
       val relScan = graph.relationships("r", CTRelationship(relType)).asCaps
       val mapping = computeMapping(relScan, includeId = false)
