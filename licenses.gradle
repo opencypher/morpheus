@@ -91,7 +91,7 @@ def whitelist = [
 ]
 
 
-allprojects {
+subprojects {
     apply plugin: "com.github.hierynomus.license"
 
     // License header checking and insertion
@@ -103,6 +103,8 @@ allprojects {
         include '**/*.scala'
         include '**/*.java'
     }
+
+    tasks.check.dependsOn tasks.license
 
     // Dependency license reporting
     downloadLicenses {
@@ -128,9 +130,7 @@ allprojects {
             [(actual): alternatives]
         }
     }
-}
 
-subprojects {
     // Dependency license validation
     task validateLicenses {
         group 'license'
@@ -152,6 +152,8 @@ subprojects {
                     .each { lic -> throw new GradleException("The license '$lic.name' is not in the license whitelist") }
         }
     }
+
+    tasks.check.dependsOn tasks.validateLicenses
 }
 
 // Disable dependency license validation on test projects

@@ -1,8 +1,10 @@
 plugins {
     id "com.github.hierynomus.license" version "0.15.0"
+    id 'idea'
 }
 
-allprojects {
+subprojects {
+
     apply plugin: 'maven'
     apply plugin: 'java'
     apply plugin: 'scala'
@@ -15,10 +17,6 @@ allprojects {
         description 'Searches all projects for a dependency'
         group 'help'
     }
-}
-
-subprojects {
-
     repositories {
         mavenLocal()
         mavenCentral()
@@ -65,4 +63,5 @@ subprojects {
 }
 
 apply from: 'licenses.gradle'
+apply from: 'publishing.gradle'
 
