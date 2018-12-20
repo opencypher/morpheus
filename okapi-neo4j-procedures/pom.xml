@@ -62,15 +62,9 @@
               <createDependencyReducedPom>true</createDependencyReducedPom>
               <artifactSet>
                 <excludes>
-                  <exclude>junit:junit</exclude>
-                  <exclude>jmock:*</exclude>
                   <exclude>org.scala-lang:*</exclude>
                   <exclude>org.scalatest:*</exclude>
                   <exclude>org.scalacheck:*</exclude>
-                  <exclude>org.apache.maven:lib:tests</exclude>
-                  <exclude>commons-beanutils:*</exclude>
-                  <exclude>aopalliance:*</exclude>
-                  <exclude>javax.inject:*</exclude>
                 </excludes>
               </artifactSet>
               <filters>
