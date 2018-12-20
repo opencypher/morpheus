@@ -49,9 +49,11 @@ abstract class ExampleTest extends FunSpec with Matchers with BeforeAndAfterAll 
 
   protected def validateBag(app: => Unit, expectedOut: URI): Unit = {
     val source = Source.fromFile(expectedOut)
-    val expectedLines = source.getLines()
+    val expectedLines = source.getLines().toList
     val appLines = capture(app).split(System.lineSeparator())
-    appLines.toBag shouldEqual expectedLines.toBag
+    withClue(s"${appLines.mkString("\n")} not equal to ${expectedLines.mkString("\n")}") {
+      appLines.toBag shouldEqual expectedLines.toBag
+    }
   }
 
   protected def validate(app: => Unit, expectedOut: String): Unit = {

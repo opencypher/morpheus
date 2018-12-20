@@ -1,19 +1,14 @@
 package org.opencypher.spark.examples
 
-import java.net.URI
-
-import org.opencypher.okapi.api.graph.{Namespace, PropertyGraph}
-import org.opencypher.okapi.api.types.CTRelationship
+import org.opencypher.okapi.api.graph.Namespace
 import org.opencypher.okapi.neo4j.io.MetaLabelSupport.entireGraphName
-import org.opencypher.okapi.neo4j.io.Neo4jConfig
 import org.opencypher.okapi.neo4j.io.testing.Neo4jHarnessUtils._
-import org.opencypher.okapi.relational.api.configuration.CoraConfiguration.PrintOptimizedRelationalPlan
 import org.opencypher.spark.api.io.neo4j.sync.Neo4jGraphMerge
 import org.opencypher.spark.api.io.neo4j.sync.Neo4jGraphMerge.Batches
+import org.opencypher.spark.api.io.sql.IdGenerationStrategy
 import org.opencypher.spark.api.io.sql.SqlDataSourceConfig.Hive
 import org.opencypher.spark.api.{CAPSSession, GraphSources}
 import org.opencypher.spark.examples.Helpers._
-import org.opencypher.spark.examples.Neo4jMergeExample.neo4j
 import org.opencypher.spark.util.{ConsoleApp, LoadInteractionsInHive}
 
 /**
@@ -48,6 +43,7 @@ object Customer360Example extends ConsoleApp {
   // It uses a Graph DDL file for understanding schema and data of its managed graphs
   val sqlPgds = GraphSources
     .sql(file("/customer-interactions/ddl/customer-interactions.ddl"))
+    .withIdGenerationStrategy(IdGenerationStrategy.HashBasedId)
     .withSqlDataSourceConfigs(Map("hive_interactions" -> Hive))
 
   // Register the SQL PGDS in the session's catalog
@@ -73,25 +69,15 @@ object Customer360Example extends ConsoleApp {
 
   log("PGDSs registered")
 
-//  PrintOptimizedRelationalPlan.set()
-
   val c360Seed = session.cypher(
     """
       |FROM c360.interactions_seed
       |RETURN GRAPH
     """.stripMargin).graph
 
-  // Speed up merge operation. Requires Neo4j Enterprise Edition
-//  Neo4jGraphMerge.createIndexes(entireGraphName, neo4j.dataSourceConfig, c360Seed.schema.nodeKeys)
-
-  // Seed Neo4j with the customer 360 graph
-  Neo4jGraphMerge.merge(entireGraphName, c360Seed, neo4j.dataSourceConfig, batches = Batches(relBatchSize = 1))
-
-  log("Graph merged to Neo4j")
-
   /*
    * Find customers who have reported the most problematic interactions (complaints or cancellations)
-   * List the top 10 customers and their interaction statistics
+   * List the top 6 customers and their interaction statistics
    */
   c360Seed.cypher(
     """
@@ -100,8 +86,16 @@ object Customer360Example extends ConsoleApp {
       |WHERE type IN ['cancel', 'complaint']
       |RETURN c, type, cnt
       |ORDER BY cnt DESC
-      |LIMIT 10
+      |LIMIT 6
     """.stripMargin).show
+
+  // Speed up merge operation. Requires Neo4j Enterprise Edition
+//  Neo4jGraphMerge.createIndexes(entireGraphName, neo4j.dataSourceConfig, c360Seed.schema.nodeKeys)
+
+  // Seed Neo4j with the customer 360 graph
+  Neo4jGraphMerge.merge(entireGraphName, c360Seed, neo4j.dataSourceConfig, batches = Batches(relBatchSize = 1))
+
+  log("Graph merged to Neo4j")
 
   /*
    * We can also execute the same query based on the graph we merged into the Neo4j instance, seeing the same results.
@@ -114,25 +108,12 @@ object Customer360Example extends ConsoleApp {
        |WHERE type IN ['cancel', 'complaint']
        |RETURN c, type, cnt
        |ORDER BY cnt DESC
-       |LIMIT 10
+       |LIMIT 6
     """.stripMargin).show
 
   /*
-   * And directly in Neo4j:
-   */
-  println(neo4j.graph().execute(
-    """
-      |MATCH (c:Customer)--(i:Interaction)--(rep:CustomerRep)
-      |WITH c, i.type AS type, count(*) AS cnt
-      |WHERE type IN ['cancel', 'complaint']
-      |RETURN c, type, cnt
-      |ORDER BY cnt DESC
-      |LIMIT 10
-    """.stripMargin).resultAsString())
-
-  /*
    * Find customer reps who have received the most problematic reports (complaints or cancellations)
-   * List the top 10 customer reps and their interaction statistics
+   * List the top 9 customer reps and their interaction statistics
    */
   session.cypher(
     """
@@ -142,7 +123,7 @@ object Customer360Example extends ConsoleApp {
       |WHERE type IN ['cancel', 'complaint']
       |RETURN rep, type, cnt
       |ORDER BY cnt DESC
-      |LIMIT 10
+      |LIMIT 9
     """.stripMargin).show
 
   /*
@@ -156,22 +137,8 @@ object Customer360Example extends ConsoleApp {
       |WHERE type IN ['cancel', 'complaint']
       |RETURN rep, type, cnt
       |ORDER BY cnt DESC
-      |LIMIT 10
+      |LIMIT 9
     """.stripMargin).show
-
-  /*
-   * And directly in Neo4j:
-   */
-  println(neo4j.graph().execute(
-    """
-      |MATCH (c:Customer)--(i:Interaction)--(rep:CustomerRep)
-      |WITH rep, i.type AS type, count(*) AS cnt
-      |WHERE type IN ['cancel', 'complaint']
-      |RETURN rep, type, cnt
-      |ORDER BY cnt DESC
-      |LIMIT 10
-    """.stripMargin).resultAsString())
-
 
   // Time moves forward and more interactions happen
   // We want to synchronize our transactional database with the new data
@@ -195,7 +162,7 @@ object Customer360Example extends ConsoleApp {
        |WHERE type IN ['cancel', 'complaint']
        |RETURN rep, type, cnt
        |ORDER BY cnt DESC
-       |LIMIT 10
+       |LIMIT 9
     """.stripMargin).show
 
   neo4j.close()
