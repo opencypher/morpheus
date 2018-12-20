@@ -1,67 +1,155 @@
 LOG: PGDSs registered
-╔═════════════════════════════════════════════════════════════════════════════════════════════════════════╤═════════════╤═════╗
-║ c                                                                                                       │ type        │ cnt ║
-╠═════════════════════════════════════════════════════════════════════════════════════════════════════════╪═════════════╪═════╣
-║ (:`Customer` {`customerId`: 'G1KX22LV86D', `customerIdx`: 784, `customerName`: 'Trevor Awe'})           │ 'complaint' │ 3   ║
-║ (:`Customer` {`customerId`: 'S4VO48QU39G', `customerIdx`: 809, `customerName`: 'Darrell Stilgenbauer'}) │ 'cancel'    │ 3   ║
-║ (:`Customer` {`customerId`: 'Z3VD29SC47G', `customerIdx`: 146, `customerName`: 'Willy Longs'})          │ 'cancel'    │ 3   ║
-║ (:`Customer` {`customerId`: 'D6ED50AU16Z', `customerIdx`: 1041, `customerName`: 'Clement Yurkanin'})    │ 'cancel'    │ 3   ║
-║ (:`Customer` {`customerId`: 'G3MZ89LK04G', `customerIdx`: 1264, `customerName`: 'Edwin Mikuszewski'})   │ 'complaint' │ 3   ║
-║ (:`Customer` {`customerId`: 'P0FT43ZY40N', `customerIdx`: 1464, `customerName`: 'Hipolito Risler'})     │ 'complaint' │ 3   ║
-╚═════════════════════════════════════════════════════════════════════════════════════════════════════════╧═════════════╧═════╝
-(6 rows)
+╔════════════════════════════════════════════════════════════════════════════════════════════════════════╤═════════════╤═════╗
+║ c                                                                                                      │ type        │ cnt ║
+╠════════════════════════════════════════════════════════════════════════════════════════════════════════╪═════════════╪═════╣
+║ (:`Customer` {`customerId`: 'Z3VD29SC47G', `customerIdx`: 146, `customerName`: 'Willy Longs'})         │ 'cancel'    │ 3   ║
+║ (:`Customer` {`customerId`: 'O8KU23FQ43V', `customerIdx`: 519, `customerName`: 'Mariella Wiebusch'})   │ 'cancel'    │ 2   ║
+║ (:`Customer` {`customerId`: 'O1NC01QZ61Y', `customerIdx`: 8, `customerName`: 'Sade Tappe'})            │ 'cancel'    │ 2   ║
+║ (:`Customer` {`customerId`: 'N8HW52LU10G', `customerIdx`: 335, `customerName`: 'Joellen Oelschlager'}) │ 'cancel'    │ 2   ║
+║ (:`Customer` {`customerId`: 'O8QB64CT07L', `customerIdx`: 407, `customerName`: 'Glenn Burbage'})       │ 'complaint' │ 2   ║
+║ (:`Customer` {`customerId`: 'K5MF89VU71T', `customerIdx`: 421, `customerName`: 'Milan Seawood'})       │ 'cancel'    │ 2   ║
+║ (:`Customer` {`customerId`: 'R4BI01OI79D', `customerIdx`: 40, `customerName`: 'Casey Phalen'})         │ 'cancel'    │ 2   ║
+║ (:`Customer` {`customerId`: 'M4XI09VC21Z', `customerIdx`: 276, `customerName`: 'Breanne Portney'})     │ 'complaint' │ 2   ║
+║ (:`Customer` {`customerId`: 'P9KU15NB27Y', `customerIdx`: 66, `customerName`: 'Tu Mottinger'})         │ 'cancel'    │ 2   ║
+║ (:`Customer` {`customerId`: 'L8UR36HO21Z', `customerIdx`: 436, `customerName`: 'Allyson Dicastro'})    │ 'complaint' │ 2   ║
+║ (:`Customer` {`customerId`: 'S8CP52TR88Y', `customerIdx`: 160, `customerName`: 'Minh Bocchicchio'})    │ 'cancel'    │ 2   ║
+║ (:`Customer` {`customerId`: 'H3IU73XG21N', `customerIdx`: 183, `customerName`: 'Micaela Rodrick'})     │ 'complaint' │ 2   ║
+║ (:`Customer` {`customerId`: 'X9QZ11SS33W', `customerIdx`: 401, `customerName`: 'Leon Adolfson'})       │ 'complaint' │ 2   ║
+║ (:`Customer` {`customerId`: 'V3XG93YU78Y', `customerIdx`: 96, `customerName`: 'Isis Hillaire'})        │ 'cancel'    │ 2   ║
+║ (:`Customer` {`customerId`: 'Q8AB40PP98W', `customerIdx`: 219, `customerName`: 'Bulah Tankersley'})    │ 'complaint' │ 2   ║
+║ (:`Customer` {`customerId`: 'L8UR36HO21Z', `customerIdx`: 437, `customerName`: 'Allyson Dicastro'})    │ 'cancel'    │ 2   ║
+║ (:`Customer` {`customerId`: 'M4SI15IG91C', `customerIdx`: 452, `customerName`: 'Holli Selzler'})       │ 'cancel'    │ 2   ║
+║ (:`Customer` {`customerId`: 'Z2EH92NI25L', `customerIdx`: 527, `customerName`: 'Dino Mccallum'})       │ 'cancel'    │ 2   ║
+║ (:`Customer` {`customerId`: 'E2IB41FW86D', `customerIdx`: 234, `customerName`: 'Charlotte Romjue'})    │ 'complaint' │ 2   ║
+║ (:`Customer` {`customerId`: 'N4OX95DN99K', `customerIdx`: 371, `customerName`: 'Sherise Lineberry'})   │ 'cancel'    │ 2   ║
+║ (:`Customer` {`customerId`: 'S8XA26FB09Z', `customerIdx`: 136, `customerName`: 'Janetta Gatesy'})      │ 'cancel'    │ 2   ║
+║ (:`Customer` {`customerId`: 'M2QP93EQ34G', `customerIdx`: 514, `customerName`: 'Albert Anthony'})      │ 'complaint' │ 2   ║
+║ (:`Customer` {`customerId`: 'A8EO68YI00C', `customerIdx`: 315, `customerName`: 'Adelia Dong'})         │ 'complaint' │ 2   ║
+║ (:`Customer` {`customerId`: 'F1GF49UD61N', `customerIdx`: 387, `customerName`: 'Thora Stolte'})        │ 'cancel'    │ 2   ║
+║ (:`Customer` {`customerId`: 'G9IZ26ZW83Q', `customerIdx`: 305, `customerName`: 'Analisa Dedrick'})     │ 'cancel'    │ 2   ║
+║ (:`Customer` {`customerId`: 'Q4YG49LT56O', `customerIdx`: 408, `customerName`: 'Cody Keeny'})          │ 'cancel'    │ 2   ║
+║ (:`Customer` {`customerId`: 'Z1NF71ZW48W', `customerIdx`: 528, `customerName`: 'Hiedi Sapara'})        │ 'cancel'    │ 2   ║
+║ (:`Customer` {`customerId`: 'M9FA39LG54Q', `customerIdx`: 200, `customerName`: 'Raymond Forner'})      │ 'cancel'    │ 2   ║
+║ (:`Customer` {`customerId`: 'K3EK65MM30V', `customerIdx`: 361, `customerName`: 'Agnes Pfeiff'})        │ 'cancel'    │ 2   ║
+║ (:`Customer` {`customerId`: 'L5LF04XF70O', `customerIdx`: 458, `customerName`: 'Elvis Neitzel'})       │ 'complaint' │ 2   ║
+║ (:`Customer` {`customerId`: 'Y3VG45ON46Y', `customerIdx`: 521, `customerName`: 'Luella Mizuno'})       │ 'complaint' │ 2   ║
+║ (:`Customer` {`customerId`: 'O3LO51QR00V', `customerIdx`: 199, `customerName`: 'Daniele Wilcoxen'})    │ 'cancel'    │ 2   ║
+║ (:`Customer` {`customerId`: 'R0GL81KY22X', `customerIdx`: 478, `customerName`: 'Carri Feeney'})        │ 'cancel'    │ 2   ║
+║ (:`Customer` {`customerId`: 'P1VH83LC79V', `customerIdx`: 20, `customerName`: 'Chantel Raso'})         │ 'complaint' │ 2   ║
+║ (:`Customer` {`customerId`: 'N4VA84OG22Z', `customerIdx`: 71, `customerName`: 'Luther Challen'})       │ 'cancel'    │ 2   ║
+║ (:`Customer` {`customerId`: 'P2DM60SR01N', `customerIdx`: 211, `customerName`: 'Giuseppe Demas'})      │ 'cancel'    │ 2   ║
+║ (:`Customer` {`customerId`: 'X2UX95PI38R', `customerIdx`: 215, `customerName`: 'Austin Garis'})        │ 'complaint' │ 2   ║
+║ (:`Customer` {`customerId`: 'F0FK99OL10B', `customerIdx`: 465, `customerName`: 'Krystin Hasek'})       │ 'complaint' │ 2   ║
+║ (:`Customer` {`customerId`: 'N8HW52LU10G', `customerIdx`: 335, `customerName`: 'Joellen Oelschlager'}) │ 'complaint' │ 2   ║
+║ (:`Customer` {`customerId`: 'Q6EN33AK42D', `customerIdx`: 440, `customerName`: 'Alyce Carwile'})       │ 'complaint' │ 2   ║
+║ (:`Customer` {`customerId`: 'F6PV55QX02R', `customerIdx`: 386, `customerName`: 'Yasmin Gysin'})        │ 'cancel'    │ 2   ║
+║ (:`Customer` {`customerId`: 'E9LH59FK59O', `customerIdx`: 289, `customerName`: 'Beverley Midyett'})    │ 'complaint' │ 2   ║
+╚════════════════════════════════════════════════════════════════════════════════════════════════════════╧═════════════╧═════╝
+(42 rows)
 LOG: Graph merged to Neo4j
-╔═════════════════════════════════════════════════════════════════════════════════════════════════════════╤═════════════╤═════╗
-║ c                                                                                                       │ type        │ cnt ║
-╠═════════════════════════════════════════════════════════════════════════════════════════════════════════╪═════════════╪═════╣
-║ (:`Customer` {`customerId`: 'G1KX22LV86D', `customerIdx`: 784, `customerName`: 'Trevor Awe'})           │ 'complaint' │ 3   ║
-║ (:`Customer` {`customerId`: 'D6ED50AU16Z', `customerIdx`: 1041, `customerName`: 'Clement Yurkanin'})    │ 'cancel'    │ 3   ║
-║ (:`Customer` {`customerId`: 'Z3VD29SC47G', `customerIdx`: 146, `customerName`: 'Willy Longs'})          │ 'cancel'    │ 3   ║
-║ (:`Customer` {`customerId`: 'P0FT43ZY40N', `customerIdx`: 1464, `customerName`: 'Hipolito Risler'})     │ 'complaint' │ 3   ║
-║ (:`Customer` {`customerId`: 'S4VO48QU39G', `customerIdx`: 809, `customerName`: 'Darrell Stilgenbauer'}) │ 'cancel'    │ 3   ║
-║ (:`Customer` {`customerId`: 'G3MZ89LK04G', `customerIdx`: 1264, `customerName`: 'Edwin Mikuszewski'})   │ 'complaint' │ 3   ║
-╚═════════════════════════════════════════════════════════════════════════════════════════════════════════╧═════════════╧═════╝
-(6 rows)
-╔══════════════════════════════════════════════════════════════════╤═════════════╤═════╗
-║ rep                                                              │ type        │ cnt ║
-╠══════════════════════════════════════════════════════════════════╪═════════════╪═════╣
-║ (:`CustomerRep` {`empName`: 'Bahi, Toshimori', `empNo`: 10335})  │ 'cancel'    │ 14  ║
-║ (:`CustomerRep` {`empName`: 'Himler, Jiakeng', `empNo`: 10466})  │ 'cancel'    │ 13  ║
-║ (:`CustomerRep` {`empName`: 'Caine, Morris', `empNo`: 10816})    │ 'cancel'    │ 12  ║
-║ (:`CustomerRep` {`empName`: 'Tramer, Basil', `empNo`: 10049})    │ 'complaint' │ 12  ║
-║ (:`CustomerRep` {`empName`: 'Nyanchama, Visit', `empNo`: 10903}) │ 'complaint' │ 12  ║
-║ (:`CustomerRep` {`empName`: 'Valtorta, Kayoko', `empNo`: 10126}) │ 'complaint' │ 12  ║
-║ (:`CustomerRep` {`empName`: 'Angel, Hidekazu', `empNo`: 10617})  │ 'cancel'    │ 11  ║
-║ (:`CustomerRep` {`empName`: 'Redmiles, Bernd', `empNo`: 10721})  │ 'complaint' │ 10  ║
-║ (:`CustomerRep` {`empName`: 'Bahr, Avishai', `empNo`: 10773})    │ 'complaint' │ 10  ║
-╚══════════════════════════════════════════════════════════════════╧═════════════╧═════╝
-(9 rows)
-╔══════════════════════════════════════════════════════════════════╤═════════════╤═════╗
-║ rep                                                              │ type        │ cnt ║
-╠══════════════════════════════════════════════════════════════════╪═════════════╪═════╣
-║ (:`CustomerRep` {`empName`: 'Bahi, Toshimori', `empNo`: 10335})  │ 'cancel'    │ 14  ║
-║ (:`CustomerRep` {`empName`: 'Himler, Jiakeng', `empNo`: 10466})  │ 'cancel'    │ 13  ║
-║ (:`CustomerRep` {`empName`: 'Tramer, Basil', `empNo`: 10049})    │ 'complaint' │ 12  ║
-║ (:`CustomerRep` {`empName`: 'Valtorta, Kayoko', `empNo`: 10126}) │ 'complaint' │ 12  ║
-║ (:`CustomerRep` {`empName`: 'Caine, Morris', `empNo`: 10816})    │ 'cancel'    │ 12  ║
-║ (:`CustomerRep` {`empName`: 'Nyanchama, Visit', `empNo`: 10903}) │ 'complaint' │ 12  ║
-║ (:`CustomerRep` {`empName`: 'Angel, Hidekazu', `empNo`: 10617})  │ 'cancel'    │ 11  ║
-║ (:`CustomerRep` {`empName`: 'Bahr, Avishai', `empNo`: 10773})    │ 'complaint' │ 10  ║
-║ (:`CustomerRep` {`empName`: 'Redmiles, Bernd', `empNo`: 10721})  │ 'complaint' │ 10  ║
-╚══════════════════════════════════════════════════════════════════╧═════════════╧═════╝
-(9 rows)
+╔════════════════════════════════════════════════════════════════════════════════════════════════════════╤═════════════╤═════╗
+║ c                                                                                                      │ type        │ cnt ║
+╠════════════════════════════════════════════════════════════════════════════════════════════════════════╪═════════════╪═════╣
+║ (:`Customer` {`customerId`: 'Z3VD29SC47G', `customerIdx`: 146, `customerName`: 'Willy Longs'})         │ 'cancel'    │ 3   ║
+║ (:`Customer` {`customerId`: 'L8UR36HO21Z', `customerIdx`: 436, `customerName`: 'Allyson Dicastro'})    │ 'complaint' │ 2   ║
+║ (:`Customer` {`customerId`: 'S8XA26FB09Z', `customerIdx`: 136, `customerName`: 'Janetta Gatesy'})      │ 'cancel'    │ 2   ║
+║ (:`Customer` {`customerId`: 'O1NC01QZ61Y', `customerIdx`: 8, `customerName`: 'Sade Tappe'})            │ 'cancel'    │ 2   ║
+║ (:`Customer` {`customerId`: 'M4XI09VC21Z', `customerIdx`: 276, `customerName`: 'Breanne Portney'})     │ 'complaint' │ 2   ║
+║ (:`Customer` {`customerId`: 'G9IZ26ZW83Q', `customerIdx`: 305, `customerName`: 'Analisa Dedrick'})     │ 'cancel'    │ 2   ║
+║ (:`Customer` {`customerId`: 'Q4YG49LT56O', `customerIdx`: 408, `customerName`: 'Cody Keeny'})          │ 'cancel'    │ 2   ║
+║ (:`Customer` {`customerId`: 'M4SI15IG91C', `customerIdx`: 452, `customerName`: 'Holli Selzler'})       │ 'cancel'    │ 2   ║
+║ (:`Customer` {`customerId`: 'E2IB41FW86D', `customerIdx`: 234, `customerName`: 'Charlotte Romjue'})    │ 'complaint' │ 2   ║
+║ (:`Customer` {`customerId`: 'Q8AB40PP98W', `customerIdx`: 219, `customerName`: 'Bulah Tankersley'})    │ 'complaint' │ 2   ║
+║ (:`Customer` {`customerId`: 'R4BI01OI79D', `customerIdx`: 40, `customerName`: 'Casey Phalen'})         │ 'cancel'    │ 2   ║
+║ (:`Customer` {`customerId`: 'N8HW52LU10G', `customerIdx`: 335, `customerName`: 'Joellen Oelschlager'}) │ 'cancel'    │ 2   ║
+║ (:`Customer` {`customerId`: 'Z1NF71ZW48W', `customerIdx`: 528, `customerName`: 'Hiedi Sapara'})        │ 'cancel'    │ 2   ║
+║ (:`Customer` {`customerId`: 'E9LH59FK59O', `customerIdx`: 289, `customerName`: 'Beverley Midyett'})    │ 'complaint' │ 2   ║
+║ (:`Customer` {`customerId`: 'S8CP52TR88Y', `customerIdx`: 160, `customerName`: 'Minh Bocchicchio'})    │ 'cancel'    │ 2   ║
+║ (:`Customer` {`customerId`: 'L5LF04XF70O', `customerIdx`: 458, `customerName`: 'Elvis Neitzel'})       │ 'complaint' │ 2   ║
+║ (:`Customer` {`customerId`: 'N4VA84OG22Z', `customerIdx`: 71, `customerName`: 'Luther Challen'})       │ 'cancel'    │ 2   ║
+║ (:`Customer` {`customerId`: 'Y3VG45ON46Y', `customerIdx`: 521, `customerName`: 'Luella Mizuno'})       │ 'complaint' │ 2   ║
+║ (:`Customer` {`customerId`: 'L8UR36HO21Z', `customerIdx`: 437, `customerName`: 'Allyson Dicastro'})    │ 'cancel'    │ 2   ║
+║ (:`Customer` {`customerId`: 'X2UX95PI38R', `customerIdx`: 215, `customerName`: 'Austin Garis'})        │ 'complaint' │ 2   ║
+║ (:`Customer` {`customerId`: 'O3LO51QR00V', `customerIdx`: 199, `customerName`: 'Daniele Wilcoxen'})    │ 'cancel'    │ 2   ║
+║ (:`Customer` {`customerId`: 'V3XG93YU78Y', `customerIdx`: 96, `customerName`: 'Isis Hillaire'})        │ 'cancel'    │ 2   ║
+║ (:`Customer` {`customerId`: 'K3EK65MM30V', `customerIdx`: 361, `customerName`: 'Agnes Pfeiff'})        │ 'cancel'    │ 2   ║
+║ (:`Customer` {`customerId`: 'Z2EH92NI25L', `customerIdx`: 527, `customerName`: 'Dino Mccallum'})       │ 'cancel'    │ 2   ║
+║ (:`Customer` {`customerId`: 'K5MF89VU71T', `customerIdx`: 421, `customerName`: 'Milan Seawood'})       │ 'cancel'    │ 2   ║
+║ (:`Customer` {`customerId`: 'M9FA39LG54Q', `customerIdx`: 200, `customerName`: 'Raymond Forner'})      │ 'cancel'    │ 2   ║
+║ (:`Customer` {`customerId`: 'M2QP93EQ34G', `customerIdx`: 514, `customerName`: 'Albert Anthony'})      │ 'complaint' │ 2   ║
+║ (:`Customer` {`customerId`: 'X9QZ11SS33W', `customerIdx`: 401, `customerName`: 'Leon Adolfson'})       │ 'complaint' │ 2   ║
+║ (:`Customer` {`customerId`: 'F6PV55QX02R', `customerIdx`: 386, `customerName`: 'Yasmin Gysin'})        │ 'cancel'    │ 2   ║
+║ (:`Customer` {`customerId`: 'H3IU73XG21N', `customerIdx`: 183, `customerName`: 'Micaela Rodrick'})     │ 'complaint' │ 2   ║
+║ (:`Customer` {`customerId`: 'N4OX95DN99K', `customerIdx`: 371, `customerName`: 'Sherise Lineberry'})   │ 'cancel'    │ 2   ║
+║ (:`Customer` {`customerId`: 'R0GL81KY22X', `customerIdx`: 478, `customerName`: 'Carri Feeney'})        │ 'cancel'    │ 2   ║
+║ (:`Customer` {`customerId`: 'O8QB64CT07L', `customerIdx`: 407, `customerName`: 'Glenn Burbage'})       │ 'complaint' │ 2   ║
+║ (:`Customer` {`customerId`: 'P2DM60SR01N', `customerIdx`: 211, `customerName`: 'Giuseppe Demas'})      │ 'cancel'    │ 2   ║
+║ (:`Customer` {`customerId`: 'A8EO68YI00C', `customerIdx`: 315, `customerName`: 'Adelia Dong'})         │ 'complaint' │ 2   ║
+║ (:`Customer` {`customerId`: 'O8KU23FQ43V', `customerIdx`: 519, `customerName`: 'Mariella Wiebusch'})   │ 'cancel'    │ 2   ║
+║ (:`Customer` {`customerId`: 'F1GF49UD61N', `customerIdx`: 387, `customerName`: 'Thora Stolte'})        │ 'cancel'    │ 2   ║
+║ (:`Customer` {`customerId`: 'Q6EN33AK42D', `customerIdx`: 440, `customerName`: 'Alyce Carwile'})       │ 'complaint' │ 2   ║
+║ (:`Customer` {`customerId`: 'N8HW52LU10G', `customerIdx`: 335, `customerName`: 'Joellen Oelschlager'}) │ 'complaint' │ 2   ║
+║ (:`Customer` {`customerId`: 'P1VH83LC79V', `customerIdx`: 20, `customerName`: 'Chantel Raso'})         │ 'complaint' │ 2   ║
+║ (:`Customer` {`customerId`: 'F0FK99OL10B', `customerIdx`: 465, `customerName`: 'Krystin Hasek'})       │ 'complaint' │ 2   ║
+║ (:`Customer` {`customerId`: 'P9KU15NB27Y', `customerIdx`: 66, `customerName`: 'Tu Mottinger'})         │ 'cancel'    │ 2   ║
+╚════════════════════════════════════════════════════════════════════════════════════════════════════════╧═════════════╧═════╝
+(42 rows)
+╔════════════════════════════════════════════════════════════════════╤═════════════╤═════╗
+║ rep                                                                │ type        │ cnt ║
+╠════════════════════════════════════════════════════════════════════╪═════════════╪═════╣
+║ (:`CustomerRep` {`empName`: 'Angel, Hidekazu', `empNo`: 10617})    │ 'cancel'    │ 8   ║
+║ (:`CustomerRep` {`empName`: 'Etalle, Danco', `empNo`: 10865})      │ 'cancel'    │ 7   ║
+║ (:`CustomerRep` {`empName`: 'Leivant, Jianhua', `empNo`: 10836})   │ 'cancel'    │ 6   ║
+║ (:`CustomerRep` {`empName`: 'Valtorta, Kayoko', `empNo`: 10126})   │ 'complaint' │ 6   ║
+║ (:`CustomerRep` {`empName`: 'Himler, Jiakeng', `empNo`: 10466})    │ 'cancel'    │ 5   ║
+║ (:`CustomerRep` {`empName`: 'Tramer, Basil', `empNo`: 10049})      │ 'complaint' │ 5   ║
+║ (:`CustomerRep` {`empName`: 'Jervis, Arco', `empNo`: 10910})       │ 'cancel'    │ 5   ║
+║ (:`CustomerRep` {`empName`: 'Shackel, Claudi', `empNo`: 10465})    │ 'complaint' │ 5   ║
+║ (:`CustomerRep` {`empName`: 'Tiemann, Hisao', `empNo`: 10432})     │ 'cancel'    │ 5   ║
+║ (:`CustomerRep` {`empName`: 'Bahi, Toshimori', `empNo`: 10335})    │ 'cancel'    │ 5   ║
+║ (:`CustomerRep` {`empName`: 'Rosin, Willard', `empNo`: 10374})     │ 'cancel'    │ 5   ║
+║ (:`CustomerRep` {`empName`: 'Lieberherr, Pranav', `empNo`: 10841}) │ 'complaint' │ 5   ║
+╚════════════════════════════════════════════════════════════════════╧═════════════╧═════╝
+(12 rows)
+╔════════════════════════════════════════════════════════════════════╤═════════════╤═════╗
+║ rep                                                                │ type        │ cnt ║
+╠════════════════════════════════════════════════════════════════════╪═════════════╪═════╣
+║ (:`CustomerRep` {`empName`: 'Angel, Hidekazu', `empNo`: 10617})    │ 'cancel'    │ 8   ║
+║ (:`CustomerRep` {`empName`: 'Etalle, Danco', `empNo`: 10865})      │ 'cancel'    │ 7   ║
+║ (:`CustomerRep` {`empName`: 'Leivant, Jianhua', `empNo`: 10836})   │ 'cancel'    │ 6   ║
+║ (:`CustomerRep` {`empName`: 'Valtorta, Kayoko', `empNo`: 10126})   │ 'complaint' │ 6   ║
+║ (:`CustomerRep` {`empName`: 'Rosin, Willard', `empNo`: 10374})     │ 'cancel'    │ 5   ║
+║ (:`CustomerRep` {`empName`: 'Tramer, Basil', `empNo`: 10049})      │ 'complaint' │ 5   ║
+║ (:`CustomerRep` {`empName`: 'Tiemann, Hisao', `empNo`: 10432})     │ 'cancel'    │ 5   ║
+║ (:`CustomerRep` {`empName`: 'Shackel, Claudi', `empNo`: 10465})    │ 'complaint' │ 5   ║
+║ (:`CustomerRep` {`empName`: 'Bahi, Toshimori', `empNo`: 10335})    │ 'cancel'    │ 5   ║
+║ (:`CustomerRep` {`empName`: 'Jervis, Arco', `empNo`: 10910})       │ 'cancel'    │ 5   ║
+║ (:`CustomerRep` {`empName`: 'Himler, Jiakeng', `empNo`: 10466})    │ 'cancel'    │ 5   ║
+║ (:`CustomerRep` {`empName`: 'Lieberherr, Pranav', `empNo`: 10841}) │ 'complaint' │ 5   ║
+╚════════════════════════════════════════════════════════════════════╧═════════════╧═════╝
+(12 rows)
 LOG: Delta merged
-╔══════════════════════════════════════════════════════════════════╤═════════════╤═════╗
-║ rep                                                              │ type        │ cnt ║
-╠══════════════════════════════════════════════════════════════════╪═════════════╪═════╣
-║ (:`CustomerRep` {`empName`: 'Bahi, Toshimori', `empNo`: 10335})  │ 'cancel'    │ 16  ║
-║ (:`CustomerRep` {`empName`: 'Tramer, Basil', `empNo`: 10049})    │ 'complaint' │ 15  ║
-║ (:`CustomerRep` {`empName`: 'Caine, Morris', `empNo`: 10816})    │ 'cancel'    │ 14  ║
-║ (:`CustomerRep` {`empName`: 'Bahr, Avishai', `empNo`: 10773})    │ 'complaint' │ 13  ║
-║ (:`CustomerRep` {`empName`: 'Swick, Yuichiro', `empNo`: 10112})  │ 'cancel'    │ 13  ║
-║ (:`CustomerRep` {`empName`: 'Himler, Jiakeng', `empNo`: 10466})  │ 'cancel'    │ 13  ║
-║ (:`CustomerRep` {`empName`: 'Redmiles, Bernd', `empNo`: 10721})  │ 'complaint' │ 12  ║
-║ (:`CustomerRep` {`empName`: 'Nyanchama, Visit', `empNo`: 10903}) │ 'complaint' │ 12  ║
-║ (:`CustomerRep` {`empName`: 'Valtorta, Kayoko', `empNo`: 10126}) │ 'complaint' │ 12  ║
-╚══════════════════════════════════════════════════════════════════╧═════════════╧═════╝
-(9 rows)
+╔═════════════════════════════════════════════════════════════════════╤═════════════╤═════╗
+║ rep                                                                 │ type        │ cnt ║
+╠═════════════════════════════════════════════════════════════════════╪═════════════╪═════╣
+║ (:`CustomerRep` {`empName`: 'Angel, Hidekazu', `empNo`: 10617})     │ 'cancel'    │ 8   ║
+║ (:`CustomerRep` {`empName`: 'Etalle, Danco', `empNo`: 10865})       │ 'cancel'    │ 8   ║
+║ (:`CustomerRep` {`empName`: 'Zolotykh, Hyuncheol', `empNo`: 10701}) │ 'cancel'    │ 7   ║
+║ (:`CustomerRep` {`empName`: 'Valtorta, Kayoko', `empNo`: 10126})    │ 'complaint' │ 6   ║
+║ (:`CustomerRep` {`empName`: 'Tramer, Basil', `empNo`: 10049})       │ 'complaint' │ 6   ║
+║ (:`CustomerRep` {`empName`: 'Bahi, Toshimori', `empNo`: 10335})     │ 'cancel'    │ 6   ║
+║ (:`CustomerRep` {`empName`: 'Leivant, Jianhua', `empNo`: 10836})    │ 'cancel'    │ 6   ║
+║ (:`CustomerRep` {`empName`: 'Tiemann, Hisao', `empNo`: 10432})      │ 'cancel'    │ 6   ║
+║ (:`CustomerRep` {`empName`: 'Thibadeau, Abdulah', `empNo`: 10154})  │ 'complaint' │ 6   ║
+║ (:`CustomerRep` {`empName`: 'Himler, Jiakeng', `empNo`: 10466})     │ 'cancel'    │ 5   ║
+║ (:`CustomerRep` {`empName`: 'Lieberherr, Pranav', `empNo`: 10841})  │ 'complaint' │ 5   ║
+║ (:`CustomerRep` {`empName`: 'Rosin, Willard', `empNo`: 10374})      │ 'cancel'    │ 5   ║
+║ (:`CustomerRep` {`empName`: 'Shackel, Claudi', `empNo`: 10465})     │ 'complaint' │ 5   ║
+║ (:`CustomerRep` {`empName`: 'Matzel, Tsvetan', `empNo`: 10453})     │ 'complaint' │ 5   ║
+║ (:`CustomerRep` {`empName`: 'Desikan, Shaowen', `empNo`: 10231})    │ 'cancel'    │ 5   ║
+║ (:`CustomerRep` {`empName`: 'Etalle, Danco', `empNo`: 10865})       │ 'complaint' │ 5   ║
+║ (:`CustomerRep` {`empName`: 'Chinen, Kellie', `empNo`: 10225})      │ 'cancel'    │ 5   ║
+║ (:`CustomerRep` {`empName`: 'Bahr, Avishai', `empNo`: 10773})       │ 'complaint' │ 5   ║
+║ (:`CustomerRep` {`empName`: 'Jervis, Arco', `empNo`: 10910})        │ 'cancel'    │ 5   ║
+╚═════════════════════════════════════════════════════════════════════╧═════════════╧═════╝
+(19 rows)

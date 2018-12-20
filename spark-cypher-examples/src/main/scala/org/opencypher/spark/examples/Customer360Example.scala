@@ -86,7 +86,7 @@ object Customer360Example extends ConsoleApp {
       |WHERE type IN ['cancel', 'complaint']
       |RETURN c, type, cnt
       |ORDER BY cnt DESC
-      |LIMIT 6
+      |LIMIT 42
     """.stripMargin).show
 
   // Speed up merge operation. Requires Neo4j Enterprise Edition
@@ -108,7 +108,7 @@ object Customer360Example extends ConsoleApp {
        |WHERE type IN ['cancel', 'complaint']
        |RETURN c, type, cnt
        |ORDER BY cnt DESC
-       |LIMIT 6
+       |LIMIT 42
     """.stripMargin).show
 
   /*
@@ -123,7 +123,7 @@ object Customer360Example extends ConsoleApp {
       |WHERE type IN ['cancel', 'complaint']
       |RETURN rep, type, cnt
       |ORDER BY cnt DESC
-      |LIMIT 9
+      |LIMIT 12
     """.stripMargin).show
 
   /*
@@ -131,13 +131,13 @@ object Customer360Example extends ConsoleApp {
    */
   session.cypher(
     s"""
-      |FROM transactional.$entireGraphName
-      |MATCH (c:Customer)--(i:Interaction)--(rep:CustomerRep)
-      |WITH rep, i.type AS type, count(*) AS cnt
-      |WHERE type IN ['cancel', 'complaint']
-      |RETURN rep, type, cnt
-      |ORDER BY cnt DESC
-      |LIMIT 9
+       |FROM transactional.$entireGraphName
+       |MATCH (c:Customer)--(i:Interaction)--(rep:CustomerRep)
+       |WITH rep, i.type AS type, count(*) AS cnt
+       |WHERE type IN ['cancel', 'complaint']
+       |RETURN rep, type, cnt
+       |ORDER BY cnt DESC
+       |LIMIT 12
     """.stripMargin).show
 
   // Time moves forward and more interactions happen
@@ -162,7 +162,7 @@ object Customer360Example extends ConsoleApp {
        |WHERE type IN ['cancel', 'complaint']
        |RETURN rep, type, cnt
        |ORDER BY cnt DESC
-       |LIMIT 9
+       |LIMIT 19
     """.stripMargin).show
 
   neo4j.close()
