@@ -10,12 +10,8 @@ allprojects {
 }
 
 subprojects {
-
-    apply plugin: 'maven'
-    apply plugin: 'java'
     apply plugin: 'scala'
     apply plugin: 'maven-publish'
-
 
     task dependencySearch(type: DependencyInsightReportTask) {
         description 'Searches all projects for a dependency'
