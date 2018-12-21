@@ -9,10 +9,11 @@ build/test/
 metastore_db/
 derby.log
 
-# Hive logs
+# Spark/Hive runtime
 derby.log
 metastore_db
 metastore_*
+spark-warehouse_*/
 
 # IDE cruft
 .settings
