@@ -30,56 +30,48 @@ import org.junit.runner.RunWith
 import org.scalatest.Suites
 import org.scalatest.junit.JUnitRunner
 
+
 @RunWith(classOf[JUnitRunner])
-class ScanGraphAcceptanceTest extends Suites(
-  Aggregation_ScanGraph,
-  BoundedVarExpand_ScanGraph,
-  ExpandInto_ScanGraph,
-  Expression_ScanGraph,
-  Functions_ScanGraph,
-  Match_ScanGraph,
-  MultipleGraph_ScanGraph,
-  OptionalMatch_ScanGraph,
-  Predicate_ScanGraph,
-  Return_ScanGraph,
-  With_ScanGraph,
-  Unwind_ScanGraph,
-  CatalogDDL_ScanGraph,
-  DrivingTable_ScanGraph,
-  Union_ScanGraph
-)
+class Aggregation_ScanGraph extends AggregationBehaviour with ScanGraphInit
 
-/**
-  * Objects that allow ScalaTest to extract decent names for the behaviours.
-  *
-  * This is verbose, but I found no way to instantiate dynamic traits at compile time without resorting to macros.
-  */
-object Aggregation_ScanGraph extends AggregationBehaviour with ScanGraphInit
+@RunWith(classOf[JUnitRunner])
+class BoundedVarExpand_ScanGraph extends BoundedVarExpandBehaviour with ScanGraphInit
 
-object BoundedVarExpand_ScanGraph extends BoundedVarExpandBehaviour with ScanGraphInit
+@RunWith(classOf[JUnitRunner])
+class DrivingTable_ScanGraph extends DrivingTableBehaviour with ScanGraphInit
 
-object DrivingTable_ScanGraph extends DrivingTableBehaviour with ScanGraphInit
+@RunWith(classOf[JUnitRunner])
+class ExpandInto_ScanGraph extends ExpandIntoBehaviour with ScanGraphInit
 
-object ExpandInto_ScanGraph extends ExpandIntoBehaviour with ScanGraphInit
+@RunWith(classOf[JUnitRunner])
+class Expression_ScanGraph extends ExpressionBehaviour with ScanGraphInit
 
-object Expression_ScanGraph extends ExpressionBehaviour with ScanGraphInit
+@RunWith(classOf[JUnitRunner])
+class Functions_ScanGraph extends FunctionsBehaviour with ScanGraphInit
 
-object Functions_ScanGraph extends FunctionsBehaviour with ScanGraphInit
+@RunWith(classOf[JUnitRunner])
+class Match_ScanGraph extends MatchBehaviour with ScanGraphInit
 
-object Match_ScanGraph extends MatchBehaviour with ScanGraphInit
+@RunWith(classOf[JUnitRunner])
+class MultipleGraph_ScanGraph extends MultipleGraphBehaviour with ScanGraphInit
 
-object MultipleGraph_ScanGraph extends MultipleGraphBehaviour with ScanGraphInit
+@RunWith(classOf[JUnitRunner])
+class OptionalMatch_ScanGraph extends OptionalMatchBehaviour with ScanGraphInit
 
-object OptionalMatch_ScanGraph extends OptionalMatchBehaviour with ScanGraphInit
+@RunWith(classOf[JUnitRunner])
+class Predicate_ScanGraph extends PredicateBehaviour with ScanGraphInit
 
-object Predicate_ScanGraph extends PredicateBehaviour with ScanGraphInit
+@RunWith(classOf[JUnitRunner])
+class Return_ScanGraph extends ReturnBehaviour with ScanGraphInit
 
-object Return_ScanGraph extends ReturnBehaviour with ScanGraphInit
+@RunWith(classOf[JUnitRunner])
+class With_ScanGraph extends WithBehaviour with ScanGraphInit
 
-object With_ScanGraph extends WithBehaviour with ScanGraphInit
+@RunWith(classOf[JUnitRunner])
+class Unwind_ScanGraph extends UnwindBehaviour with ScanGraphInit
 
-object Unwind_ScanGraph extends UnwindBehaviour with ScanGraphInit
+@RunWith(classOf[JUnitRunner])
+class CatalogDDL_ScanGraph extends CatalogDDLBehaviour with ScanGraphInit
 
-object CatalogDDL_ScanGraph extends CatalogDDLBehaviour with ScanGraphInit
-
-object Union_ScanGraph extends UnionBehaviour with ScanGraphInit
+@RunWith(classOf[JUnitRunner])
+class Union_ScanGraph extends UnionBehaviour with ScanGraphInit
