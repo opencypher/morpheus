@@ -23,7 +23,11 @@ subprojects {
     }
 
     dependencies {
-        compile group: 'org.scala-lang', name: 'scala-library', version: scalaVersionFull
+        compile group: 'org.scala-lang', name: 'scala-library',  version: scalaVersionFull
+
+        // Seems we need to lock these down, otherwise we get runtime errors on reflection
+        compile group: 'org.scala-lang', name: 'scala-reflect',  version: scalaVersionFull
+        compile group: 'org.scala-lang', name: 'scala-compiler', version: scalaVersionFull
 
         compile group: 'org.apache.logging.log4j', name: 'log4j-api',                     version: '2.11.0'
         compile group: 'org.apache.logging.log4j', name: 'log4j-core',                    version: '2.11.0'
