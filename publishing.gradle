@@ -1,41 +1,48 @@
 subprojects {
     apply plugin: 'maven-publish'
 
-        repositories {
-            maven {
-                name = 'buildDir'
-                url = "file://$rootProject.buildDir/repo"
+    afterEvaluate {
+
+        publishing {
+
+            repositories {
+                maven {
+                    name = 'buildDir'
+                    url = "file://$rootProject.buildDir/repo"
+                }
             }
-        }
 
-        publications {
-            full(MavenPublication) {
-                from components.java
+            publications {
+                full(MavenPublication) {
+                    from components.java
 
-                artifact sourceJar
+                    ['sourceJar', 'testJar', 'shadowJar']
+                            .collect { tasks.findByName(it) }
+                            .each { if (it != null) artifact it }
 
-                pom {
-                    licenses {
-                        license {
-                            name = 'Apache License, Version 2.0'
-                            url = 'http://www.apache.org/licenses/LICENSE-2.0'
+                    pom {
+                        licenses {
+                            license {
+                                name = 'Apache License, Version 2.0'
+                                url = 'http://www.apache.org/licenses/LICENSE-2.0'
+                            }
                         }
-                    }
-                    developers {
-                        developer {
-                            id = 'caps'
-                            name = 'The CAPS team'
-                            email = 'opencypher@neo4j.com'
-                            url = 'https://www.opencypher.org'
+                        developers {
+                            developer {
+                                id = 'caps'
+                                name = 'The CAPS team'
+                                email = 'opencypher@neo4j.com'
+                                url = 'https://www.opencypher.org'
+                            }
                         }
-                    }
-                    scm {
-                        url = 'https://github.com/opencypher/cypher-for-apache-spark'
+                        scm {
+                            url = 'https://github.com/opencypher/cypher-for-apache-spark'
+                        }
                     }
                 }
             }
-        }
 
+        }
     }
 
 }

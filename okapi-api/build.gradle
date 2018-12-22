@@ -4,8 +4,12 @@ description = 'Okapi - openCypher API'
 dependencies {
     compile project(':okapi-trees')
 
+    compile(group: 'org.opencypher', name: 'front-end-9.0', version: '9.0.20181030') {
+        exclude group: 'org.scalatest',  module: 'scalatest_2.11'
+        exclude group: 'org.scalacheck', module: 'scalacheck_2.11'
+    }
+
     compile group: 'org.typelevel',  name: "cats-core_$scalaVersion", version: '1.0.1'
-    compile group: 'org.opencypher', name: 'front-end-9.0',           version: '9.0.20181030'
     compile group: 'com.lihaoyi',    name: "upickle_$scalaVersion",   version: '0.6.6'
     compile group: 'com.lihaoyi',    name: "fastparse_$scalaVersion", version: '1.0.0'
 

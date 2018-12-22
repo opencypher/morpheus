@@ -3,7 +3,12 @@ description = 'Okapi IR - Declarative representation of Cypher queries'
 
 dependencies {
     compile project(':okapi-api')
-    compile group: 'org.opencypher', name: 'front-end-9.0',      version: '9.0.20181030'
+
+    compile(group: 'org.opencypher', name: 'front-end-9.0', version: '9.0.20181030') {
+        exclude group: 'org.scalatest',  module: 'scalatest_2.11'
+        exclude group: 'org.scalacheck', module: 'scalacheck_2.11'
+    }
+
     compile group: 'org.atnos',      name: "eff_$scalaVersion",  version: '5.0.0'
 
     testCompile project(':okapi-testing')
