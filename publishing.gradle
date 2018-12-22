@@ -1,5 +1,5 @@
 subprojects {
-    publishing {
+    apply plugin: 'maven-publish'
 
         repositories {
             maven {
