@@ -4,16 +4,15 @@ description = 'Okapi IR - Declarative representation of Cypher queries'
 dependencies {
     compile project(':okapi-api')
 
-    compile(group: 'org.opencypher', name: 'front-end-9.0', version: '9.0.20181030') {
+    compile group: 'org.atnos',      name: "eff".scala(),   version: ver.eff
+    compile(group: 'org.opencypher', name: 'front-end-9.0', version: ver.cypher.frontend) {
         exclude group: 'org.scalatest',  module: 'scalatest_2.11'
         exclude group: 'org.scalacheck', module: 'scalacheck_2.11'
     }
 
-    compile group: 'org.atnos',      name: "eff_$scalaVersion",  version: '5.0.0'
-
     testCompile project(':okapi-testing')
 
-    testCompile group: 'org.neo4j',      name: 'neo4j-cypher-util-3.4', version: '3.4.10',       classifier: 'tests'
-    testCompile group: 'org.opencypher', name: 'ast-9.0',               version: '9.0.20181030', classifier: 'tests'
-    testCompile group: 'org.opencypher', name: 'util-9.0',              version: '9.0.20181030', classifier: 'tests'
+    testCompile group: 'org.neo4j',      name: 'neo4j-cypher-util-3.4', version: ver.neo4j.main, classifier: 'tests'
+    testCompile group: 'org.opencypher', name: 'ast-9.0',               version: ver.cypher.frontend,        classifier: 'tests'
+    testCompile group: 'org.opencypher', name: 'util-9.0',              version: ver.cypher.frontend,        classifier: 'tests'
 }

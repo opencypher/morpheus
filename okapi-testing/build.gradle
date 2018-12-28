@@ -4,10 +4,10 @@ description = 'Okapi Test Utilities'
 dependencies {
     compile project(':okapi-api')
 
-    compile group: 'org.opencypher',   name: 'front-end-9.0',            version: '9.0.20181030'
-    compile group: 'org.neo4j.test',   name: 'neo4j-harness-enterprise', version: '3.4.10'
-    compile group: 'org.bouncycastle', name: 'bctls-jdk15on',            version: '1.59'
-    compile group: 'junit',            name: 'junit',                    version: '4.12'
-    compile group: 'org.mockito',      name: 'mockito-all',              version: '1.10.19'
-    compile group: 'org.scalatest',    name: "scalatest_$scalaVersion",  version: '3.0.5'
+    compile group: 'org.opencypher',   name: 'front-end-9.0',            version: ver.cypher.frontend
+    compile group: 'org.neo4j.test',   name: 'neo4j-harness-enterprise', version: ver.neo4j.main
+    compile group: 'org.bouncycastle', name: 'bctls-jdk15on',            version: ver.bctls
+    compile group: 'junit',            name: 'junit',                    version: ver.junit.main
+    compile group: 'org.mockito',      name: 'mockito-all',              version: ver.mockito
+    compile group: 'org.scalatest',    name: "scalatest".scala(),        version: ver.scalatest
 }

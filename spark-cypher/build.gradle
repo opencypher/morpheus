@@ -7,11 +7,11 @@ dependencies {
     compile project(':okapi-neo4j-io')
     compile project(':graph-ddl')
 
-    compile group: 'org.neo4j.driver', name: 'neo4j-java-driver', version: '1.7.2'
+    compile group: 'org.neo4j.driver', name: 'neo4j-java-driver', version: ver.neo4j.driver
 
-    compileOnly group: 'org.apache.spark', name: "spark-core_$scalaVersion",     version: '2.2.2'
-    compileOnly group: 'org.apache.spark', name: "spark-sql_$scalaVersion",      version: '2.2.2'
-    compileOnly group: 'org.apache.spark', name: "spark-catalyst_$scalaVersion", version: '2.2.2'
+    compileOnly group: 'org.apache.spark', name: "spark-core".scala(),     version: ver.spark
+    compileOnly group: 'org.apache.spark', name: "spark-sql".scala(),      version: ver.spark
+    compileOnly group: 'org.apache.spark', name: "spark-catalyst".scala(), version: ver.spark
 }
 
 shadowJar {

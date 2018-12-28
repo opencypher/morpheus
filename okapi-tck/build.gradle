@@ -5,6 +5,6 @@ dependencies {
     compile project(':okapi-testing')
     compile project(':okapi-ir')
 
-    compile group: 'org.opencypher', name: 'tck',     version: '1.0.0-M11'
-    compile group: 'org.opencypher', name: 'tck-api', version: '1.0.0-M11'
+    compile group: 'org.opencypher', name: 'tck',     version: ver.cypher.tck
+    compile group: 'org.opencypher', name: 'tck-api', version: ver.cypher.tck
 }

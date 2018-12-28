@@ -8,8 +8,8 @@ sourceSets.main.java.srcDirs = []
 dependencies {
     compile project(':okapi-api')
 
-    compileOnly group: 'org.neo4j', name: 'neo4j', version: '3.4.10'
+    compileOnly group: 'org.neo4j', name: 'neo4j', version: ver.neo4j.main
 
-    testCompile group: 'org.neo4j.test', name: 'neo4j-harness', version: '3.4.10'
+    testCompile group: 'org.neo4j.test', name: 'neo4j-harness', version: ver.neo4j.main
 
 }

@@ -3,6 +3,8 @@ plugins {
     id 'com.github.johnrengelman.shadow' version '4.0.3'  apply false
 }
 
+apply from: 'versions.gradle'
+
 allprojects {
     group   = 'org.opencypher'
     version = '0.2.3-SNAPSHOT'
@@ -17,31 +19,31 @@ subprojects {
     }
 
     dependencies {
-        compile group: 'org.scala-lang', name: 'scala-library',  version: scalaVersionFull
+        compile group: 'org.scala-lang', name: 'scala-library',  version: ver.scala.full
 
         // Seems we need to lock these down, otherwise we get runtime errors on reflection
-        compile group: 'org.scala-lang', name: 'scala-reflect',  version: scalaVersionFull
-        compile group: 'org.scala-lang', name: 'scala-compiler', version: scalaVersionFull
+        compile group: 'org.scala-lang', name: 'scala-reflect',  version: ver.scala.full
+        compile group: 'org.scala-lang', name: 'scala-compiler', version: ver.scala.full
 
-        compile group: 'org.apache.logging.log4j', name: 'log4j-api',                     version: '2.11.0'
-        compile group: 'org.apache.logging.log4j', name: 'log4j-core',                    version: '2.11.0'
-        compile group: 'org.apache.logging.log4j', name: "log4j-api-scala_$scalaVersion", version: '11.0'
+        compile group: 'org.apache.logging.log4j', name: 'log4j-api',               version: ver.log4j.main
+        compile group: 'org.apache.logging.log4j', name: 'log4j-core',              version: ver.log4j.main
+        compile group: 'org.apache.logging.log4j', name: "log4j-api-scala".scala(), version: ver.log4j.scala
 
-        testCompile group: 'org.scalatest',      name: "scalatest_$scalaVersion",  version: '3.0.5'
-        testCompile group: 'org.scalacheck',     name: "scalacheck_$scalaVersion", version: '1.13.5'
-        testCompile group: 'org.junit.platform', name: 'junit-platform-runner',    version: '1.0.2'
+        testCompile group: 'org.scalatest',      name: "scalatest".scala(),     version: ver.scalatest
+        testCompile group: 'org.scalacheck',     name: "scalacheck".scala(),    version: ver.scalacheck
+        testCompile group: 'org.junit.platform', name: 'junit-platform-runner', version: ver.junit.runner
     }
 
     tasks.withType(JavaCompile) {
-        sourceCompatibility = javaVersion
-        targetCompatibility = javaVersion
+        sourceCompatibility = ver.jvm
+        targetCompatibility = ver.jvm
         options.encoding = 'UTF-8'
     }
 
     tasks.withType(ScalaCompile) {
         options.encoding = 'UTF-8'
         scalaCompileOptions.additionalParameters = [
-                "-target:jvm-1.8",
+                "-target:jvm-$ver.jvm".toString(),
                 '-unchecked',
                 '-deprecation',
                 '-feature',
