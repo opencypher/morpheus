@@ -3,7 +3,7 @@ plugins {
     id 'com.github.johnrengelman.shadow' version '4.0.3'  apply false
 }
 
-apply from: 'versions.gradle'
+apply from: 'build.versions.gradle'
 
 allprojects {
     group   = 'org.opencypher'
@@ -72,6 +72,6 @@ subprojects {
     }
 }
 
-apply from: 'licenses.gradle'
-apply from: 'publishing.gradle'
+apply from: 'build.licenses.gradle'
+apply from: 'build.publishing.gradle'
 
