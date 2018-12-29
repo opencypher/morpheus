@@ -13,6 +13,11 @@ subprojects {
             }
 
             publications {
+
+                dev(MavenPublication) {
+                    from components.java
+                }
+
                 full(MavenPublication) {
                     from components.java
 
@@ -42,10 +47,16 @@ subprojects {
                             url = 'https://github.com/opencypher/cypher-for-apache-spark'
                         }
                     }
+
+
                 }
             }
 
         }
+    }
+
+    tasks.withType(PublishToMavenRepository) {
+        onlyIf { publication == publishing.publications.full }
     }
 
 }
