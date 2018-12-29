@@ -16,9 +16,12 @@ subprojects {
                 full(MavenPublication) {
                     from components.java
 
-                    ['sourceJar', 'testJar', 'shadowJar']
-                            .collect { tasks.findByName(it) }
-                            .each { if (it != null) artifact it }
+                    ['sourceJar',
+                     'docJar',
+                     'testJar',
+                     'shadowJar']
+                            .findResults { tasks.findByName(it) }
+                            .each { artifact it }
 
                     pom {
                         licenses {

@@ -34,6 +34,19 @@ subprojects {
         testCompile group: 'org.junit.platform', name: 'junit-platform-runner', version: ver.junit.runner
     }
 
+    def scalacParameters = [
+            "-target:jvm-$ver.jvm".toString(),
+            '-unchecked',
+            '-deprecation',
+            '-feature',
+            '-Xfatal-warnings',
+            '-Xfuture',
+            '-Ywarn-adapted-args',
+            '-Yopt-warnings:at-inline-failed',
+            '-Yopt:l:project',
+            '-Ypartial-unification',
+    ]
+
     tasks.withType(JavaCompile) {
         sourceCompatibility = ver.jvm
         targetCompatibility = ver.jvm
@@ -42,23 +55,21 @@ subprojects {
 
     tasks.withType(ScalaCompile) {
         options.encoding = 'UTF-8'
-        scalaCompileOptions.additionalParameters = [
-                "-target:jvm-$ver.jvm".toString(),
-                '-unchecked',
-                '-deprecation',
-                '-feature',
-                '-Xfatal-warnings',
-                '-Xfuture',
-                '-Ywarn-adapted-args',
-                '-Yopt-warnings:at-inline-failed',
-                '-Yopt:l:project',
-                '-Ypartial-unification',
-        ]
+        scalaCompileOptions.additionalParameters = scalacParameters
+    }
+
+    tasks.withType(ScalaDoc) {
+        scalaDocOptions.additionalParameters = scalacParameters
     }
 
     task sourceJar(type: Jar) {
         classifier = 'sources'
         from(sourceSets.main.allSource)
+    }
+
+    task docJar(type: Jar) {
+        classifier = 'docs'
+        from(tasks.scaladoc.destinationDir)
     }
 
     task testJar(type: Jar) {
