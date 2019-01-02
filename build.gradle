@@ -8,7 +8,7 @@ apply from: 'build.versions.gradle'
 
 allprojects {
     group   = 'org.opencypher'
-    version = '0.2.3-SNAPSHOT'
+    version = ver.self
 }
 
 subprojects {

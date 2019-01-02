@@ -1,6 +1,8 @@
 ext {
 
     ver = [
+            self        : '0.2.3-SNAPSHOT',
+
             jvm         : '1.8',
 
             scala       : [major: '2.11',
