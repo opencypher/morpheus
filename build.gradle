@@ -1,6 +1,7 @@
 plugins {
-    id "com.github.hierynomus.license"   version "0.15.0" apply false
-    id 'com.github.johnrengelman.shadow' version '4.0.3'  apply false
+    id 'com.github.hierynomus.license'       version '0.15.0' apply false
+    id 'com.github.johnrengelman.shadow'     version '4.0.3'  apply false
+    id 'com.github.alisiikh.scalastyle_2.11' version '2.1.0'  apply false
 }
 
 apply from: 'build.versions.gradle'
@@ -85,4 +86,5 @@ subprojects {
 
 apply from: 'build.licenses.gradle'
 apply from: 'build.publishing.gradle'
+apply from: 'build.style.gradle'
 
