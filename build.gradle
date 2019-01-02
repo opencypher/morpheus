@@ -87,4 +87,4 @@ subprojects {
 apply from: 'build.licenses.gradle'
 apply from: 'build.publishing.gradle'
 apply from: 'build.style.gradle'
-
+apply from: 'build.ci.gradle'
