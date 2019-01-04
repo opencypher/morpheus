@@ -1,170 +1,137 @@
 -- format for below is: <dataSourceName>.<schemaName>
 SET SCHEMA H2.NORTHWIND;
 
--- Node labels
+CREATE GRAPH Northwind (
 
-CREATE ELEMENT TYPE Employee (
-  employeeID INTEGER,
-  lastName STRING,
-  firstName STRING,
-  title STRING?,
-  titleOfCourtesy STRING?,
-  birthDate STRING?,
-  hireDate STRING?,
-  address STRING?,
-  city STRING?,
-  region STRING?,
-  postalCode STRING?,
-  country STRING?,
-  homePhone STRING?,
-  extension STRING?,
-  reportsTo INTEGER?,
-  photoPath STRING?
-)
+  -- Nodes
+  Employee (
+    employeeID INTEGER,
+    lastName STRING,
+    firstName STRING,
+    title STRING?,
+    titleOfCourtesy STRING?,
+    birthDate STRING?,
+    hireDate STRING?,
+    address STRING?,
+    city STRING?,
+    region STRING?,
+    postalCode STRING?,
+    country STRING?,
+    homePhone STRING?,
+    extension STRING?,
+    reportsTo INTEGER?,
+    photoPath STRING?
+  ),
 
-CREATE ELEMENT TYPE Territory (
-  territoryID STRING,
-  territoryDescription STRING,
-  regionID INTEGER
-)
+  Territory (
+    territoryID STRING,
+    territoryDescription STRING,
+    regionID INTEGER
+  ),
 
-CREATE ELEMENT TYPE Supplier (
-  supplierID INTEGER,
-  companyName STRING,
-  contactName STRING?,
-  contactTitle STRING?,
-  address STRING?,
-  city STRING?,
-  region STRING?,
-  postalCode STRING?,
-  country STRING?,
-  phone STRING?,
-  fax STRING?,
-  homePage STRING?
-)
+  Supplier (
+    supplierID INTEGER,
+    companyName STRING,
+    contactName STRING?,
+    contactTitle STRING?,
+    address STRING?,
+    city STRING?,
+    region STRING?,
+    postalCode STRING?,
+    country STRING?,
+    phone STRING?,
+    fax STRING?,
+    homePage STRING?
+  ),
 
-CREATE ELEMENT TYPE Customer (
-  customerID STRING,
-  companyName STRING,
-  contactName STRING?,
-  contactTitle STRING?,
-  address STRING?,
-  city STRING?,
-  region STRING?,
-  postalCode STRING?,
-  country STRING?,
-  phone STRING?,
-  fax STRING?
-)
+  Customer (
+    customerID STRING,
+    companyName STRING,
+    contactName STRING?,
+    contactTitle STRING?,
+    address STRING?,
+    city STRING?,
+    region STRING?,
+    postalCode STRING?,
+    country STRING?,
+    phone STRING?,
+    fax STRING?
+  ),
 
-CREATE ELEMENT TYPE Product (
-  productID INTEGER,
-  productName STRING,
-  supplierID INTEGER?,
-  categoryID INTEGER?,
-  quantityPerUnit STRING?,
-  unitPrice INTEGER?,
-  unitsInStock INTEGER?,
-  unitsOnOrder INTEGER?,
-  reorderLevel INTEGER?,
-  discontinued INTEGER
-)
+  Product (
+    productID INTEGER,
+    productName STRING,
+    supplierID INTEGER?,
+    categoryID INTEGER?,
+    quantityPerUnit STRING?,
+    unitPrice INTEGER?,
+    unitsInStock INTEGER?,
+    unitsOnOrder INTEGER?,
+    reorderLevel INTEGER?,
+    discontinued INTEGER
+  ),
 
-CREATE ELEMENT TYPE OrderDetails (
-  orderID INTEGER,
-  productID INTEGER,
-  unitPrice INTEGER,
-  quantity INTEGER,
-  discount INTEGER
-)
+  OrderDetails (
+    orderID INTEGER,
+    productID INTEGER,
+    unitPrice INTEGER,
+    quantity INTEGER,
+    discount INTEGER
+  ),
 
-CREATE ELEMENT TYPE Category (
-  categoryID INTEGER,
-  categoryName STRING,
-  description STRING?
-)
+  Category (
+    categoryID INTEGER,
+    categoryName STRING,
+    description STRING?
+  ),
 
-CREATE ELEMENT TYPE Region (
-  regionID INTEGER,
-  regionDescription STRING
-)
+  Region (
+    regionID INTEGER,
+    regionDescription STRING
+  ),
 
-CREATE ELEMENT TYPE Order (
-  orderID INTEGER,
-  customerID STRING?,
-  employeeID INTEGER?,
-  orderDate STRING?,
-  requiredDate STRING?,
-  shippedDate STRING?,
-  shipVia INTEGER?,
-  freight INTEGER?,
-  shipName STRING?,
-  shipAddress STRING?,
-  shipCity STRING?,
-  shipRegion STRING?,
-  shipPostalCode STRING?,
-  shipCountry STRING?
-)
+  Order (
+    orderID INTEGER,
+    customerID STRING?,
+    employeeID INTEGER?,
+    orderDate STRING?,
+    requiredDate STRING?,
+    shippedDate STRING?,
+    shipVia INTEGER?,
+    freight INTEGER?,
+    shipName STRING?,
+    shipAddress STRING?,
+    shipCity STRING?,
+    shipRegion STRING?,
+    shipPostalCode STRING?,
+    shipCountry STRING?
+  ),
 
-CREATE ELEMENT TYPE Shipper (
-  shipperID INTEGER,
-  companyName STRING,
-  phone STRING?
-)
+  Shipper (
+    shipperID INTEGER,
+    companyName STRING,
+    phone STRING?
+  ),
 
-CREATE ELEMENT TYPE CustomerDemographic (
-  customerTypeID STRING,
-  customerDesc STRING?
-)
+  CustomerDemographic (
+    customerTypeID STRING,
+    customerDesc STRING?
+  ),
 
--- Relationship types
+  -- Relationships
+  HAS_SUPPLIER,
+  HAS_PRODUCT,
+  HAS_CATEGORY,
+  HAS_TERRITORY,
+  HAS_EMPLOYEE,
+  REPORTS_TO,
+  HAS_CUSTOMER,
+  HAS_CUSTOMER_DEMOGRAPHIC,
+  HAS_ORDER,
+  HAS_SHIPPER,
+  HAS_REGION,
 
-CREATE ELEMENT TYPE HAS_SUPPLIER
-CREATE ELEMENT TYPE HAS_PRODUCT
-CREATE ELEMENT TYPE HAS_CATEGORY
-CREATE ELEMENT TYPE HAS_TERRITORY
-CREATE ELEMENT TYPE HAS_EMPLOYEE
-CREATE ELEMENT TYPE REPORTS_TO
-CREATE ELEMENT TYPE HAS_CUSTOMER
-CREATE ELEMENT TYPE HAS_CUSTOMER_DEMOGRAPHIC
-CREATE ELEMENT TYPE HAS_ORDER
-CREATE ELEMENT TYPE HAS_SHIPPER
-CREATE ELEMENT TYPE HAS_REGION
-
--- =================================================================
-
-CREATE GRAPH TYPE NORTHWIND_NAIVE (
-    -- Nodes
-    (Employee),
-    (Territory),
-    (Supplier),
-    (Customer),
-    (Product),
-    (OrderDetails),
-    (Category),
-    (Region),
-    (Order),
-    (Shipper),
-    (CustomerDemographic),
-
-    -- Relationships
-    (Product)-[HAS_SUPPLIER]->(Supplier),
-    (Product)-[HAS_CATEGORY]->(Category),
-    (OrderDetails)-[HAS_PRODUCT]->(Product),
-    (OrderDetails)-[HAS_ORDER]->(Order),
-    (Order)-[HAS_CUSTOMER]->(Customer),
-    (Order)-[HAS_EMPLOYEE]->(Employee),
-    (Order)-[HAS_SHIPPER]->(Shipper),
-    (Employee)-[REPORTS_TO]->(Employee),
-    (Territory)-[HAS_REGION]->(Region),
-    -- Link tables become two relationships in either direction
-    (Employee)-[HAS_TERRITORY]->(Territory),
-    (Territory)-[HAS_EMPLOYEE]->(Employee),
-    (Customer)-[HAS_CUSTOMER_DEMOGRAPHIC]->(CustomerDemographic),
-    (CustomerDemographic)-[HAS_CUSTOMER]->(Customer)
-)
--- =================================================================
-CREATE GRAPH Northwind OF NORTHWIND_NAIVE (
+  -- Node mappings
   (Order)
        FROM VIEW_ORDERS,
 
@@ -198,6 +165,7 @@ CREATE GRAPH Northwind OF NORTHWIND_NAIVE (
   (Supplier)
        FROM VIEW_SUPPLIERS,
 
+  -- Relationship mappings
   (Product)-[HAS_CATEGORY]->(Category)
       FROM VIEW_PRODUCTS edge
           START NODES (Product)
