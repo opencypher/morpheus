@@ -27,9 +27,11 @@
 package org.opencypher.spark.examples
 
 import org.opencypher.okapi.api.configuration.Configuration.PrintDebug
-import org.opencypher.okapi.api.graph.Namespace
+import org.opencypher.okapi.api.graph.GraphName
+import org.opencypher.okapi.relational.impl.graph.ScanGraph
 import org.opencypher.spark.api.io.sql.IdGenerationStrategy
 import org.opencypher.spark.api.{CAPSSession, GraphSources}
+import org.opencypher.spark.impl.table.SparkTable.DataFrameTable
 import org.opencypher.spark.util.{ConsoleApp, HiveSetupForDebug}
 
 object BugFinding extends ConsoleApp {
@@ -41,28 +43,28 @@ object BugFinding extends ConsoleApp {
   // Load a CSV file of interactions into Hive tables (views)
   HiveSetupForDebug.load()
 
-  session.registerSource(Namespace("sql"), GraphSources
+  val pgds = GraphSources
     .sql(file("/customer-interactions/ddl/debug.ddl"))
 //    .withIdGenerationStrategy(IdGenerationStrategy.HashBasedId)
-    .withSqlDataSourceConfigs(file("/customer-interactions/ddl/data-sources.json")))
+    .withSqlDataSourceConfigs(file("/customer-interactions/ddl/data-sources.json"))
 
-  val c360Seed = session.cypher(
-    """
-      |FROM sql.debug
-      |RETURN GRAPH
-    """.stripMargin).graph
+  val graph = pgds.graph(GraphName("debug"))
 
-  c360Seed.cypher(
+  graph.cypher(
     """
       |MATCH ()
       |RETURN count(*) AS `nodeCount (26 is correct)`
     """.stripMargin).show
 
-  c360Seed.cypher(
+  graph.cypher(
     """
       |MATCH ()-->()
       |RETURN count(*) AS `relCount (36 is correct)`
     """.stripMargin).show
+
+  graph.asInstanceOf[ScanGraph[DataFrameTable]].scans.foreach { scan =>
+    scan.table.show()
+  }
 
   session.sparkSession.close()
 
