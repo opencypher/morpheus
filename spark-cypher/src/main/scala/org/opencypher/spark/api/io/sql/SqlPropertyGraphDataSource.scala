@@ -31,6 +31,7 @@ import java.net.URI
 import org.apache.spark.sql.{DataFrame, functions}
 import org.opencypher.graphddl.GraphDdl.PropertyMappings
 import org.opencypher.graphddl._
+import org.opencypher.okapi.api.configuration.Configuration.PrintDebug
 import org.opencypher.okapi.api.graph.{GraphName, PropertyGraph}
 import org.opencypher.okapi.api.io.conversion.{EntityMapping, NodeMapping, RelationshipMapping}
 import org.opencypher.okapi.impl.exception.{GraphNotFoundException, IllegalArgumentException, UnsupportedOperationException}
@@ -70,8 +71,11 @@ case class SqlPropertyGraphDataSource(
       case MonotonicallyIncreasingId => createMonotonicallyIncreasingIdForTables(nodeDataFrames, sourceIdKey)
     }
 
+    println("showing all node frames")
+    println(">>>>>>>>>>>>>>>>>>>>>>>>")
     val nodeTables = nodeDataFramesWithIds.map {
       case (nodeViewKey, nodeDf) =>
+        if (PrintDebug.isSet) nodeDf.show(30)
         val nodeElementTypes = nodeViewKey.nodeType.elementTypes
         val columnsWithType = nodeColsWithCypherType(capsSchema, nodeElementTypes)
         val inputNodeMapping = createNodeMapping(nodeElementTypes, ddlGraph.nodeToViewMappings(nodeViewKey).propertyMappings)
@@ -82,6 +86,7 @@ case class SqlPropertyGraphDataSource(
 
         CAPSNodeTable.fromMapping(normalizedMapping, normalizedDf)
     }.toSeq
+    println("<<<<<<<<<<<<<<<<<<<<<<<<")
 
     // Build CAPS relationship tables
     val relDataFrames = ddlGraph.edgeToViewMappings.map(evm => evm.key -> readTable(evm.view)).toMap
@@ -99,6 +104,8 @@ case class SqlPropertyGraphDataSource(
       val startNodeViewKey = edgeToViewMapping.startNode.nodeViewKey
       val endNodeViewKey = edgeToViewMapping.endNode.nodeViewKey
 
+      println(s"$relElementType start ids")
+      println(">>>>>>>>>>>>>>>>>>>>>>>>")
       val relsWithStartNodeId = idGenerationStrategy match {
         case HashBasedId =>
           // generate the start node id using the same hash parameters as for the corresponding node table
@@ -106,9 +113,18 @@ case class SqlPropertyGraphDataSource(
           createHashIdForTable(relDf, startNodeViewKey, idColumnNames, sourceStartNodeKey)
         case MonotonicallyIncreasingId =>
           val startNodeDf = nodeDataFramesWithIds(startNodeViewKey)
-          joinNodeAndEdgeDf(startNodeDf, relDf, edgeToViewMapping.startNode.joinPredicates, sourceStartNodeKey)
-      }
+          val joined = joinNodeAndEdgeDf(startNodeDf, relDf, edgeToViewMapping.startNode.joinPredicates, sourceStartNodeKey)
 
+          if (PrintDebug.isSet) startNodeDf.show(30)
+          if (PrintDebug.isSet) relDf.show(30)
+          if (PrintDebug.isSet) joined.show(30)
+
+          joined
+      }
+      println("<<<<<<<<<<<<<<<<<<<<<<<<")
+
+      println(s"$relElementType end ids")
+      println(">>>>>>>>>>>>>>>>>>>>>>>>")
       val relsWithEndNodeId = idGenerationStrategy match {
         case HashBasedId =>
           // generate the end node id using the same hash parameters as for the corresponding node table
@@ -116,8 +132,15 @@ case class SqlPropertyGraphDataSource(
           createHashIdForTable(relsWithStartNodeId, endNodeViewKey, idColumnNames, sourceEndNodeKey)
         case MonotonicallyIncreasingId =>
           val endNodeDf = nodeDataFramesWithIds(endNodeViewKey)
-          joinNodeAndEdgeDf(endNodeDf, relsWithStartNodeId, edgeToViewMapping.endNode.joinPredicates, sourceEndNodeKey)
+          val joined = joinNodeAndEdgeDf(endNodeDf, relsWithStartNodeId, edgeToViewMapping.endNode.joinPredicates, sourceEndNodeKey)
+
+          if (PrintDebug.isSet) relsWithStartNodeId.show(30)
+          if (PrintDebug.isSet) endNodeDf.show(30)
+          if (PrintDebug.isSet) joined.show(30)
+
+          joined
       }
+      println("<<<<<<<<<<<<<<<<<<<<<<<<")
 
       val columnsWithType = relColsWithCypherType(capsSchema, relElementType)
       val inputRelMapping = createRelationshipMapping(relElementType, edgeToViewMapping.propertyMappings)

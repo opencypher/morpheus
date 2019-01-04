@@ -35,4 +35,6 @@ object Configuration {
     */
   object PrintTimings extends ConfigFlag("caps.printTimings")
 
+  object PrintDebug extends ConfigFlag("caps.debug")
+
 }
