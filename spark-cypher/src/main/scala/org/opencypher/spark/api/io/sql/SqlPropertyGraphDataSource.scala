@@ -178,11 +178,27 @@ case class SqlPropertyGraphDataSource(
 
     val nodeIdColumnName = nodePrefix + sourceIdKey
 
-    // attach id from nodes as start/end by joining on the given columns
-    val edgeDfWithNodesJoined = namespacedNodeDf
+    /*
+     * TODO: there seems to be something that changes depending on order of join here
+     * Switching order to EDGE join NODE:
+     */
+
+    val nodes = namespacedNodeDf
       .select(nodeIdColumnName, namespacedJoinColumns.map(_.nodeColumn): _*)
       .withColumnRenamed(nodeIdColumnName, newNodeIdColumn)
-      .join(namespacedEdgeDf, joinPredicate)
+    val edgeDfWithNodesJoined = namespacedEdgeDf
+      .join(nodes, joinPredicate)
+
+    // original code:
+//    val edgeDfWithNodesJoined = namespacedNodeDf
+//      .select(nodeIdColumnName, namespacedJoinColumns.map(_.nodeColumn): _*)
+//      .withColumnRenamed(nodeIdColumnName, newNodeIdColumn)
+//      .join(namespacedEdgeDf, joinPredicate)
+
+    /*
+     * then BugFinding seems to produce correct results, but I can't repro this in a simpler test (yet)
+     */
+
 
     // drop unneeded node columns (those we joined on) and drop namespace on edge columns
     edgeDfWithNodesJoined.columns.foldLeft(edgeDfWithNodesJoined) {
