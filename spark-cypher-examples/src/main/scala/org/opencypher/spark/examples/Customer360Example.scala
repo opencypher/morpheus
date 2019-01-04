@@ -34,7 +34,7 @@ import org.opencypher.spark.api.io.neo4j.sync.Neo4jGraphMerge.Batches
 import org.opencypher.spark.api.io.sql.IdGenerationStrategy
 import org.opencypher.spark.api.io.sql.SqlDataSourceConfig.Hive
 import org.opencypher.spark.api.{CAPSSession, GraphSources}
-import org.opencypher.spark.examples.Helpers._
+import org.opencypher.spark.util.Helpers._
 import org.opencypher.spark.util.{ConsoleApp, LoadInteractionsInHive}
 
 /**
@@ -194,15 +194,4 @@ object Customer360Example extends ConsoleApp {
   neo4j.close()
   session.sparkSession.close()
 
-}
-
-object Helpers {
-
-  def log(msg: String)(implicit session: CAPSSession): Unit = {
-    println(s"LOG: $msg")
-  }
-
-  def file(path: String): String = {
-    getClass.getResource(path).toURI.getPath
-  }
 }
