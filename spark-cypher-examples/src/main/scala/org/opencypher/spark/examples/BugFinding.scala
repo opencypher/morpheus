@@ -38,27 +38,27 @@ object BugFinding extends ConsoleApp {
   // Load a CSV file of interactions into Hive tables (views)
   HiveSetupForDebug.load()
 
-  session.registerSource(Namespace("c360"), GraphSources
+  session.registerSource(Namespace("sql"), GraphSources
     .sql(file("/customer-interactions/ddl/debug.ddl"))
 //    .withIdGenerationStrategy(IdGenerationStrategy.HashBasedId)
     .withSqlDataSourceConfigs(file("/customer-interactions/ddl/data-sources.json")))
 
   val c360Seed = session.cypher(
     """
-      |FROM c360.interactions_seed
+      |FROM sql.debug
       |RETURN GRAPH
     """.stripMargin).graph
 
   c360Seed.cypher(
     """
       |MATCH ()
-      |RETURN count(*) AS `nodeCount (33)`
+      |RETURN count(*) AS `nodeCount (29)`
     """.stripMargin).show
 
   c360Seed.cypher(
     """
       |MATCH ()-->()
-      |RETURN count(*) AS `relCount (72 but is 15??)`
+      |RETURN count(*) AS `relCount (38 but is 9??)`
     """.stripMargin).show
 
   session.sparkSession.close()

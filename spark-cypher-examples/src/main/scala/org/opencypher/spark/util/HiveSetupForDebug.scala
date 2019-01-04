@@ -45,9 +45,6 @@ object HiveSetupForDebug {
       StructField("empNo", LongType, nullable = false),
       StructField("empName", StringType, nullable = false),
       StructField("type", StringType, nullable = false),
-      StructField("outcomeScore", StringType, nullable = false),
-      StructField("accountHolderId", StringType, nullable = false),
-      StructField("policyAccountNumber", StringType, nullable = false),
       StructField("customerId", StringType, nullable = false),
       StructField("customerName", StringType, nullable = false)
     ))
@@ -66,17 +63,13 @@ object HiveSetupForDebug {
     baseTable.write.saveAsTable(s"$baseTableName")
 
     // Create views for nodes
-    createView(baseTableName, "interactions", true, "interactionId", "date", "type", "outcomeScore")
+    createView(baseTableName, "interactions", true, "interactionId", "date", "type")
     createView(baseTableName, "customers", true, "customerIdx", "customerId", "customerName")
-    createView(baseTableName, "account_holders", true, "accountHolderId")
-    createView(baseTableName, "policies", true, "policyAccountNumber")
     createView(baseTableName, "customer_reps", true, "empNo", "empName")
 
     // Create views for relationships
     createView(baseTableName, "has_customer_reps", false, "interactionId", "empNo")
     createView(baseTableName, "has_customers", false, "interactionId", "customerIdx")
-    createView(baseTableName, "has_policies", false, "interactionId", "policyAccountNumber")
-    createView(baseTableName, "has_account_holders", false, "interactionId", "accountHolderId")
 
     baseTable
   }

@@ -1,19 +1,19 @@
-interactionId,date,customerIdx,empNo,empName,type,outcomeScore,accountHolderId,policyAccountNumber,customerId,customerName
-0,2011-12-09T19:59:16.706Z,0,10910,"Jervis, Arco",question,negative,N400KA22K,8703 425 3098-52,X5CO34AD98M,Elsa Clukey
-1,2015-12-21T21:46:44.374Z,0,10910,"Jervis, Arco",cancel,negative,N400KA22K,8703 425 3098-52,X5CO34AD98M,Elsa Clukey
-2,2015-08-13T23:22:37.716Z,0,10910,"Jervis, Arco",renewal,positive,N400KA22K,8703 425 3098-52,X5CO34AD98M,Elsa Clukey
-3,2017-05-03T16:21:19.664Z,0,10910,"Jervis, Arco",policychange,negative,N400KA22K,8703 425 3098-52,X5CO34AD98M,Elsa Clukey
-4,2016-12-10T17:53:00.347Z,0,10910,"Jervis, Arco",policychange,positive,N400KA22K,8703 425 3098-52,X5CO34AD98M,Elsa Clukey
-5,2010-06-30T00:57:01.989Z,0,10910,"Jervis, Arco",question,neutral,N400KA22K,8703 425 3098-52,X5CO34AD98M,Elsa Clukey
-6,2012-05-07T08:52:20.728Z,1,10947,"Usery, Gor",renewal,positive,P939TB73U,4841 152 6868-17,W9VU80OL52R,Neta Whinnery
-7,2014-12-28T20:12:58.973Z,1,10947,"Usery, Gor",renewal,positive,P939TB73U,4841 152 6868-17,W9VU80OL52R,Neta Whinnery
-8,2012-10-14T17:30:32.430Z,1,10947,"Usery, Gor",renewal,positive,P939TB73U,4841 152 6868-17,W9VU80OL52R,Neta Whinnery
-9,2012-01-19T03:38:28.427Z,1,10947,"Usery, Gor",policychange,negative,P939TB73U,4841 152 6868-17,W9VU80OL52R,Neta Whinnery
-10,2017-07-27T23:05:21.266Z,2,10946,"Kabayashi, Shaz",other,negative,P939TB73U,7512 812 5065-86,W9VU80OL52R,Neta Whinnery
-11,2016-08-26T00:29:13.622Z,2,10946,"Kabayashi, Shaz",other,negative,P939TB73U,7512 812 5065-86,W9VU80OL52R,Neta Whinnery
-12,2017-09-30T16:46:34.618Z,2,10946,"Kabayashi, Shaz",policychange,positive,P939TB73U,7512 812 5065-86,W9VU80OL52R,Neta Whinnery
-13,2011-02-16T08:39:29.060Z,2,10946,"Kabayashi, Shaz",policychange,negative,P939TB73U,7512 812 5065-86,W9VU80OL52R,Neta Whinnery
-14,2011-11-25T13:49:06.332Z,3,10649,"Welham, Vitali",question,positive,F868UD17Z,7195 594 8167-74,R8RY34BW05P,Wei Rolfe
-15,2016-08-08T05:20:51.259Z,3,10649,"Welham, Vitali",policychange,negative,F868UD17Z,7195 594 8167-74,R8RY34BW05P,Wei Rolfe
-16,2011-01-16T15:11:53.812Z,3,10649,"Welham, Vitali",renewal,positive,F868UD17Z,7195 594 8167-74,R8RY34BW05P,Wei Rolfe
-17,2012-01-21T12:57:00.709Z,3,10649,"Welham, Vitali",question,positive,F868UD17Z,7195 594 8167-74,R8RY34BW05P,Wei Rolfe
+interactionId,date,customerIdx,empNo,empName,type,customerId,customerName
+0,2011-12-09T19:59:16.706Z,0,10910,"Jervis, Arco",question,X5CO34AD98M,Elsa Clukey
+1,2015-12-21T21:46:44.374Z,0,10910,"Jervis, Arco",cancel,X5CO34AD98M,Elsa Clukey
+2,2015-08-13T23:22:37.716Z,0,10910,"Jervis, Arco",renewal,X5CO34AD98M,Elsa Clukey
+3,2017-05-03T16:21:19.664Z,0,10910,"Jervis, Arco",policychange,X5CO34AD98M,Elsa Clukey
+4,2016-12-10T17:53:00.347Z,0,10910,"Jervis, Arco",policychange,X5CO34AD98M,Elsa Clukey
+5,2010-06-30T00:57:01.989Z,0,10910,"Jervis, Arco",question,X5CO34AD98M,Elsa Clukey
+6,2012-05-07T08:52:20.728Z,1,10947,"Usery, Gor",renewal,W9VU80OL52R,Neta Whinnery
+7,2014-12-28T20:12:58.973Z,1,10947,"Usery, Gor",renewal,W9VU80OL52R,Neta Whinnery
+8,2012-10-14T17:30:32.430Z,1,10947,"Usery, Gor",renewal,W9VU80OL52R,Neta Whinnery
+9,2012-01-19T03:38:28.427Z,1,10947,"Usery, Gor",policychange,W9VU80OL52R,Neta Whinnery
+10,2017-07-27T23:05:21.266Z,2,10946,"Kabayashi, Shaz",other,W9VU80OL52R,Neta Whinnery
+11,2016-08-26T00:29:13.622Z,2,10946,"Kabayashi, Shaz",other,W9VU80OL52R,Neta Whinnery
+12,2017-09-30T16:46:34.618Z,2,10946,"Kabayashi, Shaz",policychange,W9VU80OL52R,Neta Whinnery
+13,2011-02-16T08:39:29.060Z,2,10946,"Kabayashi, Shaz",policychange,W9VU80OL52R,Neta Whinnery
+14,2011-11-25T13:49:06.332Z,3,10649,"Welham, Vitali",question,R8RY34BW05P,Wei Rolfe
+15,2016-08-08T05:20:51.259Z,3,10649,"Welham, Vitali",policychange,R8RY34BW05P,Wei Rolfe
+16,2011-01-16T15:11:53.812Z,3,10649,"Welham, Vitali",renewal,R8RY34BW05P,Wei Rolfe
+17,2012-01-21T12:57:00.709Z,3,10649,"Welham, Vitali",question,R8RY34BW05P,Wei Rolfe
