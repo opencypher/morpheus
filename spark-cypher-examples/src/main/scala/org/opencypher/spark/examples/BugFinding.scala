@@ -52,13 +52,13 @@ object BugFinding extends ConsoleApp {
   c360Seed.cypher(
     """
       |MATCH ()
-      |RETURN count(*) AS `nodeCount (29)`
+      |RETURN count(*) AS `nodeCount (26 is correct)`
     """.stripMargin).show
 
   c360Seed.cypher(
     """
       |MATCH ()-->()
-      |RETURN count(*) AS `relCount (38 but is 9??)`
+      |RETURN count(*) AS `relCount (36 is correct)`
     """.stripMargin).show
 
   session.sparkSession.close()
