@@ -26,15 +26,19 @@
  */
 package org.opencypher.spark.api.io.sql
 
-import org.apache.spark.sql.types.{IntegerType, LongType, StructField, StructType}
+import org.apache.spark.sql.types._
 import org.apache.spark.sql.{Row, SaveMode}
 import org.opencypher.graphddl.GraphDdl
+import org.opencypher.okapi.api.configuration.Configuration.PrintDebug
 import org.opencypher.okapi.api.graph.GraphName
+import org.opencypher.okapi.api.types.CTNode
 import org.opencypher.okapi.api.value.CypherValue.CypherMap
+import org.opencypher.okapi.relational.impl.graph.ScanGraph
 import org.opencypher.okapi.testing.Bag
 import org.opencypher.spark.api.io.{CsvFormat, HiveFormat, JdbcFormat}
 import org.opencypher.spark.api.value.{CAPSNode, CAPSRelationship}
 import org.opencypher.spark.impl.CAPSFunctions.{partitioned_id_assignment, rowIdSpaceBitsUsedByMonotonicallyIncreasingId}
+import org.opencypher.spark.impl.table.SparkTable.DataFrameTable
 import org.opencypher.spark.testing.CAPSTestSuite
 import org.opencypher.spark.testing.fixture.{H2Fixture, HiveFixture}
 
@@ -591,5 +595,85 @@ class SqlPropertyGraphDataSourceTest extends CAPSTestSuite with HiveFixture with
       CypherMap("r" -> CAPSRelationship(0, 0, 1, "KNOWS")),
       CypherMap("r" -> CAPSRelationship(1, 1, 2, "KNOWS"))
     ))
+  }
+
+  it("should not increment node ids during relationship table construction") {
+    PrintDebug.set()
+
+    caps.sql("CREATE DATABASE IF NOT EXISTS db")
+
+    val a = List(
+      Row("Zoo"),
+      Row("Bar"),
+      Row("Pub"),
+      Row("Sic")
+    ).asJava
+    sparkSession
+      .createDataFrame(a, StructType(Seq(StructField("name", StringType))))
+      .write
+      .saveAsTable("db.a")
+
+    val b = List(
+      Row("Crayon"),
+      Row("Pencil"),
+      Row("Eraser"),
+      Row("Marker")
+    ).asJava
+    sparkSession
+      .createDataFrame(b, StructType(Seq(StructField("name", StringType))))
+      .write
+      .saveAsTable("db.b")
+
+    val rel = List(
+      Row("Zoo", "Crayon"),
+      Row("Zoo", "Eraser"),
+      Row("Bar", "Crayon"),
+      Row("Pub", "Pencil"),
+      Row("Sic", "Pencil"),
+      Row("Sic", "Eraser"),
+      Row("Sic", "Marker")
+    ).asJava
+    sparkSession
+      .createDataFrame(rel, StructType(Seq(StructField("source", StringType), StructField("target", StringType))))
+      .write
+      .saveAsTable("db.rel")
+
+    val ddl =
+      """
+        |SET SCHEMA hive.db
+        |
+        |CREATE GRAPH debug (
+        |
+        |  -- element types
+        |  A (name STRING),
+        |  B (name STRING),
+        |  REL,
+        |
+        |  (A) FROM a,
+        |  (B) FROM b,
+        |
+        |  (A)-[REL]->(B) FROM rel edge
+        |    START NODES (A) FROM a start_nodes
+        |      JOIN ON start_nodes.name = edge.source
+        |    END NODES (B) FROM b end_nodes
+        |      JOIN ON end_nodes.name = edge.target
+        |)
+      """.stripMargin
+
+    val csvDataSourceConfig = SqlDataSourceConfig(
+      storageFormat = HiveFormat,
+      dataSourceName = "hive"
+    )
+
+    // -- Read graph and validate
+    val ds = SqlPropertyGraphDataSource(GraphDdl(ddl), List(csvDataSourceConfig))
+
+    ds.graph(GraphName("debug")).asInstanceOf[ScanGraph[DataFrameTable]].scans.foreach { scan =>
+      scan.table.show()
+    }
+
+//    ds.graph(GraphName("debug")).cypher("MATCH ()-[r]->() RETURN r").records.toMapsWithCollectedEntities should equal(Bag(
+//      CypherMap("r" -> CAPSRelationship(-1, -1, -1, "REL"))
+//    ))
   }
 }
