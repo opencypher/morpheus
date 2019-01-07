@@ -15,8 +15,8 @@ subprojects {
     apply plugin: 'scala'
 
     repositories {
-        mavenLocal()
         mavenCentral()
+        mavenLocal()
     }
 
     dependencies {
