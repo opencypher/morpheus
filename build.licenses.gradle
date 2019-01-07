@@ -124,10 +124,10 @@ subprojects {
     task validateLicenses {
         group 'license'
         description 'Checks dependency licenses against a whitelist'
-        dependsOn 'downloadLicenses'
+        dependsOn tasks.downloadLicenses
 
         doLast {
-            def jsonDir = tasks['downloadLicenses'].jsonDestination
+            def jsonDir = tasks.downloadLicenses.jsonDestination
             def jsonFile = file("$jsonDir/license-dependency.json")
             def json = new groovy.json.JsonSlurper().parseText(jsonFile.text)
             File errFile = file("$jsonDir/license-errors.txt")
@@ -143,6 +143,51 @@ subprojects {
     }
 
     tasks.check.dependsOn tasks.validateLicenses
+
+    // Compound dependency licenses files
+    task generateLicensesFiles {
+        group 'license'
+        description 'Generates compound dependency licenses file'
+        dependsOn tasks.downloadLicenses
+
+        doLast {
+            def jsonDir = tasks.downloadLicenses.jsonDestination
+            def jsonFile = file("$jsonDir/license-dependency.json")
+            def json = new groovy.json.JsonSlurper().parseText(jsonFile.text)
+
+            def lics = file("$buildDir/reports/LICENSES.txt")
+            lics.createNewFile()
+            lics.text = rootProject.file("etc/licenses/headers/LICENSES-header.txt").text
+
+            json.licences
+                .sort { it.name }
+                .each {
+                    lics << '\n\n'
+                    lics << "------------------------------------------------------------------------------\n"
+                    lics << "$it.name\n"
+                    it.dependencies.sort{it}.each { lics << "  $it\n" }
+                    lics << "------------------------------------------------------------------------------\n"
+                    lics << '\n'
+                    lics << rootProject.file("etc/licenses/text/$it.name").text
+                }
+
+            def not = file("$buildDir/reports/NOTICE.txt")
+            not.createNewFile()
+            not.text = rootProject.file("etc/licenses/headers/NOTICE-header.txt").text
+            not << '\n\n'
+            not << "Third-party licenses\n"
+            not << "--------------------\n"
+
+            json.licences
+                    .sort { it.name }
+                    .each {
+                        not << '\n'
+                        not << "$it.name\n"
+                        it.dependencies.sort{it}.each { not << "  $it\n" }
+                    }
+
+        }
+    }
 }
 
 // Disable dependency license validation on test projects
@@ -155,4 +200,5 @@ subprojects {
         'spark-cypher-testing',
 ].each {
     project(it).tasks.validateLicenses.enabled = false
+    project(it).tasks.generateLicensesFiles.enabled = false
 }
