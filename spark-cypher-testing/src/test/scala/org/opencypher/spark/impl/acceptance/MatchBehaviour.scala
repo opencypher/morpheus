@@ -415,17 +415,19 @@ class MatchBehaviour extends CAPSTestSuite with DefaultGraphInit {
     }
   }
 
+  val sprawlGraphInit =
+    """
+      |CREATE (a:Person {name: "Philip"})
+      |CREATE (b:Person {name: "Stefan"})
+      |CREATE (c:City {name: "The Pan-European Sprawl"})
+      |CREATE (a)-[:KNOWS]->(b)
+      |CREATE (a)-[:LIVES_IN]->(c)
+      |CREATE (b)-[:LIVES_IN]->(c)
+    """.stripMargin
+
   it("can expand into with complex match and var length expand") {
     // Given
-    val given = initGraph(
-      """
-        |CREATE (a:Person {name: "Philip"})
-        |CREATE (b:Person {name: "Stefan"})
-        |CREATE (c:City {name: "The Pan-European Sprawl"})
-        |CREATE (a)-[:KNOWS]->(b)
-        |CREATE (a)-[:LIVES_IN]->(c)
-        |CREATE (b)-[:LIVES_IN]->(c)
-      """.stripMargin)
+    val given = initGraph(sprawlGraphInit)
 
     val result = given.cypher(
       "MATCH (a:Person)-[:LIVES_IN]->(c:City)<-[:LIVES_IN]-(b:Person), (a)-[:KNOWS*1..2]->(b) RETURN a.name, b.name, c.name"
@@ -435,4 +437,43 @@ class MatchBehaviour extends CAPSTestSuite with DefaultGraphInit {
       CypherMap("a.name" -> "Philip", "b.name" -> "Stefan", "c.name" -> "The Pan-European Sprawl")
     ))
   }
+
+  describe("match disjunctions of relationship types") {
+
+    it("can match a disjunction of two types") {
+      val given = initGraph(sprawlGraphInit)
+      val result = given.cypher("MATCH ()-[r:LIVES_IN|KNOWS]->() RETURN type(r)")
+      result.records.toMaps should equal(Bag(
+        CypherMap("type(r)" -> "LIVES_IN"),
+        CypherMap("type(r)" -> "LIVES_IN"),
+        CypherMap("type(r)" -> "KNOWS")
+      ))
+    }
+
+    it("can match a disjunction of four types with var length expand") {
+      val given = initGraph(
+        """
+          |CREATE (a { val: 'a' })
+          |CREATE (b { val: 'b' })
+          |CREATE (c { val: 'c' })
+          |CREATE (d { val: 'd' })
+          |CREATE (a)-[:A]->(a)
+          |CREATE (a)-[:B]->(b)
+          |CREATE (b)-[:C]->(c)
+          |CREATE (c)-[:D]->(d)
+        """.stripMargin)
+      val result = given.cypher("MATCH (from)-[_:A|B|C|D*1..3]->(to) RETURN from.val as from, to.val as to")
+      result.records.toMaps should equal(Bag(
+        CypherMap("from" -> "a", "to" -> "a"),
+        CypherMap("from" -> "a", "to" -> "b"),
+        CypherMap("from" -> "a", "to" -> "c"),
+        CypherMap("from" -> "a", "to" -> "d"),
+        CypherMap("from" -> "b", "to" -> "c"),
+        CypherMap("from" -> "b", "to" -> "d"),
+        CypherMap("from" -> "c", "to" -> "d")
+      ))
+    }
+
+  }
+
 }
