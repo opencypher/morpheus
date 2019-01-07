@@ -41,12 +41,6 @@ def whitelist = [
                 [name: 'the Apache License, ASL Version 2.0'],
                 [name: '', url: 'http://www.apache.org/licenses/LICENSE-2.0.txt'],
         ]],
-        [name: 'CDDL-1.0', url: 'https://opensource.org/licenses/CDDL-1.0', aliases: [
-                [name: 'COMMON DEVELOPMENT AND DISTRIBUTION LICENSE (CDDL) Version 1.0'],
-                [name: 'CDDL', url: 'http://www.sun.com/cddl'],
-                [name: 'CDDL License', url: 'http://www.opensource.org/licenses/cddl1.php'],
-
-        ]],
         [name: 'EPL-1.0', url: 'https://opensource.org/licenses/EPL-1.0', aliases: [
                 [name: 'Eclipse Public License 1.0'],
                 [name: 'Eclipse Public License - Version 1.0'],
@@ -60,11 +54,6 @@ def whitelist = [
                 [name: 'MIT License'],
                 [name: 'The MIT License'],
                 [name: 'Bouncy Castle Licence'],
-        ]],
-        [name: 'MPL-1.0', url: 'https://opensource.org/licenses/MPL-1.0', aliases: [
-        ]],
-        [name: 'MPL-1.1', url: 'https://opensource.org/licenses/MPL-1.1', aliases: [
-                [name: 'MPL 1.1'],
         ]],
         [name: 'MPL-2.0', url: 'https://opensource.org/licenses/MPL-2.0', aliases: [
                 [name: 'Mozilla Public License, Version 2.0'],
