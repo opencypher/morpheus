@@ -150,44 +150,66 @@ subprojects {
         description 'Generates compound dependency licenses file'
         dependsOn tasks.downloadLicenses
 
+        ext.licensesFile = file("$buildDir/reports/LICENSES.txt")
+        ext.noticeFile   = file("$buildDir/reports/NOTICE.txt")
+
         doLast {
             def jsonDir = tasks.downloadLicenses.jsonDestination
             def jsonFile = file("$jsonDir/license-dependency.json")
             def json = new groovy.json.JsonSlurper().parseText(jsonFile.text)
 
-            def lics = file("$buildDir/reports/LICENSES.txt")
-            lics.createNewFile()
-            lics.text = rootProject.file("etc/licenses/headers/LICENSES-header.txt").text
+            licensesFile.createNewFile()
+            licensesFile.text = rootProject.file("etc/licenses/headers/LICENSES-header.txt").text
 
             json.licences
                 .sort { it.name }
                 .each {
-                    lics << '\n\n'
-                    lics << "------------------------------------------------------------------------------\n"
-                    lics << "$it.name\n"
-                    it.dependencies.sort{it}.each { lics << "  $it\n" }
-                    lics << "------------------------------------------------------------------------------\n"
-                    lics << '\n'
-                    lics << rootProject.file("etc/licenses/text/$it.name").text
+                    licensesFile << '\n\n'
+                    licensesFile << "------------------------------------------------------------------------------\n"
+                    licensesFile << "$it.name\n"
+                    it.dependencies.sort{it}.each { licensesFile << "  $it\n" }
+                    licensesFile << "------------------------------------------------------------------------------\n"
+                    licensesFile << '\n'
+                    licensesFile << rootProject.file("etc/licenses/text/$it.name").text
                 }
 
-            def not = file("$buildDir/reports/NOTICE.txt")
-            not.createNewFile()
-            not.text = rootProject.file("etc/licenses/headers/NOTICE-header.txt").text
-            not << '\n\n'
-            not << "Third-party licenses\n"
-            not << "--------------------\n"
+            noticeFile.createNewFile()
+            noticeFile.text = rootProject.file("etc/licenses/headers/NOTICE-header.txt").text
+            noticeFile << '\n\n'
+            noticeFile << "Third-party licenses\n"
+            noticeFile << "--------------------\n"
 
             json.licences
                     .sort { it.name }
                     .each {
-                        not << '\n'
-                        not << "$it.name\n"
-                        it.dependencies.sort{it}.each { not << "  $it\n" }
+                        noticeFile << '\n'
+                        noticeFile << "$it.name\n"
+                        it.dependencies.sort{it}.each { noticeFile << "  $it\n" }
                     }
-
         }
     }
+
+    task validateLicensesFiles {
+        group 'license'
+        description 'Validates compound dependency licenses files'
+        dependsOn tasks.generateLicensesFiles
+
+        doLast {
+            def files = [
+                    [generated: tasks.generateLicensesFiles.licensesFile,
+                     existing : file("$projectDir/LICENSES.txt")],
+                    [generated: tasks.generateLicensesFiles.noticeFile,
+                     existing : file("$projectDir/NOTICE.txt")],
+            ]
+            files.each { file ->
+                if (file.generated.text != file.existing.text) {
+                    throw new GradleException("Generated file differs from the existing file.\n Generated: $file.generated \n Existing: $file.existing")
+                }
+            }
+        }
+    }
+
+    tasks.check.dependsOn tasks.validateLicensesFiles
 }
 
 // Disable dependency license validation on test projects
@@ -201,4 +223,5 @@ subprojects {
 ].each {
     project(it).tasks.validateLicenses.enabled = false
     project(it).tasks.generateLicensesFiles.enabled = false
+    project(it).tasks.validateLicensesFiles.enabled = false
 }
