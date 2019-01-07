@@ -34,7 +34,6 @@ import org.opencypher.spark.api.io.neo4j.sync.Neo4jGraphMerge.Batches
 import org.opencypher.spark.api.io.sql.IdGenerationStrategy
 import org.opencypher.spark.api.io.sql.SqlDataSourceConfig.Hive
 import org.opencypher.spark.api.{CAPSSession, GraphSources}
-import org.opencypher.spark.util.Helpers._
 import org.opencypher.spark.util.{ConsoleApp, LoadInteractionsInHive}
 
 /**
@@ -93,7 +92,7 @@ object Customer360Example extends ConsoleApp {
     GraphSources.fs("snapshots-root", Some("snapshots")).parquet
   )
 
-  log("PGDSs registered")
+  println("PGDSs registered")
 
   val c360Seed = session.cypher(
     """
@@ -107,7 +106,7 @@ object Customer360Example extends ConsoleApp {
    */
   c360Seed.cypher(
     """
-      |MATCH (c:Customer)--(i:Interaction)--(rep:CustomerRep)
+      |MATCH (c:Customer)--(i:Interaction)--(:CustomerRep)
       |WITH c, i.type AS type, count(*) AS cnt
       |WHERE type IN ['cancel', 'complaint']
       |RETURN c, type, cnt
@@ -121,7 +120,7 @@ object Customer360Example extends ConsoleApp {
   // Seed Neo4j with the customer 360 graph
   Neo4jGraphMerge.merge(entireGraphName, c360Seed, neo4j.dataSourceConfig, batches = Batches(relBatchSize = 1))
 
-  log("Graph merged to Neo4j")
+  println("Graph merged to Neo4j")
 
   /*
    * We can also execute the same query based on the graph we merged into the Neo4j instance, seeing the same results.
@@ -176,7 +175,7 @@ object Customer360Example extends ConsoleApp {
     batches = Batches(relBatchSize = 1)
   )
 
-  log("Delta merged")
+  println("Delta merged")
 
   // Find the updated statistics on customer rep interactions
   // Here we execute the query from Spark by importing the necessary data from Neo4j on the fly
@@ -193,5 +192,9 @@ object Customer360Example extends ConsoleApp {
 
   neo4j.close()
   session.sparkSession.close()
+
+  private def file(path: String): String = {
+    getClass.getResource(path).toURI.getPath
+  }
 
 }
