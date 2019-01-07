@@ -3,10 +3,10 @@ libraries. For an overview of the licenses see the NOTICE.txt file.
 
 
 ------------------------------------------------------------------------------
-Apache Software License, Version 2.0
-  Apache Log4j API
-  Apache Log4j Core
-  Scala 2.11 wrapper for Log4j API
+Apache-2.0
+  log4j-api-2.11.0.jar
+  log4j-api-scala_2.11-11.0.jar
+  log4j-core-2.11.0.jar
 ------------------------------------------------------------------------------
 
                                  Apache License
@@ -212,13 +212,13 @@ Apache Software License, Version 2.0
    limitations under the License.
 
 
-
 ------------------------------------------------------------------------------
-BSD License
-  Scala Compiler
-  Scala Library
-  scala-parser-combinators
-  scala-xml
+BSD-3-Clause
+  scala-compiler-2.11.12.jar
+  scala-library-2.11.12.jar
+  scala-parser-combinators_2.11-1.0.4.jar
+  scala-reflect-2.11.12.jar
+  scala-xml_2.11-1.0.5.jar
 ------------------------------------------------------------------------------
 
 Copyright (c) <year>, <copyright holder>
@@ -247,13 +247,12 @@ ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 
-
 ------------------------------------------------------------------------------
-MIT-license
-  Cats core
-  Cats kernel
-  Cats macros
-  machinist
+MIT
+  cats-core_2.11-1.0.1.jar
+  cats-kernel_2.11-1.0.1.jar
+  cats-macros_2.11-1.0.1.jar
+  machinist_2.11-0.6.2.jar
 ------------------------------------------------------------------------------
 
 The MIT License
@@ -277,7 +276,3 @@ AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
-
-
-
-

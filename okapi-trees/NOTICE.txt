@@ -27,20 +27,20 @@ Cypher that are not yet approved by the openCypher community".
 Third-party licenses
 --------------------
 
-Apache Software License, Version 2.0
-  Apache Log4j API
-  Apache Log4j Core
-  Scala 2.11 wrapper for Log4j API
+Apache-2.0
+  log4j-api-2.11.0.jar
+  log4j-api-scala_2.11-11.0.jar
+  log4j-core-2.11.0.jar
 
-BSD License
-  Scala Compiler
-  Scala Library
-  scala-parser-combinators
-  scala-xml
+BSD-3-Clause
+  scala-compiler-2.11.12.jar
+  scala-library-2.11.12.jar
+  scala-parser-combinators_2.11-1.0.4.jar
+  scala-reflect-2.11.12.jar
+  scala-xml_2.11-1.0.5.jar
 
-MIT-license
-  Cats core
-  Cats kernel
-  Cats macros
-  machinist
-
+MIT
+  cats-core_2.11-1.0.1.jar
+  cats-kernel_2.11-1.0.1.jar
+  cats-macros_2.11-1.0.1.jar
+  machinist_2.11-0.6.2.jar
