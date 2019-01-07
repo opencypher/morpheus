@@ -120,6 +120,12 @@ subprojects {
         }
     }
 
+    tasks.downloadLicenses.ext.licencesJson = { ->
+        def jsonDir = tasks.downloadLicenses.jsonDestination
+        def jsonFile = file("$jsonDir/license-dependency.json")
+        new groovy.json.JsonSlurper().parseText(jsonFile.text)
+    }
+
     // Dependency license validation
     task validateLicenses {
         group 'license'
@@ -127,13 +133,10 @@ subprojects {
         dependsOn tasks.downloadLicenses
 
         doLast {
-            def jsonDir = tasks.downloadLicenses.jsonDestination
-            def jsonFile = file("$jsonDir/license-dependency.json")
-            def json = new groovy.json.JsonSlurper().parseText(jsonFile.text)
-            File errFile = file("$jsonDir/license-errors.txt")
+            File errFile = file("$tasks.downloadLicenses.jsonDestination/license-errors.txt")
             errFile.text = ""
 
-            json.licences
+            tasks.downloadLicenses.licencesJson().licences
                     .findAll { lic -> !whitelist.any { lic.name == it.name } }
                     .sort { lic -> lic.name }
                     .each { lic -> logger.error("The license '$lic.name' is not in the license whitelist. Details: ${lic.toMapString()}") }
@@ -150,18 +153,14 @@ subprojects {
         description 'Generates compound dependency licenses file'
         dependsOn tasks.downloadLicenses
 
-        ext.licensesFile = file("$buildDir/reports/LICENSES.txt")
-        ext.noticeFile   = file("$buildDir/reports/NOTICE.txt")
+        ext.licensesFile = file("$tasks.downloadLicenses.jsonDestination/LICENSES.txt")
+        ext.noticeFile   = file("$tasks.downloadLicenses.jsonDestination/NOTICE.txt")
 
         doLast {
-            def jsonDir = tasks.downloadLicenses.jsonDestination
-            def jsonFile = file("$jsonDir/license-dependency.json")
-            def json = new groovy.json.JsonSlurper().parseText(jsonFile.text)
-
             licensesFile.createNewFile()
             licensesFile.text = rootProject.file("etc/licenses/headers/LICENSES-header.txt").text
 
-            json.licences
+            tasks.downloadLicenses.licencesJson().licences
                 .sort { it.name }
                 .each {
                     licensesFile << '\n\n'
@@ -179,7 +178,7 @@ subprojects {
             noticeFile << "Third-party licenses\n"
             noticeFile << "--------------------\n"
 
-            json.licences
+            tasks.downloadLicenses.licencesJson().licences
                     .sort { it.name }
                     .each {
                         noticeFile << '\n'
