@@ -8,7 +8,7 @@ subprojects {
             repositories {
                 maven {
                     name = 'buildDir'
-                    url = "file://$rootProject.buildDir/repo"
+                    url = "file://${rootProject.file(cfg.publishDir)}"
                 }
             }
 

@@ -1,5 +1,9 @@
 ext {
 
+    cfg = [
+            publishDir: "build/repo",
+    ]
+
     ver = [
             self        : '0.2.3-SNAPSHOT',
 
