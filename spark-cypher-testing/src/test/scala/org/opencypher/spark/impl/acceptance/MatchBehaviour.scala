@@ -462,10 +462,12 @@ class MatchBehaviour extends CAPSTestSuite with DefaultGraphInit {
           |CREATE (b)-[:C]->(c)
           |CREATE (c)-[:D]->(d)
         """.stripMargin)
-      val result = given.cypher("MATCH (from)-[_:A|B|C|D*1..3]->(to) RETURN from.val as from, to.val as to")
+      val result = given.cypher("MATCH (from)-[:A|B|C|D*1..3]->(to) RETURN from.val as from, to.val as to")
       result.records.toMaps should equal(Bag(
         CypherMap("from" -> "a", "to" -> "a"),
         CypherMap("from" -> "a", "to" -> "b"),
+        CypherMap("from" -> "a", "to" -> "b"),
+        CypherMap("from" -> "a", "to" -> "c"),
         CypherMap("from" -> "a", "to" -> "c"),
         CypherMap("from" -> "a", "to" -> "d"),
         CypherMap("from" -> "b", "to" -> "c"),
