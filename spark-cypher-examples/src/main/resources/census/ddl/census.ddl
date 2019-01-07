@@ -1,53 +1,41 @@
 -- format for below is: <dataSourceName>.<schemaName>
 SET SCHEMA CENSUS.CENSUS;
 
--- =================================================================
+CREATE GRAPH Census_1901 (
 
-CREATE ELEMENT TYPE LicensedDog (
-  licence_number INTEGER
-) KEY LicensedDog_NK (licence_number)
+  -- Nodes
+  LicensedDog (
+    licence_number INTEGER
+  ) KEY LicensedDog_NK (licence_number),
 
-CREATE ELEMENT TYPE Person (first_name STRING?, last_name STRING?)
+  Person (
+    first_name STRING?,
+    last_name STRING?
+  ),
 
-CREATE ELEMENT TYPE Visitor (
-  date_of_entry STRING,
-  sequence INTEGER,
-  nationality STRING?,
-  age INTEGER?
-) KEY Visitor_NK (date_of_entry, sequence)
+  Visitor (
+    date_of_entry STRING,
+    sequence INTEGER,
+    nationality STRING?,
+    age INTEGER?
+  ) KEY Visitor_NK (date_of_entry, sequence),
 
-CREATE ELEMENT TYPE Resident (
-  person_number STRING
-) KEY Resident_NK (person_number)
+  Resident (
+    person_number STRING
+  ) KEY Resident_NK (person_number),
 
-CREATE ELEMENT TYPE Town (
-  CITY_NAME STRING,
-  REGION STRING
-) KEY Town_NK (REGION, CITY_NAME)
+  Town (
+    CITY_NAME STRING,
+    REGION STRING
+  ) KEY Town_NK (REGION, CITY_NAME),
 
-CREATE ELEMENT TYPE PRESENT_IN
+  -- Relationships
+  PRESENT_IN,
+  LICENSED_BY (
+    date_of_licence STRING
+  ),
 
-CREATE ELEMENT TYPE LICENSED_BY (date_of_licence STRING)
-
--- =================================================================
-
-CREATE GRAPH TYPE CensusType (
-
-  --NODES
-  (Person, Visitor),  -- keyed by node key Visitor_NK
-  (Person, Resident), -- keyed by node key Resident_NK
-  (Town),
-  (LicensedDog),
-
-  --EDGES
-  (Person, Visitor)-[PRESENT_IN]->(Town),
-  (Person, Resident)-[PRESENT_IN]->(Town),
-  (LicensedDog)-[PRESENT_IN]->(Town),
-  (LicensedDog)-[LICENSED_BY]->(Resident)
-)
--- =================================================================
-
-CREATE GRAPH Census_1901 OF CensusType (
+  -- Node mappings:
   (Visitor, Person)
        FROM VIEW_VISITOR,
 
@@ -60,6 +48,7 @@ CREATE GRAPH Census_1901 OF CensusType (
   (Resident, Person)
        FROM VIEW_RESIDENT,
 
+  -- Relationship mappings:
   (Person, Resident)-[PRESENT_IN]->(Town)
       FROM VIEW_RESIDENT_ENUMERATED_IN_TOWN edge
           START NODES (Person, Resident)
