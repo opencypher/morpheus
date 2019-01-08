@@ -203,6 +203,20 @@ subprojects {
     }
 
     tasks.check.dependsOn tasks.validateLicensesFiles
+
+    task overwriteLicenseFiles {
+        group 'license'
+        description 'Overwrites compound dependency licenses files'
+        dependsOn tasks.generateLicensesFiles
+
+        [[generated: tasks.generateLicensesFiles.licensesFile,
+          existing : file("$projectDir/LICENSES.txt")],
+         [generated: tasks.generateLicensesFiles.noticeFile,
+          existing : file("$projectDir/NOTICE.txt")],
+        ].each { file ->
+            copy { from file.generated; into projectDir }
+        }
+    }
 }
 
 // Disable dependency license validation on test projects
