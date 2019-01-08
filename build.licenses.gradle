@@ -149,8 +149,7 @@ subprojects {
 
     // Compound dependency licenses files
     task generateLicensesFiles {
-        group 'license'
-        description 'Generates compound dependency licenses file'
+        description 'Generates dependency license report files'
         dependsOn tasks.downloadLicenses
 
         ext.licensesFile = file("$tasks.downloadLicenses.jsonDestination/LICENSES.txt")
@@ -186,7 +185,7 @@ subprojects {
 
     task validateLicensesFiles {
         group 'license'
-        description 'Validates compound dependency licenses files'
+        description 'Validates dependency license report files'
         dependsOn tasks.generateLicensesFiles
 
         doLast {
@@ -206,15 +205,15 @@ subprojects {
 
     task overwriteLicenseFiles {
         group 'license'
-        description 'Overwrites compound dependency licenses files'
+        description 'Overwrites dependency license report files'
         dependsOn tasks.generateLicensesFiles
 
-        [[generated: tasks.generateLicensesFiles.licensesFile,
-          existing : file("$projectDir/LICENSES.txt")],
-         [generated: tasks.generateLicensesFiles.noticeFile,
-          existing : file("$projectDir/NOTICE.txt")],
-        ].each { file ->
-            copy { from file.generated; into projectDir }
+        doLast {
+            [tasks.generateLicensesFiles.licensesFile,
+             tasks.generateLicensesFiles.noticeFile,
+            ].each { file ->
+                copy { from file; into projectDir }
+            }
         }
     }
 }
