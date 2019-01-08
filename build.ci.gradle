@@ -1,6 +1,0 @@
-subprojects {
-    task ci {
-        dependsOn tasks.check
-        dependsOn tasks.publish
-    }
-}

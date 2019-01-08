@@ -154,23 +154,21 @@ subprojects {
         dependsOn tasks.downloadLicenses
 
         ext.licensesFile = file("$tasks.downloadLicenses.jsonDestination/LICENSES.txt")
-        ext.noticeFile   = file("$tasks.downloadLicenses.jsonDestination/NOTICE.txt")
+        ext.noticeFile = file("$tasks.downloadLicenses.jsonDestination/NOTICE.txt")
 
         doLast {
             licensesFile.createNewFile()
             licensesFile.text = rootProject.file("etc/licenses/headers/LICENSES-header.txt").text
 
-            tasks.downloadLicenses.licencesJson().licences
-                .sort { it.name }
-                .each {
-                    licensesFile << '\n\n'
-                    licensesFile << "------------------------------------------------------------------------------\n"
-                    licensesFile << "$it.name\n"
-                    it.dependencies.sort{it}.each { licensesFile << "  $it\n" }
-                    licensesFile << "------------------------------------------------------------------------------\n"
-                    licensesFile << '\n'
-                    licensesFile << rootProject.file("etc/licenses/text/$it.name").text
-                }
+            tasks.downloadLicenses.licencesJson().licences.sort { it.name }.each {
+                licensesFile << '\n\n'
+                licensesFile << "------------------------------------------------------------------------------\n"
+                licensesFile << "$it.name\n"
+                it.dependencies.sort { it }.each { licensesFile << "  $it\n" }
+                licensesFile << "------------------------------------------------------------------------------\n"
+                licensesFile << '\n'
+                licensesFile << rootProject.file("etc/licenses/text/$it.name").text
+            }
 
             noticeFile.createNewFile()
             noticeFile.text = rootProject.file("etc/licenses/headers/NOTICE-header.txt").text
@@ -178,13 +176,11 @@ subprojects {
             noticeFile << "Third-party licenses\n"
             noticeFile << "--------------------\n"
 
-            tasks.downloadLicenses.licencesJson().licences
-                    .sort { it.name }
-                    .each {
-                        noticeFile << '\n'
-                        noticeFile << "$it.name\n"
-                        it.dependencies.sort{it}.each { noticeFile << "  $it\n" }
-                    }
+            tasks.downloadLicenses.licencesJson().licences.sort { it.name }.each {
+                noticeFile << '\n'
+                noticeFile << "$it.name\n"
+                it.dependencies.sort { it }.each { noticeFile << "  $it\n" }
+            }
         }
     }
 
@@ -194,14 +190,12 @@ subprojects {
         dependsOn tasks.generateLicensesFiles
 
         doLast {
-            def files = [
-                    [generated: tasks.generateLicensesFiles.licensesFile,
-                     existing : file("$projectDir/LICENSES.txt")],
-                    [generated: tasks.generateLicensesFiles.noticeFile,
-                     existing : file("$projectDir/NOTICE.txt")],
-            ]
-            files.each { file ->
-                if (file.generated.text != file.existing.text) {
+            [[generated: tasks.generateLicensesFiles.licensesFile,
+              existing : file("$projectDir/LICENSES.txt")],
+             [generated: tasks.generateLicensesFiles.noticeFile,
+              existing : file("$projectDir/NOTICE.txt")],
+            ].each {
+                if (it.generated.text != it.existing.text) {
                     throw new GradleException("Generated file differs from the existing file.\n Generated: $file.generated \n Existing: $file.existing")
                 }
             }
@@ -212,13 +206,12 @@ subprojects {
 }
 
 // Disable dependency license validation on test projects
-[
-        'okapi-tck',
-        'okapi-testing',
-        'okapi-neo4j-io-testing',
-        'spark-cypher-examples',
-        'spark-cypher-tck',
-        'spark-cypher-testing',
+['okapi-tck',
+ 'okapi-testing',
+ 'okapi-neo4j-io-testing',
+ 'spark-cypher-examples',
+ 'spark-cypher-tck',
+ 'spark-cypher-testing',
 ].each {
     project(it).tasks.validateLicenses.enabled = false
     project(it).tasks.generateLicensesFiles.enabled = false

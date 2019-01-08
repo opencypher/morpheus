@@ -1,6 +1,7 @@
 subprojects {
     apply plugin: 'maven-publish'
 
+    // Lets all sub-projects apply their build.gradle first
     afterEvaluate {
 
         publishing {
@@ -57,6 +58,12 @@ subprojects {
 
     tasks.withType(PublishToMavenRepository) {
         onlyIf { publication == publishing.publications.full }
+    }
+
+    // Task run by teamcity
+    task ci {
+        dependsOn tasks.check
+        dependsOn tasks.publish
     }
 
 }

@@ -4,7 +4,7 @@ plugins {
     id 'com.github.alisiikh.scalastyle_2.11' version '2.1.0'  apply false
 }
 
-apply from: 'build.versions.gradle'
+apply from: 'build.params.gradle'
 
 allprojects {
     group   = 'org.opencypher'
@@ -87,4 +87,3 @@ subprojects {
 apply from: 'build.licenses.gradle'
 apply from: 'build.publishing.gradle'
 apply from: 'build.style.gradle'
-apply from: 'build.ci.gradle'
