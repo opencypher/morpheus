@@ -1,5 +1,4 @@
 rootProject.name = 'okapi'
-include(':okapi-licensecheck-config')
 include(':okapi-api')
 include(':okapi-testing')
 include(':okapi-neo4j-io')
