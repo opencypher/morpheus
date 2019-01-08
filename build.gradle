@@ -69,6 +69,7 @@ subprojects {
     }
 
     task docJar(type: Jar) {
+        dependsOn tasks.scaladoc
         classifier = 'docs'
         from(tasks.scaladoc.destinationDir)
     }
