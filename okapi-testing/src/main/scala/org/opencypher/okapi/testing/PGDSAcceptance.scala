@@ -202,7 +202,7 @@ trait PGDSAcceptance[Session <: CypherSession] extends BeforeAndAfterEach {
       s"""
          |CATALOG CREATE GRAPH $ns.${gn}4 {
          |  CONSTRUCT
-         |    CREATE (:Āſ { Āſ: 'Āſ' })-[:Āſ]->()
+         |    CREATE (:Āſ { Āſ: 'Āſ' })-[:Āſ]->(:ā)
          |  RETURN GRAPH
          |}
          |""".stripMargin)) match {
@@ -210,7 +210,7 @@ trait PGDSAcceptance[Session <: CypherSession] extends BeforeAndAfterEach {
         withClue("`hasGraph` needs to return `true` after graph creation") {
           cypherSession.catalog.source(ns).hasGraph(GraphName(s"${gn}4")) shouldBe true
         }
-        val result = cypherSession.cypher(s"FROM GRAPH $ns.${gn}4 MATCH (c:Āſ)-[:Āſ]-() RETURN c.Āſ").records.iterator.toBag
+        val result = cypherSession.cypher(s"FROM GRAPH $ns.${gn}4 MATCH (c:Āſ)-[:Āſ]-(:ā) RETURN c.Āſ").records.iterator.toBag
         result should equal(Bag(
           CypherMap("c.Āſ" -> "Āſ")
         ))

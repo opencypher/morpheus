@@ -35,6 +35,10 @@ subprojects {
         testCompile group: 'org.junit.platform', name: 'junit-platform-runner', version: ver.junit.runner
     }
 
+    test {
+        useJUnit()
+    }
+
     def scalacParameters = [
             "-target:jvm-$ver.jvm".toString(),
             '-unchecked',
