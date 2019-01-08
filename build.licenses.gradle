@@ -85,7 +85,7 @@ subprojects {
 
     // License header checking and insertion
     license {
-        header = rootProject.file("licensecheck-config/src/main/resources/NOTICE-header.txt")
+        header = rootProject.file("etc/licenses/headers/NOTICE-header.txt")
         // https://github.com/hierynomus/license-gradle-plugin/issues/145
         // exclude 'test/resources/**'
         // exclude 'main/resources/**'
