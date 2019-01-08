@@ -26,11 +26,12 @@
  */
 package org.opencypher.spark.impl
 
-import org.apache.spark.sql.Row
+import org.apache.spark.sql.{DataFrame, Row, functions}
 import org.apache.spark.sql.types._
 import org.opencypher.okapi.testing.Bag
 import org.opencypher.okapi.testing.Bag._
 import org.opencypher.spark.impl.DataFrameOps._
+import org.opencypher.spark.impl.table.SparkTable.DataFrameTable
 import org.opencypher.spark.testing.CAPSTestSuite
 import org.scalatest.Matchers
 import org.scalatest.prop.GeneratorDrivenPropertyChecks
@@ -38,7 +39,9 @@ import org.scalatest.prop.GeneratorDrivenPropertyChecks
 import scala.collection.JavaConverters._
 import scala.collection.mutable.WrappedArray.ofLong
 
-class DataFrameOpsTest extends CAPSTestSuite with Matchers with GeneratorDrivenPropertyChecks {
+class SparkTableTest extends CAPSTestSuite with Matchers with GeneratorDrivenPropertyChecks {
+  import caps.sparkSession.sqlContext.implicits._
+
   it("it should cast integer columns to long") {
 
     val df = sparkSession.createDataFrame(List(
@@ -73,4 +76,33 @@ class DataFrameOpsTest extends CAPSTestSuite with Matchers with GeneratorDrivenP
       Row(1L, 2L, new ofLong(Array(42L)), new ofLong(Array(42L)), new ofLong(Array(42L)), Row(42L, 42L))
     ))
   }
+
+  // workaround for https://issues.apache.org/jira/browse/SPARK-26572
+  describe("distinct workaround") {
+
+    it("distinct on single column") {
+      val df: DataFrameTable = Seq((1), (1)).toDF("idx")
+      df.distinct.df.count() shouldBe 1
+    }
+
+    it("distinct on multiple columns") {
+      val df: DataFrameTable = Seq((1, 2, 3), (1, 2, 3)).toDF("one", "two", "three")
+      df.distinct.df.count() shouldBe 1
+    }
+
+    it("works around the spark bug") {
+      // Bug in Spark: "monotonically_increasing_id" is pushed down when it shouldn't be. Push down only happens when the
+      // DF containing the "monotonically_increasing_id" expression is on the left side of the join.
+      val baseTable: DataFrameTable = Seq((1), (1)).toDF("idx")
+      val distinctWithId = baseTable.distinct.df.withColumn("id", functions.monotonically_increasing_id())
+      val monotonicallyOnRight: DataFrame = baseTable.df.join(distinctWithId, "idx")
+      val monotonicallyOnLeft: DataFrame = distinctWithId.join(baseTable.df, "idx")
+
+      // verify with scala distinct
+      monotonicallyOnLeft.select("id").collect().map(_.get(0)).distinct.size shouldBe 1
+      monotonicallyOnRight.select("id").collect().map(_.get(0)).distinct.size shouldBe 1
+    }
+  }
+
+
 }
