@@ -1,63 +1,65 @@
 subprojects {
     apply plugin: 'maven-publish'
 
-    // Lets all sub-projects apply their build.gradle first
-    afterEvaluate {
+    publishing {
 
-        publishing {
+        repositories {
+            maven {
+                name = 'buildDir'
+                url = "file://${rootProject.file(cfg.publishDir)}"
+            }
+        }
 
-            repositories {
-                maven {
-                    name = 'buildDir'
-                    url = "file://${rootProject.file(cfg.publishDir)}"
-                }
+        publications {
+
+            dev(MavenPublication) {
+                from components.java
             }
 
-            publications {
+            full(MavenPublication) {
+                from components.java
 
-                dev(MavenPublication) {
-                    from components.java
-                }
-
-                full(MavenPublication) {
-                    from components.java
-
+                afterEvaluate {
                     ['sourceJar',
                      'docJar',
                      'testJar',
                      'shadowJar']
                             .findResults { tasks.findByName(it) }
                             .each { artifact it }
+                }
 
-                    pom {
-                        licenses {
-                            license {
-                                name = 'Apache License, Version 2.0'
-                                url = 'http://www.apache.org/licenses/LICENSE-2.0'
-                            }
-                        }
-                        developers {
-                            developer {
-                                id = 'caps'
-                                name = 'The CAPS team'
-                                email = 'opencypher@neo4j.com'
-                                url = 'https://www.opencypher.org'
-                            }
-                        }
-                        scm {
-                            url = 'https://github.com/opencypher/cypher-for-apache-spark'
+                pom {
+                    licenses {
+                        license {
+                            name = 'Apache License, Version 2.0'
+                            url = 'http://www.apache.org/licenses/LICENSE-2.0'
                         }
                     }
-
-
+                    developers {
+                        developer {
+                            id = 'caps'
+                            name = 'The CAPS team'
+                            email = 'opencypher@neo4j.com'
+                            url = 'https://www.opencypher.org'
+                        }
+                    }
+                    scm {
+                        url = 'https://github.com/opencypher/cypher-for-apache-spark'
+                    }
                 }
             }
-
         }
     }
 
     tasks.withType(PublishToMavenRepository) {
         onlyIf { publication == publishing.publications.full }
+    }
+
+    // Convenience for quick publish to maven local
+    task devPublish {
+        group 'publishing'
+        description ' Publishes main jars to the local Maven repository.'
+        dependsOn tasks.publishDevPublicationToMavenLocal
     }
 
     // Task run by teamcity
