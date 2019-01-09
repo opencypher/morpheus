@@ -228,11 +228,30 @@ object SparkTable {
       }
     }
 
-    override def distinct: DataFrameTable =
-      df.distinct
+    override def distinct: DataFrameTable = distinct(df.columns: _*)
 
-    override def distinct(cols: String*): DataFrameTable =
-      df.dropDuplicates(cols)
+    // workaround for https://issues.apache.org/jira/browse/SPARK-26572
+    override def distinct(colNames: String*): DataFrameTable = {
+      val uniqueSuffix = "_temp_distinct"
+
+      val originalColNames = df.columns
+
+      val renamings = originalColNames.map { c =>
+        if(colNames.contains(c)) c -> s"$c$uniqueSuffix"
+        else c -> c
+      }.toMap
+
+      val renamedDf = colNames.foldLeft(df) {
+        case (df, c) => df.safeRenameColumn(c, renamings(c))
+      }
+
+      val extractRowFromGrouping = originalColNames.map(c => functions.first(renamings(c)) as c)
+      val groupedDf = renamedDf
+        .groupBy(colNames.map(c => functions.col(renamings(c))): _*)
+        .agg(extractRowFromGrouping.head, extractRowFromGrouping.tail: _*)
+
+      groupedDf.safeDropColumns(colNames.map(renamings): _*)
+    }
 
     override def withColumnRenamed(oldColumn: String, newColumn: String): DataFrameTable =
       df.safeRenameColumn(oldColumn, newColumn)
