@@ -90,6 +90,13 @@ class SparkTableTest extends CAPSTestSuite with Matchers with GeneratorDrivenPro
       df.distinct.df.count() shouldBe 1
     }
 
+    it("distinct on subset of columns") {
+      val table: DataFrameTable = Seq((1, 2), (1, 3)).toDF("first", "second")
+      val result = table.distinct("first").df
+      result.count() shouldBe 1
+      result.columns.toSeq should equal(table.df.columns.toSeq)
+    }
+
     it("works around the spark bug") {
       // Bug in Spark: "monotonically_increasing_id" is pushed down when it shouldn't be. Push down only happens when the
       // DF containing the "monotonically_increasing_id" expression is on the left side of the join.

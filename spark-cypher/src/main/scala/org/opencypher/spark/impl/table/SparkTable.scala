@@ -231,20 +231,26 @@ object SparkTable {
     override def distinct: DataFrameTable = distinct(df.columns: _*)
 
     // workaround for https://issues.apache.org/jira/browse/SPARK-26572
-    override def distinct(cols: String*): DataFrameTable = {
+    override def distinct(colNames: String*): DataFrameTable = {
       val uniqueSuffix = "_temp_distinct"
-      val colNames = df.columns
+
+      val originalColNames = df.columns
+
+      val renamings = originalColNames.map { c =>
+        if(colNames.contains(c)) c -> s"$c$uniqueSuffix"
+        else c -> c
+      }.toMap
 
       val renamedDf = colNames.foldLeft(df) {
-        case (df, colName) => df.safeRenameColumn(colName, s"$colName$uniqueSuffix")
+        case (df, c) => df.safeRenameColumn(c, renamings(c))
       }
-      val renamedColNames = renamedDf.columns.toSeq
-      val extractRowFromGrouping = colNames.map(colName => functions.first(s"$colName$uniqueSuffix") as colName)
+
+      val extractRowFromGrouping = originalColNames.map(c => functions.first(renamings(c)) as c)
       val groupedDf = renamedDf
-        .groupBy(renamedColNames.map(functions.col): _*)
+        .groupBy(colNames.map(c => functions.col(renamings(c))): _*)
         .agg(extractRowFromGrouping.head, extractRowFromGrouping.tail: _*)
 
-      groupedDf.safeDropColumns(renamedColNames: _*)
+      groupedDf.safeDropColumns(colNames.map(renamings): _*)
     }
 
     override def withColumnRenamed(oldColumn: String, newColumn: String): DataFrameTable =
