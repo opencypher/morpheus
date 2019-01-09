@@ -1,0 +1,15 @@
+
+description = 'Okapi - Neo4j procedures'
+
+// Compile java and scala together, so we can refer java -> scala
+sourceSets.main.scala.srcDir "src/main/java"
+sourceSets.main.java.srcDirs = []
+
+dependencies {
+    compile project(':okapi-api')
+
+    compileOnly group: 'org.neo4j', name: 'neo4j', version: ver.neo4j.main
+
+    testCompile group: 'org.neo4j.test', name: 'neo4j-harness', version: ver.neo4j.main
+
+}

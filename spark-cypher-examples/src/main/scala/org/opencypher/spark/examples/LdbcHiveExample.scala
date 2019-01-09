@@ -27,6 +27,7 @@
 package org.opencypher.spark.examples
 
 import java.io.File
+import java.nio.file.Files
 
 import org.apache.spark.sql.SparkSession
 import org.apache.spark.sql.internal.StaticSQLConf.CATALOG_IMPLEMENTATION
@@ -80,11 +81,12 @@ object LdbcHiveExample extends ConsoleApp {
 
   // generate GraphDdl file
   val graphDdlString = LdbcUtil.toGraphDDL(datasource, database)
-  writeFile(resource("ddl").getFile + "/ldbc.ddl", graphDdlString)
+  val graphDdlFile = Files.createTempFile("ldbc", ".ddl").toFile.getAbsolutePath
+  writeFile(graphDdlFile, graphDdlString)
 
   // create SQL PGDS
   val sqlGraphSource = GraphSources
-    .sql(resource("ddl/ldbc.ddl").getFile)
+    .sql(graphDdlFile)
     .withSqlDataSourceConfigs(resource("ddl/data-sources.json").getFile)
 
   session.registerSource(Namespace("sql"), sqlGraphSource)

@@ -1,0 +1,8 @@
+
+description = 'Okapi - Neo4j IO'
+
+dependencies {
+    compile project(':okapi-api')
+
+    compile group: 'org.neo4j.driver', name: 'neo4j-java-driver', version: ver.neo4j.driver
+}

@@ -1,0 +1,64 @@
+ext {
+
+    cfg = [
+            publishDir: "build/repo",
+    ]
+
+    ver = [
+            self        : '0.2.4-SNAPSHOT',
+
+            jvm         : '1.8',
+
+            scala       : [major: '2.11',
+                           full : '2.11.12'],
+
+            cypher      : [frontend: '9.0.20181030',
+                           tck     : '1.0.0-M11'],
+
+            neo4j       : [main  : '3.4.10',
+                           driver: '1.7.2'],
+
+            spark       : '2.2.2',
+            hadoop      : '2.7.0',
+            fastparse   : '1.0.0',
+            upickle     : '0.6.6',
+            cats        : '1.0.1',
+            eff         : '5.0.0',
+            bctls       : '1.59',
+            netty       : '4.1.24.Final',
+            h2          : '1.4.196',
+            sparkmeasure: '0.11',
+
+            log4j       : [main : '2.11.0',
+                           scala: '11.0'],
+
+            scalatest   : '3.0.5',
+            scalacheck  : '1.13.5',
+            mockito     : '1.10.19',
+
+            junit       : [main  : '4.12',
+                           runner: '1.0.2'],
+    ]
+
+}
+
+
+// Allows overriding ext.foo.bar with -Pfoo.bar=x
+overrideMapFromProps([] as String[], project.ext.properties)
+
+def overrideMapFromProps(String[] path, Map map) {
+    map.each { key, val ->
+        String[] currPath = path + (String) key
+        if (val instanceof Map)
+            overrideMapFromProps(currPath, (Map) val)
+        else {
+            def prop = findProperty(currPath.join('.'))
+            if (prop != null) map.put(key, prop)
+        }
+    }
+}
+
+// Allow "scalatest".scala() to add the scala version to module names
+String.metaClass.scala = { ->
+    delegate + "_$ver.scala.major"
+}

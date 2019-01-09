@@ -1,0 +1,7 @@
+
+description = 'Cypher for Apache Spark - TCK'
+
+dependencies {
+    testCompile project(':okapi-tck')
+    testCompile project(':spark-cypher-testing')
+}

@@ -65,10 +65,10 @@ CAPS is currently easiest to use with Scala. Below we explain how you can import
 
 ### Building CAPS
 
-CAPS is built using Maven
+CAPS is built using Gradle
 
 ```
-mvn clean install
+./gradlew build
 ```
 
 

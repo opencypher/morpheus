@@ -1,0 +1,23 @@
+apply plugin: 'com.github.johnrengelman.shadow'
+
+description = 'Cypher for Apache Spark - CAPS'
+
+dependencies {
+    compile project(':okapi-relational')
+    compile project(':okapi-neo4j-io')
+    compile project(':graph-ddl')
+
+    compile group: 'org.neo4j.driver', name: 'neo4j-java-driver', version: ver.neo4j.driver
+
+    compileOnly group: 'org.apache.spark', name: "spark-core".scala(),     version: ver.spark
+    compileOnly group: 'org.apache.spark', name: "spark-sql".scala(),      version: ver.spark
+    compileOnly group: 'org.apache.spark', name: "spark-catalyst".scala(), version: ver.spark
+}
+
+shadowJar {
+    classifier = 'cluster'
+
+    dependencies {
+        exclude(dependency('org.scala-lang:'))
+    }
+}

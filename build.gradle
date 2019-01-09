@@ -1,0 +1,94 @@
+plugins {
+    id 'com.github.hierynomus.license'       version '0.15.0' apply false
+    id 'com.github.johnrengelman.shadow'     version '4.0.3'  apply false
+    id 'com.github.alisiikh.scalastyle_2.11' version '2.1.0'  apply false
+}
+
+apply from: 'build.params.gradle'
+
+allprojects {
+    group   = 'org.opencypher'
+    version = ver.self
+}
+
+subprojects {
+    apply plugin: 'scala'
+
+    repositories {
+        mavenCentral()
+        mavenLocal()
+    }
+
+    dependencies {
+        compile group: 'org.scala-lang', name: 'scala-library',  version: ver.scala.full
+
+        // Seems we need to lock these down, otherwise we get runtime errors on reflection
+        compile group: 'org.scala-lang', name: 'scala-reflect',  version: ver.scala.full
+        compile group: 'org.scala-lang', name: 'scala-compiler', version: ver.scala.full
+
+        compile group: 'org.apache.logging.log4j', name: 'log4j-api',               version: ver.log4j.main
+        compile group: 'org.apache.logging.log4j', name: 'log4j-core',              version: ver.log4j.main
+        compile group: 'org.apache.logging.log4j', name: "log4j-api-scala".scala(), version: ver.log4j.scala
+
+        testCompile group: 'org.scalatest',      name: "scalatest".scala(),     version: ver.scalatest
+        testCompile group: 'org.scalacheck',     name: "scalacheck".scala(),    version: ver.scalacheck
+        testCompile group: 'org.junit.platform', name: 'junit-platform-runner', version: ver.junit.runner
+    }
+
+    test {
+        useJUnit()
+    }
+
+    def scalacParameters = [
+            "-target:jvm-$ver.jvm".toString(),
+            '-unchecked',
+            '-deprecation',
+            '-feature',
+            '-Xfatal-warnings',
+            '-Xfuture',
+            '-Ywarn-adapted-args',
+            '-Yopt-warnings:at-inline-failed',
+            '-Yopt:l:project',
+            '-Ypartial-unification',
+    ]
+
+    tasks.withType(JavaCompile) {
+        sourceCompatibility = ver.jvm
+        targetCompatibility = ver.jvm
+        options.encoding = 'UTF-8'
+    }
+
+    tasks.withType(ScalaCompile) {
+        options.encoding = 'UTF-8'
+        scalaCompileOptions.additionalParameters = scalacParameters
+    }
+
+    tasks.withType(ScalaDoc) {
+        scalaDocOptions.additionalParameters = scalacParameters
+    }
+
+    task sourceJar(type: Jar) {
+        classifier = 'sources'
+        from(sourceSets.main.allSource)
+    }
+
+    task docJar(type: Jar) {
+        dependsOn tasks.scaladoc
+        classifier = 'docs'
+        from(tasks.scaladoc.destinationDir)
+    }
+
+    task testJar(type: Jar) {
+        classifier = 'tests'
+        from(sourceSets.test.output)
+    }
+
+    task dependencySearch(type: DependencyInsightReportTask) {
+        description 'Searches all projects for a dependency'
+        group 'help'
+    }
+}
+
+apply from: 'build.licenses.gradle'
+apply from: 'build.publishing.gradle'
+apply from: 'build.style.gradle'

@@ -1,0 +1,8 @@
+
+description = 'Okapi Relational - Relational Algebra for Cypher'
+
+dependencies {
+    compile project(':okapi-logical')
+
+    testCompile project(':okapi-testing')
+}

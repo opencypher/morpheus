@@ -27,42 +27,36 @@ Cypher that are not yet approved by the openCypher community".
 Third-party licenses
 --------------------
 
-Apache Software License, Version 2.0
-  Apache Commons Lang
-  Apache Log4j API
-  Apache Log4j Core
-  Graph DDL
-  Okapi - Neo4j IO
-  Okapi - openCypher API
-  Okapi IR - Declarative representation of Cypher queries
-  Okapi Logical - Logical representation of Cypher queries
-  Okapi Relational - Relational Algebra for Cypher
-  Okapi Trees - Tree rewriting framework for Okapi
-  openCypher AST for the Cypher Query Language
-  openCypher Expressions
-  openCypher Front End
-  openCypher Parser
-  openCypher Rewriting
-  openCypher Utils
-  parboiled-core
-  parboiled-scala
-  Scala 2.11 wrapper for Log4j API
+Apache-2.0
+  ast-9.0-9.0.20181030.jar
+  commons-lang3-3.7.jar
+  expressions-9.0-9.0.20181030.jar
+  front-end-9.0-9.0.20181030.jar
+  log4j-api-2.11.0.jar
+  log4j-api-scala_2.11-11.0.jar
+  log4j-core-2.11.0.jar
+  neo4j-java-driver-1.7.2.jar
+  parboiled-core-1.1.7.jar
+  parboiled-scala_2.11-1.1.7.jar
+  parser-9.0-9.0.20181030.jar
+  rewriting-9.0-9.0.20181030.jar
+  util-9.0-9.0.20181030.jar
 
-BSD License
-  Scala Compiler
-  Scala Library
-  scala-parser-combinators
-  scala-xml
+BSD-3-Clause
+  scala-compiler-2.11.12.jar
+  scala-library-2.11.12.jar
+  scala-parser-combinators_2.11-1.0.4.jar
+  scala-reflect-2.11.12.jar
+  scala-xml_2.11-1.0.5.jar
 
-MIT-license
-  Cats core
-  Cats kernel
-  Cats macros
-  core
-  fastparse
-  fastparse-utils
-  machinist
-  sourcecode
-  ujson_2.11
-  upickle_2.11
-
+MIT
+  cats-core_2.11-1.0.1.jar
+  cats-kernel_2.11-1.0.1.jar
+  cats-macros_2.11-1.0.1.jar
+  eff_2.11-5.0.0.jar
+  fastparse-utils_2.11-1.0.0.jar
+  fastparse_2.11-1.0.0.jar
+  machinist_2.11-0.6.2.jar
+  sourcecode_2.11-0.1.4.jar
+  ujson_2.11-0.6.6.jar
+  upickle_2.11-0.6.6.jar

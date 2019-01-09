@@ -1,0 +1,8 @@
+
+description = 'Okapi Logical - Logical representation of Cypher queries'
+
+dependencies {
+    compile project(':okapi-ir')
+
+    testCompile project(':okapi-testing')
+}

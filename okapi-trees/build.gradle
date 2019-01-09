@@ -1,0 +1,8 @@
+
+description = 'Okapi Trees - Tree rewriting framework for Okapi'
+
+dependencies {
+    compile group: 'org.typelevel', name: "cats-core".scala(), version: ver.cats
+
+    testCompile group: 'junit', name: 'junit', version: ver.junit.main
+}

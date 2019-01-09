@@ -9,13 +9,24 @@ build/test/
 metastore_db/
 derby.log
 
-# Hive logs
+# Spark/Hive runtime
 derby.log
 metastore_db
 metastore_*
+spark-warehouse_*/
 
 # IDE cruft
 .settings
 caps-core/.project
 caps-core/.classpath
 .project
+out/
+
+# Gradle
+.gradle
+/build/
+gradle-app.setting
+!gradle-wrapper.jar
+.gradletasknamecache
+# gradle/wrapper/gradle-wrapper.properties
+
