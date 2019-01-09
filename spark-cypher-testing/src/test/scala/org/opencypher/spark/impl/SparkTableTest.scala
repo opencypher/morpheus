@@ -77,39 +77,59 @@ class SparkTableTest extends CAPSTestSuite with Matchers with GeneratorDrivenPro
     ))
   }
 
-  // workaround for https://issues.apache.org/jira/browse/SPARK-26572
+  // These tests verify the workaround for https://issues.apache.org/jira/browse/SPARK-26572
+  // in `DataFrameTable#distinct` is correct and actually works around the bug.
   describe("distinct workaround") {
 
-    it("distinct on single column") {
-      val df: DataFrameTable = Seq((1), (1)).toDF("idx")
+    it("correct on single column") {
+      val df: DataFrameTable = Seq(1, 1).toDF("idx")
       df.distinct.df.count() shouldBe 1
     }
 
-    it("distinct on multiple columns") {
+    it("correct on multiple columns") {
       val df: DataFrameTable = Seq((1, 2, 3), (1, 2, 3)).toDF("one", "two", "three")
       df.distinct.df.count() shouldBe 1
     }
 
-    it("distinct on subset of columns") {
+    it("correct on subset of columns") {
       val table: DataFrameTable = Seq((1, 2), (1, 3)).toDF("first", "second")
       val result = table.distinct("first").df
       result.count() shouldBe 1
       result.columns.toSeq should equal(table.df.columns.toSeq)
     }
 
-    it("works around the spark bug") {
-      // Bug in Spark: "monotonically_increasing_id" is pushed down when it shouldn't be. Push down only happens when the
-      // DF containing the "monotonically_increasing_id" expression is on the left side of the join.
-      val baseTable: DataFrameTable = Seq((1), (1)).toDF("idx")
+    // This test ensures that our `DataFrameTable#distinct` workaround does not suffer from the same bug as the Spark
+    // implementation.
+    it("actually works around the Spark bug") {
+      val baseTable: DataFrameTable = Seq(1, 1).toDF("idx")
+
+      // Uses `DataFrameTable#distinct` workaround
       val distinctWithId = baseTable.distinct.df.withColumn("id", functions.monotonically_increasing_id())
-      val monotonicallyOnRight: DataFrame = baseTable.df.join(distinctWithId, "idx")
-      val monotonicallyOnLeft: DataFrame = distinctWithId.join(baseTable.df, "idx")
+
+      val monotonicallyOnRight = baseTable.df.join(distinctWithId, "idx")
+      val monotonicallyOnLeft = distinctWithId.join(baseTable.df, "idx")
 
       // verify with scala distinct
-      monotonicallyOnLeft.select("id").collect().map(_.get(0)).distinct.size shouldBe 1
-      monotonicallyOnRight.select("id").collect().map(_.get(0)).distinct.size shouldBe 1
+      monotonicallyOnLeft.select("id").collect().map(_.get(0)).distinct.length shouldBe 1
+      monotonicallyOnRight.select("id").collect().map(_.get(0)).distinct.length shouldBe 1
     }
-  }
 
+    // This test reproduces the Spark `distinct` bug and asserts that the bug is present.
+    // When this test fails, please remove the `DataFrameTable#distinct` workarounds,
+    // and all tests in `distinct workaround`.
+    it("detects if the Spark bug was fixed") {
+      val baseTable = Seq(1, 1).toDF("idx")
+
+      // Uses Spark distinct
+      val distinctWithId = baseTable.distinct.withColumn("id", functions.monotonically_increasing_id())
+
+      val monotonicallyOnLeft = distinctWithId.join(baseTable, "idx")
+
+      // Bug in Spark: "monotonically_increasing_id" is pushed down when it shouldn't be. Push down only happens when the
+      // DF containing the "monotonically_increasing_id" expression is on the left side of the join.
+      monotonicallyOnLeft.select("id").collect().map(_.get(0)).distinct.length shouldBe 2
+    }
+
+  }
 
 }
