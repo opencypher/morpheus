@@ -4,7 +4,7 @@ plugins {
     id 'com.github.alisiikh.scalastyle_2.11' version '2.1.0'  apply false
 }
 
-task dummy1 {
+task dummy2 {
     group 'dummy'
     description 'dummy'
 }
