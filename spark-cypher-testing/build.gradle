@@ -3,7 +3,6 @@ description = 'Cypher for Apache Spark - Test Utilities'
 
 dependencies {
     compile project(':spark-cypher')
-    compile project(':okapi-neo4j-procedures')
     compile project(':okapi-testing')
     compile project(':okapi-neo4j-io-testing')
 
