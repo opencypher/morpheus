@@ -119,21 +119,24 @@ object SchemaFromProcedure extends Logging {
                     throw UnsupportedOperationException(errorMessage)
                 }
               }.foldLeft(CTVoid: CypherType)(_ join _)
-
-              Seq((typ, labels, Some(property), Some(propCypherType)))
+              if (propCypherType != CTVoid) {
+                Seq((typ, labels, Some(property), Some(propCypherType)))
+              } else {
+                Seq((typ, labels, Some(property), None))
+              }
           }
         }
       }
       rows.groupBy(row => row._1 -> row._2).map {
         case ((typ, labels), tuples) =>
           val properties = tuples.collect {
-            case (_, _, p, t) if p.nonEmpty => p.get -> t.get
+            case (_, _, Some(p), Some(t)) => p -> t
           }
           Schema.empty.withNodePropertyKeys(labels: _*)(properties: _*)
       }.foldLeft(Schema.empty)(_ ++ _)
     } match {
       case Success(schema) => schema
-      case Failure(error) => throw SchemaException(s"Could not load node schema from Neo4j: ${error.getMessage}")
+      case Failure(error) => throw SchemaException(s"Could not load node schema from Neo4j", Some(error))
     }
   }
 
@@ -154,11 +157,14 @@ object SchemaFromProcedure extends Logging {
             case "" =>
               Seq((typ, None, None))
             case property =>
-              val propTypes = row.get("propertyTypes").asList(extractString).asScala.toList
+              val propertyTypesValue = row.get("propertyTypes")
+              val propertyTypes =
+                if (propertyTypesValue.isNull) Nil
+                else propertyTypesValue.asList(extractString).asScala.toList
 
               val nullable = !row.get("mandatory").asBoolean()
 
-              val propCypherType = propTypes.flatMap { neo4jTypeString =>
+              val propCypherType = propertyTypes.flatMap { neo4jTypeString =>
                 val errorMessage = s"At least one relationship with type $typ has unsupported property type $neo4jTypeString for property $property."
                 neo4jTypeString.toCypherType match {
                   case Some(ct) =>
@@ -171,21 +177,25 @@ object SchemaFromProcedure extends Logging {
                     throw UnsupportedOperationException(errorMessage)
                 }
               }.foldLeft(CTVoid: CypherType)(_ join _)
-              Seq((typ, Some(property), Some(propCypherType)))
+              if (propCypherType != CTVoid) {
+                Seq((typ, Some(property), Some(propCypherType)))
+              } else {
+                Seq((typ, Some(property), None))
+              }
           }
         }
       }
       rows.groupBy(_._1).map {
         case (typ, tuples) =>
           val properties = tuples.collect {
-            case (_, p, t) if p.nonEmpty => p.get -> t.get
+            case (_, Some(p), Some(t)) => p -> t
           }
 
           Schema.empty.withRelationshipPropertyKeys(typ)(properties: _*)
       }.foldLeft(Schema.empty)(_ ++ _)
     } match {
       case Success(schema) => schema
-      case Failure(error) => throw SchemaException(s"Could not load relationship schema from Neo4j: ${error.getMessage}")
+      case Failure(error) => throw SchemaException(s"Could not load relationship schema from Neo4j", Some(error))
     }
   }
 
@@ -246,7 +256,7 @@ object SchemaFromProcedure extends Logging {
     } match {
       case Success(schema) => Some(schema)
       case Failure(error) =>
-        logger.error(s"Could not load schema from Neo4j: ${error.getMessage}")
+        logger.error(s"Could not load schema from Neo4j", error)
         None
     }
   }
