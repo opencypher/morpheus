@@ -44,7 +44,7 @@ object Neo4jCustomSchemaExample extends ConsoleApp {
   implicit val session: CAPSSession = CAPSSession.local()
 
   // Start a Neo4j instance and populate it with social network data
-  val neo4j = startNeo4j(personNetwork).withSchemaProcedure
+  val neo4j = startNeo4j(personNetwork)
 
   // Initialise schema from serialised file
   // This bypasses the automatic schema computation

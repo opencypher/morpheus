@@ -36,6 +36,7 @@ import org.opencypher.okapi.impl.exception.{IllegalArgumentException, Unsupporte
 import org.opencypher.okapi.neo4j.io.MetaLabelSupport._
 import org.opencypher.okapi.neo4j.io.Neo4jHelpers.Neo4jDefaults._
 import org.opencypher.okapi.neo4j.io.Neo4jHelpers._
+import org.opencypher.okapi.neo4j.io.testing.Neo4jServerFixture
 import org.opencypher.okapi.testing.Bag
 import org.opencypher.okapi.testing.Bag._
 import org.opencypher.spark.api.CypherGraphSources
@@ -43,11 +44,11 @@ import org.opencypher.spark.api.io.CAPSNodeTable
 import org.opencypher.spark.api.value.CAPSNode
 import org.opencypher.spark.impl.CAPSConverters._
 import org.opencypher.spark.testing.CAPSTestSuite
-import org.opencypher.spark.testing.fixture.{CAPSNeo4jServerFixture, TeamDataFixture}
+import org.opencypher.spark.testing.fixture.TeamDataFixture
 
 class Neo4jPropertyGraphDataSourceTest
   extends CAPSTestSuite
-    with CAPSNeo4jServerFixture
+    with Neo4jServerFixture
     with TeamDataFixture {
 
   it("can read lists from Neo4j") {

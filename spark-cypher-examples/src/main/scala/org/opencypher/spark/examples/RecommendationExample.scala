@@ -45,8 +45,8 @@ object RecommendationExample extends ConsoleApp {
   implicit val caps: CAPSSession = CAPSSession.local()
 
   // Start two Neo4j instances and populate them with social network data
-  implicit val neo4jServerUS: ServerControls = startNeo4j(socialNetworkUS).withSchemaProcedure
-  implicit val neo4jServerEU: ServerControls = startNeo4j(socialNetworkEU).withSchemaProcedure
+  implicit val neo4jServerUS: ServerControls = startNeo4j(socialNetworkUS)
+  implicit val neo4jServerEU: ServerControls = startNeo4j(socialNetworkEU)
 
   // Register Property Graph Data Sources (PGDS)
 

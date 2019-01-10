@@ -35,6 +35,7 @@ import org.opencypher.okapi.impl.exception.SchemaException
 import org.opencypher.okapi.neo4j.io.MetaLabelSupport._
 import org.opencypher.okapi.neo4j.io.Neo4jHelpers.Neo4jDefaults._
 import org.opencypher.okapi.neo4j.io.Neo4jHelpers._
+import org.opencypher.okapi.neo4j.io.testing.Neo4jServerFixture
 import org.opencypher.okapi.relational.api.graph.RelationalCypherGraph
 import org.opencypher.okapi.testing.Bag
 import org.opencypher.spark.api.io.HiveFormat
@@ -43,12 +44,11 @@ import org.opencypher.spark.api.io.sql.{SqlDataSourceConfig, SqlPropertyGraphDat
 import org.opencypher.spark.impl.acceptance.DefaultGraphInit
 import org.opencypher.spark.impl.table.SparkTable
 import org.opencypher.spark.testing.CAPSTestSuite
-import org.opencypher.spark.testing.fixture.CAPSNeo4jServerFixture
 
 import scala.collection.JavaConverters._
 import scala.util.{Failure, Success, Try}
 
-class Neo4JGraphMergeTest extends CAPSTestSuite with CAPSNeo4jServerFixture with DefaultGraphInit {
+class Neo4JGraphMergeTest extends CAPSTestSuite with Neo4jServerFixture with DefaultGraphInit {
 
   override def dataFixture: String = ""
 
