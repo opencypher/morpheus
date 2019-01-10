@@ -32,7 +32,7 @@ import org.apache.spark.sql.types.{LongType, StructField, StructType}
 import org.opencypher.okapi.api.graph.{CypherResult, GraphName, Namespace}
 import org.opencypher.okapi.api.io.conversion.NodeMapping
 import org.opencypher.okapi.api.value.CypherValue.{CypherMap, CypherNull}
-import org.opencypher.okapi.impl.exception.{IllegalArgumentException, UnsupportedOperationException}
+import org.opencypher.okapi.impl.exception.{IllegalArgumentException, SchemaException, UnsupportedOperationException}
 import org.opencypher.okapi.neo4j.io.MetaLabelSupport._
 import org.opencypher.okapi.neo4j.io.Neo4jHelpers.Neo4jDefaults._
 import org.opencypher.okapi.neo4j.io.Neo4jHelpers._
@@ -81,7 +81,7 @@ class Neo4jPropertyGraphDataSourceTest
   }
 
   it("should omit properties with unsupported types if corresponding flag is set") {
-    neo4jConfig.cypher(s"""CREATE (n:Unsupported:${metaPrefix}test { foo: time(), bar: 42 })""")
+    neo4jConfig.cypher(s"""CREATE (n:Unsupported:${metaPrefix}test { foo: duration('P2.5W'), bar: 42 })""")
 
     val dataSource = CypherGraphSources.neo4j(neo4jConfig, omitIncompatibleProperties = true)
     val graph = dataSource.graph(GraphName("test")).asCaps
@@ -94,7 +94,7 @@ class Neo4jPropertyGraphDataSourceTest
   }
 
   it("should throw exception if properties with unsupported types are being imported") {
-    an[UnsupportedOperationException] should be thrownBy {
+    a[SchemaException] should be thrownBy {
       neo4jConfig.cypher(s"""CREATE (n:Unsupported:${metaPrefix}test { foo: time(), bar: 42 })""")
 
       val dataSource = CypherGraphSources.neo4j(neo4jConfig)
