@@ -263,7 +263,8 @@ final case class SchemaImpl(
   override def withNodeKey(label: String, nodeKey: Set[String]): Schema = {
     if (!labels.contains(label)) {
       throw SchemaException(
-        s"""|Invalid node key.
+        s"""|Invalid node key for schema
+            |$pretty
             |Unknown node label `$label`.
             |Should be one of: ${labels.mkString("[", ", ", "]")}""".stripMargin)
     }
@@ -272,7 +273,8 @@ final case class SchemaImpl(
 
     if (!nodeKey.subsetOf(propertyKeys.keySet)) {
       throw SchemaException(
-        s"""|Invalid node key.
+        s"""|Invalid node key for schema
+            |$pretty
             |Not all combinations that contain `$label` have all the properties for ${nodeKey.mkString("[", ", ", "]")}.
             |Available keys: ${propertyKeys.keySet.mkString("[", ", ", "]")}""".stripMargin)
     }
@@ -283,7 +285,8 @@ final case class SchemaImpl(
 
     if (nullableProperties.nonEmpty) {
       throw SchemaException(
-        s"""|Invalid node key.
+        s"""|Invalid node key for schema
+            |$pretty
             |Properties ${nullableProperties.keySet.mkString("[", ", ", "]")} have nullable types.
             |Nullable properties can not be part of a node key.""".stripMargin)
     }
@@ -295,7 +298,8 @@ final case class SchemaImpl(
   override def withRelationshipKey(relationshipType: String, relationshipKey: Set[String]): Schema = {
     if (!relationshipTypes.contains(relationshipType)) {
       throw SchemaException(
-        s"""|Invalid relationship key.
+        s"""|Invalid relationship key for schema
+            |$pretty
             |Unknown relationship type `$relationshipType`.
             |Should be one of: ${relationshipTypes.mkString("[", ", ", "]")}.""".stripMargin)
     }
@@ -304,7 +308,8 @@ final case class SchemaImpl(
 
     if (!relationshipKey.subsetOf(propertyKeys.keySet)) {
       throw SchemaException(
-        s"""|Invalid relationship key.
+        s"""|Invalid relationship key for schema
+            |$pretty
             |Relationship type `$relationshipType` does not have all the properties for ${relationshipKey.mkString("[", ", ", "]")}.
             |Available keys: ${propertyKeys.keySet.mkString("[", ", ", "]")}""".stripMargin)
     }
@@ -315,7 +320,8 @@ final case class SchemaImpl(
 
     if (nullableProperties.nonEmpty) {
       throw SchemaException(
-        s"""|Invalid relationship key.
+        s"""|Invalid relationship key for schema
+            |$pretty
             |Properties ${nullableProperties.keySet.mkString("[", ", ", "]")} have nullable types.
             |Nullable properties can not be part of a relationship key.""".stripMargin)
     }
