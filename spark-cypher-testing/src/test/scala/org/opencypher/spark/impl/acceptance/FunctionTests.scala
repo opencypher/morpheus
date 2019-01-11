@@ -442,6 +442,33 @@ class FunctionTests extends CAPSTestSuite with ScanGraphInit{
     }
   }
 
+  describe("left") {
+    it("on string value") {
+      val result = caps.cypher("RETURN left('hello', 4) AS hades")
+      result.records.toMaps should equal(
+        Bag(
+          CypherMap("hades" -> "hell")
+        )
+      )
+    }
+    it("on string value where length is greater than string") {
+      val result = caps.cypher("RETURN left('hello', 8) AS hades")
+      result.records.toMaps should equal(
+        Bag(
+          CypherMap("hades" -> "hello")
+        )
+      )
+    }
+    it("on null value") {
+      val result = caps.cypher("RETURN left(null, 4) AS hades")
+      result.records.toMaps should equal(
+        Bag(
+          CypherMap("hades" -> null)
+        )
+      )
+    }
+  }
+
   describe("toUpper") {
     it("toUpper()") {
       val result = caps.cypher("RETURN toUpper('hello') AS upperCased")
