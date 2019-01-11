@@ -496,6 +496,74 @@ class FunctionTests extends CAPSTestSuite with ScanGraphInit{
     }
   }
 
+  describe("replace") {
+    it("single character") {
+      val result = caps.cypher("RETURN replace('hello', 'l', 'w') AS res")
+      result.records.toMaps should equal(
+        Bag(
+          CypherMap("res" -> "hewwo")
+        )
+      )
+    }
+    it("multiple characters") {
+      val result = caps.cypher("RETURN replace('hello', 'ell', 'ipp') AS res")
+      result.records.toMaps should equal(
+        Bag(
+          CypherMap("res" -> "hippo")
+        )
+      )
+    }
+    it("non-existent character") {
+      val result = caps.cypher("RETURN replace('hello', 'x', 'y') AS res")
+      result.records.toMaps should equal(
+        Bag(
+          CypherMap("res" -> "hello")
+        )
+      )
+    }
+    it("on null") {
+      val result = caps.cypher("RETURN replace(null, 'x', 'y') AS res")
+      result.records.toMaps should equal(
+        Bag(
+          CypherMap("res" -> null)
+      )
+      )
+    }
+    it("on null to-be-replaced") {
+      val result = caps.cypher("RETURN replace('hello', null, 'y') AS res")
+      result.records.toMaps should equal(
+        Bag(
+          CypherMap("res" -> null)
+        )
+      )
+    }
+    it("on null replacement") {
+      val result = caps.cypher("RETURN replace('hello', 'x', null) AS res")
+      result.records.toMaps should equal(
+        Bag(
+          CypherMap("res" -> null)
+        )
+      )
+    }
+    it("on complex string expression") {
+      val result = caps.cypher("RETURN replace('he' + 'llo', 'l' + 'l', 'w' + 'w') AS res")
+      result.records.toMaps should equal(
+        Bag(
+          CypherMap("res" -> "hewwo")
+        )
+      )
+    }
+    it("on complex expression evaluating to null") {
+      val result = caps.cypher("WITH ['ll', 'ww'] AS stringList RETURN replace('hello', stringList[0], stringList[2]) AS res")
+      result.records.toMaps should equal(
+        Bag(
+          CypherMap("res" -> null)
+        )
+      )
+    }
+  }
+
+
   describe("toUpper") {
     it("toUpper()") {
       val result = caps.cypher("RETURN toUpper('hello') AS upperCased")
