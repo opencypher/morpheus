@@ -444,26 +444,53 @@ class FunctionTests extends CAPSTestSuite with ScanGraphInit{
 
   describe("left") {
     it("on string value") {
-      val result = caps.cypher("RETURN left('hello', 4) AS hades")
+      val result = caps.cypher("RETURN left('hello', 4) AS res")
       result.records.toMaps should equal(
         Bag(
-          CypherMap("hades" -> "hell")
+          CypherMap("res" -> "hell")
         )
       )
     }
     it("on string value where length is greater than string") {
-      val result = caps.cypher("RETURN left('hello', 8) AS hades")
+      val result = caps.cypher("RETURN left('hello', 8) AS res")
       result.records.toMaps should equal(
         Bag(
-          CypherMap("hades" -> "hello")
+          CypherMap("res" -> "hello")
         )
       )
     }
     it("on null value") {
-      val result = caps.cypher("RETURN left(null, 4) AS hades")
+      val result = caps.cypher("RETURN left(null, 4) AS res")
       result.records.toMaps should equal(
         Bag(
-          CypherMap("hades" -> null)
+          CypherMap("res" -> null)
+        )
+      )
+    }
+  }
+
+  describe("right") {
+    it("on string value") {
+      val result = caps.cypher("RETURN right('hello', 2) AS res")
+      result.records.toMaps should equal(
+        Bag(
+          CypherMap("res" -> "lo")
+        )
+      )
+    }
+    it("on string value where length is greater than string") {
+      val result = caps.cypher("RETURN left('hello', 8) AS res")
+      result.records.toMaps should equal(
+        Bag(
+          CypherMap("res" -> "hello")
+        )
+      )
+    }
+    it("on null value") {
+      val result = caps.cypher("RETURN left(null, 4) AS res")
+      result.records.toMaps should equal(
+        Bag(
+          CypherMap("res" -> null)
         )
       )
     }

@@ -61,6 +61,7 @@ object FunctionUtils {
         case functions.Range => Range(expr(0), expr(1), expr.lift(2))
         case functions.Substring => Substring(expr(0), expr(1), expr.lift(2))
         case functions.Left => Substring(expr(0), IntegerLit(0)(), expr.lift(1))
+        case functions.Right => Right(expr(0), expr(1))
         case functions.Trim => Trim(expr.head)(cypherType)
         case functions.LTrim => LTrim(expr.head)(cypherType)
         case functions.RTrim => RTrim(expr.head)(cypherType)

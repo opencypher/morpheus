@@ -312,6 +312,11 @@ object SparkSQLExprMapper {
           val stepCol = maybeStep.map(_.asSparkSQLExpr).getOrElse(ONE_LIT)
           rangeUdf(from.asSparkSQLExpr, to.asSparkSQLExpr, stepCol)
 
+        case Right(original, start) =>
+          val ix = start.asSparkSQLExpr * functions.lit(-1)
+          val length = functions.length(original.asSparkSQLExpr)
+          original.asSparkSQLExpr.substr(ix, length)
+
         case Substring(original, start, maybeLength) =>
           val origCol = original.asSparkSQLExpr
           val startCol = start.asSparkSQLExpr + ONE_LIT
