@@ -27,17 +27,169 @@
 package org.opencypher.okapi.neo4j.io
 
 import org.apache.logging.log4j.scala.Logging
-import org.neo4j.driver.v1.Value
-import org.neo4j.driver.v1.util.Function
-import org.opencypher.okapi.api.schema.Schema
-import org.opencypher.okapi.api.types.{CTVoid, CypherType}
-import org.opencypher.okapi.impl.exception.{SchemaException, UnsupportedOperationException}
+import org.opencypher.okapi.api.schema.PropertyKeys.PropertyKeys
+import org.opencypher.okapi.api.schema.{PropertyKeys, Schema}
+import org.opencypher.okapi.api.types.{CTAny, CTNumber, CTVoid, CypherType}
+import org.opencypher.okapi.api.value.CypherValue.{CypherBoolean, CypherList, CypherString, CypherValue}
+import org.opencypher.okapi.impl.exception.{IllegalArgumentException, SchemaException}
 import org.opencypher.okapi.neo4j.io.Neo4jHelpers._
 
-import scala.collection.JavaConverters._
 import scala.util.{Failure, Success, Try}
 
 object SchemaFromProcedure extends Logging {
+
+  def apply(neo4j: Neo4jConfig, omitImportFailures: Boolean): Schema = {
+    neo4j.withSession { implicit session =>
+
+      def areSchemaProceduresSupported: Boolean = {
+        val schemaProcedures = Set(nodeSchemaProcedure, relSchemaProcedure)
+        val supportedProcedures = cypher("CALL dbms.procedures() YIELD name AS name")
+          .map(procedure => procedure("name").value.toString)
+          .toSet
+        schemaProcedures.subsetOf(supportedProcedures)
+      }
+
+      Try {
+        areSchemaProceduresSupported
+      } match {
+        case Success(true) =>
+          val nodeRows = cypher(s"CALL $nodeSchemaProcedure")
+          val nodeRowsGroupedByCombo = nodeRows.groupBy(_.labels)
+          val nodeSchema = nodeRowsGroupedByCombo.foldLeft(Schema.empty) {
+            case (currentSchema, (combo, rows)) =>
+              val propertyKeys = rows.foldLeft(PropertyKeys.empty) { case (currentPropertyKeys, nextRow) =>
+                currentPropertyKeys ++ nextRow.propertyKeys(omitImportFailures)
+              }
+              currentSchema.withNodePropertyKeys(combo, propertyKeys)
+          }
+          val relRows = cypher(s"CALL $relSchemaProcedure")
+          val relRowsGroupedByType = relRows.groupBy(_.relType)
+          val relSchema = relRowsGroupedByType.foldLeft(Schema.empty) {
+            case (currentSchema, (tpe, rows)) =>
+              val propertyKeys = rows.foldLeft(PropertyKeys.empty) { case (currentPropertyKeys, nextRow) =>
+                currentPropertyKeys ++ nextRow.propertyKeys(omitImportFailures)
+              }
+              currentSchema.withRelationshipPropertyKeys(tpe, propertyKeys)
+          }
+          nodeSchema ++ relSchema
+        case Success(false) => throw SchemaException(
+          s"""|Your version of Neo4j does not support `$nodeSchemaProcedure` and `$relSchemaProcedure`.
+              |Schema procedure support was added by Neo4j versions 3.3.9, 3.4.10, and 3.5.0.
+           """.stripMargin)
+        case Failure(error) =>
+          throw SchemaException(s"Could not retrieve the procedure list from the Neo4j database", Some(error))
+      }
+
+    }
+  }
+
+  /**
+    * Functions to extract values from a Neo4j schema procedure row.
+    */
+  implicit private class Neo4jSchemaRow(row: Map[String, CypherValue]) {
+
+    def propertyKeys(omitImportFailures: Boolean): PropertyKeys = {
+      propertyName match {
+        case Some(name) =>
+          maybeCapsJoinedPropertyType(omitImportFailures)
+            .map(ct => PropertyKeys(name -> ct))
+            .getOrElse(PropertyKeys.empty)
+        case None =>
+          PropertyKeys.empty
+      }
+    }
+
+    def neo4jPropertyTypeStrings: List[String] = getValueAsStrings("propertyTypes")
+
+    def relType: String = {
+      val relString = row.get("relType") match {
+        case Some(CypherString(s)) => s
+        case _ => throw IllegalArgumentException("a valid Neo4j relationship schema row with a relationship type", row)
+      }
+      if (relString.length > 3 && relString.take(2) == ":`" && relString.takeRight(1) == "`") {
+        relString.drop(2).dropRight(1)
+      } else {
+        throw IllegalArgumentException(s"a Neo4j schema `relType` with format :`REL_TYPE_NAME`", relString)
+      }
+    }
+
+    def labels: Set[String] = getValueAsStrings("nodeLabels").toSet
+
+    def propertyName: Option[String] = row.get("propertyName").collect { case CypherString(s) => s }
+
+    def isMandatory: Boolean = row.get("mandatory").collect { case CypherBoolean(b) => b }.getOrElse(false)
+
+    /**
+      * CAPS can have at most one property type for a given property on a given label combination.
+      * If different property types are present on the same property with multiple nodes that have the same
+      * label combination, then by default a schema exception is thrown. If `omitImportFailures` is set, then the
+      * problematic property is instead excluded from the schema and a warning is logged.
+      *
+      * @param omitImportFailures when set CAPS excludes problematic properties from the schema instead of
+      *                           throwing an exception
+      * @return joined Cypher type of a property on a label combination
+      */
+    private def maybeCapsJoinedPropertyType(omitImportFailures: Boolean): Option[CypherType] = {
+      neo4jPropertyTypeStrings.foldLeft(Some(CTVoid): Option[CypherType]) {
+        case (maybeJoinedType, nextNeo4jTypeString) =>
+          def unsupportedPropertyTypeError: String =
+            s"""|The Neo4j property `$propertyName` on label combination [${labels.mkString(", ")}] has nodes
+                |with the unsupported property type $nextNeo4jTypeString.""".stripMargin
+
+          def incompatiblePropertyTypesError: String =
+            s"""|The Neo4j property `$propertyName` on label combination [${labels.mkString(", ")}] has nodes
+                |with incompatible property types [${neo4jPropertyTypeStrings.mkString(", ")}].""".stripMargin
+
+          def wasNotAddedMessage: String =
+            "The property was not added to the schema due to the set `omitImportFailures` flag."
+
+          def setFlagToLoadWithoutMessage: String =
+            "Set the `omitImportFailures` flag to compute the Neo4j schema without this property."
+
+          nextNeo4jTypeString.toCypherType match {
+            case Some(nextCt) =>
+              maybeJoinedType.flatMap { joinedType =>
+                val nextJoined = joinedType.join(nextCt)
+                if (nextJoined == CTAny || nextJoined == CTNumber) {
+                  if (omitImportFailures) {
+                    logger.warn(
+                      s"""|$incompatiblePropertyTypesError
+                          |$wasNotAddedMessage""".stripMargin)
+                    None
+                  } else {
+                    throw SchemaException(
+                      s"""|$incompatiblePropertyTypesError
+                          |$setFlagToLoadWithoutMessage""".stripMargin)
+                  }
+                } else {
+                  if (isMandatory) {
+                    Some(nextJoined)
+                  } else {
+                    Some(nextJoined.nullable)
+                  }
+                }
+              }
+            case None if omitImportFailures =>
+              logger.warn(
+                s"""|$unsupportedPropertyTypeError
+                    |$wasNotAddedMessage""".stripMargin)
+              None
+            case None =>
+              throw SchemaException(
+                s"""|$unsupportedPropertyTypeError
+                    |$setFlagToLoadWithoutMessage""".stripMargin)
+          }
+      }
+    }
+
+    private def getValueAsStrings(key: String): List[String] = {
+      row.getOrElse[CypherValue](key, CypherList.empty) match {
+        case CypherList(l) => l.collect { case CypherString(s) => s }
+        case nonList => throw IllegalArgumentException("A Cypher list of strings", nonList)
+      }
+    }
+
+  }
 
   val neo4jTypeMapping: Map[String, String] = Map(
     "StringArray" -> "LIST(STRING)",
@@ -45,6 +197,9 @@ object SchemaFromProcedure extends Logging {
     "String" -> "STRING"
   )
 
+  /**
+    * Naive string replacement to convert Neo4j type string representations to ones that are compatible with CAPS.
+    */
   implicit class Neo4jTypeString(val s: String) extends AnyVal {
 
     def toCapsTypeString: String = {
@@ -59,144 +214,7 @@ object SchemaFromProcedure extends Logging {
 
   }
 
-  val nodeSchemaProcedure = "db.schema.nodeTypeProperties"
-  val relSchemaProcedure = "db.schema.relTypeProperties"
-
-  def apply(config: Neo4jConfig, omitImportFailures: Boolean): Schema = {
-    Try {
-      Seq(nodeSchemaProcedure, relSchemaProcedure).forall { proc =>
-        config.cypher("CALL dbms.procedures() YIELD name AS name").exists { map =>
-          map("name").value == proc
-        }
-      }
-    } match {
-      case Success(true) =>
-        val schema = nodeSchemaFromProcedure(config, omitImportFailures) ++
-          relSchemaFromProcedure(config, omitImportFailures)
-        schema
-      case Success(false) =>
-        throw SchemaException(
-          s"""|Your version of Neo4j does not support `$nodeSchemaProcedure` and `$relSchemaProcedure`.
-              |These procedures are supported by Neo4j versions 3.3.9, 3.4.10, and all versions above 3.5.0.
-           """.stripMargin)
-      case Failure(error) =>
-        throw SchemaException(s"Retrieving the procedure list from the Neo4j database failed: $error")
-    }
-  }
-
-  private[neo4j] def nodeSchemaFromProcedure(config: Neo4jConfig, omitImportFailures: Boolean): Schema = {
-    Try {
-      val rows = config.withSession { session =>
-        val result = session.run("CALL " + nodeSchemaProcedure)
-
-        result.list().asScala.flatMap { row =>
-          val extractString = new Function[Value, String] {
-            override def apply(v1: Value): String = v1.asString()
-          }
-
-          val typ = row.get("nodeType").asString()
-          val labels = row.get("nodeLabels").asList(extractString).asScala.toList
-
-          row.get("propertyName").asString() match {
-            case "" =>
-              Seq((typ, labels, None, None))
-            case property =>
-
-              val propTypes = row.get("propertyTypes").asList(extractString).asScala.toList
-
-              val nullable = !row.get("mandatory").asBoolean()
-
-              val propCypherType = propTypes.flatMap { neo4jTypeString =>
-                val errorMessage = s"At least one node with labels [${labels.mkString(", ")}] has unsupported property type $neo4jTypeString for property $property."
-                neo4jTypeString.toCypherType match {
-                  case Some(ct) =>
-                    if (nullable) Some(ct.nullable)
-                    else Some(ct)
-                  case None if omitImportFailures =>
-                    logger.warn(s"$errorMessage Inferred type VOID for this property to indicate that it is unsupported by CAPS.")
-                    None
-                  case None =>
-                    throw UnsupportedOperationException(errorMessage)
-                }
-              }.foldLeft(CTVoid: CypherType)(_ join _)
-              if (propCypherType != CTVoid) {
-                Seq((typ, labels, Some(property), Some(propCypherType)))
-              } else {
-                Seq((typ, labels, Some(property), None))
-              }
-          }
-        }
-      }
-      rows.groupBy(row => row._1 -> row._2).map {
-        case ((typ, labels), tuples) =>
-          val properties = tuples.collect {
-            case (_, _, Some(p), Some(t)) => p -> t
-          }
-          Schema.empty.withNodePropertyKeys(labels: _*)(properties: _*)
-      }.foldLeft(Schema.empty)(_ ++ _)
-    } match {
-      case Success(schema) => schema
-      case Failure(error) => throw SchemaException(s"Could not load node schema from Neo4j", Some(error))
-    }
-  }
-
-  private[neo4j] def relSchemaFromProcedure(config: Neo4jConfig, omitImportFailures: Boolean): Schema = {
-    Try {
-      val rows = config.withSession { session =>
-        val result = session.run("CALL " + relSchemaProcedure)
-
-        result.list().asScala.flatMap { row =>
-          val extractString = new Function[Value, String] {
-            override def apply(v1: Value): String = v1.asString()
-          }
-
-          // TODO: Replace with a safer extractor
-          val typ = row.get("relType").asString.drop(2).dropRight(1)
-
-          row.get("propertyName").asString() match {
-            case "" =>
-              Seq((typ, None, None))
-            case property =>
-              val propertyTypesValue = row.get("propertyTypes")
-              val propertyTypes =
-                if (propertyTypesValue.isNull) Nil
-                else propertyTypesValue.asList(extractString).asScala.toList
-
-              val nullable = !row.get("mandatory").asBoolean()
-
-              val propCypherType = propertyTypes.flatMap { neo4jTypeString =>
-                val errorMessage = s"At least one relationship with type $typ has unsupported property type $neo4jTypeString for property $property."
-                neo4jTypeString.toCypherType match {
-                  case Some(ct) =>
-                    if (nullable) Some(ct.nullable)
-                    else Some(ct)
-                  case None if omitImportFailures =>
-                    logger.warn(s"$errorMessage Inferred type VOID for this property to indicate that it is unsupported by CAPS.")
-                    None
-                  case None =>
-                    throw UnsupportedOperationException(errorMessage)
-                }
-              }.foldLeft(CTVoid: CypherType)(_ join _)
-              if (propCypherType != CTVoid) {
-                Seq((typ, Some(property), Some(propCypherType)))
-              } else {
-                Seq((typ, Some(property), None))
-              }
-          }
-        }
-      }
-      rows.groupBy(_._1).map {
-        case (typ, tuples) =>
-          val properties = tuples.collect {
-            case (_, Some(p), Some(t)) => p -> t
-          }
-
-          Schema.empty.withRelationshipPropertyKeys(typ)(properties: _*)
-      }.foldLeft(Schema.empty)(_ ++ _)
-    } match {
-      case Success(schema) => schema
-      case Failure(error) => throw SchemaException(s"Could not load relationship schema from Neo4j", Some(error))
-    }
-  }
+  private[neo4j] val nodeSchemaProcedure = "db.schema.nodeTypeProperties"
+  private[neo4j] val relSchemaProcedure = "db.schema.relTypeProperties"
 
 }
