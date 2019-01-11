@@ -52,7 +52,7 @@ class Neo4jPropertyGraphDataSourceWriteTest
 
     dataSource.store(GraphName("g1"), g)
 
-    neo4jConfig.cypher("MATCH (n)-[r]->(m) RETURN n.val, r.val, m.val").map(x => CypherMap(x.toSeq:_*)).toBag should equal(Bag(
+    neo4jConfig.cypherWithNewSession("MATCH (n)-[r]->(m) RETURN n.val, r.val, m.val").map(x => CypherMap(x.toSeq:_*)).toBag should equal(Bag(
       CypherMap("n.val" -> 1, "r.val" -> 3, "m.val" -> 2),
       CypherMap("n.val" -> 2, "r.val" -> 4, "m.val" -> 1)
     ))

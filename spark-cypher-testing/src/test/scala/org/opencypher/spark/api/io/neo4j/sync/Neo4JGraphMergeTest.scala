@@ -256,12 +256,12 @@ class Neo4JGraphMergeTest extends CAPSTestSuite with Neo4jServerFixture with Def
 
       Neo4jGraphMerge.createIndexes(entireGraphName, neo4jConfig, nodeKeys)
 
-      neo4jConfig.cypher("CALL db.constraints YIELD description").toSet should equal(Set(
+      neo4jConfig.cypherWithNewSession("CALL db.constraints YIELD description").toSet should equal(Set(
         Map("description" -> new CypherString("CONSTRAINT ON ( person:Person ) ASSERT (person.name, person.bar) IS NODE KEY")),
         Map("description" -> new CypherString("CONSTRAINT ON ( employee:Employee ) ASSERT employee.baz IS NODE KEY"))
       ))
 
-      neo4jConfig.cypher("CALL db.indexes YIELD description").toSet should equal(Set(
+      neo4jConfig.cypherWithNewSession("CALL db.indexes YIELD description").toSet should equal(Set(
         Map("description" -> new CypherString(s"INDEX ON :Person($metaPropertyKey)")),
         Map("description" -> new CypherString(s"INDEX ON :Person(name, bar)")),
         Map("description" -> new CypherString(s"INDEX ON :Employee($metaPropertyKey)")),
@@ -330,9 +330,9 @@ class Neo4JGraphMergeTest extends CAPSTestSuite with Neo4jServerFixture with Def
       val subGraphName = GraphName("myGraph")
       Neo4jGraphMerge.createIndexes(subGraphName, neo4jConfig, nodeKeys)
 
-      neo4jConfig.cypher("CALL db.constraints YIELD description").toSet shouldBe empty
+      neo4jConfig.cypherWithNewSession("CALL db.constraints YIELD description").toSet shouldBe empty
 
-      neo4jConfig.cypher("CALL db.indexes YIELD description").toSet should equal(Set(
+      neo4jConfig.cypherWithNewSession("CALL db.indexes YIELD description").toSet should equal(Set(
         Map("description" -> new CypherString(s"INDEX ON :${subGraphName.metaLabelForSubgraph}($metaPropertyKey)")),
         Map("description" -> new CypherString(s"INDEX ON :Person(name, bar)")),
         Map("description" -> new CypherString(s"INDEX ON :Employee(baz)"))

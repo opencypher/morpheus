@@ -56,7 +56,7 @@ class EntityWriterTest extends BaseTestSuite with Neo4jServerFixture with Before
       )
     }.toBag
 
-    val result = neo4jConfig.cypher(s"MATCH (n) RETURN n.$metaPropertyKey, n.val1, n.val2, n.val3").map(CypherMap).toBag
+    val result = neo4jConfig.cypherWithNewSession(s"MATCH (n) RETURN n.$metaPropertyKey, n.val1, n.val2, n.val3").map(CypherMap).toBag
     result should equal(expected)
   }
 
@@ -78,7 +78,7 @@ class EntityWriterTest extends BaseTestSuite with Neo4jServerFixture with Before
       )
     }.toBag
 
-    val result = neo4jConfig.cypher(s"MATCH ()-[r]->() RETURN r.$metaPropertyKey, r.val3").map(CypherMap).toBag
+    val result = neo4jConfig.cypherWithNewSession(s"MATCH ()-[r]->() RETURN r.$metaPropertyKey, r.val3").map(CypherMap).toBag
     result should equal(expected)
   }
 

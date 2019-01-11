@@ -81,7 +81,7 @@ class Neo4jPropertyGraphDataSourceTest
   }
 
   it("should omit properties with unsupported types if corresponding flag is set") {
-    neo4jConfig.cypher(s"""CREATE (n:Unsupported:${metaPrefix}test { foo: duration('P2.5W'), bar: 42 })""")
+    neo4jConfig.cypherWithNewSession(s"""CREATE (n:Unsupported:${metaPrefix}test { foo: duration('P2.5W'), bar: 42 })""")
 
     val dataSource = CypherGraphSources.neo4j(neo4jConfig, omitIncompatibleProperties = true)
     val graph = dataSource.graph(GraphName("test")).asCaps
@@ -95,7 +95,7 @@ class Neo4jPropertyGraphDataSourceTest
 
   it("should throw exception if properties with unsupported types are being imported") {
     a[SchemaException] should be thrownBy {
-      neo4jConfig.cypher(s"""CREATE (n:Unsupported:${metaPrefix}test { foo: time(), bar: 42 })""")
+      neo4jConfig.cypherWithNewSession(s"""CREATE (n:Unsupported:${metaPrefix}test { foo: time(), bar: 42 })""")
 
       val dataSource = CypherGraphSources.neo4j(neo4jConfig)
       val graph = dataSource.graph(GraphName("test")).asCaps

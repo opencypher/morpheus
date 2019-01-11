@@ -67,7 +67,7 @@ case class Neo4jPropertyGraphDataSource(
   }
 
   override protected def listGraphNames: List[String] = {
-    val labelResult = config.cypher(
+    val labelResult = config.cypherWithNewSession(
       """|CALL db.labels()
          |YIELD label
          |RETURN collect(label) AS labels
