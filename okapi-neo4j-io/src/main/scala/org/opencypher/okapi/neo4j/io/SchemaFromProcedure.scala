@@ -101,6 +101,8 @@ object SchemaFromProcedure extends Logging {
 
     def neo4jPropertyTypeStrings: List[String] = getValueAsStrings("propertyTypes")
 
+    def isRelationshipSchema: Boolean = row.contains("relType")
+
     def relType: String = {
       val relString = row.get("relType") match {
         case Some(CypherString(s)) => s
@@ -132,19 +134,21 @@ object SchemaFromProcedure extends Logging {
     private def maybeCapsJoinedPropertyType(omitImportFailures: Boolean): Option[CypherType] = {
       neo4jPropertyTypeStrings.foldLeft(Some(CTVoid): Option[CypherType]) {
         case (maybeJoinedType, nextNeo4jTypeString) =>
+          def rowTypeDescription: String = if (isRelationshipSchema) {
+            s"relationship type [:$relType]"
+          } else {
+            s"node label combination [:${labels.mkString(", ")}]"
+          }
+
           def unsupportedPropertyTypeError: String =
-            s"""|The Neo4j property `$propertyName` on label combination [${labels.mkString(", ")}] has nodes
-                |with the unsupported property type $nextNeo4jTypeString.""".stripMargin
+            s"The Neo4j property `${propertyName.getOrElse("")}` on $rowTypeDescription has unsupported property type `$nextNeo4jTypeString`.".stripMargin
 
           def incompatiblePropertyTypesError: String =
-            s"""|The Neo4j property `$propertyName` on label combination [${labels.mkString(", ")}] has nodes
-                |with incompatible property types [${neo4jPropertyTypeStrings.mkString(", ")}].""".stripMargin
+            s"The Neo4j property `${propertyName.getOrElse("")}` on $rowTypeDescription has incompatible property types [${neo4jPropertyTypeStrings.mkString(", ")}].".stripMargin
 
-          def wasNotAddedMessage: String =
-            "The property was not added to the schema due to the set `omitImportFailures` flag."
+          def wasNotAddedMessage: String = "The property was not added to the schema due to the set `omitImportFailures` flag."
 
-          def setFlagToLoadWithoutMessage: String =
-            "Set the `omitImportFailures` flag to compute the Neo4j schema without this property."
+          def setFlagToLoadWithoutMessage: String = "Set the `omitImportFailures` flag to compute the Neo4j schema without this property."
 
           nextNeo4jTypeString.toCypherType match {
             case Some(nextCt) =>
@@ -193,6 +197,7 @@ object SchemaFromProcedure extends Logging {
 
   val neo4jTypeMapping: Map[String, String] = Map(
     "StringArray" -> "LIST(STRING)",
+    "Double" -> "FLOAT",
     "Long" -> "INTEGER",
     "String" -> "STRING"
   )
