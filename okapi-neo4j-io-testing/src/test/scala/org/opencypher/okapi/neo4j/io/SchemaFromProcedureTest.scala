@@ -1,0 +1,158 @@
+/*
+ * Copyright (c) 2016-2019 "Neo4j Sweden, AB" [https://neo4j.com]
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ *
+ * Attribution Notice under the terms of the Apache License 2.0
+ *
+ * This work was created by the collective efforts of the openCypher community.
+ * Without limiting the terms of Section 6, any Derivative Work that is not
+ * approved by the public consensus process of the openCypher Implementers Group
+ * should not be described as “Cypher” (and Cypher® is a registered trademark of
+ * Neo4j Inc.) or as "openCypher". Extensions by implementers or prototypes or
+ * proposals for change that have been documented or implemented should only be
+ * described as "implementation extensions to Cypher" or as "proposed changes to
+ * Cypher that are not yet approved by the openCypher community".
+ */
+package org.opencypher.okapi.neo4j.io
+
+import org.neo4j.graphdb.GraphDatabaseService
+import org.neo4j.harness.{EnterpriseTestServerBuilders, ServerControls}
+import org.opencypher.okapi.api.schema.Schema
+import org.opencypher.okapi.api.types._
+import org.opencypher.okapi.impl.exception.SchemaException
+import org.opencypher.okapi.testing.BaseTestSuite
+import org.scalatest.BeforeAndAfter
+
+class SchemaFromProcedureTest extends BaseTestSuite with BeforeAndAfter {
+
+  it("node property with numeric typed property") {
+    val numericProperty =
+      """|CREATE (:A {val1: 'String', val2: 1})
+         |CREATE (:A {val1: 'String', val2: 1.2})""".stripMargin
+
+    a[SchemaException] should be thrownBy {
+      schemaFor(numericProperty)
+    }
+
+    schemaFor(numericProperty, omitImportFailures = true) should equal(Schema.empty
+      .withNodePropertyKeys("A")("val1" -> CTString)
+    )
+  }
+
+  it("input order does not affect schema") {
+    val schema = schemaFor(
+      """|CREATE (b1:B { type: 'B1' })
+         |CREATE (b2:B { type: 'B2', size: 5 })""".stripMargin)
+    schema should equal(Schema.empty
+      .withNodePropertyKeys("B")("type" -> CTString, "size" -> CTInteger.nullable)
+    )
+  }
+
+  it("single and multiple labels") {
+    val schema = schemaFor(
+      """|CREATE (:A {val1: 'String'})
+         |CREATE (:B {val2: 2})
+         |CREATE (:A:B {val1: 'String', val2: 2})""".stripMargin)
+    schema should equal(Schema.empty
+      .withNodePropertyKeys("A")("val1" -> CTString)
+      .withNodePropertyKeys("B")("val2" -> CTInteger)
+      .withNodePropertyKeys("A", "B")("val1" -> CTString, "val2" -> CTInteger)
+    )
+  }
+
+  it("label with empty label") {
+    val schema = schemaFor("CREATE ({val1: 'String'})")
+    schema should equal(Schema.empty
+      .withNodePropertyKeys()("val1" -> CTString)
+    )
+  }
+
+  it("label without properties") {
+    val schema = schemaFor("CREATE (:A)")
+    schema should equal(Schema.empty
+      .withNodePropertyKeys("A")()
+    )
+  }
+
+  it("nullable property") {
+    val schema = schemaFor("CREATE (:A {val: 1}), (:A)")
+    schema should equal(Schema.empty
+      .withNodePropertyKeys("A")("val" -> CTInteger.nullable)
+    )
+  }
+
+  it("relationship with any type property") {
+    val anyProperty =
+      """|CREATE (a:A)
+         |CREATE (b:A)
+         |CREATE (a)-[:REL {val1: 'String', val2: true}]->(b)
+         |CREATE (a)-[:REL {val1: 'String', val2: 2.0}]->(b)""".stripMargin
+
+    a[SchemaException] should be thrownBy {
+      schemaFor(anyProperty)
+    }
+
+    schemaFor(anyProperty, omitImportFailures = true) should equal(Schema.empty
+      .withNodePropertyKeys("A")()
+      .withRelationshipPropertyKeys("REL")("val1" -> CTString)
+    )
+  }
+
+  it("relationship without properties") {
+    val schema = schemaFor(
+      """|CREATE (a:A)
+         |CREATE (b:A)
+         |CREATE (a)-[:REL]->(b)""".stripMargin)
+    schema should equal(Schema.empty
+      .withNodePropertyKeys("A")()
+      .withRelationshipPropertyKeys("REL")()
+    )
+  }
+
+  it("unsupported properties") {
+    val createQuery =
+      """|CREATE (a:A { foo: time(), bar : 42 })
+         |CREATE (b:A)
+         |CREATE (a)-[:REL]->(b)""".stripMargin
+    a[SchemaException] should be thrownBy schemaFor(createQuery)
+    val schemaWithOmittedImportFailures = schemaFor(createQuery, omitImportFailures = true)
+    schemaWithOmittedImportFailures should equal(Schema.empty
+      .withNodePropertyKeys("A")("bar" -> CTInteger.nullable)
+      .withRelationshipPropertyKeys("REL")()
+    )
+  }
+
+  private var neo4j: ServerControls = _
+
+  private var neo4jConfig: Neo4jConfig = _
+
+  def graph: GraphDatabaseService = neo4j.graph()
+
+  before {
+    neo4j = EnterpriseTestServerBuilders
+      .newInProcessBuilder()
+      .newServer()
+    neo4jConfig = Neo4jConfig(neo4j.boltURI(), user = "anonymous", password = Some("password"), encrypted = false)
+  }
+
+  after {
+    neo4j.close()
+  }
+
+  def schemaFor(createQuery: String, omitImportFailures: Boolean = false): Schema = {
+    graph.execute(createQuery).close()
+    SchemaFromProcedure(neo4jConfig, omitImportFailures = omitImportFailures)
+  }
+
+}
