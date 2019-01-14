@@ -421,10 +421,10 @@ case class Graph(
 case class ViewId(maybeSetSchema: Option[SetSchemaDefinition], parts: List[String]) {
   lazy val dataSource: String = {
     (maybeSetSchema, parts) match {
-      case (_, dataSource :: schema :: view :: Nil) => dataSource
-      case (None, dataSource :: tail) if tail.nonEmpty => dataSource
+      case (_, ds :: _ :: _ :: Nil) => ds
+      case (None, ds :: tail) if tail.nonEmpty => ds
       case (Some(setSchema), _) => setSchema.dataSource
-      case _ => malformed("Relative view identifier requires a preceeding SET SCHEMA statement", parts.mkString("."))
+      case _ => malformed("Relative view identifier requires a preceding SET SCHEMA statement", parts.mkString("."))
     }
   }
 }

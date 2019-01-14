@@ -26,11 +26,14 @@
  */
 package org.opencypher.graphddl
 
+import org.junit.runner.RunWith
 import org.opencypher.okapi.api.graph.GraphName
 import org.opencypher.okapi.api.schema.{Schema, SchemaPattern}
 import org.opencypher.okapi.api.types.{CTFloat, CTInteger, CTString}
+import org.scalatest.junit.JUnitRunner
 import org.scalatest.{FunSpec, Matchers}
 
+@RunWith(classOf[JUnitRunner])
 class GraphDdlTest extends FunSpec with Matchers {
 
   val ddlString: String =
@@ -65,11 +68,13 @@ class GraphDdlTest extends FunSpec with Matchers {
 
     val graphDdl = GraphDdl(ddlString)
 
-    val personKey1 = NodeViewKey(NodeType("Person"), ViewId(None, List("dataSourceName", "fooDatabaseName", "personView1")))
-    val personKey2 = NodeViewKey(NodeType("Person"), ViewId(None, List("dataSourceName", "fooDatabaseName", "personView2")))
-    val bookKey    = NodeViewKey(NodeType("Book"),   ViewId(None, List("dataSourceName", "fooDatabaseName", "bookView")))
-    val readsKey1  = EdgeViewKey(RelationshipType("Person", "READS", "Book"),  ViewId(None, List("dataSourceName", "fooDatabaseName", "readsView1")))
-    val readsKey2  = EdgeViewKey(RelationshipType("Person", "READS", "Book"),  ViewId(None, List("dataSourceName", "fooDatabaseName", "readsView2")))
+    val maybeSetSchema = Some(SetSchemaDefinition("dataSourceName", "fooDatabaseName"))
+
+    val personKey1 = NodeViewKey(NodeType("Person"), ViewId(maybeSetSchema, List("personView1")))
+    val personKey2 = NodeViewKey(NodeType("Person"), ViewId(maybeSetSchema, List("personView2")))
+    val bookKey    = NodeViewKey(NodeType("Book"),   ViewId(maybeSetSchema, List("bookView")))
+    val readsKey1  = EdgeViewKey(RelationshipType("Person", "READS", "Book"),  ViewId(maybeSetSchema, List("readsView1")))
+    val readsKey2  = EdgeViewKey(RelationshipType("Person", "READS", "Book"),  ViewId(maybeSetSchema, List("readsView2")))
 
     val expected = GraphDdl(
       Map(
@@ -116,14 +121,18 @@ class GraphDdlTest extends FunSpec with Matchers {
 
   it("extracts join keys for a given node view key in start node position") {
     val maybeJoinColumns = GraphDdl(ddlString).graphs(GraphName("fooGraph"))
-      .nodeIdColumnsFor(NodeViewKey(NodeType("Person"), ViewId(None, List("dataSourceName", "fooDatabaseName", "personView1"))))
+      .nodeIdColumnsFor(NodeViewKey(
+        NodeType("Person"),
+        ViewId(Some(SetSchemaDefinition("dataSourceName", "fooDatabaseName")), List("personView1"))))
 
     maybeJoinColumns shouldEqual Some(List("person_id1"))
   }
 
   it("extracts join keys for a given node view key in end node position") {
     val maybeJoinColumns = GraphDdl(ddlString).graphs(GraphName("fooGraph"))
-      .nodeIdColumnsFor(NodeViewKey(NodeType("Book"), ViewId(None, List("dataSourceName", "fooDatabaseName", "bookView"))))
+      .nodeIdColumnsFor(NodeViewKey(
+        NodeType("Book"),
+        ViewId(Some(SetSchemaDefinition("dataSourceName", "fooDatabaseName")), List("bookView"))))
 
     maybeJoinColumns shouldEqual Some(List("book_id"))
   }
@@ -152,8 +161,8 @@ class GraphDdlTest extends FunSpec with Matchers {
       """.stripMargin)
 
     ddl.graphs(GraphName("fooGraph")).nodeToViewMappings.keys shouldEqual Set(
-      NodeViewKey(NodeType("Person"), ViewId(None, List("ds1", "db1", "personView"))),
-      NodeViewKey(NodeType("Account"), ViewId(None, List("ds2", "db2", "accountView")))
+      NodeViewKey(NodeType("Person"), ViewId(Some(SetSchemaDefinition("ds1", "db1")), List("personView"))),
+      NodeViewKey(NodeType("Account"), ViewId(Some(SetSchemaDefinition("ds1", "db1")), List("ds2", "db2", "accountView")))
     )
   }
 
@@ -170,7 +179,7 @@ class GraphDdlTest extends FunSpec with Matchers {
         |)
       """.stripMargin)
 
-    val A_a = NodeViewKey(NodeType("A"), ViewId(None, List("ds1", "db1", "a")))
+    val A_a = NodeViewKey(NodeType("A"), ViewId(Some(SetSchemaDefinition("ds1", "db1")), List("a")))
 
     ddl.graphs(GraphName("myGraph")) shouldEqual Graph(
       name = GraphName("myGraph"),
@@ -179,10 +188,10 @@ class GraphDdlTest extends FunSpec with Matchers {
         .withRelationshipPropertyKeys("B")("y" -> CTString)
         .withSchemaPatterns(SchemaPattern("A", "B", "A")),
       nodeToViewMappings = Map(
-        A_a -> NodeToViewMapping(NodeType("A"), ViewId(None, List("ds1", "db1", "a")), Map("x" -> "x"))
+        A_a -> NodeToViewMapping(NodeType("A"), ViewId(Some(SetSchemaDefinition("ds1", "db1")), List("a")), Map("x" -> "x"))
       ),
       edgeToViewMappings = List(
-        EdgeToViewMapping(RelationshipType("A", "B", "A"), ViewId(None, List("ds1", "db1", "b")),
+        EdgeToViewMapping(RelationshipType("A", "B", "A"), ViewId(Some(SetSchemaDefinition("ds1", "db1")), List("b")),
           StartNode(A_a, List(Join("id", "id"))),
           EndNode(A_a, List(Join("id", "id"))),
           Map("y" -> "y")
@@ -326,7 +335,7 @@ class GraphDdlTest extends FunSpec with Matchers {
       |           FROM personView
       |)
     """.stripMargin)
-    e.getFullMessage should (include("fooGraph") and include("(Person)") and include("db.schema.personView"))
+    e.getFullMessage should (include("fooGraph") and include("(Person)") and include("personView"))
   }
 
   it("fails on duplicate relationship mappings") {
@@ -349,7 +358,7 @@ class GraphDdlTest extends FunSpec with Matchers {
         |     END   NODES (Person) FROM a n JOIN ON e.id = n.id
         |)
       """.stripMargin)
-    e.getFullMessage should (include("fooGraph") and include("(Person)-[KNOWS]->(Person)") and include("db.schema.pkpView"))
+    e.getFullMessage should (include("fooGraph") and include("(Person)-[KNOWS]->(Person)") and include("pkpView"))
   }
 
   it("fails on duplicate global labels") {
@@ -443,21 +452,6 @@ class GraphDdlTest extends FunSpec with Matchers {
     """.stripMargin)
     e.getFullMessage should (
       include("fooGraph") and include("Person") and include("personView") and include("age1")  and include("age2")
-    )
-  }
-
-  it("fails on missing set schema statement") {
-    val e = the [GraphDdlException] thrownBy GraphDdl("""
-      |CREATE GRAPH TYPE fooSchema (
-      | Person,
-      | (Person)
-      |)
-      |CREATE GRAPH fooGraph OF fooSchema (
-      |  (Person) FROM personView
-      |)
-    """.stripMargin)
-    e.getFullMessage should (
-      include("fooGraph") and include("personView")
     )
   }
 
