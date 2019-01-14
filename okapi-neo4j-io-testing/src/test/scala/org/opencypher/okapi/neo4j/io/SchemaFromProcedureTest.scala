@@ -133,6 +133,44 @@ class SchemaFromProcedureTest extends BaseTestSuite with BeforeAndAfter {
     )
   }
 
+  def testProperty(propertyValue: String, expectedType: CypherType): Unit = {
+    schemaFor(s"CREATE (:A {p: $propertyValue})") should equal(
+      Schema.empty.withNodePropertyKeys("A")("p" -> expectedType)
+    )
+  }
+
+  it("supports boolean") {
+    testProperty("true", CTBoolean)
+  }
+
+  it("supports boolean lists") {
+    testProperty("[true, false]", CTList(CTBoolean))
+  }
+
+  it("supports integers") {
+    testProperty("1", CTInteger)
+  }
+
+  it("supports integer lists") {
+    testProperty("[1, 2]", CTList(CTInteger))
+  }
+
+  it("supports floats") {
+    testProperty("1.1", CTFloat)
+  }
+
+  it("supports float lists") {
+    testProperty("[1.2, 2.3]", CTList(CTFloat))
+  }
+
+  it("supports strings") {
+    testProperty("'a'", CTString)
+  }
+
+  it("supports string lists") {
+    testProperty("['a', 'b']", CTList(CTString))
+  }
+
   private var neo4j: ServerControls = _
 
   private var neo4jConfig: Neo4jConfig = _

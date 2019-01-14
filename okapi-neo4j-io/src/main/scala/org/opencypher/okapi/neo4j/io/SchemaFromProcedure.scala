@@ -196,10 +196,9 @@ object SchemaFromProcedure extends Logging {
   }
 
   val neo4jTypeMapping: Map[String, String] = Map(
-    "StringArray" -> "LIST(STRING)",
-    "Double" -> "FLOAT",
-    "Long" -> "INTEGER",
-    "String" -> "STRING"
+    "(.+)Array" -> "List($1)",
+    "Double" -> "Float",
+    "Long" -> "Integer"
   )
 
   /**
