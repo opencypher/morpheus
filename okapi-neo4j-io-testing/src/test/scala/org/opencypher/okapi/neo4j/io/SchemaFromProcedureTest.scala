@@ -181,7 +181,7 @@ class SchemaFromProcedureTest extends BaseTestSuite with BeforeAndAfter with Bef
   }
 
   it("supports datetime") {
-    testProperty("datetime('2015-06-24T12:50:35.556+0100')", CTDate)
+    testProperty("datetime('2015-06-24T12:50:35.556+0100')", CTDateTime)
   }
 
   it("supports datetime list") {
