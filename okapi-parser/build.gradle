@@ -1,0 +1,13 @@
+
+description = 'Okapi - openCypher parser'
+
+dependencies {
+    compile project(':okapi-trees')
+    compile project(':okapi-api')
+
+    compile group: 'com.lihaoyi',       name: "fastparse".scala(), version: ver.fastparse
+
+    testCompile project(':okapi-tck')
+    testCompile group: 'org.mockito',   name: 'mockito-all', version: ver.mockito
+    testCompile group: 'junit',         name: 'junit',       version: ver.junit.main
+}
