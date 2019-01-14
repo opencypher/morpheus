@@ -140,6 +140,14 @@ class SchemaFromProcedureTest extends BaseTestSuite with BeforeAndAfter with Bef
     )
   }
 
+  it("is not sensitive to creation order") {
+    schemaFor(
+      """|CREATE (b1:B { type: 'B1' })
+         |CREATE (b2:B { type: 'B2', size: 5 })""".stripMargin) should equal(Schema.empty
+      .withNodePropertyKeys("B")("type" -> CTString, "size" -> CTInteger.nullable)
+    )
+  }
+
   it("supports boolean") {
     testProperty("true", CTBoolean)
   }

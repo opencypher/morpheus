@@ -29,7 +29,7 @@ package org.opencypher.okapi.neo4j.io
 import org.apache.logging.log4j.scala.Logging
 import org.opencypher.okapi.api.schema.PropertyKeys.PropertyKeys
 import org.opencypher.okapi.api.schema.{PropertyKeys, Schema}
-import org.opencypher.okapi.api.types.{CTAny, CTNumber, CTVoid, CypherType}
+import org.opencypher.okapi.api.types.CypherType
 import org.opencypher.okapi.api.value.CypherValue.{CypherBoolean, CypherList, CypherString, CypherValue}
 import org.opencypher.okapi.impl.exception.{IllegalArgumentException, SchemaException}
 import org.opencypher.okapi.neo4j.io.Neo4jHelpers._
