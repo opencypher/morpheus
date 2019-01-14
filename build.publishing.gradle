@@ -64,8 +64,9 @@ subprojects {
 
     // Task run by teamcity
     task ci {
-        dependsOn tasks.check
-        dependsOn tasks.publish
+        doLast {
+            println "DUMMY BRANCH 2"
+        }
     }
 
 }
