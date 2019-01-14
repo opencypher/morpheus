@@ -31,10 +31,11 @@ import org.neo4j.harness.{EnterpriseTestServerBuilders, ServerControls}
 import org.opencypher.okapi.api.schema.Schema
 import org.opencypher.okapi.api.types._
 import org.opencypher.okapi.impl.exception.SchemaException
+import org.opencypher.okapi.neo4j.io.Neo4jHelpers._
 import org.opencypher.okapi.testing.BaseTestSuite
-import org.scalatest.BeforeAndAfter
+import org.scalatest.{BeforeAndAfter, BeforeAndAfterAll}
 
-class SchemaFromProcedureTest extends BaseTestSuite with BeforeAndAfter {
+class SchemaFromProcedureTest extends BaseTestSuite with BeforeAndAfter with BeforeAndAfterAll {
 
   it("node property with numeric typed property") {
     val numericProperty =
@@ -143,31 +144,31 @@ class SchemaFromProcedureTest extends BaseTestSuite with BeforeAndAfter {
     testProperty("true", CTBoolean)
   }
 
-  it("supports boolean lists") {
+  it("supports boolean list") {
     testProperty("[true, false]", CTList(CTBoolean))
   }
 
-  it("supports integers") {
+  it("supports integer") {
     testProperty("1", CTInteger)
   }
 
-  it("supports integer lists") {
+  it("supports integer list") {
     testProperty("[1, 2]", CTList(CTInteger))
   }
 
-  it("supports floats") {
+  it("supports float") {
     testProperty("1.1", CTFloat)
   }
 
-  it("supports float lists") {
+  it("supports float list") {
     testProperty("[1.2, 2.3]", CTList(CTFloat))
   }
 
-  it("supports strings") {
+  it("supports string") {
     testProperty("'a'", CTString)
   }
 
-  it("supports string lists") {
+  it("supports string list") {
     testProperty("['a', 'b']", CTList(CTString))
   }
 
@@ -178,13 +179,17 @@ class SchemaFromProcedureTest extends BaseTestSuite with BeforeAndAfter {
   def graph: GraphDatabaseService = neo4j.graph()
 
   before {
+    neo4jConfig.cypherWithNewSession("MATCH (n) DETACH DELETE n")
+  }
+
+  override def beforeAll(): Unit = {
     neo4j = EnterpriseTestServerBuilders
       .newInProcessBuilder()
       .newServer()
     neo4jConfig = Neo4jConfig(neo4j.boltURI(), user = "anonymous", password = Some("password"), encrypted = false)
   }
 
-  after {
+  override def afterAll(): Unit = {
     neo4j.close()
   }
 
