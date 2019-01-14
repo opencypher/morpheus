@@ -172,6 +172,22 @@ class SchemaFromProcedureTest extends BaseTestSuite with BeforeAndAfter with Bef
     testProperty("['a', 'b']", CTList(CTString))
   }
 
+  it("supports date") {
+    testProperty("date()", CTDate)
+  }
+
+  it("supports date list") {
+    testProperty("[date(), date()]", CTList(CTDate))
+  }
+
+  it("supports datetime") {
+    testProperty("datetime('2015-06-24T12:50:35.556+0100')", CTDate)
+  }
+
+  it("supports datetime list") {
+    testProperty("[datetime('2015-06-24T12:50:35.556+0100'), datetime('2016-06-24T12:50:35.556+0100')]", CTList(CTDateTime))
+  }
+
   private var neo4j: ServerControls = _
 
   private var neo4jConfig: Neo4jConfig = _
