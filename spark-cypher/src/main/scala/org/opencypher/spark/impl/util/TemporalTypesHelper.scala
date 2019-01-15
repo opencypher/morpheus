@@ -118,7 +118,7 @@ object TemporalTypesHelper {
       case year :: month :: Nil => month.length match {
         case 2 => s"$year-$month-01"
         case 3 => throw NotImplementedException("Construction of Date/DateTime given days without month is not supported.") // construct month from days: 202 -> 07-21
-        case other => ???
+        case other => throw IllegalArgumentException("A valid date construction string", s"$other")
       }
 
       case date :: Nil => date.length match {
@@ -128,7 +128,7 @@ object TemporalTypesHelper {
           val month = date.substring(4)
           s"$year-$month-01"
         }
-        case 7 => ??? // construct month from days: 202 -> 07-21
+        case 7 => throw NotImplementedException("Construction of Date/DateTime given days without month is not supported.") // construct month from days: 202 -> 07-21
         case 8 => {
           val year = date.substring(0, 4)
           val month = date.substring(4, 6)
@@ -138,7 +138,7 @@ object TemporalTypesHelper {
       }
 
       case Nil => "0001-01-01"
-      case head :: tail => ???
+      case head :: tail => throw IllegalArgumentException("A valid date construction string", s"$head-$tail")
     }
   }
 
