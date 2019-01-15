@@ -205,17 +205,18 @@ trait PGDSAcceptance[Session <: CypherSession] extends BeforeAndAfterEach {
       s"""
          |CATALOG CREATE GRAPH $ns.${gn}4 {
          |  CONSTRUCT
-         |    CREATE (:S)-[:R]->()
+         |    CREATE ({ no_label_node: true })-[:SOME_REL_TYPE]->(:SOME_LABEL)
          |  RETURN GRAPH
          |}
          |""".stripMargin)) match {
       case Success(_) =>
         withClue("`hasGraph` needs to return `true` after graph creation") {
-          cypherSession.catalog.source(ns).hasGraph(GraphName(s"${gn}3")) shouldBe true
+          cypherSession.catalog.source(ns).hasGraph(GraphName(s"${gn}4")) shouldBe true
         }
-        val result = cypherSession.cypher(s"FROM GRAPH $ns.${gn}3 MATCH (d) WHERE labels(d)=[] RETURN d.type").records.iterator.toBag
+        val result = cypherSession.cypher(
+          s"FROM GRAPH $ns.${gn}4 MATCH (d) WHERE size(labels(d))=0 RETURN d.no_label_node").records.iterator.toBag
         result should equal(Bag(
-          CypherMap("d.type" -> "NO_LABEL")
+          CypherMap("d.no_label_node" -> true)
         ))
       case Failure(_: UnsupportedOperationException) =>
       case Failure(t) => throw t
