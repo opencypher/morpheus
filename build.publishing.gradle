@@ -62,14 +62,15 @@ subprojects {
         dependsOn tasks.publishDevPublicationToMavenLocal
     }
 
-    // Task run by teamcity
-    task ci {
-        // dependsOn tasks.check
-        // dependsOn tasks.publish
-        doLast {
-            def currentJvm = org.gradle.internal.jvm.Jvm.current()
-            println currentJvm
-        }
-    }
+}
 
+// Task run by teamcity
+task ci {
+    // dependsOn tasks.check
+    // dependsOn tasks.publish
+    dependsOn project('spark-cypher-testing').tasks.test
+    doLast {
+        def currentJvm = org.gradle.internal.jvm.Jvm.current()
+        println currentJvm
+    }
 }

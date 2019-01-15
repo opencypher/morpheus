@@ -17,3 +17,11 @@ dependencies {
     testCompile group: 'org.neo4j',      name: 'neo4j-cypher-util-3.4', version: ver.neo4j.main
     testCompile group: 'com.h2database', name: 'h2',                    version: ver.h2
 }
+
+test {
+    include '**/TimeZoneTest*'
+    // jvmArgs '-Duser.timezone=Europe/Sofia'
+    testLogging {
+        showStandardStreams = true
+    }
+}
