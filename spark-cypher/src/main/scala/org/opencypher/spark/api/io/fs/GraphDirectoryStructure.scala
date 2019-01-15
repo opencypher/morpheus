@@ -56,6 +56,9 @@ object DefaultGraphDirectoryStructure {
     def path: String = graphName.value.replace(".", pathSeparator)
   }
 
+  // Because an empty path does not work, we need a special directory name for nodes without labels.
+  val noLabelNodeDirectoryName: String = "NO_LABEL_NODES"
+
   val pathSeparator: String = Path.SEPARATOR
 
   val schemaFileName: String = "propertyGraphSchema.json"
@@ -66,7 +69,13 @@ object DefaultGraphDirectoryStructure {
 
   val relationshipTablesDirectory = "relationships"
 
-  def nodeTableDirectory(labels: Set[String]): String = labels.toSeq.sorted.mkString("_").encodeSpecialCharacters
+  def nodeTableDirectory(labels: Set[String]): String = {
+    if (labels.isEmpty) {
+      noLabelNodeDirectoryName
+    } else {
+      labels.toSeq.sorted.mkString("_").encodeSpecialCharacters
+    }
+  }
 
   def relKeyTableDirectory(relKey: String): String = relKey.encodeSpecialCharacters
 
