@@ -123,8 +123,9 @@ object SchemaFromProcedure extends Logging {
         case Some(CypherString(s)) => s
         case _ => throw IllegalArgumentException("a valid Neo4j relationship schema row with a relationship type", row)
       }
-      if (relString.length > 3 && relString.take(2) == ":`" && relString.takeRight(1) == "`") {
-        relString.drop(2).dropRight(1)
+      // Check that relationship type is properly formatted and not the empty string
+      if (relString.length > 3 && relString.startsWith(":`") && relString.endsWith("`")) {
+        relString.substring(2, relString.length - 1)
       } else {
         throw IllegalArgumentException(s"a Neo4j schema `relType` with format :`REL_TYPE_NAME`", relString)
       }
