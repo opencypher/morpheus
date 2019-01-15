@@ -57,7 +57,7 @@ object DefaultGraphDirectoryStructure {
   }
 
   // Because an empty path does not work, we need a special directory name for nodes without labels.
-  val noLabelNodeDirectoryName: String = "NO_LABEL_NODES"
+  val noLabelNodeDirectoryName: String = "__NO_LABEL__"
 
   val pathSeparator: String = Path.SEPARATOR
 
