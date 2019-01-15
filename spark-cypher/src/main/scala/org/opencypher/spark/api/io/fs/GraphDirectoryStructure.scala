@@ -56,20 +56,20 @@ object DefaultGraphDirectoryStructure {
     def path: String = graphName.value.replace(".", pathSeparator)
   }
 
-  // Because an empty path does not work, we need a special directory name for nodes without labels.
-  val noLabelNodeDirectoryName: String = "__NO_LABEL__"
-
   val pathSeparator: String = Path.SEPARATOR
 
   val schemaFileName: String = "propertyGraphSchema.json"
 
   val capsMetaDataFileName: String = "capsGraphMetaData.json"
 
-  val nodeTablesDirectory = "nodes"
+  val nodeTablesDirectoryName = "nodes"
 
-  val relationshipTablesDirectory = "relationships"
+  val relationshipTablesDirectoryName = "relationships"
 
-  def nodeTableDirectory(labels: Set[String]): String = {
+  // Because an empty path does not work, we need a special directory name for nodes without labels.
+  val noLabelNodeDirectoryName: String = "__NO_LABEL__"
+
+  def nodeTableDirectoryName(labels: Set[String]): String = {
     if (labels.isEmpty) {
       noLabelNodeDirectoryName
     } else {
@@ -77,7 +77,7 @@ object DefaultGraphDirectoryStructure {
     }
   }
 
-  def relKeyTableDirectory(relKey: String): String = relKey.encodeSpecialCharacters
+  def relKeyTableDirectoryName(relKey: String): String = relKey.encodeSpecialCharacters
 
 }
 
@@ -98,11 +98,11 @@ case class DefaultGraphDirectoryStructure(dataSourceRootPath: String) extends Gr
   }
 
   override def pathToNodeTable(graphName: GraphName, labels: Set[String]): String = {
-    pathToGraphDirectory(graphName) / nodeTablesDirectory / nodeTableDirectory(labels)
+    pathToGraphDirectory(graphName) / nodeTablesDirectoryName / nodeTableDirectoryName(labels)
   }
 
   override def pathToRelationshipTable(graphName: GraphName, relKey: String): String = {
-    pathToGraphDirectory(graphName) / relationshipTablesDirectory / relKeyTableDirectory(relKey)
+    pathToGraphDirectory(graphName) / relationshipTablesDirectoryName / relKeyTableDirectoryName(relKey)
   }
 
 }

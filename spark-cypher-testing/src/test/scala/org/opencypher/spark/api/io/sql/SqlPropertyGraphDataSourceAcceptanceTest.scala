@@ -34,6 +34,7 @@ import org.opencypher.okapi.api.schema.Schema
 import org.opencypher.okapi.impl.util.StringEncodingUtilities._
 import org.opencypher.okapi.testing.propertygraph.{CreateGraphFactory, InMemoryTestGraph}
 import org.opencypher.spark.api.CAPSSession
+import org.opencypher.spark.api.io.fs.DefaultGraphDirectoryStructure.nodeTableDirectoryName
 import org.opencypher.spark.api.io.sql.IdGenerationStrategy.IdGenerationStrategy
 import org.opencypher.spark.api.io.util.CAPSGraphExport._
 import org.opencypher.spark.impl.DataFrameOps._
@@ -77,7 +78,7 @@ abstract class SqlPropertyGraphDataSourceAcceptanceTest extends CAPSTestSuite wi
 
     schema.labelCombinations.combos.foreach { labelCombination =>
       val nodeDf = scanGraph.canonicalNodeTable(labelCombination).removePrefix(propertyPrefix)
-      val tableName = databaseName + "." + labelCombination.mkString("_")
+      val tableName = databaseName + "." + nodeTableDirectoryName(labelCombination)
       writeTable(nodeDf, tableName)
     }
 
