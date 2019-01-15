@@ -241,9 +241,7 @@ object SparkTable {
         else c -> c
       }.toMap
 
-      val renamedDf = colNames.foldLeft(df) {
-        case (df, c) => df.safeRenameColumn(c, renamings(c))
-      }
+      val renamedDf = df.safeRenameColumns(renamings.toSeq: _*)
 
       val extractRowFromGrouping = originalColNames.map(c => functions.first(renamings(c)) as c)
       val groupedDf = renamedDf

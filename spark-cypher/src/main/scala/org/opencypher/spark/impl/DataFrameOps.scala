@@ -195,23 +195,18 @@ object DataFrameOps {
       df.withColumn(idColumn, id)
     }
 
-    def withPropertyColumns: DataFrame = {
-      df.columns.foldLeft(df) {
-        case (currentDf, column) => currentDf.withColumnRenamed(column, column.toPropertyColumnName)
-      }
-    }
+    def withPropertyColumns: DataFrame =
+      df.withColumnsRenamed(df.columns.map(column => column -> column.toPropertyColumnName).toMap).df
 
-    def prefixColumns(prefix: String): DataFrame = {
-      df.columns.foldLeft(df) {
-        case (currentDf, column) => currentDf.withColumnRenamed(column, s"$prefix$column")
-      }
-    }
+    def prefixColumns(prefix: String): DataFrame =
+      df.withColumnsRenamed(df.columns.map(column => column -> s"$prefix$column").toMap).df
 
     def removePrefix(prefix: String): DataFrame = {
-      df.columns.foldLeft(df) {
-        case (currentDf, column) if column.startsWith(prefix) => currentDf.withColumnRenamed(column, column.substring(prefix.length))
-        case (currentDf, _) => currentDf
+      val columnRenamings = df.columns.map {
+        case column if column.startsWith(prefix) => column -> column.substring(prefix.length)
+        case column => column -> column
       }
+      df.withColumnsRenamed(columnRenamings.toMap).df
     }
 
     def safeAddColumn(name: String, col: Column): DataFrame = {
@@ -233,22 +228,10 @@ object DataFrameOps {
       df.withColumn(name, newColumn)
     }
 
-    def safeRenameColumn(oldName: String, newName: String): DataFrame = {
-      require(!df.columns.contains(newName),
-        s"Cannot rename column `$oldName` to `$newName`. A column with name `$newName` exists already.")
-      df.withColumnRenamed(oldName, newName)
-    }
-
     def safeRenameColumns(renamings: (String, String)*): DataFrame = {
-      renamings.foldLeft(df) { case (tempDf, (oldName, newName)) =>
-        tempDf.safeRenameColumn(oldName, newName)
-      }
-    }
-
-    def safeDropColumn(name: String): DataFrame = {
-      require(df.columns.contains(name),
-        s"Cannot drop column `$name`. No column with that name exists.")
-      df.drop(name)
+      renamings.foreach { case (oldName, newName) => require(!df.columns.contains(newName),
+        s"Cannot rename column `$oldName` to `$newName`. A column with name `$newName` exists already.")}
+      df.withColumnsRenamed(renamings.toMap).df
     }
 
     def safeDropColumns(names: String*): DataFrame = {
