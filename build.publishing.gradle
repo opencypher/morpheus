@@ -64,8 +64,12 @@ subprojects {
 
     // Task run by teamcity
     task ci {
-        dependsOn tasks.check
-        dependsOn tasks.publish
+        // dependsOn tasks.check
+        // dependsOn tasks.publish
+        doLast {
+            def currentJvm = org.gradle.internal.jvm.Jvm.current()
+            println currentJvm
+        }
     }
 
 }
