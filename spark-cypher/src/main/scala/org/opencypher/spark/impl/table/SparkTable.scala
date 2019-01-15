@@ -253,8 +253,17 @@ object SparkTable {
       groupedDf.safeDropColumns(colNames.map(renamings): _*)
     }
 
-    override def withColumnRenamed(oldColumn: String, newColumn: String): DataFrameTable =
-      df.safeRenameColumn(oldColumn, newColumn)
+    override def withColumnsRenamed(columnRenamings: Map[String, String]): DataFrameTable = {
+      if (columnRenamings.forall { case (oldColumn, newColumn) => oldColumn == newColumn }) {
+        df
+      } else {
+        val newColumns = physicalColumns.map {
+          case col if columnRenamings.contains(col) => columnRenamings(col)
+          case col => col
+        }
+        df.toDF(newColumns: _*)
+      }
+    }
 
     override def cache(): DataFrameTable = {
       val planToCache = df.queryExecution.analyzed

@@ -286,9 +286,7 @@ final case class RenameColumns[T <: Table[T] : TypeTag](
     case (currentHeader, (oldColumnName, newColumnName)) => currentHeader.withColumnRenamed(oldColumnName, newColumnName)
   }
 
-  override lazy val _table: T = actualRenamings.foldLeft(in.table) {
-    case (currentTable, (oldColumnName, newColumnName)) => currentTable.withColumnRenamed(oldColumnName, newColumnName)
-  }
+  override lazy val _table: T = in.table.withColumnsRenamed(actualRenamings)
 }
 
 final case class Filter[T <: Table[T] : TypeTag](
