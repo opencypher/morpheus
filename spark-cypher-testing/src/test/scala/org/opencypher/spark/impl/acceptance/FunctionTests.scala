@@ -28,7 +28,7 @@ package org.opencypher.spark.impl.acceptance
 
 import org.junit.runner.RunWith
 import org.opencypher.okapi.api.value.CypherValue.{CypherMap, CypherNull}
-import org.opencypher.okapi.impl.exception.NotImplementedException
+import org.opencypher.okapi.impl.exception.{NotImplementedException, IllegalStateException}
 import org.opencypher.okapi.testing.Bag
 import org.opencypher.okapi.testing.Bag._
 import org.opencypher.spark.testing.CAPSTestSuite
@@ -64,6 +64,26 @@ class FunctionTests extends CAPSTestSuite with ScanGraphInit{
 
       caps.cypher("RETURN date({ year: '2010' }) AS time").records.toMaps should equal(
         Bag(CypherMap("time" -> java.sql.Date.valueOf("2010-01-01")))
+      )
+    }
+
+    it("throws an error if trying to infer months from a number of days only") {
+      a[NotImplementedException] shouldBe thrownBy(
+        caps.cypher("RETURN date('2010-120')").records.toMaps
+      )
+    }
+
+    it("throws an error if values of higher significance are omitted") {
+      a[IllegalStateException] shouldBe thrownBy(
+        caps.cypher("RETURN date({ year: 2018, day: 356 })").records.toMaps
+      )
+
+      a[IllegalStateException] shouldBe thrownBy(
+        caps.cypher("RETURN date({ month: 11, day: 2 })").show
+      )
+
+      a[IllegalStateException] shouldBe thrownBy(
+        caps.cypher("RETURN date({ day: 2 })").show
       )
     }
 

@@ -28,7 +28,7 @@ package org.opencypher.spark.impl.util
 
 import org.apache.spark.sql.{Column, DataFrame, functions}
 import org.opencypher.okapi.api.value.CypherValue.{CypherInteger, CypherMap, CypherString}
-import org.opencypher.okapi.impl.exception.IllegalArgumentException
+import org.opencypher.okapi.impl.exception.{IllegalArgumentException, IllegalStateException, NotImplementedException}
 import org.opencypher.okapi.ir.api.expr.{Expr, MapExpression, Param}
 import org.opencypher.okapi.relational.impl.table.RecordHeader
 
@@ -49,6 +49,20 @@ object TemporalTypesHelper {
           case (key, expr) =>
             throw IllegalArgumentException("A valid key/value pair to construct temporal types", s"$key -> $expr")
         }
+
+        if(!checkSignificanceOrder(innerAsString, dateIdentifiers) ||
+          !checkSignificanceOrder(innerAsString, timeIdentifiers) ||
+          !checkSignificanceOrder(innerAsString, preciseTimeIdentifiers))
+          throw IllegalStateException("When constructing dates from a map it is forbidden to omit values of higher significance")
+
+        def checkSignificanceOrder(inputMap: Map[String, _], keys: Seq[String]): Boolean = {
+          val occurences = keys.map(inputMap.isDefinedAt)
+          occurences.tail.foldLeft(Seq((occurences.head, true))) {
+            case (acc, true) if acc.last._1 == false => acc :+ ((true, false))
+            case (acc, current) => acc :+ ((current, true))
+          }.map(_._2).reduce(_ && _)
+        }
+
         val dates = dateIdentifiers.map(id => innerAsString.getOrElse(id, "01"))
         val times = timeIdentifiers.map(id => innerAsString.getOrElse(id, "00"))
         val preciseTime = preciseTimeIdentifiers.map(id => innerAsString.getOrElse(id, "000"))
@@ -103,7 +117,7 @@ object TemporalTypesHelper {
 
       case year :: month :: Nil => month.length match {
         case 2 => s"$year-$month-01"
-        case 3 => ??? // construct month from days: 202 -> 07-21
+        case 3 => throw NotImplementedException("Construction of Date/DateTime given days without month is not supported.") // construct month from days: 202 -> 07-21
         case other => ???
       }
 
