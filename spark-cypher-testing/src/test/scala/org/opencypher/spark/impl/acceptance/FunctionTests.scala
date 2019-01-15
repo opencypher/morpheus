@@ -79,11 +79,11 @@ class FunctionTests extends CAPSTestSuite with ScanGraphInit{
       )
 
       a[IllegalStateException] shouldBe thrownBy(
-        caps.cypher("RETURN date({ month: 11, day: 2 })").show
+        caps.cypher("RETURN date({ month: 11, day: 2 })").records.toMaps
       )
 
       a[IllegalStateException] shouldBe thrownBy(
-        caps.cypher("RETURN date({ day: 2 })").show
+        caps.cypher("RETURN date({ day: 2 })").records.toMaps
       )
     }
 
@@ -135,6 +135,27 @@ class FunctionTests extends CAPSTestSuite with ScanGraphInit{
         Bag(
           CypherMap("time" -> java.sql.Timestamp.valueOf("2015-10-12 12:50:35.556"))
         )
+      )
+
+      caps.cypher(
+        """RETURN datetime({
+          |year: 2015,
+          |month: 10,
+          |hour: 12,
+          |minute: 50}) AS time""".stripMargin).records.toMaps should equal(
+        Bag(
+          CypherMap("time" -> java.sql.Timestamp.valueOf("2015-10-01 12:50:00.0"))
+        )
+      )
+    }
+
+    it("throws an error if values of higher significance are omitted") {
+      a[IllegalStateException] shouldBe thrownBy(
+        caps.cypher("RETURN date({ minute: 50 })").records.toMaps
+      )
+
+      a[IllegalStateException] shouldBe thrownBy(
+        caps.cypher("RETURN date({ year: 2018, hour: 12, second: 14 })").records.toMaps
       )
     }
 
