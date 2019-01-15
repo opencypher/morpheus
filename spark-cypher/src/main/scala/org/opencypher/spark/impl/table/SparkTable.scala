@@ -59,7 +59,11 @@ object SparkTable {
     override def size: Long = df.count()
 
     override def select(cols: String*): DataFrameTable = {
-      df.select(cols.map(df.col): _*)
+      if (df.columns.toSeq == cols) {
+        df
+      } else {
+        df.select(cols.map(df.col): _*)
+      }
     }
 
     override def filter(expr: Expr)(implicit header: RecordHeader, parameters: CypherMap): DataFrameTable = {
