@@ -43,6 +43,7 @@ import org.opencypher.spark.api.io._
 import org.opencypher.spark.api.io.sql.IdGenerationStrategy._
 import org.opencypher.spark.impl.DataFrameOps._
 import org.opencypher.spark.impl.io.CAPSPropertyGraphDataSource
+import org.opencypher.spark.impl.table.SparkTable._
 import org.opencypher.spark.schema.CAPSSchema
 import org.opencypher.spark.schema.CAPSSchema._
 
@@ -256,14 +257,14 @@ case class SqlPropertyGraphDataSource(
   private def normalizeDataFrame(dataFrame: DataFrame, mapping: EntityMapping): DataFrame = {
     val dfColumns = dataFrame.schema.fieldNames.map(_.toLowerCase).toSet
 
-    mapping.propertyMapping.foldLeft(dataFrame) {
-      case (currentDf, (property, column)) if dfColumns.contains(column.toLowerCase) =>
-        currentDf.withColumnRenamed(column, property.toPropertyColumnName)
-      case (_, (_, column)) => throw IllegalArgumentException(
+    val columnRenamings = mapping.propertyMapping.map {
+      case (property, column) if dfColumns.contains(column.toLowerCase) =>
+        column -> property.toPropertyColumnName
+      case (_, column) => throw IllegalArgumentException(
         expected = s"Column with name $column",
-        actual = dfColumns
-      )
+        actual = dfColumns)
     }
+    dataFrame.withColumnsRenamed(columnRenamings).df
   }
 
   private def normalizeNodeMapping(mapping: NodeMapping): NodeMapping = {
