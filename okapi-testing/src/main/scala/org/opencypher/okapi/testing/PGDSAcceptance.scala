@@ -41,8 +41,10 @@ import scala.util.{Failure, Success, Try}
 trait PGDSAcceptance[Session <: CypherSession] extends BeforeAndAfterEach {
   self: BaseTestSuite =>
 
+  val createStatementsForNodesWithoutLabels: String = "CREATE (d { name: 'D', type: 'NO_LABEL' })"
+
   val createStatements: String =
-    """
+    s"""
       |CREATE (a:A { name: 'A' })
       |CREATE (b1:B { type: 'B1' })
       |CREATE (b2:B { type: 'B2', size: 5 })
@@ -55,6 +57,7 @@ trait PGDSAcceptance[Session <: CypherSession] extends BeforeAndAfterEach {
       |CREATE (combo1)-[:S { since: 2006 }]->(combo1)
       |CREATE (ac)-[:T]->(combo2)
       |CREATE (d { name: 'D', type: 'NO_LABEL' })
+      |$createStatementsForNodesWithoutLabels
     """.stripMargin
 
   lazy val testGraph = CreateGraphFactory(createStatements)
