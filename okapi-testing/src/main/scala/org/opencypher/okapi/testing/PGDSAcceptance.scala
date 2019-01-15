@@ -54,6 +54,7 @@ trait PGDSAcceptance[Session <: CypherSession] extends BeforeAndAfterEach {
       |CREATE (b1)-[:R { since: 2005, before: false }]->(combo1)
       |CREATE (combo1)-[:S { since: 2006 }]->(combo1)
       |CREATE (ac)-[:T]->(combo2)
+      |CREATE (d { name: 'D', type: 'NO_LABEL' })
     """.stripMargin
 
   lazy val testGraph = CreateGraphFactory(createStatements)
@@ -84,7 +85,7 @@ trait PGDSAcceptance[Session <: CypherSession] extends BeforeAndAfterEach {
   }
 
   it("supports `graph`") {
-    cypherSession.catalog.source(ns).graph(gn).nodes("n").size shouldBe 7
+    cypherSession.catalog.source(ns).graph(gn).nodes("n").size shouldBe 8
     intercept[GraphNotFoundException] {
       cypherSession.catalog.source(ns).graph(GraphName("foo"))
     }
@@ -103,6 +104,7 @@ trait PGDSAcceptance[Session <: CypherSession] extends BeforeAndAfterEach {
       .withNodePropertyKeys("A", "B")("name" -> CTString, "type" -> CTString, "size" -> CTInteger.nullable)
       .withNodePropertyKeys("C")("name" -> CTString)
       .withNodePropertyKeys("A", "C")("name" -> CTString)
+      .withNodePropertyKeys()("name" -> CTString, "type" -> CTString)
       .withRelationshipPropertyKeys("R")("since" -> CTInteger, "before" -> CTBoolean.nullable)
       .withRelationshipPropertyKeys("S")("since" -> CTInteger)
       .withRelationshipPropertyKeys("T")()
@@ -146,7 +148,8 @@ trait PGDSAcceptance[Session <: CypherSession] extends BeforeAndAfterEach {
       CypherMap("n.name" -> "COMBO1", "n.size" -> 2),
       CypherMap("n.name" -> "COMBO2", "n.size" -> CypherNull),
       CypherMap("n.name" -> CypherNull, "n.size" -> 5),
-      CypherMap("n.name" -> CypherNull, "n.size" -> CypherNull)
+      CypherMap("n.name" -> CypherNull, "n.size" -> CypherNull),
+      CypherMap("n.name" -> "D", "n.size" -> CypherNull)
     ))
   }
 
@@ -163,9 +166,9 @@ trait PGDSAcceptance[Session <: CypherSession] extends BeforeAndAfterEach {
         withClue("`hasGraph` needs to return `true` after graph creation") {
           cypherSession.catalog.source(ns).hasGraph(GraphName(s"${gn}2")) shouldBe true
         }
-        cypherSession.catalog.graph(s"$ns.${gn}2").nodes("n").size shouldBe 7
+        cypherSession.catalog.graph(s"$ns.${gn}2").nodes("n").size shouldBe 8
 
-        a [GraphAlreadyExistsException] shouldBe thrownBy {
+        a[GraphAlreadyExistsException] shouldBe thrownBy {
           cypherSession.cypher(s"CATALOG CREATE GRAPH $ns.$gn { RETURN GRAPH }")
         }
       case Failure(_: UnsupportedOperationException) =>
@@ -197,10 +200,32 @@ trait PGDSAcceptance[Session <: CypherSession] extends BeforeAndAfterEach {
     }
   }
 
-  it("supports European Latin unicode labels, rel types, property keys, and property values") {
+  it("stores nodes without labels") {
     Try(cypherSession.cypher(
       s"""
          |CATALOG CREATE GRAPH $ns.${gn}4 {
+         |  CONSTRUCT
+         |    CREATE (:S)-[:R]->()
+         |  RETURN GRAPH
+         |}
+         |""".stripMargin)) match {
+      case Success(_) =>
+        withClue("`hasGraph` needs to return `true` after graph creation") {
+          cypherSession.catalog.source(ns).hasGraph(GraphName(s"${gn}3")) shouldBe true
+        }
+        val result = cypherSession.cypher(s"FROM GRAPH $ns.${gn}3 MATCH (d) WHERE labels(d)=[] RETURN d.type").records.iterator.toBag
+        result should equal(Bag(
+          CypherMap("d.type" -> "NO_LABEL")
+        ))
+      case Failure(_: UnsupportedOperationException) =>
+      case Failure(t) => throw t
+    }
+  }
+
+  it("supports European Latin unicode labels, rel types, property keys, and property values") {
+    Try(cypherSession.cypher(
+      s"""
+         |CATALOG CREATE GRAPH $ns.${gn}5 {
          |  CONSTRUCT
          |    CREATE (:Āſ { Āſ: 'Āſ' })-[:Āſ]->(:ā)
          |  RETURN GRAPH
@@ -208,9 +233,9 @@ trait PGDSAcceptance[Session <: CypherSession] extends BeforeAndAfterEach {
          |""".stripMargin)) match {
       case Success(_) =>
         withClue("`hasGraph` needs to return `true` after graph creation") {
-          cypherSession.catalog.source(ns).hasGraph(GraphName(s"${gn}4")) shouldBe true
+          cypherSession.catalog.source(ns).hasGraph(GraphName(s"${gn}5")) shouldBe true
         }
-        val result = cypherSession.cypher(s"FROM GRAPH $ns.${gn}4 MATCH (c:Āſ)-[:Āſ]-(:ā) RETURN c.Āſ").records.iterator.toBag
+        val result = cypherSession.cypher(s"FROM GRAPH $ns.${gn}5 MATCH (c:Āſ)-[:Āſ]-(:ā) RETURN c.Āſ").records.iterator.toBag
         result should equal(Bag(
           CypherMap("c.Āſ" -> "Āſ")
         ))
@@ -222,7 +247,7 @@ trait PGDSAcceptance[Session <: CypherSession] extends BeforeAndAfterEach {
   it("supports using `id` as a property key") {
     Try(cypherSession.cypher(
       s"""
-         |CATALOG CREATE GRAPH $ns.${gn}5 {
+         |CATALOG CREATE GRAPH $ns.${gn}6 {
          |  CONSTRUCT
          |    CREATE ({ id: 100 })
          |  RETURN GRAPH
@@ -230,9 +255,9 @@ trait PGDSAcceptance[Session <: CypherSession] extends BeforeAndAfterEach {
          |""".stripMargin)) match {
       case Success(_) =>
         withClue("`hasGraph` needs to return `true` after graph creation") {
-          cypherSession.catalog.source(ns).hasGraph(GraphName(s"${gn}5")) shouldBe true
+          cypherSession.catalog.source(ns).hasGraph(GraphName(s"${gn}6")) shouldBe true
         }
-        val result = cypherSession.cypher(s"FROM GRAPH $ns.${gn}5 MATCH (c) RETURN c.id").records.iterator.toBag
+        val result = cypherSession.cypher(s"FROM GRAPH $ns.${gn}6 MATCH (c) RETURN c.id").records.iterator.toBag
         result should equal(Bag(
           CypherMap("c.id" -> 100)
         ))
@@ -271,7 +296,7 @@ trait PGDSAcceptance[Session <: CypherSession] extends BeforeAndAfterEach {
     val firstConstructedGraphName = GraphName("first")
     val secondConstructedGraphName = GraphName("second")
     val graph = cypherSession.catalog.source(ns).graph(gn)
-    graph.nodes("n").size shouldBe 7
+    graph.nodes("n").size shouldBe 8
     val firstConstructedGraph = graph.cypher(
       s"""
          |CONSTRUCT
@@ -279,14 +304,14 @@ trait PGDSAcceptance[Session <: CypherSession] extends BeforeAndAfterEach {
          |  CREATE (:A {name: "A"})
          |  RETURN GRAPH
         """.stripMargin).graph
-    firstConstructedGraph.nodes("n").size shouldBe 8
+    firstConstructedGraph.nodes("n").size shouldBe 9
     val maybeStored = Try(cypherSession.catalog.source(ns).store(firstConstructedGraphName, firstConstructedGraph))
     maybeStored match {
       case Failure(_: UnsupportedOperationException) =>
       case Failure(t) => throw t
       case Success(_) =>
         val retrievedConstructedGraph = cypherSession.catalog.source(ns).graph(firstConstructedGraphName)
-        retrievedConstructedGraph.nodes("n").size shouldBe 8
+        retrievedConstructedGraph.nodes("n").size shouldBe 9
         val secondConstructedGraph = graph.cypher(
           s"""
              |CONSTRUCT
@@ -294,10 +319,10 @@ trait PGDSAcceptance[Session <: CypherSession] extends BeforeAndAfterEach {
              |  CREATE (:A:B {name: "COMBO", size: 2})
              |  RETURN GRAPH
         """.stripMargin).graph
-        secondConstructedGraph.nodes("n").size shouldBe 9
+        secondConstructedGraph.nodes("n").size shouldBe 10
         cypherSession.catalog.source(ns).store(secondConstructedGraphName, secondConstructedGraph)
         val retrievedSecondConstructedGraph = cypherSession.catalog.source(ns).graph(secondConstructedGraphName)
-        retrievedSecondConstructedGraph.nodes("n").size shouldBe 9
+        retrievedSecondConstructedGraph.nodes("n").size shouldBe 10
     }
   }
 
