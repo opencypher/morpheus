@@ -28,7 +28,6 @@ package org.opencypher.spark.impl
 
 import org.apache.spark.sql.types._
 import org.apache.spark.sql.{Column, DataFrame, functions}
-import org.apache.spark.unsafe.types.UTF8String
 import org.opencypher.okapi.api.types._
 import org.opencypher.okapi.api.value.CypherValue.{CypherList, CypherMap}
 import org.opencypher.okapi.impl.exception.{IllegalArgumentException, IllegalStateException, NotImplementedException, UnsupportedOperationException}
@@ -313,18 +312,7 @@ object SparkSQLExprMapper {
           val stepCol = maybeStep.map(_.asSparkSQLExpr).getOrElse(ONE_LIT)
           rangeUdf(from.asSparkSQLExpr, to.asSparkSQLExpr, stepCol)
 
-        case Replace(original, search, replacement) =>
-          def evaluateToString(stringExpr: Expr): Option[String] = {
-            val maybeStr = Option(stringExpr.asSparkSQLExpr.expr.eval())
-            maybeStr.map {
-              case str: UTF8String => str.toString
-              case other => throw IllegalArgumentException("an expression that evaluates to Spark type UTF8String", other)
-            }
-          }
-          (evaluateToString(search), evaluateToString(replacement)) match {
-            case (Some(s), Some(r)) => functions.translate(original.asSparkSQLExpr, s, r)
-            case _ => NULL_LIT
-          }
+        case Replace(original, search, replacement) => translate(original.asSparkSQLExpr, search.asSparkSQLExpr, replacement.asSparkSQLExpr)
 
         case Substring(original, start, maybeLength) =>
           val origCol = original.asSparkSQLExpr

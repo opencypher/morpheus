@@ -27,7 +27,7 @@
 package org.opencypher.spark.impl
 
 import org.apache.spark.sql.catalyst.analysis.UnresolvedExtractValue
-import org.apache.spark.sql.catalyst.expressions.ArrayContains
+import org.apache.spark.sql.catalyst.expressions.{ArrayContains, StringTranslate}
 import org.apache.spark.sql.expressions.UserDefinedFunction
 import org.apache.spark.sql.functions.{monotonically_increasing_id, udf}
 import org.apache.spark.sql.types.{ArrayType, StringType}
@@ -44,7 +44,9 @@ object CAPSFunctions {
       */
     def get(idx: Column): Column =
       new Column(UnresolvedExtractValue(column.expr, idx.expr))
+
   }
+
 
   val rangeUdf: UserDefinedFunction =
     udf[Array[Int], Int, Int, Int]((from: Int, to: Int, step: Int) => from.to(to, step).toArray)
@@ -97,5 +99,12 @@ object CAPSFunctions {
     dataToFilter.zip(values).collect {
       case (key, value) if value != null => key
     }
+
+  /**
+    * Alternative version of {{{org.apache.spark.sql.functions.translate}}} that takes {{{org.apache.spark.sql.Column}}}s for search and replace strings.
+    */
+  def translate(src: Column, matchingString: Column, replaceString: Column): Column = {
+    new Column(StringTranslate(src.expr, matchingString.expr, replaceString.expr))
+  }
 
 }

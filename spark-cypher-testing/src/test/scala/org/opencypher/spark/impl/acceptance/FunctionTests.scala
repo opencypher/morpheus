@@ -553,7 +553,7 @@ class FunctionTests extends CAPSTestSuite with ScanGraphInit{
         )
       )
     }
-    ignore("on complex expression evaluating to null") {
+    it("on complex expression evaluating to null") {
       val result = caps.cypher("WITH ['ll', 'ww'] AS stringList RETURN replace('hello', stringList[0], stringList[2]) AS res")
       result.records.toMaps should equal(
         Bag(
