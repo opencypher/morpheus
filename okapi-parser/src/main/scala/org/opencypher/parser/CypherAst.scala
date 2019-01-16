@@ -37,15 +37,44 @@ sealed trait Query extends Statement
 
 sealed trait RegularQuery extends Query
 
-case class SingleQuery(
-  clauses: NonEmptyList[Clause]
-) extends RegularQuery
+trait SingleQuery extends RegularQuery
 
-case class Union(all: Boolean, left: RegularQuery, right: SingleQuery) extends RegularQuery
+trait SinglePartQuery extends SingleQuery
+
+case class ReadingQuery(
+  readingClauses: List[ReadingClause],
+  returnClause: Return
+) extends SinglePartQuery
+
+case class UpdatingQuery(
+  readingClauses: List[ReadingClause],
+  updatingClauses: NonEmptyList[UpdatingClause],
+  maybeReturnClause: Option[Return]
+) extends SinglePartQuery
+
+case class MultiPartQuery(
+   readUpdateWiths: NonEmptyList[ReadUpdateWith],
+   singlePartQuery: SinglePartQuery
+) extends SingleQuery
+
+case class ReadUpdateWith(
+  readingClauses: List[ReadingClause],
+  updatingClauses: List[UpdatingClause],
+  withClause: With
+) extends Clause
+
+case class Union(
+  all: Boolean,
+  left: RegularQuery,
+  right: SingleQuery
+) extends RegularQuery
 
 sealed trait ProcedureInvocation
 
-case class StandaloneCall(procedureInvocation: ProcedureInvocation, yieldItems: List[YieldItem]) extends Query
+case class StandaloneCall(
+  procedureInvocation: ProcedureInvocation,
+  yieldItems: List[YieldItem]
+) extends Query
 
 sealed trait Expression extends ReturnItem
 
