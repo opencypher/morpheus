@@ -40,7 +40,7 @@ object SchemaFromProcedure extends Logging {
 
   /**
     * Returns the schema for a Neo4j graph. When the schema contains a property that is incompatible with CAPS,
-    * then an exception is thrown. Please set `omitImportFailures` in order to omit such properties from the schema
+    * an exception is thrown. Please set `omitImportFailures` in order to omit such properties from the schema
     * instead.
     *
     * This method relies on the built-in Neo4j schema procedures, which were introduced in Neo4j versions 3.3.9,
