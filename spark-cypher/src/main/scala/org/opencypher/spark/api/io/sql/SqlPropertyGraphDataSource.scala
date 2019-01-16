@@ -255,14 +255,15 @@ case class SqlPropertyGraphDataSource(
   }
 
   private def normalizeDataFrame(dataFrame: DataFrame, mapping: EntityMapping): DataFrame = {
-    val dfColumns = dataFrame.schema.fieldNames.map(_.toLowerCase).toSet
+    val fields = dataFrame.schema.fields
+    val indexedFields = fields.map(field => field.name.toLowerCase).zipWithIndex.toMap
 
     val columnRenamings = mapping.propertyMapping.map {
-      case (property, column) if dfColumns.contains(column.toLowerCase) =>
-        column -> property.toPropertyColumnName
+      case (property, column) if indexedFields.contains(column.toLowerCase) =>
+        fields(indexedFields(column.toLowerCase)).name -> property.toPropertyColumnName
       case (_, column) => throw IllegalArgumentException(
         expected = s"Column with name $column",
-        actual = dfColumns)
+        actual = indexedFields)
     }
     dataFrame.withColumnsRenamed(columnRenamings).df
   }
