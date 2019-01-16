@@ -563,7 +563,6 @@ class FunctionTests extends CAPSTestSuite with ScanGraphInit{
     }
   }
 
-
   describe("toUpper") {
     it("toUpper()") {
       val result = caps.cypher("RETURN toUpper('hello') AS upperCased")
@@ -752,6 +751,16 @@ class FunctionTests extends CAPSTestSuite with ScanGraphInit{
         ))
     }
 
+    it("handle null") {
+      val result = caps.cypher("RETURN labels(null) AS res")
+
+      result.records.toMaps should equal(
+        Bag(
+          CypherMap("res" -> null)
+        )
+      )
+    }
+
   }
 
   describe("size") {
@@ -803,14 +812,27 @@ class FunctionTests extends CAPSTestSuite with ScanGraphInit{
         ))
     }
 
-    ignore("size() on null") {
+    it("size() on null") {
       val given = initGraph("CREATE ()")
 
       val result = given.cypher("MATCH (a) RETURN size(a.prop) AS s")
 
-      result.records.toMaps should equal(Bag(CypherMap("s" -> null)))
+      result.records.toMaps should equal(
+        Bag(
+          CypherMap("s" -> null)
+        )
+      )
     }
 
+    it("size() on nullable list null") {
+      val result = caps.cypher("RETURN size(labels(null)) AS s")
+
+      result.records.toMaps should equal(
+        Bag(
+          CypherMap("s" -> null)
+        )
+      )
+    }
   }
 
   describe("keys") {
