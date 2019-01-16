@@ -28,7 +28,7 @@ package org.opencypher.spark.impl.acceptance
 
 import org.junit.runner.RunWith
 import org.opencypher.okapi.api.value.CypherValue.{CypherMap, CypherNull}
-import org.opencypher.okapi.impl.exception.{NotImplementedException, IllegalStateException}
+import org.opencypher.okapi.impl.exception.{IllegalStateException, NotImplementedException, IllegalArgumentException}
 import org.opencypher.okapi.testing.Bag
 import org.opencypher.okapi.testing.Bag._
 import org.opencypher.spark.testing.CAPSTestSuite
@@ -51,6 +51,10 @@ class FunctionTests extends CAPSTestSuite with ScanGraphInit{
         Bag(CypherMap("time" -> java.sql.Date.valueOf("2010-12-01")))
       )
 
+      caps.cypher("RETURN date('2010-1210') AS time").records.toMaps should equal(
+        Bag(CypherMap("time" -> java.sql.Date.valueOf("2010-12-10")))
+      )
+
     }
 
     it("returns a valid date when constructed from a map") {
@@ -68,22 +72,32 @@ class FunctionTests extends CAPSTestSuite with ScanGraphInit{
     }
 
     it("throws an error if trying to infer months from a number of days only") {
-      a[NotImplementedException] shouldBe thrownBy(
+      an[NotImplementedException] shouldBe thrownBy(
         caps.cypher("RETURN date('2010-120')").records.toMaps
       )
     }
 
     it("throws an error if values of higher significance are omitted") {
-      a[IllegalStateException] shouldBe thrownBy(
+      an[IllegalStateException] shouldBe thrownBy(
         caps.cypher("RETURN date({ year: 2018, day: 356 })").records.toMaps
       )
 
-      a[IllegalStateException] shouldBe thrownBy(
+      an[IllegalStateException] shouldBe thrownBy(
         caps.cypher("RETURN date({ month: 11, day: 2 })").records.toMaps
       )
 
-      a[IllegalStateException] shouldBe thrownBy(
+      an[IllegalStateException] shouldBe thrownBy(
         caps.cypher("RETURN date({ day: 2 })").records.toMaps
+      )
+    }
+
+    it("throws an error if the date argument is wrong") {
+      an[IllegalArgumentException] shouldBe thrownBy(
+        caps.cypher("RETURN date('2018-10-10-10')").records.toMaps
+      )
+
+      an[IllegalArgumentException] shouldBe thrownBy(
+        caps.cypher("RETURN date('201810101')").records.toMaps
       )
     }
 
@@ -120,6 +134,12 @@ class FunctionTests extends CAPSTestSuite with ScanGraphInit{
         )
       )
 
+      caps.cypher("RETURN datetime('2015-06-24T12:5035.556') AS time").records.toMaps should equal(
+        Bag(
+          CypherMap("time" -> java.sql.Timestamp.valueOf("2015-06-24 12:50:35.556"))
+        )
+      )
+
     }
 
     it("returns a valid datetime when constructed from a map") {
@@ -150,12 +170,26 @@ class FunctionTests extends CAPSTestSuite with ScanGraphInit{
     }
 
     it("throws an error if values of higher significance are omitted") {
-      a[IllegalStateException] shouldBe thrownBy(
+      an[IllegalStateException] shouldBe thrownBy(
         caps.cypher("RETURN date({ minute: 50 })").records.toMaps
       )
 
-      a[IllegalStateException] shouldBe thrownBy(
+      an[IllegalStateException] shouldBe thrownBy(
         caps.cypher("RETURN date({ year: 2018, hour: 12, second: 14 })").records.toMaps
+      )
+    }
+
+    it("throws an error if the date argument is wrong") {
+      an[IllegalArgumentException] shouldBe thrownBy(
+        caps.cypher("RETURN date('2018-10-10T12:10:30:15')").records.toMaps
+      )
+
+      an[IllegalArgumentException] shouldBe thrownBy(
+        caps.cypher("RETURN date('20181010T1210301')").records.toMaps
+      )
+
+      an[IllegalArgumentException] shouldBe thrownBy(
+        caps.cypher("RETURN date('20181010T12:000')").records.toMaps
       )
     }
 

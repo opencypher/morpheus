@@ -24,7 +24,6 @@
  * described as "implementation extensions to Cypher" or as "proposed changes to
  * Cypher that are not yet approved by the openCypher community".
  */
-
 package org.opencypher.spark.impl.util
 
 import org.apache.spark.sql.{Column, DataFrame, functions}
@@ -40,7 +39,7 @@ object TemporalTypesHelper {
     val timeIdentifiers = Seq("hour", "minute", "second")
     val preciseTimeIdentifiers = Seq("millisecond", "microsecond", "nanosecond")
     arg match {
-      case MapExpression(inner) => {
+      case MapExpression(inner) =>
         val innerAsString = inner.map {
           case (key, Param(name)) => key -> (parameters(name) match {
             case CypherString(s) => s
@@ -59,7 +58,7 @@ object TemporalTypesHelper {
         def checkSignificanceOrder(inputMap: Map[String, _], keys: Seq[String]): Boolean = {
           val occurences = keys.map(inputMap.isDefinedAt)
           occurences.tail.foldLeft(Seq((occurences.head, true))) {
-            case (acc, true) if acc.last._1 == false => acc :+ ((true, false))
+            case (acc, true) if !acc.last._1 => acc :+ ((true, false))
             case (acc, current) => acc :+ ((current, true))
           }.map(_._2).reduce(_ && _)
         }
@@ -72,78 +71,138 @@ object TemporalTypesHelper {
         val formattedTime = times.reduce(_ + ":" + _)
         val formattedPreciseTime = preciseTime.reduce(_ + "" + _)
 
-        functions.lit(sanitizeTemporalString(s"${formattedDate}T${formattedTime}.${formattedPreciseTime}"))
-      }
+        if(!formattedPreciseTime.matches("\\d{1,9}"))
+          throw IllegalArgumentException("A valid fraction of a second consisting of 1-9 digits", formattedPreciseTime)
 
-      case Param(name) => {
+        functions.lit(sanitizeTemporalString(s"${formattedDate}T$formattedTime.$formattedPreciseTime"))
+
+      case Param(name) =>
         val s = parameters(name) match {
-          case CypherString(s) => s
+          case CypherString(str) => str
           case other => throw IllegalArgumentException("a CypherString", other)
         }
         functions.lit(sanitizeTemporalString(s))
-      }
 
-      case other => ???
+      case other =>
+        throw IllegalArgumentException("A CypherString or a CypherMap constructing a temporal type", other.cypherType)
     }
   }
 
   private def sanitizeTemporalString(temporal: String): String = {
     temporal.split("T").toList match {
-      case head :: Nil => sanitizeDate(head)
-      case head :: tail => {
-        val date = sanitizeDate(head)
+      case date :: Nil => sanitizeDate(date)
+      case date :: tail =>
+        val sanitizedDate = sanitizeDate(date)
         assert(tail.size == 1, "The character `T` should only appear once in a temporal type string.")
         val timeAndTimezone = tail.head.split("[Z+-]").toList match {
-          case head :: Nil => sanitizeTime(head)
-          case head :: tail => {
-            val time = sanitizeTime(head)
-            assert(tail.size == 1, "The characters `Z`, `+`, `-`, should only appear once in a temporal type string.")
-            time + sanitizeTimezone(tail.head)
-          }
+          case time :: Nil => sanitizeTime(time)
+          case time :: timezone =>
+            val sanitizedTime = sanitizeTime(time)
+            assert(timezone.size == 1, "The characters `Z`, `+`, `-`, should only appear once in a temporal type string.")
+            sanitizedTime + sanitizeTimezone(timezone.head)
           case Nil => ""
         }
-        date + timeAndTimezone
-      }
+        sanitizedDate + timeAndTimezone
       case Nil => ""
     }
   }
 
-  private def sanitizeDate(date: String): String = {
-    assert(!date.contains('Q'), "Quarter representation in temporal types is not supported")
-    assert(!date.contains('W'), "Week representation in temporal types is not supported")
+  private def sanitizeDate(dateString: String): String = {
+    assert(!dateString.contains('Q'), "Quarter representation in temporal types is not supported")
+    assert(!dateString.contains('W'), "Week representation in temporal types is not supported")
 
-    date.split('-').toList match {
+    dateString.split('-').toList match {
       case year :: month :: day :: Nil =>
         s"$year-$month-$day"
 
-      case year :: month :: Nil => month.length match {
-        case 2 => s"$year-$month-01"
+      case year :: monthAndDays :: Nil => monthAndDays.length match {
+        case 2 => s"$year-$monthAndDays-01"
         case 3 => throw NotImplementedException("Construction of Date/DateTime given days without month is not supported.") // construct month from days: 202 -> 07-21
-        case other => throw IllegalArgumentException("A valid date construction string", s"$other")
+        case 4 =>
+          val months = monthAndDays.substring(0, 2)
+          val days = monthAndDays.substring(2, 4)
+          s"$year-$months-$days"
+        case other => throw IllegalArgumentException("A valid date construction string", other)
       }
 
       case date :: Nil => date.length match {
         case 4 => s"$date-01-01"
-        case 6 => {
+        case 6 =>
           val year = date.substring(0, 4)
           val month = date.substring(4)
           s"$year-$month-01"
-        }
         case 7 => throw NotImplementedException("Construction of Date/DateTime given days without month is not supported.") // construct month from days: 202 -> 07-21
-        case 8 => {
+        case 8 =>
           val year = date.substring(0, 4)
           val month = date.substring(4, 6)
           val day = date.substring(6)
           s"$year-$month-$day"
-        }
+        case other => throw IllegalArgumentException("A valid date construction string", other)
       }
 
-      case Nil => "0001-01-01"
-      case head :: tail => throw IllegalArgumentException("A valid date construction string", s"$head-$tail")
+      case Nil =>
+        "0001-01-01"
+
+      case head :: tail =>
+        throw IllegalArgumentException("A valid date construction string", s"$head-${tail.mkString("-")}")
     }
   }
 
-  private def sanitizeTime(time: String): String = s" $time"
+  private def sanitizeTime(time: String): String = {
+
+    def sanitizeClockTime(clockTime: String): String = {
+      clockTime.split(":").toList match {
+        case hours :: minutes :: seconds :: Nil =>
+          s"$hours:$minutes:$seconds"
+
+        case hours :: minutesAndSeconds :: Nil => minutesAndSeconds.length match {
+          case 4 =>
+            val minutes = minutesAndSeconds.substring(0, 2)
+            val seconds = minutesAndSeconds.substring(2, 4)
+            s"$hours:$minutes:$seconds"
+          case 2 =>
+            s"$hours:$minutesAndSeconds:00"
+          case other => throw IllegalArgumentException("A valid time construction string", other)
+        }
+
+        case hoursMinutesSeconds :: Nil => hoursMinutesSeconds.length match {
+          case 6 =>
+            val hours = hoursMinutesSeconds.substring(0, 2)
+            val minutes = hoursMinutesSeconds.substring(2, 4)
+            val seconds = hoursMinutesSeconds.substring(4, 6)
+            s"$hours:$minutes:$seconds"
+          case 4 =>
+            val hours = hoursMinutesSeconds.substring(0, 2)
+            val minutes = hoursMinutesSeconds.substring(2, 4)
+            s"$hours:$minutes:00"
+          case 2 =>
+            val hours = hoursMinutesSeconds.substring(0, 2)
+            s"$hours:00:00"
+          case other => throw IllegalArgumentException("A valid time construction string", other)
+        }
+
+        case Nil =>
+          "00:00:00"
+
+        case head :: tail =>
+          throw IllegalArgumentException("A valid time construction string", s"$head:${tail.mkString(":")}")
+      }
+    }
+
+    val sanitizedTime = time.split('.').toList match {
+      case clockTime :: preciseTime :: Nil =>
+        s"${sanitizeClockTime(clockTime)}.$preciseTime"
+
+      case clockTime :: Nil =>
+        sanitizeClockTime(clockTime)
+
+      case Nil => "00:00:00"
+      case head :: tail =>
+        throw IllegalArgumentException("A valid time constructing string", s"$head:${tail.mkString(".")}")
+    }
+
+    s" $sanitizedTime"
+  }
 
   private def sanitizeTimezone(timezone: String): String = "Ztimezone"
 
