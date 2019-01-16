@@ -88,13 +88,13 @@ sealed trait StringOperatorExpression extends OperatorExpression {
   def expression: Expression
 }
 
-case class In(expression: Expression) extends StringOperatorExpression
 case class StartsWith(expression: Expression) extends StringOperatorExpression
 case class EndsWith(expression: Expression) extends StringOperatorExpression
 case class Contains(expression: Expression) extends StringOperatorExpression
 
 trait ListOperatorExpression extends OperatorExpression
 
+case class In(expression: Expression) extends ListOperatorExpression
 case class SingleElementListOperatorExpression(expression: Expression) extends ListOperatorExpression
 
 case class RangeListOperatorExpression(maybeFrom: Option[Expression], maybeTo: Option[Expression])

@@ -474,8 +474,7 @@ object CypherParser {
   }
 
   val stringOperatorExpression: P[StringOperatorExpression] = P(
-    in
-      | startsWith
+    startsWith
       | endsWith
       | contains
   )
@@ -489,7 +488,8 @@ object CypherParser {
   val contains: P[Contains] = P(K("CONTAINS") ~ propertyOrLabelsExpression).map(Contains)
 
   val listOperatorExpression: P[ListOperatorExpression] = P(
-    singleElementListOperatorExpression
+    in
+      | singleElementListOperatorExpression
       | rangeListOperatorExpression
   )
 
