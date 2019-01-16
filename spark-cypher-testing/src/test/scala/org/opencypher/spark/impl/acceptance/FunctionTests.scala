@@ -52,6 +52,12 @@ class FunctionTests extends CAPSTestSuite with ScanGraphInit {
     )
   }
 
+  describe("duration") {
+    it("returns a valid duration") {
+      caps.cypher("RETURN duration('P1Y2M20D')").show
+    }
+  }
+
   describe("date") {
 
     it("returns a valid date") {

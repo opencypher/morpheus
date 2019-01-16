@@ -28,6 +28,7 @@ package org.opencypher.spark.impl.convert
 
 import org.apache.spark.sql.Row
 import org.apache.spark.sql.catalyst.expressions.GenericRowWithSchema
+import org.apache.spark.unsafe.types.CalendarInterval
 import org.opencypher.okapi.api.types.{CTList, CTMap, CTNode, CTRelationship}
 import org.opencypher.okapi.api.value.CypherValue._
 import org.opencypher.okapi.api.value._
@@ -80,7 +81,10 @@ final case class rowToCypherMap(exprToColumn: Seq[(Expr, String)]) extends (Row 
 
       case _ =>
         val raw = row.getAs[Any](header.column(expr))
-        CypherValue(raw)
+        raw match {
+          case interval: CalendarInterval => CypherString(interval.toString)
+          case other => CypherValue(other)
+        }
     }
   }
 

@@ -1067,6 +1067,14 @@ final case class Date(expr: Option[Expr])(val cypherType: CypherType = CTDate) e
   override def withCypherType(ct: CypherType): Date = copy()(ct)
 }
 
+final case class Duration(expr: Expr)(val cypherType: CypherType = CTDuration) extends TemporalInstant(expr) {
+
+  override type This = Duration
+
+  override def withCypherType(ct: CypherType): Duration = copy()(ct)
+
+}
+
 sealed abstract class BoolLit(val v: Boolean)(val cypherType: CypherType = CTBoolean) extends Lit[Boolean] {
   override type This = BoolLit
 }

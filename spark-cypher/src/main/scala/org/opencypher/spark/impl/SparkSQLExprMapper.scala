@@ -145,6 +145,10 @@ object SparkSQLExprMapper {
             case None => functions.current_timestamp()
           }
 
+        case Duration(expr) =>
+          import org.opencypher.spark.impl.util.TemporalTypesHelper._
+          functions.expr(sanitizeDuration(expr))
+
         case l: Lit[_] => functions.lit(l.v)
 
         // predicates

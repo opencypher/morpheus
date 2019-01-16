@@ -36,6 +36,7 @@ case object FunctionLookup {
     case Timestamp.name => Timestamp.signatures
     case LocalDateTime.name => LocalDateTime.signatures
     case Date.name => Date.signatures
+    case Duration.name => Duration.signatures
     case _ => Vector.empty
   }
 
@@ -67,5 +68,14 @@ case object Date extends Function with TypeSignatures {
     TypeSignature(argumentTypes = Vector(CTMap), outputType = CTDate),
     TypeSignature(argumentTypes = Vector(), outputType = CTDate)
 
+  )
+}
+
+case object Duration extends Function with TypeSignatures {
+  override val name = "duration"
+
+  override val signatures = Vector(
+    TypeSignature(argumentTypes = Vector(CTString), outputType = CTDuration),
+    TypeSignature(argumentTypes = Vector(CTMap), outputType = CTDuration)
   )
 }

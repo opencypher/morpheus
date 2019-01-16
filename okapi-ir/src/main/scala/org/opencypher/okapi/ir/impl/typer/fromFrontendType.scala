@@ -43,6 +43,7 @@ case object fromFrontendType extends (frontend.CypherType => Option[CypherType])
     case frontend.CTPath          => Some(CTPath)
     case frontend.CTLocalDateTime => Some(CTLocalDateTime)
     case frontend.CTDate          => Some(CTDate)
+    case frontend.CTDuration      => Some(CTDuration)
     case frontend.CTMap           => Some(CTMap(Map.empty)) // TODO: this is not very correct
     case frontend.ListType(inner) =>
       fromFrontendType(inner) match {
