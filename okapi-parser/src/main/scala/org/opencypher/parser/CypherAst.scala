@@ -338,10 +338,6 @@ case class PropertyKeyName(value: String) extends PropertyLookup
 
 case object CountStar extends Atom
 
-case class Filter(filterExpression: FilterExpression) extends Atom
-
-case class Extract(filterExpression: FilterExpression, maybeExpression: Option[Expression]) extends Atom
-
 case class FilterAll(filterExpression: FilterExpression) extends Atom
 
 case class FilterAny(filterExpression: FilterExpression) extends Atom

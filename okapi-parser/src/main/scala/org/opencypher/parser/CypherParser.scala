@@ -522,8 +522,6 @@ object CypherParser {
       | patternComprehension
       | listComprehension
       | (IgnoreCase("COUNT") ~ "(" ~ "*" ~ ")").map(_ => CountStar)
-      | (IgnoreCase("FILTER") ~ "(" ~ filterExpression ~ ")").map(Filter)
-      | (IgnoreCase("EXTRACT") ~ "(" ~ filterExpression ~ ("|" ~ expression).? ~ ")").map(Extract.tupled)
       | (IgnoreCase("ALL") ~ "(" ~ filterExpression ~ ")").map(FilterAll)
       | (IgnoreCase("ANY") ~ "(" ~ filterExpression ~ ")").map(FilterAny)
       | (IgnoreCase("NONE") ~ "(" ~ filterExpression ~ ")").map(FilterNone)
