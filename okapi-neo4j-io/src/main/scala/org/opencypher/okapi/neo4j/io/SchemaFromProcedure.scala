@@ -149,8 +149,6 @@ object SchemaFromProcedure extends Logging {
       * @return joined Cypher type of a property on a label combination
       */
     private def maybePropertyType(omitImportFailures: Boolean): Option[CypherType] = {
-      def wasNotAdded = "The property was not added to the schema due to the set `omitImportFailures` flag."
-      def setFlag = "Set the `omitImportFailures` flag to compute the Neo4j schema without this property."
       def rowTypeDescription = if (isRelationshipSchema) s"relationship type [:$relType]" else s"node label combination [:${labels.mkString(", ")}]"
       def multipleTypes = s"The Neo4j property `${propertyName.getOrElse("")}` on $rowTypeDescription has multiple property types: [${neo4jPropertyTypeStrings.mkString(", ")}]."
 
@@ -159,21 +157,21 @@ object SchemaFromProcedure extends Logging {
           def unsupportedPropertyType = s"The Neo4j property `${propertyName.getOrElse("")}` on $rowTypeDescription has unsupported property type `$neo4jTypeString`."
           neo4jTypeString.toCypherType match {
             case None if omitImportFailures =>
-              logger.warn(s"$unsupportedPropertyType $wasNotAdded")
+              logger.warn(s"$unsupportedPropertyType $propertyNotAddedMessage")
               None
             case None =>
               throw SchemaException(
-                s"$unsupportedPropertyType $setFlag")
+                s"$unsupportedPropertyType $setFlagMessage")
             case Some(tpe) =>
               if (isMandatory) Some(tpe) else Some(tpe.nullable)
           }
         case Nil =>
           None
         case _ if omitImportFailures =>
-          logger.warn(s"$multipleTypes\n$wasNotAdded")
+          logger.warn(s"$multipleTypes\n$propertyNotAddedMessage")
           None
         case _ =>
-          throw SchemaException(s"$multipleTypes\n$setFlag")
+          throw SchemaException(s"$multipleTypes\n$setFlagMessage")
       }
     }
 
@@ -204,6 +202,9 @@ object SchemaFromProcedure extends Logging {
     "Double" -> "Float",
     "Long" -> "Integer"
   )
+
+  private[neo4j] val propertyNotAddedMessage = "The property was not added to the schema due to the set `omitImportFailures` flag."
+  private[neo4j] val setFlagMessage = "Set the `omitImportFailures` flag to compute the Neo4j schema without this property."
 
   private[neo4j] val nodeSchemaProcedure = "db.schema.nodeTypeProperties"
   private[neo4j] val relSchemaProcedure = "db.schema.relTypeProperties"

@@ -32,6 +32,7 @@ import org.opencypher.okapi.api.schema.Schema
 import org.opencypher.okapi.api.types._
 import org.opencypher.okapi.impl.exception.SchemaException
 import org.opencypher.okapi.neo4j.io.Neo4jHelpers._
+import org.opencypher.okapi.neo4j.io.SchemaFromProcedure.setFlagMessage
 import org.opencypher.okapi.testing.BaseTestSuite
 import org.scalatest.{BeforeAndAfter, BeforeAndAfterAll}
 
@@ -42,9 +43,13 @@ class SchemaFromProcedureTest extends BaseTestSuite with BeforeAndAfter with Bef
       """|CREATE (:A {val1: 'String', val2: 1})
          |CREATE (:A {val1: 'String', val2: 1.2})""".stripMargin
 
-    a[SchemaException] should be thrownBy {
-      schemaFor(numericProperty)
-    }
+    val e = the[SchemaException] thrownBy schemaFor(numericProperty)
+    e.msg should (include("multiple property types") and
+      include("node label combination [:A]") and
+      include("val2") and
+      include("Long") and
+      include("Double") and
+      include(setFlagMessage))
 
     schemaFor(numericProperty, omitImportFailures = true) should equal(Schema.empty
       .withNodePropertyKeys("A")("val1" -> CTString)
@@ -100,9 +105,13 @@ class SchemaFromProcedureTest extends BaseTestSuite with BeforeAndAfter with Bef
          |CREATE (a)-[:REL {val1: 'String', val2: true}]->(b)
          |CREATE (a)-[:REL {val1: 'String', val2: 2.0}]->(b)""".stripMargin
 
-    a[SchemaException] should be thrownBy {
-      schemaFor(anyProperty)
-    }
+    val e = the[SchemaException] thrownBy schemaFor(anyProperty)
+    e.msg should (include("multiple property types") and
+      include("relationship type [:REL]") and
+      include("val2") and
+      include("Boolean") and
+      include("Double") and
+      include(setFlagMessage))
 
     schemaFor(anyProperty, omitImportFailures = true) should equal(Schema.empty
       .withNodePropertyKeys("A")()
@@ -126,7 +135,12 @@ class SchemaFromProcedureTest extends BaseTestSuite with BeforeAndAfter with Bef
       """|CREATE (a:A { foo: time(), bar : 42 })
          |CREATE (b:A)
          |CREATE (a)-[:REL]->(b)""".stripMargin
-    a[SchemaException] should be thrownBy schemaFor(createQuery)
+
+    val e = the[SchemaException] thrownBy schemaFor(createQuery)
+    e.msg should (include("unsupported property type") and
+      include("Time") and
+      include(setFlagMessage))
+
     val schemaWithOmittedImportFailures = schemaFor(createQuery, omitImportFailures = true)
     schemaWithOmittedImportFailures should equal(Schema.empty
       .withNodePropertyKeys("A")("bar" -> CTInteger.nullable)
