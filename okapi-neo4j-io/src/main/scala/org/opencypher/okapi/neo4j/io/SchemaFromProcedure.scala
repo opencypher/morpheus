@@ -43,8 +43,9 @@ object SchemaFromProcedure extends Logging {
     * an exception is thrown. Please set `omitImportFailures` in order to omit such properties from the schema
     * instead.
     *
-    * This method relies on the built-in Neo4j schema procedures, which were introduced in Neo4j versions 3.3.9,
-    * 3.4.10, and 3.5.0.
+    * This method relies on the built-in Neo4j schema procedures
+    * [[https://neo4j.com/docs/operations-manual/current/reference/procedures/ nodeTypeProperties/relTypeProperties]],
+    * which were introduced in Neo4j versions 3.3.9, 3.4.10, and 3.5.0.
     *
     * @param neo4j              configuration for the Neo4j instance
     * @param omitImportFailures when set, incompatible properties are omitted from the schema and a warning is logged
