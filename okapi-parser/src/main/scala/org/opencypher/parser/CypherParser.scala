@@ -184,31 +184,19 @@ object CypherParser {
     K("UNION") ~ K("ALL").!.?.toBoolean ~ singleQuery
   ).map { case (all, rhs) => lhs => Union(all, lhs, rhs) }
 
-  val singleQuery: P[SingleQuery] = P(singlePartQuery | multiPartQuery)
+  val singleQuery: P[SingleQuery] = P(clause.rep(min = 1).toNonEmptyList).map(SingleQuery)
 
-  val singlePartQuery: P[SinglePartQuery] = P(
-    (readingClause.rep.toList ~ returnClause).map(ReadingQuery.tupled)
-      | (readingClause.rep.toList ~ updatingClause.rep(min = 1).toNonEmptyList ~ returnClause.?).map(UpdatingQuery.tupled)
-  )
-
-  val multiPartQuery: P[MultiPartQuery] = P(readUpdateWith.rep(min = 1).toNonEmptyList ~ singlePartQuery).map(MultiPartQuery.tupled)
-
-  val readUpdateWith: P[ReadUpdateWith] = P(
-    readingClause.rep.toList ~ updatingClause.rep.toList ~ withClause
-  ).map(ReadUpdateWith.tupled)
-
-  val updatingClause: P[UpdatingClause] = P(
-    create
-      | merge
+  val clause: P[Clause] = P(
+    merge
       | delete
       | set
+      | create
       | remove
-  )
-
-  val readingClause: P[ReadingClause] = P(
-    matchClause
+      | withClause
+      | matchClause
       | unwind
       | inQueryCall
+      | returnClause
   )
 
   val withClause: P[With] = P(K("WITH") ~/ K("DISTINCT").!.?.toBoolean ~/ returnBody ~ where.?).map(With.tupled)
