@@ -26,15 +26,16 @@
  */
 package org.opencypher.spark.impl.acceptance
 
+import org.junit.runner.RunWith
 import org.opencypher.okapi.api.value.CypherValue.{CypherMap, CypherNull}
 import org.opencypher.okapi.impl.exception.NotImplementedException
 import org.opencypher.okapi.testing.Bag
 import org.opencypher.okapi.testing.Bag._
 import org.opencypher.spark.testing.CAPSTestSuite
-import org.scalatest.DoNotDiscover
+import org.scalatest.junit.JUnitRunner
 
-@DoNotDiscover
-class FunctionsBehaviour extends CAPSTestSuite with DefaultGraphInit {
+@RunWith(classOf[JUnitRunner])
+class FunctionTests extends CAPSTestSuite with DefaultGraphInit with ScanGraphInit{
 
   describe("date") {
     it("returns a valid date") {

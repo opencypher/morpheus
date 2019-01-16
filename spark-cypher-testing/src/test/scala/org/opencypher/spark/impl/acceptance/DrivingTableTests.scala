@@ -30,14 +30,15 @@ import java.util
 
 import org.apache.spark.sql.Row
 import org.apache.spark.sql.types.{IntegerType, StringType, StructField, StructType}
+import org.junit.runner.RunWith
 import org.opencypher.okapi.api.value.CypherValue.CypherMap
 import org.opencypher.okapi.testing.Bag
 import org.opencypher.spark.impl.CAPSRecords
 import org.opencypher.spark.testing.CAPSTestSuite
-import org.scalatest.DoNotDiscover
+import org.scalatest.junit.JUnitRunner
 
-@DoNotDiscover
-class DrivingTableBehaviour extends CAPSTestSuite with DefaultGraphInit {
+@RunWith(classOf[JUnitRunner])
+class DrivingTableTests extends CAPSTestSuite with DefaultGraphInit with ScanGraphInit {
 
   import scala.collection.JavaConverters._
 

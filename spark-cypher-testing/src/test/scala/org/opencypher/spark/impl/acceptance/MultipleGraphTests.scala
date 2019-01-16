@@ -26,6 +26,7 @@
  */
 package org.opencypher.spark.impl.acceptance
 
+import org.junit.runner.RunWith
 import org.opencypher.okapi.api.schema.{PropertyKeys, Schema}
 import org.opencypher.okapi.api.types.{CTInteger, CTString}
 import org.opencypher.okapi.api.value.CypherValue.CypherMap
@@ -40,12 +41,12 @@ import org.opencypher.spark.impl.CAPSConverters._
 import org.opencypher.spark.impl.table.SparkTable
 import org.opencypher.spark.schema.CAPSSchema._
 import org.opencypher.spark.testing.CAPSTestSuite
-import org.scalatest.DoNotDiscover
+import org.scalatest.junit.JUnitRunner
 
 import scala.language.existentials
 
-@DoNotDiscover
-class MultipleGraphBehaviour extends CAPSTestSuite with ScanGraphInit {
+@RunWith(classOf[JUnitRunner])
+class MultipleGraphTests extends CAPSTestSuite with ScanGraphInit with ScanGraphInit {
 
   def testGraph1: RelationalCypherGraph[SparkTable.DataFrameTable] = initGraph("CREATE (:Person {name: 'Mats'})")
 
