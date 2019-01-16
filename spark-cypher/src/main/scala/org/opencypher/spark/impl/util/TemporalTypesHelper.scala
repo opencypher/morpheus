@@ -204,6 +204,7 @@ object TemporalTypesHelper {
     s" $sanitizedTime"
   }
 
-  private def sanitizeTimezone(timezone: String): String = "Ztimezone"
+  private def sanitizeTimezone(timezone: String): String =
+    throw NotImplementedException("Timezones are not supported yet")
 
 }
