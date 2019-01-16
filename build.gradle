@@ -52,12 +52,6 @@ subprojects {
             '-Ypartial-unification',
     ]
 
-    tasks.withType(JavaCompile) {
-        sourceCompatibility = ver.jvm
-        targetCompatibility = ver.jvm
-        options.encoding = 'UTF-8'
-    }
-
     tasks.withType(ScalaCompile) {
         options.encoding = 'UTF-8'
         scalaCompileOptions.additionalParameters = scalacParameters

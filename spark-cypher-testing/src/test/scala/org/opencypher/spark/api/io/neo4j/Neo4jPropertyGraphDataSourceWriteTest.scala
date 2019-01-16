@@ -29,16 +29,16 @@ package org.opencypher.spark.api.io.neo4j
 import org.opencypher.okapi.api.graph.GraphName
 import org.opencypher.okapi.api.value.CypherValue.CypherMap
 import org.opencypher.okapi.neo4j.io.Neo4jHelpers._
+import org.opencypher.okapi.neo4j.io.testing.Neo4jServerFixture
 import org.opencypher.okapi.testing.Bag
 import org.opencypher.okapi.testing.Bag._
 import org.opencypher.spark.api.CypherGraphSources
 import org.opencypher.spark.impl.acceptance.DefaultGraphInit
 import org.opencypher.spark.testing.CAPSTestSuite
-import org.opencypher.spark.testing.fixture.CAPSNeo4jServerFixture
 
 class Neo4jPropertyGraphDataSourceWriteTest
   extends CAPSTestSuite
-    with CAPSNeo4jServerFixture
+    with Neo4jServerFixture
     with DefaultGraphInit{
 
   it("can write a graph to Neo4j") {
@@ -52,7 +52,7 @@ class Neo4jPropertyGraphDataSourceWriteTest
 
     dataSource.store(GraphName("g1"), g)
 
-    neo4jConfig.cypher("MATCH (n)-[r]->(m) RETURN n.val, r.val, m.val").map(x => CypherMap(x.toSeq:_*)).toBag should equal(Bag(
+    neo4jConfig.cypherWithNewSession("MATCH (n)-[r]->(m) RETURN n.val, r.val, m.val").map(x => CypherMap(x.toSeq:_*)).toBag should equal(Bag(
       CypherMap("n.val" -> 1, "r.val" -> 3, "m.val" -> 2),
       CypherMap("n.val" -> 2, "r.val" -> 4, "m.val" -> 1)
     ))

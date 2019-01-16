@@ -32,7 +32,6 @@ import org.opencypher.okapi.neo4j.io.MetaLabelSupport._
 import org.opencypher.okapi.neo4j.io.testing.Neo4jHarnessUtils._
 import org.opencypher.spark.api.io.neo4j.sync.Neo4jGraphMerge
 import org.opencypher.spark.api.{CAPSSession, GraphSources}
-import org.opencypher.spark.testing.support.creation.CAPSNeo4jHarnessUtils._
 import org.opencypher.spark.util.ConsoleApp
 
 /**
@@ -53,7 +52,7 @@ object Neo4jMergeExample extends ConsoleApp {
        |CREATE (a)-[:FRIEND_OF { id: 0, since: '23/01/1987' }]->(b)
        |CREATE (b)-[:FRIEND_OF { id: 1, since: '12/12/2009' }]->(c)
     """.stripMargin
-  ).withSchemaProcedure
+  )
 
   // Define the node and relationship keys
   val nodeKeys = Map("Person" -> Set("name"))

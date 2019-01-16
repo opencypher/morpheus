@@ -27,10 +27,9 @@
 package org.opencypher.spark.api.io.neo4j
 
 import org.opencypher.okapi.api.graph.GraphName
-import org.opencypher.okapi.impl.exception.UnsupportedOperationException
 import org.opencypher.okapi.neo4j.io.{Neo4jConfig, SchemaFromProcedure}
-import org.opencypher.spark.api.io.{AbstractPropertyGraphDataSource, Neo4jFormat, StorageFormat}
 import org.opencypher.spark.api.io.metadata.CAPSGraphMetaData
+import org.opencypher.spark.api.io.{AbstractPropertyGraphDataSource, Neo4jFormat, StorageFormat}
 import org.opencypher.spark.schema.CAPSSchema
 import org.opencypher.spark.schema.CAPSSchema._
 
@@ -42,15 +41,8 @@ abstract class AbstractNeo4jDataSource extends AbstractPropertyGraphDataSource {
 
   override def tableStorageFormat: StorageFormat = Neo4jFormat
 
-  override protected def readSchema(graphName: GraphName): CAPSSchema =
-    SchemaFromProcedure(config, omitIncompatibleProperties) match {
-      case None =>
-        throw UnsupportedOperationException(
-          "Neo4j PGDS requires okapi-neo4j-procedures to be installed in Neo4j:\n" +
-            "\thttps://github.com/opencypher/cypher-for-apache-spark/wiki/Neo4j-Schema-Procedure")
-
-      case Some(schema) =>
-        schema.asCaps
+  override protected def readSchema(graphName: GraphName): CAPSSchema = {
+    SchemaFromProcedure(config, omitIncompatibleProperties).asCaps
   }
 
   override protected def writeSchema(graphName: GraphName, schema: CAPSSchema): Unit = ()

@@ -32,10 +32,11 @@ import org.apache.spark.sql.types.{LongType, StructField, StructType}
 import org.opencypher.okapi.api.graph.{CypherResult, GraphName, Namespace}
 import org.opencypher.okapi.api.io.conversion.NodeMapping
 import org.opencypher.okapi.api.value.CypherValue.{CypherMap, CypherNull}
-import org.opencypher.okapi.impl.exception.{IllegalArgumentException, UnsupportedOperationException}
+import org.opencypher.okapi.impl.exception.{IllegalArgumentException, SchemaException, UnsupportedOperationException}
 import org.opencypher.okapi.neo4j.io.MetaLabelSupport._
 import org.opencypher.okapi.neo4j.io.Neo4jHelpers.Neo4jDefaults._
 import org.opencypher.okapi.neo4j.io.Neo4jHelpers._
+import org.opencypher.okapi.neo4j.io.testing.Neo4jServerFixture
 import org.opencypher.okapi.testing.Bag
 import org.opencypher.okapi.testing.Bag._
 import org.opencypher.spark.api.CypherGraphSources
@@ -43,11 +44,11 @@ import org.opencypher.spark.api.io.CAPSNodeTable
 import org.opencypher.spark.api.value.CAPSNode
 import org.opencypher.spark.impl.CAPSConverters._
 import org.opencypher.spark.testing.CAPSTestSuite
-import org.opencypher.spark.testing.fixture.{CAPSNeo4jServerFixture, TeamDataFixture}
+import org.opencypher.spark.testing.fixture.TeamDataFixture
 
 class Neo4jPropertyGraphDataSourceTest
   extends CAPSTestSuite
-    with CAPSNeo4jServerFixture
+    with Neo4jServerFixture
     with TeamDataFixture {
 
   it("can read lists from Neo4j") {
@@ -80,7 +81,7 @@ class Neo4jPropertyGraphDataSourceTest
   }
 
   it("should omit properties with unsupported types if corresponding flag is set") {
-    neo4jConfig.cypher(s"""CREATE (n:Unsupported:${metaPrefix}test { foo: time(), bar: 42 })""")
+    neo4jConfig.cypherWithNewSession(s"""CREATE (n:Unsupported:${metaPrefix}test { foo: duration('P2.5W'), bar: 42 })""")
 
     val dataSource = CypherGraphSources.neo4j(neo4jConfig, omitIncompatibleProperties = true)
     val graph = dataSource.graph(GraphName("test")).asCaps
@@ -93,8 +94,8 @@ class Neo4jPropertyGraphDataSourceTest
   }
 
   it("should throw exception if properties with unsupported types are being imported") {
-    an[UnsupportedOperationException] should be thrownBy {
-      neo4jConfig.cypher(s"""CREATE (n:Unsupported:${metaPrefix}test { foo: time(), bar: 42 })""")
+    a[SchemaException] should be thrownBy {
+      neo4jConfig.cypherWithNewSession(s"""CREATE (n:Unsupported:${metaPrefix}test { foo: time(), bar: 42 })""")
 
       val dataSource = CypherGraphSources.neo4j(neo4jConfig)
       val graph = dataSource.graph(GraphName("test")).asCaps
