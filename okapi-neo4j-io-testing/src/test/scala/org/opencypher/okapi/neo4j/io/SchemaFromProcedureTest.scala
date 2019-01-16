@@ -38,21 +38,24 @@ import org.scalatest.{BeforeAndAfter, BeforeAndAfterAll}
 
 class SchemaFromProcedureTest extends BaseTestSuite with BeforeAndAfter with BeforeAndAfterAll {
 
-  it("node property with numeric typed property") {
-    val numericProperty =
-      """|CREATE (:A {val1: 'String', val2: 1})
-         |CREATE (:A {val1: 'String', val2: 1.2})""".stripMargin
+  private val createForNumericProperty =
+    """|CREATE (:A {val1: 'String', val2: 1})
+       |CREATE (:A {val1: 'String', val2: 1.2})""".stripMargin
 
-    val e = the[SchemaException] thrownBy schemaFor(numericProperty)
+  it("node property with numeric typed property") {
+    val e = the[SchemaException] thrownBy schemaFor(createForNumericProperty)
     e.msg should (include("multiple property types") and
       include("node label combination [:A]") and
       include("val2") and
       include("Long") and
       include("Double") and
       include(setFlagMessage))
+  }
 
-    schemaFor(numericProperty, omitImportFailures = true) should equal(Schema.empty
-      .withNodePropertyKeys("A")("val1" -> CTString)
+  it("node property with numeric typed property: import failures omitted") {
+    schemaFor(createForNumericProperty, omitImportFailures = true) should equal(
+      Schema.empty
+        .withNodePropertyKeys("A")("val1" -> CTString)
     )
   }
 
@@ -98,24 +101,27 @@ class SchemaFromProcedureTest extends BaseTestSuite with BeforeAndAfter with Bef
     )
   }
 
-  it("relationship with any type property") {
-    val anyProperty =
-      """|CREATE (a:A)
-         |CREATE (b:A)
-         |CREATE (a)-[:REL {val1: 'String', val2: true}]->(b)
-         |CREATE (a)-[:REL {val1: 'String', val2: 2.0}]->(b)""".stripMargin
+  private val createForAnyProperty =
+    """|CREATE (a:A)
+       |CREATE (b:A)
+       |CREATE (a)-[:REL {val1: 'String', val2: true}]->(b)
+       |CREATE (a)-[:REL {val1: 'String', val2: 2.0}]->(b)""".stripMargin
 
-    val e = the[SchemaException] thrownBy schemaFor(anyProperty)
+  it("relationship with any type property") {
+    val e = the[SchemaException] thrownBy schemaFor(createForAnyProperty)
     e.msg should (include("multiple property types") and
       include("relationship type [:REL]") and
       include("val2") and
       include("Boolean") and
       include("Double") and
       include(setFlagMessage))
+  }
 
-    schemaFor(anyProperty, omitImportFailures = true) should equal(Schema.empty
-      .withNodePropertyKeys("A")()
-      .withRelationshipPropertyKeys("REL")("val1" -> CTString)
+  it("relationship with any type property: import failures omitted") {
+    schemaFor(createForAnyProperty, omitImportFailures = true) should equal(
+      Schema.empty
+        .withNodePropertyKeys("A")()
+        .withRelationshipPropertyKeys("REL")("val1" -> CTString)
     )
   }
 
@@ -130,21 +136,23 @@ class SchemaFromProcedureTest extends BaseTestSuite with BeforeAndAfter with Bef
     )
   }
 
-  it("unsupported properties") {
-    val createQuery =
-      """|CREATE (a:A { foo: time(), bar : 42 })
-         |CREATE (b:A)
-         |CREATE (a)-[:REL]->(b)""".stripMargin
+  private val createForUnsupportedProperty: String =
+    """|CREATE (a:A { foo: time(), bar : 42 })
+       |CREATE (b:A)
+       |CREATE (a)-[:REL]->(b)""".stripMargin
 
-    val e = the[SchemaException] thrownBy schemaFor(createQuery)
+  it("unsupported properties") {
+    val e = the[SchemaException] thrownBy schemaFor(createForUnsupportedProperty)
     e.msg should (include("unsupported property type") and
       include("Time") and
       include(setFlagMessage))
+  }
 
-    val schemaWithOmittedImportFailures = schemaFor(createQuery, omitImportFailures = true)
-    schemaWithOmittedImportFailures should equal(Schema.empty
-      .withNodePropertyKeys("A")("bar" -> CTInteger.nullable)
-      .withRelationshipPropertyKeys("REL")()
+  it("unsupported properties: import failures omitted") {
+    schemaFor(createForUnsupportedProperty, omitImportFailures = true) should equal(
+      Schema.empty
+        .withNodePropertyKeys("A")("bar" -> CTInteger.nullable)
+        .withRelationshipPropertyKeys("REL")()
     )
   }
 
