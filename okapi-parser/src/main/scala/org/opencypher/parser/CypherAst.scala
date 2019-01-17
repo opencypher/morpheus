@@ -43,7 +43,9 @@ case class SingleQuery(
 
 case class Union(all: Boolean, left: RegularQuery, right: SingleQuery) extends RegularQuery
 
-sealed trait ProcedureInvocation
+sealed trait ProcedureInvocation {
+  def procedureName: ProcedureName
+}
 
 case class StandaloneCall(procedureInvocation: ProcedureInvocation, yieldItems: List[YieldItem]) extends Query
 
@@ -148,9 +150,9 @@ case class PropertyExpression(
 
 sealed trait Parameter extends Properties with Atom
 
-case class IndexParameter(index: Long) extends Parameter
+case class ParameterName(name: String) extends Parameter
 
-case class SymbolicName(value: String) extends Parameter with FunctionName
+case class IndexParameter(index: Long) extends Parameter
 
 case class Pattern(patternParts: NonEmptyList[PatternPart]) extends CypherAst
 
@@ -190,9 +192,7 @@ case class Remove(removeItems: NonEmptyList[RemoveItem]) extends UpdatingClause
 
 sealed trait Literal extends Atom
 
-sealed trait FunctionName extends CypherAst
-
-case object Exists extends FunctionName
+case class FunctionName(namespace: Namespace, name: String) extends CypherAst
 
 sealed trait PropertyLookup extends CypherAst {
   def value: String
@@ -236,7 +236,9 @@ case class SetAdditionalItem(variable: Variable, value: Expression) extends SetI
 
 case class SetLabels(variable: Variable, nodeLabels: NonEmptyList[NodeLabel]) extends SetItem
 
-case class ProcedureName(namespace: Namespace, symbolicName: SymbolicName) extends CypherAst
+case class ProcedureName(namespace: Namespace, name: String) extends CypherAst {
+  override def toString: String = s"$namespace.$name"
+}
 
 sealed trait RemoveItem extends CypherAst
 
@@ -265,11 +267,13 @@ sealed trait Clause extends CypherAst
 
 sealed trait ReadingClause extends Clause
 
-case class ProcedureResultField(symbolicName: SymbolicName) extends CypherAst
+case class ProcedureResultField(name: String) extends CypherAst
 
 case class RelTypeName(relTypeName: String) extends CypherAst
 
-case class Namespace(symbolicNames: List[SymbolicName]) extends CypherAst
+case class Namespace(names: List[String]) extends CypherAst {
+  override def toString: String = s"${names.mkString(".")}"
+}
 
 case class ListLiteral(listLiterals: List[Expression]) extends Literal
 

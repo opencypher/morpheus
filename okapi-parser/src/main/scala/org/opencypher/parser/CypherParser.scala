@@ -67,24 +67,32 @@ object CypherParser {
           case _ =>
         }
 
+        val parsedQueryBeforeFailure: Option[CypherAst] = {
+          statement.parseInput(i) match {
+            case Success(v, _) => Some(v)
+            case _ => None
+          }
+        }
+
+        parsedQueryBeforeFailure match {
+          case Some(s: StandaloneCall) =>
+            throw ParsingException(InvalidArgumentPassingMode(
+              s"\n`${s.procedureInvocation.procedureName}` needs explicit arguments, unless it is used in a standalone call."))
+          case _ =>
+        }
+
         val lastSuccessfulParse: Option[CypherAst] = {
           @tailrec def lastChild(ast: CypherAst): CypherAst = {
             if (ast.children.length == 0) ast else lastChild(ast.children.last)
           }
 
-          statement.parseInput(i) match {
-            case Success(v, _) =>
-              val lastSuccess = lastChild(v)
-              lastSuccess.show()
-              Some(lastSuccess)
-            case _ => None
-          }
+          parsedQueryBeforeFailure.map(lastChild)
         }
 
         lastSuccessfulParse match {
           case Some(_: NumberLiteral) if maybeNextCharacter.isDefined =>
             throw ParsingException(InvalidNumberLiteral(
-              s"'${maybeNextCharacter.get}' is not a valid next character for a number literal"))
+              s"\n'${maybeNextCharacter.get}' is not a valid next character for a number literal."))
           case _ =>
         }
 
@@ -93,7 +101,7 @@ object CypherParser {
             throw ParsingException(InvalidRelationshipPattern(
               s"'${maybeNextCharacter.get}' is not a valid part of a relationship pattern"))
           case other =>
-            println(other)
+            println(s"Last stack frame: $other")
         }
 
         println(s"Last named parser on stack=${extra.traced.stack.last}")
@@ -167,7 +175,7 @@ object CypherParser {
 
   def K(s: String): P[Unit] = P(IgnoreCase(s) ~~ &(CharIn(" \t\n\r\f") | End))
 
-  val cypher: P[Cypher] = P(statement ~ ";".? ~ End).map(Cypher)
+  val cypher: P[Cypher] = P(Start ~ statement ~ ";".? ~ End).map(Cypher)
 
   val statement: P[Statement] = P(query)
 
@@ -257,7 +265,7 @@ object CypherParser {
   val procedureInvocation: P[ProcedureInvocation] = P(explicitProcedureInvocation | implicitProcedureInvocation)
 
   val yieldItems: P[List[YieldItem]] = P(
-    (K("YIELD") ~/ (explicitYieldItems | noYieldItems)).?.map(_.getOrElse(Nil))
+    (K("YIELD") ~ (explicitYieldItems | noYieldItems)).?.map(_.getOrElse(Nil))
   )
 
   val explicitYieldItems: P[List[YieldItem]] = P(yieldItem.rep(min = 1, sep = ",").toList)
@@ -318,7 +326,7 @@ object CypherParser {
   val patternElementChain: P[PatternElementChain] = P(relationshipPattern ~ nodePattern).map(PatternElementChain.tupled)
 
   val relationshipPattern: P[RelationshipPattern] = P(
-    hasLeftArrow ~ relationshipDetail ~ hasRightArrow
+    hasLeftArrow ~/ relationshipDetail ~ hasRightArrow
   ).map {
     case (false, detail, true) => LeftToRight(detail)
     case (true, detail, false) => RightToLeft(detail)
@@ -330,7 +338,7 @@ object CypherParser {
   val hasRightArrow: P[Boolean] = P(dash ~ rightArrowHead.!.?.map(_.isDefined))
 
   val relationshipDetail: P[RelationshipDetail] = P(
-    "[" ~ variable.? ~ relationshipTypes ~ rangeLiteral.? ~ properties.? ~ "]"
+    "[" ~/ variable.? ~/ relationshipTypes ~/ rangeLiteral.? ~/ properties.? ~/ "]"
   ).?.map(_.map(RelationshipDetail.tupled).getOrElse(RelationshipDetail(None, List.empty, None, None)))
 
   val properties: P[Properties] = P(mapLiteral | parameter)
@@ -565,7 +573,7 @@ object CypherParser {
       | IgnoreCase("FALSE").map(_ => false)
   ).map(BooleanLiteral)
 
-  val listLiteral: P[ListLiteral] = P("[" ~ expression.rep(sep = ",").toList ~ "]").map(ListLiteral)
+  val listLiteral: P[ListLiteral] = P("[" ~ NoCut(expression).rep(sep = ",").toList ~ "]").map(ListLiteral)
 
   val parenthesizedExpression: P[ParenthesizedExpression] = P("(" ~ expression ~ ")").map(ParenthesizedExpression)
 
@@ -582,9 +590,9 @@ object CypherParser {
   ).map(FunctionInvocation.tupled)
 
   val functionName: P[FunctionName] = P(
-    symbolicName.!.map(SymbolicName)
-      | K("EXISTS").map(_ => Exists)
-  )
+    (namespace ~~ symbolicName.!)
+      | K("EXISTS").map(_ => Namespace(Nil) -> "EXISTS")
+  ).map(FunctionName.tupled)
 
   val explicitProcedureInvocation: P[ExplicitProcedureInvocation] = P(
     procedureName ~ "(" ~ expression.rep(sep = ",").toList ~ ")"
@@ -592,18 +600,18 @@ object CypherParser {
 
   val implicitProcedureInvocation: P[ImplicitProcedureInvocation] = P(procedureName).map(ImplicitProcedureInvocation)
 
-  val procedureResultField: P[ProcedureResultField] = P(symbolicName.!.map(SymbolicName)).map(ProcedureResultField)
+  val procedureResultField: P[ProcedureResultField] = P(symbolicName.!).map(ProcedureResultField)
 
-  val procedureName: P[ProcedureName] = P(namespace ~ symbolicName.!.map(SymbolicName)).map(ProcedureName.tupled)
+  val procedureName: P[ProcedureName] = P(namespace ~ symbolicName.!).map(ProcedureName.tupled)
 
-  val namespace: P[Namespace] = P((symbolicName.!.map(SymbolicName) ~ ".").rep.toList).map(Namespace)
+  val namespace: P[Namespace] = P((symbolicName.! ~ ".").rep.toList).map(Namespace)
 
   val listComprehension: P[ListComprehension] = P(
     "[" ~ filterExpression ~ ("|" ~ expression).? ~ "]"
   ).map(ListComprehension.tupled)
 
   val patternComprehension: P[PatternComprehension] = P(
-    "[" ~ (variable ~ "=").? ~ relationshipsPattern ~ (K("WHERE") ~ expression).? ~ "|" ~ expression ~ "]"
+    "[" ~ (variable ~ "=").? ~ NoCut(relationshipsPattern) ~ (K("WHERE") ~ expression).? ~ "|" ~ expression ~ "]"
   ).map {
     // Switch parameter order. Required to support automated child inference in okapi trees.
     case (first, second, third, fourth) => PatternComprehension(first, second, fourth, third)
@@ -630,7 +638,7 @@ object CypherParser {
     "{" ~ (propertyKeyName ~ ":" ~ expression).rep(sep = ",") ~ "}"
   ).map(_.toList).map(MapLiteral)
 
-  val parameter: P[Parameter] = P("$" ~ (symbolicName.!.map(SymbolicName) | indexParameter))
+  val parameter: P[Parameter] = P("$" ~ (symbolicName.!.map(ParameterName) | indexParameter))
 
   val indexParameter: P[IndexParameter] = P(decimalInteger).!.map(_.toLong).map(IndexParameter)
 
@@ -744,14 +752,7 @@ object CypherParser {
       | K("DROP")
   )
 
-  val symbolicName: P[Unit] = P(unescapedSymbolicName | escapedSymbolicName | hexLetter
-    | K("COUNT")
-    | K("FILTER")
-    | K("EXTRACT")
-    | K("ANY")
-    | K("NONE")
-    | K("SINGLE")
-  )
+  val symbolicName: P[Unit] = P(unescapedSymbolicName | escapedSymbolicName | hexLetter)
 
   val unescapedSymbolicName: P[Unit] = P(identifierPart.repX(min = 1))
 
