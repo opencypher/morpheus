@@ -28,20 +28,24 @@ package org.opencypher.spark.api.io.sql
 
 import org.apache.spark.sql.DataFrame
 import org.opencypher.graphddl.GraphDdl
-import org.opencypher.okapi.api.graph.GraphName
+import org.opencypher.okapi.api.graph.{GraphName, PropertyGraph}
 import org.opencypher.okapi.api.io.PropertyGraphDataSource
+import org.opencypher.okapi.api.schema.Schema
 import org.opencypher.okapi.impl.util.StringEncodingUtilities._
-import org.opencypher.okapi.testing.propertygraph.InMemoryTestGraph
+import org.opencypher.okapi.testing.propertygraph.{CreateGraphFactory, InMemoryTestGraph}
 import org.opencypher.spark.api.CAPSSession
+import org.opencypher.spark.api.io.fs.DefaultGraphDirectoryStructure.nodeTableDirectoryName
 import org.opencypher.spark.api.io.sql.IdGenerationStrategy.IdGenerationStrategy
 import org.opencypher.spark.api.io.util.CAPSGraphExport._
 import org.opencypher.spark.impl.DataFrameOps._
+import org.opencypher.spark.impl.io.CAPSPropertyGraphDataSource
 import org.opencypher.spark.testing.CAPSTestSuite
 import org.opencypher.spark.testing.api.io.CAPSPGDSAcceptance
 import org.opencypher.spark.testing.support.creation.caps.CAPSScanGraphFactory
 
 import scala.io.Source
 
+// TODO: Replicates/translates many choices in PGDSAcceptance, which makes it brittle and maintenance-intensive
 abstract class SqlPropertyGraphDataSourceAcceptanceTest extends CAPSTestSuite with CAPSPGDSAcceptance {
 
   def sqlDataSourceConfig: SqlDataSourceConfig
@@ -74,7 +78,7 @@ abstract class SqlPropertyGraphDataSourceAcceptanceTest extends CAPSTestSuite wi
 
     schema.labelCombinations.combos.foreach { labelCombination =>
       val nodeDf = scanGraph.canonicalNodeTable(labelCombination).removePrefix(propertyPrefix)
-      val tableName = databaseName + "." + labelCombination.mkString("_")
+      val tableName = databaseName + "." + nodeTableDirectoryName(labelCombination)
       writeTable(nodeDf, tableName)
     }
 
@@ -84,6 +88,31 @@ abstract class SqlPropertyGraphDataSourceAcceptanceTest extends CAPSTestSuite wi
       writeTable(relDf, tableName)
     }
 
-    SqlPropertyGraphDataSource(graphDdl, List(sqlDataSourceConfig))
+    val sqlPgds = SqlPropertyGraphDataSource(graphDdl, List(sqlDataSourceConfig))
+
+    // The DDL cannot represent nodes without labels, so we need to wrap the data source and add this node manually
+    val nodesWithoutLabels = CAPSScanGraphFactory(CreateGraphFactory(createStatementsForNodesWithoutLabels))
+    new CAPSPropertyGraphDataSource {
+      override def hasGraph(name: GraphName): Boolean = sqlPgds.hasGraph(name)
+      override def graph(name: GraphName): PropertyGraph = {
+        val sqlGraph = sqlPgds.graph(name)
+        if (name == graphName) {
+          sqlGraph.unionAll(nodesWithoutLabels)
+        } else {
+          sqlGraph
+        }
+      }
+      override def schema(name: GraphName): Option[Schema] = {
+        val sqlSchema = sqlPgds.schema(name)
+        if (name == graphName) {
+          sqlSchema.map(_ ++ nodesWithoutLabels.schema)
+        } else {
+          sqlSchema
+        }
+      }
+      override def store(name: GraphName, graph: PropertyGraph): Unit = sqlPgds.store(name, graph)
+      override def delete(name: GraphName): Unit = sqlPgds.delete(name)
+      override def graphNames: Set[GraphName] = sqlPgds.graphNames
+    }
   }
 }
