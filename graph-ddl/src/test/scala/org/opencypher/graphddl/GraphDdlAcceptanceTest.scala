@@ -246,7 +246,7 @@ class GraphDdlAcceptanceTest extends BaseTestSuite {
     }
 
     it("parses correct schema") {
-      val ddlDefinition: DdlDefinition = parse(
+      val ddlDefinition: DdlDefinition = parseDdl(
         s"""|SET SCHEMA foo.bar;
             |
             |CREATE ELEMENT TYPE A ( name STRING )
@@ -332,7 +332,7 @@ class GraphDdlAcceptanceTest extends BaseTestSuite {
     }
 
     it("creates implicit node/edge types from mappings") {
-      val ddlDefinition: DdlDefinition = parse(
+      val ddlDefinition: DdlDefinition = parseDdl(
         s"""|SET SCHEMA a.b;
             |
             |CREATE GRAPH $graphName (
@@ -361,7 +361,7 @@ class GraphDdlAcceptanceTest extends BaseTestSuite {
     }
 
     it("resolves element types from parent graph type") {
-      val ddlDefinition: DdlDefinition = parse(
+      val ddlDefinition: DdlDefinition = parseDdl(
         s"""|SET SCHEMA a.b;
             |
             |CREATE GRAPH TYPE $typeName (
@@ -392,7 +392,7 @@ class GraphDdlAcceptanceTest extends BaseTestSuite {
     }
 
     it("resolves shadowed element types") {
-      val ddlDefinition: DdlDefinition = parse(
+      val ddlDefinition: DdlDefinition = parseDdl(
         s"""|SET SCHEMA a.b;
             |
             |CREATE GRAPH TYPE $typeName (
@@ -425,7 +425,7 @@ class GraphDdlAcceptanceTest extends BaseTestSuite {
     }
 
     it("resolves most local element type") {
-      val ddlDefinition: DdlDefinition = parse(
+      val ddlDefinition: DdlDefinition = parseDdl(
         s"""|SET SCHEMA a.b;
             |
             |CREATE ELEMENT TYPE X (a STRING)
@@ -469,7 +469,7 @@ class GraphDdlAcceptanceTest extends BaseTestSuite {
 
 
     it("throws if a label is not defined") {
-      val ddlDefinition = parse(
+      val ddlDefinition = parseDdl(
         s"""|CREATE ELEMENT TYPE A
             |
             |CREATE GRAPH TYPE $typeName (
@@ -488,7 +488,7 @@ class GraphDdlAcceptanceTest extends BaseTestSuite {
     }
 
     it("throws if a relationship type is not defined") {
-      val ddlDefinition = parse(
+      val ddlDefinition = parseDdl(
         s"""|CREATE ELEMENT TYPE A
             |
             |CREATE GRAPH TYPE $typeName (
@@ -514,7 +514,7 @@ class GraphDdlAcceptanceTest extends BaseTestSuite {
             |""".stripMargin
 
       an[GraphDdlException] shouldBe thrownBy {
-        GraphDdl(parse(ddlString)).graphs(graphName).graphType
+        GraphDdl(parseDdl(ddlString)).graphs(graphName).graphType
       }
     }
 
@@ -530,7 +530,7 @@ class GraphDdlAcceptanceTest extends BaseTestSuite {
             |""".stripMargin
 
       an[GraphDdlException] shouldBe thrownBy {
-        GraphDdl(parse(ddlString)).graphs(graphName).graphType
+        GraphDdl(parseDdl(ddlString)).graphs(graphName).graphType
       }
     }
   }

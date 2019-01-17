@@ -41,7 +41,7 @@ object GraphDdl {
   type PropertyMappings = Map[String, String]
 
   def apply(ddl: String): GraphDdl =
-    GraphDdl(GraphDdlParser.parse(ddl))
+    GraphDdl(GraphDdlParser.parseDdl(ddl))
 
   def apply(ddl: DdlDefinition): GraphDdl = {
 

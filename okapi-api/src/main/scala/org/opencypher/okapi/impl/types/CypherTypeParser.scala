@@ -35,7 +35,7 @@ import fastparse._
 object CypherTypeParser extends Logging {
 
   def parseCypherType(input: String): Option[CypherType] = {
-    parse(input, cypherTypeFromEntireInput(_)) match {
+    parse(input, cypherTypeFromEntireInput(_), verboseFailures = true) match {
       case Success(value, _) => Some(value)
       case Failure(expected, index, extra) =>
         val before = index - math.max(index - 20, 0)
