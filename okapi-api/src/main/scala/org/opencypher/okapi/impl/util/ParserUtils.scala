@@ -26,36 +26,19 @@
  */
 package org.opencypher.okapi.impl.util
 
-import fastparse.WhitespaceApi
+import fastparse._
+import NoWhitespace._
 
 object ParserUtils {
-  object ParsersForNoTrace {
+  def newline[_: P]: P[Unit] = P("\n" | "\r\n" | "\r" | "\f")
+  def invisible[_: P]: P[Unit] = P(" " | "\t" | newline)
+  def comment[_: P]: P[Unit] = P("--" ~ (!newline ~ AnyChar).rep ~ newline)
+  implicit val whitespace: P[_] => P[Unit] = { implicit ctx: ParsingRun[_] => (comment | invisible).rep }
 
-    import fastparse.all._
-
-    val newline: P[Unit] = P("\n" | "\r\n" | "\r" | "\f")
-    val whitespace: P[Unit] = P(" " | "\t" | newline)
-    val comment: P[Unit] = P("--" ~ (!newline ~ AnyChar).rep ~ newline)
-    val noTrace: P[Unit] = (comment | whitespace).rep
-  }
-
-  val Whitespace: WhitespaceApi.Wrapper = WhitespaceApi.Wrapper {
-    import fastparse.all._
-    NoTrace(ParsersForNoTrace.noTrace)
-  }
-
-  import Whitespace._
-  import fastparse.noApi._
-
-  implicit class RichParser[T](parser: fastparse.core.Parser[T, Char, String]) {
-    def entireInput: P[T] = parser ~ End
-  }
-
-  def keyword(k: String): P[Unit] = P(IgnoreCase(k))
-
-  val digit: P[Unit] = P(CharIn('0' to '9'))
-  val character: P[Unit] = P(CharIn('a' to 'z', 'A' to 'Z'))
-  val identifier: P[Unit] = P(character ~~ P(character | digit | "_").repX)
-  val escapedIdentifier: P[String] = identifier.! | P("`" ~ CharsWhile(_ != '`').! ~ "`")
-  val label: P[String] = P(":" ~ (identifier.! | escapedIdentifier))
+  def keyword[_: P](k: String): P[Unit] = P(IgnoreCase(k))
+  def digit[_: P]: P[Unit] = P(CharIn("0-9"))
+  def character[_: P]: P[Unit] = P(CharIn("a-zA-Z"))
+  def identifier[_: P]: P[Unit] = P(character ~~ P(character | digit | "_").repX)
+  def escapedIdentifier[_: P]: P[String] = P(identifier.! | ("`" ~~ CharsWhile(_ != '`').! ~~ "`"))
+  def label[_: P]: P[String] = P(":" ~ (identifier.! | escapedIdentifier))
 }
