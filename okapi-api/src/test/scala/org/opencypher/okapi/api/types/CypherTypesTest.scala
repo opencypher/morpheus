@@ -28,7 +28,7 @@ package org.opencypher.okapi.api.types
 
 import org.opencypher.okapi.ApiBaseTest
 import org.opencypher.okapi.api.graph.QualifiedGraphName
-import org.opencypher.okapi.impl.types.CypherTypeParser
+import org.opencypher.okapi.impl.types.CypherTypeParser.parseCypherType
 
 import scala.language.postfixOps
 
@@ -334,9 +334,9 @@ class CypherTypesTest extends ApiBaseTest {
 
           case Maybe =>
             (
-              (t1.isWildcard || t2.isWildcard) ||
-                (t1.isNullable && !t2.isNullable) ||
-                (!t1.isNullable && t2.isNullable)
+            (t1.isWildcard || t2.isWildcard) ||
+              (t1.isNullable && !t2.isNullable) ||
+              (!t1.isNullable && t2.isNullable)
             ) shouldBe true
         }
       }
@@ -437,10 +437,10 @@ class CypherTypesTest extends ApiBaseTest {
 
   it("is inhabited") {
     allTypes.foreach {
-      case t @ CTAny      => t.isInhabited should be(True)
-      case t @ CTVoid     => t.isInhabited should be(False)
-      case t @ CTWildcard => t.isInhabited should be(Maybe)
-      case t              => t.isInhabited should be(True)
+      case t@CTAny => t.isInhabited should be(True)
+      case t@CTVoid => t.isInhabited should be(False)
+      case t@CTWildcard => t.isInhabited should be(Maybe)
+      case t => t.isInhabited should be(True)
     }
   }
 
@@ -465,25 +465,32 @@ class CypherTypesTest extends ApiBaseTest {
   }
 
   describe("fromName") {
-    it("can parse CypherType names into CypherTypes"){
+    it("can parse CypherType names into CypherTypes") {
       allTypes.foreach { t =>
-        CypherTypeParser.parse(t.name) should equal(Some(t))
+        parseCypherType(t.name) should equal(Some(t))
       }
     }
 
     it("can parse maps with escaped keys") {
       val input = "MAP(`foo bar_my baz`: STRING)"
-      CypherTypeParser.parse(input) should equal(Some(CTMap(Map("foo bar_my baz" -> CTString))))
+      parseCypherType(input) should equal(Some(CTMap(Map("foo bar_my baz" -> CTString))))
     }
 
-    it("can parse nodes types with escaped labels") {
+    it("can parse node types with escaped labels") {
       val input = "Node(:`foo bar_my baz`:bar)"
-      CypherTypeParser.parse(input) should equal(Some(CTNode("foo bar_my baz", "bar")))
+      parseCypherType(input) should equal(Some(CTNode("foo bar_my baz", "bar")))
     }
 
     it("can parse relationship types with escaped labels") {
       val input = "Relationship(:`foo bar_my baz`|:bar)"
-      CypherTypeParser.parse(input) should equal(Some(CTRelationship("foo bar_my baz", "bar")))
+      parseCypherType(input) should equal(Some(CTRelationship("foo bar_my baz", "bar")))
+    }
+
+    it("handles white space") {
+      val input =
+        """| Node  (
+           |        :`foo bar_my baz` :bar)""".stripMargin
+      parseCypherType(input) should equal(Some(CTNode("foo bar_my baz", "bar")))
     }
   }
 }

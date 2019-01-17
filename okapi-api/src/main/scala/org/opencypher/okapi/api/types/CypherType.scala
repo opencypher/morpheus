@@ -49,7 +49,7 @@ object CypherType {
     * @see {{{org.opencypher.okapi.api.types.CypherType#name}}}
     */
   def fromName(name: String): Option[CypherType] = {
-   CypherTypeParser.parse(name)
+   CypherTypeParser.parseCypherType(name)
   }
 
   implicit class TypeCypherValue(cv: CypherValue) {
