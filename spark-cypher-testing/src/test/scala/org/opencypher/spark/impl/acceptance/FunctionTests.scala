@@ -123,6 +123,14 @@ class FunctionTests extends CAPSTestSuite with ScanGraphInit{
         )
       )
     }
+
+    it("should propagate null") {
+      caps.cypher("RETURN date(null) as time").records.toMaps should equal(
+        Bag(
+          CypherMap("time" -> null)
+        )
+      )
+    }
   }
 
   describe("datetime") {
@@ -212,6 +220,14 @@ class FunctionTests extends CAPSTestSuite with ScanGraphInit{
       caps.cypher(s"RETURN datetime('$currentDateTime') <= datetime() AS time").records.toMaps equals equal(
         Bag(
           CypherMap("time" -> true)
+        )
+      )
+    }
+
+    it("should propagate null") {
+      caps.cypher("RETURN datetime(null) as time").records.toMaps should equal(
+        Bag(
+          CypherMap("time" -> null)
         )
       )
     }

@@ -29,7 +29,7 @@ package org.opencypher.spark.impl.util
 import org.apache.spark.sql.{Column, DataFrame, functions}
 import org.opencypher.okapi.api.value.CypherValue.{CypherInteger, CypherMap, CypherString}
 import org.opencypher.okapi.impl.exception.{IllegalArgumentException, IllegalStateException, NotImplementedException}
-import org.opencypher.okapi.ir.api.expr.{Expr, MapExpression, Param}
+import org.opencypher.okapi.ir.api.expr.{Expr, MapExpression, NullLit, Param}
 import org.opencypher.okapi.relational.impl.table.RecordHeader
 
 object TemporalTypesHelper {
@@ -82,6 +82,8 @@ object TemporalTypesHelper {
           case other => throw IllegalArgumentException("a CypherString", other)
         }
         functions.lit(sanitizeTemporalString(s))
+
+      case _: NullLit => functions.lit(null)
 
       case other =>
         throw IllegalArgumentException("A CypherString or a CypherMap constructing a temporal type", other.cypherType)
