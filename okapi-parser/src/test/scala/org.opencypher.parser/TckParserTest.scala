@@ -53,7 +53,7 @@ class TckParserTest extends FunSpec with Matchers with MockitoSugar {
             meta match {
               case InitQuery | SideEffectQuery => CypherValueRecords(List.empty, List.empty)
               case ExecQuery =>
-                Try(CypherParser.parse(query)) match {
+                Try(CypherParser.parseCypher9(query)) match {
                   case Success(_) =>
                     CypherValueRecords(List.empty, List.empty)
                   case Failure(e) =>
