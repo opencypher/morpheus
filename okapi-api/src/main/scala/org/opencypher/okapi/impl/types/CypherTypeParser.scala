@@ -26,78 +26,90 @@
  */
 package org.opencypher.okapi.impl.types
 
-import fastparse.core.Parsed.{Failure, Success}
+import fastparse.Parsed.{Failure, Success}
 import org.apache.logging.log4j.scala.Logging
 import org.opencypher.okapi.api.types._
 import org.opencypher.okapi.impl.util.ParserUtils._
+import fastparse._
 
-//noinspection ForwardReference
 object CypherTypeParser extends Logging {
 
-  def parse(input: String): Option[CypherType] = {
-    cypherType.entireInput.parse(input) match {
+  def parseCypherType(input: String): Option[CypherType] = {
+    parse(input, cypherTypeFromEntireInput(_), verboseFailures = true) match {
       case Success(value, _) => Some(value)
-      case Failure(_, index, extra) =>
-        logger.debug(s"Failed to parse $input at index $index: ${extra.traced.trace}")
+      case Failure(expected, index, extra) =>
+        val before = index - math.max(index - 20, 0)
+        val after = math.min(index + 20, extra.input.length) - index
+        val locationPointer =
+          s"""|\t${extra.input.slice(index - before, index + after).replace('\n', ' ')}
+              |\t${"~" * before + "^" + "~" * after}
+           """.stripMargin
+        val msg =
+          s"""|Failed at index $index:
+              |
+              |Expected:\t$expected
+              |
+              |$locationPointer
+              |
+              |${extra.trace().msg}""".stripMargin
+        logger.debug(msg)
         None
     }
   }
 
-  import fastparse.noApi._
-  import org.opencypher.okapi.impl.util.ParserUtils.Whitespace._
-  import org.opencypher.okapi.impl.util.ParserUtils._
-
   // Basic types
-  val STRING: P[CTString.type] = IgnoreCase("STRING").map(_ => CTString)
-  val INTEGER: P[CTInteger.type] = IgnoreCase("INTEGER").map(_ => CTInteger)
-  val FLOAT: P[CTFloat.type] = IgnoreCase("FLOAT").map(_ => CTFloat)
-  val NUMBER: P[CTNumber.type] = IgnoreCase("NUMBER").map(_ => CTNumber)
-  val BOOLEAN: P[CTBoolean.type] = IgnoreCase("BOOLEAN").map(_ => CTBoolean)
-  val ANY: P[CTAny.type] = IgnoreCase("ANY").map(_ => CTAny)
-  val VOID: P[CTVoid.type] = IgnoreCase("VOID").map(_ => CTVoid)
-  val NULL: P[CTNull.type] = IgnoreCase("NULL").map(_ => CTNull)
-  val WILDCARD: P[CTWildcard.type] = IgnoreCase("?").map(_ => CTWildcard)
-  val DATE: P[CTDate.type] = IgnoreCase("DATE").map(_ => CTDate)
-  val DATETIME: P[CTDateTime.type] = IgnoreCase("DATETIME").map(_ => CTDateTime)
+  def STRING[_: P]: P[CTString.type] = IgnoreCase("STRING").map(_ => CTString)
+  def INTEGER[_: P]: P[CTInteger.type] = IgnoreCase("INTEGER").map(_ => CTInteger)
+  def FLOAT[_: P]: P[CTFloat.type] = IgnoreCase("FLOAT").map(_ => CTFloat)
+  def NUMBER[_: P]: P[CTNumber.type] = IgnoreCase("NUMBER").map(_ => CTNumber)
+  def BOOLEAN[_: P]: P[CTBoolean.type] = IgnoreCase("BOOLEAN").map(_ => CTBoolean)
+  def ANY[_: P]: P[CTAny.type] = IgnoreCase("ANY").map(_ => CTAny)
+  def VOID[_: P]: P[CTVoid.type] = IgnoreCase("VOID").map(_ => CTVoid)
+  def NULL[_: P]: P[CTNull.type] = IgnoreCase("NULL").map(_ => CTNull)
+  def WILDCARD[_: P]: P[CTWildcard.type] = IgnoreCase("?").map(_ => CTWildcard)
+  def DATE[_: P]: P[CTDate.type] = IgnoreCase("DATE").map(_ => CTDate)
+  def DATETIME[_: P]: P[CTDateTime.type] = IgnoreCase("DATETIME").map(_ => CTDateTime)
 
   // element types
-  val NODE: P[CTNode] = P(
-    IgnoreCase("NODE") ~ ("(" ~ label.rep() ~ ")").?
+  def NODE[_: P]: P[CTNode] = P(
+    IgnoreCase("NODE") ~/ ("(" ~/ label.rep() ~ ")").?
   ).map(l => CTNode(l.getOrElse(Seq.empty).toSet))
 
-  val RELATIONSHIP: P[CTRelationship] = P(
-    IgnoreCase("RELATIONSHIP") ~ ("(" ~ label.rep(sep = "|") ~ ")").?
+  def RELATIONSHIP[_: P]: P[CTRelationship] = P(
+    IgnoreCase("RELATIONSHIP") ~/ ("(" ~ label.rep(sep = "|") ~/ ")").?
   ).map(l => CTRelationship(l.getOrElse(Seq.empty).toSet))
 
-  val PATH: P[CTPath.type] = IgnoreCase("PATH").map(_ => CTPath)
+  def PATH[_: P]: P[CTPath.type] = P(IgnoreCase("PATH").map(_ => CTPath))
 
   // container types
-  val LIST: P[CTList] = P(IgnoreCase("LIST") ~ "(" ~ cypherType ~ ")").map(inner => CTList(inner))
+  def LIST[_: P]: P[CTList] = P(IgnoreCase("LIST") ~/ "(" ~/ cypherType ~/ ")").map(inner => CTList(inner))
 
-  private val mapKey: P[String] = identifier.! | escapedIdentifier
-  private val kvPair: P[(String, CypherType)] = P(mapKey ~ ":" ~ cypherType)
-  val MAP: P[CTMap] = P(IgnoreCase("MAP") ~ "(" ~ kvPair.rep(sep = ",") ~ ")").map(inner => CTMap(inner.toMap))
+  private def mapKey[_: P]: P[String] = P(identifier.! | escapedIdentifier)
+  private def kvPair[_: P]: P[(String, CypherType)] = P(mapKey ~/ ":" ~/ cypherType)
+  def MAP[_: P]: P[CTMap] = P(IgnoreCase("MAP") ~/ "(" ~/ kvPair.rep(sep = ",") ~/ ")").map(inner => CTMap(inner.toMap))
 
-  val materialCypherType: P[CypherType] = P(
+  def materialCypherType[_: P]: P[CypherType] = P(
     STRING |
-    INTEGER |
-    FLOAT |
-    NUMBER |
-    BOOLEAN |
-    ANY |
-    VOID |
-    NULL |
-    WILDCARD |
-    NODE |
-    RELATIONSHIP |
-    PATH |
-    LIST |
-    MAP |
-    DATETIME | // needs to be infront of date due to shortest match semantics
-    DATE
+      INTEGER |
+      FLOAT |
+      NUMBER |
+      BOOLEAN |
+      ANY |
+      VOID |
+      NULL |
+      WILDCARD |
+      NODE |
+      RELATIONSHIP |
+      PATH |
+      LIST |
+      MAP |
+      DATETIME | // needs to be before date due to shortest match semantics
+      DATE
   )
 
-  val nullableCypherType: P[CypherType] = P(materialCypherType ~ "?").map(ct => ct.nullable)
+  def cypherType[_: P]: P[CypherType] = P((materialCypherType ~ "?".!.?.map(_.isDefined)).map {
+    case (ct, isNullable) => if (isNullable) ct.nullable else ct
+  })
 
-  val cypherType: P[CypherType] = nullableCypherType | materialCypherType
+  def cypherTypeFromEntireInput[_: P]: P[CypherType] = Start ~ cypherType ~ End
 }
