@@ -213,7 +213,7 @@ object CypherParser {
     variable ~ nodeLabel.rep(1).toNonEmptyList
   ).map(RemoveNodeVariable.tupled)
 
-  def removeProperty[_: P]: P[PropertyExpression] = P(propertyExpression)
+  def removeProperty[_: P]: P[Property] = P(propertyExpression)
 
   def inQueryCall[_: P]: P[InQueryCall] = P(K("CALL") ~ explicitProcedureInvocation ~ yieldItems).map(InQueryCall.tupled)
 
@@ -322,21 +322,21 @@ object CypherParser {
     xorExpression ~ (K("OR") ~ xorExpression).rep
   ).map { case (lhs, rhs) =>
     if (rhs.isEmpty) lhs
-    else OrExpression(NonEmptyList(lhs, rhs.toList))
+    else Or(NonEmptyList(lhs, rhs.toList))
   }
 
   def xorExpression[_: P]: P[Expression] = P(
     andExpression ~ (K("XOR") ~ andExpression).rep
   ).map { case (lhs, rhs) =>
     if (rhs.isEmpty) lhs
-    else XorExpression(NonEmptyList(lhs, rhs.toList))
+    else Xor(NonEmptyList(lhs, rhs.toList))
   }
 
   def andExpression[_: P]: P[Expression] = P(
     notExpression ~ (K("AND") ~ notExpression).rep
   ).map { case (lhs, rhs) =>
     if (rhs.isEmpty) lhs
-    else AndExpression(NonEmptyList(lhs, rhs.toList))
+    else And(NonEmptyList(lhs, rhs.toList))
   }
 
   def notExpression[_: P]: P[Expression] = P(
@@ -344,7 +344,7 @@ object CypherParser {
   ).map { case (notCount, expr) =>
     notCount % 2 match {
       case 0 => expr
-      case 1 => NotExpression(expr)
+      case 1 => Not(expr)
     }
   }
 
@@ -356,12 +356,12 @@ object CypherParser {
   }
 
   def partialComparisonExpression[_: P]: P[Expression => Expression] = P(
-    partialEqualComparison.map(rhs => (lhs: Expression) => EqualExpression(lhs, rhs))
-      | partialNotEqualExpression.map(rhs => (lhs: Expression) => NotExpression(EqualExpression(lhs, rhs)))
-      | partialLessThanExpression.map(rhs => (lhs: Expression) => LessThanExpression(lhs, rhs))
-      | partialGreaterThanExpression.map(rhs => (lhs: Expression) => NotExpression(LessThanOrEqualExpression(lhs, rhs)))
-      | partialLessThanOrEqualExpression.map(rhs => (lhs: Expression) => LessThanOrEqualExpression(lhs, rhs))
-      | partialGreaterThanOrEqualExpression.map(rhs => (lhs: Expression) => NotExpression(LessThanExpression(lhs, rhs)))
+    partialEqualComparison.map(rhs => (lhs: Expression) => Equal(lhs, rhs))
+      | partialNotEqualExpression.map(rhs => (lhs: Expression) => Not(Equal(lhs, rhs)))
+      | partialLessThanExpression.map(rhs => (lhs: Expression) => LessThan(lhs, rhs))
+      | partialGreaterThanExpression.map(rhs => (lhs: Expression) => Not(LessThanOrEqual(lhs, rhs)))
+      | partialLessThanOrEqualExpression.map(rhs => (lhs: Expression) => LessThanOrEqual(lhs, rhs))
+      | partialGreaterThanOrEqualExpression.map(rhs => (lhs: Expression) => Not(LessThan(lhs, rhs)))
   )
 
   def partialEqualComparison[_: P]: P[Expression] = P("=" ~ addOrSubtractExpression)
@@ -385,11 +385,11 @@ object CypherParser {
 
   def partialAddExpression[_: P]: P[Expression => Expression] = P(
     "+" ~ multiplyDivideModuloExpression
-  ).map(rhs => (lhs: Expression) => AddExpression(lhs, rhs))
+  ).map(rhs => (lhs: Expression) => Add(lhs, rhs))
 
   def partialSubtractExpression[_: P]: P[Expression => Expression] = P(
     "-" ~ multiplyDivideModuloExpression
-  ).map(rhs => (lhs: Expression) => SubtractExpression(lhs, rhs))
+  ).map(rhs => (lhs: Expression) => Subtract(lhs, rhs))
 
   def multiplyDivideModuloExpression[_: P]: P[Expression] = P(
     powerOfExpression ~
@@ -401,15 +401,15 @@ object CypherParser {
 
   def partialMultiplyExpression[_: P]: P[Expression => Expression] = P(
     "*" ~ powerOfExpression
-  ).map(rhs => lhs => MultiplyExpression(lhs, rhs))
+  ).map(rhs => lhs => Multiply(lhs, rhs))
 
   def partialDivideExpression[_: P]: P[Expression => Expression] = P(
     "/" ~ powerOfExpression
-  ).map(rhs => lhs => DivideExpression(lhs, rhs))
+  ).map(rhs => lhs => Divide(lhs, rhs))
 
   def partialModuloExpression[_: P]: P[Expression => Expression] = P(
     "%" ~ powerOfExpression
-  ).map(rhs => lhs => ModuloExpression(lhs, rhs))
+  ).map(rhs => lhs => Modulo(lhs, rhs))
 
   def powerOfExpression[_: P]: P[Expression] = P(
     unaryAddOrSubtractExpression ~ ("^" ~ unaryAddOrSubtractExpression).rep
@@ -417,7 +417,7 @@ object CypherParser {
     if (ops.isEmpty) lhs
     else { // "power of" is right associative => reverse the order of the "power of" expressions before fold left
       val head :: tail = (lhs :: ops.toList).reverse
-      tail.foldLeft(head) { case (currentExponent, nextBase) => PowerOfExpression(nextBase, currentExponent) }
+      tail.foldLeft(head) { case (currentExponent, nextBase) => PowerOf(nextBase, currentExponent) }
     }
   }
 
@@ -427,7 +427,7 @@ object CypherParser {
       case 1 => true
     }) ~ stringListNullOperatorExpression
   ).map { case (unarySubtract, expr) =>
-    if (unarySubtract) UnarySubtractExpression(expr)
+    if (unarySubtract) UnarySubtract(expr)
     else expr
   }
 
@@ -437,10 +437,10 @@ object CypherParser {
   ).map {
     case (expr, ops) =>
       if (ops.isEmpty) expr
-      else StringListNullOperatorExpression(expr, NonEmptyList.fromListUnsafe(ops.toList))
+      else StringListNullOperator(expr, NonEmptyList.fromListUnsafe(ops.toList))
   }
 
-  def stringOperatorExpression[_: P]: P[StringOperatorExpression] = P(
+  def stringOperatorExpression[_: P]: P[StringOperator] = P(
     startsWith
       | endsWith
       | contains
@@ -454,21 +454,21 @@ object CypherParser {
 
   def contains[_: P]: P[Contains] = P(K("CONTAINS") ~ propertyOrLabelsExpression).map(Contains)
 
-  def listOperatorExpression[_: P]: P[ListOperatorExpression] = P(
+  def listOperatorExpression[_: P]: P[ListOperator] = P(
     in
       | singleElementListOperatorExpression
       | rangeListOperatorExpression
   )
 
-  def singleElementListOperatorExpression[_: P]: P[SingleElementListOperatorExpression] = P(
+  def singleElementListOperatorExpression[_: P]: P[SingleElementListOperator] = P(
     "[" ~ expression ~ "]"
-  ).map(SingleElementListOperatorExpression)
+  ).map(SingleElementListOperator)
 
-  def rangeListOperatorExpression[_: P]: P[RangeListOperatorExpression] = P(
+  def rangeListOperatorExpression[_: P]: P[RangeListOperator] = P(
     "[" ~ expression.? ~ ".." ~ expression.? ~ "]"
-  ).map(RangeListOperatorExpression.tupled)
+  ).map(RangeListOperator.tupled)
 
-  def nullOperatorExpression[_: P]: P[NullOperatorExpression] = P(isNull | isNotNull)
+  def nullOperatorExpression[_: P]: P[NullOperator] = P(isNull | isNotNull)
 
   def isNull[_: P]: P[IsNull.type] = P(K("IS NULL")).map(_ => IsNull)
 
@@ -479,7 +479,7 @@ object CypherParser {
     atom ~ propertyLookup.rep.toList ~ nodeLabel.rep.toList
   ).map { case (a, pls, nls) =>
     if (pls.isEmpty && nls.isEmpty) a
-    else PropertyOrLabelsExpression(a, pls, nls)
+    else PropertyOrLabels(a, pls, nls)
   }
 
   def atom[_: P]: P[Atom] = P(
@@ -539,7 +539,7 @@ object CypherParser {
     nodePattern ~ patternElementChain.rep(1).toNonEmptyList
   ).map(RelationshipsPattern.tupled)
 
-  def filterExpression[_: P]: P[FilterExpression] = P(idInColl ~ where.?).map(FilterExpression.tupled)
+  def filterExpression[_: P]: P[Filter] = P(idInColl ~ where.?).map(Filter.tupled)
 
   def idInColl[_: P]: P[IdInColl] = P(variable ~ K("IN") ~ expression).map(IdInColl.tupled)
 
@@ -549,7 +549,7 @@ object CypherParser {
 
   def functionName[_: P]: P[FunctionName] = P(
     (namespace ~~ symbolicName.!)
-      | K("EXISTS").map(_ => Namespace(Nil) -> "EXISTS")
+      | K("EXISTS").map(_ => Nil -> "EXISTS")
   ).map(FunctionName.tupled)
 
   def explicitProcedureInvocation[_: P]: P[ExplicitProcedureInvocation] = P(
@@ -562,7 +562,7 @@ object CypherParser {
 
   def procedureName[_: P]: P[ProcedureName] = P(namespace ~ symbolicName.!).map(ProcedureName.tupled)
 
-  def namespace[_: P]: P[Namespace] = P((symbolicName.! ~ ".").rep.toList).map(Namespace)
+  def namespace[_: P]: P[List[String]] = P((symbolicName.! ~ ".").rep.toList)
 
   def listComprehension[_: P]: P[ListComprehension] = P(
     "[" ~ filterExpression ~ ("|" ~ expression).? ~ "]"
@@ -600,9 +600,9 @@ object CypherParser {
 
   def indexParameter[_: P]: P[IndexParameter] = P(decimalInteger).!.map(_.toLong).map(IndexParameter)
 
-  def propertyExpression[_: P]: P[PropertyExpression] = P(
+  def propertyExpression[_: P]: P[Property] = P(
     atom ~ propertyLookup.rep(1).toNonEmptyList
-  ).map(PropertyExpression.tupled)
+  ).map(Property.tupled)
 
   def propertyKeyName[_: P]: P[PropertyKeyName] = P(schemaName).!.map(PropertyKeyName)
 

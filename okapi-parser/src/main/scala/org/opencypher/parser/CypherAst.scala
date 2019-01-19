@@ -51,62 +51,61 @@ case class StandaloneCall(procedureInvocation: ProcedureInvocation, yieldItems: 
 
 sealed trait Expression extends ReturnItem
 
-case class OrExpression(expressions: NonEmptyList[Expression]) extends Expression
+case class Or(expressions: NonEmptyList[Expression]) extends Expression
 
-case class XorExpression(expressions: NonEmptyList[Expression]) extends Expression
+case class Xor(expressions: NonEmptyList[Expression]) extends Expression
 
-case class AndExpression(expressions: NonEmptyList[Expression]) extends Expression
+case class And(expressions: NonEmptyList[Expression]) extends Expression
 
-case class NotExpression(expression: Expression) extends Expression
+case class Not(expression: Expression) extends Expression
 
-case class EqualExpression(left: Expression, right: Expression) extends Expression
+case class Equal(left: Expression, right: Expression) extends Expression
 
-case class LessThanExpression(left: Expression, right: Expression) extends Expression
+case class LessThan(left: Expression, right: Expression) extends Expression
 
-case class LessThanOrEqualExpression(left: Expression, right: Expression) extends Expression
+case class LessThanOrEqual(left: Expression, right: Expression) extends Expression
 
-case class AddExpression(left: Expression, right: Expression) extends Expression
+case class Add(left: Expression, right: Expression) extends Expression
 
-case class SubtractExpression(left: Expression, right: Expression) extends Expression
+case class Subtract(left: Expression, right: Expression) extends Expression
 
-case class MultiplyExpression(left: Expression, right: Expression) extends Expression
+case class Multiply(left: Expression, right: Expression) extends Expression
 
-case class DivideExpression(left: Expression, right: Expression) extends Expression
+case class Divide(left: Expression, right: Expression) extends Expression
 
-case class ModuloExpression(left: Expression, right: Expression) extends Expression
+case class Modulo(left: Expression, right: Expression) extends Expression
 
-case class PowerOfExpression(base: Expression, exponent: Expression) extends Expression
+case class PowerOf(base: Expression, exponent: Expression) extends Expression
 
-case class UnarySubtractExpression(expression: Expression) extends Expression
+case class UnarySubtract(expression: Expression) extends Expression
 
-case class StringListNullOperatorExpression(
+case class StringListNullOperator(
   propertyOrLabelsExpression: Expression,
   operatorExpressions: NonEmptyList[OperatorExpression]
 ) extends Expression
 
 sealed trait OperatorExpression extends Expression
 
-sealed trait StringOperatorExpression extends OperatorExpression {
+sealed trait StringOperator extends OperatorExpression {
   def expression: Expression
 }
 
-case class StartsWith(expression: Expression) extends StringOperatorExpression
-case class EndsWith(expression: Expression) extends StringOperatorExpression
-case class Contains(expression: Expression) extends StringOperatorExpression
+case class StartsWith(expression: Expression) extends StringOperator
+case class EndsWith(expression: Expression) extends StringOperator
+case class Contains(expression: Expression) extends StringOperator
 
-trait ListOperatorExpression extends OperatorExpression
+trait ListOperator extends OperatorExpression
 
-case class In(expression: Expression) extends ListOperatorExpression
-case class SingleElementListOperatorExpression(expression: Expression) extends ListOperatorExpression
+case class In(expression: Expression) extends ListOperator
+case class SingleElementListOperator(expression: Expression) extends ListOperator
 
-case class RangeListOperatorExpression(maybeFrom: Option[Expression], maybeTo: Option[Expression])
-  extends ListOperatorExpression
+case class RangeListOperator(maybeFrom: Option[Expression], maybeTo: Option[Expression]) extends ListOperator
 
-sealed trait NullOperatorExpression extends OperatorExpression
+sealed trait NullOperator extends OperatorExpression
 
-case object IsNull extends NullOperatorExpression
+case object IsNull extends NullOperator
 
-case object IsNotNull extends NullOperatorExpression
+case object IsNotNull extends NullOperator
 
 sealed trait Properties extends CypherAst
 
@@ -143,7 +142,7 @@ case class With(distinct: Boolean, returnBody: ReturnBody, maybeWhere: Option[Wh
 
 case class PatternElement(nodePattern: NodePattern, patternElementChain: List[PatternElementChain]) extends CypherAst
 
-case class PropertyExpression(
+case class Property(
   atom: Atom,
   propertyLookups: NonEmptyList[PropertyLookup]
 ) extends RemoveItem
@@ -156,7 +155,7 @@ case class IndexParameter(index: Long) extends Parameter
 
 case class Pattern(patternParts: NonEmptyList[PatternPart]) extends CypherAst
 
-case class PropertyOrLabelsExpression(
+case class PropertyOrLabels(
   atom: Atom,
   propertyLookups: List[PropertyLookup],
   maybeNodeLabels: List[NodeLabel]
@@ -192,7 +191,9 @@ case class Remove(removeItems: NonEmptyList[RemoveItem]) extends UpdatingClause
 
 sealed trait Literal extends Atom
 
-case class FunctionName(namespace: Namespace, name: String) extends CypherAst
+case class FunctionName(namespace: List[String], name: String) extends CypherAst {
+  override def toString: String = s"FunctionName(${if (namespace.isEmpty) name else s"${namespace.mkString(".")}.$name"})"
+}
 
 sealed trait PropertyLookup extends CypherAst {
   def value: String
@@ -210,7 +211,7 @@ case class IntegerLiteral(value: Long) extends NumberLiteral
 
 case class DoubleLiteral(value: Double) extends NumberLiteral
 
-case class FilterExpression(idInColl: IdInColl, maybeWhere: Option[Where]) extends Atom
+case class Filter(idInColl: IdInColl, maybeWhere: Option[Where]) extends Atom
 
 /** Order switched between `expression` and `maybeWhereExpression`
   * to avoid children allocation problems between them.
@@ -228,7 +229,7 @@ case class YieldItem(maybeProcedureResultField: Option[ProcedureResultField], va
 
 sealed trait SetItem extends CypherAst
 
-case class SetProperty(expression: PropertyExpression, value: Expression) extends SetItem
+case class SetProperty(expression: Property, value: Expression) extends SetItem
 
 case class SetVariable(variable: Variable, value: Expression) extends SetItem
 
@@ -236,8 +237,8 @@ case class SetAdditionalItem(variable: Variable, value: Expression) extends SetI
 
 case class SetLabels(variable: Variable, nodeLabels: NonEmptyList[NodeLabel]) extends SetItem
 
-case class ProcedureName(namespace: Namespace, name: String) extends CypherAst {
-  override def toString: String = s"$namespace.$name"
+case class ProcedureName(namespace: List[String], name: String) extends CypherAst {
+  override def toString: String = s"ProcedureName(${if (namespace.isEmpty) name else s"${namespace.mkString(".")}.$name"})"
 }
 
 sealed trait RemoveItem extends CypherAst
@@ -270,10 +271,6 @@ sealed trait ReadingClause extends Clause
 case class ProcedureResultField(name: String) extends CypherAst
 
 case class RelTypeName(relTypeName: String) extends CypherAst
-
-case class Namespace(names: List[String]) extends CypherAst {
-  override def toString: String = s"${names.mkString(".")}"
-}
 
 case class ListLiteral(listLiterals: List[Expression]) extends Literal
 
@@ -323,7 +320,7 @@ sealed trait UpdatingClause extends Clause
 case class Skip(expression: Expression) extends CypherAst
 
 case class ListComprehension(
-  filterExpression: FilterExpression,
+  filterExpression: Filter,
   maybeExpression: Option[Expression]
 ) extends Atom
 
@@ -336,16 +333,16 @@ sealed trait MergeAction extends CypherAst
 
 case class OnMerge(set: SetClause) extends MergeAction
 
-case class OnCreate(set: SetClause)  extends MergeAction
+case class OnCreate(set: SetClause) extends MergeAction
 
 case class PropertyKeyName(value: String) extends PropertyLookup
 
 case object CountStar extends Atom
 
-case class FilterAll(filterExpression: FilterExpression) extends Atom
+case class FilterAll(filterExpression: Filter) extends Atom
 
-case class FilterAny(filterExpression: FilterExpression) extends Atom
+case class FilterAny(filterExpression: Filter) extends Atom
 
-case class FilterNone(filterExpression: FilterExpression) extends Atom
+case class FilterNone(filterExpression: Filter) extends Atom
 
-case class FilterSingle(filterExpression: FilterExpression) extends Atom
+case class FilterSingle(filterExpression: Filter) extends Atom
