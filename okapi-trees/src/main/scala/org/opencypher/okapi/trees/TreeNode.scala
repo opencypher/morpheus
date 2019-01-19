@@ -195,7 +195,7 @@ abstract class TreeNode[T <: TreeNode[T]] extends Product with Traversable[T] {
       .reverseIterator
   }
 
-  override def toString = s"${getClass.getSimpleName}${
+  override def toString = s"${getClass.getSimpleName.filter(_ != '$')}${
     if (args.isEmpty) "" else s"(${args.mkString(", ")})"
   }"
 }
