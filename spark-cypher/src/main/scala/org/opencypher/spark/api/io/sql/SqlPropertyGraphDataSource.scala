@@ -41,7 +41,6 @@ import org.opencypher.spark.api.io.GraphEntity.sourceIdKey
 import org.opencypher.spark.api.io.Relationship.{sourceEndNodeKey, sourceStartNodeKey}
 import org.opencypher.spark.api.io._
 import org.opencypher.spark.api.io.sql.IdGenerationStrategy._
-import org.opencypher.spark.impl.DataFrameOps._
 import org.opencypher.spark.impl.io.CAPSPropertyGraphDataSource
 import org.opencypher.spark.impl.table.SparkTable._
 import org.opencypher.spark.schema.CAPSSchema
@@ -366,7 +365,7 @@ case class SqlPropertyGraphDataSource(
     newIdColumn: String
   ): Map[T, DataFrame] = {
     val (elementViewKeys, dataFrames) = views.unzip
-    elementViewKeys.zip(addUniqueIds(dataFrames.toSeq, newIdColumn)).toMap
+    elementViewKeys.zip(dataFrames.toSeq.addUniqueIds(newIdColumn)).toMap
   }
 
   override def schema(name: GraphName): Option[CAPSSchema] = graphDdl.graphs.get(name).map(_.graphType.asCaps)

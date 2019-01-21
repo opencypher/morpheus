@@ -35,7 +35,6 @@ import org.opencypher.okapi.relational.api.io.EntityTable
 import org.opencypher.okapi.relational.api.table.{RelationalCypherRecords, RelationalCypherRecordsFactory}
 import org.opencypher.okapi.relational.impl.table._
 import org.opencypher.spark.api.CAPSSession
-import org.opencypher.spark.impl.DataFrameOps._
 import org.opencypher.spark.impl.convert.SparkConversions._
 import org.opencypher.spark.impl.convert.rowToCypherMap
 import org.opencypher.spark.impl.table.SparkTable._
