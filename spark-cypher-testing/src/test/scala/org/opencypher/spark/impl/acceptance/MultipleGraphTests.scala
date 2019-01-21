@@ -46,7 +46,7 @@ import org.scalatest.junit.JUnitRunner
 import scala.language.existentials
 
 @RunWith(classOf[JUnitRunner])
-class MultipleGraphTests extends CAPSTestSuite with ScanGraphInit with ScanGraphInit {
+class MultipleGraphTests extends CAPSTestSuite with ScanGraphInit {
 
   def testGraph1: RelationalCypherGraph[SparkTable.DataFrameTable] = initGraph("CREATE (:Person {name: 'Mats'})")
 
