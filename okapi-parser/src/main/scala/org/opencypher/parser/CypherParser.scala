@@ -302,19 +302,19 @@ object CypherParser {
 
   def properties[_: P]: P[Properties] = P(mapLiteral | parameter)
 
-  def relationshipTypes[_: P]: P[List[RelTypeName]] = P(
+  def relationshipTypes[_: P]: P[List[String]] = P(
     (":" ~ relTypeName.rep(1, "|" ~ ":".?)).toList.?.map(_.getOrElse(Nil))
   )
 
-  def nodeLabel[_: P]: P[String] = P(":" ~ labelName.!)
+  def nodeLabel[_: P]: P[String] = P(":" ~ labelName)
 
   def rangeLiteral[_: P]: P[RangeLiteral] = P(
     "*" ~/ integerLiteral.? ~ (".." ~ integerLiteral.?).?.map(_.flatten)
   ).map(RangeLiteral.tupled)
 
-  def labelName[_: P]: P[Unit] = P(schemaName)
+  def labelName[_: P]: P[String] = P(schemaName.!)
 
-  def relTypeName[_: P]: P[RelTypeName] = P(schemaName).!.map(RelTypeName)
+  def relTypeName[_: P]: P[String] = P(schemaName.!)
 
   def expression[_: P]: P[Expression] = P(orExpression)
 
@@ -558,7 +558,7 @@ object CypherParser {
 
   def implicitProcedureInvocation[_: P]: P[ImplicitProcedureInvocation] = P(procedureName).map(ImplicitProcedureInvocation)
 
-  def procedureResultField[_: P]: P[ProcedureResultField] = P(symbolicName.!).map(ProcedureResultField)
+  def procedureResultField[_: P]: P[String] = P(symbolicName.!)
 
   def procedureName[_: P]: P[ProcedureName] = P(namespace ~ symbolicName.!).map(ProcedureName.tupled)
 

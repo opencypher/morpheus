@@ -51,7 +51,7 @@ object CypherAst {
 
   case class RelationshipDetail(
     maybeVariable: Option[Variable],
-    relationshipTypes: List[RelTypeName],
+    relationshipTypes: List[String],
     maybeRangeLiteral: Option[RangeLiteral],
     maybeProperties: Option[Properties]
   ) extends CypherTree
@@ -100,7 +100,7 @@ object CypherAst {
 
   sealed trait UpdatingStartClause extends Clause
 
-  case class YieldItem(maybeProcedureResultField: Option[ProcedureResultField], variable: Variable) extends CypherTree
+  case class YieldItem(maybeProcedureResultField: Option[String], variable: Variable) extends CypherTree
 
   sealed trait SetItem extends CypherTree
 
@@ -129,10 +129,6 @@ object CypherAst {
   sealed trait Clause extends CypherTree
 
   sealed trait ReadingClause extends Clause
-
-  case class ProcedureResultField(name: String) extends CypherTree
-
-  case class RelTypeName(relTypeName: String) extends CypherTree
 
   case class InQueryCall(
     explicitProcedureInvocation: ExplicitProcedureInvocation,
