@@ -31,9 +31,7 @@ import CypherExpression._
 
 object CypherAst {
 
-  case class Cypher(statement: Statement) extends CypherTree
-
-  sealed trait Query extends Statement
+  sealed trait Query extends CypherTree
 
   sealed trait RegularQuery extends Query
 
@@ -127,8 +125,6 @@ object CypherAst {
   case class RangeLiteral(maybeFrom: Option[IntegerLiteral], maybeTo: Option[IntegerLiteral]) extends CypherTree
 
   case class PatternPart(maybeVariable: Option[Variable], element: PatternElement) extends CypherTree
-
-  sealed trait Statement extends CypherTree
 
   sealed trait Clause extends CypherTree
 

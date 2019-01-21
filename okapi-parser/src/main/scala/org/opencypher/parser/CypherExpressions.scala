@@ -76,7 +76,9 @@ object CypherExpression {
 
   case class ListLiteral(listLiterals: List[Expression]) extends Literal
 
-  case class MapLiteral(properties: List[(String, Expression)]) extends Properties with Literal
+  case class PropertyLiteral(key: String, value: Expression) extends Literal
+
+  case class MapLiteral(properties: List[PropertyLiteral]) extends Properties with Literal
 
   // Parameters
 

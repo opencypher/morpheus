@@ -56,7 +56,7 @@ object CypherParser {
   import Whitespace.cypherWhitespace
 
   def parseCypher9(query: String, parameters: Map[String, CypherValue] = Map.empty): CypherTree = {
-    val parseResult = parse(query, cypher(_), verboseFailures = true)
+    val parseResult = parse(query, cypherQueryEntireInput(_), verboseFailures = true)
     val ast = parseResult match {
       case Success(v, _) =>
         println(query)
@@ -78,7 +78,7 @@ object CypherParser {
 
         // TODO: Parse without end instead and check end index?
         val parsedQueryBeforeFailure: Option[CypherTree] = {
-          parse(i, statement(_), verboseFailures = true) match {
+          parse(i, cypherQuery(_), verboseFailures = true) match {
             case Success(v, _) => Some(v)
             case _ => None
           }
@@ -136,11 +136,9 @@ object CypherParser {
 
   def K(s: String)(implicit ctx: P[Any]): P[Unit] = IgnoreCase(s) ~~ &(CharIn(" \t\n\r\f") | End)
 
-  def cypher[_: P]: P[Cypher] = P(Start ~ statement ~ ";".? ~ End).map(Cypher)
+  def cypherQueryEntireInput[_: P]: P[Query] = P(Start ~ cypherQuery ~ ";".? ~ End)
 
-  def statement[_: P]: P[Statement] = P(query)
-
-  def query[_: P]: P[Query] = P(regularQuery | standaloneCall)
+  def cypherQuery[_: P]: P[Query] = P(regularQuery | standaloneCall)
 
   def regularQuery[_: P]: P[RegularQuery] = P(
     singleQuery ~ union.rep
@@ -594,8 +592,10 @@ object CypherParser {
       | integerLiteral
   )
 
+  def propertyLiteral[_: P]: P[PropertyLiteral] = P(propertyKeyName ~ ":" ~ expression).map(PropertyLiteral.tupled)
+
   def mapLiteral[_: P]: P[MapLiteral] = P(
-    "{" ~ (propertyKeyName ~ ":" ~ expression).rep(0, ",") ~ "}"
+    "{" ~ propertyLiteral.rep(0, ",") ~ "}"
   ).map(_.toList).map(MapLiteral)
 
   def parameter[_: P]: P[Parameter] = P("$" ~ (symbolicName.!.map(ParameterName) | indexParameter))
