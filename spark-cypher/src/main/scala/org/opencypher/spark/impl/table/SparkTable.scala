@@ -359,7 +359,7 @@ object SparkTable {
   implicit class DataFrameTransformation(val df: DataFrame) extends AnyVal {
 
     def mapColumn(name: String)(f: Column => Column): DataFrame = {
-      df.withColumn(name, f(df.col(name)))
+      df.safeAddColumn(name, f(df.col(name)))
     }
 
     /**
@@ -406,7 +406,7 @@ object SparkTable {
       val shifted = functions.shiftLeft(id1, Integer.SIZE)
       val id = shifted + functions.hash(columns.reverse: _*)
 
-      df.withColumn(idColumn, id)
+      df.safeAddColumn(idColumn, id)
     }
 
     def withPropertyColumns: DataFrame =
@@ -439,7 +439,7 @@ object SparkTable {
     def safeReplaceColumn(name: String, newColumn: Column): DataFrame = {
       require(df.columns.contains(name), s"Cannot replace column `$name`. No column with that name exists. " +
         s"Use `safeAddColumn` if you intend to add that column.")
-      df.withColumn(name, newColumn)
+      df.safeAddColumn(name, newColumn)
     }
 
     def safeRenameColumns(renamings: (String, String)*): DataFrame = {
@@ -500,7 +500,7 @@ object SparkTable {
 
       dataFrames.zip(dfPartitionStartDeltas).map {
         case (df, partitionStartDelta) =>
-          df.withColumn(idColumnName, partitioned_id_assignment(partitionStartDelta))
+          df.safeAddColumn(idColumnName, partitioned_id_assignment(partitionStartDelta))
       }
     }
   }
