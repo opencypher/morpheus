@@ -67,21 +67,6 @@ object DataFrameOps {
     }
   }
 
-  implicit class CypherRow(r: Row) {
-
-    def getCypherValue(expr: Expr, header: RecordHeader)
-      (implicit context: RelationalRuntimeContext[DataFrameTable]): CypherValue = {
-      expr match {
-        case Param(name) => context.parameters(name)
-        case _ =>
-          header.getColumn(expr) match {
-            case None => throw IllegalArgumentException(s"column for $expr")
-            case Some(column) => CypherValue(r.get(r.schema.fieldIndex(column)))
-          }
-      }
-    }
-  }
-
   implicit class RichDataFrame(val df: DataFrame) extends AnyVal {
 
     def validateColumnTypes(expectedColsWithType: Map[String, CypherType]): Unit = {
