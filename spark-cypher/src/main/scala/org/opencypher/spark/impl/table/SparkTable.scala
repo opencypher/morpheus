@@ -36,7 +36,6 @@ import org.opencypher.okapi.api.value.CypherValue
 import org.opencypher.okapi.api.value.CypherValue.{CypherMap, CypherValue}
 import org.opencypher.okapi.impl.exception.{IllegalArgumentException, NotImplementedException, UnsupportedOperationException}
 import org.opencypher.okapi.impl.util.Measurement.printTiming
-import org.opencypher.okapi.impl.util.StringEncodingUtilities._
 import org.opencypher.okapi.ir.api.expr.{Expr, _}
 import org.opencypher.okapi.relational.api.table.Table
 import org.opencypher.okapi.relational.impl.planning._
@@ -410,9 +409,8 @@ object SparkTable {
       df.safeRenameColumns(df.columns.map(column => column -> s"$prefix$column").toMap)
 
     def removePrefix(prefix: String): DataFrame = {
-      val columnRenamings = df.columns.map {
+      val columnRenamings = df.columns.collect {
         case column if column.startsWith(prefix) => column -> column.substring(prefix.length)
-        case column => column -> column
       }
       df.safeRenameColumns(columnRenamings.toMap)
     }
