@@ -36,6 +36,7 @@ import org.opencypher.okapi.api.value.CypherValue
 import org.opencypher.okapi.api.value.CypherValue.{CypherMap, CypherValue}
 import org.opencypher.okapi.impl.exception.{IllegalArgumentException, NotImplementedException, UnsupportedOperationException}
 import org.opencypher.okapi.impl.util.Measurement.printTiming
+import org.opencypher.okapi.impl.util.StringEncodingUtilities._
 import org.opencypher.okapi.ir.api.expr.{Expr, _}
 import org.opencypher.okapi.relational.api.table.Table
 import org.opencypher.okapi.relational.impl.planning._
@@ -242,7 +243,7 @@ object SparkTable {
       val originalColNames = df.columns
 
       val renamings = originalColNames.map { c =>
-        if(colNames.contains(c)) c -> s"$c$uniqueSuffix"
+        if (colNames.contains(c)) c -> s"$c$uniqueSuffix"
         else c -> c
       }.toMap
 
@@ -257,15 +258,7 @@ object SparkTable {
     }
 
     override def withColumnsRenamed(columnRenamings: Map[String, String]): DataFrameTable = {
-      if (columnRenamings.forall { case (oldColumn, newColumn) => oldColumn == newColumn }) {
-        df
-      } else {
-        val newColumns = physicalColumns.map {
-          case col if columnRenamings.contains(col) => columnRenamings(col)
-          case col => col
-        }
-        df.toDF(newColumns: _*)
-      }
+      df.safeRenameColumns(columnRenamings)
     }
 
     override def cache(): DataFrameTable = {
@@ -377,9 +370,22 @@ object SparkTable {
     }
 
     def safeRenameColumns(renamings: (String, String)*): DataFrame = {
-      renamings.foreach { case (oldName, newName) => require(!df.columns.contains(newName),
-        s"Cannot rename column `$oldName` to `$newName`. A column with name `$newName` exists already.")}
-      df.withColumnsRenamed(renamings.toMap).df
+      safeRenameColumns(renamings.toMap)
+    }
+
+    def safeRenameColumns(renamings: Map[String, String]): DataFrame = {
+      if (renamings.forall { case (oldColumn, newColumn) => oldColumn == newColumn }) {
+        df
+      } else {
+        renamings.foreach { case (oldName, newName) => require(!df.columns.contains(newName),
+          s"Cannot rename column `$oldName` to `$newName`. A column with name `$newName` exists already.")
+        }
+        val newColumns = df.columns.map {
+          case col if renamings.contains(col) => renamings(col)
+          case col => col
+        }
+        df.toDF(newColumns: _*)
+      }
     }
 
     def safeDropColumns(names: String*): DataFrame = {
@@ -401,18 +407,14 @@ object SparkTable {
     }
 
     def prefixColumns(prefix: String): DataFrame =
-      df.withColumnsRenamed(df.columns.map(column => column -> s"$prefix$column").toMap).df
+      df.safeRenameColumns(df.columns.map(column => column -> s"$prefix$column").toMap)
 
     def removePrefix(prefix: String): DataFrame = {
       val columnRenamings = df.columns.map {
         case column if column.startsWith(prefix) => column -> column.substring(prefix.length)
         case column => column -> column
       }
-      df.withColumnsRenamed(columnRenamings.toMap).df
-    }
-
-    def mapColumn(name: String)(f: Column => Column): DataFrame = {
-      df.safeAddColumn(name, f(df.col(name)))
+      df.safeRenameColumns(columnRenamings.toMap)
     }
 
     /**
@@ -449,7 +451,7 @@ object SparkTable {
       * 3) generate a second hash using the reversed input column sequence
       * 4) store the hash in the lower 32 bits of the final id
       *
-      * @param columns  input columns for the hash function
+      * @param columns    input columns for the hash function
       * @param hashColumn column storing the result of the hash function
       * @return DataFrame with an additional idColumn
       */
@@ -473,7 +475,7 @@ object SparkTable {
             throw IllegalArgumentException(
               s"a Spark type supported by Cypher: ${supportedTypes.mkString("[", ", ", "]")}",
               s"type ${field.dataType} of field $field"))
-          currentDf.mapColumn(field.name)(_.cast(castType))
+          currentDf.withColumn(field.name, currentDf.col(field.name).cast(castType))
       }
       dfWithCompatibleTypes
     }

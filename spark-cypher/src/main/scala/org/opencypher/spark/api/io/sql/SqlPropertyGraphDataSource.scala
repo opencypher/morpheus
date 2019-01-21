@@ -192,7 +192,7 @@ case class SqlPropertyGraphDataSource(
       case otherFormat => notFound(otherFormat, Seq(JdbcFormat, HiveFormat, ParquetFormat, CsvFormat, OrcFormat))
     }
 
-    inputTable.prefixColumns(StringEncodingUtilities.propertyPrefix)
+    inputTable.safeRenameColumns(inputTable.columns.map(col => col -> col.toPropertyColumnName).toMap)
   }
 
   private def readSqlTable(viewId: ViewId, sqlDataSourceConfig: SqlDataSourceConfig) = {
@@ -265,7 +265,7 @@ case class SqlPropertyGraphDataSource(
         expected = s"Column with name $column",
         actual = indexedFields)
     }
-    dataFrame.withColumnsRenamed(columnRenamings).df
+    dataFrame.safeRenameColumns(columnRenamings)
   }
 
   private def normalizeNodeMapping(mapping: NodeMapping): NodeMapping = {
