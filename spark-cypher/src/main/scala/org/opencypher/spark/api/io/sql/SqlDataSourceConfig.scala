@@ -66,6 +66,8 @@ case class SqlDataSourceConfig(
   defaultSchema: Option[String] = None,
   jdbcUri: Option[String] = None,
   jdbcDriver: Option[String] = None,
+  jdbcUser: Option[String] = None,
+  jdbcPassword: Option[String] = None,
   jdbcFetchSize: Int = 100,
   basePath: Option[String] = None
 ) {

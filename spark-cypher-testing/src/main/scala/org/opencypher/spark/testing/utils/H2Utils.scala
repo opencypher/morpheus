@@ -28,7 +28,7 @@ package org.opencypher.spark.testing.utils
 
 import java.sql.{Connection, DriverManager, ResultSet, Statement}
 
-import org.apache.spark.sql.{DataFrame, SaveMode}
+import org.apache.spark.sql._
 import org.opencypher.spark.api.io.sql.{SqlDataSourceConfig, SqlDataSourceConfigException}
 
 object H2Utils {
@@ -45,11 +45,21 @@ object H2Utils {
 
   def withConnection[T](cfg: SqlDataSourceConfig)(code: Connection => T): T = {
     Class.forName(cfg.jdbcDriver.get)
-    val conn = DriverManager.getConnection(cfg.jdbcUri.get)
+    val conn = (cfg.jdbcUser, cfg.jdbcPassword) match {
+      case (Some(user), Some(pass)) =>
+        DriverManager.getConnection(cfg.jdbcUri.get, user, pass)
+      case _ =>
+        DriverManager.getConnection(cfg.jdbcUri.get)
+    }
     try { code(conn) } finally { conn.close() }
   }
 
-  implicit class DataframeSqlOps(df: DataFrame) {
+  implicit class DataFrameReaderOps(write: DataFrameWriter[Row]) {
+    def maybeOption(key: String, value: Option[String]): DataFrameWriter[Row] =
+      value.fold(write)(write.option(key, _))
+  }
+
+  implicit class DataFrameSqlOps(df: DataFrame) {
 
     def saveAsSqlTable(cfg: SqlDataSourceConfig, tableName: String): Unit =
       df.write
@@ -57,6 +67,8 @@ object H2Utils {
         .format("jdbc")
         .option("url", cfg.jdbcUri.getOrElse(throw SqlDataSourceConfigException("Missing JDBC URI")))
         .option("driver", cfg.jdbcDriver.getOrElse(throw SqlDataSourceConfigException("Missing JDBC Driver")))
+        .maybeOption("user", cfg.jdbcUser)
+        .maybeOption("password", cfg.jdbcPassword)
         .option("fetchSize", cfg.jdbcFetchSize)
         .option("dbtable", tableName)
         .save()

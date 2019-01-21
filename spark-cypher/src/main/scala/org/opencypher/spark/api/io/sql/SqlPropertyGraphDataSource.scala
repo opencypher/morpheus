@@ -28,7 +28,7 @@ package org.opencypher.spark.api.io.sql
 
 import java.net.URI
 
-import org.apache.spark.sql.{DataFrame, functions}
+import org.apache.spark.sql.{DataFrame, DataFrameReader, functions}
 import org.opencypher.graphddl.GraphDdl.PropertyMappings
 import org.opencypher.graphddl._
 import org.opencypher.okapi.api.graph.{GraphName, PropertyGraph}
@@ -207,12 +207,19 @@ case class SqlPropertyGraphDataSource(
         malformed("Relative view identifier must have exactly one segment", view.mkString("."))
     }
 
+    implicit class DataFrameReaderOps(read: DataFrameReader) {
+      def maybeOption(key: String, value: Option[String]): DataFrameReader =
+        value.fold(read)(read.option(key, _))
+    }
+
     sqlDataSourceConfig.storageFormat match {
       case JdbcFormat =>
         spark.read
           .format("jdbc")
           .option("url", sqlDataSourceConfig.jdbcUri.getOrElse(throw SqlDataSourceConfigException("Missing JDBC URI")))
           .option("driver", sqlDataSourceConfig.jdbcDriver.getOrElse(throw SqlDataSourceConfigException("Missing JDBC Driver")))
+          .maybeOption("user", sqlDataSourceConfig.jdbcUser)
+          .maybeOption("password", sqlDataSourceConfig.jdbcPassword)
           .option("fetchSize", sqlDataSourceConfig.jdbcFetchSize)
           .option("dbtable", tableName)
           .load()

@@ -27,6 +27,7 @@
 package org.opencypher.spark.api.io.sql
 
 import org.apache.spark.sql.DataFrame
+import org.h2.jdbc.JdbcSQLException
 import org.opencypher.spark.api.io.JdbcFormat
 import org.opencypher.spark.api.io.sql.IdGenerationStrategy.{IdGenerationStrategy, _}
 import org.opencypher.spark.testing.fixture.H2Fixture
@@ -51,10 +52,17 @@ class H2SqlPGDSHashBasedIdAcceptanceTest extends SqlPropertyGraphDataSourceAccep
       storageFormat = JdbcFormat,
       dataSourceName = dataSourceName,
       jdbcDriver = Some("org.h2.Driver"),
-      jdbcUri = Some("jdbc:h2:mem:?user=sa&password=1234;DB_CLOSE_DELAY=-1")
+      jdbcUri = Some("jdbc:h2:mem:test;DB_CLOSE_DELAY=-1"),
+      jdbcUser = Some("sa"),
+      jdbcPassword = Some("1234")
     )
 
   override def writeTable(df: DataFrame, tableName: String): Unit =
     df.saveAsSqlTable(sqlDataSourceConfig, tableName)
 
+  it("fails if an invalid user is supplied") {
+    an[JdbcSQLException] shouldBe thrownBy {
+      withConnection(sqlDataSourceConfig.copy(jdbcUser = Some("foo"))) { _ => }
+    }
+  }
 }
