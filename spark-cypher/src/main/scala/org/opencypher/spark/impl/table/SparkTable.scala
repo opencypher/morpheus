@@ -36,7 +36,6 @@ import org.opencypher.okapi.api.value.CypherValue
 import org.opencypher.okapi.api.value.CypherValue.{CypherMap, CypherValue}
 import org.opencypher.okapi.impl.exception.{IllegalArgumentException, NotImplementedException, UnsupportedOperationException}
 import org.opencypher.okapi.impl.util.Measurement.printTiming
-import org.opencypher.okapi.impl.util.StringEncodingUtilities._
 import org.opencypher.okapi.ir.api.expr.{Expr, _}
 import org.opencypher.okapi.relational.api.table.Table
 import org.opencypher.okapi.relational.impl.planning._
@@ -358,71 +357,6 @@ object SparkTable {
 
   implicit class DataFrameTransformation(val df: DataFrame) extends AnyVal {
 
-    def mapColumn(name: String)(f: Column => Column): DataFrame = {
-      df.safeAddColumn(name, f(df.col(name)))
-    }
-
-    /**
-      * Cast all integer columns in a DataFrame to long.
-      *
-      * @return a DataFrame with all integer values cast to long
-      */
-    def castToLong: DataFrame = {
-      def convertColumns(field: StructField, col: Column): Column = {
-        val converted = field.dataType match {
-          case StructType(inner) =>
-            val fields = inner.map(i => convertColumns(i, col.getField(i.name)))
-            functions.struct(fields: _*)
-          case ArrayType(IntegerType, nullable) => col.cast(ArrayType(LongType, nullable))
-          case IntegerType => col.cast(LongType)
-          case _ => col
-        }
-        converted.as(field.name)
-      }
-
-      val convertedFields = df.schema.fields.map { field => convertColumns(field, df.col(field.name)) }
-
-      df.select(convertedFields: _*)
-    }
-
-    /**
-      * Adds a new column under a given name containing the hash value of the given input columns.
-      *
-      * The hash is generated using [[org.apache.spark.sql.catalyst.expressions.Murmur3Hash]] based on the given column
-      * sequence. To decrease collision probability, we:
-      *
-      * 1) generate a first hash for the given column sequence
-      * 2) shift the hash into the upper bits of a 64 bit long
-      * 3) generate a second hash using the reversed input column sequence
-      * 4) store the hash in the lower 32 bits of the final id
-      *
-      * @param columns  input columns for the hash function
-      * @param idColumn column storing the result of the hash function
-      * @return DataFrame with an additional idColumn
-      */
-    def withHashColumn(columns: Seq[Column], idColumn: String): DataFrame = {
-      require(columns.nonEmpty, "Hash function requires a non-empty sequence of columns as input.")
-      val id1 = functions.hash(columns: _*).cast(LongType)
-      val shifted = functions.shiftLeft(id1, Integer.SIZE)
-      val id = shifted + functions.hash(columns.reverse: _*)
-
-      df.safeAddColumn(idColumn, id)
-    }
-
-    def withPropertyColumns: DataFrame =
-      df.withColumnsRenamed(df.columns.map(column => column -> column.toPropertyColumnName).toMap).df
-
-    def prefixColumns(prefix: String): DataFrame =
-      df.withColumnsRenamed(df.columns.map(column => column -> s"$prefix$column").toMap).df
-
-    def removePrefix(prefix: String): DataFrame = {
-      val columnRenamings = df.columns.map {
-        case column if column.startsWith(prefix) => column -> column.substring(prefix.length)
-        case column => column -> column
-      }
-      df.withColumnsRenamed(columnRenamings.toMap).df
-    }
-
     def safeAddColumn(name: String, col: Column): DataFrame = {
       require(!df.columns.contains(name),
         s"Cannot add column `$name`. A column with that name exists already. " +
@@ -464,6 +398,68 @@ object SparkTable {
       }.reduce((acc, expr) => acc && expr)
 
       df.join(other, joinExpr, joinType)
+    }
+
+    def prefixColumns(prefix: String): DataFrame =
+      df.withColumnsRenamed(df.columns.map(column => column -> s"$prefix$column").toMap).df
+
+    def removePrefix(prefix: String): DataFrame = {
+      val columnRenamings = df.columns.map {
+        case column if column.startsWith(prefix) => column -> column.substring(prefix.length)
+        case column => column -> column
+      }
+      df.withColumnsRenamed(columnRenamings.toMap).df
+    }
+
+    def mapColumn(name: String)(f: Column => Column): DataFrame = {
+      df.safeAddColumn(name, f(df.col(name)))
+    }
+
+    /**
+      * Cast all integer columns in a DataFrame to long.
+      *
+      * @return a DataFrame with all integer values cast to long
+      */
+    def castToLong: DataFrame = {
+      def convertColumns(field: StructField, col: Column): Column = {
+        val converted = field.dataType match {
+          case StructType(inner) =>
+            val fields = inner.map(i => convertColumns(i, col.getField(i.name)))
+            functions.struct(fields: _*)
+          case ArrayType(IntegerType, nullable) => col.cast(ArrayType(LongType, nullable))
+          case IntegerType => col.cast(LongType)
+          case _ => col
+        }
+        converted.as(field.name)
+      }
+
+      val convertedFields = df.schema.fields.map { field => convertColumns(field, df.col(field.name)) }
+
+      df.select(convertedFields: _*)
+    }
+
+    /**
+      * Adds a new column under a given name containing the hash value of the given input columns.
+      *
+      * The hash is generated using [[org.apache.spark.sql.catalyst.expressions.Murmur3Hash]] based on the given column
+      * sequence. To decrease collision probability, we:
+      *
+      * 1) generate a first hash for the given column sequence
+      * 2) shift the hash into the upper bits of a 64 bit long
+      * 3) generate a second hash using the reversed input column sequence
+      * 4) store the hash in the lower 32 bits of the final id
+      *
+      * @param columns  input columns for the hash function
+      * @param hashColumn column storing the result of the hash function
+      * @return DataFrame with an additional idColumn
+      */
+    def withHashColumn(columns: Seq[Column], hashColumn: String): DataFrame = {
+      require(columns.nonEmpty, "Hash function requires a non-empty sequence of columns as input.")
+      val tempHashValue = functions.hash(columns: _*).cast(LongType)
+      val shifted = functions.shiftLeft(tempHashValue, Integer.SIZE)
+      val hashValue = shifted + functions.hash(columns.reverse: _*)
+
+      df.safeAddColumn(hashColumn, hashValue)
     }
 
     /**

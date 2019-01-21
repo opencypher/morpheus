@@ -34,6 +34,7 @@ import org.opencypher.graphddl._
 import org.opencypher.okapi.api.graph.{GraphName, PropertyGraph}
 import org.opencypher.okapi.api.io.conversion.{EntityMapping, NodeMapping, RelationshipMapping}
 import org.opencypher.okapi.impl.exception.{GraphNotFoundException, IllegalArgumentException, UnsupportedOperationException}
+import org.opencypher.okapi.impl.util.StringEncodingUtilities
 import org.opencypher.okapi.impl.util.StringEncodingUtilities._
 import org.opencypher.spark.api.CAPSSession
 import org.opencypher.spark.api.io.AbstractPropertyGraphDataSource._
@@ -191,7 +192,7 @@ case class SqlPropertyGraphDataSource(
       case otherFormat => notFound(otherFormat, Seq(JdbcFormat, HiveFormat, ParquetFormat, CsvFormat, OrcFormat))
     }
 
-    inputTable.withPropertyColumns
+    inputTable.prefixColumns(StringEncodingUtilities.propertyPrefix)
   }
 
   private def readSqlTable(viewId: ViewId, sqlDataSourceConfig: SqlDataSourceConfig) = {
