@@ -36,6 +36,8 @@ import org.opencypher.okapi.api.exception.CypherException.ErrorType.SyntaxError
 import org.opencypher.okapi.api.exception.CypherException._
 import org.opencypher.okapi.api.value.CypherValue.CypherValue
 import fastparse._
+import org.opencypher.parser.CypherAst._
+import org.opencypher.parser.CypherExpression._
 
 import scala.annotation.tailrec
 
@@ -53,7 +55,7 @@ object Whitespace {
 object CypherParser {
   import Whitespace.cypherWhitespace
 
-  def parseCypher9(query: String, parameters: Map[String, CypherValue] = Map.empty): CypherAst = {
+  def parseCypher9(query: String, parameters: Map[String, CypherValue] = Map.empty): CypherTree = {
     val parseResult = parse(query, cypher(_), verboseFailures = true)
     val ast = parseResult match {
       case Success(v, _) =>
@@ -75,7 +77,7 @@ object CypherParser {
         }
 
         // TODO: Parse without end instead and check end index?
-        val parsedQueryBeforeFailure: Option[CypherAst] = {
+        val parsedQueryBeforeFailure: Option[CypherTree] = {
           parse(i, statement(_), verboseFailures = true) match {
             case Success(v, _) => Some(v)
             case _ => None
@@ -89,8 +91,8 @@ object CypherParser {
           case _ =>
         }
 
-        val lastSuccessfulParse: Option[CypherAst] = {
-          @tailrec def lastChild(ast: CypherAst): CypherAst = {
+        val lastSuccessfulParse: Option[CypherTree] = {
+          @tailrec def lastChild(ast: CypherTree): CypherTree = {
             if (ast.children.length == 0) ast else lastChild(ast.children.last)
           }
 
@@ -306,7 +308,7 @@ object CypherParser {
     (":" ~ relTypeName.rep(1, "|" ~ ":".?)).toList.?.map(_.getOrElse(Nil))
   )
 
-  def nodeLabel[_: P]: P[NodeLabel] = P(":" ~ labelName.!).map(NodeLabel)
+  def nodeLabel[_: P]: P[String] = P(":" ~ labelName.!)
 
   def rangeLiteral[_: P]: P[RangeLiteral] = P(
     "*" ~/ integerLiteral.? ~ (".." ~ integerLiteral.?).?.map(_.flatten)
@@ -575,7 +577,7 @@ object CypherParser {
     case (first, second, third, fourth) => PatternComprehension(first, second, fourth, third)
   }
 
-  def propertyLookup[_: P]: P[PropertyLookup] = P("." ~ propertyKeyName)
+  def propertyLookup[_: P]: P[String] = P("." ~ propertyKeyName)
 
   def caseExpression[_: P]: P[CaseExpression] = P(
     K("CASE") ~ expression.? ~ caseAlternatives.rep(1).toNonEmptyList ~ (K("ELSE") ~ expression).? ~ K("END")
@@ -604,7 +606,7 @@ object CypherParser {
     atom ~ propertyLookup.rep(1).toNonEmptyList
   ).map(Property.tupled)
 
-  def propertyKeyName[_: P]: P[PropertyKeyName] = P(schemaName).!.map(PropertyKeyName)
+  def propertyKeyName[_: P]: P[String] = P(schemaName.!)
 
   def integerLiteral[_: P]: P[IntegerLiteral] = P(
     hexInteger.!.map(h => java.lang.Long.parseLong(h.drop(2), 16))
