@@ -26,12 +26,11 @@
  */
 package org.opencypher.spark.impl
 
-import org.apache.spark.sql.{DataFrame, Row, functions}
 import org.apache.spark.sql.types._
+import org.apache.spark.sql.{Row, functions}
 import org.opencypher.okapi.testing.Bag
 import org.opencypher.okapi.testing.Bag._
-import org.opencypher.spark.impl.DataFrameOps._
-import org.opencypher.spark.impl.table.SparkTable.DataFrameTable
+import org.opencypher.spark.impl.table.SparkTable.{DataFrameTable, _}
 import org.opencypher.spark.testing.CAPSTestSuite
 import org.scalatest.Matchers
 import org.scalatest.prop.GeneratorDrivenPropertyChecks

@@ -26,14 +26,19 @@
  */
 package org.opencypher.spark.testing.support
 
+import org.apache.spark.sql.Row
 import org.opencypher.okapi.api.table.CypherRecords
+import org.opencypher.okapi.api.value.CypherValue
 import org.opencypher.okapi.api.value.CypherValue._
-import org.opencypher.okapi.ir.api.expr.Var
+import org.opencypher.okapi.impl.exception.IllegalArgumentException
+import org.opencypher.okapi.ir.api.expr.{Expr, Param, Var}
+import org.opencypher.okapi.relational.api.planning.RelationalRuntimeContext
+import org.opencypher.okapi.relational.impl.table.RecordHeader
 import org.opencypher.okapi.testing.Bag
 import org.opencypher.okapi.testing.Bag._
 import org.opencypher.spark.impl.CAPSConverters._
 import org.opencypher.spark.impl.CAPSRecords
-import org.opencypher.spark.impl.DataFrameOps._
+import org.opencypher.spark.impl.table.SparkTable.DataFrameTable
 import org.opencypher.spark.testing.CAPSTestSuite
 import org.scalatest.Assertion
 
@@ -42,6 +47,23 @@ import scala.collection.JavaConverters._
 trait RecordMatchingTestSupport {
 
   self: CAPSTestSuite =>
+
+  implicit class RichRow(r: Row) {
+
+    def getCypherValue(expr: Expr, header: RecordHeader)
+      (implicit context: RelationalRuntimeContext[DataFrameTable]): CypherValue = {
+      expr match {
+        case Param(name) => context.parameters(name)
+        case _ =>
+          header.getColumn(expr) match {
+            case None => throw IllegalArgumentException(
+              expected = s"column for $expr",
+              actual = header.pretty)
+            case Some(column) => CypherValue(r.get(r.schema.fieldIndex(column)))
+          }
+      }
+    }
+  }
 
   implicit class RecordMatcher(records: CAPSRecords) {
 

@@ -37,8 +37,8 @@ import org.opencypher.spark.api.CAPSSession
 import org.opencypher.spark.api.io.fs.DefaultGraphDirectoryStructure.nodeTableDirectoryName
 import org.opencypher.spark.api.io.sql.IdGenerationStrategy.IdGenerationStrategy
 import org.opencypher.spark.api.io.util.CAPSGraphExport._
-import org.opencypher.spark.impl.DataFrameOps._
 import org.opencypher.spark.impl.io.CAPSPropertyGraphDataSource
+import org.opencypher.spark.impl.table.SparkTable._
 import org.opencypher.spark.testing.CAPSTestSuite
 import org.opencypher.spark.testing.api.io.CAPSPGDSAcceptance
 import org.opencypher.spark.testing.support.creation.caps.CAPSScanGraphFactory

@@ -29,11 +29,10 @@ package org.opencypher.spark.impl
 import org.apache.spark.sql.Row
 import org.opencypher.okapi.api.types._
 import org.opencypher.okapi.ir.api.expr._
+import org.opencypher.okapi.relational.api.tagging.Tags._
 import org.opencypher.okapi.testing.Bag
-import org.opencypher.spark.impl.DataFrameOps._
 import org.opencypher.spark.testing.CAPSTestSuite
 import org.opencypher.spark.testing.fixture.{RecordsVerificationFixture, TeamDataFixture}
-import org.opencypher.okapi.relational.api.tagging.Tags._
 
 class CAPSGraphOperationsTest extends CAPSTestSuite with TeamDataFixture with RecordsVerificationFixture {
 

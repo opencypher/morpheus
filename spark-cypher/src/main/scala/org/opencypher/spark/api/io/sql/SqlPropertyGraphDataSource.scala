@@ -34,6 +34,7 @@ import org.opencypher.graphddl._
 import org.opencypher.okapi.api.graph.{GraphName, PropertyGraph}
 import org.opencypher.okapi.api.io.conversion.{EntityMapping, NodeMapping, RelationshipMapping}
 import org.opencypher.okapi.impl.exception.{GraphNotFoundException, IllegalArgumentException, UnsupportedOperationException}
+import org.opencypher.okapi.impl.util.StringEncodingUtilities
 import org.opencypher.okapi.impl.util.StringEncodingUtilities._
 import org.opencypher.spark.api.CAPSSession
 import org.opencypher.spark.api.io.AbstractPropertyGraphDataSource._
@@ -41,8 +42,8 @@ import org.opencypher.spark.api.io.GraphEntity.sourceIdKey
 import org.opencypher.spark.api.io.Relationship.{sourceEndNodeKey, sourceStartNodeKey}
 import org.opencypher.spark.api.io._
 import org.opencypher.spark.api.io.sql.IdGenerationStrategy._
-import org.opencypher.spark.impl.DataFrameOps._
 import org.opencypher.spark.impl.io.CAPSPropertyGraphDataSource
+import org.opencypher.spark.impl.table.SparkTable._
 import org.opencypher.spark.schema.CAPSSchema
 import org.opencypher.spark.schema.CAPSSchema._
 
@@ -191,7 +192,7 @@ case class SqlPropertyGraphDataSource(
       case otherFormat => notFound(otherFormat, Seq(JdbcFormat, HiveFormat, ParquetFormat, CsvFormat, OrcFormat))
     }
 
-    inputTable.withPropertyColumns
+    inputTable.safeRenameColumns(inputTable.columns.map(col => col -> col.toPropertyColumnName).toMap)
   }
 
   private def readSqlTable(viewId: ViewId, sqlDataSourceConfig: SqlDataSourceConfig) = {
@@ -254,16 +255,17 @@ case class SqlPropertyGraphDataSource(
   }
 
   private def normalizeDataFrame(dataFrame: DataFrame, mapping: EntityMapping): DataFrame = {
-    val dfColumns = dataFrame.schema.fieldNames.map(_.toLowerCase).toSet
+    val fields = dataFrame.schema.fields
+    val indexedFields = fields.map(field => field.name.toLowerCase).zipWithIndex.toMap
 
-    mapping.propertyMapping.foldLeft(dataFrame) {
-      case (currentDf, (property, column)) if dfColumns.contains(column.toLowerCase) =>
-        currentDf.withColumnRenamed(column, property.toPropertyColumnName)
-      case (_, (_, column)) => throw IllegalArgumentException(
+    val columnRenamings = mapping.propertyMapping.map {
+      case (property, column) if indexedFields.contains(column.toLowerCase) =>
+        fields(indexedFields(column.toLowerCase)).name -> property.toPropertyColumnName
+      case (_, column) => throw IllegalArgumentException(
         expected = s"Column with name $column",
-        actual = dfColumns
-      )
+        actual = indexedFields)
     }
+    dataFrame.safeRenameColumns(columnRenamings)
   }
 
   private def normalizeNodeMapping(mapping: NodeMapping): NodeMapping = {
@@ -364,7 +366,7 @@ case class SqlPropertyGraphDataSource(
     newIdColumn: String
   ): Map[T, DataFrame] = {
     val (elementViewKeys, dataFrames) = views.unzip
-    elementViewKeys.zip(addUniqueIds(dataFrames.toSeq, newIdColumn)).toMap
+    elementViewKeys.zip(dataFrames.toSeq.addUniqueIds(newIdColumn)).toMap
   }
 
   override def schema(name: GraphName): Option[CAPSSchema] = graphDdl.graphs.get(name).map(_.graphType.asCaps)
