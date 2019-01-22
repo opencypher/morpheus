@@ -157,7 +157,7 @@ object RelationalPlanner {
             in.join(relationships, Seq(source -> startNode, target -> endNode), InnerJoin)
 
           case Incoming =>
-            in.join(relationships, Seq(target -> endNode, source -> startNode), InnerJoin)
+            in.join(relationships, Seq(source -> endNode, target -> startNode), InnerJoin)
 
           case Undirected =>
             val outgoing = in.join(relationships, Seq(source -> startNode, target -> endNode), InnerJoin)
