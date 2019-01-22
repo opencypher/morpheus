@@ -531,7 +531,7 @@ class LogicalPlanner(producer: LogicalOperatorProducer)
         producer.planExpandInto(c.source, r, c.target, Outgoing, sourcePlan)
 
       case rel: DirectedRelationship if sourcePlan == targetPlan && rel.semanticDirection == INCOMING =>
-        producer.planExpandInto(r, c.source, c.target, Incoming, targetPlan)
+        producer.planExpandInto(c.target, r, c.source, Incoming, targetPlan)
 
       case rel: DirectedRelationship if rel.semanticDirection == OUTGOING =>
         producer.planExpand(c.source, r, c.target, Outgoing, sourcePlan, targetPlan)
