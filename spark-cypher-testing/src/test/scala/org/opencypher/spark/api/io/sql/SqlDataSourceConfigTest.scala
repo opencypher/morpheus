@@ -26,8 +26,8 @@
  */
 package org.opencypher.spark.api.io.sql
 
+import org.opencypher.spark.api.io.FileFormat
 import org.opencypher.spark.api.io.sql.SqlDataSourceConfig.{File, Hive, Jdbc}
-import org.opencypher.spark.api.io.{CsvFormat, ParquetFormat}
 import org.scalatest.Matchers
 
 import scala.io.Source
@@ -45,8 +45,8 @@ class SqlDataSourceConfigTest extends org.scalatest.FunSpec with Matchers {
         Hive,
         Jdbc("foo", "driv"),
         Jdbc("foo", "driv", Map("foo" -> "bar")),
-        File(CsvFormat, None),
-        File(CsvFormat, Some("/foo/bar"), Map("foo" -> "bar2"))
+        File(FileFormat.csv, None),
+        File(FileFormat.csv, Some("/foo/bar"), Map("foo" -> "bar2"))
       ).foreach(cfg => roundTrip(cfg) shouldEqual cfg)
 
     }
@@ -73,7 +73,7 @@ class SqlDataSourceConfigTest extends org.scalatest.FunSpec with Matchers {
         "HIVE_CENSUS" -> Hive,
         "HIVE_X2" -> Hive,
         "MY_DIR" -> File(
-          format = ParquetFormat,
+          format = FileFormat.parquet,
           basePath = Some("/my/path")
         )
       )

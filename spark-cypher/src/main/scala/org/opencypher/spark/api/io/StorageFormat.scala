@@ -28,9 +28,8 @@ package org.opencypher.spark.api.io
 
 import org.opencypher.okapi.impl.exception.IllegalArgumentException
 import org.opencypher.okapi.impl.util.JsonUtils.FlatOption._
+import org.opencypher.spark.api.io.StorageFormat.nonFileFormatNames
 import ujson._
-
-import scala.util.Try
 
 trait StorageFormat {
   def name: String = getClass.getSimpleName.dropRight("Format$".length).toLowerCase
@@ -38,36 +37,31 @@ trait StorageFormat {
 
 object StorageFormat {
 
-  val tabularFileFormats: Map[String, TabularFileFormat] = Map(
-    CsvFormat.name -> CsvFormat,
-    OrcFormat.name -> OrcFormat,
-    ParquetFormat.name -> ParquetFormat
-  )
-
-  val allStorageFormats: Map[String, StorageFormat] = Map(
+  val nonFileFormats: Map[String, StorageFormat] = Map(
     AvroFormat.name -> AvroFormat,
     HiveFormat.name -> HiveFormat,
     JdbcFormat.name -> JdbcFormat,
     Neo4jFormat.name -> Neo4jFormat
-  ) ++ tabularFileFormats
+  )
+
+  val nonFileFormatNames: Set[String] = nonFileFormats.keySet
 
   private def unexpected(name: String, available: Iterable[String]) =
     throw IllegalArgumentException(s"Supported storage format (one of ${available.mkString("[", ", ", "]")})", name)
 
-  implicit def rw: ReadWriter[StorageFormat] = readwriter[Value].bimap[StorageFormat](
-    storageFormat => storageFormat.name,
-    storageFormatName => allStorageFormats.getOrElse(
-      storageFormatName.str,
-      unexpected(storageFormatName.str, allStorageFormats.keys)
-    )
+  implicit def rwStorageFormat: ReadWriter[StorageFormat] = readwriter[Value].bimap[StorageFormat](
+    (storageFormat: StorageFormat) => storageFormat.name,
+    (storageFormatName: Value) => {
+      val formatString = storageFormatName.str
+      nonFileFormats.getOrElse(formatString, FileFormat(formatString))
+    }
   )
 
-  implicit def fileRw: ReadWriter[TabularFileFormat] = rw.bimap[TabularFileFormat](
-    identity,
-    format => Try(format.asInstanceOf[TabularFileFormat]).getOrElse(
-      unexpected(format.name, tabularFileFormats.keys)
-    )
+  implicit def rwFileFormat: ReadWriter[FileFormat] = readwriter[Value].bimap[FileFormat](
+    (fileFormat: FileFormat) => fileFormat.name,
+    (fileFormatName: Value) => FileFormat(fileFormatName.str)
   )
+
 }
 
 case object AvroFormat extends StorageFormat
@@ -78,10 +72,13 @@ case object HiveFormat extends StorageFormat
 
 case object JdbcFormat extends StorageFormat
 
-trait TabularFileFormat extends StorageFormat
+object FileFormat {
+  val csv: FileFormat = FileFormat("csv")
+  val orc: FileFormat = FileFormat("orc")
+  val parquet: FileFormat = FileFormat("parquet")
+}
 
-case object CsvFormat extends TabularFileFormat
-
-case object OrcFormat extends TabularFileFormat
-
-case object ParquetFormat extends TabularFileFormat
+case class FileFormat(override val name: String) extends StorageFormat {
+  assert(!nonFileFormatNames.contains(name),
+    s"Cannot create a file format with a name in ${nonFileFormatNames.mkString("[", ", ", "]")} ")
+}

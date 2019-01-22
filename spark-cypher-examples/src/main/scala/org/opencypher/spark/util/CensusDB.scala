@@ -28,9 +28,9 @@ package org.opencypher.spark.util
 
 import org.apache.spark.sql.SparkSession
 import org.apache.spark.sql.types._
+import org.opencypher.spark.api.io.{FileFormat, StorageFormat}
 import org.opencypher.spark.api.io.sql.SqlDataSourceConfig
 import org.opencypher.spark.api.io.sql.SqlDataSourceConfig.Jdbc
-import org.opencypher.spark.api.io.{ParquetFormat, StorageFormat}
 import org.opencypher.spark.testing.utils.H2Utils._
 
 import scala.io.Source
@@ -129,10 +129,10 @@ object CensusDB {
     sparkSession.sql(s"CREATE DATABASE CENSUS").count
 
     // Populate the data
-    populateData(townInput, sqlDataSourceConfig, Some(ParquetFormat))
-    populateData(residentsInput, sqlDataSourceConfig, Some(ParquetFormat))
-    populateData(visitorsInput, sqlDataSourceConfig, Some(ParquetFormat))
-    populateData(licensedDogsInput, sqlDataSourceConfig, Some(ParquetFormat))
+    populateData(townInput, sqlDataSourceConfig, Some(FileFormat.parquet))
+    populateData(residentsInput, sqlDataSourceConfig, Some(FileFormat.parquet))
+    populateData(visitorsInput, sqlDataSourceConfig, Some(FileFormat.parquet))
+    populateData(licensedDogsInput, sqlDataSourceConfig, Some(FileFormat.parquet))
 
     // Create the views
     createViewsSql.split(";").foreach(sparkSession.sql)

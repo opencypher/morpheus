@@ -32,7 +32,7 @@ import org.opencypher.graphddl.GraphDdl
 import org.opencypher.okapi.api.graph.GraphName
 import org.opencypher.okapi.api.value.CypherValue.CypherMap
 import org.opencypher.okapi.testing.Bag
-import org.opencypher.spark.api.io.CsvFormat
+import org.opencypher.spark.api.io.FileFormat
 import org.opencypher.spark.api.io.sql.SqlDataSourceConfig.{File, Hive, Jdbc}
 import org.opencypher.spark.api.value.{CAPSNode, CAPSRelationship}
 import org.opencypher.spark.impl.CAPSFunctions.{partitioned_id_assignment, rowIdSpaceBitsUsedByMonotonicallyIncreasingId}
@@ -527,7 +527,7 @@ class SqlPropertyGraphDataSourceTest extends CAPSTestSuite with HiveFixture with
     val ds = SqlPropertyGraphDataSource(
       GraphDdl(ddlString),
       Map("csv" -> File(
-        format = CsvFormat,
+        format = FileFormat.csv,
         basePath = Some("file://" + getClass.getResource("/csv").getPath)
       ))
     )
@@ -565,7 +565,7 @@ class SqlPropertyGraphDataSourceTest extends CAPSTestSuite with HiveFixture with
     val ds = SqlPropertyGraphDataSource(
       GraphDdl(ddlString),
       Map("csv" -> File(
-        format = CsvFormat
+        format = FileFormat.csv
       ))
     )
 

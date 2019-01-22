@@ -26,7 +26,7 @@
  */
 package org.opencypher.spark.api.io.sql
 
-import org.opencypher.spark.api.io.{HiveFormat, JdbcFormat, StorageFormat, TabularFileFormat}
+import org.opencypher.spark.api.io.{FileFormat, HiveFormat, JdbcFormat, StorageFormat}
 import ujson.Value
 
 import scala.util.{Failure, Success, Try}
@@ -103,7 +103,7 @@ object SqlDataSourceConfig {
     */
   @upickle.implicits.key("file")
   case class File(
-    override val format: TabularFileFormat,
+    override val format: FileFormat,
     basePath: Option[String] = None,
     override val options: Map[String, String] = Map.empty
   ) extends SqlDataSourceConfig(format, options)
