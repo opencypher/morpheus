@@ -258,14 +258,18 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 ------------------------------------------------------------------------------
 MIT
+  acyclic_2.11-0.1.5.jar
   cats-core_2.11-1.0.1.jar
   cats-kernel_2.11-1.0.1.jar
   cats-macros_2.11-1.0.1.jar
   fastparse_2.11-2.1.0.jar
   machinist_2.11-0.6.2.jar
   sourcecode_2.11-0.1.5.jar
-  ujson_2.11-0.6.6.jar
-  upickle_2.11-0.6.6.jar
+  ujson_2.11-0.7.1.jar
+  upack_2.11-0.7.1.jar
+  upickle-core_2.11-0.7.1.jar
+  upickle-implicits_2.11-0.7.1.jar
+  upickle_2.11-0.7.1.jar
 ------------------------------------------------------------------------------
 
 The MIT License

@@ -49,6 +49,7 @@ BSD-3-Clause
   scala-xml_2.11-1.0.5.jar
 
 MIT
+  acyclic_2.11-0.1.5.jar
   cats-core_2.11-1.0.1.jar
   cats-kernel_2.11-1.0.1.jar
   cats-macros_2.11-1.0.1.jar
@@ -56,5 +57,8 @@ MIT
   fastparse_2.11-2.1.0.jar
   machinist_2.11-0.6.2.jar
   sourcecode_2.11-0.1.5.jar
-  ujson_2.11-0.6.6.jar
-  upickle_2.11-0.6.6.jar
+  ujson_2.11-0.7.1.jar
+  upack_2.11-0.7.1.jar
+  upickle-core_2.11-0.7.1.jar
+  upickle-implicits_2.11-0.7.1.jar
+  upickle_2.11-0.7.1.jar

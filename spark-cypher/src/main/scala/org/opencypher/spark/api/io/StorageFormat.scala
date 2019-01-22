@@ -28,7 +28,7 @@ package org.opencypher.spark.api.io
 
 import org.opencypher.okapi.impl.exception.IllegalArgumentException
 import org.opencypher.okapi.impl.util.JsonUtils.FlatOption._
-import upickle.Js
+import ujson._
 
 trait StorageFormat {
   def name: String = getClass.getSimpleName.dropRight("Format$".length).toLowerCase
@@ -46,7 +46,7 @@ object StorageFormat {
     ParquetFormat.name -> ParquetFormat
   )
 
-  implicit def rw: ReadWriter[StorageFormat] = readwriter[Js.Value].bimap[StorageFormat](
+  implicit def rw: ReadWriter[StorageFormat] = readwriter[Value].bimap[StorageFormat](
     storageFormat => storageFormat.name,
     storageFormatName => allStorageFormats.getOrElse(storageFormatName.str,
       throw IllegalArgumentException(s"Supported storage format (one of ${allStorageFormats.keys.mkString("[", ", ", "]")})", storageFormatName.str)
