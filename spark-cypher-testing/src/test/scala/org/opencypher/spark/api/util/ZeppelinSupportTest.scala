@@ -31,7 +31,7 @@ import org.opencypher.spark.impl.acceptance.ScanGraphInit
 import org.opencypher.spark.testing.CAPSTestSuite
 import org.opencypher.spark.testing.fixture.TeamDataFixture
 
-class ZeppelinSupportTest extends CAPSTestSuite with TeamDataFixture  with ScanGraphInit {
+class ZeppelinSupportTest extends CAPSTestSuite with TeamDataFixture with ScanGraphInit {
   // scalastyle:off line.contains.tab
   it("supports Zeppelin table representation") {
     val graph = caps.graphs.create(personTable)
