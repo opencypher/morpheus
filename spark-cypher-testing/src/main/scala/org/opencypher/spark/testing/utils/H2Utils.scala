@@ -54,7 +54,7 @@ object H2Utils {
     try { code(conn) } finally { conn.close() }
   }
 
-  implicit class DataFrameReaderOps(write: DataFrameWriter[Row]) {
+  implicit class DataFrameWriterOps(write: DataFrameWriter[Row]) {
     def maybeOption(key: String, value: Option[String]): DataFrameWriter[Row] =
       value.fold(write)(write.option(key, _))
   }
