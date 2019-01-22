@@ -35,7 +35,7 @@ import org.opencypher.spark.testing.CAPSTestSuite
 import org.scalatest.junit.JUnitRunner
 
 @RunWith(classOf[JUnitRunner])
-class ExpressionTests extends CAPSTestSuite with DefaultGraphInit with ScanGraphInit {
+class ExpressionTests extends CAPSTestSuite with ScanGraphInit {
 
   describe("CASE") {
     it("should evaluate a generic CASE expression with default") {

@@ -34,7 +34,7 @@ import org.opencypher.spark.testing.CAPSTestSuite
 import org.scalatest.junit.JUnitRunner
 
 @RunWith(classOf[JUnitRunner])
-class UnionTests extends CAPSTestSuite with DefaultGraphInit with ScanGraphInit {
+class UnionTests extends CAPSTestSuite with ScanGraphInit {
 
   describe("tabular union all") {
     it("unions simple queries") {

@@ -35,7 +35,7 @@ import org.opencypher.spark.testing.CAPSTestSuite
 import org.scalatest.junit.JUnitRunner
 
 @RunWith(classOf[JUnitRunner])
-class WithTests extends CAPSTestSuite with DefaultGraphInit with ScanGraphInit {
+class WithTests extends CAPSTestSuite with ScanGraphInit {
 
   test("rebinding of dropped variables") {
     // Given

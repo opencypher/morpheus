@@ -34,7 +34,7 @@ import org.opencypher.spark.testing.CAPSTestSuite
 import org.scalatest.junit.JUnitRunner
 
 @RunWith(classOf[JUnitRunner])
-class OptionalMatchTests extends CAPSTestSuite with DefaultGraphInit with ScanGraphInit {
+class OptionalMatchTests extends CAPSTestSuite with ScanGraphInit {
 
   it("optionally match") {
     // Given

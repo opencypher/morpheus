@@ -33,7 +33,7 @@ import org.opencypher.spark.testing.CAPSTestSuite
 import org.scalatest.junit.JUnitRunner
 
 @RunWith(classOf[JUnitRunner])
-class ExpandIntoTests extends CAPSTestSuite with DefaultGraphInit with ScanGraphInit {
+class ExpandIntoTests extends CAPSTestSuite with ScanGraphInit {
 
   it("test expand into for dangling edge") {
     // Given

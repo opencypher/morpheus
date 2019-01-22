@@ -41,14 +41,14 @@ import org.opencypher.okapi.testing.Bag
 import org.opencypher.spark.api.io.HiveFormat
 import org.opencypher.spark.api.io.neo4j.Neo4jPropertyGraphDataSource
 import org.opencypher.spark.api.io.sql.{SqlDataSourceConfig, SqlPropertyGraphDataSource}
-import org.opencypher.spark.impl.acceptance.DefaultGraphInit
+import org.opencypher.spark.impl.acceptance.ScanGraphInit
 import org.opencypher.spark.impl.table.SparkTable
 import org.opencypher.spark.testing.CAPSTestSuite
 
 import scala.collection.JavaConverters._
 import scala.util.{Failure, Success, Try}
 
-class Neo4JGraphMergeTest extends CAPSTestSuite with Neo4jServerFixture with DefaultGraphInit {
+class Neo4JGraphMergeTest extends CAPSTestSuite with Neo4jServerFixture with ScanGraphInit {
 
   override def dataFixture: String = ""
 

@@ -34,7 +34,7 @@ import org.opencypher.spark.testing.CAPSTestSuite
 import org.scalatest.junit.JUnitRunner
 
 @RunWith(classOf[JUnitRunner])
-class PredicateTests extends CAPSTestSuite with DefaultGraphInit with ScanGraphInit {
+class PredicateTests extends CAPSTestSuite with ScanGraphInit {
 
   it("can evaluate predicates on non-existing properties") {
     val given = initGraph("CREATE ()")

@@ -38,7 +38,7 @@ import org.scalatest.BeforeAndAfterAll
 import org.scalatest.junit.JUnitRunner
 
 @RunWith(classOf[JUnitRunner])
-class CatalogDDLTests extends CAPSTestSuite with DefaultGraphInit with ScanGraphInit with BeforeAndAfterAll {
+class CatalogDDLTests extends CAPSTestSuite with ScanGraphInit with BeforeAndAfterAll {
 
   override def afterEach(): Unit = {
     super.afterEach()

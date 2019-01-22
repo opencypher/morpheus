@@ -34,7 +34,7 @@ import org.opencypher.spark.testing.CAPSTestSuite
 import org.scalatest.junit.JUnitRunner
 
 @RunWith(classOf[JUnitRunner])
-class BoundedVarExpandTests extends CAPSTestSuite with DefaultGraphInit with ScanGraphInit {
+class BoundedVarExpandTests extends CAPSTestSuite with ScanGraphInit {
 
   it("explicitly bound to zero length") {
 

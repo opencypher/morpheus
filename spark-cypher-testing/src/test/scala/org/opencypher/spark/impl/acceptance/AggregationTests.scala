@@ -34,7 +34,7 @@ import org.opencypher.spark.testing.CAPSTestSuite
 import org.scalatest.junit.JUnitRunner
 
 @RunWith(classOf[JUnitRunner])
-class AggregationTests extends CAPSTestSuite with DefaultGraphInit with ScanGraphInit {
+class AggregationTests extends CAPSTestSuite with ScanGraphInit {
 
   describe("AVG") {
 

@@ -35,7 +35,7 @@ import org.opencypher.spark.testing.CAPSTestSuite
 import org.scalatest.junit.JUnitRunner
 
 @RunWith(classOf[JUnitRunner])
-class FunctionTests extends CAPSTestSuite with DefaultGraphInit with ScanGraphInit{
+class FunctionTests extends CAPSTestSuite with ScanGraphInit{
 
   describe("date") {
     it("returns a valid date") {

@@ -37,7 +37,7 @@ import org.opencypher.spark.testing.CAPSTestSuite
 import org.scalatest.junit.JUnitRunner
 
 @RunWith(classOf[JUnitRunner])
-class ReturnTests extends CAPSTestSuite with DefaultGraphInit with ScanGraphInit {
+class ReturnTests extends CAPSTestSuite with ScanGraphInit {
 
   describe("RETURN") {
     it("returns only the returned fields") {

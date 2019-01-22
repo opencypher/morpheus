@@ -34,7 +34,7 @@ import org.opencypher.spark.testing.CAPSTestSuite
 import org.scalatest.junit.JUnitRunner
 
 @RunWith(classOf[JUnitRunner])
-class UnwindTests extends CAPSTestSuite with DefaultGraphInit with ScanGraphInit {
+class UnwindTests extends CAPSTestSuite with ScanGraphInit {
 
   it("standalone unwind from parameter") {
     val query = "UNWIND $param AS item RETURN item"

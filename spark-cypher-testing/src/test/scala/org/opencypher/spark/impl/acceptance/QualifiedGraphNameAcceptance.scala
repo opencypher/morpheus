@@ -35,7 +35,7 @@ import org.opencypher.okapi.testing.Bag._
 import org.opencypher.spark.impl.table.SparkTable
 import org.opencypher.spark.testing.CAPSTestSuite
 
-class QualifiedGraphNameAcceptance extends CAPSTestSuite with DefaultGraphInit {
+class QualifiedGraphNameAcceptance extends CAPSTestSuite with ScanGraphInit {
 
   val defaultGraph: RelationalCypherGraph[SparkTable.DataFrameTable] = initGraph("CREATE (:A)-[:REL]->(:B)")
 

@@ -38,7 +38,7 @@ import org.opencypher.spark.testing.CAPSTestSuite
 import org.scalatest.junit.JUnitRunner
 
 @RunWith(classOf[JUnitRunner])
-class DrivingTableTests extends CAPSTestSuite with DefaultGraphInit with ScanGraphInit {
+class DrivingTableTests extends CAPSTestSuite with ScanGraphInit {
 
   import scala.collection.JavaConverters._
 

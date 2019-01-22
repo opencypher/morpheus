@@ -38,7 +38,7 @@ import org.opencypher.spark.testing.CAPSTestSuite
 import org.scalatest.junit.JUnitRunner
 
 @RunWith(classOf[JUnitRunner])
-class MatchTests extends CAPSTestSuite with DefaultGraphInit with ScanGraphInit {
+class MatchTests extends CAPSTestSuite with ScanGraphInit {
 
   describe("scan caching") {
 
