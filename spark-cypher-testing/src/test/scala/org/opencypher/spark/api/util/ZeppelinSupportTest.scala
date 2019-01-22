@@ -27,11 +27,11 @@
 package org.opencypher.spark.api.util
 
 import org.opencypher.okapi.api.util.ZeppelinSupport._
-import org.opencypher.spark.impl.acceptance.DefaultGraphInit
+import org.opencypher.spark.impl.acceptance.ScanGraphInit
 import org.opencypher.spark.testing.CAPSTestSuite
 import org.opencypher.spark.testing.fixture.TeamDataFixture
 
-class ZeppelinSupportTest extends CAPSTestSuite with TeamDataFixture  with DefaultGraphInit {
+class ZeppelinSupportTest extends CAPSTestSuite with TeamDataFixture with ScanGraphInit {
   // scalastyle:off line.contains.tab
   it("supports Zeppelin table representation") {
     val graph = caps.graphs.create(personTable)

@@ -26,14 +26,15 @@
  */
 package org.opencypher.spark.impl.acceptance
 
+import org.junit.runner.RunWith
 import org.opencypher.okapi.api.value.CypherValue._
 import org.opencypher.okapi.testing.Bag
 import org.opencypher.okapi.testing.Bag._
 import org.opencypher.spark.testing.CAPSTestSuite
-import org.scalatest.DoNotDiscover
+import org.scalatest.junit.JUnitRunner
 
-@DoNotDiscover
-class PredicateBehaviour extends CAPSTestSuite with DefaultGraphInit {
+@RunWith(classOf[JUnitRunner])
+class PredicateTests extends CAPSTestSuite with ScanGraphInit {
 
   it("can evaluate predicates on non-existing properties") {
     val given = initGraph("CREATE ()")

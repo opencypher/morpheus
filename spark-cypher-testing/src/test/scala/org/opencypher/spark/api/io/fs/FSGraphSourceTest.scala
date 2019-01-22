@@ -35,10 +35,10 @@ import org.opencypher.spark.api.GraphSources
 import org.opencypher.spark.api.io.ParquetFormat
 import org.opencypher.spark.api.io.util.HiveTableName
 import org.opencypher.spark.api.value.CAPSNode
-import org.opencypher.spark.impl.acceptance.DefaultGraphInit
+import org.opencypher.spark.impl.acceptance.ScanGraphInit
 import org.opencypher.spark.testing.CAPSTestSuite
 
-class FSGraphSourceTest extends CAPSTestSuite with DefaultGraphInit {
+class FSGraphSourceTest extends CAPSTestSuite with ScanGraphInit {
 
   private var tempDir = new TemporaryFolder()
 

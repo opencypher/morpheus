@@ -35,8 +35,6 @@ trait GraphInit {
   def initGraph(createQuery: String)(implicit caps: CAPSSession): RelationalCypherGraph[DataFrameTable]
 }
 
-trait DefaultGraphInit extends ScanGraphInit
-
 trait ScanGraphInit extends GraphInit {
   def initGraph(createQuery: String)(implicit caps: CAPSSession): RelationalCypherGraph[DataFrameTable] = {
     CAPSScanGraphFactory.initGraph(createQuery)

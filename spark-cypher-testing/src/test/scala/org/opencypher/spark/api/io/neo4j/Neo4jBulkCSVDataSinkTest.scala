@@ -30,14 +30,14 @@ import org.junit.rules.TemporaryFolder
 import org.opencypher.okapi.api.graph.GraphName
 import org.opencypher.okapi.relational.api.graph.RelationalCypherGraph
 import org.opencypher.spark.api.io.neo4j.Neo4jBulkCSVDataSink._
-import org.opencypher.spark.impl.acceptance.DefaultGraphInit
+import org.opencypher.spark.impl.acceptance.ScanGraphInit
 import org.opencypher.spark.impl.table.SparkTable
 import org.opencypher.spark.testing.CAPSTestSuite
 import org.opencypher.spark.testing.fixture.TeamDataFixture
 
 import scala.io.Source
 
-class Neo4jBulkCSVDataSinkTest extends CAPSTestSuite with TeamDataFixture with DefaultGraphInit {
+class Neo4jBulkCSVDataSinkTest extends CAPSTestSuite with TeamDataFixture with ScanGraphInit {
   protected val tempDir = new TemporaryFolder()
   tempDir.create()
 

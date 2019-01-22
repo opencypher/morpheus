@@ -26,14 +26,15 @@
  */
 package org.opencypher.spark.impl.acceptance
 
+import org.junit.runner.RunWith
 import org.opencypher.okapi.api.value.CypherValue.{CypherMap, _}
 import org.opencypher.okapi.testing.Bag
 import org.opencypher.spark.api.value.CAPSNode
 import org.opencypher.spark.testing.CAPSTestSuite
-import org.scalatest.DoNotDiscover
+import org.scalatest.junit.JUnitRunner
 
-@DoNotDiscover
-class UnwindBehaviour extends CAPSTestSuite with DefaultGraphInit {
+@RunWith(classOf[JUnitRunner])
+class UnwindTests extends CAPSTestSuite with ScanGraphInit {
 
   it("standalone unwind from parameter") {
     val query = "UNWIND $param AS item RETURN item"
