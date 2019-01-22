@@ -171,7 +171,7 @@ final case class DirectedVarLengthRelationship(
   endpoints: DifferentEndpoints,
   lower: Int,
   upper: Option[Int],
-  semanticDirection: SemanticDirection
+  semanticDirection: SemanticDirection = OUTGOING
 ) extends VarLengthRelationship with DirectedConnection {
   override type SELF[XO, XE] = DirectedVarLengthRelationship {type O = XO; type E = XE}
 

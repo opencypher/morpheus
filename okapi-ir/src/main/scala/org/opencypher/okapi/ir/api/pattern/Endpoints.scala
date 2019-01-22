@@ -42,9 +42,9 @@ case object Endpoints {
   implicit def one(field: IRField): IdenticalEndpoints =
     OneSingleEndpoint(field)
 
-  implicit def two(fields: (IRField, IRField)): Endpoints = {
+  implicit def two(fields: (IRField, IRField)): DifferentEndpoints = {
     val (source, target) = fields
-    apply(source, target)
+    TwoDifferentEndpoints(source, target)
   }
 
   private case class OneSingleEndpoint(field: IRField) extends IdenticalEndpoints {
