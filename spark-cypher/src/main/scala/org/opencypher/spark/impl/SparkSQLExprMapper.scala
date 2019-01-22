@@ -36,6 +36,7 @@ import org.opencypher.okapi.ir.api.expr._
 import org.opencypher.okapi.relational.impl.table.RecordHeader
 import org.opencypher.spark.impl.CAPSFunctions.{array_contains, get_node_labels, get_property_keys, get_rel_type, _}
 import org.opencypher.spark.impl.convert.SparkConversions._
+import org.opencypher.spark.impl.util.TemporalTypesHelper._
 
 object SparkSQLExprMapper {
 
@@ -129,16 +130,14 @@ object SparkSQLExprMapper {
           NULL_LIT.cast(ct.toSparkType.get)
 
         case DateTime(dateExpr) =>
-          import org.opencypher.spark.impl.util.TemporalTypesHelper._
           dateExpr match {
-            case Some(e) => sanitize(e).cast(DataTypes.TimestampType)
+            case Some(e) => functions.lit(toTimestamp(e)).cast(DataTypes.TimestampType)
             case None => functions.current_timestamp()
           }
 
         case Date(dateExpr) =>
-          import org.opencypher.spark.impl.util.TemporalTypesHelper._
           dateExpr match {
-            case Some(e) => sanitize(e).cast(DataTypes.DateType)
+            case Some(e) => functions.lit(toDate(e)).cast(DataTypes.DateType)
             case None => functions.current_timestamp()
           }
 

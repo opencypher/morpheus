@@ -26,19 +26,31 @@
  */
 package org.opencypher.spark.impl.acceptance
 
+import java.time.LocalDate
+
+import org.apache.spark.sql.functions
 import org.junit.runner.RunWith
 import org.opencypher.okapi.api.value.CypherValue.{CypherMap, CypherNull}
+import org.opencypher.okapi.impl.exception.{IllegalArgumentException, IllegalStateException, NotImplementedException}
 import org.opencypher.okapi.impl.exception.{IllegalStateException, NotImplementedException, IllegalArgumentException}
 import org.opencypher.okapi.testing.Bag
 import org.opencypher.okapi.testing.Bag._
 import org.opencypher.spark.testing.CAPSTestSuite
+import org.scalatest.DoNotDiscover
 import org.scalatest.junit.JUnitRunner
 
 @RunWith(classOf[JUnitRunner])
 class FunctionTests extends CAPSTestSuite with ScanGraphInit{
 
   describe("date") {
+
     it("returns a valid date") {
+      caps.cypher("RETURN date('2010-10-10') AS time").records.toMaps should equal(
+        Bag(CypherMap("time" -> java.sql.Date.valueOf("2010-10-10")))
+      )
+    }
+
+    it("parses cypher compatible date strings") {
       caps.cypher("RETURN date('2010-10-10') AS time").records.toMaps should equal(
         Bag(CypherMap("time" -> java.sql.Date.valueOf("2010-10-10")))
       )
@@ -51,8 +63,20 @@ class FunctionTests extends CAPSTestSuite with ScanGraphInit{
         Bag(CypherMap("time" -> java.sql.Date.valueOf("2010-12-01")))
       )
 
-      caps.cypher("RETURN date('2010-1210') AS time").records.toMaps should equal(
-        Bag(CypherMap("time" -> java.sql.Date.valueOf("2010-12-10")))
+      caps.cypher("RETURN date('2015-W30-2') AS time").records.toMaps should equal(
+        Bag(CypherMap("time" -> java.sql.Date.valueOf("2015-07-21")))
+      )
+
+      caps.cypher("RETURN date('2015W302') AS time").records.toMaps should equal(
+        Bag(CypherMap("time" -> java.sql.Date.valueOf("2015-07-21")))
+      )
+
+      caps.cypher("RETURN date('2015-Q2-60') AS time").records.toMaps should equal(
+        Bag(CypherMap("time" -> java.sql.Date.valueOf("2015-05-30")))
+      )
+
+      caps.cypher("RETURN date('2015202') AS time").records.toMaps should equal(
+        Bag(CypherMap("time" -> java.sql.Date.valueOf("2015-07-21")))
       )
 
     }
