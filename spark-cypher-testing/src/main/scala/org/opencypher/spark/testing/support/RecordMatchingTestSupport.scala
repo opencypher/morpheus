@@ -56,7 +56,9 @@ trait RecordMatchingTestSupport {
         case Param(name) => context.parameters(name)
         case _ =>
           header.getColumn(expr) match {
-            case None => throw IllegalArgumentException(s"column for $expr")
+            case None => throw IllegalArgumentException(
+              expected = s"column for $expr",
+              actual = header.pretty)
             case Some(column) => CypherValue(r.get(r.schema.fieldIndex(column)))
           }
       }
