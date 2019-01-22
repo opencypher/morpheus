@@ -27,106 +27,110 @@
 package org.opencypher.parser
 
 import org.opencypher.parser.CypherExpression.PropertyLiteral
-import org.opencypher.parser.Pattern.generatedReferenceNamePrefix
 
 import scala.util.Try
 
-object Pattern {
-  val empty: Pattern = Pattern()
+object LogicalPatterns {
 
-  val generatedReferenceNamePrefix = "_UNNAMED#"
-}
+  object Pattern {
+    val empty: Pattern = Pattern()
 
-case class Pattern(
-  topology: List[Connection] = Nil,
-  constraints: Map[Reference, List[Constraint]] = Map.empty
-) {
-
-  assert(constraints.keysIterator.map(_.name).toSet.size == constraints.size,
-    s"A pattern cannot have multiple entries with the same Reference name and different Reference types:\n$this"
-  )
-
-  def withConnection(c: Connection): Pattern = {
-    copy(topology = c :: topology)
+    val generatedReferenceNamePrefix = "_UNNAMED#"
   }
 
-  def withConstraint(v: Reference, cs: Constraint*): Pattern = {
-    val currentConstraints = constraints.getOrElse(v, Nil)
-    copy(constraints = constraints.updated(v, currentConstraints ++ cs))
+  case class Pattern(
+    topology: List[Connection] = Nil,
+    constraints: Map[Reference, List[Constraint]] = Map.empty
+  ) {
+
+    assert(constraints.keysIterator.map(_.name).toSet.size == constraints.size,
+      s"A pattern cannot have multiple entries with the same Reference name and different Reference types:\n$this"
+    )
+
+    def withConnection(c: Connection): Pattern = {
+      copy(topology = c :: topology)
+    }
+
+    def withConstraint(v: Reference, cs: Constraint*): Pattern = {
+      val currentConstraints = constraints.getOrElse(v, Nil)
+      copy(constraints = constraints.updated(v, currentConstraints ++ cs))
+    }
+
+    def withNodeConstraints(cs: Constraint*): (NodeReference, Pattern) = {
+      val nr = NodeReference(nextFreeReferenceName)
+      nr -> withConstraint(nr, cs: _*)
+    }
+
+    def withRelationshipConstraints(cs: Constraint*): (RelationshipReference, Pattern) = {
+      val rr = RelationshipReference(nextFreeReferenceName)
+      rr -> withConstraint(rr, cs: _*)
+    }
+
+    def withPathConstraints(cs: Constraint*): (PathReference, Pattern) = {
+      val pr = PathReference(nextFreeReferenceName)
+      pr -> withConstraint(pr, cs: _*)
+    }
+
+    private def nextFreeReferenceName: String = {
+      import Pattern.generatedReferenceNamePrefix
+      val maxUsedReferenceId = constraints
+        .keysIterator
+        .map(_.name)
+        .filter(_.startsWith(generatedReferenceNamePrefix))
+        .map(_.drop(generatedReferenceNamePrefix.length))
+        .flatMap(s => Try(s.toInt).toOption)
+        .max
+      s"$generatedReferenceNamePrefix${maxUsedReferenceId + 1}"
+    }
+
   }
 
-  def withNodeConstraints(cs: Constraint*): (NodeReference, Pattern) = {
-    val nr = NodeReference(nextFreeReferenceName)
-    nr -> withConstraint(nr, cs: _*)
+  sealed trait Connection {
+    def startVar: NodeReference
+
+    def connectionVar: ConnectionReference
+
+    def endVar: NodeReference
+
+    def directed: Boolean
   }
 
-  def withRelationshipConstraints(cs: Constraint*): (RelationshipReference, Pattern) = {
-    val rr = RelationshipReference(nextFreeReferenceName)
-    rr -> withConstraint(rr, cs: _*)
+  case class Path(
+    startVar: NodeReference,
+    pathVar: PathReference,
+    endVar: NodeReference,
+    directed: Boolean = true
+  ) {
+    def connectionVar: PathReference = pathVar
   }
 
-  def withPathConstraints(cs: Constraint*): (PathReference, Pattern) = {
-    val pr = PathReference(nextFreeReferenceName)
-    pr -> withConstraint(pr, cs: _*)
+  case class Relationship(
+    startVar: NodeReference,
+    relationshipVar: RelationshipReference,
+    endVar: NodeReference,
+    directed: Boolean = true
+  ) {
+    def connectionVar: RelationshipReference = relationshipVar
   }
 
-  private def nextFreeReferenceName: String = {
-    val maxUsedReferenceId = constraints
-      .keysIterator
-      .map(_.name)
-      .filter(_.startsWith(generatedReferenceNamePrefix))
-      .map(_.drop(generatedReferenceNamePrefix.length))
-      .flatMap(s => Try(s.toInt).toOption)
-      .max
-    s"$generatedReferenceNamePrefix${maxUsedReferenceId + 1}"
+  sealed trait Reference {
+    def name: String
   }
+  case class NodeReference(name: String) extends Reference
+  sealed trait ConnectionReference extends Reference
+  case class RelationshipReference(name: String) extends ConnectionReference
+  case class PathReference(name: String) extends ConnectionReference
+
+  sealed trait NodeConstraint
+  sealed trait ConnectionConstraint
+  sealed trait PathConstraint extends ConnectionConstraint
+  //sealed trait RelationshipConstraint extends ConnectionConstraint
+  sealed trait Constraint extends NodeConstraint with ConnectionConstraint
+
+  case class HasProperty(property: PropertyLiteral) extends Constraint
+  case class HasLabels(labels: Set[String] = Set.empty) extends NodeConstraint
+  case class HasType(relTypes: Set[String] = Set.empty) extends ConnectionConstraint
+  case class MinLength(min: Int) extends PathConstraint
+  case class MaxLength(max: Int) extends PathConstraint
 
 }
-
-sealed trait Connection {
-  def startVar: NodeReference
-
-  def connectionVar: ConnectionReference
-
-  def endVar: NodeReference
-
-  def directed: Boolean
-}
-
-case class Path(
-  startVar: NodeReference,
-  pathVar: PathReference,
-  endVar: NodeReference,
-  directed: Boolean = true
-) {
-  def connectionVar: PathReference = pathVar
-}
-
-case class Relationship(
-  startVar: NodeReference,
-  relationshipVar: RelationshipReference,
-  endVar: NodeReference,
-  directed: Boolean = true
-) {
-  def connectionVar: RelationshipReference = relationshipVar
-}
-
-sealed trait Reference {
-  def name: String
-}
-case class NodeReference(name: String) extends Reference
-sealed trait ConnectionReference extends Reference
-case class RelationshipReference(name: String) extends ConnectionReference
-case class PathReference(name: String) extends ConnectionReference
-
-sealed trait NodeConstraint
-sealed trait ConnectionConstraint
-sealed trait PathConstraint extends ConnectionConstraint
-//sealed trait RelationshipConstraint extends ConnectionConstraint
-sealed trait Constraint extends NodeConstraint with ConnectionConstraint
-
-case class HasProperty(property: PropertyLiteral) extends Constraint
-case class HasLabels(labels: Set[String] = Set.empty) extends NodeConstraint
-case class HasType(relTypes: Set[String] = Set.empty) extends ConnectionConstraint
-case class MinLength(min: Int) extends PathConstraint
-case class MaxLength(max: Int) extends PathConstraint
