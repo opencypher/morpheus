@@ -104,7 +104,7 @@ class SqlPropertyGraphDataSourceTest extends CAPSTestSuite with HiveFixture with
       .toDF("foo")
       .write.mode(SaveMode.Overwrite).saveAsTable(s"$databaseName.$fooView")
 
-    val ds = SqlPropertyGraphDataSource(GraphDdl(ddlString), Map(dataSourceName -> Hive()))
+    val ds = SqlPropertyGraphDataSource(GraphDdl(ddlString), Map(dataSourceName -> Hive))
 
     ds.graph(fooGraphName).nodes("n").toMapsWithCollectedEntities should equal(Bag(
       CypherMap("n" -> CAPSNode(0, Set("Foo"), CypherMap("foo" -> "Alice")))
@@ -133,7 +133,7 @@ class SqlPropertyGraphDataSourceTest extends CAPSTestSuite with HiveFixture with
       .toDF("col1", "col2")
       .write.mode(SaveMode.Overwrite).mode(SaveMode.Overwrite).saveAsTable(s"$databaseName.$fooView")
 
-    val ds = SqlPropertyGraphDataSource(GraphDdl(ddlString), Map(dataSourceName -> Hive()))
+    val ds = SqlPropertyGraphDataSource(GraphDdl(ddlString), Map(dataSourceName -> Hive))
 
     ds.graph(fooGraphName).nodes("n").toMapsWithCollectedEntities should equal(Bag(
       CypherMap("n" -> CAPSNode(0, Set("Foo"), CypherMap("key1" -> 42L, "key2" -> "Alice")))
@@ -170,7 +170,7 @@ class SqlPropertyGraphDataSourceTest extends CAPSTestSuite with HiveFixture with
       .toDF("bar")
       .write.mode(SaveMode.Overwrite).saveAsTable(s"$databaseName.$barView")
 
-    val ds = SqlPropertyGraphDataSource(GraphDdl(ddlString), Map(dataSourceName -> Hive()))
+    val ds = SqlPropertyGraphDataSource(GraphDdl(ddlString), Map(dataSourceName -> Hive))
 
     ds.graph(fooGraphName).nodes("n").toMapsWithCollectedEntities should equal(Bag(
       CypherMap("n" -> CAPSNode(computePartitionedRowId(rowIndex = 0, partitionStartDelta = 0), Set("Foo"), CypherMap("foo" -> "Alice"))),
@@ -219,7 +219,7 @@ class SqlPropertyGraphDataSourceTest extends CAPSTestSuite with HiveFixture with
       .toDF("person", "book", "rating")
       .write.mode(SaveMode.Overwrite).saveAsTable(s"$databaseName.$readsView")
 
-    val ds = SqlPropertyGraphDataSource(GraphDdl(ddlString), Map(dataSourceName -> Hive()))
+    val ds = SqlPropertyGraphDataSource(GraphDdl(ddlString), Map(dataSourceName -> Hive))
 
     val personId = computePartitionedRowId(rowIndex = 0, partitionStartDelta = 0)
     val bookId = computePartitionedRowId(rowIndex = 0, partitionStartDelta = 1)
@@ -274,7 +274,7 @@ class SqlPropertyGraphDataSourceTest extends CAPSTestSuite with HiveFixture with
       .toDF("source_id", "target_id", "id", "start", "end")
       .write.mode(SaveMode.Overwrite).saveAsTable(s"$databaseName.$relsView")
 
-    val ds = SqlPropertyGraphDataSource(GraphDdl(ddlString), Map(dataSourceName -> Hive()))
+    val ds = SqlPropertyGraphDataSource(GraphDdl(ddlString), Map(dataSourceName -> Hive))
 
     val nodeId1 = computePartitionedRowId(rowIndex = 0, partitionStartDelta = 0)
     val nodeId2 = computePartitionedRowId(rowIndex = 1, partitionStartDelta = 0)
@@ -342,7 +342,7 @@ class SqlPropertyGraphDataSourceTest extends CAPSTestSuite with HiveFixture with
       .toDF("p_id", "b_id", "rates")
       .write.mode(SaveMode.Overwrite).saveAsTable(s"$databaseName.$readsView2")
 
-    val ds = SqlPropertyGraphDataSource(GraphDdl(ddlString), Map(dataSourceName -> Hive()))
+    val ds = SqlPropertyGraphDataSource(GraphDdl(ddlString), Map(dataSourceName -> Hive))
 
     val personId = computePartitionedRowId(rowIndex = 0, partitionStartDelta = 0)
     val book1Id = computePartitionedRowId(rowIndex = 0, partitionStartDelta = 1)
@@ -401,8 +401,8 @@ class SqlPropertyGraphDataSourceTest extends CAPSTestSuite with HiveFixture with
       .write.mode(SaveMode.Overwrite).saveAsTable(s"db2.$barView")
 
     val configs = Map(
-      "ds1" -> Hive(),
-      "ds2" -> Hive()
+      "ds1" -> Hive,
+      "ds2" -> Hive
     )
     val ds = SqlPropertyGraphDataSource(GraphDdl(ddlString), configs)
 
@@ -429,7 +429,7 @@ class SqlPropertyGraphDataSourceTest extends CAPSTestSuite with HiveFixture with
          |)
      """.stripMargin
 
-    val hiveDataSourceConfig = Hive()
+    val hiveDataSourceConfig = Hive
     val h2DataSourceConfig = Jdbc(
       driver = "org.h2.Driver",
       url = "jdbc:h2:mem:?user=sa&password=1234;DB_CLOSE_DELAY=-1"
@@ -484,7 +484,7 @@ class SqlPropertyGraphDataSourceTest extends CAPSTestSuite with HiveFixture with
         |)
         """.stripMargin
 
-    val pgds = SqlPropertyGraphDataSource(GraphDdl(ddlString), Map("ds1" -> Hive()))
+    val pgds = SqlPropertyGraphDataSource(GraphDdl(ddlString), Map("ds1" -> Hive))
 
     pgds.graph(GraphName("fooGraph")).cypher("MATCH (n) RETURN n.int, n.long").records.toMapsWithCollectedEntities should equal(Bag(
       CypherMap("n.int" -> 1, "n.long" -> 10),
@@ -501,7 +501,7 @@ class SqlPropertyGraphDataSourceTest extends CAPSTestSuite with HiveFixture with
         |)
       """.stripMargin
 
-    val pgds = SqlPropertyGraphDataSource(GraphDdl(ddlString), Map("known1" -> Hive(), "known2" -> Hive()))
+    val pgds = SqlPropertyGraphDataSource(GraphDdl(ddlString), Map("known1" -> Hive, "known2" -> Hive))
 
     val e = the [SqlDataSourceConfigException] thrownBy pgds.graph(GraphName("g"))
     e.getMessage should (include("unknown") and include("known1") and include("known2"))

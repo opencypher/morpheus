@@ -42,7 +42,7 @@ class SqlDataSourceConfigTest extends org.scalatest.FunSpec with Matchers {
     it("config to Json roundTrip") {
 
       List(
-        Hive(),
+        Hive,
         Jdbc("foo", "driv"),
         Jdbc("foo", "driv", Map("foo" -> "bar")),
         File(CsvFormat, None),
@@ -70,8 +70,8 @@ class SqlDataSourceConfigTest extends org.scalatest.FunSpec with Matchers {
             "fetchSize" -> "10"
           )
         ),
-        "HIVE_CENSUS" -> Hive(),
-        "HIVE_X2" -> Hive(),
+        "HIVE_CENSUS" -> Hive,
+        "HIVE_X2" -> Hive,
         "MY_DIR" -> File(
           format = ParquetFormat,
           basePath = Some("/my/path")

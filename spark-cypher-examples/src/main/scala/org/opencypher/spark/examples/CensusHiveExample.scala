@@ -52,11 +52,11 @@ object CensusHiveExample extends ConsoleApp {
   val graphName = "Census_1901"
   val sqlGraphSource = GraphSources
       .sql(resource("ddl/census.ddl").getFile)
-      .withSqlDataSourceConfigs("CENSUS" -> Hive())
+      .withSqlDataSourceConfigs("CENSUS" -> Hive)
 
   // tag::prepare-sql-database[]
   // Create the data in H2 in-memory database
-  CensusDB.createHiveData(Hive())
+  CensusDB.createHiveData(Hive)
   // end::prepare-sql-database[]
 
   session.registerSource(Namespace("sql"), sqlGraphSource)

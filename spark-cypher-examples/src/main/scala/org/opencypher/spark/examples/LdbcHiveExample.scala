@@ -88,7 +88,7 @@ object LdbcHiveExample extends ConsoleApp {
   // create SQL PGDS
   val sqlGraphSource = GraphSources
     .sql(graphDdlFile)
-    .withSqlDataSourceConfigs(datasourceName -> Hive())
+    .withSqlDataSourceConfigs(datasourceName -> Hive)
 
   session.registerSource(Namespace("sql"), sqlGraphSource)
 

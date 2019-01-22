@@ -43,7 +43,7 @@ sealed abstract class SqlDataSourceConfig(
 
 object SqlDataSourceConfig {
   private implicit val jdbc: ReadWriter[Jdbc] = macroRW
-  private implicit val hive: ReadWriter[Hive] = macroRW
+  private implicit val hive: ReadWriter[Hive.type] = macroRW
   private implicit val file: ReadWriter[File] = macroRW
   private val defaultMacroRW: ReadWriter[SqlDataSourceConfig] = macroRW
 
@@ -76,14 +76,6 @@ object SqlDataSourceConfig {
         throw SqlDataSourceConfigException(s"Malformed SQL configuration file: ${ex.getMessage}", ex)
     }
 
-//  * @param storageFormat  the interface between the SQL PGDS and the SQL data source. Supported values are hive and jdbc.
-//  * @param dataSourceName the user-defined name of the data source.
-//  * @param defaultSchema  the default SQL schema to use in this data source. Can be overridden by SET SCHEMA in Graph DDL.
-//    * @param jdbcUri
-//  * @param jdbcDriver     classname of the JDBC driver to use for the JDBC connection
-//  * @param jdbcFetchSize  the fetch size to use for transferring data over JDBC
-//    * @param basePath       the root folder used for file based formats
-
   /** Configures a data source that reads tables via JDBC
     *
     * @param url     the JDBC URI to use when connecting to the JDBC server
@@ -101,8 +93,7 @@ object SqlDataSourceConfig {
     * @note The Spark session needs to be configured with `.enableHiveSupport()`
     */
   @upickle.implicits.key("hive")
-  case class Hive(
-  ) extends SqlDataSourceConfig(HiveFormat, Map.empty)
+  case object Hive extends SqlDataSourceConfig(HiveFormat, Map.empty)
 
   /** Configures a data source that reads tables from files
     *

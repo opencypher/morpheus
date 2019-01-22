@@ -27,8 +27,8 @@
 package org.opencypher.spark.api.io.sql
 
 import org.apache.spark.sql.{DataFrame, SaveMode}
-import org.opencypher.spark.api.io.HiveFormat
 import org.opencypher.spark.api.io.sql.IdGenerationStrategy._
+import org.opencypher.spark.api.io.sql.SqlDataSourceConfig.Hive
 import org.opencypher.spark.testing.fixture.HiveFixture
 
 class HiveSqlPGDSHashBasedIdAcceptanceTest extends SqlPropertyGraphDataSourceAcceptanceTest with HiveFixture {
@@ -45,8 +45,7 @@ class HiveSqlPGDSHashBasedIdAcceptanceTest extends SqlPropertyGraphDataSourceAcc
     super.afterAll()
   }
 
-  override def sqlDataSourceConfig: SqlDataSourceConfig.Hive =
-    SqlDataSourceConfig.Hive()
+  override def sqlDataSourceConfig: Hive.type = Hive
 
   override def writeTable(df: DataFrame, tableName: String): Unit =
     df.write.mode(SaveMode.Overwrite).saveAsTable(tableName)

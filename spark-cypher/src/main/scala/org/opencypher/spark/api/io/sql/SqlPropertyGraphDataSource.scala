@@ -42,6 +42,8 @@ import org.opencypher.spark.api.io.GraphEntity.sourceIdKey
 import org.opencypher.spark.api.io.Relationship.{sourceEndNodeKey, sourceStartNodeKey}
 import org.opencypher.spark.api.io._
 import org.opencypher.spark.api.io.sql.IdGenerationStrategy._
+import org.opencypher.spark.api.io.sql.SqlDataSourceConfig.{File, Hive, Jdbc}
+import org.opencypher.spark.impl.DataFrameOps._
 import org.opencypher.spark.impl.io.CAPSPropertyGraphDataSource
 import org.opencypher.spark.impl.table.SparkTable._
 import org.opencypher.spark.schema.CAPSSchema
@@ -183,12 +185,9 @@ case class SqlPropertyGraphDataSource(
     }
 
     val inputTable = sqlDataSourceConfig match {
-      case hive: SqlDataSourceConfig.Hive =>
-        readSqlTable(viewId, hive)
-      case jdbc: SqlDataSourceConfig.Jdbc =>
-        readSqlTable(viewId, jdbc)
-      case file: SqlDataSourceConfig.File =>
-        readFile(viewId, file)
+      case hive@Hive => readSqlTable(viewId, hive)
+      case jdbc: Jdbc => readSqlTable(viewId, jdbc)
+      case file: File => readFile(viewId, file)
     }
 
     inputTable.safeRenameColumns(inputTable.columns.map(col => col -> col.toPropertyColumnName).toMap)
@@ -212,7 +211,7 @@ case class SqlPropertyGraphDataSource(
     }
 
     sqlDataSourceConfig match {
-      case SqlDataSourceConfig.Jdbc(url, driver, options) =>
+      case Jdbc(url, driver, options) =>
         spark.read
           .format("jdbc")
           .option("url", url)
@@ -222,14 +221,14 @@ case class SqlPropertyGraphDataSource(
           .option("dbtable", tableName)
           .load()
 
-      case SqlDataSourceConfig.Hive() =>
+      case SqlDataSourceConfig.Hive =>
         spark.table(tableName)
 
       case otherFormat => notFound(otherFormat, Seq(JdbcFormat, HiveFormat))
     }
   }
 
-  private def readFile(viewId: ViewId, dataSourceConfig: SqlDataSourceConfig.File) = {
+  private def readFile(viewId: ViewId, dataSourceConfig: File) = {
     val spark = caps.sparkSession
 
     val optionsByFormat: Map[StorageFormat, Map[String, String]] = Map(
@@ -240,7 +239,7 @@ case class SqlPropertyGraphDataSource(
 
     val viewPath = (viewId.maybeSetSchema, viewId.parts) match {
       case (Some(_), path :: Nil) => path
-      case (None, ds :: path :: Nil) => path
+      case (None, _ :: path :: Nil) => path
       case _ => malformed("File names must be defined with the data source", viewId.parts.mkString("."))
     }
 
