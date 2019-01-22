@@ -211,12 +211,8 @@ class Neo4JGraphMergeTest extends CAPSTestSuite with Neo4jServerFixture with Sca
           |  (Person) FROM ds1.db.persons
           |)
         """.stripMargin
-      val hiveDataSourceConfig = SqlDataSourceConfig(
-        storageFormat = HiveFormat,
-        dataSourceName = "ds1"
-      )
-
-      val pgds = SqlPropertyGraphDataSource(GraphDdl(ddlString), List(hiveDataSourceConfig))
+      val hiveDataSourceConfig = SqlDataSourceConfig.Hive()
+      val pgds = SqlPropertyGraphDataSource(GraphDdl(ddlString), Map("ds1" -> hiveDataSourceConfig))
       val graph = pgds.graph(GraphName("personGraph"))
 
       Neo4jGraphMerge.createIndexes(entireGraphName, neo4jConfig, graph.schema.nodeKeys)

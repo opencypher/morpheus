@@ -43,13 +43,13 @@ object H2Utils {
     def update(sql: String): Int = conn.run(_.executeUpdate(sql))
   }
 
-  def withConnection[T](cfg: SqlDataSourceConfig)(code: Connection => T): T = {
-    Class.forName(cfg.jdbcDriver.get)
-    val conn = (cfg.jdbcUser, cfg.jdbcPassword) match {
+  def withConnection[T](cfg: SqlDataSourceConfig.Jdbc)(code: Connection => T): T = {
+    Class.forName(cfg.driver)
+    val conn = (cfg.options.get("user"), cfg.options.get("password")) match {
       case (Some(user), Some(pass)) =>
-        DriverManager.getConnection(cfg.jdbcUri.get, user, pass)
+        DriverManager.getConnection(cfg.url, user, pass)
       case _ =>
-        DriverManager.getConnection(cfg.jdbcUri.get)
+        DriverManager.getConnection(cfg.url)
     }
     try { code(conn) } finally { conn.close() }
   }
@@ -61,15 +61,13 @@ object H2Utils {
 
   implicit class DataFrameSqlOps(df: DataFrame) {
 
-    def saveAsSqlTable(cfg: SqlDataSourceConfig, tableName: String): Unit =
+    def saveAsSqlTable(cfg: SqlDataSourceConfig.Jdbc, tableName: String): Unit =
       df.write
         .mode(SaveMode.Overwrite)
         .format("jdbc")
-        .option("url", cfg.jdbcUri.getOrElse(throw SqlDataSourceConfigException("Missing JDBC URI")))
-        .option("driver", cfg.jdbcDriver.getOrElse(throw SqlDataSourceConfigException("Missing JDBC Driver")))
-        .maybeOption("user", cfg.jdbcUser)
-        .maybeOption("password", cfg.jdbcPassword)
-        .option("fetchSize", cfg.jdbcFetchSize)
+        .option("url", cfg.url)
+        .option("driver", cfg.driver)
+        .options(cfg.options)
         .option("dbtable", tableName)
         .save()
   }

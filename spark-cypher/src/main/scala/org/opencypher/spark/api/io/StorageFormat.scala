@@ -30,40 +30,58 @@ import org.opencypher.okapi.impl.exception.IllegalArgumentException
 import org.opencypher.okapi.impl.util.JsonUtils.FlatOption._
 import ujson._
 
+import scala.util.Try
+
 trait StorageFormat {
   def name: String = getClass.getSimpleName.dropRight("Format$".length).toLowerCase
 }
 
 object StorageFormat {
 
-  val allStorageFormats: Map[String, StorageFormat] = Map(
-    AvroFormat.name -> AvroFormat,
+  val tabularFileFormats: Map[String, TabularFileFormat] = Map(
     CsvFormat.name -> CsvFormat,
-    HiveFormat.name -> HiveFormat,
-    JdbcFormat.name -> JdbcFormat,
-    Neo4jFormat.name -> Neo4jFormat,
     OrcFormat.name -> OrcFormat,
     ParquetFormat.name -> ParquetFormat
   )
 
+  val allStorageFormats: Map[String, StorageFormat] = Map(
+    AvroFormat.name -> AvroFormat,
+    HiveFormat.name -> HiveFormat,
+    JdbcFormat.name -> JdbcFormat,
+    Neo4jFormat.name -> Neo4jFormat
+  ) ++ tabularFileFormats
+
+  private def unexpected(name: String, available: Iterable[String]) =
+    throw IllegalArgumentException(s"Supported storage format (one of ${available.mkString("[", ", ", "]")})", name)
+
   implicit def rw: ReadWriter[StorageFormat] = readwriter[Value].bimap[StorageFormat](
     storageFormat => storageFormat.name,
-    storageFormatName => allStorageFormats.getOrElse(storageFormatName.str,
-      throw IllegalArgumentException(s"Supported storage format (one of ${allStorageFormats.keys.mkString("[", ", ", "]")})", storageFormatName.str)
+    storageFormatName => allStorageFormats.getOrElse(
+      storageFormatName.str,
+      unexpected(storageFormatName.str, allStorageFormats.keys)
+    )
+  )
+
+  implicit def fileRw: ReadWriter[TabularFileFormat] = rw.bimap[TabularFileFormat](
+    identity,
+    format => Try(format.asInstanceOf[TabularFileFormat]).getOrElse(
+      unexpected(format.name, tabularFileFormats.keys)
     )
   )
 }
 
 case object AvroFormat extends StorageFormat
 
-case object CsvFormat extends StorageFormat
+case object Neo4jFormat extends StorageFormat
 
 case object HiveFormat extends StorageFormat
 
 case object JdbcFormat extends StorageFormat
 
-case object Neo4jFormat extends StorageFormat
+trait TabularFileFormat extends StorageFormat
 
-case object OrcFormat extends StorageFormat
+case object CsvFormat extends TabularFileFormat
 
-case object ParquetFormat extends StorageFormat
+case object OrcFormat extends TabularFileFormat
+
+case object ParquetFormat extends TabularFileFormat

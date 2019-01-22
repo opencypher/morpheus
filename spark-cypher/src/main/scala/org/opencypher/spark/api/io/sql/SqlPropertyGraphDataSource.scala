@@ -51,7 +51,7 @@ import scala.reflect.io.Path
 
 case class SqlPropertyGraphDataSource(
   graphDdl: GraphDdl,
-  sqlDataSourceConfigs: List[SqlDataSourceConfig],
+  sqlDataSourceConfigs: Map[String, SqlDataSourceConfig],
   idGenerationStrategy: IdGenerationStrategy = MonotonicallyIncreasingId
 )(implicit val caps: CAPSSession) extends CAPSPropertyGraphDataSource {
 
@@ -174,22 +174,21 @@ case class SqlPropertyGraphDataSource(
   }
 
   private def readTable(viewId: ViewId): DataFrame = {
-    val sqlDataSourceConfig = sqlDataSourceConfigs.find(_.dataSourceName == viewId.dataSource) match {
+    val sqlDataSourceConfig = sqlDataSourceConfigs.get(viewId.dataSource) match {
       case None =>
-        val knownDataSources = sqlDataSourceConfigs.map(_.dataSourceName).mkString("'", "';'", "'")
+        val knownDataSources = sqlDataSourceConfigs.keys.mkString("'", "';'", "'")
         throw SqlDataSourceConfigException(s"Data source '${viewId.dataSource}' not configured; see data sources configuration. Known data sources: $knownDataSources")
       case Some(config) =>
         config
     }
 
-    val inputTable = sqlDataSourceConfig.storageFormat match {
-      case JdbcFormat | HiveFormat =>
-        readSqlTable(viewId, sqlDataSourceConfig)
-
-      case ParquetFormat | CsvFormat | OrcFormat =>
-        readFile(viewId, sqlDataSourceConfig)
-
-      case otherFormat => notFound(otherFormat, Seq(JdbcFormat, HiveFormat, ParquetFormat, CsvFormat, OrcFormat))
+    val inputTable = sqlDataSourceConfig match {
+      case hive: SqlDataSourceConfig.Hive =>
+        readSqlTable(viewId, hive)
+      case jdbc: SqlDataSourceConfig.Jdbc =>
+        readSqlTable(viewId, jdbc)
+      case file: SqlDataSourceConfig.File =>
+        readFile(viewId, file)
     }
 
     inputTable.safeRenameColumns(inputTable.columns.map(col => col -> col.toPropertyColumnName).toMap)
@@ -212,26 +211,25 @@ case class SqlPropertyGraphDataSource(
         value.fold(read)(read.option(key, _))
     }
 
-    sqlDataSourceConfig.storageFormat match {
-      case JdbcFormat =>
+    sqlDataSourceConfig match {
+      case SqlDataSourceConfig.Jdbc(url, driver, options) =>
         spark.read
           .format("jdbc")
-          .option("url", sqlDataSourceConfig.jdbcUri.getOrElse(throw SqlDataSourceConfigException("Missing JDBC URI")))
-          .option("driver", sqlDataSourceConfig.jdbcDriver.getOrElse(throw SqlDataSourceConfigException("Missing JDBC Driver")))
-          .maybeOption("user", sqlDataSourceConfig.jdbcUser)
-          .maybeOption("password", sqlDataSourceConfig.jdbcPassword)
-          .option("fetchSize", sqlDataSourceConfig.jdbcFetchSize)
+          .option("url", url)
+          .option("driver", driver)
+          .option("fetchSize", "100") // default value
+          .options(options)
           .option("dbtable", tableName)
           .load()
 
-      case HiveFormat =>
+      case SqlDataSourceConfig.Hive() =>
         spark.table(tableName)
 
       case otherFormat => notFound(otherFormat, Seq(JdbcFormat, HiveFormat))
     }
   }
 
-  private def readFile(viewId: ViewId, dataSourceConfig: SqlDataSourceConfig) = {
+  private def readFile(viewId: ViewId, dataSourceConfig: SqlDataSourceConfig.File) = {
     val spark = caps.sparkSession
 
     val optionsByFormat: Map[StorageFormat, Map[String, String]] = Map(
@@ -256,8 +254,9 @@ case class SqlPropertyGraphDataSource(
     }
 
     spark.read
-      .format(dataSourceConfig.storageFormat.name)
-      .options(optionsByFormat(dataSourceConfig.storageFormat))
+      .format(dataSourceConfig.format.name)
+      .options(optionsByFormat(dataSourceConfig.format))
+      .options(dataSourceConfig.options)
       .load(filePath.toString)
   }
 

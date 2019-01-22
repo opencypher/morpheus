@@ -45,8 +45,8 @@ class HiveSqlPGDSAcceptanceMonotonicallyIncreasingIdTest extends SqlPropertyGrap
     super.afterAll()
   }
 
-  override def sqlDataSourceConfig: SqlDataSourceConfig =
-    SqlDataSourceConfig(HiveFormat, dataSourceName)
+  override def sqlDataSourceConfig: SqlDataSourceConfig.Hive =
+    SqlDataSourceConfig.Hive()
 
   override def writeTable(df: DataFrame, tableName: String): Unit =
     df.write.mode(SaveMode.Overwrite).saveAsTable(tableName)

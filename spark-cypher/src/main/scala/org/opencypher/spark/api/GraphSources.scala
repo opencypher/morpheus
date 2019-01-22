@@ -121,14 +121,16 @@ object SqlGraphSources {
     def withIdGenerationStrategy(idGenerationStrategy: IdGenerationStrategy): SqlGraphSourceFactory =
       copy(idGenerationStrategy = idGenerationStrategy)
 
-
     def withSqlDataSourceConfigs(sqlDataSourceConfigsPath: String): SqlPropertyGraphDataSource = {
       val jsonString = Source.fromFile(sqlDataSourceConfigsPath, "UTF-8").getLines().mkString(Properties.lineSeparator)
-      val sqlDataSourceConfigs = SqlDataSourceConfig.dataSourcesFromString(jsonString).values.toList
+      val sqlDataSourceConfigs = SqlDataSourceConfig.dataSourcesFromString(jsonString)
       withSqlDataSourceConfigs(sqlDataSourceConfigs)
     }
 
-    def withSqlDataSourceConfigs(sqlDataSourceConfigs: List[SqlDataSourceConfig]): SqlPropertyGraphDataSource =
+    def withSqlDataSourceConfigs(sqlDataSourceConfigs: (String, SqlDataSourceConfig)*): SqlPropertyGraphDataSource =
+      withSqlDataSourceConfigs(sqlDataSourceConfigs.toMap)
+
+    def withSqlDataSourceConfigs(sqlDataSourceConfigs: Map[String, SqlDataSourceConfig]): SqlPropertyGraphDataSource =
       SqlPropertyGraphDataSource(graphDdl, sqlDataSourceConfigs, idGenerationStrategy)
   }
 

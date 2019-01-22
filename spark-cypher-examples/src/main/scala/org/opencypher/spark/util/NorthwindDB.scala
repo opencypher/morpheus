@@ -34,7 +34,7 @@ import scala.util.Properties
 
 object NorthwindDB {
 
-  def init(sqlDataSourceConfig: SqlDataSourceConfig): Unit = {
+  def init(sqlDataSourceConfig: SqlDataSourceConfig.Jdbc): Unit = {
 
     withConnection(sqlDataSourceConfig) { connection =>
 

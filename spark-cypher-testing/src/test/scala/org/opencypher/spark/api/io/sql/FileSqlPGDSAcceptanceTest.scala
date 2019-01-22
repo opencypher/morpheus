@@ -29,11 +29,11 @@ package org.opencypher.spark.api.io.sql
 import org.apache.spark.sql.{DataFrame, SaveMode}
 import org.junit.rules.TemporaryFolder
 import org.opencypher.spark.api.io.sql.IdGenerationStrategy.{IdGenerationStrategy, _}
-import org.opencypher.spark.api.io.{CsvFormat, OrcFormat, ParquetFormat, StorageFormat}
+import org.opencypher.spark.api.io._
 
 abstract class FileSqlPGDSAcceptanceTest extends SqlPropertyGraphDataSourceAcceptanceTest {
 
-  def format: StorageFormat
+  def format: TabularFileFormat
 
   var tempDir: TemporaryFolder = new TemporaryFolder()
   lazy val basePath: String =  "file:///" + tempDir.getRoot.getAbsolutePath.replace("\\", "/")
@@ -49,7 +49,7 @@ abstract class FileSqlPGDSAcceptanceTest extends SqlPropertyGraphDataSourceAccep
   }
 
   override def sqlDataSourceConfig: SqlDataSourceConfig =
-    SqlDataSourceConfig(format, dataSourceName, basePath = Some(basePath))
+    SqlDataSourceConfig.File(format, Some(basePath))
 
   override def writeTable(df: DataFrame, tableName: String): Unit = {
     val path = basePath + s"/${tableName.replace(s"$databaseName.","")}"
@@ -58,32 +58,32 @@ abstract class FileSqlPGDSAcceptanceTest extends SqlPropertyGraphDataSourceAccep
 }
 
 class ParquetSqlPGDSAcceptanceMonotonicallyIncreasingIdTest extends FileSqlPGDSAcceptanceTest {
-  override def format: StorageFormat = ParquetFormat
+  override def format: TabularFileFormat = ParquetFormat
   override val idGenerationStrategy: IdGenerationStrategy = MonotonicallyIncreasingId
 }
 
 class ParquetSqlPGDSAcceptanceHashBasedTest extends FileSqlPGDSAcceptanceTest {
-  override def format: StorageFormat = ParquetFormat
+  override def format: TabularFileFormat = ParquetFormat
   override val idGenerationStrategy: IdGenerationStrategy = HashBasedId
 }
 
 class CsvSqlPGDSAcceptanceMonotonicallyIncreasingIdTest extends FileSqlPGDSAcceptanceTest {
-  override def format: StorageFormat = CsvFormat
+  override def format: TabularFileFormat = CsvFormat
   override val idGenerationStrategy: IdGenerationStrategy = MonotonicallyIncreasingId
 }
 
 class CsvSqlPGDSAcceptanceHashBasedTest extends FileSqlPGDSAcceptanceTest {
-  override def format: StorageFormat = CsvFormat
+  override def format: TabularFileFormat = CsvFormat
   override val idGenerationStrategy: IdGenerationStrategy = HashBasedId
 }
 
 
 class OrcSqlPGDSAcceptanceMonotonicallyIncreasingIdTest extends FileSqlPGDSAcceptanceTest {
-  override def format: StorageFormat = OrcFormat
+  override def format: TabularFileFormat = OrcFormat
   override val idGenerationStrategy: IdGenerationStrategy = MonotonicallyIncreasingId
 }
 
 class OrcSqlPGDSAcceptanceHashBasedTest extends FileSqlPGDSAcceptanceTest {
-  override def format: StorageFormat = OrcFormat
+  override def format: TabularFileFormat = OrcFormat
   override val idGenerationStrategy: IdGenerationStrategy = HashBasedId
 }

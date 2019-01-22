@@ -29,6 +29,7 @@ package org.opencypher.spark.examples
 
 import org.apache.spark.sql.SparkSession
 import org.opencypher.okapi.api.graph.Namespace
+import org.opencypher.spark.api.io.sql.SqlDataSourceConfig
 import org.opencypher.spark.api.{CAPSSession, GraphSources}
 import org.opencypher.spark.util.{CensusDB, ConsoleApp}
 
@@ -42,12 +43,16 @@ object CensusJdbcExample extends ConsoleApp {
 
   // Register a SQL source (for JDBC) in the Cypher session
   val graphName = "Census_1901"
+  val dataSourceConfig = SqlDataSourceConfig.Jdbc(
+    url = "jdbc:h2:mem:CENSUS.db;INIT=CREATE SCHEMA IF NOT EXISTS CENSUS;DB_CLOSE_DELAY=30;",
+    driver = "org.h2.Driver"
+  )
   val sqlGraphSource = GraphSources
     .sql(resource("ddl/census.ddl").getFile)
-    .withSqlDataSourceConfigs(resource("ddl/jdbc-data-sources.json").getFile)
+    .withSqlDataSourceConfigs("CENSUS" -> dataSourceConfig)
 
   // Create the data in H2 in-memory database
-  CensusDB.createJdbcData(sqlGraphSource.sqlDataSourceConfigs.find(_.dataSourceName == "CENSUS").get)
+  CensusDB.createJdbcData(dataSourceConfig)
 
   session.registerSource(Namespace("sql"), sqlGraphSource)
 

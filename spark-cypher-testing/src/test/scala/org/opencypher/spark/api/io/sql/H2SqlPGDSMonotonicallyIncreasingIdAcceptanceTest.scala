@@ -46,12 +46,10 @@ class H2SqlPGDSMonotonicallyIncreasingIdAcceptanceTest extends SqlPropertyGraphD
     super.afterAll()
   }
 
-  override def sqlDataSourceConfig: SqlDataSourceConfig =
-    SqlDataSourceConfig(
-      storageFormat = JdbcFormat,
-      dataSourceName = dataSourceName,
-      jdbcDriver = Some("org.h2.Driver"),
-      jdbcUri = Some("jdbc:h2:mem:?user=sa&password=1234;DB_CLOSE_DELAY=-1")
+  override def sqlDataSourceConfig: SqlDataSourceConfig.Jdbc =
+    SqlDataSourceConfig.Jdbc(
+      driver = "org.h2.Driver",
+      url = "jdbc:h2:mem:?user=sa&password=1234;DB_CLOSE_DELAY=-1"
     )
 
   override def writeTable(df: DataFrame, tableName: String): Unit =

@@ -34,15 +34,15 @@ import org.opencypher.spark.testing.utils.H2Utils._
 trait H2Fixture extends SparkSessionFixture {
   self: BaseTestSuite =>
 
-  def createH2Database(cfg: SqlDataSourceConfig, name: String): Unit = {
+  def createH2Database(cfg: SqlDataSourceConfig.Jdbc, name: String): Unit = {
     withConnection(cfg) { conn => conn.execute(s"CREATE SCHEMA IF NOT EXISTS $name")}
   }
 
-  def dropH2Database(cfg: SqlDataSourceConfig, name: String): Unit = {
+  def dropH2Database(cfg: SqlDataSourceConfig.Jdbc, name: String): Unit = {
     withConnection(cfg) { conn => conn.execute(s"DROP SCHEMA IF EXISTS $name")}
   }
 
-  def freshH2Database(cfg: SqlDataSourceConfig, name: String): Unit = {
+  def freshH2Database(cfg: SqlDataSourceConfig.Jdbc, name: String): Unit = {
     dropH2Database(cfg, name)
     createH2Database(cfg, name)
   }

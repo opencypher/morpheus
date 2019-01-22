@@ -28,8 +28,9 @@ package org.opencypher.spark.util
 
 import org.apache.spark.sql.SparkSession
 import org.apache.spark.sql.types._
-import org.opencypher.spark.api.io.{JdbcFormat, ParquetFormat, StorageFormat}
-import org.opencypher.spark.api.io.sql.{SqlDataSourceConfig, SqlDataSourceConfigException}
+import org.opencypher.spark.api.io.sql.SqlDataSourceConfig
+import org.opencypher.spark.api.io.sql.SqlDataSourceConfig.Jdbc
+import org.opencypher.spark.api.io.{ParquetFormat, StorageFormat}
 import org.opencypher.spark.testing.utils.H2Utils._
 
 import scala.io.Source
@@ -107,7 +108,7 @@ object CensusDB {
 
   val createViewsSql: String = readResourceAsString("/census/sql/census_views.sql")
 
-  def createJdbcData(sqlDataSourceConfig: SqlDataSourceConfig)(implicit sparkSession: SparkSession): Unit = {
+  def createJdbcData(sqlDataSourceConfig: SqlDataSourceConfig.Jdbc)(implicit sparkSession: SparkSession): Unit = {
 
     // Populate the data
     populateData(townInput, sqlDataSourceConfig)
@@ -137,6 +138,7 @@ object CensusDB {
     createViewsSql.split(";").foreach(sparkSession.sql)
   }
 
+  // TODO: Can we use our data sources to populate data?
   private def populateData(input: Input, cfg: SqlDataSourceConfig, format: Option[StorageFormat] = None)
     (implicit sparkSession: SparkSession): Unit = {
     val writer = sparkSession
@@ -145,18 +147,19 @@ object CensusDB {
       .schema(input.dfSchema)
       .csv(getClass.getResource(s"${input.csvPath}").getPath)
       .write
-      .format(format.getOrElse(cfg.storageFormat).name)
+      .format(format.getOrElse(cfg.format).name)
       .mode("ignore")
 
-    if (cfg.storageFormat == JdbcFormat) {
-      writer
-        .option("url", cfg.jdbcUri.getOrElse(throw SqlDataSourceConfigException("Missing JDBC URI")))
-        .option("driver", cfg.jdbcDriver.getOrElse(throw SqlDataSourceConfigException("Missing JDBC Driver")))
-        .option("fetchSize", cfg.jdbcFetchSize)
-        .option("dbtable", s"$databaseName.${input.table}")
-        .save
-    } else {
-      writer.saveAsTable(s"$databaseName.${input.table}")
+    cfg match {
+      case Jdbc(url, driver, options) =>
+        writer
+          .option("url", url)
+          .option("driver", driver)
+          .options(options)
+          .option("dbtable", s"$databaseName.${input.table}")
+          .save
+      case _ =>
+        writer.saveAsTable(s"$databaseName.${input.table}")
     }
   }
 }
