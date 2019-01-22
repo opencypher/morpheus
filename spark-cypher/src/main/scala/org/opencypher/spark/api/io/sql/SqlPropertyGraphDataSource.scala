@@ -34,7 +34,6 @@ import org.opencypher.graphddl._
 import org.opencypher.okapi.api.graph.{GraphName, PropertyGraph}
 import org.opencypher.okapi.api.io.conversion.{EntityMapping, NodeMapping, RelationshipMapping}
 import org.opencypher.okapi.impl.exception.{GraphNotFoundException, IllegalArgumentException, UnsupportedOperationException}
-import org.opencypher.okapi.impl.util.StringEncodingUtilities
 import org.opencypher.okapi.impl.util.StringEncodingUtilities._
 import org.opencypher.spark.api.CAPSSession
 import org.opencypher.spark.api.io.AbstractPropertyGraphDataSource._
@@ -43,7 +42,6 @@ import org.opencypher.spark.api.io.Relationship.{sourceEndNodeKey, sourceStartNo
 import org.opencypher.spark.api.io._
 import org.opencypher.spark.api.io.sql.IdGenerationStrategy._
 import org.opencypher.spark.api.io.sql.SqlDataSourceConfig.{File, Hive, Jdbc}
-import org.opencypher.spark.impl.DataFrameOps._
 import org.opencypher.spark.impl.io.CAPSPropertyGraphDataSource
 import org.opencypher.spark.impl.table.SparkTable._
 import org.opencypher.spark.schema.CAPSSchema
