@@ -33,16 +33,17 @@ import org.opencypher.okapi.ir.api.expr.MapExpression
 import org.opencypher.okapi.ir.impl.exception.PatternConversionException
 
 import scala.annotation.tailrec
+import scala.collection.immutable.ListMap
 
 case object Pattern {
-  def empty[E]: Pattern = Pattern(fields = Set.empty, topology = Map.empty)
+  def empty[E]: Pattern = Pattern(fields = Set.empty, topology = ListMap.empty)
 
-  def node[E](node: IRField): Pattern = Pattern(fields = Set(node), topology = Map.empty)
+  def node[E](node: IRField): Pattern = Pattern(fields = Set(node), topology = ListMap.empty)
 }
 
 final case class Pattern(
   fields: Set[IRField],
-  topology: Map[IRField, Connection],
+  topology: ListMap[IRField, Connection],
   properties: Map[IRField, MapExpression] = Map.empty,
   baseFields: Map[IRField, IRField]= Map.empty
 ) extends Binds {
@@ -142,7 +143,7 @@ final case class Pattern(
         val newCount = count + 1
         val newPattern = Pattern(
           fields = fields intersect endpoints,
-          topology = Map(field -> connection)
+          topology = ListMap(field -> connection)
         ).withEntity(field)
         val newComponents = components.updated(count, newPattern)
         val newFields = endpoints.foldLeft(fieldToComponentIndex) { case (m, endpoint) => m.updated(endpoint, count) }
