@@ -124,9 +124,13 @@ object RelationalPlanner {
         val endNode = EndNode(rel)(CTNode)
 
         direction match {
-          case Directed =>
+          case Outgoing =>
             val tempResult = first.join(second, Seq(source -> startNode), InnerJoin)
             tempResult.join(third, Seq(endNode -> target), InnerJoin)
+
+          case Incoming =>
+            val tempResult = first.join(second, Seq(source -> endNode), InnerJoin)
+            tempResult.join(third, Seq(startNode -> target), InnerJoin)
 
           case Undirected =>
             val tempOutgoing = first.join(second, Seq(source -> startNode), InnerJoin)
@@ -149,8 +153,11 @@ object RelationalPlanner {
         val endNode = EndNode(rel)()
 
         direction match {
-          case Directed =>
+          case Outgoing =>
             in.join(relationships, Seq(source -> startNode, target -> endNode), InnerJoin)
+
+          case Incoming =>
+            in.join(relationships, Seq(target -> endNode, source -> startNode), InnerJoin)
 
           case Undirected =>
             val outgoing = in.join(relationships, Seq(source -> startNode, target -> endNode), InnerJoin)
@@ -166,7 +173,8 @@ object RelationalPlanner {
         val isExpandInto = sourceOp == targetOp
 
         val planner = direction match {
-          case Directed => new DirectedVarLengthExpandPlanner[T](
+            // TODO: verify that var length is able to traverse in different directions
+          case Outgoing | Incoming => new DirectedVarLengthExpandPlanner[T](
             source, list, edgeScan, target,
             lower, upper,
             sourceOp, edgeScanOp, targetOp,

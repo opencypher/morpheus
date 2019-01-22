@@ -28,6 +28,7 @@ package org.opencypher.okapi.ir.api.pattern
 
 import org.opencypher.okapi.ir.api.IRField
 import org.opencypher.okapi.testing.BaseTestSuite
+import org.opencypher.v9_0.expressions.SemanticDirection.{INCOMING, OUTGOING}
 
 class ConnectionTest extends BaseTestSuite {
 
@@ -35,14 +36,21 @@ class ConnectionTest extends BaseTestSuite {
   val field_b: IRField = IRField("b")()
   val field_c: IRField = IRField("c")()
 
+
   test("SimpleConnection.flip") {
     DirectedRelationship(field_a, field_b).flip should equal(DirectedRelationship(field_b, field_a))
     DirectedRelationship(field_a, field_a).flip should equal(DirectedRelationship(field_a, field_a))
   }
 
+  test("SimpleConnection.flip with semantic direction") {
+    DirectedRelationship(field_a, field_b, OUTGOING).flip should equal(DirectedRelationship(field_b, field_a, INCOMING))
+    DirectedRelationship(field_a, field_a, INCOMING).flip should equal(DirectedRelationship(field_a, field_a, OUTGOING))
+  }
+
   test("SimpleConnection.equals") {
     DirectedRelationship(field_a, field_b) shouldNot equal(DirectedRelationship(field_b, field_a))
     DirectedRelationship(field_a, field_a) should equal(DirectedRelationship(field_a, field_a))
+    DirectedRelationship(field_a, field_a, OUTGOING) should equal(DirectedRelationship(field_a, field_a, OUTGOING))
     DirectedRelationship(field_a, field_a) shouldNot equal(DirectedRelationship(field_a, field_b))
   }
 

@@ -28,6 +28,10 @@ package org.opencypher.okapi.logical.impl
 
 sealed trait Direction
 
-case object Directed extends Direction
-
 case object Undirected extends Direction
+
+sealed trait Directed extends Direction
+
+case object Outgoing extends Directed
+
+case object Incoming extends Directed
