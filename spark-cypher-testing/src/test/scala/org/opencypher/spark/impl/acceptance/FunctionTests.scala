@@ -26,20 +26,15 @@
  */
 package org.opencypher.spark.impl.acceptance
 
-import java.time.LocalDate
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
 
-import org.apache.spark.sql.functions
 import org.junit.runner.RunWith
 import org.opencypher.okapi.api.value.CypherValue.{CypherMap, CypherNull}
 import org.opencypher.okapi.impl.exception.{IllegalArgumentException, NotImplementedException}
-import org.opencypher.okapi.impl.exception.{IllegalArgumentException, IllegalStateException, NotImplementedException}
-import org.opencypher.okapi.impl.exception.{IllegalStateException, NotImplementedException, IllegalArgumentException}
 import org.opencypher.okapi.testing.Bag
 import org.opencypher.okapi.testing.Bag._
 import org.opencypher.spark.testing.CAPSTestSuite
-import org.scalatest.DoNotDiscover
 import org.scalatest.junit.JUnitRunner
 
 @RunWith(classOf[JUnitRunner])
