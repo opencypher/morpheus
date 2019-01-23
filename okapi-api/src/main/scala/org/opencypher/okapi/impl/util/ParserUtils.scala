@@ -32,7 +32,7 @@ import NoWhitespace._
 object ParserUtils {
   def newline[_: P]: P[Unit] = P("\n" | "\r\n" | "\r" | "\f")
   def invisible[_: P]: P[Unit] = P(" " | "\t" | newline)
-  def comment[_: P]: P[Unit] = P("--" ~ (!newline ~ AnyChar).rep ~ newline)
+  def comment[_: P]: P[Unit] = P("--" ~ (!newline ~ AnyChar).rep ~ (newline | &(End)))
   implicit val whitespace: P[_] => P[Unit] = { implicit ctx: ParsingRun[_] => (comment | invisible).rep }
 
   def keyword[_: P](k: String): P[Unit] = P(IgnoreCase(k))
