@@ -29,22 +29,27 @@ package org.opencypher.spark.impl.util
 import java.sql.{Date, Timestamp}
 import java.time.format.{DateTimeFormatter, DateTimeFormatterBuilder, SignStyle}
 import java.time.temporal.{ChronoField, IsoFields}
-import java.time.{LocalDate, LocalDateTime, ZoneOffset}
+import java.time.{LocalDate, LocalDateTime, LocalTime}
 
 import org.apache.spark.sql.DataFrame
 import org.opencypher.okapi.api.value.CypherValue.{CypherInteger, CypherMap, CypherString}
 import org.opencypher.okapi.impl.exception.IllegalArgumentException
-import org.opencypher.okapi.ir.api.expr.{Expr, MapExpression, Param}
+import org.opencypher.okapi.ir.api.expr.{Expr, MapExpression, NullLit, Param}
 import org.opencypher.okapi.relational.impl.table.RecordHeader
 
 import scala.util.{Failure, Success, Try}
 
 object TemporalTypesHelper {
 
-  val dateTimeFormatters = Seq(
+  val dateIdentifiers: Seq[String] = Seq("year", "month", "day")
+  val timeIdentifiers: Seq[String] = Seq("hour", "minute", "second", "millisecond", "microsecond", "nanosecond")
+
+  val dateFormatters: Seq[DateTimeFormatter] = Seq(
     new DateTimeFormatterBuilder().appendPattern("yyyy-MM-dd").toFormatter,
     new DateTimeFormatterBuilder().appendPattern("yyyyMMdd").toFormatter,
-    new DateTimeFormatterBuilder().appendPattern("yyyy-MM").toFormatter,
+    new DateTimeFormatterBuilder().appendPattern("yyyy-MM")
+      .parseDefaulting(ChronoField.DAY_OF_MONTH, 1)
+      .toFormatter,
     new DateTimeFormatterBuilder().appendPattern("yyyyMM")
       .parseDefaulting(ChronoField.DAY_OF_MONTH, 1)
       .toFormatter,
@@ -70,42 +75,45 @@ object TemporalTypesHelper {
       .toFormatter
   )
 
-  def toDate(expr: Expr)(implicit header: RecordHeader, df: DataFrame, parameters: CypherMap): Date = {
+  val timeFormatters: Seq[DateTimeFormatter] = Seq(
+    new DateTimeFormatterBuilder().appendPattern("HH:mm:ss.SSS").toFormatter,
+    new DateTimeFormatterBuilder().appendPattern("HHmmss.SSS").toFormatter,
+    new DateTimeFormatterBuilder().appendPattern("HH:mm:ss").toFormatter,
+    new DateTimeFormatterBuilder().appendPattern("HHmmss").toFormatter,
+    new DateTimeFormatterBuilder().appendPattern("HH:mm").toFormatter,
+    new DateTimeFormatterBuilder().appendPattern("HHmm").toFormatter,
+    new DateTimeFormatterBuilder().appendPattern("HH").toFormatter
+  )
+
+  def toDate(expr: Expr)(implicit header: RecordHeader, df: DataFrame, parameters: CypherMap): Option[Date] = {
+
     resolveArgument(expr) match {
-      case Left(map) =>
-        // TODO: check significance order
+      case Some(Left(map)) =>
+
+        checkSignificanceOrder(map, dateIdentifiers)
+
         val localDate = LocalDate.of(
           map.getOrElse("year", 1),
           map.getOrElse("month", 1),
           map.getOrElse("day", 1)
         )
 
-        Date.valueOf(localDate)
+        Some(Date.valueOf(localDate))
 
-      case Right(str) =>
-        val matchingFormats = dateTimeFormatters.map { formatter =>
-          Try {
-            LocalDate.parse(str, formatter)
-          } match {
-            case Success(date) => Some(date)
-            case Failure(err) =>
-              println(err)
-              None
-          }
-        }
+      case Some(Right(str)) => Some(Date.valueOf(parseDate(str)))
 
-        matchingFormats.collectFirst {
-          case Some(date) => Date.valueOf(date)
-        }.getOrElse(throw IllegalArgumentException("a date construction string that matches a valid pattern", str))
+      case None => None
 
     }
   }
 
-  def toTimestamp(expr: Expr)(implicit header: RecordHeader, df: DataFrame, parameters: CypherMap): Timestamp = {
+  def toTimestamp(expr: Expr)(implicit header: RecordHeader, df: DataFrame, parameters: CypherMap): Option[Timestamp] = {
 
     resolveArgument(expr) match {
-      case Left(map) =>
-        // TODO: check significance order
+      case Some(Left(map)) =>
+
+        checkSignificanceOrder(map, dateIdentifiers ++ timeIdentifiers)
+
         val preciseTime =
           map.getOrElse("millisecond", 0) * 1000000 +
             map.getOrElse("microsecond", 0) * 1000 +
@@ -121,13 +129,69 @@ object TemporalTypesHelper {
           preciseTime
         )
 
-        new Timestamp(localDateTime.toInstant(ZoneOffset.UTC).toEpochMilli)
+        Some(Timestamp.valueOf(localDateTime))
 
-      case Right(str) => Timestamp.valueOf(str)
+      case Some(Right(str)) =>
+        val dateString :: timeString = str.split("T", 2).toList
+
+        val date = parseDate(dateString)
+        val maybeTime = timeString match {
+          case t :: Nil => Some(parseTime(t))
+          case _ => None
+        }
+
+        val dateTime = maybeTime match {
+          case Some(time) => LocalDateTime.of(date, time)
+          case None => LocalDateTime.of(date, LocalTime.MIN)
+        }
+
+        Some(Timestamp.valueOf(dateTime))
+
+      case None => None
     }
   }
 
-  private def resolveArgument(expr: Expr)(implicit header: RecordHeader, df: DataFrame, parameters: CypherMap): Either[Map[String, Int], String] = {
+  private def parseDate(str: String): LocalDate = {
+    val matchingDateFormats = dateFormatters.map { formatter =>
+      Try {
+        LocalDate.parse(str, formatter)
+      } match {
+        case Success(date) => Some(date)
+        case Failure(_) => None
+      }
+    }
+    matchingDateFormats.find(_.isDefined).flatten match {
+      case Some(matchingDate) => matchingDate
+      case None => throw IllegalArgumentException("a date construction string that matches a valid pattern", str)
+    }
+  }
+
+  private def parseTime(str: String): LocalTime = {
+    val matchingTimeFormats = timeFormatters.map { formatter =>
+      Try {
+        LocalTime.parse(str, formatter)
+      } match {
+        case Success(date) => Some(date)
+        case Failure(_) => None
+      }
+    }
+    matchingTimeFormats.find(_.isDefined).flatten match {
+      case Some(matchingTime) => matchingTime
+      case None => throw IllegalArgumentException("a time construction string that matches a valid pattern", str)
+    }
+  }
+
+  private def checkSignificanceOrder(inputMap: Map[String, _], keys: Seq[String]): Unit = {
+    val occurences = keys.map(inputMap.isDefinedAt)
+    val validOrder = occurences.tail.foldLeft(Seq((occurences.head, true))) {
+      case (acc, true) if !acc.last._1 => acc :+ ((true, false))
+      case (acc, current) => acc :+ ((current, true))
+    }.map(_._2).reduce(_ && _)
+
+    if(!validOrder) throw IllegalArgumentException("When constructing dates from a map it is forbidden to omit values of higher significance")
+  }
+
+  private def resolveArgument(expr: Expr)(implicit header: RecordHeader, df: DataFrame, parameters: CypherMap): Option[Either[Map[String, Int], String]] = {
     expr match {
       case MapExpression(inner) =>
         val map = inner.map {
@@ -140,7 +204,7 @@ object TemporalTypesHelper {
             throw IllegalArgumentException("A valid key/value pair to construct temporal types", s"$key -> $expr")
         }
 
-        Left(map)
+        Some(Left(map))
 
 
       case Param(name) =>
@@ -149,7 +213,9 @@ object TemporalTypesHelper {
           case other => throw IllegalArgumentException("a CypherString", other)
         }
 
-        Right(s)
+        Some(Right(s))
+
+      case NullLit(_) => None
 
       case other => ???
     }

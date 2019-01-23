@@ -131,13 +131,13 @@ object SparkSQLExprMapper {
 
         case DateTime(dateExpr) =>
           dateExpr match {
-            case Some(e) => functions.lit(toTimestamp(e)).cast(DataTypes.TimestampType)
+            case Some(e) => functions.lit(toTimestamp(e).orNull).cast(DataTypes.TimestampType)
             case None => functions.current_timestamp()
           }
 
         case Date(dateExpr) =>
           dateExpr match {
-            case Some(e) => functions.lit(toDate(e)).cast(DataTypes.DateType)
+            case Some(e) => functions.lit(toDate(e).orNull).cast(DataTypes.DateType)
             case None => functions.current_timestamp()
           }
 
