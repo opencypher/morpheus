@@ -129,8 +129,8 @@ object RelationalPlanner {
             tempResult.join(third, Seq(endNode -> target), InnerJoin)
 
           case Incoming =>
-            val tempResult = first.join(second, Seq(source -> endNode), InnerJoin)
-            tempResult.join(third, Seq(startNode -> target), InnerJoin)
+            val tempResult = third.join(second, Seq(target -> endNode), InnerJoin)
+            tempResult.join(first, Seq(startNode -> source), InnerJoin)
 
           case Undirected =>
             val tempOutgoing = first.join(second, Seq(source -> startNode), InnerJoin)
@@ -153,11 +153,8 @@ object RelationalPlanner {
         val endNode = EndNode(rel)()
 
         direction match {
-          case Outgoing =>
+          case Outgoing | Incoming =>
             in.join(relationships, Seq(source -> startNode, target -> endNode), InnerJoin)
-
-          case Incoming =>
-            in.join(relationships, Seq(source -> endNode, target -> startNode), InnerJoin)
 
           case Undirected =>
             val outgoing = in.join(relationships, Seq(source -> startNode, target -> endNode), InnerJoin)
