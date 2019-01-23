@@ -32,6 +32,7 @@ import java.nio.file.Files
 import org.apache.spark.sql.SparkSession
 import org.apache.spark.sql.internal.StaticSQLConf.CATALOG_IMPLEMENTATION
 import org.opencypher.okapi.api.graph.Namespace
+import org.opencypher.spark.api.io.sql.SqlDataSourceConfig.Hive
 import org.opencypher.spark.api.{CAPSSession, GraphSources}
 import org.opencypher.spark.testing.utils.FileSystemUtils._
 import org.opencypher.spark.util.LdbcUtil._
@@ -50,7 +51,7 @@ import org.opencypher.spark.util.{ConsoleApp, LdbcUtil}
 object LdbcHiveExample extends ConsoleApp {
 
   implicit val resourceFolder: String = "/ldbc"
-  val datasource = "warehouse"
+  val datasourceName = "warehouse"
   val database = "LDBC"
 
   implicit val session: CAPSSession = CAPSSession.local(CATALOG_IMPLEMENTATION.key -> "hive")
@@ -80,14 +81,14 @@ object LdbcHiveExample extends ConsoleApp {
   views.foreach(spark.sql)
 
   // generate GraphDdl file
-  val graphDdlString = LdbcUtil.toGraphDDL(datasource, database)
+  val graphDdlString = LdbcUtil.toGraphDDL(datasourceName, database)
   val graphDdlFile = Files.createTempFile("ldbc", ".ddl").toFile.getAbsolutePath
   writeFile(graphDdlFile, graphDdlString)
 
   // create SQL PGDS
   val sqlGraphSource = GraphSources
     .sql(graphDdlFile)
-    .withSqlDataSourceConfigs(resource("ddl/data-sources.json").getFile)
+    .withSqlDataSourceConfigs(datasourceName -> Hive)
 
   session.registerSource(Namespace("sql"), sqlGraphSource)
 

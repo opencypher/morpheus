@@ -28,7 +28,8 @@ package org.opencypher.spark.api.io
 
 import org.opencypher.okapi.impl.exception.IllegalArgumentException
 import org.opencypher.okapi.impl.util.JsonUtils.FlatOption._
-import upickle.Js
+import org.opencypher.spark.api.io.StorageFormat.nonFileFormatNames
+import ujson._
 
 trait StorageFormat {
   def name: String = getClass.getSimpleName.dropRight("Format$".length).toLowerCase
@@ -36,34 +37,48 @@ trait StorageFormat {
 
 object StorageFormat {
 
-  val allStorageFormats: Map[String, StorageFormat] = Map(
+  val nonFileFormats: Map[String, StorageFormat] = Map(
     AvroFormat.name -> AvroFormat,
-    CsvFormat.name -> CsvFormat,
     HiveFormat.name -> HiveFormat,
     JdbcFormat.name -> JdbcFormat,
-    Neo4jFormat.name -> Neo4jFormat,
-    OrcFormat.name -> OrcFormat,
-    ParquetFormat.name -> ParquetFormat
+    Neo4jFormat.name -> Neo4jFormat
   )
 
-  implicit def rw: ReadWriter[StorageFormat] = readwriter[Js.Value].bimap[StorageFormat](
-    storageFormat => storageFormat.name,
-    storageFormatName => allStorageFormats.getOrElse(storageFormatName.str,
-      throw IllegalArgumentException(s"Supported storage format (one of ${allStorageFormats.keys.mkString("[", ", ", "]")})", storageFormatName.str)
-    )
+  val nonFileFormatNames: Set[String] = nonFileFormats.keySet
+
+  private def unexpected(name: String, available: Iterable[String]) =
+    throw IllegalArgumentException(s"Supported storage format (one of ${available.mkString("[", ", ", "]")})", name)
+
+  implicit def rwStorageFormat: ReadWriter[StorageFormat] = readwriter[Value].bimap[StorageFormat](
+    (storageFormat: StorageFormat) => storageFormat.name,
+    (storageFormatName: Value) => {
+      val formatString = storageFormatName.str
+      nonFileFormats.getOrElse(formatString, FileFormat(formatString))
+    }
   )
+
+  implicit def rwFileFormat: ReadWriter[FileFormat] = readwriter[Value].bimap[FileFormat](
+    (fileFormat: FileFormat) => fileFormat.name,
+    (fileFormatName: Value) => FileFormat(fileFormatName.str)
+  )
+
 }
 
 case object AvroFormat extends StorageFormat
 
-case object CsvFormat extends StorageFormat
+case object Neo4jFormat extends StorageFormat
 
 case object HiveFormat extends StorageFormat
 
 case object JdbcFormat extends StorageFormat
 
-case object Neo4jFormat extends StorageFormat
+object FileFormat {
+  val csv: FileFormat = FileFormat("csv")
+  val orc: FileFormat = FileFormat("orc")
+  val parquet: FileFormat = FileFormat("parquet")
+}
 
-case object OrcFormat extends StorageFormat
-
-case object ParquetFormat extends StorageFormat
+case class FileFormat(override val name: String) extends StorageFormat {
+  assert(!nonFileFormatNames.contains(name),
+    s"Cannot create a file format with a name in ${nonFileFormatNames.mkString("[", ", ", "]")} ")
+}

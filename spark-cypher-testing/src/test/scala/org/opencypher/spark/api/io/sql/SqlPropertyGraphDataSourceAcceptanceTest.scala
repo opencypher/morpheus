@@ -88,7 +88,7 @@ abstract class SqlPropertyGraphDataSourceAcceptanceTest extends CAPSTestSuite wi
       writeTable(relDf, tableName)
     }
 
-    val sqlPgds = SqlPropertyGraphDataSource(graphDdl, List(sqlDataSourceConfig))
+    val sqlPgds = SqlPropertyGraphDataSource(graphDdl, Map(dataSourceName -> sqlDataSourceConfig))
 
     // The DDL cannot represent nodes without labels, so we need to wrap the data source and add this node manually
     val nodesWithoutLabels = CAPSScanGraphFactory(CreateGraphFactory(createStatementsForNodesWithoutLabels))

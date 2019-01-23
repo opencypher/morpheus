@@ -28,14 +28,14 @@ package org.opencypher.spark.api
 
 import java.nio.file.Paths
 
+import org.opencypher.graphddl.GraphDdl
 import org.opencypher.okapi.api.schema.Schema
 import org.opencypher.okapi.neo4j.io.Neo4jConfig
+import org.opencypher.spark.api.io.FileFormat
 import org.opencypher.spark.api.io.fs.{EscapeAtSymbol, FSGraphSource}
 import org.opencypher.spark.api.io.neo4j.{Neo4jBulkCSVDataSink, Neo4jPropertyGraphDataSource}
-import org.opencypher.spark.api.io.sql.{SqlDataSourceConfig, SqlPropertyGraphDataSource}
-import org.opencypher.spark.api.io.{CsvFormat, OrcFormat, ParquetFormat}
-import org.opencypher.graphddl.GraphDdl
 import org.opencypher.spark.api.io.sql.IdGenerationStrategy.IdGenerationStrategy
+import org.opencypher.spark.api.io.sql.{SqlDataSourceConfig, SqlPropertyGraphDataSource}
 
 import scala.io.Source
 import scala.util.Properties
@@ -65,11 +65,11 @@ object FSGraphSources {
     filesPerTable: Option[Int] = Some(1)
   )(implicit session: CAPSSession) {
 
-    def csv: FSGraphSource = new FSGraphSource(rootPath, CsvFormat, hiveDatabaseName, filesPerTable)
+    def csv: FSGraphSource = new FSGraphSource(rootPath, FileFormat.csv, hiveDatabaseName, filesPerTable)
 
-    def parquet: FSGraphSource = new FSGraphSource(rootPath, ParquetFormat, hiveDatabaseName, filesPerTable)
+    def parquet: FSGraphSource = new FSGraphSource(rootPath, FileFormat.parquet, hiveDatabaseName, filesPerTable)
 
-    def orc: FSGraphSource = new FSGraphSource(rootPath, OrcFormat, hiveDatabaseName, filesPerTable) with EscapeAtSymbol
+    def orc: FSGraphSource = new FSGraphSource(rootPath, FileFormat.orc, hiveDatabaseName, filesPerTable) with EscapeAtSymbol
   }
 
   /**
@@ -121,14 +121,16 @@ object SqlGraphSources {
     def withIdGenerationStrategy(idGenerationStrategy: IdGenerationStrategy): SqlGraphSourceFactory =
       copy(idGenerationStrategy = idGenerationStrategy)
 
-
     def withSqlDataSourceConfigs(sqlDataSourceConfigsPath: String): SqlPropertyGraphDataSource = {
       val jsonString = Source.fromFile(sqlDataSourceConfigsPath, "UTF-8").getLines().mkString(Properties.lineSeparator)
-      val sqlDataSourceConfigs = SqlDataSourceConfig.dataSourcesFromString(jsonString).values.toList
+      val sqlDataSourceConfigs = SqlDataSourceConfig.dataSourcesFromString(jsonString)
       withSqlDataSourceConfigs(sqlDataSourceConfigs)
     }
 
-    def withSqlDataSourceConfigs(sqlDataSourceConfigs: List[SqlDataSourceConfig]): SqlPropertyGraphDataSource =
+    def withSqlDataSourceConfigs(sqlDataSourceConfigs: (String, SqlDataSourceConfig)*): SqlPropertyGraphDataSource =
+      withSqlDataSourceConfigs(sqlDataSourceConfigs.toMap)
+
+    def withSqlDataSourceConfigs(sqlDataSourceConfigs: Map[String, SqlDataSourceConfig]): SqlPropertyGraphDataSource =
       SqlPropertyGraphDataSource(graphDdl, sqlDataSourceConfigs, idGenerationStrategy)
   }
 

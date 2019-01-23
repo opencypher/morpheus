@@ -32,7 +32,7 @@ import org.opencypher.okapi.api.value.CypherValue.CypherEntity._
 import org.opencypher.okapi.api.value.CypherValue.CypherNode._
 import org.opencypher.okapi.api.value.CypherValue.CypherRelationship._
 import org.opencypher.okapi.api.value.CypherValue.{CypherNode, CypherRelationship}
-import upickle.Js
+import ujson._
 
 import scala.util.Random
 
@@ -205,11 +205,11 @@ object ZeppelinSupport {
       * }
       * }}}
       */
-    def toZeppelinJson: Js.Value = {
+    def toZeppelinJson: Value = {
       val default = n.toJson
-      Js.Obj(
+      Obj(
         idJsonKey -> default(idJsonKey),
-        labelJsonKey -> Js.Str(n.labels.headOption.getOrElse("")),
+        labelJsonKey -> Str(n.labels.headOption.getOrElse("")),
         labelsJsonKey -> default(labelsJsonKey),
         dataJsonKey -> default(propertiesJsonKey)
       )
@@ -234,9 +234,9 @@ object ZeppelinSupport {
       * }
       * }}}
       */
-    def toZeppelinJson: Js.Value = {
+    def toZeppelinJson: Value = {
       val default = r.toJson
-      Js.Obj(
+      Obj(
         idJsonKey -> default(idJsonKey),
         sourceJsonKey -> default(startIdJsonKey),
         targetJsonKey -> default(endIdJsonKey),
@@ -260,16 +260,16 @@ object ZeppelinSupport {
       * }
       * }}}
       */
-    def toZeppelinJson(nodes: Iterator[CypherNode[_]], rels: Iterator[CypherRelationship[_]], labels: Set[String], types: Set[String]): Js.Value = {
+    def toZeppelinJson(nodes: Iterator[CypherNode[_]], rels: Iterator[CypherRelationship[_]], labels: Set[String], types: Set[String]): Value = {
       val nodeJsons = nodes.map(_.toZeppelinJson)
       val relJson = rels.map(_.toZeppelinJson)
 
-      Js.Obj(
+      Obj(
         "nodes" -> nodeJsons,
         "edges" -> relJson,
-        "labels" -> labels.toSeq.sorted.map(l => l -> Js.Str(colorForLabel(l))),
-        "types" -> types.toSeq.sorted.map(Js.Str),
-        "directed" -> Js.True
+        "labels" -> labels.toSeq.sorted.map(l => l -> Str(colorForLabel(l))),
+        "types" -> types.toSeq.sorted.map(Str),
+        "directed" -> True
       )
     }
 
@@ -357,7 +357,7 @@ object ZeppelinSupport {
       * }
       * }}}
       */
-    def toZeppelinJson: Js.Value = {
+    def toZeppelinJson: Value = {
       val nodes = g.nodes("n").iterator.map(m => m("n").cast[CypherNode[_]])
       val rels = g.relationships("r").iterator.map(m => m("r").cast[CypherRelationship[_]])
 

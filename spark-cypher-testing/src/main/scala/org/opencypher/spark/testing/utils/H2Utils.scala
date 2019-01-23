@@ -28,7 +28,7 @@ package org.opencypher.spark.testing.utils
 
 import java.sql.{Connection, DriverManager, ResultSet, Statement}
 
-import org.apache.spark.sql.{DataFrame, SaveMode}
+import org.apache.spark.sql._
 import org.opencypher.spark.api.io.sql.{SqlDataSourceConfig, SqlDataSourceConfigException}
 
 object H2Utils {
@@ -43,21 +43,31 @@ object H2Utils {
     def update(sql: String): Int = conn.run(_.executeUpdate(sql))
   }
 
-  def withConnection[T](cfg: SqlDataSourceConfig)(code: Connection => T): T = {
-    Class.forName(cfg.jdbcDriver.get)
-    val conn = DriverManager.getConnection(cfg.jdbcUri.get)
+  def withConnection[T](cfg: SqlDataSourceConfig.Jdbc)(code: Connection => T): T = {
+    Class.forName(cfg.driver)
+    val conn = (cfg.options.get("user"), cfg.options.get("password")) match {
+      case (Some(user), Some(pass)) =>
+        DriverManager.getConnection(cfg.url, user, pass)
+      case _ =>
+        DriverManager.getConnection(cfg.url)
+    }
     try { code(conn) } finally { conn.close() }
   }
 
-  implicit class DataframeSqlOps(df: DataFrame) {
+  implicit class DataFrameWriterOps(write: DataFrameWriter[Row]) {
+    def maybeOption(key: String, value: Option[String]): DataFrameWriter[Row] =
+      value.fold(write)(write.option(key, _))
+  }
 
-    def saveAsSqlTable(cfg: SqlDataSourceConfig, tableName: String): Unit =
+  implicit class DataFrameSqlOps(df: DataFrame) {
+
+    def saveAsSqlTable(cfg: SqlDataSourceConfig.Jdbc, tableName: String): Unit =
       df.write
         .mode(SaveMode.Overwrite)
         .format("jdbc")
-        .option("url", cfg.jdbcUri.getOrElse(throw SqlDataSourceConfigException("Missing JDBC URI")))
-        .option("driver", cfg.jdbcDriver.getOrElse(throw SqlDataSourceConfigException("Missing JDBC Driver")))
-        .option("fetchSize", cfg.jdbcFetchSize)
+        .option("url", cfg.url)
+        .option("driver", cfg.driver)
+        .options(cfg.options)
         .option("dbtable", tableName)
         .save()
   }

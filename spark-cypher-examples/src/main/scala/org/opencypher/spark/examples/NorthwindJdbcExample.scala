@@ -28,6 +28,7 @@
 package org.opencypher.spark.examples
 
 import org.opencypher.okapi.api.graph.Namespace
+import org.opencypher.spark.api.io.sql.SqlDataSourceConfig
 import org.opencypher.spark.api.{CAPSSession, GraphSources}
 import org.opencypher.spark.util.{ConsoleApp, NorthwindDB}
 
@@ -42,12 +43,16 @@ object NorthwindJdbcExample extends ConsoleApp {
   // this holds the data source mappings files and the SQL DDL file
   // the latter contains the graph definitions and mappings from SQL tables that fill the graph with data
 
+  val dataSourceConfig = SqlDataSourceConfig.Jdbc(
+    url = "jdbc:h2:mem:NORTHWIND.db;INIT=CREATE SCHEMA IF NOT EXISTS NORTHWIND;DB_CLOSE_DELAY=30;",
+    driver = "org.h2.Driver"
+  )
   val sqlGraphSource = GraphSources
     .sql(resource("ddl/northwind.ddl").getFile)
-    .withSqlDataSourceConfigs(resource("ddl/jdbc-data-sources.json").getFile)
+    .withSqlDataSourceConfigs("H2" -> dataSourceConfig)
 
   // start up the SQL database
-  NorthwindDB.init(sqlGraphSource.sqlDataSourceConfigs.find(_.dataSourceName == "H2").get)
+  NorthwindDB.init(dataSourceConfig)
 
   // register the SQL graph source with the session
   session.registerSource(Namespace("sql"), sqlGraphSource)

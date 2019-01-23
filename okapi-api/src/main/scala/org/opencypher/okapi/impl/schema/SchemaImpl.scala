@@ -37,8 +37,7 @@ import org.opencypher.okapi.api.types.{CypherType, _}
 import org.opencypher.okapi.impl.exception.SchemaException
 import org.opencypher.okapi.impl.schema.SchemaImpl._
 import org.opencypher.okapi.impl.util.Version
-import ujson.Js.{Num, Obj, Str}
-import upickle.Js
+import ujson.{Num, Obj, Str, Value}
 import upickle.default.{macroRW, _}
 
 object SchemaImpl {
@@ -55,9 +54,9 @@ object SchemaImpl {
   val PROPERTIES = "properties"
 
 
-  implicit def rw: ReadWriter[Schema] = readwriter[Js.Value].bimap[Schema](
+  implicit def rw: ReadWriter[Schema] = readwriter[Value].bimap[Schema](
     schema => {
-      val tuples: Seq[(String, Js.Value)] = Seq[(String, Js.Value)](
+      val tuples: Seq[(String, Value)] = Seq[(String, Value)](
         VERSION -> writeJs(Schema.CURRENT_VERSION.toString),
         LABEL_PROPERTY_MAP -> writeJs(schema.labelPropertyMap),
         REL_TYPE_PROPERTY_MAP -> writeJs(schema.relTypePropertyMap)) ++ {
@@ -79,7 +78,7 @@ object SchemaImpl {
           None
         }
       }
-      Js.Obj.from(tuples)
+      Obj.from(tuples)
     }
     ,
     json => {
@@ -91,43 +90,43 @@ object SchemaImpl {
       val version = Version(versionString)
       if(!version.compatibleWith(Schema.CURRENT_VERSION)) throw SchemaException("Incompatible Schema versions")
 
-      val labelPropertyMap = readJs[LabelPropertyMap](json.obj(LABEL_PROPERTY_MAP))
-      val relTypePropertyMap = readJs[RelTypePropertyMap](json.obj(REL_TYPE_PROPERTY_MAP))
+      val labelPropertyMap = read[LabelPropertyMap](json.obj(LABEL_PROPERTY_MAP))
+      val relTypePropertyMap = read[RelTypePropertyMap](json.obj(REL_TYPE_PROPERTY_MAP))
       val explicitSchemaPatterns = json match {
-        case Obj(m) if m.keySet.contains(SCHEMA_PATTERNS) => readJs[Set[SchemaPattern]](json.obj(SCHEMA_PATTERNS))
+        case Obj(m) if m.keySet.contains(SCHEMA_PATTERNS) => read[Set[SchemaPattern]](json.obj(SCHEMA_PATTERNS))
         case _ => Set.empty[SchemaPattern]
       }
       val nodeKeys = json match {
-        case Obj(m) if m.keySet.contains(NODE_KEYS) => readJs[Map[String, Set[String]]](json.obj(NODE_KEYS))
+        case Obj(m) if m.keySet.contains(NODE_KEYS) => read[Map[String, Set[String]]](json.obj(NODE_KEYS))
         case _ => Map.empty[String, Set[String]]
       }
       val relKeys = json match {
-        case Obj(m) if m.keySet.contains(REL_KEYS) => readJs[Map[String, Set[String]]](json.obj(REL_KEYS))
+        case Obj(m) if m.keySet.contains(REL_KEYS) => read[Map[String, Set[String]]](json.obj(REL_KEYS))
         case _ => Map.empty[String, Set[String]]
       }
       SchemaImpl(labelPropertyMap, relTypePropertyMap, explicitSchemaPatterns, nodeKeys, relKeys)
     }
   )
 
-  implicit def lpmRw: ReadWriter[LabelPropertyMap] = readwriter[Js.Value].bimap[LabelPropertyMap](
+  implicit def lpmRw: ReadWriter[LabelPropertyMap] = readwriter[Value].bimap[LabelPropertyMap](
     labelPropertyMap =>
       labelPropertyMap.map {
-        case (labelCombo, propKeys) => Js.Obj(LABELS -> writeJs(labelCombo), PROPERTIES -> writeJs(propKeys))
+        case (labelCombo, propKeys) => Obj(LABELS -> writeJs(labelCombo), PROPERTIES -> writeJs(propKeys))
       },
     json =>
       json.arr.map { value =>
-        readJs[Set[String]](value.obj(LABELS)) -> readJs[PropertyKeys](value.obj(PROPERTIES))
+        read[Set[String]](value.obj(LABELS)) -> read[PropertyKeys](value.obj(PROPERTIES))
       }.toMap
   )
 
-  implicit def rpmRw: ReadWriter[RelTypePropertyMap] = readwriter[Js.Value].bimap[RelTypePropertyMap](
+  implicit def rpmRw: ReadWriter[RelTypePropertyMap] = readwriter[Value].bimap[RelTypePropertyMap](
     relTypePropertyMap =>
       relTypePropertyMap.map {
-        case (relType, propKeys) => Js.Obj(REL_TYPE -> writeJs(relType), PROPERTIES -> writeJs(propKeys))
+        case (relType, propKeys) => Obj(REL_TYPE -> writeJs(relType), PROPERTIES -> writeJs(propKeys))
       },
     json =>
       json.arr.map { value =>
-        readJs[String](value.obj(REL_TYPE)) -> readJs[PropertyKeys](value.obj(PROPERTIES))
+        read[String](value.obj(REL_TYPE)) -> read[PropertyKeys](value.obj(PROPERTIES))
       }.toMap
   )
 

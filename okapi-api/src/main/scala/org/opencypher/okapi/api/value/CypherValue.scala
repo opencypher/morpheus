@@ -26,14 +26,13 @@
  */
 package org.opencypher.okapi.api.value
 
-import java.sql.Date
 import java.util.Objects
 
 import org.opencypher.okapi.api.value.CypherValue.CypherEntity._
 import org.opencypher.okapi.api.value.CypherValue.CypherNode._
 import org.opencypher.okapi.api.value.CypherValue.CypherRelationship._
 import org.opencypher.okapi.impl.exception.{IllegalArgumentException, UnsupportedOperationException}
-import upickle.Js
+import ujson._
 
 import scala.reflect.{ClassTag, classTag}
 import scala.util.Try
@@ -199,30 +198,30 @@ object CypherValue {
       }
     }
 
-    def toJson: Js.Value = {
+    def toJson: Value = {
       this match {
-        case CypherNull => Js.Null
-        case CypherString(s) => Js.Str(s)
+        case CypherNull => Null
+        case CypherString(s) => Str(s)
         case CypherList(l) => l.map(_.toJson)
         case CypherMap(m) => m.mapValues(_.toJson).toSeq.sortBy(_._1)
         case CypherRelationship(id, startId, endId, relType, properties) =>
-          Js.Obj(
-            idJsonKey -> Js.Str(id.toString),
-            typeJsonKey -> Js.Str(relType),
-            startIdJsonKey -> Js.Str(startId.toString),
-            endIdJsonKey -> Js.Str(endId.toString),
+          Obj(
+            idJsonKey -> Str(id.toString),
+            typeJsonKey -> Str(relType),
+            startIdJsonKey -> Str(startId.toString),
+            endIdJsonKey -> Str(endId.toString),
             propertiesJsonKey -> properties.toJson
           )
         case CypherNode(id, labels, properties) =>
-          Js.Obj(
-            idJsonKey -> Js.Str(id.toString),
-            labelsJsonKey -> labels.toSeq.sorted.map(Js.Str),
+          Obj(
+            idJsonKey -> Str(id.toString),
+            labelsJsonKey -> labels.toSeq.sorted.map(Str),
             propertiesJsonKey -> properties.toJson
           )
-        case CypherFloat(d) => Js.Num(d)
-        case CypherInteger(l) => Js.Str(l.toString) // `Js.Num` would lose precision
-        case CypherBoolean(b) => Js.Bool(b)
-        case other => Js.Str(other.value.toString)
+        case CypherFloat(d) => Num(d)
+        case CypherInteger(l) => Str(l.toString) // `Num` would lose precision
+        case CypherBoolean(b) => Bool(b)
+        case other => Str(other.value.toString)
       }
     }
 

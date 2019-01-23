@@ -32,6 +32,7 @@ import java.io.File
 import org.apache.spark.sql.SparkSession
 import org.apache.spark.sql.internal.StaticSQLConf.CATALOG_IMPLEMENTATION
 import org.opencypher.okapi.api.graph.Namespace
+import org.opencypher.spark.api.io.sql.SqlDataSourceConfig.Hive
 import org.opencypher.spark.api.{CAPSSession, GraphSources}
 import org.opencypher.spark.util.{CensusDB, ConsoleApp}
 
@@ -51,11 +52,11 @@ object CensusHiveExample extends ConsoleApp {
   val graphName = "Census_1901"
   val sqlGraphSource = GraphSources
       .sql(resource("ddl/census.ddl").getFile)
-      .withSqlDataSourceConfigs(resource("ddl/hive-data-sources.json").getFile)
+      .withSqlDataSourceConfigs("CENSUS" -> Hive)
 
   // tag::prepare-sql-database[]
   // Create the data in H2 in-memory database
-  CensusDB.createHiveData(sqlGraphSource.sqlDataSourceConfigs.find(_.dataSourceName == "CENSUS").get)
+  CensusDB.createHiveData(Hive)
   // end::prepare-sql-database[]
 
   session.registerSource(Namespace("sql"), sqlGraphSource)

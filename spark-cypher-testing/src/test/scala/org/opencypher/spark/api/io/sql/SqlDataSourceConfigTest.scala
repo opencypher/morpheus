@@ -26,35 +26,59 @@
  */
 package org.opencypher.spark.api.io.sql
 
-import SqlDataSourceConfig._
-import org.opencypher.spark.api.io.{HiveFormat, JdbcFormat}
+import org.opencypher.spark.api.io.FileFormat
+import org.opencypher.spark.api.io.sql.SqlDataSourceConfig.{File, Hive, Jdbc}
 import org.scalatest.Matchers
 
 import scala.io.Source
 
 class SqlDataSourceConfigTest extends org.scalatest.FunSpec with Matchers {
 
-  describe("parsing") {
-    it("parses to and from JSON") {
-      val ds = SqlDataSourceConfig(JdbcFormat, "dataSource", Some("schema"), Some("jdbcUri"), Some("jdbcDriver"), 42)
-      val jsonString = ds.toJson
-      fromJson(jsonString) shouldEqual ds
-    }
+  private def roundTrip(cfg: SqlDataSourceConfig): SqlDataSourceConfig =
+    SqlDataSourceConfig.fromJson(SqlDataSourceConfig.toJson(cfg))
 
-    it("parses to and from JSON with missing values") {
-      val ds = SqlDataSourceConfig(HiveFormat, "dataSource")
-      val jsonString = ds.toJson
-      fromJson(jsonString) shouldEqual ds
+  describe("parsing") {
+
+    it("config to Json roundTrip") {
+
+      List(
+        Hive,
+        Jdbc("foo", "driv"),
+        Jdbc("foo", "driv", Map("foo" -> "bar")),
+        File(FileFormat.csv, None),
+        File(FileFormat.csv, Some("/foo/bar"), Map("foo" -> "bar2"))
+      ).foreach(cfg => roundTrip(cfg) shouldEqual cfg)
+
     }
 
     it("parses multiple SQL data sources") {
-      val jsonString = Source.fromURL(getClass.getResource("/sql/sql-data-sources.json")).getLines().mkString("\n")
-      SqlDataSourceConfig.dataSourcesFromString(jsonString) shouldEqual Map(
-        ("CENSUS_ORACLE", SqlDataSourceConfig(JdbcFormat, "CENSUS_ORACLE", None, Some("jdbc:h2:mem:CENSUS.db;INIT=CREATE SCHEMA IF NOT EXISTS CENSUS;DB_CLOSE_DELAY=30;"), Some("org.h2.Driver"), 100)),
-        ("ORACLE_X2", SqlDataSourceConfig(JdbcFormat, "ORACLE_X2", None, Some("jdbc:h2:mem:X2.db;INIT=CREATE SCHEMA IF NOT EXISTS X2;DB_CLOSE_DELAY=30;"), Some("org.h2.Driver"), 10)),
-        ("HIVE_CENSUS", SqlDataSourceConfig(HiveFormat, "HIVE_CENSUS", None, None, None, 100)),
-        ("HIVE_X2", SqlDataSourceConfig(HiveFormat, "HIVE_X2", None, None, None, 100))
+      val jsonString = Source.fromURL(getClass.getResource("/sql/sql-data-sources.json")).mkString
+      val config = Map(
+        "CENSUS_ORACLE" -> Jdbc(
+          url = "jdbc:h2:mem:CENSUS.db;INIT=CREATE SCHEMA IF NOT EXISTS CENSUS;DB_CLOSE_DELAY=30;",
+          driver = "org.h2.Driver",
+          options = Map(
+            "fetchSize" -> "100"
+          )
+        ),
+        "ORACLE_X2" -> Jdbc(
+          url = "jdbc:h2:mem:X2.db;INIT=CREATE SCHEMA IF NOT EXISTS X2;DB_CLOSE_DELAY=30;",
+          driver = "org.h2.Driver",
+          options = Map(
+            "user" -> "ORACLE_X2_USER",
+            "password" -> "ORACLE_X2_PASS",
+            "fetchSize" -> "10"
+          )
+        ),
+        "HIVE_CENSUS" -> Hive,
+        "HIVE_X2" -> Hive,
+        "MY_DIR" -> File(
+          format = FileFormat.parquet,
+          basePath = Some("/my/path")
+        )
       )
+      SqlDataSourceConfig.dataSourcesFromString(jsonString) shouldEqual config
+
     }
   }
 

@@ -32,7 +32,7 @@ import org.opencypher.okapi.api.graph.{GraphName, Node, Relationship}
 import org.opencypher.okapi.api.value.CypherValue.CypherMap
 import org.opencypher.okapi.testing.Bag
 import org.opencypher.spark.api.GraphSources
-import org.opencypher.spark.api.io.ParquetFormat
+import org.opencypher.spark.api.io.FileFormat
 import org.opencypher.spark.api.io.util.HiveTableName
 import org.opencypher.spark.api.value.CAPSNode
 import org.opencypher.spark.impl.acceptance.ScanGraphInit
@@ -67,7 +67,8 @@ class FSGraphSourceTest extends CAPSTestSuite with ScanGraphInit {
     it("writes nodes and relationships to hive tables") {
       val given = testGraph
 
-      val fs = new FSGraphSource("file:///" + tempDir.getRoot.getAbsolutePath.replace("\\", "/"), ParquetFormat, Some(testDatabaseName), None)
+      val fs = new FSGraphSource("file:///" + tempDir.getRoot.getAbsolutePath.replace("\\", "/"),
+        FileFormat.parquet, Some(testDatabaseName), None)
       fs.store(graphName, given)
 
       val nodeResult = caps.sparkSession.sql(s"SELECT * FROM $nodeTableName")
@@ -89,7 +90,8 @@ class FSGraphSourceTest extends CAPSTestSuite with ScanGraphInit {
     it("deletes the hive database if the graph is deleted") {
       val given = testGraph
 
-      val fs = new FSGraphSource("file:///" + tempDir.getRoot.getAbsolutePath.replace("\\", "/"), ParquetFormat, Some(testDatabaseName), None)
+      val fs = new FSGraphSource("file:///" + tempDir.getRoot.getAbsolutePath.replace("\\", "/"),
+        FileFormat.parquet, Some(testDatabaseName), None)
       fs.store(graphName, given)
 
       caps.sparkSession.sql(s"SELECT * FROM $nodeTableName").collect().toSet should not be empty
