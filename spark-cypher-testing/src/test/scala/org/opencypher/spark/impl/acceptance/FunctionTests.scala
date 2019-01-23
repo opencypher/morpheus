@@ -47,7 +47,7 @@ class FunctionTests extends CAPSTestSuite with ScanGraphInit{
   }
 
   private def shouldParseDateTime(given: String, expected: String): Unit = {
-    caps.cypher(s"RETURN datetime('$given') AS time").records.toMaps should equal(
+    caps.cypher(s"RETURN localdatetime('$given') AS time").records.toMaps should equal(
       Bag(CypherMap("time" -> java.sql.Timestamp.valueOf(expected)))
     )
   }
@@ -151,9 +151,9 @@ class FunctionTests extends CAPSTestSuite with ScanGraphInit{
     }
   }
 
-  describe("datetime") {
+  describe("localdatetime") {
 
-    it("parses cypher compatible datetime strings") {
+    it("parses cypher compatible localdatetime strings") {
       Seq(
         "2010-10-10" -> "2010-10-10 00:00:00",
         "20101010" -> "2010-10-10 00:00:00",
@@ -182,9 +182,9 @@ class FunctionTests extends CAPSTestSuite with ScanGraphInit{
       }
     }
 
-    it("returns a valid datetime when constructed from a map") {
+    it("returns a valid localdatetime when constructed from a map") {
       caps.cypher(
-        """RETURN datetime({
+        """RETURN localdatetime({
           |year: 2015,
           |month: 10,
           |day: 12,
@@ -198,7 +198,7 @@ class FunctionTests extends CAPSTestSuite with ScanGraphInit{
       )
 
       caps.cypher(
-        """RETURN datetime({
+        """RETURN localdatetime({
           |year: 2015,
           |month: 10,
           |day: 1,
@@ -212,36 +212,36 @@ class FunctionTests extends CAPSTestSuite with ScanGraphInit{
 
     it("throws an error if values of higher significance are omitted") {
       an[IllegalArgumentException] shouldBe thrownBy(
-        caps.cypher("RETURN datetime({ minute: 50 })").records.toMaps
+        caps.cypher("RETURN localdatetime({ minute: 50 })").records.toMaps
       )
 
       an[IllegalArgumentException] shouldBe thrownBy(
-        caps.cypher("RETURN datetime({ year: 2018, hour: 12, second: 14 })").records.toMaps
+        caps.cypher("RETURN localdatetime({ year: 2018, hour: 12, second: 14 })").records.toMaps
       )
     }
 
     it("throws an error if the date argument is wrong") {
       an[IllegalArgumentException] shouldBe thrownBy(
-        caps.cypher("RETURN datetime('2018-10-10T12:10:30:15')").records.toMaps
+        caps.cypher("RETURN localdatetime('2018-10-10T12:10:30:15')").records.toMaps
       )
 
       an[IllegalArgumentException] shouldBe thrownBy(
-        caps.cypher("RETURN datetime('20181010T1210301')").records.toMaps
+        caps.cypher("RETURN localdatetime('20181010T1210301')").records.toMaps
       )
 
       an[IllegalArgumentException] shouldBe thrownBy(
-        caps.cypher("RETURN datetime('20181010T12:000')").records.toMaps
+        caps.cypher("RETURN localdatetime('20181010T12:000')").records.toMaps
       )
     }
 
     it("compares two datetimes") {
-      caps.cypher("RETURN datetime(\"2015-10-10T00:00:00\") < datetime(\"2015-10-12T00:00:00\") AS time").records.toMaps should equal(
+      caps.cypher("RETURN localdatetime(\"2015-10-10T00:00:00\") < localdatetime(\"2015-10-12T00:00:00\") AS time").records.toMaps should equal(
         Bag(
           CypherMap("time" -> true)
         )
       )
 
-      caps.cypher("RETURN datetime(\"2015-10-10T00:00:00\") > datetime(\"2015-10-12T00:00:00\") AS time").records.toMaps should equal(
+      caps.cypher("RETURN localdatetime(\"2015-10-10T00:00:00\") > localdatetime(\"2015-10-12T00:00:00\") AS time").records.toMaps should equal(
         Bag(
           CypherMap("time" -> false)
         )
@@ -250,7 +250,7 @@ class FunctionTests extends CAPSTestSuite with ScanGraphInit{
 
     it("uses the current date and time if no parameters are given") {
       val currentDateTime = LocalDateTime.now().format(DateTimeFormatter.ISO_LOCAL_DATE_TIME)
-      caps.cypher(s"RETURN datetime('$currentDateTime') <= datetime() AS time").records.toMaps equals equal(
+      caps.cypher(s"RETURN localdatetime('$currentDateTime') <= localdatetime() AS time").records.toMaps equals equal(
         Bag(
           CypherMap("time" -> true)
         )
@@ -258,7 +258,7 @@ class FunctionTests extends CAPSTestSuite with ScanGraphInit{
     }
 
     it("should propagate null") {
-      caps.cypher("RETURN datetime(null) as time").records.toMaps should equal(
+      caps.cypher("RETURN localdatetime(null) as time").records.toMaps should equal(
         Bag(
           CypherMap("time" -> null)
         )

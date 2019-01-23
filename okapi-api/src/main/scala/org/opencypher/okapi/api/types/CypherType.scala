@@ -60,7 +60,7 @@ object CypherType {
         case CypherFloat(_) => CTFloat
         case CypherInteger(_) => CTInteger
         case CypherString(_) => CTString
-        case CypherDateTime(_) => CTDateTime
+        case CypherLocalDateTime(_) => CTLocalDateTime
         case CypherDate(_) => CTDate
         case CypherMap(inner) => CTMap(inner.mapValues(_.cypherType))
         case CypherNode(_, labels, _) => CTNode(labels)
@@ -180,8 +180,8 @@ case class CTMap(innerTypes: Map[String, CypherType]) extends MaterialDefiniteCy
 
 sealed trait TemporalInstantCypherType extends MaterialDefiniteCypherLeafType
 
-case object CTDateTime extends TemporalInstantCypherType {
-  override def name = "DATETIME"
+case object CTLocalDateTime extends TemporalInstantCypherType {
+  override def name = "LOCALDATETIME"
 }
 
 case object CTDate extends TemporalInstantCypherType {
@@ -624,7 +624,7 @@ private[okapi] object MaterialDefiniteCypherType {
       case CTNumber => CTNumberOrNull
       case CTFloat => CTFloatOrNull
       case CTMap(inner) => CTMapOrNull(inner)
-      case CTDateTime => CTDateTimeOrNull
+      case CTLocalDateTime => CTLocalDateTimeOrNull
       case CTDate => CTDateOrNull
       case CTPath => CTPathOrNull
     }
@@ -668,10 +668,10 @@ case object CTFloatOrNull extends NullableDefiniteCypherType {
   override def material: CTFloat.type = CTFloat
 }
 
-case object CTDateTimeOrNull extends NullableDefiniteCypherType {
-  override def name: String = CTDateTime + "?"
+case object CTLocalDateTimeOrNull extends NullableDefiniteCypherType {
+  override def name: String = CTLocalDateTime + "?"
 
-  override def material: CTDateTime.type  = CTDateTime
+  override def material: CTLocalDateTime.type  = CTLocalDateTime
 }
 
 case object CTDateOrNull extends NullableDefiniteCypherType {

@@ -42,7 +42,7 @@ import scala.util.{Failure, Success, Try}
 object TemporalTypesHelper {
 
   val dateIdentifiers: Seq[String] = Seq("year", "month", "day")
-  val timeIdentifiers: Seq[String] = Seq("hour", "minute", "second", "millisecond", "microsecond", "nanosecond")
+  val timeIdentifiers: Seq[String] = Seq("hour", "minute", "second")
 
   val dateFormatters: Seq[DateTimeFormatter] = Seq(
     new DateTimeFormatterBuilder().appendPattern("yyyy-MM-dd").toFormatter,

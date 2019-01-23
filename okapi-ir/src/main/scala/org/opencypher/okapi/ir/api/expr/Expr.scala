@@ -1046,11 +1046,11 @@ sealed abstract class TemporalInstant(expr: Option[Expr]) extends FunctionExpr {
 
 }
 
-final case class DateTime(expr: Option[Expr])(val cypherType: CypherType = CTDateTime) extends TemporalInstant(expr) {
+final case class LocalDateTime(expr: Option[Expr])(val cypherType: CypherType = CTLocalDateTime) extends TemporalInstant(expr) {
 
-  override type This = DateTime
+  override type This = LocalDateTime
 
-  override def withCypherType(ct: CypherType): DateTime = copy()(ct)
+  override def withCypherType(ct: CypherType): LocalDateTime = copy()(ct)
 }
 
 final case class Date(expr: Option[Expr])(val cypherType: CypherType = CTDate) extends TemporalInstant(expr) {

@@ -129,7 +129,7 @@ object SparkSQLExprMapper {
         case NullLit(ct) =>
           NULL_LIT.cast(ct.toSparkType.get)
 
-        case DateTime(dateExpr) =>
+        case LocalDateTime(dateExpr) =>
           dateExpr match {
             case Some(e) => functions.lit(toTimestamp(e).orNull).cast(DataTypes.TimestampType)
             case None => functions.current_timestamp()
