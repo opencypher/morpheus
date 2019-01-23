@@ -136,6 +136,6 @@ object SqlGraphSources {
 
   def apply(graphDdlPath: String)(implicit session: CAPSSession): SqlGraphSourceFactory =
     SqlGraphSourceFactory(
-      graphDdl = GraphDdl(Source.fromFile(graphDdlPath, "UTF-8").getLines().mkString(Properties.lineSeparator)),
+      graphDdl = GraphDdl(Source.fromFile(graphDdlPath, "UTF-8").mkString),
       idGenerationStrategy = MonotonicallyIncreasingId)
 }
