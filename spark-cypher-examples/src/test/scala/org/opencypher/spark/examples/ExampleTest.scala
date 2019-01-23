@@ -40,6 +40,8 @@ abstract class ExampleTest extends FunSpec with Matchers with BeforeAndAfterAll 
 
   private val oldStdOut = System.out
 
+  protected val emptyOutput: String = ""
+
   protected def validate(app: => Unit, expectedOut: URI): Unit = {
     validate(app, Source.fromFile(expectedOut).mkString)
   }
