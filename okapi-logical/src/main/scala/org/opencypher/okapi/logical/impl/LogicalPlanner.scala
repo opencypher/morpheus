@@ -37,6 +37,7 @@ import org.opencypher.okapi.ir.api.{Label, _}
 import org.opencypher.okapi.ir.impl.syntax.ExprSyntax._
 import org.opencypher.okapi.ir.impl.util.VarConverters._
 import org.opencypher.okapi.logical.impl.exception.{InvalidCypherTypeException, InvalidDependencyException, InvalidPatternException}
+import org.opencypher.v9_0.expressions.SemanticDirection.{INCOMING, OUTGOING}
 
 import scala.annotation.tailrec
 
@@ -507,7 +508,8 @@ class LogicalPlanner(producer: LogicalOperatorProducer)
     val expand = c match {
       case v: VarLengthRelationship if v.upper.nonEmpty =>
         val direction = v match {
-          case _: DirectedVarLengthRelationship => Directed
+          case rel: DirectedVarLengthRelationship if rel.semanticDirection == OUTGOING => Outgoing
+          case rel: DirectedVarLengthRelationship if rel.semanticDirection == INCOMING => Incoming
           case _: UndirectedVarLengthRelationship => Undirected
         }
 
@@ -522,11 +524,20 @@ class LogicalPlanner(producer: LogicalOperatorProducer)
         producer.planExpandInto(c.source, r, c.target, Undirected, sourcePlan)
       // cyclic and directed are handled the same way for expandInto
 
-      case _ if sourcePlan == targetPlan =>
-        producer.planExpandInto(c.source, r, c.target, Directed, sourcePlan)
+      case _: CyclicRelationship =>
+        producer.planExpandInto(c.source, r, c.target, Outgoing, sourcePlan)
 
-      case _: DirectedConnection =>
-        producer.planExpand(c.source, r, c.target, Directed, sourcePlan, targetPlan)
+      case rel: DirectedRelationship if sourcePlan == targetPlan && rel.semanticDirection == OUTGOING =>
+        producer.planExpandInto(c.source, r, c.target, Outgoing, sourcePlan)
+
+      case rel: DirectedRelationship if sourcePlan == targetPlan && rel.semanticDirection == INCOMING =>
+        producer.planExpandInto(c.source, r, c.target, Incoming, sourcePlan)
+
+      case rel: DirectedRelationship if rel.semanticDirection == OUTGOING =>
+        producer.planExpand(c.source, r, c.target, Outgoing, sourcePlan, targetPlan)
+
+      case rel: DirectedRelationship if rel.semanticDirection == INCOMING =>
+        producer.planExpand(c.source, r, c.target, Incoming, sourcePlan, targetPlan)
 
       case _: UndirectedConnection =>
         producer.planExpand(c.source, r, c.target, Undirected, sourcePlan, targetPlan)

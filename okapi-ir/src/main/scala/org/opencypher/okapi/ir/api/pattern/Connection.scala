@@ -27,8 +27,11 @@
 package org.opencypher.okapi.ir.api.pattern
 
 import org.opencypher.okapi.api.types.CTRelationship
+import org.opencypher.okapi.impl.exception.IllegalArgumentException
 import org.opencypher.okapi.ir.api._
 import org.opencypher.okapi.ir.api.pattern.Orientation.{Cyclic, Directed, Undirected}
+import org.opencypher.v9_0.expressions.SemanticDirection
+import org.opencypher.v9_0.expressions.SemanticDirection.{BOTH, INCOMING, OUTGOING}
 
 import scala.language.higherKinds
 
@@ -94,7 +97,7 @@ sealed trait SingleRelationship extends Connection {
   final protected override def seed: Int = SingleRelationship.seed
 }
 
-final case class DirectedRelationship(endpoints: DifferentEndpoints)
+final case class DirectedRelationship(endpoints: DifferentEndpoints, semanticDirection: SemanticDirection)
   extends SingleRelationship with DirectedConnection {
 
   override type SELF[XO, XE] = DirectedRelationship { type O = XO; type E = XE }
@@ -104,13 +107,17 @@ final case class DirectedRelationship(endpoints: DifferentEndpoints)
     case _ => false
   }
 
-  override def flip: DirectedRelationship = copy(endpoints.flip)
+  override def flip: DirectedRelationship = copy(endpoints.flip, semanticDirection = semanticDirection match {
+    case OUTGOING => INCOMING
+    case INCOMING => OUTGOING
+    case BOTH => throw IllegalArgumentException("semantic direction to be OUTGOING or INCOMING", "BOTH")
+  })
 }
 
 case object DirectedRelationship {
-  def apply(source: IRField, target: IRField): SingleRelationship = Endpoints(source, target) match {
+  def apply(source: IRField, target: IRField, semanticDirection: SemanticDirection = OUTGOING): SingleRelationship = Endpoints(source, target) match {
     case ends: IdenticalEndpoints => CyclicRelationship(ends)
-    case ends: DifferentEndpoints => DirectedRelationship(ends)
+    case ends: DifferentEndpoints => DirectedRelationship(ends, semanticDirection)
   }
 }
 
@@ -159,10 +166,20 @@ sealed trait VarLengthRelationship extends Connection {
   def edgeType: CTRelationship
 }
 
-final case class DirectedVarLengthRelationship(edgeType: CTRelationship, endpoints: DifferentEndpoints, lower: Int, upper: Option[Int]) extends VarLengthRelationship with DirectedConnection {
-  override type SELF[XO, XE] = DirectedVarLengthRelationship { type O = XO; type E = XE }
+final case class DirectedVarLengthRelationship(
+  edgeType: CTRelationship,
+  endpoints: DifferentEndpoints,
+  lower: Int,
+  upper: Option[Int],
+  semanticDirection: SemanticDirection = OUTGOING
+) extends VarLengthRelationship with DirectedConnection {
+  override type SELF[XO, XE] = DirectedVarLengthRelationship {type O = XO; type E = XE}
 
-  override def flip: DirectedVarLengthRelationship = copy(endpoints = endpoints.flip)
+  override def flip: DirectedVarLengthRelationship = copy(endpoints = endpoints.flip, semanticDirection = semanticDirection match {
+    case OUTGOING => INCOMING
+    case INCOMING => OUTGOING
+    case BOTH => throw IllegalArgumentException("semantic direction to be OUTGOING or INCOMING", "BOTH")
+  })
 
   override protected def equalsIfNotEq(obj: Any): Boolean = obj match {
     case other: DirectedVarLengthRelationship => orientation.eqv(endpoints, other.endpoints)

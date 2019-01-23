@@ -82,7 +82,7 @@ class LogicalPlannerTest extends BaseTestSuite with IrConstruction {
     val ir = irFor(block)
     val result = plan(ir)
 
-    val expected = Expand(irFieldA, irFieldR, irFieldB, Directed, scan1, scan2, SolvedQueryModel(Set(irFieldA, irFieldB, irFieldR), Set(aLabelPredicate)))
+    val expected = Expand(irFieldA, irFieldR, irFieldB, Outgoing, scan1, scan2, SolvedQueryModel(Set(irFieldA, irFieldB, irFieldR), Set(aLabelPredicate)))
 
     result should equalWithoutResult(expected)
   }
@@ -98,7 +98,7 @@ class LogicalPlannerTest extends BaseTestSuite with IrConstruction {
     val ir = irFor(block)
 
     val scan = NodeScan(irFieldA, leafPlan, emptySqm.withField(irFieldA).withPredicate(aLabelPredicate))
-    val expandInto = ExpandInto(irFieldA, irFieldR, irFieldA, Directed, scan, SolvedQueryModel(Set(irFieldA, irFieldR), Set(aLabelPredicate)))
+    val expandInto = ExpandInto(irFieldA, irFieldR, irFieldA, Outgoing, scan, SolvedQueryModel(Set(irFieldA, irFieldR), Set(aLabelPredicate)))
 
     plan(ir) should equalWithoutResult(expandInto)
   }
@@ -129,7 +129,7 @@ class LogicalPlannerTest extends BaseTestSuite with IrConstruction {
           varA,
           varR,
           varG,
-          Directed,
+          Outgoing,
           NodeScan(
             varA,
             Start(LogicalCatalogGraph(testQualifiedGraphName, Schema.empty), emptySqm),
@@ -189,7 +189,7 @@ class LogicalPlannerTest extends BaseTestSuite with IrConstruction {
           varA,
           Var("r")(CTRelationship),
           varG,
-          Directed,
+          Outgoing,
           NodeScan(
             varA,
             Start(

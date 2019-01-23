@@ -143,10 +143,10 @@ final class PatternConverter()(implicit val irBuilderContext: IRBuilderContext) 
                   case ends: DifferentEndpoints =>
                     dir match {
                       case OUTGOING =>
-                        registered.withConnection(rel, DirectedVarLengthRelationship(relType, ends, lower, Some(upper)), convertedProperties)
+                        registered.withConnection(rel, DirectedVarLengthRelationship(relType, ends, lower, Some(upper), OUTGOING), convertedProperties)
 
                       case INCOMING =>
-                        registered.withConnection(rel, DirectedVarLengthRelationship(relType, ends.flip, lower, Some(upper)), convertedProperties)
+                        registered.withConnection(rel, DirectedVarLengthRelationship(relType, ends.flip, lower, Some(upper), INCOMING), convertedProperties)
 
                       case BOTH =>
                         registered.withConnection(rel, UndirectedVarLengthRelationship(relType, ends.flip, lower, Some(upper)), convertedProperties)
@@ -161,10 +161,10 @@ final class PatternConverter()(implicit val irBuilderContext: IRBuilderContext) 
                   case ends: DifferentEndpoints =>
                     dir match {
                       case OUTGOING =>
-                        registered.withConnection(rel, DirectedRelationship(ends), convertedProperties)
+                        registered.withConnection(rel, DirectedRelationship(ends, OUTGOING), convertedProperties)
 
                       case INCOMING =>
-                        registered.withConnection(rel, DirectedRelationship(ends.flip), convertedProperties)
+                        registered.withConnection(rel, DirectedRelationship(ends.flip, INCOMING), convertedProperties)
 
                       case BOTH =>
                         registered.withConnection(rel, UndirectedRelationship(ends), convertedProperties)
