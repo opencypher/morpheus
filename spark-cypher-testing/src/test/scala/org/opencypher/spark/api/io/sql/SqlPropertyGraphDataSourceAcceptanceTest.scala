@@ -27,10 +27,8 @@
 package org.opencypher.spark.api.io.sql
 
 import org.apache.spark.sql.DataFrame
-import org.opencypher.graphddl._
 import org.opencypher.okapi.api.graph.GraphName
 import org.opencypher.okapi.api.io.PropertyGraphDataSource
-import org.opencypher.okapi.api.schema.SchemaPattern
 import org.opencypher.okapi.impl.util.StringEncodingUtilities._
 import org.opencypher.okapi.testing.propertygraph.InMemoryTestGraph
 import org.opencypher.spark.api.CAPSSession
@@ -38,13 +36,11 @@ import org.opencypher.spark.api.io.fs.DefaultGraphDirectoryStructure.nodeTableDi
 import org.opencypher.spark.api.io.sql.IdGenerationStrategy.IdGenerationStrategy
 import org.opencypher.spark.api.io.sql.util.DdlUtils._
 import org.opencypher.spark.api.io.util.CAPSGraphExport._
-import org.opencypher.spark.api.io.{GraphEntity, Relationship}
 import org.opencypher.spark.impl.table.SparkTable._
 import org.opencypher.spark.testing.CAPSTestSuite
 import org.opencypher.spark.testing.api.io.CAPSPGDSAcceptance
 import org.opencypher.spark.testing.support.creation.caps.CAPSScanGraphFactory
 
-// TODO: Replicates/translates many choices in PGDSAcceptance, which makes it brittle and maintenance-intensive
 abstract class SqlPropertyGraphDataSourceAcceptanceTest extends CAPSTestSuite with CAPSPGDSAcceptance {
 
   def sqlDataSourceConfig: SqlDataSourceConfig
@@ -64,52 +60,8 @@ abstract class SqlPropertyGraphDataSourceAcceptanceTest extends CAPSTestSuite wi
     testGraph: InMemoryTestGraph,
     createStatements: String
   ): PropertyGraphDataSource = {
-
     val scanGraph = CAPSScanGraphFactory(testGraph)
     val schema = scanGraph.schema
-
-    val joinFromStartNode: List[Join] = List(Join(GraphEntity.sourceIdKey, Relationship.sourceStartNodeKey))
-    val joinFromEndNode: List[Join] = List(Join(GraphEntity.sourceIdKey, Relationship.sourceEndNodeKey))
-
-    def viewId(labelCombination: Set[String]): ViewId = {
-      ViewId(None, List(dataSourceName, databaseName, nodeTableDirectoryName(labelCombination)))
-    }
-
-    def nodeViewKey(labelCombination: Set[String]): NodeViewKey = {
-      NodeViewKey(NodeType(labelCombination), viewId(labelCombination))
-    }
-
-    val nodeToViewMappings: Map[NodeViewKey, NodeToViewMapping] = {
-      schema.labelCombinations.combos.map { labelCombination =>
-        NodeToViewMapping(
-          NodeType(labelCombination),
-          viewId(labelCombination),
-          schema.nodePropertyKeys(labelCombination).keySet.map(k => k -> k).toMap)
-      }.map(mapping => mapping.key -> mapping).toMap
-    }
-
-    val edgeToViewMappings: List[EdgeToViewMapping] = {
-      val schemaPatterns: Map[String, Set[SchemaPattern]] = scanGraph.schemaPatterns.groupBy(_.relType)
-      schemaPatterns.flatMap { case (relType, patterns) =>
-        val viewId = ViewId(None, List(dataSourceName, databaseName, relType))
-        val relKeyMapping = schema.relationshipPropertyKeys(relType).keySet.map(k => k -> k).toMap
-        patterns.map { case SchemaPattern(sourceLabelCombination, _, targetLabelCombination) =>
-          EdgeToViewMapping(
-            RelationshipType(NodeType(sourceLabelCombination), relType, NodeType(targetLabelCombination)),
-            viewId,
-            StartNode(nodeViewKey(sourceLabelCombination), joinFromStartNode),
-            EndNode(nodeViewKey(targetLabelCombination), joinFromEndNode),
-            relKeyMapping)
-        }
-      }
-    }.toList
-
-    val graphDdl = GraphDdl(Map(graphName -> Graph(
-      graphName,
-      schema,
-      nodeToViewMappings,
-      edgeToViewMappings
-    )))
 
     schema.labelCombinations.combos.foreach { labelCombination =>
       val nodeDf = scanGraph.canonicalNodeTable(labelCombination).removePrefix(propertyPrefix)
@@ -123,6 +75,8 @@ abstract class SqlPropertyGraphDataSourceAcceptanceTest extends CAPSTestSuite wi
       writeTable(relDf, tableName)
     }
 
-    SqlPropertyGraphDataSource(graphDdl, Map(dataSourceName -> sqlDataSourceConfig))
+    val ddl = scanGraph.defaultDdl(graphName, Some(dataSourceName), Some(databaseName))
+
+    SqlPropertyGraphDataSource(ddl, Map(dataSourceName -> sqlDataSourceConfig))
   }
 }
