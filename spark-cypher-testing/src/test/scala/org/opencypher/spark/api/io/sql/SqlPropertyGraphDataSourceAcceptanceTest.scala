@@ -27,23 +27,21 @@
 package org.opencypher.spark.api.io.sql
 
 import org.apache.spark.sql.DataFrame
-import org.opencypher.graphddl.GraphDdl
-import org.opencypher.okapi.api.graph.{GraphName, PropertyGraph}
+import org.opencypher.graphddl._
+import org.opencypher.okapi.api.graph.GraphName
 import org.opencypher.okapi.api.io.PropertyGraphDataSource
-import org.opencypher.okapi.api.schema.Schema
+import org.opencypher.okapi.api.value.CypherValue.{CypherList, CypherMap, CypherString}
 import org.opencypher.okapi.impl.util.StringEncodingUtilities._
-import org.opencypher.okapi.testing.propertygraph.{CreateGraphFactory, InMemoryTestGraph}
+import org.opencypher.okapi.testing.propertygraph.InMemoryTestGraph
 import org.opencypher.spark.api.CAPSSession
 import org.opencypher.spark.api.io.fs.DefaultGraphDirectoryStructure.nodeTableDirectoryName
 import org.opencypher.spark.api.io.sql.IdGenerationStrategy.IdGenerationStrategy
 import org.opencypher.spark.api.io.util.CAPSGraphExport._
-import org.opencypher.spark.impl.io.CAPSPropertyGraphDataSource
+import org.opencypher.spark.api.io.{GraphEntity, Relationship}
 import org.opencypher.spark.impl.table.SparkTable._
 import org.opencypher.spark.testing.CAPSTestSuite
 import org.opencypher.spark.testing.api.io.CAPSPGDSAcceptance
 import org.opencypher.spark.testing.support.creation.caps.CAPSScanGraphFactory
-
-import scala.io.Source
 
 // TODO: Replicates/translates many choices in PGDSAcceptance, which makes it brittle and maintenance-intensive
 abstract class SqlPropertyGraphDataSourceAcceptanceTest extends CAPSTestSuite with CAPSPGDSAcceptance {
@@ -69,12 +67,56 @@ abstract class SqlPropertyGraphDataSourceAcceptanceTest extends CAPSTestSuite wi
     val scanGraph = CAPSScanGraphFactory(testGraph)
     val schema = scanGraph.schema
 
-    val ddlString = Source
-      .fromURI(getClass.getResource("/sql/SqlPropertyGraphDataSourceAcceptanceTest.ddl").toURI)
-      .getLines()
-      .mkString(System.lineSeparator())
+    val joinFromStartNode: List[Join] = List(Join(GraphEntity.sourceIdKey, Relationship.sourceStartNodeKey))
+    val joinFromEndNode: List[Join] = List(Join(GraphEntity.sourceIdKey, Relationship.sourceEndNodeKey))
 
-    val graphDdl = GraphDdl(ddlString)
+    def viewId(labelCombination: Set[String]): ViewId = {
+      ViewId(None, List(dataSourceName, databaseName, nodeTableDirectoryName(labelCombination)))
+    }
+
+    def nodeViewKey(labelCombination: Set[String]): NodeViewKey = {
+      NodeViewKey(NodeType(labelCombination), viewId(labelCombination))
+    }
+
+    val nodeToViewMappings: Map[NodeViewKey, NodeToViewMapping] = {
+      schema.labelCombinations.combos.map { labelCombination =>
+        NodeToViewMapping(
+          NodeType(labelCombination),
+          viewId(labelCombination),
+          schema.nodePropertyKeys(labelCombination).keySet.map(k => k -> k).toMap)
+      }.map(mapping => mapping.key -> mapping).toMap
+    }
+
+    val edgeToViewMappings: List[EdgeToViewMapping] = {
+      schema.relationshipTypes.toList.flatMap { relType =>
+        val relKeyMapping = schema.relationshipPropertyKeys(relType).keySet.map(k => k -> k).toMap
+        val startEndResultRows: List[CypherMap] = scanGraph.cypher(
+          s"""|MATCH (s)-[:$relType]->(e)
+              |WITH DISTINCT labels(s) AS possibleStartCombos, labels(e) AS possibleEndCombos
+              |RETURN possibleStartCombos, possibleEndCombos""".stripMargin).records.collect.toList
+        val startEndNodeLabelCombinationTuple: List[(Set[String], Set[String])] = startEndResultRows.map {
+          cypherRowAsMap: CypherMap =>
+            val s = cypherRowAsMap.value("possibleStartCombos").cast[CypherList].value.map(_.cast[CypherString].value).toSet
+            val e = cypherRowAsMap.value("possibleEndCombos").cast[CypherList].value.map(_.cast[CypherString].value).toSet
+            s -> e
+        }
+        for {
+          (startCombo, endCombo) <- startEndNodeLabelCombinationTuple
+        } yield EdgeToViewMapping(
+          RelationshipType(NodeType(startCombo), relType, NodeType(endCombo)),
+          ViewId(None, List(dataSourceName, databaseName, relType)),
+          StartNode(nodeViewKey(startCombo), joinFromStartNode),
+          EndNode(nodeViewKey(endCombo), joinFromEndNode),
+          relKeyMapping)
+      }
+    }
+
+    val graphDdl = GraphDdl(Map(graphName -> Graph(
+      graphName,
+      schema,
+      nodeToViewMappings,
+      edgeToViewMappings
+    )))
 
     schema.labelCombinations.combos.foreach { labelCombination =>
       val nodeDf = scanGraph.canonicalNodeTable(labelCombination).removePrefix(propertyPrefix)
@@ -88,31 +130,6 @@ abstract class SqlPropertyGraphDataSourceAcceptanceTest extends CAPSTestSuite wi
       writeTable(relDf, tableName)
     }
 
-    val sqlPgds = SqlPropertyGraphDataSource(graphDdl, Map(dataSourceName -> sqlDataSourceConfig))
-
-    // The DDL cannot represent nodes without labels, so we need to wrap the data source and add this node manually
-    val nodesWithoutLabels = CAPSScanGraphFactory(CreateGraphFactory(createStatementsForNodesWithoutLabels))
-    new CAPSPropertyGraphDataSource {
-      override def hasGraph(name: GraphName): Boolean = sqlPgds.hasGraph(name)
-      override def graph(name: GraphName): PropertyGraph = {
-        val sqlGraph = sqlPgds.graph(name)
-        if (name == graphName) {
-          sqlGraph.unionAll(nodesWithoutLabels)
-        } else {
-          sqlGraph
-        }
-      }
-      override def schema(name: GraphName): Option[Schema] = {
-        val sqlSchema = sqlPgds.schema(name)
-        if (name == graphName) {
-          sqlSchema.map(_ ++ nodesWithoutLabels.schema)
-        } else {
-          sqlSchema
-        }
-      }
-      override def store(name: GraphName, graph: PropertyGraph): Unit = sqlPgds.store(name, graph)
-      override def delete(name: GraphName): Unit = sqlPgds.delete(name)
-      override def graphNames: Set[GraphName] = sqlPgds.graphNames
-    }
+    SqlPropertyGraphDataSource(graphDdl, Map(dataSourceName -> sqlDataSourceConfig))
   }
 }

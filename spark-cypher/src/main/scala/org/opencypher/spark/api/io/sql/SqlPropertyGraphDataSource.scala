@@ -233,11 +233,8 @@ case class SqlPropertyGraphDataSource(
       FileFormat.csv -> Map("header" -> "true", "inferSchema" -> "true")
     )
 
-    val viewPath = (viewId.maybeSetSchema, viewId.parts) match {
-      case (Some(_), path :: Nil) => path
-      case (None, _ :: path :: Nil) => path
-      case _ => malformed("File names must be defined with the data source", viewId.parts.mkString("."))
-    }
+    val viewPath = viewId.parts.lastOption.getOrElse(
+      malformed("File names must be defined with the data source", viewId.parts.mkString(".")))
 
     val filePath = if (new URI(viewPath).isAbsolute) {
       viewPath

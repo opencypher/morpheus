@@ -43,6 +43,7 @@ trait PGDSAcceptance[Session <: CypherSession] extends BeforeAndAfterEach {
 
   val createStatementsForNodesWithoutLabels: String = "CREATE (d { name: 'D', type: 'NO_LABEL' })"
 
+  // TODO: NO_LABEL node created twice
   val createStatements: String =
     s"""
       |CREATE (a:A { name: 'A' })
