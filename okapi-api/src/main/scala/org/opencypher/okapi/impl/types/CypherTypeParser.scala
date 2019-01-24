@@ -27,10 +27,10 @@
 package org.opencypher.okapi.impl.types
 
 import fastparse.Parsed.{Failure, Success}
+import fastparse._
 import org.apache.logging.log4j.scala.Logging
 import org.opencypher.okapi.api.types._
 import org.opencypher.okapi.impl.util.ParserUtils._
-import fastparse._
 
 object CypherTypeParser extends Logging {
 
@@ -103,7 +103,7 @@ object CypherTypeParser extends Logging {
       PATH |
       LIST |
       MAP |
-      LOCALDATETIME | // needs to be before date due to shortest match semantics
+      LOCALDATETIME |
       DATE
   )
 

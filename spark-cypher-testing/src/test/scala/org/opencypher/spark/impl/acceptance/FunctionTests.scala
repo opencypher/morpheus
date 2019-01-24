@@ -60,6 +60,7 @@ class FunctionTests extends CAPSTestSuite with ScanGraphInit{
       )
     }
 
+    // TODO: Add missing parsers
     it("parses cypher compatible date strings") {
       Seq(
         "2010-10-10" -> "2010-10-10",
@@ -96,27 +97,32 @@ class FunctionTests extends CAPSTestSuite with ScanGraphInit{
     }
 
     it("throws an error if values of higher significance are omitted") {
-      an[IllegalArgumentException] shouldBe thrownBy(
+      val e1 = the [IllegalArgumentException] thrownBy(
         caps.cypher("RETURN date({ year: 2018, day: 356 })").records.toMaps
       )
+      e1.getMessage should(include("valid significance order") and include("year, day"))
 
-      an[IllegalArgumentException] shouldBe thrownBy(
+      val e2 = the [IllegalArgumentException] thrownBy(
         caps.cypher("RETURN date({ month: 11, day: 2 })").records.toMaps
       )
+      e2.getMessage should(include("valid significance order") and include("month, day"))
 
-      an[IllegalArgumentException] shouldBe thrownBy(
+      val e3 = the [IllegalArgumentException] thrownBy(
         caps.cypher("RETURN date({ day: 2 })").records.toMaps
       )
+      e3.getMessage should(include("valid significance order") and include("day"))
     }
 
     it("throws an error if the date argument is wrong") {
-      an[IllegalArgumentException] shouldBe thrownBy(
+      val e1 = the [IllegalArgumentException] thrownBy(
         caps.cypher("RETURN date('2018-10-10-10')").records.toMaps
       )
+      e1.getMessage should(include("valid date construction string") and include("2018-10-10-10"))
 
-      an[IllegalArgumentException] shouldBe thrownBy(
+      val e2 = the [IllegalArgumentException] thrownBy(
         caps.cypher("RETURN date('201810101')").records.toMaps
       )
+      e2.getMessage should(include("valid date construction string") and include("201810101"))
     }
 
     it("compares two dates") {
@@ -153,6 +159,7 @@ class FunctionTests extends CAPSTestSuite with ScanGraphInit{
 
   describe("localdatetime") {
 
+    // TODO: add missing parsers
     it("parses cypher compatible localdatetime strings") {
       Seq(
         "2010-10-10" -> "2010-10-10 00:00:00",
@@ -211,27 +218,28 @@ class FunctionTests extends CAPSTestSuite with ScanGraphInit{
     }
 
     it("throws an error if values of higher significance are omitted") {
-      an[IllegalArgumentException] shouldBe thrownBy(
-        caps.cypher("RETURN localdatetime({ minute: 50 })").records.toMaps
-      )
+      val e1 = the [IllegalArgumentException] thrownBy caps.cypher("RETURN localdatetime({ minute: 50 })").records.toMaps
+      e1.getMessage should(include("valid significance order") and include("minute"))
 
-      an[IllegalArgumentException] shouldBe thrownBy(
-        caps.cypher("RETURN localdatetime({ year: 2018, hour: 12, second: 14 })").records.toMaps
-      )
+      val e2 = the [IllegalArgumentException] thrownBy caps.cypher("RETURN localdatetime({ year: 2018, hour: 12, second: 14 })").records.toMaps
+      e2.getMessage should(include("valid significance order") and include("year, hour, second"))
     }
 
-    it("throws an error if the date argument is wrong") {
-      an[IllegalArgumentException] shouldBe thrownBy(
+    it("throws an error if the localdatetime string is malformed") {
+      val e1 = the [IllegalArgumentException] thrownBy(
         caps.cypher("RETURN localdatetime('2018-10-10T12:10:30:15')").records.toMaps
       )
+      e1.getMessage.should(include("valid time construction string") and include("12:10:30:15"))
 
-      an[IllegalArgumentException] shouldBe thrownBy(
+      val e2 = the [IllegalArgumentException] thrownBy(
         caps.cypher("RETURN localdatetime('20181010T1210301')").records.toMaps
       )
+      e2.getMessage should(include("valid time construction string") and include("1210301"))
 
-      an[IllegalArgumentException] shouldBe thrownBy(
-        caps.cypher("RETURN localdatetime('20181010T12:000')").records.toMaps
+      val e3 = the [IllegalArgumentException] thrownBy(
+        caps.cypher("RETURN localdatetime('20181010123123T12:00')").records.toMaps
       )
+      e3.getMessage should(include("valid date construction string") and include("20181010123123"))
     }
 
     it("compares two datetimes") {
