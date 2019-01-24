@@ -97,6 +97,37 @@ class ExpressionTests extends CAPSTestSuite with ScanGraphInit {
         CypherMap("n.val" -> "baz", "result" -> 3))
       )
     }
+
+    it("should evaluate an inner CASE expression with default") {
+      // Given
+      val given =
+        initGraph(
+          """
+            |CREATE (:Person {val: "foo", amount: 42 })
+            |CREATE (:Person {val: "bar", amount: 23 })
+            |CREATE (:Person {val: "baz", amount: 84 })
+          """.stripMargin)
+
+      // When
+      val result = given.cypher(
+        """MATCH (n)
+          |RETURN
+          | n.val,
+          | sum(CASE n.val
+          |   WHEN 'foo' THEN n.amount
+          |   WHEN 'bar' THEN 1984
+          |   ELSE 0
+          | END) AS result
+        """.stripMargin)
+
+      // Then
+      result.records.toMaps should equal(Bag(
+        CypherMap("n.val" -> "foo", "result" -> 42),
+        CypherMap("n.val" -> "bar", "result" -> 1984),
+        CypherMap("n.val" -> "baz", "result" -> 0))
+      )
+    }
+
   }
 
   describe("properties") {
