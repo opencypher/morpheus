@@ -35,7 +35,6 @@ import org.opencypher.okapi.impl.exception.{GraphAlreadyExistsException, GraphNo
 import org.opencypher.okapi.testing.Bag._
 import org.scalatest.Tag
 import org.scalatest.prop.TableDrivenPropertyChecks.{forAll, _}
-import org.scalatest.prop.TableFor1
 
 import scala.util.{Failure, Success, Try}
 
@@ -44,7 +43,7 @@ trait Cypher10Acceptance[Session <: CypherSession, Graph <: PropertyGraph] {
 
   lazy val graph: Map[GraphName, Graph] = testCreateGraphStatements.mapValues(initGraph)
 
-  def testedScenarios: TableFor1[Cypher10Scenario] = cypher10Scenarios
+  def allScenarios: List[Cypher10Scenario] = cypher10Scenarios
 
   def initSession: Session
 
@@ -71,9 +70,10 @@ trait Cypher10Acceptance[Session <: CypherSession, Graph <: PropertyGraph] {
 
   def initContext: TestContext = TestContext(initSession, initPgds)
 
-  def executeTests(testName: String = getClass.getSimpleName): Unit = {
-    val testTag = new Tag(testName)
-    forAll(testedScenarios) { scenario =>
+  def execute(scenarios: List[Cypher10Scenario]): Unit = {
+    val testTag = new Tag(getClass.getSimpleName)
+    val scenarioTable = Table("Read-only scenario", scenarios: _*)
+    forAll(scenarioTable) { scenario =>
       test(s"[${testTag.name}] ${scenario.name}", testTag, scenario) {
         val ctx: TestContext = initContext
         Try(scenario.test(ctx)) match {
@@ -93,6 +93,7 @@ trait Cypher10Acceptance[Session <: CypherSession, Graph <: PropertyGraph] {
     override val name: String
   )(val test: TestContext => Unit) extends Tag(name)
 
+  val ns = Namespace("testing")
   val g1 = GraphName("testGraph1")
   lazy val testCreateGraphStatements: Map[GraphName, String] = Map(
     g1 ->
@@ -137,11 +138,8 @@ trait Cypher10Acceptance[Session <: CypherSession, Graph <: PropertyGraph] {
   }
 
   // TODO: Extend TCK with Cypher 10 tests and implement with updated TCK
-  lazy val cypher10Scenarios: TableFor1[Cypher10Scenario] = {
-    val ns = Namespace("testing")
-    Table(
-      "Read-only scenario",
-
+  lazy val cypher10Scenarios: List[Cypher10Scenario] = {
+    List(
       Cypher10Scenario("API: Session.registerSource") { implicit ctx: TestContext =>
         registerPgdsStep(ns)
         storeGraphStep(g1)
@@ -439,7 +437,6 @@ trait Cypher10Acceptance[Session <: CypherSession, Graph <: PropertyGraph] {
           case Failure(t) => throw t
         }
       }
-
     )
   }
 
