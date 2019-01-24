@@ -44,9 +44,7 @@ object CAPSFunctions {
       */
     def get(idx: Column): Column =
       new Column(UnresolvedExtractValue(column.expr, idx.expr))
-
   }
-
 
   val rangeUdf: UserDefinedFunction =
     udf[Array[Int], Int, Int, Int]((from: Int, to: Int, step: Int) => from.to(to, step).toArray)
