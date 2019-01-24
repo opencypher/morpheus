@@ -30,12 +30,13 @@ import org.apache.spark.sql.DataFrame
 import org.opencypher.graphddl._
 import org.opencypher.okapi.api.graph.GraphName
 import org.opencypher.okapi.api.io.PropertyGraphDataSource
-import org.opencypher.okapi.api.value.CypherValue.{CypherList, CypherMap, CypherString}
+import org.opencypher.okapi.api.schema.SchemaPattern
 import org.opencypher.okapi.impl.util.StringEncodingUtilities._
 import org.opencypher.okapi.testing.propertygraph.InMemoryTestGraph
 import org.opencypher.spark.api.CAPSSession
 import org.opencypher.spark.api.io.fs.DefaultGraphDirectoryStructure.nodeTableDirectoryName
 import org.opencypher.spark.api.io.sql.IdGenerationStrategy.IdGenerationStrategy
+import org.opencypher.spark.api.io.sql.util.DdlUtils._
 import org.opencypher.spark.api.io.util.CAPSGraphExport._
 import org.opencypher.spark.api.io.{GraphEntity, Relationship}
 import org.opencypher.spark.impl.table.SparkTable._
@@ -88,28 +89,20 @@ abstract class SqlPropertyGraphDataSourceAcceptanceTest extends CAPSTestSuite wi
     }
 
     val edgeToViewMappings: List[EdgeToViewMapping] = {
-      schema.relationshipTypes.toList.flatMap { relType =>
+      val schemaPatterns: Map[String, Set[SchemaPattern]] = scanGraph.schemaPatterns.groupBy(_.relType)
+      schemaPatterns.flatMap { case (relType, patterns) =>
+        val viewId = ViewId(None, List(dataSourceName, databaseName, relType))
         val relKeyMapping = schema.relationshipPropertyKeys(relType).keySet.map(k => k -> k).toMap
-        val startEndResultRows: List[CypherMap] = scanGraph.cypher(
-          s"""|MATCH (s)-[:$relType]->(e)
-              |WITH DISTINCT labels(s) AS possibleStartCombos, labels(e) AS possibleEndCombos
-              |RETURN possibleStartCombos, possibleEndCombos""".stripMargin).records.collect.toList
-        val startEndNodeLabelCombinationTuple: List[(Set[String], Set[String])] = startEndResultRows.map {
-          cypherRowAsMap: CypherMap =>
-            val s = cypherRowAsMap.value("possibleStartCombos").cast[CypherList].value.map(_.cast[CypherString].value).toSet
-            val e = cypherRowAsMap.value("possibleEndCombos").cast[CypherList].value.map(_.cast[CypherString].value).toSet
-            s -> e
+        patterns.map { case SchemaPattern(sourceLabelCombination, _, targetLabelCombination) =>
+          EdgeToViewMapping(
+            RelationshipType(NodeType(sourceLabelCombination), relType, NodeType(targetLabelCombination)),
+            viewId,
+            StartNode(nodeViewKey(sourceLabelCombination), joinFromStartNode),
+            EndNode(nodeViewKey(targetLabelCombination), joinFromEndNode),
+            relKeyMapping)
         }
-        for {
-          (startCombo, endCombo) <- startEndNodeLabelCombinationTuple
-        } yield EdgeToViewMapping(
-          RelationshipType(NodeType(startCombo), relType, NodeType(endCombo)),
-          ViewId(None, List(dataSourceName, databaseName, relType)),
-          StartNode(nodeViewKey(startCombo), joinFromStartNode),
-          EndNode(nodeViewKey(endCombo), joinFromEndNode),
-          relKeyMapping)
       }
-    }
+    }.toList
 
     val graphDdl = GraphDdl(Map(graphName -> Graph(
       graphName,
