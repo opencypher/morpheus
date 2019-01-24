@@ -155,7 +155,12 @@ object SparkSQLExprMapper {
           val col = e.asSparkSQLExpr
           e.cypherType match {
             case CTString => functions.length(col).cast(LongType)
-            case _: CTList | _: CTListOrNull => functions.size(col).cast(LongType)
+            case _: CTList | _: CTListOrNull =>
+              functions.when(
+                col.isNotNull,
+                functions.size(col).cast(LongType)
+              )
+            case CTNull => NULL_LIT
             case other => throw NotImplementedException(s"size() on values of type $other")
           }
 
@@ -226,15 +231,20 @@ object SparkSQLExprMapper {
         case Exists(e) => e.asSparkSQLExpr.isNotNull
         case Id(e) => e.asSparkSQLExpr
         case Labels(e) =>
-          val node = e.owner.get
-          val labelExprs = header.labelsFor(node)
-          val (labelNames, labelColumns) = labelExprs
-            .toSeq
-            .map(e => e.label.name -> e.asSparkSQLExpr)
-            .sortBy(_._1)
-            .unzip
-          val booleanLabelFlagColumn = functions.array(labelColumns: _*)
-          get_node_labels(labelNames)(booleanLabelFlagColumn)
+          e.cypherType match {
+            case _: CTNode | _: CTNodeOrNull =>
+              val node = e.owner.get
+              val labelExprs = header.labelsFor(node)
+              val (labelNames, labelColumns) = labelExprs
+              .toSeq
+              .map(e => e.label.name -> e.asSparkSQLExpr)
+              .sortBy(_._1)
+              .unzip
+              val booleanLabelFlagColumn = functions.array(labelColumns: _*)
+              get_node_labels(labelNames)(booleanLabelFlagColumn)
+            case CTNull => NULL_LIT
+            case other => throw IllegalArgumentException("an expression with type CTNode, CTNodeOrNull, or CTNull", other)
+          }
 
         case Keys(e) => e.cypherType.material match {
           case _: CTNode | _: CTRelationship =>
@@ -311,6 +321,8 @@ object SparkSQLExprMapper {
         case Range(from, to, maybeStep) =>
           val stepCol = maybeStep.map(_.asSparkSQLExpr).getOrElse(ONE_LIT)
           rangeUdf(from.asSparkSQLExpr, to.asSparkSQLExpr, stepCol)
+
+        case Replace(original, search, replacement) => translate(original.asSparkSQLExpr, search.asSparkSQLExpr, replacement.asSparkSQLExpr)
 
         case Substring(original, start, maybeLength) =>
           val origCol = original.asSparkSQLExpr

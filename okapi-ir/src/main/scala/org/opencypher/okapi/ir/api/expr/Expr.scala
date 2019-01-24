@@ -719,6 +719,13 @@ final case class Range(from: Expr, to: Expr, o: Option[Expr]) extends FunctionEx
   override def withCypherType(ct: CypherType): Range = this
 }
 
+final case class Replace(original: Expr, search: Expr, replacement: Expr) extends FunctionExpr {
+  override def exprs: IndexedSeq[Expr] = IndexedSeq(original, search, replacement)
+  override def cypherType: CypherType = CTString
+  override type This = Replace
+  override def withCypherType(ct: CypherType): Replace = this
+}
+
 final case class Substring(original: Expr, start: Expr, length: Option[Expr]) extends FunctionExpr {
 
   override def exprs: IndexedSeq[Expr] = IndexedSeq(original, start)

@@ -26,7 +26,7 @@
  */
 package org.opencypher.okapi.ir.impl
 
-import org.opencypher.okapi.api.types.CypherType
+import org.opencypher.okapi.api.types.{CTInteger, CypherType}
 import org.opencypher.okapi.impl.exception.NotImplementedException
 import org.opencypher.okapi.ir.api.expr._
 import org.opencypher.okapi.ir.impl.parse.{functions => f}
@@ -60,6 +60,9 @@ object FunctionUtils {
         case functions.ToBoolean => ToBoolean(expr.head)(cypherType)
         case functions.Range => Range(expr(0), expr(1), expr.lift(2))
         case functions.Substring => Substring(expr(0), expr(1), expr.lift(2))
+        case functions.Left => Substring(expr(0), IntegerLit(0)(), expr.lift(1))
+        case functions.Right => Substring(expr(0), Subtract(Multiply(IntegerLit(-1)(), expr(1))(CTInteger), IntegerLit(1)())(CTInteger), None)
+        case functions.Replace => Replace(expr(0), expr(1), expr(2))
         case functions.Trim => Trim(expr.head)(cypherType)
         case functions.LTrim => LTrim(expr.head)(cypherType)
         case functions.RTrim => RTrim(expr.head)(cypherType)

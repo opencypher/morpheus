@@ -442,6 +442,127 @@ class FunctionTests extends CAPSTestSuite with ScanGraphInit{
     }
   }
 
+  describe("left") {
+    it("on string value") {
+      val result = caps.cypher("RETURN left('hello', 4) AS res")
+      result.records.toMaps should equal(
+        Bag(
+          CypherMap("res" -> "hell")
+        )
+      )
+    }
+    it("on string value where length is greater than string") {
+      val result = caps.cypher("RETURN left('hello', 8) AS res")
+      result.records.toMaps should equal(
+        Bag(
+          CypherMap("res" -> "hello")
+        )
+      )
+    }
+    it("on null value") {
+      val result = caps.cypher("RETURN left(null, 4) AS res")
+      result.records.toMaps should equal(
+        Bag(
+          CypherMap("res" -> null)
+        )
+      )
+    }
+  }
+
+  describe("right") {
+    it("on string value") {
+      val result = caps.cypher("RETURN right('hello', 2) AS res")
+      result.records.toMaps should equal(
+        Bag(
+          CypherMap("res" -> "lo")
+        )
+      )
+    }
+    it("on string value where length is greater than string") {
+      val result = caps.cypher("RETURN left('hello', 8) AS res")
+      result.records.toMaps should equal(
+        Bag(
+          CypherMap("res" -> "hello")
+        )
+      )
+    }
+    it("on null value") {
+      val result = caps.cypher("RETURN left(null, 4) AS res")
+      result.records.toMaps should equal(
+        Bag(
+          CypherMap("res" -> null)
+        )
+      )
+    }
+  }
+
+  describe("replace") {
+    it("single character") {
+      val result = caps.cypher("RETURN replace('hello', 'l', 'w') AS res")
+      result.records.toMaps should equal(
+        Bag(
+          CypherMap("res" -> "hewwo")
+        )
+      )
+    }
+    it("multiple characters") {
+      val result = caps.cypher("RETURN replace('hello', 'ell', 'ipp') AS res")
+      result.records.toMaps should equal(
+        Bag(
+          CypherMap("res" -> "hippo")
+        )
+      )
+    }
+    it("non-existent character") {
+      val result = caps.cypher("RETURN replace('hello', 'x', 'y') AS res")
+      result.records.toMaps should equal(
+        Bag(
+          CypherMap("res" -> "hello")
+        )
+      )
+    }
+    it("on null") {
+      val result = caps.cypher("RETURN replace(null, 'x', 'y') AS res")
+      result.records.toMaps should equal(
+        Bag(
+          CypherMap("res" -> null)
+      )
+      )
+    }
+    it("on null to-be-replaced") {
+      val result = caps.cypher("RETURN replace('hello', null, 'y') AS res")
+      result.records.toMaps should equal(
+        Bag(
+          CypherMap("res" -> null)
+        )
+      )
+    }
+    it("on null replacement") {
+      val result = caps.cypher("RETURN replace('hello', 'x', null) AS res")
+      result.records.toMaps should equal(
+        Bag(
+          CypherMap("res" -> null)
+        )
+      )
+    }
+    it("on complex string expression") {
+      val result = caps.cypher("RETURN replace('he' + 'llo', 'l' + 'l', 'w' + 'w') AS res")
+      result.records.toMaps should equal(
+        Bag(
+          CypherMap("res" -> "hewwo")
+        )
+      )
+    }
+    it("on complex expression evaluating to null") {
+      val result = caps.cypher("WITH ['ll', 'ww'] AS stringList RETURN replace('hello', stringList[0], stringList[2]) AS res")
+      result.records.toMaps should equal(
+        Bag(
+          CypherMap("res" -> null)
+        )
+      )
+    }
+  }
+
   describe("toUpper") {
     it("toUpper()") {
       val result = caps.cypher("RETURN toUpper('hello') AS upperCased")
@@ -630,6 +751,16 @@ class FunctionTests extends CAPSTestSuite with ScanGraphInit{
         ))
     }
 
+    it("handle null") {
+      val result = caps.cypher("RETURN labels(null) AS res")
+
+      result.records.toMaps should equal(
+        Bag(
+          CypherMap("res" -> null)
+        )
+      )
+    }
+
   }
 
   describe("size") {
@@ -681,14 +812,27 @@ class FunctionTests extends CAPSTestSuite with ScanGraphInit{
         ))
     }
 
-    ignore("size() on null") {
+    it("size() on null") {
       val given = initGraph("CREATE ()")
 
       val result = given.cypher("MATCH (a) RETURN size(a.prop) AS s")
 
-      result.records.toMaps should equal(Bag(CypherMap("s" -> null)))
+      result.records.toMaps should equal(
+        Bag(
+          CypherMap("s" -> null)
+        )
+      )
     }
 
+    it("size() on nullable list null") {
+      val result = caps.cypher("RETURN size(labels(null)) AS s")
+
+      result.records.toMaps should equal(
+        Bag(
+          CypherMap("s" -> null)
+        )
+      )
+    }
   }
 
   describe("keys") {
