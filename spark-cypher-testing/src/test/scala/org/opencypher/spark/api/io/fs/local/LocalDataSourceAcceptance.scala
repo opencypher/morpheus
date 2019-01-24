@@ -27,43 +27,34 @@
 package org.opencypher.spark.api.io.fs.local
 
 import org.junit.rules.TemporaryFolder
-import org.opencypher.okapi.api.graph.GraphName
-import org.opencypher.okapi.api.io.PropertyGraphDataSource
-import org.opencypher.okapi.relational.api.graph.RelationalCypherGraph
-import org.opencypher.okapi.testing.propertygraph.InMemoryTestGraph
+import org.opencypher.okapi.api.graph.PropertyGraph
+import org.opencypher.okapi.testing.propertygraph.CreateGraphFactory
 import org.opencypher.spark.api.CAPSSession
-import org.opencypher.spark.impl.io.CAPSPropertyGraphDataSource
-import org.opencypher.spark.impl.table.SparkTable.DataFrameTable
 import org.opencypher.spark.testing.CAPSTestSuite
 import org.opencypher.spark.testing.api.io.CAPSPGDSAcceptance
 import org.opencypher.spark.testing.support.creation.caps.CAPSScanGraphFactory
 
-abstract class LocalDataSourceAcceptance extends CAPSTestSuite with CAPSPGDSAcceptance {
-
-  protected def createDs(graph: RelationalCypherGraph[DataFrameTable]): CAPSPropertyGraphDataSource
+trait LocalDataSourceAcceptance extends CAPSTestSuite with CAPSPGDSAcceptance {
 
   protected var tempDir = new TemporaryFolder()
 
   protected val schemePrefix = "file://"
 
-  override def initSession(): CAPSSession = caps
+  override def initSession: CAPSSession = caps
 
-  override protected def beforeEach(): Unit = {
-    tempDir.create()
-    super.beforeEach()
+  override def initGraph(createStatements: String): PropertyGraph = {
+    CAPSScanGraphFactory(CreateGraphFactory(createStatements))
   }
 
-  override protected def afterEach(): Unit = {
-    tempDir.delete()
+  override def initContext: TestContext = {
     tempDir = new TemporaryFolder()
-    super.afterEach()
+    tempDir.create()
+    super.initContext
   }
 
-  override def create(graphName: GraphName, testGraph: InMemoryTestGraph, createStatements: String): PropertyGraphDataSource = {
-    val graph = CAPSScanGraphFactory(testGraph)
-    val ds = createDs(graph)
-    ds.store(graphName, graph)
-    ds
+  override def returnContext(implicit ctx: TestContext): Unit = {
+    super.returnContext
+    tempDir.delete()
   }
 
 }

@@ -46,11 +46,12 @@ trait CAPSPGDSAcceptance extends Cypher10Acceptance[CAPSSession, PropertyGraph] 
 
   override def initSession: CAPSSession = caps
 
-  override def allScenarios: List[CAPSPGDSAcceptance#Cypher10Scenario] = super.allScenarios ++ tagScenarios
+  override def allScenarios: List[Cypher10Scenario] = super.allScenarios ++ tagScenarios
 
   lazy val tagScenarios = List(
 
-    Cypher10Scenario("store graphs with tags, query variant") { implicit ctx: TestContext =>
+    Cypher10Scenario("Store graphs with tags") { implicit ctx: TestContext =>
+      registerPgdsStep(ns)
       session.cypher("CATALOG CREATE GRAPH g1 { CONSTRUCT CREATE ()-[:FOO]->() RETURN GRAPH }")
       session.cypher("CATALOG CREATE GRAPH g2 { CONSTRUCT CREATE () RETURN GRAPH }")
 
@@ -68,7 +69,8 @@ trait CAPSPGDSAcceptance extends Cypher10Acceptance[CAPSSession, PropertyGraph] 
       }
     },
 
-    Cypher10Scenario("store graphs with tags, API variant") { implicit ctx: TestContext =>
+    Cypher10Scenario("API: Store graphs with tags") { implicit ctx: TestContext =>
+      registerPgdsStep(ns)
       session.cypher("CATALOG CREATE GRAPH g1 { CONSTRUCT CREATE ()-[:FOO]->() RETURN GRAPH }")
       session.cypher("CATALOG CREATE GRAPH g2 { CONSTRUCT CREATE () RETURN GRAPH }")
 

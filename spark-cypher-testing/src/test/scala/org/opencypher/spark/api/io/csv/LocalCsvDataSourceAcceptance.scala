@@ -28,32 +28,36 @@ package org.opencypher.spark.api.io.csv
 
 import java.nio.file.Paths
 
-import org.opencypher.okapi.relational.api.graph.RelationalCypherGraph
+import org.opencypher.okapi.api.io.PropertyGraphDataSource
 import org.opencypher.spark.api.GraphSources
 import org.opencypher.spark.api.io.fs.local.LocalDataSourceAcceptance
-import org.opencypher.spark.impl.io.CAPSPropertyGraphDataSource
-import org.opencypher.spark.impl.table.SparkTable.DataFrameTable
 
 class LocalCsvDataSourceAcceptance extends LocalDataSourceAcceptance {
 
-  override protected def createDs(graph: RelationalCypherGraph[DataFrameTable]): CAPSPropertyGraphDataSource = {
+  override def initPgds(): PropertyGraphDataSource = {
     GraphSources.fs(schemePrefix + Paths.get(tempDir.getRoot.getAbsolutePath)).csv
   }
+
+  execute(allScenarios)
 
 }
 
 class LocalOrcDataSourceAcceptance extends LocalDataSourceAcceptance {
 
-  override protected def createDs(graph: RelationalCypherGraph[DataFrameTable]): CAPSPropertyGraphDataSource = {
+  override def initPgds(): PropertyGraphDataSource = {
     GraphSources.fs(schemePrefix + Paths.get(tempDir.getRoot.getAbsolutePath)).orc
   }
+
+  execute(allScenarios)
 
 }
 
 class LocalParquetDataSourceAcceptance extends LocalDataSourceAcceptance {
 
-  override protected def createDs(graph: RelationalCypherGraph[DataFrameTable]): CAPSPropertyGraphDataSource = {
+  override def initPgds(): PropertyGraphDataSource = {
     GraphSources.fs(schemePrefix + Paths.get(tempDir.getRoot.getAbsolutePath)).parquet
   }
+
+  execute(allScenarios)
 
 }

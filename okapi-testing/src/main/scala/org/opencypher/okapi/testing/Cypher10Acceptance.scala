@@ -138,7 +138,7 @@ trait Cypher10Acceptance[Session <: CypherSession, Graph <: PropertyGraph] {
   }
 
   // TODO: Extend TCK with Cypher 10 tests and implement with updated TCK
-  lazy val cypher10Scenarios: List[Cypher10Scenario] = {
+  val cypher10Scenarios: List[Cypher10Scenario] = {
     List(
       Cypher10Scenario("API: Session.registerSource") { implicit ctx: TestContext =>
         registerPgdsStep(ns)
@@ -232,7 +232,7 @@ trait Cypher10Acceptance[Session <: CypherSession, Graph <: PropertyGraph] {
         )
       },
 
-      Cypher10Scenario("multi-hop paths") { implicit ctx: TestContext =>
+      Cypher10Scenario("Multi-hop paths") { implicit ctx: TestContext =>
         registerPgdsStep(ns)
         storeGraphStep(g1)
         expectRecordsAnyOrderStep(
@@ -242,7 +242,7 @@ trait Cypher10Acceptance[Session <: CypherSession, Graph <: PropertyGraph] {
         )
       },
 
-      Cypher10Scenario("store a graph") { implicit ctx: TestContext =>
+      Cypher10Scenario("Store a graph") { implicit ctx: TestContext =>
         registerPgdsStep(ns)
         storeGraphStep(g1)
         val gn = GraphName("storedGraph")
@@ -261,7 +261,7 @@ trait Cypher10Acceptance[Session <: CypherSession, Graph <: PropertyGraph] {
         }
       },
 
-      Cypher10Scenario("store a constructed graph") { implicit ctx: TestContext =>
+      Cypher10Scenario("Store a constructed graph") { implicit ctx: TestContext =>
         registerPgdsStep(ns)
         storeGraphStep(g1)
         val gn = GraphName("storedGraph")
@@ -288,7 +288,7 @@ trait Cypher10Acceptance[Session <: CypherSession, Graph <: PropertyGraph] {
         }
       },
 
-      Cypher10Scenario("store nodes without labels") { implicit ctx: TestContext =>
+      Cypher10Scenario("Store nodes without labels") { implicit ctx: TestContext =>
         registerPgdsStep(ns)
         val gn = GraphName("storedGraph")
         Try(session.cypher(
@@ -313,7 +313,7 @@ trait Cypher10Acceptance[Session <: CypherSession, Graph <: PropertyGraph] {
         }
       },
 
-      Cypher10Scenario("store European Latin unicode labels, rel types, property keys, and property values") { implicit
+      Cypher10Scenario("Store European Latin unicode labels, rel types, property keys, and property values") { implicit
         ctx: TestContext =>
         registerPgdsStep(ns)
         val gn = GraphName("storedGraph")
@@ -338,7 +338,7 @@ trait Cypher10Acceptance[Session <: CypherSession, Graph <: PropertyGraph] {
         }
       },
 
-      Cypher10Scenario("property with property key `id`") { implicit ctx: TestContext =>
+      Cypher10Scenario("Property with property key `id`") { implicit ctx: TestContext =>
         registerPgdsStep(ns)
         val gn = GraphName("storedGraph")
         Try(session.cypher(
@@ -362,7 +362,7 @@ trait Cypher10Acceptance[Session <: CypherSession, Graph <: PropertyGraph] {
         }
       },
 
-      Cypher10Scenario("store a union graph") { implicit ctx: TestContext =>
+      Cypher10Scenario("Store a union graph") { implicit ctx: TestContext =>
         registerPgdsStep(ns)
         session.cypher("CATALOG CREATE GRAPH g1 { CONSTRUCT CREATE () RETURN GRAPH }")
         session.cypher("CATALOG CREATE GRAPH g2 { CONSTRUCT CREATE () RETURN GRAPH }")
@@ -389,7 +389,7 @@ trait Cypher10Acceptance[Session <: CypherSession, Graph <: PropertyGraph] {
         }
       },
 
-      Cypher10Scenario("repeat CONSTRUCT ON") { implicit ctx: TestContext =>
+      Cypher10Scenario("Repeat CONSTRUCT ON") { implicit ctx: TestContext =>
         registerPgdsStep(ns)
         storeGraphStep(g1)
         val firstConstructedGraphName = GraphName("first")
@@ -425,7 +425,7 @@ trait Cypher10Acceptance[Session <: CypherSession, Graph <: PropertyGraph] {
         }
       },
 
-      Cypher10Scenario("drop a graph") { implicit ctx: TestContext =>
+      Cypher10Scenario("Drop a graph") { implicit ctx: TestContext =>
         registerPgdsStep(ns)
         storeGraphStep(g1)
         Try(session.cypher(s"CATALOG DROP GRAPH $ns.$g1")) match {
