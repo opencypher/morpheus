@@ -61,8 +61,9 @@ object CypherValue {
       case js: java.lang.String => js.toString
       case jb: java.lang.Boolean => jb.booleanValue
       case jl: java.util.List[_] => seqToCypherList(jl.toArray)
-      case dt: java.sql.Date => dt
-      case ts: java.sql.Timestamp => ts
+      case dt: java.sql.Date => dt.toLocalDate
+      case ts: java.sql.Timestamp => ts.toLocalDateTime
+      case du: java.time.Duration => du
       case a: Array[_] => seqToCypherList(a)
       case s: Seq[_] => seqToCypherList(s)
       case m: Map[_, _] => m.map { case (k, cv) => k.toString -> CypherValue(cv) }
@@ -260,11 +261,15 @@ object CypherValue {
 
   implicit class CypherFloat(val value: Double) extends AnyVal with CypherNumber[Double]
 
-  implicit class CypherLocalDateTime(val value: java.sql.Timestamp) extends AnyVal with MaterialCypherValue[java.sql.Timestamp] {
+  implicit class CypherLocalDateTime(val value: java.time.LocalDateTime) extends AnyVal with MaterialCypherValue[java.time.LocalDateTime] {
     override def unwrap: Any = value
   }
 
-  implicit class CypherDate(val value: java.sql.Date) extends AnyVal with MaterialCypherValue[java.sql.Date] {
+  implicit class CypherDate(val value: java.time.LocalDate) extends AnyVal with MaterialCypherValue[java.time.LocalDate] {
+    override def unwrap: Any = value
+  }
+
+  implicit class CypherDuration(val value: java.time.Duration) extends AnyVal with MaterialCypherValue[java.time.Duration] {
     override def unwrap: Any = value
   }
 
@@ -472,8 +477,8 @@ object CypherValue {
 
   object CypherFloat extends UnapplyValue[Double, CypherFloat]
 
-  object CypherLocalDateTime extends UnapplyValue[java.sql.Timestamp, CypherLocalDateTime]
+  object CypherLocalDateTime extends UnapplyValue[java.time.LocalDateTime, CypherLocalDateTime]
 
-  object CypherDate extends UnapplyValue[java.sql.Date, CypherDate]
+  object CypherDate extends UnapplyValue[java.time.LocalDate, CypherDate]
 
 }

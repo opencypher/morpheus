@@ -31,6 +31,9 @@ import java.time.format.{DateTimeFormatter, DateTimeFormatterBuilder, SignStyle}
 import java.time.temporal.{ChronoField, IsoFields}
 import java.time.{LocalDate, LocalDateTime, LocalTime}
 
+import org.apache.spark.sql.DataFrame
+import org.apache.spark.unsafe.types.CalendarInterval
+import org.opencypher.okapi.api.value.CypherValue.{CypherInteger, CypherMap, CypherString}
 import org.opencypher.okapi.impl.exception.IllegalArgumentException
 
 import scala.util.{Failure, Success, Try}
@@ -184,6 +187,40 @@ object TemporalTypesHelper {
         }
 
         Timestamp.valueOf(dateTime)
+    }
+  }
+
+  def toDuration(expr: Expr)(implicit header: RecordHeader, df: DataFrame, parameters: CypherMap): Option[CalendarInterval] = {
+    resolveArgument(expr).map { value =>
+      val durationMap = value match {
+        case Left(_) => ???
+        case Right(str) =>
+          val durationRegex =
+            """^P(\d+Y)?(\d+M)?(\d+W)?(\d+D)?(T(\d+H)?(\d+M)?(\d+S)?)?$"""
+              .r("years", "months", "weeks", "days", "_", "hours", "minutes", "seconds")
+
+          durationRegex.findFirstMatchIn(str) match {
+            case Some(m) =>
+              Seq("years", "months", "weeks", "days", "hours", "minutes", "seconds")
+                .map(id => id -> m.group(id))
+                .filterNot(_._2.isNull)
+                .toMap
+                .mapValues(_.dropRight(1).toLong)
+            case _ => throw IllegalArgumentException("a valid duration construction string", str)
+          }
+      }
+
+      CalendarIntervalFactory(
+        durationMap.getOrElse("years", 0),
+        durationMap.getOrElse("months", 0),
+        durationMap.getOrElse("weeks", 0),
+        durationMap.getOrElse("days", 0),
+        durationMap.getOrElse("hours", 0),
+        durationMap.getOrElse("minutes", 0),
+        durationMap.getOrElse("seconds", 0),
+        durationMap.getOrElse("milliseconds", 0),
+        durationMap.getOrElse("microseconds", 0)
+      )
     }
   }
 

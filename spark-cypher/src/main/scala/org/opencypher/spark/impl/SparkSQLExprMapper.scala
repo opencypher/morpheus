@@ -28,6 +28,7 @@ package org.opencypher.spark.impl
 
 import org.apache.spark.sql.types._
 import org.apache.spark.sql.{Column, DataFrame, functions}
+import org.apache.spark.unsafe.types.CalendarInterval
 import org.opencypher.okapi.api.types._
 import org.opencypher.okapi.api.value.CypherValue.{CypherInteger, CypherList, CypherMap, CypherString}
 import org.opencypher.okapi.impl.exception.{IllegalArgumentException, IllegalStateException, NotImplementedException, UnsupportedOperationException}
@@ -146,8 +147,7 @@ object SparkSQLExprMapper {
           }
 
         case Duration(expr) =>
-          import org.opencypher.spark.impl.util.TemporalTypesHelper._
-          functions.expr(sanitizeDuration(expr))
+          functions.lit(toDuration(expr).orNull)
 
         case l: Lit[_] => functions.lit(l.v)
 

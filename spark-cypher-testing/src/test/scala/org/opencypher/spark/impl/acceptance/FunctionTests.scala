@@ -34,6 +34,7 @@ import org.opencypher.okapi.api.value.CypherValue.{CypherMap, CypherNull}
 import org.opencypher.okapi.impl.exception.{IllegalArgumentException, NotImplementedException}
 import org.opencypher.okapi.testing.Bag
 import org.opencypher.okapi.testing.Bag._
+import org.opencypher.spark.impl.util.DurationFactory
 import org.opencypher.spark.testing.CAPSTestSuite
 import org.scalatest.junit.JUnitRunner
 
@@ -53,8 +54,38 @@ class FunctionTests extends CAPSTestSuite with ScanGraphInit {
   }
 
   describe("duration") {
-    it("returns a valid duration") {
-      caps.cypher("RETURN duration('P1Y2M20D')").show
+    it("parses cypher compatible duration strings") {
+      caps.cypher("RETURN duration('P1Y2M20D') AS duration").records.toMapsWithCollectedEntities should equal(
+        Bag(CypherMap("duration" -> DurationFactory(years = 1, months = 2, days = 20)))
+      )
+
+      caps.cypher("RETURN duration('PT1S') AS duration").records.toMapsWithCollectedEntities should equal(
+        Bag(CypherMap("duration" -> DurationFactory(seconds = 1)))
+      )
+
+      caps.cypher("RETURN duration('PT1M10S') AS duration").records.toMapsWithCollectedEntities should equal(
+        Bag(CypherMap("duration" -> DurationFactory(minutes = 1, seconds = 10)))
+      )
+
+      caps.cypher("RETURN duration('PT3H1M10S') AS duration").records.toMapsWithCollectedEntities should equal(
+        Bag(CypherMap("duration" -> DurationFactory(hours = 3, minutes = 1, seconds = 10)))
+      )
+
+      caps.cypher("RETURN duration('P5DT3H1M10S') AS duration").records.toMapsWithCollectedEntities should equal(
+        Bag(CypherMap("duration" -> DurationFactory(days = 5, hours = 3, minutes = 1, seconds = 10)))
+      )
+
+      caps.cypher("RETURN duration('P1W5DT3H1M10S') AS duration").records.toMapsWithCollectedEntities should equal(
+        Bag(CypherMap("duration" -> DurationFactory(weeks = 1, days = 5, hours = 3, minutes = 1, seconds = 10)))
+      )
+
+      caps.cypher("RETURN duration('P12M1W5DT3H1M10S') AS duration").records.toMapsWithCollectedEntities should equal(
+        Bag(CypherMap("duration" -> DurationFactory(months = 12, weeks = 1, days = 5, hours = 3, minutes = 1, seconds = 10)))
+      )
+
+      caps.cypher("RETURN duration('P3Y12M1W5DT3H1M10S') AS duration").records.toMapsWithCollectedEntities should equal(
+        Bag(CypherMap("duration" -> DurationFactory(years = 3, months = 12, weeks = 1, days = 5, hours = 3, minutes = 1, seconds = 10)))
+      )
     }
   }
 

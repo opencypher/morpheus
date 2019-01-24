@@ -1050,7 +1050,6 @@ sealed abstract class TemporalInstant(expr: Option[Expr]) extends FunctionExpr {
     case Some(expr) => IndexedSeq(expr)
     case None => IndexedSeq.empty
   }
-
 }
 
 final case class LocalDateTime(expr: Option[Expr])(val cypherType: CypherType = CTLocalDateTime) extends TemporalInstant(expr) {
@@ -1067,12 +1066,13 @@ final case class Date(expr: Option[Expr])(val cypherType: CypherType = CTDate) e
   override def withCypherType(ct: CypherType): Date = copy()(ct)
 }
 
-final case class Duration(expr: Expr)(val cypherType: CypherType = CTDuration) extends TemporalInstant(expr) {
+final case class Duration(expr: Expr)(val cypherType: CypherType = CTDuration) extends FunctionExpr {
 
   override type This = Duration
 
   override def withCypherType(ct: CypherType): Duration = copy()(ct)
 
+  override def exprs: IndexedSeq[Expr] = IndexedSeq(expr)
 }
 
 sealed abstract class BoolLit(val v: Boolean)(val cypherType: CypherType = CTBoolean) extends Lit[Boolean] {
