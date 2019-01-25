@@ -1,4 +1,4 @@
-/*
+/**
  * Copyright (c) 2016-2019 "Neo4j Sweden, AB" [https://neo4j.com]
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -24,37 +24,25 @@
  * described as "implementation extensions to Cypher" or as "proposed changes to
  * Cypher that are not yet approved by the openCypher community".
  */
-package org.opencypher.spark.examples
+package org.opencypher.spark.snippets
 
-import java.io.{ByteArrayOutputStream, PrintStream}
-import java.net.URI
+import org.opencypher.spark.api.{CAPSSession, GraphSources}
+import org.opencypher.spark.api.io.sql.SqlDataSourceConfig
+import org.opencypher.spark.util.ConsoleApp
 
-import org.junit.runner.RunWith
-import org.scalatest.junit.JUnitRunner
-import org.scalatest.{BeforeAndAfterAll, FunSpec, Matchers}
+object SqlPGDS extends ConsoleApp {
+  implicit val session: CAPSSession = CAPSSession.local()
 
-import scala.io.Source
+  // tag::create-sql-pgds[]
+  val sqlPgds = GraphSources
+    .sql(resource("snippets/SqlPGDS.ddl").getFile)
+    .withSqlDataSourceConfigs(
+      "myHiveSource" -> SqlDataSourceConfig.Hive,
+      "myH2Source" -> SqlDataSourceConfig.Jdbc(
+        url = "jdbc:h2:mem:myH2.db;",
+        driver = "org.h2.Driver"
+      )
+    )
+  // end::create-sql-pgds[]
 
-@RunWith(classOf[JUnitRunner])
-abstract class ExampleTest extends FunSpec with Matchers with BeforeAndAfterAll {
-
-  private val oldStdOut = System.out
-
-  protected val emptyOutput: String = ""
-
-  protected def validate(app: => Unit, expectedOut: URI): Unit = {
-    validate(app, Source.fromFile(expectedOut).mkString)
-  }
-
-  protected def validate(app: => Unit, expectedOut: String): Unit = {
-    val outCapture = new ByteArrayOutputStream()
-    val printer = new PrintStream(outCapture, true, "UTF-8")
-    Console.withOut(printer)(app)
-    outCapture.toString("UTF-8") shouldEqual expectedOut
-  }
-
-  override protected def afterAll(): Unit = {
-    System.setOut(oldStdOut)
-    super.afterAll()
-  }
 }

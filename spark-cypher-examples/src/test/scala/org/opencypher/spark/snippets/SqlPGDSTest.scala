@@ -1,4 +1,4 @@
-/*
+/**
  * Copyright (c) 2016-2019 "Neo4j Sweden, AB" [https://neo4j.com]
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -24,37 +24,17 @@
  * described as "implementation extensions to Cypher" or as "proposed changes to
  * Cypher that are not yet approved by the openCypher community".
  */
-package org.opencypher.spark.examples
+package org.opencypher.spark.snippets
 
-import java.io.{ByteArrayOutputStream, PrintStream}
-import java.net.URI
+import org.opencypher.spark.examples.ExampleTest
 
-import org.junit.runner.RunWith
-import org.scalatest.junit.JUnitRunner
-import org.scalatest.{BeforeAndAfterAll, FunSpec, Matchers}
 
-import scala.io.Source
+class SqlPGDSTest extends ExampleTest  {
 
-@RunWith(classOf[JUnitRunner])
-abstract class ExampleTest extends FunSpec with Matchers with BeforeAndAfterAll {
-
-  private val oldStdOut = System.out
-
-  protected val emptyOutput: String = ""
-
-  protected def validate(app: => Unit, expectedOut: URI): Unit = {
-    validate(app, Source.fromFile(expectedOut).mkString)
-  }
-
-  protected def validate(app: => Unit, expectedOut: String): Unit = {
-    val outCapture = new ByteArrayOutputStream()
-    val printer = new PrintStream(outCapture, true, "UTF-8")
-    Console.withOut(printer)(app)
-    outCapture.toString("UTF-8") shouldEqual expectedOut
-  }
-
-  override protected def afterAll(): Unit = {
-    System.setOut(oldStdOut)
-    super.afterAll()
+  it("should produce the correct output") {
+    validate(
+      SqlPGDS.main(Array.empty),
+      emptyOutput
+    )
   }
 }
