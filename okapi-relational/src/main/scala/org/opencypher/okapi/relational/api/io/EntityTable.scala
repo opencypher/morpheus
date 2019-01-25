@@ -26,7 +26,7 @@
  */
 package org.opencypher.okapi.relational.api.io
 
-import org.opencypher.okapi.api.io.conversion.{EntityMapping, NodeMapping, RelationshipMapping}
+import org.opencypher.okapi.api.io.conversion.{EntityMapping, NodeMapping, PatternMapping, RelationshipMapping}
 import org.opencypher.okapi.api.schema.Schema
 import org.opencypher.okapi.api.types._
 import org.opencypher.okapi.impl.exception.IllegalArgumentException
@@ -52,6 +52,7 @@ trait EntityTable[T <: Table[T]] extends RelationalCypherRecords[T] {
   val entityType: CypherType with DefiniteCypherType = mapping.cypherType
 
   def header: RecordHeader = mapping match {
+    case p: PatternMapping => headerFrom(p)
     case n: NodeMapping => headerFrom(n)
     case r: RelationshipMapping => headerFrom(r)
   }
@@ -63,6 +64,9 @@ trait EntityTable[T <: Table[T]] extends RelationalCypherRecords[T] {
       s"Columns: ${table.physicalColumns.mkString(", ")}",
       s"Use CAPS[Node|Relationship]Table#fromMapping to create a valid EntityTable")
   }
+
+  protected def headerFrom(patternMapping: PatternMapping): RecordHeader =
+    headerFrom(patternMapping.nodeMapping) ++ headerFrom(patternMapping.relationshipMapping)
 
   protected def headerFrom(nodeMapping: NodeMapping): RecordHeader = {
     val nodeVar = Var("")(nodeMapping.cypherType)

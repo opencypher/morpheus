@@ -194,6 +194,17 @@ case object CTDuration extends TemporalValueCypherType {
   override def name = "DURATION"
 }
 
+sealed case class CTPattern(node: CTNode, relationship: CTRelationship) extends MaterialDefiniteCypherType {
+
+  final override def name: String = ???
+
+  final override def nullable = ???
+
+  final override def superTypeOf(other: CypherType): Ternary = ???
+
+  final override def joinMaterially(other: MaterialCypherType): MaterialCypherType = ???
+}
+
 object CTNode extends CTNode(Set.empty, None) with Serializable {
   def apply(labels: String*): CTNode =
     CTNode(labels.toSet)
