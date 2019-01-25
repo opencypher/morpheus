@@ -54,6 +54,11 @@ class FunctionTests extends CAPSTestSuite with ScanGraphInit {
   }
 
   describe("duration") {
+
+    it("accessors") {
+      caps.cypher("RETURN duration('P20D').days AS duration").show
+    }
+
     it("parses cypher compatible duration strings") {
       caps.cypher("RETURN duration('P1Y2M20D') AS duration").records.toMapsWithCollectedEntities should equal(
         Bag(CypherMap("duration" -> DurationFactory(years = 1, months = 2, days = 20)))
@@ -61,6 +66,10 @@ class FunctionTests extends CAPSTestSuite with ScanGraphInit {
 
       caps.cypher("RETURN duration('PT1S') AS duration").records.toMapsWithCollectedEntities should equal(
         Bag(CypherMap("duration" -> DurationFactory(seconds = 1)))
+      )
+
+      caps.cypher("RETURN duration('PT111.123456S') AS duration").records.toMapsWithCollectedEntities should equal(
+        Bag(CypherMap("duration" -> DurationFactory(seconds = 111, nanos = 123456000)))
       )
 
       caps.cypher("RETURN duration('PT1M10S') AS duration").records.toMapsWithCollectedEntities should equal(
@@ -75,16 +84,43 @@ class FunctionTests extends CAPSTestSuite with ScanGraphInit {
         Bag(CypherMap("duration" -> DurationFactory(days = 5, hours = 3, minutes = 1, seconds = 10)))
       )
 
-      caps.cypher("RETURN duration('P1W5DT3H1M10S') AS duration").records.toMapsWithCollectedEntities should equal(
+      caps.cypher("RETURN duration('P1W5DT3H1M10S') AS duration")
+        .records.toMapsWithCollectedEntities should equal(
         Bag(CypherMap("duration" -> DurationFactory(weeks = 1, days = 5, hours = 3, minutes = 1, seconds = 10)))
       )
 
-      caps.cypher("RETURN duration('P12M1W5DT3H1M10S') AS duration").records.toMapsWithCollectedEntities should equal(
-        Bag(CypherMap("duration" -> DurationFactory(months = 12, weeks = 1, days = 5, hours = 3, minutes = 1, seconds = 10)))
+      caps.cypher("RETURN duration('P12M1W5DT3H1M10S') AS duration")
+        .records.toMapsWithCollectedEntities should equal(
+        Bag(CypherMap("duration" -> DurationFactory(months = 12, weeks = 1, days = 5, hours = 3, minutes = 1,
+          seconds = 10)))
       )
 
-      caps.cypher("RETURN duration('P3Y12M1W5DT3H1M10S') AS duration").records.toMapsWithCollectedEntities should equal(
-        Bag(CypherMap("duration" -> DurationFactory(years = 3, months = 12, weeks = 1, days = 5, hours = 3, minutes = 1, seconds = 10)))
+      caps.cypher("RETURN duration('P3Y12M1W5DT3H1M10S') AS duration")
+        .records.toMapsWithCollectedEntities should equal(
+        Bag(CypherMap("duration" -> DurationFactory(years = 3, months = 12, weeks = 1, days = 5, hours = 3,
+          minutes = 1, seconds = 10)))
+      )
+    }
+
+    it("constructs duration from a map") {
+      caps.cypher("RETURN duration({ seconds: 1 }) as duration").records.toMapsWithCollectedEntities should equal(
+        Bag(CypherMap("duration" -> DurationFactory(seconds = 1)))
+      )
+
+      caps.cypher(
+        """RETURN duration({
+          | years: 3,
+          | months: 12,
+          | weeks: 1,
+          | days: 5,
+          | hours: 3,
+          | minutes: 1,
+          | seconds: 10 }) as duration""".stripMargin).records.toMapsWithCollectedEntities should equal(
+        Bag(
+          CypherMap("duration" -> DurationFactory(years = 3, months = 12, weeks = 1, days = 5, hours = 3,
+            minutes = 1, seconds = 10)
+          )
+        )
       )
     }
   }

@@ -624,6 +624,10 @@ object SchemaTyper {
         case (CTString, _) if right.subTypeOf(CTNumber).maybeTrue => Some(CTString)
         case (_, CTString) if left.subTypeOf(CTNumber).maybeTrue => Some(CTString)
         case (CTString, CTString) => Some(CTString)
+        case (CTLocalDateTime, CTDuration) => Some(CTLocalDateTime)
+        case (CTDuration, CTLocalDateTime) => Some(CTLocalDateTime)
+        case (CTDate, CTDuration) => Some(CTDate)
+        case (CTDuration, CTDate) => Some(CTDate)
         case (l, r) =>
           numericTypeOrError(expr, l, r) match {
             case Right(t) => Some(t)
