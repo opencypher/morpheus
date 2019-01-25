@@ -190,57 +190,55 @@ object TemporalTypesHelper {
     }
   }
 
-  def toDuration(expr: Expr)(implicit header: RecordHeader, df: DataFrame, parameters: CypherMap): Option[CalendarInterval] = {
-    resolveArgument(expr).map { value =>
-      val durationMap = value match {
-        case Left(map) => map.mapValues(_.toLong)
+  def toDuration(mapOrString: MapOrString): CalendarInterval = {
+    val durationMap = mapOrString match {
+      case Left(map) => map.mapValues(_.toLong)
 
-        case Right(str) =>
-          val durationRegex =
-            """^P(\d+Y)?(\d+M)?(\d+W)?(\d+D)?(T(\d+H)?(\d+M)?(\d+(\.\d{1,6})?S)?)?$"""
-              .r("years", "months", "weeks", "days", "_", "hours", "minutes", "seconds", "_", "_")
+      case Right(str) =>
+        val durationRegex =
+          """^P(\d+Y)?(\d+M)?(\d+W)?(\d+D)?(T(\d+H)?(\d+M)?(\d+(\.\d{1,6})?S)?)?$"""
+            .r("years", "months", "weeks", "days", "_", "hours", "minutes", "seconds", "_", "_")
 
-          durationRegex.findFirstMatchIn(str) match {
-            case Some(m) =>
-              val withoutSeconds = Seq("years", "months", "weeks", "days", "hours", "minutes")
-                .map(id => id -> m.group(id))
-                .filterNot(_._2.isNull)
-                .toMap
-                .mapValues(_.dropRight(1).toLong)
+        durationRegex.findFirstMatchIn(str) match {
+          case Some(m) =>
+            val withoutSeconds = Seq("years", "months", "weeks", "days", "hours", "minutes")
+              .map(id => id -> m.group(id))
+              .filterNot(_._2.isNull)
+              .toMap
+              .mapValues(_.dropRight(1).toLong)
 
-              m.group("seconds") match {
-                case s: String =>
-                  val doubleValue = s.dropRight(1).toDouble
-                  val seconds = doubleValue.toLong
-                  val fraction = (doubleValue - seconds) * 1000000
-                  val milliseconds = (fraction / 1000).toLong
-                  val microseconds = (fraction % 1000).toLong
+            m.group("seconds") match {
+              case s: String =>
+                val doubleValue = s.dropRight(1).toDouble
+                val seconds = doubleValue.toLong
+                val fraction = (doubleValue - seconds) * 1000000
+                val milliseconds = (fraction / 1000).toLong
+                val microseconds = (fraction % 1000).toLong
 
-                  withoutSeconds ++ Seq(
-                    "seconds" -> seconds,
-                    "milliseconds" -> milliseconds,
-                    "microseconds" -> microseconds
-                  ).toMap
+                withoutSeconds ++ Seq(
+                  "seconds" -> seconds,
+                  "milliseconds" -> milliseconds,
+                  "microseconds" -> microseconds
+                ).toMap
 
-                case null => withoutSeconds
-              }
+              case null => withoutSeconds
+            }
 
-            case _ => throw IllegalArgumentException("a valid duration construction string", str)
-          }
-      }
-
-      CalendarIntervalFactory(
-        durationMap.getOrElse("years", 0),
-        durationMap.getOrElse("months", 0),
-        durationMap.getOrElse("weeks", 0),
-        durationMap.getOrElse("days", 0),
-        durationMap.getOrElse("hours", 0),
-        durationMap.getOrElse("minutes", 0),
-        durationMap.getOrElse("seconds", 0),
-        durationMap.getOrElse("milliseconds", 0),
-        durationMap.getOrElse("microseconds", 0)
-      )
+          case _ => throw IllegalArgumentException("a valid duration construction string", str)
+        }
     }
+
+    CalendarIntervalFactory(
+      durationMap.getOrElse("years", 0),
+      durationMap.getOrElse("months", 0),
+      durationMap.getOrElse("weeks", 0),
+      durationMap.getOrElse("days", 0),
+      durationMap.getOrElse("hours", 0),
+      durationMap.getOrElse("minutes", 0),
+      durationMap.getOrElse("seconds", 0),
+      durationMap.getOrElse("milliseconds", 0),
+      durationMap.getOrElse("microseconds", 0)
+    )
   }
 
   private def parseDateMap(map: Map[String, Int]): LocalDate = {
@@ -334,7 +332,7 @@ object TemporalTypesHelper {
         case _ => true
       }
 
-    if(!validOrder) throw IllegalArgumentException(
+    if (!validOrder) throw IllegalArgumentException(
       "a valid significance order",
       inputMap.keys.mkString(", "),
       "When constructing dates from a map it is forbidden to omit values of higher significance"

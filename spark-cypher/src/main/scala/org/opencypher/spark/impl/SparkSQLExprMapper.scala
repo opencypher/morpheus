@@ -146,8 +146,9 @@ object SparkSQLExprMapper {
             case None => functions.current_timestamp()
           }
 
-        case Duration(expr) =>
-          functions.lit(toDuration(expr).orNull)
+        case Duration(durationExpr) =>
+          val durationValue = resolveTemporalArgument(durationExpr).map(toDuration).orNull
+          functions.lit(durationValue)
 
         case l: Lit[_] => functions.lit(l.v)
 
