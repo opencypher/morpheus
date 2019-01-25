@@ -1,7 +1,9 @@
 ext {
 
     cfg = [
-            publishDir: "build/repo",
+            ci                       : false,
+            publishDir               : "build/repo",
+            enableNotImplementedCheck: { cfg.ci.toBoolean() },
     ]
 
     ver = [

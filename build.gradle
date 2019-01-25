@@ -19,6 +19,10 @@ subprojects {
         mavenLocal()
     }
 
+    configurations {
+        scalaCompilerPlugin
+    }
+
     dependencies {
         compile group: 'org.scala-lang', name: 'scala-library',  version: ver.scala.full
 
@@ -33,6 +37,9 @@ subprojects {
         testCompile group: 'org.scalatest',      name: "scalatest".scala(),     version: ver.scalatest
         testCompile group: 'org.scalacheck',     name: "scalacheck".scala(),    version: ver.scalacheck
         testCompile group: 'org.junit.platform', name: 'junit-platform-runner', version: ver.junit.runner
+
+        if (cfg.enableNotImplementedCheck())
+            scalaCompilerPlugin group: "com.github.cb372", name: "scala-typed-holes_$ver.scala.full", version: "0.0.6"
     }
 
     test {
@@ -50,6 +57,11 @@ subprojects {
             '-Yopt-warnings:at-inline-failed',
             '-Yopt:l:project',
             '-Ypartial-unification',
+    ]
+
+    if (cfg.enableNotImplementedCheck()) scalacParameters += [
+        "-Xplugin:" + configurations.scalaCompilerPlugin.asPath,
+        "-P:typed-holes:log-level:error",
     ]
 
     tasks.withType(ScalaCompile) {
