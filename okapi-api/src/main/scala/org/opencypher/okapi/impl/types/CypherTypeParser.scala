@@ -27,10 +27,10 @@
 package org.opencypher.okapi.impl.types
 
 import fastparse.Parsed.{Failure, Success}
+import fastparse._
 import org.apache.logging.log4j.scala.Logging
 import org.opencypher.okapi.api.types._
 import org.opencypher.okapi.impl.util.ParserUtils._
-import fastparse._
 
 object CypherTypeParser extends Logging {
 
@@ -68,7 +68,7 @@ object CypherTypeParser extends Logging {
   def NULL[_: P]: P[CTNull.type] = IgnoreCase("NULL").map(_ => CTNull)
   def WILDCARD[_: P]: P[CTWildcard.type] = IgnoreCase("?").map(_ => CTWildcard)
   def DATE[_: P]: P[CTDate.type] = IgnoreCase("DATE").map(_ => CTDate)
-  def DATETIME[_: P]: P[CTDateTime.type] = IgnoreCase("DATETIME").map(_ => CTDateTime)
+  def LOCALDATETIME[_: P]: P[CTLocalDateTime.type] = IgnoreCase("LOCALDATETIME").map(_ => CTLocalDateTime)
 
   // element types
   def NODE[_: P]: P[CTNode] = P(
@@ -103,7 +103,7 @@ object CypherTypeParser extends Logging {
       PATH |
       LIST |
       MAP |
-      DATETIME | // needs to be before date due to shortest match semantics
+      LOCALDATETIME |
       DATE
   )
 

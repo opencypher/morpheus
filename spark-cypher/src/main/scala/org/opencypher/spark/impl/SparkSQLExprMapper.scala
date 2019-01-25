@@ -29,13 +29,14 @@ package org.opencypher.spark.impl
 import org.apache.spark.sql.types._
 import org.apache.spark.sql.{Column, DataFrame, functions}
 import org.opencypher.okapi.api.types._
-import org.opencypher.okapi.api.value.CypherValue.{CypherList, CypherMap}
+import org.opencypher.okapi.api.value.CypherValue.{CypherInteger, CypherList, CypherMap, CypherString}
 import org.opencypher.okapi.impl.exception.{IllegalArgumentException, IllegalStateException, NotImplementedException, UnsupportedOperationException}
 import org.opencypher.okapi.ir.api.PropertyKey
 import org.opencypher.okapi.ir.api.expr._
 import org.opencypher.okapi.relational.impl.table.RecordHeader
 import org.opencypher.spark.impl.CAPSFunctions.{array_contains, get_node_labels, get_property_keys, get_rel_type, _}
 import org.opencypher.spark.impl.convert.SparkConversions._
+import org.opencypher.spark.impl.util.TemporalTypesHelper._
 
 object SparkSQLExprMapper {
 
@@ -128,21 +129,21 @@ object SparkSQLExprMapper {
         case NullLit(ct) =>
           NULL_LIT.cast(ct.toSparkType.get)
 
-        // TODO: extract argument mapping to helper function/class
-        case DateTime(expr) =>
-          val mappedArgs = expr match {
-            case Some(e) => e.asSparkSQLExpr
+        case LocalDateTime(dateExpr) =>
+          dateExpr match {
+            case Some(e) =>
+              val localDateTimeValue = resolveTemporalArgument(e).map(parseTimestamp).orNull
+              functions.lit(localDateTimeValue).cast(DataTypes.TimestampType)
             case None => functions.current_timestamp()
           }
-          functions.lit(mappedArgs).cast(DataTypes.TimestampType)
 
-        // TODO: see above
-        case Date(expr) =>
-          val mappedArgs = expr match {
-            case Some(e) => e.asSparkSQLExpr
+        case Date(dateExpr) =>
+          dateExpr match {
+            case Some(e) =>
+              val dateValue = resolveTemporalArgument(e).map(parseDate).orNull
+              functions.lit(dateValue).cast(DataTypes.DateType)
             case None => functions.current_timestamp()
           }
-          functions.lit(mappedArgs).cast(DataTypes.DateType)
 
         case l: Lit[_] => functions.lit(l.v)
 
@@ -191,11 +192,9 @@ object SparkSQLExprMapper {
         case Contains(lhs, rhs) =>
           lhs.asSparkSQLExpr.contains(rhs.asSparkSQLExpr)
 
-        case RegexMatch(prop, Param(name)) => {
+        case RegexMatch(prop, Param(name)) =>
           val regex: String = parameters(name).unwrap.toString
           prop.asSparkSQLExpr.rlike(regex)
-        }
-
 
         // Arithmetics
         case Add(lhs, rhs) =>
@@ -442,6 +441,36 @@ object SparkSQLExprMapper {
       functions.lit(null).cast(new StructType())
     } else {
       functions.struct(structColumns: _*)
+    }
+  }
+
+  private def resolveTemporalArgument(expr: Expr)(implicit parameters: CypherMap): Option[Either[Map[String, Int], String]] = {
+    expr match {
+      case MapExpression(inner) =>
+        val map = inner.map {
+          case (key, Param(name)) => key -> (parameters(name) match {
+            case CypherString(s) => s.toInt
+            case CypherInteger(i) => i.toInt
+            case other => throw IllegalArgumentException("A map value of type CypherString or CypherInteger", other)
+          })
+          case (key, e) =>
+            throw NotImplementedException(s"Parsing temporal values is currently only supported for Literal-Maps, got $key -> $e")
+        }
+
+        Some(Left(map))
+
+      case Param(name) =>
+        val s = parameters(name) match {
+          case CypherString(str) => str
+          case other => throw IllegalArgumentException(s"Parameter `$name` to be a CypherString", other)
+        }
+
+        Some(Right(s))
+
+      case NullLit(_) => None
+
+      case other =>
+        throw NotImplementedException(s"Parsing temporal values is currently only supported for Literal-Maps and String literals, got $other")
     }
   }
 }

@@ -26,9 +26,12 @@
  */
 package org.opencypher.spark.impl.acceptance
 
+import java.time.LocalDateTime
+import java.time.format.DateTimeFormatter
+
 import org.junit.runner.RunWith
 import org.opencypher.okapi.api.value.CypherValue.{CypherMap, CypherNull}
-import org.opencypher.okapi.impl.exception.NotImplementedException
+import org.opencypher.okapi.impl.exception.{IllegalArgumentException, NotImplementedException}
 import org.opencypher.okapi.testing.Bag
 import org.opencypher.okapi.testing.Bag._
 import org.opencypher.spark.testing.CAPSTestSuite
@@ -37,13 +40,89 @@ import org.scalatest.junit.JUnitRunner
 @RunWith(classOf[JUnitRunner])
 class FunctionTests extends CAPSTestSuite with ScanGraphInit{
 
+  private def shouldParseDate(given: String, expected: String): Unit = {
+    caps.cypher(s"RETURN date('$given') AS time").records.toMaps should equal(
+      Bag(CypherMap("time" -> java.sql.Date.valueOf(expected)))
+    )
+  }
+
+  private def shouldParseDateTime(given: String, expected: String): Unit = {
+    caps.cypher(s"RETURN localdatetime('$given') AS time").records.toMaps should equal(
+      Bag(CypherMap("time" -> java.sql.Timestamp.valueOf(expected)))
+    )
+  }
+
   describe("date") {
+
     it("returns a valid date") {
       caps.cypher("RETURN date('2010-10-10') AS time").records.toMaps should equal(
-        Bag(
-          CypherMap("time" -> java.sql.Date.valueOf("2010-10-10"))
-        )
+        Bag(CypherMap("time" -> java.sql.Date.valueOf("2010-10-10")))
       )
+    }
+
+    // TODO: Add missing parsers
+    it("parses cypher compatible date strings") {
+      Seq(
+        "2010-10-10" -> "2010-10-10",
+        "20101010" -> "2010-10-10",
+        "2010-12" -> "2010-12-01",
+        "201012" -> "2010-12-01",
+        "2015-W30-2" -> "2015-07-21",
+        "2015W302" -> "2015-07-21",
+//      "2015-W30" -> 2015-07-20",
+//      "2015W30" -> 2015-07-20",
+        "2015-Q2-60" -> "2015-05-30",
+//      "2015Q260" -> 2015-05-30",
+//      "2015-Q2" -> 2015-04-01",
+//      "2015Q2" -> 2015-04-01",
+        "2015-202" -> "2015-07-21",
+        "2015202" -> "2015-07-21",
+        "2010" -> "2010-01-01").foreach {
+        case (given, expected) => shouldParseDate(given, expected)
+      }
+    }
+
+    it("returns a valid date when constructed from a map") {
+      caps.cypher("RETURN date({ year: 2010, month: 10, day: 10 }) AS time").records.toMaps should equal(
+        Bag(CypherMap("time" -> java.sql.Date.valueOf("2010-10-10")))
+      )
+
+      caps.cypher("RETURN date({ year: 2010, month: 10 }) AS time").records.toMaps should equal(
+        Bag(CypherMap("time" -> java.sql.Date.valueOf("2010-10-01")))
+      )
+
+      caps.cypher("RETURN date({ year: '2010' }) AS time").records.toMaps should equal(
+        Bag(CypherMap("time" -> java.sql.Date.valueOf("2010-01-01")))
+      )
+    }
+
+    it("throws an error if values of higher significance are omitted") {
+      val e1 = the [IllegalArgumentException] thrownBy(
+        caps.cypher("RETURN date({ year: 2018, day: 356 })").records.toMaps
+      )
+      e1.getMessage should(include("valid significance order") and include("year, day"))
+
+      val e2 = the [IllegalArgumentException] thrownBy(
+        caps.cypher("RETURN date({ month: 11, day: 2 })").records.toMaps
+      )
+      e2.getMessage should(include("valid significance order") and include("month, day"))
+
+      val e3 = the [IllegalArgumentException] thrownBy(
+        caps.cypher("RETURN date({ day: 2 })").records.toMaps
+      )
+      e3.getMessage should(include("valid significance order") and include("day"))
+    }
+
+    it("throws an error if the date argument is wrong") {
+      val e1 = the [IllegalArgumentException] thrownBy(
+        caps.cypher("RETURN date('2018-10-10-10')").records.toMaps
+      )
+      e1.getMessage should(include("valid date construction string") and include("2018-10-10-10"))
+
+      val e2 = the [IllegalArgumentException] thrownBy(
+        caps.cypher("RETURN date('201810101')").records.toMaps
+      )
+      e2.getMessage should(include("valid date construction string") and include("201810101"))
     }
 
     it("compares two dates") {
@@ -68,27 +147,109 @@ class FunctionTests extends CAPSTestSuite with ScanGraphInit{
         )
       )
     }
+
+    it("should propagate null") {
+      caps.cypher("RETURN date(null) as time").records.toMaps should equal(
+        Bag(
+          CypherMap("time" -> null)
+        )
+      )
+    }
   }
 
-  describe("datetime") {
+  describe("localdatetime") {
 
-    it("returns a valid datetime") {
-      caps.cypher("RETURN datetime(\"2015-06-24T12:50:35.556\") AS time").records.toMaps should equal(
+    // TODO: add missing parsers
+    it("parses cypher compatible localdatetime strings") {
+      Seq(
+        "2010-10-10" -> "2010-10-10 00:00:00",
+        "20101010" -> "2010-10-10 00:00:00",
+        "2010-12" -> "2010-12-01 00:00:00",
+        "201012" -> "2010-12-01 00:00:00",
+        "2015-W30-2" -> "2015-07-21 00:00:00",
+        "2015W302" -> "2015-07-21 00:00:00",
+        //      "2015-W30" -> 2015-07-20 00:00:00",
+        //      "2015W30" -> 2015-07-20 00:00:00",
+        "2015-Q2-60" -> "2015-05-30 00:00:00",
+        //      "2015Q260" -> 2015-05-30 00:00:00",
+        //      "2015-Q2" -> 2015-04-01 00:00:00",
+        //      "2015Q2" -> 2015-04-01 00:00:00",
+        "2015-202" -> "2015-07-21 00:00:00",
+        "2015202" -> "2015-07-21 00:00:00",
+        "2010" -> "2010-01-01 00:00:00",
+        "2010-10-10T21:40:32.142" -> "2010-10-10 21:40:32.142",
+        "2010-10-10T214032.142" -> "2010-10-10 21:40:32.142",
+        "2010-10-10T21:40:32" -> "2010-10-10 21:40:32",
+        "2010-10-10T214032" -> "2010-10-10 21:40:32",
+        "2010-10-10T21:40" -> "2010-10-10 21:40:00",
+        "2010-10-10T2140" -> "2010-10-10 21:40:00",
+        "2010-10-10T21" -> "2010-10-10 21:00:00"
+      ).foreach {
+        case (given, expected) => shouldParseDateTime(given, expected)
+      }
+    }
+
+    it("returns a valid localdatetime when constructed from a map") {
+      caps.cypher(
+        """RETURN localdatetime({
+          |year: 2015,
+          |month: 10,
+          |day: 12,
+          |hour: 12,
+          |minute: 50,
+          |second: 35,
+          |millisecond: 556}) AS time""".stripMargin).records.toMaps should equal(
         Bag(
-          CypherMap("time" -> java.sql.Timestamp.valueOf("2015-06-24 12:50:35.556"))
+          CypherMap("time" -> java.sql.Timestamp.valueOf("2015-10-12 12:50:35.556"))
         )
       )
 
+      caps.cypher(
+        """RETURN localdatetime({
+          |year: 2015,
+          |month: 10,
+          |day: 1,
+          |hour: 12,
+          |minute: 50}) AS time""".stripMargin).records.toMaps should equal(
+        Bag(
+          CypherMap("time" -> java.sql.Timestamp.valueOf("2015-10-01 12:50:00.0"))
+        )
+      )
     }
 
-    it("compares two datetimes" ) {
-      caps.cypher("RETURN datetime(\"2015-10-10T00:00:00\") < datetime(\"2015-10-12T00:00:00\") AS time").records.toMaps should equal(
+    it("throws an error if values of higher significance are omitted") {
+      val e1 = the [IllegalArgumentException] thrownBy caps.cypher("RETURN localdatetime({ minute: 50 })").records.toMaps
+      e1.getMessage should(include("valid significance order") and include("minute"))
+
+      val e2 = the [IllegalArgumentException] thrownBy caps.cypher("RETURN localdatetime({ year: 2018, hour: 12, second: 14 })").records.toMaps
+      e2.getMessage should(include("valid significance order") and include("year, hour, second"))
+    }
+
+    it("throws an error if the localdatetime string is malformed") {
+      val e1 = the [IllegalArgumentException] thrownBy(
+        caps.cypher("RETURN localdatetime('2018-10-10T12:10:30:15')").records.toMaps
+      )
+      e1.getMessage.should(include("valid time construction string") and include("12:10:30:15"))
+
+      val e2 = the [IllegalArgumentException] thrownBy(
+        caps.cypher("RETURN localdatetime('20181010T1210301')").records.toMaps
+      )
+      e2.getMessage should(include("valid time construction string") and include("1210301"))
+
+      val e3 = the [IllegalArgumentException] thrownBy(
+        caps.cypher("RETURN localdatetime('20181010123123T12:00')").records.toMaps
+      )
+      e3.getMessage should(include("valid date construction string") and include("20181010123123"))
+    }
+
+    it("compares two datetimes") {
+      caps.cypher("RETURN localdatetime(\"2015-10-10T00:00:00\") < localdatetime(\"2015-10-12T00:00:00\") AS time").records.toMaps should equal(
         Bag(
           CypherMap("time" -> true)
         )
       )
 
-      caps.cypher("RETURN datetime(\"2015-10-10T00:00:00\") > datetime(\"2015-10-12T00:00:00\") AS time").records.toMaps should equal(
+      caps.cypher("RETURN localdatetime(\"2015-10-10T00:00:00\") > localdatetime(\"2015-10-12T00:00:00\") AS time").records.toMaps should equal(
         Bag(
           CypherMap("time" -> false)
         )
@@ -96,16 +257,24 @@ class FunctionTests extends CAPSTestSuite with ScanGraphInit{
     }
 
     it("uses the current date and time if no parameters are given") {
-      val currentDateTime = new java.sql.Timestamp(System.currentTimeMillis())
-      caps.cypher(s"RETURN datetime('$currentDateTime') <= datetime() AS time").records.toMaps equals equal(
+      val currentDateTime = LocalDateTime.now().format(DateTimeFormatter.ISO_LOCAL_DATE_TIME)
+      caps.cypher(s"RETURN localdatetime('$currentDateTime') <= localdatetime() AS time").records.toMaps equals equal(
         Bag(
           CypherMap("time" -> true)
         )
       )
     }
+
+    it("should propagate null") {
+      caps.cypher("RETURN localdatetime(null) as time").records.toMaps should equal(
+        Bag(
+          CypherMap("time" -> null)
+        )
+      )
+    }
   }
 
-  describe("Acos"){
+  describe("Acos") {
     it("on int value") {
       val result = caps.cypher("RETURN acos(1) AS res")
       result.records.toMaps should equal(
@@ -134,7 +303,7 @@ class FunctionTests extends CAPSTestSuite with ScanGraphInit{
     }
   }
 
-  describe("Asin"){
+  describe("Asin") {
     it("on int value") {
       val result = caps.cypher("RETURN asin(1) AS res")
       result.records.toMaps should equal(
@@ -163,7 +332,7 @@ class FunctionTests extends CAPSTestSuite with ScanGraphInit{
     }
   }
 
-  describe("Atan"){
+  describe("Atan") {
     it("on int value") {
       val result = caps.cypher("RETURN atan(1) AS res")
       result.records.toMaps should equal(
@@ -192,7 +361,7 @@ class FunctionTests extends CAPSTestSuite with ScanGraphInit{
     }
   }
 
-  describe("Atan2"){
+  describe("Atan2") {
     it("on int values") {
       val result = caps.cypher("RETURN atan2(1,2) AS res")
       result.records.toMaps should equal(
@@ -239,7 +408,7 @@ class FunctionTests extends CAPSTestSuite with ScanGraphInit{
     }
   }
 
-  describe("Cos"){
+  describe("Cos") {
     it("on int value") {
       val result = caps.cypher("RETURN cos(1) AS res")
       result.records.toMaps should equal(
@@ -268,7 +437,7 @@ class FunctionTests extends CAPSTestSuite with ScanGraphInit{
     }
   }
 
-  describe("Cot"){
+  describe("Cot") {
     it("on int value") {
       val result = caps.cypher("RETURN cot(1) AS res")
       result.records.toMaps should equal(
@@ -297,7 +466,7 @@ class FunctionTests extends CAPSTestSuite with ScanGraphInit{
     }
   }
 
-  describe("Degrees"){
+  describe("Degrees") {
     it("on int value") {
       val result = caps.cypher("RETURN degrees(1) AS res")
       result.records.toMaps should equal(
@@ -326,7 +495,7 @@ class FunctionTests extends CAPSTestSuite with ScanGraphInit{
     }
   }
 
-  describe("Haversin"){
+  describe("Haversin") {
     it("on int value") {
       val result = caps.cypher("RETURN haversin(1) AS res")
       result.records.toMaps should equal(
@@ -355,7 +524,7 @@ class FunctionTests extends CAPSTestSuite with ScanGraphInit{
     }
   }
 
-  describe("Radians"){
+  describe("Radians") {
     it("on int value") {
       val result = caps.cypher("RETURN radians(180) AS res")
       result.records.toMaps should equal(
@@ -384,7 +553,7 @@ class FunctionTests extends CAPSTestSuite with ScanGraphInit{
     }
   }
 
-  describe("Sin"){
+  describe("Sin") {
     it("on int value") {
       val result = caps.cypher("RETURN sin(1) AS res")
       result.records.toMaps should equal(
@@ -413,7 +582,7 @@ class FunctionTests extends CAPSTestSuite with ScanGraphInit{
     }
   }
 
-  describe("tan"){
+  describe("tan") {
     it("on int value") {
       val result = caps.cypher("RETURN tan(1) AS res")
       result.records.toMaps should equal(

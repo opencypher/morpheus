@@ -62,7 +62,7 @@ object SparkConversions {
           case CTInteger => Some(LongType)
           case CTBoolean => Some(BooleanType)
           case CTFloat => Some(DoubleType)
-          case CTDateTime => Some(TimestampType)
+          case CTLocalDateTime => Some(TimestampType)
           case CTDate => Some(DateType)
           case _: CTNode => Some(LongType)
           case _: CTRelationship => Some(LongType)
@@ -103,8 +103,8 @@ object SparkConversions {
       case CTFloatOrNull => StructField(column, DoubleType, nullable = true)
       case CTString => StructField(column, StringType, nullable = false)
       case CTStringOrNull => StructField(column, StringType, nullable = true)
-      case CTDateTime => StructField(column, TimestampType, nullable = false)
-      case CTDateTimeOrNull => StructField(column, TimestampType, nullable = true)
+      case CTLocalDateTime => StructField(column, TimestampType, nullable = false)
+      case CTLocalDateTimeOrNull => StructField(column, TimestampType, nullable = true)
       case CTDate => StructField(column, DateType, nullable = false)
       case CTDateOrNull => StructField(column, DateType, nullable = true)
 
@@ -150,7 +150,7 @@ object SparkConversions {
         case BooleanType => Some(CTBoolean)
         case BinaryType => Some(CTAny)
         case DoubleType => Some(CTFloat)
-        case TimestampType => Some(CTDateTime)
+        case TimestampType => Some(CTLocalDateTime)
         case DateType => Some(CTDate)
         case ArrayType(NullType, _) => Some(CTList(CTVoid))
         case ArrayType(elemType, containsNull) =>

@@ -35,7 +35,7 @@ import org.opencypher.okapi.api.schema.PropertyKeys.PropertyKeys
 import org.opencypher.okapi.api.schema.Schema
 import org.opencypher.okapi.api.types.CypherType.joinMonoid
 import org.opencypher.okapi.api.types._
-import org.opencypher.okapi.ir.impl.parse.functions.{Date, DateTime, FunctionLookup, Timestamp}
+import org.opencypher.okapi.ir.impl.parse.functions.FunctionLookup
 import org.opencypher.okapi.ir.impl.parse.rewriter.ExistsPattern
 import org.opencypher.okapi.ir.impl.typer.SignatureConverter._
 import org.opencypher.v9_0.expressions._

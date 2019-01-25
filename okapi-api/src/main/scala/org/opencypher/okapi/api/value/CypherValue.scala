@@ -260,7 +260,7 @@ object CypherValue {
 
   implicit class CypherFloat(val value: Double) extends AnyVal with CypherNumber[Double]
 
-  implicit class CypherDateTime(val value: java.sql.Timestamp) extends AnyVal with MaterialCypherValue[java.sql.Timestamp] {
+  implicit class CypherLocalDateTime(val value: java.sql.Timestamp) extends AnyVal with MaterialCypherValue[java.sql.Timestamp] {
     override def unwrap: Any = value
   }
 
@@ -472,7 +472,7 @@ object CypherValue {
 
   object CypherFloat extends UnapplyValue[Double, CypherFloat]
 
-  object CypherDateTime extends UnapplyValue[java.sql.Timestamp, CypherDateTime]
+  object CypherLocalDateTime extends UnapplyValue[java.sql.Timestamp, CypherLocalDateTime]
 
   object CypherDate extends UnapplyValue[java.sql.Date, CypherDate]
 
