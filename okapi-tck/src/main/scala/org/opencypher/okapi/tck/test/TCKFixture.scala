@@ -26,12 +26,13 @@
  */
 package org.opencypher.okapi.tck.test
 
+import java.time.format.DateTimeFormatter
 import java.util.Objects
 
 import org.opencypher.okapi.api.graph.{CypherSession, PropertyGraph}
 import org.opencypher.okapi.api.table.CypherRecords
 import org.opencypher.okapi.api.value.CypherValue
-import org.opencypher.okapi.api.value.CypherValue.{CypherList => OKAPICypherList, CypherMap => OKAPICypherMap, CypherNode => OKAPICypherNode, CypherRelationship => OKAPICypherRelationship, CypherString => OKAPICypherString, CypherValue => OKAPICypherValue}
+import org.opencypher.okapi.api.value.CypherValue.{CypherDate => OKAPICypherDate, CypherList => OKAPICypherList, CypherLocalDateTime => OKAPICypherLocalDateTime, CypherMap => OKAPICypherMap, CypherNode => OKAPICypherNode, CypherRelationship => OKAPICypherRelationship, CypherString => OKAPICypherString, CypherValue => OKAPICypherValue}
 import org.opencypher.okapi.impl.exception.NotImplementedException
 import org.opencypher.okapi.ir.impl.typer.exception.TypingException
 import org.opencypher.okapi.tck.test.TCKFixture._
@@ -152,6 +153,10 @@ case class TCKGraph[C <: CypherSession](testGraphFactory: CypherTestGraphFactory
           Seq(labelString, propertyString)
             .filter(_.nonEmpty)
             .mkString("(", " ", ")")
+        case OKAPICypherDate(date) =>
+          s"'${DateTimeFormatter.ISO_DATE.format(date.toLocalDate)}'"
+        case OKAPICypherLocalDateTime(localDateTime) =>
+          s"'${localDateTime.toLocalDateTime}'"
         case _ => Objects.toString(value)
       }
     }
