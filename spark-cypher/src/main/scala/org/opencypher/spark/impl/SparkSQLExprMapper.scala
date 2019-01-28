@@ -28,7 +28,6 @@ package org.opencypher.spark.impl
 
 import org.apache.spark.sql.types._
 import org.apache.spark.sql.{Column, DataFrame, functions}
-import org.apache.spark.unsafe.types.CalendarInterval
 import org.opencypher.okapi.api.types._
 import org.opencypher.okapi.api.value.CypherValue.{CypherInteger, CypherList, CypherMap, CypherString}
 import org.opencypher.okapi.impl.exception.{IllegalArgumentException, IllegalStateException, NotImplementedException, UnsupportedOperationException}
@@ -133,7 +132,7 @@ object SparkSQLExprMapper {
         case LocalDateTime(dateExpr) =>
           dateExpr match {
             case Some(e) =>
-              val localDateTimeValue = resolveTemporalArgument(e).map(parseTimestamp).orNull
+              val localDateTimeValue = resolveTemporalArgument(e).map(parseLocalDateTime).orNull
               functions.lit(localDateTimeValue).cast(DataTypes.TimestampType)
             case None => functions.current_timestamp()
           }
@@ -147,7 +146,7 @@ object SparkSQLExprMapper {
           }
 
         case Duration(durationExpr) =>
-          val durationValue = resolveTemporalArgument(durationExpr).map(toDuration).orNull
+          val durationValue = resolveTemporalArgument(durationExpr).map(parseDuration).orNull
           functions.lit(durationValue)
 
         case l: Lit[_] => functions.lit(l.v)

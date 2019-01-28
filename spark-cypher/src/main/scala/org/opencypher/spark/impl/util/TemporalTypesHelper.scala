@@ -31,9 +31,8 @@ import java.time.format.{DateTimeFormatter, DateTimeFormatterBuilder, SignStyle}
 import java.time.temporal.{ChronoField, IsoFields}
 import java.time.{LocalDate, LocalDateTime, LocalTime}
 
-import org.apache.spark.sql.DataFrame
 import org.apache.spark.unsafe.types.CalendarInterval
-import org.opencypher.okapi.api.value.CypherValue.{CypherInteger, CypherMap, CypherString}
+import org.opencypher.okapi.api.value.CypherValue.CypherString
 import org.opencypher.okapi.impl.exception.IllegalArgumentException
 
 import scala.util.{Failure, Success, Try}
@@ -161,7 +160,7 @@ object TemporalTypesHelper {
     Date.valueOf(localDate)
   }
 
-  def parseTimestamp(mapOrString: MapOrString): Timestamp = {
+  def parseLocalDateTime(mapOrString: MapOrString): Timestamp = {
 
     mapOrString match {
       case Left(map) =>
@@ -190,7 +189,7 @@ object TemporalTypesHelper {
     }
   }
 
-  def toDuration(mapOrString: MapOrString): CalendarInterval = {
+  def parseDuration(mapOrString: MapOrString): CalendarInterval = {
     val durationMap = mapOrString match {
       case Left(map) => map.mapValues(_.toLong)
 
