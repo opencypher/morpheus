@@ -104,12 +104,12 @@ class FunctionTests extends CAPSTestSuite with ScanGraphInit {
       val e2 = the [IllegalArgumentException] thrownBy(
         caps.cypher("RETURN date({ month: 11, day: 2 })").records.toMaps
       )
-      e2.getMessage should(include("valid significance order") and include("month, day"))
+      e2.getMessage should(include("`year` needs to be set") and include("month, day"))
 
       val e3 = the [IllegalArgumentException] thrownBy(
         caps.cypher("RETURN date({ day: 2 })").records.toMaps
       )
-      e3.getMessage should(include("valid significance order") and include("day"))
+      e3.getMessage should(include("`year` needs to be set") and include("day"))
     }
 
     it("throws an error if the date argument is wrong") {
@@ -216,7 +216,7 @@ class FunctionTests extends CAPSTestSuite with ScanGraphInit {
     }
 
     it("throws an error if values of higher significance are omitted") {
-      val e1 = the [IllegalArgumentException] thrownBy caps.cypher("RETURN localdatetime({ minute: 50 })").records.toMaps
+      val e1 = the [IllegalArgumentException] thrownBy caps.cypher("RETURN localdatetime({year: 2011, minute: 50 })").records.toMaps
       e1.getMessage should (include("valid significance order") and include("minute"))
 
       val e2 = the [IllegalArgumentException] thrownBy caps.cypher("RETURN localdatetime({ year: 2018, hour: 12, second: 14 })").records.toMaps

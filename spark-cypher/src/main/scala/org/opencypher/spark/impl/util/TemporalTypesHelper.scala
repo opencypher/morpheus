@@ -190,6 +190,8 @@ object TemporalTypesHelper {
   private def parseDateMap(map: Map[String, Int]): LocalDate = {
     val sanitizedMap = sanitizeMap(map)
 
+    if(!sanitizedMap.contains("year")) throw IllegalArgumentException("the key `year` needs to be set", map.keys.mkString(", "))
+
     if (sanitizedMap.keySet.contains("week")) {
       checkSignificanceOrder(sanitizedMap, dateByWeekIdentifiers)
 
