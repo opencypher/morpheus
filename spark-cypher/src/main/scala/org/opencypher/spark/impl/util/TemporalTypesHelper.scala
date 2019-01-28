@@ -43,34 +43,96 @@ object TemporalTypesHelper {
 
   type MapOrString = Either[Map[String, Int], String]
 
-  val dateIdentifiers: Seq[String] = Seq("year", "month", "day")
+  val dateByMonthIdentifiers: Seq[String] = Seq("year", "month", "day")
+  val dateByWeekIdentifiers: Seq[String] = Seq("year", "week", "dayofweek")
+  val dateByOrdinalDayIdentifiers: Seq[String] = Seq("year", "ordinalday")
+  val dateByQuarterIdentifiers: Seq[String] = Seq("year", "quarter", "dayofquarter")
   val timeIdentifiers: Seq[String] = Seq("hour", "minute", "second")
 
   val dateFormatters: Seq[DateTimeFormatter] = Seq(
+    // 2010-01-01
     new DateTimeFormatterBuilder().appendPattern("yyyy-MM-dd").toFormatter,
+
+    // 20100101
     new DateTimeFormatterBuilder().appendPattern("yyyyMMdd").toFormatter,
+
+    // 2010-10
     new DateTimeFormatterBuilder().appendPattern("yyyy-MM")
       .parseDefaulting(ChronoField.DAY_OF_MONTH, 1)
       .toFormatter,
+
+    // 201010
     new DateTimeFormatterBuilder().appendPattern("yyyyMM")
       .parseDefaulting(ChronoField.DAY_OF_MONTH, 1)
       .toFormatter,
+
+    // 2015-W30-2
     DateTimeFormatter.ISO_WEEK_DATE,
+
+    // 2015W302
     new DateTimeFormatterBuilder()
       .parseCaseInsensitive
       .appendValue(IsoFields.WEEK_BASED_YEAR, 4, 10, SignStyle.EXCEEDS_PAD)
       .appendLiteral("W")
       .appendValue(IsoFields.WEEK_OF_WEEK_BASED_YEAR, 2)
       .appendValue(ChronoField.DAY_OF_WEEK, 1)
-      .toFormatter, // TODO: more week pattern variations ('YYYY-Www', 'YYYYWww')
+      .toFormatter,
+
+    // 2015-W30
+    new DateTimeFormatterBuilder()
+      .parseCaseInsensitive
+      .appendValue(IsoFields.WEEK_BASED_YEAR, 4, 10, SignStyle.EXCEEDS_PAD)
+      .appendLiteral("-")
+      .appendLiteral("W")
+      .appendValue(IsoFields.WEEK_OF_WEEK_BASED_YEAR, 2)
+      .parseDefaulting(ChronoField.DAY_OF_WEEK, 1)
+      .toFormatter,
+
+    // 2015W30
+    new DateTimeFormatterBuilder()
+      .parseCaseInsensitive
+      .appendValue(IsoFields.WEEK_BASED_YEAR, 4, 10, SignStyle.EXCEEDS_PAD)
+      .appendLiteral("W")
+      .appendValue(IsoFields.WEEK_OF_WEEK_BASED_YEAR, 2)
+      .parseDefaulting(ChronoField.DAY_OF_WEEK, 1)
+      .toFormatter,
+
+    // 2015-Q2-60
     new DateTimeFormatterBuilder().appendPattern("yyyy")
       .appendLiteral("-Q")
       .appendValue(IsoFields.QUARTER_OF_YEAR, 1)
       .appendLiteral("-")
       .appendValue(IsoFields.DAY_OF_QUARTER, 2)
-      .toFormatter, // TODO: more quarter pattern variations ('YYYYQqDD', 'YYYY-Qq', 'YYYYQq')
+      .toFormatter,
+
+    // 2015Q260
+    new DateTimeFormatterBuilder().appendPattern("yyyy")
+      .appendLiteral("Q")
+      .appendValue(IsoFields.QUARTER_OF_YEAR, 1)
+      .appendValue(IsoFields.DAY_OF_QUARTER, 2)
+      .toFormatter,
+
+    // 2015-Q2
+    new DateTimeFormatterBuilder().appendPattern("yyyy")
+      .appendLiteral("-Q")
+      .appendValue(IsoFields.QUARTER_OF_YEAR, 1)
+      .parseDefaulting(IsoFields.DAY_OF_QUARTER, 1)
+      .toFormatter,
+
+    // 2015Q2
+    new DateTimeFormatterBuilder().appendPattern("yyyy")
+      .appendLiteral("Q")
+      .appendValue(IsoFields.QUARTER_OF_YEAR, 1)
+      .parseDefaulting(IsoFields.DAY_OF_QUARTER, 1)
+      .toFormatter,
+
+    // 2015-202
     new DateTimeFormatterBuilder().appendPattern("yyyy-DDD").toFormatter,
+
+    // 2015202
     new DateTimeFormatterBuilder().appendPattern("yyyyDDD").toFormatter,
+
+    // 2015
     new DateTimeFormatterBuilder().appendPattern("yyyy")
       .parseDefaulting(ChronoField.MONTH_OF_YEAR, 1)
       .parseDefaulting(ChronoField.DAY_OF_MONTH, 1)
@@ -88,24 +150,12 @@ object TemporalTypesHelper {
   )
 
   def parseDate(mapOrString: MapOrString): Date = {
-
-    mapOrString match {
-      case Left(map) =>
-
-        val sanitizedMap = sanitizeMap(map)
-
-        checkSignificanceOrder(sanitizedMap, dateIdentifiers)
-
-        val localDate = LocalDate.of(
-          sanitizedMap.getOrElse("year", 1),
-          sanitizedMap.getOrElse("month", 1),
-          sanitizedMap.getOrElse("day", 1)
-        )
-
-        Date.valueOf(localDate)
-
-      case Right(str) => Date.valueOf(parseDate(str))
+    val localDate = mapOrString match {
+      case Left(map) => parseDateMap(map)
+      case Right(str)=> parseDateString(str)
     }
+
+    Date.valueOf(localDate)
   }
 
   def parseTimestamp(mapOrString: MapOrString): Timestamp = {
@@ -113,33 +163,18 @@ object TemporalTypesHelper {
     mapOrString match {
       case Left(map) =>
 
-        val sanitizedMap = sanitizeMap(map)
+        val date = parseDateMap(map)
+        val time = parseTimeMap(map)
+        val dateTime = LocalDateTime.of(date, time)
 
-        checkSignificanceOrder(sanitizedMap, dateIdentifiers ++ timeIdentifiers)
-
-        val preciseTime =
-          sanitizedMap.getOrElse("millisecond", 0) * 1000000 +
-            sanitizedMap.getOrElse("microsecond", 0) * 1000 +
-            sanitizedMap.getOrElse("nanosecond", 0)
-
-        val localDateTime = LocalDateTime.of(
-          sanitizedMap.getOrElse("year", 1),
-          sanitizedMap.getOrElse("month", 1),
-          sanitizedMap.getOrElse("day", 1),
-          sanitizedMap.getOrElse("hour", 0),
-          sanitizedMap.getOrElse("minute", 0),
-          sanitizedMap.getOrElse("second", 0),
-          preciseTime
-        )
-
-        Timestamp.valueOf(localDateTime)
+        Timestamp.valueOf(dateTime)
 
       case Right(str) =>
         val dateString :: timeString = str.split("T", 2).toList
 
-        val date = parseDate(dateString)
+        val date = parseDateString(dateString)
         val maybeTime = timeString match {
-          case t :: Nil => Some(parseTime(t))
+          case t :: Nil => Some(parseTimeString(t))
           case _ => None
         }
 
@@ -152,7 +187,39 @@ object TemporalTypesHelper {
     }
   }
 
-  private def parseDate(str: String): LocalDate = {
+  private def parseDateMap(map: Map[String, Int]): LocalDate = {
+    val sanitizedMap = sanitizeMap(map)
+
+    if (sanitizedMap.keySet.contains("week")) {
+      checkSignificanceOrder(sanitizedMap, dateByWeekIdentifiers)
+
+      LocalDate.MIN
+        .`with`(IsoFields.WEEK_BASED_YEAR, sanitizedMap("year"))
+        .`with`(IsoFields.WEEK_OF_WEEK_BASED_YEAR, sanitizedMap("week"))
+        .`with`(ChronoField.DAY_OF_WEEK, sanitizedMap.getOrElse("dayofweek", 1).toLong)
+
+    } else if (sanitizedMap.keySet.contains("ordinalday")) {
+      checkSignificanceOrder(sanitizedMap, dateByOrdinalDayIdentifiers)
+
+      LocalDate.ofYearDay(sanitizedMap("year"), sanitizedMap("ordinalday"))
+
+    } else if (sanitizedMap.keySet.contains("quarter")) {
+      checkSignificanceOrder(sanitizedMap, dateByQuarterIdentifiers)
+
+      LocalDate.MIN
+        .withYear(sanitizedMap("year"))
+        .`with`(IsoFields.QUARTER_OF_YEAR, sanitizedMap("quarter"))
+        .`with`(IsoFields.DAY_OF_QUARTER, sanitizedMap.getOrElse("dayofquarter", 1).toLong)
+
+    }
+    else {
+      checkSignificanceOrder(sanitizedMap, dateByMonthIdentifiers)
+
+      LocalDate.of(sanitizedMap("year"), sanitizedMap.getOrElse("month", 1), sanitizedMap.getOrElse("day", 1))
+    }
+  }
+
+  private def parseDateString(str: String): LocalDate = {
     val matchingDateFormats = dateFormatters.map { formatter =>
       Try {
         LocalDate.parse(str, formatter)
@@ -167,7 +234,25 @@ object TemporalTypesHelper {
     }
   }
 
-  private def parseTime(str: String): LocalTime = {
+  private def parseTimeMap(map: Map[String, Int]): LocalTime = {
+    val sanitizedMap = sanitizeMap(map)
+
+    checkSignificanceOrder(sanitizedMap, timeIdentifiers)
+
+    val preciseTime =
+      sanitizedMap.getOrElse("millisecond", 0) * 1000000 +
+        sanitizedMap.getOrElse("microsecond", 0) * 1000 +
+        sanitizedMap.getOrElse("nanosecond", 0)
+
+    LocalTime.of(
+      sanitizedMap.getOrElse("hour", 0),
+      sanitizedMap.getOrElse("minute", 0),
+      sanitizedMap.getOrElse("second", 0),
+      preciseTime
+    )
+  }
+
+  private def parseTimeString(str: String): LocalTime = {
     val matchingTimeFormats = timeFormatters.map { formatter =>
       Try {
         LocalTime.parse(str, formatter)

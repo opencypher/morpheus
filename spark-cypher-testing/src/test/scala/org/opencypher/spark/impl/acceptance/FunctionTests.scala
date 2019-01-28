@@ -38,7 +38,7 @@ import org.opencypher.spark.testing.CAPSTestSuite
 import org.scalatest.junit.JUnitRunner
 
 @RunWith(classOf[JUnitRunner])
-class FunctionTests extends CAPSTestSuite with ScanGraphInit{
+class FunctionTests extends CAPSTestSuite with ScanGraphInit {
 
   private def shouldParseDate(given: String, expected: String): Unit = {
     caps.cypher(s"RETURN date('$given') AS time").records.toMaps should equal(
@@ -60,7 +60,6 @@ class FunctionTests extends CAPSTestSuite with ScanGraphInit{
       )
     }
 
-    // TODO: Add missing parsers
     it("parses cypher compatible date strings") {
       Seq(
         "2010-10-10" -> "2010-10-10",
@@ -69,12 +68,12 @@ class FunctionTests extends CAPSTestSuite with ScanGraphInit{
         "201012" -> "2010-12-01",
         "2015-W30-2" -> "2015-07-21",
         "2015W302" -> "2015-07-21",
-//      "2015-W30" -> 2015-07-20",
-//      "2015W30" -> 2015-07-20",
+        "2015-W30" -> "2015-07-20",
+        "2015W30" -> "2015-07-20",
         "2015-Q2-60" -> "2015-05-30",
-//      "2015Q260" -> 2015-05-30",
-//      "2015-Q2" -> 2015-04-01",
-//      "2015Q2" -> 2015-04-01",
+        "2015Q260" -> "2015-05-30",
+        "2015-Q2" -> "2015-04-01",
+        "2015Q2" -> "2015-04-01",
         "2015-202" -> "2015-07-21",
         "2015202" -> "2015-07-21",
         "2010" -> "2010-01-01").foreach {
@@ -159,7 +158,6 @@ class FunctionTests extends CAPSTestSuite with ScanGraphInit{
 
   describe("localdatetime") {
 
-    // TODO: add missing parsers
     it("parses cypher compatible localdatetime strings") {
       Seq(
         "2010-10-10" -> "2010-10-10 00:00:00",
@@ -168,12 +166,12 @@ class FunctionTests extends CAPSTestSuite with ScanGraphInit{
         "201012" -> "2010-12-01 00:00:00",
         "2015-W30-2" -> "2015-07-21 00:00:00",
         "2015W302" -> "2015-07-21 00:00:00",
-        //      "2015-W30" -> 2015-07-20 00:00:00",
-        //      "2015W30" -> 2015-07-20 00:00:00",
+        "2015-W30" -> "2015-07-20 00:00:00",
+        "2015W30" -> "2015-07-20 00:00:00",
         "2015-Q2-60" -> "2015-05-30 00:00:00",
-        //      "2015Q260" -> 2015-05-30 00:00:00",
-        //      "2015-Q2" -> 2015-04-01 00:00:00",
-        //      "2015Q2" -> 2015-04-01 00:00:00",
+        "2015Q260" -> "2015-05-30 00:00:00",
+        "2015-Q2" -> "2015-04-01 00:00:00",
+        "2015Q2" -> "2015-04-01 00:00:00",
         "2015-202" -> "2015-07-21 00:00:00",
         "2015202" -> "2015-07-21 00:00:00",
         "2010" -> "2010-01-01 00:00:00",
@@ -219,10 +217,10 @@ class FunctionTests extends CAPSTestSuite with ScanGraphInit{
 
     it("throws an error if values of higher significance are omitted") {
       val e1 = the [IllegalArgumentException] thrownBy caps.cypher("RETURN localdatetime({ minute: 50 })").records.toMaps
-      e1.getMessage should(include("valid significance order") and include("minute"))
+      e1.getMessage should (include("valid significance order") and include("minute"))
 
       val e2 = the [IllegalArgumentException] thrownBy caps.cypher("RETURN localdatetime({ year: 2018, hour: 12, second: 14 })").records.toMaps
-      e2.getMessage should(include("valid significance order") and include("year, hour, second"))
+      e2.getMessage should (include("valid significance order") and include("year, hour, second"))
     }
 
     it("throws an error if the localdatetime string is malformed") {
