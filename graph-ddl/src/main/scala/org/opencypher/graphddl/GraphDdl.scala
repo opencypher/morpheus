@@ -399,7 +399,9 @@ object GraphDdl {
 
 case class GraphDdl(
   graphs: Map[GraphName, Graph]
-)
+) {
+  def ++(other: GraphDdl): GraphDdl = GraphDdl(graphs ++ other.graphs)
+}
 
 case class Graph(
   name: GraphName,
