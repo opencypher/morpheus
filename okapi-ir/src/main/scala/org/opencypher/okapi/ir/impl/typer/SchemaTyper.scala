@@ -335,7 +335,7 @@ object SchemaTyper {
       AddTyper(add)
 
     case sub: Subtract =>
-      processArithmeticExpressions(sub)
+      BasicSignatureBasedTyper(sub)
 
     case mul: Multiply =>
       processArithmeticExpressions(mul)
@@ -624,6 +624,7 @@ object SchemaTyper {
         case (CTString, _) if right.subTypeOf(CTNumber).maybeTrue => Some(CTString)
         case (_, CTString) if left.subTypeOf(CTNumber).maybeTrue => Some(CTString)
         case (CTString, CTString) => Some(CTString)
+        case (CTDuration, CTDuration) => Some(CTDuration)
         case (CTLocalDateTime, CTDuration) => Some(CTLocalDateTime)
         case (CTDuration, CTLocalDateTime) => Some(CTLocalDateTime)
         case (CTDate, CTDuration) => Some(CTDate)

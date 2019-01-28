@@ -30,13 +30,24 @@ object DurationFactory {
   /**
     * Constructs a `java.time.Duration` and handles conversions from years an months to duration.
     */
-  def apply(years: Long = 0, months: Long = 0, weeks: Long = 0, days: Long = 0, hours: Long = 0, minutes: Long = 0, seconds: Long = 0, nanos: Long = 0): Duration = {
+  def apply(
+    years: Long = 0,
+    months: Long = 0,
+    weeks: Long = 0,
+    days: Long = 0,
+    hours: Long = 0,
+    minutes: Long = 0,
+    seconds: Long = 0,
+    milliseconds: Long = 0,
+    microseconds: Long = 0,
+    nanos: Long = 0
+  ): Duration = {
     val yearsAndMonths = ChronoUnit.MONTHS.getDuration.multipliedBy(years * 12 + months)
     val weeksAndDays = Duration.ofDays(weeks * 7 + days)
     val hourDuration = Duration.ofHours(hours)
     val minuteDuration = Duration.ofMinutes(minutes)
     val secondDuration = Duration.ofSeconds(seconds)
-    val nanoDuration = Duration.ofNanos(nanos)
+    val nanoDuration = Duration.ofNanos(nanos + microseconds * 1000 + milliseconds * 1000000)
 
     yearsAndMonths plus weeksAndDays plus hourDuration plus minuteDuration plus secondDuration plus nanoDuration
   }
