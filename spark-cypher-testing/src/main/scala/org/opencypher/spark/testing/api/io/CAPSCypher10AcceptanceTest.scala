@@ -26,11 +26,13 @@
  */
 package org.opencypher.spark.testing.api.io
 
-import org.opencypher.okapi.api.graph.{GraphName, PropertyGraph}
+import org.opencypher.okapi.api.graph.GraphName
 import org.opencypher.okapi.impl.exception.UnsupportedOperationException
 import org.opencypher.okapi.relational.api.graph.RelationalCypherGraph
 import org.opencypher.okapi.relational.api.tagging.Tags._
-import org.opencypher.okapi.testing.Cypher10Acceptance
+import org.opencypher.okapi.relational.impl.graph.ScanGraph
+import org.opencypher.okapi.testing.Cypher10AcceptanceTest
+import org.opencypher.okapi.testing.propertygraph.CreateGraphFactory
 import org.opencypher.spark.api.CAPSSession
 import org.opencypher.spark.api.CAPSSession._
 import org.opencypher.spark.api.value.{CAPSNode, CAPSRelationship}
@@ -38,20 +40,27 @@ import org.opencypher.spark.impl.CAPSConverters._
 import org.opencypher.spark.impl.encoders._
 import org.opencypher.spark.impl.table.SparkTable.DataFrameTable
 import org.opencypher.spark.testing.CAPSTestSuite
+import org.opencypher.spark.testing.support.creation.caps.CAPSScanGraphFactory
 
 import scala.util.{Failure, Success, Try}
 
-trait CAPSPGDSAcceptance extends Cypher10Acceptance[CAPSSession, PropertyGraph] {
+trait CAPSCypher10AcceptanceTest extends Cypher10AcceptanceTest[CAPSSession, ScanGraph[DataFrameTable]] {
   self: CAPSTestSuite =>
 
-  override def initSession: CAPSSession = caps
+  trait CAPSTestContextFactory extends TestContextFactory {
+    override def initSession: CAPSSession = caps
+  }
 
-  override def allScenarios: List[Cypher10Scenario] = super.allScenarios ++ tagScenarios
+  override def initGraph(createStatements: String): ScanGraph[DataFrameTable] = {
+    CAPSScanGraphFactory(CreateGraphFactory(createStatements))
+  }
+
+  override def allScenarios: List[Scenario] = super.allScenarios ++ tagScenarios
 
   lazy val tagScenarios = List(
 
-    Cypher10Scenario("Store graphs with tags") { implicit ctx: TestContext =>
-      registerPgdsStep(ns)
+    Scenario("Store graphs with tags") { implicit ctx: TestContext =>
+      registerPgds(ns)
       session.cypher("CATALOG CREATE GRAPH g1 { CONSTRUCT CREATE ()-[:FOO]->() RETURN GRAPH }")
       session.cypher("CATALOG CREATE GRAPH g2 { CONSTRUCT CREATE () RETURN GRAPH }")
 
@@ -69,8 +78,8 @@ trait CAPSPGDSAcceptance extends Cypher10Acceptance[CAPSSession, PropertyGraph] 
       }
     },
 
-    Cypher10Scenario("API: Store graphs with tags") { implicit ctx: TestContext =>
-      registerPgdsStep(ns)
+    Scenario("API: Store graphs with tags") { implicit ctx: TestContext =>
+      registerPgds(ns)
       session.cypher("CATALOG CREATE GRAPH g1 { CONSTRUCT CREATE ()-[:FOO]->() RETURN GRAPH }")
       session.cypher("CATALOG CREATE GRAPH g2 { CONSTRUCT CREATE () RETURN GRAPH }")
 
