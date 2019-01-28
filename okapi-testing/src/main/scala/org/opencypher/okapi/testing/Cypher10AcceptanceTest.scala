@@ -31,57 +31,53 @@ import org.opencypher.okapi.api.io.PropertyGraphDataSource
 import org.opencypher.okapi.api.schema.Schema
 import org.opencypher.okapi.api.types.{CTBoolean, CTInteger, CTString}
 import org.opencypher.okapi.api.value.CypherValue.{CypherMap, CypherNull}
-import org.opencypher.okapi.impl.exception.{GraphAlreadyExistsException, GraphNotFoundException}
+import org.opencypher.okapi.impl.exception.GraphAlreadyExistsException
 import org.opencypher.okapi.testing.Bag._
 import org.scalatest.Tag
 import org.scalatest.prop.TableDrivenPropertyChecks.{forAll, _}
+import org.opencypher.okapi.impl.exception.UnsupportedOperationException
 
 import scala.util.{Failure, Success, Try}
 
-trait Cypher10Acceptance[Session <: CypherSession, Graph <: PropertyGraph] {
+trait Cypher10AcceptanceTest[Session <: CypherSession, Graph <: PropertyGraph] {
   self: BaseTestSuite =>
 
-  lazy val graph: Map[GraphName, Graph] = testCreateGraphStatements.mapValues(initGraph)
-
-  def allScenarios: List[Cypher10Scenario] = cypher10Scenarios
-
-  def initSession: Session
-
-  def initGraph(createStatements: String): Graph
-
-  def initPgds: PropertyGraphDataSource
-
-  def returnPgds(pgds: PropertyGraphDataSource): Unit = {
-    pgds.graphNames.foreach(pgds.delete)
-  }
-
-  def returnContext(implicit ctx: TestContext): Unit = {
-    returnSession(session)
-    returnPgds(pgds)
-  }
-
-  def returnSession(session: Session): Unit = {
-    session.catalog.listSources.foreach { case (namespace, _) =>
-      if (namespace != session.catalog.sessionNamespace) {
-        session.deregisterSource(namespace)
-      }
+  object Scenario {
+    def apply(name: String, initGraph: GraphName)(test: TestContext => Unit): Scenario = {
+      Scenario(name, List(initGraph))(test)
     }
   }
 
-  def initContext: TestContext = TestContext(initSession, initPgds)
+  case class Scenario(
+    override val name: String,
+    initGraphs: List[GraphName] = Nil
+  )(val test: TestContext => Unit) extends Tag(name)
 
-  def execute(scenarios: List[Cypher10Scenario]): Unit = {
-    val testTag = new Tag(getClass.getSimpleName)
-    val scenarioTable = Table("Read-only scenario", scenarios: _*)
-    forAll(scenarioTable) { scenario =>
-      test(s"[${testTag.name}] ${scenario.name}", testTag, scenario) {
-        val ctx: TestContext = initContext
-        Try(scenario.test(ctx)) match {
-          case Success(_) =>
-            returnContext(ctx)
-          case Failure(ex) =>
-            returnContext(ctx)
-            throw ex
+
+  abstract class TestContextFactory {
+    self =>
+
+    val tag: Tag = new Tag(self.toString)
+
+    def initializeContext(graphNames: List[GraphName]): TestContext = TestContext(initSession, initPgds(graphNames))
+
+    def initPgds(graphNames: List[GraphName]): PropertyGraphDataSource
+
+    def initSession: Session
+
+    def releaseContext(implicit ctx: TestContext): Unit = {
+      releasePgds
+      releaseSession
+    }
+
+    def releasePgds(implicit ctx: TestContext): Unit = {
+      pgds.graphNames.foreach(pgds.delete)
+    }
+
+    def releaseSession(implicit ctx: TestContext): Unit = {
+      session.catalog.listSources.foreach { case (namespace, _) =>
+        if (namespace != session.catalog.sessionNamespace) {
+          session.deregisterSource(namespace)
         }
       }
     }
@@ -89,9 +85,27 @@ trait Cypher10Acceptance[Session <: CypherSession, Graph <: PropertyGraph] {
 
   case class TestContext(session: Session, pgds: PropertyGraphDataSource)
 
-  case class Cypher10Scenario(
-    override val name: String
-  )(val test: TestContext => Unit) extends Tag(name)
+  lazy val graph: Map[GraphName, Graph] = testCreateGraphStatements.mapValues(initGraph)
+
+  def allScenarios: List[Scenario] = cypher10Scenarios
+
+  def initGraph(createStatements: String): Graph
+
+  def executeScenariosWithContext(scenarios: List[Scenario], contextFactory: TestContextFactory): Unit = {
+    val scenarioTable = Table("Scenario", scenarios: _*)
+    forAll(scenarioTable) { scenario =>
+      test(s"[$contextFactory] ${scenario.name}", contextFactory.tag, scenario) {
+        val ctx: TestContext = contextFactory.initializeContext(scenario.initGraphs)
+        Try(scenario.test(ctx)) match {
+          case Success(_) =>
+            contextFactory.releaseContext(ctx)
+          case Failure(ex) =>
+            contextFactory.releaseContext(ctx)
+            throw ex
+        }
+      }
+    }
+  }
 
   val ns = Namespace("testing")
   val g1 = GraphName("testGraph1")
@@ -119,57 +133,46 @@ trait Cypher10Acceptance[Session <: CypherSession, Graph <: PropertyGraph] {
 
   // TCK-style steps
 
-  def registerPgdsStep(namespace: Namespace)(implicit ctx: TestContext): Unit = {
+  def registerPgds(namespace: Namespace)(implicit ctx: TestContext): Unit = {
     session.registerSource(namespace, ctx.pgds)
   }
 
-  def storeGraphStep(gn: GraphName)(implicit ctx: TestContext): Unit = {
-    pgds.store(gn, graph(gn))
-  }
-
-  def executeStep(query: String, parameters: CypherMap = CypherMap.empty)(implicit ctx: TestContext): Session#Result = {
+  def executeQuery(query: String, parameters: CypherMap = CypherMap.empty)(implicit ctx: TestContext): Session#Result = {
     session.cypher(query, parameters)
   }
 
-  def expectRecordsAnyOrderStep(result: Session#Result, expectedRecords: CypherMap*): Unit = {
+  def expectRecordsAnyOrder(result: Session#Result, expectedRecords: CypherMap*): Unit = {
     result.records.iterator.toBag should equal(
       expectedRecords.toBag
     )
   }
 
-  // TODO: Extend TCK with Cypher 10 tests and implement with updated TCK
-  val cypher10Scenarios: List[Cypher10Scenario] = {
+  val cypher10Scenarios: List[Scenario] = {
     List(
-      Cypher10Scenario("API: Session.registerSource") { implicit ctx: TestContext =>
-        registerPgdsStep(ns)
-        storeGraphStep(g1)
+      Scenario("API: Session.registerSource", g1) { implicit ctx: TestContext =>
+        registerPgds(ns)
         session.catalog.source(ns).hasGraph(g1) shouldBe true
         session.catalog.source(ns).hasGraph(GraphName("foo")) shouldBe false
       },
 
-      Cypher10Scenario("API: PropertyGraphDataSource.hasGraph") { implicit ctx: TestContext =>
-        registerPgdsStep(ns)
-        storeGraphStep(g1)
+      Scenario("API: PropertyGraphDataSource.hasGraph", g1) { implicit ctx: TestContext =>
+        registerPgds(ns)
         session.catalog.source(ns).hasGraph(g1) shouldBe true
         session.catalog.source(ns).hasGraph(GraphName("foo")) shouldBe false
       },
 
-      Cypher10Scenario("API: PropertyGraphDataSource.graphNames") { implicit ctx: TestContext =>
-        pgds.graphNames should be(Set.empty)
-        registerPgdsStep(ns)
-        storeGraphStep(g1)
-        session.catalog.source(ns).graphNames should be(Set(g1))
+      Scenario("API: PropertyGraphDataSource.graphNames", g1) { implicit ctx: TestContext =>
+        registerPgds(ns)
+        session.catalog.source(ns).graphNames should contain(g1)
       },
 
-      Cypher10Scenario("API: PropertyGraphDataSource.graph") { implicit ctx: TestContext =>
-        registerPgdsStep(ns)
-        storeGraphStep(g1)
+      Scenario("API: PropertyGraphDataSource.graph", g1) { implicit ctx: TestContext =>
+        registerPgds(ns)
         session.catalog.source(ns).graph(g1)
       },
 
-      Cypher10Scenario("API: Correct schema for graph #1") { implicit ctx: TestContext =>
-        registerPgdsStep(ns)
-        storeGraphStep(g1)
+      Scenario("API: Correct schema for graph #1", g1) { implicit ctx: TestContext =>
+        registerPgds(ns)
         val expectedSchema = Schema.empty
           .withNodePropertyKeys("A")("name" -> CTString)
           .withNodePropertyKeys("B")("type" -> CTString, "size" -> CTInteger.nullable)
@@ -186,16 +189,16 @@ trait Cypher10Acceptance[Session <: CypherSession, Graph <: PropertyGraph] {
         schema.relTypePropertyMap should equal(expectedSchema.relTypePropertyMap)
       },
 
-      Cypher10Scenario("API: PropertyGraphDataSource: correct node/rel count for graph #1") { implicit ctx: TestContext =>
-        registerPgdsStep(ns)
-        storeGraphStep(g1)
+      Scenario("API: PropertyGraphDataSource: correct node/rel count for graph #1", g1) { implicit ctx: TestContext =>
+        registerPgds(ns)
         session.catalog.source(ns).graph(g1).nodes("n").size shouldBe 8
+        val r = session.catalog.source(ns).graph(g1).relationships("r")
+        println(r.collect.toList)
         session.catalog.source(ns).graph(g1).relationships("r").size shouldBe 4
       },
 
-      Cypher10Scenario("API: Cypher query directly on graph #1") { implicit ctx: TestContext =>
-        registerPgdsStep(ns)
-        storeGraphStep(g1)
+      Scenario("API: Cypher query directly on graph #1", g1) { implicit ctx: TestContext =>
+        registerPgds(ns)
         session.catalog.graph(QualifiedGraphName(ns, g1)).cypher("MATCH (a:A) RETURN a.name").records.iterator.toBag should equal(Bag(
           CypherMap("a.name" -> "A"),
           CypherMap("a.name" -> "COMBO1"),
@@ -204,11 +207,10 @@ trait Cypher10Acceptance[Session <: CypherSession, Graph <: PropertyGraph] {
         ))
       },
 
-      Cypher10Scenario("Cypher query on session") { implicit ctx: TestContext =>
-        registerPgdsStep(ns)
-        storeGraphStep(g1)
-        expectRecordsAnyOrderStep(
-          executeStep(s"FROM GRAPH $ns.$g1 MATCH (b:B) RETURN b.type, b.size"),
+      Scenario("Cypher query on session", g1) { implicit ctx: TestContext =>
+        registerPgds(ns)
+        expectRecordsAnyOrder(
+          executeQuery(s"FROM GRAPH $ns.$g1 MATCH (b:B) RETURN b.type, b.size"),
           CypherMap("b.type" -> "B1", "b.size" -> CypherNull),
           CypherMap("b.type" -> "B2", "b.size" -> 5),
           CypherMap("b.type" -> "AB1", "b.size" -> 2),
@@ -216,11 +218,10 @@ trait Cypher10Acceptance[Session <: CypherSession, Graph <: PropertyGraph] {
         )
       },
 
-      Cypher10Scenario("Scans over multiple labels") { implicit ctx: TestContext =>
-        registerPgdsStep(ns)
-        storeGraphStep(g1)
-        expectRecordsAnyOrderStep(
-          executeStep(s"FROM GRAPH $ns.$g1 MATCH (n) RETURN n.name, n.size"),
+      Scenario("Scans over multiple labels", g1) { implicit ctx: TestContext =>
+        registerPgds(ns)
+        expectRecordsAnyOrder(
+          executeQuery(s"FROM GRAPH $ns.$g1 MATCH (n) RETURN n.name, n.size"),
           CypherMap("n.name" -> "A", "n.size" -> CypherNull),
           CypherMap("n.name" -> "C", "n.size" -> CypherNull),
           CypherMap("n.name" -> "AC", "n.size" -> CypherNull),
@@ -232,19 +233,17 @@ trait Cypher10Acceptance[Session <: CypherSession, Graph <: PropertyGraph] {
         )
       },
 
-      Cypher10Scenario("Multi-hop paths") { implicit ctx: TestContext =>
-        registerPgdsStep(ns)
-        storeGraphStep(g1)
-        expectRecordsAnyOrderStep(
-          executeStep(s"FROM GRAPH $ns.$g1 MATCH (a)-[r1]->(b)-[r2]->(c) RETURN r1.since, r2.since, type(r2)"),
+      Scenario("Multi-hop paths", g1) { implicit ctx: TestContext =>
+        registerPgds(ns)
+        expectRecordsAnyOrder(
+          executeQuery(s"FROM GRAPH $ns.$g1 MATCH (a)-[r1]->(b)-[r2]->(c) RETURN r1.since, r2.since, type(r2)"),
           CypherMap("r1.since" -> 2004, "r2.since" -> 2005, "type(r2)" -> "R"),
           CypherMap("r1.since" -> 2005, "r2.since" -> 2006, "type(r2)" -> "S")
         )
       },
 
-      Cypher10Scenario("Store a graph") { implicit ctx: TestContext =>
-        registerPgdsStep(ns)
-        storeGraphStep(g1)
+      Scenario("Initialize with a graph", g1) { implicit ctx: TestContext =>
+        registerPgds(ns)
         val gn = GraphName("storedGraph")
         Try(session.cypher(s"CATALOG CREATE GRAPH $ns.$gn { FROM GRAPH $ns.$g1 RETURN GRAPH }")) match {
           case Success(_) =>
@@ -261,9 +260,8 @@ trait Cypher10Acceptance[Session <: CypherSession, Graph <: PropertyGraph] {
         }
       },
 
-      Cypher10Scenario("Store a constructed graph") { implicit ctx: TestContext =>
-        registerPgdsStep(ns)
-        storeGraphStep(g1)
+      Scenario("Initialize with a constructed graph", g1) { implicit ctx: TestContext =>
+        registerPgds(ns)
         val gn = GraphName("storedGraph")
         Try(session.cypher(
           s"""
@@ -288,8 +286,8 @@ trait Cypher10Acceptance[Session <: CypherSession, Graph <: PropertyGraph] {
         }
       },
 
-      Cypher10Scenario("Store nodes without labels") { implicit ctx: TestContext =>
-        registerPgdsStep(ns)
+      Scenario("Initialize with nodes without labels") { implicit ctx: TestContext =>
+        registerPgds(ns)
         val gn = GraphName("storedGraph")
         Try(session.cypher(
           s"""
@@ -313,9 +311,9 @@ trait Cypher10Acceptance[Session <: CypherSession, Graph <: PropertyGraph] {
         }
       },
 
-      Cypher10Scenario("Store European Latin unicode labels, rel types, property keys, and property values") { implicit
+      Scenario("Store European Latin unicode labels, rel types, property keys, and property values") { implicit
         ctx: TestContext =>
-        registerPgdsStep(ns)
+        registerPgds(ns)
         val gn = GraphName("storedGraph")
         Try(session.cypher(
           s"""
@@ -338,8 +336,8 @@ trait Cypher10Acceptance[Session <: CypherSession, Graph <: PropertyGraph] {
         }
       },
 
-      Cypher10Scenario("Property with property key `id`") { implicit ctx: TestContext =>
-        registerPgdsStep(ns)
+      Scenario("Property with property key `id`") { implicit ctx: TestContext =>
+        registerPgds(ns)
         val gn = GraphName("storedGraph")
         Try(session.cypher(
           s"""
@@ -362,8 +360,8 @@ trait Cypher10Acceptance[Session <: CypherSession, Graph <: PropertyGraph] {
         }
       },
 
-      Cypher10Scenario("Store a union graph") { implicit ctx: TestContext =>
-        registerPgdsStep(ns)
+      Scenario("Store a union graph") { implicit ctx: TestContext =>
+        registerPgds(ns)
         session.cypher("CATALOG CREATE GRAPH g1 { CONSTRUCT CREATE () RETURN GRAPH }")
         session.cypher("CATALOG CREATE GRAPH g2 { CONSTRUCT CREATE () RETURN GRAPH }")
         val unionGraphName = GraphName("union")
@@ -389,9 +387,8 @@ trait Cypher10Acceptance[Session <: CypherSession, Graph <: PropertyGraph] {
         }
       },
 
-      Cypher10Scenario("Repeat CONSTRUCT ON") { implicit ctx: TestContext =>
-        registerPgdsStep(ns)
-        storeGraphStep(g1)
+      Scenario("Repeat CONSTRUCT ON", g1) { implicit ctx: TestContext =>
+        registerPgds(ns)
         val firstConstructedGraphName = GraphName("first")
         val secondConstructedGraphName = GraphName("second")
         val graph = session.catalog.source(ns).graph(g1)
@@ -425,9 +422,8 @@ trait Cypher10Acceptance[Session <: CypherSession, Graph <: PropertyGraph] {
         }
       },
 
-      Cypher10Scenario("Drop a graph") { implicit ctx: TestContext =>
-        registerPgdsStep(ns)
-        storeGraphStep(g1)
+      Scenario("Drop a graph", g1) { implicit ctx: TestContext =>
+        registerPgds(ns)
         Try(session.cypher(s"CATALOG DROP GRAPH $ns.$g1")) match {
           case Success(_) =>
             withClue("`hasGraph` needs to return `false` after graph deletion") {
@@ -440,23 +436,4 @@ trait Cypher10Acceptance[Session <: CypherSession, Graph <: PropertyGraph] {
     )
   }
 
-}
-
-case class SingleGraphDataSource(graphName: GraphName, graph: PropertyGraph) extends PropertyGraphDataSource {
-
-  override def hasGraph(name: GraphName): Boolean = {
-    name == graphName
-  }
-
-  override def graph(name: GraphName): PropertyGraph = {
-    if (name == graphName) graph else throw GraphNotFoundException(s"Graph $name not found")
-  }
-
-  override def schema(name: GraphName): Option[Schema] = ???
-
-  override def store(name: GraphName, graph: PropertyGraph): Unit = ???
-
-  override def delete(name: GraphName): Unit = ???
-
-  override def graphNames: Set[GraphName] = ???
 }
