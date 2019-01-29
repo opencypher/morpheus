@@ -65,7 +65,9 @@ class FullPGDSAcceptanceTest extends CAPSTestSuite
 
   val sqlBlackList: Set[String] = Set("API: PropertyGraphDataSource: correct node/rel count for graph #1")
 
-  allSqlContextFactories.foreach(ctx => executeScenariosWithContext(allScenarios.filter(!sqlBlackList.contains(_)), ctx))
+  allSqlContextFactories.foreach(ctx =>
+    executeScenariosWithContext(allScenarios.filter(s => !sqlBlackList.contains(s.name)), ctx)
+  )
 
   allFileSystemContextFactories.foreach(executeScenariosWithContext(allScenarios, _))
 
