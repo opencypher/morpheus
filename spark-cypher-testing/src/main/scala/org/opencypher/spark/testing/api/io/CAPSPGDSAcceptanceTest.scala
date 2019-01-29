@@ -31,7 +31,7 @@ import org.opencypher.okapi.impl.exception.UnsupportedOperationException
 import org.opencypher.okapi.relational.api.graph.RelationalCypherGraph
 import org.opencypher.okapi.relational.api.tagging.Tags._
 import org.opencypher.okapi.relational.impl.graph.ScanGraph
-import org.opencypher.okapi.testing.Cypher10AcceptanceTest
+import org.opencypher.okapi.testing.PGDSAcceptanceTest
 import org.opencypher.okapi.testing.propertygraph.CreateGraphFactory
 import org.opencypher.spark.api.CAPSSession
 import org.opencypher.spark.api.CAPSSession._
@@ -44,7 +44,7 @@ import org.opencypher.spark.testing.support.creation.caps.CAPSScanGraphFactory
 
 import scala.util.{Failure, Success, Try}
 
-trait CAPSCypher10AcceptanceTest extends Cypher10AcceptanceTest[CAPSSession, ScanGraph[DataFrameTable]] {
+trait CAPSPGDSAcceptanceTest extends PGDSAcceptanceTest[CAPSSession, ScanGraph[DataFrameTable]] {
   self: CAPSTestSuite =>
 
   trait CAPSTestContextFactory extends TestContextFactory {

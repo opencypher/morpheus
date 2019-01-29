@@ -39,7 +39,7 @@ import org.opencypher.okapi.impl.exception.UnsupportedOperationException
 
 import scala.util.{Failure, Success, Try}
 
-trait Cypher10AcceptanceTest[Session <: CypherSession, Graph <: PropertyGraph] {
+trait PGDSAcceptanceTest[Session <: CypherSession, Graph <: PropertyGraph] {
   self: BaseTestSuite =>
 
   object Scenario {

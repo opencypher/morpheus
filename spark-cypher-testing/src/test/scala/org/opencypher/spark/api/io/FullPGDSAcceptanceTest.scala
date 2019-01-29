@@ -50,12 +50,12 @@ import org.opencypher.spark.api.io.util.CAPSGraphExport._
 import org.opencypher.spark.api.{CypherGraphSources, GraphSources}
 import org.opencypher.spark.impl.table.SparkTable._
 import org.opencypher.spark.testing.CAPSTestSuite
-import org.opencypher.spark.testing.api.io.CAPSCypher10AcceptanceTest
+import org.opencypher.spark.testing.api.io.CAPSPGDSAcceptanceTest
 import org.opencypher.spark.testing.fixture.{H2Fixture, HiveFixture, MiniDFSClusterFixture}
 import org.opencypher.spark.testing.utils.H2Utils._
 
-class FullCypher10AcceptanceTests extends CAPSTestSuite
-  with CAPSCypher10AcceptanceTest with MiniDFSClusterFixture with Neo4jServerFixture with H2Fixture with HiveFixture {
+class FullPGDSAcceptanceTest extends CAPSTestSuite
+  with CAPSPGDSAcceptanceTest with MiniDFSClusterFixture with Neo4jServerFixture with H2Fixture with HiveFixture {
 
   // === Generate context factories for Neo4j, Session, FileSystem, and SQL property graph data sources
 
