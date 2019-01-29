@@ -432,10 +432,8 @@ object SparkTable {
         }
         if (col == convertedCol) col else convertedCol.as(field.name)
       }
-
-      val convertedFields = df.schema.fields.map { field => convertColumns(field, df.col(field.name)) }
-
-      df.select(convertedFields: _*)
+      val convertedColumns = df.schema.fields.map { field => convertColumns(field, df.col(field.name)) }
+      if (df.columns.map(df.col).sameElements(convertedColumns)) df else df.select(convertedColumns: _*)
     }
 
     /**
