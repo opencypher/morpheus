@@ -193,7 +193,6 @@ trait PGDSAcceptanceTest[Session <: CypherSession, Graph <: PropertyGraph] {
         registerPgds(ns)
         session.catalog.source(ns).graph(g1).nodes("n").size shouldBe 8
         val r = session.catalog.source(ns).graph(g1).relationships("r")
-        println(r.collect.toList)
         session.catalog.source(ns).graph(g1).relationships("r").size shouldBe 4
       },
 
