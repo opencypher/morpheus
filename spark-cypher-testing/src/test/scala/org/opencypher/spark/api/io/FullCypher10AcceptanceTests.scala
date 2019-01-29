@@ -64,7 +64,7 @@ class FullCypher10AcceptanceTests extends CAPSTestSuite
   val filesPerTableOptions = List(1) //, 10
   val idGenerationOptions = List(HashBasedId, MonotonicallyIncreasingId)
 
-  val fileSystemContextFactories: List[TestContextFactory] = {
+  val allFileSystemContextFactories: List[TestContextFactory] = {
     for {
       format <- fileFormatOptions
       filesPerTable <- filesPerTableOptions
@@ -82,8 +82,6 @@ class FullCypher10AcceptanceTests extends CAPSTestSuite
     } yield SQLWithLocalFSContextFactory(format, filesPerTable, idGeneration)
   }
 
-  // TODO: Test session PGDS
-
   val sqlHiveContextFactories: List[TestContextFactory] = idGenerationOptions.map(SQLWithHiveContextFactory)
 
   val sqlH2ContextFactories: List[TestContextFactory] = idGenerationOptions.map(SQLWithH2ContextFactory)
@@ -98,7 +96,7 @@ class FullCypher10AcceptanceTests extends CAPSTestSuite
 
   allSqlContextFactories.foreach(executeScenariosWithContext(allScenarios, _))
 
-  fileSystemContextFactories.foreach(executeScenariosWithContext(allScenarios, _))
+  allFileSystemContextFactories.foreach(executeScenariosWithContext(allScenarios, _))
 
   case object SessionContextFactory extends CAPSTestContextFactory {
 
@@ -162,6 +160,7 @@ class FullCypher10AcceptanceTests extends CAPSTestSuite
 
     override def writeTable(df: DataFrame, tableName: String): Unit = {
       df.write.mode(SaveMode.Overwrite).saveAsTable(tableName)
+      sparkSession.catalog.refreshTable(tableName)
     }
 
     override def sqlDataSourceConfig: SqlDataSourceConfig.Hive.type = Hive
