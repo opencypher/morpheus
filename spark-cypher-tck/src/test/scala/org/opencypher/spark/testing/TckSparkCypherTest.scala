@@ -115,8 +115,8 @@ class TckSparkCypherTest extends CAPSTestSuite {
       .foreach(scenario => scenario(TCKGraph(defaultFactory, caps.graphs.empty)).execute())
   }
 
-  ignore("run single scenario") {
-    scenarios.get("Ordering with aggregation")
+  it("run single scenario") {
+    scenarios.get("Should add or subtract duration to or from date")
       .foreach(scenario => scenario(TCKGraph(defaultFactory, caps.graphs.empty)).execute())
   }
 }

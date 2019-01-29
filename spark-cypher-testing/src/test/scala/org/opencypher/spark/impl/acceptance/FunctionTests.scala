@@ -32,9 +32,9 @@ import java.time.format.DateTimeFormatter
 import org.junit.runner.RunWith
 import org.opencypher.okapi.api.value.CypherValue.{CypherMap, CypherNull}
 import org.opencypher.okapi.impl.exception.{IllegalArgumentException, NotImplementedException}
+import org.opencypher.okapi.impl.temporal.Duration
 import org.opencypher.okapi.testing.Bag
 import org.opencypher.okapi.testing.Bag._
-import org.opencypher.spark.impl.util.DurationFactory
 import org.opencypher.spark.testing.CAPSTestSuite
 import org.scalatest.junit.JUnitRunner
 
@@ -56,50 +56,50 @@ class FunctionTests extends CAPSTestSuite with ScanGraphInit {
   describe("duration") {
     it("parses cypher compatible duration strings") {
       caps.cypher("RETURN duration('P1Y2M20D') AS duration").records.toMapsWithCollectedEntities should equal(
-        Bag(CypherMap("duration" -> DurationFactory(years = 1, months = 2, days = 20)))
+        Bag(CypherMap("duration" -> Duration(years = 1, months = 2, days = 20)))
       )
 
       caps.cypher("RETURN duration('PT1S') AS duration").records.toMapsWithCollectedEntities should equal(
-        Bag(CypherMap("duration" -> DurationFactory(seconds = 1)))
+        Bag(CypherMap("duration" -> Duration(seconds = 1)))
       )
 
       caps.cypher("RETURN duration('PT111.123456S') AS duration").records.toMapsWithCollectedEntities should equal(
-        Bag(CypherMap("duration" -> DurationFactory(seconds = 111, nanos = 123456000)))
+        Bag(CypherMap("duration" -> Duration(seconds = 111, nanoseconds = 123456000)))
       )
 
       caps.cypher("RETURN duration('PT1M10S') AS duration").records.toMapsWithCollectedEntities should equal(
-        Bag(CypherMap("duration" -> DurationFactory(minutes = 1, seconds = 10)))
+        Bag(CypherMap("duration" -> Duration(minutes = 1, seconds = 10)))
       )
 
       caps.cypher("RETURN duration('PT3H1M10S') AS duration").records.toMapsWithCollectedEntities should equal(
-        Bag(CypherMap("duration" -> DurationFactory(hours = 3, minutes = 1, seconds = 10)))
+        Bag(CypherMap("duration" -> Duration(hours = 3, minutes = 1, seconds = 10)))
       )
 
       caps.cypher("RETURN duration('P5DT3H1M10S') AS duration").records.toMapsWithCollectedEntities should equal(
-        Bag(CypherMap("duration" -> DurationFactory(days = 5, hours = 3, minutes = 1, seconds = 10)))
+        Bag(CypherMap("duration" -> Duration(days = 5, hours = 3, minutes = 1, seconds = 10)))
       )
 
       caps.cypher("RETURN duration('P1W5DT3H1M10S') AS duration")
         .records.toMapsWithCollectedEntities should equal(
-        Bag(CypherMap("duration" -> DurationFactory(weeks = 1, days = 5, hours = 3, minutes = 1, seconds = 10)))
+        Bag(CypherMap("duration" -> Duration(weeks = 1, days = 5, hours = 3, minutes = 1, seconds = 10)))
       )
 
       caps.cypher("RETURN duration('P12M1W5DT3H1M10S') AS duration")
         .records.toMapsWithCollectedEntities should equal(
-        Bag(CypherMap("duration" -> DurationFactory(months = 12, weeks = 1, days = 5, hours = 3, minutes = 1,
+        Bag(CypherMap("duration" -> Duration(months = 12, weeks = 1, days = 5, hours = 3, minutes = 1,
           seconds = 10)))
       )
 
       caps.cypher("RETURN duration('P3Y12M1W5DT3H1M10S') AS duration")
         .records.toMapsWithCollectedEntities should equal(
-        Bag(CypherMap("duration" -> DurationFactory(years = 3, months = 12, weeks = 1, days = 5, hours = 3,
+        Bag(CypherMap("duration" -> Duration(years = 3, months = 12, weeks = 1, days = 5, hours = 3,
           minutes = 1, seconds = 10)))
       )
     }
 
     it("constructs duration from a map") {
       caps.cypher("RETURN duration({ seconds: 1 }) as duration").records.toMapsWithCollectedEntities should equal(
-        Bag(CypherMap("duration" -> DurationFactory(seconds = 1)))
+        Bag(CypherMap("duration" -> Duration(seconds = 1)))
       )
 
       caps.cypher(
@@ -114,7 +114,7 @@ class FunctionTests extends CAPSTestSuite with ScanGraphInit {
           | milliseconds: 10,
           | microseconds: 10 }) as duration""".stripMargin).records.toMapsWithCollectedEntities should equal(
         Bag(
-          CypherMap("duration" -> DurationFactory(
+          CypherMap("duration" -> Duration(
             years = 3, months = 12, weeks = 1, days = 5,
             hours = 3, minutes = 1, seconds = 10, milliseconds = 10, microseconds = 10)
           )
@@ -125,7 +125,7 @@ class FunctionTests extends CAPSTestSuite with ScanGraphInit {
     describe("addition") {
       it("supports addition to duration") {
         caps.cypher("RETURN duration('P1D') + duration('P1D') AS time").records.toMapsWithCollectedEntities should equal(
-          Bag(CypherMap("time" -> DurationFactory(days = 2)))
+          Bag(CypherMap("time" -> Duration(days = 2)))
         )
       }
 
@@ -157,11 +157,11 @@ class FunctionTests extends CAPSTestSuite with ScanGraphInit {
     describe("subtraction") {
       it("supports subtraction to duration") {
         caps.cypher("RETURN duration('P1D') - duration('P1D') AS time").records.toMapsWithCollectedEntities should equal(
-          Bag(CypherMap("time" -> DurationFactory()))
+          Bag(CypherMap("time" -> Duration()))
         )
 
         caps.cypher("RETURN duration('P1D') - duration('PT12H') AS time").records.toMapsWithCollectedEntities should equal(
-          Bag(CypherMap("time" -> DurationFactory(hours = 12)))
+          Bag(CypherMap("time" -> Duration(hours = 12)))
         )
       }
 

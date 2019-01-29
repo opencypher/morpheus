@@ -62,6 +62,7 @@ object CypherType {
         case CypherString(_) => CTString
         case CypherLocalDateTime(_) => CTLocalDateTime
         case CypherDate(_) => CTDate
+        case CypherDuration(_) => CTDuration
         case CypherMap(inner) => CTMap(inner.mapValues(_.cypherType))
         case CypherNode(_, labels, _) => CTNode(labels)
         case CypherRelationship(_, _, _, relType, _) => CTRelationship(relType)

@@ -1,38 +1,35 @@
 /**
-  * Copyright (c) 2016-2019 "Neo4j Sweden, AB" [https://neo4j.com]
-  *
-  * Licensed under the Apache License, Version 2.0 (the "License");
-  * you may not use this file except in compliance with the License.
-  * You may obtain a copy of the License at
-  *
-  * http://www.apache.org/licenses/LICENSE-2.0
-  *
-  * Unless required by applicable law or agreed to in writing, software
-  * distributed under the License is distributed on an "AS IS" BASIS,
-  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-  * See the License for the specific language governing permissions and
-  * limitations under the License.
-  *
-  * Attribution Notice under the terms of the Apache License 2.0
-  *
-  * This work was created by the collective efforts of the openCypher community.
-  * Without limiting the terms of Section 6, any Derivative Work that is not
-  * approved by the public consensus process of the openCypher Implementers Group
-  * should not be described as “Cypher” (and Cypher® is a registered trademark of
-  * Neo4j Inc.) or as "openCypher". Extensions by implementers or prototypes or
-  * proposals for change that have been documented or implemented should only be
-  * described as "implementation extensions to Cypher" or as "proposed changes to
-  * Cypher that are not yet approved by the openCypher community".
-  */
-package org.opencypher.spark.impl.util
+ * Copyright (c) 2016-2019 "Neo4j Sweden, AB" [https://neo4j.com]
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ *
+ * Attribution Notice under the terms of the Apache License 2.0
+ *
+ * This work was created by the collective efforts of the openCypher community.
+ * Without limiting the terms of Section 6, any Derivative Work that is not
+ * approved by the public consensus process of the openCypher Implementers Group
+ * should not be described as “Cypher” (and Cypher® is a registered trademark of
+ * Neo4j Inc.) or as "openCypher". Extensions by implementers or prototypes or
+ * proposals for change that have been documented or implemented should only be
+ * described as "implementation extensions to Cypher" or as "proposed changes to
+ * Cypher that are not yet approved by the openCypher community".
+ */
+package org.opencypher.okapi.impl.temporal
 
-import java.sql.{Date, Timestamp}
 import java.time.format.{DateTimeFormatter, DateTimeFormatterBuilder, SignStyle}
 import java.time.temporal.{ChronoField, IsoFields}
 import java.time.{LocalDate, LocalDateTime, LocalTime}
 
-import org.apache.spark.unsafe.types.CalendarInterval
-import org.opencypher.okapi.api.value.CypherValue.CypherString
 import org.opencypher.okapi.impl.exception.IllegalArgumentException
 
 import scala.util.{Failure, Success, Try}
@@ -151,25 +148,21 @@ object TemporalTypesHelper {
     new DateTimeFormatterBuilder().appendPattern("HH").toFormatter
   )
 
-  def parseDate(mapOrString: MapOrString): Date = {
-    val localDate = mapOrString match {
+  def parseDate(mapOrString: MapOrString): LocalDate = {
+    mapOrString match {
       case Left(map) => parseDateMap(map)
       case Right(str)=> parseDateString(str)
     }
-
-    Date.valueOf(localDate)
   }
 
-  def parseLocalDateTime(mapOrString: MapOrString): Timestamp = {
+  def parseLocalDateTime(mapOrString: MapOrString): LocalDateTime = {
 
     mapOrString match {
       case Left(map) =>
 
         val date = parseDateMap(map)
         val time = parseTimeMap(map)
-        val dateTime = LocalDateTime.of(date, time)
-
-        Timestamp.valueOf(dateTime)
+        LocalDateTime.of(date, time)
 
       case Right(str) =>
         val dateString :: timeString = str.split("T", 2).toList
@@ -180,64 +173,11 @@ object TemporalTypesHelper {
           case _ => None
         }
 
-        val dateTime = maybeTime match {
+        maybeTime match {
           case Some(time) => LocalDateTime.of(date, time)
           case None => LocalDateTime.of(date, LocalTime.MIN)
         }
-
-        Timestamp.valueOf(dateTime)
     }
-  }
-
-  def parseDuration(mapOrString: MapOrString): CalendarInterval = {
-    val durationMap = mapOrString match {
-      case Left(map) => map.mapValues(_.toLong)
-
-      case Right(str) =>
-        val durationRegex =
-          """^P(\d+Y)?(\d+M)?(\d+W)?(\d+D)?(T(\d+H)?(\d+M)?(\d+(\.\d{1,6})?S)?)?$"""
-            .r("years", "months", "weeks", "days", "_", "hours", "minutes", "seconds", "_", "_")
-
-        durationRegex.findFirstMatchIn(str) match {
-          case Some(m) =>
-            val withoutSeconds = Seq("years", "months", "weeks", "days", "hours", "minutes")
-              .map(id => id -> m.group(id))
-              .filterNot(_._2.isNull)
-              .toMap
-              .mapValues(_.dropRight(1).toLong)
-
-            m.group("seconds") match {
-              case s: String =>
-                val doubleValue = s.dropRight(1).toDouble
-                val seconds = doubleValue.toLong
-                val fraction = (doubleValue - seconds) * 1000000
-                val milliseconds = (fraction / 1000).toLong
-                val microseconds = (fraction % 1000).toLong
-
-                withoutSeconds ++ Seq(
-                  "seconds" -> seconds,
-                  "milliseconds" -> milliseconds,
-                  "microseconds" -> microseconds
-                ).toMap
-
-              case null => withoutSeconds
-            }
-
-          case _ => throw IllegalArgumentException("a valid duration construction string", str)
-        }
-    }
-
-    CalendarIntervalFactory(
-      durationMap.getOrElse("years", 0),
-      durationMap.getOrElse("months", 0),
-      durationMap.getOrElse("weeks", 0),
-      durationMap.getOrElse("days", 0),
-      durationMap.getOrElse("hours", 0),
-      durationMap.getOrElse("minutes", 0),
-      durationMap.getOrElse("seconds", 0),
-      durationMap.getOrElse("milliseconds", 0),
-      durationMap.getOrElse("microseconds", 0)
-    )
   }
 
   private def parseDateMap(map: Map[String, Int]): LocalDate = {

@@ -32,6 +32,7 @@ import org.opencypher.okapi.api.value.CypherValue.CypherEntity._
 import org.opencypher.okapi.api.value.CypherValue.CypherNode._
 import org.opencypher.okapi.api.value.CypherValue.CypherRelationship._
 import org.opencypher.okapi.impl.exception.{IllegalArgumentException, UnsupportedOperationException}
+import org.opencypher.okapi.impl.temporal.Duration
 import ujson._
 
 import scala.reflect.{ClassTag, classTag}
@@ -63,7 +64,7 @@ object CypherValue {
       case jl: java.util.List[_] => seqToCypherList(jl.toArray)
       case dt: java.sql.Date => dt.toLocalDate
       case ts: java.sql.Timestamp => ts.toLocalDateTime
-      case du: java.time.Duration => du
+      case du: Duration => du
       case a: Array[_] => seqToCypherList(a)
       case s: Seq[_] => seqToCypherList(s)
       case m: Map[_, _] => m.map { case (k, cv) => k.toString -> CypherValue(cv) }
@@ -269,7 +270,7 @@ object CypherValue {
     override def unwrap: Any = value
   }
 
-  implicit class CypherDuration(val value: java.time.Duration) extends AnyVal with MaterialCypherValue[java.time.Duration] {
+  implicit class CypherDuration(val value: Duration) extends AnyVal with MaterialCypherValue[Duration] {
     override def unwrap: Any = value
   }
 
@@ -481,4 +482,5 @@ object CypherValue {
 
   object CypherDate extends UnapplyValue[java.time.LocalDate, CypherDate]
 
+  object CypherDuration extends UnapplyValue[Duration, CypherDuration]
 }

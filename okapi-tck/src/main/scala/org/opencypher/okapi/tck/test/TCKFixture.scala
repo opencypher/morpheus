@@ -154,9 +154,9 @@ case class TCKGraph[C <: CypherSession](testGraphFactory: CypherTestGraphFactory
             .filter(_.nonEmpty)
             .mkString("(", " ", ")")
         case OKAPICypherDate(date) =>
-          s"'${DateTimeFormatter.ISO_DATE.format(date.toLocalDate)}'"
+          s"'${DateTimeFormatter.ISO_DATE.format(date)}'"
         case OKAPICypherLocalDateTime(localDateTime) =>
-          s"'${localDateTime.toLocalDateTime}'"
+          s"'$localDateTime'"
         case _ => Objects.toString(value)
       }
     }
