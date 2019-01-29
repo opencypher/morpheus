@@ -1,0 +1,7 @@
+[[example-graph-views]]
+= Example: Graph views
+
+[source, scala]
+----
+include::{examples-dir}/ViewsExample.scala[tags=full-example]
+----

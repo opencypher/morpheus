@@ -1,0 +1,7 @@
+[[example-custom-dataframe-input]]
+= Example: Custom DataFrame input
+
+[source, scala]
+----
+include::{examples-dir}/CustomDataFrameInputExample.scala[tags=full-example]
+----

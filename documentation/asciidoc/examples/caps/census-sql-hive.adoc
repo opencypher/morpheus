@@ -1,0 +1,7 @@
+[[example-census-sql-hive]]
+= Example: Census SQL graph source example using Hive
+
+[source, scala]
+----
+include::{examples-dir}/CensusHiveExample.scala[tags=full-example]
+----

@@ -1,0 +1,7 @@
+[[example-update]]
+= Example: update
+
+[source, scala]
+----
+include::{examples-dir}/UpdateExample.scala[tags=full-example]
+----

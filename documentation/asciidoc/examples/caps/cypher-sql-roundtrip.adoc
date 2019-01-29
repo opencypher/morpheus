@@ -1,0 +1,7 @@
+[[example-cypher-sql-roundtrip]]
+= Example: Cypher-SQL round-trip
+
+[source, scala]
+----
+include::{examples-dir}/CypherSQLRoundtripExample.scala[tags=full-example]
+----

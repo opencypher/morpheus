@@ -1,0 +1,9 @@
+[[backend-in-memory]]
+= In-memory backend
+
+[abstract]
+--
+Placeholder abstract.
+--
+
+// TODO: Document the in-memory backend, possibly together with or instead of session and catalog.

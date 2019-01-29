@@ -1,0 +1,74 @@
+[[backend-sql]]
+= SQL Backend
+
+[abstract]
+--
+Placeholder abstract.
+--
+
+
+[[backend-sql-pgds]]
+== SQL PGDS
+
+The most powerful PGDS is the SQL PGDS.
+It allows the extraction of graphs from any system that understands SQL.
+In particular, Hive and JDBC are the two interfaces used.
+
+The SQL PGDS is configured using a JSON file which contains parameters necessary to connect across JDBC or to Hive.
+
+.Example SQL PGDS configuration
+====
+
+[source, scala]
+----
+val sqlPgds = GraphSources
+  .sql("/path/to/my/Graph.ddl")
+  .withSqlDataSourceConfigs(
+    "myHiveSource" -> SqlDataSourceConfig.Hive,
+    "myH2Source" -> SqlDataSourceConfig.Jdbc(
+      url = "jdbc:h2:mem:myH2.db;",
+      driver = "org.h2.Driver"
+    )
+  )
+----
+
+This example creates a SQL PGDS configured to read both from Hive and from an embedded H2 SQL database.
+
+====
+
+The graphs that a SQL PGDS stores are defined by their Graph DDL, which expresses graph schema and mappings from views and tables available in the configured data sources.
+
+.Graph DDL example (located at /path/to/my/Graph.ddl)
+====
+
+[source, "graph ddl"]
+----
+SET SCHEMA myH2Source.myH2Schema
+
+CREATE GRAPH myGraph (
+
+  (Person {name: STRING}) FROM view_Persons
+
+  (Person)-[KNOWS {since: INTEGER}]->(Person)
+    FROM view_KNOWS knows
+      START NODES (Person) FROM view_Persons person
+        JOIN ON person.id = knows.start_id
+      END NODES (Person) FROM view_Persons person
+        JOIN ON person.id = knows.end_id
+)
+----
+
+The above Graph DDL requires two tables (with columns): `view_KNOWS (start_id, end_id, since)` and `view_Persons (id, name)` to be present in the catalog of `myH2Source.myH2Schema` (the `myH2Schema` schema of the H2 database).
+
+====
+
+[[backend-sql-pgds-tables]]
+=== Tables and columns
+
+* The referenced tables are required to contain all the columns referenced in the Graph DDL, but may also contain additional columns; these will not be selected.
+* By default, there is a case-insensitive mapping between the label properties to table columns, such that a table `foo(BAR1 varchar, BAR2 bigint)` will map into a label `(Foo {bar1: STRING, BAR2: INTEGER})`.
+  The case in the graph will follow the case specified in the graph schema, as Cypher is case sensitive when it comes to property keys.
+
+
+include::backend-sql-graphddl.adoc[leveloffset=+1]
+

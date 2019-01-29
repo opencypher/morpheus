@@ -1,0 +1,15 @@
+[[cypher-cypher9-features]]
+= Supported subset of Cypher
+
+// TODO: Incorporate below spreadsheet here
+// https://docs.google.com/spreadsheets/d/1c5_LoI96EYICE6l09rxna-eLO7V-GParEdiHLJJ_Oaw/[This spreadsheet] tracks which aspects of Cypher are currently supported.
+
+Not all functions and graph patterns are yet supported but all of the basics are in place.
+
+Notably missing are:
+
+* `shortestPath` and `allShortestPaths`
+* path patterns (`p = ()-\->()`)
+* unbounded variable-length patterns
+
+Cypher 9 support will be increased over successive versions of CAPS.

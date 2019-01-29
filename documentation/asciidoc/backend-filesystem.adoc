@@ -1,0 +1,22 @@
+[[backend-filesystem]]
+= Filesystem Backend
+
+[abstract]
+--
+Placeholder abstract.
+--
+
+
+[[pgds-filesystem]]
+== Filesystem PGDS
+
+The most basic PGDS sort are the filesystem PGDSs.
+These store graphs as files in a specific file format in the "tables for labels" layout.
+That is, there will be a directory for each label combination in the graph, where nodes that contain that label combination are stored in tables.
+Similarly, relationships are stored in tables grouped by their relationship types.
+
+The files can be stored in local filesystem or in the Hadoop filesystem, as determined by the PGDS configuration.
+
+Additionally, the filesystem PGDS integrate with Hive, allowing the creation of Hive tables for each label combination.
+These may then be queried using standard Spark SQL, or used as input to SQL PGDS-hosted graphs.
+

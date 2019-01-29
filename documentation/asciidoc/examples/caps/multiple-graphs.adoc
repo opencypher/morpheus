@@ -1,0 +1,7 @@
+[[example-multiple-graphs]]
+= Example: Multiple-Graphs
+
+[source, scala]
+----
+include::{examples-dir}/MultipleGraphExample.scala[tags=full-example]
+----

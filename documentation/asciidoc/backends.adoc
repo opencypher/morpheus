@@ -1,0 +1,22 @@
+[[backends]]
+= Backends
+
+[abstract]
+--
+Placeholder abstract.
+--
+
+// TODO: This page is empty, consider adding inline TOC or introductory blurb.
+// TODO: Make the sidebar TOC show an additional level for these nested sections.
+// TODO: Consider folding session+catalog into in-memory backend.
+
+include::session-catalog.adoc[leveloffset=+1]
+
+include::backend-in-memory.adoc[leveloffset=+1]
+
+include::backend-filesystem.adoc[leveloffset=+1]
+
+include::backend-neo4j.adoc[leveloffset=+1]
+
+include::backend-sql.adoc[leveloffset=+1]
+

@@ -1,0 +1,75 @@
+[[caps-overview]]
+= Overview
+
+[abstract]
+--
+Placeholder abstract.
+--
+
+
+[[caps-components]]
+== Components
+
+Cypher for Apache Spark is made up of Property Graph Data Sources (PGDSs) -- software components for loading and saving graphs from various locations -- and Cypher.
+
+
+[[introduction-pgds]]
+=== Property Graph Data Sources
+
+The following Property Graph Data Sources are available:
+
+* FileSystem
+* Neo4j
+* SQL
+
+
+[[introduction-filesystem-pgds]]
+==== FileSystem PGDS
+
+The FileSystem PGDS can be used to load and save graphs in various formats stored in one of the supported file systems.
+The supported file systems are:
+
+* HDFS
+* local FS
+* S3
+
+The supported file formats are:
+
+* Parquet
+* ORC
+* CSV
+
+
+[[introduction-neo4j-pgds]]
+==== Neo4j PGDS
+
+The Neo4j PGDS can be used to load and save graphs from a Neo4j graph database.
+Using the Neo4j PGDS, it is possible to, among other things:
+
+* Store multiple graphs in Neo4j.
+* Synchronising Neo4j DB with other data sources.
+
+
+[[introduction-sql-pgds]]
+==== SQL PGDS
+
+The SQL PGDS can be used to load and save graphs from different SQL backends.
+With the SQL PGDS comes Graph DDL, a novel language to express Graph Schema, and an extension to the SQL language for expressing how SQL tables and view map to graphs.
+Graph DDL can be used to pull one or more graphs from SQL-interfaced systems, such as Hive, or a relational database.
+
+
+[[introduction-cypher]]
+=== Cypher
+
+Read-only part of Cypher 9.
+Cypher 10 Multiple-Graph extensions -- a set of changes to the core Cypher language itself, that make it possible to query multiple named graphs in the same query.
+
+
+[[introduction-language-support]]
+== Language support
+
+At the present time, only Scala is supported.
+As such, this documentation makes reference to Scala code snippets and conventions.
+// TODO: Is this true?
+Because Scala compiles down to class files, you can probably use it with Java, but it might not be idiomatic.
+

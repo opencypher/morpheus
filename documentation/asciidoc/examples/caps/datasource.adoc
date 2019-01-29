@@ -1,0 +1,7 @@
+[[example-datasource]]
+= Example: DataSource
+
+[source, scala]
+----
+include::{examples-dir}/DataSourceExample.scala[tags=full-example]
+----

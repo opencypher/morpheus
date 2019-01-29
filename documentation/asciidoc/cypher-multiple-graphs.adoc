@@ -1,0 +1,246 @@
+[[cypher-multiple-graphs]]
+= Multiple-Graph support for Cypher
+
+[abstract]
+--
+Placeholder abstract.
+--
+
+Neo4j CAPS ships with novel Cypher features under the title of Multiple-Graphs.
+These enable a single Cypher query to reference and query several graphs.
+Cypher queries may also define new graphs, add them to the catalog of graphs, and return graphs as results.
+
+
+.Multiple graph query overview:
+====
+
+Consider below _Query 1_, where the intent is to integrate data from two different graphs and construct a new graph.
+
+.Query 1
+[source, cypher]
+----
+CATALOG CREATE GRAPH integrations.person-customer { // <1>
+  FROM allFriends                                   // <2>
+  MATCH (p:Person)                                  // <3>
+  FROM purchases.products                           // <4>
+  MATCH (c:Customer)                                // <5>
+  WHERE c.email = p.email                           // <6>
+  CONSTRUCT                                         // <7>
+    ON purchases.products, allFriends               // <8>
+    CREATE (c)-[:IS]->(p)                           // <9>
+                                                    // <10>
+  RETURN GRAPH                                      // <11>
+}                                                   // <12>
+----
+
+<1> `CATALOG CREATE GRAPH` is a _catalog DDL clause_; it adds a graph to the catalog under the given name `integrations.person-customer`.
+<2> The `FROM` clause sets the working graph (the graph from which patterns are matched) to be the `allFriends` graph.
+<3> Standard Cypher 9 `MATCH` clause.
+    This matches from the `allFriends` graph.
+<4> Sets the working graph to `purchases.products`.
+<5> As 2, except this matches from the `purchases.products` graph.
+<6> Standard Cypher 9 `WHERE` sub-clause.
+<7> The `CONSTRUCT` clause defines a new graph.
+<8> The `ON` sub-clause allows graphs to be build on the union of a set of other graphs.
+    The constructed graph is here set to include everything from the `purchases.products` and `allFriends` graphs.
+<9> `CREATE` is here a sub-clause to `CONSTRUCT` in which new patterns may be defined for inclusion in the constructed graph.
+    The `c` nodes from `purchases.products` are here connected to the `p` nodes from the `allFriends` graph.
+<10> This line doesn't mean anything in particular but at this point the working graph has been changed to the newly constructed anonymous graph defined by the `CONSTRUCT` clause.
+<11> `RETURN GRAPH` returns the working graph as a result of the query.
+     This will return the newly constructed graph.
+<12> Denotes the end of the catalog query.
+     Catalog queries are required to return a graph; returning a table is invalid.
+
+In looser terms, what the above query illustrates is a way to connect two disparate graphs.
+In this case, our simple predicate defines that `:Person` nodes and `:Customer` nodes represent the same real person if their `email` properties are equal.
+The two graphs `allFriends` and `purchases.products` are here merged into a single graph and connected through `:IS` relationships.
+This new graph is then added to the catalog as `integrations.person-customer`, and may be referenced by a subsequent query.
+
+As graphs are managed through the federated catalog, the graph will actually be stored as a graph `person-customer` in the PGDS registered at the `integrations` namespace. See other chapters on PGDSs for more details.
+
+Alternatively, if the wrapping `CATALOG CREATE GRAPH` clause is omitted, the query will return the resulting graph to the user for further in-memory processing.
+Indeed, another Cypher query may be executed on the new graph.
+This effectively allows the construction of chains of queries on top of one another, in a pattern of _composition_, which is not possible in Cypher 9.
+====
+
+
+[[mg-cypher-background]]
+== Background
+
+Cypher is a language that is approaching standardisation.
+To this end the openCypher Implementers Group (oCIG) accepted a retroactive specification for Cypher 9, which includes most of the language as it has come to be known from its use in the Neo4j database.
+The https://s3.amazonaws.com/artifacts.opencypher.org/openCypher9.pdf[Cypher 9 specification] may be found on the https://www.opencypher.org[opencypher.org] website, along with many other Cypher materials and resources.
+
+Now, the openCypher project is leading the standardisation of Cypher 10, which will include a chapter on Multiple-Graphs.
+Neo4j CAPS is the first implementation of the features proposed for Cypher 10 Multiple-Graphs.
+
+
+[[mg-cypher-caps-and-neo4j]]
+== Cypher in Cypher for Apache Spark and Neo4j
+
+Neo4j supports full Cypher 9 plus specific extensions.
+CAPS supports a subset of Cypher 9 plus Multiple-Graphs from Cypher 10.
+Across successive versions, these discrepancies will be removed.
+// TODO: Link to more details
+
+Due to the domain of CAPS being a popular integration platform in Apache Spark, the capability of referencing multiple, distinct graphs is a key feature.
+Similar to how the `SparkSession` manages tables in a catalog, the `CAPSSession` manages _named_ graphs in a catalog.
+This enables referencing of graphs very similarly to how SQL references tables.
+
+
+[[mg-cypher-named-graphs]]
+== Named graphs and the catalog
+
+In Neo4j CAPS graphs are stored in a centrally managed, federated graph catalog.
+In this catalog graphs are distinguished by their _qualified graph names_.
+A qualified graph name consists of two or more parts, separated by a dot character (`.`), where the first part is called a _namespace_.
+The namespace is the handle to which the Property Graph Data Sources (PGDSs) are registered; all graphs managed by a PGDS registered at the namespace `foo` must be referenced with `foo.<name of graph>`.
+These namespaces are fully user-defined and may be any valid Cypher identifier.
+
+Since PGDSs represent physical storage in various distinct actual locations, this namespacing scheme effectively makes the graph catalog federated, as it manages graphs across all PGDSs.
+
+
+[[mg-working-graph]]
+== Working graph
+
+A Cypher query always works within the context of a _working graph_.
+In Cypher 9, this was implicitly defined by the system.
+In Cypher 10, this may be controlled from within the query.
+The working graph is the graph on which pattern matches operate.
+To set the working graph, use a `FROM` clause.
+
+
+[[mg-from-clause]]
+== FROM
+
+The `FROM` clause is used to set the working graph.
+
+.Layout of the `FROM` clause:
+[source, cypher]
+----
+FROM [GRAPH] <graph-name>
+----
+
+
+[[mg-return-graph]]
+== RETURN GRAPH
+
+The `RETURN GRAPH` clause is used to return the working graph as the query result.
+
+.Layout of the `RETURN GRAPH` clause:
+[source, cypher]
+----
+RETURN GRAPH
+----
+
+When the query ends with a `RETURN GRAPH` clause, there will be no tabular result.
+In other words, all queries have to choose whether to return a graph or to return a table.
+
+
+[[mg-graph-construct]]
+== CONSTRUCT
+
+In Multiple-Graphs Cypher, new graphs may be constructed within a query by using the `CONSTRUCT` clause.
+A `CONSTRUCT` clause is made up of three parts: an `ON` clause, `CREATE` clauses, and `SET` clauses.
+
+.Layout of the `CONSTRUCT` clause:
+[source, cypher]
+----
+CONSTRUCT
+  [ON <graph-name-list>]
+  [CREATE <pattern> | SET <set-expression>]*
+----
+
+At the end of a `CONSTRUCT` clause, the working graph is set to be the newly constructed graph.
+In the below example, we construct an empty graph and return it.
+Note that the previous working graph `graph1` is not being returned.
+
+.Construct an empty graph:
+[source, cypher]
+----
+FROM graph1
+CONSTRUCT
+RETURN GRAPH
+----
+
+[NOTE]
+`CONSTRUCT` will clear the query scope of any bound variables, and set the binding table to a single row.
+
+
+[[mg-construct-on]]
+=== ON
+
+The `ON` clause is optional.
+It may be used to specify one or more graphs which will form the basis of the constructed graph.
+Multiple arguments are separated by a comma (`,`).
+The referenced graphs will be combined into a single graph by adding all of their nodes and relationships.
+This is identical to performing a non-distinct `UNION` over all of the referenced graphs.
+
+.Construct the union of three graphs:
+====
+[source, cypher]
+----
+CONSTRUCT
+  ON graph1, graph2, graph3
+RETURN GRAPH
+----
+
+The above example query produces the same graph as a result as using the Scala API like this:
+
+[source, scala]
+----
+val caps: CAPSSession = ...
+val graph1 = caps.catalog("graph1")
+val graph2 = caps.catalog("graph2")
+val graph3 = caps.catalog("graph3")
+
+val result = graph1.unionAll(graph2, graph3)
+----
+====
+
+
+[[mg-create]]
+=== CREATE
+
+The `CREATE` clause is very similar to the Cypher 9 `CREATE` clause, with two main differences.
+First, it does not cause any side effects to any pre-existing graphs.
+Second, it may use a pattern construct called `COPY OF`.
+
+Nodes of a `CREATE` pattern with anonymous or unbound variables will cause the creation of a new node.
+Bound variables will not be created, but will be cloned into the constructed graph.
+
+[NOTE]
+If the `CONSTRUCT` is `ON` the same graph that the bound node was matched from, the node will not cause a duplicate to be cloned. Instead, any new relationships or properties will be set on the one instance of this node.
+
+
+[[mg-copy-of]]
+==== COPY OF
+
+The `COPY OF` pattern operator may be used to copy all labels and properties of a bound node or relationship onto a new one.
+
+.Copy the relationships between all pair of nodes:
+[source, cypher]
+----
+FROM graph1
+MATCH (n)-[r]->(m)
+CONSTRUCT ON graph1
+  CREATE (n)-[COPY OF r]->(m)
+RETURN GRAPH
+----
+
+
+[[mg-set]]
+=== SET
+
+The `SET` clause is identical to `SET` in Cypher 9, with the exception of operating only over the constructed graph.
+
+.Set a property on all the nodes of a graph:
+[source, cypher]
+----
+FROM graph1
+MATCH (n)
+CONSTRUCT
+  ON graph1
+  SET n.prop = 15
+RETURN GRAPH
+----
