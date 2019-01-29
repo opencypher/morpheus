@@ -28,7 +28,6 @@ package org.opencypher.spark.api.io
 
 import java.nio.file.Paths
 
-import org.apache.hadoop.conf.Configuration
 import org.apache.hadoop.fs.Path
 import org.apache.spark.sql.{DataFrame, SaveMode}
 import org.junit.rules.TemporaryFolder
@@ -55,14 +54,14 @@ import org.opencypher.spark.testing.api.io.CAPSCypher10AcceptanceTest
 import org.opencypher.spark.testing.fixture.{H2Fixture, HiveFixture, MiniDFSClusterFixture}
 import org.opencypher.spark.testing.utils.H2Utils._
 
-import scala.collection.JavaConverters._
-
 class FullCypher10AcceptanceTests extends CAPSTestSuite
   with CAPSCypher10AcceptanceTest with MiniDFSClusterFixture with Neo4jServerFixture with H2Fixture with HiveFixture {
 
   val fileFormatOptions = List(csv, parquet, orc)
   val filesPerTableOptions = List(1) //, 10
   val idGenerationOptions = List(HashBasedId, MonotonicallyIncreasingId)
+
+  // === Generate context factories
 
   val allFileSystemContextFactories: List[TestContextFactory] = {
     for {
@@ -90,6 +89,8 @@ class FullCypher10AcceptanceTests extends CAPSTestSuite
     sqlFileSystemContextFactories ++ sqlHiveContextFactories ++ sqlH2ContextFactories
   }
 
+  // === Run scenarios with all factories
+
   executeScenariosWithContext(cypher10Scenarios, Neo4jContextFactory)
 
   executeScenariosWithContext(allScenarios, SessionContextFactory)
@@ -108,6 +109,8 @@ class FullCypher10AcceptanceTests extends CAPSTestSuite
       pgds
     }
   }
+
+  // === Define context factories
 
   case class SQLWithH2ContextFactory(
     idGenerationStrategy: IdGenerationStrategy
@@ -139,7 +142,6 @@ class FullCypher10AcceptanceTests extends CAPSTestSuite
         )
       )
     }
-
   }
 
   case class SQLWithHiveContextFactory(
@@ -164,7 +166,6 @@ class FullCypher10AcceptanceTests extends CAPSTestSuite
     }
 
     override def sqlDataSourceConfig: SqlDataSourceConfig.Hive.type = Hive
-
   }
 
   case class SQLWithLocalFSContextFactory(
@@ -197,9 +198,7 @@ class FullCypher10AcceptanceTests extends CAPSTestSuite
 
     protected val databaseName = "SQLPGDS"
 
-    override def releasePgds(implicit ctx: TestContext): Unit = {
-      // SQL PGDS does not support graph deletion
-    }
+    override def releasePgds(implicit ctx: TestContext): Unit = () // SQL PGDS does not support graph deletion
 
     override def initPgds(graphNames: List[GraphName]): SqlPropertyGraphDataSource = {
       val ddls = graphNames.map { gn =>
@@ -220,7 +219,6 @@ class FullCypher10AcceptanceTests extends CAPSTestSuite
       val ddl = ddls.foldLeft(graphddl.GraphDdl(Map.empty[GraphName, Graph]))(_ ++ _)
       SqlPropertyGraphDataSource(ddl, Map(dataSourceName -> sqlDataSourceConfig), idGenerationStrategy)
     }
-
   }
 
   case object Neo4jContextFactory extends CAPSTestContextFactory {
@@ -229,7 +227,7 @@ class FullCypher10AcceptanceTests extends CAPSTestSuite
 
     override def initPgds(graphNames: List[GraphName]): PropertyGraphDataSource = {
       val pgds = CypherGraphSources.neo4j(neo4jConfig)
-      // Delete graphs that were detected via meta labels again. Neo4j caches meta labels, even if no nodes with them are present.
+      // Neo4j caches meta labels, even if their node are no longer present.
       pgds.graphNames.filter(_ != MetaLabelSupport.entireGraphName).foreach(pgds.delete)
       graphNames.foreach(gn => pgds.store(gn, graph(gn)))
       pgds
@@ -238,7 +236,6 @@ class FullCypher10AcceptanceTests extends CAPSTestSuite
     override def releasePgds(implicit ctx: TestContext): Unit = {
       pgds.graphNames.filter(_ != MetaLabelSupport.entireGraphName).foreach(pgds.delete)
     }
-
   }
 
   class HDFSFileSystemContextFactory(
@@ -248,27 +245,7 @@ class FullCypher10AcceptanceTests extends CAPSTestSuite
 
     override def toString: String = s"HDFS-PGDS-${fileFormat.name.toUpperCase}-FORMAT-$filesPerTable-FILE(S)-PER-TABLE"
 
-    // Set an incompatible default filesystem to ensure that picking the right filesystem based on the protocol works
-    def cfg: Configuration = {
-      val miniClusterCfg = clusterConfig
-      val incompatibleDefault = s"s3a://bucket/"
-      miniClusterCfg.set("fs.defaultFS", incompatibleDefault)
-      miniClusterCfg
-    }
-
-    protected def resetHadoopConfig(): Unit = {
-      sparkSession.sparkContext.hadoopConfiguration.clear()
-      val hadoopParams = cfg.asScala
-      for (entry <- hadoopParams) {
-        sparkSession.sparkContext.hadoopConfiguration.set(entry.getKey, entry.getValue)
-      }
-    }
-
     override def initializeContext(graphNames: List[GraphName]): TestContext = {
-      // DO NOT DELETE THIS! If the config is not cleared, the PGDSAcceptanceTest fails because of connecting to a
-      // non-existent HDFS cluster. We could not figure out why the afterEach call in MiniDFSClusterFixture does not handle
-      // the clearance of the config correctly.
-      resetHadoopConfig()
       super.initializeContext(graphNames)
     }
 
@@ -292,11 +269,9 @@ class FullCypher10AcceptanceTests extends CAPSTestSuite
 
     override def toString: String = s"LocalFS-PGDS-${fileFormat.name.toUpperCase}-FORMAT-$filesPerTable-FILE(S)-PER-TABLE"
 
-    protected val schemePrefix = "file://"
-
     protected var tempDir: TemporaryFolder = _
 
-    def basePath: String = schemePrefix + Paths.get(tempDir.getRoot.getAbsolutePath)
+    def basePath: String = s"file://${Paths.get(tempDir.getRoot.getAbsolutePath)}"
 
     def graphSourceFactory: FSGraphSourceFactory = GraphSources.fs(basePath, filesPerTable = Some(filesPerTable))
 
@@ -310,7 +285,6 @@ class FullCypher10AcceptanceTests extends CAPSTestSuite
       super.releaseContext
       tempDir.delete()
     }
-
   }
 
   trait FileSystemContextFactory extends CAPSTestContextFactory {
@@ -328,8 +302,6 @@ class FullCypher10AcceptanceTests extends CAPSTestSuite
       graphNames.foreach(gn => pgds.store(gn, graph(gn)))
       pgds
     }
-
   }
 
-  override def dataFixture: String = ""
 }
