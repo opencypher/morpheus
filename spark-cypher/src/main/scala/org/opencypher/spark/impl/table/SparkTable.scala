@@ -373,7 +373,7 @@ object SparkTable {
     }
 
     def safeRenameColumns(renamings: Map[String, String]): DataFrame = {
-      if (renamings.forall { case (oldColumn, newColumn) => oldColumn == newColumn }) {
+      if (renamings.isEmpty || renamings.forall { case (oldColumn, newColumn) => oldColumn == newColumn }) {
         df
       } else {
         renamings.foreach { case (oldName, newName) => require(!df.columns.contains(newName),
@@ -422,7 +422,7 @@ object SparkTable {
       */
     def castToLong: DataFrame = {
       def convertColumns(field: StructField, col: Column): Column = {
-        val converted = field.dataType match {
+        field.dataType match {
           case StructType(inner) =>
             val fields = inner.map(i => convertColumns(i, col.getField(i.name)))
             functions.struct(fields: _*)
@@ -430,7 +430,6 @@ object SparkTable {
           case IntegerType => col.cast(LongType)
           case _ => col
         }
-        converted.as(field.name)
       }
 
       val convertedFields = df.schema.fields.map { field => convertColumns(field, df.col(field.name)) }
