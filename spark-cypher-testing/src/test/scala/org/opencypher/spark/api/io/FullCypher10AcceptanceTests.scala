@@ -36,6 +36,7 @@ import org.opencypher.graphddl
 import org.opencypher.graphddl.Graph
 import org.opencypher.okapi.api.graph.GraphName
 import org.opencypher.okapi.api.io.PropertyGraphDataSource
+import org.opencypher.okapi.impl.io.SessionGraphDataSource
 import org.opencypher.okapi.impl.util.StringEncodingUtilities._
 import org.opencypher.okapi.neo4j.io.MetaLabelSupport
 import org.opencypher.okapi.neo4j.io.testing.Neo4jServerFixture
@@ -60,7 +61,7 @@ class FullCypher10AcceptanceTests extends CAPSTestSuite
   with CAPSCypher10AcceptanceTest with MiniDFSClusterFixture with Neo4jServerFixture with H2Fixture with HiveFixture {
 
   val fileFormatOptions = List(csv, parquet, orc)
-  val filesPerTableOptions = List(1, 10)
+  val filesPerTableOptions = List(1) //, 10
   val idGenerationOptions = List(HashBasedId, MonotonicallyIncreasingId)
 
   val fileSystemContextFactories: List[TestContextFactory] = {
@@ -91,13 +92,24 @@ class FullCypher10AcceptanceTests extends CAPSTestSuite
     sqlFileSystemContextFactories ++ sqlHiveContextFactories ++ sqlH2ContextFactories
   }
 
-  sqlHiveContextFactories.foreach(executeScenariosWithContext(allScenarios, _))
+  executeScenariosWithContext(cypher10Scenarios, Neo4jContextFactory)
 
-//  executeScenariosWithContext(cypher10Scenarios, Neo4jContextFactory)
+  executeScenariosWithContext(allScenarios, SessionContextFactory)
 
-//  allSqlContextFactories.foreach(executeScenariosWithContext(allScenarios, _))
+  allSqlContextFactories.foreach(executeScenariosWithContext(allScenarios, _))
 
-//  fileSystemContextFactories.foreach(executeScenariosWithContext(allScenarios, _))
+  fileSystemContextFactories.foreach(executeScenariosWithContext(allScenarios, _))
+
+  case object SessionContextFactory extends CAPSTestContextFactory {
+
+    override def toString: String = s"SESSION-PGDS"
+
+    override def initPgds(graphNames: List[GraphName]): PropertyGraphDataSource = {
+      val pgds = new SessionGraphDataSource
+      graphNames.foreach(gn => pgds.store(gn, graph(gn)))
+      pgds
+    }
+  }
 
   case class SQLWithH2ContextFactory(
     idGenerationStrategy: IdGenerationStrategy
