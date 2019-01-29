@@ -422,14 +422,15 @@ object SparkTable {
       */
     def castToLong: DataFrame = {
       def convertColumns(field: StructField, col: Column): Column = {
-        field.dataType match {
+        val convertedCol = field.dataType match {
           case StructType(inner) =>
-            val fields = inner.map(i => convertColumns(i, col.getField(i.name)))
-            functions.struct(fields: _*)
+            val columns = inner.map(i => convertColumns(i, col.getField(i.name)).as(i.name))
+            functions.struct(columns: _*)
           case ArrayType(IntegerType, nullable) => col.cast(ArrayType(LongType, nullable))
           case IntegerType => col.cast(LongType)
           case _ => col
         }
+        if (col == convertedCol) col else convertedCol.as(field.name)
       }
 
       val convertedFields = df.schema.fields.map { field => convertColumns(field, df.col(field.name)) }
