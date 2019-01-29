@@ -38,7 +38,8 @@ import org.opencypher.okapi.ir.api.expr._
 import org.opencypher.okapi.relational.impl.table.RecordHeader
 import org.opencypher.spark.impl.CAPSFunctions.{array_contains, get_node_labels, get_property_keys, get_rel_type, _}
 import org.opencypher.spark.impl.convert.SparkConversions._
-import org.opencypher.spark.impl.util.SparkTemporalHelpers._
+import org.opencypher.spark.impl.temporal.SparkTemporalHelpers._
+import org.opencypher.spark.impl.temporal.TemporalUDFS
 object SparkSQLExprMapper {
 
   private val NULL_LIT: Column = functions.lit(null)
@@ -232,12 +233,19 @@ object SparkSQLExprMapper {
             case (CTString, CTString) =>
               functions.concat(lhs.asSparkSQLExpr, rhs.asSparkSQLExpr)
 
+            case (CTDate, CTDuration) =>
+              TemporalUDFS.dateAdd(lhs.asSparkSQLExpr, rhs.asSparkSQLExpr)
+
             case _ =>
               lhs.asSparkSQLExpr + rhs.asSparkSQLExpr
           }
 
+        case Subtract(lhs, rhs) if lhs.cypherType.material.subTypeOf(CTDate).isTrue && rhs.cypherType.material.subTypeOf(CTDuration).isTrue =>
+          TemporalUDFS.dateSubtract(lhs.asSparkSQLExpr, rhs.asSparkSQLExpr)
 
-        case Subtract(lhs, rhs) => lhs.asSparkSQLExpr - rhs.asSparkSQLExpr
+        case Subtract(lhs, rhs) =>
+          lhs.asSparkSQLExpr - rhs.asSparkSQLExpr
+
         case Multiply(lhs, rhs) => lhs.asSparkSQLExpr * rhs.asSparkSQLExpr
         case div@Divide(lhs, rhs) => (lhs.asSparkSQLExpr / rhs.asSparkSQLExpr).cast(div.cypherType.getSparkType)
 

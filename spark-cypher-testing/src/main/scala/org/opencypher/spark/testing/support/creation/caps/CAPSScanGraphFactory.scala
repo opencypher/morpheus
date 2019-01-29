@@ -30,6 +30,7 @@ import org.apache.spark.sql.Row
 import org.apache.spark.sql.types.{LongType, StructField, StructType}
 import org.opencypher.okapi.api.io.conversion.{NodeMapping, RelationshipMapping}
 import org.opencypher.okapi.api.schema.PropertyKeys.PropertyKeys
+import org.opencypher.okapi.impl.temporal.Duration
 import org.opencypher.okapi.relational.impl.graph.ScanGraph
 import org.opencypher.okapi.testing.propertygraph.InMemoryTestGraph
 import org.opencypher.spark.api.CAPSSession
@@ -38,6 +39,7 @@ import org.opencypher.spark.api.io.Relationship.{sourceEndNodeKey, sourceStartNo
 import org.opencypher.spark.api.io.{CAPSNodeTable, CAPSRelationshipTable}
 import org.opencypher.spark.impl.convert.SparkConversions._
 import org.opencypher.spark.impl.table.SparkTable.DataFrameTable
+import org.opencypher.spark.impl.temporal.SparkTemporalHelpers._
 import org.opencypher.spark.schema.CAPSSchema._
 
 import scala.collection.JavaConverters._
@@ -60,7 +62,11 @@ object CAPSScanGraphFactory extends CAPSTestGraphFactory {
         .filter(_.labels == labels)
         .map { node =>
           val propertyValues = propKeys.map(key =>
-            node.properties.unwrap.getOrElse(key._1, null)
+            node.properties.unwrap.get(key._1) match {
+              case Some(dur: Duration) => dur.toCalendarInterval
+              case Some(other) => other
+              case None => null
+            }
           )
           Row.fromSeq(Seq(node.id) ++ propertyValues)
         }

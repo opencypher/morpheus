@@ -24,13 +24,13 @@
  * described as "implementation extensions to Cypher" or as "proposed changes to
  * Cypher that are not yet approved by the openCypher community".
  */
-package org.opencypher.spark.impl.util
+package org.opencypher.spark.impl.temporal
 
-
+import org.apache.logging.log4j.scala.Logging
 import org.apache.spark.unsafe.types.CalendarInterval
 import org.opencypher.okapi.impl.temporal.Duration
 
-object SparkTemporalHelpers {
+object SparkTemporalHelpers extends Logging{
   implicit class RichDuration(duration: Duration) {
 
     /**
@@ -39,6 +39,10 @@ object SparkTemporalHelpers {
       *       Additionally it uses an approximate representation of days.
       */
     def toCalendarInterval: CalendarInterval = {
+      if(duration.nanos % 1000 != 0) {
+        logger.warn("Spark does not support durations with nanosecond resolution, truncating!")
+      }
+
       val microseconds = duration.nanos / 1000 +
                          duration.seconds * CalendarInterval.MICROS_PER_SECOND +
                          duration.days * CalendarInterval.MICROS_PER_DAY
@@ -69,5 +73,3 @@ object SparkTemporalHelpers {
     }
   }
 }
-
-

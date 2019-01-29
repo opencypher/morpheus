@@ -36,7 +36,7 @@ import org.opencypher.okapi.impl.exception.UnsupportedOperationException
 import org.opencypher.okapi.ir.api.expr.{Expr, ListSegment, Var}
 import org.opencypher.okapi.relational.impl.table.RecordHeader
 import org.opencypher.spark.api.value.{CAPSNode, CAPSRelationship}
-import org.opencypher.spark.impl.util.SparkTemporalHelpers._
+import org.opencypher.spark.impl.temporal.SparkTemporalHelpers._
 
 // TODO: argument cannot be a Map due to Scala issue https://issues.scala-lang.org/browse/SI-7005
 final case class rowToCypherMap(exprToColumn: Seq[(Expr, String)]) extends (Row => CypherMap) {

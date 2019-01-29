@@ -169,12 +169,21 @@ class FunctionTests extends CAPSTestSuite with ScanGraphInit {
         caps.cypher("RETURN date('2010-10-10') - duration('P1D') AS time").records.toMapsWithCollectedEntities should equal(
           Bag(CypherMap("time" -> java.sql.Date.valueOf("2010-10-09")))
         )
+
+        caps.cypher(
+          """
+            |WITH
+            | date({year: 1984, month: 10, day: 11}) AS date,
+            | duration({months: 1, days: -14}) as duration
+            |RETURN date - duration AS diff
+          """.stripMargin).records.toMapsWithCollectedEntities should equal(
+          Bag(CypherMap("diff" -> java.sql.Date.valueOf("1984-09-25")))
+        )
       }
 
-      // TODO: This is not necessarily correct. Neo4j would return 2010-10-09
-      ignore("supports subtraction to date with with time part present") {
+      it("supports subtraction to date with with time part present") {
         caps.cypher("RETURN date('2010-10-10') - duration('P1DT12H') AS time").records.toMapsWithCollectedEntities should equal(
-          Bag(CypherMap("time" -> java.sql.Date.valueOf("2010-10-08")))
+          Bag(CypherMap("time" -> java.sql.Date.valueOf("2010-10-09")))
         )
       }
 
