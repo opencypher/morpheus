@@ -45,7 +45,7 @@ trait Neo4jServerFixture extends BaseTestFixture {
     s"$scheme://$userInfo$host"
   }
 
-  def dataFixture: String = ""
+  def dataFixture: String
 
   abstract override def beforeAll(): Unit = {
     super.beforeAll()

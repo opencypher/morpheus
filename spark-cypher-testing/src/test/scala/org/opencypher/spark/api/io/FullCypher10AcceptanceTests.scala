@@ -57,11 +57,11 @@ import org.opencypher.spark.testing.utils.H2Utils._
 class FullCypher10AcceptanceTests extends CAPSTestSuite
   with CAPSCypher10AcceptanceTest with MiniDFSClusterFixture with Neo4jServerFixture with H2Fixture with HiveFixture {
 
+  // === Generate context factories for Neo4j, Session, FileSystem, and SQL property graph data sources
+
   val fileFormatOptions = List(csv, parquet, orc)
   val filesPerTableOptions = List(1) //, 10
   val idGenerationOptions = List(HashBasedId, MonotonicallyIncreasingId)
-
-  // === Generate context factories
 
   val allFileSystemContextFactories: List[TestContextFactory] = {
     for {
@@ -303,5 +303,7 @@ class FullCypher10AcceptanceTests extends CAPSTestSuite
       pgds
     }
   }
+
+  def dataFixture: String = ""
 
 }
