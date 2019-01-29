@@ -46,7 +46,7 @@ import org.opencypher.spark.util.{ConsoleApp, LoadInteractionsInHive}
   * A graph perspective is applied to this dataset, where we can identify customers who interact with
   * customer reps with policies and accounts.
   * From a business analysis perspective, we are interested in finding out which customers and which
-  * customer reps that are involved in the most problematic interactions, such as cancellations.
+  * customer reps are involved in the most problematic interactions, such as cancellations.
   *
   * Using Graph DDL we load a set of Hive views into a graph, which we seed into a Neo4j transactional database.
   * As time progresses, we need to update our transactional database with the incoming deltas, which are taken
