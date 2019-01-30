@@ -149,6 +149,10 @@ object SparkSQLExprMapper {
               val localDateTimeValue = resolveTemporalArgument(e)
                 .map(parseLocalDateTime)
                 .map(java.sql.Timestamp.valueOf)
+                .map {
+                  case ts if ts.getNanos % 1000 == 0 => ts
+                  case _ => throw IllegalStateException("Spark does not support nanosecond resolution in 'localdatetime'")
+                }
                 .orNull
 
               functions.lit(localDateTimeValue).cast(DataTypes.TimestampType)
@@ -521,7 +525,7 @@ object SparkSQLExprMapper {
       case "ordinalday" => functions.dayofyear(temporalColumn)
       case "weekyear" => TemporalUDFS.weekYear[I].apply(temporalColumn)
       case "dayofquarter" => TemporalUDFS.dayOfQuarter[I].apply(temporalColumn)
-      case "dayofweek" => TemporalUDFS.dayOfWeek[I].apply(temporalColumn)
+      case "dayofweek" | "weekday" => TemporalUDFS.dayOfWeek[I].apply(temporalColumn)
 
       case "hour" => functions.hour(temporalColumn)
       case "minute" => functions.minute(temporalColumn)

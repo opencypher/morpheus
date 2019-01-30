@@ -362,6 +362,20 @@ class TemporalTests extends CAPSTestSuite with ScanGraphInit {
           CypherMap("time" -> java.sql.Timestamp.valueOf("2015-10-01 12:50:00.0"))
         )
       )
+
+      caps.cypher(
+        """RETURN localdatetime({
+          |year: 2015,
+          |month: 10,
+          |day: 1,
+          |hour: 12,
+          |minute: 50,
+          |second: 1,
+          |nanosecond: 42}) AS time""".stripMargin).records.toMapsWithCollectedEntities should equal(
+        Bag(
+          CypherMap("time" -> java.sql.Timestamp.valueOf("2015-10-01 12:50:01.000000042"))
+        )
+      )
     }
 
     it("throws an error if values of higher significance are omitted") {

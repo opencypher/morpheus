@@ -108,10 +108,9 @@ object TemporalUDFS extends Logging {
   def milliseconds[I: TypeTag]: UserDefinedFunction = timeAccessor[I](ChronoField.MILLI_OF_SECOND)
 
   /**
-    * Returns the milliseconds.
+    * Returns the microseconds.
     */
   def microseconds[I: TypeTag]: UserDefinedFunction = timeAccessor[I](ChronoField.MICRO_OF_SECOND)
-
 
   def epochNanos[I: TypeTag]: UserDefinedFunction = udf[Long, I] {
     case l: Timestamp => (l.toInstant.getEpochSecond * 1000000000L) + l.toInstant.getNano
@@ -123,25 +122,30 @@ object TemporalUDFS extends Logging {
       if (duration == null) {
         null
       } else {
+        val days = duration.microseconds / CalendarInterval.MICROS_PER_DAY
+        // Note: in cypher days (and weeks) make up their own group, thus we have to exclude them for all values < day
+        val daysInMicros =  days * CalendarInterval.MICROS_PER_DAY
+
         val l: Long = accessor match {
           case "years" => duration.months / 12
           case "quarters" => duration.months / 3
           case "months" => duration.months
           case "weeks" => duration.microseconds / CalendarInterval.MICROS_PER_DAY / 7
           case "days" => duration.microseconds / CalendarInterval.MICROS_PER_DAY
-          case "hours" => duration.microseconds / CalendarInterval.MICROS_PER_HOUR
-          case "minutes" => duration.microseconds / CalendarInterval.MICROS_PER_MINUTE
-          case "seconds" => duration.microseconds / CalendarInterval.MICROS_PER_SECOND
-          case "milliseconds" => duration.microseconds / CalendarInterval.MICROS_PER_MILLI
-          case "microseconds" => duration.microseconds
-          case "nanoseconds" => duration.microseconds * 1000
+          case "hours" => (duration.microseconds - daysInMicros ) / CalendarInterval.MICROS_PER_HOUR
+          case "minutes" => (duration.microseconds - daysInMicros ) / CalendarInterval.MICROS_PER_MINUTE
+          case "seconds" => (duration.microseconds - daysInMicros ) / CalendarInterval.MICROS_PER_SECOND
+          case "milliseconds" => (duration.microseconds - daysInMicros ) / CalendarInterval.MICROS_PER_MILLI
+          case "microseconds" => duration.microseconds - daysInMicros
 
+          case "quartersofyear" => (duration.months / 3) % 4
+          case "monthsofquarter" => duration.months % 3
           case "monthsofyear" => duration.months % 12
-          case "minutesofhour" => (duration.microseconds / CalendarInterval.MICROS_PER_MINUTE) % 60
-          case "secondsofminute" => (duration.microseconds / CalendarInterval.MICROS_PER_SECOND) % 60
-          case "millisecondsofsecond" => (duration.microseconds / CalendarInterval.MICROS_PER_MILLI) % 1000
-          case "microsecondsofsecond" => (duration.microseconds / CalendarInterval.MICROS_PER_MILLI) % 1000000
-          case "nanosecondsofsecond" => (duration.microseconds / CalendarInterval.MICROS_PER_MILLI) % 1000000000
+          case "daysofweek" => (duration.microseconds / CalendarInterval.MICROS_PER_DAY) % 7
+          case "minutesofhour" => ((duration.microseconds  - daysInMicros )/ CalendarInterval.MICROS_PER_MINUTE) % 60
+          case "secondsofminute" => ((duration.microseconds - daysInMicros ) / CalendarInterval.MICROS_PER_SECOND) % 60
+          case "millisecondsofsecond" => ((duration.microseconds - daysInMicros ) / CalendarInterval.MICROS_PER_MILLI) % 1000
+          case "microsecondsofsecond" => (duration.microseconds - daysInMicros ) % 1000000
 
           case other => throw UnsupportedOperationException(s"Unknown Duration accessor: $other")
         }
