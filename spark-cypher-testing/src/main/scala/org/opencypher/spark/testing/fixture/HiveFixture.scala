@@ -42,4 +42,5 @@ trait HiveFixture extends SparkSessionFixture {
     dropHiveDatabase(name)
     createHiveDatabase(name)
   }
+
 }
