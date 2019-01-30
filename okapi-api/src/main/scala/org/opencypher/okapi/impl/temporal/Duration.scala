@@ -92,12 +92,12 @@ object Duration {
     seconds: Long = 0, milliseconds: Long = 0, microseconds: Long = 0, nanoseconds: Long = 0): Duration = {
 
     val nanoSum = milliseconds * 1000000 + microseconds * 1000 + nanoseconds
-    val normalizedSeconds = hours * 3600 + minutes * 60 + seconds + nanoSum / NANOS_PER_SECOND
+    val normalizedSeconds = hours * SECONDS_PER_HOUR + minutes * SECONDS_PER_MINUTE + seconds + nanoSum / NANOS_PER_SECOND
     val normalizedNanos = nanoSum % NANOS_PER_SECOND
 
     new Duration(
-      months = years * 12 + months,
-      days = weeks * 7 + days,
+      months = years * MONTHS_PER_YEAR + months,
+      days = weeks * DAYS_PER_WEEK + days,
       seconds = normalizedSeconds,
       nanos = normalizedNanos
     )

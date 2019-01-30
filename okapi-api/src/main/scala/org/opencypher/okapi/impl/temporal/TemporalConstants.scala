@@ -31,6 +31,12 @@ import java.time.temporal.ChronoUnit.DAYS
 object TemporalConstants {
   val NANOS_PER_SECOND: Long = 1000000000L
   val SECONDS_PER_DAY: Long = DAYS.getDuration.getSeconds
+  val SECONDS_PER_HOUR = 3600
+  val SECONDS_PER_MINUTE = 60
+
+  val MONTHS_PER_YEAR = 12
+  val DAYS_PER_WEEK = 7
+
   /** 30.4375 days = 30 days, 10 hours, 30 minutes */
   val AVG_DAYS_PER_MONTH: Double = 365.2425 / 12
   val AVG_SECONDS_PER_MONTH: Long = 2629746
