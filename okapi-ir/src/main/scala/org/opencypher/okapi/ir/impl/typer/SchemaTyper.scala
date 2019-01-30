@@ -103,6 +103,9 @@ object SchemaTyper {
           case CTMap(inner) =>
             recordType(v -> varTyp) >> recordAndUpdate(expr -> inner.getOrElse(name, CTVoid))
 
+          case _: TemporalValueCypherType =>
+            recordType(v -> varTyp) >> recordAndUpdate(expr -> CTInteger)
+
           case _ =>
             error(InvalidContainerAccess(expr))
         }

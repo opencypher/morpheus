@@ -40,6 +40,9 @@ import org.opencypher.spark.impl.CAPSFunctions.{array_contains, get_node_labels,
 import org.opencypher.spark.impl.convert.SparkConversions._
 import org.opencypher.spark.impl.temporal.SparkTemporalHelpers._
 import org.opencypher.spark.impl.temporal.TemporalUDFS
+
+import scala.reflect.runtime.universe.TypeTag
+
 object SparkSQLExprMapper {
 
   private val NULL_LIT: Column = functions.lit(null)
@@ -107,6 +110,14 @@ object SparkSQLExprMapper {
           }
 
           if (fields.contains(key)) map.asSparkSQLExpr.getField(key) else functions.lit(null)
+
+        case Property(temporalValue, PropertyKey(key)) if temporalValue.cypherType.material.isInstanceOf[TemporalValueCypherType] =>
+          val temporalColumn = temporalValue.asSparkSQLExpr
+          temporalValue.cypherType.material match {
+            case CTDate => temporalAccessor[Date](temporalColumn, key)
+            case CTLocalDateTime => temporalAccessor[Timestamp](temporalColumn, key)
+            case _ => ???
+          }
 
         case _: Property if !header.contains(expr) => NULL_LIT
 
@@ -495,6 +506,21 @@ object SparkSQLExprMapper {
 
       case other =>
         throw NotImplementedException(s"Parsing temporal values is currently only supported for Literal-Maps and String literals, got $other")
+    }
+  }
+
+  private def temporalAccessor[I: TypeTag](temporalColumn: Column, accessor: String): Column = {
+    accessor.toLowerCase match {
+      case "year" => functions.year(temporalColumn)
+      case "quarter" => functions.quarter(temporalColumn)
+      case "month" => functions.month(temporalColumn)
+      case "week" => functions.weekofyear(temporalColumn)
+      case "day" => functions.dayofmonth(temporalColumn)
+      case "ordinalday" => functions.dayofyear(temporalColumn)
+      case "weekyear" => TemporalUDFS.weekYear[I].apply(temporalColumn)
+      case "dayofquarter" => TemporalUDFS.dayOfQuarter[I].apply(temporalColumn)
+      case "dayofweek" => TemporalUDFS.dayOfWeek[I].apply(temporalColumn)
+      case other => throw UnsupportedOperationException(s"Unknown Temporal Accessor: $other")
     }
   }
 }

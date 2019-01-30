@@ -26,12 +26,16 @@
  */
 package org.opencypher.spark.impl.temporal
 
-import java.sql.Date
+import java.sql.{Date, Timestamp}
+import java.time.temporal.{ChronoField, IsoFields, TemporalField}
 
 import org.apache.logging.log4j.scala.Logging
 import org.apache.spark.sql.expressions.UserDefinedFunction
 import org.apache.spark.sql.functions.udf
 import org.apache.spark.unsafe.types.CalendarInterval
+import org.opencypher.okapi.impl.exception.UnsupportedOperationException
+
+import scala.reflect.runtime.universe._
 
 object TemporalUDFS extends Logging {
 
@@ -82,4 +86,25 @@ object TemporalUDFS extends Logging {
         Date.valueOf(reducedLocalDate)
       }
     })
+
+  private def temporalAccessor[I: TypeTag](accessor: TemporalField): UserDefinedFunction = udf[Long, I] {
+    case d: Date => d.toLocalDate.get(accessor)
+    case l: Timestamp => l.toLocalDateTime.get(accessor)
+    case other => throw UnsupportedOperationException(s"Temporal Accessor '$accessor' is not supported for '$other'.")
+  }
+
+  /**
+    * Returns the week based year of a given temporal type.
+    */
+  def weekYear[I: TypeTag]: UserDefinedFunction = temporalAccessor[I](IsoFields.WEEK_BASED_YEAR)
+
+  /**
+    * Returns the day of the quarter of a given temporal type.
+    */
+  def dayOfQuarter[I: TypeTag]: UserDefinedFunction = temporalAccessor[I](IsoFields.DAY_OF_QUARTER)
+
+  /**
+    * Returns the day of the week of a given temporal type.
+    */
+  def dayOfWeek[I: TypeTag]: UserDefinedFunction = temporalAccessor[I](ChronoField.DAY_OF_WEEK)
 }
