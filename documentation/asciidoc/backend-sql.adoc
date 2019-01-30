@@ -21,15 +21,7 @@ The SQL PGDS is configured using a JSON file which contains parameters necessary
 
 [source, scala]
 ----
-val sqlPgds = GraphSources
-  .sql("/path/to/my/Graph.ddl")
-  .withSqlDataSourceConfigs(
-    "myHiveSource" -> SqlDataSourceConfig.Hive,
-    "myH2Source" -> SqlDataSourceConfig.Jdbc(
-      url = "jdbc:h2:mem:myH2.db;",
-      driver = "org.h2.Driver"
-    )
-  )
+include::{snippets-dir}/SqlPGDS.scala[tags=create-sql-pgds]
 ----
 
 This example creates a SQL PGDS configured to read both from Hive and from an embedded H2 SQL database.
@@ -43,19 +35,7 @@ The graphs that a SQL PGDS stores are defined by their Graph DDL, which expresse
 
 [source, "graph ddl"]
 ----
-SET SCHEMA myH2Source.myH2Schema
-
-CREATE GRAPH myGraph (
-
-  (Person {name: STRING}) FROM view_Persons
-
-  (Person)-[KNOWS {since: INTEGER}]->(Person)
-    FROM view_KNOWS knows
-      START NODES (Person) FROM view_Persons person
-        JOIN ON person.id = knows.start_id
-      END NODES (Person) FROM view_Persons person
-        JOIN ON person.id = knows.end_id
-)
+include::{snippets-res-dir}/SqlPGDS.ddl[tags=full-example]
 ----
 
 The above Graph DDL requires two tables (with columns): `view_KNOWS (start_id, end_id, since)` and `view_Persons (id, name)` to be present in the catalog of `myH2Source.myH2Schema` (the `myH2Schema` schema of the H2 database).
