@@ -673,5 +673,95 @@ class TemporalTests extends CAPSTestSuite with ScanGraphInit {
         )
       }
     }
+
+    describe("duration based accessors") {
+      it("supports years") {
+        caps.cypher("""RETURN duration({years: 2, months: 14}).years AS years""").records.toMapsWithCollectedEntities should equal(
+          Bag(
+            CypherMap("years" -> 3)
+          )
+        )
+      }
+
+      it("supports months") {
+        caps.cypher("""RETURN duration({years: 2, months: 14}).months AS months""").records.toMapsWithCollectedEntities should equal(
+          Bag(
+            CypherMap("months" -> 38)
+          )
+        )
+      }
+
+      it("supports weeks") {
+        caps.cypher("""RETURN duration({years: 2, days: 15}).weeks AS weeks""").records.toMapsWithCollectedEntities should equal(
+          Bag(
+            CypherMap("weeks" -> 2)
+          )
+        )
+      }
+
+      it("supports days") {
+        caps.cypher("""RETURN duration({years: 2, days: 14}).days AS days""").records.toMapsWithCollectedEntities should equal(
+          Bag(
+            CypherMap("days" -> 14)
+          )
+        )
+      }
+
+      it("supports hours") {
+        caps.cypher("""RETURN duration({years: 2, hours: 5, minutes: 60}).hours AS hours""").records.toMapsWithCollectedEntities should equal(
+          Bag(
+            CypherMap("hours" -> 6)
+          )
+        )
+      }
+
+      it("supports minutes") {
+        caps.cypher("""RETURN duration({years: 2, hours: 2, minutes: 2}).minutes AS minutes""").records.toMapsWithCollectedEntities should equal(
+          Bag(
+            CypherMap("minutes" -> 122)
+          )
+        )
+      }
+
+      it("supports seconds") {
+        caps.cypher("""RETURN duration({years: 2, minutes: 1, seconds: 2}).seconds AS seconds""").records.toMapsWithCollectedEntities should equal(
+          Bag(
+            CypherMap("seconds" -> 62)
+          )
+        )
+      }
+
+      it("supports milliseconds") {
+        caps.cypher("""RETURN duration({years: 2, milliseconds: 142}).milliseconds AS millis""").records.toMapsWithCollectedEntities should equal(
+          Bag(
+            CypherMap("millis" -> 142)
+          )
+        )
+      }
+
+      it("supports microseconds") {
+        caps.cypher("""RETURN duration({years: 2, microseconds: 142}).microseconds AS micros""").records.toMapsWithCollectedEntities should equal(
+          Bag(
+            CypherMap("micros" -> 142)
+          )
+        )
+      }
+
+      it("supports nanoseconds") {
+        caps.cypher("""RETURN duration({years: 2, microseconds: 1}).nanoseconds AS nanos""").records.toMapsWithCollectedEntities should equal(
+          Bag(
+            CypherMap("nanos" -> 1000)
+          )
+        )
+      }
+
+      it("propagates null") {
+        caps.cypher("""RETURN duration(null).years AS years""").records.toMapsWithCollectedEntities should equal(
+          Bag(
+            CypherMap("years" -> null)
+          )
+        )
+      }
+    }
   }
 }

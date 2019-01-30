@@ -117,7 +117,7 @@ object Duration {
 
   def apply(map: Map[String, Long]): Duration = {
     val sanitizedMap = map.map { case (key, value) => key.toLowerCase -> value }
-
+    // TODO: throw error if map key is unsupported
     Duration(
       years = sanitizedMap.getOrElse("years", 0),
       months = sanitizedMap.getOrElse("months", 0),

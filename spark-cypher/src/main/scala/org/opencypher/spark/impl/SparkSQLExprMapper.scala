@@ -116,6 +116,7 @@ object SparkSQLExprMapper {
           temporalValue.cypherType.material match {
             case CTDate => temporalAccessor[Date](temporalColumn, key)
             case CTLocalDateTime => temporalAccessor[Timestamp](temporalColumn, key)
+            case CTDuration => TemporalUDFS.durationAccessor(key.toLowerCase).apply(temporalColumn)
             case _ => ???
           }
 

@@ -68,7 +68,7 @@ object TemporalUDFS extends Logging {
     * Duration components on a sub-day level are ignored
     */
   val dateSubtract: UserDefinedFunction =
-    udf[Date, Date, CalendarInterval]((date: Date, interval: CalendarInterval) =>{
+    udf[Date, Date, CalendarInterval]((date: Date, interval: CalendarInterval) => {
       if (date == null || interval == null) {
         null
       } else {
@@ -86,17 +86,6 @@ object TemporalUDFS extends Logging {
         Date.valueOf(reducedLocalDate)
       }
     })
-
-  private def dateAccessor[I: TypeTag](accessor: TemporalField): UserDefinedFunction = udf[Long, I] {
-    case d: Date => d.toLocalDate.get(accessor)
-    case l: Timestamp => l.toLocalDateTime.get(accessor)
-    case other => throw UnsupportedOperationException(s"Date Accessor '$accessor' is not supported for '$other'.")
-  }
-
-  private def timeAccessor[I: TypeTag](accessor: TemporalField): UserDefinedFunction = udf[Long, I] {
-    case l: Timestamp => l.toLocalDateTime.get(accessor)
-    case other => throw UnsupportedOperationException(s"Time Accessor '$accessor' is not supported for '$other'.")
-  }
 
   /**
     * Returns the week based year of a given temporal type.
@@ -125,7 +114,50 @@ object TemporalUDFS extends Logging {
 
 
   def epochNanos[I: TypeTag]: UserDefinedFunction = udf[Long, I] {
-    case l: Timestamp => ( l.toInstant.getEpochSecond * 1000000000L) + l.toInstant.getNano
+    case l: Timestamp => (l.toInstant.getEpochSecond * 1000000000L) + l.toInstant.getNano
     case other => throw UnsupportedOperationException(s"Time Accessor 'epochNanos' is not supported for '$other'.")
+  }
+
+  def durationAccessor(accessor: String): UserDefinedFunction = udf[java.lang.Long, CalendarInterval](
+    (duration: CalendarInterval) => {
+      if (duration == null) {
+        null
+      } else {
+        val l: Long = accessor match {
+          case "years" => duration.months / 12
+          case "quarters" => duration.months / 3
+          case "months" => duration.months
+          case "weeks" => duration.microseconds / CalendarInterval.MICROS_PER_DAY / 7
+          case "days" => duration.microseconds / CalendarInterval.MICROS_PER_DAY
+          case "hours" => duration.microseconds / CalendarInterval.MICROS_PER_HOUR
+          case "minutes" => duration.microseconds / CalendarInterval.MICROS_PER_MINUTE
+          case "seconds" => duration.microseconds / CalendarInterval.MICROS_PER_SECOND
+          case "milliseconds" => duration.microseconds / CalendarInterval.MICROS_PER_MILLI
+          case "microseconds" => duration.microseconds
+          case "nanoseconds" => duration.microseconds * 1000
+
+          case "monthsofyear" => duration.months % 12
+          case "minutesofhour" => (duration.microseconds / CalendarInterval.MICROS_PER_MINUTE) % 60
+          case "secondsofminute" => (duration.microseconds / CalendarInterval.MICROS_PER_SECOND) % 60
+          case "millisecondsofsecond" => (duration.microseconds / CalendarInterval.MICROS_PER_MILLI) % 1000
+          case "microsecondsofsecond" => (duration.microseconds / CalendarInterval.MICROS_PER_MILLI) % 1000000
+          case "nanosecondsofsecond" => (duration.microseconds / CalendarInterval.MICROS_PER_MILLI) % 1000000000
+
+          case other => throw UnsupportedOperationException(s"Unknown Duration accessor: $other")
+        }
+        new java.lang.Long(l)
+      }
+    }
+  )
+
+  private def dateAccessor[I: TypeTag](accessor: TemporalField): UserDefinedFunction = udf[Long, I] {
+    case d: Date => d.toLocalDate.get(accessor)
+    case l: Timestamp => l.toLocalDateTime.get(accessor)
+    case other => throw UnsupportedOperationException(s"Date Accessor '$accessor' is not supported for '$other'.")
+  }
+
+  private def timeAccessor[I: TypeTag](accessor: TemporalField): UserDefinedFunction = udf[Long, I] {
+    case l: Timestamp => l.toLocalDateTime.get(accessor)
+    case other => throw UnsupportedOperationException(s"Time Accessor '$accessor' is not supported for '$other'.")
   }
 }
