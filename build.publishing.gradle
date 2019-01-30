@@ -16,7 +16,8 @@ subprojects {
                 from components.java
 
                 afterEvaluate {
-                    ['sourceJar']
+                    ['sourceJar',
+                    'asciidocJar']
                             .findResults { tasks.findByName(it) }
                             .each { artifact it }
                 }
@@ -29,6 +30,7 @@ subprojects {
                     ['sourceJar',
                      'docJar',
                      'testJar',
+                     'asciidocJar',
                      'shadowJar']
                             .findResults { tasks.findByName(it) }
                             .each { artifact it }

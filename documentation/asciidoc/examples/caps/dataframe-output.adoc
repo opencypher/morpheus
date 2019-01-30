@@ -1,0 +1,7 @@
+[[example-dataframe-output]]
+= Example: DataFrame output
+
+[source, scala]
+----
+include::{examples-dir}/DataFrameOutputExample.scala[tags=full-example]
+----

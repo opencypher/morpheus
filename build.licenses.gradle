@@ -220,13 +220,14 @@ subprojects {
     }
 }
 
-// Disable dependency license validation on test projects
+// Disable dependency license validation on test and documentation projects
 ['okapi-tck',
  'okapi-testing',
  'okapi-neo4j-io-testing',
  'spark-cypher-examples',
  'spark-cypher-tck',
  'spark-cypher-testing',
+ 'documentation',
 ].each {
     project(it).tasks.validateLicenses.enabled = false
     project(it).tasks.generateLicensesFiles.enabled = false

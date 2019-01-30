@@ -1,0 +1,49 @@
+[[caps-session]]
+= The CAPSSession
+
+[abstract]
+--
+Placeholder abstract.
+--
+
+Spark programs revolve around a centralised concept called the `SparkSession`.
+This is a singleton instance through which `DataFrame` objects are created and managed, and which manages the SQL catalog of tables registered in a given Spark program.
+
+CAPS mirrors this model by declaring a similar singleton called the `CAPSSession`.
+It wraps a `SparkSession` to integrate with the underlying Spark APIs.
+In addition to these APIs it provides a `.cypher` method for executing Cypher queries.
+It also manages the catalog of graphs through registered Property Graph Data Sources.
+
+
+[[caps-session-configuration]]
+== Configuration
+
+To construct a `CAPSSession`, use the factory method `.create()` declared on the `CAPSSession` companion object.
+There is also a convenience `CAPSSession.local()` for test purposes that instantiates a new, local `CAPSSession` with default configuration.
+
+.Instantiation of a `CAPSSession`:
+====
+[source, scala]
+----
+implicit val spark = SparkSession               <1>
+    .builder()
+    .config("spark.default.parallelism", "8")
+    .master("yarn")
+    .appName("my-example-app")
+    .getOrCreate()
+val caps = CAPSSession.create()                 <2>
+----
+<1> construct a custom SparkSession
+<2> attach the SparkSession to a CAPSSession (implicit parameter)
+
+====
+
+.Instantiation of a local `CAPSSession`:
+====
+[source, scala]
+----
+val caps = CAPSSession.local("spark.hadoop.fs.defaultFS" -> "hdfs:///")     <1>
+----
+<1> The `.local` session comes with sensible defaults, but additional configuration may be provided through the factory
+
+====

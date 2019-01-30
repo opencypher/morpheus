@@ -1,0 +1,7 @@
+[[example-graphx-pagerank]]
+= Example: GraphX PageRank
+
+[source, scala]
+----
+include::{examples-dir}/GraphXPageRankExample.scala[tags=full-example]
+----

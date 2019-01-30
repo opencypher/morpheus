@@ -1,0 +1,12 @@
+[[backend-neo4j]]
+= Neo4j Backend
+
+[abstract]
+--
+This section describes using CAPS with Neo4j.
+--
+
+include::backend-pgds-neo4j.adoc[leveloffset=+1]
+
+include::backend-neo4j-graph-merge.adoc[leveloffset=+1]
+

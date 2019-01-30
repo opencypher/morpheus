@@ -1,0 +1,27 @@
+[[caps]]
+= Cypher for Apache Spark
+
+[abstract]
+--
+Placeholder abstract.
+--
+
+// TODO: Needs an inline TOC to introduce the following content.
+
+include::overview.adoc[leveloffset=+1]
+
+include::introduction.adoc[leveloffset=+1]
+
+include::backends.adoc[leveloffset=+1]
+
+include::cypher.adoc[leveloffset=+1]
+
+// TODO: Discuss if this content is useful and where it should go.
+include::caching-and-performance.adoc[leveloffset=+1]
+
+// TODO: Discuss if this content is useful and where it should go.
+include::architecture-and-usage.adoc[leveloffset=+1]
+
+include::resources.adoc[leveloffset=+1]
+
+include::examples/index.adoc[leveloffset=+1]

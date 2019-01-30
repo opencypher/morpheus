@@ -1,0 +1,8 @@
+[[resources]]
+= Resources
+
+CAPS starter project::
+A thin Maven project setup intended for users to get up and running with CAPS in minimal time:
+https://github.com/opencypher/caps-examples
+
+// TODO: Keep this page but add more useful resources.

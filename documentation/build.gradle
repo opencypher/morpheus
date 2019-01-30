@@ -1,0 +1,6 @@
+task asciidocJar(type: Jar) {
+    group 'documentation'
+    description 'Package asciidoc source files.'
+    classifier = 'asciidoc'
+    from("asciidoc")
+}

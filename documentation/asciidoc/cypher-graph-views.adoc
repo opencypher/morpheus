@@ -1,0 +1,84 @@
+[[cypher-graph-views]]
+= Graph views
+
+[abstract]
+--
+Placeholder abstract.
+--
+
+CAPS supports parameterized graph views.
+Similar to SQL table views, graph views return a transformed version of an underlying graph.
+The main advantage of views is to modularize complex data integration pipelines into smaller, reusable units.
+
+There are two important differences to SQL views:
+
+* Instead of a table, a view returns a graph.
+* It does not necessarily use one static underlying table, but can instead depend on graphs that are passed in as parameters.
+
+The behaviour of a graph view can be understood as a function that takes graph parameters and returns a graph.
+
+[[graph-views-create]]
+== Creating graph views
+
+Just like graphs, views are registered in the session catalog.
+
+.Creating a graph view
+====
+
+A view is created by executing a `CATALOG CREATE VIEW` statement that defines the name of the view and the parameters it takes.
+Just like graph names, the view name can be segmented with dots (e.g. `filters.youngFriends` is a valid view name).
+The view body can use graph parameters in `FROM` clauses and needs to return a graph.
+
+[source, cypher]
+----
+CATALOG CREATE VIEW viewName($graphParameterName) {
+  FROM $graphParameterName
+  MATCH ...
+  RETURN GRAPH
+}
+----
+
+The following example shows how to create a view for a simple social network.
+The view defines a subgraph that contains only connected persons that are younger than 25.
+
+[source, cypher]
+----
+CATALOG CREATE VIEW youngFriends($inputGraph) {
+ FROM $inputGraph
+ MATCH (p1: Person)-[r]->(p2: Person)
+ WHERE p1.age < 25 AND p2.age < 25
+ CONSTRUCT
+   CREATE (p1)-[r]->(p2)
+ RETURN GRAPH
+}
+----
+====
+
+[[graph-views-use]]
+== Using graph views
+
+Views can only be used in `FROM` clauses by referring to their name, followed by parentheses, including all required parameters.
+The main distinction between using a graph and using a view is that the view can be parameterized and is evaluated every time it is used.
+
+.Using a view
+====
+
+This example applies the `youngFriends` view to a property graph `socialNetwork` that is stored in the session catalog.
+
+[source, cypher]
+----
+FROM youngFriends(socialNetwork)
+MATCH (p: Person)-[r]->(e)
+RETURN p, r, e
+----
+
+
+Views can also be used as parameters for other views, which allows for view composition.
+In this example the social network graph is first filtered by the `europe` view, the result of which is in turn filtered by the `youngFriends` view.
+
+[source, cypher]
+----
+FROM youngFriends(europe(socialNetwork))
+...
+----
+====

@@ -1,0 +1,7 @@
+[[example-case-class]]
+= Example: Case class
+
+[source, scala]
+----
+include::{examples-dir}/CaseClassExample.scala[tags=full-example]
+----

@@ -1,0 +1,7 @@
+[[example-neo4j-graph-merge]]
+= Example: Neo4j GraphMerge
+
+[source, scala]
+----
+include::{examples-dir}/Neo4jMergeExample.scala[tags=full-example]
+----
