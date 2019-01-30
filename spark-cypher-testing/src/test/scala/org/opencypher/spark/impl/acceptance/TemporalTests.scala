@@ -273,13 +273,13 @@ class TemporalTests extends CAPSTestSuite with ScanGraphInit {
     }
 
     it("compares two dates") {
-      caps.cypher("RETURN date(\"2015-10-10\") < date(\"2015-10-12\") AS time").records.toMapsWithCollectedEntities should equal(
+      caps.cypher("RETURN date('2015-10-10') < date('2015-10-12') AS time").records.toMapsWithCollectedEntities should equal(
         Bag(
           CypherMap("time" -> true)
         )
       )
 
-      caps.cypher("RETURN date(\"2015-10-10\") > date(\"2015-10-12\") AS time").records.toMapsWithCollectedEntities should equal(
+      caps.cypher("RETURN date('2015-10-10') > date('2015-10-12') AS time").records.toMapsWithCollectedEntities should equal(
         Bag(
           CypherMap("time" -> false)
         )
@@ -324,6 +324,7 @@ class TemporalTests extends CAPSTestSuite with ScanGraphInit {
         "2015202" -> "2015-07-21 00:00:00",
         "2010" -> "2010-01-01 00:00:00",
         "2010-10-10T21:40:32.142" -> "2010-10-10 21:40:32.142",
+        "2010-10-10T21:40:32.142123" -> "2010-10-10 21:40:32.142123",
         "2010-10-10T214032.142" -> "2010-10-10 21:40:32.142",
         "2010-10-10T21:40:32" -> "2010-10-10 21:40:32",
         "2010-10-10T214032" -> "2010-10-10 21:40:32",
@@ -598,6 +599,76 @@ class TemporalTests extends CAPSTestSuite with ScanGraphInit {
         caps.cypher("""RETURN localdatetime('2019-05-10T10:10').dayOfWeek AS dayOfWeek""").records.toMapsWithCollectedEntities should equal(
           Bag(
             CypherMap("dayOfWeek" -> 5)
+          )
+        )
+      }
+    }
+
+    describe("hour") {
+      it("works on datetime") {
+        caps.cypher("""RETURN localdatetime('2019-05-10T10:10').hour AS hour""").records.toMapsWithCollectedEntities should equal(
+          Bag(
+            CypherMap("hour" -> 10)
+          )
+        )
+      }
+    }
+
+    describe("minute") {
+      it("works on datetime") {
+        caps.cypher("""RETURN localdatetime('2019-05-10T10:11').minute AS minute""").records.toMapsWithCollectedEntities should equal(
+          Bag(
+            CypherMap("minute" -> 11)
+          )
+        )
+      }
+    }
+
+    describe("second") {
+      it("works on datetime") {
+        caps.cypher("""RETURN localdatetime('2019-05-10T10:10:12').second AS second""").records.toMapsWithCollectedEntities should equal(
+          Bag(
+            CypherMap("second" -> 12)
+          )
+        )
+      }
+    }
+
+    describe("millisecond") {
+      it("works on datetime") {
+        caps.cypher("""RETURN localdatetime('2019-05-10T10:10:12.113').millisecond AS millisecond""").records.toMapsWithCollectedEntities should equal(
+          Bag(
+            CypherMap("millisecond" -> 113)
+          )
+        )
+      }
+    }
+
+    describe("microsecond") {
+      it("works on datetime") {
+        caps.cypher("""RETURN localdatetime('2019-05-10T10:10:12.113114').microsecond AS microsecond""").records.toMapsWithCollectedEntities should equal(
+          Bag(
+            CypherMap("microsecond" -> 113114)
+          )
+        )
+      }
+    }
+
+    describe("epochMillis") {
+      it("works on datetime") {
+          caps.cypher("""RETURN localdatetime('2019-05-10T10:10:12.113114').epochMillis AS epochMillis""").records.toMapsWithCollectedEntities should equal(
+          Bag(
+            CypherMap("epochMillis" -> 1.557475812113114E12)
+          )
+        )
+      }
+    }
+
+    describe("epochSeconds") {
+      it("works on datetime") {
+        caps.cypher("""RETURN localdatetime('2019-05-10T10:10:12.113114').epochSeconds AS epochSeconds""").records.toMapsWithCollectedEntities should equal(
+          Bag(
+            CypherMap("epochSeconds" -> 1.557475812113114E9)
           )
         )
       }

@@ -104,7 +104,7 @@ object SparkSQLExprMapper {
           toSparkLiteral(parameters(name).unwrap)
 
         case Property(map, PropertyKey(key)) if map.cypherType.material.isInstanceOf[CTMap] =>
-          val fields =  map.cypherType.material match {
+          val fields = map.cypherType.material match {
             case CTMap(inner) => inner.keySet
             case _ => Set.empty[String]
           }
@@ -270,10 +270,10 @@ object SparkSQLExprMapper {
               val node = e.owner.get
               val labelExprs = header.labelsFor(node)
               val (labelNames, labelColumns) = labelExprs
-              .toSeq
-              .map(e => e.label.name -> e.asSparkSQLExpr)
-              .sortBy(_._1)
-              .unzip
+                .toSeq
+                .map(e => e.label.name -> e.asSparkSQLExpr)
+                .sortBy(_._1)
+                .unzip
               val booleanLabelFlagColumn = functions.array(labelColumns: _*)
               get_node_labels(labelNames)(booleanLabelFlagColumn)
             case CTNull => NULL_LIT
@@ -383,11 +383,11 @@ object SparkSQLExprMapper {
         case Acos(e) => functions.acos(e.asSparkSQLExpr)
         case Asin(e) => functions.asin(e.asSparkSQLExpr)
         case Atan(e) => functions.atan(e.asSparkSQLExpr)
-        case Atan2(e1,e2) => functions.atan2(e1.asSparkSQLExpr, e2.asSparkSQLExpr)
+        case Atan2(e1, e2) => functions.atan2(e1.asSparkSQLExpr, e2.asSparkSQLExpr)
         case Cos(e) => functions.cos(e.asSparkSQLExpr)
         case Cot(e) => Divide(IntegerLit(1)(CTInteger), Tan(e)(CTFloat))(CTFloat).asSparkSQLExpr
         case Degrees(e) => functions.degrees(e.asSparkSQLExpr)
-        case Haversin(e) => Divide(Subtract(IntegerLit(1)(CTInteger),Cos(e)(CTFloat))(CTFloat), IntegerLit(2)(CTInteger))(CTFloat).asSparkSQLExpr
+        case Haversin(e) => Divide(Subtract(IntegerLit(1)(CTInteger), Cos(e)(CTFloat))(CTFloat), IntegerLit(2)(CTInteger))(CTFloat).asSparkSQLExpr
         case Radians(e) => functions.radians(e.asSparkSQLExpr)
         case Sin(e) => functions.sin(e.asSparkSQLExpr)
         case Tan(e) => functions.tan(e.asSparkSQLExpr)
@@ -479,7 +479,8 @@ object SparkSQLExprMapper {
     }
   }
 
-  private def resolveTemporalArgument(expr: Expr)(implicit parameters: CypherMap): Option[Either[Map[String, Int], String]] = {
+  private def resolveTemporalArgument(expr: Expr)
+    (implicit parameters: CypherMap): Option[Either[Map[String, Int], String]] = {
     expr match {
       case MapExpression(inner) =>
         val map = inner.map {
@@ -520,6 +521,14 @@ object SparkSQLExprMapper {
       case "weekyear" => TemporalUDFS.weekYear[I].apply(temporalColumn)
       case "dayofquarter" => TemporalUDFS.dayOfQuarter[I].apply(temporalColumn)
       case "dayofweek" => TemporalUDFS.dayOfWeek[I].apply(temporalColumn)
+
+      case "hour" => functions.hour(temporalColumn)
+      case "minute" => functions.minute(temporalColumn)
+      case "second" => functions.second(temporalColumn)
+      case "millisecond" => TemporalUDFS.milliseconds[I].apply(temporalColumn)
+      case "microsecond" => TemporalUDFS.microseconds[I].apply(temporalColumn)
+      case "epochmillis" => TemporalUDFS.epochNanos[I].apply(temporalColumn) / 1000000
+      case "epochseconds" => TemporalUDFS.epochNanos[I].apply(temporalColumn) / 1000000000
       case other => throw UnsupportedOperationException(s"Unknown Temporal Accessor: $other")
     }
   }

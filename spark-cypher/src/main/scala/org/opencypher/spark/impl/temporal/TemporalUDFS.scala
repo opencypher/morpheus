@@ -87,24 +87,45 @@ object TemporalUDFS extends Logging {
       }
     })
 
-  private def temporalAccessor[I: TypeTag](accessor: TemporalField): UserDefinedFunction = udf[Long, I] {
+  private def dateAccessor[I: TypeTag](accessor: TemporalField): UserDefinedFunction = udf[Long, I] {
     case d: Date => d.toLocalDate.get(accessor)
     case l: Timestamp => l.toLocalDateTime.get(accessor)
-    case other => throw UnsupportedOperationException(s"Temporal Accessor '$accessor' is not supported for '$other'.")
+    case other => throw UnsupportedOperationException(s"Date Accessor '$accessor' is not supported for '$other'.")
+  }
+
+  private def timeAccessor[I: TypeTag](accessor: TemporalField): UserDefinedFunction = udf[Long, I] {
+    case l: Timestamp => l.toLocalDateTime.get(accessor)
+    case other => throw UnsupportedOperationException(s"Time Accessor '$accessor' is not supported for '$other'.")
   }
 
   /**
     * Returns the week based year of a given temporal type.
     */
-  def weekYear[I: TypeTag]: UserDefinedFunction = temporalAccessor[I](IsoFields.WEEK_BASED_YEAR)
+  def weekYear[I: TypeTag]: UserDefinedFunction = dateAccessor[I](IsoFields.WEEK_BASED_YEAR)
 
   /**
     * Returns the day of the quarter of a given temporal type.
     */
-  def dayOfQuarter[I: TypeTag]: UserDefinedFunction = temporalAccessor[I](IsoFields.DAY_OF_QUARTER)
+  def dayOfQuarter[I: TypeTag]: UserDefinedFunction = dateAccessor[I](IsoFields.DAY_OF_QUARTER)
 
   /**
     * Returns the day of the week of a given temporal type.
     */
-  def dayOfWeek[I: TypeTag]: UserDefinedFunction = temporalAccessor[I](ChronoField.DAY_OF_WEEK)
+  def dayOfWeek[I: TypeTag]: UserDefinedFunction = dateAccessor[I](ChronoField.DAY_OF_WEEK)
+
+  /**
+    * Returns the milliseconds.
+    */
+  def milliseconds[I: TypeTag]: UserDefinedFunction = timeAccessor[I](ChronoField.MILLI_OF_SECOND)
+
+  /**
+    * Returns the milliseconds.
+    */
+  def microseconds[I: TypeTag]: UserDefinedFunction = timeAccessor[I](ChronoField.MICRO_OF_SECOND)
+
+
+  def epochNanos[I: TypeTag]: UserDefinedFunction = udf[Long, I] {
+    case l: Timestamp => ( l.toInstant.getEpochSecond * 1000000000L) + l.toInstant.getNano
+    case other => throw UnsupportedOperationException(s"Time Accessor 'epochNanos' is not supported for '$other'.")
+  }
 }
