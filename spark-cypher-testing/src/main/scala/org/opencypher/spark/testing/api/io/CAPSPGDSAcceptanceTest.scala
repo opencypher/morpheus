@@ -57,6 +57,8 @@ trait CAPSPGDSAcceptanceTest extends PGDSAcceptanceTest[CAPSSession, ScanGraph[D
 
   override def allScenarios: List[Scenario] = super.allScenarios ++ tagScenarios
 
+  val constructedGraphName = GraphName("constructedGraph")
+
   lazy val tagScenarios = List(
 
     Scenario("Store graphs with tags") { implicit ctx: TestContext =>
@@ -64,11 +66,11 @@ trait CAPSPGDSAcceptanceTest extends PGDSAcceptanceTest[CAPSSession, ScanGraph[D
       session.cypher("CATALOG CREATE GRAPH g1 { CONSTRUCT CREATE ()-[:FOO]->() RETURN GRAPH }")
       session.cypher("CATALOG CREATE GRAPH g2 { CONSTRUCT CREATE () RETURN GRAPH }")
 
-      Try(session.cypher(s"CATALOG CREATE GRAPH $ns.g3 { CONSTRUCT ON g1, g2 RETURN GRAPH }")) match {
+      Try(session.cypher(s"CATALOG CREATE GRAPH $ns.$constructedGraphName { CONSTRUCT ON g1, g2 RETURN GRAPH }")) match {
         case Failure(_: UnsupportedOperationException) =>
         case Failure(t) => throw t
         case Success(_) =>
-          val graph = session.cypher(s"FROM GRAPH $ns.g3 RETURN GRAPH").graph.asCaps
+          val graph = session.cypher(s"FROM GRAPH $ns.$constructedGraphName RETURN GRAPH").graph.asCaps
 
           withClue("tags should be restored correctly") {
             graph.tags should equal(Set(0, 1))
@@ -85,13 +87,11 @@ trait CAPSPGDSAcceptanceTest extends PGDSAcceptanceTest[CAPSSession, ScanGraph[D
 
       val graphToStore = session.cypher("CONSTRUCT ON g1, g2 RETURN GRAPH").graph.asCaps
 
-      val name = GraphName("g3")
-
-      Try(session.catalog.source(ns).store(name, graphToStore)) match {
+      Try(session.catalog.source(ns).store(constructedGraphName, graphToStore)) match {
         case Failure(_: UnsupportedOperationException) =>
         case Failure(t) => throw t
         case Success(_) =>
-          val graph = session.catalog.source(ns).graph(name).asCaps
+          val graph = session.catalog.source(ns).graph(constructedGraphName).asCaps
 
           withClue("tags should be restored correctly") {
             graph.tags should equal(graphToStore.tags)
