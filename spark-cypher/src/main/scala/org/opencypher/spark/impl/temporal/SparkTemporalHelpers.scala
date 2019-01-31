@@ -39,7 +39,7 @@ object SparkTemporalHelpers extends Logging{
       *       Additionally it uses an approximate representation of days.
       */
     def toCalendarInterval: CalendarInterval = {
-      if(duration.nanos % 1000 != 0) {
+      if (duration.nanos % 1000 != 0) {
         logger.warn("Spark does not support durations with nanosecond resolution, truncating!")
       }
 
@@ -56,7 +56,7 @@ object SparkTemporalHelpers extends Logging{
 
   /**
     * Converts the Spark representation of a duration into the Okapi representation.
-    * @note To ensure compatibility with the reverse operation we extrapolate the number of days from the given seconds.
+    * @note To ensure compatibility with the reverse operation we estimate the number of days from the given seconds.
     */
   implicit class RichCalendarInterval(calendarInterval: CalendarInterval) {
     def toDuration: Duration = {

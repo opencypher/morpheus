@@ -98,7 +98,7 @@ class FunctionTests extends CAPSTestSuite with ScanGraphInit {
     }
 
     it("constructs duration from a map") {
-      caps.cypher("RETURN duration({ seconds: 1 }) as duration").records.toMapsWithCollectedEntities should equal(
+      caps.cypher("RETURN duration({ seconds: 1 }) AS duration").records.toMapsWithCollectedEntities should equal(
         Bag(CypherMap("duration" -> Duration(seconds = 1)))
       )
 
@@ -112,7 +112,7 @@ class FunctionTests extends CAPSTestSuite with ScanGraphInit {
           | minutes: 1,
           | seconds: 10,
           | milliseconds: 10,
-          | microseconds: 10 }) as duration""".stripMargin).records.toMapsWithCollectedEntities should equal(
+          | microseconds: 10 }) AS duration""".stripMargin).records.toMapsWithCollectedEntities should equal(
         Bag(
           CypherMap("duration" -> Duration(
             years = 3, months = 12, weeks = 1, days = 5,
@@ -390,7 +390,7 @@ class FunctionTests extends CAPSTestSuite with ScanGraphInit {
     }
 
     it("compares two datetimes") {
-      caps.cypher("RETURN localdatetime(\"2015-10-10T00:00:00\") < localdatetime(\"2015-10-12T00:00:00\") AS time").records.toMapsWithCollectedEntities should equal(
+      caps.cypher("RETURN localdatetime('2015-10-10T00:00:00') < localdatetime('2015-10-12T00:00:00') AS time").records.toMapsWithCollectedEntities should equal(
         Bag(
           CypherMap("time" -> true)
         )

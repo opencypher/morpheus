@@ -36,17 +36,17 @@ import org.apache.spark.unsafe.types.CalendarInterval
 object TemporalUDFS extends Logging {
 
   /**
-    * Subtracts a duration from a date.
+    * Adds a duration to a date.
     * Duration components on a sub-day level are ignored
     */
   val dateAdd: UserDefinedFunction =
-    udf[Date, Date, CalendarInterval]((date: Date, interval: CalendarInterval) =>{
-      if(date == null || interval == null) {
+    udf[Date, Date, CalendarInterval]((date: Date, interval: CalendarInterval) => {
+      if (date == null || interval == null) {
         null
       } else {
         val days = interval.microseconds / CalendarInterval.MICROS_PER_DAY
 
-        if(interval.microseconds % CalendarInterval.MICROS_PER_DAY != 0) {
+        if (interval.microseconds % CalendarInterval.MICROS_PER_DAY != 0) {
           logger.warn("Arithmetic with Date and Duration can lead to incorrect results when sub-day values are present.")
         }
 
@@ -65,12 +65,12 @@ object TemporalUDFS extends Logging {
     */
   val dateSubtract: UserDefinedFunction =
     udf[Date, Date, CalendarInterval]((date: Date, interval: CalendarInterval) =>{
-      if(date == null || interval == null) {
+      if (date == null || interval == null) {
         null
       } else {
         val days = interval.microseconds / CalendarInterval.MICROS_PER_DAY
 
-        if(interval.microseconds % CalendarInterval.MICROS_PER_DAY != 0) {
+        if (interval.microseconds % CalendarInterval.MICROS_PER_DAY != 0) {
           logger.warn("Arithmetic with Date and Duration can lead to incorrect results when sub-day values are present.")
         }
 

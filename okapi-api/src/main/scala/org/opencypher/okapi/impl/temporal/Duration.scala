@@ -57,6 +57,10 @@ extends Ordered[Duration] {
     case d:Duration => compare(d) == 0
     case _ => false
   }
+/*
+ * Since not every month has the same amount of seconds, we use the average to sum this duration in seconds.
+ * Not every day has the same amount of seconds either, but since there is one day with +1 hour and one with -1 hour the average is still 24*3600 per day.
+ */
 
   def averageLengthInSeconds: Long = {
     val daysInSeconds = Math.multiplyExact(days, SECONDS_PER_DAY)
