@@ -113,11 +113,10 @@ object SparkSQLExprMapper {
 
         case Property(temporalValue, PropertyKey(key)) if temporalValue.cypherType.material.isInstanceOf[TemporalValueCypherType] =>
           val temporalColumn = temporalValue.asSparkSQLExpr
-          temporalValue.cypherType.material match {
+          temporalValue.cypherType.material.asInstanceOf[TemporalValueCypherType] match {
             case CTDate => temporalAccessor[Date](temporalColumn, key)
             case CTLocalDateTime => temporalAccessor[Timestamp](temporalColumn, key)
             case CTDuration => TemporalUDFS.durationAccessor(key.toLowerCase).apply(temporalColumn)
-            case _ => ???
           }
 
         case _: Property if !header.contains(expr) => NULL_LIT
