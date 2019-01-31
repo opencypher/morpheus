@@ -139,9 +139,8 @@ object TemporalTypesHelper {
   )
 
   val timeFormatters: Seq[DateTimeFormatter] = Seq(
-    new DateTimeFormatterBuilder().appendPattern("HH:mm:ss.SSS").toFormatter,
+    DateTimeFormatter.ISO_LOCAL_TIME,
     new DateTimeFormatterBuilder().appendPattern("HHmmss.SSS").toFormatter,
-    new DateTimeFormatterBuilder().appendPattern("HH:mm:ss").toFormatter,
     new DateTimeFormatterBuilder().appendPattern("HHmmss").toFormatter,
     new DateTimeFormatterBuilder().appendPattern("HH:mm").toFormatter,
     new DateTimeFormatterBuilder().appendPattern("HHmm").toFormatter,
