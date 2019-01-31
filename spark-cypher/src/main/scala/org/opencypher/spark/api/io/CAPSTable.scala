@@ -27,10 +27,10 @@
 package org.opencypher.spark.api.io
 
 import org.apache.spark.sql.{DataFrame, _}
-import org.opencypher.okapi.api.io.conversion.{NodeMapping, RelationshipMapping}
+import org.opencypher.okapi.api.io.conversion.{NodeMapping, PatternMapping, RelationshipMapping}
 import org.opencypher.okapi.api.types._
 import org.opencypher.okapi.impl.util.StringEncodingUtilities._
-import org.opencypher.okapi.relational.api.io.{EntityTable, NodeTable, RelationshipTable}
+import org.opencypher.okapi.relational.api.io.{EntityTable, NodeTable, PatternTable, RelationshipTable}
 import org.opencypher.okapi.relational.api.table.RelationalEntityTableFactory
 import org.opencypher.spark.api.CAPSSession
 import org.opencypher.spark.impl.table.SparkTable.DataFrameTable
@@ -59,6 +59,13 @@ case object CAPSEntityTableFactory extends RelationalEntityTableFactory[DataFram
 trait CAPSEntityTable extends EntityTable[DataFrameTable] {
 
   private[spark] def records(implicit caps: CAPSSession): CAPSRecords = caps.records.fromEntityTable(entityTable = this)
+}
+
+case class CAPSPatternTable(
+  override val mapping: PatternMapping,
+  override val table: DataFrameTable
+) extends PatternTable(mapping, table) with CAPSEntityTable with RecordBehaviour {
+
 }
 
 case class CAPSNodeTable(

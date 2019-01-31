@@ -31,6 +31,25 @@ import org.opencypher.okapi.impl.exception.IllegalArgumentException
 
 class EntityMappingTest extends ApiBaseTest {
 
+  describe("pattern mapping") {
+    it("constructs a pattern mapping from a node and relationship mapping") {
+      val nodeMapping = NodeMapping.on("id")
+        .withImpliedLabel("Person")
+        .withPropertyKey("name")
+
+      val relMapping = RelationshipMapping.on("id")
+        .from("foo")
+        .to("target")
+        .relType("KNOWS")
+        .withPropertyKey("since")
+
+      val given = PatternMapping.from(nodeMapping, relMapping)
+
+      given.sourceIdKey should equal(nodeMapping.sourceIdKey)
+      given.relationshipMapping.sourceStartNodeKey should equal("")
+    }
+  }
+
   it("Construct node mapping") {
     val given = NodeMapping.on("id")
       .withImpliedLabel("Person")

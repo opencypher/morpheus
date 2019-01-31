@@ -93,6 +93,19 @@ trait EntityTable[T <: Table[T]] extends RelationalCypherRecords[T] {
   }
 }
 
+abstract class PatternTable[T <: Table[T]](mapping: PatternMapping, table: T)
+  extends EntityTable[T] {
+
+  override lazy val schema: Schema = {
+    val propertyKeys = mapping.propertyMapping.toSeq.map {
+      case (propertyKey, sourceKey) => propertyKey -> table.columnType(sourceKey)
+    }
+
+
+  }
+
+}
+
 /**
   * A node table describes how to map an input data frame to a Cypher node.
   *

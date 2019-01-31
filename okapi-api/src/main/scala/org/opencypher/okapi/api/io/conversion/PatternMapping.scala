@@ -4,12 +4,12 @@ import org.opencypher.okapi.api.types.CTPattern
 
 object PatternMapping {
 
-  def apply(nodeMapping: NodeMapping, relationshipMapping: RelationshipMapping): PatternMapping = {
-    PatternMapping(nodeMapping, relationshipMapping.copy(sourceStartNodeKey = nodeMapping.sourceIdKey))
+  def from(nodeMapping: NodeMapping, relationshipMapping: RelationshipMapping): PatternMapping = {
+    PatternMapping(nodeMapping, relationshipMapping.copy(sourceStartNodeKey = ""))
   }
 }
 
-final case class PatternMapping(
+final case class PatternMapping protected(
   nodeMapping: NodeMapping,
   relationshipMapping: RelationshipMapping
 ) extends EntityMapping {
@@ -18,7 +18,7 @@ final case class PatternMapping(
 
   override val sourceIdKey: String = nodeMapping.sourceIdKey
 
-  override val idKeys: Seq[String] = nodeMapping.idKeys ++ relationshipMapping.idKeys
+  override val idKeys: Seq[String] = (nodeMapping.idKeys ++ relationshipMapping.idKeys).distinct
 
   override val propertyMapping: Map[String, String] = nodeMapping.propertyMapping ++ relationshipMapping.propertyMapping
 }
