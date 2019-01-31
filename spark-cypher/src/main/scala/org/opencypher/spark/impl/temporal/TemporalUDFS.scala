@@ -112,11 +112,6 @@ object TemporalUDFS extends Logging {
     */
   def microseconds[I: TypeTag]: UserDefinedFunction = timeAccessor[I](ChronoField.MICRO_OF_SECOND)
 
-  def epochNanos[I: TypeTag]: UserDefinedFunction = udf[Long, I] {
-    case l: Timestamp => (l.toInstant.getEpochSecond * 1000000000L) + l.toInstant.getNano
-    case other => throw UnsupportedOperationException(s"Time Accessor 'epochNanos' is not supported for '$other'.")
-  }
-
   def durationAccessor(accessor: String): UserDefinedFunction = udf[java.lang.Long, CalendarInterval](
     (duration: CalendarInterval) => {
       if (duration == null) {

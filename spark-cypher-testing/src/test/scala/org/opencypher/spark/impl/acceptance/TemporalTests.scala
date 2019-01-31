@@ -658,26 +658,6 @@ class TemporalTests extends CAPSTestSuite with ScanGraphInit {
       }
     }
 
-    describe("epochMillis") {
-      it("works on datetime") {
-        caps.cypher("""RETURN localdatetime('2019-05-10T10:10:12.113114').epochMillis AS epochMillis""").records.toMapsWithCollectedEntities should equal(
-          Bag(
-            CypherMap("epochMillis" -> 1.557475812113114E12)
-          )
-        )
-      }
-    }
-
-    describe("epochSeconds") {
-      it("works on datetime") {
-        caps.cypher("""RETURN localdatetime('2019-05-10T10:10:12.113114').epochSeconds AS epochSeconds""").records.toMapsWithCollectedEntities should equal(
-          Bag(
-            CypherMap("epochSeconds" -> 1.557475812113114E9)
-          )
-        )
-      }
-    }
-
     describe("duration based accessors") {
       it("supports years") {
         caps.cypher("""RETURN duration({years: 2, months: 14}).years AS years""").records.toMapsWithCollectedEntities should equal(

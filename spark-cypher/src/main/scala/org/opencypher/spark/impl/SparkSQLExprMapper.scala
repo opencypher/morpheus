@@ -531,8 +531,6 @@ object SparkSQLExprMapper {
       case "second" => functions.second(temporalColumn)
       case "millisecond" => TemporalUDFS.milliseconds[I].apply(temporalColumn)
       case "microsecond" => TemporalUDFS.microseconds[I].apply(temporalColumn)
-      case "epochmillis" => TemporalUDFS.epochNanos[I].apply(temporalColumn) / 1000000
-      case "epochseconds" => TemporalUDFS.epochNanos[I].apply(temporalColumn) / 1000000000
       case other => throw UnsupportedOperationException(s"Unknown Temporal Accessor: $other")
     }
   }
