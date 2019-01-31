@@ -31,7 +31,7 @@ import java.time.format.DateTimeFormatter
 
 import org.junit.runner.RunWith
 import org.opencypher.okapi.api.value.CypherValue.CypherMap
-import org.opencypher.okapi.impl.exception.{IllegalArgumentException, UnsupportedOperationException}
+import org.opencypher.okapi.impl.exception.{IllegalArgumentException, IllegalStateException, UnsupportedOperationException}
 import org.opencypher.okapi.impl.temporal.Duration
 import org.opencypher.okapi.testing.Bag
 import org.opencypher.spark.testing.CAPSTestSuite
@@ -39,16 +39,15 @@ import org.scalatest.junit.JUnitRunner
 
 @RunWith(classOf[JUnitRunner])
 class TemporalTests extends CAPSTestSuite with ScanGraphInit {
-
   private def shouldParseDate(given: String, expected: String): Unit = {
     caps.cypher(s"RETURN date('$given') AS time").records.toMapsWithCollectedEntities should equal(
-      Bag(CypherMap("time" -> java.sql.Date.valueOf(expected)))
+      Bag(CypherMap("time" -> java.time.LocalDate.parse(expected)))
     )
   }
 
   private def shouldParseDateTime(given: String, expected: String): Unit = {
     caps.cypher(s"RETURN localdatetime('$given') AS time").records.toMapsWithCollectedEntities should equal(
-      Bag(CypherMap("time" -> java.sql.Timestamp.valueOf(expected)))
+      Bag(CypherMap("time" -> java.time.LocalDateTime.parse(expected)))
     )
   }
 
@@ -97,7 +96,7 @@ class TemporalTests extends CAPSTestSuite with ScanGraphInit {
     }
 
     it("constructs duration from a map") {
-      caps.cypher("RETURN duration({ seconds: 1 }) as duration").records.toMapsWithCollectedEntities should equal(
+      caps.cypher("RETURN duration({ seconds: 1 }) AS duration").records.toMapsWithCollectedEntities should equal(
         Bag(CypherMap("duration" -> Duration(seconds = 1)))
       )
 
@@ -111,7 +110,7 @@ class TemporalTests extends CAPSTestSuite with ScanGraphInit {
           | minutes: 1,
           | seconds: 10,
           | milliseconds: 10,
-          | microseconds: 10 }) as duration""".stripMargin).records.toMapsWithCollectedEntities should equal(
+          | microseconds: 10 }) AS duration""".stripMargin).records.toMapsWithCollectedEntities should equal(
         Bag(
           CypherMap("duration" -> Duration(
             years = 3, months = 12, weeks = 1, days = 5,
@@ -130,25 +129,25 @@ class TemporalTests extends CAPSTestSuite with ScanGraphInit {
 
       it("supports addition to date") {
         caps.cypher("RETURN date('2010-10-10') + duration('P1D') AS time").records.toMapsWithCollectedEntities should equal(
-          Bag(CypherMap("time" -> java.sql.Date.valueOf("2010-10-11")))
+          Bag(CypherMap("time" -> java.time.LocalDate.parse("2010-10-11")))
         )
       }
 
       it("supports addition to date with with time part present") {
         caps.cypher("RETURN date('2010-10-10') + duration('P1DT12H') AS time").records.toMapsWithCollectedEntities should equal(
-          Bag(CypherMap("time" -> java.sql.Date.valueOf("2010-10-11")))
+          Bag(CypherMap("time" -> java.time.LocalDate.parse("2010-10-11")))
         )
       }
 
       it("supports addition to localdatetime") {
         caps.cypher("RETURN localdatetime('2010-10-10T12:00') + duration('P1D') AS time").records.toMapsWithCollectedEntities should equal(
-          Bag(CypherMap("time" -> java.sql.Timestamp.valueOf("2010-10-11 12:00:00")))
+          Bag(CypherMap("time" -> java.time.LocalDateTime.parse("2010-10-11T12:00:00")))
         )
       }
 
       it("supports addition to localdatetime with with time part present") {
         caps.cypher("RETURN localdatetime('2010-10-10T12:00') + duration('P1DT12H') AS time").records.toMapsWithCollectedEntities should equal(
-          Bag(CypherMap("time" -> java.sql.Timestamp.valueOf("2010-10-12 00:00:00")))
+          Bag(CypherMap("time" -> java.time.LocalDateTime.parse("2010-10-12T00:00:00")))
         )
       }
     }
@@ -166,7 +165,7 @@ class TemporalTests extends CAPSTestSuite with ScanGraphInit {
 
       it("supports subtraction to date") {
         caps.cypher("RETURN date('2010-10-10') - duration('P1D') AS time").records.toMapsWithCollectedEntities should equal(
-          Bag(CypherMap("time" -> java.sql.Date.valueOf("2010-10-09")))
+          Bag(CypherMap("time" -> java.time.LocalDate.parse("2010-10-09")))
         )
 
         caps.cypher(
@@ -176,25 +175,25 @@ class TemporalTests extends CAPSTestSuite with ScanGraphInit {
             | duration({months: 1, days: -14}) as duration
             |RETURN date - duration AS diff
           """.stripMargin).records.toMapsWithCollectedEntities should equal(
-          Bag(CypherMap("diff" -> java.sql.Date.valueOf("1984-09-25")))
+          Bag(CypherMap("diff" -> java.time.LocalDate.parse("1984-09-25")))
         )
       }
 
       it("supports subtraction to date with with time part present") {
         caps.cypher("RETURN date('2010-10-10') - duration('P1DT12H') AS time").records.toMapsWithCollectedEntities should equal(
-          Bag(CypherMap("time" -> java.sql.Date.valueOf("2010-10-09")))
+          Bag(CypherMap("time" -> java.time.LocalDate.parse("2010-10-09")))
         )
       }
 
       it("supports subtraction to localdatetime") {
         caps.cypher("RETURN localdatetime('2010-10-10T12:00') - duration('P1D') AS time").records.toMapsWithCollectedEntities should equal(
-          Bag(CypherMap("time" -> java.sql.Timestamp.valueOf("2010-10-09 12:00:00")))
+          Bag(CypherMap("time" -> java.time.LocalDateTime.parse("2010-10-09T12:00:00")))
         )
       }
 
       it("supports subtraction to localdatetime with with time part present") {
         caps.cypher("RETURN localdatetime('2010-10-10T12:00') - duration('P1DT12H') AS time").records.toMapsWithCollectedEntities should equal(
-          Bag(CypherMap("time" -> java.sql.Timestamp.valueOf("2010-10-09 00:00:00")))
+          Bag(CypherMap("time" -> java.time.LocalDateTime.parse("2010-10-09T00:00:00")))
         )
       }
     }
@@ -204,7 +203,7 @@ class TemporalTests extends CAPSTestSuite with ScanGraphInit {
 
     it("returns a valid date") {
       caps.cypher("RETURN date('2010-10-10') AS time").records.toMaps should equal(
-        Bag(CypherMap("time" -> java.sql.Date.valueOf("2010-10-10")))
+        Bag(CypherMap("time" -> java.time.LocalDate.parse("2010-10-10")))
       )
     }
 
@@ -231,45 +230,40 @@ class TemporalTests extends CAPSTestSuite with ScanGraphInit {
 
     it("returns a valid date when constructed from a map") {
       caps.cypher("RETURN date({ year: 2010, month: 10, day: 10 }) AS time").records.toMapsWithCollectedEntities should equal(
-        Bag(CypherMap("time" -> java.sql.Date.valueOf("2010-10-10")))
+        Bag(CypherMap("time" -> java.time.LocalDate.parse("2010-10-10")))
       )
 
       caps.cypher("RETURN date({ year: 2010, month: 10 }) AS time").records.toMapsWithCollectedEntities should equal(
-        Bag(CypherMap("time" -> java.sql.Date.valueOf("2010-10-01")))
+        Bag(CypherMap("time" -> java.time.LocalDate.parse("2010-10-01")))
       )
 
       caps.cypher("RETURN date({ year: '2010' }) AS time").records.toMapsWithCollectedEntities should equal(
-        Bag(CypherMap("time" -> java.sql.Date.valueOf("2010-01-01")))
+        Bag(CypherMap("time" -> java.time.LocalDate.parse("2010-01-01")))
       )
     }
 
     it("throws an error if values of higher significance are omitted") {
-      val e1 = the [IllegalArgumentException] thrownBy(
+      val e1 = the[IllegalArgumentException] thrownBy
         caps.cypher("RETURN date({ year: 2018, day: 356 })").records.toMapsWithCollectedEntities
-      )
-      e1.getMessage should(include("valid significance order") and include("year, day"))
+      e1.getMessage should (include("valid significance order") and include("year, day"))
 
-      val e2 = the [IllegalArgumentException] thrownBy(
+      val e2 = the[IllegalArgumentException] thrownBy
         caps.cypher("RETURN date({ month: 11, day: 2 })").records.toMapsWithCollectedEntities
-      )
-      e2.getMessage should(include("`year` needs to be set") and include("month, day"))
+      e2.getMessage should (include("`year` needs to be set") and include("month, day"))
 
-      val e3 = the [IllegalArgumentException] thrownBy(
+      val e3 = the[IllegalArgumentException] thrownBy
         caps.cypher("RETURN date({ day: 2 })").records.toMapsWithCollectedEntities
-      )
-      e3.getMessage should(include("`year` needs to be set") and include("day"))
+      e3.getMessage should (include("`year` needs to be set") and include("day"))
     }
 
     it("throws an error if the date argument is wrong") {
-      val e1 = the [IllegalArgumentException] thrownBy(
+      val e1 = the[IllegalArgumentException] thrownBy
         caps.cypher("RETURN date('2018-10-10-10')").records.toMapsWithCollectedEntities
-      )
-      e1.getMessage should(include("valid date construction string") and include("2018-10-10-10"))
+      e1.getMessage should (include("valid date construction string") and include("2018-10-10-10"))
 
-      val e2 = the [IllegalArgumentException] thrownBy(
+      val e2 = the[IllegalArgumentException] thrownBy
         caps.cypher("RETURN date('201810101')").records.toMapsWithCollectedEntities
-      )
-      e2.getMessage should(include("valid date construction string") and include("201810101"))
+      e2.getMessage should (include("valid date construction string") and include("201810101"))
     }
 
     it("compares two dates") {
@@ -308,29 +302,28 @@ class TemporalTests extends CAPSTestSuite with ScanGraphInit {
 
     it("parses cypher compatible localdatetime strings") {
       Seq(
-        "2010-10-10" -> "2010-10-10 00:00:00",
-        "20101010" -> "2010-10-10 00:00:00",
-        "2010-12" -> "2010-12-01 00:00:00",
-        "201012" -> "2010-12-01 00:00:00",
-        "2015-W30-2" -> "2015-07-21 00:00:00",
-        "2015W302" -> "2015-07-21 00:00:00",
-        "2015-W30" -> "2015-07-20 00:00:00",
-        "2015W30" -> "2015-07-20 00:00:00",
-        "2015-Q2-60" -> "2015-05-30 00:00:00",
-        "2015Q260" -> "2015-05-30 00:00:00",
-        "2015-Q2" -> "2015-04-01 00:00:00",
-        "2015Q2" -> "2015-04-01 00:00:00",
-        "2015-202" -> "2015-07-21 00:00:00",
-        "2015202" -> "2015-07-21 00:00:00",
-        "2010" -> "2010-01-01 00:00:00",
-        "2010-10-10T21:40:32.142" -> "2010-10-10 21:40:32.142",
-        "2010-10-10T21:40:32.142123" -> "2010-10-10 21:40:32.142123",
-        "2010-10-10T214032.142" -> "2010-10-10 21:40:32.142",
-        "2010-10-10T21:40:32" -> "2010-10-10 21:40:32",
-        "2010-10-10T214032" -> "2010-10-10 21:40:32",
-        "2010-10-10T21:40" -> "2010-10-10 21:40:00",
-        "2010-10-10T2140" -> "2010-10-10 21:40:00",
-        "2010-10-10T21" -> "2010-10-10 21:00:00"
+        "2010-10-10" -> "2010-10-10T00:00:00",
+        "20101010" -> "2010-10-10T00:00:00",
+        "2010-12" -> "2010-12-01T00:00:00",
+        "201012" -> "2010-12-01T00:00:00",
+        "2015-W30-2" -> "2015-07-21T00:00:00",
+        "2015W302" -> "2015-07-21T00:00:00",
+        "2015-W30" -> "2015-07-20T00:00:00",
+        "2015W30" -> "2015-07-20T00:00:00",
+        "2015-Q2-60" -> "2015-05-30T00:00:00",
+        "2015Q260" -> "2015-05-30T00:00:00",
+        "2015-Q2" -> "2015-04-01T00:00:00",
+        "2015Q2" -> "2015-04-01T00:00:00",
+        "2015-202" -> "2015-07-21T00:00:00",
+        "2015202" -> "2015-07-21T00:00:00",
+        "2010" -> "2010-01-01T00:00:00",
+        "2010-10-10T21:40:32.142" -> "2010-10-10T21:40:32.142",
+        "2010-10-10T214032.142" -> "2010-10-10T21:40:32.142",
+        "2010-10-10T21:40:32" -> "2010-10-10T21:40:32",
+        "2010-10-10T214032" -> "2010-10-10T21:40:32",
+        "2010-10-10T21:40" -> "2010-10-10T21:40:00",
+        "2010-10-10T2140" -> "2010-10-10T21:40:00",
+        "2010-10-10T21" -> "2010-10-10T21:00:00"
       ).foreach {
         case (given, expected) => shouldParseDateTime(given, expected)
       }
@@ -347,7 +340,7 @@ class TemporalTests extends CAPSTestSuite with ScanGraphInit {
           |second: 35,
           |millisecond: 556}) AS time""".stripMargin).records.toMapsWithCollectedEntities should equal(
         Bag(
-          CypherMap("time" -> java.sql.Timestamp.valueOf("2015-10-12 12:50:35.556"))
+          CypherMap("time" -> java.time.LocalDateTime.parse("2015-10-12T12:50:35.556"))
         )
       )
 
@@ -359,11 +352,13 @@ class TemporalTests extends CAPSTestSuite with ScanGraphInit {
           |hour: 12,
           |minute: 50}) AS time""".stripMargin).records.toMapsWithCollectedEntities should equal(
         Bag(
-          CypherMap("time" -> java.sql.Timestamp.valueOf("2015-10-01 12:50:00.0"))
+          CypherMap("time" -> java.time.LocalDateTime.parse("2015-10-01T12:50:00"))
         )
       )
+    }
 
-      caps.cypher(
+    it("throws an error if nanoseconds are specified") {
+      val e = the[IllegalStateException] thrownBy caps.cypher(
         """RETURN localdatetime({
           |year: 2015,
           |month: 10,
@@ -371,46 +366,41 @@ class TemporalTests extends CAPSTestSuite with ScanGraphInit {
           |hour: 12,
           |minute: 50,
           |second: 1,
-          |nanosecond: 42}) AS time""".stripMargin).records.toMapsWithCollectedEntities should equal(
-        Bag(
-          CypherMap("time" -> java.sql.Timestamp.valueOf("2015-10-01 12:50:01.000000042"))
-        )
-      )
+          |nanosecond: 42}) AS time""".stripMargin).records.toMapsWithCollectedEntities
+
+      e.getMessage should include("nanosecond resolution")
     }
 
     it("throws an error if values of higher significance are omitted") {
-      val e1 = the [IllegalArgumentException] thrownBy caps.cypher("RETURN localdatetime({year: 2011, minute: 50 })").records.toMapsWithCollectedEntities
+      val e1 = the[IllegalArgumentException] thrownBy caps.cypher("RETURN localdatetime({year: 2011, minute: 50 })").records.toMapsWithCollectedEntities
       e1.getMessage should (include("valid significance order") and include("minute"))
 
-      val e2 = the [IllegalArgumentException] thrownBy caps.cypher("RETURN localdatetime({ year: 2018, hour: 12, second: 14 })").records.toMapsWithCollectedEntities
+      val e2 = the[IllegalArgumentException] thrownBy caps.cypher("RETURN localdatetime({ year: 2018, hour: 12, second: 14 })").records.toMapsWithCollectedEntities
       e2.getMessage should (include("valid significance order") and include("year, hour, second"))
     }
 
     it("throws an error if the localdatetime string is malformed") {
-      val e1 = the [IllegalArgumentException] thrownBy(
+      val e1 = the[IllegalArgumentException] thrownBy
         caps.cypher("RETURN localdatetime('2018-10-10T12:10:30:15')").records.toMapsWithCollectedEntities
-      )
       e1.getMessage.should(include("valid time construction string") and include("12:10:30:15"))
 
-      val e2 = the [IllegalArgumentException] thrownBy(
+      val e2 = the[IllegalArgumentException] thrownBy
         caps.cypher("RETURN localdatetime('20181010T1210301')").records.toMapsWithCollectedEntities
-      )
-      e2.getMessage should(include("valid time construction string") and include("1210301"))
+      e2.getMessage should (include("valid time construction string") and include("1210301"))
 
-      val e3 = the [IllegalArgumentException] thrownBy(
+      val e3 = the[IllegalArgumentException] thrownBy
         caps.cypher("RETURN localdatetime('20181010123123T12:00')").records.toMapsWithCollectedEntities
-      )
-      e3.getMessage should(include("valid date construction string") and include("20181010123123"))
+      e3.getMessage should (include("valid date construction string") and include("20181010123123"))
     }
 
     it("compares two datetimes") {
-      caps.cypher("RETURN localdatetime(\"2015-10-10T00:00:00\") < localdatetime(\"2015-10-12T00:00:00\") AS time").records.toMapsWithCollectedEntities should equal(
+      caps.cypher("RETURN localdatetime('2015-10-10T00:00:00') < localdatetime('2015-10-12T00:00:00') AS time").records.toMapsWithCollectedEntities should equal(
         Bag(
           CypherMap("time" -> true)
         )
       )
 
-      caps.cypher("RETURN localdatetime(\"2015-10-10T00:00:00\") > localdatetime(\"2015-10-12T00:00:00\") AS time").records.toMapsWithCollectedEntities should equal(
+      caps.cypher("RETURN localdatetime('2015-10-10T00:00:00') > localdatetime('2015-10-12T00:00:00') AS time").records.toMapsWithCollectedEntities should equal(
         Bag(
           CypherMap("time" -> false)
         )
@@ -451,7 +441,7 @@ class TemporalTests extends CAPSTestSuite with ScanGraphInit {
     }
 
     it("throws an error for unknown accessors") {
-      val e = the [UnsupportedOperationException] thrownBy caps.cypher("""RETURN date().foo AS foo""").records.toMapsWithCollectedEntities
+      val e = the[UnsupportedOperationException] thrownBy caps.cypher("""RETURN date().foo AS foo""").records.toMapsWithCollectedEntities
 
       e.getMessage should include("foo")
     }
@@ -670,7 +660,7 @@ class TemporalTests extends CAPSTestSuite with ScanGraphInit {
 
     describe("epochMillis") {
       it("works on datetime") {
-          caps.cypher("""RETURN localdatetime('2019-05-10T10:10:12.113114').epochMillis AS epochMillis""").records.toMapsWithCollectedEntities should equal(
+        caps.cypher("""RETURN localdatetime('2019-05-10T10:10:12.113114').epochMillis AS epochMillis""").records.toMapsWithCollectedEntities should equal(
           Bag(
             CypherMap("epochMillis" -> 1.557475812113114E12)
           )
@@ -761,7 +751,8 @@ class TemporalTests extends CAPSTestSuite with ScanGraphInit {
         )
       }
 
-      it("supports nanoseconds") {
+      // not supported as Spark CalendarInterval does not support nanoseconds
+      ignore("supports nanoseconds") {
         caps.cypher("""RETURN duration({years: 2, microseconds: 1}).nanoseconds AS nanos""").records.toMapsWithCollectedEntities should equal(
           Bag(
             CypherMap("nanos" -> 1000)

@@ -26,9 +26,6 @@
  */
 package org.opencypher.spark.impl.acceptance
 
-import java.time.LocalDateTime
-import java.time.format.DateTimeFormatter
-
 import org.junit.runner.RunWith
 import org.opencypher.okapi.api.value.CypherValue.{CypherMap, CypherNull}
 import org.opencypher.okapi.impl.exception.NotImplementedException
