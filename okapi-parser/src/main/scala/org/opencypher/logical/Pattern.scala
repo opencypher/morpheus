@@ -24,9 +24,9 @@
   * described as "implementation extensions to Cypher" or as "proposed changes to
   * Cypher that are not yet approved by the openCypher community".
   */
-package org.opencypher.parser
+package org.opencypher.logical
 
-import org.opencypher.parser.CypherExpression.PropertyLiteral
+import org.opencypher.parser.CypherExpressions.PropertyLiteral
 
 import scala.util.Try
 
