@@ -27,7 +27,7 @@
 package org.opencypher.parser
 
 import cats.data.NonEmptyList
-import CypherExpression._
+import CypherExpressions._
 
 object CypherAst {
 
@@ -35,9 +35,7 @@ object CypherAst {
 
   sealed trait RegularQuery extends Query
 
-  case class SingleQuery(
-    clauses: NonEmptyList[Clause]
-  ) extends RegularQuery
+  case class SingleQuery(clauses: NonEmptyList[Clause]) extends RegularQuery
 
   case class Union(all: Boolean, left: RegularQuery, right: SingleQuery) extends RegularQuery
 
@@ -51,7 +49,7 @@ object CypherAst {
 
   case class RelationshipDetail(
     maybeVariable: Option[Variable],
-    relationshipTypes: List[String],
+    relationshipTypes: Set[String],
     maybeRangeLiteral: Option[RangeLiteral],
     maybeProperties: Option[Properties]
   ) extends CypherTree

@@ -30,7 +30,7 @@ import cats.data.NonEmptyList
 import org.opencypher.okapi.trees.AbstractTreeNode
 import org.opencypher.parser.CypherAst._
 
-object CypherExpression {
+object CypherExpressions {
 
   // Basic node types
 
@@ -172,7 +172,7 @@ object CypherExpression {
 
   case class NodePattern(
     maybeVariable: Option[Variable],
-    nodeLabels: List[String],
+    nodeLabels: Set[String],
     maybeProperties: Option[Properties]
   ) extends CypherTree
 

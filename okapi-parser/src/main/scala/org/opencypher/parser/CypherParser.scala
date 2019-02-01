@@ -37,7 +37,7 @@ import org.opencypher.okapi.api.exception.CypherException._
 import org.opencypher.okapi.api.value.CypherValue.CypherValue
 import fastparse._
 import org.opencypher.parser.CypherAst._
-import org.opencypher.parser.CypherExpression._
+import org.opencypher.parser.CypherExpressions._
 
 import scala.annotation.tailrec
 
@@ -53,6 +53,7 @@ object Whitespace {
 }
 
 object CypherParser {
+
   import Whitespace.cypherWhitespace
 
   def parseCypher9(query: String, parameters: Map[String, CypherValue] = Map.empty): CypherTree = {
@@ -60,6 +61,10 @@ object CypherParser {
     val ast = parseResult match {
       case Success(v, _) =>
         println(query)
+        println(
+          """|
+             |=>
+             |""".stripMargin)
         v
       case Failure(expected, index, extra) =>
         println(query)
@@ -125,8 +130,9 @@ object CypherParser {
     ast
   }
 
-  implicit class ListParserOps[E](val p: P[Seq[E]]) extends AnyVal {
-    def toList: P[List[E]] = p.map(l => l.toList)
+  implicit class ContainerParserOps[E](val p: P[Seq[E]]) extends AnyVal {
+    def toSet: P[Set[E]] = p.map(_.toSet)
+    def toList: P[List[E]] = p.map(_.toList)
     def toNonEmptyList: P[NonEmptyList[E]] = p.map(l => NonEmptyList.fromListUnsafe(l.toList))
   }
 
@@ -279,7 +285,7 @@ object CypherParser {
   )
 
   def nodePattern[_: P]: P[NodePattern] = P(
-    "(" ~ variable.? ~ nodeLabel.rep.toList ~ properties.? ~ ")"
+    "(" ~ variable.? ~ nodeLabel.rep.toSet ~ properties.? ~ ")"
   ).map(NodePattern.tupled)
 
   def patternElementChain[_: P]: P[PatternElementChain] = P(relationshipPattern ~ nodePattern).map(PatternElementChain.tupled)
@@ -298,12 +304,12 @@ object CypherParser {
 
   def relationshipDetail[_: P]: P[RelationshipDetail] = P(
     "[" ~/ variable.? ~/ relationshipTypes ~/ rangeLiteral.? ~/ properties.? ~/ "]"
-  ).?.map(_.map(RelationshipDetail.tupled).getOrElse(RelationshipDetail(None, List.empty, None, None)))
+  ).?.map(_.map(RelationshipDetail.tupled).getOrElse(RelationshipDetail(None, Set.empty, None, None)))
 
   def properties[_: P]: P[Properties] = P(mapLiteral | parameter)
 
-  def relationshipTypes[_: P]: P[List[String]] = P(
-    (":" ~ relTypeName.rep(1, "|" ~ ":".?)).toList.?.map(_.getOrElse(Nil))
+  def relationshipTypes[_: P]: P[Set[String]] = P(
+    (":" ~ relTypeName.rep(1, "|" ~ ":".?)).toSet.?.map(_.getOrElse(Set.empty))
   )
 
   def nodeLabel[_: P]: P[String] = P(":" ~ labelName)
@@ -654,63 +660,7 @@ object CypherParser {
 
   def regularDecimalReal[_: P]: P[Unit] = P(digit.rep ~ "." ~ digit.rep(1))
 
-  def schemaName[_: P]: P[Unit] = P(symbolicName | reservedWord)
-
-  def reservedWord[_: P]: P[Unit] = P(
-    K("ALL")
-      | K("ASC")
-      | K("ASCENDING")
-      | K("BY")
-      | K("CREATE")
-      | K("DELETE")
-      | K("DESC")
-      | K("DESCENDING")
-      | K("DETACH")
-      | K("EXISTS")
-      | K("LIMIT")
-      | K("MATCH")
-      | K("MERGE")
-      | K("ON")
-      | K("OPTIONAL")
-      | K("ORDER")
-      | K("REMOVE")
-      | K("RETURN")
-      | K("SET")
-      | K("SKIP")
-      | K("WHERE")
-      | K("WITH")
-      | K("UNION")
-      | K("UNWIND")
-      | K("AND")
-      | K("AS")
-      | K("CONTAINS")
-      | K("DISTINCT")
-      | K("ENDS")
-      | K("IN")
-      | K("IS")
-      | K("NOT")
-      | K("OR")
-      | K("STARTS")
-      | K("XOR")
-      | K("FALSE")
-      | K("TRUE")
-      | K("NULL")
-      | K("CONSTRAINT")
-      | K("DO")
-      | K("FOR")
-      | K("REQUIRE")
-      | K("UNIQUE")
-      | K("CASE")
-      | K("WHEN")
-      | K("THEN")
-      | K("ELSE")
-      | K("END")
-      | K("MANDATORY")
-      | K("SCALAR")
-      | K("OF")
-      | K("ADD")
-      | K("DROP")
-  )
+  def schemaName[_: P]: P[Unit] = P(symbolicName)
 
   def symbolicName[_: P]: P[Unit] = P(unescapedSymbolicName | escapedSymbolicName | hexLetter)
 
