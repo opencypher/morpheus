@@ -54,6 +54,8 @@ object SparkConversions {
   )
 
   implicit class CypherTypeOps(val ct: CypherType) extends AnyVal {
+
+    // TODO: Remove code reduncancy with toStructField
     def toSparkType: Option[DataType] = ct match {
       case CTNull | CTVoid => Some(NullType)
       case _ =>
@@ -65,8 +67,8 @@ object SparkConversions {
           case CTLocalDateTime => Some(TimestampType)
           case CTDate => Some(DateType)
           case CTDuration => Some(CalendarIntervalType)
-          case _: CTNode => Some(LongType)
-          case _: CTRelationship => Some(LongType)
+          case _: CTNode => Some(BinaryType)
+          case _: CTRelationship => Some(BinaryType)
           case CTList(CTVoid) => Some(ArrayType(NullType, containsNull = true))
           case CTList(CTNull) => Some(ArrayType(NullType, containsNull = true))
           case CTList(elemType) =>
@@ -88,13 +90,14 @@ object SparkConversions {
 
     def isSparkCompatible: Boolean = toSparkType.isDefined
 
+    // TODO: Remove code reduncancy with toSparkType
     def toStructField(column: String): StructField = ct match {
       case CTVoid | CTNull => StructField(column, NullType, nullable = true)
 
-      case _: CTNode => StructField(column, LongType, nullable = false)
-      case _: CTNodeOrNull => StructField(column, LongType, nullable = true)
-      case _: CTRelationship => StructField(column, LongType, nullable = false)
-      case _: CTRelationshipOrNull => StructField(column, LongType, nullable = true)
+      case _: CTNode => StructField(column, BinaryType, nullable = false)
+      case _: CTNodeOrNull => StructField(column, BinaryType, nullable = true)
+      case _: CTRelationship => StructField(column, BinaryType, nullable = false)
+      case _: CTRelationshipOrNull => StructField(column, BinaryType, nullable = true)
 
       case CTInteger => StructField(column, LongType, nullable = false)
       case CTIntegerOrNull => StructField(column, LongType, nullable = true)
@@ -151,12 +154,12 @@ object SparkConversions {
         case IntegerType => Some(CTInteger)
         case LongType => Some(CTInteger)
         case BooleanType => Some(CTBoolean)
-        case BinaryType => Some(CTAny)
         case DoubleType => Some(CTFloat)
         case TimestampType => Some(CTLocalDateTime)
         case DateType => Some(CTDate)
         case CalendarIntervalType => Some(CTDuration)
         case ArrayType(NullType, _) => Some(CTList(CTVoid))
+        case BinaryType => Some(CTList(CTInteger))
         case ArrayType(elemType, containsNull) =>
           elemType.toCypherType(containsNull).map(CTList)
         case NullType => Some(CTNull)
