@@ -34,7 +34,7 @@ import org.opencypher.okapi.ir.test.support.Neo4jAstTestSupport
 import org.opencypher.okapi.testing.BaseTestSuite
 import org.opencypher.v9_0.expressions._
 import org.opencypher.v9_0.expressions.functions.Tail
-import org.opencypher.v9_0.util.symbols
+import org.opencypher.v9_0.util.{InputPosition, symbols}
 import org.scalatest.Assertion
 import org.scalatest.mockito.MockitoSugar
 
@@ -294,20 +294,24 @@ class SchemaTyperTest extends BaseTestSuite with Neo4jAstTestSupport with Mockit
 
   it("typing subtract") {
     implicit val context: TypeTracker =
-      typeTracker("a" -> CTInteger, "b" -> CTFloat, "c" -> CTNumber, "d" -> CTAny.nullable, "e" -> CTString)
+      typeTracker("a" -> CTInteger, "b" -> CTFloat, "c" -> CTNumber, "d" -> CTAny.nullable, "e" -> CTString,
+        "date" -> CTDate, "localdatetime" -> CTLocalDateTime, "duration" -> CTDuration)
 
-    assertExpr.from("a - a") shouldHaveInferredType CTInteger
-    assertExpr.from("b - b") shouldHaveInferredType CTFloat
-    assertExpr.from("a - b") shouldHaveInferredType CTFloat
-    assertExpr.from("b - a") shouldHaveInferredType CTFloat
-    assertExpr.from("a - c") shouldHaveInferredType CTNumber
-    assertExpr.from("c - b") shouldHaveInferredType CTNumber
+    assertExpr.from("a - a") shouldHaveInferredType CTInteger.nullable
+    assertExpr.from("b - b") shouldHaveInferredType CTFloat.nullable
+    assertExpr.from("a - b") shouldHaveInferredType CTFloat.nullable
+    assertExpr.from("b - a") shouldHaveInferredType CTFloat.nullable
 
-    assertExpr.from("a - d") shouldHaveInferredType CTAny.nullable
-    assertExpr.from("d - c") shouldHaveInferredType CTAny.nullable
+    assertExpr.from("a - d") shouldHaveInferredType CTNumber.nullable
+
+    assertExpr.from("date - duration") shouldHaveInferredType CTDate.nullable
+    assertExpr.from("localdatetime - duration") shouldHaveInferredType CTLocalDateTime.nullable
 
     assertExpr.from("a - e") shouldFailToInferTypeWithErrors
-      InvalidType("e", Seq(CTInteger, CTFloat, CTNumber), CTString)
+      NoSuitableSignatureForExpr(
+        Subtract(Variable("a")(InputPosition.NONE), Variable("e")(InputPosition.NONE))(InputPosition.NONE),
+        Seq(CTInteger, CTString)
+      )
   }
 
   it("typing multiply") {

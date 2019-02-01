@@ -64,6 +64,7 @@ object SparkConversions {
           case CTFloat => Some(DoubleType)
           case CTLocalDateTime => Some(TimestampType)
           case CTDate => Some(DateType)
+          case CTDuration => Some(CalendarIntervalType)
           case _: CTNode => Some(LongType)
           case _: CTRelationship => Some(LongType)
           case CTList(CTVoid) => Some(ArrayType(NullType, containsNull = true))
@@ -107,6 +108,8 @@ object SparkConversions {
       case CTLocalDateTimeOrNull => StructField(column, TimestampType, nullable = true)
       case CTDate => StructField(column, DateType, nullable = false)
       case CTDateOrNull => StructField(column, DateType, nullable = true)
+      case CTDuration => StructField(column, CalendarIntervalType, nullable = false)
+      case CTDurationOrNull => StructField(column, CalendarIntervalType, nullable = true)
 
       case CTList(elementType) =>
         val elementStructField = elementType.toStructField(column)
@@ -152,6 +155,7 @@ object SparkConversions {
         case DoubleType => Some(CTFloat)
         case TimestampType => Some(CTLocalDateTime)
         case DateType => Some(CTDate)
+        case CalendarIntervalType => Some(CTDuration)
         case ArrayType(NullType, _) => Some(CTList(CTVoid))
         case ArrayType(elemType, containsNull) =>
           elemType.toCypherType(containsNull).map(CTList)

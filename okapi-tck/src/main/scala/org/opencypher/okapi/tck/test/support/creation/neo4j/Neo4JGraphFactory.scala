@@ -26,11 +26,13 @@
  */
 package org.opencypher.okapi.tck.test.support.creation.neo4j
 
+import java.time.temporal.ChronoUnit
 import java.util.stream.Collectors
 
 import org.neo4j.graphdb.GraphDatabaseService
 import org.neo4j.harness.TestServerBuilders
 import org.opencypher.okapi.api.value.CypherValue.CypherMap
+import org.opencypher.okapi.impl.temporal.Duration
 import org.opencypher.okapi.testing.propertygraph
 import org.opencypher.okapi.testing.propertygraph.{InMemoryGraphFactory, InMemoryTestGraph, InMemoryTestNode, InMemoryTestRelationship}
 
@@ -70,7 +72,7 @@ class Neo4JGraphFactory {
     val nodes = neoNodes.asScala.map { neoNode =>
       val labels: Set[String] = neoNode.getLabels.asScala.map(_.name).toSet
       val id: Long = neoNode.getId
-      val properties = CypherMap(neoNode.getAllProperties.asScala.toSeq: _*)
+      val properties = convertProperties(neoNode.getAllProperties.asScala.toMap)
 
       InMemoryTestNode(id, labels, properties)
     }
@@ -81,12 +83,27 @@ class Neo4JGraphFactory {
       val sourceId: Long = neoRel.getStartNodeId
       val targetId: Long = neoRel.getEndNodeId
       val id: Long = neoRel.getId
-      val properties = CypherMap(neoRel.getAllProperties.asScala.toSeq: _*)
+      val properties = convertProperties(neoRel.getAllProperties.asScala.toMap)
 
       InMemoryTestRelationship(id, sourceId, targetId, relType, properties)
     }
 
     propertygraph.InMemoryTestGraph(nodes, relationships)
+  }
+
+  private def convertProperties(properties: Map[String, AnyRef]) = {
+    val imported = properties.mapValues {
+      case durationValue: org.neo4j.values.storable.DurationValue =>
+        Duration(
+          months = durationValue.get(ChronoUnit.MONTHS),
+          days = durationValue.get(ChronoUnit.DAYS),
+          seconds = durationValue.get(ChronoUnit.SECONDS),
+          nanoseconds = durationValue.get(ChronoUnit.NANOS)
+        )
+      case other => other
+    }
+
+    CypherMap(imported.toSeq: _*)
   }
 
   def close: Any = neo4jServer.close()

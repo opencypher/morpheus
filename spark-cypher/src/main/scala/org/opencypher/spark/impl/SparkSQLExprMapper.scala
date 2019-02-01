@@ -31,13 +31,15 @@ import org.apache.spark.sql.{Column, DataFrame, functions}
 import org.opencypher.okapi.api.types._
 import org.opencypher.okapi.api.value.CypherValue.{CypherInteger, CypherList, CypherMap, CypherString}
 import org.opencypher.okapi.impl.exception.{IllegalArgumentException, IllegalStateException, NotImplementedException, UnsupportedOperationException}
+import org.opencypher.okapi.impl.temporal.TemporalTypesHelper._
+import org.opencypher.okapi.impl.temporal.{Duration => DurationValue}
 import org.opencypher.okapi.ir.api.PropertyKey
 import org.opencypher.okapi.ir.api.expr._
 import org.opencypher.okapi.relational.impl.table.RecordHeader
 import org.opencypher.spark.impl.CAPSFunctions.{array_contains, get_node_labels, get_property_keys, get_rel_type, _}
 import org.opencypher.spark.impl.convert.SparkConversions._
-import org.opencypher.spark.impl.util.TemporalTypesHelper._
-
+import org.opencypher.spark.impl.temporal.SparkTemporalHelpers._
+import org.opencypher.spark.impl.temporal.TemporalUDFS
 object SparkSQLExprMapper {
 
   private val NULL_LIT: Column = functions.lit(null)
@@ -132,7 +134,11 @@ object SparkSQLExprMapper {
         case LocalDateTime(dateExpr) =>
           dateExpr match {
             case Some(e) =>
-              val localDateTimeValue = resolveTemporalArgument(e).map(parseTimestamp).orNull
+              val localDateTimeValue = resolveTemporalArgument(e)
+                .map(parseLocalDateTime)
+                .map(java.sql.Timestamp.valueOf)
+                .orNull
+
               functions.lit(localDateTimeValue).cast(DataTypes.TimestampType)
             case None => functions.current_timestamp()
           }
@@ -140,10 +146,21 @@ object SparkSQLExprMapper {
         case Date(dateExpr) =>
           dateExpr match {
             case Some(e) =>
-              val dateValue = resolveTemporalArgument(e).map(parseDate).orNull
+              val dateValue = resolveTemporalArgument(e)
+                .map(parseDate)
+                .map(java.sql.Date.valueOf)
+                .orNull
+
               functions.lit(dateValue).cast(DataTypes.DateType)
             case None => functions.current_timestamp()
           }
+
+        case Duration(durationExpr) =>
+          val durationValue = resolveTemporalArgument(durationExpr).map {
+            case Left(m) => DurationValue(m.mapValues(_.toLong)).toCalendarInterval
+            case Right(s) => DurationValue.parse(s).toCalendarInterval
+          }.orNull
+          functions.lit(durationValue)
 
         case l: Lit[_] => functions.lit(l.v)
 
@@ -216,12 +233,19 @@ object SparkSQLExprMapper {
             case (CTString, CTString) =>
               functions.concat(lhs.asSparkSQLExpr, rhs.asSparkSQLExpr)
 
+            case (CTDate, CTDuration) =>
+              TemporalUDFS.dateAdd(lhs.asSparkSQLExpr, rhs.asSparkSQLExpr)
+
             case _ =>
               lhs.asSparkSQLExpr + rhs.asSparkSQLExpr
           }
 
+        case Subtract(lhs, rhs) if lhs.cypherType.material.subTypeOf(CTDate).isTrue && rhs.cypherType.material.subTypeOf(CTDuration).isTrue =>
+          TemporalUDFS.dateSubtract(lhs.asSparkSQLExpr, rhs.asSparkSQLExpr)
 
-        case Subtract(lhs, rhs) => lhs.asSparkSQLExpr - rhs.asSparkSQLExpr
+        case Subtract(lhs, rhs) =>
+          lhs.asSparkSQLExpr - rhs.asSparkSQLExpr
+
         case Multiply(lhs, rhs) => lhs.asSparkSQLExpr * rhs.asSparkSQLExpr
         case div@Divide(lhs, rhs) => (lhs.asSparkSQLExpr / rhs.asSparkSQLExpr).cast(div.cypherType.getSparkType)
 

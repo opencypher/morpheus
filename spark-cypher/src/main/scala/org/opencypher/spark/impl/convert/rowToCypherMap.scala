@@ -28,6 +28,7 @@ package org.opencypher.spark.impl.convert
 
 import org.apache.spark.sql.Row
 import org.apache.spark.sql.catalyst.expressions.GenericRowWithSchema
+import org.apache.spark.unsafe.types.CalendarInterval
 import org.opencypher.okapi.api.types.{CTList, CTMap, CTNode, CTRelationship}
 import org.opencypher.okapi.api.value.CypherValue._
 import org.opencypher.okapi.api.value._
@@ -35,6 +36,7 @@ import org.opencypher.okapi.impl.exception.UnsupportedOperationException
 import org.opencypher.okapi.ir.api.expr.{Expr, ListSegment, Var}
 import org.opencypher.okapi.relational.impl.table.RecordHeader
 import org.opencypher.spark.api.value.{CAPSNode, CAPSRelationship}
+import org.opencypher.spark.impl.temporal.SparkTemporalHelpers._
 
 // TODO: argument cannot be a Map due to Scala issue https://issues.scala-lang.org/browse/SI-7005
 final case class rowToCypherMap(exprToColumn: Seq[(Expr, String)]) extends (Row => CypherMap) {
@@ -80,7 +82,10 @@ final case class rowToCypherMap(exprToColumn: Seq[(Expr, String)]) extends (Row 
 
       case _ =>
         val raw = row.getAs[Any](header.column(expr))
-        CypherValue(raw)
+        raw match {
+          case interval: CalendarInterval => interval.toDuration
+          case other => CypherValue(other)
+        }
     }
   }
 

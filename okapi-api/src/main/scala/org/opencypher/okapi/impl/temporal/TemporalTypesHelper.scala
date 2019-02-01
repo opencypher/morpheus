@@ -1,32 +1,31 @@
 /**
-  * Copyright (c) 2016-2019 "Neo4j Sweden, AB" [https://neo4j.com]
-  *
-  * Licensed under the Apache License, Version 2.0 (the "License");
-  * you may not use this file except in compliance with the License.
-  * You may obtain a copy of the License at
-  *
-  * http://www.apache.org/licenses/LICENSE-2.0
-  *
-  * Unless required by applicable law or agreed to in writing, software
-  * distributed under the License is distributed on an "AS IS" BASIS,
-  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-  * See the License for the specific language governing permissions and
-  * limitations under the License.
-  *
-  * Attribution Notice under the terms of the Apache License 2.0
-  *
-  * This work was created by the collective efforts of the openCypher community.
-  * Without limiting the terms of Section 6, any Derivative Work that is not
-  * approved by the public consensus process of the openCypher Implementers Group
-  * should not be described as “Cypher” (and Cypher® is a registered trademark of
-  * Neo4j Inc.) or as "openCypher". Extensions by implementers or prototypes or
-  * proposals for change that have been documented or implemented should only be
-  * described as "implementation extensions to Cypher" or as "proposed changes to
-  * Cypher that are not yet approved by the openCypher community".
-  */
-package org.opencypher.spark.impl.util
+ * Copyright (c) 2016-2019 "Neo4j Sweden, AB" [https://neo4j.com]
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ *
+ * Attribution Notice under the terms of the Apache License 2.0
+ *
+ * This work was created by the collective efforts of the openCypher community.
+ * Without limiting the terms of Section 6, any Derivative Work that is not
+ * approved by the public consensus process of the openCypher Implementers Group
+ * should not be described as “Cypher” (and Cypher® is a registered trademark of
+ * Neo4j Inc.) or as "openCypher". Extensions by implementers or prototypes or
+ * proposals for change that have been documented or implemented should only be
+ * described as "implementation extensions to Cypher" or as "proposed changes to
+ * Cypher that are not yet approved by the openCypher community".
+ */
+package org.opencypher.okapi.impl.temporal
 
-import java.sql.{Date, Timestamp}
 import java.time.format.{DateTimeFormatter, DateTimeFormatterBuilder, SignStyle}
 import java.time.temporal.{ChronoField, IsoFields}
 import java.time.{LocalDate, LocalDateTime, LocalTime}
@@ -140,34 +139,29 @@ object TemporalTypesHelper {
   )
 
   val timeFormatters: Seq[DateTimeFormatter] = Seq(
-    new DateTimeFormatterBuilder().appendPattern("HH:mm:ss.SSS").toFormatter,
+    DateTimeFormatter.ISO_LOCAL_TIME,
     new DateTimeFormatterBuilder().appendPattern("HHmmss.SSS").toFormatter,
-    new DateTimeFormatterBuilder().appendPattern("HH:mm:ss").toFormatter,
     new DateTimeFormatterBuilder().appendPattern("HHmmss").toFormatter,
     new DateTimeFormatterBuilder().appendPattern("HH:mm").toFormatter,
     new DateTimeFormatterBuilder().appendPattern("HHmm").toFormatter,
     new DateTimeFormatterBuilder().appendPattern("HH").toFormatter
   )
 
-  def parseDate(mapOrString: MapOrString): Date = {
-    val localDate = mapOrString match {
+  def parseDate(mapOrString: MapOrString): LocalDate = {
+    mapOrString match {
       case Left(map) => parseDateMap(map)
       case Right(str)=> parseDateString(str)
     }
-
-    Date.valueOf(localDate)
   }
 
-  def parseTimestamp(mapOrString: MapOrString): Timestamp = {
+  def parseLocalDateTime(mapOrString: MapOrString): LocalDateTime = {
 
     mapOrString match {
       case Left(map) =>
 
         val date = parseDateMap(map)
         val time = parseTimeMap(map)
-        val dateTime = LocalDateTime.of(date, time)
-
-        Timestamp.valueOf(dateTime)
+        LocalDateTime.of(date, time)
 
       case Right(str) =>
         val dateString :: timeString = str.split("T", 2).toList
@@ -178,19 +172,17 @@ object TemporalTypesHelper {
           case _ => None
         }
 
-        val dateTime = maybeTime match {
+        maybeTime match {
           case Some(time) => LocalDateTime.of(date, time)
           case None => LocalDateTime.of(date, LocalTime.MIN)
         }
-
-        Timestamp.valueOf(dateTime)
     }
   }
 
   private def parseDateMap(map: Map[String, Int]): LocalDate = {
     val sanitizedMap = sanitizeMap(map)
 
-    if(!sanitizedMap.contains("year")) throw IllegalArgumentException("the key `year` needs to be set", map.keys.mkString(", "))
+    if (!sanitizedMap.contains("year")) throw IllegalArgumentException("the key `year` needs to be set", map.keys.mkString(", "))
 
     if (sanitizedMap.keySet.contains("week")) {
       checkSignificanceOrder(sanitizedMap, dateByWeekIdentifiers)
@@ -278,7 +270,7 @@ object TemporalTypesHelper {
         case _ => true
       }
 
-    if(!validOrder) throw IllegalArgumentException(
+    if (!validOrder) throw IllegalArgumentException(
       "a valid significance order",
       inputMap.keys.mkString(", "),
       "When constructing dates from a map it is forbidden to omit values of higher significance"

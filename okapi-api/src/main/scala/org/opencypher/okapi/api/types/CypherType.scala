@@ -62,6 +62,7 @@ object CypherType {
         case CypherString(_) => CTString
         case CypherLocalDateTime(_) => CTLocalDateTime
         case CypherDate(_) => CTDate
+        case CypherDuration(_) => CTDuration
         case CypherMap(inner) => CTMap(inner.mapValues(_.cypherType))
         case CypherNode(_, labels, _) => CTNode(labels)
         case CypherRelationship(_, _, _, relType, _) => CTRelationship(relType)
@@ -186,6 +187,10 @@ case object CTLocalDateTime extends TemporalInstantCypherType {
 
 case object CTDate extends TemporalInstantCypherType {
   override def name = "DATE"
+}
+
+case object CTDuration extends MaterialDefiniteCypherLeafType {
+  override def name = "DURATION"
 }
 
 object CTNode extends CTNode(Set.empty, None) with Serializable {
@@ -626,6 +631,7 @@ private[okapi] object MaterialDefiniteCypherType {
       case CTMap(inner) => CTMapOrNull(inner)
       case CTLocalDateTime => CTLocalDateTimeOrNull
       case CTDate => CTDateOrNull
+      case CTDuration => CTDurationOrNull
       case CTPath => CTPathOrNull
     }
   }
@@ -678,6 +684,12 @@ case object CTDateOrNull extends NullableDefiniteCypherType {
   override def name: String = CTDate + "?"
 
   override def material: CTDate.type = CTDate
+}
+
+case object CTDurationOrNull extends NullableDefiniteCypherType {
+  override def name: String = CTDuration + "?"
+
+  override def material: CTDuration.type  = CTDuration
 }
 
 case class CTMapOrNull(innerTypes: Map[String, CypherType]) extends NullableDefiniteCypherType {
