@@ -62,7 +62,6 @@ def whitelist = [
                 [name: 'Mozilla Public License, v. 2.0', url: 'http://mozilla.org/MPL/2.0/']
         ]],
         [name: 'CDDL-1.1+GPL-2.0+CPE', url: 'https://javaee.github.io/glassfish/LICENSE', aliases: [
-                [name: 'CDDL'],
                 [name: 'CDDL + GPLv2 with classpath exception'],
                 [name: 'CDDL 1.1', url: 'https://glassfish.java.net/public/CDDL+GPL_1_1.html'],
                 [name: 'CDDL 1.1', url: 'https://glassfish.dev.java.net/public/CDDL+GPL_1_1.html'],
@@ -228,6 +227,7 @@ subprojects {
  'spark-cypher-examples',
  'spark-cypher-tck',
  'spark-cypher-testing',
+ 'spark-cypher-jmh',
  'documentation',
 ].each {
     project(it).tasks.validateLicenses.enabled = false
