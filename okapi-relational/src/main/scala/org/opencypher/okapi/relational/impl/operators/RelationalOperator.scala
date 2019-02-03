@@ -145,15 +145,16 @@ abstract class RelationalOperator[T <: Table[T] : TypeTag] extends AbstractTreeN
 
 object Start {
 
-  def from[T <: Table[T] : TypeTag](header: RecordHeader, table: T)
-    (implicit context: RelationalRuntimeContext[T]): Start[T] = {
-    Start(context.session.emptyGraphQgn, Some(context.session.records.from(header, table)))
-  }
-
-  def apply[T <: Table[T] : TypeTag](records: RelationalCypherRecords[T])
+  def fromEmptyGraph[T <: Table[T] : TypeTag](records: RelationalCypherRecords[T])
     (implicit context: RelationalRuntimeContext[T]): Start[T] = {
     Start(context.session.emptyGraphQgn, Some(records))
   }
+
+  def apply[T <: Table[T] : TypeTag](qgn: QualifiedGraphName, records: RelationalCypherRecords[T])
+    (implicit context: RelationalRuntimeContext[T]): Start[T] = {
+    Start(qgn, Some(records))
+  }
+
 }
 
 final case class Start[T <: Table[T] : TypeTag](

@@ -50,7 +50,7 @@ abstract class CAPSGraphTest extends CAPSTestSuite
       def planStart: Start[DataFrameTable] = {
         implicit val tableTypeTag: universe.TypeTag[DataFrameTable] = caps.tableTypeTag
         implicit val context: RelationalRuntimeContext[DataFrameTable] = caps.basicRuntimeContext()
-        Start(records)
+        Start.fromEmptyGraph(records)
       }
     }
   }

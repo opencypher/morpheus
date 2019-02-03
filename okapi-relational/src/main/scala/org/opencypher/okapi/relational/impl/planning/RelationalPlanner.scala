@@ -519,7 +519,7 @@ object RelationalPlanner {
 
       if (!hasColumnForMandatoryLabels) {
         implicit val context: RelationalRuntimeContext[T] = op.context
-        relational.Start(op.session.records.empty(op.header))
+        relational.Start.fromEmptyGraph(op.session.records.empty(op.header))
       } else {
         val filterExpressions = labelExpressions.flatMap {
           case hl@HasLabel(_, label) if labels.contains(label.name) => Some(Equals(hl, TrueLit)(CTBoolean))

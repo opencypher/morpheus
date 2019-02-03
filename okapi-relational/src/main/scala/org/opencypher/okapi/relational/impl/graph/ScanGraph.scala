@@ -71,7 +71,7 @@ class ScanGraph[T <: Table[T] : TypeTag](val scans: Seq[EntityTable[T]], val sch
     }
 
     alignedEntityTableOps.toList match {
-      case Nil => Start(session.records.empty(targetEntityHeader))
+      case Nil => Start.fromEmptyGraph(session.records.empty(targetEntityHeader))
       case singleOp :: Nil => singleOp
       case multipleOps => multipleOps.reduce(TabularUnionAll(_, _))
     }
@@ -79,6 +79,7 @@ class ScanGraph[T <: Table[T] : TypeTag](val scans: Seq[EntityTable[T]], val sch
 
   // TODO: Express `exactLabelMatch` with type
   private def scansForType(ct: CypherType, exactLabelMatch: Boolean): Seq[RelationalOperator[T]] = {
+    val qgn = ct.graph.getOrElse(session.emptyGraphQgn)
     ct match {
       case nodeType@CTNode(labels, _) =>
         val scans = if (exactLabelMatch) {
@@ -86,7 +87,7 @@ class ScanGraph[T <: Table[T] : TypeTag](val scans: Seq[EntityTable[T]], val sch
         } else {
           nodeTables.filter(_.entityType.subTypeOf(ct).isTrue)
         }
-        val startOpsForImpliedLabels = scans.map(scanRecords => Start(scanRecords))
+        val startOpsForImpliedLabels = scans.map(scanRecords => Start(qgn, scanRecords))
 
         val startOpsForOptionalLabels = if (labels.isEmpty) {
           Seq.empty
@@ -94,7 +95,7 @@ class ScanGraph[T <: Table[T] : TypeTag](val scans: Seq[EntityTable[T]], val sch
           nodeTables
             .filter(_.entityType == CTNode)
             .filter(labels subsetOf _.mapping.optionalLabelKeys.toSet)
-            .map { table => Start(table).filterNodeLabels(nodeType, exactLabelMatch) }
+            .map { table => Start(qgn, table).filterNodeLabels(nodeType, exactLabelMatch) }
         }
 
         startOpsForImpliedLabels ++ startOpsForOptionalLabels
@@ -102,7 +103,7 @@ class ScanGraph[T <: Table[T] : TypeTag](val scans: Seq[EntityTable[T]], val sch
       case r: CTRelationship =>
         relTables
           .filter(relTable => relTable.entityType.couldBeSameTypeAs(ct))
-          .map(scanRecords => Start(scanRecords).filterRelTypes(r))
+          .map(scanRecords => Start(qgn, scanRecords).filterRelTypes(r))
 
       case other => throw IllegalArgumentException(s"Scan on $other")
     }

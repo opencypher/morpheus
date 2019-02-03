@@ -99,7 +99,7 @@ final case class UnionGraph[T <: Table[T] : TypeTag](graphsToReplacements: Seq[(
 
     alignedScans match {
       case Nil =>
-        Start(session.records.empty(targetEntityHeader))
+        Start.fromEmptyGraph(session.records.empty(targetEntityHeader))
       case _ =>
         alignedScans.reduce(TabularUnionAll(_, _))
     }
