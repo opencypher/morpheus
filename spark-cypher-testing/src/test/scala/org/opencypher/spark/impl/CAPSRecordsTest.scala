@@ -33,7 +33,6 @@ import org.opencypher.okapi.api.value.CypherValue._
 import org.opencypher.okapi.impl.exception.InternalException
 import org.opencypher.okapi.ir.api.expr._
 import org.opencypher.okapi.ir.api.{Label, PropertyKey, RelType}
-import org.opencypher.okapi.relational.api.tagging.Tags._
 import org.opencypher.okapi.relational.impl.table.RecordHeader
 import org.opencypher.okapi.testing.Bag
 import org.opencypher.okapi.testing.Bag._
@@ -174,7 +173,7 @@ class CAPSRecordsTest extends CAPSTestSuite with GraphConstructionFixture with T
   }
 
   private def validateTag(df: DataFrame, col: String, tag: Int): Unit = {
-    df.select(col).collect().forall(_.getLong(0).getTag == tag) shouldBe true
+//    df.select(col).collect().forall(_.getLong(0).getTag == tag) shouldBe true
   }
 
   it("can wrap a dataframe") {

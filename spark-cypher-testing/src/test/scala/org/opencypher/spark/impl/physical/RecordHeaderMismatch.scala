@@ -58,8 +58,6 @@ class RecordHeaderMismatch extends CAPSTestSuite {
 
       override implicit def session: CAPSSession = caps
 
-      override def tags: Set[Int] = Set(0)
-
       override def cache(): RelationalCypherGraph[DataFrameTable] = this
 
       override def tables: Seq[DataFrameTable] = Seq.empty
