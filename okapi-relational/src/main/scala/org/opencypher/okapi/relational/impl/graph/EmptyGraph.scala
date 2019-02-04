@@ -49,8 +49,6 @@ sealed case class EmptyGraph[T <: Table[T] : TypeTag](implicit val session: Rela
 
   override def tables: Seq[T] = Seq.empty
 
-  override def tags: Set[Int] = Set.empty
-
   override def scanOperator(
     entityType: CypherType,
     exactLabelMatch: Boolean

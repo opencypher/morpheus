@@ -31,6 +31,7 @@ import org.opencypher.okapi.api.schema.RelTypePropertyMap._
 import org.opencypher.okapi.api.schema.Schema
 import org.opencypher.okapi.api.types.{CTNode, CTRelationship, CypherType}
 import org.opencypher.okapi.impl.exception.UnsupportedOperationException
+import org.opencypher.okapi.ir.api.expr.PrefixId.GraphIdPrefix
 import org.opencypher.okapi.ir.api.expr.Var
 import org.opencypher.okapi.relational.api.graph.{RelationalCypherGraph, RelationalCypherSession}
 import org.opencypher.okapi.relational.api.planning.RelationalRuntimeContext
@@ -42,10 +43,10 @@ import org.opencypher.okapi.relational.impl.planning.RelationalPlanner._
 import scala.reflect.runtime.universe.TypeTag
 
 // TODO: This should be a planned tree of physical operators instead of a graph
-final case class UnionGraph[T <: Table[T] : TypeTag](graphsToReplacements: Seq[(RelationalCypherGraph[T], Map[Int, Int])])
+final case class UnionGraph[T <: Table[T] : TypeTag](graphsWithPrefix: Seq[(RelationalCypherGraph[T], GraphIdPrefix)])
   (implicit context: RelationalRuntimeContext[T]) extends RelationalCypherGraph[T] {
 
-  private val (graphs, replacements) = graphsToReplacements.unzip
+  private val (graphs, _) = graphsWithPrefix.unzip
 
   override implicit val session: RelationalCypherSession[T] = context.session
 
@@ -53,17 +54,13 @@ final case class UnionGraph[T <: Table[T] : TypeTag](graphsToReplacements: Seq[(
 
   override type Session = RelationalCypherSession[T]
 
-  require(graphsToReplacements.nonEmpty, "Union requires at least one graph")
+  require(graphsWithPrefix.nonEmpty, "Union requires at least one graph")
 
   override def tables: Seq[T] = graphs.flatMap(_.tables)
 
-  override lazy val tags: Set[Int] = replacements.flatMap(_.values).toSet
+  override lazy val schema: Schema = graphs.map(g => g.schema).foldLeft(Schema.empty)(_ ++ _)
 
-  override lazy val schema: Schema = {
-    graphs.map(g => g.schema).foldLeft(Schema.empty)(_ ++ _)
-  }
-
-  override def toString = s"UnionGraph(graphs=[${graphsToReplacements.mkString(",")}])"
+  override def toString = s"UnionGraph(graphs=[${graphsWithPrefix.mkString(",")}])"
 
   override def scanOperator(
     entityType: CypherType,
@@ -71,7 +68,7 @@ final case class UnionGraph[T <: Table[T] : TypeTag](graphsToReplacements: Seq[(
   ): RelationalOperator[T] = {
     val targetEntity = Var("")(entityType)
     val targetEntityHeader = schema.headerForEntity(targetEntity, exactLabelMatch)
-    val alignedScans = graphsToReplacements
+    val alignedScans = graphsWithPrefix
       .flatMap {
         case (graph, replacement) =>
           val isEmptyScan = entityType match {
@@ -91,7 +88,7 @@ final case class UnionGraph[T <: Table[T] : TypeTag](graphsToReplacements: Seq[(
           }
           else {
             val scanOp = graph.scanOperator(entityType, exactLabelMatch)
-            val retagOp = scanOp.retagVariable(targetEntity, replacement)
+            val retagOp = scanOp.prefixVariableId(targetEntity, replacement)
             val inputEntity = retagOp.singleEntity
             Some(retagOp.alignWith(inputEntity, targetEntity, targetEntityHeader))
           }

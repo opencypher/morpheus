@@ -26,6 +26,7 @@
  */
 package org.opencypher.spark.impl
 
+import org.apache.spark.sql.functions._
 import org.apache.spark.sql.types._
 import org.apache.spark.sql.{Column, DataFrame, functions}
 import org.opencypher.okapi.api.types._
@@ -272,6 +273,10 @@ object SparkSQLExprMapper {
         case _: MonotonicallyIncreasingId => functions.monotonically_increasing_id()
         case Exists(e) => e.asSparkSQLExpr.isNotNull
         case Id(e) => e.asSparkSQLExpr
+
+        case PrefixId(idExpr, prefix) =>
+          concat(lit(Array(prefix)).cast(StringType), idExpr.asSparkSQLExpr.cast(StringType)).cast(BinaryType)
+
         case Labels(e) =>
           e.cypherType match {
             case _: CTNode | _: CTNodeOrNull =>
@@ -364,7 +369,7 @@ object SparkSQLExprMapper {
           val stepCol = maybeStep.map(_.asSparkSQLExpr).getOrElse(ONE_LIT)
           rangeUdf(from.asSparkSQLExpr, to.asSparkSQLExpr, stepCol)
 
-        case Replace(original, search, replacement) => translate(original.asSparkSQLExpr, search.asSparkSQLExpr, replacement.asSparkSQLExpr)
+        case Replace(original, search, replacement) => translateColumn(original.asSparkSQLExpr, search.asSparkSQLExpr, replacement.asSparkSQLExpr)
 
         case Substring(original, start, maybeLength) =>
           val origCol = original.asSparkSQLExpr

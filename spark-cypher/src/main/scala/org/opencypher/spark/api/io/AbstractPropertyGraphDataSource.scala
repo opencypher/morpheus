@@ -127,7 +127,7 @@ abstract class AbstractPropertyGraphDataSource extends CAPSPropertyGraphDataSour
       if (nodeTables.isEmpty) {
         caps.graphs.empty
       } else {
-        caps.graphs.create(capsMetaData.tags, Some(capsSchema), (nodeTables ++ relTables).toSeq: _*)
+        caps.graphs.create(Some(capsSchema), (nodeTables ++ relTables).toSeq: _*)
       }
     }
   }
@@ -157,7 +157,7 @@ abstract class AbstractPropertyGraphDataSource extends CAPSPropertyGraphDataSour
       val schema = relationalGraph.schema.asCaps
       schemaCache += graphName -> schema
       graphNameCache += graphName
-      writeCAPSGraphMetaData(graphName, CAPSGraphMetaData(tableStorageFormat.name, relationalGraph.tags))
+      writeCAPSGraphMetaData(graphName, CAPSGraphMetaData(tableStorageFormat.name))
       writeSchema(graphName, schema)
 
       val nodeWrites = schema.labelCombinations.combos.map { combo =>

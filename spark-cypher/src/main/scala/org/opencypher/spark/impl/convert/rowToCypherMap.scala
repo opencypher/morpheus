@@ -35,6 +35,7 @@ import org.opencypher.okapi.api.value._
 import org.opencypher.okapi.impl.exception.UnsupportedOperationException
 import org.opencypher.okapi.ir.api.expr.{Expr, ListSegment, Var}
 import org.opencypher.okapi.relational.impl.table.RecordHeader
+import org.opencypher.spark.api.value.CAPSEntity.CAPSId
 import org.opencypher.spark.api.value.{CAPSNode, CAPSRelationship}
 import org.opencypher.spark.impl.temporal.SparkTemporalHelpers._
 
@@ -93,7 +94,7 @@ final case class rowToCypherMap(exprToColumn: Seq[(Expr, String)]) extends (Row 
     val idValue = row.getAs[Any](header.column(v))
     idValue match {
       case null => CypherNull
-      case id: Long =>
+      case id: Array[_] =>
 
         val labels = header
           .labelsFor(v)
@@ -106,7 +107,7 @@ final case class rowToCypherMap(exprToColumn: Seq[(Expr, String)]) extends (Row 
           .collect { case (key, value) if !value.isNull => key -> value }
           .toMap
 
-        CAPSNode(id, labels, properties)
+        CAPSNode(id.toSeq.asInstanceOf[CAPSId], labels, properties)
       case invalidID => throw UnsupportedOperationException(s"CAPSNode ID has to be a Long instead of ${invalidID.getClass}")
     }
   }
@@ -115,9 +116,9 @@ final case class rowToCypherMap(exprToColumn: Seq[(Expr, String)]) extends (Row 
     val idValue = row.getAs[Any](header.column(v))
     idValue match {
       case null => CypherNull
-      case id: Long =>
-        val source = row.getAs[Long](header.column(header.startNodeFor(v)))
-        val target = row.getAs[Long](header.column(header.endNodeFor(v)))
+      case id: Array[_] =>
+        val source = row.getAs[Array[_]](header.column(header.startNodeFor(v)))
+        val target = row.getAs[Array[_]](header.column(header.endNodeFor(v)))
 
         val relType = header
           .typesFor(v)
@@ -131,7 +132,7 @@ final case class rowToCypherMap(exprToColumn: Seq[(Expr, String)]) extends (Row 
           .collect { case (key, value) if !value.isNull => key -> value }
           .toMap
 
-        CAPSRelationship(id, source, target, relType, properties)
+        CAPSRelationship(id.toSeq.asInstanceOf[CAPSId], source.toSeq.asInstanceOf[CAPSId], target.toSeq.asInstanceOf[CAPSId], relType, properties)
       case invalidID => throw UnsupportedOperationException(s"CAPSRelationship ID has to be a Long instead of ${invalidID.getClass}")
     }
   }

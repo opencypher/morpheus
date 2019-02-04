@@ -101,7 +101,7 @@ object CAPSFunctions {
   /**
     * Alternative version of {{{org.apache.spark.sql.functions.translate}}} that takes {{{org.apache.spark.sql.Column}}}s for search and replace strings.
     */
-  def translate(src: Column, matchingString: Column, replaceString: Column): Column = {
+  def translateColumn(src: Column, matchingString: Column, replaceString: Column): Column = {
     new Column(StringTranslate(src.expr, matchingString.expr, replaceString.expr))
   }
 
