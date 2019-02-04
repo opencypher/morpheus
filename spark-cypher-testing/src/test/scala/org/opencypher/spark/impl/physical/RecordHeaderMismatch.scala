@@ -69,7 +69,7 @@ class RecordHeaderMismatch extends CAPSTestSuite {
         entityType: CypherType,
         exactLabelMatch: Boolean
       ): RelationalOperator[DataFrameTable] = {
-        Start(caps.records.empty())
+        Start.fromEmptyGraph(caps.records.empty())
       }
     }
 

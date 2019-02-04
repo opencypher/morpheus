@@ -62,6 +62,6 @@ sealed case class EmptyGraph[T <: Table[T] : TypeTag](implicit val session: Rela
       case other => throw IllegalArgumentException("EntityType to be either CTNode or CTRelationship", other)
     }
     val records = session.records.empty(scanHeader)
-    Start(records)
+    Start.fromEmptyGraph(records)
   }
 }
