@@ -28,7 +28,7 @@ package org.opencypher.spark.impl.table
 
 import org.apache.spark.sql.Row
 import org.apache.spark.sql.types.DecimalType
-import org.opencypher.okapi.api.io.conversion.{NodeMapping, RelationshipMapping}
+import org.opencypher.okapi.api.io.conversion.{NodeMapping, PatternMapping, RelationshipMapping}
 import org.opencypher.okapi.api.schema.Schema
 import org.opencypher.okapi.api.types._
 import org.opencypher.okapi.api.value.CypherValue.CypherMap
@@ -73,6 +73,9 @@ class EntityTableTest extends CAPSTestSuite {
     .withPropertyKey("foo" -> "FOO")
     .withPropertyKey("bar" -> "BAR")
 
+  private val patternMapping: PatternMapping = PatternMapping
+    .from(nodeMapping, relMapping)
+
   it("mapping from scala classes") {
     val personTableScala = CAPSNodeTable(List(Person(0, "Alice", 15)))
     personTableScala.mapping should equal(NodeMapping
@@ -90,6 +93,17 @@ class EntityTableTest extends CAPSTestSuite {
       .withSourceEndNodeKey("target")
       .withRelType("FRIEND_OF")
       .withPropertyKey("since"))
+  }
+
+  describe("pattern mapping") {
+
+    it("foo") {
+      val df = sparkSession.createDataFrame(Seq((1, true, "Mats", 23L, 1, 1, true))).toDF("ID", "IS_C", "FOO", "BAR", "TARGET", "SOURCE", "TYPE")
+
+      val patternTable = CAPSPatternTable.fromMapping(patternMapping, df)
+
+      ???
+    }
   }
 
   it("throws an IllegalArgumentException when a relationship table does not have the expected column ordering") {

@@ -42,7 +42,7 @@ import org.opencypher.okapi.ir.impl.{IRBuilder, IRBuilderContext, QueryLocalCata
 import org.opencypher.okapi.logical.api.configuration.LogicalConfiguration.PrintLogicalPlan
 import org.opencypher.okapi.logical.impl._
 import org.opencypher.okapi.relational.api.configuration.CoraConfiguration.{PrintOptimizedRelationalPlan, PrintQueryExecutionStages, PrintRelationalPlan}
-import org.opencypher.okapi.relational.api.io.{EntityTable, NodeTable}
+import org.opencypher.okapi.relational.api.io.{EntityTable, NodeTable, PatternTable}
 import org.opencypher.okapi.relational.api.planning.{RelationalCypherResult, RelationalRuntimeContext}
 import org.opencypher.okapi.relational.api.table.{RelationalCypherRecords, RelationalCypherRecordsFactory, RelationalEntityTableFactory, Table}
 import org.opencypher.okapi.relational.impl.RelationalConverters._
@@ -85,6 +85,10 @@ abstract class RelationalCypherSession[T <: Table[T] : TypeTag] extends CypherSe
     */
   def readFrom(nodeTable: NodeTable[T], entityTables: EntityTable[T]*): PropertyGraph = {
     graphs.create(nodeTable, entityTables: _ *)
+  }
+
+  def readFrom(patternTable: PatternTable[T], entityTables: EntityTable[T]*): PropertyGraph = {
+    graphs.create(patternTable, entityTables: _*)
   }
 
   /**

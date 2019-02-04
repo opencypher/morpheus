@@ -66,6 +66,23 @@ case class CAPSPatternTable(
   override val table: DataFrameTable
 ) extends PatternTable(mapping, table) with CAPSEntityTable with RecordBehaviour {
 
+  override type Records = CAPSPatternTable
+
+  override def cache(): CAPSPatternTable = {
+    table.df.cache()
+    this
+  }
+}
+
+object CAPSPatternTable {
+
+  def fromMapping(mapping: PatternMapping, initialTable: DataFrame): CAPSPatternTable = {
+    val nodeTable = CAPSNodeTable.fromMapping(mapping.nodeMapping, initialTable)
+    val patternTable = CAPSRelationshipTable.fromMapping(mapping.relationshipMapping, nodeTable.table.df)
+
+    CAPSPatternTable(mapping, patternTable.table)
+  }
+
 }
 
 case class CAPSNodeTable(
