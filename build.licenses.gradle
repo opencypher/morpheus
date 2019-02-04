@@ -227,6 +227,7 @@ subprojects {
  'spark-cypher-examples',
  'spark-cypher-tck',
  'spark-cypher-testing',
+ 'spark-cypher-jmh',
  'documentation',
 ].each {
     project(it).tasks.validateLicenses.enabled = false
