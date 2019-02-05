@@ -73,6 +73,7 @@ object SparkConversions {
           case CTLocalDateTime => Some(TimestampType)
           case CTDate => Some(DateType)
           case CTDuration => Some(CalendarIntervalType)
+          case CTIdentity => Some(BinaryType)
           case _: CTNode => Some(BinaryType)
           case _: CTRelationship => Some(BinaryType)
           case CTList(CTVoid) => Some(ArrayType(NullType, containsNull = true))
@@ -129,7 +130,8 @@ object SparkConversions {
         case DateType => Some(CTDate)
         case CalendarIntervalType => Some(CTDuration)
         case ArrayType(NullType, _) => Some(CTList(CTVoid))
-        case BinaryType => Some(CTList(CTInteger))
+        case ArrayType(ByteType, false) => Some(CTIdentity)
+        case BinaryType => Some(CTIdentity)
         case ArrayType(elemType, containsNull) =>
           elemType.toCypherType(containsNull).map(CTList)
         case NullType => Some(CTNull)

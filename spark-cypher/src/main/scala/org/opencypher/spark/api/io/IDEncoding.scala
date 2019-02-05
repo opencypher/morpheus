@@ -29,12 +29,14 @@ package org.opencypher.spark.api.io
 import org.apache.spark.sql.Column
 import org.apache.spark.sql.functions.{array, shiftRightUnsigned}
 import org.apache.spark.sql.types.ByteType
+import org.opencypher.okapi.ir.api.expr.PrefixId.GraphIdPrefix
 
 object IDEncoding {
 
   type CAPSId = Seq[Byte]
 
-  implicit class RichColumn(val c: Column) extends AnyVal {
+  implicit class ColumnIdEncoding(val c: Column) extends AnyVal {
+
     def encodeLongAsCAPSId(name: String): Column = encodeLongAsCAPSId.as(name)
 
     def encodeLongAsCAPSId: Column = {
@@ -49,9 +51,11 @@ object IDEncoding {
         c.cast(ByteType)
       )
     }
+
   }
 
-  implicit class RichLong(val l: Long) extends AnyVal {
+  implicit class LongIdEncoding(val l: Long) extends AnyVal {
+
     def encodeAsCAPSId: CAPSId = {
       val a = new Array[Byte](8)
       a(0) = (l >> 56).toByte
@@ -64,6 +68,11 @@ object IDEncoding {
       a(7) = l.toByte
       a
     }
+
+  }
+
+  implicit class RichCAPSId(val id: CAPSId) extends AnyVal {
+    def withPrefix(prefix: GraphIdPrefix): CAPSId = prefix +: id
   }
 
 }

@@ -26,7 +26,6 @@
  */
 package org.opencypher.spark.api.io
 
-import org.apache.spark.sql.types.{BinaryType, StringType}
 import org.apache.spark.sql.{DataFrame, _}
 import org.opencypher.okapi.api.io.conversion.{NodeMapping, RelationshipMapping}
 import org.opencypher.okapi.api.types._
@@ -34,6 +33,7 @@ import org.opencypher.okapi.impl.util.StringEncodingUtilities._
 import org.opencypher.okapi.relational.api.io.{EntityTable, NodeTable, RelationshipTable}
 import org.opencypher.okapi.relational.api.table.RelationalEntityTableFactory
 import org.opencypher.spark.api.CAPSSession
+import org.opencypher.spark.api.io.IDEncoding._
 import org.opencypher.spark.impl.table.SparkTable.DataFrameTable
 import org.opencypher.spark.impl.util.Annotation
 import org.opencypher.spark.impl.{CAPSRecords, RecordBehaviour}
@@ -128,7 +128,7 @@ object CAPSNodeTable {
     * @return a node table
     */
   def fromMapping(mapping: NodeMapping, initialTable: DataFrame): CAPSNodeTable = {
-    val idCols = mapping.idKeys.map(initialTable.col).map(_.cast(StringType).cast(BinaryType))
+    val idCols = mapping.idKeys.map(key => initialTable.col(key).encodeLongAsCAPSId(key))
     val remainingCols = mapping.allSourceKeys.filterNot(mapping.idKeys.contains).map(initialTable.col)
     val colsToSelect = idCols ++ remainingCols
     CAPSNodeTable(mapping, initialTable.select(colsToSelect: _*))
@@ -222,7 +222,7 @@ object CAPSRelationshipTable {
       case _ => initialTable
     }
 
-    val idCols = mapping.idKeys.map(updatedTable.col).map(_.cast(StringType).cast(BinaryType))
+    val idCols = mapping.idKeys.map(key => initialTable.col(key).encodeLongAsCAPSId(key))
     val remainingCols = mapping.allSourceKeys.filterNot(mapping.idKeys.contains).map(updatedTable.col)
     val colsToSelect = idCols ++ remainingCols
     CAPSRelationshipTable(mapping, updatedTable.select(colsToSelect: _*))

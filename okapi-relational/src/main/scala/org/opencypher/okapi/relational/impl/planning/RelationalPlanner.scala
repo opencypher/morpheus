@@ -359,7 +359,7 @@ object RelationalPlanner {
     }
 
     def prefixVariableId(v: Var, prefix: GraphIdPrefix): RelationalOperator[T] = {
-      val prefixedIds = op.header.idExpressions(v).map(exprToPrefix => PrefixId(exprToPrefix, prefix)() -> exprToPrefix)
+      val prefixedIds = op.header.idExpressions(v).map(exprToPrefix => PrefixId(ToId(exprToPrefix)(), prefix)() -> exprToPrefix)
       op.addInto(prefixedIds.toSeq: _*)
     }
 

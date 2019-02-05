@@ -29,7 +29,7 @@ package org.opencypher.spark.testing.support
 import org.opencypher.okapi.relational.api.graph.RelationalCypherGraph
 import org.opencypher.okapi.relational.api.table.RelationalCypherRecords
 import org.opencypher.okapi.testing.BaseTestSuite
-import org.opencypher.spark.api.value.CAPSEntity.CAPSId
+import org.opencypher.spark.api.io.IDEncoding.CAPSId
 import org.opencypher.spark.impl.table.SparkTable.DataFrameTable
 import org.opencypher.spark.testing.fixture.{CAPSSessionFixture, SparkSessionFixture}
 import org.scalatest.Assertion
@@ -46,7 +46,7 @@ trait GraphMatchingTestSupport {
       case other => throw new UnsupportedOperationException(s"Expected records with 1 entity, got $other")
     }
 
-    records.table.df.select(records.header.column(entityVar)).collect().map(_.getAs[Array[Byte]](0).toSeq).toSet
+    records.table.df.select(records.header.column(entityVar)).collect().map(_.getAs[Seq[_]](0).asInstanceOf[Seq[Byte]]).toSet
   }
 
   private def verify(actual: RelationalCypherGraph[DataFrameTable], expected: RelationalCypherGraph[DataFrameTable]): Assertion = {

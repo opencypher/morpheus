@@ -252,7 +252,7 @@ object ConstructGraphPlanner {
     // The first half of the id space is protected
     val columnPartitionOffset = columnIdPartition.toLong << columnIdShift
 
-    Add(MonotonicallyIncreasingId(), IntegerLit(columnPartitionOffset)(CTInteger))(CTInteger)
+    ToId(Add(MonotonicallyIncreasingId(), IntegerLit(columnPartitionOffset)(CTInteger))(CTInteger))()
   }
 
   /**

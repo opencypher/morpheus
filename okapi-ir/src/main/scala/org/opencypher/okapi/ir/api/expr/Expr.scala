@@ -587,6 +587,13 @@ final case class PrefixId(expr: Expr, prefix: GraphIdPrefix)(val cypherType: Cyp
   override def withCypherType(ct: CypherType): PrefixId = copy()(ct)
 }
 
+final case class ToId(expr: Expr)(val cypherType: CypherType = CTIdentity) extends UnaryFunctionExpr {
+
+  override type This = ToId
+
+  override def withCypherType(ct: CypherType): ToId = copy()(ct)
+}
+
 final case class Labels(expr: Expr)(val cypherType: CypherType = CTWildcard) extends UnaryFunctionExpr {
 
   override type This = Labels

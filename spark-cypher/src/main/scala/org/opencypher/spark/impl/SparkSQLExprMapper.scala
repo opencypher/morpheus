@@ -40,6 +40,8 @@ import org.opencypher.okapi.relational.impl.table.RecordHeader
 import org.opencypher.spark.impl.CAPSFunctions.{array_contains, get_node_labels, get_property_keys, get_rel_type, _}
 import org.opencypher.spark.impl.convert.SparkConversions._
 import org.opencypher.spark.impl.temporal.SparkTemporalHelpers._
+import org.opencypher.spark.impl.temporal.TemporalUDFS
+
 import org.opencypher.spark.impl.temporal.{SparkTemporalHelpers, TemporalUDFS}
 
 
@@ -269,14 +271,30 @@ object SparkSQLExprMapper {
         case Multiply(lhs, rhs) => lhs.asSparkSQLExpr * rhs.asSparkSQLExpr
         case div@Divide(lhs, rhs) => (lhs.asSparkSQLExpr / rhs.asSparkSQLExpr).cast(div.cypherType.getSparkType)
 
-        // Functions
-        case _: MonotonicallyIncreasingId => functions.monotonically_increasing_id()
-        case Exists(e) => e.asSparkSQLExpr.isNotNull
+        // Id functions
+
         case Id(e) => e.asSparkSQLExpr
 
         case PrefixId(idExpr, prefix) =>
-          concat(lit(Array(prefix)).cast(StringType), idExpr.asSparkSQLExpr.cast(StringType)).cast(BinaryType)
+          val convertedId = idExpr.asSparkSQLExpr.cast(StringType)
+          concat(lit(Array(prefix)).cast(StringType), convertedId.cast(StringType)).cast(BinaryType)
 
+        case ToId(e) =>
+          e.cypherType.material match {
+              // TODO: Remove this call; we shouldn't have nodes or rels as concrete types here
+            case _: CTNode | _: CTRelationship =>
+              e.asSparkSQLExpr
+            case CTInteger =>
+              e.asSparkSQLExpr.encodeLongAsCAPSId
+            case CTIdentity =>
+              e.asSparkSQLExpr
+            case other =>
+              throw IllegalArgumentException("a type that may be converted to an ID", other)
+          }
+
+        // Functions
+        case _: MonotonicallyIncreasingId => functions.monotonically_increasing_id()
+        case Exists(e) => e.asSparkSQLExpr.isNotNull
         case Labels(e) =>
           e.cypherType match {
             case _: CTNode | _: CTNodeOrNull =>
@@ -492,5 +510,28 @@ object SparkSQLExprMapper {
     }
   }
 
+  private def resolveTemporalArgument(expr: Expr)
+    (implicit parameters: CypherMap): Option[Either[Map[String, Int], String]] = {
+    expr match {
+      case MapExpression(inner) =>
+        val map = inner.map {
+          case (key, Param(name)) => key -> (parameters(name) match {
+            case CypherString(s) => s.toInt
+            case CypherInteger(i) => i.toInt
+            case other => throw IllegalArgumentException("A map value of type CypherString or CypherInteger", other)
+          })
+          case (key, e) =>
+            throw NotImplementedException(s"Parsing temporal values is currently only supported for Literal-Maps, got $key -> $e")
+        }
+
+        Some(Left(map))
+
+      case Param(name) =>
+        val s = parameters(name) match {
+          case CypherString(str) => str
+          case other => throw IllegalArgumentException(s"Parameter `$name` to be a CypherString", other)
+        }
+
+        Some(Right(s))
 
 }
