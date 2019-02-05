@@ -87,7 +87,7 @@ object GraphDdlParser {
     P(identifier.! ~/ CypherTypeParser.cypherType)
 
   private def properties[_: P]: P[Map[String, CypherType]] =
-    P("(" ~/ property.rep(min = 1, sep = ",").map(_.toMap) ~/ ")")
+    P("(" ~/ property.rep(min = 0, sep = ",").map(_.toMap) ~/ ")")
 
   private def keyDefinition[_: P]: P[(String, Set[String])] =
     P(KEY ~/ identifier.! ~/ "(" ~/ identifier.!.rep(min = 1, sep = ",").map(_.toSet) ~/ ")")
