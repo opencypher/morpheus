@@ -29,7 +29,7 @@ package org.opencypher.graphddl
 import org.opencypher.graphddl.GraphDdlParser._
 import org.opencypher.okapi.api.graph.GraphName
 import org.opencypher.okapi.api.schema.{Schema, SchemaPattern}
-import org.opencypher.okapi.api.types.{CTBoolean, CTInteger, CTString}
+import org.opencypher.okapi.api.types.{CTBoolean, CTFloat, CTInteger, CTString}
 import org.opencypher.okapi.testing.BaseTestSuite
 import org.opencypher.okapi.testing.MatchHelper.equalWithTracing
 
@@ -222,6 +222,55 @@ class GraphDdlAcceptanceTest extends BaseTestSuite {
         Schema.empty
           .withNodePropertyKeys("A")("foo" -> CTString)
           .withNodePropertyKeys("A", "B")("foo" -> CTString, "bar" -> CTString)
+      )
+    }
+
+    it("merges property keys for label combination based on element type hierarchy") {
+      // Given
+      val ddl =
+        s"""|CREATE ELEMENT TYPE A ( foo STRING )
+            |CREATE ELEMENT TYPE B EXTENDS A ( bar STRING )
+            |
+            |CREATE GRAPH TYPE $typeName (
+            |  (A),
+            |  (B)
+            |)
+            |CREATE GRAPH $graphName OF $typeName ()
+            |""".stripMargin
+
+      GraphDdl(ddl).graphs(graphName).graphType should equal(
+        Schema.empty
+          .withNodePropertyKeys("A")("foo" -> CTString)
+          .withNodePropertyKeys("A", "B")("foo" -> CTString, "bar" -> CTString)
+      )
+    }
+
+    it("merges property keys for label combination based on element type with multi-inheritance") {
+      // Given
+      val ddl =
+        s"""|CREATE ELEMENT TYPE A ( a STRING )
+            |CREATE ELEMENT TYPE B EXTENDS A ( b STRING )
+            |CREATE ELEMENT TYPE C EXTENDS A ( c STRING )
+            |
+            |CREATE GRAPH TYPE $typeName (
+            |  D EXTENDS B, C ( d INTEGER ),
+            |  E ( e FLOAT ),
+            |  (A),
+            |  (B),
+            |  (C),
+            |  (D),
+            |  (A, E)
+            |)
+            |CREATE GRAPH $graphName OF $typeName ()
+            |""".stripMargin
+
+      GraphDdl(ddl).graphs(graphName).graphType should equal(
+        Schema.empty
+          .withNodePropertyKeys("A")("a" -> CTString)
+          .withNodePropertyKeys("A", "B")("a" -> CTString, "b" -> CTString)
+          .withNodePropertyKeys("A", "C")("a" -> CTString, "c" -> CTString)
+          .withNodePropertyKeys("A", "B", "C", "D")("a" -> CTString, "b" -> CTString, "c" -> CTString, "d" -> CTInteger)
+          .withNodePropertyKeys("A", "E")("a" -> CTString, "e" -> CTFloat)
       )
     }
 
