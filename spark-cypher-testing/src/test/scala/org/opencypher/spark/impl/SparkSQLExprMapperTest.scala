@@ -35,8 +35,10 @@ import org.opencypher.okapi.api.value.CypherValue.CypherMap
 import org.opencypher.okapi.ir.api.expr._
 import org.opencypher.okapi.relational.impl.table.RecordHeader
 import org.opencypher.okapi.testing.BaseTestSuite
+import org.opencypher.spark.impl.ExprEval._
 import org.opencypher.spark.impl.SparkSQLExprMapper._
 import org.opencypher.spark.testing.fixture.SparkSessionFixture
+import org.opencypher.spark.api.io.IDEncoding._
 
 import scala.language.implicitConversions
 
@@ -53,20 +55,14 @@ class SparkSQLExprMapperTest extends BaseTestSuite with SparkSessionFixture {
     )
   }
 
-//  it("converts replaceTag expressions") {
-//    IntegerLit(0)(CTInteger)
-//      .replaceTag(0, 1)
-//      .getTag
-//      .eval should equal(1)
-//  }
-//
-//  it("converts replaceTags expression") {
-//    IntegerLit(0)(CTInteger)
-//      .setTag(1)
-//      .replaceTags(Map(0 -> 1, 1 -> 2))
-//      .getTag
-//      .eval should equal(2)
-//  }
+  it("converts prefix id expressions") {
+    val id = 257L
+    val encodedId = id.encodeAsCAPSId
+    val idString = new String(encodedId.map(_.toChar).toArray)
+    val prefix = 2.toByte
+    val expr = PrefixId(StringLit(idString)(), prefix)()
+    expr.eval.asInstanceOf[Array[_]].toList should equal(prefix :: id.encodeAsCAPSId.toList)
+  }
 
   private def convert(expr: Expr, header: RecordHeader = header): Column = {
     expr.asSparkSQLExpr(header, df, CypherMap.empty)

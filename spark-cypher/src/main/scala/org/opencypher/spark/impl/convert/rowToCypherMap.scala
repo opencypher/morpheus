@@ -35,7 +35,7 @@ import org.opencypher.okapi.api.value._
 import org.opencypher.okapi.impl.exception.UnsupportedOperationException
 import org.opencypher.okapi.ir.api.expr.{Expr, ListSegment, Var}
 import org.opencypher.okapi.relational.impl.table.RecordHeader
-import org.opencypher.spark.api.value.CAPSEntity.CAPSId
+import org.opencypher.spark.api.io.IDEncoding.CAPSId
 import org.opencypher.spark.api.value.{CAPSNode, CAPSRelationship}
 import org.opencypher.spark.impl.temporal.SparkTemporalHelpers._
 
