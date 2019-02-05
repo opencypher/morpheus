@@ -184,7 +184,7 @@ subprojects {
               existing : file("$projectDir/NOTICE.txt")],
             ].each {
                 if (it.generated.text != it.existing.text) {
-                    throw new GradleException("Generated file differs from the existing file.\n Generated: $file.generated \n Existing: $file.existing")
+                    throw new GradleException("Generated file differs from the existing file.\n Generated: $it.generated \n Existing: $it.existing")
                 }
             }
         }
