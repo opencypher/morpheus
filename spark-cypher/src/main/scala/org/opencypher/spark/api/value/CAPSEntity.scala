@@ -27,19 +27,7 @@
 package org.opencypher.spark.api.value
 
 import org.opencypher.okapi.api.value.CypherValue._
-import org.opencypher.spark.api.value.CAPSEntity._
-
-object CAPSEntity {
-
-  type CAPSId = Seq[Byte]
-
-
-  // TODO: Move to tests
-  implicit class LongToByteArray(val l: Long) extends AnyVal {
-    def capsId: CAPSId = l.toString.getBytes
-  }
-
-}
+import org.opencypher.spark.api.io.IDEncoding._
 
 // TODO: Move to tests
 object CAPSNode {
@@ -48,7 +36,7 @@ object CAPSNode {
     id: Long,
     labels: Set[String]
   ): CAPSNode = {
-    CAPSNode(id.capsId, labels)
+    CAPSNode(id.encodeAsCAPSId, labels)
   }
 
   def apply(
@@ -56,7 +44,7 @@ object CAPSNode {
     labels: Set[String],
     properties: CypherMap
   ): CAPSNode = {
-    CAPSNode(id.capsId, labels, properties)
+    CAPSNode(id.encodeAsCAPSId, labels, properties)
   }
 
 }
@@ -91,7 +79,7 @@ object CAPSRelationship {
     endId: Long,
     relType: String
   ): CAPSRelationship = {
-    CAPSRelationship(id.capsId, startId.capsId, endId.capsId, relType)
+    CAPSRelationship(id.encodeAsCAPSId, startId.encodeAsCAPSId, endId.encodeAsCAPSId, relType)
   }
 
   def apply(
@@ -101,7 +89,7 @@ object CAPSRelationship {
     relType: String,
     properties: CypherMap
   ): CAPSRelationship = {
-    CAPSRelationship(id.capsId, startId.capsId, endId.capsId, relType, properties)
+    CAPSRelationship(id.encodeAsCAPSId, startId.encodeAsCAPSId, endId.encodeAsCAPSId, relType, properties)
   }
 
 }
