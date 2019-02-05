@@ -191,25 +191,37 @@ object GraphDdl {
         elementTypes = local.elementTypes,
 
         nodeTypes = Set(
-          parts.nodeTypes.map(_.elementTypes),
-          parts.relTypes.map(_.sourceNodeType.elementTypes),
-          parts.relTypes.map(_.targetNodeType.elementTypes)
+          parts.nodeTypes.map(local.resolveNodeLabels),
+          parts.relTypes.map(relType => local.resolveNodeLabels(relType.sourceNodeType)),
+          parts.relTypes.map(relType => local.resolveNodeLabels(relType.targetNodeType))
         ).flatten.map(labels => labels -> tryWithNode(labels)(
           mergeProperties(labels.flatMap(local.resolveElementTypes))
         )).toMap,
 
         edgeTypes = Set(
-          parts.relTypes.map(_.elementType)
+          parts.relTypes.map(local.resolveRelType)
         ).flatten.map(label => label -> tryWithRel(label)(
           mergeProperties(local.resolveElementTypes(label))
         )).toMap,
 
         patterns = parts.relTypes.map(relType => SchemaPattern(
-          relType.sourceNodeType.elementTypes,
-          relType.elementType,
-          relType.targetNodeType.elementTypes
+          local.resolveNodeLabels(relType.sourceNodeType),
+          local.resolveRelType(relType),
+          local.resolveNodeLabels(relType.targetNodeType)
         )).toSet
       )
+    }
+
+    private def resolveNodeLabels(nodeType: NodeTypeDefinition): Set[String] =
+      tryWithNode(nodeType.elementTypes)(nodeType.elementTypes.flatMap(resolveElementTypes).map(_.name))
+
+    private def resolveRelType(relType: RelationshipTypeDefinition): String = {
+      val resolved = tryWithRel(relType.elementType)(resolveElementTypes(relType.elementType))
+
+      if (resolved.size > 1) {
+        illegalInheritance("Inheritance not allowed for relationship types ", relType.elementType)
+      }
+      resolved.head.name
     }
 
     private def mergeProperties(elementTypes: Set[ElementTypeDefinition]): PropertyKeys = {
@@ -469,7 +481,7 @@ case class Join(
 )
 
 object NodeType {
-  def apply(elementTypes: String*): NodeType = NodeType(elementTypes.toSet)
+  def apply(elementTypeLabels: String*): NodeType = NodeType(elementTypeLabels.toSet)
 }
 
 case class NodeType(elementTypes: Set[String]) {
