@@ -517,3 +517,19 @@ final case class ConstructGraph[T <: Table[T] : TypeTag](
   }
 }
 
+// N-ary
+
+final case class GraphUnionAll[T <: Table[T] : TypeTag](
+  inputs: NonEmptyList[RelationalOperator[T]],
+  qgn: QualifiedGraphName
+) extends RelationalOperator[T] {
+
+  override lazy val header: RecordHeader = RecordHeader.empty
+
+  override lazy val _table: T = session.records.empty().table
+
+  override lazy val graphName: QualifiedGraphName = qgn
+
+  override lazy val graph: RelationalCypherGraph[T] = session.graphs.unionGraph(inputs.map(_.graph).toList: _*)
+
+}

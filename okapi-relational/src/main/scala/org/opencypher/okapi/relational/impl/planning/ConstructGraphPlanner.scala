@@ -26,11 +26,12 @@
  */
 package org.opencypher.okapi.relational.impl.planning
 
-import cats.data.NonEmptyList
 import org.opencypher.okapi.api.graph.QualifiedGraphName
 import org.opencypher.okapi.api.schema.Schema
 import org.opencypher.okapi.api.types._
 import org.opencypher.okapi.impl.exception.{IllegalArgumentException, UnsupportedOperationException}
+import org.opencypher.okapi.impl.util.ScalaUtils._
+import org.opencypher.okapi.ir.api.expr.PrefixId.GraphIdPrefix
 import org.opencypher.okapi.ir.api.expr._
 import org.opencypher.okapi.ir.api.set.{SetLabelItem, SetPropertyItem}
 import org.opencypher.okapi.ir.api.{Label, PropertyKey, RelType, expr}
@@ -46,20 +47,24 @@ import org.opencypher.okapi.relational.impl.table.RecordHeader
 import org.opencypher.okapi.relational.impl.{operators => relational}
 
 import scala.reflect.runtime.universe.TypeTag
-import org.opencypher.okapi.impl.util.ScalaUtils._
-import org.opencypher.okapi.ir.api.expr.PrefixId.GraphIdPrefix
 
 object ConstructGraphPlanner {
 
   def planConstructGraph[T <: Table[T] : TypeTag](inputTablePlan: RelationalOperator[T], construct: LogicalPatternGraph)
     (implicit context: RelationalRuntimeContext[T]): RelationalOperator[T] = {
 
+    val areNodesCreatedOrCloned: Boolean = construct.newEntities.nonEmpty || construct.clones.nonEmpty
+
     val unionPrefixStrategy: Map[QualifiedGraphName, GraphIdPrefix] = {
-      val graphQgns = construct.qualifiedGraphName :: construct.clones.values.map(_.cypherType.graph.get).toList ++ construct.onGraphs
+      val graphQgns = if (areNodesCreatedOrCloned) {
+        construct.qualifiedGraphName :: construct.clones.values.map(_.cypherType.graph.get).toList ++ construct.onGraphs
+      } else {
+        construct.onGraphs
+      }
       graphQgns.zipWithIndex.map { case (qgn, i) => qgn -> i.toByte }.toMap
     }
 
-    val onGraphs = construct.onGraphs.map { qgn =>
+    val onGraphs: List[RelationalCypherGraph[T]] = construct.onGraphs.map { qgn =>
       // if we aren't mixing entities from different graphs we need no prefixing
       if (unionPrefixStrategy.size < 2) {
         relational.Start[T](qgn).graph
@@ -68,11 +73,11 @@ object ConstructGraphPlanner {
       }
     }
 
-    val constructTable = initConstructTable(inputTablePlan, unionPrefixStrategy, construct)
-    val scanGraph = extractScanGraph(construct, constructTable)
+    val constructTable: RelationalOperator[T] = initConstructTable(inputTablePlan, unionPrefixStrategy, construct)
+    val scanGraph: RelationalCypherGraph[T] = extractScanGraph(construct, constructTable)
 
     val graph = context.session.graphs.unionGraph(scanGraph :: onGraphs: _*)
-    val constructOp = ConstructGraph(inputTablePlan, graph, construct, context)
+    val constructOp = ConstructGraph(constructTable, graph, construct, context)
 
     context.queryLocalCatalog += (construct.qualifiedGraphName -> graph)
 
@@ -84,7 +89,7 @@ object ConstructGraphPlanner {
     unionPrefixStrategy: Map[QualifiedGraphName, GraphIdPrefix],
     construct: LogicalPatternGraph
   ): RelationalOperator[T] = {
-    val LogicalPatternGraph(_, clonedVarsToInputVars, createdEntities, sets, _, name) = construct
+    val LogicalPatternGraph(_, clonedVarsToInputVars, createdEntities, sets, _, _) = construct
 
     // Apply aliases in CLONE to input table in order to create the base table, on which CONSTRUCT happens
     val aliasClones = clonedVarsToInputVars
