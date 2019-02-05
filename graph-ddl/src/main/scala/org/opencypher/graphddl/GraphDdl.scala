@@ -51,18 +51,22 @@ object GraphDdl {
 
     val graphTypes = ddlParts.graphTypes
       .keyBy(_.name)
-      .mapValues { graphType => tryWithGraphType(graphType.name) {
-        global.push(graphType.statements)
-      }}
+      .mapValues { graphType =>
+        tryWithGraphType(graphType.name) {
+          global.push(graphType.statements)
+        }
+      }
       .view.force
 
     val graphs = ddlParts.graphs
-      .map { graph => tryWithGraph(graph.definition.name) {
-        val graphType = graph.definition.maybeGraphTypeName
-          .map(name => graphTypes.getOrFail(name, "Unresolved graph type"))
-          .getOrElse(global)
-        toGraph(graphType, graph)
-      }}
+      .map { graph =>
+        tryWithGraph(graph.definition.name) {
+          val graphType = graph.definition.maybeGraphTypeName
+            .map(name => graphTypes.getOrFail(name, "Unresolved graph type"))
+            .getOrElse(global)
+          toGraph(graphType, graph)
+        }
+      }
       .keyBy(_.name)
 
     GraphDdl(
@@ -76,10 +80,10 @@ object GraphDdl {
 
     def apply(statements: List[DdlStatement]): DdlParts = {
       val result = statements.foldLeft(DdlParts.empty) {
-        case (parts, s: SetSchemaDefinition)   => parts.copy(maybeSetSchema = Some(s))
+        case (parts, s: SetSchemaDefinition) => parts.copy(maybeSetSchema = Some(s))
         case (parts, s: ElementTypeDefinition) => parts.copy(elementTypes = parts.elementTypes :+ s)
-        case (parts, s: GraphTypeDefinition)   => parts.copy(graphTypes = parts.graphTypes :+ s)
-        case (parts, s: GraphDefinition)       => parts.copy(graphs = parts.graphs :+ GraphDefinitionWithContext(s, parts.maybeSetSchema))
+        case (parts, s: GraphTypeDefinition) => parts.copy(graphTypes = parts.graphTypes :+ s)
+        case (parts, s: GraphDefinition) => parts.copy(graphs = parts.graphs :+ GraphDefinitionWithContext(s, parts.maybeSetSchema))
       }
       result.elementTypes.validateDistinctBy(_.name, "Duplicate element type")
       result.graphTypes.validateDistinctBy(_.name, "Duplicate graph type")
@@ -101,8 +105,8 @@ object GraphDdl {
 
     def apply(statements: List[GraphTypeStatement]): GraphTypeParts = {
       val result = statements.foldLeft(GraphTypeParts.empty) {
-        case (parts, s: ElementTypeDefinition)      => parts.copy(elementTypes = parts.elementTypes :+ s)
-        case (parts, s: NodeTypeDefinition)         => parts.copy(nodeTypes = parts.nodeTypes :+ s)
+        case (parts, s: ElementTypeDefinition) => parts.copy(elementTypes = parts.elementTypes :+ s)
+        case (parts, s: NodeTypeDefinition) => parts.copy(nodeTypes = parts.nodeTypes :+ s)
         case (parts, s: RelationshipTypeDefinition) => parts.copy(relTypes = parts.relTypes :+ s)
       }
       result.elementTypes.validateDistinctBy(_.name, "Duplicate element type")
@@ -124,8 +128,8 @@ object GraphDdl {
 
     def apply(mappings: List[GraphStatement]): GraphParts =
       mappings.foldLeft(GraphParts.empty) {
-        case (parts, s: GraphTypeStatement)            => parts.copy(graphTypeStatements = parts.graphTypeStatements :+ s)
-        case (parts, s: NodeMappingDefinition)         => parts.copy(nodeMappings = parts.nodeMappings :+ s)
+        case (parts, s: GraphTypeStatement) => parts.copy(graphTypeStatements = parts.graphTypeStatements :+ s)
+        case (parts, s: NodeMappingDefinition) => parts.copy(nodeMappings = parts.nodeMappings :+ s)
         case (parts, s: RelationshipMappingDefinition) => parts.copy(relMappings = parts.relMappings :+ s)
       }
   }
@@ -239,14 +243,34 @@ object GraphDdl {
         .foldLeft(PropertyKeys.empty) { case (props, (name, cypherType)) =>
           props.get(name).filter(_ != cypherType) match {
             case Some(t) => incompatibleTypes(name, cypherType, t)
-            case None    => props.updated(name, cypherType)
+            case None => props.updated(name, cypherType)
           }
         }
     }
 
     private def resolveElementTypes(name: String): Set[ElementTypeDefinition] = {
-      val elementType = allElementTypes.getOrElse(name, unresolved(s"Unresolved element type", name))
-      elementType.parents.flatMap(resolveElementTypes) + elementType
+      val elementType = resolveElementType(name)
+      detectCircularDependency(elementType)
+      resolveParents(elementType)
+    }
+
+    private def resolveElementType(name: String): ElementTypeDefinition =
+      allElementTypes.getOrElse(name, unresolved(s"Unresolved element type", name))
+
+    private def resolveParents(node: ElementTypeDefinition): Set[ElementTypeDefinition] =
+      node.parents.map(resolveElementType).flatMap(resolveParents) + node
+
+    private def detectCircularDependency(node: ElementTypeDefinition): Unit = {
+      def traverse(node: ElementTypeDefinition, path: List[ElementTypeDefinition]): Unit = {
+        node.parents.foreach { p =>
+          val parentElementType = allElementTypes.getOrElse(p, unresolved(s"Unresolved element type", p))
+          if (path.contains(parentElementType)) {
+            illegalInheritance("Circular dependency detected", (path.map(_.name) :+ p).mkString(" -> "))
+          }
+          traverse(parentElementType, path :+ parentElementType)
+        }
+      }
+      traverse(node, List(node))
     }
   }
 
@@ -402,7 +426,7 @@ object GraphDdl {
     def validateDistinctBy[K](key: T => K, msg: String): C[T] = {
       elems.groupBy(key).foreach {
         case (k, values) if values.size > 1 => duplicate(msg, k)
-        case _                              =>
+        case _ =>
       }
       elems
     }
@@ -503,6 +527,7 @@ case class RelationshipType(startNodeType: NodeType, elementType: String, endNod
 
 trait ElementViewKey {
   def elementType: Set[String]
+
   def viewId: ViewId
 }
 

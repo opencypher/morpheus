@@ -588,5 +588,20 @@ class GraphDdlTest extends FunSpec with Matchers {
         """.stripMargin)
       e.getFullMessage should (include("fooGraph") and include("Employee") and include("MissingPerson"))
     }
+
+    it("fails on cyclic element type inheritance") {
+      val e = the[GraphDdlException] thrownBy GraphDdl(
+        """
+          |SET SCHEMA a.b
+          |CREATE GRAPH fooGraph (
+          |  A EXTENDS B ( a STRING ),
+          |  B EXTENDS A ( b STRING ),
+          |
+          |  (A) FROM a ( A_a AS a, B_b AS b ),
+          |  (B) FROM b ( A_a AS a, B_b AS b )
+          |)
+        """.stripMargin)
+      e.getFullMessage should (include("Circular dependency") and include("A -> B -> A"))
+    }
   }
 }
