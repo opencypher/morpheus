@@ -39,7 +39,7 @@ import org.opencypher.okapi.ir.impl.parse.functions.FunctionLookup
 import org.opencypher.okapi.ir.impl.parse.rewriter.ExistsPattern
 import org.opencypher.okapi.ir.impl.typer.SignatureConverter._
 import org.opencypher.v9_0.expressions._
-import org.opencypher.v9_0.expressions.functions.{Abs, Acos, Asin, Atan, Atan2, Ceil, Coalesce, Collect, Cos, Cot, Degrees, Exists, Exp, Floor, Haversin, Keys, Log, Log10, Max, Min, Properties, Radians, Round, Sign, Sin, Sqrt, Tan, ToBoolean, ToString, UnresolvedFunction}
+import org.opencypher.v9_0.expressions.functions.{Abs, Acos, Asin, Atan, Atan2, Ceil, Coalesce, Collect, Cos, Cot, Degrees, Exists, Exp, Floor, Haversin, Id, Keys, Log, Log10, Max, Min, Properties, Radians, Round, Sign, Sin, Sqrt, Tan, ToBoolean, ToString, UnresolvedFunction}
 
 final case class SchemaTyper(schema: Schema) {
 
@@ -317,6 +317,22 @@ object SchemaTyper {
             returnType <- inner.material match {
               case _: CTMap | _: CTNode | _: CTRelationship =>
                 val returnType = if (inner.isNullable) CTList(CTString).nullable else CTList(CTString)
+                recordAndUpdate(expr -> returnType)
+              case _ => error(InvalidArgument(expr, first))
+            }
+          } yield returnType
+        case seq =>
+          error(WrongNumberOfArguments(expr, 1, seq.size))
+      }
+
+    case expr: FunctionInvocation if expr.function == Id =>
+      expr.arguments match {
+        case Seq(first) =>
+          for {
+            inner <- process[R](first)
+            returnType <- inner.material match {
+              case _: CTNode | _: CTRelationship =>
+                val returnType = if (inner.isNullable) CTIdentity.nullable else CTIdentity
                 recordAndUpdate(expr -> returnType)
               case _ => error(InvalidArgument(expr, first))
             }
