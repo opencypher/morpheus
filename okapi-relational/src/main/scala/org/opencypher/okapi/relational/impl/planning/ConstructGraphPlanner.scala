@@ -57,29 +57,45 @@ object ConstructGraphPlanner {
 
     val unionPrefixStrategy: Map[QualifiedGraphName, GraphIdPrefix] = {
       val graphQgns = if (areNodesCreatedOrCloned) {
-        construct.qualifiedGraphName :: construct.clones.values.map(_.cypherType.graph.get).toList ++ construct.onGraphs
+        (construct.qualifiedGraphName :: construct.clones.values.map(_.cypherType.graph.get).toList ++ construct.onGraphs).distinct
       } else {
         construct.onGraphs
       }
       graphQgns.zipWithIndex.map { case (qgn, i) => qgn -> i.toByte }.toMap
     }
 
+    // If we aren't mixing entities from different graphs we need no prefixing
+    val needToSetPrefixes: Boolean = unionPrefixStrategy.size > 1
+
     val onGraphs: List[RelationalCypherGraph[T]] = construct.onGraphs.map { qgn =>
-      // if we aren't mixing entities from different graphs we need no prefixing
-      if (unionPrefixStrategy.size < 2) {
-        relational.Start[T](qgn).graph
-      } else {
+      if (needToSetPrefixes) {
         relational.PrefixGraph(relational.Start[T](qgn), unionPrefixStrategy(qgn)).graph
+      } else {
+        relational.Start[T](qgn).graph
+
       }
     }
 
-    val constructTable: RelationalOperator[T] = initConstructTable(inputTablePlan, unionPrefixStrategy, construct)
-    val scanGraph: RelationalCypherGraph[T] = extractScanGraph(construct, constructTable)
+    val constructTable: RelationalOperator[T] = initConstructTable(inputTablePlan, if (needToSetPrefixes) unionPrefixStrategy else Map.empty, construct)
 
-    val graph = context.session.graphs.unionGraph(scanGraph :: onGraphs: _*)
-    val constructOp = ConstructGraph(constructTable, graph, construct, context)
+    val allGraphs: List[RelationalCypherGraph[T]] = if (areNodesCreatedOrCloned) {
+      val scanGraph: RelationalCypherGraph[T] = extractScanGraph(construct, constructTable)
+      scanGraph :: onGraphs
+    } else {
+      onGraphs
+    }
 
-    context.queryLocalCatalog += (construct.qualifiedGraphName -> graph)
+    val constructedGraph = allGraphs match {
+      case Nil => context.session.graphs.empty
+      case head :: Nil => head
+      case several => context.session.graphs.unionGraph(several: _*)
+    }
+
+    val constructOp = ConstructGraph(constructTable, constructedGraph, construct, context)
+
+    constructOp.show()
+
+    context.queryLocalCatalog += (construct.qualifiedGraphName -> constructOp.graph)
 
     constructOp
   }
@@ -103,7 +119,11 @@ object ConstructGraphPlanner {
     }
 
     val prefixedBaseTableOp = clonedVarsToInputVars.foldLeft(aliasOp) {
-      case (op, (alias, original)) => op.prefixVariableId(alias, unionPrefixStrategy(original.cypherType.graph.get))
+      case (op, (alias, original)) =>
+        unionPrefixStrategy.get(original.cypherType.graph.get) match {
+          case Some(prefix) => op.prefixVariableId(alias, prefix)
+          case None => op
+        }
     }
 
     // Construct CREATEd entities
@@ -111,8 +131,8 @@ object ConstructGraphPlanner {
       if (createdEntities.isEmpty) {
         prefixedBaseTableOp
       } else {
-        val createdEntityPrefix = unionPrefixStrategy(construct.qualifiedGraphName)
-        val entitiesOp = planConstructEntities(prefixedBaseTableOp, createdEntities, createdEntityPrefix)
+        val maybeCreatedEntityPrefix = unionPrefixStrategy.get(construct.qualifiedGraphName)
+        val entitiesOp = planConstructEntities(prefixedBaseTableOp, createdEntities, maybeCreatedEntityPrefix)
 
         val setValueForExprTuples = sets.flatMap {
           case SetPropertyItem(propertyKey, v, valueExpr) =>
@@ -140,7 +160,7 @@ object ConstructGraphPlanner {
   def planConstructEntities[T <: Table[T] : TypeTag](
     inOp: RelationalOperator[T],
     toCreate: Set[ConstructedEntity],
-    createdEntityIdPrefix: GraphIdPrefix
+    maybeCreatedEntityIdPrefix: Option[GraphIdPrefix]
   ): RelationalOperator[T] = {
 
     // Construct nodes before relationships, as relationships might depend on nodes
@@ -153,7 +173,7 @@ object ConstructGraphPlanner {
 
     val (_, nodesToCreate) = nodes.foldLeft(0 -> Seq.empty[(Expr, Expr)]) {
       case ((nextColumnPartitionId, nodeProjections), nextNodeToConstruct) =>
-        (nextColumnPartitionId + 1) -> (nodeProjections ++ computeNodeProjections(inOp, createdEntityIdPrefix, nextColumnPartitionId, nodes.size, nextNodeToConstruct))
+        (nextColumnPartitionId + 1) -> (nodeProjections ++ computeNodeProjections(inOp, maybeCreatedEntityIdPrefix, nextColumnPartitionId, nodes.size, nextNodeToConstruct))
     }
 
     val createdNodesOp = inOp.addInto(nodesToCreate.map { case (into, value) => value -> into }: _*)
@@ -161,7 +181,7 @@ object ConstructGraphPlanner {
     val (_, relsToCreate) = rels.foldLeft(0 -> Seq.empty[(Expr, Expr)]) {
       case ((nextColumnPartitionId, relProjections), nextRelToConstruct) =>
         (nextColumnPartitionId + 1) ->
-          (relProjections ++ computeRelationshipProjections(createdNodesOp, createdEntityIdPrefix, nextColumnPartitionId, rels.size, nextRelToConstruct))
+          (relProjections ++ computeRelationshipProjections(createdNodesOp, maybeCreatedEntityIdPrefix, nextColumnPartitionId, rels.size, nextRelToConstruct))
     }
 
     createdNodesOp.addInto(relsToCreate.map { case (into, value) => value -> into }: _*)
@@ -169,13 +189,19 @@ object ConstructGraphPlanner {
 
   def computeNodeProjections[T <: Table[T]](
     inOp: RelationalOperator[T],
-    createdEntityIdPrefix: GraphIdPrefix,
+    maybeCreatedEntityIdPrefix: Option[GraphIdPrefix],
     columnIdPartition: Int,
     numberOfColumnPartitions: Int,
     node: ConstructedNode
   ): Map[Expr, Expr] = {
 
-    val idTuple = node.v -> PrefixId(generateId(columnIdPartition, numberOfColumnPartitions), createdEntityIdPrefix)()
+    val idTuple = node.v -> {
+      val generatedId = generateId(columnIdPartition, numberOfColumnPartitions)
+      maybeCreatedEntityIdPrefix match {
+        case Some(prefix) => PrefixId(generatedId, prefix)()
+        case None => generatedId
+      }
+    }
 
     val copiedLabelTuples = node.baseEntity match {
       case Some(origNode) => copyExpressions(inOp, node.v)(_.labelsFor(origNode))
@@ -199,7 +225,7 @@ object ConstructGraphPlanner {
 
   def computeRelationshipProjections[T <: Table[T]](
     inOp: RelationalOperator[T],
-    createdEntityIdPrefix: GraphIdPrefix,
+    maybeCreatedEntityIdPrefix: Option[GraphIdPrefix],
     columnIdPartition: Int,
     numberOfColumnPartitions: Int,
     toConstruct: ConstructedRelationship
@@ -207,7 +233,13 @@ object ConstructGraphPlanner {
     val ConstructedRelationship(rel, source, target, typOpt, baseRelOpt) = toConstruct
 
     // id needs to be generated
-    val idTuple = rel -> PrefixId(generateId(columnIdPartition, numberOfColumnPartitions), createdEntityIdPrefix)()
+    val idTuple = rel -> {
+      val generatedId = generateId(columnIdPartition, numberOfColumnPartitions)
+      maybeCreatedEntityIdPrefix match {
+        case Some(prefix) => PrefixId(generatedId, prefix)()
+        case None => generatedId
+      }
+    }
 
     // source and target are present: just copy
     val sourceTuple = {
