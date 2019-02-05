@@ -26,27 +26,20 @@
  */
 package org.opencypher.okapi.relational.impl.graph
 
-import org.opencypher.okapi.api.schema.LabelPropertyMap._
-import org.opencypher.okapi.api.schema.RelTypePropertyMap._
 import org.opencypher.okapi.api.schema.Schema
-import org.opencypher.okapi.api.types.{CTNode, CTRelationship, CypherType}
-import org.opencypher.okapi.impl.exception.UnsupportedOperationException
+import org.opencypher.okapi.api.types.CypherType
 import org.opencypher.okapi.ir.api.expr.PrefixId.GraphIdPrefix
 import org.opencypher.okapi.ir.api.expr.Var
 import org.opencypher.okapi.relational.api.graph.{RelationalCypherGraph, RelationalCypherSession}
 import org.opencypher.okapi.relational.api.planning.RelationalRuntimeContext
-import org.opencypher.okapi.relational.api.schema.RelationalSchema._
 import org.opencypher.okapi.relational.api.table.{RelationalCypherRecords, Table}
-import org.opencypher.okapi.relational.impl.operators.{RelationalOperator, Start, TabularUnionAll}
+import org.opencypher.okapi.relational.impl.operators.RelationalOperator
 import org.opencypher.okapi.relational.impl.planning.RelationalPlanner._
 
 import scala.reflect.runtime.universe.TypeTag
 
-// TODO: This should be a planned tree of physical operators instead of a graph
-final case class UnionGraph[T <: Table[T] : TypeTag](graphs: List[RelationalCypherGraph[T]])
+final case class PrefixedGraph[T <: Table[T] : TypeTag](graph: RelationalCypherGraph[T], prefix: GraphIdPrefix)
   (implicit context: RelationalRuntimeContext[T]) extends RelationalCypherGraph[T] {
-
-  require(graphs.nonEmpty, "Union requires at least one graph")
 
   override implicit val session: RelationalCypherSession[T] = context.session
 
@@ -54,48 +47,17 @@ final case class UnionGraph[T <: Table[T] : TypeTag](graphs: List[RelationalCyph
 
   override type Session = RelationalCypherSession[T]
 
-  override def tables: Seq[T] = graphs.flatMap(_.tables)
+  override def tables: Seq[T] = graph.tables
 
-  override lazy val schema: Schema = graphs.map(g => g.schema).foldLeft(Schema.empty)(_ ++ _)
+  override lazy val schema: Schema = graph.schema
 
-  override def toString = s"UnionGraph(graphs=[${graphs.mkString(",")}])"
+  override def toString = s"PrefixedGraph(graph=$graph)"
 
   override def scanOperator(
     entityType: CypherType,
     exactLabelMatch: Boolean
   ): RelationalOperator[T] = {
     val targetEntity = Var("")(entityType)
-    val targetEntityHeader = schema.headerForEntity(targetEntity, exactLabelMatch)
-    val alignedScans = graphs
-      .flatMap { graph =>
-        val isEmptyScan = entityType match {
-          case CTNode(knownLabels, _) if knownLabels.isEmpty =>
-            graph.schema.allCombinations.isEmpty
-          case CTNode(knownLabels, _) =>
-            graph.schema.labelPropertyMap.filterForLabels(knownLabels).isEmpty
-          case CTRelationship(types, _) if types.isEmpty =>
-            graph.schema.relationshipTypes.isEmpty
-          case CTRelationship(types, _) =>
-            graph.schema.relTypePropertyMap.filterForRelTypes(types).isEmpty
-          case other => throw UnsupportedOperationException(s"Cannot scan on $other")
-        }
-
-        if (isEmptyScan) {
-          None
-        }
-        else {
-          val scanOp = graph.scanOperator(entityType, exactLabelMatch)
-          val inputEntity = scanOp.singleEntity
-          Some(scanOp.alignWith(inputEntity, targetEntity, targetEntityHeader))
-        }
-      }
-
-    alignedScans match {
-      case Nil =>
-        Start.fromEmptyGraph(session.records.empty(targetEntityHeader))
-      case _ =>
-        alignedScans.reduce(TabularUnionAll(_, _))
-    }
-
+    graph.scanOperator(entityType, exactLabelMatch).prefixVariableId(targetEntity, prefix)
   }
 }

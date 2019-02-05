@@ -39,6 +39,7 @@ import org.opencypher.spark.testing.CAPSTestSuite
 import org.opencypher.spark.testing.fixture.{GraphConstructionFixture, RecordsVerificationFixture, TeamDataFixture}
 
 import scala.reflect.runtime.universe
+import org.opencypher.spark.api.io.IDEncoding._
 
 abstract class CAPSGraphTest extends CAPSTestSuite
   with GraphConstructionFixture
@@ -64,7 +65,7 @@ abstract class CAPSGraphTest extends CAPSTestSuite
       nHasPropertyLuckyNumber,
       nHasPropertyName
     )
-    verify(nodes, cols, Bag(Row(4L, true, 8L, "Donald")))
+    verify(nodes, cols, Bag(Row(4L.encodeAsCAPSId, true, 8L, "Donald")))
   }
 
   it("should return only nodes with that exact label (multiple labels)") {
@@ -78,9 +79,9 @@ abstract class CAPSGraphTest extends CAPSTestSuite
       nHasPropertyName
     )
     val data = Bag(
-      Row(2L, true, true, 1337L, "Martin"),
-      Row(3L, true, true, 8L, "Max"),
-      Row(0L, true, true, 42L, "Stefan")
+      Row(2L.encodeAsCAPSId, true, true, 1337L, "Martin"),
+      Row(3L.encodeAsCAPSId, true, true, 8L, "Max"),
+      Row(0L.encodeAsCAPSId, true, true, 42L, "Stefan")
     )
     verify(nodes, cols, data)
   }

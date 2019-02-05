@@ -630,7 +630,7 @@ class MultipleGraphTests extends CAPSTestSuite with ScanGraphInit {
       case Some(relPlan) =>
         val switchOp = relPlan.collectFirst { case op: SwitchContext[_] => op }.get
         val containsUnionGraph = switchOp.context.queryLocalCatalog.head._2 match {
-          case g: UnionGraph[_] => g.graphsWithPrefix.unzip._1.collectFirst { case op: UnionGraph[_] => op }.isDefined
+          case g: UnionGraph[_] => g.graphs.collectFirst { case op: UnionGraph[_] => op }.isDefined
           case _ => false
         }
         withClue("CONSTRUCT plans union on a single input graph") {

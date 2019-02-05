@@ -178,6 +178,20 @@ final case class Start[T <: Table[T] : TypeTag](
 
 // Unary
 
+final case class PrefixGraph[T <: Table[T] : TypeTag](
+  in: RelationalOperator[T],
+  prefix: GraphIdPrefix
+) extends RelationalOperator[T] {
+
+  override lazy val header: RecordHeader = RecordHeader.empty
+
+  override lazy val _table: T = session.records.empty().table
+
+  override lazy val graphName: QualifiedGraphName = QualifiedGraphName(s"${in.graphName}_tempPrefixed_$prefix")
+
+  override lazy val graph: RelationalCypherGraph[T] = session.graphs.prefixedGraph(in.graph, prefix)
+}
+
 /**
   * Cache is a marker operator that indicates that its child operator is used multiple times within the query.
   */
@@ -483,7 +497,6 @@ final case class TabularUnionAll[T <: Table[T] : TypeTag](
 final case class ConstructGraph[T <: Table[T] : TypeTag](
   in: RelationalOperator[T],
   constructedGraph: RelationalCypherGraph[T],
-  override val graphName: QualifiedGraphName,
   construct: LogicalPatternGraph,
   override val context: RelationalRuntimeContext[T]
 ) extends RelationalOperator[T] {
@@ -496,25 +509,11 @@ final case class ConstructGraph[T <: Table[T] : TypeTag](
 
   override lazy val graph: RelationalCypherGraph[T] = constructedGraph
 
+  override def graphName = construct.qualifiedGraphName
+
   override def toString: String = {
     val entities = construct.clones.keySet ++ construct.newEntities.map(_.v)
     s"ConstructGraph(on=[${construct.onGraphs.mkString(", ")}], entities=[${entities.mkString(", ")}])"
   }
 }
 
-// N-ary
-
-final case class GraphUnionAll[T <: Table[T] : TypeTag](
-  inputs: NonEmptyList[RelationalOperator[T]],
-  qgn: QualifiedGraphName
-) extends RelationalOperator[T] {
-
-  override lazy val header: RecordHeader = RecordHeader.empty
-
-  override lazy val _table: T = session.records.empty().table
-
-  override lazy val graphName: QualifiedGraphName = qgn
-
-  override lazy val graph: RelationalCypherGraph[T] = session.graphs.unionGraph(inputs.map(_.graph).toList: _*)
-
-}

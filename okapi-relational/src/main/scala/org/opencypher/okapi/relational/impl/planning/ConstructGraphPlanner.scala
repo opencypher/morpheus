@@ -54,25 +54,37 @@ object ConstructGraphPlanner {
   def planConstructGraph[T <: Table[T] : TypeTag](inputTablePlan: RelationalOperator[T], construct: LogicalPatternGraph)
     (implicit context: RelationalRuntimeContext[T]): RelationalOperator[T] = {
 
-    val onGraphPlan: RelationalOperator[T] = {
-      construct.onGraphs match {
-        case Nil => relational.Start[T](context.session.emptyGraphQgn) // Empty start
-        case oneQgn :: Nil => // Just oneQgn graph, no union required
-          relational.Start(oneQgn)
-        case severalQgns =>
-          val onGraphPlans = NonEmptyList.fromListUnsafe(severalQgns).map(qgn => relational.Start[T](qgn))
-          relational.GraphUnionAll[T](onGraphPlans, construct.qualifiedGraphName)
-      }
-    }
-
-    val LogicalPatternGraph(_, clonedVarsToInputVars, createdEntities, sets, _, name) = construct
-
     val unionPrefixStrategy: Map[QualifiedGraphName, GraphIdPrefix] = {
-      val graphQgns = construct.qualifiedGraphName :: clonedVarsToInputVars.values.map(_.cypherType.graph.get).toList ++ construct.onGraphs
+      val graphQgns = construct.qualifiedGraphName :: construct.clones.values.map(_.cypherType.graph.get).toList ++ construct.onGraphs
       graphQgns.zipWithIndex.map { case (qgn, i) => qgn -> i.toByte }.toMap
     }
 
-    val onGraph = onGraphPlan.graph
+    val onGraphs = construct.onGraphs.map { qgn =>
+      // if we aren't mixing entities from different graphs we need no prefixing
+      if (unionPrefixStrategy.size < 2) {
+        relational.Start[T](qgn).graph
+      } else {
+        relational.PrefixGraph(relational.Start[T](qgn), unionPrefixStrategy(qgn)).graph
+      }
+    }
+
+    val constructTable = initConstructTable(inputTablePlan, unionPrefixStrategy, construct)
+    val scanGraph = extractScanGraph(construct, constructTable)
+
+    val graph = context.session.graphs.unionGraph(scanGraph :: onGraphs: _*)
+    val constructOp = ConstructGraph(inputTablePlan, graph, construct, context)
+
+    context.queryLocalCatalog += (construct.qualifiedGraphName -> graph)
+
+    constructOp
+  }
+
+  private def initConstructTable[T <: Table[T] : TypeTag](
+    inputTablePlan: RelationalOperator[T],
+    unionPrefixStrategy: Map[QualifiedGraphName, GraphIdPrefix],
+    construct: LogicalPatternGraph
+  ): RelationalOperator[T] = {
+    val LogicalPatternGraph(_, clonedVarsToInputVars, createdEntities, sets, _, name) = construct
 
     // Apply aliases in CLONE to input table in order to create the base table, on which CONSTRUCT happens
     val aliasClones = clonedVarsToInputVars
@@ -117,21 +129,7 @@ object ConstructGraphPlanner {
     val originalVarsToKeep = clonedVarsToInputVars.keySet -- aliasClones.keySet
     val varsToRemoveFromTable = allInputVars -- originalVarsToKeep
 
-    val constructTable = constructedEntitiesOp.dropExprSet(varsToRemoveFromTable)
-
-    val scanGraph = extractScanGraph(construct, constructTable)
-
-    val graph = if (onGraph == context.session.graphs.empty) {
-      scanGraph
-    } else {
-      context.session.graphs.unionGraph(onGraph, scanGraph)
-    }
-
-    val constructOp = ConstructGraph(inputTablePlan, graph, name, construct, context)
-
-    context.queryLocalCatalog += (construct.qualifiedGraphName -> graph)
-
-    constructOp
+    constructedEntitiesOp.dropExprSet(varsToRemoveFromTable)
   }
 
   def planConstructEntities[T <: Table[T] : TypeTag](

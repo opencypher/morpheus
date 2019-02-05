@@ -34,7 +34,7 @@ import org.opencypher.okapi.ir.api.expr.PrefixId.GraphIdPrefix
 import org.opencypher.okapi.relational.api.io.{EntityTable, NodeTable}
 import org.opencypher.okapi.relational.api.planning.RelationalRuntimeContext
 import org.opencypher.okapi.relational.api.table.{RelationalCypherRecords, Table}
-import org.opencypher.okapi.relational.impl.graph.{EmptyGraph, ScanGraph, UnionGraph}
+import org.opencypher.okapi.relational.impl.graph.{EmptyGraph, PrefixedGraph, ScanGraph, UnionGraph}
 import org.opencypher.okapi.relational.impl.operators.RelationalOperator
 import org.opencypher.okapi.relational.impl.planning.RelationalPlanner._
 
@@ -48,13 +48,11 @@ trait RelationalCypherGraphFactory[T <: Table[T]] {
 
   private[opencypher] implicit def tableTypeTag: TypeTag[T] = session.tableTypeTag
 
-  def unionGraph(graphs: RelationalCypherGraph[T]*)(implicit context: RelationalRuntimeContext[T]): Graph = {
-    val computedGraphIdPrefixes = graphs.zipWithIndex.map { case (g, i) => g -> i.toByte }.toList
-    unionGraph(computedGraphIdPrefixes)
-  }
+  def prefixedGraph(graph: RelationalCypherGraph[T], prefix: GraphIdPrefix)(implicit context: RelationalRuntimeContext[T]): Graph =
+    PrefixedGraph(graph, prefix)
 
-  def unionGraph(graphsWithPrefix: List[(RelationalCypherGraph[T], GraphIdPrefix)])
-    (implicit context: RelationalRuntimeContext[T]): Graph = UnionGraph(graphsWithPrefix)
+  def unionGraph(graphs: RelationalCypherGraph[T]*)(implicit context: RelationalRuntimeContext[T]): Graph =
+    UnionGraph(graphs.toList)
 
   def empty: Graph = EmptyGraph()
 
@@ -108,7 +106,7 @@ trait RelationalCypherGraph[T <: Table[T]] extends PropertyGraph {
     session.records.from(namedScan.header, namedScan.table)
   }
 
-  def unionAll(others: PropertyGraph*): RelationalCypherGraph[T] = {
+  override def unionAll(others: PropertyGraph*): RelationalCypherGraph[T] = {
     val graphs = (this +: others).map {
       case g: RelationalCypherGraph[T] => g
       case _ => throw UnsupportedOperationException("Union all only works on relational graphs")
@@ -119,7 +117,11 @@ trait RelationalCypherGraph[T <: Table[T]] extends PropertyGraph {
       case g: RelationalCypherGraph[_] => g.asInstanceOf[RelationalCypherGraph[T]]
     })
 
-    val context = RelationalRuntimeContext(graphAt)(session)
-    session.graphs.unionGraph(graphs: _*)(context)
+    implicit val context: RelationalRuntimeContext[T] = RelationalRuntimeContext(graphAt)(session)
+    val prefixedGraphs = graphs.zipWithIndex.map {
+      case (g, i) =>
+        session.graphs.prefixedGraph(g, i.toByte)
+    }
+    session.graphs.unionGraph(prefixedGraphs: _*)
   }
 }
