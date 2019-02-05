@@ -541,9 +541,7 @@ class GraphDdlTest extends FunSpec with Matchers {
           | (Person1, Person2)
           |)
         """.stripMargin)
-      e.getFullMessage should (
-                              include("fooSchema") and include("Person1") and include("Person2") and include("age") and include("STRING") and include("INTEGER")
-                              )
+      e.getFullMessage should (include("fooSchema") and include("Person1") and include("Person2") and include("age") and include("STRING") and include("INTEGER"))
     }
 
     it("fails on unresolved property names") {
@@ -558,9 +556,37 @@ class GraphDdlTest extends FunSpec with Matchers {
           |  (Person) FROM personView ( person_name AS age2 )
           |)
         """.stripMargin)
-      e.getFullMessage should (
-                              include("fooGraph") and include("Person") and include("personView") and include("age1") and include("age2")
-                              )
+      e.getFullMessage should (include("fooGraph") and include("Person") and include("personView") and include("age1") and include("age2"))
+    }
+
+    it("fails on unresolved inherited element types") {
+      val e = the[GraphDdlException] thrownBy GraphDdl(
+        """
+          |SET SCHEMA a.b
+          |CREATE GRAPH TYPE fooSchema (
+          | Person ( name STRING ) ,
+          | Employee EXTENDS MissingPerson ( dept STRING ) ,
+          | (Employee)
+          |)
+          |CREATE GRAPH fooGraph OF fooSchema (
+          |  (Employee) FROM employeeView ( person_name AS name, emp_dept AS dept )
+          |)
+        """.stripMargin)
+      e.getFullMessage should (include("fooSchema") and include("Employee") and include("MissingPerson"))
+    }
+
+    it("fails on unresolved inherited element types within inlined graph type") {
+      val e = the[GraphDdlException] thrownBy GraphDdl(
+        """
+          |SET SCHEMA a.b
+          |CREATE GRAPH fooGraph (
+          |  Person ( name STRING ),
+          |  Employee EXTENDS MissingPerson ( dept STRING ),
+          |
+          |  (Employee) FROM employeeView ( person_name AS name, emp_dept AS dept )
+          |)
+        """.stripMargin)
+      e.getFullMessage should (include("fooGraph") and include("Employee") and include("MissingPerson"))
     }
   }
 }
