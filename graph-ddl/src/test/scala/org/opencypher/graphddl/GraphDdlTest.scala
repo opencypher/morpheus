@@ -322,137 +322,139 @@ class GraphDdlTest extends FunSpec with Matchers {
     ddls(3) shouldEqual ddls.head
   }
 
-  it("fails on duplicate node mappings") {
-    val e = the [GraphDdlException] thrownBy GraphDdl("""
-      |SET SCHEMA db.schema
-      |
-      |CREATE GRAPH TYPE fooSchema (
-      | Person,
-      | (Person)
-      |)
-      |CREATE GRAPH fooGraph OF fooSchema (
-      |  (Person) FROM personView
-      |           FROM personView
-      |)
-    """.stripMargin)
-    e.getFullMessage should (include("fooGraph") and include("(Person)") and include("personView"))
-  }
+  describe("failure handling") {
 
-  it("fails on duplicate relationship mappings") {
-    val e = the[GraphDdlException] thrownBy GraphDdl(
-      """
+    it("fails on duplicate node mappings") {
+      val e = the [GraphDdlException] thrownBy GraphDdl("""
         |SET SCHEMA db.schema
         |
         |CREATE GRAPH TYPE fooSchema (
         | Person,
-        | KNOWS,
-        | (Person)-[KNOWS]->(Person)
+        | (Person)
         |)
         |CREATE GRAPH fooGraph OF fooSchema (
-        | (Person)-[KNOWS]->(Person)
-        |   FROM pkpView e
-        |     START NODES (Person) FROM a n JOIN ON e.id = n.id
-        |     END   NODES (Person) FROM a n JOIN ON e.id = n.id,
-        |   FROM pkpView e
-        |     START NODES (Person) FROM a n JOIN ON e.id = n.id
-        |     END   NODES (Person) FROM a n JOIN ON e.id = n.id
+        |  (Person) FROM personView
+        |           FROM personView
         |)
       """.stripMargin)
-    e.getFullMessage should (include("fooGraph") and include("(Person)-[KNOWS]->(Person)") and include("pkpView"))
-  }
+      e.getFullMessage should (include("fooGraph") and include("(Person)") and include("personView"))
+    }
 
-  it("fails on duplicate global labels") {
-    val e = the [GraphDdlException] thrownBy GraphDdl("""
-      |CREATE ELEMENT TYPE Person
-      |CREATE ELEMENT TYPE Person
-    """.stripMargin)
-    e.getFullMessage should include("Person")
-  }
+    it("fails on duplicate relationship mappings") {
+      val e = the[GraphDdlException] thrownBy GraphDdl(
+        """
+          |SET SCHEMA db.schema
+          |
+          |CREATE GRAPH TYPE fooSchema (
+          | Person,
+          | KNOWS,
+          | (Person)-[KNOWS]->(Person)
+          |)
+          |CREATE GRAPH fooGraph OF fooSchema (
+          | (Person)-[KNOWS]->(Person)
+          |   FROM pkpView e
+          |     START NODES (Person) FROM a n JOIN ON e.id = n.id
+          |     END   NODES (Person) FROM a n JOIN ON e.id = n.id,
+          |   FROM pkpView e
+          |     START NODES (Person) FROM a n JOIN ON e.id = n.id
+          |     END   NODES (Person) FROM a n JOIN ON e.id = n.id
+          |)
+        """.stripMargin)
+      e.getFullMessage should (include("fooGraph") and include("(Person)-[KNOWS]->(Person)") and include("pkpView"))
+    }
 
-  it("fails on duplicate local labels") {
-    val e = the [GraphDdlException] thrownBy GraphDdl("""
-      |CREATE GRAPH TYPE fooSchema (
-      | Person,
-      | Person
-      |)
-    """.stripMargin)
-    e.getFullMessage should (include("fooSchema") and include("Person"))
-  }
+    it("fails on duplicate global labels") {
+      val e = the [GraphDdlException] thrownBy GraphDdl("""
+        |CREATE ELEMENT TYPE Person
+        |CREATE ELEMENT TYPE Person
+      """.stripMargin)
+      e.getFullMessage should include("Person")
+    }
 
-  it("fails on duplicate graph types") {
-    val e = the [GraphDdlException] thrownBy GraphDdl("""
-      |CREATE GRAPH TYPE fooSchema ()
-      |CREATE GRAPH TYPE fooSchema ()
-    """.stripMargin)
-    e.getFullMessage should include("fooSchema")
-  }
+    it("fails on duplicate local labels") {
+      val e = the [GraphDdlException] thrownBy GraphDdl("""
+        |CREATE GRAPH TYPE fooSchema (
+        | Person,
+        | Person
+        |)
+      """.stripMargin)
+      e.getFullMessage should (include("fooSchema") and include("Person"))
+    }
 
-  it("fails on duplicate graphs") {
-    val e = the [GraphDdlException] thrownBy GraphDdl("""
-      |CREATE GRAPH TYPE fooSchema ()
-      |CREATE GRAPH fooGraph OF fooSchema ()
-      |CREATE GRAPH fooGraph OF fooSchema ()
-    """.stripMargin)
-    e.getFullMessage should include("fooGraph")
-  }
+    it("fails on duplicate graph types") {
+      val e = the [GraphDdlException] thrownBy GraphDdl("""
+        |CREATE GRAPH TYPE fooSchema ()
+        |CREATE GRAPH TYPE fooSchema ()
+      """.stripMargin)
+      e.getFullMessage should include("fooSchema")
+    }
 
-  it("fails on unresolved graph type") {
-    val e = the [GraphDdlException] thrownBy GraphDdl("""
-      |CREATE GRAPH TYPE fooSchema ()
-      |CREATE GRAPH fooGraph OF barSchema ()
-    """.stripMargin)
-    e.getFullMessage should (include("fooGraph") and include("fooSchema") and include("barSchema"))
-  }
+    it("fails on duplicate graphs") {
+      val e = the [GraphDdlException] thrownBy GraphDdl("""
+        |CREATE GRAPH TYPE fooSchema ()
+        |CREATE GRAPH fooGraph OF fooSchema ()
+        |CREATE GRAPH fooGraph OF fooSchema ()
+      """.stripMargin)
+      e.getFullMessage should include("fooGraph")
+    }
 
-  it("fails on unresolved labels") {
-    val e = the [GraphDdlException] thrownBy GraphDdl("""
-      |CREATE GRAPH TYPE fooSchema (
-      | Person1,
-      | Person2,
-      | (Person3, Person4)
-      |)
-    """.stripMargin)
-    e.getFullMessage should (include("fooSchema") and include("Person3") and include("Person4"))
-  }
+    it("fails on unresolved graph type") {
+      val e = the [GraphDdlException] thrownBy GraphDdl("""
+        |CREATE GRAPH TYPE fooSchema ()
+        |CREATE GRAPH fooGraph OF barSchema ()
+      """.stripMargin)
+      e.getFullMessage should (include("fooGraph") and include("fooSchema") and include("barSchema"))
+    }
 
-  it("fails on unresolved labels in mapping") {
-    val e = the [GraphDdlException] thrownBy GraphDdl("""
-      |CREATE GRAPH fooGraph (
-      | Person1,
-      | Person2,
-      | (Person3, Person4) FROM x
-      |)
-    """.stripMargin)
-    e.getFullMessage should (include("fooGraph") and include("Person3") and include("Person4"))
-  }
+    it("fails on unresolved labels") {
+      val e = the [GraphDdlException] thrownBy GraphDdl("""
+        |CREATE GRAPH TYPE fooSchema (
+        | Person1,
+        | Person2,
+        | (Person3, Person4)
+        |)
+      """.stripMargin)
+      e.getFullMessage should (include("fooSchema") and include("Person3") and include("Person4"))
+    }
 
-  it("fails on incompatible property types") {
-    val e = the [GraphDdlException] thrownBy GraphDdl("""
-      |CREATE GRAPH TYPE fooSchema (
-      | Person1 ( age STRING ) ,
-      | Person2 ( age INTEGER ) ,
-      | (Person1, Person2)
-      |)
-    """.stripMargin)
-    e.getFullMessage should (
-      include("fooSchema") and include("Person1") and include("Person2") and include("age") and include("STRING")  and include("INTEGER")
-    )
-  }
+    it("fails on unresolved labels in mapping") {
+      val e = the [GraphDdlException] thrownBy GraphDdl("""
+        |CREATE GRAPH fooGraph (
+        | Person1,
+        | Person2,
+        | (Person3, Person4) FROM x
+        |)
+      """.stripMargin)
+      e.getFullMessage should (include("fooGraph") and include("Person3") and include("Person4"))
+    }
 
-  it("fails on unresolved property names") {
-    val e = the [GraphDdlException] thrownBy GraphDdl("""
-      |SET SCHEMA a.b
-      |CREATE GRAPH TYPE fooSchema (
-      | Person ( age1 STRING ) ,
-      | (Person)
-      |)
-      |CREATE GRAPH fooGraph OF fooSchema (
-      |  (Person) FROM personView ( person_name AS age2 )
-      |)
-    """.stripMargin)
-    e.getFullMessage should (
-      include("fooGraph") and include("Person") and include("personView") and include("age1")  and include("age2")
-    )
-  }
+    it("fails on incompatible property types") {
+      val e = the [GraphDdlException] thrownBy GraphDdl("""
+        |CREATE GRAPH TYPE fooSchema (
+        | Person1 ( age STRING ) ,
+        | Person2 ( age INTEGER ) ,
+        | (Person1, Person2)
+        |)
+      """.stripMargin)
+      e.getFullMessage should (
+        include("fooSchema") and include("Person1") and include("Person2") and include("age") and include("STRING")  and include("INTEGER")
+      )
+    }
 
+    it("fails on unresolved property names") {
+      val e = the [GraphDdlException] thrownBy GraphDdl("""
+        |SET SCHEMA a.b
+        |CREATE GRAPH TYPE fooSchema (
+        | Person ( age1 STRING ) ,
+        | (Person)
+        |)
+        |CREATE GRAPH fooGraph OF fooSchema (
+        |  (Person) FROM personView ( person_name AS age2 )
+        |)
+      """.stripMargin)
+      e.getFullMessage should (
+        include("fooGraph") and include("Person") and include("personView") and include("age1")  and include("age2")
+      )
+    }
+  }
 }

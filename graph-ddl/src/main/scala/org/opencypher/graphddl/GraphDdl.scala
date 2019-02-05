@@ -168,13 +168,13 @@ object GraphDdl {
       .foldLeftOver(allNodeTypes) { case (schema, (labels, properties)) =>
         schema.withNodePropertyKeys(labels, properties)
       }
-      .foldLeftOver(allNodeTypes.keySet.flatten.map(resolveElementType)) { case (schema, eType) =>
+      .foldLeftOver(allNodeTypes.keySet.flatten.flatMap(resolveElementTypes)) { case (schema, eType) =>
         eType.maybeKey.fold(schema)(key => schema.withNodeKey(eType.name, key._2))
       }
       .foldLeftOver(allEdgeTypes) { case (schema, (label, properties)) =>
         schema.withRelationshipPropertyKeys(label, properties)
       }
-      .foldLeftOver(allEdgeTypes.keySet.map(resolveElementType)) { case (schema, eType) =>
+      .foldLeftOver(allEdgeTypes.keySet.flatMap(resolveElementTypes)) { case (schema, eType) =>
         eType.maybeKey.fold(schema)(key => schema.withNodeKey(eType.name, key._2))
       }
       .withSchemaPatterns(allPatterns.toSeq: _*)
@@ -195,13 +195,13 @@ object GraphDdl {
           parts.relTypes.map(_.sourceNodeType.elementTypes),
           parts.relTypes.map(_.targetNodeType.elementTypes)
         ).flatten.map(labels => labels -> tryWithNode(labels)(
-          mergeProperties(labels.map(local.resolveElementType))
+          mergeProperties(labels.flatMap(local.resolveElementTypes))
         )).toMap,
 
         edgeTypes = Set(
           parts.relTypes.map(_.elementType)
         ).flatten.map(label => label -> tryWithRel(label)(
-          mergeProperties(Set(local.resolveElementType(label)))
+          mergeProperties(local.resolveElementTypes(label))
         )).toMap,
 
         patterns = parts.relTypes.map(relType => SchemaPattern(
@@ -223,8 +223,10 @@ object GraphDdl {
         }
     }
 
-    private def resolveElementType(name: String): ElementTypeDefinition =
-      allElementTypes.getOrElse(name, unresolved(s"Unresolved element type", name))
+    private def resolveElementTypes(name: String): Set[ElementTypeDefinition] = {
+      val elementType = allElementTypes.getOrElse(name, unresolved(s"Unresolved element type", name))
+      elementType.parents.flatMap(resolveElementTypes) + elementType
+    }
   }
 
   private def toGraph(
