@@ -284,10 +284,10 @@ class GraphDdlAcceptanceTest extends BaseTestSuite {
       ddlDefinition should equalWithTracing(
         DdlDefinition(List(
           SetSchemaDefinition("foo", "bar"),
-          ElementTypeDefinition("A", Map("name" -> CTString)),
-          ElementTypeDefinition("B", Map("sequence" -> CTInteger, "nationality" -> CTString.nullable, "age" -> CTInteger.nullable)),
+          ElementTypeDefinition("A", properties = Map("name" -> CTString)),
+          ElementTypeDefinition("B", properties = Map("sequence" -> CTInteger, "nationality" -> CTString.nullable, "age" -> CTInteger.nullable)),
           ElementTypeDefinition("TYPE_1"),
-          ElementTypeDefinition("TYPE_2", Map("prop" -> CTBoolean.nullable)),
+          ElementTypeDefinition("TYPE_2", properties = Map("prop" -> CTBoolean.nullable)),
           GraphTypeDefinition(
             name = typeName,
             statements = List(
