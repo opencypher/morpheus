@@ -259,7 +259,8 @@ class GraphDdlAcceptanceTest extends BaseTestSuite {
             |  (B),
             |  (C),
             |  (D),
-            |  (A, E)
+            |  (A, E),
+            |  (D, E)
             |)
             |CREATE GRAPH $graphName OF $typeName ()
             |""".stripMargin
@@ -271,6 +272,7 @@ class GraphDdlAcceptanceTest extends BaseTestSuite {
           .withNodePropertyKeys("A", "C")("a" -> CTString, "c" -> CTString)
           .withNodePropertyKeys("A", "B", "C", "D")("a" -> CTString, "b" -> CTString, "c" -> CTString, "d" -> CTInteger)
           .withNodePropertyKeys("A", "E")("a" -> CTString, "e" -> CTFloat)
+          .withNodePropertyKeys("A", "B", "C", "D", "E")("a" -> CTString, "b" -> CTString, "c" -> CTString, "d" -> CTInteger, "e" -> CTFloat)
       )
     }
 
