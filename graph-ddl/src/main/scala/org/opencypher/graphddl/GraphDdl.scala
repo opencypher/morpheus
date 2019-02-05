@@ -212,10 +212,19 @@ object GraphDdl {
       )
     }
 
-    private[graphddl] def resolveNodeLabels(nodeType: NodeTypeDefinition): Set[String] =
+    def toNodeType(nodeTypeDefinition: NodeTypeDefinition): NodeType =
+      NodeType(resolveNodeLabels(nodeTypeDefinition))
+
+    def toRelType(relationshipTypeDefinition: RelationshipTypeDefinition): RelationshipType =
+      RelationshipType(
+        startNodeType = toNodeType(relationshipTypeDefinition.sourceNodeType),
+        elementType = resolveRelType(relationshipTypeDefinition),
+        endNodeType = toNodeType(relationshipTypeDefinition.targetNodeType))
+
+    private def resolveNodeLabels(nodeType: NodeTypeDefinition): Set[String] =
       tryWithNode(nodeType.elementTypes)(nodeType.elementTypes.flatMap(resolveElementTypes).map(_.name))
 
-    private[graphddl] def resolveRelType(relType: RelationshipTypeDefinition): String = {
+    private def resolveRelType(relType: RelationshipTypeDefinition): String = {
       val resolved = tryWithRel(relType.elementType)(resolveElementTypes(relType.elementType))
 
       if (resolved.size > 1) {
@@ -250,28 +259,31 @@ object GraphDdl {
       .push(parts.graphTypeStatements)
       .push(parts.nodeMappings.map(_.nodeType) ++ parts.relMappings.map(_.relType))
 
+    val okapiSchema = graphType.asOkapiSchema
+
     Graph(
       name = GraphName(graph.definition.name),
-      graphType = graphType.asOkapiSchema,
+      graphType = okapiSchema,
       nodeToViewMappings = parts.nodeMappings
-        .flatMap(nm => toNodeToViewMappings(graphType, graph.maybeSetSchema, nm))
+        .flatMap(nmd => toNodeToViewMappings(graphType.toNodeType(nmd.nodeType), okapiSchema, graph.maybeSetSchema, nmd))
         .validateDistinctBy(_.key, "Duplicate node mapping")
         .keyBy(_.key),
       edgeToViewMappings = parts.relMappings
-        .flatMap(em => toEdgeToViewMappings(graphType, graph.maybeSetSchema, em))
+        .flatMap(rmd => toEdgeToViewMappings(graphType.toRelType(rmd.relType), okapiSchema, graph.maybeSetSchema, rmd))
         .validateDistinctBy(_.key, "Duplicate relationship mapping")
     )
   }
 
   private def toNodeToViewMappings(
-    graphType: GraphType,
+    nodeType: NodeType,
+    okapiSchema: Schema,
     maybeSetSchema: Option[SetSchemaDefinition],
     nmd: NodeMappingDefinition
   ): Seq[NodeToViewMapping] = {
     nmd.nodeToView.map { nvd =>
       tryWithContext(s"Error in node mapping for: ${nmd.nodeType.elementTypes.mkString(",")}") {
 
-        val nodeKey = NodeViewKey(toNodeType(graphType, nmd.nodeType), toViewId(maybeSetSchema, nvd.viewId))
+        val nodeKey = NodeViewKey(nodeType, toViewId(maybeSetSchema, nvd.viewId))
 
         tryWithContext(s"Error in node mapping for: $nodeKey") {
           NodeToViewMapping(
@@ -279,7 +291,7 @@ object GraphDdl {
             view = toViewId(maybeSetSchema, nvd.viewId),
             propertyMappings = toPropertyMappings(
               elementTypes = nodeKey.nodeType.elementTypes,
-              graphTypePropertyKeys = graphType.asOkapiSchema.nodePropertyKeys(nodeKey.nodeType.elementTypes).keySet,
+              graphTypePropertyKeys = okapiSchema.nodePropertyKeys(nodeKey.nodeType.elementTypes).keySet,
               maybePropertyMapping = nvd.maybePropertyMapping
             )
           )
@@ -289,14 +301,15 @@ object GraphDdl {
   }
 
   private def toEdgeToViewMappings(
-    graphType: GraphType,
+    relType: RelationshipType,
+    okapiSchema: Schema,
     maybeSetSchema: Option[SetSchemaDefinition],
     rmd: RelationshipMappingDefinition
   ): Seq[EdgeToViewMapping] = {
     rmd.relTypeToView.map { rvd =>
       tryWithContext(s"Error in relationship mapping for: ${rmd.relType}") {
 
-        val edgeKey = EdgeViewKey(toRelType(graphType, rmd.relType), toViewId(maybeSetSchema, rvd.viewDef.viewId))
+        val edgeKey = EdgeViewKey(relType, toViewId(maybeSetSchema, rvd.viewDef.viewId))
 
         tryWithContext(s"Error in relationship mapping for: $edgeKey") {
           EdgeToViewMapping(
@@ -324,7 +337,7 @@ object GraphDdl {
             ),
             propertyMappings = toPropertyMappings(
               elementTypes = Set(rmd.relType.elementType),
-              graphTypePropertyKeys = graphType.asOkapiSchema.relationshipPropertyKeys(rmd.relType.elementType).keySet,
+              graphTypePropertyKeys = okapiSchema.relationshipPropertyKeys(rmd.relType.elementType).keySet,
               maybePropertyMapping = rvd.maybePropertyMapping
             )
           )
@@ -352,15 +365,6 @@ object GraphDdl {
         unresolved(s"Unable to resolve aliases", s"$leftAlias, $rightAlias", aliases)
     }
   }
-
-  private def toNodeType(graphType: GraphType, nodeTypeDefinition: NodeTypeDefinition): NodeType =
-    NodeType(graphType.resolveNodeLabels(nodeTypeDefinition))
-
-  private def toRelType(graphType: GraphType, relTypeDefinition: RelationshipTypeDefinition): RelationshipType =
-    RelationshipType(
-      startNodeType = toNodeType(graphType, relTypeDefinition.sourceNodeType),
-      elementType = graphType.resolveRelType(relTypeDefinition),
-      endNodeType = toNodeType(graphType, relTypeDefinition.targetNodeType))
 
   private def toPropertyMappings(
     elementTypes: Set[String],
@@ -495,7 +499,6 @@ object RelationshipType {
 
 case class RelationshipType(startNodeType: NodeType, elementType: String, endNodeType: NodeType) {
   override def toString: String = s"$startNodeType-[$elementType]->$endNodeType"
-
 }
 
 trait ElementViewKey {
