@@ -102,24 +102,30 @@ object SparkSQLExprMapper {
         case Param(name) =>
           toSparkLiteral(parameters(name).unwrap)
 
-        case Property(map, PropertyKey(key)) =>
-          map.cypherType.material match {
+        case Property(e, PropertyKey(key)) =>
+          e.cypherType.material match {
             case CTMap(inner) =>
-              if (inner.keySet.contains(key)) map.asSparkSQLExpr.getField(key) else functions.lit(null)
+              if (inner.keySet.contains(key)) e.asSparkSQLExpr.getField(key) else functions.lit(null)
+
             case CTDate =>
-              SparkTemporalHelpers.temporalAccessor[Date](map.asSparkSQLExpr, key)
+              SparkTemporalHelpers.temporalAccessor[Date](e.asSparkSQLExpr, key)
+
             case CTLocalDateTime =>
-              SparkTemporalHelpers.temporalAccessor[Timestamp](map.asSparkSQLExpr, key)
+              SparkTemporalHelpers.temporalAccessor[Timestamp](e.asSparkSQLExpr, key)
+
             case CTDuration =>
-              TemporalUDFS.durationAccessor(key.toLowerCase).apply(map.asSparkSQLExpr)
+              TemporalUDFS.durationAccessor(key.toLowerCase).apply(e.asSparkSQLExpr)
+
             case _ if !header.contains(expr) =>
               NULL_LIT
+
             case _ =>
-              throw NotImplementedException(s"No support for converting Cypher expression $expr to a Spark SQL expression")
+              verify
+              df.col(header.column(expr))
           }
 
         // direct column lookup
-        case _: Var | _: Param | _: Property | _: HasLabel | _: HasType | _: StartNode | _: EndNode =>
+        case _: Var | _: Param | _: HasLabel | _: HasType | _: StartNode | _: EndNode =>
           verify
 
           val colName = header.column(expr)
