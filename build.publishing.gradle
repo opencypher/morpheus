@@ -21,6 +21,26 @@ subprojects {
                             .findResults { tasks.findByName(it) }
                             .each { artifact it }
                 }
+
+                pom {
+                    licenses {
+                        license {
+                            name = 'Apache License, Version 2.0'
+                            url = 'http://www.apache.org/licenses/LICENSE-2.0'
+                        }
+                    }
+                    developers {
+                        developer {
+                            id = 'caps'
+                            name = 'The CAPS team'
+                            email = 'opencypher@neo4j.com'
+                            url = 'https://www.opencypher.org'
+                        }
+                    }
+                    scm {
+                        url = 'https://github.com/opencypher/cypher-for-apache-spark'
+                    }
+                }
             }
 
             full(MavenPublication) {
