@@ -493,8 +493,8 @@ class RecordHeaderTest extends BaseTestSuite {
 
       val expected = RecordHeader.empty
         .withExpr(v)
-        .withExpr(StartNode(v)(CTInteger))
-        .withExpr(EndNode(v)(CTInteger))
+        .withExpr(StartNode(v)(CTIdentity))
+        .withExpr(EndNode(v)(CTIdentity))
         .withExpr(HasType(v, RelType("FOO"))(CTBoolean))
         .withExpr(HasType(v, RelType("BAR"))(CTBoolean))
 

@@ -57,7 +57,7 @@ class IDEncodingTest extends CAPSTestSuite with Checkers {
   }
 
   it("spark version encodes longs correctly") {
-    typedLit[Long](0L).encodeLongAsCAPSId.expr.eval().asInstanceOf[GenericArrayData].array.toList should equal(List.fill(8)(0.toByte))
+    typedLit[Long](0L).encodeLongAsCAPSId.expr.eval().asInstanceOf[Array[Byte]].array.toList should equal(List.fill(8)(0.toByte))
   }
 
 }

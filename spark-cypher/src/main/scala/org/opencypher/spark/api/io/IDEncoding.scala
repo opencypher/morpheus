@@ -28,6 +28,9 @@ package org.opencypher.spark.api.io
 
 import java.nio.ByteBuffer
 
+import org.apache.spark.sql.catalyst.expressions.{CreateBinaryArray, ShiftRightUnsigned}
+import org.apache.spark.sql.functions._
+import org.apache.spark.sql.types.ByteType
 import org.apache.spark.sql.{Column, functions}
 import org.opencypher.okapi.ir.api.expr.PrefixId.GraphIdPrefix
 
@@ -57,11 +60,32 @@ object IDEncoding {
     n
   }
 
+  private val l56 = lit(56).expr
+  private val l48 = lit(48).expr
+  private val l40 = lit(40).expr
+  private val l32 = lit(32).expr
+  private val l24 = lit(24).expr
+  private val l16 = lit(16).expr
+  private val l8 = lit(8).expr
+
   implicit class ColumnIdEncoding(val c: Column) extends AnyVal {
 
     def encodeLongAsCAPSId(name: String): Column = encodeLongAsCAPSId.as(name)
 
-    def encodeLongAsCAPSId: Column = encodeUdf(c)
+//    def encodeLongAsCAPSId: Column = encodeUdf(c)
+
+    def encodeLongAsCAPSId: Column = {
+      new Column(CreateBinaryArray(Array(
+        c.cast(ByteType).expr,
+        new Column(ShiftRightUnsigned(c.expr, l8)).cast(ByteType).expr,
+        new Column(ShiftRightUnsigned(c.expr, l16)).cast(ByteType).expr,
+        new Column(ShiftRightUnsigned(c.expr, l24)).cast(ByteType).expr,
+        new Column(ShiftRightUnsigned(c.expr, l32)).cast(ByteType).expr,
+        new Column(ShiftRightUnsigned(c.expr, l40)).cast(ByteType).expr,
+        new Column(ShiftRightUnsigned(c.expr, l48)).cast(ByteType).expr,
+        new Column(ShiftRightUnsigned(c.expr, l56)).cast(ByteType).expr
+      )))
+    }
 
   }
 
