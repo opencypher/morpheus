@@ -34,24 +34,16 @@ import org.opencypher.okapi.ir.api.expr.PrefixId.GraphIdPrefix
 
 object IDEncoding {
 
-  private class ThreadLocalLongBuffer extends ThreadLocal[ByteBuffer] {
-    override def initialValue: ByteBuffer = ByteBuffer.allocate(8)
-  }
-
-  private val buffer = new ThreadLocalLongBuffer
-
   type CAPSId = Array[Byte]
 
   private def encode(l: Long): CAPSId = {
-    val bb = buffer.get()
-    bb.clear()
+    val bb = ByteBuffer.allocate(8)
     bb.putLong(l)
     bb.array()
   }
 
   private def decode(a: Array[Byte]): Long = {
-    val bb = buffer.get()
-    bb.clear()
+    val bb = ByteBuffer.allocate(8)
     bb.put(a)
     bb.flip()
     bb.getLong()

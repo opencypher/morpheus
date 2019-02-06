@@ -96,7 +96,7 @@ object Neo4jMergeExample extends ConsoleApp {
       |MATCH (p:Person)
       |OPTIONAL MATCH (p)-[r:FRIEND_OF|MARRIED_TO]->(o:Person)
       |RETURN p, r, o
-      |ORDER BY p.name
+      |ORDER BY p.name, r.since
     """.stripMargin).records.show
 
   // Shutdown Neo4j test instance
