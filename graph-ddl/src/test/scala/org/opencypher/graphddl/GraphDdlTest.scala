@@ -603,5 +603,20 @@ class GraphDdlTest extends FunSpec with Matchers {
         """.stripMargin)
       e.getFullMessage should (include("Circular dependency") and include("A -> B -> A"))
     }
+
+    it("fails on conflicting property types in inheritance hierarchy") {
+      val e = the[GraphDdlException] thrownBy GraphDdl(
+        """
+          |SET SCHEMA a.b
+          |CREATE GRAPH fooGraph (
+          |  A ( x STRING ),
+          |  B ( x INTEGER ),
+          |  C EXTENDS A, B (),
+          |
+          |  (C)
+          |)
+        """.stripMargin)
+      e.getFullMessage should (include("(A,B,C)") and include("x") and include("INTEGER") and include("STRING"))
+    }
   }
 }
