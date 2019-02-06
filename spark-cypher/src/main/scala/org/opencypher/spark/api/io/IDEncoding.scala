@@ -72,6 +72,8 @@ object IDEncoding {
 
     def encodeAsCAPSId: CAPSId = encode(l)
 
+    def withPrefix(prefix: Int): CAPSId = l.encodeAsCAPSId.withPrefix(prefix.toByte)
+
   }
 
   implicit class RichCAPSId(val id: CAPSId) extends AnyVal {

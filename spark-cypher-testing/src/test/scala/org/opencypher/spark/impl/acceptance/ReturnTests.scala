@@ -35,6 +35,7 @@ import org.opencypher.spark.api.value.{CAPSNode, CAPSRelationship}
 import org.opencypher.spark.impl.CAPSConverters._
 import org.opencypher.spark.testing.CAPSTestSuite
 import org.scalatest.junit.JUnitRunner
+import org.opencypher.spark.api.io.IDEncoding._
 
 @RunWith(classOf[JUnitRunner])
 class ReturnTests extends CAPSTestSuite with ScanGraphInit {
@@ -107,8 +108,8 @@ class ReturnTests extends CAPSTestSuite with ScanGraphInit {
       val result = given.cypher("MATCH (n) RETURN n")
 
       result.records.toMaps should equal(Bag(
-        CypherMap("n" -> 0, "n.foo" -> "bar"),
-        CypherMap("n" -> 1, "n.foo" -> null))
+        CypherMap("n" -> 0L.encodeAsCAPSId, "n.foo" -> "bar"),
+        CypherMap("n" -> 1L.encodeAsCAPSId, "n.foo" -> null))
       )
     }
 

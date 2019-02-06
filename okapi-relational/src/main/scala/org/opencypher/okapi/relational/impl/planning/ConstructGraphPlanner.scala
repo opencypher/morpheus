@@ -72,7 +72,6 @@ object ConstructGraphPlanner {
         relational.PrefixGraph(relational.Start[T](qgn), unionPrefixStrategy(qgn)).graph
       } else {
         relational.Start[T](qgn).graph
-
       }
     }
 
@@ -92,8 +91,6 @@ object ConstructGraphPlanner {
     }
 
     val constructOp = ConstructGraph(constructTable, constructedGraph, construct, context)
-
-    constructOp.show()
 
     context.queryLocalCatalog += (construct.qualifiedGraphName -> constructOp.graph)
 
