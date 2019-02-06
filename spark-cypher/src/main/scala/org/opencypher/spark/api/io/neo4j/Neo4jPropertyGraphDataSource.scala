@@ -29,6 +29,7 @@ package org.opencypher.spark.api.io.neo4j
 import org.apache.logging.log4j.scala.Logging
 import org.apache.spark.sql.types.StructType
 import org.apache.spark.sql.{DataFrame, Row}
+import org.apache.spark.unsafe.types.CalendarInterval
 import org.neo4j.driver.v1.{Value, Values}
 import org.opencypher.okapi.api.graph.{GraphName, PropertyGraph}
 import org.opencypher.okapi.api.schema.LabelPropertyMap._
@@ -46,6 +47,7 @@ import org.opencypher.spark.api.CAPSSession
 import org.opencypher.spark.impl.CAPSConverters._
 import org.opencypher.spark.impl.CAPSRecords
 import org.opencypher.spark.impl.io.neo4j.external.Neo4j
+import org.opencypher.spark.impl.temporal.SparkTemporalHelpers._
 import org.opencypher.spark.schema.CAPSSchema
 import org.opencypher.spark.schema.CAPSSchema._
 
@@ -223,7 +225,13 @@ case object Writers {
     val array = new Array[Value](row.size)
     var i = 0
     while (i < row.size) {
-      array(i) = Values.value(row.get(i))
+      val castedValue = row.get(i) match {
+        case d: java.sql.Date => d.toLocalDate
+        case ts: java.sql.Timestamp => ts.toLocalDateTime
+        case ci: CalendarInterval => ci.toJavaDuration
+        case other => other
+      }
+      array(i) = Values.value(castedValue)
       i += 1
     }
     Values.value(array: _*)

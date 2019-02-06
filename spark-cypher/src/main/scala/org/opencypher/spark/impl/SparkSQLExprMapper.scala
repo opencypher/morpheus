@@ -29,7 +29,7 @@ package org.opencypher.spark.impl
 import org.apache.spark.sql.types._
 import org.apache.spark.sql.{Column, DataFrame, functions}
 import org.opencypher.okapi.api.types._
-import org.opencypher.okapi.api.value.CypherValue.{CypherInteger, CypherList, CypherMap, CypherString}
+import org.opencypher.okapi.api.value.CypherValue.{CypherList, CypherMap}
 import org.opencypher.okapi.impl.exception.{IllegalArgumentException, IllegalStateException, NotImplementedException, UnsupportedOperationException}
 import org.opencypher.okapi.impl.temporal.TemporalTypesHelper._
 import org.opencypher.okapi.impl.temporal.{Duration => DurationValue}
@@ -39,7 +39,9 @@ import org.opencypher.okapi.relational.impl.table.RecordHeader
 import org.opencypher.spark.impl.CAPSFunctions.{array_contains, get_node_labels, get_property_keys, get_rel_type, _}
 import org.opencypher.spark.impl.convert.SparkConversions._
 import org.opencypher.spark.impl.temporal.SparkTemporalHelpers._
-import org.opencypher.spark.impl.temporal.TemporalUDFS
+import org.opencypher.spark.impl.temporal.{SparkTemporalHelpers, TemporalUDFS}
+
+
 object SparkSQLExprMapper {
 
   private val NULL_LIT: Column = functions.lit(null)
@@ -100,18 +102,31 @@ object SparkSQLExprMapper {
         case Param(name) =>
           toSparkLiteral(parameters(name).unwrap)
 
-        case Property(map, PropertyKey(key)) if map.cypherType.material.isInstanceOf[CTMap] =>
-          val fields =  map.cypherType.material match {
-            case CTMap(inner) => inner.keySet
-            case _ => Set.empty[String]
+        case Property(e, PropertyKey(key)) =>
+          e.cypherType.material match {
+            case CTMap(inner) =>
+              if (inner.keySet.contains(key)) e.asSparkSQLExpr.getField(key) else functions.lit(null)
+
+            case CTDate =>
+              SparkTemporalHelpers.temporalAccessor[Date](e.asSparkSQLExpr, key)
+
+            case CTLocalDateTime =>
+              SparkTemporalHelpers.temporalAccessor[Timestamp](e.asSparkSQLExpr, key)
+
+            case CTDuration =>
+              TemporalUDFS.durationAccessor(key.toLowerCase).apply(e.asSparkSQLExpr)
+
+            case _ if !header.contains(expr) || !df.columns.contains(header.column(expr)) =>
+              NULL_LIT
+
+            case _ =>
+              verify
+
+              df.col(header.column(expr))
           }
 
-          if (fields.contains(key)) map.asSparkSQLExpr.getField(key) else functions.lit(null)
-
-        case _: Property if !header.contains(expr) => NULL_LIT
-
         // direct column lookup
-        case _: Var | _: Param | _: Property | _: HasLabel | _: HasType | _: StartNode | _: EndNode =>
+        case _: Var | _: Param | _: HasLabel | _: HasType | _: StartNode | _: EndNode =>
           verify
 
           val colName = header.column(expr)
@@ -134,9 +149,13 @@ object SparkSQLExprMapper {
         case LocalDateTime(dateExpr) =>
           dateExpr match {
             case Some(e) =>
-              val localDateTimeValue = resolveTemporalArgument(e)
+              val localDateTimeValue = SparkTemporalHelpers.resolveTemporalArgument(e)
                 .map(parseLocalDateTime)
                 .map(java.sql.Timestamp.valueOf)
+                .map {
+                  case ts if ts.getNanos % 1000 == 0 => ts
+                  case _ => throw IllegalStateException("Spark does not support nanosecond resolution in 'localdatetime'")
+                }
                 .orNull
 
               functions.lit(localDateTimeValue).cast(DataTypes.TimestampType)
@@ -259,10 +278,10 @@ object SparkSQLExprMapper {
               val node = e.owner.get
               val labelExprs = header.labelsFor(node)
               val (labelNames, labelColumns) = labelExprs
-              .toSeq
-              .map(e => e.label.name -> e.asSparkSQLExpr)
-              .sortBy(_._1)
-              .unzip
+                .toSeq
+                .map(e => e.label.name -> e.asSparkSQLExpr)
+                .sortBy(_._1)
+                .unzip
               val booleanLabelFlagColumn = functions.array(labelColumns: _*)
               get_node_labels(labelNames)(booleanLabelFlagColumn)
             case CTNull => NULL_LIT
@@ -372,11 +391,11 @@ object SparkSQLExprMapper {
         case Acos(e) => functions.acos(e.asSparkSQLExpr)
         case Asin(e) => functions.asin(e.asSparkSQLExpr)
         case Atan(e) => functions.atan(e.asSparkSQLExpr)
-        case Atan2(e1,e2) => functions.atan2(e1.asSparkSQLExpr, e2.asSparkSQLExpr)
+        case Atan2(e1, e2) => functions.atan2(e1.asSparkSQLExpr, e2.asSparkSQLExpr)
         case Cos(e) => functions.cos(e.asSparkSQLExpr)
         case Cot(e) => Divide(IntegerLit(1)(CTInteger), Tan(e)(CTFloat))(CTFloat).asSparkSQLExpr
         case Degrees(e) => functions.degrees(e.asSparkSQLExpr)
-        case Haversin(e) => Divide(Subtract(IntegerLit(1)(CTInteger),Cos(e)(CTFloat))(CTFloat), IntegerLit(2)(CTInteger))(CTFloat).asSparkSQLExpr
+        case Haversin(e) => Divide(Subtract(IntegerLit(1)(CTInteger), Cos(e)(CTFloat))(CTFloat), IntegerLit(2)(CTInteger))(CTFloat).asSparkSQLExpr
         case Radians(e) => functions.radians(e.asSparkSQLExpr)
         case Sin(e) => functions.sin(e.asSparkSQLExpr)
         case Tan(e) => functions.tan(e.asSparkSQLExpr)
@@ -468,33 +487,5 @@ object SparkSQLExprMapper {
     }
   }
 
-  private def resolveTemporalArgument(expr: Expr)(implicit parameters: CypherMap): Option[Either[Map[String, Int], String]] = {
-    expr match {
-      case MapExpression(inner) =>
-        val map = inner.map {
-          case (key, Param(name)) => key -> (parameters(name) match {
-            case CypherString(s) => s.toInt
-            case CypherInteger(i) => i.toInt
-            case other => throw IllegalArgumentException("A map value of type CypherString or CypherInteger", other)
-          })
-          case (key, e) =>
-            throw NotImplementedException(s"Parsing temporal values is currently only supported for Literal-Maps, got $key -> $e")
-        }
 
-        Some(Left(map))
-
-      case Param(name) =>
-        val s = parameters(name) match {
-          case CypherString(str) => str
-          case other => throw IllegalArgumentException(s"Parameter `$name` to be a CypherString", other)
-        }
-
-        Some(Right(s))
-
-      case NullLit(_) => None
-
-      case other =>
-        throw NotImplementedException(s"Parsing temporal values is currently only supported for Literal-Maps and String literals, got $other")
-    }
-  }
 }

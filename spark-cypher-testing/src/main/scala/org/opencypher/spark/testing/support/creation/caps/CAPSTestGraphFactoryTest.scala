@@ -26,9 +26,11 @@
  */
 package org.opencypher.spark.testing.support.creation.caps
 
+import java.sql.Date
+
 import org.opencypher.okapi.api.io.conversion.{NodeMapping, RelationshipMapping}
 import org.opencypher.okapi.api.schema.Schema
-import org.opencypher.okapi.api.types.CTString
+import org.opencypher.okapi.api.types.{CTDate, CTString}
 import org.opencypher.okapi.testing.propertygraph.CreateGraphFactory
 import org.opencypher.spark.api.io.{CAPSNodeTable, CAPSRelationshipTable}
 import org.opencypher.spark.impl.CAPSConverters._
@@ -41,7 +43,7 @@ abstract class CAPSTestGraphFactoryTest extends CAPSTestSuite with GraphMatching
 
   val createQuery: String =
     """
-      |CREATE (max:Person:Astronaut {name: "Max"})
+      |CREATE (max:Person:Astronaut {name: "Max", birthday: date("1991-07-10")})
       |CREATE (martin:Person:Martian {name: "Martin"})
       |CREATE (swedish:Language {title: "Swedish"})
       |CREATE (german:Language {title: "German"})
@@ -57,11 +59,12 @@ abstract class CAPSTestGraphFactoryTest extends CAPSTestSuite with GraphMatching
     .withImpliedLabel("Person")
     .withOptionalLabel("Astronaut" -> "IS_ASTRONAUT")
     .withOptionalLabel("Martian" -> "IS_MARTIAN")
-    .withPropertyKey("name" -> "NAME"), caps.sparkSession.createDataFrame(
+    .withPropertyKey("name" -> "NAME")
+    .withPropertyKey("birthday" -> "BIRTHDAY"), caps.sparkSession.createDataFrame(
     Seq(
-      (0L, true, false, "Max"),
-      (1L, false, true, "Martin"))
-  ).toDF("ID", "IS_ASTRONAUT", "IS_MARTIAN", "NAME"))
+      (0L, true, false, "Max", Date.valueOf("1991-07-10")),
+      (1L, false, true, "Martin", null))
+  ).toDF("ID", "IS_ASTRONAUT", "IS_MARTIAN", "NAME", "BIRTHDAY"))
 
   val languageTable: CAPSNodeTable = CAPSNodeTable.fromMapping(NodeMapping
     .on("ID")
@@ -86,7 +89,7 @@ abstract class CAPSTestGraphFactoryTest extends CAPSTestSuite with GraphMatching
   test("testSchema") {
     val propertyGraph = CreateGraphFactory(createQuery)
     factory(propertyGraph).schema should equal(Schema.empty
-      .withNodePropertyKeys("Person", "Astronaut")("name" -> CTString)
+      .withNodePropertyKeys("Person", "Astronaut")("name" -> CTString, "birthday" -> CTDate)
       .withNodePropertyKeys("Person", "Martian")("name" -> CTString)
       .withNodePropertyKeys("Language")("title" -> CTString)
       .withRelationshipType("SPEAKS")

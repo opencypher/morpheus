@@ -179,7 +179,8 @@ case class CTMap(innerTypes: Map[String, CypherType]) extends MaterialDefiniteCy
   }
 }
 
-sealed trait TemporalInstantCypherType extends MaterialDefiniteCypherLeafType
+sealed trait TemporalValueCypherType extends MaterialDefiniteCypherLeafType
+sealed trait TemporalInstantCypherType extends TemporalValueCypherType
 
 case object CTLocalDateTime extends TemporalInstantCypherType {
   override def name = "LOCALDATETIME"
@@ -189,7 +190,7 @@ case object CTDate extends TemporalInstantCypherType {
   override def name = "DATE"
 }
 
-case object CTDuration extends MaterialDefiniteCypherLeafType {
+case object CTDuration extends TemporalValueCypherType {
   override def name = "DURATION"
 }
 

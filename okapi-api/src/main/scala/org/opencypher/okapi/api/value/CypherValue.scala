@@ -63,9 +63,9 @@ object CypherValue {
       case jb: java.lang.Boolean => jb.booleanValue
       case jl: java.util.List[_] => seqToCypherList(jl.toArray)
       case dt: java.sql.Date => dt.toLocalDate
-      case d: java.time.LocalDate => d
       case ts: java.sql.Timestamp => ts.toLocalDateTime
-      case dt: java.time.LocalDateTime => dt
+      case ld: java.time.LocalDate => ld
+      case ldt: java.time.LocalDateTime => ldt
       case du: Duration => du
       case a: Array[_] => seqToCypherList(a)
       case s: Seq[_] => seqToCypherList(s)

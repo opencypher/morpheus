@@ -28,11 +28,13 @@ package org.opencypher.spark.api.io.sql
 
 import java.net.URI
 
+import org.apache.spark.sql.types.DateType
 import org.apache.spark.sql.{DataFrame, DataFrameReader, functions}
 import org.opencypher.graphddl.GraphDdl.PropertyMappings
 import org.opencypher.graphddl._
 import org.opencypher.okapi.api.graph.{GraphName, PropertyGraph}
 import org.opencypher.okapi.api.io.conversion.{EntityMapping, NodeMapping, RelationshipMapping}
+import org.opencypher.okapi.api.types.{CTDate, CypherType}
 import org.opencypher.okapi.impl.exception.{GraphNotFoundException, IllegalArgumentException, UnsupportedOperationException}
 import org.opencypher.okapi.impl.util.StringEncodingUtilities._
 import org.opencypher.spark.api.CAPSSession
@@ -76,7 +78,7 @@ case class SqlPropertyGraphDataSource(
         val nodeElementTypes = nodeViewKey.nodeType.elementTypes
         val columnsWithType = nodeColsWithCypherType(capsSchema, nodeElementTypes)
         val inputNodeMapping = createNodeMapping(nodeElementTypes, ddlGraph.nodeToViewMappings(nodeViewKey).propertyMappings)
-        val normalizedDf = normalizeDataFrame(nodeDf, inputNodeMapping).castToLong
+        val normalizedDf = normalizeDataFrame(nodeDf, inputNodeMapping, columnsWithType).castToLong
         val normalizedMapping = normalizeNodeMapping(inputNodeMapping)
 
         normalizedDf.validateColumnTypes(columnsWithType)
@@ -122,7 +124,7 @@ case class SqlPropertyGraphDataSource(
 
       val columnsWithType = relColsWithCypherType(capsSchema, relElementType)
       val inputRelMapping = createRelationshipMapping(relElementType, edgeToViewMapping.propertyMappings)
-      val normalizedDf = normalizeDataFrame(relsWithEndNodeId, inputRelMapping).castToLong
+      val normalizedDf = normalizeDataFrame(relsWithEndNodeId, inputRelMapping, columnsWithType).castToLong
       val normalizedMapping = normalizeRelationshipMapping(inputRelMapping)
 
       normalizedDf.validateColumnTypes(columnsWithType)
@@ -252,7 +254,7 @@ case class SqlPropertyGraphDataSource(
       .load(filePath.toString)
   }
 
-  private def normalizeDataFrame(dataFrame: DataFrame, mapping: EntityMapping): DataFrame = {
+  private def normalizeDataFrame(dataFrame: DataFrame, mapping: EntityMapping, columnTypes: Map[String, CypherType]): DataFrame = {
     val fields = dataFrame.schema.fields
     val indexedFields = fields.map(field => field.name.toLowerCase).zipWithIndex.toMap
 
@@ -263,7 +265,15 @@ case class SqlPropertyGraphDataSource(
         expected = s"Column with name $column",
         actual = indexedFields)
     }
-    dataFrame.safeRenameColumns(columnRenamings)
+    val renamedDf = dataFrame.safeRenameColumns(columnRenamings)
+    normalizeTemporalColumns(renamedDf, columnTypes)
+  }
+
+  private def normalizeTemporalColumns(df: DataFrame, columnTypes: Map[String, CypherType]): DataFrame = {
+    columnTypes
+      .mapValues(_.material)
+      .collect { case (column, _@ CTDate) => column}
+      .foldLeft(df) { case (acc, dateCol) => acc.withColumn(dateCol, acc.col(dateCol).cast(DateType)) }
   }
 
   private def normalizeNodeMapping(mapping: NodeMapping): NodeMapping = {

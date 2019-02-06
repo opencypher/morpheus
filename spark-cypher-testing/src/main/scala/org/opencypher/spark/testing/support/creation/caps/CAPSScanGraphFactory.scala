@@ -26,6 +26,8 @@
  */
 package org.opencypher.spark.testing.support.creation.caps
 
+import java.time.{LocalDate, LocalDateTime}
+
 import org.apache.spark.sql.Row
 import org.apache.spark.sql.types.{LongType, StructField, StructType}
 import org.opencypher.okapi.api.io.conversion.{NodeMapping, RelationshipMapping}
@@ -63,6 +65,8 @@ object CAPSScanGraphFactory extends CAPSTestGraphFactory {
         .map { node =>
           val propertyValues = propKeys.map(key =>
             node.properties.unwrap.get(key._1) match {
+              case Some(date: LocalDate) => java.sql.Date.valueOf(date)
+              case Some(localDateTime: LocalDateTime) => java.sql.Timestamp.valueOf(localDateTime)
               case Some(dur: Duration) => dur.toCalendarInterval
               case Some(other) => other
               case None => null

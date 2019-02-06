@@ -33,9 +33,10 @@ import cats.data.State
 import cats.data.State._
 import cats.instances.list._
 import cats.syntax.all._
-import org.opencypher.v9_0.ast._
 import org.opencypher.okapi.api.value.CypherValue.{CypherEntity, CypherMap, CypherNode, CypherRelationship}
 import org.opencypher.okapi.impl.exception.{IllegalArgumentException, UnsupportedOperationException}
+import org.opencypher.okapi.impl.temporal.{Duration, TemporalTypesHelper}
+import org.opencypher.v9_0.ast._
 import org.opencypher.v9_0.ast.semantics.{SemanticErrorDef, SemanticState}
 import org.opencypher.v9_0.expressions._
 import org.opencypher.v9_0.frontend.phases._
@@ -206,9 +207,22 @@ object CreateGraphFactory extends InMemoryGraphFactory {
     for {
       res <- expr match {
         case Parameter(name, _) => inspect[ParsingContext, Any](_.parameter(name))
+
         case Variable(name) => inspect[ParsingContext, Any](_.variableMapping(name))
+
         case l: Literal => pure[ParsingContext, Any](l.value)
+
         case ListLiteral(expressions) => expressions.toList.traverse[Result, Any](processExpr)
+
+        case FunctionInvocation(_, FunctionName("date"), _, Seq(dateString: StringLiteral)) =>
+          pure[ParsingContext, Any](TemporalTypesHelper.parseDate(Right(dateString.value)))
+
+        case FunctionInvocation(_, FunctionName("localdatetime"), _, Seq(dateString: StringLiteral)) =>
+          pure[ParsingContext, Any](TemporalTypesHelper.parseLocalDateTime(Right(dateString.value)))
+
+        case FunctionInvocation(_, FunctionName("duration"), _, Seq(dateString: StringLiteral)) =>
+          pure[ParsingContext, Any](Duration.parse(dateString.value))
+
         case Property(variable: Variable, propertyKey) =>
           inspect[ParsingContext, Any]({ context =>
             context.variableMapping(variable.name) match {
