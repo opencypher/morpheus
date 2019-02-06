@@ -38,8 +38,16 @@ class IDEncodingTest extends CAPSTestSuite with Checkers {
   it("encodes longs correctly") {
     check((l: Long) => {
       val scala = l.encodeAsCAPSId.toList
-      val spark = typedLit[Long](l).encodeLongAsCAPSId.expr.eval().asInstanceOf[GenericArrayData].array.toList
+      val spark = typedLit[Long](l).encodeLongAsCAPSId.expr.eval().asInstanceOf[Array[Byte]].toList
       scala === spark
+    }, minSuccessful(1000))
+  }
+
+  it("encoding/decoding is symmetric") {
+    check((l: Long) => {
+      val encoded = l.encodeAsCAPSId
+      val decoded = encoded.decodeToLong
+      decoded === l
     }, minSuccessful(1000))
   }
 

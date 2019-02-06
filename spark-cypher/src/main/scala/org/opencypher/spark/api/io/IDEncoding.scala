@@ -26,25 +26,35 @@
  */
 package org.opencypher.spark.api.io
 
+import java.nio.ByteBuffer
+
 import org.apache.spark.sql.functions.lit
 import org.apache.spark.sql.{Column, functions}
 import org.opencypher.okapi.ir.api.expr.PrefixId.GraphIdPrefix
 
 object IDEncoding {
 
+  private class ThreadLocalLongBuffer extends ThreadLocal[ByteBuffer] {
+    override def initialValue: ByteBuffer = ByteBuffer.allocate(8)
+  }
+
+  private val buffer = new ThreadLocalLongBuffer
+
   type CAPSId = Array[Byte]
 
   private def encode(l: Long): CAPSId = {
-    val a = new Array[Byte](8)
-    a(0) = (l >> 56).toByte
-    a(1) = (l >> 48).toByte
-    a(2) = (l >> 40).toByte
-    a(3) = (l >> 32).toByte
-    a(4) = (l >> 24).toByte
-    a(5) = (l >> 16).toByte
-    a(6) = (l >> 8).toByte
-    a(7) = l.toByte
-    a
+    val bb = buffer.get()
+    bb.clear()
+    bb.putLong(l)
+    bb.array()
+  }
+
+  private def decode(a: Array[Byte]): Long = {
+    val bb = buffer.get()
+    bb.clear()
+    bb.put(a)
+    bb.flip()
+    bb.getLong()
   }
 
   private val encodeUdf = functions.udf(encode _)
@@ -73,6 +83,12 @@ object IDEncoding {
     def encodeAsCAPSId: CAPSId = encode(l)
 
     def withPrefix(prefix: Int): CAPSId = l.encodeAsCAPSId.withPrefix(prefix.toByte)
+
+  }
+
+  implicit class LongIdDecoding(val a: Array[Byte]) extends AnyVal {
+
+    def decodeToLong: Long = decode(a)
 
   }
 
