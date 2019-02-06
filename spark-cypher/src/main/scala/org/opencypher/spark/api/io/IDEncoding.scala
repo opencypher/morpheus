@@ -28,7 +28,6 @@ package org.opencypher.spark.api.io
 
 import java.nio.ByteBuffer
 
-import org.apache.spark.sql.functions.lit
 import org.apache.spark.sql.{Column, functions}
 import org.opencypher.okapi.ir.api.expr.PrefixId.GraphIdPrefix
 
@@ -58,11 +57,7 @@ object IDEncoding {
     n
   }
 
-  private val addPrefixUdf = functions.udf(addPrefix _)
-
   implicit class ColumnIdEncoding(val c: Column) extends AnyVal {
-
-    def addPrefix(p: Byte): Column = addPrefixUdf(c, lit(p))
 
     def encodeLongAsCAPSId(name: String): Column = encodeLongAsCAPSId.as(name)
 

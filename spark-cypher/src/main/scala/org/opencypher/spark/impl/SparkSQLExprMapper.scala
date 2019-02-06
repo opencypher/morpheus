@@ -274,10 +274,7 @@ object SparkSQLExprMapper {
         case Id(e) => e.asSparkSQLExpr
 
         case PrefixId(idExpr, prefix) =>
-//          val convertedPrefix = lit(new String(Array[Byte](prefix), StandardCharsets.UTF_8))
-//          val convertedId = idExpr.asSparkSQLExpr.cast(StringType)
-//          concat(convertedPrefix, convertedId).cast(BinaryType)
-          idExpr.asSparkSQLExpr.addPrefix(prefix)
+          functions.concat(functions.lit(Array[Byte](prefix)), idExpr.asSparkSQLExpr).cast(BinaryType)
 
         case ToId(e) =>
           e.cypherType.material match {
