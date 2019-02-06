@@ -61,27 +61,26 @@ object ConstructGraphPlanner {
       } else {
         construct.onGraphs
       }
-      graphQgns.zipWithIndex.map { case (qgn, i) => qgn -> i.toByte }.toMap
-    }
-
-    // If we aren't mixing entities from different graphs we need no prefixing
-    val needToSetPrefixes: Boolean = unionPrefixStrategy.size > 1
-
-    val onGraphs: List[RelationalCypherGraph[T]] = construct.onGraphs.map { qgn =>
-      if (needToSetPrefixes) {
-        relational.PrefixGraph(relational.Start[T](qgn), unionPrefixStrategy(qgn)).graph
-      } else {
-        relational.Start[T](qgn).graph
+      // The first graph does not need a prefix
+      graphQgns match {
+        case Nil => Map.empty
+        case _ :: Nil => Map.empty
+        case _ :: t => t.zipWithIndex.map { case (qgn, i) => qgn -> i.toByte }.toMap
       }
     }
 
-    val constructTable: RelationalOperator[T] = initConstructTable(inputTablePlan, if (needToSetPrefixes) unionPrefixStrategy else Map.empty, construct)
+    val onGraphs: List[RelationalCypherGraph[T]] = construct.onGraphs.map { qgn =>
+      val start = relational.Start[T](qgn)
+      unionPrefixStrategy.get(qgn) match {
+        case None => start.graph
+        case Some(prefix) => relational.PrefixGraph(start, prefix).graph
+      }
+    }
 
-    val allGraphs: List[RelationalCypherGraph[T]] = if (areNodesCreatedOrCloned) {
-      val scanGraph: RelationalCypherGraph[T] = extractScanGraph(construct, constructTable)
-      scanGraph :: onGraphs
-    } else {
-      onGraphs
+    val constructTable: RelationalOperator[T] = initConstructTable(inputTablePlan, unionPrefixStrategy, construct)
+
+    val allGraphs: List[RelationalCypherGraph[T]] = onGraphs ++ {
+      if (areNodesCreatedOrCloned) Some(extractScanGraph(construct, constructTable)) else None
     }
 
     val constructedGraph = allGraphs match {

@@ -107,7 +107,7 @@ trait RelationalCypherGraph[T <: Table[T]] extends PropertyGraph {
   }
 
   override def unionAll(others: PropertyGraph*): RelationalCypherGraph[T] = {
-    val graphs = (this +: others).map {
+    val otherGraphs: List[RelationalCypherGraph[T]] = others.toList.map {
       case g: RelationalCypherGraph[T] => g
       case _ => throw UnsupportedOperationException("Union all only works on relational graphs")
     }
@@ -118,10 +118,9 @@ trait RelationalCypherGraph[T <: Table[T]] extends PropertyGraph {
     })
 
     implicit val context: RelationalRuntimeContext[T] = RelationalRuntimeContext(graphAt)(session)
-    val prefixedGraphs = graphs.zipWithIndex.map {
-      case (g, i) =>
-        session.graphs.prefixedGraph(g, i.toByte)
-    }
-    session.graphs.unionGraph(prefixedGraphs: _*)
+
+    // Prefix all other graphs, but not `this`
+    val allGraphs = this :: otherGraphs.zipWithIndex.map { case (g, i) => session.graphs.prefixedGraph(g, i.toByte) }
+    session.graphs.unionGraph(allGraphs: _*)
   }
 }
