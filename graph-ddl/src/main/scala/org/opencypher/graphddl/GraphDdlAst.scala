@@ -57,6 +57,7 @@ case class SetSchemaDefinition(
 
 case class ElementTypeDefinition(
   name: String,
+  parents: Set[String] = Set.empty,
   properties: Map[String, CypherType] = Map.empty,
   maybeKey: Option[KeyDefinition] = None
 ) extends GraphDdlAst with DdlStatement with GraphTypeStatement

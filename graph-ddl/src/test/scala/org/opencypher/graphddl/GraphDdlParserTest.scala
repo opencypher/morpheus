@@ -97,21 +97,21 @@ class GraphDdlParserTest extends BaseTestSuite with MockitoSugar with TestNameFi
     }
   }
 
-  describe("label definitions") {
+  describe("element type definitions") {
     it("parses A") {
       success(elementTypeDefinition(_), ElementTypeDefinition("A"))
     }
 
     it("parses  A ( foo  string? )") {
-      success(elementTypeDefinition(_), ElementTypeDefinition("A", Map("foo" -> CTString.nullable)))
+      success(elementTypeDefinition(_), ElementTypeDefinition("A", properties = Map("foo" -> CTString.nullable)))
     }
 
     it("parses  A ( key FLOAT )") {
-      success(elementTypeDefinition(_), ElementTypeDefinition("A", Map("key" -> CTFloat)))
+      success(elementTypeDefinition(_), ElementTypeDefinition("A", properties = Map("key" -> CTFloat)))
     }
 
     it("parses  A ( key FLOAT? )") {
-      success(elementTypeDefinition(_), ElementTypeDefinition("A", Map("key" -> CTFloat.nullable)))
+      success(elementTypeDefinition(_), ElementTypeDefinition("A", properties = Map("key" -> CTFloat.nullable)))
     }
 
     it("!parses  A ( key _ STRING )") {
@@ -119,45 +119,57 @@ class GraphDdlParserTest extends BaseTestSuite with MockitoSugar with TestNameFi
     }
 
     it("parses  A ( key1 FLOAT, key2 STRING)") {
-      success(elementTypeDefinition(_), ElementTypeDefinition("A", Map("key1" -> CTFloat, "key2" -> CTString)))
+      success(elementTypeDefinition(_), ElementTypeDefinition("A", properties = Map("key1" -> CTFloat, "key2" -> CTString)))
     }
 
     it("parses A ( key DATE )") {
-      success(elementTypeDefinition(_), ElementTypeDefinition("A", Map("key" -> CTDate)))
+      success(elementTypeDefinition(_), ElementTypeDefinition("A", properties = Map("key" -> CTDate)))
     }
 
     it("parses A ( key DATE? )") {
-      success(elementTypeDefinition(_), ElementTypeDefinition("A", Map("key" -> CTDateOrNull)))
+      success(elementTypeDefinition(_), ElementTypeDefinition("A", properties = Map("key" -> CTDateOrNull)))
     }
 
     it("parses A ( key LOCALDATETIME )") {
-      success(elementTypeDefinition(_), ElementTypeDefinition("A", Map("key" -> CTLocalDateTime)))
+      success(elementTypeDefinition(_), ElementTypeDefinition("A", properties = Map("key" -> CTLocalDateTime)))
     }
 
     it("parses A ( key LOCALDATETIME? )") {
-      success(elementTypeDefinition(_), ElementTypeDefinition("A", Map("key" -> CTLocalDateTimeOrNull)))
+      success(elementTypeDefinition(_), ElementTypeDefinition("A", properties = Map("key" -> CTLocalDateTimeOrNull)))
     }
 
-    it("!parses  A ()") {
-      failure(elementTypeDefinition(_))
+    it("parses A ()") {
+      success(elementTypeDefinition(_), ElementTypeDefinition("A"))
+    }
+
+    it("parses A EXTENDS B ()") {
+      success(elementTypeDefinition(_), ElementTypeDefinition("A", parents = Set("B")))
+    }
+
+    it("parses A EXTENDS B, C ()") {
+      success(elementTypeDefinition(_), ElementTypeDefinition("A", parents = Set("B", "C")))
+    }
+
+    it("parses A EXTENDS B, C ( key STRING )") {
+      success(elementTypeDefinition(_), ElementTypeDefinition("A", parents = Set("B", "C"), properties = Map("key" -> CTString)))
     }
   }
 
-  describe("catalog label definition") {
+  describe("catalog element type definition") {
     it("parses CREATE ELEMENT TYPE A") {
       success(globalElementTypeDefinition(_), ElementTypeDefinition("A"))
     }
 
     it("parses CREATE ELEMENT TYPE A ( foo STRING ) ") {
-      success(globalElementTypeDefinition(_), ElementTypeDefinition("A", Map("foo" -> CTString)))
+      success(globalElementTypeDefinition(_), ElementTypeDefinition("A", properties = Map("foo" -> CTString)))
     }
 
     it("parses CREATE ELEMENT TYPE A KEY A_NK   (foo,   bar)") {
-      success(globalElementTypeDefinition(_), ElementTypeDefinition("A", Map.empty, Some("A_NK" -> Set("foo", "bar"))))
+      success(globalElementTypeDefinition(_), ElementTypeDefinition("A", properties = Map.empty, maybeKey = Some("A_NK" -> Set("foo", "bar"))))
     }
 
     it("parses CREATE ELEMENT TYPE A ( foo STRING ) KEY A_NK (foo,   bar)") {
-      success(globalElementTypeDefinition(_), ElementTypeDefinition("A", Map("foo" -> CTString), Some("A_NK" -> Set("foo", "bar"))))
+      success(globalElementTypeDefinition(_), ElementTypeDefinition("A", properties = Map("foo" -> CTString), maybeKey = Some("A_NK" -> Set("foo", "bar"))))
     }
 
     it("!parses CREATE ELEMENT TYPE A ( foo STRING ) KEY A ()") {
@@ -240,10 +252,10 @@ class GraphDdlParserTest extends BaseTestSuite with MockitoSugar with TestNameFi
            |CREATE ELEMENT TYPE TYPE_2 ( prop BOOLEAN? ) """.stripMargin) shouldEqual
         DdlDefinition(List(
           SetSchemaDefinition("foo", "bar"),
-          ElementTypeDefinition("A", Map("name" -> CTString)),
-          ElementTypeDefinition("B", Map("sequence" -> CTInteger, "nationality" -> CTString.nullable, "age" -> CTInteger.nullable)),
+          ElementTypeDefinition("A", properties = Map("name" -> CTString)),
+          ElementTypeDefinition("B", properties = Map("sequence" -> CTInteger, "nationality" -> CTString.nullable, "age" -> CTInteger.nullable)),
           ElementTypeDefinition("TYPE_1"),
-          ElementTypeDefinition("TYPE_2", Map("prop" -> CTBoolean.nullable))
+          ElementTypeDefinition("TYPE_2", properties = Map("prop" -> CTBoolean.nullable))
         ))
     }
 

@@ -36,7 +36,7 @@ abstract class GraphDdlException(msg: String, cause: Option[Exception] = None) e
 private[graphddl] object GraphDdlException {
 
   def unresolved(desc: String, reference: Any): Nothing = throw UnresolvedReferenceException(
-    s"""$desc: $reference"""
+    s"$desc: $reference"
   )
 
   def unresolved(desc: String, reference: Any, available: Traversable[Any]): Nothing = throw UnresolvedReferenceException(
@@ -45,7 +45,11 @@ private[graphddl] object GraphDdlException {
   )
 
   def duplicate(desc: String, definition: Any): Nothing = throw DuplicateDefinitionException(
-    s"""$desc: $definition"""
+    s"$desc: $definition"
+  )
+
+  def illegalInheritance(desc: String, reference: Any): Nothing = throw IllegalInheritanceException(
+    s"$desc: $reference"
   )
 
   def incompatibleTypes(msg: String): Nothing =
@@ -72,6 +76,8 @@ private[graphddl] object GraphDdlException {
 case class UnresolvedReferenceException(msg: String, cause: Option[Exception] = None) extends GraphDdlException(msg, cause)
 
 case class DuplicateDefinitionException(msg: String, cause: Option[Exception] = None) extends GraphDdlException(msg, cause)
+
+case class IllegalInheritanceException(msg: String, cause: Option[Exception] = None) extends GraphDdlException(msg, cause)
 
 case class TypeException(msg: String, cause: Option[Exception] = None) extends GraphDdlException(msg, cause)
 

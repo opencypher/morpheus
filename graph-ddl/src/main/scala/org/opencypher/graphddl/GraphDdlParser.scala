@@ -65,6 +65,7 @@ object GraphDdlParser {
 
   private def CREATE[_: P]: P[Unit] = keyword("CREATE")
   private def ELEMENT[_: P]: P[Unit] = keyword("ELEMENT")
+  private def EXTENDS[_: P]: P[Unit] = keyword("EXTENDS")
   private def KEY[_: P]: P[Unit] = keyword("KEY")
   private def GRAPH[_: P]: P[Unit] = keyword("GRAPH")
   private def TYPE[_: P]: P[Unit] = keyword("TYPE")
@@ -87,21 +88,22 @@ object GraphDdlParser {
     P(identifier.! ~/ CypherTypeParser.cypherType)
 
   private def properties[_: P]: P[Map[String, CypherType]] =
-    P("(" ~/ property.rep(min = 1, sep = ",").map(_.toMap) ~/ ")")
+    P("(" ~/ property.rep(min = 0, sep = ",").map(_.toMap) ~/ ")")
 
   private def keyDefinition[_: P]: P[(String, Set[String])] =
     P(KEY ~/ identifier.! ~/ "(" ~/ identifier.!.rep(min = 1, sep = ",").map(_.toSet) ~/ ")")
 
-  def elementTypeDefinition[_: P]: P[ElementTypeDefinition] = {
-    P(identifier.! ~/ properties.? ~/ keyDefinition.?).map {
-      case (id, None, maybeKey) => ElementTypeDefinition(id, maybeKey = maybeKey)
-      case (id, Some(props), maybeKey) => ElementTypeDefinition(id, props, maybeKey)
+  private def extendsDefinition[_: P]: P[Set[String]] =
+    P(EXTENDS ~/ identifier.!.rep(min = 1, sep = ",").map(_.toSet))
+
+  def elementTypeDefinition[_: P]: P[ElementTypeDefinition] =
+    P(identifier.! ~/ extendsDefinition.? ~/ properties.? ~/ keyDefinition.?).map {
+      case (id, maybeParents, maybeProps, maybeKey) =>
+        ElementTypeDefinition(id, maybeParents.getOrElse(Set.empty), maybeProps.getOrElse(Map.empty), maybeKey)
     }
-  }
 
   def globalElementTypeDefinition[_: P]: P[ElementTypeDefinition] =
     P(CREATE ~ ELEMENT ~/ TYPE ~/ elementTypeDefinition)
-
 
   // ==== Schema ====
 

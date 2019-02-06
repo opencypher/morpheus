@@ -72,9 +72,9 @@ class GraphDdlTest extends FunSpec with Matchers {
 
     val personKey1 = NodeViewKey(NodeType("Person"), ViewId(maybeSetSchema, List("personView1")))
     val personKey2 = NodeViewKey(NodeType("Person"), ViewId(maybeSetSchema, List("personView2")))
-    val bookKey    = NodeViewKey(NodeType("Book"),   ViewId(maybeSetSchema, List("bookView")))
-    val readsKey1  = EdgeViewKey(RelationshipType("Person", "READS", "Book"),  ViewId(maybeSetSchema, List("readsView1")))
-    val readsKey2  = EdgeViewKey(RelationshipType("Person", "READS", "Book"),  ViewId(maybeSetSchema, List("readsView2")))
+    val bookKey = NodeViewKey(NodeType("Book"), ViewId(maybeSetSchema, List("bookView")))
+    val readsKey1 = EdgeViewKey(RelationshipType("Person", "READS", "Book"), ViewId(maybeSetSchema, List("readsView1")))
+    val readsKey2 = EdgeViewKey(RelationshipType("Person", "READS", "Book"), ViewId(maybeSetSchema, List("readsView2")))
 
     val expected = GraphDdl(
       Map(
@@ -200,79 +200,171 @@ class GraphDdlTest extends FunSpec with Matchers {
     )
   }
 
+  describe("validate EXTENDS syntax for mappings") {
+
+    val A_a = NodeViewKey(NodeType("A"), ViewId(Some(SetSchemaDefinition("ds1", "db1")), List("a")))
+    val A_ab = NodeViewKey(NodeType("A", "B"), ViewId(Some(SetSchemaDefinition("ds1", "db1")), List("a_b")))
+
+    val expectedGraph = Graph(
+      name = GraphName("myGraph"),
+      graphType = Schema.empty
+        .withNodePropertyKeys("A")("x" -> CTString)
+        .withNodePropertyKeys("A", "B")("x" -> CTString, "y" -> CTString)
+        .withRelationshipPropertyKeys("R")("y" -> CTString)
+        .withSchemaPatterns(SchemaPattern("A", "R", "A"))
+        .withSchemaPatterns(SchemaPattern(Set("A", "B"), "R", Set("A"))),
+      nodeToViewMappings = Map(
+        A_a -> NodeToViewMapping(NodeType("A"), ViewId(Some(SetSchemaDefinition("ds1", "db1")), List("a")), Map("x" -> "x")),
+        A_ab -> NodeToViewMapping(NodeType("A", "B"), ViewId(Some(SetSchemaDefinition("ds1", "db1")), List("a_b")), Map("x" -> "x", "y" -> "y"))
+      ),
+      edgeToViewMappings = List(
+        EdgeToViewMapping(RelationshipType("A", "R", "A"), ViewId(Some(SetSchemaDefinition("ds1", "db1")), List("r")),
+          StartNode(A_a, List(Join("id", "id"))),
+          EndNode(A_a, List(Join("id", "id"))),
+          Map("y" -> "y")
+        ),
+        EdgeToViewMapping(RelationshipType(NodeType("A", "B"), "R", NodeType("A")), ViewId(Some(SetSchemaDefinition("ds1", "db1")), List("r")),
+          StartNode(A_ab, List(Join("id", "id"))),
+          EndNode(A_a, List(Join("id", "id"))),
+          Map("y" -> "y")
+        )
+      )
+    )
+
+    it("allows compact inline graph definition with complex node type") {
+      val ddl = GraphDdl(
+        """SET SCHEMA ds1.db1
+          |CREATE GRAPH myGraph (
+          |  A (x STRING),
+          |  B (y STRING),
+          |  R (y STRING),
+          |
+          |  (A)-[R]->(A),
+          |  (A, B)-[R]->(A),
+          |
+          |  (A) FROM a,
+          |  (A, B) FROM a_b,
+          |
+          |  (A)-[R]->(A) FROM r e
+          |    START NODES (A) FROM a n JOIN ON e.id = n.id
+          |    END   NODES (A) FROM a n JOIN ON e.id = n.id,
+          |  (A, B)-[R]->(A) FROM r e
+          |    START NODES (A, B) FROM a_b n JOIN ON e.id = n.id
+          |    END   NODES (A)    FROM a   n JOIN ON e.id = n.id
+          |)
+        """.stripMargin)
+
+      ddl.graphs(GraphName("myGraph")) shouldEqual expectedGraph
+    }
+
+    it("allows compact inline graph definition with complex node type based on inheritance") {
+      val ddl = GraphDdl(
+        """SET SCHEMA ds1.db1
+          |CREATE GRAPH myGraph (
+          |  A (x STRING),
+          |  B EXTENDS A (y STRING),
+          |  R (y STRING),
+          |
+          |  (A)-[R]->(A),
+          |  (B)-[R]->(A),
+          |
+          |  (A) FROM a,
+          |  (B) FROM a_b,
+          |
+          |  (A)-[R]->(A) FROM r e
+          |    START NODES (A) FROM a n JOIN ON e.id = n.id
+          |    END   NODES (A) FROM a n JOIN ON e.id = n.id,
+          |  (B)-[R]->(A) FROM r e
+          |    START NODES (B) FROM a_b n JOIN ON e.id = n.id
+          |    END   NODES (A) FROM a   n JOIN ON e.id = n.id
+          |)
+        """.stripMargin)
+
+      ddl.graphs(GraphName("myGraph")) shouldEqual expectedGraph
+    }
+
+  }
+
+
   it("allows these equivalent graph definitions") {
     val ddls = List(
       // most compact form
-      GraphDdl("""SET SCHEMA ds1.db1
-                 |CREATE GRAPH myGraph (
-                 |  A (x STRING), B (y STRING),
-                 |  (A) FROM a,
-                 |  (A)-[B]->(A) FROM b e
-                 |    START NODES (A) FROM a n JOIN ON e.id = n.id
-                 |    END   NODES (A) FROM a n JOIN ON e.id = n.id
-                 |)
-               """.stripMargin),
+      GraphDdl(
+        """SET SCHEMA ds1.db1
+          |CREATE GRAPH myGraph (
+          |  A (x STRING), B (y STRING),
+          |  (A) FROM a,
+          |  (A)-[B]->(A) FROM b e
+          |    START NODES (A) FROM a n JOIN ON e.id = n.id
+          |    END   NODES (A) FROM a n JOIN ON e.id = n.id
+          |)
+        """.stripMargin),
       // mixed order
-      GraphDdl("""SET SCHEMA ds1.db1
-                 |CREATE GRAPH myGraph (
-                 |  (A)-[B]->(A) FROM b e
-                 |    START NODES (A) FROM a n JOIN ON e.id = n.id
-                 |    END   NODES (A) FROM a n JOIN ON e.id = n.id,
-                 |  A (x STRING), B (y STRING),
-                 |  (A) FROM a
-                 |)
-               """.stripMargin),
+      GraphDdl(
+        """SET SCHEMA ds1.db1
+          |CREATE GRAPH myGraph (
+          |  (A)-[B]->(A) FROM b e
+          |    START NODES (A) FROM a n JOIN ON e.id = n.id
+          |    END   NODES (A) FROM a n JOIN ON e.id = n.id,
+          |  A (x STRING), B (y STRING),
+          |  (A) FROM a
+          |)
+        """.stripMargin),
       // explicit node and rel type definition
-      GraphDdl("""SET SCHEMA ds1.db1
-                 |CREATE GRAPH myGraph (
-                 |  A (x STRING), B (y STRING),
-                 |  (A), (A)-[B]->(A),
-                 |  (A) FROM a,
-                 |  (A)-[B]->(A) FROM b e
-                 |    START NODES (A) FROM a n JOIN ON e.id = n.id
-                 |    END   NODES (A) FROM a n JOIN ON e.id = n.id
-                 |)
-               """.stripMargin),
+      GraphDdl(
+        """SET SCHEMA ds1.db1
+          |CREATE GRAPH myGraph (
+          |  A (x STRING), B (y STRING),
+          |  (A), (A)-[B]->(A),
+          |  (A) FROM a,
+          |  (A)-[B]->(A) FROM b e
+          |    START NODES (A) FROM a n JOIN ON e.id = n.id
+          |    END   NODES (A) FROM a n JOIN ON e.id = n.id
+          |)
+        """.stripMargin),
       // pure type definitions extracted to graph type
-      GraphDdl("""SET SCHEMA ds1.db1
-                 |CREATE GRAPH TYPE myType (
-                 |  A (x STRING), B (y STRING),
-                 |  (A), (A)-[B]->(A)
-                 |)
-                 |CREATE GRAPH myGraph OF myType (
-                 |  (A) FROM a,
-                 |  (A)-[B]->(A) FROM b e
-                 |    START NODES (A) FROM a n JOIN ON e.id = n.id
-                 |    END   NODES (A) FROM a n JOIN ON e.id = n.id
-                 |)
-               """.stripMargin),
+      GraphDdl(
+        """SET SCHEMA ds1.db1
+          |CREATE GRAPH TYPE myType (
+          |  A (x STRING), B (y STRING),
+          |  (A), (A)-[B]->(A)
+          |)
+          |CREATE GRAPH myGraph OF myType (
+          |  (A) FROM a,
+          |  (A)-[B]->(A) FROM b e
+          |    START NODES (A) FROM a n JOIN ON e.id = n.id
+          |    END   NODES (A) FROM a n JOIN ON e.id = n.id
+          |)
+        """.stripMargin),
       // shadowing
-      GraphDdl("""SET SCHEMA ds1.db1
-                 |CREATE GRAPH TYPE myType (
-                 |  A (x STRING), B (foo STRING),
-                 |  (A), (A)-[B]->(A)
-                 |)
-                 |CREATE GRAPH myGraph OF myType (
-                 |  B (y STRING),
-                 |  (A) FROM a,
-                 |  (A)-[B]->(A) FROM b e
-                 |    START NODES (A) FROM a n JOIN ON e.id = n.id
-                 |    END   NODES (A) FROM a n JOIN ON e.id = n.id
-                 |)
-               """.stripMargin),
+      GraphDdl(
+        """SET SCHEMA ds1.db1
+          |CREATE GRAPH TYPE myType (
+          |  A (x STRING), B (foo STRING),
+          |  (A), (A)-[B]->(A)
+          |)
+          |CREATE GRAPH myGraph OF myType (
+          |  B (y STRING),
+          |  (A) FROM a,
+          |  (A)-[B]->(A) FROM b e
+          |    START NODES (A) FROM a n JOIN ON e.id = n.id
+          |    END   NODES (A) FROM a n JOIN ON e.id = n.id
+          |)
+        """.stripMargin),
       // only label types in graph type
-      GraphDdl("""SET SCHEMA ds1.db1
-                 |CREATE GRAPH TYPE myType (
-                 |  A (x STRING), B (foo STRING)
-                 |)
-                 |CREATE GRAPH myGraph OF myType (
-                 |  B (y STRING),
-                 |  (A) FROM a,
-                 |  (A)-[B]->(A) FROM b e
-                 |    START NODES (A) FROM a n JOIN ON e.id = n.id
-                 |    END   NODES (A) FROM a n JOIN ON e.id = n.id
-                 |)
-               """.stripMargin)
+      GraphDdl(
+        """SET SCHEMA ds1.db1
+          |CREATE GRAPH TYPE myType (
+          |  A (x STRING), B (foo STRING)
+          |)
+          |CREATE GRAPH myGraph OF myType (
+          |  B (y STRING),
+          |  (A) FROM a,
+          |  (A)-[B]->(A) FROM b e
+          |    START NODES (A) FROM a n JOIN ON e.id = n.id
+          |    END   NODES (A) FROM a n JOIN ON e.id = n.id
+          |)
+        """.stripMargin)
     )
 
     ddls(1) shouldEqual ddls.head
@@ -285,36 +377,40 @@ class GraphDdlTest extends FunSpec with Matchers {
   it("allows these equivalent graph type definitions") {
     val ddls = List(
       // most compact form
-      GraphDdl("""
-                 |CREATE GRAPH TYPE myType (
-                 |  A (x STRING), B (y STRING), C (z STRING),
-                 |  (A)-[B]->(C)
-                 |)
-                 |CREATE GRAPH myGraph OF myType ()
-               """.stripMargin),
+      GraphDdl(
+        """
+          |CREATE GRAPH TYPE myType (
+          |  A (x STRING), B (y STRING), C (z STRING),
+          |  (A)-[B]->(C)
+          |)
+          |CREATE GRAPH myGraph OF myType ()
+        """.stripMargin),
       // explicit node and rel type definitions
-      GraphDdl("""CREATE GRAPH TYPE myType (
-                 |  A (x STRING), B (y STRING), C (z STRING),
-                 |  (A), (C),
-                 |  (A)-[B]->(C)
-                 |)
-                 |CREATE GRAPH myGraph OF myType ()
-               """.stripMargin),
+      GraphDdl(
+        """CREATE GRAPH TYPE myType (
+          |  A (x STRING), B (y STRING), C (z STRING),
+          |  (A), (C),
+          |  (A)-[B]->(C)
+          |)
+          |CREATE GRAPH myGraph OF myType ()
+        """.stripMargin),
       // implicit node type definitions
-      GraphDdl("""CREATE GRAPH TYPE myType (
-                 |  A (x STRING), B (y STRING), C (z STRING),
-                 |  (A)-[B]->(C)
-                 |)
-                 |CREATE GRAPH myGraph OF myType ()
-               """.stripMargin),
+      GraphDdl(
+        """CREATE GRAPH TYPE myType (
+          |  A (x STRING), B (y STRING), C (z STRING),
+          |  (A)-[B]->(C)
+          |)
+          |CREATE GRAPH myGraph OF myType ()
+        """.stripMargin),
       // shadowing
-      GraphDdl("""CREATE ELEMENT TYPE A (foo STRING)
-                 |CREATE GRAPH TYPE myType (
-                 |  A (x STRING), B (y STRING), C (z STRING),
-                 |  (A)-[B]->(C)
-                 |)
-                 |CREATE GRAPH myGraph OF myType ()
-               """.stripMargin)
+      GraphDdl(
+        """CREATE ELEMENT TYPE A (foo STRING)
+          |CREATE GRAPH TYPE myType (
+          |  A (x STRING), B (y STRING), C (z STRING),
+          |  (A)-[B]->(C)
+          |)
+          |CREATE GRAPH myGraph OF myType ()
+        """.stripMargin)
     )
 
     ddls(1) shouldEqual ddls.head
@@ -322,137 +418,205 @@ class GraphDdlTest extends FunSpec with Matchers {
     ddls(3) shouldEqual ddls.head
   }
 
-  it("fails on duplicate node mappings") {
-    val e = the [GraphDdlException] thrownBy GraphDdl("""
-      |SET SCHEMA db.schema
-      |
-      |CREATE GRAPH TYPE fooSchema (
-      | Person,
-      | (Person)
-      |)
-      |CREATE GRAPH fooGraph OF fooSchema (
-      |  (Person) FROM personView
-      |           FROM personView
-      |)
-    """.stripMargin)
-    e.getFullMessage should (include("fooGraph") and include("(Person)") and include("personView"))
-  }
+  describe("failure handling") {
 
-  it("fails on duplicate relationship mappings") {
-    val e = the[GraphDdlException] thrownBy GraphDdl(
-      """
-        |SET SCHEMA db.schema
-        |
-        |CREATE GRAPH TYPE fooSchema (
-        | Person,
-        | KNOWS,
-        | (Person)-[KNOWS]->(Person)
-        |)
-        |CREATE GRAPH fooGraph OF fooSchema (
-        | (Person)-[KNOWS]->(Person)
-        |   FROM pkpView e
-        |     START NODES (Person) FROM a n JOIN ON e.id = n.id
-        |     END   NODES (Person) FROM a n JOIN ON e.id = n.id,
-        |   FROM pkpView e
-        |     START NODES (Person) FROM a n JOIN ON e.id = n.id
-        |     END   NODES (Person) FROM a n JOIN ON e.id = n.id
-        |)
-      """.stripMargin)
-    e.getFullMessage should (include("fooGraph") and include("(Person)-[KNOWS]->(Person)") and include("pkpView"))
-  }
+    it("fails on duplicate node mappings") {
+      val e = the[GraphDdlException] thrownBy GraphDdl(
+        """
+          |SET SCHEMA db.schema
+          |
+          |CREATE GRAPH TYPE fooSchema (
+          | Person,
+          | (Person)
+          |)
+          |CREATE GRAPH fooGraph OF fooSchema (
+          |  (Person) FROM personView
+          |           FROM personView
+          |)
+        """.stripMargin)
+      e.getFullMessage should (include("fooGraph") and include("(Person)") and include("personView"))
+    }
 
-  it("fails on duplicate global labels") {
-    val e = the [GraphDdlException] thrownBy GraphDdl("""
-      |CREATE ELEMENT TYPE Person
-      |CREATE ELEMENT TYPE Person
-    """.stripMargin)
-    e.getFullMessage should include("Person")
-  }
+    it("fails on duplicate relationship mappings") {
+      val e = the[GraphDdlException] thrownBy GraphDdl(
+        """
+          |SET SCHEMA db.schema
+          |
+          |CREATE GRAPH TYPE fooSchema (
+          | Person,
+          | KNOWS,
+          | (Person)-[KNOWS]->(Person)
+          |)
+          |CREATE GRAPH fooGraph OF fooSchema (
+          | (Person)-[KNOWS]->(Person)
+          |   FROM pkpView e
+          |     START NODES (Person) FROM a n JOIN ON e.id = n.id
+          |     END   NODES (Person) FROM a n JOIN ON e.id = n.id,
+          |   FROM pkpView e
+          |     START NODES (Person) FROM a n JOIN ON e.id = n.id
+          |     END   NODES (Person) FROM a n JOIN ON e.id = n.id
+          |)
+        """.stripMargin)
+      e.getFullMessage should (include("fooGraph") and include("(Person)-[KNOWS]->(Person)") and include("pkpView"))
+    }
 
-  it("fails on duplicate local labels") {
-    val e = the [GraphDdlException] thrownBy GraphDdl("""
-      |CREATE GRAPH TYPE fooSchema (
-      | Person,
-      | Person
-      |)
-    """.stripMargin)
-    e.getFullMessage should (include("fooSchema") and include("Person"))
-  }
+    it("fails on duplicate global labels") {
+      val e = the[GraphDdlException] thrownBy GraphDdl(
+        """
+          |CREATE ELEMENT TYPE Person
+          |CREATE ELEMENT TYPE Person
+        """.stripMargin)
+      e.getFullMessage should include("Person")
+    }
 
-  it("fails on duplicate graph types") {
-    val e = the [GraphDdlException] thrownBy GraphDdl("""
-      |CREATE GRAPH TYPE fooSchema ()
-      |CREATE GRAPH TYPE fooSchema ()
-    """.stripMargin)
-    e.getFullMessage should include("fooSchema")
-  }
+    it("fails on duplicate local labels") {
+      val e = the[GraphDdlException] thrownBy GraphDdl(
+        """
+          |CREATE GRAPH TYPE fooSchema (
+          | Person,
+          | Person
+          |)
+        """.stripMargin)
+      e.getFullMessage should (include("fooSchema") and include("Person"))
+    }
 
-  it("fails on duplicate graphs") {
-    val e = the [GraphDdlException] thrownBy GraphDdl("""
-      |CREATE GRAPH TYPE fooSchema ()
-      |CREATE GRAPH fooGraph OF fooSchema ()
-      |CREATE GRAPH fooGraph OF fooSchema ()
-    """.stripMargin)
-    e.getFullMessage should include("fooGraph")
-  }
+    it("fails on duplicate graph types") {
+      val e = the[GraphDdlException] thrownBy GraphDdl(
+        """
+          |CREATE GRAPH TYPE fooSchema ()
+          |CREATE GRAPH TYPE fooSchema ()
+        """.stripMargin)
+      e.getFullMessage should include("fooSchema")
+    }
 
-  it("fails on unresolved graph type") {
-    val e = the [GraphDdlException] thrownBy GraphDdl("""
-      |CREATE GRAPH TYPE fooSchema ()
-      |CREATE GRAPH fooGraph OF barSchema ()
-    """.stripMargin)
-    e.getFullMessage should (include("fooGraph") and include("fooSchema") and include("barSchema"))
-  }
+    it("fails on duplicate graphs") {
+      val e = the[GraphDdlException] thrownBy GraphDdl(
+        """
+          |CREATE GRAPH TYPE fooSchema ()
+          |CREATE GRAPH fooGraph OF fooSchema ()
+          |CREATE GRAPH fooGraph OF fooSchema ()
+        """.stripMargin)
+      e.getFullMessage should include("fooGraph")
+    }
 
-  it("fails on unresolved labels") {
-    val e = the [GraphDdlException] thrownBy GraphDdl("""
-      |CREATE GRAPH TYPE fooSchema (
-      | Person1,
-      | Person2,
-      | (Person3, Person4)
-      |)
-    """.stripMargin)
-    e.getFullMessage should (include("fooSchema") and include("Person3") and include("Person4"))
-  }
+    it("fails on unresolved graph type") {
+      val e = the[GraphDdlException] thrownBy GraphDdl(
+        """
+          |CREATE GRAPH TYPE fooSchema ()
+          |CREATE GRAPH fooGraph OF barSchema ()
+        """.stripMargin)
+      e.getFullMessage should (include("fooGraph") and include("fooSchema") and include("barSchema"))
+    }
 
-  it("fails on unresolved labels in mapping") {
-    val e = the [GraphDdlException] thrownBy GraphDdl("""
-      |CREATE GRAPH fooGraph (
-      | Person1,
-      | Person2,
-      | (Person3, Person4) FROM x
-      |)
-    """.stripMargin)
-    e.getFullMessage should (include("fooGraph") and include("Person3") and include("Person4"))
-  }
+    it("fails on unresolved labels") {
+      val e = the[GraphDdlException] thrownBy GraphDdl(
+        """
+          |CREATE GRAPH TYPE fooSchema (
+          | Person1,
+          | Person2,
+          | (Person3, Person4)
+          |)
+        """.stripMargin)
+      e.getFullMessage should (include("fooSchema") and include("Person3") and include("Person4"))
+    }
 
-  it("fails on incompatible property types") {
-    val e = the [GraphDdlException] thrownBy GraphDdl("""
-      |CREATE GRAPH TYPE fooSchema (
-      | Person1 ( age STRING ) ,
-      | Person2 ( age INTEGER ) ,
-      | (Person1, Person2)
-      |)
-    """.stripMargin)
-    e.getFullMessage should (
-      include("fooSchema") and include("Person1") and include("Person2") and include("age") and include("STRING")  and include("INTEGER")
-    )
-  }
+    it("fails on unresolved labels in mapping") {
+      val e = the[GraphDdlException] thrownBy GraphDdl(
+        """
+          |CREATE GRAPH fooGraph (
+          | Person1,
+          | Person2,
+          | (Person3, Person4) FROM x
+          |)
+        """.stripMargin)
+      e.getFullMessage should (include("fooGraph") and include("Person3") and include("Person4"))
+    }
 
-  it("fails on unresolved property names") {
-    val e = the [GraphDdlException] thrownBy GraphDdl("""
-      |SET SCHEMA a.b
-      |CREATE GRAPH TYPE fooSchema (
-      | Person ( age1 STRING ) ,
-      | (Person)
-      |)
-      |CREATE GRAPH fooGraph OF fooSchema (
-      |  (Person) FROM personView ( person_name AS age2 )
-      |)
-    """.stripMargin)
-    e.getFullMessage should (
-      include("fooGraph") and include("Person") and include("personView") and include("age1")  and include("age2")
-    )
-  }
+    it("fails on incompatible property types") {
+      val e = the[GraphDdlException] thrownBy GraphDdl(
+        """
+          |CREATE GRAPH TYPE fooSchema (
+          | Person1 ( age STRING ) ,
+          | Person2 ( age INTEGER ) ,
+          | (Person1, Person2)
+          |)
+        """.stripMargin)
+      e.getFullMessage should (include("fooSchema") and include("Person1") and include("Person2") and include("age") and include("STRING") and include("INTEGER"))
+    }
 
+    it("fails on unresolved property names") {
+      val e = the[GraphDdlException] thrownBy GraphDdl(
+        """
+          |SET SCHEMA a.b
+          |CREATE GRAPH TYPE fooSchema (
+          | Person ( age1 STRING ) ,
+          | (Person)
+          |)
+          |CREATE GRAPH fooGraph OF fooSchema (
+          |  (Person) FROM personView ( person_name AS age2 )
+          |)
+        """.stripMargin)
+      e.getFullMessage should (include("fooGraph") and include("Person") and include("personView") and include("age1") and include("age2"))
+    }
+
+    it("fails on unresolved inherited element types") {
+      val e = the[GraphDdlException] thrownBy GraphDdl(
+        """
+          |SET SCHEMA a.b
+          |CREATE GRAPH TYPE fooSchema (
+          | Person ( name STRING ) ,
+          | Employee EXTENDS MissingPerson ( dept STRING ) ,
+          | (Employee)
+          |)
+          |CREATE GRAPH fooGraph OF fooSchema (
+          |  (Employee) FROM employeeView ( person_name AS name, emp_dept AS dept )
+          |)
+        """.stripMargin)
+      e.getFullMessage should (include("fooSchema") and include("Employee") and include("MissingPerson"))
+    }
+
+    it("fails on unresolved inherited element types within inlined graph type") {
+      val e = the[GraphDdlException] thrownBy GraphDdl(
+        """
+          |SET SCHEMA a.b
+          |CREATE GRAPH fooGraph (
+          |  Person ( name STRING ),
+          |  Employee EXTENDS MissingPerson ( dept STRING ),
+          |
+          |  (Employee) FROM employeeView ( person_name AS name, emp_dept AS dept )
+          |)
+        """.stripMargin)
+      e.getFullMessage should (include("fooGraph") and include("Employee") and include("MissingPerson"))
+    }
+
+    it("fails on cyclic element type inheritance") {
+      val e = the[GraphDdlException] thrownBy GraphDdl(
+        """
+          |SET SCHEMA a.b
+          |CREATE GRAPH fooGraph (
+          |  A EXTENDS B ( a STRING ),
+          |  B EXTENDS A ( b STRING ),
+          |
+          |  (A) FROM a ( A_a AS a, B_b AS b ),
+          |  (B) FROM b ( A_a AS a, B_b AS b )
+          |)
+        """.stripMargin)
+      e.getFullMessage should (include("Circular dependency") and include("A -> B -> A"))
+    }
+
+    it("fails on conflicting property types in inheritance hierarchy") {
+      val e = the[GraphDdlException] thrownBy GraphDdl(
+        """
+          |SET SCHEMA a.b
+          |CREATE GRAPH fooGraph (
+          |  A ( x STRING ),
+          |  B ( x INTEGER ),
+          |  C EXTENDS A, B (),
+          |
+          |  (C)
+          |)
+        """.stripMargin)
+      e.getFullMessage should (include("(A,B,C)") and include("x") and include("INTEGER") and include("STRING"))
+    }
+  }
 }
