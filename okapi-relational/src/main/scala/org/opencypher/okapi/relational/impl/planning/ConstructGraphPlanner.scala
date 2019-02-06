@@ -57,7 +57,7 @@ object ConstructGraphPlanner {
 
     val unionPrefixStrategy: Map[QualifiedGraphName, GraphIdPrefix] = {
       val graphQgns = if (areNodesCreatedOrCloned) {
-        (construct.qualifiedGraphName :: construct.clones.values.map(_.cypherType.graph.get).toList ++ construct.onGraphs).distinct
+        ((construct.onGraphs ++ construct.clones.values.map(_.cypherType.graph.get)) :+ construct.qualifiedGraphName).distinct
       } else {
         construct.onGraphs
       }
@@ -65,7 +65,10 @@ object ConstructGraphPlanner {
       graphQgns match {
         case Nil => Map.empty
         case _ :: Nil => Map.empty
-        case _ :: t => t.zipWithIndex.map { case (qgn, i) => qgn -> i.toByte }.toMap
+        case _ :: t => t.zipWithIndex.map { case (qgn, i) =>
+          // Assign GraphIdPrefix `11111111` to created nodes and relationships
+          qgn -> (if (qgn == construct.qualifiedGraphName) (-1).toByte else i.toByte)
+        }.toMap
       }
     }
 
