@@ -27,8 +27,14 @@
 package org.opencypher.spark.impl.temporal
 
 import org.apache.logging.log4j.scala.Logging
+import org.apache.spark.sql.{Column, functions}
 import org.apache.spark.unsafe.types.CalendarInterval
+import org.opencypher.okapi.api.value.CypherValue.{CypherInteger, CypherMap, CypherString}
+import org.opencypher.okapi.impl.exception.{IllegalArgumentException, NotImplementedException, UnsupportedOperationException}
 import org.opencypher.okapi.impl.temporal.Duration
+import org.opencypher.okapi.ir.api.expr.{Expr, MapExpression, NullLit, Param}
+
+import scala.reflect.runtime.universe.TypeTag
 
 object SparkTemporalHelpers extends Logging{
   implicit class RichDuration(duration: Duration) {
@@ -70,6 +76,58 @@ object SparkTemporalHelpers extends Logging{
         seconds = normalizedSeconds,
         nanoseconds = normalizedNanos
       )
+    }
+  }
+
+  def resolveTemporalArgument(expr: Expr)
+    (implicit parameters: CypherMap): Option[Either[Map[String, Int], String]] = {
+    expr match {
+      case MapExpression(inner) =>
+        val map = inner.map {
+          case (key, Param(name)) => key -> (parameters(name) match {
+            case CypherString(s) => s.toInt
+            case CypherInteger(i) => i.toInt
+            case other => throw IllegalArgumentException("A map value of type CypherString or CypherInteger", other)
+          })
+          case (key, e) =>
+            throw NotImplementedException(s"Parsing temporal values is currently only supported for Literal-Maps, got $key -> $e")
+        }
+
+        Some(Left(map))
+
+      case Param(name) =>
+        val s = parameters(name) match {
+          case CypherString(str) => str
+          case other => throw IllegalArgumentException(s"Parameter `$name` to be a CypherString", other)
+        }
+
+        Some(Right(s))
+
+      case NullLit(_) => None
+
+      case other =>
+        throw NotImplementedException(s"Parsing temporal values is currently only supported for Literal-Maps and String literals, got $other")
+    }
+  }
+
+  def temporalAccessor[I: TypeTag](temporalColumn: Column, accessor: String): Column = {
+    accessor.toLowerCase match {
+      case "year" => functions.year(temporalColumn)
+      case "quarter" => functions.quarter(temporalColumn)
+      case "month" => functions.month(temporalColumn)
+      case "week" => functions.weekofyear(temporalColumn)
+      case "day" => functions.dayofmonth(temporalColumn)
+      case "ordinalday" => functions.dayofyear(temporalColumn)
+      case "weekyear" => TemporalUDFS.weekYear[I].apply(temporalColumn)
+      case "dayofquarter" => TemporalUDFS.dayOfQuarter[I].apply(temporalColumn)
+      case "dayofweek" | "weekday" => TemporalUDFS.dayOfWeek[I].apply(temporalColumn)
+
+      case "hour" => functions.hour(temporalColumn)
+      case "minute" => functions.minute(temporalColumn)
+      case "second" => functions.second(temporalColumn)
+      case "millisecond" => TemporalUDFS.milliseconds[I].apply(temporalColumn)
+      case "microsecond" => TemporalUDFS.microseconds[I].apply(temporalColumn)
+      case other => throw UnsupportedOperationException(s"Unknown Temporal Accessor: $other")
     }
   }
 }
