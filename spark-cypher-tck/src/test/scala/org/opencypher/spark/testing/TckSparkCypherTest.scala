@@ -86,6 +86,18 @@ class TckSparkCypherTest extends CAPSTestSuite {
     val failingTemporalScenarios = Source.fromFile(temporalBlacklist).getLines().size
     val failureReportingScenarios = Source.fromFile(failureReportingBlacklistFile).getLines().size
 
+    val white = scenarios.whiteList.groupBy(_.featureName).mapValues(_.size)
+    val black = scenarios.blackList.groupBy(_.featureName).mapValues(_.size)
+
+    val allFeatures = white.keySet ++ black.keySet
+    val perFeatureCoverage = allFeatures.foldLeft(Map.empty[String, Float]) {
+      case (acc, feature) =>
+        val w = white.getOrElse(feature, 0).toFloat
+        val b = black.getOrElse(feature, 0).toFloat
+        val percentage = (w / (w + b)) * 100
+        acc.updated(feature, percentage)
+    }
+
     val allScenarios = scenarios.blacklist.size + scenarios.whiteList.size.toFloat
     val readOnlyScenarios = scenarios.whiteList.size + failingScenarios + failureReportingScenarios.toFloat + failingTemporalScenarios
     val smallReadOnlyScenarios = scenarios.whiteList.size + failingScenarios.toFloat
@@ -94,6 +106,9 @@ class TckSparkCypherTest extends CAPSTestSuite {
     val readOnlyCoverage = scenarios.whiteList.size / readOnlyScenarios
     val smallReadOnlyCoverage = scenarios.whiteList.size / smallReadOnlyScenarios
 
+    val featureCoverageReport =
+      perFeatureCoverage.map{ case (feature, coverage) => s" $feature: $coverage%" }.mkString("\n")
+
     val report = s"""
       |TCK Coverage
       |------------
@@ -101,9 +116,15 @@ class TckSparkCypherTest extends CAPSTestSuite {
       | Complete: ${overallCoverage * 100}%
       | Read Only: ${readOnlyCoverage * 100}%
       | Read Only (without Failure case Scenarios and temporal): ${smallReadOnlyCoverage * 100}%
+      |
+      |Feature Coverage
+      |----------------
+      |
+      |$featureCoverageReport
     """.stripMargin
 
     println(report)
+
   }
 
   ignore("run custom scenario") {
