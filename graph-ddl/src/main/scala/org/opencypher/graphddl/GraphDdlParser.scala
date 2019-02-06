@@ -97,8 +97,9 @@ object GraphDdlParser {
     P(EXTENDS ~/ identifier.!.rep(min = 1, sep = ",").map(_.toSet))
 
   def elementTypeDefinition[_: P]: P[ElementTypeDefinition] =
-    P(identifier.! ~/ extendsDefinition.?.map(_.getOrElse(Set.empty)) ~/ properties.?.map(_.getOrElse(Map.empty)) ~/ keyDefinition.?).map {
-      case (id, parents, props, maybeKey) => ElementTypeDefinition(id, parents, props, maybeKey)
+    P(identifier.! ~/ extendsDefinition.? ~/ properties.? ~/ keyDefinition.?).map {
+      case (id, maybeParents, maybeProps, maybeKey) =>
+        ElementTypeDefinition(id, maybeParents.getOrElse(Set.empty), maybeProps.getOrElse(Map.empty), maybeKey)
     }
 
   def globalElementTypeDefinition[_: P]: P[ElementTypeDefinition] =
