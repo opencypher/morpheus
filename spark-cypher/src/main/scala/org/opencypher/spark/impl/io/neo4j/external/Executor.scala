@@ -29,14 +29,15 @@ package org.opencypher.spark.impl.io.neo4j.external
 import org.apache.spark.sql.catalyst.expressions.GenericRowWithSchema
 import org.apache.spark.sql.types._
 import org.apache.spark.sql.{Row, types}
+import org.apache.spark.unsafe.types.CalendarInterval
 import org.neo4j.driver.internal.types.InternalTypeSystem
+import org.neo4j.driver.internal.value.{DateValue, DurationValue, ListValue, LocalDateTimeValue}
 import org.neo4j.driver.v1.types.{Type, TypeSystem}
 import org.neo4j.driver.v1.{StatementResult, Value}
 import org.opencypher.okapi.neo4j.io.Neo4jConfig
 import org.opencypher.okapi.neo4j.io.Neo4jHelpers._
 
 import scala.collection.JavaConverters._
-import scala.util.Try
 
 private object Executor {
 
@@ -85,7 +86,7 @@ private object Executor {
         val row = new Array[Any](keyCount)
         var i = 0
         while (i < keyCount) {
-          row.update(i, convertLists(record.get(i)))
+          row.update(i, convertValues(record.get(i)))
           i = i + 1
         }
         row
@@ -94,9 +95,20 @@ private object Executor {
     }
   }
 
-  private def convertLists(v: Value): AnyRef = Try(v.asList()).toOption match {
-    case Some(list) => list.toArray
-    case None => v.asObject()
+  private def convertValues(v: Value): AnyRef = {
+    val mapFunction = new org.neo4j.driver.v1.util.Function[Value, AnyRef] {
+      override def apply(v1: Value): AnyRef = convertValues _
+    }
+
+    v match {
+      case l: ListValue => l.asList(mapFunction).toArray
+      case d: LocalDateTimeValue => java.sql.Timestamp.valueOf(d.asLocalDateTime())
+      case d: DateValue => java.sql.Date.valueOf(d.asLocalDate())
+      case d: DurationValue =>
+        val iso = d.asIsoDuration()
+        new CalendarInterval(iso.months().toInt, iso.nanoseconds() / 1000 + iso.days() * CalendarInterval.MICROS_PER_DAY)
+      case other => other.asObject()
+    }
   }
 }
 

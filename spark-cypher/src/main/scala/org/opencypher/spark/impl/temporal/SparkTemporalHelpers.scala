@@ -26,12 +26,14 @@
  */
 package org.opencypher.spark.impl.temporal
 
+import java.time.temporal.ChronoUnit
+
 import org.apache.logging.log4j.scala.Logging
 import org.apache.spark.sql.{Column, functions}
 import org.apache.spark.unsafe.types.CalendarInterval
 import org.opencypher.okapi.api.value.CypherValue.{CypherInteger, CypherMap, CypherString}
 import org.opencypher.okapi.impl.exception.{IllegalArgumentException, NotImplementedException, UnsupportedOperationException}
-import org.opencypher.okapi.impl.temporal.Duration
+import org.opencypher.okapi.impl.temporal.{Duration, TemporalConstants}
 import org.opencypher.okapi.ir.api.expr.{Expr, MapExpression, NullLit, Param}
 
 import scala.reflect.runtime.universe.TypeTag
@@ -76,6 +78,12 @@ object SparkTemporalHelpers extends Logging{
         seconds = normalizedSeconds,
         nanoseconds = normalizedNanos
       )
+    }
+
+    def toJavaDuration: java.time.Duration = {
+      val micros = calendarInterval.microseconds +
+        (calendarInterval.months * TemporalConstants.AVG_DAYS_PER_MONTH * CalendarInterval.MICROS_PER_DAY).toLong
+      java.time.Duration.of(micros, ChronoUnit.MICROS)
     }
   }
 

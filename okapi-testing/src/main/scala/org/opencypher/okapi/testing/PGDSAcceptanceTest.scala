@@ -29,7 +29,7 @@ package org.opencypher.okapi.testing
 import org.opencypher.okapi.api.graph._
 import org.opencypher.okapi.api.io.PropertyGraphDataSource
 import org.opencypher.okapi.api.schema.Schema
-import org.opencypher.okapi.api.types.{CTBoolean, CTInteger, CTString}
+import org.opencypher.okapi.api.types._
 import org.opencypher.okapi.api.value.CypherValue.{CypherMap, CypherNull}
 import org.opencypher.okapi.impl.exception.GraphAlreadyExistsException
 import org.opencypher.okapi.testing.Bag._
@@ -112,8 +112,8 @@ trait PGDSAcceptanceTest[Session <: CypherSession, Graph <: PropertyGraph] {
   lazy val testCreateGraphStatements: Map[GraphName, String] = Map(
     g1 ->
       s"""
-         |CREATE (a:A { name: 'A' })
-         |CREATE (b1:B { type: 'B1' })
+         |CREATE (a:A { name: 'A', date: date("2011-11-11") })
+         |CREATE (b1:B { type: 'B1', datetime: localdatetime("2011-11-11T11:11:11") })
          |CREATE (b2:B { type: 'B2', size: 5 })
          |CREATE (combo1:A:B { name: 'COMBO1', type: 'AB1', size: 2 })
          |CREATE (combo2:A:B { name: 'COMBO2', type: 'AB2' })
@@ -174,8 +174,8 @@ trait PGDSAcceptanceTest[Session <: CypherSession, Graph <: PropertyGraph] {
       Scenario("API: Correct schema for graph #1", g1) { implicit ctx: TestContext =>
         registerPgds(ns)
         val expectedSchema = Schema.empty
-          .withNodePropertyKeys("A")("name" -> CTString)
-          .withNodePropertyKeys("B")("type" -> CTString, "size" -> CTInteger.nullable)
+          .withNodePropertyKeys("A")("name" -> CTString, "date" -> CTDate)
+          .withNodePropertyKeys("B")("type" -> CTString, "size" -> CTInteger.nullable, "datetime" -> CTLocalDateTime.nullable)
           .withNodePropertyKeys("A", "B")("name" -> CTString, "type" -> CTString, "size" -> CTInteger.nullable)
           .withNodePropertyKeys("C")("name" -> CTString)
           .withNodePropertyKeys("A", "C")("name" -> CTString)
