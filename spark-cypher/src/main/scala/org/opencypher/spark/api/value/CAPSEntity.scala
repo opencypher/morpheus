@@ -36,7 +36,7 @@ object CAPSNode {
     id: Long,
     labels: Set[String]
   ): CAPSNode = {
-    CAPSNode(id.encodeAsCAPSId, labels)
+    CAPSNode(id.encodeAsCAPSId.toList, labels)
   }
 
   def apply(
@@ -44,7 +44,7 @@ object CAPSNode {
     labels: Set[String],
     properties: CypherMap
   ): CAPSNode = {
-    CAPSNode(id.encodeAsCAPSId, labels, properties)
+    CAPSNode(id.encodeAsCAPSId.toList, labels, properties)
   }
 
 }
@@ -57,14 +57,14 @@ object CAPSNode {
   * @param properties the properties of the node.
   */
 case class CAPSNode(
-  override val id: CAPSId,
+  override val id: List[Byte],
   override val labels: Set[String] = Set.empty,
   override val properties: CypherMap = CypherMap.empty
-) extends CypherNode[CAPSId] {
+) extends CypherNode[List[Byte]] {
 
   override type I = CAPSNode
 
-  override def copy(id: CAPSId = id, labels: Set[String] = labels, properties: CypherMap = properties): CAPSNode = {
+  override def copy(id: List[Byte] = id, labels: Set[String] = labels, properties: CypherMap = properties): CAPSNode = {
     CAPSNode(id, labels, properties)
   }
 
@@ -79,7 +79,7 @@ object CAPSRelationship {
     endId: Long,
     relType: String
   ): CAPSRelationship = {
-    CAPSRelationship(id.encodeAsCAPSId, startId.encodeAsCAPSId, endId.encodeAsCAPSId, relType)
+    CAPSRelationship(id.encodeAsCAPSId.toList, startId.encodeAsCAPSId.toList, endId.encodeAsCAPSId.toList, relType)
   }
 
   def apply(
@@ -89,7 +89,7 @@ object CAPSRelationship {
     relType: String,
     properties: CypherMap
   ): CAPSRelationship = {
-    CAPSRelationship(id.encodeAsCAPSId, startId.encodeAsCAPSId, endId.encodeAsCAPSId, relType, properties)
+    CAPSRelationship(id.encodeAsCAPSId.toList, startId.encodeAsCAPSId.toList, endId.encodeAsCAPSId.toList, relType, properties)
   }
 
 }
@@ -104,19 +104,19 @@ object CAPSRelationship {
   * @param properties the properties of the node.
   */
 case class CAPSRelationship(
-  override val id: CAPSId,
-  override val startId: CAPSId,
-  override val endId: CAPSId,
+  override val id: List[Byte],
+  override val startId: List[Byte],
+  override val endId: List[Byte],
   override val relType: String,
   override val properties: CypherMap = CypherMap.empty
-) extends CypherRelationship[CAPSId] {
+) extends CypherRelationship[List[Byte]] {
 
   override type I = CAPSRelationship
 
   override def copy(
-    id: CAPSId = id,
-    source: CAPSId = startId,
-    target: CAPSId = endId,
+    id: List[Byte] = id,
+    source: List[Byte] = startId,
+    target: List[Byte] = endId,
     relType: String = relType,
     properties: CypherMap = properties
   ): CAPSRelationship = {

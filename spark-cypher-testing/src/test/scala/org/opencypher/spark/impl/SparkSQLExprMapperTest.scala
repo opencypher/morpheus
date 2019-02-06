@@ -35,10 +35,10 @@ import org.opencypher.okapi.api.value.CypherValue.CypherMap
 import org.opencypher.okapi.ir.api.expr._
 import org.opencypher.okapi.relational.impl.table.RecordHeader
 import org.opencypher.okapi.testing.BaseTestSuite
+import org.opencypher.spark.api.io.IDEncoding._
 import org.opencypher.spark.impl.ExprEval._
 import org.opencypher.spark.impl.SparkSQLExprMapper._
 import org.opencypher.spark.testing.fixture.SparkSessionFixture
-import org.opencypher.spark.api.io.IDEncoding._
 
 import scala.language.implicitConversions
 
@@ -57,11 +57,28 @@ class SparkSQLExprMapperTest extends BaseTestSuite with SparkSessionFixture {
 
   it("converts prefix id expressions") {
     val id = 257L
-    val encodedId = id.encodeAsCAPSId
-    val idString = new String(encodedId.map(_.toChar).toArray)
     val prefix = 2.toByte
-    val expr = PrefixId(StringLit(idString)(), prefix)()
+    val expr = PrefixId(ToId(IntegerLit(id)())(), prefix)()
     expr.eval.asInstanceOf[Array[_]].toList should equal(prefix :: id.encodeAsCAPSId.toList)
+  }
+
+  it("converts a CypherInteger to an ID") {
+    val id = 257L
+    val expr = ToId(IntegerLit(id)())()
+    expr.eval.asInstanceOf[Array[_]].toList should equal(id.encodeAsCAPSId.toList)
+  }
+
+  it("converts a CypherInteger to an ID and prefixes it") {
+    val id = 257L
+    val prefix = 2.toByte
+    val expr = PrefixId(ToId(IntegerLit(id)())(), prefix)()
+    expr.eval.asInstanceOf[Array[_]].toList should equal(prefix :: id.encodeAsCAPSId.toList)
+  }
+
+  it("converts a CypherInteger literal") {
+    val id = 257L
+    val expr = IntegerLit(id)()
+    expr.eval.asInstanceOf[Long] should equal(id)
   }
 
   private def convert(expr: Expr, header: RecordHeader = header): Column = {

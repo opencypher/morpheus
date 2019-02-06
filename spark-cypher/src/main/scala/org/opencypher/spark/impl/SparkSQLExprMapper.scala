@@ -26,7 +26,6 @@
  */
 package org.opencypher.spark.impl
 
-import org.apache.spark.sql.functions._
 import org.apache.spark.sql.types._
 import org.apache.spark.sql.{Column, DataFrame, functions}
 import org.opencypher.okapi.api.types._
@@ -37,13 +36,12 @@ import org.opencypher.okapi.impl.temporal.{Duration => DurationValue}
 import org.opencypher.okapi.ir.api.PropertyKey
 import org.opencypher.okapi.ir.api.expr._
 import org.opencypher.okapi.relational.impl.table.RecordHeader
+import org.opencypher.spark.api.io.IDEncoding._
 import org.opencypher.spark.impl.CAPSFunctions.{array_contains, get_node_labels, get_property_keys, get_rel_type, _}
 import org.opencypher.spark.impl.convert.SparkConversions._
 import org.opencypher.spark.impl.temporal.SparkTemporalHelpers._
 import org.opencypher.spark.impl.temporal.TemporalUDFS
-
 import org.opencypher.spark.impl.temporal.{SparkTemporalHelpers, TemporalUDFS}
-
 
 object SparkSQLExprMapper {
 
@@ -276,8 +274,10 @@ object SparkSQLExprMapper {
         case Id(e) => e.asSparkSQLExpr
 
         case PrefixId(idExpr, prefix) =>
-          val convertedId = idExpr.asSparkSQLExpr.cast(StringType)
-          concat(lit(Array(prefix)).cast(StringType), convertedId.cast(StringType)).cast(BinaryType)
+//          val convertedPrefix = lit(new String(Array[Byte](prefix), StandardCharsets.UTF_8))
+//          val convertedId = idExpr.asSparkSQLExpr.cast(StringType)
+//          concat(convertedPrefix, convertedId).cast(BinaryType)
+          idExpr.asSparkSQLExpr.addPrefix(prefix)
 
         case ToId(e) =>
           e.cypherType.material match {

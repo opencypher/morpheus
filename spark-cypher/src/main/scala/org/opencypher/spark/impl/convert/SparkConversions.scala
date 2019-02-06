@@ -130,7 +130,6 @@ object SparkConversions {
         case DateType => Some(CTDate)
         case CalendarIntervalType => Some(CTDuration)
         case ArrayType(NullType, _) => Some(CTList(CTVoid))
-        case ArrayType(ByteType, false) => Some(CTIdentity)
         case BinaryType => Some(CTIdentity)
         case ArrayType(elemType, containsNull) =>
           elemType.toCypherType(containsNull).map(CTList)

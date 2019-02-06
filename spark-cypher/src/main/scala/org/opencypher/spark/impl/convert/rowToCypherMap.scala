@@ -35,7 +35,6 @@ import org.opencypher.okapi.api.value._
 import org.opencypher.okapi.impl.exception.UnsupportedOperationException
 import org.opencypher.okapi.ir.api.expr.{Expr, ListSegment, Var}
 import org.opencypher.okapi.relational.impl.table.RecordHeader
-import org.opencypher.spark.api.io.IDEncoding.CAPSId
 import org.opencypher.spark.api.value.{CAPSNode, CAPSRelationship}
 import org.opencypher.spark.impl.temporal.SparkTemporalHelpers._
 
@@ -90,6 +89,7 @@ final case class rowToCypherMap(exprToColumn: Seq[(Expr, String)]) extends (Row 
     }
   }
 
+  // TODO: Use more efficient representation here, less efficient one with good equals comparison for tests
   private def collectNode(row: Row, v: Var): CypherValue = {
     val idValue = row.getAs[Any](header.column(v))
     idValue match {
@@ -107,8 +107,8 @@ final case class rowToCypherMap(exprToColumn: Seq[(Expr, String)]) extends (Row 
           .collect { case (key, value) if !value.isNull => key -> value }
           .toMap
 
-        CAPSNode(id.toSeq.asInstanceOf[CAPSId], labels, properties)
-      case invalidID => throw UnsupportedOperationException(s"CAPSNode ID has to be a Long instead of ${invalidID.getClass}")
+        CAPSNode(id.toList.asInstanceOf[List[Byte]], labels, properties)
+      case invalidID => throw UnsupportedOperationException(s"CAPSNode ID has to be a CAPSId instead of ${invalidID.getClass}")
     }
   }
 
@@ -132,7 +132,7 @@ final case class rowToCypherMap(exprToColumn: Seq[(Expr, String)]) extends (Row 
           .collect { case (key, value) if !value.isNull => key -> value }
           .toMap
 
-        CAPSRelationship(id.toSeq.asInstanceOf[CAPSId], source.toSeq.asInstanceOf[CAPSId], target.toSeq.asInstanceOf[CAPSId], relType, properties)
+        CAPSRelationship(id.toList.asInstanceOf[List[Byte]], source.toList.asInstanceOf[List[Byte]], target.toList.asInstanceOf[List[Byte]], relType, properties)
       case invalidID => throw UnsupportedOperationException(s"CAPSRelationship ID has to be a Long instead of ${invalidID.getClass}")
     }
   }
