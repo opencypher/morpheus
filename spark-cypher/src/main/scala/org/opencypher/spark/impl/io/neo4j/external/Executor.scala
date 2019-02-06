@@ -97,7 +97,7 @@ private object Executor {
 
   private def convertValues(v: Value): AnyRef = {
     val mapFunction = new org.neo4j.driver.v1.util.Function[Value, AnyRef] {
-      override def apply(v1: Value): AnyRef = convertValues _
+      override def apply(v1: Value): AnyRef = convertValues(v1)
     }
 
     v match {
