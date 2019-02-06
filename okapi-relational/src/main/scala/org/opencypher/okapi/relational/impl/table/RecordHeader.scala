@@ -49,7 +49,7 @@ object RecordHeader {
 
     from(
       v,
-      Seq(StartNode(v)(CTInteger), EndNode(v)(CTInteger))
+      Seq(StartNode(v)(CTIdentity), EndNode(v)(CTIdentity))
       ++ relType.types.map(t => HasType(v, RelType(t))(CTBoolean)): _*
     )
   }
