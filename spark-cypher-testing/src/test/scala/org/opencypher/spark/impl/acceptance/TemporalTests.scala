@@ -133,7 +133,7 @@ class TemporalTests extends CAPSTestSuite with ScanGraphInit {
         )
       }
 
-      it("supports addition to date with with time part present") {
+      it("supports addition to date with time part present") {
         caps.cypher("RETURN date('2010-10-10') + duration('P1DT12H') AS time").records.toMapsWithCollectedEntities should equal(
           Bag(CypherMap("time" -> java.time.LocalDate.parse("2010-10-11")))
         )
@@ -145,7 +145,7 @@ class TemporalTests extends CAPSTestSuite with ScanGraphInit {
         )
       }
 
-      it("supports addition to localdatetime with with time part present") {
+      it("supports addition to localdatetime with time part present") {
         caps.cypher("RETURN localdatetime('2010-10-10T12:00') + duration('P1DT12H') AS time").records.toMapsWithCollectedEntities should equal(
           Bag(CypherMap("time" -> java.time.LocalDateTime.parse("2010-10-12T00:00:00")))
         )
@@ -179,7 +179,7 @@ class TemporalTests extends CAPSTestSuite with ScanGraphInit {
         )
       }
 
-      it("supports subtraction to date with with time part present") {
+      it("supports subtraction to date with time part present") {
         caps.cypher("RETURN date('2010-10-10') - duration('P1DT12H') AS time").records.toMapsWithCollectedEntities should equal(
           Bag(CypherMap("time" -> java.time.LocalDate.parse("2010-10-09")))
         )
@@ -191,7 +191,7 @@ class TemporalTests extends CAPSTestSuite with ScanGraphInit {
         )
       }
 
-      it("supports subtraction to localdatetime with with time part present") {
+      it("supports subtraction to localdatetime with time part present") {
         caps.cypher("RETURN localdatetime('2010-10-10T12:00') - duration('P1DT12H') AS time").records.toMapsWithCollectedEntities should equal(
           Bag(CypherMap("time" -> java.time.LocalDateTime.parse("2010-10-09T00:00:00")))
         )
