@@ -116,11 +116,12 @@ object SparkSQLExprMapper {
             case CTDuration =>
               TemporalUDFS.durationAccessor(key.toLowerCase).apply(e.asSparkSQLExpr)
 
-            case _ if !header.contains(expr) =>
+            case _ if !header.contains(expr) || !df.columns.contains(header.column(expr)) =>
               NULL_LIT
 
             case _ =>
               verify
+
               df.col(header.column(expr))
           }
 
