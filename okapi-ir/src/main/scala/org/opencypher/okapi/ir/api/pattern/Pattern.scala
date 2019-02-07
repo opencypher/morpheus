@@ -94,6 +94,13 @@ final case class Pattern(
     }
   }
 
+  def outgoingConnectionsFor(node: CTNode, rel: CTRelationship): Map[IRField, Connection] = {
+    topology.collect {
+      case (f, con) if con.source.cypherType.subTypeOf(node).isTrue && f.cypherType.subTypeOf(rel).isTrue =>
+        f -> con
+    }
+  }
+
   def isEmpty: Boolean = this == Pattern.empty
 
   def withConnection(key: IRField, connection: Connection, propertiesOpt: Option[MapExpression] = None): Pattern = {

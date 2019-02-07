@@ -26,7 +26,8 @@
  */
 package org.opencypher.okapi.logical.impl
 
-import org.opencypher.okapi.api.types.CTBoolean
+import org.opencypher.okapi.api.io.{NodeRelPattern, PatternProvider}
+import org.opencypher.okapi.api.types.{CTBoolean, CTNode}
 import org.opencypher.okapi.ir.api.IRField
 import org.opencypher.okapi.ir.api.expr._
 import org.opencypher.okapi.ir.api.util.DirectCompilationStage
@@ -37,7 +38,9 @@ object LogicalOptimizer extends DirectCompilationStage[LogicalOperator, LogicalO
   override def process(input: LogicalOperator)(implicit context: LogicalPlannerContext): LogicalOperator = {
     val optimizationRules = Seq(
       discardScansForNonexistentLabels,
-      replaceCartesianWithValueJoin)
+      replaceCartesianWithValueJoin,
+      replaceScansWithRecognizePatterns
+    )
       optimizationRules.foldLeft(input) {
       // TODO: Evaluate if multiple rewriters could be fused
       case (tree: LogicalOperator, optimizationRule) => BottomUp[LogicalOperator](optimizationRule).transform(tree)
@@ -56,6 +59,38 @@ object LogicalOptimizer extends DirectCompilationStage[LogicalOperator, LogicalO
       }.transform(in, context = false)
 
       if (rewritten) newChild else filter
+  }
+
+  def replaceScansWithRecognizePatterns(implicit context: LogicalPlannerContext): PartialFunction[LogicalOperator, LogicalOperator] = {
+    case exp: Expand =>
+      exp.source.cypherType.graph.flatMap { g =>
+        val availablePatterns = context.catalog(g.namespace) match {
+          case p: PatternProvider => p.patterns
+          case _ => Seq.empty
+        }
+
+        val firstMatchingPattern = availablePatterns.find {
+          case NodeRelPattern(node, rel) if node == exp.source.cypherType && rel == exp.rel.cypherType => true
+          case _ => false
+        }
+
+        firstMatchingPattern.map { pattern =>
+          val withPatternScan = BottomUp[LogicalOperator](replaceNodeScanWithPatternScan(exp.source, exp.rel, pattern)).transform(exp)
+          val joinExpr = Equals(EndNode(exp.rel)(CTNode), exp.target)(CTBoolean)
+          ValueJoin(withPatternScan, exp.rhs, Set(joinExpr), exp.solved)
+        }
+
+      }.getOrElse(exp)
+  }
+
+  private def replaceNodeScanWithPatternScan(node: Var, rel: Var, pattern: NodeRelPattern): PartialFunction[LogicalOperator, LogicalOperator] = {
+    case NodeScan(n, parent, solved) if n == node =>
+      PatternScan(node, rel, pattern, parent, solved.withFields(node.toField.get, rel.toField.get))
+
+    case pScan: PatternScan if pScan.node == node && pScan.rel != rel =>
+      val otherPaternScan = PatternScan(node, rel, pattern, pScan.in, pScan.in.solved.withFields(node.toField.get, rel.toField.get))
+      val joinExpr = Equals(pScan.node, otherPaternScan.node)(CTBoolean)
+      ValueJoin(pScan, otherPaternScan, Set(joinExpr), pScan.solved ++ otherPaternScan.solved)
   }
 
   private object CanOptimize {

@@ -26,6 +26,7 @@
  */
 package org.opencypher.okapi.logical.impl
 
+import org.opencypher.okapi.api.io.NodeRelPattern
 import org.opencypher.okapi.api.types.{CTBoolean, CTNode, CTRelationship}
 import org.opencypher.okapi.ir.api.block.{Aggregations, SortItem}
 import org.opencypher.okapi.ir.api.expr._
@@ -88,6 +89,12 @@ class LogicalOperatorProducer {
       case _ => solvedWithField
     }
     NodeScan(node, prev, solvedWithPredicates)
+  }
+
+  def planPatternScan(node: IRField, rel: IRField, pattern: NodeRelPattern, prev: LogicalOperator) ={
+    val solved = prev.solved.withFields(node, rel)
+
+
   }
 
   def planFilter(expr: Expr, prev: LogicalOperator): Filter = {

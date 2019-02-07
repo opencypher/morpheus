@@ -28,6 +28,7 @@ package org.opencypher.okapi.api.io
 
 import org.opencypher.okapi.api.graph.{GraphName, PropertyGraph}
 import org.opencypher.okapi.api.schema.Schema
+import org.opencypher.okapi.api.types.{CTNode, CTRelationship}
 
 /**
   * Property Graph Data Source (PGDS) is used to read and write property graphs, for example from database or
@@ -113,3 +114,12 @@ trait PropertyGraphDataSource {
   def graphNames: Set[GraphName]
 
 }
+
+trait PatternProvider {
+
+  self: PropertyGraphDataSource =>
+
+  def patterns: Seq[NodeRelPattern]
+}
+
+case class NodeRelPattern(node: CTNode, rel: CTRelationship)

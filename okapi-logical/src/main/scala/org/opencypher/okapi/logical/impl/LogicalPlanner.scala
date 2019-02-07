@@ -26,6 +26,7 @@
  */
 package org.opencypher.okapi.logical.impl
 
+import org.opencypher.okapi.api.io.{NodeRelPattern, PatternProvider}
 import org.opencypher.okapi.api.types.{CTNode, CTRelationship}
 import org.opencypher.okapi.impl.exception.{IllegalArgumentException, IllegalStateException, NotImplementedException}
 import org.opencypher.okapi.ir.api.block._
@@ -474,6 +475,19 @@ class LogicalPlanner(producer: LogicalOperatorProducer)
       }
     } else { // there are connections => we need to expand
 
+//      val datasource = context.catalog(graph.qualifiedGraphName.namespace)
+//      val availablePatterns: Seq[NodeRelPattern] = datasource match {
+//        case p: PatternProvider => p.patterns
+//        case _ => Seq.empty
+//      }
+//
+//      val connectionMap: Map[(IRField, Connection), NodeRelPattern] =  availablePatterns.map {
+//        case p@NodeRelPattern(node, rel) => pattern.outgoingConnectionsFor(node, rel).map { conn => conn -> p }
+//      }.reduce(_ ++ _)
+//
+//      // search for duplicated ir fields in connection map -> one node solves 2 patterns
+//
+
       val solved = nodes.intersect(plan.solved.fields)
       val unsolved = nodes -- solved
 
@@ -487,6 +501,19 @@ class LogicalPlanner(producer: LogicalOperatorProducer)
       } else { // we can connect to the previous plan
         plan -> unsolved
       }
+
+//      remaining.filter { nodeField =>
+//        connectionMap.keySet.exists {
+//          case (relField, conn) if conn.source == nodeField => true
+//          case _ => false
+//        }
+//      }.flatMap { nodeField =>
+//        connectionMap.collect {
+//          case ((relField, conn), nodeRelPattern) if conn.source == nodeField =>
+//            planPatternScan(nodeField, relField, nodeRelPattern)
+//        }
+//
+//      }
 
       val nodePlans: Set[LogicalOperator] = remaining.map {
         nodePlan(planStart(graph), _)

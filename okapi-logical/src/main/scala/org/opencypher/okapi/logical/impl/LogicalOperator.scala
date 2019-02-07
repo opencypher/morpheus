@@ -27,6 +27,7 @@
 package org.opencypher.okapi.logical.impl
 
 import org.opencypher.okapi.api.graph.QualifiedGraphName
+import org.opencypher.okapi.api.io.NodeRelPattern
 import org.opencypher.okapi.api.schema.Schema
 import org.opencypher.okapi.api.types.{CTNode, CTRelationship}
 import org.opencypher.okapi.ir.api.Label
@@ -135,6 +136,11 @@ final case class NodeScan(node: Var, in: LogicalOperator, solved: SolvedQueryMod
     case v: Var => in.fields + v
     case _ => in.fields
   }
+}
+
+final case class PatternScan(node: Var, rel: Var, nodeRelPattern: NodeRelPattern, in: LogicalOperator, solved: SolvedQueryModel)
+  extends StackingLogicalOperator {
+  override val fields: Set[Var] = in.fields + node + rel
 }
 
 final case class Distinct(fields: Set[Var], in: LogicalOperator, solved: SolvedQueryModel)
