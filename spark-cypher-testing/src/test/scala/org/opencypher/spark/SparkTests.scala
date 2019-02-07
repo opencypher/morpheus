@@ -27,10 +27,32 @@
 package org.opencypher.spark
 
 import org.apache.spark.sql.execution.SparkPlan
+import org.apache.spark.sql.functions
+import org.apache.spark.sql.types.BinaryType
 import org.opencypher.okapi.impl.util.Measurement
+import org.opencypher.spark.IDEncoding._
 import org.opencypher.spark.testing.CAPSTestSuite
 
 class SparkTests extends CAPSTestSuite {
+
+
+  it("prepends byte") {
+    val range = 0 to 10
+    val data = range.map(_.toLong).map(encode)
+
+    val df = sparkSession.createDataFrame(data.map(Tuple1[CAPSId])).toDF("id")
+    val prefix = 2.toByte
+    val prefixCol = functions.lit(prefix)
+
+    val prefixedDf = df.select(functions.concat_ws("", prefixCol, df.col("id")).cast(BinaryType))
+
+    implicit val ordering: Ordering[List[Byte]] = Ordering.by(e => (e.toString, e.toString))
+
+    val result: List[List[Byte]] = prefixedDf.collect().toList.map(_.get(0).asInstanceOf[Array[Byte]].toList).sorted
+    val expected: List[List[Byte]] = data.map(id => addPrefix(id, prefix).toList).toList.sorted
+    result shouldEqual expected
+  }
+
 
   // Example for: https://issues.apache.org/jira/browse/SPARK-23855
   ignore("should correctly perform a join after a cross") {

@@ -28,9 +28,7 @@ package org.opencypher.spark.api.io
 
 import java.nio.ByteBuffer
 
-import org.apache.spark.sql.catalyst.expressions.{CreateBinaryArray, ShiftRightUnsigned}
 import org.apache.spark.sql.functions._
-import org.apache.spark.sql.types.ByteType
 import org.apache.spark.sql.{Column, functions}
 import org.opencypher.okapi.ir.api.expr.PrefixId.GraphIdPrefix
 
@@ -72,21 +70,7 @@ object IDEncoding {
 
     def encodeLongAsCAPSId(name: String): Column = encodeLongAsCAPSId.as(name)
 
-//    def encodeLongAsCAPSId: Column = encodeUdf(c)
-
-    def encodeLongAsCAPSId: Column = {
-      new Column(CreateBinaryArray(Array(
-        c.cast(ByteType).expr,
-        new Column(ShiftRightUnsigned(c.expr, l8)).cast(ByteType).expr,
-        new Column(ShiftRightUnsigned(c.expr, l16)).cast(ByteType).expr,
-        new Column(ShiftRightUnsigned(c.expr, l24)).cast(ByteType).expr,
-        new Column(ShiftRightUnsigned(c.expr, l32)).cast(ByteType).expr,
-        new Column(ShiftRightUnsigned(c.expr, l40)).cast(ByteType).expr,
-        new Column(ShiftRightUnsigned(c.expr, l48)).cast(ByteType).expr,
-        new Column(ShiftRightUnsigned(c.expr, l56)).cast(ByteType).expr
-      )))
-    }
-
+    def encodeLongAsCAPSId: Column = encodeUdf(c)
   }
 
   implicit class LongIdEncoding(val l: Long) extends AnyVal {
