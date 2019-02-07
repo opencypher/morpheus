@@ -26,7 +26,6 @@
  */
 package org.opencypher.spark.api.io
 
-import org.apache.spark.sql.catalyst.util.GenericArrayData
 import org.apache.spark.sql.functions.typedLit
 import org.opencypher.spark.api.io.IDEncoding._
 import org.opencypher.spark.testing.CAPSTestSuite
@@ -37,27 +36,28 @@ class IDEncodingTest extends CAPSTestSuite with Checkers {
 
   it("encodes longs correctly") {
     check((l: Long) => {
-      val scala = l.encodeAsCAPSId.toList
-      val spark = typedLit[Long](l).encodeLongAsCAPSId.expr.eval().asInstanceOf[Array[Byte]].toList
+      val positive = l & Long.MaxValue
+      val scala = positive.encodeAsCAPSId.toList
+      val spark = typedLit[Long](positive).encodeLongAsCAPSId.expr.eval().asInstanceOf[Array[Byte]].toList
       scala === spark
     }, minSuccessful(1000))
   }
 
   it("encoding/decoding is symmetric") {
     check((l: Long) => {
-      val encoded = l.encodeAsCAPSId
+      val positive = l & Long.MaxValue
+      val encoded = positive.encodeAsCAPSId
       val decoded = encoded.decodeToLong
-      decoded === l
+      decoded === positive
     }, minSuccessful(1000))
   }
 
   it("scala version encodes longs correctly") {
-    0L.encodeAsCAPSId.toList should equal(List.fill(8)(0.toByte))
-    (-1L).encodeAsCAPSId.toList should equal(List.fill(8)(-1.toByte))
+    0L.encodeAsCAPSId.toList should equal(List(0.toByte))
   }
 
   it("spark version encodes longs correctly") {
-    typedLit[Long](0L).encodeLongAsCAPSId.expr.eval().asInstanceOf[Array[Byte]].array.toList should equal(List.fill(8)(0.toByte))
+    typedLit[Long](0L).encodeLongAsCAPSId.expr.eval().asInstanceOf[Array[Byte]].array.toList should equal(List(0.toByte))
   }
 
 }

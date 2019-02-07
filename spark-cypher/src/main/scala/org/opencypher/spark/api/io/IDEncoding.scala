@@ -26,30 +26,66 @@
  */
 package org.opencypher.spark.api.io
 
-import java.nio.ByteBuffer
-
 import org.apache.spark.sql.functions._
 import org.apache.spark.sql.{Column, functions}
 import org.opencypher.okapi.ir.api.expr.PrefixId.GraphIdPrefix
+
+//class LongToByteArray extends UnaryExpression with ExpectsInputTypes with NullIntolerant {
+//
+//}
 
 object IDEncoding {
 
   type CAPSId = Array[Byte]
 
-  private def encode(l: Long): CAPSId = {
-    val bb = ByteBuffer.allocate(8)
-    bb.putLong(l)
-    bb.array()
+  private final val moreBytesBitMask: Long = Integer.parseInt("10000000", 2)
+  private final val varLength7BitMask: Long = Integer.parseInt("01111111", 2)
+  private final val otherBitsMask = ~varLength7BitMask
+  private final val maxBytesForLongVarEncoding = 9
+
+  // Same encoding as as Base 128 Varints @ https://developers.google.com/protocol-buffers/docs/encoding
+  @inline
+  private final def encodeLong(l: Long): Array[Byte] = {
+    assert(l >= 0, "var-length encoding only supports positive values")
+
+    val tempResult = new Array[Byte](maxBytesForLongVarEncoding)
+
+    var remainder = l
+    var index = 0
+
+    while ((remainder & otherBitsMask) != 0) {
+      tempResult(index) = ((remainder & varLength7BitMask) | moreBytesBitMask).toByte
+      remainder >>>= 7
+      index += 1
+    }
+    tempResult(index) = remainder.toByte
+
+    val result = new Array[Byte](index + 1)
+    System.arraycopy(tempResult, 0, result, 0, index + 1)
+    result
   }
 
-  private def decode(a: Array[Byte]): Long = {
-    val bb = ByteBuffer.allocate(8)
-    bb.put(a)
-    bb.flip()
-    bb.getLong()
+  // Same encoding as as Base 128 Varints @ https://developers.google.com/protocol-buffers/docs/encoding
+  @inline
+  private final def decodeLong(input: Array[Byte]): Long = {
+    assert(input.nonEmpty)
+
+    var index = 0
+    var currentByte = input(index)
+    var decoded = currentByte & varLength7BitMask
+    var nextLeftShift = 7
+
+    while ((currentByte & moreBytesBitMask) != 0) {
+      index += 1
+      currentByte = input(index)
+      decoded |= (currentByte & varLength7BitMask) << nextLeftShift
+      nextLeftShift += 7
+    }
+    assert(index == input.length - 1)
+    decoded
   }
 
-  private val encodeUdf = functions.udf(encode _)
+  private val encodeUdf = functions.udf(encodeLong _)
 
   private def addPrefix(a: CAPSId, p: Byte): CAPSId = {
     val n = new Array[Byte](a.length + 1)
@@ -75,7 +111,7 @@ object IDEncoding {
 
   implicit class LongIdEncoding(val l: Long) extends AnyVal {
 
-    def encodeAsCAPSId: CAPSId = encode(l)
+    def encodeAsCAPSId: CAPSId = encodeLong(l)
 
     def withPrefix(prefix: Int): CAPSId = l.encodeAsCAPSId.withPrefix(prefix.toByte)
 
@@ -83,7 +119,7 @@ object IDEncoding {
 
   implicit class LongIdDecoding(val a: Array[Byte]) extends AnyVal {
 
-    def decodeToLong: Long = decode(a)
+    def decodeToLong: Long = decodeLong(a)
 
   }
 
