@@ -24,17 +24,28 @@
  * described as "implementation extensions to Cypher" or as "proposed changes to
  * Cypher that are not yet approved by the openCypher community".
  */
-package org.opencypher.spark.api.io
+package org.opencypher.spark.impl.encoders
 
-import org.apache.spark.sql.functions._
-import org.apache.spark.sql.{Column, functions}
+import org.apache.spark.sql.Column
+import org.apache.spark.sql.catalyst.expressions.codegen.{CodegenContext, ExprCode}
+import org.apache.spark.sql.catalyst.expressions.{ExpectsInputTypes, Expression, NullIntolerant, UnaryExpression}
+import org.apache.spark.sql.types._
 import org.opencypher.okapi.ir.api.expr.PrefixId.GraphIdPrefix
 
-//class LongToByteArray extends UnaryExpression with ExpectsInputTypes with NullIntolerant {
-//
-//}
+case class EncodeLong(child: Expression) extends UnaryExpression with NullIntolerant with ExpectsInputTypes {
 
-object IDEncoding {
+  override val dataType: DataType = BinaryType
+
+  override val inputTypes: Seq[LongType] = Seq(LongType)
+
+  override protected def nullSafeEval(input: Any): Any =
+    LongEncoder.encodeLong(input.asInstanceOf[Long])
+
+  override protected def doGenCode(ctx: CodegenContext, ev: ExprCode): ExprCode =
+    defineCodeGen(ctx, ev, c => s"(byte[])(${LongEncoder.getClass.getName.dropRight(1)}.encodeLong($c))")
+}
+
+object LongEncoder {
 
   type CAPSId = Array[Byte]
 
@@ -45,7 +56,7 @@ object IDEncoding {
 
   // Same encoding as as Base 128 Varints @ https://developers.google.com/protocol-buffers/docs/encoding
   @inline
-  private final def encodeLong(l: Long): Array[Byte] = {
+  final def encodeLong(l: Long): Array[Byte] = {
     assert(l >= 0, "var-length encoding only supports positive values")
 
     val tempResult = new Array[Byte](maxBytesForLongVarEncoding)
@@ -67,7 +78,7 @@ object IDEncoding {
 
   // Same encoding as as Base 128 Varints @ https://developers.google.com/protocol-buffers/docs/encoding
   @inline
-  private final def decodeLong(input: Array[Byte]): Long = {
+  final def decodeLong(input: Array[Byte]): Long = {
     assert(input.nonEmpty)
 
     var index = 0
@@ -85,8 +96,6 @@ object IDEncoding {
     decoded
   }
 
-  private val encodeUdf = functions.udf(encodeLong _)
-
   private def addPrefix(a: CAPSId, p: Byte): CAPSId = {
     val n = new Array[Byte](a.length + 1)
     n(0) = p
@@ -94,19 +103,11 @@ object IDEncoding {
     n
   }
 
-  private val l56 = lit(56).expr
-  private val l48 = lit(48).expr
-  private val l40 = lit(40).expr
-  private val l32 = lit(32).expr
-  private val l24 = lit(24).expr
-  private val l16 = lit(16).expr
-  private val l8 = lit(8).expr
-
   implicit class ColumnIdEncoding(val c: Column) extends AnyVal {
 
     def encodeLongAsCAPSId(name: String): Column = encodeLongAsCAPSId.as(name)
 
-    def encodeLongAsCAPSId: Column = encodeUdf(c)
+    def encodeLongAsCAPSId: Column = new Column(EncodeLong(c.expr))
   }
 
   implicit class LongIdEncoding(val l: Long) extends AnyVal {
@@ -128,5 +129,4 @@ object IDEncoding {
     def withPrefix(prefix: GraphIdPrefix): CAPSId = addPrefix(id, prefix)
 
   }
-
 }

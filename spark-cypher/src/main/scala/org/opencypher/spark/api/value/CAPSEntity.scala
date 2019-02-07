@@ -27,7 +27,7 @@
 package org.opencypher.spark.api.value
 
 import org.opencypher.okapi.api.value.CypherValue._
-import org.opencypher.spark.api.io.IDEncoding._
+import org.opencypher.spark.impl.encoders.LongEncoder._
 
 // TODO: Move to tests
 object CAPSNode {

@@ -34,12 +34,12 @@ import org.opencypher.okapi.relational.api.table.RelationalCypherRecords
 import org.opencypher.okapi.relational.impl.operators.Start
 import org.opencypher.okapi.testing.Bag
 import org.opencypher.spark.api.io.{CAPSNodeTable, CAPSRelationshipTable}
+import org.opencypher.spark.impl.encoders.LongEncoder._
 import org.opencypher.spark.impl.table.SparkTable.DataFrameTable
 import org.opencypher.spark.testing.CAPSTestSuite
 import org.opencypher.spark.testing.fixture.{GraphConstructionFixture, RecordsVerificationFixture, TeamDataFixture}
 
 import scala.reflect.runtime.universe
-import org.opencypher.spark.api.io.IDEncoding._
 
 abstract class CAPSGraphTest extends CAPSTestSuite
   with GraphConstructionFixture

@@ -24,15 +24,18 @@
  * described as "implementation extensions to Cypher" or as "proposed changes to
  * Cypher that are not yet approved by the openCypher community".
  */
-package org.opencypher.spark.api.io
+package org.opencypher.spark.impl.encoders
 
+import org.apache.spark.sql.catalyst.expressions.codegen.GenerateMutableProjection
+import org.apache.spark.sql.catalyst.expressions.{Alias, GenericInternalRow}
+import org.apache.spark.sql.functions
 import org.apache.spark.sql.functions.typedLit
-import org.opencypher.spark.api.io.IDEncoding._
+import org.opencypher.spark.impl.encoders.LongEncoder._
 import org.opencypher.spark.testing.CAPSTestSuite
 import org.scalacheck.Prop.propBoolean
 import org.scalatest.prop.Checkers
 
-class IDEncodingTest extends CAPSTestSuite with Checkers {
+class LongEncoderTest extends CAPSTestSuite with Checkers {
 
   it("encodes longs correctly") {
     check((l: Long) => {
@@ -58,6 +61,35 @@ class IDEncodingTest extends CAPSTestSuite with Checkers {
 
   it("spark version encodes longs correctly") {
     typedLit[Long](0L).encodeLongAsCAPSId.expr.eval().asInstanceOf[Array[Byte]].array.toList should equal(List(0.toByte))
+  }
+
+  describe("Spark expression") {
+
+    it("converts longs into byte arrays using expression interpreter") {
+      check((l: Long) => {
+        val positive = l & Long.MaxValue
+        val inputRow = new GenericInternalRow(Array[Any](positive))
+        val encodeLong = EncodeLong(functions.lit(positive).expr)
+        val interpreted = encodeLong.eval(inputRow).asInstanceOf[Array[Byte]]
+        val decoded = decodeLong(interpreted)
+
+        decoded === positive
+      }, minSuccessful(1000))
+    }
+
+    it("converts longs into byte arrays using expression code gen") {
+      check((l: Long) => {
+        val positive = l & Long.MaxValue
+        val inputRow = new GenericInternalRow(Array[Any](positive))
+        val encodeLong = EncodeLong(functions.lit(positive).expr)
+        val plan = GenerateMutableProjection.generate(Alias(encodeLong, s"Optimized($encodeLong)")() :: Nil)
+        val codegen = plan(inputRow).get(0, encodeLong.dataType).asInstanceOf[Array[Byte]]
+        val decoded = decodeLong(codegen)
+
+        decoded === positive
+      }, minSuccessful(1000))
+    }
+
   }
 
 }
