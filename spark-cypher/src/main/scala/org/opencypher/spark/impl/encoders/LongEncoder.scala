@@ -30,7 +30,6 @@ import org.apache.spark.sql.Column
 import org.apache.spark.sql.catalyst.expressions.codegen.{CodegenContext, ExprCode}
 import org.apache.spark.sql.catalyst.expressions.{ExpectsInputTypes, Expression, NullIntolerant, UnaryExpression}
 import org.apache.spark.sql.types._
-import org.opencypher.okapi.ir.api.expr.PrefixId.GraphIdPrefix
 
 case class EncodeLong(child: Expression) extends UnaryExpression with NullIntolerant with ExpectsInputTypes {
 
@@ -126,7 +125,7 @@ object LongEncoder {
 
   implicit class RichCAPSId(val id: CAPSId) extends AnyVal {
 
-    def withPrefix(prefix: GraphIdPrefix): CAPSId = addPrefix(id, prefix)
+    def withPrefix(prefix: Int): CAPSId = addPrefix(id, prefix.toByte)
 
   }
 }

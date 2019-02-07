@@ -27,10 +27,7 @@
 package org.opencypher.spark
 
 import org.apache.spark.sql.execution.SparkPlan
-import org.apache.spark.sql.functions
-import org.apache.spark.sql.types.BinaryType
 import org.opencypher.okapi.impl.util.Measurement
-import org.opencypher.spark.IDEncoding._
 import org.opencypher.spark.testing.CAPSTestSuite
 
 class SparkTests extends CAPSTestSuite {

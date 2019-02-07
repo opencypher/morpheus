@@ -119,8 +119,7 @@ trait RelationalCypherGraph[T <: Table[T]] extends PropertyGraph {
 
     implicit val context: RelationalRuntimeContext[T] = RelationalRuntimeContext(graphAt)(session)
 
-    // Prefix all other graphs, but not `this`
-    val allGraphs = this :: otherGraphs.zipWithIndex.map { case (g, i) => session.graphs.prefixedGraph(g, i.toByte) }
+    val allGraphs = (this :: otherGraphs).zipWithIndex.map { case (g, i) => session.graphs.prefixedGraph(g, i.toByte) }
     session.graphs.unionGraph(allGraphs: _*)
   }
 }

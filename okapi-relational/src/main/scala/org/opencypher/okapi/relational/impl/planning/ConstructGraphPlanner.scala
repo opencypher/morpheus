@@ -53,37 +53,21 @@ object ConstructGraphPlanner {
   def planConstructGraph[T <: Table[T] : TypeTag](inputTablePlan: RelationalOperator[T], construct: LogicalPatternGraph)
     (implicit context: RelationalRuntimeContext[T]): RelationalOperator[T] = {
 
-    val areNodesCreatedOrCloned: Boolean = construct.newEntities.nonEmpty || construct.clones.nonEmpty
+    val prefixes = computePrefixes(construct)
 
-    val unionPrefixStrategy: Map[QualifiedGraphName, GraphIdPrefix] = {
-      val graphQgns = if (areNodesCreatedOrCloned) {
-        ((construct.onGraphs ++ construct.clones.values.map(_.cypherType.graph.get)) :+ construct.qualifiedGraphName).distinct
-      } else {
-        construct.onGraphs
-      }
-      // The first graph does not need a prefix
-      graphQgns match {
-        case Nil => Map.empty
-        case _ :: Nil => Map.empty
-        case _ :: t => t.zipWithIndex.map { case (qgn, i) =>
-          // Assign GraphIdPrefix `11111111` to created nodes and relationships
-          qgn -> (if (qgn == construct.qualifiedGraphName) (-1).toByte else i.toByte)
-        }.toMap
-      }
-    }
-
-    val onGraphs: List[RelationalCypherGraph[T]] = construct.onGraphs.map { qgn =>
+    val onGraphs = construct.onGraphs.map { qgn =>
       val start = relational.Start[T](qgn)
-      unionPrefixStrategy.get(qgn) match {
-        case None => start.graph
-        case Some(prefix) => relational.PrefixGraph(start, prefix).graph
-      }
+      prefixes.get(qgn).map(p => relational.PrefixGraph(start, p)).getOrElse(start).graph
     }
 
-    val constructTable: RelationalOperator[T] = initConstructTable(inputTablePlan, unionPrefixStrategy, construct)
+    val constructTable = initConstructTable(inputTablePlan, prefixes, construct)
 
-    val allGraphs: List[RelationalCypherGraph[T]] = onGraphs ++ {
-      if (areNodesCreatedOrCloned) Some(extractScanGraph(construct, constructTable)) else None
+    val allGraphs = onGraphs ++ {
+      if (construct.clones.nonEmpty || construct.newEntities.nonEmpty) {
+        Some(extractScanGraph(construct, constructTable))
+      } else {
+        None
+      }
     }
 
     val constructedGraph = allGraphs match {
@@ -97,6 +81,21 @@ object ConstructGraphPlanner {
     context.queryLocalCatalog += (construct.qualifiedGraphName -> constructOp.graph)
 
     constructOp
+  }
+
+  private def computePrefixes(construct: LogicalPatternGraph): Map[QualifiedGraphName, GraphIdPrefix] = {
+    val onGraphQgns = construct.onGraphs
+    val cloneGraphQgns = construct.clones.values.flatMap(_.cypherType.graph).toList
+    val createGraphQgns = if (construct.newEntities.nonEmpty) List(construct.qualifiedGraphName) else Nil
+    val graphQgns = (onGraphQgns ++ cloneGraphQgns ++ createGraphQgns).distinct
+    if (graphQgns.size <= 1) {
+      Map.empty // No prefixes needed when there is at most one graph QGN
+    } else {
+      graphQgns.zipWithIndex.map { case (qgn, i) =>
+        // Assign GraphIdPrefix `11111111` to created nodes and relationships
+        qgn -> (if (qgn == construct.qualifiedGraphName) (-1).toByte else i.toByte)
+      }.toMap
+    }
   }
 
   private def initConstructTable[T <: Table[T] : TypeTag](
