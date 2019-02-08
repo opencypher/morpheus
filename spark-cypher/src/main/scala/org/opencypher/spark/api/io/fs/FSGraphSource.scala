@@ -29,14 +29,59 @@ package org.opencypher.spark.api.io.fs
 import java.net.URI
 
 import org.apache.hadoop.fs.FileSystem
-import org.apache.spark.sql.DataFrame
-import org.apache.spark.sql.types.StructType
+import org.apache.spark.sql.{DataFrame, functions}
+import org.apache.spark.sql.types.{BinaryType, StringType, StructField, StructType}
 import org.opencypher.okapi.api.graph.{GraphName, Node, Relationship}
 import org.opencypher.spark.api.CAPSSession
 import org.opencypher.spark.api.io.fs.HadoopFSHelpers._
 import org.opencypher.spark.api.io.json.JsonSerialization
 import org.opencypher.spark.api.io.util.HiveTableName
-import org.opencypher.spark.api.io.{AbstractPropertyGraphDataSource, StorageFormat}
+import org.opencypher.spark.api.io.{AbstractPropertyGraphDataSource, FileFormat, StorageFormat}
+
+class CsvGraphSource(rootPath: String, filesPerTable: Option[Int] = None)(override implicit val caps: CAPSSession)
+  extends FSGraphSource(rootPath, FileFormat.csv, None, filesPerTable) {
+
+  override protected def writeTable(path: String, table: DataFrame): Unit = {
+    val columnsToSelect = table.schema.map {
+      case sf: StructField if sf.dataType == BinaryType => functions.hex(table.col(sf.name)).as(sf.name)
+      case sf: StructField => table.col(sf.name)
+    }
+    super.writeTable(path, table.select(columnsToSelect: _*))
+  }
+
+  protected override def readNodeTable(graphName: GraphName, labels: Set[String], sparkSchema: StructType): DataFrame =
+    readEntityTable(graphName, Left(labels), sparkSchema)
+
+  protected override def readRelationshipTable(
+    graphName: GraphName,
+    relKey: String,
+    sparkSchema: StructType
+  ): DataFrame = readEntityTable(graphName, Right(relKey), sparkSchema)
+
+  private def readEntityTable(
+    graphName: GraphName,
+    labelsOrRelKey: Either[Set[String], String],
+    sparkSchema: StructType
+  ): DataFrame = {
+    val readFields = sparkSchema.map {
+      case sf: StructField if sf.dataType == BinaryType => sf.copy(dataType = StringType)
+      case sf: StructField => sf
+    }
+
+    val tableWithEncodedStrings =labelsOrRelKey match {
+      case Left(labels) => super.readNodeTable(graphName, labels, StructType(readFields))
+      case Right(relKey) => super.readRelationshipTable(graphName, relKey, StructType(readFields))
+    }
+
+    val columnsToSelect = sparkSchema.map {
+      case sf: StructField if sf.dataType == BinaryType =>
+        functions.unhex(tableWithEncodedStrings.col(sf.name)).as(sf.name)
+      case sf: StructField => tableWithEncodedStrings.col(sf.name)
+    }
+
+    tableWithEncodedStrings.select(columnsToSelect: _*)
+  }
+}
 
 /**
   * Data source implementation that handles the writing of files and tables to a filesystem.

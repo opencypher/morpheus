@@ -27,7 +27,7 @@
 package org.opencypher.spark.api.io.util
 
 import org.apache.spark.sql.DataFrame
-import org.apache.spark.sql.types.{LongType, StructField, StructType}
+import org.apache.spark.sql.types.{BinaryType, StructField, StructType}
 import org.opencypher.okapi.api.schema.Schema
 import org.opencypher.okapi.api.types.{CTNode, CTRelationship}
 import org.opencypher.okapi.impl.util.StringEncodingUtilities._
@@ -43,7 +43,7 @@ object CAPSGraphExport {
   implicit class CanonicalTableSparkSchema(val schema: Schema) extends AnyVal {
 
     def canonicalNodeStructType(labels: Set[String]): StructType = {
-      val id = StructField(GraphEntity.sourceIdKey, LongType, nullable = false)
+      val id = StructField(GraphEntity.sourceIdKey, BinaryType, nullable = false)
       val properties = schema.nodePropertyKeys(labels).toSeq
         .map { case (propertyName, cypherType) => propertyName.toPropertyColumnName -> cypherType }
         .sortBy { case (propertyColumnName, _) => propertyColumnName }
@@ -54,9 +54,9 @@ object CAPSGraphExport {
     }
 
     def canonicalRelStructType(relType: String): StructType = {
-      val id = StructField(GraphEntity.sourceIdKey, LongType, nullable = false)
-      val sourceId = StructField(Relationship.sourceStartNodeKey, LongType, nullable = false)
-      val targetId = StructField(Relationship.sourceEndNodeKey, LongType, nullable = false)
+      val id = StructField(GraphEntity.sourceIdKey, BinaryType, nullable = false)
+      val sourceId = StructField(Relationship.sourceStartNodeKey, BinaryType, nullable = false)
+      val targetId = StructField(Relationship.sourceEndNodeKey, BinaryType, nullable = false)
       val properties = schema.relationshipPropertyKeys(relType).toSeq.sortBy(_._1).map { case (propertyName, cypherType) =>
         StructField(propertyName.toPropertyColumnName, cypherType.getSparkType, cypherType.isNullable)
       }

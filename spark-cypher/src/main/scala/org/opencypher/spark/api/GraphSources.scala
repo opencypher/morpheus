@@ -32,7 +32,7 @@ import org.opencypher.graphddl.GraphDdl
 import org.opencypher.okapi.api.schema.Schema
 import org.opencypher.okapi.neo4j.io.Neo4jConfig
 import org.opencypher.spark.api.io.FileFormat
-import org.opencypher.spark.api.io.fs.{EscapeAtSymbol, FSGraphSource}
+import org.opencypher.spark.api.io.fs.{CsvGraphSource, EscapeAtSymbol, FSGraphSource}
 import org.opencypher.spark.api.io.neo4j.{Neo4jBulkCSVDataSink, Neo4jPropertyGraphDataSource}
 import org.opencypher.spark.api.io.sql.IdGenerationStrategy.IdGenerationStrategy
 import org.opencypher.spark.api.io.sql.{SqlDataSourceConfig, SqlPropertyGraphDataSource}
@@ -65,7 +65,7 @@ object FSGraphSources {
     filesPerTable: Option[Int] = Some(1)
   )(implicit session: CAPSSession) {
 
-    def csv: FSGraphSource = new FSGraphSource(rootPath, FileFormat.csv, hiveDatabaseName, filesPerTable)
+    def csv: FSGraphSource = new CsvGraphSource(rootPath, filesPerTable)
 
     def parquet: FSGraphSource = new FSGraphSource(rootPath, FileFormat.parquet, hiveDatabaseName, filesPerTable)
 
