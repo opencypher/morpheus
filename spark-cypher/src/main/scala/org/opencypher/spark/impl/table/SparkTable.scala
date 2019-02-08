@@ -423,6 +423,14 @@ object SparkTable {
       df.select(columnsToSelect: _*)
     }
 
+    def transformColumns(cols: String*)(f: Column => Column): DataFrame = {
+      val columnsToSelect = df.columns.map {
+        case c if cols.contains(c) => f(df.col(c))
+        case c => df.col(c)
+      }
+      df.select(columnsToSelect: _*)
+    }
+
     def decodeHexStringToBinary(hexColumns: Set[String]): DataFrame = {
       val columnsToSelect = df.schema.map {
         case sf: StructField if hexColumns.contains(sf.name) =>
