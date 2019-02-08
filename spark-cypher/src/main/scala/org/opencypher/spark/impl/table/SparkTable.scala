@@ -456,9 +456,8 @@ object SparkTable {
       val tempHashValue = functions.hash(columns: _*).cast(LongType)
       val shifted = functions.shiftLeft(tempHashValue, Integer.SIZE)
       val hashValue = shifted + functions.hash(columns.reverse: _*)
-      val positiveHashValue = hashValue.bitwiseAND(functions.lit(Long.MaxValue))
 
-      df.safeAddColumn(hashColumn, positiveHashValue)
+      df.safeAddColumn(hashColumn, hashValue)
     }
 
     /**

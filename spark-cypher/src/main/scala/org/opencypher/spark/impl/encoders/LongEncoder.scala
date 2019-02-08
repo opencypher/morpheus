@@ -51,13 +51,11 @@ object LongEncoder {
   private final val moreBytesBitMask: Long = Integer.parseInt("10000000", 2)
   private final val varLength7BitMask: Long = Integer.parseInt("01111111", 2)
   private final val otherBitsMask = ~varLength7BitMask
-  private final val maxBytesForLongVarEncoding = 9
+  private final val maxBytesForLongVarEncoding = 10
 
   // Same encoding as as Base 128 Varints @ https://developers.google.com/protocol-buffers/docs/encoding
   @inline
   final def encodeLong(l: Long): Array[Byte] = {
-    assert(l >= 0, "var-length encoding only supports positive values")
-
     val tempResult = new Array[Byte](maxBytesForLongVarEncoding)
 
     var remainder = l
