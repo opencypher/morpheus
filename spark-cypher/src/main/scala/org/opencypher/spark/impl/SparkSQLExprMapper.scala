@@ -40,7 +40,6 @@ import org.opencypher.spark.impl.CAPSFunctions.{array_contains, get_node_labels,
 import org.opencypher.spark.impl.convert.SparkConversions._
 import org.opencypher.spark.impl.encoders.LongEncoder._
 import org.opencypher.spark.impl.temporal.SparkTemporalHelpers._
-import org.opencypher.spark.impl.temporal.TemporalUDFS
 import org.opencypher.spark.impl.temporal.{SparkTemporalHelpers, TemporalUDFS}
 
 object SparkSQLExprMapper {
@@ -278,7 +277,7 @@ object SparkSQLExprMapper {
 
         case ToId(e) =>
           e.cypherType.material match {
-              // TODO: Remove this call; we shouldn't have nodes or rels as concrete types here
+            // TODO: Remove this call; we shouldn't have nodes or rels as concrete types here
             case _: CTNode | _: CTRelationship =>
               e.asSparkSQLExpr
             case CTInteger =>
@@ -506,29 +505,5 @@ object SparkSQLExprMapper {
       functions.struct(structColumns: _*)
     }
   }
-
-  private def resolveTemporalArgument(expr: Expr)
-    (implicit parameters: CypherMap): Option[Either[Map[String, Int], String]] = {
-    expr match {
-      case MapExpression(inner) =>
-        val map = inner.map {
-          case (key, Param(name)) => key -> (parameters(name) match {
-            case CypherString(s) => s.toInt
-            case CypherInteger(i) => i.toInt
-            case other => throw IllegalArgumentException("A map value of type CypherString or CypherInteger", other)
-          })
-          case (key, e) =>
-            throw NotImplementedException(s"Parsing temporal values is currently only supported for Literal-Maps, got $key -> $e")
-        }
-
-        Some(Left(map))
-
-      case Param(name) =>
-        val s = parameters(name) match {
-          case CypherString(str) => str
-          case other => throw IllegalArgumentException(s"Parameter `$name` to be a CypherString", other)
-        }
-
-        Some(Right(s))
 
 }
