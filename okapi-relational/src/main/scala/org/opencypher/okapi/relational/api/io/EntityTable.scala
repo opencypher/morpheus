@@ -97,29 +97,31 @@ abstract class PatternTable[T <: Table[T]](mapping: PatternMapping, table: T)
   extends EntityTable[T] {
 
   override lazy val schema: Schema = {
-    val propertyKeys = mapping.propertyMapping.toSeq.map {
+    val nodePropertyKeys = mapping.nodeMapping.propertyMapping.toSeq.map {
+      case (propertyKey, sourceKey) => propertyKey -> table.columnType(sourceKey)
+    }
+    val relPropertyKeys = mapping.relationshipMapping.propertyMapping.toSeq.map {
       case (propertyKey, sourceKey) => propertyKey -> table.columnType(sourceKey)
     }
 
     val nodeSchema = mapping.nodeMapping.optionalLabelMapping.keys.toSet.subsets
       .map(_.union(mapping.nodeMapping.impliedLabels))
-      .map(combo => Schema.empty.withNodePropertyKeys(combo.toSeq: _*)(propertyKeys: _*))
+      .map(combo => Schema.empty.withNodePropertyKeys(combo.toSeq: _*)(nodePropertyKeys: _*))
       .reduce(_ ++ _)
 
-    val relSchema = {
-      val relTypes = mapping.relationshipMapping.relTypeOrSourceRelTypeKey match {
-        case Left(name) => Set(name)
-        case Right((_, possibleTypes)) => possibleTypes
-      }
+    val relTypes = mapping.relationshipMapping.relTypeOrSourceRelTypeKey match {
+      case Left(name) => Set(name)
+      case Right((_, possibleTypes)) => possibleTypes
+    }
 
-      relTypes.foldLeft(Schema.empty) {
-        case (partialSchema, relType) => partialSchema.withRelationshipPropertyKeys(relType)(propertyKeys: _*)
-      }
+    val relSchema = relTypes.foldLeft(Schema.empty) {
+      case (partialSchema, relType) => partialSchema.withRelationshipPropertyKeys(relType)(relPropertyKeys: _*)
     }
 
     nodeSchema ++ relSchema
   }
 
+  override def verify(): Unit = ()
 }
 
 /**

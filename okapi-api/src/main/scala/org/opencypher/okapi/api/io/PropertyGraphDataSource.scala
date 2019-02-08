@@ -119,7 +119,7 @@ trait PatternProvider {
 
   self: PropertyGraphDataSource =>
 
-  def patterns: Seq[NodeRelPattern]
+  def patterns(graph: GraphName): Seq[NodeRelPattern]
 }
 
 case class NodeRelPattern(node: CTNode, rel: CTRelationship)

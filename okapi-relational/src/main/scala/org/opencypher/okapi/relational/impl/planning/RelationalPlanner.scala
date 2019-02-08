@@ -28,7 +28,7 @@ package org.opencypher.okapi.relational.impl.planning
 
 import org.opencypher.okapi.api.graph.CypherSession
 import org.opencypher.okapi.api.io.conversion.{NodeMapping, RelationshipMapping}
-import org.opencypher.okapi.api.types.{CTBoolean, CTNode, CTRelationship}
+import org.opencypher.okapi.api.types.{CTBoolean, CTNode, CTPattern, CTRelationship}
 import org.opencypher.okapi.impl.exception.{NotImplementedException, SchemaException, UnsupportedOperationException}
 import org.opencypher.okapi.ir.api.block.SortItem
 import org.opencypher.okapi.ir.api.expr._
@@ -98,6 +98,24 @@ object RelationalPlanner {
         process[T](in).add(explodeExpr as item)
 
       case logical.NodeScan(v, in, _) => planScan(Some(process[T](in)), in.graph, v)
+
+      case logical.PatternScan(n, r, pattern, in, _) =>
+        val inOp = Some(process[T](in)) match {
+          case Some(relationalOp) => relationalOp
+          case _ => relational.Start(in.graph.qualifiedGraphName)
+        }
+
+        val graph = in.graph match {
+          case _: LogicalCatalogGraph =>
+            inOp.context.resolveGraph(in.graph.qualifiedGraphName)
+          case p: LogicalPatternGraph =>
+            inOp.context.queryLocalCatalog.getOrElse(p.qualifiedGraphName, planConstructGraph(inOp, p).graph)
+        }
+        val scanOp = graph.scanOperator(CTPattern(pattern.node, pattern.rel))
+        scanOp
+          .assignScanName(n.name, Some(Var("node")(pattern.node)))
+          .assignScanName(r.name, Some(Var("rel")(pattern.rel)))
+          .switchContext(inOp.context)
 
       case logical.Aggregate(aggregations, group, in, _) => relational.Aggregate(process[T](in), group, aggregations)
 
@@ -348,8 +366,8 @@ object RelationalPlanner {
     def alias(aliases: Set[AliasExpr]): RelationalOperator[T] = alias(aliases.toSeq: _*)
 
     // Only works with single entity tables
-    def assignScanName(name: String): RelationalOperator[T] = {
-      val scanVar = op.singleEntity
+    def assignScanName(name: String, fromEntity: Option[Var] = None): RelationalOperator[T] = {
+      val scanVar = fromEntity.getOrElse(op.singleEntity)
       val namedScanVar = Var(name)(scanVar.cypherType)
       Drop(Alias(op, Seq(scanVar as namedScanVar)), Set(scanVar))
     }

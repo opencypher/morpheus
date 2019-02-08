@@ -28,6 +28,7 @@ package org.opencypher.spark.api.io
 
 import org.apache.spark.sql.{DataFrame, _}
 import org.opencypher.okapi.api.io.conversion.{NodeMapping, PatternMapping, RelationshipMapping}
+import org.opencypher.okapi.api.schema.Schema
 import org.opencypher.okapi.api.types._
 import org.opencypher.okapi.impl.util.StringEncodingUtilities._
 import org.opencypher.okapi.relational.api.io.{EntityTable, NodeTable, PatternTable, RelationshipTable}
@@ -72,17 +73,6 @@ case class CAPSPatternTable(
     table.df.cache()
     this
   }
-}
-
-object CAPSPatternTable {
-
-  def fromMapping(mapping: PatternMapping, initialTable: DataFrame): CAPSPatternTable = {
-    val nodeTable = CAPSNodeTable.fromMapping(mapping.nodeMapping, initialTable)
-    val patternTable = CAPSRelationshipTable.fromMapping(mapping.relationshipMapping, nodeTable.table.df)
-
-    CAPSPatternTable(mapping, patternTable.table)
-  }
-
 }
 
 case class CAPSNodeTable(

@@ -33,8 +33,10 @@ import org.apache.spark.sql.{DataFrame, DataFrameReader, functions}
 import org.opencypher.graphddl.GraphDdl.PropertyMappings
 import org.opencypher.graphddl._
 import org.opencypher.okapi.api.graph.{GraphName, PropertyGraph}
-import org.opencypher.okapi.api.io.conversion.{EntityMapping, NodeMapping, RelationshipMapping}
-import org.opencypher.okapi.api.types.{CTDate, CypherType}
+import org.opencypher.okapi.api.io.conversion.{EntityMapping, NodeMapping, PatternMapping, RelationshipMapping}
+import org.opencypher.okapi.api.io.{NodeRelPattern, PatternProvider}
+import org.opencypher.okapi.api.schema.Schema
+import org.opencypher.okapi.api.types.{CTDate, CTNode, CTRelationship, CypherType}
 import org.opencypher.okapi.impl.exception.{GraphNotFoundException, IllegalArgumentException, UnsupportedOperationException}
 import org.opencypher.okapi.impl.util.StringEncodingUtilities._
 import org.opencypher.spark.api.CAPSSession
@@ -55,7 +57,22 @@ case class SqlPropertyGraphDataSource(
   graphDdl: GraphDdl,
   sqlDataSourceConfigs: Map[String, SqlDataSourceConfig],
   idGenerationStrategy: IdGenerationStrategy = MonotonicallyIncreasingId
-)(implicit val caps: CAPSSession) extends CAPSPropertyGraphDataSource {
+)(implicit val caps: CAPSSession) extends CAPSPropertyGraphDataSource with PatternProvider {
+
+
+  override def patterns(graph: GraphName): Seq[NodeRelPattern] = {
+    val ddl = graphDdl.graphs(graph)
+    ddl.edgeToViewMappings.flatMap { edgeViewMapping =>
+      val relTable = edgeViewMapping.view
+      val sourceNodeTable = edgeViewMapping.startNode.nodeViewKey.viewId
+
+      if (relTable == sourceNodeTable) {
+        val node = CTNode(edgeViewMapping.startNode.nodeViewKey.nodeType.elementTypes)
+        val relationship = CTRelationship(edgeViewMapping.relType.elementType)
+        Seq(NodeRelPattern(node, relationship))
+      } else Seq.empty
+    }
+  }
 
   override def hasGraph(graphName: GraphName): Boolean = graphDdl.graphs.contains(graphName)
 
@@ -64,28 +81,67 @@ case class SqlPropertyGraphDataSource(
     val ddlGraph = graphDdl.graphs.getOrElse(graphName, throw GraphNotFoundException(s"Graph $graphName not found"))
     val capsSchema = ddlGraph.graphType
 
-    // Build CAPS node tables
-    val nodeDataFrames = ddlGraph.nodeToViewMappings.mapValues(nvm => readTable(nvm.view))
+    val (nodeDataFramesWithIds, nodeTables) = buildCAPSNodeTables(ddlGraph, capsSchema)
 
-    // Generate node identifiers
-    val nodeDataFramesWithIds = idGenerationStrategy match {
-      case HashBasedId => createHashIdForTables(nodeDataFrames, ddlGraph, sourceIdKey)
-      case MonotonicallyIncreasingId => createMonotonicallyIncreasingIdForTables(nodeDataFrames, sourceIdKey)
+    val relationshipTables = buildCAPSRelationshipTables(ddlGraph, capsSchema, nodeDataFramesWithIds)
+
+    // Build CAPS pattern tables
+    val patternTables = patterns(ddlGraph.name).map { pattern =>
+      // Build CAPS node tables
+      // TODO replace find with filter
+      val (nodeViewMapping, patternDf) = ddlGraph.nodeToViewMappings
+        .find(_._2.nodeType.elementTypes == pattern.node.labels)
+        .map {
+          case (_, nvm) => (nvm, readTable(nvm.view))
+        }.get
+
+      // Generate node identifiers
+      val patternDataFramesWithIds = idGenerationStrategy match {
+        case HashBasedId =>
+          createHashIdForTable(patternDf, nodeViewMapping.key, getIdColumnNamesForViewKey(nodeViewMapping.key, patternDf, ddlGraph), sourceIdKey)
+      }
+
+      val edgeViewMapping = ddlGraph.edgeToViewMappings
+        .find(evm => evm.relType.elementType == pattern.rel.types.head &&
+          evm.startNode.nodeViewKey.viewId == nodeViewMapping.key.viewId).get
+
+      val relIdColumn = "rel_id"
+
+      // Add rel id column
+      val patternDFWithRelIds = idGenerationStrategy match {
+        case HashBasedId =>
+          createHashIdForTable(patternDataFramesWithIds, edgeViewMapping.key, getIdColumnNamesForViewKey(edgeViewMapping.key, patternDataFramesWithIds, ddlGraph, Seq(sourceIdKey)), relIdColumn)
+      }
+
+      // Add source column
+      val patternDfWithStartNodeId = patternDFWithRelIds.withColumn(sourceStartNodeKey, patternDFWithRelIds.col(sourceIdKey))
+
+      // Add target column
+      val patternDfWithRelEndNodeId = idGenerationStrategy match {
+        case HashBasedId =>
+          // generate the end node id using the same hash parameters as for the corresponding node table
+          val idColumnNames = edgeViewMapping.endNode.joinPredicates.map(_.edgeColumn).map(_.toPropertyColumnName)
+          createHashIdForTable(patternDfWithStartNodeId, edgeViewMapping.endNode.nodeViewKey, idColumnNames, sourceEndNodeKey)
+      }
+
+      // Mappings
+      val nodeMapping = createNodeMapping(nodeViewMapping.nodeType.elementTypes, nodeViewMapping.propertyMappings)
+      val relationshipMapping = createRelationshipMapping(edgeViewMapping.relType.elementType, edgeViewMapping.propertyMappings)
+      val withNormalizedNode = normalizeDataFrame(patternDfWithRelEndNodeId, nodeMapping)
+
+      val withNormalizedRel = normalizeDataFrame(withNormalizedNode, relationshipMapping).castToLong
+
+      val normalizedNodeMapping = normalizeNodeMapping(nodeMapping)
+      val normalizedRelMapping = normalizeRelationshipMapping(relationshipMapping)
+      val patternMapping = PatternMapping(normalizedNodeMapping, normalizedRelMapping)
+
+      CAPSPatternTable(patternMapping, withNormalizedRel)
     }
 
-    val nodeTables = nodeDataFramesWithIds.map {
-      case (nodeViewKey, nodeDf) =>
-        val nodeElementTypes = nodeViewKey.nodeType.elementTypes
-        val columnsWithType = nodeColsWithCypherType(capsSchema, nodeElementTypes)
-        val inputNodeMapping = createNodeMapping(nodeElementTypes, ddlGraph.nodeToViewMappings(nodeViewKey).propertyMappings)
-        val normalizedDf = normalizeDataFrame(nodeDf, inputNodeMapping, columnsWithType).castToLong
-        val normalizedMapping = normalizeNodeMapping(inputNodeMapping)
+    caps.graphs.create(Some(capsSchema), nodeTables.head, nodeTables.tail ++ relationshipTables ++ patternTables: _*)
+  }
 
-        normalizedDf.validateColumnTypes(columnsWithType)
-
-        CAPSNodeTable.fromMapping(normalizedMapping, normalizedDf)
-    }.toSeq
-
+  private def buildCAPSRelationshipTables(ddlGraph: Graph, capsSchema: Schema, nodeDataFramesWithIds: Map[NodeViewKey, DataFrame]): List[CAPSRelationshipTable] = {
     // Build CAPS relationship tables
     val relDataFrames = ddlGraph.edgeToViewMappings.map(evm => evm.key -> readTable(evm.view)).toMap
 
@@ -96,43 +152,74 @@ case class SqlPropertyGraphDataSource(
     }
 
     val relationshipTables = ddlGraph.edgeToViewMappings.map { edgeToViewMapping =>
-      val edgeViewKey = edgeToViewMapping.key
-      val relElementType = edgeViewKey.relType.elementType
-      val relDf = relDataFramesWithIds(edgeViewKey)
-      val startNodeViewKey = edgeToViewMapping.startNode.nodeViewKey
-      val endNodeViewKey = edgeToViewMapping.endNode.nodeViewKey
+      buildCAPSRelationshipTable(capsSchema, nodeDataFramesWithIds, relDataFramesWithIds, edgeToViewMapping)
+    }
+    relationshipTables
+  }
 
-      val relsWithStartNodeId = idGenerationStrategy match {
-        case HashBasedId =>
-          // generate the start node id using the same hash parameters as for the corresponding node table
-          val idColumnNames = edgeToViewMapping.startNode.joinPredicates.map(_.edgeColumn).map(_.toPropertyColumnName)
-          createHashIdForTable(relDf, startNodeViewKey, idColumnNames, sourceStartNodeKey)
-        case MonotonicallyIncreasingId =>
-          val startNodeDf = nodeDataFramesWithIds(startNodeViewKey)
-          joinNodeAndEdgeDf(startNodeDf, relDf, edgeToViewMapping.startNode.joinPredicates, sourceStartNodeKey)
-      }
+  private def buildCAPSRelationshipTable(capsSchema: Schema, nodeDataFramesWithIds: Map[NodeViewKey, DataFrame], relDataFramesWithIds: Map[EdgeViewKey, DataFrame], edgeToViewMapping: EdgeToViewMapping): CAPSRelationshipTable = {
+    val edgeViewKey = edgeToViewMapping.key
+    val relElementType = edgeViewKey.relType.elementType
+    val relDf = relDataFramesWithIds(edgeViewKey)
+    val startNodeViewKey = edgeToViewMapping.startNode.nodeViewKey
+    val endNodeViewKey = edgeToViewMapping.endNode.nodeViewKey
 
-      val relsWithEndNodeId = idGenerationStrategy match {
-        case HashBasedId =>
-          // generate the end node id using the same hash parameters as for the corresponding node table
-          val idColumnNames = edgeToViewMapping.endNode.joinPredicates.map(_.edgeColumn).map(_.toPropertyColumnName)
-          createHashIdForTable(relsWithStartNodeId, endNodeViewKey, idColumnNames, sourceEndNodeKey)
-        case MonotonicallyIncreasingId =>
-          val endNodeDf = nodeDataFramesWithIds(endNodeViewKey)
-          joinNodeAndEdgeDf(endNodeDf, relsWithStartNodeId, edgeToViewMapping.endNode.joinPredicates, sourceEndNodeKey)
-      }
-
-      val columnsWithType = relColsWithCypherType(capsSchema, relElementType)
-      val inputRelMapping = createRelationshipMapping(relElementType, edgeToViewMapping.propertyMappings)
-      val normalizedDf = normalizeDataFrame(relsWithEndNodeId, inputRelMapping, columnsWithType).castToLong
-      val normalizedMapping = normalizeRelationshipMapping(inputRelMapping)
-
-      normalizedDf.validateColumnTypes(columnsWithType)
-
-      CAPSRelationshipTable.fromMapping(normalizedMapping, normalizedDf)
+    val relsWithStartNodeId = idGenerationStrategy match {
+      case HashBasedId =>
+        // generate the start node id using the same hash parameters as for the corresponding node table
+        val idColumnNames = edgeToViewMapping.startNode.joinPredicates.map(_.edgeColumn).map(_.toPropertyColumnName)
+        createHashIdForTable(relDf, startNodeViewKey, idColumnNames, sourceStartNodeKey)
+      case MonotonicallyIncreasingId =>
+        val startNodeDf = nodeDataFramesWithIds(startNodeViewKey)
+        joinNodeAndEdgeDf(startNodeDf, relDf, edgeToViewMapping.startNode.joinPredicates, sourceStartNodeKey)
     }
 
-    caps.graphs.create(Some(capsSchema), nodeTables.head, nodeTables.tail ++ relationshipTables: _*)
+    val relsWithEndNodeId = idGenerationStrategy match {
+      case HashBasedId =>
+        // generate the end node id using the same hash parameters as for the corresponding node table
+        val idColumnNames = edgeToViewMapping.endNode.joinPredicates.map(_.edgeColumn).map(_.toPropertyColumnName)
+        createHashIdForTable(relsWithStartNodeId, endNodeViewKey, idColumnNames, sourceEndNodeKey)
+      case MonotonicallyIncreasingId =>
+        val endNodeDf = nodeDataFramesWithIds(endNodeViewKey)
+        joinNodeAndEdgeDf(endNodeDf, relsWithStartNodeId, edgeToViewMapping.endNode.joinPredicates, sourceEndNodeKey)
+    }
+
+    val columnsWithType = relColsWithCypherType(capsSchema, relElementType)
+    val inputRelMapping = createRelationshipMapping(relElementType, edgeToViewMapping.propertyMappings)
+    val normalizedDf = normalizeDataFrame(relsWithEndNodeId, inputRelMapping, columnsWithType).castToLong
+    val normalizedMapping = normalizeRelationshipMapping(inputRelMapping)
+
+    normalizedDf.validateColumnTypes(columnsWithType)
+
+    CAPSRelationshipTable.fromMapping(normalizedMapping, normalizedDf)
+  }
+
+  private def buildCAPSNodeTables(ddlGraph: Graph, capsSchema: Schema): (Map[NodeViewKey, DataFrame], Seq[CAPSNodeTable]) = {
+    // Build CAPS node tables
+    val nodeDataFrames = ddlGraph.nodeToViewMappings.mapValues(nvm => readTable(nvm.view))
+
+    // Generate node identifiers
+    val nodeDataFramesWithIds = idGenerationStrategy match {
+      case HashBasedId => createHashIdForTables(nodeDataFrames, ddlGraph, sourceIdKey)
+      case MonotonicallyIncreasingId => createMonotonicallyIncreasingIdForTables(nodeDataFrames, sourceIdKey)
+    }
+
+    val nodeTables = nodeDataFramesWithIds.map {
+      case (nodeViewKey, nodeDf) => buildCAPSNodeTable(ddlGraph, capsSchema, nodeViewKey, nodeDf)
+    }.toSeq
+    (nodeDataFramesWithIds, nodeTables)
+  }
+
+  private def buildCAPSNodeTable(ddlGraph: Graph, capsSchema: Schema, nodeViewKey: NodeViewKey, nodeDf: DataFrame): CAPSNodeTable = {
+    val nodeElementTypes = nodeViewKey.nodeType.elementTypes
+    val columnsWithType = nodeColsWithCypherType(capsSchema, nodeElementTypes)
+    val inputNodeMapping = createNodeMapping(nodeElementTypes, ddlGraph.nodeToViewMappings(nodeViewKey).propertyMappings)
+    val normalizedDf = normalizeDataFrame(nodeDf, inputNodeMapping, columnsWithType).castToLong
+    val normalizedMapping = normalizeNodeMapping(inputNodeMapping)
+
+    normalizedDf.validateColumnTypes(columnsWithType)
+
+    CAPSNodeTable.fromMapping(normalizedMapping, normalizedDf)
   }
 
   private def joinNodeAndEdgeDf(
@@ -349,14 +436,23 @@ case class SqlPropertyGraphDataSource(
     newIdColumn: String
   ): Map[T, DataFrame] = {
     views.map { case (elementViewKey, dataFrame) =>
-      val idColumnNames = elementViewKey match {
-        case nvk: NodeViewKey => ddlGraph.nodeIdColumnsFor(nvk) match {
-          case Some(columnNames) => columnNames.map(_.toPropertyColumnName)
-          case None => dataFrame.columns.toList
-        }
-        case _: EdgeViewKey => dataFrame.columns.toList
+      val idColumns = getIdColumnNamesForViewKey(elementViewKey, dataFrame, ddlGraph)
+      elementViewKey -> createHashIdForTable(dataFrame, elementViewKey, idColumns, newIdColumn)
+    }
+  }
+
+  private def getIdColumnNamesForViewKey[T <: ElementViewKey](
+    elementViewKey: T,
+    dataFrame: DataFrame,
+    ddlGraph: Graph,
+    blacklistColumns: Seq[String] = Seq.empty
+  ): List[String] = {
+    elementViewKey match {
+      case nvk: NodeViewKey => ddlGraph.nodeIdColumnsFor(nvk) match {
+        case Some(columnNames) => columnNames.map(_.toPropertyColumnName)
+        case None => dataFrame.columns.toList
       }
-      elementViewKey -> createHashIdForTable(dataFrame, elementViewKey, idColumnNames, newIdColumn)
+      case _: EdgeViewKey => dataFrame.columns.toList.filterNot(blacklistColumns.contains)
     }
   }
 

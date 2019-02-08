@@ -16,9 +16,10 @@ final case class PatternMapping protected(
 
   override val cypherType = CTPattern(nodeMapping.cypherType, relationshipMapping.cypherType)
 
-  override val sourceIdKey: String = nodeMapping.sourceIdKey
+  override def sourceIdKey: String = ??? //nodeMapping.sourceIdKey
 
   override val idKeys: Seq[String] = (nodeMapping.idKeys ++ relationshipMapping.idKeys).distinct
 
-  override val propertyMapping: Map[String, String] = nodeMapping.propertyMapping ++ relationshipMapping.propertyMapping
+  override def propertyMapping: Map[String, String] = ??? //nodeMapping.propertyMapping ++ relationshipMapping.propertyMapping
+
 }

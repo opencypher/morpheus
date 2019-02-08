@@ -65,21 +65,21 @@ object LogicalOptimizer extends DirectCompilationStage[LogicalOperator, LogicalO
     case exp: Expand =>
       exp.source.cypherType.graph.flatMap { g =>
         val availablePatterns = context.catalog(g.namespace) match {
-          case p: PatternProvider => p.patterns
+          case p: PatternProvider =>
+            p.patterns(g.graphName)
           case _ => Seq.empty
         }
 
         val firstMatchingPattern = availablePatterns.find {
-          case NodeRelPattern(node, rel) if node == exp.source.cypherType && rel == exp.rel.cypherType => true
+          case NodeRelPattern(node, rel) if node.withGraph(g) == exp.source.cypherType && rel.withGraph(g) == exp.rel.cypherType => true
           case _ => false
         }
 
         firstMatchingPattern.map { pattern =>
-          val withPatternScan = BottomUp[LogicalOperator](replaceNodeScanWithPatternScan(exp.source, exp.rel, pattern)).transform(exp)
+          val withPatternScan = BottomUp[LogicalOperator](replaceNodeScanWithPatternScan(exp.source, exp.rel, pattern)).transform(exp.lhs)
           val joinExpr = Equals(EndNode(exp.rel)(CTNode), exp.target)(CTBoolean)
           ValueJoin(withPatternScan, exp.rhs, Set(joinExpr), exp.solved)
         }
-
       }.getOrElse(exp)
   }
 

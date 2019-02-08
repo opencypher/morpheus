@@ -95,17 +95,6 @@ class EntityTableTest extends CAPSTestSuite {
       .withPropertyKey("since"))
   }
 
-  describe("pattern mapping") {
-
-    it("foo") {
-      val df = sparkSession.createDataFrame(Seq((1, true, "Mats", 23L, 1, 1, true))).toDF("ID", "IS_C", "FOO", "BAR", "TARGET", "SOURCE", "TYPE")
-
-      val patternTable = CAPSPatternTable.fromMapping(patternMapping, df)
-
-      ???
-    }
-  }
-
   it("throws an IllegalArgumentException when a relationship table does not have the expected column ordering") {
     val df = sparkSession.createDataFrame(Seq((1, 1, 1, true))).toDF("ID", "TARGET", "SOURCE", "TYPE")
     val relMapping = RelationshipMapping.on("ID").from("SOURCE").to("TARGET").withSourceRelTypeKey("TYPE", Set("A"))

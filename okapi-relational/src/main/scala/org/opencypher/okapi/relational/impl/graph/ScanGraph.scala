@@ -27,11 +27,11 @@
 package org.opencypher.okapi.relational.impl.graph
 
 import org.opencypher.okapi.api.schema.Schema
-import org.opencypher.okapi.api.types.{CTNode, CTRelationship, CypherType}
+import org.opencypher.okapi.api.types.{CTNode, CTPattern, CTRelationship, CypherType}
 import org.opencypher.okapi.impl.exception.IllegalArgumentException
 import org.opencypher.okapi.ir.api.expr._
 import org.opencypher.okapi.relational.api.graph.{RelationalCypherGraph, RelationalCypherSession}
-import org.opencypher.okapi.relational.api.io.{EntityTable, NodeTable, RelationshipTable}
+import org.opencypher.okapi.relational.api.io.{EntityTable, NodeTable, PatternTable, RelationshipTable}
 import org.opencypher.okapi.relational.api.planning.RelationalRuntimeContext
 import org.opencypher.okapi.relational.api.schema.RelationalSchema._
 import org.opencypher.okapi.relational.api.table.{RelationalCypherRecords, Table}
@@ -52,6 +52,8 @@ class ScanGraph[T <: Table[T] : TypeTag](val scans: Seq[EntityTable[T]], val sch
 
   private lazy val relTables = scans.collect { case it: RelationshipTable[T] => it }
 
+  private lazy val patternTables = scans.collect { case it: PatternTable[T] => it }
+
   // TODO: ScanGraph should be an operator that gets a set of tables as input
   private implicit def runtimeContext: RelationalRuntimeContext[T] = session.basicRuntimeContext()
 
@@ -62,16 +64,41 @@ class ScanGraph[T <: Table[T] : TypeTag](val scans: Seq[EntityTable[T]], val sch
     entityType: CypherType,
     exactLabelMatch: Boolean
   ): RelationalOperator[T] = {
-    val targetEntity = Var("")(entityType)
-    val selectedScans = scansForType(entityType, exactLabelMatch)
-    val targetEntityHeader = schema.headerForEntity(targetEntity, exactLabelMatch)
-    val alignedEntityTableOps = selectedScans.map { scan =>
-      val inputEntity = scan.singleEntity
-      scan.alignWith(inputEntity, targetEntity, targetEntityHeader)
+    entityType match {
+      case _: CTNode | _: CTRelationship =>
+
+        val targetEntity = Var("")(entityType)
+        val selectedScans = scansForType(entityType, exactLabelMatch)
+        val targetEntityHeader = schema.headerForEntity(targetEntity, exactLabelMatch)
+        val alignedEntityTableOps = selectedScans.map { scan =>
+          val inputEntity = scan.singleEntity
+          scan.alignWith(inputEntity, targetEntity, targetEntityHeader)
+        }
+
+        alignedEntityTableOps.toList match {
+          case Nil => Start.fromEmptyGraph(session.records.empty(targetEntityHeader))
+          case singleOp :: Nil => singleOp
+          case multipleOps => multipleOps.reduce(TabularUnionAll(_, _))
+        }
+
+      case p: CTPattern => scanForPattern(p, exactLabelMatch)
+
+      case other => throw IllegalArgumentException("An entity of type CTNode, CTRelationship or CTPattern", other)
+    }
+  }
+
+  def scanForPattern(pattern: CTPattern, exactLabelMatch: Boolean): RelationalOperator[T] = {
+    val targetNodeEntity = Var("node")(pattern.node)
+    val targetRelEntity = Var("rel")(pattern.relationship)
+    val selectedScans = scansForType(pattern, exactLabelMatch)
+    val targetEntityHeader = schema.headerForPattern(targetNodeEntity, targetRelEntity) // maybe split in two headers
+    val alignedEntitytableOps = selectedScans.map { scan =>
+      scan.alignWith(scan.header.entitiesForType(pattern.node, exactMatch = true).head, targetNodeEntity, targetEntityHeader)
+        .alignWith(scan.header.entitiesForType(pattern.relationship, exactMatch = true).head, targetRelEntity, targetEntityHeader)
     }
 
-    alignedEntityTableOps.toList match {
-      case Nil => Start.fromEmptyGraph(session.records.empty(targetEntityHeader))
+    alignedEntitytableOps.toList match {
+      case Nil => Start(session.records.empty(targetEntityHeader))
       case singleOp :: Nil => singleOp
       case multipleOps => multipleOps.reduce(TabularUnionAll(_, _))
     }
@@ -104,6 +131,11 @@ class ScanGraph[T <: Table[T] : TypeTag](val scans: Seq[EntityTable[T]], val sch
         relTables
           .filter(relTable => relTable.entityType.couldBeSameTypeAs(ct))
           .map(scanRecords => Start(qgn, scanRecords).filterRelTypes(r))
+
+      case p: CTPattern =>
+        patternTables.filter { pTable =>
+          p.node.labels == pTable.schema.labels && p.relationship.types == pTable.schema.relationshipTypes
+        }.map(scan => Start(scan))
 
       case other => throw IllegalArgumentException(s"Scan on $other")
     }

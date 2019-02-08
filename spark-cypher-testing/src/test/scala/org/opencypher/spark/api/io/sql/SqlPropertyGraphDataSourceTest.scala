@@ -31,6 +31,7 @@ import org.apache.spark.sql.{Row, SaveMode}
 import org.opencypher.graphddl.GraphDdl
 import org.opencypher.okapi.api.graph.GraphName
 import org.opencypher.okapi.api.value.CypherValue.CypherMap
+import org.opencypher.okapi.logical.api.configuration.LogicalConfiguration.PrintLogicalPlan
 import org.opencypher.okapi.testing.Bag
 import org.opencypher.spark.api.io.FileFormat
 import org.opencypher.spark.api.io.sql.SqlDataSourceConfig.{File, Hive, Jdbc}
@@ -59,6 +60,50 @@ class SqlPropertyGraphDataSourceTest extends CAPSTestSuite with HiveFixture with
   override protected def afterAll(): Unit = {
     dropHiveDatabase(databaseName)
     super.afterAll()
+  }
+
+  it("resolves 1-to-n patterns") {
+    val personViewName = "person"
+    val cityViewName = "city"
+
+    val ddlString =
+      s"""
+         |SET SCHEMA $dataSourceName.$databaseName
+         |
+         |CREATE GRAPH TYPE fooSchema (
+         |  Person ( name STRING, city STRING ),
+         |  City ( city STRING ),
+         |  LIVES_IN,
+         |
+         |  (Person),
+         |  (City),
+         |  (Person)-[LIVES_IN]->(City)
+         |)
+         |CREATE GRAPH fooGraph OF fooSchema (
+         |  (Person) FROM $personViewName,
+         |  (City) FROM $cityViewName,
+         |  (Person)-[LIVES_IN]->(City) FROM $personViewName edge
+         |    START NODES (Person)  FROM $personViewName p JOIN ON p.city = edge.city
+         |    END NODES   (City)    FROM $cityViewName c JOIN ON edge.city = c.city
+         |)
+       """.stripMargin
+
+    sparkSession
+      .createDataFrame(Seq(Tuple2("Alice", "Leipzig")))
+      .toDF("name", "city")
+      .write.mode(SaveMode.Overwrite).saveAsTable(s"$databaseName.$personViewName")
+
+    sparkSession
+      .createDataFrame(Seq(Tuple1("Leipzig")))
+      .toDF("city")
+      .write.mode(SaveMode.Overwrite).saveAsTable(s"$databaseName.$cityViewName")
+
+    val ds = SqlPropertyGraphDataSource(GraphDdl(ddlString), Map(dataSourceName -> Hive), IdGenerationStrategy.HashBasedId)
+    caps.catalog.register(testNamespace, ds)
+
+    PrintLogicalPlan.set()
+
+    caps.cypher(s"FROM GRAPH $testNamespace.$fooGraphName MATCH (p:Person)-[l:LIVES_IN]->(c:City) RETURN c").show
   }
 
   it("adds deltas to generated ids") {
