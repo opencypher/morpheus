@@ -112,6 +112,13 @@ object SparkConversions {
 
       RecordHeader(exprToColumn.toMap)
     }
+
+    def binaryColumns: Set[String] = structType.fields.filter(_.dataType == BinaryType).map(_.name).toSet
+
+    def convertTypes(from: DataType, to: DataType): StructType = StructType(structType.map {
+      case sf: StructField if sf.dataType == from => sf.copy(dataType = to)
+      case sf: StructField => sf
+    })
   }
 
   implicit class StructFieldOps(val field: StructField) extends AnyVal {

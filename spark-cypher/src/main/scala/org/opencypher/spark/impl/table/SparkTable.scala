@@ -415,6 +415,24 @@ object SparkTable {
       df.safeRenameColumns(columnRenamings.toMap)
     }
 
+    def encodeBinaryToHexString: DataFrame = {
+      val columnsToSelect = df.schema.map {
+        case sf: StructField if sf.dataType == BinaryType => functions.hex(df.col(sf.name)).as(sf.name)
+        case sf: StructField => df.col(sf.name)
+      }
+      df.select(columnsToSelect: _*)
+    }
+
+    def decodeHexStringToBinary(hexColumns: Set[String]): DataFrame = {
+      val columnsToSelect = df.schema.map {
+        case sf: StructField if hexColumns.contains(sf.name) =>
+          assert(sf.dataType == StringType, "Can only decode hex columns of StringType to BinaryType")
+          functions.unhex(df.col(sf.name)).as(sf.name)
+        case sf: StructField => df.col(sf.name)
+      }
+      df.select(columnsToSelect: _*)
+    }
+
     /**
       * Cast all integer columns in a DataFrame to long.
       *
