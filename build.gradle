@@ -82,6 +82,13 @@ subprojects {
         description 'Searches all projects for a dependency'
         group 'help'
     }
+
+    task runApp(type:JavaExec) {
+        group 'run'
+        description 'Run a custom Scala app (use -PmainClass=path.to.App)'
+        main = project.hasProperty("mainClass") ? project.getProperty("mainClass") : ""
+        classpath = sourceSets.main.runtimeClasspath
+    }
 }
 
 apply from: 'build.licenses.gradle'
