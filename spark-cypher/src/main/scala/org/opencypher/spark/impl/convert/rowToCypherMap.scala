@@ -107,7 +107,7 @@ final case class rowToCypherMap(exprToColumn: Seq[(Expr, String)]) extends (Row 
           .collect { case (key, value) if !value.isNull => key -> value }
           .toMap
 
-        CAPSNode(id.toList.asInstanceOf[List[Byte]], labels, properties)
+        CAPSNode(id.asInstanceOf[Array[Byte]], labels, properties)
       case invalidID => throw UnsupportedOperationException(s"CAPSNode ID has to be a CAPSId instead of ${invalidID.getClass}")
     }
   }
@@ -132,7 +132,12 @@ final case class rowToCypherMap(exprToColumn: Seq[(Expr, String)]) extends (Row 
           .collect { case (key, value) if !value.isNull => key -> value }
           .toMap
 
-        CAPSRelationship(id.toList.asInstanceOf[List[Byte]], source.toList.asInstanceOf[List[Byte]], target.toList.asInstanceOf[List[Byte]], relType, properties)
+        CAPSRelationship(
+          id.asInstanceOf[Array[Byte]],
+          source.asInstanceOf[Array[Byte]],
+          target.asInstanceOf[Array[Byte]],
+          relType,
+          properties)
       case invalidID => throw UnsupportedOperationException(s"CAPSRelationship ID has to be a Long instead of ${invalidID.getClass}")
     }
   }
