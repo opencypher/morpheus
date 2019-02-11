@@ -89,12 +89,20 @@ class SqlPropertyGraphDataSourceTest extends CAPSTestSuite with HiveFixture with
        """.stripMargin
 
     sparkSession
-      .createDataFrame(Seq(Tuple2("Alice", "Leipzig")))
+      .createDataFrame(Seq(
+        "Alice" -> "Leipzig",
+        "Bob"   -> "Leipzig",
+        "Eve"   -> "Dresden",
+        "Dave"  -> "Buxdehude"
+      ))
       .toDF("name", "city")
       .write.mode(SaveMode.Overwrite).saveAsTable(s"$databaseName.$personViewName")
 
     sparkSession
-      .createDataFrame(Seq(Tuple1("Leipzig")))
+      .createDataFrame(Seq(
+        Tuple1("Leipzig"),
+        Tuple1("Dresden")
+      ))
       .toDF("city")
       .write.mode(SaveMode.Overwrite).saveAsTable(s"$databaseName.$cityViewName")
 
@@ -103,7 +111,9 @@ class SqlPropertyGraphDataSourceTest extends CAPSTestSuite with HiveFixture with
 
     PrintLogicalPlan.set()
 
-    caps.cypher(s"FROM GRAPH $testNamespace.$fooGraphName MATCH (p:Person)-[l:LIVES_IN]->(c:City) RETURN c").show
+    caps.cypher(s"FROM GRAPH $testNamespace.$fooGraphName MATCH (p:Person)-[l:LIVES_IN]->(c:City) RETURN p, l, c").show
+
+    scala.io.StdIn.readLine()
   }
 
   it("adds deltas to generated ids") {

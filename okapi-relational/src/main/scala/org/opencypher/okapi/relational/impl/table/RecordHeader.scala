@@ -317,7 +317,7 @@ case class RecordHeader(exprToColumn: Map[Expr, String]) {
           val exprsToAdd: Set[Expr] = expr.owner match {
             case None => Set(expr)
 
-            case Some(exprOwner) => aliasesFor(exprOwner).map(alias => expr.withOwner(alias))
+            case Some(exprOwner) => Set(expr) //aliasesFor(exprOwner).map(alias => expr.withOwner(alias))
           }
 
           exprsToAdd.foldLeft(this) {

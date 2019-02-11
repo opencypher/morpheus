@@ -91,14 +91,25 @@ class ScanGraph[T <: Table[T] : TypeTag](val scans: Seq[EntityTable[T]], val sch
     val targetNodeEntity = Var("node")(pattern.node)
     val targetRelEntity = Var("rel")(pattern.relationship)
     val selectedScans = scansForType(pattern, exactLabelMatch)
-    val targetEntityHeader = schema.headerForPattern(targetNodeEntity, targetRelEntity) // maybe split in two headers
+
+    val targetNodeHeader = schema.headerForNode(targetNodeEntity)
+    val targetRelHeader = schema.headerForEntity(targetRelEntity)
+    val targetPatternHeader = targetNodeHeader ++ targetRelHeader
+
     val alignedEntitytableOps = selectedScans.map { scan =>
-      scan.alignWith(scan.header.entitiesForType(pattern.node, exactMatch = true).head, targetNodeEntity, targetEntityHeader)
-        .alignWith(scan.header.entitiesForType(pattern.relationship, exactMatch = true).head, targetRelEntity, targetEntityHeader)
+
+      val relInputEntity = scan.header.entitiesForType(pattern.relationship, exactMatch = true).head
+
+      val alignedNodeTargetHeader = targetNodeHeader ++ scan.header.select(scan.header.expressionsFor(relInputEntity).toList :_*)
+
+      val alignedNode = scan
+        .alignWith(scan.header.entitiesForType(pattern.node, exactMatch = true).head, targetNodeEntity, alignedNodeTargetHeader)
+
+      alignedNode.alignWith(relInputEntity, targetRelEntity, targetPatternHeader)
     }
 
     alignedEntitytableOps.toList match {
-      case Nil => Start(session.records.empty(targetEntityHeader))
+      case Nil => Start(session.records.empty(targetPatternHeader))
       case singleOp :: Nil => singleOp
       case multipleOps => multipleOps.reduce(TabularUnionAll(_, _))
     }

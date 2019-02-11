@@ -126,7 +126,7 @@ case class SqlPropertyGraphDataSource(
 
       // Mappings
       val nodeMapping = createNodeMapping(nodeViewMapping.nodeType.elementTypes, nodeViewMapping.propertyMappings)
-      val relationshipMapping = createRelationshipMapping(edgeViewMapping.relType.elementType, edgeViewMapping.propertyMappings)
+      val relationshipMapping = createRelationshipMapping(edgeViewMapping.relType.elementType, edgeViewMapping.propertyMappings, relIdColumn)
       val withNormalizedNode = normalizeDataFrame(patternDfWithRelEndNodeId, nodeMapping)
 
       val withNormalizedRel = normalizeDataFrame(withNormalizedNode, relationshipMapping).castToLong
@@ -368,7 +368,12 @@ case class SqlPropertyGraphDataSource(
   }
 
   private def normalizeRelationshipMapping(mapping: RelationshipMapping): RelationshipMapping = {
-    createRelationshipMapping(mapping.relTypeOrSourceRelTypeKey.left.get, mapping.propertyMapping.keys.map(key => key -> key).toMap)
+    RelationshipMapping
+      .on(mapping.sourceIdKey)
+      .from(mapping.sourceStartNodeKey)
+      .to(mapping.sourceEndNodeKey)
+      .withRelType(mapping.relTypeOrSourceRelTypeKey.left.get)
+      .withPropertyKeys(mapping.propertyMapping.keys.toList: _*)
   }
 
   private def createNodeMapping(labelCombination: Set[String], propertyMappings: PropertyMappings): NodeMapping = {
@@ -381,9 +386,10 @@ case class SqlPropertyGraphDataSource(
 
   private def createRelationshipMapping(
     relType: String,
-    propertyMappings: PropertyMappings
+    propertyMappings: PropertyMappings,
+    sourceRelIdKey: String = sourceIdKey
   ): RelationshipMapping = {
-    val initialRelMapping = RelationshipMapping.on(sourceIdKey)
+    val initialRelMapping = RelationshipMapping.on(sourceRelIdKey)
       .withSourceStartNodeKey(sourceStartNodeKey)
       .withSourceEndNodeKey(sourceEndNodeKey)
       .withRelType(relType)
