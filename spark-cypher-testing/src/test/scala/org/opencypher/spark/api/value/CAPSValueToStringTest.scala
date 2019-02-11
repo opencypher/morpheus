@@ -26,6 +26,7 @@
  */
 package org.opencypher.spark.api.value
 
+import org.opencypher.okapi.api.value.CypherValue.Format._
 import org.opencypher.okapi.api.value.CypherValue._
 import org.opencypher.okapi.testing.BaseTestSuite
 

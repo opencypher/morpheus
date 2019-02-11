@@ -27,6 +27,7 @@
 package org.opencypher.okapi.api.value
 
 import org.opencypher.okapi.ApiBaseTest
+import org.opencypher.okapi.api.value.CypherValue.Format._
 import org.opencypher.okapi.api.value.CypherValue.{CypherBoolean, CypherFloat, CypherInteger, CypherList, CypherMap, CypherNode, CypherRelationship, CypherString}
 
 class CypherValueTest extends ApiBaseTest {

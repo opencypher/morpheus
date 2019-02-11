@@ -35,6 +35,7 @@ import org.opencypher.okapi.impl.exception.{IllegalArgumentException, Unsupporte
 import org.opencypher.okapi.impl.temporal.Duration
 import ujson._
 
+import scala.language.implicitConversions
 import scala.reflect.{ClassTag, classTag}
 import scala.util.Try
 import scala.util.hashing.MurmurHash3
@@ -101,6 +102,18 @@ object CypherValue {
     */
   def unapply(cv: CypherValue): Option[Any] = {
     Option(cv).flatMap(v => Option(v.value))
+  }
+
+  object Format {
+    /**
+      * Formats a given value to its String representation.
+      */
+    implicit def defaultValueFormatter(value: Any): String = value match {
+      case s: Seq[_] => s.map(defaultValueFormatter).mkString
+      case a: Array[_] => a.map(defaultValueFormatter).mkString
+      case b: Byte => "%02X".format(b)
+      case other => Objects.toString(other)
+    }
   }
 
   /**
@@ -175,7 +188,7 @@ object CypherValue {
       * A Cypher string representation. For more information about the exact format of these, please refer to
       * [[https://github.com/opencypher/openCypher/tree/master/tck#format-of-the-expected-results the openCypher TCK]].
       */
-    def toCypherString: String = {
+    def toCypherString()(implicit formatValue: Any => String): String = {
       this match {
         case CypherString(s) => s"'${escape(s)}'"
         case CypherList(l) => l.map(_.toCypherString).mkString("[", ", ", "]")
@@ -198,11 +211,11 @@ object CypherValue {
           Seq(labelString, propertyString)
             .filter(_.nonEmpty)
             .mkString("(", " ", ")")
-        case _ => Objects.toString(value)
+        case other => formatValue(other)
       }
     }
 
-    def toJson: Value = {
+    def toJson()(implicit formatValue: Any => String): Value = {
       this match {
         case CypherNull => Null
         case CypherString(s) => Str(s)
@@ -210,22 +223,22 @@ object CypherValue {
         case CypherMap(m) => m.mapValues(_.toJson).toSeq.sortBy(_._1)
         case CypherRelationship(id, startId, endId, relType, properties) =>
           Obj(
-            idJsonKey -> Str(id.toString),
+            idJsonKey -> Str(formatValue(id)),
             typeJsonKey -> Str(relType),
-            startIdJsonKey -> Str(startId.toString),
-            endIdJsonKey -> Str(endId.toString),
+            startIdJsonKey -> Str(formatValue(startId)),
+            endIdJsonKey -> Str(formatValue(endId)),
             propertiesJsonKey -> properties.toJson
           )
         case CypherNode(id, labels, properties) =>
           Obj(
-            idJsonKey -> Str(id.toString),
+            idJsonKey -> Str(formatValue(id)),
             labelsJsonKey -> labels.toSeq.sorted.map(Str),
             propertiesJsonKey -> properties.toJson
           )
         case CypherFloat(d) => Num(d)
         case CypherInteger(l) => Str(l.toString) // `Num` would lose precision
         case CypherBoolean(b) => Bool(b)
-        case other => Str(other.value.toString)
+        case other => Str(formatValue(other.value))
       }
     }
 
