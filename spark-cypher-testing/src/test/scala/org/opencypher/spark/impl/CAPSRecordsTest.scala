@@ -44,6 +44,8 @@ import org.opencypher.spark.testing.fixture.{GraphConstructionFixture, TeamDataF
 
 import scala.util.Try
 
+import org.opencypher.spark.impl.encoders.LongEncoder._
+
 class CAPSRecordsTest extends CAPSTestSuite with GraphConstructionFixture with TeamDataFixture {
 
   describe("columnsFor") {
@@ -196,11 +198,11 @@ class CAPSRecordsTest extends CAPSTestSuite with GraphConstructionFixture with T
     val df = sparkSession.sql("SELECT * FROM people")
 
     // Then
-    df.collect() should equal(Array(
-      Row(1L, true, "Mats", 23),
-      Row(2L, false, "Martin", 42),
-      Row(3L, false, "Max", 1337),
-      Row(4L, false, "Stefan", 9)
+    df.collect().toBag should equal(Bag(
+      Row(1L.encodeAsCAPSId, true, "Mats", 23),
+      Row(2L.encodeAsCAPSId, false, "Martin", 42),
+      Row(3L.encodeAsCAPSId, false, "Max", 1337),
+      Row(4L.encodeAsCAPSId, false, "Stefan", 9)
     ))
   }
 

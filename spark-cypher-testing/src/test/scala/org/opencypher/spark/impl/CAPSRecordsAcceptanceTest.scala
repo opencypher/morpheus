@@ -52,7 +52,7 @@ class CAPSRecordsAcceptanceTest extends CAPSTestSuite with Neo4jServerFixture wi
     val result = graph.cypher("MATCH (a:Person) WHERE a.birthyear < 1930 RETURN a, a.name")
 
     // Then
-    result.records.collect should equal(Array(
+    result.records.collect.toBag should equal(Bag(
       CypherMap("a" -> CAPSNode(0, Set("Actor", "Person"), CypherMap("birthyear" -> 1910, "name" -> "Rachel Kempson")), "a.name" -> "Rachel Kempson"),
       CypherMap("a" -> CAPSNode(1, Set("Actor", "Person"), CypherMap("birthyear" -> 1908, "name" -> "Michael Redgrave")), "a.name" -> "Michael Redgrave"),
       CypherMap("a" -> CAPSNode(10, Set("Actor", "Person"), CypherMap("birthyear" -> 1873, "name" -> "Roy Redgrave")), "a.name" -> "Roy Redgrave")
@@ -64,7 +64,7 @@ class CAPSRecordsAcceptanceTest extends CAPSTestSuite with Neo4jServerFixture wi
     val result = graph.cypher("MATCH ()-[r:ACTED_IN]->() WHERE r.charactername ENDS WITH 'e' RETURN r")
 
     // Then
-    result.records.collect should equal(Array(
+    result.records.collect.toBag should equal(Bag(
       CypherMap("r" -> CAPSRelationship(23, 6, 18, "ACTED_IN", CypherMap("charactername" -> "Albus Dumbledore"))),
       CypherMap("r" -> CAPSRelationship(21, 2, 20, "ACTED_IN", CypherMap("charactername" -> "Guenevere"))),
       CypherMap("r" -> CAPSRelationship(26, 8, 19, "ACTED_IN", CypherMap("charactername" -> "Halle/Annie")))
