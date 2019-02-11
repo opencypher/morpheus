@@ -93,6 +93,7 @@ trait EntityTable[T <: Table[T]] extends RelationalCypherRecords[T] {
   }
 }
 
+// TODO: make this a more abstract Entity Tables which describes multiple entities (i.e. a Pattern) instead
 abstract class PatternTable[T <: Table[T]](mapping: PatternMapping, table: T)
   extends EntityTable[T] {
 

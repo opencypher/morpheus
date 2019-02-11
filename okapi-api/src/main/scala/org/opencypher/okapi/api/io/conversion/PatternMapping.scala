@@ -35,6 +35,7 @@ object PatternMapping {
   }
 }
 
+// TODO: Similar to the PatternTable extract a more general EntityMapping that stores multiple entities / a pattern
 final case class PatternMapping protected(
   nodeMapping: NodeMapping,
   relationshipMapping: RelationshipMapping

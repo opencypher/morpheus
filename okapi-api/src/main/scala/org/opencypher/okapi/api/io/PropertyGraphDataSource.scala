@@ -119,7 +119,15 @@ trait PatternProvider {
 
   self: PropertyGraphDataSource =>
 
+  // TODO: in the current system design this cannot live in the PGDS but needs to live in the graph
   def patterns(graph: GraphName): Seq[NodeRelPattern]
 }
 
+/*
+ TODO: Define a general pattern trait containing the topology and CypherTypes
+       We could then start with three implementations of that trait:
+       - NodeRel
+       - Node
+       - Relationship
+*/
 case class NodeRelPattern(node: CTNode, rel: CTRelationship)

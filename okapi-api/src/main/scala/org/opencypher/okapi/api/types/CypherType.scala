@@ -194,9 +194,10 @@ case object CTDuration extends TemporalValueCypherType {
   override def name = "DURATION"
 }
 
+// TODO: Do we really need this or should it be replaced by a general pattern notion not living in the type system
 sealed case class CTPattern(node: CTNode, relationship: CTRelationship) extends MaterialDefiniteCypherType {
 
-  final override def name: String = ???
+  final override def name: String = s"PATTERN(${node.name}, ${relationship.name})"
 
   final override def nullable = ???
 
