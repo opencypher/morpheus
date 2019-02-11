@@ -46,8 +46,6 @@ case class EncodeLong(child: Expression) extends UnaryExpression with NullIntole
 
 object LongEncoder {
 
-  type CAPSId = Array[Byte]
-
   private final val moreBytesBitMask: Long = Integer.parseInt("10000000", 2)
   private final val varLength7BitMask: Long = Integer.parseInt("01111111", 2)
   private final val otherBitsMask = ~varLength7BitMask
@@ -93,7 +91,7 @@ object LongEncoder {
     decoded
   }
 
-  private def addPrefix(a: CAPSId, p: Byte): CAPSId = {
+  private def addPrefix(a: Array[Byte], p: Byte): Array[Byte] = {
     val n = new Array[Byte](a.length + 1)
     n(0) = p
     System.arraycopy(a, 0, n, 1, a.length)
@@ -109,9 +107,9 @@ object LongEncoder {
 
   implicit class LongIdEncoding(val l: Long) extends AnyVal {
 
-    def encodeAsCAPSId: CAPSId = encodeLong(l)
+    def encodeAsCAPSId: Array[Byte] = encodeLong(l)
 
-    def withPrefix(prefix: Int): CAPSId = l.encodeAsCAPSId.withPrefix(prefix.toByte)
+    def withPrefix(prefix: Int): Array[Byte] = l.encodeAsCAPSId.withPrefix(prefix.toByte)
 
   }
 
@@ -121,9 +119,8 @@ object LongEncoder {
 
   }
 
-  implicit class RichCAPSId(val id: CAPSId) extends AnyVal {
+  implicit class RichCAPSId(val id: Array[Byte]) extends AnyVal {
 
-    def withPrefix(prefix: Int): CAPSId = addPrefix(id, prefix.toByte)
-
+    def withPrefix(prefix: Int): Array[Byte] = addPrefix(id, prefix.toByte)
   }
 }

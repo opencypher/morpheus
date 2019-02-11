@@ -29,6 +29,17 @@ package org.opencypher.spark.api.value
 import org.opencypher.okapi.api.value.CypherValue._
 import org.opencypher.spark.impl.encoders.LongEncoder._
 
+import CAPSEntity._
+
+object CAPSEntity {
+
+  implicit class RichId(id: Seq[Byte]) {
+
+    def toHex: String = s"0x${id.map(id => "%02X".format(id)).mkString}"
+
+  }
+}
+
 object CAPSNode {
 
   def apply(
@@ -62,6 +73,7 @@ case class CAPSNode(
   override def copy(id: Seq[Byte] = id, labels: Set[String] = labels, properties: CypherMap = properties): CAPSNode = {
     CAPSNode(id, labels, properties)
   }
+  override def toString: String = s"${getClass.getSimpleName}(id=${id.toHex}, labels=$labels, properties=$properties)"
 }
 
 object CAPSRelationship {
@@ -103,10 +115,12 @@ case class CAPSRelationship(
 
   override def copy(
     id: Seq[Byte] = id,
-    source: Seq[Byte] = startId,
-    target: Seq[Byte] = endId,
+    startId: Seq[Byte] = startId,
+    endId: Seq[Byte] = endId,
     relType: String = relType,
     properties: CypherMap = properties
-  ): CAPSRelationship = CAPSRelationship(id, source, target, relType, properties)
+  ): CAPSRelationship = CAPSRelationship(id, startId, endId, relType, properties)
+
+  override def toString: String = s"${getClass.getSimpleName}(id=${id.toHex}, startId=${startId.toHex}, endId=${endId.toHex}, relType=$relType, properties=$properties)"
 
 }
