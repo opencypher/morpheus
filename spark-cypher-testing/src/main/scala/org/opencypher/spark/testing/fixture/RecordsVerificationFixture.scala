@@ -43,6 +43,15 @@ trait RecordsVerificationFixture {
     val expectedColumns = expectedExprs.map(header.column)
     df.columns.length should equal(expectedColumns.size)
     df.columns.toSet should equal(expectedColumns.toSet)
-    df.select(expectedColumns.head, expectedColumns.tail: _*).collect().toBag should equal(expectedData)
+
+    // Array equality is based on reference, not structure. Hence, we need to convert to lists.
+    val actual = df.select(expectedColumns.head, expectedColumns.tail: _*).collect().map { r =>
+      Row(r.toSeq.map {
+        case c: Array[_] => c.toList
+        case other => other
+      }: _*)
+    }.toBag
+
+    actual should equal(expectedData)
   }
 }

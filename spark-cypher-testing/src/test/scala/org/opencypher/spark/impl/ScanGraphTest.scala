@@ -36,6 +36,7 @@ import org.opencypher.okapi.testing.propertygraph.CreateGraphFactory
 import org.opencypher.spark.api.io.{CAPSNodeTable, CAPSRelationshipTable}
 import org.opencypher.spark.api.value.{CAPSNode, CAPSRelationship}
 import org.opencypher.spark.impl.CAPSConverters._
+import org.opencypher.spark.impl.encoders.LongEncoder._
 import org.opencypher.spark.testing.support.creation.caps.{CAPSScanGraphFactory, CAPSTestGraphFactory}
 
 import scala.collection.JavaConverters._
@@ -71,36 +72,37 @@ class ScanGraphTest extends CAPSGraphTest {
       rHasPropertyRecommends,
       rHasPropertySince
     )
-//    val nodeData = Bag(
-//      Row(1L, false, true, false, true, null, 23L, "Mats", null, null),
-//      Row(2L, false, true, false, false, null, 42L, "Martin", null, null),
-//      Row(3L, false, true, false, false, null, 1337L, "Max", null, null),
-//      Row(4L, false, true, false, false, null, 9L, "Stefan", null, null),
-//      Row(10L.setTag(1), true, false, false, false, null, null, null, "1984", 1949L),
-//      Row(20L.setTag(1), true, false, false, false, null, null, null, "Cryptonomicon", 1999L),
-//      Row(30L.setTag(1), true, false, false, false, null, null, null, "The Eye of the World", 1990L),
-//      Row(40L.setTag(1), true, false, false, false, null, null, null, "The Circle", 2013L),
-//      Row(100L.setTag(1), false, true, true, false, "C", 42L, "Alice", null, null),
-//      Row(200L.setTag(1), false, true, true, false, "D", 23L, "Bob", null, null),
-//      Row(300L.setTag(1), false, true, true, false, "F", 84L, "Eve", null, null),
-//      Row(400L.setTag(1), false, true, true, false, "R", 49L, "Carl", null, null)
-//    )
-//
-//    val relData = Bag(
-//      Row(1L, 1L, true, false, 2L, null, 2017L),
-//      Row(1L, 2L, true, false, 3L, null, 2016L),
-//      Row(1L, 3L, true, false, 4L, null, 2015L),
-//      Row(2L, 4L, true, false, 3L, null, 2016L),
-//      Row(2L, 5L, true, false, 4L, null, 2013L),
-//      Row(3L, 6L, true, false, 4L, null, 2016L),
-//      Row(100L.setTag(1), 100L.setTag(1), false, true, 10L.setTag(1), true, null),
-//      Row(200L.setTag(1), 200L.setTag(1), false, true, 40L.setTag(1), true, null),
-//      Row(300L.setTag(1), 300L.setTag(1), false, true, 30L.setTag(1), true, null),
-//      Row(400L.setTag(1), 400L.setTag(1), false, true, 20L.setTag(1), false, null)
-//    )
-//
-//    verify(result.nodes("n"), nodeCols, nodeData)
-//    verify(result.relationships("r"), relCols, relData)
+
+    val nodeData = Bag(
+      Row(1L.encodeAsCAPSId.withPrefix(0).toList, false, true, false, true, null, 23L, "Mats", null, null),
+      Row(2L.encodeAsCAPSId.withPrefix(0).toList, false, true, false, false, null, 42L, "Martin", null, null),
+      Row(3L.encodeAsCAPSId.withPrefix(0).toList, false, true, false, false, null, 1337L, "Max", null, null),
+      Row(4L.encodeAsCAPSId.withPrefix(0).toList, false, true, false, false, null, 9L, "Stefan", null, null),
+      Row(10L.encodeAsCAPSId.withPrefix(1).toList, true, false, false, false, null, null, null, "1984", 1949L),
+      Row(20L.encodeAsCAPSId.withPrefix(1).toList, true, false, false, false, null, null, null, "Cryptonomicon", 1999L),
+      Row(30L.encodeAsCAPSId.withPrefix(1).toList, true, false, false, false, null, null, null, "The Eye of the World", 1990L),
+      Row(40L.encodeAsCAPSId.withPrefix(1).toList, true, false, false, false, null, null, null, "The Circle", 2013L),
+      Row(100L.encodeAsCAPSId.withPrefix(1).toList, false, true, true, false, "C", 42L, "Alice", null, null),
+      Row(200L.encodeAsCAPSId.withPrefix(1).toList, false, true, true, false, "D", 23L, "Bob", null, null),
+      Row(300L.encodeAsCAPSId.withPrefix(1).toList, false, true, true, false, "F", 84L, "Eve", null, null),
+      Row(400L.encodeAsCAPSId.withPrefix(1).toList, false, true, true, false, "R", 49L, "Carl", null, null)
+    )
+
+    val relData = Bag(
+      Row(1L.encodeAsCAPSId.withPrefix(0).toList, 1L.encodeAsCAPSId.withPrefix(0).toList, true, false, 2L.encodeAsCAPSId.withPrefix(0).toList, null, 2017L),
+      Row(1L.encodeAsCAPSId.withPrefix(0).toList, 2L.encodeAsCAPSId.withPrefix(0).toList, true, false, 3L.encodeAsCAPSId.withPrefix(0).toList, null, 2016L),
+      Row(1L.encodeAsCAPSId.withPrefix(0).toList, 3L.encodeAsCAPSId.withPrefix(0).toList, true, false, 4L.encodeAsCAPSId.withPrefix(0).toList, null, 2015L),
+      Row(2L.encodeAsCAPSId.withPrefix(0).toList, 4L.encodeAsCAPSId.withPrefix(0).toList, true, false, 3L.encodeAsCAPSId.withPrefix(0).toList, null, 2016L),
+      Row(2L.encodeAsCAPSId.withPrefix(0).toList, 5L.encodeAsCAPSId.withPrefix(0).toList, true, false, 4L.encodeAsCAPSId.withPrefix(0).toList, null, 2013L),
+      Row(3L.encodeAsCAPSId.withPrefix(0).toList, 6L.encodeAsCAPSId.withPrefix(0).toList, true, false, 4L.encodeAsCAPSId.withPrefix(0).toList, null, 2016L),
+      Row(100L.encodeAsCAPSId.withPrefix(1).toList, 100L.encodeAsCAPSId.withPrefix(1).toList, false, true, 10L.encodeAsCAPSId.withPrefix(1).toList, true, null),
+      Row(200L.encodeAsCAPSId.withPrefix(1).toList, 200L.encodeAsCAPSId.withPrefix(1).toList, false, true, 40L.encodeAsCAPSId.withPrefix(1).toList, true, null),
+      Row(300L.encodeAsCAPSId.withPrefix(1).toList, 300L.encodeAsCAPSId.withPrefix(1).toList, false, true, 30L.encodeAsCAPSId.withPrefix(1).toList, true, null),
+      Row(400L.encodeAsCAPSId.withPrefix(1).toList, 400L.encodeAsCAPSId.withPrefix(1).toList, false, true, 20L.encodeAsCAPSId.withPrefix(1).toList, false, null)
+    )
+
+    verify(result.nodes("n"), nodeCols, nodeData)
+    verify(result.relationships("r"), relCols, relData)
   }
 
   it("dont lose schema information when mapping") {
@@ -150,10 +152,10 @@ class ScanGraphTest extends CAPSGraphTest {
       nHasPropertyName
     )
     val data = Bag(
-      Row(1L, true, true, 23L, "Mats"),
-      Row(2L, true, false, 42L, "Martin"),
-      Row(3L, true, false, 1337L, "Max"),
-      Row(4L, true, false, 9L, "Stefan")
+      Row(1L.encodeAsCAPSId.toList, true, true, 23L, "Mats"),
+      Row(2L.encodeAsCAPSId.toList, true, false, 42L, "Martin"),
+      Row(3L.encodeAsCAPSId.toList, true, false, 1337L, "Max"),
+      Row(4L.encodeAsCAPSId.toList, true, false, 9L, "Stefan")
     )
     verify(nodes, cols, data)
   }
@@ -172,14 +174,14 @@ class ScanGraphTest extends CAPSGraphTest {
       nHasPropertyYear
     )
     val data = Bag(
-      Row(1L, false, true, true, 23L, "Mats", null, null),
-      Row(2L, false, true, false, 42L, "Martin", null, null),
-      Row(3L, false, true, false, 1337L, "Max", null, null),
-      Row(4L, false, true, false, 9L, "Stefan", null, null),
-      Row(10L, true, false, false, null, null, "1984", 1949L),
-      Row(20L, true, false, false, null, null, "Cryptonomicon", 1999L),
-      Row(30L, true, false, false, null, null, "The Eye of the World", 1990L),
-      Row(40L, true, false, false, null, null, "The Circle", 2013L)
+      Row(1L.encodeAsCAPSId.toList, false, true, true, 23L, "Mats", null, null),
+      Row(2L.encodeAsCAPSId.toList, false, true, false, 42L, "Martin", null, null),
+      Row(3L.encodeAsCAPSId.toList, false, true, false, 1337L, "Max", null, null),
+      Row(4L.encodeAsCAPSId.toList, false, true, false, 9L, "Stefan", null, null),
+      Row(10L.encodeAsCAPSId.toList, true, false, false, null, null, "1984", 1949L),
+      Row(20L.encodeAsCAPSId.toList, true, false, false, null, null, "Cryptonomicon", 1999L),
+      Row(30L.encodeAsCAPSId.toList, true, false, false, null, null, "The Eye of the World", 1990L),
+      Row(40L.encodeAsCAPSId.toList, true, false, false, null, null, "The Circle", 2013L)
     )
     verify(nodes, cols, data)
   }
@@ -237,12 +239,12 @@ class ScanGraphTest extends CAPSGraphTest {
       rHasPropertySince
     )
     val data = Bag(
-      Row(1L, 1L, true, 2L, 2017L),
-      Row(1L, 2L, true, 3L, 2016L),
-      Row(1L, 3L, true, 4L, 2015L),
-      Row(2L, 4L, true, 3L, 2016L),
-      Row(2L, 5L, true, 4L, 2013L),
-      Row(3L, 6L, true, 4L, 2016L)
+      Row(1L.encodeAsCAPSId.toList, 1L.encodeAsCAPSId.toList, true, 2L.encodeAsCAPSId.toList, 2017L),
+      Row(1L.encodeAsCAPSId.toList, 2L.encodeAsCAPSId.toList, true, 3L.encodeAsCAPSId.toList, 2016L),
+      Row(1L.encodeAsCAPSId.toList, 3L.encodeAsCAPSId.toList, true, 4L.encodeAsCAPSId.toList, 2015L),
+      Row(2L.encodeAsCAPSId.toList, 4L.encodeAsCAPSId.toList, true, 3L.encodeAsCAPSId.toList, 2016L),
+      Row(2L.encodeAsCAPSId.toList, 5L.encodeAsCAPSId.toList, true, 4L.encodeAsCAPSId.toList, 2013L),
+      Row(3L.encodeAsCAPSId.toList, 6L.encodeAsCAPSId.toList, true, 4L.encodeAsCAPSId.toList, 2016L)
     )
 
     verify(rels, cols, data)
@@ -262,14 +264,14 @@ class ScanGraphTest extends CAPSGraphTest {
       nHasPropertyYear
     )
     val data = Bag(
-      Row(1L, false, true, true, 23L, "Mats", null, null),
-      Row(2L, false, true, false, 42L, "Martin", null, null),
-      Row(3L, false, true, false, 1337L, "Max", null, null),
-      Row(4L, false, true, false, 9L, "Stefan", null, null),
-      Row(10L, true, false, false, null, null, "1984", 1949L),
-      Row(20L, true, false, false, null, null, "Cryptonomicon", 1999L),
-      Row(30L, true, false, false, null, null, "The Eye of the World", 1990L),
-      Row(40L, true, false, false, null, null, "The Circle", 2013L)
+      Row(1L.encodeAsCAPSId.toList, false, true, true, 23L, "Mats", null, null),
+      Row(2L.encodeAsCAPSId.toList, false, true, false, 42L, "Martin", null, null),
+      Row(3L.encodeAsCAPSId.toList, false, true, false, 1337L, "Max", null, null),
+      Row(4L.encodeAsCAPSId.toList, false, true, false, 9L, "Stefan", null, null),
+      Row(10L.encodeAsCAPSId.toList, true, false, false, null, null, "1984", 1949L),
+      Row(20L.encodeAsCAPSId.toList, true, false, false, null, null, "Cryptonomicon", 1999L),
+      Row(30L.encodeAsCAPSId.toList, true, false, false, null, null, "The Eye of the World", 1990L),
+      Row(40L.encodeAsCAPSId.toList, true, false, false, null, null, "The Circle", 2013L)
     )
 
     verify(nodes, cols, data)
@@ -286,10 +288,10 @@ class ScanGraphTest extends CAPSGraphTest {
       nHasPropertyName
     )
     val data = Bag(
-      Row(1L, true, true, 23L, "Mats"),
-      Row(2L, true, false, 42L, "Martin"),
-      Row(3L, true, false, 1337L, "Max"),
-      Row(4L, true, false, 9L, "Stefan")
+      Row(1L.encodeAsCAPSId.toList, true, true, 23L, "Mats"),
+      Row(2L.encodeAsCAPSId.toList, true, false, 42L, "Martin"),
+      Row(3L.encodeAsCAPSId.toList, true, false, 1337L, "Max"),
+      Row(4L.encodeAsCAPSId.toList, true, false, 9L, "Stefan")
     )
     verify(nodes, cols, data)
   }
@@ -307,16 +309,16 @@ class ScanGraphTest extends CAPSGraphTest {
       rHasPropertySince
     )
     val data = Bag(
-      Row(1L, 1L, true, false, 2L, null, 2017L),
-      Row(1L, 2L, true, false, 3L, null, 2016L),
-      Row(1L, 3L, true, false, 4L, null, 2015L),
-      Row(2L, 4L, true, false, 3L, null, 2016L),
-      Row(2L, 5L, true, false, 4L, null, 2013L),
-      Row(3L, 6L, true, false, 4L, null, 2016L),
-      Row(100L, 100L, false, true, 10L, true, null),
-      Row(200L, 200L, false, true, 40L, true, null),
-      Row(300L, 300L, false, true, 30L, true, null),
-      Row(400L, 400L, false, true, 20L, false, null)
+      Row(1L.encodeAsCAPSId.toList, 1L.encodeAsCAPSId.toList, true, false, 2L.encodeAsCAPSId.toList, null, 2017L),
+      Row(1L.encodeAsCAPSId.toList, 2L.encodeAsCAPSId.toList, true, false, 3L.encodeAsCAPSId.toList, null, 2016L),
+      Row(1L.encodeAsCAPSId.toList, 3L.encodeAsCAPSId.toList, true, false, 4L.encodeAsCAPSId.toList, null, 2015L),
+      Row(2L.encodeAsCAPSId.toList, 4L.encodeAsCAPSId.toList, true, false, 3L.encodeAsCAPSId.toList, null, 2016L),
+      Row(2L.encodeAsCAPSId.toList, 5L.encodeAsCAPSId.toList, true, false, 4L.encodeAsCAPSId.toList, null, 2013L),
+      Row(3L.encodeAsCAPSId.toList, 6L.encodeAsCAPSId.toList, true, false, 4L.encodeAsCAPSId.toList, null, 2016L),
+      Row(100L.encodeAsCAPSId.toList, 100L.encodeAsCAPSId.toList, false, true, 10L.encodeAsCAPSId.toList, true, null),
+      Row(200L.encodeAsCAPSId.toList, 200L.encodeAsCAPSId.toList, false, true, 40L.encodeAsCAPSId.toList, true, null),
+      Row(300L.encodeAsCAPSId.toList, 300L.encodeAsCAPSId.toList, false, true, 30L.encodeAsCAPSId.toList, true, null),
+      Row(400L.encodeAsCAPSId.toList, 400L.encodeAsCAPSId.toList, false, true, 20L.encodeAsCAPSId.toList, false, null)
     )
 
     verify(rels, cols, data)
@@ -333,12 +335,12 @@ class ScanGraphTest extends CAPSGraphTest {
       rHasPropertySince
     )
     val data = Bag(
-      Row(1L, 1L, true, 2L, 2017L),
-      Row(1L, 2L, true, 3L, 2016L),
-      Row(1L, 3L, true, 4L, 2015L),
-      Row(2L, 4L, true, 3L, 2016L),
-      Row(2L, 5L, true, 4L, 2013L),
-      Row(3L, 6L, true, 4L, 2016L)
+      Row(1L.encodeAsCAPSId.toList, 1L.encodeAsCAPSId.toList, true, 2L.encodeAsCAPSId.toList, 2017L),
+      Row(1L.encodeAsCAPSId.toList, 2L.encodeAsCAPSId.toList, true, 3L.encodeAsCAPSId.toList, 2016L),
+      Row(1L.encodeAsCAPSId.toList, 3L.encodeAsCAPSId.toList, true, 4L.encodeAsCAPSId.toList, 2015L),
+      Row(2L.encodeAsCAPSId.toList, 4L.encodeAsCAPSId.toList, true, 3L.encodeAsCAPSId.toList, 2016L),
+      Row(2L.encodeAsCAPSId.toList, 5L.encodeAsCAPSId.toList, true, 4L.encodeAsCAPSId.toList, 2013L),
+      Row(3L.encodeAsCAPSId.toList, 6L.encodeAsCAPSId.toList, true, 4L.encodeAsCAPSId.toList, 2016L)
     )
 
     verify(rels, cols, data)
@@ -357,14 +359,14 @@ class ScanGraphTest extends CAPSGraphTest {
     )
     val data = Bag(
       // :KNOWS
-      Row(1L, 1L, false, true, 2L, 2017L),
-      Row(1L, 2L, false, true, 3L, 2016L),
-      Row(1L, 3L, false, true, 4L, 2015L),
-      Row(2L, 4L, false, true, 3L, 2016L),
-      Row(2L, 5L, false, true, 4L, 2013L),
-      Row(3L, 6L, false, true, 4L, 2016L),
+      Row(1L.encodeAsCAPSId.toList, 1L.encodeAsCAPSId.toList, false, true, 2L.encodeAsCAPSId.toList, 2017L),
+      Row(1L.encodeAsCAPSId.toList, 2L.encodeAsCAPSId.toList, false, true, 3L.encodeAsCAPSId.toList, 2016L),
+      Row(1L.encodeAsCAPSId.toList, 3L.encodeAsCAPSId.toList, false, true, 4L.encodeAsCAPSId.toList, 2015L),
+      Row(2L.encodeAsCAPSId.toList, 4L.encodeAsCAPSId.toList, false, true, 3L.encodeAsCAPSId.toList, 2016L),
+      Row(2L.encodeAsCAPSId.toList, 5L.encodeAsCAPSId.toList, false, true, 4L.encodeAsCAPSId.toList, 2013L),
+      Row(3L.encodeAsCAPSId.toList, 6L.encodeAsCAPSId.toList, false, true, 4L.encodeAsCAPSId.toList, 2016L),
       // :INFLUENCES
-      Row(10L, 1000L, true, false, 20L, null)
+      Row(10L.encodeAsCAPSId.toList, 1000L.encodeAsCAPSId.toList, true, false, 20L.encodeAsCAPSId.toList, null)
     )
 
     verify(rels, cols, data)
@@ -383,14 +385,14 @@ class ScanGraphTest extends CAPSGraphTest {
       nHasPropertyName
     )
     val data = Bag(
-      Row(1L, true, false, true, null, 23L, "Mats"),
-      Row(2L, true, false, false, null, 42L, "Martin"),
-      Row(3L, true, false, false, null, 1337L, "Max"),
-      Row(4L, true, false, false, null, 9L, "Stefan"),
-      Row(100L, true, true, false, "C", 42L, "Alice"),
-      Row(200L, true, true, false, "D", 23L, "Bob"),
-      Row(300L, true, true, false, "F", 84L, "Eve"),
-      Row(400L, true, true, false, "R", 49L, "Carl")
+      Row(1L.encodeAsCAPSId.toList, true, false, true, null, 23L, "Mats"),
+      Row(2L.encodeAsCAPSId.toList, true, false, false, null, 42L, "Martin"),
+      Row(3L.encodeAsCAPSId.toList, true, false, false, null, 1337L, "Max"),
+      Row(4L.encodeAsCAPSId.toList, true, false, false, null, 9L, "Stefan"),
+      Row(100L.encodeAsCAPSId.toList, true, true, false, "C", 42L, "Alice"),
+      Row(200L.encodeAsCAPSId.toList, true, true, false, "D", 23L, "Bob"),
+      Row(300L.encodeAsCAPSId.toList, true, true, false, "F", 84L, "Eve"),
+      Row(400L.encodeAsCAPSId.toList, true, true, false, "R", 49L, "Carl")
     )
 
     verify(nodes, cols, data)
@@ -409,14 +411,14 @@ class ScanGraphTest extends CAPSGraphTest {
       nHasPropertyName
     )
     val data = Bag(
-      Row(1L, false, true, true, null, 23L, "Mats"),
-      Row(2L, false, true, false, null, 42L, "Martin"),
-      Row(3L, false, true, false, null, 1337L, "Max"),
-      Row(4L, false, true, false, null, 9L, "Stefan"),
-      Row(100L, true, true, false, "Node", null, null),
-      Row(200L, true, true, false, "Coffeescript", null, null),
-      Row(300L, true, true, false, "Javascript", null, null),
-      Row(400L, true, true, false, "Typescript", null, null)
+      Row(1L.encodeAsCAPSId.toList, false, true, true, null, 23L, "Mats"),
+      Row(2L.encodeAsCAPSId.toList, false, true, false, null, 42L, "Martin"),
+      Row(3L.encodeAsCAPSId.toList, false, true, false, null, 1337L, "Max"),
+      Row(4L.encodeAsCAPSId.toList, false, true, false, null, 9L, "Stefan"),
+      Row(100L.encodeAsCAPSId.toList, true, true, false, "Node", null, null),
+      Row(200L.encodeAsCAPSId.toList, true, true, false, "Coffeescript", null, null),
+      Row(300L.encodeAsCAPSId.toList, true, true, false, "Javascript", null, null),
+      Row(400L.encodeAsCAPSId.toList, true, true, false, "Typescript", null, null)
     )
 
     verify(nodes, cols, data)
