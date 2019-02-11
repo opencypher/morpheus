@@ -83,11 +83,16 @@ subprojects {
         group 'help'
     }
 
-    task runApp(type:JavaExec) {
+    task runApp {
+        dependsOn tasks.compileScala
         group 'run'
         description 'Run a custom Scala app (use -PmainClass=path.to.App)'
-        main = project.hasProperty("mainClass") ? project.getProperty("mainClass") : ""
-        classpath = sourceSets.main.runtimeClasspath
+        doLast {
+            project.javaexec {
+                classpath = sourceSets.main.runtimeClasspath
+                main = project.getProperty("mainClass")
+            }
+        }
     }
 }
 
