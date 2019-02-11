@@ -109,7 +109,7 @@ class ScanGraph[T <: Table[T] : TypeTag](val scans: Seq[EntityTable[T]], val sch
     }
 
     alignedEntitytableOps.toList match {
-      case Nil => Start(session.records.empty(targetPatternHeader))
+      case Nil => Start.fromEmptyGraph(session.records.empty(targetPatternHeader))
       case singleOp :: Nil => singleOp
       case multipleOps => multipleOps.reduce(TabularUnionAll(_, _))
     }
@@ -146,7 +146,7 @@ class ScanGraph[T <: Table[T] : TypeTag](val scans: Seq[EntityTable[T]], val sch
       case p: CTPattern =>
         patternTables.filter { pTable =>
           p.node.labels == pTable.schema.labels && p.relationship.types == pTable.schema.relationshipTypes
-        }.map(scan => Start(scan))
+        }.map(scan => Start.fromEmptyGraph(scan))
 
       case other => throw IllegalArgumentException(s"Scan on $other")
     }

@@ -125,11 +125,13 @@ case class SqlPropertyGraphDataSource(
       }
 
       // Mappings
+      val nodeColumnsWithType = nodeColsWithCypherType(capsSchema, pattern.node.labels)
       val nodeMapping = createNodeMapping(nodeViewMapping.nodeType.elementTypes, nodeViewMapping.propertyMappings)
       val relationshipMapping = createRelationshipMapping(edgeViewMapping.relType.elementType, edgeViewMapping.propertyMappings, relIdColumn)
-      val withNormalizedNode = normalizeDataFrame(patternDfWithRelEndNodeId, nodeMapping)
+      val withNormalizedNode = normalizeDataFrame(patternDfWithRelEndNodeId, nodeMapping, nodeColumnsWithType)
 
-      val withNormalizedRel = normalizeDataFrame(withNormalizedNode, relationshipMapping).castToLong
+      val relColumnsWithType = relColsWithCypherType(capsSchema, pattern.rel.types.head)
+      val withNormalizedRel = normalizeDataFrame(withNormalizedNode, relationshipMapping, relColumnsWithType).castToLong
 
       val normalizedNodeMapping = normalizeNodeMapping(nodeMapping)
       val normalizedRelMapping = normalizeRelationshipMapping(relationshipMapping)
