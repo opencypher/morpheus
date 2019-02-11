@@ -206,7 +206,7 @@ object EntityWriter extends Logging {
 
             val entityType = if (originalMessage.contains("Node(")) "nodes" else "relationships"
 
-            val duplicateIdRegex = """.+(\d+)$""".r
+            val duplicateIdRegex = """.+('[0-9a-fA-F]+')$""".r
             val duplicateId = originalMessage match {
               case duplicateIdRegex(idString) => idString
               case _ => "UNKNOWN"
