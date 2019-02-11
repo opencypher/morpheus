@@ -88,9 +88,12 @@ object LogicalOptimizer extends DirectCompilationStage[LogicalOperator, LogicalO
       PatternScan(node, rel, pattern, parent, solved.withFields(node.toField.get, rel.toField.get))
 
     case pScan: PatternScan if pScan.node == node && pScan.rel != rel =>
-      val otherPaternScan = PatternScan(node, rel, pattern, pScan.in, pScan.in.solved.withFields(node.toField.get, rel.toField.get))
+      val renamedNode = Var(node.name + "_renamed")(node.cypherType)
+      val otherPaternScan =PatternScan(renamedNode, rel, pattern, pScan.in, pScan.in.solved.withFields(node.toField.get, rel.toField.get))
+
       val joinExpr = Equals(pScan.node, otherPaternScan.node)(CTBoolean)
-      ValueJoin(pScan, otherPaternScan, Set(joinExpr), pScan.solved ++ otherPaternScan.solved)
+      val joinOp = ValueJoin(pScan, otherPaternScan, Set(joinExpr), pScan.solved ++ otherPaternScan.solved)
+      Select(List(pScan.node, pScan.rel, otherPaternScan.rel), joinOp, joinOp.solved)
   }
 
   private object CanOptimize {
