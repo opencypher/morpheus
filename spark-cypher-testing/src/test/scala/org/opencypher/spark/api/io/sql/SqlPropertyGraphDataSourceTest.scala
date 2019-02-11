@@ -31,7 +31,7 @@ import org.apache.spark.sql.{Row, SaveMode}
 import org.opencypher.graphddl.GraphDdl
 import org.opencypher.okapi.api.graph.GraphName
 import org.opencypher.okapi.api.value.CypherValue.CypherMap
-import org.opencypher.okapi.logical.api.configuration.LogicalConfiguration.PrintLogicalPlan
+import org.opencypher.okapi.logical.impl.{LogicalOperator, PatternScan}
 import org.opencypher.okapi.testing.Bag
 import org.opencypher.spark.api.io.FileFormat
 import org.opencypher.spark.api.io.sql.SqlDataSourceConfig.{File, Hive, Jdbc}
@@ -55,6 +55,7 @@ class SqlPropertyGraphDataSourceTest extends CAPSTestSuite with HiveFixture with
   override protected def beforeAll(): Unit = {
     super.beforeAll()
     createHiveDatabase(databaseName)
+    setupPatternDatabase
   }
 
   override protected def afterAll(): Unit = {
@@ -62,58 +63,57 @@ class SqlPropertyGraphDataSourceTest extends CAPSTestSuite with HiveFixture with
     super.afterAll()
   }
 
-  it("resolves 1-to-n patterns") {
-    val personViewName = "person"
-    val cityViewName = "city"
 
-    val ddlString =
-      s"""
-         |SET SCHEMA $dataSourceName.$databaseName
-         |
-         |CREATE GRAPH TYPE fooSchema (
-         |  Person ( name STRING, city STRING ),
-         |  City ( city STRING ),
-         |  LIVES_IN,
-         |
-         |  (Person),
-         |  (City),
-         |  (Person)-[LIVES_IN]->(City)
-         |)
-         |CREATE GRAPH fooGraph OF fooSchema (
-         |  (Person) FROM $personViewName,
-         |  (City) FROM $cityViewName,
-         |  (Person)-[LIVES_IN]->(City) FROM $personViewName edge
-         |    START NODES (Person)  FROM $personViewName p JOIN ON p.city = edge.city
-         |    END NODES   (City)    FROM $cityViewName c JOIN ON edge.city = c.city
-         |)
-       """.stripMargin
+  describe("1-to-n pattern support") {
+    it("resolves simple patterns") {
+      val res = caps.cypher(
+        s"""
+           |FROM GRAPH $testNamespace.$fooGraphName
+           |MATCH (p:Person)-[l:LIVES_IN]->(c:City)
+           |RETURN p.name AS p, c.name AS c""".stripMargin
+      )
 
-    sparkSession
-      .createDataFrame(Seq(
-        "Alice" -> "Leipzig",
-        "Bob"   -> "Leipzig",
-        "Eve"   -> "Dresden",
-        "Dave"  -> "Buxdehude"
+      res.records.toMapsWithCollectedEntities should equal(Bag(
+        CypherMap("p" -> "Alice", "c" -> "Leipzig"),
+        CypherMap("p" -> "Bob", "c" -> "Leipzig"),
+        CypherMap("p" -> "Eve", "c" -> "Dresden")
       ))
-      .toDF("name", "city")
-      .write.mode(SaveMode.Overwrite).saveAsTable(s"$databaseName.$personViewName")
 
-    sparkSession
-      .createDataFrame(Seq(
-        Tuple1("Leipzig"),
-        Tuple1("Dresden")
+      checkPatternScan(res.maybeLogical.get, 1)
+    }
+
+    it("resolves 1-to-n mappings for nodes with multiple foreign keys") {
+      val res = caps.cypher(
+        s"""
+           |FROM GRAPH $testNamespace.$fooGraphName
+           |MATCH (b:City)<-[:BORN_IN]-(p:Person)-[l:LIVES_IN]->(c:City)
+           |RETURN p.name AS p, c.name AS c, b.name as b""".stripMargin
+      )
+
+      res.records.toMapsWithCollectedEntities should equal(Bag(
+        CypherMap("p" -> "Alice", "c" -> "Leipzig", "b" -> "Dresden"),
+        CypherMap("p" -> "Bob", "c" -> "Leipzig", "b" -> "Leipzig"),
+        CypherMap("p" -> "Eve", "c" -> "Dresden", "b" -> "Malmö")
       ))
-      .toDF("city")
-      .write.mode(SaveMode.Overwrite).saveAsTable(s"$databaseName.$cityViewName")
 
-    val ds = SqlPropertyGraphDataSource(GraphDdl(ddlString), Map(dataSourceName -> Hive), IdGenerationStrategy.HashBasedId)
-    caps.catalog.register(testNamespace, ds)
+      checkPatternScan(res.maybeLogical.get, 2)
+    }
 
-    PrintLogicalPlan.set()
+    it("resolves 1-to-n mappings for expand into") {
+      val res = caps.cypher(
+          s"""
+           |FROM GRAPH $testNamespace.$fooGraphName
+           |MATCH (c:City)<-[:BORN_IN]-(p:Person)-[l:LIVES_IN]->(c:City)
+           |RETURN p.name AS p, c.name AS c""".stripMargin
+      )
 
-    caps.cypher(s"FROM GRAPH $testNamespace.$fooGraphName MATCH (p:Person)-[l:LIVES_IN]->(c:City) RETURN p, l, c").show
 
-    scala.io.StdIn.readLine()
+      res.records.toMapsWithCollectedEntities should equal(Bag(
+        CypherMap("p" -> "Bob", "c" -> "Leipzig")
+      ))
+
+      checkPatternScan(res.maybeLogical.get, 1)
+    }
   }
 
   it("adds deltas to generated ids") {
@@ -634,5 +634,70 @@ class SqlPropertyGraphDataSourceTest extends CAPSTestSuite with HiveFixture with
       CypherMap("r" -> CAPSRelationship(0, 0, 1, "KNOWS")),
       CypherMap("r" -> CAPSRelationship(1, 1, 2, "KNOWS"))
     ))
+  }
+
+  private def setupPatternDatabase = {
+    val personViewName = "person"
+    val cityViewName = "city"
+
+    val ddlString =
+      s"""
+         |SET SCHEMA $dataSourceName.$databaseName
+         |
+         |CREATE GRAPH TYPE fooSchema (
+         |  Person ( name STRING, city STRING, born STRING ) ,
+         |  City ( name STRING ),
+         |  LIVES_IN,
+         |  BORN_IN,
+         |
+         |  (Person),
+         |  (City),
+         |  (Person)-[LIVES_IN]->(City),
+         |  (Person)-[BORN_IN]->(City)
+         |)
+         |CREATE GRAPH fooGraph OF fooSchema (
+         |  (Person) FROM $personViewName,
+         |  (City) FROM $cityViewName,
+         |
+         |  (Person)-[LIVES_IN]->(City) FROM $personViewName edge
+         |    START NODES (Person)  FROM $personViewName p JOIN ON p.city = edge.city AND p.name = edge.name AND p.born = edge.born
+         |    END NODES   (City)    FROM $cityViewName c JOIN ON edge.city = c.name,
+         |
+         |  (Person)-[BORN_IN]->(City) FROM $personViewName edge
+         |    START NODES (Person)  FROM $personViewName p JOIN ON p.city = edge.city AND p.name = edge.name AND p.born = edge.born
+         |    END NODES   (City)    FROM $cityViewName c JOIN ON edge.born = c.name
+         |)
+       """.stripMargin
+
+    sparkSession
+      .createDataFrame(Seq(
+        ("Alice", "Leipzig", "Dresden"),
+        ("Bob", "Leipzig", "Leipzig"),
+        ("Eve", "Dresden", "Malmö"),
+        ("Dave", "Buxdehude", "Darmstadt")
+      ))
+      .toDF("name", "city", "born")
+      .write.mode(SaveMode.Overwrite).saveAsTable(s"$databaseName.$personViewName")
+
+    sparkSession
+      .createDataFrame(Seq(
+        Tuple1("Leipzig"),
+        Tuple1("Dresden"),
+        Tuple1("Malmö")
+      ))
+      .toDF("name")
+      .write.mode(SaveMode.Overwrite).saveAsTable(s"$databaseName.$cityViewName")
+
+    val ds = SqlPropertyGraphDataSource(GraphDdl(ddlString), Map(dataSourceName -> Hive), IdGenerationStrategy.HashBasedId)
+    caps.catalog.register(testNamespace, ds)
+  }
+
+  def checkPatternScan(op: LogicalOperator, count: Integer = 1): Unit = {
+    val actual = op.transform[Integer] {
+      case (_: PatternScan, children) => 1 + children.foldLeft(0)(_ + _)
+      case (_, children)  => children.foldLeft(0)(_ + _)
+    }
+
+    actual should equal( count )
   }
 }
