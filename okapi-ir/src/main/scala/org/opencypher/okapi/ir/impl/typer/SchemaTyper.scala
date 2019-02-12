@@ -545,7 +545,7 @@ object SchemaTyper {
         case Id =>
           pure[R, Set[FunctionSignature]](
           Set(
-            FunctionSignature(Seq(CTNull), CTNull),
+            FunctionSignature(Seq(CTNull), CTIdentity.nullable),
             FunctionSignature(Seq(CTNode), CTIdentity),
             FunctionSignature(Seq(CTRelationship), CTIdentity)
           ))
