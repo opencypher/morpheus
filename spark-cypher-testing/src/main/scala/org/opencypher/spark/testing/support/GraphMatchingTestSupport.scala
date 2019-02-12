@@ -39,13 +39,13 @@ trait GraphMatchingTestSupport {
 
   self: BaseTestSuite with SparkSessionFixture with CAPSSessionFixture =>
 
-  private def getEntityIds(records: RelationalCypherRecords[DataFrameTable]): Set[Long] = {
+  private def getEntityIds(records: RelationalCypherRecords[DataFrameTable]): Set[List[Byte]] = {
     val entityVar = records.header.vars.toSeq match {
       case Seq(v) => v
       case other => throw new UnsupportedOperationException(s"Expected records with 1 entity, got $other")
     }
 
-    records.table.df.select(records.header.column(entityVar)).collect().map(_.getLong(0)).toSet
+    records.table.df.select(records.header.column(entityVar)).collect().map(_.getAs[Array[Byte]](0).toList).toSet
   }
 
   private def verify(actual: RelationalCypherGraph[DataFrameTable], expected: RelationalCypherGraph[DataFrameTable]): Assertion = {

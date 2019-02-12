@@ -37,7 +37,7 @@ import org.opencypher.okapi.relational.impl.table.RecordHeader
 object SparkConversions {
 
   // Spark data types that are supported within the Cypher type system
-  val supportedTypes = Seq(
+  val supportedTypes: Seq[DataType] = Seq(
     // numeric
     ByteType,
     ShortType,
@@ -54,6 +54,14 @@ object SparkConversions {
   )
 
   implicit class CypherTypeOps(val ct: CypherType) extends AnyVal {
+
+    def toStructField(column: String): StructField = {
+      ct.toSparkType match {
+        case Some(st) => StructField(column, st, ct.isNullable)
+        case None => throw IllegalArgumentException("CypherType supported by CAPS", ct)
+      }
+    }
+
     def toSparkType: Option[DataType] = ct match {
       case CTNull | CTVoid => Some(NullType)
       case _ =>
@@ -65,8 +73,9 @@ object SparkConversions {
           case CTLocalDateTime => Some(TimestampType)
           case CTDate => Some(DateType)
           case CTDuration => Some(CalendarIntervalType)
-          case _: CTNode => Some(LongType)
-          case _: CTRelationship => Some(LongType)
+          case CTIdentity => Some(BinaryType)
+          case _: CTNode => Some(BinaryType)
+          case _: CTRelationship => Some(BinaryType)
           case CTList(CTVoid) => Some(ArrayType(NullType, containsNull = true))
           case CTList(CTNull) => Some(ArrayType(NullType, containsNull = true))
           case CTList(elemType) =>
@@ -88,41 +97,6 @@ object SparkConversions {
 
     def isSparkCompatible: Boolean = toSparkType.isDefined
 
-    def toStructField(column: String): StructField = ct match {
-      case CTVoid | CTNull => StructField(column, NullType, nullable = true)
-
-      case _: CTNode => StructField(column, LongType, nullable = false)
-      case _: CTNodeOrNull => StructField(column, LongType, nullable = true)
-      case _: CTRelationship => StructField(column, LongType, nullable = false)
-      case _: CTRelationshipOrNull => StructField(column, LongType, nullable = true)
-
-      case CTInteger => StructField(column, LongType, nullable = false)
-      case CTIntegerOrNull => StructField(column, LongType, nullable = true)
-      case CTBoolean => StructField(column, BooleanType, nullable = false)
-      case CTBooleanOrNull => StructField(column, BooleanType, nullable = true)
-      case CTFloat => StructField(column, DoubleType, nullable = false)
-      case CTFloatOrNull => StructField(column, DoubleType, nullable = true)
-      case CTString => StructField(column, StringType, nullable = false)
-      case CTStringOrNull => StructField(column, StringType, nullable = true)
-      case CTLocalDateTime => StructField(column, TimestampType, nullable = false)
-      case CTLocalDateTimeOrNull => StructField(column, TimestampType, nullable = true)
-      case CTDate => StructField(column, DateType, nullable = false)
-      case CTDateOrNull => StructField(column, DateType, nullable = true)
-      case CTDuration => StructField(column, CalendarIntervalType, nullable = false)
-      case CTDurationOrNull => StructField(column, CalendarIntervalType, nullable = true)
-
-      case CTList(elementType) =>
-        val elementStructField = elementType.toStructField(column)
-        StructField(column, ArrayType(elementStructField.dataType, containsNull = elementStructField.nullable), nullable = false)
-      case CTListOrNull(elementType) =>
-        val elementStructField = elementType.toStructField(column)
-        StructField(column, ArrayType(elementStructField.dataType, containsNull = elementStructField.nullable), nullable = true)
-
-      case map: CTMap => StructField(column, map.toSparkType.get)
-      case map: CTMapOrNull => map.material.toStructField(column).copy(nullable = true)
-
-      case other => throw IllegalArgumentException("CypherType supported by CAPS", other)
-    }
   }
 
   implicit class StructTypeOps(val structType: StructType) {
@@ -138,6 +112,13 @@ object SparkConversions {
 
       RecordHeader(exprToColumn.toMap)
     }
+
+    def binaryColumns: Set[String] = structType.fields.filter(_.dataType == BinaryType).map(_.name).toSet
+
+    def convertTypes(from: DataType, to: DataType): StructType = StructType(structType.map {
+      case sf: StructField if sf.dataType == from => sf.copy(dataType = to)
+      case sf: StructField => sf
+    })
   }
 
   implicit class StructFieldOps(val field: StructField) extends AnyVal {
@@ -151,12 +132,12 @@ object SparkConversions {
         case IntegerType => Some(CTInteger)
         case LongType => Some(CTInteger)
         case BooleanType => Some(CTBoolean)
-        case BinaryType => Some(CTAny)
         case DoubleType => Some(CTFloat)
         case TimestampType => Some(CTLocalDateTime)
         case DateType => Some(CTDate)
         case CalendarIntervalType => Some(CTDuration)
         case ArrayType(NullType, _) => Some(CTList(CTVoid))
+        case BinaryType => Some(CTIdentity)
         case ArrayType(elemType, containsNull) =>
           elemType.toCypherType(containsNull).map(CTList)
         case NullType => Some(CTNull)
@@ -203,8 +184,9 @@ object SparkConversions {
       val structFields = header.columns.toSeq.sorted.map { column =>
         val expressions = header.expressionsFor(column)
         val commonType = expressions.map(_.cypherType).reduce(_ join _)
-        assert(commonType.isSparkCompatible,s"""
-         |Expressions $expressions with common super type $commonType mapped to column $column have no compatible data type.
+        assert(commonType.isSparkCompatible,
+          s"""
+             |Expressions $expressions with common super type $commonType mapped to column $column have no compatible data type.
          """.stripMargin)
         commonType.toStructField(column)
       }

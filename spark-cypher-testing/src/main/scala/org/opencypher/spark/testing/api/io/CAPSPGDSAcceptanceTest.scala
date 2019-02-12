@@ -26,23 +26,13 @@
  */
 package org.opencypher.spark.testing.api.io
 
-import org.opencypher.okapi.api.graph.GraphName
-import org.opencypher.okapi.impl.exception.UnsupportedOperationException
-import org.opencypher.okapi.relational.api.graph.RelationalCypherGraph
-import org.opencypher.okapi.relational.api.tagging.Tags._
 import org.opencypher.okapi.relational.impl.graph.ScanGraph
 import org.opencypher.okapi.testing.PGDSAcceptanceTest
 import org.opencypher.okapi.testing.propertygraph.CreateGraphFactory
 import org.opencypher.spark.api.CAPSSession
-import org.opencypher.spark.api.CAPSSession._
-import org.opencypher.spark.api.value.{CAPSNode, CAPSRelationship}
-import org.opencypher.spark.impl.CAPSConverters._
-import org.opencypher.spark.impl.encoders._
 import org.opencypher.spark.impl.table.SparkTable.DataFrameTable
 import org.opencypher.spark.testing.CAPSTestSuite
 import org.opencypher.spark.testing.support.creation.caps.CAPSScanGraphFactory
-
-import scala.util.{Failure, Success, Try}
 
 trait CAPSPGDSAcceptanceTest extends PGDSAcceptanceTest[CAPSSession, ScanGraph[DataFrameTable]] {
   self: CAPSTestSuite =>
@@ -53,70 +43,6 @@ trait CAPSPGDSAcceptanceTest extends PGDSAcceptanceTest[CAPSSession, ScanGraph[D
 
   override def initGraph(createStatements: String): ScanGraph[DataFrameTable] = {
     CAPSScanGraphFactory(CreateGraphFactory(createStatements))
-  }
-
-  override def allScenarios: List[Scenario] = super.allScenarios ++ tagScenarios
-
-  val constructedGraphName = GraphName("constructedGraph")
-
-  lazy val tagScenarios = List(
-
-    Scenario("Store graphs with tags") { implicit ctx: TestContext =>
-      registerPgds(ns)
-      session.cypher("CATALOG CREATE GRAPH g1 { CONSTRUCT CREATE ()-[:FOO]->() RETURN GRAPH }")
-      session.cypher("CATALOG CREATE GRAPH g2 { CONSTRUCT CREATE () RETURN GRAPH }")
-
-      Try(session.cypher(s"CATALOG CREATE GRAPH $ns.$constructedGraphName { CONSTRUCT ON g1, g2 RETURN GRAPH }")) match {
-        case Failure(_: UnsupportedOperationException) =>
-        case Failure(t) => throw t
-        case Success(_) =>
-          val graph = session.cypher(s"FROM GRAPH $ns.$constructedGraphName RETURN GRAPH").graph.asCaps
-
-          withClue("tags should be restored correctly") {
-            graph.tags should equal(Set(0, 1))
-          }
-
-          verify(graph, 3, 1)
-      }
-    },
-
-    Scenario("API: Store graphs with tags") { implicit ctx: TestContext =>
-      registerPgds(ns)
-      session.cypher("CATALOG CREATE GRAPH g1 { CONSTRUCT CREATE ()-[:FOO]->() RETURN GRAPH }")
-      session.cypher("CATALOG CREATE GRAPH g2 { CONSTRUCT CREATE () RETURN GRAPH }")
-
-      val graphToStore = session.cypher("CONSTRUCT ON g1, g2 RETURN GRAPH").graph.asCaps
-
-      Try(session.catalog.source(ns).store(constructedGraphName, graphToStore)) match {
-        case Failure(_: UnsupportedOperationException) =>
-        case Failure(t) => throw t
-        case Success(_) =>
-          val graph = session.catalog.source(ns).graph(constructedGraphName).asCaps
-
-          withClue("tags should be restored correctly") {
-            graph.tags should equal(graphToStore.tags)
-            graph.tags should equal(Set(0, 1))
-          }
-
-          verify(graph, 3, 1)
-      }
-    }
-  )
-
-  private def verify(graph: RelationalCypherGraph[DataFrameTable], expectedNodeSize: Int, expectedRelSize: Int): Unit = {
-    val nodes = graph.nodes("n").asDataset.map(row => row("n").cast[CAPSNode]).collect()
-    val rels = graph.relationships("r").asDataset.map(row => row("r").cast[CAPSRelationship]).collect()
-
-    nodes.length shouldBe expectedNodeSize
-    rels.length shouldBe expectedRelSize
-
-    val nodeTags = nodes.map(_.id.getTag).toSet
-    val relTags = rels.map(_.id.getTag).toSet
-
-    nodeTags.foreach(tag => graph.tags should contain(tag))
-    relTags.foreach(tag => graph.tags should contain(tag))
-
-    graph.tags -- (nodeTags ++ relTags) shouldBe empty
   }
 
 }

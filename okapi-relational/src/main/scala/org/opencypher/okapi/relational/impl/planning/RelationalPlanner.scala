@@ -31,6 +31,7 @@ import org.opencypher.okapi.api.io.conversion.{NodeMapping, RelationshipMapping}
 import org.opencypher.okapi.api.types.{CTBoolean, CTNode, CTRelationship}
 import org.opencypher.okapi.impl.exception.{NotImplementedException, SchemaException, UnsupportedOperationException}
 import org.opencypher.okapi.ir.api.block.SortItem
+import org.opencypher.okapi.ir.api.expr.PrefixId.GraphIdPrefix
 import org.opencypher.okapi.ir.api.expr._
 import org.opencypher.okapi.ir.api.{Label, PropertyKey, RelType}
 import org.opencypher.okapi.logical.impl._
@@ -38,7 +39,6 @@ import org.opencypher.okapi.logical.{impl => logical}
 import org.opencypher.okapi.relational.api.io.EntityTable
 import org.opencypher.okapi.relational.api.planning.RelationalRuntimeContext
 import org.opencypher.okapi.relational.api.table.Table
-import org.opencypher.okapi.relational.api.tagging.Tags._
 import org.opencypher.okapi.relational.impl.operators._
 import org.opencypher.okapi.relational.impl.planning.ConstructGraphPlanner._
 import org.opencypher.okapi.relational.impl.table.RecordHeader
@@ -358,9 +358,9 @@ object RelationalPlanner {
       SwitchContext(op, context)
     }
 
-    def retagVariable(v: Var, replacements: Map[Int, Int]): RelationalOperator[T] = {
-      val idRetaggings = op.header.idExpressions(v).map(exprToRetag => exprToRetag.replaceTags(replacements) -> exprToRetag)
-      op.addInto(idRetaggings.toSeq: _*)
+    def prefixVariableId(v: Var, prefix: GraphIdPrefix): RelationalOperator[T] = {
+      val prefixedIds = op.header.idExpressions(v).map(exprToPrefix => PrefixId(ToId(exprToPrefix)(), prefix)() -> exprToPrefix)
+      op.addInto(prefixedIds.toSeq: _*)
     }
 
     def alignWith(inputEntity: Var, targetEntity: Var, targetHeader: RecordHeader): RelationalOperator[T] = {

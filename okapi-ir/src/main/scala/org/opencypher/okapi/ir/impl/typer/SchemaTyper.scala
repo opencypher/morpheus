@@ -39,7 +39,7 @@ import org.opencypher.okapi.ir.impl.parse.functions.FunctionLookup
 import org.opencypher.okapi.ir.impl.parse.rewriter.ExistsPattern
 import org.opencypher.okapi.ir.impl.typer.SignatureConverter._
 import org.opencypher.v9_0.expressions._
-import org.opencypher.v9_0.expressions.functions.{Abs, Acos, Asin, Atan, Atan2, Ceil, Coalesce, Collect, Cos, Cot, Degrees, Exists, Exp, Floor, Haversin, Keys, Log, Log10, Max, Min, Properties, Radians, Round, Sign, Sin, Sqrt, Tan, ToBoolean, ToString, UnresolvedFunction}
+import org.opencypher.v9_0.expressions.functions.{Abs, Acos, Asin, Atan, Atan2, Ceil, Coalesce, Collect, Cos, Cot, Degrees, Exists, Exp, Floor, Haversin, Id, Keys, Log, Log10, Max, Min, Properties, Radians, Round, Sign, Sin, Sqrt, Tan, ToBoolean, ToString, UnresolvedFunction}
 
 final case class SchemaTyper(schema: Schema) {
 
@@ -541,6 +541,14 @@ object SchemaTyper {
               FunctionSignature(Seq(CTInteger), CTInteger),
               FunctionSignature(Seq(CTFloat), CTFloat)
             ))
+
+        case Id =>
+          pure[R, Set[FunctionSignature]](
+          Set(
+            FunctionSignature(Seq(CTNull), CTIdentity.nullable),
+            FunctionSignature(Seq(CTNode), CTIdentity),
+            FunctionSignature(Seq(CTRelationship), CTIdentity)
+          ))
 
         case ToBoolean =>
           pure[R, Set[FunctionSignature]](

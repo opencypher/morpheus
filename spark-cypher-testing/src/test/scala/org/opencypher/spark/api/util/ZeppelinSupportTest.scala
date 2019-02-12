@@ -27,6 +27,8 @@
 package org.opencypher.spark.api.util
 
 import org.opencypher.okapi.api.util.ZeppelinSupport._
+import org.opencypher.okapi.api.value.CypherValue
+import org.opencypher.okapi.api.value.CypherValue.Format._
 import org.opencypher.spark.impl.acceptance.ScanGraphInit
 import org.opencypher.spark.testing.CAPSTestSuite
 import org.opencypher.spark.testing.fixture.TeamDataFixture
@@ -38,11 +40,12 @@ class ZeppelinSupportTest extends CAPSTestSuite with TeamDataFixture with ScanGr
     val result = graph.cypher("MATCH (p:Person) RETURN p.name, p.luckyNumber")
     val asTable = result.records.toZeppelinTable
 
-    val expected = """p.name	p.luckyNumber
-                     |'Mats'	23
-                     |'Martin'	42
-                     |'Max'	1337
-                     |'Stefan'	9""".stripMargin
+    val expected =
+      """p.name	p.luckyNumber
+        |'Mats'	23
+        |'Martin'	42
+        |'Max'	1337
+        |'Stefan'	9""".stripMargin
 
     asTable should equal(expected)
   }
@@ -54,108 +57,105 @@ class ZeppelinSupportTest extends CAPSTestSuite with TeamDataFixture with ScanGr
         |CREATE (a:Person {val1: 1, val2: "foo"})
         |CREATE (b:Person:Swedish {val1: 2, val2: "bar"})
         |CREATE (c:Person {val1: 3, val2: "baz"})
-        |CREATE (a)-[:KNOWS {since: 2018}]->(b)
-        |CREATE (a)-[:KNOWS {since: 2018}]->(c)
-        |CREATE (b)-[:KNOWS {since: 2018}]->(c)
+        |CREATE (a)-[:KNOWS {since: 2015}]->(b)
+        |CREATE (a)-[:KNOWS {since: 2016}]->(c)
+        |CREATE (b)-[:KNOWS {since: 2017}]->(c)
       """.stripMargin)
-    val result = graph.cypher("MATCH (p:Person)-[k:KNOWS]->(p2:Person) RETURN p, k, p2")
+    val result = graph.cypher("MATCH (p:Person)-[k:KNOWS]->(p2:Person) RETURN p, k, p2 ORDER BY p.val1, k.since")
+
+    import org.opencypher.okapi.api.util.ZeppelinSupport._
 
     val asGraph = result.records.toZeppelinGraph
 
-    val expected = """{
-                     |  "nodes": [
-                     |    {
-                     |      "id": "2",
-                     |      "label": "Person",
-                     |      "labels": [
-                     |        "Person"
-                     |      ],
-                     |      "data": {
-                     |        "val1": "3",
-                     |        "val2": "baz"
-                     |      }
-                     |    },
-                     |    {
-                     |      "id": "1",
-                     |      "label": "Swedish",
-                     |      "labels": [
-                     |        "Person",
-                     |        "Swedish"
-                     |      ],
-                     |      "data": {
-                     |        "val1": "2",
-                     |        "val2": "bar"
-                     |      }
-                     |    },
-                     |    {
-                     |      "id": "0",
-                     |      "label": "Person",
-                     |      "labels": [
-                     |        "Person"
-                     |      ],
-                     |      "data": {
-                     |        "val1": "1",
-                     |        "val2": "foo"
-                     |      }
-                     |    }
-                     |  ],
-                     |  "edges": [
-                     |    {
-                     |      "id": "5",
-                     |      "source": "1",
-                     |      "target": "2",
-                     |      "label": "KNOWS",
-                     |      "data": {
-                     |        "since": "2018"
-                     |      }
-                     |    },
-                     |    {
-                     |      "id": "4",
-                     |      "source": "0",
-                     |      "target": "2",
-                     |      "label": "KNOWS",
-                     |      "data": {
-                     |        "since": "2018"
-                     |      }
-                     |    },
-                     |    {
-                     |      "id": "3",
-                     |      "source": "0",
-                     |      "target": "1",
-                     |      "label": "KNOWS",
-                     |      "data": {
-                     |        "since": "2018"
-                     |      }
-                     |    }
-                     |  ],
-                     |  "labels": {
-                     |    "Person": "#cbfe79",
-                     |    "Swedish": "#6f27a9"
-                     |  },
-                     |  "types": [
-                     |    "KNOWS"
-                     |  ],
-                     |  "directed": true
-                     |}""".stripMargin
+    val expected =
+      """|{
+         |  "nodes": [
+         |    {
+         |      "id": "01",
+         |      "label": "Swedish",
+         |      "labels": [
+         |        "Person",
+         |        "Swedish"
+         |      ],
+         |      "data": {
+         |        "val1": "2",
+         |        "val2": "bar"
+         |      }
+         |    },
+         |    {
+         |      "id": "00",
+         |      "label": "Person",
+         |      "labels": [
+         |        "Person"
+         |      ],
+         |      "data": {
+         |        "val1": "1",
+         |        "val2": "foo"
+         |      }
+         |    },
+         |    {
+         |      "id": "02",
+         |      "label": "Person",
+         |      "labels": [
+         |        "Person"
+         |      ],
+         |      "data": {
+         |        "val1": "3",
+         |        "val2": "baz"
+         |      }
+         |    }
+         |  ],
+         |  "edges": [
+         |    {
+         |      "id": "05",
+         |      "source": "01",
+         |      "target": "02",
+         |      "label": "KNOWS",
+         |      "data": {
+         |        "since": "2017"
+         |      }
+         |    },
+         |    {
+         |      "id": "04",
+         |      "source": "00",
+         |      "target": "02",
+         |      "label": "KNOWS",
+         |      "data": {
+         |        "since": "2016"
+         |      }
+         |    },
+         |    {
+         |      "id": "03",
+         |      "source": "00",
+         |      "target": "01",
+         |      "label": "KNOWS",
+         |      "data": {
+         |        "since": "2015"
+         |      }
+         |    }
+         |  ],
+         |  "labels": {
+         |    "Person": "#cbfe79",
+         |    "Swedish": "#6f27a9"
+         |  },
+         |  "types": [
+         |    "KNOWS"
+         |  ],
+         |  "directed": true
+         |}""".stripMargin
 
     asGraph should equal(expected)
   }
 
   it("supports Zeppelin network representation") {
     val graph = caps.graphs.create(personTable, bookTable, readsTable, knowsTable, influencesTable)
-    val asJson = graph.toZeppelinJson
+    val asJson = graph.toZeppelinJson()(CypherValue.Format.defaultValueFormatter)
     val expected = ujson.read(
       s"""
          |{
-         |  "directed": true,
-         |  "labels": {
-         |    "Book": "#40c294",
-         |    "Person": "#cbfe79",
-         |    "Swedish": "#6f27a9"
-         |  },
          |  "nodes": [
          |    {
-         |      "id": "1",
+         |      "id": "01",
          |      "label": "Person",
          |      "labels": [
          |        "Person",
@@ -167,7 +167,7 @@ class ZeppelinSupportTest extends CAPSTestSuite with TeamDataFixture with ScanGr
          |      }
          |    },
          |    {
-         |      "id": "2",
+         |      "id": "02",
          |      "label": "Person",
          |      "labels": [
          |        "Person"
@@ -178,7 +178,7 @@ class ZeppelinSupportTest extends CAPSTestSuite with TeamDataFixture with ScanGr
          |      }
          |    },
          |    {
-         |      "id": "3",
+         |      "id": "03",
          |      "label": "Person",
          |      "labels": [
          |        "Person"
@@ -189,7 +189,7 @@ class ZeppelinSupportTest extends CAPSTestSuite with TeamDataFixture with ScanGr
          |      }
          |    },
          |    {
-         |      "id": "4",
+         |      "id": "04",
          |      "label": "Person",
          |      "labels": [
          |        "Person"
@@ -200,7 +200,7 @@ class ZeppelinSupportTest extends CAPSTestSuite with TeamDataFixture with ScanGr
          |      }
          |    },
          |    {
-         |      "id": "10",
+         |      "id": "0A",
          |      "label": "Book",
          |      "labels": [
          |        "Book"
@@ -211,7 +211,7 @@ class ZeppelinSupportTest extends CAPSTestSuite with TeamDataFixture with ScanGr
          |      }
          |    },
          |    {
-         |      "id": "20",
+         |      "id": "14",
          |      "label": "Book",
          |      "labels": [
          |        "Book"
@@ -222,7 +222,7 @@ class ZeppelinSupportTest extends CAPSTestSuite with TeamDataFixture with ScanGr
          |      }
          |    },
          |    {
-         |      "id": "30",
+         |      "id": "1E",
          |      "label": "Book",
          |      "labels": [
          |        "Book"
@@ -233,7 +233,7 @@ class ZeppelinSupportTest extends CAPSTestSuite with TeamDataFixture with ScanGr
          |      }
          |    },
          |    {
-         |      "id": "40",
+         |      "id": "28",
          |      "label": "Book",
          |      "labels": [
          |        "Book"
@@ -246,110 +246,116 @@ class ZeppelinSupportTest extends CAPSTestSuite with TeamDataFixture with ScanGr
          |  ],
          |  "edges": [
          |    {
-         |      "id": "100",
-         |      "source": "100",
-         |      "target": "10",
+         |      "id": "64",
+         |      "source": "64",
+         |      "target": "0A",
          |      "label": "READS",
          |      "data": {
          |        "recommends": true
          |      }
          |    },
          |    {
-         |      "id": "200",
-         |      "source": "200",
-         |      "target": "40",
+         |      "id": "C801",
+         |      "source": "C801",
+         |      "target": "28",
          |      "label": "READS",
          |      "data": {
          |        "recommends": true
          |      }
          |    },
          |    {
-         |      "id": "300",
-         |      "source": "300",
-         |      "target": "30",
+         |      "id": "AC02",
+         |      "source": "AC02",
+         |      "target": "1E",
          |      "label": "READS",
          |      "data": {
          |        "recommends": true
          |      }
          |    },
          |    {
-         |      "id": "400",
-         |      "source": "400",
-         |      "target": "20",
+         |      "id": "9003",
+         |      "source": "9003",
+         |      "target": "14",
          |      "label": "READS",
          |      "data": {
          |        "recommends": false
          |      }
          |    },
          |    {
-         |      "id": "1",
-         |      "source": "1",
-         |      "target": "2",
+         |      "id": "01",
+         |      "source": "01",
+         |      "target": "02",
          |      "label": "KNOWS",
          |      "data": {
          |        "since": "2017"
          |      }
          |    },
          |    {
-         |      "id": "2",
-         |      "source": "1",
-         |      "target": "3",
+         |      "id": "02",
+         |      "source": "01",
+         |      "target": "03",
          |      "label": "KNOWS",
          |      "data": {
          |        "since": "2016"
          |      }
          |    },
          |    {
-         |      "id": "3",
-         |      "source": "1",
-         |      "target": "4",
+         |      "id": "03",
+         |      "source": "01",
+         |      "target": "04",
          |      "label": "KNOWS",
          |      "data": {
          |        "since": "2015"
          |      }
          |    },
          |    {
-         |      "id": "4",
-         |      "source": "2",
-         |      "target": "3",
+         |      "id": "04",
+         |      "source": "02",
+         |      "target": "03",
          |      "label": "KNOWS",
          |      "data": {
          |        "since": "2016"
          |      }
          |    },
          |    {
-         |      "id": "5",
-         |      "source": "2",
-         |      "target": "4",
+         |      "id": "05",
+         |      "source": "02",
+         |      "target": "04",
          |      "label": "KNOWS",
          |      "data": {
          |        "since": "2013"
          |      }
          |    },
          |    {
-         |      "id": "6",
-         |      "source": "3",
-         |      "target": "4",
+         |      "id": "06",
+         |      "source": "03",
+         |      "target": "04",
          |      "label": "KNOWS",
          |      "data": {
          |        "since": "2016"
          |      }
          |    },
          |    {
-         |      "id": "1000",
-         |      "source": "10",
-         |      "target": "20",
+         |      "id": "E807",
+         |      "source": "0A",
+         |      "target": "14",
          |      "label": "INFLUENCES",
          |      "data": {
          |
          |      }
          |    }
          |  ],
+         |  "labels": {
+         |    "Book": "#40c294",
+         |    "Person": "#cbfe79",
+         |    "Swedish": "#6f27a9"
+         |  },
          |  "types": [
          |    "INFLUENCES",
          |    "KNOWS",
          |    "READS"
-         |  ]
+         |  ],
+         |  "directed": true
          |}""".stripMargin)
 
     asJson should equal(expected)

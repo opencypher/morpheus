@@ -355,4 +355,29 @@ class OptionalMatchTests extends CAPSTestSuite with ScanGraphInit {
     // Then
     result.records.toMaps should equal(Bag())
   }
+
+  it("returns null IDs") {
+    // Given
+    val given = initGraph(
+      """
+        |CREATE (p1:Person {name: "Alice"})
+      """.stripMargin)
+
+    // When
+    val result = given.cypher(
+      """
+        |MATCH (p1:Person)
+        |OPTIONAL MATCH (p1)-[e1]->(p2)
+        |RETURN id(p1), id(p2)
+      """.stripMargin)
+
+    // Then
+    result.records.toMaps should equal(Bag(
+      CypherMap(
+        "id(p1)" -> List(0),
+        "id(p2)" -> null
+      )
+    ))
+  }
+
 }

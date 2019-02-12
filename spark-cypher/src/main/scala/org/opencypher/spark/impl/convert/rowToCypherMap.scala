@@ -93,7 +93,7 @@ final case class rowToCypherMap(exprToColumn: Seq[(Expr, String)]) extends (Row 
     val idValue = row.getAs[Any](header.column(v))
     idValue match {
       case null => CypherNull
-      case id: Long =>
+      case id: Array[_] =>
 
         val labels = header
           .labelsFor(v)
@@ -106,8 +106,8 @@ final case class rowToCypherMap(exprToColumn: Seq[(Expr, String)]) extends (Row 
           .collect { case (key, value) if !value.isNull => key -> value }
           .toMap
 
-        CAPSNode(id, labels, properties)
-      case invalidID => throw UnsupportedOperationException(s"CAPSNode ID has to be a Long instead of ${invalidID.getClass}")
+        CAPSNode(id.asInstanceOf[Array[Byte]], labels, properties)
+      case invalidID => throw UnsupportedOperationException(s"CAPSNode ID has to be a CAPSId instead of ${invalidID.getClass}")
     }
   }
 
@@ -115,9 +115,9 @@ final case class rowToCypherMap(exprToColumn: Seq[(Expr, String)]) extends (Row 
     val idValue = row.getAs[Any](header.column(v))
     idValue match {
       case null => CypherNull
-      case id: Long =>
-        val source = row.getAs[Long](header.column(header.startNodeFor(v)))
-        val target = row.getAs[Long](header.column(header.endNodeFor(v)))
+      case id: Array[_] =>
+        val source = row.getAs[Array[_]](header.column(header.startNodeFor(v)))
+        val target = row.getAs[Array[_]](header.column(header.endNodeFor(v)))
 
         val relType = header
           .typesFor(v)
@@ -131,7 +131,12 @@ final case class rowToCypherMap(exprToColumn: Seq[(Expr, String)]) extends (Row 
           .collect { case (key, value) if !value.isNull => key -> value }
           .toMap
 
-        CAPSRelationship(id, source, target, relType, properties)
+        CAPSRelationship(
+          id.asInstanceOf[Array[Byte]],
+          source.asInstanceOf[Array[Byte]],
+          target.asInstanceOf[Array[Byte]],
+          relType,
+          properties)
       case invalidID => throw UnsupportedOperationException(s"CAPSRelationship ID has to be a Long instead of ${invalidID.getClass}")
     }
   }

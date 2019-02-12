@@ -30,6 +30,7 @@ import org.opencypher.okapi.api.types._
 import org.opencypher.okapi.impl.exception.IllegalArgumentException
 import org.opencypher.okapi.ir.api._
 import org.opencypher.okapi.ir.api.expr.FlattenOps._
+import org.opencypher.okapi.ir.api.expr.PrefixId.GraphIdPrefix
 import org.opencypher.okapi.trees.AbstractTreeNode
 
 import scala.annotation.tailrec
@@ -107,6 +108,8 @@ object Var {
   }
 
   def unapply(arg: Var): Option[String] = Some(arg.name)
+
+  def unnamed: CypherType => Var = apply("")
 }
 
 final case class ListSegment(index: Int, listVar: Var)(val cypherType: CypherType = CTWildcard) extends Var {
@@ -573,6 +576,24 @@ final case class Id(expr: Expr)(val cypherType: CypherType = CTWildcard) extends
   override type This = Id
 
   override def withCypherType(ct: CypherType): Id = copy()(ct)
+}
+
+object PrefixId {
+  type GraphIdPrefix = Byte
+}
+
+final case class PrefixId(expr: Expr, prefix: GraphIdPrefix)(val cypherType: CypherType = CTWildcard) extends UnaryFunctionExpr {
+
+  override type This = PrefixId
+
+  override def withCypherType(ct: CypherType): PrefixId = copy()(ct)
+}
+
+final case class ToId(expr: Expr)(val cypherType: CypherType = CTIdentity) extends UnaryFunctionExpr {
+
+  override type This = ToId
+
+  override def withCypherType(ct: CypherType): ToId = copy()(ct)
 }
 
 final case class Labels(expr: Expr)(val cypherType: CypherType = CTWildcard) extends UnaryFunctionExpr {

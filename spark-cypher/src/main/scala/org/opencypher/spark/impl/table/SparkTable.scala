@@ -43,6 +43,7 @@ import org.opencypher.okapi.relational.impl.table.RecordHeader
 import org.opencypher.spark.impl.CAPSFunctions.partitioned_id_assignment
 import org.opencypher.spark.impl.SparkSQLExprMapper._
 import org.opencypher.spark.impl.convert.SparkConversions._
+import org.opencypher.spark.impl.expressions.EncodeLong._
 
 import scala.collection.JavaConverters._
 
@@ -413,6 +414,42 @@ object SparkTable {
         case column if column.startsWith(prefix) => column -> column.substring(prefix.length)
       }
       df.safeRenameColumns(columnRenamings.toMap)
+    }
+
+    def encodeBinaryToHexString: DataFrame = {
+      val columnsToSelect = df.schema.map {
+        case sf: StructField if sf.dataType == BinaryType => functions.hex(df.col(sf.name)).as(sf.name)
+        case sf: StructField => df.col(sf.name)
+      }
+      df.select(columnsToSelect: _*)
+    }
+
+    def transformColumns(cols: String*)(f: Column => Column): DataFrame = {
+      val columnsToSelect = df.columns.map {
+        case c if cols.contains(c) => f(df.col(c))
+        case c => df.col(c)
+      }
+      df.select(columnsToSelect: _*)
+    }
+
+    def decodeHexStringToBinary(hexColumns: Set[String]): DataFrame = {
+      val columnsToSelect = df.schema.map {
+        case sf: StructField if hexColumns.contains(sf.name) =>
+          assert(sf.dataType == StringType, "Can only decode hex columns of StringType to BinaryType")
+          functions.unhex(df.col(sf.name)).as(sf.name)
+        case sf: StructField => df.col(sf.name)
+      }
+      df.select(columnsToSelect: _*)
+    }
+
+    def encodeIdColumns(idColumns: String*): Seq[Column] = {
+      idColumns.map { key =>
+        if (df.structFieldForColumn(key).dataType == LongType) {
+          df.col(key).encodeLongAsCAPSId(key)
+        } else {
+          df.col(key)
+        }
+      }
     }
 
     /**

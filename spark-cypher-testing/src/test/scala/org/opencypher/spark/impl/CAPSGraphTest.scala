@@ -34,6 +34,7 @@ import org.opencypher.okapi.relational.api.table.RelationalCypherRecords
 import org.opencypher.okapi.relational.impl.operators.Start
 import org.opencypher.okapi.testing.Bag
 import org.opencypher.spark.api.io.{CAPSNodeTable, CAPSRelationshipTable}
+import org.opencypher.spark.api.value.CAPSEntity._
 import org.opencypher.spark.impl.table.SparkTable.DataFrameTable
 import org.opencypher.spark.testing.CAPSTestSuite
 import org.opencypher.spark.testing.fixture.{GraphConstructionFixture, RecordsVerificationFixture, TeamDataFixture}
@@ -64,7 +65,7 @@ abstract class CAPSGraphTest extends CAPSTestSuite
       nHasPropertyLuckyNumber,
       nHasPropertyName
     )
-    verify(nodes, cols, Bag(Row(4L, true, 8L, "Donald")))
+    verify(nodes, cols, Bag(Row(4L.encodeAsCAPSId.toList, true, 8L, "Donald")))
   }
 
   it("should return only nodes with that exact label (multiple labels)") {
@@ -78,9 +79,9 @@ abstract class CAPSGraphTest extends CAPSTestSuite
       nHasPropertyName
     )
     val data = Bag(
-      Row(2L, true, true, 1337L, "Martin"),
-      Row(3L, true, true, 8L, "Max"),
-      Row(0L, true, true, 42L, "Stefan")
+      Row(2L.encodeAsCAPSId.toList, true, true, 1337L, "Martin"),
+      Row(3L.encodeAsCAPSId.toList, true, true, 8L, "Max"),
+      Row(0L.encodeAsCAPSId.toList, true, true, 42L, "Stefan")
     )
     verify(nodes, cols, data)
   }

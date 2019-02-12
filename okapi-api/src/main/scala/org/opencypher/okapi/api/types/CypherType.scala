@@ -194,6 +194,10 @@ case object CTDuration extends TemporalValueCypherType {
   override def name = "DURATION"
 }
 
+case object CTIdentity extends MaterialDefiniteCypherLeafType {
+  override def name = "IDENTITY"
+}
+
 object CTNode extends CTNode(Set.empty, None) with Serializable {
   def apply(labels: String*): CTNode =
     CTNode(labels.toSet)
@@ -634,6 +638,7 @@ private[okapi] object MaterialDefiniteCypherType {
       case CTDate => CTDateOrNull
       case CTDuration => CTDurationOrNull
       case CTPath => CTPathOrNull
+      case CTIdentity => CTIdentityOrNull
     }
   }
 
@@ -703,6 +708,12 @@ case object CTPathOrNull extends NullableDefiniteCypherType {
   override def name: String = CTPath + "?"
 
   override def material: CTPath.type = CTPath
+}
+
+case object CTIdentityOrNull extends NullableDefiniteCypherType {
+  override def name: String = CTIdentity + "?"
+
+  override def material: CTIdentity.type = CTIdentity
 }
 
 sealed private[okapi] trait MaterialDefiniteCypherType extends MaterialCypherType with DefiniteCypherType {

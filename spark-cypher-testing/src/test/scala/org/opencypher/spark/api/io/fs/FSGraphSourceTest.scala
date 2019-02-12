@@ -36,6 +36,7 @@ import org.opencypher.spark.api.io.FileFormat
 import org.opencypher.spark.api.io.util.HiveTableName
 import org.opencypher.spark.api.value.CAPSNode
 import org.opencypher.spark.impl.acceptance.ScanGraphInit
+import org.opencypher.spark.api.value.CAPSEntity._
 import org.opencypher.spark.testing.CAPSTestSuite
 
 class FSGraphSourceTest extends CAPSTestSuite with ScanGraphInit {
@@ -74,15 +75,15 @@ class FSGraphSourceTest extends CAPSTestSuite with ScanGraphInit {
       val nodeResult = caps.sparkSession.sql(s"SELECT * FROM $nodeTableName")
       nodeResult.collect().toSet should equal(
         Set(
-          Row(1, "c"),
-          Row(0, "a")
+          Row(1.encodeAsCAPSId, "c"),
+          Row(0.encodeAsCAPSId, "a")
         )
       )
 
       val relResult = caps.sparkSession.sql(s"SELECT * FROM $relTableName")
       relResult.collect().toSet should equal(
         Set(
-          Row(2, 0, 1, "b")
+          Row(2.encodeAsCAPSId, 0.encodeAsCAPSId, 1.encodeAsCAPSId, "b")
         )
       )
     }

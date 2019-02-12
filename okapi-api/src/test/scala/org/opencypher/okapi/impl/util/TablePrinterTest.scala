@@ -28,6 +28,7 @@ package org.opencypher.okapi.impl.util
 
 import org.opencypher.okapi.ApiBaseTest
 import org.opencypher.okapi.api.value.CypherValue
+import org.opencypher.okapi.api.value.CypherValue.Format._
 import org.opencypher.okapi.api.value.CypherValue.{CypherMap, CypherNode, CypherRelationship, CypherValue}
 import org.opencypher.okapi.impl.util.TablePrinter.toTable
 

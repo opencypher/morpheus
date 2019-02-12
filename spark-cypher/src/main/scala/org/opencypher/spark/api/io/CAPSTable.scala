@@ -33,7 +33,7 @@ import org.opencypher.okapi.impl.util.StringEncodingUtilities._
 import org.opencypher.okapi.relational.api.io.{EntityTable, NodeTable, RelationshipTable}
 import org.opencypher.okapi.relational.api.table.RelationalEntityTableFactory
 import org.opencypher.spark.api.CAPSSession
-import org.opencypher.spark.impl.table.SparkTable.DataFrameTable
+import org.opencypher.spark.impl.table.SparkTable.{DataFrameTable, _}
 import org.opencypher.spark.impl.util.Annotation
 import org.opencypher.spark.impl.{CAPSRecords, RecordBehaviour}
 
@@ -59,6 +59,7 @@ case object CAPSEntityTableFactory extends RelationalEntityTableFactory[DataFram
 trait CAPSEntityTable extends EntityTable[DataFrameTable] {
 
   private[spark] def records(implicit caps: CAPSSession): CAPSRecords = caps.records.fromEntityTable(entityTable = this)
+
 }
 
 case class CAPSNodeTable(
@@ -127,8 +128,10 @@ object CAPSNodeTable {
     * @return a node table
     */
   def fromMapping(mapping: NodeMapping, initialTable: DataFrame): CAPSNodeTable = {
-    val colsToSelect = mapping.allSourceKeys
-    CAPSNodeTable(mapping, initialTable.select(colsToSelect.head, colsToSelect.tail: _*))
+    val idCols = initialTable.encodeIdColumns(mapping.idKeys: _*)
+    val remainingCols = mapping.allSourceKeys.filterNot(mapping.idKeys.contains).map(initialTable.col)
+    val colsToSelect = idCols ++ remainingCols
+    CAPSNodeTable(mapping, initialTable.select(colsToSelect: _*))
   }
 
   private def properties(nodeColumnNames: Seq[String]): Set[String] = {
@@ -219,9 +222,10 @@ object CAPSRelationshipTable {
       case _ => initialTable
     }
 
-    val colsToSelect = mapping.allSourceKeys
-
-    CAPSRelationshipTable(mapping, updatedTable.select(colsToSelect.head, colsToSelect.tail: _*))
+    val idCols = initialTable.encodeIdColumns(mapping.idKeys: _*)
+    val remainingCols = mapping.allSourceKeys.filterNot(mapping.idKeys.contains).map(updatedTable.col)
+    val colsToSelect = idCols ++ remainingCols
+    CAPSRelationshipTable(mapping, updatedTable.select(colsToSelect: _*))
   }
 
   private def properties(relColumnNames: Seq[String]): Set[String] = {

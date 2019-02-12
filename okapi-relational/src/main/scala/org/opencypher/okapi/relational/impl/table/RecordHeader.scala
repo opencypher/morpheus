@@ -45,17 +45,17 @@ object RecordHeader {
   def from[T <: Expr](exprs: Seq[T]): RecordHeader = from(exprs.head, exprs.tail: _*)
 
   def from(relType: CTRelationship): RecordHeader = {
-    val v = RelationshipVar("")(relType)
+    val v = Var.unnamed(relType)
 
     from(
       v,
-      Seq(StartNode(v)(CTInteger), EndNode(v)(CTInteger))
+      Seq(StartNode(v)(CTIdentity), EndNode(v)(CTIdentity))
       ++ relType.types.map(t => HasType(v, RelType(t))(CTBoolean)): _*
     )
   }
 
   def from(nodeType: CTNode): RecordHeader = {
-    val v = NodeVar("")(nodeType)
+    val v = Var.unnamed(nodeType)
 
     from(
       v,

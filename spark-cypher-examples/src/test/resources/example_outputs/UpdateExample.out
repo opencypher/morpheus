@@ -1,1 +1,1 @@
-CAPSNode(1, Set(Person, Adult), Map(name -> Bob, age -> 20, canVote -> true))
+CAPSNode(id=0x01, labels=Set(Person, Adult), properties=Map(name -> Bob, age -> 20, canVote -> true))

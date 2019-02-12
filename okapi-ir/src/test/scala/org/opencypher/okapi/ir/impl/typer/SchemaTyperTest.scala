@@ -529,9 +529,10 @@ class SchemaTyperTest extends BaseTestSuite with Neo4jAstTestSupport with Mockit
   }
 
   it("types of id function") {
-    implicit val context: TypeTracker = typeTracker("n" -> CTNode("Person"))
+    implicit val context: TypeTracker = typeTracker("n" -> CTNode("Person"), "m" -> CTNode("Person").nullable)
 
-    assertExpr.from("id(n)") shouldHaveInferredType CTInteger.nullable
+    assertExpr.from("id(n)") shouldHaveInferredType CTIdentity
+    assertExpr.from("id(m)") shouldHaveInferredType CTIdentity.nullable
   }
 
   it("types functions") {

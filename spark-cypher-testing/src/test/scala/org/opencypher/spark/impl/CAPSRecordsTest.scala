@@ -26,19 +26,19 @@
  */
 package org.opencypher.spark.impl
 
-import org.apache.spark.sql.{DataFrame, Row}
+import org.apache.spark.sql.Row
 import org.opencypher.okapi.api.io.conversion.{NodeMapping, RelationshipMapping}
 import org.opencypher.okapi.api.types._
 import org.opencypher.okapi.api.value.CypherValue._
 import org.opencypher.okapi.impl.exception.InternalException
 import org.opencypher.okapi.ir.api.expr._
 import org.opencypher.okapi.ir.api.{Label, PropertyKey, RelType}
-import org.opencypher.okapi.relational.api.tagging.Tags._
 import org.opencypher.okapi.relational.impl.table.RecordHeader
 import org.opencypher.okapi.testing.Bag
 import org.opencypher.okapi.testing.Bag._
 import org.opencypher.okapi.testing.MatchHelper.equalWithTracing
 import org.opencypher.spark.api.io.{CAPSNodeTable, CAPSRelationshipTable}
+import org.opencypher.spark.api.value.CAPSEntity._
 import org.opencypher.spark.api.value.CAPSNode
 import org.opencypher.spark.testing.CAPSTestSuite
 import org.opencypher.spark.testing.fixture.{GraphConstructionFixture, TeamDataFixture}
@@ -99,84 +99,6 @@ class CAPSRecordsTest extends CAPSTestSuite with GraphConstructionFixture with T
     }
   }
 
-  // TODO: Test new RetagVariable operator instead
-  ignore("retags a node variable") {
-    val givenDF = sparkSession.createDataFrame(
-      Seq(
-        (1L, true, "Mats"),
-        (2L, false, "Martin"),
-        (3L, false, "Max"),
-        (4L, false, "Stefan")
-      )).toDF("ID", "IS_SWEDE", "NAME")
-
-    val givenMapping = NodeMapping.on("ID")
-      .withImpliedLabel("Person")
-      .withOptionalLabel("Swedish" -> "IS_SWEDE")
-      .withPropertyKey("name" -> "NAME")
-
-    val nodeTable = CAPSNodeTable.fromMapping(givenMapping, givenDF)
-
-    val records = caps.records.fromEntityTable(nodeTable)
-
-    val entityVar = Var("")(CTNode("Person"))
-
-    val fromTag = 0
-    val toTag = 1
-
-//    val retagged = records.table.retagColumn(Map(fromTag -> toTag), records.header.column(entityVar))
-//
-//    val nodeIdCol = records.header.column(entityVar)
-//
-//    validateTag(records.df, nodeIdCol, fromTag)
-//    validateTag(retagged.df, nodeIdCol, toTag)
-  }
-
-  // TODO: Test new RetagVariable operator instead
-  ignore("retags a relationship variable") {
-    val givenDF = sparkSession.createDataFrame(
-      Seq(
-        (10L, 1L, 2L, "RED"),
-        (11L, 2L, 3L, "BLUE"),
-        (12L, 3L, 4L, "GREEN"),
-        (13L, 4L, 1L, "YELLOW")
-      )).toDF("ID", "FROM", "TO", "COLOR")
-
-    val givenMapping = RelationshipMapping.on("ID")
-      .from("FROM")
-      .to("TO")
-      .withSourceRelTypeKey("COLOR", Set("RED", "BLUE", "GREEN", "YELLOW"))
-
-    val relTable = CAPSRelationshipTable.fromMapping(givenMapping, givenDF)
-
-    val records = caps.records.fromEntityTable(relTable)
-
-    val entityVar = Var("")(CTRelationship("RED", "BLUE", "GREEN", "YELLOW"))
-
-    val fromTag = 0
-    val toTag = 1
-
-    val relIdCol = records.header.column(entityVar)
-    val sourceIdCol = records.header.column(records.header.startNodeFor(entityVar))
-    val targetIdCol = records.header.column(records.header.endNodeFor(entityVar))
-
-//    val retagged = Seq(relIdCol, sourceIdCol, targetIdCol).foldLeft(records.table) {
-//      case (currentTable, idColumn) => currentTable.retagColumn(Map(fromTag -> toTag), idColumn)
-//    }
-//
-//    validateTag(records.df, relIdCol, fromTag)
-//    validateTag(retagged.df, relIdCol, toTag)
-//
-//    validateTag(records.df, sourceIdCol, fromTag)
-//    validateTag(retagged.df, sourceIdCol, toTag)
-//
-//    validateTag(records.df, targetIdCol, fromTag)
-//    validateTag(retagged.df, targetIdCol, toTag)
-  }
-
-  private def validateTag(df: DataFrame, col: String, tag: Int): Unit = {
-    df.select(col).collect().forall(_.getLong(0).getTag == tag) shouldBe true
-  }
-
   it("can wrap a dataframe") {
     // Given (generally produced by a SQL query)
     val records = caps.records.wrap(personDF)
@@ -197,11 +119,11 @@ class CAPSRecordsTest extends CAPSTestSuite with GraphConstructionFixture with T
     val df = sparkSession.sql("SELECT * FROM people")
 
     // Then
-    df.collect() should equal(Array(
-      Row(1L, true, "Mats", 23),
-      Row(2L, false, "Martin", 42),
-      Row(3L, false, "Max", 1337),
-      Row(4L, false, "Stefan", 9)
+    df.collect().toBag should equal(Bag(
+      Row(1L.encodeAsCAPSId, true, "Mats", 23),
+      Row(2L.encodeAsCAPSId, false, "Martin", 42),
+      Row(3L.encodeAsCAPSId, false, "Max", 1337),
+      Row(4L.encodeAsCAPSId, false, "Stefan", 9)
     ))
   }
 
@@ -223,7 +145,7 @@ class CAPSRecordsTest extends CAPSTestSuite with GraphConstructionFixture with T
 
     val records = caps.records.fromEntityTable(nodeTable)
 
-    val entityVar = Var("")(CTNode("Person"))
+    val entityVar = Var.unnamed(CTNode("Person"))
 
     records.header.expressions should equal(
       Set(
@@ -253,7 +175,7 @@ class CAPSRecordsTest extends CAPSTestSuite with GraphConstructionFixture with T
 
     val records = caps.records.fromEntityTable(relTable)
 
-    val entityVar = Var("")(CTRelationship("NEXT"))
+    val entityVar = Var.unnamed(CTRelationship("NEXT"))
 
     records.header.expressions should equal(
       Set(
@@ -283,7 +205,7 @@ class CAPSRecordsTest extends CAPSTestSuite with GraphConstructionFixture with T
 
     val records = caps.records.fromEntityTable(relTable)
 
-    val entityVar = Var("")(CTRelationship("RED", "BLUE", "GREEN", "YELLOW"))
+    val entityVar = Var.unnamed(CTRelationship("RED", "BLUE", "GREEN", "YELLOW"))
 
     records.header.expressions should equalWithTracing(
       Set(

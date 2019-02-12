@@ -36,7 +36,7 @@ object CAPSGraphMetaData {
     upickle.default.read[CAPSGraphMetaData](jsonString)
 }
 
-case class CAPSGraphMetaData(tableStorageFormat: String, tags: Set[Int] = Set(0)) {
+case class CAPSGraphMetaData(tableStorageFormat: String) {
 
   def toJson: String =
     upickle.default.write[CAPSGraphMetaData](this, indent = 4)

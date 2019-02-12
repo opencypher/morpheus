@@ -88,18 +88,6 @@ abstract class RelationalCypherSession[T <: Table[T] : TypeTag] extends CypherSe
   }
 
   /**
-    * Reads a graph from a sequence of entity tables that contains at least one node table.
-    *
-    * @param tags         tags that are used by graph entities
-    * @param nodeTable    first parameter to guarantee there is at least one node table
-    * @param entityTables sequence of node and relationship tables defining the graph
-    * @return property graph
-    */
-  def readFrom(tags: Set[Int], nodeTable: NodeTable[T], entityTables: EntityTable[T]*): PropertyGraph = {
-    graphs.create(tags, None, nodeTable +: entityTables: _*)
-  }
-
-  /**
     * Qualified graph name for the empty graph
     */
   private[opencypher] lazy val emptyGraphQgn = QualifiedGraphName(SessionGraphDataSource.Namespace, GraphName("emptyGraph"))

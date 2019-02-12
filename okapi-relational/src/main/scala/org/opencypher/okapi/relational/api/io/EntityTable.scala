@@ -57,7 +57,7 @@ trait EntityTable[T <: Table[T]] extends RelationalCypherRecords[T] {
   }
 
   protected def verify(): Unit = {
-    mapping.idKeys.foreach(key => table.verifyColumnType(key, CTInteger, "id key"))
+    mapping.idKeys.foreach(key => table.verifyColumnType(key, CTIdentity, "id key"))
     if (table.physicalColumns.toSet != mapping.allSourceKeys.toSet) throw IllegalArgumentException(
       s"Columns: ${mapping.allSourceKeys.mkString(", ")}",
       s"Columns: ${table.physicalColumns.mkString(", ")}",
@@ -65,7 +65,7 @@ trait EntityTable[T <: Table[T]] extends RelationalCypherRecords[T] {
   }
 
   protected def headerFrom(nodeMapping: NodeMapping): RecordHeader = {
-    val nodeVar = Var("")(nodeMapping.cypherType)
+    val nodeVar = Var.unnamed(nodeMapping.cypherType)
 
     val exprToColumn = Map[Expr, String](nodeMapping.id(nodeVar)) ++
       nodeMapping.optionalLabels(nodeVar) ++
@@ -76,7 +76,7 @@ trait EntityTable[T <: Table[T]] extends RelationalCypherRecords[T] {
 
   protected def headerFrom(relationshipMapping: RelationshipMapping): RecordHeader = {
     val cypherType = relationshipMapping.cypherType
-    val relVar = Var("")(cypherType)
+    val relVar = Var.unnamed(cypherType)
 
     val exprToColumn = Map[Expr, String](
       relationshipMapping.id(relVar),
@@ -154,8 +154,8 @@ abstract class RelationshipTable[T <: Table[T]](mapping: RelationshipMapping, ta
 
   override protected def verify(): Unit = {
     super.verify()
-    table.verifyColumnType(mapping.sourceStartNodeKey, CTInteger, "start node")
-    table.verifyColumnType(mapping.sourceEndNodeKey, CTInteger, "end node")
+    table.verifyColumnType(mapping.sourceStartNodeKey, CTIdentity, "start node")
+    table.verifyColumnType(mapping.sourceEndNodeKey, CTIdentity, "end node")
     mapping.relTypeOrSourceRelTypeKey.right.map { case (_, relTypes) =>
       relTypes.foreach { relType =>
         table.verifyColumnType(relType.toRelTypeColumnName, CTBoolean, "relationship type")

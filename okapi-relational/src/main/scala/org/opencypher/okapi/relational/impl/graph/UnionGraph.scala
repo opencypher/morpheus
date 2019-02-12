@@ -42,10 +42,10 @@ import org.opencypher.okapi.relational.impl.planning.RelationalPlanner._
 import scala.reflect.runtime.universe.TypeTag
 
 // TODO: This should be a planned tree of physical operators instead of a graph
-final case class UnionGraph[T <: Table[T] : TypeTag](graphsToReplacements: Seq[(RelationalCypherGraph[T], Map[Int, Int])])
+final case class UnionGraph[T <: Table[T] : TypeTag](graphs: List[RelationalCypherGraph[T]])
   (implicit context: RelationalRuntimeContext[T]) extends RelationalCypherGraph[T] {
 
-  private val (graphs, replacements) = graphsToReplacements.unzip
+  require(graphs.nonEmpty, "Union requires at least one graph")
 
   override implicit val session: RelationalCypherSession[T] = context.session
 
@@ -53,48 +53,40 @@ final case class UnionGraph[T <: Table[T] : TypeTag](graphsToReplacements: Seq[(
 
   override type Session = RelationalCypherSession[T]
 
-  require(graphsToReplacements.nonEmpty, "Union requires at least one graph")
-
   override def tables: Seq[T] = graphs.flatMap(_.tables)
 
-  override lazy val tags: Set[Int] = replacements.flatMap(_.values).toSet
+  override lazy val schema: Schema = graphs.map(g => g.schema).foldLeft(Schema.empty)(_ ++ _)
 
-  override lazy val schema: Schema = {
-    graphs.map(g => g.schema).foldLeft(Schema.empty)(_ ++ _)
-  }
-
-  override def toString = s"UnionGraph(graphs=[${graphsToReplacements.mkString(",")}])"
+  override def toString = s"UnionGraph(graphs=[${graphs.mkString(",")}])"
 
   override def scanOperator(
     entityType: CypherType,
     exactLabelMatch: Boolean
   ): RelationalOperator[T] = {
-    val targetEntity = Var("")(entityType)
+    val targetEntity = Var.unnamed(entityType)
     val targetEntityHeader = schema.headerForEntity(targetEntity, exactLabelMatch)
-    val alignedScans = graphsToReplacements
-      .flatMap {
-        case (graph, replacement) =>
-          val isEmptyScan = entityType match {
-            case CTNode(knownLabels, _) if knownLabels.isEmpty =>
-              graph.schema.allCombinations.isEmpty
-            case CTNode(knownLabels, _) =>
-              graph.schema.labelPropertyMap.filterForLabels(knownLabels).isEmpty
-            case CTRelationship(types, _) if types.isEmpty =>
-              graph.schema.relationshipTypes.isEmpty
-            case CTRelationship(types, _) =>
-              graph.schema.relTypePropertyMap.filterForRelTypes(types).isEmpty
-            case other => throw UnsupportedOperationException(s"Cannot scan on $other")
-          }
+    val alignedScans = graphs
+      .flatMap { graph =>
+        val isEmptyScan = entityType match {
+          case CTNode(knownLabels, _) if knownLabels.isEmpty =>
+            graph.schema.allCombinations.isEmpty
+          case CTNode(knownLabels, _) =>
+            graph.schema.labelPropertyMap.filterForLabels(knownLabels).isEmpty
+          case CTRelationship(types, _) if types.isEmpty =>
+            graph.schema.relationshipTypes.isEmpty
+          case CTRelationship(types, _) =>
+            graph.schema.relTypePropertyMap.filterForRelTypes(types).isEmpty
+          case other => throw UnsupportedOperationException(s"Cannot scan on $other")
+        }
 
-          if (isEmptyScan) {
-            None
-          }
-          else {
-            val scanOp = graph.scanOperator(entityType, exactLabelMatch)
-            val retagOp = scanOp.retagVariable(targetEntity, replacement)
-            val inputEntity = retagOp.singleEntity
-            Some(retagOp.alignWith(inputEntity, targetEntity, targetEntityHeader))
-          }
+        if (isEmptyScan) {
+          None
+        }
+        else {
+          val scanOp = graph.scanOperator(entityType, exactLabelMatch)
+          val inputEntity = scanOp.singleEntity
+          Some(scanOp.alignWith(inputEntity, targetEntity, targetEntityHeader))
+        }
       }
 
     alignedScans match {

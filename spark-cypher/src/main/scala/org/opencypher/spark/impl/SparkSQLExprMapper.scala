@@ -38,9 +38,10 @@ import org.opencypher.okapi.ir.api.expr._
 import org.opencypher.okapi.relational.impl.table.RecordHeader
 import org.opencypher.spark.impl.CAPSFunctions.{array_contains, get_node_labels, get_property_keys, get_rel_type, _}
 import org.opencypher.spark.impl.convert.SparkConversions._
+import org.opencypher.spark.impl.expressions.AddPrefix._
+import org.opencypher.spark.impl.expressions.EncodeLong._
 import org.opencypher.spark.impl.temporal.SparkTemporalHelpers._
 import org.opencypher.spark.impl.temporal.{SparkTemporalHelpers, TemporalUDFS}
-
 
 object SparkSQLExprMapper {
 
@@ -268,10 +269,29 @@ object SparkSQLExprMapper {
         case Multiply(lhs, rhs) => lhs.asSparkSQLExpr * rhs.asSparkSQLExpr
         case div@Divide(lhs, rhs) => (lhs.asSparkSQLExpr / rhs.asSparkSQLExpr).cast(div.cypherType.getSparkType)
 
+        // Id functions
+
+        case Id(e) => e.asSparkSQLExpr
+
+        case PrefixId(idExpr, prefix) =>
+          idExpr.asSparkSQLExpr.addPrefix(functions.lit(prefix))
+
+        case ToId(e) =>
+          e.cypherType.material match {
+            // TODO: Remove this call; we shouldn't have nodes or rels as concrete types here
+            case _: CTNode | _: CTRelationship =>
+              e.asSparkSQLExpr
+            case CTInteger =>
+              e.asSparkSQLExpr.encodeLongAsCAPSId
+            case CTIdentity =>
+              e.asSparkSQLExpr
+            case other =>
+              throw IllegalArgumentException("a type that may be converted to an ID", other)
+          }
+
         // Functions
         case _: MonotonicallyIncreasingId => functions.monotonically_increasing_id()
         case Exists(e) => e.asSparkSQLExpr.isNotNull
-        case Id(e) => e.asSparkSQLExpr
         case Labels(e) =>
           e.cypherType match {
             case _: CTNode | _: CTNodeOrNull =>
@@ -364,7 +384,7 @@ object SparkSQLExprMapper {
           val stepCol = maybeStep.map(_.asSparkSQLExpr).getOrElse(ONE_LIT)
           rangeUdf(from.asSparkSQLExpr, to.asSparkSQLExpr, stepCol)
 
-        case Replace(original, search, replacement) => translate(original.asSparkSQLExpr, search.asSparkSQLExpr, replacement.asSparkSQLExpr)
+        case Replace(original, search, replacement) => translateColumn(original.asSparkSQLExpr, search.asSparkSQLExpr, replacement.asSparkSQLExpr)
 
         case Substring(original, start, maybeLength) =>
           val origCol = original.asSparkSQLExpr
@@ -486,6 +506,5 @@ object SparkSQLExprMapper {
       functions.struct(structColumns: _*)
     }
   }
-
 
 }

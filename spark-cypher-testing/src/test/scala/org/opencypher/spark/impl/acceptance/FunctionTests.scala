@@ -31,6 +31,7 @@ import org.opencypher.okapi.api.value.CypherValue.{CypherMap, CypherNull}
 import org.opencypher.okapi.impl.exception.NotImplementedException
 import org.opencypher.okapi.testing.Bag
 import org.opencypher.okapi.testing.Bag._
+import org.opencypher.spark.api.value.CAPSEntity._
 import org.opencypher.spark.testing.CAPSTestSuite
 import org.scalatest.junit.JUnitRunner
 
@@ -631,7 +632,7 @@ class FunctionTests extends CAPSTestSuite with ScanGraphInit {
 
       val result = given.cypher("MATCH (n) RETURN id(n)")
 
-      result.records.toMaps should equal(Bag(CypherMap("id(n)" -> 0), CypherMap("id(n)" -> 1)))
+      result.records.toMaps should equal(Bag(CypherMap("id(n)" -> 0L.encodeAsCAPSId), CypherMap("id(n)" -> 1L.encodeAsCAPSId)))
     }
 
     it("id for rel") {
@@ -639,7 +640,7 @@ class FunctionTests extends CAPSTestSuite with ScanGraphInit {
 
       val result = given.cypher("MATCH ()-[e]->() RETURN id(e)")
 
-      result.records.toMaps should equal(Bag(CypherMap("id(e)" -> 2), CypherMap("id(e)" -> 4)))
+      result.records.toMaps should equal(Bag(CypherMap("id(e)" -> 2L.encodeAsCAPSId), CypherMap("id(e)" -> 4L.encodeAsCAPSId)))
     }
 
   }
@@ -866,8 +867,8 @@ class FunctionTests extends CAPSTestSuite with ScanGraphInit {
 
       result.records.toMaps should equal(
         Bag(
-          CypherMap("r.val" -> "a", "startNode(r)" -> 0),
-          CypherMap("r.val" -> "b", "startNode(r)" -> 3)
+          CypherMap("r.val" -> "a", "startNode(r)" -> 0L.encodeAsCAPSId),
+          CypherMap("r.val" -> "b", "startNode(r)" -> 3L.encodeAsCAPSId)
         ))
     }
   }
@@ -881,8 +882,8 @@ class FunctionTests extends CAPSTestSuite with ScanGraphInit {
 
       result.records.toMaps should equal(
         Bag(
-          CypherMap("r.val" -> "a", "endNode(r)" -> 1),
-          CypherMap("r.val" -> "b", "endNode(r)" -> 4)
+          CypherMap("r.val" -> "a", "endNode(r)" -> 1L.encodeAsCAPSId),
+          CypherMap("r.val" -> "b", "endNode(r)" -> 4L.encodeAsCAPSId)
         ))
     }
   }

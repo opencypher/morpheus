@@ -27,27 +27,41 @@
 package org.opencypher.spark.api.io.neo4j
 
 import org.junit.rules.TemporaryFolder
-import org.opencypher.okapi.api.graph.GraphName
+import org.opencypher.okapi.api.graph.{GraphName, Namespace}
 import org.opencypher.okapi.relational.api.graph.RelationalCypherGraph
 import org.opencypher.spark.api.io.neo4j.Neo4jBulkCSVDataSink._
 import org.opencypher.spark.impl.acceptance.ScanGraphInit
 import org.opencypher.spark.impl.table.SparkTable
 import org.opencypher.spark.testing.CAPSTestSuite
 import org.opencypher.spark.testing.fixture.TeamDataFixture
+import org.scalatest.BeforeAndAfterAll
 
 import scala.io.Source
 
-class Neo4jBulkCSVDataSinkTest extends CAPSTestSuite with TeamDataFixture with ScanGraphInit {
+class Neo4jBulkCSVDataSinkTest extends CAPSTestSuite with TeamDataFixture with ScanGraphInit with BeforeAndAfterAll {
   protected val tempDir = new TemporaryFolder()
-  tempDir.create()
 
-  val graph: RelationalCypherGraph[SparkTable.DataFrameTable] = initGraph(dataFixture)
-  val dataSource = new Neo4jBulkCSVDataSink(tempDir.getRoot.getAbsolutePath)
   private val graphName = GraphName("teamdata")
-  dataSource.store(graphName, graph)
+  private val namespace = Namespace("teamDatasource")
+
+  override protected def beforeAll(): Unit = {
+    super.beforeAll()
+    tempDir.create()
+    val graph: RelationalCypherGraph[SparkTable.DataFrameTable] = initGraph(dataFixture)
+    val dataSource = new Neo4jBulkCSVDataSink(tempDir.getRoot.getAbsolutePath)
+    dataSource.store(graphName, graph)
+    caps.catalog.register(namespace, dataSource)
+  }
+
+  protected override def afterAll(): Unit = {
+    tempDir.delete()
+    super.afterAll()
+  }
+
+  private def ds: Neo4jBulkCSVDataSink = caps.catalog.source(namespace).asInstanceOf[Neo4jBulkCSVDataSink]
 
   it("writes the correct script file") {
-    val root = dataSource.rootPath
+    val root = ds.rootPath
     val scriptFilePath = s"$root/${graphName.value}/$SCRIPT_NAME"
 
     val expected = s"""
@@ -72,19 +86,19 @@ class Neo4jBulkCSVDataSinkTest extends CAPSTestSuite with TeamDataFixture with S
   }
 
   it("writes the correct schema files") {
-    Source.fromFile(dataSource.schemaFileForNodes(graphName, Set("Person", "German"))).mkString should equal(
+    Source.fromFile(ds.schemaFileForNodes(graphName, Set("Person", "German"))).mkString should equal(
       "___capsID:ID,languages:string[],luckyNumber:int,name:string"
     )
 
-    Source.fromFile(dataSource.schemaFileForNodes(graphName, Set("Person"))).mkString should equal(
+    Source.fromFile(ds.schemaFileForNodes(graphName, Set("Person"))).mkString should equal(
       "___capsID:ID,languages:string[],luckyNumber:int,name:string"
     )
 
-    Source.fromFile(dataSource.schemaFileForNodes(graphName, Set("Person", "Swede"))).mkString should equal(
+    Source.fromFile(ds.schemaFileForNodes(graphName, Set("Person", "Swede"))).mkString should equal(
       "___capsID:ID,luckyNumber:int,name:string"
     )
 
-    Source.fromFile(dataSource.schemaFileForRelationships(graphName, "KNOWS")).mkString should equal(
+    Source.fromFile(ds.schemaFileForRelationships(graphName, "KNOWS")).mkString should equal(
       ":START_ID,:END_ID,since:int"
     )
   }

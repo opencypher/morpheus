@@ -28,6 +28,7 @@ package org.opencypher.okapi.impl.table
 
 import org.opencypher.okapi.api.table.CypherRecords
 import org.opencypher.okapi.api.value.CypherValue.CypherValue
+import org.opencypher.okapi.api.value.CypherValue.Format._
 import org.opencypher.okapi.impl.util.{PrintOptions, TablePrinter}
 
 object RecordsPrinter {

@@ -110,8 +110,8 @@ class Neo4jPropertyGraphDataSourceTest
     val node2DF = sparkSession.createDataFrame(List(Row(1L)).asJava, schema)
 
     val nodeMapping = NodeMapping.create("id")
-    val node1Table = CAPSNodeTable(nodeMapping, node1DF)
-    val node2Table = CAPSNodeTable(nodeMapping, node2DF)
+    val node1Table = CAPSNodeTable.fromMapping(nodeMapping, node1DF)
+    val node2Table = CAPSNodeTable.fromMapping(nodeMapping, node2DF)
 
     val graph = caps.readFrom(node1Table, node2Table)
 
@@ -121,7 +121,7 @@ class Neo4jPropertyGraphDataSourceTest
       dataSource.store(GraphName("foo"), graph)
     }
     sparkException.getCause.getMessage should equal(
-      "Could not write the graph to Neo4j. The graph you are attempting to write contains at least two nodes with CAPS id 1"
+      "Could not write the graph to Neo4j. The graph you are attempting to write contains at least two nodes with CAPS id '01'"
     )
   }
 

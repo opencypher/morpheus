@@ -27,7 +27,7 @@
 package org.opencypher.spark.api.io.neo4j
 
 import org.apache.logging.log4j.scala.Logging
-import org.apache.spark.sql.types.StructType
+import org.apache.spark.sql.types.{BinaryType, LongType, StructType}
 import org.apache.spark.sql.{DataFrame, Row}
 import org.apache.spark.unsafe.types.CalendarInterval
 import org.neo4j.driver.v1.{Value, Values}
@@ -46,7 +46,10 @@ import org.opencypher.okapi.neo4j.io.{EntityReader, EntityWriter, Neo4jConfig}
 import org.opencypher.spark.api.CAPSSession
 import org.opencypher.spark.impl.CAPSConverters._
 import org.opencypher.spark.impl.CAPSRecords
+import org.opencypher.spark.impl.convert.SparkConversions._
+import org.opencypher.spark.impl.expressions.EncodeLong._
 import org.opencypher.spark.impl.io.neo4j.external.Neo4j
+import org.opencypher.spark.impl.table.SparkTable._
 import org.opencypher.spark.impl.temporal.SparkTemporalHelpers._
 import org.opencypher.spark.schema.CAPSSchema
 import org.opencypher.spark.schema.CAPSSchema._
@@ -112,7 +115,10 @@ case class Neo4jPropertyGraphDataSource(
     val neo4jConnection = Neo4j(config, caps.sparkSession)
     val rdd = neo4jConnection.cypher(flatQuery).loadRowRdd
 
-    caps.sparkSession.createDataFrame(rdd, sparkSchema)
+    // encode Neo4j identifiers to BinaryType
+    caps.sparkSession
+      .createDataFrame(rdd, sparkSchema.convertTypes(BinaryType, LongType))
+      .transformColumns(idPropertyKey)(_.encodeLongAsCAPSId)
   }
 
   override protected def readRelationshipTable(
@@ -125,7 +131,11 @@ case class Neo4jPropertyGraphDataSource(
 
     val neo4jConnection = Neo4j(config, caps.sparkSession)
     val rdd = neo4jConnection.cypher(flatQuery).loadRowRdd
-    caps.sparkSession.createDataFrame(rdd, sparkSchema)
+
+    // encode Neo4j identifiers to BinaryType
+    caps.sparkSession
+      .createDataFrame(rdd, sparkSchema.convertTypes(BinaryType, LongType))
+      .transformColumns(idPropertyKey, startIdPropertyKey, endIdPropertyKey)(_.encodeLongAsCAPSId)
   }
 
   override protected def deleteGraph(graphName: GraphName): Unit = {
@@ -179,8 +189,9 @@ case object Writers {
       val mapping = computeMapping(nodeScan)
       nodeScan
         .df
+        .encodeBinaryToHexString
         .rdd
-        .foreachPartitionAsync{ i =>
+        .foreachPartitionAsync { i =>
           if (i.nonEmpty) EntityWriter.createNodes(i, mapping, config, combo + metaLabel)(rowToListValue)
         }
     }
@@ -204,6 +215,7 @@ case object Writers {
 
       relScan
         .df
+        .encodeBinaryToHexString
         .rdd
         .foreachPartitionAsync { i =>
           if (i.nonEmpty) {

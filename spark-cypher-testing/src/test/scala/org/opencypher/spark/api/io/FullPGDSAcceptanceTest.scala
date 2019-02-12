@@ -182,7 +182,11 @@ class FullPGDSAcceptanceTest extends CAPSTestSuite
 
     override def writeTable(df: DataFrame, tableName: String): Unit = {
       val path = basePath + s"/${tableName.replace(s"$databaseName.", "")}"
-      df.write.mode(SaveMode.Overwrite).option("header", "true").format(fileFormat.name).save(path)
+      val encodedDf = fileFormat match {
+        case FileFormat.csv => df.encodeBinaryToHexString
+        case _ => df
+      }
+      encodedDf.write.mode(SaveMode.Overwrite).option("header", "true").format(fileFormat.name).save(path)
     }
 
     override def sqlDataSourceConfig: SqlDataSourceConfig = {

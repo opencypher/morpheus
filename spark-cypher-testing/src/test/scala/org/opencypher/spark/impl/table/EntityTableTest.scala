@@ -40,6 +40,7 @@ import org.opencypher.okapi.relational.impl.table.RecordHeader
 import org.opencypher.spark.api.io._
 import org.opencypher.spark.api.value.CAPSNode
 import org.opencypher.spark.impl.convert.SparkConversions
+import org.opencypher.spark.api.value.CAPSEntity._
 import org.opencypher.spark.testing.CAPSTestSuite
 
 case class Person(id: Long, name: String, age: Int) extends Node
@@ -116,7 +117,7 @@ class EntityTableTest extends CAPSTestSuite {
 
     val nodeTable = CAPSNodeTable.fromMapping(nodeMapping, df)
 
-    val v = Var("")(CTNode("A", "B"))
+    val v = Var.unnamed(CTNode("A", "B"))
 
     nodeTable.header should equal(RecordHeader(Map(
       v -> "ID",
@@ -146,7 +147,7 @@ class EntityTableTest extends CAPSTestSuite {
 
     val relationshipTable = CAPSRelationshipTable.fromMapping(relMapping, df)
 
-    val v = Var("")(CTRelationship("A"))
+    val v = Var.unnamed(CTRelationship("A"))
 
     relationshipTable.header should equal(RecordHeader(Map(
       v -> "ID",
@@ -164,7 +165,7 @@ class EntityTableTest extends CAPSTestSuite {
 
     val relationshipTable = CAPSRelationshipTable.fromMapping(relMappingWithTypeColumn, df)
 
-    val v = Var("")(CTRelationship("A", "B", "C"))
+    val v = Var.unnamed(CTRelationship("A", "B", "C"))
 
     val createdHeader = relationshipTable.header
     createdHeader should equal(RecordHeader(Map(
@@ -180,7 +181,7 @@ class EntityTableTest extends CAPSTestSuite {
   }
 
   it("NodeTable should cast compatible types in input DataFrame") {
-    val df = sparkSession.createDataFrame(Seq((1, true, 10.toShort, 23.1f))).toDF("ID", "IS_C", "FOO", "BAR")
+    val df = sparkSession.createDataFrame(Seq((1L, true, 10.toShort, 23.1f))).toDF("ID", "IS_C", "FOO", "BAR")
 
     val nodeTable = CAPSNodeTable.fromMapping(nodeMapping, df)
 
@@ -189,7 +190,7 @@ class EntityTableTest extends CAPSTestSuite {
         .withNodePropertyKeys("A", "B")("foo" -> CTInteger, "bar" -> CTFloat)
         .withNodePropertyKeys("A", "B", "C")("foo" -> CTInteger, "bar" -> CTFloat))
 
-    nodeTable.records.df.collect().toSet should equal(Set(Row(1L, true, 23.1f.toDouble, 10L)))
+    nodeTable.records.df.collect().toSet should equal(Set(Row(1L.encodeAsCAPSId, true, 23.1f.toDouble, 10L)))
   }
 
   it("NodeTable can handle shuffled columns due to cast") {
@@ -246,14 +247,14 @@ class EntityTableTest extends CAPSTestSuite {
   it("NodeTable should not accept wrong source property key type") {
     assert(!SparkConversions.supportedTypes.contains(DecimalType))
     an[IllegalArgumentException] should be thrownBy {
-      val df = sparkSession.createDataFrame(Seq((1, true, BigDecimal(13.37)))).toDF("ID", "IS_A", "PROP")
+      val df = sparkSession.createDataFrame(Seq((1L, true, BigDecimal(13.37)))).toDF("ID", "IS_A", "PROP")
       val nodeMapping = NodeMapping.on("ID").withOptionalLabel("A" -> "IS_A").withPropertyKey("PROP")
       CAPSNodeTable.fromMapping(nodeMapping, df)
     }
   }
 
   it("NodeTable should infer the correct schema") {
-    val df = sparkSession.createDataFrame(Seq((1, "Alice", 1984, true, 13.37)))
+    val df = sparkSession.createDataFrame(Seq((1L, "Alice", 1984, true, 13.37)))
       .toDF("id", "name", "birthYear", "isGood", "luckyNumber")
 
     val nodeTable = CAPSNodeTable(Set("Person"), df)
@@ -267,7 +268,7 @@ class EntityTableTest extends CAPSTestSuite {
   }
 
   it("NodeTable should infer the correct schema including optional labels") {
-    val df = sparkSession.createDataFrame(Seq((1, "Alice", true))).toDF("id", "name", "IS_SWEDE")
+    val df = sparkSession.createDataFrame(Seq((1L, "Alice", true))).toDF("id", "name", "IS_SWEDE")
 
     val nodeTable = CAPSNodeTable(Set("Person"), Map("Swede" -> "IS_SWEDE"), df)
 
@@ -277,7 +278,7 @@ class EntityTableTest extends CAPSTestSuite {
   }
 
   it("RelationshipTable should infer the correct schema") {
-    val df = sparkSession.createDataFrame(Seq((1, 1, 1, "Alice", 1984, true, 13.37)))
+    val df = sparkSession.createDataFrame(Seq((1L, 1L, 1L, "Alice", 1984, true, 13.37)))
       .toDF("id", "source", "target", "name", "birthYear", "isGood", "luckyNumber")
 
     val relationshipTable = CAPSRelationshipTable("KNOWS", df)
