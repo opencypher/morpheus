@@ -81,6 +81,7 @@ def whitelist = [
 
 
 subprojects {
+    apply plugin: 'base'
     apply plugin: "com.github.hierynomus.license"
 
     // License header checking and insertion
@@ -143,6 +144,9 @@ subprojects {
 
         ext.licensesFile = file("$tasks.downloadLicenses.jsonDestination/LICENSES.txt")
         ext.noticeFile = file("$tasks.downloadLicenses.jsonDestination/NOTICE.txt")
+
+        outputs.file(ext.licensesFile)
+        outputs.file(ext.noticeFile)
 
         doLast {
             licensesFile.createNewFile()
