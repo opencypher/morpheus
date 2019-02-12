@@ -325,22 +325,6 @@ object SchemaTyper {
           error(WrongNumberOfArguments(expr, 1, seq.size))
       }
 
-    case expr: FunctionInvocation if expr.function == Id =>
-      expr.arguments match {
-        case Seq(first) =>
-          for {
-            inner <- process[R](first)
-            returnType <- inner.material match {
-              case _: CTNode | _: CTRelationship =>
-                val returnType = if (inner.isNullable) CTIdentity.nullable else CTIdentity
-                recordAndUpdate(expr -> returnType)
-              case _ => error(InvalidArgument(expr, first))
-            }
-          } yield returnType
-        case seq =>
-          error(WrongNumberOfArguments(expr, 1, seq.size))
-      }
-
     case expr: FunctionInvocation if expr.function == UnresolvedFunction =>
       UnresolvedFunctionSignatureTyper(expr)
 
@@ -557,6 +541,14 @@ object SchemaTyper {
               FunctionSignature(Seq(CTInteger), CTInteger),
               FunctionSignature(Seq(CTFloat), CTFloat)
             ))
+
+        case Id =>
+          pure[R, Set[FunctionSignature]](
+          Set(
+            FunctionSignature(Seq(CTNull), CTNull),
+            FunctionSignature(Seq(CTNode), CTIdentity),
+            FunctionSignature(Seq(CTRelationship), CTIdentity)
+          ))
 
         case ToBoolean =>
           pure[R, Set[FunctionSignature]](
