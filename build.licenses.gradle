@@ -172,39 +172,7 @@ subprojects {
         }
     }
 
-    task validateLicensesFiles {
-        group 'license'
-        description 'Validates dependency license report files'
-        dependsOn tasks.generateLicensesFiles
-
-        doLast {
-            [[generated: tasks.generateLicensesFiles.licensesFile,
-              existing : file("$projectDir/LICENSES.txt")],
-             [generated: tasks.generateLicensesFiles.noticeFile,
-              existing : file("$projectDir/NOTICE.txt")],
-            ].each {
-                if (it.generated.text != it.existing.text) {
-                    throw new GradleException("Generated file differs from the existing file.\n Generated: $it.generated \n Existing: $it.existing")
-                }
-            }
-        }
-    }
-
-    tasks.check.dependsOn tasks.validateLicensesFiles
-
-    task overwriteLicenseFiles {
-        group 'license'
-        description 'Overwrites dependency license report files'
-        dependsOn tasks.generateLicensesFiles
-
-        doLast {
-            [tasks.generateLicensesFiles.licensesFile,
-             tasks.generateLicensesFiles.noticeFile,
-            ].each { file ->
-                copy { from file; into projectDir }
-            }
-        }
-    }
+    tasks.check.dependsOn tasks.generateLicensesFiles
 }
 
 // Disable dependency license validation on test and documentation projects
@@ -219,5 +187,4 @@ subprojects {
 ].each {
     project(it).tasks.validateLicenses.enabled = false
     project(it).tasks.generateLicensesFiles.enabled = false
-    project(it).tasks.validateLicensesFiles.enabled = false
 }
