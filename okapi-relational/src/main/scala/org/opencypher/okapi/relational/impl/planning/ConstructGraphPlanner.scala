@@ -193,13 +193,8 @@ object ConstructGraphPlanner {
     node: ConstructedNode
   ): Map[Expr, Expr] = {
 
-    val idTuple = node.v -> {
-      val generatedId = generateId(columnIdPartition, numberOfColumnPartitions)
-      maybeCreatedEntityIdPrefix match {
-        case Some(prefix) => PrefixId(generatedId, prefix)()
-        case None => generatedId
-      }
-    }
+    val idTuple = node.v ->
+      prefixId(generateId(columnIdPartition, numberOfColumnPartitions), maybeCreatedEntityIdPrefix)
 
     val copiedLabelTuples = node.baseEntity match {
       case Some(origNode) => copyExpressions(inOp, node.v)(_.labelsFor(origNode))
@@ -231,13 +226,8 @@ object ConstructGraphPlanner {
     val ConstructedRelationship(rel, source, target, typOpt, baseRelOpt) = toConstruct
 
     // id needs to be generated
-    val idTuple = rel -> {
-      val generatedId = generateId(columnIdPartition, numberOfColumnPartitions)
-      maybeCreatedEntityIdPrefix match {
-        case Some(prefix) => PrefixId(generatedId, prefix)()
-        case None => generatedId
-      }
-    }
+    val idTuple: (Var, Expr) = rel ->
+      prefixId(generateId(columnIdPartition, numberOfColumnPartitions), maybeCreatedEntityIdPrefix)
 
     // source and target are present: just copy
     val sourceTuple = {
@@ -272,6 +262,10 @@ object ConstructGraphPlanner {
     val origExprs = extractor(inOp.header)
     val copyExprs = origExprs.map(_.withOwner(targetVar))
     copyExprs.zip(origExprs).toMap
+  }
+
+  def prefixId(id: Expr, maybeCreatedEntityIdPrefix: Option[GraphIdPrefix]): Expr = {
+    maybeCreatedEntityIdPrefix.map(PrefixId(id, _)()).getOrElse(id)
   }
 
   // TODO: improve documentation and add specific tests
