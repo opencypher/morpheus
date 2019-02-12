@@ -27,35 +27,15 @@
 package org.opencypher.spark.impl.acceptance
 
 import org.junit.runner.RunWith
-import org.opencypher.okapi.api.graph.CypherResult
 import org.opencypher.okapi.api.value.CypherValue._
 import org.opencypher.okapi.impl.exception.IllegalArgumentException
-import org.opencypher.okapi.relational.impl.operators.Cache
 import org.opencypher.okapi.testing.Bag
 import org.opencypher.okapi.testing.Bag._
-import org.opencypher.spark.impl.CAPSConverters._
 import org.opencypher.spark.testing.CAPSTestSuite
 import org.scalatest.junit.JUnitRunner
 
 @RunWith(classOf[JUnitRunner])
 class MatchTests extends CAPSTestSuite with ScanGraphInit {
-
-  describe("scan caching") {
-
-    it("caches a reused scan") {
-      val g = initGraph("""CREATE (p:Person {firstName: "Alice", lastName: "Foo"})""")
-      val result: CypherResult = g.cypher(
-        """
-          |MATCH (n: Person)
-          |MATCH (m: Person)
-          |WHERE n.name = m.name
-          |RETURN n.name
-        """.stripMargin)
-
-      result.asCaps.plans.relationalPlan.get.collectFirst { case c: Cache[_] => c } should not be empty
-    }
-
-  }
 
   describe("match single node") {
 
