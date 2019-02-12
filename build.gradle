@@ -84,11 +84,11 @@ subprojects {
     }
 
     task runApp {
-        dependsOn tasks.compileScala
+        dependsOn tasks.classes
         group 'run'
-        description 'Run a custom Scala app (use -PmainClass=path.to.App)'
+        description 'Run a custom Scala app (use -PmainClass=com.my.package.App)'
         doLast {
-            project.javaexec {
+            javaexec {
                 classpath = sourceSets.main.runtimeClasspath
                 main = project.getProperty("mainClass")
             }
