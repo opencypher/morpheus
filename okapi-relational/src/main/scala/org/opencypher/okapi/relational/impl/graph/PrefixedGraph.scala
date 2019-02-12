@@ -36,10 +36,8 @@ import org.opencypher.okapi.relational.api.table.{RelationalCypherRecords, Table
 import org.opencypher.okapi.relational.impl.operators.RelationalOperator
 import org.opencypher.okapi.relational.impl.planning.RelationalPlanner._
 
-import scala.reflect.runtime.universe.TypeTag
-
 // TODO: This should be a planned tree of physical operators instead of a graph
-final case class PrefixedGraph[T <: Table[T] : TypeTag](graph: RelationalCypherGraph[T], prefix: GraphIdPrefix)
+final case class PrefixedGraph[T <: Table[T]](graph: RelationalCypherGraph[T], prefix: GraphIdPrefix)
   (implicit context: RelationalRuntimeContext[T]) extends RelationalCypherGraph[T] {
 
   override implicit val session: RelationalCypherSession[T] = context.session
