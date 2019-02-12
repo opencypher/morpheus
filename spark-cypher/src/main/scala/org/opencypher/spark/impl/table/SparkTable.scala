@@ -444,10 +444,10 @@ object SparkTable {
 
     def encodeIdColumns(idColumns: String*): Seq[Column] = {
       idColumns.map { key =>
-        if (df.structFieldForColumn(key).dataType == LongType) {
-          df.col(key).encodeLongAsCAPSId(key)
-        } else {
-          df.col(key)
+        df.structFieldForColumn(key).dataType match {
+          case LongType => df.col(key).encodeLongAsCAPSId(key)
+          case StringType => df.col(key).cast(BinaryType)
+          case _ =>  df.col(key)
         }
       }
     }
