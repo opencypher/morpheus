@@ -26,7 +26,6 @@
  */
 package org.opencypher.spark.api.io
 
-import org.apache.spark.sql.types.LongType
 import org.apache.spark.sql.{DataFrame, _}
 import org.opencypher.okapi.api.io.conversion.{NodeMapping, RelationshipMapping}
 import org.opencypher.okapi.api.types._
@@ -34,7 +33,6 @@ import org.opencypher.okapi.impl.util.StringEncodingUtilities._
 import org.opencypher.okapi.relational.api.io.{EntityTable, NodeTable, RelationshipTable}
 import org.opencypher.okapi.relational.api.table.RelationalEntityTableFactory
 import org.opencypher.spark.api.CAPSSession
-import org.opencypher.spark.impl.expressions.EncodeLong._
 import org.opencypher.spark.impl.table.SparkTable.{DataFrameTable, _}
 import org.opencypher.spark.impl.util.Annotation
 import org.opencypher.spark.impl.{CAPSRecords, RecordBehaviour}
@@ -61,6 +59,7 @@ case object CAPSEntityTableFactory extends RelationalEntityTableFactory[DataFram
 trait CAPSEntityTable extends EntityTable[DataFrameTable] {
 
   private[spark] def records(implicit caps: CAPSSession): CAPSRecords = caps.records.fromEntityTable(entityTable = this)
+
 }
 
 case class CAPSNodeTable(
@@ -129,13 +128,7 @@ object CAPSNodeTable {
     * @return a node table
     */
   def fromMapping(mapping: NodeMapping, initialTable: DataFrame): CAPSNodeTable = {
-    val idCols = mapping.idKeys.map { key =>
-      if (initialTable.structFieldForColumn(key).dataType == LongType) {
-        initialTable.col(key).encodeLongAsCAPSId(key)
-      } else {
-        initialTable.col(key)
-      }
-    }
+    val idCols = initialTable.encodeIdColumns(mapping.idKeys: _*)
     val remainingCols = mapping.allSourceKeys.filterNot(mapping.idKeys.contains).map(initialTable.col)
     val colsToSelect = idCols ++ remainingCols
     CAPSNodeTable(mapping, initialTable.select(colsToSelect: _*))
@@ -229,13 +222,7 @@ object CAPSRelationshipTable {
       case _ => initialTable
     }
 
-    val idCols = mapping.idKeys.map { key =>
-      if (initialTable.structFieldForColumn(key).dataType == LongType) {
-        initialTable.col(key).encodeLongAsCAPSId(key)
-      } else {
-        initialTable.col(key)
-      }
-    }
+    val idCols = initialTable.encodeIdColumns(mapping.idKeys: _*)
     val remainingCols = mapping.allSourceKeys.filterNot(mapping.idKeys.contains).map(updatedTable.col)
     val colsToSelect = idCols ++ remainingCols
     CAPSRelationshipTable(mapping, updatedTable.select(colsToSelect: _*))

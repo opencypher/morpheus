@@ -43,6 +43,7 @@ import org.opencypher.okapi.relational.impl.table.RecordHeader
 import org.opencypher.spark.impl.CAPSFunctions.partitioned_id_assignment
 import org.opencypher.spark.impl.SparkSQLExprMapper._
 import org.opencypher.spark.impl.convert.SparkConversions._
+import org.opencypher.spark.impl.expressions.EncodeLong._
 
 import scala.collection.JavaConverters._
 
@@ -439,6 +440,16 @@ object SparkTable {
         case sf: StructField => df.col(sf.name)
       }
       df.select(columnsToSelect: _*)
+    }
+
+    def encodeIdColumns(idColumns: String*): Seq[Column] = {
+      idColumns.map { key =>
+        if (df.structFieldForColumn(key).dataType == LongType) {
+          df.col(key).encodeLongAsCAPSId(key)
+        } else {
+          df.col(key)
+        }
+      }
     }
 
     /**
