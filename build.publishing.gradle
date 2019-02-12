@@ -47,13 +47,17 @@ subprojects {
                 from components.java
 
                 afterEvaluate {
-                    ['sourceJar',
-                     'docJar',
-                     'testJar',
-                     'asciidocJar',
-                     'shadowJar']
+                    def included = [
+                            'jar',
+                            'sourceJar',
+                            'docJar',
+                            'testJar',
+                            'asciidocJar',
+                            'shadowJar'
+                    ]
+                    artifacts = included
                             .findResults { tasks.findByName(it) }
-                            .each { artifact it }
+                            .findAll { it.enabled }
                 }
 
                 pom {
