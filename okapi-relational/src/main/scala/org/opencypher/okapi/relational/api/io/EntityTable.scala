@@ -65,7 +65,7 @@ trait EntityTable[T <: Table[T]] extends RelationalCypherRecords[T] {
   }
 
   protected def headerFrom(nodeMapping: NodeMapping): RecordHeader = {
-    val nodeVar = Var("")(nodeMapping.cypherType)
+    val nodeVar = Var.unnamed(nodeMapping.cypherType)
 
     val exprToColumn = Map[Expr, String](nodeMapping.id(nodeVar)) ++
       nodeMapping.optionalLabels(nodeVar) ++
@@ -76,7 +76,7 @@ trait EntityTable[T <: Table[T]] extends RelationalCypherRecords[T] {
 
   protected def headerFrom(relationshipMapping: RelationshipMapping): RecordHeader = {
     val cypherType = relationshipMapping.cypherType
-    val relVar = Var("")(cypherType)
+    val relVar = Var.unnamed(cypherType)
 
     val exprToColumn = Map[Expr, String](
       relationshipMapping.id(relVar),

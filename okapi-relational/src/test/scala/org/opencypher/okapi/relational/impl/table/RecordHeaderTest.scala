@@ -489,7 +489,7 @@ class RecordHeaderTest extends BaseTestSuite {
     it("can build a RecordHeader from a Relationship type") {
       val relType = CTRelationship("FOO", "BAR")
 
-      val v = RelationshipVar("")(relType)
+      val v = Var.unnamed(relType)
 
       val expected = RecordHeader.empty
         .withExpr(v)
@@ -504,7 +504,7 @@ class RecordHeaderTest extends BaseTestSuite {
     it("can build a RecordHeader from a node type") {
       val nodeType = CTNode("FOO", "BAR")
 
-      val v = NodeVar("")(nodeType)
+      val v = Var.unnamed(nodeType)
 
       val expected = RecordHeader.empty
         .withExpr(v)

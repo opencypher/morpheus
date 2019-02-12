@@ -145,7 +145,7 @@ class CAPSRecordsTest extends CAPSTestSuite with GraphConstructionFixture with T
 
     val records = caps.records.fromEntityTable(nodeTable)
 
-    val entityVar = Var("")(CTNode("Person"))
+    val entityVar = Var.unnamed(CTNode("Person"))
 
     records.header.expressions should equal(
       Set(
@@ -175,7 +175,7 @@ class CAPSRecordsTest extends CAPSTestSuite with GraphConstructionFixture with T
 
     val records = caps.records.fromEntityTable(relTable)
 
-    val entityVar = Var("")(CTRelationship("NEXT"))
+    val entityVar = Var.unnamed(CTRelationship("NEXT"))
 
     records.header.expressions should equal(
       Set(
@@ -205,7 +205,7 @@ class CAPSRecordsTest extends CAPSTestSuite with GraphConstructionFixture with T
 
     val records = caps.records.fromEntityTable(relTable)
 
-    val entityVar = Var("")(CTRelationship("RED", "BLUE", "GREEN", "YELLOW"))
+    val entityVar = Var.unnamed(CTRelationship("RED", "BLUE", "GREEN", "YELLOW"))
 
     records.header.expressions should equalWithTracing(
       Set(

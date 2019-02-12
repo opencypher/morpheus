@@ -117,7 +117,7 @@ class EntityTableTest extends CAPSTestSuite {
 
     val nodeTable = CAPSNodeTable.fromMapping(nodeMapping, df)
 
-    val v = Var("")(CTNode("A", "B"))
+    val v = Var.unnamed(CTNode("A", "B"))
 
     nodeTable.header should equal(RecordHeader(Map(
       v -> "ID",
@@ -147,7 +147,7 @@ class EntityTableTest extends CAPSTestSuite {
 
     val relationshipTable = CAPSRelationshipTable.fromMapping(relMapping, df)
 
-    val v = Var("")(CTRelationship("A"))
+    val v = Var.unnamed(CTRelationship("A"))
 
     relationshipTable.header should equal(RecordHeader(Map(
       v -> "ID",
@@ -165,7 +165,7 @@ class EntityTableTest extends CAPSTestSuite {
 
     val relationshipTable = CAPSRelationshipTable.fromMapping(relMappingWithTypeColumn, df)
 
-    val v = Var("")(CTRelationship("A", "B", "C"))
+    val v = Var.unnamed(CTRelationship("A", "B", "C"))
 
     val createdHeader = relationshipTable.header
     createdHeader should equal(RecordHeader(Map(

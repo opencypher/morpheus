@@ -58,7 +58,6 @@ final case class PrefixedGraph[T <: Table[T] : TypeTag](graph: RelationalCypherG
     entityType: CypherType,
     exactLabelMatch: Boolean
   ): RelationalOperator[T] = {
-    val targetEntity = Var("")(entityType)
-    graph.scanOperator(entityType, exactLabelMatch).prefixVariableId(targetEntity, prefix)
+    graph.scanOperator(entityType, exactLabelMatch).prefixVariableId(Var.unnamed(entityType), prefix)
   }
 }

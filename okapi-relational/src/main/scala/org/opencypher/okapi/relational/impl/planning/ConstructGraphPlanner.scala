@@ -458,8 +458,8 @@ object ConstructGraphPlanner {
     op: RelationalOperator[T],
     schema: Schema
   ): RelationalOperator[T] = {
-    val targetEntity = Var("")(entityType)
-    val targetEntityHeader = schema.headerForEntity(Var("")(entityType), exactLabelMatch = true)
+    val targetEntity = Var.unnamed(entityType)
+    val targetEntityHeader = schema.headerForEntity(targetEntity, exactLabelMatch = true)
 
     val labelOrTypePredicate = entityType match {
       case CTNode(labels, _) =>

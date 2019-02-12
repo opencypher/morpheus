@@ -29,7 +29,7 @@ package org.opencypher.okapi.relational.impl.graph
 import org.opencypher.okapi.api.schema.Schema
 import org.opencypher.okapi.api.types.{CTNode, CTRelationship, CypherType}
 import org.opencypher.okapi.impl.exception.IllegalArgumentException
-import org.opencypher.okapi.ir.api.expr._
+import org.opencypher.okapi.ir.api.expr.Var
 import org.opencypher.okapi.relational.api.graph.{RelationalCypherGraph, RelationalCypherSession}
 import org.opencypher.okapi.relational.api.io.{EntityTable, NodeTable, RelationshipTable}
 import org.opencypher.okapi.relational.api.planning.RelationalRuntimeContext
@@ -62,7 +62,7 @@ class ScanGraph[T <: Table[T] : TypeTag](val scans: Seq[EntityTable[T]], val sch
     entityType: CypherType,
     exactLabelMatch: Boolean
   ): RelationalOperator[T] = {
-    val targetEntity = Var("")(entityType)
+    val targetEntity = Var.unnamed(entityType)
     val selectedScans = scansForType(entityType, exactLabelMatch)
     val targetEntityHeader = schema.headerForEntity(targetEntity, exactLabelMatch)
     val alignedEntityTableOps = selectedScans.map { scan =>

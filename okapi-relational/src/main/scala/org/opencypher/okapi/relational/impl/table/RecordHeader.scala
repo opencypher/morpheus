@@ -45,7 +45,7 @@ object RecordHeader {
   def from[T <: Expr](exprs: Seq[T]): RecordHeader = from(exprs.head, exprs.tail: _*)
 
   def from(relType: CTRelationship): RecordHeader = {
-    val v = RelationshipVar("")(relType)
+    val v = Var.unnamed(relType)
 
     from(
       v,
@@ -55,7 +55,7 @@ object RecordHeader {
   }
 
   def from(nodeType: CTNode): RecordHeader = {
-    val v = NodeVar("")(nodeType)
+    val v = Var.unnamed(nodeType)
 
     from(
       v,

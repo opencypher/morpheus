@@ -108,6 +108,8 @@ object Var {
   }
 
   def unapply(arg: Var): Option[String] = Some(arg.name)
+
+  def unnamed: CypherType => Var = apply("")
 }
 
 final case class ListSegment(index: Int, listVar: Var)(val cypherType: CypherType = CTWildcard) extends Var {

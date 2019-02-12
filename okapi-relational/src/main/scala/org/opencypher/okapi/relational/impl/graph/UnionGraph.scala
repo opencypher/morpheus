@@ -31,7 +31,6 @@ import org.opencypher.okapi.api.schema.RelTypePropertyMap._
 import org.opencypher.okapi.api.schema.Schema
 import org.opencypher.okapi.api.types.{CTNode, CTRelationship, CypherType}
 import org.opencypher.okapi.impl.exception.UnsupportedOperationException
-import org.opencypher.okapi.ir.api.expr.PrefixId.GraphIdPrefix
 import org.opencypher.okapi.ir.api.expr.Var
 import org.opencypher.okapi.relational.api.graph.{RelationalCypherGraph, RelationalCypherSession}
 import org.opencypher.okapi.relational.api.planning.RelationalRuntimeContext
@@ -64,7 +63,7 @@ final case class UnionGraph[T <: Table[T] : TypeTag](graphs: List[RelationalCyph
     entityType: CypherType,
     exactLabelMatch: Boolean
   ): RelationalOperator[T] = {
-    val targetEntity = Var("")(entityType)
+    val targetEntity = Var.unnamed(entityType)
     val targetEntityHeader = schema.headerForEntity(targetEntity, exactLabelMatch)
     val alignedScans = graphs
       .flatMap { graph =>
