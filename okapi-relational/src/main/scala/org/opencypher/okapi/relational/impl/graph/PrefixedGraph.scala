@@ -38,6 +38,7 @@ import org.opencypher.okapi.relational.impl.planning.RelationalPlanner._
 
 import scala.reflect.runtime.universe.TypeTag
 
+// TODO: This should be a planned tree of physical operators instead of a graph
 final case class PrefixedGraph[T <: Table[T] : TypeTag](graph: RelationalCypherGraph[T], prefix: GraphIdPrefix)
   (implicit context: RelationalRuntimeContext[T]) extends RelationalCypherGraph[T] {
 

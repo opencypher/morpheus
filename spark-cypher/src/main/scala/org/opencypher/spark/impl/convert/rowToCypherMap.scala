@@ -89,7 +89,6 @@ final case class rowToCypherMap(exprToColumn: Seq[(Expr, String)]) extends (Row 
     }
   }
 
-  // TODO: Use more efficient representation here, less efficient one with good equals comparison for tests
   private def collectNode(row: Row, v: Var): CypherValue = {
     val idValue = row.getAs[Any](header.column(v))
     idValue match {
