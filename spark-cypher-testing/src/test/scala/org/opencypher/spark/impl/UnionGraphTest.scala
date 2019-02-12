@@ -26,6 +26,9 @@
  */
 package org.opencypher.spark.impl
 
+import org.apache.spark.sql.Row
+import org.opencypher.okapi.testing.Bag
+import org.opencypher.spark.api.value.CAPSEntity._
 import org.opencypher.spark.testing.fixture.{GraphConstructionFixture, RecordsVerificationFixture, TeamDataFixture}
 
 class UnionGraphTest extends CAPSGraphTest
@@ -56,11 +59,10 @@ class UnionGraphTest extends CAPSGraphTest
     val union = caps.cypher("CONSTRUCT ON g1, g2 RETURN GRAPH").graph
 
     union.nodes("n").size shouldBe 3
-//    union.asCaps.tags shouldBe Set(0, 1)
   }
 
   test("Node scan from multiple single node CAPSRecords") {
-    val unionGraph = caps.graphs.unionGraph(Seq(initGraph(`:Person`), initGraph(`:Book`)): _*)
+    val unionGraph = initGraph(`:Person`).unionAll(initGraph(`:Book`))
     val nodes = unionGraph.nodes("n")
     val cols = Seq(
       n,
@@ -72,25 +74,25 @@ class UnionGraphTest extends CAPSGraphTest
       nHasPropertyTitle,
       nHasPropertyYear
     )
-//    val data = Bag(
-//      Row(0L, false, true, true, 23L, "Mats", null, null),
-//      Row(1L, false, true, false, 42L, "Martin", null, null),
-//      Row(2L, false, true, false, 1337L, "Max", null, null),
-//      Row(3L, false, true, false, 9L, "Stefan", null, null),
-//      Row(0L.setTag(1), true, false, false, null, null, "1984", 1949L),
-//      Row(1L.setTag(1), true, false, false, null, null, "Cryptonomicon", 1999L),
-//      Row(2L.setTag(1), true, false, false, null, null, "The Eye of the World", 1990L),
-//      Row(3L.setTag(1), true, false, false, null, null, "The Circle", 2013L)
-//    )
-//
-//    verify(nodes, cols, data)
+    val data = Bag(
+      Row(0L.withPrefix(0).toList, false, true, true, 23L, "Mats", null, null),
+      Row(1L.withPrefix(0).toList, false, true, false, 42L, "Martin", null, null),
+      Row(2L.withPrefix(0).toList, false, true, false, 1337L, "Max", null, null),
+      Row(3L.withPrefix(0).toList, false, true, false, 9L, "Stefan", null, null),
+      Row(0L.withPrefix(1).toList, true, false, false, null, null, "1984", 1949L),
+      Row(1L.withPrefix(1).toList, true, false, false, null, null, "Cryptonomicon", 1999L),
+      Row(2L.withPrefix(1).toList, true, false, false, null, null, "The Eye of the World", 1990L),
+      Row(3L.withPrefix(1).toList, true, false, false, null, null, "The Circle", 2013L)
+    )
+
+    verify(nodes, cols, data)
   }
 
   test("Returns only distinct results") {
     val scanGraph1 = caps.graphs.create(personTable)
     val scanGraph2 = caps.graphs.create(personTable)
 
-    val unionGraph = caps.graphs.unionGraph(scanGraph1, scanGraph2)
+    val unionGraph = scanGraph1.unionAll(scanGraph2)
     val nodes = unionGraph.nodes("n")
 
     val cols = Seq(
@@ -100,18 +102,18 @@ class UnionGraphTest extends CAPSGraphTest
       nHasPropertyLuckyNumber,
       nHasPropertyName
     )
-//    val data = Bag(
-//      Row(1L, true, true, 23L, "Mats"),
-//      Row(2L, true, false, 42L, "Martin"),
-//      Row(3L, true, false, 1337L, "Max"),
-//      Row(4L, true, false, 9L, "Stefan"),
-//      Row(1L.setTag(1), true, true, 23L, "Mats"),
-//      Row(2L.setTag(1), true, false, 42L, "Martin"),
-//      Row(3L.setTag(1), true, false, 1337L, "Max"),
-//      Row(4L.setTag(1), true, false, 9L, "Stefan")
-//    )
-//
-//    verify(nodes, cols, data)
+    val data = Bag(
+      Row(1L.withPrefix(0).toList, true, true, 23L, "Mats"),
+      Row(2L.withPrefix(0).toList, true, false, 42L, "Martin"),
+      Row(3L.withPrefix(0).toList, true, false, 1337L, "Max"),
+      Row(4L.withPrefix(0).toList, true, false, 9L, "Stefan"),
+      Row(1L.withPrefix(1).toList, true, true, 23L, "Mats"),
+      Row(2L.withPrefix(1).toList, true, false, 42L, "Martin"),
+      Row(3L.withPrefix(1).toList, true, false, 1337L, "Max"),
+      Row(4L.withPrefix(1).toList, true, false, 9L, "Stefan")
+    )
+
+    verify(nodes, cols, data)
   }
 
 }
