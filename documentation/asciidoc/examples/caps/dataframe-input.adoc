@@ -1,5 +1,5 @@
 [[example-dataframe-input]]
-= Example: DataFrame input
+= DataFrame input
 
 [source, scala]
 ----

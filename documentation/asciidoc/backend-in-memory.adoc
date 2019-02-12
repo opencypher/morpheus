@@ -1,5 +1,5 @@
 [[backend-in-memory]]
-= In-memory backend
+= In-memory
 
 [abstract]
 --

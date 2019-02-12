@@ -1,5 +1,5 @@
 [[example-cypher-sql-roundtrip]]
-= Example: Cypher-SQL round-trip
+= Cypher-SQL round-trip
 
 [source, scala]
 ----

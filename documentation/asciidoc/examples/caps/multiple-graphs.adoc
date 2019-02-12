@@ -1,5 +1,5 @@
 [[example-multiple-graphs]]
-= Example: Multiple-Graphs
+= Multiple-Graphs
 
 [source, scala]
 ----

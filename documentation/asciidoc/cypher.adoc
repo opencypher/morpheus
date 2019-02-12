@@ -11,7 +11,7 @@ For the Cypher 9 specification and other openCypher language resources, see the 
 
 
 [[cypher-sparksql]]
-== Cypher runs on top of Spark SQL
+== Cypher on Spark SQL
 
 The CAPS layer essentially translates Cypher queries into Spark SQL operators.
 As a result, certain aspects of Cypher like `USING INDEX` would not make sense to support in the Spark world.
@@ -19,7 +19,7 @@ Additionally, other functions like `lower()` and `upper()` can easily be duplica
 
 
 [[cypher-limitations]]
-== Create and read only
+== Limitations
 
 Because of the Spark programming model, CAPS does not support updates and deletes.
 The general approach should be to take one data source or graph, transform it into another, and store that.

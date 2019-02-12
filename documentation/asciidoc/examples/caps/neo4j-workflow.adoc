@@ -1,5 +1,5 @@
 [[example-neo4j-workflow]]
-= Example: Neo4j workflow
+= Neo4j workflow
 
 [source, scala]
 ----

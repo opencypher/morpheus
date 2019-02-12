@@ -1,5 +1,5 @@
 [[example-graphx-pagerank]]
-= Example: GraphX PageRank
+= GraphX PageRank
 
 [source, scala]
 ----

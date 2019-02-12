@@ -1,5 +1,5 @@
 [[example-detail]]
-= Example: detailed, custom DataFrame input
+= Detailed, custom DataFrame input
 
 [abstract]
 --

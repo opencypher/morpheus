@@ -23,7 +23,7 @@ To understand this, we start with the "tables for labels" model.
 
 
 [[graphs-from-tables-model]]
-== The "tables for labels" model
+== Tables for labels
 
 "Tables for labels" refers to a way of formatting tabular data such that the mapping to a graph is straightforward and easy.
 To describe this briefly, it means that all nodes for the same combination of labels and all relationships with the same type are stored in their own table.
@@ -116,7 +116,7 @@ This allows to define different properties for `:Customer` and `:Employee`.
 
 
 [[graph-from-tables-definition]]
-== Defining a graph from a set of tables
+== Defining a graph
 
 Given a set of tables, there are two ways to convert them to a graph:
 
@@ -129,11 +129,11 @@ If the data is denormalised and does not contain unique identifiers, then we rec
 
 
 [[graph-from-tables-scala-api]]
-== Defining a graph using the Scala API
+=== Scala API
 
 
 [[graphs-from-tables-data-preparation]]
-=== Preparing your data
+==== Preparing your data
 
 The recommended way to convert complex tables into graphs is to use the SQL PGDS with the Graph DDL.
 
@@ -145,7 +145,7 @@ For the next step, we assume that you have `DataFrame`s that are in the "tables 
 
 
 [[graphs-from-tables-graph-mappings]]
-=== Express graph mappings
+==== Express graph mappings
 
 To manually define the graph mapping for tables we can use the Scala API.
 Graph mappings allow CAPS to map rows in DataFrames to nodes or relationships.
@@ -175,7 +175,7 @@ These mappings allow to interpret tables as a graph.
 
 
 [[graphs-from-tables-entity-tables]]
-=== Create CAPS tables, and then the graph
+==== Create CAPS tables, and then the graph
 
 We combine the mappings with the tables in order to create node and relationship tables:
 
@@ -191,7 +191,7 @@ Now we have everything we need to run Cypher queries on our newly defined graph.
 
 
 [[graph-from-tables-graph-ddl]]
-== Defining a graph using Graph DDL
+=== Graph DDL
 
 The Graph DDL is a language to describe a mapping from a set of relational tables and views to a graph.
 

@@ -1,5 +1,5 @@
 [[caching-and-performance]]
-= Caching and performance
+= Performance
 
 [abstract]
 --
@@ -13,7 +13,7 @@ This article contains some general guidelines on how caching is used with Spark:
 
 
 [[caching-and-performance-table-caching]]
-== Option 1 - Cache the backing table
+== Cache the backing table
 
 CAPS graphs are generally backed by tables that contain nodes/relationships, which are in turn implemented by Spark tables.
 The underlying Spark tables can be cached like this:
@@ -28,7 +28,7 @@ Alternatively, you can call `.persist()` on the Spark table and specify a storag
 
 
 [[caching-and-performance-graph-caching]]
-== Option 2 - Cache the entire graph
+== Cache the graph
 
 [source, scala]
 ----

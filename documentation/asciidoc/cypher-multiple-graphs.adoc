@@ -1,5 +1,5 @@
 [[cypher-multiple-graphs]]
-= Multiple-Graph support for Cypher
+= Multiple-Graph support
 
 [abstract]
 --
