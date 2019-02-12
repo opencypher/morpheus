@@ -173,6 +173,15 @@ The above program prints:
 
 More examples, including [multiple graph features](spark-cypher-examples/src/main/scala/org/opencypher/spark/examples/MultipleGraphExample.scala), can be found [in the examples module](spark-cypher-examples).
 
+### Run example Scala apps via command line
+
+You can use Gradle to run a specific Scala application from command line. For example, to run the `CaseClassExample` 
+within the `spark-cypher-examples` module, we just call:
+
+```
+./gradlew spark-cypher-examples:runApp -PmainClass=org.opencypher.spark.examples.CaseClassExample
+```
+
 ### Loading CSV Data
 
 See the documentation in `org.opencypher.spark.impl.io.hdfs.CsvGraphLoader`, which specifies how to structure the
