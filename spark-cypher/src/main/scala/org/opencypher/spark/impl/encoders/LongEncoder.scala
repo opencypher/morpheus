@@ -28,7 +28,7 @@ package org.opencypher.spark.impl.encoders
 
 import org.apache.spark.sql.Column
 import org.apache.spark.sql.catalyst.expressions.codegen.{CodegenContext, ExprCode}
-import org.apache.spark.sql.catalyst.expressions.{ExpectsInputTypes, Expression, NullIntolerant, UnaryExpression}
+import org.apache.spark.sql.catalyst.expressions.{BinaryExpression, ExpectsInputTypes, Expression, NullIntolerant, UnaryExpression}
 import org.apache.spark.sql.types._
 
 case class EncodeLong(child: Expression) extends UnaryExpression with NullIntolerant with ExpectsInputTypes {
@@ -42,6 +42,23 @@ case class EncodeLong(child: Expression) extends UnaryExpression with NullIntole
 
   override protected def doGenCode(ctx: CodegenContext, ev: ExprCode): ExprCode =
     defineCodeGen(ctx, ev, c => s"(byte[])(${LongEncoder.getClass.getName.dropRight(1)}.encodeLong($c))")
+}
+
+case class AddPrefix(
+  left: Expression, // binary array
+  right: Expression // byte prefix
+) extends BinaryExpression with NullIntolerant with ExpectsInputTypes {
+
+  override val dataType: DataType = BinaryType
+
+  override val inputTypes: Seq[DataType] = Seq(BinaryType, ByteType)
+
+  override protected def nullSafeEval(byteArray: Any, byte: Any): Any = {
+    LongEncoder.addPrefix(byteArray.asInstanceOf[Array[Byte]], byte.asInstanceOf[Byte])
+  }
+
+  override protected def doGenCode(ctx: CodegenContext, ev: ExprCode): ExprCode =
+    defineCodeGen(ctx, ev, (a, p) => s"(byte[])(${LongEncoder.getClass.getName.dropRight(1)}.addPrefix($a, $p))")
 }
 
 object LongEncoder {
@@ -91,7 +108,7 @@ object LongEncoder {
     decoded
   }
 
-  private def addPrefix(a: Array[Byte], p: Byte): Array[Byte] = {
+  final def addPrefix(a: Array[Byte], p: Byte): Array[Byte] = {
     val n = new Array[Byte](a.length + 1)
     n(0) = p
     System.arraycopy(a, 0, n, 1, a.length)
@@ -103,6 +120,9 @@ object LongEncoder {
     def encodeLongAsCAPSId(name: String): Column = encodeLongAsCAPSId.as(name)
 
     def encodeLongAsCAPSId: Column = new Column(EncodeLong(c.expr))
+
+    def addPrefix(prefix: Column): Column = new Column(AddPrefix(c.expr, prefix.expr))
+
   }
 
   implicit class LongIdEncoding(val l: Long) extends AnyVal {
