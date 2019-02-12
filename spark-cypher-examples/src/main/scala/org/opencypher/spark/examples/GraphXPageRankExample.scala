@@ -32,7 +32,7 @@ import org.opencypher.okapi.api.io.conversion.NodeMapping
 import org.opencypher.spark.api.CAPSSession
 import org.opencypher.spark.api.CAPSSession._
 import org.opencypher.spark.api.io.CAPSNodeTable
-import org.opencypher.spark.impl.encoders.LongEncoder._
+import org.opencypher.spark.impl.expressions.EncodeLong.decodeLong
 import org.opencypher.spark.util.ConsoleApp
 
 /**
@@ -61,8 +61,8 @@ object GraphXPageRankExample extends ConsoleApp {
   )
 
   // 4) Create GraphX compatible RDDs from nodes and relationships
-  val graphXNodeRDD = nodes.records.asDataFrame.rdd.map(row => row.getAs[Array[Byte]](0).decodeToLong -> row.getString(1))
-  val graphXRelRDD = rels.records.asDataFrame.rdd.map(row => Edge(row.getAs[Array[Byte]](0).decodeToLong, row.getAs[Array[Byte]](1).decodeToLong, ()))
+  val graphXNodeRDD = nodes.records.asDataFrame.rdd.map(row => decodeLong(row.getAs[Array[Byte]](0)) -> row.getString(1))
+  val graphXRelRDD = rels.records.asDataFrame.rdd.map(row => Edge(decodeLong(row.getAs[Array[Byte]](0)), decodeLong(row.getAs[Array[Byte]](1)), ()))
 
   // 5) Compute Page Rank via GraphX
   val graph = Graph(graphXNodeRDD, graphXRelRDD)

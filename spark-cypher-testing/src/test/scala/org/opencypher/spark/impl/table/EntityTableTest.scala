@@ -40,7 +40,7 @@ import org.opencypher.okapi.relational.impl.table.RecordHeader
 import org.opencypher.spark.api.io._
 import org.opencypher.spark.api.value.CAPSNode
 import org.opencypher.spark.impl.convert.SparkConversions
-import org.opencypher.spark.impl.encoders.LongEncoder._
+import org.opencypher.spark.api.value.CAPSEntity._
 import org.opencypher.spark.testing.CAPSTestSuite
 
 case class Person(id: Long, name: String, age: Int) extends Node

@@ -27,9 +27,9 @@
 package org.opencypher.spark.api.value
 
 import org.opencypher.okapi.api.value.CypherValue._
-import org.opencypher.spark.impl.encoders.LongEncoder._
-
-import CAPSEntity._
+import org.opencypher.spark.api.value.CAPSEntity._
+import org.opencypher.spark.impl.expressions.AddPrefix.addPrefix
+import org.opencypher.spark.impl.expressions.EncodeLong._
 
 object CAPSEntity {
 
@@ -38,6 +38,21 @@ object CAPSEntity {
     def toHex: String = s"0x${id.map(id => "%02X".format(id)).mkString}"
 
   }
+
+  implicit class LongIdEncoding(val l: Long) extends AnyVal {
+
+    def withPrefix(prefix: Int): Array[Byte] = l.encodeAsCAPSId.withPrefix(prefix.toByte)
+
+    def encodeAsCAPSId: Array[Byte] = encodeLong(l)
+
+  }
+
+  implicit class RichCAPSId(val id: Array[Byte]) extends AnyVal {
+
+    def withPrefix(prefix: Int): Array[Byte] = addPrefix(prefix.toByte, id)
+
+  }
+
 }
 
 object CAPSNode {

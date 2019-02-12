@@ -47,7 +47,7 @@ import org.opencypher.spark.api.CAPSSession
 import org.opencypher.spark.impl.CAPSConverters._
 import org.opencypher.spark.impl.CAPSRecords
 import org.opencypher.spark.impl.convert.SparkConversions._
-import org.opencypher.spark.impl.encoders.LongEncoder._
+import org.opencypher.spark.impl.expressions.EncodeLong._
 import org.opencypher.spark.impl.io.neo4j.external.Neo4j
 import org.opencypher.spark.impl.table.SparkTable._
 import org.opencypher.spark.impl.temporal.SparkTemporalHelpers._

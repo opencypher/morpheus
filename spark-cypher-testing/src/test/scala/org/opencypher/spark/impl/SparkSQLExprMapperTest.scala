@@ -35,9 +35,9 @@ import org.opencypher.okapi.api.value.CypherValue.CypherMap
 import org.opencypher.okapi.ir.api.expr._
 import org.opencypher.okapi.relational.impl.table.RecordHeader
 import org.opencypher.okapi.testing.BaseTestSuite
+import org.opencypher.spark.api.value.CAPSEntity._
 import org.opencypher.spark.impl.ExprEval._
 import org.opencypher.spark.impl.SparkSQLExprMapper._
-import org.opencypher.spark.impl.encoders.LongEncoder._
 import org.opencypher.spark.testing.fixture.SparkSessionFixture
 
 import scala.language.implicitConversions

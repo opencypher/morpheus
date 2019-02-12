@@ -38,7 +38,8 @@ import org.opencypher.okapi.ir.api.expr._
 import org.opencypher.okapi.relational.impl.table.RecordHeader
 import org.opencypher.spark.impl.CAPSFunctions.{array_contains, get_node_labels, get_property_keys, get_rel_type, _}
 import org.opencypher.spark.impl.convert.SparkConversions._
-import org.opencypher.spark.impl.encoders.LongEncoder._
+import org.opencypher.spark.impl.expressions.AddPrefix._
+import org.opencypher.spark.impl.expressions.EncodeLong._
 import org.opencypher.spark.impl.temporal.SparkTemporalHelpers._
 import org.opencypher.spark.impl.temporal.{SparkTemporalHelpers, TemporalUDFS}
 

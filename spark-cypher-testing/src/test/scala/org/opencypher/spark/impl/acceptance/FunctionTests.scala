@@ -31,7 +31,7 @@ import org.opencypher.okapi.api.value.CypherValue.{CypherMap, CypherNull}
 import org.opencypher.okapi.impl.exception.NotImplementedException
 import org.opencypher.okapi.testing.Bag
 import org.opencypher.okapi.testing.Bag._
-import org.opencypher.spark.impl.encoders.LongEncoder._
+import org.opencypher.spark.api.value.CAPSEntity._
 import org.opencypher.spark.testing.CAPSTestSuite
 import org.scalatest.junit.JUnitRunner
 

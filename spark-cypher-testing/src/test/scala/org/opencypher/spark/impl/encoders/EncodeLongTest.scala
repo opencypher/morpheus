@@ -30,12 +30,14 @@ import org.apache.spark.sql.catalyst.expressions.codegen.GenerateMutableProjecti
 import org.apache.spark.sql.catalyst.expressions.{Alias, GenericInternalRow}
 import org.apache.spark.sql.functions
 import org.apache.spark.sql.functions.typedLit
-import org.opencypher.spark.impl.encoders.LongEncoder._
 import org.opencypher.spark.testing.CAPSTestSuite
 import org.scalacheck.Prop.propBoolean
+import org.opencypher.spark.api.value.CAPSEntity._
+import org.opencypher.spark.impl.expressions.EncodeLong
+import org.opencypher.spark.impl.expressions.EncodeLong._
 import org.scalatest.prop.Checkers
 
-class LongEncoderTest extends CAPSTestSuite with Checkers {
+class EncodeLongTest extends CAPSTestSuite with Checkers {
 
   it("encodes longs correctly") {
     check((l: Long) => {
@@ -48,7 +50,7 @@ class LongEncoderTest extends CAPSTestSuite with Checkers {
   it("encoding/decoding is symmetric") {
     check((l: Long) => {
       val encoded = l.encodeAsCAPSId
-      val decoded = encoded.decodeToLong
+      val decoded = decodeLong(encoded)
       decoded === l
     }, minSuccessful(1000))
   }

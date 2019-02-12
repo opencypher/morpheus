@@ -34,9 +34,9 @@ import org.opencypher.okapi.api.value.CypherValue.CypherMap
 import org.opencypher.okapi.testing.Bag
 import org.opencypher.okapi.testing.propertygraph.CreateGraphFactory
 import org.opencypher.spark.api.io.{CAPSNodeTable, CAPSRelationshipTable}
+import org.opencypher.spark.api.value.CAPSEntity._
 import org.opencypher.spark.api.value.{CAPSNode, CAPSRelationship}
 import org.opencypher.spark.impl.CAPSConverters._
-import org.opencypher.spark.impl.encoders.LongEncoder._
 import org.opencypher.spark.testing.support.creation.caps.{CAPSScanGraphFactory, CAPSTestGraphFactory}
 
 import scala.collection.JavaConverters._
