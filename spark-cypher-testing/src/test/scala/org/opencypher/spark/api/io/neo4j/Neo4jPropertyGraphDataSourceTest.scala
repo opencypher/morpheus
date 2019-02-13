@@ -32,7 +32,7 @@ import org.apache.spark.sql.types.{LongType, StructField, StructType}
 import org.opencypher.okapi.api.graph.{CypherResult, GraphName, Namespace}
 import org.opencypher.okapi.api.io.conversion.NodeMapping
 import org.opencypher.okapi.api.value.CypherValue.{CypherMap, CypherNull}
-import org.opencypher.okapi.impl.exception.{IllegalArgumentException, SchemaException, UnsupportedOperationException}
+import org.opencypher.okapi.impl.exception.{IllegalArgumentException, SchemaException}
 import org.opencypher.okapi.neo4j.io.MetaLabelSupport._
 import org.opencypher.okapi.neo4j.io.Neo4jHelpers.Neo4jDefaults._
 import org.opencypher.okapi.neo4j.io.Neo4jHelpers._
@@ -40,7 +40,7 @@ import org.opencypher.okapi.neo4j.io.testing.Neo4jServerFixture
 import org.opencypher.okapi.testing.Bag
 import org.opencypher.okapi.testing.Bag._
 import org.opencypher.spark.api.CypherGraphSources
-import org.opencypher.spark.api.io.CAPSNodeTable
+import org.opencypher.spark.api.io.CAPSEntityTable
 import org.opencypher.spark.api.value.CAPSNode
 import org.opencypher.spark.impl.CAPSConverters._
 import org.opencypher.spark.testing.CAPSTestSuite
@@ -110,8 +110,8 @@ class Neo4jPropertyGraphDataSourceTest
     val node2DF = sparkSession.createDataFrame(List(Row(1L)).asJava, schema)
 
     val nodeMapping = NodeMapping.create("id")
-    val node1Table = CAPSNodeTable.fromMapping(nodeMapping, node1DF)
-    val node2Table = CAPSNodeTable.fromMapping(nodeMapping, node2DF)
+    val node1Table = CAPSEntityTable(nodeMapping, node1DF)
+    val node2Table = CAPSEntityTable(nodeMapping, node2DF)
 
     val graph = caps.readFrom(node1Table, node2Table)
 

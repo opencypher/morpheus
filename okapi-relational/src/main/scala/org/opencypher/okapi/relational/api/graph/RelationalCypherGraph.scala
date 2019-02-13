@@ -32,8 +32,8 @@ import org.opencypher.okapi.api.table.CypherRecords
 import org.opencypher.okapi.api.types.{CTNode, CTRelationship, CypherType}
 import org.opencypher.okapi.api.value.CypherValue
 import org.opencypher.okapi.impl.exception.UnsupportedOperationException
+import org.opencypher.okapi.relational.api.io.EntityTable
 import org.opencypher.okapi.ir.api.expr.PrefixId.GraphIdPrefix
-import org.opencypher.okapi.relational.api.io.{EntityTable, NodeTable}
 import org.opencypher.okapi.relational.api.planning.{RelationalCypherResult, RelationalRuntimeContext}
 import org.opencypher.okapi.relational.api.table.{RelationalCypherRecords, Table}
 import org.opencypher.okapi.relational.impl.graph.{EmptyGraph, PrefixedGraph, ScanGraph, UnionGraph}
@@ -58,11 +58,11 @@ trait RelationalCypherGraphFactory[T <: Table[T]] {
 
   def empty: Graph = EmptyGraph()
 
-  def create(nodeTable: NodeTable[T], entityTables: EntityTable[T]*): Graph = {
+  def create(nodeTable: EntityTable[T], entityTables: EntityTable[T]*): Graph = {
     create(None, nodeTable +: entityTables: _*)
   }
 
-  def create(maybeSchema: Option[Schema], nodeTable: NodeTable[T], entityTables: EntityTable[T]*): Graph = {
+  def create(maybeSchema: Option[Schema], nodeTable: EntityTable[T], entityTables: EntityTable[T]*): Graph = {
     create(maybeSchema, nodeTable +: entityTables: _*)
   }
 

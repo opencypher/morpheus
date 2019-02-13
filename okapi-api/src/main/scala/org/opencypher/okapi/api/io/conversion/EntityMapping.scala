@@ -26,33 +26,27 @@
  */
 package org.opencypher.okapi.api.io.conversion
 
-import org.opencypher.okapi.api.types.{CypherType, DefiniteCypherType}
+import org.opencypher.okapi.api.graph.{Entity, IdKey, Pattern}
 import org.opencypher.okapi.impl.exception.IllegalArgumentException
 
-/**
-  * Represents a map from node/relationship property keys to keys in the source data.
-  */
+// TODO document
 trait EntityMapping {
+  def pattern: Pattern
 
-  // TODO: CTEntity
-  def cypherType: CypherType with DefiniteCypherType
+  def properties: Map[Entity, Map[String, String]]
 
-  def sourceIdKey: String
+  def idKeys: Map[Entity, Map[IdKey, String]]
 
-  def propertyMapping: Map[String, String]
+  def impliedTypes: Map[Entity, Set[String]]
 
-  def idKeys: Seq[String]
+  def optionalTypes: Map[Entity, Map[String, String]]
 
-  def optionalLabelKeys: Seq[String] = Seq.empty
-
-  def relTypeKeys: Seq[String] = Seq.empty
-
-  def allSourceKeys: Seq[String] = idKeys ++ optionalLabelKeys ++ relTypeKeys ++ propertyMapping.values.toSeq.sorted
-
-  protected def preventOverwritingProperty(propertyKey: String): Unit =
-    if (propertyMapping.contains(propertyKey))
-      throw IllegalArgumentException("unique property key definitions",
-        s"given key $propertyKey overwrites existing mapping")
+  def allSourceKeys: Seq[String] =
+    (
+      idKeys.values.flatten.map(_._2).toSeq ++
+      properties.values.flatten.map(_._2) ++
+      optionalTypes.values.flatten.map(_._2)
+    ).sorted
 
   protected def validate(): Unit = {
     val sourceKeys = allSourceKeys
@@ -64,4 +58,8 @@ trait EntityMapping {
     }
   }
 
+  protected def preventOverwritingProperty(entity: Entity, propertyKey: String): Unit =
+    if (properties.get(entity).exists(_.contains(propertyKey)))
+      throw IllegalArgumentException("unique property key definitions",
+        s"given key $propertyKey overwrites existing mapping for entity $entity")
 }

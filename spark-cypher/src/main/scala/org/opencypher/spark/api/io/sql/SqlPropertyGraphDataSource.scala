@@ -203,14 +203,15 @@ case class SqlPropertyGraphDataSource(
     val fields = dataFrame.schema.fields
     val indexedFields = fields.map(field => field.name.toLowerCase).zipWithIndex.toMap
 
-    val columnRenamings = mapping.propertyMapping.map {
+    val properties = mapping.properties.values.flatten
+    val columnRenamings = properties.map {
       case (property, column) if indexedFields.contains(column.toLowerCase) =>
         fields(indexedFields(column.toLowerCase)).name -> property.toPropertyColumnName
       case (_, column) => throw IllegalArgumentException(
         expected = s"Column with name $column",
         actual = indexedFields)
-    }
-    val renamedDf = dataFrame.safeRenameColumns(columnRenamings)
+    }.toSeq
+    val renamedDf = dataFrame.safeRenameColumns(columnRenamings: _*)
     normalizeTemporalColumns(renamedDf, columnTypes)
   }
 
@@ -222,11 +223,11 @@ case class SqlPropertyGraphDataSource(
   }
 
   private def normalizeNodeMapping(mapping: NodeMapping): NodeMapping = {
-    createNodeMapping(mapping.impliedLabels, mapping.propertyMapping.keys.map(key => key -> key).toMap)
+    createNodeMapping(mapping.impliedNodeLabels, mapping.properties.values.flatten.map(key => key._1 -> key._1).toMap)
   }
 
   private def normalizeRelationshipMapping(mapping: RelationshipMapping): RelationshipMapping = {
-    createRelationshipMapping(mapping.relTypeOrSourceRelTypeKey.left.get, mapping.propertyMapping.keys.map(key => key -> key).toMap)
+    createRelationshipMapping(mapping.relTypeOrSourceRelTypeKey.left.get, mapping.relationshipPropertyMapping.keys.map(key => key -> key).toMap)
   }
 
   private def createNodeMapping(labelCombination: Set[String], propertyMappings: PropertyMappings): NodeMapping = {

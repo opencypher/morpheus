@@ -558,7 +558,7 @@ object RelationalPlanner {
           val nodeMapping = properties.foldLeft(mapping) {
             case (acc, (Property(_, PropertyKey(key)), col)) => acc.withPropertyKey(key, col)
           }
-          op.session.entityTables.nodeTable(nodeMapping, op.table)
+          op.session.entityTables.entityTable(nodeMapping, op.table)
 
         case CTRelationship(typ, _) =>
           val sourceCol = header.column(header.startNodeFor(entity))
@@ -567,7 +567,7 @@ object RelationalPlanner {
           val relMapping = properties.foldLeft(mapping) {
             case (acc, (Property(_, PropertyKey(key)), col)) => acc.withPropertyKey(key, col)
           }
-          op.session.entityTables.relationshipTable(relMapping, op.table)
+          op.session.entityTables.entityTable(relMapping, op.table)
 
         case other => throw UnsupportedOperationException(s"Cannot create scan for $other")
       }

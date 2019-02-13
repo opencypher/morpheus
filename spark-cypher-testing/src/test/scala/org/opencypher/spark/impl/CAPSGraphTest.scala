@@ -27,7 +27,7 @@
 package org.opencypher.spark.impl
 
 import org.apache.spark.sql.Row
-import org.opencypher.okapi.api.io.conversion.RelationshipMapping
+import org.opencypher.okapi.api.io.conversion.{NodeMapping, RelationshipMapping}
 import org.opencypher.okapi.api.types._
 import org.opencypher.okapi.relational.api.planning.RelationalRuntimeContext
 import org.opencypher.okapi.relational.api.table.RelationalCypherRecords
@@ -94,7 +94,8 @@ abstract class CAPSGraphTest extends CAPSTestSuite
         (6L, false, "Hannes", 42L))
     ).toDF("ID", "IS_SWEDE", "NAME", "NUM")
 
-    val personTable2 = CAPSNodeTable.fromMapping(personTable.mapping, personsPart2)
+    // TODO remove hard cast
+    val personTable2 = CAPSNodeTable.fromMapping(personTable.mapping.asInstanceOf[NodeMapping], personsPart2)
 
     val graph = caps.graphs.create(personTable, personTable2)
     graph.nodes("n").size shouldBe 6
@@ -108,7 +109,8 @@ abstract class CAPSGraphTest extends CAPSTestSuite
         (1L, 8L, 3L, 2016L))
     ).toDF("SRC", "ID", "DST", "SINCE")
 
-    val knowsTable2 = CAPSRelationshipTable.fromMapping(knowsTable.mapping, knowsParts2)
+    // TODO remove hard cast
+    val knowsTable2 = CAPSRelationshipTable.fromMapping(knowsTable.mapping.asInstanceOf[RelationshipMapping], knowsParts2)
 
     val graph = caps.graphs.create(personTable, knowsTable, knowsTable2)
     graph.relationships("r").size shouldBe 8

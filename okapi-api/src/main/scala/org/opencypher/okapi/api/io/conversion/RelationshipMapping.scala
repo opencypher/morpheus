@@ -26,6 +26,7 @@
  */
 package org.opencypher.okapi.api.io.conversion
 
+import org.opencypher.okapi.api.graph._
 import org.opencypher.okapi.api.types.CTRelationship
 import org.opencypher.okapi.impl.exception.IllegalArgumentException
 import org.opencypher.okapi.impl.util.StringEncodingUtilities._
@@ -150,33 +151,54 @@ object RelationshipMapping {
   *
   * Construct a [[RelationshipMapping]] starting with [[RelationshipMapping#on]].
   *
-  * @param sourceIdKey               key to access the node identifier in the source data
-  * @param sourceStartNodeKey        key to access the start node identifier in the source data
-  * @param sourceEndNodeKey          key to access the end node identifier in the source data
+  * @param relationshipIdKey               key to access the node identifier in the source data
+  * @param relationshipStartNodeKey        key to access the start node identifier in the source data
+  * @param relationshipEndNodeKey          key to access the end node identifier in the source data
   * @param relTypeOrSourceRelTypeKey either a relationship type or a key to access the type in the source data and a set of all possible types
-  * @param propertyMapping           mapping from property key to source property key
+  * @param relationshipPropertyMapping           mapping from property key to source property key
   */
 final case class RelationshipMapping private[okapi](
-  sourceIdKey: String,
-  sourceStartNodeKey: String,
-  sourceEndNodeKey: String,
+  relationshipIdKey: String,
+  relationshipStartNodeKey: String,
+  relationshipEndNodeKey: String,
   relTypeOrSourceRelTypeKey: Either[String, (String, Set[String])],
-  propertyMapping: Map[String, String] = Map.empty) extends EntityMapping {
+  relationshipPropertyMapping: Map[String, String] = Map.empty) extends EntityMapping {
 
   // on construction
   validate()
 
-  def cypherType: CTRelationship = {
+  override def pattern: RelationshipPattern = {
     val possibleRelTypes = relTypeOrSourceRelTypeKey match {
       case Left(relType) => Set(relType)
       case Right((_, possibleRelValues)) => possibleRelValues
     }
-    CTRelationship(possibleRelTypes)
+
+    RelationshipPattern(CTRelationship(possibleRelTypes))
+  }
+
+  override lazy val properties: Map[Entity, Map[String, String]] = Map( pattern.relEntity -> relationshipPropertyMapping )
+  override lazy val idKeys: Map[Entity, Map[IdKey, String]] = Map(
+    pattern.relEntity -> Map(
+      SourceIdKey -> relationshipIdKey,
+      SourceStartNodeKey -> relationshipStartNodeKey,
+      SourceEndNodeKey -> relationshipEndNodeKey
+    )
+  )
+  override lazy val impliedTypes: Map[Entity, Set[String]] = Map(
+    pattern.relEntity -> relTypeOrSourceRelTypeKey.left.toSeq.toSet
+  )
+  override lazy val optionalTypes: Map[Entity, Map[String, String]] = {
+    val typeMapping: Map[String, String] = relTypeOrSourceRelTypeKey match {
+      case Left(_) => Map.empty
+      case Right((_, possibleTypes)) => possibleTypes.map(typ => typ -> typ.toRelTypeColumnName).toMap
+    }
+
+    Map(pattern.relEntity -> typeMapping)
   }
 
   def withPropertyKey(propertyKey: String, sourcePropertyKey: String): RelationshipMapping = {
-    preventOverwritingProperty(propertyKey)
-    copy(propertyMapping = propertyMapping.updated(propertyKey, sourcePropertyKey))
+    preventOverwritingProperty(pattern.relEntity, propertyKey)
+    copy(relationshipPropertyMapping = relationshipPropertyMapping.updated(propertyKey, sourcePropertyKey))
   }
 
   def withPropertyKey(tuple: (String, String)): RelationshipMapping =
@@ -188,22 +210,15 @@ final case class RelationshipMapping private[okapi](
   def withPropertyKeys(properties: String*): RelationshipMapping =
     properties.foldLeft(this)((mapping, propertyKey) => mapping.withPropertyKey(propertyKey, propertyKey))
 
-  override def idKeys: Seq[String] = Seq(sourceIdKey, sourceStartNodeKey, sourceEndNodeKey)
-
-  override def relTypeKeys: Seq[String] = relTypeOrSourceRelTypeKey match {
-    case Right((_, relTypes)) => relTypes.map(_.toRelTypeColumnName).toSeq.sorted
-    case _ => Seq.empty
-  }
-
   protected override def validate(): Unit = {
     super.validate()
-    if (idKeys.distinct.size != 3)
+    if (idKeys(pattern.relEntity).values.toSeq.distinct.size != 3)
       throw IllegalArgumentException(
-        s"id ($sourceIdKey, start ($sourceStartNodeKey) and end ($sourceEndNodeKey) source keys need to be distinct",
+        s"id ($relationshipIdKey), start ($relationshipStartNodeKey) and end ($relationshipEndNodeKey) source keys need to be distinct",
         s"non-distinct source keys")
 
     relTypeOrSourceRelTypeKey match {
-      case Right((sourceKey, _)) if idKeys.contains(sourceKey) =>
+      case Right((sourceKey, _)) if idKeys(pattern.relEntity).values.toSet.contains(sourceKey) =>
         throw IllegalArgumentException("dedicated source column for relationship type",
           s"relationship type source column $sourceKey is referring to one of id, start or end column")
       case _ =>

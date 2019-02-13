@@ -26,12 +26,13 @@
  */
 package org.opencypher.okapi.relational.impl.graph
 
+import org.opencypher.okapi.api.graph.{NodePattern, RelationshipPattern}
 import org.opencypher.okapi.api.schema.Schema
 import org.opencypher.okapi.api.types.{CTNode, CTRelationship, CypherType}
 import org.opencypher.okapi.impl.exception.IllegalArgumentException
 import org.opencypher.okapi.ir.api.expr.Var
 import org.opencypher.okapi.relational.api.graph.{RelationalCypherGraph, RelationalCypherSession}
-import org.opencypher.okapi.relational.api.io.{EntityTable, NodeTable, RelationshipTable}
+import org.opencypher.okapi.relational.api.io.EntityTable
 import org.opencypher.okapi.relational.api.planning.RelationalRuntimeContext
 import org.opencypher.okapi.relational.api.schema.RelationalSchema._
 import org.opencypher.okapi.relational.api.table.{RelationalCypherRecords, Table}
@@ -47,10 +48,6 @@ class ScanGraph[T <: Table[T] : TypeTag](val scans: Seq[EntityTable[T]], val sch
   override type Records = RelationalCypherRecords[T]
 
   override type Session = RelationalCypherSession[T]
-
-  private lazy val nodeTables = scans.collect { case it: NodeTable[T] => it }
-
-  private lazy val relTables = scans.collect { case it: RelationshipTable[T] => it }
 
   // TODO: ScanGraph should be an operator that gets a set of tables as input
   private implicit def runtimeContext: RelationalRuntimeContext[T] = session.basicRuntimeContext()
@@ -82,28 +79,36 @@ class ScanGraph[T <: Table[T] : TypeTag](val scans: Seq[EntityTable[T]], val sch
     val qgn = ct.graph.getOrElse(session.emptyGraphQgn)
     ct match {
       case nodeType@CTNode(labels, _) =>
-        val scans = if (exactLabelMatch) {
-          nodeTables.filter(_.entityType == ct)
-        } else {
-          nodeTables.filter(_.entityType.subTypeOf(ct).isTrue)
+        val nodePatterns = scans.collect {
+          case e: EntityTable[_] if e.mapping.pattern.isInstanceOf[NodePattern] => e -> e.mapping.pattern.asInstanceOf[NodePattern]
         }
-        val startOpsForImpliedLabels = scans.map(scanRecords => Start(qgn, scanRecords))
+        val selectedScans = if (exactLabelMatch) {
+          nodePatterns.filter(_._2.nodeEntity.typ == ct)
+        } else {
+          nodePatterns.filter(_._2.nodeEntity.typ.subTypeOf(ct).isTrue)
+        }
+        val startOpsForImpliedLabels = selectedScans.map(scanRecords => Start(qgn, scanRecords._1))
 
         val startOpsForOptionalLabels = if (labels.isEmpty) {
           Seq.empty
         } else {
-          nodeTables
-            .filter(_.entityType == CTNode)
-            .filter(labels subsetOf _.mapping.optionalLabelKeys.toSet)
-            .map { table => Start(qgn, table).filterNodeLabels(nodeType, exactLabelMatch) }
+          nodePatterns
+            .filter(_._2.nodeEntity.typ == CTNode)
+            .filter {
+              case(table, pattern) => labels subsetOf table.mapping.optionalTypes(pattern.nodeEntity).keySet
+            }
+            .map { table => Start(qgn, table._1).filterNodeLabels(nodeType, exactLabelMatch) }
         }
 
         startOpsForImpliedLabels ++ startOpsForOptionalLabels
 
       case r: CTRelationship =>
-        relTables
-          .filter(relTable => relTable.entityType.couldBeSameTypeAs(ct))
-          .map(scanRecords => Start(qgn, scanRecords).filterRelTypes(r))
+        val relPatterns = scans.collect {
+          case e: EntityTable[_] if e.mapping.pattern.isInstanceOf[RelationshipPattern] => e -> e.mapping.pattern.asInstanceOf[RelationshipPattern]
+        }
+        relPatterns
+          .filter { case (table, pattern) => pattern.relEntity.typ.couldBeSameTypeAs(ct) }
+          .map(scanRecords => Start(qgn, scanRecords._1).filterRelTypes(r))
 
       case other => throw IllegalArgumentException(s"Scan on $other")
     }
@@ -122,7 +127,7 @@ class ScanGraph[T <: Table[T] : TypeTag](val scans: Seq[EntityTable[T]], val sch
   }
 
   override def toString = s"ScanGraph(${
-    scans.map(_.entityType).mkString(", ")
+    scans.map(_.mapping.pattern).mkString(", ")
   })"
 
 }

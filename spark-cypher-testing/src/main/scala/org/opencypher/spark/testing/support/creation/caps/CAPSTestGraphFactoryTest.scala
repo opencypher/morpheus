@@ -32,7 +32,7 @@ import org.opencypher.okapi.api.io.conversion.{NodeMapping, RelationshipMapping}
 import org.opencypher.okapi.api.schema.Schema
 import org.opencypher.okapi.api.types.{CTDate, CTString}
 import org.opencypher.okapi.testing.propertygraph.CreateGraphFactory
-import org.opencypher.spark.api.io.{CAPSNodeTable, CAPSRelationshipTable}
+import org.opencypher.spark.api.io.{CAPSEntityTable, CAPSNodeTable, CAPSRelationshipTable}
 import org.opencypher.spark.impl.CAPSConverters._
 import org.opencypher.spark.schema.CAPSSchema._
 import org.opencypher.spark.testing.CAPSTestSuite
@@ -54,7 +54,7 @@ abstract class CAPSTestGraphFactoryTest extends CAPSTestSuite with GraphMatching
       |CREATE (martin)-[:SPEAKS]->(orbital)
     """.stripMargin
 
-  val personTable: CAPSNodeTable = CAPSNodeTable.fromMapping(NodeMapping
+  val personTable: CAPSEntityTable = CAPSNodeTable.fromMapping(NodeMapping
     .on("ID")
     .withImpliedLabel("Person")
     .withOptionalLabel("Astronaut" -> "IS_ASTRONAUT")
@@ -66,7 +66,7 @@ abstract class CAPSTestGraphFactoryTest extends CAPSTestSuite with GraphMatching
       (1L, false, true, "Martin", null))
   ).toDF("ID", "IS_ASTRONAUT", "IS_MARTIAN", "NAME", "BIRTHDAY"))
 
-  val languageTable: CAPSNodeTable = CAPSNodeTable.fromMapping(NodeMapping
+  val languageTable: CAPSEntityTable = CAPSNodeTable.fromMapping(NodeMapping
     .on("ID")
     .withImpliedLabel("Language")
     .withPropertyKey("title" -> "TITLE"), caps.sparkSession.createDataFrame(
@@ -76,7 +76,7 @@ abstract class CAPSTestGraphFactoryTest extends CAPSTestSuite with GraphMatching
       (4L, "Orbital"))
   ).toDF("ID", "TITLE"))
 
-  val knowsScan: CAPSRelationshipTable = CAPSRelationshipTable.fromMapping(RelationshipMapping
+  val knowsScan: CAPSEntityTable = CAPSRelationshipTable.fromMapping(RelationshipMapping
     .on("ID")
     .from("SRC").to("DST").relType("KNOWS"), caps.sparkSession.createDataFrame(
     Seq(

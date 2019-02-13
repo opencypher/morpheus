@@ -26,6 +26,20 @@
  */
 package org.opencypher.okapi.api.graph
 
+// TODO: Document
+trait IdKey {
+  def name: String
+}
+case object SourceIdKey extends IdKey {
+  override def name: String = "id"
+}
+case object SourceStartNodeKey extends IdKey {
+  override def name: String = "source"
+}
+case object SourceEndNodeKey extends IdKey {
+  override def name: String = "target"
+}
+
 trait GraphEntityType {
   def name: String
 }

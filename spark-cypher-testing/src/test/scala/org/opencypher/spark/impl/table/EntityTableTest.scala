@@ -30,6 +30,7 @@ import java.sql.Date
 
 import org.apache.spark.sql.Row
 import org.apache.spark.sql.types.DecimalType
+import org.opencypher.okapi.api.graph.Pattern
 import org.opencypher.okapi.api.io.conversion.{NodeMapping, RelationshipMapping}
 import org.opencypher.okapi.api.schema.Schema
 import org.opencypher.okapi.api.types._
@@ -99,7 +100,7 @@ class EntityTableTest extends CAPSTestSuite {
     val df = sparkSession.createDataFrame(Seq((1, 1, 1, true))).toDF("ID", "TARGET", "SOURCE", "TYPE")
     val relMapping = RelationshipMapping.on("ID").from("SOURCE").to("TARGET").withSourceRelTypeKey("TYPE", Set("A"))
     an[IllegalArgumentException] should be thrownBy {
-      CAPSRelationshipTable(relMapping, df)
+      CAPSRelationshipTable.fromMapping(relMapping, df)
     }
   }
 
@@ -119,7 +120,7 @@ class EntityTableTest extends CAPSTestSuite {
 
     val nodeTable = CAPSNodeTable.fromMapping(nodeMapping, df)
 
-    val v = Var.unnamed(CTNode("A", "B"))
+    val v = Var(Pattern.DEFAULT_NODE_NAME)(CTNode("A", "B"))
 
     nodeTable.header should equal(RecordHeader(Map(
       v -> "ID",
@@ -149,7 +150,7 @@ class EntityTableTest extends CAPSTestSuite {
 
     val relationshipTable = CAPSRelationshipTable.fromMapping(relMapping, df)
 
-    val v = Var.unnamed(CTRelationship("A"))
+    val v = Var(Pattern.DEFAULT_REL_NAME)(CTRelationship("A"))
 
     relationshipTable.header should equal(RecordHeader(Map(
       v -> "ID",
@@ -167,7 +168,7 @@ class EntityTableTest extends CAPSTestSuite {
 
     val relationshipTable = CAPSRelationshipTable.fromMapping(relMappingWithTypeColumn, df)
 
-    val v = Var.unnamed(CTRelationship("A", "B", "C"))
+    val v = Var(Pattern.DEFAULT_REL_NAME)(CTRelationship("A", "B", "C"))
 
     val createdHeader = relationshipTable.header
     createdHeader should equal(RecordHeader(Map(

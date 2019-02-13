@@ -26,6 +26,7 @@
  */
 package org.opencypher.okapi.api.io.conversion
 
+import org.opencypher.okapi.api.graph._
 import org.opencypher.okapi.api.types.CTNode
 import org.opencypher.okapi.impl.exception.IllegalArgumentException
 
@@ -82,38 +83,42 @@ object NodeMapping {
   *
   * Construct a [[NodeMapping]] starting with [[NodeMapping#on]].
   *
-  * The [[sourceIdKey]] represents a key to the node identifier within the source data. The retrieved value from the
+  * The [[nodeIdKey]] represents a key to the node identifier within the source data. The retrieved value from the
   * source data is expected to be a [[scala.Long]] value that is unique among nodes.
   *
-  * The [[impliedLabels]] represent a set of node labels.
+  * The [[impliedNodeLabels]] represent a set of node labels.
   *
-  * The [[optionalLabelMapping]] represent a map from node labels to keys in the source data. The retrieved value from
+  * The [[optionalNodeLabelMapping]] represent a map from node labels to keys in the source data. The retrieved value from
   * the source data is expected to be a [[scala.Boolean]] value indicating if the label is present on that node.
   *
-  * The [[propertyMapping]] represents a map from node property keys to keys in the source data. The retrieved value
+  * The [[nodePropertyMapping]] represents a map from node property keys to keys in the source data. The retrieved value
   * from the source is expected to be convertible to a valid [[org.opencypher.okapi.api.value.CypherValue]].
   *
-  * @param sourceIdKey          key to access the node identifier in the source data
-  * @param impliedLabels        set of node labels
-  * @param optionalLabelMapping mapping from label to source key
-  * @param propertyMapping      mapping from property key to source property key
+  * @param nodeIdKey          key to access the node identifier in the source data
+  * @param impliedNodeLabels        set of node labels
+  * @param optionalNodeLabelMapping mapping from label to source key
+  * @param nodePropertyMapping      mapping from property key to source property key
   */
 final case class NodeMapping private[okapi](
-  sourceIdKey: String,
-  impliedLabels: Set[String] = Set.empty,
-  optionalLabelMapping: Map[String, String] = Map.empty,
-  propertyMapping: Map[String, String] = Map.empty) extends EntityMapping {
+  nodeIdKey: String,
+  impliedNodeLabels: Set[String] = Set.empty,
+  optionalNodeLabelMapping: Map[String, String] = Map.empty,
+  nodePropertyMapping: Map[String, String] = Map.empty) extends EntityMapping {
 
   // on construction
   validate()
 
-  def cypherType: CTNode = CTNode(impliedLabels)
+  override lazy val pattern: NodePattern = NodePattern(CTNode(impliedNodeLabels))
+  override lazy val properties: Map[Entity, Map[String, String]] = Map( pattern.nodeEntity -> nodePropertyMapping )
+  override lazy val idKeys: Map[Entity, Map[IdKey, String]] = Map( pattern.nodeEntity -> Map(SourceIdKey -> nodeIdKey))
+  override lazy val impliedTypes: Map[Entity, Set[String]] = Map( pattern.nodeEntity -> impliedNodeLabels)
+  override lazy val optionalTypes: Map[Entity, Map[String, String]] = Map( pattern.nodeEntity -> optionalNodeLabelMapping)
 
   def withImpliedLabels(labels: String*): NodeMapping =
     labels.foldLeft(this)((mapping, label) => mapping.withImpliedLabel(label))
 
   def withImpliedLabel(label: String): NodeMapping =
-    copy(impliedLabels = impliedLabels + label)
+    copy(impliedNodeLabels = impliedNodeLabels + label)
 
   def withOptionalLabel(label: String): NodeMapping =
     withOptionalLabel(label, label)
@@ -122,7 +127,7 @@ final case class NodeMapping private[okapi](
     labels.foldLeft(this)((mapping, label) => mapping.withOptionalLabel(label, label))
 
   def withOptionalLabel(label: String, sourceLabelKey: String): NodeMapping =
-    copy(optionalLabelMapping = optionalLabelMapping.updated(label, sourceLabelKey))
+    copy(optionalNodeLabelMapping = optionalNodeLabelMapping.updated(label, sourceLabelKey))
 
   def withOptionalLabel(tuple: (String, String)): NodeMapping =
     withOptionalLabel(tuple._1, tuple._2)
@@ -134,21 +139,17 @@ final case class NodeMapping private[okapi](
     withPropertyKey(property, property)
 
   def withPropertyKey(propertyKey: String, sourcePropertyKey: String): NodeMapping = {
-    preventOverwritingProperty(propertyKey)
-    copy(propertyMapping = propertyMapping.updated(propertyKey, sourcePropertyKey))
+    preventOverwritingProperty(pattern.nodeEntity, propertyKey)
+    copy(nodePropertyMapping = nodePropertyMapping.updated(propertyKey, sourcePropertyKey))
   }
 
   def withPropertyKeys(properties: String*): NodeMapping =
     properties.foldLeft(this)((mapping, propertyKey) => mapping.withPropertyKey(propertyKey, propertyKey))
 
-  override def idKeys: Seq[String] = Seq(sourceIdKey)
-
-  override def optionalLabelKeys: Seq[String] = optionalLabelMapping.values.toSeq.sorted
-
   protected override def validate(): Unit = {
     super.validate()
-    if (optionalLabelMapping.values.toSet.contains(sourceIdKey))
+    if (optionalNodeLabelMapping.values.toSet.contains(nodeIdKey))
       throw IllegalArgumentException("source id key and optional labels referring to different source keys",
-        s"$sourceIdKey used for source id key and optional label")
+        s"$nodeIdKey used for source id key and optional label")
   }
 }

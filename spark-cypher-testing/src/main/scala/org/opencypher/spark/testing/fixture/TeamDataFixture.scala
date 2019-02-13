@@ -31,12 +31,12 @@ import org.opencypher.okapi.api.io.conversion.{NodeMapping, RelationshipMapping}
 import org.opencypher.okapi.api.schema.Schema
 import org.opencypher.okapi.api.types._
 import org.opencypher.okapi.api.value.CypherValue.{CypherList, CypherMap}
-import org.opencypher.okapi.ir.api.{Label, PropertyKey, RelType}
 import org.opencypher.okapi.ir.api.expr._
-import org.opencypher.spark.api.value.{CAPSNode, CAPSRelationship}
+import org.opencypher.okapi.ir.api.{Label, PropertyKey, RelType}
 import org.opencypher.okapi.testing.Bag
 import org.opencypher.okapi.testing.Bag._
-import org.opencypher.spark.api.io.{CAPSNodeTable, CAPSRelationshipTable}
+import org.opencypher.spark.api.io.{CAPSEntityTable, CAPSNodeTable, CAPSRelationshipTable}
+import org.opencypher.spark.api.value.{CAPSNode, CAPSRelationship}
 
 import scala.collection.mutable
 
@@ -192,7 +192,7 @@ trait TeamDataFixture extends TestDataFixture {
       (4L, false, "Stefan", 9L))
   ).toDF("ID", "IS_SWEDE", "NAME", "NUM")
 
-  lazy val personTable: CAPSNodeTable = CAPSNodeTable.fromMapping(personMapping, personDF)
+  lazy val personTable: CAPSEntityTable = CAPSNodeTable.fromMapping(personMapping, personDF)
 
   private lazy val knowsMapping: RelationshipMapping = RelationshipMapping
     .on("ID").from("SRC").to("DST").relType("KNOWS").withPropertyKey("since" -> "SINCE")
@@ -208,7 +208,7 @@ trait TeamDataFixture extends TestDataFixture {
       (3L, 6L, 4L, 2016L))
   ).toDF("SRC", "ID", "DST", "SINCE")
 
-  lazy val knowsTable: CAPSRelationshipTable = CAPSRelationshipTable.fromMapping(knowsMapping, knowsDF)
+  lazy val knowsTable: CAPSEntityTable = CAPSRelationshipTable.fromMapping(knowsMapping, knowsDF)
 
   private lazy val programmerMapping = NodeMapping
     .on("ID")
@@ -226,7 +226,7 @@ trait TeamDataFixture extends TestDataFixture {
       (400L, "Carl", 49L, "R")
     )).toDF("ID", "NAME", "NUM", "LANG")
 
-  lazy val programmerTable: CAPSNodeTable = CAPSNodeTable.fromMapping(programmerMapping, programmerDF)
+  lazy val programmerTable: CAPSEntityTable= CAPSNodeTable.fromMapping(programmerMapping, programmerDF)
 
   private lazy val brogrammerMapping = NodeMapping
     .on("ID")
@@ -243,7 +243,7 @@ trait TeamDataFixture extends TestDataFixture {
     )).toDF("ID", "LANG")
 
   // required to test conflicting input data
-  lazy val brogrammerTable: CAPSNodeTable = CAPSNodeTable.fromMapping(brogrammerMapping, brogrammerDF)
+  lazy val brogrammerTable: CAPSEntityTable = CAPSNodeTable.fromMapping(brogrammerMapping, brogrammerDF)
 
   private lazy val bookMapping = NodeMapping
     .on("ID")
@@ -259,7 +259,7 @@ trait TeamDataFixture extends TestDataFixture {
       (40L, "The Circle", 2013L)
     )).toDF("ID", "NAME", "YEAR")
 
-  lazy val bookTable: CAPSNodeTable = CAPSNodeTable.fromMapping(bookMapping, bookDF)
+  lazy val bookTable: CAPSEntityTable = CAPSNodeTable.fromMapping(bookMapping, bookDF)
 
   private lazy val readsMapping = RelationshipMapping
     .on("ID").from("SRC").to("DST").relType("READS").withPropertyKey("recommends" -> "RECOMMENDS")
@@ -272,7 +272,7 @@ trait TeamDataFixture extends TestDataFixture {
       (400L, 400L, 20L, false)
     )).toDF("SRC", "ID", "DST", "RECOMMENDS")
 
-  lazy val readsTable: CAPSRelationshipTable = CAPSRelationshipTable.fromMapping(readsMapping, readsDF)
+  lazy val readsTable: CAPSEntityTable = CAPSRelationshipTable.fromMapping(readsMapping, readsDF)
 
   private lazy val influencesMapping = RelationshipMapping
     .on("ID").from("SRC").to("DST").relType("INFLUENCES")
@@ -280,5 +280,5 @@ trait TeamDataFixture extends TestDataFixture {
   private lazy val influencesDF: DataFrame = caps.sparkSession.createDataFrame(
     Seq((10L, 1000L, 20L))).toDF("SRC", "ID", "DST")
 
-  lazy val influencesTable: CAPSRelationshipTable = CAPSRelationshipTable.fromMapping(influencesMapping, influencesDF)
+  lazy val influencesTable: CAPSEntityTable = CAPSRelationshipTable.fromMapping(influencesMapping, influencesDF)
 }
