@@ -102,4 +102,13 @@ trait PropertyGraph {
     drivingTable: Option[CypherRecords] = None,
     queryCatalog: Map[QualifiedGraphName, PropertyGraph] = Map.empty
   ): CypherResult = session.cypherOnGraph(this, query, parameters, drivingTable, queryCatalog)
+
+  /**
+    * Returns all patterns that the graph can provide
+    *
+    * @return patterns that the graph can provide
+    */
+  def patterns: Set[Pattern] =
+    schema.labelCombinations.combos.map(c => NodePattern(CTNode(c))) ++
+    schema.relationshipTypes.map(r => RelationshipPattern(CTRelationship(r)))
 }
