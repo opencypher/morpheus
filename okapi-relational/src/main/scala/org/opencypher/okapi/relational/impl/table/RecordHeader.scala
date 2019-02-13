@@ -388,17 +388,18 @@ case class RecordHeader(exprToColumn: Map[Expr, String]) {
       case (key, value) =>
         val leftCT = exprToColumn.keySet.find(_ == key).map(_.cypherType).getOrElse(CTVoid)
         val rightCT = other.exprToColumn.keySet.find(_ == key).map(_.cypherType).getOrElse(CTVoid)
-        if (leftCT.subTypeOf(rightCT).isTrue) {
-          val rightKey = other.exprToColumn.keySet.collectFirst { case k if k == key => k }.get
-          rightKey -> value
-        } else if (rightCT.subTypeOf(leftCT).isTrue) {
-          key -> value
-        } else  {
-          throw IllegalArgumentException(
+
+        val resultExpr = (key, leftCT, rightCT) match {
+          case (v: Var, l: CTNode, r: CTNode) => Var(v.name)(l.join(r))
+          case (v: Var, l: CTRelationship, r: CTRelationship) => Var(v.name)(l.join(r))
+          case (_, l, r) if l.subTypeOf(r).isTrue => other.exprToColumn.keySet.collectFirst { case k if k == key => k }.get
+          case (_, l, r) if r.subTypeOf(l).isTrue => key
+          case _ => throw IllegalArgumentException(
             expected = s"Compatible Cypher types for expression $key",
             actual = s"left type `$leftCT` and right type `$rightCT`"
           )
         }
+        resultExpr -> value
     }
     copy(exprToColumn = result)
   }

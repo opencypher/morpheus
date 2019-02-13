@@ -181,7 +181,9 @@ class RecordHeaderTest extends BaseTestSuite {
   it("can combine headers with same vars and compatible cypherType") {
     Seq(
       CTBoolean -> CTBoolean,
+      CTNode("A") -> CTNode("B"),
       CTNode("A") -> CTNode("A", "B"),
+      CTRelationship("A") -> CTRelationship("B"),
       CTRelationship("A") -> CTRelationship("A", "B")
     ).foreach {
       case (p1Type, p2Type) =>
