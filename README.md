@@ -94,14 +94,6 @@ Remember to add `fork in run := true` in your `build.sbt` for scala projects; th
 specific, but a quirk of spark execution that will help 
 [prevent problems](https://stackoverflow.com/questions/44298847/why-do-we-need-to-add-fork-in-run-true-when-running-spark-sbt-application).
 
-### Generating API documentation
-
-```
-mvn scala:doc
-```
-
-Documentation will be generated and placed under `[MODULE_DIRECTORY]/target/site/scaladocs/index.html`
-
 ### Hello CAPS
 
 Cypher is based on the [property graph](https://github.com/opencypher/openCypher/blob/master/docs/property-graph-model.adoc) data model, comprising labelled nodes and typed relationships, with a relationship either connecting two nodes, or forming a self-loop on a single node. 
