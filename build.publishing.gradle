@@ -1,6 +1,16 @@
 subprojects {
     apply plugin: 'maven-publish'
 
+    ext {
+        pub = [dev : [artifacts: ['jar',
+                                  'sourceJar',]],
+               full: [artifacts: ['jar',
+                                  'sourceJar',
+                                  'docJar',
+                                  'testJar',]],
+        ]
+    }
+
     publishing {
 
         repositories {
@@ -16,10 +26,9 @@ subprojects {
                 from components.java
 
                 afterEvaluate {
-                    ['sourceJar',
-                    'asciidocJar']
+                    artifacts = pub.dev.artifacts
                             .findResults { tasks.findByName(it) }
-                            .each { artifact it }
+                            .findAll { it.enabled }
                 }
 
                 pom {
@@ -47,17 +56,10 @@ subprojects {
                 from components.java
 
                 afterEvaluate {
-                    def included = [
-                            'jar',
-                            'sourceJar',
-                            'docJar',
-                            'testJar',
-                            'asciidocJar',
-                            'shadowJar'
-                    ]
-                    artifacts = included
+                    artifacts = pub.full.artifacts
                             .findResults { tasks.findByName(it) }
                             .findAll { it.enabled }
+
                 }
 
                 pom {

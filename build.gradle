@@ -43,7 +43,7 @@ subprojects {
         useJUnit()
     }
 
-    def scalacParameters = [
+    ext.scalacParameters = [
             "-target:jvm-$ver.jvm".toString(),
             '-unchecked',
             '-deprecation',
