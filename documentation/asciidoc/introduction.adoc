@@ -199,7 +199,7 @@ At the moment, the conversion is supported for `LongType`, `IntegerType` and `St
 If your identifier has a different data type, you need to convert it to one of the supported types before a CAPS table.
 
 Using this mechanism, you can re-use identifiers that you might already have, e.g. in a CSV file or a relational table.
-Note, that identifiers must be unique within the set of all nodes and within the set of all relationships.
+Note, that node identifiers must be unique within the set of all nodes and relationship identifiers must be unique within the set of all relationships.
 If your identifiers are only unique within a CSV file or a table, one way to make them globally unique is to prepend the file or table name (i.e., the intended label) to the identifier.
 However, this also requires updating start and end node identifiers for relationships.
 
