@@ -1,10 +1,7 @@
+group = "${group}.documentation"
 
-group =     group + '.documentation'
 
-tasks.sourceJar.enabled = false
-tasks.testJar.enabled = false
-tasks.docJar.enabled = false
-tasks.jar.enabled = false
+tasks.findAll { it instanceof Jar }.each { it.enabled = false }
 
 task asciidocJar(type: Jar) {
     group 'documentation'
@@ -36,6 +33,15 @@ task aggregatedScalaDocJar(type: Jar) {
     classifier = 'javadoc'
     from tasks.aggregatedScalaDoc
 }
+
+pub.full.artifacts = [
+        'aggregatedScalaDocJar',
+        'asciidocJar',
+]
+pub.dev.artifacts = [
+        'aggregatedScalaDocJar',
+        'asciidocJar',
+]
 
 dependencies {
     tasks.aggregatedScalaDoc.fromProjects.each {
