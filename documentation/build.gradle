@@ -1,8 +1,5 @@
 group = "${group}.documentation"
 
-
-tasks.findAll { it instanceof Jar }.each { it.enabled = false }
-
 task asciidocJar(type: Jar) {
     group 'documentation'
     description 'Package asciidoc source files.'
@@ -17,9 +14,8 @@ task aggregatedScalaDoc(type: ScalaDoc) {
             project(':spark-cypher-examples'),
     ]
 
-    fromProjects.each {
-        source it.sourceSets.main.allSource
-    }
+    classpath = project.sourceSets.main.compileClasspath
+    source = fromProjects.collect { it.sourceSets.main.allSource }
 
     include '**/api/**/*.scala'
     include '**/api/**/*.java'
