@@ -181,13 +181,27 @@ We combine the mappings with the tables in order to create node and relationship
 
 [source, scala]
 ----
-val personNodes = CAPSNodeTable(personMapping, personDataFrame)
-val foodNodes = CAPSNodeTable(foodMapping, foodDataFrame)
-val likesRels = CAPSRelationshipTable(likesMapping, likesDataMapping)
+val personNodes = CAPSNodeTable.fromMapping(personMapping, personDataFrame)
+val foodNodes = CAPSNodeTable.fromMapping(foodMapping, foodDataFrame)
+val likesRels = CAPSRelationshipTable.fromMapping(likesMapping, likesDataMapping)
 val graph = capsSession.readFrom(personNodes, foodNodes, likesRels)
 ----
 
 Now we have everything we need to run Cypher queries on our newly defined graph.
+
+[[graphs-from-tables-id-types]]
+=== Supported identifier types
+
+CAPS uses Sparks' `BinaryType` to represent identifiers internally.
+Identifiers uniquely identify nodes and relationships, as well as start and end nodes for relationships.
+During the creation of a `CAPSNodeTable` or a `CAPSRelationshipTable`, we automatically convert the specified identifier columns to `BinaryType`.
+At the moment, the conversion is supported for `LongType`, `IntegerType` and `StringType`.
+If your identifier has a different data type, you need to convert it to one of the supported types before creating a CAPS table.
+
+Using this mechanism, you can re-use identifiers that you might already have, e.g. in a CSV file or a relational table.
+Note, that node identifiers must be unique within the set of all nodes and relationship identifiers must be unique within the set of all relationships.
+If your identifiers are only unique within a CSV file or a table, one way to make them globally unique is to prepend the file or table name (i.e., the intended label) to the identifier.
+However, this also requires updating start and end node identifiers for relationships.
 
 
 [[graph-from-tables-graph-ddl]]

@@ -100,7 +100,8 @@ object SparkTable {
       df.drop(cols: _*)
     }
 
-    override def orderBy(sortItems: (Expr, Order)*)(implicit header: RecordHeader, parameters: CypherMap): DataFrameTable = {
+    override def orderBy(sortItems: (Expr, Order)*)
+      (implicit header: RecordHeader, parameters: CypherMap): DataFrameTable = {
       val mappedSortItems = sortItems.map { case (expr, order) =>
         val mappedExpr = expr.asSparkSQLExpr(header, df, parameters)
         order match {
@@ -444,10 +445,15 @@ object SparkTable {
 
     def encodeIdColumns(idColumns: String*): Seq[Column] = {
       idColumns.map { key =>
-        if (df.structFieldForColumn(key).dataType == LongType) {
-          df.col(key).encodeLongAsCAPSId(key)
-        } else {
-          df.col(key)
+        df.structFieldForColumn(key).dataType match {
+          case LongType => df.col(key).encodeLongAsCAPSId(key)
+          case IntegerType => df.col(key).cast(LongType).encodeLongAsCAPSId(key)
+          case StringType => df.col(key).cast(BinaryType)
+          case BinaryType => df.col(key)
+          case unsupportedType => throw IllegalArgumentException(
+            expected = s"Column `$key` should have a valid identifier data type, such as [`$BinaryType`, `$StringType`, `$LongType`, `$IntegerType`]",
+            actual = s"Unsupported column type `$unsupportedType`"
+          )
         }
       }
     }
@@ -469,6 +475,7 @@ object SparkTable {
         }
         if (col == convertedCol) col else convertedCol.as(field.name)
       }
+
       val convertedColumns = df.schema.fields.map { field => convertColumns(field, df.col(field.name)) }
       if (df.columns.map(df.col).sameElements(convertedColumns)) df else df.select(convertedColumns: _*)
     }
