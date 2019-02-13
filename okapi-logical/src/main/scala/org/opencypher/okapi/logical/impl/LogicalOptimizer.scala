@@ -26,7 +26,8 @@
  */
 package org.opencypher.okapi.logical.impl
 
-import org.opencypher.okapi.api.types.CTBoolean
+import org.opencypher.okapi.api.graph.{NodeRelPattern, Pattern, TripletPattern}
+import org.opencypher.okapi.api.types.{CTBoolean, CTNode}
 import org.opencypher.okapi.ir.api.IRField
 import org.opencypher.okapi.ir.api.expr._
 import org.opencypher.okapi.ir.api.util.DirectCompilationStage
@@ -56,6 +57,62 @@ object LogicalOptimizer extends DirectCompilationStage[LogicalOperator, LogicalO
       }.transform(in, context = false)
 
       if (rewritten) newChild else filter
+  }
+
+  def replaceScansWithRecognizePatterns(implicit context: LogicalPlannerContext): PartialFunction[LogicalOperator, LogicalOperator] = {
+    case exp: Expand =>
+      exp.source.cypherType.graph.flatMap { g =>
+
+        val availablePatterns = context
+          .catalog(g.namespace).graph(g.graphName)
+          .patterns
+          .collect {
+            case nr: NodeRelPattern => nr
+            case nrn: TripletPattern => nrn
+          }.toList
+          .sorted(Pattern.PatternOrdering)
+          .reverse
+
+        availablePatterns.collectFirst {
+          case pattern@TripletPattern(source, rel, target) if
+            source.withGraph(g) == exp.source.cypherType && rel.withGraph(g) == exp.rel.cypherType && target.withGraph(g) == exp.target.cypherType =>
+
+            val withPatternScan = replaceScans(exp.rhs, exp.target, pattern) { parent =>
+              val map = Map(exp.source -> pattern.sourceEntity, exp.rel -> pattern.relEntity, exp.target -> pattern.targetEntity)
+              PatternScan(pattern, map, parent, parent.solved.withFields(map.keySet.map(_.toField.get).toList:_ *))
+            }
+
+            replaceScans(exp.lhs, exp.source, pattern){_ => withPatternScan}
+
+          case pattern@NodeRelPattern(node, rel) if node.withGraph(g) == exp.source.cypherType && rel.withGraph(g) == exp.rel.cypherType =>
+            val withPatternScan = replaceScans(exp.lhs, exp.source, pattern) { parent =>
+              val map = Map(exp.source -> pattern.nodeEntity, exp.rel -> pattern.relEntity)
+              PatternScan(pattern, map, parent, parent.solved.withFields(map.keySet.map(_.toField.get).toList:_ *))
+            }
+
+            val joinExpr = Equals(EndNode(exp.rel)(CTNode), exp.target)(CTBoolean)
+            ValueJoin(withPatternScan, exp.rhs, Set(joinExpr), exp.solved)
+        }
+      }.getOrElse(exp)
+  }
+
+  def replaceScans(subtree: LogicalOperator, varToReplace: Var, pattern: Pattern)(f: LogicalOperator => LogicalOperator):LogicalOperator = {
+   def rewriter: PartialFunction[LogicalOperator, LogicalOperator] = {
+      case NodeScan(n, parent, _) if n == varToReplace =>  f(parent)
+      case pScan: PatternScan if pScan.mapping.contains(varToReplace) =>
+        val renamedVarToReplace = Var(varToReplace.name + "_renamed")(varToReplace.cypherType)
+
+        val replaceOp = f(pScan.in)
+        val withAliasedVar = Project(varToReplace -> Some(renamedVarToReplace), replaceOp, replaceOp.solved.withFields(renamedVarToReplace.toField.get))
+        val toSelect = replaceOp.fields - varToReplace + renamedVarToReplace
+        val selectOp = Select(toSelect.toList, withAliasedVar, replaceOp.solved.withFields(renamedVarToReplace.toField.get))
+
+        val joinExpr = Equals(varToReplace, renamedVarToReplace)(CTBoolean)
+        val joinOp = ValueJoin(pScan, selectOp, Set(joinExpr), pScan.solved ++ selectOp.solved)
+        Select((pScan.mapping.keySet ++ selectOp.fields).toList, joinOp, joinOp.solved)
+    }
+
+    BottomUp[LogicalOperator](rewriter).transform(subtree)
   }
 
   private object CanOptimize {
