@@ -81,6 +81,7 @@ def whitelist = [
 
 
 subprojects {
+    apply plugin: 'base'
     apply plugin: "com.github.hierynomus.license"
 
     // License header checking and insertion
@@ -144,6 +145,9 @@ subprojects {
         ext.licensesFile = file("$tasks.downloadLicenses.jsonDestination/LICENSES.txt")
         ext.noticeFile = file("$tasks.downloadLicenses.jsonDestination/NOTICE.txt")
 
+        outputs.file(ext.licensesFile)
+        outputs.file(ext.noticeFile)
+
         doLast {
             licensesFile.createNewFile()
             licensesFile.text = rootProject.file("etc/licenses/headers/LICENSES-header.txt").text
@@ -172,39 +176,7 @@ subprojects {
         }
     }
 
-    task validateLicensesFiles {
-        group 'license'
-        description 'Validates dependency license report files'
-        dependsOn tasks.generateLicensesFiles
-
-        doLast {
-            [[generated: tasks.generateLicensesFiles.licensesFile,
-              existing : file("$projectDir/LICENSES.txt")],
-             [generated: tasks.generateLicensesFiles.noticeFile,
-              existing : file("$projectDir/NOTICE.txt")],
-            ].each {
-                if (it.generated.text != it.existing.text) {
-                    throw new GradleException("Generated file differs from the existing file.\n Generated: $it.generated \n Existing: $it.existing")
-                }
-            }
-        }
-    }
-
-    tasks.check.dependsOn tasks.validateLicensesFiles
-
-    task overwriteLicenseFiles {
-        group 'license'
-        description 'Overwrites dependency license report files'
-        dependsOn tasks.generateLicensesFiles
-
-        doLast {
-            [tasks.generateLicensesFiles.licensesFile,
-             tasks.generateLicensesFiles.noticeFile,
-            ].each { file ->
-                copy { from file; into projectDir }
-            }
-        }
-    }
+    tasks.check.dependsOn tasks.generateLicensesFiles
 }
 
 // Disable dependency license validation on test and documentation projects
@@ -219,5 +191,4 @@ subprojects {
 ].each {
     project(it).tasks.validateLicenses.enabled = false
     project(it).tasks.generateLicensesFiles.enabled = false
-    project(it).tasks.validateLicensesFiles.enabled = false
 }

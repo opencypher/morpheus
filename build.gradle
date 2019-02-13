@@ -12,6 +12,8 @@ allprojects {
     version = ver.self
 }
 
+apply from: 'build.licenses.gradle'
+
 subprojects {
     apply plugin: 'scala'
 
@@ -78,6 +80,12 @@ subprojects {
         from(sourceSets.test.output)
     }
 
+    tasks.withType(Jar) {
+        from(tasks.generateLicensesFiles) {
+            into("META-INF/")
+        }
+    }
+
     task dependencySearch(type: DependencyInsightReportTask) {
         description 'Searches all projects for a dependency'
         group 'help'
@@ -96,6 +104,5 @@ subprojects {
     }
 }
 
-apply from: 'build.licenses.gradle'
 apply from: 'build.publishing.gradle'
 apply from: 'build.style.gradle'
