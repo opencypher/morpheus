@@ -1,4 +1,10 @@
-group = group + '.documentation'
+
+group =     group + '.documentation'
+
+tasks.sourceJar.enabled = false
+tasks.testJar.enabled = false
+tasks.docJar.enabled = false
+tasks.jar.enabled = false
 
 task asciidocJar(type: Jar) {
     group 'documentation'
@@ -7,7 +13,32 @@ task asciidocJar(type: Jar) {
     from("asciidoc")
 }
 
-tasks.sourceJar.enabled = false
-tasks.testJar.enabled = false
-tasks.docJar.enabled = false
-tasks.jar.enabled = false
+task aggregatedScalaDoc(type: ScalaDoc) {
+    ext.fromProjects = [
+            project(':okapi-api'),
+            project(':spark-cypher'),
+            project(':spark-cypher-examples'),
+    ]
+
+    fromProjects.each {
+        source it.sourceSets.main.allSource
+    }
+
+    include '**/api/**/*.scala'
+    include '**/api/**/*.java'
+    include '**/examples/**/*.scala'
+    include '**/examples/**/*.java'
+
+    scalaDocOptions.additionalParameters = scalacParameters
+}
+
+task aggregatedScalaDocJar(type: Jar) {
+    classifier = 'javadoc'
+    from tasks.aggregatedScalaDoc
+}
+
+dependencies {
+    tasks.aggregatedScalaDoc.fromProjects.each {
+        compileOnly it
+    }
+}
