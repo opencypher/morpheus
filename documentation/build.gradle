@@ -1,6 +1,13 @@
+group = group + '.documentation'
+
 task asciidocJar(type: Jar) {
     group 'documentation'
     description 'Package asciidoc source files.'
     classifier = 'asciidoc'
     from("asciidoc")
 }
+
+tasks.sourceJar.enabled = false
+tasks.testJar.enabled = false
+tasks.docJar.enabled = false
+tasks.jar.enabled = false
