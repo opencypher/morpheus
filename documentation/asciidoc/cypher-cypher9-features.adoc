@@ -6,15 +6,224 @@
 This section describes the Cypher9 features supported by CAPS.
 --
 
-// TODO: Incorporate below spreadsheet here
-// https://docs.google.com/spreadsheets/d/1c5_LoI96EYICE6l09rxna-eLO7V-GParEdiHLJJ_Oaw/[This spreadsheet] tracks which aspects of Cypher are currently supported.
+Not all features of Cypher9 are supported by CAPS.
+Some will be supported in the future.
+Others will never be supported.
 
-Not all functions and graph patterns are yet supported but all of the basics are in place.
-
-Notably missing are:
+Notable missing features that will be supported in the future are:
 
 * `shortestPath` and `allShortestPaths`
 * path patterns (`p = ()-\->()`)
 * unbounded variable-length patterns
 
-Cypher 9 support will be increased over successive versions of CAPS.
+Notable missing feature that will never be supported are:
+
+* Schema commands
+* Index hints
+* Features that are deprecated in Cypher9 (`CREATE UNIQUE`, `START`)
+
+Here follows a comprehensive reference of Cypher9 features and their implementation status.
+
+:yes: [✓]
+:no: [{nbsp}{nbsp}{nbsp}]
+:never: X
+
+
+== Types
+
+// TODO: Explain limitations around mixed-type lists, storable property values and nested structures
+[options=header]
+|===
+| name          | status | name | status
+| Boolean       | {yes}
+| Date          | {yes}
+| DateTime      | {no}
+| Duration      | {yes}
+| Float         | {yes}
+| Integer       | {yes}
+| List          | {yes}
+| LocalDateTime | {yes}
+| LocalTime     | {no}
+| Map           | {no}
+| Node          | {yes}
+| Path          | {no}
+| Point         | {no}
+| Relationship  | {yes}
+| String        | {yes}
+| Time          | {no}
+|===
+
+
+== Clauses
+
+[cols="m,d,m,d", options=header]
+|===
+| name            | status | name | status
+| CALL ... YIELD  | {no}
+| CREATE          | {no}
+| DELETE          | {no}
+| DETACH DELETE   | {no}
+| MANDATORY MATCH | {no}
+| MATCH           | {yes}
+| MERGE           | {no}
+| OPTIONAL MATCH  | {yes}
+| REMOVE          | {no}
+| RETURN          | {yes}
+| SET             | {no}
+| UNION           | {no}
+| UNWIND          | {yes}
+| WITH            | {yes}
+|===
+
+
+== Sub-clauses
+[cols="m,d,m,d", options=header]
+|===
+| name        | status | name | status
+| LIMIT       | {yes}
+| ON CREATE   | {no}
+| ON MATCH    | {no}
+| ORDER BY    | {yes}
+| SKIP        | {yes}
+| WHERE       | {yes}
+|===
+
+
+== Functions
+
+[cols="m,d,m,d,m,d,m,d", options=header]
+|===
+| name             | status | name | status | name | status | name | status
+| abs()            | {yes}
+| acos()           | {yes}
+| asin()           | {yes}
+| atan()           | {yes}
+| atan2()          | {yes}
+| ceil()           | {yes}
+| coalesce()       | {yes}
+| cos()            | {yes}
+| cot()            | {yes}
+| degrees()        | {yes}
+| distance()       | {no}
+| e()              | {yes}
+| endNode()        | {yes}
+| exists()         | {yes}
+| exp()            | {yes}
+| floor()          | {yes}
+| haversin()       | {yes}
+| head()           | {no}
+| id()             | {yes}
+| in()             | {yes}
+| keys()           | {yes}
+| lTrim()          | {yes}
+| labels()         | {yes}
+| last()           | {no}
+| left()           | {yes}
+| length()         | {yes}
+| log()            | {yes}
+| log10()          | {yes}
+| nodes()          | {no}
+| percentileCont() | {no}
+| percentileDisc() | {no}
+| pi()             | {yes}
+| point()          | {no}
+| properties()     | {no}
+| rTrim()          | {yes}
+| radians()        | {yes}
+| rand()           | {yes}
+| range()          | {yes}
+| relationships()  | {no}
+| replace()        | {yes}
+| reverse()        | {no}
+| right()          | {yes}
+| round()          | {yes}
+| sign()           | {yes}
+| sin()            | {yes}
+| size()           | {yes}
+| split()          | {no}
+| sqrt()           | {yes}
+| startNode()      | {yes}
+| substring()      | {yes}
+| tail()           | {no}
+| tan()            | {yes}
+| timestamp()      | {yes}
+| toBoolean()      | {yes}
+| toFloat()        | {yes}
+| toInteger()      | {yes}
+| toLower()        | {yes}
+| toString()       | {yes}
+| toUpper()        | {yes}
+| trim()           | {yes}
+| type()           | {yes}
+|===
+
+
+== Aggregating functions
+
+[cols="m,d,m,d", options=header]
+|===
+| name      | status | name | status
+| avg()     | {yes}
+| collect() | {yes}
+| count()   | {yes}
+| max()     | {yes}
+| min()     | {yes}
+| stdDev()  | {no}
+| stdDevP() | {no}
+| sum()     | {yes}
+|===
+
+
+== Expressions
+
+[options=header]
+|===
+| name                   | status  | name | status
+| CASE                   | {yes}
+| all                    | {no}
+| allShortestPaths       | {no}
+| any                    | {no}
+| extract                | {never}
+| filter                 | {no}
+| list comprehension     | {no}
+| map projections        | {no}
+| none                   | {no}
+| parameters             | {yes}
+| pattern comprehensions | {no}
+| reduce                 | {no}
+| shortestPath           | {no}
+| single                 | {no}
+|===
+
+
+== Operators
+
+[cols="m,d,m,d,m,d", options=header]
+|===
+| name                  | status | name | status | name | status
+| =                     | {yes}
+| <>                    | {yes}
+| <                     | {yes}
+| >                     | {yes}
+| \<=                   | {yes}
+| >=                    | {yes}
+| =~                    | {yes}
+| pass:[+ (arithmetic)] | {yes}
+| pass:[+ (list)]       | {no}
+| pass:[+ (string)]     | {yes}
+| /                     | {yes}
+| pass:[*]              | {yes}
+| .                     | {yes}
+| [] (subscript)        | {yes}
+| AND                   | {yes}
+| CONTAINS              | {yes}
+| DISTINCT              | {yes}
+| ENDS WITH             | {yes}
+| IS NOT NULL           | {yes}
+| IS NULL               | {yes}
+| NOT                   | {yes}
+| OR                    | {yes}
+| STARTS WITH           | {yes}
+| XOR                   | {no}
+|===
+
