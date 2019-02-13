@@ -3,7 +3,7 @@
 
 [abstract]
 --
-Placeholder abstract.
+This chapter introduces CAPS concepts and APIs, and gives examples for getting started with CAPS.
 --
 
 // TODO: Expand this to be a small but complete working example.

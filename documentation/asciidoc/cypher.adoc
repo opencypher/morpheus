@@ -3,7 +3,7 @@
 
 [abstract]
 --
-Placeholder abstract.
+This chapter documents the Cypher query language as implemented in CAPS; its features and limitations.
 --
 
 When we refer to Cypher in CAPS, we are talking about the read-only part of Cypher 9, and the extensions for Multiple Graphs proposed in Cypher 10.
