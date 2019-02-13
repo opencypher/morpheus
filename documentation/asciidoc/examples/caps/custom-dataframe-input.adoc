@@ -1,5 +1,5 @@
 [[example-custom-dataframe-input]]
-= Example: Custom DataFrame input
+= Custom DataFrame input
 
 [source, scala]
 ----

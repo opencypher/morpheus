@@ -1,5 +1,5 @@
 [[example-census-sql-hive]]
-= Example: Census SQL graph source example using Hive
+= Census SQL graph source example using Hive
 
 [source, scala]
 ----

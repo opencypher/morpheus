@@ -1,5 +1,5 @@
 [[backend-filesystem]]
-= Filesystem Backend
+= Filesystem
 
 [abstract]
 --

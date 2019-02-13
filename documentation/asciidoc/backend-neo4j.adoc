@@ -1,5 +1,5 @@
 [[backend-neo4j]]
-= Neo4j Backend
+= Neo4j
 
 [abstract]
 --

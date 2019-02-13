@@ -1,5 +1,5 @@
 [[example-neo4j-graph-merge]]
-= Example: Neo4j GraphMerge
+= Neo4j GraphMerge
 
 [source, scala]
 ----

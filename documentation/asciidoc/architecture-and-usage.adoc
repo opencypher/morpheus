@@ -1,5 +1,5 @@
 [[technology]]
-= Technology choices and future directions
+= Technology choices
 
 [abstract]
 --
@@ -24,7 +24,7 @@ This suggests several possible future directions:
 
 
 [[technology-distributed-vs-federated]]
-== Distributed vs. federated query processing
+== Query processing
 
 In choosing data sources and sinks, where the data resides is pretty important.
 

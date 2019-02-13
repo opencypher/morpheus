@@ -1,5 +1,5 @@
 [[example-census-sql-jdbc]]
-= Example: Census SQL graph source example using JDBC
+= Census SQL graph source example using JDBC
 
 [source, scala]
 ----

@@ -1,5 +1,5 @@
 [[example-datasource]]
-= Example: DataSource
+= DataSource
 
 [source, scala]
 ----
