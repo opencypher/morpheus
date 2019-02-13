@@ -1,11 +1,6 @@
 [[backend-graphddl]]
 = Graph DDL (Data Definition Language)
 
-[abstract]
---
-Placeholder abstract.
---
-
 Graph DDL enables importing SQL tabular data into a property graph in Spark.
 It is common that the data inside relational databases is or can be modelled as a graph, but the data is often not formatted correctly to be directly exploited as such.
 

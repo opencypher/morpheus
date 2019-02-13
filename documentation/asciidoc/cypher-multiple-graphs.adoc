@@ -3,7 +3,7 @@
 
 [abstract]
 --
-Placeholder abstract.
+This section describes Cypher multiple graph support in CAPS.
 --
 
 Neo4j CAPS ships with novel Cypher features under the title of Multiple-Graphs.

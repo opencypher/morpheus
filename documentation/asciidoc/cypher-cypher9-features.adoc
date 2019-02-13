@@ -1,6 +1,11 @@
 [[cypher-cypher9-features]]
 = Supported Cypher
 
+[abstract]
+--
+This section describes the Cypher9 features supported by CAPS.
+--
+
 // TODO: Incorporate below spreadsheet here
 // https://docs.google.com/spreadsheets/d/1c5_LoI96EYICE6l09rxna-eLO7V-GParEdiHLJJ_Oaw/[This spreadsheet] tracks which aspects of Cypher are currently supported.
 
