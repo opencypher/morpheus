@@ -384,20 +384,23 @@ case class RecordHeader(exprToColumn: Map[Expr, String]) {
   }
 
   def ++(other: RecordHeader): RecordHeader = {
-    val concatenateHeader = exprToColumn ++ other.exprToColumn
-    // validate if types colliding expressions have compatible types
-    concatenateHeader.foreach {
-      case (key, _) =>
+    val result = (exprToColumn ++ other.exprToColumn).map {
+      case (key, value) =>
         val leftCT = exprToColumn.keySet.find(_ == key).map(_.cypherType).getOrElse(CTVoid)
         val rightCT = other.exprToColumn.keySet.find(_ == key).map(_.cypherType).getOrElse(CTVoid)
-        if (leftCT.subTypeOf(rightCT).isFalse) {
+        if (leftCT.subTypeOf(rightCT).isTrue) {
+          val rightKey = other.exprToColumn.keySet.collectFirst { case k if k == key => k }.get
+          rightKey -> value
+        } else if (rightCT.subTypeOf(leftCT).isTrue) {
+          key -> value
+        } else  {
           throw IllegalArgumentException(
             expected = s"Compatible Cypher types for expression $key",
-            actual = s"left type `$leftCT` is not a subtype of right type `$rightCT`"
+            actual = s"left type `$leftCT` and right type `$rightCT`"
           )
         }
     }
-    copy(exprToColumn = concatenateHeader)
+    copy(exprToColumn = result)
   }
 
   def --[T <: Expr](expressions: Set[T]): RecordHeader = {
