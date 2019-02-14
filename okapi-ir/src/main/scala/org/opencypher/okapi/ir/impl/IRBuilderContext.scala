@@ -72,7 +72,7 @@ final case class IRBuilderContext(
 
   // TODO: Fuse monads
   def infer(expr: ast.Expression): Map[Ref[ast.Expression], CypherType] = {
-    typer.infer(expr, TypeTracker(List(knownTypes), parameters.value)) match {
+    typer.infer(expr, TypeTracker(knownTypes, parameters.value)) match {
       case Right(result) =>
         result.recorder.toMap
 

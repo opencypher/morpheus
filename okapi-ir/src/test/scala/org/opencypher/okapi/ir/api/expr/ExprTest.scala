@@ -68,11 +68,4 @@ class ExprTest extends BaseTestSuite {
     (n as Var("m")()).cypherType should equal(n.cypherType)
   }
 
-  test("set new cypher type") {
-    val n = Var("n")(CTNode("A"))
-    val updatedN = n.withCypherType(CTNode("B").nullable)
-    updatedN should equal(n)
-    updatedN.cypherType should equal(CTNode("B").nullable)
-  }
-
 }

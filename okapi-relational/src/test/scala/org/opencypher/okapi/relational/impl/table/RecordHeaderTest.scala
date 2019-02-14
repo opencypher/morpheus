@@ -178,12 +178,13 @@ class RecordHeaderTest extends BaseTestSuite {
     unionHeader.ownedBy(o) should equalWithTracing(oExprs)
   }
 
-  it("can combine headers with same vars but different cypherType") {
+  it("can combine headers with same vars and compatible cypherType") {
     Seq(
       CTBoolean -> CTBoolean,
-      CTInteger -> CTString,
       CTNode("A") -> CTNode("B"),
-      CTRelationship("A") -> CTRelationship("B")
+      CTNode("A") -> CTNode("A", "B"),
+      CTRelationship("A") -> CTRelationship("B"),
+      CTRelationship("A") -> CTRelationship("A", "B")
     ).foreach {
       case (p1Type, p2Type) =>
         val p1 = Var("p")(p1Type)

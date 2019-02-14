@@ -152,17 +152,7 @@ object SchemaTyper {
 
     case Ands(exprs) => processAndsOrs(expr, exprs.toVector)
 
-    case Ors(exprs) =>
-      for {
-        t1 <- get[R, TypeTracker]
-        t2 <- put[R, TypeTracker](t1.pushScope()) >> get[R, TypeTracker]
-        result <- processAndsOrs(expr, exprs.toVector)
-        _ <- t2.popScope() match {
-          case None => error(TypeTrackerScopeError) >> put[R, TypeTracker](TypeTracker.empty)
-          case Some(t) =>
-            put[R, TypeTracker](t)
-        }
-      } yield result
+    case Ors(exprs) => processAndsOrs(expr, exprs.toVector)
 
     case Equals(lhs, rhs) =>
       for {

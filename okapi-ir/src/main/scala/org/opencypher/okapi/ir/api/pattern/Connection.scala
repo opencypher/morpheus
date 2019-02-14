@@ -27,16 +27,14 @@
 package org.opencypher.okapi.ir.api.pattern
 
 import org.opencypher.okapi.api.types.CTRelationship
-import org.opencypher.okapi.impl.exception.IllegalArgumentException
 import org.opencypher.okapi.ir.api._
 import org.opencypher.okapi.ir.api.pattern.Orientation.{Cyclic, Directed, Undirected}
 import org.opencypher.v9_0.expressions.SemanticDirection
-import org.opencypher.v9_0.expressions.SemanticDirection.{BOTH, INCOMING, OUTGOING}
+import org.opencypher.v9_0.expressions.SemanticDirection.OUTGOING
 
 import scala.language.higherKinds
 
 sealed trait Connection {
-  type SELF[XO, XE] <: Connection { type O = XO; type E = XE }
   type O <: Orientation[E]
   type E <: Endpoints
 
@@ -46,8 +44,6 @@ sealed trait Connection {
   def source: IRField
   def target: IRField
 
-  def flip: SELF[O, E]
-
   override def hashCode(): Int = orientation.hash(endpoints, seed)
   override def equals(obj: scala.Any): Boolean = super.equals(obj) || (obj != null && equalsIfNotEq(obj))
 
@@ -56,7 +52,6 @@ sealed trait Connection {
 }
 
 sealed trait DirectedConnection extends Connection {
-  override type SELF[XO, XE] <: DirectedConnection { type O = XO; type E = XE }
   override type O = Directed.type
   override type E = DifferentEndpoints
 
@@ -67,7 +62,6 @@ sealed trait DirectedConnection extends Connection {
 }
 
 sealed trait UndirectedConnection extends Connection {
-  override type SELF[XO, XE] <: UndirectedConnection { type O = XO; type E = XE }
   override type O = Undirected.type
   override type E = DifferentEndpoints
 
@@ -78,7 +72,6 @@ sealed trait UndirectedConnection extends Connection {
 }
 
 sealed trait CyclicConnection extends Connection {
-  override type SELF[XO, XE] <: CyclicConnection { type O = XO; type E = XE }
   override type O = Cyclic.type
   override type E = IdenticalEndpoints
 
@@ -93,25 +86,16 @@ case object SingleRelationship {
 }
 
 sealed trait SingleRelationship extends Connection {
-  override type SELF[XO, XE] <: SingleRelationship { type O = XO; type E = XE }
   final protected override def seed: Int = SingleRelationship.seed
 }
 
 final case class DirectedRelationship(endpoints: DifferentEndpoints, semanticDirection: SemanticDirection)
   extends SingleRelationship with DirectedConnection {
 
-  override type SELF[XO, XE] = DirectedRelationship { type O = XO; type E = XE }
-
   protected def equalsIfNotEq(obj: scala.Any): Boolean = obj match {
     case other: DirectedRelationship => orientation.eqv(endpoints, other.endpoints)
     case _ => false
   }
-
-  override def flip: DirectedRelationship = copy(endpoints.flip, semanticDirection = semanticDirection match {
-    case OUTGOING => INCOMING
-    case INCOMING => OUTGOING
-    case BOTH => throw IllegalArgumentException("semantic direction to be OUTGOING or INCOMING", "BOTH")
-  })
 }
 
 case object DirectedRelationship {
@@ -124,14 +108,10 @@ case object DirectedRelationship {
 final case class UndirectedRelationship(endpoints: DifferentEndpoints)
   extends SingleRelationship with UndirectedConnection {
 
-  override type SELF[XO, XE] = UndirectedRelationship { type O = XO; type E = XE }
-
   protected def equalsIfNotEq(obj: scala.Any): Boolean = obj match {
     case other: UndirectedRelationship => orientation.eqv(endpoints, other.endpoints)
     case _ => false
   }
-
-  override def flip: UndirectedRelationship = copy(endpoints.flip)
 }
 
 case object UndirectedRelationship {
@@ -143,14 +123,10 @@ case object UndirectedRelationship {
 
 final case class CyclicRelationship(endpoints: IdenticalEndpoints) extends SingleRelationship with CyclicConnection {
 
-  override type SELF[XO, XE] = CyclicRelationship { type O = XO; type E = XE }
-
   protected def equalsIfNotEq(obj: scala.Any): Boolean = obj match {
     case other: CyclicRelationship => orientation.eqv(endpoints, other.endpoints)
     case _ => false
   }
-
-  override def flip: CyclicRelationship = this
 }
 
 object VarLengthRelationship {
@@ -158,7 +134,6 @@ object VarLengthRelationship {
 }
 
 sealed trait VarLengthRelationship extends Connection {
-  override type SELF[XO, XE] <: VarLengthRelationship { type O = XO; type E = XE }
   final protected override def seed: Int = VarLengthRelationship.seed
 
   def lower: Int
@@ -173,13 +148,6 @@ final case class DirectedVarLengthRelationship(
   upper: Option[Int],
   semanticDirection: SemanticDirection = OUTGOING
 ) extends VarLengthRelationship with DirectedConnection {
-  override type SELF[XO, XE] = DirectedVarLengthRelationship {type O = XO; type E = XE}
-
-  override def flip: DirectedVarLengthRelationship = copy(endpoints = endpoints.flip, semanticDirection = semanticDirection match {
-    case OUTGOING => INCOMING
-    case INCOMING => OUTGOING
-    case BOTH => throw IllegalArgumentException("semantic direction to be OUTGOING or INCOMING", "BOTH")
-  })
 
   override protected def equalsIfNotEq(obj: Any): Boolean = obj match {
     case other: DirectedVarLengthRelationship => orientation.eqv(endpoints, other.endpoints)
@@ -188,9 +156,6 @@ final case class DirectedVarLengthRelationship(
 }
 
 final case class UndirectedVarLengthRelationship(edgeType: CTRelationship, endpoints: DifferentEndpoints, lower: Int, upper: Option[Int]) extends VarLengthRelationship with UndirectedConnection {
-  override type SELF[XO, XE] = UndirectedVarLengthRelationship { type O = XO; type E = XE }
-
-  override def flip: UndirectedVarLengthRelationship = this
 
   override protected def equalsIfNotEq(obj: Any): Boolean = obj match {
     case other: UndirectedVarLengthRelationship => orientation.eqv(endpoints, other.endpoints)
