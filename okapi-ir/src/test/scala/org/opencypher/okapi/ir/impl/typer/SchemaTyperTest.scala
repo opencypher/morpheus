@@ -597,7 +597,7 @@ class SchemaTyperTest extends BaseTestSuite with Neo4jAstTestSupport with Mockit
   }
 
   private def typeTracker(typings: (String, CypherType)*): TypeTracker =
-    TypeTracker(List(typings.map { case (v, t) => varFor(v) -> t }.toMap))
+    TypeTracker(typings.map { case (v, t) => varFor(v) -> t }.toMap)
 
   private object assertExpr {
     def from(exprText: String)(implicit tracker: TypeTracker = TypeTracker.empty) =
