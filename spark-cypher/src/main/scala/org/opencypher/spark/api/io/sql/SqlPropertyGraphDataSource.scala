@@ -54,7 +54,7 @@ import scala.reflect.io.Path
 case class SqlPropertyGraphDataSource(
   graphDdl: GraphDdl,
   sqlDataSourceConfigs: Map[String, SqlDataSourceConfig],
-  idGenerationStrategy: IdGenerationStrategy = MonotonicallyIncreasingId
+  idGenerationStrategy: IdGenerationStrategy = SerializedId
 )(implicit val caps: CAPSSession) extends CAPSPropertyGraphDataSource {
 
   override def hasGraph(graphName: GraphName): Boolean = graphDdl.graphs.contains(graphName)
@@ -68,10 +68,7 @@ case class SqlPropertyGraphDataSource(
     val nodeDataFrames = ddlGraph.nodeToViewMappings.mapValues(nvm => readTable(nvm.view))
 
     // Generate node identifiers
-    val nodeDataFramesWithIds = idGenerationStrategy match {
-      case HashBasedId => createHashIdForTables(nodeDataFrames, ddlGraph, sourceIdKey)
-      case MonotonicallyIncreasingId => createMonotonicallyIncreasingIdForTables(nodeDataFrames, sourceIdKey)
-    }
+    val nodeDataFramesWithIds = createIdForTables(nodeDataFrames, ddlGraph, sourceIdKey, idGenerationStrategy)
 
     val nodeTables = nodeDataFramesWithIds.map {
       case (nodeViewKey, nodeDf) =>
@@ -90,10 +87,7 @@ case class SqlPropertyGraphDataSource(
     val relDataFrames = ddlGraph.edgeToViewMappings.map(evm => evm.key -> readTable(evm.view)).toMap
 
     // Generate relationship identifiers
-    val relDataFramesWithIds = idGenerationStrategy match {
-      case HashBasedId => createHashIdForTables(relDataFrames, ddlGraph, sourceIdKey)
-      case MonotonicallyIncreasingId => createMonotonicallyIncreasingIdForTables(relDataFrames, sourceIdKey)
-    }
+    val relDataFramesWithIds = createIdForTables(relDataFrames, ddlGraph, sourceIdKey, idGenerationStrategy)
 
     val relationshipTables = ddlGraph.edgeToViewMappings.map { edgeToViewMapping =>
       val edgeViewKey = edgeToViewMapping.key
@@ -102,25 +96,11 @@ case class SqlPropertyGraphDataSource(
       val startNodeViewKey = edgeToViewMapping.startNode.nodeViewKey
       val endNodeViewKey = edgeToViewMapping.endNode.nodeViewKey
 
-      val relsWithStartNodeId = idGenerationStrategy match {
-        case HashBasedId =>
-          // generate the start node id using the same hash parameters as for the corresponding node table
-          val idColumnNames = edgeToViewMapping.startNode.joinPredicates.map(_.edgeColumn).map(_.toPropertyColumnName)
-          createHashIdForTable(relDf, startNodeViewKey, idColumnNames, sourceStartNodeKey)
-        case MonotonicallyIncreasingId =>
-          val startNodeDf = nodeDataFramesWithIds(startNodeViewKey)
-          joinNodeAndEdgeDf(startNodeDf, relDf, edgeToViewMapping.startNode.joinPredicates, sourceStartNodeKey)
-      }
-
-      val relsWithEndNodeId = idGenerationStrategy match {
-        case HashBasedId =>
-          // generate the end node id using the same hash parameters as for the corresponding node table
-          val idColumnNames = edgeToViewMapping.endNode.joinPredicates.map(_.edgeColumn).map(_.toPropertyColumnName)
-          createHashIdForTable(relsWithStartNodeId, endNodeViewKey, idColumnNames, sourceEndNodeKey)
-        case MonotonicallyIncreasingId =>
-          val endNodeDf = nodeDataFramesWithIds(endNodeViewKey)
-          joinNodeAndEdgeDf(endNodeDf, relsWithStartNodeId, edgeToViewMapping.endNode.joinPredicates, sourceEndNodeKey)
-      }
+      // generate the start/end node id using the same parameters as for the corresponding node table
+      val idColumnNamesStartNode = edgeToViewMapping.startNode.joinPredicates.map(_.edgeColumn).map(_.toPropertyColumnName)
+      val relsWithStartNodeId = createIdForTable(relDf, startNodeViewKey, idColumnNamesStartNode, sourceStartNodeKey, idGenerationStrategy)
+      val idColumnNamesEndNode = edgeToViewMapping.endNode.joinPredicates.map(_.edgeColumn).map(_.toPropertyColumnName)
+      val relsWithEndNodeId = createIdForTable(relsWithStartNodeId, endNodeViewKey, idColumnNamesEndNode, sourceEndNodeKey, idGenerationStrategy)
 
       val columnsWithType = relColsWithCypherType(capsSchema, relElementType)
       val inputRelMapping = createRelationshipMapping(relElementType, edgeToViewMapping.propertyMappings)
@@ -133,46 +113,6 @@ case class SqlPropertyGraphDataSource(
     }
 
     caps.graphs.create(Some(capsSchema), nodeTables.head, nodeTables.tail ++ relationshipTables: _*)
-  }
-
-  private def joinNodeAndEdgeDf(
-    nodeDf: DataFrame,
-    edgeDf: DataFrame,
-    joinColumns: List[Join],
-    newNodeIdColumn: String
-  ): DataFrame = {
-
-    val nodePrefix = "node_"
-    val edgePrefix = "edge_"
-
-    // to avoid collisions on column names
-    val namespacedNodeDf = nodeDf.prefixColumns(nodePrefix)
-    val namespacedEdgeDf = edgeDf.prefixColumns(edgePrefix)
-
-    val namespacedJoinColumns = joinColumns
-      .map(join => Join(nodePrefix + join.nodeColumn.toPropertyColumnName, edgePrefix + join.edgeColumn.toPropertyColumnName))
-
-    val joinPredicate = namespacedJoinColumns
-      .map(join => namespacedNodeDf.col(join.nodeColumn) === namespacedEdgeDf.col(join.edgeColumn))
-      .reduce(_ && _)
-
-    val nodeIdColumnName = nodePrefix + sourceIdKey
-
-    // attach id from nodes as start/end by joining on the given columns
-    val edgeDfWithNodesJoined = namespacedNodeDf
-      .select(nodeIdColumnName, namespacedJoinColumns.map(_.nodeColumn): _*)
-      .withColumnRenamed(nodeIdColumnName, newNodeIdColumn)
-      .join(namespacedEdgeDf, joinPredicate)
-
-    // drop unneeded node columns (those we joined on) and drop namespace on edge columns
-    edgeDfWithNodesJoined.columns.foldLeft(edgeDfWithNodesJoined) {
-      case (currentDf, columnName) if columnName.startsWith(nodePrefix) =>
-        currentDf.drop(columnName)
-      case (currentDf, columnName) if columnName.startsWith(edgePrefix) =>
-        currentDf.withColumnRenamed(columnName, columnName.substring(edgePrefix.length))
-      case (currentDf, _) =>
-        currentDf
-    }
   }
 
   private def readTable(viewId: ViewId): DataFrame = {
@@ -197,7 +137,7 @@ case class SqlPropertyGraphDataSource(
     val spark = caps.sparkSession
 
     val tableName = (viewId.maybeSetSchema, viewId.parts) match {
-      case (_, dataSource :: schema :: view :: Nil) => s"$schema.$view"
+      case (_, _ :: schema :: view :: Nil) => s"$schema.$view"
       case (Some(SetSchemaDefinition(dataSource, schema)), view :: Nil) => s"$schema.$view"
       case (None, view) if view.size < 3 =>
         malformed("Relative view identifier requires a preceding SET SCHEMA statement", view.mkString("."))
@@ -254,7 +194,11 @@ case class SqlPropertyGraphDataSource(
       .load(filePath.toString)
   }
 
-  private def normalizeDataFrame(dataFrame: DataFrame, mapping: EntityMapping, columnTypes: Map[String, CypherType]): DataFrame = {
+  private def normalizeDataFrame(
+    dataFrame: DataFrame,
+    mapping: EntityMapping,
+    columnTypes: Map[String, CypherType]
+  ): DataFrame = {
     val fields = dataFrame.schema.fields
     val indexedFields = fields.map(field => field.name.toLowerCase).zipWithIndex.toMap
 
@@ -272,7 +216,7 @@ case class SqlPropertyGraphDataSource(
   private def normalizeTemporalColumns(df: DataFrame, columnTypes: Map[String, CypherType]): DataFrame = {
     columnTypes
       .mapValues(_.material)
-      .collect { case (column, _@ CTDate) => column}
+      .collect { case (column, _@CTDate) => column }
       .foldLeft(df) { case (acc, dateCol) => acc.withColumn(dateCol, acc.col(dateCol).cast(DateType)) }
   }
 
@@ -307,8 +251,9 @@ case class SqlPropertyGraphDataSource(
   }
 
   /**
-    * Creates a potentially unique 64-bit identifier for each row in the given input table. The identifier is computed
-    * by hashing the view name, the element type (i.e. its labels) and the values stored in a given set of columns.
+    * Creates a 64-bit identifier for each row in the given input table. The identifier is computed by hashing or
+    * serializing (depending on the strategy) the view name, the element type (i.e. its labels) and the values stored in a
+    * given set of columns.
     *
     * @param dataFrame      input table / view
     * @param elementViewKey node / edge view key used for hashing
@@ -317,25 +262,29 @@ case class SqlPropertyGraphDataSource(
     * @tparam T node / edge view key
     * @return input table / view with an additional column that contains potentially unique identifiers
     */
-  private def createHashIdForTable[T <: ElementViewKey](
+  private def createIdForTable[T <: ElementViewKey](
     dataFrame: DataFrame,
     elementViewKey: T,
     idColumnNames: List[String],
-    newIdColumn: String
+    newIdColumn: String,
+    strategy: IdGenerationStrategy
   ): DataFrame = {
     val viewLiteral = functions.lit(elementViewKey.viewId.parts.mkString("."))
     val elementTypeLiterals = elementViewKey.elementType.toSeq.sorted.map(functions.lit)
     val idColumns = idColumnNames.map(dataFrame.col)
-    dataFrame.withHashColumn(Seq(viewLiteral) ++ elementTypeLiterals ++ idColumns, newIdColumn)
+    strategy match {
+      case HashBasedId => dataFrame.withHashColumn(Seq(viewLiteral) ++ elementTypeLiterals ++ idColumns, newIdColumn)
+      case SerializedId => dataFrame.withSerializedIdColumn(Seq(viewLiteral) ++ elementTypeLiterals ++ idColumns, newIdColumn)
+    }
   }
 
   /**
-    * Creates a potentially unique 64-bit identifier for each row in the given input tables. The identifier is computed
-    * by hashing a specific set of columns of the input table. For node tables, we either pick the the join columns from
-    * the relationship mappings (i.e. the columns we join on) or all columns if the node is unconnected.
+    * Creates a 64-bit identifier for each row in the given input tables. The identifier is computed by hashing or
+    * serializing a specific set of columns of the input table. For node tables, we either pick the the join columns
+    * from the relationship mappings (i.e. the columns we join on) or all columns if the node is unconnected.
     *
-    * In order to reduce the probability of hash collisions, the view name and the element type (i.e. its labels) are
-    * additional input for the hash function.
+    * In order to avoid or reduce the probability of ID collisions (depending on the strategy), the view name and the
+    * element type (i.e. its labels) are additional input for the hash function and ID serializer.
     *
     * @param views       input tables
     * @param ddlGraph    DDL graph instance definition
@@ -343,10 +292,11 @@ case class SqlPropertyGraphDataSource(
     * @tparam T node / edge view key
     * @return input tables with an additional column that contains potentially unique identifiers
     */
-  private def createHashIdForTables[T <: ElementViewKey](
+  private def createIdForTables[T <: ElementViewKey](
     views: Map[T, DataFrame],
     ddlGraph: Graph,
-    newIdColumn: String
+    newIdColumn: String,
+    strategy: IdGenerationStrategy
   ): Map[T, DataFrame] = {
     views.map { case (elementViewKey, dataFrame) =>
       val idColumnNames = elementViewKey match {
@@ -356,25 +306,8 @@ case class SqlPropertyGraphDataSource(
         }
         case _: EdgeViewKey => dataFrame.columns.toList
       }
-      elementViewKey -> createHashIdForTable(dataFrame, elementViewKey, idColumnNames, newIdColumn)
+      elementViewKey -> createIdForTable(dataFrame, elementViewKey, idColumnNames, newIdColumn, strategy)
     }
-  }
-
-  /**
-    * Creates a unique 64-bit identifier for each row in the given input tables. The identifier is monotonically
-    * increasing across the input tables.
-    *
-    * @param views       input tables
-    * @param newIdColumn name of the new id column
-    * @tparam T node / edge view key
-    * @return input tables with an additional column that contains unique identifiers
-    */
-  private def createMonotonicallyIncreasingIdForTables[T <: ElementViewKey](
-    views: Map[T, DataFrame],
-    newIdColumn: String
-  ): Map[T, DataFrame] = {
-    val (elementViewKeys, dataFrames) = views.unzip
-    elementViewKeys.zip(dataFrames.toSeq.addUniqueIds(newIdColumn)).toMap
   }
 
   override def schema(name: GraphName): Option[CAPSSchema] = graphDdl.graphs.get(name).map(_.graphType.asCaps)
@@ -401,4 +334,5 @@ case class SqlPropertyGraphDataSource(
 
   private def stringList(elems: Traversable[Any]): String =
     elems.mkString("[", ",", "]")
+
 }

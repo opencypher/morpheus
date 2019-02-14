@@ -481,7 +481,7 @@ object SparkTable {
     }
 
     /**
-      * Adds a new column under a given name containing the hash value of the given input columns.
+      * Adds a new column `hashColumn` containing the hash value of the given input columns.
       *
       * The hash is generated using [[org.apache.spark.sql.catalyst.expressions.Murmur3Hash]] based on the given column
       * sequence. To decrease collision probability, we:
@@ -493,15 +493,28 @@ object SparkTable {
       *
       * @param columns    input columns for the hash function
       * @param hashColumn column storing the result of the hash function
-      * @return DataFrame with an additional idColumn
+      * @return DataFrame with an additional column that contains the hash ID
       */
     def withHashColumn(columns: Seq[Column], hashColumn: String): DataFrame = {
       require(columns.nonEmpty, "Hash function requires a non-empty sequence of columns as input.")
       val tempHashValue = functions.hash(columns: _*).cast(LongType)
       val shifted = functions.shiftLeft(tempHashValue, Integer.SIZE)
       val hashValue = shifted + functions.hash(columns.reverse: _*)
+      val encodedHashValue = hashValue.encodeLongAsCAPSId
 
-      df.safeAddColumn(hashColumn, hashValue)
+      df.safeAddColumn(hashColumn, encodedHashValue)
+    }
+
+    /**
+      * Adds a new column `serializedColumn` containing the serialized values of the given input columns.
+      *
+      * @param columns    input columns for the serialization function
+      * @param serializedColumn column storing the result of the serialization function
+      * @return DataFrame with an additional column that contains the serialized ID
+      */
+    def withSerializedIdColumn(columns: Seq[Column], serializedColumn: String): DataFrame = {
+      require(columns.nonEmpty, "Serialized ID function requires a non-empty sequence of columns as input.")
+      df.safeAddColumn(serializedColumn, functions.concat_ws("|", columns: _*).cast(BinaryType))
     }
 
     /**
