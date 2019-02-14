@@ -510,6 +510,8 @@ object SparkTable {
       */
     def withSerializedIdColumn(columns: Seq[Column], serializedColumn: String): DataFrame = {
       require(columns.nonEmpty, "Serialized ID function requires a non-empty sequence of columns as input.")
+
+
       df.safeAddColumn(serializedColumn, functions.concat_ws("|", columns: _*).cast(BinaryType))
     }
 
