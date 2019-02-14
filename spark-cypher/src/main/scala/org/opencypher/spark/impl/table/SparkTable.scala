@@ -40,6 +40,7 @@ import org.opencypher.okapi.ir.api.expr.{Expr, _}
 import org.opencypher.okapi.relational.api.table.Table
 import org.opencypher.okapi.relational.impl.planning._
 import org.opencypher.okapi.relational.impl.table.RecordHeader
+import org.opencypher.spark.impl.CAPSFunctions
 import org.opencypher.spark.impl.CAPSFunctions.partitioned_id_assignment
 import org.opencypher.spark.impl.SparkSQLExprMapper._
 import org.opencypher.spark.impl.convert.SparkConversions._
@@ -497,12 +498,7 @@ object SparkTable {
       */
     def withHashColumn(columns: Seq[Column], hashColumn: String): DataFrame = {
       require(columns.nonEmpty, "Hash function requires a non-empty sequence of columns as input.")
-      val tempHashValue = functions.hash(columns: _*).cast(LongType)
-      val shifted = functions.shiftLeft(tempHashValue, Integer.SIZE)
-      val hashValue = shifted + functions.hash(columns.reverse: _*)
-      val encodedHashValue = hashValue.encodeLongAsCAPSId
-
-      df.safeAddColumn(hashColumn, encodedHashValue)
+      df.safeAddColumn(hashColumn, CAPSFunctions.hash64(columns: _*).encodeLongAsCAPSId)
     }
 
     /**

@@ -59,9 +59,9 @@ class FullPGDSAcceptanceTest extends CAPSTestSuite
 
   // === Run scenarios with all factories
 
-//  executeScenariosWithContext(cypher10Scenarios, Neo4jContextFactory)
+  executeScenariosWithContext(cypher10Scenarios, Neo4jContextFactory)
 
-//  executeScenariosWithContext(allScenarios, SessionContextFactory)
+  executeScenariosWithContext(allScenarios, SessionContextFactory)
 
   val sqlBlackList: Set[String] = Set("API: PropertyGraphDataSource: correct node/rel count for graph #1")
 
@@ -69,13 +69,13 @@ class FullPGDSAcceptanceTest extends CAPSTestSuite
     executeScenariosWithContext(allScenarios.filter(s => !sqlBlackList.contains(s.name)), ctx)
   )
 
-//  allFileSystemContextFactories.foreach(executeScenariosWithContext(allScenarios, _))
+  allFileSystemContextFactories.foreach(executeScenariosWithContext(allScenarios, _))
 
   // === Generate context factories for Neo4j, Session, FileSystem, and SQL property graph data sources
 
   lazy val fileFormatOptions = List(csv, parquet, orc)
   lazy val filesPerTableOptions = List(1) //, 10
-  lazy val idGenerationOptions = List(SerializedId)//, HashBasedId)
+  lazy val idGenerationOptions = List(SerializedId, HashBasedId)
 
   lazy val allFileSystemContextFactories: List[TestContextFactory] = {
     for {
