@@ -22,16 +22,10 @@ subprojects {
 
         publications {
 
-            dev(MavenPublication) {
-                from components.java
-
-                afterEvaluate {
-                    artifacts = pub.dev.artifacts
-                            .findResults { tasks.findByName(it) }
-                            .findAll { it.enabled }
-                }
-
-                pom {
+            def pomConfig = {
+                    name = project.description
+                    description = project.description
+                    url = 'https://www.opencypher.org'
                     licenses {
                         license {
                             name = 'Apache License, Version 2.0'
@@ -49,6 +43,16 @@ subprojects {
                     scm {
                         url = 'https://github.com/opencypher/cypher-for-apache-spark'
                     }
+            }
+
+            dev(MavenPublication) {
+                from components.java
+
+                afterEvaluate {
+                    pom pomConfig
+                    artifacts = pub.dev.artifacts
+                            .findResults { tasks.findByName(it) }
+                            .findAll { it.enabled }
                 }
             }
 
@@ -56,30 +60,10 @@ subprojects {
                 from components.java
 
                 afterEvaluate {
+                    pom pomConfig
                     artifacts = pub.full.artifacts
                             .findResults { tasks.findByName(it) }
                             .findAll { it.enabled }
-
-                }
-
-                pom {
-                    licenses {
-                        license {
-                            name = 'Apache License, Version 2.0'
-                            url = 'http://www.apache.org/licenses/LICENSE-2.0'
-                        }
-                    }
-                    developers {
-                        developer {
-                            id = 'caps'
-                            name = 'The CAPS team'
-                            email = 'opencypher@neo4j.com'
-                            url = 'https://www.opencypher.org'
-                        }
-                    }
-                    scm {
-                        url = 'https://github.com/opencypher/cypher-for-apache-spark'
-                    }
                 }
             }
         }
