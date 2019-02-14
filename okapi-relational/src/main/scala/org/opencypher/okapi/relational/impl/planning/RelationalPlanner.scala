@@ -551,23 +551,32 @@ object RelationalPlanner {
       val header = op.header
       val idCol = header.idColumns(entity).head
       val properties = header.propertiesFor(entity).map(p => p -> header.column(p))
+      val propertyMapping = properties.map { case (Property(_, PropertyKey(property)), column) => property -> column }
 
       entity.cypherType match {
         case CTNode(labels, _) =>
-          val mapping = NodeMapping.on(idCol).withImpliedLabels(labels.toSeq: _*)
-          val nodeMapping = properties.foldLeft(mapping) {
-            case (acc, (Property(_, PropertyKey(key)), col)) => acc.withPropertyKey(key, col)
-          }
-          op.session.entityTables.entityTable(nodeMapping, op.table)
+          // TODO: respect optional labels
+          val mapping = NodeMapping
+            .on(idCol)
+            .withImpliedLabels(labels.toSeq: _*)
+            .withPropertyKeyMappings(propertyMapping.toSeq: _*)
+            .build
+
+          op.session.entityTables.entityTable(mapping, op.table)
 
         case CTRelationship(typ, _) =>
           val sourceCol = header.column(header.startNodeFor(entity))
           val targetCol = header.column(header.endNodeFor(entity))
-          val mapping = RelationshipMapping.on(idCol).from(sourceCol).to(targetCol).withRelType(typ.head)
-          val relMapping = properties.foldLeft(mapping) {
-            case (acc, (Property(_, PropertyKey(key)), col)) => acc.withPropertyKey(key, col)
-          }
-          op.session.entityTables.entityTable(relMapping, op.table)
+          // TODO respect optional rel types
+          val mapping = RelationshipMapping
+            .on(idCol)
+            .from(sourceCol)
+            .to(targetCol)
+            .withRelType(typ.head)
+            .withPropertyKeyMappings(propertyMapping.toSeq: _*)
+            .build
+
+          op.session.entityTables.entityTable(mapping, op.table)
 
         case other => throw UnsupportedOperationException(s"Cannot create scan for $other")
       }

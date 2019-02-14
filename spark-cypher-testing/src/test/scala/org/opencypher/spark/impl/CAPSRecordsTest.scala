@@ -37,6 +37,7 @@ import org.opencypher.okapi.relational.impl.table.RecordHeader
 import org.opencypher.okapi.testing.Bag
 import org.opencypher.okapi.testing.Bag._
 import org.opencypher.okapi.testing.MatchHelper.equalWithTracing
+import org.opencypher.spark.api.io.CAPSEntityTable
 import org.opencypher.spark.api.io.{CAPSNodeTable, CAPSRelationshipTable}
 import org.opencypher.spark.api.value.CAPSEntity._
 import org.opencypher.spark.api.value.CAPSNode
@@ -146,8 +147,9 @@ class CAPSRecordsTest extends CAPSTestSuite with GraphConstructionFixture with T
       .withImpliedLabel("Person")
       .withOptionalLabel("Swedish" -> "IS_SWEDE")
       .withPropertyKey("name" -> "NAME")
+      .build
 
-    val nodeTable = CAPSNodeTable.fromMapping(givenMapping, givenDF)
+    val nodeTable = CAPSEntityTable.create(givenMapping, givenDF)
 
     val records = caps.records.fromEntityTable(nodeTable)
 
@@ -176,8 +178,9 @@ class CAPSRecordsTest extends CAPSTestSuite with GraphConstructionFixture with T
       .to("TO")
       .relType("NEXT")
       .withPropertyKey("color" -> "COLOR")
+      .build
 
-    val relTable = CAPSRelationshipTable.fromMapping(givenMapping, givenDF)
+    val relTable = CAPSEntityTable.create(givenMapping, givenDF)
 
     val records = caps.records.fromEntityTable(relTable)
 
@@ -196,18 +199,19 @@ class CAPSRecordsTest extends CAPSTestSuite with GraphConstructionFixture with T
   it("contract relationships with a dynamic type") {
     val givenDF = sparkSession.createDataFrame(
       Seq(
-        (10L, 1L, 2L, "RED"),
-        (11L, 2L, 3L, "BLUE"),
-        (12L, 3L, 4L, "GREEN"),
-        (13L, 4L, 1L, "YELLOW")
-      )).toDF("ID", "FROM", "TO", "COLOR")
+        (10L, 1L, 2L, true, false, false, false),
+        (11L, 2L, 3L, false, true, false, false),
+        (12L, 3L, 4L, false, false, true, false),
+        (13L, 4L, 1L, false, false, false, true)
+      )).toDF("ID", "FROM", "TO", "red", "blue", "green", "yellow")
 
     val givenMapping = RelationshipMapping.on("ID")
       .from("FROM")
       .to("TO")
-      .withSourceRelTypeKey("COLOR", Set("RED", "BLUE", "GREEN", "YELLOW"))
+      .withOptionalRelType("RED"-> "red", "BLUE" -> "blue", "GREEN" -> "green", "YELLOW" -> "yellow")
+      .build
 
-    val relTable = CAPSRelationshipTable.fromMapping(givenMapping, givenDF)
+    val relTable = CAPSEntityTable.create(givenMapping, givenDF)
 
     val records = caps.records.fromEntityTable(relTable)
 

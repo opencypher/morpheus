@@ -30,16 +30,13 @@ import org.opencypher.okapi.api.graph.{Entity, IdKey, Pattern}
 import org.opencypher.okapi.impl.exception.IllegalArgumentException
 
 // TODO document
-trait EntityMapping {
-  def pattern: Pattern
-
-  def properties: Map[Entity, Map[String, String]]
-
-  def idKeys: Map[Entity, Map[IdKey, String]]
-
-  def impliedTypes: Map[Entity, Set[String]]
-
-  def optionalTypes: Map[Entity, Map[String, String]]
+case class EntityMapping(
+  pattern: Pattern,
+  properties: Map[Entity, Map[String, String]],
+  idKeys: Map[Entity, Map[IdKey, String]],
+  impliedTypes: Map[Entity, Set[String]],
+  optionalTypes: Map[Entity, Map[String, String]]
+) {
 
   def allSourceKeys: Seq[String] =
     (
@@ -57,9 +54,52 @@ trait EntityMapping {
         s"Duplicate columns: $duplicateColumns")
     }
   }
+}
 
-  protected def preventOverwritingProperty(entity: Entity, propertyKey: String): Unit =
-    if (properties.get(entity).exists(_.contains(propertyKey)))
+trait EntityMappingBuilder {
+
+  type BuilderType <: EntityMappingBuilder
+
+  def propertyMapping: Map[String, String]
+
+  protected def updatePropertyMapping(propertyMapping: Map[String, String]): BuilderType
+
+  def build: EntityMapping
+
+  protected def validate(): Unit
+
+  def withPropertyKey(tuple: (String, String)): BuilderType =
+    withPropertyKey(tuple._1, tuple._2)
+
+  def withPropertyKey(property: String): BuilderType =
+    withPropertyKey(property, property)
+
+  def withPropertyKey(propertyKey: String, sourcePropertyKey: String): BuilderType = {
+    preventOverwritingProperty(propertyKey)
+    updatePropertyMapping(propertyMapping.updated(propertyKey, sourcePropertyKey))
+  }
+
+  def withPropertyKeys(properties: String*): BuilderType = {
+    if (properties.size != properties.toSet.size)
+      throw IllegalArgumentException("unique propertyKey definitions",
+        s"given key $properties overwrites existing mapping")
+
+    withPropertyKeyMappings(properties.map(p => p -> p):_ *)
+  }
+
+  def withPropertyKeyMappings(tuples: (String, String)*): BuilderType = {
+    val updatedMapping = tuples.foldLeft(propertyMapping) {
+      case (oldMapping, (propertyKey, source)) =>
+        preventOverwritingProperty(propertyKey)
+        oldMapping.updated(propertyKey, source)
+    }
+
+    updatePropertyMapping(updatedMapping)
+  }
+
+  protected def preventOverwritingProperty(propertyKey: String): Unit =
+    if (propertyMapping.contains(propertyKey))
       throw IllegalArgumentException("unique property key definitions",
-        s"given key $propertyKey overwrites existing mapping for entity $entity")
+        s"given key $propertyKey overwrites existing mapping")
+
 }

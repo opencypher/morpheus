@@ -27,13 +27,13 @@
 package org.opencypher.spark.impl
 
 import org.apache.spark.sql.Row
-import org.opencypher.okapi.api.io.conversion.{NodeMapping, RelationshipMapping}
+import org.opencypher.okapi.api.io.conversion.RelationshipMapping
 import org.opencypher.okapi.api.types._
 import org.opencypher.okapi.relational.api.planning.RelationalRuntimeContext
 import org.opencypher.okapi.relational.api.table.RelationalCypherRecords
 import org.opencypher.okapi.relational.impl.operators.Start
 import org.opencypher.okapi.testing.Bag
-import org.opencypher.spark.api.io.{CAPSNodeTable, CAPSRelationshipTable}
+import org.opencypher.spark.api.io.CAPSEntityTable
 import org.opencypher.spark.api.value.CAPSEntity._
 import org.opencypher.spark.impl.table.SparkTable.DataFrameTable
 import org.opencypher.spark.testing.CAPSTestSuite
@@ -94,8 +94,7 @@ abstract class CAPSGraphTest extends CAPSTestSuite
         (6L, false, "Hannes", 42L))
     ).toDF("ID", "IS_SWEDE", "NAME", "NUM")
 
-    // TODO remove hard cast
-    val personTable2 = CAPSNodeTable.fromMapping(personTable.mapping.asInstanceOf[NodeMapping], personsPart2)
+    val personTable2 = CAPSEntityTable.create(personTable.mapping, personsPart2)
 
     val graph = caps.graphs.create(personTable, personTable2)
     graph.nodes("n").size shouldBe 6
@@ -109,8 +108,7 @@ abstract class CAPSGraphTest extends CAPSTestSuite
         (1L, 8L, 3L, 2016L))
     ).toDF("SRC", "ID", "DST", "SINCE")
 
-    // TODO remove hard cast
-    val knowsTable2 = CAPSRelationshipTable.fromMapping(knowsTable.mapping.asInstanceOf[RelationshipMapping], knowsParts2)
+    val knowsTable2 = CAPSEntityTable.create(knowsTable.mapping, knowsParts2)
 
     val graph = caps.graphs.create(personTable, knowsTable, knowsTable2)
     graph.relationships("r").size shouldBe 8
@@ -125,20 +123,21 @@ abstract class CAPSGraphTest extends CAPSTestSuite
   it("should handle a single df containing multiple relationship types") {
     val yingYang = caps.sparkSession.createDataFrame(
       Seq(
-        (1L, 8L, 3L, "HATES"),
-        (1L, 3L, 4L, "HATES"),
-        (2L, 4L, 3L, "LOVES"),
-        (2L, 5L, 4L, "LOVES"),
-        (3L, 6L, 4L, "LOVES"))
-    ).toDF("SRC", "ID", "DST", "TYPE")
+        (1L, 8L, 3L, true, false),
+        (1L, 3L, 4L, true, false),
+        (2L, 4L, 3L, false, true),
+        (2L, 5L, 4L, false, true),
+        (3L, 6L, 4L, false, true))
+    ).toDF("SRC", "ID", "DST", "hates", "loves")
 
     val relMapping = RelationshipMapping
       .on("ID")
       .from("SRC")
       .to("DST")
-      .withSourceRelTypeKey("TYPE", Set("HATES", "LOVES"))
+      .withOptionalRelType("HATES" -> "hates", "LOVES" -> "loves")
+      .build
 
-    val relTable = CAPSRelationshipTable.fromMapping(relMapping, yingYang)
+    val relTable = CAPSEntityTable.create(relMapping, yingYang)
 
     val graph = caps.graphs.create(personTable, relTable)
 

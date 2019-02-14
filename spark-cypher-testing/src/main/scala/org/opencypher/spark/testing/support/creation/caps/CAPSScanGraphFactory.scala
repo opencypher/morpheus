@@ -36,9 +36,9 @@ import org.opencypher.okapi.impl.temporal.Duration
 import org.opencypher.okapi.relational.impl.graph.ScanGraph
 import org.opencypher.okapi.testing.propertygraph.InMemoryTestGraph
 import org.opencypher.spark.api.CAPSSession
+import org.opencypher.spark.api.io.CAPSEntityTable
 import org.opencypher.spark.api.io.GraphEntity.sourceIdKey
 import org.opencypher.spark.api.io.Relationship.{sourceEndNodeKey, sourceStartNodeKey}
-import org.opencypher.spark.api.io.{CAPSNodeTable, CAPSRelationshipTable}
 import org.opencypher.spark.impl.convert.SparkConversions._
 import org.opencypher.spark.impl.table.SparkTable.DataFrameTable
 import org.opencypher.spark.impl.temporal.SparkTemporalHelpers._
@@ -77,10 +77,11 @@ object CAPSScanGraphFactory extends CAPSTestGraphFactory {
 
       val records = caps.sparkSession.createDataFrame(rows.asJava, structType).toDF(header: _*)
 
-      CAPSNodeTable.fromMapping(NodeMapping
+      CAPSEntityTable.create(NodeMapping
         .on(tableEntityIdKey)
         .withImpliedLabels(labels.toSeq: _*)
-        .withPropertyKeys(propKeys.keys.toSeq: _*), records)
+        .withPropertyKeys(propKeys.keys.toSeq: _*)
+        .build, records)
     }
 
     val relScans = schema.relationshipTypes.map { relType =>
@@ -102,12 +103,13 @@ object CAPSScanGraphFactory extends CAPSTestGraphFactory {
 
       val records = caps.sparkSession.createDataFrame(rows.asJava, structType).toDF(header: _*)
 
-      CAPSRelationshipTable.fromMapping(RelationshipMapping
+      CAPSEntityTable.create(RelationshipMapping
         .on(tableEntityIdKey)
         .from(sourceStartNodeKey)
         .to(sourceEndNodeKey)
         .relType(relType)
-        .withPropertyKeys(propKeys.keys.toSeq: _*), records)
+        .withPropertyKeys(propKeys.keys.toSeq: _*)
+        .build, records)
     }
 
     new ScanGraph(nodeScans.toSeq ++ relScans, schema)

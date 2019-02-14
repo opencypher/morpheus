@@ -29,7 +29,6 @@ package org.opencypher.okapi.api.io.conversion
 import org.opencypher.okapi.api.graph._
 import org.opencypher.okapi.api.types.CTRelationship
 import org.opencypher.okapi.impl.exception.IllegalArgumentException
-import org.opencypher.okapi.impl.util.StringEncodingUtilities._
 
 object RelationshipMapping {
 
@@ -63,7 +62,13 @@ object RelationshipMapping {
     * @param properties         property keys
     * @return relationship mapping
     */
-  def create(sourceIdKey: String, sourceStartNodeKey: String, sourceEndNodeKey: String, relType: String, properties: Set[String] = Set.empty): RelationshipMapping = {
+  def create(
+    sourceIdKey: String,
+    sourceStartNodeKey: String,
+    sourceEndNodeKey: String,
+    relType: String,
+    properties: Set[String] = Set.empty
+  ): EntityMapping = {
     val intermediateMapping = RelationshipMapping
       .withSourceIdKey(sourceIdKey)
       .withSourceStartNodeKey(sourceStartNodeKey)
@@ -72,14 +77,14 @@ object RelationshipMapping {
 
     properties.foldLeft(intermediateMapping) {
       (mapping, property) => mapping.withPropertyKey(property)
-    }
+    }.build
   }
 
   sealed class MissingSourceStartNodeKey(sourceIdKey: String) {
     /**
       * @param sourceStartNodeKey represents a key to the start node identifier within the source data. The retrieved
       *                           value from the source data is expected to be a [[scala.Long]] value.
-      * @return incomplete relationship mapping
+      * @return incomplete relationship mapping builder
       */
     def withSourceStartNodeKey(sourceStartNodeKey: String): MissingSourceEndNodeKey =
       new MissingSourceEndNodeKey(sourceIdKey, sourceStartNodeKey)
@@ -89,7 +94,7 @@ object RelationshipMapping {
       *
       * @param sourceStartNodeKey represents a key to the start node identifier within the source data. The retrieved
       *                           value from the source data is expected to be a [[scala.Long]] value.
-      * @return incomplete relationship mapping
+      * @return incomplete relationship mapping builder
       */
     def from(sourceStartNodeKey: String): MissingSourceEndNodeKey =
       withSourceStartNodeKey(sourceStartNodeKey)
@@ -99,7 +104,7 @@ object RelationshipMapping {
     /**
       * @param sourceEndNodeKey represents a key to the end node identifier within the source data. The retrieved
       *                         value from the source data is expected to be a [[scala.Long]] value.
-      * @return incomplete relationship mapping
+      * @return incomplete relationship mapping builder
       */
     def withSourceEndNodeKey(sourceEndNodeKey: String): MissingRelTypeMapping =
       new MissingRelTypeMapping(sourceIdKey, sourceStartNodeKey, sourceEndNodeKey)
@@ -109,7 +114,7 @@ object RelationshipMapping {
       *
       * @param sourceEndNodeKey represents a key to the end node identifier within the source data. The retrieved
       *                         value from the source data is expected to be a [[scala.Long]] value.
-      * @return incomplete relationship mapping
+      * @return incomplete relationship mapping builder
       */
     def to(sourceEndNodeKey: String): MissingRelTypeMapping =
       withSourceEndNodeKey(sourceEndNodeKey)
@@ -118,28 +123,28 @@ object RelationshipMapping {
   sealed class MissingRelTypeMapping(sourceIdKey: String, sourceStartNodeKey: String, sourceEndNodeKey: String) {
     /**
       * @param relType represents the relationship type for all relationships in the source data
-      * @return relationship mapping
+      * @return relationship mapping builder
       */
-    def withRelType(relType: String): RelationshipMapping =
-      RelationshipMapping(sourceIdKey, sourceStartNodeKey, sourceEndNodeKey, Left(relType))
+    def withRelType(relType: String): RelationshipMappingBuilder =
+      RelationshipMappingBuilder(sourceIdKey, sourceStartNodeKey, sourceEndNodeKey, Left(relType))
 
     /**
       * Alias for [[withRelType]].
       *
       * @param relType represents the relationship type for all relationships in the source data
-      * @return relationship mapping
+      * @return relationship mapping builder
       */
-    def relType(relType: String): RelationshipMapping =
+    def relType(relType: String): RelationshipMappingBuilder =
       withRelType(relType)
 
     /**
-      * @param sourceRelTypeKey represents a key to the relationship type within the source data. The retrieved
-      *                         value from the source data is expected to be a [[String]] value.
-      * @param possibleTypes    set of possible relationship types withing the source data column
-      * @return relationship mapping
+      * @param relTypeMapping represents the mapping between possible relationship types and their representation in the
+      *                       source data. The retrieved value from the source data is expected to be a [[Boolean]] value.
+      *                       Note that only *one* per row only one of the source columns may be set to true.
+      * @return relationship mapping builder
       */
-    def withSourceRelTypeKey(sourceRelTypeKey: String, possibleTypes: Set[String]): RelationshipMapping =
-      RelationshipMapping(sourceIdKey, sourceStartNodeKey, sourceEndNodeKey, Right(sourceRelTypeKey -> possibleTypes))
+    def withOptionalRelType(relTypeMapping: (String, String)*): RelationshipMappingBuilder =
+      RelationshipMappingBuilder(sourceIdKey, sourceStartNodeKey, sourceEndNodeKey, Right(relTypeMapping.toMap))
   }
 
 }
@@ -151,76 +156,72 @@ object RelationshipMapping {
   *
   * Construct a [[RelationshipMapping]] starting with [[RelationshipMapping#on]].
   *
-  * @param relationshipIdKey               key to access the node identifier in the source data
-  * @param relationshipStartNodeKey        key to access the start node identifier in the source data
-  * @param relationshipEndNodeKey          key to access the end node identifier in the source data
+  * @param relationshipIdKey         key to access the node identifier in the source data
+  * @param relationshipStartNodeKey  key to access the start node identifier in the source data
+  * @param relationshipEndNodeKey    key to access the end node identifier in the source data
   * @param relTypeOrSourceRelTypeKey either a relationship type or a key to access the type in the source data and a set of all possible types
-  * @param relationshipPropertyMapping           mapping from property key to source property key
+  * @param propertyMapping           mapping from property key to source property key
   */
-final case class RelationshipMapping private[okapi](
+final case class RelationshipMappingBuilder(
   relationshipIdKey: String,
   relationshipStartNodeKey: String,
   relationshipEndNodeKey: String,
-  relTypeOrSourceRelTypeKey: Either[String, (String, Set[String])],
-  relationshipPropertyMapping: Map[String, String] = Map.empty) extends EntityMapping {
+  relTypeOrSourceRelTypeKey: Either[String, Map[String, String]],
+  propertyMapping: Map[String, String] = Map.empty
+) extends EntityMappingBuilder {
 
-  // on construction
-  validate()
+  override type BuilderType = RelationshipMappingBuilder
 
-  override def pattern: RelationshipPattern = {
-    val possibleRelTypes = relTypeOrSourceRelTypeKey match {
-      case Left(relType) => Set(relType)
-      case Right((_, possibleRelValues)) => possibleRelValues
+  override protected def updatePropertyMapping(updatedPropertyMapping: Map[String, String]): RelationshipMappingBuilder =
+    copy(propertyMapping = updatedPropertyMapping)
+
+  override def build: EntityMapping = {
+    validate()
+
+    val pattern: RelationshipPattern = {
+      val possibleRelTypes = relTypeOrSourceRelTypeKey match {
+        case Left(relType) => Set(relType)
+        case Right(possibleRelValues) => possibleRelValues.keySet
+      }
+
+      RelationshipPattern(CTRelationship(possibleRelTypes))
     }
 
-    RelationshipPattern(CTRelationship(possibleRelTypes))
-  }
-
-  override lazy val properties: Map[Entity, Map[String, String]] = Map( pattern.relEntity -> relationshipPropertyMapping )
-  override lazy val idKeys: Map[Entity, Map[IdKey, String]] = Map(
-    pattern.relEntity -> Map(
-      SourceIdKey -> relationshipIdKey,
-      SourceStartNodeKey -> relationshipStartNodeKey,
-      SourceEndNodeKey -> relationshipEndNodeKey
+    val properties: Map[Entity, Map[String, String]] = Map(pattern.relEntity -> propertyMapping)
+    val idKeys: Map[Entity, Map[IdKey, String]] = Map(
+      pattern.relEntity -> Map(
+        SourceIdKey -> relationshipIdKey,
+        SourceStartNodeKey -> relationshipStartNodeKey,
+        SourceEndNodeKey -> relationshipEndNodeKey
+      )
     )
-  )
-  override lazy val impliedTypes: Map[Entity, Set[String]] = Map(
-    pattern.relEntity -> relTypeOrSourceRelTypeKey.left.toSeq.toSet
-  )
-  override lazy val optionalTypes: Map[Entity, Map[String, String]] = {
-    val typeMapping: Map[String, String] = relTypeOrSourceRelTypeKey match {
-      case Left(_) => Map.empty
-      case Right((_, possibleTypes)) => possibleTypes.map(typ => typ -> typ.toRelTypeColumnName).toMap
+    val impliedTypes: Map[Entity, Set[String]] = Map(
+      pattern.relEntity -> relTypeOrSourceRelTypeKey.left.toSeq.toSet
+    )
+    val optionalTypes: Map[Entity, Map[String, String]] = {
+      val typeMapping: Map[String, String] = relTypeOrSourceRelTypeKey match {
+        case Left(_) => Map.empty
+        case Right(possibleTypes) => possibleTypes
+      }
+
+      Map(pattern.relEntity -> typeMapping)
     }
 
-    Map(pattern.relEntity -> typeMapping)
+    EntityMapping(pattern, properties, idKeys, impliedTypes, optionalTypes)
   }
 
-  def withPropertyKey(propertyKey: String, sourcePropertyKey: String): RelationshipMapping = {
-    preventOverwritingProperty(pattern.relEntity, propertyKey)
-    copy(relationshipPropertyMapping = relationshipPropertyMapping.updated(propertyKey, sourcePropertyKey))
-  }
+  override protected def validate(): Unit = {
+    val idKeys = Set(relationshipIdKey, relationshipStartNodeKey, relationshipEndNodeKey)
 
-  def withPropertyKey(tuple: (String, String)): RelationshipMapping =
-    withPropertyKey(tuple._1, tuple._2)
-
-  def withPropertyKey(property: String): RelationshipMapping =
-    withPropertyKey(property, property)
-
-  def withPropertyKeys(properties: String*): RelationshipMapping =
-    properties.foldLeft(this)((mapping, propertyKey) => mapping.withPropertyKey(propertyKey, propertyKey))
-
-  protected override def validate(): Unit = {
-    super.validate()
-    if (idKeys(pattern.relEntity).values.toSeq.distinct.size != 3)
+    if (idKeys.size != 3)
       throw IllegalArgumentException(
         s"id ($relationshipIdKey), start ($relationshipStartNodeKey) and end ($relationshipEndNodeKey) source keys need to be distinct",
         s"non-distinct source keys")
 
     relTypeOrSourceRelTypeKey match {
-      case Right((sourceKey, _)) if idKeys(pattern.relEntity).values.toSet.contains(sourceKey) =>
+      case Right(typeMapping) if (idKeys intersect typeMapping.values.toSet).nonEmpty =>
         throw IllegalArgumentException("dedicated source column for relationship type",
-          s"relationship type source column $sourceKey is referring to one of id, start or end column")
+          s"Overlap between relationship type columns ${typeMapping.values} and id columns $idKeys")
       case _ =>
     }
   }

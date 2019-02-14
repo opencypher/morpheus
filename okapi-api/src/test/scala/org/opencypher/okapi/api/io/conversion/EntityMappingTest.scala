@@ -27,81 +27,125 @@
 package org.opencypher.okapi.api.io.conversion
 
 import org.opencypher.okapi.ApiBaseTest
+import org.opencypher.okapi.api.graph._
+import org.opencypher.okapi.api.types.{CTNode, CTRelationship}
 import org.opencypher.okapi.impl.exception.IllegalArgumentException
 
 class EntityMappingTest extends ApiBaseTest {
+  describe("node mapping builder") {
+    it("Construct node mapping") {
+      val given = NodeMapping.on("id")
+        .withImpliedLabel("Person")
+        .withOptionalLabel("Employee" -> "is_emp")
+        .withPropertyKey("name")
+        .withPropertyKey("age" -> "YEARS").build
 
-  it("Construct node mapping") {
-    val given = NodeMapping.on("id")
-      .withImpliedLabel("Person")
-      .withOptionalLabel("Employee" -> "is_emp")
-      .withPropertyKey("name")
-      .withPropertyKey("age" -> "YEARS")
 
-    val actual = NodeMapping(
-      "id",
-      Set("Person"),
-      Map("Employee" -> "is_emp"),
-      Map("name" -> "name", "age" -> "YEARS"))
+      val pattern = NodePattern(CTNode("Person"))
+      val expected = EntityMapping(
+        NodePattern(CTNode("Person")),
+        Map(
+          pattern.nodeEntity -> Map("name" -> "name", "age" -> "YEARS")
+        ),
+        Map(
+          pattern.nodeEntity -> Map(SourceIdKey -> "id")
+        ),
+        Map(
+          pattern.nodeEntity -> Set("Person")
+        ),
+        Map(
+          pattern.nodeEntity -> Map("Employee" -> "is_emp")
+        )
+      )
 
-    given should equal(actual)
+      given should equal(expected)
+    }
+
+    it("Refuses to use the same source key for incompatible types when constructing node mappings") {
+      raisesIllegalArgument(NodeMapping.on("sourceKey").withOptionalLabel("Person" -> "sourceKey").build)
+    }
+
+    it("Refuses to overwrite a property with a different mapping") {
+      raisesIllegalArgument(NodeMapping.on("sourceKey").withPropertyKey("a" -> "foo").withPropertyKey("a" -> "bar").build)
+    }
   }
 
-  it("Construct relationship mapping with static type") {
-    val given = RelationshipMapping.on("r")
-      .from("src")
-      .to("dst")
-      .relType("KNOWS")
-      .withPropertyKey("name")
-      .withPropertyKey("age" -> "YEARS")
+  describe("NodeMappingBuilder") {
+    it("Construct relationship mapping with static type") {
+      val given = RelationshipMapping.on("r")
+        .from("src")
+        .to("dst")
+        .relType("KNOWS")
+        .withPropertyKey("name")
+        .withPropertyKey("age" -> "YEARS").build
 
-    val actual = RelationshipMapping(
-      "r",
-      "src",
-      "dst",
-      Left("KNOWS"),
-      Map("name" -> "name", "age" -> "YEARS")
-    )
+      val pattern = RelationshipPattern(CTRelationship("KNOWS"))
+      val actual = EntityMapping(
+        pattern,
+        Map(
+          pattern.relEntity -> Map("name" -> "name", "age" -> "YEARS")
+        ),
+        Map(
+          pattern.relEntity -> Map(SourceIdKey -> "r", SourceStartNodeKey -> "src", SourceEndNodeKey -> "dst")
+        ),
+        Map(
+          pattern.relEntity -> Set("KNOWS")
+        ),
+        Map(
+          pattern.relEntity -> Map.empty
+        )
+      )
 
-    given should equal(actual)
-  }
+      given should equal(actual)
+    }
 
-  it("Construct relationship mapping with dynamic type") {
-    val given = RelationshipMapping.on("r")
-      .from("src")
-      .to("dst")
-      .withSourceRelTypeKey("KNOWS", Set("ADMIRES", "IGNORES"))
-      .withPropertyKey("name")
-      .withPropertyKey("age" -> "YEARS")
+    it("Construct relationship mapping with dynamic type") {
+      val given = RelationshipMapping.on("r")
+        .from("src")
+        .to("dst")
+        .withOptionalRelType("ADMIRES" -> "admires", "IGNORES" -> "ignores")
+        .withPropertyKey("name")
+        .withPropertyKey("age" -> "YEARS").build
 
-    val actual = RelationshipMapping(
-      "r",
-      "src",
-      "dst",
-      Right("KNOWS" -> Set("ADMIRES", "IGNORES")),
-      Map("name" -> "name", "age" -> "YEARS")
-    )
+      val pattern = RelationshipPattern(CTRelationship("ADMIRES", "IGNORES"))
+      val actual = EntityMapping(
+        pattern,
+        Map(
+          pattern.relEntity -> Map("name" -> "name", "age" -> "YEARS")
+        ),
+        Map(
+          pattern.relEntity -> Map(SourceIdKey -> "r", SourceStartNodeKey -> "src", SourceEndNodeKey -> "dst")
+        ),
+        Map(
+          pattern.relEntity -> Set.empty
+        ),
+        Map(
+          pattern.relEntity -> Map("ADMIRES" -> "admires", "IGNORES" -> "ignores")
+        )
+      )
 
-    given should equal(actual)
-  }
+      given should equal(actual)
+    }
 
-  it("Refuses to use the same source key for incompatible types when constructing node mappings") {
-    raisesIllegalArgument(NodeMapping.on("sourceKey").withOptionalLabel("Person" -> "sourceKey"))
-  }
+    it("Refuses to overwrite a property with a different mapping") {
+      raisesIllegalArgument(
+        RelationshipMapping
+          .on("sourceKey")
+          .from("a")
+          .to("b")
+          .relType("KNOWS")
+          .withPropertyKey("a" -> "foo").withPropertyKey("a" -> "bar")
+          .build
+      )
+    }
 
-  it("Refuses to overwrite a property with a different mapping") {
-    raisesIllegalArgument(NodeMapping.on("sourceKey").withPropertyKey("a" -> "foo").withPropertyKey("a" -> "bar"))
-    raisesIllegalArgument(RelationshipMapping.on("sourceKey").from("a").to("b").relType("KNOWS")
-      .withPropertyKey("a" -> "foo").withPropertyKey("a" -> "bar"))
-  }
-
-  // TODO reenable
-  ignore("Refuses to use the same source key for incompatible types when constructing relationships") {
-    raisesIllegalArgument(RelationshipMapping.on("r").from("r").to("b").relType("KNOWS"))
-    raisesIllegalArgument(RelationshipMapping.on("r").from("a").to("r").relType("KNOWS"))
-    raisesIllegalArgument(RelationshipMapping.on("r").from("a").to("b").withSourceRelTypeKey("r", Set("KNOWS")))
-    raisesIllegalArgument(RelationshipMapping.on("r").from("a").to("b").withSourceRelTypeKey("a", Set("KNOWS")))
-    raisesIllegalArgument(RelationshipMapping.on("r").from("a").to("b").withSourceRelTypeKey("b", Set("KNOWS")))
+    it("Refuses to use the same source key for incompatible types when constructing relationships") {
+      raisesIllegalArgument(RelationshipMapping.on("r").from("r").to("b").relType("KNOWS").build)
+      raisesIllegalArgument(RelationshipMapping.on("r").from("a").to("r").relType("KNOWS").build)
+      raisesIllegalArgument(RelationshipMapping.on("r").from("a").to("b").withOptionalRelType("KNOWS" -> "r").build)
+      raisesIllegalArgument(RelationshipMapping.on("r").from("a").to("b").withOptionalRelType("KNOWS" -> "a").build)
+      raisesIllegalArgument(RelationshipMapping.on("r").from("a").to("b").withOptionalRelType("KNOWS" -> "b").build)
+    }
   }
 
   private def raisesIllegalArgument[T](f: => T): Unit = {

@@ -32,7 +32,7 @@ import java.sql.Date
 import org.apache.spark.sql.{DataFrame, SparkSession}
 import org.opencypher.okapi.api.io.conversion.{NodeMapping, RelationshipMapping}
 import org.opencypher.spark.api.CAPSSession
-import org.opencypher.spark.api.io.{CAPSNodeTable, CAPSRelationshipTable}
+import org.opencypher.spark.api.io.CAPSEntityTable
 import org.opencypher.spark.util.ConsoleApp
 
 /**
@@ -77,6 +77,7 @@ object CustomDataFrameInputExample extends ConsoleApp {
     .withImpliedLabel("Person")
     .withPropertyKey(propertyKey = "name", sourcePropertyKey = "FIRST_NAME")
     .withPropertyKey(propertyKey = "age", sourcePropertyKey = "AGE")
+    .build
 
   val friendOfMapping = RelationshipMapping
     .withSourceIdKey("REL_ID")
@@ -84,9 +85,10 @@ object CustomDataFrameInputExample extends ConsoleApp {
     .withSourceEndNodeKey("TARGET_ID")
     .withRelType("FRIEND_OF")
     .withPropertyKey("since", "CONNECTED_SINCE")
+    .build
 
-  val personTable = CAPSNodeTable.fromMapping(personNodeMapping, nodesDF)
-  val friendsTable = CAPSRelationshipTable.fromMapping(friendOfMapping, relsDF)
+  val personTable = CAPSEntityTable.create(personNodeMapping, nodesDF)
+  val friendsTable = CAPSEntityTable.create(friendOfMapping, relsDF)
   // end::create-node-relationship-tables[]
 
   // 4) Create property graph from graph scans

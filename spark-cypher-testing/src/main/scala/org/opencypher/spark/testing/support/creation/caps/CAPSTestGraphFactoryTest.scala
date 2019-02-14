@@ -32,7 +32,7 @@ import org.opencypher.okapi.api.io.conversion.{NodeMapping, RelationshipMapping}
 import org.opencypher.okapi.api.schema.Schema
 import org.opencypher.okapi.api.types.{CTDate, CTString}
 import org.opencypher.okapi.testing.propertygraph.CreateGraphFactory
-import org.opencypher.spark.api.io.{CAPSEntityTable, CAPSNodeTable, CAPSRelationshipTable}
+import org.opencypher.spark.api.io.CAPSEntityTable
 import org.opencypher.spark.impl.CAPSConverters._
 import org.opencypher.spark.schema.CAPSSchema._
 import org.opencypher.spark.testing.CAPSTestSuite
@@ -54,31 +54,33 @@ abstract class CAPSTestGraphFactoryTest extends CAPSTestSuite with GraphMatching
       |CREATE (martin)-[:SPEAKS]->(orbital)
     """.stripMargin
 
-  val personTable: CAPSEntityTable = CAPSNodeTable.fromMapping(NodeMapping
+  val personTable: CAPSEntityTable = CAPSEntityTable.create(NodeMapping
     .on("ID")
     .withImpliedLabel("Person")
     .withOptionalLabel("Astronaut" -> "IS_ASTRONAUT")
     .withOptionalLabel("Martian" -> "IS_MARTIAN")
     .withPropertyKey("name" -> "NAME")
-    .withPropertyKey("birthday" -> "BIRTHDAY"), caps.sparkSession.createDataFrame(
+    .withPropertyKey("birthday" -> "BIRTHDAY")
+    .build, caps.sparkSession.createDataFrame(
     Seq(
       (0L, true, false, "Max", Date.valueOf("1991-07-10")),
       (1L, false, true, "Martin", null))
   ).toDF("ID", "IS_ASTRONAUT", "IS_MARTIAN", "NAME", "BIRTHDAY"))
 
-  val languageTable: CAPSEntityTable = CAPSNodeTable.fromMapping(NodeMapping
+  val languageTable: CAPSEntityTable = CAPSEntityTable.create(NodeMapping
     .on("ID")
     .withImpliedLabel("Language")
-    .withPropertyKey("title" -> "TITLE"), caps.sparkSession.createDataFrame(
+    .withPropertyKey("title" -> "TITLE")
+    .build, caps.sparkSession.createDataFrame(
     Seq(
       (2L, "Swedish"),
       (3L, "German"),
       (4L, "Orbital"))
   ).toDF("ID", "TITLE"))
 
-  val knowsScan: CAPSEntityTable = CAPSRelationshipTable.fromMapping(RelationshipMapping
+  val knowsScan: CAPSEntityTable = CAPSEntityTable.create(RelationshipMapping
     .on("ID")
-    .from("SRC").to("DST").relType("KNOWS"), caps.sparkSession.createDataFrame(
+    .from("SRC").to("DST").relType("KNOWS").build, caps.sparkSession.createDataFrame(
     Seq(
       (0L, 5L, 2L),
       (0L, 6L, 3L),

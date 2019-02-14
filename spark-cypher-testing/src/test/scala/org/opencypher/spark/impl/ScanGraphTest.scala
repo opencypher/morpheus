@@ -28,13 +28,14 @@ package org.opencypher.spark.impl
 
 import org.apache.spark.sql.types.{BooleanType, LongType, StructField, StructType}
 import org.apache.spark.sql.{Row, functions}
-import org.opencypher.okapi.api.io.conversion.{NodeMapping, RelationshipMapping}
+import org.opencypher.okapi.api.io.conversion.{EntityMapping, NodeMapping, RelationshipMapping}
 import org.opencypher.okapi.api.types.{CTNode, CTRelationship}
 import org.opencypher.okapi.api.value.CypherValue.CypherMap
 import org.opencypher.okapi.testing.Bag
 import org.opencypher.okapi.testing.propertygraph.CreateGraphFactory
 import org.opencypher.spark.api.io.{CAPSNodeTable, CAPSRelationshipTable}
 import org.opencypher.spark.api.value.CAPSEntity._
+import org.opencypher.spark.api.io.CAPSEntityTable
 import org.opencypher.spark.api.value.{CAPSNode, CAPSRelationship}
 import org.opencypher.spark.impl.CAPSConverters._
 import org.opencypher.spark.testing.support.creation.caps.{CAPSScanGraphFactory, CAPSTestGraphFactory}
@@ -106,7 +107,7 @@ class ScanGraphTest extends CAPSGraphTest {
   }
 
   it("dont lose schema information when mapping") {
-    val nodes = CAPSNodeTable.fromMapping(NodeMapping.on("id"),
+    val nodes = CAPSEntityTable.create(NodeMapping.on("id").build,
       caps.sparkSession.createDataFrame(
         Seq(
           Tuple1(10L),
@@ -121,7 +122,7 @@ class ScanGraphTest extends CAPSGraphTest {
         )
       ).toDF("id"))
 
-    val rs = CAPSRelationshipTable.fromMapping(RelationshipMapping.on("ID").from("SRC").to("DST").relType("FOO"),
+    val rs = CAPSEntityTable.create(RelationshipMapping.on("ID").from("SRC").to("DST").relType("FOO").build,
       caps.sparkSession.createDataFrame(
         Seq(
           (10L, 1000L, 20L),
@@ -207,20 +208,20 @@ class ScanGraphTest extends CAPSGraphTest {
     val aDf = caps.sparkSession.createDataFrame(Seq(
       (0L, "A")
     )).toDF("_node_id", "name").withColumn("size", functions.lit(null))
-    val aMapping: NodeMapping = NodeMapping.create("_node_id").withPropertyKey("name").withPropertyKey("size").withImpliedLabel("A")
-    val aTable = CAPSNodeTable.fromMapping(aMapping, aDf)
+    val aMapping: EntityMapping = NodeMapping.on("_node_id").withPropertyKey("name").withPropertyKey("size").withImpliedLabel("A").build
+    val aTable = CAPSEntityTable.create(aMapping, aDf)
 
     val bDf = caps.sparkSession.createDataFrame(Seq(
       (1L, "B")
     )).toDF("_node_id", "name").withColumn("size", functions.lit(null))
-    val bMapping = NodeMapping.create("_node_id").withPropertyKey("name").withPropertyKey("size").withImpliedLabel("B")
-    val bTable = CAPSNodeTable.fromMapping(bMapping, bDf)
+    val bMapping = NodeMapping.on("_node_id").withPropertyKey("name").withPropertyKey("size").withImpliedLabel("B").build
+    val bTable = CAPSEntityTable.create(bMapping, bDf)
 
     val comboDf = caps.sparkSession.createDataFrame(Seq(
       (2L, "COMBO", 2)
     )).toDF("_node_id", "name", "size")
-    val comboMapping = NodeMapping.create("_node_id").withPropertyKey("name").withPropertyKey("size").withImpliedLabels("A", "B")
-    val comboTable = CAPSNodeTable.fromMapping(comboMapping, comboDf)
+    val comboMapping = NodeMapping.on("_node_id").withPropertyKey("name").withPropertyKey("size").withImpliedLabels("A", "B").build
+    val comboTable = CAPSEntityTable.create(comboMapping, comboDf)
 
     val graph = caps.graphs.create(aTable, bTable, comboTable)
 
@@ -445,9 +446,10 @@ class ScanGraphTest extends CAPSGraphTest {
       .withOptionalLabel("Person")
       .withOptionalLabel("Employee")
       .withOptionalLabel("Animal")
+      .build
 
     it("Selects the correct table for optional labels with inexact match") {
-      val graph = caps.readFrom(CAPSNodeTable.fromMapping(mapping, df))
+      val graph = caps.readFrom(CAPSEntityTable.create(mapping, df))
 
       graph.nodes("n", CTNode("Employee"), false).toMapsWithCollectedEntities should equal(Bag(
         CypherMap("n" -> CAPSNode(2L, Set("Person", "Employee")))
@@ -455,13 +457,13 @@ class ScanGraphTest extends CAPSGraphTest {
     }
 
     it("Selects the correct table for optional labels with exact match") {
-      val graph = caps.readFrom(CAPSNodeTable.fromMapping(mapping, df))
+      val graph = caps.readFrom(CAPSEntityTable.create(mapping, df))
 
       graph.nodes("n", CTNode("Employee"), true).toMapsWithCollectedEntities shouldBe empty
     }
 
     it("Selects the correct tables for implied and optional labels with inexact match") {
-      val graph = caps.readFrom(CAPSNodeTable.fromMapping(mapping, df))
+      val graph = caps.readFrom(CAPSEntityTable.create(mapping, df))
       graph.nodes("n", CTNode("Person"), false).toMapsWithCollectedEntities should equal(Bag(
         CypherMap("n" -> CAPSNode(1L, Set("Person"))),
         CypherMap("n" -> CAPSNode(2L, Set("Person", "Employee")))
@@ -469,21 +471,21 @@ class ScanGraphTest extends CAPSGraphTest {
     }
 
     it("Selects the correct tables for implied labels with exact match") {
-      val graph = caps.readFrom(CAPSNodeTable.fromMapping(mapping, df))
+      val graph = caps.readFrom(CAPSEntityTable.create(mapping, df))
       graph.nodes("n", CTNode("Person"), true).toMapsWithCollectedEntities should equal(Bag(
         CypherMap("n" -> CAPSNode(1L, Set("Person")))
       ))
     }
 
     it("Selects the correct tables for implied and optional labels with exact match") {
-      val graph = caps.readFrom(CAPSNodeTable.fromMapping(mapping, df))
+      val graph = caps.readFrom(CAPSEntityTable.create(mapping, df))
       graph.nodes("n", CTNode("Person", "Employee"), true).toMapsWithCollectedEntities should equal(Bag(
         CypherMap("n" -> CAPSNode(2L, Set("Person", "Employee")))
       ))
     }
 
     it("Supports all node scans") {
-      val graph = caps.readFrom(CAPSNodeTable.fromMapping(mapping, df))
+      val graph = caps.readFrom(CAPSEntityTable.create(mapping, df))
       graph.nodes("n").toMapsWithCollectedEntities should equal(Bag(
         CypherMap("n" -> CAPSNode(1L, Set("Person"))),
         CypherMap("n" -> CAPSNode(2L, Set("Person", "Employee"))),
