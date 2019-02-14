@@ -55,11 +55,7 @@ case class TypeTracker(maps: List[Map[Expression, CypherType]], parameters: Map[
 
   def updated(e: Expression, t: CypherType): TypeTracker = copy(maps = head.updated(e, t) +: tail)
   def updated(entry: (Expression, CypherType)): TypeTracker = updated(entry._1, entry._2)
-  def pushScope(): TypeTracker = copy(maps = Map.empty[Expression, CypherType] +: maps)
-  def popScope(): Option[TypeTracker] = if (maps.isEmpty) None else Some(copy(maps = maps.tail))
 
-  private def head: Map[Expression, CypherType] =
-    maps.headOption.getOrElse(Map.empty[Expression, CypherType])
-  private def tail: List[Map[Expression, CypherType]] =
-    if (maps.isEmpty) List.empty else maps.tail
+  private def head: Map[Expression, CypherType] = maps.headOption.getOrElse(Map.empty[Expression, CypherType])
+  private def tail: List[Map[Expression, CypherType]] = if (maps.isEmpty) List.empty else maps.tail
 }
