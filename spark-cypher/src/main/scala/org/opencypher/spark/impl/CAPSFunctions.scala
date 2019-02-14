@@ -32,6 +32,7 @@ import org.apache.spark.sql.expressions.UserDefinedFunction
 import org.apache.spark.sql.functions.{monotonically_increasing_id, udf}
 import org.apache.spark.sql.types.{ArrayType, StringType}
 import org.apache.spark.sql.{Column, functions}
+import org.opencypher.spark.impl.expressions.Serialize
 
 object CAPSFunctions {
 
@@ -70,6 +71,12 @@ object CAPSFunctions {
 
   def hash64(columns: Column*): Column =
     new Column(new XxHash64(columns.map(_.expr)))
+
+  def serialize(columns: Column*): Column = {
+    //TODO: Enable check once bug in SQLPGDS is fixed
+    //    columns.foreach(c => assert(!c.expr.nullable, s"Nullable column $c cannot be serialized"))
+    new Column(Serialize(columns.map(_.expr)))
+  }
 
   def array_append_long(array: Column, value: Column): Column =
     appendLongUDF(array, value)
