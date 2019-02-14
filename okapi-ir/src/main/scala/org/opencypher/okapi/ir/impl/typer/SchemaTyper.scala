@@ -104,7 +104,7 @@ object SchemaTyper {
             recordType(v -> varTyp) >> recordAndUpdate(expr -> inner.getOrElse(name, CTVoid))
 
           case _: TemporalValueCypherType =>
-            recordType(v -> varTyp) >> recordAndUpdate(expr -> CTInteger)
+            recordType(v -> varTyp) >> recordAndUpdate(expr -> CTInteger.asNullableAs(varTyp))
 
           case _ =>
             error(InvalidContainerAccess(expr))
