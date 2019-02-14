@@ -394,8 +394,6 @@ class SchemaTyperTest extends BaseTestSuite with Neo4jAstTestSupport with Mockit
 
     assertExpr.from("n:Person") shouldMake varFor("n") haveType CTNode("Person")
     assertExpr.from("n:Person AND n:Dog") shouldMake varFor("n") haveType CTNode("Person", "Dog")
-
-    assertExpr.from("n:Person OR n:Dog") shouldMake varFor("n") haveType CTNode // not enough information for us to act
   }
 
   it("typing equality") {
