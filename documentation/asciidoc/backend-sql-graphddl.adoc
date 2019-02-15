@@ -4,7 +4,7 @@
 Graph DDL enables importing SQL tabular data into a property graph in Spark.
 It is common that the data inside relational databases is or can be modelled as a graph, but the data is often not formatted correctly to be directly exploited as such.
 
-Make sure to read the section on making graphs from tables before reading this section.
+Make sure to read the section on <<graphs-from-tables-model, making graphs from tables>> before reading this section.
 That background knowledge is necessary.
 
 
