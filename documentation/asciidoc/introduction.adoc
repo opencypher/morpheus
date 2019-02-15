@@ -215,7 +215,7 @@ This means that the Graph DDL is always an alternative to the Scala API when map
 
 For the person/food tables above, the following Graph DDL could operate on a denormalized table, but assumes that a view for each label/relationship has been created:
 
-[source, "graph ddl"]
+[source, graphddl]
 ----
 CATALOG CREATE LABEL (Person {name: STRING})
 CATALOG CREATE LABEL (Food {name: STRING})
@@ -239,7 +239,7 @@ CREATE GRAPH foodGraph USING SCHEMA peopleFood
 
 Note that unlike the Scala API, the SQL PGDS will take care of automatically generating the internal IDs.
 
-// TODO: link to Graph DDL chapter
+For more details on Graph DDL, see the <<backend-graphddl, Graph DDL documentation>>.
 
 
 [[graphs-from-tables-cypher-example]]
