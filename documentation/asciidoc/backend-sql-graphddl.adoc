@@ -13,14 +13,14 @@ That background knowledge is necessary.
 
 Graph DDL makes it possible to create two kinds of structures:
 
-* *graphs* that may contain:
+* concrete *graphs*, which may contain:
 ** type definitions, such as
 *** _element types_ with defined properties
 *** _node types_ composed of element types
 *** _relationship types_ composed of element types
 ** _table mappings_ that link node and relationship types to tables and columns in a SQL data source
 
-* *graph types* that allow for:
+* abstract *graph types*, which allow for:
 ** extracting type definitions from graphs into reusable structures
 ** graphs to refer to a named graph type (i.e., inheritance)
 
