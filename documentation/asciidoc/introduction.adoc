@@ -140,7 +140,7 @@ Alternatively, tables can be imported with the Scala API.
 We recommend using Spark SQL to import the tables and convert them into the suitable "tables for labels" format.
 Please consult the Spark and Spark SQL documentation.
 
-For the next step, we assume that you have `DataFrame`s that are in the "tables for labels" format described above.
+For the next step, we assume that you have DataFrames that are in the "tables for labels" format described above.
 
 
 [[graphs-from-tables-graph-mappings]]
