@@ -44,7 +44,7 @@ object NorthwindJdbcExample extends ConsoleApp {
   // the latter contains the graph definitions and mappings from SQL tables that fill the graph with data
 
   val dataSourceConfig = SqlDataSourceConfig.Jdbc(
-    url = "jdbc:h2:mem:NORTHWIND.db;INIT=CREATE SCHEMA IF NOT EXISTS NORTHWIND;DB_CLOSE_DELAY=30;",
+    url = "jdbc:h2:mem:NORTHWIND.db;DB_CLOSE_DELAY=30;",
     driver = "org.h2.Driver"
   )
   val sqlGraphSource = GraphSources

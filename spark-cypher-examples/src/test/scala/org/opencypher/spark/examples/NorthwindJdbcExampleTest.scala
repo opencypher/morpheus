@@ -26,11 +26,76 @@
  */
 package org.opencypher.spark.examples
 
+import org.opencypher.okapi.api.value.CypherValue
+import org.opencypher.okapi.api.value.CypherValue.CypherValue
+import org.opencypher.okapi.api.value.CypherValue.Format._
+import org.opencypher.okapi.impl.util.TablePrinter.toTable
+import org.opencypher.spark.api.io.sql.SqlDataSourceConfig
+import org.opencypher.spark.testing.utils.H2Utils
+import org.opencypher.spark.util.NorthwindDB
+
+import scala.io.Source
+
 class NorthwindJdbcExampleTest extends ExampleTest {
   it("runs JdbcSqlGraphSourceExample") {
     validate(
       NorthwindJdbcExample.main(Array.empty),
       getClass.getResource("/example_outputs/NorthwindJdbcExample.out").toURI
     )
+  }
+
+  it("verifies the correctness of the output") {
+    val dataSourceConfig = SqlDataSourceConfig.Jdbc(
+      url = "jdbc:h2:mem:NORTHWIND.db;DB_CLOSE_DELAY=30;",
+      driver = "org.h2.Driver"
+    )
+
+    NorthwindDB.init(dataSourceConfig)
+
+    val sqlResult = H2Utils.withConnection(dataSourceConfig) { conn =>
+      val stmt = conn.createStatement()
+      var resultTuples = List.empty[Seq[CypherValue]]
+      val result = stmt.executeQuery(
+        """
+          |SELECT
+          | ord.CustomerID AS customer,
+          | ord.OrderDate AS orderedAt,
+          | emp.LastName AS handledBy,
+          | emp.Title AS employee
+          |FROM
+          | NORTHWIND.Employees emp,
+          | NORTHWIND.Employees man,
+          | NORTHWIND.Orders ord
+          |WHERE
+          | emp.ReportsTo = man.EmployeeID
+          | AND man.EmployeeID = ord.EmployeeID
+          |ORDER BY
+          | ord.OrderDate,
+          | emp.LastName,
+          | ord.CustomerID
+          |LIMIT 50
+          |""".stripMargin)
+
+      while (result.next()) {
+        val tuple = Seq(
+          CypherValue(result.getString(1)),
+          CypherValue(result.getString(2)),
+          CypherValue(result.getString(3)),
+          CypherValue(result.getString(4))
+        )
+        resultTuples = resultTuples :+ tuple
+      }
+      toTable(Seq("customer", "orderedAt", "handledBy", "employee"), resultTuples.map(row => row.map(_.toCypherString()))).dropRight(1)
+    }
+
+    // We only need the last query result from the expected example output
+    val cypherResult = Source
+      .fromFile(getClass.getResource("/example_outputs/NorthwindJdbcExample.out").toURI)
+      .getLines()
+      .toList
+      .takeRight(55)
+      .mkString("\n")
+
+    sqlResult should equal(cypherResult)
   }
 }
