@@ -53,7 +53,6 @@ case class Serialize(children: Seq[Expression]) extends Expression {
         case StringType => write(child.eval(input).asInstanceOf[UTF8String], out)
         case IntegerType => write(child.eval(input).asInstanceOf[Int], out)
         case LongType => write(child.eval(input).asInstanceOf[Long], out)
-        case NullType => throwNull(s"$child of type ${child.getClass.getSimpleName}")
       }
     }
     out.toByteArray
@@ -70,8 +69,6 @@ case class Serialize(children: Seq[Expression]) extends Expression {
       s"""|${childEval.code}
           |if (!${childEval.isNull}) {
           |  ${Serialize.getClass.getName.dropRight(1)}.write(${childEval.value}, $out);
-          |} else {
-          |  ${Serialize.getClass.getName.dropRight(1)}.throwNull("$child of type ${child.getClass.getSimpleName}");
           |}""".stripMargin
     }.mkString("\n")
     val baos = classOf[ByteArrayOutputStream].getName
@@ -109,13 +106,5 @@ object Serialize {
   ): Unit = writeLengthAndValue(value.getBytes, out)
 
   @inline final def write(value: String, out: ByteArrayOutputStream): Unit = writeLengthAndValue(value.getBytes, out)
-
-  // TODO: Enable check once bug in SQLPGDS is fixed
-  final def throwNull(childDescription: String): Unit = {
-//    throw exception.IllegalStateException(
-//      s"""|Columns that are serialized as part of a node/relationship key cannot be null.
-//          |Expression `$childDescription` evaluated to null.
-//      """.stripMargin)
-  }
 
 }

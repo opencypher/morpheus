@@ -72,11 +72,8 @@ object CAPSFunctions {
   def hash64(columns: Column*): Column =
     new Column(new XxHash64(columns.map(_.expr)))
 
-  def serialize(columns: Column*): Column = {
-    //TODO: Enable check once bug in SQLPGDS is fixed
-    //    columns.foreach(c => assert(!c.expr.nullable, s"Nullable column $c cannot be serialized"))
+  def serialize(columns: Column*): Column =
     new Column(Serialize(columns.map(_.expr)))
-  }
 
   def array_append_long(array: Column, value: Column): Column =
     appendLongUDF(array, value)

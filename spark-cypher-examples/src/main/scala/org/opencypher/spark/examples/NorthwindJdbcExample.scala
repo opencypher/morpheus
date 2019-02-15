@@ -74,7 +74,7 @@ object NorthwindJdbcExample extends ConsoleApp {
       |FROM GRAPH sql.Northwind
       |MATCH (e:Employee)-[:REPORTS_TO]->(:Employee)<-[:HAS_EMPLOYEE]-(o:Order)
       |RETURN o.customerID AS customer, o.orderDate AS orderedAt, e.lastName AS handledBy, e.title AS employee
-      |  ORDER BY o.orderDate, handledBy, customer
+      |  ORDER BY orderedAt, handledBy, customer
       |  LIMIT 50
       |""".stripMargin).show
 

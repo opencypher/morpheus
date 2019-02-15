@@ -131,55 +131,55 @@ Explicit schema patterns {
 ╔══════════╤═════════════╤═════════════╤════════════════════════════╗
 ║ customer │ orderedAt   │ handledBy   │ employee                   ║
 ╠══════════╪═════════════╪═════════════╪════════════════════════════╣
-║ 'EASTC'  │ '1/1/1997'  │ 'Buchanan'  │ 'Sales Manager'            ║
-║ 'RATTC'  │ '1/1/1997'  │ 'Buchanan'  │ 'Sales Manager'            ║
-║ 'EASTC'  │ '1/1/1997'  │ 'Callahan'  │ 'Inside Sales Coordinator' ║
-║ 'RATTC'  │ '1/1/1997'  │ 'Callahan'  │ 'Inside Sales Coordinator' ║
-║ 'EASTC'  │ '1/1/1997'  │ 'Davolio'   │ 'Sales Representative'     ║
-║ 'RATTC'  │ '1/1/1997'  │ 'Davolio'   │ 'Sales Representative'     ║
-║ 'EASTC'  │ '1/1/1997'  │ 'Leverling' │ 'Sales Representative'     ║
-║ 'RATTC'  │ '1/1/1997'  │ 'Leverling' │ 'Sales Representative'     ║
-║ 'EASTC'  │ '1/1/1997'  │ 'Peacock'   │ 'Sales Representative'     ║
-║ 'RATTC'  │ '1/1/1997'  │ 'Peacock'   │ 'Sales Representative'     ║
-║ 'WELLI'  │ '1/1/1998'  │ 'Dodsworth' │ 'Sales Representative'     ║
-║ 'WELLI'  │ '1/1/1998'  │ 'King'      │ 'Sales Representative'     ║
-║ 'WELLI'  │ '1/1/1998'  │ 'Suyama'    │ 'Sales Representative'     ║
-║ 'BOTTM'  │ '1/10/1997' │ 'Buchanan'  │ 'Sales Manager'            ║
-║ 'BOTTM'  │ '1/10/1997' │ 'Callahan'  │ 'Inside Sales Coordinator' ║
-║ 'BOTTM'  │ '1/10/1997' │ 'Davolio'   │ 'Sales Representative'     ║
-║ 'BOTTM'  │ '1/10/1997' │ 'Dodsworth' │ 'Sales Representative'     ║
-║ 'BOTTM'  │ '1/10/1997' │ 'King'      │ 'Sales Representative'     ║
-║ 'BOTTM'  │ '1/10/1997' │ 'Leverling' │ 'Sales Representative'     ║
-║ 'BOTTM'  │ '1/10/1997' │ 'Peacock'   │ 'Sales Representative'     ║
-║ 'BOTTM'  │ '1/10/1997' │ 'Suyama'    │ 'Sales Representative'     ║
-║ 'BONAP'  │ '1/12/1998' │ 'Buchanan'  │ 'Sales Manager'            ║
-║ 'BONAP'  │ '1/12/1998' │ 'Callahan'  │ 'Inside Sales Coordinator' ║
-║ 'BONAP'  │ '1/12/1998' │ 'Davolio'   │ 'Sales Representative'     ║
-║ 'BLONP'  │ '1/12/1998' │ 'Dodsworth' │ 'Sales Representative'     ║
-║ 'BLONP'  │ '1/12/1998' │ 'King'      │ 'Sales Representative'     ║
-║ 'BONAP'  │ '1/12/1998' │ 'Leverling' │ 'Sales Representative'     ║
-║ 'BONAP'  │ '1/12/1998' │ 'Peacock'   │ 'Sales Representative'     ║
-║ 'BLONP'  │ '1/12/1998' │ 'Suyama'    │ 'Sales Representative'     ║
-║ 'WARTH'  │ '1/13/1997' │ 'Buchanan'  │ 'Sales Manager'            ║
-║ 'WARTH'  │ '1/13/1997' │ 'Callahan'  │ 'Inside Sales Coordinator' ║
-║ 'WARTH'  │ '1/13/1997' │ 'Davolio'   │ 'Sales Representative'     ║
-║ 'WARTH'  │ '1/13/1997' │ 'Leverling' │ 'Sales Representative'     ║
-║ 'WARTH'  │ '1/13/1997' │ 'Peacock'   │ 'Sales Representative'     ║
-║ 'TRADH'  │ '1/13/1998' │ 'Buchanan'  │ 'Sales Manager'            ║
-║ 'TRADH'  │ '1/13/1998' │ 'Callahan'  │ 'Inside Sales Coordinator' ║
-║ 'TRADH'  │ '1/13/1998' │ 'Davolio'   │ 'Sales Representative'     ║
-║ 'ISLAT'  │ '1/13/1998' │ 'Dodsworth' │ 'Sales Representative'     ║
-║ 'RANCH'  │ '1/13/1998' │ 'Dodsworth' │ 'Sales Representative'     ║
-║ 'ISLAT'  │ '1/13/1998' │ 'King'      │ 'Sales Representative'     ║
-║ 'RANCH'  │ '1/13/1998' │ 'King'      │ 'Sales Representative'     ║
-║ 'TRADH'  │ '1/13/1998' │ 'Leverling' │ 'Sales Representative'     ║
-║ 'TRADH'  │ '1/13/1998' │ 'Peacock'   │ 'Sales Representative'     ║
-║ 'ISLAT'  │ '1/13/1998' │ 'Suyama'    │ 'Sales Representative'     ║
-║ 'RANCH'  │ '1/13/1998' │ 'Suyama'    │ 'Sales Representative'     ║
-║ 'LAMAI'  │ '1/14/1997' │ 'Buchanan'  │ 'Sales Manager'            ║
-║ 'LAMAI'  │ '1/14/1997' │ 'Callahan'  │ 'Inside Sales Coordinator' ║
-║ 'LAMAI'  │ '1/14/1997' │ 'Davolio'   │ 'Sales Representative'     ║
-║ 'LAMAI'  │ '1/14/1997' │ 'Leverling' │ 'Sales Representative'     ║
-║ 'LAMAI'  │ '1/14/1997' │ 'Peacock'   │ 'Sales Representative'     ║
+║ 'LAUGB'  │ '1/1/1998'  │ 'Buchanan'  │ 'Sales Manager'            ║
+║ 'OLDWO'  │ '1/1/1998'  │ 'Buchanan'  │ 'Sales Manager'            ║
+║ 'LAUGB'  │ '1/1/1998'  │ 'Callahan'  │ 'Inside Sales Coordinator' ║
+║ 'OLDWO'  │ '1/1/1998'  │ 'Callahan'  │ 'Inside Sales Coordinator' ║
+║ 'LAUGB'  │ '1/1/1998'  │ 'Davolio'   │ 'Sales Representative'     ║
+║ 'OLDWO'  │ '1/1/1998'  │ 'Davolio'   │ 'Sales Representative'     ║
+║ 'LAUGB'  │ '1/1/1998'  │ 'Leverling' │ 'Sales Representative'     ║
+║ 'OLDWO'  │ '1/1/1998'  │ 'Leverling' │ 'Sales Representative'     ║
+║ 'LAUGB'  │ '1/1/1998'  │ 'Peacock'   │ 'Sales Representative'     ║
+║ 'OLDWO'  │ '1/1/1998'  │ 'Peacock'   │ 'Sales Representative'     ║
+║ 'FAMIA'  │ '1/14/1997' │ 'Buchanan'  │ 'Sales Manager'            ║
+║ 'FAMIA'  │ '1/14/1997' │ 'Callahan'  │ 'Inside Sales Coordinator' ║
+║ 'FAMIA'  │ '1/14/1997' │ 'Davolio'   │ 'Sales Representative'     ║
+║ 'FAMIA'  │ '1/14/1997' │ 'Leverling' │ 'Sales Representative'     ║
+║ 'FAMIA'  │ '1/14/1997' │ 'Peacock'   │ 'Sales Representative'     ║
+║ 'LAMAI'  │ '1/14/1998' │ 'Buchanan'  │ 'Sales Manager'            ║
+║ 'LAMAI'  │ '1/14/1998' │ 'Callahan'  │ 'Inside Sales Coordinator' ║
+║ 'LAMAI'  │ '1/14/1998' │ 'Davolio'   │ 'Sales Representative'     ║
+║ 'LAMAI'  │ '1/14/1998' │ 'Leverling' │ 'Sales Representative'     ║
+║ 'LAMAI'  │ '1/14/1998' │ 'Peacock'   │ 'Sales Representative'     ║
+║ 'REGGC'  │ '1/2/1998'  │ 'Dodsworth' │ 'Sales Representative'     ║
+║ 'REGGC'  │ '1/2/1998'  │ 'King'      │ 'Sales Representative'     ║
+║ 'REGGC'  │ '1/2/1998'  │ 'Suyama'    │ 'Sales Representative'     ║
+║ 'SUPRD'  │ '1/20/1998' │ 'Dodsworth' │ 'Sales Representative'     ║
+║ 'SUPRD'  │ '1/20/1998' │ 'King'      │ 'Sales Representative'     ║
+║ 'SUPRD'  │ '1/20/1998' │ 'Suyama'    │ 'Sales Representative'     ║
+║ 'FRANS'  │ '1/22/1997' │ 'Buchanan'  │ 'Sales Manager'            ║
+║ 'FRANS'  │ '1/22/1997' │ 'Callahan'  │ 'Inside Sales Coordinator' ║
+║ 'FRANS'  │ '1/22/1997' │ 'Davolio'   │ 'Sales Representative'     ║
+║ 'FRANS'  │ '1/22/1997' │ 'Leverling' │ 'Sales Representative'     ║
+║ 'FRANS'  │ '1/22/1997' │ 'Peacock'   │ 'Sales Representative'     ║
+║ 'SUPRD'  │ '1/22/1998' │ 'Buchanan'  │ 'Sales Manager'            ║
+║ 'SUPRD'  │ '1/22/1998' │ 'Callahan'  │ 'Inside Sales Coordinator' ║
+║ 'SUPRD'  │ '1/22/1998' │ 'Davolio'   │ 'Sales Representative'     ║
+║ 'SUPRD'  │ '1/22/1998' │ 'Leverling' │ 'Sales Representative'     ║
+║ 'SUPRD'  │ '1/22/1998' │ 'Peacock'   │ 'Sales Representative'     ║
+║ 'RICAR'  │ '1/26/1998' │ 'Dodsworth' │ 'Sales Representative'     ║
+║ 'RICAR'  │ '1/26/1998' │ 'King'      │ 'Sales Representative'     ║
+║ 'RICAR'  │ '1/26/1998' │ 'Suyama'    │ 'Sales Representative'     ║
+║ 'LACOR'  │ '1/29/1998' │ 'Buchanan'  │ 'Sales Manager'            ║
+║ 'LACOR'  │ '1/29/1998' │ 'Callahan'  │ 'Inside Sales Coordinator' ║
+║ 'LACOR'  │ '1/29/1998' │ 'Davolio'   │ 'Sales Representative'     ║
+║ 'LACOR'  │ '1/29/1998' │ 'Leverling' │ 'Sales Representative'     ║
+║ 'LACOR'  │ '1/29/1998' │ 'Peacock'   │ 'Sales Representative'     ║
+║ 'MAGAA'  │ '1/3/1997'  │ 'Buchanan'  │ 'Sales Manager'            ║
+║ 'MAGAA'  │ '1/3/1997'  │ 'Callahan'  │ 'Inside Sales Coordinator' ║
+║ 'MAGAA'  │ '1/3/1997'  │ 'Davolio'   │ 'Sales Representative'     ║
+║ 'MAGAA'  │ '1/3/1997'  │ 'Leverling' │ 'Sales Representative'     ║
+║ 'MAGAA'  │ '1/3/1997'  │ 'Peacock'   │ 'Sales Representative'     ║
+║ 'SAVEA'  │ '1/5/1998'  │ 'Buchanan'  │ 'Sales Manager'            ║
 ╚══════════╧═════════════╧═════════════╧════════════════════════════╝
 (50 rows)
