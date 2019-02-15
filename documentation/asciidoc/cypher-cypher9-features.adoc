@@ -44,7 +44,7 @@ Here follows a comprehensive reference of Cypher9 features and their implementat
 | List          | {yes}
 | LocalDateTime | {yes}
 | LocalTime     | {no}
-| Map           | {no}
+| Map           | {yes}
 | Node          | {yes}
 | Path          | {no}
 | Point         | {no}
