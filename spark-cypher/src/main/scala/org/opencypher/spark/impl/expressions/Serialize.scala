@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright (c) 2016-2019 "Neo4j Sweden, AB" [https://neo4j.com]
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -26,7 +26,6 @@
  */
 package org.opencypher.spark.impl.expressions
 
-
 import java.io.ByteArrayOutputStream
 
 import org.apache.spark.sql.catalyst.InternalRow
@@ -34,9 +33,15 @@ import org.apache.spark.sql.catalyst.expressions.Expression
 import org.apache.spark.sql.catalyst.expressions.codegen.{CodegenContext, ExprCode}
 import org.apache.spark.sql.types._
 import org.apache.spark.unsafe.types.UTF8String
+import org.opencypher.okapi.impl.exception
 import org.opencypher.spark.impl.expressions.EncodeLong.encodeLong
 import org.opencypher.spark.impl.expressions.Serialize._
 
+/**
+  * Encodes all children to a byte array (BinaryType).
+  *
+  * For each child, writes the length of the serialized child followed by the actual serialized child.
+  */
 case class Serialize(children: Seq[Expression]) extends Expression {
 
   override def dataType: DataType = BinaryType
@@ -53,6 +58,7 @@ case class Serialize(children: Seq[Expression]) extends Expression {
         case StringType => write(child.eval(input).asInstanceOf[UTF8String], out)
         case IntegerType => write(child.eval(input).asInstanceOf[Int], out)
         case LongType => write(child.eval(input).asInstanceOf[Long], out)
+        case other => throw exception.UnsupportedOperationException(s"Cannot serialize Spark data type $other.")
       }
     }
     out.toByteArray
@@ -82,12 +88,12 @@ case class Serialize(children: Seq[Expression]) extends Expression {
 
 object Serialize {
 
-  @inline private final def writeLengthAndValue(value: Array[Byte], out: ByteArrayOutputStream): Unit = {
+  val supportedTypes: Set[DataType] = Set(BinaryType, StringType, IntegerType, LongType)
+
+  @inline final def write(value: Array[Byte], out: ByteArrayOutputStream): Unit = {
     out.write(encodeLong(value.length))
     out.write(value)
   }
-
-  @inline final def write(value: Array[Byte], out: ByteArrayOutputStream): Unit = writeLengthAndValue(value, out)
 
   @inline final def write(
     value: Boolean,
@@ -98,13 +104,10 @@ object Serialize {
 
   @inline final def write(value: Int, out: ByteArrayOutputStream): Unit = write(value.toLong, out)
 
-  @inline final def write(value: Long, out: ByteArrayOutputStream): Unit = writeLengthAndValue(encodeLong(value), out)
+  @inline final def write(value: Long, out: ByteArrayOutputStream): Unit = write(encodeLong(value), out)
 
-  @inline final def write(
-    value: UTF8String,
-    out: ByteArrayOutputStream
-  ): Unit = writeLengthAndValue(value.getBytes, out)
+  @inline final def write(value: UTF8String, out: ByteArrayOutputStream): Unit = write(value.getBytes, out)
 
-  @inline final def write(value: String, out: ByteArrayOutputStream): Unit = writeLengthAndValue(value.getBytes, out)
+  @inline final def write(value: String, out: ByteArrayOutputStream): Unit = write(value.getBytes, out)
 
 }
