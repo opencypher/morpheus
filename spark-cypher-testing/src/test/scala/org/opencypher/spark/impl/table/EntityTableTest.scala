@@ -175,11 +175,12 @@ class EntityTableTest extends CAPSTestSuite {
     dfs.foreach { df =>
       val nodeTable = CAPSEntityTable.create(nodeMapping, df)
 
-    nodeTable.schema should equal(
-      Schema.empty
-        .withNodePropertyKeys("A", "B")("foo" -> CTInteger, "bar" -> CTFloat))
+      nodeTable.schema should equal(
+        Schema.empty
+          .withNodePropertyKeys("A", "B")("foo" -> CTInteger, "bar" -> CTFloat))
 
-    nodeTable.records.df.collect().toSet should equal(Set(Row(49L.encodeAsCAPSId, 23.1f.toDouble,10)))
+      nodeTable.records.df.collect().toSet should equal(Set(Row(49L.encodeAsCAPSId, 23.1f.toDouble, 10)))
+    }
   }
 
   it("NodeTable can handle shuffled columns due to cast") {
