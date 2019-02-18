@@ -15,3 +15,4 @@ include(':spark-cypher-testing')
 include(':spark-cypher-jmh')
 include(':graph-ddl')
 include(':documentation')
+// bar
