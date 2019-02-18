@@ -44,7 +44,7 @@ object NorthwindJdbcExample extends ConsoleApp {
   // the latter contains the graph definitions and mappings from SQL tables that fill the graph with data
 
   val dataSourceConfig = SqlDataSourceConfig.Jdbc(
-    url = "jdbc:h2:mem:NORTHWIND.db;INIT=CREATE SCHEMA IF NOT EXISTS NORTHWIND;DB_CLOSE_DELAY=30;",
+    url = "jdbc:h2:mem:NORTHWIND.db;DB_CLOSE_DELAY=30;",
     driver = "org.h2.Driver"
   )
   val sqlGraphSource = GraphSources
@@ -74,7 +74,7 @@ object NorthwindJdbcExample extends ConsoleApp {
       |FROM GRAPH sql.Northwind
       |MATCH (e:Employee)-[:REPORTS_TO]->(:Employee)<-[:HAS_EMPLOYEE]-(o:Order)
       |RETURN o.customerID AS customer, o.orderDate AS orderedAt, e.lastName AS handledBy, e.title AS employee
-      |  ORDER BY o.orderDate, handledBy, customer
+      |  ORDER BY orderedAt, handledBy, customer
       |  LIMIT 50
       |""".stripMargin).show
 

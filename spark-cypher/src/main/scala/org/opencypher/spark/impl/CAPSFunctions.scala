@@ -27,11 +27,12 @@
 package org.opencypher.spark.impl
 
 import org.apache.spark.sql.catalyst.analysis.UnresolvedExtractValue
-import org.apache.spark.sql.catalyst.expressions.{ArrayContains, StringTranslate}
+import org.apache.spark.sql.catalyst.expressions.{ArrayContains, StringTranslate, XxHash64}
 import org.apache.spark.sql.expressions.UserDefinedFunction
 import org.apache.spark.sql.functions.{monotonically_increasing_id, udf}
 import org.apache.spark.sql.types.{ArrayType, StringType}
 import org.apache.spark.sql.{Column, functions}
+import org.opencypher.spark.impl.expressions.Serialize
 
 object CAPSFunctions {
 
@@ -67,6 +68,13 @@ object CAPSFunctions {
     */
   def array_contains(column: Column, value: Column): Column =
     new Column(ArrayContains(column.expr, value.expr))
+
+  def hash64(columns: Column*): Column =
+    new Column(new XxHash64(columns.map(_.expr)))
+
+  def serialize(columns: Column*): Column = {
+    new Column(Serialize(columns.map(_.expr)))
+  }
 
   def array_append_long(array: Column, value: Column): Column =
     appendLongUDF(array, value)

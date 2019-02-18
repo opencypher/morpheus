@@ -75,7 +75,7 @@ class FullPGDSAcceptanceTest extends CAPSTestSuite
 
   lazy val fileFormatOptions = List(csv, parquet, orc)
   lazy val filesPerTableOptions = List(1) //, 10
-  lazy val idGenerationOptions = List(HashBasedId, MonotonicallyIncreasingId)
+  lazy val idGenerationOptions = List(SerializedId, HashedId)
 
   lazy val allFileSystemContextFactories: List[TestContextFactory] = {
     for {

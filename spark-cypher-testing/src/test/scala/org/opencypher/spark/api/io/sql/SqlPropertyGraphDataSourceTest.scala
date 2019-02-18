@@ -34,8 +34,6 @@ import org.opencypher.okapi.api.value.CypherValue.CypherMap
 import org.opencypher.okapi.testing.Bag
 import org.opencypher.spark.api.io.FileFormat
 import org.opencypher.spark.api.io.sql.SqlDataSourceConfig.{File, Hive, Jdbc}
-import org.opencypher.spark.api.value.{CAPSNode, CAPSRelationship}
-import org.opencypher.spark.impl.CAPSFunctions.{partitioned_id_assignment, rowIdSpaceBitsUsedByMonotonicallyIncreasingId}
 import org.opencypher.spark.testing.CAPSTestSuite
 import org.opencypher.spark.testing.fixture.{H2Fixture, HiveFixture}
 
@@ -47,10 +45,6 @@ class SqlPropertyGraphDataSourceTest extends CAPSTestSuite with HiveFixture with
   private val databaseName = "fooDatabase"
   private val fooGraphName = GraphName("fooGraph")
 
-  private def computePartitionedRowId(rowIndex: Long, partitionStartDelta: Long): Long = {
-    (partitionStartDelta << rowIdSpaceBitsUsedByMonotonicallyIncreasingId) + rowIndex
-  }
-
   override protected def beforeAll(): Unit = {
     super.beforeAll()
     createHiveDatabase(databaseName)
@@ -59,28 +53,6 @@ class SqlPropertyGraphDataSourceTest extends CAPSTestSuite with HiveFixture with
   override protected def afterAll(): Unit = {
     dropHiveDatabase(databaseName)
     super.afterAll()
-  }
-
-  it("adds deltas to generated ids") {
-    import sparkSession.implicits._
-    val df = sparkSession.createDataFrame(Seq(Tuple1("A"), Tuple1("B"), Tuple1("C"))).toDF("alphabet")
-    val withIds = df.withColumn("id", partitioned_id_assignment(0))
-    val vanillaIds = List(0, 1, 2)
-    withIds.select("id").collect().map(row => row.get(0)).toList should equal(vanillaIds)
-    val idsWithDeltaAdded = df.withColumn("id", partitioned_id_assignment(2))
-    val resultWithDelta = idsWithDeltaAdded.select("id").collect().map(row => row.get(0))
-    resultWithDelta should equal(vanillaIds.map(computePartitionedRowId(_, 2)))
-    resultWithDelta should equal(List(0x400000000L, 0x400000001L, 0x400000002L))
-
-    val largeDf = sparkSession.sparkContext.parallelize(
-      Seq.fill(100) {
-        Tuple1("foo")
-      }, 100
-    ).toDF("fooCol")
-    val largeDfWithIds = largeDf.withColumn("id", partitioned_id_assignment(100))
-    val largeResultWithDelta = largeDfWithIds.select("id").collect().map(row => row.get(0).asInstanceOf[Long]).map(_ >> 33).sorted.toList
-    val expectation = (0L until 100L).map(rowIndex => computePartitionedRowId(rowIndex, 100L + rowIndex)).map(_ >> 33).sorted.toList
-    largeResultWithDelta should equal(expectation)
   }
 
   it("reads nodes from a table") {
@@ -106,9 +78,12 @@ class SqlPropertyGraphDataSourceTest extends CAPSTestSuite with HiveFixture with
 
     val ds = SqlPropertyGraphDataSource(GraphDdl(ddlString), Map(dataSourceName -> Hive))
 
-    ds.graph(fooGraphName).nodes("n").toMapsWithCollectedEntities should equal(Bag(
-      CypherMap("n" -> CAPSNode(0, Set("Foo"), CypherMap("foo" -> "Alice")))
-    ))
+    ds.graph(fooGraphName)
+      .cypher("MATCH (n) RETURN labels(n) AS labels, n.foo AS foo")
+      .records.toMaps should equal(
+      Bag(
+        CypherMap("labels" -> List("Foo"), "foo" -> "Alice")
+      ))
   }
 
   it("reads nodes from a table with custom column mapping") {
@@ -135,9 +110,10 @@ class SqlPropertyGraphDataSourceTest extends CAPSTestSuite with HiveFixture with
 
     val ds = SqlPropertyGraphDataSource(GraphDdl(ddlString), Map(dataSourceName -> Hive))
 
-    ds.graph(fooGraphName).nodes("n").toMapsWithCollectedEntities should equal(Bag(
-      CypherMap("n" -> CAPSNode(0, Set("Foo"), CypherMap("key1" -> 42L, "key2" -> "Alice")))
-    ))
+    ds.graph(fooGraphName)
+      .cypher("MATCH (n) RETURN labels(n) AS labels, n.key1 AS key1, n.key2 as key2")
+      .records.toMaps should equal(
+      Bag(CypherMap("labels" -> List("Foo"), "key1" -> 42L, "key2" -> "Alice")))
   }
 
   it("reads nodes from multiple tables") {
@@ -172,10 +148,13 @@ class SqlPropertyGraphDataSourceTest extends CAPSTestSuite with HiveFixture with
 
     val ds = SqlPropertyGraphDataSource(GraphDdl(ddlString), Map(dataSourceName -> Hive))
 
-    ds.graph(fooGraphName).nodes("n").toMapsWithCollectedEntities should equal(Bag(
-      CypherMap("n" -> CAPSNode(computePartitionedRowId(rowIndex = 0, partitionStartDelta = 0), Set("Foo"), CypherMap("foo" -> "Alice"))),
-      CypherMap("n" -> CAPSNode(computePartitionedRowId(rowIndex = 0, partitionStartDelta = 1), Set("Bar"), CypherMap("bar" -> 0L)))
-    ))
+    ds.graph(fooGraphName)
+      .cypher("MATCH (n) RETURN labels(n) AS labels, n.foo AS foo, n.bar as bar")
+      .records.toMaps should equal(
+      Bag(
+        CypherMap("labels" -> List("Foo"), "foo" -> "Alice", "bar" -> null),
+        CypherMap("labels" -> List("Bar"), "foo" -> null, "bar" -> 0L)
+      ))
   }
 
   it("reads relationships from a table") {
@@ -221,22 +200,18 @@ class SqlPropertyGraphDataSourceTest extends CAPSTestSuite with HiveFixture with
 
     val ds = SqlPropertyGraphDataSource(GraphDdl(ddlString), Map(dataSourceName -> Hive))
 
-    val personId = computePartitionedRowId(rowIndex = 0, partitionStartDelta = 0)
-    val bookId = computePartitionedRowId(rowIndex = 0, partitionStartDelta = 1)
+    ds.graph(fooGraphName)
+      .cypher("MATCH (n) RETURN labels(n) AS labels, n.name AS name, n.title as title")
+      .records.toMaps should equal(
+      Bag(
+        CypherMap("labels" -> List("Person"), "name" -> "Alice", "title" -> null),
+        CypherMap("labels" -> List("Book"), "name" -> null, "title" -> "1984")
+      ))
 
-    ds.graph(fooGraphName).nodes("n").toMapsWithCollectedEntities should equal(Bag(
-      CypherMap("n" -> CAPSNode(personId, Set("Person"), CypherMap("name" -> "Alice"))),
-      CypherMap("n" -> CAPSNode(bookId, Set("Book"), CypherMap("title" -> "1984")))
-    ))
-
-    ds.graph(fooGraphName).relationships("r").toMapsWithCollectedEntities should equal(Bag(
-      CypherMap("r" -> CAPSRelationship(
-        id = computePartitionedRowId(rowIndex = 0, partitionStartDelta = 0),
-        startId = personId,
-        endId = bookId,
-        relType = "READS",
-        properties = CypherMap("rating" -> 42.23)))
-    ))
+    ds.graph(fooGraphName)
+      .cypher("MATCH (a)-[r]->(b) RETURN type(r) AS type, a.name as name, b.title as title, r.rating as rating")
+      .records.toMaps should equal(
+      Bag(CypherMap("type" -> "READS", "name" -> "Alice", "title" -> "1984", "rating" -> 42.23)))
   }
 
   it("reads relationships from a table with colliding column names") {
@@ -276,22 +251,18 @@ class SqlPropertyGraphDataSourceTest extends CAPSTestSuite with HiveFixture with
 
     val ds = SqlPropertyGraphDataSource(GraphDdl(ddlString), Map(dataSourceName -> Hive))
 
-    val nodeId1 = computePartitionedRowId(rowIndex = 0, partitionStartDelta = 0)
-    val nodeId2 = computePartitionedRowId(rowIndex = 1, partitionStartDelta = 0)
+    ds.graph(fooGraphName)
+      .cypher("MATCH (n) RETURN labels(n) AS labels, n.id AS id, n.start as start, n.end as end")
+      .records.toMaps should equal(
+      Bag(
+        CypherMap("labels" -> List("Node"), "id" -> 23, "start" -> "startValue", "end" -> "endValue"),
+        CypherMap("labels" -> List("Node"), "id" -> 42, "start" -> "startValue", "end" -> "endValue")
+      ))
 
-    ds.graph(fooGraphName).nodes("n").toMapsWithCollectedEntities should equal(Bag(
-      CypherMap("n" -> CAPSNode(nodeId1, Set("Node"), CypherMap("id" -> 23, "start" -> "startValue", "end" -> "endValue"))),
-      CypherMap("n" -> CAPSNode(nodeId2, Set("Node"), CypherMap("id" -> 42, "start" -> "startValue", "end" -> "endValue")))
-    ))
-
-    ds.graph(fooGraphName).relationships("r").toMapsWithCollectedEntities should equal(Bag(
-      CypherMap("r" -> CAPSRelationship(
-        id = computePartitionedRowId(rowIndex = 0, partitionStartDelta = 0),
-        startId = nodeId1,
-        endId = nodeId2,
-        relType = "REL",
-        properties = CypherMap("id" -> 1984L, "start" -> "startValue", "end" -> "endValue")))
-    ))
+    ds.graph(fooGraphName)
+      .cypher("MATCH (a)-[r]->(b) RETURN type(r) AS type, r.id as id, r.start as start, r.end as end")
+      .records.toMaps should equal(
+      Bag(CypherMap("type" -> "REL", "id" -> 1984L, "start" -> "startValue", "end" -> "endValue")))
   }
 
   it("reads relationships from multiple tables") {
@@ -344,31 +315,22 @@ class SqlPropertyGraphDataSourceTest extends CAPSTestSuite with HiveFixture with
 
     val ds = SqlPropertyGraphDataSource(GraphDdl(ddlString), Map(dataSourceName -> Hive))
 
-    val personId = computePartitionedRowId(rowIndex = 0, partitionStartDelta = 0)
-    val book1Id = computePartitionedRowId(rowIndex = 0, partitionStartDelta = 1)
-    val book2Id = computePartitionedRowId(rowIndex = 1, partitionStartDelta = 1)
+    ds.graph(fooGraphName)
+      .cypher("MATCH (n) RETURN labels(n) AS labels, n.name AS name, n.title as title")
+      .records.toMaps should equal(
+      Bag(
+        CypherMap("labels" -> List("Person"), "name" -> "Alice", "title" -> null),
+        CypherMap("labels" -> List("Book"), "name" -> null, "title" -> "1984"),
+        CypherMap("labels" -> List("Book"), "name" -> null, "title" -> "Scala with Cats")
+      ))
 
-    ds.graph(fooGraphName).nodes("n").toMapsWithCollectedEntities should equal(Bag(
-      CypherMap("n" -> CAPSNode(personId, Set("Person"), CypherMap("name" -> "Alice"))),
-      CypherMap("n" -> CAPSNode(book1Id, Set("Book"), CypherMap("title" -> "1984"))),
-      CypherMap("n" -> CAPSNode(book2Id, Set("Book"), CypherMap("title" -> "Scala with Cats")))
-    ))
-
-    ds.graph(fooGraphName).relationships("r").toMapsWithCollectedEntities should equal(Bag(
-      CypherMap("r" -> CAPSRelationship(
-        id = computePartitionedRowId(rowIndex = 0, partitionStartDelta = 0),
-        startId = personId,
-        endId = book1Id,
-        relType = "READS",
-        properties = CypherMap("rating" -> 42.23))),
-      CypherMap("r" -> CAPSRelationship(
-        id = computePartitionedRowId(rowIndex = 0, partitionStartDelta = 1),
-        startId = personId,
-        endId = book2Id,
-        relType = "READS",
-        properties = CypherMap("rating" -> 13.37)))
-
-    ))
+    ds.graph(fooGraphName)
+      .cypher("MATCH ()-[r]->() RETURN type(r) AS type, r.rating as rating")
+      .records.toMaps should equal(
+      Bag(
+        CypherMap("type" -> "READS", "rating" -> 42.23),
+        CypherMap("type" -> "READS", "rating" -> 13.37)
+      ))
   }
 
   it("reads nodes from multiple data sources") {
@@ -406,10 +368,13 @@ class SqlPropertyGraphDataSourceTest extends CAPSTestSuite with HiveFixture with
     )
     val ds = SqlPropertyGraphDataSource(GraphDdl(ddlString), configs)
 
-    ds.graph(fooGraphName).nodes("n").toMapsWithCollectedEntities should equal(Bag(
-      CypherMap("n" -> CAPSNode(computePartitionedRowId(rowIndex = 0, partitionStartDelta = 0), Set("Foo"), CypherMap("foo" -> "Alice"))),
-      CypherMap("n" -> CAPSNode(computePartitionedRowId(rowIndex = 0, partitionStartDelta = 1), Set("Bar"), CypherMap("bar" -> 0L)))
-    ))
+    ds.graph(fooGraphName)
+      .cypher("MATCH (n) RETURN labels(n) AS labels, n.foo AS foo, n.bar AS bar")
+      .records.toMaps should equal(
+      Bag(
+        CypherMap("labels" -> List("Foo"), "foo" -> "Alice", "bar" -> null),
+        CypherMap("labels" -> List("Bar"), "foo" -> null, "bar" -> 0L)
+      ))
   }
 
   it("reads nodes from hive and h2 data sources") {
@@ -455,11 +420,13 @@ class SqlPropertyGraphDataSourceTest extends CAPSTestSuite with HiveFixture with
 
     val ds = SqlPropertyGraphDataSource(GraphDdl(ddlString), Map("ds1" -> hiveDataSourceConfig, "ds2" -> h2DataSourceConfig))
 
-    ds.graph(fooGraphName).nodes("n").toMapsWithCollectedEntities should equal(Bag(
-      CypherMap("n" -> CAPSNode(computePartitionedRowId(rowIndex = 0, partitionStartDelta = 0), Set("Foo"), CypherMap("foo" -> "Alice"))),
-      CypherMap("n" -> CAPSNode(computePartitionedRowId(rowIndex = 0, partitionStartDelta = 1), Set("Bar"), CypherMap("bar" -> 123L)))
-    ))
-
+    ds.graph(fooGraphName)
+      .cypher("MATCH (n) RETURN labels(n) AS labels, n.foo AS foo, n.bar as bar")
+      .records.toMaps should equal(
+      Bag(
+        CypherMap("labels" -> List("Foo"), "foo" -> "Alice", "bar" -> null),
+        CypherMap("labels" -> List("Bar"), "foo" -> null, "bar" -> 123L)
+      ))
   }
 
   it("should not auto-cast IntegerType columns to LongType") {
@@ -482,7 +449,7 @@ class SqlPropertyGraphDataSourceTest extends CAPSTestSuite with HiveFixture with
         |CREATE GRAPH fooGraph OF fooType (
         | (Foo) FROM ds1.db.int_long
         |)
-        """.stripMargin
+      """.stripMargin
 
     val pgds = SqlPropertyGraphDataSource(GraphDdl(ddlString), Map("ds1" -> Hive))
 
@@ -503,7 +470,7 @@ class SqlPropertyGraphDataSourceTest extends CAPSTestSuite with HiveFixture with
 
     val pgds = SqlPropertyGraphDataSource(GraphDdl(ddlString), Map("known1" -> Hive, "known2" -> Hive))
 
-    val e = the [SqlDataSourceConfigException] thrownBy pgds.graph(GraphName("g"))
+    val e = the[SqlDataSourceConfigException] thrownBy pgds.graph(GraphName("g"))
     e.getMessage should (include("unknown") and include("known1") and include("known2"))
   }
 
@@ -532,16 +499,22 @@ class SqlPropertyGraphDataSourceTest extends CAPSTestSuite with HiveFixture with
       ))
     )
 
-    ds.graph(fooGraphName).nodes("n").toMapsWithCollectedEntities should equal(Bag(
-      CypherMap("n" -> CAPSNode(0, Set("Person"), CypherMap("id" -> 1, "name" -> "Alice"))),
-      CypherMap("n" -> CAPSNode(1, Set("Person"), CypherMap("id" -> 2, "name" -> "Bob"))),
-      CypherMap("n" -> CAPSNode(2, Set("Person"), CypherMap("id" -> 3, "name" -> "Eve")))
-    ))
+    ds.graph(fooGraphName)
+      .cypher("MATCH (n) RETURN n.id AS id, labels(n) AS labels, n.name AS name")
+      .records.toMaps should equal(
+      Bag(
+        CypherMap("id" -> 1, "labels" -> List("Person"), "name" -> "Alice"),
+        CypherMap("id" -> 2, "labels" -> List("Person"), "name" -> "Bob"),
+        CypherMap("id" -> 3, "labels" -> List("Person"), "name" -> "Eve")
+      ))
 
-    ds.graph(fooGraphName).relationships("r").toMapsWithCollectedEntities should equal(Bag(
-      CypherMap("r" -> CAPSRelationship(0, 0, 1, "KNOWS")),
-      CypherMap("r" -> CAPSRelationship(1, 1, 2, "KNOWS"))
-    ))
+    ds.graph(fooGraphName)
+      .cypher("MATCH (a)-[r]->(b) RETURN type(r) AS type, a.id as startId, b.id as endId")
+      .records.toMaps should equal(
+      Bag(
+        CypherMap("type" -> "KNOWS", "startId" -> 1, "endId" -> 2),
+        CypherMap("type" -> "KNOWS", "startId" -> 2, "endId" -> 3)
+      ))
   }
 
   it("reads nodes and rels from file-based sources with absolute paths") {
@@ -569,15 +542,21 @@ class SqlPropertyGraphDataSourceTest extends CAPSTestSuite with HiveFixture with
       ))
     )
 
-    ds.graph(fooGraphName).nodes("n").toMapsWithCollectedEntities should equal(Bag(
-      CypherMap("n" -> CAPSNode(0, Set("Person"), CypherMap("id" -> 1, "name" -> "Alice"))),
-      CypherMap("n" -> CAPSNode(1, Set("Person"), CypherMap("id" -> 2, "name" -> "Bob"))),
-      CypherMap("n" -> CAPSNode(2, Set("Person"), CypherMap("id" -> 3, "name" -> "Eve")))
-    ))
+    ds.graph(fooGraphName)
+      .cypher("MATCH (n) RETURN n.id AS id, labels(n) AS labels, n.name AS name")
+      .records.toMaps should equal(
+      Bag(
+        CypherMap("id" -> 1, "labels" -> List("Person"), "name" -> "Alice"),
+        CypherMap("id" -> 2, "labels" -> List("Person"), "name" -> "Bob"),
+        CypherMap("id" -> 3, "labels" -> List("Person"), "name" -> "Eve")
+      ))
 
-    ds.graph(fooGraphName).relationships("r").toMapsWithCollectedEntities should equal(Bag(
-      CypherMap("r" -> CAPSRelationship(0, 0, 1, "KNOWS")),
-      CypherMap("r" -> CAPSRelationship(1, 1, 2, "KNOWS"))
-    ))
+    ds.graph(fooGraphName)
+      .cypher("MATCH (a)-[r]->(b) RETURN type(r) AS type, a.id as startId, b.id as endId")
+      .records.toMaps should equal(
+      Bag(
+        CypherMap("type" -> "KNOWS", "startId" -> 1, "endId" -> 2),
+        CypherMap("type" -> "KNOWS", "startId" -> 2, "endId" -> 3)
+      ))
   }
 }

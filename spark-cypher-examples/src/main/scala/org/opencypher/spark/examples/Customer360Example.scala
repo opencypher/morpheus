@@ -68,7 +68,7 @@ object Customer360Example extends ConsoleApp {
   // It uses a Graph DDL file for understanding schema and data of its managed graphs
   val sqlPgds = GraphSources
     .sql(file("/customer-interactions/ddl/customer-interactions.ddl"))
-    .withIdGenerationStrategy(IdGenerationStrategy.HashBasedId)
+    .withIdGenerationStrategy(IdGenerationStrategy.HashedId)
     .withSqlDataSourceConfigs(Map("hive_interactions" -> Hive))
 
   // Register the SQL PGDS in the session's catalog
