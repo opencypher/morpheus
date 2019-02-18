@@ -3,7 +3,7 @@
 
 [abstract]
 --
-Placeholder abstract.
+This section describes the CAPS Session and how to use it manage graph sources and run queries.
 --
 
 Spark programs revolve around a centralised concept called the `SparkSession`.

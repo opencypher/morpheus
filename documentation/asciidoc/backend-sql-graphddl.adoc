@@ -1,15 +1,10 @@
 [[backend-graphddl]]
 = Graph DDL (Data Definition Language)
 
-[abstract]
---
-Placeholder abstract.
---
-
 Graph DDL enables importing SQL tabular data into a property graph in Spark.
 It is common that the data inside relational databases is or can be modelled as a graph, but the data is often not formatted correctly to be directly exploited as such.
 
-Make sure to read the section on making graphs from tables before reading this section.
+Make sure to read the section on <<graphs-from-tables-model, making graphs from tables>> before reading this section.
 That background knowledge is necessary.
 
 
@@ -18,18 +13,19 @@ That background knowledge is necessary.
 
 Graph DDL makes it possible to create two kinds of structures:
 
-* *graphs* that may contain:
+* concrete *graphs*, which may contain:
 ** type definitions, such as
 *** _element types_ with defined properties
 *** _node types_ composed of element types
 *** _relationship types_ composed of element types
 ** _table mappings_ that link node and relationship types to tables and columns in a SQL data source
 
-* *graph types* that allow for:
+* abstract *graph types*, which allow for:
 ** extracting type definitions from graphs into reusable structures
-** graphs to refer to a named graph type (i.e. inheritance)
+** graphs to refer to a named graph type (i.e., inheritance)
 
-Both graphs and graph types are named and referenced by their name. Named graphs are made available in the property graph catalog through registering a SQL Property Graph Datasource (see <<backend-sql-pgds>>) with the referenced Graph DDL.
+Both graphs and graph types are named and referenced by their name.
+Named graphs are made available in the property graph catalog through registering a SQL Property Graph Datasource (see <<backend-sql-pgds>>) with the referenced Graph DDL.
 
 To describe the graph type and its components, a Cypher-style ASCII art pattern syntax is used.
 The goal is to reflect the information captured in an Entity-Relationship conceptual data model in an intuitive graph pattern shorthand.
@@ -152,7 +148,7 @@ In the subsequent sections we will describe all the Graph DDL components in deta
 === Element type
 
 An element type is referred to by its _name_, often called its _label_, and forms the basis for node and relationship types.
-An element type may contain property definitions, similar to a column definition in SQL. 
+An element type may contain property definitions, similar to a column definition in SQL.
 A property definition is composed of the property name and its data type.
 Element types are declared the same way regardless if they are to be used as node or relationship types.
 //Element types are hierarchical and allow single and multiple inheritance.
@@ -177,9 +173,9 @@ CREATE ELEMENT TYPE MyType (
 )
 ----
 
-Possible data types reflect a subset of the Cypher type system. 
+Possible data types reflect a subset of the Cypher type system.
 Currently supported types are:
-`STRING`, `INTEGER`, `FLOAT` and `BOOLEAN` as well as their nullable counterparts, i.e. `STRING?`, `INTEGER?`, `FLOAT?` and `BOOLEAN?`.
+`STRING`, `INTEGER`, `FLOAT`, `BOOLEAN` and `DATE` as well as their nullable counterparts, i.e., `STRING?`, `INTEGER?`, `FLOAT?`, `BOOLEAN?` and `DATE?`.
 
 [[graphddl-node-type]]
 === Node type
@@ -237,8 +233,8 @@ We can declare relationship types by referring to node and element types in scop
 [[graphddl-graph-type]]
 === Graph type
 
-A graph type contains element, node and relationship types. 
-A graph type is always named (e.g. `movie_graph_type`).
+A graph type contains element, node and relationship types.
+A graph type is always named (e.g., `movie_graph_type`).
 Definitions within a graph type may refer to global element types.
 If a type is already globally defined, a local definition shadows a global definition.
 
@@ -268,10 +264,10 @@ CREATE GRAPH TYPE movie_graph_type (
 A graph may contain element, node and relationship types.
 In addition, table mappings can be attached to node and relationship types.
 
-A graph is always named. 
+A graph is always named.
 Definitions within a graph may refer to global element types.
 
-Optionally, a graph refers to a graph type. 
+Optionally, a graph refers to a graph type.
 In that case, element types defined in the graph type can be referenced.
 If a type is already defined outside of the graph scope, local definitions shadow global definitions.
 
@@ -304,11 +300,12 @@ The syntax for those mappings follow this outline:
 
 Here, `<node-type>` declares a node type and the `<sql-table>` denotes the name of a SQL table (see <<graphddl-referencing-tables>>).
 The optional `(<column1> AS <property1>, ...)` may be used to map a column to a property with a different name.
-The default behaviour is to look for a column with the same name as the property. This lookup is case-sensitive.
+The default behaviour is to look for a column with the same name as the property.
+This lookup is case-sensitive.
 
 Relationship types also map to SQL tables with optional column-to-property mappings.
 In contrast to the node type, mappings for start and end nodes must be specified.
-`JOIN` syntax is used to connect the corresponding SQL tables. 
+`JOIN` syntax is used to connect the corresponding SQL tables.
 Table names are aliased to simplify the join expressions.
 
 [NOTE]
@@ -344,7 +341,7 @@ CREATE GRAPH movie_graph (
 [[graphddl-referencing-tables]]
 == Referencing SQL tables and views
 
-Within Graph DDL, SQL tables are identified using a three-part identifier, i.e. `<database>.<schema>.<table>`.
+Within Graph DDL, SQL tables are identified using a three-part identifier, i.e., `<database>.<schema>.<table>`.
 In order to use simple table names within mappings, a `SET SCHEMA <database>.<schema>` statement can be used in between graph and graph type definitions.
 
 [NOTE]

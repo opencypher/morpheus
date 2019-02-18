@@ -3,14 +3,14 @@
 
 [abstract]
 --
-Placeholder abstract.
+This chapter introduces CAPS concepts and APIs, and gives examples for getting started with CAPS.
 --
 
 // TODO: Expand this to be a small but complete working example.
 // TODO: Move code to somewhere testable.
 
 When you start off with Cypher for Apache Spark, this is probably the very first thing you will do, unless you are importing a graph from Neo4j.
-This section describes how to take CSV files, relations, or any "data squares" and turn them into graphs which can be queried in CAPS.
+This section describes how to take CSV files, relations, or other tabular data and turn them into graphs which can be queried in CAPS.
 
 To create a CAPS graph, follow these steps:
 
@@ -82,7 +82,7 @@ This means that CAPS can generate identifiers for nodes and relationships on the
 
 * Every table must have a column with a unique ID.
 * The unique ID must be a 64-bit integer (string IDs are presently not supported).
-* The ID spaces of nodes/relationships can overlap, but within each entity type the IDs *cannot* be reused.
+* The ID space of nodes can overlap with that of relationships, but within each space the ID must be unique.
 
 
 [[graphs-from-tables-normalization]]
@@ -120,9 +120,8 @@ This allows to define different properties for `:Customer` and `:Employee`.
 
 Given a set of tables, there are two ways to convert them to a graph:
 
-* Manually with the Scala API
-
-* Using the SQL PGDS with a Graph DDL
+* Manually with the <<graph-from-tables-scala-api, Scala API>>
+* Using the SQL PGDS with a <<graph-from-tables-graph-ddl, Graph DDL>>
 
 If the data is already in the "tables for labels" format and contains unique identifiers, then using the Scala API is simpler.
 If the data is denormalised and does not contain unique identifiers, then we recommend using the Graph DDL.
@@ -141,7 +140,7 @@ Alternatively, tables can be imported with the Scala API.
 We recommend using Spark SQL to import the tables and convert them into the suitable "tables for labels" format.
 Please consult the Spark and Spark SQL documentation.
 
-For the next step, we assume that you have `DataFrame`s that are in the "tables for labels" format described above.
+For the next step, we assume that you have DataFrames that are in the "tables for labels" format described above.
 
 
 [[graphs-from-tables-graph-mappings]]
@@ -216,7 +215,7 @@ This means that the Graph DDL is always an alternative to the Scala API when map
 
 For the person/food tables above, the following Graph DDL could operate on a denormalized table, but assumes that a view for each label/relationship has been created:
 
-[source, "graph ddl"]
+[source, graphddl]
 ----
 CATALOG CREATE LABEL (Person {name: STRING})
 CATALOG CREATE LABEL (Food {name: STRING})
@@ -240,7 +239,7 @@ CREATE GRAPH foodGraph USING SCHEMA peopleFood
 
 Note that unlike the Scala API, the SQL PGDS will take care of automatically generating the internal IDs.
 
-// TODO: link to Graph DDL chapter
+For more details on Graph DDL, see the <<backend-graphddl, Graph DDL documentation>>.
 
 
 [[graphs-from-tables-cypher-example]]

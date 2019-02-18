@@ -3,7 +3,7 @@
 
 [abstract]
 --
-Placeholder abstract.
+This section describes the in-memory backend for CAPS.
 --
 
 // TODO: Document the in-memory backend, possibly together with or instead of session and catalog.

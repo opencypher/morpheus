@@ -1,11 +1,6 @@
 [[backend-neo4j-graph-merge]]
 = Neo4j GraphMerge utility
 
-[abstract]
---
-Placeholder abstract.
---
-
 CAPS includes a utility class, called `Neo4jGraphMerge`, that allows to merge a graph into an existing Neo4j database.
 This can be useful in order to frequently update a Neo4j database with additional data that has been produced from other data sources.
 

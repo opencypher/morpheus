@@ -1,9 +1,9 @@
-[[technology]]
-= Technology choices
+[[architecture]]
+= Architecture
 
 [abstract]
 --
-Placeholder abstract.
+This chapter describes the architecture and technology choices of CAPS.
 --
 
 CAPS is a framework for Cypher-based graph processing in Spark.
@@ -28,6 +28,7 @@ This suggests several possible future directions:
 
 In choosing data sources and sinks, where the data resides is pretty important.
 
+
 === Federating queries
 
 When formulating queries that lift data from several different PGDSs, these queries are effectively federated, as they will be executed over data that is hosted by separate environments.
@@ -37,6 +38,7 @@ In this regard CAPS is acting as a federated query processor.
 A design intention is to push down as much as possible of the operations to within the various PGDSs, but this is subject to each PGDS implementation and configuration
 For example, if using the SQL PGDS with Hive, the SQL queries executed over the Hive tables will be Spark execution plans that can be optimised globally together with the Cypher query that sits on top of this.
 Or, if using a filesystem PGDS with `parquet` files, Spark can push down predicates from the Cypher query down to the Parquet file readers.
+
 
 === Distributing queries
 

@@ -3,7 +3,7 @@
 
 [abstract]
 --
-Placeholder abstract.
+This section describes the SQL backend and GraphDDL.
 --
 
 
@@ -42,13 +42,26 @@ The above Graph DDL requires two tables (with columns): `view_KNOWS (start_id, e
 
 ====
 
+
 [[backend-sql-pgds-tables]]
 === Tables and columns
 
-* The referenced tables are required to contain all the columns referenced in the Graph DDL, but may also contain additional columns; these will not be selected.
-* By default, there is a case-insensitive mapping between the label properties to table columns, such that a table `foo(BAR1 varchar, BAR2 bigint)` will map into a label `(Foo {bar1: STRING, BAR2: INTEGER})`.
-  The case in the graph will follow the case specified in the graph schema, as Cypher is case sensitive when it comes to property keys.
+The referenced tables are required to contain all the columns referenced in the Graph DDL.
+The tables may contain additional columns not referenced in the Graph DDL.
+Such additional columns will not be selected.
 
+Mappings are not case sensitive.
+A table `person(NAME varchar, AGE bigint, HOMETOWN varchar)` can be mapped into a label `(Person {name: STRING, age: INTEGER, homeTown: String})`.
+The resulting graph will follow the case specified in the schema.
+Cypher is case sensitive.
+To query a graph created with this mapping, the label and property names used in the query must match the case in the graph:
+
+[source, cypher]
+----
+MATCH (p:Person)
+WHERE p.name = 'Tobias' AND p.homeTown = 'Malmö'
+RETURN avg(p.age)
+----
 
 include::backend-sql-graphddl.adoc[leveloffset=+1]
 

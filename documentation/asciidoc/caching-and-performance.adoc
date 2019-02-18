@@ -1,9 +1,9 @@
-[[caching-and-performance]]
+[[performance]]
 = Performance
 
 [abstract]
 --
-Placeholder abstract.
+This chapter describes caching and other performance considerations.
 --
 
 An important performance consideration is what data is cached when running a Spark application.

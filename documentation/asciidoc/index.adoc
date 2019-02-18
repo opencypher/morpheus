@@ -3,10 +3,20 @@
 
 [abstract]
 --
-Placeholder abstract.
+This part provides comprehensive documentation for Cypher for Apache Spark.
 --
 
-// TODO: Needs an inline TOC to introduce the following content.
+The Cypher for Apache Spark part of the Morpheus user guide covers the following areas:
+
+* <<caps-overview>> -- Overview of CAPS components: Property Graph Data Source backends and Cypher.
+* <<caps-introduction>> -- Introduction with examples to CAPS concepts and APIs.
+* <<backends>> -- Detailed documentation of the CAPS Session and the various CAPS backends.
+* <<cypher>> -- Features and limitations of the Cypher graph query language as implemented in CAPS.
+* <<performance>> -- Notes on caching and performance.
+* <<architecture>> -- Notes on CAPS architecture and technology choices.
+* <<resources>> -- Resources for further reading.
+* <<examples>> -- A collection of example programs with explanations.
+
 
 include::overview.adoc[leveloffset=+1]
 

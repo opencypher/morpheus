@@ -3,7 +3,7 @@
 
 [abstract]
 --
-Placeholder abstract.
+This section describes the Filesystem backend for CAPS.
 --
 
 

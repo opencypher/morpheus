@@ -3,7 +3,7 @@
 
 [abstract]
 --
-Placeholder abstract.
+This section describes Cypher graph views support in CAPS.
 --
 
 CAPS supports parameterized graph views.
