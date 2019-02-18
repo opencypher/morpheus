@@ -1,4 +1,4 @@
-[![Maven Central](https://img.shields.io/badge/Maven_Central-0.2.3-blue.svg?label=Maven%20Central)](https://search.maven.org/#artifactdetails%7Corg.opencypher%7Cspark-cypher%7C0.2.3%7Cjar)
+[![Maven Central](https://img.shields.io/badge/Maven_Central-0.2.4-blue.svg?label=Maven%20Central)](https://search.maven.org/#artifactdetails%7Corg.opencypher%7Cspark-cypher%7C0.2.4%7Cjar)
 # CAPS: Cypher for Apache Spark
 
 CAPS extends [Apache Spark™](https://spark.apache.org) with [Cypher](https://neo4j.com/docs/developer-manual/current/cypher/), the industry's most widely used [property graph](https://github.com/opencypher/openCypher/blob/master/docs/property-graph-model.adoc) query language defined and maintained by the [openCypher](http://www.opencypher.org) project.
@@ -23,9 +23,6 @@ integration with GraphX. To learn more about this, please see our [examples](htt
 The functionality and APIs are stabilizing but surface changes (e.g. to the Cypher syntax and semantics for multiple graph processing and graph projections/construction) are still likely to occur. 
 We invite you to try out the project, and we welcome feedback and contributions 
 
-A 1.0 release of the project with a stable feature set and API/language surface is targeted for Q4 of 2018. 
-
-We expect continuing development of the project after 1.0. 
 If you are interested in contributing to the project we would love to hear from you; email us at `opencypher@neo4j.org` or just raise a PR. 
 Please note that this is an openCypher project and contributions can only be accepted if you’ve agreed to the  [openCypher Contributors Agreement (oCCA)](CONTRIBUTING.adoc).
 
@@ -35,7 +32,7 @@ Please note that this is an openCypher project and contributions can only be acc
 CAPS is built on top of the Spark DataFrame API and uses features such as the Catalyst optimizer.
 The Spark representations are accessible and can be converted to representations that integrate with other Spark libraries.
 
-CAPS supports a subset of Cypher <!-- TODO: WIKI supported features --> and is the first implementation of [multiple graphs](https://github.com/boggle/openCypher/blob/CIP2017-06-18-multiple-graphs/cip/1.accepted/CIP2017-06-18-multiple-graphs.adoc) and graph query compositionality.
+CAPS supports a subset of Cypher <!-- TODO: link to User Guide --> and is the first implementation of [multiple graphs](https://github.com/boggle/openCypher/blob/CIP2017-06-18-multiple-graphs/cip/1.accepted/CIP2017-06-18-multiple-graphs.adoc) and graph query compositionality.
 
 CAPS currently supports importing graphs from both Neo4j and from custom [CSV format](https://github.com/opencypher/cypher-for-apache-spark/tree/master/caps-core/src/test/resources/csv/sn) in HDFS and local file system.
 CAPS has a data source API that allows you to plug in custom data importers for external graphs.
@@ -48,17 +45,18 @@ CAPS is under rapid development and we are planning to offer support for:
 - integration with Spark SQL
 - injection of custom graph data sources
 
-## Spark Improvement Proposal
+## Spark Project Improvement Proposal
 
 Currently CAPS is a third-party add-on to the Spark ecosystem. We, however, believe that property graphs and graph processing
 has the potential to be come a vital part of data analytics. We are thus working, in cooperation with 
 *Databricks*, on making CAPS a core part of Spark. 
 The first step on this road is the specification of a __PropertyGraph API__, similar to __SQL__ and __Dataframes__, along with porting
 Cypher 9 features of CAPS to the core Spark project in a so called __Spark Project Improvement Proposal__ (SPIP).
-We are currently in the first phase of this process. The SPIP describing the motivation and goals is published here
+
+We are currently in the second phase of this process, after having successfully [passed the vote for inclusion](http://apache-spark-developers-list.1001551.n3.nabble.com/VOTE-RESULT-SPIP-DataFrame-based-Property-Graphs-Cypher-Queries-and-Algorithms-td26401.html) into Apache Spark 3.0.
+The SPIP describing the motivation and goals is published here
 [SPARK-25994](https://issues.apache.org/jira/browse/SPARK-25994). 
-Additionally [SPARK-26028](https://issues.apache.org/jira/browse/SPARK-26028) proposes an API design and 
-implementation strategies. 
+Additionally [SPARK-26028](https://issues.apache.org/jira/browse/SPARK-26028) proposes an API design and implementation strategies. 
 
 ## Get started with CAPS
 CAPS is currently easiest to use with Scala. Below we explain how you can import a simple graph and run a Cypher query on it.
@@ -81,13 +79,13 @@ Maven:
 <dependency>
   <groupId>org.opencypher</groupId>
   <artifactId>spark-cypher</artifactId>
-  <version>0.2.3</version>
+  <version>0.2.4</version>
 </dependency>
 ```
 
 sbt:
 ```
-libraryDependencies += "org.opencypher" % "spark-cypher" % "0.2.3"
+libraryDependencies += "org.opencypher" % "spark-cypher" % "0.2.4"
 ```
 
 Remember to add `fork in run := true` in your `build.sbt` for scala projects; this is not CAPS
