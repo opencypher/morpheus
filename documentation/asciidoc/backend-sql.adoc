@@ -51,7 +51,7 @@ The tables may contain additional columns not referenced in the Graph DDL.
 Such additional columns will not be selected.
 
 Mappings are not case sensitive.
-A table `person(NAME varchar, AGE bigint)` can be mapped into a label `(Person {name: STRING, age: INTEGER})`.
+A table `person(NAME varchar, AGE bigint, HOMETOWN varchar)` can be mapped into a label `(Person {name: STRING, age: INTEGER, homeTown: String})`.
 The resulting graph will follow the case specified in the schema.
 Cypher is case sensitive.
 To query a graph created with this mapping, the label and property names used in the query must match the case in the graph:
@@ -59,7 +59,7 @@ To query a graph created with this mapping, the label and property names used in
 [source, cypher]
 ----
 MATCH (p:Person)
-WHERE p.name = 'Tobias'
+WHERE p.name = 'Tobias' AND p.homeTown = 'Malmö'
 RETURN avg(p.age)
 ----
 

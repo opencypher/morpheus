@@ -175,7 +175,7 @@ CREATE ELEMENT TYPE MyType (
 
 Possible data types reflect a subset of the Cypher type system.
 Currently supported types are:
-`STRING`, `INTEGER`, `FLOAT` and `BOOLEAN` as well as their nullable counterparts, i.e., `STRING?`, `INTEGER?`, `FLOAT?` and `BOOLEAN?`.
+`STRING`, `INTEGER`, `FLOAT`, `BOOLEAN` and `DATE` as well as their nullable counterparts, i.e., `STRING?`, `INTEGER?`, `FLOAT?`, `BOOLEAN?` and `DATE?`.
 
 [[graphddl-node-type]]
 === Node type
