@@ -30,6 +30,7 @@ import org.opencypher.okapi.api.graph.{Entity, IdKey, Pattern}
 import org.opencypher.okapi.impl.exception.IllegalArgumentException
 
 // TODO document
+// TODO add builder in Node/RelPattern style
 case class EntityMapping(
   pattern: Pattern,
   properties: Map[Entity, Map[String, String]],

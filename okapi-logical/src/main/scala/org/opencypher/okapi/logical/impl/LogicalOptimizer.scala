@@ -38,7 +38,9 @@ object LogicalOptimizer extends DirectCompilationStage[LogicalOperator, LogicalO
   override def process(input: LogicalOperator)(implicit context: LogicalPlannerContext): LogicalOperator = {
     val optimizationRules = Seq(
       discardScansForNonexistentLabels,
-      replaceCartesianWithValueJoin)
+      replaceCartesianWithValueJoin,
+      replaceScansWithRecognizePatterns
+    )
       optimizationRules.foldLeft(input) {
       // TODO: Evaluate if multiple rewriters could be fused
       case (tree: LogicalOperator, optimizationRule) => BottomUp[LogicalOperator](optimizationRule).transform(tree)

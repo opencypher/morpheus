@@ -27,14 +27,18 @@
 package org.opencypher.spark.impl
 
 import org.apache.spark.sql.{Row, functions}
+import org.opencypher.okapi.api.graph._
 import org.opencypher.okapi.api.io.conversion.{EntityMapping, NodeMapping, RelationshipMapping}
-import org.opencypher.okapi.api.types.{CTNode, CTRelationship}
+import org.opencypher.okapi.api.types._
 import org.opencypher.okapi.api.value.CypherValue.CypherMap
+import org.opencypher.okapi.ir.api.expr._
+import org.opencypher.okapi.ir.api.{Label, PropertyKey, RelType}
+import org.opencypher.okapi.ir.impl.util.VarConverters._
+import org.opencypher.okapi.relational.impl.planning.RelationalPlanner._
 import org.opencypher.okapi.testing.Bag
 import org.opencypher.okapi.testing.propertygraph.CreateGraphFactory
-import org.opencypher.spark.api.io.{CAPSNodeTable, CAPSRelationshipTable}
-import org.opencypher.spark.api.value.CAPSEntity._
 import org.opencypher.spark.api.io.CAPSEntityTable
+import org.opencypher.spark.api.value.CAPSEntity._
 import org.opencypher.spark.api.value.CAPSRelationship
 import org.opencypher.spark.impl.CAPSConverters._
 import org.opencypher.spark.testing.support.creation.caps.{CAPSScanGraphFactory, CAPSTestGraphFactory}
@@ -420,5 +424,130 @@ class ScanGraphTest extends CAPSGraphTest {
     )
 
     verify(nodes, cols, data)
+  }
+
+  describe("scanning patterns") {
+    it("can scan for NodeRelPattern") {
+      val pattern = NodeRelPattern(CTNode("Person"), CTRelationship("KNOWS"))
+
+      val mapping = EntityMapping(
+        pattern,
+        personMapping.properties ++ knowsMapping.properties,
+        personMapping.idKeys.updated(
+          pattern.relEntity, Map(SourceIdKey -> "RELID", SourceStartNodeKey -> "SRC", SourceEndNodeKey -> "DST")
+        ),
+        personMapping.impliedTypes ++ knowsMapping.impliedTypes
+      )
+
+      val joinedDf = personDF.join(
+        knowsDF.withColumnRenamed("ID", "RELID"),
+        personDF.col("ID") === knowsDF.col("SRC")
+      )
+
+      val patternTable = CAPSEntityTable.create(mapping, joinedDf)
+      val graph = caps.graphs.create(patternTable, personTable)
+
+      val scan = graph.scanOperator(pattern)
+      val renamedScan = scan.assignScanName(
+        Map(
+          pattern.nodeEntity.toVar -> n,
+          pattern.relEntity.toVar -> r
+        )
+      )
+      val result = caps.records.from(renamedScan.header, renamedScan.table)
+
+      val cols = Seq(
+        n,
+        nHasLabelPerson,
+        nHasPropertyLuckyNumber,
+        nHasPropertyName,
+        rStart,
+        r,
+        rHasTypeKnows,
+        rEnd,
+        rHasPropertySince
+      )
+
+      val data = Bag(
+        Row(1L.encodeAsCAPSId.toList, true, 23L, "Mats"  , 1L.encodeAsCAPSId.toList, 1L.encodeAsCAPSId.toList, true, 2L.encodeAsCAPSId.toList, 2017L),
+        Row(1L.encodeAsCAPSId.toList, true, 23L, "Mats"  , 1L.encodeAsCAPSId.toList, 2L.encodeAsCAPSId.toList, true, 3L.encodeAsCAPSId.toList, 2016L),
+        Row(1L.encodeAsCAPSId.toList, true, 23L, "Mats"  , 1L.encodeAsCAPSId.toList, 3L.encodeAsCAPSId.toList, true, 4L.encodeAsCAPSId.toList, 2015L),
+        Row(2L.encodeAsCAPSId.toList, true, 42L, "Martin", 2L.encodeAsCAPSId.toList, 4L.encodeAsCAPSId.toList, true, 3L.encodeAsCAPSId.toList, 2016L),
+        Row(2L.encodeAsCAPSId.toList, true, 42L, "Martin", 2L.encodeAsCAPSId.toList, 5L.encodeAsCAPSId.toList, true, 4L.encodeAsCAPSId.toList, 2013L),
+        Row(3L.encodeAsCAPSId.toList, true, 1337L, "Max" , 3L.encodeAsCAPSId.toList, 6L.encodeAsCAPSId.toList, true, 4L.encodeAsCAPSId.toList, 2016L)
+      )
+
+      verify(result, cols, data)
+    }
+
+    it("can scan for TripletPatterns") {
+      val pattern = TripletPattern(CTNode("Person"), CTRelationship("KNOWS"), CTNode("Person"))
+
+      val propertyMapping = Map(
+        pattern.sourceEntity -> Map("name" -> "sourceName"),
+        pattern.relEntity -> Map("since" -> "relSince"),
+        pattern.targetEntity -> Map("name" -> "targetName")
+      )
+
+      val idMapping: Map[Entity, Map[IdKey, String]] = Map(
+        pattern.sourceEntity -> Map(SourceIdKey -> "sourceId"),
+        pattern.relEntity -> Map(SourceIdKey -> "relId", SourceStartNodeKey -> "relSourceId", SourceEndNodeKey -> "relTargetId"),
+        pattern.targetEntity -> Map(SourceIdKey -> "targetId")
+      )
+
+      val types = Map(
+        pattern.sourceEntity -> Set("Person"),
+        pattern.relEntity -> Set("KNOWS"),
+        pattern.targetEntity -> Set("Person")
+      )
+
+      val mapping = EntityMapping(
+        pattern,
+        propertyMapping,
+        idMapping,
+        types
+      )
+
+      val df = caps.sparkSession.createDataFrame(
+        Seq(
+          (1L, "Mats"  , 1L, 1L, 2L, 1984L, 2L, "Martin"),
+          (1L, "Mats"  , 1L, 1L, 3L, 1984L, 3L, "Max"),
+          (2L, "Martin", 2L, 2L, 1L, 1984L, 1L, "Mats")
+      )).toDF("sourceId", "sourceName", "relId", "relSourceId", "relTargetId", "relSince", "targetId", "targetName")
+
+      val patternTable = CAPSEntityTable.create(mapping, df)
+
+      val graph = caps.graphs.create(patternTable)
+
+      val scan = graph.scanOperator(pattern)
+
+      val result = caps.records.from(scan.header, scan.table)
+
+
+      val sourceVar = pattern.sourceEntity.toVar
+      val targetVar = pattern.targetEntity.toVar
+      val relVar = pattern.relEntity.toVar
+      val cols = Seq(
+        sourceVar,
+        HasLabel(sourceVar, Label("Person"))(CTBoolean),
+        Property(sourceVar, PropertyKey("name"))(CTString),
+        relVar,
+        HasType(relVar, RelType("KNOWS"))(CTBoolean),
+        StartNode(relVar)(),
+        EndNode(relVar)(),
+        Property(relVar, PropertyKey("since"))(CTInteger),
+        targetVar,
+        HasLabel(targetVar, Label("Person"))(CTBoolean),
+        Property(targetVar, PropertyKey("name"))(CTString)
+      )
+
+      val data = Bag(
+        Row(1L.encodeAsCAPSId.toList, true, "Mats"  , 1L.encodeAsCAPSId.toList, true, 1L.encodeAsCAPSId.toList, 2L.encodeAsCAPSId.toList, 1984L, 2L.encodeAsCAPSId.toList, true, "Martin"),
+        Row(1L.encodeAsCAPSId.toList, true, "Mats"  , 1L.encodeAsCAPSId.toList, true, 1L.encodeAsCAPSId.toList, 3L.encodeAsCAPSId.toList, 1984L, 3L.encodeAsCAPSId.toList, true, "Max"),
+        Row(2L.encodeAsCAPSId.toList, true, "Martin", 2L.encodeAsCAPSId.toList, true, 2L.encodeAsCAPSId.toList, 1L.encodeAsCAPSId.toList, 1984L, 1L.encodeAsCAPSId.toList, true, "Mats")
+      )
+
+      verify(result, cols, data)
+    }
   }
 }

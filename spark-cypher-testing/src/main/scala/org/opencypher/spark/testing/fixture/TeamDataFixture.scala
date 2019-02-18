@@ -44,7 +44,7 @@ trait TeamDataFixture extends TestDataFixture {
 
   self: CAPSSessionFixture =>
 
-  val n: Expr = Var("n")(CTNode)
+  val n: Var = Var("n")(CTNode)
   val nHasLabelGerman: Expr = HasLabel(n, Label("German"))(CTBoolean)
   val nHasLabelBook: Expr = HasLabel(n, Label("Book"))(CTBoolean)
   val nHasLabelPerson: Expr = HasLabel(n, Label("Person"))(CTBoolean)
@@ -57,7 +57,7 @@ trait TeamDataFixture extends TestDataFixture {
   val nHasPropertyYear: Expr = Property(n, PropertyKey("year"))(CTInteger)
   val nHasPropertyName: Expr = Property(n, PropertyKey("name"))(CTString)
 
-  val r: Expr = Var("r")(CTRelationship)
+  val r: Var = Var("r")(CTRelationship)
   val rStart: Expr = StartNode(r)(CTNode)
   val rEnd: Expr = EndNode(r)(CTNode)
   val rHasTypeKnows: Expr = HasType(r, RelType("KNOWS"))(CTBoolean)
@@ -177,7 +177,7 @@ trait TeamDataFixture extends TestDataFixture {
     mutable.WrappedArray.make(s)
   }
 
-  private lazy val personMapping: EntityMapping = NodeMapping
+  protected lazy val personMapping: EntityMapping = NodeMapping
     .on("ID")
     .withImpliedLabel("Person")
     .withPropertyKey("name" -> "NAME")
@@ -194,7 +194,7 @@ trait TeamDataFixture extends TestDataFixture {
 
   lazy val personTable: CAPSEntityTable = CAPSEntityTable.create(personMapping, personDF)
 
-  private lazy val knowsMapping: EntityMapping = RelationshipMapping
+  protected lazy val knowsMapping: EntityMapping = RelationshipMapping
     .on("ID").from("SRC")
     .to("DST")
     .relType("KNOWS")
