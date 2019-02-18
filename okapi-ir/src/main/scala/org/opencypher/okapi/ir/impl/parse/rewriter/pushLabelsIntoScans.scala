@@ -53,10 +53,10 @@ case object pushLabelsIntoScans extends Rewriter {
       }
 
       val whereLabelMap = m.where.treeFold[Map[String, Set[LabelName]]](Map.empty) {
-        case Or(lhs, rhs) if containsHasLabel(lhs) && containsHasLabel(rhs) => acc => acc -> None
-        case Ors(children) if children.count(containsHasLabel) >= 2 => acc => acc -> None
+        case Or(lhs, rhs) if containsHasLabel(lhs) || containsHasLabel(rhs) => acc => acc -> None
+        case Ors(children) if children.count(containsHasLabel) >= 1 => acc => acc -> None
         case Not(child) if containsHasLabel(child) => acc => acc -> None
-        case Xor(lhs, rhs) if containsHasLabel(lhs) && containsHasLabel(rhs) => acc => acc -> None
+        case Xor(lhs, rhs) if containsHasLabel(lhs) || containsHasLabel(rhs) => acc => acc -> None
         case HasLabels(Variable(name), labels) =>
           acc => {
             val updatedLabels = acc.getOrElse(name, Set.empty) ++ labels

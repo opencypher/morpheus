@@ -26,6 +26,7 @@
  */
 package org.opencypher.spark.impl.acceptance
 
+import org.apache.spark
 import org.junit.runner.RunWith
 import org.opencypher.okapi.api.value.CypherValue._
 import org.opencypher.okapi.testing.Bag
@@ -106,6 +107,21 @@ class PredicateTests extends CAPSTestSuite with ScanGraphInit {
     result.records.toMaps should equal(Bag(
       CypherMap("a.val" -> 1),
       CypherMap("a.val" -> 2)
+    ))
+  }
+
+  it("or on labels and properties") {
+    // Given
+    val given = initGraph("""CREATE (:A {val: 1}), (:B {val: 2}), (:A:B {val: 3})""")
+
+    // When
+    val result = given.cypher("MATCH (a) WHERE (a:A AND a.val = 1) OR (a:B) RETURN a.val")
+
+    // Then
+    result.records.toMaps should equal(Bag(
+      CypherMap("a.val" -> 1),
+      CypherMap("a.val" -> 2),
+      CypherMap("a.val" -> 3)
     ))
   }
 
