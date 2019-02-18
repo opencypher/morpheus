@@ -29,5 +29,5 @@ package org.opencypher.spark.api.io.sql
 object IdGenerationStrategy extends Enumeration {
   type IdGenerationStrategy = Value
 
-  val SerializedId, HashBasedId = Value
+  val SerializedId, HashedId = Value
 }

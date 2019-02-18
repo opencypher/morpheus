@@ -273,7 +273,7 @@ case class SqlPropertyGraphDataSource(
   ): DataFrame = {
     val idColumns = idColumnNames.map(dataFrame.col)
     strategy match {
-      case HashBasedId =>
+      case HashedId =>
         val viewLiteral = functions.lit(elementViewKey.viewId.parts.mkString("."))
         val elementTypeLiterals = elementViewKey.elementType.toSeq.sorted.map(functions.lit)
         dataFrame.withHashColumn(Seq(viewLiteral) ++ elementTypeLiterals ++ idColumns, newIdColumn)
