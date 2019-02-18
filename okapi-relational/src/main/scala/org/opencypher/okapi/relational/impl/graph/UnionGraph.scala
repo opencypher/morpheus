@@ -26,11 +26,8 @@
  */
 package org.opencypher.okapi.relational.impl.graph
 
-import org.opencypher.okapi.api.schema.LabelPropertyMap._
-import org.opencypher.okapi.api.schema.RelTypePropertyMap._
+import org.opencypher.okapi.api.graph.Pattern
 import org.opencypher.okapi.api.schema.Schema
-import org.opencypher.okapi.api.types.{CTNode, CTRelationship, CypherType}
-import org.opencypher.okapi.impl.exception.UnsupportedOperationException
 import org.opencypher.okapi.ir.api.expr.Var
 import org.opencypher.okapi.relational.api.graph.{RelationalCypherGraph, RelationalCypherSession}
 import org.opencypher.okapi.relational.api.planning.RelationalRuntimeContext
@@ -44,6 +41,8 @@ import scala.reflect.runtime.universe.TypeTag
 // TODO: This should be a planned tree of physical operators instead of a graph
 final case class UnionGraph[T <: Table[T] : TypeTag](graphs: List[RelationalCypherGraph[T]])
   (implicit context: RelationalRuntimeContext[T]) extends RelationalCypherGraph[T] {
+
+  override def patterns: Set[Pattern] = ???
 
   require(graphs.nonEmpty, "Union requires at least one graph")
 

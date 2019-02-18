@@ -44,6 +44,12 @@ object RecordHeader {
 
   def from[T <: Expr](exprs: Seq[T]): RecordHeader = from(exprs.head, exprs.tail: _*)
 
+  def from(cypherType: CypherType): RecordHeader = cypherType match {
+    case n: CTNode => from(n)
+    case r: CTRelationship => from(r)
+    case other => throw IllegalArgumentException("A node or relationship type", other)
+  }
+
   def from(relType: CTRelationship): RecordHeader = {
     val v = Var.unnamed(relType)
 

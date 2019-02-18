@@ -26,7 +26,7 @@
  */
 package org.opencypher.okapi.relational.impl.planning
 
-import org.opencypher.okapi.api.graph.CypherSession
+import org.opencypher.okapi.api.graph.{Outgoing => _, _}
 import org.opencypher.okapi.api.io.conversion.{NodeMapping, RelationshipMapping}
 import org.opencypher.okapi.api.types.{CTBoolean, CTNode, CTRelationship}
 import org.opencypher.okapi.impl.exception.{NotImplementedException, SchemaException, UnsupportedOperationException}
@@ -34,6 +34,7 @@ import org.opencypher.okapi.ir.api.block.SortItem
 import org.opencypher.okapi.ir.api.expr.PrefixId.GraphIdPrefix
 import org.opencypher.okapi.ir.api.expr._
 import org.opencypher.okapi.ir.api.{Label, PropertyKey, RelType}
+import org.opencypher.okapi.ir.impl.util.VarConverters._
 import org.opencypher.okapi.logical.impl._
 import org.opencypher.okapi.logical.{impl => logical}
 import org.opencypher.okapi.relational.api.io.EntityTable
@@ -97,7 +98,22 @@ object RelationalPlanner {
         val explodeExpr = Explode(list)(item.cypherType)
         process[T](in).add(explodeExpr as item)
 
-      case logical.NodeScan(v, in, _) => planScan(Some(process[T](in)), in.graph, v)
+      case logical.NodeScan(v, in, _) =>
+        val pattern = NodePattern(v.cypherType.asInstanceOf[CTNode])
+        planScan(
+          Some(process[T](in)),
+          in.graph,
+          pattern,
+          Map(v -> pattern.nodeEntity)
+        )
+
+      case logical.PatternScan(pattern, mapping, in, _) =>
+        planScan(
+          Some(process[T](in)),
+          in.graph,
+          pattern,
+          mapping
+        )
 
       case logical.Aggregate(aggregations, group, in, _) => relational.Aggregate(process[T](in), group, aggregations)
 
@@ -119,7 +135,14 @@ object RelationalPlanner {
         val first = process[T](sourceOp)
         val third = process[T](targetOp)
 
-        val second = planScan(None, sourceOp.graph, rel)
+        val relPattern = RelationshipPattern(rel.cypherType.asInstanceOf[CTRelationship])
+        val second = planScan(
+          None,
+          sourceOp.graph,
+          relPattern,
+          Map(rel -> relPattern.relEntity)
+        )
+
         val startNode = StartNode(rel)(CTNode)
         val endNode = EndNode(rel)(CTNode)
 
@@ -147,7 +170,14 @@ object RelationalPlanner {
 
       case logical.ExpandInto(source, rel, target, direction, sourceOp, _) =>
         val in = process[T](sourceOp)
-        val relationships = planScan(None, sourceOp.graph, rel)
+
+        val relPattern = RelationshipPattern(rel.cypherType.asInstanceOf[CTRelationship])
+        val relationships = planScan(
+          None,
+          sourceOp.graph,
+          relPattern,
+          Map(rel -> relPattern.relEntity)
+        )
 
         val startNode = StartNode(rel)()
         val endNode = EndNode(rel)()
@@ -165,7 +195,14 @@ object RelationalPlanner {
       case logical.BoundedVarLengthExpand(source, list, target, edgeScanType, direction, lower, upper, sourceOp, targetOp, _) =>
 
         val edgeScan = Var(list.name)(edgeScanType)
-        val edgeScanOp = planScan(None, sourceOp.graph, edgeScan)
+
+        val edgePattern = RelationshipPattern(edgeScanType)
+        val edgeScanOp = planScan(
+          None,
+          sourceOp.graph,
+          edgePattern,
+          Map(edgeScan -> edgePattern.relEntity)
+        )
 
         val isExpandInto = sourceOp == targetOp
 
@@ -230,7 +267,8 @@ object RelationalPlanner {
   def planScan[T <: Table[T] : TypeTag](
     maybeInOp: Option[RelationalOperator[T]],
     logicalGraph: LogicalGraph,
-    entityVar: Var
+    scanPattern: Pattern,
+    varPatternEntityMapping: Map[Var, Entity]
   )(implicit context: RelationalRuntimeContext[T]): RelationalOperator[T] = {
     val inOp = maybeInOp match {
       case Some(relationalOp) => relationalOp
@@ -243,8 +281,12 @@ object RelationalPlanner {
       case p: LogicalPatternGraph =>
         inOp.context.queryLocalCatalog.getOrElse(p.qualifiedGraphName, planConstructGraph(inOp, p).graph)
     }
-    val scanOp = graph.scanOperator(entityVar.cypherType)
-    scanOp.assignScanName(entityVar.name).switchContext(inOp.context)
+
+    val scanOp = graph.scanOperator(scanPattern)
+
+    scanOp
+      .assignScanName(varPatternEntityMapping.mapValues(_.toVar).map(_.swap))
+      .switchContext(inOp.context)
   }
 
   // TODO: process operator outside of def
@@ -348,10 +390,12 @@ object RelationalPlanner {
     def alias(aliases: Set[AliasExpr]): RelationalOperator[T] = alias(aliases.toSeq: _*)
 
     // Only works with single entity tables
-    def assignScanName(name: String): RelationalOperator[T] = {
-      val scanVar = op.singleEntity
-      val namedScanVar = Var(name)(scanVar.cypherType)
-      Drop(Alias(op, Seq(scanVar as namedScanVar)), Set(scanVar))
+    def assignScanName(mapping: Map[Var, Var]): RelationalOperator[T] = {
+      val aliases = mapping.map {
+        case (from, to) => AliasExpr(from, to)
+      }
+
+      op.select(aliases.toList: _*)
     }
 
     def switchContext(context: RelationalRuntimeContext[T]): RelationalOperator[T] = {

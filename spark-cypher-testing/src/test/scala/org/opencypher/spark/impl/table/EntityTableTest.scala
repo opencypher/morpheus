@@ -36,8 +36,8 @@ import org.opencypher.okapi.api.schema.Schema
 import org.opencypher.okapi.api.types._
 import org.opencypher.okapi.api.value.CypherValue.CypherMap
 import org.opencypher.okapi.impl.exception.IllegalArgumentException
+import org.opencypher.okapi.ir.api.PropertyKey
 import org.opencypher.okapi.ir.api.expr._
-import org.opencypher.okapi.ir.api.{Label, PropertyKey, RelType}
 import org.opencypher.okapi.relational.impl.table.RecordHeader
 import org.opencypher.spark.api.io._
 import org.opencypher.spark.api.value.CAPSEntity._
@@ -107,18 +107,17 @@ class EntityTableTest extends CAPSTestSuite {
   }
 
   it("NodeTable should create correct schema from given mapping") {
-    val df = sparkSession.createDataFrame(Seq((1L, true, "Mats", 23L))).toDF("ID", "IS_C", "FOO", "BAR")
+    val df = sparkSession.createDataFrame(Seq((1L, "Mats", 23L))).toDF("ID", "FOO", "BAR")
 
     val nodeTable = CAPSEntityTable.create(nodeMapping, df)
 
     nodeTable.schema should equal(
       Schema.empty
-        .withNodePropertyKeys("A", "B")("foo" -> CTString.nullable, "bar" -> CTInteger)
-        .withNodePropertyKeys("A", "B", "C")("foo" -> CTString.nullable, "bar" -> CTInteger))
+        .withNodePropertyKeys("A", "B")("foo" -> CTString.nullable, "bar" -> CTInteger))
   }
 
   it("NodeTable should create correct header from given mapping") {
-    val df = sparkSession.createDataFrame(Seq((1L, true, "Mats", 23L))).toDF("ID", "IS_C", "FOO", "BAR")
+    val df = sparkSession.createDataFrame(Seq((1L, "Mats", 23L))).toDF("ID", "FOO", "BAR")
 
     val nodeTable = CAPSEntityTable.create(nodeMapping, df)
 
@@ -126,7 +125,6 @@ class EntityTableTest extends CAPSTestSuite {
 
     nodeTable.header should equal(RecordHeader(Map(
       v -> "ID",
-      HasLabel(v, Label("C"))(CTBoolean) -> "IS_C",
       Property(v, PropertyKey("foo"))(CTString) -> "FOO",
       Property(v, PropertyKey("bar"))(CTInteger) -> "BAR"
     )
@@ -147,8 +145,8 @@ class EntityTableTest extends CAPSTestSuite {
 
   it("Relationship table should create correct header from given mapping") {
     val df = sparkSession
-      .createDataFrame(Seq((1L, 2L, 3L, true, "Mats", 23L)))
-      .toDF("ID", "FROM", "TO", "IS_A", "FOO", "BAR")
+      .createDataFrame(Seq((1L, 2L, 3L, "Mats", 23L)))
+      .toDF("ID", "FROM", "TO", "FOO", "BAR")
 
     val relationshipTable = CAPSEntityTable.create(relMapping, df)
 
@@ -160,8 +158,7 @@ class EntityTableTest extends CAPSTestSuite {
         StartNode(v)(CTNode) -> "FROM",
         EndNode(v)(CTNode) -> "TO",
         Property(v, PropertyKey("foo"))(CTString) -> "FOO",
-        Property(v, PropertyKey("bar"))(CTInteger) -> "BAR",
-        HasType(v, RelType("A"))(CTBoolean) -> "IS_A"
+        Property(v, PropertyKey("bar"))(CTInteger) -> "BAR"
       )
     ))
   }
@@ -171,31 +168,28 @@ class EntityTableTest extends CAPSTestSuite {
     val dfBinary = sparkSession.createDataFrame(Seq((Array[Byte](49.toByte), true, 10.toShort, 23.1f))).toDF("ID", "IS_C", "FOO", "BAR")
     val dfLong = sparkSession.createDataFrame(Seq((49L, true, 10.toShort, 23.1f))).toDF("ID", "IS_C", "FOO", "BAR")
     val dfInt = sparkSession.createDataFrame(Seq((49, true, 10.toShort, 23.1f))).toDF("ID", "IS_C", "FOO", "BAR")
-    val dfString = sparkSession.createDataFrame(Seq(("1", true, 10.toShort, 23.1f))).toDF("ID", "IS_C", "FOO", "BAR")
+    val dfString = sparkSession.createDataFrame(Seq(("1", 10.toShort, 23.1f))).toDF("ID", "FOO", "BAR")
 
     val dfs = Seq(dfBinary, dfString, dfLong, dfInt)
 
     dfs.foreach { df =>
       val nodeTable = CAPSEntityTable.create(nodeMapping, df)
 
-      nodeTable.schema should equal(
-        Schema.empty
-          .withNodePropertyKeys("A", "B")("foo" -> CTInteger, "bar" -> CTFloat)
-          .withNodePropertyKeys("A", "B", "C")("foo" -> CTInteger, "bar" -> CTFloat))
+    nodeTable.schema should equal(
+      Schema.empty
+        .withNodePropertyKeys("A", "B")("foo" -> CTInteger, "bar" -> CTFloat))
 
-      nodeTable.records.df.collect().toSet should equal(Set(Row(49L.encodeAsCAPSId, true, 23.1f.toDouble, 10L)))
-    }
-
+    nodeTable.records.df.collect().toSet should equal(Set(Row(49L.encodeAsCAPSId, 23.1f.toDouble,10)))
   }
 
   it("NodeTable can handle shuffled columns due to cast") {
-    val df = sparkSession.createDataFrame(Seq((1L, true, 10.toShort, 23.1f))).toDF("ID", "IS_C", "FOO", "BAR")
+    val df = sparkSession.createDataFrame(Seq((1L, 10.toShort, 23.1f))).toDF("ID", "FOO", "BAR")
 
     val nodeTable = CAPSEntityTable.create(nodeMapping, df)
 
     val graph = caps.graphs.create(nodeTable)
     graph.nodes("n").collect.toSet should equal(Set(
-      CypherMap("n" -> CAPSNode(1, Set("A", "B", "C"), CypherMap("bar" -> 23.1f, "foo" -> 10)))
+      CypherMap("n" -> CAPSNode(1, Set("A", "B"), CypherMap("bar" -> 23.1f, "foo" -> 10)))
     ))
   }
 

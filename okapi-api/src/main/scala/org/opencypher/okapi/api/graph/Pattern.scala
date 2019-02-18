@@ -31,6 +31,28 @@ object Pattern {
 sealed trait Pattern {
   def entities: Set[Entity]
   def topology: Map[Entity, Connection]
+
+  //TODO to support general patterns implement a pattern matching algorithm
+  def findMapping(searchPattern: Pattern, exactMatch: Boolean): Option[Map[Entity, Entity]] = {
+    if((exactMatch && searchPattern == this) || (!exactMatch && subTypeOf(searchPattern))) {
+      searchPattern -> this match {
+        case (searchNode: NodePattern, otherNode: NodePattern) =>
+          Some(Map(searchNode.nodeEntity -> otherNode.nodeEntity))
+        case (searchRel: RelationshipPattern, otherRel: RelationshipPattern) =>
+          Some(Map(searchRel.relEntity -> otherRel.relEntity))
+        case (search: NodeRelPattern, other: NodeRelPattern) =>
+          Some(Map(search.nodeEntity -> other.nodeEntity, search.relEntity -> other.relEntity))
+        case (search: TripletPattern, other: TripletPattern) =>
+          Some(Map(search.sourceEntity -> other.sourceEntity, search.relEntity -> other.relEntity, search.targetEntity -> other.targetEntity))
+        case _ => None
+      }
+    } else {
+      None
+    }
+  }
+
+  def subTypeOf(other: Pattern): Boolean
+  def superTypeOf(other: Pattern): Boolean = other.subTypeOf(this)
 }
 
 case class NodePattern(nodeType: CTNode) extends Pattern {
@@ -38,6 +60,11 @@ case class NodePattern(nodeType: CTNode) extends Pattern {
 
   override def entities: Set[Entity] = Set( nodeEntity )
   override def topology: Map[Entity, Connection] = Map.empty
+
+  override def subTypeOf(other: Pattern): Boolean = other match {
+    case NodePattern(otherNodeType) => nodeType.subTypeOf(otherNodeType).isTrue
+    case _ => false
+  }
 }
 
 case class RelationshipPattern(relType: CTRelationship) extends Pattern {
@@ -45,6 +72,11 @@ case class RelationshipPattern(relType: CTRelationship) extends Pattern {
 
   override def entities: Set[Entity] = Set( relEntity )
   override def topology: Map[Entity, Connection] = Map.empty
+
+  override def subTypeOf(other: Pattern): Boolean = other match {
+    case RelationshipPattern(otherRelType) => relType.subTypeOf(otherRelType).isTrue
+    case _ => false
+  }
 }
 
 case class NodeRelPattern(nodeType: CTNode, relType: CTRelationship) extends Pattern {
@@ -62,6 +94,12 @@ case class NodeRelPattern(nodeType: CTNode, relType: CTRelationship) extends Pat
   override def topology: Map[Entity, Connection] = Map(
     relEntity -> Connection(Some(nodeEntity), None, Outgoing)
   )
+
+  override def subTypeOf(other: Pattern): Boolean = other match {
+    case NodeRelPattern(otherNodeType, otherRelType) =>
+      nodeType.subTypeOf(otherNodeType).isTrue && relType.subTypeOf(otherRelType).isTrue
+    case _ => false
+  }
 }
 
 case class TripletPattern(sourceNodeType: CTNode, relType: CTRelationship, targetNodeType: CTNode) extends Pattern {
@@ -78,4 +116,12 @@ case class TripletPattern(sourceNodeType: CTNode, relType: CTRelationship, targe
   override def topology: Map[Entity, Connection] = Map(
     relEntity -> Connection(Some(sourceEntity), Some(targetEntity), Outgoing)
   )
+
+  override def subTypeOf(other: Pattern): Boolean = other match {
+    case tr: TripletPattern =>
+      sourceNodeType.subTypeOf(tr.sourceNodeType).isTrue &&
+      relType.subTypeOf(tr.relType).isTrue &&
+      targetNodeType.subTypeOf(tr.targetNodeType).isTrue
+    case _ => false
+  }
 }
