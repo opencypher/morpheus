@@ -56,7 +56,6 @@ class EntityTableTest extends CAPSTestSuite {
     .withSourceIdKey("ID")
     .withImpliedLabel("A")
     .withImpliedLabel("B")
-    .withOptionalLabel("C" -> "IS_C")
     .withPropertyKey("foo" -> "FOO")
     .withPropertyKey("bar" -> "BAR")
     .build
@@ -65,7 +64,7 @@ class EntityTableTest extends CAPSTestSuite {
     .withSourceIdKey("ID")
     .withSourceStartNodeKey("FROM")
     .withSourceEndNodeKey("TO")
-    .withOptionalRelType("A" -> "IS_A")
+    .withRelType("A")
     .withPropertyKey("foo" -> "FOO")
     .withPropertyKey("bar" -> "BAR")
     .build
@@ -99,7 +98,7 @@ class EntityTableTest extends CAPSTestSuite {
       .on("ID")
       .from("SOURCE")
       .to("TARGET")
-      .withOptionalRelType("A" -> "Type")
+      .withRelType("A")
       .build
 
     an[IllegalArgumentException] should be thrownBy {
@@ -200,19 +199,20 @@ class EntityTableTest extends CAPSTestSuite {
     ))
   }
 
-  it("NodeTable should not accept wrong source id key type") {
+  it("NodeTable should not accept wrong source id key type (should be compatible to LongType)") {
     val e = the[IllegalArgumentException] thrownBy {
-      val df = sparkSession.createDataFrame(Seq((Date.valueOf("1987-01-23"), true))).toDF("ID", "IS_A")
-      val nodeMapping = NodeMapping.on("ID").withOptionalLabel("A" -> "IS_A").build
+      val df = sparkSession.createDataFrame(Seq(Tuple1(Date.valueOf("1987-01-23")))).toDF("ID")
+      val nodeMapping = NodeMapping.on("ID").withImpliedLabel("A").build
       CAPSEntityTable.create(nodeMapping, df)
     }
     e.getMessage should (include("Column `ID` should have a valid identifier data type") and include("Unsupported column type `DateType`"))
   }
 
+
   it("NodeTable should not accept wrong optional label source key type (should be BooleanType") {
     an[IllegalArgumentException] should be thrownBy {
       val df = sparkSession.createDataFrame(Seq((1, "true"))).toDF("ID", "IS_A")
-      val nodeMapping = NodeMapping.on("ID").withOptionalLabel("A" -> "IS_A").build
+      val nodeMapping = NodeMapping.on("ID").withImpliedLabel("A").build
       CAPSEntityTable.create(nodeMapping, df)
     }
   }
@@ -237,7 +237,7 @@ class EntityTableTest extends CAPSTestSuite {
     assert(!SparkConversions.supportedTypes.contains(DecimalType))
     an[IllegalArgumentException] should be thrownBy {
       val df = sparkSession.createDataFrame(Seq((1L, true, BigDecimal(13.37)))).toDF("ID", "IS_A", "PROP")
-      val nodeMapping = NodeMapping.on("ID").withOptionalLabel("A" -> "IS_A").withPropertyKey("PROP").build
+      val nodeMapping = NodeMapping.on("ID").withImpliedLabel("A").withPropertyKey("PROP").build
       CAPSEntityTable.create(nodeMapping, df)
     }
   }
@@ -254,16 +254,6 @@ class EntityTableTest extends CAPSTestSuite {
         "birthYear" -> CTInteger,
         "isGood" -> CTBoolean,
         "luckyNumber" -> CTFloat))
-  }
-
-  it("NodeTable should infer the correct schema including optional labels") {
-    val df = sparkSession.createDataFrame(Seq((1L, "Alice", true))).toDF("id", "name", "IS_SWEDE")
-
-    val nodeTable = CAPSNodeTable(Set("Person"), Map("Swede" -> "IS_SWEDE"), df)
-
-    nodeTable.schema should equal(Schema.empty
-      .withNodePropertyKeys("Person", "Swede")("name" -> CTString.nullable)
-      .withNodePropertyKeys("Person")("name" -> CTString.nullable))
   }
 
   it("RelationshipTable should infer the correct schema") {

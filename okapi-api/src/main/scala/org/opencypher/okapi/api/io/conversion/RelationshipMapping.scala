@@ -126,7 +126,7 @@ object RelationshipMapping {
       * @return relationship mapping builder
       */
     def withRelType(relType: String): RelationshipMappingBuilder =
-      RelationshipMappingBuilder(sourceIdKey, sourceStartNodeKey, sourceEndNodeKey, Left(relType))
+      RelationshipMappingBuilder(sourceIdKey, sourceStartNodeKey, sourceEndNodeKey, relType)
 
     /**
       * Alias for [[withRelType]].
@@ -136,15 +136,6 @@ object RelationshipMapping {
       */
     def relType(relType: String): RelationshipMappingBuilder =
       withRelType(relType)
-
-    /**
-      * @param relTypeMapping represents the mapping between possible relationship types and their representation in the
-      *                       source data. The retrieved value from the source data is expected to be a [[Boolean]] value.
-      *                       Note that only *one* per row only one of the source columns may be set to true.
-      * @return relationship mapping builder
-      */
-    def withOptionalRelType(relTypeMapping: (String, String)*): RelationshipMappingBuilder =
-      RelationshipMappingBuilder(sourceIdKey, sourceStartNodeKey, sourceEndNodeKey, Right(relTypeMapping.toMap))
   }
 
 }
@@ -159,14 +150,14 @@ object RelationshipMapping {
   * @param relationshipIdKey         key to access the node identifier in the source data
   * @param relationshipStartNodeKey  key to access the start node identifier in the source data
   * @param relationshipEndNodeKey    key to access the end node identifier in the source data
-  * @param relTypeOrSourceRelTypeKey either a relationship type or a key to access the type in the source data and a set of all possible types
+  * @param relType                   a relationship type
   * @param propertyMapping           mapping from property key to source property key
   */
 final case class RelationshipMappingBuilder(
   relationshipIdKey: String,
   relationshipStartNodeKey: String,
   relationshipEndNodeKey: String,
-  relTypeOrSourceRelTypeKey: Either[String, Map[String, String]],
+  relType: String,
   propertyMapping: Map[String, String] = Map.empty
 ) extends EntityMappingBuilder {
 
@@ -178,14 +169,7 @@ final case class RelationshipMappingBuilder(
   override def build: EntityMapping = {
     validate()
 
-    val pattern: RelationshipPattern = {
-      val possibleRelTypes = relTypeOrSourceRelTypeKey match {
-        case Left(relType) => Set(relType)
-        case Right(possibleRelValues) => possibleRelValues.keySet
-      }
-
-      RelationshipPattern(CTRelationship(possibleRelTypes))
-    }
+    val pattern: RelationshipPattern = RelationshipPattern(CTRelationship(relType))
 
     val properties: Map[Entity, Map[String, String]] = Map(pattern.relEntity -> propertyMapping)
     val idKeys: Map[Entity, Map[IdKey, String]] = Map(
@@ -196,18 +180,10 @@ final case class RelationshipMappingBuilder(
       )
     )
     val impliedTypes: Map[Entity, Set[String]] = Map(
-      pattern.relEntity -> relTypeOrSourceRelTypeKey.left.toSeq.toSet
+      pattern.relEntity -> Set(relType)
     )
-    val optionalTypes: Map[Entity, Map[String, String]] = {
-      val typeMapping: Map[String, String] = relTypeOrSourceRelTypeKey match {
-        case Left(_) => Map.empty
-        case Right(possibleTypes) => possibleTypes
-      }
 
-      Map(pattern.relEntity -> typeMapping)
-    }
-
-    EntityMapping(pattern, properties, idKeys, impliedTypes, optionalTypes)
+    EntityMapping(pattern, properties, idKeys, impliedTypes)
   }
 
   override protected def validate(): Unit = {
@@ -218,11 +194,5 @@ final case class RelationshipMappingBuilder(
         s"id ($relationshipIdKey), start ($relationshipStartNodeKey) and end ($relationshipEndNodeKey) source keys need to be distinct",
         s"non-distinct source keys")
 
-    relTypeOrSourceRelTypeKey match {
-      case Right(typeMapping) if (idKeys intersect typeMapping.values.toSet).nonEmpty =>
-        throw IllegalArgumentException("dedicated source column for relationship type",
-          s"Overlap between relationship type columns ${typeMapping.values} and id columns $idKeys")
-      case _ =>
-    }
   }
 }

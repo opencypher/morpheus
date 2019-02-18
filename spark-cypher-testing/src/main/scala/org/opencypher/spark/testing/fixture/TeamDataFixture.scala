@@ -180,18 +180,17 @@ trait TeamDataFixture extends TestDataFixture {
   private lazy val personMapping: EntityMapping = NodeMapping
     .on("ID")
     .withImpliedLabel("Person")
-    .withOptionalLabel("Swedish" -> "IS_SWEDE")
     .withPropertyKey("name" -> "NAME")
     .withPropertyKey("luckyNumber" -> "NUM")
     .build
 
   protected lazy val personDF: DataFrame = caps.sparkSession.createDataFrame(
     Seq(
-      (1L, true, "Mats", 23L),
-      (2L, false, "Martin", 42L),
-      (3L, false, "Max", 1337L),
-      (4L, false, "Stefan", 9L))
-  ).toDF("ID", "IS_SWEDE", "NAME", "NUM")
+      (1L, "Mats", 23L),
+      (2L, "Martin", 42L),
+      (3L, "Max", 1337L),
+      (4L, "Stefan", 9L))
+  ).toDF("ID", "NAME", "NUM")
 
   lazy val personTable: CAPSEntityTable = CAPSEntityTable.create(personMapping, personDF)
 

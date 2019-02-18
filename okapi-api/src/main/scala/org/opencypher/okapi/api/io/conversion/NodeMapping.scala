@@ -28,7 +28,6 @@ package org.opencypher.okapi.api.io.conversion
 
 import org.opencypher.okapi.api.graph._
 import org.opencypher.okapi.api.types.CTNode
-import org.opencypher.okapi.impl.exception.IllegalArgumentException
 
 object NodeMapping {
   /**
@@ -57,14 +56,12 @@ object NodeMapping {
     *
     * @param nodeIdKey      key to access the node identifier in the source data
     * @param impliedLabels  set of node labels
-    * @param optionalLabels set of optional node labels
     * @param propertyKeys   set of property keys
     * @return node mapping
     */
   def create(
     nodeIdKey: String,
     impliedLabels: Set[String] = Set.empty,
-    optionalLabels: Set[String] = Set.empty,
     propertyKeys: Set[String] = Set.empty
   ): EntityMapping = {
 
@@ -72,11 +69,7 @@ object NodeMapping {
       (mapping, label) => mapping.withImpliedLabel(label)
     }
 
-    val mappingWithOptionalLabels = optionalLabels.foldLeft(mappingWithImpliedLabels) {
-      (mapping, label) => mapping.withOptionalLabel(label)
-    }
-
-    propertyKeys.foldLeft(mappingWithOptionalLabels) {
+    propertyKeys.foldLeft(mappingWithImpliedLabels) {
       (mapping, property) => mapping.withPropertyKey(property)
     }.build
   }
@@ -107,7 +100,6 @@ object NodeMapping {
 final case class NodeMappingBuilder(
   nodeIdKey: String,
   impliedNodeLabels: Set[String] = Set.empty,
-  optionalNodeLabelMapping: Map[String, String] = Map.empty,
   propertyMapping: Map[String, String] = Map.empty
 ) extends EntityMappingBuilder {
 
@@ -119,21 +111,6 @@ final case class NodeMappingBuilder(
   def withImpliedLabel(label: String): NodeMappingBuilder =
     copy(impliedNodeLabels = impliedNodeLabels + label)
 
-  def withOptionalLabel(label: String): NodeMappingBuilder =
-    withOptionalLabel(label, label)
-
-  def withOptionalLabels(labels: String*): NodeMappingBuilder =
-    labels.foldLeft(this)((mapping, label) => mapping.withOptionalLabel(label, label))
-
-  def withOptionalLabelMappings(tuples: (String, String)*): NodeMappingBuilder =
-    tuples.foldLeft(this) { case (mapping, (label, source)) => mapping.withOptionalLabel(label, source) }
-
-  def withOptionalLabel(label: String, sourceLabelKey: String): NodeMappingBuilder =
-    copy(optionalNodeLabelMapping = optionalNodeLabelMapping.updated(label, sourceLabelKey))
-
-  def withOptionalLabel(tuple: (String, String)): NodeMappingBuilder =
-    withOptionalLabel(tuple._1, tuple._2)
-
   override protected def updatePropertyMapping(updatedPropertyMapping: Map[String, String]): NodeMappingBuilder =
     copy(propertyMapping = updatedPropertyMapping)
 
@@ -142,16 +119,11 @@ final case class NodeMappingBuilder(
     val properties: Map[Entity, Map[String, String]] = Map(pattern.nodeEntity -> propertyMapping)
     val idKeys: Map[Entity, Map[IdKey, String]] = Map(pattern.nodeEntity -> Map(SourceIdKey -> nodeIdKey))
     val impliedTypes: Map[Entity, Set[String]] = Map(pattern.nodeEntity -> impliedNodeLabels)
-    val optionalTypes: Map[Entity, Map[String, String]] = Map(pattern.nodeEntity -> optionalNodeLabelMapping)
 
     validate()
 
-    EntityMapping(pattern, properties, idKeys, impliedTypes, optionalTypes)
+    EntityMapping(pattern, properties, idKeys, impliedTypes)
   }
 
-  override protected def validate(): Unit = {
-    if (optionalNodeLabelMapping.values.toSet.contains(nodeIdKey))
-      throw IllegalArgumentException("source id key and optional labels referring to different source keys",
-        s"$nodeIdKey used for source id key and optional label")
-  }
+  override protected def validate(): Unit = ()
 }

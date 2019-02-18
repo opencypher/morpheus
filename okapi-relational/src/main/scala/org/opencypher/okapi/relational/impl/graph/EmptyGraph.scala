@@ -26,14 +26,13 @@
  */
 package org.opencypher.okapi.relational.impl.graph
 
+import org.opencypher.okapi.api.graph.{NodePattern, Pattern, RelationshipPattern}
 import org.opencypher.okapi.api.schema.Schema
-import org.opencypher.okapi.api.types._
 import org.opencypher.okapi.impl.exception.IllegalArgumentException
 import org.opencypher.okapi.relational.api.graph.{RelationalCypherGraph, RelationalCypherSession}
 import org.opencypher.okapi.relational.api.planning.RelationalRuntimeContext
 import org.opencypher.okapi.relational.api.table.{RelationalCypherRecords, Table}
 import org.opencypher.okapi.relational.impl.operators.{RelationalOperator, Start}
-import org.opencypher.okapi.relational.impl.table.RecordHeader
 
 import scala.reflect.runtime.universe.TypeTag
 

@@ -36,7 +36,6 @@ class EntityMappingTest extends ApiBaseTest {
     it("Construct node mapping") {
       val given = NodeMapping.on("id")
         .withImpliedLabel("Person")
-        .withOptionalLabel("Employee" -> "is_emp")
         .withPropertyKey("name")
         .withPropertyKey("age" -> "YEARS").build
 
@@ -52,17 +51,10 @@ class EntityMappingTest extends ApiBaseTest {
         ),
         Map(
           pattern.nodeEntity -> Set("Person")
-        ),
-        Map(
-          pattern.nodeEntity -> Map("Employee" -> "is_emp")
         )
       )
 
       given should equal(expected)
-    }
-
-    it("Refuses to use the same source key for incompatible types when constructing node mappings") {
-      raisesIllegalArgument(NodeMapping.on("sourceKey").withOptionalLabel("Person" -> "sourceKey").build)
     }
 
     it("Refuses to overwrite a property with a different mapping") {
@@ -90,37 +82,6 @@ class EntityMappingTest extends ApiBaseTest {
         ),
         Map(
           pattern.relEntity -> Set("KNOWS")
-        ),
-        Map(
-          pattern.relEntity -> Map.empty
-        )
-      )
-
-      given should equal(actual)
-    }
-
-    it("Construct relationship mapping with dynamic type") {
-      val given = RelationshipMapping.on("r")
-        .from("src")
-        .to("dst")
-        .withOptionalRelType("ADMIRES" -> "admires", "IGNORES" -> "ignores")
-        .withPropertyKey("name")
-        .withPropertyKey("age" -> "YEARS").build
-
-      val pattern = RelationshipPattern(CTRelationship("ADMIRES", "IGNORES"))
-      val actual = EntityMapping(
-        pattern,
-        Map(
-          pattern.relEntity -> Map("name" -> "name", "age" -> "YEARS")
-        ),
-        Map(
-          pattern.relEntity -> Map(SourceIdKey -> "r", SourceStartNodeKey -> "src", SourceEndNodeKey -> "dst")
-        ),
-        Map(
-          pattern.relEntity -> Set.empty
-        ),
-        Map(
-          pattern.relEntity -> Map("ADMIRES" -> "admires", "IGNORES" -> "ignores")
         )
       )
 
@@ -142,9 +103,6 @@ class EntityMappingTest extends ApiBaseTest {
     it("Refuses to use the same source key for incompatible types when constructing relationships") {
       raisesIllegalArgument(RelationshipMapping.on("r").from("r").to("b").relType("KNOWS").build)
       raisesIllegalArgument(RelationshipMapping.on("r").from("a").to("r").relType("KNOWS").build)
-      raisesIllegalArgument(RelationshipMapping.on("r").from("a").to("b").withOptionalRelType("KNOWS" -> "r").build)
-      raisesIllegalArgument(RelationshipMapping.on("r").from("a").to("b").withOptionalRelType("KNOWS" -> "a").build)
-      raisesIllegalArgument(RelationshipMapping.on("r").from("a").to("b").withOptionalRelType("KNOWS" -> "b").build)
     }
   }
 

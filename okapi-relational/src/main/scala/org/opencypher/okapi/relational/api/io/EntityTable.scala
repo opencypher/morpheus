@@ -31,8 +31,8 @@ import org.opencypher.okapi.api.io.conversion.EntityMapping
 import org.opencypher.okapi.api.schema.Schema
 import org.opencypher.okapi.api.types._
 import org.opencypher.okapi.impl.exception.IllegalArgumentException
+import org.opencypher.okapi.ir.api.PropertyKey
 import org.opencypher.okapi.ir.api.expr._
-import org.opencypher.okapi.ir.api.{Label, PropertyKey, RelType}
 import org.opencypher.okapi.relational.api.table.{RelationalCypherRecords, Table}
 import org.opencypher.okapi.relational.impl.table.RecordHeader
 
@@ -51,13 +51,11 @@ trait EntityTable[T <: Table[T]] extends RelationalCypherRecords[T] {
             case (propertyKey, sourceKey) => propertyKey -> table.columnType(sourceKey)
           }
 
-          mapping.optionalTypes(entity).keys.toSet.subsets
-            .map(_.union(mapping.impliedTypes(entity)))
-            .map(combo => Schema.empty.withNodePropertyKeys(combo.toSeq: _*)(propertyKeys: _*))
-            .reduce(_ ++ _)
+          val impliedTypes = mapping.impliedTypes(entity)
+          Schema.empty.withNodePropertyKeys(impliedTypes.toSeq: _*)(propertyKeys: _*)
 
         case _: CTRelationship =>
-          val relTypes = mapping.impliedTypes(entity).union(mapping.optionalTypes(entity).keySet)
+          val relTypes = mapping.impliedTypes(entity)
 
           val propertyKeys = mapping.properties(entity).toSeq.map {
             case (propertyKey, sourceKey) => propertyKey -> table.columnType(sourceKey)
@@ -82,15 +80,11 @@ trait EntityTable[T <: Table[T]] extends RelationalCypherRecords[T] {
 
           val idMapping = Map(nodeVar -> mapping.idKeys(entity).head._2)
 
-          val labelMapping = mapping.optionalTypes(entity).map {
-            case (label, source) => HasLabel(nodeVar, Label(label))(CTBoolean) -> source
-          }
-
           val propertyMapping = mapping.properties(entity).map {
             case (key, source) => Property(nodeVar, PropertyKey(key))(table.columnType(source)) -> source
           }
 
-          RecordHeader(idMapping ++ labelMapping ++ propertyMapping)
+          RecordHeader(idMapping ++ propertyMapping)
 
         case r :CTRelationship =>
           val relVar = Var(entity.name)(r)
@@ -101,15 +95,11 @@ trait EntityTable[T <: Table[T]] extends RelationalCypherRecords[T] {
             case (SourceEndNodeKey, source) => EndNode(relVar)(CTNode) -> source
           }
 
-          val labelMapping = mapping.optionalTypes(entity).map {
-            case (typ, source) => HasType(relVar, RelType(typ))(CTBoolean) -> source
-          }
-
           val propertyMapping = mapping.properties(entity).map {
             case (key, source) => Property(relVar, PropertyKey(key))(table.columnType(source)) -> source
           }
 
-          RecordHeader(idMapping ++ labelMapping ++ propertyMapping)
+          RecordHeader(idMapping ++ propertyMapping)
 
         case other => ???
       }
@@ -119,10 +109,6 @@ trait EntityTable[T <: Table[T]] extends RelationalCypherRecords[T] {
   protected def verify(): Unit = {
     mapping.idKeys.values.toSeq.flatten.foreach {
       case (_, column) => table.verifyColumnType(column, CTIdentity, "id key")
-    }
-
-    mapping.optionalTypes.values.toSeq.flatten.foreach {
-      case (_, column) => table.verifyColumnType(column, CTBoolean, "optional type")
     }
 
     if (table.physicalColumns.toSet != mapping.allSourceKeys.toSet) throw IllegalArgumentException(

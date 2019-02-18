@@ -27,7 +27,6 @@
 package org.opencypher.spark.impl
 
 import org.apache.spark.sql.Row
-import org.opencypher.okapi.api.io.conversion.RelationshipMapping
 import org.opencypher.okapi.api.types._
 import org.opencypher.okapi.relational.api.planning.RelationalRuntimeContext
 import org.opencypher.okapi.relational.api.table.RelationalCypherRecords
@@ -118,30 +117,5 @@ abstract class CAPSGraphTest extends CAPSTestSuite
     val graph = caps.graphs.create(personTable, knowsTable)
     graph.nodes("n", CTNode("BAR")).size shouldBe 0
     graph.relationships("r", CTRelationship("FOO")).size shouldBe 0
-  }
-
-  it("should handle a single df containing multiple relationship types") {
-    val yingYang = caps.sparkSession.createDataFrame(
-      Seq(
-        (1L, 8L, 3L, true, false),
-        (1L, 3L, 4L, true, false),
-        (2L, 4L, 3L, false, true),
-        (2L, 5L, 4L, false, true),
-        (3L, 6L, 4L, false, true))
-    ).toDF("SRC", "ID", "DST", "hates", "loves")
-
-    val relMapping = RelationshipMapping
-      .on("ID")
-      .from("SRC")
-      .to("DST")
-      .withOptionalRelType("HATES" -> "hates", "LOVES" -> "loves")
-      .build
-
-    val relTable = CAPSEntityTable.create(relMapping, yingYang)
-
-    val graph = caps.graphs.create(personTable, relTable)
-
-    graph.relationships("l", CTRelationship("LOVES")).size shouldBe 3
-    graph.relationships("h", CTRelationship("HATES")).size shouldBe 2
   }
 }

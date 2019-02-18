@@ -81,35 +81,20 @@ object CAPSNodeTable {
 
   /**
     * Creates a node table from the given [[DataFrame]]. By convention, there needs to be one column storing node
-    * identifiers and named after [[GraphEntity.sourceIdKey]]. All remaining columns are interpreted as node property
-    * columns, the column name is used as property key.
-    *
-    * @param impliedLabels implied node labels
-    * @param nodeDF        node data
-    * @return a node table with inferred node mapping
-    */
-  def apply(impliedLabels: Set[String], nodeDF: DataFrame): CAPSEntityTable =
-    CAPSNodeTable(impliedLabels, Map.empty, nodeDF)
-
-  /**
-    * Creates a node table from the given [[DataFrame]]. By convention, there needs to be one column storing node
-    * identifiers and named after [[GraphEntity.sourceIdKey]]. Optional labels are defined by a mapping from label to
-    * column name. All remaining columns are interpreted as node property columns, the column name is used as property
+    * identifiers and named after [[GraphEntity.sourceIdKey]]. All remaining columns are interpreted as node property columns, the column name is used as property
     * key.
     *
     * @param impliedLabels  implied node labels
-    * @param optionalLabels mapping from optional labels to column names
     * @param nodeDF         node data
     * @return a node table with inferred node mapping
     */
-  def apply(impliedLabels: Set[String], optionalLabels: Map[String, String], nodeDF: DataFrame): CAPSEntityTable = {
-    val propertyColumnNames = nodeDF.columns.filter(_ != GraphEntity.sourceIdKey).toSet -- optionalLabels.values
+  def apply(impliedLabels: Set[String], nodeDF: DataFrame): CAPSEntityTable = {
+    val propertyColumnNames = nodeDF.columns.filter(_ != GraphEntity.sourceIdKey).toSet
     val propertyKeyMapping = propertyColumnNames.map(p => p.toProperty -> p)
 
     val mapping = NodeMapping
       .on(GraphEntity.sourceIdKey)
       .withImpliedLabels(impliedLabels.toSeq: _*)
-      .withOptionalLabelMappings(optionalLabels.toSeq: _*)
       .withPropertyKeyMappings(propertyKeyMapping.toSeq: _*)
       .build
 

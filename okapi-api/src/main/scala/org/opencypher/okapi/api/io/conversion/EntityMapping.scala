@@ -34,15 +34,13 @@ case class EntityMapping(
   pattern: Pattern,
   properties: Map[Entity, Map[String, String]],
   idKeys: Map[Entity, Map[IdKey, String]],
-  impliedTypes: Map[Entity, Set[String]],
-  optionalTypes: Map[Entity, Map[String, String]]
+  impliedTypes: Map[Entity, Set[String]]
 ) {
 
   def allSourceKeys: Seq[String] =
     (
       idKeys.values.flatten.map(_._2).toSeq ++
-      properties.values.flatten.map(_._2) ++
-      optionalTypes.values.flatten.map(_._2)
+      properties.values.flatten.map(_._2)
     ).sorted
 
   protected def validate(): Unit = {

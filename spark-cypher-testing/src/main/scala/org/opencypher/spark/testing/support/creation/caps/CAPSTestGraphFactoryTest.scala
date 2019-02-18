@@ -54,18 +54,20 @@ abstract class CAPSTestGraphFactoryTest extends CAPSTestSuite with GraphMatching
       |CREATE (martin)-[:SPEAKS]->(orbital)
     """.stripMargin
 
-  val personTable: CAPSEntityTable = CAPSEntityTable.create(NodeMapping
+  val personAstronautTable: CAPSEntityTable = CAPSEntityTable.create(NodeMapping
     .on("ID")
-    .withImpliedLabel("Person")
-    .withOptionalLabel("Astronaut" -> "IS_ASTRONAUT")
-    .withOptionalLabel("Martian" -> "IS_MARTIAN")
+    .withImpliedLabels("Person", "Astronaut")
     .withPropertyKey("name" -> "NAME")
     .withPropertyKey("birthday" -> "BIRTHDAY")
     .build, caps.sparkSession.createDataFrame(
-    Seq(
-      (0L, true, false, "Max", Date.valueOf("1991-07-10")),
-      (1L, false, true, "Martin", null))
-  ).toDF("ID", "IS_ASTRONAUT", "IS_MARTIAN", "NAME", "BIRTHDAY"))
+    Seq((0L, "Max", Date.valueOf("1991-07-10")))).toDF("ID", "NAME", "BIRTHDAY"))
+
+  val personMartianTable: CAPSEntityTable = CAPSEntityTable.create(NodeMapping
+    .on("ID")
+    .withImpliedLabels("Person", "Martian")
+    .withPropertyKey("name" -> "NAME")
+    .build, caps.sparkSession.createDataFrame(
+    Seq((1L, "Martin"))).toDF("ID", "NAME"))
 
   val languageTable: CAPSEntityTable = CAPSEntityTable.create(NodeMapping
     .on("ID")
@@ -100,7 +102,7 @@ abstract class CAPSTestGraphFactoryTest extends CAPSTestSuite with GraphMatching
 
   test("testAsScanGraph") {
     val propertyGraph = CreateGraphFactory(createQuery)
-    factory(propertyGraph).asCaps shouldMatch caps.graphs.create(personTable, languageTable, knowsScan)
+    factory(propertyGraph).asCaps shouldMatch caps.graphs.create(personAstronautTable, personMartianTable, languageTable, knowsScan)
   }
 }
 
