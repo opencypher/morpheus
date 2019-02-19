@@ -109,6 +109,21 @@ class PredicateTests extends CAPSTestSuite with ScanGraphInit {
     ))
   }
 
+  it("or on labels and properties") {
+    // Given
+    val given = initGraph("""CREATE (:A {val: 1}), (:B {val: 2}), (:A:B {val: 3})""")
+
+    // When
+    val result = given.cypher("MATCH (a) WHERE (a:A AND a.val = 1) OR (a:B) RETURN a.val")
+
+    // Then
+    result.records.toMaps should equal(Bag(
+      CypherMap("a.val" -> 1),
+      CypherMap("a.val" -> 2),
+      CypherMap("a.val" -> 3)
+    ))
+  }
+
   it("or with and") {
     // Given
     val given = initGraph(
