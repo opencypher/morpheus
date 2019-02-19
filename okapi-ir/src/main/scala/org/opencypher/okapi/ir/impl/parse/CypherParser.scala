@@ -76,5 +76,4 @@ trait CypherParser {
       CNFNormalizer andThen
       LateAstRewriting andThen
       OkapiLateRewriting
-
 }
