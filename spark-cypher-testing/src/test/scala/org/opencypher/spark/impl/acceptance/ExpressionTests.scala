@@ -29,6 +29,7 @@ package org.opencypher.spark.impl.acceptance
 import org.junit.runner.RunWith
 import org.opencypher.okapi.api.value.CypherValue
 import org.opencypher.okapi.api.value.CypherValue.CypherMap
+import org.opencypher.okapi.impl.exception.NotImplementedException
 import org.opencypher.okapi.testing.Bag
 import org.opencypher.okapi.testing.Bag._
 import org.opencypher.spark.testing.CAPSTestSuite
@@ -265,6 +266,45 @@ class ExpressionTests extends CAPSTestSuite with ScanGraphInit {
         CypherMap("p.name" -> "Jemma Redgrave")))
 
     }
+
+    it("supports simple property expression") {
+      // Given
+      val given = initGraph("CREATE (:Person {name: 'Mats'})-[:REL]->(:Person {name: 'Martin'})")
+
+      // When
+      val result = given.cypher("MATCH (p:Person) RETURN p.name")
+
+      // Then
+      result.records.toMaps should equal(Bag(
+        CypherMap("p.name" -> "Mats"),
+        CypherMap("p.name" -> "Martin")
+      ))
+    }
+
+    it("supports simple property expression on relationship") {
+      // Given
+      val given = initGraph("CREATE (:Person {name: 'Mats'})-[:KNOWS {since: 2017}]->(:Person {name: 'Martin'})")
+
+      // When
+      val result = given.cypher("MATCH (a:Person)-[r:KNOWS]->(b:Person) RETURN r.since")
+
+      // Then
+      result.records.toMaps should equal(Bag(
+        CypherMap("r.since" -> 2017)
+      ))
+    }
+
+    it("reports error message when property has ANY type") {
+      // Given
+      val given = initGraph("""CREATE (:A {val: 'foo'}), (:B {val: 1}), (:C)""")
+
+      // When
+      val result = given.cypher("MATCH (a) RETURN a.val")
+
+      // Then
+      val e = the [NotImplementedException] thrownBy result.records.size
+      e.msg should (include("CypherType ANY") and include("Spark type"))
+    }
   }
 
 
@@ -464,33 +504,6 @@ class ExpressionTests extends CAPSTestSuite with ScanGraphInit {
       CypherMap("res" -> false),
       CypherMap("res" -> true),
       CypherMap("res" -> null)
-    ))
-  }
-
-  test("property expression") {
-    // Given
-    val given = initGraph("CREATE (:Person {name: 'Mats'})-[:REL]->(:Person {name: 'Martin'})")
-
-    // When
-    val result = given.cypher("MATCH (p:Person) RETURN p.name")
-
-    // Then
-    result.records.toMaps should equal(Bag(
-      CypherMap("p.name" -> "Mats"),
-      CypherMap("p.name" -> "Martin")
-    ))
-  }
-
-  test("property expression with relationship") {
-    // Given
-    val given = initGraph("CREATE (:Person {name: 'Mats'})-[:KNOWS {since: 2017}]->(:Person {name: 'Martin'})")
-
-    // When
-    val result = given.cypher("MATCH (a:Person)-[r:KNOWS]->(b:Person) RETURN r.since")
-
-    // Then
-    result.records.toMaps should equal(Bag(
-      CypherMap("r.since" -> 2017)
     ))
   }
 
