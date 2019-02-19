@@ -35,6 +35,7 @@ import cats.instances.list._
 import cats.syntax.all._
 import org.opencypher.okapi.api.value.CypherValue.{CypherEntity, CypherMap, CypherNode, CypherRelationship}
 import org.opencypher.okapi.impl.exception.{IllegalArgumentException, UnsupportedOperationException}
+import org.opencypher.okapi.impl.temporal.TemporalTypesHelper.parseDate
 import org.opencypher.okapi.impl.temporal.{Duration, TemporalTypesHelper}
 import org.opencypher.v9_0.ast._
 import org.opencypher.v9_0.ast.semantics.{SemanticErrorDef, SemanticState}
@@ -214,14 +215,33 @@ object CreateGraphFactory extends InMemoryGraphFactory {
 
         case ListLiteral(expressions) => expressions.toList.traverse[Result, Any](processExpr)
 
+        case MapExpression(items) =>
+          for {
+            keys <- pure(items.map { case (k, _) => k.name })
+            valueTypes <- items.toList.traverse[Result, Any] { case (_, v) => processExpr(v) }
+            res <- pure[ParsingContext, Any](keys.zip(valueTypes).toMap)
+          } yield res
+
         case FunctionInvocation(_, FunctionName("date"), _, Seq(dateString: StringLiteral)) =>
-          pure[ParsingContext, Any](TemporalTypesHelper.parseDate(Right(dateString.value)))
+          pure[ParsingContext, Any](parseDate(Right(dateString.value)))
+
+        case FunctionInvocation(_, FunctionName("date"), _, Seq(map: MapExpression)) =>
+          for {
+            dateMap <- processExpr(map)
+            res <- pure[ParsingContext, Any](parseDate(Left(dateMap.asInstanceOf[Map[String, Long]].mapValues(_.toInt))))
+          } yield res
 
         case FunctionInvocation(_, FunctionName("localdatetime"), _, Seq(dateString: StringLiteral)) =>
           pure[ParsingContext, Any](TemporalTypesHelper.parseLocalDateTime(Right(dateString.value)))
 
         case FunctionInvocation(_, FunctionName("duration"), _, Seq(dateString: StringLiteral)) =>
           pure[ParsingContext, Any](Duration.parse(dateString.value))
+
+        case FunctionInvocation(_, FunctionName("duration"), _, Seq(map: MapExpression)) =>
+          for {
+            durationMap <- processExpr(map)
+            res <- pure[ParsingContext, Any](Duration(durationMap.asInstanceOf[Map[String, Long]]))
+          } yield res
 
         case Property(variable: Variable, propertyKey) =>
           inspect[ParsingContext, Any]({ context =>
