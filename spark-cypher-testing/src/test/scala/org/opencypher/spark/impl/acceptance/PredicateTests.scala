@@ -26,7 +26,6 @@
  */
 package org.opencypher.spark.impl.acceptance
 
-import org.apache.spark
 import org.junit.runner.RunWith
 import org.opencypher.okapi.api.value.CypherValue._
 import org.opencypher.okapi.testing.Bag
