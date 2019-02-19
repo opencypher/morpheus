@@ -128,7 +128,7 @@ class TckSparkCypherTest extends CAPSTestSuite {
   }
 
   ignore("run custom scenario") {
-    val file = new File(getClass.getResource("CustomTest.feature").toURI)
+    val file = new File(getClass.getResource("/CustomTest.feature").toURI)
 
     CypherTCK
       .parseFilesystemFeature(file)
