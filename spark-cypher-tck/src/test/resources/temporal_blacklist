@@ -83,6 +83,7 @@ Feature "TemporalCreateAcceptance": Scenario "Should construct date time with de
 Feature "TemporalArithmeticAcceptance": Scenario "Should add or subtract duration to or from local time #1"
 Feature "TemporalArithmeticAcceptance": Scenario "Should add or subtract duration to or from local time #2"
 Feature "TemporalArithmeticAcceptance": Scenario "Should add or subtract duration to or from local time #3"
+Feature "TemporalArithmeticAcceptance": Scenario "Should add or subtract duration to or from date #3"
 Feature "TemporalParseAcceptance": Scenario "Should parse date time with named time zone from string #1"
 Feature "TemporalParseAcceptance": Scenario "Should parse date time with named time zone from string #2"
 Feature "TemporalParseAcceptance": Scenario "Should parse date time with named time zone from string #3"
