@@ -213,11 +213,23 @@ object SparkSQLExprMapper {
           val lhsCT = lhs.cypherType
           val rhsCT = rhs.cypherType
           lhsCT.material -> rhsCT.material match {
+            case (l: CTList, _: CTList) =>
+              l.elementType.material match {
+                case CTInteger => concatUDF[Int].apply(lhs.asSparkSQLExpr, rhs.asSparkSQLExpr)
+                case CTString => concatUDF[String].apply(lhs.asSparkSQLExpr, rhs.asSparkSQLExpr)
+                case CTBoolean => concatUDF[Boolean].apply(lhs.asSparkSQLExpr, rhs.asSparkSQLExpr)
+                case CTFloat => concatUDF[Float].apply(lhs.asSparkSQLExpr, rhs.asSparkSQLExpr)
+                case CTDate => concatUDF[java.sql.Date].apply(lhs.asSparkSQLExpr, rhs.asSparkSQLExpr)
+                case CTLocalDateTime => concatUDF[java.sql.Timestamp].apply(lhs.asSparkSQLExpr, rhs.asSparkSQLExpr)
+                // TODO: Handle lists of null literals
+                case other => throw UnsupportedOperationException(s"List concatenation with type ${other} is not supported")
+              }
+
             case (_: CTList, _) =>
-              throw UnsupportedOperationException("List concatenation is not supported")
+              throw UnsupportedOperationException("List + scalar concatenation is not supported")
 
             case (_, _: CTList) =>
-              throw UnsupportedOperationException("List concatenation is not supported")
+              throw UnsupportedOperationException("Scalar + list concatenation is not supported")
 
             case (CTString, _) if rhsCT.subTypeOf(CTNumber).maybeTrue =>
               functions.concat(lhs.asSparkSQLExpr, rhs.asSparkSQLExpr.cast(StringType))

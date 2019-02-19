@@ -30,7 +30,7 @@ import claimant.Claim
 import org.junit.runner.RunWith
 import org.opencypher.okapi.api.value.CypherValue
 import org.opencypher.okapi.api.value.CypherValue.Format.defaultValueFormatter
-import org.opencypher.okapi.api.value.CypherValue.{CypherFloat, CypherInteger, CypherMap}
+import org.opencypher.okapi.api.value.CypherValue.{CypherFloat, CypherInteger, CypherList, CypherMap}
 import org.opencypher.okapi.api.value.GenCypherValue._
 import org.opencypher.okapi.impl.exception.NotImplementedException
 import org.opencypher.okapi.ir.impl.exception.ParsingException
@@ -312,7 +312,6 @@ class ExpressionTests extends CAPSTestSuite with ScanGraphInit with Checkers {
       e.msg should (include("CypherType ANY") and include("Spark type"))
     }
   }
-
 
   test("less than") {
 
@@ -904,6 +903,82 @@ class ExpressionTests extends CAPSTestSuite with ScanGraphInit with Checkers {
         CypherMap("hello" -> "Hello42.0", "world" -> "42.0Hello")
       ))
     }
+  }
+
+  describe("list concatenation") {
+    it("can concat two literal lists of Cypher integers") {
+      caps.cypher(
+        """
+          |RETURN [1] + [2] AS res
+        """.stripMargin
+      ).records.toMaps should equal(Bag(
+        CypherMap("res" -> CypherList(1, 2))
+      ))
+    }
+
+    it("can concat two literal lists of strings") {
+      caps.cypher(
+        """
+          |RETURN ["foo"] + ["bar"] AS res
+        """.stripMargin
+      ).records.toMaps should equal(Bag(
+        CypherMap("res" -> CypherList("foo", "bar"))
+      ))
+    }
+
+    it("can concat two literal lists of boolean type") {
+      caps.cypher(
+        """
+          |RETURN [true] + [false] AS res
+        """.stripMargin
+      ).records.toMaps should equal(Bag(
+        CypherMap("res" -> CypherList(true, false))
+      ))
+    }
+
+    it("can concat two literal lists of float type") {
+      caps.cypher(
+        """
+          |RETURN [0.5] + [1.5] AS res
+        """.stripMargin
+      ).records.toMaps should equal(Bag(
+        CypherMap("res" -> CypherList(0.5, 1.5))
+      ))
+    }
+
+    it("can concat two literal lists of date type") {
+      val date = "2016-02-17"
+      caps.cypher(
+        """
+          |RETURN [date($date)] + [date($date)] AS res
+        """.stripMargin, CypherMap("date" -> date)
+      ).records.toMaps should equal(Bag(
+        CypherMap("res" -> CypherList(java.sql.Date.valueOf(date), java.sql.Date.valueOf(date)))
+      ))
+    }
+
+    it("can concat two literal lists of localdatetime type") {
+      val date = "2016-02-17T06:11:00"
+      caps.cypher(
+        """
+          |RETURN [localdatetime($date)] + [localdatetime($date)] AS res
+        """.stripMargin, CypherMap("date" -> date)
+      ).records.toMaps should equal(Bag(
+        CypherMap("res" -> CypherList(java.time.LocalDateTime.parse(date), java.time.LocalDateTime.parse(date)))
+      ))
+    }
+
+    // TODO: Handle lists of null literals
+    ignore("can concat two literal lists of null type") {
+      caps.cypher(
+        """
+          |RETURN [null] + [null] AS res
+        """.stripMargin
+      ).records.toMaps should equal(Bag(
+        CypherMap("res" -> CypherList(null, null))
+      ))
+    }
+
   }
 
   describe("STARTS WITH") {

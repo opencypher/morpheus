@@ -26,13 +26,16 @@
  */
 package org.opencypher.spark.impl
 
-import org.apache.spark.sql.catalyst.analysis.{UnresolvedAttribute, UnresolvedExtractValue}
-import org.apache.spark.sql.catalyst.expressions.{ArrayContains, ArrayFilter, IsNotNull, LambdaFunction, StringTranslate, XxHash64}
+import org.apache.spark.sql.catalyst.analysis.UnresolvedExtractValue
+import org.apache.spark.sql.catalyst.expressions.{ArrayContains, StringTranslate, XxHash64}
 import org.apache.spark.sql.expressions.UserDefinedFunction
-import org.apache.spark.sql.functions.{monotonically_increasing_id, udf}
+import org.apache.spark.sql.functions.monotonically_increasing_id
 import org.apache.spark.sql.types.{ArrayType, StringType}
 import org.apache.spark.sql.{Column, functions}
 import org.opencypher.spark.impl.expressions.Serialize
+
+import scala.reflect.ClassTag
+import scala.reflect.runtime.universe.TypeTag
 
 object CAPSFunctions {
 
@@ -72,6 +75,8 @@ object CAPSFunctions {
   def serialize(columns: Column*): Column = {
     new Column(Serialize(columns.map(_.expr)))
   }
+
+  def concatUDF[T: TypeTag : ClassTag]: UserDefinedFunction = functions.udf[Seq[T], Seq[T], Seq[T]](_ ++ _)
 
   def get_rel_type(relTypeNames: Seq[String]): UserDefinedFunction = {
     val extractRelTypes = (booleanMask: Seq[Boolean]) => filterWithMask(relTypeNames)(booleanMask)
