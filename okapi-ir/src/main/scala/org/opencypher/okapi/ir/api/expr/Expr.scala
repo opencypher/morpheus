@@ -70,7 +70,7 @@ sealed abstract class Expr extends AbstractTreeNode[Expr] {
 
 final case class AliasExpr(expr: Expr, alias: Var) extends Expr {
 
-  override def cypherType: CypherType = expr.cypherType
+  override def cypherType: CypherType = alias.cypherType
 
   override def withoutType: String = s"$expr AS $alias"
 

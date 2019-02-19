@@ -144,6 +144,17 @@ class RecordHeaderTest extends BaseTestSuite {
     withAlias.ownedBy(m) should equalWithTracing(mExprs)
   }
 
+  it("can add an alias for an entity that already exists but with different CypherType") {
+    val withAlias = nHeader.withAlias(n as Var(n.name)(CTNode))
+
+    withAlias.entityVars.size should be(1)
+    val entity = withAlias.entityVars.head
+
+    entity should equal(n)
+    entity.cypherType should equal(CTNode)
+
+  }
+
   it("can add an alias for a non-entity expression") {
     val s = Var("nPropFoo_Alias")(nPropFoo.cypherType)
     val t = Var("nPropFoo_Alias")(nPropFoo.cypherType)
@@ -490,7 +501,7 @@ class RecordHeaderTest extends BaseTestSuite {
     it("can build a RecordHeader from a Relationship type") {
       val relType = CTRelationship("FOO", "BAR")
 
-      val v = Var.unnamed(relType)
+      val v = Var("rel")(relType)
 
       val expected = RecordHeader.empty
         .withExpr(v)
@@ -499,20 +510,20 @@ class RecordHeaderTest extends BaseTestSuite {
         .withExpr(HasType(v, RelType("FOO"))(CTBoolean))
         .withExpr(HasType(v, RelType("BAR"))(CTBoolean))
 
-      RecordHeader.from(relType) should equal(expected)
+      RecordHeader.from(v) should equal(expected)
     }
 
     it("can build a RecordHeader from a node type") {
       val nodeType = CTNode("FOO", "BAR")
 
-      val v = Var.unnamed(nodeType)
+      val v = Var("node")(nodeType)
 
       val expected = RecordHeader.empty
         .withExpr(v)
         .withExpr(HasLabel(v, Label("FOO"))(CTBoolean))
         .withExpr(HasLabel(v, Label("BAR"))(CTBoolean))
 
-      RecordHeader.from(nodeType) should equal(expected)
+      RecordHeader.from(v) should equal(expected)
     }
   }
 }

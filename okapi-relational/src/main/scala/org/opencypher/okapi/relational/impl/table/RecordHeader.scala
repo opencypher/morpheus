@@ -417,7 +417,8 @@ case class RecordHeader(exprToColumn: Map[Expr, String]) {
   }
 
   def addExprToColumn(expr: Expr, columnName: String): RecordHeader = {
-    copy(exprToColumn = exprToColumn + (expr -> columnName))
+    // We need to possibly remove the existing expression in order to update the CypherType
+    copy(exprToColumn = exprToColumn - expr + (expr -> columnName))
   }
 
   override def toString: String = exprToColumn.keys
