@@ -49,5 +49,4 @@ class Neo4jPropertyGraphDataSourceEmptyGraphTest extends CAPSTestSuite with Neo4
       CypherMap("count" -> 0)
     ))
   }
-
 }

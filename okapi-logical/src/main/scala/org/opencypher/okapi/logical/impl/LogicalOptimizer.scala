@@ -33,6 +33,8 @@ import org.opencypher.okapi.ir.api.expr._
 import org.opencypher.okapi.ir.api.util.DirectCompilationStage
 import org.opencypher.okapi.trees.{BottomUp, BottomUpWithContext}
 
+import scala.util.Try
+
 object LogicalOptimizer extends DirectCompilationStage[LogicalOperator, LogicalOperator, LogicalPlannerContext] {
 
   override def process(input: LogicalOperator)(implicit context: LogicalPlannerContext): LogicalOperator = {
@@ -65,15 +67,18 @@ object LogicalOptimizer extends DirectCompilationStage[LogicalOperator, LogicalO
     case exp: Expand =>
       exp.source.cypherType.graph.flatMap { g =>
 
-        val availablePatterns = context
-          .catalog(g.namespace).graph(g.graphName)
-          .patterns
-          .collect {
-            case nr: NodeRelPattern => nr
-            case nrn: TripletPattern => nrn
-          }.toList
-          .sorted(Pattern.PatternOrdering)
-          .reverse
+        val availablePatterns =
+          Try {
+            context.resolveGraph(g)
+          }.map { g =>
+            g.patterns
+              .collect {
+                case nr: NodeRelPattern => nr
+                case nrn: TripletPattern => nrn
+              }.toList
+              .sorted(Pattern.PatternOrdering)
+              .reverse
+          }.getOrElse(Set.empty)
 
         availablePatterns.collectFirst {
           case pattern@TripletPattern(source, rel, target) if

@@ -28,6 +28,7 @@ package org.opencypher.okapi.relational.impl.graph
 
 import org.opencypher.okapi.api.graph.Pattern
 import org.opencypher.okapi.api.schema.Schema
+import org.opencypher.okapi.ir.impl.util.VarConverters._
 import org.opencypher.okapi.relational.api.graph.{RelationalCypherGraph, RelationalCypherSession}
 import org.opencypher.okapi.relational.api.planning.RelationalRuntimeContext
 import org.opencypher.okapi.relational.api.table.{RelationalCypherRecords, Table}
@@ -52,7 +53,7 @@ sealed case class EmptyGraph[T <: Table[T] : TypeTag](implicit val session: Rela
     implicit val context: RelationalRuntimeContext[T] = session.basicRuntimeContext()
 
     val scanHeader = searchPattern.entities
-      .map { e => RecordHeader.from(e.typ)}
+      .map { e => RecordHeader.from(e.toVar)}
       .reduce(_ ++ _)
 
     val records = session.records.empty(scanHeader)

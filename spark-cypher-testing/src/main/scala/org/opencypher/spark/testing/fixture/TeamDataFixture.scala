@@ -49,7 +49,6 @@ trait TeamDataFixture extends TestDataFixture {
   val nHasLabelBook: Expr = HasLabel(n, Label("Book"))(CTBoolean)
   val nHasLabelPerson: Expr = HasLabel(n, Label("Person"))(CTBoolean)
   val nHasLabelProgrammer: Expr = HasLabel(n, Label("Programmer"))(CTBoolean)
-  val nHasLabelSwedish: Expr = HasLabel(n, Label("Swedish"))(CTBoolean)
   val nHasLabelBrogrammer: Expr = HasLabel(n, Label("Brogrammer"))(CTBoolean)
   val nHasPropertyLanguage: Expr = Property(n, PropertyKey("language"))(CTString)
   val nHasPropertyLuckyNumber: Expr = Property(n, PropertyKey("luckyNumber"))(CTInteger)

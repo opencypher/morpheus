@@ -40,7 +40,7 @@ object VarConverters {
   }
 
   implicit class RichEntity(val e: Entity) extends AnyVal {
-    def toVar: Var = Var(e.name)(e.typ)
+    def toVar: Var = Var(e.name)(e.cypherType)
   }
 
   implicit def toVar(f: IRField): Var = f.toVar

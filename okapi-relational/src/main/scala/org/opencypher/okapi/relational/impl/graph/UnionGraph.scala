@@ -69,7 +69,7 @@ final case class UnionGraph[T <: Table[T] : TypeTag](graphs: List[RelationalCyph
 
     val alignedEntityTableOps = graphs.flatMap { graph =>
 
-      val isEmptyScan = searchPattern.entities.map(_.typ).exists {
+      val isEmptyScan = searchPattern.entities.map(_.cypherType).exists {
         case CTNode(knownLabels, _) if knownLabels.isEmpty =>
           graph.schema.allCombinations.isEmpty
         case CTNode(knownLabels, _) =>

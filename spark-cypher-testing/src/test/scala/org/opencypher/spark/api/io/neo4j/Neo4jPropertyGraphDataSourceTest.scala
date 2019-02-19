@@ -110,8 +110,8 @@ class Neo4jPropertyGraphDataSourceTest
     val node2DF = sparkSession.createDataFrame(List(Row(1L)).asJava, schema)
 
     val nodeMapping = NodeMapping.create("id")
-    val node1Table = CAPSEntityTable(nodeMapping, node1DF)
-    val node2Table = CAPSEntityTable(nodeMapping, node2DF)
+    val node1Table = CAPSEntityTable.create(nodeMapping, node1DF)
+    val node2Table = CAPSEntityTable.create(nodeMapping, node2DF)
 
     val graph = caps.readFrom(node1Table, node2Table)
 

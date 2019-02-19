@@ -35,6 +35,7 @@ import org.opencypher.okapi.ir.api._
 import org.opencypher.okapi.ir.api.block._
 import org.opencypher.okapi.ir.api.expr._
 import org.opencypher.okapi.ir.api.pattern.{CyclicRelationship, DirectedRelationship, Pattern}
+import org.opencypher.okapi.ir.impl.QueryLocalCatalog
 import org.opencypher.okapi.ir.impl.util.VarConverters._
 import org.opencypher.okapi.logical.impl._
 import org.opencypher.okapi.testing.MatchHelper._
@@ -282,11 +283,18 @@ class LogicalPlannerTest extends BaseTestSuite with IrConstruction {
 
     ir match {
       case cq: SingleQuery =>
-        planner.process(cq)(LogicalPlannerContext(ambientSchema, Set.empty, Map(testNamespace -> graphSource(withAmbientGraph: _*))))
+        planner.process(cq)(
+          LogicalPlannerContext(
+            ambientSchema,
+            Set.empty,
+            Map(testNamespace -> graphSource(withAmbientGraph: _*)),
+            QueryLocalCatalog(
+              Map(testNamespace -> graphSource(withAmbientGraph: _*))
+            )
+          )
+        )
       case _ => throw new IllegalArgumentException("Query is not a CypherQuery")
     }
-
-
   }
 
   case class equalWithoutResult(plan: LogicalOperator) extends Matcher[LogicalOperator] {

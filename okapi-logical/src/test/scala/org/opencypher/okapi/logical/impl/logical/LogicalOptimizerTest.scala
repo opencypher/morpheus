@@ -30,6 +30,7 @@ import org.opencypher.okapi.api.schema.Schema
 import org.opencypher.okapi.api.types.{CTNode, _}
 import org.opencypher.okapi.ir.api.expr._
 import org.opencypher.okapi.ir.api.{Label, _}
+import org.opencypher.okapi.ir.impl.QueryLocalCatalog
 import org.opencypher.okapi.ir.impl.util.VarConverters._
 import org.opencypher.okapi.logical.impl
 import org.opencypher.okapi.logical.impl._
@@ -56,7 +57,14 @@ class LogicalOptimizerTest extends BaseTestSuite with IrConstruction {
   //  )
 
   def plannerContext(schema: Schema) =
-    LogicalPlannerContext(schema, Set.empty, Map(testNamespace -> testGraphSource(testGraphName -> schema)))
+    LogicalPlannerContext(
+      schema, Set.empty, Map(testNamespace -> testGraphSource(testGraphName -> schema)),
+      QueryLocalCatalog(
+        Map(
+          testNamespace -> testGraphSource(testGraphName -> schema)
+        )
+      )
+    )
 
   it("pushes label filter into scan") {
     val animalSchema = schema.withNodePropertyKeys("Animal")()

@@ -45,7 +45,7 @@ trait EntityTable[T <: Table[T]] extends RelationalCypherRecords[T] {
 
   def schema: Schema = {
     mapping.pattern.entities.map { entity =>
-      entity.typ match {
+      entity.cypherType match {
         case _: CTNode =>
           val propertyKeys = mapping.properties(entity).toSeq.map {
             case (propertyKey, sourceKey) => propertyKey -> table.columnType(sourceKey)
@@ -74,7 +74,7 @@ trait EntityTable[T <: Table[T]] extends RelationalCypherRecords[T] {
 
   def header: RecordHeader = {
     mapping.pattern.entities.map { entity =>
-      entity.typ match {
+      entity.cypherType match {
         case n :CTNode =>
           val nodeVar = Var(entity.name)(n)
 

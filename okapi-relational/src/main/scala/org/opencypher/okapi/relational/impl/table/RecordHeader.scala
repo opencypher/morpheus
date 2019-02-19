@@ -44,29 +44,18 @@ object RecordHeader {
 
   def from[T <: Expr](exprs: Seq[T]): RecordHeader = from(exprs.head, exprs.tail: _*)
 
-  def from(cypherType: CypherType): RecordHeader = cypherType match {
-    case n: CTNode => from(n)
-    case r: CTRelationship => from(r)
-    case other => throw IllegalArgumentException("A node or relationship type", other)
-  }
-
-  def from(relType: CTRelationship): RecordHeader = {
-    val v = Var.unnamed(relType)
-
-    from(
+  def from(v: Var): RecordHeader = v.cypherType match {
+    case n: CTNode =>
+      from(
+        v,
+        n.labels.map(l => HasLabel(v, Label(l))(CTBoolean)).toSeq: _*
+      )
+    case r: CTRelationship => from(
       v,
       Seq(StartNode(v)(CTIdentity), EndNode(v)(CTIdentity))
-      ++ relType.types.map(t => HasType(v, RelType(t))(CTBoolean)): _*
+        ++ r.types.map(t => HasType(v, RelType(t))(CTBoolean)): _*
     )
-  }
-
-  def from(nodeType: CTNode): RecordHeader = {
-    val v = Var.unnamed(nodeType)
-
-    from(
-      v,
-      nodeType.labels.map(l => HasLabel(v, Label(l))(CTBoolean)).toSeq: _*
-    )
+    case other => throw IllegalArgumentException("A node or relationship variable", other)
   }
 }
 

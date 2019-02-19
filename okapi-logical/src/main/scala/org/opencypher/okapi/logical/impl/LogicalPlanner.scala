@@ -100,7 +100,7 @@ class LogicalPlanner(producer: LogicalOperatorProducer)
     block match {
       case SourceBlock(irGraph: IRCatalogGraph) =>
         val qualifiedGraphName = irGraph.qualifiedGraphName
-        val graphSource = context.catalog(irGraph.qualifiedGraphName.namespace)
+        val graphSource = context.sessionCatalog(irGraph.qualifiedGraphName.namespace)
         val logicalGraph = LogicalCatalogGraph(qualifiedGraphName, graphSource.schema(qualifiedGraphName.graphName).get)
 
         if (context.inputRecordFields.isEmpty) {

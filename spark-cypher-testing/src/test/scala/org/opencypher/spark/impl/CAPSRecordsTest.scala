@@ -37,7 +37,6 @@ import org.opencypher.okapi.relational.impl.table.RecordHeader
 import org.opencypher.okapi.testing.Bag
 import org.opencypher.okapi.testing.Bag._
 import org.opencypher.spark.api.io.CAPSEntityTable
-import org.opencypher.spark.api.io.{CAPSNodeTable, CAPSRelationshipTable}
 import org.opencypher.spark.api.value.CAPSEntity._
 import org.opencypher.spark.api.value.CAPSNode
 import org.opencypher.spark.impl.CAPSConverters._
@@ -111,7 +110,6 @@ class CAPSRecordsTest extends CAPSTestSuite with GraphConstructionFixture with T
 
     records.header.expressions.map(s => s -> s.cypherType) should equal(Set(
       Var("ID")() -> CTInteger,
-      Var("IS_SWEDE")() -> CTBoolean,
       Var("NAME")() -> CTString.nullable,
       Var("NUM")() -> CTInteger
     ))
@@ -126,10 +124,10 @@ class CAPSRecordsTest extends CAPSTestSuite with GraphConstructionFixture with T
 
     // Then
     df.collect().toBag should equal(Bag(
-      Row(1L.encodeAsCAPSId, true, "Mats", 23),
-      Row(2L.encodeAsCAPSId, false, "Martin", 42),
-      Row(3L.encodeAsCAPSId, false, "Max", 1337),
-      Row(4L.encodeAsCAPSId, false, "Stefan", 9)
+      Row(1L.encodeAsCAPSId, "Mats", 23),
+      Row(2L.encodeAsCAPSId, "Martin", 42),
+      Row(3L.encodeAsCAPSId, "Max", 1337),
+      Row(4L.encodeAsCAPSId, "Stefan", 9)
     ))
   }
 
@@ -140,7 +138,7 @@ class CAPSRecordsTest extends CAPSTestSuite with GraphConstructionFixture with T
         (2L, "Martin"),
         (3L, "Max"),
         (4L, "Stefan")
-      )).toDF("ID", "IS_SWEDE", "NAME")
+      )).toDF("ID", "NAME")
 
     val givenMapping = NodeMapping.on("ID")
       .withImpliedLabel("Person")
@@ -151,8 +149,7 @@ class CAPSRecordsTest extends CAPSTestSuite with GraphConstructionFixture with T
 
     val records = caps.records.fromEntityTable(nodeTable)
 
-    val entityVar = Var.unnamed(CTNode("Person"))
-
+    val entityVar = Var("node")(CTNode("Person"))
     records.header.expressions should equal(
       Set(
         entityVar,
@@ -181,7 +178,7 @@ class CAPSRecordsTest extends CAPSTestSuite with GraphConstructionFixture with T
 
     val records = caps.records.fromEntityTable(relTable)
 
-    val entityVar = Var.unnamed(CTRelationship("NEXT"))
+    val entityVar = Var("rel")(CTRelationship("NEXT"))
 
     records.header.expressions should equal(
       Set(

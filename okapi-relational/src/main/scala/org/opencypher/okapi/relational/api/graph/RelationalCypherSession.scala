@@ -211,13 +211,18 @@ abstract class RelationalCypherSession[T <: Table[T] : TypeTag] extends CypherSe
     maybeDrivingTable: Option[RelationalCypherRecords[T]],
     queryLocalCatalog: QueryLocalCatalog
   ): Result = {
-    val logicalPlan = planLogical(cypherQuery, graph, inputFields)
+    val logicalPlan = planLogical(cypherQuery, graph, inputFields, queryLocalCatalog)
     planRelational(maybeDrivingTable, allParameters, logicalPlan, queryLocalCatalog)
   }
 
-  protected def planLogical(ir: CypherQuery, graph: PropertyGraph, inputFields: Set[Var]): LogicalOperator = {
+  protected def planLogical(
+    ir: CypherQuery,
+    graph: PropertyGraph,
+    inputFields: Set[Var],
+    queryLocalCatalog: QueryLocalCatalog
+  ): LogicalOperator = {
     logStageProgress("Logical planning ...", newLine = false)
-    val logicalPlannerContext = LogicalPlannerContext(graph.schema, inputFields, catalog.listSources)
+    val logicalPlannerContext = LogicalPlannerContext(graph.schema, inputFields, catalog.listSources, queryLocalCatalog)
     val logicalPlan = time("Logical planning")(logicalPlanner(ir)(logicalPlannerContext))
     logStageProgress("Done!")
     if (PrintLogicalPlan.isSet) {

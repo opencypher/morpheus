@@ -240,6 +240,7 @@ sealed case class CTNode(
   }
 
   override def withGraph(qgn: QualifiedGraphName): CypherType = copy(graph = Some(qgn))
+  override def withoutGraph: CypherType = copy(graph = None)
 }
 
 object CTNodeOrNull extends CTNodeOrNull(Set.empty, None) with Serializable {
@@ -318,6 +319,7 @@ sealed case class CTRelationship(
   }
 
   override def withGraph(qgn: QualifiedGraphName): CypherType = copy(graph = Some(qgn))
+  override def withoutGraph: CypherType = copy(graph = None)
 }
 
 object CTRelationshipOrNull extends CTRelationshipOrNull(Set.empty, None) with Serializable {
@@ -494,6 +496,8 @@ sealed trait CypherType extends Serializable {
   def graph: Option[QualifiedGraphName] = None
 
   def withGraph(qgn: QualifiedGraphName): CypherType = this
+
+  def withoutGraph = this
 
   // true, if this type only (i.e. excluding type parameters) is a wildcard (= standing for an arbitrary unknown type)
   def isWildcard: Boolean

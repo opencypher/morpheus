@@ -284,6 +284,15 @@ object RelationalPlanner {
 
     val scanOp = graph.scanOperator(scanPattern)
 
+    val validScan = scanPattern.entities.forall { entity =>
+      scanOp.header.entityVars.exists { headerVar =>
+        headerVar.name == entity.name && headerVar.cypherType.withoutGraph == entity.cypherType.withoutGraph
+      }
+    }
+
+    if(!validScan) throw SchemaException(s"Expected the scan to include Variables for all entities of ${scanPattern.entities}" +
+      s" but got ${scanOp.header.entityVars}")
+
     scanOp
       .assignScanName(varPatternEntityMapping.mapValues(_.toVar).map(_.swap))
       .switchContext(inOp.context)

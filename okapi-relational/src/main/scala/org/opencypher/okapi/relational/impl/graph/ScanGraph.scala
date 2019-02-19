@@ -61,7 +61,7 @@ class ScanGraph[T <: Table[T] : TypeTag](val scans: Seq[EntityTable[T]], val sch
         embedding.foldLeft(scan) {
           case (acc, (targetEntity, inputEntity)) =>
             val inputEntityExpressions = scan.header.expressionsFor(inputEntity.toVar)
-            val targetHeader = acc.header -- inputEntityExpressions ++ schema.headerForEntity(targetEntity.toVar)
+            val targetHeader = acc.header -- inputEntityExpressions ++ schema.headerForEntity(targetEntity.toVar, exactLabelMatch)
 
             acc.alignWith(inputEntity.toVar, targetEntity.toVar, targetHeader)
         }
@@ -87,7 +87,7 @@ class ScanGraph[T <: Table[T] : TypeTag](val scans: Seq[EntityTable[T]], val sch
     searchPattern: Pattern,
     exactLabelMatch: Boolean
   ): Seq[(RelationalOperator[T], Map[Entity, Entity])] = {
-    val qgn = searchPattern.entities.head.typ.graph.getOrElse(session.emptyGraphQgn)
+    val qgn = searchPattern.entities.head.cypherType.graph.getOrElse(session.emptyGraphQgn)
 
     val selectedScans = scans.flatMap { scan =>
       val scanPattern = scan.mapping.pattern

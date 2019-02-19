@@ -203,15 +203,6 @@ class EntityTableTest extends CAPSTestSuite {
     e.getMessage should (include("Column `ID` should have a valid identifier data type") and include("Unsupported column type `DateType`"))
   }
 
-
-  it("NodeTable should not accept wrong optional label source key type (should be BooleanType") {
-    an[IllegalArgumentException] should be thrownBy {
-      val df = sparkSession.createDataFrame(Seq((1, "true"))).toDF("ID", "IS_A")
-      val nodeMapping = NodeMapping.on("ID").withImpliedLabel("A").build
-      CAPSEntityTable.create(nodeMapping, df)
-    }
-  }
-
   it("RelationshipTable should not accept wrong sourceId, -StartNode, -EndNode key type") {
     val relMapping = RelationshipMapping.on("ID").from("SOURCE").to("TARGET").relType("A").build
     an[IllegalArgumentException] should be thrownBy {

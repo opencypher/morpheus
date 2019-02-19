@@ -14,7 +14,7 @@ case class Connection(
   direction: Direction
 )
 
-case class Entity(name: String, typ: CypherType)
+case class Entity(name: String, cypherType: CypherType)
 
 object Pattern {
   val DEFAULT_NODE_NAME = "node"
