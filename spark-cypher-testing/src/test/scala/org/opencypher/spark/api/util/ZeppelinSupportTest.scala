@@ -158,8 +158,7 @@ class ZeppelinSupportTest extends CAPSTestSuite with TeamDataFixture with ScanGr
          |      "id": "01",
          |      "label": "Person",
          |      "labels": [
-         |        "Person",
-         |        "Swedish"
+         |        "Person"
          |      ],
          |      "data": {
          |        "luckyNumber": "23",
@@ -347,8 +346,7 @@ class ZeppelinSupportTest extends CAPSTestSuite with TeamDataFixture with ScanGr
          |  ],
          |  "labels": {
          |    "Book": "#40c294",
-         |    "Person": "#cbfe79",
-         |    "Swedish": "#6f27a9"
+         |    "Person": "#cbfe79"
          |  },
          |  "types": [
          |    "INFLUENCES",

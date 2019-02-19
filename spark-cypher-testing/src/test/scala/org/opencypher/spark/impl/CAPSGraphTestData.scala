@@ -30,7 +30,7 @@ object CAPSGraphTestData {
 
   val `:Person`: String =
     """
-      |CREATE (p1:Person:Swedish {name: "Mats", luckyNumber: 23})
+      |CREATE (p1:Person {name: "Mats", luckyNumber: 23})
       |CREATE (p2:Person {name: "Martin", luckyNumber: 42})
       |CREATE (p3:Person {name: "Max", luckyNumber: 1337})
       |CREATE (p4:Person {name: "Stefan", luckyNumber: 9})
