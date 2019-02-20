@@ -36,8 +36,7 @@ import org.opencypher.okapi.api.value.CypherValue.{CypherDate => OKAPICypherDate
 import org.opencypher.okapi.impl.exception.NotImplementedException
 import org.opencypher.okapi.ir.impl.typer.exception.TypingException
 import org.opencypher.okapi.tck.test.TCKFixture._
-import org.opencypher.okapi.tck.test.support.creation.neo4j.Neo4JGraphFactory
-import org.opencypher.okapi.testing.propertygraph.CypherTestGraphFactory
+import org.opencypher.okapi.testing.propertygraph.{CreateGraphFactory, CypherTestGraphFactory}
 import org.opencypher.tools.tck.api._
 import org.opencypher.tools.tck.constants.{TCKErrorDetails, TCKErrorPhases, TCKErrorTypes}
 import org.opencypher.tools.tck.values.{CypherValue => TCKCypherValue, _}
@@ -85,7 +84,7 @@ case class TCKGraph[C <: CypherSession](testGraphFactory: CypherTestGraphFactory
   override def execute(query: String, params: Map[String, TCKCypherValue], queryType: QueryType): (Graph, Result) = {
     queryType match {
       case InitQuery =>
-        val propertyGraph = testGraphFactory(Neo4JGraphFactory(query, params.mapValues(tckValueToCypherValue)))
+        val propertyGraph = testGraphFactory(CreateGraphFactory(query, params.mapValues(tckValueToCypherValue)))
         copy(graph = propertyGraph) -> CypherValueRecords.empty
       case SideEffectQuery =>
         // this one is tricky, not sure how can do it without Cypher
