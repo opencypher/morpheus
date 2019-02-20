@@ -93,6 +93,10 @@ object SparkSQLExprMapper {
 
       expr match {
 
+        // degenerate cases
+        case e if e.cypherType == CTNull =>
+          NULL_LIT
+
         // context based lookups
         case p@Param(name) if p.cypherType.isInstanceOf[CTList] =>
           parameters(name) match {
@@ -198,7 +202,6 @@ object SparkSQLExprMapper {
                 col.isNotNull,
                 functions.size(col).cast(LongType)
               )
-            case CTNull => NULL_LIT
             case other => throw NotImplementedException(s"size() on values of type $other")
           }
 
@@ -209,13 +212,9 @@ object SparkSQLExprMapper {
           exprs.map(_.asSparkSQLExpr).foldLeft(FALSE_LIT)(_ || _)
 
         case In(lhs, rhs) =>
-          if (rhs.cypherType == CTNull || lhs.cypherType == CTNull) {
-            NULL_LIT.cast(BooleanType)
-          } else {
-            val element = lhs.asSparkSQLExpr
-            val array = rhs.asSparkSQLExpr
-            array_contains(array, element)
-          }
+          val element = lhs.asSparkSQLExpr
+          val array = rhs.asSparkSQLExpr
+          array_contains(array, element)
 
         case LessThan(lhs, rhs) => compare(lt, lhs, rhs)
         case LessThanOrEqual(lhs, rhs) => compare(lteq, lhs, rhs)
@@ -233,7 +232,7 @@ object SparkSQLExprMapper {
           val regex: String = parameters(name).unwrap.toString
           prop.asSparkSQLExpr.rlike(regex)
 
-        // Arithmetics
+        // Arithmetic
         case Add(lhs, rhs) =>
           val lhsCT = lhs.cypherType
           val rhsCT = rhs.cypherType
@@ -304,7 +303,6 @@ object SparkSQLExprMapper {
                 .unzip
               val booleanLabelFlagColumn = functions.array(labelColumns: _*)
               get_node_labels(labelNames)(booleanLabelFlagColumn)
-            case CTNull => NULL_LIT
             case other => throw IllegalArgumentException("an expression with type CTNode, CTNodeOrNull, or CTNull", other)
           }
 
