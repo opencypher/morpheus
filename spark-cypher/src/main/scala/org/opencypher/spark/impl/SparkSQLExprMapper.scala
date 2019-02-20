@@ -91,7 +91,9 @@ object SparkSQLExprMapper {
 
       expr match {
 
-        case e:UnaryFunctionExpr if e.cypherType == CTNull && e.expr.cypherType == CTNull => NULL_LIT
+        // degenerate cases
+        case e if e.cypherType == CTNull =>
+          NULL_LIT
 
         case Param(name) =>
           expr.cypherType match {
@@ -197,13 +199,9 @@ object SparkSQLExprMapper {
         case Ors(exprs) => exprs.map(_.asSparkSQLExpr).foldLeft(FALSE_LIT)(_ || _)
 
         case In(lhs, rhs) =>
-          if (rhs.cypherType == CTNull || lhs.cypherType == CTNull) {
-            NULL_LIT.cast(BooleanType)
-          } else {
-            val element = lhs.asSparkSQLExpr
-            val array = rhs.asSparkSQLExpr
-            array_contains(array, element)
-          }
+          val element = lhs.asSparkSQLExpr
+          val array = rhs.asSparkSQLExpr
+          array_contains(array, element)
 
         case LessThan(lhs, rhs) => compare(lt, lhs, rhs)
         case LessThanOrEqual(lhs, rhs) => compare(lteq, lhs, rhs)
@@ -218,7 +216,7 @@ object SparkSQLExprMapper {
           val regex: String = parameters(name).unwrap.toString
           prop.asSparkSQLExpr.rlike(regex)
 
-        // Arithmetics
+        // Arithmetic
         case Add(lhs, rhs) =>
           val lhsCT = lhs.cypherType
           val rhsCT = rhs.cypherType
