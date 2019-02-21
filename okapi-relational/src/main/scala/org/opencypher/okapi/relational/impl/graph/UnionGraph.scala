@@ -46,7 +46,12 @@ import scala.reflect.runtime.universe.TypeTag
 final case class UnionGraph[T <: Table[T] : TypeTag](graphs: List[RelationalCypherGraph[T]])
   (implicit context: RelationalRuntimeContext[T]) extends RelationalCypherGraph[T] {
 
-  override def patterns: Set[Pattern] = graphs.flatMap(_.patterns).toSet
+  // TODO: We could be better here by also keeping patterns for which we know that they cover parts of the schema
+  //  that only the respective subgraph supplies
+  override def patterns: Set[Pattern] =
+    graphs
+      .map(_.patterns)
+      .foldLeft(Set.empty[Pattern])(_ intersect _)
 
   require(graphs.nonEmpty, "Union requires at least one graph")
 
