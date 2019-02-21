@@ -27,7 +27,7 @@
 package org.opencypher.spark.testing.fixture
 
 import org.apache.spark.sql.{DataFrame, Row}
-import org.opencypher.okapi.api.io.conversion.{EntityMapping, NodeMapping, RelationshipMapping}
+import org.opencypher.okapi.api.io.conversion.{EntityMapping, NodeMappingBuilder, RelationshipMappingBuilder}
 import org.opencypher.okapi.api.schema.Schema
 import org.opencypher.okapi.api.types._
 import org.opencypher.okapi.api.value.CypherValue.{CypherList, CypherMap}
@@ -176,7 +176,7 @@ trait TeamDataFixture extends TestDataFixture {
     mutable.WrappedArray.make(s)
   }
 
-  protected lazy val personMapping: EntityMapping = NodeMapping
+  protected lazy val personMapping: EntityMapping = NodeMappingBuilder
     .on("ID")
     .withImpliedLabel("Person")
     .withPropertyKey("name" -> "NAME")
@@ -193,7 +193,7 @@ trait TeamDataFixture extends TestDataFixture {
 
   lazy val personTable: CAPSEntityTable = CAPSEntityTable.create(personMapping, personDF)
 
-  protected lazy val knowsMapping: EntityMapping = RelationshipMapping
+  protected lazy val knowsMapping: EntityMapping = RelationshipMappingBuilder
     .on("ID").from("SRC")
     .to("DST")
     .relType("KNOWS")
@@ -213,7 +213,7 @@ trait TeamDataFixture extends TestDataFixture {
 
   lazy val knowsTable: CAPSEntityTable = CAPSEntityTable.create(knowsMapping, knowsDF)
 
-  private lazy val programmerMapping: EntityMapping = NodeMapping
+  private lazy val programmerMapping: EntityMapping = NodeMappingBuilder
     .on("ID")
     .withImpliedLabel("Programmer")
     .withImpliedLabel("Person")
@@ -232,7 +232,7 @@ trait TeamDataFixture extends TestDataFixture {
 
   lazy val programmerTable: CAPSEntityTable= CAPSEntityTable.create(programmerMapping, programmerDF)
 
-  private lazy val brogrammerMapping: EntityMapping = NodeMapping
+  private lazy val brogrammerMapping: EntityMapping = NodeMappingBuilder
     .on("ID")
     .withImpliedLabel("Brogrammer")
     .withImpliedLabel("Person")
@@ -250,7 +250,7 @@ trait TeamDataFixture extends TestDataFixture {
   // required to test conflicting input data
   lazy val brogrammerTable: CAPSEntityTable = CAPSEntityTable.create(brogrammerMapping, brogrammerDF)
 
-  private lazy val bookMapping: EntityMapping = NodeMapping
+  private lazy val bookMapping: EntityMapping = NodeMappingBuilder
     .on("ID")
     .withImpliedLabel("Book")
     .withPropertyKey("title" -> "NAME")
@@ -267,7 +267,7 @@ trait TeamDataFixture extends TestDataFixture {
 
   lazy val bookTable: CAPSEntityTable = CAPSEntityTable.create(bookMapping, bookDF)
 
-  private lazy val readsMapping: EntityMapping = RelationshipMapping
+  private lazy val readsMapping: EntityMapping = RelationshipMappingBuilder
     .on("ID").from("SRC").to("DST").relType("READS").withPropertyKey("recommends" -> "RECOMMENDS").build
 
   private lazy val readsDF = caps.sparkSession.createDataFrame(
@@ -280,7 +280,7 @@ trait TeamDataFixture extends TestDataFixture {
 
   lazy val readsTable: CAPSEntityTable = CAPSEntityTable.create(readsMapping, readsDF)
 
-  private lazy val influencesMapping: EntityMapping = RelationshipMapping
+  private lazy val influencesMapping: EntityMapping = RelationshipMappingBuilder
     .on("ID").from("SRC").to("DST").relType("INFLUENCES").build
 
   private lazy val influencesDF: DataFrame = caps.sparkSession.createDataFrame(

@@ -30,7 +30,7 @@ import org.apache.spark.SparkException
 import org.apache.spark.sql.Row
 import org.apache.spark.sql.types.{LongType, StructField, StructType}
 import org.opencypher.okapi.api.graph.{CypherResult, GraphName, Namespace}
-import org.opencypher.okapi.api.io.conversion.NodeMapping
+import org.opencypher.okapi.api.io.conversion.NodeMappingBuilder
 import org.opencypher.okapi.api.value.CypherValue.{CypherMap, CypherNull}
 import org.opencypher.okapi.impl.exception.{IllegalArgumentException, SchemaException}
 import org.opencypher.okapi.neo4j.io.MetaLabelSupport._
@@ -109,7 +109,7 @@ class Neo4jPropertyGraphDataSourceTest
     val node1DF = sparkSession.createDataFrame(List(Row(1L)).asJava, schema)
     val node2DF = sparkSession.createDataFrame(List(Row(1L)).asJava, schema)
 
-    val nodeMapping = NodeMapping.create("id")
+    val nodeMapping = NodeMappingBuilder.create("id")
     val node1Table = CAPSEntityTable.create(nodeMapping, node1DF)
     val node2Table = CAPSEntityTable.create(nodeMapping, node2DF)
 

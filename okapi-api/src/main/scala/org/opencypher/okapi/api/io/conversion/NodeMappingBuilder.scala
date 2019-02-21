@@ -29,7 +29,7 @@ package org.opencypher.okapi.api.io.conversion
 import org.opencypher.okapi.api.graph._
 import org.opencypher.okapi.api.types.CTNode
 
-object NodeMapping {
+object NodeMappingBuilder {
   /**
     * Alias for [[withSourceIdKey]].
     *
@@ -52,7 +52,7 @@ object NodeMapping {
     * Creates a NodeMapping where optional labels and property keys match with their corresponding keys in the source
     * data.
     *
-    * See [[NodeMapping]] for further information.
+    * See [[NodeMappingBuilder]] for further information.
     *
     * @param nodeIdKey      key to access the node identifier in the source data
     * @param impliedLabels  set of node labels
@@ -65,7 +65,7 @@ object NodeMapping {
     propertyKeys: Set[String] = Set.empty
   ): EntityMapping = {
 
-    val mappingWithImpliedLabels = impliedLabels.foldLeft(NodeMapping.withSourceIdKey(nodeIdKey)) {
+    val mappingWithImpliedLabels = impliedLabels.foldLeft(NodeMappingBuilder.withSourceIdKey(nodeIdKey)) {
       (mapping, label) => mapping.withImpliedLabel(label)
     }
 
@@ -118,11 +118,10 @@ final case class NodeMappingBuilder(
     val pattern: NodePattern = NodePattern(CTNode(impliedNodeLabels))
     val properties: Map[Entity, Map[String, String]] = Map(pattern.nodeEntity -> propertyMapping)
     val idKeys: Map[Entity, Map[IdKey, String]] = Map(pattern.nodeEntity -> Map(SourceIdKey -> nodeIdKey))
-    val impliedTypes: Map[Entity, Set[String]] = Map(pattern.nodeEntity -> impliedNodeLabels)
 
     validate()
 
-    EntityMapping(pattern, properties, idKeys, impliedTypes)
+    EntityMapping(pattern, properties, idKeys)
   }
 
   override protected def validate(): Unit = ()

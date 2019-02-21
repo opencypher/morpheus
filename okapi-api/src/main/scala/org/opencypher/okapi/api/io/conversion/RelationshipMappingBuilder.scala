@@ -30,7 +30,7 @@ import org.opencypher.okapi.api.graph._
 import org.opencypher.okapi.api.types.CTRelationship
 import org.opencypher.okapi.impl.exception.IllegalArgumentException
 
-object RelationshipMapping {
+object RelationshipMappingBuilder {
 
   /**
     * @param sourceIdKey represents a key to the relationship identifier within the source data. The retrieved value
@@ -41,7 +41,7 @@ object RelationshipMapping {
     new MissingSourceStartNodeKey(sourceIdKey)
 
   /**
-    * Alias for [[org.opencypher.okapi.api.io.conversion.RelationshipMapping#withSourceIdKey]].
+    * Alias for [[org.opencypher.okapi.api.io.conversion.RelationshipMappingBuilder#withSourceIdKey]].
     *
     * @param sourceIdKey represents a key to the relationship identifier within the source data. The retrieved value
     *                    from the source data is expected to be a [[scala.Long]] value that is unique among relationships.
@@ -53,7 +53,7 @@ object RelationshipMapping {
   /**
     * Creates a RelationshipMapping where property keys match with their corresponding keys in the source data.
     *
-    * See [[org.opencypher.okapi.api.io.conversion.RelationshipMapping]] for further information.
+    * See [[org.opencypher.okapi.api.io.conversion.RelationshipMappingBuilder]] for further information.
     *
     * @param sourceIdKey        key to access the node identifier in the source data
     * @param sourceStartNodeKey key to access the start node identifier in the source data
@@ -69,7 +69,7 @@ object RelationshipMapping {
     relType: String,
     properties: Set[String] = Set.empty
   ): EntityMapping = {
-    val intermediateMapping = RelationshipMapping
+    val intermediateMapping = RelationshipMappingBuilder
       .withSourceIdKey(sourceIdKey)
       .withSourceStartNodeKey(sourceStartNodeKey)
       .withSourceEndNodeKey(sourceEndNodeKey)
@@ -90,7 +90,7 @@ object RelationshipMapping {
       new MissingSourceEndNodeKey(sourceIdKey, sourceStartNodeKey)
 
     /**
-      * Alias for [[org.opencypher.okapi.api.io.conversion.RelationshipMapping.MissingSourceStartNodeKey#withSourceStartNodeKey]].
+      * Alias for [[org.opencypher.okapi.api.io.conversion.RelationshipMappingBuilder.MissingSourceStartNodeKey#withSourceStartNodeKey]].
       *
       * @param sourceStartNodeKey represents a key to the start node identifier within the source data. The retrieved
       *                           value from the source data is expected to be a [[scala.Long]] value.
@@ -145,7 +145,7 @@ object RelationshipMapping {
   * Cypher relationship. The purpose of this class is to define a mapping from an external data source to a property
   * graph.
   *
-  * Construct a [[RelationshipMapping]] starting with [[RelationshipMapping#on]].
+  * Construct a [[RelationshipMappingBuilder]] starting with [[RelationshipMappingBuilder#on]].
   *
   * @param relationshipIdKey         key to access the node identifier in the source data
   * @param relationshipStartNodeKey  key to access the start node identifier in the source data
@@ -179,11 +179,8 @@ final case class RelationshipMappingBuilder(
         SourceEndNodeKey -> relationshipEndNodeKey
       )
     )
-    val impliedTypes: Map[Entity, Set[String]] = Map(
-      pattern.relEntity -> Set(relType)
-    )
 
-    EntityMapping(pattern, properties, idKeys, impliedTypes)
+    EntityMapping(pattern, properties, idKeys)
   }
 
   override protected def validate(): Unit = {

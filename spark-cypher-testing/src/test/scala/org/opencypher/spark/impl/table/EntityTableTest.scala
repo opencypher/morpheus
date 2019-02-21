@@ -31,7 +31,7 @@ import java.sql.Date
 import org.apache.spark.sql.Row
 import org.apache.spark.sql.types.DecimalType
 import org.opencypher.okapi.api.graph.Pattern
-import org.opencypher.okapi.api.io.conversion.{EntityMapping, NodeMapping, RelationshipMapping}
+import org.opencypher.okapi.api.io.conversion.{EntityMapping, NodeMappingBuilder, RelationshipMappingBuilder}
 import org.opencypher.okapi.api.schema.Schema
 import org.opencypher.okapi.api.types._
 import org.opencypher.okapi.api.value.CypherValue.CypherMap
@@ -52,7 +52,7 @@ case class Friend(id: Long, source: Long, target: Long, since: String) extends R
 
 class EntityTableTest extends CAPSTestSuite {
 
-  private val nodeMapping: EntityMapping = NodeMapping
+  private val nodeMapping: EntityMapping = NodeMappingBuilder
     .withSourceIdKey("ID")
     .withImpliedLabel("A")
     .withImpliedLabel("B")
@@ -60,7 +60,7 @@ class EntityTableTest extends CAPSTestSuite {
     .withPropertyKey("bar" -> "BAR")
     .build
 
-  private val relMapping: EntityMapping = RelationshipMapping
+  private val relMapping: EntityMapping = RelationshipMappingBuilder
     .withSourceIdKey("ID")
     .withSourceStartNodeKey("FROM")
     .withSourceEndNodeKey("TO")
@@ -71,7 +71,7 @@ class EntityTableTest extends CAPSTestSuite {
 
   it("mapping from scala classes") {
     val personTableScala = CAPSNodeTable(List(Person(0, "Alice", 15)))
-    personTableScala.mapping should equal(NodeMapping
+    personTableScala.mapping should equal(NodeMappingBuilder
       .withSourceIdKey("id")
       .withImpliedLabel("Person")
       .withPropertyKey("name")
@@ -82,7 +82,7 @@ class EntityTableTest extends CAPSTestSuite {
     val friends = List(Friend(0, 0, 1, "23/01/1987"), Friend(1, 1, 2, "12/12/2009"))
     val friendTableScala = CAPSRelationshipTable(friends)
 
-    friendTableScala.mapping should equal(RelationshipMapping
+    friendTableScala.mapping should equal(RelationshipMappingBuilder
       .withSourceIdKey("id")
       .withSourceStartNodeKey("source")
       .withSourceEndNodeKey("target")
@@ -94,7 +94,7 @@ class EntityTableTest extends CAPSTestSuite {
   // TODO: What is the expected column ordering?
   ignore("throws an IllegalArgumentException when a relationship table does not have the expected column ordering") {
     val df = sparkSession.createDataFrame(Seq((1, 1, 1, true))).toDF("ID", "TARGET", "SOURCE", "TYPE")
-    val relMapping = RelationshipMapping
+    val relMapping = RelationshipMappingBuilder
       .on("ID")
       .from("SOURCE")
       .to("TARGET")
@@ -197,14 +197,14 @@ class EntityTableTest extends CAPSTestSuite {
   it("NodeTable should not accept wrong source id key type (should be compatible to LongType)") {
     val e = the[IllegalArgumentException] thrownBy {
       val df = sparkSession.createDataFrame(Seq(Tuple1(Date.valueOf("1987-01-23")))).toDF("ID")
-      val nodeMapping = NodeMapping.on("ID").withImpliedLabel("A").build
+      val nodeMapping = NodeMappingBuilder.on("ID").withImpliedLabel("A").build
       CAPSEntityTable.create(nodeMapping, df)
     }
     e.getMessage should (include("Column `ID` should have a valid identifier data type") and include("Unsupported column type `DateType`"))
   }
 
   it("RelationshipTable should not accept wrong sourceId, -StartNode, -EndNode key type") {
-    val relMapping = RelationshipMapping.on("ID").from("SOURCE").to("TARGET").relType("A").build
+    val relMapping = RelationshipMappingBuilder.on("ID").from("SOURCE").to("TARGET").relType("A").build
     an[IllegalArgumentException] should be thrownBy {
       val df = sparkSession.createDataFrame(Seq((1.toByte, 1, 1))).toDF("ID", "SOURCE", "TARGET")
       CAPSEntityTable.create(relMapping, df)
@@ -223,7 +223,7 @@ class EntityTableTest extends CAPSTestSuite {
     assert(!SparkConversions.supportedTypes.contains(DecimalType))
     an[IllegalArgumentException] should be thrownBy {
       val df = sparkSession.createDataFrame(Seq((1L, true, BigDecimal(13.37)))).toDF("ID", "IS_A", "PROP")
-      val nodeMapping = NodeMapping.on("ID").withImpliedLabel("A").withPropertyKey("PROP").build
+      val nodeMapping = NodeMappingBuilder.on("ID").withImpliedLabel("A").withPropertyKey("PROP").build
       CAPSEntityTable.create(nodeMapping, df)
     }
   }

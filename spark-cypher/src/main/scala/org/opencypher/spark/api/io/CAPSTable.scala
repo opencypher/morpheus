@@ -27,7 +27,7 @@
 package org.opencypher.spark.api.io
 
 import org.apache.spark.sql.DataFrame
-import org.opencypher.okapi.api.io.conversion.{EntityMapping, NodeMapping, RelationshipMapping}
+import org.opencypher.okapi.api.io.conversion.{EntityMapping, NodeMappingBuilder, RelationshipMappingBuilder}
 import org.opencypher.okapi.impl.util.StringEncodingUtilities._
 import org.opencypher.okapi.relational.api.io.EntityTable
 import org.opencypher.okapi.relational.api.table.RelationalEntityTableFactory
@@ -79,7 +79,7 @@ object CAPSNodeTable {
     val nodeLabels = Annotation.labels[E]
     val nodeDF = caps.sparkSession.createDataFrame(nodes)
     val nodeProperties = nodeDF.columns.filter(_ != GraphEntity.sourceIdKey).toSet
-    val nodeMapping = NodeMapping.create(nodeIdKey = GraphEntity.sourceIdKey, impliedLabels = nodeLabels, propertyKeys = nodeProperties)
+    val nodeMapping = NodeMappingBuilder.create(nodeIdKey = GraphEntity.sourceIdKey, impliedLabels = nodeLabels, propertyKeys = nodeProperties)
     CAPSEntityTable.create(nodeMapping, nodeDF)
   }
 
@@ -96,7 +96,7 @@ object CAPSNodeTable {
     val propertyColumnNames = nodeDF.columns.filter(_ != GraphEntity.sourceIdKey).toSet
     val propertyKeyMapping = propertyColumnNames.map(p => p.toProperty -> p)
 
-    val mapping = NodeMapping
+    val mapping = NodeMappingBuilder
       .on(GraphEntity.sourceIdKey)
       .withImpliedLabels(impliedLabels.toSeq: _*)
       .withPropertyKeyMappings(propertyKeyMapping.toSeq: _*)
@@ -113,7 +113,7 @@ object CAPSRelationshipTable {
     val relationshipDF = caps.sparkSession.createDataFrame(relationships)
     val relationshipProperties = relationshipDF.columns.filter(!Relationship.nonPropertyAttributes.contains(_)).toSet
 
-    val relationshipMapping = RelationshipMapping.create(GraphEntity.sourceIdKey,
+    val relationshipMapping = RelationshipMappingBuilder.create(GraphEntity.sourceIdKey,
       Relationship.sourceStartNodeKey,
       Relationship.sourceEndNodeKey,
       relationshipType,
@@ -140,7 +140,7 @@ object CAPSRelationshipTable {
     val propertyColumnNames = relationshipDF.columns.filter(!Relationship.nonPropertyAttributes.contains(_)).toSet
     val propertyKeyMapping = propertyColumnNames.map(p => p.toProperty -> p)
 
-    val mapping = RelationshipMapping
+    val mapping = RelationshipMappingBuilder
       .on(GraphEntity.sourceIdKey)
       .from(Relationship.sourceStartNodeKey)
       .to(Relationship.sourceEndNodeKey)

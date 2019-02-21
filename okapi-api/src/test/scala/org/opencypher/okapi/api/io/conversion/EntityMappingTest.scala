@@ -32,9 +32,9 @@ import org.opencypher.okapi.api.types.{CTNode, CTRelationship}
 import org.opencypher.okapi.impl.exception.IllegalArgumentException
 
 class EntityMappingTest extends ApiBaseTest {
-  describe("node mapping builder") {
+  describe("NodeMappingBuilder") {
     it("Construct node mapping") {
-      val given = NodeMapping.on("id")
+      val given = NodeMappingBuilder.on("id")
         .withImpliedLabel("Person")
         .withPropertyKey("name")
         .withPropertyKey("age" -> "YEARS").build
@@ -48,9 +48,6 @@ class EntityMappingTest extends ApiBaseTest {
         ),
         Map(
           pattern.nodeEntity -> Map(SourceIdKey -> "id")
-        ),
-        Map(
-          pattern.nodeEntity -> Set("Person")
         )
       )
 
@@ -58,13 +55,13 @@ class EntityMappingTest extends ApiBaseTest {
     }
 
     it("Refuses to overwrite a property with a different mapping") {
-      raisesIllegalArgument(NodeMapping.on("sourceKey").withPropertyKey("a" -> "foo").withPropertyKey("a" -> "bar").build)
+      raisesIllegalArgument(NodeMappingBuilder.on("sourceKey").withPropertyKey("a" -> "foo").withPropertyKey("a" -> "bar").build)
     }
   }
 
-  describe("NodeMappingBuilder") {
+  describe("RelationshipMappingBuilder") {
     it("Construct relationship mapping with static type") {
-      val given = RelationshipMapping.on("r")
+      val given = RelationshipMappingBuilder.on("r")
         .from("src")
         .to("dst")
         .relType("KNOWS")
@@ -79,9 +76,6 @@ class EntityMappingTest extends ApiBaseTest {
         ),
         Map(
           pattern.relEntity -> Map(SourceIdKey -> "r", SourceStartNodeKey -> "src", SourceEndNodeKey -> "dst")
-        ),
-        Map(
-          pattern.relEntity -> Set("KNOWS")
         )
       )
 
@@ -90,7 +84,7 @@ class EntityMappingTest extends ApiBaseTest {
 
     it("Refuses to overwrite a property with a different mapping") {
       raisesIllegalArgument(
-        RelationshipMapping
+        RelationshipMappingBuilder
           .on("sourceKey")
           .from("a")
           .to("b")
@@ -101,8 +95,18 @@ class EntityMappingTest extends ApiBaseTest {
     }
 
     it("Refuses to use the same source key for incompatible types when constructing relationships") {
-      raisesIllegalArgument(RelationshipMapping.on("r").from("r").to("b").relType("KNOWS").build)
-      raisesIllegalArgument(RelationshipMapping.on("r").from("a").to("r").relType("KNOWS").build)
+      raisesIllegalArgument(RelationshipMappingBuilder.on("r").from("r").to("b").relType("KNOWS").build)
+      raisesIllegalArgument(RelationshipMappingBuilder.on("r").from("a").to("r").relType("KNOWS").build)
+    }
+  }
+
+  describe("validation") {
+    it("throws an error if relationship entities do not have exactly one type") {
+      val pattern1 = RelationshipPattern(CTRelationship("Foo", "Bar"))
+      raisesIllegalArgument(EntityMapping.empty(pattern1))
+
+      val pattern2 = RelationshipPattern(CTRelationship())
+      raisesIllegalArgument(EntityMapping.empty(pattern2))
     }
   }
 

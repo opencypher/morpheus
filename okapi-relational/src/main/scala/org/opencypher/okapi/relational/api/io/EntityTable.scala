@@ -46,16 +46,14 @@ trait EntityTable[T <: Table[T]] extends RelationalCypherRecords[T] {
   def schema: Schema = {
     mapping.pattern.entities.map { entity =>
       entity.cypherType match {
-        case _: CTNode =>
+        case CTNode(impliedTypes, _) =>
           val propertyKeys = mapping.properties(entity).toSeq.map {
             case (propertyKey, sourceKey) => propertyKey -> table.columnType(sourceKey)
           }
 
-          val impliedTypes = mapping.impliedTypes(entity)
           Schema.empty.withNodePropertyKeys(impliedTypes.toSeq: _*)(propertyKeys: _*)
 
-        case _: CTRelationship =>
-          val relTypes = mapping.impliedTypes(entity)
+        case CTRelationship(relTypes, _) =>
 
           val propertyKeys = mapping.properties(entity).toSeq.map {
             case (propertyKey, sourceKey) => propertyKey -> table.columnType(sourceKey)
@@ -65,7 +63,7 @@ trait EntityTable[T <: Table[T]] extends RelationalCypherRecords[T] {
             case (partialSchema, relType) => partialSchema.withRelationshipPropertyKeys(relType)(propertyKeys: _*)
           }
 
-        case other => ???
+        case other => throw IllegalArgumentException("an entity with type CTNode or CTRelationship", other)
       }
     }.reduce(_ ++ _)
   }
@@ -101,7 +99,7 @@ trait EntityTable[T <: Table[T]] extends RelationalCypherRecords[T] {
 
           RecordHeader(idMapping ++ propertyMapping)
 
-        case other => ???
+        case other => throw IllegalArgumentException("an entity with type CTNode or CTRelationship", other)
       }
     }.reduce(_ ++ _)
   }

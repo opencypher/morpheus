@@ -30,7 +30,7 @@ package org.opencypher.spark.examples
 import java.sql.Date
 
 import org.apache.spark.sql.{DataFrame, SparkSession}
-import org.opencypher.okapi.api.io.conversion.{NodeMapping, RelationshipMapping}
+import org.opencypher.okapi.api.io.conversion.{NodeMappingBuilder, RelationshipMappingBuilder}
 import org.opencypher.spark.api.CAPSSession
 import org.opencypher.spark.api.io.CAPSEntityTable
 import org.opencypher.spark.util.ConsoleApp
@@ -72,14 +72,14 @@ object CustomDataFrameInputExample extends ConsoleApp {
 
   // tag::create-node-relationship-tables[]
 
-  val personNodeMapping = NodeMapping
+  val personNodeMapping = NodeMappingBuilder
     .withSourceIdKey("ID")
     .withImpliedLabel("Person")
     .withPropertyKey(propertyKey = "name", sourcePropertyKey = "FIRST_NAME")
     .withPropertyKey(propertyKey = "age", sourcePropertyKey = "AGE")
     .build
 
-  val friendOfMapping = RelationshipMapping
+  val friendOfMapping = RelationshipMappingBuilder
     .withSourceIdKey("REL_ID")
     .withSourceStartNodeKey("SOURCE_ID")
     .withSourceEndNodeKey("TARGET_ID")

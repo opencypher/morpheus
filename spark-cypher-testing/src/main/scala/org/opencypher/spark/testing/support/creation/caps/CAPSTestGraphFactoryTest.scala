@@ -30,7 +30,7 @@ import java.sql.Date
 
 import org.apache.spark.sql.Row
 import org.opencypher.okapi.api.graph.{NodeRelPattern, TripletPattern}
-import org.opencypher.okapi.api.io.conversion.{NodeMapping, RelationshipMapping}
+import org.opencypher.okapi.api.io.conversion.{NodeMappingBuilder, RelationshipMappingBuilder}
 import org.opencypher.okapi.api.schema.Schema
 import org.opencypher.okapi.api.types._
 import org.opencypher.okapi.ir.api.expr._
@@ -62,7 +62,7 @@ abstract class CAPSTestGraphFactoryTest extends CAPSTestSuite with GraphMatching
       |CREATE (martin)-[:SPEAKS]->(orbital)
     """.stripMargin
 
-  val personAstronautTable: CAPSEntityTable = CAPSEntityTable.create(NodeMapping
+  val personAstronautTable: CAPSEntityTable = CAPSEntityTable.create(NodeMappingBuilder
     .on("ID")
     .withImpliedLabels("Person", "Astronaut")
     .withPropertyKey("name" -> "NAME")
@@ -70,14 +70,14 @@ abstract class CAPSTestGraphFactoryTest extends CAPSTestSuite with GraphMatching
     .build, caps.sparkSession.createDataFrame(
     Seq((0L, "Max", Date.valueOf("1991-07-10")))).toDF("ID", "NAME", "BIRTHDAY"))
 
-  val personMartianTable: CAPSEntityTable = CAPSEntityTable.create(NodeMapping
+  val personMartianTable: CAPSEntityTable = CAPSEntityTable.create(NodeMappingBuilder
     .on("ID")
     .withImpliedLabels("Person", "Martian")
     .withPropertyKey("name" -> "NAME")
     .build, caps.sparkSession.createDataFrame(
     Seq((1L, "Martin"))).toDF("ID", "NAME"))
 
-  val languageTable: CAPSEntityTable = CAPSEntityTable.create(NodeMapping
+  val languageTable: CAPSEntityTable = CAPSEntityTable.create(NodeMappingBuilder
     .on("ID")
     .withImpliedLabel("Language")
     .withPropertyKey("title" -> "TITLE")
@@ -88,7 +88,7 @@ abstract class CAPSTestGraphFactoryTest extends CAPSTestSuite with GraphMatching
       (4L, "Orbital"))
   ).toDF("ID", "TITLE"))
 
-  val knowsScan: CAPSEntityTable = CAPSEntityTable.create(RelationshipMapping
+  val knowsScan: CAPSEntityTable = CAPSEntityTable.create(RelationshipMappingBuilder
     .on("ID")
     .from("SRC").to("DST").relType("KNOWS").build, caps.sparkSession.createDataFrame(
     Seq(

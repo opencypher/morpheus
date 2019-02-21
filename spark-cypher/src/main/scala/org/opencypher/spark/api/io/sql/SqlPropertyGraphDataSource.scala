@@ -33,7 +33,7 @@ import org.apache.spark.sql.{DataFrame, DataFrameReader, functions}
 import org.opencypher.graphddl.GraphDdl.PropertyMappings
 import org.opencypher.graphddl._
 import org.opencypher.okapi.api.graph.{GraphName, PropertyGraph}
-import org.opencypher.okapi.api.io.conversion.{EntityMapping, NodeMapping, RelationshipMapping}
+import org.opencypher.okapi.api.io.conversion.{EntityMapping, NodeMappingBuilder, RelationshipMappingBuilder}
 import org.opencypher.okapi.api.schema.Schema
 import org.opencypher.okapi.api.types.{CTDate, CypherType}
 import org.opencypher.okapi.impl.exception.{GraphNotFoundException, IllegalArgumentException, UnsupportedOperationException}
@@ -235,7 +235,7 @@ case class SqlPropertyGraphDataSource(
       case (propertyKey, columnName) => propertyKey -> columnName.toPropertyColumnName
     }
 
-    NodeMapping
+    NodeMappingBuilder
       .on(sourceIdKey)
       .withImpliedLabels(labelCombination.toSeq: _*)
       .withPropertyKeyMappings(propertyKeyMapping.toSeq: _*)
@@ -250,7 +250,7 @@ case class SqlPropertyGraphDataSource(
       case (propertyKey, columnName) => propertyKey -> columnName.toPropertyColumnName
     }
 
-    RelationshipMapping
+    RelationshipMappingBuilder
       .on(sourceIdKey)
       .from(sourceStartNodeKey)
       .to(sourceEndNodeKey)

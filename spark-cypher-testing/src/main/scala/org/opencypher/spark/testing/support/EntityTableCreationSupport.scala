@@ -29,7 +29,6 @@ package org.opencypher.spark.testing.support
 import org.apache.spark.sql.DataFrame
 import org.opencypher.okapi.api.graph._
 import org.opencypher.okapi.api.io.conversion.EntityMapping
-import org.opencypher.okapi.api.types.{CTNode, CTRelationship}
 import org.opencypher.spark.api.io.CAPSEntityTable
 
 trait EntityTableCreationSupport {
@@ -62,16 +61,9 @@ trait EntityTableCreationSupport {
           case prop if prop.endsWith("_property") => prop.replaceFirst(s"${entity.name}_", "").replaceFirst("_property", "") -> prop
         }.toMap
 
-        val entityTypes = entity.cypherType match {
-          case CTNode(labels, _) => labels
-          case CTRelationship(rel, _) => Set(rel.head)
-          case _ => ???
-        }
-
         acc.copy(
           properties = acc.properties.updated(entity, propertyMapping),
-          idKeys = acc.idKeys.updated(entity, idMapping),
-          impliedTypes = acc.impliedTypes.updated(entity, entityTypes)
+          idKeys = acc.idKeys.updated(entity, idMapping)
         )
     }
 

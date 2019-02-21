@@ -27,10 +27,11 @@
 package org.opencypher.okapi.api.io.conversion
 
 import org.opencypher.okapi.api.graph.{Entity, IdKey, Pattern}
+import org.opencypher.okapi.api.types.CTRelationship
 import org.opencypher.okapi.impl.exception.IllegalArgumentException
 
 object EntityMapping {
-  def empty(pattern: Pattern) = EntityMapping(pattern, Map.empty, Map.empty, Map.empty)
+  def empty(pattern: Pattern) = EntityMapping(pattern, Map.empty, Map.empty)
 }
 
 // TODO document
@@ -38,9 +39,10 @@ object EntityMapping {
 case class EntityMapping(
   pattern: Pattern,
   properties: Map[Entity, Map[String, String]],
-  idKeys: Map[Entity, Map[IdKey, String]],
-  impliedTypes: Map[Entity, Set[String]]
+  idKeys: Map[Entity, Map[IdKey, String]]
 ) {
+
+  validate()
 
   def allSourceKeys: Seq[String] =
     (
@@ -56,6 +58,15 @@ case class EntityMapping(
         "One-to-one mapping from entity elements to source keys",
         s"Duplicate columns: $duplicateColumns")
     }
+
+    pattern.entities.foreach {
+      case e@Entity(_, CTRelationship(types, _)) if types.size != 1 =>
+        throw IllegalArgumentException(
+          s"A single implied type for entity $e",
+          types
+        )
+    }
+
   }
 }
 

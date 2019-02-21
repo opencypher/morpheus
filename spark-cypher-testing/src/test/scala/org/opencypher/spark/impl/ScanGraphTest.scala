@@ -28,7 +28,7 @@ package org.opencypher.spark.impl
 
 import org.apache.spark.sql.{Row, functions}
 import org.opencypher.okapi.api.graph._
-import org.opencypher.okapi.api.io.conversion.{EntityMapping, NodeMapping, RelationshipMapping}
+import org.opencypher.okapi.api.io.conversion.{EntityMapping, NodeMappingBuilder, RelationshipMappingBuilder}
 import org.opencypher.okapi.api.types._
 import org.opencypher.okapi.api.value.CypherValue.CypherMap
 import org.opencypher.okapi.ir.api.expr._
@@ -108,7 +108,7 @@ class ScanGraphTest extends CAPSGraphTest with EntityTableCreationSupport {
   }
 
   it("dont lose schema information when mapping") {
-    val nodes = CAPSEntityTable.create(NodeMapping.on("id").build,
+    val nodes = CAPSEntityTable.create(NodeMappingBuilder.on("id").build,
       caps.sparkSession.createDataFrame(
         Seq(
           Tuple1(10L),
@@ -123,7 +123,7 @@ class ScanGraphTest extends CAPSGraphTest with EntityTableCreationSupport {
         )
       ).toDF("id"))
 
-    val rs = CAPSEntityTable.create(RelationshipMapping.on("ID").from("SRC").to("DST").relType("FOO").build,
+    val rs = CAPSEntityTable.create(RelationshipMappingBuilder.on("ID").from("SRC").to("DST").relType("FOO").build,
       caps.sparkSession.createDataFrame(
         Seq(
           (10L, 1000L, 20L),
@@ -207,19 +207,19 @@ class ScanGraphTest extends CAPSGraphTest with EntityTableCreationSupport {
     val aDf = caps.sparkSession.createDataFrame(Seq(
       (0L, "A")
     )).toDF("_node_id", "name").withColumn("size", functions.lit(null))
-    val aMapping: EntityMapping = NodeMapping.on("_node_id").withPropertyKey("name").withPropertyKey("size").withImpliedLabel("A").build
+    val aMapping: EntityMapping = NodeMappingBuilder.on("_node_id").withPropertyKey("name").withPropertyKey("size").withImpliedLabel("A").build
     val aTable = CAPSEntityTable.create(aMapping, aDf)
 
     val bDf = caps.sparkSession.createDataFrame(Seq(
       (1L, "B")
     )).toDF("_node_id", "name").withColumn("size", functions.lit(null))
-    val bMapping = NodeMapping.on("_node_id").withPropertyKey("name").withPropertyKey("size").withImpliedLabel("B").build
+    val bMapping = NodeMappingBuilder.on("_node_id").withPropertyKey("name").withPropertyKey("size").withImpliedLabel("B").build
     val bTable = CAPSEntityTable.create(bMapping, bDf)
 
     val comboDf = caps.sparkSession.createDataFrame(Seq(
       (2L, "COMBO", 2)
     )).toDF("_node_id", "name", "size")
-    val comboMapping = NodeMapping.on("_node_id").withPropertyKey("name").withPropertyKey("size").withImpliedLabels("A", "B").build
+    val comboMapping = NodeMappingBuilder.on("_node_id").withPropertyKey("name").withPropertyKey("size").withImpliedLabels("A", "B").build
     val comboTable = CAPSEntityTable.create(comboMapping, comboDf)
 
     val graph = caps.graphs.create(aTable, bTable, comboTable)

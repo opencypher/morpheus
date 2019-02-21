@@ -27,7 +27,7 @@
 package org.opencypher.spark.impl
 
 import org.apache.spark.sql.Row
-import org.opencypher.okapi.api.io.conversion.{NodeMapping, RelationshipMapping}
+import org.opencypher.okapi.api.io.conversion.{NodeMappingBuilder, RelationshipMappingBuilder}
 import org.opencypher.okapi.api.types._
 import org.opencypher.okapi.api.value.CypherValue._
 import org.opencypher.okapi.impl.exception.InternalException
@@ -140,7 +140,7 @@ class CAPSRecordsTest extends CAPSTestSuite with GraphConstructionFixture with T
         (4L, "Stefan")
       )).toDF("ID", "NAME")
 
-    val givenMapping = NodeMapping.on("ID")
+    val givenMapping = NodeMappingBuilder.on("ID")
       .withImpliedLabel("Person")
       .withPropertyKey("name" -> "NAME")
       .build
@@ -167,7 +167,7 @@ class CAPSRecordsTest extends CAPSTestSuite with GraphConstructionFixture with T
         (13L, 4L, 1L, "yellow")
       )).toDF("ID", "FROM", "TO", "COLOR")
 
-    val givenMapping = RelationshipMapping.on("ID")
+    val givenMapping = RelationshipMappingBuilder.on("ID")
       .from("FROM")
       .to("TO")
       .relType("NEXT")
