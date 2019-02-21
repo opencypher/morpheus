@@ -26,7 +26,7 @@
  */
 package org.opencypher.okapi.logical.impl
 
-import org.opencypher.okapi.api.graph.{NodeRelPattern, Pattern, QualifiedGraphName, TripletPattern}
+import org.opencypher.okapi.api.graph._
 import org.opencypher.okapi.api.types.{CTBoolean, CTNode, CTRelationship}
 import org.opencypher.okapi.ir.api.IRField
 import org.opencypher.okapi.ir.api.expr._
@@ -114,7 +114,8 @@ object LogicalOptimizer extends DirectCompilationStage[LogicalOperator, LogicalO
 
   def replaceScans(subtree: LogicalOperator, varToReplace: Var, pattern: Pattern)(f: LogicalOperator => LogicalOperator):LogicalOperator = {
    def rewriter: PartialFunction[LogicalOperator, LogicalOperator] = {
-      case NodeScan(n, parent, _) if n == varToReplace =>  f(parent)
+      case PatternScan(_: NodePattern, mapping, parent, _) if mapping.keySet.contains(varToReplace) => f(parent)
+
       case pScan: PatternScan if pScan.mapping.contains(varToReplace) =>
         val renamedVarToReplace = Var(varToReplace.name + "_renamed")(varToReplace.cypherType)
 
@@ -147,19 +148,19 @@ object LogicalOptimizer extends DirectCompilationStage[LogicalOperator, LogicalO
   }
 
   def discardScansForNonexistentLabels: PartialFunction[LogicalOperator, LogicalOperator] = {
-    case scan@NodeScan(entityExpr, in, _) =>
+    case scan@PatternScan(NodePattern(CTNode(labels, _)), mapping, in, _) =>
       def graphSchema = in.graph.schema
 
       def emptyRecords = {
-        val fields = entityExpr match {
+        val fields = mapping.keySet.flatMap {
           case v: Var => Set(v)
           case _ => Set.empty[Var]
         }
         EmptyRecords(fields, in, scan.solved)
       }
 
-      if ((scan.labels.size == 1 && !graphSchema.labels.contains(scan.labels.head)) ||
-        (scan.labels.size > 1 && !graphSchema.labelCombinations.combos.exists(scan.labels.subsetOf(_)))) {
+      if ((labels.size == 1 && !graphSchema.labels.contains(labels.head)) ||
+        (labels.size > 1 && !graphSchema.labelCombinations.combos.exists(labels.subsetOf(_)))) {
         emptyRecords
       } else {
         scan

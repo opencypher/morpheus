@@ -27,7 +27,7 @@
 package org.opencypher.okapi.relational.impl.planning
 
 import org.opencypher.okapi.api.graph.{Outgoing => _, _}
-import org.opencypher.okapi.api.io.conversion.{NodeMapping, RelationshipMapping}
+import org.opencypher.okapi.api.io.conversion.{NodeMappingBuilder, RelationshipMappingBuilder}
 import org.opencypher.okapi.api.types.{CTBoolean, CTNode, CTRelationship}
 import org.opencypher.okapi.impl.exception.{NotImplementedException, SchemaException, UnsupportedOperationException}
 import org.opencypher.okapi.ir.api.block.SortItem
@@ -97,15 +97,6 @@ object RelationalPlanner {
       case logical.Unwind(list, item, in, _) =>
         val explodeExpr = Explode(list)(item.cypherType)
         process[T](in).add(explodeExpr as item)
-
-      case logical.NodeScan(v, in, _) =>
-        val pattern = NodePattern(v.cypherType.asInstanceOf[CTNode])
-        planScan(
-          Some(process[T](in)),
-          in.graph,
-          pattern,
-          Map(v -> pattern.nodeEntity)
-        )
 
       case logical.PatternScan(pattern, mapping, in, _) =>
         planScan(
@@ -608,8 +599,7 @@ object RelationalPlanner {
 
       entity.cypherType match {
         case CTNode(labels, _) =>
-          // TODO: respect optional labels
-          val mapping = NodeMapping
+          val mapping = NodeMappingBuilder
             .on(idCol)
             .withImpliedLabels(labels.toSeq: _*)
             .withPropertyKeyMappings(propertyMapping.toSeq: _*)
@@ -620,8 +610,7 @@ object RelationalPlanner {
         case CTRelationship(typ, _) =>
           val sourceCol = header.column(header.startNodeFor(entity))
           val targetCol = header.column(header.endNodeFor(entity))
-          // TODO respect optional rel types
-          val mapping = RelationshipMapping
+          val mapping = RelationshipMappingBuilder
             .on(idCol)
             .from(sourceCol)
             .to(targetCol)

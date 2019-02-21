@@ -125,15 +125,10 @@ sealed abstract class BinaryLogicalOperator extends LogicalOperator {
 
 sealed abstract class LogicalLeafOperator extends LogicalOperator
 
-final case class NodeScan(node: Var, in: LogicalOperator, solved: SolvedQueryModel)
-  extends StackingLogicalOperator {
-  require(node.cypherType.isInstanceOf[CTNode], "A variable for a node scan needs to have type CTNode")
-
-  def labels: Set[String] = node.cypherType.asInstanceOf[CTNode].labels
-
-  override val fields: Set[Var] = node match {
-    case v: Var => in.fields + v
-    case _ => in.fields
+object NodeScan {
+  def apply(node: Var, in: LogicalOperator, solved: SolvedQueryModel): PatternScan = {
+    val pattern = NodePattern(node.cypherType.asInstanceOf[CTNode])
+    PatternScan(pattern, Map(node -> pattern.nodeEntity), in, solved)
   }
 }
 
