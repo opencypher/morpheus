@@ -150,38 +150,6 @@ object CAPSRelationshipTable {
 
     CAPSEntityTable.create(mapping, relationshipDF)
   }
-
-  // TODO: Move to unility function
-  //  /**
-  //    * Creates a relationship table from the given [[RelationshipMapping]] and [[DataFrame]].
-  //    *
-  //    * @param mapping      relationship mapping
-  //    * @param initialTable node data
-  //    * @return a relationship table
-  //    */
-  //  def fromMapping(mapping: RelationshipMapping, initialTable: DataFrame): CAPSEntityTable = {
-  //
-  //    val updatedTable = mapping.relTypeOrSourceRelTypeKey match {
-  //
-  //      // Flatten rel type column into boolean columns
-  //      case Right((typeColumnName, relTypes)) =>
-  //        DataFrameTable(initialTable).verifyColumnType(typeColumnName, CTString, "relationship type")
-  //        val updatedTable = relTypes.foldLeft(initialTable) { case (currentDf, relType) =>
-  //          val typeColumn = currentDf.col(typeColumnName)
-  //          val relTypeColumnName = relType.toRelTypeColumnName
-  //          currentDf
-  //            .withColumn(relTypeColumnName, typeColumn === functions.lit(relType))
-  //        }
-  //        updatedTable.drop(updatedTable.col(typeColumnName))
-  //
-  //      case _ => initialTable
-  //    }
-  //
-  //    val colsToSelect = mapping.allSourceKeys
-  //
-  //    CAPSEntityTable(mapping, updatedTable.select(colsToSelect.head, colsToSelect.tail: _*))
-  //  }
-
 }
 
 

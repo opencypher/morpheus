@@ -34,8 +34,23 @@ object EntityMapping {
   def empty(pattern: Pattern) = EntityMapping(pattern, Map.empty, Map.empty)
 }
 
-// TODO document
 // TODO add builder in Node/RelPattern style
+/**
+  * Represents a mapping from a source with key-based access to entity components (e.g. a table definition) to a Pattern.
+  * The purpose of this class is to define a mapping from an external data source to a property graph.
+  *
+  * The [[pattern]] describes the shape of the pattern that is described by this mapping
+  *
+  * The [[idKeys]] describe the mappings for each pattern entity, which map the the entities identifiers
+  * to columns within the source data.
+  *
+  * The [[properties]] represent mappings for every pattern entity from property keys to keys in the source data.
+  * The retrieved value from the source is expected to be convertible to a valid [[org.opencypher.okapi.api.value.CypherValue]].
+  *
+  * @param pattern the pattern described by this mapping
+  * @param properties mapping from property key to source property key
+  * @param idKeys mapping for the key to access the entity identifier in the source data
+  */
 case class EntityMapping(
   pattern: Pattern,
   properties: Map[Entity, Map[String, String]],
@@ -68,53 +83,15 @@ case class EntityMapping(
       case _ => ()
     }
 
-  }
-}
-
-trait EntityMappingBuilder {
-
-  type BuilderType <: EntityMappingBuilder
-
-  def propertyMapping: Map[String, String]
-
-  protected def updatePropertyMapping(propertyMapping: Map[String, String]): BuilderType
-
-  def build: EntityMapping
-
-  protected def validate(): Unit
-
-  def withPropertyKey(tuple: (String, String)): BuilderType =
-    withPropertyKey(tuple._1, tuple._2)
-
-  def withPropertyKey(property: String): BuilderType =
-    withPropertyKey(property, property)
-
-  def withPropertyKey(propertyKey: String, sourcePropertyKey: String): BuilderType = {
-    preventOverwritingProperty(propertyKey)
-    updatePropertyMapping(propertyMapping.updated(propertyKey, sourcePropertyKey))
-  }
-
-  def withPropertyKeys(properties: String*): BuilderType = {
-    if (properties.size != properties.toSet.size)
-      throw IllegalArgumentException("unique propertyKey definitions",
-        s"given key $properties overwrites existing mapping")
-
-    withPropertyKeyMappings(properties.map(p => p -> p):_ *)
-  }
-
-  def withPropertyKeyMappings(tuples: (String, String)*): BuilderType = {
-    val updatedMapping = tuples.foldLeft(propertyMapping) {
-      case (oldMapping, (propertyKey, source)) =>
-        preventOverwritingProperty(propertyKey)
-        oldMapping.updated(propertyKey, source)
+    pattern.entities.foreach { e =>
+      if (!idKeys.contains(e)) {
+        throw IllegalArgumentException(
+          s"idKeys for entity $e",
+          idKeys
+        )
+      }
     }
 
-    updatePropertyMapping(updatedMapping)
   }
-
-  protected def preventOverwritingProperty(propertyKey: String): Unit =
-    if (propertyMapping.contains(propertyKey))
-      throw IllegalArgumentException("unique property key definitions",
-        s"given key $propertyKey overwrites existing mapping")
-
 }
+

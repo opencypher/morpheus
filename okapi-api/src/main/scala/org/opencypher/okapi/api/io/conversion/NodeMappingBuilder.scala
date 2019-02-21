@@ -75,33 +75,31 @@ object NodeMappingBuilder {
   }
 }
 
-///**
-//  * Represents a mapping from a source with key-based access to node components (e.g. a table definition) to a Cypher
-//  * node. The purpose of this class is to define a mapping from an external data source to a property graph.
-//  *
-//  * Construct a [[NodeMapping]] starting with [[NodeMapping#on]].
-//  *
-//  * The [[nodeIdKey]] represents a key to the node identifier within the source data. The retrieved value from the
-//  * source data is expected to be a [[scala.Long]] value that is unique among nodes.
-//  *
-//  * The [[impliedNodeLabels]] represent a set of node labels.
-//  *
-//  * The [[optionalNodeLabelMapping]] represent a map from node labels to keys in the source data. The retrieved value from
-//  * the source data is expected to be a [[scala.Boolean]] value indicating if the label is present on that node.
-//  *
-//  * The [[nodePropertyMapping]] represents a map from node property keys to keys in the source data. The retrieved value
-//  * from the source is expected to be convertible to a valid [[org.opencypher.okapi.api.value.CypherValue]].
-//  *
-//  * @param nodeIdKey          key to access the node identifier in the source data
-//  * @param impliedNodeLabels        set of node labels
-//  * @param optionalNodeLabelMapping mapping from label to source key
-//  * @param nodePropertyMapping      mapping from property key to source property key
-//  */
+/**
+  * Builder to build EntityMapping with a [[NodePattern]].
+  *
+  * Represents a mapping from a source with key-based access to node components (e.g. a table definition) to a Cypher
+  * node. The purpose of this class is to define a mapping from an external data source to a property graph.
+  *
+  * Construct a [[NodeMappingBuilder]] starting with [[NodeMappingBuilder#on]].
+  *
+  * The [[nodeIdKey]] represents a key to the node identifier within the source data. The retrieved value from the
+  * source data is expected to be a [[scala.Long]] value that is unique among nodes.
+  *
+  * The [[impliedNodeLabels]] represent a set of node labels.
+  *
+  * The [[propertyMapping]] represents a map from node property keys to keys in the source data. The retrieved value
+  * from the source is expected to be convertible to a valid [[org.opencypher.okapi.api.value.CypherValue]].
+  *
+  * @param nodeIdKey          key to access the node identifier in the source data
+  * @param impliedNodeLabels  set of node labels
+  * @param propertyMapping    mapping from property key to source property key
+  */
 final case class NodeMappingBuilder(
   nodeIdKey: String,
   impliedNodeLabels: Set[String] = Set.empty,
   propertyMapping: Map[String, String] = Map.empty
-) extends EntityMappingBuilder {
+) extends SingleEntityMappingBuilder {
 
   override type BuilderType = NodeMappingBuilder
 

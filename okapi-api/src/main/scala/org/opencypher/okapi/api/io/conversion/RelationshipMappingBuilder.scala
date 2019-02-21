@@ -141,6 +141,8 @@ object RelationshipMappingBuilder {
 }
 
 /**
+  * Builder to build EntityMapping with a [[NodePattern]].
+  *
   * Represents a mapping from a source with key-based access to relationship components (e.g. a table definition) to a
   * Cypher relationship. The purpose of this class is to define a mapping from an external data source to a property
   * graph.
@@ -159,7 +161,7 @@ final case class RelationshipMappingBuilder(
   relationshipEndNodeKey: String,
   relType: String,
   propertyMapping: Map[String, String] = Map.empty
-) extends EntityMappingBuilder {
+) extends SingleEntityMappingBuilder {
 
   override type BuilderType = RelationshipMappingBuilder
 

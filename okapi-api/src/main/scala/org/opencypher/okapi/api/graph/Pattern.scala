@@ -40,12 +40,21 @@ case class Connection(
   direction: Direction
 )
 
+/**
+  * An Entity represents an element within a pattern, e.g. a node or a relationship
+  *
+  * @param name the entities name
+  * @param cypherType the entities CypherType
+  */
 case class Entity(name: String, cypherType: CypherType)
 
 object Pattern {
   val DEFAULT_NODE_NAME = "node"
   val DEFAULT_REL_NAME = "rel"
 
+  /**
+    * Patterns can be ordered by the number of relationships
+    */
   implicit case object PatternOrdering extends Ordering[Pattern] {
     override def compare(
       x: Pattern,
@@ -54,11 +63,35 @@ object Pattern {
   }
 }
 
+
 sealed trait Pattern {
+
+  /**
+    * All entities contained in the pattern
+    *
+    * @return entities contained in the pattern
+    */
   def entities: Set[Entity]
+
+  /**
+    * The patterns topology, describing connections between node entities via relationships
+    *
+    * @return the patterns topology
+    */
   def topology: Map[Entity, Connection]
 
-  //TODO to support general patterns implement a pattern matching algorithm
+  //TODO: to support general patterns implement a pattern matching algorithm
+  /**
+    * Tries to find an bijective mapping between from the search pattern into this pattern.
+    *
+    * If exactMatch is true, then two entities can be mapped if they CypherTypes are equal,
+    * e.g. both are CTNode with the same label set. Otherwise a mapping exists if the search entity type is supertype
+    * of the target entity type.
+    *
+    * @param searchPattern the pattern for which to find the mapping
+    * @param exactMatch controls how entities are matched
+    * @return a bijective mapping between the search pattern and the target pattern
+    */
   def findMapping(searchPattern: Pattern, exactMatch: Boolean): Option[Map[Entity, Entity]] = {
     if((exactMatch && searchPattern == this) || (!exactMatch && subTypeOf(searchPattern))) {
       searchPattern -> this match {
@@ -77,7 +110,25 @@ sealed trait Pattern {
     }
   }
 
+  /**
+    * Returns true if the current pattern is a sub type of the other pattern.
+    * A pattern is subtype of another if there is an bijective mapping between this patterns entities
+    * into the other pattern's entities and for every mapping the source entity type is a subtype of the target entity
+    * type.
+    *
+    * @param other reference pattern
+    * @return true if this pattern is subtype of the reference pattern
+    */
   def subTypeOf(other: Pattern): Boolean
+
+  /**
+    * Returns true if the current pattern is a super type of the other pattern.
+    * A pattern is super type of another pattern iff the other pattern is subtype of the first pattern.
+    *
+    * @see [[org.opencypher.okapi.api.graph.Pattern#subTypeOf]]
+    * @param other reference
+    * @return true if this pattern s supertype of the reference pattern
+    */
   def superTypeOf(other: Pattern): Boolean = other.subTypeOf(this)
 }
 
