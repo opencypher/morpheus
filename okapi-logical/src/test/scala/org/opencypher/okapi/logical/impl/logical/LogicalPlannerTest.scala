@@ -51,13 +51,12 @@ class LogicalPlannerTest extends BaseTestSuite with IrConstruction {
   val irFieldG: IRField = IRField("g")(CTNode("Group"))
   val irFieldR: IRField = IRField("r")(CTRelationship)
 
-  val varA = Var("a")(CTNode("Administrator"))
-  val varB = Var("b")(CTNode)
-  val varG = Var("g")(CTNode("Group"))
-  val varR = Var("r")(CTRelationship)
+  val varA: Var = Var("a")(CTNode(Set("Administrator"), Some(testQualifiedGraphName)))
+  val varB: Var = Var("b")(CTNode(Set.empty[String], Some(testQualifiedGraphName)))
+  val varG: Var = Var("g")(CTNode(Set("Group"), Some(testQualifiedGraphName)))
+  val varR: Var = Var("r")(CTRelationship(Set.empty[String], Some(testQualifiedGraphName)))
 
-  val aLabelPredicate = HasLabel(varA, Label("Administrator"))(CTBoolean)
-
+  val aLabelPredicate: HasLabel = HasLabel(varA, Label("Administrator"))(CTBoolean)
 
   val emptySqm: SolvedQueryModel = SolvedQueryModel.empty
 
@@ -168,7 +167,6 @@ class LogicalPlannerTest extends BaseTestSuite with IrConstruction {
         )
       )
     )
-
     result should equalWithoutResult(expected)
   }
 
@@ -248,12 +246,14 @@ class LogicalPlannerTest extends BaseTestSuite with IrConstruction {
 
     val result = plan(ir)
 
+    val varA2: Var = Var("a")(CTNode(Set.empty[String], Some(testQualifiedGraphName)))
+
     val expected = Project(
-      Property(varA, PropertyKey("prop"))(CTNull) -> Some(Var("a.prop")(CTNull)),
+      Property(varA2, PropertyKey("prop"))(CTNull) -> Some(Var("a.prop")(CTNull)),
       Filter(
         Not(Equals(Param("p1")(CTInteger), Param("p2")(CTBoolean))(CTBoolean))(CTBoolean),
         NodeScan(
-          varA,
+          varA2,
           Start(LogicalCatalogGraph(testQualifiedGraphName, Schema.empty), emptySqm),
           SolvedQueryModel(Set(irFieldA), Set())
         ),
@@ -265,7 +265,6 @@ class LogicalPlannerTest extends BaseTestSuite with IrConstruction {
         Set(irFieldA, IRField("a.prop")(CTNull)),
         Set(Not(Equals(Param("p1")(CTInteger), Param("p2")(CTBoolean))(CTBoolean))(CTBoolean)))
     )
-
     result should equalWithoutResult(expected)
   }
 
