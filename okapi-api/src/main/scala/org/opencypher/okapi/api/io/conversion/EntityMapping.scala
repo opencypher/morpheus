@@ -82,16 +82,6 @@ case class EntityMapping(
         )
       case _ => ()
     }
-
-    pattern.entities.foreach { e =>
-      if (!idKeys.contains(e)) {
-        throw IllegalArgumentException(
-          s"idKeys for entity $e",
-          idKeys
-        )
-      }
-    }
-
   }
 }
 
