@@ -28,99 +28,103 @@ package org.opencypher.spark.impl.acceptance
 
 import org.junit.runner.RunWith
 import org.opencypher.okapi.api.value.CypherValue.CypherMap
-import org.opencypher.okapi.testing.Bag
+import org.opencypher.okapi.testing.{Bag, TestNameFixture}
 import org.opencypher.spark.testing.CAPSTestSuite
 import org.scalatest.junit.JUnitRunner
 
 @RunWith(classOf[JUnitRunner])
-class NullTests extends CAPSTestSuite with ScanGraphInit {
+class NullTests extends CAPSTestSuite with ScanGraphInit with TestNameFixture {
 
-  private def returnsNull(call: String) =
-    returnsSingle(call, null)
+  override protected def separator: String = "calling:"
 
-  private def returnsSingle(call: String, exp: Any) =
+  private def returnsNull(call: String = testName) =
+    {println("call: " + call); returnsValue(null, call)}
+
+  private def returnsValue(exp: Any, call: String = testName) =
     caps
       .cypher(s"RETURN $call AS res")
       .records.toMaps
       .shouldEqual(Bag(CypherMap("res" -> exp)))
 
+
   describe("null input produces null") {
-    it("id(null)")(returnsNull("id(null)"))
-    it("prefixId(null)")(returnsNull("prefixId(null)")) // no syntax?
-    it("toId(null)")(returnsNull("toId(null)")) // no syntax?
-    it("labels(null)")(returnsNull("labels(null)")) // no inference
-    it("type(null)")(returnsNull("type(null)")) // no inference
-    it("exists(null)")(returnsNull("exists(null)")) // no inference
-    it("size(null)")(returnsNull("size(null)"))
-    it("keys(null)")(returnsNull("keys(null)"))
-    it("startNodeFunction(null)")(returnsNull("startNodeFunction(null)"))
-    it("endNodeFunction(null)")(returnsNull("endNodeFunction(null)"))
-    it("toFloat(null)")(returnsNull("toFloat(null)"))
-    it("toInteger(null)")(returnsNull("toInteger(null)"))
-    it("toString(null)")(returnsNull("toString(null)"))
-    it("toBoolean(null)")(returnsNull("toBoolean(null)"))
-    it("explode(null)")(returnsNull("explode(null)"))
-    it("trim(null)")(returnsNull("trim(null)"))
-    it("lTrim(null)")(returnsNull("lTrim(null)"))
-    it("rTrim(null)")(returnsNull("rTrim(null)"))
-    it("toUpper(null)")(returnsNull("toUpper(null)"))
-    it("toLower(null)")(returnsNull("toLower(null)"))
-    it("properties(null)")(returnsNull("properties(null)"))
-    it("sqrt(null)")(returnsNull("sqrt(null)"))
-    it("log(null)")(returnsNull("log(null)"))
-    it("log10(null)")(returnsNull("log10(null)"))
-    it("exp(null)")(returnsNull("exp(null)"))
-    it("abs(null)")(returnsNull("abs(null)"))
-    it("ceil(null)")(returnsNull("ceil(null)"))
-    it("floor(null)")(returnsNull("floor(null)"))
-    it("round(null)")(returnsNull("round(null)"))
-    it("sign(null)")(returnsNull("sign(null)"))
-    it("acos(null)")(returnsNull("acos(null)"))
-    it("asin(null)")(returnsNull("asin(null)"))
-    it("atan(null)")(returnsNull("atan(null)"))
-    it("cos(null)")(returnsNull("cos(null)"))
-    it("cot(null)")(returnsNull("cot(null)"))
-    it("degrees(null)")(returnsNull("degrees(null)"))
-    it("haversin(null)")(returnsNull("haversin(null)"))
-    it("radians(null)")(returnsNull("radians(null)"))
-    it("sin(null)")(returnsNull("sin(null)"))
-    it("tan(null)")(returnsNull("tan(null)"))
-    it("null STARTS WITH null")(returnsNull("null STARTS WITH null"))
-    it("null ENDS WITH null")(returnsNull("null ENDS WITH null"))
-    it("null CONTAINS null")(returnsNull("null CONTAINS null"))
-    it("null = null")(returnsNull("null = null"))
-    it("null =~ null")(returnsNull("null =~ null"))
-    it("null < null")(returnsNull("null < null"))
-    it("null <= null")(returnsNull("null <= null"))
-    it("null > null")(returnsNull("null > null"))
-    it("null >= null")(returnsNull("null >= null"))
-    it("null IN null")(returnsNull("null IN null"))
-    it("null & null")(returnsNull("null & null"))
-    it("null | null")(returnsNull("null | null"))
-    it("null << null")(returnsNull("null << null"))
-    it("null >>> null")(returnsNull("null >>> null"))
-    it("NOT null")(returnsNull("NOT null"))
-    it("null:FOO")(returnsNull("null:FOO"))
-    it("type(null) = null")(returnsNull("type(null) = null"))
-    it("null + null")(returnsNull("null + null"))
-    it("null - null")(returnsNull("null - null"))
-    it("null * null")(returnsNull("null * null"))
-    it("null / null")(returnsNull("null / null"))
-    it("null.foo")(returnsNull("null.foo"))
-    it("range(null, null)")(returnsNull("range(null, null)"))
-    it("replace(null, null, null)")(returnsNull("replace(null, null, null)"))
-    it("substring(null, null, null)")(returnsNull("substring(null, null, null)"))
-    it("atan2(null, null)")(returnsNull("atan2(null, null)"))
-    it("avg(null)")(returnsNull("avg(null)"))
-    it("max(null)")(returnsNull("max(null)"))
-    it("min(null)")(returnsNull("min(null)"))
-    it("sum(null)")(returnsNull("sum(null)"))
+    it("calling: id(null)")(returnsNull())
+    it("calling: prefixId(null)")(returnsNull()) // no syntax
+    it("calling: toId(null)")(returnsNull()) // no syntax
+    it("calling: labels(null)")(returnsNull()) // no inference
+    it("calling: type(null)")(returnsNull()) // no inference
+    it("calling: exists(null.b)")(returnsNull())
+    it("calling: size(null)")(returnsNull())
+    it("calling: keys(null)")(returnsNull())
+    it("calling: startNode(null)")(returnsNull())
+    it("calling: endNode(null)")(returnsNull())
+    it("calling: toFloat(null)")(returnsNull())
+    it("calling: toInteger(null)")(returnsNull())
+    it("calling: toString(null)")(returnsNull())
+    it("calling: toBoolean(null)")(returnsNull())
+    it("calling: explode(null)")(returnsNull()) // no syntax
+    it("calling: trim(null)")(returnsNull())
+    it("calling: lTrim(null)")(returnsNull())
+    it("calling: rTrim(null)")(returnsNull())
+    it("calling: toUpper(null)")(returnsNull())
+    it("calling: toLower(null)")(returnsNull())
+    it("calling: properties(null)")(returnsNull())
+    it("calling: sqrt(null)")(returnsNull())
+    it("calling: log(null)")(returnsNull())
+    it("calling: log10(null)")(returnsNull())
+    it("calling: exp(null)")(returnsNull())
+    it("calling: abs(null)")(returnsNull())
+    it("calling: ceil(null)")(returnsNull())
+    it("calling: floor(null)")(returnsNull())
+    it("calling: round(null)")(returnsNull())
+    it("calling: sign(null)")(returnsNull())
+    it("calling: acos(null)")(returnsNull())
+    it("calling: asin(null)")(returnsNull())
+    it("calling: atan(null)")(returnsNull())
+    it("calling: cos(null)")(returnsNull())
+    it("calling: cot(null)")(returnsNull())
+    it("calling: degrees(null)")(returnsNull())
+    it("calling: haversin(null)")(returnsNull())
+    it("calling: radians(null)")(returnsNull())
+    it("calling: sin(null)")(returnsNull())
+    it("calling: tan(null)")(returnsNull())
+    it("calling: null STARTS WITH null")(returnsNull())
+    it("calling: null ENDS WITH null")(returnsNull())
+    it("calling: null CONTAINS null")(returnsNull())
+    it("calling: null = null")(returnsNull())
+    it("calling: null =~ null")(returnsNull())
+    it("calling: null < null")(returnsNull())
+    it("calling: null <= null")(returnsNull())
+    it("calling: null > null")(returnsNull())
+    it("calling: null >= null")(returnsNull())
+    it("calling: null IN null")(returnsNull())
+    it("calling: null & null")(returnsNull()) // no syntax
+    it("calling: null | null")(returnsNull()) // no syntax
+    it("calling: null << null")(returnsNull()) // no syntax
+    it("calling: null >>> null")(returnsNull()) // no syntax
+    it("calling: NOT null")(returnsNull())
+    it("calling: null:FOO")(returnsNull())
+    it("calling: type(null) = null")(returnsNull())
+    it("calling: null + null")(returnsNull())
+    it("calling: null - null")(returnsNull())
+    it("calling: null * null")(returnsNull())
+    it("calling: null / null")(returnsNull(""))
+    it("calling: null.foo")(returnsNull())
+    it("calling: range(null, null)")(returnsNull())
+    it("calling: replace(null, null, null)")(returnsNull())
+    it("calling: substring(null, null, null)")(returnsNull())
+    it("calling: atan2(null, null)")(returnsNull())
+    it("calling: avg(null)")(returnsNull())
+    it("calling: max(null)")(returnsNull())
+    it("calling: min(null)")(returnsNull())
+    it("calling: sum(null)")(returnsNull())
   }
 
   describe("null input produces value") {
-    it("null IS NULL")(returnsSingle("null IS NULL", true))
-    it("null IS NOT NULL")(returnsSingle("null IS NOT NULL", false))
-    it("count(null)")(returnsSingle("count(null)", 0))
-    it("collect(null)")(returnsSingle("collect(null)", List()))
+    it("calling: null IS NULL")(returnsValue(true))
+    it("calling: null IS NOT NULL")(returnsValue(false))
+    it("calling: count(null)")(returnsValue(0))
+    it("calling: collect(null)")(returnsValue(List()))
   }
+
 }
