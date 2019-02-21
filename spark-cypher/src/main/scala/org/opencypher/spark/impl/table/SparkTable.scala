@@ -34,7 +34,7 @@ import org.apache.spark.storage.StorageLevel
 import org.opencypher.okapi.api.types._
 import org.opencypher.okapi.api.value.CypherValue
 import org.opencypher.okapi.api.value.CypherValue.{CypherMap, CypherValue}
-import org.opencypher.okapi.impl.exception.{IllegalArgumentException, NotImplementedException, UnsupportedOperationException}
+import org.opencypher.okapi.impl.exception.{IllegalArgumentException, NotImplementedException}
 import org.opencypher.okapi.impl.util.Measurement.printTiming
 import org.opencypher.okapi.ir.api.expr.{Expr, _}
 import org.opencypher.okapi.relational.api.table.Table
@@ -282,8 +282,6 @@ object SparkTable {
 
     def unpersist(blocking: Boolean): DataFrameTable = df.unpersist(blocking)
 
-    override def columnsFor(returnItem: String): Set[String] =
-      throw UnsupportedOperationException("A DataFrameTable does not have return items")
   }
 
   implicit class DataFrameMeta(val df: DataFrame) extends AnyVal {

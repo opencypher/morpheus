@@ -40,62 +40,56 @@ import org.opencypher.okapi.testing.MatchHelper.equalWithTracing
 import org.opencypher.spark.api.io.{CAPSNodeTable, CAPSRelationshipTable}
 import org.opencypher.spark.api.value.CAPSEntity._
 import org.opencypher.spark.api.value.CAPSNode
+import org.opencypher.spark.impl.CAPSConverters._
 import org.opencypher.spark.testing.CAPSTestSuite
 import org.opencypher.spark.testing.fixture.{GraphConstructionFixture, TeamDataFixture}
 
-import scala.util.Try
-
 class CAPSRecordsTest extends CAPSTestSuite with GraphConstructionFixture with TeamDataFixture {
 
-  describe("columnsFor") {
+  describe("column naming") {
 
-    it("can resolve a primitive return item") {
-      caps.cypher("RETURN 1").records.columnsFor("1") should equal(Set("$  AUTOINT0 __ INTEGER"))
-      caps.cypher("RETURN 1 AS foo").records.columnsFor("foo") should equal(Set("$  AUTOINT0 __ INTEGER"))
-      caps.cypher("RETURN 1 AS foo, 2 AS bar").records.columnsFor("bar") should equal(Set("$  AUTOINT1 __ INTEGER"))
+    it("creates column names for simple expressions") {
+      caps.cypher("RETURN 1").records.asCaps.df.columns should equal(Array("1"))
+      caps.cypher("RETURN '\u0099'").records.asCaps.df.columns should equal(Array("'\u0099'"))
+      caps.cypher("RETURN 1 AS foo").records.asCaps.df.columns should equal(Array("foo"))
+      caps.cypher("RETURN 1 AS foo, 2 AS bar").records.asCaps.df.columns.toSet should equal(Set("foo", "bar"))
+      caps.cypher("RETURN true AND false").records.asCaps.df.columns.toSet should equal(Set("true AND false"))
+      caps.cypher("RETURN true AND false AND false").records.asCaps.df.columns.toSet should equal(Set("true AND false AND false"))
+      caps.cypher("RETURN 'foo' STARTS WITH 'f'").records.asCaps.df.columns.toSet should equal(Set("'foo' STARTS WITH 'f'"))
     }
 
-    it("can resolve a node") {
+    it("creates column names for params") {
+      caps.cypher("RETURN $x", parameters = CypherMap("x" -> 1)).records.asCaps.df.columns should equal(Array("$x"))
+    }
+
+    it("creates column names for node expressions") {
       val given = initGraph("CREATE (:L {val: 'a'})")
       caps.catalog.store("foo", given)
 
       val result = given.cypher("FROM GRAPH foo MATCH (n) RETURN n")
 
-      result.records.columnsFor("n") should equal(
-        Set(
-          s" __ NODE @ session_foo",
-          "_val __ STRING",
-          "_L __ BOOLEAN"
-        )
-      )
+      result.records.asCaps.df.columns.toSet should equal(Set("n", "n:L", "n.val"))
     }
 
-    it("can resolve a relationship") {
+    it("creates column names for relationship expressions") {
       val given = initGraph("CREATE ({val: 'a'})-[:R {prop: 'b'}]->({val: 'c'})")
       caps.catalog.store("foo", given)
 
       val result = given.cypher("FROM GRAPH foo MATCH (n)-[r]->(m) RETURN r")
 
-      result.records.columnsFor("r") should equal(
-        Set(
-          "type() = 'R' __ BOOLEAN",
-          " __ RELATIONSHIP @ session_foo",
-          "source( __ RELATIONSHIP @ session_foo) __ NODE",
-          "target( __ RELATIONSHIP @ session_foo) __ NODE",
-          "_prop __ STRING"
-        )
-      )
+      result.records.asCaps.df.columns.toSet should equal(Set("r", "r:R", "source(r)", "target(r)", "r.prop"))
     }
 
-    it("fails when resolving a non-existing return item") {
-      val expected = "A return item in this table, which contains: [`bar`, `foo`]"
+    it("retains user-specified order of return items") {
+      val given = initGraph("CREATE (:L {val: 'a'})")
+      caps.catalog.store("foo", given)
 
-      Try(caps.cypher("RETURN 1 AS foo, 2 AS bar").records.columnsFor("almostFoo")) match {
-        case scala.util.Success(_) => fail()
-        case scala.util.Failure(exception) => {
-          exception.getMessage should (include(expected) and include("almostFoo"))
-        }
-      }
+      val result = given.cypher("FROM GRAPH foo MATCH (n) RETURN n.val AS bar, n, n.val AS foo")
+
+      val dfColumns = result.records.asCaps.df.columns
+      dfColumns.head should equal("bar")
+      dfColumns.last should equal("foo")
+      dfColumns.toSet should equal(Set("bar", "n", "n:L", "n.val", "foo"))
     }
   }
 
