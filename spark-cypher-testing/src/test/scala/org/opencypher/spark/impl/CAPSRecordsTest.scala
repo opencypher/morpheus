@@ -91,6 +91,18 @@ class CAPSRecordsTest extends CAPSTestSuite with GraphConstructionFixture with T
       dfColumns.last should equal("foo")
       dfColumns.toSet should equal(Set("bar", "n", "n:L", "n.val", "foo"))
     }
+
+    it("can handle ambiguous return items") {
+      val given = initGraph("CREATE (:L {val: 'a'})")
+      caps.catalog.store("foo", given)
+
+      val result = given.cypher("FROM GRAPH foo MATCH (n) RETURN n, n.val")
+
+      val dfColumns = result.records.asCaps.df.columns
+      dfColumns.collect { case col if col == "n.val" => col }.length should equal(2)
+      dfColumns.last should equal("n.val")
+      dfColumns.toSet should equal(Set("n", "n:L", "n.val"))
+    }
   }
 
   it("can wrap a dataframe") {
@@ -123,11 +135,11 @@ class CAPSRecordsTest extends CAPSTestSuite with GraphConstructionFixture with T
 
   it("verify CAPSRecords header") {
     val givenDF = sparkSession.createDataFrame(
-          Seq(
-            (1L, true, "Mats"),
-            (2L, false, "Martin"),
-            (3L, false, "Max"),
-            (4L, false, "Stefan")
+      Seq(
+        (1L, true, "Mats"),
+        (2L, false, "Martin"),
+        (3L, false, "Max"),
+        (4L, false, "Stefan")
       )).toDF("ID", "IS_SWEDE", "NAME")
 
     val givenMapping = NodeMapping.on("ID")
@@ -152,11 +164,11 @@ class CAPSRecordsTest extends CAPSTestSuite with GraphConstructionFixture with T
   it("verify CAPSRecords header for relationship with a fixed type") {
 
     val givenDF = sparkSession.createDataFrame(
-          Seq(
-            (10L, 1L, 2L, "red"),
-            (11L, 2L, 3L, "blue"),
-            (12L, 3L, 4L, "green"),
-            (13L, 4L, 1L, "yellow")
+      Seq(
+        (10L, 1L, 2L, "red"),
+        (11L, 2L, 3L, "blue"),
+        (12L, 3L, 4L, "green"),
+        (13L, 4L, 1L, "yellow")
       )).toDF("ID", "FROM", "TO", "COLOR")
 
     val givenMapping = RelationshipMapping.on("ID")
@@ -183,11 +195,11 @@ class CAPSRecordsTest extends CAPSTestSuite with GraphConstructionFixture with T
 
   it("contract relationships with a dynamic type") {
     val givenDF = sparkSession.createDataFrame(
-          Seq(
-            (10L, 1L, 2L, "RED"),
-            (11L, 2L, 3L, "BLUE"),
-            (12L, 3L, 4L, "GREEN"),
-            (13L, 4L, 1L, "YELLOW")
+      Seq(
+        (10L, 1L, 2L, "RED"),
+        (11L, 2L, 3L, "BLUE"),
+        (12L, 3L, 4L, "GREEN"),
+        (13L, 4L, 1L, "YELLOW")
       )).toDF("ID", "FROM", "TO", "COLOR")
 
     val givenMapping = RelationshipMapping.on("ID")
