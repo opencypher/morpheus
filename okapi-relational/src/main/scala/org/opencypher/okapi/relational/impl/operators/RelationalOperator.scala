@@ -67,7 +67,7 @@ abstract class RelationalOperator[T <: Table[T] : TypeTag] extends AbstractTreeN
 
   def graphName: QualifiedGraphName = children.head.graphName
 
-  def returnItems: Option[Seq[Var]] = children.head.returnItems
+  def maybeReturnItems: Option[Seq[Var]] = children.head.maybeReturnItems
 
   protected def resolve(qualifiedGraphName: QualifiedGraphName)
     (implicit context: RelationalRuntimeContext[T]): RelationalCypherGraph[T] =
@@ -165,7 +165,7 @@ final case class Start[T <: Table[T] : TypeTag](
 
   override lazy val graphName: QualifiedGraphName = qgn
 
-  override lazy val returnItems: Option[Seq[Var]] = None
+  override lazy val maybeReturnItems: Option[Seq[Var]] = None
 
   override def toString: String = {
     val graphArg = qgn.toString
@@ -330,8 +330,28 @@ final case class Select[T <: Table[T] : TypeTag](
     in.table.select(selectExpressions.map(header.column).distinct: _*)
   }
 
-  override lazy val returnItems: Option[Seq[Var]] =
+  override lazy val maybeReturnItems: Option[Seq[Var]] =
     Some(returnExpressions.flatMap(_.owner).collect { case e: Var => e }.distinct)
+}
+
+/**
+  * Renames physical columns to given header expression names.
+  * Ensures that there is a physical column for each return item, i.e. aliases lead to duplicate physical columns.
+  */
+final case class AlignColumnsWithReturnItems[T <: Table[T] : TypeTag](
+  in: RelationalOperator[T]
+) extends RelationalOperator[T] {
+
+  private lazy val logicalColumns = in.maybeReturnItems
+    .getOrElse(Seq.empty)
+    .flatMap(in.header.expressionsFor)
+    .map(expr => expr -> expr.withoutType.toString)
+
+  override lazy val header: RecordHeader = RecordHeader(logicalColumns.toMap)
+
+  override lazy val _table: T = in.table
+    .withColumns(logicalColumns: _*)(in.header, in.context.parameters)
+    .select(logicalColumns.map { case (_, columnName) => columnName }: _*)
 }
 
 final case class Distinct[T <: Table[T] : TypeTag](
@@ -505,7 +525,7 @@ final case class ConstructGraph[T <: Table[T] : TypeTag](
 
   override lazy val _table: T = session.records.unit().table
 
-  override def returnItems: Option[Seq[Var]] = None
+  override def maybeReturnItems: Option[Seq[Var]] = None
 
   override lazy val graph: RelationalCypherGraph[T] = constructedGraph
 

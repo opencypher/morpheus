@@ -69,6 +69,7 @@ trait RelationalCypherRecords[T <: Table[T]] extends CypherRecords {
 
   override def physicalColumns: Seq[String] = table.physicalColumns
 
+  // TODO delete
   override def columnsFor(returnItem: String): Set[String] = {
     val returnExpressions = header.returnItems.filter(_.name == returnItem)
 

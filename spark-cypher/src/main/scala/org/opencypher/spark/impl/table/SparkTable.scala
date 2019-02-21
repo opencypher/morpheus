@@ -68,7 +68,8 @@ object SparkTable {
       if (df.columns.toSeq == cols) {
         df
       } else {
-        df.select(cols.map(df.col): _*)
+        // Spark interprets dots in column names as struct accessors. Hence, we need to escape column names by default.
+        df.select(cols.map(colName => df.col(s"`$colName`")): _*)
       }
     }
 
