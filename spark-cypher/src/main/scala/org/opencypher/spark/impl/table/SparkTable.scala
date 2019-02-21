@@ -64,12 +64,13 @@ object SparkTable {
 
     override def size: Long = df.count()
 
-    override def select(cols: String*): DataFrameTable = {
-      if (df.columns.toSeq == cols) {
+    override def select(col: (String, String), cols: (String, String)*): DataFrameTable = {
+      val columns = col +: cols
+      if (df.columns.toSeq == columns.map { case (_, alias) => alias }) {
         df
       } else {
         // Spark interprets dots in column names as struct accessors. Hence, we need to escape column names by default.
-        df.select(cols.map(colName => df.col(s"`$colName`")): _*)
+        df.select(columns.map{ case (colName, alias) => df.col(s"`$colName`").as(alias) }: _*)
       }
     }
 
@@ -503,7 +504,7 @@ object SparkTable {
     /**
       * Adds a new column `serializedColumn` containing the serialized values of the given input columns.
       *
-      * @param columns    input columns for the serialization function
+      * @param columns          input columns for the serialization function
       * @param serializedColumn column storing the result of the serialization function
       * @return DataFrame with an additional column that contains the serialized ID
       */

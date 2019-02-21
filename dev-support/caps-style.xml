@@ -1,33 +1,15 @@
 <code_scheme name="caps-style" version="173">
-  <option name="CLASS_COUNT_TO_USE_IMPORT_ON_DEMAND" value="99" />
-  <option name="NAMES_COUNT_TO_USE_IMPORT_ON_DEMAND" value="99" />
-  <option name="IMPORT_LAYOUT_TABLE">
-    <value>
-      <package name="" withSubpackages="true" static="false" />
-      <emptyLine />
-      <package name="java" withSubpackages="true" static="false" />
-      <package name="javax" withSubpackages="true" static="false" />
-      <emptyLine />
-      <package name="org.neo4j" withSubpackages="true" static="false" />
-      <package name="com.neotechnology" withSubpackages="true" static="false" />
-      <emptyLine />
-      <package name="" withSubpackages="true" static="true" />
-      <emptyLine />
-      <package name="java" withSubpackages="true" static="false" />
-      <package name="javax" withSubpackages="true" static="false" />
-      <emptyLine />
-      <package name="org.neo4j" withSubpackages="true" static="false" />
-      <package name="com.neotechnology" withSubpackages="true" static="false" />
-    </value>
-  </option>
-  <option name="JD_ALIGN_PARAM_COMMENTS" value="false" />
-  <option name="JD_ALIGN_EXCEPTION_COMMENTS" value="false" />
-  <option name="JD_DO_NOT_WRAP_ONE_LINE_COMMENTS" value="true" />
-  <option name="JD_PRESERVE_LINE_FEEDS" value="true" />
-  <option name="WRAP_COMMENTS" value="true" />
+  <option name="RIGHT_MARGIN" value="160" />
   <MarkdownNavigatorCodeStyleSettings>
     <option name="RIGHT_MARGIN" value="72" />
   </MarkdownNavigatorCodeStyleSettings>
+  <ScalaCodeStyleSettings>
+    <option name="alwaysUsedImports">
+      <array>
+        <option value="org.opencypher.caps.benchmarks.ConfigurationParsing._" />
+      </array>
+    </option>
+  </ScalaCodeStyleSettings>
   <XML>
     <option name="XML_LEGACY_SETTINGS_IMPORTED" value="true" />
   </XML>

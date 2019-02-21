@@ -196,7 +196,7 @@ final case class PrefixGraph[T <: Table[T] : TypeTag](
   * Cache is a marker operator that indicates that its child operator is used multiple times within the query.
   */
 final case class Cache[T <: Table[T] : TypeTag](in: RelationalOperator[T])
-   extends RelationalOperator[T] {
+  extends RelationalOperator[T] {
 
   override lazy val _table: T = in._table.cache()
 
@@ -306,7 +306,7 @@ final case class Filter[T <: Table[T] : TypeTag](
 }
 
 final case class ReturnGraph[T <: Table[T] : TypeTag](in: RelationalOperator[T])
-   extends RelationalOperator[T] {
+  extends RelationalOperator[T] {
 
   override lazy val header: RecordHeader = RecordHeader.empty
 
@@ -343,15 +343,18 @@ final case class AlignColumnsWithReturnItems[T <: Table[T] : TypeTag](
 ) extends RelationalOperator[T] {
 
   private lazy val logicalColumns = in.maybeReturnItems
-    .getOrElse(Seq.empty)
+    .getOrElse(List.empty)
     .flatMap(in.header.expressionsFor)
     .map(expr => expr -> expr.withoutType.toString)
+    .toList
 
   override lazy val header: RecordHeader = RecordHeader(logicalColumns.toMap)
 
-  override lazy val _table: T = in.table
-    .withColumns(logicalColumns: _*)(in.header, in.context.parameters)
-    .select(logicalColumns.map { case (_, columnName) => columnName }: _*)
+  override lazy val _table: T = {
+    val columnsWithAliases = logicalColumns.map { case (expr, col) => in.header.column(expr) -> col }
+    in.table.select(columnsWithAliases.head, columnsWithAliases.tail: _*)
+  }
+
 }
 
 final case class Distinct[T <: Table[T] : TypeTag](
@@ -369,7 +372,7 @@ final case class Aggregate[T <: Table[T] : TypeTag](
   aggregations: Set[(Var, Aggregator)]
 ) extends RelationalOperator[T] {
 
-  override lazy val header: RecordHeader = in.header.select(group).withExprs(aggregations.map(_._1))
+  override lazy val header: RecordHeader = in.header.select(group).withExprs(aggregations.map { case (v, _) => v })
 
   override lazy val _table: T = {
     val preparedAggregations = aggregations.map { case (v, agg) => agg -> (header.column(v) -> v.cypherType) }
