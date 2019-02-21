@@ -29,6 +29,10 @@ package org.opencypher.okapi.api.io.conversion
 import org.opencypher.okapi.api.graph.{Entity, IdKey, Pattern}
 import org.opencypher.okapi.impl.exception.IllegalArgumentException
 
+object EntityMapping {
+  def empty(pattern: Pattern) = EntityMapping(pattern, Map.empty, Map.empty, Map.empty)
+}
+
 // TODO document
 // TODO add builder in Node/RelPattern style
 case class EntityMapping(
