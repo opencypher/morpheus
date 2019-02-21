@@ -26,8 +26,8 @@
  */
 package org.opencypher.okapi.logical.impl
 
-import org.opencypher.okapi.api.graph.{NodeRelPattern, Pattern, TripletPattern}
-import org.opencypher.okapi.api.types.{CTBoolean, CTNode}
+import org.opencypher.okapi.api.graph.{NodeRelPattern, Pattern, QualifiedGraphName, TripletPattern}
+import org.opencypher.okapi.api.types.{CTBoolean, CTNode, CTRelationship}
 import org.opencypher.okapi.ir.api.IRField
 import org.opencypher.okapi.ir.api.expr._
 import org.opencypher.okapi.ir.api.util.DirectCompilationStage
@@ -41,7 +41,7 @@ object LogicalOptimizer extends DirectCompilationStage[LogicalOperator, LogicalO
     val optimizationRules = Seq(
       discardScansForNonexistentLabels,
       replaceCartesianWithValueJoin,
-      replaceScansWithRecognizePatterns
+      replaceScansWithRecognizedPatterns
     )
       optimizationRules.foldLeft(input) {
       // TODO: Evaluate if multiple rewriters could be fused
@@ -63,11 +63,11 @@ object LogicalOptimizer extends DirectCompilationStage[LogicalOperator, LogicalO
       if (rewritten) newChild else filter
   }
 
-  def replaceScansWithRecognizePatterns(implicit context: LogicalPlannerContext): PartialFunction[LogicalOperator, LogicalOperator] = {
+  def replaceScansWithRecognizedPatterns(implicit context: LogicalPlannerContext): PartialFunction[LogicalOperator, LogicalOperator] = {
     case exp: Expand =>
-      exp.source.cypherType.graph.flatMap { g =>
+      exp.source.cypherType.graph.map { g =>
 
-        val availablePatterns =
+        val availablePatterns: Set[Pattern] =
           Try {
             context.resolveGraph(g)
           }.map { g =>
@@ -78,27 +78,36 @@ object LogicalOptimizer extends DirectCompilationStage[LogicalOperator, LogicalO
               }.toList
               .sorted(Pattern.PatternOrdering)
               .reverse
-          }.getOrElse(Set.empty)
+          }.getOrElse(Set.empty).toSet
 
-        availablePatterns.collectFirst {
-          case pattern@TripletPattern(source, rel, target) if
-            source.withGraph(g) == exp.source.cypherType && rel.withGraph(g) == exp.rel.cypherType && target.withGraph(g) == exp.target.cypherType =>
+        if ( canReplaceWithTripletPattern(exp, availablePatterns, g, context) ) {
+          val sourceType = exp.source.cypherType.asInstanceOf[CTNode]
+          val relType = exp.rel.cypherType.asInstanceOf[CTRelationship]
+          val targetType = exp.target.cypherType.asInstanceOf[CTNode]
 
-            val withPatternScan = replaceScans(exp.rhs, exp.target, pattern) { parent =>
-              val map = Map(exp.source -> pattern.sourceEntity, exp.rel -> pattern.relEntity, exp.target -> pattern.targetEntity)
-              PatternScan(pattern, map, parent, parent.solved.withFields(map.keySet.map(_.toField.get).toList:_ *))
-            }
+          val pattern = TripletPattern(sourceType, relType, targetType)
 
-            replaceScans(exp.lhs, exp.source, pattern){_ => withPatternScan}
+          val withPatternScan = replaceScans(exp.rhs, exp.target, pattern) { parent =>
+            val map = Map(exp.source -> pattern.sourceEntity, exp.rel -> pattern.relEntity, exp.target -> pattern.targetEntity)
+            PatternScan(pattern, map, parent, parent.solved.withFields(map.keySet.map(_.toField.get).toList:_ *))
+          }
+          replaceScans(exp.lhs, exp.source, pattern){_ => withPatternScan}
 
-          case pattern@NodeRelPattern(node, rel) if node.withGraph(g) == exp.source.cypherType && rel.withGraph(g) == exp.rel.cypherType =>
-            val withPatternScan = replaceScans(exp.lhs, exp.source, pattern) { parent =>
-              val map = Map(exp.source -> pattern.nodeEntity, exp.rel -> pattern.relEntity)
-              PatternScan(pattern, map, parent, parent.solved.withFields(map.keySet.map(_.toField.get).toList:_ *))
-            }
+        } else if ( canReplaceWithNodeRelPattern(exp, availablePatterns, g, context) ){
+          val nodeType = exp.source.cypherType.asInstanceOf[CTNode]
+          val relType = exp.rel.cypherType.asInstanceOf[CTRelationship]
 
-            val joinExpr = Equals(EndNode(exp.rel)(CTNode), exp.target)(CTBoolean)
-            ValueJoin(withPatternScan, exp.rhs, Set(joinExpr), exp.solved)
+          val pattern = NodeRelPattern(nodeType, relType)
+          val withPatternScan = replaceScans(exp.lhs, exp.source, pattern) { parent =>
+            val map = Map(exp.source -> pattern.nodeEntity, exp.rel -> pattern.relEntity)
+            PatternScan(pattern, map, parent, parent.solved.withFields(map.keySet.map(_.toField.get).toList:_ *))
+          }
+
+          val joinExpr = Equals(EndNode(exp.rel)(CTNode), exp.target)(CTBoolean)
+          ValueJoin(withPatternScan, exp.rhs, Set(joinExpr), exp.solved)
+
+        } else {
+          exp
         }
       }.getOrElse(exp)
   }
@@ -155,6 +164,61 @@ object LogicalOptimizer extends DirectCompilationStage[LogicalOperator, LogicalO
       } else {
         scan
       }
+  }
+
+  private def canReplaceWithTripletPattern(
+    exp: Expand,
+    availablePatterns: Set[Pattern],
+    g: QualifiedGraphName,
+    context: LogicalPlannerContext
+  ): Boolean = {
+    val sourceLabels = exp.source.cypherType.asInstanceOf[CTNode].labels
+    val sourceCombos = context.resolveSchema(g).combinationsFor(sourceLabels)
+
+    val relTypes = exp.rel.cypherType.asInstanceOf[CTRelationship].types
+
+    val targetLabels = exp.target.cypherType.asInstanceOf[CTNode].labels
+    val targetCombos = context.resolveSchema(g).combinationsFor(targetLabels)
+
+    val combos = for {
+      sourceCombo <- sourceCombos
+      relType <- relTypes
+      targetCombo <- targetCombos
+    } yield (sourceCombo, relType, targetCombo)
+
+    combos.forall {
+      case(sourceCombo, relType, targetCombo) =>
+        availablePatterns.exists {
+          case TripletPattern(CTNode(source, _), CTRelationship(rel, _), CTNode(target, _)) =>
+            source == sourceCombo && rel.contains(relType) && target == targetCombo
+          case _ => false
+        }
+    }
+  }
+
+  private def canReplaceWithNodeRelPattern(
+    exp: Expand,
+    availablePatterns: Set[Pattern],
+    g: QualifiedGraphName,
+    context: LogicalPlannerContext
+  ): Boolean = {
+    val sourceLabels = exp.source.cypherType.asInstanceOf[CTNode].labels
+    val sourceCombos = context.resolveSchema(g).combinationsFor(sourceLabels)
+
+    val relTypes = exp.rel.cypherType.asInstanceOf[CTRelationship].types
+
+    val combos = for {
+      sourceCombo <- sourceCombos
+      relType <- relTypes
+    } yield (sourceCombo, relType)
+
+    combos.forall {
+      case(sourceCombo, relType) =>
+        availablePatterns.exists {
+          case NodeRelPattern(CTNode(labels, _), CTRelationship(rel, _)) => labels == sourceCombo && rel.contains(relType)
+          case _ => false
+        }
+    }
   }
 
 }

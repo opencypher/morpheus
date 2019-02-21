@@ -40,4 +40,5 @@ final case class LogicalPlannerContext(
 ) {
 
   def resolveGraph(qgn: QualifiedGraphName): PropertyGraph = queryLocalCatalog.graph(qgn)
+  def resolveSchema(qgn: QualifiedGraphName): Schema = queryLocalCatalog.schema(qgn)
 }
