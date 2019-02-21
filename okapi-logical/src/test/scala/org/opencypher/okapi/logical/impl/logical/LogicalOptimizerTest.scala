@@ -61,31 +61,6 @@ class LogicalOptimizerTest extends BaseTestSuite with IrConstruction with TreeVe
   //    (CTNode: CTNode) -> "CTNode"
   //  )
 
-  it("pushes label filter into scan") {
-    val animalSchema = emptySchema.withNodePropertyKeys("Animal")()
-    val animalGraph = LogicalCatalogGraph(testQualifiedGraphName, animalSchema)
-    val query =
-      """|MATCH (a:Animal)
-         |RETURN a""".stripMargin
-    val plan = logicalPlan(query, TestGraph(animalSchema))
-    val optimizedLogicalPlan = LogicalOptimizer(plan)(plannerContext(TestGraph(animalSchema)))
-
-    val expected = Select(
-      List(Var("a")(CTNode(Set("Animal")))),
-      NodeScan(
-        Var("a")(CTNode(Set("Animal"))),
-        Start(
-          animalGraph,
-          emptySqm
-        ),
-        SolvedQueryModel(Set(IRField("a")(CTNode(Set("Animal")))), Set(HasLabel(Var("a")(CTNode(Set("Animal"))), Label("Animal"))(CTBoolean)))
-      ),
-      SolvedQueryModel(Set(IRField("a")(CTNode)), Set(HasLabel(Var("a")(CTNode), Label("Animal"))(CTBoolean)))
-    )
-
-    optimizedLogicalPlan should equalWithTracing(expected)
-  }
-
   it("rewrites missing label scan to empty records") {
     val query =
       """|MATCH (a:Animal)
@@ -239,7 +214,7 @@ class LogicalOptimizerTest extends BaseTestSuite with IrConstruction with TreeVe
       val optimizedPlan = LogicalOptimizer(plan)(plannerContext(graph))
 
       optimizedPlan.occourences[ValueJoin] should be(1)
-      optimizedPlan.occourences[PatternScan] should be(1)
+      optimizedPlan.occourences[PatternScan] should be(2)
 
       optimizedPlan.exists {
         case _: Expand => true
@@ -266,7 +241,7 @@ class LogicalOptimizerTest extends BaseTestSuite with IrConstruction with TreeVe
       val optimizedPlan = LogicalOptimizer(plan)(plannerContext(graph))
 
       optimizedPlan.occourences[ValueJoin] should be(3)
-      optimizedPlan.occourences[PatternScan] should be(2)
+      optimizedPlan.occourences[PatternScan] should be(4)
       optimizedPlan.exists {
         case _: Expand => true
         case _ => false
@@ -371,7 +346,12 @@ class LogicalOptimizerTest extends BaseTestSuite with IrConstruction with TreeVe
       )
 
       val optimizedPlan = LogicalOptimizer(plan)(plannerContext(graph))
-      optimizedPlan.occourences[PatternScan] should be(0)
+      optimizedPlan.occourences[PatternScan] should be(2)
+
+      optimizedPlan.exists {
+        case PatternScan(_: NodeRelPattern, _, _, _) => true
+        case _ => false
+      } should be(false)
     }
 
     it("does not insert node rel patterns if not all rel types are covered") {
@@ -389,7 +369,8 @@ class LogicalOptimizerTest extends BaseTestSuite with IrConstruction with TreeVe
       )
 
       val optimizedPlan = LogicalOptimizer(plan)(plannerContext(graph))
-      optimizedPlan.occourences[PatternScan] should be(0)
+      optimizedPlan.occourences[PatternScan] should be(2)
+      optimizedPlan.occourences[ValueJoin] should be(0)
     }
 
     it("does not insert triplet patterns if not all node label combos are covered") {
@@ -407,7 +388,12 @@ class LogicalOptimizerTest extends BaseTestSuite with IrConstruction with TreeVe
       )
 
       val optimizedPlan = LogicalOptimizer(plan)(plannerContext(graph))
-      optimizedPlan.occourences[PatternScan] should be(0)
+      optimizedPlan.occourences[PatternScan] should be(2)
+
+      optimizedPlan.exists {
+        case PatternScan(_: TripletPattern, _, _, _) => true
+        case _ => false
+      } should be(false)
     }
 
     it("does not insert triplet patterns if not all rel types are covered") {
@@ -425,7 +411,12 @@ class LogicalOptimizerTest extends BaseTestSuite with IrConstruction with TreeVe
       )
 
       val optimizedPlan = LogicalOptimizer(plan)(plannerContext(graph))
-      optimizedPlan.occourences[PatternScan] should be(0)
+      optimizedPlan.occourences[PatternScan] should be(2)
+
+      optimizedPlan.exists {
+        case PatternScan(_: TripletPattern, _, _, _) => true
+        case _ => false
+      } should be(false)
     }
   }
 
