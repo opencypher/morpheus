@@ -28,7 +28,8 @@ package org.opencypher.okapi.logical.impl
 
 import org.opencypher.okapi.api.graph.{Entity, NodePattern, Pattern, QualifiedGraphName}
 import org.opencypher.okapi.api.schema.Schema
-import org.opencypher.okapi.api.types.{CTNode, CTRelationship}
+import org.opencypher.okapi.api.types.CTRelationship
+import org.opencypher.okapi.impl.types.CypherTypeUtils._
 import org.opencypher.okapi.ir.api.Label
 import org.opencypher.okapi.ir.api.block.SortItem
 import org.opencypher.okapi.ir.api.expr._
@@ -127,7 +128,7 @@ sealed abstract class LogicalLeafOperator extends LogicalOperator
 
 object NodeScan {
   def apply(node: Var, in: LogicalOperator, solved: SolvedQueryModel): PatternScan = {
-    val pattern = NodePattern(node.cypherType.asInstanceOf[CTNode])
+    val pattern = NodePattern(node.cypherType.toCTNode)
     PatternScan(pattern, Map(node -> pattern.nodeEntity), in, solved)
   }
 }

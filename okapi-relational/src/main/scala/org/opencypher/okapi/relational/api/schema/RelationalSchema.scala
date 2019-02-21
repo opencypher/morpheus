@@ -29,6 +29,7 @@ package org.opencypher.okapi.relational.api.schema
 import org.opencypher.okapi.api.schema.Schema
 import org.opencypher.okapi.api.types.{CTBoolean, CTNode, CTRelationship}
 import org.opencypher.okapi.impl.exception.IllegalArgumentException
+import org.opencypher.okapi.impl.types.CypherTypeUtils._
 import org.opencypher.okapi.ir.api.expr._
 import org.opencypher.okapi.ir.api.{Label, PropertyKey, RelType}
 import org.opencypher.okapi.relational.impl.table.RecordHeader
@@ -46,10 +47,7 @@ object RelationalSchema {
     }
 
     def headerForNode(node: Var, exactLabelMatch: Boolean = false): RecordHeader = {
-      val labels: Set[String] = node.cypherType match {
-        case CTNode(l, _) => l
-        case other => throw IllegalArgumentException(CTNode, other)
-      }
+      val labels: Set[String] = node.cypherType.toCTNode.labels
       headerForNode(node, labels, exactLabelMatch)
     }
 

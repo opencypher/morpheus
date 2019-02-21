@@ -30,6 +30,7 @@ import org.opencypher.okapi.api.graph.{Outgoing => _, _}
 import org.opencypher.okapi.api.io.conversion.{NodeMappingBuilder, RelationshipMappingBuilder}
 import org.opencypher.okapi.api.types.{CTBoolean, CTNode, CTRelationship}
 import org.opencypher.okapi.impl.exception.{NotImplementedException, SchemaException, UnsupportedOperationException}
+import org.opencypher.okapi.impl.types.CypherTypeUtils._
 import org.opencypher.okapi.ir.api.block.SortItem
 import org.opencypher.okapi.ir.api.expr.PrefixId.GraphIdPrefix
 import org.opencypher.okapi.ir.api.expr._
@@ -126,7 +127,7 @@ object RelationalPlanner {
         val first = process[T](sourceOp)
         val third = process[T](targetOp)
 
-        val relPattern = RelationshipPattern(rel.cypherType.asInstanceOf[CTRelationship])
+        val relPattern = RelationshipPattern(rel.cypherType.toCTRelationship)
         val second = planScan(
           None,
           sourceOp.graph,
@@ -162,7 +163,7 @@ object RelationalPlanner {
       case logical.ExpandInto(source, rel, target, direction, sourceOp, _) =>
         val in = process[T](sourceOp)
 
-        val relPattern = RelationshipPattern(rel.cypherType.asInstanceOf[CTRelationship])
+        val relPattern = RelationshipPattern(rel.cypherType.toCTRelationship)
         val relationships = planScan(
           None,
           sourceOp.graph,

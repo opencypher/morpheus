@@ -28,6 +28,7 @@ package org.opencypher.okapi.logical.impl
 
 import org.opencypher.okapi.api.graph._
 import org.opencypher.okapi.api.types.{CTBoolean, CTNode, CTRelationship}
+import org.opencypher.okapi.impl.types.CypherTypeUtils._
 import org.opencypher.okapi.ir.api.IRField
 import org.opencypher.okapi.ir.api.expr._
 import org.opencypher.okapi.ir.api.util.DirectCompilationStage
@@ -81,9 +82,9 @@ object LogicalOptimizer extends DirectCompilationStage[LogicalOperator, LogicalO
           }.getOrElse(Set.empty).toSet
 
         if ( canReplaceWithTripletPattern(exp, availablePatterns, g, context) ) {
-          val sourceType = exp.source.cypherType.asInstanceOf[CTNode]
-          val relType = exp.rel.cypherType.asInstanceOf[CTRelationship]
-          val targetType = exp.target.cypherType.asInstanceOf[CTNode]
+          val sourceType = exp.source.cypherType.toCTNode
+          val relType = exp.rel.cypherType.toCTRelationship
+          val targetType = exp.target.cypherType.toCTNode
 
           val pattern = TripletPattern(sourceType, relType, targetType)
 
@@ -94,8 +95,8 @@ object LogicalOptimizer extends DirectCompilationStage[LogicalOperator, LogicalO
           replaceScans(exp.lhs, exp.source, pattern){_ => withPatternScan}
 
         } else if ( canReplaceWithNodeRelPattern(exp, availablePatterns, g, context) ){
-          val nodeType = exp.source.cypherType.asInstanceOf[CTNode]
-          val relType = exp.rel.cypherType.asInstanceOf[CTRelationship]
+          val nodeType = exp.source.cypherType.toCTNode
+          val relType = exp.rel.cypherType.toCTRelationship
 
           val pattern = NodeRelPattern(nodeType, relType)
           val withPatternScan = replaceScans(exp.lhs, exp.source, pattern) { parent =>
@@ -173,12 +174,12 @@ object LogicalOptimizer extends DirectCompilationStage[LogicalOperator, LogicalO
     g: QualifiedGraphName,
     context: LogicalPlannerContext
   ): Boolean = {
-    val sourceLabels = exp.source.cypherType.asInstanceOf[CTNode].labels
+    val sourceLabels = exp.source.cypherType.toCTNode.labels
     val sourceCombos = context.resolveSchema(g).combinationsFor(sourceLabels)
 
-    val relTypes = exp.rel.cypherType.asInstanceOf[CTRelationship].types
+    val relTypes = exp.rel.cypherType.toCTRelationship.types
 
-    val targetLabels = exp.target.cypherType.asInstanceOf[CTNode].labels
+    val targetLabels = exp.target.cypherType.toCTNode.labels
     val targetCombos = context.resolveSchema(g).combinationsFor(targetLabels)
 
     val combos = for {
@@ -203,10 +204,10 @@ object LogicalOptimizer extends DirectCompilationStage[LogicalOperator, LogicalO
     g: QualifiedGraphName,
     context: LogicalPlannerContext
   ): Boolean = {
-    val sourceLabels = exp.source.cypherType.asInstanceOf[CTNode].labels
+    val sourceLabels = exp.source.cypherType.toCTNode.labels
     val sourceCombos = context.resolveSchema(g).combinationsFor(sourceLabels)
 
-    val relTypes = exp.rel.cypherType.asInstanceOf[CTRelationship].types
+    val relTypes = exp.rel.cypherType.toCTRelationship.types
 
     val combos = for {
       sourceCombo <- sourceCombos

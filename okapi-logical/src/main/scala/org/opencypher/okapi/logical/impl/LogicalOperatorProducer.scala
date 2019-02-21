@@ -28,6 +28,7 @@ package org.opencypher.okapi.logical.impl
 
 import org.opencypher.okapi.api.graph.NodePattern
 import org.opencypher.okapi.api.types.{CTBoolean, CTNode, CTRelationship}
+import org.opencypher.okapi.impl.types.CypherTypeUtils._
 import org.opencypher.okapi.ir.api.block.{Aggregations, SortItem}
 import org.opencypher.okapi.ir.api.expr._
 import org.opencypher.okapi.ir.api.{IRField, Label}
@@ -85,7 +86,7 @@ class LogicalOperatorProducer {
   def planNodeScan(node: IRField, prev: LogicalOperator): PatternScan = {
     val solvedWithField = prev.solved.withField(node)
 
-    val nodeType = node.cypherType.asInstanceOf[CTNode]
+    val nodeType = node.cypherType.toCTNode
 
     val solvedWithPredicates = node.cypherType match {
       case CTNode(labels, _) => solvedWithField.withPredicates(labels.map(l => HasLabel(node, Label(l))(CTBoolean)).toSeq:_*)
