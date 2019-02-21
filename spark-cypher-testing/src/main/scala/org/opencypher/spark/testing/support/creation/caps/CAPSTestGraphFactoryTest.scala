@@ -33,6 +33,7 @@ import org.opencypher.okapi.api.graph.{NodeRelPattern, TripletPattern}
 import org.opencypher.okapi.api.io.conversion.{NodeMappingBuilder, RelationshipMappingBuilder}
 import org.opencypher.okapi.api.schema.Schema
 import org.opencypher.okapi.api.types._
+import org.opencypher.okapi.api.value.CypherValue.CypherMap
 import org.opencypher.okapi.ir.api.expr._
 import org.opencypher.okapi.ir.api.{Label, PropertyKey, RelType}
 import org.opencypher.okapi.ir.impl.util.VarConverters._
@@ -112,6 +113,36 @@ abstract class CAPSTestGraphFactoryTest extends CAPSTestSuite with GraphMatching
     val propertyGraph = CreateGraphFactory(createQuery)
     val g = factory(propertyGraph).asCaps
     g shouldMatch caps.graphs.create(personAstronautTable, personMartianTable, languageTable, knowsScan)
+  }
+
+  it("can create graphs containing list properties") {
+    val propertyGraph = CreateGraphFactory(
+      """
+        |CREATE ( {l: [1,2,3]} )
+      """.stripMargin)
+
+    val g = factory(propertyGraph).asCaps
+
+    g.cypher("MATCH (n) RETURN n.l as list").records.toMapsWithCollectedEntities should equal(Bag(
+      CypherMap("list" -> List(1,2,3))
+    ))
+  }
+
+  it("can handle nodes with the same label but different properties") {
+    val propertyGraph = CreateGraphFactory(
+      """
+        |CREATE ( { } )
+        |CREATE ( {val1: 1} )
+        |CREATE ( {val1: 1, val2: "foo"} )
+      """.stripMargin)
+
+    val g = factory(propertyGraph).asCaps
+
+    g.cypher("MATCH (n) RETURN n.val1, n.val2").records.toMapsWithCollectedEntities should equal(Bag(
+      CypherMap("n.val1" -> 1,    "n.val2" -> "foo"),
+      CypherMap("n.val1" -> 1,    "n.val2" -> null),
+      CypherMap("n.val1" -> null, "n.val2" -> null)
+    ))
   }
 
   it("extracts additional patterns"){

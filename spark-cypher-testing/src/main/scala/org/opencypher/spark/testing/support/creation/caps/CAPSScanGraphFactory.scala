@@ -133,8 +133,8 @@ object CAPSScanGraphFactory extends CAPSTestGraphFactory with EntityTableCreatio
             val nodeData = embeddings.map { embedding =>
               val node = embedding(entity).asInstanceOf[InMemoryTestNode]
 
-              Seq(node.id) ++
-                propertyKeys.keySet.map(p => toSparkValue(node.properties(p))).toSeq
+              val propertyValues = propertyKeys.keySet.toSeq.map(p => node.properties.get(p).map(toSparkValue).orNull)
+              Seq(node.id) ++ propertyValues
             }
 
             val newData = accData.zip(nodeData).map { case (l, r) => l ++ r }
@@ -149,8 +149,8 @@ object CAPSScanGraphFactory extends CAPSTestGraphFactory with EntityTableCreatio
 
             val relData = embeddings.map { embedding =>
               val rel = embedding(entity).asInstanceOf[InMemoryTestRelationship]
-              Seq(rel.id, rel.startId, rel.endId) ++
-                propertyKeys.keySet.map(p => toSparkValue(rel.properties(p))).toSeq
+              val propertyValues = propertyKeys.keySet.toSeq.map(p => rel.properties.get(p).map(toSparkValue).orNull)
+              Seq(rel.id, rel.startId, rel.endId) ++ propertyValues
             }
 
             val newData = accData.zip(relData).map { case (l, r) => l ++ r }
@@ -182,11 +182,12 @@ object CAPSScanGraphFactory extends CAPSTestGraphFactory with EntityTableCreatio
     }
   }
 
-  private def toSparkValue(v: CypherValue)= {
+  private def toSparkValue(v: CypherValue): Any = {
     v.getValue match {
       case Some(date: LocalDate) => java.sql.Date.valueOf(date)
       case Some(localDateTime: LocalDateTime) => java.sql.Timestamp.valueOf(localDateTime)
       case Some(dur: Duration) => dur.toCalendarInterval
+      case Some(l: List[_]) => l.collect { case c: CypherValue => toSparkValue(c) }
       case Some(other) => other
       case None => null
     }

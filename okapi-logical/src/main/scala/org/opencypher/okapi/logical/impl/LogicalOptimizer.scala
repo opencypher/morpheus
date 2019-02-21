@@ -194,7 +194,7 @@ object LogicalOptimizer extends DirectCompilationStage[LogicalOperator, LogicalO
             source == sourceCombo && rel.contains(relType) && target == targetCombo
           case _ => false
         }
-    }
+    } && combos.nonEmpty
   }
 
   private def canReplaceWithNodeRelPattern(
@@ -219,7 +219,7 @@ object LogicalOptimizer extends DirectCompilationStage[LogicalOperator, LogicalO
           case NodeRelPattern(CTNode(labels, _), CTRelationship(rel, _)) => labels == sourceCombo && rel.contains(relType)
           case _ => false
         }
-    }
+    } && combos.nonEmpty
   }
 
 }

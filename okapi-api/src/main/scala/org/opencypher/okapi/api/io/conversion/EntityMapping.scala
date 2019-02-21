@@ -65,6 +65,7 @@ case class EntityMapping(
           s"A single implied type for entity $e",
           types
         )
+      case _ => ()
     }
 
   }
