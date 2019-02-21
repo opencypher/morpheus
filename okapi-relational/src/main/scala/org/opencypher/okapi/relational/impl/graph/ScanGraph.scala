@@ -26,8 +26,9 @@
  */
 package org.opencypher.okapi.relational.impl.graph
 
-import org.opencypher.okapi.api.graph.{Entity, Pattern}
+import org.opencypher.okapi.api.graph.{Entity, NodePattern, Pattern, RelationshipPattern}
 import org.opencypher.okapi.api.schema.Schema
+import org.opencypher.okapi.impl.exception.IllegalArgumentException
 import org.opencypher.okapi.ir.impl.util.VarConverters._
 import org.opencypher.okapi.relational.api.graph.{RelationalCypherGraph, RelationalCypherSession}
 import org.opencypher.okapi.relational.api.io.EntityTable
@@ -42,6 +43,8 @@ import scala.reflect.runtime.universe.TypeTag
 class ScanGraph[T <: Table[T] : TypeTag](val scans: Seq[EntityTable[T]], val schema: Schema)
   (implicit val session: RelationalCypherSession[T])
   extends RelationalCypherGraph[T] {
+
+  validate()
 
   override type Records = RelationalCypherRecords[T]
 
@@ -101,11 +104,41 @@ class ScanGraph[T <: Table[T] : TypeTag](val scans: Seq[EntityTable[T]], val sch
     }
   }
 
-  override def patterns: Set[Pattern] = scans.map { scan =>
+  override lazy val patterns: Set[Pattern] = scans.map { scan =>
     scan.mapping.pattern
   }.toSet
 
   override def toString = s"ScanGraph(${
     scans.map(_.mapping.pattern).mkString(", ")
   })"
+
+  def validate(): Unit = {
+    schema.labelCombinations.combos.foreach { combo =>
+      val hasScan = patterns.exists {
+        case NodePattern(nodeType) => nodeType.labels == combo
+        case _ => false
+      }
+
+      if(!hasScan) {
+        throw IllegalArgumentException(
+          s"a scan with NodePattern for label combination $combo",
+          patterns
+        )
+      }
+    }
+
+    schema.relationshipTypes.foreach { relType =>
+      val hasScan = patterns.exists {
+        case RelationshipPattern(relTypes) => relTypes.types.head == relType
+        case _ => false
+      }
+
+      if(!hasScan) {
+        throw IllegalArgumentException(
+          s"a scan with a RelationshipPattern for relationship type $relType",
+          patterns
+        )
+      }
+    }
+  }
 }

@@ -41,9 +41,10 @@ import org.opencypher.spark.api.io.CAPSEntityTable
 import org.opencypher.spark.api.value.CAPSEntity._
 import org.opencypher.spark.api.value.CAPSRelationship
 import org.opencypher.spark.impl.CAPSConverters._
+import org.opencypher.spark.testing.support.EntityTableCreationSupport
 import org.opencypher.spark.testing.support.creation.caps.{CAPSScanGraphFactory, CAPSTestGraphFactory}
 
-class ScanGraphTest extends CAPSGraphTest {
+class ScanGraphTest extends CAPSGraphTest with EntityTableCreationSupport {
 
   override def capsGraphFactory: CAPSTestGraphFactory = CAPSScanGraphFactory
 
@@ -419,26 +420,16 @@ class ScanGraphTest extends CAPSGraphTest {
     verify(nodes, cols, data)
   }
 
-  describe("scanning patterns") {
+  describe("scanning complex patterns") {
     it("can scan for NodeRelPattern") {
       val pattern = NodeRelPattern(CTNode("Person"), CTRelationship("KNOWS"))
 
-      val mapping = EntityMapping(
-        pattern,
-        personMapping.properties ++ knowsMapping.properties,
-        personMapping.idKeys.updated(
-          pattern.relEntity, Map(SourceIdKey -> "RELID", SourceStartNodeKey -> "SRC", SourceEndNodeKey -> "DST")
-        ),
-        personMapping.impliedTypes ++ knowsMapping.impliedTypes
-      )
-
-      val joinedDf = personDF.join(
-        knowsDF.withColumnRenamed("ID", "RELID"),
-        personDF.col("ID") === knowsDF.col("SRC")
-      )
-
-      val patternTable = CAPSEntityTable.create(mapping, joinedDf)
-      val graph = caps.graphs.create(patternTable, personTable)
+      val graph = initGraph(
+        """
+          |CREATE (a:Person {name: "Alice"})
+          |CREATE (b:Person {name: "Bob"})
+          |CREATE (a)-[:KNOWS {since: 2017}]->(b)
+        """.stripMargin, Seq(pattern))
 
       val scan = graph.scanOperator(pattern)
       val renamedScan = scan.assignScanName(
@@ -452,7 +443,6 @@ class ScanGraphTest extends CAPSGraphTest {
       val cols = Seq(
         n,
         nHasLabelPerson,
-        nHasPropertyLuckyNumber,
         nHasPropertyName,
         rStart,
         r,
@@ -462,12 +452,7 @@ class ScanGraphTest extends CAPSGraphTest {
       )
 
       val data = Bag(
-        Row(1L.encodeAsCAPSId.toList, true, 23L, "Mats"  , 1L.encodeAsCAPSId.toList, 1L.encodeAsCAPSId.toList, true, 2L.encodeAsCAPSId.toList, 2017L),
-        Row(1L.encodeAsCAPSId.toList, true, 23L, "Mats"  , 1L.encodeAsCAPSId.toList, 2L.encodeAsCAPSId.toList, true, 3L.encodeAsCAPSId.toList, 2016L),
-        Row(1L.encodeAsCAPSId.toList, true, 23L, "Mats"  , 1L.encodeAsCAPSId.toList, 3L.encodeAsCAPSId.toList, true, 4L.encodeAsCAPSId.toList, 2015L),
-        Row(2L.encodeAsCAPSId.toList, true, 42L, "Martin", 2L.encodeAsCAPSId.toList, 4L.encodeAsCAPSId.toList, true, 3L.encodeAsCAPSId.toList, 2016L),
-        Row(2L.encodeAsCAPSId.toList, true, 42L, "Martin", 2L.encodeAsCAPSId.toList, 5L.encodeAsCAPSId.toList, true, 4L.encodeAsCAPSId.toList, 2013L),
-        Row(3L.encodeAsCAPSId.toList, true, 1337L, "Max" , 3L.encodeAsCAPSId.toList, 6L.encodeAsCAPSId.toList, true, 4L.encodeAsCAPSId.toList, 2016L)
+        Row(0L.encodeAsCAPSId.toList, true, "Alice", 0L.encodeAsCAPSId.toList, 2L.encodeAsCAPSId.toList, true, 1L.encodeAsCAPSId.toList, 2017L)
       )
 
       verify(result, cols, data)
@@ -476,46 +461,15 @@ class ScanGraphTest extends CAPSGraphTest {
     it("can scan for TripletPatterns") {
       val pattern = TripletPattern(CTNode("Person"), CTRelationship("KNOWS"), CTNode("Person"))
 
-      val propertyMapping = Map(
-        pattern.sourceEntity -> Map("name" -> "sourceName"),
-        pattern.relEntity -> Map("since" -> "relSince"),
-        pattern.targetEntity -> Map("name" -> "targetName")
-      )
-
-      val idMapping: Map[Entity, Map[IdKey, String]] = Map(
-        pattern.sourceEntity -> Map(SourceIdKey -> "sourceId"),
-        pattern.relEntity -> Map(SourceIdKey -> "relId", SourceStartNodeKey -> "relSourceId", SourceEndNodeKey -> "relTargetId"),
-        pattern.targetEntity -> Map(SourceIdKey -> "targetId")
-      )
-
-      val types = Map(
-        pattern.sourceEntity -> Set("Person"),
-        pattern.relEntity -> Set("KNOWS"),
-        pattern.targetEntity -> Set("Person")
-      )
-
-      val mapping = EntityMapping(
-        pattern,
-        propertyMapping,
-        idMapping,
-        types
-      )
-
-      val df = caps.sparkSession.createDataFrame(
-        Seq(
-          (1L, "Mats"  , 1L, 1L, 2L, 1984L, 2L, "Martin"),
-          (1L, "Mats"  , 1L, 1L, 3L, 1984L, 3L, "Max"),
-          (2L, "Martin", 2L, 2L, 1L, 1984L, 1L, "Mats")
-      )).toDF("sourceId", "sourceName", "relId", "relSourceId", "relTargetId", "relSince", "targetId", "targetName")
-
-      val patternTable = CAPSEntityTable.create(mapping, df)
-
-      val graph = caps.graphs.create(patternTable)
-
+      val graph = initGraph(
+        """
+          |CREATE (a:Person {name: "Alice"})
+          |CREATE (b:Person {name: "Bob"})
+          |CREATE (a)-[:KNOWS {since: 2017}]->(b)
+        """.stripMargin, Seq(pattern))
       val scan = graph.scanOperator(pattern)
 
       val result = caps.records.from(scan.header, scan.table)
-
 
       val sourceVar = pattern.sourceEntity.toVar
       val targetVar = pattern.targetEntity.toVar
@@ -535,9 +489,52 @@ class ScanGraphTest extends CAPSGraphTest {
       )
 
       val data = Bag(
-        Row(1L.encodeAsCAPSId.toList, true, "Mats"  , 1L.encodeAsCAPSId.toList, true, 1L.encodeAsCAPSId.toList, 2L.encodeAsCAPSId.toList, 1984L, 2L.encodeAsCAPSId.toList, true, "Martin"),
-        Row(1L.encodeAsCAPSId.toList, true, "Mats"  , 1L.encodeAsCAPSId.toList, true, 1L.encodeAsCAPSId.toList, 3L.encodeAsCAPSId.toList, 1984L, 3L.encodeAsCAPSId.toList, true, "Max"),
-        Row(2L.encodeAsCAPSId.toList, true, "Martin", 2L.encodeAsCAPSId.toList, true, 2L.encodeAsCAPSId.toList, 1L.encodeAsCAPSId.toList, 1984L, 1L.encodeAsCAPSId.toList, true, "Mats")
+        Row(0L.encodeAsCAPSId.toList, true, "Alice", 2L.encodeAsCAPSId.toList, true, 0L.encodeAsCAPSId.toList, 1L.encodeAsCAPSId.toList, 2017L, 1L.encodeAsCAPSId.toList, true, "Bob")
+      )
+
+      verify(result, cols, data)
+    }
+
+    it("can align different complex pattern scans") {
+      val scanPattern= TripletPattern(CTNode("Person"), CTRelationship("KNOWS"), CTNode)
+
+      val personPattern = TripletPattern(CTNode("Person"), CTRelationship("KNOWS"), CTNode("Person"))
+      val animalPattern = TripletPattern(CTNode("Person"), CTRelationship("KNOWS"), CTNode("Animal"))
+
+      val graph = initGraph(
+        """
+          |CREATE (a:Person {name: "Alice"})
+          |CREATE (b:Person {name: "Bob"})
+          |CREATE (c:Animal {name: "Garfield"})
+          |CREATE (a)-[:KNOWS {since: 2017}]->(b)
+          |CREATE (a)-[:KNOWS {since: 2017}]->(c)
+        """.stripMargin, Seq(personPattern, animalPattern))
+
+      val scan = graph.scanOperator(scanPattern)
+
+      val result = caps.records.from(scan.header, scan.table)
+
+      val sourceVar = scanPattern.sourceEntity.toVar
+      val targetVar = scanPattern.targetEntity.toVar
+      val relVar = scanPattern.relEntity.toVar
+      val cols = Seq(
+        sourceVar,
+        HasLabel(sourceVar, Label("Person"))(CTBoolean),
+        Property(sourceVar, PropertyKey("name"))(CTString),
+        relVar,
+        HasType(relVar, RelType("KNOWS"))(CTBoolean),
+        StartNode(relVar)(),
+        EndNode(relVar)(),
+        Property(relVar, PropertyKey("since"))(CTInteger.nullable),
+        targetVar,
+        HasLabel(targetVar, Label("Person"))(CTBoolean),
+        HasLabel(targetVar, Label("Animal"))(CTBoolean),
+        Property(targetVar, PropertyKey("name"))(CTString)
+      )
+
+      val data = Bag(
+        Row(0L.encodeAsCAPSId.toList, true, "Alice", 3L.encodeAsCAPSId.toList, true, 0L.encodeAsCAPSId.toList, 1L.encodeAsCAPSId.toList, 2017L, 1L.encodeAsCAPSId.toList, true, false, "Bob"),
+        Row(0L.encodeAsCAPSId.toList, true, "Alice", 4L.encodeAsCAPSId.toList, true, 0L.encodeAsCAPSId.toList, 2L.encodeAsCAPSId.toList, 2017L, 2L.encodeAsCAPSId.toList, false, true, "Garfield")
       )
 
       verify(result, cols, data)
