@@ -36,6 +36,8 @@ import org.opencypher.okapi.api.table.{CypherPrintable, CypherRecords}
 // TODO: make graph and records non-optional
 trait CypherResult extends CypherPrintable {
 
+  type Records <: CypherRecords
+
   type Graph <: PropertyGraph
 
   /**
@@ -59,14 +61,14 @@ trait CypherResult extends CypherPrintable {
     *
     * @return a table of records, `None` otherwise.
     */
-  def getRecords: Option[CypherRecords]
+  def getRecords: Option[Records]
 
   /**
     * The table of records if one was returned by the query, otherwise an exception is thrown.
     *
     * @return a table of records.
     */
-  def records: CypherRecords = getRecords.get
+  def records: Records = getRecords.get
 
   /**
     * API for printable plans. This is used for explaining the execution plan of a Cypher query.
